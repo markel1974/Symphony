@@ -2,7 +2,7 @@ package iec
 
 import (
 	"github.com/markel1974/c64emu/src/board/iboard"
-	"github.com/markel1974/c64emu/src/board/iec/filedrive"
+	"github.com/markel1974/c64emu/src/board/iec/drives"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/preferences"
 )
@@ -10,14 +10,6 @@ import (
 const (
 	BusNum       = 32
 	MaxDriveSize = 4
-)
-
-const (
-	StOk          = 0    // No error
-	StReadTimeout = 0x02 // Timeout on reading
-	StTimeout     = 0x03 // Timeout
-	StEof         = 0x40 // End of file
-	StNotPresent  = 0x80 // Device not present
 )
 
 const (
@@ -60,8 +52,6 @@ type IEC struct {
 
 func NewIEC() *IEC {
 	c := &IEC{
-		//stubIdx:               0,
-		//stub:                  []uint8{208, 144},
 		drvBus:                  make([]uint8, BusNum),
 		drvData:                 make([]uint8, BusNum),
 		peripheralStorage:       make([]*C1541Model, BusNum),
@@ -166,7 +156,7 @@ func (c *IEC) CpuWrite(data uint8) {
 
 func (c *IEC) CpuRead() uint8 {
 	//TODO IMPLEMENT
-	return StNotPresent
+	return virtualdrive.StNotPresent
 	//return c.cpuPort
 }
 
@@ -192,9 +182,9 @@ func (c *IEC) Out(data uint8, eoi bool) uint8 {
 		if c.receivedCmd == CmdData {
 			return c.dataOut(data, eoi)
 		}
-		return StTimeout
+		return virtualdrive.StTimeout
 	} else {
-		return StTimeout
+		return virtualdrive.StTimeout
 	}
 
 }
@@ -216,7 +206,7 @@ func (c *IEC) OutATN(data uint8) uint8 {
 		c.listening = false
 		return c.unTalk()
 	}
-	return StTimeout
+	return virtualdrive.StTimeout
 }
 
 func (c *IEC) OutSec(data uint8) uint8 {
@@ -233,7 +223,7 @@ func (c *IEC) OutSec(data uint8) uint8 {
 			return c.secTalk()
 		}
 	}
-	return StTimeout
+	return virtualdrive.StTimeout
 }
 
 func (c *IEC) In(data *uint8) uint8 {
@@ -241,7 +231,7 @@ func (c *IEC) In(data *uint8) uint8 {
 		return c.dataIn(data)
 	}
 	*data = 0
-	return StTimeout
+	return virtualdrive.StTimeout
 }
 
 func (c *IEC) SetATN() {
@@ -267,7 +257,7 @@ func (c *IEC) createVirtualDrive(emul1541 bool, deviceNumber int, newPath string
 	if len(newPath) == 0 {
 		return nil
 	}
-	vd := filedrive.CreateDrive(uint8(deviceNumber), newPath)
+	vd := drives.NewDriveHelper(uint8(deviceNumber), newPath)
 	if vd != nil {
 		//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 	}
@@ -333,41 +323,41 @@ func (c *IEC) dispatchCpuWrite() {
 func (c *IEC) listen(device uint8) uint8 {
 	c.listenerActive = false
 	if device < 8 || device > 11 {
-		return StNotPresent
+		return virtualdrive.StNotPresent
 	}
 	if c.listener = c.virtualDrives[device-8]; c.listener == nil {
-		return StNotPresent
+		return virtualdrive.StNotPresent
 	}
 	if !c.listener.Ready() {
-		return StNotPresent
+		return virtualdrive.StNotPresent
 	}
 	c.listenerActive = true
-	return StOk
+	return virtualdrive.StOk
 }
 
 func (c *IEC) talk(device uint8) uint8 {
 	c.talkerActive = false
 	if device < 8 || device > 11 {
-		return StNotPresent
+		return virtualdrive.StNotPresent
 	}
 	if c.talker = c.virtualDrives[device-8]; c.talker == nil {
-		return StNotPresent
+		return virtualdrive.StNotPresent
 	}
 	if !c.talker.Ready() {
-		return StNotPresent
+		return virtualdrive.StNotPresent
 	}
 	c.talkerActive = true
-	return StOk
+	return virtualdrive.StOk
 }
 
 func (c *IEC) unListen() uint8 {
 	c.listenerActive = false
-	return StOk
+	return virtualdrive.StOk
 }
 
 func (c *IEC) unTalk() uint8 {
 	c.talkerActive = false
-	return StOk
+	return virtualdrive.StOk
 }
 
 func (c *IEC) secListen() uint8 {
@@ -379,11 +369,11 @@ func (c *IEC) secListen() uint8 {
 			return c.listener.Close(c.secAddr)
 		}
 	}
-	return StOk
+	return virtualdrive.StOk
 }
 
 func (c *IEC) secTalk() uint8 {
-	return StOk
+	return virtualdrive.StOk
 }
 
 func (c *IEC) openOut(data uint8, eoi bool) uint8 {
@@ -393,14 +383,14 @@ func (c *IEC) openOut(data uint8, eoi bool) uint8 {
 			return c.listener.Open(c.secAddr, c.openData)
 		}
 	}
-	return StOk
+	return virtualdrive.StOk
 }
 
 func (c *IEC) dataOut(data uint8, eoi bool) uint8 {
 	if c.listener != nil {
 		return c.listener.Write(c.secAddr, data, eoi)
 	}
-	return StOk
+	return virtualdrive.StOk
 }
 
 func (c *IEC) dataIn(data *uint8) uint8 {
