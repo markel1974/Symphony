@@ -1,0 +1,47 @@
+package render
+
+var _colors [][]uint8
+
+var _paletteRed = []byte{
+	0x00, 0xff, 0x99, 0x00, 0xcc, 0x44, 0x11, 0xff, 0xaa, 0x66, 0xff, 0x40, 0x80, 0x66, 0x77, 0xc0,
+}
+
+var _paletteGreen = []byte{
+	0x00, 0xff, 0x00, 0xff, 0x00, 0xcc, 0x00, 0xff, 0x55, 0x33, 0x66, 0x40, 0x80, 0xff, 0x77, 0xc0,
+}
+
+var _paletteBlue = []byte{
+	0x00, 0xff, 0x00, 0xcc, 0xcc, 0x44, 0x99, 0x00, 0x00, 0x00, 0x66, 0x40, 0x80, 0x66, 0xff, 0xc0,
+}
+
+func init() {
+	_colors = make([][]uint8, 256)
+	alfa := uint8(255)
+	for j := 0; j < 16; j++ {
+		red := _paletteRed[j]
+		green := _paletteGreen[j]
+		blue := _paletteBlue[j]
+		rgba := []uint8{red, green, blue, alfa}
+		_colors[j] = rgba
+	}
+	for k := 16; k < 256; k++ {
+		_colors[k] = _colors[k&0x0f]
+	}
+}
+
+/*
+func init() {
+	_colors = make([]*color.RGBA, 256)
+	alfa := uint8(255)
+	for j := 0; j < 16; j++ {
+		red := _paletteRed[j]
+		green := _paletteGreen[j]
+		blue := _paletteBlue[j]
+		rgba := &color.RGBA{R: red, G: green, B: blue, A: alfa}
+		_colors[j] = rgba
+	}
+	for k := 16; k < 256; k++ {
+		_colors[k] = _colors[k&0x0f]
+	}
+}
+*/
