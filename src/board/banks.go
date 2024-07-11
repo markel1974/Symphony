@@ -129,6 +129,7 @@ func (b *Banks) Setup(board *Board, prefs *preferences.Prefs) {
 
 	ri := ram.NewInitiator(255, 128, 0, 0, 0, 0, 0, 0)
 	ri.InitWithPattern(b.ram, uint(len(b.ram)))
+
 	rc := ram.NewInitiator(255, 128, 0, 0, 0, 0, 0, ram.InitRandomChanceHalf)
 	rc.InitWithPattern(b.color, uint(len(b.color)))
 	b.initRom()
