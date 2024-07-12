@@ -8,6 +8,7 @@ import (
 //https://dustlayer.com/c64-architecture
 
 type MOS6569 struct {
+	*Core
 	board          iboard.IBoard
 	prefs          *preferences.Prefs
 	cycle          int
@@ -17,27 +18,6 @@ type MOS6569 struct {
 	lineOffset     int     // Offset from chunky bitmap buffer
 	foreMaskBuf    []uint8 // Foreground mask for sprite-graphics collisions and priorities
 	foreMaskOffset int     // Offset from foreMaskBuf
-
-	mXx [8]uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
-	mXy [8]uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
-	mx8 uint8     // VIC register
-	cr1 uint8     // VIC register
-	cr2 uint8     // VIC register
-	lpx uint8     // VIC register
-	lpy uint8     // VIC register
-	me  uint8     // VIC register
-	mxe uint8     // VIC register
-	mye uint8     // VIC register
-	mdp uint8     // VIC register
-	mmc uint8     // VIC register
-	ec  uint8     // VIC register
-	b0c uint8     // VIC register
-	b1c uint8     // VIC register
-	b2c uint8     // VIC register
-	b3c uint8     // VIC register
-	mm0 uint8     // VIC register
-	mm1 uint8     // VIC register
-	mXc [8]uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
 
 	ecColor  uint8    // Index ec Color Mapping
 	b0cColor uint8    // Index b0c Color Mapping
@@ -111,7 +91,9 @@ type MOS6569 struct {
 }
 
 func NewMOS6569() *MOS6569 {
-	vic := &MOS6569{}
+	vic := &MOS6569{
+		Core: NewCore(),
+	}
 	vic.ready = false
 	vic.displayBuffer = make([]uint8, DisplaySize)
 	vic.lineOffset = 0
@@ -133,28 +115,7 @@ func NewMOS6569() *MOS6569 {
 	vic.charBase = 0
 	vic.bitmapBase = 0
 	// Initialize VIC registers
-	vic.mx8 = 0
-	vic.cr1 = 0
-	vic.cr2 = 0
-	vic.lpx = 0
-	vic.lpy = 0
-	vic.me = 0
-	vic.mxe = 0
-	vic.mye = 0
-	vic.mdp = 0
-	vic.mmc = 0
-	vic.ec = 0
-	vic.b0c = 0
-	vic.b1c = 0
-	vic.b2c = 0
-	vic.b3c = 0
-	vic.mm0 = 0
-	vic.mm1 = 0
-	for i := 0; i < 8; i++ {
-		vic.mXx[i] = 0
-		vic.mXy[i] = 0
-		vic.mXc[i] = 0
-	}
+
 	vic.vaBase = 0
 	vic.ciaVaBase = 0
 	vic.irqFlag = 0
