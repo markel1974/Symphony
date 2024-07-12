@@ -8,125 +8,118 @@ import (
 //https://dustlayer.com/c64-architecture
 
 type MOS6569 struct {
-	cycle             int
-	lastByte          uint8 // Last byte read by VIC
-	board             iboard.IBoard
-	prefs             *preferences.Prefs
-	displayBuffer     []uint8
-	chunkyLineStart   int       // Offset from current line in bitmap buffer
-	chunkyPtr         int       // Offset from chunky bitmap buffer
-	foreMaskPtr       int       // offset from fmBuf
-	mx                [8]uint16 // VIC registers
-	my                [8]uint8  // VIC registers
-	mx8               uint8     // VIC registers
-	ctrl1             uint8
-	ctrl2             uint8
-	lpx               uint8
-	lpy               uint8
-	me                uint8
-	mxe               uint8
-	mye               uint8
-	mdp               uint8
-	mmc               uint8
-	vaBase            uint8
-	irqFlag           uint8
-	irqMask           uint8
-	clxSpr            uint8
-	clxBgr            uint8
-	ec                uint8
-	b0c               uint8
-	b1c               uint8
-	b2c               uint8
-	b3c               uint8
-	mm0               uint8
-	mm1               uint8
-	ecColor           uint8
-	b0cColor          uint8 // Indices for exterior/background colors
-	b1cColor          uint8 // Indices for exterior/background colors
-	b2cColor          uint8 // Indices for exterior/background colors
-	b3cColor          uint8 // Indices for exterior/background colors
-	mm0Color          uint8 // Indices for MOB multi colors
-	mm1Color          uint8 // Indices for MOB multi colors
-	sc                [8]uint8
-	colors            [256]uint8              // Indices of the 16 colors (16 times mirrored to avoid "& 0x0f")
-	sprColor          [8]uint8                // Indices for MOB colors
-	matrixLine        [40]uint8               // Buffer for video line, read in Bad Lines
-	colorLine         [40]uint8               // Buffer for color line, read in Bad Lines
-	rasterY           uint16                  // Current raster line
-	irqRaster         uint16                  // Interrupt raster line
-	dyStart           uint16                  // Comparison values for border logic
-	dyStop            uint16                  // Comparison values for border logic
-	rc                uint16                  // Row counter
-	vc                uint16                  // Video counter
-	vcBase            uint16                  // Video counter base
-	xScroll           uint16                  // X scroll value
-	yScroll           uint16                  // Y scroll value
-	ciaVaBase         uint16                  // CIA VA14/15 video base
-	mc                [8]uint16               // Sprite data counters
-	sprCollBuf        []uint8                 // REAL DisplayX = 0x180 | Buffer for sprite-sprite collisions and priorities
-	fmBuf             []uint8                 // DisplayX / 8 | Foreground mask for sprite-graphics collisions and priorities
-	borderColorSample [DisplayXFill + 1]uint8 // DisplayX / 8 | Samples of border color at each "displayed" cycle
-	borderOnSample    [5]bool                 // Samples of border state at different cycles (1, 17, 18, 56, 57) //PROTECTION AGAIN BUFFER OVERFLOW !!! borderColorSample FROM OUT OF BUFFER!!!!
-	sprPtr            [8]uint16               // Sprite data pointers
-	mcBase            [8]uint16               // Sprite data counter bases
-	sprData           [][]uint8               // Sprite data read
-	sprDrawData       [][]uint8               // Sprite data for drawing
-	displayIdx        int                     // Index of current display mode
-	displayOn         bool                    // true: Display state, false: Idle state
-	borderOn          bool                    // Flag: Upper/lower border on (Main border FlipFlop)
-	badLinesEnabled   bool                    // Flag: Bad Lines enabled for this frame
-	lpTriggered       bool                    // Flag: LightPen was triggered in this frame
-	matrixBase        uint16                  // Video matrix base
-	charBase          uint16                  // Character generator base
-	bitmapBase        uint16                  // Bitmap base
-	isBadLine         bool                    // Flag: Current line is bad line
-	drawThisLine      bool                    // Flag: This line is drawn on the _screen
-	udBorderOn        bool                    // Flag: Upper/lower border on
-	refreshCounter    uint8                   // Refresh counter
-	sprExpY           uint8                   // 8 sprite y expansion flip flops
-	sprDmaOn          uint8                   // 8 flags: Sprite DMA active
-	sprDisplayOn      uint8                   // 8 flags: Sprite display active
-	sprDraw           uint8                   // 8 flags: Draw sprite in this line
-	rasterX           uint16                  // Current raster x position
-	mlIndex           int                     // Index in matrix/colorLine[]
-	gfxData           uint8
-	charData          uint8
-	colorData         uint8
-	lastCharData      uint8
-	firstBaCycle      uint64
-	vBlanking         bool // Flag: VBlank in next cycle
-	baLow             bool
-	ready             bool // VIC Initialization Complete
-	//ecColorLong       uint32 // ecColor expanded to 32 bits
-}
+	board          iboard.IBoard
+	prefs          *preferences.Prefs
+	cycle          int
+	lastByte       uint8 // Last byte read by VIC
+	displayBuffer  []uint8
+	lineStart      int     // Offset from current line in bitmap buffer
+	lineOffset     int     // Offset from chunky bitmap buffer
+	foreMaskBuf    []uint8 // Foreground mask for sprite-graphics collisions and priorities
+	foreMaskOffset int     // Offset from foreMaskBuf
 
-var _colorMultiplier [][]uint8
-var _displayXDiv8 []uint8
-var _displayXFillMax []uint8
+	mXx [8]uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
+	mXy [8]uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
+	mx8 uint8     // VIC register
+	cr1 uint8     // VIC register
+	cr2 uint8     // VIC register
+	lpx uint8     // VIC register
+	lpy uint8     // VIC register
+	me  uint8     // VIC register
+	mxe uint8     // VIC register
+	mye uint8     // VIC register
+	mdp uint8     // VIC register
+	mmc uint8     // VIC register
+	ec  uint8     // VIC register
+	b0c uint8     // VIC register
+	b1c uint8     // VIC register
+	b2c uint8     // VIC register
+	b3c uint8     // VIC register
+	mm0 uint8     // VIC register
+	mm1 uint8     // VIC register
+	mXc [8]uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
 
-//var _displayXPlusOne []uint8
+	ecColor  uint8    // Index ec Color Mapping
+	b0cColor uint8    // Index b0c Color Mapping
+	b1cColor uint8    // Index b1c Color Mapping
+	b2cColor uint8    // Index b2c Color Mapping
+	b3cColor uint8    // Index b3c Color Mapping
+	mm0Color uint8    // Index mm0 Color Mapping
+	mm1Color uint8    // Index mm1 Color Mapping
+	mXcColor [8]uint8 // Indices for m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c Color Mapping
 
-func init() {
-	_colorMultiplier = make([][]uint8, 0xff)
-	for x := uint8(0); x < 0xff; x++ {
-		_colorMultiplier[x] = []uint8{x, x, x, x, x, x, x, x}
-	}
-	_displayXDiv8 = make([]uint8, DisplayXDiv8)
-	for x := 0; x < DisplayXDiv8; x++ {
-		_displayXDiv8[x] = uint8(0)
-	}
-	_displayXFillMax = make([]uint8, DisplayXFillMax)
-	for x := 0; x < DisplayXFillMax; x++ {
-		_displayXFillMax[x] = 0
-	}
-	//_displayXPlusOne = make([]uint8, DisplayXFill+1)
-	//for x := 0; x < DisplayXFill+1; x++ {
-	//	_displayXPlusOne[x] = 0
-	//}
+	irqFlag   uint8
+	irqMask   uint8
+	irqRaster uint16 // Interrupt raster line
+
+	colors     [256]uint8 // Indices of the 16 colors (16 times mirrored to avoid "& 0x0f")
+	matrixLine [40]uint8  // Buffer for video line, read in Bad Lines
+	colorLine  [40]uint8  // Buffer for color line, read in Bad Lines
+
+	rasterY          uint16 // Current raster line
+	dyStart          uint16 // Comparison values for border logic
+	dyStop           uint16 // Comparison values for border logic
+	rowCounter       uint16 // Row counter
+	videoCounter     uint16 // Video counter
+	videoCounterBase uint16 // Video counter base
+	xScroll          uint16 // X scroll value
+	yScroll          uint16 // Y scroll value
+
+	vaBase     uint8
+	ciaVaBase  uint16 // CIA VA14/15 video base
+	matrixBase uint16 // Video matrix base
+	charBase   uint16 // Character generator base
+	bitmapBase uint16 // Bitmap base
+
+	borderColorSample [DisplayXFill + 1]uint8 // Samples of border color at each "displayed" cycle
+	borderOn          bool                    // Upper/lower border on (Main border FlipFlop)
+	borderOnUL        bool                    // Upper/lower border on
+	borderOnSample    [5]bool                 // Samples of border state at different cycles (1, 17, 18, 56, 57)
+
+	displayIdx      int  // Index of current display mode
+	displayOn       bool // Display state
+	badLinesEnabled bool // Bad Lines enabled for this frame
+	lpTriggered     bool // LightPen was triggered in this frame
+	isBadLine       bool // Current line is bad line
+	drawThisLine    bool // This line is drawn
+
+	refreshCounter uint8 // Refresh counter
+
+	sprClxBgr    uint8     // Sprite to background collision
+	sprClx       uint8     // Sprite to sprite collision
+	sprCollBuf   []uint8   // Buffer for sprite-sprite collisions and priorities
+	sprPtr       [8]uint16 // Sprite data pointers
+	sprMC        [8]uint16 // Sprite data counters
+	sprMCBase    [8]uint16 // Sprite data counter bases
+	sprData      [][]uint8 // Sprite data read
+	sprDrawData  [][]uint8 // Sprite data for drawing
+	sprExpY      uint8     // 8 sprite y expansion flip flops
+	sprDmaOn     uint8     // 8 flags: Sprite DMA active
+	sprDisplayOn uint8     // 8 flags: Sprite display active
+	sprDraw      uint8     // 8 flags: Draw sprite in this line
+
+	rasterX      uint16 // Current raster x position
+	mlIndex      int    // Index in matrix/colorLine[]
+	gfxData      uint8
+	charData     uint8
+	charDataLast uint8
+	colorData    uint8
+	firstBaCycle uint64
+	vBlanking    bool // Flag: VBlank in next cycle
+	baLow        bool
+	ready        bool // VIC Initialization Complete
 }
 
 func NewMOS6569() *MOS6569 {
 	vic := &MOS6569{}
+	vic.ready = false
+	vic.displayBuffer = make([]uint8, DisplaySize)
+	vic.lineOffset = 0
+	vic.isBadLine = false
+	vic.sprExpY = 0
+	for i := 0; i < 8; i++ {
+		vic.sprMCBase[i] = 0
+	}
 	vic.sprData = make([][]uint8, 8)
 	for i := range vic.sprData {
 		vic.sprData[i] = make([]uint8, 4)
@@ -135,22 +128,14 @@ func NewMOS6569() *MOS6569 {
 	for i := range vic.sprDrawData {
 		vic.sprDrawData[i] = make([]uint8, 4)
 	}
-	vic.ready = false
-	vic.displayBuffer = make([]uint8, DisplaySize) //(color_t*)malloc(sizeof(color_t) * DisplaySize)
-	vic.chunkyPtr = 0                              //&vic.displayBuffer[0]
-	vic.isBadLine = false
-	vic.sprExpY = 0
-	for i := 0; i < 8; i++ {
-		vic.mcBase[i] = 0
-	}
 	// Set pointers
 	vic.matrixBase = 0
 	vic.charBase = 0
 	vic.bitmapBase = 0
 	// Initialize VIC registers
 	vic.mx8 = 0
-	vic.ctrl1 = 0
-	vic.ctrl2 = 0
+	vic.cr1 = 0
+	vic.cr2 = 0
 	vic.lpx = 0
 	vic.lpy = 0
 	vic.me = 0
@@ -158,12 +143,6 @@ func NewMOS6569() *MOS6569 {
 	vic.mye = 0
 	vic.mdp = 0
 	vic.mmc = 0
-	vic.vaBase = 0
-	vic.irqFlag = 0
-	vic.irqMask = 0
-	vic.clxSpr = 0
-	vic.clxBgr = 0
-	vic.ciaVaBase = 0
 	vic.ec = 0
 	vic.b0c = 0
 	vic.b1c = 0
@@ -172,16 +151,23 @@ func NewMOS6569() *MOS6569 {
 	vic.mm0 = 0
 	vic.mm1 = 0
 	for i := 0; i < 8; i++ {
-		vic.mx[i] = 0
-		vic.my[i] = 0
-		vic.sc[i] = 0
+		vic.mXx[i] = 0
+		vic.mXy[i] = 0
+		vic.mXc[i] = 0
 	}
+	vic.vaBase = 0
+	vic.ciaVaBase = 0
+	vic.irqFlag = 0
+	vic.irqMask = 0
+	vic.sprClx = 0
+	vic.sprClxBgr = 0
+
 	// Initialize other variables
 	vic.rasterY = TotalRasters - 1
-	vic.rc = 7
+	vic.rowCounter = 7
 	vic.irqRaster = 0
-	vic.vc = 0
-	vic.vcBase = 0
+	vic.videoCounter = 0
+	vic.videoCounterBase = 0
 	vic.xScroll = 0
 	vic.yScroll = 0
 	vic.dyStart = Row24YStart
@@ -191,20 +177,20 @@ func NewMOS6569() *MOS6569 {
 	vic.displayIdx = 0
 	vic.displayOn = false
 	vic.borderOn = false
-	vic.udBorderOn = false
+	vic.borderOnUL = false
 	vic.vBlanking = false
 	vic.lpTriggered = false
 	vic.drawThisLine = false
 	vic.sprDmaOn = 0
 	vic.sprDisplayOn = 0
 	for i := 0; i < 8; i++ {
-		vic.mc[i] = 63
+		vic.sprMC[i] = 63
 		vic.sprPtr[i] = 0
 	}
 	vic.sprCollBuf = make([]uint8, DisplayXFillMax)
 	copy(vic.sprCollBuf, _displayXFillMax)
-	vic.fmBuf = make([]uint8, DisplayXFill+1)
-	copy(vic.fmBuf, _displayXDiv8)
+	vic.foreMaskBuf = make([]uint8, DisplayXFill+1)
+	copy(vic.foreMaskBuf, _displayXDiv8)
 	for i := 0; i < 256; i++ {
 		vic.colors[i] = (uint8)(i & 0x0f)
 	}
@@ -217,7 +203,7 @@ func NewMOS6569() *MOS6569 {
 	vic.mm0Color = vic.colors[0]
 	vic.mm1Color = vic.colors[0]
 	for i := 0; i < 8; i++ {
-		vic.sprColor[i] = vic.colors[0]
+		vic.mXcColor[i] = vic.colors[0]
 	}
 	vic.baLow = false
 	vic.badLinesEnabled = false
@@ -263,9 +249,9 @@ func (vic *MOS6569) refreshAccess() {
 
 func (vic *MOS6569) checkSpriteDMA() {
 	for i, mask := 0, uint8(1); i < 8; i, mask = i+1, mask<<1 {
-		if (vic.me&mask) != 0 && (vic.rasterY&0xff) == uint16(vic.my[i]) {
+		if (vic.me&mask) != 0 && (vic.rasterY&0xff) == uint16(vic.mXy[i]) {
 			vic.sprDmaOn |= mask
-			vic.mcBase[i] = 0
+			vic.sprMCBase[i] = 0
 			if (vic.mye & mask) != 0 {
 				vic.sprExpY &= ^mask
 			}
@@ -280,8 +266,8 @@ func (vic *MOS6569) fetchSpriteDataPtr(num int) {
 
 func (vic *MOS6569) fetchSpriteData(num int, byteNum int) {
 	if (vic.sprDmaOn & (1 << num)) != 0 {
-		vic.sprData[num][byteNum] = vic.readByte((vic.mc[num] & 0x3f) | vic.sprPtr[num])
-		vic.mc[num]++
+		vic.sprData[num][byteNum] = vic.readByte((vic.sprMC[num] & 0x3f) | vic.sprPtr[num])
+		vic.sprMC[num]++
 	} else if byteNum == 1 {
 		//idleAccess
 		vic.readByte(0x3fff)
@@ -293,8 +279,8 @@ func (vic *MOS6569) sampleBorder() {
 		idx := vic.cycle - 13
 		vic.borderColorSample[idx&DisplayXFill] = vic.ecColor
 	}
-	vic.chunkyPtr += 8
-	vic.foreMaskPtr++
+	vic.lineOffset += 8
+	vic.foreMaskOffset++
 }
 
 func (vic *MOS6569) NewPrefs(_ *preferences.Prefs) {
@@ -313,15 +299,15 @@ func (vic *MOS6569) ReadRegister(addr uint16) uint8 {
 	addr = addr & 0x3f
 	switch addr {
 	case 0x00, 0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e:
-		return uint8(vic.mx[addr>>1])
+		return uint8(vic.mXx[addr>>1])
 	case 0x01, 0x03, 0x05, 0x07, 0x09, 0x0b, 0x0d, 0x0f:
-		return vic.my[addr>>1]
+		return vic.mXy[addr>>1]
 	// Sprite X position MSB
 	case 0x10:
 		return vic.mx8
 	// Control register 1
 	case 0x11:
-		return uint8((uint16(vic.ctrl1) & 0x7f) | ((vic.rasterY & 0x100) >> 1))
+		return uint8((uint16(vic.cr1) & 0x7f) | ((vic.rasterY & 0x100) >> 1))
 	// Raster counter
 	case 0x12:
 		return uint8(vic.rasterY)
@@ -336,7 +322,7 @@ func (vic *MOS6569) ReadRegister(addr uint16) uint8 {
 		return vic.me
 	// Control register 2
 	case 0x16:
-		return vic.ctrl2 | 0xc0
+		return vic.cr2 | 0xc0
 	// Sprite Y expansion
 	case 0x17:
 		return vic.mye
@@ -364,13 +350,13 @@ func (vic *MOS6569) ReadRegister(addr uint16) uint8 {
 		return vic.mxe
 	// Sprite-sprite collision
 	case 0x1e:
-		ret := vic.clxSpr
-		vic.clxSpr = 0 // Read and clear
+		ret := vic.sprClx
+		vic.sprClx = 0 // Read and clear
 		return ret
 	// Sprite-background collision
 	case 0x1f:
-		ret := vic.clxBgr
-		vic.clxBgr = 0 // Read and clear
+		ret := vic.sprClxBgr
+		vic.sprClxBgr = 0 // Read and clear
 		return ret
 	case 0x20:
 		return vic.ec | 0xf0
@@ -387,7 +373,7 @@ func (vic *MOS6569) ReadRegister(addr uint16) uint8 {
 	case 0x26:
 		return vic.mm1 | 0xf0
 	case 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e:
-		return vic.sc[addr-0x27] | 0xf0
+		return vic.mXc[addr-0x27] | 0xf0
 	default:
 		return 0xff
 	}
@@ -398,20 +384,20 @@ func (vic *MOS6569) WriteRegister(addr uint16, data uint8) {
 	switch addr {
 	case 0x00, 0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e:
 		target := addr >> 1
-		vic.mx[target] = (vic.mx[target] & 0xff00) | uint16(data)
+		vic.mXx[target] = (vic.mXx[target] & 0xff00) | uint16(data)
 	case 0x10:
 		vic.mx8 = data
 		for i, j := 0, uint8(1); i < 8; i, j = i+1, j<<1 {
 			if (vic.mx8 & j) != 0 {
-				vic.mx[i] |= 0x100
+				vic.mXx[i] |= 0x100
 			} else {
-				vic.mx[i] &= 0xff
+				vic.mXx[i] &= 0xff
 			}
 		}
 	case 0x01, 0x03, 0x05, 0x07, 0x09, 0x0b, 0x0d, 0x0f:
-		vic.my[addr>>1] = data
+		vic.mXy[addr>>1] = data
 	case 0x11: // Control register 1
-		vic.ctrl1 = data
+		vic.cr1 = data
 		vic.yScroll = uint16(data) & 7
 		newIRQRaster := (vic.irqRaster & 0xff) | ((uint16(data) & 0x80) << 1)
 		if vic.irqRaster != newIRQRaster && vic.rasterY == newIRQRaster {
@@ -431,7 +417,7 @@ func (vic *MOS6569) WriteRegister(addr uint16, data uint8) {
 		}
 		// Bad Line condition?
 		vic.isBadLine = vic.rasterY >= FirstDmaLine && vic.rasterY <= LastDmaLine && ((vic.rasterY & 7) == vic.yScroll) && vic.badLinesEnabled
-		vic.displayIdx = ((int(vic.ctrl1) & 0x60) | (int(vic.ctrl2) & 0x10)) >> 4
+		vic.displayIdx = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4
 	case 0x12: // Raster counter
 		newIRQRaster := (vic.irqRaster & 0xff00) | uint16(data)
 		if vic.irqRaster != newIRQRaster && vic.rasterY == newIRQRaster {
@@ -441,9 +427,9 @@ func (vic *MOS6569) WriteRegister(addr uint16, data uint8) {
 	case 0x15: // Sprite enable
 		vic.me = data
 	case 0x16: // Control register 2
-		vic.ctrl2 = data
+		vic.cr2 = data
 		vic.xScroll = uint16(data) & 7
-		vic.displayIdx = ((int(vic.ctrl1) & 0x60) | (int(vic.ctrl2) & 0x10)) >> 4
+		vic.displayIdx = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4
 	case 0x17: // Sprite Y expansion
 		vic.mye = data
 		vic.sprExpY |= ^data
@@ -499,8 +485,8 @@ func (vic *MOS6569) WriteRegister(addr uint16, data uint8) {
 		vic.mm1Color = vic.colors[data]
 	case 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e:
 		target := addr - 0x27
-		vic.sc[target] = data
-		vic.sprColor[target] = vic.colors[data]
+		vic.mXc[target] = data
+		vic.mXcColor[target] = vic.colors[data]
 	}
 }
 
@@ -534,7 +520,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			}
 			// In line $30, the DEN bit controls if Bad Lines can occur
 			if vic.rasterY == 0x30 {
-				vic.badLinesEnabled = (vic.ctrl1 & 0x10) != 0
+				vic.badLinesEnabled = (vic.cr1 & 0x10) != 0
 			}
 			// Bad Line condition?
 			vic.isBadLine = (vic.rasterY >= FirstDmaLine) && (vic.rasterY <= LastDmaLine) && ((vic.rasterY & 7) == vic.yScroll) && (vic.badLinesEnabled)
@@ -557,23 +543,23 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.vBlanking {
 			vBlank = true
 			// Vertical blank, reset counters
-			vic.vcBase = 0
+			vic.videoCounterBase = 0
 			vic.rasterY = 0
 			vic.refreshCounter = 0xff
 			vic.vBlanking = false
 			vic.lpTriggered = false
-			vic.chunkyLineStart = 0
+			vic.lineStart = 0
 			if vic.irqRaster == 0 {
 				// Trigger raster IRQ if IRQ in line 0
 				vic.rasterIrq()
 			}
 		}
 		// Our output goes here
-		vic.chunkyPtr = vic.chunkyLineStart
+		vic.lineOffset = vic.lineStart
 		// Clear foreground mask
-		copy(vic.fmBuf, _displayXDiv8)
+		copy(vic.foreMaskBuf, _displayXDiv8)
 
-		vic.foreMaskPtr = 0
+		vic.foreMaskOffset = 0
 		vic.fetchSpriteData(3, 1)
 		vic.fetchSpriteData(3, 2)
 		if vic.isBadLine {
@@ -697,7 +683,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.rasterX = 0xfffc
 
 	case 14:
-		// Refresh, vc -> vcBase, turn on matrix access and reset RC if Bad Line
+		// Refresh, videoCounter -> videoCounterBase, turn on matrix access and reset RC if Bad Line
 		if vic.drawThisLine {
 			vic.drawBackground()
 			vic.sampleBorder()
@@ -705,14 +691,14 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.refreshAccess()
 		// Turn on display and matrix access and reset RC if Bad Line
 		if vic.isBadLine {
-			vic.rc = 0
+			vic.rowCounter = 0
 			vic.displayOn = true
 			vic.setBALow()
 		}
-		vic.vc = vic.vcBase
+		vic.videoCounter = vic.videoCounterBase
 
 	case 15:
-		// Refresh and matrix access, increment mcBase by 2 if y expansion flip flop is set
+		// Refresh and matrix access, increment sprMCBase by 2 if y expansion flip flop is set
 		if vic.drawThisLine {
 			vic.drawBackground()
 			vic.sampleBorder()
@@ -725,14 +711,14 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		for idx := 0; idx < 8; idx++ {
 			if (vic.sprExpY & (1 << idx)) != 0 {
-				vic.mcBase[idx] += 2
+				vic.sprMCBase[idx] += 2
 			}
 		}
 		vic.mlIndex = 0
 		vic.matrixAccess()
 
 	case 16:
-		// Graphics and matrix access, increment mcBase by 1 if y expansion flip flop is set
+		// Graphics and matrix access, increment sprMCBase by 1 if y expansion flip flop is set
 		// and check if sprite DMA can be turned off
 		if vic.drawThisLine {
 			vic.drawBackground()
@@ -746,9 +732,9 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		for idx, mask := 0, uint8(1); idx < 8; idx, mask = idx+1, mask<<1 {
 			if (vic.sprExpY & mask) != 0 {
-				vic.mcBase[idx]++
+				vic.sprMCBase[idx]++
 			}
-			if (vic.mcBase[idx] & 0x3f) == 0x3f {
+			if (vic.sprMCBase[idx] & 0x3f) == 0x3f {
 				vic.sprDmaOn &= ^mask
 			}
 		}
@@ -756,18 +742,18 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 17:
 		// Graphics and matrix access, turn off border in 40 column mode, display window starts here
-		if (vic.ctrl2 & 8) != 0 {
+		if (vic.cr2 & 8) != 0 {
 			if vic.rasterY == vic.dyStop {
-				vic.udBorderOn = true
+				vic.borderOnUL = true
 			} else {
-				if (vic.ctrl1 & 0x10) != 0 {
+				if (vic.cr1 & 0x10) != 0 {
 					if vic.rasterY == vic.dyStart {
-						vic.udBorderOn = false
+						vic.borderOnUL = false
 						vic.borderOn = false
-					} else if !vic.udBorderOn {
+					} else if !vic.borderOnUL {
 						vic.borderOn = false
 					}
-				} else if !vic.udBorderOn {
+				} else if !vic.borderOnUL {
 					vic.borderOn = false
 				}
 			}
@@ -775,7 +761,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		// Second sample of border state
 		vic.borderOnSample[1] = vic.borderOn
 		if vic.drawThisLine {
-			if vic.udBorderOn {
+			if vic.borderOnUL {
 				vic.drawBackground()
 			} else {
 				vic.drawBackground()
@@ -793,19 +779,19 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 18:
 		// Turn off border in 38 column mode
-		if (vic.ctrl2 & 8) == 0 {
+		if (vic.cr2 & 8) == 0 {
 			if vic.rasterY == vic.dyStop {
-				vic.udBorderOn = true
+				vic.borderOnUL = true
 			} else {
-				if (vic.ctrl1 & 0x10) != 0 {
+				if (vic.cr1 & 0x10) != 0 {
 					if vic.rasterY == vic.dyStart {
-						vic.udBorderOn = false
+						vic.borderOnUL = false
 						vic.borderOn = false
-					} else if !vic.udBorderOn {
+					} else if !vic.borderOnUL {
 						vic.borderOn = false
 					}
 				} else {
-					if !vic.udBorderOn {
+					if !vic.borderOnUL {
 						vic.borderOn = false
 					}
 				}
@@ -815,7 +801,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		// Third sample of border state
 		vic.borderOnSample[2] = vic.borderOn
 		if vic.drawThisLine {
-			if vic.udBorderOn {
+			if vic.borderOnUL {
 				vic.drawBackground()
 			} else {
 				vic.drawGraphics()
@@ -830,11 +816,11 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.setBALow()
 		}
 		vic.matrixAccess()
-		vic.lastCharData = vic.charData
+		vic.charDataLast = vic.charData
 
 	case 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54:
 		if vic.drawThisLine {
-			if vic.udBorderOn {
+			if vic.borderOnUL {
 				vic.drawBackground()
 			} else {
 				vic.drawGraphics()
@@ -848,13 +834,13 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.setBALow()
 		}
 		vic.matrixAccess()
-		vic.lastCharData = vic.charData
+		vic.charDataLast = vic.charData
 
 	case 55:
 		// Last graphics access, turn off matrix access, turn on sprite DMA if Y coordinate is
 		// right and sprite is enabled, handle sprite y expansion, set BA for sprite 0
 		if vic.drawThisLine {
-			if vic.udBorderOn {
+			if vic.borderOnUL {
 				vic.drawBackground()
 			} else {
 				vic.drawGraphics()
@@ -881,13 +867,13 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	case 56:
 		// Turn on border in 38 column mode, turn on sprite DMA if Y coordinate is right and
 		// sprite is enabled, set BA for sprite 0, display window ends here
-		if (vic.ctrl2 & 8) == 0 {
+		if (vic.cr2 & 8) == 0 {
 			vic.borderOn = true
 		}
 		// Fourth sample of border state
 		vic.borderOnSample[3] = vic.borderOn
 		if vic.drawThisLine {
-			if vic.udBorderOn {
+			if vic.borderOnUL {
 				vic.drawBackground()
 			} else {
 				vic.drawGraphics()
@@ -906,7 +892,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	// Turn on border in 40 column mode, set BA for sprite 1, paint sprites
 	case 57:
-		if (vic.ctrl2 & 8) != 0 {
+		if (vic.cr2 & 8) != 0 {
 			vic.borderOn = true
 		}
 		// Fifth sample of border state
@@ -934,7 +920,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.setBALow()
 		}
 	case 58:
-		// Fetch sprite pointer 0, mcBase->mc, turn on sprite display if necessary,
+		// Fetch sprite pointer 0, sprMCBase->sprMC, turn on sprite display if necessary,
 		// turn off display if RC=7, read data of sprite 0
 		if vic.drawThisLine {
 			vic.drawBackground()
@@ -942,20 +928,20 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		rasterY := vic.rasterY & 0xff
 		for idx, mask := 0, uint8(1); idx < 8; idx, mask = idx+1, mask<<1 {
-			vic.mc[idx] = vic.mcBase[idx]
-			if (vic.sprDmaOn&mask) != 0 && (rasterY == uint16(vic.my[idx])) {
+			vic.sprMC[idx] = vic.sprMCBase[idx]
+			if (vic.sprDmaOn&mask) != 0 && (rasterY == uint16(vic.mXy[idx])) {
 				vic.sprDisplayOn |= mask
 			}
 		}
 		vic.fetchSpriteDataPtr(0)
 		vic.fetchSpriteData(0, 0)
-		if vic.rc == 7 {
-			vic.vcBase = vic.vc
+		if vic.rowCounter == 7 {
+			vic.videoCounterBase = vic.videoCounter
 			vic.displayOn = false
 		}
 		if vic.isBadLine || vic.displayOn {
 			vic.displayOn = true
-			vic.rc = (vic.rc + 1) & 7
+			vic.rowCounter = (vic.rowCounter + 1) & 7
 		}
 	case 59:
 		// Set BA for sprite 2, read data of sprite 0
@@ -979,7 +965,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			const BorderOffset = BorderS * 8
 			vic.drawBackground()
 			vic.sampleBorder()
-			displayPtr := vic.chunkyLineStart
+			displayPtr := vic.lineStart
 			if vic.sprDraw != 0 {
 				vic.drawSprites()
 			}
@@ -1007,7 +993,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 				}
 			}
 			// Increment pointer in chunky buffer
-			vic.chunkyLineStart += DisplayX
+			vic.lineStart += DisplayX
 		}
 		vic.fetchSpriteDataPtr(1)
 		vic.fetchSpriteData(1, 0)
@@ -1048,9 +1034,9 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.displayOn = true
 		}
 		if vic.rasterY == vic.dyStop {
-			vic.udBorderOn = true
-		} else if (vic.ctrl1&0x10) != 0 && vic.rasterY == vic.dyStart {
-			vic.udBorderOn = false
+			vic.borderOnUL = true
+		} else if (vic.cr1&0x10) != 0 && vic.rasterY == vic.dyStart {
+			vic.borderOnUL = false
 		}
 		if (vic.sprDmaOn & 0x10) != 0 {
 			vic.setBALow()
@@ -1091,7 +1077,7 @@ func (vic *MOS6569) matrixAccess() {
 			vic.colorLine[vic.mlIndex] = 0xff
 			vic.matrixLine[vic.mlIndex] = 0xff
 		} else {
-			addr := (vic.vc & 0x03ff) | vic.matrixBase
+			addr := (vic.videoCounter & 0x03ff) | vic.matrixBase
 			vic.matrixLine[vic.mlIndex] = vic.readByte(addr)
 			vic.colorLine[vic.mlIndex] = vic.board.ColorRead(addr & 0x03ff)
 		}
@@ -1101,21 +1087,21 @@ func (vic *MOS6569) matrixAccess() {
 func (vic *MOS6569) graphicsAccess() {
 	if vic.displayOn {
 		var addr uint16
-		if (vic.ctrl1 & 0x20) != 0 {
-			addr = ((vic.vc & 0x03ff) << 3) | vic.bitmapBase | vic.rc // Bitmap
+		if (vic.cr1 & 0x20) != 0 {
+			addr = ((vic.videoCounter & 0x03ff) << 3) | vic.bitmapBase | vic.rowCounter // Bitmap
 		} else {
-			addr = (uint16(vic.matrixLine[vic.mlIndex]) << 3) | vic.charBase | vic.rc // Text
+			addr = (uint16(vic.matrixLine[vic.mlIndex]) << 3) | vic.charBase | vic.rowCounter // Text
 		}
-		if (vic.ctrl1 & 0x40) != 0 {
+		if (vic.cr1 & 0x40) != 0 {
 			addr &= 0xf9ff // ECM
 		}
 		vic.gfxData = vic.readByte(addr)
 		vic.charData = vic.matrixLine[vic.mlIndex]
 		vic.colorData = vic.colorLine[vic.mlIndex]
 		vic.mlIndex++
-		vic.vc++
+		vic.videoCounter++
 	} else {
-		if (vic.ctrl1 & 0x40) != 0 {
+		if (vic.cr1 & 0x40) != 0 {
 			vic.gfxData = vic.readByte(0x39ff)
 		} else {
 			vic.gfxData = vic.readByte(0x3fff)
@@ -1131,16 +1117,16 @@ func (vic *MOS6569) drawBackground() {
 	case 0, 1, 3: // Standard text, Multicolor text, Multicolor bitmap
 		c = vic.b0cColor
 	case 2: // Standard bitmap
-		c = vic.colors[vic.lastCharData]
+		c = vic.colors[vic.charDataLast]
 	case 4: // ECM text
-		if (vic.lastCharData & 0x80) != 0 {
-			if (vic.lastCharData & 0x40) != 0 {
+		if (vic.charDataLast & 0x80) != 0 {
+			if (vic.charDataLast & 0x40) != 0 {
 				c = vic.b3cColor
 			} else {
 				c = vic.b2cColor
 			}
 		} else {
-			if (vic.lastCharData & 0x40) != 0 {
+			if (vic.charDataLast & 0x40) != 0 {
 				c = vic.b1cColor
 			} else {
 				c = vic.b0cColor
@@ -1149,11 +1135,11 @@ func (vic *MOS6569) drawBackground() {
 	default:
 		c = vic.colors[0]
 	}
-	copy(vic.displayBuffer[vic.chunkyPtr:], _colorMultiplier[c])
+	copy(vic.displayBuffer[vic.lineOffset:], _colorMultiplier[c])
 }
 
 func (vic *MOS6569) drawGraphics() {
-	offset := vic.chunkyPtr + int(vic.xScroll)
+	offset := vic.lineOffset + int(vic.xScroll)
 	switch vic.displayIdx {
 	case 0: // Standard text
 		vic.drawGraphicStandard(offset, vic.b0cColor, vic.colors[vic.colorData])
@@ -1194,19 +1180,19 @@ func (vic *MOS6569) drawGraphics() {
 
 func (vic *MOS6569) drawGraphicsInvalidStandard(offset int, a uint8) {
 	copy(vic.displayBuffer[offset:], _colorMultiplier[a])
-	vic.fmBuf[vic.foreMaskPtr+0] |= vic.gfxData >> vic.xScroll
-	vic.fmBuf[vic.foreMaskPtr+1] |= vic.gfxData << (7 - vic.xScroll)
+	vic.foreMaskBuf[vic.foreMaskOffset+0] |= vic.gfxData >> vic.xScroll
+	vic.foreMaskBuf[vic.foreMaskOffset+1] |= vic.gfxData << (7 - vic.xScroll)
 }
 
 func (vic *MOS6569) drawGraphicsInvalidMulticolor(offset int, a uint8) {
 	copy(vic.displayBuffer[offset:], _colorMultiplier[a])
-	vic.fmBuf[vic.foreMaskPtr+0] |= ((vic.gfxData & 0xaa) | (vic.gfxData&0xaa)>>1) >> vic.xScroll
-	vic.fmBuf[vic.foreMaskPtr+1] |= ((vic.gfxData & 0xaa) | (vic.gfxData&0xaa)>>1) << (8 - vic.xScroll)
+	vic.foreMaskBuf[vic.foreMaskOffset+0] |= ((vic.gfxData & 0xaa) | (vic.gfxData&0xaa)>>1) >> vic.xScroll
+	vic.foreMaskBuf[vic.foreMaskOffset+1] |= ((vic.gfxData & 0xaa) | (vic.gfxData&0xaa)>>1) << (8 - vic.xScroll)
 }
 
 func (vic *MOS6569) drawGraphicStandard(offset int, a uint8, b uint8) {
-	vic.fmBuf[vic.foreMaskPtr+0] |= vic.gfxData >> vic.xScroll
-	vic.fmBuf[vic.foreMaskPtr+1] |= vic.gfxData << (7 - vic.xScroll)
+	vic.foreMaskBuf[vic.foreMaskOffset+0] |= vic.gfxData >> vic.xScroll
+	vic.foreMaskBuf[vic.foreMaskOffset+1] |= vic.gfxData << (7 - vic.xScroll)
 	colorBuffer := [4]uint8{a, b, 0, 0}
 	data := vic.gfxData
 	vic.displayBuffer[offset+7] = colorBuffer[data&1]
@@ -1227,8 +1213,8 @@ func (vic *MOS6569) drawGraphicStandard(offset int, a uint8, b uint8) {
 }
 
 func (vic *MOS6569) drawGraphicMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
-	vic.fmBuf[vic.foreMaskPtr+0] |= ((vic.gfxData & 0xaa) | (vic.gfxData&0xaa)>>1) >> vic.xScroll
-	vic.fmBuf[vic.foreMaskPtr+1] |= ((vic.gfxData & 0xaa) | (vic.gfxData&0xaa)>>1) << (8 - vic.xScroll)
+	vic.foreMaskBuf[vic.foreMaskOffset+0] |= ((vic.gfxData & 0xaa) | (vic.gfxData&0xaa)>>1) >> vic.xScroll
+	vic.foreMaskBuf[vic.foreMaskOffset+1] |= ((vic.gfxData & 0xaa) | (vic.gfxData&0xaa)>>1) << (8 - vic.xScroll)
 	colorBuffer := [4]uint8{a, b, c, d}
 	data := vic.gfxData
 	vic.displayBuffer[offset+7] = colorBuffer[data&3]
@@ -1269,10 +1255,10 @@ func (vic *MOS6569) drawSprites() {
 		}
 	}
 	// sprite-sprite collisions
-	if vic.clxSpr != 0 {
-		vic.clxSpr |= sprColl
+	if vic.sprClx != 0 {
+		vic.sprClx |= sprColl
 	} else {
-		vic.clxSpr |= sprColl
+		vic.sprClx |= sprColl
 		vic.irqFlag |= 0x04
 		if vic.irqMask&0x04 != 0 {
 			vic.irqFlag |= 0x80
@@ -1280,10 +1266,10 @@ func (vic *MOS6569) drawSprites() {
 		}
 	}
 	// sprite-background collisions
-	if vic.clxBgr != 0 {
-		vic.clxBgr |= gfxColl
+	if vic.sprClxBgr != 0 {
+		vic.sprClxBgr |= gfxColl
 	} else {
-		vic.clxBgr |= gfxColl
+		vic.sprClxBgr |= gfxColl
 		vic.irqFlag |= 0x02
 		if vic.irqMask&0x02 != 0 {
 			vic.irqFlag |= 0x80
@@ -1293,13 +1279,13 @@ func (vic *MOS6569) drawSprites() {
 }
 
 func (vic *MOS6569) drawSpriteExpandedMulticolor(sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
-	q := int(vic.mx[sNum]) + 8
-	displayPtr := vic.chunkyLineStart + q
-	color := vic.sprColor[sNum]
+	q := int(vic.mXx[sNum]) + 8
+	displayPtr := vic.lineStart + q
+	color := vic.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
-	foreMask := (((uint32(vic.fmBuf[m]) << 24) | (uint32(vic.fmBuf[m+1]) << 16) | (uint32(vic.fmBuf[m+2]) << 8) | (uint32(vic.fmBuf[m+3]))) << s) | (uint32(vic.fmBuf[m+4]) >> (8 - s))
-	foreMaskR := (((uint32(vic.fmBuf[m+4]) << 24) | (uint32(vic.fmBuf[m+5]) << 16) | (uint32(vic.fmBuf[m+6]) << 8) | (uint32(vic.fmBuf[m+7]))) << s) | (uint32(vic.fmBuf[m+8]) >> (8 - s))
+	foreMask := (((uint32(vic.foreMaskBuf[m]) << 24) | (uint32(vic.foreMaskBuf[m+1]) << 16) | (uint32(vic.foreMaskBuf[m+2]) << 8) | (uint32(vic.foreMaskBuf[m+3]))) << s) | (uint32(vic.foreMaskBuf[m+4]) >> (8 - s))
+	foreMaskR := (((uint32(vic.foreMaskBuf[m+4]) << 24) | (uint32(vic.foreMaskBuf[m+5]) << 16) | (uint32(vic.foreMaskBuf[m+6]) << 8) | (uint32(vic.foreMaskBuf[m+7]))) << s) | (uint32(vic.foreMaskBuf[m+8]) >> (8 - s))
 	dd := vic.sprDrawData[sNum]
 	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
 	// Expand sprite data
@@ -1374,12 +1360,12 @@ func (vic *MOS6569) drawSpriteExpandedMulticolor(sNum uint8, sBit uint8, gfxColl
 }
 
 func (vic *MOS6569) drawSpriteExpandedStandard(sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
-	q := int(vic.mx[sNum]) + 8
-	displayPtr := vic.chunkyLineStart + q
-	color := vic.sprColor[sNum]
+	q := int(vic.mXx[sNum]) + 8
+	displayPtr := vic.lineStart + q
+	color := vic.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
-	foreMask := (((uint32(vic.fmBuf[m]) << 24) | (uint32(vic.fmBuf[m+1]) << 16) | (uint32(vic.fmBuf[m+2]) << 8) | (uint32(vic.fmBuf[m+3]))) << s) | (uint32(vic.fmBuf[m+4]) >> (8 - s))
+	foreMask := (((uint32(vic.foreMaskBuf[m]) << 24) | (uint32(vic.foreMaskBuf[m+1]) << 16) | (uint32(vic.foreMaskBuf[m+2]) << 8) | (uint32(vic.foreMaskBuf[m+3]))) << s) | (uint32(vic.foreMaskBuf[m+4]) >> (8 - s))
 	dd := vic.sprDrawData[sNum]
 	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
 	// Check graphics collision
@@ -1408,12 +1394,12 @@ func (vic *MOS6569) drawSpriteExpandedStandard(sNum uint8, sBit uint8, gfxColl *
 }
 
 func (vic *MOS6569) drawSpriteUnexpandedMulticolor(sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
-	q := int(vic.mx[sNum]) + 8
-	displayPtr := vic.chunkyLineStart + q
-	color := vic.sprColor[sNum]
+	q := int(vic.mXx[sNum]) + 8
+	displayPtr := vic.lineStart + q
+	color := vic.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
-	foreMask := (((uint32(vic.fmBuf[m+0]) << 24) | (uint32(vic.fmBuf[m+1]) << 16) | (uint32(vic.fmBuf[m+2]) << 8) | (uint32(vic.fmBuf[m+3]))) << s) | (uint32(vic.fmBuf[m+4]) >> (8 - s))
+	foreMask := (((uint32(vic.foreMaskBuf[m+0]) << 24) | (uint32(vic.foreMaskBuf[m+1]) << 16) | (uint32(vic.foreMaskBuf[m+2]) << 8) | (uint32(vic.foreMaskBuf[m+3]))) << s) | (uint32(vic.foreMaskBuf[m+4]) >> (8 - s))
 	dd := vic.sprDrawData[sNum]
 	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
 	// Convert sprite chunky pixels to bitPlanes
@@ -1459,12 +1445,12 @@ func (vic *MOS6569) drawSpriteUnexpandedMulticolor(sNum uint8, sBit uint8, gfxCo
 }
 
 func (vic *MOS6569) drawSpriteUnexpandedStandard(sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
-	q := int(vic.mx[sNum]) + 8
-	displayPtr := vic.chunkyLineStart + q
-	color := vic.sprColor[sNum]
+	q := int(vic.mXx[sNum]) + 8
+	displayPtr := vic.lineStart + q
+	color := vic.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
-	foreMask := (((uint32(vic.fmBuf[m]) << 24) | (uint32(vic.fmBuf[m+1]) << 16) | (uint32(vic.fmBuf[m+2]) << 8) | (uint32(vic.fmBuf[m+3]))) << s) | (uint32(vic.fmBuf[m+4]) >> (8 - s))
+	foreMask := (((uint32(vic.foreMaskBuf[m]) << 24) | (uint32(vic.foreMaskBuf[m+1]) << 16) | (uint32(vic.foreMaskBuf[m+2]) << 8) | (uint32(vic.foreMaskBuf[m+3]))) << s) | (uint32(vic.foreMaskBuf[m+4]) >> (8 - s))
 	dd := vic.sprDrawData[sNum]
 	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
 	// Check graphics collision

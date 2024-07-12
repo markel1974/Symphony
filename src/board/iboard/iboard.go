@@ -40,7 +40,4 @@ type IBoard interface {
 
 	ExtRamWrite(int, uint16, uint8)
 	ExtRamRead(int, uint16) uint8
-
-	//VICLastByte() uint8
-	//VICVBlank()
 }

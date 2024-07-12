@@ -32,7 +32,7 @@ func (i *interrupt) BitCheck(n uint32) bool {
 	return v != 0
 }
 
-type InterruptHandler struct {
+type Interrupts struct {
 	board         iboard.IBoard
 	prefs         *preferences.Prefs
 	intr          interrupt
@@ -40,8 +40,8 @@ type InterruptHandler struct {
 	firstNMICycle uint64
 }
 
-func New() *InterruptHandler {
-	return &InterruptHandler{
+func NewInterrupts() *Interrupts {
+	return &Interrupts{
 		board:         nil,
 		prefs:         nil,
 		firstIrqCycle: 0,
@@ -49,27 +49,27 @@ func New() *InterruptHandler {
 	}
 }
 
-func (i *InterruptHandler) Setup(board iboard.IBoard) {
+func (i *Interrupts) Setup(board iboard.IBoard) {
 	i.board = board
 }
 
-func (i *InterruptHandler) Reset() {
+func (i *Interrupts) Reset() {
 	i.intr = 0
 }
 
-func (i *InterruptHandler) HasInterrupt() bool {
+func (i *Interrupts) HasInterrupt() bool {
 	return i.intr != 0
 }
 
-func (i *InterruptHandler) AsyncReset() {
+func (i *Interrupts) AsyncReset() {
 	i.intr.BitSet(IntRst)
 }
 
-func (i *InterruptHandler) HasReset() bool {
+func (i *Interrupts) HasReset() bool {
 	return i.intr.BitCheck(IntRst)
 }
 
-func (i *InterruptHandler) TriggerVICIRQ() {
+func (i *Interrupts) TriggerVICIRQ() {
 	vic := i.intr.BitCheck(IntVic)
 	cia := i.intr.BitCheck(IntCia)
 	if !(vic || cia) {
@@ -78,15 +78,15 @@ func (i *InterruptHandler) TriggerVICIRQ() {
 	i.intr.BitSet(IntVic)
 }
 
-func (i *InterruptHandler) ClearVICIRQ() {
+func (i *Interrupts) ClearVICIRQ() {
 	i.intr.BitClear(IntVic)
 }
 
-func (i *InterruptHandler) HasVIC() bool {
+func (i *Interrupts) HasVIC() bool {
 	return i.intr.BitCheck(IntVic)
 }
 
-func (i *InterruptHandler) TriggerCIAIRQ() {
+func (i *Interrupts) TriggerCIAIRQ() {
 	vic := i.intr.BitCheck(IntVic)
 	cia := i.intr.BitCheck(IntCia)
 	if !(vic || cia) {
@@ -95,42 +95,42 @@ func (i *InterruptHandler) TriggerCIAIRQ() {
 	i.intr.BitSet(IntCia)
 }
 
-func (i *InterruptHandler) ClearCIAIRQ() {
+func (i *Interrupts) ClearCIAIRQ() {
 	i.intr.BitClear(IntCia)
 }
 
-func (i *InterruptHandler) HasCIA() bool {
+func (i *Interrupts) HasCIA() bool {
 	return i.intr.BitCheck(IntCia)
 }
 
-func (i *InterruptHandler) AsyncNMI() {
+func (i *Interrupts) AsyncNMI() {
 	i.intr.BitSet(IntNmi)
 }
 
-func (i *InterruptHandler) TriggerNMI() {
+func (i *Interrupts) TriggerNMI() {
 	if !i.intr.BitCheck(IntNmi) {
 		i.firstNMICycle = i.board.Cycle()
 	}
 	i.intr.BitSet(IntNmi)
 }
 
-func (i *InterruptHandler) ClearNMI() {
+func (i *Interrupts) ClearNMI() {
 	i.intr.BitClear(IntNmi)
 }
 
-func (i *InterruptHandler) HasNMI() bool {
+func (i *Interrupts) HasNMI() bool {
 	return i.intr.BitCheck(IntNmi)
 }
 
-func (i *InterruptHandler) GetNMICycleDistance(delay uint64) uint64 {
-	return i.computeDistance(i.firstNMICycle, delay)
+func (i *Interrupts) GetNMICycleDistance(delay int) uint64 {
+	return i.computeDistance(i.firstNMICycle, uint64(delay))
 }
 
-func (i *InterruptHandler) GetIrqCycleDistance(delay uint64) uint64 {
-	return i.computeDistance(i.firstIrqCycle, delay)
+func (i *Interrupts) GetIrqCycleDistance(delay int) uint64 {
+	return i.computeDistance(i.firstIrqCycle, uint64(delay))
 }
 
-func (i *InterruptHandler) computeDistance(base uint64, delay uint64) uint64 {
+func (i *Interrupts) computeDistance(base uint64, delay uint64) uint64 {
 	cycle := i.board.Cycle()
 	if base > cycle {
 		return 0

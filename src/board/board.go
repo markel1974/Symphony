@@ -29,7 +29,7 @@ type Board struct {
 	sid          *sid.MOS6581
 	cia1         *cia.MOS6526_1
 	cia2         *cia.MOS6526_2
-	interrupts   *cpu.InterruptHandler
+	interrupts   *cpu.Interrupts
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
 	prefs        *preferences.Prefs
@@ -79,7 +79,7 @@ func (s *Board) Setup(prefs *preferences.Prefs) error {
 	s.banks = NewBanks()
 
 	s.cpu.Setup(s, prefs)
-	s.interrupts = s.cpu.GetInterruptHandler()
+	s.interrupts = s.cpu.GetInterrupts()
 	s.vic.Setup(s, prefs)
 	s.sid.Setup(s, prefs)
 	s.cia1.Setup(s, prefs)

@@ -47,54 +47,21 @@ import (
  */
 
 type MOS6510 struct {
-	//TheIEC * IEC						// Drive Array
-	board   iboard.IBoard
-	intr    *InterruptHandler
-	nFlag   uint8  // Negative flag
-	zFlag   uint8  // Zero flag
-	vFlag   uint8  // Overflow flag
-	dFlag   uint8  // Decimal mode flag
-	iFlag   uint8  // Interrupt disable flag
-	cFlag   uint8  // Carry flag
-	a       uint8  // Register
-	x       uint8  // Register
-	y       uint8  // Register
-	sp      uint8  // Stack pointer
-	pc      uint16 // Program counter
-	state   uint8  // Current state
-	op      uint8  // Current opcode
-	ar      uint16 // Address register
-	ar2     uint16 // Address register
-	rdBuf   uint8  // Data buffer for RMW instructions
-	opFlags uint8
-	//extConfig int // Memory configuration for ExtRamRead/WriteByte (0..7)
+	*Core
 	prefs *preferences.Prefs
 }
 
 func NewMOS6510() *MOS6510 {
 	cpu := &MOS6510{
-		board:   nil,
-		prefs:   nil,
-		intr:    New(),
-		a:       0,
-		x:       0,
-		y:       0,
-		sp:      0xff,
-		nFlag:   0,
-		zFlag:   0,
-		vFlag:   0,
-		dFlag:   0,
-		cFlag:   0,
-		iFlag:   1,
-		opFlags: 0,
+		prefs: nil,
+		Core:  NewCore(),
 	}
-	// Opcode fetch (cycle 0)
 	return cpu
 }
 
 func (cpu *MOS6510) Setup(board iboard.IBoard, prefs *preferences.Prefs) {
-	cpu.board = board
 	cpu.prefs = prefs
+	cpu.board = board
 	cpu.intr.Setup(board)
 }
 
@@ -110,7 +77,7 @@ func (cpu *MOS6510) Reset() {
 	cpu.opFlags = 0
 }
 
-func (cpu *MOS6510) GetInterruptHandler() *InterruptHandler {
+func (cpu *MOS6510) GetInterrupts() *Interrupts {
 	return cpu.intr
 }
 
@@ -261,7 +228,7 @@ func (cpu *MOS6510) checkIrq() {
 	}
 	if cpu.intr.HasNMI() {
 		// Taken branches to the same page delay the NMI
-		delay := uint64(0)
+		delay := 0
 		if (cpu.opFlags & OpFlagIntDelayed) != 0 {
 			delay = 1
 		}
@@ -275,7 +242,7 @@ func (cpu *MOS6510) checkIrq() {
 	}
 	if (cpu.intr.HasVIC() || cpu.intr.HasCIA()) &&
 		((cpu.iFlag == 0) || ((cpu.opFlags & OpFlagIrqDisabled) != 0)) && ((cpu.opFlags & OpFlagIrqEnabled) == 0) {
-		delay := uint64(0)
+		delay := 0
 		if (cpu.opFlags & OpFlagIntDelayed) != 0 {
 			delay = 1
 		}
@@ -706,7 +673,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		cpu.ar += 0x100
 		cpu.state = _opTable[cpu.op]
 
-		// Addressing modes: Read operand, write it back, no extra cycles (-> ar, rdBuf)
+		// Addressing modes: Read operand, write it back, no extra cycles (-> ar, rmwBuf)
 	case M_ZERO:
 		if rdyLow {
 			return
@@ -919,11 +886,11 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.rdBuf = cpu.board.CpuRamRead(cpu.ar)
+		cpu.rmwBuf = cpu.board.CpuRamRead(cpu.ar)
 		cpu.state = RMW_DO_IT1
 
 	case RMW_DO_IT1:
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rdBuf)
+		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
 		cpu.state = _opTable[cpu.op]
 
 		// Load group
@@ -1139,14 +1106,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		cpu.state = STATE_LAST
 
 	case O_INC:
-		v := cpu.rdBuf + 1
+		v := cpu.rmwBuf + 1
 		cpu.nFlag = v
 		cpu.zFlag = v
 		cpu.board.CpuRamWrite(cpu.ar, v)
 		cpu.state = STATE_LAST
 
 	case O_DEC:
-		v := cpu.rdBuf - 1
+		v := cpu.rmwBuf - 1
 		cpu.nFlag = v
 		cpu.zFlag = v
 		cpu.board.CpuRamWrite(cpu.ar, v)
@@ -1293,8 +1260,8 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 
 		// Shift/rotate group
 	case O_ASL:
-		cpu.cFlag = cpu.rdBuf & 0x80
-		v := cpu.rdBuf << 1
+		cpu.cFlag = cpu.rmwBuf & 0x80
+		v := cpu.rmwBuf << 1
 		cpu.nFlag = v
 		cpu.zFlag = v
 		cpu.board.CpuRamWrite(cpu.ar, v)
@@ -1312,8 +1279,8 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		cpu.state = STATE_LAST
 
 	case O_LSR:
-		cpu.cFlag = cpu.rdBuf & 0x01
-		v := cpu.rdBuf >> 1
+		cpu.cFlag = cpu.rmwBuf & 0x01
+		v := cpu.rmwBuf >> 1
 		cpu.nFlag = v
 		cpu.zFlag = v
 		cpu.board.CpuRamWrite(cpu.ar, v)
@@ -1333,14 +1300,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 	case O_ROL:
 		var t uint8
 		if cpu.cFlag != 0 {
-			t = (cpu.rdBuf << 1) | 0x01
+			t = (cpu.rmwBuf << 1) | 0x01
 		} else {
-			t = cpu.rdBuf << 1
+			t = cpu.rmwBuf << 1
 		}
 		cpu.nFlag = t
 		cpu.zFlag = t
 		cpu.board.CpuRamWrite(cpu.ar, t)
-		cpu.cFlag = cpu.rdBuf & 0x80
+		cpu.cFlag = cpu.rmwBuf & 0x80
 		cpu.state = STATE_LAST
 
 	case O_ROL_A:
@@ -1362,14 +1329,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 	case O_ROR:
 		var t uint8
 		if cpu.cFlag != 0 {
-			t = (cpu.rdBuf >> 1) | 0x80
+			t = (cpu.rmwBuf >> 1) | 0x80
 		} else {
-			t = cpu.rdBuf >> 1
+			t = cpu.rmwBuf >> 1
 		}
 		cpu.nFlag = t
 		cpu.zFlag = t
 		cpu.board.CpuRamWrite(cpu.ar, t)
-		cpu.cFlag = cpu.rdBuf & 0x01
+		cpu.cFlag = cpu.rmwBuf & 0x01
 		cpu.state = STATE_LAST
 
 	case O_ROR_A:
@@ -1454,15 +1421,15 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		cpu.state = O_PLP2
 
 	case O_PLP2:
-		tmp := cpu.iFlag
+		iFlagPrev := cpu.iFlag
 		if rdyLow {
 			return
 		}
 		data := cpu.board.CpuRamRead(uint16(cpu.sp) | 0x0100)
 		cpu.popFlags(data)
-		if tmp == 0 && cpu.iFlag != 0 {
+		if iFlagPrev == 0 && cpu.iFlag != 0 {
 			cpu.opFlags |= OpFlagIrqDisabled
-		} else if tmp != 0 && cpu.iFlag == 0 {
+		} else if iFlagPrev != 0 && cpu.iFlag == 0 {
 			cpu.opFlags |= OpFlagIrqEnabled
 		}
 		cpu.state = STATE_LAST
@@ -1903,57 +1870,57 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 
 		// ASL/ORA group
 	case O_SLO:
-		cpu.cFlag = cpu.rdBuf & 0x80
-		cpu.rdBuf <<= 1
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rdBuf)
-		cpu.a |= cpu.rdBuf
+		cpu.cFlag = cpu.rmwBuf & 0x80
+		cpu.rmwBuf <<= 1
+		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.a |= cpu.rmwBuf
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
 		cpu.state = STATE_LAST
 
 		// ROL/AND group
 	case O_RLA:
-		tmp := cpu.rdBuf & 0x80
+		tmp := cpu.rmwBuf & 0x80
 		if cpu.cFlag != 0 {
-			cpu.rdBuf = (cpu.rdBuf << 1) | 0x01
+			cpu.rmwBuf = (cpu.rmwBuf << 1) | 0x01
 		} else {
-			cpu.rdBuf = cpu.rdBuf << 1
+			cpu.rmwBuf = cpu.rmwBuf << 1
 		}
 		cpu.cFlag = tmp
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rdBuf)
-		cpu.a &= cpu.rdBuf
+		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.a &= cpu.rmwBuf
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
 		cpu.state = STATE_LAST
 
 		// LSR/EOR group
 	case O_SRE:
-		cpu.cFlag = cpu.rdBuf & 0x01
-		cpu.rdBuf >>= 1
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rdBuf)
-		cpu.a ^= cpu.rdBuf
+		cpu.cFlag = cpu.rmwBuf & 0x01
+		cpu.rmwBuf >>= 1
+		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.a ^= cpu.rmwBuf
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
 		cpu.state = STATE_LAST
 
 		// ROR/ADC group
 	case O_RRA:
-		tmp := cpu.rdBuf & 0x01
+		tmp := cpu.rmwBuf & 0x01
 		if cpu.cFlag != 0 {
-			cpu.rdBuf = (cpu.rdBuf >> 1) | 0x80
+			cpu.rmwBuf = (cpu.rmwBuf >> 1) | 0x80
 		} else {
-			cpu.rdBuf = cpu.rdBuf >> 1
+			cpu.rmwBuf = cpu.rmwBuf >> 1
 		}
 		cpu.cFlag = tmp
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rdBuf)
-		cpu.doADC(cpu.rdBuf)
+		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.doADC(cpu.rmwBuf)
 		cpu.state = STATE_LAST
 
 		// DEC/CMP group
 	case O_DCP:
-		cpu.rdBuf--
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rdBuf)
-		cpu.ar = uint16(cpu.a) - uint16(cpu.rdBuf)
+		cpu.rmwBuf--
+		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.ar = uint16(cpu.a) - uint16(cpu.rmwBuf)
 		cpu.nFlag = uint8(cpu.ar)
 		cpu.zFlag = uint8(cpu.ar)
 		cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
@@ -1961,9 +1928,9 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 
 		// INC/SBC group
 	case O_ISB:
-		cpu.rdBuf++
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rdBuf)
-		cpu.doSBC(cpu.rdBuf)
+		cpu.rmwBuf++
+		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.doSBC(cpu.rmwBuf)
 		cpu.state = STATE_LAST
 
 		// Complex functions
@@ -2091,67 +2058,6 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		cpu.board.CpuRamWrite(cpu.ar, uint8(uint16(cpu.a)&uint16(cpu.x)&(cpu.ar2+1)))
 		cpu.state = STATE_LAST
 
-		//       // Extension opcode
-		//   case O_EXT:
-		//      if (pc < 0xe000)
-		//       {
-		//          illegal_op(0xf2, pc-1);
-		//           break;
-		//       }
-		//       switch (readByte(pc++))
-		//       {
-		//       case 0x00:
-		//          ram[0x90] |= TheIEC->Out(ram[0x95], ram[0xa3] & 0x80);
-		//           cFlag = false;
-		//           pc = 0xedac;
-		//           cpu.state = STATE_LAST;
-		//           break;
-		//       case 0x01:
-		//           ram[0x90] |= TheIEC->OutATN(ram[0x95]);
-		//           cFlag = false;
-		//           pc = 0xedac;
-		//           cpu.state = STATE_LAST;
-		//           break;
-		//       case 0x02:
-		//           ram[0x90] |= TheIEC->OutSec(ram[0x95]);
-		//           cFlag = false;
-		//           pc = 0xedac;
-		//           cpu.state = STATE_LAST;
-		//           break;
-		//       case 0x03:
-		//          ram[0x90] |= TheIEC->In(a);
-		//          cpu.nFlag = flag.Flag(cpu.a)
-		//			cpu.zFlag = flag.Flag(cpu.a)
-		//           cFlag = false;
-		//           pc = 0xedac;
-		//           cpu.state = STATE_LAST;
-		//           break;
-		//       case 0x04:
-		//           TheIEC->SetATN();
-		//           pc = 0xedfb;
-		//           cpu.state = STATE_LAST;
-		//          break;
-		//       case 0x05:
-		//           TheIEC->RelATN();
-		//          pc = 0xedac;
-		//          cpu.state = STATE_LAST;
-		//           break;
-		//       case 0x06:
-		//           TheIEC->Turnaround();
-		//           pc = 0xedac;
-		//           cpu.state = STATE_LAST;
-		//           break;
-		//       case 0x07:
-		//           TheIEC->Release();
-		//           pc = 0xedac;
-		//           cpu.state = STATE_LAST;
-		//           break;
-		//       default:
-		//           illegal_op(0xf2, pc-1);
-		//           break;
-		//       }
-		//       break;
-
 	default:
 		cpu.illegalOp(cpu.op, cpu.pc-1)
 	}
@@ -2176,6 +2082,6 @@ func (cpu *MOS6510) printRegisters(qCycle uint64, baLow bool) {
 		cpu.op,
 		cpu.ar,
 		cpu.ar2,
-		cpu.rdBuf)
+		cpu.rmwBuf)
 	//cpu.extConfig)
 }
