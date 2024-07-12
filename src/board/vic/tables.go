@@ -21,6 +21,8 @@ const (
 	DisplayXMax        = DisplayX + 64
 	DisplaySize        = DisplayXMax * DisplayY
 	DisplayXFillMax    = DisplayXFill + 64 //DisplayXFill + 1
+
+	SpriteNumber = 8
 )
 
 // ExpTable - Tables for sprite X expansion
@@ -92,31 +94,6 @@ var _multiExpTable = [256]uint16{
 	0xFAA0, 0xFAA5, 0xFAAA, 0xFAAF, 0xFAF0, 0xFAF5, 0xFAFA, 0xFAFF,
 	0xFF00, 0xFF05, 0xFF0A, 0xFF0F, 0xFF50, 0xFF55, 0xFF5A, 0xFF5F,
 	0xFFA0, 0xFFA5, 0xFFAA, 0xFFAF, 0xFFF0, 0xFFF5, 0xFFFA, 0xFFFF,
-}
-
-var _colorMultiplier [][]uint8
-var _displayXDiv8 []uint8
-var _displayXFillMax []uint8
-
-//var _displayXPlusOne []uint8
-
-func init() {
-	_colorMultiplier = make([][]uint8, 0xff)
-	for x := uint8(0); x < 0xff; x++ {
-		_colorMultiplier[x] = []uint8{x, x, x, x, x, x, x, x}
-	}
-	_displayXDiv8 = make([]uint8, DisplayXDiv8)
-	for x := 0; x < DisplayXDiv8; x++ {
-		_displayXDiv8[x] = uint8(0)
-	}
-	_displayXFillMax = make([]uint8, DisplayXFillMax)
-	for x := 0; x < DisplayXFillMax; x++ {
-		_displayXFillMax[x] = 0
-	}
-	//_displayXPlusOne = make([]uint8, DisplayXFill+1)
-	//for x := 0; x < DisplayXFill+1; x++ {
-	//	_displayXPlusOne[x] = 0
-	//}
 }
 
 //func RGBA(r uint8, g uint8, b uint8, a uint8) uint32 {
