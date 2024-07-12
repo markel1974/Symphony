@@ -226,12 +226,11 @@ func (c *IEC) OutSec(data uint8) uint8 {
 	return virtualdrive.StTimeout
 }
 
-func (c *IEC) In(data *uint8) uint8 {
+func (c *IEC) In() (uint8, uint8) {
 	if c.talkerActive && (c.receivedCmd == CmdData) {
-		return c.dataIn(data)
+		return c.dataIn()
 	}
-	*data = 0
-	return virtualdrive.StTimeout
+	return virtualdrive.StTimeout, 0
 }
 
 func (c *IEC) SetATN() {
@@ -257,7 +256,7 @@ func (c *IEC) createVirtualDrive(emul1541 bool, deviceNumber int, newPath string
 	if len(newPath) == 0 {
 		return nil
 	}
-	vd := drives.NewDriveHelper(uint8(deviceNumber), newPath)
+	vd := drives.NewFSDrive(uint8(deviceNumber), newPath)
 	if vd != nil {
 		//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 	}
@@ -393,11 +392,11 @@ func (c *IEC) dataOut(data uint8, eoi bool) uint8 {
 	return virtualdrive.StOk
 }
 
-func (c *IEC) dataIn(data *uint8) uint8 {
+func (c *IEC) dataIn() (uint8, uint8) {
 	if c.talker != nil {
-		return c.talker.Read(c.secAddr, data)
+		return c.talker.Read(c.secAddr)
 	}
-	return 0
+	return 0, 0
 }
 
 //void IECBus::ledStateChangedEventHandler(int  deviceNumber, uint8 state) {
