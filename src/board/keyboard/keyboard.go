@@ -2,7 +2,6 @@ package keyboard
 
 import (
 	"container/list"
-	"fmt"
 	"unicode"
 )
 
@@ -545,7 +544,7 @@ func (k *Keyboard) prepareCommand(command string) (*list.List, bool) {
 func (k *Keyboard) virtualKey2C64(vKey int) int {
 	var result = -1
 
-	fmt.Println("SHIFT STATE", vKey)
+	//fmt.Println("SHIFT STATE", vKey)
 
 	switch vKey {
 	case VK_return:

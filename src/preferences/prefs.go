@@ -14,11 +14,11 @@ func NewPrefs() *Prefs {
 	}
 }
 
-func (p *Prefs) Emul1541Proc() bool {
-	//TODO IMPLEMENT
-	return true
-	//return false
-}
+//func (p *Prefs) Emul1541Proc() bool {
+//TODO IMPLEMENT
+//	return true
+//return false
+//}
 
 func (p *Prefs) GetDrivePath(i int) string {
 	//TODO IMPLEMENT

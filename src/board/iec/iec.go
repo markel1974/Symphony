@@ -1,17 +1,25 @@
 package iec
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/board/iboard"
 	"github.com/markel1974/c64emu/src/board/iec/drives"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/preferences"
+	"strings"
 )
 
+/*
+Diamo un'occhiata alla sequenza in cui un carattere che sta per essere trasmesso. In questo momento, sia la clock line
+che lq data line vengono mantenute down [true]. Il talker gestisce la clock line e il listener la data line. Potrebbe esserci
+più di listener, nel qual caso tutti gestiscono la data line
+*/
 const (
 	BusNum       = 32
 	MaxDriveSize = 4
 )
 
+/*
 const (
 	CmdData  = 0x60 // Data transfer
 	CmdClose = 0xe0 // Close channel
@@ -24,156 +32,452 @@ const (
 	AtnTalk     = 0x40
 	AtnUntalk   = 0x5
 )
+*/
 
 type IEC struct {
+	atnState uint8
+
 	cpuPort uint8
 	cpuData uint8
 	cpuBus  uint8
-	drvPort uint8
-	oldAtn  uint8
-	drvBus  []uint8
-	drvData []uint8
 
-	peripheralStorage       []*C1541Model
-	peripheralStorageActive []*C1541Model
-	peripheralsCount        uint8
-	peripheralsActiveCount  uint8
-	virtualDrives           []virtualdrive.IVirtualDrive
-	openData                []byte
-	listener                virtualdrive.IVirtualDrive // Pointer to active listener
-	talker                  virtualdrive.IVirtualDrive // Pointer to active talker
-	listenerActive          bool                       // Listener selected, listener_data is valid
-	talkerActive            bool                       // Talker selected, talker_data is valid
-	listening               bool                       // Last ATN was listen (to decide between sec_listen/sec_talk)
-	receivedCmd             uint8                      // Received command code ($x0)
-	secAddr                 uint8                      // Received secondary address ($0x)
-	emu1541                 bool
+	peripheralsPort uint8
+	peripheralsData []uint8
+	peripheralBus   []uint8
+
+	//peripheralStorage       []*C1541Model
+	//peripheralStorageActive []*C1541Model
+	//peripheralsCount        uint8
+	//peripheralsActiveCount  uint8
+
+	virtualDrives []virtualdrive.IVirtualDrive
+
+	//openData                []byte
+	//listener                virtualdrive.IVirtualDrive // Pointer to active listener
+	//talker                  virtualdrive.IVirtualDrive // Pointer to active talker
+	//listenerActive          bool                       // Listener selected, listener_data is valid
+	//talkerActive            bool                       // Talker selected, talker_data is valid
+	//listening               bool                       // Last ATN was listen (to decide between sec_listen/sec_talk)
+	//receivedCmd             uint8                      // Received command code ($x0)
+	//secAddr                 uint8                      // Received secondary address ($0x)
+	//emu1541 bool
 }
 
 func NewIEC() *IEC {
 	c := &IEC{
-		drvBus:                  make([]uint8, BusNum),
-		drvData:                 make([]uint8, BusNum),
-		peripheralStorage:       make([]*C1541Model, BusNum),
-		peripheralStorageActive: make([]*C1541Model, BusNum),
-		virtualDrives:           make([]virtualdrive.IVirtualDrive, MaxDriveSize),
+		peripheralBus:   make([]uint8, BusNum),
+		peripheralsData: make([]uint8, BusNum),
+		//peripheralStorage:       make([]*C1541Model, BusNum),
+		//peripheralStorageActive: make([]*C1541Model, BusNum),
+		virtualDrives: nil, //make([]virtualdrive.IVirtualDrive, MaxDriveSize),
 	}
 	return c
 }
 
 func (c *IEC) AddPeripheral(peripheral *C1541Model) {
-	if c.peripheralsCount >= BusNum {
-		return
-	}
-	for i := uint8(0); i < c.peripheralsCount; i++ {
-		if c.peripheralStorage[i] == peripheral {
-			return
-		}
-	}
-	c.peripheralStorage[c.peripheralsCount] = peripheral
-	c.peripheralsCount++
-
+	//if c.peripheralsCount >= BusNum {
+	//	return
+	//}
+	//for i := uint8(0); i < c.peripheralsCount; i++ {
+	//	if c.peripheralStorage[i] == peripheral {
+	//		return
+	//	}
+	//}
+	//c.peripheralStorage[c.peripheralsCount] = peripheral
+	//c.peripheralsCount++
 	c.rebuildPeripherals()
 	//TODO
 	//peripheral->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 }
 
 func (c *IEC) RemovePeripheral(peripheral *C1541Model) {
-	found := false
-	for i := uint8(0); i < c.peripheralsCount; i++ {
-		if c.peripheralStorage[i] == peripheral {
-			c.peripheralsCount--
-			c.peripheralStorage[i] = nil
-			found = true
-			break
-		}
-	}
-	if found {
-		for i := uint8(0); i < c.peripheralsCount; i++ {
-			for j := i + 1; j < c.peripheralsCount; j++ {
-				if c.peripheralStorage[i].GetDeviceNumber() < c.peripheralStorage[j].GetDeviceNumber() {
-					tmp := c.peripheralStorage[i]
-					c.peripheralStorage[i] = c.peripheralStorage[j]
-					c.peripheralStorage[j] = tmp
-				}
-			}
-		}
-	}
+	//found := false
+	//for i := uint8(0); i < c.peripheralsCount; i++ {
+	//	if c.peripheralStorage[i] == peripheral {
+	//		c.peripheralsCount--
+	//		c.peripheralStorage[i] = nil
+	//		found = true
+	//		break
+	//	}
+	//}
+	//if found {
+	//	for i := uint8(0); i < c.peripheralsCount; i++ {
+	//		for j := i + 1; j < c.peripheralsCount; j++ {
+	//			if c.peripheralStorage[i].GetDeviceNumber() < c.peripheralStorage[j].GetDeviceNumber() {
+	//				tmp := c.peripheralStorage[i]
+	//				c.peripheralStorage[i] = c.peripheralStorage[j]
+	//				c.peripheralStorage[j] = tmp
+	//			}
+	//		}
+	//	}
+	//}
 	c.rebuildPeripherals()
 }
 
 func (c *IEC) Setup(board iboard.IBoard, prefs *preferences.Prefs) {
-	for i := 0; i < MaxDriveSize; i++ {
-		c.virtualDrives[i] = c.createVirtualDrive(prefs.Emul1541Proc(), 8+i, prefs.GetDrivePath(i))
-	}
-	for i := uint8(0); i < c.peripheralsCount; i++ {
-		c.peripheralStorage[i].NewPrefs(prefs)
-	}
+	//TOOD FROM CONFIG / COMMAND
+	//for i := 0; i < MaxDriveSize; i++ {
+	//	c.virtualDrives[i] = c.createVirtualDrive(2 /*prefs.Emul1541Proc()*/, 8+i, prefs.GetDrivePath(i))
+	//}
+
+	//TODO ATTIVARE PER TEST
+	//vd := c.createVirtualDrive(2, 8, prefs.GetDrivePath(0))
+	//c.virtualDrives = append(c.virtualDrives, vd)
+
+	//for i := uint8(0); i < c.peripheralsCount; i++ {
+	//	c.peripheralStorage[i].NewPrefs(prefs)
+	//}
 	c.rebuildPeripherals()
-	for i := uint8(0); i < MaxDriveSize; i++ {
-		oldPath := ""
-		if c.virtualDrives[i] != nil {
-			oldPath = c.virtualDrives[i].GetPath()
+	/*
+		for i := uint8(0); i < MaxDriveSize; i++ {
+			oldPath := ""
+			if c.virtualDrives[i] != nil {
+				oldPath = c.virtualDrives[i].GetPath()
+			}
+			newPath := prefs.GetDrivePath(int(i))
+			if (oldPath != newPath) || c.emu1541 != prefs.Emul1541Proc() {
+				c.destroyVirtualDrive(c.virtualDrives[i])
+				//c.virtualDrives[i] = c.createVirtualDrive(prefs.Emul1541Proc() , int(8+i), newPath)
+				c.virtualDrives[i] = c.createVirtualDrive(2 , int(8+i), newPath)
+			}
 		}
-		newPath := prefs.GetDrivePath(int(i))
-		if (oldPath != newPath) || c.emu1541 != prefs.Emul1541Proc() {
-			c.destroyVirtualDrive(c.virtualDrives[i])
-			c.virtualDrives[i] = c.createVirtualDrive(prefs.Emul1541Proc(), int(8+i), newPath)
-		}
-	}
-	c.emu1541 = prefs.Emul1541Proc()
+	*/
+	//c.emu1541 = prefs.Emul1541Proc()
 }
 
 func (c *IEC) NewPrefs(prefs *preferences.Prefs) {
 	//TODO IMPLEMENT
 }
 
-func (c *IEC) Reset() {
-	c.listener = nil
-	c.talker = nil
-	c.listenerActive = false
-	c.talkerActive = false
-	c.listening = false
-	c.receivedCmd = 0
-	c.secAddr = 0
-	c.openData = nil
+func (c *IEC) Emulate() {
+	//drive_cpu_execute_all(clock)
+	for _, vd := range c.virtualDrives {
+		vd.Emulate()
+	}
+}
 
-	for i := 0; i < MaxDriveSize; i++ {
-		if c.virtualDrives[i] != nil && c.virtualDrives[i].Ready() {
-			c.virtualDrives[i].Reset()
+func (c *IEC) Reset() {
+	//c.listener = nil
+	//c.talker = nil
+	//c.listenerActive = false
+	//c.talkerActive = false
+	//c.listening = false
+	//c.receivedCmd = 0
+	//c.secAddr = 0
+	//c.openData = nil
+	for _, vd := range c.virtualDrives {
+		if vd.Ready() {
+			vd.Reset()
 		}
 	}
 }
 
-func (c *IEC) CpuWrite(data uint8) {
-	if c.emu1541 {
-		c.updateCpuBus(^data)
-		c.updateDrvBus()
-		c.updatePorts()
-		c.dispatchCpuWrite()
+func (c *IEC) buildCpuBus(data uint8) uint8 {
+	//bit used 6 5 4
+	b6 := (data << 2) & 0x80
+	b5 := (data << 2) & 0x40
+	b4 := (data << 1) & 0x10
+	value := b6 | b5 | b4
+	return value
+}
+
+func (c *IEC) buildPeripheralBus(data uint8) uint8 {
+	//bit used 4 2
+	nData := ^data
+	bBus := ((nData ^ c.cpuBus) << 3) & 0x80
+	b4 := (data << 3) & 0x40
+	b2 := (data << 6) & bBus
+	value := b4 | b2
+	return value
+}
+
+func (c *IEC) buildPeripheralsPort() uint8 {
+	//bit used 7 8
+	bp7 := (c.cpuPort >> 4) & 0x04
+	bp8 := c.cpuPort >> 7
+	bb5 := (c.cpuBus << 3) & 0x80
+	value := bp7 | bp8 | bb5
+	return value
+}
+
+func (c *IEC) updatePorts() {
+	//c.cpuPort = c.cpuBus
+	//for x := uint8(0); x < c.peripheralsActiveCount; x++ {
+	//	p := c.peripheralStorageActive[x]
+	//	//if (p->IsActive()) {
+	//	unit := p.GetDeviceNumber()
+	//	data := c.peripheralBus[unit]
+	//	c.cpuPort &= data
+	//	//}
+	//}
+	//c.peripheralsPort = ((c.cpuPort >> 4) & 0x4) | (c.cpuPort >> 7) | ((c.cpuBus << 3) & 0x80)
+
+	c.cpuPort = c.cpuBus
+	for _, vd := range c.virtualDrives {
+		unit := vd.GetDeviceNumber()
+		data := c.peripheralBus[unit]
+		c.cpuPort &= data
 	}
+	c.peripheralsPort = c.buildPeripheralsPort()
+}
+
+func (c *IEC) CpuWrite(data uint8) {
+	//TODO IMPLEMENT
+	if len(c.virtualDrives) == 0 {
+		c.cpuPort = virtualdrive.StNotPresent
+		return
+	}
+
+	//if c.emu1541 {
+	//c.cpuBus = c.buildCpuBus(^data)
+
+	c.cpuBus = c.buildCpuBus(^data)
+
+	c.debugCpuWrite(^c.cpuBus)
+
+	c.updatePeripheralsBus()
+	c.updatePorts()
+	c.dispatchCpuWrite()
+	//}
+
+	/*
+		_board->GetRam()[0x90] |= _board->GetBus()->Out(_board->GetRam()[0x95], _board->GetRam()[0xa3] & 0x80);
+		_board->GetRam()[0x90] |= _board->GetBus()->OutATN(_board->GetRam()[0x95]);
+		_board->GetRam()[0x90] |= _board->GetBus()->OutSec(_board->GetRam()[0x95]);
+		_board->GetRam()[0x90] |= _board->GetBus()->In(_a);
+		_board->GetBus()->SetATN();
+		_board->GetBus()->RelATN();
+		_board->GetBus()->Turnaround();
+		_board->GetBus()->Release();
+	*/
 }
 
 func (c *IEC) CpuRead() uint8 {
-	//TODO IMPLEMENT
-	return virtualdrive.StNotPresent
-	//return c.cpuPort
+	return c.cpuPort
+}
+
+func (c *IEC) PeripheralRead(deviceNumber uint8) uint8 {
+	return c.peripheralsPort
+}
+
+func (c *IEC) PeripheralWrite(deviceNumber uint8, d uint8) {
+	c.peripheralBus[deviceNumber] = c.buildPeripheralBus(d)
+	c.peripheralsData[deviceNumber] = d
+	c.updatePorts()
+
+	c.debugPeripheralWrite(c.peripheralBus[deviceNumber])
+	//c.debugPeripheralWrite(d)
 }
 
 func (c *IEC) PeripheralAtnResponse(data uint8, deviceNumber uint8) {
 	c.PeripheralWrite(deviceNumber, data)
 }
 
-func (c *IEC) PeripheralRead(deviceNumber uint8) uint8 {
-	return c.drvPort
+func (c *IEC) createVirtualDrive(kind int, deviceNumber int, newPath string) virtualdrive.IVirtualDrive {
+	switch kind {
+	case 1:
+		//emul1541
+		return nil
+	case 2:
+		vd := drives.NewFSDrive(c, uint8(deviceNumber), newPath)
+		if vd != nil {
+			//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
+		}
+		return vd
+	}
+	return nil
 }
 
-func (c *IEC) PeripheralWrite(deviceNumber uint8, data uint8) {
-	c.drvBus[deviceNumber] = ((data << 3) & 0x40) | ((data << 6) & (((^data) ^ c.cpuBus) << 3) & 0x80)
-	c.drvData[deviceNumber] = data
-	c.updatePorts()
+func (c *IEC) updatePeripheralsBus() {
+	//for x := uint8(0); x < c.peripheralsActiveCount; x++ {
+	//	p := c.peripheralStorageActive[x]
+	//	//if (p->IsActive()) {
+	//	unit := p.GetDeviceNumber()
+	//	data := c.peripheralsData[unit]
+	//	c.peripheralBus[unit] = ((data << 3) & 0x40) | ((data << 6) & (((^data) ^ c.cpuBus) << 3) & 0x80)
+	//	//peripheralBus[unit] = (((peripheralsData[unit] << 3) & 0x40) | ((peripheralsData[unit] << 6) & ((~peripheralsData[unit] ^ cpuBus) << 3) & 0x80));
+	//	//}
+	//}
+
+	for _, vd := range c.virtualDrives {
+		unit := vd.GetDeviceNumber()
+		data := c.peripheralsData[unit]
+		c.peripheralBus[unit] = c.buildPeripheralBus(data)
+	}
 }
 
+func (c *IEC) dispatchCpuWrite() {
+	//newAtn := c.cpuBus & 0x10
+	//if c.oldAtn != newAtn {
+	//	for x := uint8(0); x < c.peripheralsActiveCount; x++ {
+	//		p := c.peripheralStorageActive[x]
+	//		//if (p->IsActive()) {
+	//		p.AtnStateChanged((c.oldAtn) != 0)w
+	//		//}
+	//	}
+	//	c.oldAtn = newAtn
+	//}
+	newAtnState := c.cpuBus & 0x10
+	if c.atnState == newAtnState {
+		return
+	}
+	for _, vd := range c.virtualDrives {
+		vd.AtnStateChanged(c.atnState != 0)
+	}
+	c.atnState = newAtnState
+}
+
+//void IECBus::ledStateChangedEventHandler(int  deviceNumber, uint8 state) {
+//LedStateChangedEvent.Emit(deviceNumber, state);
+//}
+
+func (c *IEC) rebuildPeripherals() {
+	//c.peripheralsActiveCount = 0
+	//for driveId := uint8(0); driveId < c.peripheralsCount; driveId++ {
+	//	if c1541 := c.peripheralStorage[driveId]; c1541 != nil && c1541.IsActive() {
+	//		c.peripheralStorageActive[c.peripheralsActiveCount] = c1541
+	//		c.peripheralsActiveCount++
+	//	}
+	//}
+}
+
+func (c *IEC) ledStateChangedEventHandler(deviceNumber int, state uint8) {
+
+}
+
+func (c *IEC) debugCpuWrite(data uint8) {
+	//value := ^data
+	value := data
+	var message []string
+	if value&0x20 != 0 {
+		message = append(message, "[DATA_OUT]")
+	}
+	if value&0x10 != 0 {
+		message = append(message, "[CLK_OUT]")
+	}
+	if value&0x08 != 0 {
+		message = append(message, "[ATN_OUT]")
+	}
+	fmt.Printf("CPU SEND: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
+}
+
+func (c *IEC) debugCpuRead(data uint8) {
+	value := data
+	var message []string
+	if value&0x80 != 0 {
+		message = append(message, "[CLK_IN]")
+	}
+	if value&0x40 != 0 {
+		message = append(message, "[DATA_IN]")
+	}
+	if value&0x20 != 0 {
+		message = append(message, "[DATA_OUT]")
+	}
+	if value&0x10 != 0 {
+		message = append(message, "[CLK_OUT]")
+	}
+	if value&0x08 != 0 {
+		message = append(message, "[ATN_OUT]")
+	}
+	fmt.Printf("CPU SEND: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
+}
+
+func (c *IEC) debugPeripheralWrite(data uint8) {
+	value := data
+	var message []string
+	if value&0x02 != 0 {
+		message = append(message, "[DATA_OUT]")
+	}
+	if value&0x08 != 0 {
+		message = append(message, "[CLK_OUT]")
+	}
+	if value&0x10 != 0 {
+		message = append(message, "[ATN_IN]")
+	}
+	fmt.Printf("DRV RECV: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
+}
+
+func (c *IEC) debugPeripheralRead(data uint8) {
+	value := data
+	var message []string
+	if value&0x01 != 0 {
+		message = append(message, "[DATA_IN]")
+	}
+	if value&0x02 != 0 {
+		message = append(message, "[DATA_OUT]")
+	}
+	if value&0x04 != 0 {
+		message = append(message, "[CLK_IN]")
+	}
+	if value&0x08 != 0 {
+		message = append(message, "[CLK_OUT]")
+	}
+	if value&0x10 != 0 {
+		message = append(message, "[ATN_IN]")
+	}
+	if value&0x80 != 0 {
+		message = append(message, "[ATN_OUT]")
+	}
+	fmt.Printf("DRV RECV: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
+}
+
+/*
+void debug_iec_drv_write(unsigned int data)
+{
+    if (debug.iec) {
+        uint8_t value = data;
+        static uint8_t oldvalue = 0;
+
+        if (value != oldvalue) {
+            oldvalue = value;
+
+            log_debug("$1800 store: %s %s %s",
+                      value & 0x02 ? "DATA OUT" : "        ",
+                      value & 0x08 ? "CLK OUT" : "       ",
+                      value & 0x10 ? "ATNA   " : "       "
+                      );
+        }
+    }
+}
+
+void debug_iec_drv_read(unsigned int data)
+{
+    if (debug.iec) {
+        uint8_t value = data;
+        static uint8_t oldvalue = { 0 };
+        const char * data_correct = "";
+
+        if (value != oldvalue) {
+            unsigned int atn = value & 0x80 ? 1 : 0;
+            unsigned int atna = value & 0x10 ? 1 : 0;
+            unsigned int ddata = value & 0x01 ? 1 : 0;
+
+            oldvalue = value;
+
+            if (atn ^ atna) {
+                if (!ddata) {
+                    data_correct = " ***** ERROR: ATN, ATNA & DATA! *****";
+                }
+            }
+
+            log_debug("$1800 read:  %s %s %s %s %s %s%s",
+                      value & 0x02 ? "DATA OUT" : "        ",
+                      value & 0x08 ? "CLK OUT" : "       ",
+                      value & 0x10 ? "ATNA   " : "       ",
+
+                      value & 0x01 ? "DATA IN" : "       ",
+                      value & 0x04 ? "CLK IN" : "       ",
+                      value & 0x80 ? "ATN" : "   ",
+                      data_correct
+                      );
+        }
+    }
+}
+
+
+*/
+
+/*
 func (c *IEC) Out(data uint8, eoi bool) uint8 {
 	if c.listenerActive {
 		if c.receivedCmd == CmdOpen {
@@ -186,22 +490,22 @@ func (c *IEC) Out(data uint8, eoi bool) uint8 {
 	} else {
 		return virtualdrive.StTimeout
 	}
-
 }
 
 func (c *IEC) OutATN(data uint8) uint8 {
 	c.receivedCmd = 0 // Command is sent with secondary address
 	c.secAddr = 0     // Command is sent with secondary address
-	switch data & 0xf0 {
+	d := data & 0xf0
+	switch d {
 	case AtnListen:
 		c.listening = true
-		return c.listen(data & 0x0f)
+		return c.listen(d)
 	case AtnUnlisten:
 		c.listening = false
 		return c.unListen()
 	case AtnTalk:
 		c.listening = false
-		return c.talk(data & 0x0f)
+		return c.talk(d)
 	case AtnUntalk:
 		c.listening = false
 		return c.unTalk()
@@ -247,76 +551,6 @@ func (c *IEC) Turnaround() {
 
 func (c *IEC) Release() {
 	// Only needed for real IEC
-}
-
-func (c *IEC) createVirtualDrive(emul1541 bool, deviceNumber int, newPath string) virtualdrive.IVirtualDrive {
-	if emul1541 {
-		return nil
-	}
-	if len(newPath) == 0 {
-		return nil
-	}
-	vd := drives.NewFSDrive(uint8(deviceNumber), newPath)
-	if vd != nil {
-		//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
-	}
-	return vd
-}
-
-func (c *IEC) destroyVirtualDrive(vd virtualdrive.IVirtualDrive) {
-	if vd == nil {
-		return
-	}
-	if c.listener == vd {
-		c.listener = nil
-		c.listenerActive = false
-	}
-	if c.talker == vd {
-		c.talker = nil
-		c.talkerActive = false
-	}
-}
-
-func (c *IEC) updateCpuBus(data uint8) {
-	c.cpuBus = ((data << 2) & 0x80) | ((data << 2) & 0x40) | ((data << 1) & 0x10)
-}
-
-func (c *IEC) updateDrvBus() {
-	for x := uint8(0); x < c.peripheralsActiveCount; x++ {
-		p := c.peripheralStorageActive[x]
-		//if (p->IsActive()) {
-		unit := p.GetDeviceNumber()
-		data := c.drvData[unit]
-		c.drvBus[unit] = ((data << 3) & 0x40) | ((data << 6) & (((^data) ^ c.cpuBus) << 3) & 0x80)
-		//drvBus[unit] = (((drvData[unit] << 3) & 0x40) | ((drvData[unit] << 6) & ((~drvData[unit] ^ cpuBus) << 3) & 0x80));
-		//}
-	}
-}
-
-func (c *IEC) updatePorts() {
-	c.cpuPort = c.cpuBus
-	for x := uint8(0); x < c.peripheralsActiveCount; x++ {
-		p := c.peripheralStorageActive[x]
-		//if (p->IsActive()) {
-		unit := p.GetDeviceNumber()
-		data := c.drvBus[unit]
-		c.cpuPort &= data
-		//}
-	}
-	c.drvPort = ((c.cpuPort >> 4) & 0x4) | (c.cpuPort >> 7) | ((c.cpuBus << 3) & 0x80)
-}
-
-func (c *IEC) dispatchCpuWrite() {
-	newAtn := c.cpuBus & 0x10
-	if c.oldAtn != newAtn {
-		for x := uint8(0); x < c.peripheralsActiveCount; x++ {
-			p := c.peripheralStorageActive[x]
-			//if (p->IsActive()) {
-			p.AtnStateChanged((c.oldAtn) != 0)
-			//}
-		}
-		c.oldAtn = newAtn
-	}
 }
 
 func (c *IEC) listen(device uint8) uint8 {
@@ -399,22 +633,17 @@ func (c *IEC) dataIn() (uint8, uint8) {
 	return 0, 0
 }
 
-//void IECBus::ledStateChangedEventHandler(int  deviceNumber, uint8 state) {
-//LedStateChangedEvent.Emit(deviceNumber, state);
-//}
-
-func (c *IEC) rebuildPeripherals() {
-	c.peripheralsActiveCount = 0
-	for driveId := uint8(0); driveId < c.peripheralsCount; driveId++ {
-		if c1541 := c.peripheralStorage[driveId]; c1541 != nil && c1541.IsActive() {
-			c.peripheralStorageActive[c.peripheralsActiveCount] = c1541
-			c.peripheralsActiveCount++
-		}
+func (c *IEC) destroyVirtualDrive(vd virtualdrive.IVirtualDrive) {
+	if vd == nil {
+		return
+	}
+	if c.listener == vd {
+		c.listener = nil
+		c.listenerActive = false
+	}
+	if c.talker == vd {
+		c.talker = nil
+		c.talkerActive = false
 	}
 }
-
-func (c *IEC) ledStateChangedEventHandler(deviceNumber int, state uint8) {
-
-}
-
-//SignalBinder2<int, uint8> LedStateChangedEvent;
+*/

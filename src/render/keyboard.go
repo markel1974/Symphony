@@ -1,7 +1,6 @@
 package render
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/board"
 	"github.com/markel1974/c64emu/src/board/keyboard"
 	"github.com/markel1974/c64emu/src/pixels"
@@ -116,7 +115,7 @@ func (g *Keyboard) Keys(pressed map[pixels.Button]bool) {
 			if _, ok := g.activeKeys[v]; ok {
 				continue
 			}
-			fmt.Println("CURRENT", v)
+			//fmt.Println("CURRENT", v)
 			g.activeKeys[v] = true
 			g.keyMapper[v](true)
 		}

@@ -146,18 +146,15 @@ func (b *Banks) AsyncReset() {
 
 func (b *Banks) initRom() {
 	romLoader := NewRomLoader()
-	if b.board.prefs.Emul1541Proc() {
-		b.kernal = romLoader.Load(roms.BuiltinKernalJiffyRom, KernalRomFile)
-		//b.kernal = b.romLoader.Load(builtin_kernal_fast_rom, KernalRomFile)
-		//b.kernal = b.romLoader.Load(builtin_kernal_rom, KernalRomFile)
-		b.basic = romLoader.Load(roms.BuiltinBasicRom, BasicRomFile)
-		b.char = romLoader.Load(roms.BuiltinCharRom, CharRomFile)
-	} else {
-		b.kernal = romLoader.Load(roms.BuiltinKernalRom, KernalRomFile)
-		b.basic = romLoader.Load(roms.BuiltinBasicRom, BasicRomFile)
-		b.char = romLoader.Load(roms.BuiltinCharRom, CharRomFile)
-		roms.PatchKernalRom(&b.kernal)
-	}
+
+	//b.kernal = romLoader.Load(roms.BuiltinKernalRom, KernalRomFile)
+	//roms.PatchKernalRom(&b.kernal)
+
+	b.kernal = romLoader.Load(roms.BuiltinKernalJiffyRom, KernalRomFile)
+	//b.kernal = b.romLoader.Load(builtin_kernal_fast_rom, KernalRomFile)
+	//b.kernal = b.romLoader.Load(builtin_kernal_rom, KernalRomFile)
+	b.basic = romLoader.Load(roms.BuiltinBasicRom, BasicRomFile)
+	b.char = romLoader.Load(roms.BuiltinCharRom, CharRomFile)
 }
 
 func (b *Banks) portsUpdate() {

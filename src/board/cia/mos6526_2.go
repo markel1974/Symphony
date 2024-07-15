@@ -35,10 +35,10 @@ func (cia2 *MOS6526_2) ReadRegister(addr uint16) uint8 {
 	addr = addr & 0x0f
 	switch addr {
 	case 0x00:
-		return ((cia2.prA | ^cia2.ddrA) & 0x3f) | cia2.board.BusCpuRead()
+		return ((cia2.prA | (^cia2.ddrA)) & 0x3f) | cia2.board.BusCpuRead()
 
 	case 0x01:
-		return cia2.prB | ^cia2.ddrB
+		return cia2.prB | (^cia2.ddrB)
 
 	case 0x02:
 		return cia2.ddrA
@@ -95,7 +95,7 @@ func (cia2 *MOS6526_2) WriteRegister(addr uint16, data uint8) {
 	switch addr {
 	case 0x0:
 		cia2.prA = data
-		cia2.board.VICChangedVA(^(cia2.prA | ^cia2.ddrA) & 3)
+		cia2.board.VICChangedVA((^(cia2.prA | (^cia2.ddrA))) & 3)
 		cia2.board.BusCpuWrite(data)
 
 	case 0x1:
@@ -103,7 +103,7 @@ func (cia2 *MOS6526_2) WriteRegister(addr uint16, data uint8) {
 
 	case 0x2:
 		cia2.ddrA = data
-		cia2.board.VICChangedVA(^(cia2.prA | ^cia2.ddrA) & 3)
+		cia2.board.VICChangedVA((^(cia2.prA | (^cia2.ddrA))) & 3)
 
 	case 0x3:
 		cia2.ddrB = data

@@ -146,13 +146,8 @@ func (s *Board) Emulate() bool {
 	s.cia1.Emulate()
 	s.cia2.Emulate()
 	s.cpu.Emulate(s.vic.GetBALow())
-	//if s.c1541activeCount == 0 {
-	//	C1541Model* c1541;
-	//	for (uint8 driveId = 0; driveId < _c1541activeCount; driveId++) {
-	//		c1541 = _c1541ActiveContainer[driveId];
-	//		c1541->Emulate();
-	//	}
-	//}
+	s.iec.Emulate()
+
 	s.quartz.AddCycle()
 	s.phiMode = PhiIdle
 	return vBlank
