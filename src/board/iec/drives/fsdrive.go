@@ -8,9 +8,15 @@ import (
 	"strings"
 )
 
-const ATN_IN = 0x80
-const CLK_IN = 0x04
-const DATA_IN = 0x01
+const (
+	ATN_IN  = 0x80
+	CLK_IN  = 0x04
+	DATA_IN = 0x01
+
+	DATA_OUT = 0x02
+	CLK_OUT  = 0x08
+	ATN_A    = 0x10
+)
 
 type FSDrive struct {
 	iec            virtualdrive.IIec
@@ -56,19 +62,16 @@ func (v *FSDrive) Reset() {
 	v.commands.SetError(virtualdrive.ERR_STARTUP)
 }
 
-func (v *FSDrive) AtnStateChanged(state bool, data uint8) {
+func (v *FSDrive) AtnStateChanged(atn bool, data uint8) {
 	//https://www.pagetable.com/?p=1135
 	// All devices on the bus have to respond to ATN by pulling DATA within 1000 µs (“ATN Response Timing”),
 	// and also eventually release CLK, because they are now receivers.
 	// Devices usually implement this in hardware by automatically answering ATN=1 with DATA=1,
 	// so that they can participate in receiving the command even when the CPU is busy and cannot be interrupted.
-	// 0x02 => DATA OUT
-	// 0x08 => CLK OUT
-	// 0x10 => ATNA
 
 	fmt.Printf("ATN received %03d [%08b]", data, data)
-	v.atn = state
-	if v.atn {
+	v.atn = atn
+	if atn {
 		value := uint8(0)
 		value |= 0x2
 		//value |= 0x10
@@ -95,6 +98,7 @@ func (v *FSDrive) BusStateChanged(data uint8) {
 
 func (v *FSDrive) Emulate() {
 	if v.respond >= 0 {
+		fmt.Printf("SENDING %03d\n", uint8(v.respond))
 		//if time.Now().UnixMilli() > v.test { //qCycle&0x800 != 0 {
 		v.iec.PeripheralWrite(v.deviceNumber, uint8(v.respond))
 		//d := v.iec.PeripheralRead(v.deviceNumber)
@@ -315,17 +319,17 @@ func data2string(data uint8) string {
 	if data&0x20 != 0 {
 		message = append(message, "[UNKNOWN BIT 6]")
 	}
-	if data&0x10 != 0 {
-		message = append(message, "[UNKNOWN BIT 5]")
+	if data&ATN_A != 0 {
+		message = append(message, "[ATN_A]")
 	}
-	if data&0x08 != 0 {
-		message = append(message, "[UNKNOWN BIT 4]")
+	if data&CLK_OUT != 0 {
+		message = append(message, "[CLK_OUT]")
 	}
 	if data&CLK_IN != 0 {
 		message = append(message, "[CLK_IN]")
 	}
-	if data&0x02 != 0 {
-		message = append(message, "[UNKNOWN BIT 2]")
+	if data&DATA_OUT != 0 {
+		message = append(message, "[DATA_OUT]")
 	}
 	if data&DATA_IN != 0 {
 		message = append(message, "[DATA_IN]")
