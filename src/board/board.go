@@ -107,6 +107,7 @@ func (s *Board) Reset() {
 	s.sid.Reset()
 	s.cia1.Reset()
 	s.cia2.Reset()
+	s.iec.Reset()
 }
 
 func (s *Board) AsyncReset() {
@@ -117,6 +118,7 @@ func (s *Board) AsyncReset() {
 	s.sid.Reset()
 	s.cia1.Reset()
 	s.cia2.Reset()
+	s.iec.Reset()
 }
 
 func (s *Board) NewPrefs(prefs *preferences.Prefs) {

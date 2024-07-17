@@ -1,11 +1,16 @@
 package drives
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"io"
 	"os"
 	"strings"
 )
+
+const ATN_IN = 0x80
+const CLK_IN = 0x04
+const DATA_IN = 0x01
 
 type FSDrive struct {
 	iec            virtualdrive.IIec
@@ -18,8 +23,7 @@ type FSDrive struct {
 	_file          [16]*os.File // File pointers for each of the 16 channels
 	_read_char     [16]uint8    // Buffers for one-byte read-ahead
 	_ready         bool
-	atnState       uint8
-	active         bool
+	atn            bool
 	//test           int64
 }
 
@@ -29,9 +33,8 @@ func NewFSDrive(iec virtualdrive.IIec, deviceNumber uint8, path string) *FSDrive
 		deviceNumber:   deviceNumber,
 		respond:        -1,
 		commands:       virtualdrive.NewCommands(),
-		atnState:       0,
 		_orig_dir_path: path,
-		active:         false,
+		atn:            false,
 	}
 	if d.changeDirectory(d._orig_dir_path) {
 		for i := 0; i < 16; i++ {
@@ -53,25 +56,40 @@ func (v *FSDrive) Reset() {
 	v.commands.SetError(virtualdrive.ERR_STARTUP)
 }
 
-func (v *FSDrive) AtnStateChanged(state bool) {
+func (v *FSDrive) AtnStateChanged(state bool, data uint8) {
 	//https://www.pagetable.com/?p=1135
 	// All devices on the bus have to respond to ATN by pulling DATA within 1000 µs (“ATN Response Timing”),
 	// and also eventually release CLK, because they are now receivers.
 	// Devices usually implement this in hardware by automatically answering ATN=1 with DATA=1,
 	// so that they can participate in receiving the command even when the CPU is busy and cannot be interrupted.
-
 	// 0x02 => DATA OUT
 	// 0x08 => CLK OUT
 	// 0x10 => ATNA
-	v.active = state
-	if v.active {
+
+	fmt.Printf("ATN received %03d [%08b]", data, data)
+	v.atn = state
+	if v.atn {
 		value := uint8(0)
 		value |= 0x2
-		value |= 0x10
-		//value = 0xff
-		//value |= 0x08
-		v.respond = int(^value) //int(value)
+		//value |= 0x10
+		value |= 0x08
+		//v.respond = int(^value) //int(value)
+		v.respond = int(value)
 		//v.test = time.Now().UnixMilli() + 5000
+		fmt.Printf("...atn is on, responding\n")
+	} else {
+		fmt.Printf("...atn is now off\n")
+	}
+}
+
+func (v *FSDrive) BusStateChanged(data uint8) {
+	fmt.Printf("DTA received %03d [%08b] ATN: [%v], %s", data, data, v.atn, data2string(data))
+	if data&CLK_IN != 0 {
+		value := 0xfe
+		v.respond = value
+		fmt.Printf("...responding %03d [%08b]\n", value, value)
+	} else {
+		fmt.Printf("...NOT RESPONDING!\n")
 	}
 }
 
@@ -284,4 +302,33 @@ func (v *FSDrive) closeAllChannels() {
 
 func (v *FSDrive) openDirectory(channel uint8, name string) uint8 {
 	return virtualdrive.StOk
+}
+
+func data2string(data uint8) string {
+	var message []string
+	if data&ATN_IN != 0 {
+		message = append(message, "[ATN_IN]")
+	}
+	if data&0x40 != 0 {
+		message = append(message, "[UNKNOWN BIT 7]")
+	}
+	if data&0x20 != 0 {
+		message = append(message, "[UNKNOWN BIT 6]")
+	}
+	if data&0x10 != 0 {
+		message = append(message, "[UNKNOWN BIT 5]")
+	}
+	if data&0x08 != 0 {
+		message = append(message, "[UNKNOWN BIT 4]")
+	}
+	if data&CLK_IN != 0 {
+		message = append(message, "[CLK_IN]")
+	}
+	if data&0x02 != 0 {
+		message = append(message, "[UNKNOWN BIT 2]")
+	}
+	if data&DATA_IN != 0 {
+		message = append(message, "[DATA_IN]")
+	}
+	return strings.Join(message, " ")
 }

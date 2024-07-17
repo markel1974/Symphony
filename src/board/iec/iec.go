@@ -121,8 +121,8 @@ func (c *IEC) Setup(board iboard.IBoard, prefs *preferences.Prefs) {
 	//}
 
 	//TODO ATTIVARE PER TEST
-	//vd := c.createVirtualDrive(2, 8, prefs.GetDrivePath(0))
-	//c.virtualDrives = append(c.virtualDrives, vd)
+	vd := c.createVirtualDrive(2, 8, prefs.GetDrivePath(0))
+	c.virtualDrives = append(c.virtualDrives, vd)
 
 	//for i := uint8(0); i < c.peripheralsCount; i++ {
 	//	c.peripheralStorage[i].NewPrefs(prefs)
@@ -233,7 +233,7 @@ func (c *IEC) CpuWrite(data uint8) {
 
 	c.cpuBus = c.buildCpuBus(^data)
 
-	c.debugCpuWrite(^c.cpuBus)
+	//c.debugCpuWrite(^c.cpuBus)
 
 	c.updatePeripheralsBus()
 	c.updatePorts()
@@ -263,10 +263,9 @@ func (c *IEC) PeripheralRead(deviceNumber uint8) uint8 {
 func (c *IEC) PeripheralWrite(deviceNumber uint8, d uint8) {
 	c.peripheralBus[deviceNumber] = c.buildPeripheralBus(d)
 	c.peripheralsData[deviceNumber] = d
+	//c.debugPeripheralWrite(c.peripheralBus[deviceNumber])
 	c.updatePorts()
-
-	c.debugPeripheralWrite(c.peripheralBus[deviceNumber])
-	//c.debugPeripheralWrite(d)
+	//fmt.Printf("CURRENT CPU PORT %d [%08b]\n", c.cpuPort, c.cpuPort)
 }
 
 func (c *IEC) PeripheralAtnResponse(data uint8, deviceNumber uint8) {
@@ -319,10 +318,13 @@ func (c *IEC) dispatchCpuWrite() {
 	//}
 	newAtnState := c.cpuBus & 0x10
 	if c.atnState == newAtnState {
+		for _, vd := range c.virtualDrives {
+			vd.BusStateChanged(c.peripheralsPort)
+		}
 		return
 	}
 	for _, vd := range c.virtualDrives {
-		vd.AtnStateChanged(c.atnState != 0)
+		vd.AtnStateChanged(c.atnState != 0, c.peripheralsPort)
 	}
 	c.atnState = newAtnState
 }
