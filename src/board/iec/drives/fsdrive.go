@@ -18,6 +18,10 @@ const (
 	ATN_A    = 0x10
 )
 
+const (
+	NOOP = -1
+)
+
 type FSDrive struct {
 	iec            virtualdrive.IIec
 	commands       *virtualdrive.Commands
@@ -37,7 +41,7 @@ func NewFSDrive(iec virtualdrive.IIec, deviceNumber uint8, path string) *FSDrive
 	d := &FSDrive{
 		iec:            iec,
 		deviceNumber:   deviceNumber,
-		respond:        NewQueue(64),
+		respond:        NewQueue(512),
 		commands:       virtualdrive.NewCommands(),
 		_orig_dir_path: path,
 		atn:            false,
@@ -73,12 +77,11 @@ func (v *FSDrive) AtnStateChanged(atn bool, data uint8) {
 	v.atn = atn
 	if atn {
 		value := uint8(0)
-		value |= 0x2
-		//value |= 0x10
-		value |= 0x08
-		//v.respond = int(^value) //int(value)
+		value |= DATA_OUT
+		value |= CLK_OUT //ERROR
+		//value |= ATN_A
+		v.respond.AddMulti(NOOP, 8)
 		v.respond.Add(int(value))
-		//v.test = time.Now().UnixMilli() + 5000
 		fmt.Printf("...atn is on, responding\n")
 	} else {
 		fmt.Printf("...atn is now off\n")
@@ -89,6 +92,7 @@ func (v *FSDrive) BusStateChanged(data uint8) {
 	fmt.Printf("DTA received %03d [%08b] ATN: [%v], %s", data, data, v.atn, data2string(data))
 	if data&CLK_IN != 0 {
 		value := 0xfe
+		v.respond.AddMulti(NOOP, 8)
 		v.respond.Add(value)
 		fmt.Printf("...responding %03d [%08b]\n", value, value)
 	} else {
@@ -101,6 +105,9 @@ func (v *FSDrive) Emulate() {
 		return
 	}
 	data := v.respond.Next()
+	if data == NOOP {
+		return
+	}
 	fmt.Printf("SENDING %03d\n", uint8(data))
 	//if time.Now().UnixMilli() > v.test { //qCycle&0x800 != 0 {
 	v.iec.PeripheralWrite(v.deviceNumber, uint8(data))

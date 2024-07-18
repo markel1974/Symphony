@@ -37,6 +37,15 @@ func (q *Queue) Len() (length int) {
 	return q.count
 }
 
+func (q *Queue) AddMulti(data int, count int) bool {
+	for x := 0; x < count; x++ {
+		if !q.Add(data) {
+			return false
+		}
+	}
+	return true
+}
+
 func (q *Queue) Add(data int) bool {
 	// if the tail chunk is full, create a new one and add it to the queue.
 	if q.tail.last >= q.max {
