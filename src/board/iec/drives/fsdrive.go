@@ -22,7 +22,7 @@ type FSDrive struct {
 	iec            virtualdrive.IIec
 	commands       *virtualdrive.Commands
 	deviceNumber   uint8
-	respond        int
+	respond        *Queue
 	_dir_path      string       // Path to directory
 	_orig_dir_path string       // Original directory path
 	_dir_title     string       // Directory title
@@ -37,7 +37,7 @@ func NewFSDrive(iec virtualdrive.IIec, deviceNumber uint8, path string) *FSDrive
 	d := &FSDrive{
 		iec:            iec,
 		deviceNumber:   deviceNumber,
-		respond:        -1,
+		respond:        NewQueue(64),
 		commands:       virtualdrive.NewCommands(),
 		_orig_dir_path: path,
 		atn:            false,
@@ -77,7 +77,7 @@ func (v *FSDrive) AtnStateChanged(atn bool, data uint8) {
 		//value |= 0x10
 		value |= 0x08
 		//v.respond = int(^value) //int(value)
-		v.respond = int(value)
+		v.respond.Add(int(value))
 		//v.test = time.Now().UnixMilli() + 5000
 		fmt.Printf("...atn is on, responding\n")
 	} else {
@@ -89,7 +89,7 @@ func (v *FSDrive) BusStateChanged(data uint8) {
 	fmt.Printf("DTA received %03d [%08b] ATN: [%v], %s", data, data, v.atn, data2string(data))
 	if data&CLK_IN != 0 {
 		value := 0xfe
-		v.respond = value
+		v.respond.Add(value)
 		fmt.Printf("...responding %03d [%08b]\n", value, value)
 	} else {
 		fmt.Printf("...NOT RESPONDING!\n")
@@ -97,16 +97,17 @@ func (v *FSDrive) BusStateChanged(data uint8) {
 }
 
 func (v *FSDrive) Emulate() {
-	if v.respond >= 0 {
-		fmt.Printf("SENDING %03d\n", uint8(v.respond))
-		//if time.Now().UnixMilli() > v.test { //qCycle&0x800 != 0 {
-		v.iec.PeripheralWrite(v.deviceNumber, uint8(v.respond))
-		//d := v.iec.PeripheralRead(v.deviceNumber)
-		//fmt.Printf("STATE: %s\n", strconv.FormatInt(int64(d), 2))
-		v.respond = -1
-		//	v.test = 0
-		//}
+	if v.respond.Len() == 0 {
+		return
 	}
+	data := v.respond.Next()
+	fmt.Printf("SENDING %03d\n", uint8(data))
+	//if time.Now().UnixMilli() > v.test { //qCycle&0x800 != 0 {
+	v.iec.PeripheralWrite(v.deviceNumber, uint8(data))
+	//d := v.iec.PeripheralRead(v.deviceNumber)
+	//fmt.Printf("STATE: %s\n", strconv.FormatInt(int64(d), 2))
+	//	v.test = 0
+	//}
 }
 
 func (v *FSDrive) Ready() bool {

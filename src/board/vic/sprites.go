@@ -50,6 +50,7 @@ func (sp *Sprites) SetSpriteData(num int, byteNum int, data uint8) {
 }
 
 func (sp *Sprites) SetDisplayOn(displayOn uint8) {
+	// Sample sprDisplayOn and sprData for sprite drawing
 	sp.sprDraw = displayOn
 	if sp.sprDraw != 0 {
 		copy(sp.sprDrawData, sp.sprData)

@@ -117,7 +117,7 @@ func (vic *MOS6569) clearBALow() {
 }
 
 func (vic *MOS6569) refreshAccess() {
-	vic.readByte(0x3f00 | uint16(vic.refreshCounter))
+	_ = vic.readByte(0x3f00 | uint16(vic.refreshCounter))
 	vic.refreshCounter--
 }
 
@@ -150,8 +150,9 @@ func (vic *MOS6569) readByte(addr uint16) uint8 {
 }
 
 func (vic *MOS6569) checkSpriteDMA() {
+	rasterY := vic.rasterY & 0xff
 	for i, mask := 0, uint8(1); i < 8; i, mask = i+1, mask<<1 {
-		if (vic.me&mask) != 0 && (vic.rasterY&0xff) == uint16(vic.mXy[i]) {
+		if (vic.me&mask) != 0 && rasterY == uint16(vic.mXy[i]) {
 			vic.sprDmaOn |= mask
 			vic.sprMCBase[i] = 0
 			if (vic.mye & mask) != 0 {
@@ -163,13 +164,17 @@ func (vic *MOS6569) checkSpriteDMA() {
 
 func (vic *MOS6569) fetchSpriteDataPtr(num int) {
 	addr := vic.matrixBase | 0x03f8 | uint16(num)
-	vic.sprites.SetSpritePtr(num, uint16(vic.readByte(addr))<<6)
+	data := vic.readByte(addr)
+	ptr := uint16(data) << 6
+	vic.sprites.SetSpritePtr(num, ptr)
 }
 
 func (vic *MOS6569) fetchSpriteData(num int, byteNum int) {
 	if (vic.sprDmaOn & (1 << num)) != 0 {
-		spr := vic.sprites.GetSpritePtr(num)
-		vic.sprites.SetSpriteData(num, byteNum, vic.readByte((vic.sprMC[num]&0x3f)|spr))
+		ptr := vic.sprites.GetSpritePtr(num)
+		addr := (vic.sprMC[num] & 0x3f) | ptr
+		data := vic.readByte(addr)
+		vic.sprites.SetSpriteData(num, byteNum, data)
 		vic.sprMC[num]++
 	} else if byteNum == 1 {
 		//idleAccess
@@ -575,11 +580,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		// Fifth sample of border state
 		vic.graphics.SetBorderOnSample(4)
-		// Sample sprDisplayOn and sprData for sprite drawing
 		vic.sprites.SetDisplayOn(vic.sprDisplayOn)
-		//if vic.sprDraw = vic.sprDisplayOn; vic.sprDraw != 0 {
-		//	copy(vic.sprDrawData, vic.sprData)
-		//}
 		// Turn off sprite display if DMA is off
 		for idx, mask := 0, uint8(1); idx < 8; idx, mask = idx+1, mask<<1 {
 			if (vic.sprDisplayOn&mask) != 0 && (vic.sprDmaOn&mask) == 0 {
