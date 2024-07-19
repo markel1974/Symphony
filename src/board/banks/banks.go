@@ -1,9 +1,13 @@
-package board
+package banks
 
 import (
+	"github.com/markel1974/c64emu/src/board/cartridges"
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
-	"github.com/markel1974/c64emu/src/board/ram"
+	"github.com/markel1974/c64emu/src/board/cia"
 	"github.com/markel1974/c64emu/src/board/roms"
+	"github.com/markel1974/c64emu/src/board/sid"
+	"github.com/markel1974/c64emu/src/board/vic"
+	"github.com/markel1974/c64emu/src/patterns"
 	"github.com/markel1974/c64emu/src/preferences"
 )
 
@@ -17,7 +21,12 @@ type ReadFn func(uint16) uint8
 type WriteFn func(uint16, uint8)
 
 type Banks struct {
-	board        *Board
+	//board        *Board
+	vic          *vic.MOS6569
+	sid          *sid.MOS6581
+	cia1         *cia.MOS6526_1
+	cia2         *cia.MOS6526_2
+	cartMan      *cartridges.Manager
 	ram          []byte
 	bankWrite    []WriteFn
 	bankRead     []ReadFn
@@ -37,7 +46,11 @@ type Banks struct {
 func NewBanks() *Banks {
 	mm := NewMemoryMap()
 	b := &Banks{
-		board:        nil,
+		vic:          nil,
+		sid:          nil,
+		cia1:         nil,
+		cia2:         nil,
+		cartMan:      nil,
 		ram:          make([]byte, 0x10000),
 		bankWrite:    make([]WriteFn, 0xf+1),
 		bankRead:     make([]ReadFn, 0xf+1),
@@ -56,8 +69,13 @@ func NewBanks() *Banks {
 	return b
 }
 
-func (b *Banks) Setup(board *Board, prefs *preferences.Prefs) {
-	b.board = board
+func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia.MOS6526_1, cia2 *cia.MOS6526_2, cartMan *cartridges.Manager, prefs *preferences.Prefs) {
+	b.vic = vic
+	b.sid = sid
+	b.cia1 = cia1
+	b.cia2 = cia2
+	b.cartMan = cartMan
+
 	b.prefs = prefs
 	b.bankWrite[0x0] = b.ramWrite0x0000
 	b.bankWrite[0x1] = b.ramWrite0x1000
@@ -93,44 +111,44 @@ func (b *Banks) Setup(board *Board, prefs *preferences.Prefs) {
 	b.bankRead[0xe] = b.ramRead0xE000
 	b.bankRead[0xf] = b.ramRead0xF000
 
-	b.portWrite[0x0] = board.vic.WriteRegister
-	b.portWrite[0x1] = board.vic.WriteRegister
-	b.portWrite[0x2] = board.vic.WriteRegister
-	b.portWrite[0x3] = board.vic.WriteRegister
-	b.portWrite[0x4] = board.sid.WriteRegister
-	b.portWrite[0x5] = board.sid.WriteRegister
-	b.portWrite[0x6] = board.sid.WriteRegister
-	b.portWrite[0x7] = board.sid.WriteRegister
+	b.portWrite[0x0] = b.vic.WriteRegister
+	b.portWrite[0x1] = b.vic.WriteRegister
+	b.portWrite[0x2] = b.vic.WriteRegister
+	b.portWrite[0x3] = b.vic.WriteRegister
+	b.portWrite[0x4] = b.sid.WriteRegister
+	b.portWrite[0x5] = b.sid.WriteRegister
+	b.portWrite[0x6] = b.sid.WriteRegister
+	b.portWrite[0x7] = b.sid.WriteRegister
 	b.portWrite[0x8] = b.portWriteColor
 	b.portWrite[0x9] = b.portWriteColor
 	b.portWrite[0xa] = b.portWriteColor
 	b.portWrite[0xb] = b.portWriteColor
-	b.portWrite[0xc] = board.cia1.WriteRegister
-	b.portWrite[0xd] = board.cia2.WriteRegister
+	b.portWrite[0xc] = b.cia1.WriteRegister
+	b.portWrite[0xd] = b.cia2.WriteRegister
 	b.portWrite[0xe] = b.portWriteIO
 	b.portWrite[0xf] = b.portWriteIO
 
-	b.portRead[0x0] = board.vic.ReadRegister
-	b.portRead[0x1] = board.vic.ReadRegister
-	b.portRead[0x2] = board.vic.ReadRegister
-	b.portRead[0x3] = board.vic.ReadRegister
-	b.portRead[0x4] = board.sid.ReadRegister
-	b.portRead[0x5] = board.sid.ReadRegister
-	b.portRead[0x6] = board.sid.ReadRegister
-	b.portRead[0x7] = board.sid.ReadRegister
+	b.portRead[0x0] = b.vic.ReadRegister
+	b.portRead[0x1] = b.vic.ReadRegister
+	b.portRead[0x2] = b.vic.ReadRegister
+	b.portRead[0x3] = b.vic.ReadRegister
+	b.portRead[0x4] = b.sid.ReadRegister
+	b.portRead[0x5] = b.sid.ReadRegister
+	b.portRead[0x6] = b.sid.ReadRegister
+	b.portRead[0x7] = b.sid.ReadRegister
 	b.portRead[0x8] = b.portReadColor
 	b.portRead[0x9] = b.portReadColor
 	b.portRead[0xa] = b.portReadColor
 	b.portRead[0xb] = b.portReadColor
-	b.portRead[0xc] = board.cia1.ReadRegister
-	b.portRead[0xd] = board.cia2.ReadRegister
+	b.portRead[0xc] = b.cia1.ReadRegister
+	b.portRead[0xd] = b.cia2.ReadRegister
 	b.portRead[0xe] = b.portReadIO
 	b.portRead[0xf] = b.portReadIO
 
-	ri := ram.NewInitiator(255, 128, 0, 0, 0, 0, 0, 0)
+	ri := patterns.NewInitiator(255, 128, 0, 0, 0, 0, 0, 0)
 	ri.InitWithPattern(b.ram, uint(len(b.ram)))
 
-	rc := ram.NewInitiator(255, 128, 0, 0, 0, 0, 0, ram.InitRandomChanceHalf)
+	rc := patterns.NewInitiator(255, 128, 0, 0, 0, 0, 0, patterns.InitRandomChanceHalf)
 	rc.InitWithPattern(b.color, uint(len(b.color)))
 	b.initRom()
 }
@@ -164,9 +182,10 @@ func (b *Banks) portsUpdate() {
 	b.ports.Update()
 	exRom := uint8(1)
 	game := uint8(1)
-	if b.board.cart != nil {
-		exRom = b.board.cart.GetExRom()
-		game = b.board.cart.GetGame()
+	cart := b.cartMan.Cartridge()
+	if cart != nil {
+		exRom = cart.GetExRom()
+		game = cart.GetGame()
 	}
 	memConfig := b.ports.GetMemoryConfig(exRom, game)
 	b.memoryConfig = b.memoryMap.Get(memConfig)
@@ -228,12 +247,12 @@ func (b *Banks) Write(addr uint16, data uint8) {
 func (b *Banks) ramWrite0x0000(addr uint16, data uint8) {
 	if addr == 0 {
 		b.ports.SetDir(data)
-		b.ram[0] = b.board.vic.GetLastByte()
+		b.ram[0] = b.vic.GetLastByte()
 		b.portsUpdate()
 		return
 	} else if addr == 1 {
 		b.ports.SetData(data)
-		b.ram[1] = b.board.vic.GetLastByte()
+		b.ram[1] = b.vic.GetLastByte()
 		b.portsUpdate()
 		return
 	}
@@ -301,18 +320,14 @@ func (b *Banks) ramWrite0xD000(addr uint16, data uint8) {
 func (b *Banks) ramWrite0xE000(addr uint16, data uint8) {
 	b.ram[addr] = data
 	//TODO Verify the only one write to cartridge
-	if b.board.cart != nil {
-		b.board.cart.Write(icartridge.ROM_HI_2, addr, data)
-	}
+	b.cartMan.Write(icartridge.ROM_HI_2, addr, data)
 	return
 }
 
 func (b *Banks) ramWrite0xF000(addr uint16, data uint8) {
 	b.ram[addr] = data
 	//TODO Verify the only one write to cartridge
-	if b.board.cart != nil {
-		b.board.cart.Write(icartridge.ROM_HI_2, addr, data)
-	}
+	b.cartMan.Write(icartridge.ROM_HI_2, addr, data)
 	return
 }
 
@@ -356,10 +371,8 @@ func (b *Banks) ramRead0x7000(addr uint16) uint8 {
 func (b *Banks) ramRead0x8000(addr uint16) uint8 {
 	const bank = 0x8
 	if b.memoryConfig[bank] == ROL {
-		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(icartridge.ROM_LO, addr); ok {
-				return v
-			}
+		if v, ok := b.cartMan.Read(icartridge.ROM_LO, addr); ok {
+			return v
 		}
 	}
 	return b.ram[addr]
@@ -368,10 +381,8 @@ func (b *Banks) ramRead0x8000(addr uint16) uint8 {
 func (b *Banks) ramRead0x9000(addr uint16) uint8 {
 	const bank = 0x9
 	if b.memoryConfig[bank] == ROL {
-		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(icartridge.ROM_LO, addr); ok {
-				return v
-			}
+		if v, ok := b.cartMan.Read(icartridge.ROM_LO, addr); ok {
+			return v
 		}
 	}
 	return b.ram[addr]
@@ -380,11 +391,10 @@ func (b *Banks) ramRead0x9000(addr uint16) uint8 {
 func (b *Banks) ramRead0xA000(addr uint16) uint8 {
 	const bank = 0xa
 	if b.memoryConfig[bank] == ROH {
-		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(icartridge.ROM_HI_1, addr); ok {
-				return v
-			}
+		if v, ok := b.cartMan.Read(icartridge.ROM_HI_1, addr); ok {
+			return v
 		}
+
 	} else if b.memoryConfig[bank] == BAS {
 		return b.basic[addr&0x1fff]
 	}
@@ -394,10 +404,8 @@ func (b *Banks) ramRead0xA000(addr uint16) uint8 {
 func (b *Banks) ramRead0xB000(addr uint16) uint8 {
 	const bank = 0xb
 	if b.memoryConfig[bank] == ROH {
-		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(icartridge.ROM_HI_1, addr); ok {
-				return v
-			}
+		if v, ok := b.cartMan.Read(icartridge.ROM_HI_1, addr); ok {
+			return v
 		}
 	} else if b.memoryConfig[bank] == BAS {
 		return b.basic[addr&0x1fff]
@@ -423,10 +431,8 @@ func (b *Banks) ramRead0xD000(addr uint16) uint8 {
 func (b *Banks) ramRead0xE000(addr uint16) uint8 {
 	const bank = 0xe
 	if b.memoryConfig[bank] == ROH {
-		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(icartridge.ROM_HI_2, addr); ok {
-				return v
-			}
+		if v, ok := b.cartMan.Read(icartridge.ROM_HI_2, addr); ok {
+			return v
 		}
 	} else if b.memoryConfig[bank] == KER {
 		return b.kernal[addr&0x1fff]
@@ -437,10 +443,8 @@ func (b *Banks) ramRead0xE000(addr uint16) uint8 {
 func (b *Banks) ramRead0xF000(addr uint16) uint8 {
 	const bank = 0xf
 	if b.memoryConfig[bank] == ROH {
-		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(icartridge.ROM_HI_2, addr); ok {
-				return v
-			}
+		if v, ok := b.cartMan.Read(icartridge.ROM_HI_2, addr); ok {
+			return v
 		}
 	} else if b.memoryConfig[bank] == KER {
 		return b.kernal[addr&0x1fff]
@@ -453,26 +457,22 @@ func (b *Banks) portWriteColor(addr uint16, data uint8) {
 }
 
 func (b *Banks) portReadColor(addr uint16) uint8 {
-	return (b.color[addr&0x03ff] & 0x0f) | (b.board.vic.GetLastByte() & 0xf0)
+	return (b.color[addr&0x03ff] & 0x0f) | (b.vic.GetLastByte() & 0xf0)
 }
 
 func (b *Banks) portReadIO(addr uint16) uint8 {
 	addr = addr & 0x0f
-	if b.board.cart != nil {
-		if v, ok := b.board.cart.IORead(addr); ok {
-			return v
-		}
+	if v, ok := b.cartMan.IORead(addr); ok {
+		return v
 	}
 	if addr < 0xdfa0 {
-		return b.board.vic.GetLastByte()
+		return b.vic.GetLastByte()
 	}
 	return b.emulatorId.Read(addr)
 }
 
 func (b *Banks) portWriteIO(addr uint16, data uint8) {
-	if b.board.cart != nil {
-		if ok := b.board.cart.IOWrite(addr, data); ok {
-			return
-		}
+	if ok := b.cartMan.IOWrite(addr, data); ok {
+		return
 	}
 }

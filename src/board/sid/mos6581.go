@@ -1,7 +1,6 @@
 package sid
 
 import (
-	"github.com/markel1974/c64emu/src/board/iboard"
 	"github.com/markel1974/c64emu/src/board/vic"
 	"github.com/markel1974/c64emu/src/preferences"
 )
@@ -40,7 +39,7 @@ func NewMOS6581() *MOS6581 {
 	return s
 }
 
-func (sid *MOS6581) Setup(board iboard.IBoard, prefs *preferences.Prefs) {
+func (sid *MOS6581) Setup(prefs *preferences.Prefs) {
 }
 
 func (sid *MOS6581) NewPrefs(prefs *preferences.Prefs) {

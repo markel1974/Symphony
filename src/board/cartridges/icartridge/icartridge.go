@@ -2,7 +2,6 @@ package icartridge
 
 import (
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
-	"github.com/markel1974/c64emu/src/board/iboard"
 )
 
 type Interval int
@@ -21,7 +20,7 @@ const (
 )
 
 type ICartridge interface {
-	Setup(board iboard.IBoard, ldr *loader.CRTLoader) error
+	Setup(board IExpansion, ldr *loader.CRTLoader) error
 	Write(i Interval, addr uint16, data uint8) bool
 	Read(i Interval, addr uint16) (uint8, bool)
 	IORead(addr uint16) (uint8, bool)

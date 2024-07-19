@@ -1,7 +1,7 @@
 package cpu
 
 import (
-	"github.com/markel1974/c64emu/src/board/iboard"
+	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/preferences"
 )
 
@@ -33,7 +33,7 @@ func (i *interrupt) BitCheck(n uint32) bool {
 }
 
 type Interrupts struct {
-	board         iboard.IBoard
+	quartz        *quartz.Quartz
 	prefs         *preferences.Prefs
 	intr          interrupt
 	firstIrqCycle uint64
@@ -42,15 +42,15 @@ type Interrupts struct {
 
 func NewInterrupts() *Interrupts {
 	return &Interrupts{
-		board:         nil,
+		quartz:        nil,
 		prefs:         nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,
 	}
 }
 
-func (i *Interrupts) Setup(board iboard.IBoard) {
-	i.board = board
+func (i *Interrupts) Setup(quartz *quartz.Quartz) {
+	i.quartz = quartz
 }
 
 func (i *Interrupts) Reset() {
@@ -73,7 +73,7 @@ func (i *Interrupts) TriggerVICIRQ() {
 	vic := i.intr.BitCheck(IntVic)
 	cia := i.intr.BitCheck(IntCia)
 	if !(vic || cia) {
-		i.firstIrqCycle = i.board.Cycle()
+		i.firstIrqCycle = i.quartz.Cycle()
 	}
 	i.intr.BitSet(IntVic)
 }
@@ -90,7 +90,7 @@ func (i *Interrupts) TriggerCIAIRQ() {
 	vic := i.intr.BitCheck(IntVic)
 	cia := i.intr.BitCheck(IntCia)
 	if !(vic || cia) {
-		i.firstIrqCycle = i.board.Cycle()
+		i.firstIrqCycle = i.quartz.Cycle()
 	}
 	i.intr.BitSet(IntCia)
 }
@@ -109,7 +109,7 @@ func (i *Interrupts) AsyncNMI() {
 
 func (i *Interrupts) TriggerNMI() {
 	if !i.intr.BitCheck(IntNmi) {
-		i.firstNMICycle = i.board.Cycle()
+		i.firstNMICycle = i.quartz.Cycle()
 	}
 	i.intr.BitSet(IntNmi)
 }
@@ -131,7 +131,7 @@ func (i *Interrupts) GetIrqCycleDistance(delay int) uint64 {
 }
 
 func (i *Interrupts) computeDistance(base uint64, delay uint64) uint64 {
-	cycle := i.board.Cycle()
+	cycle := i.quartz.Cycle()
 	if base > cycle {
 		return 0
 	}

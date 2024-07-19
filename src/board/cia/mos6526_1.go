@@ -1,19 +1,21 @@
 package cia
 
 import (
+	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/flag"
-	"github.com/markel1974/c64emu/src/board/iboard"
+	"github.com/markel1974/c64emu/src/board/vic"
 	"github.com/markel1974/c64emu/src/preferences"
 )
 
 type MOS6526_1 struct {
 	*MOS6526
+	intr        *cpu.Interrupts
+	vic         *vic.MOS6569
 	prevLPState uint8    // Previous state of LP line (bit 4
 	KeyMatrix   [8]uint8 // C64 keyboard matrix, 1 bit/key (0: key down, 1: key up)
 	RevMatrix   [8]uint8 // Reversed keyboard matrix
 	Joystick1   uint8    // Joystick 1 AND value
 	Joystick2   uint8    // Joystick 2 AND value
-	board       iboard.IBoard
 	prefs       *preferences.Prefs
 }
 
@@ -23,8 +25,9 @@ func NewMOS6526_1() *MOS6526_1 {
 	return m
 }
 
-func (cia1 *MOS6526_1) Setup(board iboard.IBoard, prefs *preferences.Prefs) {
-	cia1.board = board
+func (cia1 *MOS6526_1) Setup(intr *cpu.Interrupts, vic *vic.MOS6569, prefs *preferences.Prefs) {
+	cia1.intr = intr
+	cia1.vic = vic
 	cia1.prefs = prefs
 }
 
@@ -170,7 +173,7 @@ func (cia1 *MOS6526_1) ReadRegister(addr uint16) uint8 {
 	case 0x0d:
 		ret := cia1.icr // Read and clear ICR
 		cia1.icr = 0
-		cia1.board.CIAClearIRQ() // Clear IRQ
+		cia1.intr.ClearCIAIRQ() // Clear IRQ
 		//ClearIRQSignal.Emit();
 		return ret
 
@@ -261,7 +264,7 @@ func (cia1 *MOS6526_1) WriteRegister(addr uint16, data uint8) {
 		if flag.Uint8ToBool(cia1.icr & cia1.intMask & 0x1f) {
 			// Trigger IRQ if pending
 			cia1.icr |= 0x80
-			cia1.board.CIATriggerIRQ()
+			cia1.intr.TriggerCIAIRQ()
 		}
 
 	case 0xe:
@@ -284,15 +287,14 @@ func (cia1 *MOS6526_1) TriggerInterrupt(bit uint8) {
 		cia1.icr |= 0x80
 		//_cpu->TriggerCIAIRQ();
 		//TriggerIRQSignal.Emit();
-		cia1.board.CIATriggerIRQ()
+		cia1.intr.TriggerCIAIRQ()
 	}
 }
 
 // Write to port B, check for lightPen interrupt
 func (cia1 *MOS6526_1) checkLightPen() {
 	if ((cia1.prB | ^cia1.ddrB) & 0x10) != cia1.prevLPState {
-		cia1.board.VICLightPenTrigger()
+		cia1.vic.TriggerLightPen()
 	}
-
 	cia1.prevLPState = (cia1.prB | ^cia1.ddrB) & 0x10
 }

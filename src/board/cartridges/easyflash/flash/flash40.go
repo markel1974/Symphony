@@ -2,7 +2,7 @@ package flash
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/iboard"
+	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/board/snapshot"
 )
@@ -54,13 +54,13 @@ type Flash040Context struct {
 	flashDirty     int
 	flashType      Flash040Type
 	lastRead       uint8
-	board          iboard.IBoard
+	board          icartridge.IExpansion
 	eraseAlarm     *quartz.Alarm
 }
 
 // NewFlash040Context
 // func NewFlash040Context(b iboard.IBoard, kind Flash040Type, data []uint8) *Flash040Context {
-func NewFlash040Context(b iboard.IBoard, kind Flash040Type, data []byte) *Flash040Context {
+func NewFlash040Context(b icartridge.IExpansion, kind Flash040Type, data []byte) *Flash040Context {
 	f := &Flash040Context{
 		board:          b,
 		flashType:      kind,

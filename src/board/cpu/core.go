@@ -1,11 +1,7 @@
 package cpu
 
-import (
-	"github.com/markel1974/c64emu/src/board/iboard"
-)
-
 type Core struct {
-	board   iboard.IBoard
+	banks   IBanks
 	intr    *Interrupts
 	nFlag   uint8  // Negative flag
 	zFlag   uint8  // Zero flag
@@ -28,7 +24,7 @@ type Core struct {
 
 func NewCore() *Core {
 	regs := &Core{
-		board:   nil,
+		banks:   nil,
 		intr:    NewInterrupts(),
 		a:       0,
 		x:       0,

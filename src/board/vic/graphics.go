@@ -1,7 +1,5 @@
 package vic
 
-import "github.com/markel1974/c64emu/src/board/iboard"
-
 var _colorMultiplier = make([][]uint8, 0xff)
 
 func init() {
@@ -13,7 +11,6 @@ func init() {
 
 type Graphics struct {
 	*Core
-	board             iboard.IBoard
 	gfxData           uint8
 	colorData         uint8
 	charData          uint8
@@ -27,7 +24,6 @@ type Graphics struct {
 func NewGraphics(core *Core) *Graphics {
 	gr := &Graphics{
 		Core:              core,
-		board:             nil,
 		gfxData:           0,
 		colorData:         0,
 		charData:          0,
@@ -39,8 +35,7 @@ func NewGraphics(core *Core) *Graphics {
 	return gr
 }
 
-func (gr *Graphics) Setup(board iboard.IBoard) {
-	gr.board = board
+func (gr *Graphics) Setup() {
 }
 
 func (gr *Graphics) SetGfxData(data uint8) {

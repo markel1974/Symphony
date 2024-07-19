@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
-	"github.com/markel1974/c64emu/src/board/iboard"
 )
 
 type CartridgeOcean struct {
@@ -17,7 +16,7 @@ type CartridgeOcean struct {
 	currBank  uint8
 	game      uint8
 	exRom     uint8
-	board     iboard.IBoard
+	board     icartridge.IExpansion
 }
 
 func New(game uint8, exRom uint8, b0 icartridge.Interval, b1 icartridge.Interval) *CartridgeOcean {
@@ -31,7 +30,7 @@ func New(game uint8, exRom uint8, b0 icartridge.Interval, b1 icartridge.Interval
 	}
 }
 
-func (c *CartridgeOcean) Setup(board iboard.IBoard, ldr *loader.CRTLoader) error {
+func (c *CartridgeOcean) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
 	if ldr.GetMode() == loader.ModeCrt {
 		return c.initCrt(ldr)

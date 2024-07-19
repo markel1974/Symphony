@@ -8,8 +8,9 @@ import (
 	"github.com/markel1974/c64emu/src/board/cartridges/easyflash/flash"
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
-	"github.com/markel1974/c64emu/src/board/iboard"
-	"github.com/markel1974/c64emu/src/board/ram"
+	"github.com/markel1974/c64emu/src/patterns"
+
+	//"github.com/markel1974/c64emu/src/board/ram"
 	"github.com/markel1974/c64emu/src/board/snapshot"
 	"io"
 	"os"
@@ -258,7 +259,7 @@ easyflash_io2_read,       // peek function, same implementation
 */
 
 type CartridgeEasyFlash struct {
-	board       iboard.IBoard
+	board       icartridge.IExpansion
 	intervals   icartridge.Interval
 	game        uint8
 	exRom       uint8
@@ -289,10 +290,10 @@ func New(game uint8, exRom uint8, lo icartridge.Interval, hi icartridge.Interval
 	}
 }
 
-func (c *CartridgeEasyFlash) Setup(board iboard.IBoard, ldr *loader.CRTLoader) error {
+func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	var rawCart []byte
 	c.board = board
-	rp := ram.NewInitiator(255, 2, 1, 0x100, 255, 0, 0, 0)
+	rp := patterns.NewInitiator(255, 2, 1, 0x100, 255, 0, 0, 0)
 	rp.InitWithPattern(c.ram, CART_RAM_SIZE)
 	c.filename = ldr.Name
 	c.filetype = 0

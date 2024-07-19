@@ -1,24 +1,25 @@
 package vic
 
-import "github.com/markel1974/c64emu/src/board/iboard"
+import (
+	"github.com/markel1974/c64emu/src/board/cpu"
+)
 
 var _sprEmptyCollBuf = make([]uint8, DisplayXFillMax)
 
 type Sprites struct {
 	*Core
-	board       iboard.IBoard
+	intr        *cpu.Interrupts
 	sprCollBuf  []uint8   // Buffer for sprite-sprite collisions and priorities
 	sprPtr      []uint16  // Sprite data pointers
 	sprData     [][]uint8 // Sprite data read
 	sprDrawData [][]uint8 // Sprite data for drawing
 	sprDraw     uint8     // 8 flags: Draw sprite in this line
-
 }
 
 func NewSprites(core *Core) *Sprites {
 	s := &Sprites{
 		Core:        core,
-		board:       nil,
+		intr:        nil,
 		sprCollBuf:  make([]uint8, DisplayXFillMax),
 		sprPtr:      make([]uint16, SpriteNumber),
 		sprData:     make([][]uint8, SpriteNumber),
@@ -33,8 +34,8 @@ func NewSprites(core *Core) *Sprites {
 	return s
 }
 
-func (sp *Sprites) Setup(board iboard.IBoard) {
-	sp.board = board
+func (sp *Sprites) Setup(intr *cpu.Interrupts) {
+	sp.intr = intr
 }
 
 func (sp *Sprites) GetSpritePtr(num int) uint16 {
@@ -91,7 +92,7 @@ func (sp *Sprites) Draw(lineStart int) {
 		sp.irqFlag |= 0x04
 		if sp.irqMask&0x04 != 0 {
 			sp.irqFlag |= 0x80
-			sp.board.VICTriggerIRQ()
+			sp.intr.TriggerVICIRQ()
 		}
 	}
 	// sprite-background collisions
@@ -102,7 +103,7 @@ func (sp *Sprites) Draw(lineStart int) {
 		sp.irqFlag |= 0x02
 		if sp.irqMask&0x02 != 0 {
 			sp.irqFlag |= 0x80
-			sp.board.VICTriggerIRQ()
+			sp.intr.TriggerVICIRQ()
 		}
 	}
 }

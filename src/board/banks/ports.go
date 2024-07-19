@@ -1,4 +1,4 @@
-package board
+package banks
 
 //from c64pla.c
 

@@ -1,7 +1,8 @@
 package vic
 
 import (
-	"github.com/markel1974/c64emu/src/board/iboard"
+	"github.com/markel1974/c64emu/src/board/cpu"
+	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/preferences"
 )
 
@@ -11,8 +12,11 @@ var _emptyForeMaskBuffer = make([]uint8, DisplayXDiv8)
 
 type MOS6569 struct {
 	*Core
-	board            iboard.IBoard
+	quartz           *quartz.Quartz
+	intr             *cpu.Interrupts
+	banks            IBanks
 	prefs            *preferences.Prefs
+	readyFn          func()
 	sprites          *Sprites
 	graphics         *Graphics
 	cycle            int      // Cycle
@@ -82,11 +86,15 @@ func NewMOS6569() *MOS6569 {
 	return vic
 }
 
-func (vic *MOS6569) Setup(board iboard.IBoard, prefs *preferences.Prefs) {
-	vic.board = board
+func (vic *MOS6569) Setup(quartz *quartz.Quartz, intr *cpu.Interrupts, banks IBanks, prefs *preferences.Prefs, readyFn func()) {
+	//vic.board = board
+	vic.quartz = quartz
+	vic.intr = intr
+	vic.banks = banks
 	vic.prefs = prefs
-	vic.graphics.Setup(board)
-	vic.sprites.Setup(board)
+	vic.readyFn = readyFn
+	vic.graphics.Setup()
+	vic.sprites.Setup(intr)
 }
 
 func (vic *MOS6569) GetDisplayBuffer() []uint8 {
@@ -108,7 +116,7 @@ func (vic *MOS6569) GetBALow() bool {
 func (vic *MOS6569) setBALow() {
 	if !vic.baLow {
 		vic.baLow = true
-		vic.firstBaCycle = vic.board.Cycle()
+		vic.firstBaCycle = vic.quartz.Cycle()
 	}
 }
 
@@ -135,17 +143,17 @@ func (vic *MOS6569) rasterIrq() {
 	vic.irqFlag |= 0x01
 	if (vic.irqMask & 0x01) != 0 {
 		vic.irqFlag |= 0x80
-		vic.board.VICTriggerIRQ()
+		vic.intr.TriggerVICIRQ()
 	}
 }
 
 func (vic *MOS6569) readByte(addr uint16) uint8 {
 	va := addr | vic.ciaVaBase
 	if (va & 0x7000) == 0x1000 {
-		vic.lastByte = vic.board.CharRomRead(va & 0x0fff)
+		vic.lastByte = vic.banks.ReadCharRom(va & 0x0fff)
 		return vic.lastByte
 	}
-	vic.lastByte = vic.board.RamRead(va)
+	vic.lastByte = vic.banks.ReadDirect(va)
 	return vic.lastByte
 }
 
@@ -714,7 +722,7 @@ func (vic *MOS6569) TriggerLightPen() {
 		vic.irqFlag |= 0x08 // Trigger IRQ
 		if (vic.irqMask & 0x08) != 0 {
 			vic.irqFlag |= 0x80
-			vic.board.VICTriggerIRQ()
+			vic.intr.TriggerVICIRQ()
 		}
 	}
 }
@@ -726,13 +734,13 @@ func (vic *MOS6569) ChangedVA(newVA uint8) {
 
 func (vic *MOS6569) matrixAccess() {
 	if vic.baLow {
-		if vic.board.Cycle()-vic.firstBaCycle < 3 {
+		if vic.quartz.Cycle()-vic.firstBaCycle < 3 {
 			vic.colorLine[vic.mlIndex] = 0xff
 			vic.matrixLine[vic.mlIndex] = 0xff
 		} else {
 			addr := (vic.videoCounter & 0x03ff) | vic.matrixBase
 			vic.matrixLine[vic.mlIndex] = vic.readByte(addr)
-			vic.colorLine[vic.mlIndex] = vic.board.ColorRead(addr & 0x03ff)
+			vic.colorLine[vic.mlIndex] = vic.banks.ReadColor(addr & 0x03ff)
 		}
 	}
 }
@@ -802,7 +810,8 @@ func (vic *MOS6569) ReadRegister(addr uint16) uint8 {
 	case 0x19:
 		if !vic.ready {
 			vic.ready = true
-			vic.board.ReadyEvent()
+			vic.readyFn()
+			//vic.board.ReadyEvent()
 		}
 		return vic.irqFlag | 0x70
 	// IRQ mask
@@ -913,17 +922,17 @@ func (vic *MOS6569) WriteRegister(addr uint16, data uint8) {
 			// Set master bit if allowed interrupt still pending
 			vic.irqFlag |= 0x80
 		} else {
-			vic.board.VICClearIRQ()
+			vic.intr.ClearVICIRQ()
 		}
 	case 0x1a: // IRQ mask
 		vic.irqMask = data & 0x0f
 		if (vic.irqFlag & vic.irqMask) != 0 {
 			// Trigger interrupt if pending and now allowed
 			vic.irqFlag |= 0x80
-			vic.board.VICTriggerIRQ()
+			vic.intr.TriggerVICIRQ()
 		} else {
 			vic.irqFlag &= 0x7f
-			vic.board.VICClearIRQ()
+			vic.intr.ClearVICIRQ()
 		}
 	case 0x1b: // Sprite data priority
 		vic.mdp = data

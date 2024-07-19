@@ -8,7 +8,6 @@ import (
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
 	"github.com/markel1974/c64emu/src/board/cartridges/ocean"
-	"github.com/markel1974/c64emu/src/board/iboard"
 	"github.com/markel1974/c64emu/src/preferences"
 )
 
@@ -16,24 +15,60 @@ import (
 //https://luigidifraia.wordpress.com/2021/05/08/commodore-64-cartridges-theory-of-operation-and-ocean-bank-switching-described/
 //https://github.com/Project-64/reloaded/blob/master/c64/c64prg/C64PRG11.TXT#L13101
 
-type Factory struct {
-	board iboard.IBoard
+type Manager struct {
+	board icartridge.IExpansion
 	prefs *preferences.Prefs
+	cart  icartridge.ICartridge
 }
 
-func NewFactory() *Factory {
-	return &Factory{}
+func NewManager() *Manager {
+	return &Manager{
+		cart: nil,
+	}
 }
 
-func (f *Factory) Setup(board iboard.IBoard, prefs *preferences.Prefs) {
+func (f *Manager) Setup(board icartridge.IExpansion, prefs *preferences.Prefs) {
 	f.board = board
 	f.prefs = prefs
 }
 
-func (f *Factory) Load(p string) (icartridge.ICartridge, error) {
+func (f *Manager) Cartridge() icartridge.ICartridge {
+	return f.cart
+}
+
+func (f *Manager) Read(interval icartridge.Interval, addr uint16) (uint8, bool) {
+	if f.cart == nil {
+		return 0, false
+	}
+	return f.cart.Read(interval, addr)
+}
+
+func (f *Manager) Write(interval icartridge.Interval, addr uint16, data uint8) bool {
+	if f.cart == nil {
+		return false
+	}
+	return f.cart.Write(interval, addr, data)
+}
+
+func (f *Manager) IOWrite(addr uint16, data uint8) bool {
+	if f.cart == nil {
+		return false
+	}
+	return f.cart.IOWrite(addr, data)
+}
+
+func (f *Manager) IORead(addr uint16) (uint8, bool) {
+	if f.cart == nil {
+		return 0, false
+	}
+	return f.cart.IORead(addr)
+}
+
+func (f *Manager) Load(p string) error {
 	ldr := loader.NewLoader(loader.MachineC64)
-	if err := ldr.Setup(p); err != nil {
-		return nil, err
+	err := ldr.Setup(p)
+	if err != nil {
+		return err
 	}
 	if ldr.GetMode() == loader.ModeCrt {
 		return f.loadCrt(ldr)
@@ -41,24 +76,25 @@ func (f *Factory) Load(p string) (icartridge.ICartridge, error) {
 	return f.loadBin(ldr)
 }
 
-func (f *Factory) loadCrt(ldr *loader.CRTLoader) (icartridge.ICartridge, error) {
-	var crt icartridge.ICartridge
+func (f *Manager) loadCrt(ldr *loader.CRTLoader) error {
+	var cart icartridge.ICartridge
 	switch ldr.Kind {
 	case loader.CARTRIDGE_OCEAN:
-		crt = ocean.New(uint8(ldr.Game), uint8(ldr.ExRom), icartridge.ROM_LO, icartridge.ROM_HI_1)
+		cart = ocean.New(uint8(ldr.Game), uint8(ldr.ExRom), icartridge.ROM_LO, icartridge.ROM_HI_1)
 	case loader.CARTRIDGE_EASYFLASH:
-		crt = easyflash.New(uint8(ldr.Game), uint8(ldr.ExRom), icartridge.ROM_LO, icartridge.ROM_HI_1)
+		cart = easyflash.New(uint8(ldr.Game), uint8(ldr.ExRom), icartridge.ROM_LO, icartridge.ROM_HI_1)
 	}
-	if crt == nil {
-		return nil, fmt.Errorf("unsupported")
+	if cart == nil {
+		return fmt.Errorf("unsupported")
 	}
-	if err := crt.Setup(f.board, ldr); err != nil {
-		return nil, err
+	if err := cart.Setup(f.board, ldr); err != nil {
+		return err
 	}
-	return crt, nil
+	f.cart = cart
+	return nil
 }
 
-func (f *Factory) loadBin(ldr *loader.CRTLoader) (icartridge.ICartridge, error) {
+func (f *Manager) loadBin(ldr *loader.CRTLoader) error {
 	var cart icartridge.ICartridge = nil
 	lCartridge := len(ldr.GetData())
 	if lCartridge == 0x2000 {
@@ -72,10 +108,11 @@ func (f *Factory) loadBin(ldr *loader.CRTLoader) (icartridge.ICartridge, error) 
 		cart = ocean.New(0, 0, icartridge.ROM_LO, icartridge.ROM_HI_1)
 	}
 	if cart == nil {
-		return nil, fmt.Errorf("invalid cartridge")
+		return fmt.Errorf("invalid cartridge")
 	}
 	if err := cart.Setup(f.board, ldr); err != nil {
-		return nil, err
+		return err
 	}
-	return cart, nil
+	f.cart = cart
+	return nil
 }

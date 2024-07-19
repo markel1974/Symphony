@@ -3,7 +3,7 @@ package cpu
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/board/flag"
-	"github.com/markel1974/c64emu/src/board/iboard"
+	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/preferences"
 	"log"
 	"os"
@@ -59,10 +59,10 @@ func NewMOS6510() *MOS6510 {
 	return cpu
 }
 
-func (cpu *MOS6510) Setup(board iboard.IBoard, prefs *preferences.Prefs) {
+func (cpu *MOS6510) Setup(quartz *quartz.Quartz, banks IBanks, prefs *preferences.Prefs) {
+	cpu.banks = banks
 	cpu.prefs = prefs
-	cpu.board = board
-	cpu.intr.Setup(board)
+	cpu.intr.Setup(quartz)
 }
 
 func (cpu *MOS6510) AsyncReset() {
@@ -72,7 +72,7 @@ func (cpu *MOS6510) AsyncReset() {
 func (cpu *MOS6510) Reset() {
 	cpu.intr.Reset()
 	// Read reset vector
-	cpu.pc = uint16(cpu.board.CpuRamRead(0xfffc)) | uint16(cpu.board.CpuRamRead(0xfffd))<<8
+	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | uint16(cpu.banks.Read(0xfffd))<<8
 	cpu.state = STATE_LAST
 	cpu.opFlags = 0
 }
@@ -263,7 +263,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.op = cpu.board.CpuRamRead(cpu.pc)
+		cpu.op = cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.state = _modeTable[cpu.op]
 		cpu.opFlags = 0
@@ -273,29 +273,29 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = I_IRQ_9
 
 	case I_IRQ_9:
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = I_IRQ_A
 
 	case I_IRQ_A:
-		cpu.board.CpuRamWrite(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
+		cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 		cpu.sp--
 		cpu.state = I_IRQ_B
 
 	case I_IRQ_B:
-		cpu.board.CpuRamWrite(uint16(cpu.sp)|0x100, uint8(cpu.pc))
+		cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 		cpu.sp--
 		cpu.state = I_IRQ_C
 
 	case I_IRQ_C:
 		data := cpu.buildFlags(false)
-		cpu.board.CpuRamWrite((uint16(cpu.sp)&0xff)|0x0100, data)
+		cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 		cpu.sp--
 		cpu.iFlag = 1
 		cpu.state = I_IRQ_D
@@ -304,14 +304,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.pc = uint16(cpu.board.CpuRamRead(0xfffe))
+		cpu.pc = uint16(cpu.banks.Read(0xfffe))
 		cpu.state = I_IRQ_E
 
 	case I_IRQ_E:
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(0xffff)
+		data := cpu.banks.Read(0xffff)
 		cpu.pc |= uint16(data) << 8
 		cpu.state = STATE_LAST
 
@@ -320,29 +320,29 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = I_NMI_11
 
 	case I_NMI_11:
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = I_NMI_12
 
 	case I_NMI_12:
-		cpu.board.CpuRamWrite(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
+		cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 		cpu.sp--
 		cpu.state = I_NMI_13
 
 	case I_NMI_13:
-		cpu.board.CpuRamWrite(uint16(cpu.sp)|0x100, uint8(cpu.pc))
+		cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 		cpu.sp--
 		cpu.state = I_NMI_14
 
 	case I_NMI_14:
 		data := cpu.buildFlags(false)
-		cpu.board.CpuRamWrite((uint16(cpu.sp)&0xff)|0x0100, data)
+		cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 		cpu.sp--
 		cpu.iFlag = 1
 		cpu.state = I_NMI_15
@@ -351,14 +351,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.pc = uint16(cpu.board.CpuRamRead(0xfffa))
+		cpu.pc = uint16(cpu.banks.Read(0xfffa))
 		cpu.state = I_NMI_16
 
 	case I_NMI_16:
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(0xfffb)
+		data := cpu.banks.Read(0xfffb)
 		cpu.pc |= uint16(data) << 8
 		cpu.state = STATE_LAST
 
@@ -367,7 +367,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = _opTable[cpu.op]
 
@@ -375,7 +375,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = A_ZEROX1
 
@@ -383,7 +383,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar = (cpu.ar + uint16(cpu.x)) & 0xff
 		cpu.state = _opTable[cpu.op]
 
@@ -391,7 +391,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = A_ZEROY1
 
@@ -399,7 +399,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
 		cpu.state = _opTable[cpu.op]
 
@@ -407,7 +407,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = A_ABS1
 
@@ -415,7 +415,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.ar = cpu.ar | (uint16(data) << 8)
 		cpu.state = _opTable[cpu.op]
@@ -424,7 +424,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = A_ABSX1
 
@@ -433,7 +433,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar2 = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		if cpu.ar+uint16(cpu.x) < 0x100 {
 			cpu.state = A_ABSX2
@@ -447,7 +447,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.state = _opTable[cpu.op]
 
 	case A_ABSX3:
@@ -455,7 +455,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar += 0x100
 		cpu.state = _opTable[cpu.op]
 
@@ -463,7 +463,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = A_ABSY1
 
@@ -472,7 +472,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar2 = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		if cpu.ar+uint16(cpu.y) < 0x100 {
 			cpu.state = A_ABSY2
@@ -486,7 +486,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.state = _opTable[cpu.op]
 
 	case A_ABSY3:
@@ -494,7 +494,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar += 0x100
 		cpu.state = _opTable[cpu.op]
 
@@ -502,7 +502,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar2 = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = A_INDX1
 
@@ -510,7 +510,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar2)
+		cpu.banks.Read(cpu.ar2)
 		cpu.ar2 = (cpu.ar2 + uint16(cpu.x)) & 0xff
 		cpu.state = A_INDX2
 
@@ -518,14 +518,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.ar2))
+		cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
 		cpu.state = A_INDX3
 
 	case A_INDX3:
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead((cpu.ar2 + 1) & 0xff)
+		data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 		cpu.ar = cpu.ar | (uint16(data) << 8)
 		cpu.state = _opTable[cpu.op]
 
@@ -533,7 +533,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar2 = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = A_INDY1
 
@@ -541,7 +541,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.ar2))
+		cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
 		cpu.state = A_INDY2
 
 	case A_INDY2:
@@ -549,7 +549,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar2 = uint16(cpu.board.CpuRamRead((cpu.ar2 + 1) & 0xff))
+		cpu.ar2 = uint16(cpu.banks.Read((cpu.ar2 + 1) & 0xff))
 		if cpu.ar+uint16(cpu.y) < 0x100 {
 			cpu.state = A_INDY3
 		} else {
@@ -562,7 +562,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.state = _opTable[cpu.op]
 
 	case A_INDY4:
@@ -570,7 +570,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar += 0x100
 		cpu.state = _opTable[cpu.op]
 
@@ -579,7 +579,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = AE_ABSX1
 
@@ -587,7 +587,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if cpu.ar+uint16(cpu.x) < 0x100 {
 			cpu.ar = ((cpu.ar + uint16(cpu.x)) & 0xff) | (uint16(data) << 8)
@@ -602,7 +602,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar += 0x100
 		cpu.state = _opTable[cpu.op]
 
@@ -610,7 +610,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = AE_ABSY1
 
@@ -618,7 +618,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if cpu.ar+uint16(cpu.y) < 0x100 {
 			cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
@@ -633,7 +633,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar += 0x100
 		cpu.state = _opTable[cpu.op]
 
@@ -641,7 +641,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar2 = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = AE_INDY1
 
@@ -649,14 +649,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.ar2))
+		cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
 		cpu.state = AE_INDY2
 
 	case AE_INDY2:
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead((cpu.ar2 + 1) & 0xff)
+		data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 		if z := cpu.ar + uint16(cpu.y); z < 0x100 {
 			cpu.ar = (z & 0xff) | (uint16(data) << 8)
 			cpu.state = _opTable[cpu.op]
@@ -669,7 +669,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar += 0x100
 		cpu.state = _opTable[cpu.op]
 
@@ -678,7 +678,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = RMW_DO_IT
 
@@ -686,7 +686,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = M_ZEROX1
 
@@ -694,7 +694,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar = (cpu.ar + uint16(cpu.x)) & 0xff
 		cpu.state = RMW_DO_IT
 
@@ -702,7 +702,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = M_ZEROY1
 
@@ -710,7 +710,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
 		cpu.state = RMW_DO_IT
 
@@ -718,7 +718,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = M_ABS1
 
@@ -726,7 +726,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.ar = cpu.ar | (uint16(data) << 8)
 		cpu.state = RMW_DO_IT
@@ -735,7 +735,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = M_ABSX1
 
@@ -743,7 +743,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if cpu.ar+uint16(cpu.x) < 0x100 {
 			cpu.state = M_ABSX2
@@ -757,7 +757,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.state = RMW_DO_IT
 
 	case M_ABSX3:
@@ -765,7 +765,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar += 0x100
 		cpu.state = RMW_DO_IT
 
@@ -773,7 +773,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = M_ABSY1
 
@@ -781,7 +781,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if cpu.ar+uint16(cpu.y) < 0x100 {
 			cpu.state = M_ABSY2
@@ -795,7 +795,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.state = RMW_DO_IT
 
 	case M_ABSY3:
@@ -803,7 +803,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar += 0x100
 		cpu.state = RMW_DO_IT
 
@@ -811,7 +811,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar2 = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = M_INDX1
 
@@ -819,7 +819,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar2)
+		cpu.banks.Read(cpu.ar2)
 		cpu.ar2 = (cpu.ar2 + uint16(cpu.x)) & 0xff
 		cpu.state = M_INDX2
 
@@ -827,14 +827,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.ar2))
+		cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
 		cpu.state = M_INDX3
 
 	case M_INDX3:
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead((cpu.ar2 + 1) & 0xff)
+		data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 		cpu.ar = cpu.ar | (uint16(data) << 8)
 		cpu.state = RMW_DO_IT
 
@@ -842,7 +842,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar2 = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = M_INDY1
 
@@ -850,14 +850,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.ar2))
+		cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
 		cpu.state = M_INDY2
 
 	case M_INDY2:
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead((cpu.ar2 + 1) & 0xff)
+		data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 		if cpu.ar+uint16(cpu.y) < 0x100 {
 			cpu.state = M_INDY3
 		} else {
@@ -870,7 +870,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.state = RMW_DO_IT
 
 	case M_INDY4:
@@ -878,7 +878,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.ar += 0x100
 		cpu.state = RMW_DO_IT
 
@@ -886,11 +886,11 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.rmwBuf = cpu.board.CpuRamRead(cpu.ar)
+		cpu.rmwBuf = cpu.banks.Read(cpu.ar)
 		cpu.state = RMW_DO_IT1
 
 	case RMW_DO_IT1:
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
 		cpu.state = _opTable[cpu.op]
 
 		// Load group
@@ -898,7 +898,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.ar)
+		data := cpu.banks.Read(cpu.ar)
 		cpu.a = data
 		cpu.nFlag = data
 		cpu.zFlag = data
@@ -908,7 +908,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.a = data
 		cpu.nFlag = data
@@ -919,7 +919,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.ar)
+		data := cpu.banks.Read(cpu.ar)
 		cpu.x = data
 		cpu.nFlag = data
 		cpu.zFlag = data
@@ -929,7 +929,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.x = data
 		cpu.nFlag = data
@@ -940,7 +940,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.ar)
+		data := cpu.banks.Read(cpu.ar)
 		cpu.y = data
 		cpu.nFlag = data
 		cpu.zFlag = data
@@ -950,7 +950,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.y = data
 		cpu.nFlag = data
@@ -959,15 +959,15 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 
 		// Store group
 	case O_STA:
-		cpu.board.CpuRamWrite(cpu.ar, cpu.a)
+		cpu.banks.Write(cpu.ar, cpu.a)
 		cpu.state = STATE_LAST
 
 	case O_STX:
-		cpu.board.CpuRamWrite(cpu.ar, cpu.x)
+		cpu.banks.Write(cpu.ar, cpu.x)
 		cpu.state = STATE_LAST
 
 	case O_STY:
-		cpu.board.CpuRamWrite(cpu.ar, cpu.y)
+		cpu.banks.Write(cpu.ar, cpu.y)
 		cpu.state = STATE_LAST
 
 		// Transfer group
@@ -975,7 +975,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.x = cpu.a
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
@@ -985,7 +985,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.a = cpu.x
 		cpu.nFlag = cpu.x
 		cpu.zFlag = cpu.x
@@ -995,7 +995,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.y = cpu.a
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
@@ -1005,7 +1005,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.a = cpu.y
 		cpu.nFlag = cpu.y
 		cpu.zFlag = cpu.y
@@ -1015,7 +1015,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.x = cpu.sp
 		cpu.nFlag = cpu.sp
 		cpu.zFlag = cpu.sp
@@ -1025,7 +1025,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.sp = cpu.x
 		cpu.state = STATE_LAST
 
@@ -1034,7 +1034,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.ar)
+		data := cpu.banks.Read(cpu.ar)
 		cpu.doADC(data)
 		cpu.state = STATE_LAST
 
@@ -1042,7 +1042,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.doADC(data)
 		cpu.state = STATE_LAST
@@ -1051,7 +1051,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.ar)
+		data := cpu.banks.Read(cpu.ar)
 		cpu.doSBC(data)
 		cpu.state = STATE_LAST
 
@@ -1059,7 +1059,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.doSBC(data)
 		cpu.state = STATE_LAST
@@ -1069,7 +1069,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.x++
 		cpu.nFlag = cpu.x
 		cpu.zFlag = cpu.x
@@ -1079,7 +1079,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.x--
 		cpu.nFlag = cpu.x
 		cpu.zFlag = cpu.x
@@ -1089,7 +1089,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.y++
 		cpu.nFlag = cpu.y
 		cpu.zFlag = cpu.y
@@ -1099,7 +1099,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.y--
 		cpu.nFlag = cpu.y
 		cpu.zFlag = cpu.y
@@ -1109,14 +1109,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		v := cpu.rmwBuf + 1
 		cpu.nFlag = v
 		cpu.zFlag = v
-		cpu.board.CpuRamWrite(cpu.ar, v)
+		cpu.banks.Write(cpu.ar, v)
 		cpu.state = STATE_LAST
 
 	case O_DEC:
 		v := cpu.rmwBuf - 1
 		cpu.nFlag = v
 		cpu.zFlag = v
-		cpu.board.CpuRamWrite(cpu.ar, v)
+		cpu.banks.Write(cpu.ar, v)
 		cpu.state = STATE_LAST
 
 		// Logic group
@@ -1124,7 +1124,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.a &= cpu.board.CpuRamRead(cpu.ar)
+		cpu.a &= cpu.banks.Read(cpu.ar)
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
 		cpu.state = STATE_LAST
@@ -1133,7 +1133,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.a &= cpu.board.CpuRamRead(cpu.pc)
+		cpu.a &= cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
@@ -1143,7 +1143,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.a |= cpu.board.CpuRamRead(cpu.ar)
+		cpu.a |= cpu.banks.Read(cpu.ar)
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
 		cpu.state = STATE_LAST
@@ -1152,7 +1152,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.a |= cpu.board.CpuRamRead(cpu.pc)
+		cpu.a |= cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
@@ -1162,7 +1162,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.a ^= cpu.board.CpuRamRead(cpu.ar)
+		cpu.a ^= cpu.banks.Read(cpu.ar)
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
 		cpu.state = STATE_LAST
@@ -1171,7 +1171,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.a ^= cpu.board.CpuRamRead(cpu.pc)
+		cpu.a ^= cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
@@ -1182,7 +1182,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.ar)
+		data := cpu.banks.Read(cpu.ar)
 		cpu.ar = uint16(cpu.a) - uint16(data)
 		cpu.nFlag = uint8(cpu.ar)
 		cpu.zFlag = uint8(cpu.ar)
@@ -1193,7 +1193,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.ar = uint16(cpu.a) - uint16(data)
 		cpu.nFlag = uint8(cpu.ar)
@@ -1205,7 +1205,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.ar)
+		data := cpu.banks.Read(cpu.ar)
 		cpu.ar = uint16(cpu.x) - uint16(data)
 		cpu.nFlag = uint8(cpu.ar)
 		cpu.zFlag = uint8(cpu.ar)
@@ -1216,7 +1216,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.ar = uint16(cpu.x) - uint16(data)
 		cpu.nFlag = uint8(cpu.ar)
@@ -1228,7 +1228,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.ar)
+		data := cpu.banks.Read(cpu.ar)
 		cpu.ar = uint16(cpu.y) - uint16(data)
 		cpu.nFlag = uint8(cpu.ar)
 		cpu.zFlag = uint8(cpu.ar)
@@ -1239,7 +1239,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.ar = uint16(cpu.y) - uint16(data)
 		cpu.nFlag = uint8(cpu.ar)
@@ -1252,7 +1252,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.ar)
+		data := cpu.banks.Read(cpu.ar)
 		cpu.zFlag = cpu.a & data
 		cpu.nFlag = data
 		cpu.vFlag = data & 0x40
@@ -1264,14 +1264,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		v := cpu.rmwBuf << 1
 		cpu.nFlag = v
 		cpu.zFlag = v
-		cpu.board.CpuRamWrite(cpu.ar, v)
+		cpu.banks.Write(cpu.ar, v)
 		cpu.state = STATE_LAST
 
 	case O_ASL_A:
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.cFlag = cpu.a & 0x80
 		cpu.a <<= 1
 		cpu.nFlag = cpu.a
@@ -1283,14 +1283,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		v := cpu.rmwBuf >> 1
 		cpu.nFlag = v
 		cpu.zFlag = v
-		cpu.board.CpuRamWrite(cpu.ar, v)
+		cpu.banks.Write(cpu.ar, v)
 		cpu.state = STATE_LAST
 
 	case O_LSR_A:
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.cFlag = cpu.a & 0x01
 		cpu.a >>= 1
 		cpu.nFlag = cpu.a
@@ -1306,7 +1306,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		}
 		cpu.nFlag = t
 		cpu.zFlag = t
-		cpu.board.CpuRamWrite(cpu.ar, t)
+		cpu.banks.Write(cpu.ar, t)
 		cpu.cFlag = cpu.rmwBuf & 0x80
 		cpu.state = STATE_LAST
 
@@ -1314,7 +1314,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		data := cpu.a & 0x80
 		if cpu.cFlag != 0 {
 			cpu.a = (cpu.a << 1) | 0x01
@@ -1335,7 +1335,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		}
 		cpu.nFlag = t
 		cpu.zFlag = t
-		cpu.board.CpuRamWrite(cpu.ar, t)
+		cpu.banks.Write(cpu.ar, t)
 		cpu.cFlag = cpu.rmwBuf & 0x01
 		cpu.state = STATE_LAST
 
@@ -1343,7 +1343,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		data := cpu.a & 0x01
 		if cpu.cFlag != 0 {
 			cpu.a = (cpu.a >> 1) | 0x80
@@ -1360,11 +1360,11 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = O_PHA1
 
 	case O_PHA1:
-		cpu.board.CpuRamWrite(uint16(cpu.sp)|0x100, cpu.a)
+		cpu.banks.Write(uint16(cpu.sp)|0x100, cpu.a)
 		cpu.sp--
 		cpu.state = STATE_LAST
 
@@ -1372,14 +1372,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = O_PLA1
 
 	case O_PLA1:
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(uint16(cpu.sp) | 0x100)
+		cpu.banks.Read(uint16(cpu.sp) | 0x100)
 		cpu.sp++
 		cpu.state = O_PLA2
 
@@ -1387,7 +1387,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.a = cpu.board.CpuRamRead(uint16(cpu.sp) | 0x100)
+		cpu.a = cpu.banks.Read(uint16(cpu.sp) | 0x100)
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
 		cpu.state = STATE_LAST
@@ -1396,12 +1396,12 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = O_PHP1
 
 	case O_PHP1:
 		data := cpu.buildFlags(true)
-		cpu.board.CpuRamWrite((uint16(cpu.sp)&0xff)|0x0100, data)
+		cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 		cpu.sp--
 		cpu.state = STATE_LAST
 
@@ -1409,14 +1409,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = O_PLP1
 
 	case O_PLP1:
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(uint16(cpu.sp) | 0x100)
+		cpu.banks.Read(uint16(cpu.sp) | 0x100)
 		cpu.sp++
 		cpu.state = O_PLP2
 
@@ -1425,7 +1425,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(uint16(cpu.sp) | 0x0100)
+		data := cpu.banks.Read(uint16(cpu.sp) | 0x0100)
 		cpu.popFlags(data)
 		if iFlagPrev == 0 && cpu.iFlag != 0 {
 			cpu.opFlags |= OpFlagIrqDisabled
@@ -1439,7 +1439,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = O_JMP1
 
@@ -1447,7 +1447,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc = (uint16(data) << 8) | cpu.ar
 		cpu.state = STATE_LAST
 
@@ -1455,14 +1455,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.pc = uint16(cpu.board.CpuRamRead(cpu.ar))
+		cpu.pc = uint16(cpu.banks.Read(cpu.ar))
 		cpu.state = O_JMP_I1
 
 	case O_JMP_I1:
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(((cpu.ar + 1) & 0xff) | (cpu.ar & 0xff00))
+		data := cpu.banks.Read(((cpu.ar + 1) & 0xff) | (cpu.ar & 0xff00))
 		cpu.pc |= uint16(data) << 8
 		cpu.state = STATE_LAST
 
@@ -1470,7 +1470,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.ar = uint16(cpu.board.CpuRamRead(cpu.pc))
+		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 		cpu.pc++
 		cpu.state = O_JSR1
 
@@ -1478,16 +1478,16 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(uint16(cpu.sp) | 0x100)
+		cpu.banks.Read(uint16(cpu.sp) | 0x100)
 		cpu.state = O_JSR2
 
 	case O_JSR2:
-		cpu.board.CpuRamWrite(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
+		cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 		cpu.sp--
 		cpu.state = O_JSR3
 
 	case O_JSR3:
-		cpu.board.CpuRamWrite(uint16(cpu.sp)|0x100, uint8(cpu.pc))
+		cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 		cpu.sp--
 		cpu.state = O_JSR4
 
@@ -1495,7 +1495,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.pc = cpu.ar | (uint16(data) << 8)
 		cpu.state = STATE_LAST
@@ -1504,14 +1504,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = O_RTS1
 
 	case O_RTS1:
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(uint16(cpu.sp) | 0x100)
+		cpu.banks.Read(uint16(cpu.sp) | 0x100)
 		cpu.sp++
 		cpu.state = O_RTS2
 
@@ -1519,7 +1519,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.pc = uint16(cpu.board.CpuRamRead(uint16(cpu.sp) | 0x100))
+		cpu.pc = uint16(cpu.banks.Read(uint16(cpu.sp) | 0x100))
 		cpu.sp++
 		cpu.state = O_RTS3
 
@@ -1527,7 +1527,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(uint16(cpu.sp) | 0x100)
+		data := cpu.banks.Read(uint16(cpu.sp) | 0x100)
 		cpu.pc |= uint16(data) << 8
 		cpu.state = O_RTS4
 
@@ -1535,7 +1535,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.state = STATE_LAST
 
@@ -1543,14 +1543,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = O_RTI1
 
 	case O_RTI1:
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(uint16(cpu.sp) | 0x100)
+		cpu.banks.Read(uint16(cpu.sp) | 0x100)
 		cpu.sp++
 		cpu.state = O_RTI2
 
@@ -1558,7 +1558,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(uint16(cpu.sp) | 0x0100)
+		data := cpu.banks.Read(uint16(cpu.sp) | 0x0100)
 		cpu.popFlags(data)
 		cpu.sp++
 		cpu.state = O_RTI3
@@ -1567,7 +1567,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.pc = uint16(cpu.board.CpuRamRead(uint16(cpu.sp) | 0x100))
+		cpu.pc = uint16(cpu.banks.Read(uint16(cpu.sp) | 0x100))
 		cpu.sp++
 		cpu.state = O_RTI4
 
@@ -1575,7 +1575,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(uint16(cpu.sp) | 0x100)
+		data := cpu.banks.Read(uint16(cpu.sp) | 0x100)
 		cpu.pc |= uint16(data) << 8
 		cpu.state = STATE_LAST
 
@@ -1583,23 +1583,23 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.state = O_BRK1
 
 	case O_BRK1:
-		cpu.board.CpuRamWrite(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
+		cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 		cpu.sp--
 		cpu.state = O_BRK2
 
 	case O_BRK2:
-		cpu.board.CpuRamWrite(uint16(cpu.sp)|0x100, uint8(cpu.pc))
+		cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 		cpu.sp--
 		cpu.state = O_BRK3
 
 	case O_BRK3:
 		data := cpu.buildFlags(true)
-		cpu.board.CpuRamWrite((uint16(cpu.sp)&0xff)|0x0100, data)
+		cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 		cpu.sp--
 		cpu.iFlag = 1
 		// BRK interrupted by NMI?
@@ -1614,14 +1614,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.pc = uint16(cpu.board.CpuRamRead(0xfffe))
+		cpu.pc = uint16(cpu.banks.Read(0xfffe))
 		cpu.state = O_BRK5
 
 	case O_BRK5:
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(0xffff)
+		data := cpu.banks.Read(0xffff)
 		cpu.pc |= uint16(data) << 8
 		cpu.state = STATE_LAST
 
@@ -1629,7 +1629,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if cpu.cFlag == 0 {
 			cpu.state = STATE_LAST
@@ -1641,7 +1641,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if cpu.cFlag != 0 {
 			cpu.state = STATE_LAST
@@ -1653,7 +1653,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if cpu.zFlag != 0 {
 			cpu.state = STATE_LAST
@@ -1665,7 +1665,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if cpu.zFlag == 0 {
 			cpu.state = STATE_LAST
@@ -1677,7 +1677,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if cpu.vFlag == 0 {
 			cpu.state = STATE_LAST
@@ -1689,7 +1689,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if cpu.vFlag != 0 {
 			cpu.state = STATE_LAST
@@ -1701,7 +1701,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if (cpu.nFlag & 0x80) == 0 {
 			cpu.state = STATE_LAST
@@ -1713,7 +1713,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		if (cpu.nFlag & 0x80) != 0 {
 			cpu.state = STATE_LAST
@@ -1727,7 +1727,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.pc = cpu.ar
 		cpu.state = STATE_LAST
 
@@ -1736,7 +1736,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.pc = cpu.ar
 		cpu.state = O_BRANCH_BP1
 
@@ -1744,7 +1744,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc + 0x100)
+		cpu.banks.Read(cpu.pc + 0x100)
 		cpu.state = STATE_LAST
 
 	case O_BRANCH_FP:
@@ -1752,7 +1752,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.pc = cpu.ar
 		cpu.state = O_BRANCH_FP1
 
@@ -1760,7 +1760,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc - 0x100)
+		cpu.banks.Read(cpu.pc - 0x100)
 		cpu.state = STATE_LAST
 
 		// Flag group
@@ -1768,7 +1768,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.cFlag = 1
 		cpu.state = STATE_LAST
 
@@ -1776,7 +1776,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.cFlag = 0
 		cpu.state = STATE_LAST
 
@@ -1784,7 +1784,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.dFlag = 1
 		cpu.state = STATE_LAST
 
@@ -1792,7 +1792,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.dFlag = 0
 		cpu.state = STATE_LAST
 
@@ -1800,7 +1800,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		if cpu.iFlag == 0 {
 			cpu.opFlags |= OpFlagIrqDisabled
 		}
@@ -1811,7 +1811,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		if cpu.iFlag == 0 {
 			cpu.opFlags |= OpFlagIrqEnabled
 		}
@@ -1822,7 +1822,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.vFlag = 0
 		cpu.state = STATE_LAST
 
@@ -1831,7 +1831,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.state = STATE_LAST
 
 		// Undocumented opcodes start here
@@ -1841,7 +1841,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.pc)
+		cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.state = STATE_LAST
 
@@ -1849,7 +1849,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.board.CpuRamRead(cpu.ar)
+		cpu.banks.Read(cpu.ar)
 		cpu.state = STATE_LAST
 
 		// Load A/X group
@@ -1857,7 +1857,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.x = cpu.board.CpuRamRead(cpu.ar)
+		cpu.x = cpu.banks.Read(cpu.ar)
 		cpu.a = cpu.x
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
@@ -1865,14 +1865,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 
 		// Store A/X group
 	case O_SAX:
-		cpu.board.CpuRamWrite(cpu.ar, cpu.a&cpu.x)
+		cpu.banks.Write(cpu.ar, cpu.a&cpu.x)
 		cpu.state = STATE_LAST
 
 		// ASL/ORA group
 	case O_SLO:
 		cpu.cFlag = cpu.rmwBuf & 0x80
 		cpu.rmwBuf <<= 1
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
 		cpu.a |= cpu.rmwBuf
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
@@ -1887,7 +1887,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 			cpu.rmwBuf = cpu.rmwBuf << 1
 		}
 		cpu.cFlag = tmp
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
 		cpu.a &= cpu.rmwBuf
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
@@ -1897,7 +1897,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 	case O_SRE:
 		cpu.cFlag = cpu.rmwBuf & 0x01
 		cpu.rmwBuf >>= 1
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
 		cpu.a ^= cpu.rmwBuf
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
@@ -1912,14 +1912,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 			cpu.rmwBuf = cpu.rmwBuf >> 1
 		}
 		cpu.cFlag = tmp
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
 		cpu.doADC(cpu.rmwBuf)
 		cpu.state = STATE_LAST
 
 		// DEC/CMP group
 	case O_DCP:
 		cpu.rmwBuf--
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
 		cpu.ar = uint16(cpu.a) - uint16(cpu.rmwBuf)
 		cpu.nFlag = uint8(cpu.ar)
 		cpu.zFlag = uint8(cpu.ar)
@@ -1929,7 +1929,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		// INC/SBC group
 	case O_ISB:
 		cpu.rmwBuf++
-		cpu.board.CpuRamWrite(cpu.ar, cpu.rmwBuf)
+		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
 		cpu.doSBC(cpu.rmwBuf)
 		cpu.state = STATE_LAST
 
@@ -1938,7 +1938,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.a &= cpu.board.CpuRamRead(cpu.pc)
+		cpu.a &= cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
@@ -1949,7 +1949,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.a &= cpu.board.CpuRamRead(cpu.pc)
+		cpu.a &= cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.cFlag = cpu.a & 0x01
 		cpu.a >>= 1
@@ -1961,7 +1961,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		data &= cpu.a
 		if cpu.cFlag != 0 {
@@ -1997,7 +1997,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.a = (cpu.a | 0xee) & cpu.x & data
 		cpu.nFlag = cpu.a
@@ -2008,7 +2008,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.x = (cpu.a | 0xee) & data
 		cpu.a = cpu.x
@@ -2020,7 +2020,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.pc)
+		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
 		cpu.ar = (uint16(cpu.x) & uint16(cpu.a)) - uint16(data)
 		cpu.x = uint8(cpu.ar)
@@ -2033,7 +2033,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		data := cpu.board.CpuRamRead(cpu.ar)
+		data := cpu.banks.Read(cpu.ar)
 		cpu.sp = data & cpu.sp
 		cpu.x = cpu.sp
 		cpu.a = cpu.x
@@ -2043,19 +2043,19 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 
 	case O_SHS: // ar2 contains the high byte of the operand address
 		cpu.sp = cpu.a & cpu.x
-		cpu.board.CpuRamWrite(cpu.ar, uint8((cpu.ar2+1)&uint16(cpu.sp)))
+		cpu.banks.Write(cpu.ar, uint8((cpu.ar2+1)&uint16(cpu.sp)))
 		cpu.state = STATE_LAST
 
 	case O_SHY: // ar2 contains the high byte of the operand address
-		cpu.board.CpuRamWrite(cpu.ar, uint8(uint16(cpu.y)&(cpu.ar2+1)))
+		cpu.banks.Write(cpu.ar, uint8(uint16(cpu.y)&(cpu.ar2+1)))
 		cpu.state = STATE_LAST
 
 	case O_SHX: // ar2 contains the high byte of the operand address
-		cpu.board.CpuRamWrite(cpu.ar, uint8(uint16(cpu.x)&(cpu.ar2+1)))
+		cpu.banks.Write(cpu.ar, uint8(uint16(cpu.x)&(cpu.ar2+1)))
 		cpu.state = STATE_LAST
 
 	case O_SHA: // ar2 contains the high byte of the operand address
-		cpu.board.CpuRamWrite(cpu.ar, uint8(uint16(cpu.a)&uint16(cpu.x)&(cpu.ar2+1)))
+		cpu.banks.Write(cpu.ar, uint8(uint16(cpu.a)&uint16(cpu.x)&(cpu.ar2+1)))
 		cpu.state = STATE_LAST
 
 	default:

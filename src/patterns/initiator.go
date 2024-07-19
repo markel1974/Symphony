@@ -1,4 +1,4 @@
-package ram
+package patterns
 
 import (
 	"math"

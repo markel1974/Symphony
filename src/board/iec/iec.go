@@ -2,7 +2,6 @@ package iec
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/iboard"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541"
 	"github.com/markel1974/c64emu/src/board/iec/drives/fsdrive"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
@@ -115,7 +114,7 @@ func (c *IEC) RemovePeripheral(peripheral *c1541.Board) {
 	c.rebuildPeripherals()
 }
 
-func (c *IEC) Setup(board iboard.IBoard, prefs *preferences.Prefs) {
+func (c *IEC) Setup(prefs *preferences.Prefs) {
 	//TOOD FROM CONFIG / COMMAND
 	//for i := 0; i < MaxDriveSize; i++ {
 	//	c.virtualDrives[i] = c.createVirtualDrive(2 /*prefs.Emul1541Proc()*/, 8+i, prefs.GetDrivePath(i))

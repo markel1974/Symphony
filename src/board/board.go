@@ -1,8 +1,8 @@
 package board
 
 import (
+	"github.com/markel1974/c64emu/src/board/banks"
 	"github.com/markel1974/c64emu/src/board/cartridges"
-	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cia"
 	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/iec"
@@ -36,9 +36,8 @@ type Board struct {
 	prefs        *preferences.Prefs
 	hasClipboard bool
 	phiMode      PhiMode
-	cart         icartridge.ICartridge
-	cartFactory  *cartridges.Factory
-	banks        *Banks
+	cartMan      *cartridges.Manager
+	banks        *banks.Banks
 }
 
 func NewBoard() *Board {
@@ -52,9 +51,8 @@ func NewBoard() *Board {
 		cia2:         nil,
 		interrupts:   nil,
 		keys:         nil,
-		cart:         nil,
 		hasClipboard: false,
-		cartFactory:  cartridges.NewFactory(),
+		cartMan:      cartridges.NewManager(),
 		phiMode:      PhiIdle,
 		banks:        nil,
 	}
@@ -77,24 +75,22 @@ func (s *Board) Setup(prefs *preferences.Prefs) error {
 	s.cia1 = cia.NewMOS6526_1()
 	s.cia2 = cia.NewMOS6526_2()
 	s.keys = keyboard.NewKeyboard()
-	s.banks = NewBanks()
+	s.banks = banks.NewBanks()
 
-	s.cpu.Setup(s, prefs)
+	s.iec.Setup(prefs)
+	s.cpu.Setup(s.quartz, s.banks, prefs)
 	s.interrupts = s.cpu.GetInterrupts()
-	s.vic.Setup(s, prefs)
-	s.sid.Setup(s, prefs)
-	s.cia1.Setup(s, prefs)
-	s.cia2.Setup(s, prefs)
-	s.iec.Setup(s, prefs)
-	s.cartFactory.Setup(s, prefs)
-
-	s.banks.Setup(s, prefs)
+	s.vic.Setup(s.quartz, s.interrupts, s.banks, prefs, s.ReadyEvent)
+	s.sid.Setup(prefs)
+	s.cia1.Setup(s.interrupts, s.vic, prefs)
+	s.cia2.Setup(s.interrupts, s.vic, s.iec, prefs)
+	s.cartMan.Setup(s, prefs)
+	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, prefs)
 
 	if !s.prefs.GetDisableCartridgeAutostart() {
 		if cartFile := s.prefs.GetCartridge(); len(cartFile) > 0 {
-			if cart, err := s.cartFactory.Load(cartFile); err == nil {
-				s.cart = cart
-				//s.portsUpdate()
+			if err := s.cartMan.Load(cartFile); err != nil {
+				log.Printf("can't loca cartridge: %s", err.Error())
 			}
 		}
 	}
@@ -156,15 +152,6 @@ func (s *Board) Emulate() bool {
 	return vBlank
 }
 
-func (s *Board) RmwFlags() uint8 {
-	//TODO IMPLEMENT cpu rmw flags
-	return 0
-}
-
-func (s *Board) Cycle() uint64 {
-	return s.quartz.Cycle()
-}
-
 func (s *Board) CreateAlarm(name string, callback quartz.AlarmCallback) *quartz.Alarm {
 	return s.quartz.NewAlarm(name, callback)
 }
@@ -182,6 +169,15 @@ func (s *Board) LedStateChangedEvent(deviceNumber int, state uint8) {
 	//k.leds[deviceId] = state
 	//k.updateLedState()
 	//s.keys.InputReady(_ledActivities == 0)
+}
+
+func (s *Board) RmwFlags() uint8 {
+	//TODO IMPLEMENT cpu rmw flags
+	return 0
+}
+
+func (s *Board) Cycle() uint64 {
+	return s.quartz.Cycle()
 }
 
 func (s *Board) KeyboardPaste(pressed bool) {
@@ -222,86 +218,6 @@ func (s *Board) KeyboardSwapJoystick(pressed bool) {
 	s.keys.SwapJoystick()
 }
 
-func (s *Board) VICTriggerIRQ() {
-	s.interrupts.TriggerVICIRQ()
-}
-
-func (s *Board) VICClearIRQ() {
-	s.interrupts.ClearVICIRQ()
-}
-
-func (s *Board) VICChangedVA(d uint8) {
-	s.vic.ChangedVA(d)
-}
-
-func (s *Board) VICLightPenTrigger() {
-	s.vic.TriggerLightPen()
-}
-
-func (s *Board) GetDisplayBuffer() []byte {
-	return s.vic.GetDisplayBuffer()
-}
-
-func (s *Board) CpuRamRead(addr uint16) uint8 {
-	return s.banks.Read(addr)
-}
-
-func (s *Board) CpuRamWrite(addr uint16, data uint8) {
-	s.banks.Write(addr, data)
-}
-
-func (s *Board) ColorRead(addr uint16) uint8 {
-	return s.banks.ReadColor(addr)
-}
-
-//func (s *Board) ColorWrite(addr uint16, data uint8) {
-//	s.banks.WriteColor(addr, data)
-//}
-
-func (s *Board) RamRead(addr uint16) uint8 {
-	return s.banks.ReadDirect(addr)
-}
-
-func (s *Board) RamWrite(addr uint16, data uint8) {
-	s.banks.WriteDirect(addr, data)
-}
-
-//func (s *Board) BasicRomRead(addr uint16) uint8 {
-//	return s.banks.ReadBasicRom(addr)
-//}
-
-func (s *Board) CharRomRead(addr uint16) uint8 {
-	return s.banks.ReadCharRom(addr)
-}
-
-//func (s *Board) KernalRomRead(addr uint16) uint8 {
-//	return s.banks.ReadKernalRom(addr)
-//}
-
-func (s *Board) NMITrigger() {
-	s.interrupts.TriggerNMI()
-}
-
-func (s *Board) NMIClear() {
-	s.interrupts.ClearNMI()
-}
-
-func (s *Board) CIATriggerIRQ() {
-	s.interrupts.TriggerCIAIRQ()
-}
-
-func (s *Board) CIAClearIRQ() {
-	s.interrupts.ClearCIAIRQ()
-}
-
-func (s *Board) BusCpuWrite(d uint8) {
-	s.iec.CpuWrite(d)
-}
-
-func (s *Board) BusCpuRead() uint8 {
-	return s.iec.CpuRead()
-}
-
 func (s *Board) updateKeyboard() {
 	if c64Byte, c64Bit, pressed, joyKey, shifted, ok := s.keys.PollKeyboard(); ok {
 		joyKey1 := joyKey
@@ -324,7 +240,7 @@ func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
 		prev = s.banks.GetMemoryConfig()
 		s.banks.SetMemoryEntry(uint8(memConfig))
 	}
-	s.CpuRamWrite(addr, data)
+	s.banks.Write(addr, data)
 	if prev != nil {
 		s.banks.SetMemoryConfig(prev)
 	}
@@ -336,9 +252,92 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 		prev = s.banks.GetMemoryConfig()
 		s.banks.SetMemoryEntry(uint8(memConfig))
 	}
-	rb := s.CpuRamRead(addr)
+	rb := s.banks.Read(addr)
 	if prev != nil {
 		s.banks.SetMemoryConfig(prev)
 	}
 	return rb
 }
+
+func (s *Board) GetDisplayBuffer() []byte {
+	return s.vic.GetDisplayBuffer()
+}
+
+/*
+func (s *Board) VICTriggerIRQ() {
+	s.interrupts.TriggerVICIRQ()
+}
+
+func (s *Board) VICClearIRQ() {
+	s.interrupts.ClearVICIRQ()
+}
+
+func (s *Board) VICChangedVA(d uint8) {
+	s.vic.ChangedVA(d)
+}
+
+func (s *Board) VICLightPenTrigger() {
+	s.vic.TriggerLightPen()
+}
+
+
+func (s *Board) CpuRamRead(addr uint16) uint8 {
+	return s.banks.Read(addr)
+}
+
+func (s *Board) CpuRamWrite(addr uint16, data uint8) {
+	s.banks.Write(addr, data)
+}
+
+func (s *Board) ColorRead(addr uint16) uint8 {
+	return s.banks.ReadColor(addr)
+}
+
+//func (s *Board) ColorWrite(addr uint16, data uint8) {
+//	s.banks.WriteColor(addr, data)
+//}
+
+//func (s *Board) RamRead(addr uint16) uint8 {
+//	return s.banks.ReadDirect(addr)
+//}
+
+//func (s *Board) RamWrite(addr uint16, data uint8) {
+//	s.banks.WriteDirect(addr, data)
+//}
+
+//func (s *Board) BasicRomRead(addr uint16) uint8 {
+//	return s.banks.ReadBasicRom(addr)
+//}
+
+//func (s *Board) CharRomRead(addr uint16) uint8 {
+//	return s.banks.ReadCharRom(addr)
+//}
+
+//func (s *Board) KernalRomRead(addr uint16) uint8 {
+//	return s.banks.ReadKernalRom(addr)
+//}
+
+//func (s *Board) NMITrigger() {
+//	s.interrupts.TriggerNMI()
+//}
+
+//func (s *Board) NMIClear() {
+//	s.interrupts.ClearNMI()
+//}
+
+//func (s *Board) CIATriggerIRQ() {
+//	s.interrupts.TriggerCIAIRQ()
+//}
+
+//func (s *Board) CIAClearIRQ() {
+//	s.interrupts.ClearCIAIRQ()
+//}
+
+//func (s *Board) BusCpuWrite(d uint8) {
+//	s.iec.CpuWrite(d)
+//}
+
+//func (s *Board) BusCpuRead() uint8 {
+//	return s.iec.CpuRead()
+//}
+*/
