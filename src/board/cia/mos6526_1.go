@@ -1,7 +1,7 @@
 package cia
 
 import (
-	"github.com/markel1974/c64emu/src/board/flag"
+	"github.com/markel1974/c64emu/src/flag"
 	"github.com/markel1974/c64emu/src/preferences"
 )
 

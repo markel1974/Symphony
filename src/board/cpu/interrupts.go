@@ -1,6 +1,7 @@
 package cpu
 
 import (
+	"github.com/markel1974/c64emu/src/Interrupt"
 	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/preferences"
 )
@@ -13,29 +14,10 @@ const (
 	IntRst = 0x8
 )
 
-type interrupt uint32
-
-func (i *interrupt) Clear() {
-	*i = 0
-}
-
-func (i *interrupt) BitSet(n uint32) {
-	*i = *i | (1 << n)
-}
-
-func (i *interrupt) BitClear(n uint32) {
-	*i = *i & ^(1 << n)
-}
-
-func (i *interrupt) BitCheck(n uint32) bool {
-	v := (*i >> n) & 1
-	return v != 0
-}
-
 type Interrupts struct {
 	quartz        *quartz.Quartz
 	prefs         *preferences.Prefs
-	intr          interrupt
+	intr          Interrupt.Interrupt
 	firstIrqCycle uint64
 	firstNMICycle uint64
 }

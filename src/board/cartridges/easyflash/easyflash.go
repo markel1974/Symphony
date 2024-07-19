@@ -16,177 +16,9 @@ import (
 	"os"
 )
 
-/* decoding table of the modes */
-/* bit3 = jumper, bit2 = mode, bit1 = !exrom, bit0 = game */
-var easyflash_memconfig = []uint8{
-	/* jumper off, mode 0, trough 00,01,10,11 in game/exrom bits */
-	3, /* exrom high, game low, jumper off */
-	3, /* Reserved, don't use this */
-	1, /* exrom low, game low, jumper off */
-	1, /* Reserved, don't use this */
-	/* jumper off, mode 1, trough 00,01,10,11 in game/exrom bits */
-	2, 3, 0, 1,
-	/* jumper on, mode 0, trough 00,01,10,11 in game/exrom bits */
-	2, /* exrom high, game low, jumper on */
-	3, /* Reserved, don't use this */
-	0, /* exrom low, game low, jumper on */
-	1, /* Reserved, don't use this */
-	/* jumper on, mode 1, trough 00,01,10,11 in game/exrom bits */
-	2, 3, 0, 1,
-}
-
-type memConfig struct {
-	jumper uint8
-	mode   uint8
-	exrom  uint8
-	game   uint8
-}
-
-var easyflashMemconfig2 = []*memConfig{
-	/* 0 */ {jumper: 0, mode: 0, exrom: 1, game: 0},
-	/* 1 */ {jumper: 0, mode: 0, exrom: 1, game: 0},
-	/* 2 */ {jumper: 0, mode: 0, exrom: 0, game: 0},
-	/* 3 */ {jumper: 0, mode: 0, exrom: 0, game: 0},
-	/* 4 */ {jumper: 0, mode: 1, exrom: 1, game: 1},
-	/* 5 */ {jumper: 0, mode: 1, exrom: 1, game: 0},
-	/* 6 */ {jumper: 0, mode: 1, exrom: 0, game: 1},
-	/* 7 */ {jumper: 0, mode: 1, exrom: 0, game: 0},
-	/* 8 */ {jumper: 1, mode: 0, exrom: 1, game: 1},
-	/* 9 */ {jumper: 1, mode: 0, exrom: 1, game: 1},
-	/* A */ {jumper: 1, mode: 0, exrom: 0, game: 1},
-	/* B */ {jumper: 1, mode: 0, exrom: 0, game: 1},
-	/* C */ {jumper: 1, mode: 1, exrom: 1, game: 1},
-	/* D */ {jumper: 1, mode: 1, exrom: 1, game: 0},
-	/* E */ {jumper: 1, mode: 1, exrom: 0, game: 1},
-	/* F */ {jumper: 1, mode: 1, exrom: 0, game: 0},
-}
-
-const (
-	CART_RAM_SIZE = 256
-)
-
-const (
-	CARTRIDGE_NAME_EASYFLASH = "EasyFlash" /* see http://skoe.de/easyflash/ */
-	STRING_EASYFLASH         = CARTRIDGE_NAME_EASYFLASH
-)
-
-var _eapiam29f040 = []byte{
-	0x65, 0x61, 0x70, 0x69, 0xc1, 0x4d,
-	0x2f, 0xcd, 0x32, 0x39, 0xc6, 0x30, 0x34, 0x30,
-	0x20, 0xd6, 0x31, 0x2e, 0x34, 0x00, 0x08, 0x78,
-	0xa5, 0x4b, 0x48, 0xa5, 0x4c, 0x48, 0xa9, 0x60,
-	0x85, 0x4b, 0x20, 0x4b, 0x00, 0xba, 0xbd, 0x00,
-	0x01, 0x85, 0x4c, 0xca, 0xbd, 0x00, 0x01, 0x85,
-	0x4b, 0x18, 0x90, 0x70, 0x4c, 0x67, 0x01, 0x4c,
-	0xa4, 0x01, 0x4c, 0x39, 0x02, 0x4c, 0x40, 0x02,
-	0x4c, 0x44, 0x02, 0x4c, 0x4e, 0x02, 0x4c, 0x58,
-	0x02, 0x4c, 0x8e, 0x02, 0x4c, 0xd9, 0x02, 0x4c,
-	0xd9, 0x02, 0x8d, 0x02, 0xde, 0xa9, 0xaa, 0x8d,
-	0x55, 0x85, 0xa9, 0x55, 0x8d, 0xaa, 0x82, 0xa9,
-	0xa0, 0x8d, 0x55, 0x85, 0xad, 0xf2, 0xdf, 0x8d,
-	0x00, 0xde, 0xa9, 0x00, 0x8d, 0xff, 0xff, 0xa2,
-	0x07, 0x8e, 0x02, 0xde, 0x60, 0x8d, 0x02, 0xde,
-	0xa9, 0xaa, 0x8d, 0x55, 0xe5, 0xa9, 0x55, 0x8d,
-	0xaa, 0xe2, 0xa9, 0xa0, 0x8d, 0x55, 0xe5, 0xd0,
-	0xdb, 0xa2, 0x55, 0x8e, 0xe3, 0xdf, 0x8c, 0xe4,
-	0xdf, 0xa2, 0x85, 0x8e, 0x02, 0xde, 0x8d, 0xff,
-	0xff, 0x4c, 0xbb, 0xdf, 0xad, 0xff, 0xff, 0x60,
-	0xcd, 0xff, 0xff, 0x60, 0xa2, 0x6f, 0xa0, 0x7f,
-	0xb1, 0x4b, 0x9d, 0x80, 0xdf, 0xdd, 0x80, 0xdf,
-	0xd0, 0x21, 0x88, 0xca, 0x10, 0xf2, 0xa2, 0x00,
-	0xe8, 0x18, 0xbd, 0x80, 0xdf, 0x65, 0x4b, 0x9d,
-	0x80, 0xdf, 0xe8, 0xbd, 0x80, 0xdf, 0x65, 0x4c,
-	0x9d, 0x80, 0xdf, 0xe8, 0xe0, 0x1e, 0xd0, 0xe8,
-	0x18, 0x90, 0x06, 0xa9, 0x01, 0x8d, 0xb9, 0xdf,
-	0x38, 0x68, 0x85, 0x4c, 0x68, 0x85, 0x4b, 0xb0,
-	0x48, 0xa9, 0xaa, 0xa0, 0xe5, 0x20, 0xd5, 0xdf,
-	0xa0, 0x85, 0x20, 0xd5, 0xdf, 0xa9, 0x55, 0xa2,
-	0xaa, 0xa0, 0xe2, 0x20, 0xd7, 0xdf, 0xa2, 0xaa,
-	0xa0, 0x82, 0x20, 0xd7, 0xdf, 0xa9, 0x90, 0xa0,
-	0xe5, 0x20, 0xd5, 0xdf, 0xa0, 0x85, 0x20, 0xd5,
-	0xdf, 0xad, 0x00, 0xa0, 0x8d, 0xf1, 0xdf, 0xae,
-	0x01, 0xa0, 0x8e, 0xb9, 0xdf, 0xc9, 0x01, 0xd0,
-	0x06, 0xe0, 0xa4, 0xd0, 0x02, 0xf0, 0x0c, 0xc9,
-	0x20, 0xd0, 0x39, 0xe0, 0xe2, 0xd0, 0x35, 0xf0,
-	0x02, 0xb0, 0x50, 0xad, 0x00, 0x80, 0xae, 0x01,
-	0x80, 0xc9, 0x01, 0xd0, 0x06, 0xe0, 0xa4, 0xd0,
-	0x02, 0xf0, 0x08, 0xc9, 0x20, 0xd0, 0x19, 0xe0,
-	0xe2, 0xd0, 0x15, 0xa0, 0x3f, 0x8c, 0x00, 0xde,
-	0xae, 0x02, 0x80, 0xd0, 0x13, 0xae, 0x02, 0xa0,
-	0xd0, 0x12, 0x88, 0x10, 0xf0, 0x18, 0x90, 0x12,
-	0xa9, 0x02, 0xd0, 0x0a, 0xa9, 0x03, 0xd0, 0x06,
-	0xa9, 0x04, 0xd0, 0x02, 0xa9, 0x05, 0x8d, 0xb9,
-	0xdf, 0x38, 0xa9, 0x00, 0x8d, 0x00, 0xde, 0xa0,
-	0xe0, 0xa9, 0xf0, 0x20, 0xd7, 0xdf, 0xa0, 0x80,
-	0x20, 0xd7, 0xdf, 0xad, 0xb9, 0xdf, 0xb0, 0x08,
-	0xae, 0xf1, 0xdf, 0xa0, 0x40, 0x28, 0x18, 0x60,
-	0x28, 0x38, 0x60, 0x8d, 0xb7, 0xdf, 0x8e, 0xb9,
-	0xdf, 0x8e, 0xed, 0xdf, 0x8c, 0xba, 0xdf, 0x08,
-	0x78, 0x98, 0x29, 0xbf, 0x8d, 0xee, 0xdf, 0xa9,
-	0x00, 0x8d, 0x00, 0xde, 0xa9, 0x85, 0xc0, 0xe0,
-	0x90, 0x05, 0x20, 0xc1, 0xdf, 0xb0, 0x03, 0x20,
-	0x9e, 0xdf, 0xa2, 0x14, 0x20, 0xec, 0xdf, 0xf0,
-	0x06, 0xca, 0xd0, 0xf8, 0x18, 0x90, 0x63, 0xad,
-	0xf2, 0xdf, 0x8d, 0x00, 0xde, 0x18, 0x90, 0x72,
-	0x8d, 0xb7, 0xdf, 0x8e, 0xb9, 0xdf, 0x8c, 0xba,
-	0xdf, 0x08, 0x78, 0x98, 0xc0, 0x80, 0xf0, 0x04,
-	0xa0, 0xe0, 0xa9, 0xa0, 0x8d, 0xee, 0xdf, 0xc8,
-	0xc8, 0xc8, 0xc8, 0xc8, 0xa9, 0xaa, 0x20, 0xd5,
-	0xdf, 0xa9, 0x55, 0xa2, 0xaa, 0x88, 0x88, 0x88,
-	0x20, 0xd7, 0xdf, 0xa9, 0x80, 0xc8, 0xc8, 0xc8,
-	0x20, 0xd5, 0xdf, 0xa9, 0xaa, 0x20, 0xd5, 0xdf,
-	0xa9, 0x55, 0xa2, 0xaa, 0x88, 0x88, 0x88, 0x20,
-	0xd7, 0xdf, 0xad, 0xb7, 0xdf, 0x8d, 0x00, 0xde,
-	0xa2, 0x00, 0x8e, 0xed, 0xdf, 0x88, 0x88, 0xa9,
-	0x30, 0x20, 0xd7, 0xdf, 0xa9, 0xff, 0xaa, 0xa8,
-	0xd0, 0x24, 0xad, 0xf2, 0xdf, 0x8d, 0x00, 0xde,
-	0xa0, 0x80, 0xa9, 0xf0, 0x20, 0xd7, 0xdf, 0xa0,
-	0xe0, 0xa9, 0xf0, 0x20, 0xd7, 0xdf, 0x28, 0x38,
-	0xb0, 0x02, 0x28, 0x18, 0xac, 0xba, 0xdf, 0xae,
-	0xb9, 0xdf, 0xad, 0xb7, 0xdf, 0x60, 0x20, 0xec,
-	0xdf, 0xf0, 0x09, 0xca, 0xd0, 0xf8, 0x88, 0xd0,
-	0xf5, 0x18, 0x90, 0xce, 0xad, 0xf2, 0xdf, 0x8d,
-	0x00, 0xde, 0x18, 0x90, 0xdd, 0x8d, 0xf2, 0xdf,
-	0x8d, 0x00, 0xde, 0x60, 0xad, 0xf2, 0xdf, 0x60,
-	0x8d, 0xf3, 0xdf, 0x8e, 0xe9, 0xdf, 0x8c, 0xea,
-	0xdf, 0x60, 0x8e, 0xf4, 0xdf, 0x8c, 0xf5, 0xdf,
-	0x8d, 0xf6, 0xdf, 0x60, 0xad, 0xf2, 0xdf, 0x8d,
-	0x00, 0xde, 0x20, 0xe8, 0xdf, 0x8d, 0xb7, 0xdf,
-	0x8e, 0xf0, 0xdf, 0x8c, 0xf1, 0xdf, 0xa9, 0x00,
-	0x8d, 0xba, 0xdf, 0xf0, 0x3b, 0xad, 0xf4, 0xdf,
-	0xd0, 0x10, 0xad, 0xf5, 0xdf, 0xd0, 0x08, 0xad,
-	0xf6, 0xdf, 0xf0, 0x0b, 0xce, 0xf6, 0xdf, 0xce,
-	0xf5, 0xdf, 0xce, 0xf4, 0xdf, 0x90, 0x45, 0x38,
-	0xb0, 0x42, 0x8d, 0xb7, 0xdf, 0x8e, 0xf0, 0xdf,
-	0x8c, 0xf1, 0xdf, 0xae, 0xe9, 0xdf, 0xad, 0xea,
-	0xdf, 0xc9, 0xa0, 0x90, 0x02, 0x09, 0x40, 0xa8,
-	0xad, 0xb7, 0xdf, 0x20, 0x80, 0xdf, 0xb0, 0x24,
-	0xee, 0xe9, 0xdf, 0xd0, 0x19, 0xee, 0xea, 0xdf,
-	0xad, 0xf3, 0xdf, 0x29, 0xe0, 0xcd, 0xea, 0xdf,
-	0xd0, 0x0c, 0xad, 0xf3, 0xdf, 0x0a, 0x0a, 0x0a,
-	0x8d, 0xea, 0xdf, 0xee, 0xf2, 0xdf, 0x18, 0xad,
-	0xba, 0xdf, 0xf0, 0xa1, 0xac, 0xf1, 0xdf, 0xae,
-	0xf0, 0xdf, 0xad, 0xb7, 0xdf, 0x60, 0xff, 0xff,
-	0xff, 0xff,
-}
-
-const (
-	EASYFLASH_N_BANK_BITS = 6
-	EASYFLASH_N_BANKS     = 1 << (EASYFLASH_N_BANK_BITS)
-	EASYFLASH_BANK_MASK   = (EASYFLASH_N_BANKS) - 1
-)
-
-const snap_module_name = "CARTEF"
-const flash_snap_module_name = "FLASH040EF"
-
-const (
-	SNAP_MAJOR = 0
-	SNAP_MINOR = 0
-)
-
 /*
 static io_source_t easyflash_io1_device = {
-	CARTRIDGE_NAME_EASYFLASH, // name of the device
+	CartridgeNameEasyFlash, // name of the device
 	IO_DETACH_CART,           // use cartridge ID to detach the device when involved in a read-collision
 	IO_DETACH_NO_RESOURCE,    // does not use a resource for detach
 	0xde00, 0xdeff, 0x03,     // range for the device, regs:$de00-$de03, mirrors:$de04-$deff
@@ -224,7 +56,7 @@ The following structure is used to register the I/O address range used by a cert
 */
 /*
 static io_source_t easyflash_io2_device = {
-	CARTRIDGE_NAME_EASYFLASH, // name of the device
+	CartridgeNameEasyFlash, // name of the device
 	IO_DETACH_CART,           // use cartridge ID to detach the device when involved in a read-collision
 	IO_DETACH_NO_RESOURCE,    // does not use a resource for detach
 	0xdf00, 0xdfff, 0xff,     // range for the device, regs:$df00-$dfff
@@ -263,15 +95,15 @@ type CartridgeEasyFlash struct {
 	intervals   icartridge.Interval
 	game        uint8
 	exRom       uint8
-	stateLow    *flash.Flash040Context /* the 29F040B statemachine */
-	stateHigh   *flash.Flash040Context /* the 29F040B statemachine */
-	jumper      int                    /* the jumper */
-	crtWrite    int                    /* writing back to crt enabled */
-	crtOptimize int                    /* optimizing crt enabled */
-	register00  uint8                  /* backup of the registers */
-	register02  uint8                  /* backup of the registers */
-	ram         []uint8                /* extra RAM */
-	filename    string                 /* filename when attached */
+	stateLow    *flash.Flash040 /* the 29F040B statemachine */
+	stateHigh   *flash.Flash040 /* the 29F040B statemachine */
+	jumper      int             /* the jumper */
+	crtWrite    int             /* writing back to crt enabled */
+	crtOptimize int             /* optimizing crt enabled */
+	register00  uint8           /* backup of the registers */
+	register02  uint8           /* backup of the registers */
+	ram         []uint8         /* extra RAM */
+	filename    string          /* filename when attached */
 	filetype    int
 	led         bool
 }
@@ -286,7 +118,7 @@ func New(game uint8, exRom uint8, lo icartridge.Interval, hi icartridge.Interval
 		filetype:  0,
 		jumper:    0,
 		led:       false,
-		ram:       make([]byte, CART_RAM_SIZE),
+		ram:       make([]byte, CartRamSize),
 	}
 }
 
@@ -294,7 +126,7 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	var rawCart []byte
 	c.board = board
 	rp := patterns.NewInitiator(255, 2, 1, 0x100, 255, 0, 0, 0)
-	rp.InitWithPattern(c.ram, CART_RAM_SIZE)
+	rp.InitWithPattern(c.ram, CartRamSize)
 	c.filename = ldr.Name
 	c.filetype = 0
 	var err error
@@ -329,7 +161,7 @@ func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
 	low := make([]byte, 0x80000)
 	high := make([]byte, 0x80000)
 	// split interleaved low and high banks
-	for i := uint(0); i < EASYFLASH_N_BANKS; i++ {
+	for i := uint(0); i < NBanks; i++ {
 		const size = 0x2000
 		start := i * size
 		p1 := i * (size * 2)
@@ -337,8 +169,8 @@ func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
 		copy(low[start:start+size], rawCart[p1:p1+size])
 		copy(high[start:start+size], rawCart[p2:p2+size])
 	}
-	c.stateLow = flash.NewFlash040Context(c.board, flash.FLASH040_TYPE_B, low)
-	c.stateHigh = flash.NewFlash040Context(c.board, flash.FLASH040_TYPE_B, high)
+	c.stateLow = flash.NewFlash040(c.board, flash.KindB, low)
+	c.stateHigh = flash.NewFlash040(c.board, flash.KindB, high)
 	eApiCheck := high[0x1800 : 0x1800+4]
 	if bytes.Compare(eApiCheck, []byte("eapi")) == 0 {
 		eApi := make([]byte, 17)
@@ -346,7 +178,7 @@ func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
 			eApi[k] = c.stateHigh.Peek(uint32(0x1804 + k))
 		}
 		fmt.Printf("EF: EAPI found (%s)", string(eApi))
-		_ = c.stateHigh.StoreInterval(0x1800, 0x1800+768, _eapiam29f040)
+		_ = c.stateHigh.StoreInterval(0x1800, 0x1800+768, _eApiAM29f040)
 	}
 }
 
@@ -356,7 +188,7 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8) {
 	jumper := c.jumper << 3
 	mxg := int(c.register02) & 0x07
 	cfg := jumper | mxg
-	memMode := easyflashMemconfig2[cfg]
+	memMode := _easyFlashMemConfig2[cfg]
 	c.exRom = memMode.exrom
 	c.game = memMode.game
 	fmt.Println("register002:", value, "mode:", memMode.mode, "exrom:", memMode.exrom, "game:", memMode.game, "led:", c.led)
@@ -377,9 +209,9 @@ func (c *CartridgeEasyFlash) Write(i icartridge.Interval, addr uint16, data uint
 func (c *CartridgeEasyFlash) Read(i icartridge.Interval, addr uint16) (uint8, bool) {
 	if i&c.intervals != 0 {
 		if i == icartridge.ROM_LO {
-			return c.roml_read(addr), true
+			return c.romLRead(addr), true
 		} else if i == icartridge.ROM_HI_1 || i == icartridge.ROM_HI_2 {
-			return c.romh_read(addr), true
+			return c.romHRead(addr), true
 		}
 		return 0, false
 	}
@@ -389,7 +221,7 @@ func (c *CartridgeEasyFlash) Read(i icartridge.Interval, addr uint16) (uint8, bo
 func (c *CartridgeEasyFlash) IORead(addr uint16) (uint8, bool) {
 	ref := addr & 0xff00
 	if ref == 0xdf00 {
-		v := c.io2_read(addr)
+		v := c.io2Read(addr)
 		return v, true
 	}
 	return 0, false
@@ -399,7 +231,7 @@ func (c *CartridgeEasyFlash) IOWrite(addr uint16, data uint8) bool {
 	ref := addr & 0xff00
 	if ref == 0xde00 {
 		if addr == 0xde00 {
-			c.register00 = data & EASYFLASH_BANK_MASK
+			c.register00 = data & BankMask
 			return true
 		}
 		if addr == 0xde02 {
@@ -407,7 +239,7 @@ func (c *CartridgeEasyFlash) IOWrite(addr uint16, data uint8) bool {
 			return true
 		}
 	} else if ref == 0xdf00 {
-		c.io2_store(addr, data)
+		c.io2Store(addr, data)
 		return true
 	}
 	return false
@@ -421,36 +253,36 @@ func (c *CartridgeEasyFlash) GetGame() uint8 {
 	return c.game
 }
 
-func (c *CartridgeEasyFlash) roml_read(addr uint16) uint8 {
+func (c *CartridgeEasyFlash) romLRead(addr uint16) uint8 {
 	v := (uint(c.register00) * 0x2000) + (uint(addr) & 0x1fff)
 	return c.stateLow.Read(v)
 }
 
-func (c *CartridgeEasyFlash) romh_read(addr uint16) uint8 {
+func (c *CartridgeEasyFlash) romHRead(addr uint16) uint8 {
 	v := (uint(c.register00) * 0x2000) + (uint(addr) & 0x1fff)
 	return c.stateHigh.Read(v)
 }
 
-func (c *CartridgeEasyFlash) roml_write(addr uint16, value uint8) {
+func (c *CartridgeEasyFlash) romLWrite(addr uint16, value uint8) {
 	v := (uint(c.register00) * 0x2000) + (uint(addr) & 0x1fff)
 	c.stateLow.Store(v, value)
 }
 
-func (c *CartridgeEasyFlash) romh_write(addr uint16, value uint8) {
+func (c *CartridgeEasyFlash) romHWrite(addr uint16, value uint8) {
 	v := (uint(c.register00) * 0x2000) + (uint(addr) & 0x1fff)
 	c.stateHigh.Store(v, value)
 }
 
-// io1_peek - used by monitor [TODO]
-func (c *CartridgeEasyFlash) io1_peek(addr uint16) uint8 {
+// io1Peek - used by monitor [TODO]
+func (c *CartridgeEasyFlash) io1Peek(addr uint16) uint8 {
 	if addr&2 != 0 {
 		return c.register02
 	}
 	return c.register00
 }
 
-func (c *CartridgeEasyFlash) io1_dump() int {
-	mode := easyflash_memconfig[(c.jumper<<3)|(int(c.register02)&0x07)]
+func (c *CartridgeEasyFlash) io1Dump() int {
+	mode := _easyFlashMemConfig[(c.jumper<<3)|(int(c.register02)&0x07)]
 	bank := c.register00
 	led := "false"
 	if c.register02&0x80 != 0 {
@@ -466,15 +298,15 @@ func (c *CartridgeEasyFlash) io1_dump() int {
 	return 0
 }
 
-func (c *CartridgeEasyFlash) io2_read(addr uint16) uint8 {
+func (c *CartridgeEasyFlash) io2Read(addr uint16) uint8 {
 	return c.ram[addr&0xff]
 }
 
-func (c *CartridgeEasyFlash) io2_store(addr uint16, value uint8) {
+func (c *CartridgeEasyFlash) io2Store(addr uint16, value uint8) {
 	c.ram[addr&0xff] = value
 }
 
-func (c *CartridgeEasyFlash) set_easyflash_jumper(val int) error {
+func (c *CartridgeEasyFlash) setEasyFlashJumper(val int) error {
 	if val != 0 {
 		c.jumper = 1
 	} else {
@@ -483,7 +315,7 @@ func (c *CartridgeEasyFlash) set_easyflash_jumper(val int) error {
 	return nil
 }
 
-func (c *CartridgeEasyFlash) set_easyflash_crt_write(val int) error {
+func (c *CartridgeEasyFlash) setEasyFlashCrtWrite(val int) error {
 	if val != 0 {
 		c.crtWrite = 1
 	} else {
@@ -492,7 +324,7 @@ func (c *CartridgeEasyFlash) set_easyflash_crt_write(val int) error {
 	return nil
 }
 
-func (c *CartridgeEasyFlash) set_easyflash_crt_optimize(val int) error {
+func (c *CartridgeEasyFlash) setEasyFlashCrtOptimize(val int) error {
 	if val != 0 {
 		c.crtOptimize = 1
 	} else {
@@ -520,7 +352,7 @@ func (c *CartridgeEasyFlash) binAttach(ldr *loader.CRTLoader) ([]byte, error) {
 	}
 	copy(rawCart, ldr.GetData())
 	return rawCart, nil
-	//if err := util_file_load(filename, rawCart, 0x4000*EASYFLASH_N_BANKS, UTIL_FILE_LOAD_SKIP_ADDRESS); err != nil {
+	//if err := util_file_load(filename, rawCart, 0x4000*NBanks, UTIL_FILE_LOAD_SKIP_ADDRESS); err != nil {
 	//	return err
 	//}
 	//if len(rawCart) > len(c.rawCart) {
@@ -542,13 +374,13 @@ func (c *CartridgeEasyFlash) crtAttach(ldr *loader.CRTLoader) ([]byte, error) {
 			break
 		}
 		if chip.Size == 0x2000 {
-			if chip.Bank >= EASYFLASH_N_BANKS || !(chip.Start == 0x8000 || chip.Start == 0xa000 || chip.Start == 0xe000) {
+			if chip.Bank >= NBanks || !(chip.Start == 0x8000 || chip.Start == 0xa000 || chip.Start == 0xe000) {
 				return nil, fmt.Errorf("invalid start")
 			}
 			target := (uint(chip.Bank) << 14) | (uint(chip.Start) & uint(chip.Size))
 			copy(raw[target:], chip.Data)
 		} else if chip.Size == 0x4000 {
-			if chip.Bank >= EASYFLASH_N_BANKS || chip.Start != 0x8000 {
+			if chip.Bank >= NBanks || chip.Start != 0x8000 {
 				return nil, fmt.Errorf("invalid start")
 			}
 			target := uint(chip.Bank) << 14
@@ -562,7 +394,7 @@ func (c *CartridgeEasyFlash) crtAttach(ldr *loader.CRTLoader) ([]byte, error) {
 
 func (c *CartridgeEasyFlash) Detach() error {
 	if c.crtWrite != 0 {
-		if err := c.flush_image(); err != nil {
+		if err := c.flushImage(); err != nil {
 			return err
 		}
 	}
@@ -572,14 +404,14 @@ func (c *CartridgeEasyFlash) Detach() error {
 	return nil
 }
 
-func (c *CartridgeEasyFlash) flush_image() error {
+func (c *CartridgeEasyFlash) flushImage() error {
 	if len(c.filename) == 0 {
 		return nil
 	}
 	if c.filetype == loader.CARTRIDGE_FILETYPE_BIN {
 		return c.binSave(c.filename)
 	} else if c.filetype == loader.CARTRIDGE_FILETYPE_CRT {
-		return c.crt_save(c.filename)
+		return c.crtSave(c.filename)
 	}
 	return fmt.Errorf("unknown cartridget type")
 }
@@ -598,7 +430,7 @@ func (c *CartridgeEasyFlash) binSave(filename string) error {
 	high := 0 //c.stateHigh.flash_data
 	var lowData []uint8
 	var highData []uint8
-	for i := 0; i < EASYFLASH_N_BANKS; i++ {
+	for i := 0; i < NBanks; i++ {
 		if lowData, err = c.stateLow.ReadInterval(uint(low), uint(low)+size); err != nil {
 			return nil
 		}
@@ -619,13 +451,13 @@ func (c *CartridgeEasyFlash) binSave(filename string) error {
 	return nil
 }
 
-func (c *CartridgeEasyFlash) crt_save(filename string) error {
+func (c *CartridgeEasyFlash) crtSave(filename string) error {
 	//TODO IMPLEMENT
 	return fmt.Errorf("unimplemented")
 }
 
 func (c *CartridgeEasyFlash) snapshotWriteModule(s *snapshot.Snapshot) error {
-	m := s.NewModule(snap_module_name, SNAP_MAJOR, SNAP_MINOR)
+	m := s.NewModule(snapModuleName, SnapMajor, SnapMinor)
 	m.Add("jumper", uint8(c.jumper))
 	m.Add("register00", c.register00)
 	m.Add("register00", c.register00)
@@ -633,10 +465,10 @@ func (c *CartridgeEasyFlash) snapshotWriteModule(s *snapshot.Snapshot) error {
 	//TODO
 	//m.Add("romLBanks", c.romLBanks)
 	//m.Add("romHBanks", c.romHBanks)
-	if err := c.stateLow.SnapshotWriteModule(s, flash_snap_module_name); err != nil {
+	if err := c.stateLow.SnapshotWriteModule(s, flashSnapModuleName); err != nil {
 		return err
 	}
-	if err := c.stateHigh.SnapshotWriteModule(s, flash_snap_module_name); err != nil {
+	if err := c.stateHigh.SnapshotWriteModule(s, flashSnapModuleName); err != nil {
 		return err
 	}
 	return nil
@@ -668,7 +500,7 @@ func (c *CartridgeEasyFlash) mmu_translate(addr uint32) ([]uint8, int, int) {
 	if c.stateHigh != nil && c.stateLow != nil {
 		switch addr & 0xe000 {
 		case 0xe000:
-			if c.stateHigh.GetFlashState() == flash.FLASH040_STATE_READ {
+			if c.stateHigh.GetFlashState() == flash.StateRead {
 				offset := (int(c.register00) * 0x2000) - 0xe000
 				base := c.stateHigh.flashData[offset:]
 				start := 0xe000
@@ -677,7 +509,7 @@ func (c *CartridgeEasyFlash) mmu_translate(addr uint32) ([]uint8, int, int) {
 			}
 			break
 		case 0xa000:
-			if c.stateHigh.GetFlashState() == flash.FLASH040_STATE_READ {
+			if c.stateHigh.GetFlashState() == flash.StateRead {
 				offset := (int(c.register00) * 0x2000) - 0xa000
 				base := c.stateHigh.flashData[offset:]
 				start := 0xa000
@@ -685,7 +517,7 @@ func (c *CartridgeEasyFlash) mmu_translate(addr uint32) ([]uint8, int, int) {
 				return base, start, limit
 			}
 		case 0x8000:
-			if c.stateLow.GetFlashState() == flash.FLASH040_STATE_READ {
+			if c.stateLow.GetFlashState() == flash.StateRead {
 				offset := (int(c.register00) * 0x2000) - 0x8000
 				base := c.stateLow.flashData[offset:]
 				start := 0x8000

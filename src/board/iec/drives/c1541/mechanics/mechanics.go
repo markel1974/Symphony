@@ -159,7 +159,6 @@ func (j *Mechanics) MoveHeadOut() {
 		trackLength := int(_numSectors[j.currentHalfTrack>>1]) * GCR_SECTOR_SIZE
 		j.gcrTrackEnd = j.gcrTrackStart + trackLength
 	}
-
 	//TODO
 	// HeadPosChangedEvent.Emit(_board->GetDeviceNumber(), currentHalfTrack);
 }
@@ -258,14 +257,12 @@ func (j *Mechanics) writeTrackSector(track int, sector int, buffer []uint8) bool
 	return true
 }
 
-/*
- *  Convert track/sector to offset
- */
-
+// secNumFromTs Convert track/sector to offset
 func (j *Mechanics) secNumFromTs(track int, sector int) int {
 	return _sectorOffset[track] + sector
 }
 
+// offsetFromTrackSector Convert track/sector to offset
 func (j *Mechanics) offsetFromTrackSector(track int, sector int) int {
 	if (track < 1) || (track > NUM_TRACKS) || (sector < 0) || (sector >= int(_numSectors[track])) {
 		return -1
@@ -273,10 +270,7 @@ func (j *Mechanics) offsetFromTrackSector(track int, sector int) int {
 	return (_sectorOffset[track] + sector) << 8
 }
 
-/*
- *  Convert 4 bytes to 5 GCR encoded bytes
- */
-
+// gcrConv4 Convert 4 bytes to 5 GCR encoded bytes
 func (j *Mechanics) gcrConv4(from []uint8, to []uint8) {
 	g := (_gcrTable[from[0]>>4] << 5) | _gcrTable[from[0]&15]
 	to[0] = uint8(g >> 2)
@@ -359,8 +353,8 @@ func (j *Mechanics) sector2gcr(track int, sector int) {
 	}
 }
 
+// disk2gcr Convert all tracks and sectors
 func (j *Mechanics) disk2gcr() {
-	// Convert all tracks and sectors
 	for track := 1; track <= NUM_TRACKS; track++ {
 		for sector := 0; sector < int(_numSectors[track]); sector++ {
 			j.sector2gcr(track, sector)

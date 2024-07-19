@@ -2,8 +2,8 @@ package cpu
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/flag"
 	"github.com/markel1974/c64emu/src/board/quartz"
+	"github.com/markel1974/c64emu/src/flag"
 	"github.com/markel1974/c64emu/src/preferences"
 	"log"
 	"os"

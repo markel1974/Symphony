@@ -2,9 +2,9 @@ package cpu
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/flag"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/ram"
 	"github.com/markel1974/c64emu/src/board/quartz"
+	"github.com/markel1974/c64emu/src/flag"
 	"github.com/markel1974/c64emu/src/preferences"
 	"log"
 	"os"
@@ -15,37 +15,6 @@ import (
 
 //Notes:
 //https://codebase64.org/lib/exe/fetch.php?media=base:safely_freezing_the_c64.pdf
-//BA Line: Only read or even write are blocked?
-/*
- * Notes:
- * ------
- *
- * Opcode execution:
- *  - All opcodes are resolved into single clock cycles. There is one
- *    switch case for each cycle.
- *  - The "state" variable specifies the routine to be executed in the
- *    next cycle. Its upper 8 bits contain the current opcode, its lower
- *    8 bits contain the cycle number (0..7) within the opcode.
- *  - Opcodes are fetched in cycle 0 (state = 0)
- *  - The states 0x0010..0x0027 are used for intr
- *  - There is exactly one memory access in each clock cycle
- *
- *  - The possible interrupt sources are:
- *      IntVic: I flag is checked, jump to ($fffe)
- *      IntCia: I flag is checked, jump to ($fffe)
- *      IntNmi: Jump to ($fffa)
- *      IntRst: Jump to ($fffc)
- *  - The zFlag variable has the inverse meaning of the 6510 Z flag
- *  - Only the highest bit of the nFlag variable is used
- *  - The $f2 opcode that would normally crash the 6510 is
- *    used to implement emulator-specific functions, mainly
- *    those for the IEC routines
- *
- * Incompatibilities:
- * ------------------
- *
- *  - If BA is low and AEC is high, read accesses should occur
- */
 
 type MOS6502 struct {
 	*Core
