@@ -1,8 +1,8 @@
 package cia
 
 type TimerA struct {
-	newCr        uint8 // New values for CRA
-	hasNewCr     bool  // Flag: New value for CRA pending
+	newCr        uint8  // New values for CRA
+	hasNewCr     bool   // Flag: New value for CRA pending
 	pendingCrIrq *uint8 // Pending interrupts //TODO NON DEVE ESSERE CONDIVISO!!!!
 	cr           uint8
 	timer        uint16 // Timer A
@@ -50,19 +50,19 @@ func (m *TimerA) Reset() {
 	m.useInterrupt = false
 }
 
-func (m * TimerA) CheckIrq() bool {
+func (m *TimerA) CheckIrq() bool {
 	return m.irqNextCycle
 }
 
-func (m * TimerA) SetCr(v uint8) {
+func (m *TimerA) SetCr(v uint8) {
 	m.cr = v
 }
 
-func (m * TimerA) GetCr() uint8 {
+func (m *TimerA) GetCr() uint8 {
 	return m.cr
 }
 
-func (m * TimerA) SetCountPhi2(v bool) {
+func (m *TimerA) SetCountPhi2(v bool) {
 	m.cntPhi2 = v
 }
 
@@ -78,7 +78,6 @@ func (m *TimerA) stateStop() {
 }
 
 func (m *TimerA) stateWaitThenCount() {
-	// fall through
 	m.state = T_COUNT
 	m.idle()
 }
