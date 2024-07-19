@@ -1,21 +1,21 @@
 package via
 
-const DEFAULT_VIA_TIMEOUT = 0xffff
+const defaultViaTimeout = 0xffff
 
 type Core struct {
-	_pra  uint8
-	_ddra uint8
-	_prb  uint8
-	_ddrb uint8
-	_t1c  uint16
-	_t1l  uint16
-	_t2c  uint16
-	_t2l  uint16
-	_sr   uint8
-	_acr  uint8
-	_pcr  uint8
-	_ifr  uint8
-	_ier  uint8
+	pra  uint8
+	ddra uint8
+	prb  uint8
+	ddrb uint8
+	t1c  uint16
+	t1l  uint16
+	t2c  uint16
+	t2l  uint16
+	sr   uint8
+	acr  uint8
+	pcr  uint8
+	ifr  uint8
+	ier  uint8
 }
 
 func NewCore() *Core {
@@ -23,17 +23,17 @@ func NewCore() *Core {
 }
 
 func (c *Core) Reset() {
-	c._pra = 0
-	c._ddra = 0
-	c._prb = 0
-	c._ddrb = 0
-	c._t1c = 0
-	c._t1l = 0
-	c._t2c = 0
-	c._t2l = 0
-	c._sr = 0
-	c._acr = 0
-	c._pcr = 0
-	c._ifr = 0
-	c._ier = 0
+	c.pra = 0
+	c.ddra = 0
+	c.prb = 0
+	c.ddrb = 0
+	c.t1c = 0
+	c.t1l = 0
+	c.t2c = 0
+	c.t2l = 0
+	c.sr = 0
+	c.acr = 0
+	c.pcr = 0
+	c.ifr = 0
+	c.ier = 0
 }

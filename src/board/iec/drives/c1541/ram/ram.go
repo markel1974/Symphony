@@ -9,7 +9,6 @@ func New(size int) *Ram {
 }
 
 func (r *Ram) Setup() {
-
 }
 
 func (r *Ram) Read(addr uint16) uint8 {

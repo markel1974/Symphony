@@ -1,10 +1,10 @@
 package mechanics
 
 type Core struct {
-	_current_halftrack int
-	_gcr               uint32
-	_write_protected   bool
-	_disk_changed      bool
+	currentHalfTrack int
+	gcr              uint32
+	writeProtected   bool
+	diskChanged      bool
 }
 
 func NewCore() *Core {
@@ -14,8 +14,8 @@ func NewCore() *Core {
 }
 
 func (c *Core) Reset() {
-	c._current_halftrack = 0
-	c._gcr = 0
-	c._write_protected = false
-	c._disk_changed = false
+	c.currentHalfTrack = 0
+	c.gcr = 0
+	c.writeProtected = false
+	c.diskChanged = false
 }
