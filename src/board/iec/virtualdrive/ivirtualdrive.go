@@ -11,7 +11,7 @@ type IVirtualDrive interface {
 	Emulate()
 	Ready() bool
 	GetDeviceNumber() uint8
-	AtnStateChanged(bool, uint8)
+	AtnStateChanged(bool, bool)
 	BusStateChanged(uint8)
 
 	GetPath() string

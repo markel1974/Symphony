@@ -1,4 +1,4 @@
-package drives
+package fsdrive
 
 import (
 	"fmt"
@@ -34,6 +34,7 @@ type FSDrive struct {
 	_read_char     [16]uint8    // Buffers for one-byte read-ahead
 	_ready         bool
 	atn            bool
+	state          int
 	//test           int64
 }
 
@@ -45,6 +46,7 @@ func NewFSDrive(iec virtualdrive.IIec, deviceNumber uint8, path string) *FSDrive
 		commands:       virtualdrive.NewCommands(),
 		_orig_dir_path: path,
 		atn:            false,
+		state:          0,
 	}
 	if d.changeDirectory(d._orig_dir_path) {
 		for i := 0; i < 16; i++ {
@@ -64,40 +66,73 @@ func (v *FSDrive) Reset() {
 	v.closeAllChannels()
 	v.commands.CommandClear()
 	v.commands.SetError(virtualdrive.ERR_STARTUP)
+
+	//TODO IN FASE DI RESET CAMBIARE LO STATO DEL BUS
 }
 
-func (v *FSDrive) AtnStateChanged(atn bool, data uint8) {
+func (v *FSDrive) AtnStateChanged(atnPrev bool, atn bool) {
 	//https://www.pagetable.com/?p=1135
 	// All devices on the bus have to respond to ATN by pulling DATA within 1000 µs (“ATN Response Timing”),
 	// and also eventually release CLK, because they are now receivers.
 	// Devices usually implement this in hardware by automatically answering ATN=1 with DATA=1,
-	// so that they can participate in receiving the command even when the CPU is busy and cannot be interrupted.
-
-	fmt.Printf("ATN received %03d [%08b]", data, data)
+	// so that they can participate in receiving the command even when the CPU is busy and cannot be interrupted. /atn = !atn
+	//atn = !atn
+	fmt.Printf("ATN received %v", atn)
 	v.atn = atn
 	if atn {
+		v.state = 1
 		value := uint8(0)
 		value |= DATA_OUT
 		value |= CLK_OUT //ERROR
 		//value |= ATN_A
+
+		//value := uint8(DATA_OUT)
+		//value = ^value
+
 		v.respond.AddMulti(NOOP, 8)
 		v.respond.Add(int(value))
-		fmt.Printf("...atn is on, responding\n")
+		fmt.Printf("...atn is on, responding %03d [%08b]\n", value, value)
 	} else {
+		v.state = 0
+		//v.respond.AddMulti(NOOP, 8)
+		//v.respond.Add(int(0))
 		fmt.Printf("...atn is now off\n")
 	}
 }
 
 func (v *FSDrive) BusStateChanged(data uint8) {
 	fmt.Printf("DTA received %03d [%08b] ATN: [%v], %s", data, data, v.atn, data2string(data))
-	if data&CLK_IN != 0 {
-		value := 0xfe
-		v.respond.AddMulti(NOOP, 8)
-		v.respond.Add(value)
-		fmt.Printf("...responding %03d [%08b]\n", value, value)
-	} else {
-		fmt.Printf("...NOT RESPONDING!\n")
+	clkIn := data&CLK_IN != 0
+	dataIn := data&DATA_IN != 0
+	switch v.state {
+	case 1:
+		if clkIn && !dataIn {
+			//value := 0xfe
+			//value := uint8(DATA_OUT)
+
+			//value := data | DATA_OUT
+			//value = ^value
+
+			//value := 0xfe
+			value := ATN_A | DATA_OUT
+			v.respond.AddMulti(NOOP, 16)
+			v.respond.Add(value)
+			v.state = 2
+			fmt.Printf("...responding I'm Here %03d [%08b]\n", value, value)
+			return
+		}
+	case 2:
+		if !clkIn && dataIn {
+			value := ATN_A
+			v.respond.AddMulti(NOOP, 16)
+			v.respond.Add(value)
+			v.state = 3
+			fmt.Printf("...responding Ready %03d [%08b]\n", value, value)
+			return
+		}
 	}
+	fmt.Printf("...NOT RESPONDING!\n")
+
 }
 
 func (v *FSDrive) Emulate() {

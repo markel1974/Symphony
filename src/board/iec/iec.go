@@ -3,7 +3,8 @@ package iec
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/board/iboard"
-	"github.com/markel1974/c64emu/src/board/iec/drives"
+	"github.com/markel1974/c64emu/src/board/iec/drives/c1541"
+	"github.com/markel1974/c64emu/src/board/iec/drives/fsdrive"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/preferences"
 	"strings"
@@ -74,7 +75,7 @@ func NewIEC() *IEC {
 	return c
 }
 
-func (c *IEC) AddPeripheral(peripheral *C1541Model) {
+func (c *IEC) AddPeripheral(peripheral *c1541.Board) {
 	//if c.peripheralsCount >= BusNum {
 	//	return
 	//}
@@ -90,7 +91,7 @@ func (c *IEC) AddPeripheral(peripheral *C1541Model) {
 	//peripheral->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 }
 
-func (c *IEC) RemovePeripheral(peripheral *C1541Model) {
+func (c *IEC) RemovePeripheral(peripheral *c1541.Board) {
 	//found := false
 	//for i := uint8(0); i < c.peripheralsCount; i++ {
 	//	if c.peripheralStorage[i] == peripheral {
@@ -278,7 +279,7 @@ func (c *IEC) createVirtualDrive(kind int, deviceNumber int, newPath string) vir
 		//emul1541
 		return nil
 	case 2:
-		vd := drives.NewFSDrive(c, uint8(deviceNumber), newPath)
+		vd := fsdrive.NewFSDrive(c, uint8(deviceNumber), newPath)
 		if vd != nil {
 			//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 		}
@@ -324,7 +325,7 @@ func (c *IEC) dispatchCpuWrite() {
 		return
 	}
 	for _, vd := range c.virtualDrives {
-		vd.AtnStateChanged(c.atnState != 0, c.peripheralsPort)
+		vd.AtnStateChanged(c.atnState != 0, newAtnState != 0)
 	}
 	c.atnState = newAtnState
 }

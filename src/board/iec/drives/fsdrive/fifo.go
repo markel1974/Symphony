@@ -1,4 +1,4 @@
-package drives
+package fsdrive
 
 type chunk struct {
 	items []int
