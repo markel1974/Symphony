@@ -1,16 +1,14 @@
 package cia
 
 import (
-	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/flag"
-	"github.com/markel1974/c64emu/src/board/vic"
 	"github.com/markel1974/c64emu/src/preferences"
 )
 
 type MOS6526_1 struct {
 	*MOS6526
-	intr        *cpu.Interrupts
-	vic         *vic.MOS6569
+	intr        IInterrupts
+	vic         IVic
 	prevLPState uint8    // Previous state of LP line (bit 4
 	KeyMatrix   [8]uint8 // C64 keyboard matrix, 1 bit/key (0: key down, 1: key up)
 	RevMatrix   [8]uint8 // Reversed keyboard matrix
@@ -25,7 +23,7 @@ func NewMOS6526_1() *MOS6526_1 {
 	return m
 }
 
-func (cia1 *MOS6526_1) Setup(intr *cpu.Interrupts, vic *vic.MOS6569, prefs *preferences.Prefs) {
+func (cia1 *MOS6526_1) Setup(intr IInterrupts, vic IVic, prefs *preferences.Prefs) {
 	cia1.intr = intr
 	cia1.vic = vic
 	cia1.prefs = prefs

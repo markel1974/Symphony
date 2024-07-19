@@ -130,8 +130,8 @@ func (c *IEC) Setup(quartz *quartz.Quartz, prefs *preferences.Prefs) {
 	//vd := c.createVirtualDrive(2, 8)
 	//c.virtualDrives = append(c.virtualDrives, vd)
 
-	vd := c.createVirtualDrive(1, 8)
-	c.virtualDrives = append(c.virtualDrives, vd)
+	//vd := c.createVirtualDrive(1, 8)
+	//c.virtualDrives = append(c.virtualDrives, vd)
 
 	//for i := uint8(0); i < c.peripheralsCount; i++ {
 	//	c.peripheralStorage[i].NewPrefs(prefs)

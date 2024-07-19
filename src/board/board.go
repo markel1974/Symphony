@@ -77,7 +77,7 @@ func (s *Board) Setup(prefs *preferences.Prefs) error {
 	s.keys = keyboard.NewKeyboard()
 	s.banks = banks.NewBanks()
 
-	s.iec.Setup(prefs)
+	s.iec.Setup(s.quartz, prefs)
 	s.cpu.Setup(s.quartz, s.banks, prefs)
 	s.interrupts = s.cpu.GetInterrupts()
 	s.vic.Setup(s.quartz, s.interrupts, s.banks, prefs, s.ReadyEvent)

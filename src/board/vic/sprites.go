@@ -1,14 +1,10 @@
 package vic
 
-import (
-	"github.com/markel1974/c64emu/src/board/cpu"
-)
-
 var _sprEmptyCollBuf = make([]uint8, DisplayXFillMax)
 
 type Sprites struct {
 	*Core
-	intr        *cpu.Interrupts
+	intr        IInterrupts
 	sprCollBuf  []uint8   // Buffer for sprite-sprite collisions and priorities
 	sprPtr      []uint16  // Sprite data pointers
 	sprData     [][]uint8 // Sprite data read
@@ -34,7 +30,7 @@ func NewSprites(core *Core) *Sprites {
 	return s
 }
 
-func (sp *Sprites) Setup(intr *cpu.Interrupts) {
+func (sp *Sprites) Setup(intr IInterrupts) {
 	sp.intr = intr
 }
 

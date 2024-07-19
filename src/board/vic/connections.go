@@ -5,3 +5,8 @@ type IBanks interface {
 	ReadDirect(uint16) uint8
 	ReadColor(uint16) uint8
 }
+
+type IInterrupts interface {
+	TriggerVICIRQ()
+	ClearVICIRQ()
+}

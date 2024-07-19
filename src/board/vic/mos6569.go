@@ -1,7 +1,6 @@
 package vic
 
 import (
-	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/preferences"
 )
@@ -13,7 +12,7 @@ var _emptyForeMaskBuffer = make([]uint8, DisplayXDiv8)
 type MOS6569 struct {
 	*Core
 	quartz           *quartz.Quartz
-	intr             *cpu.Interrupts
+	intr             IInterrupts
 	banks            IBanks
 	prefs            *preferences.Prefs
 	readyFn          func()
@@ -86,7 +85,7 @@ func NewMOS6569() *MOS6569 {
 	return vic
 }
 
-func (vic *MOS6569) Setup(quartz *quartz.Quartz, intr *cpu.Interrupts, banks IBanks, prefs *preferences.Prefs, readyFn func()) {
+func (vic *MOS6569) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks, prefs *preferences.Prefs, readyFn func()) {
 	//vic.board = board
 	vic.quartz = quartz
 	vic.intr = intr

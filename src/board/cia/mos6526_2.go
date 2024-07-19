@@ -1,18 +1,15 @@
 package cia
 
 import (
-	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/flag"
-	"github.com/markel1974/c64emu/src/board/iec"
-	"github.com/markel1974/c64emu/src/board/vic"
 	"github.com/markel1974/c64emu/src/preferences"
 )
 
 type MOS6526_2 struct {
 	*MOS6526
-	intr  *cpu.Interrupts
-	vic   *vic.MOS6569
-	bus   *iec.IEC
+	intr  IInterrupts
+	vic   IVic
+	bus   IBus
 	prefs *preferences.Prefs
 }
 
@@ -22,7 +19,7 @@ func NewMOS6526_2() *MOS6526_2 {
 	return m
 }
 
-func (cia2 *MOS6526_2) Setup(intr *cpu.Interrupts, vic *vic.MOS6569, bus *iec.IEC, prefs *preferences.Prefs) {
+func (cia2 *MOS6526_2) Setup(intr IInterrupts, vic IVic, bus IBus, prefs *preferences.Prefs) {
 	cia2.intr = intr
 	cia2.vic = vic
 	cia2.bus = bus
