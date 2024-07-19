@@ -121,8 +121,8 @@ func (c *IEC) Setup(board iboard.IBoard, prefs *preferences.Prefs) {
 	//}
 
 	//TODO ATTIVARE PER TEST
-	vd := c.createVirtualDrive(2, 8, prefs.GetDrivePath(0))
-	c.virtualDrives = append(c.virtualDrives, vd)
+	//vd := c.createVirtualDrive(2, 8, prefs.GetDrivePath(0))
+	//c.virtualDrives = append(c.virtualDrives, vd)
 
 	//for i := uint8(0); i < c.peripheralsCount; i++ {
 	//	c.peripheralStorage[i].NewPrefs(prefs)
@@ -384,6 +384,7 @@ func (c *IEC) debugCpuRead(data uint8) {
 	fmt.Printf("CPU SEND: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
 }
 
+/*
 func (c *IEC) debugPeripheralWrite(data uint8) {
 	value := data
 	var message []string
@@ -422,7 +423,7 @@ func (c *IEC) debugPeripheralRead(data uint8) {
 	}
 	fmt.Printf("DRV RECV: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
 }
-
+*/
 /*
 void debug_iec_drv_write(unsigned int data)
 {
