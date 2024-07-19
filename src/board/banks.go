@@ -1,7 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/board/cartridges"
+	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/ram"
 	"github.com/markel1974/c64emu/src/board/roms"
 	"github.com/markel1974/c64emu/src/preferences"
@@ -302,7 +302,7 @@ func (b *Banks) ramWrite0xE000(addr uint16, data uint8) {
 	b.ram[addr] = data
 	//TODO Verify the only one write to cartridge
 	if b.board.cart != nil {
-		b.board.cart.Write(cartridges.ROM_HI_2, addr, data)
+		b.board.cart.Write(icartridge.ROM_HI_2, addr, data)
 	}
 	return
 }
@@ -311,7 +311,7 @@ func (b *Banks) ramWrite0xF000(addr uint16, data uint8) {
 	b.ram[addr] = data
 	//TODO Verify the only one write to cartridge
 	if b.board.cart != nil {
-		b.board.cart.Write(cartridges.ROM_HI_2, addr, data)
+		b.board.cart.Write(icartridge.ROM_HI_2, addr, data)
 	}
 	return
 }
@@ -357,7 +357,7 @@ func (b *Banks) ramRead0x8000(addr uint16) uint8 {
 	const bank = 0x8
 	if b.memoryConfig[bank] == ROL {
 		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(cartridges.ROM_LO, addr); ok {
+			if v, ok := b.board.cart.Read(icartridge.ROM_LO, addr); ok {
 				return v
 			}
 		}
@@ -369,7 +369,7 @@ func (b *Banks) ramRead0x9000(addr uint16) uint8 {
 	const bank = 0x9
 	if b.memoryConfig[bank] == ROL {
 		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(cartridges.ROM_LO, addr); ok {
+			if v, ok := b.board.cart.Read(icartridge.ROM_LO, addr); ok {
 				return v
 			}
 		}
@@ -381,7 +381,7 @@ func (b *Banks) ramRead0xA000(addr uint16) uint8 {
 	const bank = 0xa
 	if b.memoryConfig[bank] == ROH {
 		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(cartridges.ROM_HI_1, addr); ok {
+			if v, ok := b.board.cart.Read(icartridge.ROM_HI_1, addr); ok {
 				return v
 			}
 		}
@@ -395,7 +395,7 @@ func (b *Banks) ramRead0xB000(addr uint16) uint8 {
 	const bank = 0xb
 	if b.memoryConfig[bank] == ROH {
 		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(cartridges.ROM_HI_1, addr); ok {
+			if v, ok := b.board.cart.Read(icartridge.ROM_HI_1, addr); ok {
 				return v
 			}
 		}
@@ -424,7 +424,7 @@ func (b *Banks) ramRead0xE000(addr uint16) uint8 {
 	const bank = 0xe
 	if b.memoryConfig[bank] == ROH {
 		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(cartridges.ROM_HI_2, addr); ok {
+			if v, ok := b.board.cart.Read(icartridge.ROM_HI_2, addr); ok {
 				return v
 			}
 		}
@@ -438,7 +438,7 @@ func (b *Banks) ramRead0xF000(addr uint16) uint8 {
 	const bank = 0xf
 	if b.memoryConfig[bank] == ROH {
 		if b.board.cart != nil {
-			if v, ok := b.board.cart.Read(cartridges.ROM_HI_2, addr); ok {
+			if v, ok := b.board.cart.Read(icartridge.ROM_HI_2, addr); ok {
 				return v
 			}
 		}

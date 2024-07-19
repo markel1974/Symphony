@@ -1,11 +1,12 @@
-package cartridges
+package easyflash
 
 //https://skoe.de/easyflash/files/devdocs/EasyFlash-ProgRef.pdf
 
 import (
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/cartridges/flash"
+	"github.com/markel1974/c64emu/src/board/cartridges/easyflash/flash"
+	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
 	"github.com/markel1974/c64emu/src/board/iboard"
 	"github.com/markel1974/c64emu/src/board/ram"
@@ -258,7 +259,7 @@ easyflash_io2_read,       // peek function, same implementation
 
 type CartridgeEasyFlash struct {
 	board       iboard.IBoard
-	intervals   Interval
+	intervals   icartridge.Interval
 	game        uint8
 	exRom       uint8
 	stateLow    *flash.Flash040Context /* the 29F040B statemachine */
@@ -274,7 +275,7 @@ type CartridgeEasyFlash struct {
 	led         bool
 }
 
-func NewCartridgeEasyFlash(game uint8, exRom uint8, lo Interval, hi Interval) *CartridgeEasyFlash {
+func New(game uint8, exRom uint8, lo icartridge.Interval, hi icartridge.Interval) *CartridgeEasyFlash {
 	return &CartridgeEasyFlash{
 		game:      game,
 		exRom:     exRom,
@@ -360,7 +361,7 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8) {
 	fmt.Println("register002:", value, "mode:", memMode.mode, "exrom:", memMode.exrom, "game:", memMode.game, "led:", c.led)
 }
 
-func (c *CartridgeEasyFlash) Write(i Interval, addr uint16, data uint8) bool {
+func (c *CartridgeEasyFlash) Write(i icartridge.Interval, addr uint16, data uint8) bool {
 	if i&c.intervals != 0 {
 		fmt.Printf("TEST\n")
 	}
@@ -372,11 +373,11 @@ func (c *CartridgeEasyFlash) Write(i Interval, addr uint16, data uint8) bool {
 	return false
 }
 
-func (c *CartridgeEasyFlash) Read(i Interval, addr uint16) (uint8, bool) {
+func (c *CartridgeEasyFlash) Read(i icartridge.Interval, addr uint16) (uint8, bool) {
 	if i&c.intervals != 0 {
-		if i == ROM_LO {
+		if i == icartridge.ROM_LO {
 			return c.roml_read(addr), true
-		} else if i == ROM_HI_1 || i == ROM_HI_2 {
+		} else if i == icartridge.ROM_HI_1 || i == icartridge.ROM_HI_2 {
 			return c.romh_read(addr), true
 		}
 		return 0, false

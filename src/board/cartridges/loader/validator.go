@@ -1,8 +1,8 @@
-package cartridges
+package loader
 
 import "errors"
 
-func validate(data []byte) error {
+func Validate(data []byte) error {
 	i4 := data[0x4]
 	i5 := data[0x5]
 	i6 := data[0x6]

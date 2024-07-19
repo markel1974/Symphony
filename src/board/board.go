@@ -2,6 +2,7 @@ package board
 
 import (
 	"github.com/markel1974/c64emu/src/board/cartridges"
+	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cia"
 	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/iec"
@@ -35,7 +36,7 @@ type Board struct {
 	prefs        *preferences.Prefs
 	hasClipboard bool
 	phiMode      PhiMode
-	cart         cartridges.ICartridge
+	cart         icartridge.ICartridge
 	cartFactory  *cartridges.Factory
 	banks        *Banks
 }

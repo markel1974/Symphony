@@ -1,7 +1,8 @@
-package cartridges
+package ocean
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
 	"github.com/markel1974/c64emu/src/board/iboard"
 )
@@ -9,7 +10,7 @@ import (
 type CartridgeOcean struct {
 	//b0Interval Interval
 	//b1Interval Interval
-	intervals Interval
+	intervals icartridge.Interval
 	lastData  uint8
 	banks     [][]byte
 	ioMask    uint8
@@ -19,7 +20,7 @@ type CartridgeOcean struct {
 	board     iboard.IBoard
 }
 
-func NewCartridgeOcean(game uint8, exRom uint8, b0 Interval, b1 Interval) *CartridgeOcean {
+func New(game uint8, exRom uint8, b0 icartridge.Interval, b1 icartridge.Interval) *CartridgeOcean {
 	return &CartridgeOcean{
 		game:  game,
 		exRom: exRom,
@@ -38,7 +39,7 @@ func (c *CartridgeOcean) Setup(board iboard.IBoard, ldr *loader.CRTLoader) error
 	return c.initBin(ldr.GetData())
 }
 
-func (c *CartridgeOcean) Write(i Interval, addr uint16, data uint8) bool {
+func (c *CartridgeOcean) Write(i icartridge.Interval, addr uint16, data uint8) bool {
 	if i&c.intervals != 0 {
 		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.currBank, addr, data)
 		return true
@@ -46,7 +47,7 @@ func (c *CartridgeOcean) Write(i Interval, addr uint16, data uint8) bool {
 	return false
 }
 
-func (c *CartridgeOcean) Read(i Interval, addr uint16) (uint8, bool) {
+func (c *CartridgeOcean) Read(i icartridge.Interval, addr uint16) (uint8, bool) {
 	if i&c.intervals != 0 {
 		//if c.b0Interval == i {
 		//	return c.banks[c.currBank][addr&0x1fff], true
@@ -93,7 +94,7 @@ func (c *CartridgeOcean) Detach() error {
 }
 
 func (c *CartridgeOcean) initBin(data []byte) error {
-	if err := validate(data); err != nil {
+	if err := loader.Validate(data); err != nil {
 		return err
 	}
 	const cSize = 0x2000

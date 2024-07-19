@@ -1,4 +1,6 @@
-package cartridges
+package reu
+
+import "github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 
 type REU struct {
 }
@@ -27,14 +29,14 @@ func (reu *REU) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
-func (reu *REU) Write(i Interval, addr uint16, data uint8) bool {
-	if i == ROM_HI_2 && addr == 0xff00 {
+func (reu *REU) Write(i icartridge.Interval, addr uint16, data uint8) bool {
+	if i == icartridge.ROM_HI_2 && addr == 0xff00 {
 		reu.ff00Trigger()
 	}
 	return false
 }
 
-func (reu *REU) Read(i Interval, addr uint16) (uint8, bool) {
+func (reu *REU) Read(i icartridge.Interval, addr uint16) (uint8, bool) {
 	return 0, false
 }
 
