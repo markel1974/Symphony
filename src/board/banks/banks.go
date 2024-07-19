@@ -1,10 +1,10 @@
 package banks
 
 import (
+	roms2 "github.com/markel1974/c64emu/src/board/banks/roms"
 	"github.com/markel1974/c64emu/src/board/cartridges"
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cia"
-	"github.com/markel1974/c64emu/src/board/roms"
 	"github.com/markel1974/c64emu/src/board/sid"
 	"github.com/markel1974/c64emu/src/board/vic"
 	"github.com/markel1974/c64emu/src/patterns"
@@ -21,7 +21,6 @@ type ReadFn func(uint16) uint8
 type WriteFn func(uint16, uint8)
 
 type Banks struct {
-	//board        *Board
 	vic          *vic.MOS6569
 	sid          *sid.MOS6581
 	cia1         *cia.MOS6526_1
@@ -60,9 +59,9 @@ func NewBanks() *Banks {
 		memoryConfig: mm.Get(0),
 		ports:        NewPorts(),
 		emulatorId:   NewEmulatorId(),
-		basic:        make([]byte, roms.BASIC_ROM_SIZE),
-		kernal:       make([]byte, roms.KERNAL_ROM_SIZE),
-		char:         make([]byte, roms.CHAR_ROM_SIZE),
+		basic:        make([]byte, roms2.BASIC_ROM_SIZE),
+		kernal:       make([]byte, roms2.KERNAL_ROM_SIZE),
+		char:         make([]byte, roms2.CHAR_ROM_SIZE),
 		color:        make([]byte, 0x0400),
 		prefs:        nil,
 	}
@@ -168,11 +167,11 @@ func (b *Banks) initRom() {
 	//b.kernal = romLoader.Load(roms.BuiltinKernalRom, KernalRomFile)
 	//roms.PatchKernalRom(&b.kernal)
 
-	b.kernal = romLoader.Load(roms.BuiltinKernalJiffyRom, KernalRomFile)
+	b.kernal = romLoader.Load(roms2.BuiltinKernalJiffyRom, KernalRomFile)
 	//b.kernal = b.romLoader.Load(builtin_kernal_fast_rom, KernalRomFile)
 	//b.kernal = b.romLoader.Load(builtin_kernal_rom, KernalRomFile)
-	b.basic = romLoader.Load(roms.BuiltinBasicRom, BasicRomFile)
-	b.char = romLoader.Load(roms.BuiltinCharRom, CharRomFile)
+	b.basic = romLoader.Load(roms2.BuiltinBasicRom, BasicRomFile)
+	b.char = romLoader.Load(roms2.BuiltinCharRom, CharRomFile)
 }
 
 func (b *Banks) portsUpdate() {

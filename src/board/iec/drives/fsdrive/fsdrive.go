@@ -3,6 +3,7 @@ package fsdrive
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/preferences"
 	"io"
 	"os"
 	"strings"
@@ -38,24 +39,29 @@ type FSDrive struct {
 	//test           int64
 }
 
-func NewFSDrive(iec virtualdrive.IIec, deviceNumber uint8, path string) *FSDrive {
-	d := &FSDrive{
+func New(iec virtualdrive.IIec, deviceNumber uint8) *FSDrive {
+	v := &FSDrive{
 		iec:            iec,
 		deviceNumber:   deviceNumber,
 		respond:        NewQueue(512),
 		commands:       virtualdrive.NewCommands(),
-		_orig_dir_path: path,
+		_orig_dir_path: "",
 		atn:            false,
 		state:          0,
 	}
-	if d.changeDirectory(d._orig_dir_path) {
+	return v
+}
+
+func (v *FSDrive) Setup(prefs *preferences.Prefs) {
+	path := prefs.GetDrivePath(int(v.deviceNumber))
+	v._orig_dir_path = path
+	if v.changeDirectory(v._orig_dir_path) {
 		for i := 0; i < 16; i++ {
-			d._file[i] = nil
+			v._file[i] = nil
 		}
-		d.Reset()
-		d._ready = true
+		v.Reset()
+		v._ready = true
 	}
-	return d
 }
 
 func (v *FSDrive) GetDeviceNumber() uint8 {

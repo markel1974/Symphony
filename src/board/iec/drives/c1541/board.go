@@ -20,7 +20,7 @@ type Board struct {
 	deviceNumber uint8
 }
 
-func NewBoard(quartz *quartz.Quartz, iec virtualdrive.IIec, deviceNumber uint8) *Board {
+func New(quartz *quartz.Quartz, iec virtualdrive.IIec, deviceNumber uint8) *Board {
 	return &Board{
 		iec:          iec,
 		quartz:       quartz,
@@ -45,6 +45,19 @@ func (m *Board) Setup(prefs *preferences.Prefs) {
 	m.via2.Setup()
 }
 
+func (m *Board) Reset() {
+	//TODO
+}
+
+func (m *Board) Emulate() {
+	//TODO
+}
+
+func (m *Board) Ready() bool {
+	//TODO
+	return true
+}
+
 func (m *Board) GetDeviceNumber() uint8 {
 	return m.deviceNumber
 }
@@ -53,6 +66,12 @@ func (m *Board) NewPrefs(prefs *preferences.Prefs) {
 
 }
 
-func (m *Board) AtnStateChanged(state bool) {
+func (m *Board) AtnStateChanged(b bool, b2 bool) {
+	//TODO implement me
+	panic("implement me")
+}
 
+func (m *Board) BusStateChanged(u uint8) {
+	//TODO implement me
+	panic("implement me")
 }

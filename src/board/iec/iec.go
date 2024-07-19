@@ -5,6 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541"
 	"github.com/markel1974/c64emu/src/board/iec/drives/fsdrive"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/preferences"
 	"strings"
 )
@@ -35,6 +36,9 @@ const (
 */
 
 type IEC struct {
+	quartz *quartz.Quartz
+	prefs  *preferences.Prefs
+
 	atnState uint8
 
 	cpuPort uint8
@@ -114,15 +118,20 @@ func (c *IEC) RemovePeripheral(peripheral *c1541.Board) {
 	c.rebuildPeripherals()
 }
 
-func (c *IEC) Setup(prefs *preferences.Prefs) {
+func (c *IEC) Setup(quartz *quartz.Quartz, prefs *preferences.Prefs) {
+	c.quartz = quartz
+	c.prefs = prefs
 	//TOOD FROM CONFIG / COMMAND
 	//for i := 0; i < MaxDriveSize; i++ {
 	//	c.virtualDrives[i] = c.createVirtualDrive(2 /*prefs.Emul1541Proc()*/, 8+i, prefs.GetDrivePath(i))
 	//}
 
 	//TODO ATTIVARE PER TEST
-	//vd := c.createVirtualDrive(2, 8, prefs.GetDrivePath(0))
+	//vd := c.createVirtualDrive(2, 8)
 	//c.virtualDrives = append(c.virtualDrives, vd)
+
+	vd := c.createVirtualDrive(1, 8)
+	c.virtualDrives = append(c.virtualDrives, vd)
 
 	//for i := uint8(0); i < c.peripheralsCount; i++ {
 	//	c.peripheralStorage[i].NewPrefs(prefs)
@@ -150,7 +159,6 @@ func (c *IEC) NewPrefs(prefs *preferences.Prefs) {
 }
 
 func (c *IEC) Emulate() {
-	//drive_cpu_execute_all(clock)
 	for _, vd := range c.virtualDrives {
 		vd.Emulate()
 	}
@@ -272,16 +280,16 @@ func (c *IEC) PeripheralAtnResponse(data uint8, deviceNumber uint8) {
 	c.PeripheralWrite(deviceNumber, data)
 }
 
-func (c *IEC) createVirtualDrive(kind int, deviceNumber int, newPath string) virtualdrive.IVirtualDrive {
+func (c *IEC) createVirtualDrive(kind int, deviceNumber uint8) virtualdrive.IVirtualDrive {
 	switch kind {
 	case 1:
-		//emul1541
-		return nil
+		vd := c1541.New(c.quartz, c, deviceNumber)
+		vd.Setup(c.prefs)
+		return vd
 	case 2:
-		vd := fsdrive.NewFSDrive(c, uint8(deviceNumber), newPath)
-		if vd != nil {
-			//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
-		}
+		vd := fsdrive.New(c, deviceNumber)
+		vd.Setup(c.prefs)
+		//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 		return vd
 	}
 	return nil
