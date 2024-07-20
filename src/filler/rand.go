@@ -1,4 +1,4 @@
-package patterns
+package filler
 
 import (
 	"math"

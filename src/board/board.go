@@ -82,6 +82,7 @@ func (s *Board) Setup(prefs *preferences.Prefs) error {
 	s.interrupts = s.cpu.GetInterrupts()
 	s.vic.Setup(s.quartz, s.interrupts, s.banks, prefs)
 	s.vic.GetReadySignal().Bind(s.ReadyEvent)
+	//s.vic.GetBALowSignal().Bind(baLow)
 	s.sid.Setup(prefs)
 	s.cia1.Setup(s.interrupts, s.vic, prefs)
 	s.cia2.Setup(s.interrupts, s.vic, s.iec, prefs)

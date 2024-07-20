@@ -63,7 +63,8 @@ type Core struct {
 	baLow           bool     // BALine
 	baLowFirstCycle uint64   //
 	lastByte        uint8    // Last byte read by VIC
-	readySignal     *signals.Signal
+	//baLowSignal     *signals.Signal1[bool]
+	readySignal *signals.Signal
 }
 
 func NewCore() *Core {
@@ -129,7 +130,8 @@ func NewCore() *Core {
 		baLowFirstCycle: 0,
 		ready:           false,
 		readySignal:     signals.NewSignal(),
-		lastByte:        0,
+		//baLowSignal:     signals.NewSignal1[bool](),
+		lastByte: 0,
 	}
 	// Preset colors to black
 	for i := range c.mXcColor {
@@ -148,11 +150,15 @@ func (vic *Core) SetBALow() {
 	if !vic.baLow {
 		vic.baLow = true
 		vic.baLowFirstCycle = vic.quartz.Cycle()
+		//vic.baLowSignal.Emit(vic.baLow)
 	}
 }
 
 func (vic *Core) ClearBALow() {
-	vic.baLow = false
+	if vic.baLow {
+		vic.baLow = false
+		//vic.baLowSignal.Emit(vic.baLow)
+	}
 }
 
 func (vic *Core) ReadRegister(addr uint16) uint8 {

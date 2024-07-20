@@ -7,7 +7,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/cia"
 	"github.com/markel1974/c64emu/src/board/sid"
 	"github.com/markel1974/c64emu/src/board/vic"
-	"github.com/markel1974/c64emu/src/patterns"
+	"github.com/markel1974/c64emu/src/filler"
 	"github.com/markel1974/c64emu/src/preferences"
 )
 
@@ -144,10 +144,10 @@ func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia.MOS6526_1, c
 	b.portRead[0xe] = b.portReadIO
 	b.portRead[0xf] = b.portReadIO
 
-	ri := patterns.NewInitiator(255, 128, 0, 0, 0, 0, 0, 0)
+	ri := filler.New(255, 128, 0, 0, 0, 0, 0, 0)
 	ri.InitWithPattern(b.ram, uint(len(b.ram)))
 
-	rc := patterns.NewInitiator(255, 128, 0, 0, 0, 0, 0, patterns.InitRandomChanceHalf)
+	rc := filler.New(255, 128, 0, 0, 0, 0, 0, filler.InitRandomChanceHalf)
 	rc.InitWithPattern(b.color, uint(len(b.color)))
 	b.initRom()
 }

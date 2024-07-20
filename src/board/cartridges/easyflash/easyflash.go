@@ -8,7 +8,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/cartridges/easyflash/flash"
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
-	"github.com/markel1974/c64emu/src/patterns"
+	"github.com/markel1974/c64emu/src/filler"
 
 	//"github.com/markel1974/c64emu/src/board/ram"
 	"github.com/markel1974/c64emu/src/board/snapshot"
@@ -127,7 +127,7 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	var rawCart []byte
 	c.board = board
 	c.id = ldr.GetId()
-	rp := patterns.NewInitiator(255, 2, 1, 0x100, 255, 0, 0, 0)
+	rp := filler.New(255, 2, 1, 0x100, 255, 0, 0, 0)
 	rp.InitWithPattern(c.ram, CartRamSize)
 	c.filename = ldr.Name
 	c.filetype = 0

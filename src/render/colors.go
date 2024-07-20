@@ -28,20 +28,3 @@ func init() {
 		_colors[k] = _colors[k&0x0f]
 	}
 }
-
-/*
-func init() {
-	_colors = make([]*color.RGBA, 256)
-	alfa := uint8(255)
-	for j := 0; j < 16; j++ {
-		red := _paletteRed[j]
-		green := _paletteGreen[j]
-		blue := _paletteBlue[j]
-		rgba := &color.RGBA{R: red, G: green, B: blue, A: alfa}
-		_colors[j] = rgba
-	}
-	for k := 16; k < 256; k++ {
-		_colors[k] = _colors[k&0x0f]
-	}
-}
-*/

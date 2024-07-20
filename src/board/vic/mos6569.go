@@ -99,6 +99,10 @@ func (vic *MOS6569) GetReadySignal() *signals.Signal {
 	return vic.core.readySignal
 }
 
+//func (vic *MOS6569) GetBALowSignal() *signals.Signal1[bool] {
+//	return vic.core.baLowSignal
+//}
+
 func (vic *MOS6569) NewPrefs(_ *preferences.Prefs) {
 	//vic.skipFrames = prefs.SkipFrames()
 }

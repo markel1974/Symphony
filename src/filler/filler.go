@@ -1,4 +1,4 @@
-package patterns
+package filler
 
 import (
 	"math"
@@ -16,7 +16,7 @@ const (
 	RandomMethodUniform = 2 // generate discrete uniform per bit
 )
 
-type Initiator struct {
+type Filler struct {
 	startValue         int // first value of the base pattern (byte value)
 	valueInvert        int // number of bytes until start value is inverted
 	valueOffset        int // offset of first pattern in bytes
@@ -28,8 +28,8 @@ type Initiator struct {
 }
 
 /*
-func NewDefaultInitiator() *Initiator {
-	return &Initiator{
+func NewDefaultInitiator() *Filler {
+	return &Filler{
 		startValue:         255,
 		valueInvert:        128,
 		valueOffset:        0,
@@ -42,8 +42,8 @@ func NewDefaultInitiator() *Initiator {
 }
 */
 
-func NewInitiator(startValue, valueInvert, valueOffset, patternInvert, patternInvertValue, randomStart, randomRepeat, randomChance int) *Initiator {
-	return &Initiator{
+func New(startValue, valueInvert, valueOffset, patternInvert, patternInvertValue, randomStart, randomRepeat, randomChance int) *Filler {
+	return &Filler{
 		startValue:         startValue,
 		valueInvert:        valueInvert,
 		valueOffset:        valueOffset,
@@ -55,7 +55,7 @@ func NewInitiator(startValue, valueInvert, valueOffset, patternInvert, patternIn
 	}
 }
 
-func (rp *Initiator) InitWithPattern(memRam []uint8, ramSize uint) {
+func (rp *Filler) InitWithPattern(memRam []uint8, ramSize uint) {
 	randomMethod := RandomMethodNone
 	randomMaskInitial := uint(0)
 	log1mp := _log1mp //math.Inf(-1)
