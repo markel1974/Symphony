@@ -22,7 +22,7 @@ func (gr *ForeMask) Clear() {
 }
 
 func (gr *ForeMask) Update(a uint8, b uint8) {
-	gr.buf[gr.offset+0] |= a
+	gr.buf[gr.offset] |= a
 	gr.buf[gr.offset+1] |= b
 }
 

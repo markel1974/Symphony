@@ -114,8 +114,7 @@ func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit 
 	s := q & 7
 	foreMaskL := sp.foreMask.GetL(m, s)
 	foreMaskR := sp.foreMask.GetR(m, s)
-	dd := sp.sprDrawData[sNum]
-	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
+	sData := (uint32(sp.sprDrawData[sNum][0]) << 24) | (uint32(sp.sprDrawData[sNum][1]) << 16) | (uint32(sp.sprDrawData[sNum][2]) << 8)
 	// Expand sprite data
 	sDataL := uint32(_multiExpTable[sData>>24&0xff])<<16 | uint32(_multiExpTable[sData>>16&0xff])
 	sDataR := uint32(_multiExpTable[sData>>8&0xff]) << 16
@@ -194,8 +193,7 @@ func (sp *Sprites) drawSpriteExpandedStandard(lineStart int, sNum uint8, sBit ui
 	m := q / 8
 	s := q & 7
 	foreMask := sp.foreMask.GetA(m, s)
-	dd := sp.sprDrawData[sNum]
-	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
+	sData := (uint32(sp.sprDrawData[sNum][0]) << 24) | (uint32(sp.sprDrawData[sNum][1]) << 16) | (uint32(sp.sprDrawData[sNum][2]) << 8)
 	// Check graphics collision
 	if (foreMask & sData) != 0 {
 		*gfxColl |= sBit
@@ -228,8 +226,7 @@ func (sp *Sprites) drawSpriteUnexpandedMulticolor(lineStart int, sNum uint8, sBi
 	m := q / 8
 	s := q & 7
 	foreMask := sp.foreMask.GetL(m, s) //sp.foreMask.GetB(m, s)
-	dd := sp.sprDrawData[sNum]
-	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
+	sData := (uint32(sp.sprDrawData[sNum][0]) << 24) | (uint32(sp.sprDrawData[sNum][1]) << 16) | (uint32(sp.sprDrawData[sNum][2]) << 8)
 	// Convert sprite chunky pixels to bitPlanes
 	plane0 := (sData & 0x55555555) | (sData&0x55555555)<<1
 	plane1 := (sData & 0xaaaaaaaa) | (sData&0xaaaaaaaa)>>1
@@ -279,8 +276,7 @@ func (sp *Sprites) drawSpriteUnexpandedStandard(lineStart int, sNum uint8, sBit 
 	m := q / 8
 	s := q & 7
 	foreMask := sp.foreMask.GetL(m, s) //sp.foreMask.GetC(m, s)
-	dd := sp.sprDrawData[sNum]
-	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
+	sData := (uint32(sp.sprDrawData[sNum][0]) << 24) | (uint32(sp.sprDrawData[sNum][1]) << 16) | (uint32(sp.sprDrawData[sNum][2]) << 8)
 	// Check graphics collision
 	if (foreMask & sData) != 0 {
 		*gfxColl |= sBit
