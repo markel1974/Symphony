@@ -6,6 +6,7 @@ type Sprites struct {
 	*Core
 	foreMask    *ForeMask
 	intr        IInterrupts
+	db          *DisplayBuffer
 	sprCollBuf  []uint8   // Buffer for sprite-sprite collisions and priorities
 	sprPtr      []uint16  // Sprite data pointers
 	sprData     [][]uint8 // Sprite data read
@@ -13,10 +14,11 @@ type Sprites struct {
 	sprDraw     uint8     // 8 flags: Draw sprite in this line
 }
 
-func NewSprites(core *Core, foreMask *ForeMask) *Sprites {
+func NewSprites(core *Core, foreMask *ForeMask, db *DisplayBuffer) *Sprites {
 	s := &Sprites{
 		Core:        core,
 		foreMask:    foreMask,
+		db:          db,
 		intr:        nil,
 		sprCollBuf:  make([]uint8, DisplayXFillMax),
 		sprPtr:      make([]uint16, SpriteNumber),
@@ -155,7 +157,7 @@ func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit 
 			if sp.sprCollBuf[collIdx] != 0 {
 				*sprColl |= sp.sprCollBuf[collIdx] | sBit
 			} else {
-				sp.displayBuffer[displayPtr+idx] = selectedColor
+				sp.db.Set(displayPtr+idx, selectedColor)
 				sp.sprCollBuf[collIdx] = sBit
 			}
 		}
@@ -179,7 +181,7 @@ func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit 
 			if sp.sprCollBuf[collIdx] != 0 {
 				*sprColl |= sp.sprCollBuf[collIdx] | sBit
 			} else {
-				sp.displayBuffer[displayPtr+idx] = selectedColor
+				sp.db.Set(displayPtr+idx, selectedColor)
 				sp.sprCollBuf[collIdx] = sBit
 			}
 		}
@@ -211,7 +213,7 @@ func (sp *Sprites) drawSpriteExpandedStandard(lineStart int, sNum uint8, sBit ui
 					*sprColl |= sp.sprCollBuf[collIdx] | sBit
 				} else {
 					// Draw pixel if no collision
-					sp.displayBuffer[displayPtr+idx] = color
+					sp.db.Set(displayPtr+idx, color)
 					sp.sprCollBuf[collIdx] = sBit
 				}
 			}
@@ -262,7 +264,7 @@ func (sp *Sprites) drawSpriteUnexpandedMulticolor(lineStart int, sNum uint8, sBi
 				*sprColl |= sp.sprCollBuf[collIdx] | sBit
 			} else {
 				// Draw pixel if no collision
-				sp.displayBuffer[displayPtr+idx] = selectedColor
+				sp.db.Set(displayPtr+idx, selectedColor)
 				sp.sprCollBuf[collIdx] = sBit
 			}
 		}
@@ -294,7 +296,7 @@ func (sp *Sprites) drawSpriteUnexpandedStandard(lineStart int, sNum uint8, sBit 
 					*sprColl |= sp.sprCollBuf[collIdx] | sBit
 				} else {
 					// Draw pixel if no collision
-					sp.displayBuffer[displayPtr+idx] = color
+					sp.db.Set(displayPtr+idx, color)
 					sp.sprCollBuf[collIdx] = sBit
 				}
 			}

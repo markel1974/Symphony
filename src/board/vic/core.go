@@ -1,6 +1,9 @@
 package vic
 
-import "github.com/markel1974/c64emu/src/board/quartz"
+import (
+	"github.com/markel1974/c64emu/src/board/quartz"
+	"github.com/markel1974/c64emu/src/signals"
+)
 
 type Core struct {
 	quartz          *quartz.Quartz
@@ -57,12 +60,10 @@ type Core struct {
 	badLinesEnabled bool     // Bad Lines enabled for this frame
 	isBadLine       bool     // Current line is bad line
 	ready           bool     // VIC Initialization Complete
-	readyFn         func()
-	baLow           bool   // BALine
-	baLowFirstCycle uint64 //
-	lastByte        uint8  // Last byte read by VIC
-	//TODO CREATE AN OBJECT....
-	displayBuffer []uint8 //
+	baLow           bool     // BALine
+	baLowFirstCycle uint64   //
+	lastByte        uint8    // Last byte read by VIC
+	readySignal     *signals.Signal
 }
 
 func NewCore() *Core {
@@ -127,9 +128,8 @@ func NewCore() *Core {
 		baLow:           false,
 		baLowFirstCycle: 0,
 		ready:           false,
-		readyFn:         nil,
+		readySignal:     signals.NewSignal(),
 		lastByte:        0,
-		displayBuffer:   make([]uint8, DisplaySize),
 	}
 	// Preset colors to black
 	for i := range c.mXcColor {
@@ -138,11 +138,10 @@ func NewCore() *Core {
 	return c
 }
 
-func (vic *Core) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks, readyFn func()) {
+func (vic *Core) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks) {
 	vic.banks = banks
 	vic.quartz = quartz
 	vic.intr = intr
-	vic.readyFn = readyFn
 }
 
 func (vic *Core) SetBALow() {
@@ -194,8 +193,7 @@ func (vic *Core) ReadRegister(addr uint16) uint8 {
 	case 0x19:
 		if !vic.ready {
 			vic.ready = true
-			vic.readyFn()
-			//vic.board.ReadyEvent()
+			vic.readySignal.Emit()
 		}
 		return vic.irqFlag | 0x70
 	// IRQ mask

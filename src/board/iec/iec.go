@@ -7,6 +7,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/preferences"
+	"github.com/markel1974/c64emu/src/signals"
 	"strings"
 )
 
@@ -56,6 +57,8 @@ type IEC struct {
 
 	virtualDrives []virtualdrive.IVirtualDrive
 
+	ledSignal *signals.Signal2[int, uint8]
+
 	//openData                []byte
 	//listener                virtualdrive.IVirtualDrive // Pointer to active listener
 	//talker                  virtualdrive.IVirtualDrive // Pointer to active talker
@@ -74,6 +77,7 @@ func NewIEC() *IEC {
 		//peripheralStorage:       make([]*C1541Model, BusNum),
 		//peripheralStorageActive: make([]*C1541Model, BusNum),
 		virtualDrives: nil, //make([]virtualdrive.IVirtualDrive, MaxDriveSize),
+		ledSignal:     signals.NewSignal2[int, uint8](),
 	}
 	return c
 }
@@ -289,6 +293,7 @@ func (c *IEC) createVirtualDrive(kind int, deviceNumber uint8) virtualdrive.IVir
 	case 2:
 		vd := fsdrive.New(c, deviceNumber)
 		vd.Setup(c.prefs)
+
 		//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 		return vd
 	}
@@ -352,7 +357,7 @@ func (c *IEC) rebuildPeripherals() {
 }
 
 func (c *IEC) ledStateChangedEventHandler(deviceNumber int, state uint8) {
-
+	c.ledSignal.Emit(deviceNumber, state)
 }
 
 func (c *IEC) debugCpuWrite(data uint8) {

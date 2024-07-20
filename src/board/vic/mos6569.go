@@ -3,6 +3,7 @@ package vic
 import (
 	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/preferences"
+	"github.com/markel1974/c64emu/src/signals"
 )
 
 //https://dustlayer.com/c64-architecture
@@ -10,12 +11,12 @@ import (
 var _emptyForeMaskBuffer = make([]uint8, DisplayXDiv8)
 
 type MOS6569 struct {
-	core  *Core
-	prefs *preferences.Prefs
-
+	core             *Core
+	prefs            *preferences.Prefs
 	sprites          *Sprites
 	graphics         *Graphics
 	foreMask         *ForeMask
+	db               *DisplayBuffer
 	cycle            int      // Cycle
 	lineStart        int      // Offset from current line in bitmap buffer
 	lineOffset       int      // Offset from chunky bitmap buffer
@@ -41,11 +42,13 @@ type MOS6569 struct {
 func NewMOS6569() *MOS6569 {
 	core := NewCore()
 	foreMask := NewForeMask()
+	db := NewDisplayBuffer()
 	vic := &MOS6569{
 		core:             core,
 		foreMask:         foreMask,
-		graphics:         NewGraphics(core, foreMask),
-		sprites:          NewSprites(core, foreMask),
+		db:               db,
+		graphics:         NewGraphics(core, foreMask, db),
+		sprites:          NewSprites(core, foreMask, db),
 		lineOffset:       0,
 		rowCounter:       7,
 		videoCounter:     0,
@@ -68,16 +71,16 @@ func NewMOS6569() *MOS6569 {
 	return vic
 }
 
-func (vic *MOS6569) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks, prefs *preferences.Prefs, readyFn func()) {
+func (vic *MOS6569) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks, prefs *preferences.Prefs) {
 	//vic.board = board
 	vic.prefs = prefs
-	vic.core.Setup(quartz, intr, banks, readyFn)
+	vic.core.Setup(quartz, intr, banks)
 	vic.graphics.Setup()
 	vic.sprites.Setup(intr)
 }
 
 func (vic *MOS6569) GetDisplayBuffer() []uint8 {
-	return vic.core.displayBuffer
+	return vic.db.Get()
 }
 
 func (vic *MOS6569) Reset() {
@@ -90,6 +93,10 @@ func (vic *MOS6569) GetLastByte() uint8 {
 
 func (vic *MOS6569) GetBALow() bool {
 	return vic.core.baLow
+}
+
+func (vic *MOS6569) GetReadySignal() *signals.Signal {
+	return vic.core.readySignal
 }
 
 func (vic *MOS6569) NewPrefs(_ *preferences.Prefs) {

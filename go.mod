@@ -1,6 +1,6 @@
 module github.com/markel1974/c64emu
 
-go 1.17
+go 1.18
 
 require (
 	github.com/go-gl/gl v0.0.0-20231021071112-07e5d0ea2e71

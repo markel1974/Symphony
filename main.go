@@ -9,6 +9,9 @@ import (
 	"strings"
 )
 
+func test(a int, b int, c string, d int, e bool) {
+	fmt.Println("INSIDE", a, b, c, d, e)
+}
 func main() {
 	var showHelp bool
 	var showVersion bool
