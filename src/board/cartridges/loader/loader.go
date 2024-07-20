@@ -49,6 +49,7 @@ var CrtHeaderVic20 = []byte("VIC20 CARTRIDGE ")
 var CrtHeaderPlus4 = []byte("PLUS4 CARTRIDGE ")
 
 type CRTLoader struct {
+	id           string
 	rowCartridge []byte
 	cursor       int
 	mc           int
@@ -62,8 +63,9 @@ type CRTLoader struct {
 	mode         Mode
 }
 
-func NewLoader(mc int) *CRTLoader {
+func NewLoader(id string, mc int) *CRTLoader {
 	return &CRTLoader{
+		id:           id,
 		rowCartridge: nil,
 		cursor:       0,
 		mc:           mc,
@@ -86,6 +88,10 @@ func (cl *CRTLoader) Setup(p string) error {
 		}
 	}
 	return nil
+}
+
+func (cl *CRTLoader) GetId() string {
+	return cl.id
 }
 
 func (cl *CRTLoader) GetMode() Mode {

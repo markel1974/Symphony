@@ -9,6 +9,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
 	"github.com/markel1974/c64emu/src/board/cartridges/ocean"
 	"github.com/markel1974/c64emu/src/preferences"
+	"strconv"
 )
 
 //https://www.c64-wiki.com/wiki/Bank_Switching
@@ -16,6 +17,7 @@ import (
 //https://github.com/Project-64/reloaded/blob/master/c64/c64prg/C64PRG11.TXT#L13101
 
 type Manager struct {
+	idx   int
 	board icartridge.IExpansion
 	prefs *preferences.Prefs
 	carts []icartridge.ICartridge
@@ -23,6 +25,9 @@ type Manager struct {
 
 func NewManager() *Manager {
 	return &Manager{
+		idx:   0,
+		board: nil,
+		prefs: nil,
 		carts: nil,
 	}
 }
@@ -124,19 +129,38 @@ func (f *Manager) IORead(addr uint16) (uint8, bool) {
 	return val, ret
 }
 
-func (f *Manager) Add(p string) error {
-	ldr := loader.NewLoader(loader.MachineC64)
+func (f *Manager) Add(p string) (string, error) {
+	id := strconv.Itoa(f.idx)
+	ldr := loader.NewLoader(id, loader.MachineC64)
 	err := ldr.Setup(p)
 	if err != nil {
-		return err
+		return "", err
 	}
+	var cart icartridge.ICartridge = nil
 	if ldr.GetMode() == loader.ModeCrt {
-		return f.loadCrt(ldr)
+		cart, err = f.loadCrt(ldr)
+	} else {
+		cart, err = f.loadBin(ldr)
 	}
-	return f.loadBin(ldr)
+	if err != nil {
+		return "", err
+	}
+	f.idx++
+	f.carts = append(f.carts, cart)
+	return id, nil
 }
 
-func (f *Manager) loadCrt(ldr *loader.CRTLoader) error {
+func (f *Manager) Remove(id string) error {
+	for s, cart := range f.carts {
+		if cart.GetId() == id {
+			f.carts = append(f.carts[:s], f.carts[s+1:]...)
+			return nil
+		}
+	}
+	return fmt.Errorf("can't remove cartridge id %s", id)
+}
+
+func (f *Manager) loadCrt(ldr *loader.CRTLoader) (icartridge.ICartridge, error) {
 	var cart icartridge.ICartridge
 	switch ldr.Kind {
 	case loader.CARTRIDGE_OCEAN:
@@ -145,16 +169,15 @@ func (f *Manager) loadCrt(ldr *loader.CRTLoader) error {
 		cart = easyflash.New(uint8(ldr.Game), uint8(ldr.ExRom), icartridge.ROM_LO, icartridge.ROM_HI_1)
 	}
 	if cart == nil {
-		return fmt.Errorf("unsupported")
+		return nil, fmt.Errorf("unsupported")
 	}
 	if err := cart.Setup(f.board, ldr); err != nil {
-		return err
+		return nil, err
 	}
-	f.carts = append(f.carts, cart)
-	return nil
+	return cart, nil
 }
 
-func (f *Manager) loadBin(ldr *loader.CRTLoader) error {
+func (f *Manager) loadBin(ldr *loader.CRTLoader) (icartridge.ICartridge, error) {
 	var cart icartridge.ICartridge = nil
 	lCartridge := len(ldr.GetData())
 	if lCartridge == 0x2000 {
@@ -168,11 +191,10 @@ func (f *Manager) loadBin(ldr *loader.CRTLoader) error {
 		cart = ocean.New(0, 0, icartridge.ROM_LO, icartridge.ROM_HI_1)
 	}
 	if cart == nil {
-		return fmt.Errorf("invalid cartridge")
+		return nil, fmt.Errorf("invalid cartridge")
 	}
 	if err := cart.Setup(f.board, ldr); err != nil {
-		return err
+		return nil, err
 	}
-	f.carts = append(f.carts, cart)
-	return nil
+	return cart, nil
 }

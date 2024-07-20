@@ -9,6 +9,7 @@ import (
 type CartridgeOcean struct {
 	//b0Interval Interval
 	//b1Interval Interval
+	id        string
 	intervals icartridge.Interval
 	lastData  uint8
 	banks     [][]byte
@@ -32,10 +33,15 @@ func New(game uint8, exRom uint8, b0 icartridge.Interval, b1 icartridge.Interval
 
 func (c *CartridgeOcean) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
+	c.id = ldr.GetId()
 	if ldr.GetMode() == loader.ModeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr.GetData())
+}
+
+func (c *CartridgeOcean) GetId() string {
+	return c.id
 }
 
 func (c *CartridgeOcean) Write(i icartridge.Interval, addr uint16, data uint8) bool {

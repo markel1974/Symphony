@@ -21,6 +21,7 @@ const (
 
 type ICartridge interface {
 	Setup(board IExpansion, ldr *loader.CRTLoader) error
+	GetId() string
 	Write(i Interval, addr uint16, data uint8) bool
 	Read(i Interval, addr uint16) (uint8, bool)
 	IORead(addr uint16) (uint8, bool)

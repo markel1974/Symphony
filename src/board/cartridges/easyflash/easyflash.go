@@ -93,6 +93,7 @@ easyflash_io2_read,       // peek function, same implementation
 type CartridgeEasyFlash struct {
 	board       icartridge.IExpansion
 	intervals   icartridge.Interval
+	id          string
 	game        uint8
 	exRom       uint8
 	stateLow    *flash.Flash040 /* the 29F040B statemachine */
@@ -125,6 +126,7 @@ func New(game uint8, exRom uint8, lo icartridge.Interval, hi icartridge.Interval
 func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	var rawCart []byte
 	c.board = board
+	c.id = ldr.GetId()
 	rp := patterns.NewInitiator(255, 2, 1, 0x100, 255, 0, 0, 0)
 	rp.InitWithPattern(c.ram, CartRamSize)
 	c.filename = ldr.Name
@@ -155,6 +157,10 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	//c.controlUpdate(0)
 	c.initializeFlash(rawCart)
 	return nil
+}
+
+func (c *CartridgeEasyFlash) GetId() string {
+	return c.id
 }
 
 func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {

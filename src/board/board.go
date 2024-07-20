@@ -89,8 +89,10 @@ func (s *Board) Setup(prefs *preferences.Prefs) error {
 
 	if !s.prefs.GetDisableCartridgeAutostart() {
 		for _, cartName := range s.prefs.GetCartridges() {
-			if err := s.cartMan.Add(cartName); err != nil {
+			if cartId, err := s.cartMan.Add(cartName); err != nil {
 				log.Printf("can't add cartridge: %s", err.Error())
+			} else {
+				log.Printf("cartridge: %s [%s] successfully added", cartName, cartId)
 			}
 		}
 	}

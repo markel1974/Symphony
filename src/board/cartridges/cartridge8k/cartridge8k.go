@@ -7,6 +7,7 @@ import (
 )
 
 type Cartridge8K struct {
+	id        string
 	bank0     []uint8
 	intervals icartridge.Interval
 	game      uint8
@@ -24,10 +25,15 @@ func New(game uint8, exRom uint8, i icartridge.Interval) *Cartridge8K {
 
 func (c *Cartridge8K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
+	c.id = ldr.GetId()
 	if ldr.GetMode() == loader.ModeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr.GetData())
+}
+
+func (c *Cartridge8K) GetId() string {
+	return c.id
 }
 
 func (c *Cartridge8K) initCrt(ldr *loader.CRTLoader) error {
