@@ -88,9 +88,9 @@ func (s *Board) Setup(prefs *preferences.Prefs) error {
 	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, prefs)
 
 	if !s.prefs.GetDisableCartridgeAutostart() {
-		if cartFile := s.prefs.GetCartridge(); len(cartFile) > 0 {
-			if err := s.cartMan.Load(cartFile); err != nil {
-				log.Printf("can't loca cartridge: %s", err.Error())
+		for _, cartName := range s.prefs.GetCartridges() {
+			if err := s.cartMan.Add(cartName); err != nil {
+				log.Printf("can't add cartridge: %s", err.Error())
 			}
 		}
 	}

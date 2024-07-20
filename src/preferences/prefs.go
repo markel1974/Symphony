@@ -1,14 +1,14 @@
 package preferences
 
 type Prefs struct {
-	Cartridge                 string
+	Cartridges                []string
 	DisableCartridgeAutostart bool
 	//JoystickSwap              bool
 }
 
 func NewPrefs() *Prefs {
 	return &Prefs{
-		Cartridge:                 "",
+		Cartridges:                nil,
 		DisableCartridgeAutostart: false,
 		//JoystickSwap:              true,
 	}
@@ -30,12 +30,12 @@ func (p *Prefs) GetDrivePath(i int) string {
 //	return p.JoystickSwap
 //}
 
-func (p *Prefs) SetCartridge(c string) {
-	p.Cartridge = c
+func (p *Prefs) AddCartridge(c string) {
+	p.Cartridges = append(p.Cartridges, c)
 }
 
-func (p *Prefs) GetCartridge() string {
-	return p.Cartridge
+func (p *Prefs) GetCartridges() []string {
+	return p.Cartridges
 }
 
 func (p *Prefs) SetDisableCartridgeAutostart(v bool) {

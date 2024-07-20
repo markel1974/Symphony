@@ -4,6 +4,7 @@ var _sprEmptyCollBuf = make([]uint8, DisplayXFillMax)
 
 type Sprites struct {
 	*Core
+	foreMask    *ForeMask
 	intr        IInterrupts
 	sprCollBuf  []uint8   // Buffer for sprite-sprite collisions and priorities
 	sprPtr      []uint16  // Sprite data pointers
@@ -12,9 +13,10 @@ type Sprites struct {
 	sprDraw     uint8     // 8 flags: Draw sprite in this line
 }
 
-func NewSprites(core *Core) *Sprites {
+func NewSprites(core *Core, foreMask *ForeMask) *Sprites {
 	s := &Sprites{
 		Core:        core,
+		foreMask:    foreMask,
 		intr:        nil,
 		sprCollBuf:  make([]uint8, DisplayXFillMax),
 		sprPtr:      make([]uint16, SpriteNumber),
@@ -110,8 +112,8 @@ func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit 
 	color := sp.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
-	foreMask := (((uint32(sp.foreMaskBuf[m]) << 24) | (uint32(sp.foreMaskBuf[m+1]) << 16) | (uint32(sp.foreMaskBuf[m+2]) << 8) | (uint32(sp.foreMaskBuf[m+3]))) << s) | (uint32(sp.foreMaskBuf[m+4]) >> (8 - s))
-	foreMaskR := (((uint32(sp.foreMaskBuf[m+4]) << 24) | (uint32(sp.foreMaskBuf[m+5]) << 16) | (uint32(sp.foreMaskBuf[m+6]) << 8) | (uint32(sp.foreMaskBuf[m+7]))) << s) | (uint32(sp.foreMaskBuf[m+8]) >> (8 - s))
+	foreMaskL := sp.foreMask.GetL(m, s)
+	foreMaskR := sp.foreMask.GetR(m, s)
 	dd := sp.sprDrawData[sNum]
 	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
 	// Expand sprite data
@@ -123,12 +125,12 @@ func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit 
 	plane0R := (sDataR & 0x55555555) | (sDataR&0x55555555)<<1
 	plane1R := (sDataR & 0xaaaaaaaa) | (sDataR&0xaaaaaaaa)>>1
 	// Collision with graphics?
-	if (foreMask&(plane0L|plane1L)) != 0 || (foreMaskR&(plane0R|plane1R)) != 0 {
+	if (foreMaskL&(plane0L|plane1L)) != 0 || (foreMaskR&(plane0R|plane1R)) != 0 {
 		*gfxColl |= sBit
 		if sp.mdp&sBit != 0 {
 			// Mask sprite if in background
-			plane0L &= ^foreMask
-			plane1L &= ^foreMask
+			plane0L &= ^foreMaskL
+			plane1L &= ^foreMaskL
 			plane0R &= ^foreMaskR
 			plane1R &= ^foreMaskR
 		}
@@ -191,7 +193,7 @@ func (sp *Sprites) drawSpriteExpandedStandard(lineStart int, sNum uint8, sBit ui
 	color := sp.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
-	foreMask := (((uint32(sp.foreMaskBuf[m]) << 24) | (uint32(sp.foreMaskBuf[m+1]) << 16) | (uint32(sp.foreMaskBuf[m+2]) << 8) | (uint32(sp.foreMaskBuf[m+3]))) << s) | (uint32(sp.foreMaskBuf[m+4]) >> (8 - s))
+	foreMask := sp.foreMask.GetA(m, s)
 	dd := sp.sprDrawData[sNum]
 	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
 	// Check graphics collision
@@ -225,7 +227,7 @@ func (sp *Sprites) drawSpriteUnexpandedMulticolor(lineStart int, sNum uint8, sBi
 	color := sp.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
-	foreMask := (((uint32(sp.foreMaskBuf[m+0]) << 24) | (uint32(sp.foreMaskBuf[m+1]) << 16) | (uint32(sp.foreMaskBuf[m+2]) << 8) | (uint32(sp.foreMaskBuf[m+3]))) << s) | (uint32(sp.foreMaskBuf[m+4]) >> (8 - s))
+	foreMask := sp.foreMask.GetL(m, s) //sp.foreMask.GetB(m, s)
 	dd := sp.sprDrawData[sNum]
 	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
 	// Convert sprite chunky pixels to bitPlanes
@@ -276,7 +278,7 @@ func (sp *Sprites) drawSpriteUnexpandedStandard(lineStart int, sNum uint8, sBit 
 	color := sp.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
-	foreMask := (((uint32(sp.foreMaskBuf[m]) << 24) | (uint32(sp.foreMaskBuf[m+1]) << 16) | (uint32(sp.foreMaskBuf[m+2]) << 8) | (uint32(sp.foreMaskBuf[m+3]))) << s) | (uint32(sp.foreMaskBuf[m+4]) >> (8 - s))
+	foreMask := sp.foreMask.GetL(m, s) //sp.foreMask.GetC(m, s)
 	dd := sp.sprDrawData[sNum]
 	sData := (uint32(dd[0]) << 24) | (uint32(dd[1]) << 16) | (uint32(dd[2]) << 8)
 	// Check graphics collision

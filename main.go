@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/preferences"
 	"github.com/markel1974/c64emu/src/render"
 	"github.com/markel1974/c64emu/src/version"
+	"strings"
 )
 
 func main() {
@@ -29,7 +30,9 @@ func main() {
 
 	prefs := preferences.NewPrefs()
 	if len(cartridge) > 0 {
-		prefs.SetCartridge(cartridge)
+		for _, c := range strings.Split(cartridge, ";") {
+			prefs.AddCartridge(c)
+		}
 	}
 	g := render.New(prefs)
 	g.Start()

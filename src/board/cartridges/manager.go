@@ -18,12 +18,12 @@ import (
 type Manager struct {
 	board icartridge.IExpansion
 	prefs *preferences.Prefs
-	cart  icartridge.ICartridge
+	carts []icartridge.ICartridge
 }
 
 func NewManager() *Manager {
 	return &Manager{
-		cart: nil,
+		carts: nil,
 	}
 }
 
@@ -32,39 +32,99 @@ func (f *Manager) Setup(board icartridge.IExpansion, prefs *preferences.Prefs) {
 	f.prefs = prefs
 }
 
-func (f *Manager) Cartridge() icartridge.ICartridge {
-	return f.cart
+func (f *Manager) Config() (uint8, uint8, bool) {
+	if f.carts == nil {
+		return 0, 0, false
+	}
+	if len(f.carts) == 1 {
+		return f.carts[0].GetGame(), f.carts[0].GetExRom(), true
+	}
+	g := uint8(1)
+	x := uint8(1)
+	for _, cart := range f.carts {
+		if g == 1 {
+			g = cart.GetGame()
+		}
+		if x == 1 {
+			x = cart.GetExRom()
+		}
+	}
+	return g, x, true
 }
 
 func (f *Manager) Read(interval icartridge.Interval, addr uint16) (uint8, bool) {
-	if f.cart == nil {
+	if f.carts == nil {
 		return 0, false
 	}
-	return f.cart.Read(interval, addr)
+	if len(f.carts) == 1 {
+		return f.carts[0].Read(interval, addr)
+	}
+	val := uint8(0)
+	ret := false
+	for _, cart := range f.carts {
+		if v, ok := cart.Read(interval, addr); ok {
+			if !ret {
+				val = v
+				ret = true
+			}
+		}
+	}
+	return val, ret
 }
 
 func (f *Manager) Write(interval icartridge.Interval, addr uint16, data uint8) bool {
-	if f.cart == nil {
+	if f.carts == nil {
 		return false
 	}
-	return f.cart.Write(interval, addr, data)
+	if len(f.carts) == 1 {
+		return f.carts[0].Write(interval, addr, data)
+	}
+	ret := false
+	for _, cart := range f.carts {
+		if ok := cart.Write(interval, addr, data); ok {
+			ret = true
+		}
+	}
+	return ret
 }
 
 func (f *Manager) IOWrite(addr uint16, data uint8) bool {
-	if f.cart == nil {
+	if f.carts == nil {
 		return false
 	}
-	return f.cart.IOWrite(addr, data)
+	if len(f.carts) == 1 {
+		return f.carts[0].IOWrite(addr, data)
+	}
+	ret := false
+	for _, cart := range f.carts {
+		if ok := cart.IOWrite(addr, data); ok {
+			ret = true
+		}
+	}
+	return ret
 }
 
 func (f *Manager) IORead(addr uint16) (uint8, bool) {
-	if f.cart == nil {
+	if f.carts == nil {
 		return 0, false
 	}
-	return f.cart.IORead(addr)
+	if len(f.carts) == 1 {
+		return f.carts[0].IORead(addr)
+	}
+	val := uint8(0)
+	ret := false
+	for _, cart := range f.carts {
+		if v, ok := cart.IORead(addr); ok {
+			if !ret {
+				val = v
+				ret = true
+			}
+		}
+	}
+	return val, ret
 }
 
-func (f *Manager) Load(p string) error {
+func (f *Manager) Add(p string) error {
 	ldr := loader.NewLoader(loader.MachineC64)
 	err := ldr.Setup(p)
 	if err != nil {
@@ -90,7 +150,7 @@ func (f *Manager) loadCrt(ldr *loader.CRTLoader) error {
 	if err := cart.Setup(f.board, ldr); err != nil {
 		return err
 	}
-	f.cart = cart
+	f.carts = append(f.carts, cart)
 	return nil
 }
 
@@ -113,6 +173,6 @@ func (f *Manager) loadBin(ldr *loader.CRTLoader) error {
 	if err := cart.Setup(f.board, ldr); err != nil {
 		return err
 	}
-	f.cart = cart
+	f.carts = append(f.carts, cart)
 	return nil
 }

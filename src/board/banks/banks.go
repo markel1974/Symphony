@@ -179,12 +179,11 @@ func (b *Banks) portsUpdate() {
 	//https://codebase64.org/doku.php?id=base:memory_management
 	//b.ports.SetTape(tape_sense, tape_write_in, tape_motor_in)
 	b.ports.Update()
-	exRom := uint8(1)
 	game := uint8(1)
-	cart := b.cartMan.Cartridge()
-	if cart != nil {
-		exRom = cart.GetExRom()
-		game = cart.GetGame()
+	exRom := uint8(1)
+	if g, x, ok := b.cartMan.Config(); ok {
+		game = g
+		exRom = x
 	}
 	memConfig := b.ports.GetMemoryConfig(exRom, game)
 	b.memoryConfig = b.memoryMap.Get(memConfig)
