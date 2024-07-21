@@ -61,7 +61,7 @@ func (sp *Sprites) ApplyDisplayFlags() {
 
 func (sp *Sprites) FetchDataPtr(num int) {
 	addr := sp.core.matrixBase | 0x03f8 | uint16(num)
-	data := sp.core.readByte(addr)
+	data := sp.core.ReadByte(addr)
 	ptr := uint16(data) << 6
 	sp.dataPtr[num] = ptr
 }
@@ -70,12 +70,12 @@ func (sp *Sprites) FetchData(num int, byteNum int) {
 	if (sp.dmaFlags & (1 << num)) != 0 {
 		ptr := sp.dataPtr[num]
 		addr := (sp.dataCounter[num] & 0x3f) | ptr
-		data := sp.core.readByte(addr)
+		data := sp.core.ReadByte(addr)
 		sp.data[num][byteNum] = data
 		sp.dataCounter[num]++
 	} else if byteNum == 1 {
 		//idleAccess
-		sp.core.readByte(0x3fff)
+		sp.core.ReadByte(0x3fff)
 	}
 }
 

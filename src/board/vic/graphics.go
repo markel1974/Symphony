@@ -115,16 +115,16 @@ func (gr *Graphics) GraphicsAccess() {
 		if (gr.core.cr1 & 0x40) != 0 {
 			addr &= 0xf9ff // ECM
 		}
-		gr.gfxData = gr.core.readByte(addr)
+		gr.gfxData = gr.core.ReadByte(addr)
 		gr.charData = gr.matrixLine[gr.matrixLineIndex]
 		gr.colorData = gr.colorLine[gr.matrixLineIndex]
 		gr.matrixLineIndex++
 		gr.videoCounter++
 	} else {
 		if (gr.core.cr1 & 0x40) != 0 {
-			gr.gfxData = gr.core.readByte(0x39ff)
+			gr.gfxData = gr.core.ReadByte(0x39ff)
 		} else {
-			gr.gfxData = gr.core.readByte(0x3fff)
+			gr.gfxData = gr.core.ReadByte(0x3fff)
 		}
 		gr.colorData = 0
 		gr.charData = 0
@@ -138,7 +138,7 @@ func (gr *Graphics) MatrixAccess() {
 			gr.matrixLine[gr.matrixLineIndex] = 0xff
 		} else {
 			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase
-			gr.matrixLine[gr.matrixLineIndex] = gr.core.readByte(addr)
+			gr.matrixLine[gr.matrixLineIndex] = gr.core.ReadByte(addr)
 			gr.colorLine[gr.matrixLineIndex] = gr.core.banks.ReadColor(addr & 0x03ff)
 		}
 	}

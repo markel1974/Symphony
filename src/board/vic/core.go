@@ -161,6 +161,78 @@ func (vic *Core) ClearBALow() {
 	}
 }
 
+func (vic *Core) FlipFlopMYE() {
+	// Invert y expansion FlipFlop (if MYE bit is set)
+	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
+		if (vic.mye & mask) != 0 {
+			vic.sprExpY ^= mask
+		}
+	}
+}
+
+func (vic *Core) BadLineUpdate() {
+	vic.isBadLine = vic.rasterY >= FirstDmaLine && vic.rasterY <= LastDmaLine && ((vic.rasterY & 7) == vic.yScroll) && vic.badLinesEnabled
+}
+
+func (vic *Core) ChangedVA(newVA uint8) {
+	vic.ciaVaBase = uint16(newVA) << 14
+	vic.WriteRegister(0x18, vic.vaBase) // Force update of memory pointers
+}
+
+func (vic *Core) LightPenTrigger() {
+	// LightPen triggers only once per frame
+	if !vic.lpTriggered {
+		vic.lpTriggered = true
+		vic.lpx = uint8(vic.rasterX >> 1) // Latch current coordinates
+		vic.lpy = uint8(vic.rasterY)
+		vic.irqFlag |= 0x08 // Trigger IRQ
+		if (vic.irqMask & 0x08) != 0 {
+			vic.irqFlag |= 0x80
+			vic.intr.TriggerVICIRQ()
+		}
+	}
+}
+
+func (vic *Core) ResetCounters() {
+	vic.rasterY = 0
+	vic.lpTriggered = false
+	if vic.irqRaster == 0 {
+		// Trigger raster IRQ if IRQ in line 0
+		vic.rasterIrq()
+	}
+}
+
+func (vic *Core) UpdateRasterY() {
+	// Increment raster counter
+	vic.rasterY++
+	// Trigger raster IRQ if IRQ line reached
+	if vic.rasterY == vic.irqRaster {
+		vic.rasterIrq()
+	}
+	// In line $30, the DEN bit controls if Bad Lines can occur
+	if vic.rasterY == 0x30 {
+		vic.badLinesEnabled = vic.cr1&0x10 != 0
+	}
+}
+
+func (vic *Core) ReadByte(addr uint16) uint8 {
+	va := addr | vic.ciaVaBase
+	if (va & 0x7000) == 0x1000 {
+		vic.lastByte = vic.banks.ReadCharRom(va & 0x0fff)
+		return vic.lastByte
+	}
+	vic.lastByte = vic.banks.ReadDirect(va)
+	return vic.lastByte
+}
+
+func (vic *Core) rasterIrq() {
+	vic.irqFlag |= 0x01
+	if (vic.irqMask & 0x01) != 0 {
+		vic.irqFlag |= 0x80
+		vic.intr.TriggerVICIRQ()
+	}
+}
+
 func (vic *Core) ReadRegister(addr uint16) uint8 {
 	addr = addr & 0x3f
 	switch addr {
@@ -253,7 +325,7 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 		vic.mXx[target] = (vic.mXx[target] & 0xff00) | uint16(data)
 	case 0x10:
 		vic.mx8 = data
-		for i, j := 0, uint8(1); i < 8; i, j = i+1, j<<1 {
+		for i, j := 0, uint8(1); i < SpriteNumber; i, j = i+1, j<<1 {
 			if (vic.mx8 & j) != 0 {
 				vic.mXx[i] |= 0x100
 			} else {
@@ -281,7 +353,7 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 		if (vic.rasterY == 0x30) && ((data & 0x10) != 0) {
 			vic.badLinesEnabled = true
 		}
-		vic.badLineUpdate()
+		vic.BadLineUpdate()
 		vic.displayIdx = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4
 	case 0x12: // Raster counter
 		newIRQRaster := (vic.irqRaster & 0xff00) | uint16(data)
@@ -353,54 +425,4 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 		vic.mXc[target] = data
 		vic.mXcColor[target] = vic.colors[data]
 	}
-}
-
-func (vic *Core) badLineUpdate() {
-	vic.isBadLine = vic.rasterY >= FirstDmaLine && vic.rasterY <= LastDmaLine && ((vic.rasterY & 7) == vic.yScroll) && vic.badLinesEnabled
-}
-
-func (vic *Core) ChangedVA(newVA uint8) {
-	vic.ciaVaBase = uint16(newVA) << 14
-	vic.WriteRegister(0x18, vic.vaBase) // Force update of memory pointers
-}
-
-func (vic *Core) LightPenTrigger() {
-	// LightPen triggers only once per frame
-	if !vic.lpTriggered {
-		vic.lpTriggered = true
-		vic.lpx = uint8(vic.rasterX >> 1) // Latch current coordinates
-		vic.lpy = uint8(vic.rasterY)
-		vic.irqFlag |= 0x08 // Trigger IRQ
-		if (vic.irqMask & 0x08) != 0 {
-			vic.irqFlag |= 0x80
-			vic.intr.TriggerVICIRQ()
-		}
-	}
-}
-
-func (vic *Core) ResetCounters() {
-	vic.rasterY = 0
-	vic.lpTriggered = false
-	if vic.irqRaster == 0 {
-		// Trigger raster IRQ if IRQ in line 0
-		vic.rasterIrq()
-	}
-}
-
-func (vic *Core) rasterIrq() {
-	vic.irqFlag |= 0x01
-	if (vic.irqMask & 0x01) != 0 {
-		vic.irqFlag |= 0x80
-		vic.intr.TriggerVICIRQ()
-	}
-}
-
-func (vic *Core) readByte(addr uint16) uint8 {
-	va := addr | vic.ciaVaBase
-	if (va & 0x7000) == 0x1000 {
-		vic.lastByte = vic.banks.ReadCharRom(va & 0x0fff)
-		return vic.lastByte
-	}
-	vic.lastByte = vic.banks.ReadDirect(va)
-	return vic.lastByte
 }

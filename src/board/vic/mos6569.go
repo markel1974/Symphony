@@ -105,17 +105,9 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.vBlanking = true
 		} else {
 			// Increment raster counter
-			vic.core.rasterY++
-			// Trigger raster IRQ if IRQ line reached
-			if vic.core.rasterY == vic.core.irqRaster {
-				vic.core.rasterIrq()
-			}
-			// In line $30, the DEN bit controls if Bad Lines can occur
-			if vic.core.rasterY == 0x30 {
-				vic.core.badLinesEnabled = vic.core.cr1&0x10 != 0
-			}
+			vic.core.UpdateRasterY()
 			// Bad Line condition?
-			vic.core.badLineUpdate()
+			vic.core.BadLineUpdate()
 			// Don't draw all lines, hide some at the top and bottom
 			vic.drawThisLine = (vic.core.rasterY >= FirstDisplayedLine) && (vic.core.rasterY <= LastDisplayedLine)
 		}
@@ -129,7 +121,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if (vic.sprites.GetDMAFlags() & 0x18) == 0 {
 			vic.core.ClearBALow()
 		}
-
 	case 2:
 		// Set BA for sprite 5, read data of sprite 3
 		if vic.vBlanking {
@@ -355,12 +346,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
 		}
-		// Invert y expansion FlipFlop (if MYE bit is set)
-		for idx, mask := 0, uint8(1); idx < 8; idx, mask = idx+1, mask<<1 {
-			if (vic.core.mye & mask) != 0 {
-				vic.core.sprExpY ^= mask
-			}
-		}
+		vic.core.FlipFlopMYE()
 		vic.sprites.UpdateDMA()
 		if (vic.sprites.GetDMAFlags() & 0x01) != 0 {
 			vic.core.SetBALow()
@@ -380,7 +366,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.SampleBorder(vic.cycle)
 		}
 		//idleAccess
-		vic.core.readByte(0x3fff)
+		vic.core.ReadByte(0x3fff)
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
 		}
@@ -404,7 +390,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.SampleBorder(vic.cycle)
 		}
 		//idleAccess
-		vic.core.readByte(0x3fff)
+		vic.core.ReadByte(0x3fff)
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
 		}
@@ -496,6 +482,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 }
 
 func (vic *MOS6569) refreshAccess() {
-	_ = vic.core.readByte(0x3f00 | uint16(vic.refreshCounter))
+	_ = vic.core.ReadByte(0x3f00 | uint16(vic.refreshCounter))
 	vic.refreshCounter--
 }
