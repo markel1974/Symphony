@@ -24,7 +24,6 @@ type MOS6569 struct {
 func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 	core := NewCore()
 	foreMask := NewForeMask()
-	//displayBuffer := NewDisplayBuffer()
 	vic := &MOS6569{
 		core:         core,
 		foreMask:     foreMask,
@@ -34,7 +33,6 @@ func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 		vBlanking:    false,
 		drawThisLine: false,
 	}
-
 	return vic
 }
 
@@ -45,10 +43,6 @@ func (vic *MOS6569) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks,
 	vic.graphics.Setup()
 	vic.sprites.Setup(intr)
 }
-
-//func (vic *MOS6569) GetDisplayBuffer() []uint8 {
-//	return vic.displayBuffer.Get()
-//}
 
 func (vic *MOS6569) Reset() {
 	vic.core.ready = false
@@ -88,6 +82,11 @@ func (vic *MOS6569) ChangedVA(va uint8) {
 
 func (vic *MOS6569) LightPenTrigger() {
 	vic.core.LightPenTrigger()
+}
+
+func (vic *MOS6569) refreshAccess() {
+	_ = vic.core.ReadByte(0x3f00 | uint16(vic.refreshCounter))
+	vic.refreshCounter--
 }
 
 func (vic *MOS6569) Emulate() (bool, bool) {
@@ -372,9 +371,8 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if (vic.sprites.GetDMAFlags() & 0x01) != 0 {
 			vic.core.SetBALow()
 		}
-
-	// Turn on border in 40 column mode, set BA for sprite 1, paint sprites
 	case 57:
+		// Turn on border in 40 column mode, set BA for sprite 1, paint sprites
 		if (vic.core.cr2 & 8) != 0 {
 			vic.graphics.SetBorderOn()
 		}
@@ -477,9 +475,4 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.cycle++
 	}
 	return vBlank, lastCycle
-}
-
-func (vic *MOS6569) refreshAccess() {
-	_ = vic.core.ReadByte(0x3f00 | uint16(vic.refreshCounter))
-	vic.refreshCounter--
 }
