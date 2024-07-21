@@ -248,7 +248,7 @@ func (gr *Graphics) drawGraphicStandard(offset int, a uint8, b uint8) {
 	_tmp[1] = colorBuffer[data&1]
 	data >>= 1
 	_tmp[0] = colorBuffer[data]
-	gr.db.Set8(offset, _tmp)
+	gr.displayBuffer.Set8(offset, _tmp)
 }
 
 func (gr *Graphics) drawGraphicMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
@@ -269,6 +269,6 @@ func (gr *Graphics) drawGraphicMulticolor(offset int, a uint8, b uint8, c uint8,
 	data >>= 2
 	_tmp[1] = colorBuffer[data]
 	_tmp[0] = colorBuffer[data]
-	gr.db.Set8(offset, _tmp)
+	gr.displayBuffer.Set8(offset, _tmp)
 }
 */

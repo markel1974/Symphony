@@ -3,36 +3,42 @@ package vic
 var _sprEmptyCollBuf = make([]uint8, DisplayXFillMax)
 
 type Sprites struct {
-	core       *Core
-	foreMask   *ForeMask
-	intr       IInterrupts
-	db         IDisplayBuffer
-	sprCollBuf []uint8   // Buffer for sprite-sprite collisions and priorities
-	sprPtr     []uint16  // Sprite data pointers
-	sprData    [][]uint8 // Sprite data read
-	//sprDrawData [][]uint8 // Sprite data for drawing
-	sprFlags    uint8    // 8 flags: Draw sprite in this line
-	sprDrawData []uint32 // Sprite data for drawing
+	core            *Core
+	foreMask        *ForeMask
+	intr            IInterrupts
+	displayBuffer   IDisplayBuffer
+	collisionBuffer []uint8   // Buffer for sprite-sprite collisions and priorities
+	dataPtr         []uint16  // Sprite data pointers
+	data            [][]uint8 // Sprite data read
+	displayFlags    uint8     // 8 flags: Sprite display active
+	flags           uint8     // 8 flags: Draw sprite in this line
+	drawData        []uint32  // Sprite data for drawing
+	dmaFlags        uint8     // 8 flags: Sprite DMA active
+	dataCounter     []uint16  // Sprite data counters
+	dataCounterBase []uint16  // Sprite data counter bases
 }
 
 func NewSprites(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Sprites {
 	s := &Sprites{
-		core:       core,
-		foreMask:   foreMask,
-		db:         db,
-		intr:       nil,
-		sprCollBuf: make([]uint8, DisplayXFillMax),
-		sprPtr:     make([]uint16, SpriteNumber),
-		sprData:    make([][]uint8, SpriteNumber),
-		//sprDrawData: make([][]uint8, SpriteNumber),
-		sprDrawData: make([]uint32, SpriteNumber),
+		core:            core,
+		foreMask:        foreMask,
+		displayBuffer:   db,
+		intr:            nil,
+		collisionBuffer: make([]uint8, DisplayXFillMax),
+		dataPtr:         make([]uint16, SpriteNumber),
+		data:            make([][]uint8, SpriteNumber),
+		displayFlags:    0,
+		drawData:        make([]uint32, SpriteNumber),
+		dmaFlags:        0,
+		dataCounter:     make([]uint16, SpriteNumber),
+		dataCounterBase: make([]uint16, SpriteNumber),
 	}
-	for i := range s.sprData {
-		s.sprData[i] = make([]uint8, 4)
+	for i := range s.data {
+		s.data[i] = make([]uint8, 4)
 	}
-	//for i := range s.sprDrawData {
-	//	s.sprDrawData[i] = make([]uint8, 4)
-	//}
+	for i := range s.dataCounter {
+		s.dataCounter[i] = 63
+	}
 	return s
 }
 
@@ -40,60 +46,111 @@ func (sp *Sprites) Setup(intr IInterrupts) {
 	sp.intr = intr
 }
 
-func (sp *Sprites) GetSpritePtr(num int) uint16 {
-	return sp.sprPtr[num]
+func (sp *Sprites) GetDMAFlags() uint8 {
+	return sp.dmaFlags
 }
 
-func (sp *Sprites) SetSpritePtr(num int, data uint16) {
-	sp.sprPtr[num] = data
-}
-
-func (sp *Sprites) SetSpriteData(num int, byteNum int, data uint8) {
-	sp.sprData[num][byteNum] = data
-}
-
-func (sp *Sprites) SetSpriteFlags(spriteFlags uint8) {
-	sp.sprFlags = spriteFlags
-	if sp.sprFlags != 0 {
-		for sNum := 0; sNum < len(sp.sprData); sNum++ {
-			sp.sprDrawData[sNum] = (uint32(sp.sprData[sNum][0]) << 24) | (uint32(sp.sprData[sNum][1]) << 16) | (uint32(sp.sprData[sNum][2]) << 8)
+func (sp *Sprites) ApplySpriteFlags() {
+	sp.flags = sp.displayFlags
+	if sp.flags != 0 {
+		for sNum := 0; sNum < len(sp.data); sNum++ {
+			sp.drawData[sNum] = (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
 		}
 	}
 }
 
-/*
-func (sp * Sprites) Rebuild() {
+func (sp *Sprites) FetchSpriteDataPtr(num int) {
+	addr := sp.core.matrixBase | 0x03f8 | uint16(num)
+	data := sp.core.readByte(addr)
+	ptr := uint16(data) << 6
+	sp.dataPtr[num] = ptr
+}
+
+func (sp *Sprites) FetchSpriteData(num int, byteNum int) {
+	if (sp.dmaFlags & (1 << num)) != 0 {
+		ptr := sp.dataPtr[num]
+		addr := (sp.dataCounter[num] & 0x3f) | ptr
+		data := sp.core.readByte(addr)
+		sp.data[num][byteNum] = data
+		sp.dataCounter[num]++
+	} else if byteNum == 1 {
+		//idleAccess
+		sp.core.readByte(0x3fff)
+	}
+}
+
+func (sp *Sprites) UpdateDMA() {
+	rasterY := sp.core.rasterY & 0xff
+	for i, mask := 0, uint8(1); i < SpriteNumber; i, mask = i+1, mask<<1 {
+		if (sp.core.me&mask) != 0 && rasterY == uint16(sp.core.mXy[i]) {
+			sp.dmaFlags |= mask
+			sp.dataCounterBase[i] = 0
+			if (sp.core.mye & mask) != 0 {
+				sp.core.sprExpY &= ^mask
+			}
+		}
+	}
+}
+
+func (sp *Sprites) UpdateRasterYDisplayFlags() {
+	rasterY := sp.core.rasterY & 0xff
 	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
-		vic.sprDataCounter[idx] = vic.sprDataCounterBase[idx]
-		if (vic.sprDMAFlags&mask) != 0 && (rasterY == uint16(vic.core.mXy[idx])) {
-			vic.sprDisplayFlags |= mask
+		sp.dataCounter[idx] = sp.dataCounterBase[idx]
+		if (sp.dmaFlags&mask) != 0 && (rasterY == uint16(sp.core.mXy[idx])) {
+			sp.displayFlags |= mask
 		}
 	}
 }
-*/
+
+func (sp *Sprites) UpdateDisplayFlags() {
+	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
+		if (sp.displayFlags&mask) != 0 && (sp.dmaFlags&mask) == 0 {
+			sp.displayFlags &= ^mask
+		}
+	}
+}
+
+func (sp *Sprites) UpdateDMACounterBase() {
+	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
+		if (sp.core.sprExpY & mask) != 0 {
+			sp.dataCounterBase[idx]++
+		}
+		if (sp.dataCounterBase[idx] & 0x3f) == 0x3f {
+			sp.dmaFlags &= ^mask
+		}
+	}
+}
+
+func (sp *Sprites) UpdateCounterBase() {
+	for idx := 0; idx < SpriteNumber; idx++ {
+		if (sp.core.sprExpY & (1 << idx)) != 0 {
+			sp.dataCounterBase[idx] += 2
+		}
+	}
+}
 
 func (sp *Sprites) Draw(lineStart int) {
-	if sp.sprFlags == 0 {
+	if sp.flags == 0 {
 		return
 	}
 	sprColl := uint8(0)
 	gfxColl := uint8(0)
-	copy(sp.sprCollBuf, _sprEmptyCollBuf)
+	copy(sp.collisionBuffer, _sprEmptyCollBuf)
 	for sNum, sBit := uint8(0), uint8(1); sNum < 8; sNum, sBit = sNum+1, sBit<<1 {
-		if sp.sprFlags&sBit != 0 {
+		if sp.flags&sBit != 0 {
 			expanded := sp.core.mxe&sBit != 0
 			multiColor := sp.core.mmc&sBit != 0
 			if expanded {
 				if multiColor {
-					sp.drawSpriteExpandedMulticolor(lineStart, sNum, sBit, &gfxColl, &sprColl)
+					sp.drawExpandedMulticolor(lineStart, sNum, sBit, &gfxColl, &sprColl)
 				} else {
-					sp.drawSpriteExpandedStandard(lineStart, sNum, sBit, &gfxColl, &sprColl)
+					sp.drawExpandedStandard(lineStart, sNum, sBit, &gfxColl, &sprColl)
 				}
 			} else {
 				if multiColor {
-					sp.drawSpriteUnexpandedMulticolor(lineStart, sNum, sBit, &gfxColl, &sprColl)
+					sp.drawUnexpandedMulticolor(lineStart, sNum, sBit, &gfxColl, &sprColl)
 				} else {
-					sp.drawSpriteUnexpandedStandard(lineStart, sNum, sBit, &gfxColl, &sprColl)
+					sp.drawUnexpandedStandard(lineStart, sNum, sBit, &gfxColl, &sprColl)
 				}
 			}
 		}
@@ -122,7 +179,7 @@ func (sp *Sprites) Draw(lineStart int) {
 	}
 }
 
-func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
+func (sp *Sprites) drawExpandedMulticolor(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
 	q := int(sp.core.mXx[sNum]) + 8
 	displayPtr := lineStart + q
 	color := sp.core.mXcColor[sNum]
@@ -130,7 +187,7 @@ func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit 
 	s := q & 7
 	foreMaskL := sp.foreMask.GetL(m, s)
 	foreMaskR := sp.foreMask.GetR(m, s)
-	sData := sp.sprDrawData[sNum] //(uint32(sp.sprDrawData[sNum][0]) << 24) | (uint32(sp.sprDrawData[sNum][1]) << 16) | (uint32(sp.sprDrawData[sNum][2]) << 8)
+	sData := sp.drawData[sNum] //(uint32(sp.drawData[sNum][0]) << 24) | (uint32(sp.drawData[sNum][1]) << 16) | (uint32(sp.drawData[sNum][2]) << 8)
 
 	// Expand sprite data
 	sDataL := uint32(_multiExpTable[sData>>24&0xff])<<16 | uint32(_multiExpTable[sData>>16&0xff])
@@ -168,7 +225,7 @@ func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit 
 				continue
 			}
 		}
-		sp.drawSpritePixel(displayPtr, q, idx, sBit, selectedColor, sprColl)
+		sp.drawPixel(displayPtr, q, idx, sBit, selectedColor, sprColl)
 	}
 	for ; idx < 48; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
 		selectedColor := uint8(0)
@@ -185,18 +242,18 @@ func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit 
 				continue
 			}
 		}
-		sp.drawSpritePixel(displayPtr, q, idx, sBit, selectedColor, sprColl)
+		sp.drawPixel(displayPtr, q, idx, sBit, selectedColor, sprColl)
 	}
 }
 
-func (sp *Sprites) drawSpriteExpandedStandard(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
+func (sp *Sprites) drawExpandedStandard(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
 	q := int(sp.core.mXx[sNum]) + 8
 	displayPtr := lineStart + q
 	color := sp.core.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
 	foreMask := sp.foreMask.GetA(m, s)
-	sData := sp.sprDrawData[sNum] //(uint32(sp.sprDrawData[sNum][0]) << 24) | (uint32(sp.sprDrawData[sNum][1]) << 16) | (uint32(sp.sprDrawData[sNum][2]) << 8)
+	sData := sp.drawData[sNum] //(uint32(sp.drawData[sNum][0]) << 24) | (uint32(sp.drawData[sNum][1]) << 16) | (uint32(sp.drawData[sNum][2]) << 8)
 	// Check graphics collision
 	if (foreMask & sData) != 0 {
 		*gfxColl |= sBit
@@ -208,19 +265,19 @@ func (sp *Sprites) drawSpriteExpandedStandard(lineStart int, sNum uint8, sBit ui
 	// Paint sprite
 	for idx := 0; idx < 24; idx, sData = idx+1, sData<<1 {
 		if (sData & 0x80000000) != 0 {
-			sp.drawSpritePixel(displayPtr, q, idx, sBit, color, sprColl)
+			sp.drawPixel(displayPtr, q, idx, sBit, color, sprColl)
 		}
 	}
 }
 
-func (sp *Sprites) drawSpriteUnexpandedMulticolor(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
+func (sp *Sprites) drawUnexpandedMulticolor(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
 	q := int(sp.core.mXx[sNum]) + 8
 	displayPtr := lineStart + q
 	color := sp.core.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
 	foreMask := sp.foreMask.GetL(m, s) //sp.foreMask.GetB(m, s)
-	sData := sp.sprDrawData[sNum]      //(uint32(sp.sprDrawData[sNum][0]) << 24) | (uint32(sp.sprDrawData[sNum][1]) << 16) | (uint32(sp.sprDrawData[sNum][2]) << 8)
+	sData := sp.drawData[sNum]         //(uint32(sp.drawData[sNum][0]) << 24) | (uint32(sp.drawData[sNum][1]) << 16) | (uint32(sp.drawData[sNum][2]) << 8)
 	// Convert sprite pixels to bitPlanes
 	plane0 := (sData & 0x55555555) | (sData&0x55555555)<<1
 	plane1 := (sData & 0xaaaaaaaa) | (sData&0xaaaaaaaa)>>1
@@ -249,18 +306,18 @@ func (sp *Sprites) drawSpriteUnexpandedMulticolor(lineStart int, sNum uint8, sBi
 				continue
 			}
 		}
-		sp.drawSpritePixel(displayPtr, q, idx, sBit, selectedColor, sprColl)
+		sp.drawPixel(displayPtr, q, idx, sBit, selectedColor, sprColl)
 	}
 }
 
-func (sp *Sprites) drawSpriteUnexpandedStandard(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
+func (sp *Sprites) drawUnexpandedStandard(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
 	q := int(sp.core.mXx[sNum]) + 8
 	displayPtr := lineStart + q
 	color := sp.core.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
 	foreMask := sp.foreMask.GetL(m, s) //sp.foreMask.GetC(m, s)
-	sData := sp.sprDrawData[sNum]      //(uint32(sp.sprDrawData[sNum][0]) << 24) | (uint32(sp.sprDrawData[sNum][1]) << 16) | (uint32(sp.sprDrawData[sNum][2]) << 8)
+	sData := sp.drawData[sNum]         //(uint32(sp.drawData[sNum][0]) << 24) | (uint32(sp.drawData[sNum][1]) << 16) | (uint32(sp.drawData[sNum][2]) << 8)
 	// Check graphics collision
 	if (foreMask & sData) != 0 {
 		*gfxColl |= sBit
@@ -272,21 +329,21 @@ func (sp *Sprites) drawSpriteUnexpandedStandard(lineStart int, sNum uint8, sBit 
 	// Paint sprite
 	for idx := 0; idx < 24; idx, sData = idx+1, sData<<1 {
 		if (sData & 0x80000000) != 0 {
-			sp.drawSpritePixel(displayPtr, q, idx, sBit, color, sprColl)
+			sp.drawPixel(displayPtr, q, idx, sBit, color, sprColl)
 		}
 	}
 }
 
-func (sp *Sprites) drawSpritePixel(displayPtr int, q int, idx int, sBit uint8, selColor uint8, sprColl *uint8) {
+func (sp *Sprites) drawPixel(displayPtr int, q int, idx int, sBit uint8, selColor uint8, sprColl *uint8) {
 	if collIdx := q + idx; collIdx < DisplayXFillMax {
 		// Check graphics collision
-		if (sp.sprCollBuf[collIdx]) != 0 {
+		if (sp.collisionBuffer[collIdx]) != 0 {
 			// Collision with sprite?
-			*sprColl |= sp.sprCollBuf[collIdx] | sBit
+			*sprColl |= sp.collisionBuffer[collIdx] | sBit
 		} else {
 			// Draw pixel if no collision
-			sp.db.Set(displayPtr+idx, selColor)
-			sp.sprCollBuf[collIdx] = sBit
+			sp.displayBuffer.Set(displayPtr+idx, selColor)
+			sp.collisionBuffer[collIdx] = sBit
 		}
 	}
 }
