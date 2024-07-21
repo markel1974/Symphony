@@ -8,8 +8,6 @@ import (
 
 //https://dustlayer.com/c64-architecture
 
-var _emptyForeMaskBuffer = make([]uint8, DisplayXDiv8)
-
 type MOS6569 struct {
 	core           *Core
 	prefs          *preferences.Prefs

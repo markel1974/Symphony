@@ -1,14 +1,16 @@
 package vic
 
 type ForeMask struct {
-	buf    []uint8 // Foreground mask for sprite-graphics collisions and priorities
-	offset int     // Offset from buf
+	buf      []uint8 // Foreground mask for sprite-graphics collisions and priorities
+	emptyBuf []uint8
+	offset   int // Offset from buf
 }
 
 func NewForeMask() *ForeMask {
 	return &ForeMask{
-		buf:    make([]uint8, DisplayXFill+1),
-		offset: 0,
+		buf:      make([]uint8, DisplayXFill+1),
+		emptyBuf: make([]uint8, DisplayXDiv8),
+		offset:   0,
 	}
 }
 
@@ -17,7 +19,7 @@ func (gr *ForeMask) Increment() {
 }
 
 func (gr *ForeMask) Clear() {
-	copy(gr.buf, _emptyForeMaskBuffer)
+	copy(gr.buf, gr.emptyBuf)
 	gr.offset = 0
 }
 
