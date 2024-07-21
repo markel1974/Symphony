@@ -23,8 +23,9 @@ type Render struct {
 	mainSurface  *pixels.PictureRGBA
 	mainMatrix   pixels.Matrix
 	mainSprite   *pixels.Sprite
-	cacheCoords  []int
-	k            *Keyboard
+	db           *DisplayBuffer
+	//cacheCoords  []int
+	k *Keyboard
 }
 
 func New(prefs *preferences.Prefs) *Render {
@@ -45,15 +46,16 @@ func (g *Render) setup(pos pixels.Vec) {
 	g.mainSprite.SetCached(pixels.CacheModeUpdate)
 	g.mainSprite.Set(g.mainSurface, g.mainSurface.Bounds())
 	g.mainMatrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
-	g.c64Board = board.NewBoard()
+	g.db = NewDisplayBuffer(g.mainSurface)
+	g.c64Board = board.NewBoard(g.db)
 	_ = g.c64Board.Setup(g.prefs)
 	g.k.Setup(g.c64Board)
 
-	for y := 0; y < g.screenHeight; y++ {
-		for x := 0; x < g.screenWidth; x++ {
-			g.cacheCoords = append(g.cacheCoords, g.mainSurface.ComputeIndex(x, y))
-		}
-	}
+	//for y := 0; y < g.screenHeight; y++ {
+	//	for x := 0; x < g.screenWidth; x++ {
+	//		g.cacheCoords = append(g.cacheCoords, g.mainSurface.ComputeIndex(x, y))
+	//	}
+	//}
 }
 
 func (g *Render) Start() {
@@ -90,7 +92,8 @@ func (g *Render) run() {
 				break
 			}
 		}
-		g.drawDirect(win, g.c64Board.GetDisplayBuffer())
+		g.mainSprite.Draw(win, g.mainMatrix)
+		//g.drawDirect(win, g.c64Board.GetDisplayBuffer())
 		win.Update()
 		if dt.Counter()&0xf == 0xf {
 			run = !win.Closed()
@@ -98,31 +101,31 @@ func (g *Render) run() {
 	}
 }
 
-func (g *Render) SetPixel(idx int, val uint8) {
-	if idx < len(g.cacheCoords) {
-		g.mainSurface.SetRGBADirectArray(g.cacheCoords[idx], _colors[val])
-	}
-}
+//func (g *Render) drawDirect(win *pixels.GLWindow, chunky []uint8) {
+//	for cIdx, cVal := range g.cacheCoords {
+//		v := chunky[cIdx]
+//		g.mainSurface.SetRGBADirectArray(cVal, _colors[v])
+//	}
+//	g.mainSprite.Draw(win, g.mainMatrix)
+//	return
+//}
 
-func (g *Render) drawDirect(win *pixels.GLWindow, chunky []uint8) {
-	for cIdx, cVal := range g.cacheCoords {
-		v := chunky[cIdx]
-		g.mainSurface.SetRGBADirectArray(cVal, _colors[v])
-	}
-	g.mainSprite.Draw(win, g.mainMatrix)
-	return
-}
+//func (g *Render) SetPixel(idx int, val uint8) {
+//	if idx < len(g.cacheCoords) {
+//		g.mainSurface.SetRGBADirectArray(g.cacheCoords[idx], _colors[val])
+//	}
+//}
 
-func (g *Render) draw(win *pixels.GLWindow, chunky []uint8) {
-	idx := 0
-	var x int
-	var p uint8
-	for y := 0; y < vic.DisplayY; y++ {
-		for x = 0; x < vic.DisplayX; x++ {
-			p = chunky[idx]
-			idx++
-			g.mainSurface.SetRGBAArray(x, y, _colors[p])
-		}
-	}
-	g.mainSprite.Draw(win, g.mainMatrix)
-}
+//func (g *Render) draw(win *pixels.GLWindow, chunky []uint8) {
+//	idx := 0
+//	var x int
+//	var p uint8
+//	for y := 0; y < vic.DisplayY; y++ {
+//		for x = 0; x < vic.DisplayX; x++ {
+//			p = chunky[idx]
+//			idx++
+//			g.mainSurface.SetRGBAArray(x, y, _colors[p])
+//		}
+//	}
+//	g.mainSprite.Draw(win, g.mainMatrix)
+//}

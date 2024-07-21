@@ -24,6 +24,7 @@ const (
 )
 
 type Board struct {
+	db           vic.IDisplayBuffer
 	quartz       *quartz.Quartz
 	cpu          *cpu.MOS6510
 	vic          *vic.MOS6569
@@ -40,8 +41,9 @@ type Board struct {
 	banks        *banks.Banks
 }
 
-func NewBoard() *Board {
+func NewBoard(db vic.IDisplayBuffer) *Board {
 	b := &Board{
+		db:           db,
 		quartz:       quartz.NewQuartz(),
 		iec:          nil,
 		cpu:          nil,
@@ -70,7 +72,7 @@ func (s *Board) Setup(prefs *preferences.Prefs) error {
 
 	s.iec = iec.NewIEC()
 	s.cpu = cpu.NewMOS6510()
-	s.vic = vic.NewMOS6569()
+	s.vic = vic.NewMOS6569(s.db)
 	s.sid = sid.NewMOS6581()
 	s.cia1 = cia.NewMOS6526_1()
 	s.cia2 = cia.NewMOS6526_2()
@@ -263,9 +265,9 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	return rb
 }
 
-func (s *Board) GetDisplayBuffer() []byte {
-	return s.vic.GetDisplayBuffer()
-}
+//func (s *Board) GetDisplayBuffer() []byte {
+//	return s.vic.GetDisplayBuffer()
+//}
 
 /*
 func (s *Board) VICTriggerIRQ() {

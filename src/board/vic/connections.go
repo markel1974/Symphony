@@ -10,3 +10,8 @@ type IInterrupts interface {
 	TriggerVICIRQ()
 	ClearVICIRQ()
 }
+
+type IDisplayBuffer interface {
+	Set(idx int, data uint8)
+	SetMulti8(idx int, data uint8)
+}

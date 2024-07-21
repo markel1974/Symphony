@@ -20,6 +20,8 @@ func verticalFlip(rgba *image.RGBA) {
 }
 
 type PictureRGBA struct {
+	width  int
+	height int
 	rect   Rect
 	stride int
 	pixels []uint8
@@ -67,6 +69,8 @@ func NewPictureRGBA(rect Rect) *PictureRGBA {
 	h := int(math.Ceil(rect.Max.Y)) - int(math.Floor(rect.Min.Y))
 	l := 4 * w * h
 	s := &PictureRGBA{
+		width:  w,
+		height: h,
 		stride: 4 * w,
 		rect:   rect,
 		pixels: make([]uint8, l),
@@ -116,6 +120,14 @@ func (s *PictureRGBA) SetRGBASize(x int, y int, r uint8, g uint8, b uint8, a uin
 			s.SetRGBA(x+offsetX, y+offsetY, r, g, b, a)
 		}
 	}
+}
+
+func (s *PictureRGBA) Width() int {
+	return s.width
+}
+
+func (s *PictureRGBA) Height() int {
+	return s.height
 }
 
 func (s *PictureRGBA) Length() int {

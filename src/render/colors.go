@@ -1,5 +1,6 @@
 package render
 
+/*
 var _colors [][]uint8
 
 var _paletteRed = []byte{
@@ -28,3 +29,5 @@ func init() {
 		_colors[k] = _colors[k&0x0f]
 	}
 }
+
+*/

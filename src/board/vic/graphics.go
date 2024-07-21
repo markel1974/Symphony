@@ -3,7 +3,7 @@ package vic
 type Graphics struct {
 	core              *Core
 	foreMask          *ForeMask
-	db                *DisplayBuffer
+	db                IDisplayBuffer
 	gfxData           uint8
 	colorData         uint8
 	charData          uint8
@@ -13,7 +13,7 @@ type Graphics struct {
 	borderColorSample []uint8 // Samples of border color at each "displayed" cycle
 }
 
-func NewGraphics(core *Core, foreMask *ForeMask, db *DisplayBuffer) *Graphics {
+func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 	gr := &Graphics{
 		core:              core,
 		foreMask:          foreMask,

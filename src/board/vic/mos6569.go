@@ -16,7 +16,7 @@ type MOS6569 struct {
 	sprites          *Sprites
 	graphics         *Graphics
 	foreMask         *ForeMask
-	db               *DisplayBuffer
+	db               IDisplayBuffer
 	cycle            int      // Cycle
 	lineStart        int      // Offset from current line in bitmap buffer
 	lineOffset       int      // Offset from chunky bitmap buffer
@@ -39,10 +39,10 @@ type MOS6569 struct {
 
 }
 
-func NewMOS6569() *MOS6569 {
+func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 	core := NewCore()
 	foreMask := NewForeMask()
-	db := NewDisplayBuffer()
+	//db := NewDisplayBuffer()
 	vic := &MOS6569{
 		core:             core,
 		foreMask:         foreMask,
@@ -79,9 +79,9 @@ func (vic *MOS6569) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks,
 	vic.sprites.Setup(intr)
 }
 
-func (vic *MOS6569) GetDisplayBuffer() []uint8 {
-	return vic.db.Get()
-}
+//func (vic *MOS6569) GetDisplayBuffer() []uint8 {
+//	return vic.db.Get()
+//}
 
 func (vic *MOS6569) Reset() {
 	vic.core.ready = false
