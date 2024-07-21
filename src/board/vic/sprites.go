@@ -153,15 +153,7 @@ func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit 
 				continue
 			}
 		}
-
-		if collIdx := q + idx; collIdx < DisplayXFillMax {
-			if sp.sprCollBuf[collIdx] != 0 {
-				*sprColl |= sp.sprCollBuf[collIdx] | sBit
-			} else {
-				sp.db.Set(displayPtr+idx, selectedColor)
-				sp.sprCollBuf[collIdx] = sBit
-			}
-		}
+		sp.drawSpritePixel(displayPtr, q, idx, sBit, selectedColor, sprColl)
 	}
 	for ; idx < 48; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
 		selectedColor := uint8(0)
@@ -178,14 +170,7 @@ func (sp *Sprites) drawSpriteExpandedMulticolor(lineStart int, sNum uint8, sBit 
 				continue
 			}
 		}
-		if collIdx := q + idx; collIdx < DisplayXFillMax {
-			if sp.sprCollBuf[collIdx] != 0 {
-				*sprColl |= sp.sprCollBuf[collIdx] | sBit
-			} else {
-				sp.db.Set(displayPtr+idx, selectedColor)
-				sp.sprCollBuf[collIdx] = sBit
-			}
-		}
+		sp.drawSpritePixel(displayPtr, q, idx, sBit, selectedColor, sprColl)
 	}
 }
 
@@ -208,16 +193,7 @@ func (sp *Sprites) drawSpriteExpandedStandard(lineStart int, sNum uint8, sBit ui
 	// Paint sprite
 	for idx := 0; idx < 24; idx, sData = idx+1, sData<<1 {
 		if (sData & 0x80000000) != 0 {
-			if collIdx := q + idx; collIdx < DisplayXFillMax {
-				if (sp.sprCollBuf[collIdx]) != 0 {
-					// Collision with sprite?
-					*sprColl |= sp.sprCollBuf[collIdx] | sBit
-				} else {
-					// Draw pixel if no collision
-					sp.db.Set(displayPtr+idx, color)
-					sp.sprCollBuf[collIdx] = sBit
-				}
-			}
+			sp.drawSpritePixel(displayPtr, q, idx, sBit, color, sprColl)
 		}
 	}
 }
@@ -258,17 +234,7 @@ func (sp *Sprites) drawSpriteUnexpandedMulticolor(lineStart int, sNum uint8, sBi
 				continue
 			}
 		}
-		// Check graphics collision
-		if collIdx := q + idx; collIdx < DisplayXFillMax {
-			if (sp.sprCollBuf[collIdx]) != 0 {
-				// Collision with sprite
-				*sprColl |= sp.sprCollBuf[collIdx] | sBit
-			} else {
-				// Draw pixel if no collision
-				sp.db.Set(displayPtr+idx, selectedColor)
-				sp.sprCollBuf[collIdx] = sBit
-			}
-		}
+		sp.drawSpritePixel(displayPtr, q, idx, sBit, selectedColor, sprColl)
 	}
 }
 
@@ -291,28 +257,20 @@ func (sp *Sprites) drawSpriteUnexpandedStandard(lineStart int, sNum uint8, sBit 
 	// Paint sprite
 	for idx := 0; idx < 24; idx, sData = idx+1, sData<<1 {
 		if (sData & 0x80000000) != 0 {
-			if collIdx := q + idx; collIdx < DisplayXFillMax {
-				if (sp.sprCollBuf[collIdx]) != 0 {
-					// Collision with sprite?
-					*sprColl |= sp.sprCollBuf[collIdx] | sBit
-				} else {
-					// Draw pixel if no collision
-					sp.db.Set(displayPtr+idx, color)
-					sp.sprCollBuf[collIdx] = sBit
-				}
-			}
+			sp.drawSpritePixel(displayPtr, q, idx, sBit, color, sprColl)
 		}
 	}
 }
 
-func (sp *Sprites) a(displayPtr int, q int, idx int, sBit uint8, color uint8, sprColl *uint8) {
+func (sp *Sprites) drawSpritePixel(displayPtr int, q int, idx int, sBit uint8, selColor uint8, sprColl *uint8) {
 	if collIdx := q + idx; collIdx < DisplayXFillMax {
+		// Check graphics collision
 		if (sp.sprCollBuf[collIdx]) != 0 {
 			// Collision with sprite?
 			*sprColl |= sp.sprCollBuf[collIdx] | sBit
 		} else {
 			// Draw pixel if no collision
-			sp.db.Set(displayPtr+idx, color)
+			sp.db.Set(displayPtr+idx, selColor)
 			sp.sprCollBuf[collIdx] = sBit
 		}
 	}

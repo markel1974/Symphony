@@ -45,7 +45,6 @@ func NewDisplayBuffer(p *pixels.PictureRGBA) *DisplayBuffer {
 		}
 		colors8[j] = rgba8
 	}
-
 	for k := 16; k < 256; k++ {
 		colors[k] = colors[k&0x0f]
 		colors8[k] = colors8[k&0x0f]
@@ -64,6 +63,26 @@ func (db *DisplayBuffer) Set(idx int, data uint8) {
 		return
 	}
 	db.p.SetRGBADirectArray(db.coords[idx], db.colors[data])
+}
+
+func (db *DisplayBuffer) Set8(idx int, data [8]uint8) {
+	if idx+7 >= db.maxLen {
+		return
+	}
+	//t := []uint8{
+	//	db.colors[data[0]][0], db.colors[data[0]][1], db.colors[data[0]][2], db.colors[data[0]][3],
+	//	db.colors[data[1]][0], db.colors[data[1]][1], db.colors[data[1]][2], db.colors[data[1]][3],
+	//	db.colors[data[2]][0], db.colors[data[2]][1], db.colors[data[2]][2], db.colors[data[2]][3],
+	//	db.colors[data[3]][0], db.colors[data[3]][1], db.colors[data[3]][2], db.colors[data[3]][3],
+	//	db.colors[data[4]][0], db.colors[data[4]][1], db.colors[data[4]][2], db.colors[data[4]][3],
+	//	db.colors[data[5]][0], db.colors[data[5]][1], db.colors[data[5]][2], db.colors[data[5]][3],
+	//	db.colors[data[6]][0], db.colors[data[6]][1], db.colors[data[6]][2], db.colors[data[6]][3],
+	//	db.colors[data[7]][0], db.colors[data[7]][1], db.colors[data[7]][2], db.colors[data[7]][3],
+	//}
+	//db.p.SetRGBADirectArray(db.coords[idx], t)
+	for x := 0; x < 8; x++ {
+		db.p.SetRGBADirectArray(db.coords[idx+x], db.colors[data[x]])
+	}
 }
 
 func (db *DisplayBuffer) SetMulti8(idx int, data uint8) {

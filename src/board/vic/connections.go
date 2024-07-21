@@ -14,4 +14,5 @@ type IInterrupts interface {
 type IDisplayBuffer interface {
 	Set(idx int, data uint8)
 	SetMulti8(idx int, data uint8)
+	Set8(idx int, data [8]uint8)
 }

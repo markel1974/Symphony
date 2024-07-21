@@ -159,6 +159,7 @@ func (gr *Graphics) DrawGraphics(lineOffset int) {
 
 func (gr *Graphics) drawGraphicsInvalidStandard(offset int, a uint8) {
 	gr.db.SetMulti8(offset, a)
+	//foreMask
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)
@@ -166,15 +167,18 @@ func (gr *Graphics) drawGraphicsInvalidStandard(offset int, a uint8) {
 
 func (gr *Graphics) drawGraphicsInvalidMulticolor(offset int, a uint8) {
 	gr.db.SetMulti8(offset, a)
+	//foreMask
 	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
 	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)
 }
 
 func (gr *Graphics) drawGraphicStandard(offset int, a uint8, b uint8) {
+	//foreMask
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)
+
 	colorBuffer := [4]uint8{a, b, 0, 0}
 	data := gr.gfxData
 	gr.db.Set(offset+7, colorBuffer[data&1])
@@ -195,20 +199,76 @@ func (gr *Graphics) drawGraphicStandard(offset int, a uint8, b uint8) {
 }
 
 func (gr *Graphics) drawGraphicMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
+	//foreMask
+	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
+	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
+	gr.foreMask.Update(p1, p2)
+
+	colorBuffer := [4]uint8{a, b, c, d}
+	data := gr.gfxData
+	color := colorBuffer[data&3]
+	gr.db.Set(offset+7, color)
+	gr.db.Set(offset+6, color)
+	data >>= 2
+	color = colorBuffer[data&3]
+	gr.db.Set(offset+5, color)
+	gr.db.Set(offset+4, color)
+	data >>= 2
+	color = colorBuffer[data&3]
+	gr.db.Set(offset+3, color)
+	gr.db.Set(offset+2, color)
+	data >>= 2
+	color = colorBuffer[data]
+	gr.db.Set(offset+1, color)
+	gr.db.Set(offset, color)
+}
+
+/*
+var _tmp = [8]uint8{}
+
+func (gr *Graphics) drawGraphicStandard(offset int, a uint8, b uint8) {
+	p1 := gr.gfxData >> gr.core.xScroll
+	p2 := gr.gfxData << (7 - gr.core.xScroll)
+	gr.foreMask.Update(p1, p2)
+	colorBuffer := [4]uint8{a, b, 0, 0}
+	//tmp := [8]uint8{}
+	data := gr.gfxData
+	_tmp[7] = colorBuffer[data&1]
+	data >>= 1
+	_tmp[6] = colorBuffer[data&1]
+	data >>= 1
+	_tmp[5] = colorBuffer[data&1]
+	data >>= 1
+	_tmp[4] = colorBuffer[data&1]
+	data >>= 1
+	_tmp[3] = colorBuffer[data&1]
+	data >>= 1
+	_tmp[2] = colorBuffer[data&1]
+	data >>= 1
+	_tmp[1] = colorBuffer[data&1]
+	data >>= 1
+	_tmp[0] = colorBuffer[data]
+	gr.db.Set8(offset, _tmp)
+}
+
+func (gr *Graphics) drawGraphicMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
 	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
 	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)
 	colorBuffer := [4]uint8{a, b, c, d}
+	//tmp := [8]uint8{}
 	data := gr.gfxData
-	gr.db.Set(offset+7, colorBuffer[data&3])
-	gr.db.Set(offset+6, colorBuffer[data&3])
+	_tmp[7] = colorBuffer[data&3]
+	_tmp[6] = colorBuffer[data&3]
 	data >>= 2
-	gr.db.Set(offset+5, colorBuffer[data&3])
-	gr.db.Set(offset+4, colorBuffer[data&3])
+	_tmp[5] = colorBuffer[data&3]
+	_tmp[4] = colorBuffer[data&3]
 	data >>= 2
-	gr.db.Set(offset+3, colorBuffer[data&3])
-	gr.db.Set(offset+2, colorBuffer[data&3])
+	_tmp[3] = colorBuffer[data&3]
+	_tmp[2] = colorBuffer[data&3]
 	data >>= 2
-	gr.db.Set(offset+1, colorBuffer[data])
-	gr.db.Set(offset, colorBuffer[data])
+	_tmp[1] = colorBuffer[data]
+	_tmp[0] = colorBuffer[data]
+	gr.db.Set8(offset, _tmp)
 }
+*/
