@@ -11,32 +11,30 @@ import (
 var _emptyForeMaskBuffer = make([]uint8, DisplayXDiv8)
 
 type MOS6569 struct {
-	core             *Core
-	prefs            *preferences.Prefs
-	sprites          *Sprites
-	graphics         *Graphics
-	foreMask         *ForeMask
-	db               IDisplayBuffer
-	cycle            int      // Cycle
-	lineStart        int      // Offset from current line in bitmap buffer
-	lineOffset       int      // Offset from chunky bitmap buffer
-	matrixLine       []uint8  // Buffer for video line, read in Bad Lines
-	colorLine        []uint8  // Buffer for color line, read in Bad Lines
-	rowCounter       uint16   // Row counter
-	videoCounter     uint16   // Video counter
-	videoCounterBase uint16   // Video counter base
-	borderOnUL       bool     // Upper/lower border on
-	displayOn        bool     // Display state
-	drawThisLine     bool     // This line is drawn
-	sprDmaOn         uint8    // 8 flags: Sprite DMA active
-	sprMC            []uint16 // Sprite data counters
-	sprMCBase        []uint16 // Sprite data counter bases
-	sprDisplayOn     uint8    // 8 flags: Sprite display active
-	refreshCounter   uint8    // Refresh counter
-
-	mlIndex   int  // Index in matrix/colorLine[]
-	vBlanking bool // VBlank in next cycle
-
+	core               *Core
+	prefs              *preferences.Prefs
+	sprites            *Sprites
+	graphics           *Graphics
+	foreMask           *ForeMask
+	db                 IDisplayBuffer
+	cycle              int      // Cycle
+	lineStart          int      // Offset from current line in bitmap buffer
+	lineOffset         int      // Offset from chunky bitmap buffer
+	matrixLine         []uint8  // Buffer for video line, read in Bad Lines
+	colorLine          []uint8  // Buffer for color line, read in Bad Lines
+	rowCounter         uint16   // Row counter
+	videoCounter       uint16   // Video counter
+	videoCounterBase   uint16   // Video counter base
+	borderULOn         bool     // Upper/lower border on
+	displayOn          bool     // Display state
+	drawThisLine       bool     // This line is drawn
+	sprDMAFlags        uint8    // 8 flags: Sprite DMA active
+	sprDisplayFlags    uint8    // 8 flags: Sprite display active
+	sprDataCounter     []uint16 // Sprite data counters
+	sprDataCounterBase []uint16 // Sprite data counter bases
+	refreshCounter     uint8    // Refresh counter
+	mlIndex            int      // Index in matrix/colorLine[]
+	vBlanking          bool     // VBlank in next cycle
 }
 
 func NewMOS6569(db IDisplayBuffer) *MOS6569 {
@@ -44,29 +42,29 @@ func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 	foreMask := NewForeMask()
 	//db := NewDisplayBuffer()
 	vic := &MOS6569{
-		core:             core,
-		foreMask:         foreMask,
-		db:               db,
-		graphics:         NewGraphics(core, foreMask, db),
-		sprites:          NewSprites(core, foreMask, db),
-		lineOffset:       0,
-		rowCounter:       7,
-		videoCounter:     0,
-		videoCounterBase: 0,
-		mlIndex:          0,
-		cycle:            1,
-		displayOn:        false,
-		vBlanking:        false,
-		drawThisLine:     false,
-		sprDisplayOn:     0,
-		sprDmaOn:         0,
-		matrixLine:       make([]uint8, 40),
-		colorLine:        make([]uint8, 40),
-		sprMC:            make([]uint16, SpriteNumber),
-		sprMCBase:        make([]uint16, SpriteNumber),
+		core:               core,
+		foreMask:           foreMask,
+		db:                 db,
+		graphics:           NewGraphics(core, foreMask, db),
+		sprites:            NewSprites(core, foreMask, db),
+		lineOffset:         0,
+		rowCounter:         7,
+		videoCounter:       0,
+		videoCounterBase:   0,
+		mlIndex:            0,
+		cycle:              1,
+		displayOn:          false,
+		vBlanking:          false,
+		drawThisLine:       false,
+		sprDisplayFlags:    0,
+		sprDMAFlags:        0,
+		matrixLine:         make([]uint8, 40),
+		colorLine:          make([]uint8, 40),
+		sprDataCounter:     make([]uint16, SpriteNumber),
+		sprDataCounterBase: make([]uint16, SpriteNumber),
 	}
-	for i := range vic.sprMC {
-		vic.sprMC[i] = 63
+	for i := range vic.sprDataCounter {
+		vic.sprDataCounter[i] = 63
 	}
 	return vic
 }
@@ -157,7 +155,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x18) == 0 {
+		if (vic.sprDMAFlags & 0x18) == 0 {
 			vic.core.ClearBALow()
 		}
 
@@ -181,7 +179,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x20) != 0 {
+		if (vic.sprDMAFlags & 0x20) != 0 {
 			vic.core.SetBALow()
 		}
 	case 3:
@@ -191,7 +189,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x30) == 0 {
+		if (vic.sprDMAFlags & 0x30) == 0 {
 			vic.core.ClearBALow()
 		}
 	case 4:
@@ -201,7 +199,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x40) != 0 {
+		if (vic.sprDMAFlags & 0x40) != 0 {
 			vic.core.SetBALow()
 		}
 	case 5:
@@ -211,7 +209,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x60) == 0 {
+		if (vic.sprDMAFlags & 0x60) == 0 {
 			vic.core.ClearBALow()
 		}
 	case 6:
@@ -221,7 +219,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x80) != 0 {
+		if (vic.sprDMAFlags & 0x80) != 0 {
 			vic.core.SetBALow()
 		}
 	case 7:
@@ -231,7 +229,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0xc0) == 0 {
+		if (vic.sprDMAFlags & 0xc0) == 0 {
 			vic.core.ClearBALow()
 		}
 	case 8:
@@ -248,7 +246,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x80) == 0 {
+		if (vic.sprDMAFlags & 0x80) == 0 {
 			vic.core.ClearBALow()
 		}
 	case 10:
@@ -305,7 +303,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.videoCounter = vic.videoCounterBase
 
 	case 15:
-		// Refresh and matrix access, increment sprMCBase by 2 if y expansion FlipFlop is set
+		// Refresh and matrix access, increment sprDataCounterBase by 2 if y expansion FlipFlop is set
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground(vic.lineOffset)
 			vic.sampleBorder()
@@ -318,14 +316,14 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		for idx := 0; idx < 8; idx++ {
 			if (vic.core.sprExpY & (1 << idx)) != 0 {
-				vic.sprMCBase[idx] += 2
+				vic.sprDataCounterBase[idx] += 2
 			}
 		}
 		vic.mlIndex = 0
 		vic.matrixAccess()
 
 	case 16:
-		// Graphics and matrix access, increment sprMCBase by 1 if y expansion FlipFlop is set
+		// Graphics and matrix access, increment sprDataCounterBase by 1 if y expansion FlipFlop is set
 		// and check if sprite DMA can be turned off
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground(vic.lineOffset)
@@ -339,10 +337,10 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		for idx, mask := 0, uint8(1); idx < 8; idx, mask = idx+1, mask<<1 {
 			if (vic.core.sprExpY & mask) != 0 {
-				vic.sprMCBase[idx]++
+				vic.sprDataCounterBase[idx]++
 			}
-			if (vic.sprMCBase[idx] & 0x3f) == 0x3f {
-				vic.sprDmaOn &= ^mask
+			if (vic.sprDataCounterBase[idx] & 0x3f) == 0x3f {
+				vic.sprDMAFlags &= ^mask
 			}
 		}
 		vic.matrixAccess()
@@ -351,16 +349,16 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		// Graphics and matrix access, turn off border in 40 column mode, display window starts here
 		if (vic.core.cr2 & 8) != 0 {
 			if vic.core.rasterY == vic.core.dyStop {
-				vic.borderOnUL = true
+				vic.borderULOn = true
 			} else {
 				if (vic.core.cr1 & 0x10) != 0 {
 					if vic.core.rasterY == vic.core.dyStart {
-						vic.borderOnUL = false
+						vic.borderULOn = false
 						vic.graphics.SetBorderOn(false)
-					} else if !vic.borderOnUL {
+					} else if !vic.borderULOn {
 						vic.graphics.SetBorderOn(false)
 					}
-				} else if !vic.borderOnUL {
+				} else if !vic.borderULOn {
 					vic.graphics.SetBorderOn(false)
 				}
 			}
@@ -368,7 +366,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		// Second sample of border state
 		vic.graphics.SetBorderOnSample(1)
 		if vic.drawThisLine {
-			if vic.borderOnUL {
+			if vic.borderULOn {
 				vic.graphics.DrawBackground(vic.lineOffset)
 			} else {
 				vic.graphics.DrawBackground(vic.lineOffset)
@@ -388,17 +386,17 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		// Turn off border in 38 column mode
 		if (vic.core.cr2 & 8) == 0 {
 			if vic.core.rasterY == vic.core.dyStop {
-				vic.borderOnUL = true
+				vic.borderULOn = true
 			} else {
 				if (vic.core.cr1 & 0x10) != 0 {
 					if vic.core.rasterY == vic.core.dyStart {
-						vic.borderOnUL = false
+						vic.borderULOn = false
 						vic.graphics.SetBorderOn(false)
-					} else if !vic.borderOnUL {
+					} else if !vic.borderULOn {
 						vic.graphics.SetBorderOn(false)
 					}
 				} else {
-					if !vic.borderOnUL {
+					if !vic.borderULOn {
 						vic.graphics.SetBorderOn(false)
 					}
 				}
@@ -408,7 +406,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		// Third sample of border state
 		vic.graphics.SetBorderOnSample(2)
 		if vic.drawThisLine {
-			if vic.borderOnUL {
+			if vic.borderULOn {
 				vic.graphics.DrawBackground(vic.lineOffset)
 			} else {
 				vic.graphics.DrawGraphics(vic.lineOffset)
@@ -428,7 +426,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54:
 		if vic.drawThisLine {
-			if vic.borderOnUL {
+			if vic.borderULOn {
 				vic.graphics.DrawBackground(vic.lineOffset)
 			} else {
 				vic.graphics.DrawGraphics(vic.lineOffset)
@@ -448,7 +446,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		// Last graphics access, turn off matrix access, turn on sprite DMA if Y coordinate is
 		// right and sprite is enabled, handle sprite y expansion, set BA for sprite 0
 		if vic.drawThisLine {
-			if vic.borderOnUL {
+			if vic.borderULOn {
 				vic.graphics.DrawBackground(vic.lineOffset)
 			} else {
 				vic.graphics.DrawGraphics(vic.lineOffset)
@@ -466,7 +464,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			}
 		}
 		vic.checkSpriteDMA()
-		if (vic.sprDmaOn & 0x01) != 0 {
+		if (vic.sprDMAFlags & 0x01) != 0 {
 			vic.core.SetBALow()
 		} else {
 			vic.core.ClearBALow()
@@ -481,7 +479,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		// Fourth sample of border state
 		vic.graphics.SetBorderOnSample(3)
 		if vic.drawThisLine {
-			if vic.borderOnUL {
+			if vic.borderULOn {
 				vic.graphics.DrawBackground(vic.lineOffset)
 			} else {
 				vic.graphics.DrawGraphics(vic.lineOffset)
@@ -494,7 +492,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.displayOn = true
 		}
 		vic.checkSpriteDMA()
-		if (vic.sprDmaOn & 0x01) != 0 {
+		if (vic.sprDMAFlags & 0x01) != 0 {
 			vic.core.SetBALow()
 		}
 
@@ -505,11 +503,11 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		// Fifth sample of border state
 		vic.graphics.SetBorderOnSample(4)
-		vic.sprites.SetDisplayOn(vic.sprDisplayOn)
+		vic.sprites.SetSpriteFlags(vic.sprDisplayFlags)
 		// Turn off sprite display if DMA is off
 		for idx, mask := 0, uint8(1); idx < 8; idx, mask = idx+1, mask<<1 {
-			if (vic.sprDisplayOn&mask) != 0 && (vic.sprDmaOn&mask) == 0 {
-				vic.sprDisplayOn &= ^mask
+			if (vic.sprDisplayFlags&mask) != 0 && (vic.sprDMAFlags&mask) == 0 {
+				vic.sprDisplayFlags &= ^mask
 			}
 		}
 		if vic.drawThisLine {
@@ -521,21 +519,21 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x02) != 0 {
+		if (vic.sprDMAFlags & 0x02) != 0 {
 			vic.core.SetBALow()
 		}
 	case 58:
-		// Fetch sprite pointer 0, sprMCBase->sprMC, turn on sprite display if necessary,
+		// Fetch sprite pointer 0, sprDataCounterBase->sprDataCounter, turn on sprite display if necessary,
 		// turn off display if RC=7, read data of sprite 0
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground(vic.lineOffset)
 			vic.sampleBorder()
 		}
 		rasterY := vic.core.rasterY & 0xff
-		for idx, mask := 0, uint8(1); idx < 8; idx, mask = idx+1, mask<<1 {
-			vic.sprMC[idx] = vic.sprMCBase[idx]
-			if (vic.sprDmaOn&mask) != 0 && (rasterY == uint16(vic.core.mXy[idx])) {
-				vic.sprDisplayOn |= mask
+		for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
+			vic.sprDataCounter[idx] = vic.sprDataCounterBase[idx]
+			if (vic.sprDMAFlags&mask) != 0 && (rasterY == uint16(vic.core.mXy[idx])) {
+				vic.sprDisplayFlags |= mask
 			}
 		}
 		vic.fetchSpriteDataPtr(0)
@@ -559,7 +557,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x04) != 0 {
+		if (vic.sprDMAFlags & 0x04) != 0 {
 			vic.core.SetBALow()
 		}
 
@@ -578,7 +576,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x06) == 0 {
+		if (vic.sprDMAFlags & 0x06) == 0 {
 			vic.core.ClearBALow()
 		}
 
@@ -589,7 +587,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x08) != 0 {
+		if (vic.sprDMAFlags & 0x08) != 0 {
 			vic.core.SetBALow()
 		}
 
@@ -600,7 +598,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-		if (vic.sprDmaOn & 0x0c) == 0 {
+		if (vic.sprDMAFlags & 0x0c) == 0 {
 			vic.core.ClearBALow()
 		}
 
@@ -612,11 +610,11 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.displayOn = true
 		}
 		if vic.core.rasterY == vic.core.dyStop {
-			vic.borderOnUL = true
+			vic.borderULOn = true
 		} else if (vic.core.cr1&0x10) != 0 && vic.core.rasterY == vic.core.dyStart {
-			vic.borderOnUL = false
+			vic.borderULOn = false
 		}
-		if (vic.sprDmaOn & 0x10) != 0 {
+		if (vic.sprDMAFlags & 0x10) != 0 {
 			vic.core.SetBALow()
 		}
 		lastCycle = true
@@ -683,12 +681,12 @@ func (vic *MOS6569) fetchSpriteDataPtr(num int) {
 }
 
 func (vic *MOS6569) fetchSpriteData(num int, byteNum int) {
-	if (vic.sprDmaOn & (1 << num)) != 0 {
+	if (vic.sprDMAFlags & (1 << num)) != 0 {
 		ptr := vic.sprites.GetSpritePtr(num)
-		addr := (vic.sprMC[num] & 0x3f) | ptr
+		addr := (vic.sprDataCounter[num] & 0x3f) | ptr
 		data := vic.core.readByte(addr)
 		vic.sprites.SetSpriteData(num, byteNum, data)
-		vic.sprMC[num]++
+		vic.sprDataCounter[num]++
 	} else if byteNum == 1 {
 		//idleAccess
 		vic.core.readByte(0x3fff)
@@ -699,8 +697,8 @@ func (vic *MOS6569) checkSpriteDMA() {
 	rasterY := vic.core.rasterY & 0xff
 	for i, mask := 0, uint8(1); i < 8; i, mask = i+1, mask<<1 {
 		if (vic.core.me&mask) != 0 && rasterY == uint16(vic.core.mXy[i]) {
-			vic.sprDmaOn |= mask
-			vic.sprMCBase[i] = 0
+			vic.sprDMAFlags |= mask
+			vic.sprDataCounterBase[i] = 0
 			if (vic.core.mye & mask) != 0 {
 				vic.core.sprExpY &= ^mask
 			}
