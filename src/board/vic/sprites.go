@@ -9,13 +9,13 @@ type Sprites struct {
 	displayBuffer   IDisplayBuffer
 	collisionBuffer []uint8   // Buffer for sprite-sprite collisions and priorities
 	dataPtr         []uint16  // Sprite data pointers
-	data            [][]uint8 // Sprite data read
+	data            [][]uint8 // Sprite data
 	dmaFlags        uint8     // 8 flags: Sprite DMA active
 	displayFlags    uint8     // 8 flags: Sprite display active
 	spriteFlags     uint8     // 8 flags: Sprite in this line
-	drawData        []uint32  // Sprite data for drawing
-	dataCounter     []uint16  // Sprite data counters
-	dataCounterBase []uint16  // Sprite data counter bases
+	drawData        []uint32  // Sprite drawing data
+	dataCounter     []uint16  // Sprite counter data
+	dataCounterBase []uint16  // Sprite dc data
 }
 
 func NewSprites(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Sprites {
@@ -187,7 +187,7 @@ func (sp *Sprites) drawExpandedMulticolor(lineStart int, sNum uint8, sBit uint8,
 	s := q & 7
 	foreMaskL := sp.foreMask.GetL(m, s)
 	foreMaskR := sp.foreMask.GetR(m, s)
-	sData := sp.drawData[sNum] //(uint32(sp.drawData[sNum][0]) << 24) | (uint32(sp.drawData[sNum][1]) << 16) | (uint32(sp.drawData[sNum][2]) << 8)
+	sData := sp.drawData[sNum]
 
 	// Expand sprite data
 	sDataL := uint32(_multiExpTable[sData>>24&0xff])<<16 | uint32(_multiExpTable[sData>>16&0xff])
@@ -253,7 +253,7 @@ func (sp *Sprites) drawExpandedStandard(lineStart int, sNum uint8, sBit uint8, g
 	m := q / 8
 	s := q & 7
 	foreMask := sp.foreMask.GetA(m, s)
-	sData := sp.drawData[sNum] //(uint32(sp.drawData[sNum][0]) << 24) | (uint32(sp.drawData[sNum][1]) << 16) | (uint32(sp.drawData[sNum][2]) << 8)
+	sData := sp.drawData[sNum]
 	// Check graphics collision
 	if (foreMask & sData) != 0 {
 		*gfxColl |= sBit
@@ -276,8 +276,8 @@ func (sp *Sprites) drawUnexpandedMulticolor(lineStart int, sNum uint8, sBit uint
 	color := sp.core.mXcColor[sNum]
 	m := q / 8
 	s := q & 7
-	foreMask := sp.foreMask.GetL(m, s) //sp.foreMask.GetB(m, s)
-	sData := sp.drawData[sNum]         //(uint32(sp.drawData[sNum][0]) << 24) | (uint32(sp.drawData[sNum][1]) << 16) | (uint32(sp.drawData[sNum][2]) << 8)
+	foreMask := sp.foreMask.GetL(m, s)
+	sData := sp.drawData[sNum]
 	// Convert sprite pixels to bitPlanes
 	plane0 := (sData & 0x55555555) | (sData&0x55555555)<<1
 	plane1 := (sData & 0xaaaaaaaa) | (sData&0xaaaaaaaa)>>1

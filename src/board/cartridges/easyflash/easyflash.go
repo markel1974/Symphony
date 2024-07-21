@@ -184,7 +184,7 @@ func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
 			eApi[k] = c.stateHigh.Peek(uint32(0x1804 + k))
 		}
 		fmt.Printf("EF: EAPI found (%s)", string(eApi))
-		_ = c.stateHigh.StoreInterval(0x1800, 0x1800+768, _eApiAM29f040)
+		_ = c.stateHigh.StoreInterval(0x1800, _eApiAM29f040)
 	}
 }
 

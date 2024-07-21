@@ -92,17 +92,17 @@ func (f *Flash040) Reset() {
 	_ = f.eraseAlarm.Unset()
 }
 
-func (f *Flash040) StoreInterval(start uint, end uint, data []uint8) error {
-	if start >= end {
-		return fmt.Errorf("invalid interval")
-	}
+func (f *Flash040) StoreInterval(start uint, data []uint8) error {
+	//if start >= uint(len(data)) {
+	//	return fmt.Errorf("invalid interval")
+	//}
 	if start >= uint(len(f.flashData)) {
 		return fmt.Errorf("invalid start interval")
 	}
-	if end >= uint(len(f.flashData)) {
+	if start+uint(len(data)) >= uint(len(f.flashData)) {
 		return fmt.Errorf("invalid end interval")
 	}
-	copy(f.flashData[start:end], data)
+	copy(f.flashData[start:], data)
 	return nil
 }
 
