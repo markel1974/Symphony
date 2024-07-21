@@ -277,7 +277,6 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 			vic.dyStart = Row24YStart
 			vic.dyStop = Row24YStop
 		}
-
 		// In line $30, the DEN bit controls if Bad Lines can occur
 		if (vic.rasterY == 0x30) && ((data & 0x10) != 0) {
 			vic.badLinesEnabled = true
@@ -365,7 +364,7 @@ func (vic *Core) ChangedVA(newVA uint8) {
 	vic.WriteRegister(0x18, vic.vaBase) // Force update of memory pointers
 }
 
-func (vic *Core) TriggerLightPen() {
+func (vic *Core) LightPenTrigger() {
 	// LightPen triggers only once per frame
 	if !vic.lpTriggered {
 		vic.lpTriggered = true
@@ -376,6 +375,15 @@ func (vic *Core) TriggerLightPen() {
 			vic.irqFlag |= 0x80
 			vic.intr.TriggerVICIRQ()
 		}
+	}
+}
+
+func (vic *Core) ResetCounters() {
+	vic.rasterY = 0
+	vic.lpTriggered = false
+	if vic.irqRaster == 0 {
+		// Trigger raster IRQ if IRQ in line 0
+		vic.rasterIrq()
 	}
 }
 

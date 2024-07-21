@@ -281,7 +281,7 @@ func (s *Board) VICChangedVA(d uint8) {
 }
 
 func (s *Board) VICLightPenTrigger() {
-	s.vic.TriggerLightPen()
+	s.vic.LightPenTrigger()
 }
 
 

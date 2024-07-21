@@ -1,7 +1,7 @@
 package cia
 
 type IVic interface {
-	TriggerLightPen()
+	LightPenTrigger()
 	ChangedVA(uint8)
 }
 

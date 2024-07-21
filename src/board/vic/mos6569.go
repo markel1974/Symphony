@@ -119,8 +119,8 @@ func (vic *MOS6569) ChangedVA(va uint8) {
 	vic.core.ChangedVA(va)
 }
 
-func (vic *MOS6569) TriggerLightPen() {
-	vic.core.TriggerLightPen()
+func (vic *MOS6569) LightPenTrigger() {
+	vic.core.LightPenTrigger()
 }
 
 func (vic *MOS6569) Emulate() (bool, bool) {
@@ -167,15 +167,10 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vBlank = true
 			// Vertical blank, reset counters
 			vic.videoCounterBase = 0
-			vic.core.rasterY = 0
 			vic.refreshCounter = 0xff
 			vic.vBlanking = false
-			vic.core.lpTriggered = false
 			vic.lineStart = 0
-			if vic.core.irqRaster == 0 {
-				// Trigger raster IRQ if IRQ in line 0
-				vic.core.rasterIrq()
-			}
+			vic.core.ResetCounters()
 		}
 		// Our output goes here
 		vic.lineOffset = vic.lineStart
@@ -189,7 +184,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if (vic.sprDmaOn & 0x20) != 0 {
 			vic.core.SetBALow()
 		}
-
 	case 3:
 		// Fetch sprite pointer 4, reset BA is sprite 4 and 5 off
 		vic.fetchSpriteDataPtr(4)
@@ -200,7 +194,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if (vic.sprDmaOn & 0x30) == 0 {
 			vic.core.ClearBALow()
 		}
-
 	case 4:
 		// Set BA for sprite 6, read data of sprite 4
 		vic.fetchSpriteData(4, 1)
@@ -211,7 +204,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if (vic.sprDmaOn & 0x40) != 0 {
 			vic.core.SetBALow()
 		}
-
 	case 5:
 		// Fetch sprite pointer 5, reset BA if sprite 5 and 6 off
 		vic.fetchSpriteDataPtr(5)
@@ -222,7 +214,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if (vic.sprDmaOn & 0x60) == 0 {
 			vic.core.ClearBALow()
 		}
-
 	case 6:
 		// Set BA for sprite 7, read data of sprite 5
 		vic.fetchSpriteData(5, 1)
@@ -233,7 +224,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if (vic.sprDmaOn & 0x80) != 0 {
 			vic.core.SetBALow()
 		}
-
 	case 7:
 		// Fetch sprite pointer 6, reset BA if sprite 6 and 7 off
 		vic.fetchSpriteDataPtr(6)
@@ -244,7 +234,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if (vic.sprDmaOn & 0xc0) == 0 {
 			vic.core.ClearBALow()
 		}
-
 	case 8:
 		// Read data of sprite 6
 		vic.fetchSpriteData(6, 1)
@@ -252,7 +241,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-
 	case 9:
 		// Fetch sprite pointer 7, reset BA if sprite 7 off
 		vic.fetchSpriteDataPtr(7)
@@ -263,7 +251,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if (vic.sprDmaOn & 0x80) == 0 {
 			vic.core.ClearBALow()
 		}
-
 	case 10:
 		// Read data of sprite 7
 		vic.fetchSpriteData(7, 1)
@@ -271,7 +258,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.core.isBadLine {
 			vic.displayOn = true
 		}
-
 	case 11:
 		// Refresh, reset BA
 		vic.refreshAccess()
@@ -559,8 +545,8 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.displayOn = false
 		}
 		if vic.core.isBadLine || vic.displayOn {
-			vic.displayOn = true
 			vic.rowCounter = (vic.rowCounter + 1) & 7
+			vic.displayOn = true
 		}
 	case 59:
 		// Set BA for sprite 2, read data of sprite 0

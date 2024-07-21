@@ -292,7 +292,7 @@ func (cia1 *MOS6526_1) TriggerInterrupt(bit uint8) {
 // Write to port B, check for lightPen interrupt
 func (cia1 *MOS6526_1) checkLightPen() {
 	if ((cia1.prB | ^cia1.ddrB) & 0x10) != cia1.prevLPState {
-		cia1.vic.TriggerLightPen()
+		cia1.vic.LightPenTrigger()
 	}
 	cia1.prevLPState = (cia1.prB | ^cia1.ddrB) & 0x10
 }
