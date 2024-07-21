@@ -195,7 +195,7 @@ func (vic *Core) ReadRegister(addr uint16) uint8 {
 	// Memory pointers
 	case 0x18:
 		return vic.vaBase | 0x01
-	// IRQ flags
+	// IRQ spriteFlags
 	case 0x19:
 		if !vic.ready {
 			vic.ready = true
@@ -303,7 +303,7 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 		vic.matrixBase = (uint16(data) & 0xf0) << 6
 		vic.charBase = (uint16(data) & 0x0e) << 10
 		vic.bitmapBase = (uint16(data) & 0x08) << 10
-	case 0x19: // IRQ flags
+	case 0x19: // IRQ spriteFlags
 		vic.irqFlag = vic.irqFlag & (^data & 0x0f)
 		if (vic.irqFlag & vic.irqMask) != 0 {
 			// Set master bit if allowed interrupt still pending

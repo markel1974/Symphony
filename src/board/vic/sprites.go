@@ -10,10 +10,10 @@ type Sprites struct {
 	collisionBuffer []uint8   // Buffer for sprite-sprite collisions and priorities
 	dataPtr         []uint16  // Sprite data pointers
 	data            [][]uint8 // Sprite data read
-	displayFlags    uint8     // 8 flags: Sprite display active
-	flags           uint8     // 8 flags: Draw sprite in this line
-	drawData        []uint32  // Sprite data for drawing
 	dmaFlags        uint8     // 8 flags: Sprite DMA active
+	displayFlags    uint8     // 8 flags: Sprite display active
+	spriteFlags     uint8     // 8 flags: Sprite in this line
+	drawData        []uint32  // Sprite data for drawing
 	dataCounter     []uint16  // Sprite data counters
 	dataCounterBase []uint16  // Sprite data counter bases
 }
@@ -50,23 +50,23 @@ func (sp *Sprites) GetDMAFlags() uint8 {
 	return sp.dmaFlags
 }
 
-func (sp *Sprites) ApplySpriteFlags() {
-	sp.flags = sp.displayFlags
-	if sp.flags != 0 {
+func (sp *Sprites) ApplyDisplayFlags() {
+	sp.spriteFlags = sp.displayFlags
+	if sp.spriteFlags != 0 {
 		for sNum := 0; sNum < len(sp.data); sNum++ {
 			sp.drawData[sNum] = (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
 		}
 	}
 }
 
-func (sp *Sprites) FetchSpriteDataPtr(num int) {
+func (sp *Sprites) FetchDataPtr(num int) {
 	addr := sp.core.matrixBase | 0x03f8 | uint16(num)
 	data := sp.core.readByte(addr)
 	ptr := uint16(data) << 6
 	sp.dataPtr[num] = ptr
 }
 
-func (sp *Sprites) FetchSpriteData(num int, byteNum int) {
+func (sp *Sprites) FetchData(num int, byteNum int) {
 	if (sp.dmaFlags & (1 << num)) != 0 {
 		ptr := sp.dataPtr[num]
 		addr := (sp.dataCounter[num] & 0x3f) | ptr
@@ -130,14 +130,14 @@ func (sp *Sprites) UpdateCounterBase() {
 }
 
 func (sp *Sprites) Draw(lineStart int) {
-	if sp.flags == 0 {
+	if sp.spriteFlags == 0 {
 		return
 	}
 	sprColl := uint8(0)
 	gfxColl := uint8(0)
 	copy(sp.collisionBuffer, _sprEmptyCollBuf)
-	for sNum, sBit := uint8(0), uint8(1); sNum < 8; sNum, sBit = sNum+1, sBit<<1 {
-		if sp.flags&sBit != 0 {
+	for sNum, sBit := uint8(0), uint8(1); sNum < SpriteNumber; sNum, sBit = sNum+1, sBit<<1 {
+		if sp.spriteFlags&sBit != 0 {
 			expanded := sp.core.mxe&sBit != 0
 			multiColor := sp.core.mmc&sBit != 0
 			if expanded {
@@ -180,7 +180,7 @@ func (sp *Sprites) Draw(lineStart int) {
 }
 
 func (sp *Sprites) drawExpandedMulticolor(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
-	q := int(sp.core.mXx[sNum]) + 8
+	q := int(sp.core.mXx[sNum]) + SpriteNumber
 	displayPtr := lineStart + q
 	color := sp.core.mXcColor[sNum]
 	m := q / 8
@@ -247,7 +247,7 @@ func (sp *Sprites) drawExpandedMulticolor(lineStart int, sNum uint8, sBit uint8,
 }
 
 func (sp *Sprites) drawExpandedStandard(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
-	q := int(sp.core.mXx[sNum]) + 8
+	q := int(sp.core.mXx[sNum]) + SpriteNumber
 	displayPtr := lineStart + q
 	color := sp.core.mXcColor[sNum]
 	m := q / 8
@@ -271,7 +271,7 @@ func (sp *Sprites) drawExpandedStandard(lineStart int, sNum uint8, sBit uint8, g
 }
 
 func (sp *Sprites) drawUnexpandedMulticolor(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
-	q := int(sp.core.mXx[sNum]) + 8
+	q := int(sp.core.mXx[sNum]) + SpriteNumber
 	displayPtr := lineStart + q
 	color := sp.core.mXcColor[sNum]
 	m := q / 8
@@ -311,7 +311,7 @@ func (sp *Sprites) drawUnexpandedMulticolor(lineStart int, sNum uint8, sBit uint
 }
 
 func (sp *Sprites) drawUnexpandedStandard(lineStart int, sNum uint8, sBit uint8, gfxColl *uint8, sprColl *uint8) {
-	q := int(sp.core.mXx[sNum]) + 8
+	q := int(sp.core.mXx[sNum]) + SpriteNumber
 	displayPtr := lineStart + q
 	color := sp.core.mXcColor[sNum]
 	m := q / 8

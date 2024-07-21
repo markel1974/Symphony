@@ -11,6 +11,15 @@ type Graphics struct {
 	borderOn          bool    // Upper/lower border on (Main border FlipFlop)
 	borderOnSample    []bool  // Samples of border state at different cycles (1, 17, 18, 56, 57)
 	borderColorSample []uint8 // Samples of border color at each "displayed" cycle
+	lineOffset        int     // Offset from chunky bitmap buffer
+	matrixLineIndex   int     // Index in matrix/colorLine
+	matrixLine        []uint8 // Buffer for video line, read in Bad Lines
+	colorLine         []uint8 // Buffer for color line, read in Bad Lines
+	rowCounter        uint16  // Row counter
+	videoCounter      uint16  // Video counter
+	videoCounterBase  uint16  // Video counter base
+	borderULOn        bool    // Upper/lower border on
+	displayOn         bool    // Display state
 }
 
 func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
@@ -25,6 +34,14 @@ func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 		borderOnSample:    make([]bool, 5),
 		borderColorSample: make([]uint8, DisplayXFill+1),
 		borderOn:          false,
+		lineOffset:        0,
+		matrixLineIndex:   0,
+		matrixLine:        make([]uint8, 40),
+		colorLine:         make([]uint8, 40),
+		rowCounter:        7,
+		videoCounter:      0,
+		videoCounterBase:  0,
+		displayOn:         false,
 	}
 	return gr
 }
@@ -32,35 +49,159 @@ func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 func (gr *Graphics) Setup() {
 }
 
-func (gr *Graphics) SetGfxData(data uint8) {
-	gr.gfxData = data
+func (gr *Graphics) SetDisplayOn() {
+	gr.displayOn = true
 }
 
-func (gr *Graphics) SetColorData(data uint8) {
-	gr.colorData = data
+func (gr *Graphics) ResetRowCounter() {
+	gr.rowCounter = 0
 }
 
-func (gr *Graphics) SetCharData(data uint8) {
-	gr.charData = data
+func (gr *Graphics) ResetVideoCounterBase() {
+	gr.videoCounterBase = 0
+}
+
+func (gr *Graphics) ResetMatrixLineIndex() {
+	gr.matrixLineIndex = 0
+}
+
+func (gr *Graphics) UpdateVideoCounter() {
+	gr.videoCounter = gr.videoCounterBase
+}
+
+func (gr *Graphics) SetLineOffset(lineStart int) {
+	gr.lineOffset = lineStart
+}
+
+func (gr *Graphics) UpdateBorderUpperLower() {
+	if gr.core.rasterY == gr.core.dyStop {
+		gr.borderULOn = true
+	} else if (gr.core.cr1&0x10) != 0 && gr.core.rasterY == gr.core.dyStart {
+		gr.borderULOn = false
+	}
+}
+
+func (gr *Graphics) UpdateDisplayOn() {
+	if gr.rowCounter == 7 {
+		gr.videoCounterBase = gr.videoCounter
+		gr.displayOn = false
+	}
+	if gr.core.isBadLine || gr.displayOn {
+		gr.rowCounter = (gr.rowCounter + 1) & 7
+		gr.displayOn = true
+	}
 }
 
 func (gr *Graphics) SetCharDataLast() {
 	gr.charDataLast = gr.charData
 }
 
-func (gr *Graphics) SetBorderOn(b bool) {
-	gr.borderOn = b
-}
-
-func (gr *Graphics) SetBorderColorSample(cycle int) {
-	if gr.borderOn {
-		idx := cycle - 13
-		gr.borderColorSample[idx&DisplayXFill] = gr.core.ecColor
-	}
+func (gr *Graphics) SetBorderOn() {
+	gr.borderOn = true
 }
 
 func (gr *Graphics) SetBorderOnSample(idx int) {
 	gr.borderOnSample[idx] = gr.borderOn
+}
+
+func (gr *Graphics) GraphicsAccess() {
+	if gr.displayOn {
+		var addr uint16
+		if (gr.core.cr1 & 0x20) != 0 {
+			addr = ((gr.videoCounter & 0x03ff) << 3) | gr.core.bitmapBase | gr.rowCounter // Bitmap
+		} else {
+			addr = (uint16(gr.matrixLine[gr.matrixLineIndex]) << 3) | gr.core.charBase | gr.rowCounter // Text
+		}
+		if (gr.core.cr1 & 0x40) != 0 {
+			addr &= 0xf9ff // ECM
+		}
+		gr.gfxData = gr.core.readByte(addr)
+		gr.charData = gr.matrixLine[gr.matrixLineIndex]
+		gr.colorData = gr.colorLine[gr.matrixLineIndex]
+		gr.matrixLineIndex++
+		gr.videoCounter++
+	} else {
+		if (gr.core.cr1 & 0x40) != 0 {
+			gr.gfxData = gr.core.readByte(0x39ff)
+		} else {
+			gr.gfxData = gr.core.readByte(0x3fff)
+		}
+		gr.colorData = 0
+		gr.charData = 0
+	}
+}
+
+func (gr *Graphics) MatrixAccess() {
+	if gr.core.baLow {
+		if gr.core.quartz.Cycle()-gr.core.baLowFirstCycle < 3 {
+			gr.colorLine[gr.matrixLineIndex] = 0xff
+			gr.matrixLine[gr.matrixLineIndex] = 0xff
+		} else {
+			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase
+			gr.matrixLine[gr.matrixLineIndex] = gr.core.readByte(addr)
+			gr.colorLine[gr.matrixLineIndex] = gr.core.banks.ReadColor(addr & 0x03ff)
+		}
+	}
+}
+
+func (gr *Graphics) SampleBorder(cycle int) {
+	if gr.borderOn {
+		idx := cycle - 13
+		gr.borderColorSample[idx&DisplayXFill] = gr.core.ecColor
+	}
+	gr.lineOffset += 8
+	gr.foreMask.Increment()
+}
+
+func (gr *Graphics) BorderUpdate() {
+	if (gr.core.cr2 & 8) != 0 {
+		if gr.core.rasterY == gr.core.dyStop {
+			gr.borderULOn = true
+		} else {
+			if (gr.core.cr1 & 0x10) != 0 {
+				if gr.core.rasterY == gr.core.dyStart {
+					gr.borderULOn = false
+					gr.borderOn = false
+				} else if !gr.borderULOn {
+					gr.borderOn = false
+				}
+			} else if !gr.borderULOn {
+				gr.borderOn = false
+			}
+		}
+	}
+}
+
+func (gr *Graphics) BorderUpdate2() {
+	if (gr.core.cr2 & 8) == 0 {
+		if gr.core.rasterY == gr.core.dyStop {
+			gr.borderULOn = true
+		} else {
+			if (gr.core.cr1 & 0x10) != 0 {
+				if gr.core.rasterY == gr.core.dyStart {
+					gr.borderULOn = false
+					gr.borderOn = false
+				} else if !gr.borderULOn {
+					gr.borderOn = false
+				}
+			} else {
+				if !gr.borderULOn {
+					gr.borderOn = false
+				}
+			}
+		}
+	}
+}
+
+func (gr *Graphics) Draw(b bool) {
+	if gr.borderULOn {
+		gr.DrawBackground()
+	} else {
+		if b {
+			gr.DrawBackground()
+		}
+		gr.drawGraphics()
+	}
 }
 
 func (gr *Graphics) DrawBorder(lineStart int) {
@@ -90,7 +231,7 @@ func (gr *Graphics) DrawBorder(lineStart int) {
 	}
 }
 
-func (gr *Graphics) DrawBackground(lineOffset int) {
+func (gr *Graphics) DrawBackground() {
 	var c uint8
 	switch gr.core.displayIdx {
 	case 0, 1, 3: // Standard text, Multicolor text, Multicolor bitmap
@@ -114,11 +255,11 @@ func (gr *Graphics) DrawBackground(lineOffset int) {
 	default:
 		c = gr.core.colors[0]
 	}
-	gr.db.SetMulti8(lineOffset, c)
+	gr.db.SetMulti8(gr.lineOffset, c)
 }
 
-func (gr *Graphics) DrawGraphics(lineOffset int) {
-	offset := lineOffset + int(gr.core.xScroll)
+func (gr *Graphics) drawGraphics() {
+	offset := gr.lineOffset + int(gr.core.xScroll)
 	switch gr.core.displayIdx {
 	case 0: // Standard text
 		gr.drawGraphicStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
