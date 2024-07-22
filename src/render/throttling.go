@@ -30,8 +30,8 @@ func (s *DynamicThrottling) DynamicThrottling() {
 		duration := now + interval
 		if sleep := interval - s.tuning; sleep > 1 {
 			time.Sleep(time.Duration(sleep) * time.Millisecond)
+			now = time.Now().UnixMilli()
 		}
-		now = time.Now().UnixMilli()
 		if s.tuning = now - duration; s.tuning < 0 {
 			s.tuning = 0
 		}
