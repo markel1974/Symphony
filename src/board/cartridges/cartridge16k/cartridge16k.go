@@ -18,13 +18,17 @@ type Cartridge16K struct {
 	board      icartridge.IExpansion
 }
 
-func New(game uint8, exRom uint8, b0 icartridge.Interval, b1 icartridge.Interval) *Cartridge16K {
+func New(ultimax bool) *Cartridge16K {
+	v := icartridge.Modes[icartridge.Mode16K]
+	if ultimax {
+		v = icartridge.Modes[icartridge.ModeUltimax]
+	}
 	return &Cartridge16K{
-		game:       game,
-		exRom:      exRom,
-		b0Interval: b0,
-		b1Interval: b1,
-		intervals:  b0 | b1,
+		game:       v.Game,
+		exRom:      v.ExRom,
+		b0Interval: v.IntervalLow,
+		b1Interval: v.IntervalHigh,
+		intervals:  v.IntervalLow | v.IntervalHigh,
 	}
 }
 

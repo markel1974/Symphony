@@ -153,7 +153,7 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	//	c.controlUpdate(x)
 	//}
 	//TODO PATCH MOMENTANEA!!!!!
-	c.controlUpdate(7)
+	c.controlUpdate(0)
 	//c.controlUpdate(0)
 	c.initializeFlash(rawCart)
 	return nil
@@ -191,13 +191,60 @@ func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
 func (c *CartridgeEasyFlash) controlUpdate(value uint8) {
 	c.register02 = value & 0x87 // we only remember led, mode, exrom, game [led 0x80, other 0x07]
 	c.led = c.register02&0x80 == 0x80
-	jumper := c.jumper << 3
+
+	//OFF
+	v := icartridge.Modes[icartridge.ModeOff]
+	//jumper := c.jumper << 3
 	mxg := int(c.register02) & 0x07
-	cfg := jumper | mxg
-	memMode := _easyFlashMemConfig2[cfg]
-	c.exRom = memMode.exrom
-	c.game = memMode.game
-	fmt.Println("register002:", value, "mode:", memMode.mode, "exrom:", memMode.exrom, "game:", memMode.game, "led:", c.led)
+	switch mxg {
+	case 0:
+		//GAME from jumper, EXROM high (i.e. Ultimax or Off)
+		if c.jumper == 0 {
+			v = icartridge.Modes[icartridge.ModeUltimax]
+		} else {
+			v = icartridge.Modes[icartridge.ModeOff]
+		}
+	case 1:
+		//Reserved, don’t use this
+	case 2:
+		//GAME from jumper, EXROM low (i.e. 16K or 8K)
+		if c.jumper == 0 {
+			v = icartridge.Modes[icartridge.Mode16K]
+		} else {
+			v = icartridge.Modes[icartridge.Mode8K]
+		}
+	case 3:
+		//Reserved, don’t use this
+	case 4:
+		//Cartridge ROM off (RAM at $DF00 still available)
+		v = icartridge.Modes[icartridge.ModeOff]
+	case 5:
+		//Ultimax (Low bank at $8000, high bank at $e000) GAME = 0, EXROM = 1
+		v = icartridge.Modes[icartridge.ModeUltimax]
+	case 6:
+		// 8k Cartridge (Low bank at $8000) GAME = 1, EXROM = 0
+		v = icartridge.Modes[icartridge.Mode8K]
+	case 7:
+		//16k cartridge (Low bank at $8000, high bank at $a000)
+		v = icartridge.Modes[icartridge.Mode16K]
+	}
+	c.game = v.Game
+	c.exRom = v.ExRom
+	c.intervals = v.IntervalLow | v.IntervalHigh
+	//cfg := jumper | mxg
+	//memMode := _easyFlashMemConfig2[cfg]
+	//c.game = memMode.game
+	//c.exRom = memMode.exrom
+
+	//c.intervals = 0
+	//if c.game == 0 {
+	//	c.intervals |= icartridge.ROM_LO
+	//}
+	//if c.exRom == 0 {
+	//	c.intervals |= icartridge.ROM_HI_1
+	//}
+	//fmt.Println("register002:", value, "mode:", memMode.mode, "exrom:", memMode.exrom, "game:", memMode.game, "led:", c.led)
+	fmt.Println("register002:", mxg, "exrom:", c.exRom, "game:", c.game, "led:", c.led)
 }
 
 func (c *CartridgeEasyFlash) Write(i icartridge.Interval, addr uint16, data uint8) bool {

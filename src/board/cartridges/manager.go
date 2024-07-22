@@ -164,7 +164,7 @@ func (f *Manager) loadCrt(ldr *loader.CRTLoader) (icartridge.ICartridge, error) 
 	var cart icartridge.ICartridge
 	switch ldr.Kind {
 	case loader.CARTRIDGE_OCEAN:
-		cart = ocean.New(uint8(ldr.Game), uint8(ldr.ExRom), icartridge.ROM_LO, icartridge.ROM_HI_1)
+		cart = ocean.New()
 	case loader.CARTRIDGE_EASYFLASH:
 		cart = easyflash.New(uint8(ldr.Game), uint8(ldr.ExRom), icartridge.ROM_LO, icartridge.ROM_HI_1)
 	}
@@ -181,14 +181,14 @@ func (f *Manager) loadBin(ldr *loader.CRTLoader) (icartridge.ICartridge, error) 
 	var cart icartridge.ICartridge = nil
 	lCartridge := len(ldr.GetData())
 	if lCartridge == 0x2000 {
-		cart = cartridge8k.New(0, 1, icartridge.ROM_LO)
+		cart = cartridge8k.New()
 	} else if lCartridge == 0x4000 {
-		cart = cartridge16k.New(0, 0, icartridge.ROM_LO, icartridge.ROM_HI_1)
+		cart = cartridge16k.New(false)
 	} else if lCartridge > 0x4000 {
 		//TODO VERIFICA
 		//shadow of the beast funziona con ROM_LO, ROM_HI_1
 		//robocop2 funziona con ROM_LO, ROM_HI_1
-		cart = ocean.New(0, 0, icartridge.ROM_LO, icartridge.ROM_HI_1)
+		cart = ocean.New()
 	}
 	if cart == nil {
 		return nil, fmt.Errorf("invalid cartridge")

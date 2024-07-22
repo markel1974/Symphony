@@ -15,11 +15,12 @@ type Cartridge8K struct {
 	board     icartridge.IExpansion
 }
 
-func New(game uint8, exRom uint8, i icartridge.Interval) *Cartridge8K {
+func New() *Cartridge8K {
+	v := icartridge.Modes[icartridge.Mode8K]
 	return &Cartridge8K{
-		game:      game,
-		exRom:     exRom,
-		intervals: i,
+		game:      v.Game,
+		exRom:     v.ExRom,
+		intervals: v.IntervalLow | v.IntervalHigh,
 	}
 }
 

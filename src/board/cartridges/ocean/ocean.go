@@ -7,8 +7,6 @@ import (
 )
 
 type CartridgeOcean struct {
-	//b0Interval Interval
-	//b1Interval Interval
 	id        string
 	intervals icartridge.Interval
 	lastData  uint8
@@ -20,13 +18,12 @@ type CartridgeOcean struct {
 	board     icartridge.IExpansion
 }
 
-func New(game uint8, exRom uint8, b0 icartridge.Interval, b1 icartridge.Interval) *CartridgeOcean {
+func New() *CartridgeOcean {
+	v := icartridge.Modes[icartridge.Mode16K]
 	return &CartridgeOcean{
-		game:  game,
-		exRom: exRom,
-		//b0Interval: b0,
-		//b1Interval: b1,
-		intervals: b0 | b1,
+		game:      v.Game,
+		exRom:     v.ExRom,
+		intervals: v.IntervalLow | v.IntervalHigh,
 		lastData:  0,
 	}
 }
