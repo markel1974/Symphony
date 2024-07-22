@@ -92,7 +92,8 @@ easyflash_io2_read,       // peek function, same implementation
 
 type CartridgeEasyFlash struct {
 	board       icartridge.IExpansion
-	intervals   icartridge.Interval
+	intervalLo  icartridge.Interval
+	intervalHi  icartridge.Interval
 	id          string
 	game        uint8
 	exRom       uint8
@@ -111,15 +112,16 @@ type CartridgeEasyFlash struct {
 
 func New(game uint8, exRom uint8, lo icartridge.Interval, hi icartridge.Interval) *CartridgeEasyFlash {
 	return &CartridgeEasyFlash{
-		game:      game,
-		exRom:     exRom,
-		intervals: lo | hi,
-		stateLow:  nil,
-		stateHigh: nil,
-		filetype:  0,
-		jumper:    0,
-		led:       false,
-		ram:       make([]byte, CartRamSize),
+		game:       game,
+		exRom:      exRom,
+		intervalHi: hi,
+		intervalLo: lo,
+		stateLow:   nil,
+		stateHigh:  nil,
+		filetype:   0,
+		jumper:     0,
+		led:        false,
+		ram:        make([]byte, CartRamSize),
 	}
 }
 
@@ -144,14 +146,6 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 		}
 	}
 	c.register00 = 0
-	//c.jumper = 0
-	//for x := uint8(0); x < 8; x++ {
-	//	c.controlUpdate(x)
-	//}
-	//c.jumper = 1
-	//for x := uint8(0); x < 8; x++ {
-	//	c.controlUpdate(x)
-	//}
 	//TODO PATCH MOMENTANEA!!!!!
 	c.controlUpdate(0)
 	//c.controlUpdate(0)
@@ -191,7 +185,6 @@ func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
 func (c *CartridgeEasyFlash) controlUpdate(value uint8) {
 	c.register02 = value & 0x87 // we only remember led, mode, exrom, game [led 0x80, other 0x07]
 	c.led = c.register02&0x80 == 0x80
-
 	//OFF
 	v := icartridge.Modes[icartridge.ModeOff]
 	//jumper := c.jumper << 3
@@ -230,15 +223,16 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8) {
 	}
 	c.game = v.Game
 	c.exRom = v.ExRom
-	c.intervals = v.IntervalLow | v.IntervalHigh
+	c.intervalLo = v.IntervalLow
+	c.intervalHi = v.IntervalHigh
 	//fmt.Println("register002:", value, "mode:", memMode.mode, "exrom:", memMode.exrom, "game:", memMode.game, "led:", c.led)
 	fmt.Println("register002:", mxg, "exrom:", c.exRom, "game:", c.game, "led:", c.led)
 }
 
 func (c *CartridgeEasyFlash) Write(i icartridge.Interval, addr uint16, data uint8) bool {
-	if i&c.intervals != 0 {
-		fmt.Printf("TEST\n")
-	}
+	//if i&c.intervals != 0 {
+	//	fmt.Printf("TEST\n")
+	//}
 	//TODO IMPLEMENT
 	//if i == ROM_LO {
 	//	fmt.Printf("CartridgeEasyFlash can't be write %x => %d\n", addr, data)
@@ -248,13 +242,10 @@ func (c *CartridgeEasyFlash) Write(i icartridge.Interval, addr uint16, data uint
 }
 
 func (c *CartridgeEasyFlash) Read(i icartridge.Interval, addr uint16) (uint8, bool) {
-	if i&c.intervals != 0 {
-		if i == icartridge.ROM_LO {
-			return c.romLRead(addr), true
-		} else if i == icartridge.ROM_HI_1 || i == icartridge.ROM_HI_2 {
-			return c.romHRead(addr), true
-		}
-		return 0, false
+	if c.intervalLo == i {
+		return c.romLRead(addr), true
+	} else if c.intervalHi == i {
+		return c.romHRead(addr), true
 	}
 	return 0, false
 }
@@ -421,18 +412,16 @@ func (c *CartridgeEasyFlash) crtAttach(ldr *loader.CRTLoader) ([]byte, error) {
 			if chip.Bank >= NBanks || !(chip.Start == 0x8000 || chip.Start == 0xa000 || chip.Start == 0xe000) {
 				return nil, fmt.Errorf("invalid start")
 			}
-			p1 := uint(chip.Bank) << 14
-			p2 := uint(chip.Start) & uint(chip.Size)
-			target := p1 | p2
-			//target -= 8192
-			//fmt.Printf("TARGET %d\n", target)
-			copy(raw[target:], chip.Data)
+			index := uint(chip.Bank) << 14
+			offset := uint(chip.Start) & uint(chip.Size)
+			target := index | offset
+			copy(raw[target:target+uint(chip.Size)], chip.Data)
 		} else if chip.Size == 0x4000 {
 			if chip.Bank >= NBanks || chip.Start != 0x8000 {
 				return nil, fmt.Errorf("invalid start")
 			}
 			target := uint(chip.Bank) << 14
-			copy(raw[target:], chip.Data)
+			copy(raw[target:target+uint(chip.Size)], chip.Data)
 		} else {
 			return nil, fmt.Errorf("unkwnown chip size")
 		}
