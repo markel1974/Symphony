@@ -183,7 +183,7 @@ func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
 		for k := 0; k < 16; k++ {
 			eApi[k] = c.stateHigh.Peek(uint32(0x1804 + k))
 		}
-		fmt.Printf("EF: EAPI found (%s)", string(eApi))
+		fmt.Printf("EF: EAPI found (%s)\n", string(eApi))
 		_ = c.stateHigh.StoreInterval(0x1800, _eApiAM29f040)
 	}
 }
@@ -231,18 +231,6 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8) {
 	c.game = v.Game
 	c.exRom = v.ExRom
 	c.intervals = v.IntervalLow | v.IntervalHigh
-	//cfg := jumper | mxg
-	//memMode := _easyFlashMemConfig2[cfg]
-	//c.game = memMode.game
-	//c.exRom = memMode.exrom
-
-	//c.intervals = 0
-	//if c.game == 0 {
-	//	c.intervals |= icartridge.ROM_LO
-	//}
-	//if c.exRom == 0 {
-	//	c.intervals |= icartridge.ROM_HI_1
-	//}
 	//fmt.Println("register002:", value, "mode:", memMode.mode, "exrom:", memMode.exrom, "game:", memMode.game, "led:", c.led)
 	fmt.Println("register002:", mxg, "exrom:", c.exRom, "game:", c.game, "led:", c.led)
 }
@@ -426,11 +414,18 @@ func (c *CartridgeEasyFlash) crtAttach(ldr *loader.CRTLoader) ([]byte, error) {
 		if chip == nil {
 			break
 		}
+		if uint16(len(chip.Data)) != chip.Size {
+			return nil, fmt.Errorf("invalid chip size")
+		}
 		if chip.Size == 0x2000 {
 			if chip.Bank >= NBanks || !(chip.Start == 0x8000 || chip.Start == 0xa000 || chip.Start == 0xe000) {
 				return nil, fmt.Errorf("invalid start")
 			}
-			target := (uint(chip.Bank) << 14) | (uint(chip.Start) & uint(chip.Size))
+			p1 := uint(chip.Bank) << 14
+			p2 := uint(chip.Start) & uint(chip.Size)
+			target := p1 | p2
+			//target -= 8192
+			//fmt.Printf("TARGET %d\n", target)
 			copy(raw[target:], chip.Data)
 		} else if chip.Size == 0x4000 {
 			if chip.Bank >= NBanks || chip.Start != 0x8000 {
