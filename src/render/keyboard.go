@@ -26,7 +26,10 @@ func (g *Keyboard) Setup(b *board.Board) {
 	}
 	g.keyMapper[pixels.KeyEscape] = func(p bool) { b.KeyboardSetExt(p) }
 	g.keyMapper[pixels.KeyCapsLock] = func(p bool) { b.KeyboardSetCapital(p) }
-	g.keyMapper[pixels.KeyEscape] = func(p bool) { b.KeyboardSetExt(p) }
+
+	g.keyMapper[pixels.KeyF8] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_up) }
+	g.keyMapper[pixels.KeyF9] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_down) }
+
 	g.keyMapper[pixels.KeyF10] = func(p bool) { b.KeyboardSwapJoystick(p) }
 	g.keyMapper[pixels.KeyF12] = func(p bool) { b.KeyboardPaste(p) }
 

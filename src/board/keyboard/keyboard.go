@@ -231,16 +231,16 @@ func (k *Keyboard) Capital() bool {
 	return k.capital
 }
 
-func (k *Keyboard) SetExt(ext bool) {
-	k.capital = ext
+func (k *Keyboard) SetExt() {
+	k.ext = !k.ext
 }
 
-func (k *Keyboard) SetNumLock(numLock bool) {
-	k.numLock = numLock
+func (k *Keyboard) SetNumLock() {
+	k.numLock = !k.numLock
 }
 
-func (k *Keyboard) SetCapital(capital bool) {
-	k.capital = capital
+func (k *Keyboard) SetCapital() {
+	k.capital = !k.capital
 }
 
 func (k *Keyboard) SetMenu(menu bool) {

@@ -203,16 +203,25 @@ func (s *Board) KeyboardPaste(pressed bool) {
 	s.keys.SetCommand(string(data), "")
 }
 
-func (s *Board) KeyboardSetExt(ext bool) {
-	s.keys.SetExt(ext)
+func (s *Board) KeyboardSetExt(pressed bool) {
+	if !pressed {
+		return
+	}
+	s.keys.SetExt()
 }
 
-func (s *Board) KeyboardSetNumLock(numLock bool) {
-	s.keys.SetNumLock(numLock)
+func (s *Board) KeyboardSetNumLock(pressed bool) {
+	if !pressed {
+		return
+	}
+	s.keys.SetNumLock()
 }
 
-func (s *Board) KeyboardSetCapital(capital bool) {
-	s.keys.SetCapital(capital)
+func (s *Board) KeyboardSetCapital(pressed bool) {
+	if !pressed {
+		return
+	}
+	s.keys.SetCapital()
 }
 
 func (s *Board) KeyboardSetMenu(menu bool) {

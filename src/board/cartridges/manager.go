@@ -172,7 +172,7 @@ func (f *Manager) loadCrt(ldr *loader.CRTLoader) (icartridge.ICartridge, error) 
 		cart = easyflash.New(uint8(ldr.Game), uint8(ldr.ExRom), icartridge.ROM_LO, icartridge.ROM_HI_1)
 	}
 	if cart == nil {
-		return nil, fmt.Errorf("unsupported")
+		return nil, fmt.Errorf("unsupported => %d", ldr.Kind)
 	}
 	return cart, nil
 }
