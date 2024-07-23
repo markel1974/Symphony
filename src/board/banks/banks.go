@@ -1,7 +1,6 @@
 package banks
 
 import (
-	"fmt"
 	roms2 "github.com/markel1974/c64emu/src/board/banks/roms"
 	"github.com/markel1974/c64emu/src/board/cartridges"
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
@@ -198,7 +197,7 @@ func (b *Banks) RebuildMemoryConfig() {
 	if int(mcIdx) != b.memoryConfigIdx {
 		b.memoryConfigIdx = int(mcIdx)
 		b.memoryConfig = b.memoryMap.Get(mcIdx)
-		fmt.Printf("SYSTEM MEMORY CONFIG CHANGED [exRom: %d - game: %d] %d -> %v\n", exRom, game, mcIdx, b.memoryConfig)
+		//fmt.Printf("SYSTEM MEMORY CONFIG CHANGED [exRom: %d - game: %d] %d -> %v\n", exRom, game, mcIdx, b.memoryConfig)
 	}
 }
 

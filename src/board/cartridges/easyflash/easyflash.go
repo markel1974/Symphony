@@ -285,7 +285,6 @@ func (c *CartridgeEasyFlash) IOWrite(addr uint16, data uint8) bool {
 			return true
 		}
 	} else if ref == 0xdf00 {
-		//0xDF00 - 0xDFFFF
 		//fmt.Printf("EASYFLASH RAM WRITE: %x => %d\n", addr, data)
 		c.io2Store(addr, data)
 		return true
