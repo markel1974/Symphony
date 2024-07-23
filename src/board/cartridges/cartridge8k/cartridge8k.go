@@ -9,14 +9,14 @@ import (
 type Cartridge8K struct {
 	id        string
 	bank0     []uint8
-	intervals icartridge.Interval
+	intervals icartridge.RomInterval
 	game      uint8
 	exRom     uint8
 	board     icartridge.IExpansion
 }
 
 func New() *Cartridge8K {
-	v := icartridge.Modes[icartridge.Mode8K]
+	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode8K)
 	return &Cartridge8K{
 		game:      v.Game,
 		exRom:     v.ExRom,
@@ -27,7 +27,7 @@ func New() *Cartridge8K {
 func (c *Cartridge8K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
 	c.id = ldr.GetId()
-	if ldr.GetMode() == loader.ModeCrt {
+	if ldr.GetMode() == loader.FiletypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr.GetData())
@@ -47,14 +47,14 @@ func (c *Cartridge8K) initBin(data []byte) error {
 	if len(data) != cSize {
 		return fmt.Errorf("invalid size")
 	}
-	if err := loader.Validate(data); err != nil {
+	if err := loader.ValidateCartridge(data); err != nil {
 		return err
 	}
 	c.bank0 = data
 	return nil
 }
 
-func (c *Cartridge8K) Write(i icartridge.Interval, addr uint16, data uint8) bool {
+func (c *Cartridge8K) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
 	if i&c.intervals != 0 {
 		fmt.Printf("Cartridge8K can't be write %x => %d\n", addr, data)
 		return true
@@ -62,7 +62,7 @@ func (c *Cartridge8K) Write(i icartridge.Interval, addr uint16, data uint8) bool
 	return false
 }
 
-func (c *Cartridge8K) Read(i icartridge.Interval, addr uint16) (uint8, bool) {
+func (c *Cartridge8K) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
 	if i&c.intervals != 0 {
 		v := c.bank0[addr&0x1fff]
 		return v, true

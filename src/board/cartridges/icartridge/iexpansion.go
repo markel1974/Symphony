@@ -8,6 +8,8 @@ type IExpansion interface {
 	Cycle() uint64
 	CreateAlarm(string, quartz.AlarmCallback) *quartz.Alarm
 
+	RebuildMemoryConfig()
+
 	//CpuRamWrite(uint16, uint8)
 	//CpuRamRead(uint16) uint8
 

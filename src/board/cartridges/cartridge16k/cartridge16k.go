@@ -8,20 +8,20 @@ import (
 
 type Cartridge16K struct {
 	id         string
-	b0Interval icartridge.Interval
-	b1Interval icartridge.Interval
+	b0Interval icartridge.RomInterval
+	b1Interval icartridge.RomInterval
 	bank0      []uint8
 	bank1      []uint8
-	intervals  icartridge.Interval
+	intervals  icartridge.RomInterval
 	game       uint8
 	exRom      uint8
 	board      icartridge.IExpansion
 }
 
 func New(ultimax bool) *Cartridge16K {
-	v := icartridge.Modes[icartridge.Mode16K]
+	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
 	if ultimax {
-		v = icartridge.Modes[icartridge.ModeUltimax]
+		v = icartridge.GetCartridgeSpec(icartridge.CartridgeModeUltimax)
 	}
 	return &Cartridge16K{
 		game:       v.Game,
@@ -35,7 +35,7 @@ func New(ultimax bool) *Cartridge16K {
 func (c *Cartridge16K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
 	c.id = ldr.GetId()
-	if ldr.GetMode() == loader.ModeCrt {
+	if ldr.GetMode() == loader.FiletypeCrt {
 		return c.initBin(ldr)
 	}
 	return c.initRaw(ldr.GetData())
@@ -55,7 +55,7 @@ func (c *Cartridge16K) initRaw(data []byte) error {
 	if len(data) != cSize {
 		return fmt.Errorf("invalid size")
 	}
-	if err := loader.Validate(data); err != nil {
+	if err := loader.ValidateCartridge(data); err != nil {
 		return err
 	}
 	c.bank0 = data[:0x2000]
@@ -63,7 +63,7 @@ func (c *Cartridge16K) initRaw(data []byte) error {
 	return nil
 }
 
-func (c *Cartridge16K) Write(i icartridge.Interval, addr uint16, data uint8) bool {
+func (c *Cartridge16K) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
 	if i&c.intervals != 0 {
 		fmt.Printf("Cartridge16K can't be write %x => %d\n", addr, data)
 		return true
@@ -71,7 +71,7 @@ func (c *Cartridge16K) Write(i icartridge.Interval, addr uint16, data uint8) boo
 	return false
 }
 
-func (c *Cartridge16K) Read(i icartridge.Interval, addr uint16) (uint8, bool) {
+func (c *Cartridge16K) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
 	if i&c.intervals != 0 {
 		if c.b0Interval == i {
 			return c.bank0[addr&0x1fff], true

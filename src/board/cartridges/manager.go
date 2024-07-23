@@ -57,7 +57,7 @@ func (f *Manager) Config() (uint8, uint8, bool) {
 	return g, x, true
 }
 
-func (f *Manager) Read(interval icartridge.Interval, addr uint16) (uint8, bool) {
+func (f *Manager) Read(interval icartridge.RomInterval, addr uint16) (uint8, bool) {
 	if f.carts == nil {
 		return 0, false
 	}
@@ -77,7 +77,7 @@ func (f *Manager) Read(interval icartridge.Interval, addr uint16) (uint8, bool) 
 	return val, ret
 }
 
-func (f *Manager) Write(interval icartridge.Interval, addr uint16, data uint8) bool {
+func (f *Manager) Write(interval icartridge.RomInterval, addr uint16, data uint8) bool {
 	if f.carts == nil {
 		return false
 	}
@@ -137,7 +137,7 @@ func (f *Manager) Add(p string) (string, error) {
 		return "", err
 	}
 	var cart icartridge.ICartridge = nil
-	if ldr.GetMode() == loader.ModeCrt {
+	if ldr.GetMode() == loader.FiletypeCrt {
 		cart, err = f.loadCrt(ldr)
 	} else {
 		cart, err = f.loadBin(ldr)
@@ -147,6 +147,9 @@ func (f *Manager) Add(p string) (string, error) {
 	}
 	f.idx++
 	f.carts = append(f.carts, cart)
+	if err != cart.Setup(f.board, ldr) {
+		return "", err
+	}
 	return id, nil
 }
 
@@ -171,9 +174,6 @@ func (f *Manager) loadCrt(ldr *loader.CRTLoader) (icartridge.ICartridge, error) 
 	if cart == nil {
 		return nil, fmt.Errorf("unsupported")
 	}
-	if err := cart.Setup(f.board, ldr); err != nil {
-		return nil, err
-	}
 	return cart, nil
 }
 
@@ -192,9 +192,6 @@ func (f *Manager) loadBin(ldr *loader.CRTLoader) (icartridge.ICartridge, error) 
 	}
 	if cart == nil {
 		return nil, fmt.Errorf("invalid cartridge")
-	}
-	if err := cart.Setup(f.board, ldr); err != nil {
-		return nil, err
 	}
 	return cart, nil
 }

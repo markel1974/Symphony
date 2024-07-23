@@ -8,55 +8,19 @@ import (
 	"strings"
 )
 
-const (
-	CARTRIDGE_FILETYPE_BIN = 0
-	CARTRIDGE_FILETYPE_CRT = 1
-)
-
 // https://sourceforge.net/p/vice-emu/code/HEAD/tree/trunk/vice/src/c64/cart/ocean.c#l240
 
-type Mode int
-
 const (
-	ModeBin = iota
-	ModeCrt
+	crtHeaderLen   = 0x40
+	chipHeaderSize = 0x10
+	chipHeaderDef  = "CHIP"
 )
-
-const (
-	MachineC64 = iota
-	MachineC128
-	MachineVic20
-	MachinePet
-	MachineCbm5x0
-	MachineCbm6x0
-	MachinePlus4
-	MachineC64DTV
-	MachineC64SC
-	MachineVSid
-	MachineSCpu64
-)
-
-const (
-	CrtHeaderLen = 0x40
-)
-
-const chipHeaderSize = 0x10
-
-var ChipHeader = []byte("CHIP")
-
-var machineContainer = map[string]map[int]bool{
-	"C64 CARTRIDGE   ": {MachineC64: true, MachineC64SC: true, MachineC128: true, MachineSCpu64: true},
-	"C128 CARTRIDGE  ": {MachineC128: true},
-	"CBM2 CARTRIDGE  ": {MachineCbm6x0: true, MachineCbm5x0: true},
-	"VIC20 CARTRIDGE ": {MachineVic20: true},
-	"PLUS4 CARTRIDGE ": {MachinePlus4: true},
-}
 
 type CRTLoader struct {
 	id           string
 	rowCartridge []byte
 	cursor       int
-	mc           int
+	mc           MachineType
 	Version      uint16 /* version */
 	Kind         uint16 /* type of cartridge */
 	SubType      uint8  /* subtype/hardware revision of cartridge */
@@ -64,16 +28,16 @@ type CRTLoader struct {
 	Game         int    /* game line status */
 	Name         string /* name of cartridge */
 	Machine      int    /* detected machine for this crt file */
-	mode         Mode
+	mode         Filetype
 }
 
-func NewLoader(id string, mc int) *CRTLoader {
+func NewLoader(id string, mc MachineType) *CRTLoader {
 	return &CRTLoader{
 		id:           id,
 		rowCartridge: nil,
 		cursor:       0,
 		mc:           mc,
-		mode:         ModeBin,
+		mode:         FiletypeBin,
 	}
 }
 
@@ -82,11 +46,11 @@ func (cl *CRTLoader) Setup(p string) error {
 	if err != nil {
 		return err
 	}
-	cl.mode = ModeBin
+	cl.mode = FiletypeBin
 	cl.rowCartridge = data
 	lp := strings.ToLower(strings.TrimSpace(p))
 	if ext := path.Ext(lp); ext == ".crt" {
-		cl.mode = ModeCrt
+		cl.mode = FiletypeCrt
 		if err = cl.open(); err != nil {
 			return err
 		}
@@ -98,7 +62,7 @@ func (cl *CRTLoader) GetId() string {
 	return cl.id
 }
 
-func (cl *CRTLoader) GetMode() Mode {
+func (cl *CRTLoader) GetMode() Filetype {
 	return cl.mode
 }
 
@@ -107,37 +71,32 @@ func (cl *CRTLoader) GetData() []byte {
 }
 
 func (cl *CRTLoader) open() error {
-	if cl.mode == ModeBin {
+	if cl.mode == FiletypeBin {
 		return nil
 	}
 	cl.cursor = 0
 	var skip uint32
-	if CrtHeaderLen > len(cl.rowCartridge) {
+	if crtHeaderLen > len(cl.rowCartridge) {
 		return fmt.Errorf("invalid CRT header")
 	}
-	crtHeader := cl.rowCartridge[:CrtHeaderLen]
-	cl.cursor = CrtHeaderLen
+	crtHeader := cl.rowCartridge[:crtHeaderLen]
+	cl.cursor = crtHeaderLen
 	cl.Machine = -1
-	supported, ok := machineContainer[string(crtHeader[0:16])]
-	if !ok {
-		return fmt.Errorf("invalid crt header")
+	err := cl.validateMachine(cl.mc, string(crtHeader[0:16]))
+	if err != nil {
+		return err
 	}
-	_, ok = supported[cl.mc]
-	if !ok {
-		return fmt.Errorf("invalid crt header")
-	}
-	var err error
-	if skip, err = buf2dword(crtHeader[0x10:0x14]); err != nil {
+	if skip, err = cl.buf2uint32(crtHeader[0x10:0x14]); err != nil {
 		return err
 	}
 	if skip < uint32(len(crtHeader)) {
 		return fmt.Errorf("crt header size is wrong (is 0x%02x, expected 0x%02x)", skip, len(crtHeader))
 	}
 	skip -= uint32(len(crtHeader))
-	if cl.Version, err = buf2word(crtHeader[0x14:0x16]); err != nil {
+	if cl.Version, err = cl.buf2uint16(crtHeader[0x14:0x16]); err != nil {
 		return err
 	}
-	if cl.Kind, err = buf2word(crtHeader[0x16:0x18]); err != nil {
+	if cl.Kind, err = cl.buf2uint16(crtHeader[0x16:0x18]); err != nil {
 		return err
 	}
 	cl.SubType = crtHeader[0x1a]
@@ -156,7 +115,7 @@ func (cl *CRTLoader) open() error {
 }
 
 func (cl *CRTLoader) ReadChipHeader() (*CrtChipHeader, error) {
-	if cl.mode == ModeBin {
+	if cl.mode == FiletypeBin {
 		return nil, nil
 	}
 	if cl.cursor == len(cl.rowCartridge) {
@@ -167,32 +126,32 @@ func (cl *CRTLoader) ReadChipHeader() (*CrtChipHeader, error) {
 	}
 	chipHeader := cl.rowCartridge[cl.cursor : cl.cursor+chipHeaderSize]
 	cl.cursor += chipHeaderSize
-	if bytes.Compare(chipHeader[0:4], ChipHeader) != 0 {
+	if bytes.Compare(chipHeader[0:4], []byte(chipHeaderDef)) != 0 {
 		return nil, fmt.Errorf("invalid header signature")
 	}
 	var err error
 	header := NewChipHeader()
-	if header.Skip, err = buf2dword(chipHeader[4:8]); err != nil {
+	if header.Skip, err = cl.buf2uint32(chipHeader[4:8]); err != nil {
 		return nil, err
 	}
 	if int(header.Skip) < chipHeaderSize {
 		return nil, fmt.Errorf("invalid packet size")
 	}
 	header.Skip -= uint32(chipHeaderSize)
-	if header.Size, err = buf2word(chipHeader[14:18]); err != nil {
+	if header.Size, err = cl.buf2uint16(chipHeader[14:18]); err != nil {
 		return nil, err
 	}
 	if uint32(header.Size) > header.Skip {
 		return nil, fmt.Errorf("rom is bigger then total size")
 	}
 	header.Skip -= uint32(header.Size)
-	if header.Kind, err = buf2word(chipHeader[8:12]); err != nil {
+	if header.Kind, err = cl.buf2uint16(chipHeader[8:12]); err != nil {
 		return nil, err
 	}
-	if header.Bank, err = buf2word(chipHeader[10:14]); err != nil {
+	if header.Bank, err = cl.buf2uint16(chipHeader[10:14]); err != nil {
 		return nil, err
 	}
-	if header.Start, err = buf2word(chipHeader[12:16]); err != nil {
+	if header.Start, err = cl.buf2uint16(chipHeader[12:16]); err != nil {
 		return nil, err
 	}
 	if int(header.Start)+int(header.Size) > 0x10000 {
@@ -210,4 +169,34 @@ func (cl *CRTLoader) ReadChipHeader() (*CrtChipHeader, error) {
 		cl.cursor += int(header.Skip)
 	}
 	return header, nil
+}
+
+func (cl *CRTLoader) buf2uint32(buf []byte) (uint32, error) {
+	if len(buf) < 4 {
+		return 0, fmt.Errorf("invalid length")
+	}
+	t := buf[:4]
+	data := uint32(t[3]) | (uint32(t[2]) << 8) | (uint32(t[1]) << 16) | (uint32(t[0]) << 24)
+	return data, nil
+}
+
+func (cl *CRTLoader) buf2uint16(buf []byte) (uint16, error) {
+	if len(buf) < 2 {
+		return 0, fmt.Errorf("invalid length")
+	}
+	t := buf[:2]
+	data := uint16(t[1]) | (uint16(t[0]) << 8)
+	return data, nil
+}
+
+func (cl *CRTLoader) validateMachine(m MachineType, id string) error {
+	supported, ok := _machineContainer[id]
+	if !ok {
+		return fmt.Errorf("invalid crt header")
+	}
+	_, ok = supported[m]
+	if !ok {
+		return fmt.Errorf("invalid crt header")
+	}
+	return nil
 }

@@ -21,49 +21,51 @@ type ReadFn func(uint16) uint8
 type WriteFn func(uint16, uint8)
 
 type Banks struct {
-	vic          *vic.MOS6569
-	sid          *sid.MOS6581
-	cia1         *cia.MOS6526_1
-	cia2         *cia.MOS6526_2
-	cartMan      *cartridges.Manager
-	ram          []byte
-	bankWrite    []WriteFn
-	bankRead     []ReadFn
-	portWrite    []WriteFn
-	portRead     []ReadFn
-	memoryMap    *MemoryMap
-	memoryConfig []uint8
-	ports        *Ports
-	emulatorId   *EmulatorId
-	basic        []byte
-	kernal       []byte
-	char         []byte
-	color        []byte
-	prefs        *preferences.Prefs
+	vic             *vic.MOS6569
+	sid             *sid.MOS6581
+	cia1            *cia.MOS6526_1
+	cia2            *cia.MOS6526_2
+	cartMan         *cartridges.Manager
+	ram             []byte
+	bankWrite       []WriteFn
+	bankRead        []ReadFn
+	portWrite       []WriteFn
+	portRead        []ReadFn
+	memoryMap       *MemoryMap
+	memoryConfigIdx int
+	memoryConfig    []uint8
+	ports           *Ports
+	emulatorId      *EmulatorId
+	basic           []byte
+	kernal          []byte
+	char            []byte
+	color           []byte
+	prefs           *preferences.Prefs
 }
 
 func NewBanks() *Banks {
 	mm := NewMemoryMap()
 	b := &Banks{
-		vic:          nil,
-		sid:          nil,
-		cia1:         nil,
-		cia2:         nil,
-		cartMan:      nil,
-		ram:          make([]byte, 0x10000),
-		bankWrite:    make([]WriteFn, 0xf+1),
-		bankRead:     make([]ReadFn, 0xf+1),
-		portWrite:    make([]WriteFn, 0xf+1),
-		portRead:     make([]ReadFn, 0xf+1),
-		memoryMap:    mm,
-		memoryConfig: mm.Get(0),
-		ports:        NewPorts(),
-		emulatorId:   NewEmulatorId(),
-		basic:        make([]byte, roms2.BASIC_ROM_SIZE),
-		kernal:       make([]byte, roms2.KERNAL_ROM_SIZE),
-		char:         make([]byte, roms2.CHAR_ROM_SIZE),
-		color:        make([]byte, 0x0400),
-		prefs:        nil,
+		vic:             nil,
+		sid:             nil,
+		cia1:            nil,
+		cia2:            nil,
+		cartMan:         nil,
+		ram:             make([]byte, 0x10000),
+		bankWrite:       make([]WriteFn, 0xf+1),
+		bankRead:        make([]ReadFn, 0xf+1),
+		portWrite:       make([]WriteFn, 0xf+1),
+		portRead:        make([]ReadFn, 0xf+1),
+		memoryMap:       mm,
+		memoryConfig:    mm.Get(0),
+		ports:           NewPorts(),
+		emulatorId:      NewEmulatorId(),
+		basic:           make([]byte, roms2.BASIC_ROM_SIZE),
+		kernal:          make([]byte, roms2.KERNAL_ROM_SIZE),
+		char:            make([]byte, roms2.CHAR_ROM_SIZE),
+		color:           make([]byte, 0x0400),
+		prefs:           nil,
+		memoryConfigIdx: -1,
 	}
 	return b
 }
@@ -154,7 +156,7 @@ func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia.MOS6526_1, c
 
 func (b *Banks) Reset() {
 	b.ports.Reset()
-	b.portsUpdate()
+	b.update()
 }
 
 func (b *Banks) AsyncReset() {
@@ -174,19 +176,29 @@ func (b *Banks) initRom() {
 	b.char = romLoader.Load(roms2.BuiltinCharRom, CharRomFile)
 }
 
-func (b *Banks) portsUpdate() {
+func (b *Banks) update() {
 	//https://sta.c64.org/cbm64mem.html
 	//https://codebase64.org/doku.php?id=base:memory_management
 	//b.ports.SetTape(tape_sense, tape_write_in, tape_motor_in)
 	b.ports.Update()
+	b.RebuildMemoryConfig()
+}
+
+func (b *Banks) RebuildMemoryConfig() {
+	//https://sta.c64.org/cbm64mem.html
+	//https://codebase64.org/doku.php?id=base:memory_management
 	game := uint8(1)
 	exRom := uint8(1)
 	if g, x, ok := b.cartMan.Config(); ok {
 		game = g
 		exRom = x
 	}
-	memConfig := b.ports.GetMemoryConfig(exRom, game)
-	b.memoryConfig = b.memoryMap.Get(memConfig)
+	mcIdx := b.ports.GetMemoryConfig(exRom, game)
+	if int(mcIdx) != b.memoryConfigIdx {
+		b.memoryConfigIdx = int(mcIdx)
+		b.memoryConfig = b.memoryMap.Get(mcIdx)
+		//fmt.Printf("SYSTEM MEMORY CONFIG CHANGED [exRom: %d - game: %d] %d -> %v\n", exRom, game, memConfig, b.memoryConfig)
+	}
 }
 
 func (b *Banks) GetMemoryConfig() []uint8 {
@@ -246,12 +258,12 @@ func (b *Banks) ramWrite0x0000(addr uint16, data uint8) {
 	if addr == 0 {
 		b.ports.SetDir(data)
 		b.ram[0] = b.vic.GetLastByte()
-		b.portsUpdate()
+		b.update()
 		return
 	} else if addr == 1 {
 		b.ports.SetData(data)
 		b.ram[1] = b.vic.GetLastByte()
-		b.portsUpdate()
+		b.update()
 		return
 	}
 	b.ram[addr] = data

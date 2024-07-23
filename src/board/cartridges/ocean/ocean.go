@@ -8,7 +8,7 @@ import (
 
 type CartridgeOcean struct {
 	id        string
-	intervals icartridge.Interval
+	intervals icartridge.RomInterval
 	lastData  uint8
 	banks     [][]byte
 	ioMask    uint8
@@ -19,7 +19,7 @@ type CartridgeOcean struct {
 }
 
 func New() *CartridgeOcean {
-	v := icartridge.Modes[icartridge.Mode16K]
+	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
 	return &CartridgeOcean{
 		game:      v.Game,
 		exRom:     v.ExRom,
@@ -31,7 +31,7 @@ func New() *CartridgeOcean {
 func (c *CartridgeOcean) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
 	c.id = ldr.GetId()
-	if ldr.GetMode() == loader.ModeCrt {
+	if ldr.GetMode() == loader.FiletypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr.GetData())
@@ -41,7 +41,7 @@ func (c *CartridgeOcean) GetId() string {
 	return c.id
 }
 
-func (c *CartridgeOcean) Write(i icartridge.Interval, addr uint16, data uint8) bool {
+func (c *CartridgeOcean) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
 	if i&c.intervals != 0 {
 		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.currBank, addr, data)
 		return true
@@ -49,7 +49,7 @@ func (c *CartridgeOcean) Write(i icartridge.Interval, addr uint16, data uint8) b
 	return false
 }
 
-func (c *CartridgeOcean) Read(i icartridge.Interval, addr uint16) (uint8, bool) {
+func (c *CartridgeOcean) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
 	if i&c.intervals != 0 {
 		//if c.b0Interval == i {
 		//	return c.banks[c.currBank][addr&0x1fff], true
@@ -96,7 +96,7 @@ func (c *CartridgeOcean) Detach() error {
 }
 
 func (c *CartridgeOcean) initBin(data []byte) error {
-	if err := loader.Validate(data); err != nil {
+	if err := loader.ValidateCartridge(data); err != nil {
 		return err
 	}
 	const cSize = 0x2000

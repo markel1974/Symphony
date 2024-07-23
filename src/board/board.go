@@ -100,7 +100,9 @@ func (s *Board) Setup(prefs *preferences.Prefs) error {
 			}
 		}
 	}
+
 	s.Reset()
+
 	return nil
 }
 
@@ -156,6 +158,10 @@ func (s *Board) Emulate() bool {
 	s.quartz.AddCycle()
 	s.phiMode = PhiIdle
 	return vBlank
+}
+
+func (s *Board) RebuildMemoryConfig() {
+	s.banks.RebuildMemoryConfig()
 }
 
 func (s *Board) CreateAlarm(name string, callback quartz.AlarmCallback) *quartz.Alarm {

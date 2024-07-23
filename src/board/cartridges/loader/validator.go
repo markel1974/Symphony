@@ -1,8 +1,10 @@
 package loader
 
-import "errors"
+import (
+	"errors"
+)
 
-func Validate(data []byte) error {
+func ValidateCartridge(data []byte) error {
 	i4 := data[0x4]
 	i5 := data[0x5]
 	i6 := data[0x6]
