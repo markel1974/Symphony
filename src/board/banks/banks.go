@@ -472,7 +472,6 @@ func (b *Banks) portReadColor(addr uint16) uint8 {
 }
 
 func (b *Banks) portReadIO(addr uint16) uint8 {
-	addr = addr & 0x0f
 	if v, ok := b.cartMan.IORead(addr); ok {
 		return v
 	}

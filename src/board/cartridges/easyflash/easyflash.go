@@ -172,13 +172,13 @@ func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
 	}
 	c.stateLow = flash.NewFlash040(c.board, flash.KindB, low)
 	c.stateHigh = flash.NewFlash040(c.board, flash.KindB, high)
+
 	eApiCheck := high[0x1800 : 0x1800+4]
 	if bytes.Compare(eApiCheck, []byte("eapi")) == 0 {
 		eApi := make([]byte, 17)
 		for k := 0; k < 16; k++ {
 			eApi[k] = c.stateHigh.Peek(uint32(0x1804 + k))
 		}
-		fmt.Printf("EF: EAPI found (%s)\n", string(eApi))
 		_ = c.stateHigh.StoreInterval(0x1800, _eApiAM29f040)
 	}
 }
@@ -263,52 +263,35 @@ func (c *CartridgeEasyFlash) Read(i icartridge.RomInterval, addr uint16) (uint8,
 }
 
 func (c *CartridgeEasyFlash) IORead(addr uint16) (uint8, bool) {
-	if addr == 0xdf00 {
+	ref := addr & 0xff00
+	if ref == 0xdf00 {
 		v := c.io2Read(addr)
+		//fmt.Printf("EASYFLASH RAM READ: %x => %d\n", addr, v)
 		return v, true
 	}
+	fmt.Printf("EASYFLASH RAM READ OUTSIDE: %x\n", addr)
 	return 0, false
-	/*
-		ref := addr & 0xff00
-		if ref == 0xdf00 {
-			v := c.io2Read(addr)
-			return v, true
-		}
-		return 0, false
-	*/
 }
 
 func (c *CartridgeEasyFlash) IOWrite(addr uint16, data uint8) bool {
-	if addr == 0xde00 {
-		c.register00 = data & BankMask
-		return true
-	}
-	if addr == 0xde02 {
-		c.controlUpdate(data, true)
-		return true
-	}
-	if addr == 0xdf00 {
+	ref := addr & 0xff00
+	if ref == 0xde00 {
+		if addr == 0xde00 {
+			c.register00 = data & BankMask
+			return true
+		}
+		if addr == 0xde02 {
+			c.controlUpdate(data, true)
+			return true
+		}
+	} else if ref == 0xdf00 {
+		//0xDF00 - 0xDFFFF
+		//fmt.Printf("EASYFLASH RAM WRITE: %x => %d\n", addr, data)
 		c.io2Store(addr, data)
 		return true
 	}
+	fmt.Printf("EASYFLASH RAM WRITE OUSIDE: %x => %d\n", addr, data)
 	return false
-	/*
-		ref := addr & 0xff00
-		if ref == 0xde00 {
-			if addr == 0xde00 {
-				c.register00 = data & BankMask
-				return true
-			}
-			if addr == 0xde02 {
-				c.controlUpdate(data, true)
-				return true
-			}
-		} else if ref == 0xdf00 {
-			c.io2Store(addr, data)
-			return true
-		}
-		return false
-	*/
 }
 
 func (c *CartridgeEasyFlash) GetExRom() uint8 {
