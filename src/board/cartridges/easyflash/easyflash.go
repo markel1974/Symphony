@@ -100,13 +100,13 @@ type CartridgeEasyFlash struct {
 	exRom           uint8
 	stateLow        *flash.Flash040 /* the 29F040B statemachine */
 	stateHigh       *flash.Flash040 /* the 29F040B statemachine */
-	jumper          int             /* the jumper */
-	crtWrite        int             /* writing back to crt enabled */
-	crtOptimize     int             /* optimizing crt enabled */
-	register00      uint8           /* backup of the registers */
-	register02      uint8           /* backup of the registers */
-	ram             []uint8         /* extra RAM */
-	filename        string          /* filename when attached */
+	jumper          int
+	crtWrite        int     /* writing back to crt enabled */
+	crtOptimize     int     /* optimizing crt enabled */
+	register00      uint8   /* backup of the registers */
+	register02      uint8   /* backup of the registers */
+	ram             []uint8 /* extra RAM */
+	filename        string  /* filename when attached */
 	filetype        loader.Filetype
 	led             bool
 }
@@ -149,7 +149,6 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	}
 	c.register00 = 0
 	c.controlUpdate(0, false)
-	//c.controlUpdate(0, false)
 	c.initializeFlash(rawCart)
 	return nil
 }
@@ -240,16 +239,12 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 }
 
 func (c *CartridgeEasyFlash) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
+	//NOT VALID
 	if c.intervalLo == i {
 		fmt.Printf("EASYFLASH Write LOW NOT DEFINED\n")
 	} else if c.intervalHi == i {
 		fmt.Printf("EASYFLASH Write HIGH NOT DEFINED\n")
 	}
-	//TODO IMPLEMENT
-	//if i == ROM_LO {
-	//	fmt.Printf("CartridgeEasyFlash can't be write %x => %d\n", addr, data)
-	//	return true
-	//}
 	return false
 }
 
@@ -265,31 +260,42 @@ func (c *CartridgeEasyFlash) Read(i icartridge.RomInterval, addr uint16) (uint8,
 func (c *CartridgeEasyFlash) IORead(addr uint16) (uint8, bool) {
 	ref := addr & 0xff00
 	if ref == 0xdf00 {
+		//read range for the device 0xdf00-0xdfff
 		v := c.io2Read(addr)
-		//fmt.Printf("EASYFLASH RAM READ: %x => %d\n", addr, v)
 		return v, true
 	}
-	fmt.Printf("EASYFLASH RAM READ OUTSIDE: %x\n", addr)
+	if ref == 0xde00 {
+		// read is never valid, regs are write only
+		fmt.Printf("EASYFLASH RAM READ OUTSIDE: %x\n", addr)
+	}
 	return 0, false
 }
 
 func (c *CartridgeEasyFlash) IOWrite(addr uint16, data uint8) bool {
-	ref := addr & 0xff00
-	if ref == 0xde00 {
-		if addr == 0xde00 {
+	bank := addr & 0xff00
+	if bank == 0xde00 {
+		switch addr & 0x2 {
+		case 0:
 			c.register00 = data & BankMask
 			return true
-		}
-		if addr == 0xde02 {
+		case 1:
+			return true
+		case 2:
 			c.controlUpdate(data, true)
 			return true
+		case 3:
+			return true
 		}
-	} else if ref == 0xdf00 {
+		fmt.Printf("EASYFLASH RAM WRITE OUSIDE: %x => %d\n", addr, data)
+		return false
+	}
+	if bank == 0xdf00 {
+		//range for the device 0xdf00-0xdfff
 		//fmt.Printf("EASYFLASH RAM WRITE: %x => %d\n", addr, data)
 		c.io2Store(addr, data)
 		return true
 	}
-	fmt.Printf("EASYFLASH RAM WRITE OUSIDE: %x => %d\n", addr, data)
+
 	return false
 }
 
@@ -342,7 +348,6 @@ func (c *CartridgeEasyFlash) io1Dump() int {
 	}
 	fmt.Printf("Mode: %d, Bank: %d, LED %s, jumper %s\n", mode, bank, led, jumper)
 	//fmt.Printf("EAPI found: %s\n", mode, bank, led, jumper)
-	//mon_out("EAPI found: %s\n", (memcmp(&romHBanks[0x1800], "eapi", 4) == 0) ? "yes" : "no")
 	return 0
 }
 
@@ -381,7 +386,7 @@ func (c *CartridgeEasyFlash) setEasyFlashCrtOptimize(val int) error {
 	return nil
 }
 
-func (c *CartridgeEasyFlash) write_chip_if_not_empty(fd io.Writer, chip *loader.CrtChipHeader) error {
+func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip *loader.CrtChipHeader) error {
 	for i := uint16(0); i < chip.Size; i++ {
 		if (chip.Data[i] != 0xff) || (c.crtOptimize == 0) {
 			if err := chip.Write(fd); err != nil {
@@ -400,12 +405,6 @@ func (c *CartridgeEasyFlash) binAttach(ldr *loader.CRTLoader) ([]byte, error) {
 	}
 	copy(rawCart, ldr.GetData())
 	return rawCart, nil
-	//if err := util_file_load(filename, rawCart, 0x4000*NBanks, UTIL_FILE_LOAD_SKIP_ADDRESS); err != nil {
-	//	return err
-	//}
-	//if len(rawCart) > len(c.rawCart) {
-	//	return fmt.Errorf("invalid cartridge size")
-	//}
 }
 
 func (c *CartridgeEasyFlash) crtAttach(ldr *loader.CRTLoader) ([]byte, error) {
