@@ -149,6 +149,9 @@ func (gr *Graphics) SampleBorder(cycle int) {
 		idx := cycle - 13
 		gr.borderColorSample[idx&DisplayXFill] = gr.core.ecColor
 	}
+}
+
+func (gr *Graphics) IncrementOffset() {
 	gr.lineOffset += 8
 	gr.foreMask.Increment()
 }

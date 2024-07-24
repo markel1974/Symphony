@@ -233,6 +233,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		vic.refreshAccess()
 		// Turn on display and matrix access if Bad Line
@@ -246,6 +247,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		vic.refreshAccess()
 		// Turn on display and matrix access and reset RowCounter if Bad Line
@@ -260,6 +262,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		vic.refreshAccess()
 		// Turn on display and matrix access if Bad Line
@@ -276,6 +279,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
 		// Turn on display and matrix access if Bad Line
@@ -293,6 +297,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.Draw(true)
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
 		// Turn on display and matrix access if Bad Line
@@ -309,6 +314,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.Draw(false)
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
 		// Turn on display and matrix access if Bad Line
@@ -323,6 +329,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.Draw(false)
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
 		// Turn on display and matrix access if Bad Line
@@ -338,6 +345,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.Draw(false)
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
 		if vic.core.isBadLine {
@@ -361,6 +369,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.Draw(false)
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		//idleAccess
 		vic.core.ReadByte(0x3fff)
@@ -384,6 +393,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		//idleAccess
 		vic.core.ReadByte(0x3fff)
@@ -399,6 +409,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		vic.sprites.UpdateRasterYDisplayFlags()
 		vic.sprites.FetchDataPtr(0)
@@ -409,6 +420,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
 		}
 		vic.sprites.FetchData(0, 1)
 		vic.sprites.FetchData(0, 2)
@@ -423,6 +435,8 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.graphics.SampleBorder(vic.cycle)
+			vic.graphics.IncrementOffset()
+
 			vic.sprites.Draw(vic.lineStart)
 			vic.graphics.DrawBorder(vic.lineStart)
 			vic.lineStart += DisplayX

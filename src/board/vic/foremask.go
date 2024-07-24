@@ -28,10 +28,15 @@ func (gr *ForeMask) Update(a uint8, b uint8) {
 	gr.buf[gr.offset+1] |= b
 }
 
-func (gr *ForeMask) GetA(m int, s int) uint32 {
-	f := ((uint32(gr.buf[m]) << 24) | (uint32(gr.buf[m+1]) << 16) | (uint32(gr.buf[m+2]) << 8) | (uint32(gr.buf[m+3]))) << s
-	return f
-}
+//func (gr *ForeMask) GetN(m int, s int) uint32 {
+//	f := (((uint32(gr.buf[m]) << 24) | (uint32(gr.buf[m+1]) << 16) | (uint32(gr.buf[m+2]) << 8) | (uint32(gr.buf[m+3]))) << s) | (uint32(gr.buf[m+4]) >> (8 - s))
+//	return f
+//}
+
+//func (gr *ForeMask) GetA(m int, s int) uint32 {
+//	f := ((uint32(gr.buf[m]) << 24) | (uint32(gr.buf[m+1]) << 16) | (uint32(gr.buf[m+2]) << 8) | (uint32(gr.buf[m+3]))) << s
+//	return f
+//}
 
 func (gr *ForeMask) GetL(m int, s int) uint32 {
 	f := (((uint32(gr.buf[m]) << 24) | (uint32(gr.buf[m+1]) << 16) | (uint32(gr.buf[m+2]) << 8) | (uint32(gr.buf[m+3]))) << s) | (uint32(gr.buf[m+4]) >> (8 - s))
