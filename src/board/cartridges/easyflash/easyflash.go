@@ -267,6 +267,7 @@ func (c *CartridgeEasyFlash) IORead(addr uint16) (uint8, bool) {
 	if ref == 0xde00 {
 		// read is never valid, regs are write only
 		fmt.Printf("EASYFLASH RAM READ OUTSIDE: %x\n", addr)
+		return 0, false
 	}
 	return 0, false
 }

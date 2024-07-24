@@ -329,14 +329,14 @@ func (b *Banks) ramWrite0xD000(addr uint16, data uint8) {
 
 func (b *Banks) ramWrite0xE000(addr uint16, data uint8) {
 	b.ram[addr] = data
-	//TODO Verify the only one write to cartridge
+	// TODO Verify the only one write to cartridge
 	b.cartMan.Write(icartridge.ROM_HI_2, addr, data)
 	return
 }
 
 func (b *Banks) ramWrite0xF000(addr uint16, data uint8) {
 	b.ram[addr] = data
-	//TODO Verify the only one write to cartridge
+	// TODO Verify the only one write to cartridge
 	b.cartMan.Write(icartridge.ROM_HI_2, addr, data)
 	return
 }
