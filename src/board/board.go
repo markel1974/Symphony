@@ -211,8 +211,11 @@ func (s *Board) KeyboardSetCapital(pressed bool) {
 	s.keys.SetCapital()
 }
 
-func (s *Board) KeyboardSetMenu(menu bool) {
-	s.keys.SetMenu(menu)
+func (s *Board) KeyboardSetMenu(pressed bool) {
+	if !pressed {
+		return
+	}
+	s.keys.SetMenu()
 }
 
 func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {

@@ -2,7 +2,6 @@ package keyboard
 
 import (
 	"container/list"
-	"unicode"
 )
 
 func matrix(a int, b int) int {
@@ -22,10 +21,13 @@ type Keyboard struct {
 	menu           bool
 	ready          bool
 	joystickSwap   bool
+	ascii          *Ascii
 }
 
 func NewKeyboard() *Keyboard {
-	k := &Keyboard{}
+	k := &Keyboard{
+		ascii: NewAscii(),
+	}
 	k.Reset()
 	return k
 }
@@ -166,17 +168,6 @@ func (k *Keyboard) SetCommand(srcPre string, srcPost string) {
 	}
 }
 
-/*
-func (k *Keyboard) SetVirtualModifier(modifier int) {
-	k.ext = flag.IntToBool(modifier & SC_ext)
-	k.numLock = flag.IntToBool(modifier & SC_numlock)
-	k.capital = flag.IntToBool(modifier & SC_capital)
-	k.menu = flag.IntToBool(modifier & SC_menu)
-	k.control = flag.IntToBool(modifier & SC_control)
-	k.shift = flag.IntToBool(modifier & SC_shift)
-}
-*/
-
 func (k *Keyboard) keyUp(kc int) (int, int, bool, uint8, bool) {
 	ret := false
 	joyKey := 0xff
@@ -313,31 +304,6 @@ func (k *Keyboard) keyDown(kc int) (int, int, bool, uint8, bool) {
 	return c64Byte, c64Bit, shifted, uint8(joyKey), ret
 }
 
-func (k *Keyboard) BuildJoystick(x uint, y uint, buttons uint) int {
-	s1 := JOYSTICK_SENSITIVITY
-	s2 := 100 - JOYSTICK_SENSITIVITY
-	s1Val := uint(JOYSTICK_MIN + s1*JOYSTICK_RANGE/100)
-	s2Val := uint(JOYSTICK_MIN + s2*JOYSTICK_RANGE/100)
-	joystick := 0xff
-	if x < s1Val {
-		joystick &= 0xfb // Left
-	} else if x > s2Val {
-		joystick &= 0xf7 // Right
-	}
-	if y < s1Val {
-		joystick &= 0xfe // Up
-	} else if y > s2Val {
-		joystick &= 0xfd // Down
-	}
-	if (buttons & 1) != 0 {
-		joystick &= 0xef // Button
-	}
-	if (buttons & 2) != 0 {
-		//TODO
-	}
-	return joystick
-}
-
 func (k *Keyboard) keyCodeToC64(kc int) (int, int, bool, bool) {
 	if kc >= 0 || kc < 256 {
 		c64Byte := (kc >> 3) & 7
@@ -362,34 +328,38 @@ func (k *Keyboard) prepareCommand(command string) (*list.List, bool) {
 	}
 	storage := list.New()
 	for _, it := range command {
-		if d1, d2, ok := k.ascii2C64(it); ok {
-			if d2 != 0 {
-				if ret := cmd(d2, true, storage); !ret {
-					return nil, false
-				}
-			}
-			if ret := cmd(d1, true, storage); !ret {
+		v := k.ascii.FromAscii(uint8(it))
+		//if v.valid {
+		d1 := v.r1
+		d2 := v.r2
+		//if d1, d2, ok := k.ascii2C64(it); ok {
+		if d2 != 0 {
+			if ret := cmd(d2, true, storage); !ret {
 				return nil, false
-			}
-			if ret := cmd(d1, false, storage); !ret {
-				return nil, false
-			}
-			if d2 != 0 {
-				if ret := cmd(d2, false, storage); !ret {
-					return nil, false
-				}
 			}
 		}
+		if ret := cmd(d1, true, storage); !ret {
+			return nil, false
+		}
+		if ret := cmd(d1, false, storage); !ret {
+			return nil, false
+		}
+		if d2 != 0 {
+			if ret := cmd(d2, false, storage); !ret {
+				return nil, false
+			}
+		}
+		//}
+		//}
 	}
 	return storage, true
 }
 
-// TODO MOVE IN PIXEL KEYBOARD!
 func (k *Keyboard) virtualKey2C64(vKey int) int {
+	//if vKey > 0 {
+	//	return k.ascii.FromAscii(v)
+	//}
 	var result = -1
-
-	//fmt.Println("SHIFT STATE", vKey)
-
 	switch vKey {
 	case VK_return:
 		if k.menu {
@@ -656,161 +626,19 @@ func (k *Keyboard) virtualKey2C64(vKey int) int {
 	case 'Z':
 		result = matrix(1, 4)
 	}
-
 	if result != -1 && k.capital {
 		result |= 0x80
 	}
 	return result
 }
 
-func (k *Keyboard) ascii2C64(ascii rune) (int, int, bool) {
-	r1 := 0
-	r2 := 0
-
-	switch unicode.ToUpper(ascii) {
-	case '!':
-		r2 = matrix(6, 4)
-		r1 = matrix(7, 0)
-	case '"':
-		r2 = matrix(6, 4)
-		r1 = matrix(7, 3)
-	case '#':
-		r2 = matrix(6, 4)
-		r1 = matrix(1, 0)
-	case '$':
-		r2 = matrix(6, 4)
-		r1 = matrix(1, 3)
-	case '%':
-		r2 = matrix(6, 4)
-		r1 = matrix(2, 0)
-	case '&':
-		r2 = matrix(6, 4)
-		r1 = matrix(2, 3)
-	case '\'':
-		r2 = matrix(6, 4)
-		r1 = matrix(3, 0)
-	case '(':
-		r2 = matrix(6, 4)
-		r1 = matrix(3, 3)
-	case ')':
-		r2 = matrix(6, 4)
-		r1 = matrix(4, 0)
-	case '>':
-		r2 = matrix(6, 4)
-		r1 = matrix(5, 4)
-	case '<':
-		r2 = matrix(6, 4)
-		r1 = matrix(5, 7)
-	case '?':
-		r2 = matrix(6, 4)
-		r1 = matrix(6, 2)
-	case '[':
-		r2 = matrix(6, 4)
-		r1 = matrix(5, 5)
-	case ']':
-		r2 = matrix(6, 4)
-		r1 = matrix(6, 2)
-	case '\n':
-		r1 = matrix(0, 1)
-	case '\r':
-		r1 = matrix(0, 1)
-	case ' ':
-		r1 = matrix(7, 4)
-	case '/':
-		r1 = matrix(6, 7)
-	case '^':
-		r1 = matrix(6, 6)
-	case '=':
-		r1 = matrix(6, 5)
-	case ';':
-		r1 = matrix(6, 2)
-	case '*':
-		r1 = matrix(6, 1)
-	//case '£':  r1 = matrix(6, 0)
-	case ',':
-		r1 = matrix(5, 7)
-	case '@':
-		r1 = matrix(5, 6)
-	case ':':
-		r1 = matrix(5, 5)
-	case '.':
-		r1 = matrix(5, 4)
-	case '-':
-		r1 = matrix(5, 3)
-	case '+':
-		r1 = matrix(5, 0)
-	case '0':
-		r1 = matrix(4, 3)
-	case '1':
-		r1 = matrix(7, 0)
-	case '2':
-		r1 = matrix(7, 3)
-	case '3':
-		r1 = matrix(1, 0)
-	case '4':
-		r1 = matrix(1, 3)
-	case '5':
-		r1 = matrix(2, 0)
-	case '6':
-		r1 = matrix(2, 3)
-	case '7':
-		r1 = matrix(3, 0)
-	case '8':
-		r1 = matrix(3, 3)
-	case '9':
-		r1 = matrix(4, 0)
-	case 'A':
-		r1 = matrix(1, 2)
-	case 'B':
-		r1 = matrix(3, 4)
-	case 'C':
-		r1 = matrix(2, 4)
-	case 'D':
-		r1 = matrix(2, 2)
-	case 'E':
-		r1 = matrix(1, 6)
-	case 'F':
-		r1 = matrix(2, 5)
-	case 'G':
-		r1 = matrix(3, 2)
-	case 'H':
-		r1 = matrix(3, 5)
-	case 'I':
-		r1 = matrix(4, 1)
-	case 'J':
-		r1 = matrix(4, 2)
-	case 'K':
-		r1 = matrix(4, 5)
-	case 'L':
-		r1 = matrix(5, 2)
-	case 'M':
-		r1 = matrix(4, 4)
-	case 'N':
-		r1 = matrix(4, 7)
-	case 'O':
-		r1 = matrix(4, 6)
-	case 'P':
-		r1 = matrix(5, 1)
-	case 'Q':
-		r1 = matrix(7, 6)
-	case 'R':
-		r1 = matrix(2, 1)
-	case 'S':
-		r1 = matrix(1, 5)
-	case 'T':
-		r1 = matrix(2, 6)
-	case 'U':
-		r1 = matrix(3, 6)
-	case 'V':
-		r1 = matrix(3, 7)
-	case 'W':
-		r1 = matrix(1, 1)
-	case 'X':
-		r1 = matrix(2, 7)
-	case 'Y':
-		r1 = matrix(3, 1)
-	case 'Z':
-		r1 = matrix(1, 4)
-	}
-	return r1, r2, r1 != 0
+/*
+func (k *Keyboard) SetVirtualModifier(modifier int) {
+	k.ext = flag.IntToBool(modifier & SC_ext)
+	k.numLock = flag.IntToBool(modifier & SC_numlock)
+	k.capital = flag.IntToBool(modifier & SC_capital)
+	k.menu = flag.IntToBool(modifier & SC_menu)
+	k.control = flag.IntToBool(modifier & SC_control)
+	k.shift = flag.IntToBool(modifier & SC_shift)
 }
+*/

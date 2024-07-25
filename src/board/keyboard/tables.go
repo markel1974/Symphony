@@ -54,13 +54,6 @@ const (
 )
 
 const (
-	SC_ext     = 0x1
-	SC_control = 0x2
-	SC_menu    = 0x4
-	SC_capital = 0x8
-	SC_numlock = 0x10
-	SC_shift   = 0x20
-
 	VK_return   = -1
 	VK_back     = -2
 	VK_space    = -3
