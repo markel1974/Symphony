@@ -124,6 +124,10 @@ func NewAscii() *Ascii {
 	return a
 }
 
+func (a *Ascii) Reset() {
+
+}
+
 func (a *Ascii) FromAscii(v uint8) *KeyData {
 	out := a.container[v]
 	return out
