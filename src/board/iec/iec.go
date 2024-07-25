@@ -164,6 +164,9 @@ func (c *IEC) configChanged() {
 }
 
 func (c *IEC) Emulate() {
+	if len(c.virtualDrives) == 0 {
+		return
+	}
 	for _, vd := range c.virtualDrives {
 		vd.Emulate()
 	}

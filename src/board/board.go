@@ -16,12 +16,12 @@ import (
 	"os"
 )
 
-type PhiMode int
+//type PhiMode int
 
 const (
-	PhiIdle = PhiMode(0)
-	Phi1    = PhiMode(1)
-	Phi2    = PhiMode(2)
+// PhiIdle = PhiMode(0)
+// Phi1    = PhiMode(1)
+// Phi2    = PhiMode(2)
 )
 
 type Board struct {
@@ -37,9 +37,9 @@ type Board struct {
 	keys         *keyboard.Keyboard
 	cfg          *config.Config
 	hasClipboard bool
-	phiMode      PhiMode
-	cartMan      *cartridges.Manager
-	banks        *banks.Banks
+	//phiMode      PhiMode
+	cartMan *cartridges.Manager
+	banks   *banks.Banks
 }
 
 func NewBoard(db vic.IDisplayBuffer) *Board {
@@ -56,8 +56,8 @@ func NewBoard(db vic.IDisplayBuffer) *Board {
 		keys:         nil,
 		hasClipboard: false,
 		cartMan:      cartridges.NewManager(),
-		phiMode:      PhiIdle,
-		banks:        nil,
+		//phiMode:      PhiIdle,
+		banks: nil,
 	}
 	return b
 }
@@ -136,9 +136,9 @@ func (s *Board) configChanged() {
 }
 
 func (s *Board) Emulate() bool {
-	s.phiMode = Phi1
+	//s.phiMode = Phi1
 	vBlank, lastVicCycle := s.vic.Emulate()
-	s.phiMode = Phi2
+	//s.phiMode = Phi2
 	if vBlank {
 		//sidCounter := s.sid.ResetHistoryCounter()
 		//TODO
@@ -159,23 +159,16 @@ func (s *Board) Emulate() bool {
 	s.cartMan.Emulate()
 
 	s.quartz.AddCycle()
-	s.phiMode = PhiIdle
+	//s.phiMode = PhiIdle
 	return vBlank
-}
-
-func (s *Board) GameExRomConfigChanged() {
-	s.banks.RebuildMemoryConfig()
-}
-
-func (s *Board) CreateAlarm(name string, callback quartz.AlarmCallback) *quartz.Alarm {
-	return s.quartz.NewAlarm(name, callback)
 }
 
 func (s *Board) ReadyEvent() {
 	s.keys.SetReady()
 }
 
-func (s *Board) LedStateChangedEvent(deviceNumber int, state uint8) {
+// LedStateChangedEvent (deviceNumber int, state uint8)
+func (s *Board) LedStateChangedEvent(_ int, _ uint8) {
 	//TODO IMPLEMENT
 	//deviceId := deviceNumber - 8
 	//if deviceId < 0 || deviceId >= MAX_DRIVE_COUNT {
@@ -184,15 +177,6 @@ func (s *Board) LedStateChangedEvent(deviceNumber int, state uint8) {
 	//k.leds[deviceId] = state
 	//k.updateLedState()
 	//s.keys.InputReady(_ledActivities == 0)
-}
-
-func (s *Board) RmwFlags() uint8 {
-	//TODO IMPLEMENT cpu rmw flags
-	return 0
-}
-
-func (s *Board) Cycle() uint64 {
-	return s.quartz.Cycle()
 }
 
 func (s *Board) KeyboardPaste(pressed bool) {
@@ -258,6 +242,10 @@ func (s *Board) updateKeyboard() {
 	}
 }
 
+func (s *Board) GameExRomConfigChanged() {
+	s.banks.RebuildMemoryConfig()
+}
+
 func (s *Board) RamRead(addr uint16) uint8 {
 	return s.banks.Read(addr)
 }
@@ -270,7 +258,7 @@ func (s *Board) NMI() {
 	s.interrupts.TriggerNMI()
 }
 
-func (s *Board) DMA(l bool) {
+func (s *Board) DMA(_ bool) {
 	//TODO IMPLEMENT
 	//if _DMA=Low the CPU can be requested to release the bus.
 	//It will stop after the next read cycle and all bus lines will go to high resistance state.
@@ -288,6 +276,19 @@ func (s *Board) IRQOut() {
 
 func (s *Board) BusAvailable() bool {
 	return s.vic.GetBALow()
+}
+
+func (s *Board) Cycle() uint64 {
+	return s.quartz.Cycle()
+}
+
+func (s *Board) CreateAlarm(name string, callback quartz.AlarmCallback) *quartz.Alarm {
+	return s.quartz.NewAlarm(name, callback)
+}
+
+func (s *Board) RmwFlags() uint8 {
+	//TODO IMPLEMENT cpu rmw flags
+	return 0
 }
 
 func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
