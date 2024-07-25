@@ -7,7 +7,6 @@ import (
 type ICartridge interface {
 	Setup(board IExpansion, ldr *loader.CRTLoader) error
 	GetId() string
-	GetType() int
 	Write(i RomInterval, addr uint16, data uint8) bool
 	Read(i RomInterval, addr uint16) (uint8, bool)
 	IORead(addr uint16) (uint8, bool)

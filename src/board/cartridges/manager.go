@@ -17,25 +17,38 @@ import (
 //https://github.com/Project-64/reloaded/blob/master/c64/c64prg/C64PRG11.TXT#L13101
 
 type Manager struct {
-	idx     int
-	board   icartridge.IExpansion
-	prefs   *preferences.Prefs
-	carts   []icartridge.ICartridge
-	emulate []icartridge.ICartridge
+	idx                 int
+	board               icartridge.IExpansion
+	prefs               *preferences.Prefs
+	carts               []icartridge.ICartridge
+	emulate             []icartridge.ICartridge
+	registerType        map[int]func() icartridge.ICartridge
+	registerSize        map[int]func() icartridge.ICartridge
+	registerSizeDefault func() icartridge.ICartridge
 }
 
 func NewManager() *Manager {
 	return &Manager{
-		idx:   0,
-		board: nil,
-		prefs: nil,
-		carts: nil,
+		idx:                 0,
+		board:               nil,
+		prefs:               nil,
+		carts:               nil,
+		registerType:        make(map[int]func() icartridge.ICartridge),
+		registerSize:        make(map[int]func() icartridge.ICartridge),
+		registerSizeDefault: nil,
 	}
 }
 
 func (f *Manager) Setup(board icartridge.IExpansion, prefs *preferences.Prefs) {
 	f.board = board
 	f.prefs = prefs
+	f.registerType[ocean.GetType()] = ocean.New
+	f.registerType[easyflash.GetType()] = easyflash.New
+	f.registerType[cartridge8k.GetType()] = cartridge8k.New
+	f.registerType[cartridge16k.GetType()] = cartridge16k.New
+	f.registerSize[0x2000] = cartridge8k.New
+	f.registerSize[0x4000] = cartridge16k.New
+	f.registerSizeDefault = ocean.New
 }
 
 func (f *Manager) Config() (uint8, uint8, bool) {
@@ -143,22 +156,25 @@ func (f *Manager) IORead(addr uint16) (uint8, bool) {
 	return val, ret
 }
 
-func (f *Manager) Add(p string) (string, error) {
+func (f *Manager) Add(name string, data []byte) (string, error) {
 	id := strconv.Itoa(f.idx)
 	ldr := loader.NewLoader(id, loader.MachineC64)
-	err := ldr.Setup(p)
+	err := ldr.Setup(name, data)
 	if err != nil {
 		return "", err
 	}
-	var cart icartridge.ICartridge = nil
+	var factory func() icartridge.ICartridge = nil
 	if ldr.GetMode() == loader.FiletypeCrt {
-		cart, err = f.loadCrt(ldr)
+		factory = f.registerType[int(ldr.Kind)]
 	} else {
-		cart, err = f.loadBin(ldr)
+		if factory = f.registerSize[len(ldr.GetData())]; factory == nil {
+			factory = f.registerSizeDefault
+		}
 	}
-	if err != nil {
-		return "", err
+	if factory == nil {
+		return "", fmt.Errorf("unsupported => %d", ldr.Kind)
 	}
+	cart := factory()
 	f.idx++
 	f.carts = append(f.carts, cart)
 	if err != cart.Setup(f.board, ldr) {
@@ -189,37 +205,4 @@ func (f *Manager) Remove(id string) error {
 		return fmt.Errorf("can't remove cartridge id %s", id)
 	}
 	return nil
-}
-
-func (f *Manager) loadCrt(ldr *loader.CRTLoader) (icartridge.ICartridge, error) {
-	var cart icartridge.ICartridge
-	switch ldr.Kind {
-	case loader.CARTRIDGE_OCEAN:
-		cart = ocean.New()
-	case loader.CARTRIDGE_EASYFLASH:
-		cart = easyflash.New(uint8(ldr.Game), uint8(ldr.ExRom), icartridge.ROM_LO, icartridge.ROM_HI_1)
-	}
-	if cart == nil {
-		return nil, fmt.Errorf("unsupported => %d", ldr.Kind)
-	}
-	return cart, nil
-}
-
-func (f *Manager) loadBin(ldr *loader.CRTLoader) (icartridge.ICartridge, error) {
-	var cart icartridge.ICartridge = nil
-	lCartridge := len(ldr.GetData())
-	if lCartridge == 0x2000 {
-		cart = cartridge8k.New()
-	} else if lCartridge == 0x4000 {
-		cart = cartridge16k.New(false)
-	} else if lCartridge > 0x4000 {
-		//TODO VERIFICA
-		//shadow of the beast funziona con ROM_LO, ROM_HI_1
-		//robocop2 funziona con ROM_LO, ROM_HI_1
-		cart = ocean.New()
-	}
-	if cart == nil {
-		return nil, fmt.Errorf("invalid cartridge")
-	}
-	return cart, nil
 }

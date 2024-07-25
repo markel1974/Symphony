@@ -18,7 +18,11 @@ type CartridgeOcean struct {
 	board     icartridge.IExpansion
 }
 
-func New() *CartridgeOcean {
+func GetType() int {
+	return loader.CARTRIDGE_GENERIC_8KB
+}
+
+func New() icartridge.ICartridge {
 	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
 	return &CartridgeOcean{
 		game:      v.Game,
@@ -39,10 +43,6 @@ func (c *CartridgeOcean) Setup(board icartridge.IExpansion, ldr *loader.CRTLoade
 
 func (c *CartridgeOcean) GetId() string {
 	return c.id
-}
-
-func (c *CartridgeOcean) GetType() int {
-	return loader.CARTRIDGE_GENERIC_8KB
 }
 
 func (c *CartridgeOcean) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {

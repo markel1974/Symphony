@@ -13,6 +13,7 @@ import (
 	"github.com/markel1974/c64emu/src/preferences"
 	"golang.design/x/clipboard"
 	"log"
+	"os"
 )
 
 type PhiMode int
@@ -93,7 +94,12 @@ func (s *Board) Setup(prefs *preferences.Prefs) error {
 
 	if !s.prefs.GetDisableCartridgeAutostart() {
 		for _, cartName := range s.prefs.GetCartridges() {
-			if cartId, err := s.cartMan.Add(cartName); err != nil {
+			data, err := os.ReadFile(cartName)
+			if err != nil {
+				log.Printf("can't add cartridge: %s", err.Error())
+				continue
+			}
+			if cartId, err := s.cartMan.Add(cartName, data); err != nil {
 				log.Printf("can't add cartridge: %s", err.Error())
 			} else {
 				log.Printf("cartridge: %s [%s] successfully added", cartName, cartId)

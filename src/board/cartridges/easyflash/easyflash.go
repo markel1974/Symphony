@@ -111,12 +111,16 @@ type CartridgeEasyFlash struct {
 	led             bool
 }
 
-func New(game uint8, exRom uint8, lo icartridge.RomInterval, hi icartridge.RomInterval) *CartridgeEasyFlash {
+func GetType() int {
+	return loader.CARTRIDGE_EASYFLASH
+}
+
+func New() icartridge.ICartridge {
 	return &CartridgeEasyFlash{
-		game:            game,
-		exRom:           exRom,
-		intervalHi:      hi,
-		intervalLo:      lo,
+		game:            1,
+		exRom:           1,
+		intervalHi:      icartridge.ROM_HI_1,
+		intervalLo:      icartridge.ROM_LO,
 		stateLow:        nil,
 		stateHigh:       nil,
 		filetype:        0,
@@ -131,6 +135,8 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	var rawCart []byte
 	c.board = board
 	c.id = ldr.GetId()
+	c.game = uint8(ldr.Game)
+	c.exRom = uint8(ldr.ExRom)
 	rp := filler.New(255, 2, 1, 0x100, 255, 0, 0, 0)
 	rp.InitWithPattern(c.ram, CartRamSize)
 	c.filename = ldr.Name
@@ -155,10 +161,6 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 
 func (c *CartridgeEasyFlash) GetId() string {
 	return c.id
-}
-
-func (c *CartridgeEasyFlash) GetType() int {
-	return loader.CARTRIDGE_EASYFLASH
 }
 
 func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {

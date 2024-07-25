@@ -18,21 +18,31 @@ type Cartridge16K struct {
 	board      icartridge.IExpansion
 }
 
-func New(ultimax bool) *Cartridge16K {
-	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
-	if ultimax {
-		v = icartridge.GetCartridgeSpec(icartridge.CartridgeModeUltimax)
-	}
+func GetType() int {
+	return loader.CARTRIDGE_GENERIC_16KB
+}
+
+func New() icartridge.ICartridge {
 	return &Cartridge16K{
-		game:       v.Game,
-		exRom:      v.ExRom,
-		b0Interval: v.IntervalLow,
-		b1Interval: v.IntervalHigh,
-		intervals:  v.IntervalLow | v.IntervalHigh,
+		game:       1,
+		exRom:      1,
+		b0Interval: 0,
+		b1Interval: 0,
+		intervals:  0,
 	}
 }
 
 func (c *Cartridge16K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
+	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
+	//TODO
+	if ldr.Ultimax() {
+		v = icartridge.GetCartridgeSpec(icartridge.CartridgeModeUltimax)
+	}
+	c.game = v.Game
+	c.exRom = v.ExRom
+	c.b0Interval = v.IntervalLow
+	c.b1Interval = v.IntervalHigh
+	c.intervals = v.IntervalLow | v.IntervalHigh
 	c.board = board
 	c.id = ldr.GetId()
 	if ldr.GetMode() == loader.FiletypeCrt {
@@ -43,10 +53,6 @@ func (c *Cartridge16K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader)
 
 func (c *Cartridge16K) GetId() string {
 	return c.id
-}
-
-func (c *Cartridge16K) GetType() int {
-	return loader.CARTRIDGE_GENERIC_16KB
 }
 
 func (c *Cartridge16K) initBin(ldr *loader.CRTLoader) error {

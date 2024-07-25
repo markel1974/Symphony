@@ -15,7 +15,11 @@ type Cartridge8K struct {
 	board     icartridge.IExpansion
 }
 
-func New() *Cartridge8K {
+func GetType() int {
+	return loader.CARTRIDGE_OCEAN
+}
+
+func New() icartridge.ICartridge {
 	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode8K)
 	return &Cartridge8K{
 		game:      v.Game,
@@ -35,10 +39,6 @@ func (c *Cartridge8K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) 
 
 func (c *Cartridge8K) GetId() string {
 	return c.id
-}
-
-func (c *Cartridge8K) GetType() int {
-	return loader.CARTRIDGE_OCEAN
 }
 
 func (c *Cartridge8K) initCrt(ldr *loader.CRTLoader) error {

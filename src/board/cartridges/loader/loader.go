@@ -3,7 +3,6 @@ package loader
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"path"
 	"strings"
 )
@@ -41,17 +40,17 @@ func NewLoader(id string, mc MachineType) *CRTLoader {
 	}
 }
 
-func (cl *CRTLoader) Setup(p string) error {
-	data, err := os.ReadFile(p)
-	if err != nil {
-		return err
-	}
+func (cl *CRTLoader) Setup(id string, data []byte) error {
+	//data, err := os.ReadFile(p)
+	//if err != nil {
+	//	return err
+	//}
 	cl.mode = FiletypeBin
 	cl.rowCartridge = data
-	lp := strings.ToLower(strings.TrimSpace(p))
+	lp := strings.ToLower(strings.TrimSpace(id))
 	if ext := path.Ext(lp); ext == ".crt" {
 		cl.mode = FiletypeCrt
-		if err = cl.open(); err != nil {
+		if err := cl.open(); err != nil {
 			return err
 		}
 	}
@@ -68,6 +67,11 @@ func (cl *CRTLoader) GetMode() Filetype {
 
 func (cl *CRTLoader) GetData() []byte {
 	return cl.rowCartridge
+}
+
+func (cl *CRTLoader) Ultimax() bool {
+	//TODO REMOVE!!!!!
+	return false
 }
 
 func (cl *CRTLoader) open() error {
