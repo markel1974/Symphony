@@ -229,7 +229,7 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 		//fmt.Println("register002:", value, "mode:", memMode.mode, "exrom:", memMode.exrom, "game:", memMode.game, "led:", c.led)
 		fmt.Println("EASYFLASH MEMORY CONFIG CHANGED:", mxg, "exrom:", c.exRom, "game:", c.game)
 		if update {
-			c.board.RebuildMemoryConfig()
+			c.board.GameExRomConfigChanged()
 		}
 	}
 	if led := value&0x80 == 0x80; led != c.led {
@@ -281,6 +281,7 @@ func (c *CartridgeEasyFlash) IOWrite(addr uint16, data uint8) bool {
 			return true
 		case 1:
 			return true
+
 		case 2:
 			c.controlUpdate(data, true)
 			return true
@@ -306,6 +307,13 @@ func (c *CartridgeEasyFlash) GetExRom() uint8 {
 
 func (c *CartridgeEasyFlash) GetGame() uint8 {
 	return c.game
+}
+
+func (c *CartridgeEasyFlash) EmulationRequired() bool {
+	return false
+}
+
+func (c *CartridgeEasyFlash) Emulate() {
 }
 
 func (c *CartridgeEasyFlash) romLRead(addr uint16) uint8 {
@@ -547,41 +555,6 @@ func (c *CartridgeEasyFlash) printConfigValue(val uint8, jumper uint8) {
 	fmt.Printf("/* %d */{jumper: %d, mode: %d, exrom: %d, game: %d},\n", val, jumper, mode, exrom, game)
 	//fmt.Println("led:", led, "mode:", mode, "exrom:", exrom, "game:", game)
 }
-
-/*
-func (c *CartridgeEasyFlash) mmu_translate(addr uint32) ([]uint8, int, int) {
-	if c.stateHigh != nil && c.stateLow != nil {
-		switch addr & 0xe000 {
-		case 0xe000:
-			if c.stateHigh.GetFlashState() == flash.StateRead {
-				offset := (int(c.register00) * 0x2000) - 0xe000
-				base := c.stateHigh.flashData[offset:]
-				start := 0xe000
-				limit := 0xfffd
-				return base, start, limit
-			}
-			break
-		case 0xa000:
-			if c.stateHigh.GetFlashState() == flash.StateRead {
-				offset := (int(c.register00) * 0x2000) - 0xa000
-				base := c.stateHigh.flashData[offset:]
-				start := 0xa000
-				limit := 0xbffd
-				return base, start, limit
-			}
-		case 0x8000:
-			if c.stateLow.GetFlashState() == flash.StateRead {
-				offset := (int(c.register00) * 0x2000) - 0x8000
-				base := c.stateLow.flashData[offset:]
-				start := 0x8000
-				limit := 0x9ffd
-				return base, start, limit
-			}
-		}
-	}
-	return nil, 0, 0
-}
-*/
 
 /*
 static const cmdline_option_t cmdline_options[] =

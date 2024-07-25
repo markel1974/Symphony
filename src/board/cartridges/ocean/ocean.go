@@ -95,6 +95,14 @@ func (c *CartridgeOcean) Detach() error {
 	return nil
 }
 
+func (c *CartridgeOcean) EmulationRequired() bool {
+	return false
+}
+
+func (c *CartridgeOcean) Emulate() {
+
+}
+
 func (c *CartridgeOcean) initBin(data []byte) error {
 	if err := loader.ValidateCartridge(data); err != nil {
 		return err

@@ -17,10 +17,11 @@ import (
 //https://github.com/Project-64/reloaded/blob/master/c64/c64prg/C64PRG11.TXT#L13101
 
 type Manager struct {
-	idx   int
-	board icartridge.IExpansion
-	prefs *preferences.Prefs
-	carts []icartridge.ICartridge
+	idx     int
+	board   icartridge.IExpansion
+	prefs   *preferences.Prefs
+	carts   []icartridge.ICartridge
+	emulate []icartridge.ICartridge
 }
 
 func NewManager() *Manager {
@@ -55,6 +56,19 @@ func (f *Manager) Config() (uint8, uint8, bool) {
 		}
 	}
 	return g, x, true
+}
+
+func (f *Manager) Emulate() {
+	if len(f.emulate) == 0 {
+		return
+	}
+	if len(f.emulate) == 1 {
+		f.emulate[0].Emulate()
+		return
+	}
+	for _, c := range f.emulate {
+		c.Emulate()
+	}
 }
 
 func (f *Manager) Read(interval icartridge.RomInterval, addr uint16) (uint8, bool) {
@@ -150,17 +164,31 @@ func (f *Manager) Add(p string) (string, error) {
 	if err != cart.Setup(f.board, ldr) {
 		return "", err
 	}
+	if cart.EmulationRequired() {
+		f.emulate = append(f.emulate, cart)
+	}
 	return id, nil
 }
 
 func (f *Manager) Remove(id string) error {
+	found := false
 	for s, cart := range f.carts {
 		if cart.GetId() == id {
 			f.carts = append(f.carts[:s], f.carts[s+1:]...)
-			return nil
+			found = true
+			break
 		}
 	}
-	return fmt.Errorf("can't remove cartridge id %s", id)
+	for e, c := range f.emulate {
+		if c.GetId() == id {
+			f.emulate = append(f.emulate[:e], f.emulate[e+1:]...)
+			break
+		}
+	}
+	if !found {
+		return fmt.Errorf("can't remove cartridge id %s", id)
+	}
+	return nil
 }
 
 func (f *Manager) loadCrt(ldr *loader.CRTLoader) (icartridge.ICartridge, error) {

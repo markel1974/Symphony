@@ -86,6 +86,14 @@ func (c *Cartridge8K) GetGame() uint8 {
 	return c.game
 }
 
+func (c *Cartridge8K) EmulationRequired() bool {
+	return false
+}
+
+func (c *Cartridge8K) Emulate() {
+
+}
+
 func (c *Cartridge8K) Detach() error {
 	//TODO
 	return nil

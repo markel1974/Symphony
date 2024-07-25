@@ -13,5 +13,7 @@ type ICartridge interface {
 	IOWrite(addr uint16, data uint8) bool
 	GetExRom() uint8
 	GetGame() uint8
+	EmulationRequired() bool
+	Emulate()
 	Detach() error
 }

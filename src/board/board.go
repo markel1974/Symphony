@@ -154,13 +154,14 @@ func (s *Board) Emulate() bool {
 	s.cia2.Emulate()
 	s.cpu.Emulate(s.vic.GetBALow())
 	s.iec.Emulate()
+	s.cartMan.Emulate()
 
 	s.quartz.AddCycle()
 	s.phiMode = PhiIdle
 	return vBlank
 }
 
-func (s *Board) RebuildMemoryConfig() {
+func (s *Board) GameExRomConfigChanged() {
 	s.banks.RebuildMemoryConfig()
 }
 
@@ -255,6 +256,38 @@ func (s *Board) updateKeyboard() {
 	}
 }
 
+func (s *Board) RamRead(addr uint16) uint8 {
+	return s.banks.Read(addr)
+}
+
+func (s *Board) RamWrite(addr uint16, data uint8) {
+	s.banks.Write(addr, data)
+}
+
+func (s *Board) NMI() {
+	s.interrupts.TriggerNMI()
+}
+
+func (s *Board) DMA(l bool) {
+	//TODO IMPLEMENT
+	//if _DMA=Low the CPU can be requested to release the bus.
+	//It will stop after the next read cycle and all bus lines will go to high resistance state.
+	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
+}
+
+func (s *Board) IRQIn() {
+	//TODO IMPLEMENT
+	//As an output, reflects the status of the IRQ line
+}
+
+func (s *Board) IRQOut() {
+	//As an output, reflects the status of the IRQ line
+}
+
+func (s *Board) BusAvailable() bool {
+	return s.vic.GetBALow()
+}
+
 func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
 	var prev []uint8 = nil
 	if memConfig >= 0 {
@@ -279,86 +312,3 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	}
 	return rb
 }
-
-//func (s *Board) GetDisplayBuffer() []byte {
-//	return s.vic.GetDisplayBuffer()
-//}
-
-/*
-func (s *Board) VICTriggerIRQ() {
-	s.interrupts.TriggerVICIRQ()
-}
-
-func (s *Board) VICClearIRQ() {
-	s.interrupts.ClearVICIRQ()
-}
-
-func (s *Board) VICChangedVA(d uint8) {
-	s.vic.ChangedVA(d)
-}
-
-func (s *Board) VICLightPenTrigger() {
-	s.vic.LightPenTrigger()
-}
-
-
-func (s *Board) CpuRamRead(addr uint16) uint8 {
-	return s.banks.Read(addr)
-}
-
-func (s *Board) CpuRamWrite(addr uint16, data uint8) {
-	s.banks.Write(addr, data)
-}
-
-func (s *Board) ColorRead(addr uint16) uint8 {
-	return s.banks.ReadColor(addr)
-}
-
-//func (s *Board) ColorWrite(addr uint16, data uint8) {
-//	s.banks.WriteColor(addr, data)
-//}
-
-//func (s *Board) RamRead(addr uint16) uint8 {
-//	return s.banks.ReadDirect(addr)
-//}
-
-//func (s *Board) RamWrite(addr uint16, data uint8) {
-//	s.banks.WriteDirect(addr, data)
-//}
-
-//func (s *Board) BasicRomRead(addr uint16) uint8 {
-//	return s.banks.ReadBasicRom(addr)
-//}
-
-//func (s *Board) CharRomRead(addr uint16) uint8 {
-//	return s.banks.ReadCharRom(addr)
-//}
-
-//func (s *Board) KernalRomRead(addr uint16) uint8 {
-//	return s.banks.ReadKernalRom(addr)
-//}
-
-//func (s *Board) NMITrigger() {
-//	s.interrupts.TriggerNMI()
-//}
-
-//func (s *Board) NMIClear() {
-//	s.interrupts.ClearNMI()
-//}
-
-//func (s *Board) CIATriggerIRQ() {
-//	s.interrupts.TriggerCIAIRQ()
-//}
-
-//func (s *Board) CIAClearIRQ() {
-//	s.interrupts.ClearCIAIRQ()
-//}
-
-//func (s *Board) BusCpuWrite(d uint8) {
-//	s.iec.CpuWrite(d)
-//}
-
-//func (s *Board) BusCpuRead() uint8 {
-//	return s.iec.CpuRead()
-//}
-*/
