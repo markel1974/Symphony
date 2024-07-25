@@ -37,6 +37,10 @@ func (c *Cartridge8K) GetId() string {
 	return c.id
 }
 
+func (c *Cartridge8K) GetType() int {
+	return loader.CARTRIDGE_OCEAN
+}
+
 func (c *Cartridge8K) initCrt(ldr *loader.CRTLoader) error {
 	//TODO IMPLEMENT
 	return fmt.Errorf("uninplemented")

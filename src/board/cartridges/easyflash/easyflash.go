@@ -157,6 +157,10 @@ func (c *CartridgeEasyFlash) GetId() string {
 	return c.id
 }
 
+func (c *CartridgeEasyFlash) GetType() int {
+	return loader.CARTRIDGE_EASYFLASH
+}
+
 func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
 	low := make([]byte, 0x80000)
 	high := make([]byte, 0x80000)

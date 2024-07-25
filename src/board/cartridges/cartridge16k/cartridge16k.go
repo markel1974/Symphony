@@ -45,6 +45,10 @@ func (c *Cartridge16K) GetId() string {
 	return c.id
 }
 
+func (c *Cartridge16K) GetType() int {
+	return loader.CARTRIDGE_GENERIC_16KB
+}
+
 func (c *Cartridge16K) initBin(ldr *loader.CRTLoader) error {
 	//TODO IMPLEMENT
 	return fmt.Errorf("uninplemented")

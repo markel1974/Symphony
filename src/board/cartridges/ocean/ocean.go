@@ -41,6 +41,10 @@ func (c *CartridgeOcean) GetId() string {
 	return c.id
 }
 
+func (c *CartridgeOcean) GetType() int {
+	return loader.CARTRIDGE_GENERIC_8KB
+}
+
 func (c *CartridgeOcean) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
 	if i&c.intervals != 0 {
 		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.currBank, addr, data)
