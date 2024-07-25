@@ -1,8 +1,8 @@
 package cia
 
 import (
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/flag"
-	"github.com/markel1974/c64emu/src/preferences"
 )
 
 type MOS6526_1 struct {
@@ -14,7 +14,7 @@ type MOS6526_1 struct {
 	RevMatrix   [8]uint8 // Reversed keyboard matrix
 	Joystick1   uint8    // Joystick 1 AND value
 	Joystick2   uint8    // Joystick 2 AND value
-	prefs       *preferences.Prefs
+	prefs       *config.Config
 }
 
 func NewMOS6526_1() *MOS6526_1 {
@@ -23,7 +23,7 @@ func NewMOS6526_1() *MOS6526_1 {
 	return m
 }
 
-func (cia1 *MOS6526_1) Setup(intr IInterrupts, vic IVic, prefs *preferences.Prefs) {
+func (cia1 *MOS6526_1) Setup(intr IInterrupts, vic IVic, prefs *config.Config) {
 	cia1.intr = intr
 	cia1.vic = vic
 	cia1.prefs = prefs

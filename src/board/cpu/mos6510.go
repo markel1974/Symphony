@@ -3,8 +3,8 @@ package cpu
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/board/quartz"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/flag"
-	"github.com/markel1974/c64emu/src/preferences"
 	"log"
 	"os"
 )
@@ -48,7 +48,7 @@ import (
 
 type MOS6510 struct {
 	*Core
-	prefs *preferences.Prefs
+	prefs *config.Config
 }
 
 func NewMOS6510() *MOS6510 {
@@ -59,7 +59,7 @@ func NewMOS6510() *MOS6510 {
 	return cpu
 }
 
-func (cpu *MOS6510) Setup(quartz *quartz.Quartz, banks IBanks, prefs *preferences.Prefs) {
+func (cpu *MOS6510) Setup(quartz *quartz.Quartz, banks IBanks, prefs *config.Config) {
 	cpu.banks = banks
 	cpu.prefs = prefs
 	cpu.intr.Setup(quartz)

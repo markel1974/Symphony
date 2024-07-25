@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/markel1974/c64emu/src/preferences"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render"
 	"github.com/markel1974/c64emu/src/version"
 	"strings"
@@ -31,7 +31,7 @@ func main() {
 		return
 	}
 
-	prefs := preferences.NewPrefs()
+	prefs := config.New()
 	if len(cartridge) > 0 {
 		for _, c := range strings.Split(cartridge, ";") {
 			prefs.AddCartridge(c)

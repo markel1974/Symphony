@@ -7,8 +7,8 @@ import (
 	"github.com/markel1974/c64emu/src/board/cia"
 	"github.com/markel1974/c64emu/src/board/sid"
 	"github.com/markel1974/c64emu/src/board/vic"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/filler"
-	"github.com/markel1974/c64emu/src/preferences"
 )
 
 const (
@@ -40,7 +40,7 @@ type Banks struct {
 	kernal          []byte
 	char            []byte
 	color           []byte
-	prefs           *preferences.Prefs
+	prefs           *config.Config
 }
 
 func NewBanks() *Banks {
@@ -70,7 +70,7 @@ func NewBanks() *Banks {
 	return b
 }
 
-func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia.MOS6526_1, cia2 *cia.MOS6526_2, cartMan *cartridges.Manager, prefs *preferences.Prefs) {
+func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia.MOS6526_1, cia2 *cia.MOS6526_2, cartMan *cartridges.Manager, prefs *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1

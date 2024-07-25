@@ -3,8 +3,8 @@ package render
 import (
 	"github.com/markel1974/c64emu/src/board"
 	"github.com/markel1974/c64emu/src/board/vic"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/pixels"
-	"github.com/markel1974/c64emu/src/preferences"
 )
 
 type Point struct {
@@ -13,7 +13,7 @@ type Point struct {
 }
 
 type Render struct {
-	prefs        *preferences.Prefs
+	prefs        *config.Config
 	c64Board     *board.Board
 	scale        float64
 	fullscreen   bool
@@ -28,7 +28,7 @@ type Render struct {
 	k *Keyboard
 }
 
-func New(prefs *preferences.Prefs) *Render {
+func New(prefs *config.Config) *Render {
 	g := &Render{
 		prefs:        prefs,
 		fullscreen:   false,

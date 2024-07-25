@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/ram"
 	"github.com/markel1974/c64emu/src/board/quartz"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/flag"
-	"github.com/markel1974/c64emu/src/preferences"
 	"log"
 	"os"
 )
@@ -18,7 +18,7 @@ import (
 
 type MOS6502 struct {
 	*Core
-	prefs *preferences.Prefs
+	prefs *config.Config
 }
 
 func NewMOS6502() *MOS6502 {
@@ -29,7 +29,7 @@ func NewMOS6502() *MOS6502 {
 	return cpu
 }
 
-func (cpu *MOS6502) Setup(ram *ram.Ram, quartz *quartz.Quartz, prefs *preferences.Prefs) {
+func (cpu *MOS6502) Setup(ram *ram.Ram, quartz *quartz.Quartz, prefs *config.Config) {
 	cpu.prefs = prefs
 	cpu.ram = ram
 	cpu.intr.Setup(quartz)

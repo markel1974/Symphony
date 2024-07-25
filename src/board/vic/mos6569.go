@@ -2,7 +2,7 @@ package vic
 
 import (
 	"github.com/markel1974/c64emu/src/board/quartz"
-	"github.com/markel1974/c64emu/src/preferences"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/signals"
 )
 
@@ -10,7 +10,7 @@ import (
 
 type MOS6569 struct {
 	core           *Core
-	prefs          *preferences.Prefs
+	cfg            *config.Config
 	sprites        *Sprites
 	graphics       *Graphics
 	foreMask       *ForeMask
@@ -32,13 +32,15 @@ func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 		cycle:        1,
 		vBlanking:    false,
 		drawThisLine: false,
+		cfg:          nil,
 	}
 	return vic
 }
 
-func (vic *MOS6569) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks, prefs *preferences.Prefs) {
+func (vic *MOS6569) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks, cfg *config.Config) {
 	//vic.board = board
-	vic.prefs = prefs
+	vic.cfg = cfg
+	vic.cfg.Bind(vic.configChanged)
 	vic.core.Setup(quartz, intr, banks)
 	vic.graphics.Setup()
 	vic.sprites.Setup(intr)
@@ -64,8 +66,8 @@ func (vic *MOS6569) GetReadySignal() *signals.Signal {
 //	return vic.core.baLowSignal
 //}
 
-func (vic *MOS6569) NewPrefs(_ *preferences.Prefs) {
-	//vic.skipFrames = prefs.SkipFrames()
+func (vic *MOS6569) configChanged() {
+	//vic.skipFrames = vic.cfg.SkipFrames()
 }
 
 func (vic *MOS6569) ReadRegister(addr uint16) uint8 {

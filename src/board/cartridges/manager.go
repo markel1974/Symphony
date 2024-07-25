@@ -8,7 +8,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
 	"github.com/markel1974/c64emu/src/board/cartridges/ocean"
-	"github.com/markel1974/c64emu/src/preferences"
+	"github.com/markel1974/c64emu/src/config"
 	"strconv"
 )
 
@@ -19,7 +19,7 @@ import (
 type Manager struct {
 	idx                 int
 	board               icartridge.IExpansion
-	prefs               *preferences.Prefs
+	prefs               *config.Config
 	carts               []icartridge.ICartridge
 	emulate             []icartridge.ICartridge
 	registerType        map[int]func() icartridge.ICartridge
@@ -39,7 +39,7 @@ func NewManager() *Manager {
 	}
 }
 
-func (f *Manager) Setup(board icartridge.IExpansion, prefs *preferences.Prefs) {
+func (f *Manager) Setup(board icartridge.IExpansion, prefs *config.Config) {
 	f.board = board
 	f.prefs = prefs
 	f.registerType[ocean.GetType()] = ocean.New

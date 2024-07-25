@@ -2,7 +2,7 @@ package sid
 
 import (
 	"github.com/markel1974/c64emu/src/board/vic"
-	"github.com/markel1974/c64emu/src/preferences"
+	"github.com/markel1974/c64emu/src/config"
 )
 
 const (
@@ -25,6 +25,7 @@ type MOS6581 struct {
 	regs             []uint8
 	regsHistory      [][]uint8
 	regsHistoryIndex uint32
+	cfg              *config.Config
 }
 
 func NewMOS6581() *MOS6581 {
@@ -32,6 +33,7 @@ func NewMOS6581() *MOS6581 {
 		regs:             make([]uint8, RegisterCount),
 		regsHistory:      make([][]uint8, RegisterHistory),
 		regsHistoryIndex: 0,
+		cfg:              nil,
 	}
 	for x := range s.regsHistory {
 		s.regsHistory[x] = make([]uint8, RegisterCount)
@@ -39,10 +41,13 @@ func NewMOS6581() *MOS6581 {
 	return s
 }
 
-func (sid *MOS6581) Setup(prefs *preferences.Prefs) {
+func (sid *MOS6581) Setup(cfg *config.Config) {
+	sid.cfg = cfg
+	sid.cfg.Bind(sid.configChanged)
 }
 
-func (sid *MOS6581) NewPrefs(prefs *preferences.Prefs) {
+func (sid *MOS6581) configChanged() {
+	//TODO
 }
 
 func (sid *MOS6581) Reset() {

@@ -3,7 +3,7 @@ package cpu
 import (
 	"github.com/markel1974/c64emu/src/Interrupt"
 	"github.com/markel1974/c64emu/src/board/quartz"
-	"github.com/markel1974/c64emu/src/preferences"
+	"github.com/markel1974/c64emu/src/config"
 )
 
 // Interrupts
@@ -16,7 +16,7 @@ const (
 
 type Interrupts struct {
 	quartz        *quartz.Quartz
-	prefs         *preferences.Prefs
+	prefs         *config.Config
 	intr          Interrupt.Interrupt
 	firstIrqCycle uint64
 	firstNMICycle uint64

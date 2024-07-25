@@ -10,7 +10,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/board/sid"
 	"github.com/markel1974/c64emu/src/board/vic"
-	"github.com/markel1974/c64emu/src/preferences"
+	"github.com/markel1974/c64emu/src/config"
 	"golang.design/x/clipboard"
 	"log"
 	"os"
@@ -35,7 +35,7 @@ type Board struct {
 	interrupts   *cpu.Interrupts
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
-	prefs        *preferences.Prefs
+	cfg          *config.Config
 	hasClipboard bool
 	phiMode      PhiMode
 	cartMan      *cartridges.Manager
@@ -62,14 +62,15 @@ func NewBoard(db vic.IDisplayBuffer) *Board {
 	return b
 }
 
-func (s *Board) Setup(prefs *preferences.Prefs) error {
+func (s *Board) Setup(cfg *config.Config) error {
 	if err := clipboard.Init(); err != nil {
 		log.Printf("can't init clipboard: %s", err)
 	} else {
 		s.hasClipboard = true
 	}
 
-	s.prefs = prefs
+	s.cfg = cfg
+	s.cfg.Bind(s.configChanged)
 
 	s.iec = iec.NewIEC()
 	s.cpu = cpu.NewMOS6510()
@@ -80,20 +81,19 @@ func (s *Board) Setup(prefs *preferences.Prefs) error {
 	s.keys = keyboard.NewKeyboard()
 	s.banks = banks.NewBanks()
 
-	s.iec.Setup(s.quartz, prefs)
-	s.cpu.Setup(s.quartz, s.banks, prefs)
+	s.iec.Setup(s.quartz, cfg)
+	s.cpu.Setup(s.quartz, s.banks, cfg)
 	s.interrupts = s.cpu.GetInterrupts()
-	s.vic.Setup(s.quartz, s.interrupts, s.banks, prefs)
+	s.vic.Setup(s.quartz, s.interrupts, s.banks, cfg)
 	s.vic.GetReadySignal().Bind(s.ReadyEvent)
-	//s.vic.GetBALowSignal().Bind(baLow)
-	s.sid.Setup(prefs)
-	s.cia1.Setup(s.interrupts, s.vic, prefs)
-	s.cia2.Setup(s.interrupts, s.vic, s.iec, prefs)
-	s.cartMan.Setup(s, prefs)
-	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, prefs)
+	s.sid.Setup(cfg)
+	s.cia1.Setup(s.interrupts, s.vic, cfg)
+	s.cia2.Setup(s.interrupts, s.vic, s.iec, cfg)
+	s.cartMan.Setup(s, cfg)
+	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, cfg)
 
-	if !s.prefs.GetDisableCartridgeAutostart() {
-		for _, cartName := range s.prefs.GetCartridges() {
+	if !s.cfg.GetDisableCartridgeAutostart() {
+		for _, cartName := range s.cfg.GetCartridges() {
 			data, err := os.ReadFile(cartName)
 			if err != nil {
 				log.Printf("can't add cartridge: %s", err.Error())
@@ -132,11 +132,7 @@ func (s *Board) AsyncReset() {
 	s.iec.Reset()
 }
 
-func (s *Board) NewPrefs(prefs *preferences.Prefs) {
-	s.prefs = prefs
-	s.iec.NewPrefs(prefs)
-	s.sid.NewPrefs(prefs)
-	s.vic.NewPrefs(prefs)
+func (s *Board) configChanged() {
 }
 
 func (s *Board) Emulate() bool {

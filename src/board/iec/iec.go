@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/iec/drives/fsdrive"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/board/quartz"
-	"github.com/markel1974/c64emu/src/preferences"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/signals"
 	"strings"
 )
@@ -38,7 +38,7 @@ const (
 
 type IEC struct {
 	quartz *quartz.Quartz
-	prefs  *preferences.Prefs
+	cfg    *config.Config
 
 	atnState uint8
 
@@ -122,9 +122,10 @@ func (c *IEC) RemovePeripheral(peripheral *c1541.Board) {
 	c.rebuildPeripherals()
 }
 
-func (c *IEC) Setup(quartz *quartz.Quartz, prefs *preferences.Prefs) {
+func (c *IEC) Setup(quartz *quartz.Quartz, cfg *config.Config) {
 	c.quartz = quartz
-	c.prefs = prefs
+	c.cfg = cfg
+	c.cfg.Bind(c.configChanged)
 	//TOOD FROM CONFIG / COMMAND
 	//for i := 0; i < MaxDriveSize; i++ {
 	//	c.virtualDrives[i] = c.createVirtualDrive(2 /*prefs.Emul1541Proc()*/, 8+i, prefs.GetDrivePath(i))
@@ -138,7 +139,7 @@ func (c *IEC) Setup(quartz *quartz.Quartz, prefs *preferences.Prefs) {
 	//c.virtualDrives = append(c.virtualDrives, vd)
 
 	//for i := uint8(0); i < c.peripheralsCount; i++ {
-	//	c.peripheralStorage[i].NewPrefs(prefs)
+	//	c.peripheralStorage[i].New(prefs)
 	//}
 	c.rebuildPeripherals()
 	/*
@@ -158,7 +159,7 @@ func (c *IEC) Setup(quartz *quartz.Quartz, prefs *preferences.Prefs) {
 	//c.emu1541 = prefs.Emul1541Proc()
 }
 
-func (c *IEC) NewPrefs(prefs *preferences.Prefs) {
+func (c *IEC) configChanged() {
 	//TODO IMPLEMENT
 }
 
@@ -288,11 +289,11 @@ func (c *IEC) createVirtualDrive(kind int, deviceNumber uint8) virtualdrive.IVir
 	switch kind {
 	case 1:
 		vd := c1541.New(c.quartz, c, deviceNumber)
-		vd.Setup(c.prefs)
+		vd.Setup(c.cfg)
 		return vd
 	case 2:
 		vd := fsdrive.New(c, deviceNumber)
-		vd.Setup(c.prefs)
+		vd.Setup(c.cfg)
 
 		//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 		return vd

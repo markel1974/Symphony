@@ -2,7 +2,7 @@ package mechanics
 
 import (
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/ram"
-	"github.com/markel1974/c64emu/src/preferences"
+	"github.com/markel1974/c64emu/src/config"
 	"io"
 	"os"
 )
@@ -41,7 +41,7 @@ func NewJob(ram *ram.Ram, deviceNumber uint8) *Mechanics {
 	return j
 }
 
-func (j *Mechanics) Setup(prefs *preferences.Prefs) {
+func (j *Mechanics) Setup(prefs *config.Config) {
 	//if (prefs.Emul1541Proc()) {
 	//	filePath = prefs.GetDrivePath(board->GetDeviceNumber() - 8)
 	//	openFile(filePath)
