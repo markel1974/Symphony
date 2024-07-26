@@ -35,9 +35,6 @@ func (k *Virtual) SetMenu() {
 }
 
 func (k *Virtual) FromVirtual(vKey int) int {
-	//if vKey > 0 {
-	//	return k.ascii.FromAscii(v)
-	//}
 	var result = -1
 	switch vKey {
 	case VK_return:
