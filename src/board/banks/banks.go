@@ -159,9 +159,9 @@ func (b *Banks) Reset() {
 	b.update()
 }
 
-func (b *Banks) AsyncReset() {
-	b.initRom()
-}
+//func (b *Banks) AsyncReset() {
+//	b.initRom()
+//}
 
 func (b *Banks) initRom() {
 	romLoader := NewRomLoader()

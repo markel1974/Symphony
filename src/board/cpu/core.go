@@ -2,7 +2,7 @@ package cpu
 
 type Core struct {
 	banks   IBanks
-	intr    *Interrupts
+	pins    IPins
 	nFlag   uint8  // Negative flag
 	zFlag   uint8  // Zero flag
 	vFlag   uint8  // Overflow flag
@@ -22,10 +22,10 @@ type Core struct {
 	opFlags uint8
 }
 
-func NewCore() *Core {
+func NewCore(pins IPins) *Core {
 	regs := &Core{
 		banks:   nil,
-		intr:    NewInterrupts(),
+		pins:    pins,
 		a:       0,
 		x:       0,
 		y:       0,

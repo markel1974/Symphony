@@ -1,4 +1,4 @@
-package cpu
+package board
 
 import (
 	"github.com/markel1974/c64emu/src/Interrupt"
@@ -12,6 +12,7 @@ const (
 	IntCia = 0x2
 	IntNmi = 0x4
 	IntRst = 0x8
+	IntBus = 0x10
 )
 
 type Interrupts struct {
@@ -39,11 +40,11 @@ func (i *Interrupts) Reset() {
 	i.intr = 0
 }
 
-func (i *Interrupts) HasInterrupt() bool {
+func (i *Interrupts) HasAny() bool {
 	return i.intr != 0
 }
 
-func (i *Interrupts) AsyncReset() {
+func (i *Interrupts) TriggerReset() {
 	i.intr.BitSet(IntRst)
 }
 
@@ -51,12 +52,21 @@ func (i *Interrupts) HasReset() bool {
 	return i.intr.BitCheck(IntRst)
 }
 
+func (i *Interrupts) HasIRQ() bool {
+	return i.intr.BitCheck(IntVic) || i.intr.BitCheck(IntCia)
+}
+
+func (i *Interrupts) TriggerBUSIRQ() {
+	i.updateIrqCycle()
+	i.intr.BitSet(IntBus)
+}
+
+func (i *Interrupts) ClearBUSIRQ() {
+	i.intr.BitClear(IntBus)
+}
+
 func (i *Interrupts) TriggerVICIRQ() {
-	vic := i.intr.BitCheck(IntVic)
-	cia := i.intr.BitCheck(IntCia)
-	if !(vic || cia) {
-		i.firstIrqCycle = i.quartz.Cycle()
-	}
+	i.updateIrqCycle()
 	i.intr.BitSet(IntVic)
 }
 
@@ -64,25 +74,13 @@ func (i *Interrupts) ClearVICIRQ() {
 	i.intr.BitClear(IntVic)
 }
 
-func (i *Interrupts) HasVIC() bool {
-	return i.intr.BitCheck(IntVic)
-}
-
 func (i *Interrupts) TriggerCIAIRQ() {
-	vic := i.intr.BitCheck(IntVic)
-	cia := i.intr.BitCheck(IntCia)
-	if !(vic || cia) {
-		i.firstIrqCycle = i.quartz.Cycle()
-	}
+	i.updateIrqCycle()
 	i.intr.BitSet(IntCia)
 }
 
 func (i *Interrupts) ClearCIAIRQ() {
 	i.intr.BitClear(IntCia)
-}
-
-func (i *Interrupts) HasCIA() bool {
-	return i.intr.BitCheck(IntCia)
 }
 
 func (i *Interrupts) AsyncNMI() {
@@ -110,6 +108,15 @@ func (i *Interrupts) GetNMICycleDistance(delay int) uint64 {
 
 func (i *Interrupts) GetIrqCycleDistance(delay int) uint64 {
 	return i.computeDistance(i.firstIrqCycle, uint64(delay))
+}
+
+func (i *Interrupts) updateIrqCycle() {
+	vic := i.intr.BitCheck(IntVic)
+	cia := i.intr.BitCheck(IntCia)
+	bus := i.intr.BitCheck(IntBus)
+	if !(vic || cia || bus) {
+		i.firstIrqCycle = i.quartz.Cycle()
+	}
 }
 
 func (i *Interrupts) computeDistance(base uint64, delay uint64) uint64 {

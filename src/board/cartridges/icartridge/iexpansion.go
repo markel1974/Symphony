@@ -8,12 +8,14 @@ type IExpansion interface {
 	GameExRomConfigChanged()
 	RamRead(uint16) uint8
 	RamWrite(uint16, uint8)
-	NMI()
-	DMA(bool)
+	NMITrigger()
+	DMALow(bool)
 	BusAvailable() bool
-	IRQIn()
-	IRQOut()
-	AsyncReset()
+	IRQTrigger()
+	IRQClear()
+	HasIRQ()
+	ResetTrigger()
+	GetIrqCycleDistance(int) uint64
 	Cycle() uint64
 	CreateAlarm(string, quartz.AlarmCallback) *quartz.Alarm
 	RmwFlags() uint8 //TODO NOT STANDARD

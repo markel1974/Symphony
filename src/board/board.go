@@ -32,7 +32,7 @@ type Board struct {
 	sid          *sid.MOS6581
 	cia1         *cia.MOS6526_1
 	cia2         *cia.MOS6526_2
-	interrupts   *cpu.Interrupts
+	cpuPins      *Interrupts
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
 	cfg          *config.Config
@@ -40,6 +40,7 @@ type Board struct {
 	//phiMode      PhiMode
 	cartMan *cartridges.Manager
 	banks   *banks.Banks
+	dmaLow  bool
 }
 
 func NewBoard(db vic.IDisplayBuffer) *Board {
@@ -52,12 +53,13 @@ func NewBoard(db vic.IDisplayBuffer) *Board {
 		sid:          nil,
 		cia1:         nil,
 		cia2:         nil,
-		interrupts:   nil,
+		cpuPins:      nil,
 		keys:         nil,
 		hasClipboard: false,
 		cartMan:      cartridges.NewManager(),
-		//phiMode:      PhiIdle,
-		banks: nil,
+		dmaLow:       false,
+		banks:        nil,
+		//phiMode:    PhiIdle,
 	}
 	return b
 }
@@ -72,6 +74,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
+	s.cpuPins = NewInterrupts()
 	s.iec = iec.NewIEC()
 	s.cpu = cpu.NewMOS6510()
 	s.vic = vic.NewMOS6569(s.db)
@@ -81,14 +84,15 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.keys = keyboard.NewKeyboard()
 	s.banks = banks.NewBanks()
 
+	s.cpuPins.Setup(s.quartz)
 	s.iec.Setup(s.quartz, cfg)
-	s.cpu.Setup(s.quartz, s.banks, cfg)
-	s.interrupts = s.cpu.GetInterrupts()
-	s.vic.Setup(s.quartz, s.interrupts, s.banks, cfg)
+	s.cpu.Setup(s.cpuPins, s.banks, cfg)
+	//s.cpuPins = s.cpu.GetInterrupts()
+	s.vic.Setup(s.quartz, s.cpuPins, s.banks, cfg)
 	s.vic.GetReadySignal().Bind(s.ReadyEvent)
 	s.sid.Setup(cfg)
-	s.cia1.Setup(s.interrupts, s.vic, cfg)
-	s.cia2.Setup(s.interrupts, s.vic, s.iec, cfg)
+	s.cia1.Setup(s.cpuPins, s.vic, cfg)
+	s.cia2.Setup(s.cpuPins, s.vic, s.iec, cfg)
 	s.cartMan.Setup(s, cfg)
 	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, cfg)
 
@@ -113,6 +117,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 }
 
 func (s *Board) Reset() {
+	s.cpuPins.Reset()
 	s.banks.Reset()
 	s.cpu.Reset()
 	s.sid.Reset()
@@ -123,8 +128,9 @@ func (s *Board) Reset() {
 
 func (s *Board) AsyncReset() {
 	s.keys.Reset()
-	s.banks.AsyncReset()
-	s.cpu.AsyncReset()
+	s.banks.Reset()
+	s.cpuPins.TriggerReset()
+	//s.cpu.AsyncReset()
 	s.vic.Reset()
 	s.sid.Reset()
 	s.cia1.Reset()
@@ -154,7 +160,7 @@ func (s *Board) Emulate() bool {
 	s.cia2.CheckIRQs()
 	s.cia1.Emulate()
 	s.cia2.Emulate()
-	s.cpu.Emulate(s.vic.GetBALow())
+	s.cpu.Emulate(s.vic.GetBALow() || s.dmaLow)
 	s.iec.Emulate()
 	s.cartMan.Emulate()
 
@@ -257,24 +263,36 @@ func (s *Board) RamWrite(addr uint16, data uint8) {
 	s.banks.Write(addr, data)
 }
 
-func (s *Board) NMI() {
-	s.interrupts.TriggerNMI()
+func (s *Board) NMITrigger() {
+	s.cpuPins.TriggerNMI()
 }
 
-func (s *Board) DMA(_ bool) {
+func (s *Board) DMALow(v bool) {
 	//TODO IMPLEMENT
 	//if _DMA=Low the CPU can be requested to release the bus.
 	//It will stop after the next read cycle and all bus lines will go to high resistance state.
 	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
+	s.dmaLow = v
 }
 
-func (s *Board) IRQIn() {
-	//TODO IMPLEMENT
-	//As an output, reflects the status of the IRQ line
+func (s *Board) ResetTrigger() {
+	s.cpuPins.TriggerReset()
 }
 
-func (s *Board) IRQOut() {
-	//As an output, reflects the status of the IRQ line
+func (s *Board) IRQTrigger() {
+	s.cpuPins.TriggerBUSIRQ()
+}
+
+func (s *Board) IRQClear() {
+	s.cpuPins.ClearBUSIRQ()
+}
+
+func (s *Board) HasIRQ() {
+	s.cpuPins.HasIRQ()
+}
+
+func (s *Board) GetIrqCycleDistance(v int) uint64 {
+	return s.cpuPins.GetIrqCycleDistance(v)
 }
 
 func (s *Board) BusAvailable() bool {

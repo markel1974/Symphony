@@ -2,7 +2,6 @@ package cpu
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/flag"
 	"log"
@@ -54,31 +53,22 @@ type MOS6510 struct {
 func NewMOS6510() *MOS6510 {
 	cpu := &MOS6510{
 		prefs: nil,
-		Core:  NewCore(),
+		Core:  nil,
 	}
 	return cpu
 }
 
-func (cpu *MOS6510) Setup(quartz *quartz.Quartz, banks IBanks, prefs *config.Config) {
+func (cpu *MOS6510) Setup(intr IPins, banks IBanks, prefs *config.Config) {
+	cpu.Core = NewCore(intr)
 	cpu.banks = banks
 	cpu.prefs = prefs
-	cpu.intr.Setup(quartz)
-}
-
-func (cpu *MOS6510) AsyncReset() {
-	cpu.intr.AsyncReset()
 }
 
 func (cpu *MOS6510) Reset() {
-	cpu.intr.Reset()
 	// Read reset vector
 	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | uint16(cpu.banks.Read(0xfffd))<<8
 	cpu.state = STATE_LAST
 	cpu.opFlags = 0
-}
-
-func (cpu *MOS6510) GetInterrupts() *Interrupts {
-	return cpu.intr
 }
 
 // Stack
@@ -215,39 +205,39 @@ func (cpu *MOS6510) GetState() uint8 {
 	return cpu.state
 }
 
-func (cpu *MOS6510) checkIrq() {
+func (cpu *MOS6510) checkPins() {
 	if cpu.state != STATE_LAST {
 		return
 	}
-	if !cpu.intr.HasInterrupt() {
+	if !cpu.pins.HasAny() {
 		return
 	}
-	if cpu.intr.HasReset() {
+	if cpu.pins.HasReset() {
 		cpu.Reset()
 		return
 	}
-	if cpu.intr.HasNMI() {
+	if cpu.pins.HasNMI() {
 		// Taken branches to the same page delay the NMI
 		delay := 0
 		if (cpu.opFlags & OpFlagIntDelayed) != 0 {
 			delay = 1
 		}
-		if (cpu.intr.GetNMICycleDistance(delay)) >= 2 {
+		if (cpu.pins.GetNMICycleDistance(delay)) >= 2 {
 			// Simulate an edge-triggered input
-			cpu.intr.ClearNMI()
+			cpu.pins.ClearNMI()
 			cpu.state = I_NMI_10
 			cpu.opFlags = 0
 		}
 		return
 	}
-	if (cpu.intr.HasVIC() || cpu.intr.HasCIA()) &&
+	if (cpu.pins.HasIRQ()) &&
 		((cpu.iFlag == 0) || ((cpu.opFlags & OpFlagIrqDisabled) != 0)) && ((cpu.opFlags & OpFlagIrqEnabled) == 0) {
 		delay := 0
 		if (cpu.opFlags & OpFlagIntDelayed) != 0 {
 			delay = 1
 		}
 		// Taken branches to the same page delay the IRQ
-		if (cpu.intr.GetIrqCycleDistance(delay)) >= 2 {
+		if (cpu.pins.GetIrqCycleDistance(delay)) >= 2 {
 			cpu.state = I_IRQ_8
 			cpu.opFlags = 0
 		}
@@ -256,7 +246,7 @@ func (cpu *MOS6510) checkIrq() {
 }
 
 func (cpu *MOS6510) Emulate(rdyLow bool) {
-	cpu.checkIrq()
+	cpu.checkPins()
 
 	switch cpu.state {
 	case STATE_LAST:
@@ -1603,8 +1593,8 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		cpu.sp--
 		cpu.iFlag = 1
 		// BRK interrupted by NMI?
-		if cpu.intr.HasNMI() {
-			cpu.intr.ClearNMI()  // Simulate an edge-triggered input
+		if cpu.pins.HasNMI() {
+			cpu.pins.ClearNMI()  // Simulate an edge-triggered input
 			cpu.state = I_NMI_15 //0x0015 // Jump to NMI sequence
 		} else {
 			cpu.state = O_BRK4
