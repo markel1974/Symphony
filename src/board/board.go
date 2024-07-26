@@ -32,7 +32,7 @@ type Board struct {
 	sid          *sid.MOS6581
 	cia1         *cia.MOS6526_1
 	cia2         *cia.MOS6526_2
-	cpuPins      *Interrupts
+	pin          *Pin
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
 	cfg          *config.Config
@@ -53,7 +53,7 @@ func NewBoard(db vic.IDisplayBuffer) *Board {
 		sid:          nil,
 		cia1:         nil,
 		cia2:         nil,
-		cpuPins:      nil,
+		pin:          nil,
 		keys:         nil,
 		hasClipboard: false,
 		cartMan:      cartridges.NewManager(),
@@ -70,11 +70,10 @@ func (s *Board) Setup(cfg *config.Config) error {
 	} else {
 		s.hasClipboard = true
 	}
-
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
-	s.cpuPins = NewInterrupts()
+	s.pin = NewPin()
 	s.iec = iec.NewIEC()
 	s.cpu = cpu.NewMOS6510()
 	s.vic = vic.NewMOS6569(s.db)
@@ -84,15 +83,15 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.keys = keyboard.NewKeyboard()
 	s.banks = banks.NewBanks()
 
-	s.cpuPins.Setup(s.quartz)
+	s.pin.Setup(s.quartz)
 	s.iec.Setup(s.quartz, cfg)
-	s.cpu.Setup(s.cpuPins, s.banks, cfg)
-	//s.cpuPins = s.cpu.GetInterrupts()
-	s.vic.Setup(s.quartz, s.cpuPins, s.banks, cfg)
+	s.cpu.Setup(s.pin, s.banks, cfg)
+	//s.pin = s.cpu.GetInterrupts()
+	s.vic.Setup(s.quartz, s.pin, s.banks, cfg)
 	s.vic.GetReadySignal().Bind(s.ReadyEvent)
 	s.sid.Setup(cfg)
-	s.cia1.Setup(s.cpuPins, s.vic, cfg)
-	s.cia2.Setup(s.cpuPins, s.vic, s.iec, cfg)
+	s.cia1.Setup(s.pin, s.vic, cfg)
+	s.cia2.Setup(s.pin, s.vic, s.iec, cfg)
 	s.cartMan.Setup(s, cfg)
 	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, cfg)
 
@@ -117,7 +116,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 }
 
 func (s *Board) Reset() {
-	s.cpuPins.Reset()
+	s.pin.Reset()
 	s.banks.Reset()
 	s.cpu.Reset()
 	s.sid.Reset()
@@ -129,7 +128,7 @@ func (s *Board) Reset() {
 func (s *Board) AsyncReset() {
 	s.keys.Reset()
 	s.banks.Reset()
-	s.cpuPins.TriggerReset()
+	s.pin.TriggerReset()
 	//s.cpu.AsyncReset()
 	s.vic.Reset()
 	s.sid.Reset()
@@ -264,7 +263,7 @@ func (s *Board) RamWrite(addr uint16, data uint8) {
 }
 
 func (s *Board) NMITrigger() {
-	s.cpuPins.TriggerNMI()
+	s.pin.TriggerNMI()
 }
 
 func (s *Board) DMALow(v bool) {
@@ -276,23 +275,23 @@ func (s *Board) DMALow(v bool) {
 }
 
 func (s *Board) ResetTrigger() {
-	s.cpuPins.TriggerReset()
+	s.pin.TriggerReset()
 }
 
 func (s *Board) IRQTrigger() {
-	s.cpuPins.TriggerBUSIRQ()
+	s.pin.TriggerBUSIRQ()
 }
 
 func (s *Board) IRQClear() {
-	s.cpuPins.ClearBUSIRQ()
+	s.pin.ClearBUSIRQ()
 }
 
 func (s *Board) HasIRQ() {
-	s.cpuPins.HasIRQ()
+	s.pin.HasIRQ()
 }
 
 func (s *Board) GetIrqCycleDistance(v int) uint64 {
-	return s.cpuPins.GetIrqCycleDistance(v)
+	return s.pin.GetIrqCycleDistance(v)
 }
 
 func (s *Board) BusAvailable() bool {

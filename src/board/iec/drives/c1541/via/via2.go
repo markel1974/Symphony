@@ -1,7 +1,6 @@
 package via
 
 import (
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/cpu"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 )
@@ -10,10 +9,10 @@ type Via2 struct {
 	*Core
 	iec  virtualdrive.IIec
 	job  *mechanics.Mechanics
-	intr *cpu.Interrupts
+	intr IInterrupts
 }
 
-func NewVia2(iec virtualdrive.IIec, intr *cpu.Interrupts, job *mechanics.Mechanics) *Via2 {
+func NewVia2(iec virtualdrive.IIec, intr IInterrupts, job *mechanics.Mechanics) *Via2 {
 	v := &Via2{
 		Core: NewCore(),
 		iec:  iec,
@@ -154,7 +153,7 @@ func (v *Via2) CountTimers() {
 		}
 		v.ifr |= 0x40
 		if (v.ier & 0x40) != 0 {
-			v.intr.TriggerVIA2()
+			v.intr.TriggerVIA2IRQ()
 		}
 	}
 

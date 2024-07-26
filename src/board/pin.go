@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-// Interrupts
+// Pin
 const (
 	IntVic = 0x1
 	IntCia = 0x2
@@ -15,7 +15,7 @@ const (
 	IntBus = 0x10
 )
 
-type Interrupts struct {
+type Pin struct {
 	quartz        *quartz.Quartz
 	prefs         *config.Config
 	intr          Interrupt.Interrupt
@@ -23,8 +23,8 @@ type Interrupts struct {
 	firstNMICycle uint64
 }
 
-func NewInterrupts() *Interrupts {
-	return &Interrupts{
+func NewPin() *Pin {
+	return &Pin{
 		quartz:        nil,
 		prefs:         nil,
 		firstIrqCycle: 0,
@@ -32,85 +32,85 @@ func NewInterrupts() *Interrupts {
 	}
 }
 
-func (i *Interrupts) Setup(quartz *quartz.Quartz) {
+func (i *Pin) Setup(quartz *quartz.Quartz) {
 	i.quartz = quartz
 }
 
-func (i *Interrupts) Reset() {
+func (i *Pin) Reset() {
 	i.intr = 0
 }
 
-func (i *Interrupts) HasAny() bool {
+func (i *Pin) HasAny() bool {
 	return i.intr != 0
 }
 
-func (i *Interrupts) TriggerReset() {
+func (i *Pin) TriggerReset() {
 	i.intr.BitSet(IntRst)
 }
 
-func (i *Interrupts) HasReset() bool {
+func (i *Pin) HasReset() bool {
 	return i.intr.BitCheck(IntRst)
 }
 
-func (i *Interrupts) HasIRQ() bool {
+func (i *Pin) HasIRQ() bool {
 	return i.intr.BitCheck(IntVic) || i.intr.BitCheck(IntCia)
 }
 
-func (i *Interrupts) TriggerBUSIRQ() {
+func (i *Pin) TriggerBUSIRQ() {
 	i.updateIrqCycle()
 	i.intr.BitSet(IntBus)
 }
 
-func (i *Interrupts) ClearBUSIRQ() {
+func (i *Pin) ClearBUSIRQ() {
 	i.intr.BitClear(IntBus)
 }
 
-func (i *Interrupts) TriggerVICIRQ() {
+func (i *Pin) TriggerVICIRQ() {
 	i.updateIrqCycle()
 	i.intr.BitSet(IntVic)
 }
 
-func (i *Interrupts) ClearVICIRQ() {
+func (i *Pin) ClearVICIRQ() {
 	i.intr.BitClear(IntVic)
 }
 
-func (i *Interrupts) TriggerCIAIRQ() {
+func (i *Pin) TriggerCIAIRQ() {
 	i.updateIrqCycle()
 	i.intr.BitSet(IntCia)
 }
 
-func (i *Interrupts) ClearCIAIRQ() {
+func (i *Pin) ClearCIAIRQ() {
 	i.intr.BitClear(IntCia)
 }
 
-func (i *Interrupts) AsyncNMI() {
+func (i *Pin) AsyncNMI() {
 	i.intr.BitSet(IntNmi)
 }
 
-func (i *Interrupts) TriggerNMI() {
+func (i *Pin) TriggerNMI() {
 	if !i.intr.BitCheck(IntNmi) {
 		i.firstNMICycle = i.quartz.Cycle()
 	}
 	i.intr.BitSet(IntNmi)
 }
 
-func (i *Interrupts) ClearNMI() {
+func (i *Pin) ClearNMI() {
 	i.intr.BitClear(IntNmi)
 }
 
-func (i *Interrupts) HasNMI() bool {
+func (i *Pin) HasNMI() bool {
 	return i.intr.BitCheck(IntNmi)
 }
 
-func (i *Interrupts) GetNMICycleDistance(delay int) uint64 {
+func (i *Pin) GetNMICycleDistance(delay int) uint64 {
 	return i.computeDistance(i.firstNMICycle, uint64(delay))
 }
 
-func (i *Interrupts) GetIrqCycleDistance(delay int) uint64 {
+func (i *Pin) GetIrqCycleDistance(delay int) uint64 {
 	return i.computeDistance(i.firstIrqCycle, uint64(delay))
 }
 
-func (i *Interrupts) updateIrqCycle() {
+func (i *Pin) updateIrqCycle() {
 	vic := i.intr.BitCheck(IntVic)
 	cia := i.intr.BitCheck(IntCia)
 	bus := i.intr.BitCheck(IntBus)
@@ -119,7 +119,7 @@ func (i *Interrupts) updateIrqCycle() {
 	}
 }
 
-func (i *Interrupts) computeDistance(base uint64, delay uint64) uint64 {
+func (i *Pin) computeDistance(base uint64, delay uint64) uint64 {
 	cycle := i.quartz.Cycle()
 	if base > cycle {
 		return 0

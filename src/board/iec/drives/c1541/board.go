@@ -11,6 +11,7 @@ import (
 )
 
 type Board struct {
+	pin          *Pin
 	iec          virtualdrive.IIec
 	quartz       *quartz.Quartz
 	cpu          *cpu.MOS6502
@@ -26,6 +27,7 @@ func New(quartz *quartz.Quartz, iec virtualdrive.IIec, deviceNumber uint8) *Boar
 		iec:          iec,
 		quartz:       quartz,
 		deviceNumber: deviceNumber,
+		pin:          nil,
 		via1:         nil,
 		via2:         nil,
 		cpu:          nil,
@@ -36,15 +38,15 @@ func New(quartz *quartz.Quartz, iec virtualdrive.IIec, deviceNumber uint8) *Boar
 
 func (m *Board) Setup(cfg *config.Config) {
 	m.cfg = cfg
+	m.pin = NewPin()
 	m.cfg.Bind(m.configChanged)
 	m.ram = ram.New(0xffff)
 	m.cpu = cpu.NewMOS6502()
-	intr := m.cpu.GetInterrupts()
 	job := mechanics.NewJob(m.ram, m.deviceNumber)
-	m.via1 = via.NewVia1(m.iec, intr, m.deviceNumber)
-	m.via2 = via.NewVia2(m.iec, intr, job)
+	m.via1 = via.NewVia1(m.iec, m.pin, m.deviceNumber)
+	m.via2 = via.NewVia2(m.iec, m.pin, job)
 	m.ram.Setup()
-	m.cpu.Setup(m.ram, m.quartz, cfg)
+	m.cpu.Setup(m.pin, m.ram, cfg)
 	m.via1.Setup()
 	m.via2.Setup()
 }

@@ -1,20 +1,19 @@
 package via
 
 import (
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/cpu"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 )
 
 type Via1 struct {
 	*Core
 	iec          virtualdrive.IIec
-	intr         *cpu.Interrupts
+	intr         IInterrupts
 	deviceNumber uint8
 	dipSwitch    uint8
 	prbFilter    uint8
 }
 
-func NewVia1(iec virtualdrive.IIec, intr *cpu.Interrupts, deviceNumber uint8) *Via1 {
+func NewVia1(iec virtualdrive.IIec, intr IInterrupts, deviceNumber uint8) *Via1 {
 	v := &Via1{
 		Core:         NewCore(),
 		intr:         intr,
@@ -151,7 +150,7 @@ func (v *Via1) CountTimers() {
 		v.ifr |= 0x40
 		//TODO TEST
 		if v.ier&0x40 != 0 {
-			v.intr.TriggerVIA1()
+			v.intr.TriggerVIA1IRQ()
 		}
 	}
 

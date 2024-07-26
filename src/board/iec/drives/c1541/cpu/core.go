@@ -1,12 +1,8 @@
 package cpu
 
-import (
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/ram"
-)
-
 type Core struct {
-	ram     *ram.Ram
-	intr    *Interrupts
+	banks   IBanks
+	pins    IPins
 	nFlag   uint8  // Negative flag
 	zFlag   uint8  // Zero flag
 	vFlag   uint8  // Overflow flag
@@ -26,10 +22,10 @@ type Core struct {
 	opFlags uint8
 }
 
-func NewCore() *Core {
+func NewCore(pins IPins) *Core {
 	regs := &Core{
-		ram:     nil,
-		intr:    NewInterrupts(),
+		banks:   nil,
+		pins:    pins,
 		a:       0,
 		x:       0,
 		y:       0,
