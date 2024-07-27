@@ -162,7 +162,6 @@ func (s *Board) Emulate() bool {
 	s.cpu.Emulate(s.vic.GetBALow() || s.dmaLow)
 	s.iec.Emulate()
 	s.cartMan.Emulate()
-
 	s.quartz.AddCycle()
 	//s.phiMode = PhiIdle
 	return vBlank
@@ -300,6 +299,14 @@ func (s *Board) BusAvailable() bool {
 
 func (s *Board) Cycle() uint64 {
 	return s.quartz.Cycle()
+}
+
+func (s *Board) RamSetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
+	return s.banks.SetWriteTrigger(addr, fn)
+}
+
+func (s *Board) RamRemoveWriteTrigger(addr uint16, id int) {
+	s.banks.RemoveRamTrigger(addr, id)
 }
 
 func (s *Board) CreateAlarm(name string, callback quartz.AlarmCallback) *quartz.Alarm {

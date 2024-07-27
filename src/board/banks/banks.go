@@ -41,6 +41,7 @@ type Banks struct {
 	char            []byte
 	color           []byte
 	prefs           *config.Config
+	wTriggers       *WriteTriggers
 }
 
 func NewBanks() *Banks {
@@ -66,6 +67,7 @@ func NewBanks() *Banks {
 		color:           make([]byte, 0x0400),
 		prefs:           nil,
 		memoryConfigIdx: -1,
+		wTriggers:       nil,
 	}
 	return b
 }
@@ -233,18 +235,22 @@ func (b *Banks) WriteColor(addr uint16, data uint8) {
 	b.color[addr] = data
 }
 
+func (b *Banks) Read(addr uint16) uint8 {
+	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
+	bank := addr >> 12
+	return b.bankRead[bank](addr)
+}
+
 func (b *Banks) ReadDirect(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
 func (b *Banks) WriteDirect(addr uint16, data uint8) {
 	b.ram[addr] = data
-}
-
-func (b *Banks) Read(addr uint16) uint8 {
-	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
-	bank := addr >> 12
-	return b.bankRead[bank](addr)
+	if b.wTriggers == nil {
+		return
+	}
+	b.wTriggers.Exec(addr, data)
 }
 
 func (b *Banks) Write(addr uint16, data uint8) {
@@ -252,6 +258,10 @@ func (b *Banks) Write(addr uint16, data uint8) {
 	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
 	bank := addr >> 12
 	b.bankWrite[bank](addr, data)
+	if b.wTriggers == nil {
+		return
+	}
+	b.wTriggers.Exec(addr, data)
 }
 
 func (b *Banks) ramWrite0x0000(addr uint16, data uint8) {
@@ -267,6 +277,20 @@ func (b *Banks) ramWrite0x0000(addr uint16, data uint8) {
 		return
 	}
 	b.ram[addr] = data
+}
+
+func (b *Banks) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
+	if b.wTriggers == nil {
+		b.wTriggers = NewWriteTriggers(len(b.ram))
+	}
+	return b.wTriggers.Add(addr, fn)
+}
+
+func (b *Banks) RemoveRamTrigger(addr uint16, id int) {
+	if b.wTriggers == nil {
+		return
+	}
+	b.wTriggers.Remove(addr, id)
 }
 
 func (b *Banks) ramWrite0x1000(addr uint16, data uint8) {
@@ -329,15 +353,11 @@ func (b *Banks) ramWrite0xD000(addr uint16, data uint8) {
 
 func (b *Banks) ramWrite0xE000(addr uint16, data uint8) {
 	b.ram[addr] = data
-	// TODO Verify the only one write to cartridge
-	b.cartMan.Write(icartridge.ROM_HI_2, addr, data)
 	return
 }
 
 func (b *Banks) ramWrite0xF000(addr uint16, data uint8) {
 	b.ram[addr] = data
-	// TODO Verify the only one write to cartridge
-	b.cartMan.Write(icartridge.ROM_HI_2, addr, data)
 	return
 }
 
