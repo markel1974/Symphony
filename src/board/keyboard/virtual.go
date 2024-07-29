@@ -53,6 +53,7 @@ func (k *Virtual) FromVirtual(vKey int) int {
 	case VK_space:
 		return matrix(7, 4)
 	case VK_escape:
+		//RUN/STOP
 		return matrix(7, 7)
 	case VK_tab:
 		return -1
