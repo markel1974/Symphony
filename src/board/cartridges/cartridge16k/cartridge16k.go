@@ -45,7 +45,7 @@ func (c *Cartridge16K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader)
 	c.intervals = v.IntervalLow | v.IntervalHigh
 	c.board = board
 	c.id = ldr.GetId()
-	if ldr.GetMode() == loader.FiletypeCrt {
+	if ldr.GetType() == loader.TypeCrt {
 		return c.initBin(ldr)
 	}
 	return c.initRaw(ldr.GetData())

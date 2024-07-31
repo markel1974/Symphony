@@ -8,8 +8,10 @@ import (
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
 	"github.com/markel1974/c64emu/src/board/cartridges/ocean"
+	"github.com/markel1974/c64emu/src/board/cartridges/reu"
 	"github.com/markel1974/c64emu/src/config"
 	"strconv"
+	"strings"
 )
 
 //https://www.c64-wiki.com/wiki/Bank_Switching
@@ -22,6 +24,7 @@ type Manager struct {
 	prefs               *config.Config
 	carts               []icartridge.ICartridge
 	emulate             []icartridge.ICartridge
+	registerHardware    map[string]func() icartridge.ICartridge
 	registerType        map[int]func() icartridge.ICartridge
 	registerSize        map[int]func() icartridge.ICartridge
 	registerSizeDefault func() icartridge.ICartridge
@@ -33,6 +36,7 @@ func NewManager() *Manager {
 		board:               nil,
 		prefs:               nil,
 		carts:               nil,
+		registerHardware:    make(map[string]func() icartridge.ICartridge),
 		registerType:        make(map[int]func() icartridge.ICartridge),
 		registerSize:        make(map[int]func() icartridge.ICartridge),
 		registerSizeDefault: nil,
@@ -42,10 +46,20 @@ func NewManager() *Manager {
 func (f *Manager) Setup(board icartridge.IExpansion, prefs *config.Config) {
 	f.board = board
 	f.prefs = prefs
+	f.registerHardware[reu.Id128K] = reu.New128K
+	f.registerHardware[reu.Id256K] = reu.New256K
+	f.registerHardware[reu.Id512K] = reu.New512K
+	f.registerHardware[reu.Id1M] = reu.New1M
+	f.registerHardware[reu.Id2M] = reu.New2M
+	f.registerHardware[reu.Id4M] = reu.New4M
+	f.registerHardware[reu.Id8M] = reu.New8M
+	f.registerHardware[reu.Id16M] = reu.New16M
+
 	f.registerType[ocean.GetType()] = ocean.New
 	f.registerType[easyflash.GetType()] = easyflash.New
 	f.registerType[cartridge8k.GetType()] = cartridge8k.New
 	f.registerType[cartridge16k.GetType()] = cartridge16k.New
+
 	f.registerSize[0x2000] = cartridge8k.New
 	f.registerSize[0x4000] = cartridge16k.New
 	f.registerSizeDefault = ocean.New
@@ -156,7 +170,7 @@ func (f *Manager) IORead(addr uint16) (uint8, bool) {
 	return val, ret
 }
 
-func (f *Manager) Add(name string, data []byte) (string, error) {
+func (f *Manager) Add(hardware string, name string, data []byte) (string, error) {
 	id := strconv.Itoa(f.idx)
 	ldr := loader.NewLoader(id, loader.MachineC64)
 	err := ldr.Setup(name, data)
@@ -164,9 +178,12 @@ func (f *Manager) Add(name string, data []byte) (string, error) {
 		return "", err
 	}
 	var factory func() icartridge.ICartridge = nil
-	if ldr.GetMode() == loader.FiletypeCrt {
+	if len(hardware) > 0 {
+		hardware = strings.ToUpper(strings.TrimSpace(hardware))
+		factory = f.registerHardware[hardware]
+	} else if ldr.GetType() == loader.TypeCrt {
 		factory = f.registerType[int(ldr.Kind)]
-	} else {
+	} else if ldr.GetType() == loader.TypeBin {
 		if factory = f.registerSize[len(ldr.GetData())]; factory == nil {
 			factory = f.registerSizeDefault
 		}

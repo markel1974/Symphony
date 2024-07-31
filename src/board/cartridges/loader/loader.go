@@ -26,8 +26,7 @@ type CRTLoader struct {
 	ExRom        int    /* exRom line status */
 	Game         int    /* game line status */
 	Name         string /* name of cartridge */
-	Machine      int    /* detected machine for this crt file */
-	mode         Filetype
+	kind         Type
 }
 
 func NewLoader(id string, mc MachineType) *CRTLoader {
@@ -36,20 +35,16 @@ func NewLoader(id string, mc MachineType) *CRTLoader {
 		rowCartridge: nil,
 		cursor:       0,
 		mc:           mc,
-		mode:         FiletypeBin,
+		kind:         TypeBin,
 	}
 }
 
 func (cl *CRTLoader) Setup(id string, data []byte) error {
-	//data, err := os.ReadFile(p)
-	//if err != nil {
-	//	return err
-	//}
-	cl.mode = FiletypeBin
+	cl.kind = TypeBin
 	cl.rowCartridge = data
 	lp := strings.ToLower(strings.TrimSpace(id))
 	if ext := path.Ext(lp); ext == ".crt" {
-		cl.mode = FiletypeCrt
+		cl.kind = TypeCrt
 		if err := cl.open(); err != nil {
 			return err
 		}
@@ -61,8 +56,8 @@ func (cl *CRTLoader) GetId() string {
 	return cl.id
 }
 
-func (cl *CRTLoader) GetMode() Filetype {
-	return cl.mode
+func (cl *CRTLoader) GetType() Type {
+	return cl.kind
 }
 
 func (cl *CRTLoader) GetData() []byte {
@@ -75,7 +70,7 @@ func (cl *CRTLoader) Ultimax() bool {
 }
 
 func (cl *CRTLoader) open() error {
-	if cl.mode == FiletypeBin {
+	if cl.kind == TypeBin {
 		return nil
 	}
 	cl.cursor = 0
@@ -85,7 +80,7 @@ func (cl *CRTLoader) open() error {
 	}
 	crtHeader := cl.rowCartridge[:crtHeaderLen]
 	cl.cursor = crtHeaderLen
-	cl.Machine = -1
+	//cl.Machine = -1
 	err := cl.validateMachine(cl.mc, string(crtHeader[0:16]))
 	if err != nil {
 		return err
@@ -119,7 +114,7 @@ func (cl *CRTLoader) open() error {
 }
 
 func (cl *CRTLoader) ReadChipHeader() (*CrtChipHeader, error) {
-	if cl.mode == FiletypeBin {
+	if cl.kind == TypeBin {
 		return nil, nil
 	}
 	if cl.cursor == len(cl.rowCartridge) {

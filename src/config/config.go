@@ -2,8 +2,13 @@ package config
 
 import "github.com/markel1974/c64emu/src/signals"
 
+type Cartridge struct {
+	Path string
+	Kind string
+}
+
 type Config struct {
-	Cartridges                []string
+	Cartridges                []Cartridge
 	DisableCartridgeAutostart bool
 	changed                   *signals.Signal
 	//JoystickSwap              bool
@@ -38,11 +43,11 @@ func (p *Config) GetDrivePath(i int) string {
 //	return p.JoystickSwap
 //}
 
-func (p *Config) AddCartridge(c string) {
-	p.Cartridges = append(p.Cartridges, c)
+func (p *Config) AddCartridge(kind string, path string) {
+	p.Cartridges = append(p.Cartridges, Cartridge{Kind: kind, Path: path})
 }
 
-func (p *Config) GetCartridges() []string {
+func (p *Config) GetCartridges() []Cartridge {
 	return p.Cartridges
 }
 

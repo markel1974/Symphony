@@ -97,12 +97,17 @@ func (s *Board) Setup(cfg *config.Config) error {
 
 	if !s.cfg.GetDisableCartridgeAutostart() {
 		for _, cartName := range s.cfg.GetCartridges() {
-			data, err := os.ReadFile(cartName)
-			if err != nil {
-				log.Printf("can't add cartridge: %s", err.Error())
-				continue
+			var data []uint8
+			var err error
+			if len(cartName.Path) > 0 {
+				data, err = os.ReadFile(cartName.Path)
+				if err != nil {
+					log.Printf("can't add cartridge: %s", err.Error())
+					continue
+				}
 			}
-			if cartId, err := s.cartMan.Add(cartName, data); err != nil {
+
+			if cartId, err := s.cartMan.Add(cartName.Kind, cartName.Path, data); err != nil {
 				log.Printf("can't add cartridge: %s", err.Error())
 			} else {
 				log.Printf("cartridge: %s [%s] successfully added", cartName, cartId)

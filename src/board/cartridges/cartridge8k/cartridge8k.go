@@ -31,7 +31,7 @@ func New() icartridge.ICartridge {
 func (c *Cartridge8K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
 	c.id = ldr.GetId()
-	if ldr.GetMode() == loader.FiletypeCrt {
+	if ldr.GetType() == loader.TypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr.GetData())

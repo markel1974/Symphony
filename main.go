@@ -30,11 +30,16 @@ func main() {
 		fmt.Println(version.AppName, version.AppVersion)
 		return
 	}
-
 	prefs := config.New()
 	if len(cartridge) > 0 {
 		for _, c := range strings.Split(cartridge, ";") {
-			prefs.AddCartridge(c)
+			kind := ""
+			path := c
+			if opts := strings.Split(c, ":"); len(opts) > 1 {
+				kind = opts[0]
+				path = opts[1]
+			}
+			prefs.AddCartridge(kind, path)
 		}
 	}
 	g := render.New(prefs)

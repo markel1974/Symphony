@@ -6,28 +6,47 @@ import (
 )
 
 const (
-	REU_NONE = iota
-	REU_128K
-	REU_256K
-	REU_512K
+	size128K = 0x20000
+	size256K = 0x40000
+	size512K = 0x80000
+	size1M   = 0x100000
+	size2M   = 0x200000
+	size4M   = 0x400000
+	size8M   = 0x800000
+	size16M  = 0x1000000
 )
+
+const (
+	Id128K = "REU128K"
+	Id256K = "REU256K"
+	Id512K = "REU512K"
+	Id1M   = "REU1M"
+	Id2M   = "REU2M"
+	Id4M   = "REU4M"
+	Id8M   = "REU8M"
+	Id16M  = "REU16M"
+)
+
+func GetType() int {
+	return loader.CARTRIDGE_REU
+}
 
 type REU struct {
 	id        string
 	ram       []uint8 // REU RAM
 	mask      uint32  // REU RAM address bit mask
 	regs      []uint8 // REU registers
-	kind      int
+	size      int
 	expansion icartridge.IExpansion
 }
 
-func NewREU() icartridge.ICartridge {
+func new(size int) icartridge.ICartridge {
 	r := &REU{
 		id:        "",
 		ram:       nil,
 		mask:      0,
 		regs:      make([]uint8, 16),
-		kind:      0,
+		size:      size,
 		expansion: nil,
 	}
 	r.regs[0] = 0x40
@@ -38,6 +57,31 @@ func NewREU() icartridge.ICartridge {
 		r.regs[i] = 0xff
 	}
 	return r
+}
+
+func New128K() icartridge.ICartridge {
+	return new(size128K)
+}
+func New256K() icartridge.ICartridge {
+	return new(size256K)
+}
+func New512K() icartridge.ICartridge {
+	return new(size512K)
+}
+func New1M() icartridge.ICartridge {
+	return new(size1M)
+}
+func New2M() icartridge.ICartridge {
+	return new(size2M)
+}
+func New4M() icartridge.ICartridge {
+	return new(size4M)
+}
+func New8M() icartridge.ICartridge {
+	return new(size8M)
+}
+func New16M() icartridge.ICartridge {
+	return new(size16M)
 }
 
 func (reu *REU) GetId() string {
@@ -69,25 +113,9 @@ func (reu *REU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error 
 	//TODO from Setup
 	reu.expansion = board
 	reu.id = ldr.GetId()
-	const kind = REU_512K
-	if reu.kind == kind {
-		return nil
-	}
 	reu.ram = nil
 	reu.mask = 0
-	reu.kind = kind
-	if reu.kind == REU_NONE {
-		return nil
-	}
-	size := 0x20000
-	switch reu.kind {
-	case REU_128K:
-		size = 0x20000
-	case REU_256K:
-		size = 0x40000
-	case REU_512K:
-		size = 0x80000
-	}
+	size := reu.size
 	reu.mask = uint32(size) - 1
 	reu.ram = make([]uint8, size)
 	// Set kind bit in status register

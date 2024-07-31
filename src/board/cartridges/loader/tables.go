@@ -1,10 +1,10 @@
 package loader
 
-type Filetype int
+type Type int
 
 const (
-	FiletypeBin = Filetype(iota)
-	FiletypeCrt
+	TypeBin = Type(iota)
+	TypeCrt
 )
 
 type MachineType int

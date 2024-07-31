@@ -107,7 +107,7 @@ type CartridgeEasyFlash struct {
 	register02      uint8   /* backup of the registers */
 	ram             []uint8 /* extra RAM */
 	filename        string  /* filename when attached */
-	filetype        loader.Filetype
+	filetype        loader.Type
 	led             bool
 }
 
@@ -142,13 +142,13 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	c.filename = ldr.Name
 	c.filetype = 0
 	var err error
-	if ldr.GetMode() == loader.FiletypeCrt {
-		c.filetype = loader.FiletypeCrt
+	if ldr.GetType() == loader.TypeCrt {
+		c.filetype = loader.TypeCrt
 		if rawCart, err = c.crtAttach(ldr); err != nil {
 			return err
 		}
 	} else {
-		c.filetype = loader.FiletypeBin
+		c.filetype = loader.TypeBin
 		if rawCart, err = c.binAttach(ldr); err != nil {
 			return err
 		}
@@ -475,9 +475,9 @@ func (c *CartridgeEasyFlash) flushImage() error {
 	if len(c.filename) == 0 {
 		return nil
 	}
-	if c.filetype == loader.FiletypeBin {
+	if c.filetype == loader.TypeBin {
 		return c.binSave(c.filename)
-	} else if c.filetype == loader.FiletypeCrt {
+	} else if c.filetype == loader.TypeCrt {
 		return c.crtSave(c.filename)
 	}
 	return fmt.Errorf("unknown cartridget type")
