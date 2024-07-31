@@ -46,6 +46,16 @@ func (sid *MOS6581) Setup(cfg *config.Config) {
 	sid.cfg.Bind(sid.configChanged)
 }
 
+func (sid *MOS6581) SetPotXSlot(pot uint8) {
+	// PX7 PX6 PX5 PX4 PX3 PX2 PX1 PX0
+	sid.regs[25] = pot
+}
+
+func (sid *MOS6581) SetPotYSlot(pot uint8) {
+	//PY7 PY6 PY5 PY4 PY3 PY2 PY1 PY0
+	sid.regs[26] = pot
+}
+
 func (sid *MOS6581) configChanged() {
 	//TODO
 }

@@ -88,12 +88,16 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cpu.Setup(s.pin, s.banks, cfg)
 	//s.pin = s.cpu.GetInterrupts()
 	s.vic.Setup(s.quartz, s.pin, s.banks, cfg)
-	s.vic.GetReadySignal().Bind(s.ReadyEvent)
+	s.vic.GetReadySignal().Bind(s.ReadySlot)
 	s.sid.Setup(cfg)
 	s.cia1.Setup(s.pin, s.vic, cfg)
 	s.cia2.Setup(s.pin, s.vic, s.iec, cfg)
 	s.cartMan.Setup(s, cfg)
 	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, cfg)
+
+	//TODO TUTTE LE CONNESSIONI CON PIN DEVONO ESSERE EFFETTUAT TRAMITE SIGNAL - SLOT
+	//test := signals.NewSignalByte()
+	//test.Bind(s.sid.SetPotXSlot)
 
 	if !s.cfg.GetDisableCartridgeAutostart() {
 		for _, cartName := range s.cfg.GetCartridges() {
@@ -172,7 +176,7 @@ func (s *Board) Emulate() bool {
 	return vBlank
 }
 
-func (s *Board) ReadyEvent() {
+func (s *Board) ReadySlot() {
 	s.keys.SetReady()
 }
 

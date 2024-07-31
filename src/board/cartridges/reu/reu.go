@@ -27,10 +27,6 @@ const (
 	Id16M  = "REU16M"
 )
 
-func GetType() int {
-	return loader.CARTRIDGE_REU
-}
-
 type REU struct {
 	id        string
 	ram       []uint8 // REU RAM
