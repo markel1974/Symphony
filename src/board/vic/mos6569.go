@@ -3,7 +3,6 @@ package vic
 import (
 	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/signals"
 )
 
 //https://dustlayer.com/c64-architecture
@@ -58,8 +57,8 @@ func (vic *MOS6569) GetBALow() bool {
 	return vic.core.baLow
 }
 
-func (vic *MOS6569) GetReadySignal() *signals.Signal {
-	return vic.core.readySignal
+func (vic *MOS6569) ReadySignalBind(fn func()) {
+	vic.core.ReadySignalBind(fn)
 }
 
 //func (vic *MOS6569) GetBALowSignal() *signals.Signal1[bool] {

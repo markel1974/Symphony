@@ -36,14 +36,14 @@ type Core struct {
 	b3cColor        uint8    // Index b3c Color Mapping
 	mm0Color        uint8    // Index mm0 Color Mapping
 	mm1Color        uint8    // Index mm1 Color Mapping
-	mXcColor        []uint8  // Indices for m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c Color Mapping
+	mXcColor        []uint8  // Color Index Mapping for m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c
 	vaBase          uint8    // vaBase
 	ciaVaBase       uint16   // CIA VA14/15 video base
 	matrixBase      uint16   // Video matrix base
 	charBase        uint16   // Character generator base
 	bitmapBase      uint16   // Bitmap base
 	xScroll         uint16   // X scroll value
-	yScroll         uint16   // Y scroll valuej
+	yScroll         uint16   // Y scroll value
 	irqFlag         uint8    //
 	irqMask         uint8    //
 	irqRaster       uint16   // Interrupt raster line
@@ -159,6 +159,10 @@ func (vic *Core) ClearBALow() {
 		vic.baLow = false
 		//vic.baLowSignal.Emit(vic.baLow)
 	}
+}
+
+func (vic *Core) ReadySignalBind(fn func()) {
+	vic.readySignal.Bind(fn)
 }
 
 func (vic *Core) FlipFlopMYE() {
