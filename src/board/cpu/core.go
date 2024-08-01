@@ -17,7 +17,7 @@ type Core struct {
 	op      uint8  // Current opcode
 	ar      uint16 // Address register
 	ar2     uint16 // Address register
-	rmwBuf  uint8  // Data buffer for RMW instructions
+	rmw     uint8  // Data buffer for RMW instructions
 	state   uint8  // Current state
 	opFlags uint8
 }

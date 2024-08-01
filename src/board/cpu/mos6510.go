@@ -653,7 +653,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		cpu.ar += 0x100
 		cpu.state = _opTable[cpu.op]
 
-		// Addressing modes: Read operand, write it back, no extra cycles (-> ar, rmwBuf)
+		// Addressing modes: Read operand, write it back, no extra cycles (-> ar, rmw)
 	case M_ZERO:
 		if rdyLow {
 			return
@@ -866,11 +866,11 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		if rdyLow {
 			return
 		}
-		cpu.rmwBuf = cpu.banks.Read(cpu.ar)
+		cpu.rmw = cpu.banks.Read(cpu.ar)
 		cpu.state = RMW_DO_IT1
 
 	case RMW_DO_IT1:
-		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
+		cpu.banks.Write(cpu.ar, cpu.rmw)
 		cpu.state = _opTable[cpu.op]
 
 		// Load group
@@ -1086,14 +1086,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		cpu.state = STATE_LAST
 
 	case O_INC:
-		v := cpu.rmwBuf + 1
+		v := cpu.rmw + 1
 		cpu.nFlag = v
 		cpu.zFlag = v
 		cpu.banks.Write(cpu.ar, v)
 		cpu.state = STATE_LAST
 
 	case O_DEC:
-		v := cpu.rmwBuf - 1
+		v := cpu.rmw - 1
 		cpu.nFlag = v
 		cpu.zFlag = v
 		cpu.banks.Write(cpu.ar, v)
@@ -1240,8 +1240,8 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 
 		// Shift/rotate group
 	case O_ASL:
-		cpu.cFlag = cpu.rmwBuf & 0x80
-		v := cpu.rmwBuf << 1
+		cpu.cFlag = cpu.rmw & 0x80
+		v := cpu.rmw << 1
 		cpu.nFlag = v
 		cpu.zFlag = v
 		cpu.banks.Write(cpu.ar, v)
@@ -1259,8 +1259,8 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		cpu.state = STATE_LAST
 
 	case O_LSR:
-		cpu.cFlag = cpu.rmwBuf & 0x01
-		v := cpu.rmwBuf >> 1
+		cpu.cFlag = cpu.rmw & 0x01
+		v := cpu.rmw >> 1
 		cpu.nFlag = v
 		cpu.zFlag = v
 		cpu.banks.Write(cpu.ar, v)
@@ -1280,14 +1280,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 	case O_ROL:
 		var t uint8
 		if cpu.cFlag != 0 {
-			t = (cpu.rmwBuf << 1) | 0x01
+			t = (cpu.rmw << 1) | 0x01
 		} else {
-			t = cpu.rmwBuf << 1
+			t = cpu.rmw << 1
 		}
 		cpu.nFlag = t
 		cpu.zFlag = t
 		cpu.banks.Write(cpu.ar, t)
-		cpu.cFlag = cpu.rmwBuf & 0x80
+		cpu.cFlag = cpu.rmw & 0x80
 		cpu.state = STATE_LAST
 
 	case O_ROL_A:
@@ -1309,14 +1309,14 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 	case O_ROR:
 		var t uint8
 		if cpu.cFlag != 0 {
-			t = (cpu.rmwBuf >> 1) | 0x80
+			t = (cpu.rmw >> 1) | 0x80
 		} else {
-			t = cpu.rmwBuf >> 1
+			t = cpu.rmw >> 1
 		}
 		cpu.nFlag = t
 		cpu.zFlag = t
 		cpu.banks.Write(cpu.ar, t)
-		cpu.cFlag = cpu.rmwBuf & 0x01
+		cpu.cFlag = cpu.rmw & 0x01
 		cpu.state = STATE_LAST
 
 	case O_ROR_A:
@@ -1850,57 +1850,57 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 
 		// ASL/ORA group
 	case O_SLO:
-		cpu.cFlag = cpu.rmwBuf & 0x80
-		cpu.rmwBuf <<= 1
-		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
-		cpu.a |= cpu.rmwBuf
+		cpu.cFlag = cpu.rmw & 0x80
+		cpu.rmw <<= 1
+		cpu.banks.Write(cpu.ar, cpu.rmw)
+		cpu.a |= cpu.rmw
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
 		cpu.state = STATE_LAST
 
 		// ROL/AND group
 	case O_RLA:
-		tmp := cpu.rmwBuf & 0x80
+		tmp := cpu.rmw & 0x80
 		if cpu.cFlag != 0 {
-			cpu.rmwBuf = (cpu.rmwBuf << 1) | 0x01
+			cpu.rmw = (cpu.rmw << 1) | 0x01
 		} else {
-			cpu.rmwBuf = cpu.rmwBuf << 1
+			cpu.rmw = cpu.rmw << 1
 		}
 		cpu.cFlag = tmp
-		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
-		cpu.a &= cpu.rmwBuf
+		cpu.banks.Write(cpu.ar, cpu.rmw)
+		cpu.a &= cpu.rmw
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
 		cpu.state = STATE_LAST
 
 		// LSR/EOR group
 	case O_SRE:
-		cpu.cFlag = cpu.rmwBuf & 0x01
-		cpu.rmwBuf >>= 1
-		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
-		cpu.a ^= cpu.rmwBuf
+		cpu.cFlag = cpu.rmw & 0x01
+		cpu.rmw >>= 1
+		cpu.banks.Write(cpu.ar, cpu.rmw)
+		cpu.a ^= cpu.rmw
 		cpu.nFlag = cpu.a
 		cpu.zFlag = cpu.a
 		cpu.state = STATE_LAST
 
 		// ROR/ADC group
 	case O_RRA:
-		tmp := cpu.rmwBuf & 0x01
+		tmp := cpu.rmw & 0x01
 		if cpu.cFlag != 0 {
-			cpu.rmwBuf = (cpu.rmwBuf >> 1) | 0x80
+			cpu.rmw = (cpu.rmw >> 1) | 0x80
 		} else {
-			cpu.rmwBuf = cpu.rmwBuf >> 1
+			cpu.rmw = cpu.rmw >> 1
 		}
 		cpu.cFlag = tmp
-		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
-		cpu.doADC(cpu.rmwBuf)
+		cpu.banks.Write(cpu.ar, cpu.rmw)
+		cpu.doADC(cpu.rmw)
 		cpu.state = STATE_LAST
 
 		// DEC/CMP group
 	case O_DCP:
-		cpu.rmwBuf--
-		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
-		cpu.ar = uint16(cpu.a) - uint16(cpu.rmwBuf)
+		cpu.rmw--
+		cpu.banks.Write(cpu.ar, cpu.rmw)
+		cpu.ar = uint16(cpu.a) - uint16(cpu.rmw)
 		cpu.nFlag = uint8(cpu.ar)
 		cpu.zFlag = uint8(cpu.ar)
 		cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
@@ -1908,9 +1908,9 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 
 		// INC/SBC group
 	case O_ISB:
-		cpu.rmwBuf++
-		cpu.banks.Write(cpu.ar, cpu.rmwBuf)
-		cpu.doSBC(cpu.rmwBuf)
+		cpu.rmw++
+		cpu.banks.Write(cpu.ar, cpu.rmw)
+		cpu.doSBC(cpu.rmw)
 		cpu.state = STATE_LAST
 
 		// Complex functions
@@ -2062,6 +2062,6 @@ func (cpu *MOS6510) printRegisters(qCycle uint64, baLow bool) {
 		cpu.op,
 		cpu.ar,
 		cpu.ar2,
-		cpu.rmwBuf)
+		cpu.rmw)
 	//cpu.extConfig)
 }
