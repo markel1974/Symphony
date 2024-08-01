@@ -169,7 +169,8 @@ func (s *Board) Emulate() bool {
 	s.cia2.CheckIRQs()
 	s.cia1.Emulate()
 	s.cia2.Emulate()
-	s.cpu.Emulate(s.vic.GetBALow() || s.dmaLow)
+	s.cpu.Emulate(s.vic.GetBALow() || s.vic.GetAECLow() || s.dmaLow)
+
 	s.iec.Emulate()
 	s.cartMan.Emulate()
 	s.quartz.AddCycle()

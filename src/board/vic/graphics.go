@@ -133,13 +133,13 @@ func (gr *Graphics) GraphicsAccess() {
 
 func (gr *Graphics) MatrixAccess() {
 	if gr.core.baLow {
-		if gr.core.quartz.Cycle()-gr.core.baLowFirstCycle < 3 {
-			gr.colorLine[gr.matrixLineIndex] = 0xff
-			gr.matrixLine[gr.matrixLineIndex] = 0xff
-		} else {
+		if gr.core.aecLow {
 			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase
 			gr.matrixLine[gr.matrixLineIndex] = gr.core.ReadByte(addr)
 			gr.colorLine[gr.matrixLineIndex] = gr.core.banks.ReadColor(addr & 0x03ff)
+		} else {
+			gr.colorLine[gr.matrixLineIndex] = 0xff
+			gr.matrixLine[gr.matrixLineIndex] = 0xff
 		}
 	}
 }

@@ -33,14 +33,6 @@ import (
  *      IntRst: Jump to ($fffc)
  *  - The zFlag variable has the inverse meaning of the 6510 Z flag
  *  - Only the highest bit of the nFlag variable is used
- *  - The $f2 opcode that would normally crash the 6510 is
- *    used to implement emulator-specific functions, mainly
- *    those for the IEC routines
- *
- * Incompatibilities:
- * ------------------
- *
- *  - If BA is low and AEC is high, read accesses should occur
  */
 
 type MOS6510 struct {

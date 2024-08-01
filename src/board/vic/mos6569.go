@@ -57,6 +57,10 @@ func (vic *MOS6569) GetBALow() bool {
 	return vic.core.baLow
 }
 
+func (vic *MOS6569) GetAECLow() bool {
+	return vic.core.aecLow
+}
+
 func (vic *MOS6569) ReadySignalBind(fn func()) {
 	vic.core.ReadySignalBind(fn)
 }
