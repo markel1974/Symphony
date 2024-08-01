@@ -1,7 +1,7 @@
 package c1541
 
 import (
-	"github.com/markel1974/c64emu/src/Interrupt"
+	"github.com/markel1974/c64emu/src/bits"
 	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/config"
 )
@@ -17,7 +17,7 @@ const (
 type Pin struct {
 	quartz        *quartz.Quartz
 	prefs         *config.Config
-	intr          Interrupt.Interrupt
+	intr          bits.Bits
 	firstIrqCycle uint64
 	firstNMICycle uint64
 }

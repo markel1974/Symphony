@@ -170,7 +170,7 @@ func (sp *Sprites) Draw(lineStart int) {
 		sp.core.irqFlag |= 0x04
 		if sp.core.irqMask&0x04 != 0 {
 			sp.core.irqFlag |= 0x80
-			sp.intr.TriggerVICIRQ()
+			sp.intr.TriggerIRQ(IntrVicId)
 		}
 	}
 	// sprite-background collisions
@@ -181,7 +181,7 @@ func (sp *Sprites) Draw(lineStart int) {
 		sp.core.irqFlag |= 0x02
 		if sp.core.irqMask&0x02 != 0 {
 			sp.core.irqFlag |= 0x80
-			sp.intr.TriggerVICIRQ()
+			sp.intr.TriggerIRQ(IntrVicId)
 		}
 	}
 }

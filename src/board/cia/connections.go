@@ -1,5 +1,7 @@
 package cia
 
+const IntrCiaId = 0x2
+
 type IVic interface {
 	LightPenTrigger()
 	ChangedVA(uint8)
@@ -11,8 +13,8 @@ type IBus interface {
 }
 
 type IInterrupts interface {
-	ClearCIAIRQ()
-	TriggerCIAIRQ()
+	ClearIRQ(uint32)
+	TriggerIRQ(uint32)
 	ClearNMI()
 	TriggerNMI()
 }

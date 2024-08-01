@@ -94,6 +94,8 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	vBlank := false
 	lastCycle := false
 
+	vic.core.CheckAEC()
+
 	switch vic.cycle {
 	case 1:
 		// Fetch sprite pointer 3, increment raster counter, trigger raster IRQ,

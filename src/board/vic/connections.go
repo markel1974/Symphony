@@ -1,5 +1,7 @@
 package vic
 
+const IntrVicId = 0x1
+
 type IBanks interface {
 	ReadCharRom(uint16) uint8
 	ReadDirect(uint16) uint8
@@ -7,8 +9,8 @@ type IBanks interface {
 }
 
 type IInterrupts interface {
-	TriggerVICIRQ()
-	ClearVICIRQ()
+	TriggerIRQ(uint32)
+	ClearIRQ(uint32)
 }
 
 type IDisplayBuffer interface {

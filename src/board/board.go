@@ -18,6 +18,8 @@ import (
 
 //type PhiMode int
 
+const IntrBusId = 0x10
+
 const (
 // PhiIdle = PhiMode(0)
 // Phi1    = PhiMode(1)
@@ -286,11 +288,11 @@ func (s *Board) ResetTrigger() {
 }
 
 func (s *Board) IRQTrigger() {
-	s.pin.TriggerBUSIRQ()
+	s.pin.TriggerIRQ(IntrBusId)
 }
 
 func (s *Board) IRQClear() {
-	s.pin.ClearBUSIRQ()
+	s.pin.ClearIRQ(IntrBusId)
 }
 
 func (s *Board) HasIRQ() {

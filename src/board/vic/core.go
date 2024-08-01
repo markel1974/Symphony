@@ -60,7 +60,8 @@ type Core struct {
 	badLinesEnabled bool     // Bad Lines enabled for this frame
 	isBadLine       bool     // Current line is bad line
 	ready           bool     // VIC Initialization Complete
-	baLow           bool     // BALine
+	baLow           bool     // BA Line
+	aecLow          bool     // AEC Line
 	baLowFirstCycle uint64   //
 	lastByte        uint8    // Last byte read by VIC
 	//baLowSignal     *signals.Signal1[bool]
@@ -128,6 +129,7 @@ func NewCore() *Core {
 		badLinesEnabled: false,
 		baLow:           false,
 		baLowFirstCycle: 0,
+		aecLow:          false,
 		ready:           false,
 		readySignal:     signals.NewSignal(),
 		//baLowSignal:     signals.NewSignal1[bool](),
@@ -155,9 +157,20 @@ func (vic *Core) SetBALow() {
 }
 
 func (vic *Core) ClearBALow() {
-	if vic.baLow {
-		vic.baLow = false
-		//vic.baLowSignal.Emit(vic.baLow)
+	vic.baLow = false
+	vic.aecLow = false
+	//vic.baLowSignal.Emit(vic.baLow)
+}
+
+func (vic *Core) CheckAEC() {
+	if !vic.baLow {
+		return
+	}
+	if vic.aecLow == true {
+		return
+	}
+	if vic.quartz.Cycle()-vic.baLowFirstCycle >= 3 {
+		vic.aecLow = true
 	}
 }
 
@@ -192,7 +205,7 @@ func (vic *Core) LightPenTrigger() {
 		vic.irqFlag |= 0x08 // Trigger IRQ
 		if (vic.irqMask & 0x08) != 0 {
 			vic.irqFlag |= 0x80
-			vic.intr.TriggerVICIRQ()
+			vic.intr.TriggerIRQ(IntrVicId)
 		}
 	}
 }
@@ -233,7 +246,7 @@ func (vic *Core) rasterIrq() {
 	vic.irqFlag |= 0x01
 	if (vic.irqMask & 0x01) != 0 {
 		vic.irqFlag |= 0x80
-		vic.intr.TriggerVICIRQ()
+		vic.intr.TriggerIRQ(IntrVicId)
 	}
 }
 
@@ -385,17 +398,17 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 			// Set master bit if allowed interrupt still pending
 			vic.irqFlag |= 0x80
 		} else {
-			vic.intr.ClearVICIRQ()
+			vic.intr.ClearIRQ(IntrVicId)
 		}
 	case 0x1a: // IRQ mask
 		vic.irqMask = data & 0x0f
 		if (vic.irqFlag & vic.irqMask) != 0 {
 			// Trigger interrupt if pending and now allowed
 			vic.irqFlag |= 0x80
-			vic.intr.TriggerVICIRQ()
+			vic.intr.TriggerIRQ(IntrVicId)
 		} else {
 			vic.irqFlag &= 0x7f
-			vic.intr.ClearVICIRQ()
+			vic.intr.ClearIRQ(IntrVicId)
 		}
 	case 0x1b: // Sprite data priority
 		vic.mdp = data

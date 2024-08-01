@@ -171,7 +171,7 @@ func (cia1 *MOS6526_1) ReadRegister(addr uint16) uint8 {
 	case 0x0d:
 		ret := cia1.icr // Read and clear ICR
 		cia1.icr = 0
-		cia1.intr.ClearCIAIRQ() // Clear IRQ
+		cia1.intr.ClearIRQ(IntrCiaId) // Clear IRQ
 		//ClearIRQSignal.Emit();
 		return ret
 
@@ -262,7 +262,7 @@ func (cia1 *MOS6526_1) WriteRegister(addr uint16, data uint8) {
 		if flag.Uint8ToBool(cia1.icr & cia1.intMask & 0x1f) {
 			// Trigger IRQ if pending
 			cia1.icr |= 0x80
-			cia1.intr.TriggerCIAIRQ()
+			cia1.intr.TriggerIRQ(IntrCiaId)
 		}
 
 	case 0xe:
@@ -285,7 +285,7 @@ func (cia1 *MOS6526_1) TriggerInterrupt(bit uint8) {
 		cia1.icr |= 0x80
 		//_cpu->TriggerCIAIRQ();
 		//TriggerIRQSignal.Emit();
-		cia1.intr.TriggerCIAIRQ()
+		cia1.intr.TriggerIRQ(IntrCiaId)
 	}
 }
 

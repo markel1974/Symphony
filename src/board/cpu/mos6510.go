@@ -13,14 +13,12 @@ import (
 
 //Notes:
 //https://codebase64.org/lib/exe/fetch.php?media=base:safely_freezing_the_c64.pdf
-//BA Line: Only read or even write are blocked?
 /*
  * Notes:
  * ------
  *
  * Opcode execution:
- *  - All opcodes are resolved into single clock cycles. There is one
- *    switch case for each cycle.
+ *  - All opcodes are resolved into single clock cycles.
  *  - The "state" variable specifies the routine to be executed in the
  *    next cycle. Its upper 8 bits contain the current opcode, its lower
  *    8 bits contain the cycle number (0..7) within the opcode.
@@ -1595,7 +1593,7 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		// BRK interrupted by NMI?
 		if cpu.pins.HasNMI() {
 			cpu.pins.ClearNMI()  // Simulate an edge-triggered input
-			cpu.state = I_NMI_15 //0x0015 // Jump to NMI sequence
+			cpu.state = I_NMI_15 // Jump to NMI sequence
 		} else {
 			cpu.state = O_BRK4
 		}
