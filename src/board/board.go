@@ -18,7 +18,7 @@ import (
 
 //type PhiMode int
 
-const IntrBusId = 0x10
+const IntrExpansionId = 0x10
 
 const (
 // PhiIdle = PhiMode(0)
@@ -88,12 +88,24 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.pin.Setup(s.quartz)
 	s.iec.Setup(s.quartz, cfg)
 	s.cpu.Setup(s.pin, s.banks, cfg)
-	//s.pin = s.cpu.GetInterrupts()
-	s.vic.Setup(s.quartz, s.pin, s.banks, cfg)
-	s.vic.ReadySignalBind(s.ReadySlot)
+
+	s.vic.Setup(s.quartz, s.banks, cfg)
+	s.vic.SignalReadyBind(s.ReadySlot)
+	s.vic.SignalTriggerIRQBind(s.pin.TriggerIRQ)
+	s.vic.SignalClearIRQBind(s.pin.ClearIRQ)
+
 	s.sid.Setup(cfg)
-	s.cia1.Setup(s.pin, s.vic, cfg)
-	s.cia2.Setup(s.pin, s.vic, s.iec, cfg)
+
+	s.cia1.Setup(cfg)
+	s.cia1.SignalTriggerIRQBind(s.pin.TriggerIRQ)
+	s.cia1.SignalClearIRQBind(s.pin.ClearIRQ)
+	s.cia1.SignalLightPenTriggerBind(s.vic.LightPenTrigger)
+
+	s.cia2.Setup(s.iec, cfg)
+	s.cia2.SignalTriggerNMIBind(s.pin.TriggerNMI)
+	s.cia2.SignalClearNMIBind(s.pin.ClearNMI)
+	s.cia2.SignalChangedVABind(s.vic.ChangedVA)
+
 	s.cartMan.Setup(s, cfg)
 	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, cfg)
 
@@ -289,11 +301,11 @@ func (s *Board) ResetTrigger() {
 }
 
 func (s *Board) IRQTrigger() {
-	s.pin.TriggerIRQ(IntrBusId)
+	s.pin.TriggerIRQ(IntrExpansionId)
 }
 
 func (s *Board) IRQClear() {
-	s.pin.ClearIRQ(IntrBusId)
+	s.pin.ClearIRQ(IntrExpansionId)
 }
 
 func (s *Board) HasIRQ() {

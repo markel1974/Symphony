@@ -5,7 +5,6 @@ var _sprEmptyCollBuf = make([]uint8, DisplayXFillMax)
 type Sprites struct {
 	core            *Core
 	foreMask        *ForeMask
-	intr            IInterrupts
 	displayBuffer   IDisplayBuffer
 	collisionBuffer []uint8   // Buffer for sprite-sprite collisions and priorities
 	dataPtr         []uint16  // Sprite data pointers
@@ -23,7 +22,6 @@ func NewSprites(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Sprites {
 		core:            core,
 		foreMask:        foreMask,
 		displayBuffer:   db,
-		intr:            nil,
 		collisionBuffer: make([]uint8, DisplayXFillMax),
 		dataPtr:         make([]uint16, SpriteNumber),
 		data:            make([][]uint8, SpriteNumber),
@@ -42,8 +40,7 @@ func NewSprites(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Sprites {
 	return s
 }
 
-func (sp *Sprites) Setup(intr IInterrupts) {
-	sp.intr = intr
+func (sp *Sprites) Setup() {
 }
 
 func (sp *Sprites) GetDMAFlags() uint8 {
@@ -170,7 +167,8 @@ func (sp *Sprites) Draw(lineStart int) {
 		sp.core.irqFlag |= 0x04
 		if sp.core.irqMask&0x04 != 0 {
 			sp.core.irqFlag |= 0x80
-			sp.intr.TriggerIRQ(IntrVicId)
+			sp.core.signalIRQTrigger.Emit(IntrVicId)
+			//sp.intr.TriggerIRQ(IntrVicId)
 		}
 	}
 	// sprite-background collisions
@@ -181,7 +179,8 @@ func (sp *Sprites) Draw(lineStart int) {
 		sp.core.irqFlag |= 0x02
 		if sp.core.irqMask&0x02 != 0 {
 			sp.core.irqFlag |= 0x80
-			sp.intr.TriggerIRQ(IntrVicId)
+			sp.core.signalIRQTrigger.Emit(IntrVicId)
+			//sp.intr.TriggerIRQ(IntrVicId)
 		}
 	}
 }

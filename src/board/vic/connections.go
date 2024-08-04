@@ -8,10 +8,10 @@ type IBanks interface {
 	ReadColor(uint16) uint8
 }
 
-type IInterrupts interface {
-	TriggerIRQ(uint32)
-	ClearIRQ(uint32)
-}
+//type IInterrupts interface {
+//	TriggerIRQ(uint32)
+//	ClearIRQ(uint32)
+//}
 
 type IDisplayBuffer interface {
 	Set(idx int, data uint8)

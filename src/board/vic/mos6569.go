@@ -36,13 +36,13 @@ func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 	return vic
 }
 
-func (vic *MOS6569) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks, cfg *config.Config) {
+func (vic *MOS6569) Setup(quartz *quartz.Quartz, banks IBanks, cfg *config.Config) {
 	//vic.board = board
 	vic.cfg = cfg
 	vic.cfg.Bind(vic.configChanged)
-	vic.core.Setup(quartz, intr, banks)
+	vic.core.Setup(quartz, banks)
 	vic.graphics.Setup()
-	vic.sprites.Setup(intr)
+	vic.sprites.Setup()
 }
 
 func (vic *MOS6569) Reset() {
@@ -61,8 +61,16 @@ func (vic *MOS6569) GetAECLow() bool {
 	return vic.core.aecLow
 }
 
-func (vic *MOS6569) ReadySignalBind(fn func()) {
-	vic.core.ReadySignalBind(fn)
+func (vic *MOS6569) SignalReadyBind(fn func()) {
+	vic.core.signalReady.Bind(fn)
+}
+
+func (vic *MOS6569) SignalTriggerIRQBind(fn func(uint32)) {
+	vic.core.signalIRQTrigger.Bind(fn)
+}
+
+func (vic *MOS6569) SignalClearIRQBind(fn func(uint32)) {
+	vic.core.signalIRQClear.Bind(fn)
 }
 
 //func (vic *MOS6569) GetBALowSignal() *signals.Signal1[bool] {

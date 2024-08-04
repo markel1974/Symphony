@@ -3,26 +3,34 @@ package signals
 type Fn0 func()
 
 type Signal struct {
-	receivers []Fn0
+	receiver  Fn0
+	container []Fn0
 }
 
 func NewSignal() *Signal {
-	return &Signal{}
+	s := &Signal{}
+	s.receiver = s.void
+	return s
 }
 
 func (s *Signal) Bind(b Fn0) {
-	s.receivers = append(s.receivers, b)
+	s.container = append(s.container, b)
+	if len(s.container) == 1 {
+		s.receiver = b
+	} else {
+		s.receiver = s.multi
+	}
 }
 
 func (s *Signal) Emit() {
-	if s.receivers == nil {
-		return
-	}
-	if len(s.receivers) == 1 {
-		s.receivers[0]()
-		return
-	}
-	for _, r := range s.receivers {
+	s.receiver()
+}
+
+func (s *Signal) void() {
+}
+
+func (s *Signal) multi() {
+	for _, r := range s.container {
 		r()
 	}
 }

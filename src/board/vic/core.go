@@ -6,8 +6,10 @@ import (
 )
 
 type Core struct {
-	quartz          *quartz.Quartz
-	intr            IInterrupts
+	quartz           *quartz.Quartz
+	signalIRQTrigger *signals.SignalUint32
+	signalIRQClear   *signals.SignalUint32
+	//intr            IInterrupts
 	banks           IBanks
 	mXx             []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
 	mXy             []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
@@ -65,7 +67,7 @@ type Core struct {
 	baLowFirstCycle uint64   //
 	lastByte        uint8    // Last byte read by VIC
 	//baLowSignal     *signals.Signal1[bool]
-	readySignal *signals.Signal
+	signalReady *signals.Signal
 }
 
 func NewCore() *Core {
@@ -74,8 +76,10 @@ func NewCore() *Core {
 		colors[i] = (uint8)(i & 0x0f)
 	}
 	c := &Core{
-		quartz:          nil,
-		intr:            nil,
+		quartz:           nil,
+		signalIRQTrigger: signals.NewSignalUint32(),
+		signalIRQClear:   signals.NewSignalUint32(),
+		//intr:            nil,
 		banks:           nil,
 		mXx:             make([]uint16, SpriteNumber),
 		mXy:             make([]uint8, SpriteNumber),
@@ -131,7 +135,7 @@ func NewCore() *Core {
 		baLowFirstCycle: 0,
 		aecLow:          false,
 		ready:           false,
-		readySignal:     signals.NewSignal(),
+		signalReady:     signals.NewSignal(),
 		//baLowSignal:     signals.NewSignal1[bool](),
 		lastByte: 0,
 	}
@@ -142,10 +146,9 @@ func NewCore() *Core {
 	return c
 }
 
-func (vic *Core) Setup(quartz *quartz.Quartz, intr IInterrupts, banks IBanks) {
+func (vic *Core) Setup(quartz *quartz.Quartz, banks IBanks) {
 	vic.banks = banks
 	vic.quartz = quartz
-	vic.intr = intr
 }
 
 func (vic *Core) SetBALow() {
@@ -172,10 +175,6 @@ func (vic *Core) CheckAEC() {
 	if vic.quartz.Cycle()-vic.baLowFirstCycle >= 3 {
 		vic.aecLow = true
 	}
-}
-
-func (vic *Core) ReadySignalBind(fn func()) {
-	vic.readySignal.Bind(fn)
 }
 
 func (vic *Core) FlipFlopMYE() {
@@ -205,7 +204,8 @@ func (vic *Core) LightPenTrigger() {
 		vic.irqFlag |= 0x08 // Trigger IRQ
 		if (vic.irqMask & 0x08) != 0 {
 			vic.irqFlag |= 0x80
-			vic.intr.TriggerIRQ(IntrVicId)
+			vic.signalIRQTrigger.Emit(IntrVicId)
+			//vic.intr.TriggerIRQ(IntrVicId)
 		}
 	}
 }
@@ -246,7 +246,8 @@ func (vic *Core) rasterIrq() {
 	vic.irqFlag |= 0x01
 	if (vic.irqMask & 0x01) != 0 {
 		vic.irqFlag |= 0x80
-		vic.intr.TriggerIRQ(IntrVicId)
+		vic.signalIRQTrigger.Emit(IntrVicId)
+		//vic.intr.TriggerIRQ(IntrVicId)
 	}
 }
 
@@ -288,7 +289,7 @@ func (vic *Core) ReadRegister(addr uint16) uint8 {
 	case 0x19:
 		if !vic.ready {
 			vic.ready = true
-			vic.readySignal.Emit()
+			vic.signalReady.Emit()
 		}
 		return vic.irqFlag | 0x70
 	// IRQ mask
@@ -398,17 +399,20 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 			// Set master bit if allowed interrupt still pending
 			vic.irqFlag |= 0x80
 		} else {
-			vic.intr.ClearIRQ(IntrVicId)
+			vic.signalIRQClear.Emit(IntrVicId)
+			//vic.intr.ClearIRQ(IntrVicId)
 		}
 	case 0x1a: // IRQ mask
 		vic.irqMask = data & 0x0f
 		if (vic.irqFlag & vic.irqMask) != 0 {
 			// Trigger interrupt if pending and now allowed
 			vic.irqFlag |= 0x80
-			vic.intr.TriggerIRQ(IntrVicId)
+			vic.signalIRQTrigger.Emit(IntrVicId)
+			//vic.intr.TriggerIRQ(IntrVicId)
 		} else {
 			vic.irqFlag &= 0x7f
-			vic.intr.ClearIRQ(IntrVicId)
+			vic.signalIRQClear.Emit(IntrVicId)
+			//vic.intr.ClearIRQ(IntrVicId)
 		}
 	case 0x1b: // Sprite data priority
 		vic.mdp = data

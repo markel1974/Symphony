@@ -3,26 +3,34 @@ package signals
 type FnByte func(a uint8)
 
 type SignalByte struct {
-	receivers []FnByte
+	receiver  FnByte
+	container []FnByte
 }
 
 func NewSignalByte() *SignalByte {
-	return &SignalByte{}
+	s := &SignalByte{}
+	s.receiver = s.void
+	return s
 }
 
 func (s *SignalByte) Bind(b FnByte) {
-	s.receivers = append(s.receivers, b)
+	s.container = append(s.container, b)
+	if len(s.container) == 1 {
+		s.receiver = b
+	} else {
+		s.receiver = s.multi
+	}
 }
 
 func (s *SignalByte) Emit(v1 uint8) {
-	if s.receivers == nil {
-		return
-	}
-	if len(s.receivers) == 1 {
-		s.receivers[0](v1)
-		return
-	}
-	for _, r := range s.receivers {
-		r(v1)
+	s.receiver(v1)
+}
+
+func (s *SignalByte) void(_ uint8) {
+}
+
+func (s *SignalByte) multi(v uint8) {
+	for _, r := range s.container {
+		r(v)
 	}
 }

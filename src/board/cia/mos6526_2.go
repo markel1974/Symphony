@@ -3,35 +3,52 @@ package cia
 import (
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/flag"
+	"github.com/markel1974/c64emu/src/signals"
 )
 
 type MOS6526_2 struct {
 	*MOS6526
-	intr  IInterrupts
-	vic   IVic
-	bus   IBus
-	prefs *config.Config
+	bus              IBus
+	prefs            *config.Config
+	signalNMITrigger *signals.Signal
+	signalNMIClear   *signals.Signal
+	signalChangedVA  *signals.SignalByte
 }
 
 func NewMOS6526_2() *MOS6526_2 {
-	m := &MOS6526_2{}
+	m := &MOS6526_2{
+		signalNMITrigger: signals.NewSignal(),
+		signalNMIClear:   signals.NewSignal(),
+		signalChangedVA:  signals.NewSignalByte(),
+	}
 	m.MOS6526 = NewMOS6526(m.TriggerInterrupt)
 	return m
 }
 
-func (cia2 *MOS6526_2) Setup(intr IInterrupts, vic IVic, bus IBus, prefs *config.Config) {
-	cia2.intr = intr
-	cia2.vic = vic
+func (cia2 *MOS6526_2) Setup(bus IBus, prefs *config.Config) {
 	cia2.bus = bus
 	cia2.prefs = prefs
 
 	//TODO IMPLEMENT
 }
 
+func (cia2 *MOS6526_2) SignalTriggerNMIBind(fn func()) {
+	cia2.signalNMITrigger.Bind(fn)
+}
+
+func (cia2 *MOS6526_2) SignalClearNMIBind(fn func()) {
+	cia2.signalNMIClear.Bind(fn)
+}
+
+func (cia2 *MOS6526_2) SignalChangedVABind(fn func(uint8)) {
+	cia2.signalChangedVA.Bind(fn)
+}
+
 func (cia2 *MOS6526_2) Reset() {
 	cia2.MOS6526.Reset()
 	// VA14/15 = 0
-	cia2.vic.ChangedVA(0)
+	//cia2.vic.ChangedVA(0)
+	cia2.signalChangedVA.Emit(0)
 }
 
 func (cia2 *MOS6526_2) ReadRegister(addr uint16) uint8 {
@@ -81,7 +98,8 @@ func (cia2 *MOS6526_2) ReadRegister(addr uint16) uint8 {
 	case 0x0d:
 		ret := cia2.icr // Read and clear ICR
 		cia2.icr = 0
-		cia2.intr.ClearNMI()
+		cia2.signalNMIClear.Emit()
+		//cia2.intr.ClearNMI()
 		return ret
 
 	case 0x0e:
@@ -98,7 +116,8 @@ func (cia2 *MOS6526_2) WriteRegister(addr uint16, data uint8) {
 	switch addr {
 	case 0x0:
 		cia2.prA = data
-		cia2.vic.ChangedVA((^(cia2.prA | (^cia2.ddrA))) & 3)
+		//cia2.vic.ChangedVA((^(cia2.prA | (^cia2.ddrA))) & 3)
+		cia2.signalChangedVA.Emit((^(cia2.prA | (^cia2.ddrA))) & 3)
 		cia2.bus.CpuWrite(data)
 
 	case 0x1:
@@ -106,7 +125,8 @@ func (cia2 *MOS6526_2) WriteRegister(addr uint16, data uint8) {
 
 	case 0x2:
 		cia2.ddrA = data
-		cia2.vic.ChangedVA((^(cia2.prA | (^cia2.ddrA))) & 3)
+		//cia2.vic.ChangedVA((^(cia2.prA | (^cia2.ddrA))) & 3)
+		cia2.signalChangedVA.Emit((^(cia2.prA | (^cia2.ddrA))) & 3)
 
 	case 0x3:
 		cia2.ddrB = data
@@ -173,7 +193,8 @@ func (cia2 *MOS6526_2) WriteRegister(addr uint16, data uint8) {
 		// Trigger NMI if pending
 		if flag.Uint8ToBool(cia2.icr & cia2.intMask & 0x1f) {
 			cia2.icr |= 0x80
-			cia2.intr.TriggerNMI()
+			cia2.signalNMITrigger.Emit()
+			//cia2.intr.TriggerNMI()
 		}
 
 	case 0xe:
@@ -195,6 +216,7 @@ func (cia2 *MOS6526_2) TriggerInterrupt(bit uint8) {
 	cia2.icr |= bit
 	if flag.Uint8ToBool(cia2.intMask & bit) {
 		cia2.icr |= 0x80
-		cia2.intr.TriggerNMI()
+		cia2.signalNMITrigger.Emit()
+		//cia2.intr.TriggerNMI()
 	}
 }

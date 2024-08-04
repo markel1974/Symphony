@@ -3,30 +3,46 @@ package cia
 import (
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/flag"
+	"github.com/markel1974/c64emu/src/signals"
 )
 
 type MOS6526_1 struct {
 	*MOS6526
-	intr        IInterrupts
-	vic         IVic
-	prevLPState uint8    // Previous state of LP line (bit 4
-	KeyMatrix   [8]uint8 // C64 keyboard matrix, 1 bit/key (0: key down, 1: key up)
-	RevMatrix   [8]uint8 // Reversed keyboard matrix
-	Joystick1   uint8    // Joystick 1 AND value
-	Joystick2   uint8    // Joystick 2 AND value
-	prefs       *config.Config
+	signalIRQTrigger      *signals.SignalUint32
+	signalIRQClear        *signals.SignalUint32
+	signalLightPenTrigger *signals.Signal
+	prevLPState           uint8    // Previous state of LP line (bit 4
+	KeyMatrix             [8]uint8 // C64 keyboard matrix, 1 bit/key (0: key down, 1: key up)
+	RevMatrix             [8]uint8 // Reversed keyboard matrix
+	Joystick1             uint8    // Joystick 1 AND value
+	Joystick2             uint8    // Joystick 2 AND value
+	prefs                 *config.Config
 }
 
 func NewMOS6526_1() *MOS6526_1 {
-	m := &MOS6526_1{}
+	m := &MOS6526_1{
+		signalIRQTrigger:      signals.NewSignalUint32(),
+		signalIRQClear:        signals.NewSignalUint32(),
+		signalLightPenTrigger: signals.NewSignal(),
+	}
 	m.MOS6526 = NewMOS6526(m.TriggerInterrupt)
 	return m
 }
 
-func (cia1 *MOS6526_1) Setup(intr IInterrupts, vic IVic, prefs *config.Config) {
-	cia1.intr = intr
-	cia1.vic = vic
+func (cia1 *MOS6526_1) Setup(prefs *config.Config) {
 	cia1.prefs = prefs
+}
+
+func (cia1 *MOS6526_1) SignalTriggerIRQBind(fn func(uint32)) {
+	cia1.signalIRQTrigger.Bind(fn)
+}
+
+func (cia1 *MOS6526_1) SignalClearIRQBind(fn func(uint32)) {
+	cia1.signalIRQClear.Bind(fn)
+}
+
+func (cia1 *MOS6526_1) SignalLightPenTriggerBind(fn func()) {
+	cia1.signalLightPenTrigger.Bind(fn)
 }
 
 func (cia1 *MOS6526_1) Reset() {
@@ -171,8 +187,8 @@ func (cia1 *MOS6526_1) ReadRegister(addr uint16) uint8 {
 	case 0x0d:
 		ret := cia1.icr // Read and clear ICR
 		cia1.icr = 0
-		cia1.intr.ClearIRQ(IntrCiaId) // Clear IRQ
-		//ClearIRQSignal.Emit();
+		cia1.signalIRQClear.Emit(IntrCiaId)
+		//cia1.intr.ClearIRQ(IntrCiaId)
 		return ret
 
 	case 0x0e:
@@ -262,7 +278,8 @@ func (cia1 *MOS6526_1) WriteRegister(addr uint16, data uint8) {
 		if flag.Uint8ToBool(cia1.icr & cia1.intMask & 0x1f) {
 			// Trigger IRQ if pending
 			cia1.icr |= 0x80
-			cia1.intr.TriggerIRQ(IntrCiaId)
+			cia1.signalIRQTrigger.Emit(IntrCiaId)
+			//cia1.intr.TriggerIRQ(IntrCiaId)
 		}
 
 	case 0xe:
@@ -285,14 +302,16 @@ func (cia1 *MOS6526_1) TriggerInterrupt(bit uint8) {
 		cia1.icr |= 0x80
 		//_cpu->TriggerCIAIRQ();
 		//TriggerIRQSignal.Emit();
-		cia1.intr.TriggerIRQ(IntrCiaId)
+		cia1.signalIRQTrigger.Emit(IntrCiaId)
+		//cia1.intr.TriggerIRQ(IntrCiaId)
 	}
 }
 
 // Write to port B, check for lightPen interrupt
 func (cia1 *MOS6526_1) checkLightPen() {
 	if ((cia1.prB | ^cia1.ddrB) & 0x10) != cia1.prevLPState {
-		cia1.vic.LightPenTrigger()
+		cia1.signalLightPenTrigger.Emit()
+		//cia1.vic.LightPenTrigger()
 	}
 	cia1.prevLPState = (cia1.prB | ^cia1.ddrB) & 0x10
 }
