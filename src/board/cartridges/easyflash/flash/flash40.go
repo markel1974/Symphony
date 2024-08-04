@@ -70,7 +70,7 @@ func NewFlash040(b icartridge.IExpansion, kind Kind, data []byte) *Flash040 {
 	}
 	f.flashClearEraseMask()
 	callback := func(clock uint64, offset uint64) {
-		f.eraseAlarmHandler(clock, offset)
+		f.eraseAlarmHandler()
 	}
 	f.eraseAlarm = b.CreateAlarm("Flash040Alarm", callback)
 	return f
@@ -122,14 +122,12 @@ func (f *Flash040) ReadInterval(start uint, end uint) ([]byte, error) {
 }
 
 func (f *Flash040) Store(addr uint, data uint8) {
-	clock := f.board.Cycle()
-	rmwFlags := f.board.RmwFlags()
-	if rmwFlags != 0 {
-		clock--
-		f.storeInternal(clock, addr, f.lastRead)
-		//clock++
+	dist := uint64(0)
+	if rmwFlags := f.board.RmwFlags(); rmwFlags != 0 {
+		f.storeInternal(dist, addr, f.lastRead)
+		dist++
 	}
-	f.storeInternal(clock, addr, data)
+	f.storeInternal(dist, addr, data)
 }
 
 func (f *Flash040) Read(addr uint) uint8 {
@@ -224,8 +222,7 @@ func (f *Flash040) SnapshotReadModule(s *snapshot.Snapshot, name string) error {
 	switch f.flashState {
 	case SectorEraseTimeout, StateSectorErase, StateChipErase:
 		/* the alarm timing is not saved, just use some value for now */
-		mainCpuClk := f.board.Cycle()
-		_ = f.eraseAlarm.Set(mainCpuClk + uint64(flashTypes[f.flashType].eraseSectorCycles))
+		_ = f.eraseAlarm.Set(uint64(flashTypes[f.flashType].eraseSectorCycles))
 		//alarm_set(f.eraseAlarm, mainCpuClk+flashTypes[f.flashType].eraseSectorCycles)
 	default:
 	}
@@ -325,7 +322,7 @@ func (f *Flash040) flashEraseOperationStatus() int {
 	return int(v)
 }
 
-func (f *Flash040) eraseAlarmHandler(clock uint64, offset uint64) {
+func (f *Flash040) eraseAlarmHandler() {
 	var i, j int
 	var m uint8
 	_ = f.eraseAlarm.Unset()
@@ -333,7 +330,7 @@ func (f *Flash040) eraseAlarmHandler(clock uint64, offset uint64) {
 
 	switch f.flashState {
 	case SectorEraseTimeout:
-		_ = f.eraseAlarm.Set(clock + uint64(flashTypes[f.flashType].eraseSectorCycles))
+		_ = f.eraseAlarm.Set(uint64(flashTypes[f.flashType].eraseSectorCycles))
 		f.flashState = StateSectorErase
 		break
 	case StateSectorErase:
@@ -351,7 +348,7 @@ func (f *Flash040) eraseAlarmHandler(clock uint64, offset uint64) {
 			m |= f.eraseMask[i]
 		}
 		if m != 0 {
-			_ = f.eraseAlarm.Set(clock + uint64(flashTypes[f.flashType].eraseSectorCycles))
+			_ = f.eraseAlarm.Set(uint64(flashTypes[f.flashType].eraseSectorCycles))
 		} else {
 			f.flashState = f.flashBaseState
 		}
@@ -366,7 +363,7 @@ func (f *Flash040) eraseAlarmHandler(clock uint64, offset uint64) {
 	}
 }
 
-func (f *Flash040) storeInternal(mainCpuClk uint64, addr uint, data uint8) {
+func (f *Flash040) storeInternal(dist uint64, addr uint, data uint8) {
 	//#ifdef FLASH_DEBUG_ENABLED
 	//	State old_state = flash040_context->flashState;
 	//	State old_base_state = flash040_context->flashBaseState;
@@ -425,12 +422,12 @@ func (f *Flash040) storeInternal(mainCpuClk uint64, addr uint, data uint8) {
 		if f.flashMagic1(addr) != 0 && (data == 0x10) {
 			f.flashState = StateChipErase
 			f.programByte = 0
-			_ = f.eraseAlarm.Set(mainCpuClk + uint64(flashTypes[f.flashType].eraseChipCycles))
+			_ = f.eraseAlarm.Set(dist + uint64(flashTypes[f.flashType].eraseChipCycles))
 		} else if data == 0x30 {
 			f.flashAddSectorToEraseMask(addr)
 			f.programByte = 0
 			f.flashState = SectorEraseTimeout
-			_ = f.eraseAlarm.Set(mainCpuClk + uint64(flashTypes[f.flashType].eraseSectorTimeoutCycles))
+			_ = f.eraseAlarm.Set(dist + uint64(flashTypes[f.flashType].eraseSectorTimeoutCycles))
 		} else {
 			f.flashState = f.flashBaseState
 		}
@@ -451,7 +448,7 @@ func (f *Flash040) storeInternal(mainCpuClk uint64, addr uint, data uint8) {
 	case StateSectorEraseSuspend:
 		if data == 0x30 {
 			f.flashState = StateSectorErase
-			_ = f.eraseAlarm.Set(mainCpuClk + uint64(flashTypes[f.flashType].eraseSectorCycles))
+			_ = f.eraseAlarm.Set(dist + uint64(flashTypes[f.flashType].eraseSectorCycles))
 		}
 	case StateByteProgramError, StateAutoSelect:
 		if f.flashMagic1(addr) != 0 && (data == 0xaa) {

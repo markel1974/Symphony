@@ -38,13 +38,14 @@ func (s *Quartz) alarmDestroy(alarm *Alarm) {
 	delete(s.alarmsContainer, alarm)
 }
 
-func (s *Quartz) alarmSet(alarm *Alarm) error {
+func (s *Quartz) alarmSet(alarm *Alarm, dist uint64) error {
 	if alarm.element != nil {
 		return fmt.Errorf("alarm already setted")
 	}
-	if s.cycle >= alarm.cycle {
-		return fmt.Errorf("invalid alarm cycle")
+	if dist == 0 {
+		dist = 1
 	}
+	alarm.cycle = s.cycle + dist
 	if s.alarms.Len() > 0 {
 		for e := s.alarms.Front(); e != nil; e = e.Next() {
 			curr := e.Value.(*Alarm)
