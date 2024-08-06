@@ -11,7 +11,7 @@ const (
 	IntRst = 0x8
 )
 
-type Pin struct {
+type Pic struct {
 	quartz        *quartz.Quartz
 	prefs         *config.Config
 	pinOut        bits.Bits
@@ -20,8 +20,8 @@ type Pin struct {
 	firstNMICycle uint64
 }
 
-func NewPin() *Pin {
-	return &Pin{
+func NewPic() *Pic {
+	return &Pic{
 		quartz:        nil,
 		prefs:         nil,
 		firstIrqCycle: 0,
@@ -31,32 +31,32 @@ func NewPin() *Pin {
 	}
 }
 
-func (i *Pin) Setup(quartz *quartz.Quartz) {
+func (i *Pic) Setup(quartz *quartz.Quartz) {
 	i.quartz = quartz
 }
 
-func (i *Pin) Reset() {
+func (i *Pic) Reset() {
 	i.pinOut = 0
 	i.irq = 0
 }
 
-func (i *Pin) HasAny() bool {
+func (i *Pic) HasAny() bool {
 	return i.pinOut != 0
 }
 
-func (i *Pin) TriggerReset() {
+func (i *Pic) TriggerReset() {
 	i.pinOut.BitSet(IntRst)
 }
 
-func (i *Pin) HasReset() bool {
+func (i *Pic) HasReset() bool {
 	return i.pinOut.BitCheck(IntRst)
 }
 
-func (i *Pin) HasIRQ() bool {
+func (i *Pic) HasIRQ() bool {
 	return i.irq != 0
 }
 
-func (i *Pin) TriggerIRQ(intr uint32) {
+func (i *Pic) TriggerIRQ(intr uint32) {
 	if i.irq == 0 {
 		i.firstIrqCycle = i.quartz.Cycle()
 	}
@@ -64,35 +64,35 @@ func (i *Pin) TriggerIRQ(intr uint32) {
 	i.irq.BitSet(intr)
 }
 
-func (i *Pin) ClearIRQ(intr uint32) {
+func (i *Pic) ClearIRQ(intr uint32) {
 	i.pinOut.BitClear(intr)
 	i.irq.BitClear(intr)
 }
 
-func (i *Pin) TriggerNMI() {
+func (i *Pic) TriggerNMI() {
 	if !i.pinOut.BitCheck(IntNmi) {
 		i.firstNMICycle = i.quartz.Cycle()
 	}
 	i.pinOut.BitSet(IntNmi)
 }
 
-func (i *Pin) ClearNMI() {
+func (i *Pic) ClearNMI() {
 	i.pinOut.BitClear(IntNmi)
 }
 
-func (i *Pin) HasNMI() bool {
+func (i *Pic) HasNMI() bool {
 	return i.pinOut.BitCheck(IntNmi)
 }
 
-func (i *Pin) GetNMICycleDistance(delay int) uint64 {
+func (i *Pic) GetNMICycleDistance(delay int) uint64 {
 	return i.computeDistance(i.firstNMICycle, uint64(delay))
 }
 
-func (i *Pin) GetIrqCycleDistance(delay int) uint64 {
+func (i *Pic) GetIrqCycleDistance(delay int) uint64 {
 	return i.computeDistance(i.firstIrqCycle, uint64(delay))
 }
 
-func (i *Pin) computeDistance(base uint64, delay uint64) uint64 {
+func (i *Pic) computeDistance(base uint64, delay uint64) uint64 {
 	cycle := i.quartz.Cycle()
 	if base > cycle {
 		return 0
@@ -105,6 +105,6 @@ func (i *Pin) computeDistance(base uint64, delay uint64) uint64 {
 	return v
 }
 
-//func (i *Pin) AsyncNMI() {
+//func (i *Pic) AsyncNMI() {
 //	i.pinOut.BitSet(IntNmi)
 //}

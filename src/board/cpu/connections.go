@@ -5,7 +5,7 @@ type IBanks interface {
 	Write(uint16, uint8)
 }
 
-type IPins interface {
+type IPic interface {
 	HasAny() bool
 	HasReset() bool
 	HasNMI() bool

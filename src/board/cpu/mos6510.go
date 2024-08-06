@@ -48,7 +48,7 @@ func NewMOS6510() *MOS6510 {
 	return cpu
 }
 
-func (cpu *MOS6510) Setup(intr IPins, banks IBanks, prefs *config.Config) {
+func (cpu *MOS6510) Setup(intr IPic, banks IBanks, prefs *config.Config) {
 	cpu.Core = NewCore(intr)
 	cpu.banks = banks
 	cpu.prefs = prefs
@@ -199,35 +199,35 @@ func (cpu *MOS6510) checkPins() {
 	if cpu.state != STATE_LAST {
 		return
 	}
-	if !cpu.pins.HasAny() {
+	if !cpu.pic.HasAny() {
 		return
 	}
-	if cpu.pins.HasReset() {
+	if cpu.pic.HasReset() {
 		cpu.Reset()
 		return
 	}
-	if cpu.pins.HasNMI() {
+	if cpu.pic.HasNMI() {
 		// Taken branches to the same page delay the NMI
 		delay := 0
 		if (cpu.opFlags & OpFlagIntDelayed) != 0 {
 			delay = 1
 		}
-		if (cpu.pins.GetNMICycleDistance(delay)) >= 2 {
+		if (cpu.pic.GetNMICycleDistance(delay)) >= 2 {
 			// Simulate an edge-triggered input
-			cpu.pins.ClearNMI()
+			cpu.pic.ClearNMI()
 			cpu.state = I_NMI_10
 			cpu.opFlags = 0
 		}
 		return
 	}
-	if (cpu.pins.HasIRQ()) &&
+	if (cpu.pic.HasIRQ()) &&
 		((cpu.iFlag == 0) || ((cpu.opFlags & OpFlagIrqDisabled) != 0)) && ((cpu.opFlags & OpFlagIrqEnabled) == 0) {
 		delay := 0
 		if (cpu.opFlags & OpFlagIntDelayed) != 0 {
 			delay = 1
 		}
 		// Taken branches to the same page delay the IRQ
-		if (cpu.pins.GetIrqCycleDistance(delay)) >= 2 {
+		if (cpu.pic.GetIrqCycleDistance(delay)) >= 2 {
 			cpu.state = I_IRQ_8
 			cpu.opFlags = 0
 		}
@@ -1583,8 +1583,8 @@ func (cpu *MOS6510) Emulate(rdyLow bool) {
 		cpu.sp--
 		cpu.iFlag = 1
 		// BRK interrupted by NMI?
-		if cpu.pins.HasNMI() {
-			cpu.pins.ClearNMI()  // Simulate an edge-triggered input
+		if cpu.pic.HasNMI() {
+			cpu.pic.ClearNMI()   // Simulate an edge-triggered input
 			cpu.state = I_NMI_15 // Jump to NMI sequence
 		} else {
 			cpu.state = O_BRK4
