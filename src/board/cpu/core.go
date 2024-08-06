@@ -16,7 +16,7 @@ type Core struct {
 	pc      uint16 // Program counter
 	op      uint8  // Current opcode
 	ar      uint16 // Address register
-	ar2     uint16 // Address register
+	ar2     uint16 // Address register 2
 	rmw     uint8  // Data buffer for RMW instructions
 	state   uint8  // Current state
 	opFlags uint8
