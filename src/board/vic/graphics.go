@@ -303,7 +303,6 @@ func (gr *Graphics) drawGraphics() {
 
 func (gr *Graphics) drawGraphicsInvalidStandard(offset int, a uint8) {
 	gr.db.SetMulti8(offset, a)
-	//foreMask
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)
@@ -311,7 +310,6 @@ func (gr *Graphics) drawGraphicsInvalidStandard(offset int, a uint8) {
 
 func (gr *Graphics) drawGraphicsInvalidMulticolor(offset int, a uint8) {
 	gr.db.SetMulti8(offset, a)
-	//foreMask
 	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
 	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)

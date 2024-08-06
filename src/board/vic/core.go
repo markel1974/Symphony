@@ -9,65 +9,65 @@ type Core struct {
 	quartz           *quartz.Quartz
 	signalIRQTrigger *signals.SignalUint32
 	signalIRQClear   *signals.SignalUint32
-	//intr            IInterrupts
-	banks           IBanks
-	mXx             []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
-	mXy             []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
-	mx8             uint8    // VIC register
-	cr1             uint8    // VIC register
-	cr2             uint8    // VIC register
-	lpx             uint8    // VIC register
-	lpy             uint8    // VIC register
-	me              uint8    // VIC register
-	mxe             uint8    // VIC register
-	mye             uint8    // VIC register
-	mdp             uint8    // VIC register
-	mmc             uint8    // VIC register
-	ec              uint8    // VIC register
-	b0c             uint8    // VIC register
-	b1c             uint8    // VIC register
-	b2c             uint8    // VIC register
-	b3c             uint8    // VIC register
-	mm0             uint8    // VIC register
-	mm1             uint8    // VIC register
-	mXc             []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
-	ecColor         uint8    // Index ec Color Mapping
-	b0cColor        uint8    // Index b0c Color Mapping
-	b1cColor        uint8    // Index b1c Color Mapping
-	b2cColor        uint8    // Index b2c Color Mapping
-	b3cColor        uint8    // Index b3c Color Mapping
-	mm0Color        uint8    // Index mm0 Color Mapping
-	mm1Color        uint8    // Index mm1 Color Mapping
-	mXcColor        []uint8  // Color Index Mapping for m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c
-	vaBase          uint8    // vaBase
-	ciaVaBase       uint16   // CIA VA14/15 video base
-	matrixBase      uint16   // Video matrix base
-	charBase        uint16   // Character generator base
-	bitmapBase      uint16   // Bitmap base
-	xScroll         uint16   // X scroll value
-	yScroll         uint16   // Y scroll value
-	irqFlag         uint8    //
-	irqMask         uint8    //
-	irqRaster       uint16   // Interrupt raster line
-	sprExpY         uint8    // 8 sprite y expansion FlipFlops
-	sprClxBgr       uint8    // Sprite to background collision
-	sprClx          uint8    // Sprite to sprite collision
-	rasterX         uint16   // Current raster x position
-	rasterY         uint16   // Current raster line
-	dyStart         uint16   // Comparison values for border logic
-	dyStop          uint16   // Comparison values for border logic
-	colors          []uint8  // Indices of the 16 colors (16 times mirrored to avoid "& 0x0f")
-	displayIdx      int      // Index of current display mode
-	lpTriggered     bool     // LightPen was triggered in this frame
-	badLinesEnabled bool     // Bad Lines enabled for this frame
-	isBadLine       bool     // Current line is bad line
-	ready           bool     // VIC Initialization Complete
-	baLow           bool     // BA Line
-	aecLow          bool     // AEC Line
-	baLowFirstCycle uint64   //
-	lastByte        uint8    // Last byte read by VIC
-	//baLowSignal     *signals.Signal1[bool]
-	signalReady *signals.Signal
+	signalReady      *signals.Signal
+	signalBALow      *signals.SignalBool
+	signalAECLow     *signals.SignalBool
+	banks            IBanks
+	mXx              []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
+	mXy              []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
+	mx8              uint8    // VIC register
+	cr1              uint8    // VIC register
+	cr2              uint8    // VIC register
+	lpx              uint8    // VIC register
+	lpy              uint8    // VIC register
+	me               uint8    // VIC register
+	mxe              uint8    // VIC register
+	mye              uint8    // VIC register
+	mdp              uint8    // VIC register
+	mmc              uint8    // VIC register
+	ec               uint8    // VIC register
+	b0c              uint8    // VIC register
+	b1c              uint8    // VIC register
+	b2c              uint8    // VIC register
+	b3c              uint8    // VIC register
+	mm0              uint8    // VIC register
+	mm1              uint8    // VIC register
+	mXc              []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
+	ecColor          uint8    // Index ec Color Mapping
+	b0cColor         uint8    // Index b0c Color Mapping
+	b1cColor         uint8    // Index b1c Color Mapping
+	b2cColor         uint8    // Index b2c Color Mapping
+	b3cColor         uint8    // Index b3c Color Mapping
+	mm0Color         uint8    // Index mm0 Color Mapping
+	mm1Color         uint8    // Index mm1 Color Mapping
+	mXcColor         []uint8  // Color Index Mapping for m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c
+	vaBase           uint8    // vaBase
+	ciaVaBase        uint16   // CIA VA14/15 video base
+	matrixBase       uint16   // Video matrix base
+	charBase         uint16   // Character generator base
+	bitmapBase       uint16   // Bitmap base
+	xScroll          uint16   // X scroll value
+	yScroll          uint16   // Y scroll value
+	irqFlag          uint8    //
+	irqMask          uint8    //
+	irqRaster        uint16   // Interrupt raster line
+	sprExpY          uint8    // 8 sprite y expansion FlipFlops
+	sprClxBgr        uint8    // Sprite to background collision
+	sprClx           uint8    // Sprite to sprite collision
+	rasterX          uint16   // Current raster x position
+	rasterY          uint16   // Current raster line
+	dyStart          uint16   // Comparison values for border logic
+	dyStop           uint16   // Comparison values for border logic
+	colors           []uint8  // Indices of the 16 colors (16 times mirrored to avoid "& 0x0f")
+	displayIdx       int      // Index of current display mode
+	lpTriggered      bool     // LightPen was triggered in this frame
+	badLinesEnabled  bool     // Bad Lines enabled for this frame
+	isBadLine        bool     // Current line is bad line
+	ready            bool     // VIC Initialization Complete
+	baLow            bool     // BA Line
+	aecLow           bool     // AEC Line
+	baLowFirstCycle  uint64   //
+	lastByte         uint8    // Last byte read by VIC
 }
 
 func NewCore() *Core {
@@ -79,65 +79,65 @@ func NewCore() *Core {
 		quartz:           nil,
 		signalIRQTrigger: signals.NewSignalUint32(),
 		signalIRQClear:   signals.NewSignalUint32(),
-		//intr:            nil,
-		banks:           nil,
-		mXx:             make([]uint16, SpriteNumber),
-		mXy:             make([]uint8, SpriteNumber),
-		mx8:             0,
-		cr1:             0,
-		cr2:             0,
-		lpx:             0,
-		lpy:             0,
-		me:              0,
-		mxe:             0,
-		mye:             0,
-		mdp:             0,
-		mmc:             0,
-		ec:              0,
-		b0c:             0,
-		b1c:             0,
-		b2c:             0,
-		b3c:             0,
-		mm0:             0,
-		mm1:             0,
-		mXc:             make([]uint8, SpriteNumber),
-		mXcColor:        make([]uint8, SpriteNumber),
-		matrixBase:      0,
-		charBase:        0,
-		bitmapBase:      0,
-		vaBase:          0,
-		ciaVaBase:       0,
-		xScroll:         0,
-		yScroll:         0,
-		irqRaster:       0,
-		irqFlag:         0,
-		irqMask:         0,
-		sprExpY:         0,
-		sprClx:          0,
-		sprClxBgr:       0,
-		ecColor:         colors[0], // Preset colors to black
-		b0cColor:        colors[0], // Preset colors to black
-		b1cColor:        colors[0], // Preset colors to black
-		b2cColor:        colors[0], // Preset colors to black
-		b3cColor:        colors[0], // Preset colors to black
-		mm0Color:        colors[0], // Preset colors to black
-		mm1Color:        colors[0], // Preset colors to black
-		colors:          colors,
-		rasterX:         0,
-		rasterY:         TotalRasters - 1,
-		dyStart:         Row24YStart,
-		dyStop:          Row24YStop,
-		displayIdx:      0,
-		lpTriggered:     false,
-		isBadLine:       false,
-		badLinesEnabled: false,
-		baLow:           false,
-		baLowFirstCycle: 0,
-		aecLow:          false,
-		ready:           false,
-		signalReady:     signals.NewSignal(),
-		//baLowSignal:     signals.NewSignal1[bool](),
-		lastByte: 0,
+		signalBALow:      signals.NewSignalBool(),
+		signalAECLow:     signals.NewSignalBool(),
+		banks:            nil,
+		mXx:              make([]uint16, SpriteNumber),
+		mXy:              make([]uint8, SpriteNumber),
+		mx8:              0,
+		cr1:              0,
+		cr2:              0,
+		lpx:              0,
+		lpy:              0,
+		me:               0,
+		mxe:              0,
+		mye:              0,
+		mdp:              0,
+		mmc:              0,
+		ec:               0,
+		b0c:              0,
+		b1c:              0,
+		b2c:              0,
+		b3c:              0,
+		mm0:              0,
+		mm1:              0,
+		mXc:              make([]uint8, SpriteNumber),
+		mXcColor:         make([]uint8, SpriteNumber),
+		matrixBase:       0,
+		charBase:         0,
+		bitmapBase:       0,
+		vaBase:           0,
+		ciaVaBase:        0,
+		xScroll:          0,
+		yScroll:          0,
+		irqRaster:        0,
+		irqFlag:          0,
+		irqMask:          0,
+		sprExpY:          0,
+		sprClx:           0,
+		sprClxBgr:        0,
+		ecColor:          colors[0], // Preset colors to black
+		b0cColor:         colors[0], // Preset colors to black
+		b1cColor:         colors[0], // Preset colors to black
+		b2cColor:         colors[0], // Preset colors to black
+		b3cColor:         colors[0], // Preset colors to black
+		mm0Color:         colors[0], // Preset colors to black
+		mm1Color:         colors[0], // Preset colors to black
+		colors:           colors,
+		rasterX:          0,
+		rasterY:          TotalRasters - 1,
+		dyStart:          Row24YStart,
+		dyStop:           Row24YStop,
+		displayIdx:       0,
+		lpTriggered:      false,
+		isBadLine:        false,
+		badLinesEnabled:  false,
+		baLow:            false,
+		baLowFirstCycle:  0,
+		aecLow:           false,
+		ready:            false,
+		signalReady:      signals.NewSignal(),
+		lastByte:         0,
 	}
 	// Preset colors to black
 	for i := range c.mXcColor {
@@ -152,29 +152,37 @@ func (vic *Core) Setup(quartz *quartz.Quartz, banks IBanks) {
 }
 
 func (vic *Core) SetBALow() {
-	if !vic.baLow {
-		vic.baLow = true
-		vic.baLowFirstCycle = vic.quartz.Cycle()
-		//vic.baLowSignal.Emit(vic.baLow)
+	if vic.baLow {
+		return
 	}
+	vic.baLow = true
+	vic.baLowFirstCycle = vic.quartz.Cycle()
+	vic.signalBALow.Emit(true)
 }
 
 func (vic *Core) ClearBALow() {
-	vic.baLow = false
-	vic.aecLow = false
-	//vic.baLowSignal.Emit(vic.baLow)
+	if vic.baLow {
+		vic.baLow = false
+		vic.signalBALow.Emit(vic.baLow)
+	}
+	if vic.aecLow {
+		vic.aecLow = false
+		vic.signalAECLow.Emit(vic.aecLow)
+	}
 }
 
-func (vic *Core) CheckAEC() {
+func (vic *Core) TryAcquireAEC() {
 	if !vic.baLow {
 		return
 	}
 	if vic.aecLow == true {
 		return
 	}
-	if vic.quartz.Cycle()-vic.baLowFirstCycle >= 3 {
-		vic.aecLow = true
+	if dist := vic.quartz.Cycle() - vic.baLowFirstCycle; dist < 3 {
+		return
 	}
+	vic.aecLow = true
+	vic.signalAECLow.Emit(vic.aecLow)
 }
 
 func (vic *Core) FlipFlopMYE() {
@@ -201,11 +209,10 @@ func (vic *Core) LightPenTrigger() {
 		vic.lpTriggered = true
 		vic.lpx = uint8(vic.rasterX >> 1) // Latch current coordinates
 		vic.lpy = uint8(vic.rasterY)
-		vic.irqFlag |= 0x08 // Trigger IRQ
+		vic.irqFlag |= 0x08
 		if (vic.irqMask & 0x08) != 0 {
 			vic.irqFlag |= 0x80
-			vic.signalIRQTrigger.Emit(IntrVicId)
-			//vic.intr.TriggerIRQ(IntrVicId)
+			vic.signalIRQTrigger.Emit(intrVicId)
 		}
 	}
 }
@@ -246,8 +253,7 @@ func (vic *Core) rasterIrq() {
 	vic.irqFlag |= 0x01
 	if (vic.irqMask & 0x01) != 0 {
 		vic.irqFlag |= 0x80
-		vic.signalIRQTrigger.Emit(IntrVicId)
-		//vic.intr.TriggerIRQ(IntrVicId)
+		vic.signalIRQTrigger.Emit(intrVicId)
 	}
 }
 
@@ -399,20 +405,17 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 			// Set master bit if allowed interrupt still pending
 			vic.irqFlag |= 0x80
 		} else {
-			vic.signalIRQClear.Emit(IntrVicId)
-			//vic.intr.ClearIRQ(IntrVicId)
+			vic.signalIRQClear.Emit(intrVicId)
 		}
 	case 0x1a: // IRQ mask
 		vic.irqMask = data & 0x0f
 		if (vic.irqFlag & vic.irqMask) != 0 {
-			// Trigger interrupt if pending and now allowed
+			// Trigger interrupt if pending (now allowed)
 			vic.irqFlag |= 0x80
-			vic.signalIRQTrigger.Emit(IntrVicId)
-			//vic.intr.TriggerIRQ(IntrVicId)
+			vic.signalIRQTrigger.Emit(intrVicId)
 		} else {
 			vic.irqFlag &= 0x7f
-			vic.signalIRQClear.Emit(IntrVicId)
-			//vic.intr.ClearIRQ(IntrVicId)
+			vic.signalIRQClear.Emit(intrVicId)
 		}
 	case 0x1b: // Sprite data priority
 		vic.mdp = data

@@ -1,6 +1,6 @@
 package cia
 
-const IntrCiaId = 0x2
+const intrCiaId = 0x8
 
 type IVic interface {
 	LightPenTrigger()

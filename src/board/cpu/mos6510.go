@@ -195,7 +195,7 @@ func (cpu *MOS6510) GetState() uint8 {
 	return cpu.state
 }
 
-func (cpu *MOS6510) checkPins() {
+func (cpu *MOS6510) checkPic() {
 	if cpu.state != STATE_LAST {
 		return
 	}
@@ -235,8 +235,14 @@ func (cpu *MOS6510) checkPins() {
 	}
 }
 
-func (cpu *MOS6510) Emulate(rdyLow bool) {
-	cpu.checkPins()
+func (cpu *MOS6510) SetRDYLow(rdyLow bool) {
+	cpu.rdyLow = rdyLow
+}
+
+func (cpu *MOS6510) Emulate() {
+	cpu.checkPic()
+
+	rdyLow := cpu.rdyLow
 
 	switch cpu.state {
 	case STATE_LAST:

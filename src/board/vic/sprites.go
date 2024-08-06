@@ -71,7 +71,7 @@ func (sp *Sprites) FetchData(num int, byteNum int) {
 		sp.data[num][byteNum] = data
 		sp.dataCounter[num]++
 	} else if byteNum == 1 {
-		//idleAccess
+		//accessIdle
 		sp.core.ReadByte(0x3fff)
 	}
 }
@@ -167,8 +167,7 @@ func (sp *Sprites) Draw(lineStart int) {
 		sp.core.irqFlag |= 0x04
 		if sp.core.irqMask&0x04 != 0 {
 			sp.core.irqFlag |= 0x80
-			sp.core.signalIRQTrigger.Emit(IntrVicId)
-			//sp.intr.TriggerIRQ(IntrVicId)
+			sp.core.signalIRQTrigger.Emit(intrVicId)
 		}
 	}
 	// sprite-background collisions
@@ -179,8 +178,7 @@ func (sp *Sprites) Draw(lineStart int) {
 		sp.core.irqFlag |= 0x02
 		if sp.core.irqMask&0x02 != 0 {
 			sp.core.irqFlag |= 0x80
-			sp.core.signalIRQTrigger.Emit(IntrVicId)
-			//sp.intr.TriggerIRQ(IntrVicId)
+			sp.core.signalIRQTrigger.Emit(intrVicId)
 		}
 	}
 }

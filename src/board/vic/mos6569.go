@@ -53,12 +53,21 @@ func (vic *MOS6569) GetLastByte() uint8 {
 	return vic.core.lastByte
 }
 
+/*
 func (vic *MOS6569) GetBALow() bool {
 	return vic.core.baLow
 }
 
 func (vic *MOS6569) GetAECLow() bool {
 	return vic.core.aecLow
+}*/
+
+func (vic *MOS6569) SignalBALowBind(fn func(bool)) {
+	vic.core.signalBALow.Bind(fn)
+}
+
+func (vic *MOS6569) SignalAECLowBind(fn func(bool)) {
+	vic.core.signalAECLow.Bind(fn)
 }
 
 func (vic *MOS6569) SignalReadyBind(fn func()) {
@@ -97,16 +106,11 @@ func (vic *MOS6569) LightPenTrigger() {
 	vic.core.LightPenTrigger()
 }
 
-func (vic *MOS6569) refreshAccess() {
-	_ = vic.core.ReadByte(0x3f00 | uint16(vic.refreshCounter))
-	vic.refreshCounter--
-}
-
 func (vic *MOS6569) Emulate() (bool, bool) {
 	vBlank := false
 	lastCycle := false
 
-	vic.core.CheckAEC()
+	//vic.core.CheckAEC()
 
 	switch vic.cycle {
 	case 1:
@@ -230,14 +234,14 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 	case 11:
 		// Refresh, reset BA
-		vic.refreshAccess()
+		vic.accessRefresh()
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
 		}
 		vic.core.ClearBALow()
 	case 12:
 		// Refresh, turn on matrix access if Bad Line
-		vic.refreshAccess()
+		vic.accessRefresh()
 		// Turn on display and matrix access if Bad Line
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
@@ -250,7 +254,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.SampleBorder(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
-		vic.refreshAccess()
+		vic.accessRefresh()
 		// Turn on display and matrix access if Bad Line
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
@@ -264,7 +268,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.SampleBorder(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
-		vic.refreshAccess()
+		vic.accessRefresh()
 		// Turn on display and matrix access and reset RowCounter if Bad Line
 		if vic.core.isBadLine {
 			vic.graphics.ResetRowCounter()
@@ -279,7 +283,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.SampleBorder(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
-		vic.refreshAccess()
+		vic.accessRefresh()
 		// Turn on display and matrix access if Bad Line
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
@@ -287,6 +291,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		vic.sprites.UpdateCounterBase()
 		vic.graphics.ResetMatrixLineIndex()
+		vic.core.TryAcquireAEC()
 		vic.graphics.MatrixAccess()
 	case 16:
 		// Graphics and matrix access, increment dataCounterBase by 1 if y expansion FlipFlop is set
@@ -303,6 +308,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.core.SetBALow()
 		}
 		vic.sprites.UpdateDMACounterBase()
+		vic.core.TryAcquireAEC()
 		vic.graphics.MatrixAccess()
 	case 17:
 		// Graphics and matrix access, turn off border in 40 column mode, display window starts here
@@ -320,6 +326,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.SetDisplayOn()
 			vic.core.SetBALow()
 		}
+		vic.core.TryAcquireAEC()
 		vic.graphics.MatrixAccess()
 	case 18:
 		// Turn off border in 38 column mode
@@ -332,11 +339,11 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
-		// Turn on display and matrix access if Bad Line
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
 			vic.core.SetBALow()
 		}
+		vic.core.TryAcquireAEC()
 		vic.graphics.MatrixAccess()
 		vic.graphics.SetCharDataLast()
 
@@ -347,11 +354,11 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
-		// Turn on display and matrix access if Bad Line
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
 			vic.core.SetBALow()
 		}
+		vic.core.TryAcquireAEC()
 		vic.graphics.MatrixAccess()
 		vic.graphics.SetCharDataLast()
 	case 55:
@@ -386,8 +393,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.SampleBorder(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
-		//idleAccess
-		vic.core.ReadByte(0x3fff)
+		vic.accessIdle()
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
 		}
@@ -410,8 +416,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.SampleBorder(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
-		//idleAccess
-		vic.core.ReadByte(0x3fff)
+		vic.accessIdle()
 		if vic.core.isBadLine {
 			vic.graphics.SetDisplayOn()
 		}
@@ -504,4 +509,13 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.cycle++
 	}
 	return vBlank, lastCycle
+}
+
+func (vic *MOS6569) accessRefresh() {
+	_ = vic.core.ReadByte(0x3f00 | uint16(vic.refreshCounter))
+	vic.refreshCounter--
+}
+
+func (vic *MOS6569) accessIdle() {
+	_ = vic.core.ReadByte(0x3fff)
 }

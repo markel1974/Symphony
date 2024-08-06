@@ -19,7 +19,8 @@ type Core struct {
 	ar2     uint16 // Address register 2
 	rmw     uint8  // Data buffer for RMW instructions
 	state   uint8  // Current state
-	opFlags uint8
+	opFlags uint8  //
+	rdyLow  bool   // current RDY state
 }
 
 func NewCore(pic IPic) *Core {
@@ -37,6 +38,9 @@ func NewCore(pic IPic) *Core {
 		cFlag:   0,
 		iFlag:   1,
 		opFlags: 0,
+		ar:      0,
+		ar2:     0,
+		rdyLow:  false,
 	}
 	return regs
 }

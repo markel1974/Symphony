@@ -39,10 +39,12 @@ type Board struct {
 	keys         *keyboard.Keyboard
 	cfg          *config.Config
 	hasClipboard bool
-	//phiMode      PhiMode
-	cartMan *cartridges.Manager
-	banks   *banks.Banks
-	dmaLow  bool
+	cartMan      *cartridges.Manager
+	banks        *banks.Banks
+	dmaLow       bool
+	baLow        bool
+	aecLow       bool
+	//phiMode    PhiMode
 }
 
 func NewBoard(db vic.IDisplayBuffer) *Board {
@@ -60,6 +62,8 @@ func NewBoard(db vic.IDisplayBuffer) *Board {
 		hasClipboard: false,
 		cartMan:      cartridges.NewManager(),
 		dmaLow:       false,
+		baLow:        false,
+		aecLow:       false,
 		banks:        nil,
 		//phiMode:    PhiIdle,
 	}
@@ -93,6 +97,8 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.vic.SignalReadyBind(s.ReadySlot)
 	s.vic.SignalTriggerIRQBind(s.pic.TriggerIRQ)
 	s.vic.SignalClearIRQBind(s.pic.ClearIRQ)
+	s.vic.SignalBALowBind(s.baLowSlot)
+	s.vic.SignalAECLowBind(s.aecLowSlot)
 
 	s.sid.Setup(cfg)
 
@@ -181,7 +187,7 @@ func (s *Board) Emulate() bool {
 	s.cia2.CheckIRQs()
 	s.cia1.Emulate()
 	s.cia2.Emulate()
-	s.cpu.Emulate(s.vic.GetBALow() || s.vic.GetAECLow() || s.dmaLow)
+	s.cpu.Emulate()
 
 	s.iec.Emulate()
 	s.cartMan.Emulate()
@@ -294,6 +300,7 @@ func (s *Board) DMALow(v bool) {
 	//It will stop after the next read cycle and all bus lines will go to high resistance state.
 	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
 	s.dmaLow = v
+	s.updateCpuRdy()
 }
 
 func (s *Board) ResetTrigger() {
@@ -317,7 +324,7 @@ func (s *Board) GetIrqCycleDistance(v int) uint64 {
 }
 
 func (s *Board) BusAvailable() bool {
-	return s.vic.GetBALow()
+	return s.baLow
 }
 
 func (s *Board) Cycle() uint64 {
@@ -364,4 +371,18 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 		s.banks.SetMemoryConfig(prev)
 	}
 	return rb
+}
+
+func (s *Board) baLowSlot(baLow bool) {
+	s.baLow = baLow
+	s.updateCpuRdy()
+}
+
+func (s *Board) aecLowSlot(aecLow bool) {
+	s.aecLow = aecLow
+	s.updateCpuRdy()
+}
+
+func (s *Board) updateCpuRdy() {
+	s.cpu.SetRDYLow((s.baLow && s.aecLow) || s.dmaLow)
 }
