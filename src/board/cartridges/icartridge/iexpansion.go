@@ -8,8 +8,8 @@ import (
 
 type IExpansion interface {
 	GameExRomConfigChanged()
-	RamRead(uint16) uint8
-	RamWrite(uint16, uint8)
+	Read(uint16) uint8
+	Write(uint16, uint8)
 	RamSetWriteTrigger(addr uint16, fn func(uint16, uint8)) int
 	RamRemoveWriteTrigger(addr uint16, id int)
 	NMITrigger()

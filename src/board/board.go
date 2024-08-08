@@ -282,11 +282,11 @@ func (s *Board) GameExRomConfigChanged() {
 	s.banks.RebuildMemoryConfig()
 }
 
-func (s *Board) RamRead(addr uint16) uint8 {
+func (s *Board) Read(addr uint16) uint8 {
 	return s.banks.Read(addr)
 }
 
-func (s *Board) RamWrite(addr uint16, data uint8) {
+func (s *Board) Write(addr uint16, data uint8) {
 	s.banks.Write(addr, data)
 }
 

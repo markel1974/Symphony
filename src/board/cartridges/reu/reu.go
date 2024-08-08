@@ -235,27 +235,27 @@ func (reu *REU) executeDma() {
 	case 0:
 		// C64 -> REU
 		for ; length > 0; c64Addr, reuAddr, length = (uint16)(c64Inc+c64Inc), reuInc+reuInc, length-1 {
-			reu.ram[reuAddr&reu.mask] = reu.expansion.RamRead(c64Addr)
+			reu.ram[reuAddr&reu.mask] = reu.expansion.Read(c64Addr)
 		}
 
 	case 1:
 		// C64 <- REU
 		for ; length > 0; c64Addr, reuAddr, length = (uint16)(c64Inc+c64Inc), reuInc+reuInc, length-1 {
-			reu.expansion.RamWrite(c64Addr, reu.ram[reuAddr&reu.mask])
+			reu.expansion.Write(c64Addr, reu.ram[reuAddr&reu.mask])
 		}
 
 	case 2:
 		// C64 <-> REU
 		for ; length > 0; c64Addr, reuAddr, length = (uint16)(c64Inc+c64Inc), reuInc+reuInc, length-1 {
-			tmp := reu.expansion.RamRead(c64Addr)
-			reu.expansion.RamWrite(c64Addr, reu.ram[reuAddr&reu.mask])
+			tmp := reu.expansion.Read(c64Addr)
+			reu.expansion.Write(c64Addr, reu.ram[reuAddr&reu.mask])
 			reu.ram[reuAddr&reu.mask] = tmp
 		}
 
 	case 3:
 		// Compare
 		for ; length > 0; c64Addr, reuAddr, length = (uint16)(c64Inc+c64Inc), reuInc+reuInc, length-1 {
-			if reu.ram[reuAddr&reu.mask] != reu.expansion.RamRead(c64Addr) {
+			if reu.ram[reuAddr&reu.mask] != reu.expansion.Read(c64Addr) {
 				reu.regs[0] |= 0x20
 				break
 			}

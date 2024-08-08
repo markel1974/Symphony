@@ -9,6 +9,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
 	"github.com/markel1974/c64emu/src/board/cartridges/ocean"
 	"github.com/markel1974/c64emu/src/board/cartridges/reu"
+	"github.com/markel1974/c64emu/src/board/cartridges/supercpu"
 	"github.com/markel1974/c64emu/src/config"
 	"strconv"
 	"strings"
@@ -46,6 +47,7 @@ func NewManager() *Manager {
 func (f *Manager) Setup(board icartridge.IExpansion, prefs *config.Config) {
 	f.board = board
 	f.prefs = prefs
+	f.registerHardware[supercpu.Id] = supercpu.New
 	f.registerHardware[reu.Id128K] = reu.New128K
 	f.registerHardware[reu.Id256K] = reu.New256K
 	f.registerHardware[reu.Id512K] = reu.New512K
