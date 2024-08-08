@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/signals"
 )
 
-type MOS6526_1 struct {
+type MOS6526A struct {
 	*MOS6526
 	signalIRQTrigger      *signals.SignalUint32
 	signalIRQClear        *signals.SignalUint32
@@ -19,8 +19,8 @@ type MOS6526_1 struct {
 	prefs                 *config.Config
 }
 
-func NewMOS6526_1() *MOS6526_1 {
-	m := &MOS6526_1{
+func NewMOS6526A() *MOS6526A {
+	m := &MOS6526A{
 		signalIRQTrigger:      signals.NewSignalUint32(),
 		signalIRQClear:        signals.NewSignalUint32(),
 		signalLightPenTrigger: signals.NewSignal(),
@@ -29,23 +29,23 @@ func NewMOS6526_1() *MOS6526_1 {
 	return m
 }
 
-func (cia1 *MOS6526_1) Setup(prefs *config.Config) {
+func (cia1 *MOS6526A) Setup(prefs *config.Config) {
 	cia1.prefs = prefs
 }
 
-func (cia1 *MOS6526_1) SignalTriggerIRQBind(fn func(uint32)) {
+func (cia1 *MOS6526A) SignalTriggerIRQBind(fn func(uint32)) {
 	cia1.signalIRQTrigger.Bind(fn)
 }
 
-func (cia1 *MOS6526_1) SignalClearIRQBind(fn func(uint32)) {
+func (cia1 *MOS6526A) SignalClearIRQBind(fn func(uint32)) {
 	cia1.signalIRQClear.Bind(fn)
 }
 
-func (cia1 *MOS6526_1) SignalLightPenTriggerBind(fn func()) {
+func (cia1 *MOS6526A) SignalLightPenTriggerBind(fn func()) {
 	cia1.signalLightPenTrigger.Bind(fn)
 }
 
-func (cia1 *MOS6526_1) Reset() {
+func (cia1 *MOS6526A) Reset() {
 	cia1.MOS6526.Reset()
 
 	for i := 0; i < 8; i++ {
@@ -57,7 +57,7 @@ func (cia1 *MOS6526_1) Reset() {
 	cia1.prevLPState = 0x10
 }
 
-func (cia1 *MOS6526_1) SetKeyUp(c64Byte int, c64Bit int, shifted bool, joyKey1 uint8, joyKey2 uint8) {
+func (cia1 *MOS6526A) SetKeyUp(c64Byte int, c64Bit int, shifted bool, joyKey1 uint8, joyKey2 uint8) {
 	if shifted {
 		cia1.KeyMatrix[6] |= 0x10
 		cia1.RevMatrix[4] |= 0x40
@@ -68,7 +68,7 @@ func (cia1 *MOS6526_1) SetKeyUp(c64Byte int, c64Bit int, shifted bool, joyKey1 u
 	cia1.Joystick2 = joyKey2
 }
 
-func (cia1 *MOS6526_1) SetKeyDown(c64Byte int, c64Bit int, shifted bool, joyKey1 uint8, joyKey2 uint8) {
+func (cia1 *MOS6526A) SetKeyDown(c64Byte int, c64Bit int, shifted bool, joyKey1 uint8, joyKey2 uint8) {
 	if shifted {
 		cia1.KeyMatrix[6] &= 0xef
 		cia1.RevMatrix[4] &= 0xbf
@@ -79,15 +79,15 @@ func (cia1 *MOS6526_1) SetKeyDown(c64Byte int, c64Bit int, shifted bool, joyKey1
 	cia1.Joystick2 = joyKey2
 }
 
-func (cia1 *MOS6526_1) SetJoystick1(port1 uint8) {
+func (cia1 *MOS6526A) SetJoystick1(port1 uint8) {
 	cia1.Joystick1 = port1
 }
 
-func (cia1 *MOS6526_1) SetJoystick2(port2 uint8) {
+func (cia1 *MOS6526A) SetJoystick2(port2 uint8) {
 	cia1.Joystick2 = port2
 }
 
-func (cia1 *MOS6526_1) ReadRegister(addr uint16) uint8 {
+func (cia1 *MOS6526A) ReadRegister(addr uint16) uint8 {
 	addr = addr & 0x0f
 	switch addr {
 	case 0x00:
@@ -199,7 +199,7 @@ func (cia1 *MOS6526_1) ReadRegister(addr uint16) uint8 {
 	return 0 // Can't happen
 }
 
-func (cia1 *MOS6526_1) WriteRegister(addr uint16, data uint8) {
+func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 	addr = addr & 0x0f
 	switch addr {
 	case 0x0:
@@ -266,7 +266,8 @@ func (cia1 *MOS6526_1) WriteRegister(addr uint16, data uint8) {
 
 	case 0xc:
 		cia1.sdr = data
-		cia1.TriggerInterrupt(8) // Fake SDR interrupt for programs that need it
+		// Fake SDR interrupt for programs that need it
+		cia1.TriggerInterrupt(8)
 
 	case 0xd:
 		if flag.Uint8ToBool(data & 0x80) {
@@ -281,7 +282,8 @@ func (cia1 *MOS6526_1) WriteRegister(addr uint16, data uint8) {
 		}
 
 	case 0xe:
-		cia1.hasNewCrA = true // Delay write by 1 cycle
+		// Delay write by 1 cycle
+		cia1.hasNewCrA = true
 		cia1.newCrA = data
 		cia1.timerACntPhi2 = (data & 0x20) == 0x00
 
@@ -294,7 +296,7 @@ func (cia1 *MOS6526_1) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
-func (cia1 *MOS6526_1) TriggerInterrupt(bit uint8) {
+func (cia1 *MOS6526A) TriggerInterrupt(bit uint8) {
 	cia1.icr |= bit
 	if flag.Uint8ToBool(cia1.intMask & bit) {
 		cia1.icr |= 0x80
@@ -303,10 +305,9 @@ func (cia1 *MOS6526_1) TriggerInterrupt(bit uint8) {
 }
 
 // Write to port B, check for lightPen interrupt
-func (cia1 *MOS6526_1) checkLightPen() {
+func (cia1 *MOS6526A) checkLightPen() {
 	if ((cia1.prB | ^cia1.ddrB) & 0x10) != cia1.prevLPState {
 		cia1.signalLightPenTrigger.Emit()
-		//cia1.vic.LightPenTrigger()
 	}
 	cia1.prevLPState = (cia1.prB | ^cia1.ddrB) & 0x10
 }
