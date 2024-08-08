@@ -59,7 +59,7 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 	s.cpu = cpu.NewMOS6510()
 	s.cpu.Setup(s.pic, board, nil)
 
-	//TODO MISSING IRQ/NMI/RESET
+	//TODO MISSING IRQ TRIGGER/BIND
 	//m.via1.SignalTriggerIRQBind(m.pic.TriggerIRQ)
 	//m.via1.SignalClearIRQBind(m.pic.ClearIRQ)
 
