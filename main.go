@@ -16,9 +16,11 @@ func main() {
 	var showHelp bool
 	var showVersion bool
 	var cartridge string
+	var prg string
 	flag.BoolVar(&showHelp, "h", false, "show this help")
 	flag.BoolVar(&showVersion, "v", false, "show version")
 	flag.StringVar(&cartridge, "c", "", "cartridge path")
+	flag.StringVar(&prg, "p", "", "prg path")
 	flag.Parse()
 
 	if showHelp {
@@ -31,6 +33,9 @@ func main() {
 		return
 	}
 	prefs := config.New()
+	if len(prg) > 0 {
+		prefs.SetPrg(prg)
+	}
 	if len(cartridge) > 0 {
 		for _, c := range strings.Split(cartridge, ";") {
 			kind := ""

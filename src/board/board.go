@@ -7,6 +7,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/iec"
 	"github.com/markel1974/c64emu/src/board/keyboard"
+	"github.com/markel1974/c64emu/src/board/prg"
 	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/board/sid"
 	"github.com/markel1974/c64emu/src/board/vic"
@@ -247,6 +248,12 @@ func (s *Board) KeyboardSetCapital(pressed bool) {
 	if !pressed {
 		return
 	}
+
+	//
+	//TODO TEST - WE HAVE TO WAIT READY
+	//s.loadPRG(s.cfg.GetPrg())
+	//return
+
 	s.keys.SetCapital()
 }
 
@@ -411,4 +418,19 @@ func (s *Board) aecLowSlot(aecLow bool) {
 
 func (s *Board) updateCpuRdy() {
 	s.cpu.SetRDYLow((s.baLow && s.aecLow) || s.dmaLow)
+}
+
+func (s *Board) loadPRG(prgFile string) {
+	if len(prgFile) == 0 {
+		return
+	}
+	p := prg.NewPRG()
+	if err := p.Load(prgFile); err != nil {
+		log.Printf("can't set load prg: %s", err.Error())
+		return
+	}
+	if err := s.banks.Inject(p.GetStartAddress(), p.GetData()); err != nil {
+		log.Printf("can't set prg: %s", err.Error())
+		return
+	}
 }

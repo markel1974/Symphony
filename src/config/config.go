@@ -8,15 +8,16 @@ type Cartridge struct {
 }
 
 type Config struct {
-	Cartridges                []Cartridge
+	cartridges                []Cartridge
 	DisableCartridgeAutostart bool
 	changed                   *signals.Signal
+	prg                       string
 	//JoystickSwap              bool
 }
 
 func New() *Config {
 	return &Config{
-		Cartridges:                nil,
+		cartridges:                nil,
 		DisableCartridgeAutostart: false,
 		changed:                   signals.NewSignal(),
 		//JoystickSwap:              true,
@@ -43,12 +44,20 @@ func (p *Config) GetDrivePath(i int) string {
 //	return p.JoystickSwap
 //}
 
+func (p *Config) SetPrg(prg string) {
+	p.prg = prg
+}
+
+func (p *Config) GetPrg() string {
+	return p.prg
+}
+
 func (p *Config) AddCartridge(kind string, path string) {
-	p.Cartridges = append(p.Cartridges, Cartridge{Kind: kind, Path: path})
+	p.cartridges = append(p.cartridges, Cartridge{Kind: kind, Path: path})
 }
 
 func (p *Config) GetCartridges() []Cartridge {
-	return p.Cartridges
+	return p.cartridges
 }
 
 func (p *Config) SetDisableCartridgeAutostart(v bool) {

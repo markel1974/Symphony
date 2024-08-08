@@ -505,3 +505,49 @@ func (b *Banks) portWriteIO(addr uint16, data uint8) {
 		return
 	}
 }
+
+func (b *Banks) getBasicText() (uint16, uint16) {
+	start := uint16(b.ram[0x2b]) | (uint16(b.ram[0x2c]) << 8)
+	end := uint16(b.ram[0x2d]) | (uint16(b.ram[0x2e]) << 8)
+	return start, end
+}
+
+func (b *Banks) setBasicText(start uint16, end uint16) {
+	s1 := uint8(start) & 0xff
+	b.ram[0xac] = s1
+	b.ram[0x2b] = s1
+
+	s2 := uint8(start >> 8)
+	b.ram[0xad] = s2
+	b.ram[0x2c] = s2
+
+	e1 := uint8(end & 0xff)
+	b.ram[0xae] = e1
+	b.ram[0x31] = e1
+	b.ram[0x2f] = e1
+	b.ram[0x2d] = e1
+
+	e2 := uint8(end >> 8)
+	b.ram[0xaf] = e2
+	b.ram[0x32] = e2
+	b.ram[0x30] = e2
+	b.ram[0x2e] = e2
+}
+
+func (b *Banks) Inject(startAddr uint16, data []byte) error {
+	size := uint16(len(data))
+	start, _ := b.getBasicText()
+	const autostartBasicLoad = false
+	// load to basic start if requested
+	if autostartBasicLoad {
+		startAddr = start
+	}
+	// store data in emu memory
+	for i := uint16(0); i < size; i++ {
+		b.ram[startAddr+i] = data[i]
+	}
+	// simulate a basic load
+	end := startAddr + size
+	b.setBasicText(start, end)
+	return nil
+}
