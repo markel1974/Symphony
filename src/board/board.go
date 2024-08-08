@@ -19,7 +19,7 @@ import (
 
 //type PhiMode int
 
-const IntrExpansionId = 0x10
+const intrExpansionId = 0x10
 
 const (
 // PhiIdle = PhiMode(0)
@@ -314,11 +314,11 @@ func (s *Board) ResetTrigger() {
 }
 
 func (s *Board) IRQTrigger() {
-	s.pic.TriggerIRQ(IntrExpansionId)
+	s.pic.TriggerIRQ(intrExpansionId)
 }
 
 func (s *Board) IRQClear() {
-	s.pic.ClearIRQ(IntrExpansionId)
+	s.pic.ClearIRQ(intrExpansionId)
 }
 
 func (s *Board) IRQTriggerBind(fn func(uint32)) {
@@ -334,10 +334,6 @@ func (s *Board) IRQClearBind(fn func(uint32)) {
 	}
 	s.irqClear.Bind(fn)
 }
-
-//func (s *Board) IRQLine() uint32 {
-//	return s.pic.IRQLine()
-//}
 
 func (s *Board) BusAvailable() bool {
 	return s.baLow
