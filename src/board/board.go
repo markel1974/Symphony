@@ -248,12 +248,6 @@ func (s *Board) KeyboardSetCapital(pressed bool) {
 	if !pressed {
 		return
 	}
-
-	//
-	//TODO TEST - WE HAVE TO WAIT READY
-	//s.loadPRG(s.cfg.GetPrg())
-	//return
-
 	s.keys.SetCapital()
 }
 
@@ -421,6 +415,9 @@ func (s *Board) updateCpuRdy() {
 }
 
 func (s *Board) loadPRG(prgFile string) {
+	//TODO TEST - WE HAVE TO WAIT READY
+	//s.loadPRG(s.cfg.GetPrg())
+	//return
 	if len(prgFile) == 0 {
 		return
 	}

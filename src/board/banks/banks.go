@@ -1,7 +1,7 @@
 package banks
 
 import (
-	roms2 "github.com/markel1974/c64emu/src/board/banks/roms"
+	"github.com/markel1974/c64emu/src/board/banks/roms"
 	"github.com/markel1974/c64emu/src/board/cartridges"
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cia"
@@ -61,9 +61,9 @@ func NewBanks() *Banks {
 		memoryConfig:    mm.Get(0),
 		ports:           NewPorts(),
 		emulatorId:      NewEmulatorId(),
-		basic:           make([]byte, roms2.BASIC_ROM_SIZE),
-		kernal:          make([]byte, roms2.KERNAL_ROM_SIZE),
-		char:            make([]byte, roms2.CHAR_ROM_SIZE),
+		basic:           make([]byte, roms.BASIC_ROM_SIZE),
+		kernal:          make([]byte, roms.KERNAL_ROM_SIZE),
+		char:            make([]byte, roms.CHAR_ROM_SIZE),
 		color:           make([]byte, 0x0400),
 		prefs:           nil,
 		memoryConfigIdx: -1,
@@ -171,11 +171,11 @@ func (b *Banks) initRom() {
 	//b.kernal = romLoader.Load(roms.BuiltinKernalRom, KernalRomFile)
 	//roms.PatchKernalRom(&b.kernal)
 
-	b.kernal = romLoader.Load(roms2.BuiltinKernalJiffyRom, KernalRomFile)
+	b.kernal = romLoader.Load(roms.BuiltinKernalJiffyRom, KernalRomFile)
 	//b.kernal = b.romLoader.Load(builtin_kernal_fast_rom, KernalRomFile)
 	//b.kernal = b.romLoader.Load(builtin_kernal_rom, KernalRomFile)
-	b.basic = romLoader.Load(roms2.BuiltinBasicRom, BasicRomFile)
-	b.char = romLoader.Load(roms2.BuiltinCharRom, CharRomFile)
+	b.basic = romLoader.Load(roms.BuiltinBasicRom, BasicRomFile)
+	b.char = romLoader.Load(roms.BuiltinCharRom, CharRomFile)
 }
 
 func (b *Banks) update() {
@@ -551,3 +551,43 @@ func (b *Banks) Inject(startAddr uint16, data []byte) error {
 	b.setBasicText(start, end)
 	return nil
 }
+
+/*
+// used by autostart to locate and "read" kernal output on the current screen
+// this function should return whatever the kernal currently uses, regardless
+// what is currently visible/active in the UI
+// static CHECKYESNO check2(
+
+func (b *Banks) GetCursorParameter(lineOffset int) {
+	//uint16_t *screen_addr, uint8_t *cursor_column, uint8_t *line_length, int *blinking
+	// CAUTION: this function can be called at any time when the emulation (KERNAL)
+	// is in the middle of a screen update. we must make sure that all
+	// values are being looked up in an "atomic" way so we don't use a low-
+	// and high- byte from before and after an update, leading to invalid values
+
+	// Physical Screen Line Length
+	const lineLength = 40
+	screenBase := (int(b.ram[0xd1]) + (int(b.ram[0xd2]) * 256)) & ^0x3ff // the upper bits will not change
+	//blinking := b.ram[0xcc] == 0 //? 0 : 1;
+	// Current Screen Line Address
+	screenAddr := screenBase + (int(b.ram[0xd6]) * lineLength)
+	// Cursor Column on Current Line
+	cursorColumn := int(b.ram[0xd3])
+	for cursorColumn >= lineLength {
+		cursorColumn -= lineLength
+		screenAddr += lineLength
+	}
+	addr := screenAddr
+	addr += lineLength * lineOffset
+	for x := 0; x < lineLength; x++ {
+		a := uint16(addr+x) & 0xffff
+		v := b.ram[a]
+		if v != 32 && v != 0 && v != 255 && v != 160 {
+			fmt.Println(v)
+		}
+	}
+	//fmt.Println(blinking, screenAddr)
+}
+
+
+*/
