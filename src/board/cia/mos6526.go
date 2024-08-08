@@ -115,10 +115,6 @@ func (m *MOS6526) CheckIRQs() {
 }
 
 func (m *MOS6526) Emulate() {
-	//if _timerTest >= 2060000 && _timerTest <= 2065000 {
-	//	fmt.Printf("VIC %d|%d|%d|%d|%d|%d|%d|%d|%d\n", _timerTest, m.timerAState, m.timerBState, m.timerA, m.latchA, m.timerB, m.latchB, m.crA, m.crB)
-	//}
-	//_timerTest++
 	taUnderflow := m.emulateTimerA()
 	m.emulateTimerB(taUnderflow)
 }

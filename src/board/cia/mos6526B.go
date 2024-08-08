@@ -2,7 +2,6 @@ package cia
 
 import (
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/flag"
 	"github.com/markel1974/c64emu/src/signals"
 )
 
@@ -136,7 +135,7 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 	case 0x5:
 		cia2.latchA = (cia2.latchA & 0xff) | (uint16(data) << 8)
 		// Reload timer if stopped
-		if !flag.Uint8ToBool(cia2.crA & 1) {
+		if (cia2.crA & 1) == 0 {
 			cia2.timerA = cia2.latchA
 		}
 
@@ -146,33 +145,33 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 	case 0x7:
 		cia2.latchB = (cia2.latchB & 0xff) | (uint16(data) << 8)
 		// Reload timer if stopped
-		if !flag.Uint8ToBool(cia2.crB & 1) {
+		if (cia2.crB & 1) == 0 {
 			cia2.timerB = cia2.latchB
 		}
 
 	case 0x8:
-		if flag.Uint8ToBool(cia2.crB & 0x80) {
+		if (cia2.crB & 0x80) != 0 {
 			cia2.alm10ths = data & 0x0f
 		} else {
 			cia2.tod10ths = data & 0x0f
 		}
 
 	case 0x9:
-		if flag.Uint8ToBool(cia2.crB & 0x80) {
+		if (cia2.crB & 0x80) != 0 {
 			cia2.almSec = data & 0x7f
 		} else {
 			cia2.todSec = data & 0x7f
 		}
 
 	case 0xa:
-		if flag.Uint8ToBool(cia2.crB & 0x80) {
+		if (cia2.crB & 0x80) != 0 {
 			cia2.almMin = data & 0x7f
 		} else {
 			cia2.todMin = data & 0x7f
 		}
 
 	case 0xb:
-		if flag.Uint8ToBool(cia2.crB & 0x80) {
+		if (cia2.crB & 0x80) != 0 {
 			cia2.almHr = data & 0x9f
 		} else {
 			cia2.todHr = data & 0x9f
@@ -184,16 +183,15 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 		cia2.TriggerInterrupt(8)
 
 	case 0xd:
-		if flag.Uint8ToBool(data & 0x80) {
+		if (data & 0x80) != 0 {
 			cia2.intMask |= data & 0x7f
 		} else {
 			cia2.intMask &= ^data
 		}
 		// Trigger NMI if pending
-		if flag.Uint8ToBool(cia2.icr & cia2.intMask & 0x1f) {
+		if (cia2.icr & cia2.intMask & 0x1f) != 0 {
 			cia2.icr |= 0x80
 			cia2.signalNMITrigger.Emit()
-			//cia2.intr.TriggerNMI()
 		}
 
 	case 0xe:
@@ -213,7 +211,7 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 
 func (cia2 *MOS6526B) TriggerInterrupt(bit uint8) {
 	cia2.icr |= bit
-	if flag.Uint8ToBool(cia2.intMask & bit) {
+	if (cia2.intMask & bit) != 0 {
 		cia2.icr |= 0x80
 		cia2.signalNMITrigger.Emit()
 	}

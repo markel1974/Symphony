@@ -2,7 +2,6 @@ package cia
 
 import (
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/flag"
 	"github.com/markel1974/c64emu/src/signals"
 )
 
@@ -57,24 +56,24 @@ func (cia1 *MOS6526A) Reset() {
 	cia1.prevLPState = 0x10
 }
 
-func (cia1 *MOS6526A) SetKeyUp(c64Byte int, c64Bit int, shifted bool, joyKey1 uint8, joyKey2 uint8) {
+func (cia1 *MOS6526A) SetKeyUp(keyM int, revM int, shifted bool, joyKey1 uint8, joyKey2 uint8) {
 	if shifted {
 		cia1.KeyMatrix[6] |= 0x10
 		cia1.RevMatrix[4] |= 0x40
 	}
-	cia1.KeyMatrix[c64Byte] |= 1 << c64Bit
-	cia1.RevMatrix[c64Bit] |= 1 << c64Byte
+	cia1.KeyMatrix[keyM] |= 1 << revM
+	cia1.RevMatrix[revM] |= 1 << keyM
 	cia1.Joystick1 = joyKey1
 	cia1.Joystick2 = joyKey2
 }
 
-func (cia1 *MOS6526A) SetKeyDown(c64Byte int, c64Bit int, shifted bool, joyKey1 uint8, joyKey2 uint8) {
+func (cia1 *MOS6526A) SetKeyDown(keyM int, revM int, shifted bool, joyKey1 uint8, joyKey2 uint8) {
 	if shifted {
 		cia1.KeyMatrix[6] &= 0xef
 		cia1.RevMatrix[4] &= 0xbf
 	}
-	cia1.KeyMatrix[c64Byte] &= ^(1 << c64Bit)
-	cia1.RevMatrix[c64Bit] &= ^(1 << c64Byte)
+	cia1.KeyMatrix[keyM] &= ^(1 << revM)
+	cia1.RevMatrix[revM] &= ^(1 << keyM)
 	cia1.Joystick1 = joyKey1
 	cia1.Joystick2 = joyKey2
 }
@@ -93,29 +92,28 @@ func (cia1 *MOS6526A) ReadRegister(addr uint16) uint8 {
 	case 0x00:
 		ret := cia1.prA | ^cia1.ddrA
 		tst := (cia1.prB | ^cia1.ddrB) & cia1.Joystick1
-		// AND all active columns
-		if !flag.Uint8ToBool(tst & 0x01) {
+		if (tst & 0x01) == 0 {
 			ret &= cia1.RevMatrix[0]
 		}
-		if !flag.Uint8ToBool(tst & 0x02) {
+		if (tst & 0x02) == 0 {
 			ret &= cia1.RevMatrix[1]
 		}
-		if !flag.Uint8ToBool(tst & 0x04) {
+		if (tst & 0x04) == 0 {
 			ret &= cia1.RevMatrix[2]
 		}
-		if !flag.Uint8ToBool(tst & 0x08) {
+		if (tst & 0x08) == 0 {
 			ret &= cia1.RevMatrix[3]
 		}
-		if !flag.Uint8ToBool(tst & 0x10) {
+		if (tst & 0x10) == 0 {
 			ret &= cia1.RevMatrix[4]
 		}
-		if !flag.Uint8ToBool(tst & 0x20) {
+		if (tst & 0x20) == 0 {
 			ret &= cia1.RevMatrix[5]
 		}
-		if !flag.Uint8ToBool(tst & 0x40) {
+		if (tst & 0x40) == 0 {
 			ret &= cia1.RevMatrix[6]
 		}
-		if !flag.Uint8ToBool(tst & 0x80) {
+		if (tst & 0x80) == 0 {
 			ret &= cia1.RevMatrix[7]
 		}
 		return ret & cia1.Joystick2
@@ -123,28 +121,28 @@ func (cia1 *MOS6526A) ReadRegister(addr uint16) uint8 {
 	case 0x01:
 		ret := ^cia1.ddrB
 		tst := (cia1.prA | ^cia1.ddrA) & cia1.Joystick2
-		if !flag.Uint8ToBool(tst & 0x01) {
+		if (tst & 0x01) == 0 {
 			ret &= cia1.KeyMatrix[0]
-		} // AND all active rows
-		if !flag.Uint8ToBool(tst & 0x02) {
+		}
+		if (tst & 0x02) == 0 {
 			ret &= cia1.KeyMatrix[1]
 		}
-		if !flag.Uint8ToBool(tst & 0x04) {
+		if (tst & 0x04) == 0 {
 			ret &= cia1.KeyMatrix[2]
 		}
-		if !flag.Uint8ToBool(tst & 0x08) {
+		if (tst & 0x08) == 0 {
 			ret &= cia1.KeyMatrix[3]
 		}
-		if !flag.Uint8ToBool(tst & 0x10) {
+		if (tst & 0x10) == 0 {
 			ret &= cia1.KeyMatrix[4]
 		}
-		if !flag.Uint8ToBool(tst & 0x20) {
+		if (tst & 0x20) == 0 {
 			ret &= cia1.KeyMatrix[5]
 		}
-		if !flag.Uint8ToBool(tst & 0x40) {
+		if (tst & 0x40) == 0 {
 			ret &= cia1.KeyMatrix[6]
 		}
-		if !flag.Uint8ToBool(tst & 0x80) {
+		if (tst & 0x80) == 0 {
 			ret &= cia1.KeyMatrix[7]
 		}
 		return (ret | (cia1.prB & cia1.ddrB)) & cia1.Joystick1
@@ -221,7 +219,7 @@ func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 
 	case 0x5:
 		cia1.latchA = (cia1.latchA & 0xff) | (uint16(data) << 8)
-		if !flag.Uint8ToBool(cia1.crA & 1) {
+		if (cia1.crA & 1) == 0 {
 			// Reload timer if stopped
 			cia1.timerA = cia1.latchA
 		}
@@ -231,34 +229,34 @@ func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 
 	case 0x7:
 		cia1.latchB = (cia1.latchB & 0xff) | (uint16(data) << 8)
-		if !flag.Uint8ToBool(cia1.crB & 1) {
+		if (cia1.crB & 1) == 0 {
 			// Reload timer if stopped
 			cia1.timerB = cia1.latchB
 		}
 
 	case 0x8:
-		if flag.Uint8ToBool(cia1.crB & 0x80) {
+		if (cia1.crB & 0x80) != 0 {
 			cia1.alm10ths = data & 0x0f
 		} else {
 			cia1.tod10ths = data & 0x0f
 		}
 
 	case 0x9:
-		if flag.Uint8ToBool(cia1.crB & 0x80) {
+		if (cia1.crB & 0x80) != 0 {
 			cia1.almSec = data & 0x7f
 		} else {
 			cia1.todSec = data & 0x7f
 		}
 
 	case 0xa:
-		if flag.Uint8ToBool(cia1.crB & 0x80) {
+		if (cia1.crB & 0x80) != 0 {
 			cia1.almMin = data & 0x7f
 		} else {
 			cia1.todMin = data & 0x7f
 		}
 
 	case 0xb:
-		if flag.Uint8ToBool(cia1.crB & 0x80) {
+		if (cia1.crB & 0x80) != 0 {
 			cia1.almHr = data & 0x9f
 		} else {
 			cia1.todHr = data & 0x9f
@@ -270,12 +268,12 @@ func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 		cia1.TriggerInterrupt(8)
 
 	case 0xd:
-		if flag.Uint8ToBool(data & 0x80) {
+		if (data & 0x80) != 0 {
 			cia1.intMask |= data & 0x7f
 		} else {
 			cia1.intMask &= ^data
 		}
-		if flag.Uint8ToBool(cia1.icr & cia1.intMask & 0x1f) {
+		if (cia1.icr & cia1.intMask & 0x1f) != 0 {
 			// Trigger IRQ if pending
 			cia1.icr |= 0x80
 			cia1.signalIRQTrigger.Emit(intrCiaId)
@@ -298,7 +296,7 @@ func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 
 func (cia1 *MOS6526A) TriggerInterrupt(bit uint8) {
 	cia1.icr |= bit
-	if flag.Uint8ToBool(cia1.intMask & bit) {
+	if (cia1.intMask & bit) != 0 {
 		cia1.icr |= 0x80
 		cia1.signalIRQTrigger.Emit(intrCiaId)
 	}
