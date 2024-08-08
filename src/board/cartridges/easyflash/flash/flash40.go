@@ -301,7 +301,7 @@ func (f *Flash040) flashProgramByte(addr uint, data uint8) int {
 }
 
 func (f *Flash040) flashWriteOperationStatus() int {
-	mainCpuClk := f.board.Cycle()
+	mainCpuClk := f.board.GetQuartz().Cycle()
 	p1 := int((f.programByte ^ 0x80) & 0x80) //DQ7 = inverse of programmed data
 	p2 := int(mainCpuClk&2) << 5             /* DQ6 = toggle bit (2 us) */
 	p3 := 1 << 5                             /* DQ5 = timeout */

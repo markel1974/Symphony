@@ -17,10 +17,10 @@ type IExpansion interface {
 	BusAvailable() bool
 	IRQTrigger()
 	IRQClear()
-	HasIRQ()
+	//HasIRQ() bool
+	//IRQLine() uint32
 	ResetTrigger()
-	GetIrqCycleDistance(int) uint64
-	Cycle() uint64
+	GetQuartz() *quartz.Quartz
 	CreateAlarm(string, quartz.AlarmCallback) *quartz.Alarm
 	RmwFlags() uint8 //TODO NOT STANDARD
 }

@@ -41,6 +41,10 @@ func (c *CartridgeOcean) Setup(board icartridge.IExpansion, ldr *loader.CRTLoade
 	return c.initBin(ldr.GetData())
 }
 
+func (c *CartridgeOcean) Reset() {
+
+}
+
 func (c *CartridgeOcean) GetId() string {
 	return c.id
 }

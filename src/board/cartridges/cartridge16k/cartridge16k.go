@@ -51,6 +51,10 @@ func (c *Cartridge16K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader)
 	return c.initRaw(ldr.GetData())
 }
 
+func (c *Cartridge16K) Reset() {
+
+}
+
 func (c *Cartridge16K) GetId() string {
 	return c.id
 }

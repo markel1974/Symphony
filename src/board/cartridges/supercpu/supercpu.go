@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/cpu"
 )
 
-const Id = "SuperCPU"
+const Id = "SCPU"
 
 type SuperCPU struct {
 	id    string
@@ -34,6 +34,7 @@ func (s *SuperCPU) EmulationRequired() bool {
 }
 
 func (s *SuperCPU) Emulate() {
+	//TODO CLEAR IRQ/TRIGGER IRQ HAS SIGNAL
 	s.cpu.Emulate()
 }
 
@@ -46,8 +47,10 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 	s.id = ldr.GetId()
 	s.board.DMALow(true)
 
-	s.cpu = cpu.NewMOS6510()
 	s.pic = cpu.NewPic()
+	s.pic.Setup(board.GetQuartz())
+
+	s.cpu = cpu.NewMOS6510()
 	s.cpu.Setup(s.pic, board, nil)
 
 	//TODO MISSING IRQ/NMI/RESET

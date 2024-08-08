@@ -37,6 +37,10 @@ func (c *Cartridge8K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) 
 	return c.initBin(ldr.GetData())
 }
 
+func (c *Cartridge8K) Reset() {
+
+}
+
 func (c *Cartridge8K) GetId() string {
 	return c.id
 }

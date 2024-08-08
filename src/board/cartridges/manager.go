@@ -67,6 +67,18 @@ func (f *Manager) Setup(board icartridge.IExpansion, prefs *config.Config) {
 	f.registerSizeDefault = ocean.New
 }
 
+func (f *Manager) Reset() {
+	if f.carts == nil {
+		return
+	}
+	if len(f.carts) == 1 {
+		f.carts[0].Reset()
+	}
+	for _, cart := range f.carts {
+		cart.Reset()
+	}
+}
+
 func (f *Manager) Config() (uint8, uint8, bool) {
 	if f.carts == nil {
 		return 0, 0, false

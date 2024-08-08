@@ -52,10 +52,6 @@ func (i *Pic) HasReset() bool {
 	return i.all.BitCheck(intRstId)
 }
 
-func (i *Pic) HasIRQ() bool {
-	return i.irq != 0
-}
-
 func (i *Pic) TriggerIRQ(intr uint32) {
 	if i.irq == 0 {
 		i.firstIrqCycle = i.quartz.Cycle()
@@ -67,6 +63,14 @@ func (i *Pic) TriggerIRQ(intr uint32) {
 func (i *Pic) ClearIRQ(intr uint32) {
 	i.all.BitClear(intr)
 	i.irq.BitClear(intr)
+}
+
+func (i *Pic) HasIRQ() bool {
+	return i.irq != 0
+}
+
+func (i *Pic) IRQLine() uint32 {
+	return uint32(i.irq)
 }
 
 func (i *Pic) TriggerNMI() {

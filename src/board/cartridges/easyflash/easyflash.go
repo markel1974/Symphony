@@ -159,6 +159,10 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	return nil
 }
 
+func (c *CartridgeEasyFlash) Reset() {
+
+}
+
 func (c *CartridgeEasyFlash) GetId() string {
 	return c.id
 }

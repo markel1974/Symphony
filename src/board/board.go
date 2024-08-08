@@ -95,16 +95,16 @@ func (s *Board) Setup(cfg *config.Config) error {
 
 	s.vic.Setup(s.quartz, s.banks, cfg)
 	s.vic.SignalReadyBind(s.ReadySlot)
-	s.vic.SignalTriggerIRQBind(s.pic.TriggerIRQ)
-	s.vic.SignalClearIRQBind(s.pic.ClearIRQ)
+	s.vic.SignalTriggerIRQBind(s.irqTriggerSlot)
+	s.vic.SignalClearIRQBind(s.irqClearSlot)
 	s.vic.SignalBALowBind(s.baLowSlot)
 	s.vic.SignalAECLowBind(s.aecLowSlot)
 
 	s.sid.Setup(cfg)
 
 	s.cia1.Setup(cfg)
-	s.cia1.SignalTriggerIRQBind(s.pic.TriggerIRQ)
-	s.cia1.SignalClearIRQBind(s.pic.ClearIRQ)
+	s.cia1.SignalTriggerIRQBind(s.irqTriggerSlot)
+	s.cia1.SignalClearIRQBind(s.irqClearSlot)
 	s.cia1.SignalLightPenTriggerBind(s.vic.LightPenTrigger)
 
 	s.cia2.Setup(s.iec, cfg)
@@ -147,6 +147,7 @@ func (s *Board) Reset() {
 	s.pic.Reset()
 	s.banks.Reset()
 	s.cpu.Reset()
+	s.cartMan.Reset()
 	s.sid.Reset()
 	s.cia1.Reset()
 	s.cia2.Reset()
@@ -188,9 +189,8 @@ func (s *Board) Emulate() bool {
 	s.cia1.Emulate()
 	s.cia2.Emulate()
 	s.cpu.Emulate()
-
-	s.iec.Emulate()
 	s.cartMan.Emulate()
+	s.iec.Emulate()
 	s.quartz.AddCycle()
 	//s.phiMode = PhiIdle
 	return vBlank
@@ -315,20 +315,28 @@ func (s *Board) IRQClear() {
 	s.pic.ClearIRQ(IntrExpansionId)
 }
 
-func (s *Board) HasIRQ() {
-	s.pic.HasIRQ()
-}
+//func (s *Board) HasIRQ() bool {
+//	return s.pic.HasIRQ()
+//}
 
-func (s *Board) GetIrqCycleDistance(v int) uint64 {
-	return s.pic.GetIrqCycleDistance(v)
-}
+//func (s *Board) IRQLine() uint32 {
+//	return s.pic.IRQLine()
+//}
+
+//func (s *Board) GetIrqCycleDistance(v int) uint64 {
+//	return s.pic.GetIrqCycleDistance(v)
+//}
 
 func (s *Board) BusAvailable() bool {
 	return s.baLow
 }
 
-func (s *Board) Cycle() uint64 {
-	return s.quartz.Cycle()
+//func (s *Board) Cycle() uint64 {
+//	return s.quartz.Cycle()
+//}
+
+func (s *Board) GetQuartz() *quartz.Quartz {
+	return s.quartz
 }
 
 func (s *Board) RamSetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
@@ -371,6 +379,16 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 		s.banks.SetMemoryConfig(prev)
 	}
 	return rb
+}
+
+func (s *Board) irqTriggerSlot(i uint32) {
+	s.pic.TriggerIRQ(i)
+	//s.irqTrigger(i)
+}
+
+func (s *Board) irqClearSlot(i uint32) {
+	s.pic.ClearIRQ(i)
+	//s.irqClear(i)
 }
 
 func (s *Board) baLowSlot(baLow bool) {
