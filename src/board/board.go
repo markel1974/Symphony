@@ -34,7 +34,7 @@ type Board struct {
 	sid          *sid.MOS6581
 	cia1         *cia.MOS6526_1
 	cia2         *cia.MOS6526_2
-	pic          *Pic
+	pic          *cpu.Pic
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
 	cfg          *config.Config
@@ -79,7 +79,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
-	s.pic = NewPic()
+	s.pic = cpu.NewPic()
 	s.iec = iec.NewIEC()
 	s.cpu = cpu.NewMOS6510()
 	s.vic = vic.NewMOS6569(s.db)

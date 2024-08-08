@@ -1,4 +1,4 @@
-package board
+package cpu
 
 import (
 	"github.com/markel1974/c64emu/src/bits"
