@@ -143,6 +143,8 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vBlank = true
 			// Vertical blank, reset counters
 			vic.graphics.ResetVideoCounterBase()
+			//vic.graphics.ResetMatrixBuffer()
+			//fmt.Println(string(vic.graphics.matrixBuffer))
 			vic.refreshCounter = 0xff
 			vic.vBlanking = false
 			vic.lineStart = 0

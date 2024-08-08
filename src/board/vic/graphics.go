@@ -13,13 +13,15 @@ type Graphics struct {
 	borderColorSample []uint8 // Samples of border color at each "displayed" cycle
 	lineOffset        int     // Offset from chunky bitmap buffer
 	matrixLineIndex   int     // Index in matrix/colorLine
-	matrixLine        []uint8 // Buffer for video line, read in Bad Lines
-	colorLine         []uint8 // Buffer for color line, read in Bad Lines
-	rowCounter        uint16  // Row counter
-	videoCounter      uint16  // Video counter
-	videoCounterBase  uint16  // Video counter base
-	borderULOn        bool    // Upper/lower border on
-	displayOn         bool    // Display state
+	//matrixBufferIndex int     // Index in matrixBuffer
+	//matrixBuffer      []uint8
+	matrixLine       []uint8 // Buffer for video line, read in Bad Lines
+	colorLine        []uint8 // Buffer for color line, read in Bad Lines
+	rowCounter       uint16  // Row counter
+	videoCounter     uint16  // Video counter
+	videoCounterBase uint16  // Video counter base
+	borderULOn       bool    // Upper/lower border on
+	displayOn        bool    // Display state
 }
 
 func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
@@ -37,11 +39,12 @@ func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 		lineOffset:        0,
 		matrixLineIndex:   0,
 		matrixLine:        make([]uint8, 40),
-		colorLine:         make([]uint8, 40),
-		rowCounter:        7,
-		videoCounter:      0,
-		videoCounterBase:  0,
-		displayOn:         false,
+		//matrixBuffer:      make([]uint8, 40*320),
+		colorLine:        make([]uint8, 40),
+		rowCounter:       7,
+		videoCounter:     0,
+		videoCounterBase: 0,
+		displayOn:        false,
 	}
 	return gr
 }
@@ -64,6 +67,10 @@ func (gr *Graphics) ResetVideoCounterBase() {
 func (gr *Graphics) ResetMatrixLineIndex() {
 	gr.matrixLineIndex = 0
 }
+
+//func (gr *Graphics) ResetMatrixBuffer() {
+//	gr.matrixBufferIndex = 0
+//}
 
 func (gr *Graphics) UpdateVideoCounter() {
 	gr.videoCounter = gr.videoCounterBase
@@ -118,8 +125,10 @@ func (gr *Graphics) GraphicsAccess() {
 		gr.gfxData = gr.core.ReadByte(addr)
 		gr.charData = gr.matrixLine[gr.matrixLineIndex]
 		gr.colorData = gr.colorLine[gr.matrixLineIndex]
+		//gr.matrixBuffer[gr.matrixBufferIndex] = gr.charData + 64
 		gr.matrixLineIndex++
 		gr.videoCounter++
+		//gr.matrixBufferIndex++
 	} else {
 		if (gr.core.cr1 & 0x40) != 0 {
 			gr.gfxData = gr.core.ReadByte(0x39ff)
@@ -136,6 +145,12 @@ func (gr *Graphics) MatrixAccess() {
 		if gr.core.aecLow {
 			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase
 			gr.matrixLine[gr.matrixLineIndex] = gr.core.ReadByte(addr)
+			//gr.matrixBuffer[gr.matrixBufferIndex] = data + 64
+			//TODO screen codes
+			//https://sta.c64.org/cbm64scr.html
+			//if p := gr.matrixLine[gr.matrixLineIndex]; p != 32 {
+			//	fmt.Printf("%s\n", string(p+64))
+			//}
 			gr.colorLine[gr.matrixLineIndex] = gr.core.banks.ReadColor(addr & 0x03ff)
 		} else {
 			gr.colorLine[gr.matrixLineIndex] = 0xff
