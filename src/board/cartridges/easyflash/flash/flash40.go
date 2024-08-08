@@ -93,9 +93,6 @@ func (f *Flash040) Reset() {
 }
 
 func (f *Flash040) StoreInterval(start uint, data []uint8) error {
-	//if start >= uint(len(data)) {
-	//	return fmt.Errorf("invalid interval")
-	//}
 	if start >= uint(len(f.flashData)) {
 		return fmt.Errorf("invalid start interval")
 	}
@@ -132,9 +129,6 @@ func (f *Flash040) Store(addr uint, data uint8) {
 
 func (f *Flash040) Read(addr uint) uint8 {
 	var value uint8
-	//#ifdef FLASH_DEBUG_ENABLED
-	//State old_state = flash040_context->flashState;
-	//#endif
 	switch f.flashState {
 	case StateAutoSelect:
 		if f.flashType == Kind032BA01Swap {
@@ -163,13 +157,6 @@ func (f *Flash040) Read(addr uint) uint8 {
 	default:
 		value = f.flashData[addr] // The state doesn't reset if an read occurs during a command sequence
 	}
-
-	//#ifdef FLASH_DEBUG_ENABLED
-	//if (old_state != StateRead) {
-	//	FLASH_DEBUG(("Read %02x from %05x, state %i->%i", value, addr, (int)old_state, (int)flash040_context->flashState));
-	//}
-	//#endif
-
 	f.lastRead = value
 	return value
 }
@@ -221,9 +208,7 @@ func (f *Flash040) SnapshotReadModule(s *snapshot.Snapshot, name string) error {
 	/* Restore alarm if needed */
 	switch f.flashState {
 	case SectorEraseTimeout, StateSectorErase, StateChipErase:
-		/* the alarm timing is not saved, just use some value for now */
 		_ = f.eraseAlarm.Set(uint64(flashTypes[f.flashType].eraseSectorCycles))
-		//alarm_set(f.eraseAlarm, mainCpuClk+flashTypes[f.flashType].eraseSectorCycles)
 	default:
 	}
 	return nil
@@ -272,7 +257,6 @@ func (f *Flash040) flashAddSectorToEraseMask(addr uint) {
 func (f *Flash040) flashEraseSector(sector uint) {
 	sectorSize := flashTypes[f.flashType].sectorSize
 	sectorAddr := f.flashSectorToAddr(sector)
-	//FLASH_DEBUG(("Erasing 0x%x - 0x%x", sector_addr, sector_addr + sectorSize - 1));
 	for x := uint(0); x < sectorSize; x++ {
 		f.flashData[sectorAddr+x] = 0xff
 	}
@@ -290,7 +274,6 @@ func (f *Flash040) flashEraseChip() {
 func (f *Flash040) flashProgramByte(addr uint, data uint8) int {
 	oldData := f.flashData[addr]
 	newData := oldData & data
-	//FLASH_DEBUG(("Programming 0x%05x with 0x%02x (%02x->%02x)", addr, byte, old_data, old_data & byte));
 	f.programByte = data
 	f.flashData[addr] = newData
 	f.flashDirty = 1
@@ -303,19 +286,19 @@ func (f *Flash040) flashProgramByte(addr uint, data uint8) int {
 func (f *Flash040) flashWriteOperationStatus() int {
 	mainCpuClk := f.board.GetQuartz().Cycle()
 	p1 := int((f.programByte ^ 0x80) & 0x80) //DQ7 = inverse of programmed data
-	p2 := int(mainCpuClk&2) << 5             /* DQ6 = toggle bit (2 us) */
-	p3 := 1 << 5                             /* DQ5 = timeout */
+	p2 := int(mainCpuClk&2) << 5             //DQ6 = toggle bit (2 us)
+	p3 := 1 << 5                             //DQ5 = timeout
 	return p1 | p2 | p3
 }
 
 func (f *Flash040) flashEraseOperationStatus() int {
-	/* DQ6 = toggle bit */
+	// DQ6 = toggle bit
 	v := f.programByte
-	/* toggle the toggle bit(s) */
-	/* FIXME better toggle bit II emulation */
+	// toggle the toggle bit(s)
+	// FIXME better toggle bit II emulation
 	p1 := uint8(flashTypes[f.flashType].statusToggleBits)
 	f.programByte ^= p1
-	/* DQ3 = sector erase timer */
+	// DQ3 = sector erase timer
 	if f.flashState != SectorEraseTimeout {
 		v |= 0x08
 	}
@@ -323,17 +306,14 @@ func (f *Flash040) flashEraseOperationStatus() int {
 }
 
 func (f *Flash040) eraseAlarmHandler() {
-	var i, j int
-	var m uint8
 	_ = f.eraseAlarm.Unset()
-	//FLASH_DEBUG(("Erase alarm, state %i", (int)f.flashState)
-
 	switch f.flashState {
 	case SectorEraseTimeout:
 		_ = f.eraseAlarm.Set(uint64(flashTypes[f.flashType].eraseSectorCycles))
 		f.flashState = StateSectorErase
-		break
 	case StateSectorErase:
+		var i, j int
+		var m uint8
 		for i = 0; i < (8 * EraseMaskSize); i++ {
 			j = i >> 3
 			m = uint8(1 << (i & 0x7))
@@ -352,23 +332,14 @@ func (f *Flash040) eraseAlarmHandler() {
 		} else {
 			f.flashState = f.flashBaseState
 		}
-		break
 	case StateChipErase:
 		f.flashEraseChip()
 		f.flashState = f.flashBaseState
-		break
 	default:
-		//FLASH_DEBUG(("Erase alarm - error, state %i unhandled!", (int)f.flashState));
-		break
 	}
 }
 
 func (f *Flash040) storeInternal(dist uint64, addr uint, data uint8) {
-	//#ifdef FLASH_DEBUG_ENABLED
-	//	State old_state = flash040_context->flashState;
-	//	State old_base_state = flash040_context->flashBaseState;
-	//	#endif
-
 	switch f.flashState {
 	case StateRead:
 		if f.flashMagic1(addr) != 0 && (data == 0xaa) {
@@ -461,6 +432,4 @@ func (f *Flash040) storeInternal(dist uint64, addr uint, data uint8) {
 	case StateChipErase:
 	default:
 	}
-
-	//FLASH_DEBUG(("Write %02x to %05x, state %i->%i (base state %i->%i)", byte, addr, (int)old_state, (int)f.flashState, (int)old_base_state, (int)f.flashBaseState));
 }

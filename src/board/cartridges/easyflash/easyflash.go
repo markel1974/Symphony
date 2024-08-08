@@ -354,22 +354,6 @@ func (c *CartridgeEasyFlash) io1Peek(addr uint16) uint8 {
 	return c.register00
 }
 
-func (c *CartridgeEasyFlash) io1Dump() int {
-	mode := _easyFlashMemConfig[(c.jumper<<3)|(int(c.register02)&0x07)]
-	bank := c.register00
-	led := "false"
-	if c.register02&0x80 != 0 {
-		led = "true"
-	}
-	jumper := "off"
-	if c.jumper != 0 {
-		jumper = "on"
-	}
-	fmt.Printf("Mode: %d, Bank: %d, LED %s, jumper %s\n", mode, bank, led, jumper)
-	//fmt.Printf("EAPI found: %s\n", mode, bank, led, jumper)
-	return 0
-}
-
 func (c *CartridgeEasyFlash) io2Read(addr uint16) uint8 {
 	return c.ram[addr&0xff]
 }
@@ -481,7 +465,8 @@ func (c *CartridgeEasyFlash) flushImage() error {
 	}
 	if c.filetype == loader.TypeBin {
 		return c.binSave(c.filename)
-	} else if c.filetype == loader.TypeCrt {
+	}
+	if c.filetype == loader.TypeCrt {
 		return c.crtSave(c.filename)
 	}
 	return fmt.Errorf("unknown cartridget type")
@@ -497,8 +482,8 @@ func (c *CartridgeEasyFlash) binSave(filename string) error {
 		return err
 	}
 	defer fd.Close()
-	low := 0  //c.stateLow.flash_data
-	high := 0 //c.stateHigh.flash_data
+	low := 0
+	high := 0
 	var lowData []uint8
 	var highData []uint8
 	for i := 0; i < NBanks; i++ {
@@ -545,6 +530,7 @@ func (c *CartridgeEasyFlash) snapshotWriteModule(s *snapshot.Snapshot) error {
 	return nil
 }
 
+/*
 func (c *CartridgeEasyFlash) printConfigValue(val uint8, jumper uint8) {
 	mode := 0
 	exrom := uint8(1)
@@ -562,9 +548,28 @@ func (c *CartridgeEasyFlash) printConfigValue(val uint8, jumper uint8) {
 	} else {
 		game = jumper
 	}
-	fmt.Printf("/* %d */{jumper: %d, mode: %d, exrom: %d, game: %d},\n", val, jumper, mode, exrom, game)
+	fmt.Printf("{jumper: %d, mode: %d, exrom: %d, game: %d},\n", val, jumper, mode, exrom, game)
 	//fmt.Println("led:", led, "mode:", mode, "exrom:", exrom, "game:", game)
 }
+
+
+/*
+func (c *CartridgeEasyFlash) io1Dump() int {
+	mode := _easyFlashMemConfig[(c.jumper<<3)|(int(c.register02)&0x07)]
+	bank := c.register00
+	led := "false"
+	if c.register02&0x80 != 0 {
+		led = "true"
+	}
+	jumper := "off"
+	if c.jumper != 0 {
+		jumper = "on"
+	}
+	fmt.Printf("Mode: %d, Bank: %d, LED %s, jumper %s\n", mode, bank, led, jumper)
+	//fmt.Printf("EAPI found: %s\n", mode, bank, led, jumper)
+	return 0
+}
+*/
 
 /*
 static const cmdline_option_t cmdline_options[] =

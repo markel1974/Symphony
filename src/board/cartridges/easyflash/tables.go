@@ -1,50 +1,5 @@
 package easyflash
 
-/* decoding table of the modes */
-/* bit3 = jumper, bit2 = mode, bit1 = !exrom, bit0 = game */
-var _easyFlashMemConfig = []uint8{
-	/* jumper off, mode 0, trough 00,01,10,11 in game/exrom bits */
-	3, /* exrom high, game low, jumper off */
-	3, /* Reserved, don't use this */
-	1, /* exrom low, game low, jumper off */
-	1, /* Reserved, don't use this */
-	/* jumper off, mode 1, trough 00,01,10,11 in game/exrom bits */
-	2, 3, 0, 1,
-	/* jumper on, mode 0, trough 00,01,10,11 in game/exrom bits */
-	2, /* exrom high, game low, jumper on */
-	3, /* Reserved, don't use this */
-	0, /* exrom low, game low, jumper on */
-	1, /* Reserved, don't use this */
-	/* jumper on, mode 1, trough 00,01,10,11 in game/exrom bits */
-	2, 3, 0, 1,
-}
-
-type memConfig struct {
-	jumper uint8
-	mode   uint8
-	exrom  uint8
-	game   uint8
-}
-
-var _easyFlashMemConfig2 = []*memConfig{
-	/* 0 */ {jumper: 0, mode: 0, exrom: 1, game: 0},
-	/* 1 */ {jumper: 0, mode: 0, exrom: 1, game: 0},
-	/* 2 */ {jumper: 0, mode: 0, exrom: 0, game: 0},
-	/* 3 */ {jumper: 0, mode: 0, exrom: 0, game: 0},
-	/* 4 */ {jumper: 0, mode: 1, exrom: 1, game: 1},
-	/* 5 */ {jumper: 0, mode: 1, exrom: 1, game: 0},
-	/* 6 */ {jumper: 0, mode: 1, exrom: 0, game: 1},
-	/* 7 */ {jumper: 0, mode: 1, exrom: 0, game: 0},
-	/* 8 */ {jumper: 1, mode: 0, exrom: 1, game: 1},
-	/* 9 */ {jumper: 1, mode: 0, exrom: 1, game: 1},
-	/* A */ {jumper: 1, mode: 0, exrom: 0, game: 1},
-	/* B */ {jumper: 1, mode: 0, exrom: 0, game: 1},
-	/* C */ {jumper: 1, mode: 1, exrom: 1, game: 1},
-	/* D */ {jumper: 1, mode: 1, exrom: 1, game: 0},
-	/* E */ {jumper: 1, mode: 1, exrom: 0, game: 1},
-	/* F */ {jumper: 1, mode: 1, exrom: 0, game: 0},
-}
-
 const (
 	CartRamSize = 256
 )
