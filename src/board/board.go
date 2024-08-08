@@ -339,10 +339,6 @@ func (s *Board) RamRemoveWriteTrigger(addr uint16, id int) {
 	s.banks.RemoveRamTrigger(addr, id)
 }
 
-func (s *Board) CreateAlarm(name string, callback quartz.AlarmCallback) *quartz.Alarm {
-	return s.quartz.NewAlarm(name, callback)
-}
-
 func (s *Board) RmwFlags() uint8 {
 	//TODO IMPLEMENT cpu rmw flags
 	return 0

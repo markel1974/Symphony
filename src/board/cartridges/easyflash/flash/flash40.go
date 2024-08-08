@@ -72,7 +72,7 @@ func NewFlash040(b icartridge.IExpansion, kind Kind, data []byte) *Flash040 {
 	callback := func(clock uint64, offset uint64) {
 		f.eraseAlarmHandler()
 	}
-	f.eraseAlarm = b.CreateAlarm("Flash040Alarm", callback)
+	f.eraseAlarm = b.GetQuartz().NewAlarm("Flash040Alarm", callback)
 	return f
 }
 

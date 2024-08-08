@@ -1,12 +1,11 @@
 package icartridge
 
-import (
-	"github.com/markel1974/c64emu/src/board/quartz"
-)
+import "github.com/markel1974/c64emu/src/board/quartz"
 
 // https://www.c64-wiki.com/wiki/Expansion_Port
 
 type IExpansion interface {
+	GetQuartz() *quartz.Quartz
 	GameExRomConfigChanged()
 	Read(uint16) uint8
 	Write(uint16, uint8)
@@ -20,7 +19,5 @@ type IExpansion interface {
 	SetDMALow(bool)
 	BusAvailable() bool
 	AECAvailable() bool //TODO NOT STANDARD
-	GetQuartz() *quartz.Quartz
-	CreateAlarm(string, quartz.AlarmCallback) *quartz.Alarm
-	RmwFlags() uint8 //TODO NOT STANDARD
+	RmwFlags() uint8    //TODO NOT STANDARD
 }
