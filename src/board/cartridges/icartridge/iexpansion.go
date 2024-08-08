@@ -15,7 +15,8 @@ type IExpansion interface {
 	NMITrigger()
 	IRQTrigger()
 	IRQClear()
-	IRQLine() uint32
+	IRQTriggerBind(fn func(uint32))
+	IRQClearBind(fn func(uint32))
 	SetDMALow(bool)
 	BusAvailable() bool
 	AECAvailable() bool //TODO NOT STANDARD

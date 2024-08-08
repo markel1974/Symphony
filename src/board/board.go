@@ -11,6 +11,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/sid"
 	"github.com/markel1974/c64emu/src/board/vic"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/signals"
 	"golang.design/x/clipboard"
 	"log"
 	"os"
@@ -44,6 +45,9 @@ type Board struct {
 	dmaLow       bool
 	baLow        bool
 	aecLow       bool
+
+	irqTrigger *signals.SignalUint32
+	irqClear   *signals.SignalUint32
 	//phiMode    PhiMode
 }
 
@@ -65,6 +69,8 @@ func NewBoard(db vic.IDisplayBuffer) *Board {
 		baLow:        false,
 		aecLow:       false,
 		banks:        nil,
+		irqTrigger:   nil,
+		irqClear:     nil,
 		//phiMode:    PhiIdle,
 	}
 	return b
@@ -315,9 +321,23 @@ func (s *Board) IRQClear() {
 	s.pic.ClearIRQ(IntrExpansionId)
 }
 
-func (s *Board) IRQLine() uint32 {
-	return s.pic.IRQLine()
+func (s *Board) IRQTriggerBind(fn func(uint32)) {
+	if s.irqTrigger == nil {
+		s.irqTrigger = signals.NewSignalUint32()
+	}
+	s.irqTrigger.Bind(fn)
 }
+
+func (s *Board) IRQClearBind(fn func(uint32)) {
+	if s.irqClear == nil {
+		s.irqClear = signals.NewSignalUint32()
+	}
+	s.irqClear.Bind(fn)
+}
+
+//func (s *Board) IRQLine() uint32 {
+//	return s.pic.IRQLine()
+//}
 
 func (s *Board) BusAvailable() bool {
 	return s.baLow
@@ -371,12 +391,16 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 
 func (s *Board) irqTriggerSlot(i uint32) {
 	s.pic.TriggerIRQ(i)
-	//s.irqTrigger(i)
+	if s.irqTrigger != nil {
+		s.irqTrigger.Emit(i)
+	}
 }
 
 func (s *Board) irqClearSlot(i uint32) {
 	s.pic.ClearIRQ(i)
-	//s.irqClear(i)
+	if s.irqClear != nil {
+		s.irqClear.Emit(i)
+	}
 }
 
 func (s *Board) baLowSlot(baLow bool) {

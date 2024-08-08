@@ -69,15 +69,15 @@ func (i *Pic) HasIRQ() bool {
 	return i.irq != 0
 }
 
-func (i *Pic) IRQLine() uint32 {
-	return uint32(i.irq)
-}
+//func (i *Pic) IRQLine() uint32 {
+//	return uint32(i.irq)
+//}
 
-func (i *Pic) SetIRQLine(v uint32) {
-	//TODO REMOVE
-	i.all |= bits.Bits(v)
-	i.irq = bits.Bits(v)
-}
+//func (i *Pic) SetIRQLine(v uint32) {
+//	//TODO REMOVE
+//	i.all |= bits.Bits(v)
+//	i.irq = bits.Bits(v)
+//}
 
 func (i *Pic) TriggerNMI() {
 	if !i.all.BitCheck(intNmiId) {

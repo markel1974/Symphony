@@ -34,13 +34,9 @@ func (s *SuperCPU) EmulationRequired() bool {
 }
 
 func (s *SuperCPU) Emulate() {
-	// TODO CLEAR-TRIGGER RST/NMI/IRQ BALOW-AECLOW HAS SIGNAL
-	irqLine := s.board.IRQLine()
-	s.pic.SetIRQLine(irqLine)
-
+	// TODO TRIGGER BALOW-AECLOW HAS SIGNAL
 	aecLow := s.board.AECAvailable()
 	s.cpu.SetRDYLow(aecLow)
-
 	s.cpu.Emulate()
 }
 
@@ -59,9 +55,8 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 	s.cpu = cpu.NewMOS6510()
 	s.cpu.Setup(s.pic, board, nil)
 
-	//TODO MISSING IRQ TRIGGER/BIND
-	//m.via1.SignalTriggerIRQBind(m.pic.TriggerIRQ)
-	//m.via1.SignalClearIRQBind(m.pic.ClearIRQ)
+	s.board.IRQTriggerBind(s.pic.TriggerIRQ)
+	s.board.IRQClearBind(s.pic.ClearIRQ)
 
 	return nil
 }
