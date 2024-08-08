@@ -2,24 +2,27 @@ package via
 
 import (
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/signals"
 )
 
 type Via1 struct {
 	*Core
-	iec          virtualdrive.IIec
-	intr         IInterrupts
-	deviceNumber uint8
-	dipSwitch    uint8
-	prbFilter    uint8
+	iec              virtualdrive.IIec
+	deviceNumber     uint8
+	dipSwitch        uint8
+	prbFilter        uint8
+	signalIRQTrigger *signals.SignalUint32
+	signalIRQClear   *signals.SignalUint32
 }
 
-func NewVia1(iec virtualdrive.IIec, intr IInterrupts, deviceNumber uint8) *Via1 {
+func NewVia1(iec virtualdrive.IIec, deviceNumber uint8) *Via1 {
 	v := &Via1{
-		Core:         NewCore(),
-		intr:         intr,
-		iec:          iec,
-		prbFilter:    0,
-		deviceNumber: deviceNumber,
+		Core:             NewCore(),
+		iec:              iec,
+		prbFilter:        0,
+		deviceNumber:     deviceNumber,
+		signalIRQTrigger: signals.NewSignalUint32(),
+		signalIRQClear:   signals.NewSignalUint32(),
 	}
 	v.prbFilter |= 0 << 0 //Bit #0: DATA IN; 0 = Low; 1 = High.
 	v.prbFilter |= 1 << 1 //Bit #1: DATA OUT; 0 = Low; 1 = High.
@@ -41,6 +44,14 @@ func (v *Via1) Setup() {
 
 }
 
+func (v *Via1) SignalTriggerIRQBind(fn func(uint32)) {
+	v.signalIRQTrigger.Bind(fn)
+}
+
+func (v *Via1) SignalClearIRQBind(fn func(uint32)) {
+	v.signalIRQClear.Bind(fn)
+}
+
 func (v *Via1) ReadByte(addr uint16) uint8 {
 	switch addr {
 	case 0x1800:
@@ -55,7 +66,7 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 	case 0x1804:
 		v.ifr &= 0xbf
 		//TODO TEST
-		v.intr.ClearVIA1IRQ()
+		v.signalIRQClear.Emit(intrVIA1Id)
 		return uint8(v.t1c)
 	case 0x1805:
 		return uint8(v.t1c >> 8)
@@ -150,7 +161,7 @@ func (v *Via1) CountTimers() {
 		v.ifr |= 0x40
 		//TODO TEST
 		if v.ier&0x40 != 0 {
-			v.intr.TriggerVIA1IRQ()
+			v.signalIRQTrigger.Emit(intrVIA1Id)
 		}
 	}
 

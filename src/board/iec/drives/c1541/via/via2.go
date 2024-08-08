@@ -3,21 +3,24 @@ package via
 import (
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/signals"
 )
 
 type Via2 struct {
 	*Core
-	iec  virtualdrive.IIec
-	job  *mechanics.Mechanics
-	intr IInterrupts
+	iec              virtualdrive.IIec
+	job              *mechanics.Mechanics
+	signalIRQTrigger *signals.SignalUint32
+	signalIRQClear   *signals.SignalUint32
 }
 
-func NewVia2(iec virtualdrive.IIec, intr IInterrupts, job *mechanics.Mechanics) *Via2 {
+func NewVia2(iec virtualdrive.IIec, job *mechanics.Mechanics) *Via2 {
 	v := &Via2{
-		Core: NewCore(),
-		iec:  iec,
-		intr: intr,
-		job:  job,
+		Core:             NewCore(),
+		iec:              iec,
+		job:              job,
+		signalIRQTrigger: signals.NewSignalUint32(),
+		signalIRQClear:   signals.NewSignalUint32(),
 	}
 	return v
 }
@@ -27,7 +30,14 @@ func (v *Via2) Reset() {
 }
 
 func (v *Via2) Setup() {
+}
 
+func (v *Via2) SignalTriggerIRQBind(fn func(uint32)) {
+	v.signalIRQTrigger.Bind(fn)
+}
+
+func (v *Via2) SignalClearIRQBind(fn func(uint32)) {
+	v.signalIRQClear.Bind(fn)
 }
 
 func (v *Via2) ReadByte(addr uint16) uint8 {
@@ -47,8 +57,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 		return v.ddra
 	case 0x1c04:
 		v.ifr &= 0xbf
-		v.intr.ClearVIA2IRQ()
-		//_cpu1541->_interrupt.intr[INT_VIA2IRQ] = false;
+		v.signalIRQClear.Emit(intrVIA2Id)
 		return uint8(v.t1c)
 	case 0x1c05:
 		return uint8(v.t1c >> 8)
@@ -153,7 +162,7 @@ func (v *Via2) CountTimers() {
 		}
 		v.ifr |= 0x40
 		if (v.ier & 0x40) != 0 {
-			v.intr.TriggerVIA2IRQ()
+			v.signalIRQTrigger.Emit(intrVIA2Id)
 		}
 	}
 

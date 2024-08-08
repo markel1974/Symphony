@@ -1,10 +1,4 @@
 package via
 
-type IInterrupts interface {
-	ClearVIA1IRQ()
-	TriggerVIA1IRQ()
-	ClearVIA2IRQ()
-	TriggerVIA2IRQ()
-	ClearNMI()
-	TriggerNMI()
-}
+const intrVIA1Id = 0x4
+const intrVIA2Id = 0x8

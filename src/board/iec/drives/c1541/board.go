@@ -1,7 +1,7 @@
 package c1541
 
 import (
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/cpu"
+	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/ram"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/via"
@@ -11,10 +11,10 @@ import (
 )
 
 type Board struct {
-	pin          *Pin
+	pic          *cpu.Pic
 	iec          virtualdrive.IIec
 	quartz       *quartz.Quartz
-	cpu          *cpu.MOS6502
+	cpu          *cpu.MOS6510
 	via1         *via.Via1
 	via2         *via.Via2
 	ram          *ram.Ram
@@ -27,7 +27,7 @@ func New(quartz *quartz.Quartz, iec virtualdrive.IIec, deviceNumber uint8) *Boar
 		iec:          iec,
 		quartz:       quartz,
 		deviceNumber: deviceNumber,
-		pin:          nil,
+		pic:          nil,
 		via1:         nil,
 		via2:         nil,
 		cpu:          nil,
@@ -38,17 +38,24 @@ func New(quartz *quartz.Quartz, iec virtualdrive.IIec, deviceNumber uint8) *Boar
 
 func (m *Board) Setup(cfg *config.Config) {
 	m.cfg = cfg
-	m.pin = NewPin()
 	m.cfg.Bind(m.configChanged)
 	m.ram = ram.New(0xffff)
-	m.cpu = cpu.NewMOS6502()
+	m.cpu = cpu.NewMOS6510()
 	job := mechanics.NewJob(m.ram, m.deviceNumber)
-	m.via1 = via.NewVia1(m.iec, m.pin, m.deviceNumber)
-	m.via2 = via.NewVia2(m.iec, m.pin, job)
+	m.via1 = via.NewVia1(m.iec, m.deviceNumber)
+	m.via2 = via.NewVia2(m.iec, job)
 	m.ram.Setup()
-	m.cpu.Setup(m.pin, m.ram, cfg)
+
+	m.pic = cpu.NewPic()
+	m.cpu.Setup(m.pic, m.ram, cfg)
+
 	m.via1.Setup()
+	m.via1.SignalTriggerIRQBind(m.pic.TriggerIRQ)
+	m.via1.SignalClearIRQBind(m.pic.ClearIRQ)
+
 	m.via2.Setup()
+	m.via2.SignalTriggerIRQBind(m.pic.TriggerIRQ)
+	m.via2.SignalClearIRQBind(m.pic.ClearIRQ)
 }
 
 func (m *Board) Reset() {
