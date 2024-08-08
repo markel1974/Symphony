@@ -426,7 +426,8 @@ func (s *Board) loadPRG(prgFile string) {
 		log.Printf("can't set load prg: %s", err.Error())
 		return
 	}
-	if err := s.banks.Inject(p.GetStartAddress(), p.GetData()); err != nil {
+	inject := banks.NewObserver(s.banks)
+	if err := inject.Inject(false, p.GetStartAddress(), p.GetData()); err != nil {
 		log.Printf("can't set prg: %s", err.Error())
 		return
 	}
