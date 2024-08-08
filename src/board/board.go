@@ -294,7 +294,7 @@ func (s *Board) NMITrigger() {
 	s.pic.TriggerNMI()
 }
 
-func (s *Board) DMALow(v bool) {
+func (s *Board) SetDMALow(v bool) {
 	//TODO IMPLEMENT
 	//if _DMA=Low the CPU can be requested to release the bus.
 	//It will stop after the next read cycle and all bus lines will go to high resistance state.
@@ -315,25 +315,17 @@ func (s *Board) IRQClear() {
 	s.pic.ClearIRQ(IntrExpansionId)
 }
 
-//func (s *Board) HasIRQ() bool {
-//	return s.pic.HasIRQ()
-//}
-
-//func (s *Board) IRQLine() uint32 {
-//	return s.pic.IRQLine()
-//}
-
-//func (s *Board) GetIrqCycleDistance(v int) uint64 {
-//	return s.pic.GetIrqCycleDistance(v)
-//}
+func (s *Board) IRQLine() uint32 {
+	return s.pic.IRQLine()
+}
 
 func (s *Board) BusAvailable() bool {
 	return s.baLow
 }
 
-//func (s *Board) Cycle() uint64 {
-//	return s.quartz.Cycle()
-//}
+func (s *Board) AECAvailable() bool {
+	return s.aecLow
+}
 
 func (s *Board) GetQuartz() *quartz.Quartz {
 	return s.quartz

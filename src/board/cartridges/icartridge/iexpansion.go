@@ -12,14 +12,14 @@ type IExpansion interface {
 	Write(uint16, uint8)
 	RamSetWriteTrigger(addr uint16, fn func(uint16, uint8)) int
 	RamRemoveWriteTrigger(addr uint16, id int)
+	ResetTrigger()
 	NMITrigger()
-	DMALow(bool)
-	BusAvailable() bool
 	IRQTrigger()
 	IRQClear()
-	//HasIRQ() bool
-	//IRQLine() uint32
-	ResetTrigger()
+	IRQLine() uint32
+	SetDMALow(bool)
+	BusAvailable() bool
+	AECAvailable() bool //TODO NOT STANDARD
 	GetQuartz() *quartz.Quartz
 	CreateAlarm(string, quartz.AlarmCallback) *quartz.Alarm
 	RmwFlags() uint8 //TODO NOT STANDARD

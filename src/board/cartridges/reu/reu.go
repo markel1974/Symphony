@@ -208,7 +208,7 @@ func (reu *REU) Detach() error {
 func (reu *REU) executeDma() {
 	//TODO IN EMULATE CYCLE ONE BYTE AT TIME
 
-	reu.expansion.DMALow(true)
+	reu.expansion.SetDMALow(true)
 	// Get C64 and REU transfer base addresses
 	c64Addr := uint16(reu.regs[2]) | (uint16(reu.regs[3]) << 8)
 	reuAddr := uint32(reu.regs[4]) | (uint32(reu.regs[5]) << 8) | (uint32(reu.regs[6]) << 16)
@@ -278,5 +278,5 @@ func (reu *REU) executeDma() {
 
 	// Clear exec bit in command register
 	reu.regs[1] &= 0x7f
-	reu.expansion.DMALow(false)
+	reu.expansion.SetDMALow(false)
 }

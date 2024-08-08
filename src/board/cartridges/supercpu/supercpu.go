@@ -34,7 +34,13 @@ func (s *SuperCPU) EmulationRequired() bool {
 }
 
 func (s *SuperCPU) Emulate() {
-	//TODO CLEAR IRQ/TRIGGER IRQ HAS SIGNAL
+	// TODO CLEAR-TRIGGER RST/NMI/IRQ BALOW-AECLOW HAS SIGNAL
+	irqLine := s.board.IRQLine()
+	s.pic.SetIRQLine(irqLine)
+
+	aecLow := s.board.AECAvailable()
+	s.cpu.SetRDYLow(aecLow)
+
 	s.cpu.Emulate()
 }
 
@@ -45,7 +51,7 @@ func (s *SuperCPU) Reset() {
 func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	s.board = board
 	s.id = ldr.GetId()
-	s.board.DMALow(true)
+	s.board.SetDMALow(true)
 
 	s.pic = cpu.NewPic()
 	s.pic.Setup(board.GetQuartz())
