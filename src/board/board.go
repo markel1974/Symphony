@@ -248,6 +248,10 @@ func (s *Board) KeyboardSetCapital(pressed bool) {
 	if !pressed {
 		return
 	}
+	//TODO RIMUOVERE
+	//s.loadPRG(s.cfg.GetPrg())
+	//return
+
 	s.keys.SetCapital()
 }
 
