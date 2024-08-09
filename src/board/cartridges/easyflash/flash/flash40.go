@@ -72,7 +72,7 @@ func NewFlash040(b icartridge.IExpansion, kind Kind, data []byte) *Flash040 {
 	callback := func(clock uint64, offset uint64) {
 		f.eraseAlarmHandler()
 	}
-	f.eraseAlarm = b.GetQuartz().NewAlarm("Flash040Alarm", callback)
+	f.eraseAlarm = b.CycleAlarm("Flash040Alarm", callback)
 	return f
 }
 
@@ -284,7 +284,7 @@ func (f *Flash040) flashProgramByte(addr uint, data uint8) int {
 }
 
 func (f *Flash040) flashWriteOperationStatus() int {
-	mainCpuClk := f.board.GetQuartz().Cycle()
+	mainCpuClk := f.board.Cycle()
 	p1 := int((f.programByte ^ 0x80) & 0x80) //DQ7 = inverse of programmed data
 	p2 := int(mainCpuClk&2) << 5             //DQ6 = toggle bit (2 us)
 	p3 := 1 << 5                             //DQ5 = timeout

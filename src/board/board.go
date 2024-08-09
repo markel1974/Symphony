@@ -344,8 +344,12 @@ func (s *Board) AECAvailable() bool {
 	return s.aecLow
 }
 
-func (s *Board) GetQuartz() *quartz.Quartz {
-	return s.quartz
+func (s *Board) Cycle() uint64 {
+	return s.quartz.Cycle()
+}
+
+func (s *Board) CycleAlarm(id string, callback quartz.AlarmCallback) *quartz.Alarm {
+	return s.quartz.NewAlarm(id, callback)
 }
 
 func (s *Board) RamSetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {

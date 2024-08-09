@@ -4,23 +4,26 @@ import (
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
 	"github.com/markel1974/c64emu/src/board/cpu"
+	"github.com/markel1974/c64emu/src/board/quartz"
 )
 
 const Id = "SCPU"
 
 type SuperCPU struct {
-	id    string
-	board icartridge.IExpansion
-	pic   *cpu.Pic
-	cpu   *cpu.MOS6510
+	id     string
+	board  icartridge.IExpansion
+	pic    *cpu.Pic
+	cpu    *cpu.MOS6510
+	quartz *quartz.Quartz
 }
 
 func New() icartridge.ICartridge {
 	r := &SuperCPU{
-		id:    "",
-		board: nil,
-		pic:   nil,
-		cpu:   nil,
+		id:     "",
+		board:  nil,
+		pic:    nil,
+		cpu:    nil,
+		quartz: nil,
 	}
 	return r
 }
@@ -33,24 +36,15 @@ func (s *SuperCPU) EmulationRequired() bool {
 	return true
 }
 
-func (s *SuperCPU) Emulate() {
-	// TODO TRIGGER BALOW-AECLOW HAS SIGNAL
-	aecLow := s.board.AECAvailable()
-	s.cpu.SetRDYLow(aecLow)
-	s.cpu.Emulate()
-}
-
-func (s *SuperCPU) Reset() {
-	s.cpu.Reset()
-}
-
 func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	s.board = board
 	s.id = ldr.GetId()
 	s.board.SetDMALow(true)
 
+	s.quartz = quartz.NewQuartz()
 	s.pic = cpu.NewPic()
-	s.pic.Setup(board.GetQuartz())
+
+	s.pic.Setup(s.quartz)
 
 	s.cpu = cpu.NewMOS6510()
 	s.cpu.Setup(s.pic, board, nil)
@@ -59,6 +53,21 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 	s.board.IRQClearBind(s.pic.ClearIRQ)
 
 	return nil
+}
+
+func (s *SuperCPU) Reset() {
+	s.cpu.Reset()
+}
+
+func (s *SuperCPU) Emulate() {
+	const mhz = 20
+	// TODO TRIGGER BALOW-AECLOW HAS SIGNAL
+	aecLow := s.board.AECAvailable()
+	s.cpu.SetRDYLow(aecLow)
+	for x := 0; x < mhz; x++ {
+		s.cpu.Emulate()
+		s.quartz.AddCycle()
+	}
 }
 
 func (s *SuperCPU) GetExRom() uint8 {
