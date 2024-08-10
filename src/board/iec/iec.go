@@ -132,6 +132,9 @@ func (c *IEC) Setup(quartz *quartz.Quartz, cfg *config.Config) {
 	//}
 
 	//TODO ATTIVARE PER TEST
+	vd := c.createVirtualDrive(1, 8)
+	c.virtualDrives = append(c.virtualDrives, vd)
+
 	//vd := c.createVirtualDrive(2, 8)
 	//c.virtualDrives = append(c.virtualDrives, vd)
 
@@ -249,7 +252,7 @@ func (c *IEC) CpuWrite(data uint8) {
 
 	c.cpuBus = c.buildCpuBus(^data)
 
-	//c.debugCpuWrite(^c.cpuBus)
+	c.debugCpuWrite(^c.cpuBus)
 
 	c.updatePeripheralsBus()
 	c.updatePorts()

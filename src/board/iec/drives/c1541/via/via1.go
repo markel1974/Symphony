@@ -58,14 +58,14 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 		data := v.iec.PeripheralRead(v.deviceNumber)
 		return (v.prb&v.prbFilter | data) ^ 0x85
 	case 0x1801:
-		return 0xff // Keep 1541C ROMs happy (track 0 sensor)
+		// Keep 1541C ROMs happy (track 0 sensor)
+		return 0xff
 	case 0x1802:
 		return v.ddrb
 	case 0x1803:
 		return v.ddra
 	case 0x1804:
 		v.ifr &= 0xbf
-		//TODO TEST
 		v.signalIRQClear.Emit(intrVIA1Id)
 		return uint8(v.t1c)
 	case 0x1805:
@@ -93,7 +93,8 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 	case 0x180e:
 		return v.ier | 0x80
 	case 0x180f:
-		return 0xff // Keep 1541C ROMs happy (track 0 sensor)
+		// Keep 1541C ROMs happy (track 0 sensor)
+		return 0xff
 	default:
 		return 0
 	}

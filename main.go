@@ -9,9 +9,8 @@ import (
 	"strings"
 )
 
-func test(a int, b int, c string, d int, e bool) {
-	fmt.Println("INSIDE", a, b, c, d, e)
-}
+//-c "SCPU:;REU16M:/Users/tinmr305/Downloads/c64carts/doom/doom.reu" -p /Users/tinmr305/Downloads/c64carts/doom/loader.prg
+
 func main() {
 	var showHelp bool
 	var showVersion bool

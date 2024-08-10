@@ -66,9 +66,11 @@ func (r *Banks) readByteIO(addr uint16) uint8 {
 func (r *Banks) writeByteIO(addr uint16, data uint8) {
 	if (addr & 0xfc00) == 0x1800 {
 		r.via1.WriteByte(addr, data)
+		return
 	}
 	if (addr & 0xfc00) == 0x1c00 {
 		r.via2.WriteByte(addr, data)
+		return
 	}
 }
 

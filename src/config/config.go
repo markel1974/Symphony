@@ -35,8 +35,8 @@ func (p *Config) Bind(changed func()) {
 //}
 
 func (p *Config) GetDrivePath(i int) string {
+	return "/Users/tinmr305/Downloads/c64carts/C64_disk/blast198.d64"
 	//TODO IMPLEMENT
-	return "."
 	//return false
 }
 
