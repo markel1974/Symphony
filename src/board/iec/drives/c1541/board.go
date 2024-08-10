@@ -2,8 +2,8 @@ package c1541
 
 import (
 	"github.com/markel1974/c64emu/src/board/cpu"
+	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/banks"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/ram"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/via"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/board/quartz"
@@ -17,7 +17,7 @@ type Board struct {
 	cpu          *cpu.MOS6510
 	via1         *via.Via1
 	via2         *via.Via2
-	ram          *ram.Ram
+	banks        *banks.Banks
 	deviceNumber uint8
 	cfg          *config.Config
 }
@@ -31,7 +31,7 @@ func New(quartz *quartz.Quartz, iec virtualdrive.IIec, deviceNumber uint8) *Boar
 		via1:         nil,
 		via2:         nil,
 		cpu:          nil,
-		ram:          nil,
+		banks:        nil,
 		cfg:          nil,
 	}
 }
@@ -39,15 +39,18 @@ func New(quartz *quartz.Quartz, iec virtualdrive.IIec, deviceNumber uint8) *Boar
 func (m *Board) Setup(cfg *config.Config) {
 	m.cfg = cfg
 	m.cfg.Bind(m.configChanged)
-	m.ram = ram.New(0xffff)
+
+	m.banks = banks.New()
+	m.quartz = quartz.NewQuartz()
+	m.pic = cpu.NewPic()
 	m.cpu = cpu.NewMOS6510()
-	job := mechanics.NewJob(m.ram, m.deviceNumber)
+	job := mechanics.NewJob(m.banks, m.deviceNumber)
 	m.via1 = via.NewVia1(m.iec, m.deviceNumber)
 	m.via2 = via.NewVia2(m.iec, job)
-	m.ram.Setup()
 
-	m.pic = cpu.NewPic()
-	m.cpu.Setup(m.pic, m.ram, cfg)
+	m.banks.Setup(m.via1, m.via2, cfg)
+	m.pic.Setup(m.quartz)
+	m.cpu.Setup(m.pic, m.banks, cfg)
 
 	m.via1.Setup()
 	m.via1.SignalTriggerIRQBind(m.pic.TriggerIRQ)
@@ -59,11 +62,15 @@ func (m *Board) Setup(cfg *config.Config) {
 }
 
 func (m *Board) Reset() {
-	//TODO
+	m.cpu.Reset()
+	m.via1.Reset()
+	m.via2.Reset()
 }
 
 func (m *Board) Emulate() {
-	//TODO
+	m.via1.CountTimers()
+	m.via2.CountTimers()
+	m.cpu.Emulate()
 }
 
 func (m *Board) Ready() bool {
@@ -76,15 +83,15 @@ func (m *Board) GetDeviceNumber() uint8 {
 }
 
 func (m *Board) AtnStateChanged(b bool, b2 bool) {
-	//TODO implement me
-	panic("implement me")
+	m.via1.AtnStateChanged(b)
+	if b {
+		m.banks.AtnWakeUp()
+	}
 }
 
 func (m *Board) BusStateChanged(u uint8) {
-	//TODO implement me
-	panic("implement me")
+	//nothing to do
 }
 
 func (m *Board) configChanged() {
-
 }

@@ -67,3 +67,7 @@ func (p *Config) SetDisableCartridgeAutostart(v bool) {
 func (p *Config) GetDisableCartridgeAutostart() bool {
 	return p.DisableCartridgeAutostart
 }
+
+func (p *Config) Get1541RomPath() string {
+	return ""
+}

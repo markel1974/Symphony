@@ -1,7 +1,6 @@
 package mechanics
 
 import (
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/ram"
 	"github.com/markel1974/c64emu/src/config"
 	"io"
 	"os"
@@ -19,15 +18,15 @@ type Mechanics struct {
 	gcrTrackEnd   int     // Pointer to end of GCR data of current track
 	data          []uint8
 	filePath      string
-	ram           *ram.Ram
 	deviceNumber  uint8
+	banks         IBanks
 }
 
-func NewJob(ram *ram.Ram, deviceNumber uint8) *Mechanics {
+func NewJob(banks IBanks, deviceNumber uint8) *Mechanics {
 	j := &Mechanics{
-		ram:          ram,
 		Core:         NewCore(),
 		deviceNumber: deviceNumber,
+		banks:        banks,
 	}
 	j.id1 = 0
 	j.id2 = 0
@@ -96,11 +95,11 @@ func (j *Mechanics) SyncFound() bool {
 }
 
 func (j *Mechanics) WriteSector() {
-	track := j.ram.Read(0x18)
-	sector := j.ram.Read(0x19)
-	start := uint16(j.ram.Read(0x30)) | (uint16(j.ram.Read(0x31)) << 8)
+	track := j.banks.Read(0x18)
+	sector := j.banks.Read(0x19)
+	start := uint16(j.banks.Read(0x30)) | (uint16(j.banks.Read(0x31)) << 8)
 	if start <= 0x0700 {
-		block := j.ram.Interval(start, BLOCK_SIZE)
+		block := j.banks.ReadInterval(start, BLOCK_SIZE)
 		if j.writeTrackSector(int(track), int(sector), block) {
 			j.sector2gcr(int(track), int(sector))
 		}
@@ -108,11 +107,11 @@ func (j *Mechanics) WriteSector() {
 }
 
 func (j *Mechanics) FormatTrack() {
-	track := j.ram.Read(0x51)
+	track := j.banks.Read(0x51)
 	// Get new ID
-	bufNum := j.ram.Read(0x3d)
-	j.id1 = j.ram.Read(0x12 + uint16(bufNum))
-	j.id2 = j.ram.Read(0x13 + uint16(bufNum))
+	bufNum := j.banks.Read(0x3d)
+	j.id1 = j.banks.Read(0x12 + uint16(bufNum))
+	j.id2 = j.banks.Read(0x13 + uint16(bufNum))
 
 	// Create empty block
 	buf := make([]uint8, BLOCK_SIZE)

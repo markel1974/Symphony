@@ -60,6 +60,7 @@ func (s *SuperCPU) Reset() {
 }
 
 func (s *SuperCPU) Emulate() {
+	// TEST SUPER CPU.....
 	const mhz = 20
 	// TODO TRIGGER BALOW-AECLOW HAS SIGNAL
 	aecLow := s.board.AECAvailable()
