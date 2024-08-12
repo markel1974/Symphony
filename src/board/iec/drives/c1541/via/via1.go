@@ -56,7 +56,8 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 	switch addr {
 	case 0x1800:
 		data := v.iec.PeripheralRead(v.deviceNumber)
-		return (v.prb&v.prbFilter | data) ^ 0x85
+		ret := (v.prb&v.prbFilter | data) ^ 0x85
+		return ret
 	case 0x1801:
 		// Keep 1541C ROMs happy (track 0 sensor)
 		return 0xff

@@ -9,16 +9,16 @@ import (
 type Via2 struct {
 	*Core
 	iec              virtualdrive.IIec
-	job              *mechanics.Mechanics
+	mec              *mechanics.Mechanics
 	signalIRQTrigger *signals.SignalUint32
 	signalIRQClear   *signals.SignalUint32
 }
 
-func NewVia2(iec virtualdrive.IIec, job *mechanics.Mechanics) *Via2 {
+func NewVia2(iec virtualdrive.IIec, mec *mechanics.Mechanics) *Via2 {
 	v := &Via2{
 		Core:             NewCore(),
 		iec:              iec,
-		job:              job,
+		mec:              mec,
 		signalIRQTrigger: signals.NewSignalUint32(),
 		signalIRQClear:   signals.NewSignalUint32(),
 	}
@@ -43,14 +43,14 @@ func (v *Via2) SignalClearIRQBind(fn func(uint32)) {
 func (v *Via2) ReadByte(addr uint16) uint8 {
 	switch addr {
 	case 0x1c00:
-		ps := v.job.WriteProtectionState()
-		if v.job.SyncFound() {
+		ps := v.mec.WriteProtectionState()
+		if v.mec.SyncFound() {
 			return (v.prb & 0x7f) | ps
 		} else {
 			return (v.prb | 0x80) | ps
 		}
 	case 0x1c01:
-		return v.job.ReadGCRByte()
+		return v.mec.ReadGCRByte()
 	case 0x1c02:
 		return v.ddrb
 	case 0x1c03:
@@ -84,7 +84,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 	case 0x1c0e:
 		return v.ier | 0x80
 	case 0x1c0f:
-		return v.job.ReadGCRByte()
+		return v.mec.ReadGCRByte()
 	default:
 		return 0
 	}
@@ -98,15 +98,15 @@ func (v *Via2) WriteByte(addr uint16, data uint8) {
 			if (data & 8) != 0 {
 				l = 1
 			}
-			v.job.UpdateLEDs(l) // Bit 3: VirtualDrive LED
+			v.mec.UpdateLEDs(l) // Bit 3: VirtualDrive LED
 		}
 
 		if ((v.prb ^ data) & 3) != 0 {
 			/* Bits 0/1: Stepper motor */
 			if (v.prb & 3) == ((data + 1) & 3) {
-				v.job.MoveHeadOut()
+				v.mec.MoveHeadOut()
 			} else if (v.prb & 3) == ((data - 1) & 3) {
-				v.job.MoveHeadIn()
+				v.mec.MoveHeadIn()
 			}
 		}
 		v.prb = data & 0xef
@@ -177,9 +177,9 @@ func (v *Via2) CountTimers() {
 }
 
 func (v *Via2) WriteSector() {
-	v.job.WriteSector()
+	v.mec.WriteSector()
 }
 
 func (v *Via2) FormatTrack() {
-	v.job.FormatTrack()
+	v.mec.FormatTrack()
 }

@@ -18,7 +18,7 @@ type Board struct {
 	via1         *via.Via1
 	via2         *via.Via2
 	banks        *banks.Banks
-	job          *mechanics.Mechanics
+	mec          *mechanics.Mechanics
 	deviceNumber uint8
 	cfg          *config.Config
 }
@@ -45,15 +45,15 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.quartz = quartz.NewQuartz()
 	m.pic = cpu.NewPic()
 	m.cpu = cpu.NewMOS6510()
-	m.job = mechanics.NewJob(m.banks, m.deviceNumber)
+	m.mec = mechanics.NewMechanics(m.banks, m.deviceNumber)
 	m.via1 = via.NewVia1(m.iec, m.deviceNumber)
-	m.via2 = via.NewVia2(m.iec, m.job)
+	m.via2 = via.NewVia2(m.iec, m.mec)
 
 	m.banks.Setup(m.via1, m.via2, cfg)
 	m.pic.Setup(m.quartz)
 	m.cpu.Setup(m.pic, m.banks, cfg)
 
-	m.job.Setup(cfg)
+	m.mec.Setup(cfg)
 
 	m.via1.Setup()
 	m.via1.SignalTriggerIRQBind(m.pic.TriggerIRQ)
@@ -66,6 +66,7 @@ func (m *Board) Setup(cfg *config.Config) {
 }
 
 func (m *Board) Reset() {
+	m.pic.Reset()
 	m.cpu.Reset()
 	m.via1.Reset()
 	m.via2.Reset()

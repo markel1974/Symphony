@@ -22,7 +22,7 @@ type Mechanics struct {
 	banks         IBanks
 }
 
-func NewJob(banks IBanks, deviceNumber uint8) *Mechanics {
+func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
 	j := &Mechanics{
 		Core:         NewCore(),
 		deviceNumber: deviceNumber,

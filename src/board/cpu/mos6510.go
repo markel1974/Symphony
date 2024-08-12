@@ -56,7 +56,7 @@ func (cpu *MOS6510) Setup(intr IPic, banks IBanks, prefs *config.Config) {
 
 func (cpu *MOS6510) Reset() {
 	// Read reset vector
-	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | uint16(cpu.banks.Read(0xfffd))<<8
+	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8)
 	cpu.state = STATE_LAST
 	cpu.opFlags = 0
 }
