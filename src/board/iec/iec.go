@@ -260,7 +260,7 @@ func (c *IEC) CpuWrite(data uint8) {
 
 	c.updatePeripheralsBus()
 	c.updatePorts()
-	c.dispatchCpuWrite()
+	c.notifyCpuWrite()
 	//}
 
 	/*
@@ -279,7 +279,7 @@ func (c *IEC) CpuRead() uint8 {
 	return c.cpuPort
 }
 
-func (c *IEC) PeripheralRead(deviceNumber uint8) uint8 {
+func (c *IEC) PeripheralRead() uint8 {
 	return c.peripheralsPort
 }
 
@@ -291,7 +291,7 @@ func (c *IEC) PeripheralWrite(deviceNumber uint8, d uint8) {
 	//fmt.Printf("CURRENT CPU PORT %d [%08b]\n", c.cpuPort, c.cpuPort)
 }
 
-func (c *IEC) PeripheralAtnResponse(data uint8, deviceNumber uint8) {
+func (c *IEC) PeripheralAtnResponse(deviceNumber uint8, data uint8) {
 	c.PeripheralWrite(deviceNumber, data)
 }
 
@@ -329,13 +329,13 @@ func (c *IEC) updatePeripheralsBus() {
 	}
 }
 
-func (c *IEC) dispatchCpuWrite() {
+func (c *IEC) notifyCpuWrite() {
 	//newAtn := c.cpuBus & 0x10
 	//if c.oldAtn != newAtn {
 	//	for x := uint8(0); x < c.peripheralsActiveCount; x++ {
 	//		p := c.peripheralStorageActive[x]
 	//		//if (p->IsActive()) {
-	//		p.AtnStateChanged((c.oldAtn) != 0)w
+	//		p.AtnStateChanged((c.oldAtn) != 0)
 	//		//}
 	//	}
 	//	c.oldAtn = newAtn

@@ -1,8 +1,8 @@
 package virtualdrive
 
 type IIec interface {
-	PeripheralAtnResponse(data uint8, deviceNumber uint8)
-	PeripheralRead(deviceNumber uint8) uint8
+	PeripheralAtnResponse(deviceNumber uint8, data uint8)
+	PeripheralRead() uint8
 	PeripheralWrite(deviceNumber uint8, data uint8)
 }
 

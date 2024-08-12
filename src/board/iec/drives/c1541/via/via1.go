@@ -56,7 +56,7 @@ func (v *Via1) SignalClearIRQBind(fn func(uint32)) {
 func (v *Via1) ReadByte(addr uint16) uint8 {
 	switch addr {
 	case 0x1800:
-		data := v.iec.PeripheralRead(v.deviceNumber)
+		data := v.iec.PeripheralRead()
 		ret := (v.prb&v.prbFilter | data) ^ 0x85
 		fmt.Println("READING FROM IEC", data, ret)
 		return ret
