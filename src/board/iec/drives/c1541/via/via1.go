@@ -1,6 +1,7 @@
 package via
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/signals"
 )
@@ -57,6 +58,7 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 	case 0x1800:
 		data := v.iec.PeripheralRead(v.deviceNumber)
 		ret := (v.prb&v.prbFilter | data) ^ 0x85
+		fmt.Println("READING FROM IEC", data, ret)
 		return ret
 	case 0x1801:
 		// Keep 1541C ROMs happy (track 0 sensor)

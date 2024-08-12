@@ -9,15 +9,18 @@ func NewLoader() *Loader {
 	return &Loader{}
 }
 
-func (r *Loader) Load(romName string) []byte {
+func (r *Loader) Load(useJiffy bool, romName string) []byte {
 	if len(romName) > 0 {
 		dat, err := os.ReadFile(romName)
 		if err == nil {
 			return dat
 		}
 	}
-	//patch_drive_rom(_rom1541);
-	return _jiffyRom
+	if useJiffy {
+		return _jiffyRom
+	}
+	//r.patchDriveRom(_jiffyRom)
+	return _builtinRom
 }
 
 func (r *Loader) patchDriveRom(rom []byte) {

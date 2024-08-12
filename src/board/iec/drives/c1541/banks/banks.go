@@ -25,7 +25,7 @@ func (r *Banks) Setup(via1 *via.Via1, via2 *via.Via2, cfg *config.Config) {
 	r.via2 = via2
 	r.cfg = cfg
 	loader := NewLoader()
-	r.rom = loader.Load(cfg.Get1541RomPath())
+	r.rom = loader.Load(cfg.UseJiffy(), cfg.Get1541RomPath())
 }
 
 func (r *Banks) Read(addr uint16) uint8 {

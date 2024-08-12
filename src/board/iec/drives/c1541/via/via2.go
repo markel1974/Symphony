@@ -1,6 +1,7 @@
 package via
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/signals"
@@ -93,15 +94,19 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 func (v *Via2) WriteByte(addr uint16, data uint8) {
 	switch addr {
 	case 0x1c00:
-		if ((v.prb ^ data) & 8) != 0 {
+		m := v.prb ^ data
+		if (m & 8) != 0 {
 			l := 0
 			if (data & 8) != 0 {
 				l = 1
 			}
-			v.mec.UpdateLEDs(l) // Bit 3: VirtualDrive LED
+			fmt.Println("TODO - LED", l)
+			//ledStateChangedEvent.Emit(_board->GetDeviceNumber(), state);
+			//v.mec.UpdateLEDs(l) // Bit 3: VirtualDrive LED
 		}
 
-		if ((v.prb ^ data) & 3) != 0 {
+		if (m & 3) != 0 {
+			fmt.Println("MOVING HEADS....")
 			/* Bits 0/1: Stepper motor */
 			if (v.prb & 3) == ((data + 1) & 3) {
 				v.mec.MoveHeadOut()
@@ -109,6 +114,7 @@ func (v *Via2) WriteByte(addr uint16, data uint8) {
 				v.mec.MoveHeadIn()
 			}
 		}
+
 		v.prb = data & 0xef
 	case 0x1c01:
 		v.pra = data

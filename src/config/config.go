@@ -12,7 +12,6 @@ type Config struct {
 	DisableCartridgeAutostart bool
 	changed                   *signals.Signal
 	prg                       string
-	//JoystickSwap              bool
 }
 
 func New() *Config {
@@ -20,7 +19,6 @@ func New() *Config {
 		cartridges:                nil,
 		DisableCartridgeAutostart: false,
 		changed:                   signals.NewSignal(),
-		//JoystickSwap:              true,
 	}
 }
 
@@ -28,21 +26,11 @@ func (p *Config) Bind(changed func()) {
 	p.changed.Bind(changed)
 }
 
-//func (p *Config) Emul1541Proc() bool {
-//TODO IMPLEMENT
-//	return true
-//return false
-//}
-
 func (p *Config) GetDrivePath(i int) string {
 	return "/Users/tinmr305/Downloads/c64carts/C64_disk/blast198.d64"
 	//TODO IMPLEMENT
 	//return false
 }
-
-//func (p *Config) GetJoystickSwap() bool {
-//	return p.JoystickSwap
-//}
 
 func (p *Config) SetPrg(prg string) {
 	p.prg = prg
@@ -70,4 +58,12 @@ func (p *Config) GetDisableCartridgeAutostart() bool {
 
 func (p *Config) Get1541RomPath() string {
 	return ""
+}
+
+func (p *Config) GetKernalRomPath() string {
+	return ""
+}
+
+func (p *Config) UseJiffy() bool {
+	return true
 }

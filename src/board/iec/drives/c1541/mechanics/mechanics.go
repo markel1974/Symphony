@@ -141,11 +141,6 @@ func (j *Mechanics) ReadGCRByte() uint8 {
 	return data
 }
 
-func (j *Mechanics) UpdateLEDs(l int) {
-	//TODO
-	// LedStateChangedEvent.Emit(_board->GetDeviceNumber(), state);
-}
-
 func (j *Mechanics) MoveHeadOut() {
 	if j.currentHalfTrack == 2 {
 		//NOTHING TO DO

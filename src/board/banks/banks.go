@@ -12,9 +12,10 @@ import (
 )
 
 const (
-	BasicRomFile  = "Basic.rom"
-	KernalRomFile = "Kernal.rom"
-	CharRomFile   = "Char.rom"
+	//KernalRomFile = "Kernal.rom"
+
+	BasicRomFile = "Basic.rom"
+	CharRomFile  = "Char.rom"
 )
 
 type ReadFn func(uint16) uint8
@@ -40,7 +41,7 @@ type Banks struct {
 	kernal          []byte
 	char            []byte
 	color           []byte
-	prefs           *config.Config
+	cfg             *config.Config
 	wTriggers       *WriteTriggers
 }
 
@@ -65,21 +66,21 @@ func NewBanks() *Banks {
 		kernal:          make([]byte, roms.KERNAL_ROM_SIZE),
 		char:            make([]byte, roms.CHAR_ROM_SIZE),
 		color:           make([]byte, 0x0400),
-		prefs:           nil,
+		cfg:             nil,
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
 	}
 	return b
 }
 
-func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia.MOS6526A, cia2 *cia.MOS6526B, cartMan *cartridges.Manager, prefs *config.Config) {
+func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia.MOS6526A, cia2 *cia.MOS6526B, cartMan *cartridges.Manager, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1
 	b.cia2 = cia2
 	b.cartMan = cartMan
 
-	b.prefs = prefs
+	b.cfg = cfg
 	b.bankWrite[0x0] = b.ramWrite0x0000
 	b.bankWrite[0x1] = b.ramWrite0x1000
 	b.bankWrite[0x2] = b.ramWrite0x2000
@@ -167,11 +168,12 @@ func (b *Banks) Reset() {
 
 func (b *Banks) initRom() {
 	romLoader := NewRomLoader()
-
-	//b.kernal = romLoader.Load(roms.BuiltinKernalRom, KernalRomFile)
-	//roms.PatchKernalRom(&b.kernal)
-
-	b.kernal = romLoader.Load(roms.BuiltinKernalJiffyRom, KernalRomFile)
+	if b.cfg.UseJiffy() {
+		b.kernal = romLoader.Load(roms.BuiltinKernalJiffyRom, b.cfg.GetKernalRomPath())
+	} else {
+		b.kernal = romLoader.Load(roms.BuiltinKernalRom, b.cfg.GetKernalRomPath())
+		//roms.PatchKernalRom(&b.kernal)
+	}
 	//b.kernal = b.romLoader.Load(builtin_kernal_fast_rom, KernalRomFile)
 	//b.kernal = b.romLoader.Load(builtin_kernal_rom, KernalRomFile)
 	b.basic = romLoader.Load(roms.BuiltinBasicRom, BasicRomFile)
