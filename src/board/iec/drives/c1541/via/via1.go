@@ -108,12 +108,14 @@ func (v *Via1) WriteByte(addr uint16, data uint8) {
 	case 0x1800:
 		v.prb = data | v.dipSwitch
 		data = (^v.prb) & v.ddrb
+		fmt.Println("0x1800) WRITING TO IEC", data)
 		v.iec.PeripheralWrite(v.deviceNumber, data)
 	case 0x1801:
 		v.pra = data
 	case 0x1802:
 		v.ddrb = data
 		data &= ^v.prb
+		fmt.Println("0x1802) WRITING TO IEC", data)
 		v.iec.PeripheralWrite(v.deviceNumber, data)
 	case 0x1803:
 		v.ddra = data
@@ -127,7 +129,6 @@ func (v *Via1) WriteByte(addr uint16, data uint8) {
 		v.t1l = (v.t1l & 0xff00) | uint16(data)
 	case 0x1807:
 		v.t1l = (v.t1l & 0xff) | (uint16(data) << 8)
-		break
 	case 0x1808:
 		v.t2l = (v.t2l & 0xff00) | uint16(data)
 	case 0x1809:
@@ -179,7 +180,7 @@ func (v *Via1) CountTimers() {
 	}
 }
 
-func (v *Via1) AtnStateChanged(state bool) {
+func (v *Via1) AtnStateChanged() {
 	data := (^v.prb) & v.ddrb
 	v.iec.PeripheralAtnResponse(v.deviceNumber, data)
 }

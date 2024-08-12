@@ -62,7 +62,6 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.via2.Setup()
 	m.via2.SignalTriggerIRQBind(m.pic.TriggerIRQ)
 	m.via2.SignalClearIRQBind(m.pic.ClearIRQ)
-
 }
 
 func (m *Board) Reset() {
@@ -88,7 +87,7 @@ func (m *Board) GetDeviceNumber() uint8 {
 }
 
 func (m *Board) AtnStateChanged(b bool, b2 bool) {
-	m.via1.AtnStateChanged(b)
+	m.via1.AtnStateChanged()
 	if b {
 		m.banks.AtnWakeUp()
 	}

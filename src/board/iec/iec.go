@@ -170,6 +170,10 @@ func (c *IEC) Emulate() {
 	if len(c.virtualDrives) == 0 {
 		return
 	}
+	if len(c.virtualDrives) == 1 {
+		c.virtualDrives[0].Emulate()
+		return
+	}
 	for _, vd := range c.virtualDrives {
 		vd.Emulate()
 	}

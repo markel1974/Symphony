@@ -13,7 +13,6 @@ type Banks struct {
 	via1 *via.Via1
 	via2 *via.Via2
 	cfg  *config.Config
-	idle bool
 }
 
 func New() *Banks {
@@ -26,6 +25,15 @@ func (r *Banks) Setup(via1 *via.Via1, via2 *via.Via2, cfg *config.Config) {
 	r.cfg = cfg
 	loader := NewLoader()
 	r.rom = loader.Load(cfg.UseJiffy(), cfg.Get1541RomPath())
+}
+
+func (r *Banks) AtnWakeUp() {
+	//Interrupt by negative edge of ATN on IEC bus
+	r.ram[0x7c] = 1
+}
+
+func (r *Banks) ReadInterval(start uint16, count uint16) []byte {
+	return r.ram[start : start+count]
 }
 
 func (r *Banks) Read(addr uint16) uint8 {
@@ -46,34 +54,25 @@ func (r *Banks) Write(addr uint16, data uint8) {
 	r.writeByteIO(addr, data)
 }
 
-func (r *Banks) AtnWakeUp() {
-	//Interrupt by negative edge of ATN on IEC bus
-	r.ram[0x7c] = 1
-	r.idle = false
-}
-
 func (r *Banks) readByteIO(addr uint16) uint8 {
-	tmp := addr & 0xfc00
-	if tmp == 0x1800 {
+	v := addr & 0xfc00
+	if v == 0x1800 {
 		return r.via1.ReadByte(addr)
 	}
-	if tmp == 0x1c00 {
+	if v == 0x1c00 {
 		return r.via2.ReadByte(addr)
 	}
 	return uint8(addr >> 8)
 }
 
 func (r *Banks) writeByteIO(addr uint16, data uint8) {
-	if (addr & 0xfc00) == 0x1800 {
+	v := addr & 0xfc00
+	if v == 0x1800 {
 		r.via1.WriteByte(addr, data)
 		return
 	}
-	if (addr & 0xfc00) == 0x1c00 {
+	if v == 0x1c00 {
 		r.via2.WriteByte(addr, data)
 		return
 	}
-}
-
-func (r *Banks) ReadInterval(start uint16, count uint16) []byte {
-	return r.ram[start : start+count]
 }
