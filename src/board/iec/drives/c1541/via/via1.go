@@ -33,7 +33,7 @@ func NewVia1(iec virtualdrive.IIec, deviceNumber uint8) *Via1 {
 	v.prbFilter |= 1 << 5 //Bits #5 - #6: Device number, set with jumper, minus 8; % 00 = 8; % 01 = 9; % 10 = 10; % 11 = 11. Default: % 00, 8.
 	v.prbFilter |= 1 << 6
 	v.prbFilter |= 0 << 7 //Bit #7: ATN IN; 0 = Low; 1 = High.
-	v.setDipSwitch()
+	v.setDipSwitch(deviceNumber)
 	return v
 }
 
@@ -185,8 +185,8 @@ func (v *Via1) AtnStateChanged() {
 	v.iec.PeripheralAtnResponse(v.deviceNumber, data)
 }
 
-func (v *Via1) setDipSwitch() {
-	switch v.deviceNumber - 8 {
+func (v *Via1) setDipSwitch(deviceNumber uint8) {
+	switch deviceNumber - 8 {
 	case 0:
 		v.dipSwitch |= 0 << 5
 		v.dipSwitch |= 0 << 6
