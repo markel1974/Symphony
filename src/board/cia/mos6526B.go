@@ -53,10 +53,13 @@ func (cia2 *MOS6526B) ReadRegister(addr uint16) uint8 {
 	addr = addr & 0x0f
 	switch addr {
 	case 0x00:
-		return ((cia2.prA | (^cia2.ddrA)) & 0x3f) | cia2.bus.CpuRead()
+		data := cia2.bus.CpuRead()
+		ret := ((cia2.prA | (^cia2.ddrA)) & 0x3f) | data
+		return ret
 
 	case 0x01:
-		return cia2.prB | (^cia2.ddrB)
+		ret := cia2.prB | (^cia2.ddrB)
+		return ret
 
 	case 0x02:
 		return cia2.ddrA
@@ -65,16 +68,20 @@ func (cia2 *MOS6526B) ReadRegister(addr uint16) uint8 {
 		return cia2.ddrB
 
 	case 0x04:
-		return uint8(cia2.timerA)
+		ret := uint8(cia2.timerA)
+		return ret
 
 	case 0x05:
-		return uint8(cia2.timerA >> 8)
+		ret := uint8(cia2.timerA >> 8)
+		return ret
 
 	case 0x06:
-		return uint8(cia2.timerB)
+		ret := uint8(cia2.timerB)
+		return ret
 
 	case 0x07:
-		return uint8(cia2.timerB >> 8)
+		ret := uint8(cia2.timerB >> 8)
+		return ret
 
 	case 0x08:
 		cia2.todHalt = false
@@ -94,10 +101,9 @@ func (cia2 *MOS6526B) ReadRegister(addr uint16) uint8 {
 		return cia2.sdr
 
 	case 0x0d:
-		ret := cia2.icr // Read and clear ICR
+		ret := cia2.icr
 		cia2.icr = 0
 		cia2.signalNMIClear.Emit()
-		//cia2.intr.ClearNMI()
 		return ret
 
 	case 0x0e:
@@ -114,8 +120,8 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 	switch addr {
 	case 0x0:
 		cia2.prA = data
-		v := (^(cia2.prA | (^cia2.ddrA))) & 3
-		cia2.signalChangedVA.Emit(v)
+		va := (^(cia2.prA | (^cia2.ddrA))) & 3
+		cia2.signalChangedVA.Emit(va)
 		cia2.bus.CpuWrite(data)
 
 	case 0x1:
@@ -123,8 +129,8 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 
 	case 0x2:
 		cia2.ddrA = data
-		v := (^(cia2.prA | (^cia2.ddrA))) & 3
-		cia2.signalChangedVA.Emit(v)
+		va := (^(cia2.prA | (^cia2.ddrA))) & 3
+		cia2.signalChangedVA.Emit(va)
 
 	case 0x3:
 		cia2.ddrB = data

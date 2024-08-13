@@ -5,7 +5,6 @@ import (
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541"
 	"github.com/markel1974/c64emu/src/board/iec/drives/fsdrive"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
-	"github.com/markel1974/c64emu/src/board/quartz"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/signals"
 	"strings"
@@ -37,27 +36,15 @@ const (
 */
 
 type IEC struct {
-	quartz *quartz.Quartz
-	cfg    *config.Config
-
-	atnState uint8
-
-	cpuPort uint8
-	cpuData uint8
-	cpuBus  uint8
-
+	cfg             *config.Config
+	atnState        uint8
+	cpuPort         uint8
+	cpuData         uint8
+	cpuBus          uint8
 	peripheralsPort uint8
 	peripheralsData []uint8
-	peripheralBus   []uint8
-
-	//peripheralStorage       []*C1541Model
-	//peripheralStorageActive []*C1541Model
-	//peripheralsCount        uint8
-	//peripheralsActiveCount  uint8
-
-	virtualDrives []virtualdrive.IVirtualDrive
-
-	ledSignal *signals.Signal2[int, uint8]
+	virtualDrives   []virtualdrive.IVirtualDrive
+	ledSignal       *signals.Signal2[int, uint8]
 
 	//openData                []byte
 	//listener                virtualdrive.IVirtualDrive // Pointer to active listener
@@ -72,12 +59,9 @@ type IEC struct {
 
 func NewIEC() *IEC {
 	c := &IEC{
-		peripheralBus:   make([]uint8, BusNum),
 		peripheralsData: make([]uint8, BusNum),
-		//peripheralStorage:       make([]*C1541Model, BusNum),
-		//peripheralStorageActive: make([]*C1541Model, BusNum),
-		virtualDrives: nil, //make([]virtualdrive.IVirtualDrive, MaxDriveSize),
-		ledSignal:     signals.NewSignal2[int, uint8](),
+		virtualDrives:   nil,
+		ledSignal:       signals.NewSignal2[int, uint8](),
 	}
 	return c
 }
@@ -93,7 +77,7 @@ func (c *IEC) AddPeripheral(peripheral *c1541.Board) {
 	//}
 	//c.peripheralStorage[c.peripheralsCount] = peripheral
 	//c.peripheralsCount++
-	c.rebuildPeripherals()
+	//c.rebuildPeripherals()
 	//TODO
 	//peripheral->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 }
@@ -119,47 +103,18 @@ func (c *IEC) RemovePeripheral(peripheral *c1541.Board) {
 	//		}
 	//	}
 	//}
-	c.rebuildPeripherals()
+	//c.rebuildPeripherals()
 }
 
-func (c *IEC) Setup(quartz *quartz.Quartz, cfg *config.Config) {
-	c.quartz = quartz
+func (c *IEC) Setup(cfg *config.Config) {
 	c.cfg = cfg
 	c.cfg.Bind(c.configChanged)
-	//TOOD FROM CONFIG / COMMAND
-	//for i := 0; i < MaxDriveSize; i++ {
-	//	c.virtualDrives[i] = c.createVirtualDrive(2 /*prefs.Emul1541Proc()*/, 8+i, prefs.GetDrivePath(i))
-	//}
 
 	//TODO ATTIVARE PER TEST
-	vd := c.createVirtualDrive(1, 8)
+	vd := c.createVirtualDrive(8, 1)
 	c.virtualDrives = append(c.virtualDrives, vd)
 
-	//vd := c.createVirtualDrive(2, 8)
-	//c.virtualDrives = append(c.virtualDrives, vd)
-
-	//vd := c.createVirtualDrive(1, 8)
-	//c.virtualDrives = append(c.virtualDrives, vd)
-
-	//for i := uint8(0); i < c.peripheralsCount; i++ {
-	//	c.peripheralStorage[i].New(prefs)
-	//}
-	c.rebuildPeripherals()
-	/*
-		for i := uint8(0); i < MaxDriveSize; i++ {
-			oldPath := ""
-			if c.virtualDrives[i] != nil {
-				oldPath = c.virtualDrives[i].GetPath()
-			}
-			newPath := prefs.GetDrivePath(int(i))
-			if (oldPath != newPath) || c.emu1541 != prefs.Emul1541Proc() {
-				c.destroyVirtualDrive(c.virtualDrives[i])
-				//c.virtualDrives[i] = c.createVirtualDrive(prefs.Emul1541Proc() , int(8+i), newPath)
-				c.virtualDrives[i] = c.createVirtualDrive(2 , int(8+i), newPath)
-			}
-		}
-	*/
-	//c.emu1541 = prefs.Emul1541Proc()
+	//c.rebuildPeripherals()
 }
 
 func (c *IEC) configChanged() {
@@ -196,7 +151,6 @@ func (c *IEC) Reset() {
 }
 
 func (c *IEC) buildCpuBus(data uint8) uint8 {
-	//bit used 6 5 4
 	b6 := (data << 2) & 0x80
 	b5 := (data << 2) & 0x40
 	b4 := (data << 1) & 0x10
@@ -204,65 +158,35 @@ func (c *IEC) buildCpuBus(data uint8) uint8 {
 	return value
 }
 
-func (c *IEC) buildPeripheralBus(data uint8) uint8 {
-	//bit used 4 2
+func (c *IEC) buildPeripheralBus(cpuBus uint8, data uint8) uint8 {
 	nData := ^data
-	bBus := ((nData ^ c.cpuBus) << 3) & 0x80
-	b4 := (data << 3) & 0x40
-	b2 := (data << 6) & bBus
-	value := b4 | b2
-	return value
-}
-
-func (c *IEC) buildPeripheralsPort() uint8 {
-	//bit used 7 8
-	bp7 := (c.cpuPort >> 4) & 0x04
-	bp8 := c.cpuPort >> 7
-	bb5 := (c.cpuBus << 3) & 0x80
-	value := bp7 | bp8 | bb5
+	bBus := ((nData ^ cpuBus) << 3) & 0x80
+	p1 := (data << 3) & 0x40
+	p2 := (data << 6) & bBus
+	value := p1 | p2
 	return value
 }
 
 func (c *IEC) updatePorts() {
-	//c.cpuPort = c.cpuBus
-	//for x := uint8(0); x < c.peripheralsActiveCount; x++ {
-	//	p := c.peripheralStorageActive[x]
-	//	//if (p->IsActive()) {
-	//	unit := p.GetDeviceNumber()
-	//	data := c.peripheralBus[unit]
-	//	c.cpuPort &= data
-	//	//}
-	//}
-	//c.peripheralsPort = ((c.cpuPort >> 4) & 0x4) | (c.cpuPort >> 7) | ((c.cpuBus << 3) & 0x80)
-
 	c.cpuPort = c.cpuBus
 	for _, vd := range c.virtualDrives {
 		unit := vd.GetDeviceNumber()
-		data := c.peripheralBus[unit]
-		c.cpuPort &= data
+		pData := c.peripheralsData[unit]
+		pBus := c.buildPeripheralBus(c.cpuBus, pData)
+		c.cpuPort &= pBus
 	}
-	c.peripheralsPort = c.buildPeripheralsPort()
+	bp7 := (c.cpuPort >> 4) & 0x04
+	bp8 := c.cpuPort >> 7
+	bb5 := (c.cpuBus << 3) & 0x80
+	value := bp7 | bp8 | bb5
+	c.peripheralsPort = value
 }
 
 func (c *IEC) CpuWrite(data uint8) {
-	//TODO IMPLEMENT
-	if len(c.virtualDrives) == 0 {
-		c.cpuPort = virtualdrive.StNotPresent
-		return
-	}
-
-	//if c.emu1541 {
-	//c.cpuBus = c.buildCpuBus(^data)
-
 	c.cpuBus = c.buildCpuBus(^data)
-
 	c.debugCpuWrite(^c.cpuBus)
-
-	c.updatePeripheralsBus()
 	c.updatePorts()
 	c.notifyCpuWrite()
-	//}
-
 	/*
 		_board->GetRam()[0x90] |= _board->GetBus()->Out(_board->GetRam()[0x95], _board->GetRam()[0xa3] & 0x80);
 		_board->GetRam()[0x90] |= _board->GetBus()->OutATN(_board->GetRam()[0x95]);
@@ -283,63 +207,28 @@ func (c *IEC) PeripheralRead() uint8 {
 	return c.peripheralsPort
 }
 
-func (c *IEC) PeripheralWrite(deviceNumber uint8, d uint8) {
-	c.peripheralBus[deviceNumber] = c.buildPeripheralBus(d)
-	c.peripheralsData[deviceNumber] = d
+func (c *IEC) PeripheralWrite(deviceNumber uint8, data uint8) {
+	c.peripheralsData[deviceNumber] = data
 	//c.debugPeripheralWrite(c.peripheralBus[deviceNumber])
 	c.updatePorts()
-	//fmt.Printf("CURRENT CPU PORT %d [%08b]\n", c.cpuPort, c.cpuPort)
 }
 
-func (c *IEC) PeripheralAtnResponse(deviceNumber uint8, data uint8) {
-	c.PeripheralWrite(deviceNumber, data)
-}
-
-func (c *IEC) createVirtualDrive(kind int, deviceNumber uint8) virtualdrive.IVirtualDrive {
+func (c *IEC) createVirtualDrive(deviceNumber uint8, kind int) virtualdrive.IVirtualDrive {
 	switch kind {
 	case 1:
-		vd := c1541.New(c.quartz, c, deviceNumber)
+		vd := c1541.New(c, deviceNumber)
 		vd.Setup(c.cfg)
 		return vd
 	case 2:
 		vd := fsdrive.New(c, deviceNumber)
 		vd.Setup(c.cfg)
-
 		//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 		return vd
 	}
 	return nil
 }
 
-func (c *IEC) updatePeripheralsBus() {
-	//for x := uint8(0); x < c.peripheralsActiveCount; x++ {
-	//	p := c.peripheralStorageActive[x]
-	//	//if (p->IsActive()) {
-	//	unit := p.GetDeviceNumber()
-	//	data := c.peripheralsData[unit]
-	//	c.peripheralBus[unit] = ((data << 3) & 0x40) | ((data << 6) & (((^data) ^ c.cpuBus) << 3) & 0x80)
-	//	//peripheralBus[unit] = (((peripheralsData[unit] << 3) & 0x40) | ((peripheralsData[unit] << 6) & ((~peripheralsData[unit] ^ cpuBus) << 3) & 0x80));
-	//	//}
-	//}
-
-	for _, vd := range c.virtualDrives {
-		unit := vd.GetDeviceNumber()
-		data := c.peripheralsData[unit]
-		c.peripheralBus[unit] = c.buildPeripheralBus(data)
-	}
-}
-
 func (c *IEC) notifyCpuWrite() {
-	//newAtn := c.cpuBus & 0x10
-	//if c.oldAtn != newAtn {
-	//	for x := uint8(0); x < c.peripheralsActiveCount; x++ {
-	//		p := c.peripheralStorageActive[x]
-	//		//if (p->IsActive()) {
-	//		p.AtnStateChanged((c.oldAtn) != 0)
-	//		//}
-	//	}
-	//	c.oldAtn = newAtn
-	//}
 	newAtnState := c.cpuBus & 0x10
 	if c.atnState == newAtnState {
 		for _, vd := range c.virtualDrives {
@@ -356,16 +245,6 @@ func (c *IEC) notifyCpuWrite() {
 //void IECBus::ledStateChangedEventHandler(int  deviceNumber, uint8 state) {
 //LedStateChangedEvent.Emit(deviceNumber, state);
 //}
-
-func (c *IEC) rebuildPeripherals() {
-	//c.peripheralsActiveCount = 0
-	//for driveId := uint8(0); driveId < c.peripheralsCount; driveId++ {
-	//	if c1541 := c.peripheralStorage[driveId]; c1541 != nil && c1541.IsActive() {
-	//		c.peripheralStorageActive[c.peripheralsActiveCount] = c1541
-	//		c.peripheralsActiveCount++
-	//	}
-	//}
-}
 
 func (c *IEC) ledStateChangedEventHandler(deviceNumber int, state uint8) {
 	c.ledSignal.Emit(deviceNumber, state)

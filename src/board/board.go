@@ -97,7 +97,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.banks = banks.NewBanks()
 
 	s.pic.Setup(s.quartz)
-	s.iec.Setup(s.quartz, cfg)
+	s.iec.Setup(cfg)
 	s.cpu.Setup(s.pic, s.banks, cfg)
 
 	s.vic.Setup(s.quartz, s.banks, cfg)

@@ -182,7 +182,8 @@ func (v *Via1) CountTimers() {
 
 func (v *Via1) AtnStateChanged() {
 	data := (^v.prb) & v.ddrb
-	v.iec.PeripheralAtnResponse(v.deviceNumber, data)
+	//v.iec.PeripheralAtnResponse(v.deviceNumber, data)
+	v.iec.PeripheralWrite(v.deviceNumber, data)
 }
 
 func (v *Via1) setDipSwitch(deviceNumber uint8) {

@@ -23,10 +23,9 @@ type Board struct {
 	cfg          *config.Config
 }
 
-func New(quartz *quartz.Quartz, iec virtualdrive.IIec, deviceNumber uint8) *Board {
+func New(iec virtualdrive.IIec, deviceNumber uint8) *Board {
 	return &Board{
 		iec:          iec,
-		quartz:       quartz,
 		deviceNumber: deviceNumber,
 		pic:          nil,
 		via1:         nil,
