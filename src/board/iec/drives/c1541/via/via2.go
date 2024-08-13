@@ -42,6 +42,7 @@ func (v *Via2) SignalClearIRQBind(fn func(uint32)) {
 }
 
 func (v *Via2) ReadByte(addr uint16) uint8 {
+	fmt.Printf("VIA2 READ %x\n", addr)
 	switch addr {
 	case 0x1c00:
 		ps := v.mec.WriteProtectionState()
@@ -92,6 +93,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 }
 
 func (v *Via2) WriteByte(addr uint16, data uint8) {
+	fmt.Printf("VIA2 WRITE %x -> %d\n", addr, data)
 	switch addr {
 	case 0x1c00:
 		m := v.prb ^ data
@@ -158,10 +160,9 @@ func (v *Via2) WriteByte(addr uint16, data uint8) {
 }
 
 func (v *Via2) CountTimers() {
-	tmp := uint(v.t1c) - 1
-
-	v.t1c = uint16(tmp)
-	if tmp > defaultViaTimeout {
+	t1c := uint(v.t1c) - 1
+	v.t1c = uint16(t1c)
+	if t1c > defaultViaTimeout {
 		// Reload from latch in free-run mode
 		if (v.acr & 0x40) != 0 {
 			v.t1c = v.t1l
@@ -174,9 +175,9 @@ func (v *Via2) CountTimers() {
 
 	if (v.acr & 0x20) == 0 {
 		// Only count in one-shot mode
-		tmp = uint(v.t2c) - 1
-		v.t2c = uint16(tmp)
-		if tmp > defaultViaTimeout {
+		t2c := uint(v.t2c) - 1
+		v.t2c = uint16(t2c)
+		if t2c > defaultViaTimeout {
 			v.ifr |= 0x20
 		}
 	}

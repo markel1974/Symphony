@@ -27,10 +27,10 @@ func (r *Banks) Setup(via1 *via.Via1, via2 *via.Via2, cfg *config.Config) {
 	r.rom = loader.Load(cfg.UseJiffy(), cfg.Get1541RomPath())
 }
 
-func (r *Banks) AtnWakeUp() {
-	//Interrupt by negative edge of ATN on IEC bus
-	r.ram[0x7c] = 1
-}
+//func (r *Banks) AtnWakeUp() {
+//Interrupt by negative edge of ATN on IEC bus
+//	r.ram[0x7c] = 1
+//}
 
 func (r *Banks) ReadInterval(start uint16, count uint16) []byte {
 	return r.ram[start : start+count]
@@ -49,6 +49,9 @@ func (r *Banks) Read(addr uint16) uint8 {
 func (r *Banks) Write(addr uint16, data uint8) {
 	if addr < 0x1000 {
 		r.ram[addr&0x7ff] = data
+		//if addr == 0x7c {
+		//	fmt.Println("--------------------------- ADDR 0x7c", data)
+		//}
 		return
 	}
 	r.writeByteIO(addr, data)

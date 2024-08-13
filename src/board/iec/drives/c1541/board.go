@@ -1,6 +1,7 @@
 package c1541
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/banks"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
@@ -88,7 +89,12 @@ func (m *Board) GetDeviceNumber() uint8 {
 func (m *Board) AtnStateChanged(b bool, b2 bool) {
 	m.via1.AtnStateChanged()
 	if b {
-		m.banks.AtnWakeUp()
+		fmt.Println("ATN", b, "RECEIVED - WAKE UP")
+		//https://sta.c64.org/cbm1541mem.html
+		//Interrupt by negative edge of ATN on IEC bus
+		m.banks.Write(0x7c, 1)
+	} else {
+		fmt.Println("ATN", b, "RECEIVED")
 	}
 }
 

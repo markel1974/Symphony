@@ -54,11 +54,12 @@ func (v *Via1) SignalClearIRQBind(fn func(uint32)) {
 }
 
 func (v *Via1) ReadByte(addr uint16) uint8 {
+	fmt.Printf("VIA1 READ %x\n", addr)
 	switch addr {
 	case 0x1800:
 		data := v.iec.PeripheralRead()
 		ret := (v.prb&v.prbFilter | data) ^ 0x85
-		fmt.Println("READING FROM IEC", data, ret)
+		//fmt.Println("READING FROM IEC", data, ret)
 		return ret
 	case 0x1801:
 		// Keep 1541C ROMs happy (track 0 sensor)
@@ -104,18 +105,19 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 }
 
 func (v *Via1) WriteByte(addr uint16, data uint8) {
+	fmt.Printf("VIA1 WRITE %x -> %d\n", addr, data)
 	switch addr {
 	case 0x1800:
 		v.prb = data | v.dipSwitch
 		data = (^v.prb) & v.ddrb
-		fmt.Println("0x1800) WRITING TO IEC", data)
+		//fmt.Println("0x1800) WRITING TO IEC", data)
 		v.iec.PeripheralWrite(v.deviceNumber, data)
 	case 0x1801:
 		v.pra = data
 	case 0x1802:
 		v.ddrb = data
 		data &= ^v.prb
-		fmt.Println("0x1802) WRITING TO IEC", data)
+		//fmt.Println("0x1802) WRITING TO IEC", data)
 		v.iec.PeripheralWrite(v.deviceNumber, data)
 	case 0x1803:
 		v.ddra = data
@@ -155,10 +157,10 @@ func (v *Via1) WriteByte(addr uint16, data uint8) {
 }
 
 func (v *Via1) CountTimers() {
-	tmp := uint(v.t1c) - 1
-	v.t1c = uint16(tmp)
+	t1c := uint(v.t1c) - 1
+	v.t1c = uint16(t1c)
 
-	if tmp > defaultViaTimeout {
+	if t1c > defaultViaTimeout {
 		if v.acr&0x40 != 0 {
 			// Reload from latch in free-run mode
 			v.t1c = v.t1l
@@ -172,9 +174,9 @@ func (v *Via1) CountTimers() {
 
 	if v.acr&0x20 == 0 {
 		// Only count in one-shot mode
-		tmp = uint(v.t2c) - 1
-		v.t2c = uint16(tmp)
-		if tmp > defaultViaTimeout {
+		t2c := uint(v.t2c) - 1
+		v.t2c = uint16(t2c)
+		if t2c > defaultViaTimeout {
 			v.ifr |= 0x20
 		}
 	}
@@ -182,7 +184,6 @@ func (v *Via1) CountTimers() {
 
 func (v *Via1) AtnStateChanged() {
 	data := (^v.prb) & v.ddrb
-	//v.iec.PeripheralAtnResponse(v.deviceNumber, data)
 	v.iec.PeripheralWrite(v.deviceNumber, data)
 }
 
