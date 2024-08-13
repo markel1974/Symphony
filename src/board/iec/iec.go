@@ -111,8 +111,10 @@ func (c *IEC) Setup(cfg *config.Config) {
 	c.cfg.Bind(c.configChanged)
 
 	//TODO ATTIVARE PER TEST
-	vd := c.createVirtualDrive(8, 1)
-	c.virtualDrives = append(c.virtualDrives, vd)
+	vd8 := c.createVirtualDrive(8, 1)
+	c.virtualDrives = append(c.virtualDrives, vd8)
+	//vd9 := c.createVirtualDrive(9, 1)
+	//c.virtualDrives = append(c.virtualDrives, vd9)
 
 	//c.rebuildPeripherals()
 }
