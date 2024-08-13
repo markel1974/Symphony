@@ -45,12 +45,11 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 	//fmt.Printf("VIA2 READ %x\n", addr)
 	switch addr {
 	case 0x1c00:
-		ps := v.mec.WriteProtectionState()
+		wps := v.mec.WriteProtectionState()
 		if v.mec.SyncFound() {
-			return (v.prb & 0x7f) | ps
-		} else {
-			return (v.prb | 0x80) | ps
+			return (v.prb & 0x7f) | wps
 		}
+		return (v.prb | 0x80) | wps
 	case 0x1c01:
 		return v.mec.ReadGCRByte()
 	case 0x1c02:
