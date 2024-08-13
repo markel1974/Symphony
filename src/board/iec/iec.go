@@ -184,7 +184,7 @@ func (c *IEC) updatePorts() {
 
 func (c *IEC) CpuWrite(data uint8) {
 	c.cpuBus = c.buildCpuBus(^data)
-	c.debugCpuWrite(^c.cpuBus)
+	//c.debugCpuWrite(^c.cpuBus)
 	c.updatePorts()
 	c.notifyCpuWrite()
 	/*
