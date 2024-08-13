@@ -185,7 +185,7 @@ func (cia1 *MOS6526A) ReadRegister(addr uint16) uint8 {
 	case 0x0d:
 		ret := cia1.icr // Read and clear ICR
 		cia1.icr = 0
-		cia1.signalIRQClear.Emit(intrCiaId)
+		cia1.signalIRQClear.Emit(intrCia1Id)
 		return ret
 
 	case 0x0e:
@@ -276,7 +276,7 @@ func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 		if (cia1.icr & cia1.intMask & 0x1f) != 0 {
 			// Trigger IRQ if pending
 			cia1.icr |= 0x80
-			cia1.signalIRQTrigger.Emit(intrCiaId)
+			cia1.signalIRQTrigger.Emit(intrCia1Id)
 		}
 
 	case 0xe:
@@ -298,7 +298,7 @@ func (cia1 *MOS6526A) TriggerInterrupt(bit uint8) {
 	cia1.icr |= bit
 	if (cia1.intMask & bit) != 0 {
 		cia1.icr |= 0x80
-		cia1.signalIRQTrigger.Emit(intrCiaId)
+		cia1.signalIRQTrigger.Emit(intrCia1Id)
 	}
 }
 

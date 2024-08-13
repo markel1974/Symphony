@@ -38,10 +38,12 @@ import (
 type MOS6510 struct {
 	*Core
 	prefs *config.Config
+	id    string
 }
 
-func NewMOS6510() *MOS6510 {
+func NewMOS6510(id string) *MOS6510 {
 	cpu := &MOS6510{
+		id:    id,
 		prefs: nil,
 		Core:  nil,
 	}

@@ -5,6 +5,14 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
+// $0000-$07ff _ram (2K)
+// $0800-$0fff _ram mirror
+// $1000-$17ff free
+// $1800-$1bff VIA 1
+// $1c00-$1fff VIA 2
+// $2000-$bfff free
+// $c000-$ffff _rom (16K)
+
 const c1541RamSize = 0x0800
 
 type Banks struct {

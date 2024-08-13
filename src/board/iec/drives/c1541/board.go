@@ -44,7 +44,7 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.banks = banks.New()
 	m.quartz = quartz.NewQuartz()
 	m.pic = cpu.NewPic()
-	m.cpu = cpu.NewMOS6510()
+	m.cpu = cpu.NewMOS6510("c1541")
 	m.mec = mechanics.NewMechanics(m.banks, m.deviceNumber)
 	m.via1 = via.NewVia1(m.iec, m.deviceNumber)
 	m.via2 = via.NewVia2(m.iec, m.mec)
@@ -75,6 +75,7 @@ func (m *Board) Emulate() {
 	m.via1.CountTimers()
 	m.via2.CountTimers()
 	m.cpu.Emulate()
+	m.quartz.AddCycle()
 }
 
 func (m *Board) Ready() bool {

@@ -1,6 +1,6 @@
 package cia
 
-const intrCiaId = 0x8
+const intrCia1Id = 4
 
 type IBus interface {
 	CpuRead() uint8

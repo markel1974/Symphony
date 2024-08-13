@@ -46,7 +46,7 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 
 	s.pic.Setup(s.quartz)
 
-	s.cpu = cpu.NewMOS6510()
+	s.cpu = cpu.NewMOS6510("superCpu")
 	s.cpu.Setup(s.pic, board, nil)
 
 	s.board.IRQTriggerBind(s.pic.TriggerIRQ)

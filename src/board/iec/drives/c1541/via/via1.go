@@ -1,7 +1,6 @@
 package via
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/signals"
 )
@@ -54,7 +53,7 @@ func (v *Via1) SignalClearIRQBind(fn func(uint32)) {
 }
 
 func (v *Via1) ReadByte(addr uint16) uint8 {
-	fmt.Printf("VIA1 READ %x\n", addr)
+	//fmt.Printf("VIA1 READ %x\n", addr)
 	switch addr {
 	case 0x1800:
 		data := v.iec.PeripheralRead()
@@ -70,6 +69,7 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 		return v.ddra
 	case 0x1804:
 		v.ifr &= 0xbf
+		//fmt.Println("CLEAR VIA1 IRQ")
 		v.signalIRQClear.Emit(intrVIA1Id)
 		return uint8(v.t1c)
 	case 0x1805:
@@ -105,7 +105,7 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 }
 
 func (v *Via1) WriteByte(addr uint16, data uint8) {
-	fmt.Printf("VIA1 WRITE %x -> %d\n", addr, data)
+	//fmt.Printf("VIA1 WRITE %x -> %d\n", addr, data)
 	switch addr {
 	case 0x1800:
 		v.prb = data | v.dipSwitch
@@ -168,6 +168,7 @@ func (v *Via1) CountTimers() {
 		v.ifr |= 0x40
 		//TODO TEST
 		if v.ier&0x40 != 0 {
+			//fmt.Println("TRIGGER VIA1 IRQ")
 			v.signalIRQTrigger.Emit(intrVIA1Id)
 		}
 	}

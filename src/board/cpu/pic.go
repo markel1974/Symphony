@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	intRstId = 0x1
-	intNmiId = 0x2
+	intRstId = 1
+	intNmiId = 2
 )
 
 type Pic struct {

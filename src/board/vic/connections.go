@@ -1,6 +1,6 @@
 package vic
 
-const intrVicId = 0x4
+const intrVicId = 3
 
 type IBanks interface {
 	ReadCharRom(uint16) uint8

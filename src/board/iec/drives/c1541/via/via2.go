@@ -42,7 +42,7 @@ func (v *Via2) SignalClearIRQBind(fn func(uint32)) {
 }
 
 func (v *Via2) ReadByte(addr uint16) uint8 {
-	fmt.Printf("VIA2 READ %x\n", addr)
+	//fmt.Printf("VIA2 READ %x\n", addr)
 	switch addr {
 	case 0x1c00:
 		ps := v.mec.WriteProtectionState()
@@ -59,6 +59,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 		return v.ddra
 	case 0x1c04:
 		v.ifr &= 0xbf
+		//fmt.Println("ClEAR VIA2 IRQ")
 		v.signalIRQClear.Emit(intrVIA2Id)
 		return uint8(v.t1c)
 	case 0x1c05:
@@ -93,7 +94,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 }
 
 func (v *Via2) WriteByte(addr uint16, data uint8) {
-	fmt.Printf("VIA2 WRITE %x -> %d\n", addr, data)
+	//fmt.Printf("VIA2 WRITE %x -> %d\n", addr, data)
 	switch addr {
 	case 0x1c00:
 		m := v.prb ^ data
@@ -169,6 +170,7 @@ func (v *Via2) CountTimers() {
 		}
 		v.ifr |= 0x40
 		if (v.ier & 0x40) != 0 {
+			//fmt.Println("TRIGGER VIA2 IRQ")
 			v.signalIRQTrigger.Emit(intrVIA2Id)
 		}
 	}
