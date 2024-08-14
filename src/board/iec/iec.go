@@ -45,7 +45,6 @@ type IEC struct {
 	peripheralsData []uint8
 	virtualDrives   []virtualdrive.IVirtualDrive
 	ledSignal       *signals.Signal2[int, uint8]
-
 	//openData                []byte
 	//listener                virtualdrive.IVirtualDrive // Pointer to active listener
 	//talker                  virtualdrive.IVirtualDrive // Pointer to active talker
@@ -110,9 +109,11 @@ func (c *IEC) Setup(cfg *config.Config) {
 	c.cfg = cfg
 	c.cfg.Bind(c.configChanged)
 
-	//TODO ATTIVARE PER TEST
-	vd8 := c.createVirtualDrive(8, 1)
-	c.virtualDrives = append(c.virtualDrives, vd8)
+	for idx, d := range cfg.GetDrives() {
+		vd := c.createVirtualDrive(d.Kind, d.Opts, uint8(idx)+8)
+		c.virtualDrives = append(c.virtualDrives, vd)
+	}
+
 	//vd9 := c.createVirtualDrive(9, 1)
 	//c.virtualDrives = append(c.virtualDrives, vd9)
 
@@ -213,15 +214,15 @@ func (c *IEC) PeripheralWrite(deviceNumber uint8, data uint8) {
 	c.updatePorts()
 }
 
-func (c *IEC) createVirtualDrive(deviceNumber uint8, kind int) virtualdrive.IVirtualDrive {
+func (c *IEC) createVirtualDrive(kind string, opts string, deviceNumber uint8) virtualdrive.IVirtualDrive {
 	var vd virtualdrive.IVirtualDrive
 	switch kind {
-	case 1:
-		vd = c1541.New(c, deviceNumber)
-	case 2:
-		vd = fsdrive.New(c, deviceNumber)
+	case "C1541":
+		vd = c1541.New(c, deviceNumber, opts)
+	case "FSDrive":
+		vd = fsdrive.New(c, deviceNumber, opts)
 	default:
-		vd = c1541.New(c, deviceNumber)
+		vd = c1541.New(c, deviceNumber, opts)
 	}
 	vd.Setup(c.cfg)
 	return vd

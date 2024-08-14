@@ -3,12 +3,18 @@ package config
 import "github.com/markel1974/c64emu/src/signals"
 
 type Cartridge struct {
-	Path string
 	Kind string
+	Path string
+}
+
+type Drive struct {
+	Kind string
+	Opts string
 }
 
 type Config struct {
 	cartridges                []Cartridge
+	drives                    []Drive
 	DisableCartridgeAutostart bool
 	changed                   *signals.Signal
 	prg                       string
@@ -26,10 +32,12 @@ func (p *Config) Bind(changed func()) {
 	p.changed.Bind(changed)
 }
 
-func (p *Config) GetDrivePath(i int) string {
-	return "/Users/tinmr305/Downloads/c64carts/C64_disk/blast199.d64"
-	//TODO IMPLEMENT
-	//return false
+func (p *Config) AddDrive(kind string, opts string) {
+	p.drives = append(p.drives, Drive{Kind: kind, Opts: opts})
+}
+
+func (p *Config) GetDrives() []Drive {
+	return p.drives
 }
 
 func (p *Config) SetPrg(prg string) {

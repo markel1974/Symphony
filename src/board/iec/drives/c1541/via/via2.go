@@ -187,8 +187,8 @@ func (v *Via2) CountTimers() {
 	}
 }
 
-func (v *Via2) Overflow() bool {
-	if pcr := v.pcr & 0x0e; pcr == 0x0e {
+func (v *Via2) ByteReady() bool {
+	if v.pcr&0x0e == 0x0e {
 		return true
 	}
 	return false

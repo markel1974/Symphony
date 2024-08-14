@@ -1,7 +1,6 @@
 package mechanics
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"io"
 	"os"
 )
@@ -40,16 +39,8 @@ func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
 	return j
 }
 
-func (j *Mechanics) Setup(prefs *config.Config) {
-	//if (prefs.Emul1541Proc()) {
-	//	filePath = prefs.GetDrivePath(board->GetDeviceNumber() - 8)
-	//	openFile(filePath)
-	//}
-	//if !prefs.Emul1541Proc() {
-	//	j.closeFile()
-	//	return
-	//}
-	filePath := prefs.GetDrivePath(int(j.deviceNumber - 8))
+func (j *Mechanics) Setup(filePath string) {
+	//filePath := prefs.GetDrivePath(int(j.deviceNumber - 8))
 	if !j.HasDisk() {
 		j.filePath = filePath
 		j.openFile()

@@ -37,17 +37,17 @@ import (
 
 type MOS6510 struct {
 	*Core
-	prefs      *config.Config
-	id         string
-	overflowFn func() bool
+	prefs          *config.Config
+	id             string
+	overflowBranch func() bool
 }
 
 func NewMOS6510(id string) *MOS6510 {
 	cpu := &MOS6510{
-		Core:       nil,
-		id:         id,
-		prefs:      nil,
-		overflowFn: nil,
+		Core:           nil,
+		id:             id,
+		prefs:          nil,
+		overflowBranch: nil,
 	}
 	return cpu
 }
@@ -65,11 +65,12 @@ func (cpu *MOS6510) Reset() {
 	cpu.opFlags = 0
 }
 
-func (cpu *MOS6510) SetOverflow(so func() bool) {
-	cpu.overflowFn = so
+// SetOverflowBranch implement 6502c SO (SOB) Pin
+func (cpu *MOS6510) SetOverflowBranch(sob func() bool) {
+	cpu.overflowBranch = sob
 }
 
-// Stack
+// Stack Function
 
 func (cpu *MOS6510) popFlags(data uint8) {
 	cpu.nFlag = data
@@ -1673,7 +1674,7 @@ func (cpu *MOS6510) Emulate() {
 		}
 		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
-		if cpu.overflowFn != nil && cpu.overflowFn() {
+		if cpu.overflowBranch != nil && cpu.overflowBranch() {
 			cpu.vFlag = 1
 		}
 		if cpu.vFlag == 0 {
@@ -1688,7 +1689,7 @@ func (cpu *MOS6510) Emulate() {
 		}
 		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
-		if cpu.overflowFn != nil && cpu.overflowFn() {
+		if cpu.overflowBranch != nil && cpu.overflowBranch() {
 			cpu.vFlag = 1
 		}
 		if cpu.vFlag != 0 {

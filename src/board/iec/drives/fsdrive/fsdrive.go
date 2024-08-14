@@ -27,6 +27,7 @@ type FSDrive struct {
 	iec            virtualdrive.IIec
 	commands       *virtualdrive.Commands
 	deviceNumber   uint8
+	path           string
 	respond        *Queue
 	_dir_path      string       // Path to directory
 	_orig_dir_path string       // Original directory path
@@ -40,10 +41,11 @@ type FSDrive struct {
 	//test           int64
 }
 
-func New(iec virtualdrive.IIec, deviceNumber uint8) *FSDrive {
+func New(iec virtualdrive.IIec, deviceNumber uint8, path string) *FSDrive {
 	v := &FSDrive{
 		iec:            iec,
 		deviceNumber:   deviceNumber,
+		path:           path,
 		respond:        NewQueue(512),
 		commands:       virtualdrive.NewCommands(),
 		_orig_dir_path: "",
@@ -57,8 +59,7 @@ func New(iec virtualdrive.IIec, deviceNumber uint8) *FSDrive {
 func (v *FSDrive) Setup(cfg *config.Config) {
 	v.cfg = cfg
 	v.cfg.Bind(v.configChanged)
-	path := cfg.GetDrivePath(int(v.deviceNumber))
-	v._orig_dir_path = path
+	v._orig_dir_path = v.path
 	if v.changeDirectory(v._orig_dir_path) {
 		for i := 0; i < 16; i++ {
 			v._file[i] = nil

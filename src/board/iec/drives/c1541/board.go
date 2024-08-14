@@ -1,7 +1,6 @@
 package c1541
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/banks"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
@@ -21,12 +20,14 @@ type Board struct {
 	banks        *banks.Banks
 	mec          *mechanics.Mechanics
 	deviceNumber uint8
+	filePath     string
 	cfg          *config.Config
 }
 
-func New(iec virtualdrive.IIec, deviceNumber uint8) *Board {
+func New(iec virtualdrive.IIec, deviceNumber uint8, opts string) *Board {
 	return &Board{
 		iec:          iec,
+		filePath:     opts,
 		deviceNumber: deviceNumber,
 		pic:          nil,
 		via1:         nil,
@@ -53,7 +54,7 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.pic.Setup(m.quartz)
 	m.cpu.Setup(m.pic, m.banks, cfg)
 
-	m.mec.Setup(cfg)
+	m.mec.Setup(m.filePath)
 
 	m.via1.Setup()
 	m.via1.SignalTriggerIRQBind(m.pic.TriggerIRQ)
@@ -62,9 +63,7 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.via2.Setup()
 	m.via2.SignalTriggerIRQBind(m.pic.TriggerIRQ)
 	m.via2.SignalClearIRQBind(m.pic.ClearIRQ)
-	m.cpu.SetOverflow(m.via2.Overflow)
-	//TODO
-	//m.via2.SignalSOBBind(m.cpu.SOBPin)
+	m.cpu.SetOverflowBranch(m.via2.ByteReady)
 }
 
 func (m *Board) Reset() {
@@ -93,12 +92,10 @@ func (m *Board) GetDeviceNumber() uint8 {
 func (m *Board) AtnStateChanged(b bool, b2 bool) {
 	m.via1.AtnStateChanged()
 	if b {
-		fmt.Println("ATN", b, "RECEIVED - WAKE UP")
+		//fmt.Println("ATN", b, "RECEIVED - WAKE UP")
 		//https://sta.c64.org/cbm1541mem.html
 		//Interrupt by negative edge of ATN on IEC bus
 		m.banks.Write(0x7c, 1)
-	} else {
-		fmt.Println("ATN", b, "RECEIVED")
 	}
 }
 
