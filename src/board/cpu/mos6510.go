@@ -37,15 +37,17 @@ import (
 
 type MOS6510 struct {
 	*Core
-	prefs *config.Config
-	id    string
+	prefs      *config.Config
+	id         string
+	overflowFn func() bool
 }
 
 func NewMOS6510(id string) *MOS6510 {
 	cpu := &MOS6510{
-		id:    id,
-		prefs: nil,
-		Core:  nil,
+		Core:       nil,
+		id:         id,
+		prefs:      nil,
+		overflowFn: nil,
 	}
 	return cpu
 }
@@ -61,6 +63,10 @@ func (cpu *MOS6510) Reset() {
 	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8)
 	cpu.state = STATE_LAST
 	cpu.opFlags = 0
+}
+
+func (cpu *MOS6510) SetOverflow(so func() bool) {
+	cpu.overflowFn = so
 }
 
 // Stack
@@ -1667,6 +1673,9 @@ func (cpu *MOS6510) Emulate() {
 		}
 		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
+		if cpu.overflowFn != nil && cpu.overflowFn() {
+			cpu.vFlag = 1
+		}
 		if cpu.vFlag == 0 {
 			cpu.state = STATE_LAST
 		} else {
@@ -1679,6 +1688,9 @@ func (cpu *MOS6510) Emulate() {
 		}
 		data := cpu.banks.Read(cpu.pc)
 		cpu.pc++
+		if cpu.overflowFn != nil && cpu.overflowFn() {
+			cpu.vFlag = 1
+		}
 		if cpu.vFlag != 0 {
 			cpu.state = STATE_LAST
 		} else {

@@ -2,8 +2,8 @@ package c1541
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/board/cpu"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/banks"
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/cpu"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/via"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
@@ -15,7 +15,7 @@ type Board struct {
 	pic          *cpu.Pic
 	iec          virtualdrive.IIec
 	quartz       *quartz.Quartz
-	cpu          *cpu.MOS6502
+	cpu          *cpu.MOS6510
 	via1         *via.Via1
 	via2         *via.Via2
 	banks        *banks.Banks
@@ -44,7 +44,7 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.banks = banks.New()
 	m.quartz = quartz.NewQuartz()
 	m.pic = cpu.NewPic()
-	m.cpu = cpu.NewMOS6502("c1541")
+	m.cpu = cpu.NewMOS6510("c1541")
 	m.mec = mechanics.NewMechanics(m.banks, m.deviceNumber)
 	m.via1 = via.NewVia1(m.iec, m.deviceNumber)
 	m.via2 = via.NewVia2(m.iec, m.mec)
@@ -62,6 +62,7 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.via2.Setup()
 	m.via2.SignalTriggerIRQBind(m.pic.TriggerIRQ)
 	m.via2.SignalClearIRQBind(m.pic.ClearIRQ)
+	m.cpu.SetOverflow(m.via2.Overflow)
 	//TODO
 	//m.via2.SignalSOBBind(m.cpu.SOBPin)
 }

@@ -11,7 +11,6 @@ type Via2 struct {
 	*Core
 	iec              virtualdrive.IIec
 	mec              *mechanics.Mechanics
-	signalSOB        *signals.Signal
 	signalIRQTrigger *signals.SignalUint32
 	signalIRQClear   *signals.SignalUint32
 }
@@ -23,7 +22,6 @@ func NewVia2(iec virtualdrive.IIec, mec *mechanics.Mechanics) *Via2 {
 		mec:              mec,
 		signalIRQTrigger: signals.NewSignalUint32(),
 		signalIRQClear:   signals.NewSignalUint32(),
-		signalSOB:        signals.NewSignal(),
 	}
 	return v
 }
@@ -43,10 +41,6 @@ func (v *Via2) SignalClearIRQBind(fn func(uint32)) {
 	v.signalIRQClear.Bind(fn)
 }
 
-func (v *Via2) SignalSOBBind(fn func()) {
-	v.signalSOB.Bind(fn)
-}
-
 func (v *Via2) ReadByte(addr uint16) uint8 {
 	//fmt.Printf("VIA2 READ %x\n", addr)
 	switch addr {
@@ -57,12 +51,8 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 		}
 		return (v.prb | 0x80) | wps
 	case 0x1c01:
-		//TODO SOB PIN 6502
 		//fmt.Println("READING GCR BYTE - 0x1c01")
 		d := v.mec.ReadGCRByte()
-		//if pcr := v.pcr & 0x0e; pcr == 0x0e {
-		//	v.signalSOB.Emit()
-		//}
 		return d
 	case 0x1c02:
 		return v.ddrb
@@ -98,12 +88,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 	case 0x1c0e:
 		return v.ier | 0x80
 	case 0x1c0f:
-		//TODO SOB PIN 6502
-		//fmt.Println("READING GCR BYTE - 0x1c0f")
 		d := v.mec.ReadGCRByte()
-		//if pcr := v.pcr & 0x0e; pcr == 0x0e {
-		//	v.signalSOB.Emit()
-		//}
 		return d
 	default:
 		return 0
@@ -200,6 +185,13 @@ func (v *Via2) CountTimers() {
 			v.ifr |= 0x20
 		}
 	}
+}
+
+func (v *Via2) Overflow() bool {
+	if pcr := v.pcr & 0x0e; pcr == 0x0e {
+		return true
+	}
+	return false
 }
 
 func (v *Via2) WriteSector() {
