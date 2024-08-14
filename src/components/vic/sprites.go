@@ -135,7 +135,7 @@ func (sp *Sprites) Draw(lineStart int) {
 	copy(sp.collisionBuffer, _sprEmptyCollBuf)
 	for sNum, sBit := uint8(0), uint8(1); sNum < SpriteNumber; sNum, sBit = sNum+1, sBit<<1 {
 		if sp.spriteFlags&sBit != 0 {
-			color := sp.core.mXcColor[sNum]
+			sColor := sp.core.mXcColor[sNum]
 			sData := sp.drawData[sNum]
 			sOffset := int(sp.core.mXx[sNum]) + SpriteNumber
 			lineOffset := lineStart + sOffset
@@ -146,15 +146,15 @@ func (sp *Sprites) Draw(lineStart int) {
 			multiColor := sp.core.mmc&sBit != 0
 			if expanded {
 				if multiColor {
-					sp.drawExpandedMulticolor(lineOffset, color, sData, sOffset, m, s, sBit, &gfxColl, &sprColl)
+					sp.drawExpandedMulticolor(lineOffset, sColor, sData, sOffset, m, s, sBit, &gfxColl, &sprColl)
 				} else {
-					sp.drawExpandedStandard(lineOffset, color, sData, sOffset, m, s, sBit, &gfxColl, &sprColl)
+					sp.drawExpandedStandard(lineOffset, sColor, sData, sOffset, m, s, sBit, &gfxColl, &sprColl)
 				}
 			} else {
 				if multiColor {
-					sp.drawUnexpandedMulticolor(lineOffset, color, sData, sOffset, m, s, sBit, &gfxColl, &sprColl)
+					sp.drawUnexpandedMulticolor(lineOffset, sColor, sData, sOffset, m, s, sBit, &gfxColl, &sprColl)
 				} else {
-					sp.drawUnexpandedStandard(lineOffset, color, sData, sOffset, m, s, sBit, &gfxColl, &sprColl)
+					sp.drawUnexpandedStandard(lineOffset, sColor, sData, sOffset, m, s, sBit, &gfxColl, &sprColl)
 				}
 			}
 		}
@@ -183,7 +183,7 @@ func (sp *Sprites) Draw(lineStart int) {
 	}
 }
 
-func (sp *Sprites) drawExpandedMulticolor(lineOffset int, color uint8, sData uint32, q int, m int, s int, sBit uint8, gfxColl *uint8, sprColl *uint8) {
+func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8, gfxColl *uint8, sprColl *uint8) {
 	foreMaskL := sp.foreMask.GetL(m, s)
 	foreMaskR := sp.foreMask.GetR(m, s)
 	// Expand sprite data
@@ -212,7 +212,7 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, color uint8, sData uin
 			if plane0L&0x80000000 != 0 {
 				selectedColor = sp.core.mm1Color
 			} else {
-				selectedColor = color
+				selectedColor = sColor
 			}
 		} else {
 			if plane0L&0x80000000 != 0 {
@@ -221,7 +221,7 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, color uint8, sData uin
 				continue
 			}
 		}
-		sp.drawPixel(lineOffset, q, idx, sBit, selectedColor, sprColl)
+		sp.drawPixel(lineOffset, sOffset, idx, sBit, selectedColor, sprColl)
 	}
 	for ; idx < 48; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
 		selectedColor := uint8(0)
@@ -229,7 +229,7 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, color uint8, sData uin
 			if plane0R&0x80000000 != 0 {
 				selectedColor = sp.core.mm1Color
 			} else {
-				selectedColor = color
+				selectedColor = sColor
 			}
 		} else {
 			if plane0R&0x80000000 != 0 {
@@ -238,11 +238,11 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, color uint8, sData uin
 				continue
 			}
 		}
-		sp.drawPixel(lineOffset, q, idx, sBit, selectedColor, sprColl)
+		sp.drawPixel(lineOffset, sOffset, idx, sBit, selectedColor, sprColl)
 	}
 }
 
-func (sp *Sprites) drawExpandedStandard(lineOffset int, color uint8, sData uint32, q int, m int, s int, sBit uint8, gfxColl *uint8, sprColl *uint8) {
+func (sp *Sprites) drawExpandedStandard(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8, gfxColl *uint8, sprColl *uint8) {
 	foreMaskL := sp.foreMask.GetL(m, s)
 	foreMaskR := sp.foreMask.GetR(m, s)
 	sDataL := uint32(_expTable[sData>>24&0xff])<<16 | uint32(_expTable[sData>>16&0xff])
@@ -257,25 +257,25 @@ func (sp *Sprites) drawExpandedStandard(lineOffset int, color uint8, sData uint3
 	var idx = 0
 	for ; idx < 32; idx, sDataL = idx+1, sDataL<<1 {
 		if (sDataL & 0x80000000) != 0 {
-			sp.drawPixel(lineOffset, q, idx, sBit, color, sprColl)
+			sp.drawPixel(lineOffset, sOffset, idx, sBit, sColor, sprColl)
 		}
 	}
 	for ; idx < 48; idx, sDataR = idx+1, sDataR<<1 {
 		if (sDataR & 0x80000000) != 0 {
-			sp.drawPixel(lineOffset, q, idx, sBit, color, sprColl)
+			sp.drawPixel(lineOffset, sOffset, idx, sBit, sColor, sprColl)
 		}
 	}
 }
 
-func (sp *Sprites) drawUnexpandedMulticolor(lineOffset int, color uint8, sData uint32, sOffset int, m int, s int, sBit uint8, gfxColl *uint8, sprColl *uint8) {
+func (sp *Sprites) drawUnexpandedMulticolor(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8, gfxColl *uint8, sprColl *uint8) {
 	foreMask := sp.foreMask.GetL(m, s)
 	// Convert sprite pixels to bitPlanes
-	plane0 := (sData & 0x55555555) | (sData&0x55555555)<<1
-	plane1 := (sData & 0xaaaaaaaa) | (sData&0xaaaaaaaa)>>1
+	plane0 := (sData & 0x55555555) | ((sData & 0x55555555) << 1)
+	plane1 := (sData & 0xaaaaaaaa) | ((sData & 0xaaaaaaaa) >> 1)
 	// Check graphics collision
 	if (foreMask & (plane0 | plane1)) != 0 {
 		*gfxColl |= sBit
-		if sp.core.mdp&sBit != 0 {
+		if (sp.core.mdp & sBit) != 0 {
 			// Mask sprite if in background
 			plane0 &= ^foreMask
 			plane1 &= ^foreMask
@@ -287,7 +287,7 @@ func (sp *Sprites) drawUnexpandedMulticolor(lineOffset int, color uint8, sData u
 			if (plane0 & 0x80000000) != 0 {
 				selectedColor = sp.core.mm1Color
 			} else {
-				selectedColor = color
+				selectedColor = sColor
 			}
 		} else {
 			if (plane0 & 0x80000000) != 0 {
@@ -300,7 +300,7 @@ func (sp *Sprites) drawUnexpandedMulticolor(lineOffset int, color uint8, sData u
 	}
 }
 
-func (sp *Sprites) drawUnexpandedStandard(lineOffset int, color uint8, sData uint32, sOffset int, m int, s int, sBit uint8, gfxColl *uint8, sprColl *uint8) {
+func (sp *Sprites) drawUnexpandedStandard(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8, gfxColl *uint8, sprColl *uint8) {
 	foreMask := sp.foreMask.GetL(m, s)
 	// Check graphics collision
 	if (foreMask & sData) != 0 {
@@ -312,21 +312,22 @@ func (sp *Sprites) drawUnexpandedStandard(lineOffset int, color uint8, sData uin
 	}
 	for idx := 0; idx < 24; idx, sData = idx+1, sData<<1 {
 		if (sData & 0x80000000) != 0 {
-			sp.drawPixel(lineOffset, sOffset, idx, sBit, color, sprColl)
+			sp.drawPixel(lineOffset, sOffset, idx, sBit, sColor, sprColl)
 		}
 	}
 }
 
 func (sp *Sprites) drawPixel(lineOffset int, sOffset int, idx int, sBit uint8, selColor uint8, sprColl *uint8) {
+	collision := false
 	if collIdx := sOffset + idx; collIdx < DisplayXFillMax {
-		// Check graphics collision
 		if (sp.collisionBuffer[collIdx]) != 0 {
-			// Collision with sprite?
 			*sprColl |= sp.collisionBuffer[collIdx] | sBit
+			collision = true
 		} else {
-			// Draw pixel if no collision
-			sp.displayBuffer.Set(lineOffset+idx, selColor)
 			sp.collisionBuffer[collIdx] = sBit
 		}
+	}
+	if !collision {
+		sp.displayBuffer.Set(lineOffset+idx, selColor)
 	}
 }
