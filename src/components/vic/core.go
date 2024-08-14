@@ -226,7 +226,7 @@ func (vic *Core) ResetCounters() {
 	}
 }
 
-func (vic *Core) UpdateRasterY() {
+func (vic *Core) IncrementCounters() {
 	// Increment raster counter
 	vic.rasterY++
 	// Trigger raster IRQ if IRQ line reached
@@ -235,8 +235,9 @@ func (vic *Core) UpdateRasterY() {
 	}
 	// In line $30, the DEN bit controls if Bad Lines can occur
 	if vic.rasterY == 0x30 {
-		vic.badLinesEnabled = vic.cr1&0x10 != 0
+		vic.badLinesEnabled = (vic.cr1 & 0x10) != 0
 	}
+	vic.BadLineUpdate()
 }
 
 func (vic *Core) ReadByte(addr uint16) uint8 {

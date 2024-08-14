@@ -53,15 +53,6 @@ func (vic *MOS6569) GetLastByte() uint8 {
 	return vic.core.lastByte
 }
 
-/*
-func (vic *MOS6569) GetBALow() bool {
-	return vic.core.baLow
-}
-
-func (vic *MOS6569) GetAECLow() bool {
-	return vic.core.aecLow
-}*/
-
 func (vic *MOS6569) SignalBALowBind(fn func(bool)) {
 	vic.core.signalBALow.Bind(fn)
 }
@@ -81,10 +72,6 @@ func (vic *MOS6569) SignalTriggerIRQBind(fn func(uint32)) {
 func (vic *MOS6569) SignalClearIRQBind(fn func(uint32)) {
 	vic.core.signalIRQClear.Bind(fn)
 }
-
-//func (vic *MOS6569) GetBALowSignal() *signals.Signal1[bool] {
-//	return vic.core.baLowSignal
-//}
 
 func (vic *MOS6569) configChanged() {
 	//vic.skipFrames = vic.cfg.SkipFrames()
@@ -121,9 +108,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.vBlanking = true
 		} else {
 			// Increment raster counter
-			vic.core.UpdateRasterY()
-			// Bad Line condition?
-			vic.core.BadLineUpdate()
+			vic.core.IncrementCounters()
 			// Don't draw all lines, hide some at the top and bottom
 			vic.drawThisLine = (vic.core.rasterY >= FirstDisplayedLine) && (vic.core.rasterY <= LastDisplayedLine)
 		}
