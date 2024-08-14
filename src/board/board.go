@@ -43,6 +43,7 @@ type Board struct {
 	hasClipboard bool
 	cartMan      *cartridges.Manager
 	banks        *banks.Banks
+	dma          int
 	dmaLow       bool
 	baLow        bool
 	aecLow       bool
@@ -66,6 +67,7 @@ func NewBoard(db vic2.IDisplayBuffer) *Board {
 		keys:         nil,
 		hasClipboard: false,
 		cartMan:      cartridges.NewManager(),
+		dma:          0,
 		dmaLow:       false,
 		baLow:        false,
 		aecLow:       false,
@@ -159,6 +161,11 @@ func (s *Board) Reset() {
 	s.cia1.Reset()
 	s.cia2.Reset()
 	s.iec.Reset()
+
+	s.dma = 0
+	s.dmaLow = false
+	s.baLow = false
+	s.aecLow = false
 }
 
 func (s *Board) AsyncReset() {
@@ -171,6 +178,11 @@ func (s *Board) AsyncReset() {
 	s.cia1.Reset()
 	s.cia2.Reset()
 	s.iec.Reset()
+
+	s.dma = 0
+	s.dmaLow = false
+	s.baLow = false
+	s.aecLow = false
 }
 
 func (s *Board) configChanged() {
@@ -310,7 +322,17 @@ func (s *Board) SetDMALow(v bool) {
 	//if _DMA=Low the CPU can be requested to release the bus.
 	//It will stop after the next read cycle and all bus lines will go to high resistance state.
 	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
-	s.dmaLow = v
+	if v {
+		s.dma++
+		s.dmaLow = true
+	} else {
+		if s.dma > 0 {
+			s.dma--
+			if s.dma == 0 {
+				s.dmaLow = false
+			}
+		}
+	}
 	s.updateCpuRdy()
 }
 
@@ -419,7 +441,9 @@ func (s *Board) aecLowSlot(aecLow bool) {
 }
 
 func (s *Board) updateCpuRdy() {
-	s.cpu.SetRDYLow((s.baLow && s.aecLow) || s.dmaLow)
+	//s.cpu.SetRDYLow((s.baLow) || s.dmaLow)
+	//s.cpu.SetRDYLow((s.baLow && s.aecLow) || s.dmaLow)
+	s.cpu.SetRDYLow(s.aecLow || s.dmaLow)
 }
 
 func (s *Board) loadPRG(prgFile string) {

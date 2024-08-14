@@ -9,6 +9,7 @@ import (
 const (
 	intRstId = 1
 	intNmiId = 2
+	intIrqId = 3
 )
 
 type Pic struct {
@@ -56,13 +57,15 @@ func (i *Pic) TriggerIRQ(intr uint32) {
 	if i.irq == 0 {
 		i.firstIrqCycle = i.quartz.Cycle()
 	}
-	i.all.BitSet(intr)
+	i.all.BitSet(intIrqId)
 	i.irq.BitSet(intr)
 }
 
 func (i *Pic) ClearIRQ(intr uint32) {
-	i.all.BitClear(intr)
 	i.irq.BitClear(intr)
+	if i.irq == 0 {
+		i.all.BitClear(intIrqId)
+	}
 }
 
 func (i *Pic) HasIRQ() bool {
