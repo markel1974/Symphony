@@ -10,6 +10,8 @@ import (
 
 //-c "SCPU:;REU16M:/Users/tinmr305/Downloads/c64carts/doom/doom.reu" -p /Users/tinmr305/Downloads/c64carts/doom/loader.prg
 
+//-d "/Users/tinmr305/Downloads/c64carts/C64_disk/blast170.d64" -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Easyflash/d2ef-vol50.crt"
+
 func main() {
 	var showHelp bool
 	var showVersion bool
