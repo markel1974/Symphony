@@ -270,8 +270,10 @@ func (sp *Sprites) drawExpandedStandard(lineOffset int, sColor uint8, sData uint
 func (sp *Sprites) drawUnexpandedMulticolor(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8, gfxColl *uint8, sprColl *uint8) {
 	foreMask := sp.foreMask.GetL(m, s)
 	// Convert sprite pixels to bitPlanes
-	plane0 := (sData & 0x55555555) | ((sData & 0x55555555) << 1)
-	plane1 := (sData & 0xaaaaaaaa) | ((sData & 0xaaaaaaaa) >> 1)
+	p0 := sData & 0x55555555
+	p1 := sData & 0xaaaaaaaa
+	plane0 := p0 | (p0 << 1)
+	plane1 := p1 | (p1 >> 1)
 	// Check graphics collision
 	if (foreMask & (plane0 | plane1)) != 0 {
 		*gfxColl |= sBit
