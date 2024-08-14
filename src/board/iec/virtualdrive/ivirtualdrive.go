@@ -1,12 +1,14 @@
 package virtualdrive
 
+import "github.com/markel1974/c64emu/src/config"
+
 type IIec interface {
-	//PeripheralAtnResponse(deviceNumber uint8, data uint8)
 	PeripheralRead() uint8
 	PeripheralWrite(deviceNumber uint8, data uint8)
 }
 
 type IVirtualDrive interface {
+	Setup(*config.Config)
 	Reset()
 	Emulate()
 	Ready() bool

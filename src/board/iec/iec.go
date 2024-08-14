@@ -189,16 +189,14 @@ func (c *IEC) CpuWrite(data uint8) {
 	//c.debugCpuWrite(^c.cpuBus)
 	c.updatePorts()
 	c.notifyCpuWrite()
-	/*
-		_board->GetRam()[0x90] |= _board->GetBus()->Out(_board->GetRam()[0x95], _board->GetRam()[0xa3] & 0x80);
-		_board->GetRam()[0x90] |= _board->GetBus()->OutATN(_board->GetRam()[0x95]);
-		_board->GetRam()[0x90] |= _board->GetBus()->OutSec(_board->GetRam()[0x95]);
-		_board->GetRam()[0x90] |= _board->GetBus()->In(_a);
-		_board->GetBus()->SetATN();
-		_board->GetBus()->RelATN();
-		_board->GetBus()->Turnaround();
-		_board->GetBus()->Release();
-	*/
+	//_board->GetRam()[0x90] |= _board->GetBus()->Out(_board->GetRam()[0x95], _board->GetRam()[0xa3] & 0x80);
+	//_board->GetRam()[0x90] |= _board->GetBus()->OutATN(_board->GetRam()[0x95]);
+	//_board->GetRam()[0x90] |= _board->GetBus()->OutSec(_board->GetRam()[0x95]);
+	//_board->GetRam()[0x90] |= _board->GetBus()->In(_a);
+	//_board->GetBus()->SetATN();
+	//_board->GetBus()->RelATN();
+	//_board->GetBus()->Turnaround();
+	//_board->GetBus()->Release();
 }
 
 func (c *IEC) CpuRead() uint8 {
@@ -216,18 +214,17 @@ func (c *IEC) PeripheralWrite(deviceNumber uint8, data uint8) {
 }
 
 func (c *IEC) createVirtualDrive(deviceNumber uint8, kind int) virtualdrive.IVirtualDrive {
+	var vd virtualdrive.IVirtualDrive
 	switch kind {
 	case 1:
-		vd := c1541.New(c, deviceNumber)
-		vd.Setup(c.cfg)
-		return vd
+		vd = c1541.New(c, deviceNumber)
 	case 2:
-		vd := fsdrive.New(c, deviceNumber)
-		vd.Setup(c.cfg)
-		//vd->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
-		return vd
+		vd = fsdrive.New(c, deviceNumber)
+	default:
+		vd = c1541.New(c, deviceNumber)
 	}
-	return nil
+	vd.Setup(c.cfg)
+	return vd
 }
 
 func (c *IEC) notifyCpuWrite() {
@@ -243,10 +240,6 @@ func (c *IEC) notifyCpuWrite() {
 	}
 	c.atnState = newAtnState
 }
-
-//void IECBus::ledStateChangedEventHandler(int  deviceNumber, uint8 state) {
-//LedStateChangedEvent.Emit(deviceNumber, state);
-//}
 
 func (c *IEC) ledStateChangedEventHandler(deviceNumber int, state uint8) {
 	c.ledSignal.Emit(deviceNumber, state)
