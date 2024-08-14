@@ -1,4 +1,4 @@
-package cpu
+package _510
 
 type IBanks interface {
 	Read(uint16) uint8

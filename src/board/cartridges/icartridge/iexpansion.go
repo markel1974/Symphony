@@ -1,6 +1,8 @@
 package icartridge
 
-import "github.com/markel1974/c64emu/src/board/quartz"
+import (
+	"github.com/markel1974/c64emu/src/components/quartz"
+)
 
 // https://www.c64-wiki.com/wiki/Expansion_Port
 

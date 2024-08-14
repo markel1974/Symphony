@@ -1,4 +1,4 @@
-package cpu
+package _510
 
 // States for addressing modes/operations
 

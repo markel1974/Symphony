@@ -3,8 +3,8 @@ package supercpu
 import (
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/board/cartridges/loader"
-	"github.com/markel1974/c64emu/src/board/cpu"
-	"github.com/markel1974/c64emu/src/board/quartz"
+	cpu2 "github.com/markel1974/c64emu/src/components/6510"
+	"github.com/markel1974/c64emu/src/components/quartz"
 )
 
 const Id = "SCPU"
@@ -12,8 +12,8 @@ const Id = "SCPU"
 type SuperCPU struct {
 	id     string
 	board  icartridge.IExpansion
-	pic    *cpu.Pic
-	cpu    *cpu.MOS6510
+	pic    *cpu2.Pic
+	cpu    *cpu2.MOS6510
 	quartz *quartz.Quartz
 }
 
@@ -42,11 +42,11 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 	s.board.SetDMALow(true)
 
 	s.quartz = quartz.NewQuartz()
-	s.pic = cpu.NewPic()
+	s.pic = cpu2.NewPic()
 
 	s.pic.Setup(s.quartz)
 
-	s.cpu = cpu.NewMOS6510("superCpu")
+	s.cpu = cpu2.NewMOS6510("superCpu")
 	s.cpu.Setup(s.pic, board, nil)
 
 	s.board.IRQTriggerBind(s.pic.TriggerIRQ)

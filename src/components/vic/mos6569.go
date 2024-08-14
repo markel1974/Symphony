@@ -1,7 +1,7 @@
 package vic
 
 import (
-	"github.com/markel1974/c64emu/src/board/quartz"
+	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/config"
 )
 

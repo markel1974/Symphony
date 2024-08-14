@@ -4,9 +4,9 @@ import (
 	"github.com/markel1974/c64emu/src/board/banks/roms"
 	"github.com/markel1974/c64emu/src/board/cartridges"
 	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
-	"github.com/markel1974/c64emu/src/board/cia"
-	"github.com/markel1974/c64emu/src/board/sid"
-	"github.com/markel1974/c64emu/src/board/vic"
+	cia3 "github.com/markel1974/c64emu/src/components/cia"
+	"github.com/markel1974/c64emu/src/components/sid"
+	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/filler"
 )
@@ -24,8 +24,8 @@ type WriteFn func(uint16, uint8)
 type Banks struct {
 	vic             *vic.MOS6569
 	sid             *sid.MOS6581
-	cia1            *cia.MOS6526A
-	cia2            *cia.MOS6526B
+	cia1            *cia3.MOS6526A
+	cia2            *cia3.MOS6526B
 	cartMan         *cartridges.Manager
 	ram             []byte
 	bankWrite       []WriteFn
@@ -73,7 +73,7 @@ func NewBanks() *Banks {
 	return b
 }
 
-func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia.MOS6526A, cia2 *cia.MOS6526B, cartMan *cartridges.Manager, cfg *config.Config) {
+func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia3.MOS6526A, cia2 *cia3.MOS6526B, cartMan *cartridges.Manager, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1

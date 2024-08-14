@@ -1,7 +1,7 @@
 package sid
 
 import (
-	"github.com/markel1974/c64emu/src/board/vic"
+	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 )
 

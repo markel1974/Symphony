@@ -1,4 +1,4 @@
-package cpu
+package _510
 
 type Core struct {
 	banks   IBanks

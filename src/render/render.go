@@ -2,7 +2,7 @@ package render
 
 import (
 	"github.com/markel1974/c64emu/src/board"
-	"github.com/markel1974/c64emu/src/board/vic"
+	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/pixels"
 )
