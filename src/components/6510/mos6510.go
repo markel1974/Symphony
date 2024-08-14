@@ -2,7 +2,6 @@ package _510
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/flag"
 	"log"
 	"os"
@@ -37,7 +36,6 @@ import (
 
 type MOS6510 struct {
 	*Core
-	prefs          *config.Config
 	id             string
 	overflowBranch func() bool
 }
@@ -46,16 +44,14 @@ func NewMOS6510(id string) *MOS6510 {
 	cpu := &MOS6510{
 		Core:           nil,
 		id:             id,
-		prefs:          nil,
 		overflowBranch: nil,
 	}
 	return cpu
 }
 
-func (cpu *MOS6510) Setup(intr IPic, banks IBanks, prefs *config.Config) {
+func (cpu *MOS6510) Setup(intr IPic, banks IBanks) {
 	cpu.Core = NewCore(intr)
 	cpu.banks = banks
-	cpu.prefs = prefs
 }
 
 func (cpu *MOS6510) Reset() {

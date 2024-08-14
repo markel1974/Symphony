@@ -20,7 +20,6 @@ type Banks struct {
 	rom  []uint8
 	via1 *via3.Via1
 	via2 *via3.Via2
-	cfg  *config.Config
 }
 
 func New() *Banks {
@@ -30,7 +29,6 @@ func New() *Banks {
 func (r *Banks) Setup(via1 *via3.Via1, via2 *via3.Via2, cfg *config.Config) {
 	r.via1 = via1
 	r.via2 = via2
-	r.cfg = cfg
 	loader := NewLoader()
 	r.rom = loader.Load(cfg.UseJiffy(), cfg.Get1541RomPath())
 }

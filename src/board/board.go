@@ -98,7 +98,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 
 	s.pic.Setup(s.quartz)
 	s.iec.Setup(cfg)
-	s.cpu.Setup(s.pic, s.banks, cfg)
+	s.cpu.Setup(s.pic, s.banks)
 
 	s.vic.Setup(s.quartz, s.banks, cfg)
 	s.vic.SignalReadyBind(s.ReadySlot)

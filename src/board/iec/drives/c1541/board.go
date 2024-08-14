@@ -52,7 +52,7 @@ func (m *Board) Setup(cfg *config.Config) {
 
 	m.banks.Setup(m.via1, m.via2, cfg)
 	m.pic.Setup(m.quartz)
-	m.cpu.Setup(m.pic, m.banks, cfg)
+	m.cpu.Setup(m.pic, m.banks)
 
 	m.mec.Setup(m.filePath)
 

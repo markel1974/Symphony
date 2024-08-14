@@ -15,7 +15,6 @@ type MOS6526A struct {
 	RevMatrix             [8]uint8 // Reversed keyboard matrix
 	Joystick1             uint8    // Joystick 1 AND value
 	Joystick2             uint8    // Joystick 2 AND value
-	prefs                 *config.Config
 }
 
 func NewMOS6526A() *MOS6526A {
@@ -29,7 +28,6 @@ func NewMOS6526A() *MOS6526A {
 }
 
 func (cia1 *MOS6526A) Setup(prefs *config.Config) {
-	cia1.prefs = prefs
 }
 
 func (cia1 *MOS6526A) SignalTriggerIRQBind(fn func(uint32)) {
