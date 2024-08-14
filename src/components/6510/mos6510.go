@@ -26,8 +26,7 @@ import (
  *  - There is exactly one memory access in each clock cycle
  *
  *  - The possible interrupt sources are:
- *      IntVic: I flag is checked, jump to ($fffe)
- *      IntCia: I flag is checked, jump to ($fffe)
+ *      IntIrq: if I flag is checked, jump to ($fffe)
  *      IntNmi: Jump to ($fffa)
  *      IntRst: Jump to ($fffc)
  *  - The zFlag variable has the inverse meaning of the 6510 Z flag
@@ -66,8 +65,6 @@ func (cpu *MOS6510) SetOverflowBranch(sob func() bool) {
 	cpu.overflowBranch = sob
 }
 
-// Stack Function
-
 func (cpu *MOS6510) popFlags(data uint8) {
 	cpu.nFlag = data
 	cpu.vFlag = data & 0x40
@@ -77,7 +74,7 @@ func (cpu *MOS6510) popFlags(data uint8) {
 	cpu.cFlag = data & 0x01
 }
 
-func (cpu *MOS6510) buildFlags(bFlags bool) uint8 {
+func (cpu *MOS6510) pushFlags(bFlags bool) uint8 {
 	data := 0x20 | (cpu.nFlag & 0x80)
 	if cpu.vFlag != 0 {
 		data |= 0x40
@@ -276,7 +273,7 @@ func (cpu *MOS6510) Emulate() {
 		cpu.state = I_IRQ_C
 
 	case I_IRQ_C:
-		data := cpu.buildFlags(false)
+		data := cpu.pushFlags(false)
 		cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 		cpu.sp--
 		cpu.iFlag = 1
@@ -323,7 +320,7 @@ func (cpu *MOS6510) Emulate() {
 		cpu.state = I_NMI_14
 
 	case I_NMI_14:
-		data := cpu.buildFlags(false)
+		data := cpu.pushFlags(false)
 		cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 		cpu.sp--
 		cpu.iFlag = 1
@@ -1382,7 +1379,7 @@ func (cpu *MOS6510) Emulate() {
 		cpu.state = O_PHP1
 
 	case O_PHP1:
-		data := cpu.buildFlags(true)
+		data := cpu.pushFlags(true)
 		cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 		cpu.sp--
 		cpu.state = STATE_LAST
@@ -1580,7 +1577,7 @@ func (cpu *MOS6510) Emulate() {
 		cpu.state = O_BRK3
 
 	case O_BRK3:
-		data := cpu.buildFlags(true)
+		data := cpu.pushFlags(true)
 		cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 		cpu.sp--
 		cpu.iFlag = 1
