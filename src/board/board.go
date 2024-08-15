@@ -432,7 +432,7 @@ func (s *Board) irqClearSlot(i uint32) {
 
 func (s *Board) baLowSlot(baLow bool) {
 	s.baLow = baLow
-	s.updateCpuRdy()
+	//s.updateCpuRdy()
 }
 
 func (s *Board) aecLowSlot(aecLow bool) {

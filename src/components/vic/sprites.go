@@ -12,9 +12,9 @@ type Sprites struct {
 	dmaFlags        uint8     // 8 flags: Sprite DMA active
 	displayFlags    uint8     // 8 flags: Sprite display active
 	spriteFlags     uint8     // 8 flags: Sprite in this line
-	drawData        []uint32  // Sprite drawing data
-	dataCounter     []uint16  // Sprite counter data
-	dataCounterBase []uint16  // Sprite dc data
+	//drawData        []uint32  // Sprite drawing data
+	dataCounter     []uint16 // Sprite counter data
+	dataCounterBase []uint16 // Sprite dc data
 }
 
 func NewSprites(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Sprites {
@@ -26,7 +26,7 @@ func NewSprites(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Sprites {
 		dataPtr:         make([]uint16, SpriteNumber),
 		data:            make([][]uint8, SpriteNumber),
 		displayFlags:    0,
-		drawData:        make([]uint32, SpriteNumber),
+		//drawData:        make([]uint32, SpriteNumber),
 		dmaFlags:        0,
 		dataCounter:     make([]uint16, SpriteNumber),
 		dataCounterBase: make([]uint16, SpriteNumber),
@@ -49,11 +49,11 @@ func (sp *Sprites) GetDMAFlags() uint8 {
 
 func (sp *Sprites) ApplyDisplayFlags() {
 	sp.spriteFlags = sp.displayFlags
-	if sp.spriteFlags != 0 {
-		for sNum := 0; sNum < len(sp.data); sNum++ {
-			sp.drawData[sNum] = (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
-		}
-	}
+	//if sp.spriteFlags != 0 {
+	//	for sNum := 0; sNum < len(sp.data); sNum++ {
+	//		sp.drawData[sNum] = (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
+	//	}
+	//}
 }
 
 func (sp *Sprites) FetchDataPtr(num int) {
@@ -72,6 +72,7 @@ func (sp *Sprites) FetchData(num int, byteNum int) {
 		sp.dataCounter[num]++
 	} else if byteNum == 1 {
 		//accessIdle
+		//fmt.Println("ACCESS IS IDLE for SPRITE", num, byteNum)
 		sp.core.ReadByte(0x3fff)
 	}
 }
@@ -136,7 +137,7 @@ func (sp *Sprites) Draw(lineStart int) {
 	for sNum, sBit := uint8(0), uint8(1); sNum < SpriteNumber; sNum, sBit = sNum+1, sBit<<1 {
 		if sp.spriteFlags&sBit != 0 {
 			sColor := sp.core.mXcColor[sNum]
-			sData := sp.drawData[sNum]
+			sData := (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
 			sOffset := int(sp.core.mXx[sNum]) + SpriteNumber
 			lineOffset := lineStart + sOffset
 			m := sOffset / SpriteNumber
