@@ -299,7 +299,9 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.graphics.MatrixAccess()
 	case 17:
 		// Graphics and matrix access, turn off border in 40 column mode, display window starts here
-		vic.graphics.BorderUpdate()
+		if (vic.core.cr2 & 8) != 0 {
+			vic.graphics.BorderUpdate()
+		}
 		// Second sample of border state
 		vic.graphics.SetBorderOnSample(1)
 		if vic.drawThisLine {
@@ -317,7 +319,9 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.graphics.MatrixAccess()
 	case 18:
 		// Turn off border in 38 column mode
-		vic.graphics.BorderUpdate2()
+		if (vic.core.cr2 & 8) == 0 {
+			vic.graphics.BorderUpdate()
+		}
 		// Third sample of border state
 		vic.graphics.SetBorderOnSample(2)
 		if vic.drawThisLine {

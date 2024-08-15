@@ -39,12 +39,11 @@ func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 		lineOffset:        0,
 		matrixLineIndex:   0,
 		matrixLine:        make([]uint8, 40),
-		//matrixBuffer:      make([]uint8, 40*320),
-		colorLine:        make([]uint8, 40),
-		rowCounter:       7,
-		videoCounter:     0,
-		videoCounterBase: 0,
-		displayOn:        false,
+		colorLine:         make([]uint8, 40),
+		rowCounter:        7,
+		videoCounter:      0,
+		videoCounterBase:  0,
+		displayOn:         false,
 	}
 	return gr
 }
@@ -67,10 +66,6 @@ func (gr *Graphics) ResetVideoCounterBase() {
 func (gr *Graphics) ResetMatrixLineIndex() {
 	gr.matrixLineIndex = 0
 }
-
-//func (gr *Graphics) ResetMatrixBuffer() {
-//	gr.matrixBufferIndex = 0
-//}
 
 func (gr *Graphics) UpdateVideoCounter() {
 	gr.videoCounter = gr.videoCounterBase
@@ -172,41 +167,18 @@ func (gr *Graphics) IncrementOffset() {
 }
 
 func (gr *Graphics) BorderUpdate() {
-	if (gr.core.cr2 & 8) != 0 {
-		if gr.core.rasterY == gr.core.dyStop {
-			gr.borderULOn = true
-		} else {
-			if (gr.core.cr1 & 0x10) != 0 {
-				if gr.core.rasterY == gr.core.dyStart {
-					gr.borderULOn = false
-					gr.borderOn = false
-				} else if !gr.borderULOn {
-					gr.borderOn = false
-				}
+	if gr.core.rasterY == gr.core.dyStop {
+		gr.borderULOn = true
+	} else {
+		if (gr.core.cr1 & 0x10) != 0 {
+			if gr.core.rasterY == gr.core.dyStart {
+				gr.borderULOn = false
+				gr.borderOn = false
 			} else if !gr.borderULOn {
 				gr.borderOn = false
 			}
-		}
-	}
-}
-
-func (gr *Graphics) BorderUpdate2() {
-	if (gr.core.cr2 & 8) == 0 {
-		if gr.core.rasterY == gr.core.dyStop {
-			gr.borderULOn = true
-		} else {
-			if (gr.core.cr1 & 0x10) != 0 {
-				if gr.core.rasterY == gr.core.dyStart {
-					gr.borderULOn = false
-					gr.borderOn = false
-				} else if !gr.borderULOn {
-					gr.borderOn = false
-				}
-			} else {
-				if !gr.borderULOn {
-					gr.borderOn = false
-				}
-			}
+		} else if !gr.borderULOn {
+			gr.borderOn = false
 		}
 	}
 }
@@ -215,9 +187,9 @@ func (gr *Graphics) Draw(b bool) {
 	if gr.borderULOn {
 		gr.DrawBackground()
 	} else {
-		if b {
-			gr.DrawBackground()
-		}
+		//if b {
+		//gr.DrawBackground()
+		//}
 		gr.drawGraphics()
 	}
 }
@@ -379,53 +351,3 @@ func (gr *Graphics) drawGraphicMulticolor(offset int, a uint8, b uint8, c uint8,
 	gr.db.Set(offset+1, color)
 	gr.db.Set(offset, color)
 }
-
-/*
-var _tmp = [8]uint8{}
-
-func (gr *Graphics) drawGraphicStandard(offset int, a uint8, b uint8) {
-	p1 := gr.gfxData >> gr.core.xScroll
-	p2 := gr.gfxData << (7 - gr.core.xScroll)
-	gr.foreMask.Update(p1, p2)
-	colorBuffer := [4]uint8{a, b, 0, 0}
-	//tmp := [8]uint8{}
-	data := gr.gfxData
-	_tmp[7] = colorBuffer[data&1]
-	data >>= 1
-	_tmp[6] = colorBuffer[data&1]
-	data >>= 1
-	_tmp[5] = colorBuffer[data&1]
-	data >>= 1
-	_tmp[4] = colorBuffer[data&1]
-	data >>= 1
-	_tmp[3] = colorBuffer[data&1]
-	data >>= 1
-	_tmp[2] = colorBuffer[data&1]
-	data >>= 1
-	_tmp[1] = colorBuffer[data&1]
-	data >>= 1
-	_tmp[0] = colorBuffer[data]
-	gr.displayBuffer.Set8(offset, _tmp)
-}
-
-func (gr *Graphics) drawGraphicMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
-	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
-	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
-	gr.foreMask.Update(p1, p2)
-	colorBuffer := [4]uint8{a, b, c, d}
-	//tmp := [8]uint8{}
-	data := gr.gfxData
-	_tmp[7] = colorBuffer[data&3]
-	_tmp[6] = colorBuffer[data&3]
-	data >>= 2
-	_tmp[5] = colorBuffer[data&3]
-	_tmp[4] = colorBuffer[data&3]
-	data >>= 2
-	_tmp[3] = colorBuffer[data&3]
-	_tmp[2] = colorBuffer[data&3]
-	data >>= 2
-	_tmp[1] = colorBuffer[data]
-	_tmp[0] = colorBuffer[data]
-	gr.displayBuffer.Set8(offset, _tmp)
-}
-*/

@@ -188,6 +188,8 @@ func (s *Board) AsyncReset() {
 func (s *Board) configChanged() {
 }
 
+//var testCounter = 0
+
 func (s *Board) Emulate() bool {
 	//s.phiMode = Phi1
 	vBlank, lastVicCycle := s.vic.Emulate()
@@ -207,6 +209,17 @@ func (s *Board) Emulate() bool {
 	s.cia2.CheckIRQs()
 	s.cia1.Emulate()
 	s.cia2.Emulate()
+
+	//TODO SLOW CPU BUG (1/32)
+	//if s.speed > 0 {
+	//	if testCounter == s.speed {
+	//		s.cpu.Emulate()
+	//		testCounter = 0
+	//	} else {
+	//		testCounter++
+	//	}
+	//}
+
 	s.cpu.Emulate()
 	s.cartMan.Emulate()
 	s.iec.Emulate()
@@ -262,6 +275,11 @@ func (s *Board) KeyboardSetCapital(pressed bool) {
 	}
 	//TODO RIMUOVERE
 	//s.loadPRG(s.cfg.GetPrg())
+	//return
+
+	//TODO RIMUOVERE
+	//s.speed++
+	//fmt.Println("SPEED", s.speed)
 	//return
 
 	s.keys.SetCapital()
