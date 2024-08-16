@@ -12,6 +12,7 @@ type MOS6569 struct {
 	cfg            *config.Config
 	sprites        *Sprites
 	graphics       *Graphics
+	borders        *Borders
 	foreMask       *ForeMask
 	cycle          int   // Cycle
 	lineStart      int   // Offset from current line in bitmap buffer
@@ -28,6 +29,7 @@ func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 		foreMask:     foreMask,
 		graphics:     NewGraphics(core, foreMask, db),
 		sprites:      NewSprites(core, foreMask, db),
+		borders:      NewBorder(core, db),
 		cycle:        1,
 		vBlanking:    false,
 		drawThisLine: false,
@@ -107,7 +109,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.core.IncrementCounters()
 			vic.drawThisLine = (rasterY >= FirstDisplayedLine) && (rasterY <= LastDisplayedLine)
 		}
-		vic.graphics.SetBorderOnSample(0)
+		vic.borders.SetBorderOnSample(0)
 		vic.sprites.FetchDataPtr(3)
 		vic.sprites.FetchData(3, 0)
 		vic.graphics.TryDisplayOn()
@@ -204,7 +206,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	case 13:
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
-			vic.graphics.SampleBorder(vic.cycle)
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.accessRefresh()
@@ -215,7 +217,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	case 14:
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
-			vic.graphics.SampleBorder(vic.cycle)
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.accessRefresh()
@@ -227,7 +229,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	case 15:
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
-			vic.graphics.SampleBorder(vic.cycle)
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.accessRefresh()
@@ -240,7 +242,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	case 16:
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
-			vic.graphics.SampleBorder(vic.cycle)
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
@@ -251,12 +253,16 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 17:
 		if vic.core.ModeColumn40() {
-			vic.graphics.BorderUpdate()
+			vic.borders.UpdateBorder()
 		}
-		vic.graphics.SetBorderOnSample(1)
+		vic.borders.SetBorderOnSample(1)
 		if vic.drawThisLine {
-			vic.graphics.Draw()
-			vic.graphics.SampleBorder(vic.cycle)
+			if vic.borders.GetBorderULOn() {
+				vic.graphics.DrawBackground()
+			} else {
+				vic.graphics.DrawForeground()
+			}
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
@@ -266,12 +272,16 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 18:
 		if vic.core.ModeColumn38() {
-			vic.graphics.BorderUpdate()
+			vic.borders.UpdateBorder()
 		}
-		vic.graphics.SetBorderOnSample(2)
+		vic.borders.SetBorderOnSample(2)
 		if vic.drawThisLine {
-			vic.graphics.Draw()
-			vic.graphics.SampleBorder(vic.cycle)
+			if vic.borders.GetBorderULOn() {
+				vic.graphics.DrawBackground()
+			} else {
+				vic.graphics.DrawForeground()
+			}
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
@@ -282,8 +292,12 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54:
 		if vic.drawThisLine {
-			vic.graphics.Draw()
-			vic.graphics.SampleBorder(vic.cycle)
+			if vic.borders.GetBorderULOn() {
+				vic.graphics.DrawBackground()
+			} else {
+				vic.graphics.DrawForeground()
+			}
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
@@ -294,8 +308,12 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 55:
 		if vic.drawThisLine {
-			vic.graphics.Draw()
-			vic.graphics.SampleBorder(vic.cycle)
+			if vic.borders.GetBorderULOn() {
+				vic.graphics.DrawBackground()
+			} else {
+				vic.graphics.DrawForeground()
+			}
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
@@ -310,12 +328,16 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 56:
 		if vic.core.ModeColumn38() {
-			vic.graphics.SetBorderOn()
+			vic.borders.SetBorderOn()
 		}
-		vic.graphics.SetBorderOnSample(3)
+		vic.borders.SetBorderOnSample(3)
 		if vic.drawThisLine {
-			vic.graphics.Draw()
-			vic.graphics.SampleBorder(vic.cycle)
+			if vic.borders.GetBorderULOn() {
+				vic.graphics.DrawBackground()
+			} else {
+				vic.graphics.DrawForeground()
+			}
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.idleAccess()
@@ -327,14 +349,14 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 57:
 		if vic.core.ModeColumn40() {
-			vic.graphics.SetBorderOn()
+			vic.borders.SetBorderOn()
 		}
-		vic.graphics.SetBorderOnSample(4)
+		vic.borders.SetBorderOnSample(4)
 		vic.sprites.ApplyDisplayFlags()
 		vic.sprites.UpdateDisplayFlags()
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
-			vic.graphics.SampleBorder(vic.cycle)
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.idleAccess()
@@ -346,7 +368,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	case 58:
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
-			vic.graphics.SampleBorder(vic.cycle)
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.sprites.UpdateRasterYDisplayFlags()
@@ -357,7 +379,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	case 59:
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
-			vic.graphics.SampleBorder(vic.cycle)
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
 		}
 		vic.sprites.FetchData(0, 1)
@@ -370,11 +392,10 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	case 60:
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
-			vic.graphics.SampleBorder(vic.cycle)
+			vic.borders.Sample(vic.cycle)
 			vic.graphics.IncrementOffset()
-
 			vic.sprites.Draw(vic.lineStart)
-			vic.graphics.DrawBorder(vic.lineStart)
+			vic.borders.Draw(vic.lineStart)
 			vic.lineStart += DisplayX
 		}
 		vic.sprites.FetchDataPtr(1)
@@ -404,7 +425,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.FetchData(2, 1)
 		vic.sprites.FetchData(2, 2)
 		vic.graphics.TryDisplayOn()
-		vic.graphics.UpdateBorderUpperLower()
+		vic.borders.UpdateBorderUpperLower()
 		if (vic.sprites.GetDMAFlags() & 0x10) != 0 {
 			vic.core.SetBALow()
 		}

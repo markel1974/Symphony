@@ -59,8 +59,8 @@ type Core struct {
 	sprClx           uint8    // Sprite to sprite collision
 	rasterX          uint16   // Current raster x position
 	rasterY          uint16   // Current raster line
-	dyStart          uint16   // Comparison values for border logic
-	dyStop           uint16   // Comparison values for border logic
+	dyStart          uint16   // Comparison values for borders logic
+	dyStop           uint16   // Comparison values for borders logic
 	colors           []uint8  // Indices of the 16 colors (16 times mirrored to avoid "& 0x0f")
 	displayIdx       int      // Index of current display mode
 	lpTriggered      bool     // LightPen was triggered in this frame
