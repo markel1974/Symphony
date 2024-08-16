@@ -219,17 +219,14 @@ func (vic *Core) Cycle() {
 */
 
 func (vic *Core) TryAcquireAEC() {
-	if !vic.baLow {
-		return
+	if vic.baLow {
+		if !vic.aecLow {
+			if dist := vic.quartz.Cycle() - vic.baLowFirstCycle; dist >= 3 {
+				vic.aecLow = true
+				vic.signalAECLow.Emit(vic.aecLow)
+			}
+		}
 	}
-	if vic.aecLow == true {
-		return
-	}
-	if dist := vic.quartz.Cycle() - vic.baLowFirstCycle; dist < 3 {
-		return
-	}
-	vic.aecLow = true
-	vic.signalAECLow.Emit(vic.aecLow)
 }
 
 func (vic *Core) FlipFlopMYE() {
@@ -432,11 +429,11 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 		vic.badLineUpdate()
 		vic.displayIdx = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4
 	case 0x12: // Raster counter
-		newIRQRaster := (vic.irqRaster & 0xff00) | uint16(data)
-		if vic.irqRaster != newIRQRaster && vic.rasterY == newIRQRaster {
+		irqRaster := (vic.irqRaster & 0xff00) | uint16(data)
+		if vic.irqRaster != irqRaster && vic.rasterY == irqRaster {
 			vic.rasterIrq()
 		}
-		vic.irqRaster = newIRQRaster
+		vic.irqRaster = irqRaster
 	case 0x15: // Sprite enable
 		vic.me = data
 	case 0x16: // Control register 2

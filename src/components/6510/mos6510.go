@@ -216,6 +216,7 @@ func (cpu *MOS6510) checkPic() {
 	}
 	//Interrupts are only recognized if the RDY line is high
 	if cpu.pic.HasIRQ() && !cpu.rdyLow {
+		//if cpu.pic.HasIRQ() {
 		if ((cpu.iFlag == 0) || ((cpu.opFlags & OpFlagIrqDisabled) != 0)) && ((cpu.opFlags & OpFlagIrqEnabled) == 0) {
 			delay := 0
 			if (cpu.opFlags & OpFlagIntDelayed) != 0 {
