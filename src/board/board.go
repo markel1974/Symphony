@@ -45,8 +45,8 @@ type Board struct {
 	banks        *banks.Banks
 	dma          int
 	dmaLow       bool
-	baLow        bool
-	aecLow       bool
+	//baLow        bool
+	//aecLow       bool
 
 	irqTrigger *signals.SignalUint32
 	irqClear   *signals.SignalUint32
@@ -69,11 +69,11 @@ func NewBoard(db vic2.IDisplayBuffer) *Board {
 		cartMan:      cartridges.NewManager(),
 		dma:          0,
 		dmaLow:       false,
-		baLow:        false,
-		aecLow:       false,
-		banks:        nil,
-		irqTrigger:   nil,
-		irqClear:     nil,
+		//baLow:        false,
+		//aecLow:       false,
+		banks:      nil,
+		irqTrigger: nil,
+		irqClear:   nil,
 		//phiMode:    PhiIdle,
 	}
 	return b
@@ -106,8 +106,8 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.vic.SignalReadyBind(s.ReadySlot)
 	s.vic.SignalTriggerIRQBind(s.irqTriggerSlot)
 	s.vic.SignalClearIRQBind(s.irqClearSlot)
-	s.vic.SignalBALowBind(s.baLowSlot)
-	s.vic.SignalAECLowBind(s.aecLowSlot)
+	s.vic.SignalBALowBind(s.cpu.SetRDYLow)
+	s.vic.SignalAECLowBind(s.cpu.SetAECLow)
 
 	s.sid.Setup(cfg)
 
@@ -164,8 +164,8 @@ func (s *Board) Reset() {
 
 	s.dma = 0
 	s.dmaLow = false
-	s.baLow = false
-	s.aecLow = false
+	//s.baLow = false
+	//s.aecLow = false
 }
 
 func (s *Board) AsyncReset() {
@@ -181,8 +181,8 @@ func (s *Board) AsyncReset() {
 
 	s.dma = 0
 	s.dmaLow = false
-	s.baLow = false
-	s.aecLow = false
+	//s.baLow = false
+	//s.aecLow = false
 }
 
 func (s *Board) configChanged() {
@@ -351,7 +351,7 @@ func (s *Board) SetDMALow(v bool) {
 			}
 		}
 	}
-	s.updateCpuRdy()
+	//s.updateCpuRdy()
 }
 
 func (s *Board) ResetTrigger() {
@@ -381,11 +381,11 @@ func (s *Board) IRQClearBind(fn func(uint32)) {
 }
 
 func (s *Board) BusAvailable() bool {
-	return s.baLow
+	return !s.cpu.GetRDYLow()
 }
 
 func (s *Board) AECAvailable() bool {
-	return s.aecLow
+	return !s.cpu.GetAECLow()
 }
 
 func (s *Board) Cycle() uint64 {
@@ -448,6 +448,7 @@ func (s *Board) irqClearSlot(i uint32) {
 	}
 }
 
+/*
 func (s *Board) baLowSlot(baLow bool) {
 	s.baLow = baLow
 	//s.updateCpuRdy()
@@ -463,6 +464,7 @@ func (s *Board) updateCpuRdy() {
 	//s.cpu.SetRDYLow((s.baLow && s.aecLow) || s.dmaLow)
 	s.cpu.SetRDYLow(s.aecLow || s.dmaLow)
 }
+*/
 
 func (s *Board) loadPRG(prgFile string) {
 	//TODO TEST - WE HAVE TO WAIT READY

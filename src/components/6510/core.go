@@ -20,7 +20,9 @@ type Core struct {
 	rmw     uint8  // Data buffer for RMW instructions
 	state   uint8  // Current state
 	opFlags uint8  //
+	halt    bool   //
 	rdyLow  bool   // current RDY state
+	aecLow  bool   // current AEC state
 }
 
 func NewCore(pic IPic) *Core {
@@ -41,6 +43,8 @@ func NewCore(pic IPic) *Core {
 		ar:      0,
 		ar2:     0,
 		rdyLow:  false,
+		aecLow:  false,
+		halt:    false,
 	}
 	return regs
 }

@@ -63,13 +63,13 @@ func (gr *Graphics) Setup() {
 }
 
 func (gr *Graphics) TryDisplayOn() {
-	if gr.core.isBadLine {
+	if gr.core.badLineCondition {
 		gr.displayOn = true
 	}
 }
 
 func (gr *Graphics) TryResetRowCounter() {
-	if gr.core.isBadLine {
+	if gr.core.badLineCondition {
 		gr.rowCounter = 0
 	}
 }
@@ -103,7 +103,7 @@ func (gr *Graphics) UpdateDisplayOn() {
 		gr.videoCounterBase = gr.videoCounter
 		gr.displayOn = false
 	}
-	if gr.core.isBadLine || gr.displayOn {
+	if gr.core.badLineCondition || gr.displayOn {
 		gr.rowCounter = (gr.rowCounter + 1) & 7
 		gr.displayOn = true
 	}
@@ -152,6 +152,7 @@ func (gr *Graphics) GraphicsAccess() {
 
 func (gr *Graphics) TryMatrixAccess() {
 	gr.core.TryAcquireAEC()
+
 	if gr.core.baLow {
 		if gr.core.aecLow {
 			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase

@@ -97,6 +97,8 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	vBlank := false
 	lastCycle := false
 
+	//vic.core.Cycle()
+
 	switch vic.cycle {
 	case 1:
 		if rasterY := vic.core.GetRasterY(); rasterY == RasterYMax {

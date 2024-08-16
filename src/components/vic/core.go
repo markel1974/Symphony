@@ -5,6 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/signals"
 )
 
+// https://www.cebix.net/VIC-Article.txt
 // https://www.oxyron.de/html/registers_vic2.html
 
 type Core struct {
@@ -64,12 +65,13 @@ type Core struct {
 	displayIdx       int      // Index of current display mode
 	lpTriggered      bool     // LightPen was triggered in this frame
 	badLinesEnabled  bool     // Bad Lines enabled for this frame
-	isBadLine        bool     // Current line is bad line
+	badLineCondition bool     // Current line is bad line
 	ready            bool     // VIC Initialization Complete
 	baLow            bool     // BA Line
 	aecLow           bool     // AEC Line
 	baLowFirstCycle  uint64   //
-	lastByte         uint8    // Last byte read by VIC
+	//aecLowClearNextCycle bool     //
+	lastByte uint8 // Last byte read by VIC
 }
 
 func NewCore() *Core {
@@ -132,7 +134,7 @@ func NewCore() *Core {
 		dyStop:           Row24YStop,
 		displayIdx:       0,
 		lpTriggered:      false,
-		isBadLine:        false,
+		badLineCondition: false,
 		badLinesEnabled:  false,
 		baLow:            false,
 		baLowFirstCycle:  0,
@@ -174,7 +176,7 @@ func (vic *Core) ModeColumn40() bool {
 }
 
 func (vic *Core) TryBALow() {
-	if vic.isBadLine {
+	if vic.badLineCondition {
 		vic.SetBALow()
 	}
 }
@@ -194,10 +196,27 @@ func (vic *Core) ClearBALow() {
 		vic.signalBALow.Emit(vic.baLow)
 	}
 	if vic.aecLow {
+		//vic.aecLowClearNextCycle = true
 		vic.aecLow = false
 		vic.signalAECLow.Emit(vic.aecLow)
 	}
 }
+
+/*
+func (vic *Core) Cycle() {
+	if vic.baLow && !vic.aecLow {
+		if dist := vic.quartz.Cycle() - vic.baLowFirstCycle; dist >= 3 {
+			vic.aecLow = true
+			vic.signalAECLow.Emit(vic.aecLow)
+		}
+	}
+	if vic.aecLowClearNextCycle {
+		vic.aecLowClearNextCycle = false
+		vic.aecLow = false
+		vic.signalAECLow.Emit(vic.aecLow)
+	}
+}
+*/
 
 func (vic *Core) TryAcquireAEC() {
 	if !vic.baLow {
@@ -222,8 +241,15 @@ func (vic *Core) FlipFlopMYE() {
 	}
 }
 
-func (vic *Core) BadLineUpdate() {
-	vic.isBadLine = vic.rasterY >= FirstDmaLine && vic.rasterY <= LastDmaLine && ((vic.rasterY & 7) == vic.yScroll) && vic.badLinesEnabled
+func (vic *Core) badLineUpdate() {
+	// Bad Line Condition is given at any arbitrary clock cycle, if at the
+	// negative edge of ø0 at the beginning of the cycle RASTER >= $30 and RASTER <= $f7
+	// and the lower three bits of RASTER are equal to YSCROLL
+	// and if the DEN bit was set during an arbitrary cycle of raster line $30.
+	if vic.rasterY == 0x30 {
+		vic.badLinesEnabled = (vic.cr1 & 0x10) != 0 //denBit
+	}
+	vic.badLineCondition = vic.rasterY >= FirstDmaLine && vic.rasterY <= LastDmaLine && ((vic.rasterY & 7) == vic.yScroll) && vic.badLinesEnabled
 }
 
 func (vic *Core) ChangedVA(newVA uint8) {
@@ -232,7 +258,6 @@ func (vic *Core) ChangedVA(newVA uint8) {
 }
 
 func (vic *Core) LightPenTrigger() {
-	// LightPen triggers only once per frame
 	if !vic.lpTriggered {
 		vic.lpTriggered = true
 		vic.lpx = uint8(vic.rasterX >> 1) // Latch current coordinates
@@ -261,11 +286,10 @@ func (vic *Core) IncrementCounters() {
 	if vic.rasterY == vic.irqRaster {
 		vic.rasterIrq()
 	}
-	// In line $30, the DEN bit controls if Bad Lines can occur
-	if vic.rasterY == 0x30 {
-		vic.badLinesEnabled = (vic.cr1 & 0x10) != 0
-	}
-	vic.BadLineUpdate()
+	//if vic.rasterY == 0x30 {
+	//	vic.badLinesEnabled = (vic.cr1 & 0x10) != 0 //denBit
+	//}
+	vic.badLineUpdate()
 }
 
 func (vic *Core) ReadByte(addr uint16) uint8 {
@@ -293,59 +317,59 @@ func (vic *Core) ReadRegister(addr uint16) uint8 {
 		return uint8(vic.mXx[addr>>1])
 	case 0x01, 0x03, 0x05, 0x07, 0x09, 0x0b, 0x0d, 0x0f:
 		return vic.mXy[addr>>1]
-	// Sprite X position MSB
-	case 0x10:
+
+	case 0x10: // Sprite X position MSB
 		return vic.mx8
-	// Control register 1
-	case 0x11:
+
+	case 0x11: // Control register 1
 		return uint8((uint16(vic.cr1) & 0x7f) | ((vic.rasterY & 0x100) >> 1))
-	// Raster counter
-	case 0x12:
+
+	case 0x12: // Raster counter
 		return uint8(vic.rasterY)
-	// Light pen X
-	case 0x13:
+
+	case 0x13: // Light pen X
 		return vic.lpx
-	// Light pen Y
-	case 0x14:
+
+	case 0x14: // Light pen Y
 		return vic.lpy
-	// Sprite enable
-	case 0x15:
+
+	case 0x15: // Sprite enable
 		return vic.me
-	// Control register 2
-	case 0x16:
+
+	case 0x16: // Control register 2
 		return vic.cr2 | 0xc0
-	// Sprite Y expansion
-	case 0x17:
+
+	case 0x17: // Sprite Y expansion
 		return vic.mye
-	// Memory pointers
-	case 0x18:
+
+	case 0x18: // Memory pointers
 		return vic.vaBase | 0x01
-	// IRQ spriteFlags
-	case 0x19:
+
+	case 0x19: // IRQ spriteFlags
 		if !vic.ready {
 			vic.ready = true
 			vic.signalReady.Emit()
 		}
 		return vic.irqFlag | 0x70
-	// IRQ mask
-	case 0x1a:
+
+	case 0x1a: // IRQ mask
 		return vic.irqMask | 0xf0
-	// Sprite data priority
-	case 0x1b:
+
+	case 0x1b: // Sprite data priority
 		return vic.mdp
-	// Sprite multicolor
-	case 0x1c:
+
+	case 0x1c: // Sprite multicolor
 		return vic.mmc
-	// Sprite X expansion
-	case 0x1d:
+
+	case 0x1d: // Sprite X expansion
 		return vic.mxe
-	// Sprite-sprite collision
-	case 0x1e:
+
+	case 0x1e: // Sprite-sprite collision
 		ret := vic.sprClx
 		vic.sprClx = 0 // Read and clear
 		return ret
-	// Sprite-background collision
-	case 0x1f:
+
+	case 0x1f: // Sprite-background collision
 		ret := vic.sprClxBgr
 		vic.sprClxBgr = 0 // Read and clear
 		return ret
@@ -390,11 +414,11 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 	case 0x11: // Control register 1
 		vic.cr1 = data
 		vic.yScroll = uint16(data) & 7
-		newIRQRaster := (vic.irqRaster & 0xff) | ((uint16(data) & 0x80) << 1)
-		if vic.irqRaster != newIRQRaster && vic.rasterY == newIRQRaster {
+		irqRaster := (vic.irqRaster & 0xff) | ((uint16(data) & 0x80) << 1)
+		if vic.irqRaster != irqRaster && vic.rasterY == irqRaster {
 			vic.rasterIrq()
 		}
-		vic.irqRaster = newIRQRaster
+		vic.irqRaster = irqRaster
 		if (data & 8) != 0 {
 			vic.dyStart = Row25YStart
 			vic.dyStop = Row25YStop
@@ -402,11 +426,10 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 			vic.dyStart = Row24YStart
 			vic.dyStop = Row24YStop
 		}
-		// In line $30, the DEN bit controls if Bad Lines can occur
-		if (vic.rasterY == 0x30) && ((data & 0x10) != 0) {
-			vic.badLinesEnabled = true
-		}
-		vic.BadLineUpdate()
+		//if (vic.rasterY == 0x30) && ((vic.cr1 & 0x10) != 0) {
+		//	vic.badLinesEnabled = true
+		//}
+		vic.badLineUpdate()
 		vic.displayIdx = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4
 	case 0x12: // Raster counter
 		newIRQRaster := (vic.irqRaster & 0xff00) | uint16(data)

@@ -57,14 +57,14 @@ func (sp *Sprites) FetchDataPtr(num int) {
 	sp.dataPtr[num] = ptr
 }
 
-func (sp *Sprites) FetchData(num int, byteNum int) {
+func (sp *Sprites) FetchData(num int, bNum int) {
 	if (sp.dmaFlags & (1 << num)) != 0 {
 		ptr := sp.dataPtr[num]
 		addr := (sp.dataCounter[num] & 0x3f) | ptr
 		data := sp.core.ReadByte(addr)
-		sp.data[num][byteNum] = data
+		sp.data[num][bNum] = data
 		sp.dataCounter[num]++
-	} else if byteNum == 1 {
+	} else if bNum == 1 {
 		sp.core.ReadByte(0x3fff)
 	}
 }
