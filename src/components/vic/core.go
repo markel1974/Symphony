@@ -5,6 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/signals"
 )
 
+// https://www.oxyron.de/html/registers_vic2.html
+
 type Core struct {
 	quartz           *quartz.Quartz
 	signalIRQTrigger *signals.SignalUint32
@@ -149,6 +151,32 @@ func NewCore() *Core {
 func (vic *Core) Setup(quartz *quartz.Quartz, banks IBanks) {
 	vic.banks = banks
 	vic.quartz = quartz
+}
+
+func (vic *Core) GetRasterY() uint16 {
+	return vic.rasterY
+}
+
+func (vic *Core) ResetRasterX() {
+	vic.rasterX = 0xfffc
+}
+
+func (vic *Core) UpdateRasterX() {
+	vic.rasterX += 8
+}
+
+func (vic *Core) ModeColumn38() bool {
+	return (vic.cr2 & 8) == 0
+}
+
+func (vic *Core) ModeColumn40() bool {
+	return (vic.cr2 & 8) != 0
+}
+
+func (vic *Core) TryBALow() {
+	if vic.isBadLine {
+		vic.SetBALow()
+	}
 }
 
 func (vic *Core) SetBALow() {

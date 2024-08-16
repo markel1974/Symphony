@@ -1,5 +1,16 @@
 package vic
 
+const (
+	modeTextStandard            = 0
+	modeTextMulticolor          = 1
+	modeBitmapStandard          = 2
+	modeBitmapMulticolor        = 3
+	modeTextECM                 = 4
+	modeTextMulticolorInvalid   = 5
+	modeBitmapStandardInvalid   = 6
+	modeBitmapMulticolorInvalid = 7
+)
+
 type Graphics struct {
 	core              *Core
 	foreMask          *ForeMask
@@ -51,12 +62,16 @@ func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 func (gr *Graphics) Setup() {
 }
 
-func (gr *Graphics) SetDisplayOn() {
-	gr.displayOn = true
+func (gr *Graphics) TryDisplayOn() {
+	if gr.core.isBadLine {
+		gr.displayOn = true
+	}
 }
 
-func (gr *Graphics) ResetRowCounter() {
-	gr.rowCounter = 0
+func (gr *Graphics) TryResetRowCounter() {
+	if gr.core.isBadLine {
+		gr.rowCounter = 0
+	}
 }
 
 func (gr *Graphics) ResetVideoCounterBase() {
@@ -94,7 +109,7 @@ func (gr *Graphics) UpdateDisplayOn() {
 	}
 }
 
-func (gr *Graphics) SetCharDataLast() {
+func (gr *Graphics) UpdateLastCharData() {
 	gr.charDataLast = gr.charData
 }
 
@@ -135,7 +150,8 @@ func (gr *Graphics) GraphicsAccess() {
 	}
 }
 
-func (gr *Graphics) MatrixAccess() {
+func (gr *Graphics) TryMatrixAccess() {
+	gr.core.TryAcquireAEC()
 	if gr.core.baLow {
 		if gr.core.aecLow {
 			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase
@@ -183,13 +199,10 @@ func (gr *Graphics) BorderUpdate() {
 	}
 }
 
-func (gr *Graphics) Draw(b bool) {
+func (gr *Graphics) Draw() {
 	if gr.borderULOn {
 		gr.DrawBackground()
 	} else {
-		//if b {
-		//gr.DrawBackground()
-		//}
 		gr.drawGraphics()
 	}
 }
@@ -222,48 +235,46 @@ func (gr *Graphics) DrawBorder(lineStart int) {
 }
 
 func (gr *Graphics) DrawBackground() {
-	var c uint8
 	switch gr.core.displayIdx {
-	case 0, 1, 3: // Standard text, Multicolor text, Multicolor bitmap
-		c = gr.core.b0cColor
-	case 2: // Standard bitmap
-		c = gr.core.colors[gr.charDataLast]
-	case 4: // ECM text
+	case modeTextStandard, modeTextMulticolor, modeBitmapMulticolor:
+		gr.db.SetMulti8(gr.lineOffset, gr.core.b0cColor)
+	case modeBitmapStandard:
+		gr.db.SetMulti8(gr.lineOffset, gr.core.colors[gr.charDataLast])
+	case modeTextECM:
 		if (gr.charDataLast & 0x80) != 0 {
 			if (gr.charDataLast & 0x40) != 0 {
-				c = gr.core.b3cColor
+				gr.db.SetMulti8(gr.lineOffset, gr.core.b3cColor)
 			} else {
-				c = gr.core.b2cColor
+				gr.db.SetMulti8(gr.lineOffset, gr.core.b2cColor)
 			}
 		} else {
 			if (gr.charDataLast & 0x40) != 0 {
-				c = gr.core.b1cColor
+				gr.db.SetMulti8(gr.lineOffset, gr.core.b1cColor)
 			} else {
-				c = gr.core.b0cColor
+				gr.db.SetMulti8(gr.lineOffset, gr.core.b0cColor)
 			}
 		}
 	default:
-		c = gr.core.colors[0]
+		gr.db.SetMulti8(gr.lineOffset, gr.core.colors[0])
 	}
-	gr.db.SetMulti8(gr.lineOffset, c)
 }
 
 func (gr *Graphics) drawGraphics() {
 	offset := gr.lineOffset + int(gr.core.xScroll)
 	switch gr.core.displayIdx {
-	case 0: // Standard text
+	case modeTextStandard:
 		gr.drawGraphicStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
-	case 1: // Multicolor text
+	case modeTextMulticolor:
 		if (gr.colorData & 8) != 0 {
 			gr.drawGraphicMulticolor(offset, gr.core.b0cColor, gr.core.b1cColor, gr.core.b2cColor, gr.core.colors[gr.colorData&7])
 		} else {
 			gr.drawGraphicStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
 		}
-	case 2: // Standard bitmap
+	case modeBitmapStandard:
 		gr.drawGraphicStandard(offset, gr.core.colors[gr.charData], gr.core.colors[gr.charData>>4])
-	case 3: // Multicolor bitmap
+	case modeBitmapMulticolor:
 		gr.drawGraphicMulticolor(offset, gr.core.b0cColor, gr.core.colors[gr.charData>>4], gr.core.colors[gr.charData], gr.core.colors[gr.colorData])
-	case 4: // ECM text
+	case modeTextECM:
 		if (gr.charData & 0x80) != 0 {
 			if (gr.charData & 0x40) != 0 {
 				gr.drawGraphicStandard(offset, gr.core.b3cColor, gr.core.colors[gr.colorData])
@@ -275,15 +286,15 @@ func (gr *Graphics) drawGraphics() {
 		} else {
 			gr.drawGraphicStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
 		}
-	case 5: //Invalid multicolor text
+	case modeTextMulticolorInvalid:
 		if (gr.colorData & 8) != 0 {
 			gr.drawGraphicsInvalidMulticolor(offset, gr.core.colors[0])
 		} else {
 			gr.drawGraphicsInvalidStandard(offset, gr.core.colors[0])
 		}
-	case 6: //Invalid standard bitmap
+	case modeBitmapStandardInvalid:
 		gr.drawGraphicsInvalidStandard(offset, gr.core.colors[0])
-	case 7: // Invalid multicolor bitmap
+	case modeBitmapMulticolorInvalid:
 		gr.drawGraphicsInvalidMulticolor(offset, gr.core.colors[0])
 	}
 }
@@ -303,7 +314,6 @@ func (gr *Graphics) drawGraphicsInvalidMulticolor(offset int, a uint8) {
 }
 
 func (gr *Graphics) drawGraphicStandard(offset int, a uint8, b uint8) {
-	//foreMask
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)
@@ -328,7 +338,6 @@ func (gr *Graphics) drawGraphicStandard(offset int, a uint8, b uint8) {
 }
 
 func (gr *Graphics) drawGraphicMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
-	//foreMask
 	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
 	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)

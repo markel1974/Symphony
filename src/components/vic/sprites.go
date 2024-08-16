@@ -9,12 +9,11 @@ type Sprites struct {
 	collisionBuffer []uint8   // Buffer for sprite-sprite collisions and priorities
 	dataPtr         []uint16  // Sprite data pointers
 	data            [][]uint8 // Sprite data
-	dmaFlags        uint8     // 8 flags: Sprite DMA active
-	displayFlags    uint8     // 8 flags: Sprite display active
+	dmaFlags        uint8     // 8 flags: active DMA Sprite
+	displayFlags    uint8     // 8 flags: active Display Sprite
 	spriteFlags     uint8     // 8 flags: Sprite in this line
-	//drawData        []uint32  // Sprite drawing data
-	dataCounter     []uint16 // Sprite counter data
-	dataCounterBase []uint16 // Sprite dc data
+	dataCounter     []uint16  // Sprite counter data
+	dataCounterBase []uint16  // Sprite base counter data
 }
 
 func NewSprites(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Sprites {
@@ -49,11 +48,6 @@ func (sp *Sprites) GetDMAFlags() uint8 {
 
 func (sp *Sprites) ApplyDisplayFlags() {
 	sp.spriteFlags = sp.displayFlags
-	//if sp.spriteFlags != 0 {
-	//	for sNum := 0; sNum < len(sp.data); sNum++ {
-	//		sp.drawData[sNum] = (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
-	//	}
-	//}
 }
 
 func (sp *Sprites) FetchDataPtr(num int) {
@@ -71,8 +65,6 @@ func (sp *Sprites) FetchData(num int, byteNum int) {
 		sp.data[num][byteNum] = data
 		sp.dataCounter[num]++
 	} else if byteNum == 1 {
-		//accessIdle
-		//fmt.Println("ACCESS IS IDLE for SPRITE", num, byteNum)
 		sp.core.ReadByte(0x3fff)
 	}
 }
