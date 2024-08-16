@@ -99,8 +99,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	vBlank := false
 	lastCycle := false
 
-	//vic.core.Cycle()
-
 	switch vic.cycle {
 	case 1:
 		if rasterY := vic.core.GetRasterY(); rasterY == RasterYMax {
@@ -207,7 +205,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.accessRefresh()
 		vic.graphics.TryDisplayOn()
@@ -218,7 +215,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.accessRefresh()
 		vic.graphics.TryDisplayOn()
@@ -230,7 +226,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.accessRefresh()
 		vic.graphics.TryDisplayOn()
@@ -243,7 +238,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
 		vic.graphics.TryDisplayOn()
@@ -263,7 +257,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 				vic.graphics.DrawForeground()
 			}
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
 		vic.graphics.TryDisplayOn()
@@ -282,7 +275,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 				vic.graphics.DrawForeground()
 			}
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
 		vic.graphics.TryDisplayOn()
@@ -298,7 +290,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 				vic.graphics.DrawForeground()
 			}
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
 		vic.graphics.TryDisplayOn()
@@ -314,7 +305,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 				vic.graphics.DrawForeground()
 			}
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.graphics.GraphicsAccess()
 		vic.graphics.TryDisplayOn()
@@ -338,7 +328,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 				vic.graphics.DrawForeground()
 			}
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.idleAccess()
 		vic.graphics.TryDisplayOn()
@@ -357,7 +346,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.idleAccess()
 		vic.graphics.TryDisplayOn()
@@ -369,7 +357,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.sprites.UpdateRasterYDisplayFlags()
 		vic.sprites.FetchDataPtr(0)
@@ -380,7 +367,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 		}
 		vic.sprites.FetchData(0, 1)
 		vic.sprites.FetchData(0, 2)
@@ -393,7 +379,6 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		if vic.drawThisLine {
 			vic.graphics.DrawBackground()
 			vic.borders.Sample(vic.cycle)
-			vic.graphics.IncrementOffset()
 			vic.sprites.Draw(vic.lineStart)
 			vic.borders.Draw(vic.lineStart)
 			vic.lineStart += DisplayX

@@ -148,11 +148,6 @@ func (gr *Graphics) TryMatrixAccess() {
 	}
 }
 
-func (gr *Graphics) IncrementOffset() {
-	gr.lineOffset += 8
-	gr.foreMask.Increment()
-}
-
 func (gr *Graphics) DrawBackground() {
 	switch gr.core.displayIdx {
 	case modeTextStandard, modeTextMulticolor, modeBitmapMulticolor:
@@ -176,6 +171,8 @@ func (gr *Graphics) DrawBackground() {
 	default:
 		gr.db.SetMulti8(gr.lineOffset, gr.core.colors[0])
 	}
+
+	gr.incrementOffset()
 }
 
 func (gr *Graphics) DrawForeground() {
@@ -216,6 +213,13 @@ func (gr *Graphics) DrawForeground() {
 	case modeBitmapMulticolorInvalid:
 		gr.drawGraphicsInvalidMulticolor(offset, gr.core.colors[0])
 	}
+
+	gr.incrementOffset()
+}
+
+func (gr *Graphics) incrementOffset() {
+	gr.lineOffset += 8
+	gr.foreMask.Increment()
 }
 
 func (gr *Graphics) drawGraphicsInvalidStandard(offset int, a uint8) {

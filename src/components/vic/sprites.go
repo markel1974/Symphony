@@ -127,7 +127,7 @@ func (sp *Sprites) Draw(lineStart int) {
 	gfxColl := uint8(0)
 	copy(sp.collisionBuffer, _sprEmptyCollBuf)
 	for sNum, sBit := uint8(0), uint8(1); sNum < SpriteNumber; sNum, sBit = sNum+1, sBit<<1 {
-		if sp.spriteFlags&sBit != 0 {
+		if (sp.spriteFlags & sBit) != 0 {
 			sColor := sp.core.mXcColor[sNum]
 			sData := (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
 			sOffset := int(sp.core.mXx[sNum]) + SpriteNumber
@@ -158,7 +158,7 @@ func (sp *Sprites) Draw(lineStart int) {
 	} else {
 		sp.core.sprClx |= sprColl
 		sp.core.irqFlag |= 0x04
-		if sp.core.irqMask&0x04 != 0 {
+		if (sp.core.irqMask & 0x04) != 0 {
 			sp.core.irqFlag |= 0x80
 			sp.core.signalIRQTrigger.Emit(intrVicId)
 		}
@@ -201,14 +201,14 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData ui
 	idx := 0
 	for ; idx < 32; idx, plane0L, plane1L = idx+1, plane0L<<1, plane1L<<1 {
 		selectedColor := uint8(0)
-		if plane1L&0x80000000 != 0 {
-			if plane0L&0x80000000 != 0 {
+		if (plane1L & 0x80000000) != 0 {
+			if (plane0L & 0x80000000) != 0 {
 				selectedColor = sp.core.mm1Color
 			} else {
 				selectedColor = sColor
 			}
 		} else {
-			if plane0L&0x80000000 != 0 {
+			if (plane0L & 0x80000000) != 0 {
 				selectedColor = sp.core.mm0Color
 			} else {
 				continue
@@ -218,14 +218,14 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData ui
 	}
 	for ; idx < 48; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
 		selectedColor := uint8(0)
-		if plane1R&0x80000000 != 0 {
-			if plane0R&0x80000000 != 0 {
+		if (plane1R & 0x80000000) != 0 {
+			if (plane0R & 0x80000000) != 0 {
 				selectedColor = sp.core.mm1Color
 			} else {
 				selectedColor = sColor
 			}
 		} else {
-			if plane0R&0x80000000 != 0 {
+			if (plane0R & 0x80000000) != 0 {
 				selectedColor = sp.core.mm0Color
 			} else {
 				continue
@@ -242,7 +242,7 @@ func (sp *Sprites) drawExpandedStandard(lineOffset int, sColor uint8, sData uint
 	sDataR := uint32(_expTable[sData>>8&0xff]) << 16
 	if (foreMaskL&sDataL) != 0 || (foreMaskR&sDataR) != 0 {
 		*gfxColl |= sBit
-		if sp.core.mdp&sBit != 0 {
+		if (sp.core.mdp & sBit) != 0 {
 			sDataL &= ^foreMaskL
 			sDataR &= ^foreMaskR
 		}
@@ -315,7 +315,7 @@ func (sp *Sprites) drawUnexpandedStandard(lineOffset int, sColor uint8, sData ui
 func (sp *Sprites) drawPixel(lineOffset int, sOffset int, idx int, sBit uint8, selColor uint8, sprColl *uint8) {
 	collision := false
 	if collIdx := sOffset + idx; collIdx < DisplayXFillMax {
-		if (sp.collisionBuffer[collIdx]) != 0 {
+		if sp.collisionBuffer[collIdx] != 0 {
 			*sprColl |= sp.collisionBuffer[collIdx] | sBit
 			collision = true
 		} else {
