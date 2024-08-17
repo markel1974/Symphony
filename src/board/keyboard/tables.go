@@ -104,17 +104,6 @@ const (
 	VK_add      = -48
 	VK_decimal  = -49
 
-	VK_joy_fire       = -50
-	VK_joy_down_left  = -51
-	VK_joy_down       = -52
-	VK_joy_down_right = -53
-	VK_joy_left       = -54
-	VK_joy_center     = -55
-	VK_joy_right      = -56
-	VK_joy_up_left    = -57
-	VK_joy_up         = -58
-	VK_joy_up_right   = -59
-
 	VK_semicolon   = 0xba
 	VK_equal       = 0xbb
 	VK_comma       = 0xbc

@@ -9,11 +9,13 @@ import (
 type Keyboard struct {
 	keyMapper  []func(bool)
 	activeKeys map[pixels.Button]bool
+	joyKeys    bool
 }
 
 func NewKeyboard() *Keyboard {
 	return &Keyboard{
 		keyMapper:  nil,
+		joyKeys:    true,
 		activeKeys: make(map[pixels.Button]bool),
 	}
 }
@@ -27,10 +29,8 @@ func (g *Keyboard) Setup(b *board.Board) {
 
 	g.keyMapper[pixels.KeyCapsLock] = func(p bool) { b.KeyboardSetCapital(p) }
 	g.keyMapper[pixels.KeyEscape] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_escape) }
-	g.keyMapper[pixels.KeyF8] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_up) }
-	g.keyMapper[pixels.KeyF9] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_down) }
 
-	//g.keyMapper[pixels.KeyF9] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_bracketright) }
+	g.keyMapper[pixels.KeyF9] = g.swapJoyKey
 	g.keyMapper[pixels.KeyF10] = func(p bool) { b.KeyboardSwapJoystick(p) }
 	g.keyMapper[pixels.KeyF11] = func(p bool) { b.KeyboardSetExt(p) }
 	g.keyMapper[pixels.KeyF12] = func(p bool) { b.KeyboardPaste(p) }
@@ -57,12 +57,7 @@ func (g *Keyboard) Setup(b *board.Board) {
 	g.keyMapper[pixels.KeySemicolon] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_semicolon) }
 	g.keyMapper[pixels.KeyApostrophe] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_quote) }
 	g.keyMapper[pixels.KeyRightBracket] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_asterisk) }
-
-	g.keyMapper[pixels.KeyUp] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_JUP) }
-	g.keyMapper[pixels.KeyDown] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_JDN) }
-	g.keyMapper[pixels.KeyLeft] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_JLF) }
-	g.keyMapper[pixels.KeyRight] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_JRT) }
-	g.keyMapper[pixels.KeyTab] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_FIRE) }
+	g.keyMapper[pixels.KeyLeftBracket] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_asterisk) }
 
 	g.keyMapper[pixels.KeyMinus] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_minus) }
 	g.keyMapper[pixels.KeyEqual] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_equal) }
@@ -105,6 +100,42 @@ func (g *Keyboard) Setup(b *board.Board) {
 	g.keyMapper[pixels.KeyX] = func(p bool) { b.KeyboardSetVirtualKey(p, 'X') }
 	g.keyMapper[pixels.KeyY] = func(p bool) { b.KeyboardSetVirtualKey(p, 'Y') }
 	g.keyMapper[pixels.KeyZ] = func(p bool) { b.KeyboardSetVirtualKey(p, 'Z') }
+
+	g.keyMapper[pixels.KeyUp] = func(p bool) {
+		if g.joyKeys {
+			b.KeyboardSetJoyKey(p, keyboard.KEY_JUP)
+		} else {
+			b.KeyboardSetVirtualKey(p, keyboard.VK_up)
+		}
+	}
+	g.keyMapper[pixels.KeyDown] = func(p bool) {
+		if g.joyKeys {
+			b.KeyboardSetJoyKey(p, keyboard.KEY_JDN)
+		} else {
+			b.KeyboardSetVirtualKey(p, keyboard.VK_down)
+		}
+	}
+	g.keyMapper[pixels.KeyLeft] = func(p bool) {
+		if g.joyKeys {
+			b.KeyboardSetJoyKey(p, keyboard.KEY_JLF)
+		} else {
+			b.KeyboardSetVirtualKey(p, keyboard.VK_left)
+		}
+	}
+	g.keyMapper[pixels.KeyRight] = func(p bool) {
+		if g.joyKeys {
+			b.KeyboardSetJoyKey(p, keyboard.KEY_JRT)
+		} else {
+			b.KeyboardSetVirtualKey(p, keyboard.VK_right)
+		}
+	}
+	g.keyMapper[pixels.KeyTab] = func(p bool) {
+		if g.joyKeys {
+			b.KeyboardSetJoyKey(p, keyboard.KEY_FIRE)
+		} else {
+			b.KeyboardSetVirtualKey(p, keyboard.VK_tab)
+		}
+	}
 }
 
 func (g *Keyboard) Keys(pressed map[pixels.Button]bool) {
@@ -121,9 +152,14 @@ func (g *Keyboard) Keys(pressed map[pixels.Button]bool) {
 			if _, ok := g.activeKeys[v]; ok {
 				continue
 			}
-			//fmt.Println("CURRENT", v)
 			g.activeKeys[v] = true
 			g.keyMapper[v](true)
 		}
+	}
+}
+
+func (g *Keyboard) swapJoyKey(p bool) {
+	if p {
+		g.joyKeys = !g.joyKeys
 	}
 }

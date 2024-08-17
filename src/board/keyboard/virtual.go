@@ -123,26 +123,6 @@ func (k *Virtual) FromVirtual(vKey int) int {
 			return matrix(0, 2)
 		}
 		return KEY_JRT
-	case VK_joy_fire:
-		return KEY_FIRE
-	case VK_joy_down_left:
-		return KEY_JDNLF
-	case VK_joy_down:
-		return KEY_JDN
-	case VK_joy_down_right:
-		return KEY_JDNRT
-	case VK_joy_left:
-		return KEY_JLF
-	case VK_joy_center:
-		return KEY_CENTER
-	case VK_joy_right:
-		return KEY_JRT
-	case VK_joy_up_left:
-		return KEY_JUPLF
-	case VK_joy_up:
-		return KEY_JUP
-	case VK_joy_up_right:
-		return KEY_JUPRT
 	case VK_numpad0:
 		return KEY_FIRE
 	case VK_numpad1:
