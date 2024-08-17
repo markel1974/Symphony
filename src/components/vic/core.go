@@ -8,6 +8,12 @@ import (
 // https://www.cebix.net/VIC-Article.txt
 // https://www.oxyron.de/html/registers_vic2.html
 
+const (
+	flagRasterBit   = 0x01
+	flagLightPenBit = 0x08
+	flagMasterBit   = 0x80
+)
+
 type Core struct {
 	quartz           *quartz.Quartz
 	signalIRQTrigger *signals.SignalUint32
@@ -202,29 +208,11 @@ func (vic *Core) ClearBALow() {
 	}
 }
 
-/*
-func (vic *Core) Cycle() {
+func (vic *Core) TryAcquireAEC() {
 	if vic.baLow && !vic.aecLow {
 		if dist := vic.quartz.Cycle() - vic.baLowFirstCycle; dist >= 3 {
 			vic.aecLow = true
 			vic.signalAECLow.Emit(vic.aecLow)
-		}
-	}
-	if vic.aecLowClearNextCycle {
-		vic.aecLowClearNextCycle = false
-		vic.aecLow = false
-		vic.signalAECLow.Emit(vic.aecLow)
-	}
-}
-*/
-
-func (vic *Core) TryAcquireAEC() {
-	if vic.baLow {
-		if !vic.aecLow {
-			if dist := vic.quartz.Cycle() - vic.baLowFirstCycle; dist >= 3 {
-				vic.aecLow = true
-				vic.signalAECLow.Emit(vic.aecLow)
-			}
 		}
 	}
 }
@@ -258,9 +246,9 @@ func (vic *Core) LightPenTrigger() {
 		// Latch current coordinates
 		vic.lpx = uint8(vic.rasterX >> 1)
 		vic.lpy = uint8(vic.rasterY)
-		vic.irqFlag |= 0x08
-		if (vic.irqMask & 0x08) != 0 {
-			vic.irqFlag |= 0x80
+		vic.irqFlag |= flagLightPenBit
+		if (vic.irqMask & flagLightPenBit) != 0 {
+			vic.irqFlag |= flagMasterBit
 			vic.signalIRQTrigger.Emit(intrVicId)
 		}
 	}
@@ -296,9 +284,9 @@ func (vic *Core) ReadByte(addr uint16) uint8 {
 }
 
 func (vic *Core) rasterIrq() {
-	vic.irqFlag |= 0x01
-	if (vic.irqMask & 0x01) != 0 {
-		vic.irqFlag |= 0x80
+	vic.irqFlag |= flagRasterBit
+	if (vic.irqMask & flagRasterBit) != 0 {
+		vic.irqFlag |= flagMasterBit
 		vic.signalIRQTrigger.Emit(intrVicId)
 	}
 }
@@ -448,7 +436,7 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 		vic.irqFlag = vic.irqFlag & (^data & 0x0f)
 		if (vic.irqFlag & vic.irqMask) != 0 {
 			// Set master bit if allowed interrupt still pending
-			vic.irqFlag |= 0x80
+			vic.irqFlag |= flagMasterBit
 		} else {
 			vic.signalIRQClear.Emit(intrVicId)
 		}
@@ -456,7 +444,7 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 		vic.irqMask = data & 0x0f
 		if (vic.irqFlag & vic.irqMask) != 0 {
 			// Trigger interrupt if pending (now allowed)
-			vic.irqFlag |= 0x80
+			vic.irqFlag |= flagMasterBit
 			vic.signalIRQTrigger.Emit(intrVicId)
 		} else {
 			vic.irqFlag &= 0x7f

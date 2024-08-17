@@ -108,8 +108,8 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.drawThisLine = (rasterY >= FirstDisplayedLine) && (rasterY <= LastDisplayedLine)
 		}
 		vic.borders.SetBorderOnSample(0)
-		vic.sprites.FetchDataPtr(3)
-		vic.sprites.FetchData(3, 0)
+		vic.sprites.FetchPtr(3)
+		vic.sprites.Fetch(3, 0)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x18) == 0 {
 			vic.core.ClearBALow()
@@ -126,69 +126,69 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		vic.graphics.SetLineOffset(vic.lineStart)
 		vic.foreMask.Clear()
-		vic.sprites.FetchData(3, 1)
-		vic.sprites.FetchData(3, 2)
+		vic.sprites.Fetch(3, 1)
+		vic.sprites.Fetch(3, 2)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x20) != 0 {
 			vic.core.SetBALow()
 		}
 
 	case 3:
-		vic.sprites.FetchDataPtr(4)
-		vic.sprites.FetchData(4, 0)
+		vic.sprites.FetchPtr(4)
+		vic.sprites.Fetch(4, 0)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x30) == 0 {
 			vic.core.ClearBALow()
 		}
 
 	case 4:
-		vic.sprites.FetchData(4, 1)
-		vic.sprites.FetchData(4, 2)
+		vic.sprites.Fetch(4, 1)
+		vic.sprites.Fetch(4, 2)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x40) != 0 {
 			vic.core.SetBALow()
 		}
 
 	case 5:
-		vic.sprites.FetchDataPtr(5)
-		vic.sprites.FetchData(5, 0)
+		vic.sprites.FetchPtr(5)
+		vic.sprites.Fetch(5, 0)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x60) == 0 {
 			vic.core.ClearBALow()
 		}
 
 	case 6:
-		vic.sprites.FetchData(5, 1)
-		vic.sprites.FetchData(5, 2)
+		vic.sprites.Fetch(5, 1)
+		vic.sprites.Fetch(5, 2)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x80) != 0 {
 			vic.core.SetBALow()
 		}
 
 	case 7:
-		vic.sprites.FetchDataPtr(6)
-		vic.sprites.FetchData(6, 0)
+		vic.sprites.FetchPtr(6)
+		vic.sprites.Fetch(6, 0)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0xc0) == 0 {
 			vic.core.ClearBALow()
 		}
 
 	case 8:
-		vic.sprites.FetchData(6, 1)
-		vic.sprites.FetchData(6, 2)
+		vic.sprites.Fetch(6, 1)
+		vic.sprites.Fetch(6, 2)
 		vic.graphics.TryDisplayOn()
 
 	case 9:
-		vic.sprites.FetchDataPtr(7)
-		vic.sprites.FetchData(7, 0)
+		vic.sprites.FetchPtr(7)
+		vic.sprites.Fetch(7, 0)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x80) == 0 {
 			vic.core.ClearBALow()
 		}
 
 	case 10:
-		vic.sprites.FetchData(7, 1)
-		vic.sprites.FetchData(7, 2)
+		vic.sprites.Fetch(7, 1)
+		vic.sprites.Fetch(7, 2)
 		vic.graphics.TryDisplayOn()
 
 	case 11:
@@ -247,11 +247,11 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 17:
 		if vic.core.ModeColumn40() {
-			vic.borders.UpdateBorder()
+			vic.borders.Update()
 		}
 		vic.borders.SetBorderOnSample(1)
 		if vic.drawThisLine {
-			if vic.borders.GetBorderULOn() {
+			if vic.borders.GetVerticalFlipFlop() {
 				vic.graphics.DrawBackground()
 			} else {
 				vic.graphics.DrawForeground()
@@ -265,11 +265,11 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 18:
 		if vic.core.ModeColumn38() {
-			vic.borders.UpdateBorder()
+			vic.borders.Update()
 		}
 		vic.borders.SetBorderOnSample(2)
 		if vic.drawThisLine {
-			if vic.borders.GetBorderULOn() {
+			if vic.borders.GetVerticalFlipFlop() {
 				vic.graphics.DrawBackground()
 			} else {
 				vic.graphics.DrawForeground()
@@ -284,7 +284,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54:
 		if vic.drawThisLine {
-			if vic.borders.GetBorderULOn() {
+			if vic.borders.GetVerticalFlipFlop() {
 				vic.graphics.DrawBackground()
 			} else {
 				vic.graphics.DrawForeground()
@@ -299,7 +299,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 	case 55:
 		if vic.drawThisLine {
-			if vic.borders.GetBorderULOn() {
+			if vic.borders.GetVerticalFlipFlop() {
 				vic.graphics.DrawBackground()
 			} else {
 				vic.graphics.DrawForeground()
@@ -322,7 +322,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		vic.borders.SetBorderOnSample(3)
 		if vic.drawThisLine {
-			if vic.borders.GetBorderULOn() {
+			if vic.borders.GetVerticalFlipFlop() {
 				vic.graphics.DrawBackground()
 			} else {
 				vic.graphics.DrawForeground()
@@ -359,8 +359,8 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.borders.Sample(vic.cycle)
 		}
 		vic.sprites.UpdateRasterYDisplayFlags()
-		vic.sprites.FetchDataPtr(0)
-		vic.sprites.FetchData(0, 0)
+		vic.sprites.FetchPtr(0)
+		vic.sprites.Fetch(0, 0)
 		vic.graphics.UpdateDisplayOn()
 
 	case 59:
@@ -368,8 +368,8 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.graphics.DrawBackground()
 			vic.borders.Sample(vic.cycle)
 		}
-		vic.sprites.FetchData(0, 1)
-		vic.sprites.FetchData(0, 2)
+		vic.sprites.Fetch(0, 1)
+		vic.sprites.Fetch(0, 2)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x04) != 0 {
 			vic.core.SetBALow()
@@ -383,34 +383,34 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 			vic.borders.Draw(vic.lineStart)
 			vic.lineStart += DisplayX
 		}
-		vic.sprites.FetchDataPtr(1)
-		vic.sprites.FetchData(1, 0)
+		vic.sprites.FetchPtr(1)
+		vic.sprites.Fetch(1, 0)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x06) == 0 {
 			vic.core.ClearBALow()
 		}
 
 	case 61:
-		vic.sprites.FetchData(1, 1)
-		vic.sprites.FetchData(1, 2)
+		vic.sprites.Fetch(1, 1)
+		vic.sprites.Fetch(1, 2)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x08) != 0 {
 			vic.core.SetBALow()
 		}
 
 	case 62:
-		vic.sprites.FetchDataPtr(2)
-		vic.sprites.FetchData(2, 0)
+		vic.sprites.FetchPtr(2)
+		vic.sprites.Fetch(2, 0)
 		vic.graphics.TryDisplayOn()
 		if (vic.sprites.GetDMAFlags() & 0x0c) == 0 {
 			vic.core.ClearBALow()
 		}
 
 	case 63:
-		vic.sprites.FetchData(2, 1)
-		vic.sprites.FetchData(2, 2)
+		vic.sprites.Fetch(2, 1)
+		vic.sprites.Fetch(2, 2)
 		vic.graphics.TryDisplayOn()
-		vic.borders.UpdateBorderUpperLower()
+		vic.borders.UpdateVerticalFlipFlop()
 		if (vic.sprites.GetDMAFlags() & 0x10) != 0 {
 			vic.core.SetBALow()
 		}

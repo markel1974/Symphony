@@ -50,14 +50,14 @@ func (sp *Sprites) ApplyDisplayFlags() {
 	sp.spriteFlags = sp.displayFlags
 }
 
-func (sp *Sprites) FetchDataPtr(num int) {
+func (sp *Sprites) FetchPtr(num int) {
 	addr := sp.core.matrixBase | 0x03f8 | uint16(num)
 	data := sp.core.ReadByte(addr)
 	ptr := uint16(data) << 6
 	sp.dataPtr[num] = ptr
 }
 
-func (sp *Sprites) FetchData(num int, bNum int) {
+func (sp *Sprites) Fetch(num int, bNum int) {
 	if (sp.dmaFlags & (1 << num)) != 0 {
 		ptr := sp.dataPtr[num]
 		addr := (sp.dataCounter[num] & 0x3f) | ptr
