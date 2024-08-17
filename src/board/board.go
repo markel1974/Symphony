@@ -273,6 +273,11 @@ func (s *Board) KeyboardSetCapital(pressed bool) {
 	s.keys.SetCapital()
 }
 
+func (s *Board) SetMouse(x uint8, y uint8) {
+	s.sid.SetPotXSlot(x)
+	s.sid.SetPotYSlot(y)
+}
+
 func (s *Board) KeyboardSetMenu(pressed bool) {
 	if !pressed {
 		return

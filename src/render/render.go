@@ -20,12 +20,13 @@ type Render struct {
 	showMap      bool
 	screenWidth  int
 	screenHeight int
+	maxW         float64
+	maxH         float64
 	mainSurface  *pixels.PictureRGBA
 	mainMatrix   pixels.Matrix
 	mainSprite   *pixels.Sprite
 	db           *DisplayBuffer
-	//cacheCoords  []int
-	k *Keyboard
+	inputs       *Inputs
 }
 
 func New(prefs *config.Config) *Render {
@@ -35,8 +36,10 @@ func New(prefs *config.Config) *Render {
 		screenWidth:  vic.DisplayX,
 		screenHeight: vic.DisplayY,
 		scale:        3.0,
-		k:            NewKeyboard(),
+		inputs:       NewInputs(),
 	}
+	g.maxW = float64(g.screenWidth) * g.scale
+	g.maxH = float64(g.screenHeight) * g.scale
 	return g
 }
 
@@ -49,13 +52,7 @@ func (g *Render) setup(pos pixels.Vec) {
 	g.db = NewDisplayBuffer(g.mainSurface)
 	g.c64Board = board.NewBoard(g.db)
 	_ = g.c64Board.Setup(g.prefs)
-	g.k.Setup(g.c64Board)
-
-	//for y := 0; y < g.screenHeight; y++ {
-	//	for x := 0; x < g.screenWidth; x++ {
-	//		g.cacheCoords = append(g.cacheCoords, g.mainSurface.ComputeIndex(x, y))
-	//	}
-	//}
+	g.inputs.Setup(g.c64Board, g.maxW, g.maxH)
 }
 
 func (g *Render) Start() {
@@ -64,7 +61,7 @@ func (g *Render) Start() {
 
 func (g *Render) run() {
 	cfg := pixels.WindowConfig{
-		Bounds:      pixels.R(0, 0, float64(g.screenWidth)*g.scale, float64(g.screenHeight)*g.scale),
+		Bounds:      pixels.R(0, 0, g.maxW, g.maxH),
 		VSync:       true,
 		Undecorated: false,
 		Smooth:      false,
@@ -81,12 +78,16 @@ func (g *Render) run() {
 
 	c := win.Bounds().Center()
 	g.setup(c)
-
 	dt := NewDynamicThrottling(vic.FrameInterval)
+
 	run := true
 	for run {
 		dt.DynamicThrottling()
-		g.k.Keys(win.KeysPressed())
+		if win.MouseInsideWindow() {
+			mousePos := win.MousePosition()
+			g.inputs.MouseMove(mousePos.X, mousePos.Y)
+		}
+		g.inputs.Keys(win.KeysPressed())
 		for {
 			if vBlank := g.c64Board.Emulate(); vBlank {
 				break

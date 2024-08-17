@@ -6,22 +6,31 @@ import (
 	"github.com/markel1974/c64emu/src/pixels"
 )
 
-type Keyboard struct {
+type Inputs struct {
+	b          *board.Board
 	keyMapper  []func(bool)
 	activeKeys map[pixels.Button]bool
 	joyKeys    bool
+	maxW       int
+	maxH       int
 }
 
-func NewKeyboard() *Keyboard {
-	return &Keyboard{
+func NewInputs() *Inputs {
+	return &Inputs{
+		b:          nil,
 		keyMapper:  nil,
 		joyKeys:    true,
 		activeKeys: make(map[pixels.Button]bool),
+		maxW:       0,
+		maxH:       0,
 	}
 }
 
-func (g *Keyboard) Setup(b *board.Board) {
+func (g *Inputs) Setup(b *board.Board, maxW float64, maxH float64) {
 	const max = int(pixels.KeyLast + 1)
+	g.b = b
+	g.maxW = int(maxW)
+	g.maxH = int(maxH)
 	g.keyMapper = make([]func(bool), max)
 	for x := 0; x < max; x++ {
 		g.keyMapper[x] = func(b bool) {}
@@ -136,9 +145,11 @@ func (g *Keyboard) Setup(b *board.Board) {
 			b.KeyboardSetVirtualKey(p, keyboard.VK_tab)
 		}
 	}
+	g.keyMapper[pixels.MouseButton1] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_FIRE) }
+	g.keyMapper[pixels.MouseButton2] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_JUP) }
 }
 
-func (g *Keyboard) Keys(pressed map[pixels.Button]bool) {
+func (g *Inputs) Keys(pressed map[pixels.Button]bool) {
 	if len(g.activeKeys) > 0 {
 		for v := range g.activeKeys {
 			if _, ok := pressed[v]; !ok {
@@ -158,7 +169,20 @@ func (g *Keyboard) Keys(pressed map[pixels.Button]bool) {
 	}
 }
 
-func (g *Keyboard) swapJoyKey(p bool) {
+func (g *Inputs) MouseMove(x float64, y float64) {
+	//currX := (0xff * int(x)) / g.maxW
+	//currY := (0xff * int(y)) / g.maxH
+	//if x != xOld || y != yOld {
+	//mouseX := x - xOld
+	//mouseY := y - yOld
+	//g.b.SetMouse(int(+mouseX), int(+mouseY))
+	//fmt.Println(currX, currY, x, y)
+
+	g.b.SetMouse(uint8(x), uint8(y))
+	//}
+}
+
+func (g *Inputs) swapJoyKey(p bool) {
 	if p {
 		g.joyKeys = !g.joyKeys
 	}

@@ -200,7 +200,7 @@ func (w *GLWindow) SwapBuffers() {
 	executor.Thread.Call(func() {
 		_, _, oldW, oldH := intBounds(w.bounds)
 		newW, newH := w.window.GetSize()
-		w.bounds = w.bounds.ResizedMin(w.bounds.Size().Add(MakeVec(float64(newW-oldW), float64(newH-oldH), )))
+		w.bounds = w.bounds.ResizedMin(w.bounds.Size().Add(MakeVec(float64(newW-oldW), float64(newH-oldH))))
 	})
 
 	w.canvas.SetBounds(w.bounds)
@@ -211,7 +211,7 @@ func (w *GLWindow) SwapBuffers() {
 		executor.Bounds(0, 0, framebufferWidth, framebufferHeight)
 		executor.Clear(0, 0, 0, 0)
 		w.canvas.gf.Frame().Begin()
-		w.canvas.gf.Frame().Blit(nil, 0, 0, w.canvas.Texture().Width(), w.canvas.Texture().Height(), 0, 0, framebufferWidth, framebufferHeight, )
+		w.canvas.gf.Frame().Blit(nil, 0, 0, w.canvas.Texture().Width(), w.canvas.Texture().Height(), 0, 0, framebufferWidth, framebufferHeight)
 		w.canvas.gf.Frame().End()
 		if w.vsync {
 			glfw.SwapInterval(1)
@@ -566,9 +566,11 @@ func (w *GLWindow) initInput() {
 		w.window.SetMouseButtonCallback(func(_ *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 			switch action {
 			case glfw.Press:
+				w.keysPressed[Button(button)] = true
 				w.tempPressEvents[Button(button)] = true
 				w.tempInp.buttons[Button(button)] = true
 			case glfw.Release:
+				delete(w.keysPressed, Button(button))
 				w.tempReleaseEvents[Button(button)] = true
 				w.tempInp.buttons[Button(button)] = false
 			}
