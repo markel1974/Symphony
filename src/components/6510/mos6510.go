@@ -230,30 +230,19 @@ func (cpu *MOS6510) checkPic() {
 	}
 }
 
-func (cpu *MOS6510) GetAECLow() bool {
-	return cpu.aecLow
-}
-
 func (cpu *MOS6510) SetAECLow(aecLow bool) {
 	cpu.aecLow = aecLow
-	if cpu.aecLow {
-		cpu.halt = true
-	}
-}
-
-func (cpu *MOS6510) GetRDYLow() bool {
-	return cpu.rdyLow
 }
 
 func (cpu *MOS6510) SetRDYLow(rdyLow bool) {
 	cpu.rdyLow = rdyLow
 	if !cpu.rdyLow {
-		cpu.halt = false
+		cpu.stop = false
 	}
 }
 
 func (cpu *MOS6510) Emulate() {
-	if cpu.halt {
+	if cpu.stop {
 		return
 	}
 	if cpu.state == STATE_LAST {
@@ -263,7 +252,7 @@ func (cpu *MOS6510) Emulate() {
 	switch cpu.state {
 	case STATE_LAST:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.op = cpu.banks.Read(cpu.pc)
@@ -274,7 +263,7 @@ func (cpu *MOS6510) Emulate() {
 	// IRQ
 	case I_IRQ_8:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -282,7 +271,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case I_IRQ_9:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -307,7 +296,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case I_IRQ_D:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.pc = uint16(cpu.banks.Read(0xfffe))
@@ -315,7 +304,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case I_IRQ_E:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(0xffff)
@@ -325,7 +314,7 @@ func (cpu *MOS6510) Emulate() {
 	// NMI
 	case I_NMI_10:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -333,7 +322,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case I_NMI_11:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -358,7 +347,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case I_NMI_15:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.pc = uint16(cpu.banks.Read(0xfffa))
@@ -366,7 +355,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case I_NMI_16:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(0xfffb)
@@ -376,7 +365,7 @@ func (cpu *MOS6510) Emulate() {
 	// Addressing modes: Fetch effective address, no extra cycles (-> ar)
 	case A_ZERO:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -385,7 +374,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_ZEROX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -394,7 +383,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_ZEROX1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -403,7 +392,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_ZEROY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -412,7 +401,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_ZEROY1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -421,7 +410,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_ABS:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -430,7 +419,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_ABS1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -440,7 +429,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_ABSX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -450,7 +439,7 @@ func (cpu *MOS6510) Emulate() {
 	case A_ABSX1:
 		// Note: Some undocumented opcodes rely on the value of ar2
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
@@ -465,7 +454,7 @@ func (cpu *MOS6510) Emulate() {
 	case A_ABSX2:
 		// No page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -474,7 +463,7 @@ func (cpu *MOS6510) Emulate() {
 	case A_ABSX3:
 		// Page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -483,7 +472,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_ABSY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -493,7 +482,7 @@ func (cpu *MOS6510) Emulate() {
 	case A_ABSY1:
 		// Note: Some undocumented opcodes rely on the value of ar2
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
@@ -508,7 +497,7 @@ func (cpu *MOS6510) Emulate() {
 	case A_ABSY2:
 		// No page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -517,7 +506,7 @@ func (cpu *MOS6510) Emulate() {
 	case A_ABSY3:
 		// Page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -526,7 +515,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_INDX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
@@ -535,7 +524,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_INDX1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar2)
@@ -544,7 +533,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_INDX2:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
@@ -552,7 +541,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_INDX3:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
@@ -561,7 +550,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_INDY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
@@ -570,7 +559,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case A_INDY1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
@@ -579,7 +568,7 @@ func (cpu *MOS6510) Emulate() {
 	case A_INDY2:
 		// Note: Some undocumented opcodes rely on the value of ar2
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar2 = uint16(cpu.banks.Read((cpu.ar2 + 1) & 0xff))
@@ -593,7 +582,7 @@ func (cpu *MOS6510) Emulate() {
 	case A_INDY3:
 		// No page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -602,7 +591,7 @@ func (cpu *MOS6510) Emulate() {
 	case A_INDY4:
 		// Page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -612,7 +601,7 @@ func (cpu *MOS6510) Emulate() {
 		// Addressing modes: Fetch effective address, extra cycle on page crossing (-> ar)
 	case AE_ABSX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -621,7 +610,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case AE_ABSX1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -637,7 +626,7 @@ func (cpu *MOS6510) Emulate() {
 	case AE_ABSX2:
 		// Page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -646,7 +635,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case AE_ABSY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -655,7 +644,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case AE_ABSY1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -671,7 +660,7 @@ func (cpu *MOS6510) Emulate() {
 	case AE_ABSY2:
 		// Page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -680,7 +669,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case AE_INDY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
@@ -689,7 +678,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case AE_INDY1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
@@ -697,7 +686,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case AE_INDY2:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
@@ -711,7 +700,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case AE_INDY3: // Page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -721,7 +710,7 @@ func (cpu *MOS6510) Emulate() {
 		// Addressing modes: Read operand, write it back, no extra cycles (-> ar, rmw)
 	case M_ZERO:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -730,7 +719,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_ZEROX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -739,7 +728,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_ZEROX1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -748,7 +737,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_ZEROY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -757,7 +746,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_ZEROY1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -766,7 +755,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_ABS:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -775,7 +764,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_ABS1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -785,7 +774,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_ABSX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -794,7 +783,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_ABSX1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -809,7 +798,7 @@ func (cpu *MOS6510) Emulate() {
 	case M_ABSX2:
 		// No page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -818,7 +807,7 @@ func (cpu *MOS6510) Emulate() {
 	case M_ABSX3:
 		// Page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -827,7 +816,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_ABSY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -836,7 +825,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_ABSY1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -851,7 +840,7 @@ func (cpu *MOS6510) Emulate() {
 	case M_ABSY2:
 		// No page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -860,7 +849,7 @@ func (cpu *MOS6510) Emulate() {
 	case M_ABSY3:
 		// Page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -869,7 +858,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_INDX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
@@ -878,7 +867,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_INDX1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar2)
@@ -887,7 +876,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_INDX2:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
@@ -895,7 +884,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_INDX3:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
@@ -904,7 +893,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_INDY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
@@ -913,7 +902,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_INDY1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
@@ -921,7 +910,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case M_INDY2:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
@@ -935,7 +924,7 @@ func (cpu *MOS6510) Emulate() {
 	case M_INDY3:
 		// No page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -944,7 +933,7 @@ func (cpu *MOS6510) Emulate() {
 	case M_INDY4:
 		// Page crossed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -953,7 +942,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case RMW_DO_IT:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.rmw = cpu.banks.Read(cpu.ar)
@@ -966,7 +955,7 @@ func (cpu *MOS6510) Emulate() {
 		// Load group
 	case O_LDA:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.ar)
@@ -977,7 +966,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_LDA_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -989,7 +978,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_LDX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.ar)
@@ -1000,7 +989,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_LDX_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1012,7 +1001,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_LDY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.ar)
@@ -1023,7 +1012,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_LDY_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1049,7 +1038,7 @@ func (cpu *MOS6510) Emulate() {
 		// Transfer group
 	case O_TAX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1060,7 +1049,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_TXA:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1071,7 +1060,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_TAY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1082,7 +1071,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_TYA:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1093,7 +1082,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_TSX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1104,7 +1093,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_TXS:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1114,7 +1103,7 @@ func (cpu *MOS6510) Emulate() {
 		// Arithmetic group
 	case O_ADC:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.ar)
@@ -1123,7 +1112,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_ADC_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1133,7 +1122,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_SBC:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.ar)
@@ -1142,7 +1131,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_SBC_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1153,7 +1142,7 @@ func (cpu *MOS6510) Emulate() {
 		// Increment/decrement group
 	case O_INX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1164,7 +1153,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_DEX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1175,7 +1164,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_INY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1186,7 +1175,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_DEY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1212,7 +1201,7 @@ func (cpu *MOS6510) Emulate() {
 		// Logic group
 	case O_AND:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.a &= cpu.banks.Read(cpu.ar)
@@ -1222,7 +1211,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_AND_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.a &= cpu.banks.Read(cpu.pc)
@@ -1233,7 +1222,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_ORA:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.a |= cpu.banks.Read(cpu.ar)
@@ -1243,7 +1232,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_ORA_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.a |= cpu.banks.Read(cpu.pc)
@@ -1254,7 +1243,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_EOR:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.a ^= cpu.banks.Read(cpu.ar)
@@ -1264,7 +1253,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_EOR_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.a ^= cpu.banks.Read(cpu.pc)
@@ -1276,7 +1265,7 @@ func (cpu *MOS6510) Emulate() {
 		// Compare group
 	case O_CMP:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.ar)
@@ -1288,7 +1277,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_CMP_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1301,7 +1290,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_CPX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.ar)
@@ -1313,7 +1302,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_CPX_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1326,7 +1315,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_CPY:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.ar)
@@ -1338,7 +1327,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_CPY_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1352,7 +1341,7 @@ func (cpu *MOS6510) Emulate() {
 		// Bit-test group
 	case O_BIT:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.ar)
@@ -1372,7 +1361,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_ASL_A:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1392,7 +1381,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_LSR_A:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1417,7 +1406,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_ROL_A:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1447,7 +1436,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_ROR_A:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1465,7 +1454,7 @@ func (cpu *MOS6510) Emulate() {
 		// Stack group
 	case O_PHA:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1478,7 +1467,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_PLA:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1486,7 +1475,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_PLA1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(uint16(cpu.sp) | 0x100)
@@ -1495,7 +1484,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_PLA2:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.a = cpu.banks.Read(uint16(cpu.sp) | 0x100)
@@ -1505,7 +1494,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_PHP:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1519,7 +1508,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_PLP:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1527,7 +1516,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_PLP1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(uint16(cpu.sp) | 0x100)
@@ -1537,7 +1526,7 @@ func (cpu *MOS6510) Emulate() {
 	case O_PLP2:
 		iFlagPrev := cpu.iFlag
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(uint16(cpu.sp) | 0x0100)
@@ -1552,7 +1541,7 @@ func (cpu *MOS6510) Emulate() {
 		// Jump/branch group
 	case O_JMP:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -1561,7 +1550,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_JMP1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1570,7 +1559,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_JMP_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.pc = uint16(cpu.banks.Read(cpu.ar))
@@ -1578,7 +1567,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_JMP_I1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(((cpu.ar + 1) & 0xff) | (cpu.ar & 0xff00))
@@ -1587,7 +1576,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_JSR:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.ar = uint16(cpu.banks.Read(cpu.pc))
@@ -1596,7 +1585,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_JSR1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(uint16(cpu.sp) | 0x100)
@@ -1614,7 +1603,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_JSR4:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1624,7 +1613,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_RTS:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1632,7 +1621,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_RTS1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(uint16(cpu.sp) | 0x100)
@@ -1641,7 +1630,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_RTS2:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.pc = uint16(cpu.banks.Read(uint16(cpu.sp) | 0x100))
@@ -1650,7 +1639,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_RTS3:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(uint16(cpu.sp) | 0x100)
@@ -1659,7 +1648,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_RTS4:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1668,7 +1657,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_RTI:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1676,7 +1665,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_RTI1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(uint16(cpu.sp) | 0x100)
@@ -1685,7 +1674,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_RTI2:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(uint16(cpu.sp) | 0x0100)
@@ -1695,7 +1684,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_RTI3:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.pc = uint16(cpu.banks.Read(uint16(cpu.sp) | 0x100))
@@ -1704,7 +1693,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_RTI4:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(uint16(cpu.sp) | 0x100)
@@ -1713,7 +1702,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BRK:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1745,7 +1734,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BRK4:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.pc = uint16(cpu.banks.Read(0xfffe))
@@ -1753,7 +1742,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BRK5:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(0xffff)
@@ -1762,7 +1751,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BCS:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1775,7 +1764,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BCC:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1788,7 +1777,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BEQ:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1801,7 +1790,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BNE:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1814,7 +1803,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BVS:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1830,7 +1819,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BVC:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1846,7 +1835,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BMI:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1859,7 +1848,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BPL:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -1874,7 +1863,7 @@ func (cpu *MOS6510) Emulate() {
 		// No page crossed
 		cpu.opFlags |= OpFlagIntDelayed
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1884,7 +1873,7 @@ func (cpu *MOS6510) Emulate() {
 	case O_BRANCH_BP:
 		// Page crossed, branch backwards
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1893,7 +1882,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BRANCH_BP1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc + 0x100)
@@ -1902,7 +1891,7 @@ func (cpu *MOS6510) Emulate() {
 	case O_BRANCH_FP:
 		// Page crossed, branch forwards
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1911,7 +1900,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_BRANCH_FP1:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc - 0x100)
@@ -1920,7 +1909,7 @@ func (cpu *MOS6510) Emulate() {
 		// Flag group
 	case O_SEC:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1929,7 +1918,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_CLC:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1938,7 +1927,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_SED:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1947,7 +1936,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_CLD:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1956,7 +1945,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_SEI:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1968,7 +1957,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_CLI:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1980,7 +1969,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_CLV:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -1990,7 +1979,7 @@ func (cpu *MOS6510) Emulate() {
 		// NOP group
 	case O_NOP:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -2001,7 +1990,7 @@ func (cpu *MOS6510) Emulate() {
 		// NOP group
 	case O_NOP_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.pc)
@@ -2010,7 +1999,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_NOP_A:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.banks.Read(cpu.ar)
@@ -2019,7 +2008,7 @@ func (cpu *MOS6510) Emulate() {
 		// Load A/X group
 	case O_LAX:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.x = cpu.banks.Read(cpu.ar)
@@ -2101,7 +2090,7 @@ func (cpu *MOS6510) Emulate() {
 		// Complex functions
 	case O_ANC_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.a &= cpu.banks.Read(cpu.pc)
@@ -2113,7 +2102,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_ASR_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		cpu.a &= cpu.banks.Read(cpu.pc)
@@ -2126,7 +2115,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_ARR_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -2163,7 +2152,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_ANE_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -2175,7 +2164,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_LXA_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -2188,7 +2177,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_SBX_I:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.pc)
@@ -2202,7 +2191,7 @@ func (cpu *MOS6510) Emulate() {
 
 	case O_LAS:
 		if cpu.rdyLow {
-			cpu.halt = true
+			cpu.stop = true
 			return
 		}
 		data := cpu.banks.Read(cpu.ar)

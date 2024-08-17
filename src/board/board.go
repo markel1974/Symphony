@@ -381,11 +381,11 @@ func (s *Board) IRQClearBind(fn func(uint32)) {
 }
 
 func (s *Board) BusAvailable() bool {
-	return !s.cpu.GetRDYLow()
+	return !s.vic.GetBALow()
 }
 
 func (s *Board) AECAvailable() bool {
-	return !s.cpu.GetAECLow()
+	return !s.vic.GetAECLow()
 }
 
 func (s *Board) Cycle() uint64 {

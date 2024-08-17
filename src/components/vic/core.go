@@ -196,6 +196,14 @@ func (vic *Core) SetBALow() {
 	vic.signalBALow.Emit(true)
 }
 
+func (vic *Core) GetBALow() bool {
+	return vic.baLow
+}
+
+func (vic *Core) GetAECLow() bool {
+	return vic.aecLow
+}
+
 func (vic *Core) ClearBALow() {
 	if vic.baLow {
 		vic.baLow = false

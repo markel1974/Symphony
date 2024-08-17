@@ -75,6 +75,14 @@ func (vic *MOS6569) SignalClearIRQBind(fn func(uint32)) {
 	vic.core.signalIRQClear.Bind(fn)
 }
 
+func (vic *MOS6569) GetBALow() bool {
+	return vic.core.GetBALow()
+}
+
+func (vic *MOS6569) GetAECLow() bool {
+	return vic.core.GetAECLow()
+}
+
 func (vic *MOS6569) configChanged() {
 	//vic.skipFrames = vic.cfg.SkipFrames()
 }
