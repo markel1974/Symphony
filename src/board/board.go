@@ -44,11 +44,8 @@ type Board struct {
 	cartMan      *cartridges.Manager
 	banks        *banks.Banks
 	dmaLow       bool
-	//baLow        bool
-	//aecLow       bool
-
-	irqTrigger *signals.SignalUint32
-	irqClear   *signals.SignalUint32
+	irqTrigger   *signals.SignalUint32
+	irqClear     *signals.SignalUint32
 	//phiMode    PhiMode
 }
 
@@ -186,14 +183,10 @@ func (s *Board) AsyncReset() {
 	s.iec.Reset()
 
 	s.dmaLow = false
-	//s.baLow = false
-	//s.aecLow = false
 }
 
 func (s *Board) configChanged() {
 }
-
-//var testCounter = 0
 
 func (s *Board) Emulate() bool {
 	//s.phiMode = Phi1
@@ -214,16 +207,6 @@ func (s *Board) Emulate() bool {
 	s.cia2.CheckIRQs()
 	s.cia1.Emulate()
 	s.cia2.Emulate()
-
-	//TODO SLOW CPU BUG (1/32)
-	//if s.speed > 0 {
-	//	if testCounter == s.speed {
-	//		s.cpu.Emulate()
-	//		testCounter = 0
-	//	} else {
-	//		testCounter++
-	//	}
-	//}
 
 	s.cpu.Emulate()
 	s.cartMan.Emulate()
@@ -447,24 +430,6 @@ func (s *Board) irqClearSlot(i uint32) {
 		s.irqClear.Emit(i)
 	}
 }
-
-/*
-func (s *Board) baLowSlot(baLow bool) {
-	s.baLow = baLow
-	//s.updateCpuRdy()
-}
-
-func (s *Board) aecLowSlot(aecLow bool) {
-	s.aecLow = aecLow
-	s.updateCpuRdy()
-}
-
-func (s *Board) updateCpuRdy() {
-	//s.cpu.SetRDYLow((s.baLow) || s.dmaLow)
-	//s.cpu.SetRDYLow((s.baLow && s.aecLow) || s.dmaLow)
-	s.cpu.SetRDYLow(s.aecLow || s.dmaLow)
-}
-*/
 
 func (s *Board) loadPRG(prgFile string) {
 	//TODO TEST - WE HAVE TO WAIT READY
