@@ -179,39 +179,39 @@ func (gr *Graphics) DrawForeground() {
 	offset := gr.lineOffset + int(gr.core.xScroll)
 	switch gr.core.displayIdx {
 	case modeTextStandard:
-		gr.drawGraphicStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
+		gr.drawStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
 	case modeTextMulticolor:
 		if (gr.colorData & 8) != 0 {
-			gr.drawGraphicMulticolor(offset, gr.core.b0cColor, gr.core.b1cColor, gr.core.b2cColor, gr.core.colors[gr.colorData&7])
+			gr.drawMulticolor(offset, gr.core.b0cColor, gr.core.b1cColor, gr.core.b2cColor, gr.core.colors[gr.colorData&7])
 		} else {
-			gr.drawGraphicStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
+			gr.drawStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
 		}
 	case modeBitmapStandard:
-		gr.drawGraphicStandard(offset, gr.core.colors[gr.charData], gr.core.colors[gr.charData>>4])
+		gr.drawStandard(offset, gr.core.colors[gr.charData], gr.core.colors[gr.charData>>4])
 	case modeBitmapMulticolor:
-		gr.drawGraphicMulticolor(offset, gr.core.b0cColor, gr.core.colors[gr.charData>>4], gr.core.colors[gr.charData], gr.core.colors[gr.colorData])
+		gr.drawMulticolor(offset, gr.core.b0cColor, gr.core.colors[gr.charData>>4], gr.core.colors[gr.charData], gr.core.colors[gr.colorData])
 	case modeTextECM:
 		if (gr.charData & 0x80) != 0 {
 			if (gr.charData & 0x40) != 0 {
-				gr.drawGraphicStandard(offset, gr.core.b3cColor, gr.core.colors[gr.colorData])
+				gr.drawStandard(offset, gr.core.b3cColor, gr.core.colors[gr.colorData])
 			} else {
-				gr.drawGraphicStandard(offset, gr.core.b2cColor, gr.core.colors[gr.colorData])
+				gr.drawStandard(offset, gr.core.b2cColor, gr.core.colors[gr.colorData])
 			}
 		} else if (gr.charData & 0x40) != 0 {
-			gr.drawGraphicStandard(offset, gr.core.b1cColor, gr.core.colors[gr.colorData])
+			gr.drawStandard(offset, gr.core.b1cColor, gr.core.colors[gr.colorData])
 		} else {
-			gr.drawGraphicStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
+			gr.drawStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
 		}
 	case modeTextMulticolorInvalid:
 		if (gr.colorData & 8) != 0 {
-			gr.drawGraphicsInvalidMulticolor(offset, gr.core.colors[0])
+			gr.drawInvalidMulticolor(offset, gr.core.colors[0])
 		} else {
-			gr.drawGraphicsInvalidStandard(offset, gr.core.colors[0])
+			gr.drawInvalidStandard(offset, gr.core.colors[0])
 		}
 	case modeBitmapStandardInvalid:
-		gr.drawGraphicsInvalidStandard(offset, gr.core.colors[0])
+		gr.drawInvalidStandard(offset, gr.core.colors[0])
 	case modeBitmapMulticolorInvalid:
-		gr.drawGraphicsInvalidMulticolor(offset, gr.core.colors[0])
+		gr.drawInvalidMulticolor(offset, gr.core.colors[0])
 	}
 
 	gr.incrementOffset()
@@ -222,21 +222,21 @@ func (gr *Graphics) incrementOffset() {
 	gr.foreMask.Increment()
 }
 
-func (gr *Graphics) drawGraphicsInvalidStandard(offset int, a uint8) {
+func (gr *Graphics) drawInvalidStandard(offset int, a uint8) {
 	gr.db.SetMulti8(offset, a)
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)
 }
 
-func (gr *Graphics) drawGraphicsInvalidMulticolor(offset int, a uint8) {
+func (gr *Graphics) drawInvalidMulticolor(offset int, a uint8) {
 	gr.db.SetMulti8(offset, a)
 	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
 	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)
 }
 
-func (gr *Graphics) drawGraphicStandard(offset int, a uint8, b uint8) {
+func (gr *Graphics) drawStandard(offset int, a uint8, b uint8) {
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)
@@ -260,7 +260,7 @@ func (gr *Graphics) drawGraphicStandard(offset int, a uint8, b uint8) {
 	gr.db.Set(offset, colorBuffer[data])
 }
 
-func (gr *Graphics) drawGraphicMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
+func (gr *Graphics) drawMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
 	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
 	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
 	gr.foreMask.Update(p1, p2)

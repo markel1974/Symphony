@@ -3,14 +3,15 @@ package vic
 type ForeMask struct {
 	buf      []uint8 // Foreground mask for sprite-graphics collisions and priorities
 	emptyBuf []uint8
-	offset   int // Offset from buf
+	offset   int
 }
 
 func NewForeMask() *ForeMask {
 	return &ForeMask{
 		buf:      make([]uint8, DisplayXFill+1),
 		emptyBuf: make([]uint8, DisplayXDiv8),
-		offset:   0,
+		//emptyBuf: make([]uint8, DisplayXFill+1),
+		offset: 0,
 	}
 }
 
