@@ -208,7 +208,7 @@ func (k *Virtual) FromVirtual(vKey int) int {
 		return KEY_KPPERIOD
 	case VK_bracketleft:
 		return matrix(5, 6)
-	case VK_bracketright:
+	case VK_asterisk:
 		return matrix(6, 1)
 	case VK_slash:
 		return matrix(6, 7)

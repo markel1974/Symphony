@@ -115,16 +115,16 @@ const (
 	VK_joy_up         = -58
 	VK_joy_up_right   = -59
 
-	VK_semicolon    = 0xba
-	VK_equal        = 0xbb
-	VK_comma        = 0xbc
-	VK_period       = 0xbe
-	VK_minus        = 0xbd
-	VK_slash        = 0xbf
-	VK_bracketleft  = 0xdb
-	VK_backslash    = 0xdc
-	VK_quote        = 0xde
-	VK_bracketright = 0xdd
-	VK_grave        = 0xc0
-	VK_plus         = 0xc1
+	VK_semicolon   = 0xba
+	VK_equal       = 0xbb
+	VK_comma       = 0xbc
+	VK_period      = 0xbe
+	VK_minus       = 0xbd
+	VK_slash       = 0xbf
+	VK_bracketleft = 0xdb
+	VK_backslash   = 0xdc
+	VK_quote       = 0xde
+	VK_asterisk    = 0xdd
+	VK_grave       = 0xc0
+	VK_plus        = 0xc1
 )

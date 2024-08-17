@@ -54,26 +54,22 @@ func (cia1 *MOS6526A) Reset() {
 	cia1.prevLPState = 0x10
 }
 
-func (cia1 *MOS6526A) SetKeyUp(keyM int, revM int, shifted bool, joyKey1 uint8, joyKey2 uint8) {
+func (cia1 *MOS6526A) SetKeyUp(keyM int, revM int, shifted bool) {
 	if shifted {
 		cia1.KeyMatrix[6] |= 0x10
 		cia1.RevMatrix[4] |= 0x40
 	}
 	cia1.KeyMatrix[keyM] |= 1 << revM
 	cia1.RevMatrix[revM] |= 1 << keyM
-	cia1.Joystick1 = joyKey1
-	cia1.Joystick2 = joyKey2
 }
 
-func (cia1 *MOS6526A) SetKeyDown(keyM int, revM int, shifted bool, joyKey1 uint8, joyKey2 uint8) {
+func (cia1 *MOS6526A) SetKeyDown(keyM int, revM int, shifted bool) {
 	if shifted {
 		cia1.KeyMatrix[6] &= 0xef
 		cia1.RevMatrix[4] &= 0xbf
 	}
 	cia1.KeyMatrix[keyM] &= ^(1 << revM)
 	cia1.RevMatrix[revM] &= ^(1 << keyM)
-	cia1.Joystick1 = joyKey1
-	cia1.Joystick2 = joyKey2
 }
 
 func (cia1 *MOS6526A) SetJoystick1(port1 uint8) {

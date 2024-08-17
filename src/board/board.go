@@ -284,6 +284,10 @@ func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
 	s.keys.SetVirtualKey(pressed, vKey)
 }
 
+func (s *Board) KeyboardSetJoyKey(pressed bool, vKey int) {
+	s.keys.SetJoyKey(pressed, vKey)
+}
+
 func (s *Board) KeyboardSwapJoystick(pressed bool) {
 	if !pressed {
 		return
@@ -292,17 +296,18 @@ func (s *Board) KeyboardSwapJoystick(pressed bool) {
 }
 
 func (s *Board) updateKeyboard() {
-	if c64Byte, c64Bit, pressed, joyKey, shifted, ok := s.keys.PollKeyboard(); ok {
-		joyKey1 := joyKey
-		joyKey2 := uint8(0xff)
+	if joyKey, ok := s.keys.PollJoyKey(); ok {
 		if s.keys.HasJoystickSwap() {
-			joyKey2 = joyKey
-			joyKey1 = uint8(0xff)
-		}
-		if pressed {
-			s.cia1.SetKeyDown(c64Byte, c64Bit, shifted, joyKey1, joyKey2)
+			s.cia1.SetJoystick2(joyKey)
 		} else {
-			s.cia1.SetKeyUp(c64Byte, c64Bit, shifted, joyKey1, joyKey2)
+			s.cia1.SetJoystick1(joyKey)
+		}
+	}
+	if c64Byte, c64Bit, pressed, shifted, ok := s.keys.PollKeyboard(); ok {
+		if pressed {
+			s.cia1.SetKeyDown(c64Byte, c64Bit, shifted)
+		} else {
+			s.cia1.SetKeyUp(c64Byte, c64Bit, shifted)
 		}
 	}
 }

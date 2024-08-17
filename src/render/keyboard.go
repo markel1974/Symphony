@@ -31,7 +31,6 @@ func (g *Keyboard) Setup(b *board.Board) {
 	g.keyMapper[pixels.KeyF9] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_down) }
 
 	//g.keyMapper[pixels.KeyF9] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_bracketright) }
-
 	g.keyMapper[pixels.KeyF10] = func(p bool) { b.KeyboardSwapJoystick(p) }
 	g.keyMapper[pixels.KeyF11] = func(p bool) { b.KeyboardSetExt(p) }
 	g.keyMapper[pixels.KeyF12] = func(p bool) { b.KeyboardPaste(p) }
@@ -57,12 +56,13 @@ func (g *Keyboard) Setup(b *board.Board) {
 	g.keyMapper[pixels.KeyPeriod] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_period) }
 	g.keyMapper[pixels.KeySemicolon] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_semicolon) }
 	g.keyMapper[pixels.KeyApostrophe] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_quote) }
+	g.keyMapper[pixels.KeyRightBracket] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_asterisk) }
 
-	g.keyMapper[pixels.KeyUp] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_joy_up) }
-	g.keyMapper[pixels.KeyDown] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_joy_down) }
-	g.keyMapper[pixels.KeyLeft] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_joy_left) }
-	g.keyMapper[pixels.KeyRight] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_joy_right) }
-	g.keyMapper[pixels.KeyTab] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_joy_fire) }
+	g.keyMapper[pixels.KeyUp] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_JUP) }
+	g.keyMapper[pixels.KeyDown] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_JDN) }
+	g.keyMapper[pixels.KeyLeft] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_JLF) }
+	g.keyMapper[pixels.KeyRight] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_JRT) }
+	g.keyMapper[pixels.KeyTab] = func(p bool) { b.KeyboardSetJoyKey(p, keyboard.KEY_FIRE) }
 
 	g.keyMapper[pixels.KeyMinus] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_minus) }
 	g.keyMapper[pixels.KeyEqual] = func(p bool) { b.KeyboardSetVirtualKey(p, keyboard.VK_equal) }
