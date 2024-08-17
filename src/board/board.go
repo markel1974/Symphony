@@ -1,6 +1,7 @@
 package board
 
 import (
+	"github.com/markel1974/c64emu/src/bits"
 	"github.com/markel1974/c64emu/src/board/banks"
 	"github.com/markel1974/c64emu/src/board/cartridges"
 	"github.com/markel1974/c64emu/src/board/iec"
@@ -43,8 +44,7 @@ type Board struct {
 	hasClipboard bool
 	cartMan      *cartridges.Manager
 	banks        *banks.Banks
-	dma          int
-	dmaLow       bool
+	dma          bits.Bits
 	//baLow        bool
 	//aecLow       bool
 
@@ -68,7 +68,6 @@ func NewBoard(db vic2.IDisplayBuffer) *Board {
 		hasClipboard: false,
 		cartMan:      cartridges.NewManager(),
 		dma:          0,
-		dmaLow:       false,
 		//baLow:        false,
 		//aecLow:       false,
 		banks:      nil,
@@ -106,8 +105,8 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.vic.SignalReadyBind(s.ReadySlot)
 	s.vic.SignalTriggerIRQBind(s.irqTriggerSlot)
 	s.vic.SignalClearIRQBind(s.irqClearSlot)
-	s.vic.SignalBALowBind(s.cpu.SetRDYLow)
-	s.vic.SignalAECLowBind(s.cpu.SetAECLow)
+	s.vic.SignalBALowBind(s.setRDYLow)
+	s.vic.SignalAECLowBind(s.setAECLow)
 
 	s.sid.Setup(cfg)
 
@@ -152,6 +151,23 @@ func (s *Board) Setup(cfg *config.Config) error {
 	return nil
 }
 
+func (s *Board) setRDYLow(v bool) {
+	s.updateDMA(0, v)
+}
+
+func (s *Board) setAECLow(v bool) {
+	s.cpu.SetAECLow(v)
+}
+
+func (s *Board) updateDMA(b uint32, v bool) {
+	if v {
+		s.dma.BitSet(b)
+	} else {
+		s.dma.BitClear(b)
+	}
+	s.cpu.SetRDYLow(s.dma != 0)
+}
+
 func (s *Board) Reset() {
 	s.pic.Reset()
 	s.banks.Reset()
@@ -163,7 +179,6 @@ func (s *Board) Reset() {
 	s.iec.Reset()
 
 	s.dma = 0
-	s.dmaLow = false
 	//s.baLow = false
 	//s.aecLow = false
 }
@@ -180,7 +195,6 @@ func (s *Board) AsyncReset() {
 	s.iec.Reset()
 
 	s.dma = 0
-	s.dmaLow = false
 	//s.baLow = false
 	//s.aecLow = false
 }
@@ -340,18 +354,12 @@ func (s *Board) SetDMALow(v bool) {
 	//if _DMA=Low the CPU can be requested to release the bus.
 	//It will stop after the next read cycle and all bus lines will go to high resistance state.
 	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
-	if v {
-		s.dma++
-		s.dmaLow = true
-	} else {
-		if s.dma > 0 {
-			s.dma--
-			if s.dma == 0 {
-				s.dmaLow = false
-			}
-		}
-	}
-	//s.updateCpuRdy()
+	//The DMA line on the expansion port gets pulled low, or the VIC-II's BA line goes low.
+	//The DMA line is used to put the CPU in a wait state.
+	//The DMA line also forces the CPU's AEC line low so while it's waiting its R/W, address bus and data bus lines are put in HighZ,
+	//so they don't have any influence over the buses.
+	//This allows a device on the expansion port, such as an REU, to perform direct memory accesses (DMA) to the main RAM.
+	s.updateDMA(1, v)
 }
 
 func (s *Board) ResetTrigger() {
