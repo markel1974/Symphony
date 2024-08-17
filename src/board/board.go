@@ -1,7 +1,6 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/bits"
 	"github.com/markel1974/c64emu/src/board/banks"
 	"github.com/markel1974/c64emu/src/board/cartridges"
 	"github.com/markel1974/c64emu/src/board/iec"
@@ -44,7 +43,7 @@ type Board struct {
 	hasClipboard bool
 	cartMan      *cartridges.Manager
 	banks        *banks.Banks
-	dma          bits.Bits
+	dmaLow       bool
 	//baLow        bool
 	//aecLow       bool
 
@@ -67,7 +66,7 @@ func NewBoard(db vic2.IDisplayBuffer) *Board {
 		keys:         nil,
 		hasClipboard: false,
 		cartMan:      cartridges.NewManager(),
-		dma:          0,
+		dmaLow:       false,
 		//baLow:        false,
 		//aecLow:       false,
 		banks:      nil,
@@ -152,20 +151,12 @@ func (s *Board) Setup(cfg *config.Config) error {
 }
 
 func (s *Board) setRDYLow(v bool) {
-	s.updateDMA(0, v)
+	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
+	s.cpu.SetRDYLow(v || s.dmaLow)
 }
 
 func (s *Board) setAECLow(v bool) {
 	s.cpu.SetAECLow(v)
-}
-
-func (s *Board) updateDMA(b uint32, v bool) {
-	if v {
-		s.dma.BitSet(b)
-	} else {
-		s.dma.BitClear(b)
-	}
-	s.cpu.SetRDYLow(s.dma != 0)
 }
 
 func (s *Board) Reset() {
@@ -178,7 +169,7 @@ func (s *Board) Reset() {
 	s.cia2.Reset()
 	s.iec.Reset()
 
-	s.dma = 0
+	s.dmaLow = false
 	//s.baLow = false
 	//s.aecLow = false
 }
@@ -194,7 +185,7 @@ func (s *Board) AsyncReset() {
 	s.cia2.Reset()
 	s.iec.Reset()
 
-	s.dma = 0
+	s.dmaLow = false
 	//s.baLow = false
 	//s.aecLow = false
 }
@@ -359,7 +350,8 @@ func (s *Board) SetDMALow(v bool) {
 	//The DMA line also forces the CPU's AEC line low so while it's waiting its R/W, address bus and data bus lines are put in HighZ,
 	//so they don't have any influence over the buses.
 	//This allows a device on the expansion port, such as an REU, to perform direct memory accesses (DMA) to the main RAM.
-	s.updateDMA(1, v)
+	s.dmaLow = v
+	s.cpu.SetRDYLow(s.dmaLow || s.vic.GetBALow())
 }
 
 func (s *Board) ResetTrigger() {
