@@ -243,21 +243,20 @@ func (vic *Core) badLineUpdate() {
 	// negative edge of ø0 at the beginning of the cycle RASTER >= $30 and RASTER <= $f7
 	// and the lower three bits of RASTER are equal to YSCROLL
 	// and if the DEN bit was set during an arbitrary cycle of raster line $30.
-	if vic.rasterY == 0x30 {
-		vic.badLinesEnabled = (vic.cr1 & 0x10) != 0 //denBit
-	}
-	vic.badLineCondition = vic.rasterY >= FirstDmaLine && vic.rasterY <= LastDmaLine && ((vic.rasterY & 7) == vic.yScroll) && vic.badLinesEnabled
+	vic.badLineCondition = (vic.rasterY >= FirstDmaLine) && (vic.rasterY <= LastDmaLine) && ((vic.rasterY & 7) == vic.yScroll) && vic.badLinesEnabled
 }
 
 func (vic *Core) ChangedVA(newVA uint8) {
 	vic.ciaVaBase = uint16(newVA) << 14
-	vic.WriteRegister(0x18, vic.vaBase) // Force update of memory pointers
+	// Force update memory pointers
+	vic.WriteRegister(0x18, vic.vaBase)
 }
 
 func (vic *Core) LightPenTrigger() {
 	if !vic.lpTriggered {
 		vic.lpTriggered = true
-		vic.lpx = uint8(vic.rasterX >> 1) // Latch current coordinates
+		// Latch current coordinates
+		vic.lpx = uint8(vic.rasterX >> 1)
 		vic.lpy = uint8(vic.rasterY)
 		vic.irqFlag |= 0x08
 		if (vic.irqMask & 0x08) != 0 {
@@ -271,21 +270,18 @@ func (vic *Core) ResetCounters() {
 	vic.rasterY = 0
 	vic.lpTriggered = false
 	if vic.irqRaster == 0 {
-		// Trigger raster IRQ if IRQ in line 0
 		vic.rasterIrq()
 	}
 }
 
 func (vic *Core) IncrementCounters() {
-	// Increment raster counter
 	vic.rasterY++
-	// Trigger raster IRQ if IRQ line reached
 	if vic.rasterY == vic.irqRaster {
 		vic.rasterIrq()
 	}
-	//if vic.rasterY == 0x30 {
-	//	vic.badLinesEnabled = (vic.cr1 & 0x10) != 0 //denBit
-	//}
+	if vic.rasterY == 0x30 {
+		vic.badLinesEnabled = (vic.cr1 & 0x10) != 0 //denBit
+	}
 	vic.badLineUpdate()
 }
 
@@ -423,9 +419,9 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 			vic.dyStart = Row24YStart
 			vic.dyStop = Row24YStop
 		}
-		//if (vic.rasterY == 0x30) && ((vic.cr1 & 0x10) != 0) {
-		//	vic.badLinesEnabled = true
-		//}
+		if (vic.rasterY == 0x30) && ((vic.cr1 & 0x10) != 0) {
+			vic.badLinesEnabled = true
+		}
 		vic.badLineUpdate()
 		vic.displayIdx = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4
 	case 0x12: // Raster counter
