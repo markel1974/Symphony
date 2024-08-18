@@ -55,12 +55,6 @@ func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 func (gr *Graphics) Setup() {
 }
 
-func (gr *Graphics) TryResetRowCounter() {
-	if gr.core.badLineCondition {
-		gr.rowCounter = 0
-	}
-}
-
 func (gr *Graphics) ResetVideoCounterBase() {
 	gr.videoCounterBase = 0
 }
@@ -79,6 +73,12 @@ func (gr *Graphics) SetLineOffset(lineStart int) {
 
 func (gr *Graphics) UpdateLastCharData() {
 	gr.charDataLast = gr.charData
+}
+
+func (gr *Graphics) TryResetRowCounter() {
+	if gr.core.badLineCondition {
+		gr.rowCounter = 0
+	}
 }
 
 func (gr *Graphics) TryAcquireDisplayAccess() {
@@ -112,9 +112,9 @@ func (gr *Graphics) TryGraphicsAccess() {
 		gr.gfxData = gr.core.ReadByte(addr)
 		gr.charData = gr.matrixLine[gr.matrixLineIndex]
 		gr.colorData = gr.colorLine[gr.matrixLineIndex]
-		//gr.matrixBuffer[gr.matrixBufferIndex] = gr.charData + 64
 		gr.matrixLineIndex++
 		gr.videoCounter++
+		//gr.matrixBuffer[gr.matrixBufferIndex] = gr.charData + 64
 		//gr.matrixBufferIndex++
 	} else {
 		if (gr.core.cr1 & 0x40) != 0 {
@@ -132,13 +132,13 @@ func (gr *Graphics) TryMatrixAccess() {
 		if gr.core.aecLow {
 			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase
 			gr.matrixLine[gr.matrixLineIndex] = gr.core.ReadByte(addr)
+			gr.colorLine[gr.matrixLineIndex] = gr.core.banks.ReadColor(addr & 0x03ff)
 			//gr.matrixBuffer[gr.matrixBufferIndex] = data + 64
 			//TODO screen codes
 			//https://sta.c64.org/cbm64scr.html
 			//if p := gr.matrixLine[gr.matrixLineIndex]; p != 32 {
 			//	fmt.Printf("%s\n", string(p+64))
 			//}
-			gr.colorLine[gr.matrixLineIndex] = gr.core.banks.ReadColor(addr & 0x03ff)
 		} else {
 			gr.colorLine[gr.matrixLineIndex] = 0xff
 			gr.matrixLine[gr.matrixLineIndex] = 0xff
