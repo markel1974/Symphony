@@ -181,7 +181,7 @@ func (vic *Core) ModeColumn40() bool {
 	return (vic.cr2 & 8) != 0
 }
 
-func (vic *Core) TryBALow() {
+func (vic *Core) TryAcquireBA() {
 	if vic.badLineCondition {
 		vic.SetBALow()
 	}
@@ -239,6 +239,11 @@ func (vic *Core) badLineUpdate() {
 	// negative edge of ø0 at the beginning of the cycle RASTER >= $30 and RASTER <= $f7
 	// and the lower three bits of RASTER are equal to YSCROLL
 	// and if the DEN bit was set during an arbitrary cycle of raster line $30.
+
+	//if vic.rasterY == 0x30 {
+	//	vic.badLinesEnabled = (vic.cr1 & 0x10) != 0 //denBit
+	//}
+
 	vic.badLineCondition = (vic.rasterY >= FirstDmaLine) && (vic.rasterY <= LastDmaLine) && ((vic.rasterY & 7) == vic.yScroll) && vic.badLinesEnabled
 }
 

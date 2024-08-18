@@ -25,7 +25,6 @@ func NewSprites(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Sprites {
 		dataPtr:         make([]uint16, SpriteNumber),
 		data:            make([][]uint8, SpriteNumber),
 		displayFlags:    0,
-		//drawData:        make([]uint32, SpriteNumber),
 		dmaFlags:        0,
 		dataCounter:     make([]uint16, SpriteNumber),
 		dataCounterBase: make([]uint16, SpriteNumber),
@@ -46,8 +45,14 @@ func (sp *Sprites) GetDMAFlags() uint8 {
 	return sp.dmaFlags
 }
 
-func (sp *Sprites) ApplyDisplayFlags() {
+func (sp *Sprites) UpdateDisplayFlags() {
 	sp.spriteFlags = sp.displayFlags
+
+	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
+		if (sp.displayFlags&mask) != 0 && (sp.dmaFlags&mask) == 0 {
+			sp.displayFlags &= ^mask
+		}
+	}
 }
 
 func (sp *Sprites) FetchPtr(num int) {
@@ -88,14 +93,6 @@ func (sp *Sprites) UpdateRasterYDisplayFlags() {
 		sp.dataCounter[idx] = sp.dataCounterBase[idx]
 		if (sp.dmaFlags&mask) != 0 && (rasterY == uint16(sp.core.mXy[idx])) {
 			sp.displayFlags |= mask
-		}
-	}
-}
-
-func (sp *Sprites) UpdateDisplayFlags() {
-	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
-		if (sp.displayFlags&mask) != 0 && (sp.dmaFlags&mask) == 0 {
-			sp.displayFlags &= ^mask
 		}
 	}
 }

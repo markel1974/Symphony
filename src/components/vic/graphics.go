@@ -28,7 +28,7 @@ type Graphics struct {
 	rowCounter       uint16  // Row counter
 	videoCounter     uint16  // Video counter
 	videoCounterBase uint16  // Video counter base
-	displayOn        bool    // Display state
+	displayAccess    bool    // Display state
 }
 
 func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
@@ -47,7 +47,7 @@ func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 		rowCounter:       7,
 		videoCounter:     0,
 		videoCounterBase: 0,
-		displayOn:        false,
+		displayAccess:    false,
 	}
 	return gr
 }
@@ -55,13 +55,7 @@ func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 func (gr *Graphics) Setup() {
 }
 
-func (gr *Graphics) TryDisplayOn() {
-	if gr.core.badLineCondition {
-		gr.displayOn = true
-	}
-}
-
-func (gr *Graphics) TryResetRowCounter() {
+func (gr *Graphics) AcquireResetRowCounter() {
 	if gr.core.badLineCondition {
 		gr.rowCounter = 0
 	}
@@ -83,23 +77,29 @@ func (gr *Graphics) SetLineOffset(lineStart int) {
 	gr.lineOffset = lineStart
 }
 
-func (gr *Graphics) UpdateDisplayOn() {
-	if gr.rowCounter == 7 {
-		gr.videoCounterBase = gr.videoCounter
-		gr.displayOn = false
-	}
-	if gr.core.badLineCondition || gr.displayOn {
-		gr.rowCounter = (gr.rowCounter + 1) & 7
-		gr.displayOn = true
-	}
-}
-
 func (gr *Graphics) UpdateLastCharData() {
 	gr.charDataLast = gr.charData
 }
 
-func (gr *Graphics) GraphicsAccess() {
-	if gr.displayOn {
+func (gr *Graphics) TryAcquireDisplayAccess() {
+	if gr.core.badLineCondition {
+		gr.displayAccess = true
+	}
+}
+
+func (gr *Graphics) UpdateDisplayAccess() {
+	if gr.rowCounter == 7 {
+		gr.videoCounterBase = gr.videoCounter
+		gr.displayAccess = false
+	}
+	if gr.core.badLineCondition || gr.displayAccess {
+		gr.rowCounter = (gr.rowCounter + 1) & 7
+		gr.displayAccess = true
+	}
+}
+
+func (gr *Graphics) TryGraphicsAccess() {
+	if gr.displayAccess {
 		var addr uint16
 		if (gr.core.cr1 & 0x20) != 0 {
 			addr = ((gr.videoCounter & 0x03ff) << 3) | gr.core.bitmapBase | gr.rowCounter // Bitmap
@@ -128,8 +128,6 @@ func (gr *Graphics) GraphicsAccess() {
 }
 
 func (gr *Graphics) TryMatrixAccess() {
-	gr.core.TryAcquireAEC()
-
 	if gr.core.baLow {
 		if gr.core.aecLow {
 			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase
