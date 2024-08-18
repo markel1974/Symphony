@@ -41,8 +41,8 @@ func NewSprites(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Sprites {
 func (sp *Sprites) Setup() {
 }
 
-func (sp *Sprites) GetDMAFlag(bit uint8) uint8 {
-	return sp.dmaFlags & bit
+func (sp *Sprites) GetDMAFlag(b uint8) uint8 {
+	return sp.dmaFlags & b
 }
 
 func (sp *Sprites) UpdateDisplayFlags() {
