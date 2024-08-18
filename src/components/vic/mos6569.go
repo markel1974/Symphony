@@ -119,7 +119,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.FetchPtr(3)
 		vic.sprites.Fetch(3, 0)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x18) == 0 {
+		if vic.sprites.GetDMAFlag(0x18) == 0 {
 			vic.core.ClearBALow()
 		}
 
@@ -137,7 +137,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.Fetch(3, 1)
 		vic.sprites.Fetch(3, 2)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x20) != 0 {
+		if vic.sprites.GetDMAFlag(0x20) != 0 {
 			vic.core.SetBALow()
 		}
 
@@ -145,7 +145,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.FetchPtr(4)
 		vic.sprites.Fetch(4, 0)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x30) == 0 {
+		if vic.sprites.GetDMAFlag(0x30) == 0 {
 			vic.core.ClearBALow()
 		}
 
@@ -153,7 +153,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.Fetch(4, 1)
 		vic.sprites.Fetch(4, 2)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x40) != 0 {
+		if vic.sprites.GetDMAFlag(0x40) != 0 {
 			vic.core.SetBALow()
 		}
 
@@ -161,7 +161,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.FetchPtr(5)
 		vic.sprites.Fetch(5, 0)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x60) == 0 {
+		if vic.sprites.GetDMAFlag(0x60) == 0 {
 			vic.core.ClearBALow()
 		}
 
@@ -169,7 +169,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.Fetch(5, 1)
 		vic.sprites.Fetch(5, 2)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x80) != 0 {
+		if vic.sprites.GetDMAFlag(0x80) != 0 {
 			vic.core.SetBALow()
 		}
 
@@ -177,7 +177,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.FetchPtr(6)
 		vic.sprites.Fetch(6, 0)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0xc0) == 0 {
+		if vic.sprites.GetDMAFlag(0xc0) == 0 {
 			vic.core.ClearBALow()
 		}
 
@@ -190,7 +190,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.FetchPtr(7)
 		vic.sprites.Fetch(7, 0)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x80) == 0 {
+		if vic.sprites.GetDMAFlag(0x80) == 0 {
 			vic.core.ClearBALow()
 		}
 
@@ -323,7 +323,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.graphics.TryAcquireDisplayAccess()
 		vic.core.FlipFlopMYE()
 		vic.sprites.UpdateDMA()
-		if (vic.sprites.GetDMAFlags() & 0x01) != 0 {
+		if vic.sprites.GetDMAFlag(0x01) != 0 {
 			vic.core.SetBALow()
 		} else {
 			vic.core.ClearBALow()
@@ -345,7 +345,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.idleAccess()
 		vic.graphics.TryAcquireDisplayAccess()
 		vic.sprites.UpdateDMA()
-		if (vic.sprites.GetDMAFlags() & 0x01) != 0 {
+		if vic.sprites.GetDMAFlag(0x01) != 0 {
 			vic.core.SetBALow()
 		}
 
@@ -361,7 +361,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		}
 		vic.idleAccess()
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x02) != 0 {
+		if vic.sprites.GetDMAFlag(0x02) != 0 {
 			vic.core.SetBALow()
 		}
 
@@ -383,7 +383,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.Fetch(0, 1)
 		vic.sprites.Fetch(0, 2)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x04) != 0 {
+		if vic.sprites.GetDMAFlag(0x04) != 0 {
 			vic.core.SetBALow()
 		}
 
@@ -398,7 +398,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.FetchPtr(1)
 		vic.sprites.Fetch(1, 0)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x06) == 0 {
+		if vic.sprites.GetDMAFlag(0x06) == 0 {
 			vic.core.ClearBALow()
 		}
 
@@ -406,7 +406,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.Fetch(1, 1)
 		vic.sprites.Fetch(1, 2)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x08) != 0 {
+		if vic.sprites.GetDMAFlag(0x08) != 0 {
 			vic.core.SetBALow()
 		}
 
@@ -414,7 +414,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.FetchPtr(2)
 		vic.sprites.Fetch(2, 0)
 		vic.graphics.TryAcquireDisplayAccess()
-		if (vic.sprites.GetDMAFlags() & 0x0c) == 0 {
+		if vic.sprites.GetDMAFlag(0x0c) == 0 {
 			vic.core.ClearBALow()
 		}
 
@@ -423,7 +423,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 		vic.sprites.Fetch(2, 2)
 		vic.graphics.TryAcquireDisplayAccess()
 		vic.borders.UpdateVerticalFlipFlop()
-		if (vic.sprites.GetDMAFlags() & 0x10) != 0 {
+		if vic.sprites.GetDMAFlag(0x10) != 0 {
 			vic.core.SetBALow()
 		}
 		lastCycle = true

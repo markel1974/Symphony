@@ -207,6 +207,7 @@ func (vic *Core) GetAECLow() bool {
 func (vic *Core) ClearBALow() {
 	if vic.baLow {
 		vic.baLow = false
+		vic.baLowFirstCycle = 0
 		vic.signalBALow.Emit(vic.baLow)
 	}
 	if vic.aecLow {
