@@ -78,6 +78,7 @@ func (b *Borders) Draw(lineStart int) {
 		b.db.SetMulti8(lineStart+(32), b.borderColorSample[4])
 	}
 	if b.borderOnSample[2] {
+		//TODO VERIFICA
 		for idx := 5; idx < BorderS; idx++ {
 			b.db.SetMulti8(lineStart+(idx*8), b.borderColorSample[idx])
 		}
