@@ -55,7 +55,7 @@ func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 func (gr *Graphics) Setup() {
 }
 
-func (gr *Graphics) AcquireResetRowCounter() {
+func (gr *Graphics) TryResetRowCounter() {
 	if gr.core.badLineCondition {
 		gr.rowCounter = 0
 	}
