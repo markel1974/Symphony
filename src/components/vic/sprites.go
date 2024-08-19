@@ -120,9 +120,11 @@ func (sp *Sprites) Draw(lineStart int) {
 	if sp.spriteFlags == 0 {
 		return
 	}
+	//TODO OBJECT
 	sprColl := uint8(0)
 	gfxColl := uint8(0)
 	copy(sp.collisionBuffer, _sprEmptyCollBuf)
+
 	for sNum, sBit := uint8(0), uint8(1); sNum < SpriteNumber; sNum, sBit = sNum+1, sBit<<1 {
 		if (sp.spriteFlags & sBit) != 0 {
 			sColor := sp.core.mXcColor[sNum]
