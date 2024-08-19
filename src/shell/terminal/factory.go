@@ -15,8 +15,8 @@
 package terminal
 
 import (
-	"github.com/markel1974/webautoma/src/shell/interfaces"
-	"github.com/markel1974/webautoma/src/shell/terminal/vt100"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/terminal/vt100"
 	"io"
 )
 

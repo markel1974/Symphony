@@ -15,7 +15,7 @@
 package invaders
 
 import (
-	"github.com/markel1974/webautoma/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
 func drawColor(surface interfaces.ISurface, x, y int, fg, bg interfaces.ColorDef, data string) {

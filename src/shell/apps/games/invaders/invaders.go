@@ -16,8 +16,8 @@ package invaders
 
 import (
 	"fmt"
-	"github.com/markel1974/webautoma/src/shell/context/matrix"
-	"github.com/markel1974/webautoma/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/context/matrix"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"math/rand"
 	"strconv"
 	"time"

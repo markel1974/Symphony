@@ -14,7 +14,7 @@
 
 package authenticator
 
-import "github.com/markel1974/webautoma/src/shell/interfaces"
+import "github.com/markel1974/c64emu/src/shell/interfaces"
 
 type SimpleAuthenticator struct {
 	username string

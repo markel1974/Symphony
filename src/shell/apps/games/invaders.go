@@ -15,10 +15,10 @@
 package games
 
 import (
-	"github.com/markel1974/webautoma/src/shell/apps/commandcreator"
-	"github.com/markel1974/webautoma/src/shell/apps/games/invaders"
-	"github.com/markel1974/webautoma/src/shell/cli"
-	"github.com/markel1974/webautoma/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
+	"github.com/markel1974/c64emu/src/shell/apps/games/invaders"
+	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
 func CreateInvaders(t commandcreator.ICreator) *cli.Command {

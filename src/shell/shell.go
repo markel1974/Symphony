@@ -15,11 +15,11 @@
 package shell
 
 import (
-	"github.com/markel1974/webautoma/src/shell/adaptiveticker"
-	"github.com/markel1974/webautoma/src/shell/authenticator"
-	"github.com/markel1974/webautoma/src/shell/cli"
-	"github.com/markel1974/webautoma/src/shell/context"
-	"github.com/markel1974/webautoma/src/shell/terminal"
+	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
+	"github.com/markel1974/c64emu/src/shell/authenticator"
+	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/context"
+	"github.com/markel1974/c64emu/src/shell/terminal"
 	"golang.org/x/term"
 	"os"
 )

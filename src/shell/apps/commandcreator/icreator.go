@@ -14,7 +14,7 @@
 
 package commandcreator
 
-import "github.com/markel1974/webautoma/src/shell/cli"
+import "github.com/markel1974/c64emu/src/shell/cli"
 
 type ICreator interface {
 	CreateCommand() *cli.Command

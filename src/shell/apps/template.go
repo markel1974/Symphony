@@ -15,13 +15,13 @@
 package apps
 
 import (
-	"github.com/markel1974/webautoma/src/shell/apps/games"
-	"github.com/markel1974/webautoma/src/shell/apps/history"
-	"github.com/markel1974/webautoma/src/shell/apps/runtime"
-	"github.com/markel1974/webautoma/src/shell/apps/stats"
-	"github.com/markel1974/webautoma/src/shell/apps/tasks"
-	"github.com/markel1974/webautoma/src/shell/cli"
-	"github.com/markel1974/webautoma/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/apps/games"
+	"github.com/markel1974/c64emu/src/shell/apps/history"
+	"github.com/markel1974/c64emu/src/shell/apps/runtime"
+	"github.com/markel1974/c64emu/src/shell/apps/stats"
+	"github.com/markel1974/c64emu/src/shell/apps/tasks"
+	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"io"
 )
 

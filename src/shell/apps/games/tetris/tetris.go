@@ -16,7 +16,7 @@ package tetris
 
 import (
 	"fmt"
-	"github.com/markel1974/webautoma/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"math/rand"
 	"time"
 )
