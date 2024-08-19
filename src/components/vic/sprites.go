@@ -149,28 +149,8 @@ func (sp *Sprites) Draw(lineStart int) {
 			}
 		}
 	}
-	// sprite-sprite collisions
-	if sp.core.sprClx != 0 {
-		sp.core.sprClx |= sprColl
-	} else {
-		sp.core.sprClx |= sprColl
-		sp.core.irqFlag |= 0x04
-		if (sp.core.irqMask & 0x04) != 0 {
-			sp.core.irqFlag |= 0x80
-			sp.core.signalIRQTrigger.Emit(intrVicId)
-		}
-	}
-	// sprite-background collisions
-	if sp.core.sprClxBgr != 0 {
-		sp.core.sprClxBgr |= gfxColl
-	} else {
-		sp.core.sprClxBgr |= gfxColl
-		sp.core.irqFlag |= 0x02
-		if sp.core.irqMask&0x02 != 0 {
-			sp.core.irqFlag |= 0x80
-			sp.core.signalIRQTrigger.Emit(intrVicId)
-		}
-	}
+
+	sp.collisionDetection(gfxColl, sprColl)
 }
 
 func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8, gfxColl *uint8, sprColl *uint8) {
@@ -321,5 +301,29 @@ func (sp *Sprites) drawPixel(lineOffset int, sOffset int, idx int, sBit uint8, s
 	}
 	if !collision {
 		sp.displayBuffer.Set(lineOffset+idx, selColor)
+	}
+}
+
+func (sp *Sprites) collisionDetection(gfxColl uint8, sprColl uint8) {
+	if sp.core.sprClx != 0 {
+		sp.core.sprClx |= sprColl
+	} else {
+		sp.core.sprClx |= sprColl
+		sp.core.irqFlag |= 0x04
+		if (sp.core.irqMask & 0x04) != 0 {
+			sp.core.irqFlag |= 0x80
+			sp.core.signalIRQTrigger.Emit(intrVicId)
+		}
+	}
+
+	if sp.core.sprClxBgr != 0 {
+		sp.core.sprClxBgr |= gfxColl
+	} else {
+		sp.core.sprClxBgr |= gfxColl
+		sp.core.irqFlag |= 0x02
+		if sp.core.irqMask&0x02 != 0 {
+			sp.core.irqFlag |= 0x80
+			sp.core.signalIRQTrigger.Emit(intrVicId)
+		}
 	}
 }

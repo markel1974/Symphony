@@ -191,7 +191,7 @@ func (vic *MOS6569) cycle2() {
 		vic.lineStart = 0
 		vic.core.ResetCounters()
 	}
-	vic.graphics.SetLineOffset(vic.lineStart)
+	vic.graphics.SetOffset(vic.lineStart)
 	vic.foreMask.Clear()
 	vic.sprites.Fetch(3, 1)
 	vic.sprites.Fetch(3, 2)
@@ -310,10 +310,10 @@ func (vic *MOS6569) cycle15() {
 	vic.accessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.sprites.UpdateCounterBase()
-	vic.graphics.ResetMatrixLineIndex()
+	vic.graphics.ResetLineIndex()
 	vic.core.TryAcquireBA()
 	vic.core.TryAcquireAEC()
-	vic.graphics.TryMatrixAccess()
+	vic.graphics.TryVideoMatrixAccess()
 }
 
 func (vic *MOS6569) cycle16() {
@@ -326,7 +326,7 @@ func (vic *MOS6569) cycle16() {
 	vic.sprites.UpdateDMACounterBase()
 	vic.core.TryAcquireBA()
 	vic.core.TryAcquireAEC()
-	vic.graphics.TryMatrixAccess()
+	vic.graphics.TryVideoMatrixAccess()
 }
 
 func (vic *MOS6569) cycle17() {
@@ -346,7 +346,7 @@ func (vic *MOS6569) cycle17() {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.core.TryAcquireBA()
 	vic.core.TryAcquireAEC()
-	vic.graphics.TryMatrixAccess()
+	vic.graphics.TryVideoMatrixAccess()
 }
 
 func (vic *MOS6569) cycle18() {
@@ -366,7 +366,7 @@ func (vic *MOS6569) cycle18() {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.core.TryAcquireBA()
 	vic.core.TryAcquireAEC()
-	vic.graphics.TryMatrixAccess()
+	vic.graphics.TryVideoMatrixAccess()
 	vic.graphics.UpdateLastCharData()
 }
 
@@ -383,7 +383,7 @@ func (vic *MOS6569) cycle19to54() {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.core.TryAcquireBA()
 	vic.core.TryAcquireAEC()
-	vic.graphics.TryMatrixAccess()
+	vic.graphics.TryVideoMatrixAccess()
 	vic.graphics.UpdateLastCharData()
 }
 
