@@ -13,16 +13,16 @@ const (
 
 type Graphics struct {
 	core             *Core
-	foreMask         *ForeMask
+	collisions       *Collisions
 	db               IDisplayBuffer
 	gfxData          uint8
 	colorData        uint8
 	charData         uint8
 	charDataLast     uint8
-	offset           int     // Offset from bitmap buffer
+	offset           int     // Offset from bitmap spritesBuffer
 	lineIndex        int     // Index in video matrix / color line
-	videoMatrix      []uint8 // Video matrix buffer
-	colorLine        []uint8 // Color line buffer
+	videoMatrix      []uint8 // Video matrix spritesBuffer
+	colorLine        []uint8 // Color line spritesBuffer
 	rowCounter       uint16  // Row counter
 	videoCounter     uint16  // Video counter
 	videoCounterBase uint16  // Video counter base
@@ -31,10 +31,10 @@ type Graphics struct {
 	//matrixBuffer      []uint8
 }
 
-func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
+func NewGraphics(core *Core, collisions *Collisions, db IDisplayBuffer) *Graphics {
 	gr := &Graphics{
 		core:             core,
-		foreMask:         foreMask,
+		collisions:       collisions,
 		db:               db,
 		gfxData:          0,
 		colorData:        0,
@@ -217,27 +217,27 @@ func (gr *Graphics) DrawForeground() {
 
 func (gr *Graphics) incrementOffset() {
 	gr.offset += 8
-	gr.foreMask.Increment()
+	gr.collisions.IncrementGraphicsOffset()
 }
 
 func (gr *Graphics) drawInvalidStandard(offset int, a uint8) {
 	gr.db.SetMulti8(offset, a)
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
-	gr.foreMask.Update(p1, p2)
+	gr.collisions.UpdateGraphics(p1, p2)
 }
 
 func (gr *Graphics) drawInvalidMulticolor(offset int, a uint8) {
 	gr.db.SetMulti8(offset, a)
 	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
 	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
-	gr.foreMask.Update(p1, p2)
+	gr.collisions.UpdateGraphics(p1, p2)
 }
 
 func (gr *Graphics) drawStandard(offset int, a uint8, b uint8) {
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
-	gr.foreMask.Update(p1, p2)
+	gr.collisions.UpdateGraphics(p1, p2)
 
 	colorBuffer := [4]uint8{a, b, 0, 0}
 	data := gr.gfxData
@@ -261,7 +261,7 @@ func (gr *Graphics) drawStandard(offset int, a uint8, b uint8) {
 func (gr *Graphics) drawMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
 	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
 	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
-	gr.foreMask.Update(p1, p2)
+	gr.collisions.UpdateGraphics(p1, p2)
 
 	colorBuffer := [4]uint8{a, b, c, d}
 	data := gr.gfxData

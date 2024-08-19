@@ -15,10 +15,10 @@ const (
 type MOS6569 struct {
 	core           *Core
 	cfg            *config.Config
+	collisions     *Collisions
 	sprites        *Sprites
 	graphics       *Graphics
 	borders        *Borders
-	foreMask       *ForeMask
 	cycle          uint8
 	lineStart      int
 	drawLine       bool
@@ -29,18 +29,18 @@ type MOS6569 struct {
 
 func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 	core := NewCore()
-	foreMask := NewForeMask()
+	collisions := NewCollisions(core)
 	vic := &MOS6569{
-		core:     core,
-		foreMask: foreMask,
-		graphics: NewGraphics(core, foreMask, db),
-		sprites:  NewSprites(core, foreMask, db),
-		borders:  NewBorder(core, db, 13),
-		cycle:    cycleFirst,
-		vBlank:   0,
-		drawLine: false,
-		cfg:      nil,
-		cycles:   make([]func(), cycleLast+1),
+		core:       core,
+		collisions: collisions,
+		graphics:   NewGraphics(core, collisions, db),
+		sprites:    NewSprites(core, collisions, db),
+		borders:    NewBorder(core, db, 13),
+		cycle:      cycleFirst,
+		vBlank:     0,
+		drawLine:   false,
+		cfg:        nil,
+		cycles:     make([]func(), cycleLast+1),
 	}
 	return vic
 }
@@ -192,7 +192,7 @@ func (vic *MOS6569) cycle2() {
 		vic.core.ResetCounters()
 	}
 	vic.graphics.SetOffset(vic.lineStart)
-	vic.foreMask.Clear()
+	vic.collisions.ClearGraphics()
 	vic.sprites.Fetch(3, 1)
 	vic.sprites.Fetch(3, 2)
 	vic.graphics.TryAcquireDisplayAccess()
