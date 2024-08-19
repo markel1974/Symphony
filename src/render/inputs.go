@@ -13,6 +13,8 @@ type Inputs struct {
 	joyKeys    bool
 	maxW       int
 	maxH       int
+	lastX      uint8
+	lastY      uint8
 }
 
 func NewInputs() *Inputs {
@@ -23,6 +25,8 @@ func NewInputs() *Inputs {
 		activeKeys: make(map[pixels.Button]bool),
 		maxW:       0,
 		maxH:       0,
+		lastX:      0,
+		lastY:      0,
 	}
 }
 
@@ -177,9 +181,13 @@ func (g *Inputs) MouseMove(x float64, y float64) {
 	//mouseY := y - yOld
 	//g.b.SetMouse(int(+mouseX), int(+mouseY))
 	//fmt.Println(currX, currY, x, y)
-
-	g.b.SetMouse(uint8(x), uint8(y))
-	//}
+	x1 := uint8(x)
+	y1 := uint8(y)
+	if g.lastX != x1 || g.lastY != y1 {
+		g.lastX = x1
+		g.lastY = y1
+		g.b.SetMouse(uint8(x), uint8(y))
+	}
 }
 
 func (g *Inputs) swapJoyKey(p bool) {
