@@ -20,9 +20,9 @@ type Graphics struct {
 	charData         uint8
 	charDataLast     uint8
 	offset           int     // Offset from bitmap buffer
-	lineIndex        int     // Index in matrix/colorLine
-	videoMatrixLine  []uint8 // Buffer for video matrix, read in Bad Lines
-	colorLine        []uint8 // Buffer for color line, read in Bad Lines
+	lineIndex        int     // Index in video matrix / color line
+	videoMatrix      []uint8 // Video matrix buffer
+	colorLine        []uint8 // Color line buffer
 	rowCounter       uint16  // Row counter
 	videoCounter     uint16  // Video counter
 	videoCounterBase uint16  // Video counter base
@@ -42,7 +42,7 @@ func NewGraphics(core *Core, foreMask *ForeMask, db IDisplayBuffer) *Graphics {
 		charDataLast:     0,
 		offset:           0,
 		lineIndex:        0,
-		videoMatrixLine:  make([]uint8, 40),
+		videoMatrix:      make([]uint8, 40),
 		colorLine:        make([]uint8, 40),
 		rowCounter:       7,
 		videoCounter:     0,
@@ -104,13 +104,13 @@ func (gr *Graphics) TryGraphicsAccess() {
 		if (gr.core.cr1 & 0x20) != 0 {
 			addr = ((gr.videoCounter & 0x03ff) << 3) | gr.core.bitmapBase | gr.rowCounter // Bitmap
 		} else {
-			addr = (uint16(gr.videoMatrixLine[gr.lineIndex]) << 3) | gr.core.charBase | gr.rowCounter // Text
+			addr = (uint16(gr.videoMatrix[gr.lineIndex]) << 3) | gr.core.charBase | gr.rowCounter // Text
 		}
 		if (gr.core.cr1 & 0x40) != 0 {
 			addr &= 0xf9ff // ECM
 		}
 		gr.gfxData = gr.core.ReadByte(addr)
-		gr.charData = gr.videoMatrixLine[gr.lineIndex]
+		gr.charData = gr.videoMatrix[gr.lineIndex]
 		gr.colorData = gr.colorLine[gr.lineIndex]
 		gr.lineIndex++
 		gr.videoCounter++
@@ -131,17 +131,17 @@ func (gr *Graphics) TryVideoMatrixAccess() {
 	if gr.core.baLow {
 		if gr.core.aecLow {
 			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase
-			gr.videoMatrixLine[gr.lineIndex] = gr.core.ReadByte(addr)
+			gr.videoMatrix[gr.lineIndex] = gr.core.ReadByte(addr)
 			gr.colorLine[gr.lineIndex] = gr.core.banks.ReadColor(addr & 0x03ff)
 			//gr.matrixBuffer[gr.matrixBufferIndex] = data + 64
 			//TODO screen codes
 			//https://sta.c64.org/cbm64scr.html
-			//if p := gr.videoMatrixLine[gr.lineIndex]; p != 32 {
+			//if p := gr.videoMatrix[gr.lineIndex]; p != 32 {
 			//	fmt.Printf("%s\n", string(p+64))
 			//}
 		} else {
 			gr.colorLine[gr.lineIndex] = 0xff
-			gr.videoMatrixLine[gr.lineIndex] = 0xff
+			gr.videoMatrix[gr.lineIndex] = 0xff
 		}
 	}
 }
