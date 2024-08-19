@@ -13,40 +13,46 @@ const (
 )
 
 type MOS6569 struct {
-	core            *Core
-	cfg             *config.Config
-	sprites         *Sprites
-	graphics        *Graphics
-	borders         *Borders
-	foreMask        *ForeMask
-	cycle           int   // Cycle
-	lineStart       int   // Offset from current line in bitmap buffer
-	drawThisLine    bool  // This line is drawn
-	refreshCounter  uint8 // Refresh counter
-	vBlank          bool  // VBlank in current cycle
-	vBlankNextCycle bool  // VBlank in next cycle
-	cycles          []func()
+	core           *Core
+	cfg            *config.Config
+	sprites        *Sprites
+	graphics       *Graphics
+	borders        *Borders
+	foreMask       *ForeMask
+	cycle          uint8
+	lineStart      int
+	drawLine       bool
+	refreshCounter uint8
+	vBlank         uint8
+	cycles         []func()
 }
 
 func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 	core := NewCore()
 	foreMask := NewForeMask()
 	vic := &MOS6569{
-		core:            core,
-		foreMask:        foreMask,
-		graphics:        NewGraphics(core, foreMask, db),
-		sprites:         NewSprites(core, foreMask, db),
-		borders:         NewBorder(core, db),
-		cycle:           cycleFirst,
-		vBlank:          false,
-		vBlankNextCycle: false,
-		drawThisLine:    false,
-		cfg:             nil,
-		cycles:          make([]func(), cycleLast+1),
+		core:     core,
+		foreMask: foreMask,
+		graphics: NewGraphics(core, foreMask, db),
+		sprites:  NewSprites(core, foreMask, db),
+		borders:  NewBorder(core, db, 13),
+		cycle:    cycleFirst,
+		vBlank:   0,
+		drawLine: false,
+		cfg:      nil,
+		cycles:   make([]func(), cycleLast+1),
 	}
+	return vic
+}
+
+func (vic *MOS6569) Setup(quartz *quartz.Quartz, banks IBanks, cfg *config.Config) {
+	vic.cfg = cfg
+	vic.cfg.Bind(vic.configChanged)
+	vic.core.Setup(quartz, banks)
+	vic.graphics.Setup()
+	vic.sprites.Setup()
 
 	//TODO NTSC / PAL
-	vic.cycles[0] = nil
 	vic.cycles[1] = vic.cycle1
 	vic.cycles[2] = vic.cycle2
 	vic.cycles[3] = vic.cycle3
@@ -65,42 +71,9 @@ func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 	vic.cycles[16] = vic.cycle16
 	vic.cycles[17] = vic.cycle17
 	vic.cycles[18] = vic.cycle18
-	vic.cycles[19] = vic.cycle19to54
-	vic.cycles[20] = vic.cycle19to54
-	vic.cycles[21] = vic.cycle19to54
-	vic.cycles[22] = vic.cycle19to54
-	vic.cycles[23] = vic.cycle19to54
-	vic.cycles[24] = vic.cycle19to54
-	vic.cycles[25] = vic.cycle19to54
-	vic.cycles[26] = vic.cycle19to54
-	vic.cycles[27] = vic.cycle19to54
-	vic.cycles[28] = vic.cycle19to54
-	vic.cycles[29] = vic.cycle19to54
-	vic.cycles[30] = vic.cycle19to54
-	vic.cycles[31] = vic.cycle19to54
-	vic.cycles[32] = vic.cycle19to54
-	vic.cycles[33] = vic.cycle19to54
-	vic.cycles[34] = vic.cycle19to54
-	vic.cycles[35] = vic.cycle19to54
-	vic.cycles[36] = vic.cycle19to54
-	vic.cycles[37] = vic.cycle19to54
-	vic.cycles[38] = vic.cycle19to54
-	vic.cycles[39] = vic.cycle19to54
-	vic.cycles[40] = vic.cycle19to54
-	vic.cycles[41] = vic.cycle19to54
-	vic.cycles[42] = vic.cycle19to54
-	vic.cycles[43] = vic.cycle19to54
-	vic.cycles[44] = vic.cycle19to54
-	vic.cycles[45] = vic.cycle19to54
-	vic.cycles[46] = vic.cycle19to54
-	vic.cycles[47] = vic.cycle19to54
-	vic.cycles[48] = vic.cycle19to54
-	vic.cycles[49] = vic.cycle19to54
-	vic.cycles[50] = vic.cycle19to54
-	vic.cycles[51] = vic.cycle19to54
-	vic.cycles[52] = vic.cycle19to54
-	vic.cycles[53] = vic.cycle19to54
-	vic.cycles[54] = vic.cycle19to54
+	for x := 19; x <= 54; x++ {
+		vic.cycles[x] = vic.cycle19to54
+	}
 	vic.cycles[55] = vic.cycle55
 	vic.cycles[56] = vic.cycle56
 	vic.cycles[57] = vic.cycle57
@@ -110,16 +83,6 @@ func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 	vic.cycles[61] = vic.cycle61
 	vic.cycles[62] = vic.cycle62
 	vic.cycles[63] = vic.cycle63
-	return vic
-}
-
-func (vic *MOS6569) Setup(quartz *quartz.Quartz, banks IBanks, cfg *config.Config) {
-	//vic.board = board
-	vic.cfg = cfg
-	vic.cfg.Bind(vic.configChanged)
-	vic.core.Setup(quartz, banks)
-	vic.graphics.Setup()
-	vic.sprites.Setup()
 }
 
 func (vic *MOS6569) Reset() {
@@ -191,9 +154,9 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	vic.cycles[vic.cycle]()
 	vic.core.UpdateRasterX()
 	vBlank := false
-	if vic.vBlank {
+	if vic.vBlank == 2 {
 		vBlank = true
-		vic.vBlank = false
+		vic.vBlank = 0
 	}
 	lastCycle := vic.cycle == cycleLast
 	if lastCycle {
@@ -206,12 +169,12 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 
 func (vic *MOS6569) cycle1() {
 	if rasterY := vic.core.GetRasterY(); rasterY == RasterYMax {
-		vic.vBlankNextCycle = true
+		vic.vBlank = 1
 	} else {
 		vic.core.IncrementCounters()
-		vic.drawThisLine = (rasterY >= FirstDisplayedLine) && (rasterY <= LastDisplayedLine)
+		vic.drawLine = (rasterY >= FirstDisplayedLine) && (rasterY <= LastDisplayedLine)
 	}
-	vic.borders.SetBorderOnSample(0)
+	vic.borders.SetSample(BorderTypeLeft)
 	vic.sprites.FetchPtr(3)
 	vic.sprites.Fetch(3, 0)
 	vic.graphics.TryAcquireDisplayAccess()
@@ -221,11 +184,10 @@ func (vic *MOS6569) cycle1() {
 }
 
 func (vic *MOS6569) cycle2() {
-	if vic.vBlankNextCycle {
-		vic.vBlank = true
+	if vic.vBlank == 1 {
+		vic.vBlank = 2
 		vic.graphics.ResetVideoCounterBase()
 		vic.refreshCounter = 0xff
-		vic.vBlankNextCycle = false
 		vic.lineStart = 0
 		vic.core.ResetCounters()
 	}
@@ -318,7 +280,7 @@ func (vic *MOS6569) cycle12() {
 }
 
 func (vic *MOS6569) cycle13() {
-	if vic.drawThisLine {
+	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
 	}
@@ -329,7 +291,7 @@ func (vic *MOS6569) cycle13() {
 }
 
 func (vic *MOS6569) cycle14() {
-	if vic.drawThisLine {
+	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
 	}
@@ -341,7 +303,7 @@ func (vic *MOS6569) cycle14() {
 }
 
 func (vic *MOS6569) cycle15() {
-	if vic.drawThisLine {
+	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
 	}
@@ -355,7 +317,7 @@ func (vic *MOS6569) cycle15() {
 }
 
 func (vic *MOS6569) cycle16() {
-	if vic.drawThisLine {
+	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
 	}
@@ -371,8 +333,8 @@ func (vic *MOS6569) cycle17() {
 	if vic.core.ModeColumn40() {
 		vic.borders.Update()
 	}
-	vic.borders.SetBorderOnSample(1)
-	if vic.drawThisLine {
+	vic.borders.SetSample(BorderTypeMidLeft)
+	if vic.drawLine {
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -391,8 +353,8 @@ func (vic *MOS6569) cycle18() {
 	if vic.core.ModeColumn38() {
 		vic.borders.Update()
 	}
-	vic.borders.SetBorderOnSample(2)
-	if vic.drawThisLine {
+	vic.borders.SetSample(BorderTypeCenter)
+	if vic.drawLine {
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -409,7 +371,7 @@ func (vic *MOS6569) cycle18() {
 }
 
 func (vic *MOS6569) cycle19to54() {
-	if vic.drawThisLine {
+	if vic.drawLine {
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -426,7 +388,7 @@ func (vic *MOS6569) cycle19to54() {
 }
 
 func (vic *MOS6569) cycle55() {
-	if vic.drawThisLine {
+	if vic.drawLine {
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -446,10 +408,10 @@ func (vic *MOS6569) cycle55() {
 }
 func (vic *MOS6569) cycle56() {
 	if vic.core.ModeColumn38() {
-		vic.borders.SetBorderOn()
+		vic.borders.Enable()
 	}
-	vic.borders.SetBorderOnSample(3)
-	if vic.drawThisLine {
+	vic.borders.SetSample(BorderTypeMidRight)
+	if vic.drawLine {
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -467,11 +429,11 @@ func (vic *MOS6569) cycle56() {
 
 func (vic *MOS6569) cycle57() {
 	if vic.core.ModeColumn40() {
-		vic.borders.SetBorderOn()
+		vic.borders.Enable()
 	}
-	vic.borders.SetBorderOnSample(4)
+	vic.borders.SetSample(BorderTypeRight)
 	vic.sprites.UpdateDisplayFlags()
-	if vic.drawThisLine {
+	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
 	}
@@ -483,7 +445,7 @@ func (vic *MOS6569) cycle57() {
 }
 
 func (vic *MOS6569) cycle58() {
-	if vic.drawThisLine {
+	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
 	}
@@ -494,7 +456,7 @@ func (vic *MOS6569) cycle58() {
 }
 
 func (vic *MOS6569) cycle59() {
-	if vic.drawThisLine {
+	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
 	}
@@ -507,7 +469,7 @@ func (vic *MOS6569) cycle59() {
 }
 
 func (vic *MOS6569) cycle60() {
-	if vic.drawThisLine {
+	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
 		vic.sprites.Draw(vic.lineStart)
