@@ -93,7 +93,7 @@ func (sid *MOS6581) GetRegsHistory() [][]uint8 {
 	return sid.regsHistory
 }
 
-func (sid *MOS6581) ResetHistoryCounter() uint32 {
+func (sid *MOS6581) ResetHistory() uint32 {
 	cycle := sid.regsHistoryIndex
 	sid.regsHistoryIndex = 0
 	return cycle

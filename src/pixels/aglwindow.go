@@ -525,6 +525,18 @@ func (w *GLWindow) MousePosition() Vec {
 	return w.currInp.mouse
 }
 
+func (w *GLWindow) MousePositionX() float64 {
+	return w.currInp.mouse.X
+}
+
+func (w *GLWindow) MousePositionY() float64 {
+	return w.currInp.mouse.Y
+}
+
+func (w *GLWindow) MousePositionXY() (float64, float64) {
+	return w.currInp.mouse.X, w.currInp.mouse.Y
+}
+
 // MousePreviousPosition returns the previous mouse position in the GLWindow's Bounds.
 func (w *GLWindow) MousePreviousPosition() Vec {
 	return w.prevInp.mouse

@@ -193,11 +193,11 @@ func (s *Board) Emulate() bool {
 	vBlank, lastVicCycle := s.vic.Emulate()
 	//s.phiMode = Phi2
 	if vBlank {
-		//sidCounter := s.sid.ResetHistoryCounter()
+		//sidCounter := s.sid.ResetHistory()
 		//TODO
-		_ = s.sid.ResetHistoryCounter()
-		s.cia1.CountTOD()
-		s.cia2.CountTOD()
+		_ = s.sid.ResetHistory()
+		s.cia1.TODUpdate()
+		s.cia2.TODUpdate()
 		s.updateKeyboard()
 		//if bytes.Contains(s.vic.GetText(), []byte("READY")) {
 		//	fmt.Println("READY!!!")

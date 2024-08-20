@@ -174,13 +174,6 @@ func (g *Inputs) Keys(pressed map[pixels.Button]bool) {
 }
 
 func (g *Inputs) MouseMove(x float64, y float64) {
-	//currX := (0xff * int(x)) / g.maxW
-	//currY := (0xff * int(y)) / g.maxH
-	//if x != xOld || y != yOld {
-	//mouseX := x - xOld
-	//mouseY := y - yOld
-	//g.b.SetMouse(int(+mouseX), int(+mouseY))
-	//fmt.Println(currX, currY, x, y)
 	x1 := uint8(x)
 	y1 := uint8(y)
 	if g.lastX != x1 || g.lastY != y1 {

@@ -10,7 +10,7 @@ import (
  *
  *  - The Emulate() function is called for every emulated Phi2 clock cycle.
  *    It counts down the timers and triggers interrupts if necessary.
- *  - The TOD clocks are counted by CountTOD() during the VBlank, so the input frequency is 50Hz
+ *  - The TOD clocks are counted by TODUpdate() during the VBlank, so the input frequency is 50Hz
  *  - The fields KeyMatrix and RevMatrix contain one bit for each
  *    key on the C64 keyboard (0: key pressed, 1: key released).
  *    KeyMatrix is used for normal keyboard polling (PRA->PRB),
@@ -407,7 +407,7 @@ tb_idle:
 	}
 }
 
-func (m *MOS6526) CountTOD() {
+func (m *MOS6526) TODUpdate() {
 	// Decrement frequency divider
 	if (m.todDivider) != 0 {
 		m.todDivider--

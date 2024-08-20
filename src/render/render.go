@@ -84,8 +84,7 @@ func (g *Render) run() {
 	for run {
 		dt.DynamicThrottling()
 		if win.MouseInsideWindow() {
-			mousePos := win.MousePosition()
-			g.inputs.MouseMove(mousePos.X, mousePos.Y)
+			g.inputs.MouseMove(win.MousePositionXY())
 		}
 		g.inputs.Keys(win.KeysPressed())
 		for {
@@ -94,7 +93,6 @@ func (g *Render) run() {
 			}
 		}
 		g.mainSprite.Draw(win, g.mainMatrix)
-		//g.drawDirect(win, g.c64Board.GetDisplayBuffer())
 		win.Update()
 		if dt.Counter()&0xf == 0xf {
 			run = !win.Closed()
