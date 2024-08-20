@@ -1,5 +1,23 @@
 package sid
 
+import "github.com/markel1974/c64emu/src/components/vic"
+
+const (
+	SampleFreq      = 44100                      // Sample output frequency in Hz
+	Frequency       = 985248                     // SID frequency in Hz
+	CalcFreq        = 50                         // Frequency at which calc_buffer is called in Hz (should be 50Hz)
+	Cycles          = Frequency / SampleFreq     // # of SID clocks per sample frame
+	SampleBufSize   = 0x138 * 2                  // Size of buffer for sampled voice (double buffered)
+	RegisterCount   = 32                         //
+	RegisterHistory = 1024                       //
+	FragFreq        = vic.ScreenFreq             // one frag per frame
+	FragSize        = SampleFreq / FragFreq      // samples, not bytes
+	FragInterval    = 1000 / FragFreq            // in milliseconds
+	BufferFrags     = FragFreq                   // frags the in buffer
+	BufferSize      = 2 * FragSize * BufferFrags // bytes, not samples
+	MaxLeadAvg      = BufferFrags                // lead average count
+)
+
 // from a 6581R4
 var _triSawTable = []uint16{
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
