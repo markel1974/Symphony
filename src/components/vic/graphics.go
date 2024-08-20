@@ -11,6 +11,8 @@ const (
 	modeBitmapMulticolorInvalid = 7
 )
 
+const maxLine = 40
+
 type Graphics struct {
 	core             *Core
 	collisions       *Collisions
@@ -27,8 +29,7 @@ type Graphics struct {
 	videoCounter     uint16  // Video counter
 	videoCounterBase uint16  // Video counter base
 	displayAccess    bool    // Display state
-	//matrixBufferIndex int     // Index in matrixBuffer
-	//matrixBuffer      []uint8
+	textBuffer       []byte
 }
 
 func NewGraphics(core *Core, collisions *Collisions, db IDisplayBuffer) *Graphics {
@@ -42,8 +43,9 @@ func NewGraphics(core *Core, collisions *Collisions, db IDisplayBuffer) *Graphic
 		charDataLast:     0,
 		offset:           0,
 		lineIndex:        0,
-		videoMatrix:      make([]uint8, 40),
-		colorLine:        make([]uint8, 40),
+		videoMatrix:      make([]uint8, maxLine),
+		colorLine:        make([]uint8, maxLine),
+		textBuffer:       make([]uint8, (RasterYMax/8)*maxLine),
 		rowCounter:       7,
 		videoCounter:     0,
 		videoCounterBase: 0,
@@ -52,7 +54,21 @@ func NewGraphics(core *Core, collisions *Collisions, db IDisplayBuffer) *Graphic
 	return gr
 }
 
+//func (gr *Graphics) PrintText() {
+//	for x, v := range gr.textBuffer {
+//		if x%40 == 0 {
+//			fmt.Println()
+//		}
+//		fmt.Printf("%c", v)
+//	}
+//	fmt.Println()
+//}
+
 func (gr *Graphics) Setup() {
+}
+
+func (gr *Graphics) GetText() []byte {
+	return gr.textBuffer
 }
 
 func (gr *Graphics) ResetVideoCounterBase() {
@@ -112,10 +128,15 @@ func (gr *Graphics) TryGraphicsAccess() {
 		gr.gfxData = gr.core.ReadByte(addr)
 		gr.charData = gr.videoMatrix[gr.lineIndex]
 		gr.colorData = gr.colorLine[gr.lineIndex]
+		if gr.rowCounter == 0 {
+			index := maxLine * (gr.core.rasterY / 8)
+			//TODO screen codes
+			//https://sta.c64.org/cbm64scr.html
+			gr.textBuffer[index+uint16(gr.lineIndex)] = _scCodesAscii[gr.charData&0x7f] //gr.charData + 64
+		}
 		gr.lineIndex++
 		gr.videoCounter++
-		//gr.matrixBuffer[gr.matrixBufferIndex] = gr.charData + 64
-		//gr.matrixBufferIndex++
+
 	} else {
 		if (gr.core.cr1 & 0x40) != 0 {
 			gr.gfxData = gr.core.ReadByte(0x39ff)
@@ -133,12 +154,6 @@ func (gr *Graphics) TryVideoMatrixAccess() {
 			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase
 			gr.videoMatrix[gr.lineIndex] = gr.core.ReadByte(addr)
 			gr.colorLine[gr.lineIndex] = gr.core.banks.ReadColor(addr & 0x03ff)
-			//gr.matrixBuffer[gr.matrixBufferIndex] = data + 64
-			//TODO screen codes
-			//https://sta.c64.org/cbm64scr.html
-			//if p := gr.videoMatrix[gr.lineIndex]; p != 32 {
-			//	fmt.Printf("%s\n", string(p+64))
-			//}
 		} else {
 			gr.colorLine[gr.lineIndex] = 0xff
 			gr.videoMatrix[gr.lineIndex] = 0xff

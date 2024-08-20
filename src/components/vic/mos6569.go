@@ -89,6 +89,10 @@ func (vic *MOS6569) Reset() {
 	vic.core.ready = false
 }
 
+func (vic *MOS6569) GetText() []byte {
+	return vic.graphics.GetText()
+}
+
 func (vic *MOS6569) GetLastByte() uint8 {
 	return vic.core.lastByte
 }
@@ -157,6 +161,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	if vic.vBlank == 2 {
 		vBlank = true
 		vic.vBlank = 0
+		//vic.graphics.PrintText()
 	}
 	lastCycle := vic.cycle == cycleLast
 	if lastCycle {

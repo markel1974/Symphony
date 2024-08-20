@@ -199,6 +199,9 @@ func (s *Board) Emulate() bool {
 		s.cia1.CountTOD()
 		s.cia2.CountTOD()
 		s.updateKeyboard()
+		//if bytes.Contains(s.vic.GetText(), []byte("READY")) {
+		//	fmt.Println("READY!!!")
+		//}
 	}
 	if lastVicCycle {
 		s.sid.Emulate()
