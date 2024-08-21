@@ -232,6 +232,9 @@ func (cpu *MOS6510) checkPic() {
 
 func (cpu *MOS6510) SetAECLow(aecLow bool) {
 	cpu.aecLow = aecLow
+	if cpu.aecLow {
+		cpu.stop = true
+	}
 }
 
 func (cpu *MOS6510) SetRDYLow(rdyLow bool) {

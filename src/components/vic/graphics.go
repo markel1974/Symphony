@@ -11,7 +11,8 @@ const (
 	modeBitmapMulticolorInvalid = 7
 )
 
-const maxLine = 40
+const columnsMax = 40
+const rowsMax = 7
 
 type Graphics struct {
 	core             *Core
@@ -43,10 +44,10 @@ func NewGraphics(core *Core, collisions *Collisions, db IDisplayBuffer) *Graphic
 		charDataLast:     0,
 		offset:           0,
 		lineIndex:        0,
-		videoMatrix:      make([]uint8, maxLine),
-		colorLine:        make([]uint8, maxLine),
-		textBuffer:       make([]uint8, (RasterYMax/8)*maxLine),
-		rowCounter:       7,
+		videoMatrix:      make([]uint8, columnsMax),
+		colorLine:        make([]uint8, columnsMax),
+		textBuffer:       make([]uint8, (RasterYMax/8)*columnsMax),
+		rowCounter:       rowsMax,
 		videoCounter:     0,
 		videoCounterBase: 0,
 		displayAccess:    false,
@@ -104,12 +105,12 @@ func (gr *Graphics) TryAcquireDisplayAccess() {
 }
 
 func (gr *Graphics) UpdateDisplayAccess() {
-	if gr.rowCounter == 7 {
+	if gr.rowCounter == rowsMax {
 		gr.videoCounterBase = gr.videoCounter
 		gr.displayAccess = false
 	}
 	if gr.core.badLineCondition || gr.displayAccess {
-		gr.rowCounter = (gr.rowCounter + 1) & 7
+		gr.rowCounter = (gr.rowCounter + 1) & rowsMax
 		gr.displayAccess = true
 	}
 }
@@ -129,14 +130,13 @@ func (gr *Graphics) TryGraphicsAccess() {
 		gr.charData = gr.videoMatrix[gr.lineIndex]
 		gr.colorData = gr.colorLine[gr.lineIndex]
 		if gr.rowCounter == 0 {
-			index := maxLine * (gr.core.rasterY / 8)
+			index := columnsMax * (gr.core.rasterY / 8)
 			//TODO screen codes
 			//https://sta.c64.org/cbm64scr.html
 			gr.textBuffer[index+uint16(gr.lineIndex)] = _scCodesAscii[gr.charData&0x7f] //gr.charData + 64
 		}
 		gr.lineIndex++
 		gr.videoCounter++
-
 	} else {
 		if (gr.core.cr1 & 0x40) != 0 {
 			gr.gfxData = gr.core.ReadByte(0x39ff)
