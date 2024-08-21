@@ -6,11 +6,11 @@ import (
 	"github.com/markel1974/c64emu/src/board/iec"
 	"github.com/markel1974/c64emu/src/board/keyboard"
 	"github.com/markel1974/c64emu/src/board/prg"
-	cpu2 "github.com/markel1974/c64emu/src/components/6510"
-	cia3 "github.com/markel1974/c64emu/src/components/cia"
-	quartz2 "github.com/markel1974/c64emu/src/components/quartz"
+	"github.com/markel1974/c64emu/src/components/6510"
+	"github.com/markel1974/c64emu/src/components/cia"
+	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/sid"
-	vic2 "github.com/markel1974/c64emu/src/components/vic"
+	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/signals"
 	"golang.design/x/clipboard"
@@ -29,14 +29,14 @@ const (
 )
 
 type Board struct {
-	db           vic2.IDisplayBuffer
-	quartz       *quartz2.Quartz
-	cpu          *cpu2.MOS6510
-	vic          *vic2.MOS6569
+	db           vic.IDisplayBuffer
+	quartz       *quartz.Quartz
+	cpu          *mos6510.MOS6510
+	vic          *vic.MOS6569
 	sid          *sid.MOS6581
-	cia1         *cia3.MOS6526A
-	cia2         *cia3.MOS6526B
-	pic          *cpu2.Pic
+	cia1         *cia.MOS6526A
+	cia2         *cia.MOS6526B
+	pic          *mos6510.Pic
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
 	cfg          *config.Config
@@ -49,10 +49,10 @@ type Board struct {
 	//phiMode    PhiMode
 }
 
-func NewBoard(db vic2.IDisplayBuffer) *Board {
+func NewBoard(db vic.IDisplayBuffer) *Board {
 	b := &Board{
 		db:           db,
-		quartz:       quartz2.NewQuartz(),
+		quartz:       quartz.NewQuartz(),
 		iec:          nil,
 		cpu:          nil,
 		vic:          nil,
@@ -83,13 +83,13 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
-	s.pic = cpu2.NewPic()
+	s.pic = mos6510.NewPic()
 	s.iec = iec.NewIEC()
-	s.cpu = cpu2.NewMOS6510("c64")
-	s.vic = vic2.NewMOS6569(s.db)
+	s.cpu = mos6510.NewMOS6510("c64")
+	s.vic = vic.NewMOS6569(s.db)
 	s.sid = sid.NewMOS6581()
-	s.cia1 = cia3.NewMOS6526A()
-	s.cia2 = cia3.NewMOS6526B()
+	s.cia1 = cia.NewMOS6526A()
+	s.cia2 = cia.NewMOS6526B()
 	s.keys = keyboard.NewKeyboard()
 	s.banks = banks.NewBanks()
 
@@ -388,7 +388,7 @@ func (s *Board) Cycle() uint64 {
 	return s.quartz.Cycle()
 }
 
-func (s *Board) CycleAlarm(id string, callback quartz2.AlarmCallback) *quartz2.Alarm {
+func (s *Board) CycleAlarm(id string, callback quartz.AlarmCallback) *quartz.Alarm {
 	return s.quartz.NewAlarm(id, callback)
 }
 

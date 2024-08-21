@@ -1,4 +1,4 @@
-package _510
+package mos6510
 
 type Core struct {
 	banks   IBanks

@@ -1,4 +1,4 @@
-package _510
+package mos6510
 
 type IBanks interface {
 	Read(uint16) uint8

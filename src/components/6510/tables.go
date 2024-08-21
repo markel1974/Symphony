@@ -1,4 +1,4 @@
-package _510
+package mos6510
 
 // States for addressing modes/operations
 
