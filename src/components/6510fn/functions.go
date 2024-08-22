@@ -1,637 +1,236 @@
-package mos6510
+package mos6510fn
 
-import (
-	"fmt"
-	"github.com/markel1974/c64emu/src/flag"
-	"log"
-	"os"
-)
+import "github.com/markel1974/c64emu/src/flag"
 
-//https://dustlayer.com/c64-architecture
-//https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
-
-//Notes() {
-//https://codebase64.org/lib/exe/fetch.php?media=base:safely_freezing_the_c64.pdf
-/*
- *  - The zFlag variable has the inverse meaning of the 6510 Z flag
- *  - Only the highest bit of the nFlag variable is used
- */
-
-type MOS6510fn struct {
-	*Core
-	id             string
-	overflowBranch func() bool
-	functions      []func()
-}
-
-func NewMOS6510fn(id string) *MOS6510fn {
-	cpu := &MOS6510fn{
-		Core:           nil,
-		id:             id,
-		overflowBranch: nil,
-		functions:      make([]func(), 0xff),
-	}
-	for x := range cpu.functions {
-		cpu.functions[x] = cpu.fnIllegalOp
-	}
-	return cpu
-}
-
-func (cpu *MOS6510fn) Setup(intr IPic, banks IBanks) {
-	cpu.Core = NewCore(intr)
-	cpu.banks = banks
-
-	cpu.functions[STATE_LAST] = cpu.fnSTATE_LAST
-	cpu.functions[I_IRQ_8] = cpu.fnI_IRQ_8
-	cpu.functions[I_IRQ_9] = cpu.fnI_IRQ_9
-	cpu.functions[I_IRQ_A] = cpu.fnI_IRQ_A
-	cpu.functions[I_IRQ_B] = cpu.fnI_IRQ_B
-	cpu.functions[I_IRQ_C] = cpu.fnI_IRQ_C
-	cpu.functions[I_IRQ_D] = cpu.fnI_IRQ_D
-	cpu.functions[I_IRQ_E] = cpu.fnI_IRQ_E
-	cpu.functions[I_NMI_10] = cpu.fnI_NMI_10
-	cpu.functions[I_NMI_11] = cpu.fnI_NMI_11
-	cpu.functions[I_NMI_12] = cpu.fnI_NMI_12
-	cpu.functions[I_NMI_13] = cpu.fnI_NMI_13
-	cpu.functions[I_NMI_14] = cpu.fnI_NMI_14
-	cpu.functions[I_NMI_15] = cpu.fnI_NMI_15
-	cpu.functions[I_NMI_16] = cpu.fnI_NMI_16
-	cpu.functions[A_ZERO] = cpu.fnA_ZERO
-	cpu.functions[A_ZEROX] = cpu.fnA_ZEROX
-	cpu.functions[A_ZEROX1] = cpu.fnA_ZEROX1
-	cpu.functions[A_ZEROY] = cpu.fnA_ZEROY
-	cpu.functions[A_ZEROY1] = cpu.fnA_ZEROY1
-	cpu.functions[A_ABS] = cpu.fnA_ABS
-	cpu.functions[A_ABS1] = cpu.fnA_ABS1
-	cpu.functions[A_ABSX] = cpu.fnA_ABSX
-	cpu.functions[A_ABSX1] = cpu.fnA_ABSX1
-	cpu.functions[A_ABSX2] = cpu.fnA_ABSX2
-	cpu.functions[A_ABSX3] = cpu.fnA_ABSX3
-	cpu.functions[A_ABSY] = cpu.fnA_ABSY
-	cpu.functions[A_ABSY1] = cpu.fnA_ABSY1
-	cpu.functions[A_ABSY2] = cpu.fnA_ABSY2
-	cpu.functions[A_ABSY3] = cpu.fnA_ABSY3
-	cpu.functions[A_INDX] = cpu.fnA_INDX
-	cpu.functions[A_INDX1] = cpu.fnA_INDX1
-	cpu.functions[A_INDX2] = cpu.fnA_INDX2
-	cpu.functions[A_INDX3] = cpu.fnA_INDX3
-	cpu.functions[A_INDY] = cpu.fnA_INDY
-	cpu.functions[A_INDY1] = cpu.fnA_INDY1
-	cpu.functions[A_INDY2] = cpu.fnA_INDY2
-	cpu.functions[A_INDY3] = cpu.fnA_INDY3
-	cpu.functions[A_INDY4] = cpu.fnA_INDY4
-	cpu.functions[AE_ABSX] = cpu.fnAE_ABSX
-	cpu.functions[AE_ABSX1] = cpu.fnAE_ABSX1
-	cpu.functions[AE_ABSX2] = cpu.fnAE_ABSX2
-	cpu.functions[AE_ABSY] = cpu.fnAE_ABSY
-	cpu.functions[AE_ABSY1] = cpu.fnAE_ABSY1
-	cpu.functions[AE_ABSY2] = cpu.fnAE_ABSY2
-	cpu.functions[AE_INDY] = cpu.fnAE_INDY
-	cpu.functions[AE_INDY1] = cpu.fnAE_INDY1
-	cpu.functions[AE_INDY2] = cpu.fnAE_INDY2
-	cpu.functions[AE_INDY3] = cpu.fnAE_INDY3
-	cpu.functions[M_ZERO] = cpu.fnM_ZERO
-	cpu.functions[M_ZEROX] = cpu.fnM_ZEROX
-	cpu.functions[M_ZEROX1] = cpu.fnM_ZEROX1
-	cpu.functions[M_ZEROY] = cpu.fnM_ZEROY
-	cpu.functions[M_ZEROY1] = cpu.fnM_ZEROY1
-	cpu.functions[M_ABS] = cpu.fnM_ABS
-	cpu.functions[M_ABS1] = cpu.fnM_ABS1
-	cpu.functions[M_ABSX] = cpu.fnM_ABSX
-	cpu.functions[M_ABSX1] = cpu.fnM_ABSX1
-	cpu.functions[M_ABSX2] = cpu.fnM_ABSX2
-	cpu.functions[M_ABSX3] = cpu.fnM_ABSX3
-	cpu.functions[M_ABSY] = cpu.fnM_ABSY
-	cpu.functions[M_ABSY1] = cpu.fnM_ABSY1
-	cpu.functions[M_ABSY2] = cpu.fnM_ABSY2
-	cpu.functions[M_ABSY3] = cpu.fnM_ABSY3
-	cpu.functions[M_INDX] = cpu.fnM_INDX
-	cpu.functions[M_INDX1] = cpu.fnM_INDX1
-	cpu.functions[M_INDX2] = cpu.fnM_INDX2
-	cpu.functions[M_INDX3] = cpu.fnM_INDX3
-	cpu.functions[M_INDY] = cpu.fnM_INDY
-	cpu.functions[M_INDY1] = cpu.fnM_INDY1
-	cpu.functions[M_INDY2] = cpu.fnM_INDY2
-	cpu.functions[M_INDY3] = cpu.fnM_INDY3
-	cpu.functions[M_INDY4] = cpu.fnM_INDY4
-	cpu.functions[RMW_DO_IT] = cpu.fnRMW_DO_IT
-	cpu.functions[RMW_DO_IT1] = cpu.fnRMW_DO_IT1
-	cpu.functions[O_LDA] = cpu.fnO_LDA
-	cpu.functions[O_LDA_I] = cpu.fnO_LDA_I
-	cpu.functions[O_LDX] = cpu.fnO_LDX
-	cpu.functions[O_LDX_I] = cpu.fnO_LDX_I
-	cpu.functions[O_LDY] = cpu.fnO_LDY
-	cpu.functions[O_LDY_I] = cpu.fnO_LDY_I
-	cpu.functions[O_STA] = cpu.fnO_STA
-	cpu.functions[O_STX] = cpu.fnO_STX
-	cpu.functions[O_STY] = cpu.fnO_STY
-	cpu.functions[O_TAX] = cpu.fnO_TAX
-	cpu.functions[O_TXA] = cpu.fnO_TXA
-	cpu.functions[O_TAY] = cpu.fnO_TAY
-	cpu.functions[O_TYA] = cpu.fnO_TYA
-	cpu.functions[O_TSX] = cpu.fnO_TSX
-	cpu.functions[O_TXS] = cpu.fnO_TXS
-	cpu.functions[O_ADC] = cpu.fnO_ADC
-	cpu.functions[O_ADC_I] = cpu.fnO_ADC_I
-	cpu.functions[O_SBC] = cpu.fnO_SBC
-	cpu.functions[O_SBC_I] = cpu.fnO_SBC_I
-	cpu.functions[O_INX] = cpu.fnO_INX
-	cpu.functions[O_DEX] = cpu.fnO_DEX
-	cpu.functions[O_INY] = cpu.fnO_INY
-	cpu.functions[O_DEY] = cpu.fnO_DEY
-	cpu.functions[O_INC] = cpu.fnO_INC
-	cpu.functions[O_DEC] = cpu.fnO_DEC
-	cpu.functions[O_AND] = cpu.fnO_AND
-	cpu.functions[O_AND_I] = cpu.fnO_AND_I
-	cpu.functions[O_ORA] = cpu.fnO_ORA
-	cpu.functions[O_ORA_I] = cpu.fnO_ORA_I
-	cpu.functions[O_EOR] = cpu.fnO_EOR
-	cpu.functions[O_EOR_I] = cpu.fnO_EOR_I
-	cpu.functions[O_CMP] = cpu.fnO_CMP
-	cpu.functions[O_CMP_I] = cpu.fnO_CMP_I
-	cpu.functions[O_CPX] = cpu.fnO_CPX
-	cpu.functions[O_CPX_I] = cpu.fnO_CPX_I
-	cpu.functions[O_CPY] = cpu.fnO_CPY
-	cpu.functions[O_CPY_I] = cpu.fnO_CPY_I
-	cpu.functions[O_BIT] = cpu.fnO_BIT
-	cpu.functions[O_ASL] = cpu.fnO_ASL
-	cpu.functions[O_ASL_A] = cpu.fnO_ASL_A
-	cpu.functions[O_LSR] = cpu.fnO_LSR
-	cpu.functions[O_LSR_A] = cpu.fnO_LSR_A
-	cpu.functions[O_ROL] = cpu.fnO_ROL
-	cpu.functions[O_ROL_A] = cpu.fnO_ROL_A
-	cpu.functions[O_ROR] = cpu.fnO_ROR
-	cpu.functions[O_ROR_A] = cpu.fnO_ROR_A
-	cpu.functions[O_PHA] = cpu.fnO_PHA
-	cpu.functions[O_PHA1] = cpu.fnO_PHA1
-	cpu.functions[O_PLA] = cpu.fnO_PLA
-	cpu.functions[O_PLA1] = cpu.fnO_PLA1
-	cpu.functions[O_PLA2] = cpu.fnO_PLA2
-	cpu.functions[O_PHP] = cpu.fnO_PHP
-	cpu.functions[O_PHP1] = cpu.fnO_PHP1
-	cpu.functions[O_PLP] = cpu.fnO_PLP
-	cpu.functions[O_PLP1] = cpu.fnO_PLP1
-	cpu.functions[O_PLP2] = cpu.fnO_PLP2
-	cpu.functions[O_JMP] = cpu.fnO_JMP
-	cpu.functions[O_JMP1] = cpu.fnO_JMP1
-	cpu.functions[O_JMP_I] = cpu.fnO_JMP_I
-	cpu.functions[O_JMP_I1] = cpu.fnO_JMP_I1
-	cpu.functions[O_JSR] = cpu.fnO_JSR
-	cpu.functions[O_JSR1] = cpu.fnO_JSR1
-	cpu.functions[O_JSR2] = cpu.fnO_JSR2
-	cpu.functions[O_JSR3] = cpu.fnO_JSR3
-	cpu.functions[O_JSR4] = cpu.fnO_JSR4
-	cpu.functions[O_RTS] = cpu.fnO_RTS
-	cpu.functions[O_RTS1] = cpu.fnO_RTS1
-	cpu.functions[O_RTS2] = cpu.fnO_RTS2
-	cpu.functions[O_RTS3] = cpu.fnO_RTS3
-	cpu.functions[O_RTS4] = cpu.fnO_RTS4
-	cpu.functions[O_RTI] = cpu.fnO_RTI
-	cpu.functions[O_RTI1] = cpu.fnO_RTI1
-	cpu.functions[O_RTI2] = cpu.fnO_RTI2
-	cpu.functions[O_RTI3] = cpu.fnO_RTI3
-	cpu.functions[O_RTI4] = cpu.fnO_RTI4
-	cpu.functions[O_BRK] = cpu.fnO_BRK
-	cpu.functions[O_BRK1] = cpu.fnO_BRK1
-	cpu.functions[O_BRK2] = cpu.fnO_BRK2
-	cpu.functions[O_BRK3] = cpu.fnO_BRK3
-	cpu.functions[O_BRK4] = cpu.fnO_BRK4
-	cpu.functions[O_BRK5] = cpu.fnO_BRK5
-	//cpu.functions[O_BRK5NMI] = cpu.fnO_BRK5NMI
-	cpu.functions[O_BCS] = cpu.fnO_BCS
-	cpu.functions[O_BCC] = cpu.fnO_BCC
-	cpu.functions[O_BEQ] = cpu.fnO_BEQ
-	cpu.functions[O_BNE] = cpu.fnO_BNE
-	cpu.functions[O_BVS] = cpu.fnO_BVS
-	cpu.functions[O_BVC] = cpu.fnO_BVC
-	cpu.functions[O_BMI] = cpu.fnO_BMI
-	cpu.functions[O_BPL] = cpu.fnO_BPL
-	cpu.functions[O_BRANCH_NP] = cpu.fnO_BRANCH_NP
-	cpu.functions[O_BRANCH_BP] = cpu.fnO_BRANCH_BP
-	cpu.functions[O_BRANCH_BP1] = cpu.fnO_BRANCH_BP1
-	cpu.functions[O_BRANCH_FP] = cpu.fnO_BRANCH_FP
-	cpu.functions[O_BRANCH_FP1] = cpu.fnO_BRANCH_FP1
-	cpu.functions[O_SEC] = cpu.fnO_SEC
-	cpu.functions[O_CLC] = cpu.fnO_CLC
-	cpu.functions[O_SED] = cpu.fnO_SED
-	cpu.functions[O_CLD] = cpu.fnO_CLD
-	cpu.functions[O_SEI] = cpu.fnO_SEI
-	cpu.functions[O_CLI] = cpu.fnO_CLI
-	cpu.functions[O_CLV] = cpu.fnO_CLV
-	cpu.functions[O_NOP] = cpu.fnO_NOP
-	cpu.functions[O_NOP_I] = cpu.fnO_NOP_I
-	cpu.functions[O_NOP_A] = cpu.fnO_NOP_A
-	cpu.functions[O_LAX] = cpu.fnO_LAX
-	cpu.functions[O_SAX] = cpu.fnO_SAX
-	cpu.functions[O_SLO] = cpu.fnO_SLO
-	cpu.functions[O_RLA] = cpu.fnO_RLA
-	cpu.functions[O_SRE] = cpu.fnO_SRE
-	cpu.functions[O_RRA] = cpu.fnO_RRA
-	cpu.functions[O_DCP] = cpu.fnO_DCP
-	cpu.functions[O_ISB] = cpu.fnO_ISB
-	cpu.functions[O_ANC_I] = cpu.fnO_ANC_I
-	cpu.functions[O_ASR_I] = cpu.fnO_ASR_I
-	cpu.functions[O_ARR_I] = cpu.fnO_ARR_I
-	cpu.functions[O_ANE_I] = cpu.fnO_ANE_I
-	cpu.functions[O_LXA_I] = cpu.fnO_LXA_I
-	cpu.functions[O_SBX_I] = cpu.fnO_SBX_I
-	cpu.functions[O_LAS] = cpu.fnO_LAS
-	cpu.functions[O_SHS] = cpu.fnO_SHS
-	cpu.functions[O_SHY] = cpu.fnO_SHY
-	cpu.functions[O_SHX] = cpu.fnO_SHX
-	cpu.functions[O_SHA] = cpu.fnO_SHA
-}
-
-func (cpu *MOS6510fn) Reset() {
+func doReset(cpu *MOS6510) {
 	// Read reset vector
 	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 	cpu.opFlags = 0
 }
 
-// SetOverflowBranch implement 6502c SO (SOB) Pin
-func (cpu *MOS6510fn) SetOverflowBranch(sob func() bool) {
-	cpu.overflowBranch = sob
-}
-
-func (cpu *MOS6510fn) popFlags(data uint8) {
-	cpu.nFlag = data
-	cpu.vFlag = data & 0x40
-	cpu.dFlag = data & 0x08
-	cpu.iFlag = data & 0x04
-	cpu.zFlag = flag.BoolToUint8((data & 0x02) == 0)
-	cpu.cFlag = data & 0x01
-}
-
-func (cpu *MOS6510fn) pushFlags(bFlags bool) uint8 {
-	data := 0x20 | (cpu.nFlag & 0x80)
-	if cpu.vFlag != 0 {
-		data |= 0x40
-	}
-	if bFlags {
-		data |= 0x10
-	}
-	if cpu.dFlag != 0 {
-		data |= 0x08
-	}
-	if cpu.iFlag != 0 {
-		data |= 0x04
-	}
-	if cpu.zFlag == 0 {
-		data |= 0x02
-	}
-	if cpu.cFlag != 0 {
-		data |= 0x01
-	}
-	return data
-}
-
-func (cpu *MOS6510fn) branch(data uint8) {
-	cpu.ar = cpu.pc + uint16(int8(data))
-	if (cpu.ar >> 8) != (cpu.pc >> 8) {
-		if data&0x80 != 0 {
-			cpu.state = O_BRANCH_BP
-		} else {
-			cpu.state = O_BRANCH_FP
-		}
-	} else {
-		cpu.state = O_BRANCH_NP
-	}
-}
-
-func (cpu *MOS6510fn) doADC(data uint8) {
-	k := uint8(0)
-	if cpu.cFlag != 0 {
-		k = 1
-	}
-	if cpu.dFlag == 0 {
-		// Binary mode
-		tmp := uint16(cpu.a) + uint16(data) + uint16(k)
-		cpu.cFlag = flag.BoolToUint8(tmp > 0xff)
-		p1 := (uint16(cpu.a) ^ uint16(data)) & 0x80
-		p2 := (uint16(cpu.a) ^ tmp) & 0x80
-		cpu.vFlag = flag.BoolToUint8((p1 == 0) && (p2 != 0))
-		cpu.a = uint8(tmp)
-		cpu.nFlag = uint8(tmp)
-		cpu.zFlag = uint8(tmp)
-		return
-	}
-	// Decimal mode
-	al := (cpu.a & 0x0f) + (data & 0x0f) + k
-	if al > 9 {
-		al += 6 // BCD fixup
-	}
-	ah := (cpu.a >> 4) + (data >> 4)
-	if al > 0x0f {
-		ah++
-	}
-	cpu.zFlag = cpu.a + data + k
-	cpu.nFlag = ah << 4 // Only highest bit used
-	p1 := ((ah << 4) ^ cpu.a) & 0x80
-	p2 := (cpu.a ^ data) & 0x80
-	cpu.vFlag = flag.BoolToUint8((p1 != 0) && (p2 == 0))
-	if ah > 9 {
-		ah += 6
-	}
-	// BCD fixup for upper nybble
-	cpu.cFlag = flag.BoolToUint8(ah > 0x0f) // carry flag
-	cpu.a = (ah << 4) | (al & 0x0f)         // result
-}
-
-func (cpu *MOS6510fn) doSBC(data uint8) {
-	k := uint8(0)
-	if cpu.cFlag == 0 {
-		k = 1
-	}
-	tmp := uint16(cpu.a) - uint16(data) - uint16(k)
-	if cpu.dFlag == 0 {
-		// Binary mode
-		cpu.cFlag = flag.BoolToUint8(tmp < 0x100)
-		p1 := (uint16(cpu.a) ^ tmp) & 0x80
-		p2 := (uint16(cpu.a) ^ uint16(data)) & 0x80
-		cpu.vFlag = flag.BoolToUint8((p1 != 0) && (p2 != 0))
-		cpu.a = uint8(tmp)
-		cpu.nFlag = uint8(tmp)
-		cpu.zFlag = uint8(tmp)
-		return
-	}
-	// Decimal mode
-	al := (cpu.a & 0x0f) - (data & 0x0f) - k
-	ah := (cpu.a >> 4) - (data >> 4)
-	if (al & 0x10) != 0 {
-		al -= 6 // BCD fixup
-		ah--
-	}
-	if (ah & 0x10) != 0 {
-		ah -= 6 // BCD fixup
-	}
-	cpu.cFlag = flag.BoolToUint8(uint16(tmp) < 0x100)
-	p1 := (uint16(cpu.a) ^ tmp) & 0x80
-	p2 := (uint16(cpu.a) ^ uint16(data)) & 0x80
-	cpu.vFlag = flag.BoolToUint8((p1 != 0) && (p2 != 0))
-	cpu.zFlag = uint8(tmp)
-	cpu.nFlag = uint8(tmp)
-	cpu.a = (ah << 4) | (al & 0x0f)
-}
-
-func (cpu *MOS6510fn) illegalOp(illOp uint8, at uint16) {
-	log.Printf("illegal opcode %02x at %04x.", illOp, at)
-	//TODO EVENT
-	cpu.Reset()
-	os.Exit(1)
-}
-
-func (cpu *MOS6510fn) checkPic() {
-	if !cpu.pic.HasAny() {
-		return
-	}
-	if cpu.pic.HasReset() {
-		cpu.Reset()
-		return
-	}
-	if cpu.pic.HasNMI() {
-		// Taken branches to the same page delay the NMI
-		delay := 0
-		if (cpu.opFlags & OpFlagIntDelayed) != 0 {
-			delay = 1
-		}
-		if (cpu.pic.GetNMICycleDistance(delay)) >= 2 {
-			// Simulate an edge-triggered input
-			cpu.pic.ClearNMI()
-			cpu.state = I_NMI_10
-			cpu.opFlags = 0
-		}
-		return
-	}
-	//Interrupts are only recognized if the RDY line is high
-	if cpu.pic.HasIRQ() && !cpu.rdyLow {
-		//if cpu.pic.HasIRQ() {
-		if ((cpu.iFlag == 0) || ((cpu.opFlags & OpFlagIrqDisabled) != 0)) && ((cpu.opFlags & OpFlagIrqEnabled) == 0) {
+func fnStateLast(cpu *MOS6510) {
+	if cpu.pic.HasAny() {
+		if cpu.pic.HasReset() {
+			doReset(cpu)
+		} else if cpu.pic.HasNMI() {
 			delay := 0
 			if (cpu.opFlags & OpFlagIntDelayed) != 0 {
 				delay = 1
 			}
-			if (cpu.pic.GetIrqCycleDistance(delay)) >= 2 {
-				cpu.state = I_IRQ_8
+			if (cpu.pic.GetNMICycleDistance(delay)) >= 2 {
+				// Edge-triggered
+				cpu.pic.ClearNMI()
+				cpu.next = fnI_NMI_10
 				cpu.opFlags = 0
+				cpu.next(cpu)
+				return
+			}
+		} else if cpu.pic.HasIRQ() && !cpu.rdyLow {
+			// Interrupts are recognized if the RDY line is high
+			if ((cpu.iFlag == 0) || ((cpu.opFlags & OpFlagIrqDisabled) != 0)) && ((cpu.opFlags & OpFlagIrqEnabled) == 0) {
+				delay := 0
+				if (cpu.opFlags & OpFlagIntDelayed) != 0 {
+					delay = 1
+				}
+				if (cpu.pic.GetIrqCycleDistance(delay)) >= 2 {
+					cpu.next = fnI_IRQ_8
+					cpu.opFlags = 0
+					cpu.next(cpu)
+					return
+				}
 			}
 		}
 	}
-}
 
-func (cpu *MOS6510fn) SetAECLow(aecLow bool) {
-	cpu.aecLow = aecLow
-	if cpu.aecLow {
-		cpu.stop = true
-	}
-}
-
-func (cpu *MOS6510fn) SetRDYLow(rdyLow bool) {
-	cpu.rdyLow = rdyLow
-	if !cpu.rdyLow {
-		cpu.stop = false
-	}
-}
-
-func (cpu *MOS6510fn) Emulate() {
-	if cpu.stop {
-		return
-	}
-	if cpu.state == STATE_LAST {
-		cpu.checkPic()
-	}
-	cpu.functions[cpu.state]()
-}
-
-func (cpu *MOS6510fn) fnSTATE_LAST() {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.op = cpu.banks.Read(cpu.pc)
 	cpu.pc++
-	cpu.state = _modeTable[cpu.op]
+	cpu.next = _modeTable[cpu.op]
 	cpu.opFlags = 0
 }
 
 // IRQ
-func (cpu *MOS6510fn) fnI_IRQ_8() {
+func fnI_IRQ_8(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = I_IRQ_9
+	cpu.next = fnI_IRQ_9
 }
 
-func (cpu *MOS6510fn) fnI_IRQ_9() {
+func fnI_IRQ_9(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = I_IRQ_A
+	cpu.next = fnI_IRQ_A
 }
 
-func (cpu *MOS6510fn) fnI_IRQ_A() {
+func fnI_IRQ_A(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 	cpu.sp--
-	cpu.state = I_IRQ_B
+	cpu.next = fnI_IRQ_B
 }
 
-func (cpu *MOS6510fn) fnI_IRQ_B() {
+func fnI_IRQ_B(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 	cpu.sp--
-	cpu.state = I_IRQ_C
+	cpu.next = fnI_IRQ_C
 }
 
-func (cpu *MOS6510fn) fnI_IRQ_C() {
+func fnI_IRQ_C(cpu *MOS6510) {
 	data := cpu.pushFlags(false)
 	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 	cpu.sp--
 	cpu.iFlag = 1
-	cpu.state = I_IRQ_D
+	cpu.next = fnI_IRQ_D
 }
 
-func (cpu *MOS6510fn) fnI_IRQ_D() {
+func fnI_IRQ_D(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.pc = uint16(cpu.banks.Read(0xfffe))
-	cpu.state = I_IRQ_E
+	cpu.next = fnI_IRQ_E
 }
 
-func (cpu *MOS6510fn) fnI_IRQ_E() {
+func fnI_IRQ_E(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read(0xffff)
 	cpu.pc |= uint16(data) << 8
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // NMI
-func (cpu *MOS6510fn) fnI_NMI_10() {
+func fnI_NMI_10(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = I_NMI_11
+	cpu.next = fnI_NMI_11
 }
 
-func (cpu *MOS6510fn) fnI_NMI_11() {
+func fnI_NMI_11(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = I_NMI_12
+	cpu.next = fnI_NMI_12
 }
 
-func (cpu *MOS6510fn) fnI_NMI_12() {
+func fnI_NMI_12(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 	cpu.sp--
-	cpu.state = I_NMI_13
+	cpu.next = fnI_NMI_13
 }
 
-func (cpu *MOS6510fn) fnI_NMI_13() {
+func fnI_NMI_13(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 	cpu.sp--
-	cpu.state = I_NMI_14
+	cpu.next = fnI_NMI_14
 }
 
-func (cpu *MOS6510fn) fnI_NMI_14() {
+func fnI_NMI_14(cpu *MOS6510) {
 	data := cpu.pushFlags(false)
 	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 	cpu.sp--
 	cpu.iFlag = 1
-	cpu.state = I_NMI_15
+	cpu.next = fnI_NMI_15
 }
 
-func (cpu *MOS6510fn) fnI_NMI_15() {
+func fnI_NMI_15(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.pc = uint16(cpu.banks.Read(0xfffa))
-	cpu.state = I_NMI_16
+	cpu.next = fnI_NMI_16
 }
 
-func (cpu *MOS6510fn) fnI_NMI_16() {
+func fnI_NMI_16(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read(0xfffb)
 	cpu.pc |= uint16(data) << 8
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Addressing modes: Fetch effective address, no extra cycles (-> ar)
-func (cpu *MOS6510fn) fnA_ZERO() {
+func fnA_ZERO(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnA_ZEROX() {
+func fnA_ZEROX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = A_ZEROX1
+	cpu.next = fnA_ZEROX1
 }
 
-func (cpu *MOS6510fn) fnA_ZEROX1() {
+func fnA_ZEROX1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar = (cpu.ar + uint16(cpu.x)) & 0xff
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnA_ZEROY() {
+func fnA_ZEROY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = A_ZEROY1
+	cpu.next = fnA_ZEROY1
 }
 
-func (cpu *MOS6510fn) fnA_ZEROY1() {
+func fnA_ZEROY1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnA_ABS() {
+func fnA_ABS(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = A_ABS1
+	cpu.next = fnA_ABS1
 }
 
-func (cpu *MOS6510fn) fnA_ABS1() {
+func fnA_ABS1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -639,20 +238,20 @@ func (cpu *MOS6510fn) fnA_ABS1() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.ar = cpu.ar | (uint16(data) << 8)
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnA_ABSX() {
+func fnA_ABSX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = A_ABSX1
+	cpu.next = fnA_ABSX1
 }
 
-func (cpu *MOS6510fn) fnA_ABSX1() {
+func fnA_ABSX1(cpu *MOS6510) {
 	// Note: Some undocumented functions rely on the value of ar2
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -661,24 +260,24 @@ func (cpu *MOS6510fn) fnA_ABSX1() {
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
 	if cpu.ar+uint16(cpu.x) < 0x100 {
-		cpu.state = A_ABSX2
+		cpu.next = fnA_ABSX2
 	} else {
-		cpu.state = A_ABSX3
+		cpu.next = fnA_ABSX3
 	}
 	cpu.ar = ((cpu.ar + uint16(cpu.x)) & 0xff) | (cpu.ar2 << 8)
 }
 
-func (cpu *MOS6510fn) fnA_ABSX2() {
+func fnA_ABSX2(cpu *MOS6510) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnA_ABSX3() {
+func fnA_ABSX3(cpu *MOS6510) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -686,20 +285,20 @@ func (cpu *MOS6510fn) fnA_ABSX3() {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnA_ABSY() {
+func fnA_ABSY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = A_ABSY1
+	cpu.next = fnA_ABSY1
 }
 
-func (cpu *MOS6510fn) fnA_ABSY1() {
+func fnA_ABSY1(cpu *MOS6510) {
 	// Note: Some undocumented functions rely on the value of ar2
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -708,24 +307,24 @@ func (cpu *MOS6510fn) fnA_ABSY1() {
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
 	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.state = A_ABSY2
+		cpu.next = fnA_ABSY2
 	} else {
-		cpu.state = A_ABSY3
+		cpu.next = fnA_ABSY3
 	}
 	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (cpu.ar2 << 8)
 }
 
-func (cpu *MOS6510fn) fnA_ABSY2() {
+func fnA_ABSY2(cpu *MOS6510) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnA_ABSY3() {
+func fnA_ABSY3(cpu *MOS6510) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -733,68 +332,68 @@ func (cpu *MOS6510fn) fnA_ABSY3() {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnA_INDX() {
+func fnA_INDX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = A_INDX1
+	cpu.next = fnA_INDX1
 }
 
-func (cpu *MOS6510fn) fnA_INDX1() {
+func fnA_INDX1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar2)
 	cpu.ar2 = (cpu.ar2 + uint16(cpu.x)) & 0xff
-	cpu.state = A_INDX2
+	cpu.next = fnA_INDX2
 }
 
-func (cpu *MOS6510fn) fnA_INDX2() {
+func fnA_INDX2(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.state = A_INDX3
+	cpu.next = fnA_INDX3
 }
 
-func (cpu *MOS6510fn) fnA_INDX3() {
+func fnA_INDX3(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 	cpu.ar = cpu.ar | (uint16(data) << 8)
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnA_INDY() {
+func fnA_INDY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = A_INDY1
+	cpu.next = fnA_INDY1
 }
 
-func (cpu *MOS6510fn) fnA_INDY1() {
+func fnA_INDY1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.state = A_INDY2
+	cpu.next = fnA_INDY2
 }
 
-func (cpu *MOS6510fn) fnA_INDY2() {
+func fnA_INDY2(cpu *MOS6510) {
 	// Note: Some undocumented functions rely on the value of ar2
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -802,24 +401,24 @@ func (cpu *MOS6510fn) fnA_INDY2() {
 	}
 	cpu.ar2 = uint16(cpu.banks.Read((cpu.ar2 + 1) & 0xff))
 	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.state = A_INDY3
+		cpu.next = fnA_INDY3
 	} else {
-		cpu.state = A_INDY4
+		cpu.next = fnA_INDY4
 	}
 	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (cpu.ar2 << 8)
 }
 
-func (cpu *MOS6510fn) fnA_INDY3() {
+func fnA_INDY3(cpu *MOS6510) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnA_INDY4() {
+func fnA_INDY4(cpu *MOS6510) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -827,10 +426,10 @@ func (cpu *MOS6510fn) fnA_INDY4() {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnAE_ABSX() {
+func fnAE_ABSX(cpu *MOS6510) {
 	// Addressing modes: Fetch effective address, extra cycle on page crossing (-> ar)
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -838,10 +437,10 @@ func (cpu *MOS6510fn) fnAE_ABSX() {
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = AE_ABSX1
+	cpu.next = fnAE_ABSX1
 }
 
-func (cpu *MOS6510fn) fnAE_ABSX1() {
+func fnAE_ABSX1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -850,14 +449,14 @@ func (cpu *MOS6510fn) fnAE_ABSX1() {
 	cpu.pc++
 	if cpu.ar+uint16(cpu.x) < 0x100 {
 		cpu.ar = ((cpu.ar + uint16(cpu.x)) & 0xff) | (uint16(data) << 8)
-		cpu.state = _opTable[cpu.op]
+		cpu.next = _opTable[cpu.op]
 	} else {
 		cpu.ar = ((cpu.ar + uint16(cpu.x)) & 0xff) | (uint16(data) << 8)
-		cpu.state = AE_ABSX2
+		cpu.next = fnAE_ABSX2
 	}
 }
 
-func (cpu *MOS6510fn) fnAE_ABSX2() {
+func fnAE_ABSX2(cpu *MOS6510) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -865,20 +464,20 @@ func (cpu *MOS6510fn) fnAE_ABSX2() {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnAE_ABSY() {
+func fnAE_ABSY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = AE_ABSY1
+	cpu.next = fnAE_ABSY1
 }
 
-func (cpu *MOS6510fn) fnAE_ABSY1() {
+func fnAE_ABSY1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -887,14 +486,14 @@ func (cpu *MOS6510fn) fnAE_ABSY1() {
 	cpu.pc++
 	if cpu.ar+uint16(cpu.y) < 0x100 {
 		cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
-		cpu.state = _opTable[cpu.op]
+		cpu.next = _opTable[cpu.op]
 	} else {
 		cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
-		cpu.state = AE_ABSY2
+		cpu.next = fnAE_ABSY2
 	}
 }
 
-func (cpu *MOS6510fn) fnAE_ABSY2() {
+func fnAE_ABSY2(cpu *MOS6510) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -902,29 +501,29 @@ func (cpu *MOS6510fn) fnAE_ABSY2() {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnAE_INDY() {
+func fnAE_INDY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = AE_INDY1
+	cpu.next = fnAE_INDY1
 }
 
-func (cpu *MOS6510fn) fnAE_INDY1() {
+func fnAE_INDY1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.state = AE_INDY2
+	cpu.next = fnAE_INDY2
 }
 
-func (cpu *MOS6510fn) fnAE_INDY2() {
+func fnAE_INDY2(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -932,14 +531,14 @@ func (cpu *MOS6510fn) fnAE_INDY2() {
 	data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 	if z := cpu.ar + uint16(cpu.y); z < 0x100 {
 		cpu.ar = (z & 0xff) | (uint16(data) << 8)
-		cpu.state = _opTable[cpu.op]
+		cpu.next = _opTable[cpu.op]
 	} else {
 		cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
-		cpu.state = AE_INDY3
+		cpu.next = fnAE_INDY3
 	}
 }
 
-func (cpu *MOS6510fn) fnAE_INDY3() {
+func fnAE_INDY3(cpu *MOS6510) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -947,10 +546,10 @@ func (cpu *MOS6510fn) fnAE_INDY3() {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
-func (cpu *MOS6510fn) fnM_ZERO() {
+func fnM_ZERO(cpu *MOS6510) {
 	// Addressing modes: Read operand, write it back, no extra cycles (-> ar, rmw)
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -958,60 +557,62 @@ func (cpu *MOS6510fn) fnM_ZERO() {
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
 
-func (cpu *MOS6510fn) fnM_ZEROX() {
+func fnM_ZEROX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = M_ZEROX1
+	cpu.next = fnM_ZEROX1
 }
 
-func (cpu *MOS6510fn) fnM_ZEROX1() {
+func fnM_ZEROX1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar = (cpu.ar + uint16(cpu.x)) & 0xff
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
 
-func (cpu *MOS6510fn) fnM_ZEROY() {
+/*
+func fnM_ZEROY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = M_ZEROY1
+	cpu.next = fnM_ZEROY1
 }
 
-func (cpu *MOS6510fn) fnM_ZEROY1() {
+func fnM_ZEROY1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
+*/
 
-func (cpu *MOS6510fn) fnM_ABS() {
+func fnM_ABS(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = M_ABS1
+	cpu.next = fnM_ABS1
 }
 
-func (cpu *MOS6510fn) fnM_ABS1() {
+func fnM_ABS1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1019,20 +620,20 @@ func (cpu *MOS6510fn) fnM_ABS1() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.ar = cpu.ar | (uint16(data) << 8)
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
 
-func (cpu *MOS6510fn) fnM_ABSX() {
+func fnM_ABSX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = M_ABSX1
+	cpu.next = fnM_ABSX1
 }
 
-func (cpu *MOS6510fn) fnM_ABSX1() {
+func fnM_ABSX1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1040,24 +641,24 @@ func (cpu *MOS6510fn) fnM_ABSX1() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.ar+uint16(cpu.x) < 0x100 {
-		cpu.state = M_ABSX2
+		cpu.next = fnM_ABSX2
 	} else {
-		cpu.state = M_ABSX3
+		cpu.next = fnM_ABSX3
 	}
 	cpu.ar = (cpu.ar + uint16(cpu.x)&0xff) | (uint16(data) << 8)
 }
 
-func (cpu *MOS6510fn) fnM_ABSX2() {
+func fnM_ABSX2(cpu *MOS6510) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
 
-func (cpu *MOS6510fn) fnM_ABSX3() {
+func fnM_ABSX3(cpu *MOS6510) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -1065,20 +666,20 @@ func (cpu *MOS6510fn) fnM_ABSX3() {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
 
-func (cpu *MOS6510fn) fnM_ABSY() {
+func fnM_ABSY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = M_ABSY1
+	cpu.next = fnM_ABSY1
 }
 
-func (cpu *MOS6510fn) fnM_ABSY1() {
+func fnM_ABSY1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1086,24 +687,24 @@ func (cpu *MOS6510fn) fnM_ABSY1() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.state = M_ABSY2
+		cpu.next = fnM_ABSY2
 	} else {
-		cpu.state = M_ABSY3
+		cpu.next = fnM_ABSY3
 	}
 	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
 }
 
-func (cpu *MOS6510fn) fnM_ABSY2() {
+func fnM_ABSY2(cpu *MOS6510) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
 
-func (cpu *MOS6510fn) fnM_ABSY3() {
+func fnM_ABSY3(cpu *MOS6510) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -1111,92 +712,92 @@ func (cpu *MOS6510fn) fnM_ABSY3() {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
 
-func (cpu *MOS6510fn) fnM_INDX() {
+func fnM_INDX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = M_INDX1
+	cpu.next = fnM_INDX1
 }
 
-func (cpu *MOS6510fn) fnM_INDX1() {
+func fnM_INDX1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar2)
 	cpu.ar2 = (cpu.ar2 + uint16(cpu.x)) & 0xff
-	cpu.state = M_INDX2
+	cpu.next = fnM_INDX2
 }
 
-func (cpu *MOS6510fn) fnM_INDX2() {
+func fnM_INDX2(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.state = M_INDX3
+	cpu.next = fnM_INDX3
 }
 
-func (cpu *MOS6510fn) fnM_INDX3() {
+func fnM_INDX3(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 	cpu.ar = cpu.ar | (uint16(data) << 8)
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
 
-func (cpu *MOS6510fn) fnM_INDY() {
+func fnM_INDY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = M_INDY1
+	cpu.next = fnM_INDY1
 }
 
-func (cpu *MOS6510fn) fnM_INDY1() {
+func fnM_INDY1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.state = M_INDY2
+	cpu.next = fnM_INDY2
 }
 
-func (cpu *MOS6510fn) fnM_INDY2() {
+func fnM_INDY2(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.state = M_INDY3
+		cpu.next = fnM_INDY3
 	} else {
-		cpu.state = M_INDY4
+		cpu.next = fnM_INDY4
 	}
 	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
 }
 
-func (cpu *MOS6510fn) fnM_INDY3() {
+func fnM_INDY3(cpu *MOS6510) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
 
-func (cpu *MOS6510fn) fnM_INDY4() {
+func fnM_INDY4(cpu *MOS6510) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -1204,25 +805,25 @@ func (cpu *MOS6510fn) fnM_INDY4() {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.state = RMW_DO_IT
+	cpu.next = fnRMW_DO_IT
 }
 
-func (cpu *MOS6510fn) fnRMW_DO_IT() {
+func fnRMW_DO_IT(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.rmw = cpu.banks.Read(cpu.ar)
-	cpu.state = RMW_DO_IT1
+	cpu.next = fnRMW_DO_IT1
 }
 
-func (cpu *MOS6510fn) fnRMW_DO_IT1() {
+func fnRMW_DO_IT1(cpu *MOS6510) {
 	cpu.banks.Write(cpu.ar, cpu.rmw)
-	cpu.state = _opTable[cpu.op]
+	cpu.next = _opTable[cpu.op]
 }
 
 // Load group
-func (cpu *MOS6510fn) fnO_LDA() {
+func fnO_LDA(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1231,10 +832,10 @@ func (cpu *MOS6510fn) fnO_LDA() {
 	cpu.a = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_LDA_I() {
+func fnO_LDA_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1244,10 +845,10 @@ func (cpu *MOS6510fn) fnO_LDA_I() {
 	cpu.a = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_LDX() {
+func fnO_LDX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1256,10 +857,10 @@ func (cpu *MOS6510fn) fnO_LDX() {
 	cpu.x = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_LDX_I() {
+func fnO_LDX_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1269,10 +870,10 @@ func (cpu *MOS6510fn) fnO_LDX_I() {
 	cpu.x = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_LDY() {
+func fnO_LDY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1281,10 +882,10 @@ func (cpu *MOS6510fn) fnO_LDY() {
 	cpu.y = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_LDY_I() {
+func fnO_LDY_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1294,27 +895,27 @@ func (cpu *MOS6510fn) fnO_LDY_I() {
 	cpu.y = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Store group
-func (cpu *MOS6510fn) fnO_STA() {
+func fnO_STA(cpu *MOS6510) {
 	cpu.banks.Write(cpu.ar, cpu.a)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_STX() {
+func fnO_STX(cpu *MOS6510) {
 	cpu.banks.Write(cpu.ar, cpu.x)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_STY() {
+func fnO_STY(cpu *MOS6510) {
 	cpu.banks.Write(cpu.ar, cpu.y)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Transfer group
-func (cpu *MOS6510fn) fnO_TAX() {
+func fnO_TAX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1323,10 +924,10 @@ func (cpu *MOS6510fn) fnO_TAX() {
 	cpu.x = cpu.a
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_TXA() {
+func fnO_TXA(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1335,10 +936,10 @@ func (cpu *MOS6510fn) fnO_TXA() {
 	cpu.a = cpu.x
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_TAY() {
+func fnO_TAY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1347,10 +948,10 @@ func (cpu *MOS6510fn) fnO_TAY() {
 	cpu.y = cpu.a
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_TYA() {
+func fnO_TYA(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1359,10 +960,10 @@ func (cpu *MOS6510fn) fnO_TYA() {
 	cpu.a = cpu.y
 	cpu.nFlag = cpu.y
 	cpu.zFlag = cpu.y
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_TSX() {
+func fnO_TSX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1371,31 +972,31 @@ func (cpu *MOS6510fn) fnO_TSX() {
 	cpu.x = cpu.sp
 	cpu.nFlag = cpu.sp
 	cpu.zFlag = cpu.sp
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_TXS() {
+func fnO_TXS(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.sp = cpu.x
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Arithmetic group
-func (cpu *MOS6510fn) fnO_ADC() {
+func fnO_ADC(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read(cpu.ar)
 	cpu.doADC(data)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ADC_I() {
+func fnO_ADC_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1403,20 +1004,20 @@ func (cpu *MOS6510fn) fnO_ADC_I() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.doADC(data)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_SBC() {
+func fnO_SBC(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read(cpu.ar)
 	cpu.doSBC(data)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_SBC_I() {
+func fnO_SBC_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1424,11 +1025,11 @@ func (cpu *MOS6510fn) fnO_SBC_I() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.doSBC(data)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Increment/decrement group
-func (cpu *MOS6510fn) fnO_INX() {
+func fnO_INX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1437,10 +1038,10 @@ func (cpu *MOS6510fn) fnO_INX() {
 	cpu.x++
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_DEX() {
+func fnO_DEX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1449,10 +1050,10 @@ func (cpu *MOS6510fn) fnO_DEX() {
 	cpu.x--
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_INY() {
+func fnO_INY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1461,10 +1062,10 @@ func (cpu *MOS6510fn) fnO_INY() {
 	cpu.y++
 	cpu.nFlag = cpu.y
 	cpu.zFlag = cpu.y
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_DEY() {
+func fnO_DEY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1473,27 +1074,27 @@ func (cpu *MOS6510fn) fnO_DEY() {
 	cpu.y--
 	cpu.nFlag = cpu.y
 	cpu.zFlag = cpu.y
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_INC() {
+func fnO_INC(cpu *MOS6510) {
 	v := cpu.rmw + 1
 	cpu.nFlag = v
 	cpu.zFlag = v
 	cpu.banks.Write(cpu.ar, v)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_DEC() {
+func fnO_DEC(cpu *MOS6510) {
 	v := cpu.rmw - 1
 	cpu.nFlag = v
 	cpu.zFlag = v
 	cpu.banks.Write(cpu.ar, v)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Logic group
-func (cpu *MOS6510fn) fnO_AND() {
+func fnO_AND(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1501,10 +1102,10 @@ func (cpu *MOS6510fn) fnO_AND() {
 	cpu.a &= cpu.banks.Read(cpu.ar)
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_AND_I() {
+func fnO_AND_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1513,10 +1114,10 @@ func (cpu *MOS6510fn) fnO_AND_I() {
 	cpu.pc++
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ORA() {
+func fnO_ORA(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1524,10 +1125,10 @@ func (cpu *MOS6510fn) fnO_ORA() {
 	cpu.a |= cpu.banks.Read(cpu.ar)
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ORA_I() {
+func fnO_ORA_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1536,10 +1137,10 @@ func (cpu *MOS6510fn) fnO_ORA_I() {
 	cpu.pc++
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_EOR() {
+func fnO_EOR(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1547,10 +1148,10 @@ func (cpu *MOS6510fn) fnO_EOR() {
 	cpu.a ^= cpu.banks.Read(cpu.ar)
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_EOR_I() {
+func fnO_EOR_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1559,11 +1160,11 @@ func (cpu *MOS6510fn) fnO_EOR_I() {
 	cpu.pc++
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Compare group
-func (cpu *MOS6510fn) fnO_CMP() {
+func fnO_CMP(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1573,10 +1174,10 @@ func (cpu *MOS6510fn) fnO_CMP() {
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
 	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_CMP_I() {
+func fnO_CMP_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1587,10 +1188,10 @@ func (cpu *MOS6510fn) fnO_CMP_I() {
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
 	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_CPX() {
+func fnO_CPX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1600,10 +1201,10 @@ func (cpu *MOS6510fn) fnO_CPX() {
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
 	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_CPX_I() {
+func fnO_CPX_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1614,10 +1215,10 @@ func (cpu *MOS6510fn) fnO_CPX_I() {
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
 	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_CPY() {
+func fnO_CPY(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1627,10 +1228,10 @@ func (cpu *MOS6510fn) fnO_CPY() {
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
 	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_CPY_I() {
+func fnO_CPY_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1641,11 +1242,11 @@ func (cpu *MOS6510fn) fnO_CPY_I() {
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
 	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Bit-test group
-func (cpu *MOS6510fn) fnO_BIT() {
+func fnO_BIT(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1654,20 +1255,20 @@ func (cpu *MOS6510fn) fnO_BIT() {
 	cpu.zFlag = cpu.a & data
 	cpu.nFlag = data
 	cpu.vFlag = data & 0x40
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Shift/rotate group
-func (cpu *MOS6510fn) fnO_ASL() {
+func fnO_ASL(cpu *MOS6510) {
 	cpu.cFlag = cpu.rmw & 0x80
 	v := cpu.rmw << 1
 	cpu.nFlag = v
 	cpu.zFlag = v
 	cpu.banks.Write(cpu.ar, v)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ASL_A() {
+func fnO_ASL_A(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1677,19 +1278,19 @@ func (cpu *MOS6510fn) fnO_ASL_A() {
 	cpu.a <<= 1
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_LSR() {
+func fnO_LSR(cpu *MOS6510) {
 	cpu.cFlag = cpu.rmw & 0x01
 	v := cpu.rmw >> 1
 	cpu.nFlag = v
 	cpu.zFlag = v
 	cpu.banks.Write(cpu.ar, v)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_LSR_A() {
+func fnO_LSR_A(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1699,10 +1300,10 @@ func (cpu *MOS6510fn) fnO_LSR_A() {
 	cpu.a >>= 1
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ROL() {
+func fnO_ROL(cpu *MOS6510) {
 	var t uint8
 	if cpu.cFlag != 0 {
 		t = (cpu.rmw << 1) | 0x01
@@ -1713,10 +1314,10 @@ func (cpu *MOS6510fn) fnO_ROL() {
 	cpu.zFlag = t
 	cpu.banks.Write(cpu.ar, t)
 	cpu.cFlag = cpu.rmw & 0x80
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ROL_A() {
+func fnO_ROL_A(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1731,10 +1332,10 @@ func (cpu *MOS6510fn) fnO_ROL_A() {
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
 	cpu.cFlag = data
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ROR() {
+func fnO_ROR(cpu *MOS6510) {
 	var t uint8
 	if cpu.cFlag != 0 {
 		t = (cpu.rmw >> 1) | 0x80
@@ -1745,10 +1346,10 @@ func (cpu *MOS6510fn) fnO_ROR() {
 	cpu.zFlag = t
 	cpu.banks.Write(cpu.ar, t)
 	cpu.cFlag = cpu.rmw & 0x01
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ROR_A() {
+func fnO_ROR_A(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1763,45 +1364,45 @@ func (cpu *MOS6510fn) fnO_ROR_A() {
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
 	cpu.cFlag = data
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Stack group
-func (cpu *MOS6510fn) fnO_PHA() {
+func fnO_PHA(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = O_PHA1
+	cpu.next = fnO_PHA1
 }
 
-func (cpu *MOS6510fn) fnO_PHA1() {
+func fnO_PHA1(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, cpu.a)
 	cpu.sp--
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_PLA() {
+func fnO_PLA(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = O_PLA1
+	cpu.next = fnO_PLA1
 }
 
-func (cpu *MOS6510fn) fnO_PLA1() {
+func fnO_PLA1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.sp++
-	cpu.state = O_PLA2
+	cpu.next = fnO_PLA2
 }
 
-func (cpu *MOS6510fn) fnO_PLA2() {
+func fnO_PLA2(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1809,45 +1410,45 @@ func (cpu *MOS6510fn) fnO_PLA2() {
 	cpu.a = cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_PHP() {
+func fnO_PHP(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = O_PHP1
+	cpu.next = fnO_PHP1
 }
 
-func (cpu *MOS6510fn) fnO_PHP1() {
+func fnO_PHP1(cpu *MOS6510) {
 	data := cpu.pushFlags(true)
 	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 	cpu.sp--
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_PLP() {
+func fnO_PLP(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = O_PLP1
+	cpu.next = fnO_PLP1
 }
 
-func (cpu *MOS6510fn) fnO_PLP1() {
+func fnO_PLP1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.sp++
-	cpu.state = O_PLP2
+	cpu.next = fnO_PLP2
 }
 
-func (cpu *MOS6510fn) fnO_PLP2() {
+func fnO_PLP2(cpu *MOS6510) {
 	iFlagPrev := cpu.iFlag
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -1860,81 +1461,81 @@ func (cpu *MOS6510fn) fnO_PLP2() {
 	} else if iFlagPrev != 0 && cpu.iFlag == 0 {
 		cpu.opFlags |= OpFlagIrqEnabled
 	}
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Jump/branch group
-func (cpu *MOS6510fn) fnO_JMP() {
+func fnO_JMP(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = O_JMP1
+	cpu.next = fnO_JMP1
 }
 
-func (cpu *MOS6510fn) fnO_JMP1() {
+func fnO_JMP1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc = (uint16(data) << 8) | cpu.ar
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_JMP_I() {
+func fnO_JMP_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.pc = uint16(cpu.banks.Read(cpu.ar))
-	cpu.state = O_JMP_I1
+	cpu.next = fnO_JMP_I1
 }
 
-func (cpu *MOS6510fn) fnO_JMP_I1() {
+func fnO_JMP_I1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read(((cpu.ar + 1) & 0xff) | (cpu.ar & 0xff00))
 	cpu.pc |= uint16(data) << 8
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_JSR() {
+func fnO_JSR(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.state = O_JSR1
+	cpu.next = fnO_JSR1
 }
 
-func (cpu *MOS6510fn) fnO_JSR1() {
+func fnO_JSR1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(uint16(cpu.sp) | 0x100)
-	cpu.state = O_JSR2
+	cpu.next = fnO_JSR2
 }
 
-func (cpu *MOS6510fn) fnO_JSR2() {
+func fnO_JSR2(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 	cpu.sp--
-	cpu.state = O_JSR3
+	cpu.next = fnO_JSR3
 }
 
-func (cpu *MOS6510fn) fnO_JSR3() {
+func fnO_JSR3(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 	cpu.sp--
-	cpu.state = O_JSR4
+	cpu.next = fnO_JSR4
 }
 
-func (cpu *MOS6510fn) fnO_JSR4() {
+func fnO_JSR4(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1942,78 +1543,78 @@ func (cpu *MOS6510fn) fnO_JSR4() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.pc = cpu.ar | (uint16(data) << 8)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_RTS() {
+func fnO_RTS(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = O_RTS1
+	cpu.next = fnO_RTS1
 }
 
-func (cpu *MOS6510fn) fnO_RTS1() {
+func fnO_RTS1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.sp++
-	cpu.state = O_RTS2
+	cpu.next = fnO_RTS2
 }
 
-func (cpu *MOS6510fn) fnO_RTS2() {
+func fnO_RTS2(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.pc = uint16(cpu.banks.Read(uint16(cpu.sp) | 0x100))
 	cpu.sp++
-	cpu.state = O_RTS3
+	cpu.next = fnO_RTS3
 }
 
-func (cpu *MOS6510fn) fnO_RTS3() {
+func fnO_RTS3(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.pc |= uint16(data) << 8
-	cpu.state = O_RTS4
+	cpu.next = fnO_RTS4
 }
 
-func (cpu *MOS6510fn) fnO_RTS4() {
+func fnO_RTS4(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.pc++
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_RTI() {
+func fnO_RTI(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = O_RTI1
+	cpu.next = fnO_RTI1
 }
 
-func (cpu *MOS6510fn) fnO_RTI1() {
+func fnO_RTI1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.sp++
-	cpu.state = O_RTI2
+	cpu.next = fnO_RTI2
 }
 
-func (cpu *MOS6510fn) fnO_RTI2() {
+func fnO_RTI2(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2021,85 +1622,85 @@ func (cpu *MOS6510fn) fnO_RTI2() {
 	data := cpu.banks.Read(uint16(cpu.sp) | 0x0100)
 	cpu.popFlags(data)
 	cpu.sp++
-	cpu.state = O_RTI3
+	cpu.next = fnO_RTI3
 }
 
-func (cpu *MOS6510fn) fnO_RTI3() {
+func fnO_RTI3(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.pc = uint16(cpu.banks.Read(uint16(cpu.sp) | 0x100))
 	cpu.sp++
-	cpu.state = O_RTI4
+	cpu.next = fnO_RTI4
 }
 
-func (cpu *MOS6510fn) fnO_RTI4() {
+func fnO_RTI4(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.pc |= uint16(data) << 8
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_BRK() {
+func fnO_BRK(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.pc++
-	cpu.state = O_BRK1
+	cpu.next = fnO_BRK1
 }
 
-func (cpu *MOS6510fn) fnO_BRK1() {
+func fnO_BRK1(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 	cpu.sp--
-	cpu.state = O_BRK2
+	cpu.next = fnO_BRK2
 }
 
-func (cpu *MOS6510fn) fnO_BRK2() {
+func fnO_BRK2(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 	cpu.sp--
-	cpu.state = O_BRK3
+	cpu.next = fnO_BRK3
 }
 
-func (cpu *MOS6510fn) fnO_BRK3() {
+func fnO_BRK3(cpu *MOS6510) {
 	data := cpu.pushFlags(true)
 	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 	cpu.sp--
 	cpu.iFlag = 1
 	// BRK interrupted by NMI?
 	if cpu.pic.HasNMI() {
-		cpu.pic.ClearNMI()   // Simulate an edge-triggered input
-		cpu.state = I_NMI_15 // Jump to NMI sequence
+		cpu.pic.ClearNMI()    // Simulate an edge-triggered input
+		cpu.next = fnI_NMI_15 // Jump to NMI sequence
 	} else {
-		cpu.state = O_BRK4
+		cpu.next = fnO_BRK4
 	}
 }
 
-func (cpu *MOS6510fn) fnO_BRK4() {
+func fnO_BRK4(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.pc = uint16(cpu.banks.Read(0xfffe))
-	cpu.state = O_BRK5
+	cpu.next = fnO_BRK5
 }
 
-func (cpu *MOS6510fn) fnO_BRK5() {
+func fnO_BRK5(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	data := cpu.banks.Read(0xffff)
 	cpu.pc |= uint16(data) << 8
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_BCS() {
+func fnO_BCS(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2107,13 +1708,13 @@ func (cpu *MOS6510fn) fnO_BCS() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.cFlag == 0 {
-		cpu.state = STATE_LAST
+		cpu.next = fnStateLast
 	} else {
 		cpu.branch(data)
 	}
 }
 
-func (cpu *MOS6510fn) fnO_BCC() {
+func fnO_BCC(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2121,13 +1722,13 @@ func (cpu *MOS6510fn) fnO_BCC() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.cFlag != 0 {
-		cpu.state = STATE_LAST
+		cpu.next = fnStateLast
 	} else {
 		cpu.branch(data)
 	}
 }
 
-func (cpu *MOS6510fn) fnO_BEQ() {
+func fnO_BEQ(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2135,13 +1736,13 @@ func (cpu *MOS6510fn) fnO_BEQ() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.zFlag != 0 {
-		cpu.state = STATE_LAST
+		cpu.next = fnStateLast
 	} else {
 		cpu.branch(data)
 	}
 }
 
-func (cpu *MOS6510fn) fnO_BNE() {
+func fnO_BNE(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2149,13 +1750,13 @@ func (cpu *MOS6510fn) fnO_BNE() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.zFlag == 0 {
-		cpu.state = STATE_LAST
+		cpu.next = fnStateLast
 	} else {
 		cpu.branch(data)
 	}
 }
 
-func (cpu *MOS6510fn) fnO_BVS() {
+func fnO_BVS(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2166,13 +1767,13 @@ func (cpu *MOS6510fn) fnO_BVS() {
 		cpu.vFlag = 1
 	}
 	if cpu.vFlag == 0 {
-		cpu.state = STATE_LAST
+		cpu.next = fnStateLast
 	} else {
 		cpu.branch(data)
 	}
 }
 
-func (cpu *MOS6510fn) fnO_BVC() {
+func fnO_BVC(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2183,13 +1784,13 @@ func (cpu *MOS6510fn) fnO_BVC() {
 		cpu.vFlag = 1
 	}
 	if cpu.vFlag != 0 {
-		cpu.state = STATE_LAST
+		cpu.next = fnStateLast
 	} else {
 		cpu.branch(data)
 	}
 }
 
-func (cpu *MOS6510fn) fnO_BMI() {
+func fnO_BMI(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2197,13 +1798,13 @@ func (cpu *MOS6510fn) fnO_BMI() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if (cpu.nFlag & 0x80) == 0 {
-		cpu.state = STATE_LAST
+		cpu.next = fnStateLast
 	} else {
 		cpu.branch(data)
 	}
 }
 
-func (cpu *MOS6510fn) fnO_BPL() {
+func fnO_BPL(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2211,13 +1812,13 @@ func (cpu *MOS6510fn) fnO_BPL() {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if (cpu.nFlag & 0x80) != 0 {
-		cpu.state = STATE_LAST
+		cpu.next = fnStateLast
 	} else {
 		cpu.branch(data)
 	}
 }
 
-func (cpu *MOS6510fn) fnO_BRANCH_NP() {
+func fnO_BRANCH_NP(cpu *MOS6510) {
 	// No page crossed
 	cpu.opFlags |= OpFlagIntDelayed
 	if cpu.rdyLow {
@@ -2226,10 +1827,10 @@ func (cpu *MOS6510fn) fnO_BRANCH_NP() {
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.pc = cpu.ar
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_BRANCH_BP() {
+func fnO_BRANCH_BP(cpu *MOS6510) {
 	// Page crossed, branch backwards
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -2237,19 +1838,19 @@ func (cpu *MOS6510fn) fnO_BRANCH_BP() {
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.pc = cpu.ar
-	cpu.state = O_BRANCH_BP1
+	cpu.next = fnO_BRANCH_BP1
 }
 
-func (cpu *MOS6510fn) fnO_BRANCH_BP1() {
+func fnO_BRANCH_BP1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc + 0x100)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_BRANCH_FP() {
+func fnO_BRANCH_FP(cpu *MOS6510) {
 	// Page crossed, branch forwards
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -2257,60 +1858,60 @@ func (cpu *MOS6510fn) fnO_BRANCH_FP() {
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.pc = cpu.ar
-	cpu.state = O_BRANCH_FP1
+	cpu.next = fnO_BRANCH_FP1
 }
 
-func (cpu *MOS6510fn) fnO_BRANCH_FP1() {
+func fnO_BRANCH_FP1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc - 0x100)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Flag group
-func (cpu *MOS6510fn) fnO_SEC() {
+func fnO_SEC(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.cFlag = 1
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_CLC() {
+func fnO_CLC(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.cFlag = 0
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_SED() {
+func fnO_SED(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.dFlag = 1
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_CLD() {
+func fnO_CLD(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.dFlag = 0
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_SEI() {
+func fnO_SEI(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2320,10 +1921,10 @@ func (cpu *MOS6510fn) fnO_SEI() {
 		cpu.opFlags |= OpFlagIrqDisabled
 	}
 	cpu.iFlag = 1
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_CLI() {
+func fnO_CLI(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2333,53 +1934,53 @@ func (cpu *MOS6510fn) fnO_CLI() {
 		cpu.opFlags |= OpFlagIrqEnabled
 	}
 	cpu.iFlag = 0
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_CLV() {
+func fnO_CLV(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.vFlag = 0
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // NOP group
-func (cpu *MOS6510fn) fnO_NOP() {
+func fnO_NOP(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Undocumented functions start here
 
 // NOP group
-func (cpu *MOS6510fn) fnO_NOP_I() {
+func fnO_NOP_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
 	cpu.pc++
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_NOP_A() {
+func fnO_NOP_A(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Load A/X group
-func (cpu *MOS6510fn) fnO_LAX() {
+func fnO_LAX(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2388,28 +1989,28 @@ func (cpu *MOS6510fn) fnO_LAX() {
 	cpu.a = cpu.x
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Store A/X group
-func (cpu *MOS6510fn) fnO_SAX() {
+func fnO_SAX(cpu *MOS6510) {
 	cpu.banks.Write(cpu.ar, cpu.a&cpu.x)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // ASL/ORA group
-func (cpu *MOS6510fn) fnO_SLO() {
+func fnO_SLO(cpu *MOS6510) {
 	cpu.cFlag = cpu.rmw & 0x80
 	cpu.rmw <<= 1
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.a |= cpu.rmw
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // ROL/AND group
-func (cpu *MOS6510fn) fnO_RLA() {
+func fnO_RLA(cpu *MOS6510) {
 	tmp := cpu.rmw & 0x80
 	if cpu.cFlag != 0 {
 		cpu.rmw = (cpu.rmw << 1) | 0x01
@@ -2421,22 +2022,22 @@ func (cpu *MOS6510fn) fnO_RLA() {
 	cpu.a &= cpu.rmw
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // LSR/EOR group
-func (cpu *MOS6510fn) fnO_SRE() {
+func fnO_SRE(cpu *MOS6510) {
 	cpu.cFlag = cpu.rmw & 0x01
 	cpu.rmw >>= 1
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.a ^= cpu.rmw
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // ROR/ADC group
-func (cpu *MOS6510fn) fnO_RRA() {
+func fnO_RRA(cpu *MOS6510) {
 	tmp := cpu.rmw & 0x01
 	if cpu.cFlag != 0 {
 		cpu.rmw = (cpu.rmw >> 1) | 0x80
@@ -2446,30 +2047,30 @@ func (cpu *MOS6510fn) fnO_RRA() {
 	cpu.cFlag = tmp
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.doADC(cpu.rmw)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // DEC/CMP group
-func (cpu *MOS6510fn) fnO_DCP() {
+func fnO_DCP(cpu *MOS6510) {
 	cpu.rmw--
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.ar = uint16(cpu.a) - uint16(cpu.rmw)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
 	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // INC/SBC group
-func (cpu *MOS6510fn) fnO_ISB() {
+func fnO_ISB(cpu *MOS6510) {
 	cpu.rmw++
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.doSBC(cpu.rmw)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
 // Complex functions
-func (cpu *MOS6510fn) fnO_ANC_I() {
+func fnO_ANC_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2479,10 +2080,10 @@ func (cpu *MOS6510fn) fnO_ANC_I() {
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
 	cpu.cFlag = cpu.nFlag & 0x80
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ASR_I() {
+func fnO_ASR_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2493,10 +2094,10 @@ func (cpu *MOS6510fn) fnO_ASR_I() {
 	cpu.a >>= 1
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ARR_I() {
+func fnO_ARR_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2531,10 +2132,10 @@ func (cpu *MOS6510fn) fnO_ARR_I() {
 			cpu.a += 0x60
 		}
 	}
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_ANE_I() {
+func fnO_ANE_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2544,10 +2145,10 @@ func (cpu *MOS6510fn) fnO_ANE_I() {
 	cpu.a = (cpu.a | 0xee) & cpu.x & data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_LXA_I() {
+func fnO_LXA_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2558,10 +2159,10 @@ func (cpu *MOS6510fn) fnO_LXA_I() {
 	cpu.a = cpu.x
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_SBX_I() {
+func fnO_SBX_I(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2573,10 +2174,10 @@ func (cpu *MOS6510fn) fnO_SBX_I() {
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
 	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_LAS() {
+func fnO_LAS(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2587,54 +2188,34 @@ func (cpu *MOS6510fn) fnO_LAS() {
 	cpu.a = cpu.x
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_SHS() { // ar2 contains the high byte of the operand address
+func fnO_SHS(cpu *MOS6510) {
+	// ar2 contains the high byte of the operand address
 	cpu.sp = cpu.a & cpu.x
 	cpu.banks.Write(cpu.ar, uint8((cpu.ar2+1)&uint16(cpu.sp)))
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_SHY() { // ar2 contains the high byte of the operand address
+func fnO_SHY(cpu *MOS6510) {
+	// ar2 contains the high byte of the operand address
 	cpu.banks.Write(cpu.ar, uint8(uint16(cpu.y)&(cpu.ar2+1)))
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_SHX() { // ar2 contains the high byte of the operand address
+func fnO_SHX(cpu *MOS6510) {
+	// ar2 contains the high byte of the operand address
 	cpu.banks.Write(cpu.ar, uint8(uint16(cpu.x)&(cpu.ar2+1)))
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnO_SHA() {
+func fnO_SHA(cpu *MOS6510) {
 	// ar2 contains the high byte of the operand address
 	cpu.banks.Write(cpu.ar, uint8(uint16(cpu.a)&uint16(cpu.x)&(cpu.ar2+1)))
-	cpu.state = STATE_LAST
+	cpu.next = fnStateLast
 }
 
-func (cpu *MOS6510fn) fnIllegalOp() {
+func fnI_ILL_OP(cpu *MOS6510) {
 	cpu.illegalOp(cpu.op, cpu.pc-1)
-}
-
-func (cpu *MOS6510fn) printRegisters(qCycle uint64, baLow bool) {
-	fmt.Printf("CPU] %d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d\n",
-		qCycle,
-		cpu.state,
-		flag.BoolToUint8(baLow),
-		cpu.nFlag,
-		cpu.zFlag,
-		cpu.vFlag,
-		cpu.dFlag,
-		cpu.iFlag,
-		cpu.cFlag,
-		cpu.a,
-		cpu.x,
-		cpu.y,
-		cpu.sp,
-		cpu.pc,
-		cpu.op,
-		cpu.ar,
-		cpu.ar2,
-		cpu.rmw)
-	//cpu.extConfig)
 }
