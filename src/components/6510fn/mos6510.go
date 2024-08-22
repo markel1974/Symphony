@@ -24,8 +24,7 @@ func NewMOS6510fn(id string) *MOS6510 {
 }
 
 func (cpu *MOS6510) Setup(intr IPic, banks IBanks) {
-	cpu.core = NewCore(intr)
-	cpu.core.banks = banks
+	cpu.core = NewCore(intr, banks)
 }
 
 func (cpu *MOS6510) Reset() {

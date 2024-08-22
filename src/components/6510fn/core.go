@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+//https://www.masswerk.at/6502/6502_instruction_set.html
+
 type Core struct {
 	banks          IBanks
 	pic            IPic
@@ -33,9 +35,9 @@ type Core struct {
 	overflowBranch func() bool
 }
 
-func NewCore(pic IPic) *Core {
+func NewCore(pic IPic, banks IBanks) *Core {
 	regs := &Core{
-		banks:          nil,
+		banks:          banks,
 		pic:            pic,
 		a:              0,
 		x:              0,
