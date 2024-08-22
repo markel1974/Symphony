@@ -1,13 +1,13 @@
 package mos6510fn
 
 // _modeTable Addressing mode for each opcode (first part of execution)
-var _modeTable []func(mos6510 *MOS6510)
+var _modeTable []func(*Core)
 
 // _opTable Operation for each opcode (second part of execution)
-var _opTable []func(*MOS6510)
+var _opTable []func(*Core)
 
 func init() {
-	_modeTable = []func(mos6510 *MOS6510){
+	_modeTable = []func(*Core){
 		fnO_BRK, fnA_INDX, fnI_ILL_OP, fnM_INDX, fnA_ZERO, fnA_ZERO, fnM_ZERO, fnM_ZERO, // 00
 		fnO_PHP, fnO_ORA_I, fnO_ASL_A, fnO_ANC_I, fnA_ABS, fnA_ABS, fnM_ABS, fnM_ABS,
 		fnO_BPL, fnAE_INDY, fnI_ILL_OP, fnM_INDY, fnA_ZEROX, fnA_ZEROX, fnM_ZEROX, fnM_ZEROX, // 10
@@ -42,7 +42,7 @@ func init() {
 		fnO_SED, fnAE_ABSY, fnO_NOP, fnM_ABSY, fnAE_ABSX, fnAE_ABSX, fnM_ABSX, fnM_ABSX,
 	}
 
-	_opTable = []func(*MOS6510){
+	_opTable = []func(*Core){
 		fnI_ILL_OP, fnO_ORA, fnI_ILL_OP, fnO_SLO, fnO_NOP_A, fnO_ORA, fnO_ASL, fnO_SLO, // 00
 		fnI_ILL_OP, fnI_ILL_OP, fnI_ILL_OP, fnI_ILL_OP, fnO_NOP_A, fnO_ORA, fnO_ASL, fnO_SLO,
 		fnI_ILL_OP, fnO_ORA, fnI_ILL_OP, fnO_SLO, fnO_NOP_A, fnO_ORA, fnO_ASL, fnO_SLO, // 10
