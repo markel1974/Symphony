@@ -21,8 +21,8 @@ func fnStateLast(cpu *MOS6510) {
 			if (cpu.pic.GetNMICycleDistance(delay)) >= 2 {
 				// Edge-triggered
 				cpu.pic.ClearNMI()
-				cpu.next = fnI_NMI_10
 				cpu.opFlags = 0
+				cpu.next = fnNMI
 				cpu.next(cpu)
 				return
 			}
@@ -34,8 +34,8 @@ func fnStateLast(cpu *MOS6510) {
 					delay = 1
 				}
 				if (cpu.pic.GetIrqCycleDistance(delay)) >= 2 {
-					cpu.next = fnI_IRQ_8
 					cpu.opFlags = 0
+					cpu.next = fnIRQ
 					cpu.next(cpu)
 					return
 				}
@@ -54,54 +54,54 @@ func fnStateLast(cpu *MOS6510) {
 }
 
 // IRQ
-func fnI_IRQ_8(cpu *MOS6510) {
+func fnIRQ(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.next = fnI_IRQ_9
+	cpu.next = fnIRQ1
 }
 
-func fnI_IRQ_9(cpu *MOS6510) {
+func fnIRQ1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.next = fnI_IRQ_A
+	cpu.next = fnIRQ2
 }
 
-func fnI_IRQ_A(cpu *MOS6510) {
+func fnIRQ2(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 	cpu.sp--
-	cpu.next = fnI_IRQ_B
+	cpu.next = fnIRQ3
 }
 
-func fnI_IRQ_B(cpu *MOS6510) {
+func fnIRQ3(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 	cpu.sp--
-	cpu.next = fnI_IRQ_C
+	cpu.next = fnIRQ4
 }
 
-func fnI_IRQ_C(cpu *MOS6510) {
+func fnIRQ4(cpu *MOS6510) {
 	data := cpu.pushFlags(false)
 	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 	cpu.sp--
 	cpu.iFlag = 1
-	cpu.next = fnI_IRQ_D
+	cpu.next = fnIRQ5
 }
 
-func fnI_IRQ_D(cpu *MOS6510) {
+func fnIRQ5(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.pc = uint16(cpu.banks.Read(0xfffe))
-	cpu.next = fnI_IRQ_E
+	cpu.next = fnIRQ6
 }
 
-func fnI_IRQ_E(cpu *MOS6510) {
+func fnIRQ6(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -112,54 +112,54 @@ func fnI_IRQ_E(cpu *MOS6510) {
 }
 
 // NMI
-func fnI_NMI_10(cpu *MOS6510) {
+func fnNMI(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.next = fnI_NMI_11
+	cpu.next = fnNMI1
 }
 
-func fnI_NMI_11(cpu *MOS6510) {
+func fnNMI1(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.pc)
-	cpu.next = fnI_NMI_12
+	cpu.next = fnNMI2
 }
 
-func fnI_NMI_12(cpu *MOS6510) {
+func fnNMI2(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 	cpu.sp--
-	cpu.next = fnI_NMI_13
+	cpu.next = fnNMI3
 }
 
-func fnI_NMI_13(cpu *MOS6510) {
+func fnNMI3(cpu *MOS6510) {
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 	cpu.sp--
-	cpu.next = fnI_NMI_14
+	cpu.next = fnNMI4
 }
 
-func fnI_NMI_14(cpu *MOS6510) {
+func fnNMI4(cpu *MOS6510) {
 	data := cpu.pushFlags(false)
 	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 	cpu.sp--
 	cpu.iFlag = 1
-	cpu.next = fnI_NMI_15
+	cpu.next = fnNMI5
 }
 
-func fnI_NMI_15(cpu *MOS6510) {
+func fnNMI5(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.pc = uint16(cpu.banks.Read(0xfffa))
-	cpu.next = fnI_NMI_16
+	cpu.next = fnNMI6
 }
 
-func fnI_NMI_16(cpu *MOS6510) {
+func fnNMI6(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -557,7 +557,7 @@ func fnM_ZERO(cpu *MOS6510) {
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = fnRMW_DO_IT
+	cpu.next = fnRMW
 }
 
 func fnM_ZEROX(cpu *MOS6510) {
@@ -577,7 +577,7 @@ func fnM_ZEROX1(cpu *MOS6510) {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar = (cpu.ar + uint16(cpu.x)) & 0xff
-	cpu.next = fnRMW_DO_IT
+	cpu.next = fnRMW
 }
 
 /*
@@ -620,7 +620,7 @@ func fnM_ABS1(cpu *MOS6510) {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.ar = cpu.ar | (uint16(data) << 8)
-	cpu.next = fnRMW_DO_IT
+	cpu.next = fnRMW
 }
 
 func fnM_ABSX(cpu *MOS6510) {
@@ -655,7 +655,7 @@ func fnM_ABSX2(cpu *MOS6510) {
 		return
 	}
 	cpu.banks.Read(cpu.ar)
-	cpu.next = fnRMW_DO_IT
+	cpu.next = fnRMW
 }
 
 func fnM_ABSX3(cpu *MOS6510) {
@@ -666,7 +666,7 @@ func fnM_ABSX3(cpu *MOS6510) {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.next = fnRMW_DO_IT
+	cpu.next = fnRMW
 }
 
 func fnM_ABSY(cpu *MOS6510) {
@@ -701,7 +701,7 @@ func fnM_ABSY2(cpu *MOS6510) {
 		return
 	}
 	cpu.banks.Read(cpu.ar)
-	cpu.next = fnRMW_DO_IT
+	cpu.next = fnRMW
 }
 
 func fnM_ABSY3(cpu *MOS6510) {
@@ -712,7 +712,7 @@ func fnM_ABSY3(cpu *MOS6510) {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.next = fnRMW_DO_IT
+	cpu.next = fnRMW
 }
 
 func fnM_INDX(cpu *MOS6510) {
@@ -751,7 +751,7 @@ func fnM_INDX3(cpu *MOS6510) {
 	}
 	data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 	cpu.ar = cpu.ar | (uint16(data) << 8)
-	cpu.next = fnRMW_DO_IT
+	cpu.next = fnRMW
 }
 
 func fnM_INDY(cpu *MOS6510) {
@@ -794,7 +794,7 @@ func fnM_INDY3(cpu *MOS6510) {
 		return
 	}
 	cpu.banks.Read(cpu.ar)
-	cpu.next = fnRMW_DO_IT
+	cpu.next = fnRMW
 }
 
 func fnM_INDY4(cpu *MOS6510) {
@@ -805,19 +805,19 @@ func fnM_INDY4(cpu *MOS6510) {
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar += 0x100
-	cpu.next = fnRMW_DO_IT
+	cpu.next = fnRMW
 }
 
-func fnRMW_DO_IT(cpu *MOS6510) {
+func fnRMW(cpu *MOS6510) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.rmw = cpu.banks.Read(cpu.ar)
-	cpu.next = fnRMW_DO_IT1
+	cpu.next = fnRMW1
 }
 
-func fnRMW_DO_IT1(cpu *MOS6510) {
+func fnRMW1(cpu *MOS6510) {
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.next = _opTable[cpu.op]
 }
@@ -1674,8 +1674,8 @@ func fnO_BRK3(cpu *MOS6510) {
 	cpu.iFlag = 1
 	// BRK interrupted by NMI?
 	if cpu.pic.HasNMI() {
-		cpu.pic.ClearNMI()    // Simulate an edge-triggered input
-		cpu.next = fnI_NMI_15 // Jump to NMI sequence
+		cpu.pic.ClearNMI() // Simulate an edge-triggered input
+		cpu.next = fnNMI5  // Jump to NMI sequence
 	} else {
 		cpu.next = fnO_BRK4
 	}
