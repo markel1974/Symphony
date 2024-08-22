@@ -64,7 +64,7 @@ func NewCore(pic IPic, banks IBanks) *Core {
 func (cpu *Core) reset() {
 	// Read reset vector
 	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8)
-	cpu.next = fnInit
+	cpu.next = instInit
 	cpu.opFlags = 0
 }
 
@@ -104,12 +104,12 @@ func (cpu *Core) branch(data uint8) {
 	cpu.ar = cpu.pc + uint16(int8(data))
 	if (cpu.ar >> 8) != (cpu.pc >> 8) {
 		if data&0x80 != 0 {
-			cpu.next = fnO_BRANCH_BP
+			cpu.next = instO_BRANCH_BP
 		} else {
-			cpu.next = fnO_BRANCH_FP
+			cpu.next = instO_BRANCH_FP
 		}
 	} else {
-		cpu.next = fnO_BRANCH_NP
+		cpu.next = instO_BRANCH_NP
 	}
 }
 
