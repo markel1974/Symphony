@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/board/iec"
 	"github.com/markel1974/c64emu/src/board/keyboard"
 	"github.com/markel1974/c64emu/src/board/prg"
-	"github.com/markel1974/c64emu/src/components/6510"
+	"github.com/markel1974/c64emu/src/components/6510fn"
 	"github.com/markel1974/c64emu/src/components/cia"
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/sid"
@@ -31,12 +31,12 @@ const (
 type Board struct {
 	db           vic.IDisplayBuffer
 	quartz       *quartz.Quartz
-	cpu          *mos6510.MOS6510
+	cpu          *mos6510fn.MOS6510
 	vic          *vic.MOS6569
 	sid          *sid.MOS6581
 	cia1         *cia.MOS6526A
 	cia2         *cia.MOS6526B
-	pic          *mos6510.Pic
+	pic          *mos6510fn.Pic
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
 	cfg          *config.Config
@@ -83,9 +83,9 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
-	s.pic = mos6510.NewPic()
+	s.pic = mos6510fn.NewPic()
 	s.iec = iec.NewIEC()
-	s.cpu = mos6510.NewMOS6510("c64")
+	s.cpu = mos6510fn.NewMOS6510fn("c64")
 	s.vic = vic.NewMOS6569(s.db)
 	s.sid = sid.NewMOS6581()
 	s.cia1 = cia.NewMOS6526A()
@@ -264,6 +264,9 @@ func (s *Board) KeyboardSetCapital(pressed bool) {
 	if !pressed {
 		return
 	}
+
+	//TODO RIMUOVERE
+	s.cfg.SetDriveOpt("/Users/tinmr305/Downloads/c64carts/mw4_2.d64", 0)
 	//TODO RIMUOVERE
 	//s.loadPRG(s.cfg.GetPrg())
 	//return

@@ -26,6 +26,7 @@ const (
 type FSDrive struct {
 	iec            virtualdrive.IIec
 	commands       *virtualdrive.Commands
+	deviceId       uint8
 	deviceNumber   uint8
 	path           string
 	respond        *Queue
@@ -41,9 +42,10 @@ type FSDrive struct {
 	//test           int64
 }
 
-func New(iec virtualdrive.IIec, deviceNumber uint8, path string) *FSDrive {
+func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, path string) *FSDrive {
 	v := &FSDrive{
 		iec:            iec,
+		deviceId:       deviceId,
 		deviceNumber:   deviceNumber,
 		path:           path,
 		respond:        NewQueue(512),

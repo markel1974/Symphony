@@ -18,12 +18,14 @@ type Config struct {
 	DisableCartridgeAutostart bool
 	changed                   *signals.Signal
 	prg                       string
+	driveIndex                int
 }
 
 func New() *Config {
 	return &Config{
 		cartridges:                nil,
 		DisableCartridgeAutostart: false,
+		driveIndex:                0,
 		changed:                   signals.NewSignal(),
 	}
 }
@@ -38,6 +40,22 @@ func (p *Config) AddDrive(kind string, opts string) {
 
 func (p *Config) GetDrives() []Drive {
 	return p.drives
+}
+
+func (p *Config) GetDrivesOpt(id uint8) (string, bool) {
+	if int(id) < len(p.drives) {
+		return p.drives[id].Opts, true
+	}
+	return "", false
+}
+
+func (p *Config) SetDriveOpt(opt string, id uint8) bool {
+	if int(id) < len(p.drives) {
+		p.drives[id].Opts = opt
+		p.changed.Emit()
+		return true
+	}
+	return false
 }
 
 func (p *Config) SetPrg(prg string) {

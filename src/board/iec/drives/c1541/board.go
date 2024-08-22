@@ -19,14 +19,16 @@ type Board struct {
 	via2         *via3.Via2
 	banks        *banks.Banks
 	mec          *mechanics.Mechanics
+	deviceId     uint8
 	deviceNumber uint8
 	filePath     string
 	cfg          *config.Config
 }
 
-func New(iec virtualdrive.IIec, deviceNumber uint8, opts string) *Board {
+func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string) *Board {
 	return &Board{
 		iec:          iec,
+		deviceId:     deviceId,
 		filePath:     opts,
 		deviceNumber: deviceNumber,
 		pic:          nil,
@@ -104,4 +106,11 @@ func (m *Board) BusStateChanged(u uint8) {
 }
 
 func (m *Board) configChanged() {
+	if opt, ok := m.cfg.GetDrivesOpt(m.deviceId); ok {
+		if opt != m.filePath {
+			m.filePath = opt
+			m.Reset()
+			m.mec.Setup(m.filePath)
+		}
+	}
 }

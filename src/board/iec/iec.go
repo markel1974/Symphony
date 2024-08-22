@@ -110,7 +110,7 @@ func (c *IEC) Setup(cfg *config.Config) {
 	c.cfg.Bind(c.configChanged)
 
 	for idx, d := range cfg.GetDrives() {
-		vd := c.createVirtualDrive(d.Kind, d.Opts, uint8(idx)+8)
+		vd := c.createVirtualDrive(d.Kind, d.Opts, uint8(idx))
 		c.virtualDrives = append(c.virtualDrives, vd)
 	}
 
@@ -214,15 +214,16 @@ func (c *IEC) PeripheralWrite(deviceNumber uint8, data uint8) {
 	c.updatePorts()
 }
 
-func (c *IEC) createVirtualDrive(kind string, opts string, deviceNumber uint8) virtualdrive.IVirtualDrive {
+func (c *IEC) createVirtualDrive(kind string, opts string, deviceId uint8) virtualdrive.IVirtualDrive {
+	deviceNumber := deviceId + 8
 	var vd virtualdrive.IVirtualDrive
 	switch kind {
 	case "C1541":
-		vd = c1541.New(c, deviceNumber, opts)
+		vd = c1541.New(c, deviceId, deviceNumber, opts)
 	case "FSDrive":
-		vd = fsdrive.New(c, deviceNumber, opts)
+		vd = fsdrive.New(c, deviceId, deviceNumber, opts)
 	default:
-		vd = c1541.New(c, deviceNumber, opts)
+		vd = c1541.New(c, deviceId, deviceNumber, opts)
 	}
 	vd.Setup(c.cfg)
 	return vd
