@@ -127,7 +127,6 @@ func (j *Mechanics) ReadGCRByte() uint8 {
 }
 
 func (j *Mechanics) WriteGCRByte(data uint8) {
-	//TODO VERIFY
 	j.gcrData[j.gcrIdx] = data
 }
 
