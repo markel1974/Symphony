@@ -1,21 +1,21 @@
 package keyboard
 
 type KeyData struct {
-	r1 int
-	r2 int
+	r1      int
+	shifted bool
+}
+
+func NewShiftedKeyData(a int, b int) *KeyData {
+	return &KeyData{
+		r1:      matrix(a, b),
+		shifted: true,
+	}
 }
 
 func NewSingleKeyData(a int, b int) *KeyData {
 	return &KeyData{
-		r1: matrix(a, b),
-		r2: 0,
-	}
-}
-
-func NewDoubleKeyData(a int, b int, c int, d int) *KeyData {
-	return &KeyData{
-		r1: matrix(a, b),
-		r2: matrix(c, d),
+		r1:      matrix(a, b),
+		shifted: false,
 	}
 }
 
@@ -30,20 +30,21 @@ func NewAscii() *Ascii {
 	for x := range a.container {
 		a.container[x] = space
 	}
-	a.container['!'] = NewDoubleKeyData(6, 4, 7, 0)
-	a.container['"'] = NewDoubleKeyData(6, 4, 7, 3)
-	a.container['#'] = NewDoubleKeyData(6, 4, 1, 0)
-	a.container['$'] = NewDoubleKeyData(6, 4, 1, 3)
-	a.container['%'] = NewDoubleKeyData(6, 4, 2, 0)
-	a.container['&'] = NewDoubleKeyData(6, 4, 2, 3)
-	a.container['\\'] = NewDoubleKeyData(6, 4, 3, 0)
-	a.container['('] = NewDoubleKeyData(6, 4, 3, 3)
-	a.container[')'] = NewDoubleKeyData(6, 4, 4, 0)
-	a.container['>'] = NewDoubleKeyData(6, 4, 5, 4)
-	a.container['<'] = NewDoubleKeyData(6, 4, 5, 7)
-	a.container['?'] = NewDoubleKeyData(6, 4, 6, 2)
-	a.container['['] = NewDoubleKeyData(6, 4, 5, 5)
-	a.container[']'] = NewDoubleKeyData(6, 4, 6, 2)
+	a.container['!'] = NewShiftedKeyData(7, 0)
+	a.container['"'] = NewShiftedKeyData(7, 3)
+	a.container['#'] = NewShiftedKeyData(1, 0)
+	a.container['$'] = NewShiftedKeyData(1, 3)
+	a.container['%'] = NewShiftedKeyData(2, 0)
+	a.container['&'] = NewShiftedKeyData(2, 3)
+	a.container['\\'] = NewShiftedKeyData(3, 0)
+	a.container['('] = NewShiftedKeyData(3, 3)
+	a.container[')'] = NewShiftedKeyData(4, 0)
+	a.container['>'] = NewShiftedKeyData(5, 4)
+	a.container['<'] = NewShiftedKeyData(5, 7)
+	a.container['?'] = NewShiftedKeyData(6, 2)
+	a.container['['] = NewShiftedKeyData(5, 5)
+	a.container[']'] = NewShiftedKeyData(6, 2)
+
 	a.container['\n'] = NewSingleKeyData(0, 1)
 	a.container['\r'] = NewSingleKeyData(0, 1)
 	a.container[' '] = NewSingleKeyData(7, 4)

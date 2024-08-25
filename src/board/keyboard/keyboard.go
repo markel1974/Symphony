@@ -308,8 +308,8 @@ func (k *Keyboard) prepareCommand(command string) (*list.List, bool) {
 	if len(command) == 0 {
 		return nil, false
 	}
-	cmd := func(keyCode int, pressed bool, storage *list.List) bool {
-		if c64Byte, c64Bit, shifted, ok := k.keyCodeToC64(keyCode); ok {
+	cmd := func(keyCode int, pressed bool, shifted bool, storage *list.List) bool {
+		if c64Byte, c64Bit, _, ok := k.keyCodeToC64(keyCode); ok {
 			i1 := NewInputKeyData(pressed, c64Byte, c64Bit, shifted)
 			storage.PushBack(i1)
 			return true
@@ -319,28 +319,14 @@ func (k *Keyboard) prepareCommand(command string) (*list.List, bool) {
 	storage := list.New()
 	for _, it := range command {
 		v := k.ascii.FromAscii(uint8(it))
-		//if v.valid {
 		d1 := v.r1
-		d2 := v.r2
-		//if d1, d2, ok := k.ascii2C64(it); ok {
-		if d2 != 0 {
-			if ret := cmd(d2, true, storage); !ret {
-				return nil, false
-			}
-		}
-		if ret := cmd(d1, true, storage); !ret {
+		shifted := v.shifted
+		if ret := cmd(d1, true, shifted, storage); !ret {
 			return nil, false
 		}
-		if ret := cmd(d1, false, storage); !ret {
+		if ret := cmd(d1, false, shifted, storage); !ret {
 			return nil, false
 		}
-		if d2 != 0 {
-			if ret := cmd(d2, false, storage); !ret {
-				return nil, false
-			}
-		}
-		//}
-		//}
 	}
 	return storage, true
 }
