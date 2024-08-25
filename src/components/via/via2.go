@@ -178,6 +178,7 @@ func (v *Via2) ByteReady() bool {
 	return false
 }
 
+/*
 func (v *Via2) WriteSector() {
 	v.mec.WriteSector()
 }
@@ -185,3 +186,4 @@ func (v *Via2) WriteSector() {
 func (v *Via2) FormatTrack() {
 	v.mec.FormatTrack()
 }
+*/

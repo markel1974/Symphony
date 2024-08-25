@@ -14,11 +14,11 @@ type Mechanics struct {
 	id1           uint8   // ID of disk
 	id2           uint8   // ID of disk
 	errorInfo     []uint8 // Sector error information (1 byte/sector)
-	gcrData       []uint8 // Pointer to GCR encoded disk data
-	gcrIdx        int     // Pointer to GCR data under R/W head
-	gcrTrackStart int     // Pointer to start of GCR data of current track
-	gcrTrackEnd   int     // Pointer to end of GCR data of current track
-	data          []uint8
+	gcrData       []uint8 // Pointer to GCR encoded disk
+	gcrIdx        int     // Pointer to GCR disk under R/W head
+	gcrTrackStart int     // Pointer to start of GCR disk of current track
+	gcrTrackEnd   int     // Pointer to end of GCR disk of current track
+	diskData      []uint8
 	filePath      string
 	deviceNumber  uint8
 	banks         IBanks
@@ -56,7 +56,7 @@ func (j *Mechanics) Setup(filePath string) {
 }
 
 func (j *Mechanics) HasDisk() bool {
-	return j.data != nil
+	return j.diskData != nil
 }
 
 func (j *Mechanics) WriteProtectionState() uint8 {
@@ -83,44 +83,6 @@ func (j *Mechanics) SyncFound() bool {
 	return false
 }
 
-func (j *Mechanics) WriteSector() {
-	track := j.banks.Read(0x18)
-	sector := j.banks.Read(0x19)
-	start := uint16(j.banks.Read(0x30)) | (uint16(j.banks.Read(0x31)) << 8)
-	if start <= 0x0700 {
-		block := j.banks.ReadInterval(start, BLOCK_SIZE)
-		if j.writeTrackSector(int(track), int(sector), block) {
-			j.sector2gcr(int(track), int(sector))
-		}
-	}
-}
-
-func (j *Mechanics) FormatTrack() {
-	track := j.banks.Read(0x51)
-	// Get new ID
-	bufNum := j.banks.Read(0x3d)
-	j.id1 = j.banks.Read(0x12 + uint16(bufNum))
-	j.id2 = j.banks.Read(0x13 + uint16(bufNum))
-
-	// Create empty block
-	buf := make([]uint8, BLOCK_SIZE)
-	buf[0] = 0x4b
-
-	// Write block to all sectors on track
-	for sector := 0; sector < int(_numSectors[track]); sector++ {
-		j.writeTrackSector(int(track), sector, buf)
-		j.sector2gcr(int(track), sector)
-	}
-
-	// Clear error info (all sectors no error)
-	if track == 35 {
-		for x := range j.errorInfo {
-			j.errorInfo[x] = 1
-		}
-		// Write error_info to disk?
-	}
-}
-
 func (j *Mechanics) ReadGCRByte() uint8 {
 	data := j.gcrData[j.gcrIdx]
 	return data
@@ -128,6 +90,7 @@ func (j *Mechanics) ReadGCRByte() uint8 {
 
 func (j *Mechanics) WriteGCRByte(data uint8) {
 	j.gcrData[j.gcrIdx] = data
+	//fmt.Println("WRITING ", j.gcrIdx, data)
 }
 
 func (j *Mechanics) RotateDisk() {
@@ -236,15 +199,15 @@ func (j *Mechanics) openFile() bool {
 		return false
 	}
 	defer fd.Close()
-	j.data, err = io.ReadAll(fd)
+	j.diskData, err = io.ReadAll(fd)
 	if err != nil {
 		return false
 	}
-	size := len(j.data)
+	size := len(j.diskData)
 	if size < NUM_SECTORS*BLOCK_SIZE {
 		return false
 	}
-	if j.data[0] == 0x43 && j.data[1] == 0x15 && j.data[2] == 0x41 && j.data[3] == 0x64 {
+	if j.diskData[0] == 0x43 && j.diskData[1] == 0x15 && j.diskData[2] == 0x41 && j.diskData[3] == 0x64 {
 		j.imageHeader = 64
 	} else {
 		j.imageHeader = 0
@@ -254,7 +217,7 @@ func (j *Mechanics) openFile() bool {
 	}
 	// Load sector error info from .d64 file, if present
 	if j.imageHeader == 0 && size == NUM_SECTORS*257 {
-		copy(j.errorInfo, j.data[NUM_SECTORS*BLOCK_SIZE:])
+		copy(j.errorInfo, j.diskData[NUM_SECTORS*BLOCK_SIZE:])
 	}
 	// Read BAM and get ID
 	bam := j.readSector(18, 0)
@@ -265,13 +228,13 @@ func (j *Mechanics) openFile() bool {
 	j.id1 = bam[162]
 	j.id2 = bam[163]
 
-	// Create GCR encoded disk data from image
+	// Create GCR encoded disk from image
 	j.disk2gcr()
 	return true
 }
 
 func (j *Mechanics) closeFile() {
-	j.data = nil
+	j.diskData = nil
 	//TODO
 }
 
@@ -282,23 +245,12 @@ func (j *Mechanics) readSector(track int, sector int) []uint8 {
 		return nil
 	}
 	start := offset + j.imageHeader
-	if end := start + BLOCK_SIZE; end >= len(j.data) {
+	if end := start + BLOCK_SIZE; end >= len(j.diskData) {
 		return nil
 	}
 	buffer := make([]uint8, BLOCK_SIZE)
-	copy(buffer, j.data[start:])
+	copy(buffer, j.diskData[start:])
 	return buffer
-}
-
-func (j *Mechanics) writeTrackSector(track int, sector int, buffer []uint8) bool {
-	offset := j.offsetFromTrackSector(track, sector)
-	// Convert track/sector to byte offset in file
-	if offset < 0 {
-		return false
-	}
-	copy(j.data[offset+j.imageHeader:], buffer)
-	_ = os.WriteFile("a", j.data, 0644)
-	return true
 }
 
 // secNumFromTs Convert track/sector to offset
@@ -405,3 +357,56 @@ func (j *Mechanics) disk2gcr() {
 		}
 	}
 }
+
+/*
+func (j *Mechanics) WriteSector() {
+	track := j.banks.Read(0x18)
+	sector := j.banks.Read(0x19)
+	start := uint16(j.banks.Read(0x30)) | (uint16(j.banks.Read(0x31)) << 8)
+	if start <= 0x0700 {
+		block := j.banks.ReadInterval(start, BLOCK_SIZE)
+		if j.writeTrackSector(int(track), int(sector), block) {
+			j.sector2gcr(int(track), int(sector))
+		}
+	}
+}
+
+func (j *Mechanics) FormatTrack() {
+	track := j.banks.Read(0x51)
+	// Get new ID
+	bufNum := j.banks.Read(0x3d)
+	j.id1 = j.banks.Read(0x12 + uint16(bufNum))
+	j.id2 = j.banks.Read(0x13 + uint16(bufNum))
+
+	// Create empty block
+	buf := make([]uint8, BLOCK_SIZE)
+	buf[0] = 0x4b
+
+	// Write block to all sectors on track
+	for sector := 0; sector < int(_numSectors[track]); sector++ {
+		j.writeTrackSector(int(track), sector, buf)
+		j.sector2gcr(int(track), sector)
+	}
+
+	// Clear error info (all sectors no error)
+	if track == 35 {
+		for x := range j.errorInfo {
+			j.errorInfo[x] = 1
+		}
+		// Write error_info to disk?
+	}
+}
+*/
+
+/*
+func (j *Mechanics) writeTrackSector(track int, sector int, buffer []uint8) bool {
+	offset := j.offsetFromTrackSector(track, sector)
+	// Convert track/sector to byte offset in file
+	if offset < 0 {
+		return false
+	}
+	copy(j.diskData[offset+j.imageHeader:], buffer)
+	_ = os.WriteFile("a", j.diskData, 0644)
+	return true
+}
+*/

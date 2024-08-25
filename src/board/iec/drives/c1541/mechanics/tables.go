@@ -8,7 +8,7 @@ const (
 const BLOCK_SIZE = 256
 
 const (
-	// Size of GCR encoded data
+	// Size of GCR encoded diskData
 
 	GCR_SECTOR_SIZE = 1 + 10 + 9 + 1 + 325 + 8 // SYNC Header Gap SYNC Data Gap (should be 5 SYNC bytes each)
 	GCR_TRACK_SIZE  = GCR_SECTOR_SIZE * 21     // Each track in gcr_data has 21 sectors
