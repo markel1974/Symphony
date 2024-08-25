@@ -1,9 +1,12 @@
 package mechanics
 
 import (
+	"fmt"
 	"io"
 	"os"
 )
+
+//see https://sta.c64.org/cbm1541mem.html
 
 type Mechanics struct {
 	*Core
@@ -12,7 +15,7 @@ type Mechanics struct {
 	id2           uint8   // ID of disk
 	errorInfo     []uint8 // Sector error information (1 byte/sector)
 	gcrData       []uint8 // Pointer to GCR encoded disk data
-	gcrPtr        int     // Pointer to GCR data under R/W head
+	gcrIdx        int     // Pointer to GCR data under R/W head
 	gcrTrackStart int     // Pointer to start of GCR data of current track
 	gcrTrackEnd   int     // Pointer to end of GCR data of current track
 	data          []uint8
@@ -31,7 +34,7 @@ func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
 	j.id2 = 0
 	j.imageHeader = 0
 	j.gcrData = make([]uint8, GCR_DISK_SIZE)
-	j.gcrPtr = 0
+	j.gcrIdx = 0
 	j.gcrTrackStart = 0
 	j.gcrTrackEnd = j.gcrTrackStart + GCR_TRACK_SIZE
 	j.currentHalfTrack = 2
@@ -73,16 +76,11 @@ func (j *Mechanics) WriteProtectionState() uint8 {
 }
 
 func (j *Mechanics) SyncFound() bool {
-	if j.gcrData[j.gcrPtr] == 0xff {
+	if j.gcrData[j.gcrIdx] == 0xff {
 		return true
 	}
-	// Rotate disk
-	j.gcrPtr++
-	if j.gcrPtr == j.gcrTrackEnd {
-		j.gcrPtr = j.gcrTrackStart
-	}
+	j.RotateDisk()
 	return false
-
 }
 
 func (j *Mechanics) WriteSector() {
@@ -124,23 +122,85 @@ func (j *Mechanics) FormatTrack() {
 }
 
 func (j *Mechanics) ReadGCRByte() uint8 {
-	data := j.gcrData[j.gcrPtr]
-	j.gcrPtr++ // Rotate disk
-	if j.gcrPtr == j.gcrTrackEnd {
-		j.gcrPtr = j.gcrTrackStart
-	}
+	data := j.gcrData[j.gcrIdx]
 	return data
 }
 
-func (j *Mechanics) MoveHeadOut() {
+func (j *Mechanics) WriteGCRByte(data uint8) {
+	//TODO VERIFY
+	j.gcrData[j.gcrIdx] = data
+}
+
+func (j *Mechanics) RotateDisk() {
+	j.gcrIdx++
+	if j.gcrIdx == j.gcrTrackEnd {
+		j.gcrIdx = j.gcrTrackStart
+	}
+}
+
+func (j *Mechanics) UpdatePRB(prb uint8, data uint8) {
+	const headControl = 0x3
+	const motorControl = 0x4
+	const ledControl = 0x8
+	const photocellControl = 0x10
+	const densityControl = 0x60
+	const syncControl = 0x80
+
+	m := prb ^ data
+
+	//bit [0,1]
+	//Head step direction.
+	//Decrease value (%00-%11-%10-%01-%00...) to move head downwards
+	//Increase value (%00-%01-%10-%11-%00...) to move head upwards
+	if (m & headControl) != 0 {
+		if (prb & headControl) == ((data + 1) & headControl) {
+			j.moveHeadOut()
+		} else if (prb & headControl) == ((data - 1) & headControl) {
+			j.moveHeadIn()
+		}
+	}
+	//bit [2]
+	//Motor control; 0 = Off; 1 = On.
+	if (m & motorControl) != 0 {
+		motor := (data & motorControl) != 0
+		fmt.Println("TODO - MOTOR", motor)
+	}
+	//bit [3]
+	//LED control; 0 = Off; 1 = On.
+	if (m & ledControl) != 0 {
+		led := (data & ledControl) != 0
+		fmt.Println("TODO - LED", led)
+		//ledStateChangedEvent.Emit(_board->GetDeviceNumber(), state);
+		//v.mec.UpdateLEDs(l) // Bit 3: VirtualDrive LED
+	}
+	//bit [4]
+	//Write protect photocell status; 0 = Write protect tab covered, disk protected; 1 = Tab uncovered, disk not protected.
+	if (m & photocellControl) != 0 {
+		//photocell := (data & photocellControl) != 0
+		//fmt.Println("TODO - PHOTOCELL", photocell)
+	}
+	//bit [5-6]:
+	//Data density; %00 = Lowest; %11 = Highest.
+	if (m & densityControl) != 0 {
+		density := (data & densityControl) >> 5
+		fmt.Printf("TODO - DENSITY %2b\n", density)
+	}
+	//Bit [7]
+	//0 = SYNC marks are being currently read from disk; 1 = Data bytes are being read.
+	if (m & syncControl) != 0 {
+		//sync := (data & syncControl) != 0
+		//fmt.Println("TODO - SYNC", sync)
+	}
+}
+
+func (j *Mechanics) moveHeadOut() {
 	if j.currentHalfTrack == 2 {
 		//NOTHING TO DO
 	} else {
 		j.currentHalfTrack--
 		idx := ((j.currentHalfTrack >> 1) - 1) * GCR_TRACK_SIZE
-		//data := j.gcrData[idx]
-		j.gcrTrackStart = idx //data
-		j.gcrPtr = idx        //data
+		j.gcrTrackStart = idx
+		j.gcrIdx = idx
 		trackLength := int(_numSectors[j.currentHalfTrack>>1]) * GCR_SECTOR_SIZE
 		j.gcrTrackEnd = j.gcrTrackStart + trackLength
 	}
@@ -148,14 +208,14 @@ func (j *Mechanics) MoveHeadOut() {
 	// HeadPosChangedEvent.Emit(_board->GetDeviceNumber(), currentHalfTrack);
 }
 
-func (j *Mechanics) MoveHeadIn() {
+func (j *Mechanics) moveHeadIn() {
 	if j.currentHalfTrack == NUM_TRACKS*2 {
 		//NOTHING TO DO
 	} else {
 		j.currentHalfTrack++
 		idx := ((j.currentHalfTrack >> 1) - 1) * GCR_TRACK_SIZE
 		j.gcrTrackStart = idx
-		j.gcrPtr = idx
+		j.gcrIdx = idx
 		trackLength := int(_numSectors[j.currentHalfTrack>>1]) * GCR_SECTOR_SIZE
 		j.gcrTrackEnd = j.gcrTrackStart + trackLength
 	}

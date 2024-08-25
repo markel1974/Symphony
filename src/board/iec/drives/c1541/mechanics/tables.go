@@ -1,7 +1,6 @@
 package mechanics
 
 const (
-	// Number of tracks/sectors
 	NUM_TRACKS  = 35
 	NUM_SECTORS = 683
 )
