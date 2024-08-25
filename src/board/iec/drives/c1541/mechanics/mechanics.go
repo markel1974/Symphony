@@ -91,6 +91,13 @@ func (j *Mechanics) ReadGCRByte() uint8 {
 func (j *Mechanics) WriteGCRByte(data uint8) {
 	j.gcrData[j.gcrIdx] = data
 	//fmt.Println("WRITING ", j.gcrIdx, data)
+
+	//track := j.gcrTrackStart
+	//sector := _numSectors[j.currentHalfTrack>>1]
+	//offset := j.offsetFromTrackSector(track, int(sector))
+	//fmt.Println("WRITING ", j.gcrIdx, data)
+	//fmt.Println(j.currentHalfTrack, sector, offset)
+	//fmt.Println("------------------")
 }
 
 func (j *Mechanics) RotateDisk() {
