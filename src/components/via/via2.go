@@ -1,11 +1,14 @@
 package via
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/signals"
 )
+
+// see drive/iecieee/via2d.c [store_pra - store_prb]
+// 1541, 1541II, 1571 and 2031
+// see https://sta.c64.org/cbm1541mem.html
 
 type Via2 struct {
 	*Core
@@ -42,7 +45,6 @@ func (v *Via2) SignalClearIRQBind(fn func(uint32)) {
 }
 
 func (v *Via2) ReadByte(addr uint16) uint8 {
-	//fmt.Printf("VIA2 READ %x\n", addr)
 	switch addr {
 	case 0x1c00:
 		wps := v.mec.WriteProtectionState()
@@ -51,8 +53,8 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 		}
 		return (v.prb | 0x80) | wps
 	case 0x1c01:
-		//fmt.Println("READING GCR BYTE - 0x1c01")
 		d := v.mec.ReadGCRByte()
+		v.mec.RotateDisk()
 		return d
 	case 0x1c02:
 		return v.ddrb
@@ -60,7 +62,6 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 		return v.ddra
 	case 0x1c04:
 		v.ifr &= 0xbf
-		//fmt.Println("ClEAR VIA2 IRQ")
 		v.signalIRQClear.Emit(intrVIA2Id)
 		return uint8(v.t1c)
 	case 0x1c05:
@@ -89,6 +90,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 		return v.ier | 0x80
 	case 0x1c0f:
 		d := v.mec.ReadGCRByte()
+		v.mec.RotateDisk()
 		return d
 	default:
 		return 0
@@ -96,32 +98,13 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 }
 
 func (v *Via2) WriteByte(addr uint16, data uint8) {
-	//fmt.Printf("VIA2 WRITE %x -> %d\n", addr, data)
 	switch addr {
 	case 0x1c00:
-		m := v.prb ^ data
-		if (m & 8) != 0 {
-			l := 0
-			if (data & 8) != 0 {
-				l = 1
-			}
-			fmt.Println("TODO - LED", l)
-			//ledStateChangedEvent.Emit(_board->GetDeviceNumber(), state);
-			//v.mec.UpdateLEDs(l) // Bit 3: VirtualDrive LED
-		}
-
-		if (m & 3) != 0 {
-			//fmt.Println("MOVING HEADS....")
-			/* Bits 0/1: Stepper motor */
-			if (v.prb & 3) == ((data + 1) & 3) {
-				v.mec.MoveHeadOut()
-			} else if (v.prb & 3) == ((data - 1) & 3) {
-				v.mec.MoveHeadIn()
-			}
-		}
-
+		v.mec.UpdatePRB(v.prb, data)
 		v.prb = data & 0xef
 	case 0x1c01:
+		v.mec.WriteGCRByte(data)
+		v.mec.RotateDisk()
 		v.pra = data
 	case 0x1c02:
 		v.ddrb = data
@@ -158,6 +141,8 @@ func (v *Via2) WriteByte(addr uint16, data uint8) {
 			v.ier &= ^data
 		}
 	case 0x1c0f:
+		v.mec.WriteGCRByte(data)
+		v.mec.RotateDisk()
 		v.pra = data
 	}
 }
@@ -172,7 +157,6 @@ func (v *Via2) CountTimers() {
 		}
 		v.ifr |= 0x40
 		if (v.ier & 0x40) != 0 {
-			//fmt.Println("TRIGGER VIA2 IRQ")
 			v.signalIRQTrigger.Emit(intrVIA2Id)
 		}
 	}
