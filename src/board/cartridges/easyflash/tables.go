@@ -1,12 +1,28 @@
 package easyflash
 
+// see http://skoe.de/easyflash/
+
 const (
 	CartRamSize = 256
 )
 
 const (
-	CartridgeNameEasyFlash = "EasyFlash" // see http://skoe.de/easyflash/
-	StringEasyFlash        = CartridgeNameEasyFlash
+	NBankBits = 6
+	NBanks    = 1 << (NBankBits)
+	BankMask  = (NBanks) - 1
+)
+
+const snapModuleName = "CARTEF"
+const flashSnapModuleName = "FLASH040EF"
+
+const (
+	SnapMajor = 0
+	SnapMinor = 0
+)
+
+const (
+	EApiHeader       = "eapi"
+	EApiStartAddress = 0x1800
 )
 
 var _eApiAM29f040 = []byte{
@@ -108,17 +124,3 @@ var _eApiAM29f040 = []byte{
 	0xf0, 0xdf, 0xad, 0xb7, 0xdf, 0x60, 0xff, 0xff,
 	0xff, 0xff,
 }
-
-const (
-	NBankBits = 6
-	NBanks    = 1 << (NBankBits)
-	BankMask  = (NBanks) - 1
-)
-
-const snapModuleName = "CARTEF"
-const flashSnapModuleName = "FLASH040EF"
-
-const (
-	SnapMajor = 0
-	SnapMinor = 0
-)

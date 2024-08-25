@@ -100,15 +100,16 @@ type CartridgeEasyFlash struct {
 	exRom           uint8
 	stateLow        *flash.Flash040 /* the 29F040B statemachine */
 	stateHigh       *flash.Flash040 /* the 29F040B statemachine */
-	jumper          int
-	crtWrite        int     /* writing back to crt enabled */
-	crtOptimize     int     /* optimizing crt enabled */
+	jumper          bool
+	writeEnabled    bool    /* writing back to crt enabled */
+	optimize        bool    /* optimizing crt enabled */
 	register00      uint8   /* backup of the registers */
 	register02      uint8   /* backup of the registers */
 	ram             []uint8 /* extra RAM */
 	filename        string  /* filename when attached */
 	filetype        loader.Type
 	led             bool
+	updateEApi      bool
 }
 
 func GetType() int {
@@ -119,15 +120,18 @@ func New() icartridge.ICartridge {
 	return &CartridgeEasyFlash{
 		game:            1,
 		exRom:           1,
+		register00:      0,
+		register02:      0,
 		intervalHi:      icartridge.ROM_HI_1,
 		intervalLo:      icartridge.ROM_LO,
 		stateLow:        nil,
 		stateHigh:       nil,
 		filetype:        0,
-		jumper:          0,
+		jumper:          false,
 		led:             false,
 		ram:             make([]byte, CartRamSize),
 		memoryConfigIdx: -1,
+		updateEApi:      true,
 	}
 }
 
@@ -155,7 +159,7 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	}
 	c.register00 = 0
 	c.controlUpdate(0, false)
-	c.initializeFlash(rawCart)
+	c.initialize(rawCart)
 	return nil
 }
 
@@ -167,7 +171,38 @@ func (c *CartridgeEasyFlash) GetId() string {
 	return c.id
 }
 
-func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
+func (c *CartridgeEasyFlash) GetExRom() uint8 {
+	return c.exRom
+}
+
+func (c *CartridgeEasyFlash) GetGame() uint8 {
+	return c.game
+}
+
+func (c *CartridgeEasyFlash) EmulationRequired() bool {
+	return false
+}
+
+func (c *CartridgeEasyFlash) Emulate() {
+}
+
+func (c *CartridgeEasyFlash) SetJumper(j bool) {
+	c.jumper = j
+}
+
+func (c *CartridgeEasyFlash) SetWriteEnabled(e bool) {
+	c.writeEnabled = e
+}
+
+func (c *CartridgeEasyFlash) SetOptimize(o bool) {
+	c.optimize = o
+}
+
+func (c *CartridgeEasyFlash) SetUpdateEApi(e bool) {
+	c.updateEApi = e
+}
+
+func (c *CartridgeEasyFlash) initialize(rawCart []byte) {
 	low := make([]byte, 0x80000)
 	high := make([]byte, 0x80000)
 	// split interleaved low and high banks
@@ -182,62 +217,61 @@ func (c *CartridgeEasyFlash) initializeFlash(rawCart []byte) {
 	c.stateLow = flash.NewFlash040(c.board, flash.KindB, low)
 	c.stateHigh = flash.NewFlash040(c.board, flash.KindB, high)
 
-	eApiCheck := high[0x1800 : 0x1800+4]
-	if bytes.Compare(eApiCheck, []byte("eapi")) == 0 {
-		eApi := make([]byte, 17)
-		for k := 0; k < 16; k++ {
-			eApi[k] = c.stateHigh.Peek(uint32(0x1804 + k))
+	if c.updateEApi {
+		eApiHeader := high[EApiStartAddress : EApiStartAddress+len(EApiHeader)]
+		if bytes.Compare(eApiHeader, []byte(EApiHeader)) == 0 {
+			//updating eapi
+			//eApi := make([]byte, 17)
+			//for k := 0; k < 16; k++ {
+			//	eApi[k] = c.stateHigh.Peek(uint32(0x1804 + k))
+			//}
+			_ = c.stateHigh.StoreInterval(0x1800, _eApiAM29f040)
 		}
-		_ = c.stateHigh.StoreInterval(0x1800, _eApiAM29f040)
 	}
 }
 
 func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 	c.register02 = value & 0x87 // we only remember led, mode, exrom, game [led 0x80, other 0x07]
-	mcIdx := icartridge.CartridgeModeOff
-	//jumper := c.jumper << 3
+	mode := icartridge.CartridgeModeOff
 	mxg := value & 0x07
 	switch mxg {
 	case 0:
 		//GAME from jumper, EXROM high (i.e. Ultimax or Off)
-		if c.jumper == 0 {
-			mcIdx = icartridge.CartridgeModeUltimax
+		if !c.jumper {
+			mode = icartridge.CartridgeModeUltimax
 		} else {
-			mcIdx = icartridge.CartridgeModeOff
+			mode = icartridge.CartridgeModeOff
 		}
-	case 1:
-		//Reserved, don’t use this
+	case 1, 3:
+		//Reserved, don’t use these
 	case 2:
 		//GAME from jumper, EXROM low (i.e. 16K or 8K)
-		if c.jumper == 0 {
-			mcIdx = icartridge.CartridgeMode16K
+		if !c.jumper {
+			mode = icartridge.CartridgeMode16K
 		} else {
-			mcIdx = icartridge.CartridgeMode8K
+			mode = icartridge.CartridgeMode8K
 		}
-	case 3:
-		//Reserved, don’t use this
 	case 4:
 		//Cartridge ROM off (RAM at $DF00 still available)
-		mcIdx = icartridge.CartridgeModeOff
+		mode = icartridge.CartridgeModeOff
 	case 5:
 		//Ultimax (Low bank at $8000, high bank at $e000) GAME = 0, EXROM = 1
-		mcIdx = icartridge.CartridgeModeUltimax
+		mode = icartridge.CartridgeModeUltimax
 	case 6:
-		// 8k Cartridge (Low bank at $8000) GAME = 1, EXROM = 0
-		mcIdx = icartridge.CartridgeMode8K
+		//8k Cartridge (Low bank at $8000) GAME = 1, EXROM = 0
+		mode = icartridge.CartridgeMode8K
 	case 7:
 		//16k cartridge (Low bank at $8000, high bank at $a000)
-		mcIdx = icartridge.CartridgeMode16K
+		mode = icartridge.CartridgeMode16K
 	}
-	if int(mcIdx) != c.memoryConfigIdx {
-		c.memoryConfigIdx = int(mcIdx)
-		v := icartridge.GetCartridgeSpec(mcIdx)
+	if int(mode) != c.memoryConfigIdx {
+		c.memoryConfigIdx = int(mode)
+		v := icartridge.GetCartridgeSpec(mode)
 		c.game = v.Game
 		c.exRom = v.ExRom
 		c.intervalLo = v.IntervalLow
 		c.intervalHi = v.IntervalHigh
-		//fmt.Println("register002:", value, "mode:", memMode.mode, "exrom:", memMode.exrom, "game:", memMode.game, "led:", c.led)
-		fmt.Println("EASYFLASH MEMORY CONFIG CHANGED:", mxg, "exrom:", c.exRom, "game:", c.game)
+		fmt.Println("EASYFLASH MEMORY CONFIG CHANGED:", mxg, "exrom:", c.exRom, "game:", c.game, "LO", c.intervalLo, "HIGH", c.intervalHi)
 		if update {
 			c.board.GameExRomConfigChanged()
 		}
@@ -249,7 +283,6 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 }
 
 func (c *CartridgeEasyFlash) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
-	//NOT VALID
 	if c.intervalLo == i {
 		fmt.Printf("EASYFLASH Write LOW NOT DEFINED\n")
 	} else if c.intervalHi == i {
@@ -268,15 +301,13 @@ func (c *CartridgeEasyFlash) Read(i icartridge.RomInterval, addr uint16) (uint8,
 }
 
 func (c *CartridgeEasyFlash) IORead(addr uint16) (uint8, bool) {
-	ref := addr & 0xff00
-	if ref == 0xdf00 {
-		//read range for the device 0xdf00-0xdfff
+	bank := addr & 0xff00
+	if bank == 0xdf00 {
 		v := c.io2Read(addr)
 		return v, true
-	}
-	if ref == 0xde00 {
+	} else if bank == 0xde00 {
 		// read is never valid, regs are write only
-		fmt.Printf("EASYFLASH RAM READ OUTSIDE: %x\n", addr)
+		fmt.Printf("EASYFLASH WARNING: regs $de00-$deff are write only -> $%x\n", addr)
 		return 0, false
 	}
 	return 0, false
@@ -291,39 +322,17 @@ func (c *CartridgeEasyFlash) IOWrite(addr uint16, data uint8) bool {
 			return true
 		case 1:
 			return true
-
 		case 2:
 			c.controlUpdate(data, true)
 			return true
 		case 3:
 			return true
 		}
-		fmt.Printf("EASYFLASH RAM WRITE OUSIDE: %x => %d\n", addr, data)
-		return false
-	}
-	if bank == 0xdf00 {
-		//range for the device 0xdf00-0xdfff
-		//fmt.Printf("EASYFLASH RAM WRITE: %x => %d\n", addr, data)
+	} else if bank == 0xdf00 {
 		c.io2Store(addr, data)
 		return true
 	}
-
 	return false
-}
-
-func (c *CartridgeEasyFlash) GetExRom() uint8 {
-	return c.exRom
-}
-
-func (c *CartridgeEasyFlash) GetGame() uint8 {
-	return c.game
-}
-
-func (c *CartridgeEasyFlash) EmulationRequired() bool {
-	return false
-}
-
-func (c *CartridgeEasyFlash) Emulate() {
 }
 
 func (c *CartridgeEasyFlash) romLRead(addr uint16) uint8 {
@@ -362,36 +371,9 @@ func (c *CartridgeEasyFlash) io2Store(addr uint16, value uint8) {
 	c.ram[addr&0xff] = value
 }
 
-func (c *CartridgeEasyFlash) setEasyFlashJumper(val int) error {
-	if val != 0 {
-		c.jumper = 1
-	} else {
-		c.jumper = 0
-	}
-	return nil
-}
-
-func (c *CartridgeEasyFlash) setEasyFlashCrtWrite(val int) error {
-	if val != 0 {
-		c.crtWrite = 1
-	} else {
-		c.crtWrite = 0
-	}
-	return nil
-}
-
-func (c *CartridgeEasyFlash) setEasyFlashCrtOptimize(val int) error {
-	if val != 0 {
-		c.crtOptimize = 1
-	} else {
-		c.crtOptimize = 0
-	}
-	return nil
-}
-
 func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip *loader.CrtChipHeader) error {
 	for i := uint16(0); i < chip.Size; i++ {
-		if (chip.Data[i] != 0xff) || (c.crtOptimize == 0) {
+		if (chip.Data[i] != 0xff) || !c.optimize {
 			if err := chip.Write(fd); err != nil {
 				return err
 			}
@@ -448,7 +430,7 @@ func (c *CartridgeEasyFlash) crtAttach(ldr *loader.CRTLoader) ([]byte, error) {
 }
 
 func (c *CartridgeEasyFlash) Detach() error {
-	if c.crtWrite != 0 {
+	if c.writeEnabled {
 		if err := c.flushImage(); err != nil {
 			return err
 		}
@@ -465,8 +447,7 @@ func (c *CartridgeEasyFlash) flushImage() error {
 	}
 	if c.filetype == loader.TypeBin {
 		return c.binSave(c.filename)
-	}
-	if c.filetype == loader.TypeCrt {
+	} else if c.filetype == loader.TypeCrt {
 		return c.crtSave(c.filename)
 	}
 	return fmt.Errorf("unknown cartridget type")
@@ -514,7 +495,7 @@ func (c *CartridgeEasyFlash) crtSave(filename string) error {
 
 func (c *CartridgeEasyFlash) snapshotWriteModule(s *snapshot.Snapshot) error {
 	m := s.NewModule(snapModuleName, SnapMajor, SnapMinor)
-	m.Add("jumper", uint8(c.jumper))
+	m.Add("jumper", c.jumper)
 	m.Add("register00", c.register00)
 	m.Add("register00", c.register00)
 	m.Add("ram", c.ram)
@@ -529,78 +510,3 @@ func (c *CartridgeEasyFlash) snapshotWriteModule(s *snapshot.Snapshot) error {
 	}
 	return nil
 }
-
-/*
-func (c *CartridgeEasyFlash) printConfigValue(val uint8, jumper uint8) {
-	mode := 0
-	exrom := uint8(1)
-	game := uint8(1)
-	if bitM := val&0x04 == 0x04; bitM {
-		mode = 1
-	}
-	if bitX := val&0x02 == 0x02; bitX {
-		exrom = 0
-	}
-	if mode != 0 {
-		if bitG := val&0x01 == 0x01; bitG {
-			game = 0
-		}
-	} else {
-		game = jumper
-	}
-	fmt.Printf("{jumper: %d, mode: %d, exrom: %d, game: %d},\n", val, jumper, mode, exrom, game)
-	//fmt.Println("led:", led, "mode:", mode, "exrom:", exrom, "game:", game)
-}
-
-
-/*
-func (c *CartridgeEasyFlash) io1Dump() int {
-	mode := _easyFlashMemConfig[(c.jumper<<3)|(int(c.register02)&0x07)]
-	bank := c.register00
-	led := "false"
-	if c.register02&0x80 != 0 {
-		led = "true"
-	}
-	jumper := "off"
-	if c.jumper != 0 {
-		jumper = "on"
-	}
-	fmt.Printf("Mode: %d, Bank: %d, LED %s, jumper %s\n", mode, bank, led, jumper)
-	//fmt.Printf("EAPI found: %s\n", mode, bank, led, jumper)
-	return 0
-}
-*/
-
-/*
-static const cmdline_option_t cmdline_options[] =
-{
-    { "-easyflashjumper", SET_RESOURCE, CMDLINE_ATTRIB_NONE,
-      NULL, NULL, "EasyFlashJumper", (resource_value_t)1,
-      NULL, "Enable EasyFlash jumper" },
-    { "+easyflashjumper", SET_RESOURCE, CMDLINE_ATTRIB_NONE,
-      NULL, NULL, "EasyFlashJumper", (resource_value_t)0,
-      NULL, "Disable EasyFlash jumper" },
-    { "-easyflashcrtwrite", SET_RESOURCE, CMDLINE_ATTRIB_NONE,
-      NULL, NULL, "EasyFlashWriteCRT", (resource_value_t)1,
-      NULL, "Enable writing to EasyFlash .crt image" },
-    { "+easyflashcrtwrite", SET_RESOURCE, CMDLINE_ATTRIB_NONE,
-      NULL, NULL, "EasyFlashWriteCRT", (resource_value_t)0,
-      NULL, "Disable writing to EasyFlash .crt image" },
-    { "-easyflashcrtoptimize", SET_RESOURCE, CMDLINE_ATTRIB_NONE,
-      NULL, NULL, "EasyFlashOptimizeCRT", (resource_value_t)1,
-      NULL, "Enable EasyFlash .crt image optimize on write" },
-    { "+easyflashcrtoptimize", SET_RESOURCE, CMDLINE_ATTRIB_NONE,
-      NULL, NULL, "EasyFlashOptimizeCRT", (resource_value_t)0,
-      NULL, "Disable writing to EasyFlash .crt image" },
-    CMDLINE_LIST_END
-};
-
-int easyflash_cmdline_options_init(void)
-{
-    return cmdline_register_options(cmdline_options);
-}
-func (c *CartridgeEasyFlash) easyflash_cmdline_options_init(void) int {
-{
-return cmdline_register_options(cmdline_options);
-}
-*/
