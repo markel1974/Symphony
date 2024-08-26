@@ -1,5 +1,7 @@
 package gcr
 
+//http://www.unusedino.de/ec64/technical/formats/g64.html
+
 const (
 	NumTracks    = 35
 	NumSectors   = 683
@@ -11,7 +13,7 @@ const BlockSize = 256
 // Size of GCR encoded diskData
 const (
 	SectorSize = 1 + 10 + 9 + 1 + 325 + 8 // SYNC Header Gap SYNC Data Gap (should be 5 SYNC bytes each)
-	TrackSize  = SectorSize * 21          // Each track in gcr_data has 21 sectors
+	TrackSize  = SectorSize * 21          // Each track in gcr has 21 sectors
 	DiskSize   = TrackSize * NumTracks
 )
 
