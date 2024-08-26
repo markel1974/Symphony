@@ -60,14 +60,14 @@ func (gcr *Factory) conv4(from []uint8, to []uint8) {
 }
 
 func (gcr *Factory) convertSector(diskData []byte, gcrData []uint8, headerLen int, id1 uint8, id2 uint8, track int, sector int) {
-	buf := make([]uint8, 4)
-	p := (track-1)*TrackSize + sector*SectorSize
 	block := gcr.readSector(diskData, headerLen, track, sector)
 	if block == nil {
 		return
 	}
 	// Create GCR header
 	// SYNC
+	buf := make([]uint8, 4)
+	p := ((track - 1) * TrackSize) + (sector * SectorSize)
 	gcrData[p] = 0xff
 	p++
 	// Header mark
@@ -127,21 +127,21 @@ func (gcr *Factory) convertSector(diskData []byte, gcrData []uint8, headerLen in
 }
 
 func (gcr *Factory) Create(image []byte) (*GCR, error) {
-	d := NewGCR()
 	diskDataLen := len(image)
 	if diskDataLen < NumSectors*BlockSize {
 		return nil, fmt.Errorf("invalid disk data length")
 	}
+	d := NewGCR()
 	headerLen := 0
 	if image[0] == 0x43 && image[1] == 0x15 && image[2] == 0x41 && image[3] == 0x64 {
 		headerLen = 64
 	}
-	// Load sector error info
 	if headerLen == 0 && diskDataLen == NumSectors*257 {
 		copy(d.errorInfo, image[NumSectors*BlockSize:])
 	}
-	// Read BAM
-	bam := gcr.readSector(image, headerLen, 18, 0)
+	const bamTrack = 18
+	const bamSector = 0
+	bam := gcr.readSector(image, headerLen, bamTrack, bamSector)
 	if bam == nil {
 		return nil, fmt.Errorf("nil bam")
 	}
