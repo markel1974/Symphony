@@ -1,6 +1,7 @@
 package c1541
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/c1541/banks"
 	"github.com/markel1974/c64emu/src/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
@@ -8,6 +9,7 @@ import (
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/via"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/signals"
 )
 
 type Board struct {
@@ -23,6 +25,7 @@ type Board struct {
 	deviceNumber uint8
 	filePath     string
 	cfg          *config.Config
+	ledChanged   *signals.SignalUint32
 }
 
 func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string) *Board {
@@ -31,6 +34,7 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string)
 		deviceId:     deviceId,
 		filePath:     opts,
 		deviceNumber: deviceNumber,
+		ledChanged:   signals.NewSignalUint32(),
 		pic:          nil,
 		via1:         nil,
 		via2:         nil,
@@ -50,7 +54,7 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.cpu = mos6510fn.NewMOS6510("c1541")
 	m.mec = mechanics.NewMechanics(m.banks, m.deviceNumber)
 	m.via1 = via.NewVia1(m.iec, m.deviceNumber)
-	m.via2 = via.NewVia2(m.iec, m.mec)
+	m.via2 = via.NewVia2(m.iec, m.mec, m.deviceNumber)
 
 	m.banks.Setup(m.via1, m.via2, cfg)
 	m.pic.Setup(m.quartz)
@@ -65,6 +69,7 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.via2.Setup()
 	m.via2.SignalTriggerIRQBind(m.pic.TriggerIRQ)
 	m.via2.SignalClearIRQBind(m.pic.ClearIRQ)
+	m.via2.SignalLedBind(m.ledChangedSlot)
 	m.cpu.SetOverflowBranch(m.via2.ByteReady)
 }
 
@@ -114,4 +119,9 @@ func (m *Board) configChanged() {
 			m.mec.Setup(m.filePath)
 		}
 	}
+}
+
+func (m *Board) ledChangedSlot(d byte) {
+	fmt.Println("LED", m.deviceNumber, d)
+	m.ledChanged.Emit(uint32(d)<<8 | uint32(m.deviceNumber))
 }

@@ -1,8 +1,15 @@
 package gcr
 
-import (
-	"fmt"
-)
+import "fmt"
+
+//func GetNumSectors(d int) uint8 {
+//	return _numSectors[d]
+//}
+
+func GetTrackLen(d int) int {
+	trackLength := int(_numSectors[d]) * SectorSize
+	return trackLength
+}
 
 type Factory struct {
 }
@@ -12,28 +19,25 @@ func NewFactory() *Factory {
 }
 
 func (gcr *Factory) readSector(diskData []byte, headerLen int, track int, sector int) []uint8 {
-	// Convert track/sector to byte offset in file
 	offset := gcr.offsetFromTrackSector(track, sector)
 	if offset < 0 {
 		return nil
 	}
 	start := offset + headerLen
-	if end := start + BLOCK_SIZE; end >= len(diskData) {
+	if end := start + BlockSize; end >= len(diskData) {
 		return nil
 	}
-	buffer := make([]uint8, BLOCK_SIZE)
+	buffer := make([]uint8, BlockSize)
 	copy(buffer, diskData[start:])
 	return buffer
 }
 
-// secNumFromTs Convert track/sector to offset
 func (gcr *Factory) secNumFromTs(track int, sector int) int {
 	return _sectorOffset[track] + sector
 }
 
-// offsetFromTrackSector Convert track/sector to offset
 func (gcr *Factory) offsetFromTrackSector(track int, sector int) int {
-	if (track < 1) || (track > NUM_TRACKS) || (sector < 0) || (sector >= int(_numSectors[track])) {
+	if (track < 1) || (track > NumTracks) || (sector < 0) || (sector >= int(_numSectors[track])) {
 		return -1
 	}
 	return (_sectorOffset[track] + sector) << 8
@@ -57,7 +61,7 @@ func (gcr *Factory) conv4(from []uint8, to []uint8) {
 
 func (gcr *Factory) convertSector(diskData []byte, gcrData []uint8, headerLen int, id1 uint8, id2 uint8, track int, sector int) {
 	buf := make([]uint8, 4)
-	p := (track-1)*GCR_TRACK_SIZE + sector*GCR_SECTOR_SIZE
+	p := (track-1)*TrackSize + sector*SectorSize
 	block := gcr.readSector(diskData, headerLen, track, sector)
 	if block == nil {
 		return
@@ -122,11 +126,10 @@ func (gcr *Factory) convertSector(diskData []byte, gcrData []uint8, headerLen in
 	}
 }
 
-// Create GCR disk from image disk
 func (gcr *Factory) Create(image []byte) (*GCR, error) {
 	d := NewGCR()
 	diskDataLen := len(image)
-	if diskDataLen < NUM_SECTORS*BLOCK_SIZE {
+	if diskDataLen < NumSectors*BlockSize {
 		return nil, fmt.Errorf("invalid disk data length")
 	}
 	headerLen := 0
@@ -134,8 +137,8 @@ func (gcr *Factory) Create(image []byte) (*GCR, error) {
 		headerLen = 64
 	}
 	// Load sector error info
-	if headerLen == 0 && diskDataLen == NUM_SECTORS*257 {
-		copy(d.errorInfo, image[NUM_SECTORS*BLOCK_SIZE:])
+	if headerLen == 0 && diskDataLen == NumSectors*257 {
+		copy(d.errorInfo, image[NumSectors*BlockSize:])
 	}
 	// Read BAM
 	bam := gcr.readSector(image, headerLen, 18, 0)
@@ -145,7 +148,7 @@ func (gcr *Factory) Create(image []byte) (*GCR, error) {
 	id1 := bam[162]
 	id2 := bam[163]
 	// Create GCR encoded disk from image
-	for track := 1; track <= NUM_TRACKS; track++ {
+	for track := 1; track <= NumTracks; track++ {
 		for sector := 0; sector < int(_numSectors[track]); sector++ {
 			gcr.convertSector(image, d.data, headerLen, id1, id2, track, sector)
 		}
@@ -159,7 +162,7 @@ func (j *Mechanics) WriteSector() {
 	sector := j.banks.Read(0x19)
 	start := uint16(j.banks.Read(0x30)) | (uint16(j.banks.Read(0x31)) << 8)
 	if start <= 0x0700 {
-		block := j.banks.ReadInterval(start, BLOCK_SIZE)
+		block := j.banks.ReadInterval(start, BlockSize)
 		if j.writeTrackSector(int(track), int(sector), block) {
 			j.Sector2GCR(int(track), int(sector))
 		}
@@ -174,7 +177,7 @@ func (j *Mechanics) FormatTrack() {
 	j.id2 = j.banks.Read(0x13 + uint16(bufNum))
 
 	// Create empty block
-	buf := make([]uint8, BLOCK_SIZE)
+	buf := make([]uint8, BlockSize)
 	buf[0] = 0x4b
 
 	// Write block to all sectors on track

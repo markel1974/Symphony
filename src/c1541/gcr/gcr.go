@@ -7,8 +7,8 @@ type GCR struct {
 
 func NewGCR() *GCR {
 	d := &GCR{
-		data:      make([]uint8, GCR_DISK_SIZE),
-		errorInfo: make([]uint8, NUM_SECTORS),
+		data:      make([]uint8, DiskSize),
+		errorInfo: make([]uint8, NumSectors),
 	}
 	for x := range d.data {
 		d.data[x] = 0x55

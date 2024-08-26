@@ -14,17 +14,21 @@ type Via2 struct {
 	*Core
 	iec              virtualdrive.IIec
 	mec              IMechanics
+	deviceNumber     uint8
 	signalIRQTrigger *signals.SignalUint32
 	signalIRQClear   *signals.SignalUint32
+	signalLed        *signals.SignalByte
 }
 
-func NewVia2(iec virtualdrive.IIec, mec IMechanics) *Via2 {
+func NewVia2(iec virtualdrive.IIec, mec IMechanics, deviceNumber uint8) *Via2 {
 	v := &Via2{
 		Core:             NewCore(),
 		iec:              iec,
 		mec:              mec,
+		deviceNumber:     deviceNumber,
 		signalIRQTrigger: signals.NewSignalUint32(),
 		signalIRQClear:   signals.NewSignalUint32(),
+		signalLed:        signals.NewSignalByte(),
 	}
 	return v
 }
@@ -42,6 +46,10 @@ func (v *Via2) SignalTriggerIRQBind(fn func(uint32)) {
 
 func (v *Via2) SignalClearIRQBind(fn func(uint32)) {
 	v.signalIRQClear.Bind(fn)
+}
+
+func (v *Via2) SignalLedBind(fn func(byte)) {
+	v.signalLed.Bind(fn)
 }
 
 func (v *Via2) ReadByte(addr uint16) uint8 {
@@ -197,10 +205,8 @@ func (v *Via2) updatePRB(prb uint8, data uint8) {
 	if (m & headControl) != 0 {
 		if (prb & headControl) == ((data + 1) & headControl) {
 			v.mec.MoveHeadOut()
-			//TODO HeadPosChangedEvent.Emit(_board->GetDeviceNumber(), currentHalfTrack);
 		} else if (prb & headControl) == ((data - 1) & headControl) {
 			v.mec.MoveHeadIn()
-			//TODO HeadPosChangedEvent.Emit(_board->GetDeviceNumber(), currentHalfTrack);
 		}
 	}
 	//bit [2]
@@ -213,9 +219,11 @@ func (v *Via2) updatePRB(prb uint8, data uint8) {
 	//bit [3]
 	//LED control; 0 = Off; 1 = On.
 	if (m & ledControl) != 0 {
-		led := (data & ledControl) != 0
-		fmt.Println("TODO - LED", led)
-		//TODO ledStateChangedEvent.Emit(_board->GetDeviceNumber(), state);
+		led := uint8(0)
+		if (data & ledControl) != 0 {
+			led = 1
+		}
+		v.signalLed.Emit(led)
 	}
 	//bit [4]
 	//Write protect photocell status; 0 = Write protect tab covered, disk protected; 1 = Tab uncovered, disk not protected.
