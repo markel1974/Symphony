@@ -1,6 +1,7 @@
 package mechanics
 
 import (
+	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/gcr"
 	"io"
 	"os"
 )
@@ -18,7 +19,7 @@ type Mechanics struct {
 	deviceNumber  uint8
 	banks         IBanks
 	motor         bool
-	factory       *GCRFactory
+	factory       *gcr.Factory
 }
 
 func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
@@ -32,7 +33,7 @@ func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
 		gcrTrackStart: 0,
 		gcrTrackEnd:   0,
 		errorInfo:     nil,
-		factory:       NewGCRFactory(),
+		factory:       gcr.NewFactory(),
 	}
 	return j
 }
@@ -40,7 +41,7 @@ func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
 func (j *Mechanics) Reset() {
 	j.gcrIdx = 0
 	j.gcrTrackStart = 0
-	j.gcrTrackEnd = j.gcrTrackStart + GCR_TRACK_SIZE
+	j.gcrTrackEnd = j.gcrTrackStart + gcr.GCR_TRACK_SIZE
 	j.currentHalfTrack = 2
 	j.writeProtected = false
 	j.gcrData = nil
@@ -128,23 +129,23 @@ func (j *Mechanics) MoveHeadOut() {
 		return
 	}
 	j.currentHalfTrack--
-	idx := ((j.currentHalfTrack >> 1) - 1) * GCR_TRACK_SIZE
+	idx := ((j.currentHalfTrack >> 1) - 1) * gcr.GCR_TRACK_SIZE
 	j.gcrTrackStart = idx
 	j.gcrIdx = idx
-	trackLength := int(_numSectors[j.currentHalfTrack>>1]) * GCR_SECTOR_SIZE
+	trackLength := int(gcr.GetNumSectors(j.currentHalfTrack>>1)) * gcr.GCR_SECTOR_SIZE
 	j.gcrTrackEnd = j.gcrTrackStart + trackLength
 }
 
 func (j *Mechanics) MoveHeadIn() {
-	const maxTracks = NUM_TRACKS * 2
+	const maxTracks = gcr.NUM_TRACKS * 2
 	if j.currentHalfTrack == maxTracks {
 		return
 	}
 	j.currentHalfTrack++
-	idx := ((j.currentHalfTrack >> 1) - 1) * GCR_TRACK_SIZE
+	idx := ((j.currentHalfTrack >> 1) - 1) * gcr.GCR_TRACK_SIZE
 	j.gcrTrackStart = idx
 	j.gcrIdx = idx
-	trackLength := int(_numSectors[j.currentHalfTrack>>1]) * GCR_SECTOR_SIZE
+	trackLength := int(gcr.GetNumSectors(j.currentHalfTrack>>1)) * gcr.GCR_SECTOR_SIZE
 	j.gcrTrackEnd = j.gcrTrackStart + trackLength
 }
 
@@ -166,8 +167,8 @@ func (j *Mechanics) openFile(filePath string) error {
 	if err != nil {
 		return err
 	}
-	j.gcrData = d.data
-	j.errorInfo = d.errorInfo
+	j.gcrData = d.GetData()
+	j.errorInfo = d.GetErrorInfo()
 	return nil
 }
 
@@ -198,56 +199,3 @@ func (j *Mechanics) closeFile() {
 	}
 */
 //}
-
-/*
-func (j *Mechanics) WriteSector() {
-	track := j.banks.Read(0x18)
-	sector := j.banks.Read(0x19)
-	start := uint16(j.banks.Read(0x30)) | (uint16(j.banks.Read(0x31)) << 8)
-	if start <= 0x0700 {
-		block := j.banks.ReadInterval(start, BLOCK_SIZE)
-		if j.writeTrackSector(int(track), int(sector), block) {
-			j.Sector2GCR(int(track), int(sector))
-		}
-	}
-}
-
-func (j *Mechanics) FormatTrack() {
-	track := j.banks.Read(0x51)
-	// Get new ID
-	bufNum := j.banks.Read(0x3d)
-	j.id1 = j.banks.Read(0x12 + uint16(bufNum))
-	j.id2 = j.banks.Read(0x13 + uint16(bufNum))
-
-	// Create empty block
-	buf := make([]uint8, BLOCK_SIZE)
-	buf[0] = 0x4b
-
-	// Write block to all sectors on track
-	for sector := 0; sector < int(_numSectors[track]); sector++ {
-		j.writeTrackSector(int(track), sector, buf)
-		j.Sector2GCR(int(track), sector)
-	}
-
-	// Clear error info (all sectors no error)
-	if track == 35 {
-		for x := range j.errorInfo {
-			j.errorInfo[x] = 1
-		}
-		// Write error_info to disk?
-	}
-}
-*/
-
-/*
-func (j *Mechanics) writeTrackSector(track int, sector int, buffer []uint8) bool {
-	offset := j.offsetFromTrackSector(track, sector)
-	// Convert track/sector to byte offset in file
-	if offset < 0 {
-		return false
-	}
-	copy(j.diskData[offset+j.headerLen:], buffer)
-	_ = os.WriteFile("a", j.diskData, 0644)
-	return true
-}
-*/

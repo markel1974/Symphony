@@ -1,34 +1,17 @@
-package mechanics
+package gcr
 
-import "fmt"
+import (
+	"fmt"
+)
 
-type GCR struct {
-	data      []uint8
-	errorInfo []uint8
+type Factory struct {
 }
 
-func NewGCR() *GCR {
-	d := &GCR{
-		data:      make([]uint8, GCR_DISK_SIZE),
-		errorInfo: make([]uint8, NUM_SECTORS),
-	}
-	for x := range d.data {
-		d.data[x] = 0x55
-	}
-	for x := range d.errorInfo {
-		d.errorInfo[x] = 1
-	}
-	return d
+func NewFactory() *Factory {
+	return &Factory{}
 }
 
-type GCRFactory struct {
-}
-
-func NewGCRFactory() *GCRFactory {
-	return &GCRFactory{}
-}
-
-func (gcr *GCRFactory) readSector(diskData []byte, headerLen int, track int, sector int) []uint8 {
+func (gcr *Factory) readSector(diskData []byte, headerLen int, track int, sector int) []uint8 {
 	// Convert track/sector to byte offset in file
 	offset := gcr.offsetFromTrackSector(track, sector)
 	if offset < 0 {
@@ -44,12 +27,12 @@ func (gcr *GCRFactory) readSector(diskData []byte, headerLen int, track int, sec
 }
 
 // secNumFromTs Convert track/sector to offset
-func (gcr *GCRFactory) secNumFromTs(track int, sector int) int {
+func (gcr *Factory) secNumFromTs(track int, sector int) int {
 	return _sectorOffset[track] + sector
 }
 
 // offsetFromTrackSector Convert track/sector to offset
-func (gcr *GCRFactory) offsetFromTrackSector(track int, sector int) int {
+func (gcr *Factory) offsetFromTrackSector(track int, sector int) int {
 	if (track < 1) || (track > NUM_TRACKS) || (sector < 0) || (sector >= int(_numSectors[track])) {
 		return -1
 	}
@@ -57,7 +40,7 @@ func (gcr *GCRFactory) offsetFromTrackSector(track int, sector int) int {
 }
 
 // Conv4 Convert 4 bytes to 5 GCR encoded bytes
-func (gcr *GCRFactory) conv4(from []uint8, to []uint8) {
+func (gcr *Factory) conv4(from []uint8, to []uint8) {
 	g := (_gcrTable[from[0]>>4] << 5) | _gcrTable[from[0]&15]
 	to[0] = uint8(g >> 2)
 	to[1] = uint8((g << 6) & 0xc0)
@@ -72,14 +55,14 @@ func (gcr *GCRFactory) conv4(from []uint8, to []uint8) {
 	to[4] = uint8(g)
 }
 
-func (gcr *GCRFactory) convertSector(diskData []byte, gcrData []uint8, headerLen int, id1 uint8, id2 uint8, track int, sector int) {
+func (gcr *Factory) convertSector(diskData []byte, gcrData []uint8, headerLen int, id1 uint8, id2 uint8, track int, sector int) {
 	buf := make([]uint8, 4)
 	p := (track-1)*GCR_TRACK_SIZE + sector*GCR_SECTOR_SIZE
 	block := gcr.readSector(diskData, headerLen, track, sector)
 	if block == nil {
 		return
 	}
-	// Create GCRFactory header
+	// Create GCR header
 	// SYNC
 	gcrData[p] = 0xff
 	p++
@@ -140,7 +123,7 @@ func (gcr *GCRFactory) convertSector(diskData []byte, gcrData []uint8, headerLen
 }
 
 // Create GCR disk from image disk
-func (gcr *GCRFactory) Create(image []byte) (*GCR, error) {
+func (gcr *Factory) Create(image []byte) (*GCR, error) {
 	d := NewGCR()
 	diskDataLen := len(image)
 	if diskDataLen < NUM_SECTORS*BLOCK_SIZE {
@@ -169,3 +152,56 @@ func (gcr *GCRFactory) Create(image []byte) (*GCR, error) {
 	}
 	return d, nil
 }
+
+/*
+func (j *Mechanics) WriteSector() {
+	track := j.banks.Read(0x18)
+	sector := j.banks.Read(0x19)
+	start := uint16(j.banks.Read(0x30)) | (uint16(j.banks.Read(0x31)) << 8)
+	if start <= 0x0700 {
+		block := j.banks.ReadInterval(start, BLOCK_SIZE)
+		if j.writeTrackSector(int(track), int(sector), block) {
+			j.Sector2GCR(int(track), int(sector))
+		}
+	}
+}
+
+func (j *Mechanics) FormatTrack() {
+	track := j.banks.Read(0x51)
+	// Get new ID
+	bufNum := j.banks.Read(0x3d)
+	j.id1 = j.banks.Read(0x12 + uint16(bufNum))
+	j.id2 = j.banks.Read(0x13 + uint16(bufNum))
+
+	// Create empty block
+	buf := make([]uint8, BLOCK_SIZE)
+	buf[0] = 0x4b
+
+	// Write block to all sectors on track
+	for sector := 0; sector < int(_numSectors[track]); sector++ {
+		j.writeTrackSector(int(track), sector, buf)
+		j.Sector2GCR(int(track), sector)
+	}
+
+	// Clear error info (all sectors no error)
+	if track == 35 {
+		for x := range j.errorInfo {
+			j.errorInfo[x] = 1
+		}
+		// Write error_info to disk?
+	}
+}
+*/
+
+/*
+func (j *Mechanics) writeTrackSector(track int, sector int, buffer []uint8) bool {
+	offset := j.offsetFromTrackSector(track, sector)
+	// Convert track/sector to byte offset in file
+	if offset < 0 {
+		return false
+	}
+	copy(j.diskData[offset+j.headerLen:], buffer)
+	_ = os.WriteFile("a", j.diskData, 0644)
+	return true
+}
+*/
