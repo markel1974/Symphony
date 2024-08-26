@@ -1,7 +1,6 @@
 package mechanics
 
 import (
-	"fmt"
 	"io"
 	"os"
 )
@@ -22,6 +21,7 @@ type Mechanics struct {
 	filePath      string
 	deviceNumber  uint8
 	banks         IBanks
+	motor         bool
 }
 
 func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
@@ -29,6 +29,7 @@ func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
 		Core:         NewCore(),
 		deviceNumber: deviceNumber,
 		banks:        banks,
+		motor:        false,
 	}
 	j.id1 = 0
 	j.id2 = 0
@@ -55,6 +56,37 @@ func (j *Mechanics) Setup(filePath string) {
 	}
 }
 
+//var _v = int64(0)
+
+func (j *Mechanics) Emulate() {
+	//The measurement of the speed of rotation of the Commodore 1541 floppy disk drive is very accurate,
+	//as long as it is between 265 and 325 revolutions per minute. Outside these ranges,
+	//the program may return unreliable values, but this does not matter, since the speed must be set at 300 rpm.
+	/*
+		if j.motor {
+			now := time.Now().UnixMilli()
+			v := now / 200
+			if v > _v {
+				_v = v
+				//fmt.Println("ROTATION", v)
+				j.rotateDisk()
+			}
+		}
+	*/
+}
+
+func (j *Mechanics) RotateDisk() {
+	//fmt.Println("ROTATION")
+	j.gcrIdx++
+	if j.gcrIdx == j.gcrTrackEnd {
+		j.gcrIdx = j.gcrTrackStart
+	}
+}
+
+func (j *Mechanics) SetMotor(m bool) {
+	j.motor = m
+}
+
 func (j *Mechanics) HasDisk() bool {
 	return j.diskData != nil
 }
@@ -79,7 +111,6 @@ func (j *Mechanics) SyncFound() bool {
 	if j.gcrData[j.gcrIdx] == 0xff {
 		return true
 	}
-	j.RotateDisk()
 	return false
 }
 
@@ -100,96 +131,29 @@ func (j *Mechanics) WriteGCRByte(data uint8) {
 	//fmt.Println("------------------")
 }
 
-func (j *Mechanics) RotateDisk() {
-	j.gcrIdx++
-	if j.gcrIdx == j.gcrTrackEnd {
-		j.gcrIdx = j.gcrTrackStart
-	}
-}
-
-func (j *Mechanics) UpdatePRB(prb uint8, data uint8) {
-	const headControl = 0x3
-	const motorControl = 0x4
-	const ledControl = 0x8
-	const photocellControl = 0x10
-	const densityControl = 0x60
-	const syncControl = 0x80
-
-	m := prb ^ data
-
-	//bit [0,1]
-	//Head step direction.
-	//Decrease value (%00-%11-%10-%01-%00...) to move head downwards
-	//Increase value (%00-%01-%10-%11-%00...) to move head upwards
-	if (m & headControl) != 0 {
-		if (prb & headControl) == ((data + 1) & headControl) {
-			j.moveHeadOut()
-		} else if (prb & headControl) == ((data - 1) & headControl) {
-			j.moveHeadIn()
-		}
-	}
-	//bit [2]
-	//Motor control; 0 = Off; 1 = On.
-	if (m & motorControl) != 0 {
-		motor := (data & motorControl) != 0
-		fmt.Println("TODO - MOTOR", motor)
-	}
-	//bit [3]
-	//LED control; 0 = Off; 1 = On.
-	if (m & ledControl) != 0 {
-		led := (data & ledControl) != 0
-		fmt.Println("TODO - LED", led)
-		//ledStateChangedEvent.Emit(_board->GetDeviceNumber(), state);
-		//v.mec.UpdateLEDs(l) // Bit 3: VirtualDrive LED
-	}
-	//bit [4]
-	//Write protect photocell status; 0 = Write protect tab covered, disk protected; 1 = Tab uncovered, disk not protected.
-	if (m & photocellControl) != 0 {
-		//photocell := (data & photocellControl) != 0
-		//fmt.Println("TODO - PHOTOCELL", photocell)
-	}
-	//bit [5-6]:
-	//Data density; %00 = Lowest; %11 = Highest.
-	if (m & densityControl) != 0 {
-		density := (data & densityControl) >> 5
-		fmt.Printf("TODO - DENSITY %2b\n", density)
-	}
-	//Bit [7]
-	//0 = SYNC marks are being currently read from disk; 1 = Data bytes are being read.
-	if (m & syncControl) != 0 {
-		//sync := (data & syncControl) != 0
-		//fmt.Println("TODO - SYNC", sync)
-	}
-}
-
-func (j *Mechanics) moveHeadOut() {
+func (j *Mechanics) MoveHeadOut() {
 	if j.currentHalfTrack == 2 {
-		//NOTHING TO DO
-	} else {
-		j.currentHalfTrack--
-		idx := ((j.currentHalfTrack >> 1) - 1) * GCR_TRACK_SIZE
-		j.gcrTrackStart = idx
-		j.gcrIdx = idx
-		trackLength := int(_numSectors[j.currentHalfTrack>>1]) * GCR_SECTOR_SIZE
-		j.gcrTrackEnd = j.gcrTrackStart + trackLength
+		return
 	}
-	//TODO
-	// HeadPosChangedEvent.Emit(_board->GetDeviceNumber(), currentHalfTrack);
+	j.currentHalfTrack--
+	idx := ((j.currentHalfTrack >> 1) - 1) * GCR_TRACK_SIZE
+	j.gcrTrackStart = idx
+	j.gcrIdx = idx
+	trackLength := int(_numSectors[j.currentHalfTrack>>1]) * GCR_SECTOR_SIZE
+	j.gcrTrackEnd = j.gcrTrackStart + trackLength
 }
 
-func (j *Mechanics) moveHeadIn() {
-	if j.currentHalfTrack == NUM_TRACKS*2 {
-		//NOTHING TO DO
-	} else {
-		j.currentHalfTrack++
-		idx := ((j.currentHalfTrack >> 1) - 1) * GCR_TRACK_SIZE
-		j.gcrTrackStart = idx
-		j.gcrIdx = idx
-		trackLength := int(_numSectors[j.currentHalfTrack>>1]) * GCR_SECTOR_SIZE
-		j.gcrTrackEnd = j.gcrTrackStart + trackLength
+func (j *Mechanics) MoveHeadIn() {
+	const maxTracks = NUM_TRACKS * 2
+	if j.currentHalfTrack == maxTracks {
+		return
 	}
-	//TODO
-	// HeadPosChangedEvent.Emit(_board->GetDeviceNumber(), currentHalfTrack);
+	j.currentHalfTrack++
+	idx := ((j.currentHalfTrack >> 1) - 1) * GCR_TRACK_SIZE
+	j.gcrTrackStart = idx
+	j.gcrIdx = idx
+	trackLength := int(_numSectors[j.currentHalfTrack>>1]) * GCR_SECTOR_SIZE
+	j.gcrTrackEnd = j.gcrTrackStart + trackLength
 }
 
 func (j *Mechanics) openFile() bool {

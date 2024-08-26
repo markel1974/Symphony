@@ -1,6 +1,7 @@
 package via
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/signals"
@@ -50,8 +51,10 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 		wps := v.mec.WriteProtectionState()
 		if v.mec.SyncFound() {
 			return (v.prb & 0x7f) | wps
+		} else {
+			v.mec.RotateDisk()
+			return (v.prb | 0x80) | wps
 		}
-		return (v.prb | 0x80) | wps
 	case 0x1c01:
 		d := v.mec.ReadGCRByte()
 		v.mec.RotateDisk()
@@ -100,7 +103,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 func (v *Via2) WriteByte(addr uint16, data uint8) {
 	switch addr {
 	case 0x1c00:
-		v.mec.UpdatePRB(v.prb, data)
+		v.updatePRB(v.prb, data)
 		v.prb = data & 0xef
 	case 0x1c01:
 		v.mec.WriteGCRByte(data)
@@ -147,7 +150,7 @@ func (v *Via2) WriteByte(addr uint16, data uint8) {
 	}
 }
 
-func (v *Via2) CountTimers() {
+func (v *Via2) Emulate() {
 	t1c := uint(v.t1c) - 1
 	v.t1c = uint16(t1c)
 	if t1c > defaultViaTimeout {
@@ -176,6 +179,63 @@ func (v *Via2) ByteReady() bool {
 		return true
 	}
 	return false
+}
+
+func (v *Via2) updatePRB(prb uint8, data uint8) {
+	const headControl = 0x3
+	const motorControl = 0x4
+	const ledControl = 0x8
+	const photocellControl = 0x10
+	const densityControl = 0x60
+	const syncControl = 0x80
+
+	m := prb ^ data
+
+	//bit [0,1]
+	//Head step direction.
+	//Decrease value (%00-%11-%10-%01-%00...) to move head downwards
+	//Increase value (%00-%01-%10-%11-%00...) to move head upwards
+	if (m & headControl) != 0 {
+		if (prb & headControl) == ((data + 1) & headControl) {
+			v.mec.MoveHeadOut()
+			//TODO HeadPosChangedEvent.Emit(_board->GetDeviceNumber(), currentHalfTrack);
+		} else if (prb & headControl) == ((data - 1) & headControl) {
+			v.mec.MoveHeadIn()
+			//TODO HeadPosChangedEvent.Emit(_board->GetDeviceNumber(), currentHalfTrack);
+		}
+	}
+	//bit [2]
+	//Motor control; 0 = Off; 1 = On.
+	if (m & motorControl) != 0 {
+		motorOn := (data & motorControl) != 0
+		v.mec.SetMotor(motorOn)
+		fmt.Println("TODO - MOTOR", motorOn)
+	}
+	//bit [3]
+	//LED control; 0 = Off; 1 = On.
+	if (m & ledControl) != 0 {
+		led := (data & ledControl) != 0
+		fmt.Println("TODO - LED", led)
+		//TODO ledStateChangedEvent.Emit(_board->GetDeviceNumber(), state);
+	}
+	//bit [4]
+	//Write protect photocell status; 0 = Write protect tab covered, disk protected; 1 = Tab uncovered, disk not protected.
+	if (m & photocellControl) != 0 {
+		//photocell := (data & photocellControl) != 0
+		//fmt.Println("TODO - PHOTOCELL", photocell)
+	}
+	//bit [5-6]:
+	//Data density; %00 = Lowest; %11 = Highest.
+	if (m & densityControl) != 0 {
+		density := (data & densityControl) >> 5
+		fmt.Printf("TODO - DENSITY %2b\n", density)
+	}
+	//Bit [7]
+	//0 = SYNC marks are being currently read from disk; 1 = Data bytes are being read.
+	if (m & syncControl) != 0 {
+		sync := (data & syncControl) != 0
+		fmt.Println("TODO - SYNC", !sync)
+	}
 }
 
 /*

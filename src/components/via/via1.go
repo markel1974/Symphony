@@ -156,7 +156,7 @@ func (v *Via1) WriteByte(addr uint16, data uint8) {
 	}
 }
 
-func (v *Via1) CountTimers() {
+func (v *Via1) Emulate() {
 	t1c := uint(v.t1c) - 1
 	v.t1c = uint16(t1c)
 

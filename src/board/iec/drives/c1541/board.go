@@ -76,8 +76,9 @@ func (m *Board) Reset() {
 }
 
 func (m *Board) Emulate() {
-	m.via1.CountTimers()
-	m.via2.CountTimers()
+	m.mec.Emulate()
+	m.via1.Emulate()
+	m.via2.Emulate()
 	m.cpu.Emulate()
 	m.quartz.AddCycle()
 }
