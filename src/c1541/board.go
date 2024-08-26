@@ -1,9 +1,9 @@
 package c1541
 
 import (
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/banks"
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
-	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/c1541/banks"
+	"github.com/markel1974/c64emu/src/c1541/mechanics"
+	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/components/6510fn"
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/via"

@@ -2,8 +2,8 @@ package flash
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
-	"github.com/markel1974/c64emu/src/board/snapshot"
+	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
+	"github.com/markel1974/c64emu/src/c64/snapshot"
 	"github.com/markel1974/c64emu/src/components/quartz"
 )
 

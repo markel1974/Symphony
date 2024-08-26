@@ -1,7 +1,7 @@
 package mechanics
 
 import (
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/gcr"
+	gcr2 "github.com/markel1974/c64emu/src/c1541/gcr"
 	"io"
 	"os"
 )
@@ -19,7 +19,7 @@ type Mechanics struct {
 	deviceNumber  uint8
 	banks         IBanks
 	motor         bool
-	factory       *gcr.Factory
+	factory       *gcr2.Factory
 }
 
 func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
@@ -33,7 +33,7 @@ func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
 		gcrTrackStart: 0,
 		gcrTrackEnd:   0,
 		errorInfo:     nil,
-		factory:       gcr.NewFactory(),
+		factory:       gcr2.NewFactory(),
 	}
 	return j
 }
@@ -41,7 +41,7 @@ func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
 func (j *Mechanics) Reset() {
 	j.gcrIdx = 0
 	j.gcrTrackStart = 0
-	j.gcrTrackEnd = j.gcrTrackStart + gcr.GCR_TRACK_SIZE
+	j.gcrTrackEnd = j.gcrTrackStart + gcr2.GCR_TRACK_SIZE
 	j.currentHalfTrack = 2
 	j.writeProtected = false
 	j.gcrData = nil
@@ -129,23 +129,23 @@ func (j *Mechanics) MoveHeadOut() {
 		return
 	}
 	j.currentHalfTrack--
-	idx := ((j.currentHalfTrack >> 1) - 1) * gcr.GCR_TRACK_SIZE
+	idx := ((j.currentHalfTrack >> 1) - 1) * gcr2.GCR_TRACK_SIZE
 	j.gcrTrackStart = idx
 	j.gcrIdx = idx
-	trackLength := int(gcr.GetNumSectors(j.currentHalfTrack>>1)) * gcr.GCR_SECTOR_SIZE
+	trackLength := int(gcr2.GetNumSectors(j.currentHalfTrack>>1)) * gcr2.GCR_SECTOR_SIZE
 	j.gcrTrackEnd = j.gcrTrackStart + trackLength
 }
 
 func (j *Mechanics) MoveHeadIn() {
-	const maxTracks = gcr.NUM_TRACKS * 2
+	const maxTracks = gcr2.NUM_TRACKS * 2
 	if j.currentHalfTrack == maxTracks {
 		return
 	}
 	j.currentHalfTrack++
-	idx := ((j.currentHalfTrack >> 1) - 1) * gcr.GCR_TRACK_SIZE
+	idx := ((j.currentHalfTrack >> 1) - 1) * gcr2.GCR_TRACK_SIZE
 	j.gcrTrackStart = idx
 	j.gcrIdx = idx
-	trackLength := int(gcr.GetNumSectors(j.currentHalfTrack>>1)) * gcr.GCR_SECTOR_SIZE
+	trackLength := int(gcr2.GetNumSectors(j.currentHalfTrack>>1)) * gcr2.GCR_SECTOR_SIZE
 	j.gcrTrackEnd = j.gcrTrackStart + trackLength
 }
 

@@ -5,13 +5,13 @@ package easyflash
 import (
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/cartridges/easyflash/flash"
-	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
-	"github.com/markel1974/c64emu/src/board/cartridges/loader"
+	"github.com/markel1974/c64emu/src/c64/cartridges/easyflash/flash"
+	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
+	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/filler"
 
 	//"github.com/markel1974/c64emu/src/board/ram"
-	"github.com/markel1974/c64emu/src/board/snapshot"
+	"github.com/markel1974/c64emu/src/c64/snapshot"
 	"io"
 	"os"
 )

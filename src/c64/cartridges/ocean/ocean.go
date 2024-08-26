@@ -2,8 +2,8 @@ package ocean
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
-	"github.com/markel1974/c64emu/src/board/cartridges/loader"
+	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
+	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 )
 
 type CartridgeOcean struct {

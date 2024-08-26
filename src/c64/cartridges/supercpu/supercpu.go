@@ -1,8 +1,8 @@
 package supercpu
 
 import (
-	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
-	"github.com/markel1974/c64emu/src/board/cartridges/loader"
+	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
+	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 	cpu2 "github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/quartz"
 )

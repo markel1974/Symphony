@@ -2,9 +2,9 @@ package iec
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541"
-	"github.com/markel1974/c64emu/src/board/iec/drives/fsdrive"
-	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/c1541"
+	"github.com/markel1974/c64emu/src/c64/iec/drives/fsdrive"
+	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/signals"
 	"strings"

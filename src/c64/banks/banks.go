@@ -1,9 +1,9 @@
 package banks
 
 import (
-	"github.com/markel1974/c64emu/src/board/banks/roms"
-	"github.com/markel1974/c64emu/src/board/cartridges"
-	"github.com/markel1974/c64emu/src/board/cartridges/icartridge"
+	"github.com/markel1974/c64emu/src/c64/banks/roms"
+	"github.com/markel1974/c64emu/src/c64/cartridges"
+	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	cia3 "github.com/markel1974/c64emu/src/components/cia"
 	"github.com/markel1974/c64emu/src/components/sid"
 	"github.com/markel1974/c64emu/src/components/vic"

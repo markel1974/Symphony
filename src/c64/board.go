@@ -1,11 +1,11 @@
-package board
+package c64
 
 import (
-	"github.com/markel1974/c64emu/src/board/banks"
-	"github.com/markel1974/c64emu/src/board/cartridges"
-	"github.com/markel1974/c64emu/src/board/iec"
-	"github.com/markel1974/c64emu/src/board/keyboard"
-	"github.com/markel1974/c64emu/src/board/prg"
+	"github.com/markel1974/c64emu/src/c64/banks"
+	"github.com/markel1974/c64emu/src/c64/cartridges"
+	"github.com/markel1974/c64emu/src/c64/iec"
+	"github.com/markel1974/c64emu/src/c64/keyboard"
+	"github.com/markel1974/c64emu/src/c64/prg"
 	"github.com/markel1974/c64emu/src/components/6510fn"
 	"github.com/markel1974/c64emu/src/components/cia"
 	"github.com/markel1974/c64emu/src/components/quartz"

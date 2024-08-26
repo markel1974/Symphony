@@ -1,7 +1,7 @@
 package via
 
 import (
-	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/signals"
 )
 

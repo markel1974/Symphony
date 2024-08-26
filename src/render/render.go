@@ -1,7 +1,7 @@
 package render
 
 import (
-	"github.com/markel1974/c64emu/src/board"
+	"github.com/markel1974/c64emu/src/c64"
 	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/pixels"
@@ -14,7 +14,7 @@ type Point struct {
 
 type Render struct {
 	prefs        *config.Config
-	c64Board     *board.Board
+	c64Board     *c64.Board
 	scale        float64
 	fullscreen   bool
 	showMap      bool
@@ -50,7 +50,7 @@ func (g *Render) setup(pos pixels.Vec) {
 	g.mainSprite.Set(g.mainSurface, g.mainSurface.Bounds())
 	g.mainMatrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
 	g.db = NewDisplayBuffer(g.mainSurface)
-	g.c64Board = board.NewBoard(g.db)
+	g.c64Board = c64.NewBoard(g.db)
 	_ = g.c64Board.Setup(g.prefs)
 	g.inputs.Setup(g.c64Board, g.maxW, g.maxH)
 }

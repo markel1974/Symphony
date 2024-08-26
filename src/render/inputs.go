@@ -1,13 +1,13 @@
 package render
 
 import (
-	"github.com/markel1974/c64emu/src/board"
-	"github.com/markel1974/c64emu/src/board/keyboard"
+	"github.com/markel1974/c64emu/src/c64"
+	"github.com/markel1974/c64emu/src/c64/keyboard"
 	"github.com/markel1974/c64emu/src/pixels"
 )
 
 type Inputs struct {
-	b          *board.Board
+	b          *c64.Board
 	keyMapper  []func(bool)
 	activeKeys map[pixels.Button]bool
 	joyKeys    bool
@@ -30,7 +30,7 @@ func NewInputs() *Inputs {
 	}
 }
 
-func (g *Inputs) Setup(b *board.Board, maxW float64, maxH float64) {
+func (g *Inputs) Setup(b *c64.Board, maxW float64, maxH float64) {
 	const max = int(pixels.KeyLast + 1)
 	g.b = b
 	g.maxW = int(maxW)
