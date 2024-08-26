@@ -85,7 +85,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 
 	s.pic = mos6510fn.NewPic()
 	s.iec = iec.NewIEC()
-	s.cpu = mos6510fn.NewMOS6510fn("c64")
+	s.cpu = mos6510fn.NewMOS6510("c64")
 	s.vic = vic.NewMOS6569(s.db)
 	s.sid = sid.NewMOS6581()
 	s.cia1 = cia.NewMOS6526A()

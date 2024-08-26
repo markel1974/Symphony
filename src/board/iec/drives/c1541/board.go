@@ -4,19 +4,19 @@ import (
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/banks"
 	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
-	cpu2 "github.com/markel1974/c64emu/src/components/6510"
+	"github.com/markel1974/c64emu/src/components/6510fn"
 	"github.com/markel1974/c64emu/src/components/quartz"
-	via3 "github.com/markel1974/c64emu/src/components/via"
+	"github.com/markel1974/c64emu/src/components/via"
 	"github.com/markel1974/c64emu/src/config"
 )
 
 type Board struct {
-	pic          *cpu2.Pic
+	pic          *mos6510fn.Pic
+	cpu          *mos6510fn.MOS6510
 	iec          virtualdrive.IIec
 	quartz       *quartz.Quartz
-	cpu          *cpu2.MOS6510
-	via1         *via3.Via1
-	via2         *via3.Via2
+	via1         *via.Via1
+	via2         *via.Via2
 	banks        *banks.Banks
 	mec          *mechanics.Mechanics
 	deviceId     uint8
@@ -46,11 +46,11 @@ func (m *Board) Setup(cfg *config.Config) {
 
 	m.banks = banks.New()
 	m.quartz = quartz.NewQuartz()
-	m.pic = cpu2.NewPic()
-	m.cpu = cpu2.NewMOS6510("c1541")
+	m.pic = mos6510fn.NewPic()
+	m.cpu = mos6510fn.NewMOS6510("c1541")
 	m.mec = mechanics.NewMechanics(m.banks, m.deviceNumber)
-	m.via1 = via3.NewVia1(m.iec, m.deviceNumber)
-	m.via2 = via3.NewVia2(m.iec, m.mec)
+	m.via1 = via.NewVia1(m.iec, m.deviceNumber)
+	m.via2 = via.NewVia2(m.iec, m.mec)
 
 	m.banks.Setup(m.via1, m.via2, cfg)
 	m.pic.Setup(m.quartz)
@@ -76,7 +76,7 @@ func (m *Board) Reset() {
 }
 
 func (m *Board) Emulate() {
-	m.mec.Emulate()
+	//m.mec.Emulate()
 	m.via1.Emulate()
 	m.via2.Emulate()
 	m.cpu.Emulate()

@@ -14,7 +14,7 @@ func NewCore() *Core {
 }
 
 func (c *Core) Reset() {
-	c.currentHalfTrack = 0
+	c.currentHalfTrack = 2
 	c.gcr = 0
 	c.writeProtected = false
 	c.diskChanged = false

@@ -2,7 +2,6 @@ package via
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/board/iec/drives/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/board/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/signals"
 )
@@ -14,12 +13,12 @@ import (
 type Via2 struct {
 	*Core
 	iec              virtualdrive.IIec
-	mec              *mechanics.Mechanics
+	mec              IMechanics
 	signalIRQTrigger *signals.SignalUint32
 	signalIRQClear   *signals.SignalUint32
 }
 
-func NewVia2(iec virtualdrive.IIec, mec *mechanics.Mechanics) *Via2 {
+func NewVia2(iec virtualdrive.IIec, mec IMechanics) *Via2 {
 	v := &Via2{
 		Core:             NewCore(),
 		iec:              iec,
@@ -56,7 +55,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 			return (v.prb | 0x80) | wps
 		}
 	case 0x1c01:
-		d := v.mec.ReadGCRByte()
+		d := v.mec.ReadByte()
 		v.mec.RotateDisk()
 		return d
 	case 0x1c02:
@@ -92,7 +91,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 	case 0x1c0e:
 		return v.ier | 0x80
 	case 0x1c0f:
-		d := v.mec.ReadGCRByte()
+		d := v.mec.ReadByte()
 		v.mec.RotateDisk()
 		return d
 	default:
@@ -106,7 +105,7 @@ func (v *Via2) WriteByte(addr uint16, data uint8) {
 		v.updatePRB(v.prb, data)
 		v.prb = data & 0xef
 	case 0x1c01:
-		v.mec.WriteGCRByte(data)
+		v.mec.WriteByte(data)
 		v.mec.RotateDisk()
 		v.pra = data
 	case 0x1c02:
@@ -144,7 +143,7 @@ func (v *Via2) WriteByte(addr uint16, data uint8) {
 			v.ier &= ^data
 		}
 	case 0x1c0f:
-		v.mec.WriteGCRByte(data)
+		v.mec.WriteByte(data)
 		v.mec.RotateDisk()
 		v.pra = data
 	}

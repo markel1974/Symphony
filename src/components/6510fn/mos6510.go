@@ -15,7 +15,7 @@ type MOS6510 struct {
 	id   string
 }
 
-func NewMOS6510fn(id string) *MOS6510 {
+func NewMOS6510(id string) *MOS6510 {
 	cpu := &MOS6510{
 		core: nil,
 		id:   id,
