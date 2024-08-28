@@ -26,8 +26,8 @@ type MOS6526A struct {
 	joy1                  uint8    // Joystick 1 AND value
 	joy2                  uint8    // Joystick 2 AND value
 	tod                   *TOD
-	timerA                *TimerA
-	timerB                *TimerB
+	timerA                *Timer
+	timerB                *Timer
 }
 
 func NewMOS6526A() *MOS6526A {
@@ -36,32 +36,31 @@ func NewMOS6526A() *MOS6526A {
 		signalIRQClear:        signals.NewSignalUint32(),
 		signalLightPenTrigger: signals.NewSignal(),
 		tod:                   NewTOD(),
+		timerA:                NewTimer(),
+		timerB:                NewTimer(),
 	}
-	m.timerA = NewTimerA()
-	m.timerB = NewTimerB()
-	m.timerA.SignalTimerAUnderflowBind(m.timerAUnderflowSlot)
-	m.timerB.SignalTimerBUnderflowBind(m.timerBUnderflowSlot)
+	m.timerA.SignalTimerUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrqNextCycle = true })
+	m.timerB.SignalTimerUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrqNextCycle = true })
 	return m
 }
 
 func (cia1 *MOS6526A) Setup(cfg *config.Config) {
-
 }
 
 func (cia1 *MOS6526A) CheckIRQs() {
 	if cia1.timerAIrqNextCycle {
 		cia1.timerAIrqNextCycle = false
-		cia1.triggerIrq(IRQUnderflowTimerA)
+		cia1.triggerIrq()
 	}
 	if cia1.timerBIrqNextCycle {
 		cia1.timerBIrqNextCycle = false
-		cia1.triggerIrq(IRQUnderflowTimerB)
+		cia1.triggerIrq()
 	}
 }
 
 func (cia1 *MOS6526A) Emulate() {
-	taUnderflow := cia1.timerA.Emulate()
-	cia1.timerB.Emulate(taUnderflow)
+	underflow := cia1.timerA.Emulate(false)
+	cia1.timerB.Emulate(underflow)
 }
 
 func (cia1 *MOS6526A) SignalTriggerIRQBind(fn func(uint32)) {
@@ -77,8 +76,9 @@ func (cia1 *MOS6526A) SignalLightPenTriggerBind(fn func()) {
 }
 
 func (cia1 *MOS6526A) Update() {
-	if cia1.tod.Update(cia1.timerA.crA & 0x80) {
-		cia1.triggerIrq(IRQTODAlarmEqual)
+	if cia1.tod.Update(cia1.timerA.GetCR() & 0x80) {
+		cia1.icr |= IRQTODAlarmEqual
+		cia1.triggerIrq()
 	}
 }
 
@@ -163,7 +163,6 @@ func (cia1 *MOS6526A) ReadRegister(addr uint16) uint8 {
 			ret &= cia1.revMatrix[7]
 		}
 		return ret & cia1.joy2
-
 	case 0x01:
 		//joy port 1
 		ret := ^cia1.ddrB
@@ -193,57 +192,42 @@ func (cia1 *MOS6526A) ReadRegister(addr uint16) uint8 {
 			ret &= cia1.keyMatrix[7]
 		}
 		return (ret | (cia1.prB & cia1.ddrB)) & cia1.joy1
-
 	case 0x02:
 		return cia1.ddrA
-
 	case 0x03:
 		return cia1.ddrB
-
 	case 0x04:
-		return uint8(cia1.timerA.timerA)
-
+		return uint8(cia1.timerA.GetTimer())
 	case 0x05:
-		return uint8(cia1.timerA.timerA >> 8)
-
+		return uint8(cia1.timerA.GetTimer() >> 8)
 	case 0x06:
-		return uint8(cia1.timerB.timerB)
-
+		return uint8(cia1.timerB.GetTimer())
 	case 0x07:
-		return uint8(cia1.timerB.timerB >> 8)
-
+		return uint8(cia1.timerB.GetTimer() >> 8)
 	case 0x08:
 		v := cia1.tod.Get10ths()
 		cia1.tod.Unfreeze()
 		return v
-
 	case 0x09:
 		return cia1.tod.GetSec()
-
 	case 0x0a:
 		return cia1.tod.GetMin()
-
 	case 0x0b:
 		cia1.tod.Freeze()
 		return cia1.tod.GetHour()
-
 	case 0x0c:
 		return cia1.sdr
-
 	case 0x0d:
-		// Read and clear ICR
-		ret := cia1.icr
+		icr := cia1.icr
 		cia1.icr = 0
-		if ret != 0 {
+		if icr != 0 {
 			cia1.signalIRQClear.Emit(intrCia1Id)
 		}
-		return ret
-
+		return icr
 	case 0x0e:
-		return cia1.timerA.crA
-
+		return cia1.timerA.GetCR()
 	case 0x0f:
-		return cia1.timerB.crB
+		return cia1.timerB.GetCR()
 	}
 	return 0 // Can't happen
 }
@@ -253,70 +237,50 @@ func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 	switch addr {
 	case 0x00:
 		cia1.prA = data
-
 	case 0x01:
 		cia1.prB = data
 		cia1.checkLightPen()
-
 	case 0x02:
 		cia1.ddrA = data
-
 	case 0x03:
 		cia1.ddrB = data
 		cia1.checkLightPen()
-
 	case 0x04:
-		cia1.timerA.latchA = (cia1.timerA.latchA & 0xff00) | uint16(data)
-
+		cia1.timerA.SetLatchLowByte(data)
 	case 0x05:
-		cia1.timerA.latchA = (cia1.timerA.latchA & 0xff) | (uint16(data) << 8)
-		if (cia1.timerA.crA & 1) == 0 {
-			// Reload timer if stopped
-			cia1.timerA.timerA = cia1.timerA.latchA
-		}
-
+		cia1.timerA.SetLatchHighByte(data)
 	case 0x06:
-		cia1.timerB.latchB = (cia1.timerB.latchB & 0xff00) | uint16(data)
-
+		cia1.timerB.SetLatchLowByte(data)
 	case 0x07:
-		cia1.timerB.latchB = (cia1.timerB.latchB & 0xff) | (uint16(data) << 8)
-		if (cia1.timerB.crB & 1) == 0 {
-			// Reload timer if stopped
-			cia1.timerB.timerB = cia1.timerB.latchB
-		}
-
+		cia1.timerB.SetLatchHighByte(data)
 	case 0x08:
-		if (cia1.timerB.crB & 0x80) != 0 {
+		if (cia1.timerB.GetCR() & 0x80) != 0 {
 			cia1.tod.SetAlarm10ths(data & 0x0f)
 		} else {
 			cia1.tod.Set10ths(data & 0x0f)
 		}
-
 	case 0x09:
-		if (cia1.timerB.crB & 0x80) != 0 {
+		if (cia1.timerB.GetCR() & 0x80) != 0 {
 			cia1.tod.SetAlarmSec(data & 0x7f)
 		} else {
 			cia1.tod.SetSec(data & 0x7f)
 		}
-
 	case 0x0a:
-		if (cia1.timerB.crB & 0x80) != 0 {
+		if (cia1.timerB.GetCR() & 0x80) != 0 {
 			cia1.tod.SetAlarmMin(data & 0x7f)
 		} else {
 			cia1.tod.SetMin(data & 0x7f)
 		}
-
 	case 0x0b:
-		if (cia1.timerB.crB & 0x80) != 0 {
+		if (cia1.timerB.GetCR() & 0x80) != 0 {
 			cia1.tod.SetAlarmHour(data & 0x9f)
 		} else {
 			cia1.tod.SetHour(data & 0x9f)
 		}
-
 	case 0x0c:
 		cia1.sdr = data
-		cia1.triggerIrq(IRQSDRFullOtEmpty)
-
+		cia1.icr |= IRQSDRFullOtEmpty
+		cia1.triggerIrq()
 	case 0x0d:
 		//Bit 0: 1 = Interrupt release through timer A underflow
 		//Bit 1: 1 = Interrupt release through timer B underflow
@@ -340,41 +304,17 @@ func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 				cia1.intMask &= ^bits //^data
 			}
 		}
-		// Trigger IRQ if pending
-		mask := cia1.intMask & 0x1f
-		if (cia1.icr & mask) != 0 {
-			cia1.icr |= IRQOccurred
-			cia1.signalIRQTrigger.Emit(intrCia1Id)
-		}
-
+		cia1.triggerIrq()
 	case 0x0e:
-		// Delay write by 1 cycle
-		cia1.timerA.hasNewCrA = true
-		cia1.timerA.newCrA = data
-		cia1.timerA.timerACntPhi2 = (data & 0x20) == 0x00
-
+		cia1.timerA.TimerControl(data, false)
 	case 0x0f:
-		// Delay write by 1 cycle
-		cia1.timerB.hasNewCrB = true
-		cia1.timerB.newCrB = data
-		cia1.timerB.timerBCntPhi2 = (data & 0x60) == 0x00
-		cia1.timerB.timerBCntTimerA = (data & 0x60) == 0x40
+		cia1.timerB.TimerControl(data, true)
 	}
 }
 
-func (cia1 *MOS6526A) timerAUnderflowSlot() {
-	cia1.icr |= IRQUnderflowTimerA
-	cia1.timerAIrqNextCycle = true
-}
-
-func (cia1 *MOS6526A) timerBUnderflowSlot() {
-	cia1.icr |= IRQUnderflowTimerB
-	cia1.timerBIrqNextCycle = true
-}
-
-func (cia1 *MOS6526A) triggerIrq(bit uint8) {
-	cia1.icr |= bit
-	if (cia1.intMask & bit) != 0 {
+func (cia1 *MOS6526A) triggerIrq() {
+	mask := cia1.intMask & 0x1f
+	if (cia1.icr & mask) != 0 {
 		cia1.icr |= IRQOccurred
 		cia1.signalIRQTrigger.Emit(intrCia1Id)
 	}

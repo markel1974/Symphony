@@ -1,6 +1,7 @@
 package render
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/c64"
 	"github.com/markel1974/c64emu/src/c64/keyboard"
 	"github.com/markel1974/c64emu/src/pixels"
@@ -186,5 +187,6 @@ func (g *Inputs) MouseMove(x float64, y float64) {
 func (g *Inputs) swapJoyKey(p bool) {
 	if p {
 		g.joyKeys = !g.joyKeys
+		fmt.Println("joyKeys", g.joyKeys)
 	}
 }

@@ -23,8 +23,8 @@ type MOS6526B struct {
 	signalNMIClear     *signals.Signal
 	signalChangedVA    *signals.SignalByte
 	tod                *TOD
-	timerA             *TimerA
-	timerB             *TimerB
+	timerA             *Timer
+	timerB             *Timer
 }
 
 func NewMOS6526B() *MOS6526B {
@@ -33,11 +33,11 @@ func NewMOS6526B() *MOS6526B {
 		signalNMIClear:   signals.NewSignal(),
 		signalChangedVA:  signals.NewSignalByte(),
 		tod:              NewTOD(),
+		timerA:           NewTimer(),
+		timerB:           NewTimer(),
 	}
-	m.timerA = NewTimerA()
-	m.timerB = NewTimerB()
-	m.timerA.SignalTimerAUnderflowBind(m.timerAUnderflowSlot)
-	m.timerB.SignalTimerBUnderflowBind(m.timerBUnderflowSlot)
+	m.timerA.SignalTimerUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrqNextCycle = true })
+	m.timerB.SignalTimerUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrqNextCycle = true })
 	return m
 }
 
@@ -48,20 +48,19 @@ func (cia2 *MOS6526B) Setup(bus IBus, cfg *config.Config) {
 }
 
 func (cia2 *MOS6526B) CheckIRQs() {
-	// Trigger pending interrupts
 	if cia2.timerAIrqNextCycle {
 		cia2.timerAIrqNextCycle = false
-		cia2.triggerNMI(IRQUnderflowTimerA)
+		cia2.triggerNMI()
 	}
 	if cia2.timerBIrqNextCycle {
 		cia2.timerBIrqNextCycle = false
-		cia2.triggerNMI(IRQUnderflowTimerB)
+		cia2.triggerNMI()
 	}
 }
 
 func (cia2 *MOS6526B) Emulate() {
-	taUnderflow := cia2.timerA.Emulate()
-	cia2.timerB.Emulate(taUnderflow)
+	underflow := cia2.timerA.Emulate(false)
+	cia2.timerB.Emulate(underflow)
 }
 
 func (cia2 *MOS6526B) SignalTriggerNMIBind(fn func()) {
@@ -77,8 +76,9 @@ func (cia2 *MOS6526B) SignalChangedVABind(fn func(uint8)) {
 }
 
 func (cia2 *MOS6526B) Update() {
-	if cia2.tod.Update(cia2.timerA.crA & 0x80) {
-		cia2.triggerNMI(IRQTODAlarmEqual)
+	if cia2.tod.Update(cia2.timerA.GetCR() & 0x80) {
+		cia2.icr |= IRQTODAlarmEqual
+		cia2.triggerNMI()
 	}
 }
 
@@ -90,15 +90,12 @@ func (cia2 *MOS6526B) Reset() {
 	cia2.sdr = 0
 	cia2.icr = 0
 	cia2.intMask = 0
-
 	cia2.timerAIrqNextCycle = false
 	cia2.timerBIrqNextCycle = false
-
 	cia2.timerA.Reset()
 	cia2.timerB.Reset()
 	cia2.tod.Reset()
-	// VA14/15 = 0
-	cia2.signalChangedVA.Emit(0)
+	cia2.signalChangedVA.Emit(0) // VA14/15 = 0
 }
 
 func (cia2 *MOS6526B) ReadRegister(addr uint16) uint8 {
@@ -108,51 +105,38 @@ func (cia2 *MOS6526B) ReadRegister(addr uint16) uint8 {
 		data := cia2.bus.CpuRead()
 		ret := ((cia2.prA | (^cia2.ddrA)) & 0x3f) | data
 		return ret
-
 	case 0x01:
 		ret := cia2.prB | (^cia2.ddrB)
 		return ret
-
 	case 0x02:
 		return cia2.ddrA
-
 	case 0x03:
 		return cia2.ddrB
-
 	case 0x04:
-		ret := uint8(cia2.timerA.timerA)
+		ret := uint8(cia2.timerA.GetTimer())
 		return ret
-
 	case 0x05:
-		ret := uint8(cia2.timerA.timerA >> 8)
+		ret := uint8(cia2.timerA.GetTimer() >> 8)
 		return ret
-
 	case 0x06:
-		ret := uint8(cia2.timerB.timerB)
+		ret := uint8(cia2.timerB.GetTimer())
 		return ret
-
 	case 0x07:
-		ret := uint8(cia2.timerB.timerB >> 8)
+		ret := uint8(cia2.timerB.GetTimer() >> 8)
 		return ret
-
 	case 0x08:
 		v := cia2.tod.Get10ths()
 		cia2.tod.Unfreeze()
 		return v
-
 	case 0x09:
 		return cia2.tod.GetSec()
-
 	case 0x0a:
 		return cia2.tod.GetMin()
-
 	case 0x0b:
 		cia2.tod.Freeze()
 		return cia2.tod.GetHour()
-
 	case 0x0c:
 		return cia2.sdr
-
 	case 0x0d:
 		ret := cia2.icr
 		cia2.icr = 0
@@ -160,12 +144,10 @@ func (cia2 *MOS6526B) ReadRegister(addr uint16) uint8 {
 			cia2.signalNMIClear.Emit()
 		}
 		return ret
-
 	case 0x0e:
-		return cia2.timerA.crA
-
+		return cia2.timerA.GetCR()
 	case 0x0f:
-		return cia2.timerB.crB
+		return cia2.timerB.GetCR()
 	}
 	return 0 // Can't happen
 }
@@ -181,70 +163,49 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 		cia2.prA = data
 		cia2.UpdateVA()
 		cia2.bus.CpuWrite(data)
-
 	case 0x1:
 		cia2.prB = data
-
 	case 0x2:
 		cia2.ddrA = data
 		cia2.UpdateVA()
-
 	case 0x3:
 		cia2.ddrB = data
-
 	case 0x4:
-		cia2.timerA.latchA = (cia2.timerA.latchA & 0xff00) | uint16(data)
-
+		cia2.timerA.SetLatchLowByte(data)
 	case 0x5:
-		cia2.timerA.latchA = (cia2.timerA.latchA & 0xff) | (uint16(data) << 8)
-		// Reload timer if stopped
-		if (cia2.timerA.crA & 1) == 0 {
-			cia2.timerA.timerA = cia2.timerA.latchA
-		}
-
+		cia2.timerA.SetLatchHighByte(data)
 	case 0x6:
-		cia2.timerB.latchB = (cia2.timerB.latchB & 0xff00) | uint16(data)
-
+		cia2.timerB.SetLatchLowByte(data)
 	case 0x7:
-		cia2.timerB.latchB = (cia2.timerB.latchB & 0xff) | (uint16(data) << 8)
-		// Reload timer if stopped
-		if (cia2.timerB.crB & 1) == 0 {
-			cia2.timerB.timerB = cia2.timerB.latchB
-		}
-
+		cia2.timerB.SetLatchHighByte(data)
 	case 0x08:
-		if (cia2.timerB.crB & 0x80) != 0 {
+		if (cia2.timerB.GetCR() & 0x80) != 0 {
 			cia2.tod.SetAlarm10ths(data & 0x0f)
 		} else {
 			cia2.tod.Set10ths(data & 0x0f)
 		}
-
 	case 0x09:
-		if (cia2.timerB.crB & 0x80) != 0 {
+		if (cia2.timerB.GetCR() & 0x80) != 0 {
 			cia2.tod.SetAlarmSec(data & 0x7f)
 		} else {
 			cia2.tod.SetSec(data & 0x7f)
 		}
-
 	case 0x0a:
-		if (cia2.timerB.crB & 0x80) != 0 {
+		if (cia2.timerB.GetCR() & 0x80) != 0 {
 			cia2.tod.SetAlarmMin(data & 0x7f)
 		} else {
 			cia2.tod.SetMin(data & 0x7f)
 		}
-
 	case 0x0b:
-		if (cia2.timerB.crB & 0x80) != 0 {
+		if (cia2.timerB.GetCR() & 0x80) != 0 {
 			cia2.tod.SetAlarmHour(data & 0x9f)
 		} else {
 			cia2.tod.SetHour(data & 0x9f)
 		}
-
 	case 0xc:
 		cia2.sdr = data
-		// Fake SDR interrupt for programs that need it
-		cia2.triggerNMI(IRQSDRFullOtEmpty)
-
+		cia2.icr |= IRQSDRFullOtEmpty
+		cia2.triggerNMI()
 	case 0xd:
 		if bits := data & 0x1f; bits != 0 {
 			if (data & 0x80) != 0 {
@@ -253,41 +214,17 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 				cia2.intMask &= ^bits //^data
 			}
 		}
-		// Trigger NMI if pending
-		mask := cia2.intMask & 0x1f
-		if (cia2.icr & mask) != 0 {
-			cia2.icr |= IRQOccurred
-			cia2.signalNMITrigger.Emit()
-		}
-
+		cia2.triggerNMI()
 	case 0xe:
-		// Delay write by 1 cycle
-		cia2.timerA.hasNewCrA = true
-		cia2.timerA.newCrA = data
-		cia2.timerA.timerACntPhi2 = (data & 0x20) == 0x00
-
+		cia2.timerA.TimerControl(data, false)
 	case 0xf:
-		// Delay write by 1 cycle
-		cia2.timerB.hasNewCrB = true
-		cia2.timerB.newCrB = data
-		cia2.timerB.timerBCntPhi2 = (data & 0x60) == 0x00
-		cia2.timerB.timerBCntTimerA = (data & 0x60) == 0x40
+		cia2.timerB.TimerControl(data, true)
 	}
 }
 
-func (cia2 *MOS6526B) timerAUnderflowSlot() {
-	cia2.icr |= IRQUnderflowTimerA
-	cia2.timerAIrqNextCycle = true
-}
-
-func (cia2 *MOS6526B) timerBUnderflowSlot() {
-	cia2.icr |= IRQUnderflowTimerB
-	cia2.timerBIrqNextCycle = true
-}
-
-func (cia2 *MOS6526B) triggerNMI(bit uint8) {
-	cia2.icr |= bit
-	if (cia2.intMask & bit) != 0 {
+func (cia2 *MOS6526B) triggerNMI() {
+	mask := cia2.intMask & 0x1f
+	if (cia2.icr & mask) != 0 {
 		cia2.icr |= IRQOccurred
 		cia2.signalNMITrigger.Emit()
 	}
