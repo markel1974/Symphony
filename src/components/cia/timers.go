@@ -45,7 +45,7 @@ const (
 	T_COUNT_THEN_STOP
 )
 
-type MOS6526 struct {
+type Timers struct {
 	prA                uint8
 	ddrB               uint8
 	crA                uint8
@@ -76,15 +76,15 @@ type MOS6526 struct {
 	interruptSignal *signals.SignalByte
 }
 
-func NewMOS6526() *MOS6526 {
-	m := &MOS6526{
+func NewMOS6526() *Timers {
+	m := &Timers{
 		interruptSignal: signals.NewSignalByte(),
 	}
 	m.Reset()
 	return m
 }
 
-func (m *MOS6526) Reset() {
+func (m *Timers) Reset() {
 	m.hasNewCrA = false
 	m.hasNewCrB = false
 	m.timerA = 0xffff
@@ -100,11 +100,11 @@ func (m *MOS6526) Reset() {
 	m.latchB = 1
 }
 
-func (m *MOS6526) SignalInterruptBind(fn func(uint8)) {
+func (m *Timers) SignalInterruptBind(fn func(uint8)) {
 	m.interruptSignal.Bind(fn)
 }
 
-func (m *MOS6526) CheckIRQs() {
+func (m *Timers) CheckIRQs() {
 	// Trigger pending interrupts
 	if m.timerAIrqNextCycle {
 		m.timerAIrqNextCycle = false
@@ -116,12 +116,12 @@ func (m *MOS6526) CheckIRQs() {
 	}
 }
 
-func (m *MOS6526) Emulate() {
+func (m *Timers) Emulate() {
 	taUnderflow := m.emulateTimerA()
 	m.emulateTimerB(taUnderflow)
 }
 
-func (m *MOS6526) emulateTimerA() bool {
+func (m *Timers) emulateTimerA() bool {
 	taUnderflow := false
 	taUseInterrupt := false
 
@@ -268,7 +268,7 @@ ta_idle:
 	return taUnderflow
 }
 
-func (m *MOS6526) emulateTimerB(timerAUnderflow bool) {
+func (m *Timers) emulateTimerB(timerAUnderflow bool) {
 	tbUseInterrupt := false
 
 	// Timer B state machine
