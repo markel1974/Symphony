@@ -2,6 +2,7 @@ package cia
 
 import (
 	"github.com/markel1974/c64emu/src/flag"
+	"github.com/markel1974/c64emu/src/signals"
 )
 
 /*
@@ -11,10 +12,10 @@ import (
  *  - The Emulate() function is called for every emulated Phi2 clock cycle.
  *    It counts down the timers and triggers interrupts if necessary.
  *  - The TOD clocks are counted by TODUpdate() during the VBlank, so the input frequency is 50Hz
- *  - The fields KeyMatrix and RevMatrix contain one bit for each
+ *  - The fields keyMatrix and revMatrix contain one bit for each
  *    key on the C64 keyboard (0: key pressed, 1: key released).
- *    KeyMatrix is used for normal keyboard polling (PRA->PRB),
- *    RevMatrix for reversed polling (PRB->PRA).
+ *    keyMatrix is used for normal keyboard polling (PRA->PRB),
+ *    revMatrix for reversed polling (PRB->PRA).
  *
  * Incompatibilities:
  * ------------------
@@ -23,6 +24,15 @@ import (
  *  - The SDR interrupt is faked
  *  - Some small incompatibilities with the timers
  */
+
+const (
+	IRQUnderflowTimerA = 0x1
+	IRQUnderflowTimerB = 0x2
+	IRQTODAlarmEqual   = 0x4
+	IRQSDRFullOtEmpty  = 0x8
+	IRQFlagPin         = 0x10
+	IRQOccurred        = 0x80
+)
 
 // Timer states
 const (
@@ -62,24 +72,13 @@ type MOS6526 struct {
 	sdr uint8
 	icr uint8 // Pending interrupts
 
-	intMask          uint8 // Enabled interrupts
-	triggerInterrupt func(uint8)
-
-	tod10ths   uint8 // TOD 10ths
-	todSec     uint8 // TOD sec
-	todMin     uint8 // TOD min
-	todHr      uint8 // TOD hr
-	todHalt    bool  // TOD halted
-	todDivider int   // TOD frequency divider
-	alm10ths   uint8 // Alarm time
-	almSec     uint8 // Alarm time
-	almMin     uint8 // Alarm time
-	almHr      uint8 // Alarm time
+	intMask         uint8 // Enabled interrupts
+	interruptSignal *signals.SignalByte
 }
 
-func NewMOS6526(trigger func(uint8)) *MOS6526 {
+func NewMOS6526() *MOS6526 {
 	m := &MOS6526{
-		triggerInterrupt: trigger,
+		interruptSignal: signals.NewSignalByte(),
 	}
 	m.Reset()
 	return m
@@ -99,18 +98,21 @@ func (m *MOS6526) Reset() {
 	m.timerBState = T_STOP
 	m.latchA = 1
 	m.latchB = 1
-	m.todHalt = false
+}
+
+func (m *MOS6526) SignalInterruptBind(fn func(uint8)) {
+	m.interruptSignal.Bind(fn)
 }
 
 func (m *MOS6526) CheckIRQs() {
 	// Trigger pending interrupts
 	if m.timerAIrqNextCycle {
 		m.timerAIrqNextCycle = false
-		m.triggerInterrupt(1)
+		m.interruptSignal.Emit(IRQUnderflowTimerA)
 	}
 	if m.timerBIrqNextCycle {
 		m.timerBIrqNextCycle = false
-		m.triggerInterrupt(2)
+		m.interruptSignal.Emit(IRQUnderflowTimerB)
 	}
 }
 
@@ -404,66 +406,5 @@ tb_idle:
 		}
 		m.crB = m.newCrB & 0xef
 		m.hasNewCrB = false
-	}
-}
-
-func (m *MOS6526) TODUpdate() {
-	// Decrement frequency divider
-	if (m.todDivider) != 0 {
-		m.todDivider--
-		return
-	}
-	// Reload divider according to 50/60 Hz flag
-	if flag.Uint8ToBool(m.crA & 0x80) {
-		m.todDivider = 4
-	} else {
-		m.todDivider = 5
-	}
-	// 1/10 seconds
-	m.tod10ths++
-	if m.tod10ths > 9 {
-		var lo, hi uint8
-		m.tod10ths = 0
-		// Seconds
-		lo = (m.todSec & 0x0f) + 1
-		hi = m.todSec >> 4
-		if lo > 9 {
-			lo = 0
-			hi++
-		}
-		if hi > 5 {
-			m.todSec = 0
-			// Minutes
-			lo = (m.todMin & 0x0f) + 1
-			hi = m.todMin >> 4
-			if lo > 9 {
-				lo = 0
-				hi++
-			}
-			if hi > 5 {
-				m.todMin = 0
-				// Hours
-				lo = (m.todHr & 0x0f) + 1
-				hi = (m.todHr >> 4) & 1
-				// Keep AM/PM flag
-				m.todHr &= 0x80
-				if lo > 9 {
-					lo = 0
-					hi++
-				}
-				m.todHr |= (hi << 4) | lo
-				if (m.todHr & 0x1f) > 0x11 {
-					m.todHr = (m.todHr & 0x80) ^ 0x80
-				}
-			} else {
-				m.todMin = (hi << 4) | lo
-			}
-		} else {
-			m.todSec = (hi << 4) | lo
-		}
-	}
-	// Alarm time reached? Trigger interrupt if enabled
-	if m.tod10ths == m.alm10ths && m.todSec == m.almSec && m.todMin == m.almMin && m.todHr == m.almHr {
-		m.triggerInterrupt(4)
 	}
 }

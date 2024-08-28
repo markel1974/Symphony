@@ -5,16 +5,19 @@ import (
 	"github.com/markel1974/c64emu/src/signals"
 )
 
+//https://emudev.de/q00-c64/cias-timers-keyboard-and-more/
+
 type MOS6526A struct {
 	*MOS6526
 	signalIRQTrigger      *signals.SignalUint32
 	signalIRQClear        *signals.SignalUint32
 	signalLightPenTrigger *signals.Signal
 	prevLPState           uint8    // Previous state of LP line (bit 4
-	KeyMatrix             [8]uint8 // C64 keyboard matrix, 1 bit/key (0: key down, 1: key up)
-	RevMatrix             [8]uint8 // Reversed keyboard matrix
-	Joystick1             uint8    // Joystick 1 AND value
-	Joystick2             uint8    // Joystick 2 AND value
+	keyMatrix             [8]uint8 // C64 keyboard matrix, 1 bit/key (0: key down, 1: key up)
+	revMatrix             [8]uint8 // Reversed keyboard matrix
+	joy1                  uint8    // Joystick 1 AND value
+	joy2                  uint8    // Joystick 2 AND value
+	tod                   *TOD
 }
 
 func NewMOS6526A() *MOS6526A {
@@ -22,12 +25,15 @@ func NewMOS6526A() *MOS6526A {
 		signalIRQTrigger:      signals.NewSignalUint32(),
 		signalIRQClear:        signals.NewSignalUint32(),
 		signalLightPenTrigger: signals.NewSignal(),
+		tod:                   NewTOD(),
 	}
-	m.MOS6526 = NewMOS6526(m.TriggerInterrupt)
+	m.MOS6526 = NewMOS6526()
+	m.SignalInterruptBind(m.triggerInterruptSlot)
 	return m
 }
 
-func (cia1 *MOS6526A) Setup(prefs *config.Config) {
+func (cia1 *MOS6526A) Setup(cfg *config.Config) {
+
 }
 
 func (cia1 *MOS6526A) SignalTriggerIRQBind(fn func(uint32)) {
@@ -42,104 +48,112 @@ func (cia1 *MOS6526A) SignalLightPenTriggerBind(fn func()) {
 	cia1.signalLightPenTrigger.Bind(fn)
 }
 
+func (cia1 *MOS6526A) Update() {
+	if cia1.tod.Update(cia1.crA & 0x80) {
+		cia1.triggerInterruptSlot(IRQTODAlarmEqual)
+	}
+}
+
 func (cia1 *MOS6526A) Reset() {
 	cia1.MOS6526.Reset()
-
+	cia1.tod.Reset()
 	for i := 0; i < 8; i++ {
-		cia1.KeyMatrix[i] = 0xff
-		cia1.RevMatrix[i] = 0xff
+		cia1.keyMatrix[i] = 0xff
+		cia1.revMatrix[i] = 0xff
 	}
-	cia1.Joystick1 = 0xff
-	cia1.Joystick2 = 0xff
+	cia1.joy1 = 0xff
+	cia1.joy2 = 0xff
 	cia1.prevLPState = 0x10
 }
 
 func (cia1 *MOS6526A) SetKeyUp(keyM int, revM int, shifted bool) {
 	if shifted {
-		cia1.KeyMatrix[6] |= 0x10
-		cia1.RevMatrix[4] |= 0x40
+		cia1.keyMatrix[6] |= 0x10
+		cia1.revMatrix[4] |= 0x40
 	}
-	cia1.KeyMatrix[keyM] |= 1 << revM
-	cia1.RevMatrix[revM] |= 1 << keyM
+	cia1.keyMatrix[keyM] |= 1 << revM
+	cia1.revMatrix[revM] |= 1 << keyM
 }
 
 func (cia1 *MOS6526A) SetKeyDown(keyM int, revM int, shifted bool) {
 	if shifted {
-		cia1.KeyMatrix[6] &= 0xef
-		cia1.RevMatrix[4] &= 0xbf
+		cia1.keyMatrix[6] &= 0xef
+		cia1.revMatrix[4] &= 0xbf
 	}
-	cia1.KeyMatrix[keyM] &= ^(1 << revM)
-	cia1.RevMatrix[revM] &= ^(1 << keyM)
+	cia1.keyMatrix[keyM] &= ^(1 << revM)
+	cia1.revMatrix[revM] &= ^(1 << keyM)
 }
 
 func (cia1 *MOS6526A) SetJoystick1(port1 uint8) {
-	cia1.Joystick1 = port1
+	cia1.joy1 = port1
 }
 
 func (cia1 *MOS6526A) SetJoystick2(port2 uint8) {
-	cia1.Joystick2 = port2
+	cia1.joy2 = port2
 }
 
 func (cia1 *MOS6526A) ReadRegister(addr uint16) uint8 {
 	addr = addr & 0x0f
 	switch addr {
 	case 0x00:
+		//Joy port 2
 		ret := cia1.prA | ^cia1.ddrA
-		tst := (cia1.prB | ^cia1.ddrB) & cia1.Joystick1
+		tst := (cia1.prB | ^cia1.ddrB) & cia1.joy1
 		if (tst & 0x01) == 0 {
-			ret &= cia1.RevMatrix[0]
+			ret &= cia1.revMatrix[0]
 		}
 		if (tst & 0x02) == 0 {
-			ret &= cia1.RevMatrix[1]
+			ret &= cia1.revMatrix[1]
 		}
 		if (tst & 0x04) == 0 {
-			ret &= cia1.RevMatrix[2]
+			ret &= cia1.revMatrix[2]
 		}
 		if (tst & 0x08) == 0 {
-			ret &= cia1.RevMatrix[3]
+			ret &= cia1.revMatrix[3]
 		}
 		if (tst & 0x10) == 0 {
-			ret &= cia1.RevMatrix[4]
+			ret &= cia1.revMatrix[4]
 		}
 		if (tst & 0x20) == 0 {
-			ret &= cia1.RevMatrix[5]
+			ret &= cia1.revMatrix[5]
 		}
 		if (tst & 0x40) == 0 {
-			ret &= cia1.RevMatrix[6]
+			ret &= cia1.revMatrix[6]
 		}
 		if (tst & 0x80) == 0 {
-			ret &= cia1.RevMatrix[7]
+			ret &= cia1.revMatrix[7]
 		}
-		return ret & cia1.Joystick2
+		return ret & cia1.joy2
 
 	case 0x01:
+		//joy port 1
 		ret := ^cia1.ddrB
-		tst := (cia1.prA | ^cia1.ddrA) & cia1.Joystick2
+		tst := (cia1.prA | ^cia1.ddrA) & cia1.joy2
 		if (tst & 0x01) == 0 {
-			ret &= cia1.KeyMatrix[0]
+			ret &= cia1.keyMatrix[0]
 		}
 		if (tst & 0x02) == 0 {
-			ret &= cia1.KeyMatrix[1]
+			ret &= cia1.keyMatrix[1]
 		}
 		if (tst & 0x04) == 0 {
-			ret &= cia1.KeyMatrix[2]
+			ret &= cia1.keyMatrix[2]
 		}
 		if (tst & 0x08) == 0 {
-			ret &= cia1.KeyMatrix[3]
+			ret &= cia1.keyMatrix[3]
 		}
 		if (tst & 0x10) == 0 {
-			ret &= cia1.KeyMatrix[4]
+			ret &= cia1.keyMatrix[4]
 		}
 		if (tst & 0x20) == 0 {
-			ret &= cia1.KeyMatrix[5]
+			ret &= cia1.keyMatrix[5]
 		}
 		if (tst & 0x40) == 0 {
-			ret &= cia1.KeyMatrix[6]
+			ret &= cia1.keyMatrix[6]
 		}
 		if (tst & 0x80) == 0 {
-			ret &= cia1.KeyMatrix[7]
+			ret &= cia1.keyMatrix[7]
 		}
-		return (ret | (cia1.prB & cia1.ddrB)) & cia1.Joystick1
+		return (ret | (cia1.prB & cia1.ddrB)) & cia1.joy1
 
 	case 0x02:
 		return cia1.ddrA
@@ -160,26 +174,30 @@ func (cia1 *MOS6526A) ReadRegister(addr uint16) uint8 {
 		return uint8(cia1.timerB >> 8)
 
 	case 0x08:
-		cia1.todHalt = false
-		return cia1.tod10ths
+		v := cia1.tod.Get10ths()
+		cia1.tod.Unfreeze()
+		return v
 
 	case 0x09:
-		return cia1.todSec
+		return cia1.tod.GetSec()
 
 	case 0x0a:
-		return cia1.todMin
+		return cia1.tod.GetMin()
 
 	case 0x0b:
-		cia1.todHalt = true
-		return cia1.todHr
+		cia1.tod.Freeze()
+		return cia1.tod.GetHour()
 
 	case 0x0c:
 		return cia1.sdr
 
 	case 0x0d:
-		ret := cia1.icr // Read and clear ICR
+		// Read and clear ICR
+		ret := cia1.icr
 		cia1.icr = 0
-		cia1.signalIRQClear.Emit(intrCia1Id)
+		if ret != 0 {
+			cia1.signalIRQClear.Emit(intrCia1Id)
+		}
 		return ret
 
 	case 0x0e:
@@ -194,92 +212,109 @@ func (cia1 *MOS6526A) ReadRegister(addr uint16) uint8 {
 func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 	addr = addr & 0x0f
 	switch addr {
-	case 0x0:
+	case 0x00:
 		cia1.prA = data
 
-	case 0x1:
+	case 0x01:
 		cia1.prB = data
 		cia1.checkLightPen()
 
-	case 0x2:
+	case 0x02:
 		cia1.ddrA = data
 
-	case 0x3:
+	case 0x03:
 		cia1.ddrB = data
 		cia1.checkLightPen()
 
-	case 0x4:
+	case 0x04:
 		cia1.latchA = (cia1.latchA & 0xff00) | uint16(data)
 
-	case 0x5:
+	case 0x05:
 		cia1.latchA = (cia1.latchA & 0xff) | (uint16(data) << 8)
 		if (cia1.crA & 1) == 0 {
 			// Reload timer if stopped
 			cia1.timerA = cia1.latchA
 		}
 
-	case 0x6:
+	case 0x06:
 		cia1.latchB = (cia1.latchB & 0xff00) | uint16(data)
 
-	case 0x7:
+	case 0x07:
 		cia1.latchB = (cia1.latchB & 0xff) | (uint16(data) << 8)
 		if (cia1.crB & 1) == 0 {
 			// Reload timer if stopped
 			cia1.timerB = cia1.latchB
 		}
 
-	case 0x8:
+	case 0x08:
 		if (cia1.crB & 0x80) != 0 {
-			cia1.alm10ths = data & 0x0f
+			cia1.tod.SetAlarm10ths(data & 0x0f)
 		} else {
-			cia1.tod10ths = data & 0x0f
+			cia1.tod.Set10ths(data & 0x0f)
 		}
 
-	case 0x9:
+	case 0x09:
 		if (cia1.crB & 0x80) != 0 {
-			cia1.almSec = data & 0x7f
+			cia1.tod.SetAlarmSec(data & 0x7f)
 		} else {
-			cia1.todSec = data & 0x7f
+			cia1.tod.SetSec(data & 0x7f)
 		}
 
-	case 0xa:
+	case 0x0a:
 		if (cia1.crB & 0x80) != 0 {
-			cia1.almMin = data & 0x7f
+			cia1.tod.SetAlarmMin(data & 0x7f)
 		} else {
-			cia1.todMin = data & 0x7f
+			cia1.tod.SetMin(data & 0x7f)
 		}
 
-	case 0xb:
+	case 0x0b:
 		if (cia1.crB & 0x80) != 0 {
-			cia1.almHr = data & 0x9f
+			cia1.tod.SetAlarmHour(data & 0x9f)
 		} else {
-			cia1.todHr = data & 0x9f
+			cia1.tod.SetHour(data & 0x9f)
 		}
 
-	case 0xc:
+	case 0x0c:
 		cia1.sdr = data
-		// Fake SDR interrupt for programs that need it
-		cia1.TriggerInterrupt(8)
+		cia1.triggerInterruptSlot(IRQSDRFullOtEmpty)
 
-	case 0xd:
-		if (data & 0x80) != 0 {
-			cia1.intMask |= data & 0x7f
-		} else {
-			cia1.intMask &= ^data
+	case 0x0d:
+		//Bit 0: 1 = Interrupt release through timer A underflow
+		//Bit 1: 1 = Interrupt release through timer B underflow
+		//Bit 2: 1 = Interrupt release if clock=alarm
+		//Bit 3: 1 = Interrupt release if a complete byte has been received/sent.
+		//Bit 4: 1 = Interrupt release if a positive slope occurs at the FLAG-Pin.
+		//Bit 5..6: unused
+		//Bit 7: Source bit.
+		//     0 = set bits 0..4 are clearing the according mask bit.
+		//     1 = set bits 0..4 are setting the according mask bit.
+		//If all 5 bits [0..4] are cleared, there will be no change to the mask.
+		if bits := data & 0x1f; bits != 0 {
+			//Bit 7: Source bit.
+			// 1 = set bits 0..4 are setting the according mask bit.
+			// 0 = set bits 0..4 are clearing the according mask bit.
+			if (data & 0x80) != 0 {
+				//set bits 0..4 are setting the according mask bit.
+				cia1.intMask |= bits //data & 0x7f
+			} else {
+				//set bits 0..4 are clearing the according mask bit.
+				cia1.intMask &= ^bits //^data
+			}
 		}
-		if (cia1.icr & cia1.intMask & 0x1f) != 0 {
-			// Trigger IRQ if pending
-			cia1.icr |= 0x80
+		// Trigger IRQ if pending
+		mask := cia1.intMask & 0x1f
+		if (cia1.icr & mask) != 0 {
+			cia1.icr |= IRQOccurred
 			cia1.signalIRQTrigger.Emit(intrCia1Id)
 		}
 
-	case 0xe:
+	case 0x0e:
 		// Delay write by 1 cycle
 		cia1.hasNewCrA = true
 		cia1.newCrA = data
 		cia1.timerACntPhi2 = (data & 0x20) == 0x00
 
-	case 0xf:
+	case 0x0f:
 		// Delay write by 1 cycle
 		cia1.hasNewCrB = true
 		cia1.newCrB = data
@@ -288,15 +323,14 @@ func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
-func (cia1 *MOS6526A) TriggerInterrupt(bit uint8) {
+func (cia1 *MOS6526A) triggerInterruptSlot(bit uint8) {
 	cia1.icr |= bit
 	if (cia1.intMask & bit) != 0 {
-		cia1.icr |= 0x80
+		cia1.icr |= IRQOccurred
 		cia1.signalIRQTrigger.Emit(intrCia1Id)
 	}
 }
 
-// Write to port B, check for lightPen interrupt
 func (cia1 *MOS6526A) checkLightPen() {
 	if ((cia1.prB | ^cia1.ddrB) & 0x10) != cia1.prevLPState {
 		cia1.signalLightPenTrigger.Emit()

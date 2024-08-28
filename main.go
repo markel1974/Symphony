@@ -44,23 +44,22 @@ func main() {
 		fmt.Println(version.AppName, version.AppVersion)
 		return
 	}
-	prefs := config.New()
+	cfg := config.New()
 	if len(prg) > 0 {
-		prefs.SetPrg(prg)
+		cfg.SetPrg(prg)
 	}
 	if len(cartridges) > 0 {
 		kv := config.KeyVal(cartridges)
 		for _, v := range kv {
-			prefs.AddCartridge(v.K, v.V)
+			cfg.AddCartridge(v.K, v.V)
 		}
 	}
 	if len(drives) > 0 {
 		kv := config.KeyVal(drives)
 		for _, v := range kv {
-			prefs.AddDrive(v.K, v.V)
+			cfg.AddDrive(v.K, v.V)
 		}
 	}
-
-	g := render.New(prefs)
+	g := render.New(cfg)
 	g.Start()
 }

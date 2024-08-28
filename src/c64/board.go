@@ -196,8 +196,8 @@ func (s *Board) Emulate() bool {
 		//sidCounter := s.sid.ResetHistory()
 		//TODO
 		_ = s.sid.ResetHistory()
-		s.cia1.TODUpdate()
-		s.cia2.TODUpdate()
+		s.cia1.Update()
+		s.cia2.Update()
 		s.updateKeyboard()
 		//if bytes.Contains(s.vic.GetText(), []byte("READY")) {
 		//	fmt.Println("READY!!!")
