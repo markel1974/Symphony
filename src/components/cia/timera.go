@@ -1,215 +1,212 @@
 package cia
 
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/signals"
+)
+
+/*
+ * Notes:
+ * ------
+ *
+ *  - The Emulate() function is called for every emulated Phi2 clock cycle.
+ *    It counts down the timers and triggers interrupts if necessary.
+ *  - The TOD clocks are counted by TODUpdate() during the VBlank, so the input frequency is 50Hz
+ *  - The fields keyMatrix and revMatrix contain one bit for each
+ *    key on the C64 keyboard (0: key pressed, 1: key released).
+ *    keyMatrix is used for normal keyboard polling (PRA->PRB),
+ *    revMatrix for reversed polling (PRB->PRA).
+ *
+ * Incompatibilities:
+ * ------------------
+ *
+ *  - The TOD clock should not be stopped on a read access, but be latched
+ *  - The SDR interrupt is faked
+ *  - Some small incompatibilities with the timers
+ */
+
+// Timer states
+const (
+	timerStop = iota
+	timerWaitThenCount
+	timerLoadThenStop
+	timerLoadThenCount
+	timerLoadThenWaitThenCount
+	timerCount
+	timerCountThenStop
+)
+
 type TimerA struct {
-	newCr        uint8  // New values for CRA
-	hasNewCr     bool   // Flag: New value for CRA pending
-	pendingCrIrq *uint8 // Pending interrupts //TODO NON DEVE ESSERE CONDIVISO!!!!
-	cr           uint8
-	timer        uint16 // Timer A
-	state        uint8  // Timer A states
-	latch        uint16 // Timer latch A
-	cntPhi2      bool   // Flag: Timer A is counting Phi 2
-	irqNextCycle bool   // Flag: Trigger TA IRQ in next cycle
-	underflow    bool
-	useInterrupt bool
-	statesFn     [7]func()
+	crA                   uint8
+	newCrA                uint8  // New values for CRA
+	hasNewCrA             bool   // Flag: New value for CRA pending
+	timerA                uint16 // Timer A
+	timerAState           uint8  // Timer A states
+	latchA                uint16 // Timer latch A
+	timerACntPhi2         bool   // Flag: Timer A is counting Phi 2
+	signalTimerAUnderflow *signals.Signal
 }
 
 func NewTimerA() *TimerA {
-	t := &TimerA{
-		//pendingCrIrq: 0,
-		timer:        0,
-		state:        0,
-		latch:        0,
-		cntPhi2:      false,
-		irqNextCycle: false,
-		underflow:    false,
-		useInterrupt: false,
-		newCr:        0,
+	m := &TimerA{
+		signalTimerAUnderflow: signals.NewSignal(),
 	}
-	t.statesFn[T_STOP] = t.stateStop
-	t.statesFn[T_WAIT_THEN_COUNT] = t.stateWaitThenCount
-	t.statesFn[T_LOAD_THEN_STOP] = t.stateLoadThenStop
-	t.statesFn[T_LOAD_THEN_COUNT] = t.stateLoadThenCount
-	t.statesFn[T_LOAD_THEN_WAIT_THEN_COUNT] = t.stateLoadThenWaitThenCount
-	t.statesFn[T_COUNT] = t.stateCount
-	t.statesFn[T_COUNT_THEN_STOP] = t.stateCountThenStop
-	t.Reset()
-	return t
+	m.Reset()
+	return m
 }
 
 func (m *TimerA) Reset() {
-	//m.pendingCrIrq = 0
-	m.newCr = 0
-	m.timer = 0xffff
-	m.cntPhi2 = false
-	m.irqNextCycle = false
-	m.state = T_STOP
-	m.latch = 1
-	m.underflow = false
-	m.useInterrupt = false
+	m.hasNewCrA = false
+	m.timerA = 0xffff
+	m.timerACntPhi2 = false
+	m.timerAState = timerStop
+	m.latchA = 1
 }
 
-func (m *TimerA) CheckIrq() bool {
-	return m.irqNextCycle
+func (m *TimerA) SignalTimerAUnderflowBind(fn func()) {
+	m.signalTimerAUnderflow.Bind(fn)
 }
 
-func (m *TimerA) SetCr(v uint8) {
-	m.cr = v
-}
+func (m *TimerA) Emulate() bool {
+	taUnderflow := false
+	taUseInterrupt := false
 
-func (m *TimerA) GetCr() uint8 {
-	return m.cr
-}
+	// Timer A state machine
+	switch m.timerAState {
+	case timerWaitThenCount:
+		// fall through
+		m.timerAState = timerCount
+		goto taIdle
 
-func (m *TimerA) SetCountPhi2(v bool) {
-	m.cntPhi2 = v
-}
+	case timerStop:
+		goto taIdle
 
-func (m *TimerA) EmulateTimer() bool {
-	m.underflow = false
-	m.useInterrupt = false
-	m.statesFn[m.state]()
-	return m.underflow
-}
+	case timerLoadThenStop:
+		m.timerAState = timerStop
+		// Reload timer
+		m.timerA = m.latchA
+		goto taIdle
 
-func (m *TimerA) stateStop() {
-	m.idle()
-}
+	case timerLoadThenCount:
+		m.timerAState = timerCount
+		// Reload timer
+		m.timerA = m.latchA
+		goto taIdle
 
-func (m *TimerA) stateWaitThenCount() {
-	m.state = T_COUNT
-	m.idle()
-}
+	case timerLoadThenWaitThenCount:
+		m.timerAState = timerWaitThenCount
+		if m.timerA == 1 {
+			// Interrupt if timer == 1
+			taUseInterrupt = true
+			goto taCount
+			//goto ta_interrupt
+		} else {
+			m.timerA = m.latchA // Reload timer
+			goto taIdle
+		}
 
-func (m *TimerA) stateLoadThenStop() {
-	m.state = T_STOP
-	// Reload timer
-	m.timer = m.latch
-	m.idle()
-}
+	case timerCount:
+		goto taCount
 
-func (m *TimerA) stateLoadThenCount() {
-	m.state = T_COUNT
-	// Reload timer
-	m.timer = m.latch
-	m.idle()
-}
-
-func (m *TimerA) stateLoadThenWaitThenCount() {
-	m.state = T_WAIT_THEN_COUNT
-	if m.timer == 1 {
-		m.useInterrupt = true
-		m.count()
-		m.idle()
-		return
+	case timerCountThenStop:
+		m.timerAState = timerStop
+		goto taCount
 	}
-	// Reload timer
-	m.timer = m.latch
-	m.idle()
-}
 
-func (m *TimerA) stateCount() {
-	m.count()
-	m.idle()
-}
-
-func (m *TimerA) stateCountThenStop() {
-	m.state = T_STOP
-	m.count()
-	m.idle()
-}
-
-func (m *TimerA) count() {
-	if !m.useInterrupt {
-		if m.cntPhi2 {
-			ta := m.timer
-			m.timer--
-			if (ta == 0) || (m.timer == 0) {
+	// Count timer A
+taCount:
+	if !taUseInterrupt {
+		if m.timerACntPhi2 {
+			ta := m.timerA
+			m.timerA--
+			if (ta == 0) || (m.timerA == 0) {
 				// Decrement timer, underflow?
-				if m.state != T_STOP {
-					m.useInterrupt = true
+				if m.timerAState != timerStop {
+					taUseInterrupt = true
 				}
-				m.underflow = true
+				taUnderflow = true
 			}
 		}
 	}
 
-	if m.useInterrupt {
+	if taUseInterrupt {
 		// Reload timer
-		m.timer = m.latch
-		// Trigger interrupt in next cycle
-		m.irqNextCycle = true
-		// But set ICR bit now
-		*m.pendingCrIrq |= 1
-
+		m.timerA = m.latchA
+		m.signalTimerAUnderflow.Emit()
 		// One-shot?
-		if (m.cr & 8) != 0 {
+		if (m.crA & 8) != 0 {
 			// Yes, stop timer
-			m.cr &= 0xfe
-			m.newCr &= 0xfe
+			m.crA &= 0xfe
+			m.newCrA &= 0xfe
 			// Reload in next cycle
-			m.state = T_LOAD_THEN_STOP
+			m.timerAState = timerLoadThenStop
 		} else {
 			// No, delay one cycle (and reload)
-			m.state = T_LOAD_THEN_COUNT
+			m.timerAState = timerLoadThenCount
 		}
 		//TODO VERIFY!!!!!
-		m.underflow = true
+		taUnderflow = true
 	}
-}
 
-func (m *TimerA) idle() {
-	if !m.hasNewCr {
-		return
-	}
-	if m.state == T_STOP || m.state == T_LOAD_THEN_STOP {
-		if (m.newCr & 1) != 0 {
-			// Timer started, wasn't running
-			if (m.newCr & 0x10) != 0 {
-				// Force load
-				m.state = T_LOAD_THEN_WAIT_THEN_COUNT
+	// Delayed write to CRA?
+taIdle:
+	if m.hasNewCrA {
+		switch m.timerAState {
+		case timerStop, timerLoadThenStop:
+			if (m.newCrA & 1) != 0 {
+				// Timer started, wasn't running
+				if (m.newCrA & 0x10) != 0 {
+					// Force load
+					m.timerAState = timerLoadThenWaitThenCount
+				} else {
+					// No force load
+					m.timerAState = timerWaitThenCount
+				}
 			} else {
-				// No force load
-				m.state = T_WAIT_THEN_COUNT
+				// Timer stopped, was already stopped
+				if (m.newCrA & 0x10) != 0 {
+					// Force load
+					m.timerAState = timerLoadThenStop
+				}
 			}
-		} else {
-			// Timer stopped, was already stopped
-			if (m.newCr & 0x10) != 0 {
-				// Force load
-				m.state = T_LOAD_THEN_STOP
-			}
-		}
-	} else if m.state == T_COUNT {
-		if (m.newCr & 1) != 0 {
-			// Timer started, was already running
-			if (m.newCr & 0x10) != 0 {
-				// Force load
-				m.state = T_LOAD_THEN_WAIT_THEN_COUNT
-			}
-		} else {
-			// Timer stopped, was running
-			if (m.newCr & 0x10) != 0 {
-				// Force load
-				m.state = T_LOAD_THEN_STOP
+
+		case timerCount:
+			if (m.newCrA & 1) != 0 {
+				// Timer started, was already running
+				if (m.newCrA & 0x10) != 0 {
+					// Force load
+					m.timerAState = timerLoadThenWaitThenCount
+				}
 			} else {
-				// No force load
-				m.state = T_COUNT_THEN_STOP
+				// Timer stopped, was running
+				if (m.newCrA & 0x10) != 0 {
+					// Force load
+					m.timerAState = timerLoadThenStop
+				} else {
+					// No force load
+					m.timerAState = timerCountThenStop
+				}
 			}
-		}
-	} else if m.state == T_LOAD_THEN_COUNT || m.state == T_WAIT_THEN_COUNT {
-		if (m.newCr & 1) != 0 {
-			// One-shot?
-			if (m.newCr & 8) != 0 {
-				m.newCr &= 0xfe
-				m.state = T_STOP
-			} else if (m.newCr & 0x10) != 0 {
-				m.state = T_LOAD_THEN_WAIT_THEN_COUNT
+
+		case timerLoadThenCount, timerWaitThenCount:
+			if (m.newCrA & 1) != 0 {
+				// One-shot?
+				if (m.newCrA & 8) != 0 {
+					// Yes, stop timer
+					m.newCrA &= 0xfe
+					m.timerAState = timerStop
+				} else if (m.newCrA & 0x10) != 0 {
+					// Force load
+					m.timerAState = timerLoadThenWaitThenCount
+				}
+			} else {
+				m.timerAState = timerStop
 			}
-		} else {
-			m.state = T_STOP
+		default:
+			fmt.Println("TIMER A - UNDEFINED", m.timerAState)
 		}
+		m.crA = m.newCrA & 0xef
+		m.hasNewCrA = false
 	}
-	m.cr = m.newCr & 0xef
-	m.hasNewCr = false
+	return taUnderflow
 }
