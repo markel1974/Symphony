@@ -34,7 +34,7 @@ const (
 	IRQUnderflowTimerA = 0x1
 	IRQUnderflowTimerB = 0x2
 	IRQTODAlarmEqual   = 0x4
-	IRQSDRFullOtEmpty  = 0x8
+	IRQSDRFullOrEmpty  = 0x8
 	IRQFlagPin         = 0x10
 	IRQOccurred        = 0x80
 )

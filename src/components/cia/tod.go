@@ -36,45 +36,47 @@ func (m *TOD) Reset() {
 	m.almHr = 0
 }
 
-func (m *TOD) SetAlarm10ths(data uint8) {
-	m.alm10ths = data
-}
-
-func (m *TOD) SetAlarmSec(data uint8) {
-	m.almSec = data
-}
-
-func (m *TOD) SetAlarmMin(data uint8) {
-	m.almMin = data
-}
-
-func (m *TOD) SetAlarmHour(data uint8) {
-	m.almHr = data
-}
-
-func (m *TOD) Set10ths(d uint8) {
-	m.tod10ths = d
-	if m.todHalt {
-		m.todDivider = 0
-		m.todHalt = false
+func (m *TOD) Set10ths(alarm bool, d uint8) {
+	if alarm {
+		m.alm10ths = d
+	} else {
+		m.tod10ths = d
+		if m.todHalt {
+			m.todDivider = 0
+			m.todHalt = false
+		}
 	}
 }
 
-func (m *TOD) SetSec(s uint8) {
-	m.todSec = s
+func (m *TOD) SetSec(alarm bool, d uint8) {
+	if alarm {
+		m.almSec = d
+	} else {
+		m.todSec = d
+	}
 }
 
-func (m *TOD) SetMin(v uint8) {
-	m.todMin = v
+func (m *TOD) SetMin(alarm bool, d uint8) {
+	if alarm {
+		m.almMin = d
+	} else {
+		m.todMin = d
+	}
 }
 
-func (m *TOD) SetHour(h uint8) {
-	m.todHr = h
-	m.todHalt = true
+func (m *TOD) SetHour(alarm bool, d uint8) {
+	if alarm {
+		m.almHr = d
+	} else {
+		m.todHr = d
+		m.todHalt = true
+	}
 }
 
 func (m *TOD) GetHour() uint8 {
-	return m.todHr
+	v := m.todHr
+	m.freeze()
+	return v
 }
 
 func (m *TOD) GetMin() uint8 {
@@ -92,19 +94,23 @@ func (m *TOD) GetSec() uint8 {
 }
 
 func (m *TOD) Get10ths() uint8 {
+	var v uint8
 	if m.todShadow10ths >= 0 {
-		return uint8(m.todShadow10ths)
+		v = uint8(m.todShadow10ths)
+	} else {
+		v = m.tod10ths
 	}
-	return m.tod10ths
+	m.unfreeze()
+	return v
 }
 
-func (m *TOD) Freeze() {
+func (m *TOD) freeze() {
 	m.todShadow10ths = int(m.tod10ths)
 	m.todShadowSec = int(m.todSec)
 	m.todShadowMin = int(m.todMin)
 }
 
-func (m *TOD) Unfreeze() {
+func (m *TOD) unfreeze() {
 	m.todShadow10ths = -1
 	m.todShadowSec = -1
 	m.todShadowMin = -1

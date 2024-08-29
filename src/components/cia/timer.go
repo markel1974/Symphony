@@ -6,6 +6,7 @@ import (
 )
 
 type Timer struct {
+	id                   string
 	cr                   uint8
 	hasNewCr             bool   // Flag: New value for CRB pending
 	newCr                uint8  // New values for CRB
@@ -17,8 +18,9 @@ type Timer struct {
 	signalTimerUnderflow *signals.Signal
 }
 
-func NewTimer() *Timer {
+func NewTimer(id string) *Timer {
 	m := &Timer{
+		id:                   id,
 		signalTimerUnderflow: signals.NewSignal(),
 	}
 	m.Reset()
@@ -34,8 +36,12 @@ func (m *Timer) Reset() {
 	m.latch = 1
 }
 
-func (m *Timer) GetTimer() uint16 {
-	return m.timer
+func (m *Timer) GetTimerLow() uint8 {
+	return uint8(m.timer)
+}
+
+func (m *Timer) GetTimerHigh() uint8 {
+	return uint8(m.timer >> 8)
 }
 
 func (m *Timer) GetCR() uint8 {
@@ -128,10 +134,12 @@ labelCount:
 	if interrupt {
 		// Reload timer
 		m.timer = m.latch
+		//fmt.Println(m.id, "EMITTING CR", m.cr)
 		m.signalTimerUnderflow.Emit()
 		if (m.cr & 8) != 0 {
 			// One-shot, stop timer
 			m.cr &= 0xfe
+			//fmt.Println(m.id, "ONE SHOT, STOPPING CR", m.cr)
 			m.newCr &= 0xfe
 			// Reload in next cycle
 			m.timerState = timerLoadThenStop
@@ -198,6 +206,7 @@ labelIdle:
 			fmt.Println("TIMER - UNDEFINED", m.timerState)
 		}
 		m.cr = m.newCr & 0xef
+		//fmt.Println(m.id, "CREATING NEW CR", m.cr)
 		m.hasNewCr = false
 	}
 	return taUnderflow
