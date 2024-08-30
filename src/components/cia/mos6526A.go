@@ -35,16 +35,16 @@ func NewMOS6526A() *MOS6526A {
 		signalIRQTrigger:      signals.NewSignalUint32(),
 		signalIRQClear:        signals.NewSignalUint32(),
 		signalLightPenTrigger: signals.NewSignal(),
-		tod:                   NewTOD(),
+		tod:                   NewTOD("CIA1_TOD"),
 		timerA:                NewTimer("CIA1_TIMER_A"),
-		timerB:                NewTimer("CIA2_TIMER_B"),
+		timerB:                NewTimer("CIA1_TIMER_B"),
 	}
 	m.timerA.SignalTimerUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrqNextCycle = true })
 	m.timerB.SignalTimerUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrqNextCycle = true })
 	return m
 }
 
-func (cia1 *MOS6526A) Setup(cfg *config.Config) {
+func (cia1 *MOS6526A) Setup(_ *config.Config) {
 }
 
 func (cia1 *MOS6526A) CheckIRQs() {

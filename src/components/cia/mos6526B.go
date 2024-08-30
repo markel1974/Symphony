@@ -32,7 +32,7 @@ func NewMOS6526B() *MOS6526B {
 		signalNMITrigger: signals.NewSignal(),
 		signalNMIClear:   signals.NewSignal(),
 		signalChangedVA:  signals.NewSignalByte(),
-		tod:              NewTOD(),
+		tod:              NewTOD("CIA2_TOD"),
 		timerA:           NewTimer("CIA2_TIMER_A"),
 		timerB:           NewTimer("CIA2_TIMER_B"),
 	}

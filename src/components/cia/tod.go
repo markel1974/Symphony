@@ -1,6 +1,7 @@
 package cia
 
 type TOD struct {
+	id             string
 	tod10ths       uint8 // TOD 10ths
 	todSec         uint8 // TOD sec
 	todMin         uint8 // TOD min
@@ -16,8 +17,10 @@ type TOD struct {
 	almHr          uint8 // Alarm time
 }
 
-func NewTOD() *TOD {
-	return &TOD{}
+func NewTOD(id string) *TOD {
+	return &TOD{
+		id: id,
+	}
 }
 
 func (m *TOD) Reset() {
