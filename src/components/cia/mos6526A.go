@@ -8,6 +8,7 @@ import (
 //https://emudev.de/q00-c64/cias-timers-keyboard-and-more/
 
 type MOS6526A struct {
+	id                    string
 	prA                   uint8
 	prB                   uint8
 	ddrA                  uint8
@@ -30,14 +31,15 @@ type MOS6526A struct {
 	timerB                *Timer
 }
 
-func NewMOS6526A() *MOS6526A {
+func NewMOS6526A(id string) *MOS6526A {
 	m := &MOS6526A{
+		id:                    id,
 		signalIRQTrigger:      signals.NewSignalUint32(),
 		signalIRQClear:        signals.NewSignalUint32(),
 		signalLightPenTrigger: signals.NewSignal(),
-		tod:                   NewTOD("CIA1_TOD"),
-		timerA:                NewTimer("CIA1_TIMER_A", false),
-		timerB:                NewTimer("CIA1_TIMER_B", true),
+		tod:                   NewTOD(id + "_TOD"),
+		timerA:                NewTimer(id+"_TIMER_A", false),
+		timerB:                NewTimer(id+"_TIMER_B", true),
 	}
 	m.timerA.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrqNextCycle = true })
 	m.timerB.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrqNextCycle = true })

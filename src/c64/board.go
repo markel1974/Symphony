@@ -88,8 +88,8 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cpu = mos6510fn.NewMOS6510("c64")
 	s.vic = vic.NewMOS6569(s.db)
 	s.sid = sid.NewMOS6581()
-	s.cia1 = cia.NewMOS6526A()
-	s.cia2 = cia.NewMOS6526B()
+	s.cia1 = cia.NewMOS6526A("CIA1")
+	s.cia2 = cia.NewMOS6526B("CIA2")
 	s.keys = keyboard.NewKeyboard()
 	s.banks = banks.NewBanks()
 
@@ -112,8 +112,8 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cia1.SignalLightPenTriggerBind(s.vic.LightPenTrigger)
 
 	s.cia2.Setup(s.iec, cfg)
-	s.cia2.SignalTriggerNMIBind(s.pic.TriggerNMI)
-	s.cia2.SignalClearNMIBind(s.pic.ClearNMI)
+	s.cia2.SignalTriggerIRQBind(s.pic.TriggerNMI)
+	s.cia2.SignalClearIRQBind(s.pic.ClearNMI)
 	s.cia2.SignalChangedVABind(s.vic.ChangedVA)
 
 	s.cartMan.Setup(s, cfg)
