@@ -104,19 +104,16 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 }
 
 func (v *Via1) WriteByte(addr uint16, data uint8) {
-	//fmt.Printf("VIA1 WRITE %x -> %d\n", addr, data)
 	switch addr {
 	case 0x1800:
 		v.prb = data | v.dipSwitch
 		data = (^v.prb) & v.ddrb
-		//fmt.Println("0x1800) WRITING TO IEC", data)
 		v.iec.PeripheralWrite(v.deviceNumber, data)
 	case 0x1801:
 		v.pra = data
 	case 0x1802:
 		v.ddrb = data
 		data &= ^v.prb
-		//fmt.Println("0x1802) WRITING TO IEC", data)
 		v.iec.PeripheralWrite(v.deviceNumber, data)
 	case 0x1803:
 		v.ddra = data
