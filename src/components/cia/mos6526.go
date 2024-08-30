@@ -23,7 +23,7 @@ type MOS6526 struct {
 	ddrB               uint8
 	sdr                uint8
 	icr                uint8 // Pending interrupts
-	intMask            uint8 // Enabled interrupts
+	irqMask            uint8 // Enabled interrupts
 	timerAIrqNextCycle bool  // Flag: Trigger TA IRQ in next cycle
 	timerBIrqNextCycle bool  // Flag: Trigger Timer B IRQ in next cycle
 	signalIRQTrigger   *signals.SignalUint32
@@ -84,7 +84,7 @@ func (m *MOS6526) Reset() {
 	m.ddrB = 0
 	m.sdr = 0
 	m.icr = 0
-	m.intMask = 0
+	m.irqMask = 0
 	m.timerAIrqNextCycle = false
 	m.timerBIrqNextCycle = false
 	m.timerA.Reset()
@@ -173,7 +173,7 @@ func (m *MOS6526) WriteRegister(addr uint16, data uint8) {
 		m.icr |= IRQSDRFullOrEmpty
 		m.triggerIrq()
 	case 0x0d:
-		m.updateIntMask(data)
+		m.updateIrqMask(data)
 		m.triggerIrq()
 	case 0x0e:
 		m.timerA.SetControlRegister(data)
@@ -182,7 +182,7 @@ func (m *MOS6526) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
-func (m *MOS6526) updateIntMask(data uint8) {
+func (m *MOS6526) updateIrqMask(data uint8) {
 	//Bit 0: 1 = Interrupt release through timer A underflow
 	//Bit 1: 1 = Interrupt release through timer B underflow
 	//Bit 2: 1 = Interrupt release if clock=alarm
@@ -199,16 +199,16 @@ func (m *MOS6526) updateIntMask(data uint8) {
 		// 0 = set bits 0..4 are clearing the according mask bit.
 		if (data & 0x80) != 0 {
 			//set bits 0..4 are setting the according mask bit.
-			m.intMask |= bits //data & 0x7f
+			m.irqMask |= bits //data & 0x7f
 		} else {
 			//set bits 0..4 are clearing the according mask bit.
-			m.intMask &= ^bits //^data
+			m.irqMask &= ^bits //^data
 		}
 	}
 }
 
 func (m *MOS6526) triggerIrq() {
-	mask := m.intMask & 0x1f
+	mask := m.irqMask & 0x1f
 	if (m.icr & mask) != 0 {
 		m.icr |= IRQOccurred
 		m.signalIRQTrigger.Emit(intrCia1Id)
