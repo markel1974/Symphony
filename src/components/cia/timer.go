@@ -5,8 +5,10 @@ import (
 	"github.com/markel1974/c64emu/src/signals"
 )
 
+type TimerState uint8
+
 const (
-	timerStop = iota
+	timerStop = TimerState(iota)
 	timerWaitThenCount
 	timerLoadThenStop
 	timerLoadThenCount
@@ -53,23 +55,23 @@ const (
 
 type Timer struct {
 	id                   string
-	count                bool
+	countX               bool
 	cr                   uint8
-	crNew                uint8  // New values for cr
-	crPending            bool   // New value for crNew pending
-	timer                uint16 // Timer
-	timerLatch           uint16 // Timer latch
-	timerState           uint8  // Timer states
-	countPhi2            bool   // Timer is counting Phi 2
-	checkUnderflowTimerX bool   // Timer is counting underflow's of Timer X
-	signalTimerUnderflow *signals.Signal
+	crNew                uint8      // New values for cr
+	crPending            bool       // New value for crNew pending
+	timer                uint16     // Timer
+	timerLatch           uint16     // Timer latch
+	timerState           TimerState // Timer states
+	countPhi2            bool       // Timer is counting Phi 2
+	checkUnderflowTimerX bool       // Timer is counting underflow's of Timer X
+	signalUnderflow      *signals.Signal
 }
 
-func NewTimer(id string, count bool) *Timer {
+func NewTimer(id string, countX bool) *Timer {
 	m := &Timer{
-		id:                   id,
-		count:                count,
-		signalTimerUnderflow: signals.NewSignal(),
+		id:              id,
+		countX:          countX,
+		signalUnderflow: signals.NewSignal(),
 	}
 	m.Reset()
 	return m
@@ -84,6 +86,10 @@ func (m *Timer) Reset() {
 	m.timerState = timerStop
 	m.countPhi2 = false
 	m.checkUnderflowTimerX = false
+}
+
+func (m *Timer) SignalUnderflowBind(fn func()) {
+	m.signalUnderflow.Bind(fn)
 }
 
 func (m *Timer) GetRTC() bool {
@@ -109,8 +115,7 @@ func (m *Timer) SetTimerLow(data uint8) {
 func (m *Timer) SetTimerHigh(data uint8) {
 	m.timerLatch = (m.timerLatch & 0xff) | (uint16(data) << 8)
 	if (m.cr & crBitStart) == 0 {
-		// timer stopped, reload
-		m.timer = m.timerLatch
+		m.timer = m.timerLatch // Stopped, reload
 	}
 }
 
@@ -118,7 +123,7 @@ func (m *Timer) SetControlRegister(data uint8) {
 	//m.printTimerControlData(data)
 	m.crPending = true
 	m.crNew = data
-	if m.count {
+	if m.countX {
 		m.countPhi2 = (data & 0x60) == 0
 		m.checkUnderflowTimerX = (data & 0x60) == 0x40
 	} else {
@@ -127,82 +132,82 @@ func (m *Timer) SetControlRegister(data uint8) {
 	}
 }
 
-func (m *Timer) SignalTimerUnderflowBind(fn func()) {
-	m.signalTimerUnderflow.Bind(fn)
-}
-
 func (m *Timer) Emulate(underflowTimerX bool) bool {
-	underflow := false
-	interrupt := false
-
-	// Timer state machine
 	switch m.timerState {
 	case timerWaitThenCount:
-		// fall through
 		m.timerState = timerCount
-		goto labelIdle
+		m.checkPending()
+		return false
 	case timerStop:
-		goto labelIdle
+		m.checkPending()
+		return false
 	case timerLoadThenStop:
 		m.timerState = timerStop
-		// Reload timer
-		m.timer = m.timerLatch
-		goto labelIdle
+		m.timer = m.timerLatch // Reload
+		m.checkPending()
+		return false
 	case timerLoadThenCount:
 		m.timerState = timerCount
-		// Reload timer
-		m.timer = m.timerLatch
-		goto labelIdle
+		m.timer = m.timerLatch // Reload
+		m.checkPending()
+		return false
 	case timerLoadThenWaitThenCount:
 		m.timerState = timerWaitThenCount
 		if m.timer == 1 {
-			interrupt = true
-			goto labelCount
-		} else {
-			// Reload timer
-			m.timer = m.timerLatch
-			goto labelIdle
+			underflow := m.timerCount(true, underflowTimerX)
+			m.checkPending()
+			return underflow
 		}
+		m.timer = m.timerLatch // Reload
+		m.checkPending()
+		return false
 	case timerCount:
-		goto labelCount
+		underflow := m.timerCount(false, underflowTimerX)
+		m.checkPending()
+		return underflow
 	case timerCountThenStop:
 		m.timerState = timerStop
-		goto labelCount
+		underflow := m.timerCount(false, underflowTimerX)
+		m.checkPending()
+		return underflow
 	}
+	//never happen
+	return false
+}
 
-labelCount:
-	if !interrupt {
+func (m *Timer) timerCount(signal bool, underflowTimerX bool) bool {
+	underflow := false
+	if !signal {
 		if m.countPhi2 || (m.checkUnderflowTimerX && underflowTimerX) {
 			timer := m.timer
 			m.timer--
 			if (timer == 0) || (m.timer == 0) {
-				if m.timerState != timerStop {
-					interrupt = true
-				}
 				underflow = true
+				if m.timerState != timerStop {
+					signal = true
+				}
 			}
 		}
 	}
-
-	if interrupt {
+	if signal {
+		underflow = true
 		// Reload timer
 		m.timer = m.timerLatch
-		m.signalTimerUnderflow.Emit()
+		m.signalUnderflow.Emit()
 		if (m.cr & crBitOneShot) != 0 {
 			// stop timer
 			m.cr &= 0xfe
 			m.crNew &= 0xfe
-			// Reload in next cycle
-			m.timerState = timerLoadThenStop
+			m.timerState = timerLoadThenStop // Reload in next cycle
 		} else {
-			// delay one cycle (and reload)
-			m.timerState = timerLoadThenCount
+			m.timerState = timerLoadThenCount // Delay one cycle (and reload)
 		}
-		underflow = true
 	}
+	return underflow
+}
 
+func (m *Timer) checkPending() {
 	// Delayed write to CR?
-labelIdle:
 	if m.crPending {
 		switch m.timerState {
 		case timerStop, timerLoadThenStop:
@@ -253,7 +258,6 @@ labelIdle:
 		m.cr = m.crNew & 0xef
 		m.crPending = false
 	}
-	return underflow
 }
 
 func (m *Timer) printTimerControlData(data uint8) {

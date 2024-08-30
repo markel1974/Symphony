@@ -36,8 +36,8 @@ func NewMOS6526B() *MOS6526B {
 		timerA:           NewTimer("CIA2_TIMER_A", false),
 		timerB:           NewTimer("CIA2_TIMER_B", true),
 	}
-	m.timerA.SignalTimerUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrqNextCycle = true })
-	m.timerB.SignalTimerUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrqNextCycle = true })
+	m.timerA.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrqNextCycle = true })
+	m.timerB.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrqNextCycle = true })
 	return m
 }
 
