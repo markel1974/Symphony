@@ -92,7 +92,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 	case 0x1c0c:
 		return v.pcr
 	case 0x1c0d:
-		if v.ifr&v.ier != 0 {
+		if (v.ifr & v.ier) != 0 {
 			return v.ifr | 0x80
 		}
 		return v.ifr

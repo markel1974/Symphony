@@ -69,7 +69,6 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 		return v.ddra
 	case 0x1804:
 		v.ifr &= 0xbf
-		//fmt.Println("CLEAR VIA1 IRQ")
 		v.signalIRQClear.Emit(intrVIA1Id)
 		return uint8(v.t1c)
 	case 0x1805:

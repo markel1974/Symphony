@@ -2,11 +2,6 @@ package cia
 
 const intrCia1Id = 4
 
-type IBus interface {
-	CpuRead() uint8
-	CpuWrite(uint8)
-}
-
 type IWiring interface {
 	Reset()
 	ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8
