@@ -92,10 +92,11 @@ func (cia1 *MOS6526A) Reset() {
 	cia1.intMask = 0
 	cia1.timerAIrqNextCycle = false
 	cia1.timerBIrqNextCycle = false
-
 	cia1.timerA.Reset()
 	cia1.timerB.Reset()
 	cia1.tod.Reset()
+
+	//External
 	for i := 0; i < 8; i++ {
 		cia1.keyMatrix[i] = 0xff
 		cia1.revMatrix[i] = 0xff
@@ -135,9 +136,9 @@ func (cia1 *MOS6526A) ReadRegister(addr uint16) uint8 {
 	addr = addr & 0x0f
 	switch addr {
 	case 0x00:
-		return cia1.updateRevMatrix()
+		return cia1.readPortA()
 	case 0x01:
-		return cia1.updateKeyMatrix()
+		return cia1.readPortB()
 	case 0x02:
 		return cia1.ddrA
 	case 0x03:
@@ -243,14 +244,15 @@ func (cia1 *MOS6526A) updateIntMask(data uint8) {
 	}
 }
 
-func (cia1 *MOS6526A) updateLightPen() {
-	if ((cia1.prB | ^cia1.ddrB) & 0x10) != cia1.prevLPState {
-		cia1.signalLightPenTrigger.Emit()
+func (cia1 *MOS6526A) triggerIrq() {
+	mask := cia1.intMask & 0x1f
+	if (cia1.icr & mask) != 0 {
+		cia1.icr |= IRQOccurred
+		cia1.signalIRQTrigger.Emit(intrCia1Id)
 	}
-	cia1.prevLPState = (cia1.prB | ^cia1.ddrB) & 0x10
 }
 
-func (cia1 *MOS6526A) updateRevMatrix() uint8 {
+func (cia1 *MOS6526A) readPortA() uint8 {
 	//Joy port 2
 	ret := cia1.prA | ^cia1.ddrA
 	tst := (cia1.prB | ^cia1.ddrB) & cia1.joy1
@@ -281,7 +283,7 @@ func (cia1 *MOS6526A) updateRevMatrix() uint8 {
 	return ret & cia1.joy2
 }
 
-func (cia1 *MOS6526A) updateKeyMatrix() uint8 {
+func (cia1 *MOS6526A) readPortB() uint8 {
 	//joy port 1
 	ret := ^cia1.ddrB
 	tst := (cia1.prA | ^cia1.ddrA) & cia1.joy2
@@ -312,10 +314,9 @@ func (cia1 *MOS6526A) updateKeyMatrix() uint8 {
 	return (ret | (cia1.prB & cia1.ddrB)) & cia1.joy1
 }
 
-func (cia1 *MOS6526A) triggerIrq() {
-	mask := cia1.intMask & 0x1f
-	if (cia1.icr & mask) != 0 {
-		cia1.icr |= IRQOccurred
-		cia1.signalIRQTrigger.Emit(intrCia1Id)
+func (cia1 *MOS6526A) updateLightPen() {
+	if ((cia1.prB | ^cia1.ddrB) & 0x10) != cia1.prevLPState {
+		cia1.signalLightPenTrigger.Emit()
 	}
+	cia1.prevLPState = (cia1.prB | ^cia1.ddrB) & 0x10
 }

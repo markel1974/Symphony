@@ -19,8 +19,8 @@ type MOS6526B struct {
 	timerBIrqNextCycle bool  // Flag: Trigger Timer B IRQ in next cycle
 	bus                IBus
 	cfg                *config.Config
-	signalNMITrigger   *signals.Signal
-	signalNMIClear     *signals.Signal
+	signalIRQTrigger   *signals.Signal
+	signalIRQClear     *signals.Signal
 	signalChangedVA    *signals.SignalByte
 	tod                *TOD
 	timerA             *Timer
@@ -29,8 +29,8 @@ type MOS6526B struct {
 
 func NewMOS6526B() *MOS6526B {
 	m := &MOS6526B{
-		signalNMITrigger: signals.NewSignal(),
-		signalNMIClear:   signals.NewSignal(),
+		signalIRQTrigger: signals.NewSignal(),
+		signalIRQClear:   signals.NewSignal(),
 		signalChangedVA:  signals.NewSignalByte(),
 		tod:              NewTOD("CIA2_TOD"),
 		timerA:           NewTimer("CIA2_TIMER_A", false),
@@ -50,11 +50,11 @@ func (cia2 *MOS6526B) Setup(bus IBus, cfg *config.Config) {
 func (cia2 *MOS6526B) CheckIRQs() {
 	if cia2.timerAIrqNextCycle {
 		cia2.timerAIrqNextCycle = false
-		cia2.triggerNMI()
+		cia2.triggerIrq()
 	}
 	if cia2.timerBIrqNextCycle {
 		cia2.timerBIrqNextCycle = false
-		cia2.triggerNMI()
+		cia2.triggerIrq()
 	}
 }
 
@@ -63,12 +63,12 @@ func (cia2 *MOS6526B) Emulate() {
 	cia2.timerB.Emulate(underflow)
 }
 
-func (cia2 *MOS6526B) SignalTriggerNMIBind(fn func()) {
-	cia2.signalNMITrigger.Bind(fn)
+func (cia2 *MOS6526B) SignalTriggerIRQBind(fn func()) {
+	cia2.signalIRQTrigger.Bind(fn)
 }
 
-func (cia2 *MOS6526B) SignalClearNMIBind(fn func()) {
-	cia2.signalNMIClear.Bind(fn)
+func (cia2 *MOS6526B) SignalClearIRQBind(fn func()) {
+	cia2.signalIRQClear.Bind(fn)
 }
 
 func (cia2 *MOS6526B) SignalChangedVABind(fn func(uint8)) {
@@ -78,7 +78,7 @@ func (cia2 *MOS6526B) SignalChangedVABind(fn func(uint8)) {
 func (cia2 *MOS6526B) Update() {
 	if cia2.tod.Update(cia2.timerA.GetRTC()) {
 		cia2.icr |= IRQTODAlarmEqual
-		cia2.triggerNMI()
+		cia2.triggerIrq()
 	}
 }
 
@@ -95,6 +95,8 @@ func (cia2 *MOS6526B) Reset() {
 	cia2.timerA.Reset()
 	cia2.timerB.Reset()
 	cia2.tod.Reset()
+
+	//External
 	cia2.signalChangedVA.Emit(0) // VA14/15 = 0
 }
 
@@ -138,7 +140,7 @@ func (cia2 *MOS6526B) ReadRegister(addr uint16) uint8 {
 		ret := cia2.icr
 		cia2.icr = 0
 		if ret != 0 {
-			cia2.signalNMIClear.Emit()
+			cia2.signalIRQClear.Emit()
 		}
 		return ret
 	case 0x0e:
@@ -182,10 +184,10 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 	case 0xc:
 		cia2.sdr = data
 		cia2.icr |= IRQSDRFullOrEmpty
-		cia2.triggerNMI()
+		cia2.triggerIrq()
 	case 0xd:
 		cia2.updateIntMask(data)
-		cia2.triggerNMI()
+		cia2.triggerIrq()
 	case 0xe:
 		cia2.timerA.SetControlRegister(data)
 	case 0xf:
@@ -193,11 +195,11 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
-func (cia2 *MOS6526B) triggerNMI() {
+func (cia2 *MOS6526B) triggerIrq() {
 	mask := cia2.intMask & 0x1f
 	if (cia2.icr & mask) != 0 {
 		cia2.icr |= IRQOccurred
-		cia2.signalNMITrigger.Emit()
+		cia2.signalIRQTrigger.Emit()
 	}
 }
 

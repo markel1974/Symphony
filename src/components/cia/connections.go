@@ -33,3 +33,14 @@ type IBus interface {
 	CpuRead() uint8
 	CpuWrite(uint8)
 }
+
+type IPort interface {
+	ReadPortA(prA uint8, ddrA uint8, prb uint8, ddrB uint8) uint8
+	ReadPortB(prA uint8, ddrA uint8, prb uint8, ddrB uint8) uint8
+	ReadDdrA(prA uint8, ddrA uint8, prb uint8, ddrB uint8) uint8
+	ReadDdrB(prA uint8, ddrA uint8, prb uint8, ddrB uint8) uint8
+	WritePortA(prA uint8, ddrA uint8, prb uint8, ddrB uint8)
+	WritePortB(prA uint8, ddrA uint8, prb uint8, ddrB uint8)
+	WriteDdrA(prA uint8, ddrA uint8, prb uint8, ddrB uint8)
+	WriteDdrB(prA uint8, ddrA uint8, prb uint8, ddrB uint8)
+}
