@@ -76,7 +76,7 @@ func (cia1 *MOS6526A) SignalLightPenTriggerBind(fn func()) {
 }
 
 func (cia1 *MOS6526A) Update() {
-	if cia1.tod.Update(cia1.timerA.GetCR() & 0x80) {
+	if cia1.tod.Update(cia1.timerA.GetRTC()) {
 		cia1.icr |= IRQTODAlarmEqual
 		cia1.triggerIrq()
 	}
@@ -197,13 +197,13 @@ func (cia1 *MOS6526A) WriteRegister(addr uint16, data uint8) {
 	case 0x07:
 		cia1.timerB.SetTimerHigh(data)
 	case 0x08:
-		cia1.tod.Set10ths(cia1.timerB.GetCR()&0x80 != 0, data&0x0f)
+		cia1.tod.Set10ths(cia1.timerB.GetRTC(), data&0x0f)
 	case 0x09:
-		cia1.tod.SetSec(cia1.timerB.GetCR()&0x80 != 0, data&0x7f)
+		cia1.tod.SetSec(cia1.timerB.GetRTC(), data&0x7f)
 	case 0x0a:
-		cia1.tod.SetMin(cia1.timerB.GetCR()&0x80 != 0, data&0x7f)
+		cia1.tod.SetMin(cia1.timerB.GetRTC(), data&0x7f)
 	case 0x0b:
-		cia1.tod.SetHour(cia1.timerB.GetCR()&0x80 != 0, data&0x9f)
+		cia1.tod.SetHour(cia1.timerB.GetRTC(), data&0x9f)
 	case 0x0c:
 		cia1.sdr = data
 		cia1.icr |= IRQSDRFullOrEmpty

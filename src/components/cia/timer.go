@@ -15,10 +15,40 @@ const (
 	timerCountThenStop
 )
 
+//Bit 0:
+//0 = Stop timer
+//1 = Start timer
+//Bit 1:
+//0 = Indicates no timer underflow at port B in bit 6.
+//1 = Indicates a timer underflow at port B in bit 6.
+//Bit 2:
+//0 = Through a timer overflow, bit 6 of port B will get high for one cycle,
+//1 = Through a timer underflow, bit 6 of port B will be inverted
+//Bit 3:
+//0 = Timer-restart after underflow (latch will be reloaded),
+//1 = Timer stops after underflow.
+//Bit 4:
+//0 = Not Load latch
+//1 = Load latch into the timer once.
+//Bit 5:
+//0 = Timer counts system cycles,
+//1 = Timer counts positive slope at CNT-pin
+//Bit 6: Direction of the serial shift register,
+//0 = SP-pin is input (read),
+//1 = SP-pin is output (write)
+//Bit 7: Real Time Clock,
+//0 = 60 Hz
+//1 = 50 Hz
+
 const (
-	crBitStopped   = 0x1
-	crBitOneShot   = 0x8
-	crBitForceLoad = 0x10
+	crBitStopped                 = 0x1
+	crBitSignalUnderflow         = 0x2
+	crBitSignalUnderflowInverted = 0x4
+	crBitOneShot                 = 0x8
+	crBitForceLoad               = 0x10
+	crBitTimerCountSystemCycle   = 0x20
+	crBitShiftRegDir             = 0x40
+	crBitRTC                     = 0x80
 )
 
 type Timer struct {
@@ -54,6 +84,10 @@ func (m *Timer) Reset() {
 	m.checkUnderflowTimerX = false
 }
 
+func (m *Timer) GetRTC() bool {
+	return (m.cr & crBitRTC) != 0
+}
+
 func (m *Timer) GetCR() uint8 {
 	return m.cr
 }
@@ -79,6 +113,7 @@ func (m *Timer) SetTimerHigh(data uint8) {
 }
 
 func (m *Timer) SetTimerControl(data uint8, count bool) {
+	//m.printTimerControlData(data)
 	m.crPending = true
 	m.crLatch = data
 	if count {
@@ -133,11 +168,9 @@ func (m *Timer) Emulate(underflowTimerX bool) bool {
 		goto labelCount
 	}
 
-	// Count timer
 labelCount:
 	if !interrupt {
 		if m.countPhi2 || (m.checkUnderflowTimerX && underflowTimerX) {
-			// Decrement timer, underflow?
 			timer := m.timer
 			m.timer--
 			if (timer == 0) || (m.timer == 0) {
@@ -219,4 +252,17 @@ labelIdle:
 		m.crPending = false
 	}
 	return underflow
+}
+
+func (m *Timer) printTimerControlData(data uint8) {
+	fmt.Printf("\n")
+	fmt.Printf("%s Timer Control -> crBitStopped: %v\n", m.id, data&crBitStopped != 0)
+	fmt.Printf("%s Timer Control -> crBitSignalUnderflow: %v\n", m.id, data&crBitSignalUnderflow != 0)
+	fmt.Printf("%s Timer Control -> crBitSignalUnderflowInverted: %v\n", m.id, data&crBitSignalUnderflowInverted != 0)
+	fmt.Printf("%s Timer Control -> crBitOneShot: %v\n", m.id, data&crBitOneShot != 0)
+	fmt.Printf("%s Timer Control -> crBitForceLoad: %v\n", m.id, data&crBitForceLoad != 0)
+	fmt.Printf("%s Timer Control -> crBitTimerCountSystemCycle: %v\n", m.id, data&crBitTimerCountSystemCycle != 0)
+	fmt.Printf("%s Timer Control -> crBitShiftRegDir: %v\n", m.id, data&crBitShiftRegDir != 0)
+	fmt.Printf("%s Timer Control -> crBitRTC: %v\n", m.id, data&crBitRTC != 0)
+	fmt.Printf("\n")
 }

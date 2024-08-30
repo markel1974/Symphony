@@ -76,7 +76,7 @@ func (cia2 *MOS6526B) SignalChangedVABind(fn func(uint8)) {
 }
 
 func (cia2 *MOS6526B) Update() {
-	if cia2.tod.Update(cia2.timerA.GetCR() & 0x80) {
+	if cia2.tod.Update(cia2.timerA.GetRTC()) {
 		cia2.icr |= IRQTODAlarmEqual
 		cia2.triggerNMI()
 	}
@@ -172,13 +172,13 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 	case 0x7:
 		cia2.timerB.SetTimerHigh(data)
 	case 0x08:
-		cia2.tod.Set10ths(cia2.timerB.GetCR()&0x80 != 0, data&0x0f)
+		cia2.tod.Set10ths(cia2.timerB.GetRTC(), data&0x0f)
 	case 0x09:
-		cia2.tod.SetSec(cia2.timerB.GetCR()&0x80 != 0, data&0x7f)
+		cia2.tod.SetSec(cia2.timerB.GetRTC(), data&0x7f)
 	case 0x0a:
-		cia2.tod.SetMin(cia2.timerB.GetCR()&0x80 != 0, data&0x7f)
+		cia2.tod.SetMin(cia2.timerB.GetRTC(), data&0x7f)
 	case 0x0b:
-		cia2.tod.SetHour(cia2.timerB.GetCR()&0x80 != 0, data&0x9f)
+		cia2.tod.SetHour(cia2.timerB.GetRTC(), data&0x9f)
 	case 0xc:
 		cia2.sdr = data
 		cia2.icr |= IRQSDRFullOrEmpty

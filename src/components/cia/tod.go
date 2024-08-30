@@ -119,7 +119,7 @@ func (m *TOD) unfreeze() {
 	m.todShadowMin = -1
 }
 
-func (m *TOD) Update(v uint8) bool {
+func (m *TOD) Update(rtc bool) bool {
 	if m.todHalt {
 		return false
 	}
@@ -128,7 +128,7 @@ func (m *TOD) Update(v uint8) bool {
 		return false
 	}
 	// Reload divider (50/60 Hz flag)
-	if v != 0 {
+	if rtc {
 		m.todDivider = 4
 	} else {
 		m.todDivider = 5

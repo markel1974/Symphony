@@ -14,8 +14,6 @@ package cia
  *
  * Incompatibilities:
  * ------------------
- *
- *  - The TOD clock should not be stopped on a read access, but be latched
  *  - The SDR interrupt is faked
  *  - Some small incompatibilities with the timers
  */
