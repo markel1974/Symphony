@@ -24,8 +24,8 @@ type WriteFn func(uint16, uint8)
 type Banks struct {
 	vic             *vic.MOS6569
 	sid             *sid.MOS6581
-	cia1            *cia3.MOS6526A
-	cia2            *cia3.MOS6526B
+	cia1            *cia3.MOS6526
+	cia2            *cia3.MOS6526
 	cartMan         *cartridges.Manager
 	ram             []byte
 	bankWrite       []WriteFn
@@ -73,7 +73,7 @@ func NewBanks() *Banks {
 	return b
 }
 
-func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia3.MOS6526A, cia2 *cia3.MOS6526B, cartMan *cartridges.Manager, cfg *config.Config) {
+func (b *Banks) Setup(vic *vic.MOS6569, sid *sid.MOS6581, cia1 *cia3.MOS6526, cia2 *cia3.MOS6526, cartMan *cartridges.Manager, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1

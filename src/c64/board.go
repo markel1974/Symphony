@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/iec"
 	"github.com/markel1974/c64emu/src/c64/keyboard"
 	"github.com/markel1974/c64emu/src/c64/prg"
-	"github.com/markel1974/c64emu/src/components/6510fn"
+	mos6510 "github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/cia"
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/sid"
@@ -31,12 +31,14 @@ const (
 type Board struct {
 	db           vic.IDisplayBuffer
 	quartz       *quartz.Quartz
-	cpu          *mos6510fn.MOS6510
+	cpu          *mos6510.MOS6510
 	vic          *vic.MOS6569
 	sid          *sid.MOS6581
-	cia1         *cia.MOS6526A
-	cia2         *cia.MOS6526B
-	pic          *mos6510fn.Pic
+	cia1         *cia.MOS6526
+	cia2         *cia.MOS6526
+	cia1wiring   *CIA1Wiring
+	cia2wiring   *CIA2Wiring
+	pic          *mos6510.Pic
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
 	cfg          *config.Config
@@ -83,13 +85,16 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
-	s.pic = mos6510fn.NewPic()
+	s.pic = mos6510.NewPic()
 	s.iec = iec.NewIEC()
-	s.cpu = mos6510fn.NewMOS6510("c64")
+	s.cpu = mos6510.NewMOS6510("c64")
 	s.vic = vic.NewMOS6569(s.db)
 	s.sid = sid.NewMOS6581()
-	s.cia1 = cia.NewMOS6526A("CIA1")
-	s.cia2 = cia.NewMOS6526B("CIA2")
+	s.cia1wiring = NewCIA1AWiring()
+	s.cia2wiring = NewCIA2Wiring()
+
+	s.cia1 = cia.NewMOS6526("CIA1")
+	s.cia2 = cia.NewMOS6526("CIA2")
 	s.keys = keyboard.NewKeyboard()
 	s.banks = banks.NewBanks()
 
@@ -106,15 +111,10 @@ func (s *Board) Setup(cfg *config.Config) error {
 
 	s.sid.Setup(cfg)
 
-	s.cia1.Setup(cfg)
-	s.cia1.SignalTriggerIRQBind(s.irqTriggerSlot)
-	s.cia1.SignalClearIRQBind(s.irqClearSlot)
-	s.cia1.SignalLightPenTriggerBind(s.vic.LightPenTrigger)
-
-	s.cia2.Setup(s.iec, cfg)
-	s.cia2.SignalTriggerIRQBind(s.pic.TriggerNMI)
-	s.cia2.SignalClearIRQBind(s.pic.ClearNMI)
-	s.cia2.SignalChangedVABind(s.vic.ChangedVA)
+	s.cia1wiring.Setup(s.vic.LightPenTrigger)
+	s.cia2wiring.Setup(s.iec, s.vic.ChangedVA)
+	s.cia1.Setup(s.cia1wiring, s.irqTriggerSlot, s.irqClearSlot)
+	s.cia2.Setup(s.cia2wiring, func(_ uint32) { s.pic.TriggerNMI() }, func(_ uint32) { s.pic.ClearNMI() })
 
 	s.cartMan.Setup(s, cfg)
 	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, cfg)
@@ -309,16 +309,16 @@ func (s *Board) KeyboardSwapJoystick(pressed bool) {
 func (s *Board) updateKeyboard() {
 	if joyKey, ok := s.keys.PollJoyKey(); ok {
 		if s.keys.HasJoystickSwap() {
-			s.cia1.SetJoystick2(joyKey)
+			s.cia1wiring.SetJoystick2(joyKey)
 		} else {
-			s.cia1.SetJoystick1(joyKey)
+			s.cia1wiring.SetJoystick1(joyKey)
 		}
 	}
 	if c64Byte, c64Bit, pressed, shifted, ok := s.keys.PollKeyboard(); ok {
 		if pressed {
-			s.cia1.SetKeyDown(c64Byte, c64Bit, shifted)
+			s.cia1wiring.SetKeyDown(c64Byte, c64Bit, shifted)
 		} else {
-			s.cia1.SetKeyUp(c64Byte, c64Bit, shifted)
+			s.cia1wiring.SetKeyUp(c64Byte, c64Bit, shifted)
 		}
 	}
 }

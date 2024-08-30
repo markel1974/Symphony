@@ -1,4 +1,4 @@
-package mos6510fn
+package mos6510
 
 import "github.com/markel1974/c64emu/src/flag"
 

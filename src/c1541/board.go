@@ -5,7 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/c1541/banks"
 	"github.com/markel1974/c64emu/src/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
-	"github.com/markel1974/c64emu/src/components/6510fn"
+	mos6510 "github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/via"
 	"github.com/markel1974/c64emu/src/config"
@@ -13,8 +13,8 @@ import (
 )
 
 type Board struct {
-	pic          *mos6510fn.Pic
-	cpu          *mos6510fn.MOS6510
+	pic          *mos6510.Pic
+	cpu          *mos6510.MOS6510
 	iec          virtualdrive.IIec
 	quartz       *quartz.Quartz
 	via1         *via.Via1
@@ -50,8 +50,8 @@ func (m *Board) Setup(cfg *config.Config) {
 
 	m.banks = banks.New()
 	m.quartz = quartz.NewQuartz()
-	m.pic = mos6510fn.NewPic()
-	m.cpu = mos6510fn.NewMOS6510("c1541")
+	m.pic = mos6510.NewPic()
+	m.cpu = mos6510.NewMOS6510("c1541")
 	m.mec = mechanics.NewMechanics(m.banks, m.deviceNumber)
 	m.via1 = via.NewVia1(m.iec, m.deviceNumber)
 	m.via2 = via.NewVia2(m.iec, m.mec, m.deviceNumber)
