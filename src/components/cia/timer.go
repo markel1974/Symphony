@@ -41,14 +41,14 @@ const (
 //1 = 50 Hz
 
 const (
-	crBitStopped                 = 0x1
-	crBitSignalUnderflow         = 0x2
-	crBitSignalUnderflowInverted = 0x4
-	crBitOneShot                 = 0x8
-	crBitForceLoad               = 0x10
-	crBitTimerCountSystemCycle   = 0x20
-	crBitShiftRegDir             = 0x40
-	crBitRTC                     = 0x80
+	crBitStart                    = 0x1
+	crBitUnderflowPortB           = 0x2
+	crBitUnderflowPortBInverted   = 0x4
+	crBitOneShot                  = 0x8
+	crBitForceLoad                = 0x10
+	crBitTimerCountsPositiveSlope = 0x20
+	crBitShiftRegDir              = 0x40
+	crBitRTC                      = 0x80
 )
 
 type Timer struct {
@@ -106,8 +106,8 @@ func (m *Timer) SetTimerLow(data uint8) {
 
 func (m *Timer) SetTimerHigh(data uint8) {
 	m.timerLatch = (m.timerLatch & 0xff) | (uint16(data) << 8)
-	if (m.cr & crBitStopped) == 0 {
-		// Reload timer if stopped
+	if (m.cr & crBitStart) == 0 {
+		// timer stopped, reload
 		m.timer = m.timerLatch
 	}
 }
@@ -117,10 +117,10 @@ func (m *Timer) SetTimerControl(data uint8, count bool) {
 	m.crPending = true
 	m.crLatch = data
 	if count {
-		m.countPhi2 = (data & 0x60) == 0x00
+		m.countPhi2 = (data & 0x60) == 0
 		m.checkUnderflowTimerX = (data & 0x60) == 0x40
 	} else {
-		m.countPhi2 = (data & 0x20) == 0x00
+		m.countPhi2 = (data & crBitTimerCountsPositiveSlope) == 0 //Timer counts system cycles
 		m.checkUnderflowTimerX = false
 	}
 }
@@ -205,7 +205,7 @@ labelIdle:
 		switch m.timerState {
 		case timerStop, timerLoadThenStop:
 			// Timer started, wasn't running
-			if (m.crLatch & crBitStopped) != 0 {
+			if (m.crLatch & crBitStart) != 0 {
 				if (m.crLatch & crBitForceLoad) != 0 {
 					m.timerState = timerLoadThenWaitThenCount
 				} else {
@@ -218,7 +218,7 @@ labelIdle:
 				}
 			}
 		case timerCount:
-			if (m.crLatch & crBitStopped) != 0 {
+			if (m.crLatch & crBitStart) != 0 {
 				// Timer started, was already running
 				if (m.crLatch & crBitForceLoad) != 0 {
 					m.timerState = timerLoadThenWaitThenCount
@@ -232,7 +232,7 @@ labelIdle:
 				}
 			}
 		case timerLoadThenCount, timerWaitThenCount:
-			if (m.crLatch & crBitStopped) != 0 {
+			if (m.crLatch & crBitStart) != 0 {
 				if (m.crLatch & crBitOneShot) != 0 {
 					// One-shot, stop timer
 					m.crLatch &= 0xfe
@@ -256,12 +256,12 @@ labelIdle:
 
 func (m *Timer) printTimerControlData(data uint8) {
 	fmt.Printf("\n")
-	fmt.Printf("%s Timer Control -> crBitStopped: %v\n", m.id, data&crBitStopped != 0)
-	fmt.Printf("%s Timer Control -> crBitSignalUnderflow: %v\n", m.id, data&crBitSignalUnderflow != 0)
-	fmt.Printf("%s Timer Control -> crBitSignalUnderflowInverted: %v\n", m.id, data&crBitSignalUnderflowInverted != 0)
+	fmt.Printf("%s Timer Control -> crBitStart: %v\n", m.id, data&crBitStart != 0)
+	fmt.Printf("%s Timer Control -> crBitSignalNoUnderflow: %v\n", m.id, data&crBitUnderflowPortB != 0)
+	fmt.Printf("%s Timer Control -> crBitSignalUnderflowInverted: %v\n", m.id, data&crBitUnderflowPortBInverted != 0)
 	fmt.Printf("%s Timer Control -> crBitOneShot: %v\n", m.id, data&crBitOneShot != 0)
 	fmt.Printf("%s Timer Control -> crBitForceLoad: %v\n", m.id, data&crBitForceLoad != 0)
-	fmt.Printf("%s Timer Control -> crBitTimerCountSystemCycle: %v\n", m.id, data&crBitTimerCountSystemCycle != 0)
+	fmt.Printf("%s Timer Control -> crBitTimerCountsPositiveSlope: %v\n", m.id, data&crBitTimerCountsPositiveSlope != 0)
 	fmt.Printf("%s Timer Control -> crBitShiftRegDir: %v\n", m.id, data&crBitShiftRegDir != 0)
 	fmt.Printf("%s Timer Control -> crBitRTC: %v\n", m.id, data&crBitRTC != 0)
 	fmt.Printf("\n")
