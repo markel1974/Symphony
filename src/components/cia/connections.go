@@ -21,16 +21,6 @@ package cia
  */
 
 const (
-	timerStop = iota
-	timerWaitThenCount
-	timerLoadThenStop
-	timerLoadThenCount
-	timerLoadThenWaitThenCount
-	timerCount
-	timerCountThenStop
-)
-
-const (
 	IRQUnderflowTimerA = 0x1
 	IRQUnderflowTimerB = 0x2
 	IRQTODAlarmEqual   = 0x4

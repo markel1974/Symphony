@@ -164,13 +164,13 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 	case 0x3:
 		cia2.ddrB = data
 	case 0x4:
-		cia2.timerA.SetLatchLowByte(data)
+		cia2.timerA.SetTimerLow(data)
 	case 0x5:
-		cia2.timerA.SetLatchHighByte(data)
+		cia2.timerA.SetTimerHigh(data)
 	case 0x6:
-		cia2.timerB.SetLatchLowByte(data)
+		cia2.timerB.SetTimerLow(data)
 	case 0x7:
-		cia2.timerB.SetLatchHighByte(data)
+		cia2.timerB.SetTimerHigh(data)
 	case 0x08:
 		cia2.tod.Set10ths(cia2.timerB.GetCR()&0x80 != 0, data&0x0f)
 	case 0x09:
@@ -187,9 +187,9 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 		cia2.updateIntMask(data)
 		cia2.triggerNMI()
 	case 0xe:
-		cia2.timerA.TimerControl(data, false)
+		cia2.timerA.SetTimerControl(data, false)
 	case 0xf:
-		cia2.timerB.TimerControl(data, true)
+		cia2.timerB.SetTimerControl(data, true)
 	}
 }
 

@@ -5,16 +5,32 @@ import (
 	"github.com/markel1974/c64emu/src/signals"
 )
 
+const (
+	timerStop = iota
+	timerWaitThenCount
+	timerLoadThenStop
+	timerLoadThenCount
+	timerLoadThenWaitThenCount
+	timerCount
+	timerCountThenStop
+)
+
+const (
+	crBitStopped   = 0x1
+	crBitOneShot   = 0x8
+	crBitForceLoad = 0x10
+)
+
 type Timer struct {
 	id                   string
 	cr                   uint8
-	hasNewCr             bool   // Flag: New value for CRB pending
-	newCr                uint8  // New values for CRB
+	crLatch              uint8  // New values for cr
+	crPending            bool   // New value for crLatch pending
 	timer                uint16 // Timer
+	timerLatch           uint16 // Timer latch
 	timerState           uint8  // Timer states
-	latch                uint16 // Timer latch
-	timerCntPhi2         bool   // Flag: Timer is counting Phi 2
-	timerCntTimerX       bool   // Flag: Timer is counting underflow's of Timer X
+	countPhi2            bool   // Timer is counting Phi 2
+	checkUnderflowTimerX bool   // Timer is counting underflow's of Timer X
 	signalTimerUnderflow *signals.Signal
 }
 
@@ -28,12 +44,18 @@ func NewTimer(id string) *Timer {
 }
 
 func (m *Timer) Reset() {
-	m.hasNewCr = false
+	m.cr = 0
+	m.crLatch = 0
+	m.crPending = false
 	m.timer = 0xffff
-	m.timerCntPhi2 = false
-	m.timerCntTimerX = false
+	m.timerLatch = 1
 	m.timerState = timerStop
-	m.latch = 1
+	m.countPhi2 = false
+	m.checkUnderflowTimerX = false
+}
+
+func (m *Timer) GetCR() uint8 {
+	return m.cr
 }
 
 func (m *Timer) GetTimerLow() uint8 {
@@ -44,30 +66,27 @@ func (m *Timer) GetTimerHigh() uint8 {
 	return uint8(m.timer >> 8)
 }
 
-func (m *Timer) GetCR() uint8 {
-	return m.cr
+func (m *Timer) SetTimerLow(data uint8) {
+	m.timerLatch = (m.timerLatch & 0xff00) | uint16(data)
 }
 
-func (m *Timer) SetLatchLowByte(data uint8) {
-	m.latch = (m.latch & 0xff00) | uint16(data)
-}
-
-func (m *Timer) SetLatchHighByte(data uint8) {
-	m.latch = (m.latch & 0xff) | (uint16(data) << 8)
-	if (m.cr & 1) == 0 {
+func (m *Timer) SetTimerHigh(data uint8) {
+	m.timerLatch = (m.timerLatch & 0xff) | (uint16(data) << 8)
+	if (m.cr & crBitStopped) == 0 {
 		// Reload timer if stopped
-		m.timer = m.latch
+		m.timer = m.timerLatch
 	}
 }
 
-func (m *Timer) TimerControl(data uint8, count bool) {
-	m.hasNewCr = true
-	m.newCr = data
+func (m *Timer) SetTimerControl(data uint8, count bool) {
+	m.crPending = true
+	m.crLatch = data
 	if count {
-		m.timerCntPhi2 = (data & 0x60) == 0x00
-		m.timerCntTimerX = (data & 0x60) == 0x40
+		m.countPhi2 = (data & 0x60) == 0x00
+		m.checkUnderflowTimerX = (data & 0x60) == 0x40
 	} else {
-		m.timerCntPhi2 = (data & 0x20) == 0x00
+		m.countPhi2 = (data & 0x20) == 0x00
+		m.checkUnderflowTimerX = false
 	}
 }
 
@@ -75,8 +94,8 @@ func (m *Timer) SignalTimerUnderflowBind(fn func()) {
 	m.signalTimerUnderflow.Bind(fn)
 }
 
-func (m *Timer) Emulate(timerXUnderflow bool) bool {
-	taUnderflow := false
+func (m *Timer) Emulate(underflowTimerX bool) bool {
+	underflow := false
 	interrupt := false
 
 	// Timer state machine
@@ -90,22 +109,21 @@ func (m *Timer) Emulate(timerXUnderflow bool) bool {
 	case timerLoadThenStop:
 		m.timerState = timerStop
 		// Reload timer
-		m.timer = m.latch
+		m.timer = m.timerLatch
 		goto labelIdle
 	case timerLoadThenCount:
 		m.timerState = timerCount
 		// Reload timer
-		m.timer = m.latch
+		m.timer = m.timerLatch
 		goto labelIdle
 	case timerLoadThenWaitThenCount:
 		m.timerState = timerWaitThenCount
 		if m.timer == 1 {
-			// Interrupt if timer == 1
 			interrupt = true
 			goto labelCount
 		} else {
 			// Reload timer
-			m.timer = m.latch
+			m.timer = m.timerLatch
 			goto labelIdle
 		}
 	case timerCount:
@@ -118,7 +136,7 @@ func (m *Timer) Emulate(timerXUnderflow bool) bool {
 	// Count timer
 labelCount:
 	if !interrupt {
-		if m.timerCntPhi2 || (m.timerCntTimerX && timerXUnderflow) {
+		if m.countPhi2 || (m.checkUnderflowTimerX && underflowTimerX) {
 			// Decrement timer, underflow?
 			timer := m.timer
 			m.timer--
@@ -126,76 +144,67 @@ labelCount:
 				if m.timerState != timerStop {
 					interrupt = true
 				}
-				taUnderflow = true
+				underflow = true
 			}
 		}
 	}
 
 	if interrupt {
 		// Reload timer
-		m.timer = m.latch
-		//fmt.Println(m.id, "EMITTING CR", m.cr)
+		m.timer = m.timerLatch
 		m.signalTimerUnderflow.Emit()
-		if (m.cr & 8) != 0 {
-			// One-shot, stop timer
+		if (m.cr & crBitOneShot) != 0 {
+			// stop timer
 			m.cr &= 0xfe
-			//fmt.Println(m.id, "ONE SHOT, STOPPING CR", m.cr)
-			m.newCr &= 0xfe
+			m.crLatch &= 0xfe
 			// Reload in next cycle
 			m.timerState = timerLoadThenStop
 		} else {
-			// No One-shot, delay one cycle (and reload)
+			// delay one cycle (and reload)
 			m.timerState = timerLoadThenCount
 		}
-		//TODO VERIFY!!!!!
-		taUnderflow = true
+		underflow = true
 	}
 
 	// Delayed write to CR?
 labelIdle:
-	if m.hasNewCr {
+	if m.crPending {
 		switch m.timerState {
 		case timerStop, timerLoadThenStop:
 			// Timer started, wasn't running
-			if (m.newCr & 1) != 0 {
-				if (m.newCr & 0x10) != 0 {
-					// Force load
+			if (m.crLatch & crBitStopped) != 0 {
+				if (m.crLatch & crBitForceLoad) != 0 {
 					m.timerState = timerLoadThenWaitThenCount
 				} else {
-					// No force load
 					m.timerState = timerWaitThenCount
 				}
 			} else {
 				// Timer stopped, was already stopped
-				if (m.newCr & 0x10) != 0 {
-					// Force load
+				if (m.crLatch & crBitForceLoad) != 0 {
 					m.timerState = timerLoadThenStop
 				}
 			}
 		case timerCount:
-			if (m.newCr & 1) != 0 {
+			if (m.crLatch & crBitStopped) != 0 {
 				// Timer started, was already running
-				if (m.newCr & 0x10) != 0 {
-					// Force load
+				if (m.crLatch & crBitForceLoad) != 0 {
 					m.timerState = timerLoadThenWaitThenCount
 				}
 			} else {
 				// Timer stopped, was running
-				if (m.newCr & 0x10) != 0 {
-					// Force load
+				if (m.crLatch & crBitForceLoad) != 0 {
 					m.timerState = timerLoadThenStop
 				} else {
-					// No force load
 					m.timerState = timerCountThenStop
 				}
 			}
 		case timerLoadThenCount, timerWaitThenCount:
-			if (m.newCr & 1) != 0 {
-				if (m.newCr & 8) != 0 {
+			if (m.crLatch & crBitStopped) != 0 {
+				if (m.crLatch & crBitOneShot) != 0 {
 					// One-shot, stop timer
-					m.newCr &= 0xfe
+					m.crLatch &= 0xfe
 					m.timerState = timerStop
-				} else if (m.newCr & 0x10) != 0 {
+				} else if (m.crLatch & crBitForceLoad) != 0 {
 					// No One-shot, force load
 					m.timerState = timerLoadThenWaitThenCount
 				}
@@ -205,9 +214,9 @@ labelIdle:
 		default:
 			fmt.Println("TIMER - UNDEFINED", m.timerState)
 		}
-		m.cr = m.newCr & 0xef
-		//fmt.Println(m.id, "CREATING NEW CR", m.cr)
-		m.hasNewCr = false
+		//no force load set
+		m.cr = m.crLatch & 0xef
+		m.crPending = false
 	}
-	return taUnderflow
+	return underflow
 }
