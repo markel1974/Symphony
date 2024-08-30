@@ -53,6 +53,7 @@ const (
 
 type Timer struct {
 	id                   string
+	count                bool
 	cr                   uint8
 	crNew                uint8  // New values for cr
 	crPending            bool   // New value for crNew pending
@@ -64,9 +65,10 @@ type Timer struct {
 	signalTimerUnderflow *signals.Signal
 }
 
-func NewTimer(id string) *Timer {
+func NewTimer(id string, count bool) *Timer {
 	m := &Timer{
 		id:                   id,
+		count:                count,
 		signalTimerUnderflow: signals.NewSignal(),
 	}
 	m.Reset()
@@ -112,11 +114,11 @@ func (m *Timer) SetTimerHigh(data uint8) {
 	}
 }
 
-func (m *Timer) SetTimerControl(data uint8, count bool) {
+func (m *Timer) SetControlRegister(data uint8) {
 	//m.printTimerControlData(data)
 	m.crPending = true
 	m.crNew = data
-	if count {
+	if m.count {
 		m.countPhi2 = (data & 0x60) == 0
 		m.checkUnderflowTimerX = (data & 0x60) == 0x40
 	} else {

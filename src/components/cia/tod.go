@@ -39,7 +39,8 @@ func (m *TOD) Reset() {
 	m.almHr = 0
 }
 
-func (m *TOD) Set10ths(alarm bool, d uint8) {
+func (m *TOD) Set10ths(alarm bool, data uint8) {
+	d := data & 0x0f
 	if alarm {
 		m.alm10ths = d
 	} else {
@@ -51,7 +52,8 @@ func (m *TOD) Set10ths(alarm bool, d uint8) {
 	}
 }
 
-func (m *TOD) SetSec(alarm bool, d uint8) {
+func (m *TOD) SetSec(alarm bool, data uint8) {
+	d := data & 0x7f
 	if alarm {
 		m.almSec = d
 	} else {
@@ -59,7 +61,8 @@ func (m *TOD) SetSec(alarm bool, d uint8) {
 	}
 }
 
-func (m *TOD) SetMin(alarm bool, d uint8) {
+func (m *TOD) SetMin(alarm bool, data uint8) {
+	d := data & 0x7f
 	if alarm {
 		m.almMin = d
 	} else {
@@ -67,7 +70,8 @@ func (m *TOD) SetMin(alarm bool, d uint8) {
 	}
 }
 
-func (m *TOD) SetHour(alarm bool, d uint8) {
+func (m *TOD) SetHour(alarm bool, data uint8) {
+	d := data & 0x9f
 	if alarm {
 		m.almHr = d
 	} else {

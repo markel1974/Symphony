@@ -33,8 +33,8 @@ func NewMOS6526B() *MOS6526B {
 		signalNMIClear:   signals.NewSignal(),
 		signalChangedVA:  signals.NewSignalByte(),
 		tod:              NewTOD("CIA2_TOD"),
-		timerA:           NewTimer("CIA2_TIMER_A"),
-		timerB:           NewTimer("CIA2_TIMER_B"),
+		timerA:           NewTimer("CIA2_TIMER_A", false),
+		timerB:           NewTimer("CIA2_TIMER_B", true),
 	}
 	m.timerA.SignalTimerUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrqNextCycle = true })
 	m.timerB.SignalTimerUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrqNextCycle = true })
@@ -172,13 +172,13 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 	case 0x7:
 		cia2.timerB.SetTimerHigh(data)
 	case 0x08:
-		cia2.tod.Set10ths(cia2.timerB.GetRTC(), data&0x0f)
+		cia2.tod.Set10ths(cia2.timerB.GetRTC(), data)
 	case 0x09:
-		cia2.tod.SetSec(cia2.timerB.GetRTC(), data&0x7f)
+		cia2.tod.SetSec(cia2.timerB.GetRTC(), data)
 	case 0x0a:
-		cia2.tod.SetMin(cia2.timerB.GetRTC(), data&0x7f)
+		cia2.tod.SetMin(cia2.timerB.GetRTC(), data)
 	case 0x0b:
-		cia2.tod.SetHour(cia2.timerB.GetRTC(), data&0x9f)
+		cia2.tod.SetHour(cia2.timerB.GetRTC(), data)
 	case 0xc:
 		cia2.sdr = data
 		cia2.icr |= IRQSDRFullOrEmpty
@@ -187,9 +187,9 @@ func (cia2 *MOS6526B) WriteRegister(addr uint16, data uint8) {
 		cia2.updateIntMask(data)
 		cia2.triggerNMI()
 	case 0xe:
-		cia2.timerA.SetTimerControl(data, false)
+		cia2.timerA.SetControlRegister(data)
 	case 0xf:
-		cia2.timerB.SetTimerControl(data, true)
+		cia2.timerB.SetControlRegister(data)
 	}
 }
 
