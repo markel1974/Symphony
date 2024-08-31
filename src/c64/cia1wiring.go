@@ -123,8 +123,10 @@ func (w *CIA1Wiring) updateLightPen(prB uint8, ddrB uint8) {
 }
 
 func (w *CIA1Wiring) updateInputs() {
-	if joy1, joy2, ok := w.keys.PollJoysticks(); ok {
+	if joy1, ok := w.keys.PollJoystick1(); ok {
 		w.joy1 = joy1
+	}
+	if joy2, ok := w.keys.PollJoystick2(); ok {
 		w.joy2 = joy2
 	}
 	if keyM, revM, pressed, shifted, ok := w.keys.PollKeyboard(); ok {

@@ -295,7 +295,7 @@ func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
 }
 
 func (s *Board) KeyboardSetJoyKey(pressed bool, vKey int) {
-	s.keys.SetJoystick(pressed, vKey)
+	s.keys.SetJoystick1(pressed, vKey)
 }
 
 func (s *Board) KeyboardSwapJoystick(pressed bool) {
