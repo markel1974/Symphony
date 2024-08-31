@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/iec"
 	"github.com/markel1974/c64emu/src/c64/keyboard"
 	"github.com/markel1974/c64emu/src/c64/prg"
-	mos6510 "github.com/markel1974/c64emu/src/components/6510"
+	"github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/cia"
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/sid"
@@ -111,7 +111,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 
 	s.sid.Setup(cfg)
 
-	s.cia1wiring.Setup(s.vic.LightPenTrigger)
+	s.cia1wiring.Setup(s.keys, s.vic.LightPenTrigger)
 	s.cia2wiring.Setup(s.iec, s.vic.ChangedVA)
 	s.cia1.Setup(s.cia1wiring, s.irqTriggerSlot, s.irqClearSlot)
 	s.cia2.Setup(s.cia2wiring, func(_ uint32) { s.pic.TriggerNMI() }, func(_ uint32) { s.pic.ClearNMI() })
@@ -198,7 +198,6 @@ func (s *Board) Emulate() bool {
 		_ = s.sid.ResetHistory()
 		s.cia1.Update()
 		s.cia2.Update()
-		s.updateKeyboard()
 		//if bytes.Contains(s.vic.GetText(), []byte("READY")) {
 		//	fmt.Println("READY!!!")
 		//}
@@ -266,7 +265,7 @@ func (s *Board) KeyboardSetCapital(pressed bool) {
 	}
 
 	//TODO RIMUOVERE
-	s.cfg.SetDriveOpt("/Users/tinmr305/Downloads/c64carts/mw4_2.d64", 0)
+	//s.cfg.SetDriveOpt("/Users/tinmr305/Downloads/c64carts/mw4_2.d64", 0)
 	//TODO RIMUOVERE
 	//s.loadPRG(s.cfg.GetPrg())
 	//return
@@ -296,7 +295,7 @@ func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
 }
 
 func (s *Board) KeyboardSetJoyKey(pressed bool, vKey int) {
-	s.keys.SetJoyKey(pressed, vKey)
+	s.keys.SetJoystick(pressed, vKey)
 }
 
 func (s *Board) KeyboardSwapJoystick(pressed bool) {
@@ -304,23 +303,6 @@ func (s *Board) KeyboardSwapJoystick(pressed bool) {
 		return
 	}
 	s.keys.SwapJoystick()
-}
-
-func (s *Board) updateKeyboard() {
-	if joyKey, ok := s.keys.PollJoyKey(); ok {
-		if s.keys.HasJoystickSwap() {
-			s.cia1wiring.SetJoystick2(joyKey)
-		} else {
-			s.cia1wiring.SetJoystick1(joyKey)
-		}
-	}
-	if c64Byte, c64Bit, pressed, shifted, ok := s.keys.PollKeyboard(); ok {
-		if pressed {
-			s.cia1wiring.SetKeyDown(c64Byte, c64Bit, shifted)
-		} else {
-			s.cia1wiring.SetKeyUp(c64Byte, c64Bit, shifted)
-		}
-	}
 }
 
 func (s *Board) GameExRomConfigChanged() {

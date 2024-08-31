@@ -1,6 +1,7 @@
 package c64
 
 import (
+	"github.com/markel1974/c64emu/src/c64/keyboard"
 	"github.com/markel1974/c64emu/src/signals"
 )
 
@@ -11,6 +12,7 @@ type CIA1Wiring struct {
 	revMatrix             [8]uint8 // Reversed keyboard matrix
 	joy1                  uint8    // Joystick 1 AND value
 	joy2                  uint8    // Joystick 2 AND value
+	keys                  *keyboard.Keyboard
 }
 
 func NewCIA1AWiring() *CIA1Wiring {
@@ -20,7 +22,8 @@ func NewCIA1AWiring() *CIA1Wiring {
 	return c
 }
 
-func (w *CIA1Wiring) Setup(fn func()) {
+func (w *CIA1Wiring) Setup(keys *keyboard.Keyboard, fn func()) {
+	w.keys = keys
 	w.signalLightPenTrigger.Bind(fn)
 }
 
@@ -34,33 +37,8 @@ func (w *CIA1Wiring) Reset() {
 	w.prevLPState = 0x10
 }
 
-func (w *CIA1Wiring) SetKeyUp(keyM int, revM int, shifted bool) {
-	if shifted {
-		w.keyMatrix[6] |= 0x10
-		w.revMatrix[4] |= 0x40
-	}
-	w.keyMatrix[keyM] |= 1 << revM
-	w.revMatrix[revM] |= 1 << keyM
-}
-
-func (w *CIA1Wiring) SetKeyDown(keyM int, revM int, shifted bool) {
-	if shifted {
-		w.keyMatrix[6] &= 0xef
-		w.revMatrix[4] &= 0xbf
-	}
-	w.keyMatrix[keyM] &= ^(1 << revM)
-	w.revMatrix[revM] &= ^(1 << keyM)
-}
-
-func (w *CIA1Wiring) SetJoystick1(port1 uint8) {
-	w.joy1 = port1
-}
-
-func (w *CIA1Wiring) SetJoystick2(port2 uint8) {
-	w.joy2 = port2
-}
-
 func (w *CIA1Wiring) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
+	w.updateInputs()
 	//Joy port 2
 	ret := prA | ^ddrA
 	tst := (prB | ^ddrB) & w.joy1
@@ -92,6 +70,7 @@ func (w *CIA1Wiring) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uin
 }
 
 func (w *CIA1Wiring) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
+	w.updateInputs()
 	//joy port 1
 	ret := ^ddrB
 	tst := (prA | ^ddrA) & w.joy2
@@ -141,4 +120,28 @@ func (w *CIA1Wiring) updateLightPen(prB uint8, ddrB uint8) {
 		w.signalLightPenTrigger.Emit()
 	}
 	w.prevLPState = (prB | ^ddrB) & 0x10
+}
+
+func (w *CIA1Wiring) updateInputs() {
+	if joy1, joy2, ok := w.keys.PollJoysticks(); ok {
+		w.joy1 = joy1
+		w.joy2 = joy2
+	}
+	if keyM, revM, pressed, shifted, ok := w.keys.PollKeyboard(); ok {
+		if pressed {
+			if shifted {
+				w.keyMatrix[6] &= 0xef
+				w.revMatrix[4] &= 0xbf
+			}
+			w.keyMatrix[keyM] &= ^(1 << revM)
+			w.revMatrix[revM] &= ^(1 << keyM)
+		} else {
+			if shifted {
+				w.keyMatrix[6] |= 0x10
+				w.revMatrix[4] |= 0x40
+			}
+			w.keyMatrix[keyM] |= 1 << revM
+			w.revMatrix[revM] |= 1 << keyM
+		}
+	}
 }

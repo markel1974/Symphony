@@ -9,17 +9,16 @@ func matrix(a int, b int) int {
 }
 
 type Keyboard struct {
-	keyDataStorage    *list.List
-	joyKeyDataStorage *list.List
-	inputReady        bool
-	srcPre            *list.List
-	srcPost           *list.List
-	poolCounter       int
-	joyKey            int
-	ready             bool
-	joystickSwap      bool
-	virtual           *Virtual
-	ascii             *Ascii
+	keyDataStorage      *list.List
+	joystickDataStorage *list.List
+	inputReady          bool
+	srcPre              *list.List
+	srcPost             *list.List
+	joyKey              int
+	ready               bool
+	joystickSwap        bool
+	virtual             *Virtual
+	ascii               *Ascii
 }
 
 func NewKeyboard() *Keyboard {
@@ -34,11 +33,10 @@ func NewKeyboard() *Keyboard {
 func (k *Keyboard) Reset() {
 	k.ready = false
 	k.keyDataStorage = list.New()
-	k.joyKeyDataStorage = list.New()
+	k.joystickDataStorage = list.New()
 	k.inputReady = false
 	k.srcPre = list.New()
 	k.srcPost = list.New()
-	k.poolCounter = 0
 	k.joyKey = 0xff
 	k.joystickSwap = true
 	k.virtual.Reset()
@@ -85,10 +83,7 @@ func (k *Keyboard) SetMenu() {
 
 func (k *Keyboard) SwapJoystick() {
 	k.joystickSwap = !k.joystickSwap
-}
-
-func (k *Keyboard) HasJoystickSwap() bool {
-	return k.joystickSwap
+	k.joyKey = 0xff
 }
 
 func (k *Keyboard) SetVirtualKey(pressed bool, vKey int) {
@@ -99,58 +94,51 @@ func (k *Keyboard) SetVirtualKey(pressed bool, vKey int) {
 	if kc < 0 {
 		return
 	}
-	if pressed {
-		if c64Byte, c64Bit, shifted, ok := k.keyDown(kc); ok {
-			k.keyDataStorage.PushBack(NewInputKeyData(pressed, c64Byte, c64Bit, shifted))
-		}
-	} else {
-		if c64Byte, c64Bit, shifted, ok := k.keyUp(kc); ok {
-			k.keyDataStorage.PushBack(NewInputKeyData(pressed, c64Byte, c64Bit, shifted))
-		}
+	if keyM, revM, shifted, ok := k.keyCodeToC64(kc); ok {
+		k.keyDataStorage.PushBack(NewInputKeyData(pressed, keyM, revM, shifted))
 	}
+	return
 }
 
-func (k *Keyboard) SetJoyKey(pressed bool, jKey int) {
-	if k.joyKeyDataStorage.Len() >= MAX_STORAGE_SIZE {
+func (k *Keyboard) SetJoystick(pressed bool, jId int) {
+	if k.joystickDataStorage.Len() >= MAX_STORAGE_SIZE {
 		return
 	}
 	if pressed {
-		if joyKey, ok := k.joyKeyDown(jKey); ok {
-			k.joyKeyDataStorage.PushBack(uint8(joyKey))
+		if joy, ok := k.joyDown(k.joyKey, jId); ok {
+			k.joyKey = joy
+			k.joystickDataStorage.PushBack(uint8(joy))
 		}
 	} else {
-		if joyKey, ok := k.joyKeyUp(jKey); ok {
-			k.joyKeyDataStorage.PushBack(uint8(joyKey))
+		if joy, ok := k.joyUp(k.joyKey, jId); ok {
+			k.joyKey = joy
+			k.joystickDataStorage.PushBack(uint8(joy))
 		}
 	}
 }
 
-func (k *Keyboard) PollJoyKey() (uint8, bool) {
-	if k.joyKeyDataStorage.Len() > 0 {
-		e := k.joyKeyDataStorage.Front()
-		joyKey := e.Value.(uint8)
-		k.joyKeyDataStorage.Remove(e)
-		return joyKey, true
+func (k *Keyboard) PollJoysticks() (uint8, uint8, bool) {
+	if k.joystickDataStorage.Len() == 0 {
+		//TODO RETURN JOY
+		return 0xff, 0xff, false
 	}
-	return 0xff, false
+	e := k.joystickDataStorage.Front()
+	j := e.Value.(uint8)
+	k.joystickDataStorage.Remove(e)
+	if k.joystickSwap {
+		return 0xff, j, true
+	}
+	return j, 0xff, true
 }
 
 func (k *Keyboard) PollKeyboard() (int, int, bool, bool, bool) {
-	if k.poolCounter > 0 {
-		k.poolCounter--
+	if k.keyDataStorage.Len() == 0 {
+		return 0, 0, false, false, false
 	}
-	if k.poolCounter == 0 && k.keyDataStorage.Len() > 0 {
-		e := k.keyDataStorage.Front()
-		i := e.Value.(*InputKeyData)
-		c64Byte := i.c64Byte
-		c64Bit := i.c64Bit
-		shifted := i.shifted
-		pressed := i.pressed
-		k.poolCounter = int(i.counter)
-		k.keyDataStorage.Remove(e)
-		return c64Byte, c64Bit, pressed, shifted, true
-	}
-	return 0, 0, false, false, false
+	e := k.keyDataStorage.Front()
+	i := e.Value.(*InputKeyData)
+	k.keyDataStorage.Remove(e)
+	return i.keyM, i.revM, i.pressed, i.shifted, true
 }
 
 func (k *Keyboard) SetCommand(srcPre string, srcPost string) {
@@ -182,124 +170,89 @@ func (k *Keyboard) SetCommand(srcPre string, srcPost string) {
 	}
 }
 
-func (k *Keyboard) joyKeyUp(kc int) (int, bool) {
+func (k *Keyboard) joyUp(j int, kc int) (int, bool) {
 	switch kc {
 	case KEY_FIRE:
-		k.joyKey |= 0x10
-		return k.joyKey, true
+		j |= 0x10
+		return j, true
 	case KEY_JUP:
-		k.joyKey |= 0x01
-		return k.joyKey, true
+		j |= 0x01
+		return j, true
 	case KEY_JDN:
-		k.joyKey |= 0x02
-		return k.joyKey, true
+		j |= 0x02
+		return j, true
 	case KEY_JLF:
-		k.joyKey |= 0x04
-		return k.joyKey, true
+		j |= 0x04
+		return j, true
 	case KEY_JRT:
-		k.joyKey |= 0x08
-		return k.joyKey, true
+		j |= 0x08
+		return j, true
 	case KEY_JUPLF:
-		k.joyKey |= 0x05
-		return k.joyKey, true
+		j |= 0x05
+		return j, true
 	case KEY_JUPRT:
-		k.joyKey |= 0x09
-		return k.joyKey, true
+		j |= 0x09
+		return j, true
 	case KEY_JDNLF:
-		k.joyKey |= 0x06
-		return k.joyKey, true
+		j |= 0x06
+		return j, true
 	case KEY_JDNRT:
-		k.joyKey |= 0x0a
-		return k.joyKey, true
+		j |= 0x0a
+		return j, true
 	}
 	return 0xff, false
 }
 
-func (k *Keyboard) joyKeyDown(kc int) (int, bool) {
+func (k *Keyboard) joyDown(j int, kc int) (int, bool) {
 	switch kc {
 	case KEY_FIRE:
-		k.joyKey &= ^0x10
-		return k.joyKey, true
+		j &= ^0x10
+		return j, true
 	case KEY_JUP:
-		k.joyKey |= 0x02
-		k.joyKey &= ^0x01
-		return k.joyKey, true
+		j |= 0x02
+		j &= ^0x01
+		return j, true
 	case KEY_JDN:
-		k.joyKey |= 0x01
-		k.joyKey &= ^0x02
-		return k.joyKey, true
+		j |= 0x01
+		j &= ^0x02
+		return j, true
 	case KEY_JLF:
-		k.joyKey |= 0x08
-		k.joyKey &= ^0x04
-		return k.joyKey, true
+		j |= 0x08
+		j &= ^0x04
+		return j, true
 	case KEY_JRT:
-		k.joyKey |= 0x04
-		k.joyKey &= ^0x08
-		return k.joyKey, true
+		j |= 0x04
+		j &= ^0x08
+		return j, true
 	case KEY_JUPLF:
-		k.joyKey |= 0x0a
-		k.joyKey &= ^0x05
-		return k.joyKey, true
+		j |= 0x0a
+		j &= ^0x05
+		return j, true
 	case KEY_JUPRT:
-		k.joyKey |= 0x06
-		k.joyKey &= ^0x09
-		return k.joyKey, true
+		j |= 0x06
+		j &= ^0x09
+		return j, true
 	case KEY_JDNLF:
-		k.joyKey |= 0x09
-		k.joyKey &= ^0x06
-		return k.joyKey, true
+		j |= 0x09
+		j &= ^0x06
+		return j, true
 	case KEY_JDNRT:
-		k.joyKey |= 0x05
-		k.joyKey &= ^0x0a
-		return k.joyKey, true
+		j |= 0x05
+		j &= ^0x0a
+		return j, true
 	case KEY_CENTER:
-		k.joyKey |= 0x0f
-		return k.joyKey, true
+		j |= 0x0f
+		return j, true
 	}
 	return 0xff, false
-}
-
-func (k *Keyboard) keyUp(kc int) (int, int, bool, bool) {
-	return k.keyCodeToC64(kc)
-}
-
-func (k *Keyboard) keyDown(kc int) (int, int, bool, bool) {
-	switch kc {
-	case KEY_PAUSE:
-	case KEY_KPPLUS:
-		break
-	case KEY_KPMINUS:
-		break
-	case KEY_KPMULT:
-		break
-	case KEY_KPDIV:
-		break
-	case KEY_KPPERIOD:
-		break
-	case KEY_ALTENTER:
-		break
-	case KEY_CTRLENTER:
-		break
-	case KEY_F9:
-		break
-	case KEY_F10:
-		break
-	case KEY_F11:
-		break
-	case KEY_F12:
-		break
-	default:
-		return k.keyCodeToC64(kc)
-	}
-	return 0, 0, false, false
 }
 
 func (k *Keyboard) keyCodeToC64(kc int) (int, int, bool, bool) {
 	if kc >= 0 || kc < 256 {
-		c64Byte := (kc >> 3) & 7
-		c64Bit := kc & 7
+		keyM := (kc >> 3) & 7
+		revM := kc & 7
 		shifted := (kc & 128) != 0
-		return c64Byte, c64Bit, shifted, true
+		return keyM, revM, shifted, true
 	}
 	return 0, 0, false, false
 }
@@ -309,8 +262,8 @@ func (k *Keyboard) prepareCommand(command string) (*list.List, bool) {
 		return nil, false
 	}
 	cmd := func(keyCode int, pressed bool, shifted bool, storage *list.List) bool {
-		if c64Byte, c64Bit, _, ok := k.keyCodeToC64(keyCode); ok {
-			i1 := NewInputKeyData(pressed, c64Byte, c64Bit, shifted)
+		if keyM, revM, _, ok := k.keyCodeToC64(keyCode); ok {
+			i1 := NewInputKeyData(pressed, keyM, revM, shifted)
 			storage.PushBack(i1)
 			return true
 		}
@@ -319,25 +272,12 @@ func (k *Keyboard) prepareCommand(command string) (*list.List, bool) {
 	storage := list.New()
 	for _, it := range command {
 		v := k.ascii.FromAscii(uint8(it))
-		d1 := v.r1
-		shifted := v.shifted
-		if ret := cmd(d1, true, shifted, storage); !ret {
+		if ret := cmd(v.r1, true, v.shifted, storage); !ret {
 			return nil, false
 		}
-		if ret := cmd(d1, false, shifted, storage); !ret {
+		if ret := cmd(v.r1, false, v.shifted, storage); !ret {
 			return nil, false
 		}
 	}
 	return storage, true
 }
-
-/*
-func (k *Keyboard) SetVirtualModifier(modifier int) {
-	k.ext = flag.IntToBool(modifier & SC_ext)
-	k.numLock = flag.IntToBool(modifier & SC_numlock)
-	k.capital = flag.IntToBool(modifier & SC_capital)
-	k.menu = flag.IntToBool(modifier & SC_menu)
-	k.control = flag.IntToBool(modifier & SC_control)
-	k.shift = flag.IntToBool(modifier & SC_shift)
-}
-*/
