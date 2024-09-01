@@ -3,14 +3,13 @@ package banks
 //from c64pla.c
 
 type Ports struct {
-	dataOut  uint8
-	dir      uint8
-	data     uint8
-	dataRead uint8
-	//dirRead         uint8
-	oldDataOut      uint8 /* Tape motor status.  */
-	oldWriteBit     uint8 /* Tape write line status.  */
-	oldSenseOut     uint8 /* Tape sense line out status. */
+	dataOut         uint8
+	dir             uint8
+	data            uint8
+	dataRead        uint8
+	oldDataOut      uint8 // Tape motor status
+	oldWriteBit     uint8 // Tape write line status
+	oldSenseOut     uint8 // Tape sense line out status
 	dataSetBit6     uint8
 	dataSetBit7     uint8
 	dataFalloffBit6 uint8
@@ -20,23 +19,24 @@ type Ports struct {
 	tapeMotorIn     int
 	capsSense       int
 	pullUp          uint8
+	//dirRead         uint8
 }
 
 func NewPorts() *Ports {
 	return &Ports{
-		capsSense: 1,
-		pullUp:    0x17,
-		dataOut:   0,
-		dir:       0,
-		data:      0,
-		dataRead:  0,
-		//dirRead:     0,
+		capsSense:   1,
+		pullUp:      0x17,
+		dataOut:     0,
+		dir:         0,
+		data:        0,
+		dataRead:    0,
 		oldDataOut:  0xff,
 		oldWriteBit: 0xff,
 		oldSenseOut: 0xff,
 		tapeSense:   0,
 		tapeWriteIn: 0,
 		tapeMotorIn: 0,
+		//dirRead:     0,
 	}
 }
 
@@ -50,11 +50,11 @@ func (p *Ports) Reset() {
 	p.dataOut = 0
 	p.dataRead = 0
 	p.dir = 0
-	//p.dirRead = 0
 	p.dataSetBit6 = 0
 	p.dataSetBit7 = 0
 	p.dataFalloffBit6 = 0
 	p.dataFalloffBit7 = 0
+	//p.dirRead = 0
 }
 
 func (p *Ports) SetDir(data uint8) {

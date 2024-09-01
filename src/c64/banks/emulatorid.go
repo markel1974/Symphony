@@ -24,14 +24,14 @@ func NewEmulatorId() *EmulatorId {
 }
 
 func (s *EmulatorId) Read(addr uint16) uint8 {
-	addr = addr & 0x7f
-	switch addr {
+	reg := addr & 0x7f
+	switch reg {
 	case 0x7c: // 0xdffc: revision
 		return s.rev
 	case 0x7d: // 0xdffd: version
 		return s.ver
 	case 0x7e: // 0xdffe
-		return s.key //appName [0]
+		return s.key
 	case 0x7f: // 0xdfff alternates between $55 and $aa
 		s.alt = ^s.alt
 		return s.alt

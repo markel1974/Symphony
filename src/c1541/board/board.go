@@ -3,7 +3,7 @@ package board
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c1541/banks"
-	"github.com/markel1974/c64emu/src/c1541/mechanics"
+	"github.com/markel1974/c64emu/src/c1541/mechanic"
 	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/quartz"
@@ -33,7 +33,7 @@ type Board struct {
 	via1Wiring   *Via1Wiring
 	via2Wiring   *Via2Wiring
 	banks        *banks.Banks
-	mec          *mechanics.Mechanics
+	mec          *mechanic.Mechanic
 	deviceId     uint8
 	deviceNumber uint8
 	filePath     string
@@ -67,7 +67,7 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.quartz = quartz.NewQuartz()
 	m.pic = mos6510.NewPic(intrRstBit, intrNmiBit, intrIrqBit)
 	m.cpu = mos6510.NewCPU("c1541")
-	m.mec = mechanics.NewMechanics(m.banks, m.deviceNumber)
+	m.mec = mechanic.NewMechanic()
 
 	m.mec.Setup(m.filePath)
 

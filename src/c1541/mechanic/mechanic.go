@@ -1,4 +1,4 @@
-package mechanics
+package mechanic
 
 import (
 	"github.com/markel1974/c64emu/src/c1541/gcr"
@@ -8,37 +8,45 @@ import (
 
 //see https://sta.c64.org/cbm1541mem.html
 
-type Mechanics struct {
-	*Core
-	errorInfo     []uint8 // Sector error information (1 byte/sector)
-	gcrData       []uint8 // Pointer to GCR encoded disk
-	gcrIdx        int     // Pointer to GCR disk under R/W head
-	gcrTrackStart int     // Pointer to start of GCR disk of current track
-	gcrTrackEnd   int     // Pointer to end of GCR disk of current track
-	filePath      string
-	deviceNumber  uint8
-	banks         IBanks
-	motor         bool
-	factory       *gcr.Factory
+type Mechanic struct {
+	currentHalfTrack int
+	gcr              uint32
+	writeProtected   bool
+	diskChanged      bool
+	errorInfo        []uint8 // Sector error information (1 byte/sector)
+	gcrData          []uint8 // Pointer to GCR encoded disk
+	gcrIdx           int     // Pointer to GCR disk under R/W head
+	gcrTrackStart    int     // Pointer to start of GCR disk of current track
+	gcrTrackEnd      int     // Pointer to end of GCR disk of current track
+	filePath         string
+	//deviceNumber  uint8
+	//banks         IBanks
+	motor   bool
+	factory *gcr.Factory
 }
 
-func NewMechanics(banks IBanks, deviceNumber uint8) *Mechanics {
-	j := &Mechanics{
-		Core:          NewCore(),
-		deviceNumber:  deviceNumber,
-		banks:         banks,
-		motor:         false,
-		gcrData:       nil,
-		gcrIdx:        0,
-		gcrTrackStart: 0,
-		gcrTrackEnd:   0,
-		errorInfo:     nil,
-		factory:       gcr.NewFactory(),
+func NewMechanic() *Mechanic {
+	j := &Mechanic{
+		currentHalfTrack: 2,
+		gcr:              0,
+		writeProtected:   false,
+		diskChanged:      false,
+		motor:            false,
+		gcrData:          nil,
+		gcrIdx:           0,
+		gcrTrackStart:    0,
+		gcrTrackEnd:      0,
+		errorInfo:        nil,
+		factory:          gcr.NewFactory(),
 	}
 	return j
 }
 
-func (j *Mechanics) Reset() {
+func (j *Mechanic) Reset() {
+	j.currentHalfTrack = 2
+	j.gcr = 0
+	j.writeProtected = false
+	j.diskChanged = false
 	j.gcrIdx = 0
 	j.gcrTrackStart = 0
 	j.gcrTrackEnd = j.gcrTrackStart + gcr.TrackSize
@@ -48,8 +56,7 @@ func (j *Mechanics) Reset() {
 	j.errorInfo = nil
 }
 
-func (j *Mechanics) Setup(filePath string) {
-	//filePath := prefs.GetDrivePath(int(j.deviceNumber - 8))
+func (j *Mechanic) Setup(filePath string) {
 	if !j.HasDisk() {
 		j.filePath = filePath
 		_ = j.openFile(j.filePath)
@@ -61,22 +68,22 @@ func (j *Mechanics) Setup(filePath string) {
 	}
 }
 
-func (j *Mechanics) RotateDisk() {
+func (j *Mechanic) RotateDisk() {
 	j.gcrIdx++
 	if j.gcrIdx == j.gcrTrackEnd {
 		j.gcrIdx = j.gcrTrackStart
 	}
 }
 
-func (j *Mechanics) SetMotor(m bool) {
+func (j *Mechanic) SetMotor(m bool) {
 	j.motor = m
 }
 
-func (j *Mechanics) HasDisk() bool {
+func (j *Mechanic) HasDisk() bool {
 	return j.gcrData != nil
 }
 
-func (j *Mechanics) WriteProtectionState() uint8 {
+func (j *Mechanic) WriteProtectionState() uint8 {
 	r := uint8(0)
 	if j.diskChanged {
 		j.diskChanged = false
@@ -91,7 +98,7 @@ func (j *Mechanics) WriteProtectionState() uint8 {
 	return r
 }
 
-func (j *Mechanics) SyncFound() bool {
+func (j *Mechanic) SyncFound() bool {
 	if j.gcrData == nil {
 		return false
 	}
@@ -101,7 +108,7 @@ func (j *Mechanics) SyncFound() bool {
 	return false
 }
 
-func (j *Mechanics) ReadByte() uint8 {
+func (j *Mechanic) ReadByte() uint8 {
 	if j.gcrData == nil {
 		return 0
 	}
@@ -109,7 +116,7 @@ func (j *Mechanics) ReadByte() uint8 {
 	return data
 }
 
-func (j *Mechanics) WriteByte(data uint8) {
+func (j *Mechanic) WriteByte(data uint8) {
 	if j.gcrData == nil {
 		return
 	}
@@ -124,7 +131,7 @@ func (j *Mechanics) WriteByte(data uint8) {
 	//fmt.Println("------------------")
 }
 
-func (j *Mechanics) MoveHeadOut() {
+func (j *Mechanic) MoveHeadOut() {
 	if j.currentHalfTrack == 2 {
 		return
 	}
@@ -136,7 +143,7 @@ func (j *Mechanics) MoveHeadOut() {
 	j.gcrTrackEnd = j.gcrTrackStart + trackLength
 }
 
-func (j *Mechanics) MoveHeadIn() {
+func (j *Mechanic) MoveHeadIn() {
 	if j.currentHalfTrack == gcr.NumTracksMax {
 		return
 	}
@@ -148,7 +155,7 @@ func (j *Mechanics) MoveHeadIn() {
 	j.gcrTrackEnd = j.gcrTrackStart + trackLength
 }
 
-func (j *Mechanics) openFile(filePath string) error {
+func (j *Mechanic) openFile(filePath string) error {
 	j.Reset()
 	fd, err := os.OpenFile(filePath, os.O_RDWR, 0)
 	if err != nil {
@@ -171,7 +178,7 @@ func (j *Mechanics) openFile(filePath string) error {
 	return nil
 }
 
-func (j *Mechanics) closeFile() {
+func (j *Mechanic) closeFile() {
 	j.Reset()
 	//TODO
 }

@@ -2,7 +2,7 @@ package board
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/c1541/mechanics"
+	"github.com/markel1974/c64emu/src/c1541/mechanic"
 	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/signals"
 )
@@ -20,7 +20,7 @@ const noPhotocellControl = ^photocellControl
 const noSyncControl = ^syncControl
 
 type Via2Wiring struct {
-	mec          *mechanics.Mechanics
+	mec          *mechanic.Mechanic
 	iec          virtualdrive.IIec
 	deviceNumber uint8
 	prbPrev      uint8
@@ -33,7 +33,7 @@ func (v *Via2Wiring) WriteDDRA(u uint8, u2 uint8) {
 func (v *Via2Wiring) WriteDDRB(u uint8, u2 uint8) {
 }
 
-func NewVia2Wiring(iec virtualdrive.IIec, mec *mechanics.Mechanics, deviceNumber uint8) *Via2Wiring {
+func NewVia2Wiring(iec virtualdrive.IIec, mec *mechanic.Mechanic, deviceNumber uint8) *Via2Wiring {
 	return &Via2Wiring{
 		iec:          iec,
 		mec:          mec,
