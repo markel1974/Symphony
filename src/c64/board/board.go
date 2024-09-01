@@ -98,7 +98,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cpu = mos6510.NewCPU("c64")
 	s.vic = mos6569.NewVIC(s.db, intrIrqVicBit)
 	s.sid = mos6581.NewSID()
-	s.cia1wiring = NewCIA1AWiring()
+	s.cia1wiring = NewCIA1Wiring()
 	s.cia2wiring = NewCIA2Wiring()
 
 	s.cia1 = mos6526.NewCIA("cia1", intrIrqCia1Bit)
@@ -111,11 +111,11 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cpu.Setup(s.pic, s.banks)
 
 	s.vic.Setup(s.quartz, s.banks, cfg)
-	s.vic.SignalReadyBind(s.ReadySlot)
+	s.vic.SignalReadyBind(s.readySlot)
 	s.vic.SignalTriggerIRQBind(s.irqTriggerSlot)
 	s.vic.SignalClearIRQBind(s.irqClearSlot)
-	s.vic.SignalBALowBind(s.setRDYLow)
-	s.vic.SignalAECLowBind(s.setAECLow)
+	s.vic.SignalBALowBind(s.rdyLowSlot)
+	s.vic.SignalAECLowBind(s.aecLowSlot)
 
 	s.sid.Setup(cfg)
 
@@ -155,12 +155,12 @@ func (s *Board) Setup(cfg *config.Config) error {
 	return nil
 }
 
-func (s *Board) setRDYLow(v bool) {
+func (s *Board) rdyLowSlot(v bool) {
 	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
 	s.cpu.SetRDYLow(v || s.dmaLow)
 }
 
-func (s *Board) setAECLow(v bool) {
+func (s *Board) aecLowSlot(v bool) {
 	s.cpu.SetAECLow(v)
 }
 
@@ -226,7 +226,7 @@ func (s *Board) Emulate() bool {
 	return vBlank
 }
 
-func (s *Board) ReadySlot() {
+func (s *Board) readySlot() {
 	s.keys.SetReady()
 }
 

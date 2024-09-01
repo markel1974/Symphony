@@ -15,7 +15,7 @@ type CIA1Wiring struct {
 	keys                  *keyboard.Keyboard
 }
 
-func NewCIA1AWiring() *CIA1Wiring {
+func NewCIA1Wiring() *CIA1Wiring {
 	c := &CIA1Wiring{
 		signalLightPenTrigger: signals.NewSignal(),
 	}
