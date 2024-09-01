@@ -9,6 +9,12 @@ import (
 
 const Id = "SCPU"
 
+const (
+	intrRstBit = 1
+	intrNmiBit = 2
+	intrIrqBit = 3
+)
+
 type SuperCPU struct {
 	id     string
 	board  icartridge.IExpansion
@@ -42,7 +48,7 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 	s.board.SetDMALow(true)
 
 	s.quartz = quartz.NewQuartz()
-	s.pic = mos6510.NewPic()
+	s.pic = mos6510.NewPic(intrRstBit, intrNmiBit, intrIrqBit)
 
 	s.pic.Setup(s.quartz)
 

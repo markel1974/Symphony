@@ -3,28 +3,25 @@ package mos6510
 import (
 	"github.com/markel1974/c64emu/src/bits"
 	"github.com/markel1974/c64emu/src/components/quartz"
-	"github.com/markel1974/c64emu/src/config"
-)
-
-const (
-	intRstId = 1
-	intNmiId = 2
-	intIrqId = 3
 )
 
 type Pic struct {
+	intRstBit     uint32
+	intNmiBit     uint32
+	intIrqBit     uint32
 	quartz        *quartz.Quartz
-	prefs         *config.Config
 	all           bits.Bits
 	irq           bits.Bits
 	firstIrqCycle uint64
 	firstNMICycle uint64
 }
 
-func NewPic() *Pic {
+func NewPic(rstBit uint32, nmiBit uint32, irqBit uint32) *Pic {
 	return &Pic{
+		intRstBit:     rstBit,
+		intNmiBit:     nmiBit,
+		intIrqBit:     irqBit,
 		quartz:        nil,
-		prefs:         nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,
 		all:           0,
@@ -46,25 +43,25 @@ func (i *Pic) HasAny() bool {
 }
 
 func (i *Pic) TriggerReset() {
-	i.all.BitSet(intRstId)
+	i.all.BitSet(i.intRstBit)
 }
 
 func (i *Pic) HasReset() bool {
-	return i.all.BitCheck(intRstId)
+	return i.all.BitCheck(i.intRstBit)
 }
 
 func (i *Pic) TriggerIRQ(intr uint32) {
 	if i.irq == 0 {
 		i.firstIrqCycle = i.quartz.Cycle()
 	}
-	i.all.BitSet(intIrqId)
+	i.all.BitSet(i.intIrqBit)
 	i.irq.BitSet(intr)
 }
 
 func (i *Pic) ClearIRQ(intr uint32) {
 	i.irq.BitClear(intr)
 	if i.irq == 0 {
-		i.all.BitClear(intIrqId)
+		i.all.BitClear(i.intIrqBit)
 	}
 }
 
@@ -73,18 +70,18 @@ func (i *Pic) HasIRQ() bool {
 }
 
 func (i *Pic) TriggerNMI() {
-	if !i.all.BitCheck(intNmiId) {
+	if !i.all.BitCheck(i.intNmiBit) {
 		i.firstNMICycle = i.quartz.Cycle()
 	}
-	i.all.BitSet(intNmiId)
+	i.all.BitSet(i.intNmiBit)
 }
 
 func (i *Pic) ClearNMI() {
-	i.all.BitClear(intNmiId)
+	i.all.BitClear(i.intNmiBit)
 }
 
 func (i *Pic) HasNMI() bool {
-	return i.all.BitCheck(intNmiId)
+	return i.all.BitCheck(i.intNmiBit)
 }
 
 func (i *Pic) GetNMICycleDistance(delay int) uint64 {

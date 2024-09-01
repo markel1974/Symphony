@@ -1,4 +1,4 @@
-package vic
+package mos6569
 
 import (
 	"github.com/markel1974/c64emu/src/components/quartz"
@@ -15,6 +15,7 @@ const (
 )
 
 type Core struct {
+	intrId           uint32
 	quartz           *quartz.Quartz
 	signalIRQTrigger *signals.SignalUint32
 	signalIRQClear   *signals.SignalUint32
@@ -80,12 +81,13 @@ type Core struct {
 	lastByte uint8 // Last byte read by VIC
 }
 
-func NewCore() *Core {
+func NewCore(intrId uint32) *Core {
 	colors := make([]uint8, 256)
 	for i := range colors {
 		colors[i] = (uint8)(i & 0x0f)
 	}
 	c := &Core{
+		intrId:           intrId,
 		quartz:           nil,
 		signalIRQTrigger: signals.NewSignalUint32(),
 		signalIRQClear:   signals.NewSignalUint32(),
@@ -263,7 +265,7 @@ func (vic *Core) LightPenTrigger() {
 		vic.irqFlag |= flagLightPenBit
 		if (vic.irqMask & flagLightPenBit) != 0 {
 			vic.irqFlag |= flagMasterBit
-			vic.signalIRQTrigger.Emit(intrVicId)
+			vic.signalIRQTrigger.Emit(vic.intrId)
 		}
 	}
 }
@@ -301,7 +303,7 @@ func (vic *Core) rasterIrq() {
 	vic.irqFlag |= flagRasterBit
 	if (vic.irqMask & flagRasterBit) != 0 {
 		vic.irqFlag |= flagMasterBit
-		vic.signalIRQTrigger.Emit(intrVicId)
+		vic.signalIRQTrigger.Emit(vic.intrId)
 	}
 }
 
@@ -452,17 +454,17 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 			// Set master bit if allowed interrupt still pending
 			vic.irqFlag |= flagMasterBit
 		} else {
-			vic.signalIRQClear.Emit(intrVicId)
+			vic.signalIRQClear.Emit(vic.intrId)
 		}
 	case 0x1a: // IRQ mask
 		vic.irqMask = data & 0x0f
 		if (vic.irqFlag & vic.irqMask) != 0 {
 			// Trigger interrupt if pending (now allowed)
 			vic.irqFlag |= flagMasterBit
-			vic.signalIRQTrigger.Emit(intrVicId)
+			vic.signalIRQTrigger.Emit(vic.intrId)
 		} else {
 			vic.irqFlag &= 0x7f
-			vic.signalIRQClear.Emit(intrVicId)
+			vic.signalIRQClear.Emit(vic.intrId)
 		}
 	case 0x1b: // Sprite data priority
 		vic.mdp = data

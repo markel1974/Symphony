@@ -33,8 +33,8 @@ func New(prefs *config.Config) *Render {
 	g := &Render{
 		prefs:        prefs,
 		fullscreen:   false,
-		screenWidth:  vic.DisplayX,
-		screenHeight: vic.DisplayY,
+		screenWidth:  mos6569.DisplayX,
+		screenHeight: mos6569.DisplayY,
 		scale:        3.0,
 		inputs:       NewInputs(),
 	}
@@ -78,7 +78,7 @@ func (g *Render) run() {
 
 	c := win.Bounds().Center()
 	g.setup(c)
-	dt := NewDynamicThrottling(vic.FrameInterval)
+	dt := NewDynamicThrottling(mos6569.FrameInterval)
 
 	run := true
 	for run {

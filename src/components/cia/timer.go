@@ -1,4 +1,4 @@
-package cia
+package mos6526
 
 import (
 	"fmt"

@@ -1,4 +1,4 @@
-package vic
+package mos6569
 
 type BorderType int
 

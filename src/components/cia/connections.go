@@ -1,6 +1,4 @@
-package cia
-
-const intrCia1Id = 4
+package mos6526
 
 type IWiring interface {
 	Reset()

@@ -1,4 +1,4 @@
-package via
+package mos6522
 
 import (
 	"fmt"

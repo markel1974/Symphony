@@ -12,16 +12,24 @@ import (
 	"github.com/markel1974/c64emu/src/signals"
 )
 
-const IntrVIA1Id = 3
-const IntrVIA2Id = 4
+const (
+	intrRstBit = 0
+	intrNmiBit = 1
+	intrIrqBit = 2
+)
+
+const (
+	intrIrqVIA1Bit = 0
+	intrIrqVIA2Bit = 1
+)
 
 type Board struct {
 	pic          *mos6510.Pic
 	cpu          *mos6510.MOS6510
 	iec          virtualdrive.IIec
 	quartz       *quartz.Quartz
-	via1         *via.Via
-	via2         *via.Via
+	via1         *mos6522.Via
+	via2         *mos6522.Via
 	via1Wiring   *Via1Wiring
 	via2Wiring   *Via2Wiring
 	banks        *banks.Banks
@@ -57,7 +65,7 @@ func (m *Board) Setup(cfg *config.Config) {
 
 	m.banks = banks.New()
 	m.quartz = quartz.NewQuartz()
-	m.pic = mos6510.NewPic()
+	m.pic = mos6510.NewPic(intrRstBit, intrNmiBit, intrIrqBit)
 	m.cpu = mos6510.NewMOS6510("c1541")
 	m.mec = mechanics.NewMechanics(m.banks, m.deviceNumber)
 
@@ -67,8 +75,8 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.via2Wiring = NewVia2Wiring(m.iec, m.mec, m.deviceNumber)
 	m.via2Wiring.SignalLedBind(m.ledChangedSlot)
 
-	m.via1 = via.NewVia("VIA1", IntrVIA1Id)
-	m.via2 = via.NewVia("VIA2", IntrVIA2Id)
+	m.via1 = mos6522.NewVia("VIA1", intrIrqVIA1Bit)
+	m.via2 = mos6522.NewVia("VIA2", intrIrqVIA2Bit)
 
 	m.via1.Setup(m.via1Wiring)
 	m.via1.SignalTriggerIRQBind(m.pic.TriggerIRQ)

@@ -1,4 +1,4 @@
-package cia
+package mos6526
 
 type TOD struct {
 	id             string

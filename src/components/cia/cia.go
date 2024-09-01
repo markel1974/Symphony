@@ -1,4 +1,4 @@
-package cia
+package mos6526
 
 import (
 	"github.com/markel1974/c64emu/src/signals"
@@ -17,6 +17,7 @@ const (
 
 type MOS6526 struct {
 	id                 string
+	intrId             uint32
 	prA                uint8
 	prB                uint8
 	ddrA               uint8
@@ -34,9 +35,10 @@ type MOS6526 struct {
 	conn               IWiring
 }
 
-func NewMOS6526(id string) *MOS6526 {
+func NewMOS6526(id string, intrId uint32) *MOS6526 {
 	m := &MOS6526{
 		id:               id,
+		intrId:           intrId,
 		signalIRQTrigger: signals.NewSignalUint32(),
 		signalIRQClear:   signals.NewSignalUint32(),
 		tod:              NewTOD(id + "_TOD"),
@@ -126,7 +128,7 @@ func (m *MOS6526) ReadRegister(addr uint16) uint8 {
 		icr := m.icr
 		m.icr = 0
 		if icr != 0 {
-			m.signalIRQClear.Emit(intrCia1Id)
+			m.signalIRQClear.Emit(m.intrId)
 		}
 		return icr
 	case 0x0e:
@@ -211,6 +213,6 @@ func (m *MOS6526) triggerIrq() {
 	mask := m.irqMask & 0x1f
 	if (m.icr & mask) != 0 {
 		m.icr |= IRQOccurred
-		m.signalIRQTrigger.Emit(intrCia1Id)
+		m.signalIRQTrigger.Emit(m.intrId)
 	}
 }

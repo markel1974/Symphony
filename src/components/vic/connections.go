@@ -1,6 +1,4 @@
-package vic
-
-const intrVicId = 3
+package mos6569
 
 type IBanks interface {
 	ReadCharRom(uint16) uint8

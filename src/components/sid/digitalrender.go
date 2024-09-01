@@ -529,7 +529,7 @@ func (dr *DigitalRender) Resume() {
 }
 
 func (dr *DigitalRender) createDivisorTable() {
-	tmp := int32(vic.TotalRasters * vic.ScreenFreq)
+	tmp := int32(mos6569.TotalRasters * mos6569.ScreenFreq)
 	dr.divisorTableData = make([]*DivisorTableData, SampleFreq+1)
 	for x := int32(0); x <= SampleFreq; x++ {
 		dr.divisorTableData[x].divisor = x

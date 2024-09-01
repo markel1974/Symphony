@@ -18,9 +18,19 @@ import (
 	"os"
 )
 
-//type PhiMode int
+// type PhiMode int
+const (
+	intrRstBit = 0
+	intrNmiBit = 1
+	intrIrqBit = 2
+)
 
-const intrExpansionId = 0x10
+const (
+	intrIrqVicBit       = 0
+	intrIrqCia1Bit      = 1
+	intrIrqCia2Bit      = 2
+	intrIrqExpansionBit = 3
+)
 
 const (
 // PhiIdle = PhiMode(0)
@@ -29,13 +39,13 @@ const (
 )
 
 type Board struct {
-	db           vic.IDisplayBuffer
+	db           mos6569.IDisplayBuffer
 	quartz       *quartz.Quartz
 	cpu          *mos6510.MOS6510
-	vic          *vic.MOS6569
+	vic          *mos6569.VIC
 	sid          *sid.MOS6581
-	cia1         *cia.MOS6526
-	cia2         *cia.MOS6526
+	cia1         *mos6526.MOS6526
+	cia2         *mos6526.MOS6526
 	cia1wiring   *CIA1Wiring
 	cia2wiring   *CIA2Wiring
 	pic          *mos6510.Pic
@@ -51,7 +61,7 @@ type Board struct {
 	//phiMode    PhiMode
 }
 
-func NewBoard(db vic.IDisplayBuffer) *Board {
+func NewBoard(db mos6569.IDisplayBuffer) *Board {
 	b := &Board{
 		db:           db,
 		quartz:       quartz.NewQuartz(),
@@ -66,11 +76,9 @@ func NewBoard(db vic.IDisplayBuffer) *Board {
 		hasClipboard: false,
 		cartMan:      cartridges.NewManager(),
 		dmaLow:       false,
-		//baLow:        false,
-		//aecLow:       false,
-		banks:      nil,
-		irqTrigger: nil,
-		irqClear:   nil,
+		banks:        nil,
+		irqTrigger:   nil,
+		irqClear:     nil,
 		//phiMode:    PhiIdle,
 	}
 	return b
@@ -85,16 +93,16 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
-	s.pic = mos6510.NewPic()
+	s.pic = mos6510.NewPic(intrRstBit, intrNmiBit, intrIrqBit)
 	s.iec = iec.NewIEC()
 	s.cpu = mos6510.NewMOS6510("c64")
-	s.vic = vic.NewMOS6569(s.db)
+	s.vic = mos6569.NewVIC(s.db, intrIrqVicBit)
 	s.sid = sid.NewMOS6581()
 	s.cia1wiring = NewCIA1AWiring()
 	s.cia2wiring = NewCIA2Wiring()
 
-	s.cia1 = cia.NewMOS6526("CIA1")
-	s.cia2 = cia.NewMOS6526("CIA2")
+	s.cia1 = mos6526.NewMOS6526("cia1", intrIrqCia1Bit)
+	s.cia2 = mos6526.NewMOS6526("cia2", intrIrqCia2Bit) //Unused - Emit NMI
 	s.keys = keyboard.NewKeyboard()
 	s.banks = banks.NewBanks()
 
@@ -340,11 +348,11 @@ func (s *Board) ResetTrigger() {
 }
 
 func (s *Board) IRQTrigger() {
-	s.pic.TriggerIRQ(intrExpansionId)
+	s.pic.TriggerIRQ(intrIrqExpansionBit)
 }
 
 func (s *Board) IRQClear() {
-	s.pic.ClearIRQ(intrExpansionId)
+	s.pic.ClearIRQ(intrIrqExpansionBit)
 }
 
 func (s *Board) IRQTriggerBind(fn func(uint32)) {

@@ -10,7 +10,7 @@ const (
 	SampleBufSize   = 0x138 * 2                  // Size of buffer for sampled voice (double buffered)
 	RegisterCount   = 32                         //
 	RegisterHistory = 1024                       //
-	FragFreq        = vic.ScreenFreq             // one frag per frame
+	FragFreq        = mos6569.ScreenFreq         // one frag per frame
 	FragSize        = SampleFreq / FragFreq      // samples, not bytes
 	FragInterval    = 1000 / FragFreq            // in milliseconds
 	BufferFrags     = FragFreq                   // frags the in buffer

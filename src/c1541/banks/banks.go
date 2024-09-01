@@ -18,15 +18,15 @@ const c1541RamSize = 0x0800
 type Banks struct {
 	ram  []uint8
 	rom  []uint8
-	via1 *via.Via
-	via2 *via.Via
+	via1 *mos6522.Via
+	via2 *mos6522.Via
 }
 
 func New() *Banks {
 	return &Banks{ram: make([]uint8, c1541RamSize)}
 }
 
-func (r *Banks) Setup(via1 *via.Via, via2 *via.Via, cfg *config.Config) {
+func (r *Banks) Setup(via1 *mos6522.Via, via2 *mos6522.Via, cfg *config.Config) {
 	r.via1 = via1
 	r.via2 = via2
 	loader := NewLoader()

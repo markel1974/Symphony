@@ -1,4 +1,4 @@
-package vic
+package mos6569
 
 import (
 	"github.com/markel1974/c64emu/src/components/quartz"
@@ -12,7 +12,7 @@ const (
 	cycleLast  = 63
 )
 
-type MOS6569 struct {
+type VIC struct {
 	core           *Core
 	cfg            *config.Config
 	collisions     *Collisions
@@ -27,10 +27,10 @@ type MOS6569 struct {
 	cycles         []func()
 }
 
-func NewMOS6569(db IDisplayBuffer) *MOS6569 {
-	core := NewCore()
+func NewVIC(db IDisplayBuffer, intrId uint32) *VIC {
+	core := NewCore(intrId)
 	collisions := NewCollisions(core)
-	vic := &MOS6569{
+	vic := &VIC{
 		core:       core,
 		collisions: collisions,
 		graphics:   NewGraphics(core, collisions, db),
@@ -45,7 +45,7 @@ func NewMOS6569(db IDisplayBuffer) *MOS6569 {
 	return vic
 }
 
-func (vic *MOS6569) Setup(quartz *quartz.Quartz, banks IBanks, cfg *config.Config) {
+func (vic *VIC) Setup(quartz *quartz.Quartz, banks IBanks, cfg *config.Config) {
 	vic.cfg = cfg
 	vic.cfg.Bind(vic.configChanged)
 	vic.core.Setup(quartz, banks)
@@ -85,76 +85,76 @@ func (vic *MOS6569) Setup(quartz *quartz.Quartz, banks IBanks, cfg *config.Confi
 	vic.cycles[63] = vic.cycle63
 }
 
-func (vic *MOS6569) Reset() {
+func (vic *VIC) Reset() {
 	vic.core.ready = false
 }
 
-func (vic *MOS6569) GetText() []byte {
+func (vic *VIC) GetText() []byte {
 	return vic.graphics.GetText()
 }
 
-func (vic *MOS6569) GetLastByte() uint8 {
+func (vic *VIC) GetLastByte() uint8 {
 	return vic.core.lastByte
 }
 
-func (vic *MOS6569) SignalBALowBind(fn func(bool)) {
+func (vic *VIC) SignalBALowBind(fn func(bool)) {
 	vic.core.signalBALow.Bind(fn)
 }
 
-func (vic *MOS6569) SignalAECLowBind(fn func(bool)) {
+func (vic *VIC) SignalAECLowBind(fn func(bool)) {
 	vic.core.signalAECLow.Bind(fn)
 }
 
-func (vic *MOS6569) SignalReadyBind(fn func()) {
+func (vic *VIC) SignalReadyBind(fn func()) {
 	vic.core.signalReady.Bind(fn)
 }
 
-func (vic *MOS6569) SignalTriggerIRQBind(fn func(uint32)) {
+func (vic *VIC) SignalTriggerIRQBind(fn func(uint32)) {
 	vic.core.signalIRQTrigger.Bind(fn)
 }
 
-func (vic *MOS6569) SignalClearIRQBind(fn func(uint32)) {
+func (vic *VIC) SignalClearIRQBind(fn func(uint32)) {
 	vic.core.signalIRQClear.Bind(fn)
 }
 
-func (vic *MOS6569) GetBALow() bool {
+func (vic *VIC) GetBALow() bool {
 	return vic.core.GetBALow()
 }
 
-func (vic *MOS6569) GetAECLow() bool {
+func (vic *VIC) GetAECLow() bool {
 	return vic.core.GetAECLow()
 }
 
-func (vic *MOS6569) configChanged() {
+func (vic *VIC) configChanged() {
 	//vic.skipFrames = vic.cfg.SkipFrames()
 }
 
-func (vic *MOS6569) ReadRegister(addr uint16) uint8 {
+func (vic *VIC) ReadRegister(addr uint16) uint8 {
 	return vic.core.ReadRegister(addr)
 }
 
-func (vic *MOS6569) WriteRegister(addr uint16, data uint8) {
+func (vic *VIC) WriteRegister(addr uint16, data uint8) {
 	vic.core.WriteRegister(addr, data)
 }
 
-func (vic *MOS6569) ChangedVA(va uint8) {
+func (vic *VIC) ChangedVA(va uint8) {
 	vic.core.ChangedVA(va)
 }
 
-func (vic *MOS6569) LightPenTrigger() {
+func (vic *VIC) LightPenTrigger() {
 	vic.core.LightPenTrigger()
 }
 
-func (vic *MOS6569) accessRefresh() {
+func (vic *VIC) accessRefresh() {
 	_ = vic.core.ReadByte(0x3f00 | uint16(vic.refreshCounter))
 	vic.refreshCounter--
 }
 
-func (vic *MOS6569) idleAccess() {
+func (vic *VIC) idleAccess() {
 	_ = vic.core.ReadByte(0x3fff)
 }
 
-func (vic *MOS6569) Emulate() (bool, bool) {
+func (vic *VIC) Emulate() (bool, bool) {
 	vic.cycles[vic.cycle]()
 	vic.core.UpdateRasterX()
 	vBlank := false
@@ -172,7 +172,7 @@ func (vic *MOS6569) Emulate() (bool, bool) {
 	return vBlank, lastCycle
 }
 
-func (vic *MOS6569) cycle1() {
+func (vic *VIC) cycle1() {
 	if rasterY := vic.core.GetRasterY(); rasterY == RasterYMax {
 		vic.vBlank = 1
 	} else {
@@ -188,7 +188,7 @@ func (vic *MOS6569) cycle1() {
 	}
 }
 
-func (vic *MOS6569) cycle2() {
+func (vic *VIC) cycle2() {
 	if vic.vBlank == 1 {
 		vic.vBlank = 2
 		vic.graphics.ResetVideoCounterBase()
@@ -206,7 +206,7 @@ func (vic *MOS6569) cycle2() {
 	}
 }
 
-func (vic *MOS6569) cycle3() {
+func (vic *VIC) cycle3() {
 	vic.sprites.FetchPtr(4)
 	vic.sprites.Fetch(4, 0)
 	vic.graphics.TryAcquireDisplayAccess()
@@ -215,7 +215,7 @@ func (vic *MOS6569) cycle3() {
 	}
 }
 
-func (vic *MOS6569) cycle4() {
+func (vic *VIC) cycle4() {
 	vic.sprites.Fetch(4, 1)
 	vic.sprites.Fetch(4, 2)
 	vic.graphics.TryAcquireDisplayAccess()
@@ -224,7 +224,7 @@ func (vic *MOS6569) cycle4() {
 	}
 }
 
-func (vic *MOS6569) cycle5() {
+func (vic *VIC) cycle5() {
 	vic.sprites.FetchPtr(5)
 	vic.sprites.Fetch(5, 0)
 	vic.graphics.TryAcquireDisplayAccess()
@@ -233,7 +233,7 @@ func (vic *MOS6569) cycle5() {
 	}
 }
 
-func (vic *MOS6569) cycle6() {
+func (vic *VIC) cycle6() {
 	vic.sprites.Fetch(5, 1)
 	vic.sprites.Fetch(5, 2)
 	vic.graphics.TryAcquireDisplayAccess()
@@ -242,7 +242,7 @@ func (vic *MOS6569) cycle6() {
 	}
 }
 
-func (vic *MOS6569) cycle7() {
+func (vic *VIC) cycle7() {
 	vic.sprites.FetchPtr(6)
 	vic.sprites.Fetch(6, 0)
 	vic.graphics.TryAcquireDisplayAccess()
@@ -251,13 +251,13 @@ func (vic *MOS6569) cycle7() {
 	}
 }
 
-func (vic *MOS6569) cycle8() {
+func (vic *VIC) cycle8() {
 	vic.sprites.Fetch(6, 1)
 	vic.sprites.Fetch(6, 2)
 	vic.graphics.TryAcquireDisplayAccess()
 }
 
-func (vic *MOS6569) cycle9() {
+func (vic *VIC) cycle9() {
 	vic.sprites.FetchPtr(7)
 	vic.sprites.Fetch(7, 0)
 	vic.graphics.TryAcquireDisplayAccess()
@@ -266,25 +266,25 @@ func (vic *MOS6569) cycle9() {
 	}
 }
 
-func (vic *MOS6569) cycle10() {
+func (vic *VIC) cycle10() {
 	vic.sprites.Fetch(7, 1)
 	vic.sprites.Fetch(7, 2)
 	vic.graphics.TryAcquireDisplayAccess()
 }
 
-func (vic *MOS6569) cycle11() {
+func (vic *VIC) cycle11() {
 	vic.accessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.core.ClearBALow()
 }
 
-func (vic *MOS6569) cycle12() {
+func (vic *VIC) cycle12() {
 	vic.accessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.core.TryAcquireBA()
 }
 
-func (vic *MOS6569) cycle13() {
+func (vic *VIC) cycle13() {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
@@ -295,7 +295,7 @@ func (vic *MOS6569) cycle13() {
 	vic.core.ResetRasterX()
 }
 
-func (vic *MOS6569) cycle14() {
+func (vic *VIC) cycle14() {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
@@ -307,7 +307,7 @@ func (vic *MOS6569) cycle14() {
 	vic.graphics.UpdateVideoCounter()
 }
 
-func (vic *MOS6569) cycle15() {
+func (vic *VIC) cycle15() {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
@@ -321,7 +321,7 @@ func (vic *MOS6569) cycle15() {
 	vic.graphics.TryVideoMatrixAccess()
 }
 
-func (vic *MOS6569) cycle16() {
+func (vic *VIC) cycle16() {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
@@ -334,7 +334,7 @@ func (vic *MOS6569) cycle16() {
 	vic.graphics.TryVideoMatrixAccess()
 }
 
-func (vic *MOS6569) cycle17() {
+func (vic *VIC) cycle17() {
 	if vic.core.ModeColumn40() {
 		vic.borders.Update()
 	}
@@ -354,7 +354,7 @@ func (vic *MOS6569) cycle17() {
 	vic.graphics.TryVideoMatrixAccess()
 }
 
-func (vic *MOS6569) cycle18() {
+func (vic *VIC) cycle18() {
 	if vic.core.ModeColumn38() {
 		vic.borders.Update()
 	}
@@ -375,7 +375,7 @@ func (vic *MOS6569) cycle18() {
 	vic.graphics.UpdateLastCharData()
 }
 
-func (vic *MOS6569) cycle19to54() {
+func (vic *VIC) cycle19to54() {
 	if vic.drawLine {
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
@@ -392,7 +392,7 @@ func (vic *MOS6569) cycle19to54() {
 	vic.graphics.UpdateLastCharData()
 }
 
-func (vic *MOS6569) cycle55() {
+func (vic *VIC) cycle55() {
 	if vic.drawLine {
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
@@ -411,7 +411,7 @@ func (vic *MOS6569) cycle55() {
 		vic.core.ClearBALow()
 	}
 }
-func (vic *MOS6569) cycle56() {
+func (vic *VIC) cycle56() {
 	if vic.core.ModeColumn38() {
 		vic.borders.Enable()
 	}
@@ -432,7 +432,7 @@ func (vic *MOS6569) cycle56() {
 	}
 }
 
-func (vic *MOS6569) cycle57() {
+func (vic *VIC) cycle57() {
 	if vic.core.ModeColumn40() {
 		vic.borders.Enable()
 	}
@@ -449,7 +449,7 @@ func (vic *MOS6569) cycle57() {
 	}
 }
 
-func (vic *MOS6569) cycle58() {
+func (vic *VIC) cycle58() {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
@@ -460,7 +460,7 @@ func (vic *MOS6569) cycle58() {
 	vic.graphics.UpdateDisplayAccess()
 }
 
-func (vic *MOS6569) cycle59() {
+func (vic *VIC) cycle59() {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
@@ -473,7 +473,7 @@ func (vic *MOS6569) cycle59() {
 	}
 }
 
-func (vic *MOS6569) cycle60() {
+func (vic *VIC) cycle60() {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.cycle)
@@ -489,7 +489,7 @@ func (vic *MOS6569) cycle60() {
 	}
 }
 
-func (vic *MOS6569) cycle61() {
+func (vic *VIC) cycle61() {
 	vic.sprites.Fetch(1, 1)
 	vic.sprites.Fetch(1, 2)
 	vic.graphics.TryAcquireDisplayAccess()
@@ -498,7 +498,7 @@ func (vic *MOS6569) cycle61() {
 	}
 }
 
-func (vic *MOS6569) cycle62() {
+func (vic *VIC) cycle62() {
 	vic.sprites.FetchPtr(2)
 	vic.sprites.Fetch(2, 0)
 	vic.graphics.TryAcquireDisplayAccess()
@@ -507,7 +507,7 @@ func (vic *MOS6569) cycle62() {
 	}
 }
 
-func (vic *MOS6569) cycle63() {
+func (vic *VIC) cycle63() {
 	vic.sprites.Fetch(2, 1)
 	vic.sprites.Fetch(2, 2)
 	vic.graphics.TryAcquireDisplayAccess()
