@@ -81,3 +81,7 @@ func (sid *SID) ResetHistory() uint32 {
 	sid.regsHistoryIndex = 0
 	return cycle
 }
+
+func (sid *SID) GetLastByte() uint8 {
+	return 0
+}

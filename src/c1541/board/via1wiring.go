@@ -1,4 +1,4 @@
-package c1541
+package board
 
 import (
 	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"

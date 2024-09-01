@@ -1,4 +1,4 @@
-package c1541
+package board
 
 import (
 	"fmt"

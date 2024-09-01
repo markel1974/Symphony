@@ -184,6 +184,10 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
+func (m *CIA) GetLastByte() uint8 {
+	return 0
+}
+
 func (m *CIA) updateIrqMask(data uint8) {
 	//Bit 0: 1 = Interrupt release through timer A underflow
 	//Bit 1: 1 = Interrupt release through timer B underflow

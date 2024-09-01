@@ -2,7 +2,7 @@ package iec
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/c1541"
+	"github.com/markel1974/c64emu/src/c1541/board"
 	"github.com/markel1974/c64emu/src/c64/iec/drives/fsdrive"
 	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/config"
@@ -65,7 +65,7 @@ func NewIEC() *IEC {
 	return c
 }
 
-func (c *IEC) AddPeripheral(peripheral *c1541.Board) {
+func (c *IEC) AddPeripheral(peripheral *board.Board) {
 	//if c.peripheralsCount >= BusNum {
 	//	return
 	//}
@@ -81,7 +81,7 @@ func (c *IEC) AddPeripheral(peripheral *c1541.Board) {
 	//peripheral->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 }
 
-func (c *IEC) RemovePeripheral(peripheral *c1541.Board) {
+func (c *IEC) RemovePeripheral(peripheral *board.Board) {
 	//found := false
 	//for i := uint8(0); i < c.peripheralsCount; i++ {
 	//	if c.peripheralStorage[i] == peripheral {
@@ -219,11 +219,11 @@ func (c *IEC) createVirtualDrive(kind string, opts string, deviceId uint8) virtu
 	var vd virtualdrive.IVirtualDrive
 	switch kind {
 	case "C1541":
-		vd = c1541.New(c, deviceId, deviceNumber, opts)
+		vd = board.New(c, deviceId, deviceNumber, opts)
 	case "FSDrive":
 		vd = fsdrive.New(c, deviceId, deviceNumber, opts)
 	default:
-		vd = c1541.New(c, deviceId, deviceNumber, opts)
+		vd = board.New(c, deviceId, deviceNumber, opts)
 	}
 	vd.Setup(c.cfg)
 	return vd

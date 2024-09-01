@@ -1,4 +1,4 @@
-package c64
+package board
 
 import (
 	"github.com/markel1974/c64emu/src/c64/banks"
