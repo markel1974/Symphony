@@ -2,15 +2,12 @@ package banks
 
 import (
 	"github.com/markel1974/c64emu/src/c64/banks/roms"
-	"github.com/markel1974/c64emu/src/c64/cartridges"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/filler"
 )
 
 const (
-	//KernalRomFile = "Kernal.rom"
-
 	BasicRomFile = "Basic.rom"
 	CharRomFile  = "Char.rom"
 )
@@ -19,11 +16,11 @@ type ReadFn func(uint16) uint8
 type WriteFn func(uint16, uint8)
 
 type Banks struct {
-	vic             IWiring
-	sid             IWiring
-	cia1            IWiring
-	cia2            IWiring
-	cartMan         *cartridges.Manager
+	vic             ISystemWiring
+	sid             ISystemWiring
+	cia1            ISystemWiring
+	cia2            ISystemWiring
+	cartMan         IExpansionWiring
 	ram             []byte
 	bankWrite       []WriteFn
 	bankRead        []ReadFn
@@ -70,7 +67,7 @@ func NewBanks() *Banks {
 	return b
 }
 
-func (b *Banks) Setup(vic IWiring, sid IWiring, cia1 IWiring, cia2 IWiring, cartMan *cartridges.Manager, cfg *config.Config) {
+func (b *Banks) Setup(vic ISystemWiring, sid ISystemWiring, cia1 ISystemWiring, cia2 ISystemWiring, cartMan IExpansionWiring, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1
@@ -169,7 +166,6 @@ func (b *Banks) initRom() {
 		b.kernal = romLoader.Load(roms.BuiltinKernalJiffyRom, b.cfg.GetKernalRomPath())
 	} else {
 		b.kernal = romLoader.Load(roms.BuiltinKernalRom, b.cfg.GetKernalRomPath())
-		//roms.PatchKernalRom(&b.kernal)
 	}
 	//b.kernal = b.romLoader.Load(builtin_kernal_fast_rom, KernalRomFile)
 	//b.kernal = b.romLoader.Load(builtin_kernal_rom, KernalRomFile)
