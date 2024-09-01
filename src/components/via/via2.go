@@ -18,6 +18,7 @@ type Via2 struct {
 	signalIRQTrigger *signals.SignalUint32
 	signalIRQClear   *signals.SignalUint32
 	signalLed        *signals.SignalByte
+	prbPrev          uint8
 }
 
 func NewVia2(iec virtualdrive.IIec, mec IMechanics, deviceNumber uint8) *Via2 {
@@ -29,12 +30,14 @@ func NewVia2(iec virtualdrive.IIec, mec IMechanics, deviceNumber uint8) *Via2 {
 		signalIRQTrigger: signals.NewSignalUint32(),
 		signalIRQClear:   signals.NewSignalUint32(),
 		signalLed:        signals.NewSignalByte(),
+		prbPrev:          0,
 	}
 	return v
 }
 
 func (v *Via2) Reset() {
 	v.Core.Reset()
+	v.prbPrev = 0
 }
 
 func (v *Via2) Setup() {
@@ -55,17 +58,9 @@ func (v *Via2) SignalLedBind(fn func(byte)) {
 func (v *Via2) ReadByte(addr uint16) uint8 {
 	switch addr {
 	case 0x1c00:
-		wps := v.mec.WriteProtectionState()
-		if v.mec.SyncFound() {
-			return (v.prb & 0x7f) | wps
-		} else {
-			v.mec.RotateDisk()
-			return (v.prb | 0x80) | wps
-		}
+		return v.readPRB(v.prb, v.ddrb)
 	case 0x1c01:
-		d := v.mec.ReadByte()
-		v.mec.RotateDisk()
-		return d
+		return v.readPRA(v.pra, v.ddra)
 	case 0x1c02:
 		return v.ddrb
 	case 0x1c03:
@@ -99,9 +94,7 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 	case 0x1c0e:
 		return v.ier | 0x80
 	case 0x1c0f:
-		d := v.mec.ReadByte()
-		v.mec.RotateDisk()
-		return d
+		return v.readPRA(v.pra, v.ddra)
 	default:
 		return 0
 	}
@@ -110,12 +103,11 @@ func (v *Via2) ReadByte(addr uint16) uint8 {
 func (v *Via2) WriteByte(addr uint16, data uint8) {
 	switch addr {
 	case 0x1c00:
-		v.updatePRB(v.prb, data)
-		v.prb = data & 0xef
+		v.prb = data
+		v.writePRB(v.prb, v.ddrb)
 	case 0x1c01:
-		v.mec.WriteByte(data)
-		v.mec.RotateDisk()
 		v.pra = data
+		v.writePRA(v.pra, v.ddra)
 	case 0x1c02:
 		v.ddrb = data
 	case 0x1c03:
@@ -151,9 +143,8 @@ func (v *Via2) WriteByte(addr uint16, data uint8) {
 			v.ier &= ^data
 		}
 	case 0x1c0f:
-		v.mec.WriteByte(data)
-		v.mec.RotateDisk()
 		v.pra = data
+		v.writePRA(v.pra, v.ddra)
 	}
 }
 
@@ -188,31 +179,68 @@ func (v *Via2) ByteReady() bool {
 	return false
 }
 
-func (v *Via2) updatePRB(prb uint8, data uint8) {
-	const headControl = 0x3
-	const motorControl = 0x4
-	const ledControl = 0x8
-	const photocellControl = 0x10
-	const densityControl = 0x60
-	const syncControl = 0x80
+func (v *Via2) SignalPRA() {
+	v.writePRA(v.pra, v.ddra)
+}
 
-	m := prb ^ data
+func (v *Via2) SignalPRB() {
+	v.writePRB(v.prb, v.ddrb)
+}
+
+func (v *Via2) readPRA(_ uint8, _ uint8) uint8 {
+	d := v.mec.ReadByte()
+	v.mec.RotateDisk()
+	return d
+}
+
+//TODO MOVE IN WIRED
+
+const headControl = uint8(0x3)
+const motorControl = uint8(0x4)
+const ledControl = uint8(0x8)
+const photocellControl = uint8(0x10)
+const densityControl = uint8(0x60)
+const syncControl = uint8(0x80)
+
+const noPhotocellControl = ^photocellControl
+const noSyncControl = ^syncControl
+
+func (v *Via2) readPRB(prb uint8, _ uint8) uint8 {
+	p := prb & noPhotocellControl
+	photocellState := v.mec.WriteProtectionState()
+	if v.mec.SyncFound() {
+		return (p & noSyncControl) | photocellState
+	} else {
+		v.mec.RotateDisk()
+		return (p | syncControl) | photocellState
+	}
+}
+
+func (v *Via2) writePRA(pra uint8, _ uint8) {
+	v.mec.WriteByte(pra)
+	v.mec.RotateDisk()
+}
+
+func (v *Via2) writePRB(prb uint8, _ uint8) {
+	prevPrb := v.prbPrev
+	v.prbPrev = prb
+	m := prevPrb ^ prb
 
 	//bit [0,1]
 	//Head step direction.
 	//Decrease value (%00-%11-%10-%01-%00...) to move head downwards
 	//Increase value (%00-%01-%10-%11-%00...) to move head upwards
 	if (m & headControl) != 0 {
-		if (prb & headControl) == ((data + 1) & headControl) {
+		if (prevPrb & headControl) == ((prb + 1) & headControl) {
 			v.mec.MoveHeadOut()
-		} else if (prb & headControl) == ((data - 1) & headControl) {
+		} else if (prevPrb & headControl) == ((prb - 1) & headControl) {
 			v.mec.MoveHeadIn()
 		}
 	}
 	//bit [2]
 	//Motor control; 0 = Off; 1 = On.
 	if (m & motorControl) != 0 {
-		motorOn := (data & motorControl) != 0
+		motorOn := (prb & motorControl) != 0
 		v.mec.SetMotor(motorOn)
 		fmt.Println("TODO - MOTOR", motorOn)
 	}
@@ -220,7 +248,7 @@ func (v *Via2) updatePRB(prb uint8, data uint8) {
 	//LED control; 0 = Off; 1 = On.
 	if (m & ledControl) != 0 {
 		led := uint8(0)
-		if (data & ledControl) != 0 {
+		if (prb & ledControl) != 0 {
 			led = 1
 		}
 		v.signalLed.Emit(led)
@@ -234,13 +262,13 @@ func (v *Via2) updatePRB(prb uint8, data uint8) {
 	//bit [5-6]:
 	//Data density; %00 = Lowest; %11 = Highest.
 	if (m & densityControl) != 0 {
-		density := (data & densityControl) >> 5
+		density := (prb & densityControl) >> 5
 		fmt.Printf("TODO - DENSITY %2b\n", density)
 	}
 	//Bit [7]
 	//0 = SYNC marks are being currently read from disk; 1 = Data bytes are being read.
 	if (m & syncControl) != 0 {
-		sync := (data & syncControl) != 0
+		sync := (prb & syncControl) != 0
 		fmt.Println("TODO - SYNC", !sync)
 	}
 }

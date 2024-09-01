@@ -24,14 +24,7 @@ func NewVia1(iec virtualdrive.IIec, deviceNumber uint8) *Via1 {
 		signalIRQTrigger: signals.NewSignalUint32(),
 		signalIRQClear:   signals.NewSignalUint32(),
 	}
-	v.prbFilter |= 0 << 0 //Bit #0: DATA IN; 0 = Low; 1 = High.
-	v.prbFilter |= 1 << 1 //Bit #1: DATA OUT; 0 = Low; 1 = High.
-	v.prbFilter |= 0 << 2 //Bit #2: CLOCK IN; 0 = Low; 1 = High.
-	v.prbFilter |= 1 << 3 //Bit #3: CLOCK OUT; 0 = Low; 1 = High..
-	v.prbFilter |= 1 << 4 //Bit #4: ATNA OUT; 1 = Enable device presence detection by automatically acknowledging ATN IN signals on DATA OUT.
-	v.prbFilter |= 1 << 5 //Bits #5 - #6: Device number, set with jumper, minus 8; % 00 = 8; % 01 = 9; % 10 = 10; % 11 = 11. Default: % 00, 8.
-	v.prbFilter |= 1 << 6
-	v.prbFilter |= 0 << 7 //Bit #7: ATN IN; 0 = Low; 1 = High.
+	v.setFilters()
 	v.setDipSwitch(deviceNumber)
 	return v
 }
@@ -53,16 +46,11 @@ func (v *Via1) SignalClearIRQBind(fn func(uint32)) {
 }
 
 func (v *Via1) ReadByte(addr uint16) uint8 {
-	//fmt.Printf("VIA1 READ %x\n", addr)
 	switch addr {
 	case 0x1800:
-		data := v.iec.PeripheralRead()
-		ret := (v.prb&v.prbFilter | data) ^ 0x85
-		//fmt.Println("READING FROM IEC", data, ret)
-		return ret
+		return v.readPRB(v.prb, v.ddrb)
 	case 0x1801:
-		// Keep 1541C ROMs happy (track 0 sensor)
-		return 0xff
+		return v.readPRA(v.pra, v.ddra)
 	case 0x1802:
 		return v.ddrb
 	case 0x1803:
@@ -96,8 +84,7 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 	case 0x180e:
 		return v.ier | 0x80
 	case 0x180f:
-		// Keep 1541C ROMs happy (track 0 sensor)
-		return 0xff
+		return v.readPRA(v.pra, v.ddra)
 	default:
 		return 0
 	}
@@ -106,17 +93,17 @@ func (v *Via1) ReadByte(addr uint16) uint8 {
 func (v *Via1) WriteByte(addr uint16, data uint8) {
 	switch addr {
 	case 0x1800:
-		v.prb = data | v.dipSwitch
-		data = (^v.prb) & v.ddrb
-		v.iec.PeripheralWrite(v.deviceNumber, data)
+		v.prb = data
+		v.writePRB(v.prb, v.ddrb)
 	case 0x1801:
 		v.pra = data
+		v.writePRA(v.pra, v.ddra)
 	case 0x1802:
 		v.ddrb = data
-		data &= ^v.prb
-		v.iec.PeripheralWrite(v.deviceNumber, data)
+		v.writeDDRB(v.prb, v.ddrb)
 	case 0x1803:
 		v.ddra = data
+		v.writeDDRA(v.pra, v.ddra)
 	case 0x1804:
 		v.t1l = (v.t1l & 0xff00) | uint16(data)
 	case 0x1805:
@@ -142,13 +129,14 @@ func (v *Via1) WriteByte(addr uint16, data uint8) {
 	case 0x180d:
 		v.ifr &= ^data
 	case 0x180e:
-		if data&0x80 != 0 {
+		if (data & 0x80) != 0 {
 			v.ier |= data & 0x7f
 		} else {
 			v.ier &= ^data
 		}
 	case 0x180f:
 		v.pra = data
+		v.writePRA(v.pra, v.ddra)
 	}
 }
 
@@ -157,19 +145,17 @@ func (v *Via1) Emulate() {
 	v.t1c = uint16(t1c)
 
 	if t1c > defaultViaTimeout {
-		if v.acr&0x40 != 0 {
+		if (v.acr & 0x40) != 0 {
 			// Reload from latch in free-run mode
 			v.t1c = v.t1l
 		}
 		v.ifr |= 0x40
-		//TODO TEST
-		if v.ier&0x40 != 0 {
-			//fmt.Println("TRIGGER VIA1 IRQ")
+		if (v.ier & 0x40) != 0 {
 			v.signalIRQTrigger.Emit(intrVIA1Id)
 		}
 	}
 
-	if v.acr&0x20 == 0 {
+	if (v.acr & 0x20) == 0 {
 		// Only count in one-shot mode
 		t2c := uint(v.t2c) - 1
 		v.t2c = uint16(t2c)
@@ -179,9 +165,32 @@ func (v *Via1) Emulate() {
 	}
 }
 
-func (v *Via1) AtnStateChanged() {
-	data := (^v.prb) & v.ddrb
-	v.iec.PeripheralWrite(v.deviceNumber, data)
+func (v *Via1) SignalPRA() {
+	v.writePRA(v.pra, v.ddra)
+}
+
+func (v *Via1) SignalPRB() {
+	v.writePRB(v.prb, v.ddrb)
+}
+
+func (v *Via1) ByteReady() bool {
+	if v.pcr&0x0e == 0x0e {
+		return true
+	}
+	return false
+}
+
+//TODO MOVE IN WIRED
+
+func (v *Via1) setFilters() {
+	v.prbFilter |= 0 << 0 //Bit #0: DATA IN; 0 = Low; 1 = High.
+	v.prbFilter |= 1 << 1 //Bit #1: DATA OUT; 0 = Low; 1 = High.
+	v.prbFilter |= 0 << 2 //Bit #2: CLOCK IN; 0 = Low; 1 = High.
+	v.prbFilter |= 1 << 3 //Bit #3: CLOCK OUT; 0 = Low; 1 = High..
+	v.prbFilter |= 1 << 4 //Bit #4: ATNA OUT; 1 = Enable device presence detection by automatically acknowledging ATN IN signals on DATA OUT.
+	v.prbFilter |= 1 << 5 //Bits #5 - #6: Device number, set with jumper, minus 8; % 00 = 8; % 01 = 9; % 10 = 10; % 11 = 11. Default: % 00, 8.
+	v.prbFilter |= 1 << 6
+	v.prbFilter |= 0 << 7 //Bit #7: ATN IN; 0 = Low; 1 = High.
 }
 
 func (v *Via1) setDipSwitch(deviceNumber uint8) {
@@ -202,4 +211,38 @@ func (v *Via1) setDipSwitch(deviceNumber uint8) {
 		v.dipSwitch |= 0 << 5
 		v.dipSwitch |= 0 << 6
 	}
+}
+
+func (v *Via1) readPRA(_ uint8, _ uint8) uint8 {
+	// Keep 1541C ROMs happy (track 0 sensor)
+	return 0xff
+}
+
+func (v *Via1) readPRB(prb uint8, _ uint8) uint8 {
+	data := v.iec.PeripheralRead()
+	p := (prb | v.dipSwitch) & v.prbFilter
+	//bit 0 - 2 - 7 = 0x85
+	ret := (p | data) ^ 0x85
+	return ret
+}
+
+func (v *Via1) writePRA(_ uint8, _ uint8) {
+}
+
+func (v *Via1) writePRB(prb uint8, ddrb uint8) {
+	v.peripheralWrite(prb, ddrb)
+}
+
+func (v *Via1) writeDDRA(_ uint8, _ uint8) {
+
+}
+
+func (v *Via1) writeDDRB(prb uint8, ddrb uint8) {
+	v.peripheralWrite(prb, ddrb)
+}
+
+func (v *Via1) peripheralWrite(prb uint8, ddrb uint8) {
+	p := prb | v.dipSwitch
+	wd := (^p) & ddrb
+	v.iec.PeripheralWrite(v.deviceNumber, wd)
 }

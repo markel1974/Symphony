@@ -5,7 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/c1541/banks"
 	"github.com/markel1974/c64emu/src/c1541/mechanics"
 	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
-	mos6510 "github.com/markel1974/c64emu/src/components/6510"
+	"github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/via"
 	"github.com/markel1974/c64emu/src/config"
@@ -98,7 +98,7 @@ func (m *Board) GetDeviceNumber() uint8 {
 }
 
 func (m *Board) AtnStateChanged(b bool, b2 bool) {
-	m.via1.AtnStateChanged()
+	m.via1.SignalPRB()
 	if b {
 		//fmt.Println("ATN", b, "RECEIVED - WAKE UP")
 		//https://sta.c64.org/cbm1541mem.html
