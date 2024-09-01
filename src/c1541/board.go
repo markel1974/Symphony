@@ -12,13 +12,18 @@ import (
 	"github.com/markel1974/c64emu/src/signals"
 )
 
+const IntrVIA1Id = 3
+const IntrVIA2Id = 4
+
 type Board struct {
 	pic          *mos6510.Pic
 	cpu          *mos6510.MOS6510
 	iec          virtualdrive.IIec
 	quartz       *quartz.Quartz
-	via1         *via.Via1
-	via2         *via.Via2
+	via1         *via.Via
+	via2         *via.Via
+	via1Wiring   *Via1Wiring
+	via2Wiring   *Via2Wiring
 	banks        *banks.Banks
 	mec          *mechanics.Mechanics
 	deviceId     uint8
@@ -35,6 +40,8 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string)
 		filePath:     opts,
 		deviceNumber: deviceNumber,
 		ledChanged:   signals.NewSignalUint32(),
+		via1Wiring:   nil,
+		via2Wiring:   nil,
 		pic:          nil,
 		via1:         nil,
 		via2:         nil,
@@ -53,23 +60,28 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.pic = mos6510.NewPic()
 	m.cpu = mos6510.NewMOS6510("c1541")
 	m.mec = mechanics.NewMechanics(m.banks, m.deviceNumber)
-	m.via1 = via.NewVia1(m.iec, m.deviceNumber)
-	m.via2 = via.NewVia2(m.iec, m.mec, m.deviceNumber)
-
-	m.banks.Setup(m.via1, m.via2, cfg)
-	m.pic.Setup(m.quartz)
-	m.cpu.Setup(m.pic, m.banks)
 
 	m.mec.Setup(m.filePath)
 
-	m.via1.Setup()
+	m.via1Wiring = NewVia1Wiring(m.iec, m.deviceNumber)
+	m.via2Wiring = NewVia2Wiring(m.iec, m.mec, m.deviceNumber)
+	m.via2Wiring.SignalLedBind(m.ledChangedSlot)
+
+	m.via1 = via.NewVia("VIA1", IntrVIA1Id)
+	m.via2 = via.NewVia("VIA2", IntrVIA2Id)
+
+	m.via1.Setup(m.via1Wiring)
 	m.via1.SignalTriggerIRQBind(m.pic.TriggerIRQ)
 	m.via1.SignalClearIRQBind(m.pic.ClearIRQ)
 
-	m.via2.Setup()
+	m.via2.Setup(m.via2Wiring)
 	m.via2.SignalTriggerIRQBind(m.pic.TriggerIRQ)
 	m.via2.SignalClearIRQBind(m.pic.ClearIRQ)
-	m.via2.SignalLedBind(m.ledChangedSlot)
+
+	m.banks.Setup(m.via1, m.via2, cfg)
+
+	m.pic.Setup(m.quartz)
+	m.cpu.Setup(m.pic, m.banks)
 	m.cpu.SetOverflowBranch(m.via2.ByteReady)
 }
 

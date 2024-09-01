@@ -1,15 +1,11 @@
 package via
 
-const intrVIA1Id = 3
-const intrVIA2Id = 4
-
-type IMechanics interface {
-	WriteProtectionState() uint8
-	SyncFound() bool
-	RotateDisk()
-	MoveHeadOut()
-	MoveHeadIn()
-	ReadByte() uint8
-	WriteByte(uint8)
-	SetMotor(bool)
+type IWiring interface {
+	Reset()
+	ReadPRA(uint8, uint8) uint8
+	ReadPRB(uint8, uint8) uint8
+	WritePRA(uint8, uint8)
+	WritePRB(uint8, uint8)
+	WriteDDRA(uint8, uint8)
+	WriteDDRB(uint8, uint8)
 }

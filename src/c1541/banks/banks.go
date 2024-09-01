@@ -1,7 +1,7 @@
 package banks
 
 import (
-	via3 "github.com/markel1974/c64emu/src/components/via"
+	"github.com/markel1974/c64emu/src/components/via"
 	"github.com/markel1974/c64emu/src/config"
 )
 
@@ -18,15 +18,15 @@ const c1541RamSize = 0x0800
 type Banks struct {
 	ram  []uint8
 	rom  []uint8
-	via1 *via3.Via1
-	via2 *via3.Via2
+	via1 *via.Via
+	via2 *via.Via
 }
 
 func New() *Banks {
 	return &Banks{ram: make([]uint8, c1541RamSize)}
 }
 
-func (r *Banks) Setup(via1 *via3.Via1, via2 *via3.Via2, cfg *config.Config) {
+func (r *Banks) Setup(via1 *via.Via, via2 *via.Via, cfg *config.Config) {
 	r.via1 = via1
 	r.via2 = via2
 	loader := NewLoader()
