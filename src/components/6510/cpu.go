@@ -7,9 +7,18 @@ import (
 	"os"
 )
 
-//https://www.masswerk.at/6502/6502_instruction_set.html
+//https://dustlayer.com/c64-architecture
+//https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
 
-type Core struct {
+//Notes
+//https://codebase64.org/lib/exe/fetch.php?media=base:safely_freezing_the_c64.pdf
+/*
+ *  - The zFlag variable has the inverse meaning of the 6510 Z flag
+ *  - Only the highest bit of the nFlag variable is used
+ */
+
+type CPU struct {
+	id             string
 	banks          IBanks
 	pic            IPic
 	nFlag          uint8  // Negative flag
@@ -29,46 +38,58 @@ type Core struct {
 	rmw            uint8  // Data buffer for RMW instructions
 	opFlags        uint8  //
 	stop           bool   //
-	next           func(*Core)
+	next           func(cpu *CPU)
 	rdyLow         bool // current RDY state
 	aecLow         bool // current AEC state
 	overflowBranch func() bool
 }
 
-func NewCore(pic IPic, banks IBanks) *Core {
-	regs := &Core{
-		banks:          banks,
-		pic:            pic,
-		a:              0,
-		x:              0,
-		y:              0,
-		sp:             0xff,
-		nFlag:          0,
-		zFlag:          0,
-		vFlag:          0,
-		dFlag:          0,
-		cFlag:          0,
-		iFlag:          1,
-		opFlags:        0,
-		ar:             0,
-		ar2:            0,
-		rdyLow:         false,
-		aecLow:         false,
-		stop:           false,
-		overflowBranch: nil,
-		next:           nil,
+func NewCPU(id string) *CPU {
+	cpu := &CPU{
+		id: id,
 	}
-	return regs
+	return cpu
 }
 
-func (cpu *Core) reset() {
+func (cpu *CPU) Setup(pic IPic, banks IBanks) {
+	cpu.pic = pic
+	cpu.banks = banks
+}
+
+func (cpu *CPU) Reset() {
 	// Read reset vector
 	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8)
 	cpu.next = instInit
 	cpu.opFlags = 0
 }
 
-func (cpu *Core) popFlags(data uint8) {
+// SetOverflowBranch implement 6502c SO (SOB) Pin
+func (cpu *CPU) SetOverflowBranch(sob func() bool) {
+	cpu.overflowBranch = sob
+}
+
+func (cpu *CPU) SetAECLow(aecLow bool) {
+	cpu.aecLow = aecLow
+	if cpu.aecLow {
+		cpu.stop = true
+	}
+}
+
+func (cpu *CPU) SetRDYLow(rdyLow bool) {
+	cpu.rdyLow = rdyLow
+	if !cpu.rdyLow {
+		cpu.stop = false
+	}
+}
+
+func (cpu *CPU) Emulate() {
+	if cpu.stop {
+		return
+	}
+	cpu.next(cpu)
+}
+
+func (cpu *CPU) popFlags(data uint8) {
 	cpu.nFlag = data
 	cpu.vFlag = data & 0x40
 	cpu.dFlag = data & 0x08
@@ -77,7 +98,7 @@ func (cpu *Core) popFlags(data uint8) {
 	cpu.cFlag = data & 0x01
 }
 
-func (cpu *Core) pushFlags(bFlags bool) uint8 {
+func (cpu *CPU) pushFlags(bFlags bool) uint8 {
 	data := 0x20 | (cpu.nFlag & 0x80)
 	if cpu.vFlag != 0 {
 		data |= 0x40
@@ -100,7 +121,7 @@ func (cpu *Core) pushFlags(bFlags bool) uint8 {
 	return data
 }
 
-func (cpu *Core) branch(data uint8) {
+func (cpu *CPU) branch(data uint8) {
 	cpu.ar = cpu.pc + uint16(int8(data))
 	if (cpu.ar >> 8) != (cpu.pc >> 8) {
 		if data&0x80 != 0 {
@@ -113,7 +134,7 @@ func (cpu *Core) branch(data uint8) {
 	}
 }
 
-func (cpu *Core) doADC(data uint8) {
+func (cpu *CPU) doADC(data uint8) {
 	k := uint8(0)
 	if cpu.cFlag != 0 {
 		k = 1
@@ -152,7 +173,7 @@ func (cpu *Core) doADC(data uint8) {
 	cpu.a = (ah << 4) | (al & 0x0f)         // result
 }
 
-func (cpu *Core) doSBC(data uint8) {
+func (cpu *CPU) doSBC(data uint8) {
 	k := uint8(0)
 	if cpu.cFlag == 0 {
 		k = 1
@@ -188,14 +209,14 @@ func (cpu *Core) doSBC(data uint8) {
 	cpu.a = (ah << 4) | (al & 0x0f)
 }
 
-func (cpu *Core) illegalOp(illOp uint8, at uint16) {
+func (cpu *CPU) illegalOp(illOp uint8, at uint16) {
 	log.Printf("illegal opcode %02x at %04x.", illOp, at)
 	//TODO EVENT
-	cpu.reset()
+	cpu.Reset()
 	os.Exit(1)
 }
 
-func (cpu *Core) printRegisters(qCycle uint64, baLow bool) {
+func (cpu *CPU) printRegisters(qCycle uint64, baLow bool) {
 	fmt.Printf("CPU] %d|%d||%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d\n",
 		qCycle,
 		//cpu.state,

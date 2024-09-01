@@ -1,4 +1,4 @@
-package sid
+package mos6581
 
 type DigitalRenderVoice struct {
 	wave    WaveFormType        // Selected waveform

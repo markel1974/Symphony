@@ -1,13 +1,13 @@
 package mos6510
 
 // _modeTable Addressing mode for each opcode (first part of execution)
-var _modeTable []func(*Core)
+var _modeTable []func(*CPU)
 
 // _opTable Operation for each opcode (second part of execution)
-var _opTable []func(*Core)
+var _opTable []func(*CPU)
 
 func init() {
-	_modeTable = []func(*Core){
+	_modeTable = []func(*CPU){
 		instO_BRK, instA_INDX, instI_ILL_OP, instM_INDX, instA_ZERO, instA_ZERO, instM_ZERO, instM_ZERO, // 00
 		instO_PHP, instO_ORA_I, instO_ASL_A, instO_ANC_I, instA_ABS, instA_ABS, instM_ABS, instM_ABS,
 		instO_BPL, instAE_INDY, instI_ILL_OP, instM_INDY, instA_ZEROX, instA_ZEROX, instM_ZEROX, instM_ZEROX, // 10
@@ -42,7 +42,7 @@ func init() {
 		instO_SED, instAE_ABSY, instO_NOP, instM_ABSY, instAE_ABSX, instAE_ABSX, instM_ABSX, instM_ABSX,
 	}
 
-	_opTable = []func(*Core){
+	_opTable = []func(*CPU){
 		instI_ILL_OP, instO_ORA, instI_ILL_OP, instO_SLO, instO_NOP_A, instO_ORA, instO_ASL, instO_SLO, // 00
 		instI_ILL_OP, instI_ILL_OP, instI_ILL_OP, instI_ILL_OP, instO_NOP_A, instO_ORA, instO_ASL, instO_SLO,
 		instI_ILL_OP, instO_ORA, instI_ILL_OP, instO_SLO, instO_NOP_A, instO_ORA, instO_ASL, instO_SLO, // 10

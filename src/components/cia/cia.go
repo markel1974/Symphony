@@ -15,7 +15,7 @@ const (
 
 //https://emudev.de/q00-c64/cias-timers-keyboard-and-more/
 
-type MOS6526 struct {
+type CIA struct {
 	id                 string
 	intrId             uint32
 	prA                uint8
@@ -35,8 +35,8 @@ type MOS6526 struct {
 	conn               IWiring
 }
 
-func NewMOS6526(id string, intrId uint32) *MOS6526 {
-	m := &MOS6526{
+func NewCIA(id string, intrId uint32) *CIA {
+	m := &CIA{
 		id:               id,
 		intrId:           intrId,
 		signalIRQTrigger: signals.NewSignalUint32(),
@@ -50,13 +50,13 @@ func NewMOS6526(id string, intrId uint32) *MOS6526 {
 	return m
 }
 
-func (m *MOS6526) Setup(conn IWiring, trigger func(uint32), clear func(uint32)) {
+func (m *CIA) Setup(conn IWiring, trigger func(uint32), clear func(uint32)) {
 	m.conn = conn
 	m.signalIRQTrigger.Bind(trigger)
 	m.signalIRQClear.Bind(clear)
 }
 
-func (m *MOS6526) CheckIRQs() {
+func (m *CIA) CheckIRQs() {
 	if m.timerAIrqNextCycle {
 		m.timerAIrqNextCycle = false
 		m.triggerIrq()
@@ -67,19 +67,19 @@ func (m *MOS6526) CheckIRQs() {
 	}
 }
 
-func (m *MOS6526) Emulate() {
+func (m *CIA) Emulate() {
 	underflow := m.timerA.Emulate(false)
 	m.timerB.Emulate(underflow)
 }
 
-func (m *MOS6526) Update() {
+func (m *CIA) Update() {
 	if m.tod.Update(m.timerA.GetRTC()) {
 		m.icr |= IRQTODAlarmEqual
 		m.triggerIrq()
 	}
 }
 
-func (m *MOS6526) Reset() {
+func (m *CIA) Reset() {
 	m.prA = 0
 	m.prB = 0
 	m.ddrA = 0
@@ -95,7 +95,7 @@ func (m *MOS6526) Reset() {
 	m.conn.Reset()
 }
 
-func (m *MOS6526) ReadRegister(addr uint16) uint8 {
+func (m *CIA) ReadRegister(addr uint16) uint8 {
 	addr = addr & 0x0f
 	switch addr {
 	case 0x00:
@@ -139,7 +139,7 @@ func (m *MOS6526) ReadRegister(addr uint16) uint8 {
 	return 0 // Can't happen
 }
 
-func (m *MOS6526) WriteRegister(addr uint16, data uint8) {
+func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	addr = addr & 0x0f
 	switch addr {
 	case 0x00:
@@ -184,7 +184,7 @@ func (m *MOS6526) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
-func (m *MOS6526) updateIrqMask(data uint8) {
+func (m *CIA) updateIrqMask(data uint8) {
 	//Bit 0: 1 = Interrupt release through timer A underflow
 	//Bit 1: 1 = Interrupt release through timer B underflow
 	//Bit 2: 1 = Interrupt release if clock=alarm
@@ -209,7 +209,7 @@ func (m *MOS6526) updateIrqMask(data uint8) {
 	}
 }
 
-func (m *MOS6526) triggerIrq() {
+func (m *CIA) triggerIrq() {
 	mask := m.irqMask & 0x1f
 	if (m.icr & mask) != 0 {
 		m.icr |= IRQOccurred

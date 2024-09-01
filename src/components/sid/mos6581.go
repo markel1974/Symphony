@@ -1,18 +1,18 @@
-package sid
+package mos6581
 
 import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-type MOS6581 struct {
+type SID struct {
 	regs             []uint8
 	regsHistory      [][]uint8
 	regsHistoryIndex uint32
 	cfg              *config.Config
 }
 
-func NewMOS6581() *MOS6581 {
-	s := &MOS6581{
+func NewSID() *SID {
+	s := &SID{
 		regs:             make([]uint8, RegisterCount),
 		regsHistory:      make([][]uint8, RegisterHistory),
 		regsHistoryIndex: 0,
@@ -24,26 +24,26 @@ func NewMOS6581() *MOS6581 {
 	return s
 }
 
-func (sid *MOS6581) Setup(cfg *config.Config) {
+func (sid *SID) Setup(cfg *config.Config) {
 	sid.cfg = cfg
 	sid.cfg.Bind(sid.configChanged)
 }
 
-func (sid *MOS6581) SetPotXSlot(pot uint8) {
+func (sid *SID) SetPotXSlot(pot uint8) {
 	// PX7 PX6 PX5 PX4 PX3 PX2 PX1 PX0
 	sid.regs[25] = pot
 }
 
-func (sid *MOS6581) SetPotYSlot(pot uint8) {
+func (sid *SID) SetPotYSlot(pot uint8) {
 	//PY7 PY6 PY5 PY4 PY3 PY2 PY1 PY0
 	sid.regs[26] = pot
 }
 
-func (sid *MOS6581) configChanged() {
+func (sid *SID) configChanged() {
 	//TODO
 }
 
-func (sid *MOS6581) Reset() {
+func (sid *SID) Reset() {
 	for x := range sid.regs {
 		sid.regs[x] = 0
 	}
@@ -55,28 +55,28 @@ func (sid *MOS6581) Reset() {
 	sid.regsHistoryIndex = 0
 }
 
-func (sid *MOS6581) ReadRegister(addr uint16) uint8 {
+func (sid *SID) ReadRegister(addr uint16) uint8 {
 	addr = addr & 0x1f
 	return sid.regs[addr]
 }
 
-func (sid *MOS6581) WriteRegister(addr uint16, data uint8) {
+func (sid *SID) WriteRegister(addr uint16, data uint8) {
 	addr = addr & 0x1f
 	sid.regs[addr] = data
 }
 
-func (sid *MOS6581) Emulate() {
+func (sid *SID) Emulate() {
 	if sid.regsHistoryIndex < RegisterHistory {
 		copy(sid.regsHistory[sid.regsHistoryIndex], sid.regs)
 		sid.regsHistoryIndex++
 	}
 }
 
-func (sid *MOS6581) GetRegsHistory() [][]uint8 {
+func (sid *SID) GetRegsHistory() [][]uint8 {
 	return sid.regsHistory
 }
 
-func (sid *MOS6581) ResetHistory() uint32 {
+func (sid *SID) ResetHistory() uint32 {
 	cycle := sid.regsHistoryIndex
 	sid.regsHistoryIndex = 0
 	return cycle

@@ -25,7 +25,7 @@ const (
 
 type Board struct {
 	pic          *mos6510.Pic
-	cpu          *mos6510.MOS6510
+	cpu          *mos6510.CPU
 	iec          virtualdrive.IIec
 	quartz       *quartz.Quartz
 	via1         *mos6522.Via
@@ -66,7 +66,7 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.banks = banks.New()
 	m.quartz = quartz.NewQuartz()
 	m.pic = mos6510.NewPic(intrRstBit, intrNmiBit, intrIrqBit)
-	m.cpu = mos6510.NewMOS6510("c1541")
+	m.cpu = mos6510.NewCPU("c1541")
 	m.mec = mechanics.NewMechanics(m.banks, m.deviceNumber)
 
 	m.mec.Setup(m.filePath)
@@ -75,8 +75,8 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.via2Wiring = NewVia2Wiring(m.iec, m.mec, m.deviceNumber)
 	m.via2Wiring.SignalLedBind(m.ledChangedSlot)
 
-	m.via1 = mos6522.NewVia("VIA1", intrIrqVIA1Bit)
-	m.via2 = mos6522.NewVia("VIA2", intrIrqVIA2Bit)
+	m.via1 = mos6522.NewVia("via1", intrIrqVIA1Bit)
+	m.via2 = mos6522.NewVia("via2", intrIrqVIA2Bit)
 
 	m.via1.Setup(m.via1Wiring)
 	m.via1.SignalTriggerIRQBind(m.pic.TriggerIRQ)

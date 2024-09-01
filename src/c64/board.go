@@ -41,11 +41,11 @@ const (
 type Board struct {
 	db           mos6569.IDisplayBuffer
 	quartz       *quartz.Quartz
-	cpu          *mos6510.MOS6510
+	cpu          *mos6510.CPU
 	vic          *mos6569.VIC
-	sid          *sid.MOS6581
-	cia1         *mos6526.MOS6526
-	cia2         *mos6526.MOS6526
+	sid          *mos6581.SID
+	cia1         *mos6526.CIA
+	cia2         *mos6526.CIA
 	cia1wiring   *CIA1Wiring
 	cia2wiring   *CIA2Wiring
 	pic          *mos6510.Pic
@@ -95,14 +95,14 @@ func (s *Board) Setup(cfg *config.Config) error {
 
 	s.pic = mos6510.NewPic(intrRstBit, intrNmiBit, intrIrqBit)
 	s.iec = iec.NewIEC()
-	s.cpu = mos6510.NewMOS6510("c64")
+	s.cpu = mos6510.NewCPU("c64")
 	s.vic = mos6569.NewVIC(s.db, intrIrqVicBit)
-	s.sid = sid.NewMOS6581()
+	s.sid = mos6581.NewSID()
 	s.cia1wiring = NewCIA1AWiring()
 	s.cia2wiring = NewCIA2Wiring()
 
-	s.cia1 = mos6526.NewMOS6526("cia1", intrIrqCia1Bit)
-	s.cia2 = mos6526.NewMOS6526("cia2", intrIrqCia2Bit) //Unused - Emit NMI
+	s.cia1 = mos6526.NewCIA("cia1", intrIrqCia1Bit)
+	s.cia2 = mos6526.NewCIA("cia2", intrIrqCia2Bit) //Unused - Emit NMI
 	s.keys = keyboard.NewKeyboard()
 	s.banks = banks.NewBanks()
 

@@ -19,7 +19,7 @@ type SuperCPU struct {
 	id     string
 	board  icartridge.IExpansion
 	pic    *mos6510.Pic
-	cpu    *mos6510.MOS6510
+	cpu    *mos6510.CPU
 	quartz *quartz.Quartz
 }
 
@@ -52,7 +52,7 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 
 	s.pic.Setup(s.quartz)
 
-	s.cpu = mos6510.NewMOS6510("superCpu")
+	s.cpu = mos6510.NewCPU("superCpu")
 	s.cpu.Setup(s.pic, board)
 
 	s.board.IRQTriggerBind(s.pic.TriggerIRQ)
