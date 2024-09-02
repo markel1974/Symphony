@@ -2,9 +2,14 @@ package mos6510
 
 import "github.com/markel1974/c64emu/src/flag"
 
+const minIRQCycleDistance = 32
+
 func instInit(cpu *CPU) {
-	if cpu.pic.HasAny() {
+	// https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
+	// Interrupts are only recognized if the RDY line is high
+	if cpu.pic.HasAny() && !cpu.rdyLow && (cpu.pic.GetCycle()-cpu.lastIRQCycle) > minIRQCycleDistance {
 		if cpu.pic.HasReset() {
+			cpu.lastIRQCycle = cpu.pic.GetCycle()
 			cpu.Reset()
 		} else if cpu.pic.HasNMI() {
 			delay := 0
@@ -13,20 +18,22 @@ func instInit(cpu *CPU) {
 			}
 			if (cpu.pic.GetNMICycleDistance(delay)) >= 2 {
 				// Edge-triggered
+				cpu.lastIRQCycle = cpu.pic.GetCycle()
 				cpu.pic.ClearNMI()
 				cpu.opFlags = 0
 				cpu.next = instNMI
 				cpu.next(cpu)
 				return
 			}
-		} else if cpu.pic.HasIRQ() && !cpu.rdyLow {
-			// Interrupts are recognized if the RDY line is high
+		} else if cpu.pic.HasIRQ() {
 			if ((cpu.iFlag == 0) || ((cpu.opFlags & OpFlagIrqDisabled) != 0)) && ((cpu.opFlags & OpFlagIrqEnabled) == 0) {
 				delay := 0
 				if (cpu.opFlags & OpFlagIntDelayed) != 0 {
 					delay = 1
 				}
 				if (cpu.pic.GetIrqCycleDistance(delay)) >= 2 {
+					// Level-triggered
+					cpu.lastIRQCycle = cpu.pic.GetCycle()
 					cpu.opFlags = 0
 					cpu.next = instIRQ
 					cpu.next(cpu)
@@ -35,6 +42,7 @@ func instInit(cpu *CPU) {
 			}
 		}
 	}
+
 	if cpu.rdyLow {
 		cpu.stop = true
 		return

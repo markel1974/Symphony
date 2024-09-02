@@ -19,7 +19,7 @@ type CartridgeOcean struct {
 }
 
 func GetType() int {
-	return loader.CARTRIDGE_GENERIC_8KB
+	return loader.CARTRIDGE_OCEAN
 }
 
 func New() icartridge.ICartridge {
@@ -81,11 +81,11 @@ func (c *CartridgeOcean) IOWrite(addr uint16, data uint8) bool {
 	if (addr & 0xfff0) == 0xde00 {
 		//exRomDisabled := (data & 0x80) != 0
 		//currBank := data & 0x7f
-		currBank := data & c.ioMask & 0x3f
+		currBank := (data & c.ioMask) & 0x3f
 		c.currBank = currBank
 		c.lastData = data
 		//TODO board.updateMemoryConfig()
-		fmt.Printf("BANK SWITCHING %x => %d, %d\n", addr, data, c.currBank)
+		fmt.Printf("[OCEAN] Bank switching %x => %d, %d\n", addr, data, c.currBank)
 	}
 	return false
 }
@@ -135,6 +135,9 @@ func (c *CartridgeOcean) initBin(data []byte) error {
 
 func (c *CartridgeOcean) initCrt(loader *loader.CRTLoader) error {
 	c.banks = [][]byte{}
+	//c.exRom = uint8(loader.ExRom)
+	//c.game = uint8(loader.Game)
+
 	romSize := 0
 	for {
 		chip, err := loader.ReadChipHeader()

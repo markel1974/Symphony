@@ -11,6 +11,7 @@ type IPic interface {
 	HasNMI() bool
 	HasIRQ() bool
 	ClearNMI()
+	GetCycle() uint64
 	GetNMICycleDistance(int) uint64
 	GetIrqCycleDistance(int) uint64
 }

@@ -42,6 +42,7 @@ type CPU struct {
 	rdyLow         bool // current RDY state
 	aecLow         bool // current AEC state
 	overflowBranch func() bool
+	lastIRQCycle   uint64
 }
 
 func NewCPU(id string) *CPU {

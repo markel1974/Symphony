@@ -16,7 +16,7 @@ type Cartridge8K struct {
 }
 
 func GetType() int {
-	return loader.CARTRIDGE_OCEAN
+	return loader.CARTRIDGE_GENERIC_8KB
 }
 
 func New() icartridge.ICartridge {

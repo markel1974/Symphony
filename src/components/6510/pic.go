@@ -84,6 +84,10 @@ func (i *Pic) HasNMI() bool {
 	return i.all.BitCheck(i.intNmiBit)
 }
 
+func (i *Pic) GetCycle() uint64 {
+	return i.quartz.Cycle()
+}
+
 func (i *Pic) GetNMICycleDistance(delay int) uint64 {
 	return i.computeDistance(i.firstNMICycle, uint64(delay))
 }

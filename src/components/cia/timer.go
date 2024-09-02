@@ -53,6 +53,8 @@ const (
 	crBitRTC                      = 0x80
 )
 
+const defaultTimerInit = 0xffff
+
 type Timer struct {
 	id                   string
 	countX               bool
@@ -69,9 +71,17 @@ type Timer struct {
 
 func NewTimer(id string, countX bool) *Timer {
 	m := &Timer{
-		id:              id,
-		countX:          countX,
-		signalUnderflow: signals.NewSignal(),
+		id:                   id,
+		countX:               countX,
+		cr:                   0,
+		crNew:                0,
+		crPending:            false,
+		timer:                defaultTimerInit,
+		timerLatch:           defaultTimerInit, //1
+		timerState:           timerStop,
+		countPhi2:            false,
+		checkUnderflowTimerX: false,
+		signalUnderflow:      signals.NewSignal(),
 	}
 	m.Reset()
 	return m
@@ -81,8 +91,8 @@ func (m *Timer) Reset() {
 	m.cr = 0
 	m.crNew = 0
 	m.crPending = false
-	m.timer = 0xffff
-	m.timerLatch = 1
+	m.timer = defaultTimerInit
+	m.timerLatch = defaultTimerInit
 	m.timerState = timerStop
 	m.countPhi2 = false
 	m.checkUnderflowTimerX = false
@@ -109,14 +119,28 @@ func (m *Timer) GetTimerHigh() uint8 {
 }
 
 func (m *Timer) SetTimerLow(data uint8) {
-	m.timerLatch = (m.timerLatch & 0xff00) | uint16(data)
+	timerLow := uint16(data)
+	timerHigh := m.timerLatch & 0xff00
+	m.timerLatch = timerLow | timerHigh
+	//fmt.Printf("%s SET TIMER LOW %x, %x\n", m.id, timerLow, timerHigh)
+	//TODO TEST
+	//if (m.cr & crBitForceLoad) != 0 {
+	//	m.timer = (m.timer & 0xff00) | uint16(data)
+	//}
 }
 
 func (m *Timer) SetTimerHigh(data uint8) {
-	m.timerLatch = (m.timerLatch & 0xff) | (uint16(data) << 8)
+	timerLow := m.timerLatch & 0xff
+	timerHigh := uint16(data) << 8
+	m.timerLatch = timerLow | timerHigh
+	//fmt.Printf("%s SET TIMER HIGH %x, %x\n", m.id, timerLow, timerHigh)
 	if (m.cr & crBitStart) == 0 {
 		m.timer = m.timerLatch // Stopped, reload
 	}
+	//TODO TEST
+	//if (m.cr & crBitForceLoad) != 0 {
+	//	m.timer = m.timerLatch // Stopped, reload
+	//}
 }
 
 func (m *Timer) SetControlRegister(data uint8) {
@@ -191,15 +215,15 @@ func (m *Timer) timerCount(signal bool, underflowTimerX bool) bool {
 	}
 	if signal {
 		underflow = true
-		// Reload timer
-		m.timer = m.timerLatch
 		m.signalUnderflow.Emit()
 		if (m.cr & crBitOneShot) != 0 {
+			m.timer = m.timerLatch // Reload timer
 			// stop timer
 			m.cr &= 0xfe
 			m.crNew &= 0xfe
 			m.timerState = timerLoadThenStop // Reload in next cycle
 		} else {
+			m.timer = m.timerLatch            // Reload timer
 			m.timerState = timerLoadThenCount // Delay one cycle (and reload)
 		}
 	}
