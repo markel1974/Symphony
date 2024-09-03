@@ -93,7 +93,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
-	s.pic = mos6510.NewPic(intrRstBit, intrNmiBit, intrIrqBit)
+	s.pic = mos6510.NewPic(mos6510.MinIrqCycleDistance, intrRstBit, intrNmiBit, intrIrqBit)
 	s.iec = iec.NewIEC()
 	s.cpu = mos6510.NewCPU("c64")
 	s.vic = mos6569.NewVIC(s.db, intrIrqVicBit)

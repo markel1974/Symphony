@@ -65,7 +65,7 @@ func (m *Board) Setup(cfg *config.Config) {
 
 	m.banks = banks.New()
 	m.quartz = quartz.NewQuartz()
-	m.pic = mos6510.NewPic(intrRstBit, intrNmiBit, intrIrqBit)
+	m.pic = mos6510.NewPic(mos6510.MinIrqCycleDistance, intrRstBit, intrNmiBit, intrIrqBit)
 	m.cpu = mos6510.NewCPU("c1541")
 	m.mec = mechanic.NewMechanic()
 

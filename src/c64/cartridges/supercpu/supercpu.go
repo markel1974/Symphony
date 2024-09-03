@@ -48,7 +48,7 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 	s.board.SetDMALow(true)
 
 	s.quartz = quartz.NewQuartz()
-	s.pic = mos6510.NewPic(intrRstBit, intrNmiBit, intrIrqBit)
+	s.pic = mos6510.NewPic(mos6510.MinIrqCycleDistance, intrRstBit, intrNmiBit, intrIrqBit)
 
 	s.pic.Setup(s.quartz)
 

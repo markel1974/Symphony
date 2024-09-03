@@ -11,33 +11,35 @@ const (
 	opFlagIntDelayed  = 0x04
 )
 
-const minIrqCycleDistance = 32
+const MinIrqCycleDistance = 32
 
 type Pic struct {
-	intRstBit     uint32
-	intNmiBit     uint32
-	intIrqBit     uint32
-	quartz        *quartz.Quartz
-	all           bits.Bits
-	irq           bits.Bits
-	firstIrqCycle uint64
-	firstNMICycle uint64
-	lastIrqCycle  uint64
-	opFlags       uint8
+	intRstBit        uint32
+	intNmiBit        uint32
+	intIrqBit        uint32
+	irqCycleDistance uint64
+	quartz           *quartz.Quartz
+	all              bits.Bits
+	irq              bits.Bits
+	firstIrqCycle    uint64
+	firstNMICycle    uint64
+	lastIrqCycle     uint64
+	opFlags          uint8
 }
 
-func NewPic(rstBit uint32, nmiBit uint32, irqBit uint32) *Pic {
+func NewPic(irqCycleDistance uint8, rstBit uint32, nmiBit uint32, irqBit uint32) *Pic {
 	return &Pic{
-		intRstBit:     rstBit,
-		intNmiBit:     nmiBit,
-		intIrqBit:     irqBit,
-		quartz:        nil,
-		firstIrqCycle: 0,
-		firstNMICycle: 0,
-		lastIrqCycle:  0,
-		all:           0,
-		irq:           0,
-		opFlags:       0,
+		irqCycleDistance: uint64(irqCycleDistance),
+		intRstBit:        rstBit,
+		intNmiBit:        nmiBit,
+		intIrqBit:        irqBit,
+		quartz:           nil,
+		firstIrqCycle:    0,
+		firstNMICycle:    0,
+		lastIrqCycle:     0,
+		all:              0,
+		irq:              0,
+		opFlags:          0,
 	}
 }
 
@@ -117,7 +119,7 @@ func (i *Pic) ClearOPFlags() {
 }
 
 func (i *Pic) VerifyIrq(iFlag uint8) uint8 {
-	if i.all != 0 && (i.quartz.Cycle()-i.lastIrqCycle) > minIrqCycleDistance {
+	if i.all != 0 && (i.quartz.Cycle()-i.lastIrqCycle) > i.irqCycleDistance {
 		if i.all.BitCheck(i.intRstBit) {
 			i.lastIrqCycle = i.quartz.Cycle()
 			i.opFlags = 0
