@@ -2,55 +2,31 @@ package mos6510
 
 import "github.com/markel1974/c64emu/src/flag"
 
-const minIRQCycleDistance = 32
-
 func instInit(cpu *CPU) {
 	// https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
 	// Interrupts are only recognized if the RDY line is high
-	if cpu.pic.HasAny() && !cpu.rdyLow && (cpu.pic.GetCycle()-cpu.lastIRQCycle) > minIRQCycleDistance {
-		if cpu.pic.HasReset() {
-			cpu.lastIRQCycle = cpu.pic.GetCycle()
+	if !cpu.rdyLow {
+		switch cpu.pic.VerifyIrq(cpu.iFlag) {
+		case 1:
 			cpu.Reset()
-		} else if cpu.pic.HasNMI() {
-			delay := 0
-			if (cpu.opFlags & OpFlagIntDelayed) != 0 {
-				delay = 1
-			}
-			if (cpu.pic.GetNMICycleDistance(delay)) >= 2 {
-				// Edge-triggered
-				cpu.lastIRQCycle = cpu.pic.GetCycle()
-				cpu.pic.ClearNMI()
-				cpu.opFlags = 0
-				cpu.next = instNMI
-				cpu.next(cpu)
-				return
-			}
-		} else if cpu.pic.HasIRQ() {
-			if ((cpu.iFlag == 0) || ((cpu.opFlags & OpFlagIrqDisabled) != 0)) && ((cpu.opFlags & OpFlagIrqEnabled) == 0) {
-				delay := 0
-				if (cpu.opFlags & OpFlagIntDelayed) != 0 {
-					delay = 1
-				}
-				if (cpu.pic.GetIrqCycleDistance(delay)) >= 2 {
-					// Level-triggered
-					cpu.lastIRQCycle = cpu.pic.GetCycle()
-					cpu.opFlags = 0
-					cpu.next = instIRQ
-					cpu.next(cpu)
-					return
-				}
-			}
+			return
+		case 2:
+			cpu.next = instNMI
+			cpu.next(cpu)
+			return
+		case 3:
+			cpu.next = instIRQ
+			cpu.next(cpu)
+			return
 		}
-	}
-
-	if cpu.rdyLow {
+	} else {
 		cpu.stop = true
 		return
 	}
+	cpu.pic.ClearOPFlags()
 	cpu.op = cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.next = _modeTable[cpu.op]
-	cpu.opFlags = 0
 }
 
 // IRQ
@@ -1457,9 +1433,9 @@ func instO_PLP2(cpu *CPU) {
 	data := cpu.banks.Read(uint16(cpu.sp) | 0x0100)
 	cpu.popFlags(data)
 	if iFlagPrev == 0 && cpu.iFlag != 0 {
-		cpu.opFlags |= OpFlagIrqDisabled
+		cpu.pic.SetOpFlagIrqDisabled()
 	} else if iFlagPrev != 0 && cpu.iFlag == 0 {
-		cpu.opFlags |= OpFlagIrqEnabled
+		cpu.pic.SetOpFlagIrqEnabled()
 	}
 	cpu.next = instInit
 }
@@ -1820,7 +1796,7 @@ func instO_BPL(cpu *CPU) {
 
 func instO_BRANCH_NP(cpu *CPU) {
 	// No page crossed
-	cpu.opFlags |= OpFlagIntDelayed
+	cpu.pic.SetOpFlagIntDelayed()
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1918,7 +1894,7 @@ func instO_SEI(cpu *CPU) {
 	}
 	cpu.banks.Read(cpu.pc)
 	if cpu.iFlag == 0 {
-		cpu.opFlags |= OpFlagIrqDisabled
+		cpu.pic.SetOpFlagIrqDisabled()
 	}
 	cpu.iFlag = 1
 	cpu.next = instInit
@@ -1931,7 +1907,7 @@ func instO_CLI(cpu *CPU) {
 	}
 	cpu.banks.Read(cpu.pc)
 	if cpu.iFlag == 0 {
-		cpu.opFlags |= OpFlagIrqEnabled
+		cpu.pic.SetOpFlagIrqEnabled()
 	}
 	cpu.iFlag = 0
 	cpu.next = instInit

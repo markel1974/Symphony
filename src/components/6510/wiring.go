@@ -6,12 +6,12 @@ type IBanks interface {
 }
 
 type IPic interface {
-	HasAny() bool
-	HasReset() bool
-	HasNMI() bool
-	HasIRQ() bool
+	Reset()
+	VerifyIrq(uint8) uint8
+	ClearOPFlags()
 	ClearNMI()
-	GetCycle() uint64
-	GetNMICycleDistance(int) uint64
-	GetIrqCycleDistance(int) uint64
+	HasNMI() bool
+	SetOpFlagIrqDisabled()
+	SetOpFlagIrqEnabled()
+	SetOpFlagIntDelayed()
 }

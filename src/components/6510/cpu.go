@@ -36,13 +36,11 @@ type CPU struct {
 	ar             uint16 // Address register
 	ar2            uint16 // Address register 2
 	rmw            uint8  // Data buffer for RMW instructions
-	opFlags        uint8  //
 	stop           bool   //
 	next           func(cpu *CPU)
 	rdyLow         bool // current RDY state
 	aecLow         bool // current AEC state
 	overflowBranch func() bool
-	lastIRQCycle   uint64
 }
 
 func NewCPU(id string) *CPU {
@@ -59,9 +57,9 @@ func (cpu *CPU) Setup(pic IPic, banks IBanks) {
 
 func (cpu *CPU) Reset() {
 	// Read reset vector
+	cpu.pic.Reset()
 	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8)
 	cpu.next = instInit
-	cpu.opFlags = 0
 }
 
 // SetOverflowBranch implement 6502c SO (SOB) Pin

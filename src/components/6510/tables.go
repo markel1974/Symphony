@@ -77,9 +77,3 @@ func init() {
 		instI_ILL_OP, instO_SBC, instI_ILL_OP, instO_ISB, instO_NOP_A, instO_SBC, instO_INC, instO_ISB,
 	}
 }
-
-const (
-	OpFlagIrqDisabled = 0x01
-	OpFlagIrqEnabled  = 0x02
-	OpFlagIntDelayed  = 0x04
-)
