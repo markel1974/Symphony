@@ -119,6 +119,7 @@ func (i *Pic) ClearOPFlags() {
 }
 
 func (i *Pic) VerifyIrq(iFlag uint8) uint8 {
+	const minIrqDistance = 2
 	if i.all != 0 && (i.quartz.Cycle()-i.lastIrqCycle) > i.irqCycleDistance {
 		if i.all.BitCheck(i.intRstBit) {
 			i.lastIrqCycle = i.quartz.Cycle()
@@ -127,7 +128,7 @@ func (i *Pic) VerifyIrq(iFlag uint8) uint8 {
 			i.ClearReset()
 			return 1
 		} else if i.all.BitCheck(i.intNmiBit) {
-			if (i.computeDistance(i.firstNMICycle)) >= 2 {
+			if (i.computeDistance(i.firstNMICycle)) >= minIrqDistance {
 				i.lastIrqCycle = i.quartz.Cycle()
 				i.opFlags = 0
 				// Edge-triggered
@@ -136,7 +137,7 @@ func (i *Pic) VerifyIrq(iFlag uint8) uint8 {
 			}
 		} else if i.irq != 0 {
 			if ((iFlag == 0) || ((i.opFlags & opFlagIrqDisabled) != 0)) && ((i.opFlags & opFlagIrqEnabled) == 0) {
-				if (i.computeDistance(i.firstIrqCycle)) >= 2 {
+				if (i.computeDistance(i.firstIrqCycle)) >= minIrqDistance {
 					// Level-triggered
 					i.lastIrqCycle = i.quartz.Cycle()
 					i.opFlags = 0
