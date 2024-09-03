@@ -16,23 +16,23 @@ const (
 //https://emudev.de/q00-c64/cias-timers-keyboard-and-more/
 
 type CIA struct {
-	id                 string
-	intrId             uint32
-	prA                uint8
-	prB                uint8
-	ddrA               uint8
-	ddrB               uint8
-	sdr                uint8
-	icr                uint8 // Pending interrupts
-	irqMask            uint8 // Enabled interrupts
-	timerAIrqNextCycle bool  // Flag: Trigger TA IRQ in next cycle
-	timerBIrqNextCycle bool  // Flag: Trigger Timer B IRQ in next cycle
-	signalIRQTrigger   *signals.SignalUint32
-	signalIRQClear     *signals.SignalUint32
-	tod                *TOD
-	timerA             *Timer
-	timerB             *Timer
-	conn               IWiring
+	id               string
+	intrId           uint32
+	prA              uint8
+	prB              uint8
+	ddrA             uint8
+	ddrB             uint8
+	sdr              uint8
+	icr              uint8 // Pending interrupts
+	irqMask          uint8 // Enabled interrupts
+	timerAIrq        bool  // Flag: Trigger Timer A IRQ in next cycle
+	timerBIrq        bool  // Flag: Trigger Timer B IRQ in next cycle
+	signalIRQTrigger *signals.SignalUint32
+	signalIRQClear   *signals.SignalUint32
+	tod              *TOD
+	timerA           *Timer
+	timerB           *Timer
+	conn             IWiring
 }
 
 func NewCIA(id string, intrId uint32) *CIA {
@@ -45,8 +45,8 @@ func NewCIA(id string, intrId uint32) *CIA {
 		timerA:           NewTimer(id+"_TIMER_A", false),
 		timerB:           NewTimer(id+"_TIMER_B", true),
 	}
-	m.timerA.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrqNextCycle = true })
-	m.timerB.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrqNextCycle = true })
+	m.timerA.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrq = true })
+	m.timerB.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrq = true })
 	return m
 }
 
@@ -57,12 +57,12 @@ func (m *CIA) Setup(conn IWiring, trigger func(uint32), clear func(uint32)) {
 }
 
 func (m *CIA) CheckIRQs() {
-	if m.timerAIrqNextCycle {
-		m.timerAIrqNextCycle = false
+	if m.timerAIrq {
+		m.timerAIrq = false
 		m.triggerIrq()
 	}
-	if m.timerBIrqNextCycle {
-		m.timerBIrqNextCycle = false
+	if m.timerBIrq {
+		m.timerBIrq = false
 		m.triggerIrq()
 	}
 }
@@ -87,8 +87,8 @@ func (m *CIA) Reset() {
 	m.sdr = 0
 	m.icr = 0
 	m.irqMask = 0
-	m.timerAIrqNextCycle = false
-	m.timerBIrqNextCycle = false
+	m.timerAIrq = false
+	m.timerBIrq = false
 	m.timerA.Reset()
 	m.timerB.Reset()
 	m.tod.Reset()
@@ -96,8 +96,8 @@ func (m *CIA) Reset() {
 }
 
 func (m *CIA) ReadRegister(addr uint16) uint8 {
-	addr = addr & 0x0f
-	switch addr {
+	reg := addr & 0x0f
+	switch reg {
 	case 0x00:
 		return m.conn.ReadPortA(m.prA, m.ddrA, m.prB, m.ddrB)
 	case 0x01:
@@ -140,8 +140,8 @@ func (m *CIA) ReadRegister(addr uint16) uint8 {
 }
 
 func (m *CIA) WriteRegister(addr uint16, data uint8) {
-	addr = addr & 0x0f
-	switch addr {
+	reg := addr & 0x0f
+	switch reg {
 	case 0x00:
 		m.prA = data
 		m.conn.WritePortA(m.prA, m.ddrA, m.prB, m.ddrB)

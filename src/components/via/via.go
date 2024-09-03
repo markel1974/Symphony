@@ -206,7 +206,7 @@ func (v *Via) SignalPRB() {
 }
 
 func (v *Via) ByteReady() bool {
-	if v.pcr&0x0e == 0x0e {
+	if (v.pcr & 0x0e) == 0x0e {
 		return true
 	}
 	return false
