@@ -1,7 +1,6 @@
 package mos6526
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/signals"
 	"log"
 )
@@ -21,7 +20,7 @@ const (
 const (
 	//1 = START TIMER A - 0 = STOP TIMER A s (This bit is automatically reset when underflow occurs during one-shot mode).
 	crBitStart = 0x1 //bit 0
-	//1 = TIMER A output appears on PB6 - 0 = PB6 normal operation.
+	//1 = TIMER A output appears on PB6 - 0 = PB6 normal operation. // TODO IMPLEMENT
 	crBitPBOn = 0x2 //bit 1
 	//1 = TOGGLE - 0 = PULSE
 	crBitOutMode = 0x4 //bit 2
@@ -121,6 +120,13 @@ func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
 	m.crPending = true
 	m.crNew = data
 	m.countMode = countMode
+
+	if (m.crNew & crBitPBOn) != 0 {
+		log.Printf("[SetControlRegister] %s Unimplemented TIMER A output appears on PB6", m.id)
+	}
+	if (m.crNew & crBitOutMode) != 0 {
+		log.Printf("[SetControlRegister] %s Unimplemented OUT MODE", m.id)
+	}
 	//count: 0 clock - 1 positive CNT (Serial Port) transition; 2 - timerA underflow pulse - 3 timerA underflow pulse while CNT (Serial Port) is high
 }
 
@@ -178,7 +184,7 @@ func (m *Timer) timerCount(signal bool, underflowTimerX bool) bool {
 				count = true
 			}
 		} else {
-			log.Printf("UNSUPPORTED Timer counts CNT %d", m.countMode)
+			log.Printf("[timerCount] %s UNSUPPORTED Timer counts CNT %d", m.id, m.countMode)
 		}
 		if count {
 			timer := m.timer
@@ -254,7 +260,7 @@ func (m *Timer) checkPending() {
 				m.timerState = timerStop
 			}
 		default:
-			fmt.Println("TIMER - UNDEFINED", m.timerState)
+			log.Printf("[checkPending] %s TIMER - UNDEFINED Timer %d", m.id, m.timerState)
 		}
 		//no force load set
 		m.cr = m.crNew & 0xef
@@ -262,6 +268,7 @@ func (m *Timer) checkPending() {
 	}
 }
 
+/*
 func (m *Timer) printTimerControlData(data uint8) {
 	fmt.Printf("\n")
 	fmt.Printf("%s Timer Control -> crBitStart: %v\n", m.id, data&crBitStart != 0)
@@ -274,3 +281,4 @@ func (m *Timer) printTimerControlData(data uint8) {
 	fmt.Printf("%s Timer Control -> crBitTODIn: %v\n", m.id, data&crBitTODIn != 0)
 	fmt.Printf("\n")
 }
+*/
