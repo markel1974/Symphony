@@ -20,7 +20,7 @@ const (
 const (
 	//1 = START TIMER A - 0 = STOP TIMER A s (This bit is automatically reset when underflow occurs during one-shot mode).
 	crBitStart = 0x1 //bit 0
-	//1 = TIMER A output appears on PB6 - 0 = PB6 normal operation. // TODO IMPLEMENT
+	//1 = TIMER A output appears on PB6 - 0 = PB6 normal operation.
 	crBitPBOn = 0x2 //bit 1
 	//1 = TOGGLE - 0 = PULSE
 	crBitOutMode = 0x4 //bit 2
@@ -122,10 +122,13 @@ func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
 	m.countMode = countMode
 
 	if (m.crNew & crBitPBOn) != 0 {
-		log.Printf("[SetControlRegister] %s Unimplemented TIMER A output appears on PB6", m.id)
+		log.Printf("[SetControlRegister] %s Unimplemented TIMER A on PB6", m.id)
 	}
 	if (m.crNew & crBitOutMode) != 0 {
 		log.Printf("[SetControlRegister] %s Unimplemented OUT MODE", m.id)
+	}
+	if (m.crNew & crBitSPMode) != 0 {
+		log.Printf("[SetControlRegister] %s Unimplemented SERIAL PORT output", m.id)
 	}
 	//count: 0 clock - 1 positive CNT (Serial Port) transition; 2 - timerA underflow pulse - 3 timerA underflow pulse while CNT (Serial Port) is high
 }
