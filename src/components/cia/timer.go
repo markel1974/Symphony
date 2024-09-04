@@ -3,6 +3,7 @@ package mos6526
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/signals"
+	"log"
 )
 
 type TimerState uint8
@@ -17,71 +18,50 @@ const (
 	timerCountThenStop
 )
 
-//Bit 0:
-//0 = Stop timer
-//1 = Start timer
-//Bit 1:
-//0 = Indicates no timer underflow at port B in bit 6.
-//1 = Indicates a timer underflow at port B in bit 6.
-//Bit 2:
-//0 = Through a timer overflow, bit 6 of port B will get high for one cycle,
-//1 = Through a timer underflow, bit 6 of port B will be inverted
-//Bit 3:
-//0 = Timer-restart after underflow (latch will be reloaded),
-//1 = Timer stops after underflow.
-//Bit 4:
-//0 = Not Load latch
-//1 = Load latch into the timer once.
-//Bit 5:
-//0 = Timer counts system cycles,
-//1 = Timer counts positive slope at CNT-pin
-//Bit 6: Direction of the serial shift register,
-//0 = SP-pin is input (read),
-//1 = SP-pin is output (write)
-//Bit 7: Real Time Clock,
-//0 = 60 Hz
-//1 = 50 Hz
-
 const (
-	crBitStart                    = 0x1
-	crBitUnderflowPortB           = 0x2
-	crBitUnderflowPortBInverted   = 0x4
-	crBitOneShot                  = 0x8
-	crBitForceLoad                = 0x10
-	crBitTimerCountsPositiveSlope = 0x20
-	crBitShiftRegDir              = 0x40
-	crBitRTC                      = 0x80
+	//1 = START TIMER A - 0 = STOP TIMER A s (This bit is automatically reset when underflow occurs during one-shot mode).
+	crBitStart = 0x1 //bit 0
+	//1 = TIMER A output appears on PB6 - 0 = PB6 normal operation.
+	crBitPBOn = 0x2 //bit 1
+	//1 = TOGGLE - 0 = PULSE
+	crBitOutMode = 0x4 //bit 2
+	//1 = ONE-SHOT - 0 = CONTINUOUS
+	crBitRunMode = 0x8 //bit 3
+	//1 = FORCE LOAD (this is a STROBE input, there is no data storage, bit 4 will always read back a zero and writing a zero has no effect).
+	crBitForceLoad = 0x10 //bit 4
+	//1 = TIMER A counts positive CNT transitions. - 0 = TIMER A counts phi2 pulses.
+	crBitInMode = 0x20 //bit 5
+	//1 = SERIAL PORT output (CNT sources shift clock) - 0 = SERIAL PORT input (external shift clock required)
+	crBitSPMode = 0x40 //bit 6
+	//1 = 50Hz clock required on TOD pin for accurate time - 0 = 60Hz clock required on TOD pin for accurate time
+	crBitTODIn = 0x80 //bit 7
 )
 
 const defaultTimerInit = 0xffff
 
 type Timer struct {
-	id                   string
-	countX               bool
-	cr                   uint8
-	crNew                uint8      // New values for cr
-	crPending            bool       // New value for crNew pending
-	timer                uint16     // Timer
-	timerLatch           uint16     // Timer latch
-	timerState           TimerState // Timer states
-	countPhi2            bool       // Timer is counting Phi 2
-	checkUnderflowTimerX bool       // Timer is counting underflow's of Timer X
-	signalUnderflow      *signals.Signal
+	id              string
+	signalUnderflow *signals.Signal
+	cr              uint8
+	crNew           uint8      // New values for cr
+	crPending       bool       // New value for crNew pending
+	timer           uint16     // Timer
+	timerLatch      uint16     // Timer latch
+	timerState      TimerState // Timer states
+	countMode       uint8
 }
 
-func NewTimer(id string, countX bool) *Timer {
+func NewTimer(id string) *Timer {
 	m := &Timer{
-		id:                   id,
-		countX:               countX,
-		cr:                   0,
-		crNew:                0,
-		crPending:            false,
-		timer:                defaultTimerInit,
-		timerLatch:           defaultTimerInit, //1
-		timerState:           timerStop,
-		countPhi2:            false,
-		checkUnderflowTimerX: false,
-		signalUnderflow:      signals.NewSignal(),
+		id:              id,
+		signalUnderflow: signals.NewSignal(),
+		cr:              0,
+		crNew:           0,
+		crPending:       false,
+		timer:           defaultTimerInit,
+		timerLatch:      defaultTimerInit,
+		timerState:      timerStop,
+		countMode:       0,
 	}
 	m.Reset()
 	return m
@@ -94,8 +74,7 @@ func (m *Timer) Reset() {
 	m.timer = defaultTimerInit
 	m.timerLatch = defaultTimerInit
 	m.timerState = timerStop
-	m.countPhi2 = false
-	m.checkUnderflowTimerX = false
+	m.countMode = 0
 }
 
 func (m *Timer) SignalUnderflowBind(fn func()) {
@@ -103,7 +82,7 @@ func (m *Timer) SignalUnderflowBind(fn func()) {
 }
 
 func (m *Timer) GetRTC() bool {
-	return (m.cr & crBitRTC) != 0
+	return (m.cr & crBitTODIn) != 0
 }
 
 func (m *Timer) GetCR() uint8 {
@@ -122,38 +101,27 @@ func (m *Timer) SetTimerLow(data uint8) {
 	timerLow := uint16(data)
 	timerHigh := m.timerLatch & 0xff00
 	m.timerLatch = timerLow | timerHigh
-	//fmt.Printf("%s SET TIMER LOW %x, %x\n", m.id, timerLow, timerHigh)
-	//TODO TEST
-	//if (m.cr & crBitForceLoad) != 0 {
-	//	m.timer = (m.timer & 0xff00) | uint16(data)
-	//}
+	if (m.cr & crBitForceLoad) != 0 {
+		m.timer = m.timerLatch // Reload
+	}
 }
 
 func (m *Timer) SetTimerHigh(data uint8) {
 	timerLow := m.timerLatch & 0xff
 	timerHigh := uint16(data) << 8
 	m.timerLatch = timerLow | timerHigh
-	//fmt.Printf("%s SET TIMER HIGH %x, %x\n", m.id, timerLow, timerHigh)
-	if (m.cr & crBitStart) == 0 {
-		m.timer = m.timerLatch // Stopped, reload
+	if (m.cr&crBitStart) == 0 || (m.cr&crBitForceLoad) != 0 {
+		m.timer = m.timerLatch // Reload
 	}
-	//TODO TEST
-	//if (m.cr & crBitForceLoad) != 0 {
-	//	m.timer = m.timerLatch // Stopped, reload
-	//}
+
 }
 
-func (m *Timer) SetControlRegister(data uint8) {
+func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
 	//m.printTimerControlData(data)
 	m.crPending = true
 	m.crNew = data
-	if m.countX {
-		m.countPhi2 = (data & 0x60) == 0
-		m.checkUnderflowTimerX = (data & 0x60) == 0x40
-	} else {
-		m.countPhi2 = (data & crBitTimerCountsPositiveSlope) == 0 //Timer counts system cycles
-		m.checkUnderflowTimerX = false
-	}
+	m.countMode = countMode
+	//count: 0 clock - 1 positive CNT (Serial Port) transition; 2 - timerA underflow pulse - 3 timerA underflow pulse while CNT (Serial Port) is high
 }
 
 func (m *Timer) Emulate(underflowTimerX bool) bool {
@@ -202,7 +170,17 @@ func (m *Timer) Emulate(underflowTimerX bool) bool {
 func (m *Timer) timerCount(signal bool, underflowTimerX bool) bool {
 	underflow := false
 	if !signal {
-		if m.countPhi2 || (m.checkUnderflowTimerX && underflowTimerX) {
+		count := false
+		if m.countMode == 0 {
+			count = true
+		} else if m.countMode == 2 {
+			if underflowTimerX {
+				count = true
+			}
+		} else {
+			log.Printf("UNSUPPORTED Timer counts CNT %d", m.countMode)
+		}
+		if count {
 			timer := m.timer
 			m.timer--
 			if (timer == 0) || (m.timer == 0) {
@@ -216,7 +194,7 @@ func (m *Timer) timerCount(signal bool, underflowTimerX bool) bool {
 	if signal {
 		underflow = true
 		m.signalUnderflow.Emit()
-		if (m.cr & crBitOneShot) != 0 {
+		if (m.cr & crBitRunMode) != 0 {
 			m.timer = m.timerLatch // Reload timer
 			// stop timer
 			m.cr &= 0xfe
@@ -264,7 +242,7 @@ func (m *Timer) checkPending() {
 			}
 		case timerLoadThenCount, timerWaitThenCount:
 			if (m.crNew & crBitStart) != 0 {
-				if (m.crNew & crBitOneShot) != 0 {
+				if (m.crNew & crBitRunMode) != 0 {
 					// One-shot, stop timer
 					m.crNew &= 0xfe
 					m.timerState = timerStop
@@ -287,12 +265,12 @@ func (m *Timer) checkPending() {
 func (m *Timer) printTimerControlData(data uint8) {
 	fmt.Printf("\n")
 	fmt.Printf("%s Timer Control -> crBitStart: %v\n", m.id, data&crBitStart != 0)
-	fmt.Printf("%s Timer Control -> crBitSignalNoUnderflow: %v\n", m.id, data&crBitUnderflowPortB != 0)
-	fmt.Printf("%s Timer Control -> crBitSignalUnderflowInverted: %v\n", m.id, data&crBitUnderflowPortBInverted != 0)
-	fmt.Printf("%s Timer Control -> crBitOneShot: %v\n", m.id, data&crBitOneShot != 0)
+	fmt.Printf("%s Timer Control -> crBitSignalNoUnderflow: %v\n", m.id, data&crBitPBOn != 0)
+	fmt.Printf("%s Timer Control -> crBitSignalUnderflowInverted: %v\n", m.id, data&crBitOutMode != 0)
+	fmt.Printf("%s Timer Control -> crBitRunMode: %v\n", m.id, data&crBitRunMode != 0)
 	fmt.Printf("%s Timer Control -> crBitForceLoad: %v\n", m.id, data&crBitForceLoad != 0)
-	fmt.Printf("%s Timer Control -> crBitTimerCountsPositiveSlope: %v\n", m.id, data&crBitTimerCountsPositiveSlope != 0)
-	fmt.Printf("%s Timer Control -> crBitShiftRegDir: %v\n", m.id, data&crBitShiftRegDir != 0)
-	fmt.Printf("%s Timer Control -> crBitRTC: %v\n", m.id, data&crBitRTC != 0)
+	fmt.Printf("%s Timer Control -> crBitInMode: %v\n", m.id, data&crBitInMode != 0)
+	fmt.Printf("%s Timer Control -> crBitSPMode: %v\n", m.id, data&crBitSPMode != 0)
+	fmt.Printf("%s Timer Control -> crBitTODIn: %v\n", m.id, data&crBitTODIn != 0)
 	fmt.Printf("\n")
 }

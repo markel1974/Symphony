@@ -42,8 +42,8 @@ func NewCIA(id string, intrId uint32) *CIA {
 		signalIRQTrigger: signals.NewSignalUint32(),
 		signalIRQClear:   signals.NewSignalUint32(),
 		tod:              NewTOD(id + "_TOD"),
-		timerA:           NewTimer(id+"_TIMER_A", false),
-		timerB:           NewTimer(id+"_TIMER_B", true),
+		timerA:           NewTimer(id + "_TIMER_A"),
+		timerB:           NewTimer(id + "_TIMER_B"),
 	}
 	m.timerA.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrq = true })
 	m.timerB.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrq = true })
@@ -178,9 +178,14 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 		m.updateIrqMask(data)
 		m.triggerIrq()
 	case 0x0e:
-		m.timerA.SetControlRegister(data)
+		countMode := uint8(0)
+		if (data & crBitInMode) != 0 {
+			countMode = 1
+		}
+		m.timerA.SetControlRegister(data, countMode)
 	case 0x0f:
-		m.timerB.SetControlRegister(data)
+		countMode := (data >> 5) & 0x3
+		m.timerB.SetControlRegister(data, countMode)
 	}
 }
 
