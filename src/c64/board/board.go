@@ -20,12 +20,6 @@ import (
 
 // type PhiMode int
 const (
-	intrRstBit = 0
-	intrNmiBit = 1
-	intrIrqBit = 2
-)
-
-const (
 	intrIrqVicBit       = 0
 	intrIrqCia1Bit      = 1
 	intrIrqCia2Bit      = 2
@@ -93,7 +87,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
-	s.pic = mos6510.NewPic(mos6510.MinIrqCycleDistance, intrRstBit, intrNmiBit, intrIrqBit)
+	s.pic = mos6510.NewPic()
 	s.iec = iec.NewIEC()
 	s.cpu = mos6510.NewCPU("c64")
 	s.vic = mos6569.NewVIC(s.db, intrIrqVicBit)
@@ -201,11 +195,11 @@ func (s *Board) Emulate() bool {
 	vBlank, lastVicCycle := s.vic.Emulate()
 	//s.phiMode = Phi2
 	if vBlank {
-		//sidCounter := s.sid.ResetHistory()
 		//TODO
+		//sidCounter := s.sid.ResetHistory()
 		_ = s.sid.ResetHistory()
-		s.cia1.Update()
-		s.cia2.Update()
+		//s.cia1.Update()
+		//s.cia2.Update()
 		//if bytes.Contains(s.vic.GetText(), []byte("READY")) {
 		//	fmt.Println("READY!!!")
 		//}
@@ -213,10 +207,10 @@ func (s *Board) Emulate() bool {
 	if lastVicCycle {
 		s.sid.Emulate()
 	}
-	s.cia1.CheckIRQs()
-	s.cia2.CheckIRQs()
-	s.cia1.Emulate()
-	s.cia2.Emulate()
+	//s.cia1.CheckIRQs()
+	//s.cia2.CheckIRQs()
+	s.cia1.Emulate(vBlank)
+	s.cia2.Emulate(vBlank)
 
 	s.cpu.Emulate()
 	s.cartMan.Emulate()

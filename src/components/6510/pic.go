@@ -6,36 +6,36 @@ import (
 )
 
 const (
+	intrRstBit = 0
+	intrNmiBit = 1
+	intrIrqBit = 2
+)
+
+const (
 	opFlagIrqDisabled = 0x01
 	opFlagIrqEnabled  = 0x02
 	opFlagIntDelayed  = 0x04
 )
 
-const MinIrqCycleDistance = 32
+//const MinIrqCycleDistance = 32
 
 type Pic struct {
-	intRstBit        uint32
-	intNmiBit        uint32
-	intIrqBit        uint32
-	irqCycleDistance uint64
-	quartz           *quartz.Quartz
-	all              bits.Bits
-	irq              bits.Bits
-	firstIrqCycle    uint64
-	firstNMICycle    uint64
+	//irqCycleDistance uint64
+	quartz        *quartz.Quartz
+	all           bits.Bits
+	irq           bits.Bits
+	firstIrqCycle uint64
+	firstNMICycle uint64
 	//lastIrqCycle     uint64
 	opFlags uint8
 }
 
-func NewPic(irqCycleDistance uint8, rstBit uint32, nmiBit uint32, irqBit uint32) *Pic {
+func NewPic() *Pic {
 	return &Pic{
-		irqCycleDistance: uint64(irqCycleDistance),
-		intRstBit:        rstBit,
-		intNmiBit:        nmiBit,
-		intIrqBit:        irqBit,
-		quartz:           nil,
-		firstIrqCycle:    0,
-		firstNMICycle:    0,
+		//irqCycleDistance: uint64(irqCycleDistance),
+		quartz:        nil,
+		firstIrqCycle: 0,
+		firstNMICycle: 0,
 		//lastIrqCycle:     0,
 		all:     0,
 		irq:     0,
@@ -57,11 +57,11 @@ func (i *Pic) Reset() {
 }
 
 func (i *Pic) TriggerReset() {
-	i.all.BitSet(i.intRstBit)
+	i.all.BitSet(intrRstBit)
 }
 
 func (i *Pic) ClearReset() {
-	i.all.BitClear(i.intRstBit)
+	i.all.BitClear(intrRstBit)
 }
 
 //func (i *Pic) HasReset() bool {
@@ -73,13 +73,13 @@ func (i *Pic) TriggerIRQ(intr uint32) {
 		i.firstIrqCycle = i.quartz.Cycle()
 	}
 	i.irq.BitSet(intr)
-	i.all.BitSet(i.intIrqBit)
+	i.all.BitSet(intrIrqBit)
 }
 
 func (i *Pic) ClearIRQ(intr uint32) {
 	i.irq.BitClear(intr)
 	if i.irq == 0 {
-		i.all.BitClear(i.intIrqBit)
+		i.all.BitClear(intrIrqBit)
 	}
 }
 
@@ -88,18 +88,18 @@ func (i *Pic) ClearIRQ(intr uint32) {
 //}
 
 func (i *Pic) TriggerNMI() {
-	if !i.all.BitCheck(i.intNmiBit) {
+	if !i.all.BitCheck(intrNmiBit) {
 		i.firstNMICycle = i.quartz.Cycle()
 	}
-	i.all.BitSet(i.intNmiBit)
+	i.all.BitSet(intrNmiBit)
 }
 
 func (i *Pic) ClearNMI() {
-	i.all.BitClear(i.intNmiBit)
+	i.all.BitClear(intrNmiBit)
 }
 
 func (i *Pic) HasNMI() bool {
-	return i.all.BitCheck(i.intNmiBit)
+	return i.all.BitCheck(intrNmiBit)
 }
 
 func (i *Pic) SetOpFlagIrqDisabled() {
@@ -121,36 +121,27 @@ func (i *Pic) ClearOPFlags() {
 func (i *Pic) VerifyIrq(iFlag uint8) uint8 {
 	const minIrqDistance = 2
 	if i.all != 0 {
-		//if (i.quartz.Cycle() - i.lastIrqCycle) > i.irqCycleDistance {
-		//	fmt.Println("ERROR!!!!!")
-		//}
-		if i.all.BitCheck(i.intRstBit) {
-			//i.lastIrqCycle = i.quartz.Cycle()
+		if i.all.BitCheck(intrRstBit) {
 			i.opFlags = 0
 			// Edge-triggered
 			i.ClearReset()
 			return 1
-		} else if i.all.BitCheck(i.intNmiBit) {
+		} else if i.all.BitCheck(intrNmiBit) {
 			if (i.computeDistance(i.firstNMICycle)) >= minIrqDistance {
-				//i.lastIrqCycle = i.quartz.Cycle()
 				i.opFlags = 0
 				// Edge-triggered
 				i.ClearNMI()
 				return 2
 			}
-		} else if i.all.BitCheck(i.intIrqBit) {
+		} else if i.all.BitCheck(intrIrqBit) {
 			if ((iFlag == 0) || ((i.opFlags & opFlagIrqDisabled) != 0)) && ((i.opFlags & opFlagIrqEnabled) == 0) {
 				if (i.computeDistance(i.firstIrqCycle)) >= minIrqDistance {
 					// Level-triggered
-					//i.lastIrqCycle = i.quartz.Cycle()
 					i.opFlags = 0
 					return 3
 				}
 			}
 		}
-		//} else {
-		//	fmt.Println("ERROR!!!!!")
-		//}
 	}
 	return 0
 }

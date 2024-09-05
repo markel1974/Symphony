@@ -13,12 +13,6 @@ import (
 )
 
 const (
-	intrRstBit = 0
-	intrNmiBit = 1
-	intrIrqBit = 2
-)
-
-const (
 	intrIrqVIA1Bit = 0
 	intrIrqVIA2Bit = 1
 )
@@ -65,7 +59,7 @@ func (m *Board) Setup(cfg *config.Config) {
 
 	m.banks = banks.New()
 	m.quartz = quartz.NewQuartz()
-	m.pic = mos6510.NewPic(mos6510.MinIrqCycleDistance, intrRstBit, intrNmiBit, intrIrqBit)
+	m.pic = mos6510.NewPic()
 	m.cpu = mos6510.NewCPU("c1541")
 	m.mec = mechanic.NewMechanic()
 

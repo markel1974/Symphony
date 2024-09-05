@@ -54,34 +54,34 @@ func (m *CIA) Setup(conn IWiring, trigger func(uint32), clear func(uint32)) {
 	m.signalIRQClear.Bind(clear)
 }
 
-func (m *CIA) CheckIRQs() {
+func (m *CIA) Emulate(vBlank bool) {
+	if vBlank {
+		if m.tod.Update(m.timerA.GetRTC()) {
+			m.icr |= IRQTODAlarmEqual
+			m.triggerIrq()
+		}
+	}
+
 	if m.timerAIrq {
 		m.timerAIrq = false
 		m.triggerIrq()
 	}
+
 	if m.timerBIrq {
 		m.timerBIrq = false
 		m.triggerIrq()
 	}
-}
 
-func (m *CIA) Emulate() {
 	underflowA := m.timerA.Emulate(false)
 	if underflowA {
 		m.icr |= IRQUnderflowTimerA
 		m.timerAIrq = true
 	}
+
 	underFlowB := m.timerB.Emulate(underflowA)
 	if underFlowB {
 		m.icr |= IRQUnderflowTimerB
 		m.timerBIrq = true
-	}
-}
-
-func (m *CIA) Update() {
-	if m.tod.Update(m.timerA.GetRTC()) {
-		m.icr |= IRQTODAlarmEqual
-		m.triggerIrq()
 	}
 }
 

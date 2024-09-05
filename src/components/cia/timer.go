@@ -137,18 +137,18 @@ func (m *Timer) Emulate(underflowTimerX bool) bool {
 	case timerStop:
 		//nothing to do
 	case timerLoadThenStop:
+		m.timer = m.timerLatch
 		m.timerState = timerStop
-		m.timer = m.timerLatch
 	case timerLoadThenCount:
-		m.timerState = timerCount
 		m.timer = m.timerLatch
+		m.timerState = timerCount
 	case timerLoadThenWaitThenCount:
-		m.timerState = timerWaitThenCount
 		if m.timer == 1 {
 			underflow = true
 		} else {
 			m.timer = m.timerLatch
 		}
+		m.timerState = timerWaitThenCount
 	case timerCount:
 		underflow = m.count(underflowTimerX)
 	case timerCountThenStop:
@@ -229,6 +229,8 @@ func (m *Timer) Emulate(underflowTimerX bool) bool {
 	return underflow
 }
 
+var _unsupportedPrinted = false
+
 func (m *Timer) count(underflowTimerX bool) bool {
 	count := false
 	if m.countMode == 0 {
@@ -238,7 +240,11 @@ func (m *Timer) count(underflowTimerX bool) bool {
 			count = true
 		}
 	} else {
-		log.Printf("[timerCount] %s UNSUPPORTED Timer counts CNT %d", m.id, m.countMode)
+		// TODO UNSUPPORTED!!!!!
+		if !_unsupportedPrinted {
+			log.Printf("[timerCount] %s UNSUPPORTED Timer counts CNT %d", m.id, m.countMode)
+			_unsupportedPrinted = true
+		}
 	}
 	if count {
 		timer := m.timer
