@@ -1,7 +1,6 @@
 package mos6526
 
 import (
-	"github.com/markel1974/c64emu/src/signals"
 	"log"
 )
 
@@ -20,7 +19,7 @@ const (
 const (
 	//1 = START TIMER A - 0 = STOP TIMER A s (This bit is automatically reset when underflow occurs during one-shot mode).
 	crBitStart = 0x1 //bit 0
-	//1 = TIMER A output appears on PB6 - 0 = PB6 normal operation.
+	//1 = TIMER A/B output appears on PB6/PB7 - 0 = PB6/PB7 normal operation.
 	crBitPBOn = 0x2 //bit 1
 	//1 = TOGGLE - 0 = PULSE
 	crBitOutMode = 0x4 //bit 2
@@ -39,28 +38,30 @@ const (
 const defaultTimerInit = 0xffff
 
 type Timer struct {
-	id              string
-	signalUnderflow *signals.Signal
-	cr              uint8
-	crNew           uint8      // New values for cr
-	crPending       bool       // New value for crNew pending
-	timer           uint16     // Timer
-	timerLatch      uint16     // Timer latch
-	timerState      TimerState // Timer states
-	countMode       uint8
+	id string
+	//signalUnderflow *signals.Signal
+	cr           uint8
+	crNew        uint8      // New values for cr
+	crNewPending bool       // New value for crNew pending
+	timer        uint16     // Timer
+	timerLatch   uint16     // Timer latch
+	timerState   TimerState // Timer states
+	// 0 = clock; 1 = positive CNT (Serial Port) transition; 2 = timerA underflow; 3 = timerA underflow while CNT (Serial Port) is high
+	countMode  uint8
+	toggleMode bool
 }
 
 func NewTimer(id string) *Timer {
 	m := &Timer{
-		id:              id,
-		signalUnderflow: signals.NewSignal(),
-		cr:              0,
-		crNew:           0,
-		crPending:       false,
-		timer:           defaultTimerInit,
-		timerLatch:      defaultTimerInit,
-		timerState:      timerStop,
-		countMode:       0,
+		id:           id,
+		cr:           0,
+		crNew:        0,
+		crNewPending: false,
+		timer:        defaultTimerInit,
+		timerLatch:   defaultTimerInit,
+		timerState:   timerStop,
+		countMode:    0,
+		toggleMode:   false,
 	}
 	m.Reset()
 	return m
@@ -69,15 +70,23 @@ func NewTimer(id string) *Timer {
 func (m *Timer) Reset() {
 	m.cr = 0
 	m.crNew = 0
-	m.crPending = false
+	m.crNewPending = false
 	m.timer = defaultTimerInit
 	m.timerLatch = defaultTimerInit
 	m.timerState = timerStop
 	m.countMode = 0
+	m.toggleMode = false
 }
 
-func (m *Timer) SignalUnderflowBind(fn func()) {
-	m.signalUnderflow.Bind(fn)
+func (m *Timer) HasPBOn() bool {
+	return (m.cr & crBitPBOn) != 0
+}
+
+func (m *Timer) ToggleModeApply(d bool) bool {
+	if (m.cr & crBitOutMode) != 0 {
+		d = m.toggleMode
+	}
+	return d
 }
 
 func (m *Timer) GetRTC() bool {
@@ -101,7 +110,7 @@ func (m *Timer) SetTimerLow(data uint8) {
 	timerHigh := m.timerLatch & 0xff00
 	m.timerLatch = timerLow | timerHigh
 	if (m.cr & crBitForceLoad) != 0 {
-		m.timer = m.timerLatch // Reload
+		m.timer = m.timerLatch
 	}
 }
 
@@ -110,120 +119,67 @@ func (m *Timer) SetTimerHigh(data uint8) {
 	timerHigh := uint16(data) << 8
 	m.timerLatch = timerLow | timerHigh
 	if (m.cr&crBitStart) == 0 || (m.cr&crBitForceLoad) != 0 {
-		m.timer = m.timerLatch // Reload
+		m.timer = m.timerLatch
 	}
-
 }
 
 func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
-	//m.printTimerControlData(data)
-	m.crPending = true
+	m.crNewPending = true
 	m.crNew = data
 	m.countMode = countMode
-
-	if (m.crNew & crBitPBOn) != 0 {
-		log.Printf("[SetControlRegister] %s Unimplemented TIMER A on PB6", m.id)
-	}
-	if (m.crNew & crBitOutMode) != 0 {
-		log.Printf("[SetControlRegister] %s Unimplemented OUT MODE", m.id)
-	}
-	if (m.crNew & crBitSPMode) != 0 {
-		log.Printf("[SetControlRegister] %s Unimplemented SERIAL PORT output", m.id)
-	}
-	//count: 0 clock - 1 positive CNT (Serial Port) transition; 2 - timerA underflow pulse - 3 timerA underflow pulse while CNT (Serial Port) is high
 }
 
 func (m *Timer) Emulate(underflowTimerX bool) bool {
+	underflow := false
 	switch m.timerState {
 	case timerWaitThenCount:
 		m.timerState = timerCount
-		m.checkPending()
-		return false
 	case timerStop:
-		m.checkPending()
-		return false
+		//nothing to do
 	case timerLoadThenStop:
 		m.timerState = timerStop
-		m.timer = m.timerLatch // Reload
-		m.checkPending()
-		return false
+		m.timer = m.timerLatch
 	case timerLoadThenCount:
 		m.timerState = timerCount
-		m.timer = m.timerLatch // Reload
-		m.checkPending()
-		return false
+		m.timer = m.timerLatch
 	case timerLoadThenWaitThenCount:
 		m.timerState = timerWaitThenCount
 		if m.timer == 1 {
-			underflow := m.timerCount(true, underflowTimerX)
-			m.checkPending()
-			return underflow
+			underflow = true
+		} else {
+			m.timer = m.timerLatch
 		}
-		m.timer = m.timerLatch // Reload
-		m.checkPending()
-		return false
 	case timerCount:
-		underflow := m.timerCount(false, underflowTimerX)
-		m.checkPending()
-		return underflow
+		underflow = m.count(underflowTimerX)
 	case timerCountThenStop:
 		m.timerState = timerStop
-		underflow := m.timerCount(false, underflowTimerX)
-		m.checkPending()
-		return underflow
+		underflow = m.count(underflowTimerX)
 	}
-	//never happen
-	return false
-}
 
-func (m *Timer) timerCount(signal bool, underflowTimerX bool) bool {
-	underflow := false
-	if !signal {
-		count := false
-		if m.countMode == 0 {
-			count = true
-		} else if m.countMode == 2 {
-			if underflowTimerX {
-				count = true
-			}
-		} else {
-			log.Printf("[timerCount] %s UNSUPPORTED Timer counts CNT %d", m.id, m.countMode)
-		}
-		if count {
-			timer := m.timer
-			m.timer--
-			if (timer == 0) || (m.timer == 0) {
-				underflow = true
-				if m.timerState != timerStop {
-					signal = true
-				}
-			}
-		}
-	}
-	if signal {
-		underflow = true
-		m.signalUnderflow.Emit()
+	if underflow {
+		m.toggleMode = !m.toggleMode // Toggle PB6 output
 		if (m.cr & crBitRunMode) != 0 {
-			m.timer = m.timerLatch // Reload timer
-			// stop timer
-			m.cr &= 0xfe
-			m.crNew &= 0xfe
+			m.cr &= 0xfe                     // stop timer
+			m.crNew &= 0xfe                  // stop timer
 			m.timerState = timerLoadThenStop // Reload in next cycle
+			m.timer = m.timerLatch           // Reload timer
 		} else {
+			const minTimer = 32
+			if m.countMode == 0 && m.timerLatch < minTimer {
+				log.Printf("[Emulate] %s countinuos timerLatch is too low %d, changing to %d", m.id, m.timerLatch, minTimer)
+				m.timerLatch = minTimer
+			}
+			m.timerState = timerLoadThenCount // Reload in next cycle
 			m.timer = m.timerLatch            // Reload timer
-			m.timerState = timerLoadThenCount // Delay one cycle (and reload)
 		}
 	}
-	return underflow
-}
 
-func (m *Timer) checkPending() {
-	// Delayed write to CR?
-	if m.crPending {
+	if m.crNewPending {
 		switch m.timerState {
 		case timerStop, timerLoadThenStop:
 			// Timer started, wasn't running
 			if (m.crNew & crBitStart) != 0 {
+				m.toggleMode = true
 				if (m.crNew & crBitForceLoad) != 0 {
 					m.timerState = timerLoadThenWaitThenCount
 				} else {
@@ -263,12 +219,35 @@ func (m *Timer) checkPending() {
 				m.timerState = timerStop
 			}
 		default:
-			log.Printf("[checkPending] %s TIMER - UNDEFINED Timer %d", m.id, m.timerState)
+			log.Printf("[Emulate] %s TIMER - UNDEFINED Timer %d", m.id, m.timerState)
 		}
 		//no force load set
 		m.cr = m.crNew & 0xef
-		m.crPending = false
+		m.crNewPending = false
 	}
+
+	return underflow
+}
+
+func (m *Timer) count(underflowTimerX bool) bool {
+	count := false
+	if m.countMode == 0 {
+		count = true
+	} else if m.countMode == 2 {
+		if underflowTimerX {
+			count = true
+		}
+	} else {
+		log.Printf("[timerCount] %s UNSUPPORTED Timer counts CNT %d", m.id, m.countMode)
+	}
+	if count {
+		timer := m.timer
+		m.timer--
+		if (timer == 0) || (m.timer == 0) {
+			return true
+		}
+	}
+	return false
 }
 
 /*

@@ -45,8 +45,6 @@ func NewCIA(id string, intrId uint32) *CIA {
 		timerA:           NewTimer(id + "_TIMER_A"),
 		timerB:           NewTimer(id + "_TIMER_B"),
 	}
-	m.timerA.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerA; m.timerAIrq = true })
-	m.timerB.SignalUnderflowBind(func() { m.icr |= IRQUnderflowTimerB; m.timerBIrq = true })
 	return m
 }
 
@@ -68,8 +66,16 @@ func (m *CIA) CheckIRQs() {
 }
 
 func (m *CIA) Emulate() {
-	underflow := m.timerA.Emulate(false)
-	m.timerB.Emulate(underflow)
+	underflowA := m.timerA.Emulate(false)
+	if underflowA {
+		m.icr |= IRQUnderflowTimerA
+		m.timerAIrq = true
+	}
+	underFlowB := m.timerB.Emulate(underflowA)
+	if underFlowB {
+		m.icr |= IRQUnderflowTimerB
+		m.timerBIrq = true
+	}
 }
 
 func (m *CIA) Update() {
@@ -101,7 +107,23 @@ func (m *CIA) ReadRegister(addr uint16) uint8 {
 	case 0x00:
 		return m.conn.ReadPortA(m.prA, m.ddrA, m.prB, m.ddrB)
 	case 0x01:
-		return m.conn.ReadPortB(m.prA, m.ddrA, m.prB, m.ddrB)
+		ret := m.conn.ReadPortB(m.prA, m.ddrA, m.prB, m.ddrB)
+		// TA/TB output to PB enabled
+		if m.timerA.HasPBOn() {
+			if m.timerA.ToggleModeApply(m.timerAIrq) {
+				ret |= 0x40
+			} else {
+				ret &= 0xbf
+			}
+		}
+		if m.timerB.HasPBOn() {
+			if m.timerB.ToggleModeApply(m.timerBIrq) {
+				ret |= 0x80
+			} else {
+				ret &= 0x7f
+			}
+		}
+		return ret
 	case 0x02:
 		return m.ddrA
 	case 0x03:

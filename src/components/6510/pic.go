@@ -23,8 +23,8 @@ type Pic struct {
 	irq              bits.Bits
 	firstIrqCycle    uint64
 	firstNMICycle    uint64
-	lastIrqCycle     uint64
-	opFlags          uint8
+	//lastIrqCycle     uint64
+	opFlags uint8
 }
 
 func NewPic(irqCycleDistance uint8, rstBit uint32, nmiBit uint32, irqBit uint32) *Pic {
@@ -36,10 +36,10 @@ func NewPic(irqCycleDistance uint8, rstBit uint32, nmiBit uint32, irqBit uint32)
 		quartz:           nil,
 		firstIrqCycle:    0,
 		firstNMICycle:    0,
-		lastIrqCycle:     0,
-		all:              0,
-		irq:              0,
-		opFlags:          0,
+		//lastIrqCycle:     0,
+		all:     0,
+		irq:     0,
+		opFlags: 0,
 	}
 }
 
@@ -52,7 +52,7 @@ func (i *Pic) Reset() {
 	i.irq = 0
 	i.firstIrqCycle = 0
 	i.firstNMICycle = 0
-	i.lastIrqCycle = 0
+	//i.lastIrqCycle = 0
 	i.opFlags = 0
 }
 
@@ -72,8 +72,8 @@ func (i *Pic) TriggerIRQ(intr uint32) {
 	if i.irq == 0 {
 		i.firstIrqCycle = i.quartz.Cycle()
 	}
-	i.all.BitSet(i.intIrqBit)
 	i.irq.BitSet(intr)
+	i.all.BitSet(i.intIrqBit)
 }
 
 func (i *Pic) ClearIRQ(intr uint32) {
@@ -120,31 +120,37 @@ func (i *Pic) ClearOPFlags() {
 
 func (i *Pic) VerifyIrq(iFlag uint8) uint8 {
 	const minIrqDistance = 2
-	if i.all != 0 && (i.quartz.Cycle()-i.lastIrqCycle) > i.irqCycleDistance {
+	if i.all != 0 {
+		//if (i.quartz.Cycle() - i.lastIrqCycle) > i.irqCycleDistance {
+		//	fmt.Println("ERROR!!!!!")
+		//}
 		if i.all.BitCheck(i.intRstBit) {
-			i.lastIrqCycle = i.quartz.Cycle()
+			//i.lastIrqCycle = i.quartz.Cycle()
 			i.opFlags = 0
 			// Edge-triggered
 			i.ClearReset()
 			return 1
 		} else if i.all.BitCheck(i.intNmiBit) {
 			if (i.computeDistance(i.firstNMICycle)) >= minIrqDistance {
-				i.lastIrqCycle = i.quartz.Cycle()
+				//i.lastIrqCycle = i.quartz.Cycle()
 				i.opFlags = 0
 				// Edge-triggered
 				i.ClearNMI()
 				return 2
 			}
-		} else if i.irq != 0 {
+		} else if i.all.BitCheck(i.intIrqBit) {
 			if ((iFlag == 0) || ((i.opFlags & opFlagIrqDisabled) != 0)) && ((i.opFlags & opFlagIrqEnabled) == 0) {
 				if (i.computeDistance(i.firstIrqCycle)) >= minIrqDistance {
 					// Level-triggered
-					i.lastIrqCycle = i.quartz.Cycle()
+					//i.lastIrqCycle = i.quartz.Cycle()
 					i.opFlags = 0
 					return 3
 				}
 			}
 		}
+		//} else {
+		//	fmt.Println("ERROR!!!!!")
+		//}
 	}
 	return 0
 }
