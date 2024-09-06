@@ -1,6 +1,6 @@
 package mos6522
 
-type IWiring interface {
+type ISocket interface {
 	Reset()
 	ReadPRA(uint8, uint8) uint8
 	ReadPRB(uint8, uint8) uint8
@@ -8,4 +8,7 @@ type IWiring interface {
 	WritePRB(uint8, uint8)
 	WriteDDRA(uint8, uint8)
 	WriteDDRB(uint8, uint8)
+
+	IRQClear()
+	IRQTrigger()
 }

@@ -32,7 +32,7 @@ type CIA struct {
 	tod              *TOD
 	timerA           *Timer
 	timerB           *Timer
-	conn             IWiring
+	conn             ISocket
 }
 
 func NewCIA(id string, intrId uint32) *CIA {
@@ -48,7 +48,7 @@ func NewCIA(id string, intrId uint32) *CIA {
 	return m
 }
 
-func (m *CIA) Setup(conn IWiring, trigger func(uint32), clear func(uint32)) {
+func (m *CIA) Setup(conn ISocket, trigger func(uint32), clear func(uint32)) {
 	m.conn = conn
 	m.signalIRQTrigger.Bind(trigger)
 	m.signalIRQClear.Bind(clear)

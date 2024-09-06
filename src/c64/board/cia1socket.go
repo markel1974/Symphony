@@ -5,7 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/signals"
 )
 
-type CIA1Wiring struct {
+type CIA1Socket struct {
 	signalLightPenTrigger *signals.Signal
 	prevLPState           uint8    // Previous state of LP line (bit 4
 	keyMatrix             [8]uint8 // C64 keyboard matrix, 1 bit/key (0: key down, 1: key up)
@@ -15,19 +15,19 @@ type CIA1Wiring struct {
 	keys                  *keyboard.Keyboard
 }
 
-func NewCIA1Wiring() *CIA1Wiring {
-	c := &CIA1Wiring{
+func NewCIA1Socket() *CIA1Socket {
+	c := &CIA1Socket{
 		signalLightPenTrigger: signals.NewSignal(),
 	}
 	return c
 }
 
-func (w *CIA1Wiring) Setup(keys *keyboard.Keyboard, fn func()) {
+func (w *CIA1Socket) Setup(keys *keyboard.Keyboard, fn func()) {
 	w.keys = keys
 	w.signalLightPenTrigger.Bind(fn)
 }
 
-func (w *CIA1Wiring) Reset() {
+func (w *CIA1Socket) Reset() {
 	for i := 0; i < 8; i++ {
 		w.keyMatrix[i] = 0xff
 		w.revMatrix[i] = 0xff
@@ -37,7 +37,7 @@ func (w *CIA1Wiring) Reset() {
 	w.prevLPState = 0x10
 }
 
-func (w *CIA1Wiring) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
+func (w *CIA1Socket) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
 	w.updateInputs()
 	//Joy port 2
 	ret := prA | ^ddrA
@@ -69,7 +69,7 @@ func (w *CIA1Wiring) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uin
 	return ret & w.joy2
 }
 
-func (w *CIA1Wiring) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
+func (w *CIA1Socket) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
 	w.updateInputs()
 	//joy port 1
 	ret := ^ddrB
@@ -101,28 +101,28 @@ func (w *CIA1Wiring) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uin
 	return (ret | (prB & ddrB)) & w.joy1
 }
 
-func (w *CIA1Wiring) WritePortA(_ uint8, _ uint8, _ uint8, _ uint8) {
+func (w *CIA1Socket) WritePortA(_ uint8, _ uint8, _ uint8, _ uint8) {
 }
 
-func (w *CIA1Wiring) WriteDdrA(_ uint8, _ uint8, _ uint8, _ uint8) {
+func (w *CIA1Socket) WriteDdrA(_ uint8, _ uint8, _ uint8, _ uint8) {
 }
 
-func (w *CIA1Wiring) WritePortB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
+func (w *CIA1Socket) WritePortB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
 	w.updateLightPen(prB, ddrB)
 }
 
-func (w *CIA1Wiring) WriteDdrB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
+func (w *CIA1Socket) WriteDdrB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
 	w.updateLightPen(prB, ddrB)
 }
 
-func (w *CIA1Wiring) updateLightPen(prB uint8, ddrB uint8) {
+func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
 	if ((prB | ^ddrB) & 0x10) != w.prevLPState {
 		w.signalLightPenTrigger.Emit()
 	}
 	w.prevLPState = (prB | ^ddrB) & 0x10
 }
 
-func (w *CIA1Wiring) updateInputs() {
+func (w *CIA1Socket) updateInputs() {
 	if joy1, ok := w.keys.PollJoystick1(); ok {
 		w.joy1 = joy1
 	}

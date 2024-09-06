@@ -5,54 +5,54 @@ import (
 	"github.com/markel1974/c64emu/src/signals"
 )
 
-type CIA2Wiring struct {
+type CIA2Socket struct {
 	bus             *iec.IEC
 	signalChangedVA *signals.SignalByte
 }
 
-func NewCIA2Wiring() *CIA2Wiring {
-	c := &CIA2Wiring{
+func NewCIA2Socket() *CIA2Socket {
+	c := &CIA2Socket{
 		signalChangedVA: signals.NewSignalByte(),
 	}
 	return c
 }
 
-func (w *CIA2Wiring) Setup(bus *iec.IEC, fn func(uint8)) {
+func (w *CIA2Socket) Setup(bus *iec.IEC, fn func(uint8)) {
 	w.bus = bus
 	w.signalChangedVA.Bind(fn)
 }
 
-func (w *CIA2Wiring) Reset() {
+func (w *CIA2Socket) Reset() {
 
 }
 
-func (w *CIA2Wiring) ReadPortA(prA uint8, ddrA uint8, _ uint8, _ uint8) uint8 {
+func (w *CIA2Socket) ReadPortA(prA uint8, ddrA uint8, _ uint8, _ uint8) uint8 {
 	data := w.bus.CpuRead()
 	ret := ((prA | (^ddrA)) & 0x3f) | data
 	return ret
 }
 
-func (w *CIA2Wiring) ReadPortB(_ uint8, _ uint8, prB uint8, ddrB uint8) uint8 {
+func (w *CIA2Socket) ReadPortB(_ uint8, _ uint8, prB uint8, ddrB uint8) uint8 {
 	ret := prB | (^ddrB)
 	return ret
 }
 
-func (w *CIA2Wiring) WritePortA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
+func (w *CIA2Socket) WritePortA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
 	w.updateVA(prA, ddrA)
 	w.bus.CpuWrite(prA)
 }
 
-func (w *CIA2Wiring) WritePortB(_ uint8, _ uint8, _ uint8, _ uint8) {
+func (w *CIA2Socket) WritePortB(_ uint8, _ uint8, _ uint8, _ uint8) {
 }
 
-func (w *CIA2Wiring) WriteDdrA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
+func (w *CIA2Socket) WriteDdrA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
 	w.updateVA(prA, ddrA)
 }
 
-func (w *CIA2Wiring) WriteDdrB(_ uint8, _ uint8, _ uint8, _ uint8) {
+func (w *CIA2Socket) WriteDdrB(_ uint8, _ uint8, _ uint8, _ uint8) {
 }
 
-func (w *CIA2Wiring) updateVA(prA uint8, ddrA uint8) {
+func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 	//Bit 0..1: Select the position of the VIC-memory
 	//Bit 2: RS-232: TXD Output, userPort: Data PA 2 (pin M)
 	//Bit 3..5: serial bus Output (0=High/Inactive, 1=Low/Active)

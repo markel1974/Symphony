@@ -2,9 +2,6 @@ package board
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/c1541/mechanic"
-	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
-	"github.com/markel1974/c64emu/src/signals"
 )
 
 //TODO MOVE IN WIRED
@@ -19,61 +16,59 @@ const syncControl = uint8(0x80)
 const noPhotocellControl = ^photocellControl
 const noSyncControl = ^syncControl
 
-type Via2Wiring struct {
-	mec          *mechanic.Mechanic
-	iec          virtualdrive.IIec
-	deviceNumber uint8
-	prbPrev      uint8
-	signalLed    *signals.SignalByte
+type Via2Socket struct {
+	board   *Board
+	intrId  uint32
+	prbPrev uint8
 }
 
-func (v *Via2Wiring) WriteDDRA(u uint8, u2 uint8) {
-}
-
-func (v *Via2Wiring) WriteDDRB(u uint8, u2 uint8) {
-}
-
-func NewVia2Wiring(iec virtualdrive.IIec, mec *mechanic.Mechanic, deviceNumber uint8) *Via2Wiring {
-	return &Via2Wiring{
-		iec:          iec,
-		mec:          mec,
-		deviceNumber: deviceNumber,
-		prbPrev:      0,
-		signalLed:    signals.NewSignalByte(),
+func NewVia2Socket(board *Board, intrId uint32) *Via2Socket {
+	return &Via2Socket{
+		board:   board,
+		intrId:  intrId,
+		prbPrev: 0,
 	}
 }
 
-func (v *Via2Wiring) Reset() {
+func (v *Via2Socket) Reset() {
 	v.prbPrev = 0
 }
 
-func (v *Via2Wiring) SignalLedBind(fn func(byte)) {
-	v.signalLed.Bind(fn)
+func (v *Via2Socket) LedChanged(data byte) {
+	v.board.LedChanged(data)
 }
 
-func (v *Via2Wiring) ReadPRA(_ uint8, _ uint8) uint8 {
-	d := v.mec.ReadByte()
-	v.mec.RotateDisk()
+func (v *Via2Socket) IRQClear() {
+	v.board.IRQClear(v.intrId)
+}
+
+func (v *Via2Socket) IRQTrigger() {
+	v.board.IRQTrigger(v.intrId)
+}
+
+func (v *Via2Socket) ReadPRA(_ uint8, _ uint8) uint8 {
+	d := v.board.mec.ReadByte()
+	v.board.mec.RotateDisk()
 	return d
 }
 
-func (v *Via2Wiring) ReadPRB(prb uint8, _ uint8) uint8 {
+func (v *Via2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
 	p := prb & noPhotocellControl
-	photocellState := v.mec.WriteProtectionState()
-	if v.mec.SyncFound() {
+	photocellState := v.board.mec.WriteProtectionState()
+	if v.board.mec.SyncFound() {
 		return (p & noSyncControl) | photocellState
 	} else {
-		v.mec.RotateDisk()
+		v.board.mec.RotateDisk()
 		return (p | syncControl) | photocellState
 	}
 }
 
-func (v *Via2Wiring) WritePRA(pra uint8, _ uint8) {
-	v.mec.WriteByte(pra)
-	v.mec.RotateDisk()
+func (v *Via2Socket) WritePRA(pra uint8, _ uint8) {
+	v.board.mec.WriteByte(pra)
+	v.board.mec.RotateDisk()
 }
 
-func (v *Via2Wiring) WritePRB(prb uint8, _ uint8) {
+func (v *Via2Socket) WritePRB(prb uint8, _ uint8) {
 	prevPrb := v.prbPrev
 	v.prbPrev = prb
 	m := prevPrb ^ prb
@@ -84,16 +79,16 @@ func (v *Via2Wiring) WritePRB(prb uint8, _ uint8) {
 	//Increase value (%00-%01-%10-%11-%00...) to move head upwards
 	if (m & headControl) != 0 {
 		if (prevPrb & headControl) == ((prb + 1) & headControl) {
-			v.mec.MoveHeadOut()
+			v.board.mec.MoveHeadOut()
 		} else if (prevPrb & headControl) == ((prb - 1) & headControl) {
-			v.mec.MoveHeadIn()
+			v.board.mec.MoveHeadIn()
 		}
 	}
 	//bit [2]
 	//Motor control; 0 = Off; 1 = On.
 	if (m & motorControl) != 0 {
 		motorOn := (prb & motorControl) != 0
-		v.mec.SetMotor(motorOn)
+		v.board.mec.SetMotor(motorOn)
 		fmt.Println("TODO - MOTOR", motorOn)
 	}
 	//bit [3]
@@ -103,7 +98,7 @@ func (v *Via2Wiring) WritePRB(prb uint8, _ uint8) {
 		if (prb & ledControl) != 0 {
 			led = 1
 		}
-		v.signalLed.Emit(led)
+		v.board.LedChanged(led)
 	}
 	//bit [4]
 	//Write protect photocell status; 0 = Write protect tab covered, disk protected; 1 = Tab uncovered, disk not protected.
@@ -123,6 +118,14 @@ func (v *Via2Wiring) WritePRB(prb uint8, _ uint8) {
 		sync := (prb & syncControl) != 0
 		fmt.Println("TODO - SYNC", !sync)
 	}
+}
+
+func (v *Via2Socket) WriteDDRA(_ uint8, _ uint8) {
+
+}
+
+func (v *Via2Socket) WriteDDRB(_ uint8, _ uint8) {
+
 }
 
 /*

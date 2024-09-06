@@ -40,8 +40,8 @@ type Board struct {
 	sid          *mos6581.SID
 	cia1         *mos6526.CIA
 	cia2         *mos6526.CIA
-	cia1wiring   *CIA1Wiring
-	cia2wiring   *CIA2Wiring
+	cia1wiring   *CIA1Socket
+	cia2wiring   *CIA2Socket
 	pic          *mos6510.Pic
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
@@ -92,8 +92,8 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cpu = mos6510.NewCPU("c64")
 	s.vic = mos6569.NewVIC(s.db, intrIrqVicBit)
 	s.sid = mos6581.NewSID()
-	s.cia1wiring = NewCIA1Wiring()
-	s.cia2wiring = NewCIA2Wiring()
+	s.cia1wiring = NewCIA1Socket()
+	s.cia2wiring = NewCIA2Socket()
 
 	s.cia1 = mos6526.NewCIA("cia1", intrIrqCia1Bit)
 	s.cia2 = mos6526.NewCIA("cia2", intrIrqCia2Bit) //Unused - Emit NMI

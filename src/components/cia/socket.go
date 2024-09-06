@@ -1,6 +1,6 @@
 package mos6526
 
-type IWiring interface {
+type ISocket interface {
 	Reset()
 	ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8
 	ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8

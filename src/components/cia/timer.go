@@ -1,6 +1,7 @@
 package mos6526
 
 import (
+	"fmt"
 	"log"
 )
 
@@ -112,6 +113,9 @@ func (m *Timer) SetTimerLow(data uint8) {
 	if (m.cr & crBitForceLoad) != 0 {
 		m.timer = m.timerLatch
 	}
+	//if m.id == "cia2_TIMER_B" {
+	//	fmt.Printf("%s [SetTimerLow] %d\n", m.id, m.timerLatch)
+	//}
 }
 
 func (m *Timer) SetTimerHigh(data uint8) {
@@ -121,15 +125,21 @@ func (m *Timer) SetTimerHigh(data uint8) {
 	if (m.cr&crBitStart) == 0 || (m.cr&crBitForceLoad) != 0 {
 		m.timer = m.timerLatch
 	}
+	//if m.id == "cia2_TIMER_B" {
+	//	fmt.Printf("%s [SetTimerHigh] %d\n", m.id, m.timerLatch)
+	//}
 }
 
 func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
 	m.crNewPending = true
 	m.crNew = data
 	m.countMode = countMode
+	//if m.id == "cia2_TIMER_B" {
+	//	fmt.Printf("%s [SetControlRegister] %8b [CONTINUOS: %v]\n", m.id, m.crNew, (m.crNew&crBitRunMode) == 0)
+	//}
 }
 
-func (m *Timer) Emulate(underflowTimerX bool) bool {
+func (m *Timer) Emulate(underflowX bool) bool {
 	underflow := false
 	switch m.timerState {
 	case timerWaitThenCount:
@@ -150,27 +160,27 @@ func (m *Timer) Emulate(underflowTimerX bool) bool {
 		}
 		m.timerState = timerWaitThenCount
 	case timerCount:
-		underflow = m.count(underflowTimerX)
+		underflow = m.count(underflowX)
 	case timerCountThenStop:
+		underflow = m.count(underflowX)
 		m.timerState = timerStop
-		underflow = m.count(underflowTimerX)
 	}
 
 	if underflow {
-		m.toggleMode = !m.toggleMode // Toggle PB6 output
+		m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
 		if (m.cr & crBitRunMode) != 0 {
 			m.cr &= 0xfe                     // stop timer
 			m.crNew &= 0xfe                  // stop timer
-			m.timerState = timerLoadThenStop // Reload in next cycle
 			m.timer = m.timerLatch           // Reload timer
+			m.timerState = timerLoadThenStop // Reload in next cycle
 		} else {
 			const minTimer = 32
 			if m.countMode == 0 && m.timerLatch < minTimer {
 				log.Printf("[Emulate] %s countinuos timerLatch is too low %d, changing to %d", m.id, m.timerLatch, minTimer)
 				m.timerLatch = minTimer
 			}
-			m.timerState = timerLoadThenCount // Reload in next cycle
 			m.timer = m.timerLatch            // Reload timer
+			m.timerState = timerLoadThenCount // Reload in next cycle
 		}
 	}
 
@@ -231,32 +241,33 @@ func (m *Timer) Emulate(underflowTimerX bool) bool {
 
 var _unsupportedPrinted = false
 
-func (m *Timer) count(underflowTimerX bool) bool {
-	count := false
+func (m *Timer) count(underflowX bool) bool {
 	if m.countMode == 0 {
-		count = true
-	} else if m.countMode == 2 {
-		if underflowTimerX {
-			count = true
-		}
-	} else {
-		// TODO UNSUPPORTED!!!!!
-		if !_unsupportedPrinted {
-			log.Printf("[timerCount] %s UNSUPPORTED Timer counts CNT %d", m.id, m.countMode)
-			_unsupportedPrinted = true
-		}
-	}
-	if count {
-		timer := m.timer
-		m.timer--
-		if (timer == 0) || (m.timer == 0) {
+		if m.timer <= 1 {
+			m.timer = 0
 			return true
 		}
+		m.timer--
+		return false
+	}
+	if m.countMode == 2 {
+		if underflowX {
+			if m.timer <= 1 {
+				m.timer = 0
+				return true
+			}
+			m.timer--
+		}
+		return false
+	}
+	// TODO UNSUPPORTED!!!!!
+	if !_unsupportedPrinted {
+		log.Printf("[timerCount] %s UNSUPPORTED Timer counts CNT %d", m.id, m.countMode)
+		_unsupportedPrinted = true
 	}
 	return false
 }
 
-/*
 func (m *Timer) printTimerControlData(data uint8) {
 	fmt.Printf("\n")
 	fmt.Printf("%s Timer Control -> crBitStart: %v\n", m.id, data&crBitStart != 0)
@@ -269,4 +280,3 @@ func (m *Timer) printTimerControlData(data uint8) {
 	fmt.Printf("%s Timer Control -> crBitTODIn: %v\n", m.id, data&crBitTODIn != 0)
 	fmt.Printf("\n")
 }
-*/

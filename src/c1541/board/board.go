@@ -24,8 +24,8 @@ type Board struct {
 	quartz       *quartz.Quartz
 	via1         *mos6522.Via
 	via2         *mos6522.Via
-	via1Wiring   *Via1Wiring
-	via2Wiring   *Via2Wiring
+	via1Socket   *Via1Socket
+	via2Socket   *Via2Socket
 	banks        *banks.Banks
 	mec          *mechanic.Mechanic
 	deviceId     uint8
@@ -42,8 +42,8 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string)
 		filePath:     opts,
 		deviceNumber: deviceNumber,
 		ledChanged:   signals.NewSignalUint32(),
-		via1Wiring:   nil,
-		via2Wiring:   nil,
+		via1Socket:   nil,
+		via2Socket:   nil,
 		pic:          nil,
 		via1:         nil,
 		via2:         nil,
@@ -56,32 +56,19 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string)
 func (m *Board) Setup(cfg *config.Config) {
 	m.cfg = cfg
 	m.cfg.Bind(m.configChanged)
-
 	m.banks = banks.New()
 	m.quartz = quartz.NewQuartz()
 	m.pic = mos6510.NewPic()
 	m.cpu = mos6510.NewCPU("c1541")
 	m.mec = mechanic.NewMechanic()
-
 	m.mec.Setup(m.filePath)
-
-	m.via1Wiring = NewVia1Wiring(m.iec, m.deviceNumber)
-	m.via2Wiring = NewVia2Wiring(m.iec, m.mec, m.deviceNumber)
-	m.via2Wiring.SignalLedBind(m.ledChangedSlot)
-
-	m.via1 = mos6522.NewVia("via1", intrIrqVIA1Bit)
-	m.via2 = mos6522.NewVia("via2", intrIrqVIA2Bit)
-
-	m.via1.Setup(m.via1Wiring)
-	m.via1.SignalTriggerIRQBind(m.pic.TriggerIRQ)
-	m.via1.SignalClearIRQBind(m.pic.ClearIRQ)
-
-	m.via2.Setup(m.via2Wiring)
-	m.via2.SignalTriggerIRQBind(m.pic.TriggerIRQ)
-	m.via2.SignalClearIRQBind(m.pic.ClearIRQ)
-
+	m.via1 = mos6522.NewVia("via1")
+	m.via2 = mos6522.NewVia("via2")
+	m.via1Socket = NewVia1Socket(m, intrIrqVIA1Bit)
+	m.via2Socket = NewVia2Socket(m, intrIrqVIA2Bit)
+	m.via1.Setup(m.via1Socket)
+	m.via2.Setup(m.via2Socket)
 	m.banks.Setup(m.via1, m.via2, cfg)
-
 	m.pic.Setup(m.quartz)
 	m.cpu.Setup(m.pic, m.banks)
 	m.cpu.SetOverflowBranch(m.via2.ByteReady)
@@ -135,7 +122,15 @@ func (m *Board) configChanged() {
 	}
 }
 
-func (m *Board) ledChangedSlot(d byte) {
+func (m *Board) LedChanged(d byte) {
 	fmt.Println("LED", m.deviceNumber, d)
 	m.ledChanged.Emit(uint32(d)<<8 | uint32(m.deviceNumber))
+}
+
+func (m *Board) IRQClear(intr uint32) {
+	m.pic.ClearIRQ(intr)
+}
+
+func (m *Board) IRQTrigger(intr uint32) {
+	m.pic.TriggerIRQ(intr)
 }
