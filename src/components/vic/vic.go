@@ -12,6 +12,7 @@ const (
 )
 
 type VIC struct {
+	id             string
 	core           *Core
 	cfg            *config.Config
 	collisions     *Collisions
@@ -26,33 +27,31 @@ type VIC struct {
 	cycles         []func()
 }
 
-func NewVIC(socket ISocket) *VIC {
-	core := NewCore(socket)
-	collisions := NewCollisions(core)
-	db := socket.GetDisplayBuffer()
+func NewVIC(id string) *VIC {
 	vic := &VIC{
-		core:       core,
-		collisions: collisions,
-		graphics:   NewGraphics(core, collisions, db),
-		sprites:    NewSprites(core, collisions, db),
-		borders:    NewBorder(core, db, 13),
-		cycle:      cycleFirst,
-		vBlank:     0,
-		drawLine:   false,
-		cfg:        nil,
-		cycles:     make([]func(), cycleLast+1),
+		id: id,
 	}
 	return vic
 }
 
-func (vic *VIC) Setup(cfg *config.Config) {
+func (vic *VIC) Setup(socket ISocket, cfg *config.Config) {
 	vic.cfg = cfg
+	db := socket.GetDisplayBuffer()
+	vic.core = NewCore(socket)
+	vic.collisions = NewCollisions(vic.core)
+	vic.graphics = NewGraphics(vic.core, vic.collisions, db)
+	vic.sprites = NewSprites(vic.core, vic.collisions, db)
+	vic.borders = NewBorder(vic.core, db, 13)
+	vic.cycle = cycleFirst
+	vic.vBlank = 0
+	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)
 	vic.core.Setup()
 	vic.graphics.Setup()
 	vic.sprites.Setup()
 
 	//TODO NTSC / PAL
+	vic.cycles = make([]func(), cycleLast+1)
 	vic.cycles[1] = vic.cycle1
 	vic.cycles[2] = vic.cycle2
 	vic.cycles[3] = vic.cycle3

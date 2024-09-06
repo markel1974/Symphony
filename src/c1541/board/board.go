@@ -17,6 +17,8 @@ const (
 	intrIrqVIA2Bit = 1
 )
 
+const baseId = "c1541"
+
 type Board struct {
 	pic          *mos6510.Pic
 	cpu          *mos6510.CPU
@@ -24,6 +26,7 @@ type Board struct {
 	quartz       *quartz.Quartz
 	via1         *mos6522.Via
 	via2         *mos6522.Via
+	cpuSocket    *CPUSocket
 	via1Socket   *Via1Socket
 	via2Socket   *Via2Socket
 	banks        *banks.Banks
@@ -42,6 +45,7 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string)
 		filePath:     opts,
 		deviceNumber: deviceNumber,
 		ledChanged:   signals.NewSignalUint32(),
+		cpuSocket:    nil,
 		via1Socket:   nil,
 		via2Socket:   nil,
 		pic:          nil,
@@ -59,18 +63,20 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.banks = banks.New()
 	m.quartz = quartz.NewQuartz()
 	m.pic = mos6510.NewPic()
-	m.cpu = mos6510.NewCPU("c1541")
+	m.cpu = mos6510.NewCPU(baseId)
 	m.mec = mechanic.NewMechanic()
 	m.mec.Setup(m.filePath)
-	m.via1 = mos6522.NewVia("via1")
-	m.via2 = mos6522.NewVia("via2")
+	m.via1 = mos6522.NewVia(baseId + "_via1")
+	m.via2 = mos6522.NewVia(baseId + "_via2")
+	m.cpuSocket = NewCPUSocket()
 	m.via1Socket = NewVia1Socket(m, intrIrqVIA1Bit)
 	m.via2Socket = NewVia2Socket(m, intrIrqVIA2Bit)
 	m.via1.Setup(m.via1Socket)
 	m.via2.Setup(m.via2Socket)
 	m.banks.Setup(m.via1, m.via2, cfg)
 	m.pic.Setup(m.quartz)
-	m.cpu.Setup(m.pic, m.banks)
+	m.cpuSocket.Setup(m)
+	m.cpu.Setup(m.cpuSocket)
 	m.cpu.SetOverflowBranch(m.via2.ByteReady)
 }
 

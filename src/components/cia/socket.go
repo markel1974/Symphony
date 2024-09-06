@@ -8,4 +8,7 @@ type ISocket interface {
 	WritePortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
 	WriteDdrA(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
 	WriteDdrB(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
+
+	IRQTrigger()
+	IRQClear()
 }

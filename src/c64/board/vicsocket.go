@@ -7,11 +7,13 @@ type VicSocket struct {
 	intrId uint32
 }
 
-func NewVicSocket(board *Board, intrId uint32) *VicSocket {
-	return &VicSocket{
-		board:  board,
-		intrId: intrId,
-	}
+func NewVicSocket() *VicSocket {
+	return &VicSocket{}
+}
+
+func (v *VicSocket) Setup(board *Board, intrId uint32) {
+	v.board = board
+	v.intrId = intrId
 }
 
 func (v *VicSocket) Cycle() uint64 {

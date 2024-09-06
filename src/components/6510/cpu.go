@@ -19,8 +19,8 @@ import (
 
 type CPU struct {
 	id             string
-	banks          ISocketBanks
-	pic            ISocketPic
+	banks          IBanks
+	pic            IPic
 	nFlag          uint8  // Negative flag
 	zFlag          uint8  // Zero flag
 	vFlag          uint8  // Overflow flag
@@ -50,9 +50,9 @@ func NewCPU(id string) *CPU {
 	return cpu
 }
 
-func (cpu *CPU) Setup(pic ISocketPic, banks ISocketBanks) {
-	cpu.pic = pic
-	cpu.banks = banks
+func (cpu *CPU) Setup(socket ISocket) {
+	cpu.pic = socket.GetPic()
+	cpu.banks = socket.GetBanks()
 }
 
 func (cpu *CPU) Reset() {

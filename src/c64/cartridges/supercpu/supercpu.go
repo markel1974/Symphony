@@ -10,20 +10,22 @@ import (
 const Id = "SCPU"
 
 type SuperCPU struct {
-	id     string
-	board  icartridge.IExpansion
-	pic    *mos6510.Pic
-	cpu    *mos6510.CPU
-	quartz *quartz.Quartz
+	id        string
+	board     icartridge.IExpansion
+	cpuSocket *CPUSocket
+	pic       *mos6510.Pic
+	cpu       *mos6510.CPU
+	quartz    *quartz.Quartz
 }
 
 func New() icartridge.ICartridge {
 	r := &SuperCPU{
-		id:     "",
-		board:  nil,
-		pic:    nil,
-		cpu:    nil,
-		quartz: nil,
+		id:        "",
+		board:     nil,
+		cpuSocket: nil,
+		pic:       nil,
+		cpu:       nil,
+		quartz:    nil,
 	}
 	return r
 }
@@ -46,8 +48,11 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 
 	s.pic.Setup(s.quartz)
 
+	s.cpuSocket = NewCPUSocket()
 	s.cpu = mos6510.NewCPU("superCpu")
-	s.cpu.Setup(s.pic, board)
+
+	s.cpuSocket.Setup(s)
+	s.cpu.Setup(s.cpuSocket)
 
 	s.board.IRQTriggerBind(s.pic.TriggerIRQ)
 	s.board.IRQClearBind(s.pic.ClearIRQ)

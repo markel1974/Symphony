@@ -1,30 +1,23 @@
 package board
 
-import (
-	"github.com/markel1974/c64emu/src/c64/keyboard"
-	"github.com/markel1974/c64emu/src/signals"
-)
-
 type CIA1Socket struct {
-	signalLightPenTrigger *signals.Signal
-	prevLPState           uint8    // Previous state of LP line (bit 4
-	keyMatrix             [8]uint8 // C64 keyboard matrix, 1 bit/key (0: key down, 1: key up)
-	revMatrix             [8]uint8 // Reversed keyboard matrix
-	joy1                  uint8    // Joystick 1 AND value
-	joy2                  uint8    // Joystick 2 AND value
-	keys                  *keyboard.Keyboard
+	board       *Board
+	intrId      uint32
+	prevLPState uint8    // Previous state of LP line (bit 4
+	keyMatrix   [8]uint8 // C64 keyboard matrix, 1 bit/key (0: key down, 1: key up)
+	revMatrix   [8]uint8 // Reversed keyboard matrix
+	joy1        uint8    // Joystick 1 AND value
+	joy2        uint8    // Joystick 2 AND value
 }
 
 func NewCIA1Socket() *CIA1Socket {
-	c := &CIA1Socket{
-		signalLightPenTrigger: signals.NewSignal(),
-	}
+	c := &CIA1Socket{}
 	return c
 }
 
-func (w *CIA1Socket) Setup(keys *keyboard.Keyboard, fn func()) {
-	w.keys = keys
-	w.signalLightPenTrigger.Bind(fn)
+func (w *CIA1Socket) Setup(board *Board, intrId uint32) {
+	w.board = board
+	w.intrId = intrId
 }
 
 func (w *CIA1Socket) Reset() {
@@ -117,19 +110,19 @@ func (w *CIA1Socket) WriteDdrB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
 
 func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
 	if ((prB | ^ddrB) & 0x10) != w.prevLPState {
-		w.signalLightPenTrigger.Emit()
+		w.board.vic.LightPenTrigger() // signalLightPenTrigger.Emit()
 	}
 	w.prevLPState = (prB | ^ddrB) & 0x10
 }
 
 func (w *CIA1Socket) updateInputs() {
-	if joy1, ok := w.keys.PollJoystick1(); ok {
+	if joy1, ok := w.board.keys.PollJoystick1(); ok {
 		w.joy1 = joy1
 	}
-	if joy2, ok := w.keys.PollJoystick2(); ok {
+	if joy2, ok := w.board.keys.PollJoystick2(); ok {
 		w.joy2 = joy2
 	}
-	if keyM, revM, pressed, shifted, ok := w.keys.PollKeyboard(); ok {
+	if keyM, revM, pressed, shifted, ok := w.board.keys.PollKeyboard(); ok {
 		if pressed {
 			if shifted {
 				w.keyMatrix[6] &= 0xef
@@ -146,4 +139,12 @@ func (w *CIA1Socket) updateInputs() {
 			w.revMatrix[revM] |= 1 << keyM
 		}
 	}
+}
+
+func (w *CIA1Socket) IRQTrigger() {
+	w.board.irqTriggerSlot(w.intrId)
+}
+
+func (w *CIA1Socket) IRQClear() {
+	w.board.irqClearSlot(w.intrId)
 }

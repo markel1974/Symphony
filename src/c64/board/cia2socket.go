@@ -1,25 +1,18 @@
 package board
 
-import (
-	"github.com/markel1974/c64emu/src/c64/iec"
-	"github.com/markel1974/c64emu/src/signals"
-)
-
 type CIA2Socket struct {
-	bus             *iec.IEC
-	signalChangedVA *signals.SignalByte
+	board  *Board
+	intrId uint32
 }
 
 func NewCIA2Socket() *CIA2Socket {
-	c := &CIA2Socket{
-		signalChangedVA: signals.NewSignalByte(),
-	}
+	c := &CIA2Socket{}
 	return c
 }
 
-func (w *CIA2Socket) Setup(bus *iec.IEC, fn func(uint8)) {
-	w.bus = bus
-	w.signalChangedVA.Bind(fn)
+func (w *CIA2Socket) Setup(board *Board, intrId uint32) {
+	w.board = board
+	w.intrId = intrId
 }
 
 func (w *CIA2Socket) Reset() {
@@ -27,7 +20,7 @@ func (w *CIA2Socket) Reset() {
 }
 
 func (w *CIA2Socket) ReadPortA(prA uint8, ddrA uint8, _ uint8, _ uint8) uint8 {
-	data := w.bus.CpuRead()
+	data := w.board.iec.CpuRead()
 	ret := ((prA | (^ddrA)) & 0x3f) | data
 	return ret
 }
@@ -39,7 +32,7 @@ func (w *CIA2Socket) ReadPortB(_ uint8, _ uint8, prB uint8, ddrB uint8) uint8 {
 
 func (w *CIA2Socket) WritePortA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
 	w.updateVA(prA, ddrA)
-	w.bus.CpuWrite(prA)
+	w.board.iec.CpuWrite(prA)
 }
 
 func (w *CIA2Socket) WritePortB(_ uint8, _ uint8, _ uint8, _ uint8) {
@@ -63,5 +56,13 @@ func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 	//%10, 2: Bank 1: $4000-$7FFF, 16384-32767
 	//%11, 3: Bank 0: $0000-$3FFF, 0-16383 (standard)
 	va := (^(prA | (^ddrA))) & 3
-	w.signalChangedVA.Emit(va)
+	w.board.vic.ChangedVA(va)
+}
+
+func (w *CIA2Socket) IRQTrigger() {
+	w.board.pic.TriggerNMI()
+}
+
+func (w *CIA2Socket) IRQClear() {
+	w.board.pic.ClearNMI()
 }

@@ -1,9 +1,5 @@
 package mos6526
 
-import (
-	"github.com/markel1974/c64emu/src/signals"
-)
-
 const (
 	IRQUnderflowTimerA = 0x1
 	IRQUnderflowTimerB = 0x2
@@ -16,42 +12,34 @@ const (
 //https://emudev.de/q00-c64/cias-timers-keyboard-and-more/
 
 type CIA struct {
-	id               string
-	intrId           uint32
-	prA              uint8
-	prB              uint8
-	ddrA             uint8
-	ddrB             uint8
-	sdr              uint8
-	icr              uint8 // Pending interrupts
-	irqMask          uint8 // Enabled interrupts
-	timerAIrq        bool  // Flag: Trigger Timer A IRQ in next cycle
-	timerBIrq        bool  // Flag: Trigger Timer B IRQ in next cycle
-	signalIRQTrigger *signals.SignalUint32
-	signalIRQClear   *signals.SignalUint32
-	tod              *TOD
-	timerA           *Timer
-	timerB           *Timer
-	conn             ISocket
+	id        string
+	prA       uint8
+	prB       uint8
+	ddrA      uint8
+	ddrB      uint8
+	sdr       uint8
+	icr       uint8 // Pending interrupts
+	irqMask   uint8 // Enabled interrupts
+	timerAIrq bool  // Flag: Trigger Timer A IRQ in next cycle
+	timerBIrq bool  // Flag: Trigger Timer B IRQ in next cycle
+	tod       *TOD
+	timerA    *Timer
+	timerB    *Timer
+	socket    ISocket
 }
 
-func NewCIA(id string, intrId uint32) *CIA {
+func NewCIA(id string) *CIA {
 	m := &CIA{
-		id:               id,
-		intrId:           intrId,
-		signalIRQTrigger: signals.NewSignalUint32(),
-		signalIRQClear:   signals.NewSignalUint32(),
-		tod:              NewTOD(id + "_TOD"),
-		timerA:           NewTimer(id + "_TIMER_A"),
-		timerB:           NewTimer(id + "_TIMER_B"),
+		id:     id,
+		tod:    NewTOD(id + "_TOD"),
+		timerA: NewTimer(id + "_TIMER_A"),
+		timerB: NewTimer(id + "_TIMER_B"),
 	}
 	return m
 }
 
-func (m *CIA) Setup(conn ISocket, trigger func(uint32), clear func(uint32)) {
-	m.conn = conn
-	m.signalIRQTrigger.Bind(trigger)
-	m.signalIRQClear.Bind(clear)
+func (m *CIA) Setup(conn ISocket) {
+	m.socket = conn
 }
 
 func (m *CIA) Emulate(vBlank bool) {
@@ -98,16 +86,16 @@ func (m *CIA) Reset() {
 	m.timerA.Reset()
 	m.timerB.Reset()
 	m.tod.Reset()
-	m.conn.Reset()
+	m.socket.Reset()
 }
 
 func (m *CIA) ReadRegister(addr uint16) uint8 {
 	reg := addr & 0x0f
 	switch reg {
 	case 0x00:
-		return m.conn.ReadPortA(m.prA, m.ddrA, m.prB, m.ddrB)
+		return m.socket.ReadPortA(m.prA, m.ddrA, m.prB, m.ddrB)
 	case 0x01:
-		ret := m.conn.ReadPortB(m.prA, m.ddrA, m.prB, m.ddrB)
+		ret := m.socket.ReadPortB(m.prA, m.ddrA, m.prB, m.ddrB)
 		// TA/TB output to PB enabled
 		if m.timerA.HasPBOn() {
 			if m.timerA.ToggleModeApply(m.timerAIrq) {
@@ -150,7 +138,7 @@ func (m *CIA) ReadRegister(addr uint16) uint8 {
 		icr := m.icr
 		m.icr = 0
 		if icr != 0 {
-			m.signalIRQClear.Emit(m.intrId)
+			m.socket.IRQClear()
 		}
 		return icr
 	case 0x0e:
@@ -166,16 +154,16 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	switch reg {
 	case 0x00:
 		m.prA = data
-		m.conn.WritePortA(m.prA, m.ddrA, m.prB, m.ddrB)
+		m.socket.WritePortA(m.prA, m.ddrA, m.prB, m.ddrB)
 	case 0x01:
 		m.prB = data
-		m.conn.WritePortB(m.prA, m.ddrA, m.prB, m.ddrB)
+		m.socket.WritePortB(m.prA, m.ddrA, m.prB, m.ddrB)
 	case 0x02:
 		m.ddrA = data
-		m.conn.WriteDdrA(m.prA, m.ddrA, m.prB, m.ddrB)
+		m.socket.WriteDdrA(m.prA, m.ddrA, m.prB, m.ddrB)
 	case 0x03:
 		m.ddrB = data
-		m.conn.WriteDdrB(m.prA, m.ddrA, m.prB, m.ddrB)
+		m.socket.WriteDdrB(m.prA, m.ddrA, m.prB, m.ddrB)
 	case 0x04:
 		m.timerA.SetTimerLow(data)
 	case 0x05:
@@ -244,6 +232,6 @@ func (m *CIA) triggerIrq() {
 	mask := m.irqMask & 0x1f
 	if (m.icr & mask) != 0 {
 		m.icr |= IRQOccurred
-		m.signalIRQTrigger.Emit(m.intrId)
+		m.socket.IRQTrigger()
 	}
 }

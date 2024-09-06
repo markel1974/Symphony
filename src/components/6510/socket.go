@@ -1,11 +1,11 @@
 package mos6510
 
-type ISocketBanks interface {
+type IBanks interface {
 	Read(uint16) uint8
 	Write(uint16, uint8)
 }
 
-type ISocketPic interface {
+type IPic interface {
 	Reset()
 	VerifyIrq(uint8) uint8
 	ClearOPFlags()
@@ -14,4 +14,9 @@ type ISocketPic interface {
 	SetOpFlagIrqDisabled()
 	SetOpFlagIrqEnabled()
 	SetOpFlagIntDelayed()
+}
+
+type ISocket interface {
+	GetBanks() IBanks
+	GetPic() IPic
 }

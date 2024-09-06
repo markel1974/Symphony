@@ -26,6 +26,8 @@ const (
 	intrIrqExpansionBit = 3
 )
 
+const baseId = "c64"
+
 const (
 // PhiIdle = PhiMode(0)
 // Phi1    = PhiMode(1)
@@ -43,6 +45,8 @@ type Board struct {
 	cia1Socket   *CIA1Socket
 	cia2Socket   *CIA2Socket
 	vicSocket    *VicSocket
+	sidSocket    *SidSocket
+	cpuSocket    *CPUSocket
 	pic          *mos6510.Pic
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
@@ -53,6 +57,8 @@ type Board struct {
 	dmaLow       bool
 	irqTrigger   *signals.SignalUint32
 	irqClear     *signals.SignalUint32
+	vBlank       bool
+	lastVicCycle bool
 	//phiMode    PhiMode
 }
 
@@ -74,6 +80,8 @@ func NewBoard(db mos6569.IDisplayBuffer) *Board {
 		banks:        nil,
 		irqTrigger:   nil,
 		irqClear:     nil,
+		vBlank:       false,
+		lastVicCycle: false,
 		//phiMode:    PhiIdle,
 	}
 	return b
@@ -88,40 +96,36 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
-	s.vicSocket = NewVicSocket(s, intrIrqVicBit)
+	s.cpuSocket = NewCPUSocket()
+	s.vicSocket = NewVicSocket()
+	s.sidSocket = NewSidSocket()
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 
 	s.pic = mos6510.NewPic()
 	s.iec = iec.NewIEC()
-	s.cpu = mos6510.NewCPU("c64")
-	s.vic = mos6569.NewVIC(s.vicSocket)
-	s.sid = mos6581.NewSID()
-
-	s.cia1 = mos6526.NewCIA("cia1", intrIrqCia1Bit)
-	s.cia2 = mos6526.NewCIA("cia2", intrIrqCia2Bit) //Unused - Emit NMI
+	s.cpu = mos6510.NewCPU(baseId + "_cpu")
+	s.vic = mos6569.NewVIC(baseId + "_vic")
+	s.sid = mos6581.NewSID(baseId + "_sid")
+	s.cia1 = mos6526.NewCIA(baseId + "_cia1")
+	s.cia2 = mos6526.NewCIA(baseId + "_cia2")
 	s.keys = keyboard.NewKeyboard()
 	s.banks = banks.NewBanks()
 
 	s.pic.Setup(s.quartz)
 	s.iec.Setup(cfg)
-	s.cpu.Setup(s.pic, s.banks)
-
-	s.vic.Setup(cfg)
-
-	s.sid.Setup(cfg)
-
-	s.cia1Socket.Setup(s.keys, s.vic.LightPenTrigger)
-	s.cia2Socket.Setup(s.iec, s.vic.ChangedVA)
-	s.cia1.Setup(s.cia1Socket, s.irqTriggerSlot, s.irqClearSlot)
-	s.cia2.Setup(s.cia2Socket, func(_ uint32) { s.pic.TriggerNMI() }, func(_ uint32) { s.pic.ClearNMI() })
-
+	s.cpuSocket.Setup(s)
+	s.cpu.Setup(s.cpuSocket)
+	s.vicSocket.Setup(s, intrIrqVicBit)
+	s.vic.Setup(s.vicSocket, cfg)
+	s.sidSocket.Setup(s)
+	s.sid.Setup(s.sidSocket, cfg)
+	s.cia1Socket.Setup(s, intrIrqCia1Bit)
+	s.cia1.Setup(s.cia1Socket)
+	s.cia2Socket.Setup(s, intrIrqCia2Bit)
+	s.cia2.Setup(s.cia2Socket)
 	s.cartMan.Setup(s, cfg)
 	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, cfg)
-
-	//TODO TUTTE LE CONNESSIONI CON PIN DEVONO ESSERE EFFETTUATE TRAMITE SIGNAL - SLOT
-	//test := signals.NewSignalByte()
-	//test.Bind(s.sid.SetPotXSlot)
 
 	if !s.cfg.GetDisableCartridgeAutostart() {
 		for _, cartName := range s.cfg.GetCartridges() {
@@ -190,32 +194,23 @@ func (s *Board) configChanged() {
 
 func (s *Board) Emulate() bool {
 	//s.phiMode = Phi1
-	vBlank, lastVicCycle := s.vic.Emulate()
+	s.vBlank, s.lastVicCycle = s.vic.Emulate()
 	//s.phiMode = Phi2
-	if vBlank {
-		//TODO
-		//sidCounter := s.sid.ResetHistory()
-		_ = s.sid.ResetHistory()
-		//s.cia1.Update()
-		//s.cia2.Update()
-		//if bytes.Contains(s.vic.GetText(), []byte("READY")) {
-		//	fmt.Println("READY!!!")
-		//}
-	}
-	if lastVicCycle {
-		s.sid.Emulate()
-	}
-	//s.cia1.CheckIRQs()
-	//s.cia2.CheckIRQs()
-	s.cia1.Emulate(vBlank)
-	s.cia2.Emulate(vBlank)
-
-	s.cpu.Emulate()
+	//if vBlank {
+	//TODO
+	//if bytes.Contains(s.vic.GetText(), []byte("READY")) {
+	//	fmt.Println("READY!!!")
+	//}
+	//}
+	s.sid.Emulate(s.vBlank, s.lastVicCycle)
+	s.cia1.Emulate(s.vBlank)
+	s.cia2.Emulate(s.vBlank)
 	s.cartMan.Emulate()
 	s.iec.Emulate()
+	s.cpu.Emulate()
 	s.quartz.AddCycle()
 	//s.phiMode = PhiIdle
-	return vBlank
+	return s.vBlank
 }
 
 func (s *Board) readySlot() {

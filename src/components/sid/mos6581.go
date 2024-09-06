@@ -5,14 +5,17 @@ import (
 )
 
 type SID struct {
+	id               string
+	socket           ISocket
 	regs             []uint8
 	regsHistory      [][]uint8
 	regsHistoryIndex uint32
 	cfg              *config.Config
 }
 
-func NewSID() *SID {
+func NewSID(id string) *SID {
 	s := &SID{
+		id:               id,
 		regs:             make([]uint8, RegisterCount),
 		regsHistory:      make([][]uint8, RegisterHistory),
 		regsHistoryIndex: 0,
@@ -24,7 +27,8 @@ func NewSID() *SID {
 	return s
 }
 
-func (sid *SID) Setup(cfg *config.Config) {
+func (sid *SID) Setup(socket ISocket, cfg *config.Config) {
+	sid.socket = socket
 	sid.cfg = cfg
 	sid.cfg.Bind(sid.configChanged)
 }
@@ -65,10 +69,16 @@ func (sid *SID) WriteRegister(addr uint16, data uint8) {
 	sid.regs[addr] = data
 }
 
-func (sid *SID) Emulate() {
-	if sid.regsHistoryIndex < RegisterHistory {
-		copy(sid.regsHistory[sid.regsHistoryIndex], sid.regs)
-		sid.regsHistoryIndex++
+func (sid *SID) Emulate(vBlank bool, lastVicCycle bool) {
+	if vBlank {
+		//sidCounter := s.sid.ResetHistory()
+		_ = sid.ResetHistory()
+	}
+	if lastVicCycle {
+		if sid.regsHistoryIndex < RegisterHistory {
+			copy(sid.regsHistory[sid.regsHistoryIndex], sid.regs)
+			sid.regsHistoryIndex++
+		}
 	}
 }
 
