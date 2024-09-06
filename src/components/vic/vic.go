@@ -1,7 +1,6 @@
 package mos6569
 
 import (
-	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/config"
 )
 
@@ -27,9 +26,10 @@ type VIC struct {
 	cycles         []func()
 }
 
-func NewVIC(db IDisplayBuffer, intrId uint32) *VIC {
-	core := NewCore(intrId)
+func NewVIC(socket ISocket) *VIC {
+	core := NewCore(socket)
 	collisions := NewCollisions(core)
+	db := socket.GetDisplayBuffer()
 	vic := &VIC{
 		core:       core,
 		collisions: collisions,
@@ -45,10 +45,10 @@ func NewVIC(db IDisplayBuffer, intrId uint32) *VIC {
 	return vic
 }
 
-func (vic *VIC) Setup(quartz *quartz.Quartz, banks IBanks, cfg *config.Config) {
+func (vic *VIC) Setup(cfg *config.Config) {
 	vic.cfg = cfg
 	vic.cfg.Bind(vic.configChanged)
-	vic.core.Setup(quartz, banks)
+	vic.core.Setup()
 	vic.graphics.Setup()
 	vic.sprites.Setup()
 
@@ -95,26 +95,6 @@ func (vic *VIC) GetText() []byte {
 
 func (vic *VIC) GetLastByte() uint8 {
 	return vic.core.lastByte
-}
-
-func (vic *VIC) SignalBALowBind(fn func(bool)) {
-	vic.core.signalBALow.Bind(fn)
-}
-
-func (vic *VIC) SignalAECLowBind(fn func(bool)) {
-	vic.core.signalAECLow.Bind(fn)
-}
-
-func (vic *VIC) SignalReadyBind(fn func()) {
-	vic.core.signalReady.Bind(fn)
-}
-
-func (vic *VIC) SignalTriggerIRQBind(fn func(uint32)) {
-	vic.core.signalIRQTrigger.Bind(fn)
-}
-
-func (vic *VIC) SignalClearIRQBind(fn func(uint32)) {
-	vic.core.signalIRQClear.Bind(fn)
 }
 
 func (vic *VIC) GetBALow() bool {

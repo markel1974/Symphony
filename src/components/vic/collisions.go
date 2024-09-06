@@ -56,7 +56,7 @@ func (c *Collisions) Detect() {
 		c.core.irqFlag |= 0x04
 		if (c.core.irqMask & 0x04) != 0 {
 			c.core.irqFlag |= 0x80
-			c.core.signalIRQTrigger.Emit(c.core.intrId)
+			c.core.socket.IRQTrigger()
 		}
 	}
 
@@ -67,7 +67,7 @@ func (c *Collisions) Detect() {
 		c.core.irqFlag |= 0x02
 		if c.core.irqMask&0x02 != 0 {
 			c.core.irqFlag |= 0x80
-			c.core.signalIRQTrigger.Emit(c.core.intrId)
+			c.core.socket.IRQTrigger()
 		}
 	}
 }

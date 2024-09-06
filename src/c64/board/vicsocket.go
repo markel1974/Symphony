@@ -1,0 +1,47 @@
+package board
+
+import mos6569 "github.com/markel1974/c64emu/src/components/vic"
+
+type VicSocket struct {
+	board  *Board
+	intrId uint32
+}
+
+func NewVicSocket(board *Board, intrId uint32) *VicSocket {
+	return &VicSocket{
+		board:  board,
+		intrId: intrId,
+	}
+}
+
+func (v *VicSocket) Cycle() uint64 {
+	return v.board.quartz.Cycle()
+}
+
+func (v *VicSocket) GetDisplayBuffer() mos6569.IDisplayBuffer {
+	return v.board.db
+}
+
+func (v *VicSocket) GetBanks() mos6569.IBanks {
+	return v.board.banks
+}
+
+func (v *VicSocket) Ready() {
+	v.board.readySlot()
+}
+
+func (v *VicSocket) IRQTrigger() {
+	v.board.irqTriggerSlot(v.intrId)
+}
+
+func (v *VicSocket) IRQClear() {
+	v.board.irqClearSlot(v.intrId)
+}
+
+func (v *VicSocket) BALow(d bool) {
+	v.board.rdyLowSlot(d)
+}
+
+func (v *VicSocket) AECLow(d bool) {
+	v.board.aecLowSlot(d)
+}

@@ -40,8 +40,9 @@ type Board struct {
 	sid          *mos6581.SID
 	cia1         *mos6526.CIA
 	cia2         *mos6526.CIA
-	cia1wiring   *CIA1Socket
-	cia2wiring   *CIA2Socket
+	cia1Socket   *CIA1Socket
+	cia2Socket   *CIA2Socket
+	vicSocket    *VicSocket
 	pic          *mos6510.Pic
 	iec          *iec.IEC
 	keys         *keyboard.Keyboard
@@ -87,13 +88,15 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 
+	s.vicSocket = NewVicSocket(s, intrIrqVicBit)
+	s.cia1Socket = NewCIA1Socket()
+	s.cia2Socket = NewCIA2Socket()
+
 	s.pic = mos6510.NewPic()
 	s.iec = iec.NewIEC()
 	s.cpu = mos6510.NewCPU("c64")
-	s.vic = mos6569.NewVIC(s.db, intrIrqVicBit)
+	s.vic = mos6569.NewVIC(s.vicSocket)
 	s.sid = mos6581.NewSID()
-	s.cia1wiring = NewCIA1Socket()
-	s.cia2wiring = NewCIA2Socket()
 
 	s.cia1 = mos6526.NewCIA("cia1", intrIrqCia1Bit)
 	s.cia2 = mos6526.NewCIA("cia2", intrIrqCia2Bit) //Unused - Emit NMI
@@ -104,19 +107,14 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.iec.Setup(cfg)
 	s.cpu.Setup(s.pic, s.banks)
 
-	s.vic.Setup(s.quartz, s.banks, cfg)
-	s.vic.SignalReadyBind(s.readySlot)
-	s.vic.SignalTriggerIRQBind(s.irqTriggerSlot)
-	s.vic.SignalClearIRQBind(s.irqClearSlot)
-	s.vic.SignalBALowBind(s.rdyLowSlot)
-	s.vic.SignalAECLowBind(s.aecLowSlot)
+	s.vic.Setup(cfg)
 
 	s.sid.Setup(cfg)
 
-	s.cia1wiring.Setup(s.keys, s.vic.LightPenTrigger)
-	s.cia2wiring.Setup(s.iec, s.vic.ChangedVA)
-	s.cia1.Setup(s.cia1wiring, s.irqTriggerSlot, s.irqClearSlot)
-	s.cia2.Setup(s.cia2wiring, func(_ uint32) { s.pic.TriggerNMI() }, func(_ uint32) { s.pic.ClearNMI() })
+	s.cia1Socket.Setup(s.keys, s.vic.LightPenTrigger)
+	s.cia2Socket.Setup(s.iec, s.vic.ChangedVA)
+	s.cia1.Setup(s.cia1Socket, s.irqTriggerSlot, s.irqClearSlot)
+	s.cia2.Setup(s.cia2Socket, func(_ uint32) { s.pic.TriggerNMI() }, func(_ uint32) { s.pic.ClearNMI() })
 
 	s.cartMan.Setup(s, cfg)
 	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, cfg)

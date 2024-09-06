@@ -1,10 +1,5 @@
 package mos6569
 
-import (
-	"github.com/markel1974/c64emu/src/components/quartz"
-	"github.com/markel1974/c64emu/src/signals"
-)
-
 // https://www.cebix.net/VIC-Article.txt
 // https://www.oxyron.de/html/registers_vic2.html
 
@@ -15,13 +10,7 @@ const (
 )
 
 type Core struct {
-	intrId           uint32
-	quartz           *quartz.Quartz
-	signalIRQTrigger *signals.SignalUint32
-	signalIRQClear   *signals.SignalUint32
-	signalReady      *signals.Signal
-	signalBALow      *signals.SignalBool
-	signalAECLow     *signals.SignalBool
+	socket           ISocket
 	banks            IBanks
 	mXx              []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
 	mXy              []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
@@ -81,18 +70,13 @@ type Core struct {
 	lastByte uint8 // Last byte read by VIC
 }
 
-func NewCore(intrId uint32) *Core {
+func NewCore(socket ISocket) *Core {
 	colors := make([]uint8, 256)
 	for i := range colors {
 		colors[i] = (uint8)(i & 0x0f)
 	}
 	c := &Core{
-		intrId:           intrId,
-		quartz:           nil,
-		signalIRQTrigger: signals.NewSignalUint32(),
-		signalIRQClear:   signals.NewSignalUint32(),
-		signalBALow:      signals.NewSignalBool(),
-		signalAECLow:     signals.NewSignalBool(),
+		socket:           socket,
 		banks:            nil,
 		mXx:              make([]uint16, SpriteNumber),
 		mXy:              make([]uint8, SpriteNumber),
@@ -148,7 +132,6 @@ func NewCore(intrId uint32) *Core {
 		baLowFirstCycle:  0,
 		aecLow:           false,
 		ready:            false,
-		signalReady:      signals.NewSignal(),
 		lastByte:         0,
 	}
 	// Preset colors to black
@@ -158,9 +141,8 @@ func NewCore(intrId uint32) *Core {
 	return c
 }
 
-func (vic *Core) Setup(quartz *quartz.Quartz, banks IBanks) {
-	vic.banks = banks
-	vic.quartz = quartz
+func (vic *Core) Setup() {
+	vic.banks = vic.socket.GetBanks()
 }
 
 func (vic *Core) GetRasterY() uint16 {
@@ -194,8 +176,8 @@ func (vic *Core) SetBALow() {
 		return
 	}
 	vic.baLow = true
-	vic.baLowFirstCycle = vic.quartz.Cycle()
-	vic.signalBALow.Emit(true)
+	vic.baLowFirstCycle = vic.socket.Cycle()
+	vic.socket.BALow(true)
 }
 
 func (vic *Core) GetBALow() bool {
@@ -210,20 +192,20 @@ func (vic *Core) ClearBALow() {
 	if vic.baLow {
 		vic.baLow = false
 		vic.baLowFirstCycle = 0
-		vic.signalBALow.Emit(vic.baLow)
+		vic.socket.BALow(vic.baLow)
 	}
 	if vic.aecLow {
 		//vic.aecLowClearNextCycle = true
 		vic.aecLow = false
-		vic.signalAECLow.Emit(vic.aecLow)
+		vic.socket.AECLow(vic.aecLow)
 	}
 }
 
 func (vic *Core) TryAcquireAEC() {
 	if vic.baLow && !vic.aecLow {
-		if dist := vic.quartz.Cycle() - vic.baLowFirstCycle; dist >= 3 {
+		if dist := vic.socket.Cycle() - vic.baLowFirstCycle; dist >= 3 {
 			vic.aecLow = true
-			vic.signalAECLow.Emit(vic.aecLow)
+			vic.socket.AECLow(vic.aecLow)
 		}
 	}
 }
@@ -265,7 +247,7 @@ func (vic *Core) LightPenTrigger() {
 		vic.irqFlag |= flagLightPenBit
 		if (vic.irqMask & flagLightPenBit) != 0 {
 			vic.irqFlag |= flagMasterBit
-			vic.signalIRQTrigger.Emit(vic.intrId)
+			vic.socket.IRQTrigger()
 		}
 	}
 }
@@ -303,7 +285,7 @@ func (vic *Core) rasterIrq() {
 	vic.irqFlag |= flagRasterBit
 	if (vic.irqMask & flagRasterBit) != 0 {
 		vic.irqFlag |= flagMasterBit
-		vic.signalIRQTrigger.Emit(vic.intrId)
+		vic.socket.IRQTrigger()
 	}
 }
 
@@ -345,7 +327,7 @@ func (vic *Core) ReadRegister(addr uint16) uint8 {
 	case 0x19: // IRQ spriteFlags
 		if !vic.ready {
 			vic.ready = true
-			vic.signalReady.Emit()
+			vic.socket.Ready()
 		}
 		return vic.irqFlag | 0x70
 
@@ -454,17 +436,17 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 			// Set master bit if allowed interrupt still pending
 			vic.irqFlag |= flagMasterBit
 		} else {
-			vic.signalIRQClear.Emit(vic.intrId)
+			vic.socket.IRQClear()
 		}
 	case 0x1a: // IRQ mask
 		vic.irqMask = data & 0x0f
 		if (vic.irqFlag & vic.irqMask) != 0 {
 			// Trigger interrupt if pending (now allowed)
 			vic.irqFlag |= flagMasterBit
-			vic.signalIRQTrigger.Emit(vic.intrId)
+			vic.socket.IRQTrigger()
 		} else {
 			vic.irqFlag &= 0x7f
-			vic.signalIRQClear.Emit(vic.intrId)
+			vic.socket.IRQClear()
 		}
 	case 0x1b: // Sprite data priority
 		vic.mdp = data
