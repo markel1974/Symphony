@@ -22,6 +22,7 @@ func (a *Audio) Write(_ []uint32, pos int, samples int) {
 func (a *Audio) Pause() {
 
 }
+
 func (a *Audio) Resume() {
 
 }
