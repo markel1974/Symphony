@@ -6,7 +6,9 @@ func instInit(cpu *CPU) {
 	// https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
 	// Interrupts are only recognized if the RDY line is high
 	if !cpu.rdyLow {
-		switch cpu.pic.VerifyIrq(cpu.iFlag) {
+		opFlag := cpu.opFlags
+		cpu.opFlags = 0
+		switch cpu.pic.VerifyIrq(cpu.iFlag, opFlag) {
 		case 1:
 			cpu.Reset()
 			return
@@ -23,7 +25,6 @@ func instInit(cpu *CPU) {
 		cpu.stop = true
 		return
 	}
-	cpu.pic.ClearOPFlags()
 	cpu.op = cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.next = _modeTable[cpu.op]
@@ -31,6 +32,7 @@ func instInit(cpu *CPU) {
 
 // IRQ
 func instIRQ(cpu *CPU) {
+	//internal operation
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -40,6 +42,7 @@ func instIRQ(cpu *CPU) {
 }
 
 func instIRQ1(cpu *CPU) {
+	//internal operation
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -49,18 +52,21 @@ func instIRQ1(cpu *CPU) {
 }
 
 func instIRQ2(cpu *CPU) {
+	//push return address high byte onto stack
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = instIRQ3
 }
 
 func instIRQ3(cpu *CPU) {
+	//push return address low byte onto stack
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = instIRQ4
 }
 
 func instIRQ4(cpu *CPU) {
+	//push status register onto stack
 	data := cpu.pushFlags(false)
 	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 	cpu.sp--
@@ -69,6 +75,7 @@ func instIRQ4(cpu *CPU) {
 }
 
 func instIRQ5(cpu *CPU) {
+	//get irq vector from $fffe
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -78,6 +85,7 @@ func instIRQ5(cpu *CPU) {
 }
 
 func instIRQ6(cpu *CPU) {
+	//get irq vector from $ffff
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -89,6 +97,7 @@ func instIRQ6(cpu *CPU) {
 
 // NMI
 func instNMI(cpu *CPU) {
+	//internal operation
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -98,6 +107,7 @@ func instNMI(cpu *CPU) {
 }
 
 func instNMI1(cpu *CPU) {
+	//internal operation
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -107,18 +117,21 @@ func instNMI1(cpu *CPU) {
 }
 
 func instNMI2(cpu *CPU) {
+	//push return address high byte onto stack
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = instNMI3
 }
 
 func instNMI3(cpu *CPU) {
+	//push return address low byte onto stack
 	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = instNMI4
 }
 
 func instNMI4(cpu *CPU) {
+	//push status register onto stack
 	data := cpu.pushFlags(false)
 	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
 	cpu.sp--
@@ -127,6 +140,7 @@ func instNMI4(cpu *CPU) {
 }
 
 func instNMI5(cpu *CPU) {
+	//get irq vector from $fffa
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -136,6 +150,7 @@ func instNMI5(cpu *CPU) {
 }
 
 func instNMI6(cpu *CPU) {
+	//get irq vector from $fffb
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1433,9 +1448,9 @@ func instO_PLP2(cpu *CPU) {
 	data := cpu.banks.Read(uint16(cpu.sp) | 0x0100)
 	cpu.popFlags(data)
 	if iFlagPrev == 0 && cpu.iFlag != 0 {
-		cpu.pic.SetOpFlagIrqDisabled()
+		cpu.opFlags |= opFlagIrqDisabled
 	} else if iFlagPrev != 0 && cpu.iFlag == 0 {
-		cpu.pic.SetOpFlagIrqEnabled()
+		cpu.opFlags |= opFlagIrqEnabled
 	}
 	cpu.next = instInit
 }
@@ -1796,7 +1811,7 @@ func instO_BPL(cpu *CPU) {
 
 func instO_BRANCH_NP(cpu *CPU) {
 	// No page crossed
-	cpu.pic.SetOpFlagIntDelayed()
+	cpu.opFlags |= opFlagIntDelayed
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1894,7 +1909,7 @@ func instO_SEI(cpu *CPU) {
 	}
 	cpu.banks.Read(cpu.pc)
 	if cpu.iFlag == 0 {
-		cpu.pic.SetOpFlagIrqDisabled()
+		cpu.opFlags |= opFlagIrqDisabled
 	}
 	cpu.iFlag = 1
 	cpu.next = instInit
@@ -1907,7 +1922,7 @@ func instO_CLI(cpu *CPU) {
 	}
 	cpu.banks.Read(cpu.pc)
 	if cpu.iFlag == 0 {
-		cpu.pic.SetOpFlagIrqEnabled()
+		cpu.opFlags |= opFlagIrqEnabled
 	}
 	cpu.iFlag = 0
 	cpu.next = instInit

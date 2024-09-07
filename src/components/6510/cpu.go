@@ -41,6 +41,7 @@ type CPU struct {
 	rdyLow         bool // current RDY state
 	aecLow         bool // current AEC state
 	overflowBranch func() bool
+	opFlags        uint8
 }
 
 func NewCPU(id string) *CPU {
@@ -56,10 +57,10 @@ func (cpu *CPU) Setup(socket ISocket) {
 }
 
 func (cpu *CPU) Reset() {
-	// Read reset vector
 	cpu.pic.Reset()
-	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8)
+	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8) // Read reset vector
 	cpu.next = instInit
+	cpu.opFlags = 0
 }
 
 // SetOverflowBranch implement 6502c SO (SOB) Pin

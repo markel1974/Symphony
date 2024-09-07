@@ -17,29 +17,25 @@ const (
 	opFlagIntDelayed  = 0x04
 )
 
-//const MinIrqCycleDistance = 32
+// http://6502.org/tutorials/interrupts.html
 
 type Pic struct {
-	//irqCycleDistance uint64
 	quartz        *quartz.Quartz
 	all           bits.Bits
 	irq           bits.Bits
 	firstIrqCycle uint64
 	firstNMICycle uint64
-	//lastIrqCycle     uint64
-	opFlags uint8
+	nmiAck        bool
 }
 
 func NewPic() *Pic {
 	return &Pic{
-		//irqCycleDistance: uint64(irqCycleDistance),
 		quartz:        nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,
-		//lastIrqCycle:     0,
-		all:     0,
-		irq:     0,
-		opFlags: 0,
+		all:           0,
+		irq:           0,
+		nmiAck:        false,
 	}
 }
 
@@ -52,8 +48,7 @@ func (i *Pic) Reset() {
 	i.irq = 0
 	i.firstIrqCycle = 0
 	i.firstNMICycle = 0
-	//i.lastIrqCycle = 0
-	i.opFlags = 0
+	i.nmiAck = false
 }
 
 func (i *Pic) TriggerReset() {
@@ -83,61 +78,45 @@ func (i *Pic) ClearIRQ(intr uint32) {
 	}
 }
 
-//func (i *Pic) HasIRQ() bool {
-//	return i.irq != 0
-//}
-
 func (i *Pic) TriggerNMI() {
-	if !i.all.BitCheck(intrNmiBit) {
-		i.firstNMICycle = i.quartz.Cycle()
+	if i.all.BitCheck(intrNmiBit) {
+		return
 	}
+	i.firstNMICycle = i.quartz.Cycle()
 	i.all.BitSet(intrNmiBit)
 }
 
 func (i *Pic) ClearNMI() {
 	i.all.BitClear(intrNmiBit)
+	i.nmiAck = false
 }
 
 func (i *Pic) HasNMI() bool {
 	return i.all.BitCheck(intrNmiBit)
 }
 
-func (i *Pic) SetOpFlagIrqDisabled() {
-	i.opFlags |= opFlagIrqEnabled
-}
-
-func (i *Pic) SetOpFlagIrqEnabled() {
-	i.opFlags |= opFlagIrqEnabled
-}
-
-func (i *Pic) SetOpFlagIntDelayed() {
-	i.opFlags |= opFlagIntDelayed
-}
-
-func (i *Pic) ClearOPFlags() {
-	i.opFlags = 0
-}
-
-func (i *Pic) VerifyIrq(iFlag uint8) uint8 {
+func (i *Pic) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
+	const minNMIDistance = 2
 	const minIrqDistance = 2
 	if i.all != 0 {
 		if i.all.BitCheck(intrRstBit) {
-			i.opFlags = 0
 			// Edge-triggered
 			i.ClearReset()
 			return 1
-		} else if i.all.BitCheck(intrNmiBit) {
-			if (i.computeDistance(i.firstNMICycle)) >= minIrqDistance {
-				i.opFlags = 0
-				// Edge-triggered
-				i.ClearNMI()
-				return 2
+		}
+		if i.all.BitCheck(intrNmiBit) {
+			if !i.nmiAck {
+				if i.computeDistance(i.firstNMICycle, (opFlags&opFlagIntDelayed) != 0) >= minNMIDistance {
+					// Edge-triggered
+					i.nmiAck = true
+					return 2
+				}
 			}
-		} else if i.all.BitCheck(intrIrqBit) {
-			if ((iFlag == 0) || ((i.opFlags & opFlagIrqDisabled) != 0)) && ((i.opFlags & opFlagIrqEnabled) == 0) {
-				if (i.computeDistance(i.firstIrqCycle)) >= minIrqDistance {
+		}
+		if i.all.BitCheck(intrIrqBit) {
+			if ((iFlag == 0) || ((opFlags & opFlagIrqDisabled) != 0)) && ((opFlags & opFlagIrqEnabled) == 0) {
+				if i.computeDistance(i.firstIrqCycle, (opFlags&opFlagIntDelayed) != 0) >= minIrqDistance {
 					// Level-triggered
-					i.opFlags = 0
 					return 3
 				}
 			}
@@ -146,9 +125,9 @@ func (i *Pic) VerifyIrq(iFlag uint8) uint8 {
 	return 0
 }
 
-func (i *Pic) computeDistance(base uint64) uint64 {
+func (i *Pic) computeDistance(base uint64, hasDelay bool) uint64 {
 	delay := uint64(0)
-	if (i.opFlags & opFlagIntDelayed) != 0 {
+	if hasDelay {
 		delay = 1
 	}
 	cycle := i.quartz.Cycle()

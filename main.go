@@ -22,6 +22,12 @@ import (
 
 // -c "/Users/tinmr305/Downloads/c64carts/thepit.bin"
 
+// -c "/Users/tinmr305/Downloads/c64carts/popeye.bin"
+
+// -c "/Users/tinmr305/Downloads/c64carts/SuperWonderboyInMonsterland_1989_Activision-EF.crt"
+
+// -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/1/defender_of_the_crown.crt"
+
 func main() {
 	var showHelp bool
 	var showVersion bool

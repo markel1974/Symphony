@@ -7,13 +7,9 @@ type IBanks interface {
 
 type IPic interface {
 	Reset()
-	VerifyIrq(uint8) uint8
-	ClearOPFlags()
+	VerifyIrq(uint8, uint8) uint8
 	ClearNMI()
 	HasNMI() bool
-	SetOpFlagIrqDisabled()
-	SetOpFlagIrqEnabled()
-	SetOpFlagIntDelayed()
 }
 
 type ISocket interface {

@@ -174,11 +174,6 @@ func (m *Timer) Emulate(underflowX bool) bool {
 			m.timer = m.timerLatch           // Reload timer
 			m.timerState = timerLoadThenStop // Reload in next cycle
 		} else {
-			const minTimer = 32
-			if m.countMode == 0 && m.timerLatch < minTimer {
-				log.Printf("[Emulate] %s countinuos timerLatch is too low %d, changing to %d", m.id, m.timerLatch, minTimer)
-				m.timerLatch = minTimer
-			}
 			m.timer = m.timerLatch            // Reload timer
 			m.timerState = timerLoadThenCount // Reload in next cycle
 		}
