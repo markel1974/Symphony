@@ -1,9 +1,8 @@
 package mos6581
 
 import (
-	"fmt"
-	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/flag"
+	"log"
 	"math"
 )
 
@@ -65,21 +64,30 @@ type DivisorTableData struct {
 	toOut   int32
 }
 
-type DigitalRender struct {
-	player             IPlayer
+type Builder struct {
+	player       IPlayer
+	rasters      int
+	fragFreq     int // one frag per frame
+	fragSize     int // samples, not bytes
+	fragInterval int // in milliseconds
+	bufferFrags  int // frags the in buffer
+	bufferSize   int // bytes, not samples
+	maxLeadAvg   int // lead average count
+	//regsHistory        [][]uint8
+	//regsHistoryIndex   uint32
 	useFilters         bool
 	triTable           [0x1000 * 2]uint16
 	divisorTableData   []*DivisorTableData
-	volume             uint8                  // Master volume
-	v3Mute             bool                   // Voice 3 muted
-	voice              [3]*DigitalRenderVoice // Data for 3 voices
-	filterType         FilterType             // Filter type
-	filterFreq         uint8                  // SID filter frequency (upper 8 bits)
-	filterRes          uint8                  // Filter resonance (0..15)
-	filterAmpl         float64                // IIR filter input attenuation;
-	d1, d2, g1, g2     float64                // IIR filter coefficients
-	xn1, xn2, yn1, yn2 float64                // IIR filter previous input/output signal
-	resonanceLP        [256]float64           // shortcut for calc_filter
+	volume             uint8        // Master volume
+	v3Mute             bool         // Voice 3 muted
+	voice              [3]*Voice    // Data for 3 voices
+	filterType         FilterType   // Filter type
+	filterFreq         uint8        // SID filter frequency (upper 8 bits)
+	filterRes          uint8        // Filter resonance (0..15)
+	filterAmpl         float64      // IIR filter input attenuation;
+	d1, d2, g1, g2     float64      // IIR filter coefficients
+	xn1, xn2, yn1, yn2 float64      // IIR filter previous input/output signal
+	resonanceLP        [256]float64 // shortcut for calc_filter
 	resonanceHP        [256]float64
 	sampleBuf          [SampleBufSize]uint8 // Buffer for sampled voice
 	sampleInPtr        int                  // Index in sample_buf for writing
@@ -92,16 +100,29 @@ type DigitalRender struct {
 	seed               uint32
 }
 
-func NewDigitalRenderer(sp IPlayer, useFilters bool) *DigitalRender {
-	d := &DigitalRender{
+func NewBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Builder {
+	d := &Builder{
 		player:           sp,
 		useFilters:       useFilters,
 		divisorTableData: nil,
 		seed:             1,
+		//regsHistory:      make([][]uint8, RegisterHistory),
+		//regsHistoryIndex: 0,
 	}
-	d.voice[0] = NewDigitalRenderVoice()
-	d.voice[1] = NewDigitalRenderVoice()
-	d.voice[2] = NewDigitalRenderVoice()
+	//for x := range d.regsHistory {
+	//	d.regsHistory[x] = make([]uint8, RegisterCount)
+	//}
+	d.rasters = rasters
+	d.fragFreq = fragFreq                         // one frag per frame
+	d.fragSize = SampleFreq / d.fragFreq          // samples, not bytes
+	d.fragInterval = 1000 / d.fragFreq            // in milliseconds
+	d.bufferFrags = d.fragFreq                    // frags the in buffer
+	d.bufferSize = 2 * d.fragSize * d.bufferFrags // bytes, not samples
+	d.maxLeadAvg = d.bufferFrags                  // lead average count
+
+	d.voice[0] = NewVoice()
+	d.voice[1] = NewVoice()
+	d.voice[2] = NewVoice()
 	// Link voices together
 	d.voice[0].modBy = d.voice[2]
 	d.voice[1].modBy = d.voice[0]
@@ -123,7 +144,14 @@ func NewDigitalRenderer(sp IPlayer, useFilters bool) *DigitalRender {
 	return d
 }
 
-func (dr *DigitalRender) Reset() {
+func (dr *Builder) Reset() {
+	//for x := range dr.regsHistory {
+	//	for y := range dr.regsHistory[x] {
+	//		dr.regsHistory[x][y] = 0
+	//	}
+	//}
+	//dr.regsHistoryIndex = 0
+
 	dr.volume = 0
 	dr.v3Mute = false
 	for v := 0; v < 3; v++ {
@@ -163,16 +191,16 @@ func (dr *DigitalRender) Reset() {
 	}
 	dr.toOutput = 0
 	dr.divisor = 0
-	dr.soundBuffer = make([]uint32, 2*FragSize)
-	dr.lead = make([]int, MaxLeadAvg)
-	for lIdx := 0; lIdx < MaxLeadAvg; lIdx++ {
+	dr.soundBuffer = make([]uint32, 2*dr.fragSize)
+	dr.lead = make([]int, dr.maxLeadAvg)
+	for lIdx := 0; lIdx < dr.maxLeadAvg; lIdx++ {
 		dr.lead[lIdx] = 0
 	}
 	dr.sbPos = 0
 	dr.leadPos = 0
 }
 
-func (dr *DigitalRender) loadRegister(addr uint16, data uint8) {
+func (dr *Builder) loadRegister(addr uint16, data uint8) {
 	v := addr / 7 // Voice number
 	switch addr {
 	case 0, 7, 14:
@@ -244,7 +272,7 @@ func (dr *DigitalRender) loadRegister(addr uint16, data uint8) {
 	}
 }
 
-func (dr *DigitalRender) calcFilter() {
+func (dr *Builder) calcFilter() {
 	var fr float64
 
 	// Check for some trivial cases
@@ -311,15 +339,17 @@ func (dr *DigitalRender) calcFilter() {
 		dr.d1 = -2.0 * math.Cos(MPi*arg)
 		dr.d2 = 1.0
 		dr.filterAmpl = 0.25 * (1.0 + dr.g1 + dr.g2) * (1.0 + math.Cos(MPi*arg)) / math.Sin(MPi*arg)
+	default:
+		log.Printf("SID FILTER NOT IMPLEMENTED %d\n", dr.filterType)
 	}
 }
 
-func (dr *DigitalRender) noiseRandom() uint8 {
+func (dr *Builder) noiseRandom() uint8 {
 	dr.seed = dr.seed*1103515245 + 12345
 	return (uint8)(dr.seed >> 16)
 }
 
-func (dr *DigitalRender) calcBuffer(buf []uint32) {
+func (dr *Builder) calcBuffer(buf []uint32) {
 	// Get filter coefficients, so the emulator won't change them in the middle of calculations
 	cfAmpl := dr.filterAmpl
 	cd1 := dr.d1
@@ -445,40 +475,55 @@ func (dr *DigitalRender) calcBuffer(buf []uint32) {
 	}
 }
 
-func (dr *DigitalRender) Render(regs []uint8) {
-	for i := uint16(0); i < RegisterCount; i++ {
-		dr.loadRegister(i, regs[i])
+func (dr *Builder) AddToHistory(regs []uint8) {
+	for y := uint16(0); y < uint16(len(regs)); y++ {
+		dr.loadRegister(y, regs[y])
 	}
+
+	//if dr.regsHistoryIndex < RegisterHistory {
+	//	copy(dr.regsHistory[dr.regsHistoryIndex], regs)
+	//	dr.regsHistoryIndex++
+	//}
+}
+
+func (dr *Builder) Render() {
+	//for x := uint32(0); x < dr.regsHistoryIndex; x++ {
+	//	for y := uint16(0); y < uint16(len(dr.regsHistory[x])); y++ {
+	//		dr.loadRegister(y, dr.regsHistory[x][y])
+	//	}
+	//}
+	//dr.regsHistoryIndex = 0
+
 	dr.sampleBuf[dr.sampleInPtr] = dr.volume
 	dr.sampleInPtr = (dr.sampleInPtr + 1) % SampleBufSize
 	dr.divisor += SampleFreq
 	dr.toOutput += int(dr.divisorTableData[dr.divisor].toOut)
 	dr.divisor = int(dr.divisorTableData[dr.divisor].divisor)
 	// Calculate the sound data only when we have enough to fill the buffer entirely.
-	if dr.toOutput >= FragSize {
-		dr.toOutput -= FragSize
+	if dr.toOutput >= dr.fragSize {
+		dr.toOutput -= dr.fragSize
 		dr.playSound()
 	}
 }
 
-func (dr *DigitalRender) playSound() {
+func (dr *Builder) playSound() {
 	if dr.player == nil {
 		return
 	}
 	// Convert latency preferences from milliseconds to frags.
-	leadSmooth := LatencyAvg / FragInterval
-	leadHiWater := LatencyMax / FragInterval
-	leadLoWater := LatencyMin / FragInterval
+	leadSmooth := LatencyAvg / dr.fragInterval
+	leadHiWater := LatencyMax / dr.fragInterval
+	leadLoWater := LatencyMin / dr.fragInterval
 	// Compute the current lead in frags.
 	currentPosition := dr.player.GetCurrentPosition()
 	if currentPosition == -1 {
 		return
 	}
-	leadInBytes := (dr.sbPos - currentPosition + BufferSize) % BufferSize
-	if leadInBytes >= BufferSize/2 {
-		leadInBytes -= BufferSize
+	leadInBytes := (dr.sbPos - currentPosition + dr.bufferSize) % dr.bufferSize
+	if leadInBytes >= dr.bufferSize/2 {
+		leadInBytes -= dr.bufferSize
 	}
-	leadInFrags := leadInBytes / 2 * FragSize
+	leadInFrags := leadInBytes / 2 * dr.fragSize
 	dr.lead[dr.leadPos] = leadInFrags
 	dr.leadPos++
 	if dr.leadPos == leadSmooth {
@@ -490,7 +535,7 @@ func (dr *DigitalRender) playSound() {
 		avgLead += dr.lead[i]
 	}
 	avgLead /= leadSmooth
-	fmt.Printf("lead = %d, avg = %d\n", leadInFrags, avgLead)
+	//fmt.Printf("lead = %d, avg = %d\n", leadInFrags, avgLead)
 	//If we're getting too far ahead of the audio skip a frag.
 	if avgLead > leadHiWater {
 		for i := 0; i < leadSmooth; i++ {
@@ -500,7 +545,7 @@ func (dr *DigitalRender) playSound() {
 		return
 	}
 	// Calculate one frag
-	nSamples := FragSize
+	nSamples := dr.fragSize
 	dr.calcBuffer(dr.soundBuffer)
 	// If we're getting too far behind the audio add an extra frag.
 	if avgLead < leadLoWater {
@@ -508,30 +553,30 @@ func (dr *DigitalRender) playSound() {
 			dr.lead[i]++
 		}
 		//fmt.Printf("Adding an extra frag...\n");
-		dr.calcBuffer(dr.soundBuffer[FragSize:])
-		nSamples += FragSize
+		dr.calcBuffer(dr.soundBuffer[dr.fragSize:])
+		nSamples += dr.fragSize
 	}
 	// Write the frags to the player and update out write position.
 	dr.player.Write(dr.soundBuffer, dr.sbPos, 2*nSamples)
-	dr.sbPos = (dr.sbPos + 2*nSamples) % BufferSize
+	dr.sbPos = (dr.sbPos + 2*nSamples) % dr.bufferSize
 }
 
-func (dr *DigitalRender) Pause() {
+func (dr *Builder) Pause() {
 	if dr.player == nil {
 		return
 	}
 	dr.player.Pause()
 }
 
-func (dr *DigitalRender) Resume() {
+func (dr *Builder) Resume() {
 	if dr.player == nil {
 		return
 	}
 	dr.player.Resume()
 }
 
-func (dr *DigitalRender) createDivisorTable() {
-	tmp := int32(mos6569.TotalRasters * mos6569.ScreenFreq)
+func (dr *Builder) createDivisorTable() {
+	tmp := int32(dr.rasters * dr.fragFreq)
 	dr.divisorTableData = make([]*DivisorTableData, SampleFreq+1)
 	for x := int32(0); x <= SampleFreq; x++ {
 		dtd := &DivisorTableData{}

@@ -121,7 +121,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.vicSocket.Setup(s, intrIrqVicBit)
 	s.vic.Setup(s.vicSocket, cfg)
 	s.sidSocket.Setup(s)
-	s.sid.Setup(s.sidSocket, cfg)
+	s.sid.Setup(s.sidSocket, cfg, mos6569.ScreenFreq, mos6569.TotalRasters)
 	s.cia1Socket.Setup(s, intrIrqCia1Bit)
 	s.cia1.Setup(s.cia1Socket)
 	s.cia2Socket.Setup(s, intrIrqCia2Bit)

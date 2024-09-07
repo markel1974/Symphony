@@ -16,7 +16,7 @@ func (a *Audio) GetCurrentPosition() int {
 
 func (a *Audio) Write(_ []uint32, pos int, samples int) {
 	a.pos = pos + samples
-	//fmt.Println("AUDIO STREAM ", pos, samples)
+	//fmt.Println("AUDIO STREAM ", b, pos, samples)
 }
 
 func (a *Audio) Pause() {
