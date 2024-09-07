@@ -23,8 +23,8 @@ func NewSID(id string) *SID {
 
 func (sid *SID) Setup(socket ISocket, cfg *config.Config, fragFreq int, rasters int) {
 	sid.socket = socket
+	sid.builder = NewBuilder(sid.socket.GetPlayer(), true, fragFreq, rasters)
 	sid.cfg = cfg
-	sid.builder = NewBuilder(socket.GetPlayer(), true, fragFreq, rasters)
 	sid.cfg.Bind(sid.configChanged)
 }
 
@@ -47,7 +47,6 @@ func (sid *SID) Reset() {
 		sid.regs[x] = 0
 	}
 	sid.builder.Reset()
-
 	//PADDLE TEST
 	//sid.WriteRegister(0xDC00, 0x40) //Control-Port 1 selected
 	//sid.WriteRegister(0xD419, 0x7F) //Paddle X value
@@ -68,11 +67,11 @@ func (sid *SID) WriteRegister(addr uint16, data uint8) {
 }
 
 func (sid *SID) Emulate(vBlank bool, lastVicCycle bool) {
+	if lastVicCycle {
+		sid.builder.Prepare(sid.regs)
+	}
 	if vBlank {
 		sid.builder.Render()
-	}
-	if lastVicCycle {
-		sid.builder.AddToHistory(sid.regs)
 	}
 }
 

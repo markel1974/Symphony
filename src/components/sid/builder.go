@@ -475,7 +475,7 @@ func (dr *Builder) calcBuffer(buf []uint32) {
 	}
 }
 
-func (dr *Builder) AddToHistory(regs []uint8) {
+func (dr *Builder) Prepare(regs []uint8) {
 	for y := uint16(0); y < uint16(len(regs)); y++ {
 		dr.loadRegister(y, regs[y])
 	}
