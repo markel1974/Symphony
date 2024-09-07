@@ -1,6 +1,7 @@
 package mos6581
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/flag"
 	"math"
@@ -65,7 +66,7 @@ type DivisorTableData struct {
 }
 
 type DigitalRender struct {
-	player             ISidPlayer
+	player             IPlayer
 	useFilters         bool
 	triTable           [0x1000 * 2]uint16
 	divisorTableData   []*DivisorTableData
@@ -91,7 +92,7 @@ type DigitalRender struct {
 	seed               uint32
 }
 
-func NewDigitalRenderer(sp ISidPlayer, useFilters bool) *DigitalRender {
+func NewDigitalRenderer(sp IPlayer, useFilters bool) *DigitalRender {
 	d := &DigitalRender{
 		player:           sp,
 		useFilters:       useFilters,
@@ -318,7 +319,7 @@ func (dr *DigitalRender) noiseRandom() uint8 {
 	return (uint8)(dr.seed >> 16)
 }
 
-func (dr *DigitalRender) calcBuffer(buf []uint32, count int) {
+func (dr *DigitalRender) calcBuffer(buf []uint32) {
 	// Get filter coefficients, so the emulator won't change them in the middle of calculations
 	cfAmpl := dr.filterAmpl
 	cd1 := dr.d1
@@ -328,6 +329,7 @@ func (dr *DigitalRender) calcBuffer(buf []uint32, count int) {
 	// Index in sample_buf for reading, 16.16 fixed
 	sampleCount := (dr.sampleInPtr + SampleBufSize/2) << 16
 	// count >>= 2; // 16 bit stereo output, count is in bytes
+	count := len(buf)
 	count >>= 1 // 16 bit mono output, count is in bytes
 	idx := 0
 	for ; count >= 0; count, idx = count-1, idx+1 {
@@ -488,7 +490,7 @@ func (dr *DigitalRender) playSound() {
 		avgLead += dr.lead[i]
 	}
 	avgLead /= leadSmooth
-	//fmt.Printf("lead = %d, avg = %d\n", leadInFrags, avgLead);
+	fmt.Printf("lead = %d, avg = %d\n", leadInFrags, avgLead)
 	//If we're getting too far ahead of the audio skip a frag.
 	if avgLead > leadHiWater {
 		for i := 0; i < leadSmooth; i++ {
@@ -499,14 +501,14 @@ func (dr *DigitalRender) playSound() {
 	}
 	// Calculate one frag
 	nSamples := FragSize
-	dr.calcBuffer(dr.soundBuffer, 2*FragSize)
+	dr.calcBuffer(dr.soundBuffer)
 	// If we're getting too far behind the audio add an extra frag.
 	if avgLead < leadLoWater {
 		for i := 0; i < leadSmooth; i++ {
 			dr.lead[i]++
 		}
 		//fmt.Printf("Adding an extra frag...\n");
-		dr.calcBuffer(dr.soundBuffer[FragSize:], 2*FragSize)
+		dr.calcBuffer(dr.soundBuffer[FragSize:])
 		nSamples += FragSize
 	}
 	// Write the frags to the player and update out write position.
@@ -532,11 +534,13 @@ func (dr *DigitalRender) createDivisorTable() {
 	tmp := int32(mos6569.TotalRasters * mos6569.ScreenFreq)
 	dr.divisorTableData = make([]*DivisorTableData, SampleFreq+1)
 	for x := int32(0); x <= SampleFreq; x++ {
-		dr.divisorTableData[x].divisor = x
-		dr.divisorTableData[x].toOut = 0
-		for dr.divisorTableData[x].divisor >= 0 {
-			dr.divisorTableData[x].divisor -= tmp
-			dr.divisorTableData[x].toOut++
+		dtd := &DivisorTableData{}
+		dtd.divisor = x
+		dtd.toOut = 0
+		for dtd.divisor >= 0 {
+			dtd.divisor -= tmp
+			dtd.toOut++
 		}
+		dr.divisorTableData[x] = dtd
 	}
 }

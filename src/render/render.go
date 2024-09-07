@@ -13,7 +13,7 @@ type Point struct {
 }
 
 type Render struct {
-	prefs        *config.Config
+	cfg          *config.Config
 	c64Board     *board.Board
 	scale        float64
 	fullscreen   bool
@@ -27,11 +27,12 @@ type Render struct {
 	mainSprite   *pixels.Sprite
 	db           *DisplayBuffer
 	inputs       *Inputs
+	audio        *Audio
 }
 
-func New(prefs *config.Config) *Render {
+func New(cfg *config.Config) *Render {
 	g := &Render{
-		prefs:        prefs,
+		cfg:          cfg,
 		fullscreen:   false,
 		screenWidth:  mos6569.DisplayX,
 		screenHeight: mos6569.DisplayY,
@@ -50,8 +51,9 @@ func (g *Render) setup(pos pixels.Vec) {
 	g.mainSprite.Set(g.mainSurface, g.mainSurface.Bounds())
 	g.mainMatrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
 	g.db = NewDisplayBuffer(g.mainSurface)
-	g.c64Board = board.NewBoard(g.db)
-	_ = g.c64Board.Setup(g.prefs)
+	g.audio = NewAudio()
+	g.c64Board = board.NewBoard(g.db, g.audio)
+	_ = g.c64Board.Setup(g.cfg)
 	g.inputs.Setup(g.c64Board, g.maxW, g.maxH)
 }
 

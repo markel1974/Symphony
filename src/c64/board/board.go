@@ -36,6 +36,7 @@ const (
 
 type Board struct {
 	db           mos6569.IDisplayBuffer
+	player       mos6581.IPlayer
 	quartz       *quartz.Quartz
 	cpu          *mos6510.CPU
 	vic          *mos6569.VIC
@@ -62,9 +63,10 @@ type Board struct {
 	//phiMode    PhiMode
 }
 
-func NewBoard(db mos6569.IDisplayBuffer) *Board {
+func NewBoard(db mos6569.IDisplayBuffer, player mos6581.IPlayer) *Board {
 	b := &Board{
 		db:           db,
+		player:       player,
 		quartz:       quartz.NewQuartz(),
 		iec:          nil,
 		cpu:          nil,

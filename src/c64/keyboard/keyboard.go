@@ -132,8 +132,11 @@ func (k *Keyboard) PollKeyboard() (int, int, bool, bool, bool) {
 		return 0, 0, false, false, false
 	}
 	e := k.keyDataStorage.Front()
-	i := e.Value.(*InputKeyData)
 	k.keyDataStorage.Remove(e)
+	if e.Value == nil {
+		return 0, 0, false, false, false
+	}
+	i := e.Value.(*InputKeyData)
 	return i.keyM, i.revM, i.pressed, i.shifted, true
 }
 
@@ -177,6 +180,7 @@ func (k *Keyboard) keyCodeToC64(kc int) (int, int, bool, bool) {
 }
 
 func (k *Keyboard) prepareCommand(command string) (*list.List, bool) {
+	const persistenceCycles = 20
 	if len(command) == 0 {
 		return nil, false
 	}
@@ -184,8 +188,20 @@ func (k *Keyboard) prepareCommand(command string) (*list.List, bool) {
 		if keyM, revM, _, ok := k.keyCodeToC64(keyCode); ok {
 			i1 := NewInputKeyData(pressed, keyM, revM, shifted)
 			storage.PushBack(i1)
+			for x := 0; x < persistenceCycles; x++ {
+				storage.PushBack(nil)
+			}
 			return true
 		}
+		/*
+			if keyM, revM, _, ok := k.keyCodeToC64(keyCode); ok {
+				for x := 0; x < persistence; x++ {
+					i1 := NewInputKeyData(pressed, keyM, revM, shifted)
+					storage.PushBack(i1)
+				}
+				return true
+			}
+		*/
 		return false
 	}
 	storage := list.New()

@@ -11,6 +11,7 @@ type SID struct {
 	regsHistory      [][]uint8
 	regsHistoryIndex uint32
 	cfg              *config.Config
+	player           *DigitalRender
 }
 
 func NewSID(id string) *SID {
@@ -30,6 +31,7 @@ func NewSID(id string) *SID {
 func (sid *SID) Setup(socket ISocket, cfg *config.Config) {
 	sid.socket = socket
 	sid.cfg = cfg
+	sid.player = NewDigitalRenderer(socket.GetPlayer(), false)
 	sid.cfg.Bind(sid.configChanged)
 }
 
@@ -57,21 +59,31 @@ func (sid *SID) Reset() {
 		}
 	}
 	sid.regsHistoryIndex = 0
+	sid.player.Reset()
+
+	//PADDLE TEST
+	//sid.WriteRegister(0xDC00, 0x40) //Control-Port 1 selected
+	//sid.WriteRegister(0xD419, 0x7F) //Paddle X value
+	//sid.WriteRegister(0xD419, 0x7F) //Paddle Y value
 }
 
 func (sid *SID) ReadRegister(addr uint16) uint8 {
-	addr = addr & 0x1f
-	return sid.regs[addr]
+	reg := addr & 0x1f
+	v := sid.regs[reg]
+	//fmt.Printf("[%s][ReadRegister] addr %X [%x] -> %d\n", sid.id, addr, reg, v)
+	return v
 }
 
 func (sid *SID) WriteRegister(addr uint16, data uint8) {
-	addr = addr & 0x1f
-	sid.regs[addr] = data
+	reg := addr & 0x1f
+	//fmt.Printf("[%s][WriteRegister] addr %X [%x] -> %d\n", sid.id, addr, reg, data)
+	sid.regs[reg] = data
 }
 
 func (sid *SID) Emulate(vBlank bool, lastVicCycle bool) {
 	if vBlank {
 		//sidCounter := s.sid.ResetHistory()
+		sid.player.Render(sid.regsHistory[sid.regsHistoryIndex])
 		_ = sid.ResetHistory()
 	}
 	if lastVicCycle {
