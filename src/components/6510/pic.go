@@ -25,7 +25,8 @@ type Pic struct {
 	irq           bits.Bits
 	firstIrqCycle uint64
 	firstNMICycle uint64
-	nmiAck        bool
+	nmiExec       bool
+	irqExec       bool
 }
 
 func NewPic() *Pic {
@@ -35,7 +36,8 @@ func NewPic() *Pic {
 		firstNMICycle: 0,
 		all:           0,
 		irq:           0,
-		nmiAck:        false,
+		nmiExec:       false,
+		irqExec:       false,
 	}
 }
 
@@ -48,7 +50,8 @@ func (i *Pic) Reset() {
 	i.irq = 0
 	i.firstIrqCycle = 0
 	i.firstNMICycle = 0
-	i.nmiAck = false
+	i.nmiExec = false
+	i.irqExec = false
 }
 
 func (i *Pic) TriggerReset() {
@@ -72,6 +75,7 @@ func (i *Pic) TriggerIRQ(intr uint32) {
 }
 
 func (i *Pic) ClearIRQ(intr uint32) {
+	i.irqExec = false
 	i.irq.BitClear(intr)
 	if i.irq == 0 {
 		i.all.BitClear(intrIrqBit)
@@ -79,16 +83,15 @@ func (i *Pic) ClearIRQ(intr uint32) {
 }
 
 func (i *Pic) TriggerNMI() {
-	if i.all.BitCheck(intrNmiBit) {
-		return
+	if !i.all.BitCheck(intrNmiBit) {
+		i.firstNMICycle = i.quartz.Cycle()
+		i.all.BitSet(intrNmiBit)
 	}
-	i.firstNMICycle = i.quartz.Cycle()
-	i.all.BitSet(intrNmiBit)
 }
 
 func (i *Pic) ClearNMI() {
+	i.nmiExec = false
 	i.all.BitClear(intrNmiBit)
-	i.nmiAck = false
 }
 
 func (i *Pic) HasNMI() bool {
@@ -104,19 +107,18 @@ func (i *Pic) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
 			i.ClearReset()
 			return 1
 		}
-		if i.all.BitCheck(intrNmiBit) {
-			if !i.nmiAck {
-				if i.computeDistance(i.firstNMICycle, (opFlags&opFlagIntDelayed) != 0) >= minNMIDistance {
-					// Edge-triggered
-					i.nmiAck = true
-					return 2
-				}
+		if i.all.BitCheck(intrNmiBit) && !i.nmiExec {
+			if i.computeDistance(i.firstNMICycle, (opFlags&opFlagIntDelayed) != 0) >= minNMIDistance {
+				// Edge-triggered
+				i.nmiExec = true
+				return 2
 			}
 		}
-		if i.all.BitCheck(intrIrqBit) {
+		if i.all.BitCheck(intrIrqBit) && !i.irqExec {
 			if ((iFlag == 0) || ((opFlags & opFlagIrqDisabled) != 0)) && ((opFlags & opFlagIrqEnabled) == 0) {
 				if i.computeDistance(i.firstIrqCycle, (opFlags&opFlagIntDelayed) != 0) >= minIrqDistance {
 					// Level-triggered
+					i.irqExec = true
 					return 3
 				}
 			}
