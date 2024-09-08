@@ -1,4 +1,4 @@
-package keyboard
+package inputs
 
 import "container/list"
 

@@ -1,4 +1,4 @@
-package keyboard
+package inputs
 
 import (
 	"container/list"
@@ -98,7 +98,7 @@ func (k *Keyboard) SetVirtualKey(pressed bool, vKey int) {
 		return
 	}
 	if keyM, revM, shifted, ok := k.keyCodeToC64(kc); ok {
-		k.keyDataStorage.PushBack(NewInputKeyData(pressed, keyM, revM, shifted))
+		k.keyDataStorage.PushBack(NewInputKeyData(pressed, keyM, revM, shifted, 1))
 	}
 	return
 }
@@ -132,11 +132,13 @@ func (k *Keyboard) PollKeyboard() (int, int, bool, bool, bool) {
 		return 0, 0, false, false, false
 	}
 	e := k.keyDataStorage.Front()
-	k.keyDataStorage.Remove(e)
-	if e.Value == nil {
-		return 0, 0, false, false, false
-	}
+	//if e.Value == nil {
+	//	return 0, 0, false, false, false
+	//}
 	i := e.Value.(*InputKeyData)
+	if i.persistence--; i.persistence == 0 {
+		k.keyDataStorage.Remove(e)
+	}
 	return i.keyM, i.revM, i.pressed, i.shifted, true
 }
 
@@ -186,11 +188,8 @@ func (k *Keyboard) prepareCommand(command string) (*list.List, bool) {
 	}
 	cmd := func(keyCode int, pressed bool, shifted bool, storage *list.List) bool {
 		if keyM, revM, _, ok := k.keyCodeToC64(keyCode); ok {
-			i1 := NewInputKeyData(pressed, keyM, revM, shifted)
+			i1 := NewInputKeyData(pressed, keyM, revM, shifted, persistenceCycles)
 			storage.PushBack(i1)
-			for x := 0; x < persistenceCycles; x++ {
-				storage.PushBack(nil)
-			}
 			return true
 		}
 		/*

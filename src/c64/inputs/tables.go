@@ -1,4 +1,4 @@
-package keyboard
+package inputs
 
 /*
 C64 keyboard matrix:
@@ -50,7 +50,6 @@ const (
 
 const (
 	MAX_STORAGE_SIZE = 1024
-	CMD_COUNT        = 0
 )
 
 const (

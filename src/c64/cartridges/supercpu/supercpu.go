@@ -68,8 +68,10 @@ func (s *SuperCPU) Emulate() {
 	// TEST SUPER CPU.....
 	const mhz = 20
 	// TODO TRIGGER BALOW-AECLOW HAS SIGNAL
-	aecLow := s.board.AECAvailable()
-	s.cpu.SetRDYLow(aecLow)
+	ba := s.board.BusAvailable()
+	aec := s.board.AECAvailable()
+	s.cpu.SetRDYLow(!ba)
+	s.cpu.SetAECLow(!aec)
 	for x := 0; x < mhz; x++ {
 		s.cpu.Emulate()
 		s.quartz.AddCycle()

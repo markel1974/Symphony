@@ -4,7 +4,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/banks"
 	"github.com/markel1974/c64emu/src/c64/cartridges"
 	"github.com/markel1974/c64emu/src/c64/iec"
-	"github.com/markel1974/c64emu/src/c64/keyboard"
+	"github.com/markel1974/c64emu/src/c64/inputs"
 	"github.com/markel1974/c64emu/src/c64/prg"
 	"github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/cia"
@@ -48,18 +48,19 @@ type Board struct {
 	vicSocket    *VicSocket
 	sidSocket    *SidSocket
 	cpuSocket    *CPUSocket
+	expansion    *Expansion
 	pic          *mos6510.Pic
 	iec          *iec.IEC
-	keys         *keyboard.Keyboard
+	keys         *inputs.Keyboard
 	cfg          *config.Config
 	hasClipboard bool
 	cartMan      *cartridges.Manager
 	banks        *banks.Banks
-	dmaLow       bool
 	irqTrigger   *signals.SignalUint32
 	irqClear     *signals.SignalUint32
 	vBlank       bool
 	lastVicCycle bool
+	dmaLow       bool
 	//phiMode    PhiMode
 }
 
@@ -78,12 +79,12 @@ func NewBoard(db mos6569.IDisplayBuffer, player mos6581.IPlayer) *Board {
 		keys:         nil,
 		hasClipboard: false,
 		cartMan:      cartridges.NewManager(),
-		dmaLow:       false,
 		banks:        nil,
 		irqTrigger:   nil,
 		irqClear:     nil,
 		vBlank:       false,
 		lastVicCycle: false,
+		dmaLow:       false,
 		//phiMode:    PhiIdle,
 	}
 	return b
@@ -111,8 +112,9 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.sid = mos6581.NewSID(baseId + "_sid")
 	s.cia1 = mos6526.NewCIA(baseId + "_cia1")
 	s.cia2 = mos6526.NewCIA(baseId + "_cia2")
-	s.keys = keyboard.NewKeyboard()
+	s.keys = inputs.NewKeyboard()
 	s.banks = banks.NewBanks()
+	s.expansion = NewExpansion(s)
 
 	s.pic.Setup(s.quartz)
 	s.iec.Setup(cfg)
@@ -126,7 +128,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cia1.Setup(s.cia1Socket)
 	s.cia2Socket.Setup(s, intrIrqCia2Bit)
 	s.cia2.Setup(s.cia2Socket)
-	s.cartMan.Setup(s, cfg)
+	s.cartMan.Setup(s.expansion, cfg)
 	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, cfg)
 
 	if !s.cfg.GetDisableCartridgeAutostart() {
@@ -148,21 +150,12 @@ func (s *Board) Setup(cfg *config.Config) error {
 		}
 	}
 
-	s.Reset()
+	s.reset()
 
 	return nil
 }
 
-func (s *Board) rdyLowSlot(v bool) {
-	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
-	s.cpu.SetRDYLow(v || s.dmaLow)
-}
-
-func (s *Board) aecLowSlot(v bool) {
-	s.cpu.SetAECLow(v)
-}
-
-func (s *Board) Reset() {
+func (s *Board) reset() {
 	s.pic.Reset()
 	s.banks.Reset()
 	s.cpu.Reset()
@@ -171,10 +164,7 @@ func (s *Board) Reset() {
 	s.cia1.Reset()
 	s.cia2.Reset()
 	s.iec.Reset()
-
-	s.dmaLow = false
-	//s.baLow = false
-	//s.aecLow = false
+	s.expansion.Reset()
 }
 
 func (s *Board) AsyncReset() {
@@ -187,6 +177,7 @@ func (s *Board) AsyncReset() {
 	s.cia1.Reset()
 	s.cia2.Reset()
 	s.iec.Reset()
+	s.expansion.Reset()
 
 	s.dmaLow = false
 }
@@ -302,91 +293,6 @@ func (s *Board) KeyboardSwapJoystick(pressed bool) {
 	s.keys.SwapJoystick()
 }
 
-func (s *Board) GameExRomConfigChanged() {
-	s.banks.RebuildMemoryConfig()
-}
-
-func (s *Board) Read(addr uint16) uint8 {
-	return s.banks.Read(addr)
-}
-
-func (s *Board) Write(addr uint16, data uint8) {
-	s.banks.Write(addr, data)
-}
-
-func (s *Board) NMITrigger() {
-	s.pic.TriggerNMI()
-}
-
-func (s *Board) SetDMALow(v bool) {
-	//TODO IMPLEMENT
-	//if _DMA=Low the CPU can be requested to release the bus.
-	//It will stop after the next read cycle and all bus lines will go to high resistance state.
-	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
-	//The DMA line on the expansion port gets pulled low, or the VIC-II's BA line goes low.
-	//The DMA line is used to put the CPU in a wait state.
-	//The DMA line also forces the CPU's AEC line low so while it's waiting its R/W, address bus and data bus lines are put in HighZ,
-	//so they don't have any influence over the buses.
-	//This allows a device on the expansion port, such as an REU, to perform direct memory accesses (DMA) to the main RAM.
-	s.dmaLow = v
-	s.cpu.SetRDYLow(s.dmaLow || s.vic.GetBALow())
-}
-
-func (s *Board) ResetTrigger() {
-	s.pic.TriggerReset()
-}
-
-func (s *Board) IRQTrigger() {
-	s.pic.TriggerIRQ(intrIrqExpansionBit)
-}
-
-func (s *Board) IRQClear() {
-	s.pic.ClearIRQ(intrIrqExpansionBit)
-}
-
-func (s *Board) IRQTriggerBind(fn func(uint32)) {
-	if s.irqTrigger == nil {
-		s.irqTrigger = signals.NewSignalUint32()
-	}
-	s.irqTrigger.Bind(fn)
-}
-
-func (s *Board) IRQClearBind(fn func(uint32)) {
-	if s.irqClear == nil {
-		s.irqClear = signals.NewSignalUint32()
-	}
-	s.irqClear.Bind(fn)
-}
-
-func (s *Board) BusAvailable() bool {
-	return !s.vic.GetBALow()
-}
-
-func (s *Board) AECAvailable() bool {
-	return !s.vic.GetAECLow()
-}
-
-func (s *Board) Cycle() uint64 {
-	return s.quartz.Cycle()
-}
-
-func (s *Board) CycleAlarm(id string, callback quartz.AlarmCallback) *quartz.Alarm {
-	return s.quartz.NewAlarm(id, callback)
-}
-
-func (s *Board) RamSetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
-	return s.banks.SetWriteTrigger(addr, fn)
-}
-
-func (s *Board) RamRemoveWriteTrigger(addr uint16, id int) {
-	s.banks.RemoveRamTrigger(addr, id)
-}
-
-func (s *Board) RmwFlags() uint8 {
-	//TODO IMPLEMENT cpu rmw flags
-	return 0
-}
-
 func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
 	var prev []uint8 = nil
 	if memConfig >= 0 {
@@ -410,6 +316,29 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 		s.banks.SetMemoryConfig(prev)
 	}
 	return rb
+}
+
+func (s *Board) dmaLowSlot(v bool) {
+	//if _DMA=Low the CPU can be requested to release the bus.
+	//It will stop after the next read cycle and all bus lines will go to high resistance state.
+	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
+	//The DMA line on the expansion port gets pulled low, or the VIC-II's BA line goes low.
+	//The DMA line is used to put the CPU in a wait state.
+	//The DMA line also forces the CPU's AEC line low so while it's waiting its R/W, address bus and data bus lines are put in HighZ,
+	//so they don't have any influence over the buses.
+	//This allows a device on the expansion port, such as an REU, to perform direct memory accesses (DMA) to the main RAM.
+	s.dmaLow = v
+	s.cpu.SetRDYLow(s.dmaLow || s.vic.GetBALow())
+	s.cpu.SetAECLow(s.dmaLow || s.vic.GetAECLow())
+}
+
+func (s *Board) rdyLowSlot(v bool) {
+	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
+	s.cpu.SetRDYLow(v || s.dmaLow)
+}
+
+func (s *Board) aecLowSlot(v bool) {
+	s.cpu.SetAECLow(v || s.dmaLow)
 }
 
 func (s *Board) irqTriggerSlot(i uint32) {

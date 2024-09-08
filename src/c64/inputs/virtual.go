@@ -1,4 +1,4 @@
-package keyboard
+package inputs
 
 type Virtual struct {
 	numLock bool

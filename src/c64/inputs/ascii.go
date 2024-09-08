@@ -1,4 +1,4 @@
-package keyboard
+package inputs
 
 type KeyData struct {
 	r1      int

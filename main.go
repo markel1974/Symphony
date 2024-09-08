@@ -28,6 +28,8 @@ import (
 
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/1/defender_of_the_crown.crt"
 
+// -c "/Users/tinmr305/Downloads/c64carts/GhostNGoblinsArcade_N0S_EF.crt"
+
 func main() {
 	var showHelp bool
 	var showVersion bool
