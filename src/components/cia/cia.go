@@ -46,18 +46,18 @@ func (m *CIA) Emulate(vBlank bool) {
 	if vBlank {
 		if m.tod.Update(m.timerA.GetRTC()) {
 			m.icr |= IRQTODAlarmEqual
-			m.triggerIrq()
+			m.irqTrigger()
 		}
 	}
 
 	if m.timerAIrq {
 		m.timerAIrq = false
-		m.triggerIrq()
+		m.irqTrigger()
 	}
 
 	if m.timerBIrq {
 		m.timerBIrq = false
-		m.triggerIrq()
+		m.irqTrigger()
 	}
 
 	underflowA := m.timerA.Emulate(false)
@@ -183,10 +183,10 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	case 0x0c:
 		m.sdr = data
 		m.icr |= IRQSDRFullOrEmpty
-		m.triggerIrq()
+		m.irqTrigger()
 	case 0x0d:
-		m.updateIrqMask(data)
-		m.triggerIrq()
+		m.irqUpdateMask(data)
+		m.irqTrigger()
 	case 0x0e:
 		countMode := uint8(0)
 		if (data & crBitInMode) != 0 {
@@ -203,7 +203,15 @@ func (m *CIA) GetLastByte() uint8 {
 	return 0
 }
 
-func (m *CIA) updateIrqMask(data uint8) {
+func (m *CIA) irqTrigger() {
+	mask := m.irqMask & 0x1f
+	if (m.icr & mask) != 0 {
+		m.icr |= IRQOccurred
+		m.socket.IRQTrigger()
+	}
+}
+
+func (m *CIA) irqUpdateMask(data uint8) {
 	//Bit 0: 1 = Interrupt release through timer A underflow
 	//Bit 1: 1 = Interrupt release through timer B underflow
 	//Bit 2: 1 = Interrupt release if clock=alarm
@@ -225,13 +233,5 @@ func (m *CIA) updateIrqMask(data uint8) {
 			//set bits 0..4 are clearing the according mask bit.
 			m.irqMask &= ^bits //^data
 		}
-	}
-}
-
-func (m *CIA) triggerIrq() {
-	mask := m.irqMask & 0x1f
-	if (m.icr & mask) != 0 {
-		m.icr |= IRQOccurred
-		m.socket.IRQTrigger()
 	}
 }
