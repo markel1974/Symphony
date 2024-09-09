@@ -362,6 +362,14 @@ func (s *Board) irqClearSlot(i uint32) {
 	}
 }
 
+func (s *Board) nmiTriggerSlot() {
+	s.pic.TriggerNMI()
+}
+
+func (s *Board) nmiClearSlot() {
+	s.pic.ClearNMI()
+}
+
 func (s *Board) loadPRG(prgFile string) {
 	//TODO TEST - WE HAVE TO WAIT READY
 	//s.loadPRG(s.cfg.GetPrg())

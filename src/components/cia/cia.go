@@ -12,20 +12,20 @@ const (
 //https://emudev.de/q00-c64/cias-timers-keyboard-and-more/
 
 type CIA struct {
-	id        string
-	prA       uint8
-	prB       uint8
-	ddrA      uint8
-	ddrB      uint8
-	sdr       uint8
-	icr       uint8 // Pending interrupts
-	irqMask   uint8 // Enabled interrupts
-	timerAIrq bool  // Flag: Trigger Timer A IRQ in next cycle
-	timerBIrq bool  // Flag: Trigger Timer B IRQ in next cycle
-	tod       *TOD
-	timerA    *Timer
-	timerB    *Timer
-	socket    ISocket
+	id             string
+	prA            uint8
+	prB            uint8
+	ddrA           uint8
+	ddrB           uint8
+	sdr            uint8
+	icr            uint8 // Pending interrupts
+	irqMask        uint8 // Enabled interrupts
+	timerAIrqCycle bool  // Flag: Trigger Timer A IRQ in next cycle
+	timerBIrqCycle bool  // Flag: Trigger Timer B IRQ in next cycle
+	tod            *TOD
+	timerA         *Timer
+	timerB         *Timer
+	socket         ISocket
 }
 
 func NewCIA(id string) *CIA {
@@ -50,26 +50,30 @@ func (m *CIA) Emulate(vBlank bool) {
 		}
 	}
 
-	if m.timerAIrq {
-		m.timerAIrq = false
-		m.irqTrigger()
+	if m.timerAIrqCycle {
+		m.timerAIrqCycle = false
+		//trigger in next cycle
+		//m.irqTrigger()
 	}
 
-	if m.timerBIrq {
-		m.timerBIrq = false
-		m.irqTrigger()
+	if m.timerBIrqCycle {
+		m.timerBIrqCycle = false
+		//trigger in next cycle
+		//m.irqTrigger()
 	}
 
 	underflowA := m.timerA.Emulate(false)
 	if underflowA {
+		m.timerAIrqCycle = true
 		m.icr |= IRQUnderflowTimerA
-		m.timerAIrq = true
+		m.irqTrigger()
 	}
 
 	underFlowB := m.timerB.Emulate(underflowA)
 	if underFlowB {
+		m.timerBIrqCycle = true
 		m.icr |= IRQUnderflowTimerB
-		m.timerBIrq = true
+		m.irqTrigger()
 	}
 }
 
@@ -81,8 +85,8 @@ func (m *CIA) Reset() {
 	m.sdr = 0
 	m.icr = 0
 	m.irqMask = 0
-	m.timerAIrq = false
-	m.timerBIrq = false
+	m.timerAIrqCycle = false
+	m.timerBIrqCycle = false
 	m.timerA.Reset()
 	m.timerB.Reset()
 	m.tod.Reset()
@@ -98,14 +102,14 @@ func (m *CIA) ReadRegister(addr uint16) uint8 {
 		ret := m.socket.ReadPortB(m.prA, m.ddrA, m.prB, m.ddrB)
 		// TA/TB output to PB enabled
 		if m.timerA.HasPBOn() {
-			if m.timerA.ToggleModeApply(m.timerAIrq) {
+			if m.timerA.ToggleModeApply(m.timerAIrqCycle) {
 				ret |= 0x40
 			} else {
 				ret &= 0xbf
 			}
 		}
 		if m.timerB.HasPBOn() {
-			if m.timerB.ToggleModeApply(m.timerBIrq) {
+			if m.timerB.ToggleModeApply(m.timerBIrqCycle) {
 				ret |= 0x80
 			} else {
 				ret &= 0x7f

@@ -60,9 +60,9 @@ func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 }
 
 func (w *CIA2Socket) IRQTrigger() {
-	w.board.pic.TriggerNMI()
+	w.board.nmiTriggerSlot()
 }
 
 func (w *CIA2Socket) IRQClear() {
-	w.board.pic.ClearNMI()
+	w.board.nmiClearSlot()
 }
