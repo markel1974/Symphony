@@ -131,9 +131,8 @@ func (gr *Graphics) TryGraphicsAccess() {
 		gr.colorData = gr.colorLine[gr.lineIndex]
 		if gr.rowCounter == 0 {
 			index := columnsMax * (gr.core.rasterY / 8)
-			//TODO screen codes
 			//https://sta.c64.org/cbm64scr.html
-			gr.textBuffer[index+uint16(gr.lineIndex)] = _scCodesAscii[gr.charData&0x7f] //gr.charData + 64
+			gr.textBuffer[index+uint16(gr.lineIndex)] = _scCodesAscii[gr.charData&0x7f]
 		}
 		gr.lineIndex++
 		gr.videoCounter++
@@ -236,17 +235,20 @@ func (gr *Graphics) incrementOffset() {
 }
 
 func (gr *Graphics) drawInvalidStandard(offset int, a uint8) {
-	gr.db.SetMulti8(offset, a)
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
+
+	gr.db.SetMulti8(offset, a)
 }
 
 func (gr *Graphics) drawInvalidMulticolor(offset int, a uint8) {
-	gr.db.SetMulti8(offset, a)
-	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
-	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
+	p := (gr.gfxData & 0xAA) | ((gr.gfxData & 0xAA) >> 1)
+	p1 := p >> gr.core.xScroll
+	p2 := p << (8 - gr.core.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
+
+	gr.db.SetMulti8(offset, a)
 }
 
 func (gr *Graphics) drawStandard(offset int, a uint8, b uint8) {
@@ -274,8 +276,9 @@ func (gr *Graphics) drawStandard(offset int, a uint8, b uint8) {
 }
 
 func (gr *Graphics) drawMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
-	p1 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) >> gr.core.xScroll
-	p2 := ((gr.gfxData & 0xaa) | (gr.gfxData&0xaa)>>1) << (8 - gr.core.xScroll)
+	p := (gr.gfxData & 0xAA) | ((gr.gfxData & 0xAA) >> 1)
+	p1 := p >> gr.core.xScroll
+	p2 := p << (8 - gr.core.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
 
 	colorBuffer := [4]uint8{a, b, c, d}

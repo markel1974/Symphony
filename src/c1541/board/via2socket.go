@@ -1,11 +1,5 @@
 package board
 
-import (
-	"fmt"
-)
-
-//TODO MOVE IN WIRED
-
 const headControl = uint8(0x3)
 const motorControl = uint8(0x4)
 const ledControl = uint8(0x8)
@@ -89,7 +83,7 @@ func (v *Via2Socket) WritePRB(prb uint8, _ uint8) {
 	if (m & motorControl) != 0 {
 		motorOn := (prb & motorControl) != 0
 		v.board.mec.SetMotor(motorOn)
-		fmt.Println("TODO - MOTOR", motorOn)
+		//fmt.Println("TODO - MOTOR", motorOn)
 	}
 	//bit [3]
 	//LED control; 0 = Off; 1 = On.
@@ -109,14 +103,14 @@ func (v *Via2Socket) WritePRB(prb uint8, _ uint8) {
 	//bit [5-6]:
 	//Data density; %00 = Lowest; %11 = Highest.
 	if (m & densityControl) != 0 {
-		density := (prb & densityControl) >> 5
-		fmt.Printf("TODO - DENSITY %2b\n", density)
+		//density := (prb & densityControl) >> 5
+		//fmt.Printf("TODO - DENSITY %2b\n", density)
 	}
 	//Bit [7]
 	//0 = SYNC marks are being currently read from disk; 1 = Data bytes are being read.
 	if (m & syncControl) != 0 {
-		sync := (prb & syncControl) != 0
-		fmt.Println("TODO - SYNC", !sync)
+		//sync := (prb & syncControl) != 0
+		//fmt.Println("TODO - SYNC", !sync)
 	}
 }
 

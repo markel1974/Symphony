@@ -35,56 +35,56 @@ const (
 )
 
 type Board struct {
-	db           mos6569.IDisplayBuffer
-	player       mos6581.IPlayer
-	quartz       *quartz.Quartz
-	cpu          *mos6510.CPU
-	vic          *mos6569.VIC
-	sid          *mos6581.SID
-	cia1         *mos6526.CIA
-	cia2         *mos6526.CIA
-	cia1Socket   *CIA1Socket
-	cia2Socket   *CIA2Socket
-	vicSocket    *VicSocket
-	sidSocket    *SidSocket
-	cpuSocket    *CPUSocket
-	expansion    *Expansion
-	pic          *mos6510.Pic
-	iec          *iec.IEC
-	keys         *inputs.Keyboard
-	cfg          *config.Config
-	hasClipboard bool
-	cartMan      *cartridges.Manager
-	banks        *banks.Banks
-	irqTrigger   *signals.SignalUint32
-	irqClear     *signals.SignalUint32
-	vBlank       bool
-	lastVicCycle bool
-	dmaLow       bool
+	db                  mos6569.IDisplayBuffer
+	player              mos6581.IPlayer
+	quartz              *quartz.Quartz
+	cpu                 *mos6510.CPU
+	vic                 *mos6569.VIC
+	sid                 *mos6581.SID
+	cia1                *mos6526.CIA
+	cia2                *mos6526.CIA
+	cia1Socket          *CIA1Socket
+	cia2Socket          *CIA2Socket
+	vicSocket           *VicSocket
+	sidSocket           *SidSocket
+	cpuSocket           *CPUSocket
+	expansion           *Expansion
+	pic                 *mos6510.Pic
+	iec                 *iec.IEC
+	keys                *inputs.Keyboard
+	cfg                 *config.Config
+	hasClipboard        bool
+	cartMan             *cartridges.Manager
+	banks               *banks.Banks
+	expansionIrqTrigger *signals.SignalUint32
+	expansionIrqClear   *signals.SignalUint32
+	vBlank              bool
+	lastVicCycle        bool
+	dmaLow              bool
 	//phiMode    PhiMode
 }
 
 func NewBoard(db mos6569.IDisplayBuffer, player mos6581.IPlayer) *Board {
 	b := &Board{
-		db:           db,
-		player:       player,
-		quartz:       quartz.NewQuartz(),
-		iec:          nil,
-		cpu:          nil,
-		vic:          nil,
-		sid:          nil,
-		cia1:         nil,
-		cia2:         nil,
-		pic:          nil,
-		keys:         nil,
-		hasClipboard: false,
-		cartMan:      cartridges.NewManager(),
-		banks:        nil,
-		irqTrigger:   nil,
-		irqClear:     nil,
-		vBlank:       false,
-		lastVicCycle: false,
-		dmaLow:       false,
+		db:                  db,
+		player:              player,
+		quartz:              quartz.NewQuartz(),
+		iec:                 nil,
+		cpu:                 nil,
+		vic:                 nil,
+		sid:                 nil,
+		cia1:                nil,
+		cia2:                nil,
+		pic:                 nil,
+		keys:                nil,
+		hasClipboard:        false,
+		cartMan:             cartridges.NewManager(),
+		banks:               nil,
+		expansionIrqTrigger: nil,
+		expansionIrqClear:   nil,
+		vBlank:              false,
+		lastVicCycle:        false,
+		dmaLow:              false,
 		//phiMode:    PhiIdle,
 	}
 	return b
@@ -187,7 +187,9 @@ func (s *Board) configChanged() {
 
 func (s *Board) Emulate() bool {
 	//s.phiMode = Phi1
+	//PHI1
 	s.vBlank, s.lastVicCycle = s.vic.Emulate()
+
 	//s.phiMode = Phi2
 	//if vBlank {
 	//TODO
@@ -195,6 +197,8 @@ func (s *Board) Emulate() bool {
 	//	fmt.Println("READY!!!")
 	//}
 	//}
+
+	//PHI2
 	s.sid.Emulate(s.vBlank, s.lastVicCycle)
 	s.cia1.Emulate(s.vBlank)
 	s.cia2.Emulate(s.vBlank)
@@ -202,6 +206,7 @@ func (s *Board) Emulate() bool {
 	s.iec.Emulate()
 	s.cpu.Emulate()
 	s.quartz.AddCycle()
+
 	//s.phiMode = PhiIdle
 	return s.vBlank
 }
@@ -335,23 +340,25 @@ func (s *Board) dmaLowSlot(v bool) {
 func (s *Board) rdyLowSlot(v bool) {
 	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
 	s.cpu.SetRDYLow(v || s.dmaLow)
+	//TODO SIGNAL
 }
 
 func (s *Board) aecLowSlot(v bool) {
 	s.cpu.SetAECLow(v || s.dmaLow)
+	//TODO SIGNAL
 }
 
 func (s *Board) irqTriggerSlot(i uint32) {
 	s.pic.TriggerIRQ(i)
-	if s.irqTrigger != nil {
-		s.irqTrigger.Emit(i)
+	if s.expansionIrqTrigger != nil {
+		s.expansionIrqTrigger.Emit(i)
 	}
 }
 
 func (s *Board) irqClearSlot(i uint32) {
 	s.pic.ClearIRQ(i)
-	if s.irqClear != nil {
-		s.irqClear.Emit(i)
+	if s.expansionIrqClear != nil {
+		s.expansionIrqClear.Emit(i)
 	}
 }
 

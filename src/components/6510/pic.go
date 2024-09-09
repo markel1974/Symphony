@@ -26,7 +26,6 @@ type Pic struct {
 	firstIrqCycle uint64
 	firstNMICycle uint64
 	nmiExec       bool
-	//irqExec       bool
 }
 
 func NewPic() *Pic {
@@ -37,7 +36,6 @@ func NewPic() *Pic {
 		all:           0,
 		irq:           0,
 		nmiExec:       false,
-		//irqExec:       false,
 	}
 }
 

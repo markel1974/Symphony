@@ -49,17 +49,17 @@ func (s *Expansion) IRQClear() {
 }
 
 func (s *Expansion) IRQTriggerBind(fn func(uint32)) {
-	if s.board.irqTrigger == nil {
-		s.board.irqTrigger = signals.NewSignalUint32()
+	if s.board.expansionIrqTrigger == nil {
+		s.board.expansionIrqTrigger = signals.NewSignalUint32()
 	}
-	s.board.irqTrigger.Bind(fn)
+	s.board.expansionIrqTrigger.Bind(fn)
 }
 
 func (s *Expansion) IRQClearBind(fn func(uint32)) {
-	if s.board.irqClear == nil {
-		s.board.irqClear = signals.NewSignalUint32()
+	if s.board.expansionIrqClear == nil {
+		s.board.expansionIrqClear = signals.NewSignalUint32()
 	}
-	s.board.irqClear.Bind(fn)
+	s.board.expansionIrqClear.Bind(fn)
 }
 
 func (s *Expansion) BusAvailable() bool {
