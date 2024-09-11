@@ -59,7 +59,7 @@ func (cpu *CPU) Setup(socket ISocket) {
 func (cpu *CPU) Reset() {
 	cpu.pic.Reset()
 	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8) // Read reset vector
-	cpu.next = instInit
+	cpu.next = instOpInit
 	cpu.opFlags = 0
 }
 
@@ -125,12 +125,12 @@ func (cpu *CPU) branch(data uint8) {
 	cpu.ar = cpu.pc + uint16(int8(data))
 	if (cpu.ar >> 8) != (cpu.pc >> 8) {
 		if data&0x80 != 0 {
-			cpu.next = instO_BRANCH_BP
+			cpu.next = instOpBranchBP
 		} else {
-			cpu.next = instO_BRANCH_FP
+			cpu.next = instOpBranchFP
 		}
 	} else {
-		cpu.next = instO_BRANCH_NP
+		cpu.next = instOpBranchNP
 	}
 }
 
