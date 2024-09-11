@@ -59,15 +59,12 @@ func (sp *Sprites) FetchPtr(num int) {
 	//TEST
 	if (sp.dmaFlags & (1 << num)) != 0 {
 		if sp.core.baLow && sp.core.aecLow {
-			//if !sp.core.baLow || !sp.core.aecLow {
-			//	fmt.Println("SPRITES: WRONG FETCH PTR")
-			//}
 			addr := sp.core.matrixBase | 0x03f8 | uint16(num)
 			data := sp.core.ReadByte(addr)
 			ptr := uint16(data) << 6
 			sp.dataPtr[num] = ptr
 		} else {
-			log.Printf("CAN'T FETCH SPRITE PTR %d", num)
+			log.Printf("sprites: can't fetch sprite ptr %d", num)
 		}
 	}
 }
@@ -81,7 +78,7 @@ func (sp *Sprites) Fetch(num int, bNum int) {
 			sp.data[num][bNum] = data
 			sp.dataCounter[num]++
 		} else {
-			log.Printf("CAN'T FETCH SPRITE %d - %d", num, bNum)
+			log.Printf("sprites: can't fetch sprite %d - %d", num, bNum)
 			sp.core.ReadByte(0x3fff)
 		}
 	} else if bNum == 1 {
