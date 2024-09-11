@@ -173,6 +173,10 @@ func (vic *Core) TryBALowIfBadLine() {
 	}
 }
 
+func (vic *Core) GetBALow() bool {
+	return vic.baLow
+}
+
 func (vic *Core) SetBALow() {
 	if vic.baLow {
 		return
@@ -180,14 +184,6 @@ func (vic *Core) SetBALow() {
 	vic.baLow = true
 	vic.baLowFirstCycle = vic.socket.Cycle()
 	vic.socket.BALow(true)
-}
-
-func (vic *Core) GetBALow() bool {
-	return vic.baLow
-}
-
-func (vic *Core) GetAECLow() bool {
-	return vic.aecLow
 }
 
 func (vic *Core) ClearBALow() {
@@ -201,6 +197,10 @@ func (vic *Core) ClearBALow() {
 		vic.aecLow = false
 		vic.socket.AECLow(vic.aecLow)
 	}
+}
+
+func (vic *Core) GetAECLow() bool {
+	return vic.aecLow
 }
 
 func (vic *Core) TryAcquireAEC() {
