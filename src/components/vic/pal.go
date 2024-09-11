@@ -1,0 +1,498 @@
+package mos6569
+
+var _pal *cycleData
+
+const (
+	sprite0 = 0x1
+	sprite1 = 0x2
+	sprite2 = 0x4
+	sprite3 = 0x8
+	sprite4 = 0x10
+	sprite5 = 0x20
+	sprite6 = 0x40
+	sprite7 = 0x80
+)
+
+func init() {
+	var palCycles []*cycleData
+	palCycles = append(palCycles, &cycleData{fn: palCycle1})
+	palCycles = append(palCycles, &cycleData{fn: palCycle2})
+	palCycles = append(palCycles, &cycleData{fn: palCycle3})
+	palCycles = append(palCycles, &cycleData{fn: palCycle4})
+	palCycles = append(palCycles, &cycleData{fn: palCycle5})
+	palCycles = append(palCycles, &cycleData{fn: palCycle6})
+	palCycles = append(palCycles, &cycleData{fn: palCycle7})
+	palCycles = append(palCycles, &cycleData{fn: palCycle8})
+	palCycles = append(palCycles, &cycleData{fn: palCycle9})
+	palCycles = append(palCycles, &cycleData{fn: palCycle10})
+	palCycles = append(palCycles, &cycleData{fn: palCycle11})
+	palCycles = append(palCycles, &cycleData{fn: palCycle12})
+	palCycles = append(palCycles, &cycleData{fn: palCycle13})
+	palCycles = append(palCycles, &cycleData{fn: palCycle14})
+	palCycles = append(palCycles, &cycleData{fn: palCycle15})
+	palCycles = append(palCycles, &cycleData{fn: palCycle16})
+	palCycles = append(palCycles, &cycleData{fn: palCycle17})
+	palCycles = append(palCycles, &cycleData{fn: palCycle18})
+	for x := 19; x <= 54; x++ {
+		palCycles = append(palCycles, &cycleData{fn: palCycle19to54})
+	}
+	palCycles = append(palCycles, &cycleData{fn: palCycle55})
+	palCycles = append(palCycles, &cycleData{fn: palCycle56})
+	palCycles = append(palCycles, &cycleData{fn: palCycle57})
+	palCycles = append(palCycles, &cycleData{fn: palCycle58})
+	palCycles = append(palCycles, &cycleData{fn: palCycle59})
+	palCycles = append(palCycles, &cycleData{fn: palCycle60})
+	palCycles = append(palCycles, &cycleData{fn: palCycle61})
+	palCycles = append(palCycles, &cycleData{fn: palCycle62})
+	palCycles = append(palCycles, &cycleData{fn: palCycle63})
+
+	last := len(palCycles) - 1
+	for idx := 0; idx < len(palCycles); idx++ {
+		palCycles[idx].cycle = uint8(idx) + 1
+		if idx == last {
+			palCycles[idx].next = palCycles[0]
+		} else {
+			palCycles[idx].next = palCycles[idx+1]
+		}
+	}
+	_pal = palCycles[0]
+}
+
+func palCycle1(vic *VIC) {
+	if rasterY := vic.core.GetRasterY(); rasterY == RasterYMax {
+		vic.vBlankNextCycle = true
+	} else {
+		vic.core.IncrementCounters()
+		vic.drawLine = (rasterY >= FirstDisplayedLine) && (rasterY <= LastDisplayedLine)
+	}
+	vic.borders.SetSample(BorderTypeLeft)
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite3) != 0 {
+	vic.sprites.FetchPtr(3)
+	vic.sprites.Fetch(3, 0)
+	//}
+
+	//Clear BALow if DMA for Sprite 3 - 4 is off
+	if vic.sprites.GetDMAFlag(0x18) == 0 {
+		vic.core.ClearBALow()
+	}
+}
+
+func palCycle2(vic *VIC) {
+	if vic.vBlankNextCycle {
+		vic.vBlankNextCycle = false
+		vic.graphics.ResetVideoCounterBase()
+		vic.lineStart = 0
+		vic.core.ResetCounters()
+		vic.core.socket.VBlank()
+	}
+	vic.graphics.SetOffset(vic.lineStart)
+	vic.collisions.ClearGraphics()
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite3) != 0 {
+	vic.sprites.Fetch(3, 1)
+	vic.sprites.Fetch(3, 2)
+	//}
+	//0010 0000
+	if vic.sprites.GetDMAFlag(0x20) != 0 {
+		vic.core.SetBALow()
+	}
+}
+
+func palCycle3(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite4) != 0 {
+	vic.sprites.FetchPtr(4)
+	vic.sprites.Fetch(4, 0)
+	//}
+
+	//0011 0000
+	if vic.sprites.GetDMAFlag(sprite4|sprite5) == 0 {
+		vic.core.ClearBALow()
+	}
+}
+
+func palCycle4(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite4) != 0 {
+	vic.sprites.Fetch(4, 1)
+	vic.sprites.Fetch(4, 2)
+	//}
+
+	if vic.sprites.GetDMAFlag(sprite6) != 0 {
+		vic.core.SetBALow()
+	}
+}
+
+func palCycle5(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite5) != 0 {
+	vic.sprites.FetchPtr(5)
+	vic.sprites.Fetch(5, 0)
+	//}
+
+	if vic.sprites.GetDMAFlag(sprite5|sprite6) == 0 {
+		vic.core.ClearBALow()
+	}
+}
+
+func palCycle6(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite5) != 0 {
+	vic.sprites.Fetch(5, 1)
+	vic.sprites.Fetch(5, 2)
+	//}
+
+	if vic.sprites.GetDMAFlag(sprite7) != 0 {
+		vic.core.SetBALow()
+	}
+}
+
+func palCycle7(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite6) != 0 {
+	vic.sprites.FetchPtr(6)
+	vic.sprites.Fetch(6, 0)
+	//}
+
+	if vic.sprites.GetDMAFlag(sprite7|sprite6) == 0 {
+		vic.core.ClearBALow()
+	}
+}
+
+func palCycle8(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite6) != 0 {
+	vic.sprites.Fetch(6, 1)
+	vic.sprites.Fetch(6, 2)
+	//}
+}
+
+func palCycle9(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite7) != 0 {
+	vic.sprites.FetchPtr(7)
+	vic.sprites.Fetch(7, 0)
+	//}
+	if vic.sprites.GetDMAFlag(sprite7) == 0 {
+		vic.core.ClearBALow()
+	}
+}
+
+func palCycle10(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite7) != 0 {
+	vic.sprites.Fetch(7, 1)
+	vic.sprites.Fetch(7, 2)
+	//}
+}
+
+func palCycle11(vic *VIC) {
+	vic.core.AccessRefresh()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.core.ClearBALow()
+}
+
+func palCycle12(vic *VIC) {
+	vic.core.AccessRefresh()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.core.TryBALowIfBadLine()
+}
+
+func palCycle13(vic *VIC) {
+	if vic.drawLine {
+		vic.graphics.DrawBackground()
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.core.AccessRefresh()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.core.TryBALowIfBadLine()
+	vic.core.ResetRasterX()
+}
+
+func palCycle14(vic *VIC) {
+	if vic.drawLine {
+		vic.graphics.DrawBackground()
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.core.AccessRefresh()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.graphics.TryResetRowCounter()
+	vic.core.TryBALowIfBadLine()
+	vic.graphics.UpdateVideoCounter()
+}
+
+func palCycle15(vic *VIC) {
+	if vic.drawLine {
+		vic.graphics.DrawBackground()
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.core.AccessRefresh()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.sprites.UpdateCounterBase()
+	vic.graphics.ResetLineIndex()
+	vic.core.TryBALowIfBadLine()
+	//vic.core.TryAcquireAEC()
+	vic.graphics.TryVideoMatrixAccess()
+}
+
+func palCycle16(vic *VIC) {
+	if vic.drawLine {
+		vic.graphics.DrawBackground()
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.graphics.TryGraphicsAccess()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.sprites.UpdateDMACounterBase()
+	vic.core.TryBALowIfBadLine()
+	//vic.core.TryAcquireAEC()
+	vic.graphics.TryVideoMatrixAccess()
+}
+
+func palCycle17(vic *VIC) {
+	if vic.core.ModeColumn40() {
+		vic.borders.Update()
+	}
+	vic.borders.SetSample(BorderTypeMidLeft)
+	if vic.drawLine {
+		if vic.borders.GetVerticalFlipFlop() {
+			vic.graphics.DrawBackground()
+		} else {
+			vic.graphics.DrawForeground()
+		}
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.graphics.TryGraphicsAccess()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.core.TryBALowIfBadLine()
+	//vic.core.TryAcquireAEC()
+	vic.graphics.TryVideoMatrixAccess()
+}
+
+func palCycle18(vic *VIC) {
+	if vic.core.ModeColumn38() {
+		vic.borders.Update()
+	}
+	vic.borders.SetSample(BorderTypeCenter)
+	if vic.drawLine {
+		if vic.borders.GetVerticalFlipFlop() {
+			vic.graphics.DrawBackground()
+		} else {
+			vic.graphics.DrawForeground()
+		}
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.graphics.TryGraphicsAccess()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.core.TryBALowIfBadLine()
+	//vic.core.TryAcquireAEC()
+	vic.graphics.TryVideoMatrixAccess()
+	vic.graphics.UpdateLastCharData()
+}
+
+func palCycle19to54(vic *VIC) {
+	if vic.drawLine {
+		if vic.borders.GetVerticalFlipFlop() {
+			vic.graphics.DrawBackground()
+		} else {
+			vic.graphics.DrawForeground()
+		}
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.graphics.TryGraphicsAccess()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.core.TryBALowIfBadLine()
+	//vic.core.TryAcquireAEC()
+	vic.graphics.TryVideoMatrixAccess()
+	vic.graphics.UpdateLastCharData()
+}
+
+func palCycle55(vic *VIC) {
+	if vic.drawLine {
+		if vic.borders.GetVerticalFlipFlop() {
+			vic.graphics.DrawBackground()
+		} else {
+			vic.graphics.DrawForeground()
+		}
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.graphics.TryGraphicsAccess()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.core.FlipFlopMYE()
+
+	vic.sprites.UpdateDMA()
+	if vic.sprites.GetDMAFlag(sprite0) != 0 {
+		vic.core.SetBALow() //BALow for Sprite 0 [cycle 58 = 55 + 3]
+	} else {
+		vic.core.ClearBALow() //Clear BALow for Sprite 0
+	}
+}
+
+func palCycle56(vic *VIC) {
+	if vic.core.ModeColumn38() {
+		vic.borders.Enable()
+	}
+	vic.borders.SetSample(BorderTypeMidRight)
+	if vic.drawLine {
+		if vic.borders.GetVerticalFlipFlop() {
+			vic.graphics.DrawBackground()
+		} else {
+			vic.graphics.DrawForeground()
+		}
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.core.AccessIdle()
+	vic.graphics.TryAcquireDisplayAccess()
+
+	vic.sprites.UpdateDMA()
+
+	if vic.sprites.GetDMAFlag(sprite0) != 0 {
+		//Wrong cycle 59
+		vic.core.SetBALow() //BALow for Sprite 0 [cycle 59 = 56 + 3]
+	}
+}
+
+func palCycle57(vic *VIC) {
+	if vic.core.ModeColumn40() {
+		vic.borders.Enable()
+	}
+	vic.borders.SetSample(BorderTypeRight)
+	vic.sprites.UpdateDisplayFlags()
+	if vic.drawLine {
+		vic.graphics.DrawBackground()
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.core.AccessIdle()
+	vic.graphics.TryAcquireDisplayAccess()
+
+	if vic.sprites.GetDMAFlag(sprite1) != 0 {
+		vic.core.SetBALow() //BALow for Sprite 1 [cycle 60 = 57 + 3]
+	}
+}
+
+func palCycle58(vic *VIC) {
+	if vic.drawLine {
+		vic.graphics.DrawBackground()
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.sprites.UpdateRasterYDisplayFlags()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite0) != 0 {
+	vic.sprites.FetchPtr(0) //phi1
+	vic.sprites.Fetch(0, 0) //phi2
+	//}
+
+	vic.graphics.UpdateDisplayAccess()
+}
+
+func palCycle59(vic *VIC) {
+	if vic.drawLine {
+		vic.graphics.DrawBackground()
+		vic.borders.Sample(vic.curr.cycle)
+	}
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite0) != 0 {
+	vic.sprites.Fetch(0, 1) //phi1
+	vic.sprites.Fetch(0, 2) //phi2
+	//}
+
+	if vic.sprites.GetDMAFlag(sprite2) != 0 {
+		vic.core.SetBALow() //BALow for Sprite 2 [cycle 62 = 59 + 3]
+	}
+}
+
+func palCycle60(vic *VIC) {
+	if vic.drawLine {
+		vic.graphics.DrawBackground()
+		vic.borders.Sample(vic.curr.cycle)
+		vic.sprites.Draw(vic.lineStart)
+		vic.borders.Draw(vic.lineStart)
+		vic.lineStart += DisplayX
+	}
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite1) != 0 {
+	vic.sprites.FetchPtr(1) //phi1
+	vic.sprites.Fetch(1, 0) //phi2
+	//}
+
+	if vic.sprites.GetDMAFlag(sprite1|sprite2) == 0 {
+		vic.core.ClearBALow() //Clear BALow for Sprite 1 - 2
+	}
+}
+
+func palCycle61(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite2) != 0 {
+	vic.sprites.Fetch(1, 1) //phi1
+	vic.sprites.Fetch(1, 2) //phi2
+	//}
+
+	if vic.sprites.GetDMAFlag(sprite3) != 0 {
+		vic.core.SetBALow() //BALow for Sprite 3 [cycle 1 = 61 + 3]
+	}
+}
+
+func palCycle62(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite2) != 0 {
+	vic.sprites.FetchPtr(2) //phi1
+	vic.sprites.Fetch(2, 0) //phi2
+	//}
+
+	if vic.sprites.GetDMAFlag(sprite2|sprite3) == 0 {
+		vic.core.ClearBALow() //Clear BALow for Sprite 2 - 3
+	}
+}
+
+/* Check BA for matrix fetch */
+/* Check BA for Sprite Phi2 fetch */
+
+func palCycle63(vic *VIC) {
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.borders.UpdateVerticalFlipFlop()
+
+	//TEST
+	//if vic.sprites.GetDMAFlag(sprite2) != 0 {
+	vic.sprites.Fetch(2, 1) //phi1
+	vic.sprites.Fetch(2, 2) //phi2
+	//}
+
+	if vic.sprites.GetDMAFlag(sprite4) != 0 {
+		vic.core.SetBALow() //BALow for Sprite 4 [cycle 3 = 63 + 3]
+	}
+
+	vic.core.socket.LastCycle()
+}
+
+//60 sprite 0 sprite 0 ptr
+//61 s
+//62 sprite 1
+//63 s
+//64 sprite 2
+//65 s

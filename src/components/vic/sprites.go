@@ -52,13 +52,23 @@ func (sp *Sprites) UpdateDisplayFlags() {
 }
 
 func (sp *Sprites) FetchPtr(num int) {
-	addr := sp.core.matrixBase | 0x03f8 | uint16(num)
-	data := sp.core.ReadByte(addr)
-	ptr := uint16(data) << 6
-	sp.dataPtr[num] = ptr
+	//TEST
+	if (sp.dmaFlags & (1 << num)) != 0 {
+		//if !sp.core.baLow || !sp.core.aecLow {
+		//	fmt.Println("SPRITES: WRONG FETCH PTR")
+		//}
+		addr := sp.core.matrixBase | 0x03f8 | uint16(num)
+		data := sp.core.ReadByte(addr)
+		ptr := uint16(data) << 6
+		sp.dataPtr[num] = ptr
+	}
 }
 
 func (sp *Sprites) Fetch(num int, bNum int) {
+	//TODO
+	//if !sp.core.baLow || !sp.core.aecLow {
+	//	fmt.Println("SPRITES: WRONG FETCH")
+	//}
 	if (sp.dmaFlags & (1 << num)) != 0 {
 		ptr := sp.dataPtr[num]
 		addr := (sp.dataCounter[num] & 0x3f) | ptr

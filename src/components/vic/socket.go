@@ -21,4 +21,6 @@ type ISocket interface {
 	IRQClear()
 	BALow(d bool)
 	AECLow(d bool)
+	VBlank()
+	LastCycle()
 }

@@ -66,13 +66,12 @@ func (sid *SID) WriteRegister(addr uint16, data uint8) {
 	sid.regs[reg] = data
 }
 
-func (sid *SID) Emulate(vBlank bool, lastVicCycle bool) {
-	if lastVicCycle {
-		sid.builder.Prepare(sid.regs)
-	}
-	if vBlank {
-		sid.builder.Render()
-	}
+func (sid *SID) Prepare() {
+	sid.builder.Prepare(sid.regs)
+}
+
+func (sid *SID) Render() {
+	sid.builder.Render()
 }
 
 func (sid *SID) GetLastByte() uint8 {

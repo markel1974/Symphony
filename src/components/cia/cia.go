@@ -42,14 +42,14 @@ func (m *CIA) Setup(conn ISocket) {
 	m.socket = conn
 }
 
-func (m *CIA) Emulate(vBlank bool) {
-	if vBlank {
-		if m.tod.Update(m.timerA.GetRTC()) {
-			m.icr |= IRQTODAlarmEqual
-			m.irqTrigger()
-		}
+func (m *CIA) Update() {
+	if m.tod.Update(m.timerA.GetRTC()) {
+		m.icr |= IRQTODAlarmEqual
+		m.irqTrigger()
 	}
+}
 
+func (m *CIA) Emulate() {
 	if m.timerAIrqCycle {
 		m.timerAIrqCycle = false
 		//trigger in next cycle

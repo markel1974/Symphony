@@ -47,3 +47,11 @@ func (v *VicSocket) BALow(d bool) {
 func (v *VicSocket) AECLow(d bool) {
 	v.board.aecLowSlot(d)
 }
+
+func (v *VicSocket) LastCycle() {
+	v.board.vicLastCycleSLot()
+}
+
+func (v *VicSocket) VBlank() {
+	v.board.vicVBlankSlot()
+}

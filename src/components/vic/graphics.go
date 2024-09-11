@@ -1,5 +1,7 @@
 package mos6569
 
+import "fmt"
+
 const (
 	modeTextStandard            = 0
 	modeTextMulticolor          = 1
@@ -55,15 +57,15 @@ func NewGraphics(core *Core, collisions *Collisions, db IDisplayBuffer) *Graphic
 	return gr
 }
 
-//func (gr *Graphics) PrintText() {
-//	for x, v := range gr.textBuffer {
-//		if x%40 == 0 {
-//			fmt.Println()
-//		}
-//		fmt.Printf("%c", v)
-//	}
-//	fmt.Println()
-//}
+func (gr *Graphics) PrintText() {
+	for x, v := range gr.textBuffer {
+		if x%40 == 0 {
+			fmt.Println()
+		}
+		fmt.Printf("%c", v)
+	}
+	fmt.Println()
+}
 
 func (gr *Graphics) Setup() {
 }

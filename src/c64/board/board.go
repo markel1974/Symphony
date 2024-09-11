@@ -188,7 +188,8 @@ func (s *Board) configChanged() {
 func (s *Board) Emulate() bool {
 	//s.phiMode = Phi1
 	//PHI1
-	s.vBlank, s.lastVicCycle = s.vic.Emulate()
+	s.vBlank = false
+	s.vic.Emulate()
 
 	//s.phiMode = Phi2
 	//if vBlank {
@@ -199,9 +200,9 @@ func (s *Board) Emulate() bool {
 	//}
 
 	//PHI2
-	s.sid.Emulate(s.vBlank, s.lastVicCycle)
-	s.cia1.Emulate(s.vBlank)
-	s.cia2.Emulate(s.vBlank)
+	//s.sid.Emulate(s.vBlank, s.lastVicCycle)
+	s.cia1.Emulate()
+	s.cia2.Emulate()
 	s.cartMan.Emulate()
 	s.iec.Emulate()
 	s.cpu.Emulate()
@@ -368,6 +369,17 @@ func (s *Board) nmiTriggerSlot() {
 
 func (s *Board) nmiClearSlot() {
 	s.pic.ClearNMI()
+}
+
+func (s *Board) vicLastCycleSLot() {
+	s.sid.Prepare()
+}
+
+func (s *Board) vicVBlankSlot() {
+	s.sid.Render()
+	s.cia1.Update()
+	s.cia2.Update()
+	s.vBlank = true
 }
 
 func (s *Board) loadPRG(prgFile string) {

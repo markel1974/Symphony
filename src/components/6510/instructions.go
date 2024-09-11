@@ -161,7 +161,7 @@ func instNMI6(cpu *CPU) {
 }
 
 // Addressing modes: Fetch effective address, no extra cycles (-> ar)
-func instA_ZERO(cpu *CPU) {
+func instApZero(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -171,17 +171,17 @@ func instA_ZERO(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instA_ZEROX(cpu *CPU) {
+func instApZeroX(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instA_ZEROX1
+	cpu.next = instApZeroX1
 }
 
-func instA_ZEROX1(cpu *CPU) {
+func instApZeroX1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -191,17 +191,17 @@ func instA_ZEROX1(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instA_ZEROY(cpu *CPU) {
+func instApZeroY(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instA_ZEROY1
+	cpu.next = instApZeroY1
 }
 
-func instA_ZEROY1(cpu *CPU) {
+func instApZeroY1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -211,17 +211,17 @@ func instA_ZEROY1(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instA_ABS(cpu *CPU) {
+func instApAbs(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instA_ABS1
+	cpu.next = instApAbs1
 }
 
-func instA_ABS1(cpu *CPU) {
+func instApAbs1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -232,17 +232,17 @@ func instA_ABS1(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instA_ABSX(cpu *CPU) {
+func instApAbsX(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instA_ABSX1
+	cpu.next = instApAbsX1
 }
 
-func instA_ABSX1(cpu *CPU) {
+func instApAbsX1(cpu *CPU) {
 	// Note: Some undocumented functions rely on the value of ar2
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -251,14 +251,14 @@ func instA_ABSX1(cpu *CPU) {
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
 	if cpu.ar+uint16(cpu.x) < 0x100 {
-		cpu.next = instA_ABSX2
+		cpu.next = instApAbsX2
 	} else {
-		cpu.next = instA_ABSX3
+		cpu.next = instApAbsX3
 	}
 	cpu.ar = ((cpu.ar + uint16(cpu.x)) & 0xff) | (cpu.ar2 << 8)
 }
 
-func instA_ABSX2(cpu *CPU) {
+func instApAbsX2(cpu *CPU) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -268,7 +268,7 @@ func instA_ABSX2(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instA_ABSX3(cpu *CPU) {
+func instApAbsX3(cpu *CPU) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -279,17 +279,17 @@ func instA_ABSX3(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instA_ABSY(cpu *CPU) {
+func instApAbsY(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instA_ABSY1
+	cpu.next = instApAbsY1
 }
 
-func instA_ABSY1(cpu *CPU) {
+func instApAbsY1(cpu *CPU) {
 	// Note: Some undocumented functions rely on the value of ar2
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -298,14 +298,14 @@ func instA_ABSY1(cpu *CPU) {
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
 	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.next = instA_ABSY2
+		cpu.next = instApAbsY2
 	} else {
-		cpu.next = instA_ABSY3
+		cpu.next = instApAbsY3
 	}
 	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (cpu.ar2 << 8)
 }
 
-func instA_ABSY2(cpu *CPU) {
+func instApAbsY2(cpu *CPU) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -315,7 +315,7 @@ func instA_ABSY2(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instA_ABSY3(cpu *CPU) {
+func instApAbsY3(cpu *CPU) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -326,36 +326,36 @@ func instA_ABSY3(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instA_INDX(cpu *CPU) {
+func instApIndX(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instA_INDX1
+	cpu.next = instApIndX1
 }
 
-func instA_INDX1(cpu *CPU) {
+func instApIndX1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar2)
 	cpu.ar2 = (cpu.ar2 + uint16(cpu.x)) & 0xff
-	cpu.next = instA_INDX2
+	cpu.next = instApIndX2
 }
 
-func instA_INDX2(cpu *CPU) {
+func instApIndX2(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.next = instA_INDX3
+	cpu.next = instAIndX3
 }
 
-func instA_INDX3(cpu *CPU) {
+func instAIndX3(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -365,26 +365,26 @@ func instA_INDX3(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instA_INDY(cpu *CPU) {
+func instApIndY(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instA_INDY1
+	cpu.next = instApIndY1
 }
 
-func instA_INDY1(cpu *CPU) {
+func instApIndY1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.next = instA_INDY2
+	cpu.next = instApIndY2
 }
 
-func instA_INDY2(cpu *CPU) {
+func instApIndY2(cpu *CPU) {
 	// Note: Some undocumented functions rely on the value of ar2
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -392,14 +392,14 @@ func instA_INDY2(cpu *CPU) {
 	}
 	cpu.ar2 = uint16(cpu.banks.Read((cpu.ar2 + 1) & 0xff))
 	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.next = instA_INDY3
+		cpu.next = instApIndY3
 	} else {
-		cpu.next = instA_INDY4
+		cpu.next = instApIndY4
 	}
 	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (cpu.ar2 << 8)
 }
 
-func instA_INDY3(cpu *CPU) {
+func instApIndY3(cpu *CPU) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -409,7 +409,7 @@ func instA_INDY3(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instA_INDY4(cpu *CPU) {
+func instApIndY4(cpu *CPU) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -420,7 +420,7 @@ func instA_INDY4(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instAE_ABSX(cpu *CPU) {
+func instAeAbsX(cpu *CPU) {
 	// Addressing modes: Fetch effective address, extra cycle on page crossing (-> ar)
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -428,10 +428,10 @@ func instAE_ABSX(cpu *CPU) {
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instAE_ABSX1
+	cpu.next = instAeAbsX1
 }
 
-func instAE_ABSX1(cpu *CPU) {
+func instAeAbsX1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -443,11 +443,11 @@ func instAE_ABSX1(cpu *CPU) {
 		cpu.next = _opTable[cpu.op]
 	} else {
 		cpu.ar = ((cpu.ar + uint16(cpu.x)) & 0xff) | (uint16(data) << 8)
-		cpu.next = instAE_ABSX2
+		cpu.next = instAeAbsX2
 	}
 }
 
-func instAE_ABSX2(cpu *CPU) {
+func instAeAbsX2(cpu *CPU) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -458,17 +458,17 @@ func instAE_ABSX2(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instAE_ABSY(cpu *CPU) {
+func instAeAbsY(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instAE_ABSY1
+	cpu.next = instAeAbsY1
 }
 
-func instAE_ABSY1(cpu *CPU) {
+func instAeAbsY1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -480,11 +480,11 @@ func instAE_ABSY1(cpu *CPU) {
 		cpu.next = _opTable[cpu.op]
 	} else {
 		cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
-		cpu.next = instAE_ABSY2
+		cpu.next = instAeAbsY2
 	}
 }
 
-func instAE_ABSY2(cpu *CPU) {
+func instAeAbsY2(cpu *CPU) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -495,26 +495,26 @@ func instAE_ABSY2(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instAE_INDY(cpu *CPU) {
+func instAeIndy(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instAE_INDY1
+	cpu.next = instAeIndY1
 }
 
-func instAE_INDY1(cpu *CPU) {
+func instAeIndY1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.next = instAE_INDY2
+	cpu.next = instAeIndY2
 }
 
-func instAE_INDY2(cpu *CPU) {
+func instAeIndY2(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -525,11 +525,11 @@ func instAE_INDY2(cpu *CPU) {
 		cpu.next = _opTable[cpu.op]
 	} else {
 		cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
-		cpu.next = instAE_INDY3
+		cpu.next = instAeIndY3
 	}
 }
 
-func instAE_INDY3(cpu *CPU) {
+func instAeIndY3(cpu *CPU) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -540,7 +540,7 @@ func instAE_INDY3(cpu *CPU) {
 	cpu.next = _opTable[cpu.op]
 }
 
-func instM_ZERO(cpu *CPU) {
+func instMpZero(cpu *CPU) {
 	// Addressing modes: Read operand, write it back, no extra cycles (-> ar, rmw)
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -551,17 +551,17 @@ func instM_ZERO(cpu *CPU) {
 	cpu.next = instRMW
 }
 
-func instM_ZEROX(cpu *CPU) {
+func instMpZeroX(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instM_ZEROX1
+	cpu.next = instMpZeroX1
 }
 
-func instM_ZEROX1(cpu *CPU) {
+func instMpZeroX1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -572,38 +572,38 @@ func instM_ZEROX1(cpu *CPU) {
 }
 
 /*
-func instM_ZEROY(cpu *CPU) {
+func instMpZeroY(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instM_ZEROY1
+	cpu.next = instMpZeroY1
 }
 
-func instM_ZEROY1(cpu *CPU) {
+func instMpZeroY1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.banks.Read(cpu.ar)
 	cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
-	cpu.next = instRMW_DO_IT
+	cpu.next = instRMW
 }
 */
 
-func instM_ABS(cpu *CPU) {
+func instMpAbs(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instM_ABS1
+	cpu.next = instMpAbs1
 }
 
-func instM_ABS1(cpu *CPU) {
+func instMpAbs1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -614,17 +614,17 @@ func instM_ABS1(cpu *CPU) {
 	cpu.next = instRMW
 }
 
-func instM_ABSX(cpu *CPU) {
+func instMpAbsX(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instM_ABSX1
+	cpu.next = instMpAbsX1
 }
 
-func instM_ABSX1(cpu *CPU) {
+func instMpAbsX1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -632,14 +632,14 @@ func instM_ABSX1(cpu *CPU) {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.ar+uint16(cpu.x) < 0x100 {
-		cpu.next = instM_ABSX2
+		cpu.next = instMpAbsX2
 	} else {
-		cpu.next = instM_ABSX3
+		cpu.next = instMpAbsX3
 	}
 	cpu.ar = (cpu.ar + uint16(cpu.x)&0xff) | (uint16(data) << 8)
 }
 
-func instM_ABSX2(cpu *CPU) {
+func instMpAbsX2(cpu *CPU) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -649,7 +649,7 @@ func instM_ABSX2(cpu *CPU) {
 	cpu.next = instRMW
 }
 
-func instM_ABSX3(cpu *CPU) {
+func instMpAbsX3(cpu *CPU) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -660,17 +660,17 @@ func instM_ABSX3(cpu *CPU) {
 	cpu.next = instRMW
 }
 
-func instM_ABSY(cpu *CPU) {
+func instMpAbsY(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
 	}
 	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instM_ABSY1
+	cpu.next = instMpAbsY1
 }
 
-func instM_ABSY1(cpu *CPU) {
+func instMpAbsY1(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -678,14 +678,14 @@ func instM_ABSY1(cpu *CPU) {
 	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.next = instM_ABSY2
+		cpu.next = instMpAbsY2
 	} else {
-		cpu.next = instM_ABSY3
+		cpu.next = instMpAbsY3
 	}
 	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
 }
 
-func instM_ABSY2(cpu *CPU) {
+func instMpAbsY2(cpu *CPU) {
 	// No page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -695,7 +695,7 @@ func instM_ABSY2(cpu *CPU) {
 	cpu.next = instRMW
 }
 
-func instM_ABSY3(cpu *CPU) {
+func instMpAbsY3(cpu *CPU) {
 	// Page crossed
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -706,7 +706,7 @@ func instM_ABSY3(cpu *CPU) {
 	cpu.next = instRMW
 }
 
-func instM_INDX(cpu *CPU) {
+func instMpIndX(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -745,7 +745,7 @@ func instM_INDX3(cpu *CPU) {
 	cpu.next = instRMW
 }
 
-func instM_INDY(cpu *CPU) {
+func instMpIndy(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -976,7 +976,7 @@ func instO_TXS(cpu *CPU) {
 	cpu.next = instInit
 }
 
-// Arithmetic group
+// Apithmetic group
 func instO_ADC(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -1119,7 +1119,7 @@ func instO_ORA(cpu *CPU) {
 	cpu.next = instInit
 }
 
-func instO_ORA_I(cpu *CPU) {
+func instOiOpa(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1259,7 +1259,7 @@ func instO_ASL(cpu *CPU) {
 	cpu.next = instInit
 }
 
-func instO_ASL_A(cpu *CPU) {
+func instOaAsl(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1404,7 +1404,7 @@ func instO_PLA2(cpu *CPU) {
 	cpu.next = instInit
 }
 
-func instO_PHP(cpu *CPU) {
+func instOpPhp(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1636,7 +1636,7 @@ func instO_RTI4(cpu *CPU) {
 	cpu.next = instInit
 }
 
-func instO_BRK(cpu *CPU) {
+func instOpBrk(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -1795,7 +1795,7 @@ func instO_BMI(cpu *CPU) {
 	}
 }
 
-func instO_BPL(cpu *CPU) {
+func instOpBpl(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2061,7 +2061,7 @@ func instO_ISB(cpu *CPU) {
 }
 
 // Complex functions
-func instO_ANC_I(cpu *CPU) {
+func instOiAnc(cpu *CPU) {
 	if cpu.rdyLow {
 		cpu.stop = true
 		return
@@ -2207,6 +2207,6 @@ func instO_SHA(cpu *CPU) {
 	cpu.next = instInit
 }
 
-func instI_ILL_OP(cpu *CPU) {
+func instOpIll(cpu *CPU) {
 	cpu.illegalOp(cpu.op, cpu.pc-1)
 }

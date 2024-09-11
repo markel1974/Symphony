@@ -67,7 +67,8 @@ type Core struct {
 	aecLow           bool     // AEC Line
 	baLowFirstCycle  uint64   //
 	//aecLowClearNextCycle bool     //
-	lastByte uint8 // Last byte read by VIC
+	lastByte       uint8 // Last byte read by VIC
+	refreshCounter uint8
 }
 
 func NewCore(socket ISocket) *Core {
@@ -133,6 +134,7 @@ func NewCore(socket ISocket) *Core {
 		aecLow:           false,
 		ready:            false,
 		lastByte:         0,
+		refreshCounter:   0,
 	}
 	// Preset colors to black
 	for i := range c.mXcColor {
@@ -165,7 +167,7 @@ func (vic *Core) ModeColumn40() bool {
 	return (vic.cr2 & 8) != 0
 }
 
-func (vic *Core) TryAcquireBA() {
+func (vic *Core) TryBALowIfBadLine() {
 	if vic.badLineCondition {
 		vic.SetBALow()
 	}
@@ -253,6 +255,7 @@ func (vic *Core) LightPenTrigger() {
 }
 
 func (vic *Core) ResetCounters() {
+	vic.refreshCounter = 0xff
 	vic.rasterY = 0
 	vic.lpTriggered = false
 	if vic.irqRaster == 0 {
@@ -269,6 +272,15 @@ func (vic *Core) IncrementCounters() {
 		vic.badLinesEnabled = (vic.cr1 & 0x10) != 0 //denBit
 	}
 	vic.badLineUpdate()
+}
+
+func (vic *Core) AccessIdle() {
+	_ = vic.ReadByte(0x3fff)
+}
+
+func (vic *Core) AccessRefresh() {
+	_ = vic.ReadByte(0x3f00 | uint16(vic.refreshCounter))
+	vic.refreshCounter--
 }
 
 func (vic *Core) ReadByte(addr uint16) uint8 {
