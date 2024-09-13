@@ -4,7 +4,6 @@ type InputKeyData struct {
 	keyM        int
 	revM        int
 	shifted     bool
-	joyKey      uint8
 	pressed     bool
 	persistence uint8
 }

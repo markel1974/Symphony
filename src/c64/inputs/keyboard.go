@@ -2,7 +2,10 @@ package inputs
 
 import (
 	"container/list"
+	"github.com/markel1974/c64emu/src/components/quartz"
 )
+
+const persistence = 1
 
 func matrix(a int, b int) int {
 	return ((a) << 3) | (b)
@@ -19,14 +22,16 @@ type Keyboard struct {
 	ready          bool
 	virtual        *Virtual
 	ascii          *Ascii
+	quartz         *quartz.Quartz
 }
 
-func NewKeyboard() *Keyboard {
+func NewKeyboard(quartz *quartz.Quartz) *Keyboard {
 	k := &Keyboard{
+		quartz:  quartz,
 		virtual: NewVirtual(),
 		ascii:   NewAscii(),
-		joy1:    NewJoystick(),
-		joy2:    NewJoystick(),
+		joy1:    NewJoystick(quartz),
+		joy2:    NewJoystick(quartz),
 	}
 	k.Reset()
 	return k
@@ -98,7 +103,7 @@ func (k *Keyboard) SetVirtualKey(pressed bool, vKey int) {
 		return
 	}
 	if keyM, revM, shifted, ok := k.keyCodeToC64(kc); ok {
-		k.keyDataStorage.PushBack(NewInputKeyData(pressed, keyM, revM, shifted, 1))
+		k.keyDataStorage.PushBack(NewInputKeyData(pressed, keyM, revM, shifted, persistence))
 	}
 	return
 }
@@ -132,9 +137,6 @@ func (k *Keyboard) PollKeyboard() (int, int, bool, bool, bool) {
 		return 0, 0, false, false, false
 	}
 	e := k.keyDataStorage.Front()
-	//if e.Value == nil {
-	//	return 0, 0, false, false, false
-	//}
 	i := e.Value.(*InputKeyData)
 	if i.persistence--; i.persistence == 0 {
 		k.keyDataStorage.Remove(e)
@@ -182,25 +184,14 @@ func (k *Keyboard) keyCodeToC64(kc int) (int, int, bool, bool) {
 }
 
 func (k *Keyboard) prepareCommand(command string) (*list.List, bool) {
-	const persistenceCycles = 20
 	if len(command) == 0 {
 		return nil, false
 	}
 	cmd := func(keyCode int, pressed bool, shifted bool, storage *list.List) bool {
 		if keyM, revM, _, ok := k.keyCodeToC64(keyCode); ok {
-			i1 := NewInputKeyData(pressed, keyM, revM, shifted, persistenceCycles)
-			storage.PushBack(i1)
+			storage.PushBack(NewInputKeyData(pressed, keyM, revM, shifted, persistence))
 			return true
 		}
-		/*
-			if keyM, revM, _, ok := k.keyCodeToC64(keyCode); ok {
-				for x := 0; x < persistence; x++ {
-					i1 := NewInputKeyData(pressed, keyM, revM, shifted)
-					storage.PushBack(i1)
-				}
-				return true
-			}
-		*/
 		return false
 	}
 	storage := list.New()

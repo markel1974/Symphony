@@ -164,7 +164,7 @@ func (v *Via) Emulate() {
 
 	if t1c > defaultViaTimeout {
 		if (v.acr & 0x40) != 0 {
-			// Reload from latch in free-run mode
+			// Reload from latch in free run mode
 			v.t1c = v.t1l
 		}
 		v.ifr |= 0x40
@@ -174,7 +174,7 @@ func (v *Via) Emulate() {
 	}
 
 	if (v.acr & 0x20) == 0 {
-		// Only count in one-shot mode
+		// count in one shot mode only
 		t2c := uint(v.t2c) - 1
 		v.t2c = uint16(t2c)
 		if t2c > defaultViaTimeout {

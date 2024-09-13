@@ -112,7 +112,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.sid = mos6581.NewSID(baseId + "_sid")
 	s.cia1 = mos6526.NewCIA(baseId + "_cia1")
 	s.cia2 = mos6526.NewCIA(baseId + "_cia2")
-	s.keys = inputs.NewKeyboard()
+	s.keys = inputs.NewKeyboard(s.quartz)
 	s.banks = banks.NewBanks()
 	s.expansion = NewExpansion(s)
 
@@ -376,10 +376,21 @@ func (s *Board) vicLastCycleSLot() {
 }
 
 func (s *Board) vicVBlankSlot() {
+	s.vBlank = true
+
 	s.sid.Render()
 	s.cia1.Update()
 	s.cia2.Update()
-	s.vBlank = true
+
+	if joy1, ok := s.keys.PollJoystick1(); ok {
+		s.cia1Socket.SetJoy1(joy1)
+	}
+	if joy2, ok := s.keys.PollJoystick2(); ok {
+		s.cia1Socket.SetJoy2(joy2)
+	}
+	if keyM, revM, pressed, shifted, ok := s.keys.PollKeyboard(); ok {
+		s.cia1Socket.SetKeyboard(keyM, revM, pressed, shifted)
+	}
 }
 
 func (s *Board) loadPRG(prgFile string) {

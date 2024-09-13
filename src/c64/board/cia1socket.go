@@ -20,6 +20,32 @@ func (w *CIA1Socket) Setup(board *Board, intrId uint32) {
 	w.intrId = intrId
 }
 
+func (w *CIA1Socket) SetKeyboard(keyM int, revM int, pressed bool, shifted bool) {
+	if pressed {
+		if shifted {
+			w.keyMatrix[6] &= 0xef
+			w.revMatrix[4] &= 0xbf
+		}
+		w.keyMatrix[keyM] &= ^(1 << revM)
+		w.revMatrix[revM] &= ^(1 << keyM)
+	} else {
+		if shifted {
+			w.keyMatrix[6] |= 0x10
+			w.revMatrix[4] |= 0x40
+		}
+		w.keyMatrix[keyM] |= 1 << revM
+		w.revMatrix[revM] |= 1 << keyM
+	}
+}
+
+func (w *CIA1Socket) SetJoy1(joy1 uint8) {
+	w.joy1 = joy1
+}
+
+func (w *CIA1Socket) SetJoy2(joy2 uint8) {
+	w.joy2 = joy2
+}
+
 func (w *CIA1Socket) Reset() {
 	for i := 0; i < 8; i++ {
 		w.keyMatrix[i] = 0xff
@@ -31,7 +57,8 @@ func (w *CIA1Socket) Reset() {
 }
 
 func (w *CIA1Socket) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
-	w.updateInputs()
+	//w.updateInputs()
+
 	//Joy port 2
 	ret := prA | ^ddrA
 	tst := (prB | ^ddrB) & w.joy1
@@ -63,7 +90,8 @@ func (w *CIA1Socket) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uin
 }
 
 func (w *CIA1Socket) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
-	w.updateInputs()
+	//w.updateInputs()
+
 	//joy port 1
 	ret := ^ddrB
 	tst := (prA | ^ddrA) & w.joy2
@@ -115,6 +143,7 @@ func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
 	w.prevLPState = (prB | ^ddrB) & 0x10
 }
 
+/*
 func (w *CIA1Socket) updateInputs() {
 	if joy1, ok := w.board.keys.PollJoystick1(); ok {
 		w.joy1 = joy1
@@ -140,6 +169,7 @@ func (w *CIA1Socket) updateInputs() {
 		}
 	}
 }
+*/
 
 func (w *CIA1Socket) IRQTrigger() {
 	w.board.irqTriggerSlot(w.intrId)
