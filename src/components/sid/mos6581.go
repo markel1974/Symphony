@@ -47,6 +47,8 @@ func (sid *SID) Reset() {
 		sid.regs[x] = 0
 	}
 	sid.builder.Reset()
+	sid.SetPotXSlot(0xff)
+	sid.SetPotYSlot(0xff)
 	//PADDLE TEST
 	//sid.WriteRegister(0xDC00, 0x40) //Control-Port 1 selected
 	//sid.WriteRegister(0xD419, 0x7F) //Paddle X value
