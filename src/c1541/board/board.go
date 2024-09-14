@@ -82,9 +82,9 @@ func (m *Board) Setup(cfg *config.Config) {
 
 func (m *Board) Reset() {
 	m.pic.Reset()
-	m.cpu.Reset()
-	m.via1.Reset()
-	m.via2.Reset()
+	m.cpuSocket.Reset()
+	m.via1Socket.Reset()
+	m.via2Socket.Reset()
 }
 
 func (m *Board) Emulate() {

@@ -53,8 +53,6 @@ func (v *Via) Reset() {
 	v.pcr = 0
 	v.ifr = 0
 	v.ier = 0
-
-	v.socket.Reset()
 }
 
 func (v *Via) ReadByte(addr uint16) uint8 {

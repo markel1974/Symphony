@@ -19,6 +19,7 @@ func NewVia1Socket(board *Board, intrId uint32) *Via1Socket {
 }
 
 func (v *Via1Socket) Reset() {
+	v.board.via1.Reset()
 }
 
 func (v *Via1Socket) IRQClear() {

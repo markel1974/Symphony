@@ -26,6 +26,7 @@ func NewVia2Socket(board *Board, intrId uint32) *Via2Socket {
 
 func (v *Via2Socket) Reset() {
 	v.prbPrev = 0
+	v.board.via2.Reset()
 }
 
 func (v *Via2Socket) LedChanged(data byte) {

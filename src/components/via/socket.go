@@ -1,7 +1,6 @@
 package mos6522
 
 type ISocket interface {
-	Reset()
 	ReadPRA(uint8, uint8) uint8
 	ReadPRB(uint8, uint8) uint8
 	WritePRA(uint8, uint8)
