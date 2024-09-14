@@ -2,20 +2,20 @@ package inputs
 
 type KeyData struct {
 	r1      int
-	shifted bool
+	shifted uint8
 }
 
 func NewShiftedKeyData(a int, b int) *KeyData {
 	return &KeyData{
 		r1:      matrix(a, b),
-		shifted: true,
+		shifted: 1,
 	}
 }
 
 func NewSingleKeyData(a int, b int) *KeyData {
 	return &KeyData{
 		r1:      matrix(a, b),
-		shifted: false,
+		shifted: 0,
 	}
 }
 

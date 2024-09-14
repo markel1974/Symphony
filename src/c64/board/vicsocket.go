@@ -16,6 +16,10 @@ func (v *VicSocket) Setup(board *Board, intrId uint32) {
 	v.intrId = intrId
 }
 
+func (v *VicSocket) Reset() {
+	v.board.vic.Reset()
+}
+
 func (v *VicSocket) Cycle() uint64 {
 	return v.board.quartz.Cycle()
 }
@@ -26,10 +30,6 @@ func (v *VicSocket) GetDisplayBuffer() mos6569.IDisplayBuffer {
 
 func (v *VicSocket) GetBanks() mos6569.IBanks {
 	return v.board.banks
-}
-
-func (v *VicSocket) Ready() {
-	v.board.readySlot()
 }
 
 func (v *VicSocket) IRQTrigger() {

@@ -62,10 +62,10 @@ type Core struct {
 	lpTriggered      bool     // LightPen was triggered in this frame
 	badLinesEnabled  bool     // Bad Lines enabled for this frame
 	badLineCondition bool     // Current line is bad line
-	ready            bool     // VIC Initialization Complete
-	baLow            bool     // BA Line
-	aecLow           bool     // AEC Line
-	baLowFirstCycle  uint64   //
+	//ready            bool     // VIC Initialization Complete
+	baLow           bool   // BA Line
+	aecLow          bool   // AEC Line
+	baLowFirstCycle uint64 //
 	//aecLowClearNextCycle bool     //
 	lastByte       uint8 // Last byte read by VIC
 	refreshCounter uint8
@@ -132,9 +132,9 @@ func NewCore(socket ISocket) *Core {
 		baLow:            false,
 		baLowFirstCycle:  0,
 		aecLow:           false,
-		ready:            false,
-		lastByte:         0,
-		refreshCounter:   0,
+		//ready:            false,
+		lastByte:       0,
+		refreshCounter: 0,
 	}
 	// Preset colors to black
 	for i := range c.mXcColor {
@@ -337,10 +337,10 @@ func (vic *Core) ReadRegister(addr uint16) uint8 {
 		return vic.vaBase | 0x01
 
 	case 0x19: // IRQ spriteFlags
-		if !vic.ready {
-			vic.ready = true
-			vic.socket.Ready()
-		}
+		//if !vic.ready {
+		//	vic.ready = true
+		//	vic.socket.Ready()
+		//}
 		return vic.irqFlag | 0x70
 
 	case 0x1a: // IRQ mask

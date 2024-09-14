@@ -52,6 +52,9 @@ type Board struct {
 	pic                 *mos6510.Pic
 	iec                 *iec.IEC
 	keys                *inputs.Keyboard
+	joy1                *inputs.Joystick
+	joy2                *inputs.Joystick
+	joySwap             bool
 	cfg                 *config.Config
 	hasClipboard        bool
 	cartMan             *cartridges.Manager
@@ -77,6 +80,8 @@ func NewBoard(db mos6569.IDisplayBuffer, player mos6581.IPlayer) *Board {
 		cia2:                nil,
 		pic:                 nil,
 		keys:                nil,
+		joy1:                nil,
+		joy2:                nil,
 		hasClipboard:        false,
 		cartMan:             cartridges.NewManager(),
 		banks:               nil,
@@ -85,6 +90,7 @@ func NewBoard(db mos6569.IDisplayBuffer, player mos6581.IPlayer) *Board {
 		vBlank:              false,
 		lastVicCycle:        false,
 		dmaLow:              false,
+		joySwap:             true,
 		//phiMode:    PhiIdle,
 	}
 	return b
@@ -112,7 +118,9 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.sid = mos6581.NewSID(baseId + "_sid")
 	s.cia1 = mos6526.NewCIA(baseId + "_cia1")
 	s.cia2 = mos6526.NewCIA(baseId + "_cia2")
-	s.keys = inputs.NewKeyboard(s.quartz)
+	s.keys = inputs.NewKeyboard()
+	s.joy1 = inputs.NewJoystick()
+	s.joy2 = inputs.NewJoystick()
 	s.banks = banks.NewBanks()
 	s.expansion = NewExpansion(s)
 
@@ -158,24 +166,23 @@ func (s *Board) Setup(cfg *config.Config) error {
 func (s *Board) reset() {
 	s.pic.Reset()
 	s.banks.Reset()
-	s.cpu.Reset()
+	s.cpuSocket.Reset()
 	s.cartMan.Reset()
-	s.sid.Reset()
-	s.cia1.Reset()
-	s.cia2.Reset()
+	s.sidSocket.Reset()
+	s.cia1Socket.Reset()
+	s.cia2Socket.Reset()
 	s.iec.Reset()
 	s.expansion.Reset()
 }
 
 func (s *Board) AsyncReset() {
-	s.keys.Reset()
 	s.banks.Reset()
 	s.pic.TriggerReset()
-	//s.cpu.AsyncReset()
-	s.vic.Reset()
-	s.sid.Reset()
-	s.cia1.Reset()
-	s.cia2.Reset()
+	//s.cpuSocket.AsyncReset()
+	s.vicSocket.Reset()
+	s.sidSocket.Reset()
+	s.cia1Socket.Reset()
+	s.cia2Socket.Reset()
 	s.iec.Reset()
 	s.expansion.Reset()
 
@@ -212,10 +219,6 @@ func (s *Board) Emulate() bool {
 	return s.vBlank
 }
 
-func (s *Board) readySlot() {
-	s.keys.SetReady()
-}
-
 // LedStateChangedEvent (deviceNumber int, state uint8)
 func (s *Board) LedStateChangedEvent(_ int, _ uint8) {
 	//TODO IMPLEMENT
@@ -236,7 +239,7 @@ func (s *Board) KeyboardPaste(pressed bool) {
 		return
 	}
 	data := clipboard.Read(clipboard.FmtText)
-	s.keys.SetCommand(string(data), "")
+	s.keys.SetCommand(string(data))
 }
 
 func (s *Board) KeyboardSetExt(pressed bool) {
@@ -288,15 +291,21 @@ func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
 	s.keys.SetVirtualKey(pressed, vKey)
 }
 
-func (s *Board) KeyboardSetJoyKey(pressed bool, vKey int) {
-	s.keys.SetJoystick1(pressed, vKey)
+func (s *Board) JoystickSetKey(pressed bool, vKey int) {
+	if s.joySwap {
+		s.joy2.SetKey(pressed, vKey)
+	} else {
+		s.joy1.SetKey(pressed, vKey)
+	}
 }
 
 func (s *Board) KeyboardSwapJoystick(pressed bool) {
 	if !pressed {
 		return
 	}
-	s.keys.SwapJoystick()
+	s.joySwap = !s.joySwap
+	s.joy1.Reset()
+	s.joy2.Reset()
 }
 
 func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
@@ -372,25 +381,17 @@ func (s *Board) nmiClearSlot() {
 }
 
 func (s *Board) vicLastCycleSLot() {
-	s.sid.Prepare()
+	s.sidSocket.Update()
 }
 
 func (s *Board) vicVBlankSlot() {
 	s.vBlank = true
 
-	s.sid.Render()
-	s.cia1.Update()
-	s.cia2.Update()
+	//TODO MOVE
+	s.sidSocket.Render()
 
-	if joy1, ok := s.keys.PollJoystick1(); ok {
-		s.cia1Socket.SetJoy1(joy1)
-	}
-	if joy2, ok := s.keys.PollJoystick2(); ok {
-		s.cia1Socket.SetJoy2(joy2)
-	}
-	if keyM, revM, pressed, shifted, ok := s.keys.PollKeyboard(); ok {
-		s.cia1Socket.SetKeyboard(keyM, revM, pressed, shifted)
-	}
+	s.cia1Socket.Update()
+	s.cia2Socket.Update()
 }
 
 func (s *Board) loadPRG(prgFile string) {

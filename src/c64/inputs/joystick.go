@@ -2,23 +2,17 @@ package inputs
 
 import (
 	"container/list"
-	"github.com/markel1974/c64emu/src/components/quartz"
 )
 
-type joyData struct {
-	joy         uint8
-	persistence uint8
-}
-
 type Joystick struct {
-	quartz      *quartz.Quartz
 	dataStorage *list.List
 	joy         int
 }
 
-func NewJoystick(quartz *quartz.Quartz) *Joystick {
+func NewJoystick() *Joystick {
 	return &Joystick{
-		quartz: quartz,
+		dataStorage: list.New(),
+		joy:         0xff,
 	}
 }
 
@@ -52,20 +46,19 @@ func (k *Joystick) Build(x uint, y uint, buttons uint) int {
 	return joystick
 }
 
-func (k *Joystick) Set(pressed bool, jId int) {
-	const persistence = 1
+func (k *Joystick) SetKey(pressed bool, jId int) {
 	if k.dataStorage.Len() >= MAX_STORAGE_SIZE {
 		return
 	}
 	if pressed {
-		if joy, ok := joyDown(k.joy, jId); ok {
+		if joy, ok := joyKeyDown(k.joy, jId); ok {
 			k.joy = joy
-			k.dataStorage.PushBack(&joyData{joy: uint8(joy), persistence: persistence})
+			k.dataStorage.PushBack(joy)
 		}
 	} else {
-		if joy, ok := joyUp(k.joy, jId); ok {
+		if joy, ok := joyKeyUp(k.joy, jId); ok {
 			k.joy = joy
-			k.dataStorage.PushBack(&joyData{joy: uint8(joy), persistence: persistence})
+			k.dataStorage.PushBack(joy)
 		}
 	}
 }
@@ -75,14 +68,12 @@ func (k *Joystick) Poll() (uint8, bool) {
 		return 0, false
 	}
 	e := k.dataStorage.Front()
-	i := e.Value.(*joyData)
-	if i.persistence--; i.persistence == 0 {
-		k.dataStorage.Remove(e)
-	}
-	return i.joy, true
+	joy := e.Value.(int)
+	k.dataStorage.Remove(e)
+	return uint8(joy), true
 }
 
-func joyUp(j int, kc int) (int, bool) {
+func joyKeyUp(j int, kc int) (int, bool) {
 	switch kc {
 	case KEY_FIRE:
 		j |= 0x10
@@ -115,7 +106,7 @@ func joyUp(j int, kc int) (int, bool) {
 	return 0xff, false
 }
 
-func joyDown(j int, kc int) (int, bool) {
+func joyKeyDown(j int, kc int) (int, bool) {
 	switch kc {
 	case KEY_FIRE:
 		j &= ^0x10

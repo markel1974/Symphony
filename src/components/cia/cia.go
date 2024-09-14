@@ -90,7 +90,6 @@ func (m *CIA) Reset() {
 	m.timerA.Reset()
 	m.timerB.Reset()
 	m.tod.Reset()
-	m.socket.Reset()
 }
 
 func (m *CIA) ReadRegister(addr uint16) uint8 {

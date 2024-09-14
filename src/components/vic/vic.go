@@ -51,7 +51,7 @@ func (vic *VIC) Setup(socket ISocket, cfg *config.Config) {
 }
 
 func (vic *VIC) Reset() {
-	vic.core.ready = false
+	//vic.core.ready = false
 }
 
 func (vic *VIC) GetText() []byte {

@@ -16,7 +16,6 @@ type ISocket interface {
 	Cycle() uint64
 	GetDisplayBuffer() IDisplayBuffer
 	GetBanks() IBanks
-	Ready()
 	IRQTrigger()
 	IRQClear()
 	BALow(d bool)

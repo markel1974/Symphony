@@ -30,6 +30,8 @@ import (
 
 // -c "/Users/tinmr305/Downloads/c64carts/GhostNGoblinsArcade_N0S_EF.crt"
 
+// -c "/Users/tinmr305/Downloads/c64carts/briley_witch_chronicles_v1.01_[excess].crt"
+
 func main() {
 	var showHelp bool
 	var showVersion bool

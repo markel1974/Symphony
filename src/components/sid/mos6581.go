@@ -68,7 +68,7 @@ func (sid *SID) WriteRegister(addr uint16, data uint8) {
 	sid.regs[reg] = data
 }
 
-func (sid *SID) Prepare() {
+func (sid *SID) Update() {
 	sid.builder.Prepare(sid.regs)
 }
 

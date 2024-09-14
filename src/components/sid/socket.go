@@ -8,6 +8,5 @@ type IPlayer interface {
 }
 
 type ISocket interface {
-	Reset()
 	GetPlayer() IPlayer
 }

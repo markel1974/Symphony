@@ -16,7 +16,11 @@ func (w *CIA2Socket) Setup(board *Board, intrId uint32) {
 }
 
 func (w *CIA2Socket) Reset() {
+	w.board.cia2.Reset()
+}
 
+func (w *CIA2Socket) Update() {
+	w.board.cia2.Update()
 }
 
 func (w *CIA2Socket) ReadPortA(prA uint8, ddrA uint8, _ uint8, _ uint8) uint8 {
