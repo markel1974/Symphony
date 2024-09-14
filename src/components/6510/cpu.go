@@ -3,8 +3,6 @@ package mos6510
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/flag"
-	"log"
-	"os"
 )
 
 //https://web.archive.org/web/20221112220344if_/http://archive.6502.org/datasheets/synertek_programming_manual.pdf
@@ -43,6 +41,7 @@ type CPU struct {
 	aecLow         bool // current AEC state
 	overflowBranch func() bool
 	opFlags        uint8
+	irqBreaker     bool
 }
 
 func NewCPU(id string) *CPU {
@@ -62,6 +61,7 @@ func (cpu *CPU) Reset() {
 	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8) // Read reset vector
 	cpu.next = instOpInit
 	cpu.opFlags = 0
+	cpu.irqBreaker = false
 }
 
 // SetOverflowBranch implement 6502c SO (SOB) Pin
@@ -208,13 +208,6 @@ func (cpu *CPU) doSBC(data uint8) {
 	cpu.zFlag = uint8(tmp)
 	cpu.nFlag = uint8(tmp)
 	cpu.a = (ah << 4) | (al & 0x0f)
-}
-
-func (cpu *CPU) illegalOp(illOp uint8, at uint16) {
-	log.Printf("[%s] illegal opcode %02x at %04x.", cpu.id, illOp, at)
-	//TODO EVENT
-	cpu.Reset()
-	os.Exit(1)
 }
 
 func (cpu *CPU) printRegisters(qCycle uint64, baLow bool) {

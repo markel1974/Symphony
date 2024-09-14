@@ -1,30 +1,39 @@
 package mos6510
 
-import "github.com/markel1974/c64emu/src/flag"
+import (
+	"github.com/markel1974/c64emu/src/flag"
+	"log"
+	"os"
+)
 
 func instOpInit(cpu *CPU) {
 	// https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
 	// Interrupts are only recognized if the RDY line is high
 	if !cpu.rdyLow {
-		opFlag := cpu.opFlags
-		cpu.opFlags = 0
-		switch cpu.pic.VerifyIrq(cpu.iFlag, opFlag) {
-		case 1:
-			cpu.Reset()
-			return
-		case 2:
-			cpu.next = instOpNMI
-			cpu.next(cpu)
-			return
-		case 3:
-			cpu.next = instOpIRQ
-			cpu.next(cpu)
-			return
+		if !cpu.irqBreaker {
+			opFlag := cpu.opFlags
+			cpu.opFlags = 0
+			switch cpu.pic.VerifyIrq(cpu.iFlag, opFlag) {
+			case 1:
+				cpu.Reset()
+				return
+			case 2:
+				cpu.irqBreaker = true
+				cpu.next = instOpNMI
+				cpu.next(cpu)
+				return
+			case 3:
+				cpu.irqBreaker = true
+				cpu.next = instOpIRQ
+				cpu.next(cpu)
+				return
+			}
 		}
 	} else {
 		cpu.stop = true
 		return
 	}
+	cpu.irqBreaker = false
 	cpu.op = cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.next = _modeTable[cpu.op]
@@ -2208,5 +2217,8 @@ func instOpSHA(cpu *CPU) {
 }
 
 func instOpIll(cpu *CPU) {
-	cpu.illegalOp(cpu.op, cpu.pc-1)
+	log.Printf("[%s] illegal opcode %02x at %04x.", cpu.id, cpu.op, cpu.pc-1)
+	//TODO EVENT
+	cpu.Reset()
+	os.Exit(1)
 }
