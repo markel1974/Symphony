@@ -7,6 +7,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/easyflash"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
+	"github.com/markel1974/c64emu/src/c64/cartridges/magicdesk"
 	"github.com/markel1974/c64emu/src/c64/cartridges/ocean"
 	"github.com/markel1974/c64emu/src/c64/cartridges/reu"
 	"github.com/markel1974/c64emu/src/c64/cartridges/supercpu"
@@ -58,6 +59,7 @@ func (f *Manager) Setup(board icartridge.IExpansion, prefs *config.Config) {
 	f.registerHardware[reu.Id16M] = reu.New16M
 
 	f.registerType[ocean.GetType()] = ocean.New
+	f.registerType[magicdesk.GetType()] = magicdesk.New
 	f.registerType[easyflash.GetType()] = easyflash.New
 	f.registerType[cartridge8k.GetType()] = cartridge8k.New
 	f.registerType[cartridge16k.GetType()] = cartridge16k.New
@@ -187,8 +189,7 @@ func (f *Manager) IORead(addr uint16) (uint8, bool) {
 func (f *Manager) Add(hardware string, name string, data []byte) (string, error) {
 	id := strconv.Itoa(f.idx)
 	ldr := loader.NewLoader(id, loader.MachineC64)
-	err := ldr.Setup(name, data)
-	if err != nil {
+	if err := ldr.Setup(name, data); err != nil {
 		return "", err
 	}
 	var factory func() icartridge.ICartridge = nil
@@ -208,7 +209,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	cart := factory()
 	f.idx++
 	f.carts = append(f.carts, cart)
-	if err != cart.Setup(f.board, ldr) {
+	if err := cart.Setup(f.board, ldr); err != nil {
 		return "", err
 	}
 	if cart.EmulationRequired() {

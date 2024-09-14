@@ -6,6 +6,8 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 )
 
+const cSize = 0x2000
+
 type Cartridge8K struct {
 	id        string
 	bank0     []uint8
@@ -46,12 +48,24 @@ func (c *Cartridge8K) GetId() string {
 }
 
 func (c *Cartridge8K) initCrt(ldr *loader.CRTLoader) error {
-	//TODO IMPLEMENT
-	return fmt.Errorf("uninplemented")
+	chip, err := ldr.ReadChipHeader()
+	if chip == nil {
+		return fmt.Errorf("nil chip")
+	}
+	if err != nil {
+		return err
+	}
+	if chip.Start != 0x8000 {
+		return fmt.Errorf("invalid chip start")
+	}
+	if chip.Size != cSize {
+		return fmt.Errorf("invalid chip size")
+	}
+	c.bank0 = chip.Data
+	return nil
 }
 
 func (c *Cartridge8K) initBin(data []byte) error {
-	const cSize = 0x2000
 	if len(data) != cSize {
 		return fmt.Errorf("invalid size")
 	}

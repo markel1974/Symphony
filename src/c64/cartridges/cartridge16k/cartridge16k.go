@@ -6,6 +6,8 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 )
 
+const cSize = 0x4000
+
 type Cartridge16K struct {
 	id         string
 	b0Interval icartridge.RomInterval
@@ -19,7 +21,7 @@ type Cartridge16K struct {
 }
 
 func GetType() int {
-	return loader.CARTRIDGE_GENERIC_16KB
+	return loader.CARTRIDGE_CRT
 }
 
 func New() icartridge.ICartridge {
@@ -46,7 +48,7 @@ func (c *Cartridge16K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader)
 	c.board = board
 	c.id = ldr.GetId()
 	if ldr.GetType() == loader.TypeCrt {
-		return c.initBin(ldr)
+		return c.initCrt(ldr)
 	}
 	return c.initRaw(ldr.GetData())
 }
@@ -59,13 +61,39 @@ func (c *Cartridge16K) GetId() string {
 	return c.id
 }
 
-func (c *Cartridge16K) initBin(ldr *loader.CRTLoader) error {
-	//TODO IMPLEMENT
-	return fmt.Errorf("uninplemented")
+func (c *Cartridge16K) initCrt(ldr *loader.CRTLoader) error {
+	chip, err := ldr.ReadChipHeader()
+	if chip == nil {
+		return fmt.Errorf("nil chip")
+	}
+	if err != nil {
+		return err
+	}
+	if chip.Start != 0x8000 {
+		return fmt.Errorf("invalid chip start")
+	}
+	if chip.Size != cSize {
+		return fmt.Errorf("invalid chip size")
+	}
+	c.bank0 = chip.Data[:0x2000]
+	c.bank1 = chip.Data[0x2000:]
+
+	//TODO ULTIMAX
+	/*
+		if (chip.start >= 0xe000 && chip.size > 0 && (chip.size + chip.start) == 0x10000) {
+		        if (crt_read_chip(rawcart, chip.start & 0x3fff, &chip, fd)) {
+		            return -1;
+		        }
+		        if (generic_common_attach(CARTRIDGE_ULTIMAX) < 0) {
+		            return -1;
+		        }
+		        return CARTRIDGE_ULTIMAX;
+		    }
+	*/
+	return nil
 }
 
 func (c *Cartridge16K) initRaw(data []byte) error {
-	const cSize = 0x4000
 	if len(data) != cSize {
 		return fmt.Errorf("invalid size")
 	}
