@@ -39,8 +39,7 @@ const (
 const defaultTimerInit = 0xffff
 
 type Timer struct {
-	id string
-	//signalUnderflow *signals.Signal
+	id           string
 	cr           uint8
 	crNew        uint8      // New values for cr
 	crNewPending bool       // New value for crNew pending
@@ -110,9 +109,9 @@ func (m *Timer) SetTimerLow(data uint8) {
 	timerLow := uint16(data)
 	timerHigh := m.timerLatch & 0xff00
 	m.timerLatch = timerLow | timerHigh
-	if m.timerLatch == 0 {
-		fmt.Println("SetTimerLow: timerLatch => 0")
-	}
+	//if m.timerLatch == 0 {
+	//	fmt.Println("SetTimerLow: timerLatch => 0")
+	//}
 	if (m.cr & crBitForceLoad) != 0 {
 		m.timer = m.timerLatch
 	}
@@ -126,9 +125,9 @@ func (m *Timer) SetTimerHigh(data uint8) {
 	timerHigh := uint16(data) << 8
 	m.timerLatch = timerLow | timerHigh
 
-	if m.timerLatch == 0 {
-		fmt.Println("SetTimerHigh: timerLatch => 0")
-	}
+	//if m.timerLatch == 0 {
+	//	fmt.Println("SetTimerHigh: timerLatch => 0")
+	//}
 	if (m.cr&crBitStart) == 0 || (m.cr&crBitForceLoad) != 0 {
 		m.timer = m.timerLatch
 	}
