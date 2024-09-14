@@ -50,7 +50,7 @@ var flashTypes = [KindNum]flashType{
 	/* Expansion S29GL064N */
 	{0x01, 0x7e, 2,
 		0x800000,
-		/* FIXME: some models support non-uniform sector layout */
+		// FIXME: some models support non-uniform sector layout
 		0x7f0000, 0x10000, 16,
 		0xaaa, 0x555, 0xfff, 0xfff,
 		0x40,

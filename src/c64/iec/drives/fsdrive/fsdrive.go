@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/fifo"
 	"io"
 	"os"
 	"strings"
@@ -29,7 +30,7 @@ type FSDrive struct {
 	deviceId       uint8
 	deviceNumber   uint8
 	path           string
-	respond        *Queue
+	respond        *fifo.Queue
 	_dir_path      string       // Path to directory
 	_orig_dir_path string       // Original directory path
 	_dir_title     string       // Directory title
@@ -48,7 +49,7 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, path string)
 		deviceId:       deviceId,
 		deviceNumber:   deviceNumber,
 		path:           path,
-		respond:        NewQueue(512),
+		respond:        fifo.NewQueue(512),
 		commands:       virtualdrive.NewCommands(),
 		_orig_dir_path: "",
 		atn:            false,
@@ -152,7 +153,10 @@ func (v *FSDrive) Emulate() {
 	if v.respond.Len() == 0 {
 		return
 	}
-	data := v.respond.Next()
+	data, ok := v.respond.Next()
+	if !ok {
+		return
+	}
 	if data == NOOP {
 		return
 	}

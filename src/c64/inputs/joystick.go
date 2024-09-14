@@ -1,23 +1,23 @@
 package inputs
 
 import (
-	"container/list"
+	"github.com/markel1974/c64emu/src/fifo"
 )
 
 type Joystick struct {
-	dataStorage *list.List
-	joy         int
+	storage *fifo.Queue
+	joy     int
 }
 
 func NewJoystick() *Joystick {
 	return &Joystick{
-		dataStorage: list.New(),
-		joy:         0xff,
+		storage: nil,
+		joy:     0xff,
 	}
 }
 
 func (k *Joystick) Reset() {
-	k.dataStorage = list.New()
+	k.storage = fifo.NewQueue(256)
 	k.joy = 0xff
 }
 
@@ -41,111 +41,105 @@ func (k *Joystick) Build(x uint, y uint, buttons uint) int {
 		joystick &= 0xef // Button
 	}
 	if (buttons & 2) != 0 {
-		//TODO
+		//TODO SID POTX / POTY
 	}
 	return joystick
 }
 
 func (k *Joystick) SetKey(pressed bool, jId int) {
-	if k.dataStorage.Len() >= MAX_STORAGE_SIZE {
-		return
-	}
 	if pressed {
-		if joy, ok := joyKeyDown(k.joy, jId); ok {
-			k.joy = joy
-			k.dataStorage.PushBack(joy)
-		}
+		k.joy = joyKeyDown(k.joy, jId)
+		k.storage.Add(k.joy)
 	} else {
-		if joy, ok := joyKeyUp(k.joy, jId); ok {
-			k.joy = joy
-			k.dataStorage.PushBack(joy)
-		}
+		k.joy = joyKeyUp(k.joy, jId)
+		k.storage.Add(k.joy)
 	}
 }
 
 func (k *Joystick) Poll() (uint8, bool) {
-	if k.dataStorage.Len() == 0 {
+	if k.storage.Len() == 0 {
 		return 0, false
 	}
-	e := k.dataStorage.Front()
-	joy := e.Value.(int)
-	k.dataStorage.Remove(e)
+	joy, ok := k.storage.Next()
+	if !ok {
+		return 0, false
+	}
 	return uint8(joy), true
 }
 
-func joyKeyUp(j int, kc int) (int, bool) {
+func joyKeyUp(j int, kc int) int {
 	switch kc {
 	case KEY_FIRE:
 		j |= 0x10
-		return j, true
+		return j
 	case KEY_JUP:
 		j |= 0x01
-		return j, true
+		return j
 	case KEY_JDN:
 		j |= 0x02
-		return j, true
+		return j
 	case KEY_JLF:
 		j |= 0x04
-		return j, true
+		return j
 	case KEY_JRT:
 		j |= 0x08
-		return j, true
+		return j
 	case KEY_JUPLF:
 		j |= 0x05
-		return j, true
+		return j
 	case KEY_JUPRT:
 		j |= 0x09
-		return j, true
+		return j
 	case KEY_JDNLF:
 		j |= 0x06
-		return j, true
+		return j
 	case KEY_JDNRT:
 		j |= 0x0a
-		return j, true
+		return j
 	}
-	return 0xff, false
+	return 0xff
 }
 
-func joyKeyDown(j int, kc int) (int, bool) {
+func joyKeyDown(j int, kc int) int {
 	switch kc {
 	case KEY_FIRE:
 		j &= ^0x10
-		return j, true
+		return j
 	case KEY_JUP:
 		j |= 0x02
 		j &= ^0x01
-		return j, true
+		return j
 	case KEY_JDN:
 		j |= 0x01
 		j &= ^0x02
-		return j, true
+		return j
 	case KEY_JLF:
 		j |= 0x08
 		j &= ^0x04
-		return j, true
+		return j
 	case KEY_JRT:
 		j |= 0x04
 		j &= ^0x08
-		return j, true
+		return j
 	case KEY_JUPLF:
 		j |= 0x0a
 		j &= ^0x05
-		return j, true
+		return j
 	case KEY_JUPRT:
 		j |= 0x06
 		j &= ^0x09
-		return j, true
+		return j
 	case KEY_JDNLF:
 		j |= 0x09
 		j &= ^0x06
-		return j, true
+		return j
 	case KEY_JDNRT:
 		j |= 0x05
 		j &= ^0x0a
-		return j, true
+		return j
 	case KEY_CENTER:
 		j |= 0x0f
-		return j, true
+		return j
 	}
-	return 0xff, false
+	return 0xff
 }
