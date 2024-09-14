@@ -6,6 +6,8 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 )
 
+///Users/tinmr305/Desktop/emu/vice-emu-code-r45201-trunk-vice/src/c64/cart/c64-generic.c
+
 const cSize = 0x4000
 
 type Cartridge16K struct {
@@ -36,10 +38,6 @@ func New() icartridge.ICartridge {
 
 func (c *Cartridge16K) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
-	//TODO
-	if ldr.Ultimax() {
-		v = icartridge.GetCartridgeSpec(icartridge.CartridgeModeUltimax)
-	}
 	c.game = v.Game
 	c.exRom = v.ExRom
 	c.b0Interval = v.IntervalLow
@@ -62,6 +60,7 @@ func (c *Cartridge16K) GetId() string {
 }
 
 func (c *Cartridge16K) initCrt(ldr *loader.CRTLoader) error {
+	const bankSize = cSize / 2
 	chip, err := ldr.ReadChipHeader()
 	if chip == nil {
 		return fmt.Errorf("nil chip")
@@ -69,16 +68,38 @@ func (c *Cartridge16K) initCrt(ldr *loader.CRTLoader) error {
 	if err != nil {
 		return err
 	}
-	if chip.Start != 0x8000 {
-		return fmt.Errorf("invalid chip start")
+	if (chip.Start == 0x8000) && (chip.Size == cSize) {
+		c.bank0 = make([]uint8, bankSize)
+		c.bank1 = make([]uint8, bankSize)
+		copy(c.bank0, chip.Data[:bankSize])
+		copy(c.bank1, chip.Data[bankSize:])
+		return nil
 	}
-	if chip.Size != cSize {
-		return fmt.Errorf("invalid chip size")
-	}
-	c.bank0 = chip.Data[:0x2000]
-	c.bank1 = chip.Data[0x2000:]
 
-	//TODO ULTIMAX
+	if (chip.Start == 0x8000) && (chip.Size == bankSize) {
+		chip2, err2 := ldr.ReadChipHeader()
+		if chip2 == nil {
+			return fmt.Errorf("nil chip")
+		}
+		if err2 != nil {
+			return err
+		}
+		c.bank0 = make([]uint8, bankSize)
+		c.bank1 = make([]uint8, bankSize)
+		copy(c.bank0, chip.Data)
+		copy(c.bank1, chip2.Data)
+		return nil
+	}
+
+	if (chip.Start == 0xe000) && (chip.Size > 0) && (uint(chip.Size)+uint(chip.Start)) == 0x10000 {
+		//TODO ULTIMAX
+		v := icartridge.GetCartridgeSpec(icartridge.CartridgeModeUltimax)
+		c.game = v.Game
+		c.exRom = v.ExRom
+	}
+
+	return fmt.Errorf("unsupported crt")
+
 	/*
 		if (chip.start >= 0xe000 && chip.size > 0 && (chip.size + chip.start) == 0x10000) {
 		        if (crt_read_chip(rawcart, chip.start & 0x3fff, &chip, fd)) {
@@ -90,7 +111,6 @@ func (c *Cartridge16K) initCrt(ldr *loader.CRTLoader) error {
 		        return CARTRIDGE_ULTIMAX;
 		    }
 	*/
-	return nil
 }
 
 func (c *Cartridge16K) initRaw(data []byte) error {
@@ -100,8 +120,11 @@ func (c *Cartridge16K) initRaw(data []byte) error {
 	if err := loader.ValidateCartridge(data); err != nil {
 		return err
 	}
-	c.bank0 = data[:0x2000]
-	c.bank1 = data[0x2000:]
+	const bankSize = cSize / 2
+	c.bank0 = make([]uint8, bankSize)
+	c.bank1 = make([]uint8, bankSize)
+	copy(c.bank0, data[:bankSize])
+	copy(c.bank1, data[bankSize:])
 	return nil
 }
 

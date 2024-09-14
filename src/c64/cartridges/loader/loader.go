@@ -64,11 +64,6 @@ func (cl *CRTLoader) GetData() []byte {
 	return cl.rowCartridge
 }
 
-func (cl *CRTLoader) Ultimax() bool {
-	//TODO REMOVE!!!!!
-	return false
-}
-
 func (cl *CRTLoader) open() error {
 	if cl.kind == TypeBin {
 		return nil
