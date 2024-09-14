@@ -8,6 +8,7 @@ const (
 	BorderTypeCenter   = BorderType(2)
 	BorderTypeMidRight = BorderType(3)
 	BorderTypeRight    = BorderType(4)
+	BorderTypeLast     = BorderType(5)
 )
 
 type Borders struct {
@@ -17,25 +18,23 @@ type Borders struct {
 	verticalFlipFlop bool
 	samples          []bool
 	colors           []uint8
-	firstCycle       uint8
 }
 
-func NewBorder(core *Core, db IDisplayBuffer, firstCycle uint8) *Borders {
+func NewBorder(core *Core, db IDisplayBuffer) *Borders {
 	gr := &Borders{
 		db:               db,
 		core:             core,
-		samples:          make([]bool, 5),
+		samples:          make([]bool, BorderTypeLast),
 		colors:           make([]uint8, 0xff),
 		mainFlipFlop:     false,
 		verticalFlipFlop: false,
-		firstCycle:       firstCycle,
 	}
 	return gr
 }
 
-func (b *Borders) Sample(cycle uint8) {
+func (b *Borders) Sample(idx uint8) {
 	if b.mainFlipFlop {
-		b.colors[cycle-b.firstCycle] = b.core.ecColor
+		b.colors[idx] = b.core.ecColor
 	}
 }
 
@@ -54,7 +53,7 @@ func (b *Borders) GetVerticalFlipFlop() bool {
 func (b *Borders) UpdateVerticalFlipFlop() {
 	if b.core.rasterY == b.core.dyStop {
 		b.verticalFlipFlop = true
-	} else if (b.core.cr1&0x10) != 0 && b.core.rasterY == b.core.dyStart {
+	} else if ((b.core.cr1 & 0x10) != 0) && b.core.rasterY == b.core.dyStart {
 		b.verticalFlipFlop = false
 	}
 }

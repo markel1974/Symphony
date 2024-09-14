@@ -7,9 +7,10 @@ import (
 //https://dustlayer.com/c64-architecture
 
 type cycleData struct {
-	fn    func(vic *VIC)
-	next  *cycleData
-	cycle uint8
+	fn          func(vic *VIC)
+	next        *cycleData
+	cycle       uint8
+	cycleBorder uint8
 }
 
 type VIC struct {
@@ -40,7 +41,7 @@ func (vic *VIC) Setup(socket ISocket, cfg *config.Config) {
 	vic.collisions = NewCollisions(vic.core)
 	vic.graphics = NewGraphics(vic.core, vic.collisions, db)
 	vic.sprites = NewSprites(vic.core, vic.collisions, db)
-	vic.borders = NewBorder(vic.core, db, 13)
+	vic.borders = NewBorder(vic.core, db)
 	vic.vBlankNextCycle = false
 	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)

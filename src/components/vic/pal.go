@@ -14,6 +14,8 @@ const (
 )
 
 func init() {
+	const palBorderFirstCycle uint8 = 13
+
 	var palCycles []*cycleData
 	palCycles = append(palCycles, &cycleData{fn: palCycle1})
 	palCycles = append(palCycles, &cycleData{fn: palCycle2})
@@ -48,7 +50,11 @@ func init() {
 
 	last := len(palCycles) - 1
 	for idx := 0; idx < len(palCycles); idx++ {
+		palCycles[idx].cycleBorder = 0xff
 		palCycles[idx].cycle = uint8(idx) + 1
+		if palCycles[idx].cycle >= palBorderFirstCycle {
+			palCycles[idx].cycleBorder = palCycles[idx].cycle - palBorderFirstCycle
+		}
 		if idx == last {
 			palCycles[idx].next = palCycles[0]
 		} else {
@@ -209,7 +215,7 @@ func palCycle12(vic *VIC) {
 func palCycle13(vic *VIC) {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.core.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -220,7 +226,7 @@ func palCycle13(vic *VIC) {
 func palCycle14(vic *VIC) {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.core.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -232,7 +238,7 @@ func palCycle14(vic *VIC) {
 func palCycle15(vic *VIC) {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.core.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -246,7 +252,7 @@ func palCycle15(vic *VIC) {
 func palCycle16(vic *VIC) {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -267,7 +273,7 @@ func palCycle17(vic *VIC) {
 		} else {
 			vic.graphics.DrawForeground()
 		}
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -287,7 +293,7 @@ func palCycle18(vic *VIC) {
 		} else {
 			vic.graphics.DrawForeground()
 		}
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -304,7 +310,7 @@ func palCycle19to54(vic *VIC) {
 		} else {
 			vic.graphics.DrawForeground()
 		}
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -321,7 +327,7 @@ func palCycle55(vic *VIC) {
 		} else {
 			vic.graphics.DrawForeground()
 		}
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -346,7 +352,7 @@ func palCycle56(vic *VIC) {
 		} else {
 			vic.graphics.DrawForeground()
 		}
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.core.AccessIdle()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -367,7 +373,7 @@ func palCycle57(vic *VIC) {
 	vic.sprites.UpdateDisplayFlags()
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.core.AccessIdle()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -380,7 +386,7 @@ func palCycle57(vic *VIC) {
 func palCycle58(vic *VIC) {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.sprites.UpdateRasterYDisplayFlags()
 
@@ -395,7 +401,7 @@ func palCycle58(vic *VIC) {
 func palCycle59(vic *VIC) {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.graphics.TryAcquireDisplayAccess()
 
@@ -412,7 +418,7 @@ func palCycle59(vic *VIC) {
 func palCycle60(vic *VIC) {
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
-		vic.borders.Sample(vic.curr.cycle)
+		vic.borders.Sample(vic.curr.cycleBorder)
 		vic.sprites.Draw(vic.lineStart)
 		vic.borders.Draw(vic.lineStart)
 		vic.lineStart += DisplayX
