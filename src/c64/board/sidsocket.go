@@ -23,6 +23,11 @@ func (w *SidSocket) Update() {
 	w.board.sid.Update()
 }
 
+func (w *SidSocket) SetPotXY(x uint8, y uint8) {
+	w.board.sid.SetPotX(x)
+	w.board.sid.SetPotY(y)
+}
+
 func (w *SidSocket) Render() {
 	//TODO MOVE
 	w.board.sid.Render()

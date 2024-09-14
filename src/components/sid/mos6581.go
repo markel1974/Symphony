@@ -28,12 +28,12 @@ func (sid *SID) Setup(socket ISocket, cfg *config.Config, fragFreq int, rasters 
 	sid.cfg.Bind(sid.configChanged)
 }
 
-func (sid *SID) SetPotXSlot(pot uint8) {
+func (sid *SID) SetPotX(pot uint8) {
 	// PX7 PX6 PX5 PX4 PX3 PX2 PX1 PX0
 	sid.regs[25] = pot
 }
 
-func (sid *SID) SetPotYSlot(pot uint8) {
+func (sid *SID) SetPotY(pot uint8) {
 	//PY7 PY6 PY5 PY4 PY3 PY2 PY1 PY0
 	sid.regs[26] = pot
 }
@@ -47,8 +47,8 @@ func (sid *SID) Reset() {
 		sid.regs[x] = 0
 	}
 	sid.builder.Reset()
-	sid.SetPotXSlot(0xff)
-	sid.SetPotYSlot(0xff)
+	sid.SetPotX(0xff)
+	sid.SetPotY(0xff)
 	//PADDLE TEST
 	//sid.WriteRegister(0xDC00, 0x40) //Control-Port 1 selected
 	//sid.WriteRegister(0xD419, 0x7F) //Paddle X value

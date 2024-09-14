@@ -45,7 +45,7 @@ func (g *Inputs) Setup(b *board.Board, maxW float64, maxH float64) {
 	g.keyMapper[pixels.KeyEscape] = func(p bool) { b.KeyboardSetVirtualKey(p, inputs.VK_escape) }
 
 	g.keyMapper[pixels.KeyF9] = g.swapJoyKey
-	g.keyMapper[pixels.KeyF10] = func(p bool) { b.KeyboardSwapJoystick(p) }
+	g.keyMapper[pixels.KeyF10] = func(p bool) { b.JoystickSwap(p) }
 	g.keyMapper[pixels.KeyF11] = func(p bool) { b.KeyboardSetExt(p) }
 	g.keyMapper[pixels.KeyF12] = func(p bool) { b.KeyboardPaste(p) }
 

@@ -18,7 +18,6 @@ import (
 	"os"
 )
 
-// type PhiMode int
 const (
 	intrIrqVicBit       = 0
 	intrIrqCia1Bit      = 1
@@ -27,12 +26,6 @@ const (
 )
 
 const baseId = "c64"
-
-const (
-// PhiIdle = PhiMode(0)
-// Phi1    = PhiMode(1)
-// Phi2    = PhiMode(2)
-)
 
 type Board struct {
 	db                  mos6569.IDisplayBuffer
@@ -64,7 +57,6 @@ type Board struct {
 	vBlank              bool
 	lastVicCycle        bool
 	dmaLow              bool
-	//phiMode    PhiMode
 }
 
 func NewBoard(db mos6569.IDisplayBuffer, player mos6581.IPlayer) *Board {
@@ -91,7 +83,6 @@ func NewBoard(db mos6569.IDisplayBuffer, player mos6581.IPlayer) *Board {
 		lastVicCycle:        false,
 		dmaLow:              false,
 		joySwap:             true,
-		//phiMode:    PhiIdle,
 	}
 	return b
 }
@@ -193,29 +184,20 @@ func (s *Board) configChanged() {
 }
 
 func (s *Board) Emulate() bool {
-	//s.phiMode = Phi1
-	//PHI1
 	s.vBlank = false
+
+	//PHI1
 	s.vic.Emulate()
 
-	//s.phiMode = Phi2
-	//if vBlank {
-	//TODO
-	//if bytes.Contains(s.vic.GetText(), []byte("READY")) {
-	//	fmt.Println("READY!!!")
-	//}
-	//}
-
 	//PHI2
-	//s.sid.Emulate(s.vBlank, s.lastVicCycle)
 	s.cia1.Emulate()
 	s.cia2.Emulate()
 	s.cartMan.Emulate()
 	s.iec.Emulate()
 	s.cpu.Emulate()
+
 	s.quartz.AddCycle()
 
-	//s.phiMode = PhiIdle
 	return s.vBlank
 }
 
@@ -276,8 +258,7 @@ func (s *Board) KeyboardSetCapital(pressed bool) {
 }
 
 func (s *Board) SetMouse(x uint8, y uint8) {
-	s.sid.SetPotXSlot(x)
-	s.sid.SetPotYSlot(y)
+	s.sidSocket.SetPotXY(x, y)
 }
 
 func (s *Board) KeyboardSetMenu(pressed bool) {
@@ -299,7 +280,7 @@ func (s *Board) JoystickSetKey(pressed bool, vKey int) {
 	}
 }
 
-func (s *Board) KeyboardSwapJoystick(pressed bool) {
+func (s *Board) JoystickSwap(pressed bool) {
 	if !pressed {
 		return
 	}
@@ -392,6 +373,11 @@ func (s *Board) vicVBlankSlot() {
 
 	s.cia1Socket.Update()
 	s.cia2Socket.Update()
+
+	//TODO
+	//if bytes.Contains(s.vic.GetText(), []byte("READY")) {
+	//	fmt.Println("READY!!!")
+	//}
 }
 
 func (s *Board) loadPRG(prgFile string) {

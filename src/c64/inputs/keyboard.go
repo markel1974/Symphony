@@ -2,7 +2,6 @@ package inputs
 
 import (
 	"container/list"
-	"github.com/markel1974/c64emu/src/components/quartz"
 )
 
 func matrix(a int, b int) int {
@@ -13,13 +12,13 @@ type Keyboard struct {
 	keyDataStorage *list.List
 	virtual        *Virtual
 	ascii          *Ascii
-	quartz         *quartz.Quartz
 }
 
 func NewKeyboard() *Keyboard {
 	k := &Keyboard{
-		virtual: NewVirtual(),
-		ascii:   NewAscii(),
+		keyDataStorage: nil,
+		virtual:        NewVirtual(),
+		ascii:          NewAscii(),
 	}
 	k.Reset()
 	return k
