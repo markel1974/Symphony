@@ -59,8 +59,8 @@ type Core struct {
 	sprClx           uint8    // Sprite to sprite collision
 	rasterX          uint16   // Current raster x position
 	rasterY          uint16   // Current raster line
-	dyStart          uint16   // Comparison values for borders logic
-	dyStop           uint16   // Comparison values for borders logic
+	dyTop            uint16   // Comparison values for borders logic
+	dyBottom         uint16   // Comparison values for borders logic
 	colors           []uint8  // Indices of the 16 colors (16 times mirrored to avoid "& 0x0f")
 	displayIdx       int      // Index of current display mode
 	lpTriggered      bool     // LightPen was triggered in this frame
@@ -127,8 +127,8 @@ func NewCore(socket ISocket) *Core {
 		colors:           colors,
 		rasterX:          0,
 		rasterY:          TotalRasters - 1,
-		dyStart:          Row24YStart,
-		dyStop:           Row24YStop,
+		dyTop:            Row24YStart,
+		dyBottom:         Row24YStop,
 		displayIdx:       0,
 		lpTriggered:      false,
 		badLineCondition: false,
@@ -477,11 +477,11 @@ func (vic *Core) WriteRegister(addr2 uint16, data uint8) {
 		}
 		vic.irqRaster = irqRaster
 		if (data & 8) != 0 {
-			vic.dyStart = Row25YStart
-			vic.dyStop = Row25YStop
+			vic.dyTop = Row25YStart
+			vic.dyBottom = Row25YStop
 		} else {
-			vic.dyStart = Row24YStart
-			vic.dyStop = Row24YStop
+			vic.dyTop = Row24YStart
+			vic.dyBottom = Row24YStop
 		}
 		if (vic.rasterY == 0x30) && ((vic.cr1 & 0x10) != 0) {
 			vic.badLinesEnabled = true
