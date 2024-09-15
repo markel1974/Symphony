@@ -2,9 +2,8 @@ package cartridges
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/c64/cartridges/cartridge16k"
-	"github.com/markel1974/c64emu/src/c64/cartridges/cartridge8k"
 	"github.com/markel1974/c64emu/src/c64/cartridges/easyflash"
+	"github.com/markel1974/c64emu/src/c64/cartridges/generic"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/c64/cartridges/magicdesk"
@@ -61,11 +60,11 @@ func (f *Manager) Setup(board icartridge.IExpansion, prefs *config.Config) {
 	f.registerType[ocean.GetType()] = ocean.New
 	f.registerType[magicdesk.GetType()] = magicdesk.New
 	f.registerType[easyflash.GetType()] = easyflash.New
-	f.registerType[cartridge8k.GetType()] = cartridge8k.New
-	f.registerType[cartridge16k.GetType()] = cartridge16k.New
+	f.registerType[generic.GetType()] = generic.New
+	//f.registerType[cartridge16k.GetType()] = cartridge16k.New
 
-	f.registerSize[0x2000] = cartridge8k.New
-	f.registerSize[0x4000] = cartridge16k.New
+	f.registerSize[0x2000] = generic.New //cartridge8k.New
+	f.registerSize[0x4000] = generic.New //cartridge16k.New
 	f.registerSizeDefault = ocean.New
 }
 
