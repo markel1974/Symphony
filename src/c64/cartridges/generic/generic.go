@@ -142,11 +142,11 @@ func (c *Generic) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
 	return 0, false
 }
 
-func (c *Generic) IORead(addr uint16) (uint8, bool) {
+func (c *Generic) IORead(_ uint16) (uint8, bool) {
 	return 0, false
 }
 
-func (c *Generic) IOWrite(addr uint16, data uint8) bool {
+func (c *Generic) IOWrite(_ uint16, _ uint8) bool {
 	return false
 }
 
