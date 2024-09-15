@@ -1,5 +1,9 @@
 package mos6569
 
+import (
+	"log"
+)
+
 // https://www.cebix.net/VIC-Article.txt
 // https://www.oxyron.de/html/registers_vic2.html
 
@@ -62,13 +66,12 @@ type Core struct {
 	lpTriggered      bool     // LightPen was triggered in this frame
 	badLinesEnabled  bool     // Bad Lines enabled for this frame
 	badLineCondition bool     // Current line is bad line
-	//ready            bool     // VIC Initialization Complete
-	baLow           bool   // BA Line
-	aecLow          bool   // AEC Line
-	baLowFirstCycle uint64 //
-	//aecLowClearNextCycle bool     //
-	lastByte       uint8 // Last byte read by VIC
-	refreshCounter uint8
+	baLow            bool     // BA Line
+	aecLow           bool     // AEC Line
+	aecLowNextCycle  uint64   //
+	lastByte         uint8    // Last byte read by VIC
+	refreshCounter   uint8    //
+	//ready            bool   // VIC Initialization Complete
 }
 
 func NewCore(socket ISocket) *Core {
@@ -76,6 +79,7 @@ func NewCore(socket ISocket) *Core {
 	for i := range colors {
 		colors[i] = (uint8)(i & 0x0f)
 	}
+	defaultColor := colors[0] //black
 	c := &Core{
 		socket:           socket,
 		banks:            nil,
@@ -113,13 +117,13 @@ func NewCore(socket ISocket) *Core {
 		sprExpY:          0,
 		sprClx:           0,
 		sprClxBgr:        0,
-		ecColor:          colors[0], // Preset colors to black
-		b0cColor:         colors[0], // Preset colors to black
-		b1cColor:         colors[0], // Preset colors to black
-		b2cColor:         colors[0], // Preset colors to black
-		b3cColor:         colors[0], // Preset colors to black
-		mm0Color:         colors[0], // Preset colors to black
-		mm1Color:         colors[0], // Preset colors to black
+		ecColor:          defaultColor,
+		b0cColor:         defaultColor,
+		b1cColor:         defaultColor,
+		b2cColor:         defaultColor,
+		b3cColor:         defaultColor,
+		mm0Color:         defaultColor,
+		mm1Color:         defaultColor,
 		colors:           colors,
 		rasterX:          0,
 		rasterY:          TotalRasters - 1,
@@ -130,15 +134,14 @@ func NewCore(socket ISocket) *Core {
 		badLineCondition: false,
 		badLinesEnabled:  false,
 		baLow:            false,
-		baLowFirstCycle:  0,
+		aecLowNextCycle:  0,
 		aecLow:           false,
-		//ready:            false,
-		lastByte:       0,
-		refreshCounter: 0,
+		lastByte:         0,
+		refreshCounter:   0,
+		//ready:          false,
 	}
-	// Preset colors to black
 	for i := range c.mXcColor {
-		c.mXcColor[i] = c.colors[0]
+		c.mXcColor[i] = defaultColor
 	}
 	return c
 }
@@ -182,20 +185,18 @@ func (vic *Core) SetBALow() {
 		return
 	}
 	vic.baLow = true
-	vic.baLowFirstCycle = vic.socket.Cycle()
+	vic.aecLowNextCycle = vic.socket.Cycle() + 3
 	vic.socket.BALow(true)
 }
 
 func (vic *Core) ClearBALow() {
 	if vic.baLow {
 		vic.baLow = false
-		vic.baLowFirstCycle = 0
-		vic.socket.BALow(vic.baLow)
+		vic.socket.BALow(false)
 	}
 	if vic.aecLow {
-		//vic.aecLowClearNextCycle = true
 		vic.aecLow = false
-		vic.socket.AECLow(vic.aecLow)
+		vic.socket.AECLow(false)
 	}
 }
 
@@ -205,9 +206,9 @@ func (vic *Core) GetAECLow() bool {
 
 func (vic *Core) TryAcquireAEC() {
 	if vic.baLow && !vic.aecLow {
-		if dist := vic.socket.Cycle() - vic.baLowFirstCycle; dist >= 3 {
+		if vic.socket.Cycle() >= vic.aecLowNextCycle {
 			vic.aecLow = true
-			vic.socket.AECLow(vic.aecLow)
+			vic.socket.AECLow(true)
 		}
 	}
 }
@@ -237,13 +238,15 @@ func (vic *Core) badLineUpdate() {
 func (vic *Core) ChangedVA(newVA uint8) {
 	vic.ciaVaBase = uint16(newVA) << 14
 	// Force update memory pointers
-	vic.WriteRegister(0x18, vic.vaBase)
+	//vic.WriteRegister(0x18, vic.vaBase)
+	vic.matrixBase = (uint16(vic.vaBase) & 0xf0) << 6
+	vic.charBase = (uint16(vic.vaBase) & 0x0e) << 10
+	vic.bitmapBase = (uint16(vic.vaBase) & 0x08) << 10
 }
 
 func (vic *Core) LightPenTrigger() {
 	if !vic.lpTriggered {
 		vic.lpTriggered = true
-		// Latch current coordinates
 		vic.lpx = uint8(vic.rasterX >> 1)
 		vic.lpy = uint8(vic.rasterY)
 		vic.irqFlag |= flagLightPenBit
@@ -302,64 +305,72 @@ func (vic *Core) rasterIrq() {
 }
 
 func (vic *Core) ReadRegister(addr uint16) uint8 {
-	addr = addr & 0x3f
-	switch addr {
-	case 0x00, 0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e:
-		return uint8(vic.mXx[addr>>1])
-	case 0x01, 0x03, 0x05, 0x07, 0x09, 0x0b, 0x0d, 0x0f:
-		return vic.mXy[addr>>1]
-
+	reg := addr & 0x3f
+	switch reg {
+	case 0x00:
+		return uint8(vic.mXx[0])
+	case 0x01:
+		return vic.mXy[0]
+	case 0x02:
+		return uint8(vic.mXx[1])
+	case 0x03:
+		return vic.mXy[1]
+	case 0x04:
+		return uint8(vic.mXx[2])
+	case 0x05:
+		return vic.mXy[2]
+	case 0x06:
+		return uint8(vic.mXx[3])
+	case 0x07:
+		return vic.mXy[3]
+	case 0x08:
+		return uint8(vic.mXx[4])
+	case 0x09:
+		return vic.mXy[4]
+	case 0x0a:
+		return uint8(vic.mXx[5])
+	case 0x0b:
+		return vic.mXy[5]
+	case 0x0c:
+		return uint8(vic.mXx[6])
+	case 0x0d:
+		return vic.mXy[6]
+	case 0x0e:
+		return uint8(vic.mXx[7])
+	case 0x0f:
+		return vic.mXy[7]
 	case 0x10: // Sprite X position MSB
 		return vic.mx8
-
 	case 0x11: // Control register 1
 		return uint8((uint16(vic.cr1) & 0x7f) | ((vic.rasterY & 0x100) >> 1))
-
 	case 0x12: // Raster counter
 		return uint8(vic.rasterY)
-
 	case 0x13: // Light pen X
 		return vic.lpx
-
 	case 0x14: // Light pen Y
 		return vic.lpy
-
 	case 0x15: // Sprite enable
 		return vic.me
-
 	case 0x16: // Control register 2
 		return vic.cr2 | 0xc0
-
 	case 0x17: // Sprite Y expansion
 		return vic.mye
-
 	case 0x18: // Memory pointers
 		return vic.vaBase | 0x01
-
 	case 0x19: // IRQ spriteFlags
-		//if !vic.ready {
-		//	vic.ready = true
-		//	vic.socket.Ready()
-		//}
 		return vic.irqFlag | 0x70
-
 	case 0x1a: // IRQ mask
 		return vic.irqMask | 0xf0
-
 	case 0x1b: // Sprite data priority
 		return vic.mdp
-
 	case 0x1c: // Sprite multicolor
 		return vic.mmc
-
 	case 0x1d: // Sprite X expansion
 		return vic.mxe
-
 	case 0x1e: // Sprite-sprite collision
 		ret := vic.sprClx
 		vic.sprClx = 0 // Read and clear
 		return ret
-
 	case 0x1f: // Sprite-background collision
 		ret := vic.sprClxBgr
 		vic.sprClxBgr = 0 // Read and clear
@@ -378,30 +389,85 @@ func (vic *Core) ReadRegister(addr uint16) uint8 {
 		return vic.mm0 | 0xf0
 	case 0x26:
 		return vic.mm1 | 0xf0
-	case 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e:
-		return vic.mXc[addr-0x27] | 0xf0
+	case 0x27:
+		return vic.mXc[0] | 0xf0
+	case 0x28:
+		return vic.mXc[1] | 0xf0
+	case 0x29:
+		return vic.mXc[2] | 0xf0
+	case 0x2a:
+		return vic.mXc[3] | 0xf0
+	case 0x2b:
+		return vic.mXc[4] | 0xf0
+	case 0x2c:
+		return vic.mXc[5] | 0xf0
+	case 0x2d:
+		return vic.mXc[6] | 0xf0
+	case 0x2e:
+		return vic.mXc[7] | 0xf0
+	case 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f: //unconnected
+		return 0xff
 	default:
+		log.Printf("ReadRegister: unknown reg 0x%x", reg)
 		return 0xff
 	}
 }
 
-func (vic *Core) WriteRegister(addr uint16, data uint8) {
-	addr = addr & 0x3f
-	switch addr {
-	case 0x00, 0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e:
-		target := addr >> 1
-		vic.mXx[target] = (vic.mXx[target] & 0xff00) | uint16(data)
-	case 0x10:
+func (vic *Core) WriteRegister(addr2 uint16, data uint8) {
+	reg := addr2 & 0x3f
+	switch reg {
+	case 0x00:
+		vic.mXx[0] = (vic.mXx[0] & 0xff00) | uint16(data)
+	case 0x01:
+		vic.mXy[0] = data
+	case 0x02:
+		vic.mXx[1] = (vic.mXx[1] & 0xff00) | uint16(data)
+	case 0x03:
+		vic.mXy[1] = data
+	case 0x04:
+		vic.mXx[2] = (vic.mXx[2] & 0xff00) | uint16(data)
+	case 0x05:
+		vic.mXy[2] = data
+	case 0x06:
+		vic.mXx[3] = (vic.mXx[3] & 0xff00) | uint16(data)
+	case 0x07:
+		vic.mXy[3] = data
+	case 0x08:
+		vic.mXx[4] = (vic.mXx[4] & 0xff00) | uint16(data)
+	case 0x09:
+		vic.mXy[4] = data
+	case 0x0a:
+		vic.mXx[5] = (vic.mXx[5] & 0xff00) | uint16(data)
+	case 0x0b:
+		vic.mXy[5] = data
+	case 0x0c:
+		vic.mXx[6] = (vic.mXx[6] & 0xff00) | uint16(data)
+	case 0x0d:
+		vic.mXy[6] = data
+	case 0x0e:
+		vic.mXx[7] = (vic.mXx[7] & 0xff00) | uint16(data)
+	case 0x0f:
+		vic.mXy[7] = data
+	case 0x10: //MSBs of X coordinates
 		vic.mx8 = data
-		for i, j := 0, uint8(1); i < SpriteNumber; i, j = i+1, j<<1 {
-			if (vic.mx8 & j) != 0 {
+		for i := 0; i < SpriteNumber; i++ {
+			if (data & _spriteBit[i]) != 0 {
 				vic.mXx[i] |= 0x100
 			} else {
 				vic.mXx[i] &= 0xff
 			}
 		}
-	case 0x01, 0x03, 0x05, 0x07, 0x09, 0x0b, 0x0d, 0x0f:
-		vic.mXy[addr>>1] = data
+
+		/*
+			for i, j := 0, uint8(1); i < SpriteNumber; i, j = i+1, j<<1 {
+				//fmt.Println(j)
+				if (vic.mx8 & j) != 0 {
+					vic.mXx[i] |= 0x100
+				} else {
+					vic.mXx[i] &= 0xff
+				}
+			}
+		*/
 	case 0x11: // Control register 1
 		vic.cr1 = data
 		vic.yScroll = uint16(data) & 7
@@ -428,6 +494,10 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 			vic.rasterIrq()
 		}
 		vic.irqRaster = irqRaster
+	case 0x13: // Light pen X
+		vic.lpx = data
+	case 0x14: // Light pen Y
+		vic.lpy = data
 	case 0x15: // Sprite enable
 		vic.me = data
 	case 0x16: // Control register 2
@@ -466,6 +536,12 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 		vic.mmc = data
 	case 0x1d: // Sprite X expansion
 		vic.mxe = data
+	case 0x1e: // Sprite-sprite collision
+		//log.Printf("Write Sprite-sprite collision %d", data)
+		vic.sprClx = data
+	case 0x1f: // Sprite-background collision
+		//log.Printf("Write Sprite-background collision %d", data)
+		vic.sprClxBgr = data
 	case 0x20:
 		vic.ec = data
 		vic.ecColor = vic.colors[data]
@@ -487,9 +563,32 @@ func (vic *Core) WriteRegister(addr uint16, data uint8) {
 	case 0x26:
 		vic.mm1 = data
 		vic.mm1Color = vic.colors[data]
-	case 0x27, 0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e:
-		target := addr - 0x27
-		vic.mXc[target] = data
-		vic.mXcColor[target] = vic.colors[data]
+	case 0x27:
+		vic.mXc[0] = data
+		vic.mXcColor[0] = vic.colors[data]
+	case 0x28:
+		vic.mXc[1] = data
+		vic.mXcColor[1] = vic.colors[data]
+	case 0x29:
+		vic.mXc[2] = data
+		vic.mXcColor[2] = vic.colors[data]
+	case 0x2a:
+		vic.mXc[3] = data
+		vic.mXcColor[3] = vic.colors[data]
+	case 0x2b:
+		vic.mXc[4] = data
+		vic.mXcColor[4] = vic.colors[data]
+	case 0x2c:
+		vic.mXc[5] = data
+		vic.mXcColor[5] = vic.colors[data]
+	case 0x2d:
+		vic.mXc[6] = data
+		vic.mXcColor[6] = vic.colors[data]
+	case 0x2e:
+		vic.mXc[7] = data
+		vic.mXcColor[7] = vic.colors[data]
+	case 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f: //unconnected
+	default:
+		log.Printf("WriteRegister: unknown reg 0x%x", reg)
 	}
 }

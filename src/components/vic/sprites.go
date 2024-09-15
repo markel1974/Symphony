@@ -41,19 +41,6 @@ func NewSprites(core *Core, collisions *Collisions, db IDisplayBuffer) *Sprites 
 func (sp *Sprites) Setup() {
 }
 
-func (sp *Sprites) GetDMAFlag(b uint8) uint8 {
-	return sp.dmaFlags & b
-}
-
-func (sp *Sprites) UpdateDisplayFlags() {
-	sp.spriteFlags = sp.displayFlags
-	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
-		if (sp.displayFlags&mask) != 0 && (sp.dmaFlags&mask) == 0 {
-			sp.displayFlags &= ^mask
-		}
-	}
-}
-
 func (sp *Sprites) FetchPtr(num int) {
 	if sp.core.baLow && sp.core.aecLow {
 		addr := sp.core.matrixBase | 0x03f8 | uint16(num)
@@ -77,25 +64,28 @@ func (sp *Sprites) Fetch(num int, bNum int) {
 	}
 }
 
+func (sp *Sprites) UpdateDisplayFlags() {
+	sp.spriteFlags = sp.displayFlags
+	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
+		if ((sp.displayFlags & mask) != 0) && ((sp.dmaFlags & mask) == 0) {
+			sp.displayFlags &= ^mask
+		}
+	}
+}
+
+func (sp *Sprites) GetDMAFlag(b uint8) uint8 {
+	return sp.dmaFlags & b
+}
+
 func (sp *Sprites) UpdateDMA() {
 	rasterY := sp.core.rasterY & 0xff
 	for i, mask := 0, uint8(1); i < SpriteNumber; i, mask = i+1, mask<<1 {
-		if (sp.core.me&mask) != 0 && rasterY == uint16(sp.core.mXy[i]) {
+		if ((sp.core.me & mask) != 0) && (rasterY == uint16(sp.core.mXy[i])) {
 			sp.dmaFlags |= mask
 			sp.dataCounterBase[i] = 0
 			if (sp.core.mye & mask) != 0 {
 				sp.core.sprExpY &= ^mask
 			}
-		}
-	}
-}
-
-func (sp *Sprites) UpdateRasterYDisplayFlags() {
-	rasterY := sp.core.rasterY & 0xff
-	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
-		sp.dataCounter[idx] = sp.dataCounterBase[idx]
-		if (sp.dmaFlags&mask) != 0 && (rasterY == uint16(sp.core.mXy[idx])) {
-			sp.displayFlags |= mask
 		}
 	}
 }
@@ -107,6 +97,16 @@ func (sp *Sprites) UpdateDMACounterBase() {
 		}
 		if (sp.dataCounterBase[idx] & 0x3f) == 0x3f {
 			sp.dmaFlags &= ^mask
+		}
+	}
+}
+
+func (sp *Sprites) UpdateRasterYDisplayFlags() {
+	rasterY := sp.core.rasterY & 0xff
+	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
+		sp.dataCounter[idx] = sp.dataCounterBase[idx]
+		if ((sp.dmaFlags & mask) != 0) && (rasterY == uint16(sp.core.mXy[idx])) {
+			sp.displayFlags |= mask
 		}
 	}
 }
