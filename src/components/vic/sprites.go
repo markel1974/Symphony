@@ -47,7 +47,6 @@ func (sp *Sprites) GetDMAFlag(b uint8) uint8 {
 
 func (sp *Sprites) UpdateDisplayFlags() {
 	sp.spriteFlags = sp.displayFlags
-
 	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
 		if (sp.displayFlags&mask) != 0 && (sp.dmaFlags&mask) == 0 {
 			sp.displayFlags &= ^mask
@@ -56,33 +55,25 @@ func (sp *Sprites) UpdateDisplayFlags() {
 }
 
 func (sp *Sprites) FetchPtr(num int) {
-	//TEST
-	if (sp.dmaFlags & (1 << num)) != 0 {
-		if sp.core.baLow && sp.core.aecLow {
-			addr := sp.core.matrixBase | 0x03f8 | uint16(num)
-			data := sp.core.ReadByte(addr)
-			ptr := uint16(data) << 6
-			sp.dataPtr[num] = ptr
-		} else {
-			log.Printf("sprites: can't fetch sprite ptr %d", num)
-		}
+	if sp.core.baLow && sp.core.aecLow {
+		addr := sp.core.matrixBase | 0x03f8 | uint16(num)
+		data := sp.core.ReadByte(addr)
+		ptr := uint16(data) << 6
+		sp.dataPtr[num] = ptr
+	} else {
+		log.Printf("sprites: can't fetch sprite ptr %d", num)
 	}
 }
 
 func (sp *Sprites) Fetch(num int, bNum int) {
-	if (sp.dmaFlags & (1 << num)) != 0 {
-		if sp.core.baLow && sp.core.aecLow {
-			ptr := sp.dataPtr[num]
-			addr := (sp.dataCounter[num] & 0x3f) | ptr
-			data := sp.core.ReadByte(addr)
-			sp.data[num][bNum] = data
-			sp.dataCounter[num]++
-		} else {
-			log.Printf("sprites: can't fetch sprite %d - %d", num, bNum)
-			sp.core.ReadByte(0x3fff)
-		}
-	} else if bNum == 1 {
-		sp.core.ReadByte(0x3fff)
+	if sp.core.baLow && sp.core.aecLow {
+		ptr := sp.dataPtr[num]
+		addr := (sp.dataCounter[num] & 0x3f) | ptr
+		data := sp.core.ReadByte(addr)
+		sp.data[num][bNum] = data
+		sp.dataCounter[num]++
+	} else {
+		log.Printf("sprites: can't fetch sprite %d - %d", num, bNum)
 	}
 }
 
