@@ -186,7 +186,6 @@ func (gr *Graphics) DrawBackground() {
 	default:
 		gr.db.SetMulti8(gr.offset, gr.core.colors[0])
 	}
-
 	gr.incrementOffset()
 }
 
@@ -228,7 +227,6 @@ func (gr *Graphics) DrawForeground() {
 	case modeBitmapMulticolorInvalid:
 		gr.drawInvalidMulticolor(offset, gr.core.colors[0])
 	}
-
 	gr.incrementOffset()
 }
 

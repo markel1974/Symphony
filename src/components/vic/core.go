@@ -71,7 +71,8 @@ type Core struct {
 	aecLowNextCycle  uint64   //
 	lastByte         uint8    // Last byte read by VIC
 	refreshCounter   uint8    //
-	//ready            bool   // VIC Initialization Complete
+	denBit           bool
+	columnMode40     bool
 }
 
 func NewCore(socket ISocket) *Core {
@@ -138,7 +139,8 @@ func NewCore(socket ISocket) *Core {
 		aecLow:           false,
 		lastByte:         0,
 		refreshCounter:   0,
-		//ready:          false,
+		denBit:           false,
+		columnMode40:     false,
 	}
 	for i := range c.mXcColor {
 		c.mXcColor[i] = defaultColor
@@ -274,7 +276,7 @@ func (vic *Core) IncrementCounters() {
 		vic.rasterIrq()
 	}
 	if vic.rasterY == 0x30 {
-		vic.badLinesEnabled = (vic.cr1 & 0x10) != 0 //denBit
+		vic.badLinesEnabled = vic.denBit //denBit
 	}
 	vic.badLineUpdate()
 }
@@ -459,43 +461,37 @@ func (vic *Core) WriteRegister(addr2 uint16, data uint8) {
 				vic.mXx[i] &= 0xff
 			}
 		}
-
-		/*
-			for i, j := 0, uint8(1); i < SpriteNumber; i, j = i+1, j<<1 {
-				//fmt.Println(j)
-				if (vic.mx8 & j) != 0 {
-					vic.mXx[i] |= 0x100
-				} else {
-					vic.mXx[i] &= 0xff
-				}
-			}
-		*/
 	case 0x11: // Control register 1
 		vic.cr1 = data
-		vic.yScroll = uint16(data) & 7
-		irqRaster := (vic.irqRaster & 0xff) | ((uint16(data) & 0x80) << 1)
-		if vic.irqRaster != irqRaster && vic.rasterY == irqRaster {
-			vic.rasterIrq()
+		vic.yScroll = uint16(vic.cr1) & 7
+		vic.denBit = (vic.cr1 & 0x10) != 0
+		irqRaster := (vic.irqRaster & 0xff) | ((uint16(vic.cr1) & 0x80) << 1)
+		if vic.irqRaster != irqRaster {
+			if vic.rasterY == irqRaster {
+				vic.rasterIrq()
+			}
+			vic.irqRaster = irqRaster
 		}
-		vic.irqRaster = irqRaster
-		if (data & 8) != 0 {
+		if (vic.cr1 & 8) != 0 {
 			vic.dyTop = Row25YStart
 			vic.dyBottom = Row25YStop
 		} else {
 			vic.dyTop = Row24YStart
 			vic.dyBottom = Row24YStop
 		}
-		if (vic.rasterY == 0x30) && ((vic.cr1 & 0x10) != 0) {
+		if (vic.rasterY == 0x30) && vic.denBit {
 			vic.badLinesEnabled = true
 		}
 		vic.badLineUpdate()
 		vic.displayIdx = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4
 	case 0x12: // Raster counter
 		irqRaster := (vic.irqRaster & 0xff00) | uint16(data)
-		if vic.irqRaster != irqRaster && vic.rasterY == irqRaster {
-			vic.rasterIrq()
+		if vic.irqRaster != irqRaster {
+			if vic.rasterY == irqRaster {
+				vic.rasterIrq()
+			}
+			vic.irqRaster = irqRaster
 		}
-		vic.irqRaster = irqRaster
 	case 0x13: // Light pen X
 		vic.lpx = data
 	case 0x14: // Light pen Y
@@ -504,7 +500,8 @@ func (vic *Core) WriteRegister(addr2 uint16, data uint8) {
 		vic.me = data
 	case 0x16: // Control register 2
 		vic.cr2 = data
-		vic.xScroll = uint16(data) & 7
+		vic.columnMode40 = (vic.cr2 & 8) != 0
+		vic.xScroll = uint16(vic.cr2) & 7
 		vic.displayIdx = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4
 	case 0x17: // Sprite Y expansion
 		vic.mye = data

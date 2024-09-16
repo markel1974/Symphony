@@ -95,6 +95,8 @@ func palCycle2(vic *VIC) {
 	}
 	vic.collisions.ClearGraphics()
 	vic.graphics.SetOffset(vic.lineStart)
+	vic.sprites.SetOffset(vic.lineStart)
+	vic.borders.SetOffset(vic.lineStart)
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite3) != 0 {
 		vic.sprites.Fetch(3, 1)
@@ -211,8 +213,8 @@ func palCycle12(vic *VIC) {
 
 func palCycle13(vic *VIC) {
 	if vic.drawLine {
-		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.graphics.DrawBackground()
 	}
 	vic.core.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -222,8 +224,8 @@ func palCycle13(vic *VIC) {
 
 func palCycle14(vic *VIC) {
 	if vic.drawLine {
-		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.graphics.DrawBackground()
 	}
 	vic.core.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -234,8 +236,8 @@ func palCycle14(vic *VIC) {
 
 func palCycle15(vic *VIC) {
 	if vic.drawLine {
-		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.graphics.DrawBackground()
 	}
 	vic.core.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -248,8 +250,8 @@ func palCycle15(vic *VIC) {
 
 func palCycle16(vic *VIC) {
 	if vic.drawLine {
-		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.graphics.DrawBackground()
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -262,12 +264,12 @@ func palCycle16(vic *VIC) {
 func palCycle17(vic *VIC) {
 	vic.borders.UpdateColumn40()
 	if vic.drawLine {
+		vic.borders.Sample(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
 			vic.graphics.DrawForeground()
 		}
-		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -279,12 +281,12 @@ func palCycle17(vic *VIC) {
 func palCycle18(vic *VIC) {
 	vic.borders.UpdateColumn38()
 	if vic.drawLine {
+		vic.borders.Sample(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
 			vic.graphics.DrawForeground()
 		}
-		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -296,12 +298,12 @@ func palCycle18(vic *VIC) {
 
 func palCycle19to54(vic *VIC) {
 	if vic.drawLine {
+		vic.borders.Sample(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
 			vic.graphics.DrawForeground()
 		}
-		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -313,12 +315,12 @@ func palCycle19to54(vic *VIC) {
 
 func palCycle55(vic *VIC) {
 	if vic.drawLine {
+		vic.borders.Sample(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
 			vic.graphics.DrawForeground()
 		}
-		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -334,12 +336,12 @@ func palCycle55(vic *VIC) {
 func palCycle56(vic *VIC) {
 	vic.borders.EnableColumn38()
 	if vic.drawLine {
+		vic.borders.Sample(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
 			vic.graphics.DrawForeground()
 		}
-		vic.borders.Sample(vic.curr.cycleBorder)
 	}
 	vic.core.AccessIdle()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -354,8 +356,8 @@ func palCycle57(vic *VIC) {
 	vic.borders.EnableColumn40()
 	vic.sprites.UpdateDisplayFlags()
 	if vic.drawLine {
-		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.graphics.DrawBackground()
 	}
 	vic.core.AccessIdle()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -366,8 +368,8 @@ func palCycle57(vic *VIC) {
 
 func palCycle58(vic *VIC) {
 	if vic.drawLine {
-		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.graphics.DrawBackground()
 	}
 	vic.sprites.UpdateRasterYDisplayFlags()
 	if vic.sprites.GetDMAFlag(sprite0) != 0 {
@@ -379,8 +381,8 @@ func palCycle58(vic *VIC) {
 
 func palCycle59(vic *VIC) {
 	if vic.drawLine {
-		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.graphics.DrawBackground()
 	}
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite0) != 0 {
@@ -396,10 +398,10 @@ func palCycle59(vic *VIC) {
 
 func palCycle60(vic *VIC) {
 	if vic.drawLine {
-		vic.graphics.DrawBackground()
 		vic.borders.Sample(vic.curr.cycleBorder)
-		vic.sprites.Draw(vic.lineStart)
-		vic.borders.Draw(vic.lineStart)
+		vic.graphics.DrawBackground()
+		vic.sprites.Draw()
+		vic.borders.Draw()
 		vic.lineStart += DisplayX
 	}
 	vic.graphics.TryAcquireDisplayAccess()

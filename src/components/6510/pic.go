@@ -106,7 +106,7 @@ func (i *Pic) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
 			return 1
 		}
 		if i.all.BitCheck(intrNmiBit) && !i.nmiExec {
-			if i.computeDistance(i.firstNMICycle, (opFlags&opFlagIntDelayed) != 0) >= minNMIDistance {
+			if i.computeDistance(i.firstNMICycle, (opFlags&opFlagIntDelayed) != 0, minNMIDistance) {
 				// Edge-triggered
 				i.nmiExec = true
 				return 2
@@ -114,7 +114,7 @@ func (i *Pic) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
 		}
 		if i.all.BitCheck(intrIrqBit) /* && !i.irqExec */ {
 			if ((iFlag == 0) || ((opFlags & opFlagIrqDisabled) != 0)) && ((opFlags & opFlagIrqEnabled) == 0) {
-				if i.computeDistance(i.firstIrqCycle, (opFlags&opFlagIntDelayed) != 0) >= minIrqDistance {
+				if i.computeDistance(i.firstIrqCycle, (opFlags&opFlagIntDelayed) != 0, minIrqDistance) {
 					// Level-triggered
 					//i.irqExec = true
 					return 3
@@ -125,19 +125,14 @@ func (i *Pic) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
 	return 0
 }
 
-func (i *Pic) computeDistance(base uint64, hasDelay bool) uint64 {
-	delay := uint64(0)
+func (i *Pic) computeDistance(base uint64, hasDelay bool, distance uint64) bool {
+	total := base + distance
 	if hasDelay {
-		delay = 1
+		total += 1
 	}
 	cycle := i.quartz.Cycle()
-	if base > cycle {
-		return 0
+	if cycle >= total {
+		return true
 	}
-	v := cycle - base
-	if v < delay {
-		return 0
-	}
-	v -= delay
-	return v
+	return false
 }

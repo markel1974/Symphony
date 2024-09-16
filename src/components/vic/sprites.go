@@ -10,11 +10,12 @@ type Sprites struct {
 	collisions      *Collisions
 	dataPtr         []uint16  // Sprite data pointers
 	data            [][]uint8 // Sprite data
-	dmaFlags        uint8     // 8 flags: active DMA Sprite
-	displayFlags    uint8     // 8 flags: active Display Sprite
-	spriteFlags     uint8     // 8 flags: Sprite in this line
+	dmaFlags        uint8     // active DMA Sprite
+	displayFlags    uint8     // active Display Sprite
+	spriteFlags     uint8     // Sprite in this line
 	dataCounter     []uint16  // Sprite counter data
 	dataCounterBase []uint16  // Sprite base counter data
+	offset          int       //
 }
 
 func NewSprites(core *Core, collisions *Collisions, db IDisplayBuffer) *Sprites {
@@ -28,6 +29,7 @@ func NewSprites(core *Core, collisions *Collisions, db IDisplayBuffer) *Sprites 
 		dmaFlags:        0,
 		dataCounter:     make([]uint16, SpriteNumber),
 		dataCounterBase: make([]uint16, SpriteNumber),
+		offset:          0,
 	}
 	for i := range s.data {
 		s.data[i] = make([]uint8, 4)
@@ -39,6 +41,10 @@ func NewSprites(core *Core, collisions *Collisions, db IDisplayBuffer) *Sprites 
 }
 
 func (sp *Sprites) Setup() {
+}
+
+func (sp *Sprites) SetOffset(offset int) {
+	sp.offset = offset
 }
 
 func (sp *Sprites) FetchPtr(num int) {
@@ -119,7 +125,7 @@ func (sp *Sprites) UpdateCounterBase() {
 	}
 }
 
-func (sp *Sprites) Draw(lineStart int) {
+func (sp *Sprites) Draw( /* lineStart int */ ) {
 	if sp.spriteFlags == 0 {
 		return
 	}
@@ -131,7 +137,7 @@ func (sp *Sprites) Draw(lineStart int) {
 			sColor := sp.core.mXcColor[sNum]
 			sData := (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
 			sOffset := int(sp.core.mXx[sNum]) + SpriteNumber
-			lineOffset := lineStart + sOffset
+			lineOffset := sp.offset + sOffset /* lineStart + sOffset */
 			m := sOffset / SpriteNumber
 			s := sOffset & 7
 			expanded := sp.core.mxe&sBit != 0
@@ -159,13 +165,13 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData ui
 	foreMaskL := sp.collisions.GetGraphicsL(m, s)
 	foreMaskR := sp.collisions.GetGraphicsR(m, s)
 	// Expand sprite data
-	sDataL := uint32(_multiExpTable[sData>>24&0xff])<<16 | uint32(_multiExpTable[sData>>16&0xff])
-	sDataR := uint32(_multiExpTable[sData>>8&0xff]) << 16
-	// Convert sprite pixels to bitPlanes
-	plane0L := (sDataL & 0x55555555) | (sDataL&0x55555555)<<1
-	plane1L := (sDataL & 0xaaaaaaaa) | (sDataL&0xaaaaaaaa)>>1
-	plane0R := (sDataR & 0x55555555) | (sDataR&0x55555555)<<1
-	plane1R := (sDataR & 0xaaaaaaaa) | (sDataR&0xaaaaaaaa)>>1
+	sDataL := uint32(_multiExpTable[(sData>>24)&0xff])<<16 | uint32(_multiExpTable[(sData>>16)&0xff])
+	sDataR := uint32(_multiExpTable[(sData>>8)&0xff]) << 16
+	// Convert sprite in bit-planes
+	plane0L := (sDataL & 0x55555555) | ((sDataL & 0x55555555) << 1)
+	plane1L := (sDataL & 0xaaaaaaaa) | ((sDataL & 0xaaaaaaaa) >> 1)
+	plane0R := (sDataR & 0x55555555) | ((sDataR & 0x55555555) << 1)
+	plane1R := (sDataR & 0xaaaaaaaa) | ((sDataR & 0xaaaaaaaa) >> 1)
 	// Collision with graphics?
 	if (foreMaskL&(plane0L|plane1L)) != 0 || (foreMaskR&(plane0R|plane1R)) != 0 {
 		sp.collisions.SetGraphicsCollision(sBit)
@@ -221,8 +227,8 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData ui
 func (sp *Sprites) drawExpandedStandard(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8) {
 	foreMaskL := sp.collisions.GetGraphicsL(m, s)
 	foreMaskR := sp.collisions.GetGraphicsR(m, s)
-	sDataL := uint32(_expTable[sData>>24&0xff])<<16 | uint32(_expTable[sData>>16&0xff])
-	sDataR := uint32(_expTable[sData>>8&0xff]) << 16
+	sDataL := uint32(_expTable[(sData>>24)&0xff])<<16 | uint32(_expTable[(sData>>16)&0xff])
+	sDataR := uint32(_expTable[(sData>>8)&0xff]) << 16
 	if (foreMaskL&sDataL) != 0 || (foreMaskR&sDataR) != 0 {
 		sp.collisions.SetGraphicsCollision(sBit)
 		if (sp.core.mdp & sBit) != 0 {
