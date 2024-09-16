@@ -61,12 +61,14 @@ func (b *Borders) EnableColumn40() {
 	if b.columnMode40 {
 		b.mainFlipFlop = true
 	}
+	b.samples[BorderTypeRight] = b.mainFlipFlop
 }
 
 func (b *Borders) EnableColumn38() {
 	if !b.columnMode40 {
 		b.mainFlipFlop = true
 	}
+	b.samples[BorderTypeMidRight] = b.mainFlipFlop
 }
 
 func (b *Borders) UpdateColumn40() {
@@ -76,6 +78,7 @@ func (b *Borders) UpdateColumn40() {
 			b.mainFlipFlop = false
 		}
 	}
+	b.samples[BorderTypeMidLeft] = b.mainFlipFlop
 }
 
 func (b *Borders) UpdateColumn38() {
@@ -85,10 +88,7 @@ func (b *Borders) UpdateColumn38() {
 			b.mainFlipFlop = false
 		}
 	}
-}
-
-func (b *Borders) SetSample(t BorderType) {
-	b.samples[t] = b.mainFlipFlop
+	b.samples[BorderTypeCenter] = b.mainFlipFlop
 }
 
 func (b *Borders) GetVerticalFlipFlop() bool {
@@ -100,6 +100,7 @@ func (b *Borders) Reset() {
 	b.den = (b.core.cr1 & 0x10) != 0 //DEN bit (Display Enable, register $d011, bit 4) serves for switching vertical border unit
 	b.top = b.core.dyTop
 	b.bottom = b.core.dyBottom
+	b.samples[BorderTypeLeft] = b.mainFlipFlop
 }
 
 func (b *Borders) Draw(lineStart int) {

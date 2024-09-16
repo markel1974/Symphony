@@ -74,10 +74,7 @@ func palCycle1(vic *VIC) {
 		vic.core.IncrementCounters()
 		vic.drawLine = (rasterY >= FirstDisplayedLine) && (rasterY <= LastDisplayedLine)
 	}
-
 	vic.borders.Reset()
-	vic.borders.SetSample(BorderTypeLeft)
-
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite3) != 0 {
 		vic.sprites.FetchPtr(3)
@@ -263,10 +260,7 @@ func palCycle16(vic *VIC) {
 }
 
 func palCycle17(vic *VIC) {
-	//per line - border can be reset here
 	vic.borders.UpdateColumn40()
-	vic.borders.SetSample(BorderTypeMidLeft)
-
 	if vic.drawLine {
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
@@ -284,8 +278,6 @@ func palCycle17(vic *VIC) {
 
 func palCycle18(vic *VIC) {
 	vic.borders.UpdateColumn38()
-	vic.borders.SetSample(BorderTypeCenter)
-
 	if vic.drawLine {
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
@@ -341,8 +333,6 @@ func palCycle55(vic *VIC) {
 
 func palCycle56(vic *VIC) {
 	vic.borders.EnableColumn38()
-	vic.borders.SetSample(BorderTypeMidRight)
-
 	if vic.drawLine {
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
@@ -362,8 +352,6 @@ func palCycle56(vic *VIC) {
 
 func palCycle57(vic *VIC) {
 	vic.borders.EnableColumn40()
-	vic.borders.SetSample(BorderTypeRight)
-
 	vic.sprites.UpdateDisplayFlags()
 	if vic.drawLine {
 		vic.graphics.DrawBackground()
