@@ -33,13 +33,21 @@ func (q *Queue) AddMulti(data int, count int) bool {
 func (q *Queue) Add(data int) bool {
 	if q.tail.last >= q.max {
 		return false
-		//q.tail.next = new(element)
-		//q.tail = q.tail.next
 	}
 	q.tail.items[q.tail.last] = data
 	q.tail.last++
 	q.count++
 	return true
+}
+
+func (q *Queue) AddElement(data int) {
+	if q.tail.last >= q.max {
+		q.tail.next = NewElement(q.max)
+		q.tail = q.tail.next
+	}
+	q.tail.items[q.tail.last] = data
+	q.tail.last++
+	q.count++
 }
 
 func (q *Queue) Next() (int, bool) {

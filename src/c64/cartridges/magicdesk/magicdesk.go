@@ -7,15 +7,13 @@ import (
 )
 
 type CartridgeMagicDesk struct {
-	id        string
-	intervals icartridge.RomInterval
-	lastData  uint8
-	banks     [][]byte
-	ioMask    uint8
-	currBank  uint8
-	game      uint8
-	exRom     uint8
-	board     icartridge.IExpansion
+	id       string
+	spec     *icartridge.CartridgeSpec
+	banks    [][]byte
+	bankMask uint8
+	regVal   uint8
+	slot     uint8
+	board    icartridge.IExpansion
 }
 
 func GetType() int {
@@ -23,12 +21,11 @@ func GetType() int {
 }
 
 func New() icartridge.ICartridge {
-	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
 	return &CartridgeMagicDesk{
-		game:      v.Game,
-		exRom:     v.ExRom,
-		intervals: v.IntervalLow | v.IntervalHigh,
-		lastData:  0,
+		spec:     icartridge.GetCartridgeSpec(icartridge.CartridgeMode8K),
+		bankMask: 0x7f,
+		regVal:   0,
+		slot:     0,
 	}
 }
 
@@ -50,51 +47,59 @@ func (c *CartridgeMagicDesk) GetId() string {
 }
 
 func (c *CartridgeMagicDesk) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
-	if i&c.intervals != 0 {
-		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.currBank, addr, data)
+	if (i & (c.spec.IntervalLow | c.spec.IntervalHigh)) != 0 {
+		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.slot, addr, data)
 		return true
 	}
 	return false
 }
 
 func (c *CartridgeMagicDesk) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
-	if i&c.intervals != 0 {
+	if (i & (c.spec.IntervalLow | c.spec.IntervalHigh)) != 0 {
 		//if c.b0Interval == i {
 		//	return c.banks[c.currBank][addr&0x1fff], true
 		//}
 		//if c.b1Interval == i {
 		//	return c.banks[c.currBank][addr&0x1fff], true
 		//}
-		return c.banks[c.currBank][addr&0x1fff], true
+		return c.banks[c.slot][addr&0x1fff], true
 	}
 	return 0, false
 }
 
 func (c *CartridgeMagicDesk) IORead(addr uint16) (uint8, bool) {
 	if (addr & 0xfff0) == 0xde00 {
-		return c.lastData, true
+		return c.regVal, true
 	}
 	return 0, false
 }
 
 func (c *CartridgeMagicDesk) IOWrite(addr uint16, data uint8) bool {
 	if (addr & 0xfff0) == 0xde00 {
-		//exRomDisabled := (data & 0x80) != 0
-		//currBank := data & 0x7f
-		currBank := (data & c.ioMask) & 0x3f
-		c.currBank = currBank
-		c.lastData = data
-		fmt.Printf("[MAGIC DESK] Bank switching %x => %d, %d\n", addr, data, c.currBank)
+		c.regVal = data & (0x80 | c.bankMask)
+		c.slot = data & c.bankMask
+		fmt.Println("magic desk slot", c.slot)
+		var spec *icartridge.CartridgeSpec
+		if (data & 0x80) != 0 {
+			spec = icartridge.GetCartridgeSpec(icartridge.CartridgeModeOff)
+		} else {
+			spec = icartridge.GetCartridgeSpec(icartridge.CartridgeMode8K)
+		}
+		if spec != c.spec {
+			fmt.Println("magic desk changing config", c.spec)
+			c.spec = spec
+			c.board.GameExRomConfigChanged()
+		}
 	}
 	return false
 }
 
 func (c *CartridgeMagicDesk) GetExRom() uint8 {
-	return c.exRom
+	return c.spec.ExRom
 }
 
 func (c *CartridgeMagicDesk) GetGame() uint8 {
-	return c.game
+	return c.spec.Game
 }
 
 func (c *CartridgeMagicDesk) Detach() error {
@@ -111,33 +116,39 @@ func (c *CartridgeMagicDesk) Emulate() {
 }
 
 func (c *CartridgeMagicDesk) initBin(data []byte) error {
-	if err := loader.ValidateCartridge(data); err != nil {
-		return err
+	c.banks = [][]byte{}
+	c.bankMask = 0x7f
+	c.regVal = 0
+	c.slot = 0
+	switch len(data) {
+	case 0x100000:
+		c.bankMask = 0x3f
+	case 0x80000:
+		c.bankMask = 0x1f
+	case 0x40000:
+		c.bankMask = 0x0f
+	case 0x20000:
+		c.bankMask = 0x07
+	case 0x10000:
+		c.bankMask = 0x03
+	default:
+		return fmt.Errorf("unsupported size")
 	}
-	const cSize = 0x2000
-	lCartridge := len(data)
-	c.ioMask = uint8((lCartridge >> 13) - 1)
-	totalBanks := len(data) / cSize
-	c.banks = make([][]byte, totalBanks)
-	for bankIdx := 0; bankIdx < totalBanks; bankIdx++ {
-		bank := make([]byte, cSize)
-		offset := bankIdx * cSize
-		for y := 0; y < cSize; y++ {
-			bank[y] = data[offset+y]
-		}
-		c.banks[bankIdx] = bank
+	start := 0
+	for start < len(data) {
+		end := start + 0x2000
+		c.banks = append(c.banks, data[start:end])
+		start += end
 	}
-	c.lastData = 0
-	c.currBank = 0
 	return nil
 }
 
 func (c *CartridgeMagicDesk) initCrt(loader *loader.CRTLoader) error {
 	c.banks = [][]byte{}
-	//c.exRom = uint8(loader.ExRom)
-	//c.game = uint8(loader.Game)
-
-	romSize := 0
+	lastBank := uint16(0)
+	c.bankMask = 0x7f
+	c.regVal = 0
+	c.slot = 0
 	for {
 		chip, err := loader.ReadChipHeader()
 		if chip == nil {
@@ -146,14 +157,29 @@ func (c *CartridgeMagicDesk) initCrt(loader *loader.CRTLoader) error {
 		if err != nil {
 			return err
 		}
-		if (chip.Bank > 63) || ((chip.Start != 0x8000) && (chip.Start != 0xa000)) || (chip.Size != 0x2000) {
+		if (chip.Bank > 128) || ((chip.Start != 0x8000) && (chip.Start != 0xa000)) || (chip.Size != 0x2000) {
 			return fmt.Errorf("invalid chip bank")
 		}
 		c.banks = append(c.banks, chip.Data)
-		romSize += int(chip.Size)
+		if chip.Bank > lastBank {
+			lastBank = chip.Bank
+		}
 	}
-	c.ioMask = uint8((romSize >> 13) - 1)
-	c.lastData = 0
-	c.currBank = 0
+	if lastBank >= 128 {
+		return fmt.Errorf("chip has more than 128 banks")
+	}
+	if lastBank >= 64 {
+		c.bankMask = 0x7f // min 65, max 128 banks
+	} else if lastBank >= 32 {
+		c.bankMask = 0x3f // min 33, max 64 banks
+	} else if lastBank >= 16 {
+		c.bankMask = 0x1f // min 17, max 32 banks
+	} else if lastBank >= 8 {
+		c.bankMask = 0x0f // min 9, max 16 banks
+	} else if lastBank >= 4 {
+		c.bankMask = 0x07 // min 5, max 8 banks
+	} else {
+		c.bankMask = 0x03 // max 4 banks
+	}
 	return nil
 }
