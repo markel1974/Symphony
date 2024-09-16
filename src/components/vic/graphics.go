@@ -59,7 +59,7 @@ func NewGraphics(core *Core, collisions *Collisions, db IDisplayBuffer) *Graphic
 
 func (gr *Graphics) PrintText() {
 	for x, v := range gr.textBuffer {
-		if x%40 == 0 {
+		if (x % 40) == 0 {
 			fmt.Println()
 		}
 		fmt.Printf("%c", v)
