@@ -107,6 +107,7 @@ func (gr *Graphics) TryAcquireDisplayAccess() {
 }
 
 func (gr *Graphics) UpdateDisplayAccess() {
+	// TODO VERIFY
 	if gr.rowCounter == rowsMax {
 		gr.videoCounterBase = gr.videoCounter
 		gr.displayAccess = false
