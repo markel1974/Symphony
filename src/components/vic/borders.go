@@ -23,7 +23,6 @@ type Borders struct {
 	//columnMode40   bool
 	//top            uint16
 	//bottom         uint16
-
 }
 
 func NewBorder(core *Core, db IDisplayBuffer) *Borders {
