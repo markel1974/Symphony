@@ -24,7 +24,6 @@ type VIC struct {
 	lineStart       int
 	drawLine        bool
 	vBlankNextCycle bool
-	columnMode40    bool
 	curr            *cycleData
 }
 

@@ -162,6 +162,7 @@ func (vic *Core) UpdateRasterX() {
 	vic.rasterX += 8
 }
 
+/*
 func (vic *Core) ModeColumn38() bool {
 	return (vic.cr2 & 8) == 0
 }
@@ -169,6 +170,7 @@ func (vic *Core) ModeColumn38() bool {
 func (vic *Core) ModeColumn40() bool {
 	return (vic.cr2 & 8) != 0
 }
+*/
 
 func (vic *Core) TryBALowIfBadLine() {
 	if vic.badLineCondition {

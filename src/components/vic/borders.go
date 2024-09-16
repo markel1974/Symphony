@@ -18,6 +18,10 @@ type Borders struct {
 	verticalFlipFlop bool
 	samples          []bool
 	colors           []uint8
+	den              bool
+	columnMode40     bool
+	dyTop            uint16
+	dyBottom         uint16
 }
 
 func NewBorder(core *Core, db IDisplayBuffer) *Borders {
@@ -28,6 +32,10 @@ func NewBorder(core *Core, db IDisplayBuffer) *Borders {
 		colors:           make([]uint8, 0xff),
 		mainFlipFlop:     false,
 		verticalFlipFlop: false,
+		columnMode40:     false,
+		den:              false,
+		dyTop:            0,
+		dyBottom:         0,
 	}
 	return gr
 }
@@ -38,8 +46,45 @@ func (b *Borders) Sample(idx uint8) {
 	}
 }
 
-func (b *Borders) Enable() {
-	b.mainFlipFlop = true
+func (b *Borders) UpdateVerticalFlipFlop() {
+	//3.9. The border unit
+	if b.dyBottom == b.core.rasterY {
+		//2. If the Y coordinate reaches the bottom comparison value in cycle 63, the vertical border flip flop is set.
+		b.verticalFlipFlop = true
+	} else if b.dyTop == b.core.rasterY && b.den {
+		//3. If the Y coordinate reaches the top comparison value in cycle 63 and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
+		b.verticalFlipFlop = false
+	}
+}
+
+func (b *Borders) EnableColumn40() {
+	if b.columnMode40 {
+		b.mainFlipFlop = true
+	}
+}
+
+func (b *Borders) EnableColumn38() {
+	if !b.columnMode40 {
+		b.mainFlipFlop = true
+	}
+}
+
+func (b *Borders) UpdateColumn40() {
+	if b.columnMode40 {
+		b.UpdateVerticalFlipFlop()
+		if !b.verticalFlipFlop {
+			b.mainFlipFlop = false
+		}
+	}
+}
+
+func (b *Borders) UpdateColumn38() {
+	if !b.columnMode40 {
+		b.UpdateVerticalFlipFlop()
+		if !b.verticalFlipFlop {
+			b.mainFlipFlop = false
+		}
+	}
 }
 
 func (b *Borders) SetSample(t BorderType) {
@@ -50,84 +95,12 @@ func (b *Borders) GetVerticalFlipFlop() bool {
 	return b.verticalFlipFlop
 }
 
-/*
-func (b *Borders) UpdateVerticalFlipFlop_OLD() {
-	if b.core.rasterY == b.core.dyBottom {
-		b.verticalFlipFlop = true
-	} else if ((b.core.cr1 & 0x10) != 0) && b.core.rasterY == b.core.dyTop {
-		b.verticalFlipFlop = false
-	}
+func (b *Borders) Reset() {
+	b.columnMode40 = (b.core.cr2 & 8) != 0
+	b.den = (b.core.cr1 & 0x10) != 0
+	b.dyTop = b.core.dyTop
+	b.dyBottom = b.core.dyBottom
 }
-*/
-
-/*
-func (b *Borders) Update_OLD() {
-	if b.core.rasterY == b.core.dyBottom {
-		b.verticalFlipFlop = true
-		return
-	}
-	if (b.core.cr1 & 0x10) != 0 {
-		if b.core.rasterY == b.core.dyTop {
-			b.verticalFlipFlop = false
-			b.mainFlipFlop = false
-		} else if !b.verticalFlipFlop {
-			b.mainFlipFlop = false
-		}
-	} else if !b.verticalFlipFlop {
-		b.mainFlipFlop = false
-	}
-}
-*/
-
-func (b *Borders) UpdateVerticalFlipFlop() {
-	//3.9. The border unit
-	//2. If the Y coordinate reaches the bottom comparison value in cycle 63, the vertical border flip flop is set.
-	if b.core.rasterY == b.core.dyBottom {
-		b.verticalFlipFlop = true
-		return
-	}
-	//3. If the Y coordinate reaches the top comparison value in cycle 63 and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
-	if b.core.rasterY == b.core.dyTop && ((b.core.cr1 & 0x10) != 0) {
-		b.verticalFlipFlop = false
-	}
-}
-
-func (b *Borders) Update() {
-	//TODO Wrong implementation
-	//see https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
-	//3.9. The border unit
-	if b.core.rasterY == b.core.dyBottom {
-		b.verticalFlipFlop = true
-		return
-	}
-	if b.core.rasterY == b.core.dyTop && ((b.core.cr1 & 0x10) != 0) {
-		b.verticalFlipFlop = false
-	}
-	if !b.verticalFlipFlop {
-		b.mainFlipFlop = false
-	}
-}
-
-/*
-func (b *Borders) Update_NEW() {
-	//1. If the X coordinate reaches the right comparison value, the main border flip flop is set.
-	if b.core.rasterX == b.core.dxRight {
-		b.mainFlipFlop = true
-	}
-	//4. If the X coordinate reaches the left comparison value and the Y coordinate reaches the bottom one, the vertical border flip flop is set.
-	if (b.core.rasterX == b.core.dxLeft) && (b.core.rasterY == b.core.dyBottom) {
-		b.verticalFlipFlop = true
-	}
-	//5. If the X coordinate reaches the left comparison value and the Y coordinate reaches the top one and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
-	if (b.core.rasterX == b.core.dxLeft) && (b.core.rasterY == b.core.dyTop) && ((b.core.cr1 & 0x10) != 0) {
-		b.verticalFlipFlop = false
-	}
-	//6. If the X coordinate reaches the left comparison value and the vertical border flip flop is not set, the main flip flop is reset.
-	if (b.core.rasterX == b.core.dxLeft) && !b.verticalFlipFlop {
-		b.mainFlipFlop = false
-	}
-}
-*/
 
 func (b *Borders) Draw(lineStart int) {
 	const bSize = 8
@@ -162,3 +135,53 @@ func (b *Borders) Draw(lineStart int) {
 		}
 	}
 }
+
+/*
+func (b *Borders) UpdateVerticalFlipFlop_OLD() {
+	if b.core.rasterY == b.core.dyBottom {
+		b.verticalFlipFlop = true
+	} else if ((b.core.cr1 & 0x10) != 0) && b.core.rasterY == b.core.dyTop {
+		b.verticalFlipFlop = false
+	}
+}
+*/
+
+/*
+func (b *Borders) Update_OLD() {
+	if b.core.rasterY == b.core.dyBottom {
+		b.verticalFlipFlop = true
+		return
+	}
+	if (b.core.cr1 & 0x10) != 0 {
+		if b.core.rasterY == b.core.dyTop {
+			b.verticalFlipFlop = false
+			b.mainFlipFlop = false
+		} else if !b.verticalFlipFlop {
+			b.mainFlipFlop = false
+		}
+	} else if !b.verticalFlipFlop {
+		b.mainFlipFlop = false
+	}
+}
+*/
+
+/*
+func (b *Borders) Update_NEW() {
+	//1. If the X coordinate reaches the right comparison value, the main border flip flop is set.
+	if b.core.rasterX == b.core.dxRight {
+		b.mainFlipFlop = true
+	}
+	//4. If the X coordinate reaches the left comparison value and the Y coordinate reaches the bottom one, the vertical border flip flop is set.
+	if (b.core.rasterX == b.core.dxLeft) && (b.core.rasterY == b.core.dyBottom) {
+		b.verticalFlipFlop = true
+	}
+	//5. If the X coordinate reaches the left comparison value and the Y coordinate reaches the top one and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
+	if (b.core.rasterX == b.core.dxLeft) && (b.core.rasterY == b.core.dyTop) && ((b.core.cr1 & 0x10) != 0) {
+		b.verticalFlipFlop = false
+	}
+	//6. If the X coordinate reaches the left comparison value and the vertical border flip flop is not set, the main flip flop is reset.
+	if (b.core.rasterX == b.core.dxLeft) && !b.verticalFlipFlop {
+		b.mainFlipFlop = false
+	}
+}
+*/
