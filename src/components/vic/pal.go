@@ -89,7 +89,6 @@ func palCycle2(vic *VIC) {
 	if vic.vBlankNextCycle {
 		vic.vBlankNextCycle = false
 		vic.lineStart = 0
-		vic.borders.Reset()
 		vic.graphics.ResetVideoCounterBase()
 		vic.core.ResetCounters()
 		vic.core.socket.VBlank()
@@ -262,7 +261,7 @@ func palCycle16(vic *VIC) {
 
 func palCycle17(vic *VIC) {
 	//per line - border can be reset here
-	//vic.borders.Reset()
+	vic.borders.Reset()
 	vic.borders.UpdateColumn40()
 	vic.borders.SetSample(BorderTypeMidLeft)
 	if vic.drawLine {

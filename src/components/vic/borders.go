@@ -20,8 +20,8 @@ type Borders struct {
 	colors           []uint8
 	den              bool
 	columnMode40     bool
-	dyTop            uint16
-	dyBottom         uint16
+	top              uint16
+	bottom           uint16
 }
 
 func NewBorder(core *Core, db IDisplayBuffer) *Borders {
@@ -34,8 +34,8 @@ func NewBorder(core *Core, db IDisplayBuffer) *Borders {
 		verticalFlipFlop: false,
 		columnMode40:     false,
 		den:              false,
-		dyTop:            0,
-		dyBottom:         0,
+		top:              0,
+		bottom:           0,
 	}
 	return gr
 }
@@ -48,10 +48,10 @@ func (b *Borders) Sample(idx uint8) {
 
 func (b *Borders) UpdateVerticalFlipFlop() {
 	//3.9. The border unit
-	if b.dyBottom == b.core.rasterY {
+	if b.bottom == b.core.rasterY {
 		//2. If the Y coordinate reaches the bottom comparison value in cycle 63, the vertical border flip flop is set.
 		b.verticalFlipFlop = true
-	} else if b.dyTop == b.core.rasterY && b.den {
+	} else if b.top == b.core.rasterY && b.den {
 		//3. If the Y coordinate reaches the top comparison value in cycle 63 and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
 		b.verticalFlipFlop = false
 	}
@@ -97,9 +97,9 @@ func (b *Borders) GetVerticalFlipFlop() bool {
 
 func (b *Borders) Reset() {
 	b.columnMode40 = (b.core.cr2 & 8) != 0
-	b.den = (b.core.cr1 & 0x10) != 0
-	b.dyTop = b.core.dyTop
-	b.dyBottom = b.core.dyBottom
+	b.den = (b.core.cr1 & 0x10) != 0 //DEN bit (Display Enable, register $d011, bit 4) serves for switching vertical border unit
+	b.top = b.core.dyTop
+	b.bottom = b.core.dyBottom
 }
 
 func (b *Borders) Draw(lineStart int) {
