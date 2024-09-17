@@ -16,11 +16,11 @@ type ReadFn func(uint16) uint8
 type WriteFn func(uint16, uint8)
 
 type Banks struct {
-	vic             ISystemWiring
-	sid             ISystemWiring
-	cia1            ISystemWiring
-	cia2            ISystemWiring
-	cartMan         IExpansionWiring
+	vic             ISocket
+	sid             ISocket
+	cia1            ISocket
+	cia2            ISocket
+	cartMan         IExpansionSocket
 	ram             []byte
 	bankWrite       []WriteFn
 	bankRead        []ReadFn
@@ -67,7 +67,7 @@ func NewBanks() *Banks {
 	return b
 }
 
-func (b *Banks) Setup(vic ISystemWiring, sid ISystemWiring, cia1 ISystemWiring, cia2 ISystemWiring, cartMan IExpansionWiring, cfg *config.Config) {
+func (b *Banks) Setup(vic ISocket, sid ISocket, cia1 ISocket, cia2 ISocket, cartMan IExpansionSocket, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1
