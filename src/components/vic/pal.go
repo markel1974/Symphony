@@ -213,7 +213,7 @@ func palCycle12(vic *VIC) {
 
 func palCycle13(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.core.AccessRefresh()
@@ -224,7 +224,7 @@ func palCycle13(vic *VIC) {
 
 func palCycle14(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.core.AccessRefresh()
@@ -236,7 +236,7 @@ func palCycle14(vic *VIC) {
 
 func palCycle15(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.core.AccessRefresh()
@@ -250,12 +250,12 @@ func palCycle15(vic *VIC) {
 
 func palCycle16(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.sprites.UpdateDMACounterBase()
+	vic.sprites.UpdateCounterBaseDMA()
 	vic.core.TryBALowIfBadLine()
 	//vic.core.TryAcquireAEC()
 	vic.graphics.TryVideoMatrixAccess()
@@ -264,7 +264,7 @@ func palCycle16(vic *VIC) {
 func palCycle17(vic *VIC) {
 	vic.borders.UpdateColumn40()
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -281,7 +281,7 @@ func palCycle17(vic *VIC) {
 func palCycle18(vic *VIC) {
 	vic.borders.UpdateColumn38()
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -298,7 +298,7 @@ func palCycle18(vic *VIC) {
 
 func palCycle19to54(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -315,7 +315,7 @@ func palCycle19to54(vic *VIC) {
 
 func palCycle55(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -324,7 +324,7 @@ func palCycle55(vic *VIC) {
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.core.FlipFlopMYE()
+	vic.core.UpdateSpriteExpY()
 	vic.sprites.UpdateDMA()
 	if vic.sprites.GetDMAFlag(sprite0) != 0 {
 		vic.core.SetBALow() //BALow for Sprite 0 [cycle 58 = 55 + 3]
@@ -336,7 +336,7 @@ func palCycle55(vic *VIC) {
 func palCycle56(vic *VIC) {
 	vic.borders.EnableColumn38()
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -356,7 +356,7 @@ func palCycle57(vic *VIC) {
 	vic.borders.EnableColumn40()
 	vic.sprites.UpdateDisplayFlags()
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.core.AccessIdle()
@@ -368,10 +368,10 @@ func palCycle57(vic *VIC) {
 
 func palCycle58(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.sprites.UpdateRasterYDisplayFlags()
+	vic.sprites.UpdateDisplayYFlags()
 	if vic.sprites.GetDMAFlag(sprite0) != 0 {
 		vic.sprites.FetchPtr(0) //phi1
 		vic.sprites.Fetch(0, 0) //phi2
@@ -381,7 +381,7 @@ func palCycle58(vic *VIC) {
 
 func palCycle59(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.graphics.TryAcquireDisplayAccess()
@@ -398,7 +398,7 @@ func palCycle59(vic *VIC) {
 
 func palCycle60(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.Sample(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 		vic.sprites.Draw()
 		vic.borders.Draw()

@@ -3,7 +3,7 @@ package mos6581
 //const CalcFreq        = 50                         // Frequency at which calc_buffer is called in Hz (should be 50Hz)
 
 const (
-	SampleFreq      = 44100                  // Sample output frequency in Hz
+	SampleFreq      = 44100                  // AcquireColor output frequency in Hz
 	Frequency       = 985248                 // SID frequency in Hz
 	Cycles          = Frequency / SampleFreq // # of SID clocks per sample frame
 	SampleBufSize   = 0x138 * 2              // Size of buffer for sampled voice (double buffered)

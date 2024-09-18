@@ -168,16 +168,6 @@ func (vic *Core) UpdateRasterX() {
 	vic.rasterX += 8
 }
 
-/*
-func (vic *Core) ModeColumn38() bool {
-	return (vic.cr2 & 8) == 0
-}
-
-func (vic *Core) ModeColumn40() bool {
-	return (vic.cr2 & 8) != 0
-}
-*/
-
 func (vic *Core) TryBALowIfBadLine() {
 	if vic.badLineCondition {
 		vic.SetBALow()
@@ -221,7 +211,7 @@ func (vic *Core) TryAcquireAEC() {
 	}
 }
 
-func (vic *Core) FlipFlopMYE() {
+func (vic *Core) UpdateSpriteExpY() {
 	// Invert y expansion FlipFlop (if MYE bit is set)
 	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
 		if (vic.mye & mask) != 0 {
