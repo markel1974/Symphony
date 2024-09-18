@@ -47,9 +47,9 @@ func (b *Borders) SetOffset(offset int) {
 }
 
 func (b *Borders) Sample(idx uint8) {
-	if b.mainFlipFlop {
-		b.colors[idx] = b.core.ecColor
-	}
+	//if b.mainFlipFlop {
+	b.colors[idx] = b.core.ecColor
+	//}
 }
 
 func (b *Borders) UpdateVerticalFlipFlop() {

@@ -265,16 +265,16 @@ func (vic *Core) LightPenTrigger() {
 	}
 }
 
-func (vic *Core) ResetCounters() {
-	vic.refreshCounter = 0xff
+func (vic *Core) ResetRasterY() {
 	vic.rasterY = 0
+	vic.refreshCounter = 0xff
 	vic.lpTriggered = false
 	if vic.irqRaster == 0 {
 		vic.rasterIrq()
 	}
 }
 
-func (vic *Core) IncrementCounters() {
+func (vic *Core) IncrementRasterY() {
 	vic.rasterY++
 	if vic.rasterY == vic.irqRaster {
 		vic.rasterIrq()
@@ -543,10 +543,8 @@ func (vic *Core) WriteRegister(addr2 uint16, data uint8) {
 	case 0x1d: // Sprite X expansion
 		vic.mxe = data
 	case 0x1e: // Sprite-sprite collision
-		//log.Printf("Write Sprite-sprite collision %d", data)
 		vic.sprClx = data
 	case 0x1f: // Sprite-background collision
-		//log.Printf("Write Sprite-background collision %d", data)
 		vic.sprClxBgr = data
 	case 0x20:
 		vic.ec = data

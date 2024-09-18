@@ -71,7 +71,7 @@ func palCycle1(vic *VIC) {
 	if rasterY := vic.core.GetRasterY(); rasterY == RasterYMax {
 		vic.vBlankNextCycle = true
 	} else {
-		vic.core.IncrementCounters()
+		vic.core.IncrementRasterY()
 		vic.drawLine = (rasterY >= FirstDisplayedLine) && (rasterY <= LastDisplayedLine)
 	}
 	vic.borders.Reset()
@@ -90,7 +90,7 @@ func palCycle2(vic *VIC) {
 		vic.vBlankNextCycle = false
 		vic.lineStart = 0
 		vic.graphics.ResetVideoCounterBase()
-		vic.core.ResetCounters()
+		vic.core.ResetRasterY()
 		vic.core.socket.VBlank()
 	}
 	vic.collisions.ClearGraphics()
