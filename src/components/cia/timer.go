@@ -137,6 +137,9 @@ func (m *Timer) SetTimerHigh(data uint8) {
 }
 
 func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
+	if m.crNewPending {
+		fmt.Printf("TIMER %s has cr pending\n", m.id)
+	}
 	m.crNewPending = true
 	m.crNew = data
 	m.countMode = countMode
