@@ -2,19 +2,41 @@ package mos6569
 
 import "fmt"
 
-const (
-	modeTextStandard            = 0
-	modeTextMulticolor          = 1
-	modeBitmapStandard          = 2
-	modeBitmapMulticolor        = 3
-	modeTextECM                 = 4
-	modeTextMulticolorInvalid   = 5
-	modeBitmapStandardInvalid   = 6
-	modeBitmapMulticolorInvalid = 7
-)
+//const (
+//	modeTextStandard            = 0
+//	modeTextMulticolor          = 1
+//	modeBitmapStandard          = 2
+//	modeBitmapMulticolor        = 3
+//	modeTextECM                 = 4
+//	modeTextMulticolorInvalid   = 5
+//	modeBitmapStandardInvalid   = 6
+//	modeBitmapMulticolorInvalid = 7
+//)
 
 const columnsMax = 40
 const rowsMax = 7
+
+var _foregroundSequencer = []func(*Graphics, int){
+	drawForegroundTextStandard,
+	drawForegroundTextMulticolor,
+	drawForegroundBitmapStandard,
+	drawForegroundBitmapMulticolor,
+	drawForegroundTextECM,
+	drawForegroundTextMulticolorInvalid,
+	drawForegroundBitmapStandardInvalid,
+	drawForegroundBitmapMulticolorInvalid,
+}
+
+var _backgroundSequencer = []func(*Graphics){
+	drawBackgroundTextStandard,
+	drawBackgroundTextMulticolor,
+	drawBackgroundBitmapStandard,
+	drawBackgroundBitmapMulticolor,
+	drawBackgroundTextECM,
+	drawBackgroundDefault,
+	drawBackgroundDefault,
+	drawBackgroundDefault,
+}
 
 type Graphics struct {
 	core             *Core
@@ -33,6 +55,8 @@ type Graphics struct {
 	videoCounterBase uint16  // Video counter base
 	displayAccess    bool    // Display state
 	textBuffer       []byte
+	//foregroundSequencer []func(*Graphics, int)
+	//backgroundSequencer []func(*Graphics)
 }
 
 func NewGraphics(core *Core, collisions *Collisions, db IDisplayBuffer) *Graphics {
@@ -54,6 +78,26 @@ func NewGraphics(core *Core, collisions *Collisions, db IDisplayBuffer) *Graphic
 		videoCounterBase: 0,
 		displayAccess:    false,
 	}
+	//gr.foregroundSequencer = make([]func(*Graphics, int), 8)
+	//gr.foregroundSequencer[modeTextStandard] = drawForegroundTextStandard
+	//gr.foregroundSequencer[modeTextMulticolor] = drawForegroundTextMulticolor
+	//gr.foregroundSequencer[modeBitmapStandard] = drawForegroundBitmapStandard
+	//gr.foregroundSequencer[modeBitmapMulticolor] = drawForegroundBitmapMulticolor
+	//gr.foregroundSequencer[modeTextECM] = drawForegroundTextECM
+	//gr.foregroundSequencer[modeTextMulticolorInvalid] = drawForegroundTextMulticolorInvalid
+	//gr.foregroundSequencer[modeBitmapStandardInvalid] = drawForegroundBitmapStandardInvalid
+	//gr.foregroundSequencer[modeBitmapMulticolorInvalid] = drawForegroundBitmapMulticolorInvalid
+
+	//gr.backgroundSequencer = make([]func(*Graphics), 8)
+	//gr.backgroundSequencer[modeTextStandard] = drawBackgroundTextStandard
+	//gr.backgroundSequencer[modeTextMulticolor] = drawBackgroundTextMulticolor
+	//gr.backgroundSequencer[modeBitmapStandard] = drawBackgroundBitmapStandard
+	//gr.backgroundSequencer[modeBitmapMulticolor] = drawBackgroundBitmapMulticolor
+	//gr.backgroundSequencer[modeTextECM] = drawBackgroundTextECM
+	//gr.backgroundSequencer[modeTextMulticolorInvalid] = drawBackgroundDefault
+	//gr.backgroundSequencer[modeBitmapStandardInvalid] = drawBackgroundDefault
+	//gr.backgroundSequencer[modeBitmapMulticolorInvalid] = drawBackgroundDefault
+
 	return gr
 }
 
@@ -121,26 +165,26 @@ func (gr *Graphics) UpdateDisplayAccess() {
 func (gr *Graphics) TryGraphicsAccess() {
 	if gr.displayAccess {
 		var addr uint16
-		if (gr.core.cr1 & 0x20) != 0 {
+		if gr.core.bmm {
 			addr = ((gr.videoCounter & 0x03ff) << 3) | gr.core.bitmapBase | gr.rowCounter // Bitmap
 		} else {
 			addr = (uint16(gr.videoMatrix[gr.lineIndex]) << 3) | gr.core.charBase | gr.rowCounter // Text
 		}
-		if (gr.core.cr1 & 0x40) != 0 {
-			addr &= 0xf9ff // ECM
+		if gr.core.ecm {
+			addr &= 0xf9ff
 		}
 		gr.gfxData = gr.core.ReadByte(addr)
 		gr.charData = gr.videoMatrix[gr.lineIndex]
 		gr.colorData = gr.colorLine[gr.lineIndex]
 		if gr.rowCounter == 0 {
-			index := columnsMax * (gr.core.rasterY / 8)
 			//https://sta.c64.org/cbm64scr.html
+			index := columnsMax * (gr.core.rasterY / 8)
 			gr.textBuffer[index+uint16(gr.lineIndex)] = _scCodesAscii[gr.charData&0x7f]
 		}
 		gr.lineIndex++
 		gr.videoCounter++
 	} else {
-		if (gr.core.cr1 & 0x40) != 0 {
+		if gr.core.ecm {
 			gr.gfxData = gr.core.ReadByte(0x39ff)
 		} else {
 			gr.gfxData = gr.core.ReadByte(0x3fff)
@@ -153,6 +197,7 @@ func (gr *Graphics) TryGraphicsAccess() {
 func (gr *Graphics) TryVideoMatrixAccess() {
 	if gr.core.baLow {
 		if gr.core.aecLow {
+			//phi2
 			addr := (gr.videoCounter & 0x03ff) | gr.core.matrixBase
 			gr.videoMatrix[gr.lineIndex] = gr.core.ReadByte(addr)
 			gr.colorLine[gr.lineIndex] = gr.core.banks.ReadColor(addr & 0x03ff)
@@ -164,73 +209,16 @@ func (gr *Graphics) TryVideoMatrixAccess() {
 }
 
 func (gr *Graphics) DrawBackground() {
-	switch gr.core.displayIdx {
-	case modeTextStandard, modeTextMulticolor, modeBitmapMulticolor:
-		gr.db.SetMulti8(gr.offset, gr.core.b0cColor)
-	case modeBitmapStandard:
-		gr.db.SetMulti8(gr.offset, gr.core.colors[gr.charDataLast])
-	case modeTextECM:
-		if (gr.charDataLast & 0x80) != 0 {
-			if (gr.charDataLast & 0x40) != 0 {
-				gr.db.SetMulti8(gr.offset, gr.core.b3cColor)
-			} else {
-				gr.db.SetMulti8(gr.offset, gr.core.b2cColor)
-			}
-		} else {
-			if (gr.charDataLast & 0x40) != 0 {
-				gr.db.SetMulti8(gr.offset, gr.core.b1cColor)
-			} else {
-				gr.db.SetMulti8(gr.offset, gr.core.b0cColor)
-			}
-		}
-	default:
-		gr.db.SetMulti8(gr.offset, gr.core.colors[0])
-	}
-	gr.incrementOffset()
+	_backgroundSequencer[gr.core.displayMode](gr)
+	//gr.backgroundSequencer[gr.core.displayMode](gr)
+	gr.offset += 8
+	gr.collisions.IncrementGraphicsOffset()
 }
 
 func (gr *Graphics) DrawForeground() {
 	offset := gr.offset + int(gr.core.xScroll)
-	switch gr.core.displayIdx {
-	case modeTextStandard:
-		gr.drawStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
-	case modeTextMulticolor:
-		if (gr.colorData & 8) != 0 {
-			gr.drawMulticolor(offset, gr.core.b0cColor, gr.core.b1cColor, gr.core.b2cColor, gr.core.colors[gr.colorData&7])
-		} else {
-			gr.drawStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
-		}
-	case modeBitmapStandard:
-		gr.drawStandard(offset, gr.core.colors[gr.charData], gr.core.colors[gr.charData>>4])
-	case modeBitmapMulticolor:
-		gr.drawMulticolor(offset, gr.core.b0cColor, gr.core.colors[gr.charData>>4], gr.core.colors[gr.charData], gr.core.colors[gr.colorData])
-	case modeTextECM:
-		if (gr.charData & 0x80) != 0 {
-			if (gr.charData & 0x40) != 0 {
-				gr.drawStandard(offset, gr.core.b3cColor, gr.core.colors[gr.colorData])
-			} else {
-				gr.drawStandard(offset, gr.core.b2cColor, gr.core.colors[gr.colorData])
-			}
-		} else if (gr.charData & 0x40) != 0 {
-			gr.drawStandard(offset, gr.core.b1cColor, gr.core.colors[gr.colorData])
-		} else {
-			gr.drawStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
-		}
-	case modeTextMulticolorInvalid:
-		if (gr.colorData & 8) != 0 {
-			gr.drawInvalidMulticolor(offset, gr.core.colors[0])
-		} else {
-			gr.drawInvalidStandard(offset, gr.core.colors[0])
-		}
-	case modeBitmapStandardInvalid:
-		gr.drawInvalidStandard(offset, gr.core.colors[0])
-	case modeBitmapMulticolorInvalid:
-		gr.drawInvalidMulticolor(offset, gr.core.colors[0])
-	}
-	gr.incrementOffset()
-}
-
-func (gr *Graphics) incrementOffset() {
+	_foregroundSequencer[gr.core.displayMode](gr, offset)
+	//gr.foregroundSequencer[gr.core.displayMode](gr, offset)
 	gr.offset += 8
 	gr.collisions.IncrementGraphicsOffset()
 }
@@ -299,4 +287,90 @@ func (gr *Graphics) drawMulticolor(offset int, a uint8, b uint8, c uint8, d uint
 	color = colorBuffer[data]
 	gr.db.Set(offset+1, color)
 	gr.db.Set(offset, color)
+}
+
+func drawBackgroundTextStandard(gr *Graphics) {
+	gr.db.SetMulti8(gr.offset, gr.core.b0cColor)
+}
+
+func drawBackgroundTextMulticolor(gr *Graphics) {
+	gr.db.SetMulti8(gr.offset, gr.core.b0cColor)
+}
+
+func drawBackgroundBitmapMulticolor(gr *Graphics) {
+	gr.db.SetMulti8(gr.offset, gr.core.b0cColor)
+}
+
+func drawBackgroundBitmapStandard(gr *Graphics) {
+	gr.db.SetMulti8(gr.offset, gr.core.colors[gr.charDataLast])
+}
+
+func drawBackgroundTextECM(gr *Graphics) {
+	if (gr.charDataLast & 0x80) != 0 {
+		if (gr.charDataLast & 0x40) != 0 {
+			gr.db.SetMulti8(gr.offset, gr.core.b3cColor)
+		} else {
+			gr.db.SetMulti8(gr.offset, gr.core.b2cColor)
+		}
+	} else {
+		if (gr.charDataLast & 0x40) != 0 {
+			gr.db.SetMulti8(gr.offset, gr.core.b1cColor)
+		} else {
+			gr.db.SetMulti8(gr.offset, gr.core.b0cColor)
+		}
+	}
+}
+
+func drawBackgroundDefault(gr *Graphics) {
+	gr.db.SetMulti8(gr.offset, gr.core.colors[0])
+}
+
+func drawForegroundTextStandard(gr *Graphics, offset int) {
+	gr.drawStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
+}
+
+func drawForegroundTextMulticolor(gr *Graphics, offset int) {
+	if (gr.colorData & 8) != 0 {
+		gr.drawMulticolor(offset, gr.core.b0cColor, gr.core.b1cColor, gr.core.b2cColor, gr.core.colors[gr.colorData&7])
+	} else {
+		gr.drawStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
+	}
+}
+
+func drawForegroundBitmapStandard(gr *Graphics, offset int) {
+	gr.drawStandard(offset, gr.core.colors[gr.charData], gr.core.colors[gr.charData>>4])
+}
+
+func drawForegroundBitmapMulticolor(gr *Graphics, offset int) {
+	gr.drawMulticolor(offset, gr.core.b0cColor, gr.core.colors[gr.charData>>4], gr.core.colors[gr.charData], gr.core.colors[gr.colorData])
+}
+
+func drawForegroundTextECM(gr *Graphics, offset int) {
+	if (gr.charData & 0x80) != 0 {
+		if (gr.charData & 0x40) != 0 {
+			gr.drawStandard(offset, gr.core.b3cColor, gr.core.colors[gr.colorData])
+		} else {
+			gr.drawStandard(offset, gr.core.b2cColor, gr.core.colors[gr.colorData])
+		}
+	} else if (gr.charData & 0x40) != 0 {
+		gr.drawStandard(offset, gr.core.b1cColor, gr.core.colors[gr.colorData])
+	} else {
+		gr.drawStandard(offset, gr.core.b0cColor, gr.core.colors[gr.colorData])
+	}
+}
+
+func drawForegroundTextMulticolorInvalid(gr *Graphics, offset int) {
+	if (gr.colorData & 8) != 0 {
+		gr.drawInvalidMulticolor(offset, gr.core.colors[0])
+	} else {
+		gr.drawInvalidStandard(offset, gr.core.colors[0])
+	}
+}
+
+func drawForegroundBitmapStandardInvalid(gr *Graphics, offset int) {
+	gr.drawInvalidStandard(offset, gr.core.colors[0])
+}
+
+func drawForegroundBitmapMulticolorInvalid(gr *Graphics, offset int) {
+	gr.drawInvalidMulticolor(offset, gr.core.colors[0])
 }

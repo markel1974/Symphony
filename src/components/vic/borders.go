@@ -57,7 +57,7 @@ func (b *Borders) UpdateVerticalFlipFlop() {
 	if b.core.dyBottom == b.core.rasterY {
 		//2. If the Y coordinate reaches the bottom comparison value in cycle 63, the vertical border flip flop is set.
 		b.verticalFlipFlop = true
-	} else if b.core.dyTop == b.core.rasterY && b.core.denBit {
+	} else if b.core.dyTop == b.core.rasterY && b.core.den {
 		//3. If the Y coordinate reaches the top comparison value in cycle 63 and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
 		b.verticalFlipFlop = false
 	}
@@ -103,7 +103,7 @@ func (b *Borders) GetVerticalFlipFlop() bool {
 
 func (b *Borders) Reset() {
 	//b.columnMode40 = b.core.columnMode40 //(b.core.cr2 & 8) != 0
-	//b.den = b.core.denBit                //DEN bit (Display Enable, register $d011, bit 4) serves for switching vertical border unit
+	//b.den = b.core.den                //DEN bit (Display Enable, register $d011, bit 4) serves for switching vertical border unit
 	//b.top = b.core.dyTop
 	//b.bottom = b.core.dyBottom
 	b.samples[BorderTypeLeft] = b.mainFlipFlop
