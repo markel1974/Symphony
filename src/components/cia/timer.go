@@ -124,11 +124,10 @@ func (m *Timer) SetTimerHigh(data uint8) {
 	timerLow := m.timerLatch & 0xff
 	timerHigh := uint16(data) << 8
 	m.timerLatch = timerLow | timerHigh
-
 	//if m.timerLatch == 0 {
 	//	fmt.Println("SetTimerHigh: timerLatch => 0")
 	//}
-	if (m.cr&crBitStart) == 0 || (m.cr&crBitForceLoad) != 0 {
+	if ((m.cr & crBitStart) == 0) || ((m.cr & crBitForceLoad) != 0) {
 		m.timer = m.timerLatch
 	}
 	//if m.id == "cia2_TIMER_B" {
@@ -149,98 +148,99 @@ func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
 }
 
 func (m *Timer) Emulate(underflowX bool) bool {
-	underflow := false
+	m.pendingVerify()
+
 	switch m.timerState {
 	case timerWaitThenCount:
 		m.timerState = timerCount
 	case timerStop:
 		//nothing to do
 	case timerLoadThenStop:
+		m.cr &= 0xfe // stop timer
 		m.timer = m.timerLatch
 		m.timerState = timerStop
 	case timerLoadThenCount:
 		m.timer = m.timerLatch
 		m.timerState = timerCount
 	case timerLoadThenWaitThenCount:
-		if m.timer == 1 {
-			underflow = true
-		} else {
-			m.timer = m.timerLatch
-		}
+		m.timer = m.timerLatch
 		m.timerState = timerWaitThenCount
 	case timerCount:
-		underflow = m.count(underflowX)
+		if m.count(underflowX) {
+			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
+			if (m.cr & crBitRunMode) != 0 {
+				m.cr &= 0xfe // clear start bit
+				m.timerState = timerStop
+			} else {
+				m.timerState = timerLoadThenCount
+			}
+			return true
+		}
 	case timerCountThenStop:
-		underflow = m.count(underflowX)
+		if m.count(underflowX) {
+			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
+			if (m.cr & crBitRunMode) != 0 {
+				m.cr &= 0xfe // clear start bit
+				m.timerState = timerStop
+			} else {
+				m.timerState = timerLoadThenCount
+			}
+			return true
+		}
+		m.cr &= 0xfe // stop timer
 		m.timerState = timerStop
 	}
+	return false
+}
 
-	if underflow {
-		m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
-		if (m.cr & crBitRunMode) != 0 {
-			m.cr &= 0xfe                     // stop timer
-			m.crNew &= 0xfe                  // stop timer
-			m.timer = m.timerLatch           // Reload timer
-			m.timerState = timerLoadThenStop // Reload in next cycle
+func (m *Timer) pendingVerify() {
+	if !m.crNewPending {
+		return
+	}
+	start := (m.crNew & crBitStart) != 0
+	forceLoad := (m.crNew & crBitForceLoad) != 0
+	m.cr = m.crNew & 0xef //no force load set (strobe)
+	m.crNewPending = false
+
+	if forceLoad {
+		if start {
+			m.timerState = timerLoadThenWaitThenCount
 		} else {
-			m.timer = m.timerLatch            // Reload timer
-			m.timerState = timerLoadThenCount // Reload in next cycle
+			m.timerState = timerLoadThenStop
 		}
+		return
 	}
 
-	if m.crNewPending {
+	if start {
 		switch m.timerState {
-		case timerStop, timerLoadThenStop:
-			// Timer started, wasn't running
-			if (m.crNew & crBitStart) != 0 {
-				m.toggleMode = true
-				if (m.crNew & crBitForceLoad) != 0 {
-					m.timerState = timerLoadThenWaitThenCount
-				} else {
-					m.timerState = timerWaitThenCount
-				}
-			} else {
-				// Timer stopped, was already stopped
-				if (m.crNew & crBitForceLoad) != 0 {
-					m.timerState = timerLoadThenStop
-				}
-			}
+		case timerStop:
+			m.toggleMode = true
+			m.timerState = timerWaitThenCount
+		case timerLoadThenStop:
+			m.toggleMode = true
+			m.timerState = timerLoadThenWaitThenCount
+		case timerCountThenStop:
+			m.timerState = timerWaitThenCount
 		case timerCount:
-			if (m.crNew & crBitStart) != 0 {
-				// Timer started, was already running
-				if (m.crNew & crBitForceLoad) != 0 {
-					m.timerState = timerLoadThenWaitThenCount
-				}
-			} else {
-				// Timer stopped, was running
-				if (m.crNew & crBitForceLoad) != 0 {
-					m.timerState = timerLoadThenStop
-				} else {
-					m.timerState = timerCountThenStop
-				}
-			}
-		case timerLoadThenCount, timerWaitThenCount:
-			if (m.crNew & crBitStart) != 0 {
-				if (m.crNew & crBitRunMode) != 0 {
-					// One-shot, stop timer
-					m.crNew &= 0xfe
-					m.timerState = timerStop
-				} else if (m.crNew & crBitForceLoad) != 0 {
-					// No One-shot, force load
-					m.timerState = timerLoadThenWaitThenCount
-				}
-			} else {
-				m.timerState = timerStop
-			}
-		default:
-			log.Printf("[Emulate] %s TIMER - UNDEFINED Timer %d", m.id, m.timerState)
+		case timerLoadThenWaitThenCount:
+		case timerLoadThenCount:
+		case timerWaitThenCount:
 		}
-		//no force load set
-		m.cr = m.crNew & 0xef
-		m.crNewPending = false
+	} else {
+		switch m.timerState {
+		case timerStop:
+		case timerLoadThenStop:
+		case timerCountThenStop:
+		case timerLoadThenCount:
+			m.timerState = timerLoadThenStop
+		case timerLoadThenWaitThenCount:
+			m.timerState = timerLoadThenStop
+		case timerCount:
+			m.timerState = timerCountThenStop
+		case timerWaitThenCount:
+			m.timerState = timerStop
+		}
 	}
-
-	return underflow
 }
 
 var _unsupportedPrinted = false

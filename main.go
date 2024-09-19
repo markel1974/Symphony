@@ -36,6 +36,8 @@ import (
 
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/2/Pinball Spectacular.crt"
 
+// -c "/Users/tinmr305/Downloads/c64carts/c64diag.bin"
+
 func main() {
 	var showHelp bool
 	var showVersion bool

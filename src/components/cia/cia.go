@@ -66,6 +66,7 @@ func (m *CIA) Emulate() {
 	if underflowA {
 		m.timerAIrqCycle = true
 		m.icr |= IRQUnderflowTimerA
+		//fmt.Println("EMITTING TIMER A", m.id, m.timerA.timerLatch)
 		m.irqTrigger()
 	}
 
@@ -73,6 +74,7 @@ func (m *CIA) Emulate() {
 	if underFlowB {
 		m.timerBIrqCycle = true
 		m.icr |= IRQUnderflowTimerB
+		//fmt.Println("EMITTING TIMER B", m.id, m.timerA.timerLatch)
 		m.irqTrigger()
 	}
 }
@@ -142,6 +144,7 @@ func (m *CIA) ReadRegister(addr uint16) uint8 {
 		m.icr = 0
 		if icr != 0 {
 			m.socket.IRQClear()
+			//fmt.Println("CLEARING ", m.id)
 		}
 		return icr
 	case 0x0e:
@@ -197,6 +200,7 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 		}
 		m.timerA.SetControlRegister(data, countMode)
 	case 0x0f:
+		//crBitInMode | crBitSPMode
 		countMode := (data >> 5) & 0x3
 		m.timerB.SetControlRegister(data, countMode)
 	}
