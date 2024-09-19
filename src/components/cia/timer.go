@@ -47,21 +47,23 @@ type Timer struct {
 	timerLatch   uint16     // Timer latch
 	timerState   TimerState // Timer states
 	// 0 = clock; 1 = positive CNT (Serial Port) transition; 2 = timerA underflow; 3 = timerA underflow while CNT (Serial Port) is high
-	countMode  uint8
-	toggleMode bool
+	countMode     uint8
+	toggleMode    bool
+	timerLatchLow uint16
 }
 
 func NewTimer(id string) *Timer {
 	m := &Timer{
-		id:           id,
-		cr:           0,
-		crNew:        0,
-		crNewPending: false,
-		timer:        defaultTimerInit,
-		timerLatch:   defaultTimerInit,
-		timerState:   timerStop,
-		countMode:    0,
-		toggleMode:   false,
+		id:            id,
+		cr:            0,
+		crNew:         0,
+		crNewPending:  false,
+		timer:         defaultTimerInit,
+		timerLatch:    defaultTimerInit,
+		timerState:    timerStop,
+		countMode:     0,
+		toggleMode:    false,
+		timerLatchLow: 0,
 	}
 	m.Reset()
 	return m
@@ -105,33 +107,32 @@ func (m *Timer) GetTimerHigh() uint8 {
 	return uint8(m.timer >> 8)
 }
 
-func (m *Timer) SetTimerLow(data uint8) {
-	timerLow := uint16(data)
-	timerHigh := m.timerLatch & 0xff00
-	m.timerLatch = timerLow | timerHigh
-	//if m.timerLatch == 0 {
-	//	fmt.Println("SetTimerLow: timerLatch => 0")
-	//}
-	if (m.cr & crBitForceLoad) != 0 {
-		m.timer = m.timerLatch
-	}
-	//if m.id == "cia2_TIMER_B" {
-	//	fmt.Printf("%s [SetTimerLow] %d\n", m.id, m.timerLatch)
+func (m *Timer) SetTimerLow(prescaler uint8) {
+	m.timerLatchLow = uint16(prescaler)
+	//m.timerLatch = m.timerLow | m.timerHigh
+	//timerHigh := m.timerLatch & 0xff00
+	//m.timerLatch = timerLow | timerHigh
+
+	//if (m.cr & crBitForceLoad) != 0 {
+	//	m.timer = m.timerLatch
 	//}
 }
 
-func (m *Timer) SetTimerHigh(data uint8) {
-	timerLow := m.timerLatch & 0xff
-	timerHigh := uint16(data) << 8
-	m.timerLatch = timerLow | timerHigh
-	//if m.timerLatch == 0 {
-	//	fmt.Println("SetTimerHigh: timerLatch => 0")
-	//}
-	if ((m.cr & crBitStart) == 0) || ((m.cr & crBitForceLoad) != 0) {
+func (m *Timer) SetTimerHigh(prescaler uint8) {
+	timerLatchHigh := uint16(prescaler) << 8
+	m.timerLatch = m.timerLatchLow | timerLatchHigh
+
+	//The timer latch is loaded into the timer on any timer underflow.
+	//The timer latch is loaded into the timer on a force load.
+	//The timer latch is loaded into the timer after a write to the high byte of the prescaler while the timer is stopped.
+	//If the timer is running, a write to the high byte will load the timer latch, but not reload the counter
+
+	if m.timerState == timerStop {
 		m.timer = m.timerLatch
 	}
-	//if m.id == "cia2_TIMER_B" {
-	//	fmt.Printf("%s [SetTimerHigh] %d\n", m.id, m.timerLatch)
+
+	//if ((m.cr & crBitStart) == 0) || ((m.cr & crBitForceLoad) != 0) {
+	//	m.timer = m.timerLatch
 	//}
 }
 
@@ -142,9 +143,6 @@ func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
 	m.crNewPending = true
 	m.crNew = data
 	m.countMode = countMode
-	//if m.id == "cia2_TIMER_B" {
-	//	fmt.Printf("%s [SetControlRegister] %8b [CONTINUOS: %v]\n", m.id, m.crNew, (m.crNew&crBitRunMode) == 0)
-	//}
 }
 
 func (m *Timer) Emulate(underflowX bool) bool {
@@ -169,8 +167,7 @@ func (m *Timer) Emulate(underflowX bool) bool {
 		if m.count(underflowX) {
 			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
 			if (m.cr & crBitRunMode) != 0 {
-				m.cr &= 0xfe // clear start bit
-				m.timerState = timerStop
+				m.timerState = timerLoadThenStop
 			} else {
 				m.timerState = timerLoadThenCount
 			}
@@ -180,8 +177,7 @@ func (m *Timer) Emulate(underflowX bool) bool {
 		if m.count(underflowX) {
 			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
 			if (m.cr & crBitRunMode) != 0 {
-				m.cr &= 0xfe // clear start bit
-				m.timerState = timerStop
+				m.timerState = timerLoadThenStop
 			} else {
 				m.timerState = timerLoadThenCount
 			}
@@ -197,10 +193,10 @@ func (m *Timer) pendingVerify() {
 	if !m.crNewPending {
 		return
 	}
+	m.crNewPending = false
 	start := (m.crNew & crBitStart) != 0
 	forceLoad := (m.crNew & crBitForceLoad) != 0
 	m.cr = m.crNew & 0xef //no force load set (strobe)
-	m.crNewPending = false
 
 	if forceLoad {
 		if start {
@@ -238,7 +234,7 @@ func (m *Timer) pendingVerify() {
 		case timerCount:
 			m.timerState = timerCountThenStop
 		case timerWaitThenCount:
-			m.timerState = timerStop
+			m.timerState = timerCountThenStop
 		}
 	}
 }

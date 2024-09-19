@@ -9,6 +9,7 @@ const (
 	IRQOccurred        = 0x80
 )
 
+//https://web.archive.org/web/20181126000922if_/http://archive.6502.org/datasheets/mos_6526_cia_recreated.pdf
 //https://emudev.de/q00-c64/cias-timers-keyboard-and-more/
 
 type CIA struct {

@@ -38,6 +38,8 @@ import (
 
 // -c "/Users/tinmr305/Downloads/c64carts/c64diag.bin"
 
+// -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/Tool Collection.crt"
+
 func main() {
 	var showHelp bool
 	var showVersion bool
