@@ -41,7 +41,17 @@ const (
 	crBitForceLoadUnset = ^crBitForceLoad
 )
 
+const (
+	countModeTick           = 0
+	countModeTimerUnderflow = 2
+)
+
 const defaultTimerInit = 0xffff
+
+//The timer latch is loaded into the timer on any timer underflow.
+//The timer latch is loaded into the timer on a force load.
+//The timer latch is loaded into the timer after a write to the high byte of the prescaler while the timer is stopped.
+//If the timer is running, a write to the high byte will load the timer latch, but not reload the counter
 
 type Timer struct {
 	id           string
@@ -53,6 +63,7 @@ type Timer struct {
 	timerState   TimerState // Timer states
 	// 0 = clock; 1 = positive CNT (Serial Port) transition; 2 = timerA underflow; 3 = timerA underflow while CNT (Serial Port) is high
 	countMode     uint8
+	count         func(bool) bool
 	toggleMode    bool
 	timerLatchLow uint16
 }
@@ -66,9 +77,10 @@ func NewTimer(id string) *Timer {
 		timer:         defaultTimerInit,
 		timerLatch:    defaultTimerInit,
 		timerState:    timerStop,
-		countMode:     0,
+		countMode:     countModeTick,
 		toggleMode:    false,
 		timerLatchLow: 0,
+		count:         nil,
 	}
 	m.Reset()
 	return m
@@ -81,8 +93,9 @@ func (m *Timer) Reset() {
 	m.timer = defaultTimerInit
 	m.timerLatch = defaultTimerInit
 	m.timerState = timerStop
-	m.countMode = 0
+	m.countMode = countModeTick
 	m.toggleMode = false
+	m.count = m.countTick
 }
 
 func (m *Timer) HasPBOn() bool {
@@ -114,31 +127,14 @@ func (m *Timer) GetTimerHigh() uint8 {
 
 func (m *Timer) SetTimerLow(prescaler uint8) {
 	m.timerLatchLow = uint16(prescaler)
-	//m.timerLatch = m.timerLow | m.timerHigh
-	//timerHigh := m.timerLatch & 0xff00
-	//m.timerLatch = timerLow | timerHigh
-
-	//if (m.cr & crBitForceLoad) != 0 {
-	//	m.timer = m.timerLatch
-	//}
 }
 
 func (m *Timer) SetTimerHigh(prescaler uint8) {
 	timerLatchHigh := uint16(prescaler) << 8
 	m.timerLatch = m.timerLatchLow | timerLatchHigh
-
-	//The timer latch is loaded into the timer on any timer underflow.
-	//The timer latch is loaded into the timer on a force load.
-	//The timer latch is loaded into the timer after a write to the high byte of the prescaler while the timer is stopped.
-	//If the timer is running, a write to the high byte will load the timer latch, but not reload the counter
-
 	if (m.cr & crBitStart) == 0 {
 		m.timer = m.timerLatch
 	}
-
-	//if ((m.cr & crBitStart) == 0) || ((m.cr & crBitForceLoad) != 0) {
-	//	m.timer = m.timerLatch
-	//}
 }
 
 func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
@@ -148,10 +144,21 @@ func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
 	m.crNewPending = true
 	m.crNew = data
 	m.countMode = countMode
+	switch m.countMode {
+	case countModeTick:
+		m.count = m.countTick
+	case countModeTimerUnderflow:
+		m.count = m.countTimerUnderflow
+	default:
+		m.count = m.countUnknown
+	}
 }
 
 func (m *Timer) Emulate(underflowX bool) bool {
-	m.pendingVerify()
+	if m.crNewPending {
+		m.crNewPending = false
+		m.pendingVerify()
+	}
 
 	switch m.timerState {
 	case timerStop:
@@ -197,35 +204,24 @@ func (m *Timer) Emulate(underflowX bool) bool {
 		m.timer = m.timerLatch
 		m.timerState = timerWaitThenCount
 	}
-
 	return false
 }
 
 func (m *Timer) pendingVerify() {
-	if !m.crNewPending {
-		return
-	}
-	m.crNewPending = false
-	start := (m.crNew & crBitStart) != 0
-	forceLoad := (m.crNew & crBitForceLoad) != 0
 	m.cr = m.crNew & crBitForceLoadUnset //no force load set (strobe) (0xef)
 
-	if forceLoad {
-		if start {
-			m.timerState = timerLoadThenWaitThenCount
-		} else {
-			m.timerState = timerLoadThenStop
+	if (m.crNew & crBitStart) != 0 {
+		if m.timerState == timerStop || m.timerState == timerLoadThenStop {
+			m.toggleMode = true
 		}
-		return
-	}
-
-	if start {
+		if (m.crNew & crBitForceLoad) != 0 {
+			m.timerState = timerLoadThenWaitThenCount
+			return
+		}
 		switch m.timerState {
 		case timerStop:
-			m.toggleMode = true
 			m.timerState = timerWaitThenCount
 		case timerLoadThenStop:
-			m.toggleMode = true
 			m.timerState = timerLoadThenWaitThenCount
 		case timerCountThenStop:
 			m.timerState = timerWaitThenCount
@@ -235,6 +231,10 @@ func (m *Timer) pendingVerify() {
 		case timerWaitThenCount:
 		}
 	} else {
+		if (m.crNew & crBitForceLoad) != 0 {
+			m.timerState = timerLoadThenStop
+			return
+		}
 		switch m.timerState {
 		case timerStop:
 		case timerLoadThenStop:
@@ -251,32 +251,28 @@ func (m *Timer) pendingVerify() {
 	}
 }
 
-var _unsupportedPrinted = false
+func (m *Timer) countTick(_ bool) bool {
+	if m.timer <= 1 {
+		m.timer = 0
+		return true
+	}
+	m.timer--
+	return false
+}
 
-func (m *Timer) count(underflowX bool) bool {
-	if m.countMode == 0 {
+func (m *Timer) countTimerUnderflow(underflowX bool) bool {
+	if underflowX {
 		if m.timer <= 1 {
 			m.timer = 0
 			return true
 		}
 		m.timer--
-		return false
 	}
-	if m.countMode == 2 {
-		if underflowX {
-			if m.timer <= 1 {
-				m.timer = 0
-				return true
-			}
-			m.timer--
-		}
-		return false
-	}
-	// TODO UNSUPPORTED!!!!!
-	if !_unsupportedPrinted {
-		log.Printf("[timerCount] %s UNSUPPORTED Timer counts CNT %d", m.id, m.countMode)
-		_unsupportedPrinted = true
-	}
+	return false
+}
+
+func (m *Timer) countUnknown(_ bool) bool {
+	log.Printf("[timerCount] %s UNSUPPORTED Count Mode %d", m.id, m.countMode)
 	return false
 }
 
