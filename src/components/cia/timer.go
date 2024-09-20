@@ -19,21 +19,26 @@ const (
 
 const (
 	//1 = START TIMER A - 0 = STOP TIMER A s (This bit is automatically reset when underflow occurs during one-shot mode).
-	crBitStart = 0x1 //bit 0
+	crBitStart = uint8(0x1) //bit 0
 	//1 = TIMER A/B output appears on PB6/PB7 - 0 = PB6/PB7 normal operation.
-	crBitPBOn = 0x2 //bit 1
+	crBitPBOn = uint8(0x2) //bit 1
 	//1 = TOGGLE - 0 = PULSE
-	crBitOutMode = 0x4 //bit 2
+	crBitOutMode = uint8(0x4) //bit 2
 	//1 = ONE-SHOT - 0 = CONTINUOUS
-	crBitRunMode = 0x8 //bit 3
+	crBitRunMode = uint8(0x8) //bit 3
 	//1 = FORCE LOAD (this is a STROBE input, there is no data storage, bit 4 will always read back a zero and writing a zero has no effect).
-	crBitForceLoad = 0x10 //bit 4
+	crBitForceLoad = uint8(0x10) //bit 4
 	//1 = TIMER A counts positive CNT transitions. - 0 = TIMER A counts phi2 pulses.
-	crBitInMode = 0x20 //bit 5
+	crBitInMode = uint8(0x20) //bit 5
 	//1 = SERIAL PORT output (CNT sources shift clock) - 0 = SERIAL PORT input (external shift clock required)
-	crBitSPMode = 0x40 //bit 6
+	crBitSPMode = uint8(0x40) //bit 6
 	//1 = 50Hz clock required on TOD pin for accurate time - 0 = 60Hz clock required on TOD pin for accurate time
-	crBitTODIn = 0x80 //bit 7
+	crBitTODIn = uint8(0x80) //bit 7
+)
+
+const (
+	crBitStartUnset     = ^crBitStart
+	crBitForceLoadUnset = ^crBitForceLoad
 )
 
 const defaultTimerInit = 0xffff
@@ -127,7 +132,7 @@ func (m *Timer) SetTimerHigh(prescaler uint8) {
 	//The timer latch is loaded into the timer after a write to the high byte of the prescaler while the timer is stopped.
 	//If the timer is running, a write to the high byte will load the timer latch, but not reload the counter
 
-	if m.timerState == timerStop {
+	if (m.cr & crBitStart) == 0 {
 		m.timer = m.timerLatch
 	}
 
@@ -149,43 +154,50 @@ func (m *Timer) Emulate(underflowX bool) bool {
 	m.pendingVerify()
 
 	switch m.timerState {
-	case timerWaitThenCount:
-		m.timerState = timerCount
 	case timerStop:
 		//nothing to do
 	case timerLoadThenStop:
-		m.cr &= 0xfe // stop timer
 		m.timer = m.timerLatch
 		m.timerState = timerStop
+		m.cr &= crBitStartUnset
+	case timerCountThenStop:
+		if m.count(underflowX) {
+			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
+			if (m.cr & crBitRunMode) != 0 {
+				m.timer = m.timerLatch
+				m.timerState = timerStop
+				m.cr &= crBitStartUnset
+			} else {
+				m.timer = m.timerLatch
+				m.timerState = timerLoadThenCount
+			}
+			return true
+		}
+		m.cr &= crBitStartUnset //0xfe
+		m.timerState = timerStop
+	case timerCount:
+		if m.count(underflowX) {
+			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
+			if (m.cr & crBitRunMode) != 0 {
+				m.timer = m.timerLatch
+				m.timerState = timerStop
+				m.cr &= crBitStartUnset
+			} else {
+				m.timer = m.timerLatch
+				m.timerState = timerLoadThenCount
+			}
+			return true
+		}
+	case timerWaitThenCount:
+		m.timerState = timerCount
 	case timerLoadThenCount:
 		m.timer = m.timerLatch
 		m.timerState = timerCount
 	case timerLoadThenWaitThenCount:
 		m.timer = m.timerLatch
 		m.timerState = timerWaitThenCount
-	case timerCount:
-		if m.count(underflowX) {
-			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
-			if (m.cr & crBitRunMode) != 0 {
-				m.timerState = timerLoadThenStop
-			} else {
-				m.timerState = timerLoadThenCount
-			}
-			return true
-		}
-	case timerCountThenStop:
-		if m.count(underflowX) {
-			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
-			if (m.cr & crBitRunMode) != 0 {
-				m.timerState = timerLoadThenStop
-			} else {
-				m.timerState = timerLoadThenCount
-			}
-			return true
-		}
-		m.cr &= 0xfe // stop timer
-		m.timerState = timerStop
 	}
+
 	return false
 }
 
@@ -196,7 +208,7 @@ func (m *Timer) pendingVerify() {
 	m.crNewPending = false
 	start := (m.crNew & crBitStart) != 0
 	forceLoad := (m.crNew & crBitForceLoad) != 0
-	m.cr = m.crNew & 0xef //no force load set (strobe)
+	m.cr = m.crNew & crBitForceLoadUnset //no force load set (strobe) (0xef)
 
 	if forceLoad {
 		if start {
