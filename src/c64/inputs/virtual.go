@@ -3,8 +3,6 @@ package inputs
 type Virtual struct {
 	numLock bool
 	capital bool
-	//ext     bool
-	//menu    bool
 }
 
 func NewVirtual() *Virtual {
@@ -14,17 +12,7 @@ func NewVirtual() *Virtual {
 func (k *Virtual) Reset() {
 	k.numLock = false
 	k.capital = false
-	//k.ext = false
-	//k.menu = false
 }
-
-//func (k *Virtual) SetExt() {
-//	k.ext = !k.ext
-//}
-
-//func (k *Virtual) SetMenu() {
-//	k.menu = !k.menu
-//}
 
 func (k *Virtual) NumLockToggle() {
 	k.numLock = !k.numLock
@@ -38,9 +26,6 @@ func (k *Virtual) FromVirtual(vKey int) int {
 	var result = -1
 	switch vKey {
 	case VKReturn:
-		//if k.menu {
-		//	return KEY_ALTENTER
-		//}
 		return matrix(0, 1)
 	case VKBack:
 		return matrix(0, 0)
@@ -53,16 +38,10 @@ func (k *Virtual) FromVirtual(vKey int) int {
 		return -1
 	case VKDelete:
 		return matrix(0, 0)
-		//return KEY_KPPERIOD
 	case VKShift:
 		return matrix(1, 7)
 	case VKControl:
-		//if k.ext {
-		//	return matrix(7, 5)
-		//}
 		return matrix(7, 2)
-	case VKMenu:
-		matrix(7, 5)
 	case VKInsert:
 		return matrix(0, 0) | 0x80
 	case VKHome:
@@ -199,53 +178,3 @@ func (k *Virtual) FromVirtual(vKey int) int {
 	}
 	return result
 }
-
-/*
-	case VK_f9:
-		return KEY_F9
-	case VK_f10:
-		return KEY_F10
-	case VK_f11:
-		return KEY_F11
-	case VK_f12:
-		return KEY_F12
-	case VK_clear:
-		return KEY_CENTER
-	case VK_pause:
-		return KEY_PAUSE
-	case VK_numlock:
-		return -1
-	case VK_capital:
-		return -1
-	case VK_multiply:
-		return KEY_KPMULT
-	case VK_divide:
-		return KEY_KPDIV
-	case VK_subtract:
-		return KEY_KPMINUS
-	case VK_add:
-		return KEY_KPPLUS
-	case VK_decimal:
-		return KEY_KPPERIOD
-
-	case VK_numpad0:
-		return KEY_FIRE
-	case VK_numpad1:
-		return KeyJDownLeft
-	case VK_numpad2:
-		return KeyJDown
-	case VK_numpad3:
-		return KeyJDownRight
-	case VK_numpad4:
-		return KeyJLeft
-	case VK_numpad5:
-		return KEY_CENTER
-	case VK_numpad6:
-		return KeyJRight
-	case VK_numpad7:
-		return KeyJUpLeft
-	case VK_numpad8:
-		return KeyJUp
-	case VK_numpad9:
-		return KeyJUpRight
-*/

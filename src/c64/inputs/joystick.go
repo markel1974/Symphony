@@ -33,25 +33,25 @@ func (k *Joystick) Reset() {
 	k.joy = 0xff
 }
 
-func (k *Joystick) Build(x uint, y uint, buttons uint) int {
-	joystick := 0xff
+func (k *Joystick) Move(x uint, y uint, buttons uint) {
+	k.joy = 0xff
 	if x < k.s1 {
-		joystick &= 0xfb // Left
+		k.joy &= 0xfb // Left
 	} else if x > k.s2 {
-		joystick &= 0xf7 // Right
+		k.joy &= 0xf7 // Right
 	}
 	if y < k.s1 {
-		joystick &= 0xfe // Up
+		k.joy &= 0xfe // Up
 	} else if y > k.s2 {
-		joystick &= 0xfd // Down
+		k.joy &= 0xfd // Down
 	}
 	if (buttons & 1) != 0 {
-		joystick &= 0xef // Button
+		k.joy &= 0xef // Button
 	}
 	if (buttons & 2) != 0 {
 		//TODO SID POTX / POTY
 	}
-	return joystick
+	k.storage.Add(k.joy)
 }
 
 func (k *Joystick) SetKey(pressed bool, jId int) {

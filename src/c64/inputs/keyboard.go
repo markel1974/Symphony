@@ -87,11 +87,3 @@ func keyCodeToC64(kc uint8, shifted int, pressed bool) uint32 {
 	}
 	return out
 }
-
-//func (k *Keyboard) SetExt() {
-//	k.virtual.SetExt()
-//}
-
-//func (k *Keyboard) SetMenu() {
-//	k.virtual.SetMenu()
-//}

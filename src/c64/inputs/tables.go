@@ -36,7 +36,6 @@ const (
 	VKDelete
 	VKShift
 	VKControl
-	VKMenu
 	VKInsert
 	VKHome
 	VKEnd
@@ -67,50 +66,3 @@ const (
 	VKGrave
 	VKPlus
 )
-
-/*
-
-const (
-// KEY_KPPERIOD = 276
-// KEY_ALTENTER = 278
-)
-
-	KEY_F9        = 256
-	KEY_F10       = 257
-	KEY_F11       = 258
-	KEY_F12       = 259
-
-	KEY_NUMLOCK   = 270
-	KEY_KPPLUS    = 271
-	KEY_KPMINUS   = 272
-	KEY_KPMULT    = 273
-	KEY_KPDIV     = 274
-	KEY_KPENTER   = 275
-	KEY_PAUSE     = 277
-	KEY_CTRLENTER = 279
-
-	//VK_numlock = -11
-	//VK_capital = -12
-	//VK_numpad0  = -21
-	//VK_numpad1  = -22
-	//VK_numpad2  = -23
-	//VK_numpad3  = -24
-	//VK_numpad4  = -25
-	//VK_numpad5  = -26
-	//VK_numpad6  = -27
-	//VK_numpad7  = -28
-	//VK_numpad8  = -29
-	//VK_numpad9  = -30
-	//VK_f9       = -39
-	//VK_f10      = -40
-	//VK_f11      = -41
-	//VK_f12      = -42
-	//VK_clear    = -43
-	//VK_pause    = -44
-	//VK_multiply = -45
-	//VK_divide   = -46
-	//VK_subtract = -47
-	//VK_add      = -48
-	//VK_decimal  = -49
-
-*/
