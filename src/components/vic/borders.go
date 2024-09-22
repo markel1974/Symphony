@@ -19,10 +19,6 @@ type Borders struct {
 	samples          []bool
 	colors           []uint8
 	offset           int
-	//den            bool
-	//columnMode40   bool
-	//top            uint16
-	//bottom         uint16
 }
 
 func NewBorder(core *Core, db IDisplayBuffer) *Borders {
@@ -33,11 +29,7 @@ func NewBorder(core *Core, db IDisplayBuffer) *Borders {
 		colors:           make([]uint8, 0xff),
 		mainFlipFlop:     false,
 		verticalFlipFlop: false,
-		//columnMode40:     false,
-		//den:              false,
-		//top:              0,
-		//bottom:           0,
-		offset: 0,
+		offset:           0,
 	}
 	return gr
 }
@@ -48,7 +40,7 @@ func (b *Borders) SetOffset(offset int) {
 
 func (b *Borders) AcquireColor(idx uint8) {
 	//if b.mainFlipFlop {
-	b.colors[idx] = b.core.ecColor
+	b.colors[idx] = _colors[b.core.ec]
 	//}
 }
 
@@ -64,21 +56,21 @@ func (b *Borders) UpdateVerticalFlipFlop() {
 }
 
 func (b *Borders) EnableColumn40() {
-	if b.core.columnMode40 {
+	if b.core.columnSel {
 		b.mainFlipFlop = true
 	}
 	b.samples[BorderTypeRight] = b.mainFlipFlop
 }
 
 func (b *Borders) EnableColumn38() {
-	if !b.core.columnMode40 {
+	if !b.core.columnSel {
 		b.mainFlipFlop = true
 	}
 	b.samples[BorderTypeMidRight] = b.mainFlipFlop
 }
 
 func (b *Borders) UpdateColumn40() {
-	if b.core.columnMode40 {
+	if b.core.columnSel {
 		b.UpdateVerticalFlipFlop()
 		if !b.verticalFlipFlop {
 			b.mainFlipFlop = false
@@ -88,7 +80,7 @@ func (b *Borders) UpdateColumn40() {
 }
 
 func (b *Borders) UpdateColumn38() {
-	if !b.core.columnMode40 {
+	if !b.core.columnSel {
 		b.UpdateVerticalFlipFlop()
 		if !b.verticalFlipFlop {
 			b.mainFlipFlop = false
@@ -102,10 +94,6 @@ func (b *Borders) GetVerticalFlipFlop() bool {
 }
 
 func (b *Borders) Reset() {
-	//b.columnMode40 = b.core.columnMode40 //(b.core.cr2 & 8) != 0
-	//b.den = b.core.den                //DEN bit (Display Enable, register $d011, bit 4) serves for switching vertical border unit
-	//b.top = b.core.dyTop
-	//b.bottom = b.core.dyBottom
 	b.samples[BorderTypeLeft] = b.mainFlipFlop
 }
 
@@ -120,8 +108,12 @@ func (b *Borders) Draw( /*lineStart int*/ ) {
 	const border4Start = border2End + 1
 	const border4End = DisplayXDiv8
 
+	const border0StartSize = border0Start * bSize
+	const border2StartSize = border2Start * bSize
+	const border4StartSize = border4Start * bSize
+
 	if b.samples[BorderTypeLeft] {
-		for idx, offset := border0Start, border0Start*bSize; idx < border1End; idx, offset = idx+1, offset+bSize {
+		for idx, offset := border0Start, border0StartSize; idx < border1End; idx, offset = idx+1, offset+bSize {
 			b.db.SetMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
@@ -129,7 +121,7 @@ func (b *Borders) Draw( /*lineStart int*/ ) {
 		b.db.SetMulti8(b.offset+(border1Offset), b.colors[border1End])
 	}
 	if b.samples[BorderTypeCenter] {
-		for idx, offset := border2Start, border2Start*bSize; idx < border2End; idx, offset = idx+1, offset+bSize {
+		for idx, offset := border2Start, border2StartSize; idx < border2End; idx, offset = idx+1, offset+bSize {
 			b.db.SetMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
@@ -137,7 +129,7 @@ func (b *Borders) Draw( /*lineStart int*/ ) {
 		b.db.SetMulti8(b.offset+(border3Offset), b.colors[border2End])
 	}
 	if b.samples[BorderTypeRight] {
-		for idx, offset := border4Start, border4Start*bSize; idx < border4End; idx, offset = idx+1, offset+bSize {
+		for idx, offset := border4Start, border4StartSize; idx < border4End; idx, offset = idx+1, offset+bSize {
 			b.db.SetMulti8(b.offset+offset, b.colors[idx])
 		}
 	}

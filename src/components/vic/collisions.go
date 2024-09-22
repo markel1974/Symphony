@@ -49,27 +49,7 @@ func (c *Collisions) SetSpriteCollision(collIdx int, sBit uint8) bool {
 }
 
 func (c *Collisions) Detect() {
-	if c.core.sprClx != 0 {
-		c.core.sprClx |= c.sprites
-	} else {
-		c.core.sprClx |= c.sprites
-		c.core.irqFlag |= 0x04
-		if (c.core.irqMask & 0x04) != 0 {
-			c.core.irqFlag |= 0x80
-			c.core.socket.IRQTrigger()
-		}
-	}
-
-	if c.core.sprClxBgr != 0 {
-		c.core.sprClxBgr |= c.graphics
-	} else {
-		c.core.sprClxBgr |= c.graphics
-		c.core.irqFlag |= 0x02
-		if c.core.irqMask&0x02 != 0 {
-			c.core.irqFlag |= 0x80
-			c.core.socket.IRQTrigger()
-		}
-	}
+	c.core.CollisionApply(c.sprites, c.graphics)
 }
 
 func (c *Collisions) IncrementGraphicsOffset() {

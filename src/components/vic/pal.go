@@ -245,7 +245,7 @@ func palCycle15(vic *VIC) {
 	vic.graphics.ResetLineIndex()
 	vic.core.TryBALowIfBadLine()
 	//vic.core.TryAcquireAEC()
-	vic.graphics.TryVideoMatrixAccess()
+	vic.graphics.TryPhi2Access()
 }
 
 func palCycle16(vic *VIC) {
@@ -258,7 +258,7 @@ func palCycle16(vic *VIC) {
 	vic.sprites.UpdateCounterBaseDMA()
 	vic.core.TryBALowIfBadLine()
 	//vic.core.TryAcquireAEC()
-	vic.graphics.TryVideoMatrixAccess()
+	vic.graphics.TryPhi2Access()
 }
 
 func palCycle17(vic *VIC) {
@@ -275,7 +275,7 @@ func palCycle17(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.core.TryBALowIfBadLine()
 	//vic.core.TryAcquireAEC()
-	vic.graphics.TryVideoMatrixAccess()
+	vic.graphics.TryPhi2Access()
 }
 
 func palCycle18(vic *VIC) {
@@ -292,7 +292,7 @@ func palCycle18(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.core.TryBALowIfBadLine()
 	//vic.core.TryAcquireAEC()
-	vic.graphics.TryVideoMatrixAccess()
+	vic.graphics.TryPhi2Access()
 	vic.graphics.UpdateLastCharData()
 }
 
@@ -309,7 +309,7 @@ func palCycle19to54(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.core.TryBALowIfBadLine()
 	//vic.core.TryAcquireAEC()
-	vic.graphics.TryVideoMatrixAccess()
+	vic.graphics.TryPhi2Access()
 	vic.graphics.UpdateLastCharData()
 }
 

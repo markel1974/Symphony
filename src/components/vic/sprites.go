@@ -134,7 +134,7 @@ func (sp *Sprites) Draw() {
 
 	for sNum, sBit := uint8(0), uint8(1); sNum < SpriteNumber; sNum, sBit = sNum+1, sBit<<1 {
 		if (sp.spriteFlags & sBit) != 0 {
-			sColor := sp.core.mXcColor[sNum]
+			sColor := _colors[sp.core.mXc[sNum]]
 			sData := (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
 			sOffset := int(sp.core.mXx[sNum]) + SpriteNumber
 			lineOffset := sp.offset + sOffset // lineStart + sOffset
@@ -185,13 +185,13 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData ui
 		selectedColor := uint8(0)
 		if (plane1L & 0x80000000) != 0 {
 			if (plane0L & 0x80000000) != 0 {
-				selectedColor = sp.core.mm1Color
+				selectedColor = _colors[sp.core.mm1]
 			} else {
 				selectedColor = sColor
 			}
 		} else {
 			if (plane0L & 0x80000000) != 0 {
-				selectedColor = sp.core.mm0Color
+				selectedColor = _colors[sp.core.mm0]
 			} else {
 				continue
 			}
@@ -204,13 +204,13 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData ui
 		selectedColor := uint8(0)
 		if (plane1R & 0x80000000) != 0 {
 			if (plane0R & 0x80000000) != 0 {
-				selectedColor = sp.core.mm1Color
+				selectedColor = _colors[sp.core.mm1]
 			} else {
 				selectedColor = sColor
 			}
 		} else {
 			if (plane0R & 0x80000000) != 0 {
-				selectedColor = sp.core.mm0Color
+				selectedColor = _colors[sp.core.mm0]
 			} else {
 				continue
 			}
@@ -268,13 +268,13 @@ func (sp *Sprites) drawUnexpandedMulticolor(lineOffset int, sColor uint8, sData 
 		var selectedColor uint8
 		if (plane1 & 0x80000000) != 0 {
 			if (plane0 & 0x80000000) != 0 {
-				selectedColor = sp.core.mm1Color
+				selectedColor = _colors[sp.core.mm1]
 			} else {
 				selectedColor = sColor
 			}
 		} else {
 			if (plane0 & 0x80000000) != 0 {
-				selectedColor = sp.core.mm0Color
+				selectedColor = _colors[sp.core.mm0]
 			} else {
 				continue
 			}

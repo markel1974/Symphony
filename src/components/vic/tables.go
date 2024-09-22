@@ -109,3 +109,12 @@ var _scCodesAscii = []byte{
 }
 
 var _spriteBit = []byte{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}
+
+var _colors []uint8
+
+func init() {
+	_colors = make([]uint8, 256)
+	for i := range _colors {
+		_colors[i] = (uint8)(i & 0xf)
+	}
+}

@@ -8,9 +8,15 @@ import (
 // https://www.oxyron.de/html/registers_vic2.html
 
 const (
-	flagRasterBit   = 0x01
-	flagLightPenBit = 0x08
-	flagMasterBit   = 0x80
+	irqRasterBit          = uint8(0x01)
+	irqSpriteToGraphicBit = uint8(0x02)
+	irqSpriteToSpriteBit  = uint8(0x04)
+	irqLightPenBit        = uint8(0x08)
+	irqMasterBit          = uint8(0x80)
+)
+
+const (
+	irqUnsetMasterBit = ^irqMasterBit
 )
 
 type Core struct {
@@ -18,6 +24,7 @@ type Core struct {
 	banks            IBanks
 	mXx              []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
 	mXy              []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
+	mXc              []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
 	mx8              uint8    // VIC register
 	cr1              uint8    // VIC register
 	cr2              uint8    // VIC register
@@ -35,15 +42,6 @@ type Core struct {
 	b3c              uint8    // VIC register
 	mm0              uint8    // VIC register
 	mm1              uint8    // VIC register
-	mXc              []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
-	ecColor          uint8    // Index ec Color Mapping
-	b0cColor         uint8    // Index b0c Color Mapping
-	b1cColor         uint8    // Index b1c Color Mapping
-	b2cColor         uint8    // Index b2c Color Mapping
-	b3cColor         uint8    // Index b3c Color Mapping
-	mm0Color         uint8    // Index mm0 Color Mapping
-	mm1Color         uint8    // Index mm1 Color Mapping
-	mXcColor         []uint8  // Color Index Mapping for m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c
 	vaBase           uint8    // vaBase
 	ciaVaBase        uint16   // CIA VA14/15 video base
 	matrixBase       uint16   // Video matrix base
@@ -51,20 +49,19 @@ type Core struct {
 	bitmapBase       uint16   // Bitmap base
 	xScroll          uint16   // X scroll value
 	yScroll          uint16   // Y scroll value
-	irqFlag          uint8    //
+	irqLatch         uint8    //
 	irqMask          uint8    //
 	irqRaster        uint16   // Interrupt raster line
 	sprExpY          uint8    // 8 sprite y expansion FlipFlops
-	sprClxBgr        uint8    // Sprite to background collision
-	sprClx           uint8    // Sprite to sprite collision
+	sprBgrClx        uint8    // Sprite to background collision
+	sprSprClx        uint8    // Sprite to sprite collision
 	rasterX          uint16   // Current raster x position
 	rasterY          uint16   // Current raster line
 	dyTop            uint16   // Comparison values for borders logic
 	dyBottom         uint16   // Comparison values for borders logic
-	colors           []uint8  // Indices of the 16 colors (16 times mirrored to avoid "& 0x0f")
 	displayMode      int      // Index of current display mode
 	lpTriggered      bool     // LightPen was triggered in this frame
-	badLinesEnabled  bool     // Bad Lines enabled for this frame
+	badLineEnabler   bool     // Bad Lines enabled for this frame
 	badLineCondition bool     // Current line is bad line
 	baLow            bool     // BA Line
 	aecLow           bool     // AEC Line
@@ -74,20 +71,16 @@ type Core struct {
 	den              bool
 	bmm              bool
 	ecm              bool
-	columnMode40     bool
+	columnSel        bool
 }
 
 func NewCore(socket ISocket) *Core {
-	colors := make([]uint8, 256)
-	for i := range colors {
-		colors[i] = (uint8)(i & 0x0f)
-	}
-	defaultColor := colors[0] //black
 	c := &Core{
 		socket:           socket,
 		banks:            nil,
 		mXx:              make([]uint16, SpriteNumber),
 		mXy:              make([]uint8, SpriteNumber),
+		mXc:              make([]uint8, SpriteNumber),
 		mx8:              0,
 		cr1:              0,
 		cr2:              0,
@@ -105,8 +98,6 @@ func NewCore(socket ISocket) *Core {
 		b3c:              0,
 		mm0:              0,
 		mm1:              0,
-		mXc:              make([]uint8, SpriteNumber),
-		mXcColor:         make([]uint8, SpriteNumber),
 		matrixBase:       0,
 		charBase:         0,
 		bitmapBase:       0,
@@ -115,19 +106,11 @@ func NewCore(socket ISocket) *Core {
 		xScroll:          0,
 		yScroll:          0,
 		irqRaster:        0,
-		irqFlag:          0,
+		irqLatch:         0,
 		irqMask:          0,
 		sprExpY:          0,
-		sprClx:           0,
-		sprClxBgr:        0,
-		ecColor:          defaultColor,
-		b0cColor:         defaultColor,
-		b1cColor:         defaultColor,
-		b2cColor:         defaultColor,
-		b3cColor:         defaultColor,
-		mm0Color:         defaultColor,
-		mm1Color:         defaultColor,
-		colors:           colors,
+		sprSprClx:        0,
+		sprBgrClx:        0,
 		rasterX:          0,
 		rasterY:          TotalRasters - 1,
 		dyTop:            Row24YStart,
@@ -135,7 +118,7 @@ func NewCore(socket ISocket) *Core {
 		displayMode:      0,
 		lpTriggered:      false,
 		badLineCondition: false,
-		badLinesEnabled:  false,
+		badLineEnabler:   false,
 		baLow:            false,
 		aecLowNextCycle:  0,
 		aecLow:           false,
@@ -144,10 +127,7 @@ func NewCore(socket ISocket) *Core {
 		den:              false,
 		bmm:              false,
 		ecm:              false,
-		columnMode40:     false,
-	}
-	for i := range c.mXcColor {
-		c.mXcColor[i] = defaultColor
+		columnSel:        false,
 	}
 	return c
 }
@@ -224,22 +204,30 @@ func (vic *Core) badLineUpdate() {
 	// Bad Line Condition is given at any arbitrary clock cycle, if at the
 	// negative edge of ø0 at the beginning of the cycle RASTER >= $30 and RASTER <= $f7
 	// and the lower three bits of RASTER are equal to YSCROLL
-	// and if the DEN bit was set during an arbitrary cycle of raster line $30.
+	// and if the DEN bit has been set for at least one cycle somewhere in raster line $30
+	// So clearing the DEN bit will normally prevent Bad Lines
 
-	//if vic.rasterY == 0x30 {
-	//	vic.badLinesEnabled = (vic.cr1 & 0x10) != 0 //den
-	//}
-
-	vic.badLineCondition = (vic.rasterY >= FirstDmaLine) && (vic.rasterY <= LastDmaLine) && ((vic.rasterY & 7) == vic.yScroll) && vic.badLinesEnabled
+	if (vic.rasterY >= FirstDmaLine) && (vic.rasterY <= LastDmaLine) {
+		if vic.rasterY == FirstDmaLine && vic.den {
+			//If YSCROLL=0, a Bad Line Condition occurs in raster line $30 as soon as the DEN bit
+			vic.badLineEnabler = true
+			if vic.yScroll == 0 {
+				vic.badLineCondition = true
+				return
+			}
+		}
+		if vic.badLineEnabler {
+			vic.badLineCondition = vic.yScroll == (vic.rasterY & 7)
+		}
+	} else {
+		vic.badLineEnabler = false
+		vic.badLineCondition = false
+	}
 }
 
 func (vic *Core) ChangedVA(newVA uint8) {
 	vic.ciaVaBase = uint16(newVA) << 14
-	// Force update memory pointers
-	//vic.WriteRegister(0x18, vic.vaBase)
-	vic.matrixBase = (uint16(vic.vaBase) & 0xf0) << 6
-	vic.charBase = (uint16(vic.vaBase) & 0x0e) << 10
-	vic.bitmapBase = (uint16(vic.vaBase) & 0x08) << 10
+	vic.memoryPointerUpdate()
 }
 
 func (vic *Core) LightPenTrigger() {
@@ -247,11 +235,7 @@ func (vic *Core) LightPenTrigger() {
 		vic.lpTriggered = true
 		vic.lpx = uint8(vic.rasterX >> 1)
 		vic.lpy = uint8(vic.rasterY)
-		vic.irqFlag |= flagLightPenBit
-		if (vic.irqMask & flagLightPenBit) != 0 {
-			vic.irqFlag |= flagMasterBit
-			vic.socket.IRQTrigger()
-		}
+		vic.irqEmit(irqLightPenBit)
 	}
 }
 
@@ -260,17 +244,14 @@ func (vic *Core) ResetRasterY() {
 	vic.refreshCounter = 0xff
 	vic.lpTriggered = false
 	if vic.irqRaster == 0 {
-		vic.rasterIrq()
+		vic.irqEmit(irqRasterBit)
 	}
 }
 
 func (vic *Core) IncrementRasterY() {
 	vic.rasterY++
 	if vic.rasterY == vic.irqRaster {
-		vic.rasterIrq()
-	}
-	if vic.rasterY == 0x30 {
-		vic.badLinesEnabled = vic.den //den
+		vic.irqEmit(irqRasterBit)
 	}
 	vic.badLineUpdate()
 }
@@ -294,32 +275,18 @@ func (vic *Core) ReadByte(addr uint16) uint8 {
 	return vic.lastByte
 }
 
-func (vic *Core) rasterIrq() {
-	vic.irqFlag |= flagRasterBit
-	if (vic.irqMask & flagRasterBit) != 0 {
-		vic.irqFlag |= flagMasterBit
-		vic.socket.IRQTrigger()
-	}
-}
-
-func (vic *Core) rasterUpdate(low uint16, high uint16) {
-	irqRaster := low | high
-	if irqRaster != vic.irqRaster {
-		if vic.rasterY == irqRaster {
-			vic.rasterIrq()
-		}
-		vic.irqRaster = irqRaster
-	}
-}
-
-func (vic *Core) borderLogicUpdate(data uint8) {
-	//RSEL - CSEL
-	if (data & 8) != 0 {
-		vic.dyTop = Row25YStart
-		vic.dyBottom = Row25YStop
+func (vic *Core) CollisionApply(sprites uint8, graphics uint8) {
+	if vic.sprSprClx != 0 {
+		vic.sprSprClx |= sprites
 	} else {
-		vic.dyTop = Row24YStart
-		vic.dyBottom = Row24YStop
+		vic.sprSprClx |= sprites
+		vic.irqEmit(irqSpriteToSpriteBit)
+	}
+	if vic.sprBgrClx != 0 {
+		vic.sprBgrClx |= graphics
+	} else {
+		vic.sprBgrClx |= graphics
+		vic.irqEmit(irqSpriteToGraphicBit)
 	}
 }
 
@@ -376,8 +343,8 @@ func (vic *Core) ReadRegister(addr uint16) uint8 {
 		return vic.mye
 	case 0x18: // Memory pointers
 		return vic.vaBase | 0x01
-	case 0x19: // IRQ spriteFlags
-		return vic.irqFlag | 0x70
+	case 0x19: // IRQ latch
+		return vic.irqLatch | 0x70
 	case 0x1a: // IRQ mask
 		return vic.irqMask | 0xf0
 	case 0x1b: // Sprite data priority
@@ -387,12 +354,12 @@ func (vic *Core) ReadRegister(addr uint16) uint8 {
 	case 0x1d: // Sprite X expansion
 		return vic.mxe
 	case 0x1e: // Sprite-sprite collision
-		ret := vic.sprClx
-		vic.sprClx = 0 // Read and clear
+		ret := vic.sprSprClx
+		vic.sprSprClx = 0 // Read and clear
 		return ret
 	case 0x1f: // Sprite-background collision
-		ret := vic.sprClxBgr
-		vic.sprClxBgr = 0 // Read and clear
+		ret := vic.sprBgrClx
+		vic.sprBgrClx = 0 // Read and clear
 		return ret
 	case 0x20:
 		return vic.ec | 0xf0
@@ -479,18 +446,24 @@ func (vic *Core) WriteRegister(addr2 uint16, data uint8) {
 	case 0x11: // Control register 1
 		vic.cr1 = data
 		vic.yScroll = uint16(vic.cr1) & 7
+		if rowSel := (vic.cr1 & 0x8) != 0; rowSel {
+			vic.dyTop = Row25YStart
+			vic.dyBottom = Row25YStop
+		} else {
+			vic.dyTop = Row24YStart
+			vic.dyBottom = Row24YStop
+		}
 		vic.den = (vic.cr1 & 0x10) != 0
 		vic.bmm = (vic.cr1 & 0x20) != 0
 		vic.ecm = (vic.cr1 & 0x40) != 0
-		vic.rasterUpdate(vic.irqRaster&0xff, (uint16(vic.cr1)&0x80)<<1)
-		vic.borderLogicUpdate(vic.cr1)
+		//rst8 := (vic.cr1 & 0x80) != 0
 		vic.displayMode = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
-		if (vic.rasterY == 0x30) && vic.den {
-			vic.badLinesEnabled = true
-		}
+		irqRaster := (vic.irqRaster & 0xff) | ((uint16(vic.cr1) & 0x80) << 1)
+		vic.rasterUpdate(irqRaster)
 		vic.badLineUpdate()
 	case 0x12: // Raster counter
-		vic.rasterUpdate(uint16(data), vic.irqRaster&0xff00)
+		irqRaster := (vic.irqRaster & 0xff00) | uint16(data)
+		vic.rasterUpdate(irqRaster)
 	case 0x13: // Light pen X
 		vic.lpx = data
 	case 0x14: // Light pen Y
@@ -499,33 +472,29 @@ func (vic *Core) WriteRegister(addr2 uint16, data uint8) {
 		vic.me = data
 	case 0x16: // Control register 2
 		vic.cr2 = data
-		vic.columnMode40 = (vic.cr2 & 8) != 0
 		vic.xScroll = uint16(vic.cr2) & 7
+		vic.columnSel = (vic.cr2 & 0x8) != 0
 		vic.displayMode = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
 	case 0x17: // Sprite Y expansion
 		vic.mye = data
 		vic.sprExpY |= ^data
 	case 0x18: // Memory pointers
 		vic.vaBase = data
-		vic.matrixBase = (uint16(data) & 0xf0) << 6
-		vic.charBase = (uint16(data) & 0x0e) << 10
-		vic.bitmapBase = (uint16(data) & 0x08) << 10
-	case 0x19: // IRQ spriteFlags
-		vic.irqFlag = vic.irqFlag & (^data & 0x0f)
-		if (vic.irqFlag & vic.irqMask) != 0 {
-			vic.irqFlag |= flagMasterBit // Set master bit if allowed interrupt still pending
-		} else {
-			vic.socket.IRQClear()
-		}
+		vic.memoryPointerUpdate()
+	case 0x19: // IRQ Latch
+		// TODO VERIFICA IMPLEMENTAZIONE
+		vic.irqLatch &= ^((data & 0xf) | irqMasterBit)
+		vic.irqVerify()
+		//old
+		//vic.irqLatch &= ^(data & 0xf)
+		//if (vic.irqLatch & vic.irqMask) != 0 {
+		//	vic.irqLatch |= irqMasterBit // Set master bit if allowed interrupt still pending
+		//} else {
+		//	vic.socket.IRQClear()
+		//}
 	case 0x1a: // IRQ mask
-		vic.irqMask = data & 0x0f
-		if (vic.irqFlag & vic.irqMask) != 0 {
-			vic.irqFlag |= flagMasterBit
-			vic.socket.IRQTrigger() // Trigger interrupt if pending (now allowed)
-		} else {
-			vic.irqFlag &= 0x7f
-			vic.socket.IRQClear()
-		}
+		vic.irqMask = data & 0xf
+		vic.irqVerify()
 	case 0x1b: // Sprite data priority
 		vic.mdp = data
 	case 0x1c: // Sprite multicolor
@@ -533,56 +502,74 @@ func (vic *Core) WriteRegister(addr2 uint16, data uint8) {
 	case 0x1d: // Sprite X expansion
 		vic.mxe = data
 	case 0x1e: // Sprite-sprite collision
-		vic.sprClx = data
+		vic.sprSprClx = data
 	case 0x1f: // Sprite-background collision
-		vic.sprClxBgr = data
+		vic.sprBgrClx = data
 	case 0x20:
 		vic.ec = data
-		vic.ecColor = vic.colors[data]
 	case 0x21:
 		vic.b0c = data
-		vic.b0cColor = vic.colors[data]
 	case 0x22:
 		vic.b1c = data
-		vic.b1cColor = vic.colors[data]
 	case 0x23:
 		vic.b2c = data
-		vic.b2cColor = vic.colors[data]
 	case 0x24:
 		vic.b3c = data
-		vic.b3cColor = vic.colors[data]
 	case 0x25:
 		vic.mm0 = data
-		vic.mm0Color = vic.colors[data]
 	case 0x26:
 		vic.mm1 = data
-		vic.mm1Color = vic.colors[data]
 	case 0x27:
 		vic.mXc[0] = data
-		vic.mXcColor[0] = vic.colors[data]
 	case 0x28:
 		vic.mXc[1] = data
-		vic.mXcColor[1] = vic.colors[data]
 	case 0x29:
 		vic.mXc[2] = data
-		vic.mXcColor[2] = vic.colors[data]
 	case 0x2a:
 		vic.mXc[3] = data
-		vic.mXcColor[3] = vic.colors[data]
 	case 0x2b:
 		vic.mXc[4] = data
-		vic.mXcColor[4] = vic.colors[data]
 	case 0x2c:
 		vic.mXc[5] = data
-		vic.mXcColor[5] = vic.colors[data]
 	case 0x2d:
 		vic.mXc[6] = data
-		vic.mXcColor[6] = vic.colors[data]
 	case 0x2e:
 		vic.mXc[7] = data
-		vic.mXcColor[7] = vic.colors[data]
 	case 0x2f, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f: //unconnected
 	default:
 		log.Printf("WriteRegister: unknown reg 0x%x", reg)
+	}
+}
+
+func (vic *Core) memoryPointerUpdate() {
+	vic.matrixBase = (uint16(vic.vaBase) & 0xf0) << 6
+	vic.charBase = (uint16(vic.vaBase) & 0x0e) << 10
+	vic.bitmapBase = (uint16(vic.vaBase) & 0x08) << 10
+}
+
+func (vic *Core) rasterUpdate(irqRaster uint16) {
+	if irqRaster != vic.irqRaster {
+		if vic.rasterY == irqRaster {
+			vic.irqEmit(irqRasterBit)
+		}
+		vic.irqRaster = irqRaster
+	}
+}
+
+func (vic *Core) irqEmit(irq uint8) {
+	vic.irqLatch |= irq
+	if (vic.irqMask & irq) != 0 {
+		vic.irqLatch |= irqMasterBit
+		vic.socket.IRQTrigger()
+	}
+}
+
+func (vic *Core) irqVerify() {
+	if (vic.irqLatch & vic.irqMask) != 0 {
+		vic.irqLatch |= irqMasterBit
+		vic.socket.IRQTrigger() // Trigger interrupt if pending (now allowed)
+	} else {
+		vic.irqLatch &= irqUnsetMasterBit
+		vic.socket.IRQClear()
 	}
 }
