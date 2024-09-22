@@ -7,13 +7,25 @@ import (
 type Joystick struct {
 	storage *fifo.Queue
 	joy     int
+	s1      uint
+	s2      uint
 }
 
 func NewJoystick() *Joystick {
-	return &Joystick{
+	j := &Joystick{
 		storage: nil,
 		joy:     0xff,
+		s1:      0,
+		s2:      0,
 	}
+	j.Update(0x0000, 0xffff, 40)
+	return j
+}
+
+func (k *Joystick) Update(min uint16, max uint16, sensitivity uint16) {
+	interval := max - min
+	k.s1 = uint(min + ((sensitivity * interval) / 100))
+	k.s2 = uint(min + (((100 - sensitivity) * interval) / 100))
 }
 
 func (k *Joystick) Reset() {
@@ -22,19 +34,15 @@ func (k *Joystick) Reset() {
 }
 
 func (k *Joystick) Build(x uint, y uint, buttons uint) int {
-	s1 := JOYSTICK_SENSITIVITY
-	s2 := 100 - JOYSTICK_SENSITIVITY
-	s1Val := uint(JOYSTICK_MIN + s1*JOYSTICK_RANGE/100)
-	s2Val := uint(JOYSTICK_MIN + s2*JOYSTICK_RANGE/100)
 	joystick := 0xff
-	if x < s1Val {
+	if x < k.s1 {
 		joystick &= 0xfb // Left
-	} else if x > s2Val {
+	} else if x > k.s2 {
 		joystick &= 0xf7 // Right
 	}
-	if y < s1Val {
+	if y < k.s1 {
 		joystick &= 0xfe // Up
-	} else if y > s2Val {
+	} else if y > k.s2 {
 		joystick &= 0xfd // Down
 	}
 	if (buttons & 1) != 0 {
@@ -69,75 +77,77 @@ func (k *Joystick) Poll() (uint8, bool) {
 
 func joyKeyUp(j int, kc int) int {
 	switch kc {
-	case KEY_FIRE:
+	case KeyJFire:
 		j |= 0x10
 		return j
-	case KEY_JUP:
+	case KeyJUp:
 		j |= 0x01
 		return j
-	case KEY_JDN:
+	case KeyJDown:
 		j |= 0x02
 		return j
-	case KEY_JLF:
+	case KeyJLeft:
 		j |= 0x04
 		return j
-	case KEY_JRT:
+	case KeyJRight:
 		j |= 0x08
 		return j
-	case KEY_JUPLF:
+	case KeyJUpLeft:
 		j |= 0x05
 		return j
-	case KEY_JUPRT:
+	case KeyJUpRight:
 		j |= 0x09
 		return j
-	case KEY_JDNLF:
+	case KeyJDownLeft:
 		j |= 0x06
 		return j
-	case KEY_JDNRT:
+	case KeyJDownRight:
 		j |= 0x0a
 		return j
+	case KeyJCenter:
+		return 0xff
 	}
 	return 0xff
 }
 
 func joyKeyDown(j int, kc int) int {
 	switch kc {
-	case KEY_FIRE:
+	case KeyJFire:
 		j &= ^0x10
 		return j
-	case KEY_JUP:
+	case KeyJUp:
 		j |= 0x02
 		j &= ^0x01
 		return j
-	case KEY_JDN:
+	case KeyJDown:
 		j |= 0x01
 		j &= ^0x02
 		return j
-	case KEY_JLF:
+	case KeyJLeft:
 		j |= 0x08
 		j &= ^0x04
 		return j
-	case KEY_JRT:
+	case KeyJRight:
 		j |= 0x04
 		j &= ^0x08
 		return j
-	case KEY_JUPLF:
+	case KeyJUpLeft:
 		j |= 0x0a
 		j &= ^0x05
 		return j
-	case KEY_JUPRT:
+	case KeyJUpRight:
 		j |= 0x06
 		j &= ^0x09
 		return j
-	case KEY_JDNLF:
+	case KeyJDownLeft:
 		j |= 0x09
 		j &= ^0x06
 		return j
-	case KEY_JDNRT:
+	case KeyJDownRight:
 		j |= 0x05
 		j &= ^0x0a
 		return j
-	case KEY_CENTER:
+	case KeyJCenter:
 		j |= 0x0f
 		return j
 	}

@@ -30,20 +30,12 @@ func (k *Keyboard) Reset() {
 	k.ascii.Reset()
 }
 
-func (k *Keyboard) SetExt() {
-	k.virtual.SetExt()
+func (k *Keyboard) NumLockToggle() {
+	k.virtual.NumLockToggle()
 }
 
-func (k *Keyboard) SetNumLock() {
-	k.virtual.SetNumLock()
-}
-
-func (k *Keyboard) SetCapital() {
-	k.virtual.SetCapital()
-}
-
-func (k *Keyboard) SetMenu() {
-	k.virtual.SetMenu()
+func (k *Keyboard) CapitalToggle() {
+	k.virtual.CapitalToggle()
 }
 
 func (k *Keyboard) SetVirtualKey(pressed bool, vKey int) {
@@ -95,3 +87,11 @@ func keyCodeToC64(kc uint8, shifted int, pressed bool) uint32 {
 	}
 	return out
 }
+
+//func (k *Keyboard) SetExt() {
+//	k.virtual.SetExt()
+//}
+
+//func (k *Keyboard) SetMenu() {
+//	k.virtual.SetMenu()
+//}
