@@ -38,7 +38,7 @@ func (o *Observer) setBasicText(start uint16, end uint16) {
 	o.b.ram[0x2e] = e2
 }
 
-func (o *Observer) Inject(autostartBasicLoad bool, startAddr uint16, data []byte) error {
+func (o *Observer) Inject(autostartBasicLoad bool, startAddr uint16, data []byte) {
 	size := uint16(len(data))
 	start, _ := o.getBasicText()
 	// load to basic start if requested
@@ -51,7 +51,6 @@ func (o *Observer) Inject(autostartBasicLoad bool, startAddr uint16, data []byte
 	// simulate a basic load
 	end := startAddr + size
 	o.setBasicText(start, end)
-	return nil
 }
 
 // used by autostart to locate and "read" kernal output on the current screen

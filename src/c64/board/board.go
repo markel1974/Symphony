@@ -239,30 +239,12 @@ func (s *Board) KeyboardNumLockToggle() {
 }
 
 func (s *Board) KeyboardCapitalToggle() {
-	//TODO RIMUOVERE
-	//s.cfg.SetDriveOpt("/Users/tinmr305/Downloads/c64carts/mw4_2.d64", 0)
-	//TODO RIMUOVERE
-	//s.loadPRG(s.cfg.GetPrg())
-	//return
-
-	//TODO RIMUOVERE
-	//s.speed++
-	//fmt.Println("SPEED", s.speed)
-	//return
-
 	s.keys.CapitalToggle()
 }
 
 func (s *Board) SetMouse(x uint8, y uint8) {
 	s.sidSocket.SetPotXY(x, y)
 }
-
-//func (s *Board) KeyboardSetMenu(pressed bool) {
-//	if !pressed {
-//		return
-//	}
-//	s.keys.SetMenu()
-//}
 
 func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
 	s.keys.SetVirtualKey(pressed, vKey)
