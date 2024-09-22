@@ -57,6 +57,7 @@ type Board struct {
 	vBlank              bool
 	lastVicCycle        bool
 	dmaLow              bool
+	prg                 *prg.PRG
 }
 
 func NewBoard(db mos6569.IDisplayBuffer, player mos6581.IPlayer) *Board {
@@ -82,6 +83,7 @@ func NewBoard(db mos6569.IDisplayBuffer, player mos6581.IPlayer) *Board {
 		vBlank:              false,
 		lastVicCycle:        false,
 		dmaLow:              false,
+		prg:                 nil,
 		joySwap:             true,
 	}
 	return b
@@ -146,6 +148,14 @@ func (s *Board) Setup(cfg *config.Config) error {
 			} else {
 				log.Printf("cartridge: %s [%s] successfully added", cartName, cartId)
 			}
+		}
+	}
+
+	if prgPath := s.cfg.GetPrg(); len(prgPath) > 0 {
+		s.prg = prg.NewPRG(banks.NewObserver(s.banks), s.keys)
+		if err := s.prg.Load(prgPath); err != nil {
+			log.Printf("can't load prg: %s", err.Error())
+			s.prg = nil
 		}
 	}
 
@@ -223,13 +233,6 @@ func (s *Board) KeyboardPaste(pressed bool) {
 	data := clipboard.Read(clipboard.FmtText)
 	s.keys.SetCommand(string(data))
 }
-
-//func (s *Board) KeyboardSetExt(pressed bool) {
-//	if !pressed {
-//		return
-//	}
-//	s.keys.SetExt()
-//}
 
 func (s *Board) KeyboardNumLockToggle() {
 	s.keys.NumLockToggle()
@@ -367,27 +370,9 @@ func (s *Board) vicVBlankSlot() {
 	s.cia1Socket.Update()
 	s.cia2Socket.Update()
 
-	//TODO
-	//if bytes.Contains(s.vic.GetText(), []byte("READY")) {
-	//	fmt.Println("READY!!!")
-	//}
-}
-
-func (s *Board) loadPRG(prgFile string) {
-	//TODO TEST - WE HAVE TO WAIT READY
-	//s.loadPRG(s.cfg.GetPrg())
-	//return
-	if len(prgFile) == 0 {
-		return
-	}
-	p := prg.NewPRG()
-	if err := p.Load(prgFile); err != nil {
-		log.Printf("can't set load prg: %s", err.Error())
-		return
-	}
-	inject := banks.NewObserver(s.banks)
-	if err := inject.Inject(false, p.GetStartAddress(), p.GetData()); err != nil {
-		log.Printf("can't set prg: %s", err.Error())
-		return
+	if s.prg != nil {
+		if s.prg.Inject(s.vic.GetText()) {
+			s.prg = nil
+		}
 	}
 }
