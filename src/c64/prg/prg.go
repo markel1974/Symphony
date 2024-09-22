@@ -13,6 +13,8 @@ type PRG struct {
 	startAddr uint16
 	observer  *banks.Observer
 	keys      *inputs.Keyboard
+	search    []byte
+	command   string
 }
 
 func NewPRG(observer *banks.Observer, keys *inputs.Keyboard) *PRG {
@@ -21,7 +23,17 @@ func NewPRG(observer *banks.Observer, keys *inputs.Keyboard) *PRG {
 		keys:      keys,
 		data:      nil,
 		startAddr: 0,
+		search:    []byte("READY"),
+		command:   "RUN\n",
 	}
+}
+
+func (b *PRG) SetSearch(search string) {
+	b.search = []byte(search)
+}
+
+func (b *PRG) SetCommand(cmd string) {
+	b.command = cmd
 }
 
 func (b *PRG) Load(prgFile string) error {
@@ -42,10 +54,10 @@ func (b *PRG) Load(prgFile string) error {
 }
 
 func (b *PRG) Inject(buffer []byte) bool {
-	if !bytes.Contains(buffer, []byte("READY")) {
+	if !bytes.Contains(buffer, b.search) {
 		return false
 	}
 	b.observer.Inject(false, b.startAddr, b.data)
-	b.keys.SetCommand("RUN\n")
+	b.keys.SetCommand(b.command)
 	return true
 }
