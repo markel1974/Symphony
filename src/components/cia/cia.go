@@ -195,12 +195,18 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 		m.irqUpdateMask(data)
 		m.irqTrigger()
 	case 0x0e:
+		//00 = Timer counts system cycles
+		//01 = Timer counts positive slope at CNT-pin
 		countMode := uint8(0)
 		if (data & crBitInMode) != 0 {
 			countMode = 1
 		}
 		m.timerA.SetControlRegister(data, countMode)
 	case 0x0f:
+		//00 = Timer counts System cycle
+		//01 = Timer counts positive slope on CNT-pin
+		//10 = Timer counts underflow of timer A
+		//11 = Timer counts underflow of timer A if the CNT-pin is high
 		//crBitInMode | crBitSPMode
 		countMode := (data >> 5) & 0x3
 		m.timerB.SetControlRegister(data, countMode)

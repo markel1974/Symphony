@@ -402,7 +402,6 @@ func instApINDy4(cpu *CPU) {
 }
 
 func instAeABSx(cpu *CPU) {
-	// Addressing modes: Fetch effective address (extra cycle on page crossing)
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
 		return
@@ -513,7 +512,6 @@ func instAeINDy3(cpu *CPU) {
 }
 
 func instMpZER(cpu *CPU) {
-	// Addressing modes: Read operand, write it back, no extra cycles (-> ar, rmw)
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
 		return
@@ -834,7 +832,8 @@ func instOiLDY(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Store group
+// Store
+
 func instOpSTA(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.a)
 	cpu.next = instOpINI
@@ -850,7 +849,8 @@ func instOpSTY(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Transfer group
+// Transfer
+
 func instOpTAX(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -909,7 +909,8 @@ func instOpTXS(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Arithmetic group
+// Arithmetic
+
 func instOpADC(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
@@ -948,7 +949,8 @@ func instOiSBC(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Increment/decrement group
+// Increment, decrement
+
 func instOpINX(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -1151,7 +1153,8 @@ func instOiCPY(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Bit-test group
+// Bit-test
+
 func instOpBIT(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
@@ -1185,7 +1188,7 @@ func instOaASL(cpu *CPU) {
 }
 
 func instOpLSR(cpu *CPU) {
-	cpu.cFlag = cpu.rmw & 0x01
+	cpu.cFlag = cpu.rmw & 0x1
 	v := cpu.rmw >> 1
 	cpu.nFlag = v
 	cpu.zFlag = v
@@ -1197,7 +1200,7 @@ func instOaLSR(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.cFlag = cpu.a & 0x01
+	cpu.cFlag = cpu.a & 0x1
 	cpu.a >>= 1
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
@@ -1207,7 +1210,7 @@ func instOaLSR(cpu *CPU) {
 func instOpROL(cpu *CPU) {
 	var t uint8
 	if cpu.cFlag != 0 {
-		t = (cpu.rmw << 1) | 0x01
+		t = (cpu.rmw << 1) | 0x1
 	} else {
 		t = cpu.rmw << 1
 	}
@@ -1224,7 +1227,7 @@ func instOaROL(cpu *CPU) {
 	}
 	data := cpu.a & 0x80
 	if cpu.cFlag != 0 {
-		cpu.a = (cpu.a << 1) | 0x01
+		cpu.a = (cpu.a << 1) | 0x1
 	} else {
 		cpu.a = cpu.a << 1
 	}
@@ -1244,7 +1247,7 @@ func instOpROR(cpu *CPU) {
 	cpu.nFlag = t
 	cpu.zFlag = t
 	cpu.banks.Write(cpu.ar, t)
-	cpu.cFlag = cpu.rmw & 0x01
+	cpu.cFlag = cpu.rmw & 0x1
 	cpu.next = instOpINI
 }
 
@@ -1252,7 +1255,7 @@ func instOaROR(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	data := cpu.a & 0x01
+	data := cpu.a & 0x1
 	if cpu.cFlag != 0 {
 		cpu.a = (cpu.a >> 1) | 0x80
 	} else {
@@ -1264,7 +1267,8 @@ func instOaROR(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Stack group
+// Stack
+
 func instOpPHA(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -1348,7 +1352,8 @@ func instOpPLP2(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Jump/branch group
+// Jump - Branch
+
 func instOpJMP(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -1683,7 +1688,7 @@ func instOpBRAnp(cpu *CPU) {
 }
 
 func instOpBRAbp(cpu *CPU) {
-	// Page crossed, branch backwards
+	// Page crossed (branch backwards)
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
@@ -1699,7 +1704,7 @@ func instOpBRAbp1(cpu *CPU) {
 }
 
 func instOpBRAfp(cpu *CPU) {
-	// Page crossed, branch forwards
+	// Page crossed (branch forwards)
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
@@ -1714,7 +1719,8 @@ func instOpBRAfp1(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Flag group
+// Flag
+
 func instOpSEC(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -1777,7 +1783,7 @@ func instOpCLV(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// NOP group
+// NOP
 func instOpNOP(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -1785,9 +1791,10 @@ func instOpNOP(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Undocumented functions start here
+// Undocumented functions
 
-// NOP group
+// NOP
+
 func instOiNOP(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -1803,7 +1810,8 @@ func instOaNOP(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Load A/X group
+// Load A/X
+
 func instOpLAX(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
@@ -1816,13 +1824,15 @@ func instOpLAX(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// Store A/X group
+// Store A/X
+
 func instOpSAX(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.a&cpu.x)
 	cpu.next = instOpINI
 }
 
-// ASL/ORA group
+// ASL/ORA
+
 func instOpSLO(cpu *CPU) {
 	cpu.cFlag = cpu.rmw & 0x80
 	cpu.rmw <<= 1
@@ -1833,11 +1843,12 @@ func instOpSLO(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// ROL/AND group
+// ROL/AND
+
 func instOpRLA(cpu *CPU) {
 	tmp := cpu.rmw & 0x80
 	if cpu.cFlag != 0 {
-		cpu.rmw = (cpu.rmw << 1) | 0x01
+		cpu.rmw = (cpu.rmw << 1) | 0x1
 	} else {
 		cpu.rmw = cpu.rmw << 1
 	}
@@ -1849,9 +1860,10 @@ func instOpRLA(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// LSR/EOR group
+// LSR/EOR
+
 func instOpSRE(cpu *CPU) {
-	cpu.cFlag = cpu.rmw & 0x01
+	cpu.cFlag = cpu.rmw & 0x1
 	cpu.rmw >>= 1
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.a ^= cpu.rmw
@@ -1860,9 +1872,10 @@ func instOpSRE(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// ROR/ADC group
+// ROR/ADC
+
 func instOpRRA(cpu *CPU) {
-	tmp := cpu.rmw & 0x01
+	tmp := cpu.rmw & 0x1
 	if cpu.cFlag != 0 {
 		cpu.rmw = (cpu.rmw >> 1) | 0x80
 	} else {
@@ -1874,7 +1887,8 @@ func instOpRRA(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
-// DEC/CMP group
+// DEC/CMP
+
 func instOpDCP(cpu *CPU) {
 	cpu.rmw--
 	cpu.banks.Write(cpu.ar, cpu.rmw)
@@ -1914,7 +1928,7 @@ func instOiASR(cpu *CPU) {
 	}
 	cpu.pc++
 	cpu.a &= data
-	cpu.cFlag = cpu.a & 0x01
+	cpu.cFlag = cpu.a & 0x1
 	cpu.a >>= 1
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
@@ -1946,8 +1960,8 @@ func instOiARR(cpu *CPU) {
 		}
 		cpu.zFlag = cpu.a
 		cpu.vFlag = (data ^ cpu.a) & 0x40
-		if ((data & 0x0f) + (data & 0x01)) > 5 {
-			cpu.a = (cpu.a & 0xf0) | ((cpu.a + 6) & 0x0f)
+		if ((data & 0xf) + (data & 0x1)) > 5 {
+			cpu.a = (cpu.a & 0xf0) | ((cpu.a + 6) & 0xf)
 		}
 		k := uint16((data)+(uint8(data)&0x10)) & 0x1f0
 		cpu.cFlag = uint8(k)
@@ -2011,27 +2025,27 @@ func instOpLAS(cpu *CPU) {
 }
 
 func instOpSHS(cpu *CPU) {
-	// ar2 contains the high byte of the operand address
 	cpu.sp = cpu.a & cpu.x
-	cpu.banks.Write(cpu.ar, uint8((cpu.ar2+1)&uint16(cpu.sp)))
+	d := uint8((cpu.ar2 + 1) & uint16(cpu.sp))
+	cpu.banks.Write(cpu.ar, d)
 	cpu.next = instOpINI
 }
 
 func instOpSHY(cpu *CPU) {
-	// ar2 contains the high byte of the operand address
-	cpu.banks.Write(cpu.ar, uint8(uint16(cpu.y)&(cpu.ar2+1)))
+	d := uint8(uint16(cpu.y) & (cpu.ar2 + 1))
+	cpu.banks.Write(cpu.ar, d)
 	cpu.next = instOpINI
 }
 
 func instOpSHX(cpu *CPU) {
-	// ar2 contains the high byte of the operand address
-	cpu.banks.Write(cpu.ar, uint8(uint16(cpu.x)&(cpu.ar2+1)))
+	d := uint8(uint16(cpu.x) & (cpu.ar2 + 1))
+	cpu.banks.Write(cpu.ar, d)
 	cpu.next = instOpINI
 }
 
 func instOpSHA(cpu *CPU) {
-	// ar2 contains the high byte of the operand address
-	cpu.banks.Write(cpu.ar, uint8(uint16(cpu.a)&uint16(cpu.x)&(cpu.ar2+1)))
+	d := uint8(uint16(cpu.a) & uint16(cpu.x) & (cpu.ar2 + 1))
+	cpu.banks.Write(cpu.ar, d)
 	cpu.next = instOpINI
 }
 

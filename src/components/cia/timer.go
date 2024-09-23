@@ -42,8 +42,10 @@ const (
 )
 
 const (
-	countModeTick           = 0
-	countModeTimerUnderflow = 2
+	countModeTick              = 0
+	countModeCNT               = 1
+	countModeTimerUnderflow    = 2
+	countModeTimerUnderflowCNT = 3
 )
 
 const defaultTimerInit = 0xffff
@@ -66,6 +68,7 @@ type Timer struct {
 	count         func(bool) bool
 	toggleMode    bool
 	timerLatchLow uint16
+	cnt           bool
 }
 
 func NewTimer(id string) *Timer {
@@ -81,6 +84,7 @@ func NewTimer(id string) *Timer {
 		toggleMode:    false,
 		timerLatchLow: 0,
 		count:         nil,
+		cnt:           false,
 	}
 	m.Reset()
 	return m
@@ -96,6 +100,7 @@ func (m *Timer) Reset() {
 	m.countMode = countModeTick
 	m.toggleMode = false
 	m.count = m.countTick
+	m.cnt = false
 }
 
 func (m *Timer) HasPBOn() bool {
@@ -147,10 +152,17 @@ func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
 	switch m.countMode {
 	case countModeTick:
 		m.count = m.countTick
+	case countModeCNT:
+		log.Printf("[timerCount] %s TODO Count Mode countModeCNT", m.id)
+		m.count = m.countCNT
 	case countModeTimerUnderflow:
 		m.count = m.countTimerUnderflow
+	case countModeTimerUnderflowCNT:
+		log.Printf("[timerCount] %s TODO Count Mode countModeTimerUnderflowCNT", m.id)
+		m.count = m.countTimerUnderflowCNT
 	default:
-		m.count = m.countUnknown
+		log.Printf("[timerCount] %s UNSUPPORTED Count Mode %d", m.id, m.countMode)
+		m.count = m.countTick
 	}
 }
 
@@ -260,6 +272,17 @@ func (m *Timer) countTick(_ bool) bool {
 	return false
 }
 
+func (m *Timer) countCNT(_ bool) bool {
+	if m.cnt {
+		if m.timer <= 1 {
+			m.timer = 0
+			return true
+		}
+		m.timer--
+	}
+	return false
+}
+
 func (m *Timer) countTimerUnderflow(underflowX bool) bool {
 	if underflowX {
 		if m.timer <= 1 {
@@ -271,8 +294,14 @@ func (m *Timer) countTimerUnderflow(underflowX bool) bool {
 	return false
 }
 
-func (m *Timer) countUnknown(_ bool) bool {
-	log.Printf("[timerCount] %s UNSUPPORTED Count Mode %d", m.id, m.countMode)
+func (m *Timer) countTimerUnderflowCNT(underflowX bool) bool {
+	if underflowX && m.cnt {
+		if m.timer <= 1 {
+			m.timer = 0
+			return true
+		}
+		m.timer--
+	}
 	return false
 }
 
