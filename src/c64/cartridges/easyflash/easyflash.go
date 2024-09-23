@@ -208,7 +208,7 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 	}
 }
 
-func (c *CartridgeEasyFlash) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
+func (c *CartridgeEasyFlash) Write(i icartridge.RomInterval, _ uint16, _ uint8) bool {
 	if c.intervalLo == i {
 		fmt.Printf("EASYFLASH Write LOW NOT DEFINED\n")
 	} else if c.intervalHi == i {
@@ -414,7 +414,7 @@ func (c *CartridgeEasyFlash) binSave(filename string) error {
 	return nil
 }
 
-func (c *CartridgeEasyFlash) crtSave(filename string) error {
+func (c *CartridgeEasyFlash) crtSave(_ string) error {
 	//TODO IMPLEMENT
 	return fmt.Errorf("unimplemented")
 }
