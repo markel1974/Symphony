@@ -6,7 +6,11 @@ import (
 	"os"
 )
 
-func instOpInit(cpu *CPU) {
+const (
+	stackAddr = 0x100
+)
+
+func instOpINI(cpu *CPU) {
 	// https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
 	// Interrupts are only recognized if the RDY line is high
 	if !cpu.rdyLow {
@@ -39,37 +43,32 @@ func instOpInit(cpu *CPU) {
 	cpu.next = _modeTable[cpu.op]
 }
 
-// IRQ
 func instOpIRQ(cpu *CPU) {
 	//internal operation
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.next = instOpIRQ1
 }
 
 func instOpIRQ1(cpu *CPU) {
 	//internal operation
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.next = instOpIRQ2
 }
 
 func instOpIRQ2(cpu *CPU) {
 	//push return address high byte onto stack
-	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
+	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = instOpIRQ3
 }
 
 func instOpIRQ3(cpu *CPU) {
 	//push return address low byte onto stack
-	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
+	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = instOpIRQ4
 }
@@ -77,64 +76,58 @@ func instOpIRQ3(cpu *CPU) {
 func instOpIRQ4(cpu *CPU) {
 	//push status register onto stack
 	data := cpu.pushFlags(false)
-	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
+	cpu.banks.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.iFlag = 1
 	cpu.next = instOpIRQ5
 }
 
 func instOpIRQ5(cpu *CPU) {
-	//get irq vector from $fffe
-	if cpu.rdyLow {
-		cpu.stop = true
+	//get irq vector from 0xfffe
+	data, ok := cpu.read(0xfffe)
+	if !ok {
 		return
 	}
-	cpu.pc = uint16(cpu.banks.Read(0xfffe))
+	cpu.pc = uint16(data)
 	cpu.next = instOpIRQ6
 }
 
 func instOpIRQ6(cpu *CPU) {
-	//get irq vector from $ffff
-	if cpu.rdyLow {
-		cpu.stop = true
+	//get irq vector from 0xffff
+	data, ok := cpu.read(0xffff)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(0xffff)
 	cpu.pc |= uint16(data) << 8
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
-// NMI
 func instOpNMI(cpu *CPU) {
 	//internal operation
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.next = instOpNMI1
 }
 
 func instOpNMI1(cpu *CPU) {
 	//internal operation
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.next = instOpNMI2
 }
 
 func instOpNMI2(cpu *CPU) {
 	//push return address high byte onto stack
-	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
+	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = instOpNMI3
 }
 
 func instOpNMI3(cpu *CPU) {
 	//push return address low byte onto stack
-	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
+	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = instOpNMI4
 }
@@ -142,939 +135,858 @@ func instOpNMI3(cpu *CPU) {
 func instOpNMI4(cpu *CPU) {
 	//push status register onto stack
 	data := cpu.pushFlags(false)
-	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
+	cpu.banks.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.iFlag = 1
 	cpu.next = instOpNMI5
 }
 
 func instOpNMI5(cpu *CPU) {
-	//get irq vector from $fffa
-	if cpu.rdyLow {
-		cpu.stop = true
+	//get irq vector from 0xfffa
+	data, ok := cpu.read(0xfffa)
+	if !ok {
 		return
 	}
-	cpu.pc = uint16(cpu.banks.Read(0xfffa))
+	cpu.pc = uint16(data)
 	cpu.next = instOpNMI6
 }
 
 func instOpNMI6(cpu *CPU) {
-	//get irq vector from $fffb
-	if cpu.rdyLow {
-		cpu.stop = true
+	//get irq vector from 0xfffb
+	data, ok := cpu.read(0xfffb)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(0xfffb)
 	cpu.pc |= uint16(data) << 8
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
-// Addressing modes: Fetch effective address, no extra cycles (-> ar)
-func instApZero(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+// Addressing modes: Fetch effective address (no extra cycles)
+func instApZER(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
+	cpu.ar = uint16(data)
 	cpu.next = _opTable[cpu.op]
 }
 
-func instApZeroX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApZERx(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instApZeroX1
+	cpu.ar = uint16(data)
+	cpu.next = instApZERx1
 }
 
-func instApZeroX1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApZERx1(cpu *CPU) {
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
 	cpu.ar = (cpu.ar + uint16(cpu.x)) & 0xff
 	cpu.next = _opTable[cpu.op]
 }
 
-func instApZeroY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApZERy(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instApZeroY1
+	cpu.ar = uint16(data)
+	cpu.next = instApZERy1
 }
 
-func instApZeroY1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApZERy1(cpu *CPU) {
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
 	cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
 	cpu.next = _opTable[cpu.op]
 }
 
 func instApABS(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
+	cpu.ar = uint16(data)
 	cpu.next = instApABS1
 }
 
 func instApABS1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.ar = cpu.ar | (uint16(data) << 8)
 	cpu.next = _opTable[cpu.op]
 }
 
-func instApAbsX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApABSx(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instApAbsX1
+	cpu.ar = uint16(data)
+	cpu.next = instApABSx1
 }
 
-func instApAbsX1(cpu *CPU) {
-	// Note: Some undocumented functions rely on the value of ar2
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApABSx1(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	if cpu.ar+uint16(cpu.x) < 0x100 {
-		cpu.next = instApAbsX2
+	cpu.ar2 = uint16(data)
+	z := cpu.ar + uint16(cpu.x)
+	cpu.ar = (z & 0xff) | (cpu.ar2 << 8)
+	if z < stackAddr {
+		cpu.next = instApABSx2
 	} else {
-		cpu.next = instApAbsX3
+		cpu.next = instApABSx3
 	}
-	cpu.ar = ((cpu.ar + uint16(cpu.x)) & 0xff) | (cpu.ar2 << 8)
 }
 
-func instApAbsX2(cpu *CPU) {
+func instApABSx2(cpu *CPU) {
 	// No page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
 	cpu.next = _opTable[cpu.op]
 }
 
-func instApAbsX3(cpu *CPU) {
+func instApABSx3(cpu *CPU) {
 	// Page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.ar += 0x100
+	cpu.ar += stackAddr
 	cpu.next = _opTable[cpu.op]
 }
 
-func instApAbsY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApABSy(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instApAbsY1
+	cpu.ar = uint16(data)
+	cpu.next = instApABSy1
 }
 
-func instApAbsY1(cpu *CPU) {
-	// Note: Some undocumented functions rely on the value of ar2
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApABSy1(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.next = instApAbsY2
+	cpu.ar2 = uint16(data)
+	z := cpu.ar + uint16(cpu.y)
+	cpu.ar = (z & 0xff) | (cpu.ar2 << 8)
+	if z < stackAddr {
+		cpu.next = instApABSy2
 	} else {
-		cpu.next = instApAbsY3
+		cpu.next = instApABSy3
 	}
-	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (cpu.ar2 << 8)
 }
 
-func instApAbsY2(cpu *CPU) {
+func instApABSy2(cpu *CPU) {
 	// No page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
 	cpu.next = _opTable[cpu.op]
 }
 
-func instApAbsY3(cpu *CPU) {
+func instApABSy3(cpu *CPU) {
 	// Page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.ar += 0x100
+	cpu.ar += stackAddr
 	cpu.next = _opTable[cpu.op]
 }
 
-func instApIndX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApINDx(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instApIndX1
+	cpu.ar2 = uint16(data)
+	cpu.next = instApINDx1
 }
 
-func instApIndX1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApINDx1(cpu *CPU) {
+	if _, ok := cpu.read(cpu.ar2); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar2)
 	cpu.ar2 = (cpu.ar2 + uint16(cpu.x)) & 0xff
-	cpu.next = instApIndX2
+	cpu.next = instApINDx2
 }
 
-func instApIndX2(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApINDx2(cpu *CPU) {
+	data, ok := cpu.read(cpu.ar2)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.next = instAIndX3
+	cpu.ar = uint16(data)
+	cpu.next = instApINDx3
 }
 
-func instAIndX3(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApINDx3(cpu *CPU) {
+	data, ok := cpu.read((cpu.ar2 + 1) & 0xff)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 	cpu.ar = cpu.ar | (uint16(data) << 8)
 	cpu.next = _opTable[cpu.op]
 }
 
-func instApIndY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApINDy(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instApIndY1
+	cpu.ar2 = uint16(data)
+	cpu.next = instApINDy1
 }
 
-func instApIndY1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApINDy1(cpu *CPU) {
+	data, ok := cpu.read(cpu.ar2)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.next = instApIndY2
+	cpu.ar = uint16(data)
+	cpu.next = instApINDy2
 }
 
-func instApIndY2(cpu *CPU) {
-	// Note: Some undocumented functions rely on the value of ar2
-	if cpu.rdyLow {
-		cpu.stop = true
+func instApINDy2(cpu *CPU) {
+	data, ok := cpu.read((cpu.ar2 + 1) & 0xff)
+	if !ok {
 		return
 	}
-	cpu.ar2 = uint16(cpu.banks.Read((cpu.ar2 + 1) & 0xff))
-	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.next = instApIndY3
+	cpu.ar2 = uint16(data)
+	z := cpu.ar + uint16(cpu.y)
+	cpu.ar = (z & 0xff) | (cpu.ar2 << 8)
+	if z < stackAddr {
+		cpu.next = instApINDy3
 	} else {
-		cpu.next = instApIndY4
+		cpu.next = instApINDy4
 	}
-	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (cpu.ar2 << 8)
 }
 
-func instApIndY3(cpu *CPU) {
+func instApINDy3(cpu *CPU) {
 	// No page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
 	cpu.next = _opTable[cpu.op]
 }
 
-func instApIndY4(cpu *CPU) {
+func instApINDy4(cpu *CPU) {
 	// Page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.ar += 0x100
+	cpu.ar += stackAddr
 	cpu.next = _opTable[cpu.op]
 }
 
-func instAeAbsX(cpu *CPU) {
-	// Addressing modes: Fetch effective address, extra cycle on page crossing (-> ar)
-	if cpu.rdyLow {
-		cpu.stop = true
+func instAeABSx(cpu *CPU) {
+	// Addressing modes: Fetch effective address (extra cycle on page crossing)
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instAeAbsX1
+	cpu.ar = uint16(data)
+	cpu.next = instAeABSx1
 }
 
-func instAeAbsX1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instAeABSx1(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
-	if cpu.ar+uint16(cpu.x) < 0x100 {
-		cpu.ar = ((cpu.ar + uint16(cpu.x)) & 0xff) | (uint16(data) << 8)
+	z := cpu.ar + uint16(cpu.x)
+	cpu.ar = (z & 0xff) | (uint16(data) << 8)
+	if z < stackAddr {
 		cpu.next = _opTable[cpu.op]
 	} else {
-		cpu.ar = ((cpu.ar + uint16(cpu.x)) & 0xff) | (uint16(data) << 8)
-		cpu.next = instAeAbsX2
+		cpu.next = instAeABSx2
 	}
 }
 
-func instAeAbsX2(cpu *CPU) {
+func instAeABSx2(cpu *CPU) {
 	// Page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.ar += 0x100
+	cpu.ar += stackAddr
 	cpu.next = _opTable[cpu.op]
 }
 
-func instAeAbsY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instAeABSy(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instAeAbsY1
+	cpu.ar = uint16(data)
+	cpu.next = instAeABSy1
 }
 
-func instAeAbsY1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instAeABSy1(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
-	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
+	z := cpu.ar + uint16(cpu.y)
+	cpu.ar = (z & 0xff) | (uint16(data) << 8)
+	if z < stackAddr {
 		cpu.next = _opTable[cpu.op]
 	} else {
-		cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
-		cpu.next = instAeAbsY2
+		cpu.next = instAeABSy2
 	}
 }
 
-func instAeAbsY2(cpu *CPU) {
+func instAeABSy2(cpu *CPU) {
 	// Page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.ar += 0x100
+	cpu.ar += stackAddr
 	cpu.next = _opTable[cpu.op]
 }
 
-func instAeIndy(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instAeINDy(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instAeIndY1
+	cpu.ar2 = uint16(data)
+	cpu.next = instAeINDy1
 }
 
-func instAeIndY1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instAeINDy1(cpu *CPU) {
+	data, ok := cpu.read(cpu.ar2)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.next = instAeIndY2
+	cpu.ar = uint16(data)
+	cpu.next = instAeINDy2
 }
 
-func instAeIndY2(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instAeINDy2(cpu *CPU) {
+	data, ok := cpu.read((cpu.ar2 + 1) & 0xff)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
-	if z := cpu.ar + uint16(cpu.y); z < 0x100 {
-		cpu.ar = (z & 0xff) | (uint16(data) << 8)
+	z := cpu.ar + uint16(cpu.y)
+	cpu.ar = (z & 0xff) | (uint16(data) << 8)
+	if z < stackAddr {
 		cpu.next = _opTable[cpu.op]
 	} else {
-		cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
-		cpu.next = instAeIndY3
+		cpu.next = instAeINDy3
 	}
 }
 
-func instAeIndY3(cpu *CPU) {
+func instAeINDy3(cpu *CPU) {
 	// Page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.ar += 0x100
+	cpu.ar += stackAddr
 	cpu.next = _opTable[cpu.op]
 }
 
-func instMpZero(cpu *CPU) {
+func instMpZER(cpu *CPU) {
 	// Addressing modes: Read operand, write it back, no extra cycles (-> ar, rmw)
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instRMW
+	cpu.ar = uint16(data)
+	cpu.next = instOpRMW
 }
 
-func instMpZeroX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpZERx(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instMpZeroX1
+	cpu.ar = uint16(data)
+	cpu.next = instMpZERx1
 }
 
-func instMpZeroX1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpZERx1(cpu *CPU) {
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
 	cpu.ar = (cpu.ar + uint16(cpu.x)) & 0xff
-	cpu.next = instRMW
+	cpu.next = instOpRMW
 }
 
-/*
-func instMpZeroY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+//func instMpZERy(cpu *CPU) {
+//	data, ok := cpu.read(cpu.pc)
+//	if !ok {
+//		return
+//	}
+//	cpu.pc++
+//	cpu.ar = uint16(data)
+//	cpu.next = instMpZERy1
+//}
+
+//func instMpZERy1(cpu *CPU) {
+//	data, ok := cpu.read(cpu.ar)
+//	if !ok {
+//		return
+//	}
+//	cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
+//	cpu.next = instOpRMW
+//}
+
+func instMpABS(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instMpZeroY1
+	cpu.ar = uint16(data)
+	cpu.next = instMpABS1
 }
 
-func instMpZeroY1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpABS1(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
-	cpu.next = instRMW
-}
-*/
-
-func instMpAbs(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
-		return
-	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
-	cpu.pc++
-	cpu.next = instMpAbs1
-}
-
-func instMpAbs1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
-		return
-	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.ar = cpu.ar | (uint16(data) << 8)
-	cpu.next = instRMW
+	cpu.next = instOpRMW
 }
 
-func instMpAbsX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpABSx(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instMpAbsX1
+	cpu.ar = uint16(data)
+	cpu.next = instMpABSx1
 }
 
-func instMpAbsX1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpABSx1(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
-	if cpu.ar+uint16(cpu.x) < 0x100 {
-		cpu.next = instMpAbsX2
+	z := cpu.ar + uint16(cpu.x)
+	cpu.ar = (z & 0xff) | (uint16(data) << 8)
+	if z < stackAddr {
+		cpu.next = instMpABSx2
 	} else {
-		cpu.next = instMpAbsX3
+		cpu.next = instMpABSx3
 	}
-	cpu.ar = (cpu.ar + uint16(cpu.x)&0xff) | (uint16(data) << 8)
 }
 
-func instMpAbsX2(cpu *CPU) {
+func instMpABSx2(cpu *CPU) {
 	// No page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.next = instRMW
+	cpu.next = instOpRMW
 }
 
-func instMpAbsX3(cpu *CPU) {
+func instMpABSx3(cpu *CPU) {
 	// Page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.ar += 0x100
-	cpu.next = instRMW
+	cpu.ar += stackAddr
+	cpu.next = instOpRMW
 }
 
-func instMpAbsY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpABSy(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instMpAbsY1
+	cpu.ar = uint16(data)
+	cpu.next = instMpABSy1
 }
 
-func instMpAbsY1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpABSy1(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
-	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.next = instMpAbsY2
+	z := cpu.ar + uint16(cpu.y)
+	cpu.ar = (z & 0xff) | (uint16(data) << 8)
+	if z < stackAddr {
+		cpu.next = instMpABSy2
 	} else {
-		cpu.next = instMpAbsY3
+		cpu.next = instMpABSy3
 	}
-	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
 }
 
-func instMpAbsY2(cpu *CPU) {
+func instMpABSy2(cpu *CPU) {
 	// No page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.next = instRMW
+	cpu.next = instOpRMW
 }
 
-func instMpAbsY3(cpu *CPU) {
+func instMpABSy3(cpu *CPU) {
 	// Page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.ar += 0x100
-	cpu.next = instRMW
+	cpu.ar += stackAddr
+	cpu.next = instOpRMW
 }
 
-func instMpIndX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpINDx(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instMpIndX1
+	cpu.ar2 = uint16(data)
+	cpu.next = instMpINDx1
 }
 
-func instMpIndX1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpINDx1(cpu *CPU) {
+	if _, ok := cpu.read(cpu.ar2); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar2)
 	cpu.ar2 = (cpu.ar2 + uint16(cpu.x)) & 0xff
-	cpu.next = instMpIndX2
+	cpu.next = instMpINDx2
 }
 
-func instMpIndX2(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpINDx2(cpu *CPU) {
+	data, ok := cpu.read(cpu.ar2)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.next = instMpIndX3
+	cpu.ar = uint16(data)
+	cpu.next = instMpINDx3
 }
 
-func instMpIndX3(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpINDx3(cpu *CPU) {
+	data, ok := cpu.read((cpu.ar2 + 1) & 0xff)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
 	cpu.ar = cpu.ar | (uint16(data) << 8)
-	cpu.next = instRMW
+	cpu.next = instOpRMW
 }
 
-func instMpIndy(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpINDy(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar2 = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
-	cpu.next = instMpIndY1
+	cpu.ar2 = uint16(data)
+	cpu.next = instMpINDy1
 }
 
-func instMpIndY1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpINDy1(cpu *CPU) {
+	data, ok := cpu.read(cpu.ar2)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.ar2))
-	cpu.next = instMpIndY2
+	cpu.ar = uint16(data)
+	cpu.next = instMpINDy2
 }
 
-func instMpIndY2(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instMpINDy2(cpu *CPU) {
+	data, ok := cpu.read((cpu.ar2 + 1) & 0xff)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read((cpu.ar2 + 1) & 0xff)
-	if cpu.ar+uint16(cpu.y) < 0x100 {
-		cpu.next = instMpIndY3
+	z := cpu.ar + uint16(cpu.y)
+	cpu.ar = (z & 0xff) | (uint16(data) << 8)
+	if z < stackAddr {
+		cpu.next = instMpINDy3
 	} else {
-		cpu.next = instMpIndY4
+		cpu.next = instMpINDy4
 	}
-	cpu.ar = ((cpu.ar + uint16(cpu.y)) & 0xff) | (uint16(data) << 8)
 }
 
-func instMpIndY3(cpu *CPU) {
+func instMpINDy3(cpu *CPU) {
 	// No page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	_ = cpu.banks.Read(cpu.ar)
-	cpu.next = instRMW
+	cpu.next = instOpRMW
 }
 
-func instMpIndY4(cpu *CPU) {
+func instMpINDy4(cpu *CPU) {
 	// Page crossed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.ar += 0x100
-	cpu.next = instRMW
+	cpu.ar += stackAddr
+	cpu.next = instOpRMW
 }
 
-func instRMW(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instOpRMW(cpu *CPU) {
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	cpu.rmw = cpu.banks.Read(cpu.ar)
-	cpu.next = instRMW1
+	cpu.rmw = data
+	cpu.next = instOpRMW1
 }
 
-func instRMW1(cpu *CPU) {
+func instOpRMW1(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.next = _opTable[cpu.op]
 }
 
 // Load group
 func instOpLDA(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.ar)
 	cpu.a = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiLDA(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.a = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpLDX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.ar)
 	cpu.x = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiLDX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.x = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpLDY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.ar)
 	cpu.y = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiLDY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.y = data
 	cpu.nFlag = data
 	cpu.zFlag = data
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Store group
 func instOpSTA(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.a)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpSTX(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.x)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpSTY(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.y)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Transfer group
 func instOpTAX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.x = cpu.a
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpTXA(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.a = cpu.x
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpTAY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.y = cpu.a
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpTYA(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.a = cpu.y
 	cpu.nFlag = cpu.y
 	cpu.zFlag = cpu.y
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpTSX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.x = cpu.sp
 	cpu.nFlag = cpu.sp
 	cpu.zFlag = cpu.sp
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpTXS(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.sp = cpu.x
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Arithmetic group
 func instOpADC(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.ar)
 	cpu.doADC(data)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiADC(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.doADC(data)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpSBC(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.ar)
 	cpu.doSBC(data)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiSBC(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.doSBC(data)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Increment/decrement group
 func instOpINX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.x++
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpDEX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.x--
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpINY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.y++
 	cpu.nFlag = cpu.y
 	cpu.zFlag = cpu.y
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpDEY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.y--
 	cpu.nFlag = cpu.y
 	cpu.zFlag = cpu.y
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpINC(cpu *CPU) {
@@ -1082,7 +994,7 @@ func instOpINC(cpu *CPU) {
 	cpu.nFlag = v
 	cpu.zFlag = v
 	cpu.banks.Write(cpu.ar, v)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpDEC(cpu *CPU) {
@@ -1090,172 +1002,165 @@ func instOpDEC(cpu *CPU) {
 	cpu.nFlag = v
 	cpu.zFlag = v
 	cpu.banks.Write(cpu.ar, v)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Logic group
 func instOpAND(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	cpu.a &= cpu.banks.Read(cpu.ar)
+	cpu.a &= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiAND(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.a &= cpu.banks.Read(cpu.pc)
 	cpu.pc++
+	cpu.a &= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpORA(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	cpu.a |= cpu.banks.Read(cpu.ar)
+	cpu.a |= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiOPA(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.a |= cpu.banks.Read(cpu.pc)
 	cpu.pc++
+	cpu.a |= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpEOR(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	cpu.a ^= cpu.banks.Read(cpu.ar)
+	cpu.a ^= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiEOR(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.a ^= cpu.banks.Read(cpu.pc)
 	cpu.pc++
+	cpu.a ^= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Compare group
 func instOpCMP(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.ar)
 	cpu.ar = uint16(cpu.a) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.next = instOpInit
+	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.next = instOpINI
 }
 
 func instOiCMP(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.ar = uint16(cpu.a) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.next = instOpInit
+	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.next = instOpINI
 }
 
 func instOpCPX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.ar)
 	cpu.ar = uint16(cpu.x) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.next = instOpInit
+	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.next = instOpINI
 }
 
 func instOiCPX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.ar = uint16(cpu.x) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.next = instOpInit
+	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.next = instOpINI
 }
 
 func instOpCPY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.ar)
 	cpu.ar = uint16(cpu.y) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.next = instOpInit
+	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.next = instOpINI
 }
 
 func instOiCPY(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.ar = uint16(cpu.y) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.next = instOpInit
+	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.next = instOpINI
 }
 
 // Bit-test group
 func instOpBIT(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.ar)
 	cpu.zFlag = cpu.a & data
 	cpu.nFlag = data
 	cpu.vFlag = data & 0x40
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Shift/rotate group
@@ -1265,20 +1170,18 @@ func instOpASL(cpu *CPU) {
 	cpu.nFlag = v
 	cpu.zFlag = v
 	cpu.banks.Write(cpu.ar, v)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOaASL(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.cFlag = cpu.a & 0x80
 	cpu.a <<= 1
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpLSR(cpu *CPU) {
@@ -1287,20 +1190,18 @@ func instOpLSR(cpu *CPU) {
 	cpu.nFlag = v
 	cpu.zFlag = v
 	cpu.banks.Write(cpu.ar, v)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOaLSR(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.cFlag = cpu.a & 0x01
 	cpu.a >>= 1
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpROL(cpu *CPU) {
@@ -1314,15 +1215,13 @@ func instOpROL(cpu *CPU) {
 	cpu.zFlag = t
 	cpu.banks.Write(cpu.ar, t)
 	cpu.cFlag = cpu.rmw & 0x80
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOaROL(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	data := cpu.a & 0x80
 	if cpu.cFlag != 0 {
 		cpu.a = (cpu.a << 1) | 0x01
@@ -1332,7 +1231,7 @@ func instOaROL(cpu *CPU) {
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
 	cpu.cFlag = data
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpROR(cpu *CPU) {
@@ -1346,15 +1245,13 @@ func instOpROR(cpu *CPU) {
 	cpu.zFlag = t
 	cpu.banks.Write(cpu.ar, t)
 	cpu.cFlag = cpu.rmw & 0x01
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOaROR(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	data := cpu.a & 0x01
 	if cpu.cFlag != 0 {
 		cpu.a = (cpu.a >> 1) | 0x80
@@ -1364,315 +1261,281 @@ func instOaROR(cpu *CPU) {
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
 	cpu.cFlag = data
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Stack group
 func instOpPHA(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.next = instOpPHA1
 }
 
 func instOpPHA1(cpu *CPU) {
-	cpu.banks.Write(uint16(cpu.sp)|0x100, cpu.a)
+	cpu.banks.Write(uint16(cpu.sp)|stackAddr, cpu.a)
 	cpu.sp--
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpPLA(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.next = instOpPLA1
 }
 
 func instOpPLA1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
-	cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.sp++
 	cpu.next = instOpPLA2
 }
 
 func instOpPLA2(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
+	if !ok {
 		return
 	}
-	cpu.a = cpu.banks.Read(uint16(cpu.sp) | 0x100)
+	cpu.a = data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpPHP(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.next = instOpPHP1
 }
 
 func instOpPHP1(cpu *CPU) {
 	data := cpu.pushFlags(true)
-	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
+	cpu.banks.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpPLP(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.next = instOpPLP1
 }
 
 func instOpPLP1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
-	cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.sp++
 	cpu.next = instOpPLP2
 }
 
 func instOpPLP2(cpu *CPU) {
-	iFlagPrev := cpu.iFlag
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(uint16(cpu.sp) | 0x0100)
+	iFlagPrev := cpu.iFlag
 	cpu.popFlags(data)
 	if iFlagPrev == 0 && cpu.iFlag != 0 {
 		cpu.opFlags |= opFlagIrqDisabled
 	} else if iFlagPrev != 0 && cpu.iFlag == 0 {
 		cpu.opFlags |= opFlagIrqEnabled
 	}
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Jump/branch group
 func instOpJMP(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
+	cpu.ar = uint16(data)
 	cpu.next = instOpJMP1
 }
 
 func instOpJMP1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc = (uint16(data) << 8) | cpu.ar
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiJMP(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	cpu.pc = uint16(cpu.banks.Read(cpu.ar))
+	cpu.pc = uint16(data)
 	cpu.next = instOiJMP1
 }
 
 func instOiJMP1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(((cpu.ar + 1) & 0xff) | (cpu.ar & 0xff00))
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(((cpu.ar + 1) & 0xff) | (cpu.ar & 0xff00))
 	cpu.pc |= uint16(data) << 8
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpJSR(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.ar = uint16(cpu.banks.Read(cpu.pc))
 	cpu.pc++
+	cpu.ar = uint16(data)
 	cpu.next = instOpJSR1
 }
 
 func instOpJSR1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
-	cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.next = instOpJSR2
 }
 
 func instOpJSR2(cpu *CPU) {
-	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
+	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = instOpJSR3
 }
 
 func instOpJSR3(cpu *CPU) {
-	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
+	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = instOpJSR4
 }
 
 func instOpJSR4(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.pc = cpu.ar | (uint16(data) << 8)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpRTS(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.next = instOpRTS1
 }
 
 func instOpRTS1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
-	cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.sp++
 	cpu.next = instOpRTS2
 }
 
 func instOpRTS2(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
+	if !ok {
 		return
 	}
-	cpu.pc = uint16(cpu.banks.Read(uint16(cpu.sp) | 0x100))
+	cpu.pc = uint16(data)
 	cpu.sp++
 	cpu.next = instOpRTS3
 }
 
 func instOpRTS3(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.pc |= uint16(data) << 8
 	cpu.next = instOpRTS4
 }
 
 func instOpRTS4(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.pc++
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpRTI(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.next = instOpRTI1
 }
 
 func instOpRTI1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
-	cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.sp++
 	cpu.next = instOpRTI2
 }
 
 func instOpRTI2(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(uint16(cpu.sp) | 0x0100)
 	cpu.popFlags(data)
 	cpu.sp++
 	cpu.next = instOpRTI3
 }
 
 func instOpRTI3(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
+	if !ok {
 		return
 	}
-	cpu.pc = uint16(cpu.banks.Read(uint16(cpu.sp) | 0x100))
+	cpu.pc = uint16(data)
 	cpu.sp++
 	cpu.next = instOpRTI4
 }
 
 func instOpRTI4(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(uint16(cpu.sp) | 0x100)
 	cpu.pc |= uint16(data) << 8
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpBRK(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.next = instOpBRK1
 }
 
 func instOpBRK1(cpu *CPU) {
-	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc>>8))
+	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = instOpBRK2
 }
 
 func instOpBRK2(cpu *CPU) {
-	cpu.banks.Write(uint16(cpu.sp)|0x100, uint8(cpu.pc))
+	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = instOpBRK3
 }
 
 func instOpBRK3(cpu *CPU) {
 	data := cpu.pushFlags(true)
-	cpu.banks.Write((uint16(cpu.sp)&0xff)|0x0100, data)
+	cpu.banks.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.iFlag = 1
-	// BRK interrupted by NMI?
 	if cpu.pic.HasNMI() {
 		cpu.pic.ClearNMI()    // Simulate an edge-triggered input
 		cpu.next = instOpNMI5 // Jump to NMI sequence
@@ -1682,320 +1545,281 @@ func instOpBRK3(cpu *CPU) {
 }
 
 func instOpBRK4(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(0xfffe)
+	if !ok {
 		return
 	}
-	cpu.pc = uint16(cpu.banks.Read(0xfffe))
+	cpu.pc = uint16(data)
 	cpu.next = instOpBRK5
 }
 
 func instOpBRK5(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(0xffff)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(0xffff)
 	cpu.pc |= uint16(data) << 8
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpBCS(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.cFlag == 0 {
-		cpu.next = instOpInit
+		cpu.next = instOpINI
 	} else {
 		cpu.branch(data)
 	}
 }
 
 func instOpBCC(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.cFlag != 0 {
-		cpu.next = instOpInit
+		cpu.next = instOpINI
 	} else {
 		cpu.branch(data)
 	}
 }
 
 func instOpBEQ(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.zFlag != 0 {
-		cpu.next = instOpInit
+		cpu.next = instOpINI
 	} else {
 		cpu.branch(data)
 	}
 }
 
 func instOpBNE(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.zFlag == 0 {
-		cpu.next = instOpInit
+		cpu.next = instOpINI
 	} else {
 		cpu.branch(data)
 	}
 }
 
 func instOpBVS(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.overflowBranch != nil && cpu.overflowBranch() {
 		cpu.vFlag = 1
 	}
 	if cpu.vFlag == 0 {
-		cpu.next = instOpInit
+		cpu.next = instOpINI
 	} else {
 		cpu.branch(data)
 	}
 }
 
 func instOpBVC(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if cpu.overflowBranch != nil && cpu.overflowBranch() {
 		cpu.vFlag = 1
 	}
 	if cpu.vFlag != 0 {
-		cpu.next = instOpInit
+		cpu.next = instOpINI
 	} else {
 		cpu.branch(data)
 	}
 }
 
 func instOpBMI(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if (cpu.nFlag & 0x80) == 0 {
-		cpu.next = instOpInit
+		cpu.next = instOpINI
 	} else {
 		cpu.branch(data)
 	}
 }
 
-func instOpBpl(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instOpBPL(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	if (cpu.nFlag & 0x80) != 0 {
-		cpu.next = instOpInit
+		cpu.next = instOpINI
 	} else {
 		cpu.branch(data)
 	}
 }
 
-func instOpBranchNP(cpu *CPU) {
+func instOpBRAnp(cpu *CPU) {
 	// No page crossed
 	cpu.opFlags |= opFlagIntDelayed
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.pc = cpu.ar
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
-func instOpBranchBP(cpu *CPU) {
+func instOpBRAbp(cpu *CPU) {
 	// Page crossed, branch backwards
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.pc = cpu.ar
-	cpu.next = instOpBranchBP1
+	cpu.next = instOpBRAbp1
 }
 
-func instOpBranchBP1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instOpBRAbp1(cpu *CPU) {
+	if _, ok := cpu.read(cpu.pc + stackAddr); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc + 0x100)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
-func instOpBranchFP(cpu *CPU) {
+func instOpBRAfp(cpu *CPU) {
 	// Page crossed, branch forwards
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.pc = cpu.ar
-	cpu.next = instOpBranchFP1
+	cpu.next = instOpBRAfp1
 }
 
-func instOpBranchFP1(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instOpBRAfp1(cpu *CPU) {
+	if _, ok := cpu.read(cpu.pc - stackAddr); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc - 0x100)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Flag group
 func instOpSEC(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.cFlag = 1
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpCLC(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.cFlag = 0
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpSED(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.dFlag = 1
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpCLD(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.dFlag = 0
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpSEI(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	if cpu.iFlag == 0 {
 		cpu.opFlags |= opFlagIrqDisabled
 	}
 	cpu.iFlag = 1
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpCLI(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	if cpu.iFlag == 0 {
 		cpu.opFlags |= opFlagIrqEnabled
 	}
 	cpu.iFlag = 0
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpCLV(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.vFlag = 0
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // NOP group
 func instOpNOP(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Undocumented functions start here
 
 // NOP group
 func instOiNOP(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.pc)
 	cpu.pc++
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOaNOP(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	if _, ok := cpu.read(cpu.ar); !ok {
 		return
 	}
-	cpu.banks.Read(cpu.ar)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Load A/X group
 func instOpLAX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	cpu.x = cpu.banks.Read(cpu.ar)
+	cpu.x = data
 	cpu.a = cpu.x
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Store A/X group
 func instOpSAX(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.a&cpu.x)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // ASL/ORA group
@@ -2006,7 +1830,7 @@ func instOpSLO(cpu *CPU) {
 	cpu.a |= cpu.rmw
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // ROL/AND group
@@ -2022,7 +1846,7 @@ func instOpRLA(cpu *CPU) {
 	cpu.a &= cpu.rmw
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // LSR/EOR group
@@ -2033,7 +1857,7 @@ func instOpSRE(cpu *CPU) {
 	cpu.a ^= cpu.rmw
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // ROR/ADC group
@@ -2047,7 +1871,7 @@ func instOpRRA(cpu *CPU) {
 	cpu.cFlag = tmp
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.doADC(cpu.rmw)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // DEC/CMP group
@@ -2057,8 +1881,8 @@ func instOpDCP(cpu *CPU) {
 	cpu.ar = uint16(cpu.a) - uint16(cpu.rmw)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.next = instOpInit
+	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.next = instOpINI
 }
 
 // INC/SBC group
@@ -2066,43 +1890,42 @@ func instOpISB(cpu *CPU) {
 	cpu.rmw++
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.doSBC(cpu.rmw)
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 // Complex functions
-func instOiAnc(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+func instOiANC(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.a &= cpu.banks.Read(cpu.pc)
 	cpu.pc++
+	cpu.a &= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
 	cpu.cFlag = cpu.nFlag & 0x80
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiASR(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	cpu.a &= cpu.banks.Read(cpu.pc)
 	cpu.pc++
+	cpu.a &= data
 	cpu.cFlag = cpu.a & 0x01
 	cpu.a >>= 1
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiARR(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	data &= cpu.a
 	if cpu.cFlag != 0 {
@@ -2123,7 +1946,7 @@ func instOiARR(cpu *CPU) {
 		}
 		cpu.zFlag = cpu.a
 		cpu.vFlag = (data ^ cpu.a) & 0x40
-		if (data&0x0f)+(data&0x01) > 5 {
+		if ((data & 0x0f) + (data & 0x01)) > 5 {
 			cpu.a = (cpu.a & 0xf0) | ((cpu.a + 6) & 0x0f)
 		}
 		k := uint16((data)+(uint8(data)&0x10)) & 0x1f0
@@ -2132,91 +1955,87 @@ func instOiARR(cpu *CPU) {
 			cpu.a += 0x60
 		}
 	}
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiANE(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.a = (cpu.a | 0xee) & cpu.x & data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiLXA(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.x = (cpu.a | 0xee) & data
 	cpu.a = cpu.x
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOiSBX(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.pc)
 	cpu.pc++
 	cpu.ar = (uint16(cpu.x) & uint16(cpu.a)) - uint16(data)
 	cpu.x = uint8(cpu.ar)
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < 0x100)
-	cpu.next = instOpInit
+	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.next = instOpINI
 }
 
 func instOpLAS(cpu *CPU) {
-	if cpu.rdyLow {
-		cpu.stop = true
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
 		return
 	}
-	data := cpu.banks.Read(cpu.ar)
 	cpu.sp = data & cpu.sp
 	cpu.x = cpu.sp
 	cpu.a = cpu.x
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpSHS(cpu *CPU) {
 	// ar2 contains the high byte of the operand address
 	cpu.sp = cpu.a & cpu.x
 	cpu.banks.Write(cpu.ar, uint8((cpu.ar2+1)&uint16(cpu.sp)))
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpSHY(cpu *CPU) {
 	// ar2 contains the high byte of the operand address
 	cpu.banks.Write(cpu.ar, uint8(uint16(cpu.y)&(cpu.ar2+1)))
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpSHX(cpu *CPU) {
 	// ar2 contains the high byte of the operand address
 	cpu.banks.Write(cpu.ar, uint8(uint16(cpu.x)&(cpu.ar2+1)))
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
 func instOpSHA(cpu *CPU) {
 	// ar2 contains the high byte of the operand address
 	cpu.banks.Write(cpu.ar, uint8(uint16(cpu.a)&uint16(cpu.x)&(cpu.ar2+1)))
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 }
 
-func instOpIll(cpu *CPU) {
+func instOpJAM(cpu *CPU) {
 	log.Printf("[%s] illegal opcode %02x at %04x.", cpu.id, cpu.op, cpu.pc-1)
 	//TODO EVENT
 	cpu.Reset()

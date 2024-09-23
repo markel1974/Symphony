@@ -59,7 +59,7 @@ func (cpu *CPU) Setup(socket ISocket) {
 func (cpu *CPU) Reset() {
 	cpu.pic.Reset()
 	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8) // Read reset vector
-	cpu.next = instOpInit
+	cpu.next = instOpINI
 	cpu.opFlags = 0
 	cpu.irqBreaker = false
 }
@@ -88,6 +88,14 @@ func (cpu *CPU) Emulate() {
 		return
 	}
 	cpu.next(cpu)
+}
+
+func (cpu *CPU) read(addr uint16) (uint8, bool) {
+	if cpu.rdyLow {
+		cpu.stop = true
+		return 0, false
+	}
+	return cpu.banks.Read(addr), true
 }
 
 func (cpu *CPU) popFlags(data uint8) {
@@ -125,13 +133,13 @@ func (cpu *CPU) pushFlags(bFlags bool) uint8 {
 func (cpu *CPU) branch(data uint8) {
 	cpu.ar = cpu.pc + uint16(int8(data))
 	if (cpu.ar >> 8) != (cpu.pc >> 8) {
-		if data&0x80 != 0 {
-			cpu.next = instOpBranchBP
+		if (data & 0x80) != 0 {
+			cpu.next = instOpBRAbp
 		} else {
-			cpu.next = instOpBranchFP
+			cpu.next = instOpBRAfp
 		}
 	} else {
-		cpu.next = instOpBranchNP
+		cpu.next = instOpBRAnp
 	}
 }
 
