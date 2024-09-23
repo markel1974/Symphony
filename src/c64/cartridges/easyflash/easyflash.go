@@ -8,87 +8,12 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/easyflash/flash"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
-	"github.com/markel1974/c64emu/src/filler"
-
-	//"github.com/markel1974/c64emu/src/board/ram"
 	"github.com/markel1974/c64emu/src/c64/snapshot"
+	"github.com/markel1974/c64emu/src/filler"
 	"io"
+	"log"
 	"os"
 )
-
-/*
-static io_source_t easyflash_io1_device = {
-	CartridgeNameEasyFlash, // name of the device
-	IO_DETACH_CART,           // use cartridge ID to detach the device when involved in a read-collision
-	IO_DETACH_NO_RESOURCE,    // does not use a resource for detach
-	0xde00, 0xdeff, 0x03,     // range for the device, regs:$de00-$de03, mirrors:$de04-$deff
-	0,                        // read is never valid, regs are write only
-	easyflash_io1_store,      // store function
-	NULL,                     // NO poke function < write without side effects (used by monitor)
-	NULL,                     // NO read function
-	easyflash_io1_peek,       // peek function < read without side effects (used by monitor)
-	easyflash_io1_peek,       // device state information dump function  !< print detailed state for this i/o device (used by monitor)
-	CARTRIDGE_EASYFLASH,      // cartridge ID
-	IO_PRIO_NORMAL,           // normal priority, device read needs to be checked for collisions
-	0,                        // insertion order, gets filled in by the registration function
-	IO_MIRROR_NONE            // NO mirroring
-}
-*/
-
-/*
-The following structure is used to register the I/O address range used by a certain device/chip/cartridge.
- *
- * The address_mask determines if the defined address range is mirrored across a bigger range, the mask tells
- * the I/O read/write handler how many bits of the address being accessed are valid for an I/O read or write.
- *
- * Some examples:
- *
- * start_address | end_address | mask | primary register address | address mirrors
- * -------------------------------------------------------------------------------
- * $de00         | $de0f       | $00  | $de00                    | $de01-$de0f (mirrors of 0xde00)
- * $de00         | $de03       | $01  | $de00-$de01              | $de02-$de03 ($de02 mirrors $de00 and $de03 mirrors $de01)
- * $de00         | $deff       | $0f  | $de00-$de0f              | $de10-$deff (15 blocks of 16 bytes mirroring $de00-$de0f)
- * $de00         | $deff       | $7f  | $de00-$de7f              | $de80-$deff (1 block of 128 bytes mirroring $de00-$de7f)
- * $de80         | $deff       | $7f  | $de80-$deff              | no mirrors
- * $de00         | $de0f       | $0f  | $de00-$de0f              | no mirrors
- * $de00         | $deff       | $ff  | $de00-$deff              | no mirrors
-
-*/
-/*
-static io_source_t easyflash_io2_device = {
-	CartridgeNameEasyFlash, // name of the device
-	IO_DETACH_CART,           // use cartridge ID to detach the device when involved in a read-collision
-	IO_DETACH_NO_RESOURCE,    // does not use a resource for detach
-	0xdf00, 0xdfff, 0xff,     // range for the device, regs:$df00-$dfff
-	1,                        // read is always valid
-	easyflash_io2_store,      // store function
-	NULL,                     // NO poke function
-	easyflash_io2_read,       // read function
-	easyflash_io2_read,       // peek function, same implementation
-	NULL,                     // device state information dump function
-	CARTRIDGE_EASYFLASH,      // cartridge ID
-	IO_PRIO_NORMAL,           // normal priority, device read needs to be checked for collisions
-	0,                        // insertion order, gets filled in by the registration function
-	IO_MIRROR_NONE            // NO mirroring
-};
-*/
-
-/*
-0xde00, 0xdeff, 0x03,     // range for the device, regs:$de00-$de03, mirrors:$de04-$deff
-0,                        // read is never valid, regs are write only
-easyflash_io1_store,      // store function
-NULL,                     // NO poke function
-NULL,                     // NO read function
-easyflash_io1_peek,       // peek function
-easyflash_io1_peek,       // device state information dump function
-
-0xdf00, 0xdfff, 0xff,     // range for the device, regs:$df00-$dfff
-1,                        // read is always valid
-easyflash_io2_store,      // store function
-NULL,                     // NO poke function
-easyflash_io2_read,       // read function
-easyflash_io2_read,       // peek function, same implementation
-*/
 
 type CartridgeEasyFlash struct {
 	board           icartridge.IExpansion
@@ -231,7 +156,7 @@ func (c *CartridgeEasyFlash) initialize(rawCart []byte) {
 }
 
 func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
-	c.register02 = value & 0x87 // we only remember led, mode, exrom, game [led 0x80, other 0x07]
+	c.register02 = value & 0x87 // led, mode, exrom, game [led 0x80, other 0x07]
 	mode := icartridge.CartridgeModeOff
 	mxg := value & 0x07
 	switch mxg {
@@ -244,6 +169,7 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 		}
 	case 1, 3:
 		//Reserved, don’t use these
+		log.Printf("CartridgeEasyFlash: unsupported mode %d", mode)
 	case 2:
 		//GAME from jumper, EXROM low (i.e. 16K or 8K)
 		if !c.jumper {
