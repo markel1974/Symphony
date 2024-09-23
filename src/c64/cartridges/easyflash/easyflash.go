@@ -271,7 +271,7 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 		c.exRom = v.ExRom
 		c.intervalLo = v.IntervalLow
 		c.intervalHi = v.IntervalHigh
-		fmt.Println("EASYFLASH MEMORY CONFIG CHANGED:", mxg, "exrom:", c.exRom, "game:", c.game, "LO", c.intervalLo, "HIGH", c.intervalHi)
+		//fmt.Println("EASYFLASH MEMORY CONFIG CHANGED:", mxg, "exrom:", c.exRom, "game:", c.game, "LO", c.intervalLo, "HIGH", c.intervalHi)
 		if update {
 			c.board.GameExRomConfigChanged()
 		}
