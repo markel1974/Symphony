@@ -28,7 +28,7 @@ func (k *Virtual) FromVirtual(vKey int) int {
 	case VKReturn:
 		return matrix(0, 1)
 	case VKBack:
-		return matrix(0, 0)
+		return matrix(7, 1) //matrix(0, 0)
 	case VKSpace:
 		return matrix(7, 4)
 	case VKEscape:
