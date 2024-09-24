@@ -5,7 +5,7 @@ import (
 )
 
 type Sprites struct {
-	core            *Core
+	core            *VIC
 	displayBuffer   IDisplayBuffer
 	collisions      *Collisions
 	dataPtr         []uint16  // Sprite data pointers
@@ -18,7 +18,7 @@ type Sprites struct {
 	offset          int       //
 }
 
-func NewSprites(core *Core, collisions *Collisions, db IDisplayBuffer) *Sprites {
+func NewSprites(core *VIC, collisions *Collisions, db IDisplayBuffer) *Sprites {
 	s := &Sprites{
 		core:            core,
 		displayBuffer:   db,
@@ -252,8 +252,8 @@ func (sp *Sprites) drawExpandedStandard(lineOffset int, sColor uint8, sData uint
 
 func (sp *Sprites) drawUnexpandedMulticolor(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8) {
 	foreMask := sp.collisions.GetGraphicsL(m, s)
-	p0 := sData & 0x55555555 // convert sprite to bitPlanes
-	p1 := sData & 0xaaaaaaaa // convert sprite to bitPlanes
+	p0 := sData & 0x55555555 // sprite to bitPlanes
+	p1 := sData & 0xaaaaaaaa // sprite to bitPlanes
 	plane0 := p0 | (p0 << 1)
 	plane1 := p1 | (p1 >> 1)
 	// check graphics collision

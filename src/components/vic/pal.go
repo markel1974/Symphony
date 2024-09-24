@@ -68,10 +68,10 @@ func init() {
 }
 
 func palCycle1(vic *VIC) {
-	if rasterY := vic.core.GetRasterY(); rasterY == RasterYMax {
+	if rasterY := vic.GetRasterY(); rasterY == RasterYMax {
 		vic.vBlankNextCycle = true
 	} else {
-		vic.core.IncrementRasterY()
+		vic.IncrementRasterY()
 		vic.drawLine = (rasterY >= FirstDisplayedLine) && (rasterY <= LastDisplayedLine)
 	}
 	vic.borders.Reset()
@@ -81,7 +81,7 @@ func palCycle1(vic *VIC) {
 		vic.sprites.Fetch(3, 0)
 	}
 	if vic.sprites.GetDMAFlag(sprite3|sprite4) == 0 {
-		vic.core.ClearBALow()
+		vic.ClearBALow()
 	}
 }
 
@@ -89,9 +89,9 @@ func palCycle2(vic *VIC) {
 	if vic.vBlankNextCycle {
 		vic.vBlankNextCycle = false
 		vic.lineStart = 0
-		vic.graphics.ResetVideoCounterBase()
-		vic.core.ResetRasterY()
-		vic.core.socket.VBlank()
+		vic.graphics.ResetVideoCounterLatch()
+		vic.ResetRasterY()
+		vic.socket.VBlank()
 	}
 	vic.collisions.ClearGraphics()
 	vic.graphics.SetOffset(vic.lineStart)
@@ -102,10 +102,10 @@ func palCycle2(vic *VIC) {
 		vic.sprites.Fetch(3, 1)
 		vic.sprites.Fetch(3, 2)
 	} else {
-		vic.core.AccessIdle()
+		vic.AccessIdle()
 	}
 	if vic.sprites.GetDMAFlag(sprite5) != 0 {
-		vic.core.SetBALow()
+		vic.SetBALow()
 	}
 }
 
@@ -116,7 +116,7 @@ func palCycle3(vic *VIC) {
 		vic.sprites.Fetch(4, 0)
 	}
 	if vic.sprites.GetDMAFlag(sprite4|sprite5) == 0 {
-		vic.core.ClearBALow()
+		vic.ClearBALow()
 	}
 }
 
@@ -126,10 +126,10 @@ func palCycle4(vic *VIC) {
 		vic.sprites.Fetch(4, 1)
 		vic.sprites.Fetch(4, 2)
 	} else {
-		vic.core.AccessIdle()
+		vic.AccessIdle()
 	}
 	if vic.sprites.GetDMAFlag(sprite6) != 0 {
-		vic.core.SetBALow()
+		vic.SetBALow()
 	}
 }
 
@@ -140,7 +140,7 @@ func palCycle5(vic *VIC) {
 		vic.sprites.Fetch(5, 0)
 	}
 	if vic.sprites.GetDMAFlag(sprite5|sprite6) == 0 {
-		vic.core.ClearBALow()
+		vic.ClearBALow()
 	}
 }
 
@@ -150,10 +150,10 @@ func palCycle6(vic *VIC) {
 		vic.sprites.Fetch(5, 1)
 		vic.sprites.Fetch(5, 2)
 	} else {
-		vic.core.AccessIdle()
+		vic.AccessIdle()
 	}
 	if vic.sprites.GetDMAFlag(sprite7) != 0 {
-		vic.core.SetBALow()
+		vic.SetBALow()
 	}
 }
 
@@ -164,7 +164,7 @@ func palCycle7(vic *VIC) {
 		vic.sprites.Fetch(6, 0)
 	}
 	if vic.sprites.GetDMAFlag(sprite6|sprite7) == 0 {
-		vic.core.ClearBALow()
+		vic.ClearBALow()
 	}
 }
 
@@ -174,7 +174,7 @@ func palCycle8(vic *VIC) {
 		vic.sprites.Fetch(6, 1)
 		vic.sprites.Fetch(6, 2)
 	} else {
-		vic.core.AccessIdle()
+		vic.AccessIdle()
 	}
 }
 
@@ -185,7 +185,7 @@ func palCycle9(vic *VIC) {
 		vic.sprites.Fetch(7, 0)
 	}
 	if vic.sprites.GetDMAFlag(sprite7) == 0 {
-		vic.core.ClearBALow()
+		vic.ClearBALow()
 	}
 }
 
@@ -195,20 +195,20 @@ func palCycle10(vic *VIC) {
 		vic.sprites.Fetch(7, 1)
 		vic.sprites.Fetch(7, 2)
 	} else {
-		vic.core.AccessIdle()
+		vic.AccessIdle()
 	}
 }
 
 func palCycle11(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.core.ClearBALow()
-	vic.core.AccessRefresh()
+	vic.ClearBALow()
+	vic.AccessRefresh()
 }
 
 func palCycle12(vic *VIC) {
-	vic.core.AccessRefresh()
+	vic.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.core.TryBALowIfBadLine()
+	vic.TryBALowIfBadLine()
 }
 
 func palCycle13(vic *VIC) {
@@ -216,10 +216,10 @@ func palCycle13(vic *VIC) {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.core.AccessRefresh()
+	vic.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.core.TryBALowIfBadLine()
-	vic.core.ResetRasterX()
+	vic.TryBALowIfBadLine()
+	vic.ResetRasterX()
 }
 
 func palCycle14(vic *VIC) {
@@ -227,10 +227,10 @@ func palCycle14(vic *VIC) {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.core.AccessRefresh()
+	vic.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.graphics.TryResetRowCounter()
-	vic.core.TryBALowIfBadLine()
+	vic.TryBALowIfBadLine()
 	vic.graphics.UpdateVideoCounter()
 }
 
@@ -239,12 +239,12 @@ func palCycle15(vic *VIC) {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.core.AccessRefresh()
+	vic.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.sprites.UpdateCounterBase()
 	vic.graphics.ResetLineIndex()
-	vic.core.TryBALowIfBadLine()
-	//vic.core.TryAcquireAEC()
+	vic.TryBALowIfBadLine()
+	//vic.TryAcquireAEC()
 	vic.graphics.TryPhi2Access()
 }
 
@@ -256,8 +256,8 @@ func palCycle16(vic *VIC) {
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.sprites.UpdateCounterBaseDMA()
-	vic.core.TryBALowIfBadLine()
-	//vic.core.TryAcquireAEC()
+	vic.TryBALowIfBadLine()
+	//vic.TryAcquireAEC()
 	vic.graphics.TryPhi2Access()
 }
 
@@ -273,8 +273,8 @@ func palCycle17(vic *VIC) {
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.core.TryBALowIfBadLine()
-	//vic.core.TryAcquireAEC()
+	vic.TryBALowIfBadLine()
+	//vic.TryAcquireAEC()
 	vic.graphics.TryPhi2Access()
 }
 
@@ -290,10 +290,10 @@ func palCycle18(vic *VIC) {
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.core.TryBALowIfBadLine()
-	//vic.core.TryAcquireAEC()
+	vic.TryBALowIfBadLine()
+	//vic.TryAcquireAEC()
 	vic.graphics.TryPhi2Access()
-	vic.graphics.UpdateLastCharData()
+	vic.graphics.UpdateCharDataLast()
 }
 
 func palCycle19to54(vic *VIC) {
@@ -307,10 +307,10 @@ func palCycle19to54(vic *VIC) {
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.core.TryBALowIfBadLine()
-	//vic.core.TryAcquireAEC()
+	vic.TryBALowIfBadLine()
+	//vic.TryAcquireAEC()
 	vic.graphics.TryPhi2Access()
-	vic.graphics.UpdateLastCharData()
+	vic.graphics.UpdateCharDataLast()
 }
 
 func palCycle55(vic *VIC) {
@@ -324,12 +324,12 @@ func palCycle55(vic *VIC) {
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.core.UpdateSpriteExpY()
+	vic.UpdateSpriteExpY()
 	vic.sprites.UpdateDMA()
 	if vic.sprites.GetDMAFlag(sprite0) != 0 {
-		vic.core.SetBALow() //BALow for Sprite 0 [cycle 58 = 55 + 3]
+		vic.SetBALow() //BALow for Sprite 0 [cycle 58 = 55 + 3]
 	} else {
-		vic.core.ClearBALow() //Clear BALow for Sprite 0
+		vic.ClearBALow() //Clear BALow for Sprite 0
 	}
 }
 
@@ -343,12 +343,12 @@ func palCycle56(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.core.AccessIdle()
+	vic.AccessIdle()
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.sprites.UpdateDMA()
 	if vic.sprites.GetDMAFlag(sprite0) != 0 {
 		//Wrong cycle 59
-		vic.core.SetBALow() //BALow for Sprite 0 [cycle 59 = 56 + 3]
+		vic.SetBALow() //BALow for Sprite 0 [cycle 59 = 56 + 3]
 	}
 }
 
@@ -359,10 +359,10 @@ func palCycle57(vic *VIC) {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.core.AccessIdle()
+	vic.AccessIdle()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite1) != 0 {
-		vic.core.SetBALow() //BALow for Sprite 1 [cycle 60 = 57 + 3]
+		vic.SetBALow() //BALow for Sprite 1 [cycle 60 = 57 + 3]
 	}
 }
 
@@ -389,10 +389,10 @@ func palCycle59(vic *VIC) {
 		vic.sprites.Fetch(0, 1) //phi1
 		vic.sprites.Fetch(0, 2) //phi2
 	} else {
-		vic.core.AccessIdle()
+		vic.AccessIdle()
 	}
 	if vic.sprites.GetDMAFlag(sprite2) != 0 {
-		vic.core.SetBALow() //BALow for Sprite 2 [cycle 62 = 59 + 3]
+		vic.SetBALow() //BALow for Sprite 2 [cycle 62 = 59 + 3]
 	}
 }
 
@@ -409,10 +409,10 @@ func palCycle60(vic *VIC) {
 		vic.sprites.FetchPtr(1) //phi1
 		vic.sprites.Fetch(1, 0) //phi2
 	} else {
-		vic.core.AccessIdle()
+		vic.AccessIdle()
 	}
 	if vic.sprites.GetDMAFlag(sprite1|sprite2) == 0 {
-		vic.core.ClearBALow() //Clear BALow for Sprite 1 - 2
+		vic.ClearBALow() //Clear BALow for Sprite 1 - 2
 	}
 }
 
@@ -422,10 +422,10 @@ func palCycle61(vic *VIC) {
 		vic.sprites.Fetch(1, 1) //phi1
 		vic.sprites.Fetch(1, 2) //phi2
 	} else {
-		vic.core.AccessIdle()
+		vic.AccessIdle()
 	}
 	if vic.sprites.GetDMAFlag(sprite3) != 0 {
-		vic.core.SetBALow() //BALow for Sprite 3 [cycle 1 = 61 + 3]
+		vic.SetBALow() //BALow for Sprite 3 [cycle 1 = 61 + 3]
 	}
 }
 
@@ -436,7 +436,7 @@ func palCycle62(vic *VIC) {
 		vic.sprites.Fetch(2, 0) //phi2
 	}
 	if vic.sprites.GetDMAFlag(sprite2|sprite3) == 0 {
-		vic.core.ClearBALow() //Clear BALow for Sprite 2 - 3
+		vic.ClearBALow() //Clear BALow for Sprite 2 - 3
 	}
 }
 
@@ -447,10 +447,10 @@ func palCycle63(vic *VIC) {
 		vic.sprites.Fetch(2, 1) //phi1
 		vic.sprites.Fetch(2, 2) //phi2
 	} else {
-		vic.core.AccessIdle()
+		vic.AccessIdle()
 	}
 	if vic.sprites.GetDMAFlag(sprite4) != 0 {
-		vic.core.SetBALow() //BALow for Sprite 4 [cycle 3 = 63 + 3]
+		vic.SetBALow() //BALow for Sprite 4 [cycle 3 = 63 + 3]
 	}
-	vic.core.socket.LastCycle()
+	vic.socket.LastCycle()
 }

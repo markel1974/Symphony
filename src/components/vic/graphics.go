@@ -28,44 +28,42 @@ var _backgroundSequencer = []func(*Graphics){
 }
 
 type Graphics struct {
-	core             *Core
-	collisions       *Collisions
-	db               IDisplayBuffer
-	gfxData          uint8
-	colorData        uint8
-	charData         uint8
-	charDataLast     uint8
-	offset           int     // Offset from bitmap spritesBuffer
-	lineIndex        int     // Index in video matrix / color line
-	videoMatrix      []uint8 // Video matrix spritesBuffer
-	colorLine        []uint8 // Color line spritesBuffer
-	rowCounter       uint16  // Row counter
-	videoCounter     uint16  // Video counter
-	videoCounterBase uint16  // Video counter base
-	displayAccess    bool    // Display state
-	textBuffer       []byte
-	//foregroundSequencer []func(*Graphics, int)
-	//backgroundSequencer []func(*Graphics)
+	core              *VIC
+	collisions        *Collisions
+	db                IDisplayBuffer
+	gfxData           uint8
+	colorData         uint8
+	charData          uint8
+	charDataLast      uint8
+	offset            int     // Offset from bitmap spritesBuffer
+	lineIndex         int     // Index in video matrix / color line
+	videoMatrix       []uint8 // Video matrix spritesBuffer
+	colorLine         []uint8 // Color line spritesBuffer
+	rowCounter        uint16  // Row counter
+	videoCounter      uint16  // Video counter
+	videoCounterLatch uint16  // Video counter base
+	displayAccess     bool    // Display state
+	textBuffer        []byte
 }
 
-func NewGraphics(core *Core, collisions *Collisions, db IDisplayBuffer) *Graphics {
+func NewGraphics(core *VIC, collisions *Collisions, db IDisplayBuffer) *Graphics {
 	gr := &Graphics{
-		core:             core,
-		collisions:       collisions,
-		db:               db,
-		gfxData:          0,
-		colorData:        0,
-		charData:         0,
-		charDataLast:     0,
-		offset:           0,
-		lineIndex:        0,
-		videoMatrix:      make([]uint8, columnsMax),
-		colorLine:        make([]uint8, columnsMax),
-		textBuffer:       make([]uint8, (RasterYMax/8)*columnsMax),
-		rowCounter:       rowsMax,
-		videoCounter:     0,
-		videoCounterBase: 0,
-		displayAccess:    false,
+		core:              core,
+		collisions:        collisions,
+		db:                db,
+		gfxData:           0,
+		colorData:         0,
+		charData:          0,
+		charDataLast:      0,
+		offset:            0,
+		lineIndex:         0,
+		videoMatrix:       make([]uint8, columnsMax),
+		colorLine:         make([]uint8, columnsMax),
+		textBuffer:        make([]uint8, (RasterYMax/8)*columnsMax),
+		rowCounter:        rowsMax,
+		videoCounter:      0,
+		videoCounterLatch: 0,
+		displayAccess:     false,
 	}
 	//gr.foregroundSequencer = make([]func(*Graphics, int), 8)
 	//gr.foregroundSequencer[modeTextStandard] = drawForegroundTextStandard
@@ -107,23 +105,23 @@ func (gr *Graphics) GetText() []byte {
 	return gr.textBuffer
 }
 
-func (gr *Graphics) ResetVideoCounterBase() {
-	gr.videoCounterBase = 0
+func (gr *Graphics) ResetVideoCounterLatch() {
+	gr.videoCounterLatch = 0
+}
+
+func (gr *Graphics) UpdateVideoCounter() {
+	gr.videoCounter = gr.videoCounterLatch
 }
 
 func (gr *Graphics) ResetLineIndex() {
 	gr.lineIndex = 0
 }
 
-func (gr *Graphics) UpdateVideoCounter() {
-	gr.videoCounter = gr.videoCounterBase
-}
-
 func (gr *Graphics) SetOffset(offset int) {
 	gr.offset = offset
 }
 
-func (gr *Graphics) UpdateLastCharData() {
+func (gr *Graphics) UpdateCharDataLast() {
 	gr.charDataLast = gr.charData
 }
 
@@ -141,7 +139,7 @@ func (gr *Graphics) TryAcquireDisplayAccess() {
 
 func (gr *Graphics) UpdateDisplayAccess() {
 	if gr.rowCounter == rowsMax {
-		gr.videoCounterBase = gr.videoCounter
+		gr.videoCounterLatch = gr.videoCounter
 		gr.displayAccess = false
 	}
 	if gr.core.badLineCondition || gr.displayAccess {

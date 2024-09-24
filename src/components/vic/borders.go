@@ -12,7 +12,7 @@ const (
 )
 
 type Borders struct {
-	core             *Core
+	core             *VIC
 	db               IDisplayBuffer
 	mainFlipFlop     bool
 	verticalFlipFlop bool
@@ -21,7 +21,7 @@ type Borders struct {
 	offset           int
 }
 
-func NewBorder(core *Core, db IDisplayBuffer) *Borders {
+func NewBorder(core *VIC, db IDisplayBuffer) *Borders {
 	gr := &Borders{
 		db:               db,
 		core:             core,

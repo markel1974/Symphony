@@ -1,7 +1,7 @@
 package mos6569
 
 type Collisions struct {
-	core                 *Core
+	core                 *VIC
 	graphics             uint8
 	sprites              uint8
 	spritesBuffer        []uint8 // Buffer for sprite-sprite collisions and priorities
@@ -11,7 +11,7 @@ type Collisions struct {
 	graphicsBufferOffset int
 }
 
-func NewCollisions(core *Core) *Collisions {
+func NewCollisions(core *VIC) *Collisions {
 	return &Collisions{
 		core:                 core,
 		graphics:             0,
