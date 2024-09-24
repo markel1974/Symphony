@@ -108,8 +108,6 @@ var _scCodesAscii = []byte{
 	/* 112 - 127 */ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?',
 }
 
-var _spriteBit = []byte{0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80}
-
 var _colors []uint8
 
 func init() {

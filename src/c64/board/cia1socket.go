@@ -1,17 +1,35 @@
 package board
 
+import (
+	"github.com/markel1974/c64emu/src/bits"
+)
+
+const (
+	defaultLPState  = 0x10
+	defaultJoyState = 0xff
+	defaultKeyState = 0xff
+)
+
 type CIA1Socket struct {
-	board       *Board
-	intrId      uint32
-	prevLPState uint8    // Previous state of LP line (bit 4
-	keyMatrix   [8]uint8 // C64 keyboard matrix, 1 bit/key (0: key down, 1: key up)
-	revMatrix   [8]uint8 // Reversed keyboard matrix
-	joy1        uint8    // Joystick 1 AND value
-	joy2        uint8    // Joystick 2 AND value
+	board       *Board  //
+	intrId      uint32  //
+	prevLPState uint8   // Previous state of LP line (bit 4)
+	keyMatrix   []uint8 // keyboard matrix [0: down, 1: up]
+	revMatrix   []uint8 // Reversed keyboard matrix
+	joy1        uint8   // Joystick 1
+	joy2        uint8   // Joystick 2
 }
 
 func NewCIA1Socket() *CIA1Socket {
-	c := &CIA1Socket{}
+	c := &CIA1Socket{
+		board:       nil,
+		intrId:      0,
+		prevLPState: defaultLPState,
+		keyMatrix:   make([]uint8, 8),
+		revMatrix:   make([]uint8, 8),
+		joy1:        defaultJoyState,
+		joy2:        defaultJoyState,
+	}
 	return c
 }
 
@@ -25,14 +43,15 @@ func (w *CIA1Socket) Reset() {
 	w.board.joy1.Reset()
 	w.board.joy2.Reset()
 	w.board.cia1.Reset()
-
-	for i := 0; i < 8; i++ {
-		w.keyMatrix[i] = 0xff
-		w.revMatrix[i] = 0xff
+	for idx := range w.keyMatrix {
+		w.keyMatrix[idx] = defaultKeyState
 	}
-	w.joy1 = 0xff
-	w.joy2 = 0xff
-	w.prevLPState = 0x10
+	for idx := range w.revMatrix {
+		w.revMatrix[idx] = defaultKeyState
+	}
+	w.joy1 = defaultJoyState
+	w.joy2 = defaultJoyState
+	w.prevLPState = defaultLPState
 }
 
 func (w *CIA1Socket) Update() {
@@ -67,63 +86,23 @@ func (w *CIA1Socket) Update() {
 }
 
 func (w *CIA1Socket) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
-	//Joy port 2
 	ret := prA | ^ddrA
 	tst := (prB | ^ddrB) & w.joy1
-	if (tst & 0x01) == 0 {
-		ret &= w.revMatrix[0]
-	}
-	if (tst & 0x02) == 0 {
-		ret &= w.revMatrix[1]
-	}
-	if (tst & 0x04) == 0 {
-		ret &= w.revMatrix[2]
-	}
-	if (tst & 0x08) == 0 {
-		ret &= w.revMatrix[3]
-	}
-	if (tst & 0x10) == 0 {
-		ret &= w.revMatrix[4]
-	}
-	if (tst & 0x20) == 0 {
-		ret &= w.revMatrix[5]
-	}
-	if (tst & 0x40) == 0 {
-		ret &= w.revMatrix[6]
-	}
-	if (tst & 0x80) == 0 {
-		ret &= w.revMatrix[7]
+	for idx, bit := range bits.Uint8s {
+		if (tst & bit) == 0 {
+			ret &= w.revMatrix[idx]
+		}
 	}
 	return ret & w.joy2
 }
 
 func (w *CIA1Socket) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
-	//joy port 1
 	ret := ^ddrB
 	tst := (prA | ^ddrA) & w.joy2
-	if (tst & 0x01) == 0 {
-		ret &= w.keyMatrix[0]
-	}
-	if (tst & 0x02) == 0 {
-		ret &= w.keyMatrix[1]
-	}
-	if (tst & 0x04) == 0 {
-		ret &= w.keyMatrix[2]
-	}
-	if (tst & 0x08) == 0 {
-		ret &= w.keyMatrix[3]
-	}
-	if (tst & 0x10) == 0 {
-		ret &= w.keyMatrix[4]
-	}
-	if (tst & 0x20) == 0 {
-		ret &= w.keyMatrix[5]
-	}
-	if (tst & 0x40) == 0 {
-		ret &= w.keyMatrix[6]
-	}
-	if (tst & 0x80) == 0 {
-		ret &= w.keyMatrix[7]
+	for idx, bit := range bits.Uint8s {
+		if (tst & bit) == 0 {
+			ret &= w.keyMatrix[idx]
+		}
 	}
 	return (ret | (prB & ddrB)) & w.joy1
 }
@@ -144,7 +123,7 @@ func (w *CIA1Socket) WriteDdrB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
 
 func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
 	if ((prB | ^ddrB) & 0x10) != w.prevLPState {
-		w.board.vic.LightPenTrigger() // signalLightPenTrigger.Emit()
+		w.board.vic.LightPenTrigger()
 	}
 	w.prevLPState = (prB | ^ddrB) & 0x10
 }

@@ -1,6 +1,7 @@
 package mos6569
 
 import (
+	"github.com/markel1974/c64emu/src/bits"
 	"log"
 )
 
@@ -437,7 +438,7 @@ func (vic *Core) WriteRegister(addr2 uint16, data uint8) {
 	case 0x10: //MSBs of X coordinates
 		vic.mx8 = data
 		for i := 0; i < SpriteNumber; i++ {
-			if (data & _spriteBit[i]) != 0 {
+			if (data & bits.Uint8s[i]) != 0 {
 				vic.mXx[i] |= 0x100
 			} else {
 				vic.mXx[i] &= 0xff
