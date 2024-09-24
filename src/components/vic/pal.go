@@ -13,9 +13,6 @@ const (
 	sprite7 = 0x80
 )
 
-// Check BA for matrix fetch
-// Check BA for Sprite Phi2 fetch
-
 func init() {
 	const palBorderFirstCycle uint8 = 13
 
@@ -244,7 +241,6 @@ func palCycle15(vic *VIC) {
 	vic.sprites.UpdateCounterBase()
 	vic.graphics.ResetLineIndex()
 	vic.TryBALowIfBadLine()
-	//vic.TryAcquireAEC()
 	vic.graphics.TryPhi2Access()
 }
 
@@ -257,7 +253,6 @@ func palCycle16(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.sprites.UpdateCounterBaseDMA()
 	vic.TryBALowIfBadLine()
-	//vic.TryAcquireAEC()
 	vic.graphics.TryPhi2Access()
 }
 
@@ -274,7 +269,6 @@ func palCycle17(vic *VIC) {
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.TryBALowIfBadLine()
-	//vic.TryAcquireAEC()
 	vic.graphics.TryPhi2Access()
 }
 
@@ -291,7 +285,6 @@ func palCycle18(vic *VIC) {
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.TryBALowIfBadLine()
-	//vic.TryAcquireAEC()
 	vic.graphics.TryPhi2Access()
 	vic.graphics.UpdateCharDataLast()
 }
@@ -308,7 +301,6 @@ func palCycle19to54(vic *VIC) {
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.TryBALowIfBadLine()
-	//vic.TryAcquireAEC()
 	vic.graphics.TryPhi2Access()
 	vic.graphics.UpdateCharDataLast()
 }
