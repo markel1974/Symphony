@@ -234,8 +234,13 @@ func (a *Audio) GetCurrentPosition() int {
 }
 
 func (a *Audio) Write(_ []uint32, pos int, samples int) {
+	//TODO
 	a.pos = pos + samples
 	//fmt.Println("AUDIO STREAM ", b, pos, samples)
+}
+
+func (a *Audio) Play() {
+	//TODO
 }
 
 func (a *Audio) Pause() {

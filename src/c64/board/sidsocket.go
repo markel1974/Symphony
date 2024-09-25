@@ -19,18 +19,17 @@ func (w *SidSocket) Reset() {
 	w.board.sid.Reset()
 }
 
-func (w *SidSocket) Update() {
-	w.board.sid.Update()
-}
-
 func (w *SidSocket) SetPotXY(x uint8, y uint8) {
 	w.board.sid.SetPotX(x)
 	w.board.sid.SetPotY(y)
 }
 
-func (w *SidSocket) Render() {
-	//TODO MOVE
-	w.board.sid.Render()
+func (w *SidSocket) Prepare() {
+	w.board.sid.Prepare()
+}
+
+func (w *SidSocket) Update() {
+	w.board.sid.Update()
 }
 
 func (w *SidSocket) GetPlayer() mos6581.IPlayer {

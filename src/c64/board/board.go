@@ -340,18 +340,14 @@ func (s *Board) nmiClearSlot() {
 }
 
 func (s *Board) vicLastCycleSLot() {
-	s.sidSocket.Update()
+	s.sidSocket.Prepare()
 }
 
 func (s *Board) vicVBlankSlot() {
 	s.vBlank = true
-
-	//TODO MOVE
-	s.sidSocket.Render()
-
+	s.sidSocket.Update()
 	s.cia1Socket.Update()
 	s.cia2Socket.Update()
-
 	if s.prg != nil {
 		if s.prg.Inject(s.vic.GetText()) {
 			s.prg = nil

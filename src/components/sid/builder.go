@@ -479,21 +479,9 @@ func (dr *Builder) Prepare(regs []uint8) {
 	for y := uint16(0); y < uint16(len(regs)); y++ {
 		dr.loadRegister(y, regs[y])
 	}
-
-	//if dr.regsHistoryIndex < RegisterHistory {
-	//	copy(dr.regsHistory[dr.regsHistoryIndex], regs)
-	//	dr.regsHistoryIndex++
-	//}
 }
 
-func (dr *Builder) Render() {
-	//for x := uint32(0); x < dr.regsHistoryIndex; x++ {
-	//	for y := uint16(0); y < uint16(len(dr.regsHistory[x])); y++ {
-	//		dr.loadRegister(y, dr.regsHistory[x][y])
-	//	}
-	//}
-	//dr.regsHistoryIndex = 0
-
+func (dr *Builder) Update() {
 	dr.sampleBuf[dr.sampleInPtr] = dr.volume
 	dr.sampleInPtr = (dr.sampleInPtr + 1) % SampleBufSize
 	dr.divisor += SampleFreq
@@ -502,11 +490,11 @@ func (dr *Builder) Render() {
 	// Calculate the sound data only when we have enough to fill the buffer entirely.
 	if dr.toOutput >= dr.fragSize {
 		dr.toOutput -= dr.fragSize
-		dr.playSound()
+		dr.write()
 	}
 }
 
-func (dr *Builder) playSound() {
+func (dr *Builder) write() {
 	if dr.player == nil {
 		return
 	}
@@ -557,22 +545,10 @@ func (dr *Builder) playSound() {
 		nSamples += dr.fragSize
 	}
 	// Write the frags to the player and update out write position.
-	dr.player.Write(dr.soundBuffer, dr.sbPos, 2*nSamples)
-	dr.sbPos = (dr.sbPos + 2*nSamples) % dr.bufferSize
-}
-
-func (dr *Builder) Pause() {
-	if dr.player == nil {
-		return
-	}
-	dr.player.Pause()
-}
-
-func (dr *Builder) Resume() {
-	if dr.player == nil {
-		return
-	}
-	dr.player.Resume()
+	currPos := dr.sbPos
+	samples := 2 * nSamples
+	dr.sbPos = (dr.sbPos + samples) % dr.bufferSize
+	dr.player.Write(dr.soundBuffer, currPos, samples)
 }
 
 func (dr *Builder) createDivisorTable() {

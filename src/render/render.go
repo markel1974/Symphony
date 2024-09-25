@@ -22,10 +22,10 @@ type Render struct {
 	screenHeight int
 	maxW         float64
 	maxH         float64
-	mainSurface  *pixels.PictureRGBA
-	mainMatrix   pixels.Matrix
-	mainSprite   *pixels.Sprite
-	db           *DisplayBuffer
+	picture      *pixels.PictureRGBA
+	matrix       pixels.Matrix
+	surface      *pixels.Sprite
+	display      *DisplayBuffer
 	inputs       *Inputs
 	audio        *Audio
 }
@@ -45,14 +45,14 @@ func New(cfg *config.Config) *Render {
 }
 
 func (g *Render) setup(pos pixels.Vec) {
-	g.mainSurface = pixels.NewPictureRGBA(pixels.R(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
-	g.mainSprite = pixels.NewSprite()
-	g.mainSprite.SetCached(pixels.CacheModeUpdate)
-	g.mainSprite.Set(g.mainSurface, g.mainSurface.Bounds())
-	g.mainMatrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
-	g.db = NewDisplayBuffer(g.mainSurface)
+	g.picture = pixels.NewPictureRGBA(pixels.R(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
+	g.surface = pixels.NewSprite()
+	g.surface.SetCached(pixels.CacheModeUpdate)
+	g.surface.Set(g.picture, g.picture.Bounds())
+	g.matrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
+	g.display = NewDisplayBuffer(g.picture)
 	g.audio = NewAudio()
-	g.c64Board = board.NewBoard(g.db, g.audio)
+	g.c64Board = board.NewBoard(g.display, g.audio)
 	_ = g.c64Board.Setup(g.cfg)
 	g.inputs.Setup(g.c64Board, g.maxW, g.maxH)
 }
@@ -94,7 +94,8 @@ func (g *Render) run() {
 				break
 			}
 		}
-		g.mainSprite.Draw(win, g.mainMatrix)
+		g.surface.Draw(win, g.matrix)
+		g.audio.Play()
 		win.Update()
 		if dt.Counter()&0xf == 0xf {
 			run = !win.Closed()
