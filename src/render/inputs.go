@@ -45,7 +45,7 @@ func (g *Inputs) Setup(b *board.Board, maxW float64, maxH float64) {
 	g.keyMapper[pixels.KeyEscape] = func(p bool) { b.KeyboardSetVirtualKey(p, inputs.VKEscape) }
 
 	g.keyMapper[pixels.KeyF9] = g.swapJoyKey
-	g.keyMapper[pixels.KeyF10] = func(p bool) { b.JoystickSwap(p) }
+	g.keyMapper[pixels.KeyF10] = func(p bool) { b.JoySwap(p) }
 	//g.keyMapper[pixels.KeyF11] = func(p bool) { b.KeyboardSetExt(p) }
 	g.keyMapper[pixels.KeyF12] = func(p bool) { b.KeyboardPaste(p) }
 
@@ -117,41 +117,41 @@ func (g *Inputs) Setup(b *board.Board, maxW float64, maxH float64) {
 
 	g.keyMapper[pixels.KeyUp] = func(p bool) {
 		if g.joyKeys {
-			b.JoystickSetKey(p, inputs.KeyJUp)
+			b.Joy1SetKey(p, inputs.KeyJUp)
 		} else {
 			b.KeyboardSetVirtualKey(p, inputs.VKUp)
 		}
 	}
 	g.keyMapper[pixels.KeyDown] = func(p bool) {
 		if g.joyKeys {
-			b.JoystickSetKey(p, inputs.KeyJDown)
+			b.Joy1SetKey(p, inputs.KeyJDown)
 		} else {
 			b.KeyboardSetVirtualKey(p, inputs.VKDown)
 		}
 	}
 	g.keyMapper[pixels.KeyLeft] = func(p bool) {
 		if g.joyKeys {
-			b.JoystickSetKey(p, inputs.KeyJLeft)
+			b.Joy1SetKey(p, inputs.KeyJLeft)
 		} else {
 			b.KeyboardSetVirtualKey(p, inputs.VKLeft)
 		}
 	}
 	g.keyMapper[pixels.KeyRight] = func(p bool) {
 		if g.joyKeys {
-			b.JoystickSetKey(p, inputs.KeyJRight)
+			b.Joy1SetKey(p, inputs.KeyJRight)
 		} else {
 			b.KeyboardSetVirtualKey(p, inputs.VKRight)
 		}
 	}
 	g.keyMapper[pixels.KeyTab] = func(p bool) {
 		if g.joyKeys {
-			b.JoystickSetKey(p, inputs.KeyJFire)
+			b.Joy1SetKey(p, inputs.KeyJFire)
 		} else {
 			b.KeyboardSetVirtualKey(p, inputs.VKTab)
 		}
 	}
-	g.keyMapper[pixels.MouseButton1] = func(p bool) { b.JoystickSetKey(p, inputs.KeyJFire) }
-	g.keyMapper[pixels.MouseButton2] = func(p bool) { b.JoystickSetKey(p, inputs.KeyJUp) }
+	g.keyMapper[pixels.MouseButton1] = func(p bool) { b.Joy1SetKey(p, inputs.KeyJFire) }
+	g.keyMapper[pixels.MouseButton2] = func(p bool) { b.Joy1SetKey(p, inputs.KeyJUp) }
 }
 
 func (g *Inputs) Keys(pressed map[pixels.Button]bool) {

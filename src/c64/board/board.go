@@ -250,7 +250,7 @@ func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
 	s.keys.SetVirtualKey(pressed, vKey)
 }
 
-func (s *Board) JoystickSetKey(pressed bool, vKey int) {
+func (s *Board) Joy1SetKey(pressed bool, vKey int) {
 	if s.joySwap {
 		s.joy2.SetKey(pressed, vKey)
 	} else {
@@ -258,7 +258,15 @@ func (s *Board) JoystickSetKey(pressed bool, vKey int) {
 	}
 }
 
-func (s *Board) JoystickSwap(pressed bool) {
+func (s *Board) Joy2SetKey(pressed bool, vKey int) {
+	if s.joySwap {
+		s.joy1.SetKey(pressed, vKey)
+	} else {
+		s.joy2.SetKey(pressed, vKey)
+	}
+}
+
+func (s *Board) JoySwap(pressed bool) {
 	if !pressed {
 		return
 	}

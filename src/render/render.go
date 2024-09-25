@@ -36,7 +36,7 @@ func New(cfg *config.Config) *Render {
 		fullscreen:   false,
 		screenWidth:  mos6569.DisplayX,
 		screenHeight: mos6569.DisplayY,
-		scale:        3.0,
+		scale:        2.0,
 		inputs:       NewInputs(),
 	}
 	g.maxW = float64(g.screenWidth) * g.scale
@@ -97,37 +97,8 @@ func (g *Render) run() {
 		g.surface.Draw(win, g.matrix)
 		g.audio.Play()
 		win.Update()
-		if dt.Counter()&0xf == 0xf {
+		if (dt.Counter() & 0xf) == 0xf {
 			run = !win.Closed()
 		}
 	}
 }
-
-//func (g *Render) drawDirect(win *pixels.GLWindow, chunky []uint8) {
-//	for cIdx, cVal := range g.cacheCoords {
-//		v := chunky[cIdx]
-//		g.mainSurface.SetRGBADirectArray(cVal, _colors[v])
-//	}
-//	g.mainSprite.Draw(win, g.mainMatrix)
-//	return
-//}
-
-//func (g *Render) SetPixel(idx int, val uint8) {
-//	if idx < len(g.cacheCoords) {
-//		g.mainSurface.SetRGBADirectArray(g.cacheCoords[idx], _colors[val])
-//	}
-//}
-
-//func (g *Render) draw(win *pixels.GLWindow, chunky []uint8) {
-//	idx := 0
-//	var x int
-//	var p uint8
-//	for y := 0; y < vic.DisplayY; y++ {
-//		for x = 0; x < vic.DisplayX; x++ {
-//			p = chunky[idx]
-//			idx++
-//			g.mainSurface.SetRGBAArray(x, y, _colors[p])
-//		}
-//	}
-//	g.mainSprite.Draw(win, g.mainMatrix)
-//}
