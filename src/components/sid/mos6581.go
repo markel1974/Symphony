@@ -14,9 +14,11 @@ type SID struct {
 
 func NewSID(id string) *SID {
 	s := &SID{
-		id:   id,
-		regs: make([]uint8, RegisterCount),
-		cfg:  nil,
+		id:      id,
+		socket:  nil,
+		regs:    make([]uint8, RegisterCount),
+		cfg:     nil,
+		builder: nil,
 	}
 	return s
 }
