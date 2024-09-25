@@ -40,7 +40,7 @@ func (s *Quartz) alarmDestroy(alarm *Alarm) {
 
 func (s *Quartz) alarmSet(alarm *Alarm, dist uint64) error {
 	if alarm.element != nil {
-		return fmt.Errorf("alarm already setted")
+		return fmt.Errorf("alarm already set")
 	}
 	if dist == 0 {
 		dist = 1

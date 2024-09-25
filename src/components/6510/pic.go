@@ -33,8 +33,8 @@ func NewPic() *Pic {
 		quartz:        nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,
-		all:           0,
-		irq:           0,
+		all:           bits.Bits(0),
+		irq:           bits.Bits(0),
 		nmiExec:       false,
 	}
 }
