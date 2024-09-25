@@ -132,22 +132,19 @@ func (s *Board) Setup(cfg *config.Config) error {
 	s.cartMan.Setup(s.expansion, cfg)
 	s.banks.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, cfg)
 
-	if !s.cfg.GetDisableCartridgeAutostart() {
-		for _, cartName := range s.cfg.GetCartridges() {
-			var data []uint8
+	for _, cartName := range s.cfg.GetCartridges() {
+		var data []uint8
+		if len(cartName.Path) > 0 {
 			var err error
-			if len(cartName.Path) > 0 {
-				data, err = os.ReadFile(cartName.Path)
-				if err != nil {
-					log.Printf("can't add cartridge: %s", err.Error())
-					continue
-				}
-			}
-			if cartId, err := s.cartMan.Add(cartName.Kind, cartName.Path, data); err != nil {
+			if data, err = os.ReadFile(cartName.Path); err != nil {
 				log.Printf("can't add cartridge: %s", err.Error())
-			} else {
-				log.Printf("cartridge: %s [%s] successfully added", cartName, cartId)
+				continue
 			}
+		}
+		if cartId, err := s.cartMan.Add(cartName.Kind, cartName.Path, data); err != nil {
+			log.Printf("can't add cartridge: %s", err.Error())
+		} else {
+			log.Printf("cartridge: %s [%s] successfully added", cartName, cartId)
 		}
 	}
 
@@ -209,18 +206,6 @@ func (s *Board) Emulate() bool {
 	s.quartz.AddCycle()
 
 	return s.vBlank
-}
-
-// LedStateChangedEvent (deviceNumber int, state uint8)
-func (s *Board) LedStateChangedEvent(_ int, _ uint8) {
-	//TODO IMPLEMENT
-	//deviceId := deviceNumber - 8
-	//if deviceId < 0 || deviceId >= MAX_DRIVE_COUNT {
-	//	return
-	//}
-	//k.leds[deviceId] = state
-	//k.updateLedState()
-	//s.keys.InputReady(_ledActivities == 0)
 }
 
 func (s *Board) KeyboardPaste(pressed bool) {
@@ -361,4 +346,15 @@ func (s *Board) vicVBlankSlot() {
 			s.prg = nil
 		}
 	}
+}
+
+func (s *Board) ledStateChangedSlot(_ int, _ uint8) {
+	//TODO IMPLEMENT
+	//deviceId := deviceNumber - 8
+	//if deviceId < 0 || deviceId >= MAX_DRIVE_COUNT {
+	//	return
+	//}
+	//k.leds[deviceId] = state
+	//k.updateLedState()
+	//s.keys.InputReady(_ledActivities == 0)
 }

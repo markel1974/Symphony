@@ -7,11 +7,6 @@ import (
 	"github.com/markel1974/c64emu/src/pixels"
 )
 
-type Point struct {
-	X int
-	Y int
-}
-
 type Render struct {
 	cfg          *config.Config
 	c64Board     *board.Board

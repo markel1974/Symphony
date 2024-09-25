@@ -13,20 +13,18 @@ type Drive struct {
 }
 
 type Config struct {
-	cartridges                []Cartridge
-	drives                    []Drive
-	DisableCartridgeAutostart bool
-	changed                   *signals.Signal
-	prg                       string
-	driveIndex                int
+	cartridges []Cartridge
+	drives     []Drive
+	changed    *signals.Signal
+	prg        string
+	driveIndex int
 }
 
 func New() *Config {
 	return &Config{
-		cartridges:                nil,
-		DisableCartridgeAutostart: false,
-		driveIndex:                0,
-		changed:                   signals.NewSignal(),
+		cartridges: nil,
+		driveIndex: 0,
+		changed:    signals.NewSignal(),
 	}
 }
 
@@ -72,14 +70,6 @@ func (p *Config) AddCartridge(kind string, path string) {
 
 func (p *Config) GetCartridges() []Cartridge {
 	return p.cartridges
-}
-
-func (p *Config) SetDisableCartridgeAutostart(v bool) {
-	p.DisableCartridgeAutostart = v
-}
-
-func (p *Config) GetDisableCartridgeAutostart() bool {
-	return p.DisableCartridgeAutostart
 }
 
 func (p *Config) Get1541RomPath() string {
