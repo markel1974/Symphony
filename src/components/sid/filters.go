@@ -91,25 +91,25 @@ func (f *Filters) Compute(outputFilter int32) int32 {
 	return outputFilter
 }
 
-func (f *Filters) UpdateFilterFreq(data uint8) {
+func (f *Filters) UpdateFreq(data uint8) {
 	if data != f.filterFreq {
 		f.filterFreq = data
 		if f.useFilters {
-			f.calcFilter()
+			f.compute()
 		}
 	}
 }
 
-func (f *Filters) UpdateFilterRes(data uint8) {
+func (f *Filters) UpdateRes(data uint8) {
 	if (data >> 4) != f.filterRes {
 		f.filterRes = data >> 4
 		if f.useFilters {
-			f.calcFilter()
+			f.compute()
 		}
 	}
 }
 
-func (f *Filters) UpdateFilterType(data uint8) {
+func (f *Filters) UpdateType(data uint8) {
 	if FilterType((data>>4)&7) != f.filterType {
 		f.filterType = FilterType((data >> 4) & 7)
 		f.xn1 = 0.0
@@ -117,12 +117,12 @@ func (f *Filters) UpdateFilterType(data uint8) {
 		f.yn1 = 0.0
 		f.yn2 = 0.0
 		if f.useFilters {
-			f.calcFilter()
+			f.compute()
 		}
 	}
 }
 
-func (f *Filters) calcFilter() {
+func (f *Filters) compute() {
 	var fr float64
 	// Check for some trivial cases
 	if f.filterType == FilterAll {

@@ -35,7 +35,6 @@ type AudioBuilder struct {
 	bufferFrags      int // frags the in buffer
 	bufferSize       int // bytes, not samples
 	maxLeadAvg       int // lead average count
-	triTable         [0x1000 * 2]uint16
 	divisorTableData []*DivisorTableData
 	volume           uint8                // Master volume
 	v3Mute           bool                 // Voice 3 muted
@@ -48,7 +47,6 @@ type AudioBuilder struct {
 	divisor          int
 	lead             []int
 	leadPos          int
-	seed             uint32
 	registerToVoice  []*Voice
 	filters          *Filters
 }
@@ -62,7 +60,6 @@ func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Au
 	d := &AudioBuilder{
 		player:           sp,
 		divisorTableData: nil,
-		seed:             1,
 		voices:           nil,
 		rasters:          rasters,
 		fragFreq:         fragFreq,
@@ -88,12 +85,6 @@ func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Au
 	for x := range d.registerToVoice {
 		vIdx := (x / 7) % len(d.voices)
 		d.registerToVoice[x] = d.voices[vIdx]
-	}
-
-	// Calculate triangle table
-	for i := uint16(0); i < 0x1000; i++ {
-		d.triTable[i] = (i << 4) | (i >> 8)
-		d.triTable[0x1fff-i] = (i << 4) | (i >> 8)
 	}
 
 	d.Reset()
@@ -143,7 +134,7 @@ func (dr *AudioBuilder) loadRegister(regIdx uint16, data uint8) {
 		voice.UpdateWaveForm(data)
 	case 5, 12, 19:
 		voice := dr.registerToVoice[regIdx]
-		voice.UpdateEG(data)
+		voice.UpdateEnvelopeGenerators(data)
 	case 6, 13, 20:
 		voice := dr.registerToVoice[regIdx]
 		voice.UpdateSustainLevel(data)
@@ -157,20 +148,20 @@ func (dr *AudioBuilder) loadRegister(regIdx uint16, data uint8) {
 }
 
 func (dr *AudioBuilder) updateFilterFreq(data uint8) {
-	dr.filters.UpdateFilterFreq(data)
+	dr.filters.UpdateFreq(data)
 }
 
 func (dr *AudioBuilder) updateVoiceFilters(data uint8) {
 	dr.voices[0].filter = flag.Uint8ToBool(data & 1)
 	dr.voices[1].filter = flag.Uint8ToBool(data & 2)
 	dr.voices[2].filter = flag.Uint8ToBool(data & 4)
-	dr.filters.UpdateFilterRes(data)
+	dr.filters.UpdateRes(data)
 }
 
 func (dr *AudioBuilder) updateVolume(data uint8) {
 	dr.volume = data & 0xf
 	dr.v3Mute = flag.Uint8ToBool(data & 0x80)
-	dr.filters.UpdateFilterType(data)
+	dr.filters.UpdateType(data)
 }
 
 func (dr *AudioBuilder) calcBuffer(buf []uint32) {
@@ -186,39 +177,9 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 		masterVolume := dr.sampleBuf[(sampleCount>>16)%SampleBufSize]
 		sampleCount += ((0x138 * 50) << 16) / SampleFreq
 		sumOutput := _sampleTable[masterVolume] << 8
-		// Loop for all three voices
-		for j := 0; j < 3; j++ {
-			v := dr.voices[j]
-			// Envelope generators
-			var envelope uint16
-			switch v.egState {
-			case EgAttack:
-				v.egLevel += v.aAdd
-				if v.egLevel > 0xffffff {
-					v.egLevel = 0xffffff
-					v.egState = EgDecay
-				}
-			case EgDecay:
-				if v.egLevel <= v.sLevel || v.egLevel > 0xffffff {
-					v.egLevel = v.sLevel
-				} else {
-					v.egLevel -= v.dSub >> _eGDRShiftTable[v.egLevel>>16]
-					if v.egLevel <= v.sLevel || v.egLevel > 0xffffff {
-						v.egLevel = v.sLevel
-					}
-				}
-			case EgRelease:
-				v.egLevel -= v.rSub >> _eGDRShiftTable[v.egLevel>>16]
-				if v.egLevel > 0xffffff {
-					v.egLevel = 0
-					v.egState = EgIdle
-				}
-			case EgIdle:
-				v.egLevel = 0
-			}
-			envelope = uint16((v.egLevel * uint32(masterVolume)) >> 20)
-			// Waveform generator
-			var output uint16
+		for _, v := range dr.voices {
+			v.ComputeEnvelopeGenerators()
+			envelope := uint16((v.egLevel * uint32(masterVolume)) >> 20)
 			if !v.test {
 				v.count += v.add
 			}
@@ -226,54 +187,7 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 				v.modTo.count = 0
 			}
 			v.count &= 0xffffff
-			switch v.wave {
-			case WaveTri:
-				if v.ring {
-					output = dr.triTable[(v.count^(v.modBy.count&0x800000))>>11]
-				} else {
-					output = dr.triTable[v.count>>11]
-				}
-			case WaveSaw:
-				output = uint16(v.count >> 8)
-			case WaveRect:
-				if v.count > uint32(v.pw<<12) {
-					output = 0xffff
-				} else {
-					output = 0
-				}
-			case WaveTriSaw:
-				output = _triSawTable[v.count>>16]
-			case WaveTriRect:
-				if v.count > uint32(v.pw<<12) {
-					output = _triRectTable[v.count>>16]
-				} else {
-					output = 0
-				}
-			case WaveSawRect:
-				if v.count > uint32(v.pw<<12) {
-					output = _sawRectTable[v.count>>16]
-				} else {
-					output = 0
-				}
-			case WaveTriSawRect:
-				if v.count > uint32(v.pw<<12) {
-					output = _triSawRectTable[v.count>>16]
-				} else {
-					output = 0
-				}
-			case WaveNoise:
-				if v.count > 0x100000 {
-					dr.seed = (dr.seed * 1103515245) + 12345
-					noise := dr.seed >> 16
-					v.noise = noise << 8
-					output = uint16(v.noise)
-					v.count &= 0xfffff
-				} else {
-					output = uint16(v.noise)
-				}
-			default:
-				output = 0x8000
-			}
+			output := v.ComputeWaveForm()
 			if v.filter {
 				sumOutputFilter += int32((output ^ 0x8000) * envelope)
 			} else {

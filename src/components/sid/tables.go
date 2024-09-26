@@ -198,3 +198,13 @@ var _sampleTable = [16]int32{
 	int32(0x6eee),
 	int32(0x7fff),
 }
+
+var _triTable [0x1000 * 2]uint16
+
+func init() {
+	// Calculate triangle table
+	for i := uint16(0); i < 0x1000; i++ {
+		_triTable[i] = (i << 4) | (i >> 8)
+		_triTable[0x1fff-i] = (i << 4) | (i >> 8)
+	}
+}

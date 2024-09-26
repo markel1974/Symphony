@@ -2,6 +2,20 @@ package mos6581
 
 import "github.com/markel1974/c64emu/src/flag"
 
+type WaveFormType int
+
+const (
+	WaveNone = WaveFormType(iota)
+	WaveTri
+	WaveSaw
+	WaveTriSaw
+	WaveRect
+	WaveTriRect
+	WaveSawRect
+	WaveTriSawRect
+	WaveNoise
+)
+
 type Voice struct {
 	number  uint8
 	wave    WaveFormType // Selected waveform
@@ -23,6 +37,7 @@ type Voice struct {
 	test    bool         // Test bit
 	filter  bool         // Flag: Voice filtered
 	sync    bool         // The following bit is set for the modulating voices, not for the modulated one (as the SID bits)
+	seed    uint32
 }
 
 func NewVoice(number uint8) *Voice {
@@ -47,6 +62,7 @@ func NewVoice(number uint8) *Voice {
 		test:    false,
 		filter:  false,
 		sync:    false,
+		seed:    1,
 	}
 }
 
@@ -114,7 +130,7 @@ func (v *Voice) UpdateWaveForm(data uint8) {
 	}
 }
 
-func (v *Voice) UpdateEG(data uint8) {
+func (v *Voice) UpdateEnvelopeGenerators(data uint8) {
 	v.aAdd = _eGTable[data>>4]
 	v.dSub = _eGTable[data&0xf]
 }
@@ -122,4 +138,85 @@ func (v *Voice) UpdateEG(data uint8) {
 func (v *Voice) UpdateSustainLevel(data uint8) {
 	v.sLevel = (uint32(data) >> 4) * 0x111111
 	v.rSub = _eGTable[data&0xf]
+}
+
+func (v *Voice) ComputeEnvelopeGenerators() {
+	switch v.egState {
+	case EgAttack:
+		v.egLevel += v.aAdd
+		if v.egLevel > 0xffffff {
+			v.egLevel = 0xffffff
+			v.egState = EgDecay
+		}
+	case EgDecay:
+		if v.egLevel <= v.sLevel || v.egLevel > 0xffffff {
+			v.egLevel = v.sLevel
+		} else {
+			v.egLevel -= v.dSub >> _eGDRShiftTable[v.egLevel>>16]
+			if v.egLevel <= v.sLevel || v.egLevel > 0xffffff {
+				v.egLevel = v.sLevel
+			}
+		}
+	case EgRelease:
+		v.egLevel -= v.rSub >> _eGDRShiftTable[v.egLevel>>16]
+		if v.egLevel > 0xffffff {
+			v.egLevel = 0
+			v.egState = EgIdle
+		}
+	case EgIdle:
+		v.egLevel = 0
+	}
+}
+
+func (v *Voice) ComputeWaveForm() uint16 {
+	output := uint16(0)
+	switch v.wave {
+	case WaveTri:
+		if v.ring {
+			output = _triTable[(v.count^(v.modBy.count&0x800000))>>11]
+		} else {
+			output = _triTable[v.count>>11]
+		}
+	case WaveSaw:
+		output = uint16(v.count >> 8)
+	case WaveRect:
+		if v.count > uint32(v.pw<<12) {
+			output = 0xffff
+		} else {
+			output = 0
+		}
+	case WaveTriSaw:
+		output = _triSawTable[v.count>>16]
+	case WaveTriRect:
+		if v.count > uint32(v.pw<<12) {
+			output = _triRectTable[v.count>>16]
+		} else {
+			output = 0
+		}
+	case WaveSawRect:
+		if v.count > uint32(v.pw<<12) {
+			output = _sawRectTable[v.count>>16]
+		} else {
+			output = 0
+		}
+	case WaveTriSawRect:
+		if v.count > uint32(v.pw<<12) {
+			output = _triSawRectTable[v.count>>16]
+		} else {
+			output = 0
+		}
+	case WaveNoise:
+		if v.count > 0x100000 {
+			v.seed = (v.seed * 1103515245) + 12345
+			noise := v.seed >> 16
+			v.noise = noise << 8
+			output = uint16(v.noise)
+			v.count &= 0xfffff
+		} else {
+			output = uint16(v.noise)
+		}
+	default:
+		output = 0x8000
+	}
+	return output
 }
