@@ -4,53 +4,60 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
+const (
+	potXRegisterIndex = 25
+	potYRegisterIndex = 26
+)
+
 type SID struct {
-	id      string
-	socket  ISocket
-	regs    []uint8
-	cfg     *config.Config
-	builder *Builder
+	id           string
+	socket       ISocket
+	registers    []uint8
+	cfg          *config.Config
+	audioBuilder *AudioBuilder
 }
 
 func NewSID(id string) *SID {
 	s := &SID{
-		id:      id,
-		socket:  nil,
-		regs:    make([]uint8, RegisterCount),
-		cfg:     nil,
-		builder: nil,
+		id:           id,
+		socket:       nil,
+		registers:    make([]uint8, RegisterCount),
+		cfg:          nil,
+		audioBuilder: nil,
 	}
 	return s
 }
 
 func (sid *SID) Setup(socket ISocket, cfg *config.Config, fragFreq int, rasters int) {
 	sid.socket = socket
-	sid.builder = NewBuilder(sid.socket.GetPlayer(), true, fragFreq, rasters)
+	sid.audioBuilder = NewAudioBuilder(sid.socket.GetPlayer(), true, fragFreq, rasters)
 	sid.cfg = cfg
-	sid.cfg.Bind(sid.configChanged)
+	sid.cfg.Bind(sid.onConfigChanged)
 }
 
 func (sid *SID) SetPotX(pot uint8) {
 	// PX7 PX6 PX5 PX4 PX3 PX2 PX1 PX0
-	sid.regs[25] = pot
+	sid.registers[potXRegisterIndex] = pot
 }
 
 func (sid *SID) SetPotY(pot uint8) {
 	//PY7 PY6 PY5 PY4 PY3 PY2 PY1 PY0
-	sid.regs[26] = pot
+	sid.registers[potYRegisterIndex] = pot
 }
 
-func (sid *SID) configChanged() {
+func (sid *SID) onConfigChanged() {
 	//TODO
 }
 
 func (sid *SID) Reset() {
-	for x := range sid.regs {
-		sid.regs[x] = 0
+	for x := range sid.registers {
+		sid.registers[x] = 0
 	}
-	sid.builder.Reset()
 	sid.SetPotX(0xff)
 	sid.SetPotY(0xff)
+
+	sid.audioBuilder.Reset()
+
 	//PADDLE TEST
 	//sid.WriteRegister(0xDC00, 0x40) //Control-Port 1 selected
 	//sid.WriteRegister(0xD419, 0x7F) //Paddle X value
@@ -59,7 +66,7 @@ func (sid *SID) Reset() {
 
 func (sid *SID) ReadRegister(addr uint16) uint8 {
 	reg := addr & 0x1f
-	v := sid.regs[reg]
+	v := sid.registers[reg]
 	//fmt.Printf("[%s][ReadRegister] addr %X [%x] -> %d\n", sid.id, addr, reg, v)
 	return v
 }
@@ -67,15 +74,15 @@ func (sid *SID) ReadRegister(addr uint16) uint8 {
 func (sid *SID) WriteRegister(addr uint16, data uint8) {
 	reg := addr & 0x1f
 	//fmt.Printf("[%s][WriteRegister] addr %X [%x] -> %d\n", sid.id, addr, reg, data)
-	sid.regs[reg] = data
+	sid.registers[reg] = data
 }
 
 func (sid *SID) Prepare() {
-	sid.builder.Prepare(sid.regs)
+	sid.audioBuilder.Prepare(sid.registers)
 }
 
 func (sid *SID) Update() {
-	sid.builder.Update()
+	sid.audioBuilder.Update()
 }
 
 func (sid *SID) GetLastByte() uint8 {

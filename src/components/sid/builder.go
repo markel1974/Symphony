@@ -13,20 +13,6 @@ const (
 	MPi        = math.Pi
 )
 
-type WaveFormType int
-
-const (
-	WaveNone = WaveFormType(iota)
-	WaveTri
-	WaveSaw
-	WaveTriSaw
-	WaveRect
-	WaveTriRect
-	WaveSawRect
-	WaveTriSawRect
-	WaveNoise
-)
-
 type EGState int
 
 const (
@@ -36,51 +22,30 @@ const (
 	EgRelease
 )
 
-type FilterType int
-
 const (
-	FilterNone = FilterType(iota)
-	FilterLp
-	FilterBp
-	FilterLpBp
-	FilterHp
-	FilterNotch
-	FilterHpBp
-	FilterAll
+	voicesNumber = 3
 )
-
-func calcResonanceLp(X float64) float64 {
-	v := 227.755 - 1.7635*X - 0.0176385*X*X + 0.00333484*X*X*X - 9.05683e-6*X*X*X*X
-	return v
-}
-
-func calcResonanceHp(X float64) float64 {
-	v := 366.374 - 14.0052*X + 0.603212*X*X - 0.000880196*X*X*X
-	return v
-}
 
 type DivisorTableData struct {
 	divisor int32
 	toOut   int32
 }
 
-type Builder struct {
-	player       IPlayer
-	rasters      int
-	fragFreq     int // one frag per frame
-	fragSize     int // samples, not bytes
-	fragInterval int // in milliseconds
-	bufferFrags  int // frags the in buffer
-	bufferSize   int // bytes, not samples
-	maxLeadAvg   int // lead average count
-	//regsHistory        [][]uint8
-	//regsHistoryIndex   uint32
+type AudioBuilder struct {
+	player             IPlayer
+	rasters            int
+	fragFreq           int // one frag per frame
+	fragSize           int // samples, not bytes
+	fragInterval       int // in milliseconds
+	bufferFrags        int // frags the in buffer
+	bufferSize         int // bytes, not samples
+	maxLeadAvg         int // lead average count
 	useFilters         bool
 	triTable           [0x1000 * 2]uint16
 	divisorTableData   []*DivisorTableData
 	volume             uint8        // Master volume
 	v3Mute             bool         // Voice 3 muted
-	voice              [3]*Voice    // Data for 3 voices
+	voices             []*Voice     // Data for 3 voices
 	filterType         FilterType   // Filter type
 	filterFreq         uint8        // SID filter frequency (upper 8 bits)
 	filterRes          uint8        // Filter resonance (0..15)
@@ -89,7 +54,7 @@ type Builder struct {
 	xn1, xn2, yn1, yn2 float64      // IIR filter previous input/output signal
 	resonanceLP        [256]float64 // shortcut for calc_filter
 	resonanceHP        [256]float64
-	sampleBuf          [SampleBufSize]uint8 // Buffer for sampled voice
+	sampleBuf          [SampleBufSize]uint8 // Buffer for sampled voices
 	sampleInPtr        int                  // Index in sample_buf for writing
 	soundBuffer        []uint32
 	toOutput           int
@@ -98,38 +63,47 @@ type Builder struct {
 	lead               []int
 	leadPos            int
 	seed               uint32
+	registerToVoice    []*Voice
 }
 
-func NewBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Builder {
-	d := &Builder{
+func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *AudioBuilder {
+	bufferFrags := fragFreq                  // one frag per frame
+	fragSize := SampleFreq / fragFreq        // samples, not bytes
+	fragInterval := 1000 / fragFreq          // in milliseconds
+	bufferSize := 2 * fragSize * bufferFrags // bytes, not samples
+
+	d := &AudioBuilder{
 		player:           sp,
 		useFilters:       useFilters,
 		divisorTableData: nil,
 		seed:             1,
-		//regsHistory:      make([][]uint8, RegisterHistory),
-		//regsHistoryIndex: 0,
+		voices:           make([]*Voice, voicesNumber),
+		rasters:          rasters,
+		fragFreq:         fragFreq,
+		fragSize:         fragSize,
+		fragInterval:     fragInterval,
+		bufferFrags:      fragFreq,
+		bufferSize:       bufferSize,
+		maxLeadAvg:       bufferFrags,
+		registerToVoice:  make([]*Voice, RegisterCount),
 	}
-	//for x := range d.regsHistory {
-	//	d.regsHistory[x] = make([]uint8, RegisterCount)
-	//}
-	d.rasters = rasters
-	d.fragFreq = fragFreq                         // one frag per frame
-	d.fragSize = SampleFreq / d.fragFreq          // samples, not bytes
-	d.fragInterval = 1000 / d.fragFreq            // in milliseconds
-	d.bufferFrags = d.fragFreq                    // frags the in buffer
-	d.bufferSize = 2 * d.fragSize * d.bufferFrags // bytes, not samples
-	d.maxLeadAvg = d.bufferFrags                  // lead average count
 
-	d.voice[0] = NewVoice()
-	d.voice[1] = NewVoice()
-	d.voice[2] = NewVoice()
+	for idx := range d.voices {
+		d.voices[idx] = NewVoice(uint8(idx))
+	}
+
+	for x := range d.registerToVoice {
+		vIdx := (x / 7) % voicesNumber
+		d.registerToVoice[x] = d.voices[vIdx]
+	}
+
 	// Link voices together
-	d.voice[0].modBy = d.voice[2]
-	d.voice[1].modBy = d.voice[0]
-	d.voice[2].modBy = d.voice[1]
-	d.voice[0].modTo = d.voice[1]
-	d.voice[1].modTo = d.voice[2]
-	d.voice[2].modTo = d.voice[0]
+	d.voices[0].modBy = d.voices[2]
+	d.voices[1].modBy = d.voices[0]
+	d.voices[2].modBy = d.voices[1]
+	d.voices[0].modTo = d.voices[1]
+	d.voices[1].modTo = d.voices[2]
+	d.voices[2].modTo = d.voices[0]
 	// Calculate triangle table
 	for i := uint16(0); i < 0x1000; i++ {
 		d.triTable[i] = (i << 4) | (i >> 8)
@@ -144,33 +118,11 @@ func NewBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Builder
 	return d
 }
 
-func (dr *Builder) Reset() {
-	//for x := range dr.regsHistory {
-	//	for y := range dr.regsHistory[x] {
-	//		dr.regsHistory[x][y] = 0
-	//	}
-	//}
-	//dr.regsHistoryIndex = 0
-
+func (dr *AudioBuilder) Reset() {
 	dr.volume = 0
 	dr.v3Mute = false
-	for v := 0; v < 3; v++ {
-		dr.voice[v].wave = WaveNone
-		dr.voice[v].egState = EgIdle
-		dr.voice[v].add = 0
-		dr.voice[v].count = 0
-		dr.voice[v].pw = 0
-		dr.voice[v].freq = 0
-		dr.voice[v].sLevel = 0
-		dr.voice[v].egLevel = 0
-		dr.voice[v].rSub = _eGTable[0]
-		dr.voice[v].dSub = _eGTable[0]
-		dr.voice[v].aAdd = _eGTable[0]
-		dr.voice[v].test = false
-		dr.voice[v].ring = false
-		dr.voice[v].gate = false
-		dr.voice[v].sync = false
-		dr.voice[v].filter = false
+	for _, voice := range dr.voices {
+		voice.Reset()
 	}
 	dr.filterType = FilterNone
 	dr.filterFreq = 0
@@ -200,81 +152,76 @@ func (dr *Builder) Reset() {
 	dr.leadPos = 0
 }
 
-func (dr *Builder) loadRegister(addr uint16, data uint8) {
-	v := addr / 7 // Voice number
-	switch addr {
+func (dr *AudioBuilder) loadRegister(regIdx uint16, data uint8) {
+	switch regIdx {
 	case 0, 7, 14:
-		dr.voice[v].freq = (dr.voice[v].freq & 0xff00) | addr
-		dr.voice[v].add = uint32(float64(dr.voice[v].freq) * Frequency / SampleFreq)
+		voice := dr.registerToVoice[regIdx]
+		voice.UpdateFreqA(regIdx)
 	case 1, 8, 15:
-		dr.voice[v].freq = (dr.voice[v].freq & 0xff) | (uint16(data) << 8)
-		dr.voice[v].add = uint32(float64(dr.voice[v].freq) * Frequency / SampleFreq)
+		voice := dr.registerToVoice[regIdx]
+		voice.UpdateFreqB(data)
 	case 2, 9, 16:
-		dr.voice[v].pw = (dr.voice[v].pw & 0x0f00) | uint16(data)
+		voice := dr.registerToVoice[regIdx]
+		voice.UpdatePulseWidthA(data)
 	case 3, 10, 17:
-		dr.voice[v].pw = (dr.voice[v].pw & 0xff) | ((uint16(data) & 0xf) << 8)
+		voice := dr.registerToVoice[regIdx]
+		voice.UpdatePulseWidthB(data)
 	case 4, 11, 18:
-		dr.voice[v].wave = WaveFormType(data>>4) & 0xf
-		if flag.Uint8ToBool(data&1) != dr.voice[v].gate {
-			if (data & 1) != 0 {
-				// Gate turned on
-				dr.voice[v].egState = EgAttack
-			} else {
-				// Gate turned off
-				if dr.voice[v].egState != EgIdle {
-					dr.voice[v].egState = EgRelease
-				}
-			}
-		}
-		dr.voice[v].gate = flag.Uint8ToBool(data & 1)
-		dr.voice[v].modBy.sync = flag.Uint8ToBool(data & 2)
-		dr.voice[v].ring = flag.Uint8ToBool(data & 4)
-		dr.voice[v].test = flag.Uint8ToBool(data & 8)
-		if dr.voice[v].test {
-			dr.voice[v].count = 0
-		}
+		voice := dr.registerToVoice[regIdx]
+		voice.UpdateWaveForm(data)
 	case 5, 12, 19:
-		dr.voice[v].aAdd = _eGTable[data>>4]
-		dr.voice[v].dSub = _eGTable[data&0xf]
+		voice := dr.registerToVoice[regIdx]
+		voice.UpdateEG(data)
 	case 6, 13, 20:
-		dr.voice[v].sLevel = (uint32(data) >> 4) * 0x111111
-		dr.voice[v].rSub = _eGTable[data&0xf]
+		voice := dr.registerToVoice[regIdx]
+		voice.UpdateSustainLevel(data)
 	case 22:
-		if data != dr.filterFreq {
-			dr.filterFreq = data
-			if dr.useFilters {
-				dr.calcFilter()
-			}
-		}
+		dr.updateFilterFreq(data)
 	case 23:
-		dr.voice[0].filter = flag.Uint8ToBool(data & 1)
-		dr.voice[1].filter = flag.Uint8ToBool(data & 2)
-		dr.voice[2].filter = flag.Uint8ToBool(data & 4)
-		if (data >> 4) != dr.filterRes {
-			dr.filterRes = data >> 4
-			if dr.useFilters {
-				dr.calcFilter()
-			}
-		}
+		dr.updateVoiceFilters(data)
 	case 24:
-		dr.volume = data & 0xf
-		dr.v3Mute = flag.Uint8ToBool(data & 0x80)
-		if FilterType((data>>4)&7) != dr.filterType {
-			dr.filterType = FilterType((data >> 4) & 7)
-			dr.xn1 = 0.0
-			dr.xn2 = 0.0
-			dr.yn1 = 0.0
-			dr.yn2 = 0.0
-			if dr.useFilters {
-				dr.calcFilter()
-			}
+		dr.updateVolume(data)
+	}
+}
+
+func (dr *AudioBuilder) updateFilterFreq(data uint8) {
+	if data != dr.filterFreq {
+		dr.filterFreq = data
+		if dr.useFilters {
+			dr.calcFilter()
 		}
 	}
 }
 
-func (dr *Builder) calcFilter() {
-	var fr float64
+func (dr *AudioBuilder) updateVoiceFilters(data uint8) {
+	dr.voices[0].filter = flag.Uint8ToBool(data & 1)
+	dr.voices[1].filter = flag.Uint8ToBool(data & 2)
+	dr.voices[2].filter = flag.Uint8ToBool(data & 4)
+	if (data >> 4) != dr.filterRes {
+		dr.filterRes = data >> 4
+		if dr.useFilters {
+			dr.calcFilter()
+		}
+	}
+}
 
+func (dr *AudioBuilder) updateVolume(data uint8) {
+	dr.volume = data & 0xf
+	dr.v3Mute = flag.Uint8ToBool(data & 0x80)
+	if FilterType((data>>4)&7) != dr.filterType {
+		dr.filterType = FilterType((data >> 4) & 7)
+		dr.xn1 = 0.0
+		dr.xn2 = 0.0
+		dr.yn1 = 0.0
+		dr.yn2 = 0.0
+		if dr.useFilters {
+			dr.calcFilter()
+		}
+	}
+}
+
+func (dr *AudioBuilder) calcFilter() {
+	var fr float64
 	// Check for some trivial cases
 	if dr.filterType == FilterAll {
 		dr.d1 = 0.0
@@ -344,12 +291,12 @@ func (dr *Builder) calcFilter() {
 	}
 }
 
-func (dr *Builder) noiseRandom() uint8 {
+func (dr *AudioBuilder) noiseRandom() uint8 {
 	dr.seed = dr.seed*1103515245 + 12345
 	return (uint8)(dr.seed >> 16)
 }
 
-func (dr *Builder) calcBuffer(buf []uint32) {
+func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 	// Get filter coefficients, so the emulator won't change them in the middle of calculations
 	cfAmpl := dr.filterAmpl
 	cd1 := dr.d1
@@ -364,13 +311,13 @@ func (dr *Builder) calcBuffer(buf []uint32) {
 	idx := 0
 	for ; count >= 0; count, idx = count-1, idx+1 {
 		var sumOutputFilter int32 = 0
-		// Get current master volume from sample buffer, calculate sampled voice
+		// Get current master volume from sample buffer, calculate sampled voices
 		masterVolume := dr.sampleBuf[(sampleCount>>16)%SampleBufSize]
 		sampleCount += ((0x138 * 50) << 16) / SampleFreq
 		sumOutput := _sampleTable[masterVolume] << 8
 		// Loop for all three voices
 		for j := 0; j < 3; j++ {
-			v := dr.voice[j]
+			v := dr.voices[j]
 			// Envelope generators
 			var envelope uint16
 			switch v.egState {
@@ -475,13 +422,13 @@ func (dr *Builder) calcBuffer(buf []uint32) {
 	}
 }
 
-func (dr *Builder) Prepare(regs []uint8) {
-	for y := uint16(0); y < uint16(len(regs)); y++ {
-		dr.loadRegister(y, regs[y])
+func (dr *AudioBuilder) Prepare(regs []uint8) {
+	for y, r := range regs {
+		dr.loadRegister(uint16(y), r)
 	}
 }
 
-func (dr *Builder) Update() {
+func (dr *AudioBuilder) Update() {
 	dr.sampleBuf[dr.sampleInPtr] = dr.volume
 	dr.sampleInPtr = (dr.sampleInPtr + 1) % SampleBufSize
 	dr.divisor += SampleFreq
@@ -494,7 +441,7 @@ func (dr *Builder) Update() {
 	}
 }
 
-func (dr *Builder) write() {
+func (dr *AudioBuilder) write() {
 	if dr.player == nil {
 		return
 	}
@@ -551,7 +498,7 @@ func (dr *Builder) write() {
 	dr.player.Write(dr.soundBuffer, currPos, samples)
 }
 
-func (dr *Builder) createDivisorTable() {
+func (dr *AudioBuilder) createDivisorTable() {
 	tmp := int32(dr.rasters * dr.fragFreq)
 	dr.divisorTableData = make([]*DivisorTableData, SampleFreq+1)
 	for x := int32(0); x <= SampleFreq; x++ {

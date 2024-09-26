@@ -1,14 +1,12 @@
 package mos6581
 
-//const CalcFreq        = 50                         // Frequency at which calc_buffer is called in Hz (should be 50Hz)
-
 const (
-	SampleFreq      = 44100                  // AcquireColor output frequency in Hz
-	Frequency       = 985248                 // SID frequency in Hz
-	Cycles          = Frequency / SampleFreq // # of SID clocks per sample frame
-	SampleBufSize   = 0x138 * 2              // Size of buffer for sampled voice (double buffered)
-	RegisterCount   = 32                     //
-	RegisterHistory = 1024                   //
+	SampleFreq    = 44100                  // SampleFreq define the output frequency in Hz
+	Frequency     = 985248                 // Frequency defines the SID frequency in Hz
+	Cycles        = Frequency / SampleFreq // Cycles defines the SID clocks per sample frame
+	SampleBufSize = 0x138 * 2              // SampleBufSize defines the size of the buffer for sampled voices (double buffered)
+	RegisterCount = 32                     // RegisterCount defines the number of registers in the SID.
+	//RegisterHistory = 1024                   // RegisterHistory defines the size of the register history buffer.
 )
 
 // from a 6581R4
