@@ -67,18 +67,18 @@ func (sid *SID) Reset() {
 func (sid *SID) ReadRegister(addr uint16) uint8 {
 	reg := addr & 0x1f
 	v := sid.registers[reg]
-	//fmt.Printf("[%s][ReadRegister] addr %X [%x] -> %d\n", sid.id, addr, reg, v)
 	return v
 }
 
 func (sid *SID) WriteRegister(addr uint16, data uint8) {
 	reg := addr & 0x1f
-	//fmt.Printf("[%s][WriteRegister] addr %X [%x] -> %d\n", sid.id, addr, reg, data)
 	sid.registers[reg] = data
 }
 
 func (sid *SID) Prepare() {
-	sid.audioBuilder.Prepare(sid.registers)
+	for y, r := range sid.registers {
+		sid.audioBuilder.LoadRegister(uint8(y), r)
+	}
 }
 
 func (sid *SID) Update() {

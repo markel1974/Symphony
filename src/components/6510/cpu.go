@@ -2,7 +2,7 @@ package mos6510
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/flag"
+	"github.com/markel1974/c64emu/src/conversion"
 )
 
 //https://web.archive.org/web/20221112220344if_/http://archive.6502.org/datasheets/synertek_programming_manual.pdf
@@ -103,7 +103,7 @@ func (cpu *CPU) popFlags(data uint8) {
 	cpu.vFlag = data & 0x40
 	cpu.dFlag = data & 0x08
 	cpu.iFlag = data & 0x04
-	cpu.zFlag = flag.BoolToUint8((data & 0x02) == 0)
+	cpu.zFlag = conversion.BoolToUint8((data & 0x02) == 0)
 	cpu.cFlag = data & 0x01
 }
 
@@ -151,10 +151,10 @@ func (cpu *CPU) doADC(data uint8) {
 	if cpu.dFlag == 0 {
 		// Binary mode
 		tmp := uint16(cpu.a) + uint16(data) + uint16(k)
-		cpu.cFlag = flag.BoolToUint8(tmp > 0xff)
+		cpu.cFlag = conversion.BoolToUint8(tmp > 0xff)
 		p1 := (uint16(cpu.a) ^ uint16(data)) & 0x80
 		p2 := (uint16(cpu.a) ^ tmp) & 0x80
-		cpu.vFlag = flag.BoolToUint8((p1 == 0) && (p2 != 0))
+		cpu.vFlag = conversion.BoolToUint8((p1 == 0) && (p2 != 0))
 		cpu.a = uint8(tmp)
 		cpu.nFlag = uint8(tmp)
 		cpu.zFlag = uint8(tmp)
@@ -173,13 +173,13 @@ func (cpu *CPU) doADC(data uint8) {
 	cpu.nFlag = ah << 4 // Only highest bit used
 	p1 := ((ah << 4) ^ cpu.a) & 0x80
 	p2 := (cpu.a ^ data) & 0x80
-	cpu.vFlag = flag.BoolToUint8((p1 != 0) && (p2 == 0))
+	cpu.vFlag = conversion.BoolToUint8((p1 != 0) && (p2 == 0))
 	if ah > 9 {
 		ah += 6
 	}
 	// BCD fixup for upper nybble
-	cpu.cFlag = flag.BoolToUint8(ah > 0x0f) // carry flag
-	cpu.a = (ah << 4) | (al & 0x0f)         // result
+	cpu.cFlag = conversion.BoolToUint8(ah > 0x0f) // carry flag
+	cpu.a = (ah << 4) | (al & 0x0f)               // result
 }
 
 func (cpu *CPU) doSBC(data uint8) {
@@ -190,10 +190,10 @@ func (cpu *CPU) doSBC(data uint8) {
 	tmp := uint16(cpu.a) - uint16(data) - uint16(k)
 	if cpu.dFlag == 0 {
 		// Binary mode
-		cpu.cFlag = flag.BoolToUint8(tmp < 0x100)
+		cpu.cFlag = conversion.BoolToUint8(tmp < 0x100)
 		p1 := (uint16(cpu.a) ^ tmp) & 0x80
 		p2 := (uint16(cpu.a) ^ uint16(data)) & 0x80
-		cpu.vFlag = flag.BoolToUint8((p1 != 0) && (p2 != 0))
+		cpu.vFlag = conversion.BoolToUint8((p1 != 0) && (p2 != 0))
 		cpu.a = uint8(tmp)
 		cpu.nFlag = uint8(tmp)
 		cpu.zFlag = uint8(tmp)
@@ -209,10 +209,10 @@ func (cpu *CPU) doSBC(data uint8) {
 	if (ah & 0x10) != 0 {
 		ah -= 6 // BCD fixup
 	}
-	cpu.cFlag = flag.BoolToUint8(uint16(tmp) < 0x100)
+	cpu.cFlag = conversion.BoolToUint8(uint16(tmp) < 0x100)
 	p1 := (uint16(cpu.a) ^ tmp) & 0x80
 	p2 := (uint16(cpu.a) ^ uint16(data)) & 0x80
-	cpu.vFlag = flag.BoolToUint8((p1 != 0) && (p2 != 0))
+	cpu.vFlag = conversion.BoolToUint8((p1 != 0) && (p2 != 0))
 	cpu.zFlag = uint8(tmp)
 	cpu.nFlag = uint8(tmp)
 	cpu.a = (ah << 4) | (al & 0x0f)
@@ -222,7 +222,7 @@ func (cpu *CPU) printRegisters(qCycle uint64, baLow bool) {
 	fmt.Printf("CPU] %d|%d||%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d\n",
 		qCycle,
 		//cpu.state,
-		flag.BoolToUint8(baLow),
+		conversion.BoolToUint8(baLow),
 		cpu.nFlag,
 		cpu.zFlag,
 		cpu.vFlag,

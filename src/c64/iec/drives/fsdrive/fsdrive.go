@@ -30,7 +30,7 @@ type FSDrive struct {
 	deviceId       uint8
 	deviceNumber   uint8
 	path           string
-	respond        *fifo.Queue
+	respond        *fifo.StaticFifo
 	_dir_path      string       // Path to directory
 	_orig_dir_path string       // Original directory path
 	_dir_title     string       // Directory title
@@ -49,7 +49,7 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, path string)
 		deviceId:       deviceId,
 		deviceNumber:   deviceNumber,
 		path:           path,
-		respond:        fifo.NewQueue(512),
+		respond:        fifo.NewStaticFifo(512),
 		commands:       virtualdrive.NewCommands(),
 		_orig_dir_path: "",
 		atn:            false,
@@ -103,8 +103,8 @@ func (v *FSDrive) AtnStateChanged(atnPrev bool, atn bool) {
 		//value := uint8(DATA_OUT)
 		//value = ^value
 
-		v.respond.AddMulti(NOOP, 8)
-		v.respond.Add(int(value))
+		v.respond.SetMulti(NOOP, 8)
+		v.respond.Set(int(value))
 		fmt.Printf("...atn is on, responding %03d [%08b]\n", value, value)
 	} else {
 		v.state = 0
@@ -129,8 +129,8 @@ func (v *FSDrive) BusStateChanged(data uint8) {
 
 			//value := 0xfe
 			value := ATN_A | DATA_OUT
-			v.respond.AddMulti(NOOP, 16)
-			v.respond.Add(value)
+			v.respond.SetMulti(NOOP, 16)
+			v.respond.Set(value)
 			v.state = 2
 			fmt.Printf("...responding I'm Here %03d [%08b]\n", value, value)
 			return
@@ -138,8 +138,8 @@ func (v *FSDrive) BusStateChanged(data uint8) {
 	case 2:
 		if !clkIn && dataIn {
 			value := ATN_A
-			v.respond.AddMulti(NOOP, 16)
-			v.respond.Add(value)
+			v.respond.SetMulti(NOOP, 16)
+			v.respond.Set(value)
 			v.state = 3
 			fmt.Printf("...responding Ready %03d [%08b]\n", value, value)
 			return

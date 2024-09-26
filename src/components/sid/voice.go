@@ -1,6 +1,6 @@
 package mos6581
 
-import "github.com/markel1974/c64emu/src/flag"
+import "github.com/markel1974/c64emu/src/conversion"
 
 type WaveFormType int
 
@@ -90,8 +90,8 @@ func (v *Voice) Reset() {
 	v.filter = false
 }
 
-func (v *Voice) UpdateFreqA(regIdx uint16) {
-	v.freq = (v.freq & 0xff00) | regIdx
+func (v *Voice) UpdateFreqA(regIdx uint8) {
+	v.freq = (v.freq & 0xff00) | uint16(regIdx)
 	v.add = uint32(float64(v.freq) * Frequency / SampleFreq)
 }
 
@@ -110,7 +110,7 @@ func (v *Voice) UpdatePulseWidthB(data uint8) {
 
 func (v *Voice) UpdateWaveForm(data uint8) {
 	v.wave = WaveFormType(data>>4) & 0xf
-	if flag.Uint8ToBool(data&1) != v.gate {
+	if conversion.Uint8ToBool(data&1) != v.gate {
 		if (data & 1) != 0 {
 			// Gate turned on
 			v.egState = EgAttack
@@ -121,10 +121,10 @@ func (v *Voice) UpdateWaveForm(data uint8) {
 			}
 		}
 	}
-	v.gate = flag.Uint8ToBool(data & 1)
-	v.modBy.sync = flag.Uint8ToBool(data & 2)
-	v.ring = flag.Uint8ToBool(data & 4)
-	v.test = flag.Uint8ToBool(data & 8)
+	v.gate = conversion.Uint8ToBool(data & 1)
+	v.modBy.sync = conversion.Uint8ToBool(data & 2)
+	v.ring = conversion.Uint8ToBool(data & 4)
+	v.test = conversion.Uint8ToBool(data & 8)
 	if v.test {
 		v.count = 0
 	}

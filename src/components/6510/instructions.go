@@ -1,7 +1,7 @@
 package mos6510
 
 import (
-	"github.com/markel1974/c64emu/src/flag"
+	"github.com/markel1974/c64emu/src/conversion"
 	"log"
 	"os"
 )
@@ -1086,7 +1086,7 @@ func instOpCMP(cpu *CPU) {
 	cpu.ar = uint16(cpu.a) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	cpu.next = instOpINI
 }
 
@@ -1099,7 +1099,7 @@ func instOiCMP(cpu *CPU) {
 	cpu.ar = uint16(cpu.a) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	cpu.next = instOpINI
 }
 
@@ -1111,7 +1111,7 @@ func instOpCPX(cpu *CPU) {
 	cpu.ar = uint16(cpu.x) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	cpu.next = instOpINI
 }
 
@@ -1124,7 +1124,7 @@ func instOiCPX(cpu *CPU) {
 	cpu.ar = uint16(cpu.x) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	cpu.next = instOpINI
 }
 
@@ -1136,7 +1136,7 @@ func instOpCPY(cpu *CPU) {
 	cpu.ar = uint16(cpu.y) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	cpu.next = instOpINI
 }
 
@@ -1149,7 +1149,7 @@ func instOiCPY(cpu *CPU) {
 	cpu.ar = uint16(cpu.y) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	cpu.next = instOpINI
 }
 
@@ -1895,7 +1895,7 @@ func instOpDCP(cpu *CPU) {
 	cpu.ar = uint16(cpu.a) - uint16(cpu.rmw)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	cpu.next = instOpINI
 }
 
@@ -2007,7 +2007,7 @@ func instOiSBX(cpu *CPU) {
 	cpu.x = uint8(cpu.ar)
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.cFlag = flag.BoolToUint8(cpu.ar < stackAddr)
+	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	cpu.next = instOpINI
 }
 

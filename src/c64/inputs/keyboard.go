@@ -9,7 +9,7 @@ func matrix(a int, b int) int {
 }
 
 type Keyboard struct {
-	storage *fifo.Queue
+	storage *fifo.StaticFifo
 	virtual *Virtual
 	ascii   *Ascii
 }
@@ -25,7 +25,7 @@ func NewKeyboard() *Keyboard {
 }
 
 func (k *Keyboard) Reset() {
-	k.storage = fifo.NewQueue(16384)
+	k.storage = fifo.NewStaticFifo(16384)
 	k.virtual.Reset()
 	k.ascii.Reset()
 }
@@ -41,7 +41,7 @@ func (k *Keyboard) CapitalToggle() {
 func (k *Keyboard) SetVirtualKey(pressed bool, vKey int) {
 	if kc := k.virtual.FromVirtual(vKey); kc >= 0 {
 		v := keyCodeToC64(uint8(kc), -1, pressed)
-		k.storage.Add(int(v))
+		k.storage.Set(int(v))
 	}
 }
 
@@ -60,11 +60,11 @@ func (k *Keyboard) SetCommand(cmd string) {
 	for _, c := range cmd {
 		v := k.ascii.FromAscii(uint8(c))
 		p1 := keyCodeToC64(uint8(v.r1), v.shifted, true)
-		if !k.storage.Add(int(p1)) {
+		if !k.storage.Set(int(p1)) {
 			return
 		}
 		p2 := keyCodeToC64(uint8(v.r1), v.shifted, false)
-		if !k.storage.Add(int(p2)) {
+		if !k.storage.Set(int(p2)) {
 			return
 		}
 	}

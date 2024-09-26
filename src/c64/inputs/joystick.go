@@ -5,7 +5,7 @@ import (
 )
 
 type Joystick struct {
-	storage *fifo.Queue
+	storage *fifo.StaticFifo
 	joy     int
 	s1      uint
 	s2      uint
@@ -29,7 +29,7 @@ func (k *Joystick) Update(min uint16, max uint16, sensitivity uint16) {
 }
 
 func (k *Joystick) Reset() {
-	k.storage = fifo.NewQueue(256)
+	k.storage = fifo.NewStaticFifo(256)
 	k.joy = 0xff
 }
 
@@ -51,16 +51,16 @@ func (k *Joystick) Move(x uint, y uint, buttons uint) {
 	if (buttons & 2) != 0 {
 		//TODO SID POTX / POTY
 	}
-	k.storage.Add(k.joy)
+	k.storage.Set(k.joy)
 }
 
 func (k *Joystick) SetKey(pressed bool, jId int) {
 	if pressed {
 		k.joy = joyKeyDown(k.joy, jId)
-		k.storage.Add(k.joy)
+		k.storage.Set(k.joy)
 	} else {
 		k.joy = joyKeyUp(k.joy, jId)
-		k.storage.Add(k.joy)
+		k.storage.Set(k.joy)
 	}
 }
 
