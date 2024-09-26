@@ -2,7 +2,6 @@ package mos6581
 
 import (
 	"github.com/markel1974/c64emu/src/flag"
-	"log"
 	"math"
 )
 
@@ -28,38 +27,30 @@ type DivisorTableData struct {
 }
 
 type AudioBuilder struct {
-	player             IPlayer
-	rasters            int
-	fragFreq           int // one frag per frame
-	fragSize           int // samples, not bytes
-	fragInterval       int // in milliseconds
-	bufferFrags        int // frags the in buffer
-	bufferSize         int // bytes, not samples
-	maxLeadAvg         int // lead average count
-	useFilters         bool
-	triTable           [0x1000 * 2]uint16
-	divisorTableData   []*DivisorTableData
-	volume             uint8        // Master volume
-	v3Mute             bool         // Voice 3 muted
-	voices             []*Voice     // Data for 3 voices
-	filterType         FilterType   // Filter type
-	filterFreq         uint8        // SID filter frequency (upper 8 bits)
-	filterRes          uint8        // Filter resonance (0..15)
-	filterAmpl         float64      // IIR filter input attenuation;
-	d1, d2, g1, g2     float64      // IIR filter coefficients
-	xn1, xn2, yn1, yn2 float64      // IIR filter previous input/output signal
-	resonanceLP        [256]float64 // shortcut for calc_filter
-	resonanceHP        [256]float64
-	sampleBuf          [SampleBufSize]uint8 // Buffer for sampled voices
-	sampleInPtr        int                  // Index in sample_buf for writing
-	soundBuffer        []uint32
-	toOutput           int
-	sbPos              int
-	divisor            int
-	lead               []int
-	leadPos            int
-	seed               uint32
-	registerToVoice    []*Voice
+	player           IPlayer
+	rasters          int
+	fragFreq         int // one frag per frame
+	fragSize         int // samples, not bytes
+	fragInterval     int // in milliseconds
+	bufferFrags      int // frags the in buffer
+	bufferSize       int // bytes, not samples
+	maxLeadAvg       int // lead average count
+	triTable         [0x1000 * 2]uint16
+	divisorTableData []*DivisorTableData
+	volume           uint8                // Master volume
+	v3Mute           bool                 // Voice 3 muted
+	voices           []*Voice             // Data for 3 voices
+	sampleBuf        [SampleBufSize]uint8 // Buffer for sampled voices
+	sampleInPtr      int                  // Index in sample_buf for writing
+	soundBuffer      []uint32
+	toOutput         int
+	sbPos            int
+	divisor          int
+	lead             []int
+	leadPos          int
+	seed             uint32
+	registerToVoice  []*Voice
+	filters          *Filters
 }
 
 func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *AudioBuilder {
@@ -70,7 +61,6 @@ func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Au
 
 	d := &AudioBuilder{
 		player:           sp,
-		useFilters:       useFilters,
 		divisorTableData: nil,
 		seed:             1,
 		voices:           nil,
@@ -82,6 +72,7 @@ func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Au
 		bufferSize:       bufferSize,
 		maxLeadAvg:       bufferFrags,
 		registerToVoice:  make([]*Voice, RegisterCount),
+		filters:          NewFilters(useFilters),
 	}
 
 	voice0 := NewVoice(0)
@@ -104,10 +95,7 @@ func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Au
 		d.triTable[i] = (i << 4) | (i >> 8)
 		d.triTable[0x1fff-i] = (i << 4) | (i >> 8)
 	}
-	for i := 0; i < 256; i++ {
-		d.resonanceLP[i] = calcResonanceLp(float64(i))
-		d.resonanceHP[i] = calcResonanceHp(float64(i))
-	}
+
 	d.Reset()
 	d.createDivisorTable()
 	return d
@@ -119,18 +107,7 @@ func (dr *AudioBuilder) Reset() {
 	for _, voice := range dr.voices {
 		voice.Reset()
 	}
-	dr.filterType = FilterNone
-	dr.filterFreq = 0
-	dr.filterRes = 0
-	dr.filterAmpl = 1.0
-	dr.d1 = 0.0
-	dr.d2 = 0.0
-	dr.g1 = 0.0
-	dr.g2 = 0.0
-	dr.xn1 = 0.0
-	dr.xn2 = 0.0
-	dr.yn1 = 0.0
-	dr.yn2 = 0.0
+	dr.filters.Reset()
 	dr.sampleInPtr = 0
 
 	for x := range dr.sampleBuf {
@@ -180,124 +157,23 @@ func (dr *AudioBuilder) loadRegister(regIdx uint16, data uint8) {
 }
 
 func (dr *AudioBuilder) updateFilterFreq(data uint8) {
-	if data != dr.filterFreq {
-		dr.filterFreq = data
-		if dr.useFilters {
-			dr.calcFilter()
-		}
-	}
+	dr.filters.UpdateFilterFreq(data)
 }
 
 func (dr *AudioBuilder) updateVoiceFilters(data uint8) {
 	dr.voices[0].filter = flag.Uint8ToBool(data & 1)
 	dr.voices[1].filter = flag.Uint8ToBool(data & 2)
 	dr.voices[2].filter = flag.Uint8ToBool(data & 4)
-	if (data >> 4) != dr.filterRes {
-		dr.filterRes = data >> 4
-		if dr.useFilters {
-			dr.calcFilter()
-		}
-	}
+	dr.filters.UpdateFilterRes(data)
 }
 
 func (dr *AudioBuilder) updateVolume(data uint8) {
 	dr.volume = data & 0xf
 	dr.v3Mute = flag.Uint8ToBool(data & 0x80)
-	if FilterType((data>>4)&7) != dr.filterType {
-		dr.filterType = FilterType((data >> 4) & 7)
-		dr.xn1 = 0.0
-		dr.xn2 = 0.0
-		dr.yn1 = 0.0
-		dr.yn2 = 0.0
-		if dr.useFilters {
-			dr.calcFilter()
-		}
-	}
-}
-
-func (dr *AudioBuilder) calcFilter() {
-	var fr float64
-	// Check for some trivial cases
-	if dr.filterType == FilterAll {
-		dr.d1 = 0.0
-		dr.d2 = 0.0
-		dr.g1 = 0.0
-		dr.g2 = 0.0
-		dr.filterAmpl = 1.0
-		return
-	} else if dr.filterType == FilterNone {
-		dr.d1 = 0.0
-		dr.d2 = 0.0
-		dr.g1 = 0.0
-		dr.g2 = 0.0
-		dr.filterAmpl = 0.0
-		return
-	}
-
-	// Calculate resonance frequency
-	if dr.filterType == FilterLp || dr.filterType == FilterLpBp {
-		fr = dr.resonanceLP[dr.filterFreq]
-	} else {
-		fr = dr.resonanceHP[dr.filterFreq]
-	}
-	// Limit to <1/2 sample frequency, avoid div by 0 in case FilterBp below
-	arg := fr / float64(SampleFreq>>1)
-	if arg > 0.99 {
-		arg = 0.99
-	}
-	if arg < 0.01 {
-		arg = 0.01
-	}
-	// Calculate poles (resonance frequency and resonance)
-	dr.g2 = 0.55 + 1.2*arg*arg - 1.2*arg + float64(dr.filterRes)*0.0133333333
-	dr.g1 = -2.0 * math.Sqrt(dr.g2) * math.Cos(MPi*arg)
-	// Increase resonance if LP/HP combined with BP
-	if dr.filterType == FilterLpBp || dr.filterType == FilterHpBp {
-		dr.g2 += 0.1
-	}
-	// Stabilize filter
-	if math.Abs(dr.g1) >= dr.g2+1.0 {
-		if dr.g1 > 0.0 {
-			dr.g1 = dr.g2 + 0.99
-		} else {
-			dr.g1 = -(dr.g2 + 0.99)
-		}
-	}
-	// Calculate roots (filter characteristic) and input attenuation
-	switch dr.filterType {
-	case FilterLpBp, FilterLp:
-		dr.d1 = 2.0
-		dr.d2 = 1.0
-		dr.filterAmpl = 0.25 * (1.0 + dr.g1 + dr.g2)
-	case FilterHpBp, FilterHp:
-		dr.d1 = -2.0
-		dr.d2 = 1.0
-		dr.filterAmpl = 0.25 * (1.0 - dr.g1 + dr.g2)
-	case FilterBp:
-		dr.d1 = 0.0
-		dr.d2 = -1.0
-		dr.filterAmpl = 0.25 * (1.0 + dr.g1 + dr.g2) * (1.0 + math.Cos(MPi*arg)) / math.Sin(MPi*arg)
-	case FilterNotch:
-		dr.d1 = -2.0 * math.Cos(MPi*arg)
-		dr.d2 = 1.0
-		dr.filterAmpl = 0.25 * (1.0 + dr.g1 + dr.g2) * (1.0 + math.Cos(MPi*arg)) / math.Sin(MPi*arg)
-	default:
-		log.Printf("SID FILTER NOT IMPLEMENTED %d\n", dr.filterType)
-	}
-}
-
-func (dr *AudioBuilder) noiseRandom() uint8 {
-	dr.seed = dr.seed*1103515245 + 12345
-	return (uint8)(dr.seed >> 16)
+	dr.filters.UpdateFilterType(data)
 }
 
 func (dr *AudioBuilder) calcBuffer(buf []uint32) {
-	// Get filter coefficients, so the emulator won't change them in the middle of calculations
-	cfAmpl := dr.filterAmpl
-	cd1 := dr.d1
-	cd2 := dr.d2
-	cg1 := dr.g1
-	cg2 := dr.g2
 	// Index in sample_buf for reading, 16.16 fixed
 	sampleCount := (dr.sampleInPtr + SampleBufSize/2) << 16
 	// count >>= 2; // 16 bit stereo output, count is in bytes
@@ -387,7 +263,9 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 				}
 			case WaveNoise:
 				if v.count > 0x100000 {
-					v.noise = uint32(dr.noiseRandom()) << 8
+					dr.seed = (dr.seed * 1103515245) + 12345
+					noise := dr.seed >> 16
+					v.noise = noise << 8
 					output = uint16(v.noise)
 					v.count &= 0xfffff
 				} else {
@@ -402,17 +280,8 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 				sumOutput += int32((output ^ 0x8000) * envelope)
 			}
 		}
-		// Filter
-		if dr.useFilters {
-			xn := float64(sumOutputFilter) * cfAmpl
-			yn := xn + cd1*dr.xn1 + cd2*dr.xn2 - cg1*dr.yn1 - cg2*dr.yn2
-			dr.yn2 = dr.yn1
-			dr.yn1 = yn
-			dr.xn2 = dr.xn1
-			dr.xn1 = xn
-			sumOutputFilter = int32(yn)
-		}
-		// Write to buffer
+		sumOutputFilter = dr.filters.Compute(sumOutputFilter)
+
 		buf[idx] = uint32((sumOutput + sumOutputFilter) >> 10)
 	}
 }
