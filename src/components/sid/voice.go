@@ -16,6 +16,13 @@ const (
 	WaveNoise
 )
 
+const (
+	EgIdle = EGState(iota)
+	EgAttack
+	EgDecay
+	EgRelease
+)
+
 type Voice struct {
 	number  uint8
 	wave    WaveFormType // Selected waveform

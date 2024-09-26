@@ -2,29 +2,19 @@ package mos6581
 
 import (
 	"github.com/markel1974/c64emu/src/conversion"
-	"math"
 )
 
 const (
 	LatencyMin = 80
 	LatencyMax = 120
 	LatencyAvg = 280
-	MPi        = math.Pi
 )
 
 type EGState int
 
-const (
-	EgIdle = EGState(iota)
-	EgAttack
-	EgDecay
-	EgRelease
-)
-
 type AudioBuilder struct {
 	player          IPlayer
 	fragSize        int                  // samples, not bytes
-	fragInterval    int                  // in milliseconds
 	bufferFrags     int                  // frags the in buffer
 	bufferSize      int                  // bytes, not samples
 	volume          uint8                // Master volume
@@ -41,6 +31,9 @@ type AudioBuilder struct {
 	registerToVoice []*Voice
 	filters         *Filters
 	divisorTable    *DivisorTable
+	leadSmooth      int
+	leadHiWater     int
+	leadLoWater     int
 }
 
 func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *AudioBuilder {
@@ -54,12 +47,15 @@ func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Au
 		divisorTable:    NewDivisorTable(rasters, fragFreq),
 		voices:          nil,
 		fragSize:        fragSize,
-		fragInterval:    fragInterval,
 		bufferFrags:     fragFreq,
 		bufferSize:      bufferSize,
 		registerToVoice: make([]*Voice, RegisterCount),
 		filters:         NewFilters(useFilters),
 		lead:            make([]int, maxLeadAvg),
+		leadSmooth:      LatencyAvg / fragInterval,
+		leadHiWater:     LatencyMax / fragInterval,
+		leadLoWater:     LatencyMin / fragInterval,
+		soundBuffer:     make([]uint32, 2*fragSize),
 	}
 
 	voice0 := NewVoice(0)
@@ -94,7 +90,9 @@ func (dr *AudioBuilder) Reset() {
 	}
 	dr.toOutput = 0
 	dr.divisor = 0
-	dr.soundBuffer = make([]uint32, 2*dr.fragSize)
+	for x := range dr.soundBuffer {
+		dr.soundBuffer[x] = 0
+	}
 	for x := range dr.lead {
 		dr.lead[x] = 0
 	}
@@ -201,13 +199,6 @@ func (dr *AudioBuilder) Update() {
 }
 
 func (dr *AudioBuilder) write() {
-	if dr.player == nil {
-		return
-	}
-	// Convert latency preferences from milliseconds to frags.
-	leadSmooth := LatencyAvg / dr.fragInterval
-	leadHiWater := LatencyMax / dr.fragInterval
-	leadLoWater := LatencyMin / dr.fragInterval
 	// Compute the current lead in frags.
 	currentPosition := dr.player.GetCurrentPosition()
 	if currentPosition == -1 {
@@ -220,19 +211,19 @@ func (dr *AudioBuilder) write() {
 	leadInFrags := leadInBytes / 2 * dr.fragSize
 	dr.lead[dr.leadPos] = leadInFrags
 	dr.leadPos++
-	if dr.leadPos == leadSmooth {
+	if dr.leadPos == dr.leadSmooth {
 		dr.leadPos = 0
 	}
 	// Compute the average lead in frags.
 	avgLead := 0
-	for i := 0; i < leadSmooth; i++ {
+	for i := 0; i < dr.leadSmooth; i++ {
 		avgLead += dr.lead[i]
 	}
-	avgLead /= leadSmooth
+	avgLead /= dr.leadSmooth
 	//fmt.Printf("lead = %d, avg = %d\n", leadInFrags, avgLead)
 	//If we're getting too far ahead of the audio skip a frag.
-	if avgLead > leadHiWater {
-		for i := 0; i < leadSmooth; i++ {
+	if avgLead > dr.leadHiWater {
+		for i := 0; i < dr.leadSmooth; i++ {
 			dr.lead[i]--
 		}
 		//fmt.Printf("Skipping a frag...\n")
@@ -242,8 +233,8 @@ func (dr *AudioBuilder) write() {
 	nSamples := dr.fragSize
 	dr.calcBuffer(dr.soundBuffer)
 	// If we're getting too far behind the audio add an extra frag.
-	if avgLead < leadLoWater {
-		for i := 0; i < leadSmooth; i++ {
+	if avgLead < dr.leadLoWater {
+		for i := 0; i < dr.leadSmooth; i++ {
 			dr.lead[i]++
 		}
 		//fmt.Printf("Adding an extra frag...\n");

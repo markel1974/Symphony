@@ -18,13 +18,13 @@ const (
 	FilterAll
 )
 
-func calcResonanceLp(X float64) float64 {
-	v := 227.755 - 1.7635*X - 0.0176385*X*X + 0.00333484*X*X*X - 9.05683e-6*X*X*X*X
+func calcResonanceLp(x float64) float64 {
+	v := 227.755 - (1.7635 * x) - (0.0176385 * x * x) + (0.00333484 * x * x * x) - (9.05683e-6 * x * x * x * x)
 	return v
 }
 
-func calcResonanceHp(X float64) float64 {
-	v := 366.374 - 14.0052*X + 0.603212*X*X - 0.000880196*X*X*X
+func calcResonanceHp(x float64) float64 {
+	v := 366.374 - (14.0052 * x) + (0.603212 * x * x) - (0.000880196 * x * x * x)
 	return v
 }
 
@@ -101,8 +101,9 @@ func (f *Filters) UpdateFreq(data uint8) {
 }
 
 func (f *Filters) UpdateRes(data uint8) {
-	if (data >> 4) != f.filterRes {
-		f.filterRes = data >> 4
+	v := data >> 4
+	if v != f.filterRes {
+		f.filterRes = v
 		if f.useFilters {
 			f.compute()
 		}
@@ -110,8 +111,9 @@ func (f *Filters) UpdateRes(data uint8) {
 }
 
 func (f *Filters) UpdateType(data uint8) {
-	if FilterType((data>>4)&7) != f.filterType {
-		f.filterType = FilterType((data >> 4) & 7)
+	v := FilterType((data >> 4) & 7)
+	if v != f.filterType {
+		f.filterType = v
 		f.xn1 = 0.0
 		f.xn2 = 0.0
 		f.yn1 = 0.0
@@ -157,13 +159,13 @@ func (f *Filters) compute() {
 	}
 	// Calculate poles (resonance frequency and resonance)
 	f.g2 = 0.55 + 1.2*arg*arg - 1.2*arg + float64(f.filterRes)*0.0133333333
-	f.g1 = -2.0 * math.Sqrt(f.g2) * math.Cos(MPi*arg)
+	f.g1 = -2.0 * math.Sqrt(f.g2) * math.Cos(math.Pi*arg)
 	// Increase resonance if LP/HP combined with BP
 	if f.filterType == FilterLpBp || f.filterType == FilterHpBp {
 		f.g2 += 0.1
 	}
 	// Stabilize filter
-	if math.Abs(f.g1) >= f.g2+1.0 {
+	if math.Abs(f.g1) >= (f.g2 + 1.0) {
 		if f.g1 > 0.0 {
 			f.g1 = f.g2 + 0.99
 		} else {
@@ -183,11 +185,11 @@ func (f *Filters) compute() {
 	case FilterBp:
 		f.d1 = 0.0
 		f.d2 = -1.0
-		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 + math.Cos(MPi*arg)) / math.Sin(MPi*arg)
+		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 + math.Cos(math.Pi*arg)) / math.Sin(math.Pi*arg)
 	case FilterNotch:
-		f.d1 = -2.0 * math.Cos(MPi*arg)
+		f.d1 = -2.0 * math.Cos(math.Pi*arg)
 		f.d2 = 1.0
-		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 + math.Cos(MPi*arg)) / math.Sin(MPi*arg)
+		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 + math.Cos(math.Pi*arg)) / math.Sin(math.Pi*arg)
 	default:
 		log.Printf("SID FILTER NOT IMPLEMENTED %d\n", f.filterType)
 	}
