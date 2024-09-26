@@ -1,4 +1,4 @@
-package render
+package glrender
 
 import (
 	"fmt"

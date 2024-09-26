@@ -1,10 +1,11 @@
-package render
+package glrender
 
 import (
 	"github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/pixels"
+	"github.com/markel1974/c64emu/src/render/common"
 )
 
 type Render struct {
@@ -75,7 +76,7 @@ func (g *Render) run() {
 
 	c := win.Bounds().Center()
 	g.setup(c)
-	dt := NewDynamicThrottling(mos6569.FrameInterval)
+	dt := common.NewDynamicThrottling(mos6569.FrameInterval)
 
 	run := true
 	for run {

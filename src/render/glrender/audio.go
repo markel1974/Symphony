@@ -1,4 +1,4 @@
-package render
+package glrender
 
 //TODO OTO
 //https://github.com/ebitengine/oto

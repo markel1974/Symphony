@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/render"
+	"github.com/markel1974/c64emu/src/render/glrender"
 	"github.com/markel1974/c64emu/src/version"
 )
 
@@ -78,6 +78,7 @@ func main() {
 			cfg.AddDrive(v.K, v.V)
 		}
 	}
-	g := render.New(cfg)
+	g := glrender.New(cfg)
+	//g := asciirender.New(cfg)
 	g.Start()
 }
