@@ -76,8 +76,8 @@ func (sid *SID) WriteRegister(addr uint16, data uint8) {
 }
 
 func (sid *SID) Prepare() {
-	for y, r := range sid.registers {
-		sid.audioBuilder.LoadRegister(uint8(y), r)
+	for _, x := range _audioRegisters {
+		sid.audioBuilder.LoadRegister(x, sid.registers[x])
 	}
 }
 

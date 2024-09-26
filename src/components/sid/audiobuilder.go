@@ -100,6 +100,8 @@ func (dr *AudioBuilder) Reset() {
 	dr.sbPos = 0
 }
 
+var _audioRegisters = []uint8{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24}
+
 func (dr *AudioBuilder) LoadRegister(reg uint8, data uint8) {
 	switch reg {
 	case 0, 7, 14:
