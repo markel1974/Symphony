@@ -22,10 +22,6 @@ const (
 	EgRelease
 )
 
-const (
-	voicesNumber = 3
-)
-
 type DivisorTableData struct {
 	divisor int32
 	toOut   int32
@@ -77,7 +73,7 @@ func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Au
 		useFilters:       useFilters,
 		divisorTableData: nil,
 		seed:             1,
-		voices:           make([]*Voice, voicesNumber),
+		voices:           nil,
 		rasters:          rasters,
 		fragFreq:         fragFreq,
 		fragSize:         fragSize,
@@ -88,22 +84,21 @@ func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *Au
 		registerToVoice:  make([]*Voice, RegisterCount),
 	}
 
-	for idx := range d.voices {
-		d.voices[idx] = NewVoice(uint8(idx))
-	}
+	voice0 := NewVoice(0)
+	voice1 := NewVoice(1)
+	voice2 := NewVoice(2)
+
+	voice0.Setup(voice2, voice1)
+	voice1.Setup(voice0, voice2)
+	voice2.Setup(voice1, voice0)
+
+	d.voices = append(d.voices, voice0, voice1, voice2)
 
 	for x := range d.registerToVoice {
-		vIdx := (x / 7) % voicesNumber
+		vIdx := (x / 7) % len(d.voices)
 		d.registerToVoice[x] = d.voices[vIdx]
 	}
 
-	// Link voices together
-	d.voices[0].modBy = d.voices[2]
-	d.voices[1].modBy = d.voices[0]
-	d.voices[2].modBy = d.voices[1]
-	d.voices[0].modTo = d.voices[1]
-	d.voices[1].modTo = d.voices[2]
-	d.voices[2].modTo = d.voices[0]
 	// Calculate triangle table
 	for i := uint16(0); i < 0x1000; i++ {
 		d.triTable[i] = (i << 4) | (i >> 8)

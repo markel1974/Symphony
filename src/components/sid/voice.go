@@ -50,6 +50,11 @@ func NewVoice(number uint8) *Voice {
 	}
 }
 
+func (v *Voice) Setup(modBy *Voice, modTo *Voice) {
+	v.modBy = modBy
+	v.modTo = modTo
+}
+
 func (v *Voice) Reset() {
 	v.wave = WaveNone
 	v.egState = EgIdle
