@@ -78,6 +78,7 @@ func main() {
 			cfg.AddDrive(v.K, v.V)
 		}
 	}
+
 	g := glrender.New(cfg)
 	//g := asciirender.New(cfg)
 	g.Start()

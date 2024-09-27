@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/board"
+	"github.com/markel1974/c64emu/src/c64/inputs"
 	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/common"
@@ -84,13 +85,27 @@ func (g *Render) Start() {
 
 		select {
 		case text := <-ch:
-			g.c64Board.KeyboardSetCommand(string(text))
-			//TODO REMOVE
-			if string(text) == "Q" {
+			switch text[0] {
+			case 'A':
+				g.c64Board.Joy1SetKey(true, inputs.KeyJLeft)
+				g.c64Board.Joy1SetKey(false, inputs.KeyJLeft)
+			case 'D':
+				g.c64Board.Joy1SetKey(true, inputs.KeyJRight)
+				g.c64Board.Joy1SetKey(false, inputs.KeyJRight)
+			case 'W':
+				g.c64Board.Joy1SetKey(true, inputs.KeyJUp)
+				g.c64Board.Joy1SetKey(false, inputs.KeyJUp)
+			case 'S':
+				g.c64Board.Joy1SetKey(true, inputs.KeyJDown)
+				g.c64Board.Joy1SetKey(false, inputs.KeyJDown)
+			case 'F':
+				g.c64Board.Joy1SetKey(true, inputs.KeyJFire)
+				g.c64Board.Joy1SetKey(false, inputs.KeyJFire)
+			case 'Q':
 				run = false
+			default:
+				g.c64Board.KeyboardSetCommand(string(text))
 			}
-			//g.c64Board.Joy1SetKey(true, inputs.KeyJFire)
-			//g.c64Board.Joy1SetKey(false, inputs.KeyJFire)
 		default:
 		}
 
