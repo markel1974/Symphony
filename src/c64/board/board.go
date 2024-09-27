@@ -208,6 +208,10 @@ func (s *Board) Emulate() bool {
 	return s.vBlank
 }
 
+func (s *Board) GetText() []byte {
+	return s.vic.GetText()
+}
+
 func (s *Board) KeyboardPaste(pressed bool) {
 	if !pressed {
 		return
@@ -217,6 +221,10 @@ func (s *Board) KeyboardPaste(pressed bool) {
 	}
 	data := clipboard.Read(clipboard.FmtText)
 	s.keys.SetCommand(string(data))
+}
+
+func (s *Board) KeyboardSetCommand(cmd string) {
+	s.keys.SetCommand(cmd)
 }
 
 func (s *Board) KeyboardNumLockToggle() {

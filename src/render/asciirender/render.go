@@ -1,10 +1,13 @@
 package asciirender
 
 import (
+	"bytes"
+	"fmt"
 	"github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/common"
+	"os"
 )
 
 type Render struct {
@@ -42,24 +45,67 @@ func (g *Render) setup() {
 	//g.inputs.Setup(g.c64Board, g.maxW, g.maxH)
 }
 
+func (g *Render) PrintBuffer(textBuffer []byte) {
+	const asciiEsc = 27
+	const newLine = "\r\n"
+	fmt.Printf("%c[2J", asciiEsc)
+	for x, v := range textBuffer {
+		if (x % 40) == 0 {
+			fmt.Print(newLine)
+		}
+		fmt.Printf("%c", v)
+	}
+}
+
 func (g *Render) Start() {
 	g.setup()
 	dt := common.NewDynamicThrottling(mos6569.FrameInterval)
 
+	MakeStdInRaw()
+
 	run := true
+
+	ch := make(chan []byte)
+
+	go func() {
+		textData := make([]byte, 16)
+		for {
+			if n, err := os.Stdin.Read(textData); err == nil && n > 0 {
+				ch <- textData[:n]
+			}
+
+		}
+	}()
+
+	counter := 0
+	textBuffer := make([]byte, 65000)
 	for run {
 		dt.DynamicThrottling()
-		//g.inputs.Keys(win.KeysPressed())
+
+		select {
+		case text := <-ch:
+			g.c64Board.KeyboardSetCommand(string(text))
+			//TODO REMOVE
+			if string(text) == "Q" {
+				run = false
+			}
+			//g.c64Board.Joy1SetKey(true, inputs.KeyJFire)
+			//g.c64Board.Joy1SetKey(false, inputs.KeyJFire)
+		default:
+		}
+
 		for {
 			if vBlank := g.c64Board.Emulate(); vBlank {
 				break
 			}
 		}
-		//g.surface.Draw(win, g.matrix)
-		//g.audio.Play()
-		//win.Update()
-		//if (dt.Counter() & 0xf) == 0xf {
-		//	run = !win.Closed()
-		//}
+		b := g.c64Board.GetText()
+		if v := bytes.Compare(b, textBuffer[:len(b)]); v == 0 {
+			continue
+		}
+		g.PrintBuffer(b)
+		copy(textBuffer, b)
+		counter++
+		fmt.Printf("vblank %d\r\n", counter)
 	}
 }
