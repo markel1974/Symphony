@@ -9,70 +9,48 @@ import (
 //see https://sta.c64.org/cbm1541mem.html
 
 type Mechanic struct {
-	currentHalfTrack int
-	gcr              uint32
-	writeProtected   bool
-	diskChanged      bool
-	errorInfo        []uint8 // Sector error information (1 byte/sector)
-	gcrData          []uint8 // Pointer to GCR encoded disk
-	gcrIdx           int     // Pointer to GCR disk under R/W head
-	gcrTrackStart    int     // Pointer to start of GCR disk of current track
-	gcrTrackEnd      int     // Pointer to end of GCR disk of current track
-	filePath         string
-	//deviceNumber  uint8
-	//banks         IBanks
-	motor   bool
-	factory *gcr.Factory
+	gcr            *gcr.GCR
+	writeProtected bool
+	diskChanged    bool
+	filePath       string
+	motor          bool
+	factory        *gcr.Factory
 }
 
 func NewMechanic() *Mechanic {
 	j := &Mechanic{
-		currentHalfTrack: 2,
-		gcr:              0,
-		writeProtected:   false,
-		diskChanged:      false,
-		motor:            false,
-		gcrData:          nil,
-		gcrIdx:           0,
-		gcrTrackStart:    0,
-		gcrTrackEnd:      0,
-		errorInfo:        nil,
-		factory:          gcr.NewFactory(),
+		writeProtected: false,
+		diskChanged:    false,
+		motor:          false,
+		factory:        gcr.NewFactory(),
+		gcr:            nil,
 	}
 	return j
 }
 
 func (j *Mechanic) Reset() {
-	j.currentHalfTrack = 2
-	j.gcr = 0
+	j.gcr = nil
 	j.writeProtected = false
 	j.diskChanged = false
-	j.gcrIdx = 0
-	j.gcrTrackStart = 0
-	j.gcrTrackEnd = j.gcrTrackStart + gcr.TrackSize
-	j.currentHalfTrack = 2
-	j.writeProtected = false
-	j.gcrData = nil
-	j.errorInfo = nil
 }
 
 func (j *Mechanic) Setup(filePath string) {
 	if !j.HasDisk() {
 		j.filePath = filePath
-		_ = j.openFile(j.filePath)
+		_ = j.readFile(j.filePath)
 	} else if j.filePath != filePath {
 		j.filePath = filePath
-		j.closeFile()
-		_ = j.openFile(j.filePath)
+		j.Reset()
+		_ = j.readFile(j.filePath)
 		j.diskChanged = true
 	}
 }
 
 func (j *Mechanic) RotateDisk() {
-	j.gcrIdx++
-	if j.gcrIdx == j.gcrTrackEnd {
-		j.gcrIdx = j.gcrTrackStart
+	if j.gcr == nil {
+		return
 	}
+	j.gcr.Rotate()
 }
 
 func (j *Mechanic) SetMotor(m bool) {
@@ -80,7 +58,7 @@ func (j *Mechanic) SetMotor(m bool) {
 }
 
 func (j *Mechanic) HasDisk() bool {
-	return j.gcrData != nil
+	return j.gcr != nil
 }
 
 func (j *Mechanic) WriteProtectionState() uint8 {
@@ -99,30 +77,27 @@ func (j *Mechanic) WriteProtectionState() uint8 {
 }
 
 func (j *Mechanic) SyncFound() bool {
-	if j.gcrData == nil {
+	if j.gcr == nil {
 		return false
 	}
-	if j.gcrData[j.gcrIdx] == 0xff {
+	if j.gcr.Read() == 0xff {
 		return true
 	}
 	return false
 }
 
 func (j *Mechanic) ReadByte() uint8 {
-	if j.gcrData == nil {
+	if j.gcr == nil {
 		return 0
 	}
-	data := j.gcrData[j.gcrIdx]
-	return data
+	return j.gcr.Read()
 }
 
 func (j *Mechanic) WriteByte(data uint8) {
-	if j.gcrData == nil {
+	if j.gcr == nil {
 		return
 	}
-	j.gcrData[j.gcrIdx] = data
-	//fmt.Println("WRITING ", j.gcrIdx, data)
-
+	j.gcr.Write(data)
 	//track := j.gcrTrackStart
 	//sector := _numSectors[j.currentHalfTrack>>1]
 	//offset := j.offsetFromTrackSector(track, int(sector))
@@ -132,30 +107,20 @@ func (j *Mechanic) WriteByte(data uint8) {
 }
 
 func (j *Mechanic) MoveHeadOut() {
-	if j.currentHalfTrack == 2 {
+	if j.gcr == nil {
 		return
 	}
-	j.currentHalfTrack--
-	idx := ((j.currentHalfTrack >> 1) - 1) * gcr.TrackSize
-	j.gcrTrackStart = idx
-	j.gcrIdx = idx
-	trackLength := gcr.GetTrackLen(j.currentHalfTrack >> 1) //int(gcr2.GetNumSectors(j.currentHalfTrack>>1)) * gcr2.SectorSize
-	j.gcrTrackEnd = j.gcrTrackStart + trackLength
+	j.gcr.MoveOut()
 }
 
 func (j *Mechanic) MoveHeadIn() {
-	if j.currentHalfTrack == gcr.NumTracksMax {
+	if j.gcr == nil {
 		return
 	}
-	j.currentHalfTrack++
-	idx := ((j.currentHalfTrack >> 1) - 1) * gcr.TrackSize
-	j.gcrTrackStart = idx
-	j.gcrIdx = idx
-	trackLength := gcr.GetTrackLen(j.currentHalfTrack >> 1) //int(gcr2.GetNumSectors(j.currentHalfTrack>>1)) * gcr2.SectorSize
-	j.gcrTrackEnd = j.gcrTrackStart + trackLength
+	j.gcr.MoveIn()
 }
 
-func (j *Mechanic) openFile(filePath string) error {
+func (j *Mechanic) readFile(filePath string) error {
 	j.Reset()
 	fd, err := os.OpenFile(filePath, os.O_RDWR, 0)
 	if err != nil {
@@ -164,23 +129,17 @@ func (j *Mechanic) openFile(filePath string) error {
 			return err
 		}
 	}
-	defer fd.Close()
 	image, err := io.ReadAll(fd)
 	if err != nil {
 		return err
 	}
-	d, err := j.factory.Create(image)
+	_ = fd.Close()
+	g, err := j.factory.Create(image)
 	if err != nil {
 		return err
 	}
-	j.gcrData = d.GetData()
-	j.errorInfo = d.GetErrorInfo()
+	j.gcr = g
 	return nil
-}
-
-func (j *Mechanic) closeFile() {
-	j.Reset()
-	//TODO
 }
 
 //var _counter = 0
