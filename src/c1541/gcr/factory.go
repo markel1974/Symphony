@@ -4,6 +4,14 @@ package gcr
 //	return _numSectors[d]
 //}
 
+type IGCR interface {
+	Read() uint8
+	Write(uint8)
+	MoveOut()
+	MoveIn()
+	Rotate()
+}
+
 type Factory struct {
 }
 
@@ -11,7 +19,10 @@ func NewFactory() *Factory {
 	return &Factory{}
 }
 
-func (f *Factory) Create(image []byte) (*GCR, error) {
+func (f *Factory) Create(image []byte) (IGCR, error) {
+	if image == nil {
+		return NewEmpty(), nil
+	}
 	gcr, err := NewGCR(image)
 	return gcr, err
 }

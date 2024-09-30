@@ -18,7 +18,8 @@ const (
 )
 
 // Conv4 Convert 4 bytes to 5 GCR encoded bytes
-func conv4to5(from [4]uint8, to []uint8) {
+func conv4to5(from [4]uint8) []uint8 {
+	to := make([]uint8, 5)
 	g := (_gcrTable[from[0]>>4] << 5) | _gcrTable[from[0]&15]
 	to[0] = uint8(g >> 2)
 	to[1] = uint8((g << 6) & 0xc0)
@@ -31,6 +32,7 @@ func conv4to5(from [4]uint8, to []uint8) {
 	g = (_gcrTable[from[3]>>4] << 5) | _gcrTable[from[3]&15]
 	to[3] |= uint8((g >> 8) & 0x03)
 	to[4] = uint8(g)
+	return to
 }
 
 type GCR struct {
@@ -151,9 +153,9 @@ func (gcr *GCR) convertSector(block []uint8, bam1 uint8, bam2 uint8, track int, 
 	idx++
 	// Header mark [0], Checksum [1,2,3]
 	p1 := [4]uint8{0x08, uint8(sector ^ track ^ int(bam2) ^ int(bam1)), uint8(sector), uint8(track)}
-	conv4to5(p1, gcr.data[idx:])
+	copy(gcr.data[idx:], conv4to5(p1))
 	p2 := [4]uint8{bam2, bam1, 0x0f, 0x0f}
-	conv4to5(p2, gcr.data[idx+5:])
+	copy(gcr.data[idx+5:], conv4to5(p2))
 	idx += 10
 	for x := 0; x < 9; x++ {
 		gcr.data[idx+x] = 0x55
@@ -167,7 +169,7 @@ func (gcr *GCR) convertSector(block []uint8, bam1 uint8, bam2 uint8, track int, 
 	checksum := p3[1]
 	checksum ^= p3[2]
 	checksum ^= p3[3]
-	conv4to5(p3, gcr.data[idx:])
+	copy(gcr.data[idx:], conv4to5(p3))
 	idx += 5
 	for x := 3; x < 255; x += 4 {
 		p4 := [4]uint8{block[x], block[x+1], block[x+2], block[x+3]}
@@ -175,12 +177,12 @@ func (gcr *GCR) convertSector(block []uint8, bam1 uint8, bam2 uint8, track int, 
 		checksum ^= p4[1]
 		checksum ^= p4[2]
 		checksum ^= p4[3]
-		conv4to5(p4, gcr.data[idx:])
+		copy(gcr.data[idx:], conv4to5(p4))
 		idx += 5
 	}
 	checksum ^= block[255]
 	p5 := [4]uint8{block[255], checksum, 0, 0}
-	conv4to5(p5, gcr.data[idx:])
+	copy(gcr.data[idx:], conv4to5(p5))
 	idx += 5
 	for x := 0; x < 8; x++ {
 		gcr.data[idx+x] = 0x55
