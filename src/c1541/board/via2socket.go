@@ -16,12 +16,17 @@ type Via2Socket struct {
 	prbPrev uint8
 }
 
-func NewVia2Socket(board *Board, intrId uint32) *Via2Socket {
+func NewVia2Socket() *Via2Socket {
 	return &Via2Socket{
-		board:   board,
-		intrId:  intrId,
+		board:   nil,
+		intrId:  0,
 		prbPrev: 0,
 	}
+}
+
+func (v *Via2Socket) Setup(board *Board, intrId uint32) {
+	v.board = board
+	v.intrId = intrId
 }
 
 func (v *Via2Socket) Reset() {

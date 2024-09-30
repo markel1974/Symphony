@@ -9,18 +9,22 @@ type CPUSocket struct {
 }
 
 func NewCPUSocket() *CPUSocket {
-	c := &CPUSocket{}
+	c := &CPUSocket{
+		board: nil,
+		pic:   nil,
+		banks: nil,
+	}
 	return c
-}
-
-func (w *CPUSocket) Reset() {
-	w.board.cpu.Reset()
 }
 
 func (w *CPUSocket) Setup(board *Board) {
 	w.board = board
 	w.pic = board.pic
 	w.banks = board.banks
+}
+
+func (w *CPUSocket) Reset() {
+	w.board.cpu.Reset()
 }
 
 func (w *CPUSocket) GetPic() mos6510.IPic {

@@ -7,15 +7,19 @@ type Via1Socket struct {
 	prbFilter uint8
 }
 
-func NewVia1Socket(board *Board, intrId uint32) *Via1Socket {
-	v := &Via1Socket{
-		board:     board,
-		intrId:    intrId,
+func NewVia1Socket() *Via1Socket {
+	return &Via1Socket{
+		board:     nil,
+		intrId:    0,
 		prbFilter: 0,
 	}
+}
+
+func (v *Via1Socket) Setup(board *Board, intrId uint32) {
+	v.board = board
+	v.intrId = intrId
 	v.setFilters()
 	v.setDipSwitch(board.deviceNumber)
-	return v
 }
 
 func (v *Via1Socket) Reset() {
