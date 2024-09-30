@@ -22,12 +22,13 @@ func NewMechanic() *Mechanic {
 	factory := gcr.NewFactory()
 	empty, _ := factory.Create(nil)
 	j := &Mechanic{
+		gcr:            empty,
 		writeProtected: false,
 		diskChanged:    false,
+		filePath:       "",
 		motor:          false,
-		factory:        factory,
 		empty:          empty,
-		gcr:            empty,
+		factory:        factory,
 	}
 	return j
 }
@@ -73,22 +74,21 @@ func (j *Mechanic) SetMotor(m bool) {
 }
 
 func (j *Mechanic) HasDisk() bool {
-	return j.gcr != j.empty
+	return len(j.filePath) > 0
 }
 
 func (j *Mechanic) WriteProtectionState() uint8 {
-	r := uint8(0)
-	if j.diskChanged {
-		j.diskChanged = false
-		if j.writeProtected {
-			r = 0x10
-		}
-	} else {
+	if !j.diskChanged {
 		if !j.writeProtected {
-			r = 0x10
+			return 0x10
 		}
+		return 0
 	}
-	return r
+	j.diskChanged = false
+	if j.writeProtected {
+		return 0x10
+	}
+	return 0
 }
 
 func (j *Mechanic) SyncFound() bool {
@@ -121,10 +121,10 @@ func (j *Mechanic) MoveHeadIn() {
 func (j *Mechanic) readFile(filePath string) error {
 	fd, err := os.OpenFile(filePath, os.O_RDWR, 0)
 	if err != nil {
-		j.writeProtected = true
 		if fd, err = os.OpenFile(filePath, os.O_RDONLY, 0); err != nil {
 			return err
 		}
+		j.writeProtected = true
 	}
 	defer fd.Close()
 	image, err := io.ReadAll(fd)
