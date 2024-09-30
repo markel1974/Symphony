@@ -12,11 +12,8 @@ func NewFactory() *Factory {
 }
 
 func (f *Factory) Create(image []byte) (*GCR, error) {
-	gcr := NewGCR()
-	if err := gcr.Setup(image); err != nil {
-		return nil, err
-	}
-	return gcr, nil
+	gcr, err := NewGCR(image)
+	return gcr, err
 }
 
 /*
