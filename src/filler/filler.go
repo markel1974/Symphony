@@ -17,32 +17,17 @@ const (
 )
 
 type Filler struct {
-	startValue         int // first value of the base pattern (byte value)
-	valueInvert        int // number of bytes until start value is inverted
-	valueOffset        int // offset of first pattern in bytes
-	patternInvert      int // invert base pattern after this many bytes
-	patternInvertValue int // invert base pattern with this byte
-	randomStart        int // length of random pattern in bytes
-	randomRepeat       int // repeat random pattern after this many bytes
-	randomChance       int // global random chance
+	startValue         uint // first value of the base pattern (byte value)
+	valueInvert        uint // number of bytes until start value is inverted
+	valueOffset        uint // offset of first pattern in bytes
+	patternInvert      uint // invert base pattern after this many bytes
+	patternInvertValue uint // invert base pattern with this byte
+	randomStart        uint // length of random pattern in bytes
+	randomRepeat       uint // repeat random pattern after this many bytes
+	randomChance       uint // global random chance
 }
 
-/*
-func NewDefaultInitiator() *Filler {
-	return &Filler{
-		startValue:         255,
-		valueInvert:        128,
-		valueOffset:        0,
-		patternInvert:      0,
-		patternInvertValue: 0,
-		randomStart:        0,
-		randomRepeat:       0,
-		randomChance:       0,
-	}
-}
-*/
-
-func New(startValue, valueInvert, valueOffset, patternInvert, patternInvertValue, randomStart, randomRepeat, randomChance int) *Filler {
+func New(startValue uint, valueInvert uint, valueOffset uint, patternInvert uint, patternInvertValue uint, randomStart uint, randomRepeat uint, randomChance uint) *Filler {
 	return &Filler{
 		startValue:         startValue,
 		valueInvert:        valueInvert,
@@ -58,10 +43,10 @@ func New(startValue, valueInvert, valueOffset, patternInvert, patternInvertValue
 func (rp *Filler) InitWithPattern(memRam []uint8, ramSize uint) {
 	randomMethod := RandomMethodNone
 	randomMaskInitial := uint(0)
-	log1mp := _log1mp //math.Inf(-1)
+	log1mp := math.Inf(-1)
 	randomNext := UintMax
 
-	if rp.randomChance <= 0 {
+	if rp.randomChance == 0 {
 		// flipping no bits
 		randomMethod = RandomMethodNone
 		randomMaskInitial = 0x00
@@ -69,10 +54,10 @@ func (rp *Filler) InitWithPattern(memRam []uint8, ramSize uint) {
 		// flipping all bits; same as no bits, but with the opposite mask
 		randomMethod = RandomMethodNone
 		randomMaskInitial = 0xff
-	} else if rp.randomChance == (InitRandomChanceHalf) {
+	} else if rp.randomChance == InitRandomChanceHalf {
 		// flipping bits or not with equal probability; worst-case for the geometric spacing method, so handle separately
 		randomMethod = RandomMethodUniform
-	} else if rp.randomChance < (InitRandomChanceHalf) {
+	} else if rp.randomChance < InitRandomChanceHalf {
 		// some other probability less than 0.5; generate the number of bits un-flipped between each flipped bit.
 		randomMethod = RandomMethodGeom
 		randomMaskInitial = 0x00
@@ -85,27 +70,26 @@ func (rp *Filler) InitWithPattern(memRam []uint8, ramSize uint) {
 		log1mp = math.Log(float64(rp.randomChance) / InitRandomChanceMax)
 		randomNext = RandomMethodGeomNext(log1mp)
 	}
-
 	for offset := uint(0); offset < ramSize; offset++ {
 		j := uint(0)
 		k := uint(0)
 		if rp.valueInvert != 0 {
 			j = 0x00
-			if p := ((int(offset) + rp.valueOffset) / rp.valueInvert) & 1; p != 0 {
+			if p := ((offset + rp.valueOffset) / rp.valueInvert) & 1; p != 0 {
 				j = 0xff
 			}
 		}
 		if rp.patternInvert != 0 {
 			j = 0x00
-			if p := (int(offset) / rp.patternInvert) & 1; p != 0 {
-				j = uint(rp.patternInvertValue)
+			if p := (offset / rp.patternInvert) & 1; p != 0 {
+				j = rp.patternInvertValue
 			}
 		}
-		value := uint8(uint(rp.startValue) ^ j ^ k)
+		value := uint8(rp.startValue ^ j ^ k)
 		k = 0
 		if rp.randomStart != 0 && rp.randomRepeat != 0 {
 			k = 0
-			if (int(offset) % rp.randomRepeat) < rp.randomStart {
+			if (offset % rp.randomRepeat) < rp.randomStart {
 				k = RandomUint(0, 0xff)
 			}
 		}

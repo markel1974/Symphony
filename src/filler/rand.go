@@ -9,7 +9,6 @@ const LcgIncrement = 1
 const LcgMultiplier = 6364136223846793005
 const UintMax = ^uint(0)
 
-var _log1mp = math.Inf(-1)
 var _randState uint64 = LcgMultiplier + LcgIncrement
 
 func RandUint32() uint32 {
