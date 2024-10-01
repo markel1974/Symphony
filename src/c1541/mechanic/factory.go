@@ -9,7 +9,7 @@ import (
 //	return _numSectors[d]
 //}
 
-type IFloppy interface {
+type IDisk interface {
 	Read() uint8
 	Write(uint8)
 	MoveOut()
@@ -25,7 +25,7 @@ func NewFactory() *Factory {
 	return &Factory{}
 }
 
-func (f *Factory) Create(image []byte) (IFloppy, error) {
+func (f *Factory) Create(image []byte) (IDisk, error) {
 	if image == nil {
 		return empty.NewEmpty(), nil
 	}

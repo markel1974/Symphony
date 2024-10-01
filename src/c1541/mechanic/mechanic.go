@@ -8,12 +8,12 @@ import (
 //see https://sta.c64.org/cbm1541mem.html
 
 type Mechanic struct {
-	gcr            IFloppy
+	gcr            IDisk
 	writeProtected bool
 	diskChanged    bool
 	filePath       string
 	motor          bool
-	empty          IFloppy
+	empty          IDisk
 	factory        *Factory
 }
 
