@@ -42,22 +42,24 @@ type GCR struct {
 	trackStart       int // Pointer to start of GCR disk of current track
 	trackEnd         int // Pointer to end of GCR disk of current track
 	currentHalfTrack int
+	usable           bool
 }
 
 func NewGCR(image []uint8) (*GCR, error) {
-	gcr := &GCR{
+	g := &GCR{
 		data:             make([]uint8, diskSize),
 		errorInfo:        make([]uint8, numSectors),
 		idx:              0,
 		trackStart:       0,
 		trackEnd:         trackSize,
 		currentHalfTrack: 2,
+		usable:           false,
 	}
-	for x := range gcr.data {
-		gcr.data[x] = 0x55
+	for x := range g.data {
+		g.data[x] = 0x55
 	}
-	for x := range gcr.errorInfo {
-		gcr.errorInfo[x] = 1
+	for x := range g.errorInfo {
+		g.errorInfo[x] = 1
 	}
 	imageLen := len(image)
 	if imageLen < (numSectors * blockSize) {
@@ -68,9 +70,9 @@ func NewGCR(image []uint8) (*GCR, error) {
 		headerLen = 64
 	}
 	if (headerLen == 0) && (imageLen == (numSectors * 257)) {
-		copy(gcr.errorInfo, image[numSectors*blockSize:])
+		copy(g.errorInfo, image[numSectors*blockSize:])
 	}
-	bamSector := gcr.readSector(image, headerLen, bamTrackIdx, bamSectorIdx)
+	bamSector := g.readSector(image, headerLen, bamTrackIdx, bamSectorIdx)
 	if bamSector == nil {
 		return nil, fmt.Errorf("nil bam sector")
 	}
@@ -78,56 +80,61 @@ func NewGCR(image []uint8) (*GCR, error) {
 	bam2 := bamSector[163]
 	for track := 1; track <= numTracks; track++ {
 		for sector := 0; sector < int(_numSectors[track]); sector++ {
-			if block := gcr.readSector(image, headerLen, track, sector); block != nil {
-				if err := gcr.convertSector(block, bam1, bam2, track, sector); err != nil {
+			if block := g.readSector(image, headerLen, track, sector); block != nil {
+				if err := g.convertSector(block, bam1, bam2, track, sector); err != nil {
 					return nil, err
 				}
 			}
 		}
 	}
-	return gcr, nil
+	g.usable = true
+	return g, nil
 }
 
-func (gcr *GCR) MoveOut() {
-	if gcr.currentHalfTrack <= 2 {
+func (g *GCR) Usable() bool {
+	return g.usable
+}
+
+func (g *GCR) MoveOut() {
+	if g.currentHalfTrack <= 2 {
 		return
 	}
-	gcr.currentHalfTrack--
-	gcr.updateTrack()
+	g.currentHalfTrack--
+	g.updateTrack()
 }
 
-func (gcr *GCR) MoveIn() {
-	if gcr.currentHalfTrack >= numTracksMax {
+func (g *GCR) MoveIn() {
+	if g.currentHalfTrack >= numTracksMax {
 		return
 	}
-	gcr.currentHalfTrack++
-	gcr.updateTrack()
+	g.currentHalfTrack++
+	g.updateTrack()
 }
 
-func (gcr *GCR) Rotate() {
-	gcr.idx++
-	if gcr.idx >= gcr.trackEnd {
-		gcr.idx = gcr.trackStart
+func (g *GCR) Rotate() {
+	g.idx++
+	if g.idx >= g.trackEnd {
+		g.idx = g.trackStart
 	}
 }
 
-func (gcr *GCR) Read() uint8 {
-	return gcr.data[gcr.idx]
+func (g *GCR) Read() uint8 {
+	return g.data[g.idx]
 }
 
-func (gcr *GCR) Write(data uint8) {
-	gcr.data[gcr.idx] = data
+func (g *GCR) Write(data uint8) {
+	g.data[g.idx] = data
 }
 
-func (gcr *GCR) updateTrack() {
-	halfTrack := gcr.currentHalfTrack >> 1
-	gcr.idx = (halfTrack - 1) * trackSize
-	gcr.trackStart = gcr.idx
+func (g *GCR) updateTrack() {
+	halfTrack := g.currentHalfTrack >> 1
+	g.idx = (halfTrack - 1) * trackSize
+	g.trackStart = g.idx
 	trackLength := int(_numSectors[halfTrack]) * sectorSize
-	gcr.trackEnd = gcr.trackStart + trackLength
+	g.trackEnd = g.trackStart + trackLength
 }
 
-func (gcr *GCR) readSector(diskData []byte, headerLen int, track int, sector int) []uint8 {
+func (g *GCR) readSector(diskData []byte, headerLen int, track int, sector int) []uint8 {
 	if (track < 1) || (track > numTracks) || (sector < 0) || (sector >= int(_numSectors[track])) {
 		return nil
 	}
@@ -144,32 +151,32 @@ func (gcr *GCR) readSector(diskData []byte, headerLen int, track int, sector int
 	return buffer
 }
 
-func (gcr *GCR) convertSector(block []uint8, bam1 uint8, bam2 uint8, track int, sector int) error {
+func (g *GCR) convertSector(block []uint8, bam1 uint8, bam2 uint8, track int, sector int) error {
 	if len(block) > blockSize {
 		return fmt.Errorf("invalid block length")
 	}
 	idx := ((track - 1) * trackSize) + (sector * sectorSize)
-	gcr.data[idx] = 0xff
+	g.data[idx] = 0xff
 	idx++
 	// Header mark [0], Checksum [1,2,3]
 	p1 := [4]uint8{0x08, uint8(sector ^ track ^ int(bam2) ^ int(bam1)), uint8(sector), uint8(track)}
-	copy(gcr.data[idx:], conv4to5(p1))
+	copy(g.data[idx:], conv4to5(p1))
 	p2 := [4]uint8{bam2, bam1, 0x0f, 0x0f}
-	copy(gcr.data[idx+5:], conv4to5(p2))
+	copy(g.data[idx+5:], conv4to5(p2))
 	idx += 10
 	for x := 0; x < 9; x++ {
-		gcr.data[idx+x] = 0x55
+		g.data[idx+x] = 0x55
 	}
 	idx += 9
 	// Create GCR data + SYNC
-	gcr.data[idx] = 0xff
+	g.data[idx] = 0xff
 	idx++
 	// Data mark
 	p3 := [4]uint8{0x07, block[0], block[1], block[2]}
 	checksum := p3[1]
 	checksum ^= p3[2]
 	checksum ^= p3[3]
-	copy(gcr.data[idx:], conv4to5(p3))
+	copy(g.data[idx:], conv4to5(p3))
 	idx += 5
 	for x := 3; x < 255; x += 4 {
 		p4 := [4]uint8{block[x], block[x+1], block[x+2], block[x+3]}
@@ -177,15 +184,15 @@ func (gcr *GCR) convertSector(block []uint8, bam1 uint8, bam2 uint8, track int, 
 		checksum ^= p4[1]
 		checksum ^= p4[2]
 		checksum ^= p4[3]
-		copy(gcr.data[idx:], conv4to5(p4))
+		copy(g.data[idx:], conv4to5(p4))
 		idx += 5
 	}
 	checksum ^= block[255]
 	p5 := [4]uint8{block[255], checksum, 0, 0}
-	copy(gcr.data[idx:], conv4to5(p5))
+	copy(g.data[idx:], conv4to5(p5))
 	idx += 5
 	for x := 0; x < 8; x++ {
-		gcr.data[idx+x] = 0x55
+		g.data[idx+x] = 0x55
 	}
 	return nil
 }

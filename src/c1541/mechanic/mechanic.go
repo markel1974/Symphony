@@ -1,7 +1,6 @@
 package mechanic
 
 import (
-	"github.com/markel1974/c64emu/src/c1541/gcr"
 	"io"
 	"os"
 )
@@ -9,17 +8,17 @@ import (
 //see https://sta.c64.org/cbm1541mem.html
 
 type Mechanic struct {
-	gcr            gcr.IGCR
+	gcr            IFloppy
 	writeProtected bool
 	diskChanged    bool
 	filePath       string
 	motor          bool
-	empty          gcr.IGCR
-	factory        *gcr.Factory
+	empty          IFloppy
+	factory        *Factory
 }
 
 func NewMechanic() *Mechanic {
-	factory := gcr.NewFactory()
+	factory := NewFactory()
 	empty, _ := factory.Create(nil)
 	j := &Mechanic{
 		gcr:            empty,
@@ -43,7 +42,7 @@ func (j *Mechanic) Reset() {
 
 func (j *Mechanic) init(fp string) error {
 	j.Reset()
-	if err := j.readFile(fp); err != nil {
+	if err := j.insertDisk(fp); err != nil {
 		return err
 	}
 	j.filePath = fp
@@ -74,19 +73,20 @@ func (j *Mechanic) SetMotor(m bool) {
 }
 
 func (j *Mechanic) HasDisk() bool {
-	return len(j.filePath) > 0
+	return j.gcr.Usable()
 }
 
 func (j *Mechanic) WriteProtectionState() uint8 {
+	const wp = 0x10
 	if !j.diskChanged {
 		if !j.writeProtected {
-			return 0x10
+			return wp
 		}
 		return 0
 	}
 	j.diskChanged = false
 	if j.writeProtected {
-		return 0x10
+		return wp
 	}
 	return 0
 }
@@ -118,7 +118,7 @@ func (j *Mechanic) MoveHeadIn() {
 	j.gcr.MoveIn()
 }
 
-func (j *Mechanic) readFile(filePath string) error {
+func (j *Mechanic) insertDisk(filePath string) error {
 	fd, err := os.OpenFile(filePath, os.O_RDWR, 0)
 	if err != nil {
 		if fd, err = os.OpenFile(filePath, os.O_RDONLY, 0); err != nil {

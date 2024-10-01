@@ -1,15 +1,21 @@
-package gcr
+package mechanic
+
+import (
+	"github.com/markel1974/c64emu/src/c1541/disk/empty"
+	"github.com/markel1974/c64emu/src/c1541/disk/gcr"
+)
 
 //func GetNumSectors(d int) uint8 {
 //	return _numSectors[d]
 //}
 
-type IGCR interface {
+type IFloppy interface {
 	Read() uint8
 	Write(uint8)
 	MoveOut()
 	MoveIn()
 	Rotate()
+	Usable() bool
 }
 
 type Factory struct {
@@ -19,12 +25,12 @@ func NewFactory() *Factory {
 	return &Factory{}
 }
 
-func (f *Factory) Create(image []byte) (IGCR, error) {
+func (f *Factory) Create(image []byte) (IFloppy, error) {
 	if image == nil {
-		return NewEmpty(), nil
+		return empty.NewEmpty(), nil
 	}
-	gcr, err := NewGCR(image)
-	return gcr, err
+	g, err := gcr.NewGCR(image)
+	return g, err
 }
 
 /*

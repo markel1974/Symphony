@@ -1,4 +1,4 @@
-package gcr
+package empty
 
 type Empty struct{}
 
@@ -20,4 +20,8 @@ func (e *Empty) MoveIn() {
 }
 
 func (e *Empty) Rotate() {
+}
+
+func (e *Empty) Usable() bool {
+	return false
 }
