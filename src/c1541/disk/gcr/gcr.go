@@ -17,19 +17,43 @@ const (
 	bamSectorIdx = 0
 )
 
-// Conv4 Convert 4 bytes to 5 GCR encoded bytes
+// conv5to4 converts GCR encoded bytes into an array of 4 decoded bytes
+func conv5to4(source []uint8) [4]uint8 {
+	tDest := uint32(source[0])
+	tDest <<= 13
+	var dest [4]uint8
+	destIdx := 0
+	sourceIdx := 1
+	for _, i := range []uint8{5, 7, 9, 11} {
+		tDest |= (uint32(source[sourceIdx])) << i
+		dest[destIdx] = _gcrFromTable[(tDest>>16)&0x1f] << 4
+		tDest <<= 5
+		dest[destIdx] |= _gcrFromTable[(tDest>>16)&0x1f]
+		tDest <<= 5
+		sourceIdx++
+		destIdx++
+	}
+	return dest
+}
+
+// conv4to5 converts 4 bytes to 5 GCR encoded bytes
 func conv4to5(from [4]uint8) []uint8 {
+	encode := func(f uint8) uint16 {
+		f1 := f >> 4
+		f2 := f & 0xf
+		return (_gcrTable[f1] << 5) | _gcrTable[f2]
+	}
 	to := make([]uint8, 5)
-	g := (_gcrTable[from[0]>>4] << 5) | _gcrTable[from[0]&15]
+	g := encode(from[0])
 	to[0] = uint8(g >> 2)
 	to[1] = uint8((g << 6) & 0xc0)
-	g = (_gcrTable[from[1]>>4] << 5) | _gcrTable[from[1]&15]
+	g = encode(from[1])
 	to[1] |= uint8((g >> 4) & 0x3f)
 	to[2] = uint8((g << 4) & 0xf0)
-	g = (_gcrTable[from[2]>>4] << 5) | _gcrTable[from[2]&15]
+	g = encode(from[2])
 	to[2] |= uint8((g >> 6) & 0x0f)
 	to[3] = uint8((g << 2) & 0xfc)
-	g = (_gcrTable[from[3]>>4] << 5) | _gcrTable[from[3]&15]
+	g = encode(from[3])
 	to[3] |= uint8((g >> 8) & 0x03)
 	to[4] = uint8(g)
 	return to
@@ -81,7 +105,7 @@ func NewGCR(image []uint8) (*GCR, error) {
 	for track := 1; track <= numTracks; track++ {
 		for sector := 0; sector < int(_numSectors[track]); sector++ {
 			if block := g.readSector(image, headerLen, track, sector); block != nil {
-				if err := g.convertSector(block, bam1, bam2, track, sector); err != nil {
+				if err := g.sector2gcr(block, bam1, bam2, track, sector); err != nil {
 					return nil, err
 				}
 			}
@@ -151,7 +175,7 @@ func (g *GCR) readSector(diskData []byte, headerLen int, track int, sector int) 
 	return buffer
 }
 
-func (g *GCR) convertSector(block []uint8, bam1 uint8, bam2 uint8, track int, sector int) error {
+func (g *GCR) sector2gcr(block []uint8, bam1 uint8, bam2 uint8, track int, sector int) error {
 	if len(block) > blockSize {
 		return fmt.Errorf("invalid block length")
 	}
@@ -161,6 +185,7 @@ func (g *GCR) convertSector(block []uint8, bam1 uint8, bam2 uint8, track int, se
 	// Header mark [0], Checksum [1,2,3]
 	p1 := [4]uint8{0x08, uint8(sector ^ track ^ int(bam2) ^ int(bam1)), uint8(sector), uint8(track)}
 	copy(g.data[idx:], conv4to5(p1))
+
 	p2 := [4]uint8{bam2, bam1, 0x0f, 0x0f}
 	copy(g.data[idx+5:], conv4to5(p2))
 	idx += 10
@@ -196,3 +221,36 @@ func (g *GCR) convertSector(block []uint8, bam1 uint8, bam2 uint8, track int, se
 	}
 	return nil
 }
+
+/*
+///Users/tinmr305/Desktop/emu/vice-emu-code-r45201-trunk-vice/src/gcr.c
+func (g *GCR) gcr2sector(block []uint8, track int, sector int) []uint8 {
+	var shift, i, j int
+	var gcr[5] uint8
+	var b uint8;
+	var offsetIdx uint8
+	var end uint8 = raw.data + raw.size;
+
+	shift = p & 7;
+	offsetIdx = raw->data + (p >> 3);
+
+	b = offset[0] << shift;
+	for i = 0; i < num; i++, buf += 4 {
+		// get 5 bytes of gcr data
+		for j = 0; j < 5; j++){
+			offset++;
+			if offset >= end {
+				offset = raw->data;
+			}
+			if shift {
+				gcr[j] = b | ((offset[0] << shift) >> 8);
+				b = offset[0] << shift;
+			} else {
+				gcr[j] = b;
+				b = offset[0];
+			}
+		}
+		conv4to5(gcr, buf);
+	}
+}
+*/

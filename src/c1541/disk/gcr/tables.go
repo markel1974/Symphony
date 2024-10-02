@@ -26,6 +26,13 @@ var _gcrTable = []uint16{
 	0x09, 0x19, 0x1a, 0x1b, 0x0d, 0x1d, 0x1e, 0x15,
 }
 
+var _gcrFromTable = []uint8{
+	0, 0, 0, 0, 0, 0, 0, 0,
+	0, 8, 0, 1, 0, 12, 4, 5,
+	0, 0, 2, 3, 0, 15, 6, 7,
+	0, 9, 10, 11, 0, 13, 14, 0,
+}
+
 //func secNumFromTs(track int, sector int) int {
 //	return _sectorOffset[track] + sector
 //}
