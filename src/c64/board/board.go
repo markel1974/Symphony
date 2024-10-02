@@ -212,6 +212,14 @@ func (s *Board) GetText() []byte {
 	return s.vic.GetText()
 }
 
+func (s *Board) DiskChange() {
+	//s.cfg.GetDrives()
+	//aaa
+
+	s.cfg.SwitchDisk()
+	s.cfg.SetDriveOpt("", 8)
+}
+
 func (s *Board) KeyboardPaste(pressed bool) {
 	if !pressed {
 		return

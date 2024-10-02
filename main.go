@@ -40,16 +40,23 @@ import (
 
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/Tool Collection.crt"
 
+// -f "/Users/tinmr305/Downloads/c64carts/Elvira2_CHR/Elvira2_Chr_A.d64;/Users/tinmr305/Downloads/c64carts/Elvira2_CHR/Elvira2_Chr_B.d64;/Users/tinmr305/Downloads/c64carts/Elvira2_CHR/Elvira2_Chr_C.d64;/Users/tinmr305/Downloads/c64carts/Elvira2_CHR/Elvira2_Chr_D.d64;/Users/tinmr305/Downloads/c64carts/Elvira2_CHR/Elvira2_Chr_E.d64"
+
+// -f "/Users/tinmr305/Downloads/c64carts/mw4_1.d64;/Users/tinmr305/Downloads/c64carts/mw4_2.d64"
+
+// -f "/Users/tinmr305/Downloads/c64carts/01SonicTheHedgehog_v1.2+5_-TRIAD+GP.d64;/Users/tinmr305/Downloads/c64carts/02SonicTheHedgehog_v1.2+5_-TRIAD+GP.d64" -c "REU2M:"
 func main() {
 	var showHelp bool
 	var showVersion bool
 	var cartridges string
 	var drives string
+	var disks string
 	var prg string
 	flag.BoolVar(&showHelp, "h", false, "show this help")
 	flag.BoolVar(&showVersion, "v", false, "show version")
 	flag.StringVar(&cartridges, "c", "", "cartridge path")
 	flag.StringVar(&drives, "d", "", "drives path")
+	flag.StringVar(&disks, "f", "", "disks")
 	flag.StringVar(&prg, "p", "", "prg path")
 	flag.Parse()
 
@@ -72,10 +79,21 @@ func main() {
 			cfg.AddCartridge(v.K, v.V)
 		}
 	}
+
 	if len(drives) > 0 {
-		kv := config.KeyVal(drives)
-		for _, v := range kv {
+		for _, v := range config.KeyVal(drives) {
 			cfg.AddDrive(v.K, v.V)
+		}
+	}
+
+	if len(disks) > 0 {
+		if kv := config.KeyVal(disks); len(kv) > 0 {
+			if len(cfg.GetDrives()) == 0 {
+				cfg.AddDrive(kv[0].K, kv[0].V)
+			}
+			for _, v := range kv {
+				cfg.AddDisk(v.K, v.V)
+			}
 		}
 	}
 

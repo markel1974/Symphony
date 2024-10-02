@@ -46,7 +46,7 @@ func (g *Inputs) Setup(b *board.Board, maxW float64, maxH float64) {
 
 	g.keyMapper[pixels.KeyF9] = g.swapJoyKey
 	g.keyMapper[pixels.KeyF10] = func(p bool) { b.JoySwap(p) }
-	//g.keyMapper[pixels.KeyF11] = func(p bool) { b.KeyboardSetExt(p) }
+	g.keyMapper[pixels.KeyF11] = g.diskChange
 	g.keyMapper[pixels.KeyF12] = func(p bool) { b.KeyboardPaste(p) }
 
 	g.keyMapper[pixels.KeyF1] = func(p bool) { b.KeyboardSetVirtualKey(p, inputs.VKF1) }
@@ -181,6 +181,12 @@ func (g *Inputs) MouseMove(x float64, y float64) {
 		g.lastX = x1
 		g.lastY = y1
 		g.b.SetMouse(uint8(x), uint8(y))
+	}
+}
+
+func (g *Inputs) diskChange(p bool) {
+	if p {
+		g.b.DiskChange()
 	}
 }
 

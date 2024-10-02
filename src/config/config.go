@@ -15,15 +15,16 @@ type Drive struct {
 type Config struct {
 	cartridges []Cartridge
 	drives     []Drive
+	disks      []Drive
 	changed    *signals.Signal
 	prg        string
-	driveIndex int
+	diskIndex  int
 }
 
 func New() *Config {
 	return &Config{
 		cartridges: nil,
-		driveIndex: 0,
+		diskIndex:  0,
 		changed:    signals.NewSignal(),
 	}
 }
@@ -34,6 +35,10 @@ func (p *Config) Bind(changed func()) {
 
 func (p *Config) AddDrive(kind string, opts string) {
 	p.drives = append(p.drives, Drive{Kind: kind, Opts: opts})
+}
+
+func (p *Config) AddDisk(kind string, opts string) {
+	p.disks = append(p.disks, Drive{Kind: kind, Opts: opts})
 }
 
 func (p *Config) GetDrives() []Drive {
@@ -54,6 +59,16 @@ func (p *Config) SetDriveOpt(opt string, id uint8) bool {
 		return true
 	}
 	return false
+}
+
+func (p *Config) SwitchDisk() {
+	if len(p.disks) == 0 {
+		return
+	}
+	p.diskIndex++
+	driveIndex := p.diskIndex % len(p.disks)
+	p.SetDriveOpt(p.disks[driveIndex].Opts, 0)
+	p.changed.Emit()
 }
 
 func (p *Config) SetPrg(prg string) {
