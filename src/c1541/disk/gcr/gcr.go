@@ -17,48 +17,6 @@ const (
 	bamSectorIdx = 0
 )
 
-// conv5to4 converts GCR encoded bytes into an array of 4 decoded bytes
-func conv5to4(source []uint8) [4]uint8 {
-	tDest := uint32(source[0])
-	tDest <<= 13
-	var dest [4]uint8
-	destIdx := 0
-	sourceIdx := 1
-	for _, i := range []uint8{5, 7, 9, 11} {
-		tDest |= (uint32(source[sourceIdx])) << i
-		dest[destIdx] = _gcrFromTable[(tDest>>16)&0x1f] << 4
-		tDest <<= 5
-		dest[destIdx] |= _gcrFromTable[(tDest>>16)&0x1f]
-		tDest <<= 5
-		sourceIdx++
-		destIdx++
-	}
-	return dest
-}
-
-// conv4to5 converts 4 bytes to 5 GCR encoded bytes
-func conv4to5(from [4]uint8) []uint8 {
-	encode := func(f uint8) uint16 {
-		f1 := f >> 4
-		f2 := f & 0xf
-		return (_gcrTable[f1] << 5) | _gcrTable[f2]
-	}
-	to := make([]uint8, 5)
-	g := encode(from[0])
-	to[0] = uint8(g >> 2)
-	to[1] = uint8((g << 6) & 0xc0)
-	g = encode(from[1])
-	to[1] |= uint8((g >> 4) & 0x3f)
-	to[2] = uint8((g << 4) & 0xf0)
-	g = encode(from[2])
-	to[2] |= uint8((g >> 6) & 0x0f)
-	to[3] = uint8((g << 2) & 0xfc)
-	g = encode(from[3])
-	to[3] |= uint8((g >> 8) & 0x03)
-	to[4] = uint8(g)
-	return to
-}
-
 type GCR struct {
 	data             []uint8
 	errorInfo        []uint8
@@ -182,13 +140,14 @@ func (g *GCR) sector2gcr(block []uint8, bam1 uint8, bam2 uint8, track int, secto
 	idx := ((track - 1) * trackSize) + (sector * sectorSize)
 	g.data[idx] = 0xff
 	idx++
-	// Header mark [0], Checksum [1,2,3]
-	p1 := [4]uint8{0x08, uint8(sector ^ track ^ int(bam2) ^ int(bam1)), uint8(sector), uint8(track)}
-	copy(g.data[idx:], conv4to5(p1))
-
-	p2 := [4]uint8{bam2, bam1, 0x0f, 0x0f}
-	copy(g.data[idx+5:], conv4to5(p2))
-	idx += 10
+	for z, v := range conv4to5([4]uint8{0x08, uint8(sector ^ track ^ int(bam2) ^ int(bam1)), uint8(sector), uint8(track)}) {
+		g.data[idx+z] = v
+	}
+	idx += 5
+	for z, v := range conv4to5([4]uint8{bam2, bam1, 0x0f, 0x0f}) {
+		g.data[idx+z] = v
+	}
+	idx += 5
 	for x := 0; x < 9; x++ {
 		g.data[idx+x] = 0x55
 	}
@@ -197,24 +156,31 @@ func (g *GCR) sector2gcr(block []uint8, bam1 uint8, bam2 uint8, track int, secto
 	g.data[idx] = 0xff
 	idx++
 	// Data mark
-	p3 := [4]uint8{0x07, block[0], block[1], block[2]}
-	checksum := p3[1]
-	checksum ^= p3[2]
-	checksum ^= p3[3]
-	copy(g.data[idx:], conv4to5(p3))
+	for z, v := range conv4to5([4]uint8{0x07, block[0], block[1], block[2]}) {
+		g.data[idx+z] = v
+	}
+	checksum := block[0]
+	checksum ^= block[1]
+	checksum ^= block[2]
 	idx += 5
 	for x := 3; x < 255; x += 4 {
-		p4 := [4]uint8{block[x], block[x+1], block[x+2], block[x+3]}
-		checksum ^= p4[0]
-		checksum ^= p4[1]
-		checksum ^= p4[2]
-		checksum ^= p4[3]
-		copy(g.data[idx:], conv4to5(p4))
+		b0 := block[x]
+		b1 := block[x+1]
+		b2 := block[x+2]
+		b3 := block[x+3]
+		for z, v := range conv4to5([4]uint8{b0, b1, b2, b3}) {
+			g.data[idx+z] = v
+		}
+		checksum ^= b0
+		checksum ^= b1
+		checksum ^= b2
+		checksum ^= b3
 		idx += 5
 	}
 	checksum ^= block[255]
-	p5 := [4]uint8{block[255], checksum, 0, 0}
-	copy(g.data[idx:], conv4to5(p5))
+	for z, v := range conv4to5([4]uint8{block[255], checksum, 0, 0}) {
+		g.data[idx+z] = v
+	}
 	idx += 5
 	for x := 0; x < 8; x++ {
 		g.data[idx+x] = 0x55
