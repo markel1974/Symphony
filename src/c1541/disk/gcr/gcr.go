@@ -101,10 +101,14 @@ func (g *GCR) Rotate() {
 }
 
 func (g *GCR) Read() uint8 {
+	//if g.data[g.idx] != 0xff {
+	//	fmt.Printf("Read %d -> %02x\n", g.idx, g.data[g.idx])
+	//}
 	return g.data[g.idx]
 }
 
 func (g *GCR) Write(data uint8) {
+	//fmt.Printf("Write %d -> %02x\n", g.idx, data)
 	g.data[g.idx] = data
 }
 
