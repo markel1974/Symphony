@@ -44,7 +44,10 @@ import (
 
 // -f "/Users/tinmr305/Downloads/c64carts/mw4_1.d64;/Users/tinmr305/Downloads/c64carts/mw4_2.d64"
 
+// -f "/Users/tinmr305/Downloads/c64carts/0_LOAD-Steel_Ranger_+3CD_LAXITY.d64;/Users/tinmr305/Downloads/c64carts/1_GAME-Steel_Ranger_+3CD_LAXITY.d64"
+
 // -f "/Users/tinmr305/Downloads/c64carts/01SonicTheHedgehog_v1.2+5_-TRIAD+GP.d64;/Users/tinmr305/Downloads/c64carts/02SonicTheHedgehog_v1.2+5_-TRIAD+GP.d64" -c "REU2M:"
+
 func main() {
 	var showHelp bool
 	var showVersion bool
@@ -52,12 +55,14 @@ func main() {
 	var drives string
 	var disks string
 	var prg string
+	var noJiffy bool
 	flag.BoolVar(&showHelp, "h", false, "show this help")
 	flag.BoolVar(&showVersion, "v", false, "show version")
 	flag.StringVar(&cartridges, "c", "", "cartridge path")
 	flag.StringVar(&drives, "d", "", "drives path")
 	flag.StringVar(&disks, "f", "", "disks")
 	flag.StringVar(&prg, "p", "", "prg path")
+	flag.BoolVar(&noJiffy, "j", false, "disable jiffy")
 	flag.Parse()
 
 	if showHelp {
@@ -95,6 +100,10 @@ func main() {
 				cfg.AddDisk(v.K, v.V)
 			}
 		}
+	}
+
+	if noJiffy {
+		cfg.DisableJiffy()
 	}
 
 	g := glrender.New(cfg)

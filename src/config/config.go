@@ -19,6 +19,7 @@ type Config struct {
 	changed    *signals.Signal
 	prg        string
 	diskIndex  int
+	jiffy      bool
 }
 
 func New() *Config {
@@ -26,6 +27,7 @@ func New() *Config {
 		cartridges: nil,
 		diskIndex:  0,
 		changed:    signals.NewSignal(),
+		jiffy:      true,
 	}
 }
 
@@ -95,6 +97,10 @@ func (p *Config) GetKernalRomPath() string {
 	return ""
 }
 
+func (p *Config) DisableJiffy() {
+	p.jiffy = false
+}
+
 func (p *Config) UseJiffy() bool {
-	return true
+	return p.jiffy
 }
