@@ -68,6 +68,7 @@ func (g *Disk) Usable() bool {
 }
 
 func (g *Disk) MoveOut() {
+	//todo halfTrack handler
 	if g.currentHalfTrack <= 2 {
 		return
 	}
@@ -77,6 +78,7 @@ func (g *Disk) MoveOut() {
 }
 
 func (g *Disk) MoveIn() {
+	//todo halfTrack handler
 	if g.currentHalfTrack >= numHalfTracks {
 		return
 	}
