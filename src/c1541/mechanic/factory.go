@@ -5,10 +5,6 @@ import (
 	"github.com/markel1974/c64emu/src/c1541/disk/void"
 )
 
-//func GetNumSectors(d int) uint8 {
-//	return _numSectors[d]
-//}
-
 type IDisk interface {
 	Read() uint8
 	Write(uint8)

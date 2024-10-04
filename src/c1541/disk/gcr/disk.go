@@ -15,12 +15,13 @@ const (
 )
 
 const (
+	startTrack   = 1
 	bamTrackIdx  = 18
 	bamSectorIdx = 0
 )
 
 type Disk struct {
-	errorInfo        []uint8
+	//errorInfo        []uint8
 	currentHalfTrack int
 	tracks           []*Track
 	currentTrack     *Track
@@ -29,7 +30,7 @@ type Disk struct {
 
 func NewDisk(image []uint8) (*Disk, error) {
 	g := &Disk{
-		errorInfo:        make([]uint8, numSectors),
+		//errorInfo:        make([]uint8, numSectors),
 		currentHalfTrack: 2,
 		usable:           false,
 	}
@@ -42,20 +43,22 @@ func NewDisk(image []uint8) (*Disk, error) {
 	}
 	bamTrack := NewTrack(bamTrackIdx, headerLen)
 	bamSector, bErr := bamTrack.RawSector(image, bamSectorIdx)
-	bam1 := bamSector[162]
-	bam2 := bamSector[163]
 	if bErr != nil {
 		return nil, bErr
 	}
+	bam1 := bamSector[162]
+	bam2 := bamSector[163]
+
 	g.tracks = make([]*Track, numTracks+1)
-	for trackNum := uint8(1); trackNum <= numTracks; trackNum++ {
+
+	for trackNum := uint8(startTrack); trackNum <= numTracks; trackNum++ {
 		track := NewTrack(trackNum, headerLen)
 		if tErr := track.Load(image, bam1, bam2); tErr != nil {
 			return nil, tErr
 		}
 		g.tracks[trackNum] = track
 	}
-	g.currentTrack = g.tracks[1]
+	g.currentTrack = g.tracks[startTrack]
 	g.usable = true
 	return g, nil
 }

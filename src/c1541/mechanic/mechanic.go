@@ -8,7 +8,7 @@ import (
 //see https://sta.c64.org/cbm1541mem.html
 
 type Mechanic struct {
-	gcr            IDisk
+	disk           IDisk
 	writeProtected bool
 	diskChanged    bool
 	filePath       string
@@ -21,7 +21,7 @@ func NewMechanic() *Mechanic {
 	factory := NewFactory()
 	empty, _ := factory.Create(nil)
 	j := &Mechanic{
-		gcr:            empty,
+		disk:           empty,
 		writeProtected: false,
 		diskChanged:    false,
 		filePath:       "",
@@ -33,7 +33,7 @@ func NewMechanic() *Mechanic {
 }
 
 func (j *Mechanic) Reset() {
-	j.gcr = j.empty
+	j.disk = j.empty
 	j.writeProtected = false
 	j.diskChanged = false
 	j.filePath = ""
@@ -55,25 +55,12 @@ func (j *Mechanic) Setup(fp string) {
 	}
 }
 
-//func (j *Mechanic) Load(fp string) error {
-//	if !j.HasDisk() {
-//		return j.init(fp)
-//	} else if j.filePath != fp {
-//		if err := j.init(fp); err != nil {
-//			return err
-//		}
-//		j.diskChanged = true
-//		return nil
-//	}
-//	return nil
-//}
-
 func (j *Mechanic) SetMotor(m bool) {
 	j.motor = m
 }
 
 func (j *Mechanic) HasDisk() bool {
-	return j.gcr.Usable()
+	return j.disk.Usable()
 }
 
 func (j *Mechanic) WriteProtectionState() uint8 {
@@ -92,30 +79,30 @@ func (j *Mechanic) WriteProtectionState() uint8 {
 }
 
 func (j *Mechanic) SyncFound() bool {
-	if j.gcr.Read() == 0xff {
+	if j.disk.Read() == 0xff {
 		return true
 	}
 	return false
 }
 
 func (j *Mechanic) RotateDisk() {
-	j.gcr.Rotate()
+	j.disk.Rotate()
 }
 
 func (j *Mechanic) ReadByte() uint8 {
-	return j.gcr.Read()
+	return j.disk.Read()
 }
 
 func (j *Mechanic) WriteByte(data uint8) {
-	j.gcr.Write(data)
+	j.disk.Write(data)
 }
 
 func (j *Mechanic) MoveHeadOut() {
-	j.gcr.MoveOut()
+	j.disk.MoveOut()
 }
 
 func (j *Mechanic) MoveHeadIn() {
-	j.gcr.MoveIn()
+	j.disk.MoveIn()
 }
 
 func (j *Mechanic) insertDisk(filePath string) error {
@@ -135,6 +122,19 @@ func (j *Mechanic) insertDisk(filePath string) error {
 	if err != nil {
 		return err
 	}
-	j.gcr = g
+	j.disk = g
 	return nil
 }
+
+//func (j *Mechanic) Load(fp string) error {
+//	if !j.HasDisk() {
+//		return j.init(fp)
+//	} else if j.filePath != fp {
+//		if err := j.init(fp); err != nil {
+//			return err
+//		}
+//		j.diskChanged = true
+//		return nil
+//	}
+//	return nil
+//}

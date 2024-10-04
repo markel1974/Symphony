@@ -38,7 +38,7 @@ func (t *Track) RawSector(disk []uint8, sectorNum uint8) ([]uint8, error) {
 	if sectorNum >= uint8(len(t.sectors)) {
 		return nil, fmt.Errorf("sector index out of range")
 	}
-	return t.current.sector.Raw(disk)
+	return t.sectors[sectorNum].sector.Raw(disk)
 }
 
 func (t *Track) Load(disk []uint8, bam1 uint8, bam2 uint8) error {

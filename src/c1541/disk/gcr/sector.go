@@ -6,21 +6,21 @@ import (
 )
 
 type Sector struct {
-	headerLen uint8
 	trackNum  uint8
 	sectorNum uint8
-	offset    uint16
+	begin     int
 	data      [sectorSize]uint8
 	cursor    uint
 }
 
 func NewSector(trackNum uint8, sectorNum uint8, headerLen uint8, offset uint16) *Sector {
+	realOffset := (int(offset) + int(sectorNum)) << 8
+	begin := realOffset + int(headerLen)
 	s := &Sector{
 		trackNum:  trackNum,
 		sectorNum: sectorNum,
-		headerLen: headerLen,
-		offset:    offset,
 		cursor:    0,
+		begin:     begin,
 	}
 	for i := range s.data {
 		s.data[i] = 0x55
@@ -62,23 +62,13 @@ func (s *Sector) Write(data uint8) {
 }
 
 func (s *Sector) Raw(diskData []byte) ([]uint8, error) {
-	if (s.trackNum < 1) || (s.trackNum > numTracks) {
-		log.Printf("Invalid track: %d", s.trackNum)
-		return nil, fmt.Errorf("invalid track")
-	}
-	if s.sectorNum >= _numSectors[s.trackNum] {
-		log.Printf("Invalid sector: %d", s.sectorNum)
-		return nil, fmt.Errorf("invalid sector")
-	}
-	diskOffset := (int(s.offset) + int(s.sectorNum)) << 8
-	start := diskOffset + int(s.headerLen)
-	end := start + blockSize
-	if start > len(diskData) || end > len(diskData) {
-		log.Printf("Invalid offset: %d", s.offset)
-		return nil, fmt.Errorf("invalid offset")
+	end := s.begin + blockSize
+	if s.begin > len(diskData) || end > len(diskData) {
+		log.Printf("Invalid start/end: %d - %d", s.begin, end)
+		return nil, fmt.Errorf("invalid start/end")
 	}
 	buffer := make([]uint8, blockSize)
-	copy(buffer, diskData[start:end])
+	copy(buffer, diskData[s.begin:end])
 	return buffer, nil
 }
 
