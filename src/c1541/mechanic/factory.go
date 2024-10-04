@@ -29,7 +29,8 @@ func (f *Factory) Create(image []byte) (IDisk, error) {
 	if image == nil {
 		return empty.NewEmpty(), nil
 	}
-	g, err := gcr.NewGCR(image)
+	//g, err := gcr.NewGCR(image)
+	g, err := gcr.NewDisk(image)
 	return g, err
 }
 

@@ -1,15 +1,18 @@
 package gcr
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 const (
-	numTracks    = 35
-	numSectors   = 683
-	numTracksMax = numTracks * 2
-	blockSize    = 256
-	sectorSize   = 1 + 10 + 9 + 1 + 325 + 8 // SYNC Header Gap SYNC Data Gap (should be 5 SYNC bytes each)
-	trackSize    = sectorSize * 21          // Each track in gcr has 21 sectors
-	diskSize     = trackSize * numTracks
+	numTracks     = 35
+	numSectors    = 683
+	numHalfTracks = numTracks * 2
+	blockSize     = 256
+	sectorSize    = 1 + 10 + 9 + 1 + 325 + 8 // SYNC Header Gap SYNC Data Gap (should be 5 SYNC bytes each)
+	trackSize     = sectorSize * 21          // Each track in gcr has 21 sectors
+	diskSize      = trackSize * numTracks
 )
 
 const (
@@ -90,7 +93,7 @@ func (g *GCR) MoveOut() {
 }
 
 func (g *GCR) MoveIn() {
-	if g.currentHalfTrack >= numTracksMax {
+	if g.currentHalfTrack >= numHalfTracks {
 		return
 	}
 	g.currentHalfTrack++
@@ -124,14 +127,20 @@ func (g *GCR) updateTrack() {
 	g.trackEnd = g.trackStart + trackLength
 }
 
-func (g *GCR) readSector(diskData []byte, headerLen uint8, track uint8, sector uint8) ([]uint8, error) {
-	if (track < 1) || (track > numTracks) || (sector >= _numSectors[track]) {
-		return nil, fmt.Errorf("invalid track/sector")
+func (g *GCR) readSector(diskData []byte, headerLen uint8, trackNum uint8, sectorNum uint8) ([]uint8, error) {
+	if (trackNum < 1) || (trackNum > numTracks) {
+		log.Printf("Invalid track %d", trackNum)
+		return nil, fmt.Errorf("invalid track")
 	}
-	offset := (int(_sectorOffset[track]) + int(sector)) << 8
+	if sectorNum >= _numSectors[trackNum] {
+		log.Printf("Invalid sector %d", trackNum)
+		return nil, fmt.Errorf("invalid sector")
+	}
+	offset := (int(_sectorOffset[trackNum]) + int(sectorNum)) << 8
 	start := offset + int(headerLen)
 	end := start + blockSize
 	if start > len(diskData) || end > len(diskData) {
+		log.Printf("Invalid sector %d - %d", start, end)
 		return nil, fmt.Errorf("invalid track/sector")
 	}
 	buffer := make([]uint8, blockSize)
