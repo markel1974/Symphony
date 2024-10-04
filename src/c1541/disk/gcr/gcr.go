@@ -62,14 +62,14 @@ func NewGCR(image []uint8) (*GCR, error) {
 	bam2 := bamSector[163]
 	for trackIdx := 1; trackIdx <= numTracks; trackIdx++ {
 		for sectorIdx := 0; sectorIdx < int(_numSectors[trackIdx]); sectorIdx++ {
-			block, _ := g.readSector(image, headerLen, trackIdx, sectorIdx)
-			if block != nil {
-				sector, err := g.sector2gcr(block, bam1, bam2, trackIdx, sectorIdx)
+			sector, _ := g.readSector(image, headerLen, trackIdx, sectorIdx)
+			if sector != nil {
+				gcrSector, err := g.sector2gcr(sector, bam1, bam2, trackIdx, sectorIdx)
 				if err != nil {
 					return nil, err
 				}
 				idx := ((trackIdx - 1) * trackSize) + (sectorIdx * sectorSize)
-				copy(g.data[idx:], sector)
+				copy(g.data[idx:], gcrSector)
 			}
 		}
 	}
@@ -141,8 +141,8 @@ func (g *GCR) readSector(diskData []byte, headerLen int, track int, sector int) 
 	return buffer, nil
 }
 
-func (g *GCR) sector2gcr(block []uint8, bam1 uint8, bam2 uint8, track int, sector int) ([]uint8, error) {
-	if len(block) > blockSize {
+func (g *GCR) sector2gcr(sector []uint8, bam1 uint8, bam2 uint8, trackIdx int, sectorIdx int) ([]uint8, error) {
+	if len(sector) > blockSize {
 		return nil, fmt.Errorf("invalid block length")
 	}
 	idx := 0
@@ -150,7 +150,7 @@ func (g *GCR) sector2gcr(block []uint8, bam1 uint8, bam2 uint8, track int, secto
 	ret[idx] = 0xff
 	idx++
 
-	headerData := conv4to5([4]uint8{0x08, uint8(sector ^ track ^ int(bam2) ^ int(bam1)), uint8(sector), uint8(track)})
+	headerData := conv4to5([4]uint8{0x08, uint8(sectorIdx ^ trackIdx ^ int(bam2) ^ int(bam1)), uint8(sectorIdx), uint8(trackIdx)})
 	copy(ret[idx:], headerData[:])
 	idx += len(headerData)
 
@@ -165,24 +165,24 @@ func (g *GCR) sector2gcr(block []uint8, bam1 uint8, bam2 uint8, track int, secto
 	ret[idx] = 0xff // Create SYNC
 	idx++
 
-	dataMark := conv4to5([4]uint8{0x07, block[0], block[1], block[2]})
+	dataMark := conv4to5([4]uint8{0x07, sector[0], sector[1], sector[2]})
 	copy(ret[idx:], dataMark[:])
 	idx += len(dataMark)
 
-	checksum := block[0] ^ block[1] ^ block[2]
+	checksum := sector[0] ^ sector[1] ^ sector[2]
 	for x := 3; x < 255; x += 4 {
-		data := conv4to5([4]uint8{block[x], block[x+1], block[x+2], block[x+3]})
+		data := conv4to5([4]uint8{sector[x], sector[x+1], sector[x+2], sector[x+3]})
 		copy(ret[idx:], data[:])
 		idx += len(data)
 
-		checksum ^= block[x]
-		checksum ^= block[x+1]
-		checksum ^= block[x+2]
-		checksum ^= block[x+3]
+		checksum ^= sector[x]
+		checksum ^= sector[x+1]
+		checksum ^= sector[x+2]
+		checksum ^= sector[x+3]
 	}
-	checksum ^= block[255]
+	checksum ^= sector[255]
 
-	checksumData := conv4to5([4]uint8{block[255], checksum, 0, 0})
+	checksumData := conv4to5([4]uint8{sector[255], checksum, 0, 0})
 	copy(ret[idx:], checksumData[:])
 	idx += len(checksumData)
 
