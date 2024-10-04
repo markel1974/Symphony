@@ -47,7 +47,7 @@ func NewGCR(image []uint8) (*GCR, error) {
 	if imageLen < (numSectors * blockSize) {
 		return nil, fmt.Errorf("invalid disk data length")
 	}
-	headerLen := 0
+	headerLen := uint8(0)
 	if (image[0] == 0x43) && (image[1] == 0x1) && (image[2] == 0x41) && (image[3] == 0x64) {
 		headerLen = 64
 	}
@@ -60,15 +60,15 @@ func NewGCR(image []uint8) (*GCR, error) {
 	}
 	bam1 := bamSector[162]
 	bam2 := bamSector[163]
-	for trackIdx := 1; trackIdx <= numTracks; trackIdx++ {
-		for sectorIdx := 0; sectorIdx < int(_numSectors[trackIdx]); sectorIdx++ {
+	for trackIdx := uint8(1); trackIdx <= numTracks; trackIdx++ {
+		for sectorIdx := uint8(0); sectorIdx < _numSectors[trackIdx]; sectorIdx++ {
 			sector, _ := g.readSector(image, headerLen, trackIdx, sectorIdx)
 			if sector != nil {
 				gcrSector, err := g.sector2gcr(sector, bam1, bam2, trackIdx, sectorIdx)
 				if err != nil {
 					return nil, err
 				}
-				idx := ((trackIdx - 1) * trackSize) + (sectorIdx * sectorSize)
+				idx := (int(trackIdx-1) * trackSize) + (int(sectorIdx) * sectorSize)
 				copy(g.data[idx:], gcrSector)
 			}
 		}
@@ -124,24 +124,22 @@ func (g *GCR) updateTrack() {
 	g.trackEnd = g.trackStart + trackLength
 }
 
-func (g *GCR) readSector(diskData []byte, headerLen int, track int, sector int) ([]uint8, error) {
-	if (track < 1) || (track > numTracks) || (sector < 0) || (sector >= int(_numSectors[track])) {
+func (g *GCR) readSector(diskData []byte, headerLen uint8, track uint8, sector uint8) ([]uint8, error) {
+	if (track < 1) || (track > numTracks) || (sector >= _numSectors[track]) {
 		return nil, fmt.Errorf("invalid track/sector")
 	}
-	offset := (_sectorOffset[track] + sector) << 8
-	if offset < 0 {
-		return nil, fmt.Errorf("invalid track/sector")
-	}
-	start := offset + headerLen
-	if end := start + blockSize; end >= len(diskData) {
+	offset := (int(_sectorOffset[track]) + int(sector)) << 8
+	start := offset + int(headerLen)
+	end := start + blockSize
+	if start > len(diskData) || end > len(diskData) {
 		return nil, fmt.Errorf("invalid track/sector")
 	}
 	buffer := make([]uint8, blockSize)
-	copy(buffer, diskData[start:])
+	copy(buffer, diskData[start:end])
 	return buffer, nil
 }
 
-func (g *GCR) sector2gcr(sector []uint8, bam1 uint8, bam2 uint8, trackIdx int, sectorIdx int) ([]uint8, error) {
+func (g *GCR) sector2gcr(sector []uint8, bam1 uint8, bam2 uint8, trackIdx uint8, sectorIdx uint8) ([]uint8, error) {
 	if len(sector) > blockSize {
 		return nil, fmt.Errorf("invalid block length")
 	}
@@ -150,7 +148,7 @@ func (g *GCR) sector2gcr(sector []uint8, bam1 uint8, bam2 uint8, trackIdx int, s
 	ret[idx] = 0xff
 	idx++
 
-	headerData := conv4to5([4]uint8{0x08, uint8(sectorIdx ^ trackIdx ^ int(bam2) ^ int(bam1)), uint8(sectorIdx), uint8(trackIdx)})
+	headerData := conv4to5([4]uint8{0x08, uint8(int(sectorIdx) ^ int(trackIdx) ^ int(bam2) ^ int(bam1)), sectorIdx, trackIdx})
 	copy(ret[idx:], headerData[:])
 	idx += len(headerData)
 

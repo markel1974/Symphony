@@ -12,7 +12,7 @@ var _numSectors = [...]uint8{
 }
 
 // _sectorOffset Sector offset of start of track in .d64 file
-var _sectorOffset = [...]int{
+var _sectorOffset = [...]uint16{
 	0,
 	0, 21, 42, 63, 84, 105, 126, 147, 168, 189, 210, 231, 252, 273, 294, 315, 336,
 	357, 376, 395, 414, 433, 452, 471,
