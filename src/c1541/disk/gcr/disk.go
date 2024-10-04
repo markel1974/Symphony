@@ -62,6 +62,10 @@ func (g *Disk) Usable() bool {
 	return g.usable
 }
 
+func (g *Disk) GetTracksNumber() uint8 {
+	return NumTracks
+}
+
 func (g *Disk) SetHeadTrack(track uint8) {
 	g.currentTrack = g.tracks[track]
 }
