@@ -4,6 +4,21 @@ import (
 	"fmt"
 )
 
+const (
+	numTracks     = 35
+	numSectors    = 683
+	numHalfTracks = numTracks * 2
+	blockSize     = 256
+	sectorSize    = 1 + 10 + 9 + 1 + 325 + 8 // SYNC Header Gap SYNC Data Gap (should be 5 SYNC bytes each)
+	//trackSize     = sectorSize * 21          // Each track in gcr has 21 sectors
+	//diskSize      = trackSize * numTracks
+)
+
+const (
+	bamTrackIdx  = 18
+	bamSectorIdx = 0
+)
+
 type Disk struct {
 	errorInfo        []uint8
 	currentHalfTrack int
