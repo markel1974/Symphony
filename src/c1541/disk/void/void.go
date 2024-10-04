@@ -13,10 +13,7 @@ func (e *Void) Read() uint8 {
 func (e *Void) Write(_ uint8) {
 }
 
-func (e *Void) MoveOut() {
-}
-
-func (e *Void) MoveIn() {
+func (e *Void) SetHeadTrack(uint8) {
 }
 
 func (e *Void) Rotate() {

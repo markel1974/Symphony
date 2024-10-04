@@ -5,13 +5,10 @@ import (
 )
 
 const (
-	numTracks     = 35
-	numSectors    = 683
-	numHalfTracks = numTracks * 2
-	blockSize     = 256
-	sectorSize    = 1 + 10 + 9 + 1 + 325 + 8 // SYNC Header Gap SYNC Data Gap (should be 5 SYNC bytes each)
-	//trackSize     = sectorSize * 21          // Each track in gcr has 21 sectors
-	//diskSize      = trackSize * numTracks
+	NumTracks  = 35
+	NumSectors = 683
+	BlockSize  = 256
+	SectorSize = 1 + 10 + 9 + 1 + 325 + 8 // SYNC Header Gap SYNC Data Gap (should be 5 SYNC bytes each)
 )
 
 const (
@@ -22,19 +19,17 @@ const (
 
 type Disk struct {
 	//errorInfo        []uint8
-	currentHalfTrack int
-	tracks           []*Track
-	currentTrack     *Track
-	usable           bool
+	tracks       []*Track
+	currentTrack *Track
+	usable       bool
 }
 
 func NewDisk(image []uint8) (*Disk, error) {
 	g := &Disk{
 		//errorInfo:        make([]uint8, numSectors),
-		currentHalfTrack: 2,
-		usable:           false,
+		usable: false,
 	}
-	if len(image) < (numSectors * blockSize) {
+	if len(image) < (NumSectors * BlockSize) {
 		return nil, fmt.Errorf("invalid disk data length")
 	}
 	headerLen := uint8(0)
@@ -49,9 +44,9 @@ func NewDisk(image []uint8) (*Disk, error) {
 	bam1 := bamSector[162]
 	bam2 := bamSector[163]
 
-	g.tracks = make([]*Track, numTracks+1)
+	g.tracks = make([]*Track, NumTracks+1)
 
-	for trackNum := uint8(startTrack); trackNum <= numTracks; trackNum++ {
+	for trackNum := uint8(startTrack); trackNum <= NumTracks; trackNum++ {
 		track := NewTrack(trackNum, headerLen)
 		if tErr := track.Load(image, bam1, bam2); tErr != nil {
 			return nil, tErr
@@ -67,14 +62,19 @@ func (g *Disk) Usable() bool {
 	return g.usable
 }
 
+func (g *Disk) SetHeadTrack(track uint8) {
+	g.currentTrack = g.tracks[track]
+}
+
+/*
 func (g *Disk) MoveOut() {
 	//todo halfTrack handler
-	if g.currentHalfTrack <= 2 {
-		return
-	}
-	g.currentHalfTrack--
-	track := g.currentHalfTrack >> 1
-	g.currentTrack = g.tracks[track]
+	//if g.currentHalfTrack <= 2 {
+	//	return
+	//}
+	//g.currentHalfTrack--
+	//track := g.currentHalfTrack >> 1
+	//g.currentTrack = g.tracks[track]
 }
 
 func (g *Disk) MoveIn() {
@@ -86,6 +86,7 @@ func (g *Disk) MoveIn() {
 	track := g.currentHalfTrack >> 1
 	g.currentTrack = g.tracks[track]
 }
+*/
 
 func (g *Disk) Rotate() {
 	g.currentTrack.Advance()

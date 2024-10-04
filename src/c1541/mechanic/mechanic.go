@@ -5,6 +5,9 @@ import (
 	"os"
 )
 
+const numTracks = 35
+const numHalfTracks = numTracks * 2
+
 //see https://sta.c64.org/cbm1541mem.html
 
 type Mechanic struct {
@@ -15,6 +18,8 @@ type Mechanic struct {
 	motor          bool
 	empty          IDisk
 	factory        *Factory
+
+	headPos int
 }
 
 func NewMechanic() *Mechanic {
@@ -28,6 +33,7 @@ func NewMechanic() *Mechanic {
 		motor:          false,
 		empty:          empty,
 		factory:        factory,
+		headPos:        2,
 	}
 	return j
 }
@@ -98,11 +104,23 @@ func (j *Mechanic) WriteByte(data uint8) {
 }
 
 func (j *Mechanic) MoveHeadOut() {
-	j.disk.MoveOut()
+	//todo halfTrack handler
+	if j.headPos <= 2 {
+		return
+	}
+	j.headPos--
+	track := uint8(j.headPos >> 1)
+	j.disk.SetHeadTrack(track)
 }
 
 func (j *Mechanic) MoveHeadIn() {
-	j.disk.MoveIn()
+	//todo halfTrack handler
+	if j.headPos >= numHalfTracks {
+		return
+	}
+	j.headPos++
+	track := uint8(j.headPos >> 1)
+	j.disk.SetHeadTrack(track)
 }
 
 func (j *Mechanic) insertDisk(filePath string) error {

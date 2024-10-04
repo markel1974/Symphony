@@ -9,7 +9,7 @@ type Sector struct {
 	trackNum  uint8
 	sectorNum uint8
 	begin     int
-	data      [sectorSize]uint8
+	data      [SectorSize]uint8
 	cursor    uint
 }
 
@@ -62,19 +62,19 @@ func (s *Sector) Write(data uint8) {
 }
 
 func (s *Sector) Raw(diskData []byte) ([]uint8, error) {
-	end := s.begin + blockSize
+	end := s.begin + BlockSize
 	if s.begin > len(diskData) || end > len(diskData) {
 		log.Printf("Invalid start/end: %d - %d", s.begin, end)
 		return nil, fmt.Errorf("invalid start/end")
 	}
-	buffer := make([]uint8, blockSize)
+	buffer := make([]uint8, BlockSize)
 	copy(buffer, diskData[s.begin:end])
 	return buffer, nil
 }
 
-func (s *Sector) sector2gcr(sector []uint8, bam1 uint8, bam2 uint8) ([sectorSize]uint8, error) {
-	var ret [sectorSize]uint8
-	if len(sector) > blockSize {
+func (s *Sector) sector2gcr(sector []uint8, bam1 uint8, bam2 uint8) ([SectorSize]uint8, error) {
+	var ret [SectorSize]uint8
+	if len(sector) > BlockSize {
 		log.Printf("Invalid block length: %d", len(sector))
 		return ret, fmt.Errorf("invalid block length")
 	}
