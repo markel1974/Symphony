@@ -5,8 +5,8 @@ import (
 	"os"
 )
 
-//const numTracks = 35
-//const numHalfTracks = numTracks * 2
+const headStep = 35
+const headHalfStep = headStep * 2 //half track
 
 //see https://sta.c64.org/cbm1541mem.html
 
@@ -114,8 +114,7 @@ func (j *Mechanic) MoveHeadOut() {
 
 func (j *Mechanic) MoveHeadIn() {
 	//todo halfTrack handler
-	halfTrack := j.disk.GetTracksNumber() * 2
-	if j.headPos >= halfTrack {
+	if j.headPos >= headHalfStep {
 		return
 	}
 	j.headPos++

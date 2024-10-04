@@ -8,7 +8,6 @@ import (
 type IDisk interface {
 	Read() uint8
 	Write(uint8)
-	GetTracksNumber() uint8
 	SetHeadTrack(uint8)
 	Rotate()
 	Usable() bool

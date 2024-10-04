@@ -2,6 +2,7 @@ package gcr
 
 import (
 	"fmt"
+	"log"
 )
 
 const (
@@ -62,35 +63,13 @@ func (g *Disk) Usable() bool {
 	return g.usable
 }
 
-func (g *Disk) GetTracksNumber() uint8 {
-	return NumTracks
-}
-
 func (g *Disk) SetHeadTrack(track uint8) {
-	g.currentTrack = g.tracks[track]
-}
-
-/*
-func (g *Disk) MoveOut() {
-	//todo halfTrack handler
-	//if g.currentHalfTrack <= 2 {
-	//	return
-	//}
-	//g.currentHalfTrack--
-	//track := g.currentHalfTrack >> 1
-	//g.currentTrack = g.tracks[track]
-}
-
-func (g *Disk) MoveIn() {
-	//todo halfTrack handler
-	if g.currentHalfTrack >= numHalfTracks {
+	if track >= uint8(len(g.tracks)) {
+		log.Printf("invalid track number: %d", track)
 		return
 	}
-	g.currentHalfTrack++
-	track := g.currentHalfTrack >> 1
 	g.currentTrack = g.tracks[track]
 }
-*/
 
 func (g *Disk) Rotate() {
 	g.currentTrack.Advance()
