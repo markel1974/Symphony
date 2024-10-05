@@ -9,7 +9,7 @@ const (
 	NumTracks  = 35
 	NumSectors = 683
 	BlockSize  = 256
-	SectorSize = 1 + 10 + 9 + 1 + 325 + 8 // SYNC Header Gap SYNC Data Gap (should be 5 SYNC bytes each)
+	SectorSize = 1 + 10 + 9 + 1 + 325 + 8 // Sync | Header | Fill | Sync | Data | Fill
 )
 
 const (
@@ -87,36 +87,3 @@ func (g *Disk) Read() uint8 {
 func (g *Disk) Write(data uint8) {
 	g.currentTrack.Write(data)
 }
-
-/*
-///Users/tinmr305/Desktop/emu/vice-emu-code-r45201-trunk-vice/src/gcr.c
-func (g *GCR) gcr2sector(block []uint8, track int, sector int) []uint8 {
-	var shift, i, j int
-	var gcr[5] uint8
-	var b uint8;
-	var offsetIdx uint8
-	var end uint8 = raw.data + raw.size;
-
-	shift = p & 7;
-	offsetIdx = raw->data + (p >> 3);
-
-	b = offset[0] << shift;
-	for i = 0; i < num; i++, buf += 4 {
-		// get 5 bytes of gcr data
-		for j = 0; j < 5; j++){
-			offset++;
-			if offset >= end {
-				offset = raw->data;
-			}
-			if shift {
-				gcr[j] = b | ((offset[0] << shift) >> 8);
-				b = offset[0] << shift;
-			} else {
-				gcr[j] = b;
-				b = offset[0];
-			}
-		}
-		conv4to5(gcr, buf);
-	}
-}
-*/

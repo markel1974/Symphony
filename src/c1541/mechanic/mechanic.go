@@ -2,7 +2,6 @@ package mechanic
 
 import (
 	"io"
-	"log"
 	"os"
 )
 
@@ -52,16 +51,6 @@ func (j *Mechanic) Reset() {
 	j.motor = false
 }
 
-func (j *Mechanic) Emulate() {
-	if j.motor {
-		j.rotationCounter++
-		if j.rotationCounter >= j.rotationIntervals {
-			j.RotateDisk()
-			j.rotationCounter = 0
-		}
-	}
-}
-
 func (j *Mechanic) init(fp string) error {
 	j.Reset()
 	if err := j.insertDisk(fp); err != nil {
@@ -75,6 +64,38 @@ func (j *Mechanic) Setup(fp string) {
 	if err := j.init(fp); err != nil {
 		return
 	}
+}
+
+func (j *Mechanic) RotateDisk() {
+	j.disk.Rotate()
+}
+
+//func (j *Mechanic) Emulate() {
+//	if j.motor {
+//		j.rotationCounter++
+//		if j.rotationCounter >= j.rotationIntervals {
+//			j.disk.Rotate()
+//			j.rotationCounter = 0
+//		}
+//	}
+//}
+
+func (j *Mechanic) ReadByte() uint8 {
+	return j.disk.Read()
+}
+
+func (j *Mechanic) WriteByte(data uint8) {
+	j.disk.Write(data)
+}
+
+func (j *Mechanic) SyncFound() bool {
+	if !j.motor {
+		return true
+	}
+	if j.disk.Read() == 0xff {
+		return true
+	}
+	return false
 }
 
 func (j *Mechanic) SetMotor(m bool) {
@@ -100,37 +121,23 @@ func (j *Mechanic) WriteProtectionState() uint8 {
 	return 0
 }
 
-func (j *Mechanic) SyncFound() bool {
-	if j.disk.Read() == 0xff {
-		return true
-	}
-	return false
-}
-
-func (j *Mechanic) RotateDisk() {
-	j.disk.Rotate()
-}
-
-func (j *Mechanic) ReadByte() uint8 {
-	return j.disk.Read()
-}
-
-func (j *Mechanic) WriteByte(data uint8) {
-	j.disk.Write(data)
-}
-
 func (j *Mechanic) updateHeadPos() {
-	const rps = 300 / 60
-	const freq = 985000
 	track := j.headPos >> 1
-	if trackLen := j.disk.SetHeadTrack(track); trackLen > 0 {
-		j.rotationIntervals = freq / (rps * trackLen)
-	} else {
-		j.rotationIntervals = 0
-	}
-	j.rotationCounter = 0
-	log.Printf("track: %d => rotation intervals: %d", track, j.rotationIntervals)
+	j.disk.SetHeadTrack(track)
+	//j.updateRotationIntervals()
+
 }
+
+//func (j *Mechanic) updateRotationIntervals() {
+//	const rps = 300 / 60
+//	const freq = 985000
+//	if trackLen := j.disk.HeadTrackLen(); trackLen > 0 {
+//		j.rotationIntervals = freq / (rps * trackLen)
+//	} else {
+//		j.rotationIntervals = 0
+//	}
+//	log.Printf("track: %d => rotation intervals: %d", j.headPos>>1, j.rotationIntervals)
+//}
 
 func (j *Mechanic) MoveHeadOut() {
 	//todo halfTrack handler
@@ -168,6 +175,7 @@ func (j *Mechanic) insertDisk(filePath string) error {
 		return err
 	}
 	j.disk = g
+	//j.updateRotationIntervals()
 	return nil
 }
 

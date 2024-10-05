@@ -41,9 +41,9 @@ func (t *Track) Len() int {
 	return t.length
 }
 
-func (t *Track) RawSector(disk []uint8, sectorNum uint8) ([]uint8, error) {
+func (t *Track) RawSector(disk []uint8, sectorNum uint8) ([BlockSize]uint8, error) {
 	if sectorNum >= uint8(len(t.sectors)) {
-		return nil, fmt.Errorf("sector index out of range")
+		return [BlockSize]uint8{}, fmt.Errorf("sector index out of range")
 	}
 	return t.sectors[sectorNum].sector.Raw(disk)
 }

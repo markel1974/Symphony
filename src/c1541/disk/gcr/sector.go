@@ -5,6 +5,9 @@ import (
 	"log"
 )
 
+const sync = 0xff
+const fill uint8 = 0x55
+
 type Sector struct {
 	trackNum  uint8
 	sectorNum uint8
@@ -14,8 +17,8 @@ type Sector struct {
 }
 
 func NewSector(trackNum uint8, sectorNum uint8, headerLen uint8, offset uint16) *Sector {
-	realOffset := (int(offset) + int(sectorNum)) << 8
-	begin := realOffset + int(headerLen)
+	rOffset := (int(offset) + int(sectorNum)) << 8
+	begin := rOffset + int(headerLen)
 	s := &Sector{
 		trackNum:  trackNum,
 		sectorNum: sectorNum,
@@ -23,7 +26,7 @@ func NewSector(trackNum uint8, sectorNum uint8, headerLen uint8, offset uint16) 
 		begin:     begin,
 	}
 	for i := range s.data {
-		s.data[i] = 0x55
+		s.data[i] = fill
 	}
 	return s
 }
@@ -33,13 +36,11 @@ func (s *Sector) Len() int {
 }
 
 func (s *Sector) Load(image []uint8, bam1 uint8, bam2 uint8) error {
-	if sector, _ := s.Raw(image); sector != nil {
-		data, err := s.sector2gcr(sector, bam1, bam2)
-		if err != nil {
-			return err
-		}
-		s.data = data
+	sector, err := s.Raw(image)
+	if err != nil {
+		return err
 	}
+	s.data = s.sector2gcr(sector, bam1, bam2)
 	return nil
 }
 
@@ -61,29 +62,29 @@ func (s *Sector) Read() uint8 {
 }
 
 func (s *Sector) Write(data uint8) {
-	//log.Printf("Write: Track %d -> Sector %d -> Cursor %d = %02x", s.trackNum, s.sectorNum, s.cursor, data)
+	//if data == sync {
+	//	log.Printf("Write: Track %d -> Sector %d -> Cursor %d = %02x", s.trackNum, s.sectorNum, s.cursor, data)
+	//}
 	s.data[s.cursor] = data
 }
 
-func (s *Sector) Raw(diskData []byte) ([]uint8, error) {
+func (s *Sector) Raw(diskData []byte) ([BlockSize]uint8, error) {
+	var buffer [BlockSize]uint8
 	end := s.begin + BlockSize
 	if s.begin > len(diskData) || end > len(diskData) {
-		log.Printf("Invalid start/end: %d - %d", s.begin, end)
-		return nil, fmt.Errorf("invalid start/end")
+		log.Printf("invalid start/end: %d - %d", s.begin, end)
+		return buffer, fmt.Errorf("invalid start/end")
 	}
-	buffer := make([]uint8, BlockSize)
-	copy(buffer, diskData[s.begin:end])
+	copy(buffer[:], diskData[s.begin:end])
 	return buffer, nil
 }
 
-func (s *Sector) sector2gcr(sector []uint8, bam1 uint8, bam2 uint8) ([SectorSize]uint8, error) {
+func (s *Sector) sector2gcr(sector [BlockSize]uint8, bam1 uint8, bam2 uint8) [SectorSize]uint8 {
+	const last = BlockSize - 1
+
 	var ret [SectorSize]uint8
-	if len(sector) > BlockSize {
-		log.Printf("Invalid block length: %d", len(sector))
-		return ret, fmt.Errorf("invalid block length")
-	}
 	idx := 0
-	ret[idx] = 0xff
+	ret[idx] = sync
 	idx++
 
 	headerData := conv4to5([4]uint8{0x08, uint8(int(s.sectorNum) ^ int(s.trackNum) ^ int(bam2) ^ int(bam1)), s.sectorNum, s.trackNum})
@@ -94,11 +95,11 @@ func (s *Sector) sector2gcr(sector []uint8, bam1 uint8, bam2 uint8) ([SectorSize
 	copy(ret[idx:], bamData[:])
 	idx += len(bamData)
 
-	fillData := [9]uint8{0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55}
+	fillData := [9]uint8{fill, fill, fill, fill, fill, fill, fill, fill, fill}
 	copy(ret[idx:], fillData[:])
 	idx += len(fillData)
 
-	ret[idx] = 0xff // Create SYNC
+	ret[idx] = sync
 	idx++
 
 	dataMark := conv4to5([4]uint8{0x07, sector[0], sector[1], sector[2]})
@@ -106,7 +107,7 @@ func (s *Sector) sector2gcr(sector []uint8, bam1 uint8, bam2 uint8) ([SectorSize
 	idx += len(dataMark)
 
 	checksum := sector[0] ^ sector[1] ^ sector[2]
-	for x := 3; x < 255; x += 4 {
+	for x := 3; x < last; x += 4 {
 		data := conv4to5([4]uint8{sector[x], sector[x+1], sector[x+2], sector[x+3]})
 		copy(ret[idx:], data[:])
 		idx += len(data)
@@ -116,13 +117,46 @@ func (s *Sector) sector2gcr(sector []uint8, bam1 uint8, bam2 uint8) ([SectorSize
 		checksum ^= sector[x+2]
 		checksum ^= sector[x+3]
 	}
-	checksum ^= sector[255]
+	checksum ^= sector[last]
 
-	checksumData := conv4to5([4]uint8{sector[255], checksum, 0, 0})
+	checksumData := conv4to5([4]uint8{sector[last], checksum, 0, 0})
 	copy(ret[idx:], checksumData[:])
 	idx += len(checksumData)
 
-	endData := [8]uint8{0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55}
+	endData := [8]uint8{fill, fill, fill, fill, fill, fill, fill, fill}
 	copy(ret[idx:], endData[:])
-	return ret, nil
+	return ret
 }
+
+/*
+///Users/tinmr305/Desktop/emu/vice-emu-code-r45201-trunk-vice/src/gcr.c
+func (g *GCR) gcr2sector(block []uint8, track int, sector int) []uint8 {
+	var shift, i, j int
+	var gcr[5] uint8
+	var b uint8;
+	var offsetIdx uint8
+	var end uint8 = raw.data + raw.size;
+
+	shift = p & 7;
+	offsetIdx = raw->data + (p >> 3);
+
+	b = offset[0] << shift;
+	for i = 0; i < num; i++, buf += 4 {
+		// get 5 bytes of gcr data
+		for j = 0; j < 5; j++){
+			offset++;
+			if offset >= end {
+				offset = raw->data;
+			}
+			if shift {
+				gcr[j] = b | ((offset[0] << shift) >> 8);
+				b = offset[0] << shift;
+			} else {
+				gcr[j] = b;
+				b = offset[0];
+			}
+		}
+		conv4to5(gcr, buf);
+	}
+}
+*/
