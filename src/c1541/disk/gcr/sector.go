@@ -28,6 +28,10 @@ func NewSector(trackNum uint8, sectorNum uint8, headerLen uint8, offset uint16) 
 	return s
 }
 
+func (s *Sector) Len() int {
+	return len(s.data)
+}
+
 func (s *Sector) Load(image []uint8, bam1 uint8, bam2 uint8) error {
 	if sector, _ := s.Raw(image); sector != nil {
 		data, err := s.sector2gcr(sector, bam1, bam2)

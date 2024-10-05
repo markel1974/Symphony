@@ -63,12 +63,17 @@ func (g *Disk) Usable() bool {
 	return g.usable
 }
 
-func (g *Disk) SetHeadTrack(track uint8) {
+func (g *Disk) SetHeadTrack(track uint8) int {
 	if track >= uint8(len(g.tracks)) {
 		log.Printf("invalid track number: %d", track)
-		return
+		return -1
 	}
 	g.currentTrack = g.tracks[track]
+	return g.currentTrack.Len()
+}
+
+func (g *Disk) HeadTrackLen() int {
+	return g.currentTrack.Len()
 }
 
 func (g *Disk) Rotate() {
@@ -82,63 +87,6 @@ func (g *Disk) Read() uint8 {
 func (g *Disk) Write(data uint8) {
 	g.currentTrack.Write(data)
 }
-
-/*
-func (g *GCR) sector2gcr_old(block []uint8, bam1 uint8, bam2 uint8, track int, sector int) error {
-	if len(block) > blockSize {
-		return fmt.Errorf("invalid block length")
-	}
-	idx := ((track - 1) * trackSize) + (sector * sectorSize)
-	g.data[idx] = 0xff
-	idx++
-	for z, v := range conv4to5([4]uint8{0x08, uint8(sector ^ track ^ int(bam2) ^ int(bam1)), uint8(sector), uint8(track)}) {
-		g.data[idx+z] = v
-	}
-	idx += 5
-	for z, v := range conv4to5([4]uint8{bam2, bam1, 0x0f, 0x0f}) {
-		g.data[idx+z] = v
-	}
-	idx += 5
-	for x := 0; x < 9; x++ {
-		g.data[idx+x] = 0x55
-	}
-	idx += 9
-	// Create GCR data + SYNC
-	g.data[idx] = 0xff
-	idx++
-	// Data mark
-	for z, v := range conv4to5([4]uint8{0x07, block[0], block[1], block[2]}) {
-		g.data[idx+z] = v
-	}
-	checksum := block[0]
-	checksum ^= block[1]
-	checksum ^= block[2]
-	idx += 5
-	for x := 3; x < 255; x += 4 {
-		b0 := block[x]
-		b1 := block[x+1]
-		b2 := block[x+2]
-		b3 := block[x+3]
-		for z, v := range conv4to5([4]uint8{b0, b1, b2, b3}) {
-			g.data[idx+z] = v
-		}
-		checksum ^= b0
-		checksum ^= b1
-		checksum ^= b2
-		checksum ^= b3
-		idx += 5
-	}
-	checksum ^= block[255]
-	for z, v := range conv4to5([4]uint8{block[255], checksum, 0, 0}) {
-		g.data[idx+z] = v
-	}
-	idx += 5
-	for x := 0; x < 8; x++ {
-		g.data[idx+x] = 0x55
-	}
-	return nil
-}
-*/
 
 /*
 ///Users/tinmr305/Desktop/emu/vice-emu-code-r45201-trunk-vice/src/gcr.c

@@ -13,6 +13,7 @@ type Track struct {
 	headerLen uint8
 	sectors   []*SectorItem
 	current   *SectorItem
+	length    int
 }
 
 func NewTrack(trackNum uint8, headerLen uint8) *Track {
@@ -21,6 +22,7 @@ func NewTrack(trackNum uint8, headerLen uint8) *Track {
 		headerLen: headerLen,
 		offset:    _sectorOffset[trackNum],
 		sectors:   make([]*SectorItem, _numSectors[trackNum]),
+		length:    0,
 	}
 	for sectorNum := range t.sectors {
 		item := &SectorItem{sector: NewSector(t.trackNum, uint8(sectorNum), t.headerLen, t.offset), next: nil}
@@ -28,10 +30,15 @@ func NewTrack(trackNum uint8, headerLen uint8) *Track {
 		if sectorNum > 0 {
 			t.sectors[sectorNum-1].next = item
 		}
+		t.length += item.sector.Len()
 	}
 	t.sectors[len(t.sectors)-1].next = t.sectors[0]
 	t.current = t.sectors[0]
 	return t
+}
+
+func (t *Track) Len() int {
+	return t.length
 }
 
 func (t *Track) RawSector(disk []uint8, sectorNum uint8) ([]uint8, error) {
