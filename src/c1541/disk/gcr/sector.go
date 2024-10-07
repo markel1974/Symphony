@@ -1,10 +1,6 @@
 package gcr
 
-import (
-	"fmt"
-	"log"
-)
-
+/*
 const sync = 0xff
 const fill uint8 = 0x55
 
@@ -127,6 +123,8 @@ func (s *Sector) sector2gcr(sector [BlockSize]uint8, bam1 uint8, bam2 uint8) [Se
 	copy(ret[idx:], endData[:])
 	return ret
 }
+
+*/
 
 /*
 ///Users/tinmr305/Desktop/emu/vice-emu-code-r45201-trunk-vice/src/gcr.c
