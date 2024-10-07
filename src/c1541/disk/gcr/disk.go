@@ -5,16 +5,6 @@ import (
 	"log"
 )
 
-const (
-	numTracks = 35
-)
-
-const (
-	startTrack   = 1
-	bamTrackIdx  = 18
-	bamSectorIdx = 0
-)
-
 // _numSectorsPerTrack  Number of sectors of each track
 var _numSectorsPerTrack = []uint8{
 	0, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
@@ -43,6 +33,11 @@ type Disk struct {
 }
 
 func NewDisk(image []uint8) (*Disk, error) {
+	const numTracks = 35
+	const startTrack = 1
+	const bamTrackIdx = 18
+	const bamSectorIdx = 0
+
 	g := &Disk{
 		//errorInfo:        make([]uint8, numSectors),
 		usable: false,
