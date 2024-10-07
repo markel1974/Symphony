@@ -9,7 +9,8 @@ type IDisk interface {
 	Read() uint8
 	Write(uint8)
 	SetHeadTrack(uint8) int
-	HeadTrackLen() int
+	TrackLen() int
+	TrackSectors() uint8
 	Rotate()
 	Usable() bool
 }

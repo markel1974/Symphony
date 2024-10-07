@@ -6,9 +6,14 @@ func NewDisk() *Void {
 	return &Void{}
 }
 
-func (e *Void) HeadTrackLen() int {
+func (e *Void) TrackLen() int {
 	return 0
 }
+
+func (e *Void) TrackSectors() uint8 {
+	return 0
+}
+
 func (e *Void) Read() uint8 {
 	return 0
 }

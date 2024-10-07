@@ -31,6 +31,10 @@ func (t *Track) Len() int {
 	return len(t.data)
 }
 
+func (t *Track) Sectors() uint8 {
+	return t.sectors
+}
+
 func (t *Track) Load(disk []uint8, headerLen, bam1 uint8, bam2 uint8, trackOffset uint16) error {
 	for sectorIdx := uint8(0); sectorIdx < t.sectors; sectorIdx++ {
 		sector, err := rawSector(disk, headerLen, trackOffset, sectorIdx)

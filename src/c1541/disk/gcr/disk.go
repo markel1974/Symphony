@@ -5,6 +5,8 @@ import (
 	"log"
 )
 
+//https://www.pagetable.com/?p=1070
+
 // _numSectorsPerTrack  Number of sectors of each track
 var _numSectorsPerTrack = []uint8{
 	0, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21, 21,
@@ -88,8 +90,12 @@ func (g *Disk) SetHeadTrack(track uint8) int {
 	return g.currentTrack.Len()
 }
 
-func (g *Disk) HeadTrackLen() int {
+func (g *Disk) TrackLen() int {
 	return g.currentTrack.Len()
+}
+
+func (g *Disk) TrackSectors() uint8 {
+	return g.currentTrack.Sectors()
 }
 
 func (g *Disk) Rotate() {
