@@ -11,6 +11,7 @@ type IDisk interface {
 	SetHeadTrack(uint8) int
 	TrackLen() int
 	TrackSectors() uint8
+	MicroSecPerByte() uint8
 	Rotate()
 	Usable() bool
 }

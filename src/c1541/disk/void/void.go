@@ -25,6 +25,10 @@ func (e *Void) SetHeadTrack(uint8) int {
 	return 0
 }
 
+func (e *Void) MicroSecPerByte() uint8 {
+	return 0
+}
+
 func (e *Void) Rotate() {
 }
 

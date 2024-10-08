@@ -69,6 +69,10 @@ func (g *Disk) TrackLen() int {
 	return g.currentTrack.Len()
 }
 
+func (g *Disk) MicroSecPerByte() uint8 {
+	return getMicroSecPerByte(g.currentTrack.trackIdx)
+}
+
 func (g *Disk) TrackSectors() uint8 {
 	return g.currentTrack.Sectors()
 }

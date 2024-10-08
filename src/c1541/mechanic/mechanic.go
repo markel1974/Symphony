@@ -70,17 +70,29 @@ func (j *Mechanic) RotateDisk() {
 	j.disk.Rotate()
 }
 
-//func (j *Mechanic) Emulate() {
-//	if j.motor {
-//		j.rotationCounter++
-//		if j.rotationCounter >= j.rotationIntervals {
-//			j.disk.Rotate()
-//			j.rotationCounter = 0
-//		}
-//	}
-//}
+/*
+var _counter uint64 = 0
+var _readCounter uint64 = 0
+func (j *Mechanic) Emulate() {
+	//if j.motor {
+	//	_counter++
+	//} else {
+	//	_counter = 0
+	//}
+	//return
+	if j.motor {
+		j.rotationCounter++
+		if j.rotationCounter >= j.rotationIntervals {
+			j.disk.Rotate()
+			j.rotationCounter = 0
+		}
+	}
+}
+*/
 
 func (j *Mechanic) ReadByte() uint8 {
+	//fmt.Println(_counter - _readCounter)
+	//_counter = _readCounter
 	return j.disk.Read()
 }
 
@@ -124,20 +136,14 @@ func (j *Mechanic) WriteProtectionState() uint8 {
 func (j *Mechanic) updateHeadPos() {
 	track := j.headPos >> 1
 	j.disk.SetHeadTrack(track)
-	//j.updateRotationIntervals()
+	j.updateRotationIntervals()
 
 }
 
-//func (j *Mechanic) updateRotationIntervals() {
-//	const rps = 300 / 60
-//	const freq = 985000
-//	if trackLen := j.disk.HeadTrackLen(); trackLen > 0 {
-//		j.rotationIntervals = freq / (rps * trackLen)
-//	} else {
-//		j.rotationIntervals = 0
-//	}
-//	log.Printf("track: %d => rotation intervals: %d", j.headPos>>1, j.rotationIntervals)
-//}
+func (j *Mechanic) updateRotationIntervals() {
+	j.rotationIntervals = int(j.disk.MicroSecPerByte())
+	//log.Printf("track: %d => rotation intervals: %d", j.headPos>>1, j.rotationIntervals)
+}
 
 func (j *Mechanic) MoveHeadOut() {
 	//todo halfTrack handler
@@ -175,7 +181,7 @@ func (j *Mechanic) insertDisk(filePath string) error {
 		return err
 	}
 	j.disk = g
-	//j.updateRotationIntervals()
+	j.updateRotationIntervals()
 	return nil
 }
 
