@@ -19,6 +19,24 @@ var _gcrFromTable = []uint8{
 	0, 2, 3, 0, 15, 6, 7, 0, 9, 10, 11, 0, 13, 14, 0,
 }
 
+var _syncBlock [syncLen]uint8
+var _fillBeginBlock [fillBeginLen]uint8
+var _fillEndBlock [fillEndLen]uint8
+
+func init() {
+	const syncMarker = 0xff
+	const fillByte uint8 = 0x55
+	for i := range _syncBlock {
+		_syncBlock[i] = syncMarker
+	}
+	for i := range _fillBeginBlock {
+		_fillBeginBlock[i] = fillByte
+	}
+	for i := range _fillEndBlock {
+		_fillEndBlock[i] = fillByte
+	}
+}
+
 func rawSector(disk []uint8, headerLen uint8, trackOffset uint16, sectorIdx uint8) ([blockSize]uint8, error) {
 	var buffer [blockSize]uint8
 	rOffset := (int(trackOffset) + int(sectorIdx)) << 8
@@ -69,13 +87,11 @@ func conv4to5(from [4]uint8) [5]uint8 {
 
 func sector2gcr(sector [blockSize]uint8, bam1 uint8, bam2 uint8, trackIdx uint8, sectorIdx uint8) [sectorSize]uint8 {
 	const last = blockSize - 1
-	const fillByte uint8 = 0x55
-	const syncMarker = 0xff
 
 	var ret [sectorSize]uint8
 	idx := 0
-	ret[idx] = syncMarker
-	idx++
+	copy(ret[idx:], _syncBlock[:])
+	idx += len(_syncBlock)
 
 	headerData := conv4to5([4]uint8{0x08, uint8(int(sectorIdx) ^ int(trackIdx) ^ int(bam2) ^ int(bam1)), sectorIdx, trackIdx})
 	copy(ret[idx:], headerData[:])
@@ -85,12 +101,11 @@ func sector2gcr(sector [blockSize]uint8, bam1 uint8, bam2 uint8, trackIdx uint8,
 	copy(ret[idx:], bamData[:])
 	idx += len(bamData)
 
-	fillData := [9]uint8{fillByte, fillByte, fillByte, fillByte, fillByte, fillByte, fillByte, fillByte, fillByte}
-	copy(ret[idx:], fillData[:])
-	idx += len(fillData)
+	copy(ret[idx:], _fillBeginBlock[:])
+	idx += len(_fillBeginBlock)
 
-	ret[idx] = syncMarker
-	idx++
+	copy(ret[idx:], _syncBlock[:])
+	idx += len(_syncBlock)
 
 	dataMark := conv4to5([4]uint8{0x07, sector[0], sector[1], sector[2]})
 	copy(ret[idx:], dataMark[:])
@@ -113,8 +128,9 @@ func sector2gcr(sector [blockSize]uint8, bam1 uint8, bam2 uint8, trackIdx uint8,
 	copy(ret[idx:], checksumData[:])
 	idx += len(checksumData)
 
-	endData := [8]uint8{fillByte, fillByte, fillByte, fillByte, fillByte, fillByte, fillByte, fillByte}
-	copy(ret[idx:], endData[:])
+	copy(ret[idx:], _fillEndBlock[:])
+	idx += len(_fillEndBlock)
+
 	return ret
 }
 

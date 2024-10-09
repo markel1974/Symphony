@@ -95,7 +95,7 @@ func (j *Mechanic) SyncFound() bool {
 	if !j.motor {
 		return true
 	}
-	if j.disk.Read() == 0xff {
+	if j.disk.Read() == 0xff && j.disk.Next() != 0xff {
 		return true
 	}
 	return false

@@ -5,8 +5,12 @@ import (
 )
 
 const (
-	blockSize  = 256
-	sectorSize = 1 + 10 + 9 + 1 + 325 + 8 // Sync | Header | Fill | Sync | Data | Fill
+	blockSize    = 256
+	syncLen      = 5
+	headerLen    = 10
+	fillBeginLen = 9
+	fillEndLen   = 8
+	sectorSize   = syncLen + headerLen + fillBeginLen + syncLen + 325 + fillEndLen // Sync | Header | Fill | Sync | Data | Fill
 )
 
 type Track struct {
@@ -69,6 +73,14 @@ func (t *Track) Advance() {
 
 func (t *Track) Read() uint8 {
 	return t.data[t.cursor]
+}
+
+func (t *Track) Next() uint8 {
+	cursor := t.cursor + 1
+	if cursor >= uint32(len(t.data)) {
+		cursor = 0
+	}
+	return t.data[cursor]
 }
 
 func (t *Track) Write(data uint8) {

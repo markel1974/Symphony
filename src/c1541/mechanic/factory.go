@@ -8,6 +8,7 @@ import (
 type IDisk interface {
 	Read() uint8
 	Write(uint8)
+	Next() uint8
 	SetHeadTrack(uint8) int
 	TrackLen() int
 	TrackSectors() uint8

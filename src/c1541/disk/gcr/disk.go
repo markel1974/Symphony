@@ -85,6 +85,10 @@ func (g *Disk) Read() uint8 {
 	return g.currentTrack.Read()
 }
 
+func (g *Disk) Next() uint8 {
+	return g.currentTrack.Next()
+}
+
 func (g *Disk) Write(data uint8) {
 	g.currentTrack.Write(data)
 }
