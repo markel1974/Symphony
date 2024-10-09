@@ -26,11 +26,11 @@ func NewDisk(image []uint8) (*Disk, error) {
 	if uint(len(image)) < getImageSize() {
 		return nil, fmt.Errorf("invalid disk data length")
 	}
-	headerLen := uint8(0)
+	hLen := uint8(0)
 	if (image[0] == 0x43) && (image[1] == 0x1) && (image[2] == 0x41) && (image[3] == 0x64) {
-		headerLen = 64
+		hLen = 64
 	}
-	bamSector, bErr := rawSector(image, headerLen, getTrackOffset(bamTrackIdx), bamSectorIdx)
+	bamSector, bErr := rawSector(image, hLen, getTrackOffset(bamTrackIdx), bamSectorIdx)
 	if bErr != nil {
 		return nil, bErr
 	}
@@ -39,7 +39,7 @@ func NewDisk(image []uint8) (*Disk, error) {
 	g.tracks = make([]*Track, getTrackCount()+getTrackStart())
 	for trackIdx := getTrackStart(); trackIdx <= getTrackCount(); trackIdx++ {
 		track := NewTrack(trackIdx, getTrackSectors(trackIdx))
-		if tErr := track.Load(image, headerLen, bam1, bam2, getTrackOffset(trackIdx)); tErr != nil {
+		if tErr := track.Load(image, hLen, bam1, bam2, getTrackOffset(trackIdx)); tErr != nil {
 			return nil, tErr
 		}
 		g.tracks[trackIdx] = track
