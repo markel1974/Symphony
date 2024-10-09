@@ -34,13 +34,13 @@ func init() {
 		if x == 0 {
 			track.Update(0, 0, 0, 0)
 		} else if x >= 1 && x <= 17 {
-			track.Update(21, 3, 19 /*26*/, 60.0)
+			track.Update(21, 3, 20 /*19*/ /*26*/, 60.0)
 		} else if x >= 18 && x <= 24 {
-			track.Update(19, 2, 19 /*28*/, 55.8)
+			track.Update(19, 2, 20 /*28*/, 55.8)
 		} else if x >= 25 && x <= 30 {
-			track.Update(18, 1, 19 /*30*/, 52.1)
+			track.Update(18, 1, 20 /*30*/, 52.1)
 		} else if x >= 31 && x <= 35 {
-			track.Update(17, 0, 19 /*32*/, 48.8)
+			track.Update(17, 0, 20 /*32*/, 48.8)
 		}
 		currentOffset += uint16(track.sectors)
 		_totalSectors += uint(track.sectors)
