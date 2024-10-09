@@ -23,6 +23,7 @@ type Mechanic struct {
 	headPos           uint8
 	rotationIntervals int
 	rotationCounter   int
+	data              uint8
 }
 
 func NewMechanic() *Mechanic {
@@ -39,6 +40,7 @@ func NewMechanic() *Mechanic {
 		headPos:           2,
 		rotationIntervals: 0,
 		rotationCounter:   0,
+		data:              0,
 	}
 	return j
 }
@@ -70,29 +72,18 @@ func (j *Mechanic) RotateDisk() {
 	j.disk.Rotate()
 }
 
-/*
-var _counter uint64 = 0
-var _readCounter uint64 = 0
 func (j *Mechanic) Emulate() {
-	//if j.motor {
-	//	_counter++
-	//} else {
-	//	_counter = 0
-	//}
-	//return
 	if j.motor {
 		j.rotationCounter++
 		if j.rotationCounter >= j.rotationIntervals {
 			j.disk.Rotate()
+			j.data = j.disk.Read()
 			j.rotationCounter = 0
 		}
 	}
 }
-*/
 
 func (j *Mechanic) ReadByte() uint8 {
-	//fmt.Println(_counter - _readCounter)
-	//_counter = _readCounter
 	return j.disk.Read()
 }
 
@@ -112,6 +103,7 @@ func (j *Mechanic) SyncFound() bool {
 
 func (j *Mechanic) SetMotor(m bool) {
 	j.motor = m
+	j.data = 0
 }
 
 func (j *Mechanic) HasDisk() bool {
