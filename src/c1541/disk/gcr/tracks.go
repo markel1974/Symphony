@@ -49,7 +49,7 @@ func init() {
 }
 
 func getImageSize() uint {
-	return _totalSectors * blockSize
+	return _totalSectors * blockBytesLen
 }
 
 func getTrackStart() uint8 {

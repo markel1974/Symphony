@@ -37,11 +37,11 @@ func init() {
 	}
 }
 
-func rawSector(disk []uint8, headerLen uint8, trackOffset uint16, sectorIdx uint8) ([blockSize]uint8, error) {
-	var buffer [blockSize]uint8
+func rawSector(disk []uint8, headerLen uint8, trackOffset uint16, sectorIdx uint8) ([blockBytesLen]uint8, error) {
+	var buffer [blockBytesLen]uint8
 	rOffset := (int(trackOffset) + int(sectorIdx)) << 8
 	begin := rOffset + int(headerLen)
-	end := begin + blockSize
+	end := begin + blockBytesLen
 	if begin > len(disk) || end > len(disk) {
 		log.Printf("invalid start/end: %d - %d", begin, end)
 		return buffer, fmt.Errorf("sector index out of range")
@@ -85,10 +85,10 @@ func conv4to5(from [4]uint8) [5]uint8 {
 	return to
 }
 
-func sector2gcr(sector [blockSize]uint8, bam1 uint8, bam2 uint8, trackIdx uint8, sectorIdx uint8) [sectorSize]uint8 {
-	const last = blockSize - 1
+func sector2gcr(sector [blockBytesLen]uint8, bam1 uint8, bam2 uint8, trackIdx uint8, sectorIdx uint8) [gcrSectorLen]uint8 {
+	const last = blockBytesLen - 1
 
-	var ret [sectorSize]uint8
+	var ret [gcrSectorLen]uint8
 	idx := 0
 	copy(ret[idx:], _syncBlock[:])
 	idx += len(_syncBlock)

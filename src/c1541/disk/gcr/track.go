@@ -5,13 +5,18 @@ import (
 )
 
 const (
-	blockSize    = 256
-	syncLen      = 5
-	headerLen    = 10
-	fillBeginLen = 9
-	fillEndLen   = 8
-	sectorSize   = syncLen + headerLen + fillBeginLen + syncLen + 325 + fillEndLen // Sync | Header | Fill | Sync | Data | Fill
+	blockBytesLen = 256
+	dataBlockLen  = blockBytesLen + 4 // data block id (0x07) + blockBytes + checksum + 0x00 + 0x00
+	syncLen       = 5
+	headerLen     = 10
+	fillBeginLen  = 9
+	fillEndLen    = 8
+	gcrDataLen    = (dataBlockLen / 4) * 5
+	gcrSectorLen  = syncLen + headerLen + fillBeginLen + syncLen + gcrDataLen + fillEndLen
+	//realSectorLen = syncLen + headerLen + fillBeginLen + syncLen + dataBlockLen + fillEndLen
 )
+
+//real size: 7
 
 type Track struct {
 	trackIdx uint8
@@ -27,7 +32,7 @@ func NewTrack(trackIdx uint8, sectors uint8) *Track {
 		data:     nil,
 		cursor:   0,
 	}
-	t.data = make([]uint8, int(t.sectors)*sectorSize)
+	t.data = make([]uint8, int(t.sectors)*gcrSectorLen)
 	return t
 }
 
@@ -46,8 +51,8 @@ func (t *Track) Load(disk []uint8, headerLen, bam1 uint8, bam2 uint8, trackOffse
 			return fmt.Errorf("failed to read sector %d: %w", sectorIdx, err)
 		}
 		gcr := sector2gcr(sector, bam1, bam2, t.trackIdx, sectorIdx)
-		start := uint(sectorIdx) * sectorSize
-		end := start + sectorSize
+		start := uint(sectorIdx) * uint(len(gcr))
+		end := start + uint(len(gcr))
 		if start >= uint(len(disk)) || end > uint(len(disk)) {
 			return fmt.Errorf("sector index out of range")
 		}

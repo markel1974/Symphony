@@ -5,12 +5,15 @@ import (
 	"os"
 )
 
-//see https://sta.c64.org/cbm1541mem.html
+//see
+//http://www.baltissen.org/newhtm/1541c.htm
+//https://sta.c64.org/cbm1541mem.html
+//https://c64os.com/post/howdoes1541work
 
-//0.985mhz / RPM 300 => (300/60) * track.Len() => es 5 * 7434 => 37170
-
+// 0.985mhz / RPM 300 => (300/60) * track.Len() => es 5 * 7434 => 37170
+const sync = 0xff
 const headStep = 35
-const headHalfStep = headStep * 2 //half track
+const headHalfStep = headStep * 2 //half-track
 
 type Mechanic struct {
 	disk              IDisk
@@ -24,6 +27,7 @@ type Mechanic struct {
 	rotationIntervals int
 	rotationCounter   int
 	data              uint8
+	sync              bool
 }
 
 func NewMechanic() *Mechanic {
@@ -41,6 +45,7 @@ func NewMechanic() *Mechanic {
 		rotationIntervals: 0,
 		rotationCounter:   0,
 		data:              0,
+		sync:              false,
 	}
 	return j
 }
@@ -51,6 +56,12 @@ func (j *Mechanic) Reset() {
 	j.diskChanged = false
 	j.filePath = ""
 	j.motor = false
+	j.data = 0
+	j.sync = false
+	j.headPos = 2
+	j.rotationIntervals = 0
+	j.rotationCounter = 0
+	j.updateHeadPos()
 }
 
 func (j *Mechanic) init(fp string) error {
@@ -76,15 +87,22 @@ func (j *Mechanic) Emulate() {
 	if j.motor {
 		j.rotationCounter++
 		if j.rotationCounter >= j.rotationIntervals {
+			j.rotationCounter = 0
 			j.disk.Rotate()
 			j.data = j.disk.Read()
-			j.rotationCounter = 0
+			next := j.disk.Next()
+			if j.data == sync && next != sync {
+				j.sync = true
+			} else {
+				j.sync = false
+			}
 		}
 	}
 }
 
 func (j *Mechanic) ReadByte() uint8 {
 	return j.disk.Read()
+	//return j.data
 }
 
 func (j *Mechanic) WriteByte(data uint8) {
@@ -95,15 +113,20 @@ func (j *Mechanic) SyncFound() bool {
 	if !j.motor {
 		return true
 	}
-	if j.disk.Read() == 0xff && j.disk.Next() != 0xff {
+	if j.disk.Read() == sync && j.disk.Next() != sync {
 		return true
 	}
 	return false
+	//if j.sync {
+	//	return true
+	//}
+	//return false
 }
 
 func (j *Mechanic) SetMotor(m bool) {
 	j.motor = m
 	j.data = 0
+	j.sync = false
 }
 
 func (j *Mechanic) HasDisk() bool {
@@ -129,7 +152,6 @@ func (j *Mechanic) updateHeadPos() {
 	track := j.headPos >> 1
 	j.disk.SetHeadTrack(track)
 	j.updateRotationIntervals()
-
 }
 
 func (j *Mechanic) updateRotationIntervals() {
