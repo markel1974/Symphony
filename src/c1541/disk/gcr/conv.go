@@ -20,8 +20,8 @@ var _gcrFromTable = []uint8{
 }
 
 var _syncBlock [syncLen]uint8
-var _fillBeginBlock [fillBeginLen]uint8
-var _fillEndBlock [fillEndLen]uint8
+var _gapBeginBlock [gapBeginLen]uint8
+var _gapEndBlock [gapEndLen]uint8
 
 func init() {
 	const syncMarker = 0xff
@@ -29,11 +29,11 @@ func init() {
 	for i := range _syncBlock {
 		_syncBlock[i] = syncMarker
 	}
-	for i := range _fillBeginBlock {
-		_fillBeginBlock[i] = fillByte
+	for i := range _gapBeginBlock {
+		_gapBeginBlock[i] = fillByte
 	}
-	for i := range _fillEndBlock {
-		_fillEndBlock[i] = fillByte
+	for i := range _gapEndBlock {
+		_gapEndBlock[i] = fillByte
 	}
 }
 
@@ -101,8 +101,8 @@ func sector2gcr(sector [blockBytesLen]uint8, bam1 uint8, bam2 uint8, trackIdx ui
 	copy(ret[idx:], bamData[:])
 	idx += len(bamData)
 
-	copy(ret[idx:], _fillBeginBlock[:])
-	idx += len(_fillBeginBlock)
+	copy(ret[idx:], _gapBeginBlock[:])
+	idx += len(_gapBeginBlock)
 
 	copy(ret[idx:], _syncBlock[:])
 	idx += len(_syncBlock)
@@ -128,8 +128,8 @@ func sector2gcr(sector [blockBytesLen]uint8, bam1 uint8, bam2 uint8, trackIdx ui
 	copy(ret[idx:], checksumData[:])
 	idx += len(checksumData)
 
-	copy(ret[idx:], _fillEndBlock[:])
-	idx += len(_fillEndBlock)
+	copy(ret[idx:], _gapEndBlock[:])
+	idx += len(_gapEndBlock)
 
 	return ret
 }
