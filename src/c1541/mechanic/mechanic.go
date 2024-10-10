@@ -149,8 +149,7 @@ func (j *Mechanic) WriteProtectionState() uint8 {
 }
 
 func (j *Mechanic) updateHeadPos() {
-	track := j.headPos >> 1
-	j.disk.SetHeadTrack(track)
+	j.disk.SetHeadHalfTrack(j.headPos)
 	j.updateRotationIntervals()
 }
 
@@ -160,7 +159,6 @@ func (j *Mechanic) updateRotationIntervals() {
 }
 
 func (j *Mechanic) MoveHeadOut() {
-	//todo halfTrack handler
 	if j.headPos <= 2 {
 		return
 	}
@@ -169,7 +167,6 @@ func (j *Mechanic) MoveHeadOut() {
 }
 
 func (j *Mechanic) MoveHeadIn() {
-	//todo halfTrack handler
 	if j.headPos >= headHalfStep {
 		return
 	}

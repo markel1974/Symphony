@@ -25,7 +25,7 @@ func (e *Void) Next() uint8 {
 	return 0
 }
 
-func (e *Void) SetHeadTrack(uint8) int {
+func (e *Void) SetHeadHalfTrack(uint8) int {
 	return 0
 }
 
