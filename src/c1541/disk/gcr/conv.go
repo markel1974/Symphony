@@ -25,15 +25,15 @@ var _gapEndBlock [gapEndLen]uint8
 
 func init() {
 	const syncMarker = 0xff
-	const fillByte uint8 = 0x55
+	const gapByte uint8 = 0x55
 	for i := range _syncBlock {
 		_syncBlock[i] = syncMarker
 	}
 	for i := range _gapBeginBlock {
-		_gapBeginBlock[i] = fillByte
+		_gapBeginBlock[i] = gapByte
 	}
 	for i := range _gapEndBlock {
-		_gapEndBlock[i] = fillByte
+		_gapEndBlock[i] = gapByte
 	}
 }
 
@@ -50,6 +50,34 @@ func rawSector(disk []uint8, headerLen uint8, trackOffset uint16, sectorIdx uint
 	return buffer, nil
 }
 
+func toGCR(from uint8) uint16 {
+	to := (_gcrTable[(from>>4)&0xf] << 5) | _gcrTable[from&0xf]
+	return to
+}
+
+func fromGCR(from uint32) uint8 {
+	g := _gcrFromTable[(from>>16)&0x1f]
+	return g
+}
+
+// conv4to5 converts 4 bytes to 5 GCR encoded bytes
+func conv4to5(from [4]uint8) [5]uint8 {
+	var to [5]uint8
+	g := toGCR(from[0])
+	to[0] = uint8(g >> 2)
+	to[1] = uint8((g << 6) & 0xc0)
+	g = toGCR(from[1])
+	to[1] |= uint8((g >> 4) & 0x3f)
+	to[2] = uint8((g << 4) & 0xf0)
+	g = toGCR(from[2])
+	to[2] |= uint8((g >> 6) & 0x0f)
+	to[3] = uint8((g << 2) & 0xfc)
+	g = toGCR(from[3])
+	to[3] |= uint8((g >> 8) & 0x03)
+	to[4] = uint8(g)
+	return to
+}
+
 // conv5to4 converts GCR encoded bytes into an array of 4 decoded bytes
 func conv5to4(src [5]uint8) [4]uint8 {
 	var dst [4]uint8
@@ -58,31 +86,13 @@ func conv5to4(src [5]uint8) [4]uint8 {
 	sourceIdx := 1
 	for dstIdx, shift := range []uint8{5, 7, 9, 11} {
 		t |= (uint32(src[sourceIdx])) << shift
-		dst[dstIdx] = _gcrFromTable[(t>>16)&0x1f] << 4
+		dst[dstIdx] = fromGCR(t) << 4 //_gcrFromTable[(t>>16)&0x1f] << 4
 		t <<= 5
-		dst[dstIdx] |= _gcrFromTable[(t>>16)&0x1f]
+		dst[dstIdx] |= fromGCR(t) //_gcrFromTable[(t>>16)&0x1f]
 		t <<= 5
 		sourceIdx++
 	}
 	return dst
-}
-
-// conv4to5 converts 4 bytes to 5 GCR encoded bytes
-func conv4to5(from [4]uint8) [5]uint8 {
-	var to [5]uint8
-	g := (_gcrTable[(from[0]>>4)&0xf] << 5) | _gcrTable[from[0]&0xf]
-	to[0] = uint8(g >> 2)
-	to[1] = uint8((g << 6) & 0xc0)
-	g = (_gcrTable[(from[1]>>4)&0xf] << 5) | _gcrTable[from[1]&0xf]
-	to[1] |= uint8((g >> 4) & 0x3f)
-	to[2] = uint8((g << 4) & 0xf0)
-	g = (_gcrTable[(from[2]>>4)&0xf] << 5) | _gcrTable[from[2]&0xf]
-	to[2] |= uint8((g >> 6) & 0x0f)
-	to[3] = uint8((g << 2) & 0xfc)
-	g = (_gcrTable[(from[3]>>4)&0xf] << 5) | _gcrTable[from[3]&0xf]
-	to[3] |= uint8((g >> 8) & 0x03)
-	to[4] = uint8(g)
-	return to
 }
 
 func sector2gcr(sector [blockBytesLen]uint8, bam1 uint8, bam2 uint8, trackIdx uint8, sectorIdx uint8) [gcrSectorLen]uint8 {

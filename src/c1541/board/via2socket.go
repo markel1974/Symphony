@@ -5,10 +5,10 @@ const motorControl = uint8(0x4)
 const ledControl = uint8(0x8)
 const photocellControl = uint8(0x10)
 const densityControl = uint8(0x60)
-const syncControl = uint8(0x80)
+const dataArrivedControl = uint8(0x80)
 
 const noPhotocellControl = ^photocellControl
-const noSyncControl = ^syncControl
+const syncArrivedControl = ^dataArrivedControl
 
 type Via2Socket struct {
 	board   *Board
@@ -56,10 +56,10 @@ func (v *Via2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
 	p := prb & noPhotocellControl
 	photocellState := v.board.mec.WriteProtectionState()
 	if v.board.mec.SyncFound() {
-		return (p & noSyncControl) | photocellState
+		return (p & syncArrivedControl) | photocellState
 	} else {
 		v.board.mec.RotateDisk()
-		return (p | syncControl) | photocellState
+		return (p | dataArrivedControl) | photocellState
 	}
 }
 
@@ -102,22 +102,25 @@ func (v *Via2Socket) WritePRB(prb uint8, _ uint8) {
 	}
 	//bit [4]
 	//Write protect photocell status; 0 = Write protect tab covered, disk protected; 1 = Tab uncovered, disk not protected.
-	if (m & photocellControl) != 0 {
-		//photocell := (data & photocellControl) != 0
-		//fmt.Println("TODO - PHOTOCELL", photocell)
-	}
+	//if (m & photocellControl) != 0 {
+	//photocell := (data & photocellControl) != 0
+	//fmt.Println("TODO - PHOTOCELL", photocell)
+	//}
 	//bit [5-6]:
 	//Data density; %00 = Lowest; %11 = Highest.
-	if (m & densityControl) != 0 {
-		//density := (prb & densityControl) >> 5
-		//fmt.Printf("TODO - DENSITY %2b\n", density)
-	}
+	//if (m & densityControl) != 0 {
+	//density := (prb & densityControl) >> 5
+	//fmt.Printf("TODO - DENSITY %2b\n", density)
+	//}
 	//Bit [7]
 	//0 = SYNC marks are being currently read from disk; 1 = Data bytes are being read.
-	if (m & syncControl) != 0 {
-		//sync := (prb & syncControl) != 0
-		//fmt.Println("TODO - SYNC", !sync)
-	}
+	//if (m & dataArrivedControl) != 0 {
+	//sync := (prb & syncControl) != 0
+	//fmt.Println("TODO - DATA ARRIVED", !sync)
+	//} else {
+	//sync := (prb & syncControl) != 0
+	//fmt.Println("TODO - SYNC ARRIVED", !sync)
+	//}
 }
 
 func (v *Via2Socket) WriteDDRA(_ uint8, _ uint8) {

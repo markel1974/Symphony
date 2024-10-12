@@ -7,12 +7,13 @@ import (
 const (
 	blockBytesLen = 256
 	dataBlockLen  = blockBytesLen + 4 // data block id (0x07) + blockBytes + checksum + 0x00 + 0x00
-	syncLen       = 5
-	headerLen     = 10
-	gapBeginLen   = 9
-	gapEndLen     = 8
-	gcrDataLen    = (dataBlockLen / 4) * 5
-	gcrSectorLen  = syncLen + headerLen + gapBeginLen + syncLen + gcrDataLen + gapEndLen
+	// All multiple of 5
+	syncLen      = 5
+	headerLen    = 10
+	gapBeginLen  = 9
+	gapEndLen    = 8
+	gcrDataLen   = (dataBlockLen / 4) * 5
+	gcrSectorLen = syncLen + headerLen + gapBeginLen + syncLen + gcrDataLen + gapEndLen
 	//realSectorLen = syncLen + headerLen + fillBeginLen + syncLen + dataBlockLen + fillEndLen
 )
 
