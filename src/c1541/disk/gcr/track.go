@@ -2,19 +2,7 @@ package gcr
 
 import (
 	"fmt"
-)
-
-const (
-	blockBytesLen = 256
-	dataBlockLen  = blockBytesLen + 4 // data block id (0x07) + blockBytes + checksum + 0x00 + 0x00
-	// All multiple of 5
-	syncLen      = 5
-	headerLen    = 10
-	gapBeginLen  = 9
-	gapEndLen    = 8
-	gcrDataLen   = (dataBlockLen / 4) * 5
-	gcrSectorLen = syncLen + headerLen + gapBeginLen + syncLen + gcrDataLen + gapEndLen
-	//realSectorLen = syncLen + headerLen + fillBeginLen + syncLen + dataBlockLen + fillEndLen
+	"log"
 )
 
 //real size: 7
@@ -24,6 +12,19 @@ type Track struct {
 	data     []uint8
 	sectors  uint8
 	cursor   uint32
+}
+
+func rawSector(disk []uint8, headerLen uint8, trackOffset uint16, sectorIdx uint8) ([blockBytesLen]uint8, error) {
+	var buffer [blockBytesLen]uint8
+	rOffset := (int(trackOffset) + int(sectorIdx)) << 8
+	begin := rOffset + int(headerLen)
+	end := begin + blockBytesLen
+	if begin > len(disk) || end > len(disk) {
+		log.Printf("invalid start/end: %d - %d", begin, end)
+		return buffer, fmt.Errorf("sector index out of range")
+	}
+	copy(buffer[:], disk[begin:end])
+	return buffer, nil
 }
 
 func NewTrack(trackIdx uint8, sectors uint8) *Track {

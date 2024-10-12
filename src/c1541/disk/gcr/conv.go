@@ -1,11 +1,18 @@
 package gcr
 
-import (
-	"fmt"
-	"log"
-)
-
 //http://www.unusedino.de/ec64/technical/formats/g64.html
+//http://www.baltissen.org/newhtm/1541c.htm
+
+const (
+	blockBytesLen     = 256
+	dataBlockLen      = blockBytesLen + 4 // data block id (0x07) + blockBytes + checksum + 0x00 + 0x00
+	syncLen           = 5
+	headerLen         = 10 // GCR([ID $08] [Checksum] [Sector Number] [Track Number]) GCR([ID Char #2] [ID Char #1] [$0F] [$0F])
+	gapHeaderLen      = 9
+	gapInterSectorLen = 8
+	gcrDataLen        = (dataBlockLen / 4) * 5
+	gcrSectorLen      = syncLen + headerLen + gapHeaderLen + syncLen + gcrDataLen + gapInterSectorLen
+)
 
 // _gcrTable is a lookup table used for GCR (Group Code Recording) encoding, mapping 4-bit values to their 5-bit GCR encoded values.
 var _gcrTable = []uint16{
@@ -20,8 +27,8 @@ var _gcrFromTable = []uint8{
 }
 
 var _syncBlock [syncLen]uint8
-var _gapBeginBlock [gapBeginLen]uint8
-var _gapEndBlock [gapEndLen]uint8
+var _gapHeaderBlock [gapHeaderLen]uint8
+var _gapInterSectorBlock [gapInterSectorLen]uint8
 
 func init() {
 	const syncMarker = 0xff
@@ -29,25 +36,12 @@ func init() {
 	for i := range _syncBlock {
 		_syncBlock[i] = syncMarker
 	}
-	for i := range _gapBeginBlock {
-		_gapBeginBlock[i] = gapByte
+	for i := range _gapHeaderBlock {
+		_gapHeaderBlock[i] = gapByte
 	}
-	for i := range _gapEndBlock {
-		_gapEndBlock[i] = gapByte
+	for i := range _gapInterSectorBlock {
+		_gapInterSectorBlock[i] = gapByte
 	}
-}
-
-func rawSector(disk []uint8, headerLen uint8, trackOffset uint16, sectorIdx uint8) ([blockBytesLen]uint8, error) {
-	var buffer [blockBytesLen]uint8
-	rOffset := (int(trackOffset) + int(sectorIdx)) << 8
-	begin := rOffset + int(headerLen)
-	end := begin + blockBytesLen
-	if begin > len(disk) || end > len(disk) {
-		log.Printf("invalid start/end: %d - %d", begin, end)
-		return buffer, fmt.Errorf("sector index out of range")
-	}
-	copy(buffer[:], disk[begin:end])
-	return buffer, nil
 }
 
 func toGCR(from uint8) uint16 {
@@ -95,7 +89,7 @@ func conv5to4(src [5]uint8) [4]uint8 {
 	return dst
 }
 
-func sector2gcr(sector [blockBytesLen]uint8, bam1 uint8, bam2 uint8, trackIdx uint8, sectorIdx uint8) [gcrSectorLen]uint8 {
+func sector2gcr(sector [blockBytesLen]uint8, id1 uint8, id2 uint8, trackIdx uint8, sectorIdx uint8) [gcrSectorLen]uint8 {
 	const last = blockBytesLen - 1
 
 	var ret [gcrSectorLen]uint8
@@ -103,16 +97,16 @@ func sector2gcr(sector [blockBytesLen]uint8, bam1 uint8, bam2 uint8, trackIdx ui
 	copy(ret[idx:], _syncBlock[:])
 	idx += len(_syncBlock)
 
-	headerData := conv4to5([4]uint8{0x08, uint8(int(sectorIdx) ^ int(trackIdx) ^ int(bam2) ^ int(bam1)), sectorIdx, trackIdx})
+	headerData := conv4to5([4]uint8{0x08, uint8(int(sectorIdx) ^ int(trackIdx) ^ int(id2) ^ int(id1)), sectorIdx, trackIdx})
 	copy(ret[idx:], headerData[:])
 	idx += len(headerData)
 
-	bamData := conv4to5([4]uint8{bam2, bam1, 0x0f, 0x0f})
+	bamData := conv4to5([4]uint8{id2, id1, 0x0f, 0x0f})
 	copy(ret[idx:], bamData[:])
 	idx += len(bamData)
 
-	copy(ret[idx:], _gapBeginBlock[:])
-	idx += len(_gapBeginBlock)
+	copy(ret[idx:], _gapHeaderBlock[:])
+	idx += len(_gapHeaderBlock)
 
 	copy(ret[idx:], _syncBlock[:])
 	idx += len(_syncBlock)
@@ -138,8 +132,8 @@ func sector2gcr(sector [blockBytesLen]uint8, bam1 uint8, bam2 uint8, trackIdx ui
 	copy(ret[idx:], checksumData[:])
 	idx += len(checksumData)
 
-	copy(ret[idx:], _gapEndBlock[:])
-	idx += len(_gapEndBlock)
+	copy(ret[idx:], _gapInterSectorBlock[:])
+	idx += len(_gapInterSectorBlock)
 
 	return ret
 }
