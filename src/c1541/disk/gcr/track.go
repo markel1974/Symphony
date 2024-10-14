@@ -9,6 +9,7 @@ import (
 
 type Track struct {
 	trackIdx uint8
+	overlap  bool
 	data     []uint8
 	sectors  uint8
 	cursor   uint32
@@ -27,15 +28,29 @@ func rawSector(disk []uint8, headerLen uint8, trackOffset uint16, sectorIdx uint
 	return buffer, nil
 }
 
-func NewTrack(trackIdx uint8, sectors uint8) *Track {
+func NewTrack(trackIdx uint8, sectors uint8, overlap bool) *Track {
 	t := &Track{
 		trackIdx: trackIdx,
 		sectors:  sectors,
+		overlap:  overlap,
 		data:     nil,
 		cursor:   0,
 	}
 	t.data = make([]uint8, int(t.sectors)*gcrSectorLen)
+	if !overlap {
+		for i := range t.data {
+			t.data[i] = gapByte
+		}
+	}
 	return t
+}
+
+func (t *Track) Index() uint8 {
+	return t.trackIdx
+}
+
+func (t *Track) Overlap() bool {
+	return t.overlap
 }
 
 func (t *Track) Len() int {

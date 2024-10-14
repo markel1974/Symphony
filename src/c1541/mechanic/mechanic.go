@@ -12,7 +12,8 @@ import (
 
 // 0.985mhz / RPM 300 => (300/60) * track.Len() => es 5 * 7434 => 37170
 const syncByte = 0xff
-const gapByte = 0x55
+
+// const gapByte = 0x55
 const headStep = 35
 const headHalfStep = headStep * 2 //half-track
 
@@ -158,7 +159,7 @@ func (j *Mechanic) updateHeadPos() {
 
 func (j *Mechanic) updateRotationIntervals() {
 	j.rotationIntervals = int(j.disk.MicroSecPerByte())
-	//log.Printf("track: %d => rotation intervals: %d", j.headPos>>1, j.rotationIntervals)
+	//log.Printf("halfTrack: %d, track: %d => rotation intervals: %d", j.headPos, j.headPos>>1, j.rotationIntervals)
 }
 
 func (j *Mechanic) MoveHeadOut() {

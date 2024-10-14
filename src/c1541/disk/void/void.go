@@ -1,9 +1,15 @@
 package void
 
+import "fmt"
+
 type Void struct{}
 
 func NewDisk() *Void {
 	return &Void{}
+}
+
+func (e *Void) Load(image []byte) error {
+	return fmt.Errorf("not implemented")
 }
 
 func (e *Void) TrackLen() int {

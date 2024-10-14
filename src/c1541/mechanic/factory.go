@@ -6,6 +6,7 @@ import (
 )
 
 type IDisk interface {
+	Load(image []byte) error
 	Read() uint8
 	Write(uint8)
 	Next() uint8
@@ -28,6 +29,11 @@ func (f *Factory) Create(image []byte) (IDisk, error) {
 	if image == nil {
 		return void.NewDisk(), nil
 	}
-	g, err := gcr.NewDisk(image)
-	return g, err
+	g := gcr.NewDisk()
+	if len(image) > 0 {
+		if err := g.Load(image); err != nil {
+			return nil, err
+		}
+	}
+	return g, nil
 }

@@ -14,6 +14,11 @@ const (
 	gcrSectorLen      = syncLen + headerLen + gapHeaderLen + syncLen + gcrDataLen + gapInterSectorLen
 )
 
+const (
+	syncMarker       = 0xff
+	gapByte    uint8 = 0x55
+)
+
 // _gcrTable is a lookup table used for GCR (Group Code Recording) encoding, mapping 4-bit values to their 5-bit GCR encoded values.
 var _gcrTable = []uint16{
 	0x0a, 0x0b, 0x12, 0x13, 0x0e, 0x0f, 0x16, 0x17,
@@ -31,8 +36,6 @@ var _gapHeaderBlock [gapHeaderLen]uint8
 var _gapInterSectorBlock [gapInterSectorLen]uint8
 
 func init() {
-	const syncMarker = 0xff
-	const gapByte uint8 = 0x55
 	for i := range _syncBlock {
 		_syncBlock[i] = syncMarker
 	}
