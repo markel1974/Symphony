@@ -11,7 +11,8 @@ import (
 //https://c64os.com/post/howdoes1541work
 
 // 0.985mhz / RPM 300 => (300/60) * track.Len() => es 5 * 7434 => 37170
-const sync = 0xff
+const syncByte = 0xff
+const gapByte = 0x55
 const headStep = 35
 const headHalfStep = headStep * 2 //half-track
 
@@ -87,7 +88,7 @@ func (j *Mechanic) Emulate() {
 			j.disk.Rotate()
 			j.data = j.disk.Read()
 			next := j.disk.Next()
-			if j.data == sync && next != sync {
+			if j.data == syncByte && next != syncByte {
 				j.sync = true
 			} else {
 				j.sync = false
@@ -113,11 +114,10 @@ func (j *Mechanic) SyncFound() bool {
 	if !j.motor {
 		return true
 	}
-	if (j.disk.Read() == sync) && (j.disk.Next() != sync) {
-		//TODO COUNTER....
+	j.disk.Rotate()
+	if (j.disk.Read() == syncByte) && (j.disk.Next() != syncByte) {
 		return true
 	}
-	j.disk.Rotate()
 	return false
 
 	//if j.sync {
