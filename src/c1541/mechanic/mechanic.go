@@ -79,10 +79,6 @@ func (j *Mechanic) Setup(fp string) {
 	}
 }
 
-func (j *Mechanic) RotateDisk() {
-	j.disk.Rotate()
-}
-
 func (j *Mechanic) Emulate() {
 	if j.motor {
 		j.rotationCounter++
@@ -101,12 +97,16 @@ func (j *Mechanic) Emulate() {
 }
 
 func (j *Mechanic) ReadByte() uint8 {
-	return j.disk.Read()
+	data := j.disk.Read()
+	j.disk.Rotate()
+	return data
+
 	//return j.data
 }
 
 func (j *Mechanic) WriteByte(data uint8) {
 	j.disk.Write(data)
+	j.disk.Rotate()
 }
 
 func (j *Mechanic) SyncFound() bool {
@@ -114,9 +114,12 @@ func (j *Mechanic) SyncFound() bool {
 		return true
 	}
 	if (j.disk.Read() == sync) && (j.disk.Next() != sync) {
+		//TODO COUNTER....
 		return true
 	}
+	j.disk.Rotate()
 	return false
+
 	//if j.sync {
 	//	return true
 	//}

@@ -48,7 +48,6 @@ func (v *Via2Socket) IRQTrigger() {
 
 func (v *Via2Socket) ReadPRA(_ uint8, _ uint8) uint8 {
 	d := v.board.mec.ReadByte()
-	v.board.mec.RotateDisk()
 	return d
 }
 
@@ -58,14 +57,12 @@ func (v *Via2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
 	if v.board.mec.SyncFound() {
 		return (p & syncArrivedControl) | photocellState
 	} else {
-		v.board.mec.RotateDisk()
 		return (p | dataArrivedControl) | photocellState
 	}
 }
 
 func (v *Via2Socket) WritePRA(pra uint8, _ uint8) {
 	v.board.mec.WriteByte(pra)
-	v.board.mec.RotateDisk()
 }
 
 func (v *Via2Socket) WritePRB(prb uint8, _ uint8) {
