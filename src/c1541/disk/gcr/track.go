@@ -8,11 +8,12 @@ import (
 //real size: 7
 
 type Track struct {
-	trackIdx uint8
-	overlap  bool
-	data     []uint8
-	sectors  uint8
-	cursor   uint32
+	trackIdx   uint8
+	overlap    bool
+	data       []uint8
+	sectors    uint8
+	cursor     uint32
+	writeCount int
 }
 
 func rawSector(disk []uint8, headerLen uint8, trackOffset uint16, sectorIdx uint8) ([blockBytesLen]uint8, error) {
@@ -30,11 +31,12 @@ func rawSector(disk []uint8, headerLen uint8, trackOffset uint16, sectorIdx uint
 
 func NewTrack(trackIdx uint8, sectors uint8, overlap bool) *Track {
 	t := &Track{
-		trackIdx: trackIdx,
-		sectors:  sectors,
-		overlap:  overlap,
-		data:     nil,
-		cursor:   0,
+		trackIdx:   trackIdx,
+		sectors:    sectors,
+		overlap:    overlap,
+		data:       nil,
+		cursor:     0,
+		writeCount: 0,
 	}
 	t.data = make([]uint8, int(t.sectors)*gcrSectorLen)
 	if !overlap {
@@ -82,8 +84,17 @@ func (t *Track) Cursor() uint32 {
 	return t.cursor
 }
 
-func (t *Track) Reset(cursor uint32) {
+func (t *Track) Enter(cursor uint32) {
 	t.cursor = cursor % uint32(len(t.data))
+	t.writeCount = 0
+	//fmt.Println("ENTERING TRACK", t.Index(), len(t.data))
+}
+
+func (t *Track) Leave() {
+	//if t.writeCount > 0 {
+	//	fmt.Println("LEAVING TRACK", t.Index(), len(t.data), t.writeCount)
+	//}
+	t.writeCount = 0
 }
 
 func (t *Track) Advance() {
@@ -107,4 +118,10 @@ func (t *Track) Next() uint8 {
 
 func (t *Track) Write(data uint8) {
 	t.data[t.cursor] = data
+	t.writeCount++
+	//if t.Index() == 18 {
+	//	fmt.Printf("Write %d -> %02x\n", t.Cursor(), data)
+	//}
+	//TODO
+	//fmt.Printf("%d - %d Write %02x\n", t.Index(), t.Cursor(), data)
 }

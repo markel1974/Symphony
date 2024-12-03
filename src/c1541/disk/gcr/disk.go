@@ -70,8 +70,10 @@ func (g *Disk) SetHeadHalfTrack(halfTrack uint8) int {
 	}
 	//Simulate all track rotation
 	cursor := g.currentTrack.Cursor()
+	g.currentTrack.Leave()
+
 	g.currentTrack = g.tracks[track]
-	g.currentTrack.Reset(cursor)
+	g.currentTrack.Enter(cursor)
 	return g.currentTrack.Len()
 }
 
