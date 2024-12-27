@@ -47,12 +47,11 @@ type WindowConfig struct {
 }
 
 type GLWindow struct {
-	window *glfw.Window
-
+	window             *glfw.Window
 	bounds             Rect
 	canvas             *GLCanvas
-	vsync              bool
 	cursorVisible      bool
+	vSync              int
 	cursorInsideWindow bool
 
 	// need to save these to correctly restore a fullscreen window
@@ -82,8 +81,11 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 		true:  glfw.True,
 		false: glfw.False,
 	}
-
-	w := &GLWindow{bounds: cfg.Bounds, cursorVisible: true, keysPressed: make(map[Button]bool)}
+	w := &GLWindow{
+		bounds:        cfg.Bounds,
+		cursorVisible: true,
+		keysPressed:   make(map[Button]bool),
+	}
 
 	flag := false
 	for _, v := range []int{0, 2, 4, 8, 16} {
@@ -98,12 +100,10 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 
 	err := executor.Thread.CallErr(func() error {
 		var err error
-
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
 		glfw.WindowHint(glfw.ContextVersionMinor, 3)
 		glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 		glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
-
 		glfw.WindowHint(glfw.Resizable, bool2int[cfg.Resizable])
 		glfw.WindowHint(glfw.Decorated, bool2int[!cfg.Undecorated])
 		glfw.WindowHint(glfw.Floating, bool2int[cfg.AlwaysOnTop])
@@ -112,11 +112,9 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 		glfw.WindowHint(glfw.Maximized, bool2int[cfg.Maximized])
 		glfw.WindowHint(glfw.Visible, bool2int[!cfg.Invisible])
 		glfw.WindowHint(glfw.Samples, cfg.SamplesMSAA)
-
 		if cfg.Position.X != 0 || cfg.Position.Y != 0 {
 			glfw.WindowHint(glfw.Visible, glfw.False)
 		}
-
 		var share *glfw.Window
 		if currWin != nil {
 			share = currWin.window
@@ -126,18 +124,14 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 		if err != nil {
 			return err
 		}
-
 		if cfg.Position.X != 0 || cfg.Position.Y != 0 {
 			w.window.SetPos(int(cfg.Position.X), int(cfg.Position.Y))
 			w.window.Show()
 		}
-
-		// enter the OpenGL context
 		w.begin()
 		executor.Init()
 		gl.Enable(gl.MULTISAMPLE)
 		w.end()
-
 		return nil
 	})
 	if err != nil {
@@ -145,29 +139,22 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 	}
 
 	if len(cfg.Icon) > 0 {
-		imgs := make([]image.Image, len(cfg.Icon))
+		m := make([]image.Image, len(cfg.Icon))
 		for i, icon := range cfg.Icon {
 			pic := NewPictureRGBAFromPicture(icon)
-
 			fmt.Println(pic, i)
-			imgs[i] = pic.Image()
+			m[i] = pic.Image()
 		}
 		executor.Thread.Call(func() {
-			w.window.SetIcon(imgs)
+			w.window.SetIcon(m)
 		})
 	}
-
 	w.SetVSync(cfg.VSync)
-
 	w.initInput()
 	w.SetMonitor(cfg.Monitor)
-
 	w.canvas = NewGLCanvas(cfg.Bounds, cfg.Smooth)
-
 	w.Update()
-
 	runtime.SetFinalizer(w, (*GLWindow).Destroy)
-
 	return w, nil
 }
 
@@ -180,51 +167,49 @@ func (w *GLWindow) Destroy() {
 
 // Update swaps buffers and polls events. Call this method at the end of each frame.
 func (w *GLWindow) Update() {
-	w.SwapBuffers()
-	w.UpdateInput()
+	bounds := w.bounds
+	newBounds := false
+	executor.Thread.Call(func() {
+		_, _, oldW, oldH := intBounds(bounds)
+		newW, newH := w.window.GetSize()
+		width := newW - oldW
+		height := newH - oldH
+		if width > 0 || height > 0 {
+			bounds = bounds.ResizedMin(bounds.Size().Add(MakeVec(float64(width), float64(height))))
+			newBounds = true
+		}
+
+		w.begin()
+		fbWidth, fbHeight := w.window.GetFramebufferSize()
+		executor.Bounds(0, 0, fbWidth, fbHeight)
+		executor.Clear(0, 0, 0, 0)
+		w.canvas.gf.Frame().Begin()
+		w.canvas.gf.Frame().Blit(nil, 0, 0, w.canvas.Texture().Width(), w.canvas.Texture().Height(), 0, 0, fbWidth, fbHeight)
+		w.canvas.gf.Frame().End()
+		glfw.SwapInterval(w.vSync)
+		w.window.SwapBuffers()
+		w.end()
+
+		glfw.PollEvents()
+	})
+	if newBounds {
+		w.canvas.SetBounds(bounds)
+		w.bounds = bounds
+	}
+	w.doUpdateInput()
 }
 
-// ClipboardText returns the current value of the systems clipboard.
+// ClipboardText returns the current value of the systems' clipboard.
 func (w *GLWindow) ClipboardText() string {
 	return w.window.GetClipboardString()
 }
 
-// SetClipboardText passes the given string to the underlying glfw window to set the systems clipboard.
+// SetClipboardText passes the given string to the underlying glfw window to set the systems' clipboard.
 func (w *GLWindow) SetClipboardText(text string) {
 	w.window.SetClipboardString(text)
 }
 
-// SwapBuffers swaps buffers. Call this to swap buffers without polling window events.
-// Note that Update invokes SwapBuffers.
-func (w *GLWindow) SwapBuffers() {
-	executor.Thread.Call(func() {
-		_, _, oldW, oldH := intBounds(w.bounds)
-		newW, newH := w.window.GetSize()
-		w.bounds = w.bounds.ResizedMin(w.bounds.Size().Add(MakeVec(float64(newW-oldW), float64(newH-oldH))))
-	})
-
-	w.canvas.SetBounds(w.bounds)
-
-	executor.Thread.Call(func() {
-		w.begin()
-		framebufferWidth, framebufferHeight := w.window.GetFramebufferSize()
-		executor.Bounds(0, 0, framebufferWidth, framebufferHeight)
-		executor.Clear(0, 0, 0, 0)
-		w.canvas.gf.Frame().Begin()
-		w.canvas.gf.Frame().Blit(nil, 0, 0, w.canvas.Texture().Width(), w.canvas.Texture().Height(), 0, 0, framebufferWidth, framebufferHeight)
-		w.canvas.gf.Frame().End()
-		if w.vsync {
-			glfw.SwapInterval(1)
-		} else {
-			glfw.SwapInterval(0)
-		}
-		w.window.SwapBuffers()
-		w.end()
-	})
-}
-
 // SetClosed sets the closed flag of the GLWindow.
-//
 // This is useful when overriding the user's attempt to close the GLWindow, or just to close the
 // GLWindow from within the program.
 func (w *GLWindow) SetClosed(closed bool) {
@@ -322,7 +307,6 @@ func (w *GLWindow) setWindowed() {
 
 // SetMonitor sets the GLWindow fullscreen on the given GLMonitor. If the GLMonitor is nil, the GLWindow
 // will be restored to windowed state instead.
-//
 // The GLWindow will be automatically set to the GLMonitor's resolution. If you want a different
 // resolution, you will need to set it manually with SetBounds method.
 func (w *GLWindow) SetMonitor(monitor *GLMonitor) {
@@ -335,7 +319,7 @@ func (w *GLWindow) SetMonitor(monitor *GLMonitor) {
 	}
 }
 
-// GLMonitor returns a monitor the GLWindow is fullscreen on. If the GLWindow is not fullscreen, this
+// Monitor returns a monitor the GLWindow is fullscreen on. If the GLWindow is not fullscreen, this
 // function returns nil.
 func (w *GLWindow) Monitor() *GLMonitor {
 	var monitor *glfw.Monitor
@@ -360,13 +344,20 @@ func (w *GLWindow) Focused() bool {
 }
 
 // SetVSync sets whether the GLWindow's Update should synchronize with the monitor refresh rate.
-func (w *GLWindow) SetVSync(vsync bool) {
-	w.vsync = vsync
+func (w *GLWindow) SetVSync(vSync bool) {
+	if vSync {
+		w.vSync = 1
+	} else {
+		w.vSync = 0
+	}
 }
 
 // VSync returns whether the GLWindow is set to synchronize with the monitor refresh rate.
 func (w *GLWindow) VSync() bool {
-	return w.vsync
+	if w.vSync == 0 {
+		return false
+	}
+	return true
 }
 
 // SetCursorVisible sets the visibility of the mouse cursor inside the GLWindow client area.
@@ -408,16 +399,13 @@ func (w *GLWindow) end() {
 	// nothing, really
 }
 
-// MakeTriangles generates a specialized copy of the supplied ITriangles that will draw onto this
-// GLWindow.
-//
+// MakeTriangles generates a specialized copy of the supplied ITriangles that will draw onto this GLWindow.
 // GLWindow supports ITrianglesPosition, ITrianglesColor and ITrianglesPicture.
 func (w *GLWindow) MakeTriangles(t ITriangles) ITargetTriangles {
 	return w.canvas.MakeTriangles(t)
 }
 
 // MakePicture generates a specialized copy of the supplied IPicture that will draw onto this GLWindow.
-//
 // GLWindow supports IPictureColor.
 func (w *GLWindow) MakePicture(p IPicture) ITargetPicture {
 	return w.canvas.MakePicture(p)
@@ -459,7 +447,7 @@ func (w *GLWindow) Color(at Vec) RGBA {
 	return w.canvas.Color(at)
 }
 
-// GLCanvas returns the window's underlying GLCanvas
+// Canvas returns the window's underlying GLCanvas
 func (w *GLWindow) Canvas() *GLCanvas {
 	return w.canvas
 }
@@ -579,12 +567,12 @@ func (w *GLWindow) initInput() {
 			switch action {
 			case glfw.Press:
 				w.keysPressed[Button(button)] = true
-				w.tempPressEvents[Button(button)] = true
-				w.tempInp.buttons[Button(button)] = true
+				w.tempPressEvents[button] = true
+				w.tempInp.buttons[button] = true
 			case glfw.Release:
 				delete(w.keysPressed, Button(button))
-				w.tempReleaseEvents[Button(button)] = true
-				w.tempInp.buttons[Button(button)] = false
+				w.tempReleaseEvents[button] = true
+				w.tempInp.buttons[button] = false
 			}
 		})
 
@@ -618,9 +606,9 @@ func (w *GLWindow) initInput() {
 			)
 		})
 
-		w.window.SetScrollCallback(func(_ *glfw.Window, xoff, yoff float64) {
-			w.tempInp.scroll.X += xoff
-			w.tempInp.scroll.Y += yoff
+		w.window.SetScrollCallback(func(_ *glfw.Window, xOff, yOff float64) {
+			w.tempInp.scroll.X += xOff
+			w.tempInp.scroll.Y += yOff
 		})
 
 		w.window.SetCharCallback(func(_ *glfw.Window, r rune) {
@@ -630,10 +618,10 @@ func (w *GLWindow) initInput() {
 }
 
 // UpdateInput polls window events. Call this function to poll window events without swapping buffers. Note that the Update method invokes UpdateInput.
-func (w *GLWindow) UpdateInput() {
-	executor.Thread.Call(func() { glfw.PollEvents() })
-	w.doUpdateInput()
-}
+//func (w *GLWindow) UpdateInput() {
+//	executor.Thread.Call(func() { glfw.PollEvents() })
+//	w.doUpdateInput()
+//}
 
 // UpdateInputWait blocks until an event is received or a timeout. If timeout is 0
 // then it will wait indefinitely

@@ -14,18 +14,14 @@ type GLPicture interface {
 func NewGLPicture(p IPicture) GLPicture {
 	bounds := p.Bounds()
 	bx, by, bw, bh := intBounds(bounds)
-	pixels := acquirePicture(p, bx, by, bw, bh, bounds.Min.X, bounds.Min.Y)
+	pixels := extractPixels(p, bx, by, bw, bh, bounds.Min.X, bounds.Min.Y)
 	var tex *executor.Texture
 
 	executor.Thread.Call(func() {
 		tex = executor.NewTexture(bw, bh, true, pixels)
 	})
 
-	gp := &glPicture{
-		bounds: bounds,
-		tex:    tex,
-		pixels: pixels,
-	}
+	gp := &glPicture{bounds: bounds, tex: tex, pixels: pixels}
 
 	return gp
 }
@@ -62,7 +58,7 @@ func (gp *glPicture) Color(at Vec) RGBA {
 func (gp *glPicture) Update(p IPicture) {
 	bounds := p.Bounds()
 	bx, by, bw, bh := intBounds(bounds)
-	pixels := acquirePicture(p, bx, by, bw, bh, bounds.Min.X, bounds.Min.Y)
+	pixels := extractPixels(p, bx, by, bw, bh, bounds.Min.X, bounds.Min.Y)
 	executor.Thread.Call(func() {
 		gp.tex.Begin()
 		gp.tex.SetPixels(bx, by, bw, bh, pixels)
@@ -70,38 +66,19 @@ func (gp *glPicture) Update(p IPicture) {
 	})
 }
 
-func acquirePicture(p IPicture, bx int, by int, bw int, bh int, bMinX float64, bMinY float64) []uint8 {
-
-	/*
-		else if pd, ok := p.(*pixel.PictureData); ok {
-			pixels = make([]uint8, 4 * bw * bh)
-			for y := 0; y < bh; y++ {
-				for x := 0; x < bw; x++ {
-					rgba := pd.Pix[y*pd.Stride+x]
-					off := (y*bw + x) * 4
-					pixels[off+0] = rgba.R
-					pixels[off+1] = rgba.G
-					pixels[off+2] = rgba.B
-					pixels[off+3] = rgba.A
-				}
-			}
-		}
-
-	*/
-
-	var pixels []uint8
-	if pd, ok := p.(*PictureRGBA); ok {
-		pixels = pd.Pixels()
-	} else if p, ok := p.(IPictureColor); ok {
-		pixels = make([]uint8, 4*bw*bh)
-
+func extractPixels(p IPicture, bx int, by int, bw int, bh int, bMinX float64, bMinY float64) []uint8 {
+	if pr, ok := p.(*PictureRGBA); ok {
+		return pr.Pixels()
+	}
+	if pc, ok := p.(IPictureColor); ok {
+		pixels := make([]uint8, 4*bw*bh)
 		for y := 0; y < bh; y++ {
 			for x := 0; x < bw; x++ {
 				at := MakeVec(
 					math.Max(float64(bx+x), bMinX),
 					math.Max(float64(by+y), bMinY),
 				)
-				color := p.Color(at)
+				color := pc.Color(at)
 				off := (y*bw + x) * 4
 				pixels[off+0] = uint8(color.R * 255)
 				pixels[off+1] = uint8(color.G * 255)
@@ -109,8 +86,7 @@ func acquirePicture(p IPicture, bx int, by int, bw int, bh int, bMinX float64, b
 				pixels[off+3] = uint8(color.A * 255)
 			}
 		}
-	} else {
-		pixels = make([]uint8, 4*bw*bh)
+		return pixels
 	}
-	return pixels
+	return make([]uint8, 4*bw*bh)
 }

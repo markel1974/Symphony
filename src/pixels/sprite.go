@@ -5,14 +5,14 @@ import "image/color"
 type Sprite struct {
 	tri    *TrianglesData
 	frame  Rect
-	d      Drawer
+	d      *Drawer
 	matrix Matrix
 	mask   RGBA
 }
 
 func NewSprite() *Sprite {
 	tri := MakeTrianglesData(6)
-	s := &Sprite{tri: tri, d: Drawer{Triangles: tri, Cached: 1}}
+	s := &Sprite{tri: tri, d: NewDrawer(tri, nil, CacheModePicture)}
 	s.matrix = IM
 	s.mask = Alpha(1)
 	return s
@@ -25,19 +25,19 @@ func NewSpriteFromPicture(pic IPicture, frame Rect) *Sprite {
 }
 
 func (s *Sprite) Set(pic IPicture, frame Rect) {
-	s.d.Picture = pic
+	s.d.SetPicture(pic)
 	if frame != s.frame {
 		s.frame = frame
 		s.calcData()
 	}
 }
 
-func (s *Sprite) SetCached(cached CacheMode) {
-	s.d.Cached = cached
+func (s *Sprite) SetCachedMode(cacheMode CacheMode) {
+	s.d.SetCacheMode(cacheMode)
 }
 
 func (s *Sprite) Picture() IPicture {
-	return s.d.Picture
+	return s.d.Picture()
 }
 
 func (s *Sprite) Frame() Rect {

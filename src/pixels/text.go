@@ -39,23 +39,27 @@ func RangeTable(table *unicode.RangeTable) []rune {
 // Text allows for effiecient and convenient text drawing.
 //
 // To create a Text object, use the New constructor:
-//   txt := text.New(pixel.ZV, text.NewAtlas(face, text.ASCII))
+//
+//	txt := text.New(pixel.ZV, text.NewAtlas(face, text.ASCII))
 //
 // As suggested by the constructor, a Text object is always associated with one font face and a
 // fixed set of runes. For example, the Text we created above can draw text using the font face
 // contained in the face variable and is capable of drawing ASCII characters.
 //
 // Here we create a Text object which can draw ASCII and Katakana characters:
-//   txt := text.New(0, text.NewAtlas(face, text.ASCII, text.RangeTable(unicode.Katakana)))
+//
+//	txt := text.New(0, text.NewAtlas(face, text.ASCII, text.RangeTable(unicode.Katakana)))
 //
 // Similarly to IMDraw, Text functions as a buffer. It implements io.Writer interface, so writing
 // text to it is really simple:
-//   fmt.Print(txt, "Hello, world!")
+//
+//	fmt.Print(txt, "Hello, world!")
 //
 // Newlines, tabs and carriage returns are supported.
 //
 // Finally, if we want the written text to show up on some other ITarget, we can draw it:
-//   txt.Draw(target)
+//
+//	txt.Draw(target)
 //
 // Text exports two important fields: Orig and Dot. Dot is the position where the next character
 // will be written. Dot is automatically moved when writing to a Text object, but you can also
@@ -102,18 +106,18 @@ type Text struct {
 	anchor Anchor
 }
 
-// New creates a new Text capable of drawing runes contained in the provided Atlas. Orig and Dot
+// NewText creates a new Text capable of drawing runes contained in the provided Atlas. Orig and Dot
 // will be initially set to orig.
-//
 // Here we create a Text capable of drawing ASCII characters using the Go Regular font.
-//   ttf, err := truetype.Parse(goregular.TTF)
-//   if err != nil {
-//       panic(err)
-//   }
-//   face := truetype.NewFace(ttf, &truetype.Options{
-//       Size: 14,
-//   })
-//   txt := text.New(orig, text.NewAtlas(face, text.ASCII))
+//
+//	ttf, err := truetype.Parse(goregular.TTF)
+//	if err != nil {
+//	    panic(err)
+//	}
+//	face := truetype.NewFace(ttf, &truetype.Options{
+//	    Size: 14,
+//	})
+//	txt := text.New(orig, text.NewAtlas(face, text.ASCII))
 func NewText(orig Vec, atlas *Atlas) *Text {
 	txt := &Text{
 		Orig:       orig,
@@ -132,9 +136,9 @@ func NewText(orig Vec, atlas *Atlas) *Text {
 		txt.glyph[i].Intensity = 1
 	}
 
-	txt.transD.Picture = txt.atlas.pic
-	txt.transD.Triangles = &txt.trans
-	txt.transD.Cached = 1
+	txt.transD.SetPicture(txt.atlas.pic)
+	txt.transD.SetTriangles(&txt.trans)
+	txt.transD.SetCacheMode(CacheModePicture)
 
 	txt.Clear()
 

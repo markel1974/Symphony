@@ -32,7 +32,7 @@ func New(cfg *config.Config) *Render {
 		fullscreen:   false,
 		screenWidth:  mos6569.DisplayX,
 		screenHeight: mos6569.DisplayY,
-		scale:        2.0,
+		scale:        3.0,
 		inputs:       NewInputs(),
 	}
 	g.maxW = float64(g.screenWidth) * g.scale
@@ -43,7 +43,7 @@ func New(cfg *config.Config) *Render {
 func (g *Render) setup(pos pixels.Vec) {
 	g.picture = pixels.NewPictureRGBA(pixels.R(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
 	g.surface = pixels.NewSprite()
-	g.surface.SetCached(pixels.CacheModeUpdate)
+	g.surface.SetCachedMode(pixels.CacheModeUpdate)
 	g.surface.Set(g.picture, g.picture.Bounds())
 	g.matrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
 	g.display = NewDisplayBuffer(g.picture)

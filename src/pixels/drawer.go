@@ -3,10 +3,9 @@ package pixels
 type CacheMode int
 
 const (
-	CacheModeDisable       CacheMode = 0
-	CacheModePicture       CacheMode = 1
-	CacheModePictureUpdate CacheMode = 2
-	CacheModeUpdate        CacheMode = 3
+	CacheModeUpdate        CacheMode = 1
+	CacheModePicture       CacheMode = 2
+	CacheModePictureUpdate CacheMode = 3
 )
 
 // Drawer glues all the fundamental interfaces (ITarget, ITriangles, IPicture) into a coherent and the
@@ -17,7 +16,7 @@ const (
 //
 // To create a Drawer, just assign it's ITriangles and IPicture fields:
 //
-//   d := pixel.Drawer{ITriangles: t, IPicture: p}
+//	d := pixel.Drawer{ITriangles: t, IPicture: p}
 //
 // If ITriangles is nil, nothing will be drawn. If IPicture is nil, ITriangles will be drawn without a
 // IPicture.
@@ -30,10 +29,9 @@ const (
 // memory leak, since Drawer caches them and never forgets. In such a situation, create a new Drawer
 // for each IPicture.
 type Drawer struct {
-	Triangles ITriangles
-	Picture   IPicture
-	Cached    CacheMode
-
+	triangles   ITriangles
+	picture     IPicture
+	cacheMode   CacheMode
 	targets     map[ITarget]*drawerTarget
 	allTargets  []*drawerTarget
 	initialized bool
@@ -46,11 +44,43 @@ type drawerTarget struct {
 	pic   ITargetPicture
 }
 
+func NewDrawer(triangles ITriangles, picture IPicture, cacheMode CacheMode) *Drawer {
+	return &Drawer{
+		triangles: triangles,
+		picture:   picture,
+		cacheMode: cacheMode,
+	}
+}
+
 func (d *Drawer) lazyInit() {
 	if !d.initialized {
 		d.targets = make(map[ITarget]*drawerTarget)
 		d.initialized = true
 	}
+}
+
+func (d *Drawer) Triangles() ITriangles {
+	return d.triangles
+}
+
+func (d *Drawer) SetTriangles(triangles ITriangles) {
+	d.triangles = triangles
+}
+
+func (d *Drawer) Picture() IPicture {
+	return d.picture
+}
+
+func (d *Drawer) SetPicture(picture IPicture) {
+	d.picture = picture
+}
+
+func (d *Drawer) CacheMode() CacheMode {
+	return d.cacheMode
+}
+
+func (d *Drawer) SetCacheMode(cacheMode CacheMode) {
+	d.cacheMode = cacheMode
 }
 
 // Dirty marks the ITriangles of this Drawer as changed. If not called, changes will not be visible when drawing.
@@ -62,12 +92,11 @@ func (d *Drawer) Dirty() {
 }
 
 // Draw efficiently draws ITriangles with IPicture onto the provided ITarget.
-//
 // If ITriangles is nil, nothing will be drawn. If IPicture is nil, ITriangles will be drawn without a IPicture.
 func (d *Drawer) Draw(t ITarget) {
 	d.lazyInit()
 
-	if d.Triangles == nil {
+	if d.triangles == nil {
 		return
 	}
 
@@ -79,46 +108,63 @@ func (d *Drawer) Draw(t ITarget) {
 	}
 
 	if dt.tris == nil {
-		dt.tris = t.MakeTriangles(d.Triangles)
+		dt.tris = t.MakeTriangles(d.triangles)
 		dt.clean = true
 	}
 
 	if !dt.clean {
-		dt.tris.SetLen(d.Triangles.Len())
-		dt.tris.Update(d.Triangles)
+		dt.tris.SetLen(d.triangles.Len())
+		dt.tris.Update(d.triangles)
 		dt.clean = true
 	}
 
-	if d.Picture == nil {
+	if d.picture == nil {
 		dt.tris.Draw()
 		return
 	}
 
-	var pic ITargetPicture
-
-	switch d.Cached {
-	case CacheModePicture:
-		if pic = dt.pics[d.Picture]; pic == nil {
-			pic = t.MakePicture(d.Picture)
-			dt.pics[d.Picture] = pic
-		}
-	case CacheModePictureUpdate:
-		if pic = dt.pics[d.Picture]; pic == nil {
-			pic = t.MakePicture(d.Picture)
-			dt.pics[d.Picture] = pic
-		} else {
-			pic.Update(d.Picture)
-		}
+	switch d.cacheMode {
 	case CacheModeUpdate:
-		if dt.pic == nil {
-			pic = t.MakePicture(d.Picture)
-			dt.pic = pic
-		} else {
-			pic = dt.pic
-			pic.Update(d.Picture)
-		}
+		d.drawUpdate(dt, t)
+	case CacheModePicture:
+		d.drawPicture(dt, t)
+	case CacheModePictureUpdate:
+		d.drawPictureUpdate(dt, t)
 	default:
-		pic = t.MakePicture(d.Picture)
+		d.drawDefault(dt, t)
 	}
+}
+
+func (d *Drawer) drawUpdate(dt *drawerTarget, t ITarget) {
+	if dt.pic == nil {
+		dt.pic = t.MakePicture(d.picture)
+	} else {
+		dt.pic.Update(d.picture)
+	}
+	dt.pic.Draw(dt.tris)
+}
+
+func (d *Drawer) drawPicture(dt *drawerTarget, t ITarget) {
+	pic := dt.pics[d.picture]
+	if pic == nil {
+		pic = t.MakePicture(d.picture)
+		dt.pics[d.picture] = pic
+	} else {
+		pic.Update(d.picture)
+	}
+	pic.Draw(dt.tris)
+}
+
+func (d *Drawer) drawPictureUpdate(dt *drawerTarget, t ITarget) {
+	pic := dt.pics[d.picture]
+	if pic == nil {
+		pic = t.MakePicture(d.picture)
+		dt.pics[d.picture] = pic
+	}
+	pic.Draw(dt.tris)
+}
+
+func (d *Drawer) drawDefault(dt *drawerTarget, t ITarget) {
+	pic := t.MakePicture(d.picture)
 	pic.Draw(dt.tris)
 }

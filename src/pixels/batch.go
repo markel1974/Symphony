@@ -8,9 +8,10 @@ import (
 // Batch is a ITarget that allows for efficient drawing of many objects with the same IPicture.
 //
 // To put an object into a Batch, just draw it onto it:
-//   object.Draw(batch)
+//
+//	object.Draw(batch)
 type Batch struct {
-	cont Drawer
+	cont *Drawer
 
 	mat Matrix
 	col RGBA
@@ -26,7 +27,7 @@ var _ IBasicTarget = (*Batch)(nil)
 //
 // Note, that if the container does not support ITrianglesColor, color masking will not work.
 func NewBatch(container ITriangles, pic IPicture) *Batch {
-	b := &Batch{cont: Drawer{Triangles: container, Picture: pic, Cached: 1}}
+	b := &Batch{cont: NewDrawer(container, pic, CacheModePicture)}
 	b.SetMatrix(IM)
 	b.SetColorMask(Alpha(1))
 	return b
@@ -35,17 +36,17 @@ func NewBatch(container ITriangles, pic IPicture) *Batch {
 // Dirty notifies Batch about an external modification of it's container. If you retain access to
 // the Batch's container and change it, call Dirty to notify Batch about the change.
 //
-//   container := &pixel.TrianglesData{}
-//   batch := pixel.NewBatch(container, nil)
-//   container.SetLen(10) // container changed from outside of Batch
-//   batch.Dirty()        // notify Batch about the change
+//	container := &pixel.TrianglesData{}
+//	batch := pixel.NewBatch(container, nil)
+//	container.SetLen(10) // container changed from outside of Batch
+//	batch.Dirty()        // notify Batch about the change
 func (b *Batch) Dirty() {
 	b.cont.Dirty()
 }
 
 // Clear removes all objects from the Batch.
 func (b *Batch) Clear() {
-	b.cont.Triangles.SetLen(0)
+	b.cont.Triangles().SetLen(0)
 	b.cont.Dirty()
 }
 
@@ -80,7 +81,7 @@ func (b *Batch) MakeTriangles(t ITriangles) ITargetTriangles {
 
 // MakePicture returns a specialized copy of the provided IPicture that draws onto this Batch.
 func (b *Batch) MakePicture(p IPicture) ITargetPicture {
-	if p != b.cont.Picture {
+	if p != b.cont.Picture() {
 		panic(fmt.Errorf("(%T).MakePicture: IPicture is not the Batch's IPicture", b))
 	}
 	bp := &batchPicture{
@@ -133,7 +134,7 @@ func (bt *batchTriangles) draw(bp *batchPicture) {
 		(*bt.tmp)[i].Color = bt.dst.col.Mul((*bt.tmp)[i].Color)
 	}
 
-	cont := bt.dst.cont.Triangles
+	cont := bt.dst.cont.Triangles()
 	cont.SetLen(cont.Len() + bt.tri.Len())
 	added := cont.Slice(cont.Len()-bt.tri.Len(), cont.Len())
 	added.Update(bt.tri)
