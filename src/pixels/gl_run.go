@@ -1,21 +1,17 @@
 package pixels
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
-func GLRun(run func()) {
+func GLRun(main func()) error {
 	err := glfw.Init()
 	if err != nil {
-		panic(errors.New("failed to initialize glfw"))
+		return fmt.Errorf("failed to initialize glfw: %v", err)
 	}
 	defer glfw.Terminate()
-	executor.GraphicThread.Run(run)
-}
-
-func GLGetTime() float64 {
-	return glfw.GetTime()
+	return executor.GraphicThread.Run(main)
 }

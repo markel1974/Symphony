@@ -112,5 +112,8 @@ func main() {
 
 	g := glrender.New(cfg)
 	//g := asciirender.New(cfg)
-	g.Start()
+	if err := g.Start(); err != nil {
+		fmt.Println(err)
+		return
+	}
 }

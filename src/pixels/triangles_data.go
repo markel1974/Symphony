@@ -14,20 +14,19 @@ type TriangleData struct {
 }
 
 // zeroValueTriangleData is the default value of a TriangleData element
-var zeroValueTriangleData = TriangleData{Color: RGBA{1, 1, 1, 1}}
+var _zeroValueTriangleData = TriangleData{Color: RGBA{1, 1, 1, 1}}
 
 // TrianglesData specifies a list of ITriangles vertices with three common properties:
 // ITrianglesPosition, ITrianglesColor and ITrianglesPicture.
 type TrianglesData []TriangleData
 
 // MakeTrianglesData creates TrianglesData of length len initialized with default property values.
-//
 // Prefer this function to make(TrianglesData, len), because make zeros them, while this function
 // does the correct initialization.
 func MakeTrianglesData(len int) *TrianglesData {
 	td := make(TrianglesData, len)
 	for i := 0; i < len; i++ {
-		td[i] = zeroValueTriangleData
+		td[i] = _zeroValueTriangleData
 	}
 	return &td
 }
@@ -45,7 +44,7 @@ func (td *TrianglesData) SetLen(len int) {
 	if len > td.Len() {
 		needAppend := len - td.Len()
 		for i := 0; i < needAppend; i++ {
-			*td = append(*td, zeroValueTriangleData)
+			*td = append(*td, _zeroValueTriangleData)
 		}
 	}
 	if len < td.Len() {

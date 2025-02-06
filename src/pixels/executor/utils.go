@@ -1,6 +1,8 @@
 package executor
 
-import "github.com/go-gl/gl/v3.3-core/gl"
+import (
+	"github.com/go-gl/gl/v3.3-core/gl"
+)
 
 func Init() {
 	err := gl.Init()

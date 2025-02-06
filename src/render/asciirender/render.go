@@ -58,11 +58,13 @@ func (g *Render) PrintBuffer(textBuffer []byte) {
 	}
 }
 
-func (g *Render) Start() {
+func (g *Render) Start() error {
 	g.setup()
 	dt := common.NewDynamicThrottling(mos6569.FrameInterval)
 
-	MakeStdInRaw()
+	if err := MakeStdInRaw(); err != nil {
+		return err
+	}
 
 	run := true
 
@@ -123,4 +125,5 @@ func (g *Render) Start() {
 		counter++
 		fmt.Printf("vblank %d\r\n", counter)
 	}
+	return nil
 }

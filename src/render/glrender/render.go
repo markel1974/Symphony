@@ -53,8 +53,8 @@ func (g *Render) setup(pos pixels.Vec) {
 	g.inputs.Setup(g.c64Board, g.maxW, g.maxH)
 }
 
-func (g *Render) Start() {
-	pixels.GLRun(g.run)
+func (g *Render) Start() error {
+	return pixels.GLRun(g.run)
 }
 
 func (g *Render) run() {

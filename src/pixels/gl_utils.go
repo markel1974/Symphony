@@ -1,6 +1,7 @@
 package pixels
 
 import (
+	"github.com/go-gl/glfw/v3.3/glfw"
 	"math"
 )
 
@@ -10,4 +11,8 @@ func intBounds(bounds Rect) (x, y, w, h int) {
 	x1 := int(math.Ceil(bounds.Max.X))
 	y1 := int(math.Ceil(bounds.Max.Y))
 	return x0, y0, x1 - x0, y1 - y0
+}
+
+func GLGetTime() float64 {
+	return glfw.GetTime()
 }

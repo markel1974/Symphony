@@ -58,10 +58,11 @@ func (m *Thread) CallErr(f func() error) error {
 	return err
 }
 
-func (m *Thread) Run(main func()) {
+func (m *Thread) Run(main func()) error {
 	done := make(chan bool)
 	m.mainLoop(main, done)
 	m.eventLoop(done)
+	return nil
 }
 
 func (m *Thread) mainLoop(fn func(), done chan bool) {
