@@ -141,7 +141,7 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 	if len(cfg.Icon) > 0 {
 		m := make([]image.Image, len(cfg.Icon))
 		for i, icon := range cfg.Icon {
-			pic := NewPictureRGBAFromPicture(icon)
+			pic := NewPictureFromPicture(icon)
 			fmt.Println(pic, i)
 			m[i] = pic.Image()
 		}

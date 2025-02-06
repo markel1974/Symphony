@@ -19,7 +19,7 @@ func verticalFlip(rgba *image.RGBA) {
 	}
 }
 
-type PictureRGBA struct {
+type Picture struct {
 	width  int
 	height int
 	rect   Rect
@@ -33,12 +33,12 @@ type PictureRGBA struct {
 	bh     int
 }
 
-func NewPictureRGBAFromPicture(picture IPicture) *PictureRGBA {
-	if pd, ok := picture.(*PictureRGBA); ok {
+func NewPictureFromPicture(picture IPicture) *Picture {
+	if pd, ok := picture.(*Picture); ok {
 		return pd
 	}
 	bounds := picture.Bounds()
-	pd := NewPictureRGBA(bounds)
+	pd := NewPicture(bounds)
 	if pc, ok := picture.(IPictureColor); ok {
 		for y := math.Floor(bounds.Min.Y); y < bounds.Max.Y; y++ {
 			for x := math.Floor(bounds.Min.X); x < bounds.Max.X; x++ {
@@ -51,11 +51,11 @@ func NewPictureRGBAFromPicture(picture IPicture) *PictureRGBA {
 	return pd
 }
 
-func NewPictureRGBAFromImage(img image.Image) *PictureRGBA {
+func NewPictureFromImage(img image.Image) *Picture {
 	rgba := image.NewRGBA(img.Bounds())
 	draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
 	verticalFlip(rgba)
-	pd := NewPictureRGBA(R(
+	pd := NewPicture(R(
 		float64(rgba.Bounds().Min.X),
 		float64(rgba.Bounds().Min.Y),
 		float64(rgba.Bounds().Max.X),
@@ -65,12 +65,12 @@ func NewPictureRGBAFromImage(img image.Image) *PictureRGBA {
 	return pd
 }
 
-func NewPictureRGBA(rect Rect) *PictureRGBA {
+func NewPicture(rect Rect) *Picture {
 	w := int(math.Ceil(rect.Max.X)) - int(math.Floor(rect.Min.X))
 	h := int(math.Ceil(rect.Max.Y)) - int(math.Floor(rect.Min.Y))
 	l := 4 * w * h
 	bx, by, bw, bh := intBounds(rect)
-	s := &PictureRGBA{
+	s := &Picture{
 		width:  w,
 		height: h,
 		stride: 4 * w,
@@ -86,7 +86,7 @@ func NewPictureRGBA(rect Rect) *PictureRGBA {
 	return s
 }
 
-func (s *PictureRGBA) SetRGBAArray(x int, y int, rgba []uint8) {
+func (s *Picture) SetRGBAArray(x int, y int, rgba []uint8) {
 	//flip
 	//y = (int(s.rect.Max.Y) -1) - y
 	y = s.lastY - y
@@ -96,17 +96,17 @@ func (s *PictureRGBA) SetRGBAArray(x int, y int, rgba []uint8) {
 	}
 }
 
-func (s *PictureRGBA) ComputeIndex(x int, y int) int {
+func (s *Picture) ComputeIndex(x int, y int) int {
 	y = s.lastY - y
 	i := (y-int(s.rect.Min.Y))*s.stride + (x-int(s.rect.Min.X))*4
 	return i
 }
 
-func (s *PictureRGBA) SetRGBADirectArray(i int, rgba []uint8) {
+func (s *Picture) SetRGBADirectArray(i int, rgba []uint8) {
 	copy(s.pixels[i:], rgba)
 }
 
-func (s *PictureRGBA) SetRGBA(x int, y int, r uint8, g uint8, b uint8, a uint8) {
+func (s *Picture) SetRGBA(x int, y int, r uint8, g uint8, b uint8, a uint8) {
 	//flip
 	//y = (int(s.rect.Max.Y) -1) - y
 	y = s.lastY - y
@@ -119,7 +119,7 @@ func (s *PictureRGBA) SetRGBA(x int, y int, r uint8, g uint8, b uint8, a uint8) 
 	}
 }
 
-func (s *PictureRGBA) SetRGBASize(x int, y int, r uint8, g uint8, b uint8, a uint8, size int) {
+func (s *Picture) SetRGBASize(x int, y int, r uint8, g uint8, b uint8, a uint8, size int) {
 	k := size / 2
 	for offsetX := -k; offsetX < k; offsetX++ {
 		for offsetY := -k; offsetY < k; offsetY++ {
@@ -128,31 +128,31 @@ func (s *PictureRGBA) SetRGBASize(x int, y int, r uint8, g uint8, b uint8, a uin
 	}
 }
 
-func (s *PictureRGBA) Width() int {
+func (s *Picture) Width() int {
 	return s.width
 }
 
-func (s *PictureRGBA) Height() int {
+func (s *Picture) Height() int {
 	return s.height
 }
 
-func (s *PictureRGBA) Length() int {
+func (s *Picture) Length() int {
 	return s.length
 }
 
-func (s *PictureRGBA) Stride() int {
+func (s *Picture) Stride() int {
 	return s.stride
 }
 
-func (s *PictureRGBA) Bounds() Rect {
+func (s *Picture) Bounds() Rect {
 	return s.rect
 }
 
-func (s *PictureRGBA) Pixels() (int, int, int, int, []uint8) {
+func (s *Picture) Pixels() (int, int, int, int, []uint8) {
 	return s.bx, s.by, s.bw, s.bh, s.pixels
 }
 
-func (s *PictureRGBA) Image() *image.RGBA {
+func (s *Picture) Image() *image.RGBA {
 	bounds := image.Rect(
 		int(math.Floor(s.rect.Min.X)),
 		int(math.Floor(s.rect.Min.Y)),

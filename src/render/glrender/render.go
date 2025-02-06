@@ -18,7 +18,7 @@ type Render struct {
 	screenHeight int
 	maxW         float64
 	maxH         float64
-	picture      *pixels.PictureRGBA
+	picture      *pixels.Picture
 	matrix       pixels.Matrix
 	surface      *pixels.Sprite
 	display      *DisplayBuffer
@@ -41,7 +41,7 @@ func New(cfg *config.Config) *Render {
 }
 
 func (g *Render) setup(pos pixels.Vec) {
-	g.picture = pixels.NewPictureRGBA(pixels.R(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
+	g.picture = pixels.NewPicture(pixels.R(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
 	g.surface = pixels.NewSprite()
 	g.surface.SetCachedMode(pixels.CacheModeUpdate)
 	g.surface.Set(g.picture, g.picture.Bounds())

@@ -84,7 +84,7 @@ func NewAtlas(face font.Face, runeSets ...[]rune) *Atlas {
 
 	return &Atlas{
 		face:       face,
-		pic:        NewPictureRGBAFromImage(atlasImg),
+		pic:        NewPictureFromImage(atlasImg),
 		mapping:    mapping,
 		ascent:     i2f(face.Metrics().Ascent),
 		descent:    i2f(face.Metrics().Descent),
