@@ -10,9 +10,6 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// Atlas7x13 is an Atlas using basic-font Face 7x13 with the ASCII rune set
-var Atlas7x13 *Atlas
-
 // Glyph describes one glyph in an Atlas.
 type Glyph struct {
 	Dot     Vec

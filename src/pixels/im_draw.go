@@ -58,7 +58,6 @@ func (imd *IMDraw) Clear() {
 }
 
 // Reset restores all point properties to defaults and removes all Pushed points.
-//
 // This does not affect matrix and color mask set by SetMatrix and SetColorMask.
 func (imd *IMDraw) Reset() {
 	imd.points = imd.points[:0]
@@ -143,7 +142,6 @@ func (imd *IMDraw) Rectangle(thickness float64) {
 // Polygon draws a polygon from the Pushed points. If the thickness is 0, the convex polygon will be
 // filled. Otherwise, an outline of the specified thickness will be drawn. The outline does not have
 // to be convex.
-//
 // Note: that the filled polygon does not have to be strictly convex. The way it's drawn is that a
 // triangle is drawn between each two adjacent points and the first Pushed point. You can use this
 // property to draw certain kinds of concave polygons.

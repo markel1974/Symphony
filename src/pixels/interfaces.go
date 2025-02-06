@@ -2,8 +2,6 @@ package pixels
 
 import (
 	"image/color"
-
-	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
 // ITarget is something that can be drawn onto, such as a window, a canvas, and so on.
@@ -157,12 +155,4 @@ type IPicturePixels interface {
 	IPicture
 
 	Pixels() (int, int, int, int, []byte)
-}
-
-type IGLPicture interface {
-	IPictureColor
-
-	Texture() *executor.Texture
-
-	Update(p IPicture)
 }

@@ -245,25 +245,21 @@ func (r Rect) IntersectLine(l Line) Vec {
 func (r Rect) IntersectionPoints(l Line) []Vec {
 	// Use map keys to ensure unique points
 	pointMap := make(map[Vec]struct{})
-
 	for _, edge := range r.Edges() {
 		if intersect, ok := l.Intersect(edge); ok {
 			pointMap[intersect] = struct{}{}
 		}
 	}
-
 	points := make([]Vec, 0, len(pointMap))
-	for point := range pointMap {
-		points = append(points, point)
+	for pt := range pointMap {
+		points = append(points, pt)
 	}
-
 	// Order the points
 	if len(points) == 2 {
 		if points[1].To(l.A).Len() < points[0].To(l.A).Len() {
 			return []Vec{points[1], points[0]}
 		}
 	}
-
 	return points
 }
 

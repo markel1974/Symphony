@@ -11,6 +11,9 @@ import (
 // ASCII is a set of all ASCII runes. These runes are codepoints from 32 to 127 inclusive.
 var ASCII []rune
 
+// Atlas7x13 is an Atlas using basic-font Face 7x13 with the ASCII rune set
+var Atlas7x13 *Atlas
+
 func init() {
 	ASCII = make([]rune, unicode.MaxASCII-32)
 	for i := range ASCII {
@@ -19,8 +22,7 @@ func init() {
 	Atlas7x13 = NewAtlas(basicfont.Face7x13, ASCII)
 }
 
-// RangeTable takes a *unicode.RangeTable and generates a set of runes contained within that
-// RangeTable.
+// RangeTable takes a *unicode.RangeTable and generates a set of runes contained within that RangeTable.
 func RangeTable(table *unicode.RangeTable) []rune {
 	var runes []rune
 	for _, rng := range table.R16 {

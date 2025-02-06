@@ -6,7 +6,13 @@ import (
 	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
-func NewGLPicture(p IPicture) IGLPicture {
+type GLPicture struct {
+	bounds  Rect
+	texture *executor.Texture
+	pixels  []uint8
+}
+
+func NewGLPicture(p IPicture) *GLPicture {
 	var pixels []uint8
 	var bw, bh int
 
@@ -24,7 +30,7 @@ func NewGLPicture(p IPicture) IGLPicture {
 		texture = executor.NewTexture(bw, bh, true, pixels)
 	})
 
-	gp := &glPicture{
+	gp := &GLPicture{
 		bounds:  p.Bounds(),
 		texture: texture,
 		pixels:  pixels,
@@ -33,21 +39,15 @@ func NewGLPicture(p IPicture) IGLPicture {
 	return gp
 }
 
-type glPicture struct {
-	bounds  Rect
-	texture *executor.Texture
-	pixels  []uint8
-}
-
-func (gp *glPicture) Bounds() Rect {
+func (gp *GLPicture) Bounds() Rect {
 	return gp.bounds
 }
 
-func (gp *glPicture) Texture() *executor.Texture {
+func (gp *GLPicture) Texture() *executor.Texture {
 	return gp.texture
 }
 
-func (gp *glPicture) Color(at Vec) RGBA {
+func (gp *GLPicture) Color(at Vec) RGBA {
 	if !gp.bounds.Contains(at) {
 		return Alpha(0)
 	}
@@ -62,7 +62,7 @@ func (gp *glPicture) Color(at Vec) RGBA {
 	}
 }
 
-func (gp *glPicture) Update(p IPicture) {
+func (gp *GLPicture) Update(p IPicture) {
 	var pixels []uint8
 	var bx, by, bw, bh int
 

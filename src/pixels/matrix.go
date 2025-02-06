@@ -7,7 +7,6 @@ import (
 
 // Matrix is a 2x3 affine matrix that can be used for all kinds of spatial transforms, such
 // as movement, scaling and rotations.
-//
 // Matrix has a handful of useful methods, each of which adds a transformation to the matrix. For
 // example:
 //
