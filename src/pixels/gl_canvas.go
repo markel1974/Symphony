@@ -2,7 +2,6 @@ package pixels
 
 import (
 	"errors"
-
 	"image/color"
 
 	"github.com/go-gl/mathgl/mgl32"
