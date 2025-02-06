@@ -187,6 +187,7 @@ func (g *Inputs) MouseMove(x float64, y float64) {
 func (g *Inputs) diskChange(p bool) {
 	if p {
 		g.b.DiskChange()
+		fmt.Println("swapping disk")
 	}
 }
 

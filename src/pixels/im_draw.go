@@ -172,7 +172,7 @@ func (imd *IMDraw) Circle(radius, thickness float64) {
 // continues to the high angle. If low<high, the arc will be drawn counterclockwise. Otherwise it
 // will be clockwise. The angles are not normalized by any means.
 //
-//   imd.CircleArc(40, 0, 8*math.Pi, 0)
+//	imd.CircleArc(40, 0, 8*math.Pi, 0)
 //
 // This line will fill the whole circle 4 times.
 func (imd *IMDraw) CircleArc(radius, low, high, thickness float64) {
@@ -199,7 +199,7 @@ func (imd *IMDraw) Ellipse(radius Vec, thickness float64) {
 // angle and continues to the high angle. If low<high, the arc will be drawn counterclockwise.
 // Otherwise it will be clockwise. The angles are not normalized by any means.
 //
-//   imd.EllipseArc(pixel.V(100, 50), 0, 8*math.Pi, 0)
+//	imd.EllipseArc(pixel.V(100, 50), 0, 8*math.Pi, 0)
 //
 // This line will fill the whole ellipse 4 times.
 func (imd *IMDraw) EllipseArc(radius Vec, low, high, thickness float64) {
