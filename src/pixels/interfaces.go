@@ -1,6 +1,10 @@
 package pixels
 
-import "image/color"
+import (
+	"image/color"
+
+	"github.com/markel1974/c64emu/src/pixels/executor"
+)
 
 // ITarget is something that can be drawn onto, such as a window, a canvas, and so on.
 //
@@ -83,12 +87,14 @@ type ITargetTriangles interface {
 // ITrianglesPosition specifies ITriangles with Position property.
 type ITrianglesPosition interface {
 	ITriangles
+
 	Position(i int) Vec
 }
 
 // ITrianglesColor specifies ITriangles with Color property.
 type ITrianglesColor interface {
 	ITriangles
+
 	Color(i int) RGBA
 }
 
@@ -99,6 +105,7 @@ type ITrianglesColor interface {
 // is should be fully included and anything in between means anything in between.
 type ITrianglesPicture interface {
 	ITriangles
+
 	Picture(i int) (pic Vec, intensity float64)
 }
 
@@ -108,6 +115,7 @@ type ITrianglesPicture interface {
 // if the triangle is clipped.
 type ITrianglesClipped interface {
 	ITriangles
+
 	ClipRect(i int) (rect Rect, is bool)
 }
 
@@ -140,5 +148,20 @@ type ITargetPicture interface {
 // Positions outside the IPicture's Bounds must return full transparent (Alpha(0)).
 type IPictureColor interface {
 	IPicture
+
 	Color(at Vec) RGBA
+}
+
+type IPicturePixels interface {
+	IPicture
+
+	Pixels() (int, int, int, int, []byte)
+}
+
+type IGLPicture interface {
+	IPictureColor
+
+	Texture() *executor.Texture
+
+	Update(p IPicture)
 }

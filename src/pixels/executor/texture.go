@@ -63,10 +63,10 @@ func (t *Texture) Height() int {
 }
 
 func (t *Texture) SetPixels(x, y, w, h int, pixels []uint8) {
-	if len(pixels) != w*h*4 {
-		return
-		//panic("set pixels: wrong number of pixels")
-	}
+	//if len(pixels) != w*h*4 {
+	//	return
+	//	//panic("set pixels: wrong number of pixels")
+	//}
 	gl.TexSubImage2D(gl.TEXTURE_2D, 0, int32(x), int32(y), int32(w), int32(h), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(pixels))
 }
 

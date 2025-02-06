@@ -27,6 +27,10 @@ type PictureRGBA struct {
 	pixels []uint8
 	length int
 	lastY  int
+	bx     int
+	by     int
+	bw     int
+	bh     int
 }
 
 func NewPictureRGBAFromPicture(picture IPicture) *PictureRGBA {
@@ -68,6 +72,7 @@ func NewPictureRGBA(rect Rect) *PictureRGBA {
 	w := int(math.Ceil(rect.Max.X)) - int(math.Floor(rect.Min.X))
 	h := int(math.Ceil(rect.Max.Y)) - int(math.Floor(rect.Min.Y))
 	l := 4 * w * h
+	bx, by, bw, bh := intBounds(rect)
 	s := &PictureRGBA{
 		width:  w,
 		height: h,
@@ -76,6 +81,10 @@ func NewPictureRGBA(rect Rect) *PictureRGBA {
 		pixels: make([]uint8, l),
 		length: l - 4,
 		lastY:  int(rect.Max.Y) - 1,
+		bx:     bx,
+		by:     by,
+		bw:     bw,
+		bh:     bh,
 	}
 	return s
 }
@@ -142,8 +151,8 @@ func (s *PictureRGBA) Bounds() Rect {
 	return s.rect
 }
 
-func (s *PictureRGBA) Pixels() []uint8 {
-	return s.pixels
+func (s *PictureRGBA) Pixels() (int, int, int, int, []uint8) {
+	return s.bx, s.by, s.bw, s.bh, s.pixels
 }
 
 func (s *PictureRGBA) Image() *image.RGBA {
