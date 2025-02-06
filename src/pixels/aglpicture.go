@@ -23,7 +23,11 @@ func NewGLPicture(p IPicture) IGLPicture {
 		texture = executor.NewTexture(bw, bh, true, pixels)
 	})
 
-	gp := &glPicture{bounds: p.Bounds(), texture: texture, pixels: pixels}
+	gp := &glPicture{
+		bounds:  p.Bounds(),
+		texture: texture,
+		pixels:  pixels,
+	}
 
 	return gp
 }
@@ -58,9 +62,6 @@ func (gp *glPicture) Color(at Vec) RGBA {
 }
 
 func (gp *glPicture) Update(p IPicture) {
-	//bounds := p.Bounds()
-	//bx, by, bw, bh := intBounds(bounds)
-	//pixels := extractPixels(p, bx, by, bw, bh, bounds.Min.X, bounds.Min.Y)
 	var pixels []uint8
 	var bx, by, bw, bh int
 
@@ -90,7 +91,7 @@ func extractPixelsFromPictureColor(pc IPictureColor) (int, int, int, int, []uint
 				math.Max(float64(by+y), bounds.Min.Y),
 			)
 			color := pc.Color(at)
-			off := (y*bw + x) * 4
+			off := ((y * bw) + x) * 4
 			pixels[off+0] = uint8(color.R * 255)
 			pixels[off+1] = uint8(color.G * 255)
 			pixels[off+2] = uint8(color.B * 255)
@@ -106,30 +107,3 @@ func extractPixelsFromPicture(pp IPicture) (int, int, int, int, []uint8) {
 	pixels := make([]uint8, 4*bw*bh)
 	return bx, by, bw, bh, pixels
 }
-
-/*
-func extractPixels(p IPicture, bx int, by int, bw int, bh int, bMinX float64, bMinY float64) []uint8 {
-	if pr, ok := p.(IPicturePixels); ok {
-		return pr.Pixels()
-	}
-	if pc, ok := p.(IPictureColor); ok {
-		pixels := make([]uint8, 4*bw*bh)
-		for y := 0; y < bh; y++ {
-			for x := 0; x < bw; x++ {
-				at := MakeVec(
-					math.Max(float64(bx+x), bMinX),
-					math.Max(float64(by+y), bMinY),
-				)
-				color := pc.Color(at)
-				off := (y*bw + x) * 4
-				pixels[off+0] = uint8(color.R * 255)
-				pixels[off+1] = uint8(color.G * 255)
-				pixels[off+2] = uint8(color.B * 255)
-				pixels[off+3] = uint8(color.A * 255)
-			}
-		}
-		return pixels
-	}
-	return make([]uint8, 4*bw*bh)
-}
-*/
