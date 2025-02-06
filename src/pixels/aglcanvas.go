@@ -172,7 +172,7 @@ func setBlendFunc(cmp ComposeMethod) {
 		executor.BlendFunc(executor.Zero, executor.SrcAlpha)
 	case ComposeRout:
 		executor.BlendFunc(executor.Zero, executor.OneMinusSrcAlpha)
-	case ComposeRatop:
+	case ComposeRaTop:
 		executor.BlendFunc(executor.OneMinusDstAlpha, executor.SrcAlpha)
 	case ComposeXor:
 		executor.BlendFunc(executor.OneMinusDstAlpha, executor.OneMinusSrcAlpha)
@@ -295,7 +295,7 @@ func (ct *canvasTriangles) draw(tex *executor.Texture, bounds Rect) {
 		shader.Begin()
 
 		ct.shader.uniformDefaults.transform = mat
-		ct.shader.uniformDefaults.colormask = col
+		ct.shader.uniformDefaults.colorMask = col
 		dstBounds := ct.dst.Bounds()
 		ct.shader.uniformDefaults.bounds = mgl32.Vec4{
 			float32(dstBounds.Min.X),
@@ -305,7 +305,7 @@ func (ct *canvasTriangles) draw(tex *executor.Texture, bounds Rect) {
 		}
 
 		bx, by, bw, bh := intBounds(bounds)
-		ct.shader.uniformDefaults.texbounds = mgl32.Vec4{
+		ct.shader.uniformDefaults.texBounds = mgl32.Vec4{
 			float32(bx),
 			float32(by),
 			float32(bw),

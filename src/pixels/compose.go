@@ -2,7 +2,7 @@ package pixels
 
 import "errors"
 
-// ComposeTarget is a IBasicTarget capable of Porter-Duff composition.
+// ComposeTarget is an IBasicTarget capable of Porter-Duff composition.
 type ComposeTarget interface {
 	IBasicTarget
 
@@ -23,14 +23,14 @@ const (
 	ComposeRover
 	ComposeRin
 	ComposeRout
-	ComposeRatop
+	ComposeRaTop
 	ComposeXor
 	ComposePlus
 	ComposeCopy
 )
 
-// Compose composes two colors together according to the ComposeMethod. A is the foreground, B is
-// the background.
+// Compose composes two colors together, according to the ComposeMethod.
+// A is the foreground, B is the background.
 func (cm ComposeMethod) Compose(a, b RGBA) RGBA {
 	var fa, fb float64
 
@@ -49,7 +49,7 @@ func (cm ComposeMethod) Compose(a, b RGBA) RGBA {
 		fa, fb = 0, a.A
 	case ComposeRout:
 		fa, fb = 0, 1-a.A
-	case ComposeRatop:
+	case ComposeRaTop:
 		fa, fb = 1-b.A, a.A
 	case ComposeXor:
 		fa, fb = 1-b.A, 1-a.A
@@ -58,7 +58,7 @@ func (cm ComposeMethod) Compose(a, b RGBA) RGBA {
 	case ComposeCopy:
 		fa, fb = 1, 0
 	default:
-		panic(errors.New("Compose: invalid ComposeMethod"))
+		panic(errors.New("compose: invalid ComposeMethod"))
 	}
 
 	return a.Mul(Alpha(fa)).Add(b.Mul(Alpha(fb)))

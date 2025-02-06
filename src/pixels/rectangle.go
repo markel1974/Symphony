@@ -8,7 +8,7 @@ import (
 // Rect is a 2D rectangle aligned with the axes of the coordinate system. It is defined by two
 // points, Min and Max.
 //
-// The invariant should hold, that Max's components are greater or equal than Min's components
+// The invariant should hold that Max's components are greater or equal than Min's components
 // respectively.
 type Rect struct {
 	Min Vec
@@ -29,10 +29,6 @@ func R(minX, minY, maxX, maxY float64) Rect {
 }
 
 // String returns the string representation of the Rect.
-//
-//   r := pixel.R(100, 50, 200, 300)
-//   r.String()     // returns "Rect(100, 50, 200, 300)"
-//   fmt.Println(r) // Rect(100, 50, 200, 300)
 func (r Rect) String() string {
 	return fmt.Sprintf("Rect(%v, %v, %v, %v)", r.Min.X, r.Min.Y, r.Max.X, r.Max.Y)
 }
@@ -98,7 +94,7 @@ var (
 	TopLeft     = Anchor{1, 0}
 )
 
-var anchorStrings map[Anchor]string = map[Anchor]string{
+var anchorStrings = map[Anchor]string{
 	Center:      "center",
 	Top:         "top",
 	TopRight:    "top-right",
@@ -115,7 +111,7 @@ func (anchor Anchor) String() string {
 	return anchorStrings[anchor]
 }
 
-var oppositeAnchors map[Anchor]Anchor = map[Anchor]Anchor{
+var oppositeAnchors = map[Anchor]Anchor{
 	Center:      Center,
 	Top:         Bottom,
 	Bottom:      Top,
@@ -127,7 +123,7 @@ var oppositeAnchors map[Anchor]Anchor = map[Anchor]Anchor{
 	TopLeft:     BottomRight,
 }
 
-// Opposite returns the opposite position of the anchor (ie. Top -> Bottom; BottomLeft -> TopRight, etc.).
+// Opposite returns the opposite position of the anchor (i.e., Top -> Bottom; BottomLeft -> TopRight, etc.).
 func (anchor Anchor) Opposite() Anchor {
 	return oppositeAnchors[anchor]
 }
@@ -159,12 +155,12 @@ func (r Rect) Moved(delta Vec) Rect {
 // Resized returns the Rect resized to the given size while keeping the position of the given
 // anchor.
 //
-//   r.Resized(r.Min, size)      // resizes while keeping the position of the lower-left corner
-//   r.Resized(r.Max, size)      // same with the top-right corner
-//   r.Resized(r.Center(), size) // resizes around the center
+//	r.Resized(r.Min, size)      // resizes while keeping the position of the lower-left corner
+//	r.Resized(r.Max, size)      // same with the top-right corner
+//	r.Resized(r.Center(), size) // resizes around the center
 //
 // This function does not make sense for resizing a rectangle of zero area and will panic. Use
-// ResizedMin in the case of zero area.
+// ResizedMin in the case of zero areas.
 func (r Rect) Resized(anchor, size Vec) Rect {
 	if r.W()*r.H() == 0 {
 		panic(fmt.Errorf("(%T).Resize: zero area", r))
@@ -176,10 +172,8 @@ func (r Rect) Resized(anchor, size Vec) Rect {
 	}
 }
 
-// ResizedMin returns the Rect resized to the given size while keeping the position of the Rect's
-// Min.
-//
-// Sizes of zero area are safe here.
+// ResizedMin returns the Rect resized to the given size while keeping the position of the Rest's Min.
+// Sizes of zero areas are safe here.
 func (r Rect) ResizedMin(size Vec) Rect {
 	return Rect{
 		Min: r.Min,
@@ -187,12 +181,12 @@ func (r Rect) ResizedMin(size Vec) Rect {
 	}
 }
 
-// Contains checks whether a vector u is contained within this Rect (including it's borders).
+// Contains checks whether a vector u is contained within this Rect (including its borders).
 func (r Rect) Contains(u Vec) bool {
 	return r.Min.X <= u.X && u.X <= r.Max.X && r.Min.Y <= u.Y && u.Y <= r.Max.Y
 }
 
-// Union returns the minimal Rect which covers both r and s. Rects r and s must be normalized.
+// Union returns the minimal Rect which covers both r and s. Rect r and s must be normalized.
 func (r Rect) Union(s Rect) Rect {
 	return R(
 		math.Min(r.Min.X, s.Min.X),
@@ -202,7 +196,7 @@ func (r Rect) Union(s Rect) Rect {
 	)
 }
 
-// Intersect returns the maximal Rect which is covered by both r and s. Rects r and s must be normalized.
+// Intersect returns the maximal Rect which is covered by both r and s. Rect r and s must be normalized.
 //
 // If r and s don't overlap, this function returns a zero-rectangle.
 func (r Rect) Intersect(s Rect) Rect {
@@ -218,8 +212,7 @@ func (r Rect) Intersect(s Rect) Rect {
 	return t
 }
 
-// Intersects returns whether or not the given Rect intersects at any point with this Rect.
-//
+// Intersects returns whether the given Rect intersects at any point with this Rect.
 // This function is overall about 5x faster than Intersect, so it is better
 // to use if you have no need for the returned Rect from Intersect.
 func (r Rect) Intersects(s Rect) bool {
@@ -234,8 +227,8 @@ func (r Rect) Intersects(s Rect) bool {
 // the perimeters touch.
 //
 // This function will return a non-zero vector if:
-//  - The Rect contains the Circle, partially or fully
-//  - The Circle contains the Rect, partially of fully
+//   - The Rect contains the Circle, partially or fully
+//   - The Circle contains the Rect, partially/fully
 func (r Rect) IntersectCircle(c Circle) Vec {
 	return c.IntersectRect(r).Scaled(-1)
 }
@@ -274,7 +267,7 @@ func (r Rect) IntersectionPoints(l Line) []Vec {
 	return points
 }
 
-// Vertices returns a slice of the four corners which make up the rectangle.
+// Vertices return a slice of the four corners which make up the rectangle.
 func (r Rect) Vertices() [4]Vec {
 	return [4]Vec{
 		r.Min,

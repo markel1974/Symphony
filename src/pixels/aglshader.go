@@ -15,10 +15,10 @@ type GLShader struct {
 
 	uniformDefaults struct {
 		transform mgl32.Mat3
-		colormask mgl32.Vec4
+		colorMask mgl32.Vec4
 		bounds    mgl32.Vec4
-		texbounds mgl32.Vec4
-		cliprect  mgl32.Vec4
+		texBounds mgl32.Vec4
+		clipRect  mgl32.Vec4
 	}
 }
 
@@ -26,7 +26,7 @@ type gsUniformAttr struct {
 	Name      string
 	Type      executor.AttrType
 	value     interface{}
-	ispointer bool
+	isPointer bool
 }
 
 const (
@@ -53,9 +53,9 @@ func NewGLShader(fragmentShader string) *GLShader {
 	}
 
 	gs.SetUniform("uTransform", &gs.uniformDefaults.transform)
-	gs.SetUniform("uColorMask", &gs.uniformDefaults.colormask)
+	gs.SetUniform("uColorMask", &gs.uniformDefaults.colorMask)
 	gs.SetUniform("uBounds", &gs.uniformDefaults.bounds)
-	gs.SetUniform("uTexBounds", &gs.uniformDefaults.texbounds)
+	gs.SetUniform("uTexBounds", &gs.uniformDefaults.texBounds)
 
 	gs.Update()
 
@@ -74,12 +74,7 @@ func (gs *GLShader) Update() {
 	var shader *executor.Shader
 	executor.Thread.Call(func() {
 		var err error
-		shader, err = executor.NewShader(
-			gs.vf,
-			gs.uf,
-			gs.vs,
-			gs.fs,
-		)
+		shader, err = executor.NewShader(gs.vf, gs.uf, gs.vs, gs.fs)
 		if err != nil {
 			panic(errors.New("failed to create GLCanvas, there's a bug in the shader:" + err.Error()))
 		}
@@ -102,20 +97,20 @@ func (gs *GLShader) SetUniform(name string, value interface{}) {
 	if loc := gs.getUniform(name); loc > -1 {
 		gs.uniforms[loc].Name = name
 		gs.uniforms[loc].Type = t
-		gs.uniforms[loc].ispointer = p
+		gs.uniforms[loc].isPointer = p
 		gs.uniforms[loc].value = value
 		return
 	}
 	gs.uniforms = append(gs.uniforms, gsUniformAttr{
 		Name:      name,
 		Type:      t,
-		ispointer: p,
+		isPointer: p,
 		value:     value,
 	})
 }
 
 func (gu *gsUniformAttr) Value() interface{} {
-	if !gu.ispointer {
+	if !gu.isPointer {
 		return gu.value
 	}
 	switch gu.Type {
@@ -148,7 +143,7 @@ func (gu *gsUniformAttr) Value() interface{} {
 	case executor.Float:
 		return *gu.value.(*float32)
 	default:
-		panic("invalid attrtype")
+		panic("invalid attr type (Value)")
 	}
 }
 
@@ -211,6 +206,6 @@ func getAttrType(v interface{}) (executor.AttrType, bool) {
 	case *float32:
 		return executor.Float, true
 	default:
-		panic("invalid AttrType")
+		panic("invalid attr type (getAttrType)")
 	}
 }

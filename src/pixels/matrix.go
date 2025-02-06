@@ -11,7 +11,7 @@ import (
 // Matrix has a handful of useful methods, each of which adds a transformation to the matrix. For
 // example:
 //
-//   pixel.IM.Moved(pixel.V(100, 200)).Rotated(pixel.ZV, math.Pi/2)
+//	pixel.IM.Moved(pixel.V(100, 200)).Rotated(pixel.ZV, math.Pi/2)
 //
 // This code creates a Matrix that first moves everything by 100 units horizontally and 200 units
 // vertically and then rotates everything by 90 degrees around the origin.
@@ -19,16 +19,14 @@ import (
 // Layout is:
 // [0] [2] [4]
 // [1] [3] [5]
-//  0   0   1  (implicit row)
+//
+//	0 0 1 (implicit row)
 type Matrix [6]float64
 
 // IM stands for identity matrix. Does nothing, no transformation.
 var IM = Matrix{1, 0, 0, 1, 0, 0}
 
 // String returns a string representation of the Matrix.
-//
-//   m := pixel.IM
-//   fmt.Println(m) // Matrix(1 0 0 | 0 1 0)
 func (m Matrix) String() string {
 	return fmt.Sprintf(
 		"Matrix(%v %v %v | %v %v %v)",
@@ -66,8 +64,8 @@ func (m Matrix) Rotated(around Vec, angle float64) Matrix {
 	return m2
 }
 
-// Chained adds another Matrix to this one. All tranformations by the next Matrix will be applied
-// after the transformations of this Matrix.
+// Chained adds another Matrix to this one.
+// All transformations by the next Matrix will be applied after the transformations of this Matrix.
 func (m Matrix) Chained(next Matrix) Matrix {
 	return Matrix{
 		next[0]*m[0] + next[2]*m[1],
@@ -80,14 +78,12 @@ func (m Matrix) Chained(next Matrix) Matrix {
 }
 
 // Project applies all transformations added to the Matrix to a vector u and returns the result.
-//
 // Time complexity is O(1).
 func (m Matrix) Project(u Vec) Vec {
 	return Vec{m[0]*u.X + m[2]*u.Y + m[4], m[1]*u.X + m[3]*u.Y + m[5]}
 }
 
 // Unproject does the inverse operation to Project.
-//
 // Time complexity is O(1).
 func (m Matrix) Unproject(u Vec) Vec {
 	det := m[0]*m[3] - m[2]*m[1]

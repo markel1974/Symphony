@@ -14,19 +14,19 @@ const (
 // Drawer makes it possible to draw any combination of ITriangles and IPicture onto any ITarget
 // efficiently.
 //
-// To create a Drawer, just assign it's ITriangles and IPicture fields:
+// To create a Drawer, just assign its ITriangles and IPicture fields:
 //
 //	d := pixel.Drawer{ITriangles: t, IPicture: p}
 //
-// If ITriangles is nil, nothing will be drawn. If IPicture is nil, ITriangles will be drawn without a
-// IPicture.
+// If ITriangles is nil, nothing will be drawn.
+// If IPicture is nil, ITriangles will be drawn without an IPicture.
 //
 // Whenever you change the ITriangles, call Dirty to notify Drawer that ITriangles changed. You don't
 // need to notify Drawer about a change of the IPicture.
 //
-// Note, that Drawer caches the results of MakePicture from Targets it's drawn to for each IPicture
+// Note that Drawer caches the results of MakePicture from Targets it's drawn to for each IPicture
 // it's set to. What it means is that using a Drawer with an unbounded number of Pictures leads to a
-// memory leak, since Drawer caches them and never forgets. In such a situation, create a new Drawer
+// memory leak, since the Drawer caches them and never forgets. In such a situation, create a new Drawer
 // for each IPicture.
 type Drawer struct {
 	triangles ITriangles
@@ -57,7 +57,7 @@ func (d *Drawer) Triangles() ITriangles {
 	return d.triangles
 }
 
-// SetTriangles sets the ITriangles instance to be used by the Drawer for subsequent drawing operations.
+// SetTriangles sets the ITriangles instance to be used by the Drawer for later drawing operations.
 func (d *Drawer) SetTriangles(triangles ITriangles) {
 	d.triangles = triangles
 }
@@ -67,7 +67,7 @@ func (d *Drawer) Picture() IPicture {
 	return d.picture
 }
 
-// SetPicture assigns the provided IPicture instance to the Drawer for use in subsequent drawing operations.
+// SetPicture assigns the provided IPicture instance to the Drawer for use in later drawing operations.
 func (d *Drawer) SetPicture(picture IPicture) {
 	d.picture = picture
 }
@@ -90,7 +90,8 @@ func (d *Drawer) Dirty() {
 }
 
 // Draw efficiently draws ITriangles with IPicture onto the provided ITarget.
-// If ITriangles is nil, nothing will be drawn. If IPicture is nil, ITriangles will be drawn without a IPicture.
+// If ITriangles is nil, nothing will be drawn.
+// If IPicture is nil, ITriangles will be drawn without an IPicture.
 func (d *Drawer) Draw(t ITarget) {
 	if d.triangles == nil {
 		return
