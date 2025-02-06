@@ -6,14 +6,16 @@ import (
 	"sync"
 )
 
+const (
+	callQueueCap = 16
+)
+
 var Thread *MainThread
 
 func init() {
 	runtime.LockOSThread()
 	Thread = NewMainThread()
 }
-
-const CallQueueCap = 16
 
 type MainThread struct {
 	callQueue chan func()
@@ -23,22 +25,22 @@ type MainThread struct {
 
 func NewMainThread() *MainThread {
 	return &MainThread{
-		callQueue: make(chan func(), CallQueueCap),
+		callQueue: make(chan func(), callQueueCap),
 		respChan:  make(chan interface{}),
 	}
 }
 
-func (m *MainThread) Run(run func()) {
+func (m *MainThread) Run(fn func()) {
 	done := make(chan bool)
 	go func() {
-		run()
+		fn()
 		done <- true
 	}()
 
 	for {
 		select {
-		case f := <-m.callQueue:
-			f()
+		case fnCq := <-m.callQueue:
+			fnCq()
 		case <-done:
 			return
 		}
