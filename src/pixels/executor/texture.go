@@ -7,12 +7,13 @@ import (
 )
 
 type Texture struct {
-	tex           Binder
-	width, height int
-	smooth        bool
+	tex    Binder
+	width  int
+	height int
+	smooth bool
 }
 
-func NewTexture(width, height int, smooth bool, pixels []uint8) *Texture {
+func NewTexture(width int, height int, smooth bool, pixels []uint8) *Texture {
 	tex := &Texture{
 		tex: Binder{
 			restoreLoc: gl.TEXTURE_BINDING_2D,
