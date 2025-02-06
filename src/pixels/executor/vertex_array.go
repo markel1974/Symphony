@@ -115,11 +115,11 @@ func (va *VertexArray) End() {
 	va.vao.Restore()
 }
 
-func (va *VertexArray) Draw(i, j int) {
+func (va *VertexArray) Draw(i int, j int) {
 	gl.DrawArrays(gl.TRIANGLES, int32(i), int32(j-i))
 }
 
-func (va *VertexArray) SetVertexData(i, j int, data []float32) {
+func (va *VertexArray) SetVertexData(i int, j int, data []float32) {
 	if j-i == 0 {
 		// avoid setting 0 bytes of buffer data
 		return
@@ -127,7 +127,7 @@ func (va *VertexArray) SetVertexData(i, j int, data []float32) {
 	gl.BufferSubData(gl.ARRAY_BUFFER, i*va.stride, len(data)*4, gl.Ptr(data))
 }
 
-func (va *VertexArray) VertexData(i, j int) []float32 {
+func (va *VertexArray) VertexData(i int, j int) []float32 {
 	if j-i == 0 {
 		// avoid getting 0 bytes of buffer data
 		return nil

@@ -92,10 +92,10 @@ func (c *GLCanvas) MakePicture(p IPicture) ITargetPicture {
 
 // SetMatrix sets a Matrix that every point will be projected by.
 func (c *GLCanvas) SetMatrix(m Matrix) {
-	// pixel.Matrix is 3x2 with an implicit 0, 0, 1 row after it. So
+	// Pixel.Matrix is 3x2 with an implicit 0, 0, 1 row after it.
 	// [0] [2] [4]    [0] [3] [6]
 	// [1] [3] [5] => [1] [4] [7]
-	//  0   0   1      0   0   1
+	//  0 0 1 - 0 0 1
 	// since all matrix ops are affine, the last row never changes, and we don't need to copy it
 	for i, j := range [...]int{0, 1, 3, 4, 6, 7} {
 		c.mat[j] = float32(m[i])
@@ -137,25 +137,23 @@ func (c *GLCanvas) Bounds() Rect {
 	return c.gf.Bounds()
 }
 
-// SetSmooth sets whether stretched Pictures drawn onto this GLCanvas should be drawn smooth or
-// pixely.
+// SetSmooth sets whether stretched Pictures drawn onto this GLCanvas should be drawn smooth or pixelY.
 func (c *GLCanvas) SetSmooth(smooth bool) {
 	c.smooth = smooth
 }
 
-// Smooth returns whether stretched Pictures drawn onto this GLCanvas are set to be drawn smooth or
-// pixely.
+// Smooth returns whether stretched Pictures drawn onto this GLCanvas are set to be drawn smooth or pixelY.
 func (c *GLCanvas) Smooth() bool {
 	return c.smooth
 }
 
-// must be manually called inside mainthread
-func (c *GLCanvas) setGlhfBounds() {
+// must be manually called inside main-thread
+func (c *GLCanvas) setGlBounds() {
 	_, _, bw, bh := intBounds(c.gf.Bounds())
 	executor.Bounds(0, 0, bw, bh)
 }
 
-// must be manually called inside mainthread
+// must be manually called inside main-thread
 func setBlendFunc(cmp ComposeMethod) {
 	switch cmp {
 	case ComposeOver:
@@ -200,7 +198,7 @@ func (c *GLCanvas) Clear(color color.Color) {
 	})
 
 	executor.GraphicThread.Post(func() {
-		c.setGlhfBounds()
+		c.setGlBounds()
 		c.gf.Frame().Begin()
 		executor.Clear(
 			float32(rgba.R),
@@ -242,7 +240,7 @@ func (c *GLCanvas) SetPixels(pixels []uint8) {
 	})
 }
 
-// Pixels returns an alpha-premultiplied RGBA sequence of the content of the GLCanvas.
+// Pixels return an alpha-premultiplied RGBA sequence of the content of the GLCanvas.
 func (c *GLCanvas) Pixels() []uint8 {
 	var pixels []uint8
 
@@ -285,7 +283,7 @@ func (ct *canvasTriangles) draw(tex *executor.Texture, bounds Rect) {
 	col := ct.dst.col
 
 	executor.GraphicThread.Post(func() {
-		ct.dst.setGlhfBounds()
+		ct.dst.setGlBounds()
 		setBlendFunc(cmp)
 
 		frame := ct.dst.gf.Frame()

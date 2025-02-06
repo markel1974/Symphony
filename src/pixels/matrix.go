@@ -52,7 +52,7 @@ func (m Matrix) ScaledXY(around Vec, scale Vec) Matrix {
 
 // Scaled scales everything around a given point by the scale factor.
 func (m Matrix) Scaled(around Vec, scale float64) Matrix {
-	return m.ScaledXY(around, MakeVec(scale, scale))
+	return m.ScaledXY(around, NewVec(scale, scale))
 }
 
 // Rotated rotates everything around a given point by the given angle in radians.

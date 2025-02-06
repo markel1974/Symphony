@@ -82,7 +82,7 @@ func (c Circle) Union(d Circle) Circle {
 	r := (dist + biggerC.Radius + smallerC.Radius) / 2
 
 	theta := .5 + (biggerC.Radius-smallerC.Radius)/(2*dist)
-	center := Lerp(smallerC.Center, biggerC.Center, theta)
+	center := LinearInterpolation(smallerC.Center, biggerC.Center, theta)
 
 	return Circle{
 		Center: center,
@@ -111,7 +111,7 @@ func (c Circle) Intersect(d Circle) Circle {
 	// Distance from c.Center to the weighted midpoint
 	distToMidpoint := c.Radius + 0.5*diff
 	// Weighted midpoint
-	center := Lerp(c.Center, d.Center, distToMidpoint/dist)
+	center := LinearInterpolation(c.Center, d.Center, distToMidpoint/dist)
 
 	// No need to calculate radius if the circles do not overlap
 	if c.Center.To(d.Center).Len() >= c.Radius+d.Radius {
@@ -143,7 +143,7 @@ func (c Circle) IntersectRect(r Rect) Vec {
 	// Checks if the c.Center is not in the diagonal quadrants of the rectangle
 	if (r.Min.X <= c.Center.X && c.Center.X <= r.Max.X) || (r.Min.Y <= c.Center.Y && c.Center.Y <= r.Max.Y) {
 		// 'grow' the Rect by c.Radius in each orthogonal
-		grown := Rect{Min: r.Min.Sub(MakeVec(c.Radius, c.Radius)), Max: r.Max.Add(MakeVec(c.Radius, c.Radius))}
+		grown := Rect{Min: r.Min.Sub(NewVec(c.Radius, c.Radius)), Max: r.Max.Add(NewVec(c.Radius, c.Radius))}
 		if !grown.Contains(c.Center) {
 			// c.Center doesn't close enough to overlap, return zero-vector
 			return ZV
@@ -168,15 +168,15 @@ func (c Circle) IntersectRect(r Rect) Vec {
 
 		if math.Abs(h) > math.Abs(v) {
 			// Vertical distance shorter
-			return MakeVec(0, v)
+			return NewVec(0, v)
 		}
-		return MakeVec(h, 0)
+		return NewVec(h, 0)
 	} else {
 		// The center is in the diagonal quadrants
 
 		// Helper points to make code below easy to read.
-		rectTopLeft := MakeVec(r.Min.X, r.Max.Y)
-		rectBottomRight := MakeVec(r.Max.X, r.Min.Y)
+		rectTopLeft := NewVec(r.Min.X, r.Max.Y)
+		rectBottomRight := NewVec(r.Max.X, r.Min.Y)
 
 		// Check for overlap.
 		if !(c.Contains(r.Min) || c.Contains(r.Max) || c.Contains(rectTopLeft) || c.Contains(rectBottomRight)) {

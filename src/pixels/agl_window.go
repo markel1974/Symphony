@@ -176,7 +176,7 @@ func (w *GLWindow) Update() {
 		width := newW - oldW
 		height := newH - oldH
 		if width > 0 || height > 0 {
-			bounds = bounds.ResizedMin(bounds.Size().Add(MakeVec(float64(width), float64(height))))
+			bounds = bounds.ResizedMin(bounds.Size().Add(NewVec(float64(width), float64(height))))
 			newBounds = true
 		}
 
@@ -250,8 +250,7 @@ func (w *GLWindow) SetBounds(bounds Rect) {
 // SetPos sets the position, in screen coordinates, of the upper-left corner
 // of the client area of the window. Position can be fractional, but the actual position
 // of the window will be rounded to integers.
-//
-// If it is a full screen window, this function does nothing.
+// If it is a full-screen window, this function does nothing.
 func (w *GLWindow) SetPos(pos Vec) {
 	executor.GraphicThread.Call(func() {
 		left, top := int(pos.X), int(pos.Y)
@@ -265,7 +264,7 @@ func (w *GLWindow) GetPos() Vec {
 	var v Vec
 	executor.GraphicThread.Call(func() {
 		x, y := w.window.GetPos()
-		v = MakeVec(float64(x), float64(y))
+		v = NewVec(float64(x), float64(y))
 	})
 	return v
 }
@@ -453,7 +452,8 @@ func (w *GLWindow) Canvas() *GLCanvas {
 	return w.canvas
 }
 
-// Show makes the window visible, if it was previously hidden. If the window is already visible or is in full screen mode, this function does nothing.
+// Show makes the window visible if it was previously hidden.
+// If the window is already visible or is in full-screen mode, this function does nothing.
 func (w *GLWindow) Show() {
 	executor.GraphicThread.Call(func() {
 		w.window.Show()
@@ -601,7 +601,7 @@ func (w *GLWindow) initInput() {
 		})
 
 		w.window.SetCursorPosCallback(func(_ *glfw.Window, x, y float64) {
-			w.tempInp.mouse = MakeVec(
+			w.tempInp.mouse = NewVec(
 				x+w.bounds.Min.X,
 				(w.bounds.H()-y)+w.bounds.Min.Y,
 			)
@@ -618,8 +618,10 @@ func (w *GLWindow) initInput() {
 	})
 }
 
-// UpdateInput polls window events. Call this function to poll window events without swapping buffers. Note that the Update method invokes UpdateInput.
-//func (w *GLWindow) UpdateInput() {
+// UpdateInput poll window events.
+// Call this function to poll window events without swapping buffers.
+// Note that the Update method invoke UpdateInput.
+//Func (w *GLWindow) UpdateInput() {
 //	executor.GraphicThread.Call(func() { glfw.PollEvents() })
 //	w.doUpdateInput()
 //}

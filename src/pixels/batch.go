@@ -6,8 +6,7 @@ import (
 )
 
 // Batch is a ITarget that allows for efficient drawing of many objects with the same IPicture.
-//
-// To put an object into a Batch, just draw it onto it:
+// To put an object into a Batch, draw it onto it:
 //
 //	object.Draw(batch)
 type Batch struct {
@@ -20,12 +19,11 @@ type Batch struct {
 var _ IBasicTarget = (*Batch)(nil)
 
 // NewBatch creates an empty Batch with the specified IPicture and container.
-//
-// The container is where objects get accumulated. Batch will support precisely those ITriangles
-// properties, that the supplied container supports. If you retain access to the container and
+// The container is where objects get accumulated.
+// It will support precisely those ITriangles properties that the supplied container supports.
+// If you retain access to the container and
 // change it, call Dirty to notify Batch about the change.
-//
-// Note, that if the container does not support ITrianglesColor, color masking will not work.
+// Note: that if the container does not support ITrianglesColor, color masking will not work.
 func NewBatch(container ITriangles, pic IPicture) *Batch {
 	b := &Batch{cont: NewDrawer(container, pic, CacheModePicture)}
 	b.SetMatrix(IM)
@@ -33,10 +31,10 @@ func NewBatch(container ITriangles, pic IPicture) *Batch {
 	return b
 }
 
-// Dirty notifies Batch about an external modification of it's container. If you retain access to
-// the Batch's container and change it, call Dirty to notify Batch about the change.
+// Dirty notifies Batch about an external modification of its container.
+// If you retain access to the Batch's container and change it, call Dirty to notify Batch about the change.
 //
-//	container := &pixel.TrianglesData{}
+//	Container := &pixel.TrianglesData{}
 //	batch := pixel.NewBatch(container, nil)
 //	container.SetLen(10) // container changed from outside of Batch
 //	batch.Dirty()        // notify Batch about the change
@@ -126,7 +124,7 @@ func (bt *batchTriangles) Copy() ITriangles {
 	}
 }
 
-func (bt *batchTriangles) draw(bp *batchPicture) {
+func (bt *batchTriangles) draw(_ *batchPicture) {
 	bt.tmp.Update(bt.tri)
 
 	for i := range *bt.tmp {
@@ -163,6 +161,6 @@ func (bp *batchPicture) Draw(t ITargetTriangles) {
 	bt.draw(bp)
 }
 
-func (bp *batchPicture) Update(p IPicture) {
+func (bp *batchPicture) Update(_ IPicture) {
 
 }

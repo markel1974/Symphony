@@ -21,7 +21,7 @@ var ZR = Rect{Min: ZV, Max: ZV}
 // R returns a new Rect with given the Min and Max coordinates.
 //
 // Note that the returned rectangle is not automatically normalized.
-func R(minX, minY, maxX, maxY float64) Rect {
+func R(minX float64, minY float64, maxX float64, maxY float64) Rect {
 	return Rect{
 		Min: Vec{minX, minY},
 		Max: Vec{maxX, maxY},
@@ -59,7 +59,7 @@ func (r Rect) H() float64 {
 
 // Size returns the vector of width and height of the Rect.
 func (r Rect) Size() Vec {
-	return MakeVec(r.W(), r.H())
+	return NewVec(r.W(), r.H())
 }
 
 // Area returns the area of r. If r is not normalized, area may be negative.
@@ -130,7 +130,7 @@ func (anchor Anchor) Opposite() Anchor {
 
 // AnchorPos returns the relative position of the given anchor.
 func (r Rect) AnchorPos(anchor Anchor) Vec {
-	return r.Size().ScaledXY(MakeVec(0, 0).Sub(Vec(anchor)))
+	return r.Size().ScaledXY(NewVec(0, 0).Sub(Vec(anchor)))
 }
 
 // AlignedTo returns the rect moved by the given anchor.
@@ -141,7 +141,7 @@ func (r Rect) AlignedTo(anchor Anchor) Rect {
 // Center returns the position of the center of the Rect.
 // `rect.Center()` is equivalent to `rect.Anchor(pixel.Anchor.Center)`
 func (r Rect) Center() Vec {
-	return Lerp(r.Min, r.Max, 0.5)
+	return LinearInterpolation(r.Min, r.Max, 0.5)
 }
 
 // Moved returns the Rect moved (both Min and Max) by the given vector delta.
@@ -271,8 +271,8 @@ func (r Rect) IntersectionPoints(l Line) []Vec {
 func (r Rect) Vertices() [4]Vec {
 	return [4]Vec{
 		r.Min,
-		MakeVec(r.Min.X, r.Max.Y),
+		NewVec(r.Min.X, r.Max.Y),
 		r.Max,
-		MakeVec(r.Max.X, r.Min.Y),
+		NewVec(r.Max.X, r.Min.Y),
 	}
 }

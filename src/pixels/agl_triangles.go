@@ -61,7 +61,7 @@ func (gt *GLTriangles) VertexSlice() *executor.VertexSlice {
 	return gt.vs
 }
 
-// Shader returns the GLTriangles's associated shader.
+// Shader returns the GLTriangles associated shader.
 func (gt *GLTriangles) Shader() *GLShader {
 	return gt.shader
 }
@@ -189,7 +189,7 @@ func (gt *GLTriangles) Update(t ITriangles) {
 	}
 	gt.updateData(t)
 
-	// Copy the verteces down to the glhf.VertexData
+	// Copy the vertexes down to the glVertexData
 	gt.CopyVertices()
 }
 
@@ -197,7 +197,7 @@ func (gt *GLTriangles) Update(t ITriangles) {
 func (gt *GLTriangles) CopyVertices() {
 	// this code is supposed to copy the vertex data and CallNonBlock the update if
 	// the data is small enough, otherwise it'll block and not copy the data
-	if len(gt.data) < 256 { // arbitrary heurestic constant
+	if len(gt.data) < 256 { // arbitrary heuristic constant
 		data := append([]float32{}, gt.data...)
 		executor.GraphicThread.Post(func() {
 			gt.vs.Begin()
@@ -225,7 +225,7 @@ func (gt *GLTriangles) index(i, idx int) int {
 func (gt *GLTriangles) Position(i int) Vec {
 	px := gt.data[gt.index(i, triPosX)]
 	py := gt.data[gt.index(i, triPosY)]
-	return MakeVec(float64(px), float64(py))
+	return NewVec(float64(px), float64(py))
 }
 
 // SetPosition sets the position property of the i-th vertex.
@@ -256,12 +256,12 @@ func (gt *GLTriangles) SetColor(i int, c RGBA) {
 	gt.data[gt.index(i, triColorA)] = float32(c.A)
 }
 
-// IPicture returns the IPicture property of the i-th vertex.
+// Picture returns the IPicture property of the i-th vertex.
 func (gt *GLTriangles) Picture(i int) (pic Vec, intensity float64) {
 	tx := gt.data[gt.index(i, triPicX)]
 	ty := gt.data[gt.index(i, triPicY)]
 	intensity = float64(gt.data[gt.index(i, triIntensity)])
-	return MakeVec(float64(tx), float64(ty)), intensity
+	return NewVec(float64(tx), float64(ty)), intensity
 }
 
 // SetPicture sets the picture property of the i-th vertex.

@@ -116,7 +116,7 @@ func (td *TrianglesData) Color(i int) RGBA {
 	return (*td)[i].Color
 }
 
-// IPicture returns the picture property of i-th vertex.
+// Picture returns the picture property of i-th vertex.
 func (td *TrianglesData) Picture(i int) (pic Vec, intensity float64) {
 	return (*td)[i].Picture, (*td)[i].Intensity
 }

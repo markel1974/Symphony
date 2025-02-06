@@ -36,7 +36,7 @@ func RangeTable(table *unicode.RangeTable) []rune {
 	return runes
 }
 
-// Text allows for effiecient and convenient text drawing.
+// Text allows for efficient and convenient text drawing.
 //
 // To create a Text object, use the New constructor:
 //
@@ -145,8 +145,8 @@ func NewText(orig Vec, atlas *Atlas) *Text {
 	return txt
 }
 
-// Atlas returns the underlying Text's Atlas containing all of the pre-drawn glyphs. The Atlas is
-// also useful for getting values such as the recommended line height.
+// Atlas returns the underlying Text's Atlas containing all the pre-drawn glyphs.
+// The Atlas is also useful for getting values such as the recommended line height.
 func (txt *Text) Atlas() *Atlas {
 	return txt.atlas
 }
@@ -217,7 +217,7 @@ func (txt *Text) WriteString(s string) (n int, err error) {
 
 // WriteByte writes a byte to the Text. This method never fails, always returns nil.
 //
-// Writing a multi-byte rune byte-by-byte is perfectly supported.
+// Writing a multibyte rune byte-by-byte is perfectly supported.
 func (txt *Text) WriteByte(c byte) error {
 	txt.buf = append(txt.buf, c)
 	txt.drawBuf()

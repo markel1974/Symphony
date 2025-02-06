@@ -29,7 +29,7 @@ type point struct {
 	pic       Vec
 	in        float64
 	precision int
-	endshape  EndShape
+	endShape  EndShape
 }
 
 type EndShape int
@@ -70,8 +70,7 @@ func (imd *IMDraw) Reset() {
 }
 
 // Draw draws all currently drawn shapes inside the IM onto another ITarget.
-//
-// Note, that IMDraw's matrix and color mask have no effect here.
+// Note: that IMDraw's matrix and color mask have no effect here.
 func (imd *IMDraw) Draw(t ITarget) {
 	imd.batch.Draw(t)
 }
@@ -89,7 +88,7 @@ func (imd *IMDraw) Push(pts ...Vec) {
 		pic:       imd.Picture,
 		in:        imd.Intensity,
 		precision: imd.Precision,
-		endshape:  imd.EndShape,
+		endShape:  imd.EndShape,
 	}
 	for _, pt := range pts {
 		imd.pushPt(pt, opts)
@@ -128,10 +127,9 @@ func (imd *IMDraw) Line(thickness float64) {
 	imd.polyline(thickness, false)
 }
 
-// Rectangle draws a rectangle between each two subsequent Pushed points. Drawing a rectangle
-// between two points means drawing a rectangle with sides parallel to the axes of the coordinate
-// system, where the two points specify it's two opposite corners.
-//
+// Rectangle draws a rectangle between each two later Pushed points.
+// Drawing a rectangle between two points means drawing a rectangle with sides parallel to the axes of the coordinate
+// system, where the two points specify its two opposite corners.
 // If the thickness is 0, rectangles will be filled, otherwise will be outlined with the given
 // thickness.
 func (imd *IMDraw) Rectangle(thickness float64) {
@@ -146,7 +144,7 @@ func (imd *IMDraw) Rectangle(thickness float64) {
 // filled. Otherwise, an outline of the specified thickness will be drawn. The outline does not have
 // to be convex.
 //
-// Note, that the filled polygon does not have to be strictly convex. The way it's drawn is that a
+// Note: that the filled polygon does not have to be strictly convex. The way it's drawn is that a
 // triangle is drawn between each two adjacent points and the first Pushed point. You can use this
 // property to draw certain kinds of concave polygons.
 func (imd *IMDraw) Polygon(thickness float64) {
@@ -161,30 +159,32 @@ func (imd *IMDraw) Polygon(thickness float64) {
 // the circle will be filled, otherwise a circle outline of the specified thickness will be drawn.
 func (imd *IMDraw) Circle(radius, thickness float64) {
 	if thickness == 0 {
-		imd.fillEllipseArc(MakeVec(radius, radius), 0, 2*math.Pi)
+		imd.fillEllipseArc(NewVec(radius, radius), 0, 2*math.Pi)
 	} else {
-		imd.outlineEllipseArc(MakeVec(radius, radius), 0, 2*math.Pi, thickness, false)
+		imd.outlineEllipseArc(NewVec(radius, radius), 0, 2*math.Pi, thickness, false)
 	}
 }
 
-// CircleArc draws a circle arc of the specified radius around each Pushed point. If the thickness
-// is 0, the arc will be filled, otherwise will be outlined. The arc starts at the low angle and
-// continues to the high angle. If low<high, the arc will be drawn counterclockwise. Otherwise it
-// will be clockwise. The angles are not normalized by any means.
+// CircleArc draws a circle arc of the specified radius around each Pushed point.
+// If the thickness is 0, the arc will be filled, otherwise will be outlined.
+// The arc starts at the low angle and continues to the high angle.
+// If low<high, the arc will be drawn counterclockwise.
+// Otherwise, it will be clockwise.
+// The angles are not normalized by any means.
 //
-//	imd.CircleArc(40, 0, 8*math.Pi, 0)
+//	Imd.CircleArc(40, 0, 8*math.Pi, 0)
 //
 // This line will fill the whole circle 4 times.
 func (imd *IMDraw) CircleArc(radius, low, high, thickness float64) {
 	if thickness == 0 {
-		imd.fillEllipseArc(MakeVec(radius, radius), low, high)
+		imd.fillEllipseArc(NewVec(radius, radius), low, high)
 	} else {
-		imd.outlineEllipseArc(MakeVec(radius, radius), low, high, thickness, true)
+		imd.outlineEllipseArc(NewVec(radius, radius), low, high, thickness, true)
 	}
 }
 
-// Ellipse draws an ellipse of the specified radius in each axis around each Pushed points. If the
-// thickness is 0, the ellipse will be filled, otherwise an ellipse outline of the specified
+// Ellipse draws an ellipse of the specified radius in each axis around each Pushed point.
+// If the thickness is 0, the ellipse will be filled, otherwise an ellipse outline of the specified
 // thickness will be drawn.
 func (imd *IMDraw) Ellipse(radius Vec, thickness float64) {
 	if thickness == 0 {
@@ -194,12 +194,14 @@ func (imd *IMDraw) Ellipse(radius Vec, thickness float64) {
 	}
 }
 
-// EllipseArc draws an ellipse arc of the specified radius in each axis around each Pushed point. If
-// the thickness is 0, the arc will be filled, otherwise will be outlined. The arc starts at the low
-// angle and continues to the high angle. If low<high, the arc will be drawn counterclockwise.
-// Otherwise it will be clockwise. The angles are not normalized by any means.
+// EllipseArc draws an ellipse arc of the specified radius in each axis around each Pushed point.
+// If the thickness is 0, the arc will be filled, otherwise will be outlined.
+// The arc starts at the low angle and continues to the high angle.
+// If low<high, the arc will be drawn counterclockwise.
+// Otherwise, it will be clockwise.
+// The angles are not normalized by any means.
 //
-//	imd.EllipseArc(pixel.V(100, 50), 0, 8*math.Pi, 0)
+//	Imd.EllipseArc(pixel.V(100, 50), 0, 8*math.Pi, 0)
 //
 // This line will fill the whole ellipse 4 times.
 func (imd *IMDraw) EllipseArc(radius Vec, low, high, thickness float64) {
@@ -249,15 +251,15 @@ func (imd *IMDraw) fillRectangle() {
 	for i, j := 0, off; i+1 < len(points); i, j = i+1, j+6 {
 		a, b := points[i], points[i+1]
 		c := point{
-			pos: MakeVec(a.pos.X, b.pos.Y),
+			pos: NewVec(a.pos.X, b.pos.Y),
 			col: a.col.Add(b.col).Mul(Alpha(0.5)),
-			pic: MakeVec(a.pic.X, b.pic.Y),
+			pic: NewVec(a.pic.X, b.pic.Y),
 			in:  (a.in + b.in) / 2,
 		}
 		d := point{
-			pos: MakeVec(b.pos.X, a.pos.Y),
+			pos: NewVec(b.pos.X, a.pos.Y),
 			col: a.col.Add(b.col).Mul(Alpha(0.5)),
-			pic: MakeVec(b.pic.X, a.pic.Y),
+			pic: NewVec(b.pic.X, a.pic.Y),
 			in:  (a.in + b.in) / 2,
 		}
 
@@ -290,9 +292,9 @@ func (imd *IMDraw) outlineRectangle(thickness float64) {
 		mid.in = (a.in + b.in) / 2
 
 		imd.pushPt(a.pos, a)
-		imd.pushPt(MakeVec(a.pos.X, b.pos.Y), mid)
+		imd.pushPt(NewVec(a.pos.X, b.pos.Y), mid)
 		imd.pushPt(b.pos, b)
-		imd.pushPt(MakeVec(b.pos.X, a.pos.Y), mid)
+		imd.pushPt(NewVec(b.pos.X, a.pos.Y), mid)
 		imd.polyline(thickness, true)
 	}
 
@@ -345,14 +347,14 @@ func (imd *IMDraw) fillEllipseArc(radius Vec, low, high float64) {
 		for i, j := 0.0, off; i < num; i, j = i+1, j+3 {
 			angle := low + i*delta
 			sin, cos := math.Sincos(angle)
-			a := pt.pos.Add(MakeVec(
+			a := pt.pos.Add(NewVec(
 				radius.X*cos,
 				radius.Y*sin,
 			))
 
 			angle = low + (i+1)*delta
 			sin, cos = math.Sincos(angle)
-			b := pt.pos.Add(MakeVec(
+			b := pt.pos.Add(NewVec(
 				radius.X*cos,
 				radius.Y*sin,
 			))
@@ -388,24 +390,24 @@ func (imd *IMDraw) outlineEllipseArc(radius Vec, low, high, thickness float64, d
 		for i, j := 0.0, off; i < num; i, j = i+1, j+6 {
 			angle := low + i*delta
 			sin, cos := math.Sincos(angle)
-			normalSin, normalCos := MakeVec(sin, cos).ScaledXY(radius).Unit().XY()
-			a := pt.pos.Add(MakeVec(
+			normalSin, normalCos := NewVec(sin, cos).ScaledXY(radius).Unit().XY()
+			a := pt.pos.Add(NewVec(
 				radius.X*cos-thickness/2*normalCos,
 				radius.Y*sin-thickness/2*normalSin,
 			))
-			b := pt.pos.Add(MakeVec(
+			b := pt.pos.Add(NewVec(
 				radius.X*cos+thickness/2*normalCos,
 				radius.Y*sin+thickness/2*normalSin,
 			))
 
 			angle = low + (i+1)*delta
 			sin, cos = math.Sincos(angle)
-			normalSin, normalCos = MakeVec(sin, cos).ScaledXY(radius).Unit().XY()
-			c := pt.pos.Add(MakeVec(
+			normalSin, normalCos = NewVec(sin, cos).ScaledXY(radius).Unit().XY()
+			c := pt.pos.Add(NewVec(
 				radius.X*cos-thickness/2*normalCos,
 				radius.Y*sin-thickness/2*normalSin,
 			))
-			d := pt.pos.Add(MakeVec(
+			d := pt.pos.Add(NewVec(
 				radius.X*cos+thickness/2*normalCos,
 				radius.Y*sin+thickness/2*normalSin,
 			))
@@ -423,45 +425,45 @@ func (imd *IMDraw) outlineEllipseArc(radius Vec, low, high, thickness float64, d
 
 		if doEndShape {
 			lowSin, lowCos := math.Sincos(low)
-			lowCenter := pt.pos.Add(MakeVec(
+			lowCenter := pt.pos.Add(NewVec(
 				radius.X*lowCos,
 				radius.Y*lowSin,
 			))
-			normalLowSin, normalLowCos := MakeVec(lowSin, lowCos).ScaledXY(radius).Unit().XY()
-			normalLow := MakeVec(normalLowCos, normalLowSin).Angle()
+			normalLowSin, normalLowCos := NewVec(lowSin, lowCos).ScaledXY(radius).Unit().XY()
+			normalLow := NewVec(normalLowCos, normalLowSin).Angle()
 
 			highSin, highCos := math.Sincos(high)
-			highCenter := pt.pos.Add(MakeVec(
+			highCenter := pt.pos.Add(NewVec(
 				radius.X*highCos,
 				radius.Y*highSin,
 			))
-			normalHighSin, normalHighCos := MakeVec(highSin, highCos).ScaledXY(radius).Unit().XY()
-			normalHigh := MakeVec(normalHighCos, normalHighSin).Angle()
+			normalHighSin, normalHighCos := NewVec(highSin, highCos).ScaledXY(radius).Unit().XY()
+			normalHigh := NewVec(normalHighCos, normalHighSin).Angle()
 
 			orientation := 1.0
 			if low > high {
 				orientation = -1.0
 			}
 
-			switch pt.endshape {
+			switch pt.endShape {
 			case NoEndShape:
 				// nothing
 			case SharpEndShape:
-				thick := MakeVec(thickness/2, 0).Rotated(normalLow)
+				thick := NewVec(thickness/2, 0).Rotated(normalLow)
 				imd.pushPt(lowCenter.Add(thick), pt)
 				imd.pushPt(lowCenter.Sub(thick), pt)
 				imd.pushPt(lowCenter.Sub(thick.Normal().Scaled(orientation)), pt)
 				imd.fillPolygon()
-				thick = MakeVec(thickness/2, 0).Rotated(normalHigh)
+				thick = NewVec(thickness/2, 0).Rotated(normalHigh)
 				imd.pushPt(highCenter.Add(thick), pt)
 				imd.pushPt(highCenter.Sub(thick), pt)
 				imd.pushPt(highCenter.Add(thick.Normal().Scaled(orientation)), pt)
 				imd.fillPolygon()
 			case RoundEndShape:
 				imd.pushPt(lowCenter, pt)
-				imd.fillEllipseArc(MakeVec(thickness/2, thickness/2), normalLow, normalLow-math.Pi*orientation)
+				imd.fillEllipseArc(NewVec(thickness/2, thickness/2), normalLow, normalLow-math.Pi*orientation)
 				imd.pushPt(highCenter, pt)
-				imd.fillEllipseArc(MakeVec(thickness/2, thickness/2), normalHigh, normalHigh+math.Pi*orientation)
+				imd.fillEllipseArc(NewVec(thickness/2, thickness/2), normalHigh, normalHigh+math.Pi*orientation)
 			}
 		}
 	}
@@ -486,7 +488,7 @@ func (imd *IMDraw) polyline(thickness float64, closed bool) {
 	ijNormal := points[0].pos.To(points[1].pos).Normal().Unit().Scaled(thickness / 2)
 
 	if !closed {
-		switch points[j].endshape {
+		switch points[j].endShape {
 		case NoEndShape:
 			// nothing
 		case SharpEndShape:
@@ -496,7 +498,7 @@ func (imd *IMDraw) polyline(thickness float64, closed bool) {
 			imd.fillPolygon()
 		case RoundEndShape:
 			imd.pushPt(points[j].pos, points[j])
-			imd.fillEllipseArc(MakeVec(thickness/2, thickness/2), ijNormal.Angle(), ijNormal.Angle()+math.Pi)
+			imd.fillEllipseArc(NewVec(thickness/2, thickness/2), ijNormal.Angle(), ijNormal.Angle()+math.Pi)
 		}
 	}
 
@@ -530,7 +532,7 @@ func (imd *IMDraw) polyline(thickness float64, closed bool) {
 		imd.pushPt(points[j].pos.Add(ijNormal), points[j])
 		imd.fillPolygon()
 
-		switch points[j].endshape {
+		switch points[j].endShape {
 		case NoEndShape:
 			// nothing
 		case SharpEndShape:
@@ -540,9 +542,9 @@ func (imd *IMDraw) polyline(thickness float64, closed bool) {
 			imd.fillPolygon()
 		case RoundEndShape:
 			imd.pushPt(points[j].pos, points[j])
-			imd.fillEllipseArc(MakeVec(thickness/2, thickness/2), ijNormal.Angle(), ijNormal.Angle()-math.Pi)
+			imd.fillEllipseArc(NewVec(thickness/2, thickness/2), ijNormal.Angle(), ijNormal.Angle()-math.Pi)
 			imd.pushPt(points[j].pos, points[j])
-			imd.fillEllipseArc(MakeVec(thickness/2, thickness/2), jkNormal.Angle(), jkNormal.Angle()+math.Pi)
+			imd.fillEllipseArc(NewVec(thickness/2, thickness/2), jkNormal.Angle(), jkNormal.Angle()+math.Pi)
 		}
 
 		if !closing {
@@ -562,7 +564,7 @@ func (imd *IMDraw) polyline(thickness float64, closed bool) {
 	imd.fillPolygon()
 
 	if !closed {
-		switch points[j].endshape {
+		switch points[j].endShape {
 		case NoEndShape:
 			// nothing
 		case SharpEndShape:
@@ -572,7 +574,7 @@ func (imd *IMDraw) polyline(thickness float64, closed bool) {
 			imd.fillPolygon()
 		case RoundEndShape:
 			imd.pushPt(points[j].pos, points[j])
-			imd.fillEllipseArc(MakeVec(thickness/2, thickness/2), ijNormal.Angle(), ijNormal.Angle()-math.Pi)
+			imd.fillEllipseArc(NewVec(thickness/2, thickness/2), ijNormal.Angle(), ijNormal.Angle()-math.Pi)
 		}
 	}
 

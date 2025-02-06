@@ -10,7 +10,7 @@ import (
 	"golang.org/x/image/math/fixed"
 )
 
-// Atlas7x13 is an Atlas using basicfont.Face7x13 with the ASCII rune set
+// Atlas7x13 is an Atlas using basic-font Face 7x13 with the ASCII rune set
 var Atlas7x13 *Atlas
 
 // Glyph describes one glyph in an Atlas.
@@ -30,11 +30,9 @@ type Atlas struct {
 	lineHeight float64
 }
 
-// NewAtlas creates a new Atlas containing glyphs of the union of the given sets of runes (plus
-// unicode.ReplacementChar) from the given font face.
-//
-// Creating an Atlas is rather expensive, do not create a new Atlas each frame.
-//
+// NewAtlas creates a new Atlas containing glyphs of the union of the given sets of runes
+// (plus unicode.ReplacementChar) from the given font face.
+// Creating an Atlas is rather expensive, does not create a new Atlas each frame.
 // Do not destroy or close the font.Face after creating the Atlas. Atlas still uses it.
 func NewAtlas(face font.Face, runeSets ...[]rune) *Atlas {
 	seen := make(map[rune]bool)
@@ -58,8 +56,8 @@ func NewAtlas(face font.Face, runeSets ...[]rune) *Atlas {
 	))
 
 	for r, fg := range fixedMapping {
-		if dr, mask, maskp, _, ok := face.Glyph(fg.dot, r); ok {
-			draw.Draw(atlasImg, dr, mask, maskp, draw.Src)
+		if dr, mask, maskP, _, ok := face.Glyph(fg.dot, r); ok {
+			draw.Draw(atlasImg, dr, mask, maskP, draw.Src)
 		}
 	}
 
@@ -73,7 +71,7 @@ func NewAtlas(face font.Face, runeSets ...[]rune) *Atlas {
 	mapping := make(map[rune]Glyph)
 	for r, fg := range fixedMapping {
 		mapping[r] = Glyph{
-			Dot: MakeVec(
+			Dot: NewVec(
 				i2f(fg.dot.X),
 				bounds.Max.Y-(i2f(fg.dot.Y)-bounds.Min.Y),
 			),
@@ -97,13 +95,13 @@ func NewAtlas(face font.Face, runeSets ...[]rune) *Atlas {
 	}
 }
 
-// IPicture returns the underlying IPicture containing an arrangement of all the glyphs contained
+// Picture returns the underlying IPicture containing an arrangement of all the glyphs contained
 // within the Atlas.
 func (a *Atlas) Picture() IPicture {
 	return a.pic
 }
 
-// Contains reports wheter r in contained within the Atlas.
+// Contains reports whether r in contained within the Atlas.
 func (a *Atlas) Contains(r rune) bool {
 	_, ok := a.mapping[r]
 	return ok
@@ -190,9 +188,9 @@ func makeSquareMapping(face font.Face, runes []rune, padding fixed.Int26_6) (map
 	return makeMapping(face, runes, padding, fixed.Int26_6(width))
 }
 
-// makeMapping arranges glyphs of the given runes into rows in such a way, that no glyph is located
-// fully to the right of the specified width. Specifically, it places glyphs in a row one by one and
-// once it reaches the specified width, it starts a new row.
+// makeMapping arranges glyphs of the given runes into rows in such a way that no glyph is located
+// fully to the right of the specified width.
+// Specifically, it places glyphs in a row one by one, and once it reaches the specified width, it starts a new row.
 func makeMapping(face font.Face, runes []rune, padding, width fixed.Int26_6) (map[rune]fixedGlyph, fixed.Rectangle26_6) {
 	mapping := make(map[rune]fixedGlyph)
 	bounds := fixed.Rectangle26_6{}

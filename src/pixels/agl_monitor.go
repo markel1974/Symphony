@@ -100,17 +100,18 @@ func (m *GLMonitor) RefreshRate() (rate float64) {
 }
 
 // VideoModes returns all available video modes for the monitor.
-func (m *GLMonitor) VideoModes() (vmodes []VideoMode) {
+func (m *GLMonitor) VideoModes() []VideoMode {
+	var vModes []VideoMode
 	var modes []*glfw.VidMode
 	executor.GraphicThread.Call(func() {
 		modes = m.monitor.GetVideoModes()
 	})
 	for _, mode := range modes {
-		vmodes = append(vmodes, VideoMode{
+		vModes = append(vModes, VideoMode{
 			Width:       mode.Width,
 			Height:      mode.Height,
 			RefreshRate: mode.RefreshRate,
 		})
 	}
-	return
+	return vModes
 }

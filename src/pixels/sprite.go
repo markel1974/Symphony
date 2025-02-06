@@ -70,8 +70,8 @@ func (s *Sprite) DrawColorMask(t ITarget, matrix Matrix, mask color.Color) {
 
 func (s *Sprite) calcData() {
 	center := s.frame.Center()
-	horizontal := MakeVec(s.frame.W()/2, 0)
-	vertical := MakeVec(0, s.frame.H()/2)
+	horizontal := NewVec(s.frame.W()/2, 0)
+	vertical := NewVec(0, s.frame.H()/2)
 
 	(*s.tri)[0].Position = Vec{}.Sub(horizontal).Sub(vertical)
 	(*s.tri)[1].Position = Vec{}.Add(horizontal).Sub(vertical)

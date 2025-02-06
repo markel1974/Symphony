@@ -86,7 +86,7 @@ func extractPixelsFromPictureColor(pc IPictureColor) (int, int, int, int, []uint
 	pixels := make([]uint8, 4*bw*bh)
 	for y := 0; y < bh; y++ {
 		for x := 0; x < bw; x++ {
-			at := MakeVec(
+			at := NewVec(
 				math.Max(float64(bx+x), bounds.Min.X),
 				math.Max(float64(by+y), bounds.Min.Y),
 			)

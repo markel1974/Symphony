@@ -54,7 +54,7 @@ func (c RGBA) Mul(d RGBA) RGBA {
 	}
 }
 
-// Scaled multiplies each component of color c by scale and returns the result (the components
+// Scaled multiply each component of color c by scale and returns the result (the components
 // are not clamped).
 func (c RGBA) Scaled(scale float64) RGBA {
 	return RGBA{
@@ -74,7 +74,8 @@ func (c RGBA) RGBA() (r, g, b, a uint32) {
 	return
 }
 
-// ToRGBA converts a color to RGBA format. Using this function is preferred to using RGBAModel, for
+// ToRGBA converts a color to RGBA format.
+// Using this function is preferred to using RGBAModel for
 // performance (using RGBAModel introduces additional unnecessary allocations).
 func ToRGBA(c color.Color) RGBA {
 	if c, ok := c.(RGBA); ok {
