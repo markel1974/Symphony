@@ -19,7 +19,7 @@ func NewGLPicture(p IPicture) IGLPicture {
 
 	var texture *executor.Texture
 
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		texture = executor.NewTexture(bw, bh, true, pixels)
 	})
 
@@ -73,7 +73,7 @@ func (gp *glPicture) Update(p IPicture) {
 		bx, by, bw, bh, pixels = extractPixelsFromPicture(p)
 	}
 
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		gp.texture.Begin()
 		gp.texture.SetPixels(bx, by, bw, bh, pixels)
 		gp.texture.End()

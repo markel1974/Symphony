@@ -43,7 +43,7 @@ const (
 // Only draw the ITriangles using the provided Shader.
 func NewGLTriangles(shader *GLShader, t ITriangles) *GLTriangles {
 	var gt *GLTriangles
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		gt = &GLTriangles{
 			vs:     executor.MakeVertexSlice(shader.s, 0, t.Len()),
 			shader: shader,
@@ -92,7 +92,7 @@ func (gt *GLTriangles) SetLen(length int) {
 	default:
 		return
 	}
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		gt.vs.Begin()
 		gt.vs.SetLen(length)
 		gt.vs.End()
@@ -199,13 +199,13 @@ func (gt *GLTriangles) CopyVertices() {
 	// the data is small enough, otherwise it'll block and not copy the data
 	if len(gt.data) < 256 { // arbitrary heurestic constant
 		data := append([]float32{}, gt.data...)
-		executor.Thread.Post(func() {
+		executor.GraphicThread.Post(func() {
 			gt.vs.Begin()
 			gt.vs.SetVertexData(data)
 			gt.vs.End()
 		})
 	} else {
-		executor.Thread.Call(func() {
+		executor.GraphicThread.Call(func() {
 			gt.vs.Begin()
 			gt.vs.SetVertexData(gt.data)
 			gt.vs.End()

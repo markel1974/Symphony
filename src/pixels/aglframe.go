@@ -22,7 +22,7 @@ func (gf *GLFrame) SetBounds(bounds Rect) {
 		return
 	}
 
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		oldF := gf.frame
 
 		_, _, w, h := intBounds(bounds)
@@ -55,7 +55,7 @@ func (gf *GLFrame) Bounds() Rect {
 
 func (gf *GLFrame) Color(at Vec) RGBA {
 	if gf.dirty {
-		executor.Thread.Call(func() {
+		executor.GraphicThread.Call(func() {
 			tex := gf.frame.Texture()
 			tex.Begin()
 			gf.pixels = tex.Pixels(0, 0, tex.Width(), tex.Height())

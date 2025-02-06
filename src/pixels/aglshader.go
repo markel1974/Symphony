@@ -72,7 +72,7 @@ func (gs *GLShader) Update() {
 	}
 
 	var shader *executor.Shader
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		var err error
 		shader, err = executor.NewShader(gs.vf, gs.uf, gs.vs, gs.fs)
 		if err != nil {

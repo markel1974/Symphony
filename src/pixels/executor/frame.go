@@ -48,7 +48,7 @@ func NewFrame(width, height int, smooth bool) *Frame {
 }
 
 func (f *Frame) delete() {
-	Thread.Post(func() {
+	GraphicThread.Post(func() {
 		gl.DeleteFramebuffers(1, &f.fb.obj)
 	})
 }

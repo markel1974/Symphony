@@ -24,7 +24,7 @@ type GLMonitor struct {
 // PrimaryMonitor returns the main monitor (usually the one with the taskbar and stuff).
 func PrimaryMonitor() *GLMonitor {
 	var monitor *glfw.Monitor
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		monitor = glfw.GetPrimaryMonitor()
 	})
 	return &GLMonitor{
@@ -35,7 +35,7 @@ func PrimaryMonitor() *GLMonitor {
 // Monitors returns a slice of all currently available monitors.
 func Monitors() []*GLMonitor {
 	var monitors []*GLMonitor
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		for _, monitor := range glfw.GetMonitors() {
 			monitors = append(monitors, &GLMonitor{monitor: monitor})
 		}
@@ -46,14 +46,14 @@ func Monitors() []*GLMonitor {
 // Name returns a human-readable name of the GLMonitor.
 func (m *GLMonitor) Name() string {
 	var name string
-	executor.Thread.Call(func() { name = m.monitor.GetName() })
+	executor.GraphicThread.Call(func() { name = m.monitor.GetName() })
 	return name
 }
 
 // PhysicalSize returns the size of the display area of the GLMonitor in millimeters.
 func (m *GLMonitor) PhysicalSize() (width, height float64) {
 	var wi, hi int
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		wi, hi = m.monitor.GetPhysicalSize()
 	})
 	width = float64(wi)
@@ -64,7 +64,7 @@ func (m *GLMonitor) PhysicalSize() (width, height float64) {
 // Position returns the position of the upper-left corner of the GLMonitor in screen coordinates.
 func (m *GLMonitor) Position() (x, y float64) {
 	var xi, yi int
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		xi, yi = m.monitor.GetPos()
 	})
 	x = float64(xi)
@@ -75,7 +75,7 @@ func (m *GLMonitor) Position() (x, y float64) {
 // Size returns the resolution of the GLMonitor in pixels.
 func (m *GLMonitor) Size() (width, height float64) {
 	var mode *glfw.VidMode
-	executor.Thread.Call(func() { mode = m.monitor.GetVideoMode() })
+	executor.GraphicThread.Call(func() { mode = m.monitor.GetVideoMode() })
 	width = float64(mode.Width)
 	height = float64(mode.Height)
 	return
@@ -84,7 +84,7 @@ func (m *GLMonitor) Size() (width, height float64) {
 // BitDepth returns the number of bits per color of the GLMonitor.
 func (m *GLMonitor) BitDepth() (red, green, blue int) {
 	var mode *glfw.VidMode
-	executor.Thread.Call(func() { mode = m.monitor.GetVideoMode() })
+	executor.GraphicThread.Call(func() { mode = m.monitor.GetVideoMode() })
 	red = mode.RedBits
 	green = mode.GreenBits
 	blue = mode.BlueBits
@@ -94,7 +94,7 @@ func (m *GLMonitor) BitDepth() (red, green, blue int) {
 // RefreshRate returns the refresh frequency of the GLMonitor in Hz (refreshes/second).
 func (m *GLMonitor) RefreshRate() (rate float64) {
 	var mode *glfw.VidMode
-	executor.Thread.Call(func() { mode = m.monitor.GetVideoMode() })
+	executor.GraphicThread.Call(func() { mode = m.monitor.GetVideoMode() })
 	rate = float64(mode.RefreshRate)
 	return
 }
@@ -102,7 +102,7 @@ func (m *GLMonitor) RefreshRate() (rate float64) {
 // VideoModes returns all available video modes for the monitor.
 func (m *GLMonitor) VideoModes() (vmodes []VideoMode) {
 	var modes []*glfw.VidMode
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		modes = m.monitor.GetVideoModes()
 	})
 	for _, mode := range modes {

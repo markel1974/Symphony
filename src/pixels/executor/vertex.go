@@ -202,7 +202,7 @@ func newVertexArray(shader *Shader, cap int) *vertexArray {
 }
 
 func (va *vertexArray) delete() {
-	Thread.Post(func() {
+	GraphicThread.Post(func() {
 		gl.DeleteVertexArrays(1, &va.vao.obj)
 		gl.DeleteBuffers(1, &va.vbo.obj)
 	})

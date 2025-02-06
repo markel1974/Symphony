@@ -12,7 +12,7 @@ func GLRun(run func()) {
 		panic(errors.New("failed to initialize glfw"))
 	}
 	defer glfw.Terminate()
-	executor.Thread.Run(run)
+	executor.GraphicThread.Run(run)
 }
 
 func GLGetTime() float64 {

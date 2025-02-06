@@ -45,7 +45,7 @@ func NewTexture(width, height int, smooth bool, pixels []uint8) *Texture {
 }
 
 func (t *Texture) delete() {
-	Thread.Post(func() {
+	GraphicThread.Post(func() {
 		gl.DeleteTextures(1, &t.tex.obj)
 	})
 }

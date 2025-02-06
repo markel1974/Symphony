@@ -199,7 +199,7 @@ func (c *GLCanvas) Clear(color color.Color) {
 		A: float64(c.col[3]),
 	})
 
-	executor.Thread.Post(func() {
+	executor.GraphicThread.Post(func() {
 		c.setGlhfBounds()
 		c.gf.Frame().Begin()
 		executor.Clear(
@@ -234,7 +234,7 @@ func (c *GLCanvas) Frame() *executor.Frame {
 func (c *GLCanvas) SetPixels(pixels []uint8) {
 	c.gf.Dirty()
 
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		tex := c.Texture()
 		tex.Begin()
 		tex.SetPixels(0, 0, tex.Width(), tex.Height(), pixels)
@@ -246,7 +246,7 @@ func (c *GLCanvas) SetPixels(pixels []uint8) {
 func (c *GLCanvas) Pixels() []uint8 {
 	var pixels []uint8
 
-	executor.Thread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		tex := c.Texture()
 		tex.Begin()
 		pixels = tex.Pixels(0, 0, tex.Width(), tex.Height())
@@ -284,7 +284,7 @@ func (ct *canvasTriangles) draw(tex *executor.Texture, bounds Rect) {
 	mat := ct.dst.mat
 	col := ct.dst.col
 
-	executor.Thread.Post(func() {
+	executor.GraphicThread.Post(func() {
 		ct.dst.setGlhfBounds()
 		setBlendFunc(cmp)
 
