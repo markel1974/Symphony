@@ -302,12 +302,12 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 }
 
 func (s *Board) dmaLowSlot(v bool) {
-	//if _DMA=Low the CPU can be requested to release the bus.
-	//It will stop after the next read cycle and all bus lines will go to high resistance state.
+	//If _DMA=Low the CPU can be requested to release the bus.
+	//It will stop after the next read cycle, and all bus lines will go to high resistance state.
 	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
 	//The DMA line on the expansion port gets pulled low, or the VIC-II's BA line goes low.
 	//The DMA line is used to put the CPU in a wait state.
-	//The DMA line also forces the CPU's AEC line low so while it's waiting its R/W, address bus and data bus lines are put in HighZ,
+	//The DMA line also forces the CPU's AEC line low, so while it's waiting, its R/W, address bus and data bus lines are put in HighZ,
 	//so they don't have any influence over the buses.
 	//This allows a device on the expansion port, such as an REU, to perform direct memory accesses (DMA) to the main RAM.
 	s.dmaLow = v
