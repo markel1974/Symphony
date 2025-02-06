@@ -71,7 +71,7 @@ func (t *Texture) SetPixels(x, y, w, h int, pixels []uint8) {
 	gl.TexSubImage2D(gl.TEXTURE_2D, 0, int32(x), int32(y), int32(w), int32(h), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(pixels))
 }
 
-func (t *Texture) Pixels(x, y, w, h int) []uint8 {
+func (t *Texture) Pixels(x int, y int, w int, h int) []uint8 {
 	pixels := make([]uint8, t.width*t.height*4)
 	gl.GetTexImage(gl.TEXTURE_2D, 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(pixels))
 	subPixels := make([]uint8, w*h*4)
