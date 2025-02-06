@@ -8,6 +8,9 @@ import (
 	"github.com/markel1974/c64emu/src/version"
 )
 
+//TODO WASM
+// https://garciat.com/posts/go-wasm/
+
 // -c "SCPU:;REU16M:/Users/tinmr305/Downloads/c64carts/doom/doom.reu" -p /Users/tinmr305/Downloads/c64carts/doom/loader.prg
 
 // -d "/Users/tinmr305/Downloads/c64carts/C64_disk/blast170.d64" -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Easyflash/d2ef-vol03.crt"
