@@ -10,6 +10,7 @@ import (
 
 //TODO WASM
 // https://garciat.com/posts/go-wasm/
+// https://github.com/seqsense/webgl-go/tree/master
 
 // -c "SCPU:;REU16M:/Users/tinmr305/Downloads/c64carts/doom/doom.reu" -p /Users/tinmr305/Downloads/c64carts/doom/loader.prg
 
