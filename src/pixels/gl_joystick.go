@@ -7,7 +7,7 @@ import (
 // Joystick is a joystick or controller (gamepad).
 type Joystick int
 
-// List all of the joysticks.
+// List all the joysticks.
 const (
 	Joystick1  = Joystick(glfw.Joystick1)
 	Joystick2  = Joystick(glfw.Joystick2)
@@ -59,10 +59,10 @@ const (
 	ButtonGuide       = GamepadButton(glfw.ButtonGuide)
 	ButtonLeftThumb   = GamepadButton(glfw.ButtonLeftThumb)
 	ButtonRightThumb  = GamepadButton(glfw.ButtonRightThumb)
-	ButtonDpadUp      = GamepadButton(glfw.ButtonDpadUp)
-	ButtonDpadRight   = GamepadButton(glfw.ButtonDpadRight)
-	ButtonDpadDown    = GamepadButton(glfw.ButtonDpadDown)
-	ButtonDpadLeft    = GamepadButton(glfw.ButtonDpadLeft)
+	ButtonDPadUp      = GamepadButton(glfw.ButtonDpadUp)
+	ButtonDPadRight   = GamepadButton(glfw.ButtonDpadRight)
+	ButtonDPadDown    = GamepadButton(glfw.ButtonDpadDown)
+	ButtonDPadLeft    = GamepadButton(glfw.ButtonDpadLeft)
 	ButtonLast        = GamepadButton(glfw.ButtonLast)
 	ButtonCross       = GamepadButton(glfw.ButtonCross)
 	ButtonCircle      = GamepadButton(glfw.ButtonCircle)
@@ -79,7 +79,7 @@ type GLJoystick struct {
 
 // Returns if a button on a joystick is down, returning false if the button or joystick is invalid.
 func (js *GLJoystick) getButton(joystick Joystick, button int) bool {
-	// Check that the joystick and button is valid, return false by default
+	// Check that the joystick and button are valid, return false by default
 	if js.buttons[joystick] == nil || button >= len(js.buttons[joystick]) || button < 0 {
 		return false
 	}
@@ -88,7 +88,7 @@ func (js *GLJoystick) getButton(joystick Joystick, button int) bool {
 
 // Returns the value of a joystick axis, returning 0 if the button or joystick is invalid.
 func (js *GLJoystick) getAxis(joystick Joystick, axis int) float64 {
-	// Check that the joystick and axis is valid, return 0 by default.
+	// Check that the joystick and axis are valid, return 0 by default.
 	if js.axis[joystick] == nil || axis >= len(js.axis[joystick]) || axis < 0 {
 		return 0
 	}

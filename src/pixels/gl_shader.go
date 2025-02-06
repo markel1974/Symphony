@@ -2,32 +2,10 @@ package pixels
 
 import (
 	"errors"
+
 	"github.com/go-gl/mathgl/mgl32"
 	"github.com/markel1974/c64emu/src/pixels/executor"
 )
-
-type GLShader struct {
-	s      *executor.Shader
-	vf, uf executor.AttrFormat
-	vs, fs string
-
-	uniforms []gsUniformAttr
-
-	uniformDefaults struct {
-		transform mgl32.Mat3
-		colorMask mgl32.Vec4
-		bounds    mgl32.Vec4
-		texBounds mgl32.Vec4
-		clipRect  mgl32.Vec4
-	}
-}
-
-type gsUniformAttr struct {
-	Name      string
-	Type      executor.AttrType
-	value     interface{}
-	isPointer bool
-}
 
 const (
 	canvasPosition int = iota
@@ -43,6 +21,22 @@ var defaultCanvasVertexFormat = executor.AttrFormat{
 	canvasTexCoords: executor.Attr{Name: "aTexCoords", Type: executor.Vec2},
 	canvasIntensity: executor.Attr{Name: "aIntensity", Type: executor.Float},
 	canvasClip:      executor.Attr{Name: "aClipRect", Type: executor.Vec4},
+}
+
+type GLShader struct {
+	s      *executor.Shader
+	vf, uf executor.AttrFormat
+	vs, fs string
+
+	uniforms []gsUniformAttr
+
+	uniformDefaults struct {
+		transform mgl32.Mat3
+		colorMask mgl32.Vec4
+		bounds    mgl32.Vec4
+		texBounds mgl32.Vec4
+		clipRect  mgl32.Vec4
+	}
 }
 
 func NewGLShader(fragmentShader string) *GLShader {
@@ -107,6 +101,13 @@ func (gs *GLShader) SetUniform(name string, value interface{}) {
 		isPointer: p,
 		value:     value,
 	})
+}
+
+type gsUniformAttr struct {
+	Name      string
+	Type      executor.AttrType
+	value     interface{}
+	isPointer bool
 }
 
 func (gu *gsUniformAttr) Value() interface{} {

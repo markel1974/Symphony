@@ -1,8 +1,9 @@
 package pixels
 
 import (
-	"github.com/markel1974/c64emu/src/pixels/executor"
 	"math"
+
+	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
 func NewGLPicture(p IPicture) IGLPicture {

@@ -2,6 +2,7 @@ package pixels
 
 import (
 	"errors"
+
 	"github.com/go-gl/glfw/v3.3/glfw"
 	"github.com/markel1974/c64emu/src/pixels/executor"
 )

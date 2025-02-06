@@ -2,6 +2,7 @@ package pixels
 
 import (
 	"fmt"
+
 	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
