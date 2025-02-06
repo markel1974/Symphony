@@ -21,18 +21,3 @@ func Bounds(x, y, w, h int) {
 	gl.Viewport(int32(x), int32(y), int32(w), int32(h))
 	gl.Scissor(int32(x), int32(y), int32(w), int32(h))
 }
-
-type BlendFactor int
-
-const (
-	One              = BlendFactor(gl.ONE)
-	Zero             = BlendFactor(gl.ZERO)
-	SrcAlpha         = BlendFactor(gl.SRC_ALPHA)
-	DstAlpha         = BlendFactor(gl.DST_ALPHA)
-	OneMinusSrcAlpha = BlendFactor(gl.ONE_MINUS_SRC_ALPHA)
-	OneMinusDstAlpha = BlendFactor(gl.ONE_MINUS_DST_ALPHA)
-)
-
-func BlendFunc(src, dst BlendFactor) {
-	gl.BlendFunc(uint32(src), uint32(dst))
-}

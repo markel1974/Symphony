@@ -10,7 +10,7 @@ import (
 )
 
 type Shader struct {
-	program    binder
+	program    Binder
 	vertexFmt  AttrFormat
 	uniformFmt AttrFormat
 	uniformLoc []int32
@@ -18,7 +18,7 @@ type Shader struct {
 
 func NewShader(vertexFmt, uniformFmt AttrFormat, vertexShader, fragmentShader string) (*Shader, error) {
 	shader := &Shader{
-		program: binder{
+		program: Binder{
 			restoreLoc: gl.CURRENT_PROGRAM,
 			bindFunc: func(obj uint32) {
 				gl.UseProgram(obj)
@@ -176,9 +176,9 @@ func (s *Shader) SetUniformAttr(uniform int, value interface{}) (bool, error) {
 }
 
 func (s *Shader) Begin() {
-	s.program.bind()
+	s.program.Bind()
 }
 
 func (s *Shader) End() {
-	s.program.restore()
+	s.program.Restore()
 }

@@ -168,9 +168,10 @@ func (w *GLWindow) Destroy() {
 // Update swaps buffers and polls events. Call this method at the end of each frame.
 func (w *GLWindow) Update() {
 	bounds := w.bounds
+	_, _, oldW, oldH := intBounds(bounds)
 	newBounds := false
+
 	executor.GraphicThread.Call(func() {
-		_, _, oldW, oldH := intBounds(bounds)
 		newW, newH := w.window.GetSize()
 		width := newW - oldW
 		height := newH - oldH

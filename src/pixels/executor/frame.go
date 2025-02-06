@@ -7,27 +7,27 @@ import (
 )
 
 type Frame struct {
-	fb  binder
-	rf  binder
-	df  binder
+	fb  Binder
+	rf  Binder
+	df  Binder
 	tex *Texture
 }
 
 func NewFrame(width, height int, smooth bool) *Frame {
 	f := &Frame{
-		fb: binder{
+		fb: Binder{
 			restoreLoc: gl.FRAMEBUFFER_BINDING,
 			bindFunc: func(obj uint32) {
 				gl.BindFramebuffer(gl.FRAMEBUFFER, obj)
 			},
 		},
-		rf: binder{
+		rf: Binder{
 			restoreLoc: gl.READ_FRAMEBUFFER_BINDING,
 			bindFunc: func(obj uint32) {
 				gl.BindFramebuffer(gl.READ_FRAMEBUFFER, obj)
 			},
 		},
-		df: binder{
+		df: Binder{
 			restoreLoc: gl.DRAW_FRAMEBUFFER_BINDING,
 			bindFunc: func(obj uint32) {
 				gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, obj)
@@ -38,9 +38,9 @@ func NewFrame(width, height int, smooth bool) *Frame {
 
 	gl.GenFramebuffers(1, &f.fb.obj)
 
-	f.fb.bind()
+	f.fb.Bind()
 	gl.FramebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, f.tex.tex.obj, 0)
-	f.fb.restore()
+	f.fb.Restore()
 
 	runtime.SetFinalizer(f, (*Frame).delete)
 
@@ -58,11 +58,11 @@ func (f *Frame) ID() uint32 {
 }
 
 func (f *Frame) Begin() {
-	f.fb.bind()
+	f.fb.Bind()
 }
 
 func (f *Frame) End() {
-	f.fb.restore()
+	f.fb.Restore()
 }
 
 func (f *Frame) Blit(dst *Frame, sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1 int) {
@@ -72,8 +72,8 @@ func (f *Frame) Blit(dst *Frame, sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1 int) {
 	} else {
 		f.df.obj = 0
 	}
-	f.rf.bind()
-	f.df.bind()
+	f.rf.Bind()
+	f.df.Bind()
 
 	filter := gl.NEAREST
 	if f.tex.smooth {
@@ -86,8 +86,8 @@ func (f *Frame) Blit(dst *Frame, sx0, sy0, sx1, sy1, dx0, dy0, dx1, dy1 int) {
 		gl.COLOR_BUFFER_BIT, uint32(filter),
 	)
 
-	f.rf.restore()
-	f.df.restore()
+	f.rf.Restore()
+	f.df.Restore()
 }
 
 func (f *Frame) Texture() *Texture {

@@ -45,7 +45,7 @@ func NewGLTriangles(shader *GLShader, t ITriangles) *GLTriangles {
 	var gt *GLTriangles
 	executor.GraphicThread.Call(func() {
 		gt = &GLTriangles{
-			vs:     executor.MakeVertexSlice(shader.s, 0, t.Len()),
+			vs:     executor.NewVertexSlice(shader.s, 0, t.Len()),
 			shader: shader,
 		}
 	})
