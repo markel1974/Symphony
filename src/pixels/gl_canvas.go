@@ -27,7 +27,7 @@ type GLCanvas struct {
 	sprite *Sprite
 }
 
-var _ ComposeTarget = (*GLCanvas)(nil)
+var _ IComposeTarget = (*GLCanvas)(nil)
 
 // NewGLCanvas creates a new empty, fully transparent GLCanvas with given bounds.
 func NewGLCanvas(bounds Rect, smooth bool) *GLCanvas {

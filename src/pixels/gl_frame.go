@@ -4,6 +4,8 @@ import (
 	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
+// GLFrame represents a graphical frame used for rendering operations and managing pixel data efficiently.
+// It contains a frame object, boundary definitions, pixel data, and a flag indicating if the frame is dirty.
 type GLFrame struct {
 	frame  *executor.Frame
 	bounds Rect
@@ -11,12 +13,15 @@ type GLFrame struct {
 	dirty  bool
 }
 
+// NewGLFrame creates a new GLFrame instance and sets its bounds to the specified Rect.
+// Returns a pointer to the newly created GLFrame.
 func NewGLFrame(bounds Rect) *GLFrame {
 	gf := new(GLFrame)
 	gf.SetBounds(bounds)
 	return gf
 }
 
+// SetBounds updates the frame's bounds to the specified rectangle and reallocates resources if necessary.
 func (gf *GLFrame) SetBounds(bounds Rect) {
 	if bounds == gf.Bounds() {
 		return
@@ -49,10 +54,14 @@ func (gf *GLFrame) SetBounds(bounds Rect) {
 	gf.dirty = true
 }
 
+// Bounds returns the rectangle defining the boundaries of the GLFrame instance.
 func (gf *GLFrame) Bounds() Rect {
 	return gf.bounds
 }
 
+// Color returns the RGBA color at the specified Vec position in the GLFrame.
+// If the position is out of bounds, it returns an RGBA with zero alpha.
+// Updates pixel data if the GLFrame is marked as dirty.
 func (gf *GLFrame) Color(at Vec) RGBA {
 	if gf.dirty {
 		executor.GraphicThread.Call(func() {
@@ -77,14 +86,17 @@ func (gf *GLFrame) Color(at Vec) RGBA {
 	}
 }
 
+// Frame returns the underlying executor.Frame instance associated with this GLFrame.
 func (gf *GLFrame) Frame() *executor.Frame {
 	return gf.frame
 }
 
+// Texture retrieves the underlying executor.Texture associated with the GLFrame instance.
 func (gf *GLFrame) Texture() *executor.Texture {
 	return gf.frame.Texture()
 }
 
+// Dirty marks the GLFrame as needing to be redrawn by setting its dirty flag to true.
 func (gf *GLFrame) Dirty() {
 	gf.dirty = true
 }

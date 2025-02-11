@@ -5,11 +5,14 @@ import (
 	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
+// GLCanvasTriangles represents a drawable set of triangles specific to a GLCanvas context.
+// It embeds GLTriangles and includes functionality for integration with the associated GLCanvas.
 type GLCanvasTriangles struct {
 	*GLTriangles
 	dst *GLCanvas
 }
 
+// NewGLCanvasTriangles creates and returns a new GLCanvasTriangles instance using the given GLTriangles and GLCanvas.
 func NewGLCanvasTriangles(t *GLTriangles, dst *GLCanvas) *GLCanvasTriangles {
 	return &GLCanvasTriangles{
 		GLTriangles: t,
@@ -17,6 +20,7 @@ func NewGLCanvasTriangles(t *GLTriangles, dst *GLCanvas) *GLCanvasTriangles {
 	}
 }
 
+// draw renders GLCanvasTriangles onto the frame using the provided texture and bounds within a graphics thread context.
 func (ct *GLCanvasTriangles) draw(tex *executor.Texture, bounds Rect) {
 	ct.dst.gf.Dirty()
 
@@ -81,6 +85,7 @@ func (ct *GLCanvasTriangles) draw(tex *executor.Texture, bounds Rect) {
 	})
 }
 
+// Draw draws the triangles in the associated GLCanvasTriangles object onto the destination canvas.
 func (ct *GLCanvasTriangles) Draw() {
 	ct.draw(nil, Rect{})
 }

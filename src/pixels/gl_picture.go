@@ -6,12 +6,14 @@ import (
 	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
+// GLPicture represents a graphical picture with texture, pixel data, and its bounding rectangle.
 type GLPicture struct {
 	bounds  Rect
 	texture *executor.Texture
 	pixels  []uint8
 }
 
+// NewGLPicture creates a new GLPicture based on the provided IPicture. It initializes texture and pixel data.
 func NewGLPicture(p IPicture) *GLPicture {
 	var pixels []uint8
 	var bw, bh int
@@ -39,14 +41,18 @@ func NewGLPicture(p IPicture) *GLPicture {
 	return gp
 }
 
+// Bounds returns the rectangular bounds of the GLPicture.
 func (gp *GLPicture) Bounds() Rect {
 	return gp.bounds
 }
 
+// Texture returns the associated texture of the GLPicture instance.
 func (gp *GLPicture) Texture() *executor.Texture {
 	return gp.texture
 }
 
+// Color returns the RGBA color at the specified Vec position within the GLPicture bounds.
+// If the position is outside bounds, it returns fully transparent (Alpha 0).
 func (gp *GLPicture) Color(at Vec) RGBA {
 	if !gp.bounds.Contains(at) {
 		return Alpha(0)
@@ -62,6 +68,7 @@ func (gp *GLPicture) Color(at Vec) RGBA {
 	}
 }
 
+// Update updates the GLPicture texture with the pixel data from the specified IPicture implementation.
 func (gp *GLPicture) Update(p IPicture) {
 	var pixels []uint8
 	var bx, by, bw, bh int
@@ -81,6 +88,7 @@ func (gp *GLPicture) Update(p IPicture) {
 	})
 }
 
+// extractPixelsFromPictureColor extracts pixel data from an IPictureColor into a slice and returns dimensions & position.
 func extractPixelsFromPictureColor(pc IPictureColor) (int, int, int, int, []uint8) {
 	bounds := pc.Bounds()
 	bx, by, bw, bh := intBounds(bounds)
@@ -102,6 +110,7 @@ func extractPixelsFromPictureColor(pc IPictureColor) (int, int, int, int, []uint
 	return bx, by, bw, bh, pixels
 }
 
+// extractPixelsFromPicture extracts pixel data and bounding box dimensions from an IPicture instance.
 func extractPixelsFromPicture(pp IPicture) (int, int, int, int, []uint8) {
 	bounds := pp.Bounds()
 	bx, by, bw, bh := intBounds(bounds)

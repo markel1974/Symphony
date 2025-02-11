@@ -55,20 +55,6 @@ func (c Circle) Formula() (h, k float64) {
 	return c.Center.X, c.Center.Y
 }
 
-func maxCircle(c, d Circle) Circle {
-	if c.Radius < d.Radius {
-		return d
-	}
-	return c
-}
-
-func minCircle(c, d Circle) Circle {
-	if c.Radius < d.Radius {
-		return c
-	}
-	return d
-}
-
 func (c Circle) Union(d Circle) Circle {
 	biggerC := maxCircle(c.Norm(), d.Norm())
 	smallerC := minCircle(c.Norm(), d.Norm())
@@ -273,16 +259,16 @@ func (c Circle) IntersectionPoints(l Line) []Vec {
 		// Using the rule that there are 180 degrees (or Pi radians) in a triangle, we can now get C
 		C := math.Pi - A + B
 		// If C is zero, the line segment is in-line with the center-intersect line.
-		var c float64
+		var cz float64
 		if C == 0 {
-			c = b - a
+			cz = b - a
 		} else {
-			// Using the Sine rule again, we can now get c
-			c = (a * math.Sin(C)) / math.Sin(A)
+			// Using the Sine rule again, we can now get cz
+			cz = (a * math.Sin(C)) / math.Sin(A)
 		}
 		// Traveling from the contained point to the other end by length of a will provide the intersection point.
 		return []Vec{
-			containedPoint.Add(containedPoint.To(otherEnd).Unit().Scaled(c)),
+			containedPoint.Add(containedPoint.To(otherEnd).Unit().Scaled(cz)),
 		}
 	}
 
@@ -300,4 +286,18 @@ func (c Circle) IntersectionPoints(l Line) []Vec {
 		return []Vec{first, second}
 	}
 	return []Vec{second, first}
+}
+
+func maxCircle(c Circle, d Circle) Circle {
+	if c.Radius < d.Radius {
+		return d
+	}
+	return c
+}
+
+func minCircle(c Circle, d Circle) Circle {
+	if c.Radius < d.Radius {
+		return c
+	}
+	return d
 }

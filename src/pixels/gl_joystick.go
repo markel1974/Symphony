@@ -4,10 +4,11 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
-// Joystick is a joystick or controller (gamepad).
+// Joystick represents a joystick input device and maps to specific identifiers for each joystick supported.
 type Joystick int
 
-// List all the joysticks.
+// Joystick1 to Joystick16 represent GLFW joystick mappings for respective joystick IDs.
+// JoystickLast represents the last available joystick ID for GLFW.
 const (
 	Joystick1  = Joystick(glfw.Joystick1)
 	Joystick2  = Joystick(glfw.Joystick2)
@@ -29,10 +30,16 @@ const (
 	JoystickLast = Joystick(glfw.JoystickLast)
 )
 
-// GamepadAxis corresponds to a gamepad axis.
+// GamepadAxis represents an axis on a gamepad, typically associated with analog sticks or trigger controls.
 type GamepadAxis int
 
-// Gamepad axis IDs.
+// AxisLeftX represents the horizontal axis of the left thumbstick on a gamepad.
+// AxisLeftY represents the vertical axis of the left thumbstick on a gamepad.
+// AxisRightX represents the horizontal axis of the right thumbstick on a gamepad.
+// AxisRightY represents the vertical axis of the right thumbstick on a gamepad.
+// AxisLeftTrigger represents the axis of the left trigger on a gamepad.
+// AxisRightTrigger represents the axis of the right trigger on a gamepad.
+// AxisLast represents the last valid axis on a gamepad.
 const (
 	AxisLeftX        = GamepadAxis(glfw.AxisLeftX)
 	AxisLeftY        = GamepadAxis(glfw.AxisLeftY)
@@ -43,10 +50,29 @@ const (
 	AxisLast         = GamepadAxis(glfw.AxisLast)
 )
 
-// GamepadButton corresponds to a gamepad button.
+// GamepadButton represents a specific button on a gamepad controller.
 type GamepadButton int
 
-// Gamepad button IDs.
+// ButtonA represents the A button on a gamepad.
+// ButtonB represents the B button on a gamepad.
+// ButtonX represents the X button on a gamepad.
+// ButtonY represents the Y button on a gamepad.
+// ButtonLeftBumper represents the left bumper button on a gamepad.
+// ButtonRightBumper represents the right bumper button on a gamepad.
+// ButtonBack represents the back button on a gamepad.
+// ButtonStart represents the start button on a gamepad.
+// ButtonGuide represents the guide button on a gamepad.
+// ButtonLeftThumb represents the left thumbstick button on a gamepad.
+// ButtonRightThumb represents the right thumbstick button on a gamepad.
+// ButtonDPadUp represents the up direction on the D-Pad of a gamepad.
+// ButtonDPadRight represents the right direction on the D-Pad of a gamepad.
+// ButtonDPadDown represents the down direction on the D-Pad of a gamepad.
+// ButtonDPadLeft represents the left direction on the D-Pad of a gamepad.
+// ButtonLast represents the last button enumerated on a gamepad.
+// ButtonCross represents the cross button on a gamepad (common on PlayStation-style controllers).
+// ButtonCircle represents the circle button on a gamepad (common on PlayStation-style controllers).
+// ButtonSquare represents the square button on a gamepad (common on PlayStation-style controllers).
+// ButtonTriangle represents the triangle button on a gamepad (common on PlayStation-style controllers).
 const (
 	ButtonA           = GamepadButton(glfw.ButtonA)
 	ButtonB           = GamepadButton(glfw.ButtonB)
@@ -70,6 +96,7 @@ const (
 	ButtonTriangle    = GamepadButton(glfw.ButtonTriangle)
 )
 
+// GLJoystick tracks the state of connected joysticks, including their connection status, names, buttons, and axis data.
 type GLJoystick struct {
 	connected [JoystickLast + 1]bool
 	name      [JoystickLast + 1]string
@@ -77,7 +104,7 @@ type GLJoystick struct {
 	axis      [JoystickLast + 1][]float32
 }
 
-// Returns if a button on a joystick is down, returning false if the button or joystick is invalid.
+// getButton checks if the specified button on the given joystick is currently pressed and returns true or false accordingly.
 func (js *GLJoystick) getButton(joystick Joystick, button int) bool {
 	// Check that the joystick and button are valid, return false by default
 	if js.buttons[joystick] == nil || button >= len(js.buttons[joystick]) || button < 0 {
@@ -86,7 +113,7 @@ func (js *GLJoystick) getButton(joystick Joystick, button int) bool {
 	return js.buttons[joystick][byte(button)] == glfw.Press
 }
 
-// Returns the value of a joystick axis, returning 0 if the button or joystick is invalid.
+// getAxis retrieves the current value of the specified axis for the given joystick, returning 0 if invalid.
 func (js *GLJoystick) getAxis(joystick Joystick, axis int) float64 {
 	// Check that the joystick and axis are valid, return 0 by default.
 	if js.axis[joystick] == nil || axis >= len(js.axis[joystick]) || axis < 0 {

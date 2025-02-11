@@ -7,6 +7,11 @@ import (
 	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
+// canvasPosition is the iota constant representing the position data for a canvas.
+// canvasColor is the iota constant representing the color data for a canvas.
+// canvasTexCoords is the iota constant representing the texture coordinates for a canvas.
+// canvasIntensity is the iota constant representing the intensity data for a canvas.
+// canvasClip is the iota constant representing the clipping data for a canvas.
 const (
 	canvasPosition int = iota
 	canvasColor
@@ -15,6 +20,7 @@ const (
 	canvasClip
 )
 
+// defaultCanvasVertexFormat defines the default set of vertex attributes for canvas rendering, including position, color, texture coordinates, intensity, and clipping information.
 var defaultCanvasVertexFormat = executor.AttrFormat{
 	canvasPosition:  executor.Attr{Name: "aPosition", Type: executor.Vec2},
 	canvasColor:     executor.Attr{Name: "aColor", Type: executor.Vec4},
@@ -23,6 +29,7 @@ var defaultCanvasVertexFormat = executor.AttrFormat{
 	canvasClip:      executor.Attr{Name: "aClipRect", Type: executor.Vec4},
 }
 
+// GLShader represents an OpenGL shader that encapsulates vertex and fragment shaders along with their configurations.
 type GLShader struct {
 	s      *executor.Shader
 	vf, uf executor.AttrFormat
@@ -39,6 +46,8 @@ type GLShader struct {
 	}
 }
 
+// NewGLShader creates a new GLShader instance using the provided fragment shader source code.
+// It initializes default uniforms and updates the shader configuration before returning the instance.
 func NewGLShader(fragmentShader string) *GLShader {
 	gs := &GLShader{
 		vf: defaultCanvasVertexFormat,
@@ -56,6 +65,7 @@ func NewGLShader(fragmentShader string) *GLShader {
 	return gs
 }
 
+// Update rebuilds the shader using the current vertex format, uniform format, and shader code, applying any changes.
 func (gs *GLShader) Update() {
 	gs.uf = make([]executor.Attr, len(gs.uniforms))
 	for idx := range gs.uniforms {
@@ -77,6 +87,7 @@ func (gs *GLShader) Update() {
 	gs.s = shader
 }
 
+// getUniform searches for a uniform variable by its name in the shader and returns its index or -1 if not found.
 func (gs *GLShader) getUniform(Name string) int {
 	for i, u := range gs.uniforms {
 		if u.Name == Name {
@@ -86,6 +97,7 @@ func (gs *GLShader) getUniform(Name string) int {
 	return -1
 }
 
+// SetUniform assigns a value to a uniform variable by name, updating it if it exists or creating a new entry if it does not.
 func (gs *GLShader) SetUniform(name string, value interface{}) {
 	t, p := getAttrType(value)
 	if loc := gs.getUniform(name); loc > -1 {
@@ -103,6 +115,11 @@ func (gs *GLShader) SetUniform(name string, value interface{}) {
 	})
 }
 
+// gsUniformAttr represents a single uniform attribute in a graphics shader.
+// Name specifies the name of the uniform attribute.
+// Type defines the data type of the attribute, based on executor.AttrType.
+// value stores the actual data of the uniform attribute.
+// isPointer indicates whether the value is a pointer type.
 type gsUniformAttr struct {
 	Name      string
 	Type      executor.AttrType
@@ -110,6 +127,7 @@ type gsUniformAttr struct {
 	isPointer bool
 }
 
+// Value returns the stored value of the gsUniformAttr instance, resolving pointer dereferences based on its type.
 func (gu *gsUniformAttr) Value() interface{} {
 	if !gu.isPointer {
 		return gu.value
@@ -148,6 +166,9 @@ func (gu *gsUniformAttr) Value() interface{} {
 	}
 }
 
+// getAttrType determines the attribute type and pointer status of the given value for use in the shader execution context.
+// It returns the corresponding executor.AttrType and a boolean indicating whether the value is a pointer type.
+// Panics if the provided value is of an invalid or unsupported attribute type.
 func getAttrType(v interface{}) (executor.AttrType, bool) {
 	switch v.(type) {
 	case int32:

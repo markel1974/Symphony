@@ -7,6 +7,8 @@ import (
 	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
+// GLRun initializes the GLFW library, handles its lifecycle, and runs the provided main function on the graphic thread.
+// Returns an error if GLFW initialization fails or if running the main function encounters an issue.
 func GLRun(main func()) error {
 	err := glfw.Init()
 	if err != nil {

@@ -2,11 +2,14 @@ package pixels
 
 import "fmt"
 
+// GLCanvasPicture is a specialized IGLPicture that allows operations to be performed on a GLCanvas.
+// It links an IGLPicture to a specific GLCanvas target for drawing operations.
 type GLCanvasPicture struct {
 	IGLPicture
 	dst *GLCanvas
 }
 
+// NewGLCanvasPicture creates a specialized GLCanvasPicture that wraps an IGLPicture and targets the specified GLCanvas.
 func NewGLCanvasPicture(t IGLPicture, dst *GLCanvas) *GLCanvasPicture {
 	return &GLCanvasPicture{
 		IGLPicture: t,
@@ -14,6 +17,7 @@ func NewGLCanvasPicture(t IGLPicture, dst *GLCanvas) *GLCanvasPicture {
 	}
 }
 
+// Draw renders the GLCanvasPicture onto the specified ITargetTriangles. Ensures compatibility with the target's GLCanvas.
 func (cp *GLCanvasPicture) Draw(t ITargetTriangles) {
 	ct := t.(*GLCanvasTriangles)
 	if cp.dst != ct.dst {
@@ -22,6 +26,7 @@ func (cp *GLCanvasPicture) Draw(t ITargetTriangles) {
 	ct.draw(cp.IGLPicture.Texture(), cp.IGLPicture.Bounds())
 }
 
+// Update updates the underlying IGLPicture with the provided IPicture instance.
 func (cp *GLCanvasPicture) Update(p IPicture) {
 	cp.IGLPicture.Update(p)
 }

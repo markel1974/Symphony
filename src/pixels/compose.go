@@ -2,8 +2,8 @@ package pixels
 
 import "errors"
 
-// ComposeTarget is an IBasicTarget capable of Porter-Duff composition.
-type ComposeTarget interface {
+// IComposeTarget is an IBasicTarget capable of Porter-Duff composition.
+type IComposeTarget interface {
 	IBasicTarget
 
 	// SetComposeMethod sets a Porter-Duff composition method to be used.

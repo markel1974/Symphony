@@ -5,6 +5,8 @@ import (
 	"math"
 )
 
+// intBounds computes integer bounds of a Rect by flooring Min points and ceiling Max points to nearest integers.
+// Returns x, y as coordinates of the bottom-left corner, and w, h as the width and height of the rectangle.
 func intBounds(bounds Rect) (x, y, w, h int) {
 	x0 := int(math.Floor(bounds.Min.X))
 	y0 := int(math.Floor(bounds.Min.Y))
