@@ -170,6 +170,7 @@ func (c Circle) IntersectRect(r Rect) Vec {
 			// Vertical distance shorter
 			return NewVec(0, v)
 		}
+
 		return NewVec(h, 0)
 	} else {
 		// The center is in the diagonal quadrants

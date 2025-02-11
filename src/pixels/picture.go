@@ -6,6 +6,7 @@ import (
 	"math"
 )
 
+// verticalFlip vertically inverts the pixels of the provided RGBA image by swapping rows in place.
 func verticalFlip(rgba *image.RGBA) {
 	bounds := rgba.Bounds()
 	width := bounds.Dx()
@@ -19,6 +20,7 @@ func verticalFlip(rgba *image.RGBA) {
 	}
 }
 
+// Picture represents an image, defining its dimensions, boundary rectangle, pixel data, and other related properties.
 type Picture struct {
 	width  int
 	height int
@@ -33,6 +35,7 @@ type Picture struct {
 	bh     int
 }
 
+// NewPictureFromPicture creates a new Picture from an existing IPicture, copying pixel data if applicable.
 func NewPictureFromPicture(picture IPicture) *Picture {
 	if pd, ok := picture.(*Picture); ok {
 		return pd
@@ -51,6 +54,7 @@ func NewPictureFromPicture(picture IPicture) *Picture {
 	return pd
 }
 
+// NewPictureFromImage creates a new Picture from the given image.Image, with a vertically flipped RGBA pixel buffer.
 func NewPictureFromImage(img image.Image) *Picture {
 	rgba := image.NewRGBA(img.Bounds())
 	draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
@@ -65,6 +69,7 @@ func NewPictureFromImage(img image.Image) *Picture {
 	return pd
 }
 
+// NewPicture creates a new Picture instance based on the specified Rect. It initializes pixel data and associated properties.
 func NewPicture(rect Rect) *Picture {
 	w := int(math.Ceil(rect.Max.X)) - int(math.Floor(rect.Min.X))
 	h := int(math.Ceil(rect.Max.Y)) - int(math.Floor(rect.Min.Y))
@@ -86,6 +91,15 @@ func NewPicture(rect Rect) *Picture {
 	return s
 }
 
+// ComputeIndex calculates the linear index in the pixel array for the given (x, y) coordinates.
+// It adjusts the y-coordinate based on the lastY property and computes the index using stride and rectangle bounds.
+func (s *Picture) ComputeIndex(x int, y int) int {
+	y = s.lastY - y
+	i := (y-int(s.rect.Min.Y))*s.stride + (x-int(s.rect.Min.X))*4
+	return i
+}
+
+// SetRGBAArray sets the RGBA color data at the specified (x, y) coordinates using a given array of uint8 values.
 func (s *Picture) SetRGBAArray(x int, y int, rgba []uint8) {
 	//flip
 	//y = (int(s.rect.Max.Y) -1) - y
@@ -96,16 +110,12 @@ func (s *Picture) SetRGBAArray(x int, y int, rgba []uint8) {
 	}
 }
 
-func (s *Picture) ComputeIndex(x int, y int) int {
-	y = s.lastY - y
-	i := (y-int(s.rect.Min.Y))*s.stride + (x-int(s.rect.Min.X))*4
-	return i
-}
-
+// SetRGBADirectArray sets the RGBA color values starting at the given pixel index directly in the pixel data array.
 func (s *Picture) SetRGBADirectArray(i int, rgba []uint8) {
 	copy(s.pixels[i:], rgba)
 }
 
+// SetRGBA sets the RGBA color value for the pixel at the specified x, y coordinates within the image bounds.
 func (s *Picture) SetRGBA(x int, y int, r uint8, g uint8, b uint8, a uint8) {
 	//flip
 	//y = (int(s.rect.Max.Y) -1) - y
@@ -119,6 +129,7 @@ func (s *Picture) SetRGBA(x int, y int, r uint8, g uint8, b uint8, a uint8) {
 	}
 }
 
+// SetRGBASize sets a square block of pixels centered at (x, y) to the specified RGBA color with the given size.
 func (s *Picture) SetRGBASize(x int, y int, r uint8, g uint8, b uint8, a uint8, size int) {
 	k := size / 2
 	for offsetX := -k; offsetX < k; offsetX++ {
@@ -128,30 +139,37 @@ func (s *Picture) SetRGBASize(x int, y int, r uint8, g uint8, b uint8, a uint8, 
 	}
 }
 
+// Width returns the width of the Picture in pixels.
 func (s *Picture) Width() int {
 	return s.width
 }
 
+// Height returns the height of the Picture in pixels.
 func (s *Picture) Height() int {
 	return s.height
 }
 
+// Length returns the total length in pixels of the Picture.
 func (s *Picture) Length() int {
 	return s.length
 }
 
+// Stride returns the number of bytes between successive rows of pixels in the Picture.
 func (s *Picture) Stride() int {
 	return s.stride
 }
 
+// Bounds returns the rectangular domain of the Picture as a Rect structure.
 func (s *Picture) Bounds() Rect {
 	return s.rect
 }
 
+// Pixels returns the bounding box coordinates (bx, by, bw, bh) and the pixel data of the Picture.
 func (s *Picture) Pixels() (int, int, int, int, []uint8) {
 	return s.bx, s.by, s.bw, s.bh, s.pixels
 }
 
+// Image converts the Picture object into an *image.RGBA, using its internal pixel data and defined bounds.
 func (s *Picture) Image() *image.RGBA {
 	bounds := image.Rect(
 		int(math.Floor(s.rect.Min.X)),

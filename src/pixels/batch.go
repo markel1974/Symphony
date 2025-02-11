@@ -11,9 +11,8 @@ import (
 //	object.Draw(batch)
 type Batch struct {
 	cont *Drawer
-
-	mat Matrix
-	col RGBA
+	mat  Matrix
+	col  RGBA
 }
 
 var _ IBasicTarget = (*Batch)(nil)

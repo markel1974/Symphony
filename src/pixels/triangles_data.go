@@ -58,6 +58,9 @@ func (td *TrianglesData) Slice(i, j int) ITriangles {
 	return &s
 }
 
+// updateData updates the properties of TrianglesData from another ITriangles instance efficiently where possible.
+// It performs a fast copy if the input is of type *TrianglesData and falls back to manual property updates otherwise.
+// Supports updating properties of ITrianglesPosition, ITrianglesColor, ITrianglesPicture, and ITrianglesClipped.
 func (td *TrianglesData) updateData(t ITriangles) {
 	// fast path optimization
 	if t, ok := t.(*TrianglesData); ok {

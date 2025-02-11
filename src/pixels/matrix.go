@@ -86,6 +86,9 @@ func (m Matrix) Project(u Vec) Vec {
 // Time complexity is O(1).
 func (m Matrix) Unproject(u Vec) Vec {
 	det := m[0]*m[3] - m[2]*m[1]
+	if det == 0 {
+		return Vec{}
+	}
 	return Vec{
 		(m[3]*(u.X-m[4]) - m[2]*(u.Y-m[5])) / det,
 		(-m[1]*(u.X-m[4]) + m[0]*(u.Y-m[5])) / det,
