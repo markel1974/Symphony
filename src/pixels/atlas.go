@@ -58,7 +58,7 @@ func NewAtlas(face font.Face, runeSets ...[]rune) *Atlas {
 		}
 	}
 
-	bounds := R(
+	bounds := NewRect(
 		i2f(fixedBounds.Min.X),
 		i2f(fixedBounds.Min.Y),
 		i2f(fixedBounds.Max.X),
@@ -72,7 +72,7 @@ func NewAtlas(face font.Face, runeSets ...[]rune) *Atlas {
 				i2f(fg.dot.X),
 				bounds.Max.Y-(i2f(fg.dot.Y)-bounds.Min.Y),
 			),
-			Frame: R(
+			Frame: NewRect(
 				i2f(fg.frame.Min.X),
 				bounds.Max.Y-(i2f(fg.frame.Min.Y)-bounds.Min.Y),
 				i2f(fg.frame.Max.X),
@@ -155,7 +155,7 @@ func (a *Atlas) DrawRune(prevR, r rune, dot Vec) (rect, frame, bounds Rect, newD
 	bounds = rect
 
 	if bounds.W()*bounds.H() != 0 {
-		bounds = R(
+		bounds = NewRect(
 			bounds.Min.X,
 			dot.Y-a.Descent(),
 			bounds.Max.X,

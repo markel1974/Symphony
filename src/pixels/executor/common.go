@@ -14,12 +14,12 @@ func Init() {
 	gl.BlendEquation(gl.FUNC_ADD)
 }
 
-func Clear(r, g, b, a float32) {
+func Clear(r float32, g float32, b float32, a float32) {
 	gl.ClearColor(r, g, b, a)
 	gl.Clear(gl.COLOR_BUFFER_BIT)
 }
 
-func Bounds(x, y, w, h int) {
+func Bounds(x int, y int, w int, h int) {
 	gl.Viewport(int32(x), int32(y), int32(w), int32(h))
 	gl.Scissor(int32(x), int32(y), int32(w), int32(h))
 }

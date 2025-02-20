@@ -18,10 +18,10 @@ type Rect struct {
 // ZR is a zero rectangle.
 var ZR = Rect{Min: ZV, Max: ZV}
 
-// R returns a new Rect with given the Min and Max coordinates.
+// NewRect returns a new Rect with given the Min and Max coordinates.
 //
 // Note that the returned rectangle is not automatically normalized.
-func R(minX float64, minY float64, maxX float64, maxY float64) Rect {
+func NewRect(minX float64, minY float64, maxX float64, maxY float64) Rect {
 	return Rect{
 		Min: Vec{minX, minY},
 		Max: Vec{maxX, maxY},
@@ -188,7 +188,7 @@ func (r Rect) Contains(u Vec) bool {
 
 // Union returns the minimal Rect which covers both r and s. Rect r and s must be normalized.
 func (r Rect) Union(s Rect) Rect {
-	return R(
+	return NewRect(
 		math.Min(r.Min.X, s.Min.X),
 		math.Min(r.Min.Y, s.Min.Y),
 		math.Max(r.Max.X, s.Max.X),
@@ -200,7 +200,7 @@ func (r Rect) Union(s Rect) Rect {
 //
 // If r and s don't overlap, this function returns a zero-rectangle.
 func (r Rect) Intersect(s Rect) Rect {
-	t := R(
+	t := NewRect(
 		math.Max(r.Min.X, s.Min.X),
 		math.Max(r.Min.Y, s.Min.Y),
 		math.Min(r.Max.X, s.Max.X),

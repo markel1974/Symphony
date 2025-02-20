@@ -11,8 +11,8 @@ type Line struct {
 	B Vec
 }
 
-// L creates and returns a new Line.
-func L(from, to Vec) Line {
+// NewLine creates and returns a new Line.
+func NewLine(from, to Vec) Line {
 	return Line{
 		A: from,
 		B: to,
@@ -21,7 +21,7 @@ func L(from, to Vec) Line {
 
 // Bounds returns the lines bounding box.  This is in the form of a normalized Rect.
 func (l Line) Bounds() Rect {
-	return R(l.A.X, l.A.Y, l.B.X, l.B.Y).Norm()
+	return NewRect(l.A.X, l.A.Y, l.B.X, l.B.Y).Norm()
 }
 
 // Center will return the point at the center of the line; that is, the point equidistant from either end.

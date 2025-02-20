@@ -59,7 +59,7 @@ func NewPictureFromImage(img image.Image) *Picture {
 	rgba := image.NewRGBA(img.Bounds())
 	draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
 	verticalFlip(rgba)
-	pd := NewPicture(R(
+	pd := NewPicture(NewRect(
 		float64(rgba.Bounds().Min.X),
 		float64(rgba.Bounds().Min.Y),
 		float64(rgba.Bounds().Max.X),

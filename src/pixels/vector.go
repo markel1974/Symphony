@@ -57,7 +57,7 @@ func (u Vec) String() string {
 }
 
 // XY returns the components of the vector in two return values.
-func (u Vec) XY() (x, y float64) {
+func (u Vec) XY() (float64, float64) {
 	return u.X, u.Y
 }
 

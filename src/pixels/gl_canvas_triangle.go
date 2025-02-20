@@ -68,15 +68,12 @@ func (ct *GLCanvasTriangles) draw(tex *executor.Texture, bounds Rect) {
 			ct.vs.End()
 		} else {
 			tex.Begin()
-
 			if tex.Smooth() != smt {
 				tex.SetSmooth(smt)
 			}
-
 			ct.vs.Begin()
 			ct.vs.Draw()
 			ct.vs.End()
-
 			tex.End()
 		}
 

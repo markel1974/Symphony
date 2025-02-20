@@ -1,11 +1,12 @@
 package pixels
 
 import (
-	"golang.org/x/image/font/basicfont"
 	"image/color"
 	"math"
 	"unicode"
 	"unicode/utf8"
+
+	"golang.org/x/image/font/basicfont"
 )
 
 // ASCII is a set of all ASCII runes. These runes are codepoints from 32 to 127 inclusive.

@@ -278,7 +278,7 @@ func (gt *GLTriangles) ClipRect(i int) (rect Rect, is bool) {
 	my := gt.data[gt.index(i, triClipMinY)]
 	ax := gt.data[gt.index(i, triClipMaxX)]
 	ay := gt.data[gt.index(i, triClipMaxY)]
-	rect = R(float64(mx), float64(my), float64(ax), float64(ay))
+	rect = NewRect(float64(mx), float64(my), float64(ax), float64(ay))
 	is = rect.Area() != 0.0
 	return
 }

@@ -46,57 +46,53 @@ func Monitors() []*GLMonitor {
 // Name returns a human-readable name of the GLMonitor.
 func (m *GLMonitor) Name() string {
 	var name string
-	executor.GraphicThread.Call(func() { name = m.monitor.GetName() })
+	executor.GraphicThread.Call(func() {
+		name = m.monitor.GetName()
+	})
 	return name
 }
 
 // PhysicalSize returns the size of the display area of the GLMonitor in millimeters.
-func (m *GLMonitor) PhysicalSize() (width, height float64) {
+func (m *GLMonitor) PhysicalSize() (float64, float64) {
 	var wi, hi int
 	executor.GraphicThread.Call(func() {
 		wi, hi = m.monitor.GetPhysicalSize()
 	})
-	width = float64(wi)
-	height = float64(hi)
-	return
+	return float64(wi), float64(hi)
 }
 
 // Position returns the position of the upper-left corner of the GLMonitor in screen coordinates.
-func (m *GLMonitor) Position() (x, y float64) {
+func (m *GLMonitor) Position() (float64, float64) {
 	var xi, yi int
 	executor.GraphicThread.Call(func() {
 		xi, yi = m.monitor.GetPos()
 	})
-	x = float64(xi)
-	y = float64(yi)
-	return
+	return float64(xi), float64(yi)
 }
 
 // Size returns the resolution of the GLMonitor in pixels.
-func (m *GLMonitor) Size() (width, height float64) {
+func (m *GLMonitor) Size() (float64, float64) {
 	var mode *glfw.VidMode
-	executor.GraphicThread.Call(func() { mode = m.monitor.GetVideoMode() })
-	width = float64(mode.Width)
-	height = float64(mode.Height)
-	return
+	executor.GraphicThread.Call(func() {
+		mode = m.monitor.GetVideoMode()
+	})
+	return float64(mode.Width), float64(mode.Height)
 }
 
 // BitDepth returns the number of bits per color of the GLMonitor.
-func (m *GLMonitor) BitDepth() (red, green, blue int) {
+func (m *GLMonitor) BitDepth() (int, int, int) {
 	var mode *glfw.VidMode
 	executor.GraphicThread.Call(func() { mode = m.monitor.GetVideoMode() })
-	red = mode.RedBits
-	green = mode.GreenBits
-	blue = mode.BlueBits
-	return
+	return mode.RedBits, mode.GreenBits, mode.BlueBits
 }
 
 // RefreshRate returns the refresh frequency of the GLMonitor in Hz (refreshes/second).
-func (m *GLMonitor) RefreshRate() (rate float64) {
+func (m *GLMonitor) RefreshRate() float64 {
 	var mode *glfw.VidMode
-	executor.GraphicThread.Call(func() { mode = m.monitor.GetVideoMode() })
-	rate = float64(mode.RefreshRate)
-	return
+	executor.GraphicThread.Call(func() {
+		mode = m.monitor.GetVideoMode()
+	})
+	return float64(mode.RefreshRate)
 }
 
 // VideoModes returns all available video modes for the monitor.

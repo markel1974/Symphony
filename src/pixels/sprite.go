@@ -11,7 +11,7 @@ type Sprite struct {
 }
 
 func NewSprite() *Sprite {
-	tri := MakeTrianglesData(6)
+	tri := NewTrianglesData(6)
 	s := &Sprite{tri: tri, d: NewDrawer(tri, nil, CacheModePicture)}
 	s.matrix = IM
 	s.mask = Alpha(1)

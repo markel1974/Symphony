@@ -63,7 +63,7 @@ func (t *Texture) Height() int {
 	return t.height
 }
 
-func (t *Texture) SetPixels(x, y, w, h int, pixels []uint8) {
+func (t *Texture) SetPixels(x int, y int, w int, h int, pixels []uint8) {
 	//if len(pixels) != w*h*4 {
 	//	return
 	//	//panic("set pixels: wrong number of pixels")

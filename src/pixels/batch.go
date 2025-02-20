@@ -70,7 +70,7 @@ func (b *Batch) SetColorMask(c color.Color) {
 func (b *Batch) MakeTriangles(t ITriangles) ITargetTriangles {
 	bt := &batchTriangles{
 		tri: t.Copy(),
-		tmp: MakeTrianglesData(t.Len()),
+		tmp: NewTrianglesData(t.Len()),
 		dst: b,
 	}
 	return bt

@@ -10,7 +10,7 @@ type Circle struct {
 	Radius float64
 }
 
-func MakeCircle(center Vec, radius float64) Circle {
+func NewCircle(center Vec, radius float64) Circle {
 	return Circle{
 		Center: center,
 		Radius: radius,
@@ -101,7 +101,7 @@ func (c Circle) Intersect(d Circle) Circle {
 
 	// No need to calculate radius if the circles do not overlap
 	if c.Center.To(d.Center).Len() >= c.Radius+d.Radius {
-		return MakeCircle(center, 0)
+		return NewCircle(center, 0)
 	}
 
 	radius := c.Center.To(d.Center).Len() - (c.Radius + d.Radius)

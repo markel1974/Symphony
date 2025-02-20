@@ -41,7 +41,7 @@ func New(cfg *config.Config) *Render {
 }
 
 func (g *Render) setup(pos pixels.Vec) {
-	g.picture = pixels.NewPicture(pixels.R(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
+	g.picture = pixels.NewPicture(pixels.NewRect(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
 	g.surface = pixels.NewSprite()
 	g.surface.SetCachedMode(pixels.CacheModeUpdate)
 	g.surface.Set(g.picture, g.picture.Bounds())
@@ -59,7 +59,7 @@ func (g *Render) Start() error {
 
 func (g *Render) run() {
 	cfg := pixels.WindowConfig{
-		Bounds:      pixels.R(0, 0, g.maxW, g.maxH),
+		Bounds:      pixels.NewRect(0, 0, g.maxW, g.maxH),
 		VSync:       true,
 		Undecorated: false,
 		Smooth:      false,

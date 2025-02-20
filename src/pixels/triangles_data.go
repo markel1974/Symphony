@@ -20,10 +20,10 @@ var _zeroValueTriangleData = TriangleData{Color: RGBA{1, 1, 1, 1}}
 // ITrianglesPosition, ITrianglesColor and ITrianglesPicture.
 type TrianglesData []TriangleData
 
-// MakeTrianglesData creates TrianglesData of length len initialized with default property values.
+// NewTrianglesData creates TrianglesData of length len initialized with default property values.
 // Prefer this function to make(TrianglesData, len), because make zeros them, while this function
 // does the correct initialization.
-func MakeTrianglesData(len int) *TrianglesData {
+func NewTrianglesData(len int) *TrianglesData {
 	td := make(TrianglesData, len)
 	for i := 0; i < len; i++ {
 		td[i] = _zeroValueTriangleData
@@ -103,7 +103,7 @@ func (td *TrianglesData) Update(t ITriangles) {
 
 // Copy returns an exact independent copy of this TrianglesData.
 func (td *TrianglesData) Copy() ITriangles {
-	copyTd := MakeTrianglesData(td.Len())
+	copyTd := NewTrianglesData(td.Len())
 	copyTd.Update(td)
 	return copyTd
 }

@@ -74,8 +74,7 @@ func (imd *IMDraw) Draw(t ITarget) {
 	imd.batch.Draw(t)
 }
 
-// Push adds some points to the IM queue. All Pushed points will have the same properties except for
-// the position.
+// Push adds some points to the IM queue. All Pushed points will have the same properties except for the position.
 func (imd *IMDraw) Push(pts ...Vec) {
 	// Assert that Color is of type pixel.RGBA,
 	if _, ok := imd.Color.(RGBA); !ok {
@@ -482,26 +481,26 @@ func (imd *IMDraw) polyline(thickness float64, closed bool) {
 	}
 
 	// first point
-	j, i := 0, 1
+	j1, i1 := 0, 1
 	ijNormal := points[0].pos.To(points[1].pos).Normal().Unit().Scaled(thickness / 2)
 
 	if !closed {
-		switch points[j].endShape {
+		switch points[j1].endShape {
 		case NoEndShape:
 			// nothing
 		case SharpEndShape:
-			imd.pushPt(points[j].pos.Add(ijNormal), points[j])
-			imd.pushPt(points[j].pos.Sub(ijNormal), points[j])
-			imd.pushPt(points[j].pos.Add(ijNormal.Normal()), points[j])
+			imd.pushPt(points[j1].pos.Add(ijNormal), points[j1])
+			imd.pushPt(points[j1].pos.Sub(ijNormal), points[j1])
+			imd.pushPt(points[j1].pos.Add(ijNormal.Normal()), points[j1])
 			imd.fillPolygon()
 		case RoundEndShape:
-			imd.pushPt(points[j].pos, points[j])
+			imd.pushPt(points[j1].pos, points[j1])
 			imd.fillEllipseArc(NewVec(thickness/2, thickness/2), ijNormal.Angle(), ijNormal.Angle()+math.Pi)
 		}
 	}
 
-	imd.pushPt(points[j].pos.Add(ijNormal), points[j])
-	imd.pushPt(points[j].pos.Sub(ijNormal), points[j])
+	imd.pushPt(points[j1].pos.Add(ijNormal), points[j1])
+	imd.pushPt(points[j1].pos.Sub(ijNormal), points[j1])
 
 	// middle points
 	for i := 0; i < len(points); i++ {
@@ -554,24 +553,24 @@ func (imd *IMDraw) polyline(thickness float64, closed bool) {
 	}
 
 	// last point
-	i, j = len(points)-2, len(points)-1
-	ijNormal = points[i].pos.To(points[j].pos).Normal().Unit().Scaled(thickness / 2)
+	i1, j1 = len(points)-2, len(points)-1
+	ijNormal = points[i1].pos.To(points[j1].pos).Normal().Unit().Scaled(thickness / 2)
 
-	imd.pushPt(points[j].pos.Sub(ijNormal), points[j])
-	imd.pushPt(points[j].pos.Add(ijNormal), points[j])
+	imd.pushPt(points[j1].pos.Sub(ijNormal), points[j1])
+	imd.pushPt(points[j1].pos.Add(ijNormal), points[j1])
 	imd.fillPolygon()
 
 	if !closed {
-		switch points[j].endShape {
+		switch points[j1].endShape {
 		case NoEndShape:
 			// nothing
 		case SharpEndShape:
-			imd.pushPt(points[j].pos.Add(ijNormal), points[j])
-			imd.pushPt(points[j].pos.Sub(ijNormal), points[j])
-			imd.pushPt(points[j].pos.Add(ijNormal.Normal().Scaled(-1)), points[j])
+			imd.pushPt(points[j1].pos.Add(ijNormal), points[j1])
+			imd.pushPt(points[j1].pos.Sub(ijNormal), points[j1])
+			imd.pushPt(points[j1].pos.Add(ijNormal.Normal().Scaled(-1)), points[j1])
 			imd.fillPolygon()
 		case RoundEndShape:
-			imd.pushPt(points[j].pos, points[j])
+			imd.pushPt(points[j1].pos, points[j1])
 			imd.fillEllipseArc(NewVec(thickness/2, thickness/2), ijNormal.Angle(), ijNormal.Angle()-math.Pi)
 		}
 	}

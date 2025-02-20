@@ -9,6 +9,7 @@ import (
 	"github.com/go-gl/mathgl/mgl32"
 )
 
+// Shader represents a compiled, linked, and usable GPU shader program with associated vertex and uniform attribute formats.
 type Shader struct {
 	program    Binder
 	vertexFmt  AttrFormat
@@ -16,6 +17,9 @@ type Shader struct {
 	uniformLoc []int32
 }
 
+// NewShader creates a new Shader object using specified vertex and uniform formats and given GLSL shader code.
+// It compiles the vertex and fragment shaders, links them into a shader program, and initializes uniform locations.
+// Returns a pointer to the created Shader and an error if shader compilation or linking fails.
 func NewShader(vertexFmt, uniformFmt AttrFormat, vertexShader, fragmentShader string) (*Shader, error) {
 	shader := &Shader{
 		program: Binder{
@@ -103,24 +107,31 @@ func NewShader(vertexFmt, uniformFmt AttrFormat, vertexShader, fragmentShader st
 	return shader, nil
 }
 
+// delete releases the OpenGL shader program associated with the shader object using the graphic thread.
 func (s *Shader) delete() {
 	GraphicThread.Post(func() {
 		gl.DeleteProgram(s.program.obj)
 	})
 }
 
+// ID returns the OpenGL program ID associated with the Shader.
 func (s *Shader) ID() uint32 {
 	return s.program.obj
 }
 
+// VertexFormat returns the vertex attribute format (AttrFormat) used by the Shader.
 func (s *Shader) VertexFormat() AttrFormat {
 	return s.vertexFmt
 }
 
+// UniformFormat returns the format of the uniform attributes used by the shader.
 func (s *Shader) UniformFormat() AttrFormat {
 	return s.uniformFmt
 }
 
+// SetUniformAttr assigns a value to a specified uniform attribute in the shader program.
+// It accepts the uniform index and a value of the appropriate type.
+// Returns true if the uniform was successfully set, or false and an error if it fails.
 func (s *Shader) SetUniformAttr(uniform int, value interface{}) (bool, error) {
 	if s.uniformLoc[uniform] < 0 {
 		return false, nil
@@ -175,10 +186,12 @@ func (s *Shader) SetUniformAttr(uniform int, value interface{}) (bool, error) {
 	return true, nil
 }
 
+// Begin activates the shader program by binding it to the current OpenGL context.
 func (s *Shader) Begin() {
 	s.program.Bind()
 }
 
+// End restores the previous OpenGL state that was active before the shader was bound.
 func (s *Shader) End() {
 	s.program.Restore()
 }
