@@ -4,22 +4,21 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/inputs"
-	"github.com/markel1974/c64emu/src/c64/observer"
 	"os"
 )
 
 type PRG struct {
 	data      []byte
 	startAddr uint16
-	observer  *observer.Observer
+	observer  *Observer
 	keys      *inputs.Keyboard
 	search    []byte
 	command   string
 }
 
-func NewPRG(observer *observer.Observer, keys *inputs.Keyboard) *PRG {
+func NewPRG(b IAdapter, keys *inputs.Keyboard) *PRG {
 	return &PRG{
-		observer:  observer,
+		observer:  NewObserver(b),
 		keys:      keys,
 		data:      nil,
 		startAddr: 0,

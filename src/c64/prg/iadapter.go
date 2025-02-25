@@ -1,4 +1,4 @@
-package observer
+package prg
 
 type IAdapter interface {
 	Read(addr uint16) uint8

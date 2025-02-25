@@ -1,4 +1,4 @@
-package observer
+package prg
 
 import (
 	"fmt"
