@@ -1,9 +1,9 @@
 package mos6510
 
-// _modeTable Addressing mode for each opcode (first part of execution)
+// _modeTable is a slice of functions, each defining behavior or processing logic for specific CPU operational modes.
 var _modeTable []func(*CPU)
 
-// _opTable Operation for each opcode (second part of execution)
+// _opTable defines a slice of CPU instruction implementations, where each function specifies operation logic for an opcode.
 var _opTable []func(*CPU)
 
 //https://www.c64-wiki.com/wiki/Opcode
@@ -18,6 +18,7 @@ var _opTable []func(*CPU)
 // Oa -> Operation Accumulator
 // Op -> Operation
 
+// init initializes the CPU operation and mode tables by assigning corresponding instruction functions to their positions.
 func init() {
 	_modeTable = []func(*CPU){
 		instOpBRK, instApINDx, instOpJAM, instMpINDx, instApZER, instApZER, instMpZER, instMpZER, // 00

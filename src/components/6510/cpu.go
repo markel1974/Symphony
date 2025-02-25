@@ -16,6 +16,7 @@ import (
  *  - Only the highest bit of the nFlag variable is used
  */
 
+// CPU represents a simulated central processing unit with registers, flags, and associated helper components.
 type CPU struct {
 	id             string
 	banks          IBanks
@@ -44,6 +45,7 @@ type CPU struct {
 	irqBreaker     bool
 }
 
+// NewCPU initializes and returns a new CPU instance with the provided id.
 func NewCPU(id string) *CPU {
 	cpu := &CPU{
 		id: id,
@@ -51,11 +53,13 @@ func NewCPU(id string) *CPU {
 	return cpu
 }
 
+// Setup initializes the CPU by configuring its PIC and banks from the given socket.
 func (cpu *CPU) Setup(socket ISocket) {
 	cpu.pic = socket.GetPic()
 	cpu.banks = socket.GetBanks()
 }
 
+// Reset initializes or restores the CPU to a default state by resetting internal flags, registers, and setting the program counter.
 func (cpu *CPU) Reset() {
 	cpu.pic.Reset()
 	cpu.pc = uint16(cpu.banks.Read(0xfffc)) | (uint16(cpu.banks.Read(0xfffd)) << 8) // Read reset vector
@@ -64,11 +68,12 @@ func (cpu *CPU) Reset() {
 	cpu.irqBreaker = false
 }
 
-// SetOverflowBranch implement 6502c SO (SOB) Pin
+// SetOverflowBranch sets the function used to handle conditional overflow branching for the CPU.
 func (cpu *CPU) SetOverflowBranch(sob func() bool) {
 	cpu.overflowBranch = sob
 }
 
+// SetAECLow sets the AEC line state to low or high based on the provided boolean value and updates the CPU stop state accordingly.
 func (cpu *CPU) SetAECLow(aecLow bool) {
 	cpu.aecLow = aecLow
 	if cpu.aecLow {
@@ -76,6 +81,7 @@ func (cpu *CPU) SetAECLow(aecLow bool) {
 	}
 }
 
+// SetRDYLow sets the RDY line to the provided state and resumes the CPU if RDY is not low.
 func (cpu *CPU) SetRDYLow(rdyLow bool) {
 	cpu.rdyLow = rdyLow
 	if !cpu.rdyLow {
@@ -83,6 +89,7 @@ func (cpu *CPU) SetRDYLow(rdyLow bool) {
 	}
 }
 
+// Emulate processes one CPU cycle by invoking the next instruction handler unless the CPU is stopped.
 func (cpu *CPU) Emulate() {
 	if cpu.stop {
 		return
@@ -90,6 +97,9 @@ func (cpu *CPU) Emulate() {
 	cpu.next(cpu)
 }
 
+// read retrieves a byte from the specified memory address using the CPU's banks and checks the RDY state.
+// Returns the read byte and a boolean indicating success.
+// If RDY is low, the CPU will pause execution by setting the stop flag and return a failed state.
 func (cpu *CPU) read(addr uint16) (uint8, bool) {
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -98,6 +108,7 @@ func (cpu *CPU) read(addr uint16) (uint8, bool) {
 	return cpu.banks.Read(addr), true
 }
 
+// popFlags updates the CPU state flags based on the input data, setting various flags like nFlag, vFlag, dFlag, etc.
 func (cpu *CPU) popFlags(data uint8) {
 	cpu.nFlag = data
 	cpu.vFlag = data & 0x40
@@ -107,6 +118,7 @@ func (cpu *CPU) popFlags(data uint8) {
 	cpu.cFlag = data & 0x01
 }
 
+// pushFlags generates a status register byte based on the CPU's flag states and the provided B flag parameter.
 func (cpu *CPU) pushFlags(bFlags bool) uint8 {
 	data := 0x20 | (cpu.nFlag & 0x80)
 	if cpu.vFlag != 0 {
@@ -130,6 +142,7 @@ func (cpu *CPU) pushFlags(bFlags bool) uint8 {
 	return data
 }
 
+// branch handles the logic for branching to a new program counter location based on offset and page crossing.
 func (cpu *CPU) branch(data uint8) {
 	cpu.ar = cpu.pc + uint16(int8(data))
 	if (cpu.ar >> 8) != (cpu.pc >> 8) {
@@ -143,6 +156,8 @@ func (cpu *CPU) branch(data uint8) {
 	}
 }
 
+// doADC performs the Add with Carry (ADC) operation using the given operand and CPU state.
+// Supports both binary and decimal modes. Updates processor flags: carry, zero, negative, and overflow.
 func (cpu *CPU) doADC(data uint8) {
 	k := uint8(0)
 	if cpu.cFlag != 0 {
@@ -182,6 +197,9 @@ func (cpu *CPU) doADC(data uint8) {
 	cpu.a = (ah << 4) | (al & 0x0f)               // result
 }
 
+// doSBC performs the SBC (Subtract with Carry) instruction on the CPU, handling both binary and BCD (decimal) modes.
+// It calculates the result of the subtraction of `data` and the current accumulator with the carry-in value.
+// The method updates the accumulator and relevant CPU flags: negative, zero, overflow, and carry.
 func (cpu *CPU) doSBC(data uint8) {
 	k := uint8(0)
 	if cpu.cFlag == 0 {
@@ -218,6 +236,7 @@ func (cpu *CPU) doSBC(data uint8) {
 	cpu.a = (ah << 4) | (al & 0x0f)
 }
 
+// printRegisters logs the state of the CPU registers and flags. It outputs a formatted string with relevant values.
 func (cpu *CPU) printRegisters(qCycle uint64, baLow bool) {
 	fmt.Printf("CPU] %d|%d||%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d\n",
 		qCycle,

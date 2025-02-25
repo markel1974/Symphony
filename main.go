@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/render/asciirender"
 	"github.com/markel1974/c64emu/src/render/glrender"
 	"github.com/markel1974/c64emu/src/version"
 )
@@ -56,6 +57,10 @@ import (
 
 // -f "/Users/tinmr305/Downloads/c64carts/0_LOAD-Steel_Ranger_+3CD_LAXITY.d64;/Users/tinmr305/Downloads/c64carts/1_GAME-Steel_Ranger_+3CD_LAXITY.d64" -c "/Users/tinmr305/Downloads/c64carts/1541DiagnosticCart/1541diagcart.crt"
 
+type IRender interface {
+	Start() error
+}
+
 func main() {
 	var showHelp bool
 	var showVersion bool
@@ -64,6 +69,7 @@ func main() {
 	var disks string
 	var prg string
 	var noJiffy bool
+	var ascii bool
 	flag.BoolVar(&showHelp, "h", false, "show this help")
 	flag.BoolVar(&showVersion, "v", false, "show version")
 	flag.StringVar(&cartridges, "c", "", "cartridge path")
@@ -71,6 +77,7 @@ func main() {
 	flag.StringVar(&disks, "f", "", "disks")
 	flag.StringVar(&prg, "p", "", "prg path")
 	flag.BoolVar(&noJiffy, "j", false, "disable jiffy")
+	flag.BoolVar(&ascii, "a", false, "ascii render")
 	flag.Parse()
 
 	if showHelp {
@@ -114,8 +121,14 @@ func main() {
 		cfg.DisableJiffy()
 	}
 
-	g := glrender.New(cfg)
-	//g := asciirender.New(cfg)
+	var g IRender
+
+	if ascii {
+		g = asciirender.New(cfg)
+	} else {
+		g = glrender.New(cfg)
+	}
+
 	if err := g.Start(); err != nil {
 		fmt.Println(err)
 		return
