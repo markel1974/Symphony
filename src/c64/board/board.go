@@ -5,6 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges"
 	"github.com/markel1974/c64emu/src/c64/iec"
 	"github.com/markel1974/c64emu/src/c64/inputs"
+	"github.com/markel1974/c64emu/src/c64/observer"
 	"github.com/markel1974/c64emu/src/c64/prg"
 	"github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/cia"
@@ -149,7 +150,7 @@ func (s *Board) Setup(cfg *config.Config) error {
 	}
 
 	if prgPath := s.cfg.GetPrg(); len(prgPath) > 0 {
-		s.prg = prg.NewPRG(banks.NewObserver(s.banks), s.keys)
+		s.prg = prg.NewPRG(observer.NewObserver(s.banks), s.keys)
 		if err := s.prg.Load(prgPath); err != nil {
 			log.Printf("can't load prg: %s", err.Error())
 			s.prg = nil

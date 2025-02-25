@@ -3,21 +3,21 @@ package prg
 import (
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/c64/banks"
 	"github.com/markel1974/c64emu/src/c64/inputs"
+	"github.com/markel1974/c64emu/src/c64/observer"
 	"os"
 )
 
 type PRG struct {
 	data      []byte
 	startAddr uint16
-	observer  *banks.Observer
+	observer  *observer.Observer
 	keys      *inputs.Keyboard
 	search    []byte
 	command   string
 }
 
-func NewPRG(observer *banks.Observer, keys *inputs.Keyboard) *PRG {
+func NewPRG(observer *observer.Observer, keys *inputs.Keyboard) *PRG {
 	return &PRG{
 		observer:  observer,
 		keys:      keys,
