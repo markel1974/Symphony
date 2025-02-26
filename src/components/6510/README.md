@@ -1,74 +1,74 @@
 # Package mos6510
 
-Questo package implementa l'emulazione del microprocessore MOS 6510 (una variante del 6502) utilizzato nel Commodore 64.
+This package implements the emulation of the MOS 6510 microprocessor (a variant of the 6502) used in the Commodore 64.
 
-## Panoramica
+## Overview
 
-Il package `mos6510` fornisce una rappresentazione software della CPU 6510, inclusi:
+The `mos6510` package provides a software representation of the 6510 CPU, including:
 
-*   Registri (A, X, Y, PC, SP, SR).
-*   Flag del processore (N, V, B, D, I, Z, C).
-*   Ciclo di esecuzione delle istruzioni (fetch, decode, execute).
-*   Gestione degli interrupt (NMI, IRQ, Reset).
-*   Implementazione delle istruzioni del 6510 (tramite micro-operazioni).
-*   Gestione dello stack.
-* Tabelle di lookup
+*   Registers (A, X, Y, PC, SP, SR).
+*   Processor flags (N, V, B, D, I, Z, C).
+*   Instruction execution cycle (fetch, decode, execute).
+*   Interrupt handling (NMI, IRQ, Reset).
+*   Instruction implementation for the 6510 (using micro-operations).
+*   Stack management.
+*   Lookup tables.
 
-## Struttura del Package
+## Package Structure
 
-Il package è organizzato nei seguenti file:
+The package is organized into the following files:
 
-*   `cpu.go`: Definisce la struct `CPU` e i metodi principali per l'emulazione (ciclo di esecuzione, gestione registri, ecc.).
-*   `instructions.go`: Contiene le *dichiarazioni* delle funzioni che implementano le singole istruzioni del 6510 (suddivise in micro-operazioni).
-*   `inst_*.go`: Contengono l'*implementazione* delle micro-operazioni delle istruzioni, raggruppate per categoria (load/store, aritmetiche, logiche, ecc.).
-*   `opcodes.go`: Definisce le tabelle di dispatch (`_modeTable` e `_opTable`) che mappano gli opcode alle funzioni di gestione delle modalità di indirizzamento e alle funzioni di esecuzione delle istruzioni.
-*   `stack.go`: Implementa le operazioni sullo stack del 6510.
-*   `utils.go`: Contiene funzioni di utilità.
-*   `interrupts_test.go`: Contiene i test per la gestione degli interrupt.
-* `opcodes_test.go`: Contiene test per le operations.
+*   `cpu.go`: Defines the `CPU` struct and the main methods for emulation (execution cycle, register management, etc.).
+*   `instructions.go`: Contains the *declarations* of the functions implementing the individual instructions of the 6510 (divided into micro-operations).
+*   `inst_*.go`: Contain the *implementation* of the micro-operations for the instructions, grouped by category (load/store, arithmetic, logic, etc.).
+*   `opcodes.go`: Defines the dispatch tables (`_modeTable` and `_opTable`) that map opcodes to functions for addressing mode handling and instruction execution.
+*   `stack.go`: Implements operations on the 6510 stack.
+*   `utils.go`: Contains utility functions.
+*   `interrupts_test.go`: Contains tests for interrupt handling.
+*   `opcodes_test.go`: Contains tests for opcode operations.
 
-## Istruzioni Implementate
+## Implemented Instructions
 
-[**TODO:** Elencare *tutte* le istruzioni implementate, con una breve descrizione di ciascuna, la modalità di indirizzamento, i flag modificati, e i cicli di clock.  Questo può essere fatto in forma di tabella, o usando una lista.]
+[**TODO:** List *all* implemented instructions, with a brief description of each, their addressing modes, modified flags, and clock cycles. This can be done in table format or as a list.]
 
-**Esempio:**
+**Example:**
 
-| Istruzione | Modalità di Indirizzamento | Descrizione                                   | Flag Affetti | Cicli |
-| :---------- | :------------------------- | :-------------------------------------------- | :----------- | ----- |
-| LDA         | Immediate                  | Carica un valore immediato nell'accumulatore. | N, Z         | 2     |
-| LDA         | Zero Page                  | Carica un valore da un indirizzo in Zero Page.  | N, Z         | 3     |
-| ...         | ...                        | ...                                           | ...          | ...   |
+| Instruction | Addressing Mode            | Description                                    | Flags Affected | Cycles |
+| :---------- | :------------------------- | :--------------------------------------------- | :------------- | :----- |
+| LDA         | Immediate                  | Loads an immediate value into the accumulator. | N, Z           | 2      |
+| LDA         | Zero Page                  | Loads a value from a Zero Page address.        | N, Z           | 3      |
+| ...         | ...                        | ...                                            | ...            | ...    |
 
-## Modalità di Indirizzamento
+## Addressing Modes
 
-[**TODO:** Descrivere le modalità di indirizzamento del 6502/6510, con esempi.]
+[**TODO:** Describe the addressing modes of the 6502/6510, with examples.]
 
-## Interrupt
+## Interrupts
 
-[**TODO:** Spiegare come vengono gestiti gli interrupt (NMI, IRQ, Reset).]
+[**TODO:** Explain how interrupts (NMI, IRQ, Reset) are handled.]
 
-## Dipendenze
+## Dependencies
 
-*   `github.com/markel1974/c64emu/src/memory` (per l'accesso alla memoria)
-*   `github.com/markel1974/c64emu/src/components/quartz` (per la gestione del clock)
-* Altre interfacce
+*   `github.com/markel1974/c64emu/src/memory` (for memory access)
+*   `github.com/markel1974/c64emu/src/components/quartz` (for clock management)
+*   Other interfaces
 
-## Note
+## Notes
 
-*   Questo emulatore implementa *tutte* le istruzioni non documentate del 6502/6510.
-*   Questo emulatore *mira* all'accuratezza ciclo per ciclo.
+*   This emulator implements *all* undocumented instructions of the 6502/6510.
+*   This emulator *aims* for cycle-by-cycle accuracy.
 
 ## TODO
 
-*   Aggiungere test unitari per *tutte* le istruzioni, in *tutte* le modalità di indirizzamento.
-*   Migliorare la gestione degli errori.
-*   Aggiungere commenti dettagliati alle micro-operazioni.
-*   Completare l'implementazione delle istruzioni mancanti (se ce ne sono).
+*   Add unit tests for *all* instructions, in *all* addressing modes.
+*   Improve error handling.
+*   Add detailed comments to the micro-operations.
+*   Complete the implementation of any missing instructions (if any are still missing).
 
-## Contribuire
+## Contributing
 
-[**TODO:** Se accetti contributi, spiega come farlo.]
+[**TODO:** If you accept contributions, describe how to do so.]
 
-## Licenza
+## License
 
-Questo progetto è rilasciato sotto licenza [Apache 2.0](https://opensource.org/licenses/Apache-2.0).
+This project is released under the [Apache 2.0 license](https://opensource.org/licenses/Apache-2.0).
