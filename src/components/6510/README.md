@@ -24,8 +24,6 @@ The package is organized into the following files:
 *   `opcodes.go`: Defines the dispatch tables (`_modeTable` and `_opTable`) that map opcodes to functions for addressing mode handling and instruction execution.
 *   `stack.go`: Implements operations on the 6510 stack.
 *   `utils.go`: Contains utility functions.
-*   `interrupts_test.go`: Contains tests for interrupt handling.
-*   `opcodes_test.go`: Contains tests for opcode operations.
 
 ## Implemented Instructions
 
