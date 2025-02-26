@@ -8,8 +8,10 @@ import (
 // 1541, 1541II, 1571 and 2031
 // see https://sta.c64.org/cbm1541mem.html
 
+// defaultViaTimeout is the maximum threshold for VIA timer counters before triggering specific actions or interrupts.
 const defaultViaTimeout = 0xffff
 
+// Via represents a Versatile Interface Adapter (VIA) with multiple registers for configuring I/O, timers, and control logic.
 type Via struct {
 	pra    uint8
 	ddra   uint8
@@ -28,6 +30,7 @@ type Via struct {
 	socket ISocket
 }
 
+// NewVia creates and initializes a new Via instance with the specified identifier.
 func NewVia(id string) *Via {
 	v := &Via{
 		id: id,
@@ -35,10 +38,12 @@ func NewVia(id string) *Via {
 	return v
 }
 
+// Setup initializes the Via by assigning the provided ISocket instance to its internal socket reference.
 func (v *Via) Setup(socket ISocket) {
 	v.socket = socket
 }
 
+// Reset sets all internal registers of the Via instance to zero, effectively reinitializing its state.
 func (v *Via) Reset() {
 	v.pra = 0
 	v.ddra = 0
@@ -55,6 +60,8 @@ func (v *Via) Reset() {
 	v.ier = 0
 }
 
+// ReadByte reads a byte from the VIA register specified by the given address.
+// It returns the value read from the corresponding register or 0 for unknown addresses.
 func (v *Via) ReadByte(addr uint16) uint8 {
 	reg := addr & 0x0f
 	switch reg {
@@ -103,6 +110,7 @@ func (v *Via) ReadByte(addr uint16) uint8 {
 	}
 }
 
+// WriteByte writes a byte to a specified address, handling internal registers and triggering necessary operations.
 func (v *Via) WriteByte(addr uint16, data uint8) {
 	reg := addr & 0x0f
 	switch reg {
@@ -156,6 +164,7 @@ func (v *Via) WriteByte(addr uint16, data uint8) {
 	}
 }
 
+// Emulate handles the timer countdown logic for Timer 1 and Timer 2, triggers interrupts, and reloads Timer 1 in free-run mode.
 func (v *Via) Emulate() {
 	t1c := uint(v.t1c) - 1
 	v.t1c = uint16(t1c)
@@ -181,14 +190,18 @@ func (v *Via) Emulate() {
 	}
 }
 
+// SignalPRA writes the current PRA (Port A register) value to the connected socket using the Data Direction Register A.
 func (v *Via) SignalPRA() {
 	v.socket.WritePRA(v.pra, v.ddra)
 }
 
+// SignalPRB updates the socket with the current state and data direction of Port B (PRB and DDRB).
 func (v *Via) SignalPRB() {
 	v.socket.WritePRB(v.prb, v.ddrb)
 }
 
+// ByteReady checks if the peripheral control register (PCR) indicates that the byte is ready for processing.
+// It returns true if the PCR's specific bits (0x0e) match the expected value, otherwise false.
 func (v *Via) ByteReady() bool {
 	if (v.pcr & 0x0e) == 0x0e {
 		return true
