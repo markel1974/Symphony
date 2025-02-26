@@ -1,72 +1,137 @@
 # Package mos6510
 
-This package implements the emulation of the MOS 6510 microprocessor (a variant of the 6502) used in the Commodore 64.
+This package (`src/components/mos6510`) provides an emulation of the MOS 6510 microprocessor, a variant of the 6502, used in the Commodore 64 home computer.  The emulator is designed for accuracy, aiming for cycle-accurate emulation where feasible. It's used as the CPU component within the `g64` Commodore 64 emulator.
 
-## Overview
+**Note:** This emulator is part of a larger project (`g64`) and is not intended for standalone use. It relies on other components of `g64` (specifically the `memory.Memory` interface and `IBanks`, `IPic` interfaces) for its operation.
 
-The `mos6510` package provides a software representation of the 6510 CPU, including:
+## Architecture
 
-*   Registers (A, X, Y, PC, SP, SR).
-*   Processor flags (N, V, B, D, I, Z, C).
-*   Instruction execution cycle (fetch, decode, execute).
-*   Interrupt handling (NMI, IRQ, Reset).
-*   Instruction implementation for the 6510 (using micro-operations).
-*   Stack management.
-*   Lookup tables.
+The 6510 emulation is based on a micro-operation approach.  Each 6502/6510 instruction is broken down into a sequence of smaller operations, each corresponding (roughly) to a CPU clock cycle. This allows for a high degree of timing accuracy, which is essential for accurate emulation of the VIC-II and SID chips.
 
-## Package Structure
+**Key Components:**
 
-The package is organized into the following files:
+*   **`cpu.go`:** Contains the core `CPU` struct and its methods. This includes:
+    *   `CPU` struct: Represents the state of the 6510 CPU (registers, flags, program counter, stack pointer, etc.).
+    *   `Run()`: The main execution loop. This function repeatedly fetches and executes instructions until `c.Exit` is true.
+    *   `Fetch()`: Reads the next opcode from memory.
+    *   `Read()` and `Write()`:  Methods for reading from and writing to memory (using the `IBanks` interface).
+    *   `StackPush()` and `StackPop()`: Methods for manipulating the stack.
+    *   `Nmi()`, `Irq()`, `Reset()`:  Methods for handling interrupts.
+    *   Helper functions for flag manipulation (e.g., `SetFlagNZ`).
+    *   Helper functions for address calculation, different addressing mode.
 
-*   `cpu.go`: Defines the `CPU` struct and the main methods for emulation (execution cycle, register management, etc.).
-*   `instructions.go`: Contains the *declarations* of the functions implementing the individual instructions of the 6510 (divided into micro-operations).
-*   `inst_*.go`: Contain the *implementation* of the micro-operations for the instructions, grouped by category (load/store, arithmetic, logic, etc.).
-*   `opcodes.go`: Defines the dispatch tables (`_modeTable` and `_opTable`) that map opcodes to functions for addressing mode handling and instruction execution.
-*   `stack.go`: Implements operations on the 6510 stack.
-*   `utils.go`: Contains utility functions.
+*   **`instructions.go`:** Contains *declarations* of all the functions that implement the individual 6510 instructions.  These functions are grouped by category in separate files (see below).
 
-## Implemented Instructions
+*   **`inst_*.go`:**  These files contain the *implementations* of the 6502/6510 instructions, grouped by category:
+    *   `inst_load_store.go`:  Load/Store instructions (LDA, STA, LDX, STX, LDY, STY, etc.).
+    *   `inst_arithmetic.go`: Arithmetic instructions (ADC, SBC, INC, DEC, etc.).
+    *   `inst_logic.go`: Logical instructions (AND, ORA, EOR, BIT, ecc.).
+    *   `inst_shift_rotate.go`: Shift and rotate instructions (ASL, LSR, ROL, ROR, ecc.).
+    *   `inst_branch.go`: Branch instructions (BCC, BCS, BEQ, BNE, JMP, JSR, RTS, etc.).
+    *   `inst_flag.go`: Flag manipulation instructions (CLC, SEC, CLI, SEI, CLD, SED, CLV).
+    *   `inst_stack.go`: Stack instructions (PHA, PLA, PHP, PLP, TSX, TXS).
+    *    `inst_interrupt.go`: Interrupt instructions
+    *   `inst_transfer.go`: Register transfer instructions (TAX, TXA, TAY, TYA, etc.).
+    *  `inst_control.go`: Other instructions.
+    *   `inst_undocumented.go`: Undocumented (illegal) opcodes.
 
-[**TODO:** List *all* implemented instructions, with a brief description of each, their addressing modes, modified flags, and clock cycles. This can be done in table format or as a list.]
+*   **`opcodes.go`:**  This file *was* present in a previous version, it's not present now.
 
-**Example:**
+*   **`tables.go`:** Contains the dispatch tables (`opTable` and `modeTable`) that map opcodes to the corresponding addressing mode and instruction execution functions.
 
-| Instruction | Addressing Mode            | Description                                    | Flags Affected | Cycles |
-| :---------- | :------------------------- | :--------------------------------------------- | :------------- | :----- |
-| LDA         | Immediate                  | Loads an immediate value into the accumulator. | N, Z           | 2      |
-| LDA         | Zero Page                  | Loads a value from a Zero Page address.        | N, Z           | 3      |
-| ...         | ...                        | ...                                            | ...            | ...    |
+*   **`stack.go`:**  Provides functions for managing the 6510 stack.
 
-## Addressing Modes
+*   **`utils.go`:** Contains utility functions.
 
-[**TODO:** Describe the addressing modes of the 6502/6510, with examples.]
+**Execution Flow:**
 
-## Interrupts
+The `Run` method in `cpu.go` is the main execution loop.  It repeatedly:
 
-[**TODO:** Explain how interrupts (NMI, IRQ, Reset) are handled.]
+1.  Fetches the next opcode using `Fetch()`.
+2.  Looks up the corresponding instruction implementation function in `opTable`.
+3.  Looks up the corresponding addressing mode function in `modeTable`.
+4.  Calls the addressing mode function.
+5.  Calls the instruction implementation function.
+6.  Handles interrupts.
+
+**Addressing Modes:**
+
+The 6510 supports various addressing modes.  The functions to handle address calculation are mostly located within `cpu.go`.
+
+**Interrupts:**
+
+The 6510 supports three types of interrupts:
+
+*   **NMI (Non-Maskable Interrupt):**  A high-priority interrupt that cannot be ignored by the CPU.
+*   **IRQ (Maskable Interrupt):**  A lower-priority interrupt that can be enabled or disabled by the CPU.
+*   **Reset:**  Resets the CPU to its initial state.
+
+The `pic.go` and the methods in `cpu.go` handle interrupt generation and processing. The `IPic` interface is used to communicate with a separate interrupt controller.
+
+**Status Register (Flags):**
+
+The 6510 has a status register (SR) that contains several flags that reflect the state of the CPU and the result of the last operation.
+
+*   **N (Negative):** Set if the result of the last operation was negative (bit 7 set).
+*   **V (Overflow):** Set if the last operation resulted in a signed overflow.
+*   **- (Unused):** This bit is always 1.
+* **B (Break):**
+*   **D (Decimal Mode):**  Used for BCD arithmetic (not fully supported in the original 6502, and often has different, or no, behavior on the 6510).
+*   **I (Interrupt Disable):**  Set to disable IRQ interrupts.
+*   **Z (Zero):** Set if the result of the last operation was zero.
+*   **C (Carry):** Set if the last operation resulted in a carry (addition) or borrow (subtraction).
+
+**Supported Instructions:**
+
+[**TODO:** Provide a *complete* list of supported instructions, grouped by category (Load/Store, Arithmetic, Logic, etc.).  For each instruction, include:
+*   Mnemonic.
+*   Addressing modes.
+*   Brief description.
+*   Flags affected.
+*   Cycles (ideally, per addressing mode).
+    A table format, like the one started in the previous draft, is recommended.]
+
+**Undocumented Instructions:**
+
+[**TODO:** List any undocumented instructions that are implemented, and describe their behavior.]
+
+## Usage
+
+[**TODO:** Provide examples of how to use the `mos6510` package.  This should include:]
+
+*   **Creating a `CPU` instance:**
+
+    ```go
+    // Assuming you have an implementation of memory.Memory called `myMemory`
+    cpu := mos6510.NewCPU(myMemory)
+    ```
+
+*   **Loading code into memory:**  (using the `memory.Memory` interface).
+
+*   **Setting the program counter (PC):** (using the `SetPC` method).
+
+*   **Running the emulator:**  (using the `Run` method).
+
+*   **Accessing registers:**  (using the `GetA`, `GetX`, `GetY`, `GetPC`, `GetSP` methods).
+
+*   **Reading and writing memory:** (using the `Read` and `Write` methods).
+* **Handling interrupts:**
 
 ## Dependencies
+* `github.com/markel1974/c64emu/src/memory`
+* `github.com/markel1974/c64emu/src/components/quartz`
+* `github.com/markel1974/c64emu/src/bits`
+* `github.com/markel1974/c64emu/src/c64/banks`
 
-*   `github.com/markel1974/c64emu/src/memory` (for memory access)
-*   `github.com/markel1974/c64emu/src/components/quartz` (for clock management)
-*   Other interfaces
+## Limitations
 
-## Notes
-
-*   This emulator implements *all* undocumented instructions of the 6502/6510.
-*   This emulator *aims* for cycle-by-cycle accuracy.
-
-## TODO
-
-*   Add unit tests for *all* instructions, in *all* addressing modes.
-*   Improve error handling.
-*   Add detailed comments to the micro-operations.
-*   Complete the implementation of any missing instructions (if any are still missing).
+*   **No Unit Tests:** This package currently lacks unit tests. This means that the correctness of the emulation cannot be guaranteed.
+*   **Incomplete Documentation:**  The documentation is incomplete.
 
 ## Contributing
 
-[**TODO:** If you accept contributions, describe how to do so.]
+[**TODO:** If you accept contributions, explain how to do it.]
 
 ## License
 
-This project is released under the [Apache 2.0 license](https://opensource.org/licenses/Apache-2.0).
+This project is released under the [Apache 2.0 License](https://www.google.com/url?sa=E&source=gmail&q=https://www.google.com/url?sa=E%26source=gmail%26q=https://opensource.org/licenses/Apache-2.0).
