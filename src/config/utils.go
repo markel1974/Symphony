@@ -2,11 +2,13 @@ package config
 
 import "strings"
 
+// KV represents a key-value pair with both key and value as strings.
 type KV struct {
 	K string
 	V string
 }
 
+// KeyVal parses a semicolon-separated string into a slice of KV structs, splitting each entry into key and value pairs.
 func KeyVal(data string) []KV {
 	var kvs []KV
 	for _, c := range strings.Split(data, ";") {

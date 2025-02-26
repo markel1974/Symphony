@@ -4,18 +4,25 @@ import (
 	"math"
 )
 
+// InitRandomChanceMax defines the maximum chance value, representing 100% probability.
+// InitRandomChanceHalf represents 50% probability, derived as half of InitRandomChanceMax.
+// InitRandomChanceDefault defines the default chance value, representing 0.1% probability.
 const (
 	InitRandomChanceMax     = 10000 // 100%
 	InitRandomChanceHalf    = InitRandomChanceMax / 2
 	InitRandomChanceDefault = 10 // 0.1%
 )
 
+// RandomMethodNone does not flip any bits.
+// RandomMethodGeom generates bit intervals between flips geometrically.
+// RandomMethodUniform generates discrete uniform values for each bit.
 const (
 	RandomMethodNone    = 0 // flip no (or all) bits
 	RandomMethodGeom    = 1 // generate bit intervals between flips
 	RandomMethodUniform = 2 // generate discrete uniform per bit
 )
 
+// Filler represents a configurable structure used to generate patterns and randomness for memory initialization.
 type Filler struct {
 	startValue         uint // first value of the base pattern (byte value)
 	valueInvert        uint // number of bytes until start value is inverted
@@ -27,6 +34,7 @@ type Filler struct {
 	randomChance       uint // global random chance
 }
 
+// New creates and returns a new instance of Filler with the specified parameters for pattern and randomization configuration.
 func New(startValue uint, valueInvert uint, valueOffset uint, patternInvert uint, patternInvertValue uint, randomStart uint, randomRepeat uint, randomChance uint) *Filler {
 	return &Filler{
 		startValue:         startValue,
@@ -40,6 +48,7 @@ func New(startValue uint, valueInvert uint, valueOffset uint, patternInvert uint
 	}
 }
 
+// InitWithPattern initializes the memory with a patterned sequence based on the properties and randomness configuration.
 func (rp *Filler) InitWithPattern(memRam []uint8, ramSize uint) {
 	randomMethod := RandomMethodNone
 	randomMaskInitial := uint(0)

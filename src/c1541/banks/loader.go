@@ -2,13 +2,16 @@ package banks
 
 import "os"
 
+// Loader is responsible for managing the loading and patching of ROM files.
 type Loader struct {
 }
 
+// NewLoader returns a new instance of Loader, used for managing and loading ROM data.
 func NewLoader() *Loader {
 	return &Loader{}
 }
 
+// Load retrieves ROM data from a file if romName is provided and readable, otherwise returns default or Jiffy ROM data.
 func (r *Loader) Load(useJiffy bool, romName string) []byte {
 	if len(romName) > 0 {
 		dat, err := os.ReadFile(romName)
@@ -23,6 +26,8 @@ func (r *Loader) Load(useJiffy bool, romName string) []byte {
 	return _builtinRom
 }
 
+/*
+// patchDriveRom modifies a ROM byte array to disable checksum verification, adjust idle loop, and enable specific disk operations.
 func (r *Loader) patchDriveRom(rom []byte) {
 	rom[0x2ae4] = 0xea // Don't check ROM checksum
 	rom[0x2ae5] = 0xea
@@ -41,3 +46,4 @@ func (r *Loader) patchDriveRom(rom []byte) {
 	rom[0x3b0c] = 0xf2 // Format track
 	rom[0x3b0d] = 0x02
 }
+*/
