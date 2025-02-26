@@ -177,7 +177,7 @@ func (m *CIA) ReadRegister(addr uint16) uint8 {
 	case 0x0f:
 		return m.timerB.GetCR()
 	}
-	return 0 // Can't happen
+	return 0 // Impossible
 }
 
 // WriteRegister writes data to a specified register address in the CIA and updates the appropriate internal state or behavior.

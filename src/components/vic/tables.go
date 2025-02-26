@@ -1,5 +1,26 @@
 package mos6569
 
+// ScreenFreq defines the screen refresh frequency in Hertz.
+// FrameInterval calculates the duration of a frame in milliseconds.
+// DisplayX specifies the horizontal display resolution.
+// DisplayY specifies the vertical display resolution.
+// DisplayXFill represents an extended horizontal resolution range.
+// TotalRasters denotes the total number of raster lines for PAL format.
+// DisplayXDiv8 is the horizontal resolution divided by 8.
+// DisplayXDiv4 is the horizontal resolution divided by 4.
+// FirstDisplayedLine specifies the first line displayed on the screen.
+// LastDisplayedLine specifies the last line displayed on the screen.
+// FirstDmaLine identifies the first raster line eligible for Bad Lines.
+// LastDmaLine identifies the last raster line eligible for Bad Lines.
+// Row25YStart specifies the Y start position for a 25-row display.
+// Row25YStop specifies the Y stop position for a 25-row display.
+// Row24YStart specifies the Y start position for a 24-row display.
+// Row24YStop specifies the Y stop position for a 24-row display.
+// RasterYMax represents the maximum value of the raster Y position.
+// DisplayXMax calculates the maximum horizontal resolution including padding.
+// DisplaySize defines the total display buffer size in pixels.
+// DisplayXFillMax calculates the extended horizontal resolution including padding.
+// SpriteNumber specifies the number of hardware-supported sprites.
 const (
 	ScreenFreq         = 50
 	FrameInterval      = 1000 / ScreenFreq
@@ -24,7 +45,7 @@ const (
 	SpriteNumber       = 8
 )
 
-// _multiExpTable - Table for multicolor sprite expansion
+// _multiExpTable is a precomputed lookup table of uint16 values for efficient multi-exponentiation operations.
 var _multiExpTable = []uint16{
 	0x0000, 0x0005, 0x000A, 0x000F, 0x0050, 0x0055, 0x005A, 0x005F,
 	0x00A0, 0x00A5, 0x00AA, 0x00AF, 0x00F0, 0x00F5, 0x00FA, 0x00FF,
@@ -60,7 +81,7 @@ var _multiExpTable = []uint16{
 	0xFFA0, 0xFFA5, 0xFFAA, 0xFFAF, 0xFFF0, 0xFFF5, 0xFFFA, 0xFFFF,
 }
 
-// _expTable - Table for standard sprite expansion
+// _expTable is a lookup table containing uint16 values for quick reference or computation in specific algorithms.
 var _expTable = []uint16{
 	0x0000, 0x0003, 0x000C, 0x000F, 0x0030, 0x0033, 0x003C, 0x003F,
 	0x00C0, 0x00C3, 0x00CC, 0x00CF, 0x00F0, 0x00F3, 0x00FC, 0x00FF,
@@ -96,6 +117,7 @@ var _expTable = []uint16{
 	0xFFC0, 0xFFC3, 0xFFCC, 0xFFCF, 0xFFF0, 0xFFF3, 0xFFFC, 0xFFFF,
 }
 
+// _scCodesAscii is a mapping of character codes to their corresponding ASCII byte representations.
 var _scCodesAscii = []byte{
 	/*   0 -  15 */ '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
 	/*  16 -  31 */ 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '£', ']', '^', '<',
@@ -108,8 +130,10 @@ var _scCodesAscii = []byte{
 	/* 112 - 127 */ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?',
 }
 
+// _colors is a slice of 8-bit unsigned integers representing a precomputed mapping of color indices to color values.
 var _colors []uint8
 
+// init initializes the _colors slice with 256 elements, mapping each index to the lower 4 bits of its value.
 func init() {
 	_colors = make([]uint8, 256)
 	for i := range _colors {

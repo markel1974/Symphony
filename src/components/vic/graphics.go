@@ -2,9 +2,13 @@ package mos6569
 
 import "fmt"
 
+// columnsMax defines the maximum number of columns used for graphical or text-based data buffers in the graphics rendering.
 const columnsMax = 40
+
+// rowsMax is the maximum number of rows used for video display handling and row counter operations in the graphics logic.
 const rowsMax = 7
 
+// _foregroundSequencer provides a sequence of rendering functions for various foreground drawing modes in the Graphics system.
 var _foregroundSequencer = []func(*Graphics, int){
 	drawForegroundTextStandard,
 	drawForegroundTextMulticolor,
@@ -16,6 +20,7 @@ var _foregroundSequencer = []func(*Graphics, int){
 	drawForegroundBitmapMulticolorInvalid,
 }
 
+// _backgroundSequencer is a sequence of functions for rendering backgrounds based on the current display mode of Graphics.
 var _backgroundSequencer = []func(*Graphics){
 	drawBackgroundTextStandard,
 	drawBackgroundTextMulticolor,
@@ -27,6 +32,8 @@ var _backgroundSequencer = []func(*Graphics){
 	drawBackgroundDefault,
 }
 
+// Graphics represents the core structure handling graphical rendering and related operations in the system.
+// It includes components for managing video memory, collisions, display buffer, and other graphical parameters.
 type Graphics struct {
 	core              *VIC
 	collisions        *Collisions
@@ -46,6 +53,7 @@ type Graphics struct {
 	textBuffer        []byte
 }
 
+// NewGraphics initializes and returns a new Graphics instance with the provided VIC core, collision handler, and display buffer.
 func NewGraphics(core *VIC, collisions *Collisions, db IDisplayBuffer) *Graphics {
 	gr := &Graphics{
 		core:              core,
@@ -88,6 +96,7 @@ func NewGraphics(core *VIC, collisions *Collisions, db IDisplayBuffer) *Graphics
 	return gr
 }
 
+// PrintText outputs the contents of the textBuffer in a formatted manner, wrapping lines at every 40 characters.
 func (gr *Graphics) PrintText() {
 	for x, v := range gr.textBuffer {
 		if (x % 40) == 0 {
@@ -98,45 +107,55 @@ func (gr *Graphics) PrintText() {
 	fmt.Println()
 }
 
+// Setup initializes the Graphics instance and prepares it for rendering operations.
 func (gr *Graphics) Setup() {
 }
 
+// GetText retrieves the text buffer content from the Graphics instance as a slice of bytes.
 func (gr *Graphics) GetText() []byte {
 	return gr.textBuffer
 }
 
+// ResetVideoCounterLatch resets the video counter latch to zero.
 func (gr *Graphics) ResetVideoCounterLatch() {
 	gr.videoCounterLatch = 0
 }
 
+// UpdateVideoCounter updates the video counter to match the current video counter latch value.
 func (gr *Graphics) UpdateVideoCounter() {
 	gr.videoCounter = gr.videoCounterLatch
 }
 
+// ResetLineIndex resets the line index to zero, typically used to start a new line in the video matrix or color line.
 func (gr *Graphics) ResetLineIndex() {
 	gr.lineIndex = 0
 }
 
+// SetOffset sets the offset value for the Graphics instance to the given parameter.
 func (gr *Graphics) SetOffset(offset int) {
 	gr.offset = offset
 }
 
+// UpdateCharDataLast updates the `charDataLast` field with the current value of `charData` to retain the last frame's data.
 func (gr *Graphics) UpdateCharDataLast() {
 	gr.charDataLast = gr.charData
 }
 
+// TryResetRowCounter resets the row counter to 0 if the badLineCondition in the core is true.
 func (gr *Graphics) TryResetRowCounter() {
 	if gr.core.badLineCondition {
 		gr.rowCounter = 0
 	}
 }
 
+// TryAcquireDisplayAccess sets the displayAccess flag to true if the badLineCondition flag in the core is active.
 func (gr *Graphics) TryAcquireDisplayAccess() {
 	if gr.core.badLineCondition {
 		gr.displayAccess = true
 	}
 }
 
+// UpdateDisplayAccess updates the display access state and row counter based on the current conditions and row limit.
 func (gr *Graphics) UpdateDisplayAccess() {
 	if gr.rowCounter == rowsMax {
 		gr.videoCounterLatch = gr.videoCounter
@@ -148,6 +167,7 @@ func (gr *Graphics) UpdateDisplayAccess() {
 	}
 }
 
+// TryGraphicsAccess fetches and processes graphics data from memory based on the current raster and display state.
 func (gr *Graphics) TryGraphicsAccess() {
 	if gr.displayAccess {
 		var addr uint16
@@ -180,6 +200,7 @@ func (gr *Graphics) TryGraphicsAccess() {
 	}
 }
 
+// TryPhi2Access handles Phi2 clock phase access, updating videoMatrix and colorLine based on core conditions and memory.
 func (gr *Graphics) TryPhi2Access() {
 	if gr.core.baLow {
 		if gr.core.aecLow {
@@ -193,12 +214,15 @@ func (gr *Graphics) TryPhi2Access() {
 	}
 }
 
+// DrawBackground renders the background using the current display mode and updates the graphics offset and collision state.
 func (gr *Graphics) DrawBackground() {
 	_backgroundSequencer[gr.core.displayMode](gr)
 	gr.offset += 8
 	gr.collisions.IncrementGraphicsOffset()
 }
 
+// DrawForeground renders the foreground graphics based on the current display mode and x-scroll offset.
+// It also increments the offset and updates the collisions.
 func (gr *Graphics) DrawForeground() {
 	offset := gr.offset + int(gr.core.xScroll)
 	_foregroundSequencer[gr.core.displayMode](gr, offset)
@@ -206,22 +230,33 @@ func (gr *Graphics) DrawForeground() {
 	gr.collisions.IncrementGraphicsOffset()
 }
 
+// drawBackgroundTextStandard renders the background text using the standard text mode based on the current Graphics settings.
+// It utilizes the offset and core attributes of the Graphics instance to determine the drawing configuration.
 func drawBackgroundTextStandard(gr *Graphics) {
 	_drawDefault(gr, gr.offset, gr.core.b0c)
 }
 
+// drawBackgroundTextMulticolor renders a multicolor text background for the given Graphics object.
+// Internally, it utilizes the _drawDefault function to set multi-color data based on the specified parameters.
+// The Graphics parameter contains all the necessary data like offset, core state, and color information.
 func drawBackgroundTextMulticolor(gr *Graphics) {
 	_drawDefault(gr, gr.offset, gr.core.b0c)
 }
 
+// drawBackgroundBitmapMulticolor draws a multicolor bitmap background using the provided Graphics object.
+// Updates the display buffer with colors based on the provided Graphics state and configuration.
 func drawBackgroundBitmapMulticolor(gr *Graphics) {
 	_drawDefault(gr, gr.offset, gr.core.b0c)
 }
 
+// drawBackgroundBitmapStandard renders a standard bitmap background using the provided Graphics instance.
+// It utilizes the _drawDefault function to handle the drawing process based on the current Graphics state.
 func drawBackgroundBitmapStandard(gr *Graphics) {
 	_drawDefault(gr, gr.offset, gr.charDataLast)
 }
 
+// drawBackgroundTextECM renders the background text in ECM (Extended Color Mode) based on character data and bitmask checks.
+// It selects the appropriate color source from the Graphics core and applies it using the _drawDefault helper function.
 func drawBackgroundTextECM(gr *Graphics) {
 	if (gr.charDataLast & 0x80) != 0 {
 		if (gr.charDataLast & 0x40) != 0 {
@@ -238,14 +273,18 @@ func drawBackgroundTextECM(gr *Graphics) {
 	}
 }
 
+// drawBackgroundDefault draws the default background by delegating to the _drawDefault function with the current offset.
 func drawBackgroundDefault(gr *Graphics) {
 	_drawDefault(gr, gr.offset, 0)
 }
 
+// drawForegroundTextStandard renders foreground text using the standard graphics mode at the specified offset.
 func drawForegroundTextStandard(gr *Graphics, offset int) {
 	_drawStandard(gr, offset, gr.core.b0c, gr.colorData)
 }
 
+// drawForegroundTextMulticolor renders multicolor text for the foreground depending on the color mode and provided offset.
+// If the color mode indicates multicolor, it invokes `_drawMulticolor`; otherwise, `_drawStandard` is used.
 func drawForegroundTextMulticolor(gr *Graphics, offset int) {
 	if (gr.colorData & 8) != 0 {
 		_drawMulticolor(gr, offset, gr.core.b0c, gr.core.b1c, gr.core.b2c, gr.colorData&7)
@@ -254,14 +293,17 @@ func drawForegroundTextMulticolor(gr *Graphics, offset int) {
 	}
 }
 
+// drawForegroundBitmapStandard renders a standard foreground bitmap using character and offset data for pixel mapping.
 func drawForegroundBitmapStandard(gr *Graphics, offset int) {
 	_drawStandard(gr, offset, gr.charData, gr.charData>>4)
 }
 
+// drawForegroundBitmapMulticolor renders a foreground bitmap in multicolor mode using the specified graphics and offset.
 func drawForegroundBitmapMulticolor(gr *Graphics, offset int) {
 	_drawMulticolor(gr, offset, gr.core.b0c, gr.charData>>4, gr.charData, gr.colorData)
 }
 
+// drawForegroundTextECM handles rendering of foreground text in Extended Color Mode (ECM) by selecting the correct color mapping.
 func drawForegroundTextECM(gr *Graphics, offset int) {
 	if (gr.charData & 0x80) != 0 {
 		if (gr.charData & 0x40) != 0 {
@@ -276,6 +318,7 @@ func drawForegroundTextECM(gr *Graphics, offset int) {
 	}
 }
 
+// drawForegroundTextMulticolorInvalid draws invalid multicolor or standard text foreground based on colorData.
 func drawForegroundTextMulticolorInvalid(gr *Graphics, offset int) {
 	if (gr.colorData & 8) != 0 {
 		_drawInvalidMulticolor(gr, offset, 0)
@@ -284,18 +327,23 @@ func drawForegroundTextMulticolorInvalid(gr *Graphics, offset int) {
 	}
 }
 
+// drawForegroundBitmapStandardInvalid renders an invalid-standard-mode bitmap to the specified offset in the graphics buffer.
+// It calls the internal _drawInvalidStandard function to handle rendering logic with the provided Graphics object.
 func drawForegroundBitmapStandardInvalid(gr *Graphics, offset int) {
 	_drawInvalidStandard(gr, offset, 0)
 }
 
+// drawForegroundBitmapMulticolorInvalid renders an invalid multicolor bitmap at the specified offset using Graphics object.
 func drawForegroundBitmapMulticolorInvalid(gr *Graphics, offset int) {
 	_drawInvalidMulticolor(gr, offset, 0)
 }
 
+// _drawDefault sets a color value from the _colors array into the display buffer at the specified offset.
 func _drawDefault(gr *Graphics, offset int, a uint8) {
 	gr.db.SetMulti8(offset, _colors[a])
 }
 
+// _drawInvalidStandard updates graphics buffer based on x-scroll and sets color values in the display buffer.
 func _drawInvalidStandard(gr *Graphics, offset int, a uint8) {
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
@@ -304,6 +352,7 @@ func _drawInvalidStandard(gr *Graphics, offset int, a uint8) {
 	gr.db.SetMulti8(offset, _colors[a])
 }
 
+// _drawInvalidMulticolor processes invalid multicolor graphics and updates collision and display buffers accordingly.
 func _drawInvalidMulticolor(gr *Graphics, offset int, a uint8) {
 	p := (gr.gfxData & 0xaa) | ((gr.gfxData & 0xaa) >> 1)
 	p1 := p >> gr.core.xScroll
@@ -313,6 +362,7 @@ func _drawInvalidMulticolor(gr *Graphics, offset int, a uint8) {
 	gr.db.SetMulti8(offset, _colors[a])
 }
 
+// _drawStandard renders 8 pixels to a graphics display using two color indices, updating graphics collisions and buffer.
 func _drawStandard(gr *Graphics, offset int, a uint8, b uint8) {
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
@@ -337,6 +387,7 @@ func _drawStandard(gr *Graphics, offset int, a uint8, b uint8) {
 	gr.db.Set(offset, colorBuffer[data])
 }
 
+// _drawMulticolor draws a multicolor graphics sequence into the display buffer using the provided Graphics context.
 func _drawMulticolor(gr *Graphics, offset int, a uint8, b uint8, c uint8, d uint8) {
 	p := (gr.gfxData & 0xaa) | ((gr.gfxData & 0xaa) >> 1)
 	p1 := p >> gr.core.xScroll

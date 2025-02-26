@@ -9,6 +9,11 @@ import (
 // https://www.cebix.net/VIC-Article.txt
 // https://www.oxyron.de/html/registers_vic2.html
 
+// irqRasterBit represents the interrupt request bit for raster events.
+// irqSpriteToGraphicBit represents the interrupt request bit for sprite-to-graphic collisions.
+// irqSpriteToSpriteBit represents the interrupt request bit for sprite-to-sprite collisions.
+// irqLightPenBit represents the interrupt request bit for light pen events.
+// irqMasterBit represents the master interrupt request bit.
 const (
 	irqRasterBit          = uint8(0x01)
 	irqSpriteToGraphicBit = uint8(0x02)
@@ -17,12 +22,14 @@ const (
 	irqMasterBit          = uint8(0x80)
 )
 
+// irqUnsetMasterBit is the bitwise negation of irqMasterBit, used to clear the master IRQ bit in irqLatch.
 const (
 	irqUnsetMasterBit = ^irqMasterBit
 )
 
 //https://dustlayer.com/c64-architecture
 
+// cycleData represents a node in a cyclic linked list to manage cycles and associated operations.
 type cycleData struct {
 	fn          func(vic *VIC)
 	next        *cycleData
@@ -30,6 +37,11 @@ type cycleData struct {
 	cycleBorder uint8
 }
 
+// VIC represents the core component for emulating a video interface chip, managing graphics rendering and sprites.
+// It maintains configuration, collision detection, registers, and graphical memory base addresses.
+// This structure includes VIC-specific registers, raster positions, display modes, and control logic for video operations.
+// The structure integrates functionality for sprite handling, display timing, bad line conditions, and IRQ management.
+// Graphics systems and border handling are also supported using their specific components within the VIC structure.
 type VIC struct {
 	id              string
 	cfg             *config.Config
@@ -96,6 +108,7 @@ type VIC struct {
 	columnSel        bool     //
 }
 
+// NewVIC creates and returns a pointer to a newly initialized VIC instance with default values and given id.
 func NewVIC(id string) *VIC {
 	vic := &VIC{
 		id:               id,
@@ -154,6 +167,7 @@ func NewVIC(id string) *VIC {
 	return vic
 }
 
+// Setup initializes the VIC component with the provided socket and configuration.
 func (vic *VIC) Setup(socket ISocket, cfg *config.Config) {
 	vic.cfg = cfg
 	db := socket.GetDisplayBuffer()
@@ -171,22 +185,27 @@ func (vic *VIC) Setup(socket ISocket, cfg *config.Config) {
 	vic.curr = _pal
 }
 
+// Reset reinitializes the VIC instance to its default state by resetting its internal readiness flag.
 func (vic *VIC) Reset() {
 	//vic.core.ready = false
 }
 
+// GetText retrieves the current text data as a byte slice from the VIC's graphics system.
 func (vic *VIC) GetText() []byte {
 	return vic.graphics.GetText()
 }
 
+// GetLastByte returns the last byte stored in the VIC instance.
 func (vic *VIC) GetLastByte() uint8 {
 	return vic.lastByte
 }
 
+// configChanged handles updates to the VIC configuration and applies necessary changes to its state.
 func (vic *VIC) configChanged() {
 	//vic.skipFrames = vic.cfg.SkipFrames()
 }
 
+// Emulate executes one cycle of the VIC, processing the current function and updating the raster position.
 func (vic *VIC) Emulate() {
 	vic.TryAcquireAEC()
 	vic.curr.fn(vic)
@@ -194,28 +213,34 @@ func (vic *VIC) Emulate() {
 	vic.UpdateRasterX()
 }
 
+// GetRasterY returns the current vertical raster position as a uint16.
 func (vic *VIC) GetRasterY() uint16 {
 	return vic.rasterY
 }
 
+// ResetRasterX sets the rasterX field to its default initial value, typically used to reset position or state.
 func (vic *VIC) ResetRasterX() {
 	vic.rasterX = 0xfffc
 }
 
+// UpdateRasterX increments the rasterX property of the VIC object by 8 each time it is called.
 func (vic *VIC) UpdateRasterX() {
 	vic.rasterX += 8
 }
 
+// TryBALowIfBadLine checks if the bad line condition is met and sets the BA line to low if true.
 func (vic *VIC) TryBALowIfBadLine() {
 	if vic.badLineCondition {
 		vic.SetBALow()
 	}
 }
 
+// GetBALow returns the state of the baLow variable, indicating whether the BA low condition is active.
 func (vic *VIC) GetBALow() bool {
 	return vic.baLow
 }
 
+// SetBALow sets the BA (bus available) signal to low and schedules the AEC signal to be low after 3 cycles if not already set.
 func (vic *VIC) SetBALow() {
 	if vic.baLow {
 		return
@@ -225,6 +250,7 @@ func (vic *VIC) SetBALow() {
 	vic.socket.BALow(true)
 }
 
+// ClearBALow resets the BA low and AEC low flags in the VIC instance and updates the corresponding socket states.
 func (vic *VIC) ClearBALow() {
 	if vic.baLow {
 		vic.baLow = false
@@ -236,10 +262,14 @@ func (vic *VIC) ClearBALow() {
 	}
 }
 
+// GetAECLow retrieves the current state of the AEC low flag for the VIC instance. Returns true if enabled, false otherwise.
 func (vic *VIC) GetAECLow() bool {
 	return vic.aecLow
 }
 
+// TryAcquireAEC attempts to acquire the AEC (Address Enable Control) signal if BA is low and AEC is not already low.
+// It ensures the AEC signal is acquired only when the current cycle meets the required condition.
+// This method controls the AEC line state by interacting with the VIC's socket mechanism.
 func (vic *VIC) TryAcquireAEC() {
 	if vic.baLow && !vic.aecLow {
 		if vic.socket.Cycle() >= vic.aecLowNextCycle {
@@ -249,6 +279,7 @@ func (vic *VIC) TryAcquireAEC() {
 	}
 }
 
+// UpdateSpriteExpY adjusts the sprite's vertical expansion state based on the MYE register using an inversion technique.
 func (vic *VIC) UpdateSpriteExpY() {
 	// Invert y expansion FlipFlop (if MYE bit is set)
 	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
@@ -258,6 +289,8 @@ func (vic *VIC) UpdateSpriteExpY() {
 	}
 }
 
+// badLineUpdate updates the bad line condition based on the current raster position, DEN bit, and YSCROLL value.
+// The bad line condition occurs when specific raster and scroll conditions are met, enabling certain VIC behavior.
 func (vic *VIC) badLineUpdate() {
 	// Bad Line Condition is given at any arbitrary clock cycle, if at the
 	// negative edge of ø0 at the beginning of the cycle RASTER >= $30 and RASTER <= $f7
@@ -283,11 +316,13 @@ func (vic *VIC) badLineUpdate() {
 	}
 }
 
+// ChangedVA updates the VIC's virtual address base and triggers the memory pointer update process.
 func (vic *VIC) ChangedVA(newVA uint8) {
 	vic.ciaVaBase = uint16(newVA) << 14
 	vic.memoryPointerUpdate()
 }
 
+// LightPenTrigger triggers the light pen interrupt and updates the light pen coordinates if not already triggered.
 func (vic *VIC) LightPenTrigger() {
 	if !vic.lpTriggered {
 		vic.lpTriggered = true
@@ -297,6 +332,7 @@ func (vic *VIC) LightPenTrigger() {
 	}
 }
 
+// ResetRasterY resets the VIC's raster Y position and refresh counter, and handles IRQ emission for raster line 0.
 func (vic *VIC) ResetRasterY() {
 	vic.rasterY = 0
 	vic.refreshCounter = 0xff
@@ -306,6 +342,7 @@ func (vic *VIC) ResetRasterY() {
 	}
 }
 
+// IncrementRasterY increments the rasterY field, triggers an IRQ if it matches irqRaster, and updates bad lines.
 func (vic *VIC) IncrementRasterY() {
 	vic.rasterY++
 	if vic.rasterY == vic.irqRaster {
@@ -314,15 +351,18 @@ func (vic *VIC) IncrementRasterY() {
 	vic.badLineUpdate()
 }
 
+// AccessIdle triggers a read operation on address 0x3fff to access the idle state of the VIC component.
 func (vic *VIC) AccessIdle() {
 	_ = vic.ReadByte(0x3fff)
 }
 
+// AccessRefresh performs a memory read using the refresh counter and decrements the counter afterward.
 func (vic *VIC) AccessRefresh() {
 	_ = vic.ReadByte(0x3f00 | uint16(vic.refreshCounter))
 	vic.refreshCounter--
 }
 
+// ReadByte reads a byte from the given address after applying the VIC's address translation logic.
 func (vic *VIC) ReadByte(addr uint16) uint8 {
 	va := addr | vic.ciaVaBase
 	if (va & 0x7000) == 0x1000 {
@@ -333,6 +373,7 @@ func (vic *VIC) ReadByte(addr uint16) uint8 {
 	return vic.lastByte
 }
 
+// CollisionApply processes sprite-to-sprite and sprite-to-background collisions and emits appropriate IRQ signals.
 func (vic *VIC) CollisionApply(sprites uint8, graphics uint8) {
 	if vic.sprSprClx != 0 {
 		vic.sprSprClx |= sprites
@@ -348,6 +389,7 @@ func (vic *VIC) CollisionApply(sprites uint8, graphics uint8) {
 	}
 }
 
+// ReadRegister reads a register at the given address and returns the corresponding 8-bit value.
 func (vic *VIC) ReadRegister(addr uint16) uint8 {
 	reg := addr & 0x3f
 	switch reg {
@@ -457,6 +499,7 @@ func (vic *VIC) ReadRegister(addr uint16) uint8 {
 	}
 }
 
+// WriteRegister writes data to a register at the specified address, handling various control and memory settings.
 func (vic *VIC) WriteRegister(addr2 uint16, data uint8) {
 	reg := addr2 & 0x3f
 	switch reg {
@@ -599,12 +642,15 @@ func (vic *VIC) WriteRegister(addr2 uint16, data uint8) {
 	}
 }
 
+// memoryPointerUpdate updates the memory pointers for various VIC-II display components based on the current vaBase value.
+// It recalculates matrixBase, charBase, and bitmapBase by applying bitwise operations on the vaBase property.
 func (vic *VIC) memoryPointerUpdate() {
 	vic.matrixBase = (uint16(vic.vaBase) & 0xf0) << 6
 	vic.charBase = (uint16(vic.vaBase) & 0x0e) << 10
 	vic.bitmapBase = (uint16(vic.vaBase) & 0x08) << 10
 }
 
+// rasterUpdate updates the VIC raster interrupt value and triggers an interrupt if the raster line matches the new value.
 func (vic *VIC) rasterUpdate(irqRaster uint16) {
 	if irqRaster != vic.irqRaster {
 		if vic.rasterY == irqRaster {
@@ -614,6 +660,7 @@ func (vic *VIC) rasterUpdate(irqRaster uint16) {
 	}
 }
 
+// irqEmit sets the given IRQ bit in irqLatch and triggers IRQ if it matches the irqMask.
 func (vic *VIC) irqEmit(irq uint8) {
 	vic.irqLatch |= irq
 	if (vic.irqMask & irq) != 0 {
@@ -622,6 +669,7 @@ func (vic *VIC) irqEmit(irq uint8) {
 	}
 }
 
+// irqVerify checks the IRQ latch and mask, sets or clears the master IRQ bit, and triggers or clears the IRQ signal.
 func (vic *VIC) irqVerify() {
 	if (vic.irqLatch & vic.irqMask) != 0 {
 		vic.irqLatch |= irqMasterBit

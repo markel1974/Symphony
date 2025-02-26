@@ -98,8 +98,8 @@ func (cpu *CPU) Emulate() {
 }
 
 // read retrieves a byte from the specified memory address using the CPU's banks and checks the RDY state.
-// Returns the read byte and a boolean indicating success.
-// If RDY is low, the CPU will pause execution by setting the stop flag and return a failed state.
+// Returns the read byte and a boolean indicating run/stop.
+// If RDY is low, the CPU will pause execution by setting the stop flag and return a false state, it means stop state
 func (cpu *CPU) read(addr uint16) (uint8, bool) {
 	if cpu.rdyLow {
 		cpu.stop = true

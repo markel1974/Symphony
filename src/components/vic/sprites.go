@@ -4,6 +4,10 @@ import (
 	"log"
 )
 
+// Sprites represents the structure responsible for handling sprites, including their data, states, and configurations.
+// It contains properties for managing sprite visual data, collision detection, and display control buffers.
+// The type relies on various counters, flags, and pointers to handle sprite DMA and display activities effectively.
+// It interacts with the VIC core and an implemented display buffer interface for rendering and collision processing.
 type Sprites struct {
 	core            *VIC
 	displayBuffer   IDisplayBuffer
@@ -18,6 +22,8 @@ type Sprites struct {
 	offset          int       //
 }
 
+// NewSprites initializes and returns a new instance of the Sprites struct with default settings and allocations.
+// It sets up sprite data, counters, and dependencies using the provided VIC core, collisions, and display buffer.
 func NewSprites(core *VIC, collisions *Collisions, db IDisplayBuffer) *Sprites {
 	s := &Sprites{
 		core:            core,
@@ -40,13 +46,17 @@ func NewSprites(core *VIC, collisions *Collisions, db IDisplayBuffer) *Sprites {
 	return s
 }
 
+// Setup initializes the Sprites instance, preparing internal state and configurations needed for sprite operations.
 func (sp *Sprites) Setup() {
 }
 
+// SetOffset updates the `offset` value of the Sprites instance with the given value.
 func (sp *Sprites) SetOffset(offset int) {
 	sp.offset = offset
 }
 
+// FetchPtr fetches the sprite pointer for the given sprite number if BA and AEC conditions are met, and updates its data pointer.
+// Logs a warning if conditions are not met.
 func (sp *Sprites) FetchPtr(num int) {
 	if sp.core.baLow && sp.core.aecLow {
 		addr := sp.core.matrixBase | 0x03f8 | uint16(num)
@@ -58,6 +68,9 @@ func (sp *Sprites) FetchPtr(num int) {
 	}
 }
 
+// Fetch loads sprite data for the given sprite number and byte index from memory if BA and AEC lines are low.
+// It updates the sprite's data array and increments its data counter.
+// Logs an error if BA or AEC lines are high.
 func (sp *Sprites) Fetch(num int, bNum int) {
 	if sp.core.baLow && sp.core.aecLow {
 		ptr := sp.dataPtr[num]
@@ -70,6 +83,7 @@ func (sp *Sprites) Fetch(num int, bNum int) {
 	}
 }
 
+// UpdateDisplayFlags updates the display flags for sprites by checking and clearing flags based on DMA activity status.
 func (sp *Sprites) UpdateDisplayFlags() {
 	sp.spriteFlags = sp.displayFlags
 	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
@@ -79,6 +93,7 @@ func (sp *Sprites) UpdateDisplayFlags() {
 	}
 }
 
+// UpdateCounterBase increments the base counters of sprites with vertical expansion enabled by 2 for each enabled sprite.
 func (sp *Sprites) UpdateCounterBase() {
 	for idx := 0; idx < SpriteNumber; idx++ {
 		if (sp.core.sprExpY & (1 << idx)) != 0 {
@@ -87,10 +102,12 @@ func (sp *Sprites) UpdateCounterBase() {
 	}
 }
 
+// GetDMAFlag checks and returns the active DMA flag for the specified sprite(s) by performing a bitwise AND operation.
 func (sp *Sprites) GetDMAFlag(b uint8) uint8 {
 	return sp.dmaFlags & b
 }
 
+// UpdateDMA updates the DMA status of sprites based on their raster line and enabled flags.
 func (sp *Sprites) UpdateDMA() {
 	rasterY := sp.core.rasterY & 0xff
 	for i, mask := 0, uint8(1); i < SpriteNumber; i, mask = i+1, mask<<1 {
@@ -104,6 +121,7 @@ func (sp *Sprites) UpdateDMA() {
 	}
 }
 
+// UpdateCounterBaseDMA updates the base counters of sprites and manages DMA flags based on specific conditions.
 func (sp *Sprites) UpdateCounterBaseDMA() {
 	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
 		if (sp.core.sprExpY & mask) != 0 {
@@ -115,6 +133,7 @@ func (sp *Sprites) UpdateCounterBaseDMA() {
 	}
 }
 
+// UpdateDisplayYFlags updates the display flags for sprites based on raster line position and active DMA flags.
 func (sp *Sprites) UpdateDisplayYFlags() {
 	rasterY := sp.core.rasterY & 0xff
 	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
@@ -125,6 +144,9 @@ func (sp *Sprites) UpdateDisplayYFlags() {
 	}
 }
 
+// Draw renders all active sprites for the current line based on their flags, properties, and configurations.
+// It handles both expanded and unexpanded sprites in standard and multicolor modes.
+// Collision detection for sprites is carried out during the rendering process.
 func (sp *Sprites) Draw() {
 	if sp.spriteFlags == 0 {
 		return
@@ -160,6 +182,7 @@ func (sp *Sprites) Draw() {
 	sp.collisions.Detect()
 }
 
+// drawExpandedMulticolor renders expanded multicolor sprites with applied graphics and collision handling logic.
 func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8) {
 	foreMaskL := sp.collisions.GetGraphicsL(m, s)
 	foreMaskR := sp.collisions.GetGraphicsR(m, s)
@@ -221,6 +244,7 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData ui
 	}
 }
 
+// drawExpandedStandard draws an expanded standard sprite on the display buffer with collision detection and masking checks.
 func (sp *Sprites) drawExpandedStandard(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8) {
 	foreMaskL := sp.collisions.GetGraphicsL(m, s)
 	foreMaskR := sp.collisions.GetGraphicsR(m, s)
@@ -250,6 +274,7 @@ func (sp *Sprites) drawExpandedStandard(lineOffset int, sColor uint8, sData uint
 	}
 }
 
+// drawUnexpandedMulticolor renders an unexpanded multicolor sprite onto the display buffer with collision detection.
 func (sp *Sprites) drawUnexpandedMulticolor(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8) {
 	foreMask := sp.collisions.GetGraphicsL(m, s)
 	p0 := sData & 0x55555555 // sprite to bitPlanes
@@ -285,6 +310,7 @@ func (sp *Sprites) drawUnexpandedMulticolor(lineOffset int, sColor uint8, sData 
 	}
 }
 
+// drawUnexpandedStandard renders a non-expanded standard sprite onto the display buffer and manages collision logic.
 func (sp *Sprites) drawUnexpandedStandard(lineOffset int, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8) {
 	foreMask := sp.collisions.GetGraphicsL(m, s)
 	if (foreMask & sData) != 0 {
