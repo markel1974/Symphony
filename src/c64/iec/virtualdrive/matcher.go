@@ -1,10 +1,14 @@
 package virtualdrive
 
+// Matcher represents a structure for handling wildcard-based string pattern matching.
+// S defines the single-character wildcard symbol.
+// M defines the multi-character wildcard symbol.
 type Matcher struct {
 	S byte
 	M byte
 }
 
+// NewMatcher creates and returns a new instance of Matcher with default wildcard characters '?' and '*'.
 func NewMatcher() *Matcher {
 	return &Matcher{
 		S: '?',
@@ -12,6 +16,7 @@ func NewMatcher() *Matcher {
 	}
 }
 
+// isWildPattern determines if the given pattern contains wildcards defined by the Matcher instance.
 func (m *Matcher) isWildPattern(pattern string) bool {
 	for i := range pattern {
 		c := pattern[i]
@@ -25,8 +30,9 @@ func (m *Matcher) isWildPattern(pattern string) bool {
 	return false
 }
 
+// Match checks if the given string `s` matches the `pattern` using wildcard characters defined in the Matcher instance.
+// Returns a boolean indicating the match result and an error if applicable.
 func (m *Matcher) Match(pattern string, s string) (bool, error) {
-	// Edge cases.
 	if pattern == string(m.M) {
 		return true, nil
 	}
@@ -36,12 +42,9 @@ func (m *Matcher) Match(pattern string, s string) (bool, error) {
 		}
 		return false, nil
 	}
-	// If pattern does not contain wildcard chars, just compare the strings
-	// to avoid extra memory allocation.
 	if !m.isWildPattern(pattern) {
 		return pattern == s, nil
 	}
-	// Initialize DP.
 	lp := len(pattern)
 	ls := len(s)
 	dp := make([][]bool, lp+1)
@@ -59,7 +62,6 @@ func (m *Matcher) Match(pattern string, s string) (bool, error) {
 	for j := 0; j < ls; j++ {
 		dp[0][j+1] = false
 	}
-	// Start DP.
 	for i := 0; i < lp; i++ {
 		for j := 0; j < ls; j++ {
 			pc := pattern[i]
