@@ -1,5 +1,6 @@
 package mos6526
 
+// TOD represents a Time of Day (TOD) and Alarm functionality with tracking for hours, minutes, seconds, and tenths.
 type TOD struct {
 	id             string
 	tod10ths       uint8 // TOD 10ths
@@ -17,12 +18,14 @@ type TOD struct {
 	almHr          uint8 // Alarm time
 }
 
+// NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
 func NewTOD(id string) *TOD {
 	return &TOD{
 		id: id,
 	}
 }
 
+// Reset reinitializes the TOD registers, alarm registers, and control flags to their default states.
 func (m *TOD) Reset() {
 	m.todHalt = false
 	m.todDivider = 0
@@ -39,6 +42,8 @@ func (m *TOD) Reset() {
 	m.almHr = 0
 }
 
+// Set10ths updates the 10ths component of the time or alarm based on the `alarm` flag and provided `data`.
+// If updating the time and TOD is halted, it resets the divider and unhalts TOD.
 func (m *TOD) Set10ths(alarm bool, data uint8) {
 	d := data & 0x0f
 	if alarm {
@@ -52,6 +57,7 @@ func (m *TOD) Set10ths(alarm bool, data uint8) {
 	}
 }
 
+// SetSec sets the seconds value for either the TOD clock or the alarm based on the alarm flag.
 func (m *TOD) SetSec(alarm bool, data uint8) {
 	d := data & 0x7f
 	if alarm {
@@ -61,6 +67,7 @@ func (m *TOD) SetSec(alarm bool, data uint8) {
 	}
 }
 
+// SetMin sets the minute value for either the TOD clock or the alarm based on the alarm flag.
 func (m *TOD) SetMin(alarm bool, data uint8) {
 	d := data & 0x7f
 	if alarm {
@@ -70,6 +77,7 @@ func (m *TOD) SetMin(alarm bool, data uint8) {
 	}
 }
 
+// SetHour sets the hour for either the alarm or the time of day based on the `alarm` flag and provided `data` input.
 func (m *TOD) SetHour(alarm bool, data uint8) {
 	d := data & 0x9f
 	if alarm {
@@ -80,12 +88,14 @@ func (m *TOD) SetHour(alarm bool, data uint8) {
 	}
 }
 
+// GetHour retrieves the current hour value from the TOD device and freezes the shadow registers state.
 func (m *TOD) GetHour() uint8 {
 	v := m.todHr
 	m.freeze()
 	return v
 }
 
+// GetMin retrieves the current minute value from the TOD. If a shadow minute is available, it returns the shadow value.
 func (m *TOD) GetMin() uint8 {
 	if m.todShadowMin >= 0 {
 		return uint8(m.todShadowMin)
@@ -93,6 +103,7 @@ func (m *TOD) GetMin() uint8 {
 	return m.todMin
 }
 
+// GetSec returns the current seconds value from the TOD, checking the shadow register if applicable.
 func (m *TOD) GetSec() uint8 {
 	if m.todShadowSec >= 0 {
 		return uint8(m.todShadowSec)
@@ -100,6 +111,7 @@ func (m *TOD) GetSec() uint8 {
 	return m.todSec
 }
 
+// Get10ths retrieves the current 10ths value from the TOD (Time-of-Day) clock, using the shadow value if available.
 func (m *TOD) Get10ths() uint8 {
 	var v uint8
 	if m.todShadow10ths >= 0 {
@@ -111,18 +123,25 @@ func (m *TOD) Get10ths() uint8 {
 	return v
 }
 
+// freeze copies the current time-of-day values (10ths, seconds, and minutes) into their respective shadow variables.
 func (m *TOD) freeze() {
 	m.todShadow10ths = int(m.tod10ths)
 	m.todShadowSec = int(m.todSec)
 	m.todShadowMin = int(m.todMin)
 }
 
+// unfreeze clears the shadow registers for tenths, seconds, and minutes, restoring real-time tracking for these values.
 func (m *TOD) unfreeze() {
 	m.todShadow10ths = -1
 	m.todShadowSec = -1
 	m.todShadowMin = -1
 }
 
+// Update processes the TOD counter, increments time fields, and checks if the alarm matches the current TOD time.
+// Returns true if an alarm match occurs, otherwise false.
+// The rtc parameter determines the TOD frequency divider (50Hz or 60Hz).
+// Automatically handles AM/PM and 24-hour format transitions.
+// Resets the divider when time fields are updated.
 func (m *TOD) Update(rtc bool) bool {
 	if m.todHalt {
 		return false

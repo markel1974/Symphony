@@ -1,5 +1,11 @@
 package mos6526
 
+// IRQUnderflowTimerA represents the IRQ flag for Timer A underflow.
+// IRQUnderflowTimerB represents the IRQ flag for Timer B underflow.
+// IRQTODAlarmEqual represents the IRQ flag for Time-of-Day alarm equality.
+// IRQSDRFullOrEmpty represents the IRQ flag for SDR full or empty buffer.
+// IRQFlagPin represents the IRQ flag for the state of the FLAG pin.
+// IRQOccurred represents the IRQ flag indicating an interrupt occurred.
 const (
 	IRQUnderflowTimerA = 0x1
 	IRQUnderflowTimerB = 0x2
@@ -12,6 +18,18 @@ const (
 //https://web.archive.org/web/20181126000922if_/http://archive.6502.org/datasheets/mos_6526_cia_recreated.pdf
 //https://emudev.de/q00-c64/cias-timers-keyboard-and-more/
 
+// CIA represents a Complex Interface Adapter providing I/O ports, timers, and a clock for peripheral devices.
+// id is the identifier for the CIA instance.
+// prA and prB are the Peripheral Registers for ports A and B.
+// ddrA and ddrB are the Data Direction Registers for ports A and B.
+// sdr is the Serial Data Register for serial communication.
+// icr holds the pending interrupt control register state.
+// irqMask specifies the enabled interrupts mask for the CIA.
+// timerAIrqCycle is a flag indicating if Timer A triggers an IRQ in the next cycle.
+// timerBIrqCycle is a flag indicating if Timer B triggers an IRQ in the next cycle.
+// tod is a pointer to the Time-of-Day clock functionality managed by the CIA.
+// timerA and timerB point to Timer A and Timer B functionality respectively.
+// socket represents the interface socket connected to peripheral and communication devices.
 type CIA struct {
 	id             string
 	prA            uint8
@@ -29,6 +47,7 @@ type CIA struct {
 	socket         ISocket
 }
 
+// NewCIA initializes and returns a new instance of the CIA struct with the specified ID and associated components.
 func NewCIA(id string) *CIA {
 	m := &CIA{
 		id:     id,
@@ -39,10 +58,12 @@ func NewCIA(id string) *CIA {
 	return m
 }
 
+// Setup initializes the CIA instance by assigning a provided ISocket connection to its socket field.
 func (m *CIA) Setup(conn ISocket) {
 	m.socket = conn
 }
 
+// Update checks the TOD alarm condition and triggers an IRQ if the alarm matches the timer.
 func (m *CIA) Update() {
 	if m.tod.Update(m.timerA.GetRTC()) {
 		m.icr |= IRQTODAlarmEqual
@@ -50,6 +71,7 @@ func (m *CIA) Update() {
 	}
 }
 
+// Emulate processes a single emulation cycle for the CIA timers, handling timer underflows and triggering necessary IRQs.
 func (m *CIA) Emulate() {
 	if m.timerAIrqCycle {
 		m.timerAIrqCycle = false
@@ -80,6 +102,7 @@ func (m *CIA) Emulate() {
 	}
 }
 
+// Reset initializes all registers and flags of the CIA to their default states and resets the timers and TOD.
 func (m *CIA) Reset() {
 	m.prA = 0
 	m.prB = 0
@@ -95,6 +118,7 @@ func (m *CIA) Reset() {
 	m.tod.Reset()
 }
 
+// ReadRegister reads the data from the specified register address within the CIA component and returns the corresponding value.
 func (m *CIA) ReadRegister(addr uint16) uint8 {
 	reg := addr & 0x0f
 	switch reg {
@@ -156,6 +180,7 @@ func (m *CIA) ReadRegister(addr uint16) uint8 {
 	return 0 // Can't happen
 }
 
+// WriteRegister writes data to a specified register address in the CIA and updates the appropriate internal state or behavior.
 func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	reg := addr & 0x0f
 	switch reg {
@@ -213,10 +238,12 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
+// GetLastByte returns the last byte of data processed by the CIA instance.
 func (m *CIA) GetLastByte() uint8 {
 	return 0
 }
 
+// irqTrigger checks if any enabled interrupts are pending and triggers an IRQ signal if conditions are met.
 func (m *CIA) irqTrigger() {
 	mask := m.irqMask & 0x1f
 	if (m.icr & mask) != 0 {
@@ -225,6 +252,10 @@ func (m *CIA) irqTrigger() {
 	}
 }
 
+// irqUpdateMask updates the interrupt mask based on the input data.
+// Bits 0-4 determine the conditions for enabling or disabling interrupts.
+// Bit 7 determines if the conditions set or clear the corresponding mask bits.
+// If all condition bits (0-4) are unset, the mask remains unchanged.
 func (m *CIA) irqUpdateMask(data uint8) {
 	//Bit 0: 1 = Interrupt release through timer A underflow
 	//Bit 1: 1 = Interrupt release through timer B underflow
