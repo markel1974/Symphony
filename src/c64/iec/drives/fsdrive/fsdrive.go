@@ -26,7 +26,7 @@ const (
 
 type FSDrive struct {
 	iec            virtualdrive.IIec
-	commands       *virtualdrive.Commands
+	commands       *Commands
 	deviceId       uint8
 	deviceNumber   uint8
 	path           string
@@ -50,7 +50,7 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, path string)
 		deviceNumber:   deviceNumber,
 		path:           path,
 		respond:        fifo.NewStaticFifo(512),
-		commands:       virtualdrive.NewCommands(),
+		commands:       NewCommands(),
 		_orig_dir_path: "",
 		atn:            false,
 		state:          0,
@@ -345,7 +345,7 @@ func (v *FSDrive) changeDirectory(dirPath string) bool {
 
 func (v *FSDrive) findFirstFile(pattern string) (string, bool) {
 	items, _ := os.ReadDir(v._dir_path)
-	matcher := virtualdrive.NewMatcher()
+	matcher := NewMatcher()
 	for _, item := range items {
 		if item.IsDir() {
 			continue
