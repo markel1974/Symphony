@@ -2,15 +2,15 @@ package pixels
 
 import (
 	"errors"
+	executor2 "github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
 	"image/color"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
 type IGLPicture interface {
 	IPictureColor
-	Texture() *executor.Texture
+	Texture() *executor2.Texture
 	Update(p IPicture)
 }
 
@@ -137,34 +137,34 @@ func (c *GLCanvas) Smooth() bool {
 // must be manually called inside main-thread
 func (c *GLCanvas) setGlBounds() {
 	_, _, bw, bh := intBounds(c.gf.Bounds())
-	executor.Bounds(0, 0, bw, bh)
+	executor2.Bounds(0, 0, bw, bh)
 }
 
 // must be manually called inside main-thread
 func setBlendFunc(cmp ComposeMethod) {
 	switch cmp {
 	case ComposeOver:
-		executor.BlendFunc(executor.One, executor.OneMinusSrcAlpha)
+		executor2.BlendFunc(executor2.One, executor2.OneMinusSrcAlpha)
 	case ComposeIn:
-		executor.BlendFunc(executor.DstAlpha, executor.Zero)
+		executor2.BlendFunc(executor2.DstAlpha, executor2.Zero)
 	case ComposeOut:
-		executor.BlendFunc(executor.OneMinusDstAlpha, executor.Zero)
+		executor2.BlendFunc(executor2.OneMinusDstAlpha, executor2.Zero)
 	case ComposeAtop:
-		executor.BlendFunc(executor.DstAlpha, executor.OneMinusSrcAlpha)
+		executor2.BlendFunc(executor2.DstAlpha, executor2.OneMinusSrcAlpha)
 	case ComposeRover:
-		executor.BlendFunc(executor.OneMinusDstAlpha, executor.One)
+		executor2.BlendFunc(executor2.OneMinusDstAlpha, executor2.One)
 	case ComposeRin:
-		executor.BlendFunc(executor.Zero, executor.SrcAlpha)
+		executor2.BlendFunc(executor2.Zero, executor2.SrcAlpha)
 	case ComposeRout:
-		executor.BlendFunc(executor.Zero, executor.OneMinusSrcAlpha)
+		executor2.BlendFunc(executor2.Zero, executor2.OneMinusSrcAlpha)
 	case ComposeRaTop:
-		executor.BlendFunc(executor.OneMinusDstAlpha, executor.SrcAlpha)
+		executor2.BlendFunc(executor2.OneMinusDstAlpha, executor2.SrcAlpha)
 	case ComposeXor:
-		executor.BlendFunc(executor.OneMinusDstAlpha, executor.OneMinusSrcAlpha)
+		executor2.BlendFunc(executor2.OneMinusDstAlpha, executor2.OneMinusSrcAlpha)
 	case ComposePlus:
-		executor.BlendFunc(executor.One, executor.One)
+		executor2.BlendFunc(executor2.One, executor2.One)
 	case ComposeCopy:
-		executor.BlendFunc(executor.One, executor.Zero)
+		executor2.BlendFunc(executor2.One, executor2.Zero)
 	default:
 		panic(errors.New("GLCanvas: invalid compose method"))
 	}
@@ -184,10 +184,10 @@ func (c *GLCanvas) Clear(color color.Color) {
 		A: float64(c.col[3]),
 	})
 
-	executor.GraphicThread.Post(func() {
+	executor2.GraphicThread.Post(func() {
 		c.setGlBounds()
 		c.gf.Frame().Begin()
-		executor.Clear(
+		executor2.Clear(
 			float32(rgba.R),
 			float32(rgba.G),
 			float32(rgba.B),
@@ -204,12 +204,12 @@ func (c *GLCanvas) Color(at Vec) RGBA {
 
 // Texture returns the underlying OpenGL Texture of this GLCanvas.
 // Implements GLPicture interface.
-func (c *GLCanvas) Texture() *executor.Texture {
+func (c *GLCanvas) Texture() *executor2.Texture {
 	return c.gf.Texture()
 }
 
 // Frame returns the underlying OpenGL Frame of this GLCanvas.
-func (c *GLCanvas) Frame() *executor.Frame {
+func (c *GLCanvas) Frame() *executor2.Frame {
 	return c.gf.frame
 }
 
@@ -218,7 +218,7 @@ func (c *GLCanvas) Frame() *executor.Frame {
 func (c *GLCanvas) SetPixels(pixels []uint8) {
 	c.gf.Dirty()
 
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		tex := c.Texture()
 		tex.Begin()
 		tex.SetPixels(0, 0, tex.Width(), tex.Height(), pixels)
@@ -230,7 +230,7 @@ func (c *GLCanvas) SetPixels(pixels []uint8) {
 func (c *GLCanvas) Pixels() []uint8 {
 	var pixels []uint8
 
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		tex := c.Texture()
 		tex.Begin()
 		pixels = tex.Pixels(0, 0, tex.Width(), tex.Height())

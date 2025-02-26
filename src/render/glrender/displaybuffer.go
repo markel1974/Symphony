@@ -1,7 +1,7 @@
 package glrender
 
 import (
-	"github.com/markel1974/c64emu/src/pixels"
+	"github.com/markel1974/c64emu/src/render/glrender/pixels"
 )
 
 type DisplayBuffer struct {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/c64/inputs"
-	"github.com/markel1974/c64emu/src/pixels"
+	"github.com/markel1974/c64emu/src/render/glrender/pixels"
 )
 
 type Inputs struct {

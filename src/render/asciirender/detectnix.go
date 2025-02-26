@@ -9,14 +9,14 @@ import (
 	"unsafe"
 )
 
-type Termios struct {
-	Iflag  uint64
-	Oflag  uint64
-	Cflag  uint64
-	Lflag  uint64
+type TermInfo struct {
+	IFlag  uint64
+	OFlag  uint64
+	CFlag  uint64
+	LFlag  uint64
 	Cc     [20]uint8
-	Ispeed uint64
-	Ospeed uint64
+	ISpeed uint64
+	OSpeed uint64
 }
 
 func ioctl(fd uintptr, request uintptr, ifReq uintptr) error {
@@ -49,16 +49,16 @@ func MakeStdInRaw() error {
 	const CS8 = 0x300
 	const VMIN = 0x10
 	const VTIME = 0x11
-	var term Termios
+	var term TermInfo
 	fd := os.Stdin.Fd()
 	if err := ioctl(fd, ioctlReadTerm, uintptr(unsafe.Pointer(&term))); err != nil {
 		return err
 	}
-	term.Iflag &^= IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON
-	term.Oflag &^= OPOST
-	term.Lflag &^= ECHO | ECHONL | ICANON | ISIG | IEXTEN
-	term.Cflag &^= CSIZE | PARENB
-	term.Cflag |= CS8
+	term.IFlag &^= IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON
+	term.OFlag &^= OPOST
+	term.LFlag &^= ECHO | ECHONL | ICANON | ISIG | IEXTEN
+	term.CFlag &^= CSIZE | PARENB
+	term.CFlag |= CS8
 	term.Cc[VMIN] = 1
 	term.Cc[VTIME] = 0
 
@@ -84,6 +84,6 @@ func detectSpecialTermColor(termVal string) (Level, bool) {
 	return ColorLevelBasic, false
 }
 
-func IsTerminal(fd uintptr) bool {
-	return fd == uintptr(syscall.Stdout) || fd == uintptr(syscall.Stdin) || fd == uintptr(syscall.Stderr)
-}
+//func IsTerminal(fd uintptr) bool {
+//	return fd == uintptr(syscall.Stdout) || fd == uintptr(syscall.Stdin) || fd == uintptr(syscall.Stderr)
+//}

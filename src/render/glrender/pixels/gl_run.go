@@ -2,9 +2,9 @@ package pixels
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
 
 	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
 // GLRun initializes the GLFW library, handles its lifecycle, and runs the provided main function on the graphic thread.

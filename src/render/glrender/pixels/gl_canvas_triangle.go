@@ -2,7 +2,7 @@ package pixels
 
 import (
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/markel1974/c64emu/src/pixels/executor"
+	executor2 "github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
 )
 
 // GLCanvasTriangles represents a drawable set of triangles specific to a GLCanvas context.
@@ -21,7 +21,7 @@ func NewGLCanvasTriangles(t *GLTriangles, dst *GLCanvas) *GLCanvasTriangles {
 }
 
 // draw renders GLCanvasTriangles onto the frame using the provided texture and bounds within a graphics thread context.
-func (ct *GLCanvasTriangles) draw(tex *executor.Texture, bounds Rect) {
+func (ct *GLCanvasTriangles) draw(tex *executor2.Texture, bounds Rect) {
 	ct.dst.gf.Dirty()
 
 	// save the current state vars to avoid race condition
@@ -30,7 +30,7 @@ func (ct *GLCanvasTriangles) draw(tex *executor.Texture, bounds Rect) {
 	mat := ct.dst.mat
 	col := ct.dst.col
 
-	executor.GraphicThread.Post(func() {
+	executor2.GraphicThread.Post(func() {
 		ct.dst.setGlBounds()
 		setBlendFunc(cmp)
 

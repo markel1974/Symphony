@@ -350,23 +350,21 @@ func detectColorLevelFromEnv(termVal string, isWin bool) Level {
 	}
 
 	// otherwise determine from TERM's max_colors capability
-	/*
-		if !isWin && termVal != "" {
-			ti, err := terminfo.Load(termVal)
-			if err != nil {
-				//saveInternalError(err)
-				return ColorLevelNone
-			}
-			v, ok := ti.Nums[terminfo.MaxColors]
-			switch {
-			case !ok || v <= 16:
-				return ColorLevelNone
-			case ok && v >= 256:
-				return ColorLevelHundreds
-			}
-			return ColorLevelBasic
-		}
-	*/
+	//	if !isWin && termVal != "" {
+	//		ti, err := terminfo.Load(termVal)
+	//		if err != nil {
+	//			//saveInternalError(err)
+	//			return ColorLevelNone
+	//		}
+	//		v, ok := ti.Nums[terminfo.MaxColors]
+	//		switch {
+	//		case !ok || v <= 16:
+	//			return ColorLevelNone
+	//		case ok && v >= 256:
+	//			return ColorLevelHundreds
+	//		}
+	//		return ColorLevelBasic
+	//	}
 
 	// no TERM env value. default return none level
 	return ColorLevelNone

@@ -2,9 +2,9 @@ package pixels
 
 import (
 	"errors"
+	executor2 "github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
 
 	"github.com/go-gl/mathgl/mgl32"
-	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
 // canvasPosition is the iota constant representing the position data for a canvas.
@@ -21,18 +21,18 @@ const (
 )
 
 // defaultCanvasVertexFormat defines the default set of vertex attributes for canvas rendering, including position, color, texture coordinates, intensity, and clipping information.
-var defaultCanvasVertexFormat = executor.AttrFormat{
-	canvasPosition:  executor.Attr{Name: "aPosition", Type: executor.Vec2},
-	canvasColor:     executor.Attr{Name: "aColor", Type: executor.Vec4},
-	canvasTexCoords: executor.Attr{Name: "aTexCoords", Type: executor.Vec2},
-	canvasIntensity: executor.Attr{Name: "aIntensity", Type: executor.Float},
-	canvasClip:      executor.Attr{Name: "aClipRect", Type: executor.Vec4},
+var defaultCanvasVertexFormat = executor2.AttrFormat{
+	canvasPosition:  executor2.Attr{Name: "aPosition", Type: executor2.Vec2},
+	canvasColor:     executor2.Attr{Name: "aColor", Type: executor2.Vec4},
+	canvasTexCoords: executor2.Attr{Name: "aTexCoords", Type: executor2.Vec2},
+	canvasIntensity: executor2.Attr{Name: "aIntensity", Type: executor2.Float},
+	canvasClip:      executor2.Attr{Name: "aClipRect", Type: executor2.Vec4},
 }
 
 // GLShader represents an OpenGL shader that encapsulates vertex and fragment shaders along with their configurations.
 type GLShader struct {
-	s      *executor.Shader
-	vf, uf executor.AttrFormat
+	s      *executor2.Shader
+	vf, uf executor2.AttrFormat
 	vs, fs string
 
 	uniforms []gsUniformAttr
@@ -67,18 +67,18 @@ func NewGLShader(fragmentShader string) *GLShader {
 
 // Update rebuilds the shader using the current vertex format, uniform format, and shader code, applying any changes.
 func (gs *GLShader) Update() {
-	gs.uf = make([]executor.Attr, len(gs.uniforms))
+	gs.uf = make([]executor2.Attr, len(gs.uniforms))
 	for idx := range gs.uniforms {
-		gs.uf[idx] = executor.Attr{
+		gs.uf[idx] = executor2.Attr{
 			Name: gs.uniforms[idx].Name,
 			Type: gs.uniforms[idx].Type,
 		}
 	}
 
-	var shader *executor.Shader
-	executor.GraphicThread.Call(func() {
+	var shader *executor2.Shader
+	executor2.GraphicThread.Call(func() {
 		var err error
-		shader, err = executor.NewShader(gs.vf, gs.uf, gs.vs, gs.fs)
+		shader, err = executor2.NewShader(gs.vf, gs.uf, gs.vs, gs.fs)
 		if err != nil {
 			panic(errors.New("failed to create GLCanvas, there's a bug in the shader:" + err.Error()))
 		}
@@ -122,7 +122,7 @@ func (gs *GLShader) SetUniform(name string, value interface{}) {
 // isPointer indicates whether the value is a pointer type.
 type gsUniformAttr struct {
 	Name      string
-	Type      executor.AttrType
+	Type      executor2.AttrType
 	value     interface{}
 	isPointer bool
 }
@@ -133,33 +133,33 @@ func (gu *gsUniformAttr) Value() interface{} {
 		return gu.value
 	}
 	switch gu.Type {
-	case executor.Vec2:
+	case executor2.Vec2:
 		return *gu.value.(*mgl32.Vec2)
-	case executor.Vec3:
+	case executor2.Vec3:
 		return *gu.value.(*mgl32.Vec3)
-	case executor.Vec4:
+	case executor2.Vec4:
 		return *gu.value.(*mgl32.Vec4)
-	case executor.Mat2:
+	case executor2.Mat2:
 		return *gu.value.(*mgl32.Mat2)
-	case executor.Mat23:
+	case executor2.Mat23:
 		return *gu.value.(*mgl32.Mat2x3)
-	case executor.Mat24:
+	case executor2.Mat24:
 		return *gu.value.(*mgl32.Mat2x4)
-	case executor.Mat3:
+	case executor2.Mat3:
 		return *gu.value.(*mgl32.Mat3)
-	case executor.Mat32:
+	case executor2.Mat32:
 		return *gu.value.(*mgl32.Mat3x2)
-	case executor.Mat34:
+	case executor2.Mat34:
 		return *gu.value.(*mgl32.Mat3x4)
-	case executor.Mat4:
+	case executor2.Mat4:
 		return *gu.value.(*mgl32.Mat4)
-	case executor.Mat42:
+	case executor2.Mat42:
 		return *gu.value.(*mgl32.Mat4x2)
-	case executor.Mat43:
+	case executor2.Mat43:
 		return *gu.value.(*mgl32.Mat4x3)
-	case executor.Int:
+	case executor2.Int:
 		return *gu.value.(*int32)
-	case executor.Float:
+	case executor2.Float:
 		return *gu.value.(*float32)
 	default:
 		panic("invalid attr type (Value)")
@@ -169,64 +169,64 @@ func (gu *gsUniformAttr) Value() interface{} {
 // getAttrType determines the attribute type and pointer status of the given value for use in the shader execution context.
 // It returns the corresponding executor.AttrType and a boolean indicating whether the value is a pointer type.
 // Panics if the provided value is of an invalid or unsupported attribute type.
-func getAttrType(v interface{}) (executor.AttrType, bool) {
+func getAttrType(v interface{}) (executor2.AttrType, bool) {
 	switch v.(type) {
 	case int32:
-		return executor.Int, false
+		return executor2.Int, false
 	case float32:
-		return executor.Float, false
+		return executor2.Float, false
 	case mgl32.Vec2:
-		return executor.Vec2, false
+		return executor2.Vec2, false
 	case mgl32.Vec3:
-		return executor.Vec3, false
+		return executor2.Vec3, false
 	case mgl32.Vec4:
-		return executor.Vec4, false
+		return executor2.Vec4, false
 	case mgl32.Mat2:
-		return executor.Mat2, false
+		return executor2.Mat2, false
 	case mgl32.Mat2x3:
-		return executor.Mat23, false
+		return executor2.Mat23, false
 	case mgl32.Mat2x4:
-		return executor.Mat24, false
+		return executor2.Mat24, false
 	case mgl32.Mat3:
-		return executor.Mat3, false
+		return executor2.Mat3, false
 	case mgl32.Mat3x2:
-		return executor.Mat32, false
+		return executor2.Mat32, false
 	case mgl32.Mat3x4:
-		return executor.Mat34, false
+		return executor2.Mat34, false
 	case mgl32.Mat4:
-		return executor.Mat4, false
+		return executor2.Mat4, false
 	case mgl32.Mat4x2:
-		return executor.Mat42, false
+		return executor2.Mat42, false
 	case mgl32.Mat4x3:
-		return executor.Mat43, false
+		return executor2.Mat43, false
 	case *mgl32.Vec2:
-		return executor.Vec2, true
+		return executor2.Vec2, true
 	case *mgl32.Vec3:
-		return executor.Vec3, true
+		return executor2.Vec3, true
 	case *mgl32.Vec4:
-		return executor.Vec4, true
+		return executor2.Vec4, true
 	case *mgl32.Mat2:
-		return executor.Mat2, true
+		return executor2.Mat2, true
 	case *mgl32.Mat2x3:
-		return executor.Mat23, true
+		return executor2.Mat23, true
 	case *mgl32.Mat2x4:
-		return executor.Mat24, true
+		return executor2.Mat24, true
 	case *mgl32.Mat3:
-		return executor.Mat3, true
+		return executor2.Mat3, true
 	case *mgl32.Mat3x2:
-		return executor.Mat32, true
+		return executor2.Mat32, true
 	case *mgl32.Mat3x4:
-		return executor.Mat34, true
+		return executor2.Mat34, true
 	case *mgl32.Mat4:
-		return executor.Mat4, true
+		return executor2.Mat4, true
 	case *mgl32.Mat4x2:
-		return executor.Mat42, true
+		return executor2.Mat42, true
 	case *mgl32.Mat4x3:
-		return executor.Mat43, true
+		return executor2.Mat43, true
 	case *int32:
-		return executor.Int, true
+		return executor2.Int, true
 	case *float32:
-		return executor.Float, true
+		return executor2.Float, true
 	default:
 		panic("invalid attr type (getAttrType)")
 	}

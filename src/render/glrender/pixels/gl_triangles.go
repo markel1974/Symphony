@@ -2,12 +2,11 @@ package pixels
 
 import (
 	"fmt"
-
-	"github.com/markel1974/c64emu/src/pixels/executor"
+	executor2 "github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
 )
 
 type GLTriangles struct {
-	vs     *executor.VertexSlice
+	vs     *executor2.VertexSlice
 	data   []float32
 	shader *GLShader
 }
@@ -44,9 +43,9 @@ const (
 // Only draw the ITriangles using the provided Shader.
 func NewGLTriangles(shader *GLShader, t ITriangles) *GLTriangles {
 	var gt *GLTriangles
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		gt = &GLTriangles{
-			vs:     executor.NewVertexSlice(shader.s, 0, t.Len()),
+			vs:     executor2.NewVertexSlice(shader.s, 0, t.Len()),
 			shader: shader,
 		}
 	})
@@ -58,7 +57,7 @@ func NewGLTriangles(shader *GLShader, t ITriangles) *GLTriangles {
 // VertexSlice returns the VertexSlice of this GLTriangles.
 //
 // You can use it to draw them.
-func (gt *GLTriangles) VertexSlice() *executor.VertexSlice {
+func (gt *GLTriangles) VertexSlice() *executor2.VertexSlice {
 	return gt.vs
 }
 
@@ -93,7 +92,7 @@ func (gt *GLTriangles) SetLen(length int) {
 	default:
 		return
 	}
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		gt.vs.Begin()
 		gt.vs.SetLen(length)
 		gt.vs.End()
@@ -200,13 +199,13 @@ func (gt *GLTriangles) CopyVertices() {
 	// the data is small enough, otherwise it'll block and not copy the data
 	if len(gt.data) < 256 { // arbitrary heuristic constant
 		data := append([]float32{}, gt.data...)
-		executor.GraphicThread.Post(func() {
+		executor2.GraphicThread.Post(func() {
 			gt.vs.Begin()
 			gt.vs.SetVertexData(data)
 			gt.vs.End()
 		})
 	} else {
-		executor.GraphicThread.Call(func() {
+		executor2.GraphicThread.Call(func() {
 			gt.vs.Begin()
 			gt.vs.SetVertexData(gt.data)
 			gt.vs.End()

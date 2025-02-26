@@ -3,6 +3,7 @@ package pixels
 import (
 	"errors"
 	"fmt"
+	executor2 "github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
 	"image"
 	"image/color"
 	"runtime"
@@ -10,8 +11,6 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
-
-	"github.com/markel1974/c64emu/src/pixels/executor"
 )
 
 type WindowConfig struct {
@@ -98,7 +97,7 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 		return nil, fmt.Errorf("invalid value '%v' for msaaSamples", cfg.SamplesMSAA)
 	}
 
-	err := executor.GraphicThread.CallErr(func() error {
+	err := executor2.GraphicThread.CallErr(func() error {
 		var err error
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
 		glfw.WindowHint(glfw.ContextVersionMinor, 3)
@@ -129,7 +128,7 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 			w.window.Show()
 		}
 		w.begin()
-		executor.Init()
+		executor2.Init()
 		gl.Enable(gl.MULTISAMPLE)
 		w.end()
 		return nil
@@ -145,7 +144,7 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 			fmt.Println(pic, i)
 			m[i] = pic.Image()
 		}
-		executor.GraphicThread.Call(func() {
+		executor2.GraphicThread.Call(func() {
 			w.window.SetIcon(m)
 		})
 	}
@@ -160,7 +159,7 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 
 // Destroy destroys the GLWindow. The GLWindow can't be used any further.
 func (w *GLWindow) Destroy() {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		w.window.Destroy()
 	})
 }
@@ -171,7 +170,7 @@ func (w *GLWindow) Update() {
 	_, _, oldW, oldH := intBounds(bounds)
 	newBounds := false
 
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		newW, newH := w.window.GetSize()
 		width := newW - oldW
 		height := newH - oldH
@@ -182,8 +181,8 @@ func (w *GLWindow) Update() {
 
 		w.begin()
 		fbWidth, fbHeight := w.window.GetFramebufferSize()
-		executor.Bounds(0, 0, fbWidth, fbHeight)
-		executor.Clear(0, 0, 0, 0)
+		executor2.Bounds(0, 0, fbWidth, fbHeight)
+		executor2.Clear(0, 0, 0, 0)
 		w.canvas.gf.Frame().Begin()
 		w.canvas.gf.Frame().Blit(nil, 0, 0, w.canvas.Texture().Width(), w.canvas.Texture().Height(), 0, 0, fbWidth, fbHeight)
 		w.canvas.gf.Frame().End()
@@ -214,7 +213,7 @@ func (w *GLWindow) SetClipboardText(text string) {
 // This is useful when overriding the user's attempt to close the GLWindow, or just to close the
 // GLWindow from within the program.
 func (w *GLWindow) SetClosed(closed bool) {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		w.window.SetShouldClose(closed)
 	})
 }
@@ -224,7 +223,7 @@ func (w *GLWindow) SetClosed(closed bool) {
 // The closed flag is automatically set when a user attempts to close the GLWindow.
 func (w *GLWindow) Closed() bool {
 	var closed bool
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		closed = w.window.ShouldClose()
 	})
 	return closed
@@ -232,7 +231,7 @@ func (w *GLWindow) Closed() bool {
 
 // SetTitle changes the title of the GLWindow.
 func (w *GLWindow) SetTitle(title string) {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		w.window.SetTitle(title)
 	})
 }
@@ -241,7 +240,7 @@ func (w *GLWindow) SetTitle(title string) {
 // of the window will be rounded to integers.
 func (w *GLWindow) SetBounds(bounds Rect) {
 	w.bounds = bounds
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		_, _, width, height := intBounds(bounds)
 		w.window.SetSize(width, height)
 	})
@@ -252,7 +251,7 @@ func (w *GLWindow) SetBounds(bounds Rect) {
 // of the window will be rounded to integers.
 // If it is a full-screen window, this function does nothing.
 func (w *GLWindow) SetPos(pos Vec) {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		left, top := int(pos.X), int(pos.Y)
 		w.window.SetPos(left, top)
 	})
@@ -262,7 +261,7 @@ func (w *GLWindow) SetPos(pos Vec) {
 // of the client area of the window. The position is rounded to integers.
 func (w *GLWindow) GetPos() Vec {
 	var v Vec
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		x, y := w.window.GetPos()
 		v = NewVec(float64(x), float64(y))
 	})
@@ -275,7 +274,7 @@ func (w *GLWindow) Bounds() Rect {
 }
 
 func (w *GLWindow) setFullscreen(monitor *GLMonitor) {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		w.restore.xPos, w.restore.yPos = w.window.GetPos()
 		w.restore.width, w.restore.height = w.window.GetSize()
 
@@ -293,7 +292,7 @@ func (w *GLWindow) setFullscreen(monitor *GLMonitor) {
 }
 
 func (w *GLWindow) setWindowed() {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		w.window.SetMonitor(
 			nil,
 			w.restore.xPos,
@@ -323,7 +322,7 @@ func (w *GLWindow) SetMonitor(monitor *GLMonitor) {
 // function returns nil.
 func (w *GLWindow) Monitor() *GLMonitor {
 	var monitor *glfw.Monitor
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		monitor = w.window.GetMonitor()
 	})
 	if monitor == nil {
@@ -337,7 +336,7 @@ func (w *GLWindow) Monitor() *GLMonitor {
 // Focused returns true if the GLWindow has input focus.
 func (w *GLWindow) Focused() bool {
 	var focused bool
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		focused = w.window.GetAttrib(glfw.Focused) == glfw.True
 	})
 	return focused
@@ -363,7 +362,7 @@ func (w *GLWindow) VSync() bool {
 // SetCursorVisible sets the visibility of the mouse cursor inside the GLWindow client area.
 func (w *GLWindow) SetCursorVisible(visible bool) {
 	w.cursorVisible = visible
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		if visible {
 			w.window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
 		} else {
@@ -376,7 +375,7 @@ func (w *GLWindow) SetCursorVisible(visible bool) {
 // make cursor visible using SetCursorVisible
 func (w *GLWindow) SetCursorDisabled() {
 	w.cursorVisible = false
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		w.window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	})
 }
@@ -455,7 +454,7 @@ func (w *GLWindow) Canvas() *GLCanvas {
 // Show makes the window visible if it was previously hidden.
 // If the window is already visible or is in full-screen mode, this function does nothing.
 func (w *GLWindow) Show() {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		w.window.Show()
 	})
 }
@@ -463,7 +462,7 @@ func (w *GLWindow) Show() {
 // Clipboard returns the contents of the system clipboard.
 func (w *GLWindow) Clipboard() string {
 	var clipboard string
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		clipboard = w.window.GetClipboardString()
 	})
 	return clipboard
@@ -471,7 +470,7 @@ func (w *GLWindow) Clipboard() string {
 
 // SetClipboard sets the system clipboard to the specified UTF-8 encoded string.
 func (w *GLWindow) SetClipboard(str string) {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		w.window.SetClipboardString(str)
 	})
 }
@@ -533,7 +532,7 @@ func (w *GLWindow) MousePreviousPosition() Vec {
 
 // SetMousePosition positions the mouse cursor anywhere within the GLWindow's Bounds.
 func (w *GLWindow) SetMousePosition(v Vec) {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		if (v.X >= 0 && v.X <= w.bounds.W()) &&
 			(v.Y >= 0 && v.Y <= w.bounds.H()) {
 			w.window.SetCursorPos(
@@ -563,7 +562,7 @@ func (w *GLWindow) Typed() string {
 }
 
 func (w *GLWindow) initInput() {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		w.window.SetMouseButtonCallback(func(_ *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 			switch action {
 			case glfw.Press:
@@ -629,7 +628,7 @@ func (w *GLWindow) initInput() {
 // UpdateInputWait blocks until an event is received or a timeout. If timeout is 0
 // then it will wait indefinitely
 func (w *GLWindow) UpdateInputWait(timeout time.Duration) {
-	executor.GraphicThread.Call(func() {
+	executor2.GraphicThread.Call(func() {
 		if timeout <= 0 {
 			glfw.WaitEvents()
 		} else {

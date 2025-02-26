@@ -2,7 +2,7 @@ package pixels
 
 import (
 	"github.com/go-gl/glfw/v3.3/glfw"
-	"github.com/markel1974/c64emu/src/pixels/executor"
+	"github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
 )
 
 // VideoMode represents all properties of a video mode and is

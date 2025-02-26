@@ -4,8 +4,8 @@ import (
 	"github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/pixels"
 	"github.com/markel1974/c64emu/src/render/common"
+	pixels2 "github.com/markel1974/c64emu/src/render/glrender/pixels"
 )
 
 type Render struct {
@@ -18,9 +18,9 @@ type Render struct {
 	screenHeight int
 	maxW         float64
 	maxH         float64
-	picture      *pixels.Picture
-	matrix       pixels.Matrix
-	surface      *pixels.Sprite
+	picture      *pixels2.Picture
+	matrix       pixels2.Matrix
+	surface      *pixels2.Sprite
 	display      *DisplayBuffer
 	inputs       *Inputs
 	audio        *Audio
@@ -40,12 +40,12 @@ func New(cfg *config.Config) *Render {
 	return g
 }
 
-func (g *Render) setup(pos pixels.Vec) {
-	g.picture = pixels.NewPicture(pixels.NewRect(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
-	g.surface = pixels.NewSprite()
-	g.surface.SetCachedMode(pixels.CacheModeUpdate)
+func (g *Render) setup(pos pixels2.Vec) {
+	g.picture = pixels2.NewPicture(pixels2.NewRect(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
+	g.surface = pixels2.NewSprite()
+	g.surface.SetCachedMode(pixels2.CacheModeUpdate)
 	g.surface.Set(g.picture, g.picture.Bounds())
-	g.matrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
+	g.matrix = pixels2.IM.Moved(pos).Scaled(pos, g.scale)
 	g.display = NewDisplayBuffer(g.picture)
 	g.audio = NewAudio()
 	g.c64Board = board.NewBoard(g.display, g.audio)
@@ -54,22 +54,22 @@ func (g *Render) setup(pos pixels.Vec) {
 }
 
 func (g *Render) Start() error {
-	return pixels.GLRun(g.run)
+	return pixels2.GLRun(g.run)
 }
 
 func (g *Render) run() {
-	cfg := pixels.WindowConfig{
-		Bounds:      pixels.NewRect(0, 0, g.maxW, g.maxH),
+	cfg := pixels2.WindowConfig{
+		Bounds:      pixels2.NewRect(0, 0, g.maxW, g.maxH),
 		VSync:       true,
 		Undecorated: false,
 		Smooth:      false,
 	}
 
 	if g.fullscreen {
-		cfg.Monitor = pixels.PrimaryMonitor()
+		cfg.Monitor = pixels2.PrimaryMonitor()
 	}
 
-	win, err := pixels.NewGLWindow(cfg)
+	win, err := pixels2.NewGLWindow(cfg)
 	if err != nil {
 		panic(err)
 	}
