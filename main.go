@@ -57,6 +57,12 @@ import (
 
 // -f "/Users/tinmr305/Downloads/c64carts/0_LOAD-Steel_Ranger_+3CD_LAXITY.d64;/Users/tinmr305/Downloads/c64carts/1_GAME-Steel_Ranger_+3CD_LAXITY.d64" -c "/Users/tinmr305/Downloads/c64carts/1541DiagnosticCart/1541diagcart.crt"
 
+// -c "/Users/tinmr305/Downloads/c64carts/wrathdemon.crt"
+
+// -c "/Users/tinmr305/Downloads/c64carts/eye_of_beholder.crt"
+
+// -f "/Users/tinmr305/Downloads/c64carts/SamsJourneySeasonsSpecialV1_1+5D-GP.d64"
+
 type IRender interface {
 	Start() error
 }
