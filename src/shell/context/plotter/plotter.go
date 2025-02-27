@@ -16,7 +16,6 @@ package plotter
 
 import (
 	"fmt"
-	"github.com/markel1974/webautoma/src/shell/interfaces"
 	"math"
 )
 
