@@ -16,8 +16,8 @@ package invaders
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -41,7 +41,7 @@ func (a ByScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByScore) Less(i, j int) bool { return a[i].score < a[j].score }
 
 func (g *Invaders) loadHighScores() {
-	data, err := ioutil.ReadFile(highScoreFilename)
+	data, err := os.ReadFile(highScoreFilename)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -91,7 +91,7 @@ func (g *Invaders) checkHighScores() {
 				data += "\n"
 			}
 		}
-		_ = ioutil.WriteFile(highScoreFilename, []byte(data), 0666)
+		_ = os.WriteFile(highScoreFilename, []byte(data), 0666)
 	}
 }
 

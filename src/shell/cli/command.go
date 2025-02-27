@@ -161,8 +161,13 @@ func NewCommand() *Command {
 	return &Command{}
 }
 
-func (c *Command) SetArgs(a []string) {
-	c.args = a
+func (c *Command) Parse(line string) bool {
+	args, err := Parse(line)
+	if err != nil {
+		return false
+	}
+	c.args = args
+	return true
 }
 
 // SetOutput sets the destination for usage and error messages.
@@ -266,13 +271,13 @@ func (c *Command) GetGlobalNormalizationFunc() func(f *mflag.FlagSet, name strin
 	return c.globNormFunc
 }
 
-func (c *Command) Write(data []byte) {
-	c.OutOrStdout().Write(data)
+func (c *Command) Write(data []byte) (int, error) {
+	return c.OutOrStdout().Write(data)
 }
 
-func (c *Command) WriteLn(data []byte) {
+func (c *Command) WriteLn(data []byte) (int, error) {
 	data = append(data, []byte(DefaultEol)...)
-	c.Write(data)
+	return c.Write(data)
 }
 
 func (c *Command) OutOrStdout() io.Writer {
@@ -555,7 +560,7 @@ Loop:
 			// "--" terminates the flags
 			break Loop
 		case strings.HasPrefix(s, "--") && !strings.Contains(s, "=") && !hasNoOptDefVal(s[2:], flags):
-			// If '--mflag arg' then
+			// If '--flag arg' then
 			// delete arg from args.
 			fallthrough // (do the same as below)
 		case strings.HasPrefix(s, "-") && !strings.Contains(s, "=") && len(s) == 2 && !shortHasNoOptDefVal(s[1:], flags):

@@ -68,18 +68,9 @@ func NewShell(auth interfaces.IAuthenticator, terminal interfaces.ITerminal, pro
 		passwordRetry: 0,
 		state:         stateUndefined,
 	}
-
-	switch c.auth.GetAuthenticationMode() {
-	case interfaces.AuthModeFull:
-		c.setUsernameRequiredState()
-	case interfaces.AuthModePassword:
-		c.setPasswordRequiredState()
-	case interfaces.AuthModeNone:
-		c.setAuthenticatedState()
-	default:
-		c.setAuthenticatedState()
+	if auth.IsAuthenticated() {
+		c.state = stateAuthenticated
 	}
-
 	return c
 }
 
@@ -99,7 +90,6 @@ func (c *Shell) KeyEvent(event *interfaces.KeyData) bool {
 	case interfaces.KeyTypeCursor:
 		c.cursorPressed(interfaces.CursorCodeDef(event.Key))
 	}
-
 	return ret
 }
 
@@ -174,7 +164,7 @@ func (c *Shell) enterPressed() bool {
 			c.setPasswordRequiredState()
 
 		case statePasswordRequired:
-			if c.auth.IsAuthenticated(c.currentUsername, buffer) {
+			if c.auth.Authenticate(c.currentUsername, buffer) {
 				c.setAuthenticatedState()
 			} else {
 				c.passwordRetry++

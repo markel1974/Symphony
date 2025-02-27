@@ -14,47 +14,45 @@
 
 package authenticator
 
-import "github.com/markel1974/c64emu/src/shell/interfaces"
+import (
+	"fmt"
+	"golang.org/x/crypto/bcrypt"
+)
 
 type SimpleAuthenticator struct {
-	username string
-	password string
+	username      string
+	hash          []byte
+	authenticated bool
 }
 
 func NewSimpleAuthenticator() *SimpleAuthenticator {
-	a := &SimpleAuthenticator{}
+	a := &SimpleAuthenticator{
+		username:      "",
+		hash:          []byte{},
+		authenticated: false,
+	}
 	return a
 }
 
-func (a *SimpleAuthenticator) SetCredentials(username string, password string) {
+func (a *SimpleAuthenticator) Setup(username string, password string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return fmt.Errorf("error hashing password: %s", err.Error())
+	}
 	a.username = username
-	a.password = password
+	a.hash = hashedPassword
+	return nil
 }
 
-func (a *SimpleAuthenticator) GetAuthenticationMode() interfaces.AuthMode {
-	if len(a.username) > 0 {
-		return interfaces.AuthModeFull
+func (a *SimpleAuthenticator) Authenticate(user string, pass string) bool {
+	if a.username != user {
+		a.authenticated = false
+	} else {
+		a.authenticated = bcrypt.CompareHashAndPassword(a.hash, []byte(pass)) == nil
 	}
-
-	if len(a.password) > 0 {
-		return interfaces.AuthModePassword
-	}
-
-	return interfaces.AuthModeNone
+	return a.authenticated
 }
 
-func (a *SimpleAuthenticator) IsAuthenticated(user string, password string) bool {
-	switch a.GetAuthenticationMode() {
-	case interfaces.AuthModeFull:
-		return user == a.username && password == a.password
-
-	case interfaces.AuthModePassword:
-		return password == a.password
-
-	case interfaces.AuthModeNone:
-		return true
-
-	default:
-		return false
-	}
+func (a *SimpleAuthenticator) IsAuthenticated() bool {
+	return a.authenticated
 }

@@ -130,8 +130,8 @@ func NewTaskManager(ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *a
 		root:       root,
 		dirty:      false,
 		fullPaint:  true,
-		width:      132,
-		height:     40,
+		width:      80,
+		height:     24,
 		ids:        adaptiveticker.NewIds(1024),
 	}
 
@@ -139,12 +139,9 @@ func NewTaskManager(ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *a
 }
 
 func (c *TaskManager) Execute(line string, template *Task) bool {
-	args := strings.Split(line, " ")
-	if len(args) <= 0 {
+	if !c.root.Parse(line) {
 		return false
 	}
-
-	c.root.SetArgs(args)
 
 	pCmd, flags, err := c.root.Prepare()
 	if err != nil {
@@ -218,19 +215,21 @@ func (c *TaskManager) SetSelectionMode(requestedPid int) {
 	c.selector.pid = adaptiveticker.UnknownId
 	c.selector.available = nil
 
-	for e := c.ids.All().Front(); e != nil; e = e.Next() {
-		task := e.Value.(*Task)
-		if task.cmd.PaintEvent != nil {
-			c.selector.available = append(c.selector.available, task.pid)
-			if firstPid == adaptiveticker.UnknownId {
-				firstPid = task.pid
-				firstIdx = idx
+	for _, e := range c.ids.All() {
+		task, ok := e.(*Task)
+		if ok && task != nil {
+			if task.cmd.PaintEvent != nil {
+				c.selector.available = append(c.selector.available, task.pid)
+				if firstPid == adaptiveticker.UnknownId {
+					firstPid = task.pid
+					firstIdx = idx
+				}
+				if task.pid == requestedPid {
+					c.selector.pid = requestedPid
+					c.selector.idx = idx
+				}
+				idx++
 			}
-			if task.pid == requestedPid {
-				c.selector.pid = requestedPid
-				c.selector.idx = idx
-			}
-			idx++
 		}
 	}
 
@@ -502,8 +501,11 @@ func (c *TaskManager) Kill(pid int) bool {
 func (c *TaskManager) KillAll(name string) int {
 	count := 0
 	var tasks []*Task
-	for e := c.ids.All().Front(); e != nil; e = e.Next() {
-		tasks = append(tasks, e.Value.(*Task))
+	for _, e := range c.ids.All() {
+		task, ok := e.(*Task)
+		if ok && task != nil {
+			tasks = append(tasks, task)
+		}
 	}
 
 	for _, task := range tasks {
@@ -527,9 +529,9 @@ func (c *TaskManager) KillAll(name string) int {
 
 func (c *TaskManager) List() string {
 	out := "\r\nPid: Task"
-	for e := c.ids.All().Front(); e != nil; e = e.Next() {
-		task := e.Value.(*Task)
-		if task != nil {
+	for _, e := range c.ids.All() {
+		task, ok := e.(*Task)
+		if ok && task != nil {
 			out += fmt.Sprintf("\r\n%d: %s", task.pid, task.cmd.Name())
 		}
 	}
@@ -592,13 +594,15 @@ func (c *TaskManager) ExecPaint(terminal interfaces.ITerminal) bool {
 		}
 	*/
 
-	for e := c.ids.All().Front(); e != nil; e = e.Next() {
-		task := e.Value.(*Task)
-		if task.pid == c.selector.pid {
-			selectedTask = task
-		} else {
-			surface.SetSelectionMode(false)
-			task.Paint(surface)
+	for _, e := range c.ids.All() {
+		task, ok := e.(*Task)
+		if ok && task != nil {
+			if task.pid == c.selector.pid {
+				selectedTask = task
+			} else {
+				surface.SetSelectionMode(false)
+				task.Paint(surface)
+			}
 		}
 	}
 
@@ -639,12 +643,14 @@ func (c *TaskManager) SaveTasks(name string) bool {
 	var tasks map[int]*Task
 	tasks = make(map[int]*Task)
 
-	for e := c.ids.All().Front(); e != nil; e = e.Next() {
-		task := e.Value.(*Task)
-		if strings.HasPrefix(task.Line, commandTask) {
-			continue
+	for _, e := range c.ids.All() {
+		task, ok := e.(*Task)
+		if ok && task != nil {
+			if strings.HasPrefix(task.Line, commandTask) {
+				continue
+			}
+			tasks[task.pid] = task
 		}
-		tasks[task.pid] = task
 	}
 
 	data, err := json.Marshal(tasks)

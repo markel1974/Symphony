@@ -27,6 +27,6 @@ func NewEquipmentFactory() *EquipmentFactory {
 	return &EquipmentFactory{}
 }
 
-func (f *EquipmentFactory) Create(_ string, z io.Writer, debug bool) interfaces.ITerminal {
-	return vt100.NewVt100(z, debug)
+func (f *EquipmentFactory) Create(_ string, z io.Writer) interfaces.ITerminal {
+	return vt100.NewVt100(z)
 }

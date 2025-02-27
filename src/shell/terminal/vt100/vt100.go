@@ -15,7 +15,6 @@
 package vt100
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"io"
 	"log"
@@ -40,10 +39,10 @@ type VT100 struct {
 	enterKey rune
 }
 
-func NewVt100(z io.Writer, debug bool) *VT100 {
+func NewVt100(z io.Writer) *VT100 {
 	return &VT100{
 		z:        z,
-		debug:    debug,
+		debug:    false,
 		enterKey: 13,
 	}
 }
@@ -261,10 +260,6 @@ func (l *VT100) Scan(data []byte) {
 		return
 	}
 
-	if l.debug {
-		fmt.Printf("RECEIVED %s\r\n", string(data))
-	}
-
 	//UTF8
 	sequence := []rune(string(data))
 
@@ -299,7 +294,7 @@ func (l *VT100) Scan(data []byte) {
 			}
 		} else {
 			if l.debug {
-				log.Printf("Key Pressed %d %d\r\n", key, pos)
+				log.Println("Key Pressed", key, pos)
 			}
 
 			if key == 9 {
@@ -338,7 +333,7 @@ func (l *VT100) Scan(data []byte) {
 
 func (l *VT100) doEscape(parameter byte, intermediate byte, final byte) bool {
 	if l.debug {
-		log.Printf("Escape sequence %d %d %d\r\n", parameter, intermediate, final)
+		log.Println("Escape sequence", parameter, intermediate, final)
 	}
 
 	switch final {

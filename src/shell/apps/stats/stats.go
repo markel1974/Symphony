@@ -32,7 +32,6 @@ func Create(t commandcreator.ICreator) *cli.Command {
 	t.AddCommand(root, CreateMemoryStatus(t))
 	t.AddCommand(root, CreateMemoryPlot(t))
 	t.AddCommand(root, CreateCPUStatus(t))
-	t.AddCommand(root, CreateFdStatus(t))
 	t.AddCommand(root, CreateCPUUsage(t))
 
 	return root

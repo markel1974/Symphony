@@ -18,27 +18,27 @@ import (
 	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
 	"github.com/markel1974/c64emu/src/shell/authenticator"
 	"github.com/markel1974/c64emu/src/shell/cli"
-	"github.com/markel1974/c64emu/src/shell/context"
-	"github.com/markel1974/c64emu/src/shell/terminal"
-	"golang.org/x/term"
-	"os"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/ssh"
+	"github.com/markel1974/c64emu/src/shell/telnet"
 )
 
-func Create(autoSave bool, template *cli.Command) error {
-	prompt := "% "
-	factory := terminal.NewEquipmentFactory()
-	ticker := adaptiveticker.NewAdaptiveTicker()
-	auth := authenticator.NewSimpleAuthenticator()
-	_, err := term.MakeRaw(int(os.Stdin.Fd()))
-	if err != nil {
-		return err
-	}
-	reader := os.Stdin
-	writer := os.Stdout
-	ctx := context.NewContext(ticker, reader, writer, auth, factory, template, prompt, autoSave)
-	//ctx.SetEnterKey(13)
-	ctx.Setup("VT100", false)
-	ctx.Exec(true)
+type IShellServer interface {
+	SetPrompt(prompt string)
+	SetTemplate(template *cli.Command)
+	Start()
+	AsyncStart()
+}
 
-	return nil
+func New(secure bool, auth interfaces.IAuthenticator, port int, autosave bool) IShellServer {
+	var ticker = adaptiveticker.NewAdaptiveTicker()
+	if auth == nil {
+		auth = authenticator.NewSimpleAuthenticator()
+	}
+
+	if secure {
+		return ssh.NewServer(ticker, auth, port, autosave)
+	} else {
+		return telnet.NewServer(ticker, auth, port, autosave)
+	}
 }

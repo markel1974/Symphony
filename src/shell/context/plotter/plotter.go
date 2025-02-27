@@ -16,6 +16,7 @@ package plotter
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"math"
 )
 

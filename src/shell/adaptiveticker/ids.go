@@ -14,7 +14,10 @@
 
 package adaptiveticker
 
-import "container/list"
+import (
+	"container/list"
+	"sync"
+)
 
 const UnknownId = -1
 
@@ -28,6 +31,7 @@ type Ids struct {
 	currentSlot int
 	kv          map[int]*list.Element
 	ll          *list.List
+	lock        sync.RWMutex
 }
 
 func NewIds(max int) *Ids {
@@ -41,6 +45,8 @@ func NewIds(max int) *Ids {
 }
 
 func (a *Ids) Set(obj IIds) int {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 	var id = UnknownId
 
 	if a.currentSlot >= len(a.slots) {
@@ -73,6 +79,8 @@ func (a *Ids) Set(obj IIds) int {
 }
 
 func (a *Ids) Get(id int) (IIds, bool) {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
 	var obj IIds = nil
 	var e, ok = a.kv[id]
 	if ok {
@@ -81,11 +89,20 @@ func (a *Ids) Get(id int) (IIds, bool) {
 	return obj, ok
 }
 
-func (a *Ids) All() *list.List {
-	return a.ll
+func (a *Ids) All() []IIds {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
+	var out []IIds
+	for e := a.ll.Front(); e != nil; e = e.Next() {
+		var obj = e.Value.(IIds)
+		out = append(out, obj)
+	}
+	return out
 }
 
 func (a *Ids) Unset(id int) bool {
+	a.lock.Lock()
+	defer a.lock.Unlock()
 	if id < 0 {
 		return false
 	}
