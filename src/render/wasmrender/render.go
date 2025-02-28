@@ -1,5 +1,24 @@
 package wasmrender
 
+// GOOS=js GOARCH=wasm go build -o g64.wasm ./src/render/wasmrender
+
+/*
+
+import (
+"embed"
+"net/http"
+)
+
+//go:embed g64.wasm
+var wasmFS embed.FS
+
+func main() {
+	http.Handle("/", http.FileServer(http.FS(wasmFS)))
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+
+*/
+
 /*
 import (
 "syscall/js" // Per interagire con JavaScript
