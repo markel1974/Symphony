@@ -3,13 +3,13 @@ package cartridges
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/cartridges/easyflash"
+	"github.com/markel1974/c64emu/src/c64/cartridges/externalcpu"
 	"github.com/markel1974/c64emu/src/c64/cartridges/generic"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/c64/cartridges/magicdesk"
 	"github.com/markel1974/c64emu/src/c64/cartridges/ocean"
 	"github.com/markel1974/c64emu/src/c64/cartridges/reu"
-	"github.com/markel1974/c64emu/src/c64/cartridges/supercpu"
 	"github.com/markel1974/c64emu/src/config"
 	"strconv"
 	"strings"
@@ -47,7 +47,7 @@ func NewManager() *Manager {
 func (f *Manager) Setup(board icartridge.IExpansion, prefs *config.Config) {
 	f.board = board
 	f.prefs = prefs
-	f.registerHardware[supercpu.Id] = supercpu.New
+	f.registerHardware[externalcpu.Id] = externalcpu.New
 	f.registerHardware[reu.Id128K] = reu.New128K
 	f.registerHardware[reu.Id256K] = reu.New256K
 	f.registerHardware[reu.Id512K] = reu.New512K

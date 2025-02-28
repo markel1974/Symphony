@@ -1,4 +1,4 @@
-package supercpu
+package externalcpu
 
 import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
@@ -9,7 +9,7 @@ import (
 
 const Id = "SCPU"
 
-type SuperCPU struct {
+type ExternalCPU struct {
 	id        string
 	board     icartridge.IExpansion
 	cpuSocket *CPUSocket
@@ -19,7 +19,7 @@ type SuperCPU struct {
 }
 
 func New() icartridge.ICartridge {
-	r := &SuperCPU{
+	r := &ExternalCPU{
 		id:        "",
 		board:     nil,
 		cpuSocket: nil,
@@ -30,15 +30,15 @@ func New() icartridge.ICartridge {
 	return r
 }
 
-func (s *SuperCPU) GetId() string {
+func (s *ExternalCPU) GetId() string {
 	return s.id
 }
 
-func (s *SuperCPU) EmulationRequired() bool {
+func (s *ExternalCPU) EmulationRequired() bool {
 	return true
 }
 
-func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
+func (s *ExternalCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	s.board = board
 	s.id = ldr.GetId()
 	s.board.SetDMALow(true)
@@ -60,11 +60,11 @@ func (s *SuperCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) err
 	return nil
 }
 
-func (s *SuperCPU) Reset() {
+func (s *ExternalCPU) Reset() {
 	s.cpu.Reset()
 }
 
-func (s *SuperCPU) Emulate() {
+func (s *ExternalCPU) Emulate() {
 	// TEST SUPER CPU.....
 	const mhz = 20
 	// TODO TRIGGER BALOW-AECLOW HAS SIGNAL
@@ -78,31 +78,31 @@ func (s *SuperCPU) Emulate() {
 	}
 }
 
-func (s *SuperCPU) GetExRom() uint8 {
+func (s *ExternalCPU) GetExRom() uint8 {
 	return 1
 }
 
-func (s *SuperCPU) GetGame() uint8 {
+func (s *ExternalCPU) GetGame() uint8 {
 	return 1
 }
 
-func (s *SuperCPU) IORead(addr uint16) (uint8, bool) {
+func (s *ExternalCPU) IORead(addr uint16) (uint8, bool) {
 	return 0, false
 }
 
-func (s *SuperCPU) IOWrite(addr uint16, data uint8) bool {
+func (s *ExternalCPU) IOWrite(addr uint16, data uint8) bool {
 	return false
 }
 
-func (s *SuperCPU) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
+func (s *ExternalCPU) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
 	return false
 }
 
-func (s *SuperCPU) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
+func (s *ExternalCPU) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
 	return 0, false
 }
 
-func (s *SuperCPU) Detach() error {
+func (s *ExternalCPU) Detach() error {
 	//TODO IMPLEMENT
 	return nil
 }

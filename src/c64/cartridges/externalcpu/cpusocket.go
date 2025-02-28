@@ -1,4 +1,4 @@
-package supercpu
+package externalcpu
 
 import (
 	mos6510 "github.com/markel1974/c64emu/src/components/6510"
@@ -14,7 +14,7 @@ func NewCPUSocket() *CPUSocket {
 	return c
 }
 
-func (w *CPUSocket) Setup(board *SuperCPU) {
+func (w *CPUSocket) Setup(board *ExternalCPU) {
 	w.pic = board.pic
 	w.banks = board.board
 }
