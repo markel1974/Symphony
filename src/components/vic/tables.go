@@ -45,7 +45,22 @@ const (
 	SpriteNumber       = 8
 )
 
-// _multiExpTable is a precomputed lookup table of uint16 values for efficient multi-exponentiation operations.
+// _multiExpTable is a precomputed lookup table for expanding multicolor
+// sprite data for display. Each entry takes a byte of sprite data and
+// expands it into a 16-bit value representing the doubled pixels,
+// suitable for multicolor mode where each pair of bits determines a color.
+//
+// Example:
+// Input byte (8 bits):  10110100  (binary)
+//
+//	10 -> 11 00
+//	11 -> 11 11
+//	01 -> 00 11
+//	00 -> 00 00
+//
+// Output word (16 bits): 1100111100110000 (binary)
+// _multiExpTable index:   0xCB         (203 decimal)
+// _multiExpTable value:  0xCF30       (binary 1100111100110000)
 var _multiExpTable = []uint16{
 	0x0000, 0x0005, 0x000A, 0x000F, 0x0050, 0x0055, 0x005A, 0x005F,
 	0x00A0, 0x00A5, 0x00AA, 0x00AF, 0x00F0, 0x00F5, 0x00FA, 0x00FF,
@@ -81,7 +96,31 @@ var _multiExpTable = []uint16{
 	0xFFA0, 0xFFA5, 0xFFAA, 0xFFAF, 0xFFF0, 0xFFF5, 0xFFFA, 0xFFFF,
 }
 
-// _expTable is a lookup table containing uint16 values for quick reference or computation in specific algorithms.
+// _expTable is a lookup table for fast horizontal expansion of sprite data.
+//
+// Each byte in a standard (non-multicolor) sprite represents 8 pixels.
+// When a sprite is expanded horizontally (by setting the corresponding bit
+// in the VIC-II's sprite expansion register), each of those pixels becomes
+// *two* pixels wide.  This table pre-calculates the expanded bit pattern
+// for every possible byte value.
+//
+// The index into this table is the byte value from the sprite data.
+// The value at that index is a 16-bit integer representing the expanded
+// pixel data.  Each bit in the original byte becomes *two* bits in the
+// 16-bit word.
+//
+// Example:
+//
+//	Original sprite data byte:  0b10110100  (binary)
+//	                                10110100
+//	Expanded pixel data (16bit): 1100111100110000 (binary)
+//
+// _expTable index:           0xb4          (decimal 180)
+// _expTable value:       0xccf3   (binary 1100110011110011)
+//
+// This allows the VIC-II emulation to quickly expand sprite data
+// by simply looking up the pre-calculated value in this table, instead
+// of performing bitwise operations for each pixel.
 var _expTable = []uint16{
 	0x0000, 0x0003, 0x000C, 0x000F, 0x0030, 0x0033, 0x003C, 0x003F,
 	0x00C0, 0x00C3, 0x00CC, 0x00CF, 0x00F0, 0x00F3, 0x00FC, 0x00FF,
