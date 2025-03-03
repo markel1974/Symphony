@@ -1,5 +1,7 @@
 package mos6569
 
+import "github.com/markel1974/c64emu/src/components/board"
+
 // BorderType represents the type of border used, defined as an integer-based enumeration.
 type BorderType int
 
@@ -21,7 +23,7 @@ const (
 // Borders represents the structure for handling visual border rendering in a VIC-based display system.
 type Borders struct {
 	core             *VIC
-	db               IDisplayBuffer
+	db               board.IDisplayBuffer
 	mainFlipFlop     bool
 	verticalFlipFlop bool
 	samples          []bool
@@ -30,7 +32,7 @@ type Borders struct {
 }
 
 // NewBorder creates and initializes a new Borders instance with the provided VIC core and display buffer dependencies.
-func NewBorder(core *VIC, db IDisplayBuffer) *Borders {
+func NewBorder(core *VIC, db board.IDisplayBuffer) *Borders {
 	gr := &Borders{
 		db:               db,
 		core:             core,

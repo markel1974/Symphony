@@ -3,7 +3,7 @@ package fsdrive
 import (
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
 )
 
 type Commands struct {

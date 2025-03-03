@@ -1,6 +1,7 @@
 package mos6581
 
 import (
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/conversion"
 )
 
@@ -13,7 +14,7 @@ const (
 type EGState int
 
 type AudioBuilder struct {
-	player          IPlayer
+	player          board.IPlayer
 	fragSize        int                  // samples, not bytes
 	bufferFrags     int                  // frags the in buffer
 	bufferSize      int                  // bytes, not samples
@@ -36,7 +37,7 @@ type AudioBuilder struct {
 	leadLoWater     int
 }
 
-func NewAudioBuilder(sp IPlayer, useFilters bool, fragFreq int, rasters int) *AudioBuilder {
+func NewAudioBuilder(sp board.IPlayer, useFilters bool, fragFreq int, rasters int) *AudioBuilder {
 	bufferFrags := fragFreq                  // one frag per frame
 	fragSize := SampleFreq / fragFreq        // samples, not bytes
 	fragInterval := 1000 / fragFreq          // in milliseconds

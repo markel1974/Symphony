@@ -3,10 +3,15 @@ package main
 import (
 	"flag"
 	"fmt"
+
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/asciirender"
 	"github.com/markel1974/c64emu/src/render/glrender"
 	"github.com/markel1974/c64emu/src/version"
+
+	c64board "github.com/markel1974/c64emu/src/c64/board"
+	vic20board "github.com/markel1974/c64emu/src/vic20/board"
 )
 
 //TODO WASM
@@ -76,11 +81,13 @@ func main() {
 	var prg string
 	var noJiffy bool
 	var ascii bool
+	var mode string
 	flag.BoolVar(&showHelp, "h", false, "show this help")
 	flag.BoolVar(&showVersion, "v", false, "show version")
 	flag.StringVar(&cartridges, "c", "", "cartridge path")
 	flag.StringVar(&drives, "d", "", "drives path")
 	flag.StringVar(&disks, "f", "", "disks")
+	flag.StringVar(&mode, "m", "", "hardware mode: vic20, c64")
 	flag.StringVar(&prg, "p", "", "prg path")
 	flag.BoolVar(&noJiffy, "j", false, "disable jiffy")
 	flag.BoolVar(&ascii, "a", false, "ascii render")
@@ -105,13 +112,11 @@ func main() {
 			cfg.AddCartridge(v.K, v.V)
 		}
 	}
-
 	if len(drives) > 0 {
 		for _, v := range config.KeyVal(drives) {
 			cfg.AddDrive(v.K, v.V)
 		}
 	}
-
 	if len(disks) > 0 {
 		if kv := config.KeyVal(disks); len(kv) > 0 {
 			if len(cfg.GetDrives()) == 0 {
@@ -122,17 +127,23 @@ func main() {
 			}
 		}
 	}
-
 	if noJiffy {
 		cfg.DisableJiffy()
 	}
 
 	var g IRender
+	var b board.IBoard
+
+	if mode == "vic20" {
+		b = vic20board.NewBoard()
+	} else {
+		b = c64board.NewBoard()
+	}
 
 	if ascii {
-		g = asciirender.New(cfg)
+		g = asciirender.New(b, cfg)
 	} else {
-		g = glrender.New(cfg)
+		g = glrender.New(b, cfg)
 	}
 
 	if err := g.Start(); err != nil {

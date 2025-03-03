@@ -20,7 +20,7 @@ func (w *CPUSocket) Setup(board *Board) {
 }
 
 func (w *CPUSocket) Reset() {
-	w.board.cpu.Reset()
+	//w.board.cpu.Reset()
 }
 
 func (w *CPUSocket) GetPic() mos6510.IPic {

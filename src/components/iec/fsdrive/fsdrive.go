@@ -2,7 +2,7 @@ package fsdrive
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/c64/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/fifo"
 	"io"

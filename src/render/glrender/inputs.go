@@ -2,13 +2,13 @@ package glrender
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/c64/inputs"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/render/glrender/pixels"
 )
 
 type Inputs struct {
-	b          *board.Board
+	b          board.IBoard
 	keyMapper  []func(bool)
 	activeKeys map[pixels.Button]bool
 	joyKeys    bool
@@ -31,7 +31,7 @@ func NewInputs() *Inputs {
 	}
 }
 
-func (g *Inputs) Setup(b *board.Board, maxW float64, maxH float64) {
+func (g *Inputs) Setup(b board.IBoard, maxW float64, maxH float64) {
 	const max = int(pixels.KeyLast + 1)
 	g.b = b
 	g.maxW = int(maxW)

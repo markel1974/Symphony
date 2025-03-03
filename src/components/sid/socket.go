@@ -1,10 +1,7 @@
 package mos6581
 
-type IPlayer interface {
-	GetCurrentPosition() int
-	Write([]uint32, int, int)
-}
+import "github.com/markel1974/c64emu/src/components/board"
 
 type ISocket interface {
-	GetPlayer() IPlayer
+	GetPlayer() board.IPlayer
 }

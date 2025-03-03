@@ -1,6 +1,9 @@
 package mos6569
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/components/board"
+)
 
 // columnsMax defines the maximum number of columns used for graphical or text-based data buffers in the graphics rendering.
 // This constant represents the horizontal resolution in character units (40 columns).
@@ -42,7 +45,7 @@ var _backgroundSequencer = []func(*Graphics){
 type Graphics struct {
 	core              *VIC
 	collisions        *Collisions
-	db                IDisplayBuffer
+	db                board.IDisplayBuffer
 	gfxData           uint8
 	colorData         uint8
 	charData          uint8
@@ -59,7 +62,7 @@ type Graphics struct {
 }
 
 // NewGraphics initializes and returns a new Graphics instance with the provided VIC core, collision handler, and display buffer.
-func NewGraphics(core *VIC, collisions *Collisions, db IDisplayBuffer) *Graphics {
+func NewGraphics(core *VIC, collisions *Collisions, db board.IDisplayBuffer) *Graphics {
 	gr := &Graphics{
 		core:              core,
 		collisions:        collisions,

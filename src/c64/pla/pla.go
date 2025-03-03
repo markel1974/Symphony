@@ -1,17 +1,9 @@
-package banks
+package pla
 
 import (
-	"github.com/markel1974/c64emu/src/c64/banks/roms"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/filler"
-)
-
-// BasicRomFile represents the filename for the Basic ROM file.
-// CharRomFile represents the filename for the Char ROM file.
-const (
-	BasicRomFile = "Basic.rom"
-	CharRomFile  = "Char.rom"
 )
 
 type ReadFn func(uint16) uint8
@@ -19,13 +11,14 @@ type ReadFn func(uint16) uint8
 // WriteFn is a function type that represents a write operation with a 16-bit address and an 8-bit data payload.
 type WriteFn func(uint16, uint8)
 
-// Banks represents a structure managing memory configurations, ports, and sockets for emulation purposes.
-type Banks struct {
+// PLA represents a structure managing memory configurations, ports, and sockets for emulation purposes.
+type PLA struct {
 	vic             ISocket
 	sid             ISocket
 	cia1            ISocket
 	cia2            ISocket
 	cartMan         IExpansionSocket
+	roms            IRomSocket
 	ram             []byte
 	bankWrite       []WriteFn
 	bankRead        []ReadFn
@@ -44,15 +37,16 @@ type Banks struct {
 	wTriggers       *WriteTriggers
 }
 
-// NewBanks initializes and returns a pointer to a new instance of Banks with default memory and configurations set.
-func NewBanks() *Banks {
+// NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
+func NewPLA() *PLA {
 	mm := NewMemoryMap()
-	b := &Banks{
+	b := &PLA{
 		vic:             nil,
 		sid:             nil,
 		cia1:            nil,
 		cia2:            nil,
 		cartMan:         nil,
+		roms:            nil,
 		ram:             make([]byte, 0x10000),
 		bankWrite:       make([]WriteFn, 0xf+1),
 		bankRead:        make([]ReadFn, 0xf+1),
@@ -62,9 +56,9 @@ func NewBanks() *Banks {
 		memoryConfig:    mm.Get(0),
 		ports:           NewPorts(),
 		emulatorId:      NewEmulatorId(),
-		basic:           make([]byte, roms.BasicRomSize),
-		kernal:          make([]byte, roms.KernalRomSize),
-		char:            make([]byte, roms.CharRomSize),
+		basic:           []byte{},
+		kernal:          []byte{},
+		char:            []byte{},
 		color:           make([]byte, 0x0400),
 		cfg:             nil,
 		memoryConfigIdx: -1,
@@ -73,12 +67,13 @@ func NewBanks() *Banks {
 	return b
 }
 
-func (b *Banks) Setup(vic ISocket, sid ISocket, cia1 ISocket, cia2 ISocket, cartMan IExpansionSocket, cfg *config.Config) {
+func (b *PLA) Setup(vic ISocket, sid ISocket, cia1 ISocket, cia2 ISocket, cartMan IExpansionSocket, roms IRomSocket, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1
 	b.cia2 = cia2
 	b.cartMan = cartMan
+	b.roms = roms
 
 	b.cfg = cfg
 	b.bankWrite[0x0] = b.ramWrite0x0000
@@ -157,31 +152,24 @@ func (b *Banks) Setup(vic ISocket, sid ISocket, cia1 ISocket, cia2 ISocket, cart
 	b.initRom()
 }
 
-// Reset reinitializes the state of Banks by resetting its ports and updating internal references or state.
-func (b *Banks) Reset() {
+// Reset reinitializes the state of PLA by resetting its ports and updating internal references or state.
+func (b *PLA) Reset() {
 	b.ports.Reset()
 	b.update()
 }
 
-//func (b *Banks) AsyncReset() {
+//func (b *PLA) AsyncReset() {
 //	b.initRom()
 //}
 
-func (b *Banks) initRom() {
-	romLoader := NewRomLoader()
-	if b.cfg.UseJiffy() {
-		b.kernal = romLoader.Load(roms.BuiltinKernalJiffyRom, b.cfg.GetKernalRomPath())
-	} else {
-		b.kernal = romLoader.Load(roms.BuiltinKernalRom, b.cfg.GetKernalRomPath())
-	}
-	//b.kernal = b.romLoader.Load(builtin_kernal_fast_rom, KernalRomFile)
-	//b.kernal = b.romLoader.Load(builtin_kernal_rom, KernalRomFile)
-	b.basic = romLoader.Load(roms.BuiltinBasicRom, BasicRomFile)
-	b.char = romLoader.Load(roms.BuiltinCharRom, CharRomFile)
+func (b *PLA) initRom() {
+	b.kernal = b.roms.LoadKernal()
+	b.basic = b.roms.LoadBasic()
+	b.char = b.roms.LoadChar()
 }
 
-// update updates the state of the Banks object by updating ports and rebuilding the memory configuration.
-func (b *Banks) update() {
+// update updates the state of the PLA object by updating ports and rebuilding the memory configuration.
+func (b *PLA) update() {
 	//https://sta.c64.org/cbm64mem.html
 	//https://codebase64.org/doku.php?id=base:memory_management
 	//b.ports.SetTape(tape_sense, tape_write_in, tape_motor_in)
@@ -190,7 +178,7 @@ func (b *Banks) update() {
 }
 
 // RebuildMemoryConfig updates the memory configuration based on the current cartridge and port settings.
-func (b *Banks) RebuildMemoryConfig() {
+func (b *PLA) RebuildMemoryConfig() {
 	//https://sta.c64.org/cbm64mem.html
 	//https://codebase64.org/doku.php?id=base:memory_management
 	game := uint8(1)
@@ -207,60 +195,60 @@ func (b *Banks) RebuildMemoryConfig() {
 	}
 }
 
-// GetMemoryConfig returns the memory configuration of the Banks as a slice of uint8.
-func (b *Banks) GetMemoryConfig() []uint8 {
+// GetMemoryConfig returns the memory configuration of the PLA as a slice of uint8.
+func (b *PLA) GetMemoryConfig() []uint8 {
 	return b.memoryConfig
 }
 
 // SetMemoryConfig updates the memory configuration of the bank with the provided byte slice configuration.
-func (b *Banks) SetMemoryConfig(cfg []uint8) {
+func (b *PLA) SetMemoryConfig(cfg []uint8) {
 	b.memoryConfig = cfg
 }
 
-// SetMemoryEntry sets the memory configuration for the Banks instance using the provided memory configuration identifier.
-func (b *Banks) SetMemoryEntry(memConfig uint8) {
+// SetMemoryEntry sets the memory configuration for the PLA instance using the provided memory configuration identifier.
+func (b *PLA) SetMemoryEntry(memConfig uint8) {
 	b.memoryConfig = b.memoryMap.Get(memConfig)
 }
 
 // ReadBasicRom reads a byte from the BASIC ROM at the specified memory address.
-func (b *Banks) ReadBasicRom(addr uint16) uint8 {
+func (b *PLA) ReadBasicRom(addr uint16) uint8 {
 	return b.basic[addr]
 }
 
 // ReadCharRom reads a byte from the character ROM at the given address. It returns the byte located at the specified address.
-func (b *Banks) ReadCharRom(addr uint16) uint8 {
+func (b *PLA) ReadCharRom(addr uint16) uint8 {
 	return b.char[addr]
 }
 
 // ReadKernalRom reads a byte from the Kernal ROM at the specified memory address.
-func (b *Banks) ReadKernalRom(addr uint16) uint8 {
+func (b *PLA) ReadKernalRom(addr uint16) uint8 {
 	return b.kernal[addr]
 }
 
 // ReadColor reads and returns the color value from the given address in the color bank.
-func (b *Banks) ReadColor(addr uint16) uint8 {
+func (b *PLA) ReadColor(addr uint16) uint8 {
 	return b.color[addr]
 }
 
-// WriteColor writes the given data byte to the specified address in the color memory of the Banks struct.
-func (b *Banks) WriteColor(addr uint16, data uint8) {
+// WriteColor writes the given data byte to the specified address in the color memory of the PLA struct.
+func (b *PLA) WriteColor(addr uint16, data uint8) {
 	b.color[addr] = data
 }
 
 // Read retrieves an 8-bit value from the specified memory address using the appropriate bank read function.
-func (b *Banks) Read(addr uint16) uint8 {
+func (b *PLA) Read(addr uint16) uint8 {
 	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
 	bank := addr >> 12
 	return b.bankRead[bank](addr)
 }
 
 // ReadDirect retrieves a byte of data directly from the RAM at the specified address without any additional processing.
-func (b *Banks) ReadDirect(addr uint16) uint8 {
+func (b *PLA) ReadDirect(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
 // WriteDirect writes the specified `data` byte to the given `addr` in RAM and triggers any associated write hooks.
-func (b *Banks) WriteDirect(addr uint16, data uint8) {
+func (b *PLA) WriteDirect(addr uint16, data uint8) {
 	b.ram[addr] = data
 	if b.wTriggers == nil {
 		return
@@ -269,7 +257,7 @@ func (b *Banks) WriteDirect(addr uint16, data uint8) {
 }
 
 // Write updates the memory at the specified address with the provided data using the current memory bank configuration.
-func (b *Banks) Write(addr uint16, data uint8) {
+func (b *PLA) Write(addr uint16, data uint8) {
 	//sta.c64.org/cbm64mem.html
 	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
 	bank := addr >> 12
@@ -281,7 +269,7 @@ func (b *Banks) Write(addr uint16, data uint8) {
 }
 
 // ramWrite0x0000 writes data to the specified address in RAM, handling special cases for addresses 0 and 1.
-func (b *Banks) ramWrite0x0000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0x0000(addr uint16, data uint8) {
 	if addr == 0 {
 		b.ports.SetDir(data)
 		b.ram[0] = b.vic.GetLastByte()
@@ -297,7 +285,7 @@ func (b *Banks) ramWrite0x0000(addr uint16, data uint8) {
 }
 
 // SetWriteTrigger sets a write trigger at the specified address with the given callback function and returns its trigger ID.
-func (b *Banks) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
+func (b *PLA) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
 	if b.wTriggers == nil {
 		b.wTriggers = NewWriteTriggers(len(b.ram))
 	}
@@ -305,7 +293,7 @@ func (b *Banks) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
 }
 
 // RemoveRamTrigger removes a write trigger associated with the specified memory address and identifier from the bank.
-func (b *Banks) RemoveRamTrigger(addr uint16, id int) {
+func (b *PLA) RemoveRamTrigger(addr uint16, id int) {
 	if b.wTriggers == nil {
 		return
 	}
@@ -313,69 +301,69 @@ func (b *Banks) RemoveRamTrigger(addr uint16, id int) {
 }
 
 // ramWrite0x1000 writes a byte of data to the specified address in the RAM within the 0x1000 range.
-func (b *Banks) ramWrite0x1000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0x1000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0x2000 writes a single byte of data to the RAM at the specified 16-bit address.
-func (b *Banks) ramWrite0x2000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0x2000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0x3000 writes the given data byte to the specified address within the 0x3000 range of the RAM.
-func (b *Banks) ramWrite0x3000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0x3000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0x4000 writes a byte of data to the specified RAM address within the range starting at 0x4000.
-func (b *Banks) ramWrite0x4000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0x4000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0x5000 writes a single byte of data to the specified address in the RAM within the 0x5000 range.
-func (b *Banks) ramWrite0x5000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0x5000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0x6000 writes a byte of data to the specified address in the RAM, starting at the 0x6000 range.
-func (b *Banks) ramWrite0x6000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0x6000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0x7000 writes an 8-bit data value to the specified 16-bit address in the RAM within the addressable 0x7000 range.
-func (b *Banks) ramWrite0x7000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0x7000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0x8000 writes a single byte of data to the specified address in the RAM starting at 0x8000.
-func (b *Banks) ramWrite0x8000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0x8000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0x9000 writes a byte of data to the RAM at the specified address in the 0x9000 range.
-func (b *Banks) ramWrite0x9000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0x9000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0xA000 writes a byte of data to the RAM at the specified address in the 0xA000 range.
-func (b *Banks) ramWrite0xA000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0xA000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0xB000 writes a byte of data to the specified address in the RAM located at 0xB000.
-func (b *Banks) ramWrite0xB000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0xB000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0xC000 writes a byte of data to the specified address in the RAM starting at 0xC000.
-func (b *Banks) ramWrite0xC000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0xC000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
 // ramWrite0xD000 writes a byte of data to RAM or an I/O port based on the memory configuration for bank 0xD.
 // If the memory is configured as I/O, it determines the port and invokes the relevant port write handler.
 // Otherwise, it directly writes the data to the specified RAM address.
-func (b *Banks) ramWrite0xD000(addr uint16, data uint8) {
+func (b *PLA) ramWrite0xD000(addr uint16, data uint8) {
 	const bank = 0xd
 	if b.memoryConfig[bank] == I_O {
 		p := (addr >> 8) & 0x0f
@@ -385,21 +373,21 @@ func (b *Banks) ramWrite0xD000(addr uint16, data uint8) {
 	b.ram[addr] = data
 }
 
-// ramWrite0xE000 writes a byte of data to the specified RAM address within the 0xE000 range in the Banks structure.
-func (b *Banks) ramWrite0xE000(addr uint16, data uint8) {
+// ramWrite0xE000 writes a byte of data to the specified RAM address within the 0xE000 range in the PLA structure.
+func (b *PLA) ramWrite0xE000(addr uint16, data uint8) {
 	b.ram[addr] = data
 	return
 }
 
 // ramWrite0xF000 writes a byte of data to the RAM at the specified 0xF000-based address.
-// It directly manipulates the memory location in the RAM slice of the Banks object.
-func (b *Banks) ramWrite0xF000(addr uint16, data uint8) {
+// It directly manipulates the memory location in the RAM slice of the PLA object.
+func (b *PLA) ramWrite0xF000(addr uint16, data uint8) {
 	b.ram[addr] = data
 	return
 }
 
 // ramRead0x0000 reads a byte of data from the specified address within the RAM or ports based on the given address input.
-func (b *Banks) ramRead0x0000(addr uint16) uint8 {
+func (b *PLA) ramRead0x0000(addr uint16) uint8 {
 	if addr == 0 {
 		return b.ports.GetDirection()
 	} else if addr == 1 {
@@ -409,42 +397,42 @@ func (b *Banks) ramRead0x0000(addr uint16) uint8 {
 }
 
 // ramRead0x1000 reads a byte from the RAM at the given address within the 0x1000 address space.
-func (b *Banks) ramRead0x1000(addr uint16) uint8 {
+func (b *PLA) ramRead0x1000(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
 // ramRead0x2000 reads a byte from the RAM at the specified address within the range 0x2000.
-func (b *Banks) ramRead0x2000(addr uint16) uint8 {
+func (b *PLA) ramRead0x2000(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
 // ramRead0x3000 reads a byte from the RAM at the specified address within the 0x3000 memory range.
-func (b *Banks) ramRead0x3000(addr uint16) uint8 {
+func (b *PLA) ramRead0x3000(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
 // ramRead0x4000 reads a byte from the RAM at the specified 16-bit address within the 0x4000 memory range.
-func (b *Banks) ramRead0x4000(addr uint16) uint8 {
+func (b *PLA) ramRead0x4000(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
 // ramRead0x5000 reads an 8-bit value from the bank's RAM at the specified 16-bit address within range 0x5000.
-func (b *Banks) ramRead0x5000(addr uint16) uint8 {
+func (b *PLA) ramRead0x5000(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
 // ramRead0x6000 reads and returns a byte from the RAM at the specified address within the 0x6000 range.
-func (b *Banks) ramRead0x6000(addr uint16) uint8 {
+func (b *PLA) ramRead0x6000(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
 // ramRead0x7000 reads a byte from the RAM at the specified address within the 0x7000 memory range.
-func (b *Banks) ramRead0x7000(addr uint16) uint8 {
+func (b *PLA) ramRead0x7000(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
 // ramRead0x8000 reads a byte from RAM or cartridge memory based on the memory configuration at address 0x8000.
-func (b *Banks) ramRead0x8000(addr uint16) uint8 {
+func (b *PLA) ramRead0x8000(addr uint16) uint8 {
 	const bank = 0x8
 	if b.memoryConfig[bank] == ROL {
 		if v, ok := b.cartMan.Read(icartridge.ROM_LO, addr); ok {
@@ -455,7 +443,7 @@ func (b *Banks) ramRead0x8000(addr uint16) uint8 {
 }
 
 // ramRead0x9000 reads a byte from the memory bank at address 0x9000 based on the current memory configuration and cartridge mode.
-func (b *Banks) ramRead0x9000(addr uint16) uint8 {
+func (b *PLA) ramRead0x9000(addr uint16) uint8 {
 	const bank = 0x9
 	if b.memoryConfig[bank] == ROL {
 		if v, ok := b.cartMan.Read(icartridge.ROM_LO, addr); ok {
@@ -469,7 +457,7 @@ func (b *Banks) ramRead0x9000(addr uint16) uint8 {
 // If the bank is set to "ROH", it attempts to read from the cartridge's high ROM segment.
 // If the bank is set to "BAS", it retrieves data from the BASIC ROM.
 // Otherwise, it defaults to reading from RAM at the specified address.
-func (b *Banks) ramRead0xA000(addr uint16) uint8 {
+func (b *PLA) ramRead0xA000(addr uint16) uint8 {
 	const bank = 0xa
 	if b.memoryConfig[bank] == ROH {
 		if v, ok := b.cartMan.Read(icartridge.ROM_HI_1, addr); ok {
@@ -486,7 +474,7 @@ func (b *Banks) ramRead0xA000(addr uint16) uint8 {
 // It prioritizes cartridge ROM, BASIC memory, or RAM depending on the configuration of the 0xB bank.
 // addr is the 16-bit memory address to be read.
 // Returns the byte value read from the appropriate memory source.
-func (b *Banks) ramRead0xB000(addr uint16) uint8 {
+func (b *PLA) ramRead0xB000(addr uint16) uint8 {
 	const bank = 0xb
 	if b.memoryConfig[bank] == ROH {
 		if v, ok := b.cartMan.Read(icartridge.ROM_HI_1, addr); ok {
@@ -498,7 +486,7 @@ func (b *Banks) ramRead0xB000(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
-func (b *Banks) ramRead0xC000(addr uint16) uint8 {
+func (b *PLA) ramRead0xC000(addr uint16) uint8 {
 	return b.ram[addr]
 }
 
@@ -506,7 +494,7 @@ func (b *Banks) ramRead0xC000(addr uint16) uint8 {
 // If the configuration is I_O, it reads from an I/O port determined by bits 8-11 of the address.
 // If the configuration is CHA, it reads from the character memory at the lower 12 bits of the address.
 // Otherwise, it reads directly from the RAM at the specified address.
-func (b *Banks) ramRead0xD000(addr uint16) uint8 {
+func (b *PLA) ramRead0xD000(addr uint16) uint8 {
 	const bank = 0xd
 	if b.memoryConfig[bank] == I_O {
 		p := (addr >> 8) & 0x0f
@@ -518,7 +506,7 @@ func (b *Banks) ramRead0xD000(addr uint16) uint8 {
 }
 
 // ramRead0xE000 reads a byte from the RAM or ROM mapped to the address 0xE000 based on the current memory configuration.
-func (b *Banks) ramRead0xE000(addr uint16) uint8 {
+func (b *PLA) ramRead0xE000(addr uint16) uint8 {
 	const bank = 0xe
 	if b.memoryConfig[bank] == ROH {
 		if v, ok := b.cartMan.Read(icartridge.ROM_HI_2, addr); ok {
@@ -531,7 +519,7 @@ func (b *Banks) ramRead0xE000(addr uint16) uint8 {
 }
 
 // ramRead0xF000 reads a byte from address 0xF000 based on the current memory configuration, supporting ROM, Kernal, or RAM.
-func (b *Banks) ramRead0xF000(addr uint16) uint8 {
+func (b *PLA) ramRead0xF000(addr uint16) uint8 {
 	const bank = 0xf
 	if b.memoryConfig[bank] == ROH {
 		if v, ok := b.cartMan.Read(icartridge.ROM_HI_2, addr); ok {
@@ -544,17 +532,17 @@ func (b *Banks) ramRead0xF000(addr uint16) uint8 {
 }
 
 // portWriteColor updates the color buffer at the specified address with the given 4-bit color data.
-func (b *Banks) portWriteColor(addr uint16, data uint8) {
+func (b *PLA) portWriteColor(addr uint16, data uint8) {
 	b.color[addr&0x03ff] = data & 0x0f
 }
 
 // portReadColor reads the color data at the specified address, combining it with the high nibble of the last VIC byte.
-func (b *Banks) portReadColor(addr uint16) uint8 {
+func (b *PLA) portReadColor(addr uint16) uint8 {
 	return (b.color[addr&0x03ff] & 0x0f) | (b.vic.GetLastByte() & 0xf0)
 }
 
 // portReadIO handles IO read operations for the given address and returns the corresponding byte value.
-func (b *Banks) portReadIO(addr uint16) uint8 {
+func (b *PLA) portReadIO(addr uint16) uint8 {
 	if v, ok := b.cartMan.IORead(addr); ok {
 		return v
 	}
@@ -565,7 +553,7 @@ func (b *Banks) portReadIO(addr uint16) uint8 {
 }
 
 // portWriteIO handles writing a byte of data to a specified IO port address, delegating to the cartMan IOWrite method.
-func (b *Banks) portWriteIO(addr uint16, data uint8) {
+func (b *PLA) portWriteIO(addr uint16, data uint8) {
 	if ok := b.cartMan.IOWrite(addr, data); ok {
 		return
 	}

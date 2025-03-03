@@ -1,4 +1,4 @@
-package banks
+package pla
 
 import "github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 
@@ -13,4 +13,10 @@ type ISocket interface {
 	WriteRegister(addr uint16, data uint8)
 	ReadRegister(addr uint16) uint8
 	GetLastByte() uint8
+}
+
+type IRomSocket interface {
+	LoadKernal() []byte
+	LoadBasic() []byte
+	LoadChar() []byte
 }

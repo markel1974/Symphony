@@ -20,11 +20,12 @@ func (v *VicSocket) Setup(board *Board, intrId uint32) {
 }
 
 func (v *VicSocket) Reset() {
-	v.board.vic.Reset()
+	//v.board.vic.Reset()
 }
 
 func (v *VicSocket) Cycle() uint64 {
-	return v.board.quartz.Cycle()
+	return 0
+	//return v.board.quartz.Cycle()
 }
 
 func (v *VicSocket) GetDisplayBuffer() board.IDisplayBuffer {
@@ -36,25 +37,25 @@ func (v *VicSocket) GetBanks() mos6569.IBanks {
 }
 
 func (v *VicSocket) IRQTrigger() {
-	v.board.irqTriggerSlot(v.intrId)
+	//v.board.irqTriggerSlot(v.intrId)
 }
 
 func (v *VicSocket) IRQClear() {
-	v.board.irqClearSlot(v.intrId)
+	//v.board.irqClearSlot(v.intrId)
 }
 
 func (v *VicSocket) BALow(d bool) {
-	v.board.rdyLowSlot(d)
+	//v.board.rdyLowSlot(d)
 }
 
 func (v *VicSocket) AECLow(d bool) {
-	v.board.aecLowSlot(d)
+	//v.board.aecLowSlot(d)
 }
 
 func (v *VicSocket) LastCycle() {
-	v.board.vicLastCycleSLot()
+	//v.board.vicLastCycleSLot()
 }
 
 func (v *VicSocket) VBlank() {
-	v.board.vicVBlankSlot()
+	//v.board.vicVBlankSlot()
 }

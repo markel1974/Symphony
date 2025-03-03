@@ -1,4 +1,4 @@
-package banks
+package pla
 
 type TriggerData struct {
 	id   int

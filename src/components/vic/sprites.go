@@ -1,6 +1,7 @@
 package mos6569
 
 import (
+	"github.com/markel1974/c64emu/src/components/board"
 	"log"
 )
 
@@ -9,22 +10,22 @@ import (
 // The type relies on various counters, flags, and pointers to handle sprite DMA and display activities effectively.
 // It interacts with the VIC core and an implemented display buffer interface for rendering and collision processing.
 type Sprites struct {
-	core            *VIC           // Pointer to the main VIC-II core.
-	displayBuffer   IDisplayBuffer // Interface to the display buffer.
-	collisions      *Collisions    // Pointer to the collision detection system.
-	dataPtr         []uint16       // Sprite data pointers (one per sprite).
-	data            [][]uint8      // Sprite data (up to 64 bytes per sprite).
-	dmaFlags        uint8          // Active DMA Sprite (bitmask: bit i = 1 means sprite is active).
-	displayFlags    uint8          // Active Display Sprite (bitmask).
-	spriteFlags     uint8          // Sprite in this line (bitmask).
-	dataCounter     []uint16       // Sprite counter data (one per sprite).
-	dataCounterBase []uint16       // Sprite base counter data (one per sprite).
-	offset          int            // Offset from bitmap spritesBuffer
+	core            *VIC                 // Pointer to the main VIC-II core.
+	displayBuffer   board.IDisplayBuffer // Interface to the display buffer.
+	collisions      *Collisions          // Pointer to the collision detection system.
+	dataPtr         []uint16             // Sprite data pointers (one per sprite).
+	data            [][]uint8            // Sprite data (up to 64 bytes per sprite).
+	dmaFlags        uint8                // Active DMA Sprite (bitmask: bit i = 1 means sprite is active).
+	displayFlags    uint8                // Active Display Sprite (bitmask).
+	spriteFlags     uint8                // Sprite in this line (bitmask).
+	dataCounter     []uint16             // Sprite counter data (one per sprite).
+	dataCounterBase []uint16             // Sprite base counter data (one per sprite).
+	offset          int                  // Offset from bitmap spritesBuffer
 }
 
 // NewSprites initializes and returns a new instance of the Sprites struct with default settings and allocations.
 // It sets up sprite data, counters, and dependencies using the provided VIC core, collisions, and display buffer.
-func NewSprites(core *VIC, collisions *Collisions, db IDisplayBuffer) *Sprites {
+func NewSprites(core *VIC, collisions *Collisions, db board.IDisplayBuffer) *Sprites {
 	s := &Sprites{
 		core:            core,
 		displayBuffer:   db,

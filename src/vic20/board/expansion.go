@@ -33,7 +33,7 @@ func (s *Expansion) NMITrigger() {
 }
 
 func (s *Expansion) SetDMALow(v bool) {
-	s.board.dmaLowSlot(v)
+	//s.board.dmaLowSlot(v)
 }
 
 func (s *Expansion) ResetTrigger() {
@@ -63,19 +63,23 @@ func (s *Expansion) IRQClearBind(fn func(uint32)) {
 }
 
 func (s *Expansion) BusAvailable() bool {
-	return !s.board.vic.GetBALow()
+	//return !s.board.vic.GetBALow()
+	return true
 }
 
 func (s *Expansion) AECAvailable() bool {
-	return !s.board.vic.GetAECLow()
+	//return !s.board.vic.GetAECLow()
+	return true
 }
 
 func (s *Expansion) Cycle() uint64 {
-	return s.board.quartz.Cycle()
+	//return s.board.quartz.Cycle()
+	return 0
 }
 
 func (s *Expansion) CycleAlarm(id string, callback quartz.AlarmCallback) *quartz.Alarm {
-	return s.board.quartz.NewAlarm(id, callback)
+	return nil
+	//return s.board.quartz.NewAlarm(id, callback)
 }
 
 func (s *Expansion) RamSetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {

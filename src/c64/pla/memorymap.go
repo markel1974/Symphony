@@ -1,4 +1,4 @@
-package banks
+package pla
 
 const RAM = 0x0
 const KER = 0x1

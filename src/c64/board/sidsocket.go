@@ -1,6 +1,8 @@
 package board
 
-import "github.com/markel1974/c64emu/src/components/sid"
+import (
+	"github.com/markel1974/c64emu/src/components/board"
+)
 
 type SidSocket struct {
 	board *Board
@@ -32,6 +34,6 @@ func (w *SidSocket) Update() {
 	w.board.sid.Update()
 }
 
-func (w *SidSocket) GetPlayer() mos6581.IPlayer {
+func (w *SidSocket) GetPlayer() board.IPlayer {
 	return w.board.player
 }

@@ -3,8 +3,8 @@ package asciirender
 import (
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/c64/inputs"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/common"
@@ -13,7 +13,7 @@ import (
 
 type Render struct {
 	cfg          *config.Config
-	c64Board     *board.Board
+	c64Board     board.IBoard
 	scale        float64
 	fullscreen   bool
 	showMap      bool
@@ -25,8 +25,9 @@ type Render struct {
 	audio        *Audio
 }
 
-func New(cfg *config.Config) *Render {
+func New(c64board board.IBoard, cfg *config.Config) *Render {
 	g := &Render{
+		c64Board:     c64board,
 		cfg:          cfg,
 		fullscreen:   false,
 		screenWidth:  mos6569.DisplayX,
@@ -41,8 +42,8 @@ func New(cfg *config.Config) *Render {
 }
 
 func (g *Render) setup() {
-	g.c64Board = board.NewBoard(g.display, g.audio)
-	_ = g.c64Board.Setup(g.cfg)
+	//g.c64Board = board.NewBoard()
+	_ = g.c64Board.Setup(g.display, g.audio, g.cfg)
 	//g.inputs.Setup(g.c64Board, g.maxW, g.maxH)
 }
 
