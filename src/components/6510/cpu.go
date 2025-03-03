@@ -97,9 +97,18 @@ func (cpu *CPU) Emulate() {
 	cpu.next(cpu)
 }
 
-// read retrieves a byte from the specified memory address using the CPU's banks and checks the RDY state.
-// Returns the read byte and a boolean indicating run/stop.
-// If RDY is low, the CPU will pause execution by setting the stop flag and return a false state, it means stop state
+// Read retrieves a byte from the specified memory address.
+//
+// Returns the byte read and a boolean indicating success.
+//
+// If the RDY line is low (rdyLow == true), indicating that the VIC-II is currently
+// accessing memory, the CPU pauses execution by setting the internal 'stop' flag,
+// and the function returns 0, false. This simulates the behavior of the 6510's RDY line,
+// which is used by the VIC-II during "bad-lines".  The 'stop' flag is specific
+// to this emulator and is NOT part of the real 6510 hardware.
+//
+// If the RDY line is high (rdyLow == false), the function reads a byte from memory
+// using the cpu.banks.Read method and returns the byte and true.
 func (cpu *CPU) read(addr uint16) (uint8, bool) {
 	if cpu.rdyLow {
 		cpu.stop = true
@@ -185,7 +194,7 @@ func (cpu *CPU) doADC(data uint8) {
 		ah++
 	}
 	cpu.zFlag = cpu.a + data + k
-	cpu.nFlag = ah << 4 // Only highest bit used
+	cpu.nFlag = ah << 4 // Only the highest bit used
 	p1 := ((ah << 4) ^ cpu.a) & 0x80
 	p2 := (cpu.a ^ data) & 0x80
 	cpu.vFlag = conversion.BoolToUint8((p1 != 0) && (p2 == 0))
