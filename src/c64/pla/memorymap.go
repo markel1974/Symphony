@@ -1,12 +1,27 @@
 package pla
 
+// RAM represents the memory type or section with a hexadecimal identifier of 0x0.
 const RAM = 0x0
+
+// KER represents the Kernal ROM memory configuration, used to map specific memory regions to the Kernal ROM.
 const KER = 0x1
+
+// BAS represents a memory bank identifier for accessing the BASIC ROM in the system's memory configuration.
 const BAS = 0x2
+
+// CHA represents the memory configuration for character memory mapping within the system.
 const CHA = 0x3
+
+// I_O represents a memory configuration value indicating an I/O port mapping for specific address ranges.
 const I_O = 0x4
+
+// ROL represents the ROM_LO memory type, typically used in memory mappings for addressing cartridge ROM.
 const ROL = 0x5
+
+// ROH is a constant representing the high ROM segment in memory configurations with the value 0x6.
 const ROH = 0x6
+
+// UND represents an undefined or invalid memory type with a constant value of 0xff.
 const UND = 0xff
 
 //https://sta.c64.org/cbm64mem.html
@@ -18,6 +33,7 @@ const UND = 0xff
 //%0xx: Character ROM visible at $D000-0xDFFF. (Except for the value 0x000, see above.)
 //%1xx: I/O area visible at $D000-0xDFFF. (Except for the value 0x100, see above.)
 
+// _memoryMap defines a 2D array representing the system's memory layout, mapping memory regions to specific access types.
 var _memoryMap = [][]uint8{
 	//	               0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F
 	/*  0 - 00000 */ {RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM},
@@ -54,10 +70,13 @@ var _memoryMap = [][]uint8{
 	/* 31 - 11111 */ {RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, RAM, BAS, BAS, RAM, I_O, KER, KER},
 }
 
+// MemoryMap represents a structure for managing memory configurations with a maximum index for memory mapping.
 type MemoryMap struct {
 	max uint8
 }
 
+// NewMemoryMap creates and initializes a new MemoryMap instance based on the `_memoryMap` configuration.
+// It panics if `_memoryMap` is empty or its length is not a multiple of 2.
 func NewMemoryMap() *MemoryMap {
 	memLen := len(_memoryMap)
 	if memLen == 0 {
@@ -71,6 +90,7 @@ func NewMemoryMap() *MemoryMap {
 	}
 }
 
+// Get fetches a memory configuration based on the provided memConfig by masking it with the maximum valid value.
 func (m *MemoryMap) Get(memConfig uint8) []byte {
 	idx := memConfig & m.max //0x1f
 	return _memoryMap[idx]

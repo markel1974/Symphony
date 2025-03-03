@@ -2,6 +2,7 @@ package pla
 
 //from c64pla.c
 
+// Ports represents the state and management of hardware I/O ports used for device communication and control.
 type Ports struct {
 	dataOut         uint8
 	dir             uint8
@@ -22,6 +23,7 @@ type Ports struct {
 	//dirRead         uint8
 }
 
+// NewPorts initializes and returns a new instance of the Ports struct with default values set.
 func NewPorts() *Ports {
 	return &Ports{
 		capsSense:   1,
@@ -40,11 +42,7 @@ func NewPorts() *Ports {
 	}
 }
 
-// Reset
-// both DDR and DATA are 0 after poweron/reset, this means all pins are input,
-// and the pullups at charen/hiram/loram/sense will pull up the respective lines
-// so the kernal will be banked in and i/o is active.
-// c64pla_pport_reset
+// Reset resets all port-related variables in the Ports struct to their default state.
 func (p *Ports) Reset() {
 	p.data = 0
 	p.dataOut = 0
@@ -57,18 +55,22 @@ func (p *Ports) Reset() {
 	//p.dirRead = 0
 }
 
+// SetDir sets the direction register of the Ports to the specified value.
 func (p *Ports) SetDir(data uint8) {
 	p.dir = data
 }
 
+// SetData sets the data property of the Ports instance to the specified value.
 func (p *Ports) SetData(data uint8) {
 	p.data = data
 }
 
+// GetDirection returns the current direction configuration of the port as an 8-bit unsigned integer.
 func (p *Ports) GetDirection() uint8 {
 	return p.dir
 }
 
+// GetDataRead retrieves the current value of the `dataRead` field from the Ports structure.
 func (p *Ports) GetDataRead() uint8 {
 	return p.dataRead
 }
@@ -77,19 +79,20 @@ func (p *Ports) GetDataRead() uint8 {
 //	return p.dataOut
 //}
 
-// SetTape - Tape sense status: 1 = some button pressed, 0 = no buttons pressed
+// SetTape sets the tape sense, tape write input, and tape motor input values for the Ports instance.
 func (p *Ports) SetTape(tapeSense int, tapeWriteIn int, tapeMotorIn int) {
 	p.tapeSense = tapeSense
 	p.tapeWriteIn = tapeWriteIn
 	p.tapeMotorIn = tapeMotorIn
 }
 
+// GetMemoryConfig calculates the memory configuration index based on port direction, data values, and cartridge signals.
 func (p *Ports) GetMemoryConfig(exRom uint8, game uint8) uint8 {
 	c := ((^p.dir | p.data) & 0x7) | (exRom << 3) | (game << 4)
 	return c
 }
 
-// Update - c64pla_config_changed
+// Update recalculates the state of the Ports structure based on current register values, adjusting outputs and data logic.
 func (p *Ports) Update() {
 	//6 Bits - (on cpu are P0 - P1 - P2 - P3 - P4 - P5 - P6)
 	//Bit 3: Datasette output signal level.

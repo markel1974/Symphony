@@ -5,6 +5,7 @@ import (
 	"strconv"
 )
 
+// EmulatorId represents an identifier for the emulator, including revision, version, key, and alternate values.
 type EmulatorId struct {
 	rev uint8
 	ver uint8
@@ -12,6 +13,7 @@ type EmulatorId struct {
 	alt uint8
 }
 
+// NewEmulatorId creates and initializes an EmulatorId instance using version information and application name.
 func NewEmulatorId() *EmulatorId {
 	rev, _ := strconv.Atoi(version.BuildVersion)
 	ver, _ := strconv.Atoi(version.MajorVersion)
@@ -23,6 +25,9 @@ func NewEmulatorId() *EmulatorId {
 	}
 }
 
+// Read returns the specific byte value based on the provided address by mapping it to a corresponding register.
+// The returned value depends on the register identified by the address, which is masked with 0x7f.
+// For register 0x7f, the return alternates between 0x55 and 0xaa on consecutive accesses.
 func (s *EmulatorId) Read(addr uint16) uint8 {
 	reg := addr & 0x7f
 	switch reg {
