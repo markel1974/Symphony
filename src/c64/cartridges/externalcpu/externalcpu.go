@@ -7,8 +7,11 @@ import (
 	"github.com/markel1974/c64emu/src/components/quartz"
 )
 
+// Id is a constant representing the identifier "SCPU" for a specific hardware type or component registration.
 const Id = "SCPU"
 
+// ExternalCPU represents an external CPU module with its associated components and connections for system integration.
+// It includes an ID, expansion board, CPU socket, programmable interrupt controller, CPU, and quartz clock source.
 type ExternalCPU struct {
 	id        string
 	board     icartridge.IExpansion
@@ -18,6 +21,7 @@ type ExternalCPU struct {
 	quartz    *quartz.Quartz
 }
 
+// New returns a new instance of the ExternalCPU struct implementing the ICartridge interface.
 func New() icartridge.ICartridge {
 	r := &ExternalCPU{
 		id:        "",
@@ -30,14 +34,17 @@ func New() icartridge.ICartridge {
 	return r
 }
 
+// GetId returns the unique identifier of the ExternalCPU as a string.
 func (s *ExternalCPU) GetId() string {
 	return s.id
 }
 
+// EmulationRequired determines if CPU emulation is needed for the associated external CPU instance. Always returns true.
 func (s *ExternalCPU) EmulationRequired() bool {
 	return true
 }
 
+// Setup initializes the ExternalCPU with the provided expansion board and CRT loader, configuring its internal components.
 func (s *ExternalCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	s.board = board
 	s.id = ldr.GetId()
@@ -60,10 +67,12 @@ func (s *ExternalCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) 
 	return nil
 }
 
+// Reset reinitializes the CPU to its default state by invoking its internal Reset method.
 func (s *ExternalCPU) Reset() {
 	s.cpu.Reset()
 }
 
+// Emulate simulates the operation of the external CPU at a fixed frequency by processing cycles and managing bus signals.
 func (s *ExternalCPU) Emulate() {
 	// TEST SUPER CPU.....
 	const mhz = 20
@@ -78,30 +87,38 @@ func (s *ExternalCPU) Emulate() {
 	}
 }
 
+// GetExRom returns the external ROM configuration signal as a uint8 value. It often indicates the cartridge's EXROM state.
 func (s *ExternalCPU) GetExRom() uint8 {
 	return 1
 }
 
+// GetGame retrieves the current game signal state for the ExternalCPU, returning a uint8 representation of its value.
 func (s *ExternalCPU) GetGame() uint8 {
 	return 1
 }
 
+// IORead reads data from the specified memory address and returns the value along with a success status flag.
 func (s *ExternalCPU) IORead(addr uint16) (uint8, bool) {
 	return 0, false
 }
 
+// IOWrite writes a byte of data to the specified address in the I/O space.
+// Returns true if the write operation is handled; otherwise, false.
 func (s *ExternalCPU) IOWrite(addr uint16, data uint8) bool {
 	return false
 }
 
+// Write stores an 8-bit data value to a specified address within a given ROM interval and returns success status as a boolean.
 func (s *ExternalCPU) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
 	return false
 }
 
+// Read fetches a byte and status from the specified address within the ROM interval.
 func (s *ExternalCPU) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
 	return 0, false
 }
 
+// Detach releases the resources and internal bindings associated with the ExternalCPU, ensuring proper cleanup.
 func (s *ExternalCPU) Detach() error {
 	//TODO IMPLEMENT
 	return nil

@@ -1,10 +1,12 @@
 package inputs
 
+// KeyData is a struct that holds encoded information with an integer value `r1` and a shift indicator `shifted`.
 type KeyData struct {
 	r1      int
 	shifted int
 }
 
+// NewKeyData creates and returns a new instance of KeyData with calculated `r1` value and the provided `shifted` value.
 func NewKeyData(a int, b int, shifted int) *KeyData {
 	return &KeyData{
 		r1:      matrix(a, b),
@@ -12,10 +14,12 @@ func NewKeyData(a int, b int, shifted int) *KeyData {
 	}
 }
 
+// Ascii is a structure that maps ASCII values to corresponding KeyData instances using a container of size 256.
 type Ascii struct {
 	container []*KeyData
 }
 
+// NewAscii initializes and returns a pointer to an `Ascii` struct with a preconfigured container of `KeyData` values.
 func NewAscii() *Ascii {
 	a := &Ascii{}
 	a.container = make([]*KeyData, 256)
@@ -118,10 +122,12 @@ func NewAscii() *Ascii {
 	return a
 }
 
+// Reset clears all stored key data in the Ascii container, effectively reinitializing its internal state.
 func (a *Ascii) Reset() {
 
 }
 
+// FromAscii retrieves the KeyData associated with the given ASCII value from the container and returns it.
 func (a *Ascii) FromAscii(v uint8) *KeyData {
 	out := a.container[v]
 	return out

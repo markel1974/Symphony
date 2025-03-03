@@ -4,6 +4,7 @@ import (
 	"errors"
 )
 
+// ValidateCartridge checks if the provided cartridge data matches specific byte patterns and returns an error if invalid.
 func ValidateCartridge(data []byte) error {
 	i4 := data[0x4]
 	i5 := data[0x5]

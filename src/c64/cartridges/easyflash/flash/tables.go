@@ -1,5 +1,8 @@
 package flash
 
+// flashType defines the structure for flash memory properties, including identification, size, and operational parameters.
+// It contains fields for manufacturer and device IDs, size details, sector configuration, magic addresses, and status bits.
+// Additionally, it stores timing parameters for erase and operation cycles.
 type flashType struct {
 	manufacturerId           uint8
 	deviceId                 uint8
@@ -18,6 +21,7 @@ type flashType struct {
 	eraseChipCycles          uint
 }
 
+// flashTypes defines an array of flashType configurations for different flash memory models, indexed by KindNum.
 var flashTypes = [KindNum]flashType{
 	/* AM29F040 */
 	{0x01, 0xa4, 1,

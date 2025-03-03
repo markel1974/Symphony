@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 )
 
+// CartridgeOcean represents a cartridge model with bank switching and IO interaction mechanisms for ROM emulation.
 type CartridgeOcean struct {
 	id        string
 	intervals icartridge.RomInterval
@@ -18,10 +19,12 @@ type CartridgeOcean struct {
 	board     icartridge.IExpansion
 }
 
+// GetType returns the type identifier of the Ocean cartridge as an integer constant.
 func GetType() int {
 	return loader.CARTRIDGE_OCEAN
 }
 
+// New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridge interface.
 func New() icartridge.ICartridge {
 	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
 	return &CartridgeOcean{
@@ -32,6 +35,7 @@ func New() icartridge.ICartridge {
 	}
 }
 
+// Setup initializes the cartridge with the specified expansion board and CRT loader, setting up necessary configurations.
 func (c *CartridgeOcean) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
 	c.id = ldr.GetId()
@@ -41,14 +45,17 @@ func (c *CartridgeOcean) Setup(board icartridge.IExpansion, ldr *loader.CRTLoade
 	return c.initBin(ldr.GetData())
 }
 
+// Reset restores the CartridgeOcean state to its initial default, clearing any active configurations or settings.
 func (c *CartridgeOcean) Reset() {
 
 }
 
+// GetId returns the unique identifier of the CartridgeOcean instance.
 func (c *CartridgeOcean) GetId() string {
 	return c.id
 }
 
+// Write attempts to write data to the cartridge at the specified address and interval. Returns true if the write is blocked.
 func (c *CartridgeOcean) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
 	if i&c.intervals != 0 {
 		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.currBank, addr, data)
@@ -57,6 +64,7 @@ func (c *CartridgeOcean) Write(i icartridge.RomInterval, addr uint16, data uint8
 	return false
 }
 
+// Read reads a byte from the current bank, based on the specified ROM interval and address. Returns the byte and success status.
 func (c *CartridgeOcean) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
 	if i&c.intervals != 0 {
 		//if c.b0Interval == i {
@@ -70,6 +78,7 @@ func (c *CartridgeOcean) Read(i icartridge.RomInterval, addr uint16) (uint8, boo
 	return 0, false
 }
 
+// IORead reads from a memory-mapped I/O address and returns the data and a success flag if the address is valid.
 func (c *CartridgeOcean) IORead(addr uint16) (uint8, bool) {
 	if (addr & 0xfff0) == 0xde00 {
 		return c.lastData, true
@@ -77,6 +86,7 @@ func (c *CartridgeOcean) IORead(addr uint16) (uint8, bool) {
 	return 0, false
 }
 
+// IOWrite processes writes to the cartridge's I/O address space, handling bank switching and configuration updates.
 func (c *CartridgeOcean) IOWrite(addr uint16, data uint8) bool {
 	if (addr & 0xfff0) == 0xde00 {
 		//exRomDisabled := (data & 0x80) != 0
@@ -90,27 +100,34 @@ func (c *CartridgeOcean) IOWrite(addr uint16, data uint8) bool {
 	return false
 }
 
+// GetExRom returns the value of the ExROM line, which indicates the configuration of the cartridge in the memory map.
 func (c *CartridgeOcean) GetExRom() uint8 {
 	return c.exRom
 }
 
+// GetGame returns the current game state identifier as a uint8 value.
 func (c *CartridgeOcean) GetGame() uint8 {
 	return c.game
 }
 
+// Detach removes the cartridge from the system, performing any necessary cleanup or state reset operations.
 func (c *CartridgeOcean) Detach() error {
 	//TODO
 	return nil
 }
 
+// EmulationRequired indicates if additional emulation logic is needed for the cartridge. Always returns false for this type.
 func (c *CartridgeOcean) EmulationRequired() bool {
 	return false
 }
 
+// Emulate handles the execution of the cartridge's emulation logic during each cycle of the system's operation.
 func (c *CartridgeOcean) Emulate() {
 
 }
 
+// initBin initializes the cartridge by parsing binary data, validating it and segmenting it into fixed-size memory banks.
+// It calculates the I/O mask and sets initial values for `lastData` and `currBank`. Returns an error if validation fails.
 func (c *CartridgeOcean) initBin(data []byte) error {
 	if err := loader.ValidateCartridge(data); err != nil {
 		return err
@@ -133,6 +150,7 @@ func (c *CartridgeOcean) initBin(data []byte) error {
 	return nil
 }
 
+// initCrt initializes the cartridge by reading chip headers from the provided CRTLoader and validates the chip data.
 func (c *CartridgeOcean) initCrt(loader *loader.CRTLoader) error {
 	c.banks = [][]byte{}
 	//c.exRom = uint8(loader.ExRom)

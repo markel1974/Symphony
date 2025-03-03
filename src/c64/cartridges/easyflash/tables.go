@@ -2,29 +2,41 @@ package easyflash
 
 // see http://skoe.de/easyflash/
 
+// CartRamSize defines the size of the RAM used in the cartridge setup, set to 256 bytes.
 const (
 	CartRamSize = 256
 )
 
+// NBankBits defines the number of bits used to represent a bank.
+// NBanks calculates the total number of banks as a power of two using NBankBits.
+// BankMask defines a bitmask for extracting bank indices.
 const (
 	NBankBits = 6
 	NBanks    = 1 << (NBankBits)
 	BankMask  = (NBanks) - 1
 )
 
+// snapModuleName represents the module identifier used for the CartridgeEasyFlash snapshot functionality.
 const snapModuleName = "CARTEF"
+
+// flashSnapModuleName defines the module name used for snapshot serialization of the EasyFlash cartridge state.
 const flashSnapModuleName = "FLASH040EF"
 
+// SnapMajor represents the major version of the Snap software, initialized to 0.
+// SnapMinor represents the minor version of the Snap software, initialized to 0.
 const (
 	SnapMajor = 0
 	SnapMinor = 0
 )
 
+// EApiHeader represents the header identifier for the EAPI (Embedded API).
+// EApiStartAddress defines the starting memory address for the EAPI operations.
 const (
 	EApiHeader       = "eapi"
 	EApiStartAddress = 0x1800
 )
 
+// _eApiAM29f040 represents a byte array containing raw binary eapi firmware.
 var _eApiAM29f040 = []byte{
 	0x65, 0x61, 0x70, 0x69, 0xc1, 0x4d,
 	0x2f, 0xcd, 0x32, 0x39, 0xc6, 0x30, 0x34, 0x30,

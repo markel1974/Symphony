@@ -2,28 +2,34 @@ package inputs
 
 import "github.com/markel1974/c64emu/src/components/board"
 
+// Virtual represents a virtual keyboard with states for num-lock and capital-lock toggles.
 type Virtual struct {
 	numLock bool
 	capital bool
 }
 
+// NewVirtual creates and returns a new instance of Virtual with default states for numLock and capital unset.
 func NewVirtual() *Virtual {
 	return &Virtual{}
 }
 
+// Reset resets the Virtual keyboard state by disabling Num Lock and Caps Lock features.
 func (k *Virtual) Reset() {
 	k.numLock = false
 	k.capital = false
 }
 
+// NumLockToggle toggles the state of the Num Lock key by inverting its current value on the virtual keyboard.
 func (k *Virtual) NumLockToggle() {
 	k.numLock = !k.numLock
 }
 
+// CapitalToggle toggles the state of the capital (caps lock) key in the Virtual struct by inverting its current value.
 func (k *Virtual) CapitalToggle() {
 	k.capital = !k.capital
 }
 
+// FromVirtual maps a virtual key code to its corresponding matrix value based on predefined key mappings and shifts.
 func (k *Virtual) FromVirtual(vKey int) int {
 	var result = -1
 	switch vKey {

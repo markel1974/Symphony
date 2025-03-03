@@ -19,6 +19,7 @@ import (
 //https://luigidifraia.wordpress.com/2021/05/08/commodore-64-cartridges-theory-of-operation-and-ocean-bank-switching-described/
 //https://github.com/Project-64/reloaded/blob/master/c64/c64prg/C64PRG11.TXT#L13101
 
+// Manager is responsible for managing cartridge interactions, configurations, and hardware registration in the system.
 type Manager struct {
 	idx                 int
 	board               icartridge.IExpansion
@@ -31,6 +32,7 @@ type Manager struct {
 	registerSizeDefault func() icartridge.ICartridge
 }
 
+// NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
 func NewManager() *Manager {
 	return &Manager{
 		idx:                 0,
@@ -44,6 +46,7 @@ func NewManager() *Manager {
 	}
 }
 
+// Setup initializes the Manager by setting up the expansion board, configuration preferences, and cartridge hardware mappings.
 func (f *Manager) Setup(board icartridge.IExpansion, prefs *config.Config) {
 	f.board = board
 	f.prefs = prefs
@@ -68,6 +71,7 @@ func (f *Manager) Setup(board icartridge.IExpansion, prefs *config.Config) {
 	f.registerSizeDefault = ocean.New
 }
 
+// Reset resets all cartridges managed by the Manager. If no cartridges exist, it performs no operations.
 func (f *Manager) Reset() {
 	if f.carts == nil {
 		return
@@ -80,6 +84,7 @@ func (f *Manager) Reset() {
 	}
 }
 
+// Config returns the Game and ExROM status along with a boolean indicating whether configuration was successful.
 func (f *Manager) Config() (uint8, uint8, bool) {
 	if f.carts == nil {
 		return 0, 0, false
@@ -100,6 +105,10 @@ func (f *Manager) Config() (uint8, uint8, bool) {
 	return g, x, true
 }
 
+// Emulate performs a simulation step for all emulated cartridges in the `emulate` slice.
+// If no cartridges exist, the method exits immediately.
+// If only one cartridge exists, it directly delegates the emulate call to it.
+// For multiple cartridges, it iterates and calls the emulate function for each.
 func (f *Manager) Emulate() {
 	if len(f.emulate) == 0 {
 		return
@@ -113,6 +122,7 @@ func (f *Manager) Emulate() {
 	}
 }
 
+// Read retrieves a value from the specified ROM interval and address. Returns the value and a boolean indicating success.
 func (f *Manager) Read(interval icartridge.RomInterval, addr uint16) (uint8, bool) {
 	if f.carts == nil {
 		return 0, false
@@ -133,6 +143,8 @@ func (f *Manager) Read(interval icartridge.RomInterval, addr uint16) (uint8, boo
 	return val, ret
 }
 
+// Write attempts to write the given data to the specified address within the provided ROM interval for all managed cartridges.
+// Returns true if any cartridge successfully handles the write operation, otherwise returns false.
 func (f *Manager) Write(interval icartridge.RomInterval, addr uint16, data uint8) bool {
 	if f.carts == nil {
 		return false
@@ -149,6 +161,8 @@ func (f *Manager) Write(interval icartridge.RomInterval, addr uint16, data uint8
 	return ret
 }
 
+// IOWrite attempts to write the specified data to the given address using all attached cartridges.
+// Returns true if at least one cartridge successfully processes the I/O write operation.
 func (f *Manager) IOWrite(addr uint16, data uint8) bool {
 	if f.carts == nil {
 		return false
@@ -165,6 +179,7 @@ func (f *Manager) IOWrite(addr uint16, data uint8) bool {
 	return ret
 }
 
+// IORead reads a byte from the specified I/O address and returns the value along with a flag indicating success.
 func (f *Manager) IORead(addr uint16) (uint8, bool) {
 	if f.carts == nil {
 		return 0, false
@@ -185,6 +200,7 @@ func (f *Manager) IORead(addr uint16) (uint8, bool) {
 	return val, ret
 }
 
+// Add registers a new cartridge using the provided hardware type, name, and data, returning an identifier or an error if failed.
 func (f *Manager) Add(hardware string, name string, data []byte) (string, error) {
 	id := strconv.Itoa(f.idx)
 	ldr := loader.NewLoader(id, loader.MachineC64)
@@ -217,6 +233,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	return id, nil
 }
 
+// Remove removes a cartridge and its emulation by the given ID from the Manager's list. Returns an error if ID is not found.
 func (f *Manager) Remove(id string) error {
 	found := false
 	for s, cart := range f.carts {

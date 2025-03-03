@@ -15,6 +15,8 @@ import (
 	"os"
 )
 
+// CartridgeEasyFlash represents the implementation of an EasyFlash cartridge for execution on supported hardware.
+// It contains fields for configuration, state management, memory mapping, flash state, and cartridge-specific options.
 type CartridgeEasyFlash struct {
 	board           icartridge.IExpansion
 	intervalLo      icartridge.RomInterval
@@ -37,10 +39,12 @@ type CartridgeEasyFlash struct {
 	updateEApi      bool
 }
 
+// GetType returns the cartridge type constant representing an EasyFlash cartridge.
 func GetType() int {
 	return loader.CARTRIDGE_EASYFLASH
 }
 
+// New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridge interface.
 func New() icartridge.ICartridge {
 	return &CartridgeEasyFlash{
 		game:            1,
@@ -60,6 +64,7 @@ func New() icartridge.ICartridge {
 	}
 }
 
+// Setup initializes the CartridgeEasyFlash instance with the provided board and CRT loader data.
 func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	var rawCart []byte
 	c.board = board
@@ -88,45 +93,57 @@ func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	return nil
 }
 
+// Reset reinitializes the CartridgeEasyFlash state, clearing any temporary data and restoring default settings.
 func (c *CartridgeEasyFlash) Reset() {
 
 }
 
+// GetId returns the unique identifier of the CartridgeEasyFlash as a string.
 func (c *CartridgeEasyFlash) GetId() string {
 	return c.id
 }
 
+// GetExRom returns the current value of the exRom property for the CartridgeEasyFlash instance as an unsigned 8-bit integer.
 func (c *CartridgeEasyFlash) GetExRom() uint8 {
 	return c.exRom
 }
 
+// GetGame retrieves the currently selected game index from the EasyFlash cartridge.
 func (c *CartridgeEasyFlash) GetGame() uint8 {
 	return c.game
 }
 
+// EmulationRequired determines whether emulation is required for the CartridgeEasyFlash. Always returns false.
 func (c *CartridgeEasyFlash) EmulationRequired() bool {
 	return false
 }
 
+// Emulate starts the emulation process for the CartridgeEasyFlash, executing associated operations and behaviors.
 func (c *CartridgeEasyFlash) Emulate() {
 }
 
+// SetJumper sets the jumper state for the EasyFlash cartridge to the specified boolean value.
 func (c *CartridgeEasyFlash) SetJumper(j bool) {
 	c.jumper = j
 }
 
+// SetWriteEnabled updates the write-enabled state of the cartridge.
 func (c *CartridgeEasyFlash) SetWriteEnabled(e bool) {
 	c.writeEnabled = e
 }
 
+// SetOptimize sets the optimize flag for the CartridgeEasyFlash instance.
 func (c *CartridgeEasyFlash) SetOptimize(o bool) {
 	c.optimize = o
 }
 
+// SetUpdateEApi configures the updateEApi flag to enable or disable the extended API updating functionality.
 func (c *CartridgeEasyFlash) SetUpdateEApi(e bool) {
 	c.updateEApi = e
 }
 
+// initialize prepares the interleaved low and high memory banks from the raw cartridge data
+// and initializes the flash states.
 func (c *CartridgeEasyFlash) initialize(rawCart []byte) {
 	low := make([]byte, 0x80000)
 	high := make([]byte, 0x80000)
@@ -155,13 +172,17 @@ func (c *CartridgeEasyFlash) initialize(rawCart []byte) {
 	}
 }
 
+// controlUpdate handles updates to the cartridge control register
+// and adjusts the cartridge mode and configuration accordingly.
+// It manages changes to GAME/EXROM signal settings, LED state, and memory configuration based on input values.
+// Logs warnings for unsupported modes and invokes a board configuration change if required.
 func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 	c.register02 = value & 0x87 // led, mode, exrom, game [led 0x80, other 0x07]
 	mode := icartridge.CartridgeModeOff
 	mxg := value & 0x07
 	switch mxg {
 	case 0:
-		//GAME from jumper, EXROM high (i.e. Ultimax or Off)
+		//GAME from jumper, EXROM high (i.e., Ultimax or Off)
 		if !c.jumper {
 			mode = icartridge.CartridgeModeUltimax
 		} else {
@@ -208,6 +229,7 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 	}
 }
 
+// Write attempts to handle a write operation to the EasyFlash cartridge but currently does not implement writing logic.
 func (c *CartridgeEasyFlash) Write(i icartridge.RomInterval, _ uint16, _ uint8) bool {
 	if c.intervalLo == i {
 		fmt.Printf("EASYFLASH Write LOW NOT DEFINED\n")
@@ -217,6 +239,7 @@ func (c *CartridgeEasyFlash) Write(i icartridge.RomInterval, _ uint16, _ uint8) 
 	return false
 }
 
+// Read retrieves a byte of data from the cartridge memory based on the provided ROM interval and address.
 func (c *CartridgeEasyFlash) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
 	if c.intervalLo == i {
 		return c.romLRead(addr), true
@@ -226,19 +249,25 @@ func (c *CartridgeEasyFlash) Read(i icartridge.RomInterval, addr uint16) (uint8,
 	return 0, false
 }
 
+// IORead reads a value from the specified address within the EasyFlash cartridge's I/O space.
+// Returns the value and a boolean indicating if the read is valid.
 func (c *CartridgeEasyFlash) IORead(addr uint16) (uint8, bool) {
 	bank := addr & 0xff00
 	if bank == 0xdf00 {
 		v := c.io2Read(addr)
 		return v, true
 	} else if bank == 0xde00 {
-		// read is never valid, regs are write only
+		// read is never valid, regs are write-only
 		fmt.Printf("EASYFLASH WARNING: regs $de00-$deff are write only -> $%x\n", addr)
 		return 0, false
 	}
 	return 0, false
 }
 
+// IOWrite handles input/output write operations for the CartridgeEasyFlash.
+// It processes writes to specific memory address ranges (0xde00 and 0xdf00).
+// Updates internal registers and control states based on the provided data.
+// Returns true if the operation is valid and the data is handled, otherwise false.
 func (c *CartridgeEasyFlash) IOWrite(addr uint16, data uint8) bool {
 	bank := addr & 0xff00
 	if bank == 0xde00 {
@@ -261,27 +290,32 @@ func (c *CartridgeEasyFlash) IOWrite(addr uint16, data uint8) bool {
 	return false
 }
 
+// romLRead reads a byte from the low ROM bank at the given address within the EasyFlash cartridge.
 func (c *CartridgeEasyFlash) romLRead(addr uint16) uint8 {
 	v := (uint(c.register00) * 0x2000) + (uint(addr) & 0x1fff)
 	return c.stateLow.Read(v)
 }
 
+// romHRead reads a byte of data from the high ROM bank based on the given address and the current register state.
 func (c *CartridgeEasyFlash) romHRead(addr uint16) uint8 {
 	v := (uint(c.register00) * 0x2000) + (uint(addr) & 0x1fff)
 	return c.stateHigh.Read(v)
 }
 
+// romLWrite writes the provided value to the low bank memory at the calculated address based on the current register state.
 func (c *CartridgeEasyFlash) romLWrite(addr uint16, value uint8) {
 	v := (uint(c.register00) * 0x2000) + (uint(addr) & 0x1fff)
 	c.stateLow.Store(v, value)
 }
 
+// romHWrite handles writing a value to the high ROM bank at the specified address within the cartridge memory.
 func (c *CartridgeEasyFlash) romHWrite(addr uint16, value uint8) {
 	v := (uint(c.register00) * 0x2000) + (uint(addr) & 0x1fff)
 	c.stateHigh.Store(v, value)
 }
 
-// io1Peek - used by monitor [TODO]
+// io1Peek reads and returns a value from the specified IO1 address within the EasyFlash cartridge's memory map.
+// The returned value depends on the address bits; either register02 or register00 is accessed.
 func (c *CartridgeEasyFlash) io1Peek(addr uint16) uint8 {
 	if addr&2 != 0 {
 		return c.register02
@@ -289,14 +323,18 @@ func (c *CartridgeEasyFlash) io1Peek(addr uint16) uint8 {
 	return c.register00
 }
 
+// io2Read reads a byte from the I/O bank 2 memory-mapped area at the specified address and returns the value.
 func (c *CartridgeEasyFlash) io2Read(addr uint16) uint8 {
 	return c.ram[addr&0xff]
 }
 
+// io2Store writes a given 8-bit value into the cartridge's RAM at the specified address masked to a 256-byte range.
 func (c *CartridgeEasyFlash) io2Store(addr uint16, value uint8) {
 	c.ram[addr&0xff] = value
 }
 
+// writeChipIfNotEmpty writes the chip data to the given writer
+// if the chip data is not empty or optimization is disabled.
 func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip *loader.CrtChipHeader) error {
 	for i := uint16(0); i < chip.Size; i++ {
 		if (chip.Data[i] != 0xff) || !c.optimize {
@@ -309,6 +347,7 @@ func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip *loader.CrtC
 	return nil
 }
 
+// binAttach initializes a raw cartridge with default data and copies data from the provided CRTLoader into it.
 func (c *CartridgeEasyFlash) binAttach(ldr *loader.CRTLoader) ([]byte, error) {
 	rawCart := make([]uint8, 0x100000)
 	for idx := range rawCart {
@@ -318,6 +357,8 @@ func (c *CartridgeEasyFlash) binAttach(ldr *loader.CRTLoader) ([]byte, error) {
 	return rawCart, nil
 }
 
+// crtAttach processes CRT cartridge data using the provided CRTLoader
+// and returns the formatted cartridge data or an error.
 func (c *CartridgeEasyFlash) crtAttach(ldr *loader.CRTLoader) ([]byte, error) {
 	raw := make([]uint8, 0x100000)
 	for idx := range raw {
@@ -355,6 +396,7 @@ func (c *CartridgeEasyFlash) crtAttach(ldr *loader.CRTLoader) ([]byte, error) {
 	return raw, nil
 }
 
+// Detach finalizes and detaches the EasyFlash cartridge, ensuring any pending writes are flushed before shutdown.
 func (c *CartridgeEasyFlash) Detach() error {
 	if c.writeEnabled {
 		if err := c.flushImage(); err != nil {
@@ -367,6 +409,7 @@ func (c *CartridgeEasyFlash) Detach() error {
 	return nil
 }
 
+// flushImage saves the current cartridge data to the specified file based on its type or returns an error if unsuccessful.
 func (c *CartridgeEasyFlash) flushImage() error {
 	if len(c.filename) == 0 {
 		return nil
@@ -379,6 +422,8 @@ func (c *CartridgeEasyFlash) flushImage() error {
 	return fmt.Errorf("unknown cartridget type")
 }
 
+// binSave saves the cartridge data to a binary file with the specified filename.
+// It returns an error if the filename is invalid or if file creation or data writing fails.
 func (c *CartridgeEasyFlash) binSave(filename string) error {
 	const size = 0x2000
 	if len(filename) == 0 {
@@ -414,11 +459,14 @@ func (c *CartridgeEasyFlash) binSave(filename string) error {
 	return nil
 }
 
+// crtSave saves the current cartridge data to a specified file in the CRT format.
+// Returns an error if the save operation fails or is unimplemented.
 func (c *CartridgeEasyFlash) crtSave(_ string) error {
 	//TODO IMPLEMENT
 	return fmt.Errorf("unimplemented")
 }
 
+// snapshotWriteModule serializes the module state of the CartridgeEasyFlash into the provided snapshot.
 func (c *CartridgeEasyFlash) snapshotWriteModule(s *snapshot.Snapshot) error {
 	m := s.NewModule(snapModuleName, SnapMajor, SnapMinor)
 	m.Add("jumper", c.jumper)

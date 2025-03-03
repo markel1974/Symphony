@@ -7,10 +7,10 @@ import (
 
 // EmulatorId represents an identifier for the emulator, including revision, version, key, and alternate values.
 type EmulatorId struct {
-	rev uint8
-	ver uint8
-	key uint8
-	alt uint8
+	revision uint8
+	version  uint8
+	key      uint8
+	alt      uint8
 }
 
 // NewEmulatorId creates and initializes an EmulatorId instance using version information and application name.
@@ -18,10 +18,10 @@ func NewEmulatorId() *EmulatorId {
 	rev, _ := strconv.Atoi(version.BuildVersion)
 	ver, _ := strconv.Atoi(version.MajorVersion)
 	return &EmulatorId{
-		rev: uint8(rev << 4),
-		ver: uint8(ver),
-		key: version.AppName[0],
-		alt: 0x55,
+		revision: uint8(rev << 4),
+		version:  uint8(ver),
+		key:      version.AppName[0],
+		alt:      0x55,
 	}
 }
 
@@ -32,9 +32,9 @@ func (s *EmulatorId) Read(addr uint16) uint8 {
 	reg := addr & 0x7f
 	switch reg {
 	case 0x7c: // 0xdffc: revision
-		return s.rev
+		return s.revision
 	case 0x7d: // 0xdffd: version
-		return s.ver
+		return s.version
 	case 0x7e: // 0xdffe
 		return s.key
 	case 0x7f: // 0xdfff alternates between $55 and $aa

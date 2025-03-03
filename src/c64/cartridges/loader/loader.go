@@ -9,12 +9,16 @@ import (
 
 // https://sourceforge.net/p/vice-emu/code/HEAD/tree/trunk/vice/src/c64/cart/ocean.c#l240
 
+// crtHeaderLen defines the length of the CRT header in bytes.
+// chipHeaderSize specifies the size of the chip header in bytes.
+// chipHeaderDef represents the default string identifier for a chip header.
 const (
 	crtHeaderLen   = 0x40
 	chipHeaderSize = 0x10
 	chipHeaderDef  = "CHIP"
 )
 
+// CRTLoader represents a loader for cartridge files with associated metadata and functionality for parsing CRT headers.
 type CRTLoader struct {
 	id           string
 	rowCartridge []byte
@@ -29,6 +33,7 @@ type CRTLoader struct {
 	kind         Type
 }
 
+// NewLoader initializes and returns a new CRTLoader instance with the given id and MachineType.
 func NewLoader(id string, mc MachineType) *CRTLoader {
 	return &CRTLoader{
 		id:           id,
@@ -39,6 +44,7 @@ func NewLoader(id string, mc MachineType) *CRTLoader {
 	}
 }
 
+// Setup initializes the CRTLoader with the provided id and data, determining the cartridge type and handling .crt files.
 func (cl *CRTLoader) Setup(id string, data []byte) error {
 	cl.kind = TypeBin
 	cl.rowCartridge = data
@@ -52,18 +58,23 @@ func (cl *CRTLoader) Setup(id string, data []byte) error {
 	return nil
 }
 
+// GetId returns the unique identifier associated with the CRTLoader instance.
 func (cl *CRTLoader) GetId() string {
 	return cl.id
 }
 
+// GetType returns the cartridge type of the CRTLoader instance as a Type.
 func (cl *CRTLoader) GetType() Type {
 	return cl.kind
 }
 
+// GetData retrieves the raw cartridge data as a byte slice.
 func (cl *CRTLoader) GetData() []byte {
 	return cl.rowCartridge
 }
 
+// open initializes the CRTLoader by validating and parsing the cartridge header based on its type and data.
+// Returns an error if the header is invalid, improperly formatted, or any mandatory fields are inconsistent.
 func (cl *CRTLoader) open() error {
 	if cl.kind == TypeBin {
 		return nil
@@ -108,6 +119,7 @@ func (cl *CRTLoader) open() error {
 	return nil
 }
 
+// ReadChipHeader parses the next chip header from the cartridge data and returns the CrtChipHeader or an error if invalid.
 func (cl *CRTLoader) ReadChipHeader() (*CrtChipHeader, error) {
 	if cl.kind == TypeBin {
 		return nil, nil
@@ -165,6 +177,7 @@ func (cl *CRTLoader) ReadChipHeader() (*CrtChipHeader, error) {
 	return header, nil
 }
 
+// buf2uint32 converts a 4-byte slice into a uint32 value in big-endian order. Returns an error if the slice is too short.
 func (cl *CRTLoader) buf2uint32(buf []byte) (uint32, error) {
 	if len(buf) < 4 {
 		return 0, fmt.Errorf("invalid length")
@@ -174,6 +187,7 @@ func (cl *CRTLoader) buf2uint32(buf []byte) (uint32, error) {
 	return data, nil
 }
 
+// buf2uint16 converts a 2-byte buffer into a uint16 while ensuring the buffer has sufficient length. Returns an error if invalid.
 func (cl *CRTLoader) buf2uint16(buf []byte) (uint16, error) {
 	if len(buf) < 2 {
 		return 0, fmt.Errorf("invalid length")
@@ -183,6 +197,7 @@ func (cl *CRTLoader) buf2uint16(buf []byte) (uint16, error) {
 	return data, nil
 }
 
+// validateMachine checks if the given MachineType and id combination is valid based on predefined mappings. Returns error if invalid.
 func (cl *CRTLoader) validateMachine(m MachineType, id string) error {
 	supported, ok := _machineContainer[id]
 	if !ok {

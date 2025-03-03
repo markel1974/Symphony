@@ -6,6 +6,8 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 )
 
+// CartridgeMagicDesk represents a software-implemented version of a Magic Desk cartridge for system emulation.
+// It implements the ICartridge interface for handling cartridge-specific functionality within an expansion board.
 type CartridgeMagicDesk struct {
 	id       string
 	spec     *icartridge.CartridgeSpec
@@ -16,10 +18,12 @@ type CartridgeMagicDesk struct {
 	board    icartridge.IExpansion
 }
 
+// GetType returns an integer identifier representing the type of the Magic Desk cartridge.
 func GetType() int {
 	return loader.CARTRIDGE_MAGIC_DESK
 }
 
+// New creates and returns a new instance of a CartridgeMagicDesk implementing the icartridge.ICartridge interface.
 func New() icartridge.ICartridge {
 	return &CartridgeMagicDesk{
 		spec:     icartridge.GetCartridgeSpec(icartridge.CartridgeMode8K),
@@ -29,6 +33,7 @@ func New() icartridge.ICartridge {
 	}
 }
 
+// Setup initializes the CartridgeMagicDesk by configuring its board and loading data via the provided CRTLoader.
 func (c *CartridgeMagicDesk) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
 	c.id = ldr.GetId()
@@ -38,14 +43,17 @@ func (c *CartridgeMagicDesk) Setup(board icartridge.IExpansion, ldr *loader.CRTL
 	return c.initBin(ldr.GetData())
 }
 
+// Reset reinitializes the cartridge state, clearing registers and resetting to default configurations.
 func (c *CartridgeMagicDesk) Reset() {
 
 }
 
+// GetId retrieves the unique identifier of the CartridgeMagicDesk instance.
 func (c *CartridgeMagicDesk) GetId() string {
 	return c.id
 }
 
+// Write attempts to write data to the cartridge at the specified ROM interval and address, returning true if write-protected.
 func (c *CartridgeMagicDesk) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
 	if (i & (c.spec.IntervalLow | c.spec.IntervalHigh)) != 0 {
 		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.slot, addr, data)
@@ -54,6 +62,7 @@ func (c *CartridgeMagicDesk) Write(i icartridge.RomInterval, addr uint16, data u
 	return false
 }
 
+// Read retrieves the byte at the specified address if the interval matches the cartridge's configuration, else returns 0.
 func (c *CartridgeMagicDesk) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
 	if (i & (c.spec.IntervalLow | c.spec.IntervalHigh)) != 0 {
 		//if c.b0Interval == i {
@@ -67,6 +76,8 @@ func (c *CartridgeMagicDesk) Read(i icartridge.RomInterval, addr uint16) (uint8,
 	return 0, false
 }
 
+// IORead checks if the given address matches the specific range (0xde00) and returns the register value and a success flag.
+// If the address does not match, it returns 0 and a failure flag.
 func (c *CartridgeMagicDesk) IORead(addr uint16) (uint8, bool) {
 	if (addr & 0xfff0) == 0xde00 {
 		return c.regVal, true
@@ -74,6 +85,8 @@ func (c *CartridgeMagicDesk) IORead(addr uint16) (uint8, bool) {
 	return 0, false
 }
 
+// IOWrite writes data to the specified I/O address and updates the bank, register, and configuration settings if needed.
+// Returns false to indicate no further memory interaction processing is needed.
 func (c *CartridgeMagicDesk) IOWrite(addr uint16, data uint8) bool {
 	if (addr & 0xfff0) == 0xde00 {
 		c.regVal = data & (0x80 | c.bankMask)
@@ -94,27 +107,34 @@ func (c *CartridgeMagicDesk) IOWrite(addr uint16, data uint8) bool {
 	return false
 }
 
+// GetExRom retrieves the ExRom value from the cartridge specification.
 func (c *CartridgeMagicDesk) GetExRom() uint8 {
 	return c.spec.ExRom
 }
 
+// GetGame retrieves the value of the "Game" field from the cartridge specification associated with the instance.
 func (c *CartridgeMagicDesk) GetGame() uint8 {
 	return c.spec.Game
 }
 
+// Detach disconnects the cartridge from the expansion board and releases associated resources. Returns an error if any issues occur.
 func (c *CartridgeMagicDesk) Detach() error {
 	//TODO
 	return nil
 }
 
+// EmulationRequired determines whether the cartridge requires emulation support in the system.
 func (c *CartridgeMagicDesk) EmulationRequired() bool {
 	return false
 }
 
+// Emulate manages the core emulation process for the CartridgeMagicDesk, integrating with the system's cycle operations.
 func (c *CartridgeMagicDesk) Emulate() {
 
 }
 
+// initBin initializes the cartridge by dividing the given binary data into 8KB banks and setting the bank mask based on size.
+// Returns an error if the size of the data is unsupported.
 func (c *CartridgeMagicDesk) initBin(data []byte) error {
 	c.banks = [][]byte{}
 	c.bankMask = 0x7f
@@ -143,6 +163,8 @@ func (c *CartridgeMagicDesk) initBin(data []byte) error {
 	return nil
 }
 
+// initCrt initializes the cartridge by reading chip headers and populating chip banks from a CRTLoader.
+// It validates bank numbers, chip sizes, and addresses and determines the appropriate bank mask. Returns an error if invalid.
 func (c *CartridgeMagicDesk) initCrt(loader *loader.CRTLoader) error {
 	c.banks = [][]byte{}
 	lastBank := uint16(0)

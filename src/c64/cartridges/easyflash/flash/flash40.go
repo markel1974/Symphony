@@ -7,17 +7,27 @@ import (
 	"github.com/markel1974/c64emu/src/components/quartz"
 )
 
+// DumpVerMajor represents the major version of the dump format.
+// DumpVerMinor represents the minor version of the dump format.
 const (
 	DumpVerMajor = 2
 	DumpVerMinor = 0
 )
 
+// EraseMaskSize defines the size of the erase mask array used for handling flash memory operations.
 const (
 	EraseMaskSize = 8
 )
 
+// Kind represents an enumeration type used for categorizing or distinguishing different variants or states.
 type Kind int
 
+// KindNormal represents the Kind 29F040.
+// KindB represents the Kind 29F040B.
+// Kind010 represents the Kind 29F010.
+// Kind032BA01Swap represents the Kind 29F032B with A0/1 swapped.
+// Kind064 represents the Kind for expansion S29GL064N.
+// KindNum represents the latest Kind.
 const (
 	KindNormal      = Kind(iota) // 29F040
 	KindB                        // 29F040B
@@ -27,8 +37,22 @@ const (
 	KindNum                      // Latest
 )
 
+// State represents the operational state of a specific entity, defined as an integer-based enumeration.
 type State int
 
+// StateRead represents the state where a read operation is performed.
+// StateMagic1 represents the first magic step in the operation sequence.
+// StateMagic2 represents the second magic step in the operation sequence.
+// StateAutoSelect represents the state where auto-select operation is executed.
+// StateByteProgram represents the state for byte program operation.
+// StateByteProgramError represents the state where a byte program error occurs.
+// StateEraseMagic1 represents the first magic step in the erase operation sequence.
+// StateEraseMagic2 represents the second magic step in the erase operation sequence.
+// StateEraseSelect represents the state where erase selection is performed.
+// StateChipErase represents the state where a chip erase operation is performed.
+// StateSectorErase represents the state where a sector erase operation is performed.
+// SectorEraseTimeout represents the state of timeout during sector erase.
+// StateSectorEraseSuspend represents the state where a sector erase operation is suspended.
 const (
 	StateRead = State(iota)
 	StateMagic1
@@ -45,6 +69,7 @@ const (
 	StateSectorEraseSuspend
 )
 
+// Flash040 represents a flash memory module with various operational states, data storage, and functionalities.
 type Flash040 struct {
 	flashData      []uint8
 	flashState     State
@@ -58,6 +83,8 @@ type Flash040 struct {
 	eraseAlarm     *quartz.Alarm
 }
 
+// NewFlash040 initializes and returns a pointer to a Flash040 instance with the provided cartridge, type, and data.
+// It configures the flash memory state, sets up an erase alarm, and clears the erase mask.
 func NewFlash040(b icartridge.IExpansion, kind Kind, data []byte) *Flash040 {
 	f := &Flash040{
 		board:          b,
@@ -76,14 +103,18 @@ func NewFlash040(b icartridge.IExpansion, kind Kind, data []byte) *Flash040 {
 	return f
 }
 
+// Shutdown releases resources associated with the Flash040 instance, such as destroying the erase alarm.
 func (f *Flash040) Shutdown() {
 	f.eraseAlarm.Destroy()
 }
 
+// GetFlashState retrieves the current state of the flash. It returns a value of the State type representing the flash's state.
 func (f *Flash040) GetFlashState() State {
 	return f.flashState
 }
 
+// Reset reinitializes the Flash040 state to default values for flashState, flashBaseState, and programByte.
+// Reset also clears the erase mask and unsets the erase alarm.
 func (f *Flash040) Reset() {
 	f.flashState = StateRead
 	f.flashBaseState = StateRead
@@ -92,6 +123,8 @@ func (f *Flash040) Reset() {
 	_ = f.eraseAlarm.Unset()
 }
 
+// StoreInterval writes a slice of data starting at the specified index in the flashData array.
+// Returns an error if the start or end interval exceeds the bounds of the flashData array.
 func (f *Flash040) StoreInterval(start uint, data []uint8) error {
 	if start >= uint(len(f.flashData)) {
 		return fmt.Errorf("invalid start interval")
@@ -103,6 +136,8 @@ func (f *Flash040) StoreInterval(start uint, data []uint8) error {
 	return nil
 }
 
+// ReadInterval reads and returns a slice of bytes from the flash memory within the specified start and end bounds.
+// It returns an error if the interval is invalid or out of range.
 func (f *Flash040) ReadInterval(start uint, end uint) ([]byte, error) {
 	if start >= end {
 		return nil, fmt.Errorf("invalid interval")
@@ -118,6 +153,7 @@ func (f *Flash040) ReadInterval(start uint, end uint) ([]byte, error) {
 	return ret, nil
 }
 
+// Store writes a byte of data to the specified address in the flash memory, with handling for read-modify-write scenarios.
 func (f *Flash040) Store(addr uint, data uint8) {
 	dist := uint64(0)
 	if rmwFlags := f.board.RmwFlags(); rmwFlags != 0 {
@@ -127,6 +163,7 @@ func (f *Flash040) Store(addr uint, data uint8) {
 	f.storeInternal(dist, addr, data)
 }
 
+// Read accesses the flash memory at the specified address and returns the corresponding 8-bit data.
 func (f *Flash040) Read(addr uint) uint8 {
 	var value uint8
 	switch f.flashState {
@@ -161,10 +198,12 @@ func (f *Flash040) Read(addr uint) uint8 {
 	return value
 }
 
+// Peek retrieves the byte value stored at the given memory address from the flash memory.
 func (f *Flash040) Peek(addr uint32) uint8 {
 	return f.flashData[addr]
 }
 
+// SnapshotWriteModule writes the state of the Flash040 module into the provided snapshot module with the specified name.
 func (f *Flash040) SnapshotWriteModule(s *snapshot.Snapshot, name string) error {
 	m := s.NewModule(name, DumpVerMajor, DumpVerMinor)
 	state := uint8(f.flashState)
@@ -177,6 +216,7 @@ func (f *Flash040) SnapshotWriteModule(s *snapshot.Snapshot, name string) error 
 	return nil
 }
 
+// SnapshotReadModule restores the module-specific state from a snapshot using the provided snapshot object and module name.
 func (f *Flash040) SnapshotReadModule(s *snapshot.Snapshot, name string) error {
 	m := s.GetModule(name)
 	if m == nil {
@@ -214,6 +254,7 @@ func (f *Flash040) SnapshotReadModule(s *snapshot.Snapshot, name string) error {
 	return nil
 }
 
+// flashMagic1 evaluates a given address using the magic1Mask and magic1Addr to determine a match, returning 1 if true.
 func (f *Flash040) flashMagic1(addr uint) int {
 	p1 := flashTypes[f.flashType].magic1Mask
 	p2 := flashTypes[f.flashType].magic1Addr
@@ -223,6 +264,8 @@ func (f *Flash040) flashMagic1(addr uint) int {
 	return 0
 }
 
+// flashMagic2 checks if the given address matches a specific pattern defined by `magic2Mask` and `magic2Addr` for the Flash type.
+// Returns 1 if the condition is met, otherwise returns 0.
 func (f *Flash040) flashMagic2(addr uint) int {
 	p1 := flashTypes[f.flashType].magic2Mask
 	p2 := flashTypes[f.flashType].magic2Addr
@@ -232,28 +275,33 @@ func (f *Flash040) flashMagic2(addr uint) int {
 	return 0
 }
 
+// flashClearEraseMask resets all elements of the eraseMask array in the Flash040 struct to zero.
 func (f *Flash040) flashClearEraseMask() {
 	for i := 0; i < EraseMaskSize; i++ {
 		f.eraseMask[i] = 0
 	}
 }
 
+// flashSectorToAddr calculates the start address of the specified sector based on the sector size of the Flash type.
 func (f *Flash040) flashSectorToAddr(sector uint) uint {
 	sectorSize := flashTypes[f.flashType].sectorSize
 	return sector * sectorSize
 }
 
+// flashAddrToSectorNumber calculates the sector number for a given flash address based on the flash type's parameters.
 func (f *Flash040) flashAddrToSectorNumber(addr uint) uint {
 	sectorAddr := flashTypes[f.flashType].sectorMask & addr
 	sectorShift := flashTypes[f.flashType].sectorShift
 	return sectorAddr >> sectorShift
 }
 
+// flashAddSectorToEraseMask adds a specific flash memory sector to the erase mask based on the provided address.
 func (f *Flash040) flashAddSectorToEraseMask(addr uint) {
 	sectorNum := f.flashAddrToSectorNumber(addr)
 	f.eraseMask[sectorNum>>3] |= (uint8)(1 << (sectorNum & 0x7))
 }
 
+// flashEraseSector erases a specified flash sector by setting its contents to 0xFF and marking the flash as dirty.
 func (f *Flash040) flashEraseSector(sector uint) {
 	sectorSize := flashTypes[f.flashType].sectorSize
 	sectorAddr := f.flashSectorToAddr(sector)
@@ -263,6 +311,7 @@ func (f *Flash040) flashEraseSector(sector uint) {
 	f.flashDirty = 1
 }
 
+// flashEraseChip erases all data on the chip by setting each byte to 0xFF and marks the flash memory as dirty.
 func (f *Flash040) flashEraseChip() {
 	//FLASH_DEBUG(("Erasing chip"));
 	for x := uint(0); x < flashTypes[f.flashType].size; x++ {
@@ -271,6 +320,8 @@ func (f *Flash040) flashEraseChip() {
 	f.flashDirty = 1
 }
 
+// flashProgramByte programs a single byte of data into the flash memory at the specified address.
+// Returns 1 if the programming operation succeeds, otherwise returns 0.
 func (f *Flash040) flashProgramByte(addr uint, data uint8) int {
 	oldData := f.flashData[addr]
 	newData := oldData & data
@@ -283,6 +334,7 @@ func (f *Flash040) flashProgramByte(addr uint, data uint8) int {
 	return 0
 }
 
+// flashWriteOperationStatus determines and returns the status of a flash memory write operation as an integer bit mask.
 func (f *Flash040) flashWriteOperationStatus() int {
 	mainCpuClk := f.board.Cycle()
 	p1 := int((f.programByte ^ 0x80) & 0x80) //DQ7 = inverse of programmed data
@@ -291,6 +343,7 @@ func (f *Flash040) flashWriteOperationStatus() int {
 	return p1 | p2 | p3
 }
 
+// flashEraseOperationStatus retrieves the current status of the flash erase operation, including toggle bits and sector erase state.
 func (f *Flash040) flashEraseOperationStatus() int {
 	// DQ6 = toggle bit
 	v := f.programByte
@@ -305,6 +358,7 @@ func (f *Flash040) flashEraseOperationStatus() int {
 	return int(v)
 }
 
+// eraseAlarmHandler handles the alarm events during flash erase operations and transitions the flash state accordingly.
 func (f *Flash040) eraseAlarmHandler() {
 	_ = f.eraseAlarm.Unset()
 	switch f.flashState {
@@ -339,6 +393,7 @@ func (f *Flash040) eraseAlarmHandler() {
 	}
 }
 
+// storeInternal processes internal flash memory state transitions based on the provided address, data, and distance values.
 func (f *Flash040) storeInternal(dist uint64, addr uint, data uint8) {
 	switch f.flashState {
 	case StateRead:
