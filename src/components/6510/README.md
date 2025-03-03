@@ -12,11 +12,14 @@ The 6510 emulation is based on a micro-operation approach.  Each 6502/6510 instr
 
 *   **`cpu.go`:** Contains the core `CPU` struct and its methods. This includes:
     *   `CPU` struct: Represents the state of the 6510 CPU (registers, flags, program counter, stack pointer, etc.).
-    *   `Run()`: The main execution loop. This function repeatedly fetches and executes instructions until `c.Exit` is true.
-    *   `Fetch()`: Reads the next opcode from memory.
-    *   `Read()` and `Write()`:  Methods for reading from and writing to memory (using the `IBanks` interface).
-    *   `StackPush()` and `StackPop()`: Methods for manipulating the stack.
-    *   `Nmi()`, `Irq()`, `Reset()`:  Methods for handling interrupts.
+    *   `Emulate()`: The main execution loop. This function repeatedly fetches and executes instructions until `c.stop` is true.
+    *   `read()`: Reads a byte from the memory.
+    *   `Reset()`: Resets the cpu to initial state.
+    *   `popFlags()`: Reads the status register from memory.
+    *   `pushFlags()`: Create the status register to write to the memory.
+    * `branch()`: Handles the logic for branching.
+    * `doADC()`: Implement the ADC instruction.
+    * `doSBC()`: Implement the SBC instruction.
     *   Helper functions for flag manipulation (e.g., `SetFlagNZ`).
     *   Helper functions for address calculation, different addressing mode.
 
@@ -35,9 +38,7 @@ The 6510 emulation is based on a micro-operation approach.  Each 6502/6510 instr
     *  `inst_control.go`: Other instructions.
     *   `inst_undocumented.go`: Undocumented (illegal) opcodes.
 
-*   **`opcodes.go`:**  This file *was* present in a previous version, it's not present now.
-
-*   **`tables.go`:** Contains the dispatch tables (`opTable` and `modeTable`) that map opcodes to the corresponding addressing mode and instruction execution functions.
+*   **`tables.go`:** Contains the dispatch tables (`opcodeTable` and `addressingModeTable`) that map opcodes to the corresponding addressing mode and instruction execution functions.
 
 *   **`stack.go`:**  Provides functions for managing the 6510 stack.
 
@@ -45,14 +46,13 @@ The 6510 emulation is based on a micro-operation approach.  Each 6502/6510 instr
 
 **Execution Flow:**
 
-The `Run` method in `cpu.go` is the main execution loop.  It repeatedly:
+The `Emulate` method in `cpu.go` is the main execution loop.  It repeatedly:
 
-1.  Fetches the next opcode using `Fetch()`.
-2.  Looks up the corresponding instruction implementation function in `opTable`.
-3.  Looks up the corresponding addressing mode function in `modeTable`.
-4.  Calls the addressing mode function.
-5.  Calls the instruction implementation function.
-6.  Handles interrupts.
+1.  Executes the function `next`.
+2. The function read the `opcodeTable` for the next instruction.
+3. The function read the `addressingModeTable` for the next addressing mode.
+4. Execute the instruction.
+5. Handles interrupts.
 
 **Addressing Modes:**
 
@@ -83,17 +83,11 @@ The 6510 has a status register (SR) that contains several flags that reflect the
 
 **Supported Instructions:**
 
-[**TODO:** Provide a *complete* list of supported instructions, grouped by category (Load/Store, Arithmetic, Logic, etc.).  For each instruction, include:
-*   Mnemonic.
-*   Addressing modes.
-*   Brief description.
-*   Flags affected.
-*   Cycles (ideally, per addressing mode).
-    A table format, like the one started in the previous draft, is recommended.]
+All the instructions are implemented, the documentated and the not documentated instructions.
 
 **Undocumented Instructions:**
 
-[**TODO:** List any undocumented instructions that are implemented, and describe their behavior.]
+The instructions are implemented: NOP, LAX, SAX, SLO, RLA, SRE, RRA, DCP, ISB, ANC, ASR, ARR, ANE, LXA, SBX, LAS, SHS, SHY, SHX, SHA and JAM.
 
 ## Usage
 

@@ -5,16 +5,20 @@ import (
 	"log"
 )
 
+// lineLength defines the number of characters that fit on a single physical screen line.
 const lineLength = 40
 
+// Observer coordinates operations between a given adapter and system, providing higher-level interface functionality.
 type Observer struct {
 	b IAdapter
 }
 
+// NewObserver creates a new Observer instance with the given IAdapter implementation to interact with devices or memory.
 func NewObserver(b IAdapter) *Observer {
 	return &Observer{b: b}
 }
 
+// getBasicText reads specific memory addresses to calculate and return the start and end addresses as uint16 values.
 func (o *Observer) getBasicText() (uint16, uint16) {
 	b := o.b.Read(0x2b)
 	c := o.b.Read(0x2c)
@@ -25,6 +29,7 @@ func (o *Observer) getBasicText() (uint16, uint16) {
 	return start, end
 }
 
+// setBasicText writes start and end addresses to specific memory locations, modifying multiple associated addresses.
 func (o *Observer) setBasicText(start uint16, end uint16) {
 	s1 := uint8(start) & 0xff
 	o.b.Write(0xac, s1)
@@ -47,6 +52,7 @@ func (o *Observer) setBasicText(start uint16, end uint16) {
 	o.b.Write(0x2e, e2)
 }
 
+// Inject loads the provided data into memory at the specified address or BASIC start address if autostart is enabled.
 func (o *Observer) Inject(autostartBasicLoad bool, startAddr uint16, data []byte) {
 	size := uint16(len(data))
 	start, _ := o.getBasicText()
@@ -62,6 +68,7 @@ func (o *Observer) Inject(autostartBasicLoad bool, startAddr uint16, data []byte
 	o.setBasicText(start, end)
 }
 
+// GetCursorParameter calculates data values based on cursor position and specified line offset for screen rendering.
 func (o *Observer) GetCursorParameter(lineOffset int) {
 	if lineOffset < 0 {
 		log.Printf("Invalid lineOffset: %d\n", lineOffset)
