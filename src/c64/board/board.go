@@ -217,6 +217,14 @@ func (s *Board) GetText() []byte {
 	return s.vic.GetText()
 }
 
+func (s *Board) GetScreenSize() (int, int) {
+	return mos6569.DisplayX, mos6569.DisplayY
+}
+
+func (s *Board) GetFrameInterval() int {
+	return mos6569.FrameInterval
+}
+
 func (s *Board) DiskChange() {
 	//s.cfg.GetDrives()
 	//aaa

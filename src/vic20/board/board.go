@@ -151,6 +151,14 @@ func (s *Board) GetText() []byte {
 	return nil
 }
 
+func (s *Board) GetScreenSize() (int, int) {
+	return 320, 200
+}
+
+func (s *Board) GetFrameInterval() int {
+	return 20
+}
+
 func (s *Board) DiskChange() {
 	//s.cfg.GetDrives()
 	//aaa

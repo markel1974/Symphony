@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/inputs"
 	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/common"
 	"os"
@@ -26,12 +25,13 @@ type Render struct {
 }
 
 func New(c64board board.IBoard, cfg *config.Config) *Render {
+	w, h := c64board.GetScreenSize()
 	g := &Render{
 		c64Board:     c64board,
 		cfg:          cfg,
 		fullscreen:   false,
-		screenWidth:  mos6569.DisplayX,
-		screenHeight: mos6569.DisplayY,
+		screenWidth:  w,
+		screenHeight: h,
 		scale:        2.0,
 		display:      NewDisplayBuffer(),
 		audio:        NewAudio(),
@@ -61,7 +61,7 @@ func (g *Render) PrintBuffer(textBuffer []byte) {
 
 func (g *Render) Start() error {
 	g.setup()
-	dt := common.NewDynamicThrottling(mos6569.FrameInterval)
+	dt := common.NewDynamicThrottling(g.c64Board.GetFrameInterval())
 
 	if err := MakeStdInRaw(); err != nil {
 		return err

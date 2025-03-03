@@ -30,6 +30,10 @@ type IBoard interface {
 
 	GetText() []byte
 
+	GetScreenSize() (int, int)
+
+	GetFrameInterval() int
+
 	Joy1SetKey(pressed bool, vKey int)
 	Joy2SetKey(pressed bool, vKey int)
 	JoySwap(p bool)

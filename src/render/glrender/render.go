@@ -2,10 +2,9 @@ package glrender
 
 import (
 	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/common"
-	pixels2 "github.com/markel1974/c64emu/src/render/glrender/pixels"
+	"github.com/markel1974/c64emu/src/render/glrender/pixels"
 )
 
 type Render struct {
@@ -18,21 +17,22 @@ type Render struct {
 	screenHeight int
 	maxW         float64
 	maxH         float64
-	picture      *pixels2.Picture
-	matrix       pixels2.Matrix
-	surface      *pixels2.Sprite
+	picture      *pixels.Picture
+	matrix       pixels.Matrix
+	surface      *pixels.Sprite
 	display      *DisplayBuffer
 	inputs       *Inputs
 	audio        *Audio
 }
 
 func New(board board.IBoard, cfg *config.Config) *Render {
+	w, h := board.GetScreenSize()
 	g := &Render{
 		c64Board:     board,
 		cfg:          cfg,
 		fullscreen:   false,
-		screenWidth:  mos6569.DisplayX,
-		screenHeight: mos6569.DisplayY,
+		screenWidth:  w,
+		screenHeight: h,
 		scale:        3.0,
 		inputs:       NewInputs(),
 	}
@@ -41,12 +41,12 @@ func New(board board.IBoard, cfg *config.Config) *Render {
 	return g
 }
 
-func (g *Render) setup(pos pixels2.Vec) {
-	g.picture = pixels2.NewPicture(pixels2.NewRect(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
-	g.surface = pixels2.NewSprite()
-	g.surface.SetCachedMode(pixels2.CacheModeUpdate)
+func (g *Render) setup(pos pixels.Vec) {
+	g.picture = pixels.NewPicture(pixels.NewRect(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
+	g.surface = pixels.NewSprite()
+	g.surface.SetCachedMode(pixels.CacheModeUpdate)
 	g.surface.Set(g.picture, g.picture.Bounds())
-	g.matrix = pixels2.IM.Moved(pos).Scaled(pos, g.scale)
+	g.matrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
 	g.display = NewDisplayBuffer(g.picture)
 	g.audio = NewAudio()
 	_ = g.c64Board.Setup(g.display, g.audio, g.cfg)
@@ -54,29 +54,29 @@ func (g *Render) setup(pos pixels2.Vec) {
 }
 
 func (g *Render) Start() error {
-	return pixels2.GLRun(g.run)
+	return pixels.GLRun(g.run)
 }
 
 func (g *Render) run() {
-	cfg := pixels2.WindowConfig{
-		Bounds:      pixels2.NewRect(0, 0, g.maxW, g.maxH),
+	cfg := pixels.WindowConfig{
+		Bounds:      pixels.NewRect(0, 0, g.maxW, g.maxH),
 		VSync:       true,
 		Undecorated: false,
 		Smooth:      false,
 	}
 
 	if g.fullscreen {
-		cfg.Monitor = pixels2.PrimaryMonitor()
+		cfg.Monitor = pixels.PrimaryMonitor()
 	}
 
-	win, err := pixels2.NewGLWindow(cfg)
+	win, err := pixels.NewGLWindow(cfg)
 	if err != nil {
 		panic(err)
 	}
 
 	c := win.Bounds().Center()
 	g.setup(c)
-	dt := common.NewDynamicThrottling(mos6569.FrameInterval)
+	dt := common.NewDynamicThrottling(g.c64Board.GetFrameInterval())
 
 	run := true
 	for run {
