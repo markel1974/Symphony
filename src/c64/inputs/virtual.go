@@ -1,5 +1,7 @@
 package inputs
 
+import "github.com/markel1974/c64emu/src/components/board"
+
 type Virtual struct {
 	numLock bool
 	capital bool
@@ -25,80 +27,80 @@ func (k *Virtual) CapitalToggle() {
 func (k *Virtual) FromVirtual(vKey int) int {
 	var result = -1
 	switch vKey {
-	case VKReturn:
+	case board.VKReturn:
 		return matrix(0, 1)
-	case VKBack:
+	case board.VKBack:
 		return matrix(7, 1) //matrix(0, 0)
-	case VKSpace:
+	case board.VKSpace:
 		return matrix(7, 4)
-	case VKEscape:
+	case board.VKEscape:
 		//RUN/STOP
 		return matrix(7, 7)
-	case VKTab:
+	case board.VKTab:
 		return -1
-	case VKDelete:
+	case board.VKDelete:
 		return matrix(0, 0)
-	case VKShift:
+	case board.VKShift:
 		return matrix(1, 7)
-	case VKControl:
+	case board.VKControl:
 		return matrix(7, 2)
-	case VKInsert:
+	case board.VKInsert:
 		return matrix(0, 0) | 0x80
-	case VKHome:
+	case board.VKHome:
 		return matrix(6, 3)
-	case VKEnd:
+	case board.VKEnd:
 		return matrix(6, 0)
-	case VKPrior:
+	case board.VKPrior:
 		return matrix(6, 6)
-	case VKNext:
+	case board.VKNext:
 		return matrix(6, 5)
-	case VKUp:
+	case board.VKUp:
 		return matrix(0, 7) | 0x80
-	case VKDown:
+	case board.VKDown:
 		return matrix(0, 7)
-	case VKLeft:
+	case board.VKLeft:
 		return matrix(0, 2) | 0x80
-	case VKRight:
+	case board.VKRight:
 		return matrix(0, 2)
-	case VKF1:
+	case board.VKF1:
 		return matrix(0, 4)
-	case VKF2:
+	case board.VKF2:
 		return matrix(0, 4) | 0x80
-	case VKF3:
+	case board.VKF3:
 		return matrix(0, 5)
-	case VKF4:
+	case board.VKF4:
 		return matrix(0, 5) | 0x80
-	case VKF5:
+	case board.VKF5:
 		return matrix(0, 6)
-	case VKF6:
+	case board.VKF6:
 		return matrix(0, 6) | 0x80
-	case VKF7:
+	case board.VKF7:
 		return matrix(0, 3)
-	case VKF8:
+	case board.VKF8:
 		return matrix(0, 3) | 0x80
-	case VKBracketLeft:
+	case board.VKBracketLeft:
 		return matrix(5, 6)
-	case VKAsterisk:
+	case board.VKAsterisk:
 		return matrix(6, 1)
-	case VKSlash:
+	case board.VKSlash:
 		return matrix(6, 7)
-	case VKSemicolon:
+	case board.VKSemicolon:
 		return matrix(5, 5)
-	case VKGrave:
+	case board.VKGrave:
 		return matrix(7, 1)
-	case VKMinus:
+	case board.VKMinus:
 		return matrix(5, 3)
-	case VKPlus:
+	case board.VKPlus:
 		return matrix(5, 0)
-	case VKEqual:
+	case board.VKEqual:
 		return matrix(6, 5)
-	case VKComma:
+	case board.VKComma:
 		return matrix(5, 7)
-	case VKPeriod:
+	case board.VKPeriod:
 		return matrix(5, 4)
-	case VKQuote:
+	case board.VKQuote:
 		return matrix(6, 2)
-	case VKBackslash:
+	case board.VKBackslash:
 		return matrix(6, 6)
 	case '0':
 		return matrix(4, 3)

@@ -1,6 +1,7 @@
 package inputs
 
 import (
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/fifo"
 )
 
@@ -77,34 +78,34 @@ func (k *Joystick) Poll() (uint8, bool) {
 
 func joyKeyUp(j int, kc int) int {
 	switch kc {
-	case KeyJFire:
+	case board.KeyJFire:
 		j |= 0x10
 		return j
-	case KeyJUp:
+	case board.KeyJUp:
 		j |= 0x01
 		return j
-	case KeyJDown:
+	case board.KeyJDown:
 		j |= 0x02
 		return j
-	case KeyJLeft:
+	case board.KeyJLeft:
 		j |= 0x04
 		return j
-	case KeyJRight:
+	case board.KeyJRight:
 		j |= 0x08
 		return j
-	case KeyJUpLeft:
+	case board.KeyJUpLeft:
 		j |= 0x05
 		return j
-	case KeyJUpRight:
+	case board.KeyJUpRight:
 		j |= 0x09
 		return j
-	case KeyJDownLeft:
+	case board.KeyJDownLeft:
 		j |= 0x06
 		return j
-	case KeyJDownRight:
+	case board.KeyJDownRight:
 		j |= 0x0a
 		return j
-	case KeyJCenter:
+	case board.KeyJCenter:
 		return 0xff
 	}
 	return 0xff
@@ -112,42 +113,42 @@ func joyKeyUp(j int, kc int) int {
 
 func joyKeyDown(j int, kc int) int {
 	switch kc {
-	case KeyJFire:
+	case board.KeyJFire:
 		j &= ^0x10
 		return j
-	case KeyJUp:
+	case board.KeyJUp:
 		j |= 0x02
 		j &= ^0x01
 		return j
-	case KeyJDown:
+	case board.KeyJDown:
 		j |= 0x01
 		j &= ^0x02
 		return j
-	case KeyJLeft:
+	case board.KeyJLeft:
 		j |= 0x08
 		j &= ^0x04
 		return j
-	case KeyJRight:
+	case board.KeyJRight:
 		j |= 0x04
 		j &= ^0x08
 		return j
-	case KeyJUpLeft:
+	case board.KeyJUpLeft:
 		j |= 0x0a
 		j &= ^0x05
 		return j
-	case KeyJUpRight:
+	case board.KeyJUpRight:
 		j |= 0x06
 		j &= ^0x09
 		return j
-	case KeyJDownLeft:
+	case board.KeyJDownLeft:
 		j |= 0x09
 		j &= ^0x06
 		return j
-	case KeyJDownRight:
+	case board.KeyJDownRight:
 		j |= 0x05
 		j &= ^0x0a
 		return j
-	case KeyJCenter:
+	case board.KeyJCenter:
 		j |= 0x0f
 		return j
 	}
