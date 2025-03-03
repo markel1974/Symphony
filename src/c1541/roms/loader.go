@@ -1,6 +1,8 @@
-package banks
+package roms
 
-import "os"
+import (
+	"os"
+)
 
 // Loader is responsible for managing the loading and patching of ROM files.
 type Loader struct {

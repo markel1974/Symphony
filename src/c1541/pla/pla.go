@@ -1,6 +1,7 @@
-package banks
+package pla
 
 import (
+	"github.com/markel1974/c64emu/src/c1541/roms"
 	"github.com/markel1974/c64emu/src/components/via"
 	"github.com/markel1974/c64emu/src/config"
 )
@@ -16,39 +17,39 @@ import (
 // c1541RamSize defines the size of RAM in the C1541 disk drive, measured in bytes.
 const c1541RamSize = 0x0800
 
-// Banks represents the memory and I/O peripherals for a system, including RAM, ROM, and VIA interfaces.
-type Banks struct {
+// PLA represents the memory and I/O peripherals for a system, including RAM, ROM, and VIA interfaces.
+type PLA struct {
 	ram  []uint8
 	rom  []uint8
 	via1 *mos6522.Via
 	via2 *mos6522.Via
 }
 
-// New initializes and returns a new Banks instance with its RAM allocated to the size defined by c1541RamSize.
-func New() *Banks {
-	return &Banks{ram: make([]uint8, c1541RamSize)}
+// New initializes and returns a new PLA instance with its RAM allocated to the size defined by P.
+func New() *PLA {
+	return &PLA{ram: make([]uint8, c1541RamSize)}
 }
 
-// Setup initializes the Banks instance by assigning VIA instances and loading ROM data based on the provided configuration.
-func (r *Banks) Setup(via1 *mos6522.Via, via2 *mos6522.Via, cfg *config.Config) {
+// Setup initializes the PLA instance by assigning VIA instances and loading ROM data based on the provided configuration.
+func (r *PLA) Setup(via1 *mos6522.Via, via2 *mos6522.Via, cfg *config.Config) {
 	r.via1 = via1
 	r.via2 = via2
-	loader := NewLoader()
+	loader := roms.NewLoader()
 	r.rom = loader.Load(cfg.UseJiffy(), cfg.Get1541RomPath())
 }
 
-//func (r *Banks) AtnWakeUp() {
+//func (r *PLA) AtnWakeUp() {
 //Interrupt by negative edge of ATN on IEC bus
 //	r.ram[0x7c] = 1
 //}
 
 // ReadInterval returns a slice of bytes from the RAM, starting at the specified address and spanning the given count.
-func (r *Banks) ReadInterval(start uint16, count uint16) []byte {
+func (r *PLA) ReadInterval(start uint16, count uint16) []byte {
 	return r.ram[start : start+count]
 }
 
 // Read fetches a byte of data from RAM, ROM, or I/O space based on the specified memory address.
-func (r *Banks) Read(addr uint16) uint8 {
+func (r *PLA) Read(addr uint16) uint8 {
 	if addr >= 0xc000 {
 		return r.rom[addr&0x3fff]
 	}
@@ -58,8 +59,8 @@ func (r *Banks) Read(addr uint16) uint8 {
 	return r.readByteIO(addr)
 }
 
-// Write writes a single byte of data to the given address in the memory or I/O space managed by the Banks instance.
-func (r *Banks) Write(addr uint16, data uint8) {
+// Write writes a single byte of data to the given address in the memory or I/O space managed by the PLA instance.
+func (r *PLA) Write(addr uint16, data uint8) {
 	if addr < 0x1000 {
 		r.ram[addr&0x7ff] = data
 		//if addr == 0x7c {
@@ -71,7 +72,7 @@ func (r *Banks) Write(addr uint16, data uint8) {
 }
 
 // readByteIO determines the appropriate byte to return based on the address range and passes control to VIA instances if applicable.
-func (r *Banks) readByteIO(addr uint16) uint8 {
+func (r *PLA) readByteIO(addr uint16) uint8 {
 	v := addr & 0xfc00
 	if v == 0x1800 {
 		return r.via1.ReadByte(addr)
@@ -83,7 +84,7 @@ func (r *Banks) readByteIO(addr uint16) uint8 {
 }
 
 // writeByteIO writes a byte of data to a specific I/O address space, delegating to VIA instances when applicable.
-func (r *Banks) writeByteIO(addr uint16, data uint8) {
+func (r *PLA) writeByteIO(addr uint16, data uint8) {
 	v := addr & 0xfc00
 	if v == 0x1800 {
 		r.via1.WriteByte(addr, data)

@@ -1,4 +1,4 @@
-package banks
+package roms
 
 // _builtinRom is a byte array containing data represent jiffy dos
 var _jiffyRom = []byte{

@@ -1,4 +1,4 @@
-package banks
+package roms
 
 //const DRIVE_ROM_SIZE = 0x4000
 

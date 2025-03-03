@@ -2,8 +2,8 @@ package board
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/c1541/banks"
 	"github.com/markel1974/c64emu/src/c1541/mechanic"
+	"github.com/markel1974/c64emu/src/c1541/pla"
 	"github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/components/quartz"
@@ -29,7 +29,7 @@ type Board struct {
 	cpuSocket    *CPUSocket
 	via1Socket   *Via1Socket
 	via2Socket   *Via2Socket
-	banks        *banks.Banks
+	banks        *pla.PLA
 	mec          *mechanic.Mechanic
 	deviceId     uint8
 	deviceNumber uint8
@@ -60,7 +60,7 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string)
 func (m *Board) Setup(cfg *config.Config) {
 	m.cfg = cfg
 	m.cfg.Bind(m.configChanged)
-	m.banks = banks.New()
+	m.banks = pla.New()
 	m.quartz = quartz.NewQuartz()
 	m.pic = mos6510.NewPic()
 	m.cpu = mos6510.NewCPU(baseId)
