@@ -12,6 +12,7 @@ import (
 	"github.com/markel1974/c64emu/src/components/iec"
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/sid"
+	"github.com/markel1974/c64emu/src/components/throttling"
 	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/signals"
@@ -60,6 +61,7 @@ type Board struct {
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
+	dt                  board.IDynamicThrottling
 }
 
 func NewBoard() *Board {
@@ -87,6 +89,7 @@ func NewBoard() *Board {
 		dmaLow:              false,
 		prg:                 nil,
 		joySwap:             true,
+		dt:                  nil,
 	}
 	return b
 }
@@ -101,6 +104,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	}
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
+	s.dt = throttling.NewDynamicThrottling(mos6569.FrameInterval)
 
 	s.cpuSocket = NewCPUSocket()
 	s.vicSocket = NewVicSocket()
@@ -213,16 +217,16 @@ func (s *Board) Emulate() bool {
 	return s.vBlank
 }
 
+func (s *Board) Throttle() board.IDynamicThrottling {
+	return s.dt
+}
+
 func (s *Board) GetText() []byte {
 	return s.vic.GetText()
 }
 
 func (s *Board) GetScreenSize() (int, int) {
 	return mos6569.DisplayX, mos6569.DisplayY
-}
-
-func (s *Board) GetFrameInterval() int {
-	return mos6569.FrameInterval
 }
 
 func (s *Board) DiskChange() {

@@ -1,9 +1,10 @@
-package common
+package throttling
 
 import (
 	"time"
 )
 
+// DynamicThrottling dynamically regulates task execution intervals to maintain a desired frame rate or time spacing.
 type DynamicThrottling struct {
 	frameInterval int64
 	tuning        int64
@@ -11,6 +12,7 @@ type DynamicThrottling struct {
 	counter       uint64
 }
 
+// NewDynamicThrottling creates a new instance of DynamicThrottling with the specified frameInterval in milliseconds.
 func NewDynamicThrottling(frameInterval int) *DynamicThrottling {
 	return &DynamicThrottling{
 		prev:          time.Now().UnixMilli(),
@@ -20,7 +22,11 @@ func NewDynamicThrottling(frameInterval int) *DynamicThrottling {
 	}
 }
 
-func (s *DynamicThrottling) DynamicThrottling() {
+// Throttle regulates code execution to maintain a consistent time interval between consecutive invocations.
+// It calculates the time difference from the previous execution and sleeps if necessary to enforce the interval.
+// Adjusts a tuning parameter dynamically to compensate for deviations in interval accuracy.
+// Updates the internal state, including the previous execution timestamp and invocation counter.
+func (s *DynamicThrottling) Throttle() {
 	now := time.Now().UnixMilli()
 	diff := now - s.prev
 	interval := s.frameInterval - diff
@@ -40,6 +46,7 @@ func (s *DynamicThrottling) DynamicThrottling() {
 	s.counter++
 }
 
+// Counter returns the current value of the counter field, which represents the number of throttling operations performed.
 func (s *DynamicThrottling) Counter() uint64 {
 	return s.counter
 }

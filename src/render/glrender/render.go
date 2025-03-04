@@ -3,7 +3,6 @@ package glrender
 import (
 	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/render/common"
 	"github.com/markel1974/c64emu/src/render/glrender/pixels"
 )
 
@@ -76,11 +75,11 @@ func (g *Render) run() {
 
 	c := win.Bounds().Center()
 	g.setup(c)
-	dt := common.NewDynamicThrottling(g.c64Board.GetFrameInterval())
+	dt := g.c64Board.Throttle()
 
 	run := true
 	for run {
-		dt.DynamicThrottling()
+		dt.Throttle()
 		if win.MouseInsideWindow() {
 			g.inputs.MouseMove(win.MousePositionXY())
 		}

@@ -8,6 +8,8 @@ import (
 	mos6510 "github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/iec"
+	"github.com/markel1974/c64emu/src/components/throttling"
+	mos6569 "github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/signals"
 	"golang.design/x/clipboard"
@@ -45,6 +47,7 @@ type Board struct {
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
+	dt                  board.IDynamicThrottling
 }
 
 func NewBoard() *Board {
@@ -64,6 +67,7 @@ func NewBoard() *Board {
 		dmaLow:              false,
 		prg:                 nil,
 		joySwap:             true,
+		dt:                  nil,
 	}
 	return b
 }
@@ -78,6 +82,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, p board.IPlayer, cfg *config.Conf
 	}
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
+	s.dt = throttling.NewDynamicThrottling(mos6569.FrameInterval)
 
 	s.cpuSocket = NewCPUSocket()
 	s.vicSocket = NewVicSocket()
@@ -153,10 +158,6 @@ func (s *Board) GetText() []byte {
 
 func (s *Board) GetScreenSize() (int, int) {
 	return 320, 200
-}
-
-func (s *Board) GetFrameInterval() int {
-	return 20
 }
 
 func (s *Board) DiskChange() {
@@ -246,4 +247,8 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 		s.pla.SetMemoryConfig(prev)
 	}
 	return rb
+}
+
+func (s *Board) Throttle() board.IDynamicThrottling {
+	return s.dt
 }

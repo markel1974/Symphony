@@ -22,6 +22,11 @@ type IPlayer interface {
 	Write([]uint32, int, int)
 }
 
+type IDynamicThrottling interface {
+	Throttle()
+	Counter() uint64
+}
+
 // IBoard is an interface representing the functionalities of an emulated board system.
 type IBoard interface {
 	Setup(db IDisplayBuffer, p IPlayer, cfg *config.Config) error
@@ -31,8 +36,6 @@ type IBoard interface {
 	GetText() []byte
 
 	GetScreenSize() (int, int)
-
-	GetFrameInterval() int
 
 	Joy1SetKey(pressed bool, vKey int)
 	Joy2SetKey(pressed bool, vKey int)
@@ -45,6 +48,8 @@ type IBoard interface {
 	KeyboardSetVirtualKey(pressed bool, vKey int)
 
 	SetMouse(x uint8, y uint8)
+
+	Throttle() IDynamicThrottling
 
 	DiskChange()
 }

@@ -5,14 +5,17 @@ import (
 	"fmt"
 )
 
-// Quartz is a type that manages a clock cycle and provides scheduling functionality through alarms.
+// Quartz represents a scheduler that manages alarms based on cycles, enabling timed execution of associated callbacks.
+// cycle tracks the current cycle count in the Quartz instance.
+// alarmsContainer provides a mapping of active alarms for quick accessibility and management.
+// alarms stores active alarms in a doubly linked list, sorted by their scheduled cycle execution times.
 type Quartz struct {
 	cycle           uint64
 	alarmsContainer map[*Alarm]*Alarm
 	alarms          *list.List
 }
 
-// NewQuartz creates and returns a new instance of Quartz with initialized cycle and empty alarm structures.
+// NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
 func NewQuartz() *Quartz {
 	return &Quartz{
 		cycle:           0,
@@ -21,30 +24,30 @@ func NewQuartz() *Quartz {
 	}
 }
 
-// AddCycle increments the internal cycle counter of the Quartz instance and triggers alarm checks for the current cycle.
+// AddCycle increments the internal cycle counter and checks scheduled alarms against the updated cycle value.
 func (s *Quartz) AddCycle() {
 	s.cycle++
 	s.alarmsCheck(s.cycle)
 }
 
-// Cycle returns the current cycle count maintained by the Quartz instance.
+// Cycle returns the current cycle count of the Quartz instance.
 func (s *Quartz) Cycle() uint64 {
 	return s.cycle
 }
 
-// NewAlarm creates a new alarm with the specified name and callback, associates it with the Quartz instance, and registers it.
+// NewAlarm creates a new alarm with the given name and callback, associates it with the Quartz instance, and returns it.
 func (s *Quartz) NewAlarm(name string, callback AlarmCallback) *Alarm {
 	a := NewAlarm(s, name, callback)
 	s.alarmsContainer[a] = a
 	return a
 }
 
-// alarmDestroy removes the specified alarm from the Quartz instance's alarms container.
+// alarmDestroy removes the specified alarm from the alarmsContainer within the Quartz instance.
 func (s *Quartz) alarmDestroy(alarm *Alarm) {
 	delete(s.alarmsContainer, alarm)
 }
 
-// alarmSet schedules an alarm to trigger after a specified distance in cycles. Returns an error if the alarm is already set.
+// alarmSet schedules an alarm to trigger after a specified number of cycles. Returns an error if the alarm is already set.
 func (s *Quartz) alarmSet(alarm *Alarm, dist uint64) error {
 	if alarm.element != nil {
 		return fmt.Errorf("alarm already set")
@@ -68,7 +71,7 @@ func (s *Quartz) alarmSet(alarm *Alarm, dist uint64) error {
 	return nil
 }
 
-// alarmUnset removes an alarm from the scheduled list. Returns an error if the alarm is not currently set.
+// alarmUnset removes the specified alarm from the scheduled list and clears its element reference. Returns an error if the alarm is not set.
 func (s *Quartz) alarmUnset(alarm *Alarm) error {
 	if alarm.element == nil {
 		return fmt.Errorf("alarm not setted")
@@ -78,7 +81,7 @@ func (s *Quartz) alarmUnset(alarm *Alarm) error {
 	return nil
 }
 
-// alarmsCheck processes all alarms that are scheduled to execute at or before the given cycle and removes them from the list.
+// alarmsCheck executes all alarms whose scheduled cycle is less than or equal to the current cycle and removes them from the list.
 func (s *Quartz) alarmsCheck(cycle uint64) {
 	if s.alarms.Len() == 0 {
 		return

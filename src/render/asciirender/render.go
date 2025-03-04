@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/render/common"
 	"os"
 )
 
@@ -60,7 +59,7 @@ func (g *Render) PrintBuffer(textBuffer []byte) {
 
 func (g *Render) Start() error {
 	g.setup()
-	dt := common.NewDynamicThrottling(g.c64Board.GetFrameInterval())
+	dt := g.c64Board.Throttle()
 
 	if err := MakeStdInRaw(); err != nil {
 		return err
@@ -83,7 +82,7 @@ func (g *Render) Start() error {
 	counter := 0
 	textBuffer := make([]byte, 65000)
 	for run {
-		dt.DynamicThrottling()
+		dt.Throttle()
 
 		select {
 		case text := <-ch:
