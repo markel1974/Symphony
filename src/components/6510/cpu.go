@@ -2,7 +2,7 @@ package mos6510
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/conversion"
+	"github.com/markel1974/c64emu/src/common/conversion"
 )
 
 //https://web.archive.org/web/20221112220344if_/http://archive.6502.org/datasheets/synertek_programming_manual.pdf

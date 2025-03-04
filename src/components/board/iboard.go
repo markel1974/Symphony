@@ -4,30 +4,17 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-// IDisplayBuffer is an interface for managing display buffer operations in graphical rendering systems.
-// Set sets a single value at the specified index in the display buffer.
-// SetMulti8 sets a multi-bit value at the specified index in the display buffer.
-// Set8 sets an array of 8-bit values starting at the specified index in the display buffer.
+// IDisplayBuffer defines methods for interacting with a display buffer, allowing data manipulation at specified indices.
+// Set sets a single byte of data at the given index.
+// SetMulti8 sets a single byte of data and applies it across multiple relevant sections.
+// Set8 sets an array of 8 bytes of data starting at the given index.
 type IDisplayBuffer interface {
 	Set(idx int, data uint8)
 	SetMulti8(idx int, data uint8)
 	Set8(idx int, data [8]uint8)
 }
 
-// IPlayer is an interface for managing player-related operations in a game or multimedia context.
-// GetCurrentPosition returns the current position of the player.
-// Write writes audio or data buffer with specified parameters.
-type IPlayer interface {
-	GetCurrentPosition() int
-	Write([]uint32, int, int)
-}
-
-type IDynamicThrottling interface {
-	Throttle()
-	Counter() uint64
-}
-
-// IBoard is an interface representing the functionalities of an emulated board system.
+// IBoard defines a hardware abstraction interface for managing emulation, input/output events, and configurations.
 type IBoard interface {
 	Setup(db IDisplayBuffer, p IPlayer, cfg *config.Config) error
 
@@ -49,7 +36,7 @@ type IBoard interface {
 
 	SetMouse(x uint8, y uint8)
 
-	Throttle() IDynamicThrottling
+	Throttle() IThrottling
 
 	DiskChange()
 }

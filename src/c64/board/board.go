@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/pla"
 	"github.com/markel1974/c64emu/src/c64/prg"
 	"github.com/markel1974/c64emu/src/c64/roms"
+	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/cia"
@@ -15,7 +16,6 @@ import (
 	"github.com/markel1974/c64emu/src/components/throttling"
 	"github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/signals"
 	"golang.design/x/clipboard"
 	"log"
 	"os"
@@ -61,7 +61,7 @@ type Board struct {
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
-	dt                  board.IDynamicThrottling
+	dt                  board.IThrottling
 }
 
 func NewBoard() *Board {
@@ -217,7 +217,7 @@ func (s *Board) Emulate() bool {
 	return s.vBlank
 }
 
-func (s *Board) Throttle() board.IDynamicThrottling {
+func (s *Board) Throttle() board.IThrottling {
 	return s.dt
 }
 

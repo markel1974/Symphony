@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c1541/mechanic"
 	"github.com/markel1974/c64emu/src/c1541/pla"
+	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/via"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/signals"
 )
 
 const (

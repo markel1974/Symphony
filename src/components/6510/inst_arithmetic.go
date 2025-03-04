@@ -1,6 +1,8 @@
 package mos6510
 
-import "github.com/markel1974/c64emu/src/conversion"
+import (
+	"github.com/markel1974/c64emu/src/common/conversion"
+)
 
 // Arithmetic
 

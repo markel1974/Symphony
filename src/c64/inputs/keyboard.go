@@ -1,7 +1,7 @@
 package inputs
 
 import (
-	"github.com/markel1974/c64emu/src/fifo"
+	"github.com/markel1974/c64emu/src/common/fifo"
 )
 
 // matrix computes and returns a combined integer value by shifting `a` to the left by 3 bits and performing a bitwise OR with `b`.

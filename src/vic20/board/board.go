@@ -5,13 +5,13 @@ import (
 	"github.com/markel1974/c64emu/src/c64/inputs"
 	"github.com/markel1974/c64emu/src/c64/pla"
 	"github.com/markel1974/c64emu/src/c64/prg"
+	"github.com/markel1974/c64emu/src/common/signals"
 	mos6510 "github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/iec"
 	"github.com/markel1974/c64emu/src/components/throttling"
 	mos6569 "github.com/markel1974/c64emu/src/components/vic"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/signals"
 	"golang.design/x/clipboard"
 	"log"
 )
@@ -47,7 +47,7 @@ type Board struct {
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
-	dt                  board.IDynamicThrottling
+	dt                  board.IThrottling
 }
 
 func NewBoard() *Board {
@@ -249,6 +249,6 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	return rb
 }
 
-func (s *Board) Throttle() board.IDynamicThrottling {
+func (s *Board) Throttle() board.IThrottling {
 	return s.dt
 }

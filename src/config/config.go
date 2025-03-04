@@ -1,6 +1,8 @@
 package config
 
-import "github.com/markel1974/c64emu/src/signals"
+import (
+	"github.com/markel1974/c64emu/src/common/signals"
+)
 
 // Cartridge represents a cartridge with a specified kind and file path.
 type Cartridge struct {

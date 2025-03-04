@@ -1,8 +1,8 @@
 package board
 
 import (
+	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/components/quartz"
-	"github.com/markel1974/c64emu/src/signals"
 )
 
 type Expansion struct {

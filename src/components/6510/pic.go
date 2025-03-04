@@ -1,7 +1,7 @@
 package mos6510
 
 import (
-	"github.com/markel1974/c64emu/src/bits"
+	"github.com/markel1974/c64emu/src/common/bits"
 	"github.com/markel1974/c64emu/src/components/quartz"
 )
 

@@ -1,8 +1,8 @@
 package inputs
 
 import (
+	"github.com/markel1974/c64emu/src/common/fifo"
 	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/fifo"
 )
 
 // Joystick represents an input device for handling directional and button presses with customizable sensitivity settings.

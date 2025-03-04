@@ -1,6 +1,8 @@
 package mos6581
 
-import "github.com/markel1974/c64emu/src/conversion"
+import (
+	"github.com/markel1974/c64emu/src/common/conversion"
+)
 
 type WaveFormType int
 

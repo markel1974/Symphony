@@ -9,7 +9,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/c64/snapshot"
-	"github.com/markel1974/c64emu/src/filler"
+	"github.com/markel1974/c64emu/src/common/filler"
 	"io"
 	"log"
 	"os"

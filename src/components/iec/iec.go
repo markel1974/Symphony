@@ -3,10 +3,10 @@ package iec
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c1541/board"
+	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/components/iec/fsdrive"
 	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/signals"
 	"strings"
 )
 
