@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-
 	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/asciirender"

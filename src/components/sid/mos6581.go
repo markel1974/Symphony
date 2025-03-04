@@ -1,12 +1,17 @@
 package mos6581
 
 import (
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/config"
 )
 
 const (
 	potXRegisterIndex = 25
 	potYRegisterIndex = 26
+)
+
+const (
+	idRegisters = "registers"
 )
 
 type SID struct {
@@ -33,6 +38,21 @@ func (sid *SID) Setup(socket ISocket, cfg *config.Config, fragFreq int, rasters 
 	sid.audioBuilder = NewAudioBuilder(sid.socket.GetPlayer(), true, fragFreq, rasters)
 	sid.cfg = cfg
 	sid.cfg.Bind(sid.onConfigChanged)
+}
+
+func (sid *SID) Dump() (map[string]interface{}, error) {
+	d := make(map[string]interface{})
+	board.DumpSetByteArray(d, idRegisters, sid.registers)
+	return d, nil
+}
+
+func (sid *SID) Restore(d map[string]interface{}) error {
+	r, err := board.DumpGetByteArray(d, idRegisters, len(sid.registers))
+	if err != nil {
+		return err
+	}
+	copy(sid.registers, r)
+	return nil
 }
 
 func (sid *SID) SetPotX(pot uint8) {

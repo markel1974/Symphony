@@ -63,6 +63,17 @@ func (m *CIA) Setup(conn ISocket) {
 	m.socket = conn
 }
 
+func (m *CIA) Dump() (map[string]interface{}, error) {
+	d := make(map[string]interface{})
+	//TODO
+	return d, nil
+}
+
+func (m *CIA) Restore(d map[string]interface{}) error {
+	//TODO
+	return nil
+}
+
 // Update checks the TOD alarm condition and triggers an IRQ if the alarm matches the timer.
 func (m *CIA) Update() {
 	if m.tod.Update(m.timerA.GetRTC()) {

@@ -6,7 +6,7 @@ package loader
 // Negative values denote cartridges without a ROM image, while non-negative values align with CRT IDs.
 // Each cartridge type is mapped to its associated source file for reference.
 const (
-	/* Carts that don't have a rom image */
+	// Without a rom image
 	CARTRIDGE_DIGIMAX            = -100 /* digimax.c */
 	CARTRIDGE_DQBB               = -101 /* dqbb.c */
 	CARTRIDGE_GEORAM             = -102 /* georam.c */
@@ -32,7 +32,6 @@ const (
 	CARTRIDGE_DEBUGCART          = -124 /* debugcart.c */
 
 	// Known cartridge types
-
 	CARTRIDGE_ULTIMAX      = -6 /* generic.c */ /* TODO: cartconv (4k and 12k binaries) */
 	CARTRIDGE_GENERIC_8KB  = -3 /* generic.c */
 	CARTRIDGE_GENERIC_16KB = -2 /* generic.c */
@@ -40,7 +39,6 @@ const (
 	CARTRIDGE_CRT          = 0
 
 	// the following must match the CRT IDs
-
 	CARTRIDGE_ACTION_REPLAY      = 1  /* actionreplay.c */
 	CARTRIDGE_KCS_POWER          = 2  /* kcs.c */
 	CARTRIDGE_FINAL_III          = 3  /* final3.c */
