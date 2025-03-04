@@ -24,6 +24,8 @@ type IBoard interface {
 
 	GetScreenSize() (int, int)
 
+	Joystick1Move(x uint, y uint, buttons uint)
+	Joystick2Move(x uint, y uint, buttons uint)
 	Joy1SetKey(pressed bool, vKey int)
 	Joy2SetKey(pressed bool, vKey int)
 	JoySwap(p bool)

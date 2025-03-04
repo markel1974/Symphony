@@ -1,54 +1,67 @@
 package board
 
+// CIA2Socket represents a connection interface to the CIA2 chip on a hardware board.
+// It contains a reference to the board and an interrupt identifier.
 type CIA2Socket struct {
 	board  *Board
 	intrId uint32
 }
 
+// NewCIA2Socket creates and returns a new instance of CIA2Socket.
 func NewCIA2Socket() *CIA2Socket {
 	c := &CIA2Socket{}
 	return c
 }
 
+// Setup initializes the CIA2Socket with the provided board reference and interrupt ID.
 func (w *CIA2Socket) Setup(board *Board, intrId uint32) {
 	w.board = board
 	w.intrId = intrId
 }
 
+// Reset resets the connected CIA2 component to its default state by invoking its Reset method.
 func (w *CIA2Socket) Reset() {
 	w.board.cia2.Reset()
 }
 
+// Update invokes the Update method on the CIA2 instance associated with the CIA2Socket.
 func (w *CIA2Socket) Update() {
 	w.board.cia2.Update()
 }
 
+// ReadPortA reads data from Port A considering the data direction register and input from the CPU's IEC interface.
 func (w *CIA2Socket) ReadPortA(prA uint8, ddrA uint8, _ uint8, _ uint8) uint8 {
 	data := w.board.iec.CpuRead()
 	ret := ((prA | (^ddrA)) & 0x3f) | data
 	return ret
 }
 
+// ReadPortB reads the value of Port B by combining the port register (prB) with the inverted data direction register (ddrB).
 func (w *CIA2Socket) ReadPortB(_ uint8, _ uint8, prB uint8, ddrB uint8) uint8 {
 	ret := prB | (^ddrB)
 	return ret
 }
 
+// WritePortA writes data to Port A by updating its virtual address and signaling the connected IEC interface.
 func (w *CIA2Socket) WritePortA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
 	w.updateVA(prA, ddrA)
 	w.board.iec.CpuWrite(prA)
 }
 
+// WritePortB writes data to Port B with the given input parameters, modifying internal state as required.
 func (w *CIA2Socket) WritePortB(_ uint8, _ uint8, _ uint8, _ uint8) {
 }
 
+// WriteDdrA updates the DDR register A and its associated state by calling the updateVA method.
 func (w *CIA2Socket) WriteDdrA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
 	w.updateVA(prA, ddrA)
 }
 
+// WriteDdrB updates the Data Direction Register (DDR) for Port B with specified parameters, typically controlling pin direction settings.
 func (w *CIA2Socket) WriteDdrB(_ uint8, _ uint8, _ uint8, _ uint8) {
 }
 
+// updateVA updates the VIC-memory bank selection based on the given port A and data direction register A values.
 func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 	//Bit 0..1: Select the position of the VIC-memory
 	//Bit 2: RS-232: TXD Output, userPort: Data PA 2 (pin M)
@@ -63,10 +76,12 @@ func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 	w.board.vic.ChangedVA(va)
 }
 
+// IRQTrigger sends an interrupt request to the connected board's NMI trigger slot.
 func (w *CIA2Socket) IRQTrigger() {
 	w.board.nmiTriggerSlot()
 }
 
+// IRQClear clears the currently triggered IRQ (Interrupt Request) on the associated board's NMI slot.
 func (w *CIA2Socket) IRQClear() {
 	w.board.nmiClearSlot()
 }

@@ -21,6 +21,7 @@ import (
 	"os"
 )
 
+// Constants representing interrupt request bits for various hardware components.
 const (
 	intrIrqVicBit       = 0
 	intrIrqCia1Bit      = 1
@@ -28,8 +29,10 @@ const (
 	intrIrqExpansionBit = 3
 )
 
+// baseId is a constant string identifier used for naming and distinguishing various system components.
 const baseId = "c64"
 
+// Board represents the central processing and coordination system for handling hardware components and peripherals.
 type Board struct {
 	db                  board.IDisplayBuffer
 	player              board.IPlayer
@@ -64,6 +67,7 @@ type Board struct {
 	dt                  board.IThrottling
 }
 
+// NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
 func NewBoard() *Board {
 	b := &Board{
 		db:                  nil,
@@ -94,6 +98,7 @@ func NewBoard() *Board {
 	return b
 }
 
+// Setup initializes the Board with provided display buffer, player, and configuration settings.
 func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config.Config) error {
 	s.db = db
 	s.player = player
@@ -170,6 +175,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	return nil
 }
 
+// reset resets the internal components of the Board to their initial states.
 func (s *Board) reset() {
 	s.pic.Reset()
 	s.pla.Reset()
@@ -182,6 +188,8 @@ func (s *Board) reset() {
 	s.expansion.Reset()
 }
 
+// AsyncReset resets various components of the board asynchronously by invoking their respective reset methods.
+// It clears the low DMA state and initiates resets for the PLA, PIC, VIC, SID, CIA1, CIA2, IEC, and Expansion modules.
 func (s *Board) AsyncReset() {
 	s.pla.Reset()
 	s.pic.TriggerReset()
@@ -196,9 +204,11 @@ func (s *Board) AsyncReset() {
 	s.dmaLow = false
 }
 
+// configChanged handles updates or changes in the configuration settings for the Board instance.
 func (s *Board) configChanged() {
 }
 
+// Emulate executes the main emulation loop for the Board, coordinating CPU, VIC, CIA, and other components in sequence.
 func (s *Board) Emulate() bool {
 	s.vBlank = false
 
@@ -217,18 +227,22 @@ func (s *Board) Emulate() bool {
 	return s.vBlank
 }
 
+// Throttle returns the throttling service used by the board.
 func (s *Board) Throttle() board.IThrottling {
 	return s.dt
 }
 
+// GetText retrieves the text data from the VIC component of the Board instance. It returns the text as a byte slice.
 func (s *Board) GetText() []byte {
 	return s.vic.GetText()
 }
 
+// GetScreenSize returns the dimensions of the screen as width and height in pixels.
 func (s *Board) GetScreenSize() (int, int) {
 	return mos6569.DisplayX, mos6569.DisplayY
 }
 
+// DiskChange triggers disk-related operations, such as switching the current disk and setting the drive configuration options.
 func (s *Board) DiskChange() {
 	//s.cfg.GetDrives()
 	//aaa
@@ -237,6 +251,7 @@ func (s *Board) DiskChange() {
 	s.cfg.SetDriveOpt("", 8)
 }
 
+// KeyboardPaste checks if the paste button is pressed and clipboard data is available, then sets the keyboard command from the clipboard data.
 func (s *Board) KeyboardPaste(pressed bool) {
 	if !pressed {
 		return
@@ -248,26 +263,32 @@ func (s *Board) KeyboardPaste(pressed bool) {
 	s.keys.SetCommand(string(data))
 }
 
+// KeyboardSetCommand sets the specified command string to the keyboard input handler.
 func (s *Board) KeyboardSetCommand(cmd string) {
 	s.keys.SetCommand(cmd)
 }
 
+// KeyboardNumLockToggle toggles the state of the Num Lock key on the keyboard.
 func (s *Board) KeyboardNumLockToggle() {
 	s.keys.NumLockToggle()
 }
 
+// KeyboardCapitalToggle toggles the capital (Caps Lock) state of the keyboard.
 func (s *Board) KeyboardCapitalToggle() {
 	s.keys.CapitalToggle()
 }
 
+// SetMouse sets the mouse position by providing x and y coordinates to the SID socket.
 func (s *Board) SetMouse(x uint8, y uint8) {
 	s.sidSocket.SetPotXY(x, y)
 }
 
+// KeyboardSetVirtualKey modifies the state of a virtual key based on whether it is pressed or released.
 func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
 	s.keys.SetVirtualKey(pressed, vKey)
 }
 
+// Joy1SetKey sets the state of a key input for joystick 1 or swaps to joystick 2 depending on the joySwap flag.
 func (s *Board) Joy1SetKey(pressed bool, vKey int) {
 	if s.joySwap {
 		s.joy2.SetKey(pressed, vKey)
@@ -276,6 +297,7 @@ func (s *Board) Joy1SetKey(pressed bool, vKey int) {
 	}
 }
 
+// Joy2SetKey sets the state of a joystick key (pressed or released) for Joy2, swapping with Joy1 if joySwap is enabled.
 func (s *Board) Joy2SetKey(pressed bool, vKey int) {
 	if s.joySwap {
 		s.joy1.SetKey(pressed, vKey)
@@ -284,6 +306,26 @@ func (s *Board) Joy2SetKey(pressed bool, vKey int) {
 	}
 }
 
+// Joystick1Move updates the position and button states of joystick 1, or joystick 2 if `joySwap` is enabled.
+func (s *Board) Joystick1Move(x uint, y uint, buttons uint) {
+	if s.joySwap {
+		s.joy2.Move(x, y, buttons)
+	} else {
+		s.joy1.Move(x, y, buttons)
+	}
+}
+
+// Joystick2Move moves the second joystick based on the given x, y coordinates and button presses.
+// If joystick swapping is enabled, the move applies to the first joystick instead.
+func (s *Board) Joystick2Move(x uint, y uint, buttons uint) {
+	if s.joySwap {
+		s.joy1.Move(x, y, buttons)
+	} else {
+		s.joy2.Move(x, y, buttons)
+	}
+}
+
+// JoySwap toggles the joystick swap state and resets both joysticks if the passed button state is pressed.
 func (s *Board) JoySwap(pressed bool) {
 	if !pressed {
 		return
@@ -293,6 +335,7 @@ func (s *Board) JoySwap(pressed bool) {
 	s.joy2.Reset()
 }
 
+// ExtRamWrite writes a byte of data to an external RAM address with an optional memory configuration switch.
 func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
 	var prev []uint8 = nil
 	if memConfig >= 0 {
@@ -305,6 +348,9 @@ func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
 	}
 }
 
+// ExtRamRead reads a byte from the external RAM at the specified address and memory configuration setting.
+// If memConfig is non-negative, it temporarily applies the memory configuration, performs the read operation,
+// and restores the previous memory configuration. Returns the retrieved byte value.
 func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	var prev []uint8 = nil
 	if memConfig >= 0 {
@@ -318,6 +364,9 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	return rb
 }
 
+// dmaLowSlot sets the DMA low slot state for the board by updating internal flags and CPU control lines.
+// If DMA is low, the CPU releases the bus for other devices to access memory via direct memory access (DMA).
+// The method updates CPU RDY and AEC lines depending on the DMA state and VIC-II bus access status.
 func (s *Board) dmaLowSlot(v bool) {
 	//If _DMA=Low the CPU can be requested to release the bus.
 	//It will stop after the next read cycle, and all bus lines will go to high resistance state.
@@ -332,17 +381,20 @@ func (s *Board) dmaLowSlot(v bool) {
 	s.cpu.SetAECLow(s.dmaLow || s.vic.GetAECLow())
 }
 
+// rdyLowSlot updates the RDY signal based on the logical OR of the given value and the dmaLow state.
 func (s *Board) rdyLowSlot(v bool) {
 	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
 	s.cpu.SetRDYLow(v || s.dmaLow)
 	//TODO SIGNAL
 }
 
+// aecLowSlot sets the AEC (Address Enable Control) line state based on the provided value and the DMA state.
 func (s *Board) aecLowSlot(v bool) {
 	s.cpu.SetAECLow(v || s.dmaLow)
 	//TODO SIGNAL
 }
 
+// irqTriggerSlot triggers an interrupt request (IRQ) specified by the given identifier and emits it to expansion if available.
 func (s *Board) irqTriggerSlot(i uint32) {
 	s.pic.TriggerIRQ(i)
 	if s.expansionIrqTrigger != nil {
@@ -350,6 +402,7 @@ func (s *Board) irqTriggerSlot(i uint32) {
 	}
 }
 
+// irqClearSlot clears the specified IRQ signal on the PIC and emits a clear signal through expansionIrqClear if defined.
 func (s *Board) irqClearSlot(i uint32) {
 	s.pic.ClearIRQ(i)
 	if s.expansionIrqClear != nil {
@@ -357,18 +410,22 @@ func (s *Board) irqClearSlot(i uint32) {
 	}
 }
 
+// nmiTriggerSlot triggers a Non-Maskable Interrupt (NMI) via the board's Programmable Interrupt Controller (PIC).
 func (s *Board) nmiTriggerSlot() {
 	s.pic.TriggerNMI()
 }
 
+// nmiClearSlot clears the Non-Maskable Interrupt (NMI) by utilizing the PIC's `ClearNMI` method.
 func (s *Board) nmiClearSlot() {
 	s.pic.ClearNMI()
 }
 
+// vicLastCycleSLot prepares the SID socket for operations during the last VIC-II cycle.
 func (s *Board) vicLastCycleSLot() {
 	s.sidSocket.Prepare()
 }
 
+// vicVBlankSlot handles the vertical blanking interval updates for connected components and processes injected programs if applicable.
 func (s *Board) vicVBlankSlot() {
 	s.vBlank = true
 	s.sidSocket.Update()
@@ -381,6 +438,7 @@ func (s *Board) vicVBlankSlot() {
 	}
 }
 
+// ledStateChangedSlot is triggered to handle changes in the LED state for a specified device.
 func (s *Board) ledStateChangedSlot(_ int, _ uint8) {
 	//TODO IMPLEMENT
 	//deviceId := deviceNumber - 8

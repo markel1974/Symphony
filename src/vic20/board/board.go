@@ -215,6 +215,22 @@ func (s *Board) Joy2SetKey(pressed bool, vKey int) {
 	}
 }
 
+func (s *Board) Joystick1Move(x uint, y uint, buttons uint) {
+	if s.joySwap {
+		s.joy2.Move(x, y, buttons)
+	} else {
+		s.joy1.Move(x, y, buttons)
+	}
+}
+
+func (s *Board) Joystick2Move(x uint, y uint, buttons uint) {
+	if s.joySwap {
+		s.joy1.Move(x, y, buttons)
+	} else {
+		s.joy2.Move(x, y, buttons)
+	}
+}
+
 func (s *Board) JoySwap(pressed bool) {
 	if !pressed {
 		return
