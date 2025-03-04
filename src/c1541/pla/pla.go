@@ -14,10 +14,10 @@ import (
 // $2000-$bfff free
 // $c000-$ffff _rom (16K)
 
-// c1541RamSize defines the size of RAM in the C1541 disk drive, measured in bytes.
+// c1541RamSize defines the size of the RAM for a C1541 emulator, set to 2 KB (0x0800 bytes).
 const c1541RamSize = 0x0800
 
-// PLA represents the memory and I/O peripherals for a system, including RAM, ROM, and VIA interfaces.
+// PLA represents a memory management and I/O coordination unit, including RAM, ROM, and communication with VIAs.
 type PLA struct {
 	ram  []uint8
 	rom  []uint8
@@ -25,12 +25,12 @@ type PLA struct {
 	via2 *mos6522.Via
 }
 
-// New initializes and returns a new PLA instance with its RAM allocated to the size defined by P.
+// New creates and returns a new instance of PLA with initialized RAM of the specified size.
 func New() *PLA {
 	return &PLA{ram: make([]uint8, c1541RamSize)}
 }
 
-// Setup initializes the PLA instance by assigning VIA instances and loading ROM data based on the provided configuration.
+// Setup initializes the PLA instance by configuring VIA components and loading required ROM based on the provided configuration.
 func (r *PLA) Setup(via1 *mos6522.Via, via2 *mos6522.Via, cfg *config.Config) {
 	r.via1 = via1
 	r.via2 = via2
@@ -43,12 +43,12 @@ func (r *PLA) Setup(via1 *mos6522.Via, via2 *mos6522.Via, cfg *config.Config) {
 //	r.ram[0x7c] = 1
 //}
 
-// ReadInterval returns a slice of bytes from the RAM, starting at the specified address and spanning the given count.
+// ReadInterval returns a slice of bytes from the RAM starting at the provided start address for the specified count.
 func (r *PLA) ReadInterval(start uint16, count uint16) []byte {
 	return r.ram[start : start+count]
 }
 
-// Read fetches a byte of data from RAM, ROM, or I/O space based on the specified memory address.
+// Read retrieves a byte at the specified memory address using prioritized access to ROM, RAM, or I/O.
 func (r *PLA) Read(addr uint16) uint8 {
 	if addr >= 0xc000 {
 		return r.rom[addr&0x3fff]
@@ -59,7 +59,7 @@ func (r *PLA) Read(addr uint16) uint8 {
 	return r.readByteIO(addr)
 }
 
-// Write writes a single byte of data to the given address in the memory or I/O space managed by the PLA instance.
+// Write writes an 8-bit unsigned data value to the specified 16-bit memory address in the PLA instance.
 func (r *PLA) Write(addr uint16, data uint8) {
 	if addr < 0x1000 {
 		r.ram[addr&0x7ff] = data
@@ -71,7 +71,7 @@ func (r *PLA) Write(addr uint16, data uint8) {
 	r.writeByteIO(addr, data)
 }
 
-// readByteIO determines the appropriate byte to return based on the address range and passes control to VIA instances if applicable.
+// readByteIO reads a byte from a specified I/O address, delegating to via1 or via2 if within their address ranges.
 func (r *PLA) readByteIO(addr uint16) uint8 {
 	v := addr & 0xfc00
 	if v == 0x1800 {
@@ -83,7 +83,7 @@ func (r *PLA) readByteIO(addr uint16) uint8 {
 	return uint8(addr >> 8)
 }
 
-// writeByteIO writes a byte of data to a specific I/O address space, delegating to VIA instances when applicable.
+// writeByteIO handles the writing of a byte to the VIA1 or VIA2 interfaces based on the provided address range conditions.
 func (r *PLA) writeByteIO(addr uint16, data uint8) {
 	v := addr & 0xfc00
 	if v == 0x1800 {

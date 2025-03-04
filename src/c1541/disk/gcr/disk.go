@@ -8,6 +8,8 @@ import (
 
 //https://www.pagetable.com/?p=1070
 
+// Disk represents a storage medium comprising multiple tracks that can store and manage data.
+// It maintains the current track and indicates whether the disk is usable.
 type Disk struct {
 	//errorInfo        []uint8
 	tracks       []*Track
@@ -15,6 +17,7 @@ type Disk struct {
 	usable       bool
 }
 
+// NewDisk initializes a new Disk instance with tracks and sets it as usable with the start track as the current track.
 func NewDisk() *Disk {
 	startTrack := getTrackStart()
 	tracks := getTrackCount()
@@ -30,6 +33,7 @@ func NewDisk() *Disk {
 	return g
 }
 
+// Load initializes the Disk by reading from the provided image data and loading each track with its sectors and metadata.
 func (g *Disk) Load(image []byte) error {
 	const bamTrackIdx = 18
 	const bamSectorIdx = 0
@@ -58,10 +62,13 @@ func (g *Disk) Load(image []byte) error {
 	return nil
 }
 
+// Usable returns the usability status of the disk, indicating whether it is functional or not.
 func (g *Disk) Usable() bool {
 	return g.usable
 }
 
+// SetHeadHalfTrack sets the disk head to the specified half-track position and returns the length of the target track.
+// If the half-track is invalid, it logs an error and returns -1. The function also retains the cursor position on the track.
 func (g *Disk) SetHeadHalfTrack(halfTrack uint8) int {
 	track := halfTrack >> 1
 	if track >= uint8(len(g.tracks)) {
@@ -77,30 +84,37 @@ func (g *Disk) SetHeadHalfTrack(halfTrack uint8) int {
 	return g.currentTrack.Len()
 }
 
+// TrackLen returns the length of the current track's data in bytes.
 func (g *Disk) TrackLen() int {
 	return g.currentTrack.Len()
 }
 
+// MicroSecPerByte returns the number of microseconds required to process a single byte for the current track.
 func (g *Disk) MicroSecPerByte() uint8 {
 	return getMicroSecPerByte(g.currentTrack.trackIdx)
 }
 
+// TrackSectors returns the number of sectors in the current track of the disk.
 func (g *Disk) TrackSectors() uint8 {
 	return g.currentTrack.Sectors()
 }
 
+// Rotate advances the cursor of the current track to the next position, simulating the rotation of the disk.
 func (g *Disk) Rotate() {
 	g.currentTrack.Advance()
 }
 
+// Read returns the current byte at the cursor position of the current track.
 func (g *Disk) Read() uint8 {
 	return g.currentTrack.Read()
 }
 
+// Next retrieves the value at the next position of the current track's cursor without advancing it.
 func (g *Disk) Next() uint8 {
 	return g.currentTrack.Next()
 }
 
+// Write writes the specified byte of data to the current position in the current track of the disk.
 func (g *Disk) Write(data uint8) {
 	g.currentTrack.Write(data)
 }
