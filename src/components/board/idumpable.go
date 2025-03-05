@@ -94,6 +94,22 @@ func DumpGetInt(d map[string]interface{}, id string, val *int) bool {
 	return true
 }
 
+// DumpGetUint retrieves a uint8 value from a map using a given key and stores it in the provided pointer if successful.
+// Returns true if the key is found and the value can be converted to uint8, otherwise returns false.
+func DumpGetUint(d map[string]interface{}, id string, val *uint) bool {
+	data, ok := dumpGet(d, id)
+	if !ok {
+		return false
+	}
+	t, ok := data.(uint)
+	if !ok {
+		log.Printf("DumpGetUint8: invalid type for key '%s': expected uint, got %T", id, t)
+		return false
+	}
+	*val = t
+	return true
+}
+
 // DumpGetUint8 retrieves a uint8 value from a map using a given key and stores it in the provided pointer if successful.
 // Returns true if the key is found and the value can be converted to uint8, otherwise returns false.
 func DumpGetUint8(d map[string]interface{}, id string, val *uint8) bool {
