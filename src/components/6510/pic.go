@@ -27,6 +27,8 @@ const (
 
 // Pic represents a programmable interrupt controller with IRQ and NMI handling capabilities.
 type Pic struct {
+	id            string
+	parentId      string
 	quartz        *quartz.Quartz
 	all           bits.Bits
 	irq           bits.Bits
@@ -36,8 +38,10 @@ type Pic struct {
 }
 
 // NewPic initializes and returns a pointer to a new Pic instance with default values.
-func NewPic() *Pic {
+func NewPic(parentId string, suffix string) *Pic {
 	return &Pic{
+		id:            "pic" + suffix,
+		parentId:      parentId,
 		quartz:        nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,
@@ -50,6 +54,14 @@ func NewPic() *Pic {
 // Setup initializes the Pic instance with a Quartz instance, establishing internal dependencies.
 func (i *Pic) Setup(quartz *quartz.Quartz) {
 	i.quartz = quartz
+}
+
+func (i *Pic) GetId() string {
+	return i.id
+}
+
+func (i *Pic) GetParentId() string {
+	return i.parentId
 }
 
 // Reset reinitializes the Pic instance by clearing all internal state variables and flags.

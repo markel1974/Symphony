@@ -31,6 +31,7 @@ const (
 // timerA and timerB point to Timer A and Timer B functionality respectively.
 // socket represents the interface socket connected to peripheral and communication devices.
 type CIA struct {
+	parentId       string
 	id             string
 	prA            uint8
 	prB            uint8
@@ -48,12 +49,15 @@ type CIA struct {
 }
 
 // NewCIA initializes and returns a new instance of the CIA struct with the specified ID and associated components.
-func NewCIA(id string) *CIA {
+func NewCIA(parentId string, suffix string) *CIA {
+	const componentId = "cia"
+	id := componentId + suffix
 	m := &CIA{
-		id:     id,
-		tod:    NewTOD(id + ".tod"),
-		timerA: NewTimer(id + ".timerA"),
-		timerB: NewTimer(id + ".timerB"),
+		parentId: parentId,
+		id:       id,
+		tod:      NewTOD(id, ""),
+		timerA:   NewTimer(id, "A"),
+		timerB:   NewTimer(id, "B"),
 	}
 	return m
 }
@@ -61,6 +65,14 @@ func NewCIA(id string) *CIA {
 // Setup initializes the CIA instance by assigning a provided ISocket connection to its socket field.
 func (m *CIA) Setup(conn ISocket) {
 	m.socket = conn
+}
+
+func (m *CIA) GetId() string {
+	return m.id
+}
+
+func (m *CIA) GetParentId() string {
+	return m.parentId
 }
 
 func (m *CIA) Dump() (map[string]interface{}, error) {

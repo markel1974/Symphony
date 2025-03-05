@@ -20,7 +20,13 @@ type Alarm struct {
 
 // NewAlarm creates and returns a new Alarm instance with a specified Quartz, name, and callback. It initializes the Alarm.
 func NewAlarm(quartz *Quartz, name string, callback AlarmCallback) *Alarm {
-	return &Alarm{quartz: quartz, name: name, callback: callback, destroyed: false, cycle: 0}
+	return &Alarm{
+		quartz:    quartz,
+		name:      name,
+		callback:  callback,
+		destroyed: false,
+		cycle:     0,
+	}
 }
 
 // Set configures the alarm to trigger after a specified distance in cycles. Returns an error if the alarm is destroyed or already set.

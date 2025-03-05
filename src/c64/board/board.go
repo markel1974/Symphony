@@ -29,9 +29,6 @@ const (
 	intrIrqExpansionBit = 3
 )
 
-// baseId is a constant string identifier used for naming and distinguishing various system components.
-const baseId = "c64"
-
 // Board represents the central processing and coordination system for handling hardware components and peripherals.
 type Board struct {
 	db                  board.IDisplayBuffer
@@ -65,14 +62,17 @@ type Board struct {
 	dmaLow              bool
 	prg                 *prg.PRG
 	dt                  board.IThrottling
+	components          map[string]board.IComponent
 }
+
+const componentId = "c64"
 
 // NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
 func NewBoard() *Board {
 	b := &Board{
 		db:                  nil,
 		player:              nil,
-		quartz:              quartz.NewQuartz(),
+		quartz:              quartz.NewQuartz(componentId, ""),
 		iec:                 nil,
 		cpu:                 nil,
 		vic:                 nil,
@@ -94,6 +94,7 @@ func NewBoard() *Board {
 		prg:                 nil,
 		joySwap:             true,
 		dt:                  nil,
+		components:          make(map[string]board.IComponent),
 	}
 	return b
 }
@@ -117,19 +118,22 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 
-	s.pic = mos6510.NewPic()
-	s.iec = iec.NewIEC()
-	s.cpu = mos6510.NewCPU(baseId + "_cpu")
-	s.vic = mos6569.NewVIC(baseId + "_vic")
-	s.sid = mos6581.NewSID(baseId + "_sid")
-	s.cia1 = mos6526.NewCIA(baseId + "_cia1")
-	s.cia2 = mos6526.NewCIA(baseId + "_cia2")
+	s.pic = mos6510.NewPic(componentId, "")
+	s.iec = iec.NewIEC(componentId, "")
+	s.cpu = mos6510.NewCPU(componentId, "")
+	s.vic = mos6569.NewVIC(componentId, "")
+	s.sid = mos6581.NewSID(componentId, "")
+	s.cia1 = mos6526.NewCIA(componentId, "1")
+	s.cia2 = mos6526.NewCIA(componentId, "2")
 	s.keys = inputs.NewKeyboard()
 	s.joy1 = inputs.NewJoystick()
 	s.joy2 = inputs.NewJoystick()
-	s.pla = pla.NewPLA()
-	s.expansion = NewExpansion(s)
+	s.pla = pla.NewPLA(componentId, "")
+	s.expansion = NewExpansion(componentId, "")
 
+	s.register(s.sid)
+
+	s.expansion.Setup(s)
 	s.pic.Setup(s.quartz)
 	s.iec.Setup(cfg)
 	s.cpuSocket.Setup(s)
@@ -448,4 +452,9 @@ func (s *Board) ledStateChangedSlot(_ int, _ uint8) {
 	//k.leds[deviceId] = state
 	//k.updateLedState()
 	//s.keys.InputReady(_ledActivities == 0)
+}
+
+func (s *Board) register(component board.IComponent) {
+	id := component.GetId()
+	s.components[id] = component
 }

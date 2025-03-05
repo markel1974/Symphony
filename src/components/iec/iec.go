@@ -36,6 +36,8 @@ const (
 */
 
 type IEC struct {
+	parentId        string
+	id              string
 	cfg             *config.Config
 	atnState        uint8
 	cpuPort         uint8
@@ -56,8 +58,10 @@ type IEC struct {
 	//emu1541 bool
 }
 
-func NewIEC() *IEC {
+func NewIEC(parentId string, suffix string) *IEC {
 	c := &IEC{
+		parentId:        parentId,
+		id:              "iec" + suffix,
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),
@@ -118,6 +122,14 @@ func (c *IEC) Setup(cfg *config.Config) {
 	//c.virtualDrives = append(c.virtualDrives, vd9)
 
 	//c.rebuildPeripherals()
+}
+
+func (c *IEC) GetId() string {
+	return c.id
+}
+
+func (c *IEC) GetParentId() string {
+	return c.parentId
 }
 
 func (c *IEC) configChanged() {

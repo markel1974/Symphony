@@ -43,6 +43,7 @@ type cycleData struct {
 // The structure integrates functionality for sprite handling, display timing, bad line conditions, and IRQ management.
 // Graphics systems and border handling are also supported using their specific components within the VIC structure.
 type VIC struct {
+	parentId        string
 	id              string
 	cfg             *config.Config
 	collisions      *Collisions
@@ -109,9 +110,10 @@ type VIC struct {
 }
 
 // NewVIC creates and returns a pointer to a newly initialized VIC instance with default values and given id.
-func NewVIC(id string) *VIC {
+func NewVIC(parentId string, suffix string) *VIC {
 	vic := &VIC{
-		id:               id,
+		parentId:         parentId,
+		id:               "vic" + suffix,
 		banks:            nil,
 		mXx:              make([]uint16, SpriteNumber),
 		mXy:              make([]uint8, SpriteNumber),
@@ -183,6 +185,14 @@ func (vic *VIC) Setup(socket ISocket, cfg *config.Config) {
 	vic.graphics.Setup()
 	vic.sprites.Setup()
 	vic.curr = _pal
+}
+
+func (vic *VIC) GetId() string {
+	return vic.id
+}
+
+func (vic *VIC) GetParentId() string {
+	return vic.parentId
 }
 
 // Reset reinitializes the VIC instance to its default state by resetting its internal readiness flag.

@@ -19,6 +19,7 @@ import (
 // CPU represents a simulated central processing unit with registers, flags, and associated helper components.
 type CPU struct {
 	id             string
+	parentId       string
 	banks          IBanks
 	pic            IPic
 	nFlag          uint8  // Negative flag
@@ -46,9 +47,10 @@ type CPU struct {
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
-func NewCPU(id string) *CPU {
+func NewCPU(parentId string, suffix string) *CPU {
 	cpu := &CPU{
-		id: id,
+		id:       "mos6510" + suffix,
+		parentId: parentId,
 	}
 	return cpu
 }
@@ -66,6 +68,14 @@ func (cpu *CPU) Reset() {
 	cpu.next = instOpINI
 	cpu.opFlags = 0
 	cpu.irqBreaker = false
+}
+
+func (cpu *CPU) GetId() string {
+	return cpu.id
+}
+
+func (cpu *CPU) GetParentId() string {
+	return cpu.parentId
 }
 
 // SetOverflowBranch sets the function used to handle conditional overflow branching for the CPU.

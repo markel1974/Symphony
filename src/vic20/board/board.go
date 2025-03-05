@@ -90,12 +90,13 @@ func (s *Board) Setup(db board.IDisplayBuffer, p board.IPlayer, cfg *config.Conf
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 
-	s.pic = mos6510.NewPic()
-	s.iec = iec.NewIEC()
+	const componentId = "vic20"
+	s.pic = mos6510.NewPic(componentId, "")
+	s.iec = iec.NewIEC(componentId, "")
 	s.keys = inputs.NewKeyboard()
 	s.joy1 = inputs.NewJoystick()
 	s.joy2 = inputs.NewJoystick()
-	s.pla = pla.NewPLA()
+	s.pla = pla.NewPLA(componentId, "")
 	s.expansion = NewExpansion(s)
 
 	s.iec.Setup(cfg)

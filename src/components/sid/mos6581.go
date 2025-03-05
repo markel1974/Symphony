@@ -15,6 +15,7 @@ const (
 )
 
 type SID struct {
+	parentId     string
 	id           string
 	socket       ISocket
 	registers    []uint8
@@ -22,9 +23,10 @@ type SID struct {
 	audioBuilder *AudioBuilder
 }
 
-func NewSID(id string) *SID {
+func NewSID(parentId string, suffix string) *SID {
 	s := &SID{
-		id:           id,
+		parentId:     parentId,
+		id:           "sid" + suffix,
 		socket:       nil,
 		registers:    make([]uint8, RegisterCount),
 		cfg:          nil,
@@ -40,15 +42,21 @@ func (sid *SID) Setup(socket ISocket, cfg *config.Config, fragFreq int, rasters 
 	sid.cfg.Bind(sid.onConfigChanged)
 }
 
+func (sid *SID) GetId() string {
+	return sid.id
+}
+
+func (sid *SID) GetParentId() string {
+	return sid.parentId
+}
+
 func (sid *SID) Dump(d map[string]interface{}) error {
-	prefix := sid.id + "."
-	board.DumpSetByteArray(d, prefix+idRegisters, sid.registers)
+	board.DumpSetByteArray(d, []string{sid.id, idRegisters}, sid.registers)
 	return nil
 }
 
 func (sid *SID) Restore(d map[string]interface{}) error {
-	prefix := sid.id + "."
-	_ = board.DumpGetByteArray(d, prefix+idRegisters, &sid.registers, len(sid.registers))
+	_ = board.DumpGetByteArray(d, []string{sid.id, idRegisters}, &sid.registers, len(sid.registers))
 	return nil
 }
 

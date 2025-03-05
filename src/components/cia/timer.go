@@ -78,6 +78,7 @@ const defaultTimerInit = 0xffff
 
 // Timer is a structure representing a timer with configurable control registers and modes of operation.
 type Timer struct {
+	parentId     string
 	id           string
 	cr           uint8
 	crNew        uint8      // New values for cr
@@ -94,9 +95,10 @@ type Timer struct {
 }
 
 // NewTimer initializes and returns a new instance of Timer with the provided id, setting default states and values.
-func NewTimer(id string) *Timer {
+func NewTimer(parentId string, suffix string) *Timer {
 	m := &Timer{
-		id:            id,
+		parentId:      parentId,
+		id:            "timer" + suffix,
 		cr:            0,
 		crNew:         0,
 		crNewPending:  false,
@@ -127,39 +129,45 @@ func (m *Timer) Reset() {
 	m.cnt = false
 }
 
+func (m *Timer) GetId() string {
+	return m.id
+}
+
+func (m *Timer) GetParentId() string {
+	return m.parentId
+}
+
 // Dump serializes the Timer's internal state into a map with string keys and interface{} values.
 func (m *Timer) Dump(d map[string]interface{}) error {
-	prefix := m.id + "."
-	board.DumpSetUint8(d, prefix+"cr", m.cr)
-	board.DumpSetUint8(d, prefix+"crNew", m.crNew)
-	board.DumpSetBool(d, prefix+"crNewPending", m.crNewPending)
-	board.DumpSetUint16(d, prefix+"timer", m.timer)
-	board.DumpSetUint16(d, prefix+"timerLatch", m.timerLatch)
-	board.DumpSetBool(d, prefix+"toggleMode", m.toggleMode)
-	board.DumpSetUint16(d, prefix+"timerLatchLow", m.timerLatchLow)
-	board.DumpSetBool(d, prefix+"cnt", m.cnt)
-	board.DumpSetUint8(d, prefix+"timerState", uint8(m.timerState))
-	board.DumpSetUint8(d, prefix+"countMode", m.countMode)
+	board.DumpSetUint8(d, []string{m.id, "cr"}, m.cr)
+	board.DumpSetUint8(d, []string{m.id, "crNew"}, m.crNew)
+	board.DumpSetBool(d, []string{m.id, "crNewPending"}, m.crNewPending)
+	board.DumpSetUint16(d, []string{m.id, "timer"}, m.timer)
+	board.DumpSetUint16(d, []string{m.id, "timerLatch"}, m.timerLatch)
+	board.DumpSetBool(d, []string{m.id, "toggleMode"}, m.toggleMode)
+	board.DumpSetUint16(d, []string{m.id, "timerLatchLow"}, m.timerLatchLow)
+	board.DumpSetBool(d, []string{m.id, "cnt"}, m.cnt)
+	board.DumpSetUint8(d, []string{m.id, "timerState"}, uint8(m.timerState))
+	board.DumpSetUint8(d, []string{m.id, "countMode"}, m.countMode)
 	return nil
 }
 
 // Restore restores the Timer's state from a provided data map and returns an error if any step fails.
 func (m *Timer) Restore(d map[string]interface{}) error {
-	prefix := m.id + "."
-	_ = board.DumpGetUint8(d, prefix+"cr", &m.cr)
-	_ = board.DumpGetUint8(d, prefix+"crNew", &m.crNew)
-	_ = board.DumpGetBool(d, prefix+"crNewPending", &m.crNewPending)
-	_ = board.DumpGetUint16(d, prefix+"timer", &m.timer)
-	_ = board.DumpGetUint16(d, prefix+"timerLatch", &m.timerLatch)
-	_ = board.DumpGetBool(d, prefix+"toggleMode", &m.toggleMode)
-	_ = board.DumpGetUint16(d, prefix+"timerLatchLow", &m.timerLatchLow)
-	_ = board.DumpGetBool(d, prefix+"cnt", &m.cnt)
+	_ = board.DumpGetUint8(d, []string{m.id, "cr"}, &m.cr)
+	_ = board.DumpGetUint8(d, []string{m.id, "crNew"}, &m.crNew)
+	_ = board.DumpGetBool(d, []string{m.id, "crNewPending"}, &m.crNewPending)
+	_ = board.DumpGetUint16(d, []string{m.id, "timer"}, &m.timer)
+	_ = board.DumpGetUint16(d, []string{m.id, "timerLatch"}, &m.timerLatch)
+	_ = board.DumpGetBool(d, []string{m.id, "toggleMode"}, &m.toggleMode)
+	_ = board.DumpGetUint16(d, []string{m.id, "timerLatchLow"}, &m.timerLatchLow)
+	_ = board.DumpGetBool(d, []string{m.id, "cnt"}, &m.cnt)
 	timerState := uint8(m.timerState)
-	if ok := board.DumpGetUint8(d, prefix+"timerState", &timerState); ok {
+	if ok := board.DumpGetUint8(d, []string{m.id, "timerState"}, &timerState); ok {
 		m.timerState = TimerState(timerState)
 	}
 	countMode := m.countMode
-	if ok := board.DumpGetUint8(d, prefix+"countMode", &countMode); ok {
+	if ok := board.DumpGetUint8(d, []string{m.id, "countMode"}, &countMode); ok {
 		m.updateCountMode(countMode)
 	}
 	return nil

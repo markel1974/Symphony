@@ -46,17 +46,18 @@ func (s *ExternalCPU) EmulationRequired() bool {
 
 // Setup initializes the ExternalCPU with the provided expansion board and CRT loader, configuring its internal components.
 func (s *ExternalCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
+	const componentId = "externalCpu"
 	s.board = board
 	s.id = ldr.GetId()
 	s.board.SetDMALow(true)
 
-	s.quartz = quartz.NewQuartz()
-	s.pic = mos6510.NewPic()
+	s.quartz = quartz.NewQuartz(componentId, "")
+	s.pic = mos6510.NewPic(componentId, "")
 
 	s.pic.Setup(s.quartz)
 
 	s.cpuSocket = NewCPUSocket()
-	s.cpu = mos6510.NewCPU("superCpu")
+	s.cpu = mos6510.NewCPU(componentId, "")
 
 	s.cpuSocket.Setup(s)
 	s.cpu.Setup(s.cpuSocket)

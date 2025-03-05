@@ -10,18 +10,30 @@ import (
 // alarmsContainer provides a mapping of active alarms for quick accessibility and management.
 // alarms stores active alarms in a doubly linked list, sorted by their scheduled cycle execution times.
 type Quartz struct {
+	parentId        string
+	id              string
 	cycle           uint64
 	alarmsContainer map[*Alarm]*Alarm
 	alarms          *list.List
 }
 
 // NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
-func NewQuartz() *Quartz {
+func NewQuartz(parentId string, suffix string) *Quartz {
 	return &Quartz{
+		parentId:        parentId,
+		id:              "quartz" + suffix,
 		cycle:           0,
 		alarmsContainer: make(map[*Alarm]*Alarm),
 		alarms:          list.New(),
 	}
+}
+
+func (s *Quartz) GetId() string {
+	return s.id
+}
+
+func (s *Quartz) GetParentId() string {
+	return s.parentId
 }
 
 // AddCycle increments the internal cycle counter and checks scheduled alarms against the updated cycle value.

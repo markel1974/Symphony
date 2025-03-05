@@ -13,27 +13,29 @@ const defaultViaTimeout = 0xffff
 
 // Via represents a Versatile Interface Adapter (VIA) with multiple registers for configuring I/O, timers, and control logic.
 type Via struct {
-	pra    uint8
-	ddra   uint8
-	prb    uint8
-	ddrb   uint8
-	t1c    uint16
-	t1l    uint16
-	t2c    uint16
-	t2l    uint16
-	sr     uint8
-	acr    uint8
-	pcr    uint8
-	ifr    uint8
-	ier    uint8
-	id     string
-	socket ISocket
+	parentId string
+	id       string
+	pra      uint8
+	ddra     uint8
+	prb      uint8
+	ddrb     uint8
+	t1c      uint16
+	t1l      uint16
+	t2c      uint16
+	t2l      uint16
+	sr       uint8
+	acr      uint8
+	pcr      uint8
+	ifr      uint8
+	ier      uint8
+	socket   ISocket
 }
 
 // NewVia creates and initializes a new Via instance with the specified identifier.
-func NewVia(id string) *Via {
+func NewVia(parentId string, suffix string) *Via {
 	v := &Via{
-		id: id,
+		parentId: parentId,
+		id:       "via" + suffix,
 	}
 	return v
 }
@@ -41,6 +43,14 @@ func NewVia(id string) *Via {
 // Setup initializes the Via by assigning the provided ISocket instance to its internal socket reference.
 func (v *Via) Setup(socket ISocket) {
 	v.socket = socket
+}
+
+func (v *Via) GetId() string {
+	return v.id
+}
+
+func (v *Via) GetParentId() string {
+	return v.parentId
 }
 
 // Reset sets all internal registers of the Via instance to zero, effectively reinitializing its state.

@@ -13,6 +13,8 @@ type WriteFn func(uint16, uint8)
 
 // PLA represents a structure managing memory configurations, ports, and sockets for emulation purposes.
 type PLA struct {
+	parentId        string
+	id              string
 	vic             ISocket
 	sid             ISocket
 	cia1            ISocket
@@ -38,9 +40,11 @@ type PLA struct {
 }
 
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
-func NewPLA() *PLA {
+func NewPLA(parentId string, suffix string) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
+		parentId:        parentId,
+		id:              "pla" + suffix,
 		vic:             nil,
 		sid:             nil,
 		cia1:            nil,
@@ -156,6 +160,14 @@ func (b *PLA) Setup(vic ISocket, sid ISocket, cia1 ISocket, cia2 ISocket, cartMa
 func (b *PLA) Reset() {
 	b.ports.Reset()
 	b.update()
+}
+
+func (b *PLA) GetId() string {
+	return b.id
+}
+
+func (b *PLA) GetParentId() string {
+	return b.parentId
 }
 
 //func (b *PLA) AsyncReset() {

@@ -2,6 +2,7 @@ package mos6526
 
 // TOD represents a Time of Day (TOD) and Alarm functionality with tracking for hours, minutes, seconds, and tenths.
 type TOD struct {
+	parentId       string
 	id             string
 	tod10ths       uint8 // TOD 10ths
 	todSec         uint8 // TOD sec
@@ -19,9 +20,10 @@ type TOD struct {
 }
 
 // NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
-func NewTOD(id string) *TOD {
+func NewTOD(parentId string, suffix string) *TOD {
 	return &TOD{
-		id: id,
+		parentId: parentId,
+		id:       "tod" + suffix,
 	}
 }
 
@@ -40,6 +42,14 @@ func (m *TOD) Reset() {
 	m.almSec = 0
 	m.almMin = 0
 	m.almHr = 0
+}
+
+func (m *TOD) GetId() string {
+	return m.id
+}
+
+func (m *TOD) GetParentId() string {
+	return m.parentId
 }
 
 // Set10ths updates the 10ths component of the time or alarm based on the `alarm` flag and provided `data`.
