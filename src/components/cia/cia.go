@@ -51,9 +51,9 @@ type CIA struct {
 func NewCIA(id string) *CIA {
 	m := &CIA{
 		id:     id,
-		tod:    NewTOD(id + "_TOD"),
-		timerA: NewTimer(id + "_TIMER_A"),
-		timerB: NewTimer(id + "_TIMER_B"),
+		tod:    NewTOD(id + ".tod"),
+		timerA: NewTimer(id + ".timerA"),
+		timerB: NewTimer(id + ".timerB"),
 	}
 	return m
 }

@@ -128,45 +128,40 @@ func (m *Timer) Reset() {
 }
 
 // Dump serializes the Timer's internal state into a map with string keys and interface{} values.
-func (m *Timer) Dump() (map[string]interface{}, error) {
-	d := make(map[string]interface{})
-	board.DumpSetUint8(d, "cr", m.cr)
-	board.DumpSetUint8(d, "crNew", m.crNew)
-	board.DumpSetBool(d, "crNewPending", m.crNewPending)
-	board.DumpSetUint16(d, "timer", m.timer)
-	board.DumpSetUint16(d, "timerLatch", m.timerLatch)
-	board.DumpSetUint8(d, "timerState", uint8(m.timerState))
-	board.DumpSetBool(d, "toggleMode", m.toggleMode)
-	board.DumpSetUint16(d, "timerLatchLow", m.timerLatchLow)
-	board.DumpSetBool(d, "cnt", m.cnt)
-	board.DumpSetUint8(d, "countMode", m.countMode)
-	return d, nil
+func (m *Timer) Dump(d map[string]interface{}) error {
+	prefix := m.id + "."
+	board.DumpSetUint8(d, prefix+"cr", m.cr)
+	board.DumpSetUint8(d, prefix+"crNew", m.crNew)
+	board.DumpSetBool(d, prefix+"crNewPending", m.crNewPending)
+	board.DumpSetUint16(d, prefix+"timer", m.timer)
+	board.DumpSetUint16(d, prefix+"timerLatch", m.timerLatch)
+	board.DumpSetBool(d, prefix+"toggleMode", m.toggleMode)
+	board.DumpSetUint16(d, prefix+"timerLatchLow", m.timerLatchLow)
+	board.DumpSetBool(d, prefix+"cnt", m.cnt)
+	board.DumpSetUint8(d, prefix+"timerState", uint8(m.timerState))
+	board.DumpSetUint8(d, prefix+"countMode", m.countMode)
+	return nil
 }
 
 // Restore restores the Timer's state from a provided data map and returns an error if any step fails.
 func (m *Timer) Restore(d map[string]interface{}) error {
-	//TODO IMPLEMENT
-	/*
-		cr, err := board.DumpGetUInt8(d, "cr")
-		if err != nil {
-			return err
-		}
-		crNew, err := board.DumpGetUInt8(d, "crNew")
-		if err != nil {
-			return err
-		}
-		crNewPending := d["crNewPending"].(bool)
-		timer := uint16(d["timer"].(float64))
-		timerLatch := uint16(d["timerLatch"].(float64))
-		m.timerState = TimerState(d["timerState"].(float64))
-		m.toggleMode = d["toggleMode"].(bool)
-		m.timerLatchLow = uint16(d["timerLatchLow"].(float64))
-		m.cnt = d["cnt"].(bool)
-		countMode := uint8(d["countMode"].(float64))
-		m.cr = cr
-		m.crNew = crNew
+	prefix := m.id + "."
+	_ = board.DumpGetUint8(d, prefix+"cr", &m.cr)
+	_ = board.DumpGetUint8(d, prefix+"crNew", &m.crNew)
+	_ = board.DumpGetBool(d, prefix+"crNewPending", &m.crNewPending)
+	_ = board.DumpGetUint16(d, prefix+"timer", &m.timer)
+	_ = board.DumpGetUint16(d, prefix+"timerLatch", &m.timerLatch)
+	_ = board.DumpGetBool(d, prefix+"toggleMode", &m.toggleMode)
+	_ = board.DumpGetUint16(d, prefix+"timerLatchLow", &m.timerLatchLow)
+	_ = board.DumpGetBool(d, prefix+"cnt", &m.cnt)
+	timerState := uint8(m.timerState)
+	if ok := board.DumpGetUint8(d, prefix+"timerState", &timerState); ok {
+		m.timerState = TimerState(timerState)
+	}
+	countMode := m.countMode
+	if ok := board.DumpGetUint8(d, prefix+"countMode", &countMode); ok {
 		m.updateCountMode(countMode)
-	*/
+	}
 	return nil
 }
 

@@ -40,18 +40,15 @@ func (sid *SID) Setup(socket ISocket, cfg *config.Config, fragFreq int, rasters 
 	sid.cfg.Bind(sid.onConfigChanged)
 }
 
-func (sid *SID) Dump() (map[string]interface{}, error) {
-	d := make(map[string]interface{})
-	board.DumpSetByteArray(d, idRegisters, sid.registers)
-	return d, nil
+func (sid *SID) Dump(d map[string]interface{}) error {
+	prefix := sid.id + "."
+	board.DumpSetByteArray(d, prefix+idRegisters, sid.registers)
+	return nil
 }
 
 func (sid *SID) Restore(d map[string]interface{}) error {
-	r, err := board.DumpGetByteArray(d, idRegisters, len(sid.registers))
-	if err != nil {
-		return err
-	}
-	copy(sid.registers, r)
+	prefix := sid.id + "."
+	_ = board.DumpGetByteArray(d, prefix+idRegisters, &sid.registers, len(sid.registers))
 	return nil
 }
 
