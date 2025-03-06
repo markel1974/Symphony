@@ -3,7 +3,6 @@ package pixels
 import (
 	"errors"
 	"fmt"
-	executor2 "github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
 	"image"
 	"image/color"
 	"runtime"
@@ -11,8 +10,26 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.3/glfw"
+
+	"github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
 )
 
+// WindowConfig represents the configuration options for initializing a window.
+// Title specifies the title of the window.
+// Icon is a slice of IPicture used for the window's icon images.
+// Bounds defines the initial size of the window as a Rect.
+// Position specifies the initial position of the window using a Vec.
+// Monitor specifies the monitor for full-screen mode, if applicable.
+// Smooth determines whether rendering is smoothed.
+// Resizable indicates if the window can be resized by the user.
+// Undecorated defines whether the window has system decorations (e.g., borders, title bar).
+// NoIconify prevents the window from being iconified (minimized).
+// AlwaysOnTop makes the window stay above other windows.
+// TransparentFramebuffer enables transparency in the framebuffer.
+// VSync sets vertical synchronization for reducing screen tearing.
+// Maximized determines whether the window starts maximized.
+// Invisible makes the window initially invisible.
+// SamplesMSAA specifies the number of samples for multisample anti-aliasing (MSAA).
 type WindowConfig struct {
 	Title string
 
@@ -45,6 +62,7 @@ type WindowConfig struct {
 	SamplesMSAA int
 }
 
+// GLWindow represents a graphical window using GLFW, managing its bounds, input states, fullscreen restoration, and events.
 type GLWindow struct {
 	window             *glfw.Window
 	bounds             Rect
@@ -73,8 +91,11 @@ type GLWindow struct {
 	prevJoy, currJoy, tempJoy GLJoystick
 }
 
+// currWin holds a reference to the current GLWindow with an active OpenGL context.
 var currWin *GLWindow
 
+// NewGLWindow creates a new OpenGL window using the provided configuration, initializes it, and returns the GLWindow instance.
+// Returns an error if the window creation fails or an invalid value is passed for certain configuration fields like msaaSamples.
 func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 	bool2int := map[bool]int{
 		true:  glfw.True,
@@ -97,7 +118,7 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 		return nil, fmt.Errorf("invalid value '%v' for msaaSamples", cfg.SamplesMSAA)
 	}
 
-	err := executor2.GraphicThread.CallErr(func() error {
+	err := executor.GraphicThread.CallErr(func() error {
 		var err error
 		glfw.WindowHint(glfw.ContextVersionMajor, 3)
 		glfw.WindowHint(glfw.ContextVersionMinor, 3)
@@ -128,7 +149,7 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 			w.window.Show()
 		}
 		w.begin()
-		executor2.Init()
+		executor.Init()
 		gl.Enable(gl.MULTISAMPLE)
 		w.end()
 		return nil
@@ -144,7 +165,7 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 			fmt.Println(pic, i)
 			m[i] = pic.Image()
 		}
-		executor2.GraphicThread.Call(func() {
+		executor.GraphicThread.Call(func() {
 			w.window.SetIcon(m)
 		})
 	}
@@ -157,20 +178,20 @@ func NewGLWindow(cfg WindowConfig) (*GLWindow, error) {
 	return w, nil
 }
 
-// Destroy destroys the GLWindow. The GLWindow can't be used any further.
+// Destroy safely destroys the GLWindow instance by invoking its destruction on the graphics thread.
 func (w *GLWindow) Destroy() {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		w.window.Destroy()
 	})
 }
 
-// Update swaps buffers and polls events. Call this method at the end of each frame.
+// Update refreshes the GLWindow by handling resizing, framebuffer updates, and rendering tasks executed on the graphic thread.
 func (w *GLWindow) Update() {
 	bounds := w.bounds
 	_, _, oldW, oldH := intBounds(bounds)
 	newBounds := false
 
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		newW, newH := w.window.GetSize()
 		width := newW - oldW
 		height := newH - oldH
@@ -181,8 +202,8 @@ func (w *GLWindow) Update() {
 
 		w.begin()
 		fbWidth, fbHeight := w.window.GetFramebufferSize()
-		executor2.Bounds(0, 0, fbWidth, fbHeight)
-		executor2.Clear(0, 0, 0, 0)
+		executor.Bounds(0, 0, fbWidth, fbHeight)
+		executor.Clear(0, 0, 0, 0)
 		w.canvas.gf.Frame().Begin()
 		w.canvas.gf.Frame().Blit(nil, 0, 0, w.canvas.Texture().Width(), w.canvas.Texture().Height(), 0, 0, fbWidth, fbHeight)
 		w.canvas.gf.Frame().End()
@@ -199,82 +220,75 @@ func (w *GLWindow) Update() {
 	w.doUpdateInput()
 }
 
-// ClipboardText returns the current value of the systems' clipboard.
+// ClipboardText retrieves the current text content from the system clipboard associated with the GLWindow instance.
 func (w *GLWindow) ClipboardText() string {
 	return w.window.GetClipboardString()
 }
 
-// SetClipboardText passes the given string to the underlying glfw window to set the systems' clipboard.
+// SetClipboardText sets the given text to the system clipboard for the current GLWindow instance.
 func (w *GLWindow) SetClipboardText(text string) {
 	w.window.SetClipboardString(text)
 }
 
-// SetClosed sets the closed flag of the GLWindow.
-// This is useful when overriding the user's attempt to close the GLWindow, or just to close the
-// GLWindow from within the program.
+// SetClosed sets the closed state of the GLWindow by signaling the graphics thread to update the window's close status.
 func (w *GLWindow) SetClosed(closed bool) {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		w.window.SetShouldClose(closed)
 	})
 }
 
-// Closed returns the closed flag of the GLWindow, which reports whether the GLWindow should be closed.
-//
-// The closed flag is automatically set when a user attempts to close the GLWindow.
+// Closed returns true if the window is marked for closing, otherwise false.
 func (w *GLWindow) Closed() bool {
 	var closed bool
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		closed = w.window.ShouldClose()
 	})
 	return closed
 }
 
-// SetTitle changes the title of the GLWindow.
+// SetTitle sets the title of the GLWindow. The operation is performed on the graphical thread to ensure thread safety.
 func (w *GLWindow) SetTitle(title string) {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		w.window.SetTitle(title)
 	})
 }
 
-// SetBounds sets the bounds of the GLWindow in pixels. Bounds can be fractional, but the actual size
-// of the window will be rounded to integers.
+// SetBounds updates the dimensions of the GLWindow by setting its bounding rectangle.
+// It adjusts the window's size on the graphic thread using the provided Rect dimensions.
 func (w *GLWindow) SetBounds(bounds Rect) {
 	w.bounds = bounds
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		_, _, width, height := intBounds(bounds)
 		w.window.SetSize(width, height)
 	})
 }
 
-// SetPos sets the position, in screen coordinates, of the upper-left corner
-// of the client area of the window. Position can be fractional, but the actual position
-// of the window will be rounded to integers.
-// If it is a full-screen window, this function does nothing.
+// SetPos sets the position of the window to the specified coordinates using the Vec type on the graphic thread.
 func (w *GLWindow) SetPos(pos Vec) {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		left, top := int(pos.X), int(pos.Y)
 		w.window.SetPos(left, top)
 	})
 }
 
-// GetPos gets the position, in screen coordinates, of the upper-left corner
-// of the client area of the window. The position is rounded to integers.
+// GetPos retrieves the position of the GLWindow as a Vec, making a thread-safe call to the graphic thread.
 func (w *GLWindow) GetPos() Vec {
 	var v Vec
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		x, y := w.window.GetPos()
 		v = NewVec(float64(x), float64(y))
 	})
 	return v
 }
 
-// Bounds returns the current bounds of the GLWindow.
+// Bounds returns the current bounds of the GLWindow as a Rect.
 func (w *GLWindow) Bounds() Rect {
 	return w.bounds
 }
 
+// setFullscreen switches the window to fullscreen mode on the specified monitor and stores the current window state.
 func (w *GLWindow) setFullscreen(monitor *GLMonitor) {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		w.restore.xPos, w.restore.yPos = w.window.GetPos()
 		w.restore.width, w.restore.height = w.window.GetSize()
 
@@ -291,8 +305,9 @@ func (w *GLWindow) setFullscreen(monitor *GLMonitor) {
 	})
 }
 
+// setWindowed switches the window back to windowed mode with its previous position and size, detaching it from any monitor.
 func (w *GLWindow) setWindowed() {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		w.window.SetMonitor(
 			nil,
 			w.restore.xPos,
@@ -304,10 +319,7 @@ func (w *GLWindow) setWindowed() {
 	})
 }
 
-// SetMonitor sets the GLWindow fullscreen on the given GLMonitor. If the GLMonitor is nil, the GLWindow
-// will be restored to windowed state instead.
-// The GLWindow will be automatically set to the GLMonitor's resolution. If you want a different
-// resolution, you will need to set it manually with SetBounds method.
+// SetMonitor adjusts the window by associating it with a specific GLMonitor to enter fullscreen or detached to exit it.
 func (w *GLWindow) SetMonitor(monitor *GLMonitor) {
 	if w.Monitor() != monitor {
 		if monitor != nil {
@@ -318,11 +330,10 @@ func (w *GLWindow) SetMonitor(monitor *GLMonitor) {
 	}
 }
 
-// Monitor returns a monitor the GLWindow is fullscreen on. If the GLWindow is not fullscreen, this
-// function returns nil.
+// Monitor retrieves the GLMonitor associated with the GLWindow, or nil if no monitor is currently associated.
 func (w *GLWindow) Monitor() *GLMonitor {
 	var monitor *glfw.Monitor
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		monitor = w.window.GetMonitor()
 	})
 	if monitor == nil {
@@ -333,16 +344,16 @@ func (w *GLWindow) Monitor() *GLMonitor {
 	}
 }
 
-// Focused returns true if the GLWindow has input focus.
+// Focused checks if the window is currently focused and returns true if focused, otherwise it returns false.
 func (w *GLWindow) Focused() bool {
 	var focused bool
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		focused = w.window.GetAttrib(glfw.Focused) == glfw.True
 	})
 	return focused
 }
 
-// SetVSync sets whether the GLWindow's Update should synchronize with the monitor refresh rate.
+// SetVSync configures whether vertical synchronization (VSync) is enabled or disabled for the GLWindow.
 func (w *GLWindow) SetVSync(vSync bool) {
 	if vSync {
 		w.vSync = 1
@@ -351,7 +362,7 @@ func (w *GLWindow) SetVSync(vSync bool) {
 	}
 }
 
-// VSync returns whether the GLWindow is set to synchronize with the monitor refresh rate.
+// VSync checks if vertical synchronization (VSync) is enabled for the window, returning true if enabled, otherwise false.
 func (w *GLWindow) VSync() bool {
 	if w.vSync == 0 {
 		return false
@@ -359,10 +370,10 @@ func (w *GLWindow) VSync() bool {
 	return true
 }
 
-// SetCursorVisible sets the visibility of the mouse cursor inside the GLWindow client area.
+// SetCursorVisible toggles the visibility of the window's cursor based on the provided boolean parameter.
 func (w *GLWindow) SetCursorVisible(visible bool) {
 	w.cursorVisible = visible
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		if visible {
 			w.window.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
 		} else {
@@ -371,21 +382,20 @@ func (w *GLWindow) SetCursorVisible(visible bool) {
 	})
 }
 
-// SetCursorDisabled hides the cursor and provides unlimited virtual cursor movement
-// make cursor visible using SetCursorVisible
+// SetCursorDisabled sets the cursor mode to disabled, making it invisible and confined to the window.
 func (w *GLWindow) SetCursorDisabled() {
 	w.cursorVisible = false
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		w.window.SetInputMode(glfw.CursorMode, glfw.CursorDisabled)
 	})
 }
 
-// CursorVisible returns the visibility status of the mouse cursor.
+// CursorVisible returns a boolean indicating whether the cursor is currently visible in the window.
 func (w *GLWindow) CursorVisible() bool {
 	return w.cursorVisible
 }
 
-// Note: must be called inside the main thread.
+// begin sets the current OpenGL context to the window if it is not already the current context.
 func (w *GLWindow) begin() {
 	if currWin != w {
 		w.window.MakeContextCurrent()
@@ -393,152 +403,150 @@ func (w *GLWindow) begin() {
 	}
 }
 
-// Note: must be called inside the main thread.
+// end finalizes the rendering or processing for the current frame. It is a placeholder with no specific implementation.
 func (w *GLWindow) end() {
 	// nothing, really
 }
 
-// MakeTriangles generates a specialized copy of the supplied ITriangles that will draw onto this GLWindow.
-// GLWindow supports ITrianglesPosition, ITrianglesColor and ITrianglesPicture.
+// MakeTriangles creates a specialized copy of the supplied ITriangles that can draw onto the GLWindow's canvas.
 func (w *GLWindow) MakeTriangles(t ITriangles) ITargetTriangles {
 	return w.canvas.MakeTriangles(t)
 }
 
-// MakePicture generates a specialized copy of the supplied IPicture that will draw onto this GLWindow.
-// GLWindow supports IPictureColor.
+// MakePicture creates a specialized copy of the provided IPicture that can be drawn onto the GLWindow's canvas.
 func (w *GLWindow) MakePicture(p IPicture) ITargetPicture {
 	return w.canvas.MakePicture(p)
 }
 
-// SetMatrix sets a Matrix that every point will be projected by.
+// SetMatrix sets the transformation matrix for the window's canvas, applying spatial transforms like scaling or rotation.
 func (w *GLWindow) SetMatrix(m Matrix) {
 	w.canvas.SetMatrix(m)
 }
 
-// SetColorMask sets a global color mask for the GLWindow.
+// SetColorMask sets the color mask of the GLWindow by multiplying it with the provided color for rendering operations.
 func (w *GLWindow) SetColorMask(c color.Color) {
 	w.canvas.SetColorMask(c)
 }
 
-// SetComposeMethod sets a Porter-Duff composition method to be used in the following draws onto
-// this GLWindow.
+// SetComposeMethod sets the Porter-Duff composition method for rendering on the window's canvas.
 func (w *GLWindow) SetComposeMethod(cmp ComposeMethod) {
 	w.canvas.SetComposeMethod(cmp)
 }
 
-// SetSmooth sets whether the stretched Pictures drawn onto this GLWindow should be drawn smooth or pixelated.
+// SetSmooth sets whether the window's canvas should apply smoothing when resizing or scaling drawn content.
 func (w *GLWindow) SetSmooth(smooth bool) {
 	w.canvas.SetSmooth(smooth)
 }
 
-// Smooth returns whether the stretched Pictures drawn onto this GLWindow are set to be drawn smooth or pixelated.
+// Smooth returns whether the GLWindow's canvas is set to draw stretched pictures smoothly or not.
 func (w *GLWindow) Smooth() bool {
 	return w.canvas.Smooth()
 }
 
-// Clear clears the GLWindow with a single color.
+// Clear fills the entire canvas of the GLWindow with the specified color.
 func (w *GLWindow) Clear(c color.Color) {
 	w.canvas.Clear(c)
 }
 
-// Color returns the color of the pixel over the given position inside the GLWindow.
+// Color returns the RGBA color at the specified Vec position on the GLWindow's canvas.
 func (w *GLWindow) Color(at Vec) RGBA {
 	return w.canvas.Color(at)
 }
 
-// Canvas returns the window's underlying GLCanvas
+// Canvas returns the associated instance of GLCanvas, which is an off-screen drawable rectangular area.
 func (w *GLWindow) Canvas() *GLCanvas {
 	return w.canvas
 }
 
-// Show makes the window visible if it was previously hidden.
-// If the window is already visible or is in full-screen mode, this function does nothing.
+// Show makes the window visible by invoking the Show method on the internal window object within the graphic thread.
 func (w *GLWindow) Show() {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		w.window.Show()
 	})
 }
 
-// Clipboard returns the contents of the system clipboard.
+// Clipboard retrieves the current text from the system clipboard associated with the GLWindow instance.
 func (w *GLWindow) Clipboard() string {
 	var clipboard string
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		clipboard = w.window.GetClipboardString()
 	})
 	return clipboard
 }
 
-// SetClipboard sets the system clipboard to the specified UTF-8 encoded string.
+// SetClipboard sets the clipboard content to the provided string on the graphic thread.
 func (w *GLWindow) SetClipboard(str string) {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		w.window.SetClipboardString(str)
 	})
 }
 
+// KeysPressed returns a map where the keys currently pressed are marked as true, and others as false.
 func (w *GLWindow) KeysPressed() map[Button]bool {
 	return w.keysPressed
 }
 
+// Pressed returns true if the specified button is currently being pressed, otherwise false.
 func (w *GLWindow) Pressed(button Button) bool {
 	return w.currInp.buttons[button]
 }
 
+// PressedList returns a boolean array indicating the pressed state of keys up to the maximum defined key constant KeyLast.
 func (w *GLWindow) PressedList() [KeyLast + 1]bool {
 	return w.pressEvents
 }
 
+// ReleasedList returns an array of booleans indicating the release state of keys and buttons up to KeyLast.
 func (w *GLWindow) ReleasedList() [KeyLast + 1]bool {
 	return w.releaseEvents
 }
 
-// JustPressed returns whether the Button has been pressed in the last frame.
+// JustPressed checks if the specified button was just pressed during the current frame. Returns true if pressed, false otherwise.
 func (w *GLWindow) JustPressed(button Button) bool {
 	return w.pressEvents[button]
 }
 
-// JustReleased returns whether the Button has been released in the last frame.
+// JustReleased checks if the specified button was just released during the most recent input event.
 func (w *GLWindow) JustReleased(button Button) bool {
 	return w.releaseEvents[button]
 }
 
-// Repeated returns whether a repeat event has been triggered on button.
-//
-// Repeat event occurs repeatedly when a button is held down for some time.
+// Repeated checks if the specified button is being held down and is generating repeated input events.
 func (w *GLWindow) Repeated(button Button) bool {
 	return w.currInp.repeat[button]
 }
 
-// MousePosition returns the current mouse position in the GLWindow's Bounds.
+// MousePosition returns the current position of the mouse relative to the window as a Vec.
 func (w *GLWindow) MousePosition() Vec {
 	return w.currInp.mouse
 }
 
+// MousePositionX returns the current X-coordinate of the mouse position within the window as a float64.
 func (w *GLWindow) MousePositionX() float64 {
 	return w.currInp.mouse.X
 }
 
+// MousePositionY returns the current Y-coordinate of the mouse pointer relative to the window.
 func (w *GLWindow) MousePositionY() float64 {
 	return w.currInp.mouse.Y
 }
 
+// MousePositionXY retrieves the current mouse cursor position in the window as X and Y coordinates in float64 format.
 func (w *GLWindow) MousePositionXY() (float64, float64) {
 	return w.currInp.mouse.X, w.currInp.mouse.Y
 }
 
-// MousePreviousPosition returns the previous mouse position in the GLWindow's Bounds.
+// MousePreviousPosition returns the previous position of the mouse as a Vec.
 func (w *GLWindow) MousePreviousPosition() Vec {
 	return w.prevInp.mouse
 }
 
-// SetMousePosition positions the mouse cursor anywhere within the GLWindow's Bounds.
+// SetMousePosition sets the mouse position to the specified vector coordinates within the window bounds on the graphics thread.
 func (w *GLWindow) SetMousePosition(v Vec) {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		if (v.X >= 0 && v.X <= w.bounds.W()) &&
 			(v.Y >= 0 && v.Y <= w.bounds.H()) {
-			w.window.SetCursorPos(
-				v.X+w.bounds.Min.X,
-				(w.bounds.H()-v.Y)+w.bounds.Min.Y,
-			)
+			w.window.SetCursorPos(v.X+w.bounds.Min.X, (w.bounds.H()-v.Y)+w.bounds.Min.Y)
 			w.prevInp.mouse = v
 			w.currInp.mouse = v
 			w.tempInp.mouse = v
@@ -546,23 +554,24 @@ func (w *GLWindow) SetMousePosition(v Vec) {
 	})
 }
 
-// MouseInsideWindow returns true if the mouse position is within the GLWindow's Bounds.
+// MouseInsideWindow returns true if the mouse cursor is currently within the boundaries of the window.
 func (w *GLWindow) MouseInsideWindow() bool {
 	return w.cursorInsideWindow
 }
 
-// MouseScroll returns the mouse scroll amount (in both axes) since the last call to GLWindow.Update.
+// MouseScroll returns the current scroll offset as a 2D vector (Vec) representing the x and y scroll components.
 func (w *GLWindow) MouseScroll() Vec {
 	return w.currInp.scroll
 }
 
-// Typed returns the text typed on the keyboard since the last call to GLWindow.Update.
+// Typed returns the current typed input as a string from the GLWindow's internal input state.
 func (w *GLWindow) Typed() string {
 	return w.currInp.typed
 }
 
+// initInput initializes input callbacks for the window, handling mouse, keyboard, cursor, scroll, and character input events.
 func (w *GLWindow) initInput() {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		w.window.SetMouseButtonCallback(func(_ *glfw.Window, button glfw.MouseButton, action glfw.Action, mod glfw.ModifierKey) {
 			switch action {
 			case glfw.Press:
@@ -600,10 +609,7 @@ func (w *GLWindow) initInput() {
 		})
 
 		w.window.SetCursorPosCallback(func(_ *glfw.Window, x, y float64) {
-			w.tempInp.mouse = NewVec(
-				x+w.bounds.Min.X,
-				(w.bounds.H()-y)+w.bounds.Min.Y,
-			)
+			w.tempInp.mouse = NewVec(x+w.bounds.Min.X, (w.bounds.H()-y)+w.bounds.Min.Y)
 		})
 
 		w.window.SetScrollCallback(func(_ *glfw.Window, xOff, yOff float64) {
@@ -625,10 +631,9 @@ func (w *GLWindow) initInput() {
 //	w.doUpdateInput()
 //}
 
-// UpdateInputWait blocks until an event is received or a timeout. If timeout is 0
-// then it will wait indefinitely
+// UpdateInputWait processes input updates, pausing the thread to wait for events or a timeout on the graphics thread.
 func (w *GLWindow) UpdateInputWait(timeout time.Duration) {
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		if timeout <= 0 {
 			glfw.WaitEvents()
 		} else {
@@ -638,7 +643,8 @@ func (w *GLWindow) UpdateInputWait(timeout time.Duration) {
 	w.doUpdateInput()
 }
 
-// internal input bookkeeping
+// doUpdateInput performs input state updates by transferring current input states to previous, clearing temporary states,
+// and processing joystick inputs. It resets per-frame accumulators like key presses, releases, scroll data, and typing.
 func (w *GLWindow) doUpdateInput() {
 	w.prevInp = w.currInp
 	w.currInp = w.tempInp
@@ -658,68 +664,47 @@ func (w *GLWindow) doUpdateInput() {
 	w.updateJoystickInput()
 }
 
-// JoystickPresent returns if the joystick is currently connected.
-//
-// This API is experimental.
+// JoystickPresent checks whether the specified joystick is currently connected.
 func (w *GLWindow) JoystickPresent(js Joystick) bool {
 	return w.currJoy.connected[js]
 }
 
-// JoystickName returns the name of the joystick. A disconnected joystick will return an
-// empty string.
-//
-// This API is experimental.
+// JoystickName returns the name of the specified joystick.
 func (w *GLWindow) JoystickName(js Joystick) string {
 	return w.currJoy.name[js]
 }
 
-// JoystickButtonCount returns the number of buttons a connected joystick has.
-//
-// This API is experimental.
+// JoystickButtonCount returns the number of buttons on the specified joystick.
 func (w *GLWindow) JoystickButtonCount(js Joystick) int {
 	return len(w.currJoy.buttons[js])
 }
 
-// JoystickAxisCount returns the number of axes a connected joystick has.
-//
-// This API is experimental.
+// JoystickAxisCount returns the number of axes for the specified joystick.
 func (w *GLWindow) JoystickAxisCount(js Joystick) int {
 	return len(w.currJoy.axis[js])
 }
 
-// JoystickPressed returns whether the joystick Button is currently pressed down.
-// If the button index is out of range, this will return false.
-//
-// This API is experimental.
+// JoystickPressed checks if the specified button on the given joystick is currently pressed and returns true or false.
 func (w *GLWindow) JoystickPressed(js Joystick, button GamepadButton) bool {
 	return w.currJoy.getButton(js, int(button))
 }
 
-// JoystickJustPressed returns whether the joystick Button has just been pressed down.
-// If the button index is out of range, this will return false.
-//
-// This API is experimental.
+// JoystickJustPressed returns true if the specified button on the given joystick was just pressed in the current frame.
 func (w *GLWindow) JoystickJustPressed(js Joystick, button GamepadButton) bool {
 	return w.currJoy.getButton(js, int(button)) && !w.prevJoy.getButton(js, int(button))
 }
 
-// JoystickJustReleased returns whether the joystick Button has just been released up.
-// If the button index is out of range, this will return false.
-//
-// This API is experimental.
+// JoystickJustReleased returns true if the specified button on the given joystick was just released in the current frame.
 func (w *GLWindow) JoystickJustReleased(js Joystick, button GamepadButton) bool {
 	return !w.currJoy.getButton(js, int(button)) && w.prevJoy.getButton(js, int(button))
 }
 
-// JoystickAxis returns the value of a joystick axis at the last call to GLWindow.Update.
-// If the axis index is out of range, this will return 0.
-//
-// This API is experimental.
+// JoystickAxis retrieves the current value of the specified axis for the given joystick as a float64.
 func (w *GLWindow) JoystickAxis(js Joystick, axis GamepadAxis) float64 {
 	return w.currJoy.getAxis(js, int(axis))
 }
 
-// Used internally during GLWindow.UpdateInput to update the state of the joysticks.
+// updateJoystickInput updates the state of all joysticks, including connection status, buttons, axes, and names.
 func (w *GLWindow) updateJoystickInput() {
 	for js := Joystick1; js <= JoystickLast; js++ {
 		// Determine and store if the joystick was connected
