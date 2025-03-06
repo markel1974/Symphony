@@ -22,22 +22,22 @@ func (s *Components) Register(component IComponent) {
 
 // Dump retrieves a component by its ID, initializes a dumper with its properties, and exports the component's state.
 func (m *Components) Dump(id string) error {
-	component, ok := m.container[id]
+	c, ok := m.container[id]
 	if !ok {
 		return fmt.Errorf("component '%s' not found", id)
 	}
-	dumper := NewDumper(component.GetProperties())
-	return component.Dump(dumper)
+	dumper := NewDumper(c.GetProperties())
+	return c.Dump(dumper)
 }
 
 // Restore attempts to restore the state of a component by its ID using a Dumper instance. Returns an error if not found.
 func (m *Components) Restore(id string) error {
-	component, ok := m.container[id]
+	c, ok := m.container[id]
 	if !ok {
 		return fmt.Errorf("component '%s' not found", id)
 	}
-	dumper := NewDumper(component.GetProperties())
-	return component.Restore(dumper)
+	dumper := NewDumper(c.GetProperties())
+	return c.Restore(dumper)
 }
 
 /*

@@ -25,6 +25,7 @@ type SID struct {
 	registers    []uint8
 	cfg          *config.Config
 	audioBuilder *AudioBuilder
+	props        map[string]*board.PropertyInfo
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
@@ -36,6 +37,10 @@ func NewSID(parentId string, suffix string) *SID {
 		registers:    make([]uint8, RegisterCount),
 		cfg:          nil,
 		audioBuilder: nil,
+		props:        nil,
+	}
+	s.props = map[string]*board.PropertyInfo{
+		registersId: board.MustCreatePropertyInfo(s.registers, "SID register", false),
 	}
 	return s
 }
@@ -65,9 +70,7 @@ func (sid *SID) GetParentId() string {
 
 // GetProperties returns a map of property information related to the SID object, along with an error if any occurs.
 func (sid *SID) GetProperties() map[string]*board.PropertyInfo {
-	return map[string]*board.PropertyInfo{
-		registersId: board.MustCreatePropertyInfo(sid.registers, "SID register", false),
-	}
+	return sid.props
 }
 
 // Dump stores the SID's registers into the provided map using the registers identifier as the key.
