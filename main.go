@@ -5,7 +5,7 @@ import (
 	"fmt"
 	c64board "github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/components/board"
-	mos6581 "github.com/markel1974/c64emu/src/components/sid"
+	"github.com/markel1974/c64emu/src/components/sid"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/asciirender"
 	"github.com/markel1974/c64emu/src/render/glrender"
