@@ -3,22 +3,25 @@ package prg
 import (
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/c64/inputs"
 	"os"
 )
+
+type Keys interface {
+	SetCommand(cmd string)
+}
 
 // PRG represents a program loader, managing data injection, search strings, and command execution.
 type PRG struct {
 	data      []byte
 	startAddr uint16
 	observer  *Observer
-	keys      *inputs.Keyboard
+	keys      Keys
 	search    []byte
 	command   string
 }
 
 // NewPRG creates a new PRG instance, initializing its observer, keyboard, and default properties.
-func NewPRG(b IAdapter, keys *inputs.Keyboard) *PRG {
+func NewPRG(b IAdapter, keys Keys) *PRG {
 	return &PRG{
 		observer:  NewObserver(b),
 		keys:      keys,
@@ -39,12 +42,17 @@ func (b *PRG) SetCommand(cmd string) {
 	b.command = cmd
 }
 
-// Load loads a PRG file into memory, validates its size, and calculates the start address from the file's header.
+// Load loads a Load file into memory, validates its size, and calculates the start address from the file's header.
 func (b *PRG) Load(prgFile string) error {
 	src, err := os.ReadFile(prgFile)
 	if err != nil {
 		return err
 	}
+	return b.LoadData(src)
+}
+
+// LoadData loads PRG data from the given byte slice, sets the start address, and validates file length and size.
+func (b *PRG) LoadData(src []byte) error {
 	if len(src) < 3 {
 		return fmt.Errorf("invalid prg file len")
 	}

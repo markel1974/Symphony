@@ -9,6 +9,8 @@ type IComponent interface {
 	GetParentId() string
 
 	Emulate()
+
+	Reset()
 }
 
 // Components represents a collection of IComponent instances managed in a container mapped by their unique IDs.
@@ -18,7 +20,9 @@ type Components struct {
 
 // NewComponents initializes and returns a pointer to a new Components instance with an empty container map.
 func NewComponents() *Components {
-	return &Components{}
+	return &Components{
+		container: make(map[string]IComponent),
+	}
 }
 
 // Register adds the given IComponent instance to the container, identified by its unique ID obtained from GetId().

@@ -5,7 +5,6 @@ import (
 	"github.com/markel1974/c64emu/src/c64/inputs"
 	"github.com/markel1974/c64emu/src/c64/pla"
 	"github.com/markel1974/c64emu/src/c64/prg"
-	"github.com/markel1974/c64emu/src/c64/roms"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/board"
@@ -40,6 +39,7 @@ type Board struct {
 	sidSocket           *SidSocket
 	cpuSocket           *CPUSocket
 	expansion           *Expansion
+	plaSocket           *PLASocket
 	pic                 *mos6510.Pic
 	iec                 *iec.IEC
 	keys                *inputs.Keyboard
@@ -49,7 +49,6 @@ type Board struct {
 	cfg                 *config.Config
 	hasClipboard        bool
 	cartMan             *cartridges.Manager
-	pla                 *pla.PLA
 	expansionIrqTrigger *signals.SignalUint32
 	expansionIrqClear   *signals.SignalUint32
 	vBlank              bool
@@ -75,7 +74,7 @@ func NewBoard() *Board {
 		joy2:                nil,
 		hasClipboard:        false,
 		cartMan:             cartridges.NewManager(),
-		pla:                 nil,
+		plaSocket:           nil,
 		expansionIrqTrigger: nil,
 		expansionIrqClear:   nil,
 		vBlank:              false,
@@ -107,6 +106,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	s.sidSocket = NewSidSocket()
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
+	s.plaSocket = NewPLASocket()
 
 	s.pic = mos6510.NewPic(componentId, "")
 	s.iec = iec.NewIEC(componentId, "")
@@ -115,10 +115,10 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	sid := mos6581.NewSID(componentId, "")
 	cia1 := mos6526.NewCIA(componentId, "1")
 	cia2 := mos6526.NewCIA(componentId, "2")
+	plaC := pla.NewPLA(componentId, "")
 	s.keys = inputs.NewKeyboard()
 	s.joy1 = inputs.NewJoystick()
 	s.joy2 = inputs.NewJoystick()
-	s.pla = pla.NewPLA(componentId, "")
 	s.expansion = NewExpansion(componentId, "")
 
 	//TODO REGISTER ALL COMPONENTS....
@@ -133,8 +133,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	s.cia1Socket.Setup(s, cia1)
 	s.cia2Socket.Setup(s, cia2)
 	s.cartMan.Setup(s.expansion, cfg)
-	rl := roms.NewRomLoader(cfg)
-	s.pla.Setup(vic, sid, cia1, cia2, s.cartMan, rl, cfg)
+	s.plaSocket.Setup(s, plaC, vic, sid, cia1, cia2, s.cartMan)
 
 	for _, cartName := range s.cfg.GetCartridges() {
 		var data []uint8
@@ -153,7 +152,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	}
 
 	if prgPath := s.cfg.GetPrg(); len(prgPath) > 0 {
-		s.prg = prg.NewPRG(s.pla, s.keys)
+		s.prg = prg.NewPRG(plaC, s.keys)
 		if err := s.prg.Load(prgPath); err != nil {
 			log.Printf("can't load prg: %s", err.Error())
 			s.prg = nil
@@ -168,7 +167,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 // reset resets the internal components of the Board to their initial states.
 func (s *Board) reset() {
 	s.pic.Reset()
-	s.pla.Reset()
+	s.plaSocket.Reset()
 	s.cpuSocket.Reset()
 	s.cartMan.Reset()
 	s.sidSocket.Reset()
@@ -181,7 +180,7 @@ func (s *Board) reset() {
 // AsyncReset resets various components of the board asynchronously by invoking their respective reset methods.
 // It clears the low DMA state and initiates resets for the PLA, PIC, VIC, SID, CIA1, CIA2, IEC, and Expansion modules.
 func (s *Board) AsyncReset() {
-	s.pla.Reset()
+	s.plaSocket.Reset()
 	s.pic.TriggerReset()
 	//s.cpuSocket.AsyncReset()
 	s.vicSocket.Reset()
@@ -329,12 +328,12 @@ func (s *Board) JoySwap(pressed bool) {
 func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
 	var prev []uint8 = nil
 	if memConfig >= 0 {
-		prev = s.pla.GetMemoryConfig()
-		s.pla.SetMemoryEntry(uint8(memConfig))
+		prev = s.plaSocket.GetMemoryConfig()
+		s.plaSocket.SetMemoryEntry(uint8(memConfig))
 	}
-	s.pla.Write(addr, data)
+	s.plaSocket.Write(addr, data)
 	if prev != nil {
-		s.pla.SetMemoryConfig(prev)
+		s.plaSocket.SetMemoryConfig(prev)
 	}
 }
 
@@ -344,12 +343,12 @@ func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
 func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	var prev []uint8 = nil
 	if memConfig >= 0 {
-		prev = s.pla.GetMemoryConfig()
-		s.pla.SetMemoryEntry(uint8(memConfig))
+		prev = s.plaSocket.GetMemoryConfig()
+		s.plaSocket.SetMemoryEntry(uint8(memConfig))
 	}
-	rb := s.pla.Read(addr)
+	rb := s.plaSocket.Read(addr)
 	if prev != nil {
-		s.pla.SetMemoryConfig(prev)
+		s.plaSocket.SetMemoryConfig(prev)
 	}
 	return rb
 }
@@ -437,5 +436,4 @@ func (s *Board) ledStateChangedSlot(_ int, _ uint8) {
 	//}
 	//k.leds[deviceId] = state
 	//k.updateLedState()
-	//s.keys.InputReady(_ledActivities == 0)
 }

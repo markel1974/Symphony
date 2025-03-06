@@ -6,21 +6,20 @@ import mos6510 "github.com/markel1974/c64emu/src/components/6510"
 type CPUSocket struct {
 	board *Board
 	cpu   *mos6510.CPU
-	pic   mos6510.IPic
-	banks mos6510.IBanks
 }
 
 // NewCPUSocket creates and returns a new instance of CPUSocket with initialized properties.
 func NewCPUSocket() *CPUSocket {
-	c := &CPUSocket{}
+	c := &CPUSocket{
+		board: nil,
+		cpu:   nil,
+	}
 	return c
 }
 
 // Setup initializes the CPUSocket by linking it with a given Board, setting the PIC and memory banks from the board.
 func (w *CPUSocket) Setup(board *Board, cpu *mos6510.CPU) {
 	w.board = board
-	w.pic = board.pic
-	w.banks = board.pla
 	w.cpu = cpu
 	w.cpu.Setup(w)
 }
@@ -36,12 +35,12 @@ func (w *CPUSocket) Emulate() {
 
 // GetPic retrieves the programmable interrupt controller (IPic) associated with the CPUSocket instance.
 func (w *CPUSocket) GetPic() mos6510.IPic {
-	return w.pic
+	return w.board.pic
 }
 
 // GetBanks retrieves the memory banks interface associated with the CPUSocket.
 func (w *CPUSocket) GetBanks() mos6510.IBanks {
-	return w.banks
+	return w.board.plaSocket
 }
 
 func (w *CPUSocket) SetRDYLow(rdyLow bool) {

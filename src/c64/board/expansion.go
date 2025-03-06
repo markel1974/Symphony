@@ -43,17 +43,17 @@ func (s *Expansion) GetParentId() string {
 
 // Read reads a byte of data from the specified memory address using the associated board's PLA component.
 func (s *Expansion) Read(addr uint16) uint8 {
-	return s.board.pla.Read(addr)
+	return s.board.plaSocket.Read(addr)
 }
 
 // Write writes a value to the specified address through the board's PLA module.
 func (s *Expansion) Write(addr uint16, data uint8) {
-	s.board.pla.Write(addr, data)
+	s.board.plaSocket.Write(addr, data)
 }
 
 // GameExRomConfigChanged triggers a rebuild of the memory configuration within the PLA board.
 func (s *Expansion) GameExRomConfigChanged() {
-	s.board.pla.RebuildMemoryConfig()
+	s.board.plaSocket.RebuildMemoryConfig()
 }
 
 // NMITrigger triggers a Non-Maskable Interrupt (NMI) by invoking the associated method on the programmable interrupt controller.
@@ -119,12 +119,12 @@ func (s *Expansion) CycleAlarm(id string, callback quartz.AlarmCallback) *quartz
 
 // RamSetWriteTrigger sets a write trigger for a specific RAM address and executes the provided callback on writes.
 func (s *Expansion) RamSetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
-	return s.board.pla.SetWriteTrigger(addr, fn)
+	return s.board.plaSocket.SetWriteTrigger(addr, fn)
 }
 
 // RamRemoveWriteTrigger removes a write trigger from the specified RAM address using the given trigger id.
 func (s *Expansion) RamRemoveWriteTrigger(addr uint16, id int) {
-	s.board.pla.RemoveRamTrigger(addr, id)
+	s.board.plaSocket.RemoveRamTrigger(addr, id)
 }
 
 // RmwFlags computes and returns the read-modify-write flags for CPU operations.

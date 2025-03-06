@@ -69,7 +69,7 @@ func (v *VicSocket) GetDisplayBuffer() board.IDisplayBuffer {
 
 // GetBanks returns an implementation of the mos6569.IBanks interface, which provides access to memory handling operations.
 func (v *VicSocket) GetBanks() mos6569.IBanks {
-	return v.board.pla
+	return v.board.plaSocket
 }
 
 // IRQTrigger signals an interrupt request by invoking the IRQ trigger mechanism on the associated board slot.
