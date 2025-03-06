@@ -1,5 +1,7 @@
 package board
 
+import mos6522 "github.com/markel1974/c64emu/src/components/via"
+
 // headControl represents the bit mask for controlling the head movement direction in the PRB register of VIA2.
 const headControl = uint8(0x3)
 
@@ -26,6 +28,7 @@ const syncArrivedControl = ^dataArrivedControl
 
 // Via2Socket represents a socket interface for interacting with the VIA2 (Versatile Interface Adapter) component on the board.
 type Via2Socket struct {
+	via2    *mos6522.Via
 	board   *Board
 	intrId  uint32
 	prbPrev uint8
@@ -34,22 +37,32 @@ type Via2Socket struct {
 // NewVia2Socket creates and returns a new instance of Via2Socket with default initialized fields.
 func NewVia2Socket() *Via2Socket {
 	return &Via2Socket{
+		via2:    nil,
 		board:   nil,
-		intrId:  0,
+		intrId:  intrIrqVIA2Bit,
 		prbPrev: 0,
 	}
 }
 
 // Setup initializes the Via2Socket by associating it with a Board instance and configuring the interrupt ID.
-func (v *Via2Socket) Setup(board *Board, intrId uint32) {
+func (v *Via2Socket) Setup(board *Board, via2 *mos6522.Via) {
 	v.board = board
-	v.intrId = intrId
+	v.via2 = via2
+	v.via2.Setup(v)
+}
+
+func (v *Via2Socket) Emulate() {
+	v.via2.Emulate()
 }
 
 // Reset reinitializes the Via2Socket to its default state by clearing prbPrev and invoking the Reset method on board.via2.
 func (v *Via2Socket) Reset() {
 	v.prbPrev = 0
-	v.board.via2.Reset()
+	v.via2.Reset()
+}
+
+func (v *Via2Socket) ByteReady() func() bool {
+	return v.via2.ByteReady
 }
 
 // LedChanged updates the LED state by forwarding the provided data to the board's LED change handler.

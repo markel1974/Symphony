@@ -2,6 +2,7 @@ package board
 
 import (
 	"github.com/markel1974/c64emu/src/common/bits"
+	mos6526 "github.com/markel1974/c64emu/src/components/cia"
 )
 
 // defaultLPState represents the default state for LP (Launchpad) set to 0x10.
@@ -22,6 +23,7 @@ const (
 // joy1 denotes the state of joystick 1 connected to the system.
 // joy2 denotes the state of joystick 2 connected to the system.
 type CIA1Socket struct {
+	cia1        *mos6526.CIA
 	board       *Board  //
 	intrId      uint32  //
 	prevLPState uint8   // Previous state of LP line (bit 4)
@@ -34,8 +36,9 @@ type CIA1Socket struct {
 // NewCIA1Socket creates and initializes a new instance of CIA1Socket with default values for its fields.
 func NewCIA1Socket() *CIA1Socket {
 	c := &CIA1Socket{
+		cia1:        nil,
 		board:       nil,
-		intrId:      0,
+		intrId:      intrIrqCia1Bit,
 		prevLPState: defaultLPState,
 		keyMatrix:   make([]uint8, 8),
 		revMatrix:   make([]uint8, 8),
@@ -46,9 +49,10 @@ func NewCIA1Socket() *CIA1Socket {
 }
 
 // Setup initializes the CIA1Socket with the provided Board reference and interrupt ID.
-func (w *CIA1Socket) Setup(board *Board, intrId uint32) {
+func (w *CIA1Socket) Setup(board *Board, cia1 *mos6526.CIA) {
 	w.board = board
-	w.intrId = intrId
+	w.cia1 = cia1
+	w.cia1.Setup(w)
 }
 
 // Reset reinitializes the CIA1Socket by resetting its board components, key matrices, joystick states, and light pen state.
@@ -56,7 +60,7 @@ func (w *CIA1Socket) Reset() {
 	w.board.keys.Reset()
 	w.board.joy1.Reset()
 	w.board.joy2.Reset()
-	w.board.cia1.Reset()
+	w.cia1.Reset()
 	for idx := range w.keyMatrix {
 		w.keyMatrix[idx] = defaultKeyState
 	}
@@ -66,6 +70,10 @@ func (w *CIA1Socket) Reset() {
 	w.joy1 = defaultJoyState
 	w.joy2 = defaultJoyState
 	w.prevLPState = defaultLPState
+}
+
+func (w *CIA1Socket) Emulate() {
+	w.cia1.Emulate()
 }
 
 // Update synchronizes the joystick and keyboard states by polling their current inputs and updates the key matrices accordingly.
@@ -97,7 +105,7 @@ func (w *CIA1Socket) Update() {
 			w.revMatrix[revM] |= 1 << keyM
 		}
 	}
-	w.board.cia1.Update()
+	w.cia1.Update()
 }
 
 // ReadPortA reads data from Port A taking into account the provided port registers and joystick states.
@@ -149,7 +157,7 @@ func (w *CIA1Socket) WriteDdrB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
 // updateLightPen updates the light pen state based on Port B and DDR B values and triggers the light pen event if state changes.
 func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
 	if ((prB | ^ddrB) & 0x10) != w.prevLPState {
-		w.board.vic.LightPenTrigger()
+		w.board.vicSocket.LightPenTrigger()
 	}
 	w.prevLPState = (prB | ^ddrB) & 0x10
 }

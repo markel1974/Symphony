@@ -1,32 +1,44 @@
 package board
 
+import mos6526 "github.com/markel1974/c64emu/src/components/cia"
+
 // CIA2Socket represents a connection interface to the CIA2 chip on a hardware board.
 // It contains a reference to the board and an interrupt identifier.
 type CIA2Socket struct {
+	cia2   *mos6526.CIA
 	board  *Board
 	intrId uint32
 }
 
 // NewCIA2Socket creates and returns a new instance of CIA2Socket.
 func NewCIA2Socket() *CIA2Socket {
-	c := &CIA2Socket{}
+	c := &CIA2Socket{
+		cia2:   nil,
+		board:  nil,
+		intrId: intrIrqCia2Bit,
+	}
 	return c
 }
 
 // Setup initializes the CIA2Socket with the provided board reference and interrupt ID.
-func (w *CIA2Socket) Setup(board *Board, intrId uint32) {
+func (w *CIA2Socket) Setup(board *Board, cia2 *mos6526.CIA) {
 	w.board = board
-	w.intrId = intrId
+	w.cia2 = cia2
+	w.cia2.Setup(w)
+}
+
+func (w *CIA2Socket) Emulate() {
+	w.cia2.Emulate()
 }
 
 // Reset resets the connected CIA2 component to its default state by invoking its Reset method.
 func (w *CIA2Socket) Reset() {
-	w.board.cia2.Reset()
+	w.cia2.Reset()
 }
 
 // Update invokes the Update method on the CIA2 instance associated with the CIA2Socket.
 func (w *CIA2Socket) Update() {
-	w.board.cia2.Update()
+	w.cia2.Update()
 }
 
 // ReadPortA reads data from Port A considering the data direction register and input from the CPU's IEC interface.
@@ -73,7 +85,7 @@ func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 	//%10, 2: Bank 1: $4000-$7FFF, 16384-32767
 	//%11, 3: Bank 0: $0000-$3FFF, 0-16383 (standard)
 	va := (^(prA | (^ddrA))) & 3
-	w.board.vic.ChangedVA(va)
+	w.board.vicSocket.ChangedVA(va)
 }
 
 // IRQTrigger sends an interrupt request to the connected board's NMI trigger slot.

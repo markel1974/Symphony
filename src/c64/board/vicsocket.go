@@ -7,24 +7,54 @@ import (
 
 // VicSocket represents a virtual interface connector socket with a reference to a board and an interrupt identifier.
 type VicSocket struct {
+	vic    *mos6569.VIC
 	board  *Board
 	intrId uint32
 }
 
 // NewVicSocket creates and returns a new instance of the VicSocket struct.
 func NewVicSocket() *VicSocket {
-	return &VicSocket{}
+	return &VicSocket{
+		vic:    nil,
+		board:  nil,
+		intrId: intrIrqVicBit,
+	}
 }
 
 // Setup initializes the VicSocket with the given board and interrupt ID.
-func (v *VicSocket) Setup(board *Board, intrId uint32) {
+func (v *VicSocket) Setup(board *Board, vic *mos6569.VIC) {
 	v.board = board
-	v.intrId = intrId
+	v.vic = vic
+	v.vic.Setup(v, v.board.cfg)
 }
 
 // Reset resets the VIC component of the associated board by invoking its Reset method.
 func (v *VicSocket) Reset() {
-	v.board.vic.Reset()
+	v.vic.Reset()
+}
+
+func (v *VicSocket) Emulate() {
+	v.vic.Emulate()
+}
+
+func (v *VicSocket) GetText() []byte {
+	return v.vic.GetText()
+}
+
+func (v *VicSocket) GetBALow() bool {
+	return v.vic.GetBALow()
+}
+
+func (v *VicSocket) GetAECLow() bool {
+	return v.vic.GetAECLow()
+}
+
+func (v *VicSocket) LightPenTrigger() {
+	v.vic.LightPenTrigger()
+}
+
+func (v *VicSocket) ChangedVA(newVA uint8) {
+	v.vic.ChangedVA(newVA)
 }
 
 // Cycle retrieves the current cycle count from the associated Quartz scheduler.

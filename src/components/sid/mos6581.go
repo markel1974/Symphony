@@ -50,6 +50,10 @@ func (sid *SID) GetParentId() string {
 	return sid.parentId
 }
 
+func (sid *SID) Emulate() {
+
+}
+
 func (sid *SID) Dump(d map[string]interface{}) error {
 	board.DumpSetByteArray(d, []string{sid.id, idRegisters}, sid.registers)
 	return nil

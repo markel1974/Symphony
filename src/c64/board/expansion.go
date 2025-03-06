@@ -99,12 +99,12 @@ func (s *Expansion) IRQClearBind(fn func(uint32)) {
 
 // BusAvailable checks if the bus is available by verifying if the BA (Bus Available) signal is not asserted low.
 func (s *Expansion) BusAvailable() bool {
-	return !s.board.vic.GetBALow()
+	return !s.board.vicSocket.GetBALow()
 }
 
 // AECAvailable determines if the Address Enable Control (AEC) signal is available by checking if the AEC line is not low.
 func (s *Expansion) AECAvailable() bool {
-	return !s.board.vic.GetAECLow()
+	return !s.board.vicSocket.GetAECLow()
 }
 
 // Cycle returns the current cycle count as a uint64 from the underlying Quartz instance associated with the Expansion.

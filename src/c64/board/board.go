@@ -34,11 +34,6 @@ type Board struct {
 	db                  board.IDisplayBuffer
 	player              board.IPlayer
 	quartz              *quartz.Quartz
-	cpu                 *mos6510.CPU
-	vic                 *mos6569.VIC
-	sid                 *mos6581.SID
-	cia1                *mos6526.CIA
-	cia2                *mos6526.CIA
 	cia1Socket          *CIA1Socket
 	cia2Socket          *CIA2Socket
 	vicSocket           *VicSocket
@@ -62,7 +57,7 @@ type Board struct {
 	dmaLow              bool
 	prg                 *prg.PRG
 	dt                  board.IThrottling
-	components          map[string]board.IComponent
+	components          *board.Components
 }
 
 const componentId = "c64"
@@ -74,11 +69,6 @@ func NewBoard() *Board {
 		player:              nil,
 		quartz:              quartz.NewQuartz(componentId, ""),
 		iec:                 nil,
-		cpu:                 nil,
-		vic:                 nil,
-		sid:                 nil,
-		cia1:                nil,
-		cia2:                nil,
 		pic:                 nil,
 		keys:                nil,
 		joy1:                nil,
@@ -94,7 +84,7 @@ func NewBoard() *Board {
 		prg:                 nil,
 		joySwap:             true,
 		dt:                  nil,
-		components:          make(map[string]board.IComponent),
+		components:          board.NewComponents(),
 	}
 	return b
 }
@@ -120,35 +110,31 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 
 	s.pic = mos6510.NewPic(componentId, "")
 	s.iec = iec.NewIEC(componentId, "")
-	s.cpu = mos6510.NewCPU(componentId, "")
-	s.vic = mos6569.NewVIC(componentId, "")
-	s.sid = mos6581.NewSID(componentId, "")
-	s.cia1 = mos6526.NewCIA(componentId, "1")
-	s.cia2 = mos6526.NewCIA(componentId, "2")
+	cpu := mos6510.NewCPU(componentId, "")
+	vic := mos6569.NewVIC(componentId, "")
+	sid := mos6581.NewSID(componentId, "")
+	cia1 := mos6526.NewCIA(componentId, "1")
+	cia2 := mos6526.NewCIA(componentId, "2")
 	s.keys = inputs.NewKeyboard()
 	s.joy1 = inputs.NewJoystick()
 	s.joy2 = inputs.NewJoystick()
 	s.pla = pla.NewPLA(componentId, "")
 	s.expansion = NewExpansion(componentId, "")
 
-	s.register(s.sid)
+	//TODO REGISTER ALL COMPONENTS....
+	s.components.Register(sid)
 
 	s.expansion.Setup(s)
 	s.pic.Setup(s.quartz)
 	s.iec.Setup(cfg)
-	s.cpuSocket.Setup(s)
-	s.cpu.Setup(s.cpuSocket)
-	s.vicSocket.Setup(s, intrIrqVicBit)
-	s.vic.Setup(s.vicSocket, cfg)
-	s.sidSocket.Setup(s)
-	s.sid.Setup(s.sidSocket, cfg, mos6569.ScreenFreq, mos6569.TotalRasters)
-	s.cia1Socket.Setup(s, intrIrqCia1Bit)
-	s.cia1.Setup(s.cia1Socket)
-	s.cia2Socket.Setup(s, intrIrqCia2Bit)
-	s.cia2.Setup(s.cia2Socket)
+	s.cpuSocket.Setup(s, cpu)
+	s.vicSocket.Setup(s, vic)
+	s.sidSocket.Setup(s, sid)
+	s.cia1Socket.Setup(s, cia1)
+	s.cia2Socket.Setup(s, cia2)
 	s.cartMan.Setup(s.expansion, cfg)
 	rl := roms.NewRomLoader(cfg)
-	s.pla.Setup(s.vic, s.sid, s.cia1, s.cia2, s.cartMan, rl, cfg)
+	s.pla.Setup(vic, sid, cia1, cia2, s.cartMan, rl, cfg)
 
 	for _, cartName := range s.cfg.GetCartridges() {
 		var data []uint8
@@ -217,14 +203,14 @@ func (s *Board) Emulate() bool {
 	s.vBlank = false
 
 	//PHI1
-	s.vic.Emulate()
+	s.vicSocket.Emulate()
 
 	//PHI2
-	s.cia1.Emulate()
-	s.cia2.Emulate()
+	s.cia1Socket.Emulate()
+	s.cia2Socket.Emulate()
 	s.cartMan.Emulate()
 	s.iec.Emulate()
-	s.cpu.Emulate()
+	s.cpuSocket.Emulate()
 
 	s.quartz.AddCycle()
 
@@ -238,7 +224,7 @@ func (s *Board) Throttle() board.IThrottling {
 
 // GetText retrieves the text data from the VIC component of the Board instance. It returns the text as a byte slice.
 func (s *Board) GetText() []byte {
-	return s.vic.GetText()
+	return s.vicSocket.GetText()
 }
 
 // GetScreenSize returns the dimensions of the screen as width and height in pixels.
@@ -381,20 +367,20 @@ func (s *Board) dmaLowSlot(v bool) {
 	//so they don't have any influence over the buses.
 	//This allows a device on the expansion port, such as an REU, to perform direct memory accesses (DMA) to the main RAM.
 	s.dmaLow = v
-	s.cpu.SetRDYLow(s.dmaLow || s.vic.GetBALow())
-	s.cpu.SetAECLow(s.dmaLow || s.vic.GetAECLow())
+	s.cpuSocket.SetRDYLow(s.dmaLow || s.vicSocket.GetBALow())
+	s.cpuSocket.SetAECLow(s.dmaLow || s.vicSocket.GetAECLow())
 }
 
 // rdyLowSlot updates the RDY signal based on the logical OR of the given value and the dmaLow state.
 func (s *Board) rdyLowSlot(v bool) {
 	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
-	s.cpu.SetRDYLow(v || s.dmaLow)
+	s.cpuSocket.SetRDYLow(v || s.dmaLow)
 	//TODO SIGNAL
 }
 
 // aecLowSlot sets the AEC (Address Enable Control) line state based on the provided value and the DMA state.
 func (s *Board) aecLowSlot(v bool) {
-	s.cpu.SetAECLow(v || s.dmaLow)
+	s.cpuSocket.SetAECLow(v || s.dmaLow)
 	//TODO SIGNAL
 }
 
@@ -436,7 +422,7 @@ func (s *Board) vicVBlankSlot() {
 	s.cia1Socket.Update()
 	s.cia2Socket.Update()
 	if s.prg != nil {
-		if s.prg.Inject(s.vic.GetText()) {
+		if s.prg.Inject(s.vicSocket.GetText()) {
 			s.prg = nil
 		}
 	}
@@ -452,9 +438,4 @@ func (s *Board) ledStateChangedSlot(_ int, _ uint8) {
 	//k.leds[deviceId] = state
 	//k.updateLedState()
 	//s.keys.InputReady(_ledActivities == 0)
-}
-
-func (s *Board) register(component board.IComponent) {
-	id := component.GetId()
-	s.components[id] = component
 }

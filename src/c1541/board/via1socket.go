@@ -1,7 +1,10 @@
 package board
 
+import mos6522 "github.com/markel1974/c64emu/src/components/via"
+
 // Via1Socket represents the interface between the VIA1 chip and the board, managing IRQs, filters, and dip switches.
 type Via1Socket struct {
+	via1      *mos6522.Via
 	board     *Board
 	intrId    uint32
 	dipSwitch uint8
@@ -11,23 +14,33 @@ type Via1Socket struct {
 // NewVia1Socket creates and returns a new instance of Via1Socket with default, uninitialized state values.
 func NewVia1Socket() *Via1Socket {
 	return &Via1Socket{
+		via1:      nil,
 		board:     nil,
-		intrId:    0,
+		intrId:    intrIrqVIA1Bit,
 		prbFilter: 0,
 	}
 }
 
 // Setup initializes the Via1Socket by assigning the board and interrupt ID, setting filters, and configuring the dip switch.
-func (v *Via1Socket) Setup(board *Board, intrId uint32) {
+func (v *Via1Socket) Setup(board *Board, via1 *mos6522.Via) {
 	v.board = board
-	v.intrId = intrId
 	v.setFilters()
 	v.setDipSwitch(board.deviceNumber)
+	v.via1 = via1
+	v.via1.Setup(v)
+}
+
+func (v *Via1Socket) Emulate() {
+	v.via1.Emulate()
 }
 
 // Reset reinitializes the VIA1 socket by invoking the Reset method of the associated VIA instance.
 func (v *Via1Socket) Reset() {
-	v.board.via1.Reset()
+	v.via1.Reset()
+}
+
+func (v *Via1Socket) SignalPRB() {
+	v.via1.SignalPRB()
 }
 
 // IRQClear clears the interrupt request (IRQ) for the current Via1Socket using the associated board and interrupt ID.

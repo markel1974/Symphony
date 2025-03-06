@@ -31,11 +31,8 @@ const baseId = "c1541"
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
 	pic          *mos6510.Pic
-	cpu          *mos6510.CPU
 	iec          virtualdrive.IIec
 	quartz       *quartz.Quartz
-	via1         *mos6522.Via
-	via2         *mos6522.Via
 	cpuSocket    *CPUSocket
 	via1Socket   *Via1Socket
 	via2Socket   *Via2Socket
@@ -60,9 +57,6 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string)
 		via1Socket:   nil,
 		via2Socket:   nil,
 		pic:          nil,
-		via1:         nil,
-		via2:         nil,
-		cpu:          nil,
 		banks:        nil,
 		cfg:          nil,
 	}
@@ -75,23 +69,20 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.banks = pla.New()
 	m.quartz = quartz.NewQuartz(baseId, "")
 	m.pic = mos6510.NewPic(baseId, "")
-	m.cpu = mos6510.NewCPU(baseId, "")
+	cpu := mos6510.NewCPU(baseId, "")
 	m.mec = mechanic.NewMechanic()
 	m.mec.Setup(m.filePath)
-	m.via1 = mos6522.NewVia(baseId, "1")
-	m.via2 = mos6522.NewVia(baseId, "2")
+	via1 := mos6522.NewVia(baseId, "1")
+	via2 := mos6522.NewVia(baseId, "2")
 	m.cpuSocket = NewCPUSocket()
 	m.via1Socket = NewVia1Socket()
 	m.via2Socket = NewVia2Socket()
-	m.via1Socket.Setup(m, intrIrqVIA1Bit)
-	m.via2Socket.Setup(m, intrIrqVIA2Bit)
-	m.via1.Setup(m.via1Socket)
-	m.via2.Setup(m.via2Socket)
-	m.banks.Setup(m.via1, m.via2, cfg)
+	m.via1Socket.Setup(m, via1)
+	m.via2Socket.Setup(m, via2)
+	m.banks.Setup(via1, via2, cfg)
 	m.pic.Setup(m.quartz)
-	m.cpuSocket.Setup(m)
-	m.cpu.Setup(m.cpuSocket)
-	m.cpu.SetOverflowBranch(m.via2.ByteReady)
+	m.cpuSocket.Setup(m, cpu)
+
 }
 
 // Reset reinitializes the Board's internal components to their default states by calling their respective Reset methods.
@@ -105,9 +96,9 @@ func (m *Board) Reset() {
 // Emulate executes one emulation cycle for the Board by simulating the VIA1, VIA2, CPU, and incrementing the quartz clock cycle.
 func (m *Board) Emulate() {
 	//m.mec.Emulate()
-	m.via1.Emulate()
-	m.via2.Emulate()
-	m.cpu.Emulate()
+	m.via1Socket.Emulate()
+	m.via2Socket.Emulate()
+	m.cpuSocket.Emulate()
 	m.quartz.AddCycle()
 }
 
@@ -128,7 +119,7 @@ func (m *Board) GetDeviceNumber() uint8 {
 // - b: Indicates whether the ATN signal is active.
 // - b2: Currently unused, reserved for future extension.
 func (m *Board) AtnStateChanged(b bool, b2 bool) {
-	m.via1.SignalPRB()
+	m.via1Socket.SignalPRB()
 	if b {
 		//fmt.Println("ATN", b, "RECEIVED - WAKE UP")
 		//https://sta.c64.org/cbm1541mem.html
