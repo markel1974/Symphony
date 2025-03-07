@@ -1,15 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	c64board "github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/components/board"
+	mos6581 "github.com/markel1974/c64emu/src/components/sid"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/asciirender"
 	"github.com/markel1974/c64emu/src/render/glrender"
 	"github.com/markel1974/c64emu/src/version"
 	vic20board "github.com/markel1974/c64emu/src/vic20/board"
+	"os"
 )
 
 //TODO WASM
@@ -70,28 +73,33 @@ type IRender interface {
 	Start() error
 }
 
-/*
 func Test() {
 	components := board.NewComponents()
 	s := mos6581.NewSID("test", "")
 	components.Register(s)
-	tst := make([]byte, 32)
-	for x := range tst {
-		tst[x] = uint8(x)
-	}
-	err := components.SetProperty(s.GetId(), "registers", tst)
+	res, err := components.Dump(s.GetId())
 	if err != nil {
 		panic(err)
 	}
-	res, err := components.GetProperty(s.GetId(), "registers")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("res: %v\n", res)
-	components.Dump(s.GetId())
+	body, _ := json.MarshalIndent(res, "", "  ")
+	fmt.Println(string(body))
+
+	//tst := make([]byte, 32)
+	//for x := range tst {
+	//	tst[x] = uint8(x)
+	//}
+	//err := components.SetProperty(s.GetId(), "registers", tst)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//res, err := components.GetProperty(s.GetId(), "registers")
+	//if err != nil {
+	//	panic(err)
+	//}
+	//fmt.Printf("res: %v\n", res)
+
 	os.Exit(1)
 }
-*/
 
 func main() {
 	//Test()

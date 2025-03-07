@@ -5,12 +5,13 @@ import (
 	"reflect"
 )
 
+// RunFn defines a function type that executes a command with arguments and returns a result map or an error.
 type RunFn func(cmd string, args []string) (map[string]interface{}, error)
 
-// PropertyInfo represents metadata associated with a property, including its type, description, and access methods.
+// PropertyInfo represents metadata and behavior for a property, including its ID, type details, description, and functionality.
 type PropertyInfo struct {
 	id          string
-	kind        string
+	kind        reflect.Type
 	description string
 	readOnly    bool
 	getType     reflect.Type
@@ -20,81 +21,53 @@ type PropertyInfo struct {
 	set0Kind    reflect.Kind
 }
 
-// CreatePropertyInfo creates a new PropertyInfo instance with the specified type, description, and read-only configuration.
-// It returns an error if the specified type is not supported.
+// CreatePropertyInfo initializes and returns a new PropertyInfo object with the given parameters.
+// id specifies the unique identifier of the property.
+// kind defines the data type of the property.
+// desc provides a human-readable description of the property.
+// ro indicates whether the property is read-only.
+// get is a function to retrieve the property's value, with signature func() <ret>.
+// set is a function to update the property's value, with signature func(v <arg>).
 func CreatePropertyInfo(id string, kind interface{}, desc string, ro bool, get interface{}, set interface{}) *PropertyInfo {
-	p := &PropertyInfo{id: id, kind: fmt.Sprintf("%T", kind), description: desc, readOnly: ro}
+	const getError = "wrong get signature must be func get() <ret>"
+	const setError = "wrong get signature must be func set(v <arg>)"
+	p := &PropertyInfo{id: id, kind: reflect.TypeOf(kind), description: desc, readOnly: ro}
 	p.getType = reflect.TypeOf(get)
 	p.getValue = reflect.ValueOf(get)
 	p.setType = reflect.TypeOf(set)
 	p.setValue = reflect.ValueOf(set)
 	if get == nil || p.getType.Kind() != reflect.Func {
-		panic(fmt.Errorf("get isn't a function"))
+		panic(getError)
 	}
 	if p.getType.NumIn() != 0 || p.getType.NumOut() != 1 {
-		panic("wrong get signature must be func get() <ret>")
+		panic(getError)
 	}
 	if set == nil || p.setType.Kind() != reflect.Func {
-		panic(fmt.Errorf("set function is nil"))
+		panic(setError)
 	}
 	if p.setType.NumIn() != 1 || p.setType.NumOut() != 0 {
-		panic("wrong get signature must be func set(v <arg>)")
+		panic(setError)
 	}
 	if p.setType.NumOut() != 0 {
-		panic("wrong set signature")
+		panic(setError)
 	}
 	p.set0Kind = p.setType.In(0).Kind()
 	return p
 }
 
-type Properties struct {
-	properties map[string]*PropertyInfo
-	run        RunFn
+// Id returns the unique identifier of the PropertyInfo.
+func (prop *PropertyInfo) Id() string {
+	return prop.id
 }
 
-func NewProperties(run RunFn) *Properties {
-	return &Properties{
-		run:        run,
-		properties: make(map[string]*PropertyInfo),
-	}
-}
-
-func (p *Properties) Add(info *PropertyInfo) {
-	if info == nil {
-		panic(fmt.Errorf("property info is nil"))
-	}
-	p.properties[info.id] = info
-}
-
-func (p *Properties) Get(id string) *PropertyInfo {
-	return p.properties[id]
-}
-
-func (p *Properties) Run(cmd string, values []string) (map[string]interface{}, error) {
-	return p.run(cmd, values)
-}
-
-func (p *Properties) GetProperty(id string) (interface{}, error) {
-	prop, ok := p.properties[id]
-	if !ok || prop == nil {
-		return nil, fmt.Errorf("property '%s' not found", id)
-	}
-	results := prop.getValue.Call([]reflect.Value{})
-	if len(results) == 0 {
-		return nil, fmt.Errorf("no results returned")
-	}
-	result := results[0].Interface()
-	return result, nil
-}
-
-func (p *Properties) SetProperty(id string, arg interface{}) error {
-	prop, ok := p.properties[id]
-	if !ok || prop == nil {
-		return fmt.Errorf("property '%s' not found", id)
+// Set assigns a new value to the property if it is not read-only and the input type matches the expected kind.
+func (prop *PropertyInfo) Set(arg interface{}) error {
+	if prop.readOnly {
+		return fmt.Errorf("property '%s' is read-only", prop.id)
 	}
 	argType := reflect.TypeOf(arg)
 	if argType.Kind() != prop.set0Kind {
-		return fmt.Errorf("wrong input signature")
+		return fmt.Errorf("property '%s' wrong input signature", prop.id)
 	}
 	argValue := reflect.ValueOf(arg)
 	args := []reflect.Value{argValue}
@@ -102,67 +75,97 @@ func (p *Properties) SetProperty(id string, arg interface{}) error {
 	return nil
 }
 
-func (p *Properties) Dump() (map[string]interface{}, error) {
-	//TODO IMPLEMENT
-	return nil, fmt.Errorf("unimplemented")
-}
-
-func (p *Properties) Restore(d map[string]interface{}) error {
-	//TODO IMPLEMENT
-	return fmt.Errorf("unimplemented")
-}
-
-/*
-func addOne(x int) int {
-	return x + 1
-}
-
-func multiplyByTwo(x int) int {
-	return x * 2
-}
-
-func invalidFunction(s string) string {
-	return s + "!"
-}
-
-func callFunctionIfValid(target interface{}, arg interface{}, out interface{}) (interface{}, error) {
-	funcType := reflect.TypeOf(target)
-	funcValue := reflect.ValueOf(target)
-	if funcType.Kind() != reflect.Func {
-		return nil, fmt.Errorf("target isn't a function")
-	}
-	inputArg := reflect.TypeOf(arg).Kind()
-	outputArg := reflect.TypeOf(out).Kind()
-	// Verifica la firma della funzione dei dati di input
-	if funcType.NumIn() != 1 || funcType.In(0).Kind() != inputArg {
-		return nil, fmt.Errorf("wrong input signature")
-	}
-	// Verifica la firma della funzione dei dati di output
-	if funcType.NumOut() != 1 || funcType.Out(0).Kind() != outputArg {
-		return nil, fmt.Errorf("wrong output signature")
-	}
-	args := []reflect.Value{reflect.ValueOf(arg)}
-	results := funcValue.Call(args)
+// Get retrieves the value of the property by calling its getter function and returns the result or an error if any occurs.
+func (prop *PropertyInfo) Get() (interface{}, error) {
+	results := prop.getValue.Call([]reflect.Value{})
 	if len(results) == 0 {
-		return nil, fmt.Errorf("no results returned")
+		return nil, fmt.Errorf("property '%s' no results returned", prop.id)
 	}
 	result := results[0].Interface()
 	return result, nil
 }
 
-func Test() {
-	output := 0
-	callFunctionIfValid(addOne, 5, output)
-	callFunctionIfValid(multiplyByTwo, 10, output)
-	callFunctionIfValid(invalidFunction, 12, output) // Fallisce
-	callFunctionIfValid(123, 12, output)             //Fallisce
-
-	//components := board.NewComponents()
-	//s := mos6581.NewSID("test", "")
-	//components.Register(s)
-	//components.Dump(s.GetId())
-	//os.Exit(1)
+// Properties represents a collection of property definitions mapped by identifiers and a function to execute commands.
+type Properties struct {
+	properties map[string]*PropertyInfo
+	run        RunFn
 }
 
+// NewProperties creates a new instance of Properties with the provided RunFn and initializes an empty properties map.
+func NewProperties(run RunFn) *Properties {
+	return &Properties{
+		run:        run,
+		properties: make(map[string]*PropertyInfo),
+	}
+}
 
-*/
+// Add inserts a new PropertyInfo instance into the Properties map using its id as the key.
+// It panics if the provided PropertyInfo argument is nil.
+func (p *Properties) Add(prop *PropertyInfo) {
+	if prop == nil {
+		panic(fmt.Errorf("property info is nil"))
+	}
+	p.properties[prop.Id()] = prop
+}
+
+// Get retrieves the PropertyInfo associated with the given id from the properties map. Returns nil if not found.
+func (p *Properties) Get(id string) *PropertyInfo {
+	return p.properties[id]
+}
+
+// Run executes the specified command with the given arguments and returns the result as a map or an error if one occurs.
+func (p *Properties) Run(cmd string, values []string) (map[string]interface{}, error) {
+	return p.run(cmd, values)
+}
+
+// GetProperty retrieves the value of a property by its id from the Properties instance. Returns the value or an error if not found.
+func (p *Properties) GetProperty(id string) (interface{}, error) {
+	prop, ok := p.properties[id]
+	if !ok || prop == nil {
+		return nil, fmt.Errorf("property '%s' not found", id)
+	}
+	ret, err := prop.Get()
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+// SetProperty updates the value of a property with the given id. Returns an error if the property is not found or invalid.
+func (p *Properties) SetProperty(id string, arg interface{}) error {
+	prop, ok := p.properties[id]
+	if !ok || prop == nil {
+		return fmt.Errorf("property '%s' not found", id)
+	}
+	if err := prop.Set(arg); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Dump returns a map of all properties with their current values. Returns an error if any property's retrieval fails.
+func (p *Properties) Dump() (map[string]interface{}, error) {
+	out := make(map[string]interface{})
+	for _, prop := range p.properties {
+		res, err := prop.Get()
+		if err != nil {
+			return nil, err
+		}
+		out[prop.Id()] = res
+	}
+	return out, nil
+}
+
+// Restore updates the properties in the receiver using the provided map. Returns an error if a property cannot be restored.
+func (p *Properties) Restore(d map[string]interface{}) error {
+	for k, v := range d {
+		prop, ok := p.properties[k]
+		if !ok || prop == nil {
+			return fmt.Errorf("property '%s' not found", k)
+		}
+		if err := prop.Set(v); err != nil {
+			return err
+		}
+	}
+	return nil
+}
