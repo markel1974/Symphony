@@ -14,8 +14,7 @@ const (
 
 // SID represents a chip emulation containing configurations, registers, and audio handling functionality.
 type SID struct {
-	parentId     string
-	id           string
+	*board.BaseComponent
 	socket       ISocket
 	registers    []uint8
 	cfg          *config.Config
@@ -24,14 +23,13 @@ type SID struct {
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
-func NewSID(parentId string, suffix string) *SID {
+func NewSID(node *board.Node, suffix string) *SID {
 	s := &SID{
-		parentId:     parentId,
-		id:           "sid" + suffix,
-		socket:       nil,
-		registers:    make([]uint8, RegisterCount),
-		cfg:          nil,
-		audioBuilder: nil,
+		BaseComponent: board.NewBaseComponent(node, "sid", suffix, nil),
+		socket:        nil,
+		registers:     make([]uint8, RegisterCount),
+		cfg:           nil,
+		audioBuilder:  nil,
 	}
 	s.reflect = NewSidReflect(s)
 	return s
@@ -48,21 +46,6 @@ func (sid *SID) Setup(socket ISocket, cfg *config.Config, fragFreq int, rasters 
 // Emulate processes the main emulation logic for the SID component, handling internal updates and state changes.
 func (sid *SID) Emulate() {
 
-}
-
-// GetId returns the ID of the SID instance as a string.
-func (sid *SID) GetId() string {
-	return sid.id
-}
-
-// GetParentId returns the parent ID associated with the SID instance as a string.
-func (sid *SID) GetParentId() string {
-	return sid.parentId
-}
-
-// GetProperties returns a map of property information related to the SID object, along with an error if any occurs.
-func (sid *SID) GetProperties() *board.Properties {
-	return sid.reflect.GetProperties()
 }
 
 // SetPotX sets the value of the POT X register in the SID chip using the given 8-bit value.

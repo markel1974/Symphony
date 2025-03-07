@@ -3,6 +3,7 @@ package mos6510
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/conversion"
+	"github.com/markel1974/c64emu/src/components/board"
 )
 
 //https://web.archive.org/web/20221112220344if_/http://archive.6502.org/datasheets/synertek_programming_manual.pdf
@@ -18,8 +19,7 @@ import (
 
 // CPU represents a simulated central processing unit with registers, flags, and associated helper components.
 type CPU struct {
-	id             string
-	parentId       string
+	*board.BaseComponent
 	banks          IBanks
 	pic            IPic
 	nFlag          uint8  // Negative flag
@@ -47,10 +47,9 @@ type CPU struct {
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
-func NewCPU(parentId string, suffix string) *CPU {
+func NewCPU(node *board.Node, suffix string) *CPU {
 	cpu := &CPU{
-		id:       "mos6510" + suffix,
-		parentId: parentId,
+		BaseComponent: board.NewBaseComponent(node, "mos6510", suffix, nil),
 	}
 	return cpu
 }
@@ -68,14 +67,6 @@ func (cpu *CPU) Reset() {
 	cpu.next = instOpINI
 	cpu.opFlags = 0
 	cpu.irqBreaker = false
-}
-
-func (cpu *CPU) GetId() string {
-	return cpu.id
-}
-
-func (cpu *CPU) GetParentId() string {
-	return cpu.parentId
 }
 
 // SetOverflowBranch sets the function used to handle conditional overflow branching for the CPU.

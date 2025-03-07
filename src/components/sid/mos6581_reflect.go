@@ -1,10 +1,5 @@
 package mos6581
 
-import (
-	"fmt"
-	"github.com/markel1974/c64emu/src/components/board"
-)
-
 // Costanti per gli indici dei registri del SID (all'interno della slice 'registers').
 const (
 	freqLO1 = 0
@@ -39,60 +34,48 @@ const (
 )
 
 type SidReflect struct {
-	props *board.Properties
-	sid   *SID
+	sid *SID
 }
 
 func NewSidReflect(s *SID) *SidReflect {
 	r := &SidReflect{
-		props: nil,
-		sid:   s,
+		sid: s,
 	}
-	r.props = board.NewProperties(r.RunCommand)
 	// Voice 1
-	r.props.Add(board.CreatePropertyInfo("freqLO1", "Voice 1: Frequency Low Byte (0xD400)", false, r.getFreqLO1, r.setFreqLO1))
-	r.props.Add(board.CreatePropertyInfo("freqHI1", "Voice 1: Frequency High Byte (0xD401)", false, r.getFreqHI1, r.setFreqHI1))
-	r.props.Add(board.CreatePropertyInfo("pwLO1", "Voice 1: Pulse Width Low Byte (0xD402)", false, r.getPwLO1, r.setPwLO1))
-	r.props.Add(board.CreatePropertyInfo("pwHI1", "Voice 1: Pulse Width High Byte (0xD403)", false, r.getPwHI1, r.setPwHI1))
-	r.props.Add(board.CreatePropertyInfo("cr1", "Voice 1: Control Register (0xD404) - Gate, Sync, Ring, Test, Waveform", false, r.getCr1, r.setCr1))
-	r.props.Add(board.CreatePropertyInfo("ad1", "Voice 1: Attack/Decay (0xD405) - Attack Rate, Decay Rate", false, r.getAd1, r.setAd1))
-	r.props.Add(board.CreatePropertyInfo("sr1", "Voice 1: Sustain/Release (0xD406) - Sustain Level, Release Rate", false, r.getSr1, r.setSr1))
+	s.AddProperty("freqLO1", "Voice 1: Frequency Low Byte (0xD400)", false, r.getFreqLO1, r.setFreqLO1)
+	s.AddProperty("freqHI1", "Voice 1: Frequency High Byte (0xD401)", false, r.getFreqHI1, r.setFreqHI1)
+	s.AddProperty("pwLO1", "Voice 1: Pulse Width Low Byte (0xD402)", false, r.getPwLO1, r.setPwLO1)
+	s.AddProperty("pwHI1", "Voice 1: Pulse Width High Byte (0xD403)", false, r.getPwHI1, r.setPwHI1)
+	s.AddProperty("cr1", "Voice 1: Control Register (0xD404) - Gate, Sync, Ring, Test, Waveform", false, r.getCr1, r.setCr1)
+	s.AddProperty("ad1", "Voice 1: Attack/Decay (0xD405) - Attack Rate, Decay Rate", false, r.getAd1, r.setAd1)
+	s.AddProperty("sr1", "Voice 1: Sustain/Release (0xD406) - Sustain Level, Release Rate", false, r.getSr1, r.setSr1)
 	// Voice 2
-	r.props.Add(board.CreatePropertyInfo("freqLO2", "Voice 2: Frequency Low Byte (0xD407)", false, r.getFreqLO2, r.setFreqLO2))
-	r.props.Add(board.CreatePropertyInfo("freqHI2", "Voice 2: Frequency High Byte (0xD408)", false, r.getFreqHI2, r.setFreqHI2))
-	r.props.Add(board.CreatePropertyInfo("pwLO2", "Voice 2: Pulse Width Low Byte (0xD409)", false, r.getPwLO2, r.setPwLO2))
-	r.props.Add(board.CreatePropertyInfo("pwHI2", "Voice 2: Pulse Width High Byte (0xD40A)", false, r.getPwHI2, r.setPwHI2))
-	r.props.Add(board.CreatePropertyInfo("cr2", "Voice 2: Control Register (0xD40B) - Gate, Sync, Ring, Test, Waveform", false, r.getCr2, r.setCr2))
-	r.props.Add(board.CreatePropertyInfo("ad2", "Voice 2: Attack/Decay (0xD40C) - Attack Rate, Decay Rate", false, r.getAd2, r.setAd2))
-	r.props.Add(board.CreatePropertyInfo("sr2", "Voice 2: Sustain/Release (0xD40D) - Sustain Level, Release Rate", false, r.getSr2, r.setSr2))
+	s.AddProperty("freqLO2", "Voice 2: Frequency Low Byte (0xD407)", false, r.getFreqLO2, r.setFreqLO2)
+	s.AddProperty("freqHI2", "Voice 2: Frequency High Byte (0xD408)", false, r.getFreqHI2, r.setFreqHI2)
+	s.AddProperty("pwLO2", "Voice 2: Pulse Width Low Byte (0xD409)", false, r.getPwLO2, r.setPwLO2)
+	s.AddProperty("pwHI2", "Voice 2: Pulse Width High Byte (0xD40A)", false, r.getPwHI2, r.setPwHI2)
+	s.AddProperty("cr2", "Voice 2: Control Register (0xD40B) - Gate, Sync, Ring, Test, Waveform", false, r.getCr2, r.setCr2)
+	s.AddProperty("ad2", "Voice 2: Attack/Decay (0xD40C) - Attack Rate, Decay Rate", false, r.getAd2, r.setAd2)
+	s.AddProperty("sr2", "Voice 2: Sustain/Release (0xD40D) - Sustain Level, Release Rate", false, r.getSr2, r.setSr2)
 	// Voice 3
-	r.props.Add(board.CreatePropertyInfo("freqLO3", "Voice 3: Frequency Low Byte (0xD40E)", false, r.getFreqLO3, r.setFreqLO3))
-	r.props.Add(board.CreatePropertyInfo("freqHI3", "Voice 3: Frequency High Byte (0xD40F)", false, r.getFreqHI3, r.setFreqHI3))
-	r.props.Add(board.CreatePropertyInfo("pwLO3", "Voice 3: Pulse Width Low Byte (0xD410)", false, r.getPwLO3, r.setPwLO3))
-	r.props.Add(board.CreatePropertyInfo("pwHI3", "Voice 3: Pulse Width High Byte (0xD411)", false, r.getPwHI3, r.setPwHI3))
-	r.props.Add(board.CreatePropertyInfo("cr3", "Voice 3: Control Register (0xD412) - Gate, Sync, Ring, Test, Waveform", false, r.getCr3, r.setCr3))
-	r.props.Add(board.CreatePropertyInfo("ad3", "Voice 3: Attack/Decay (0xD413) - Attack Rate, Decay Rate", false, r.getAd3, r.setAd3))
-	r.props.Add(board.CreatePropertyInfo("sr3", "Voice 3: Sustain/Release (0xD414) - Sustain Level, Release Rate", false, r.getSr3, r.setSr3))
+	s.AddProperty("freqLO3", "Voice 3: Frequency Low Byte (0xD40E)", false, r.getFreqLO3, r.setFreqLO3)
+	s.AddProperty("freqHI3", "Voice 3: Frequency High Byte (0xD40F)", false, r.getFreqHI3, r.setFreqHI3)
+	s.AddProperty("pwLO3", "Voice 3: Pulse Width Low Byte (0xD410)", false, r.getPwLO3, r.setPwLO3)
+	s.AddProperty("pwHI3", "Voice 3: Pulse Width High Byte (0xD411)", false, r.getPwHI3, r.setPwHI3)
+	s.AddProperty("cr3", "Voice 3: Control Register (0xD412) - Gate, Sync, Ring, Test, Waveform", false, r.getCr3, r.setCr3)
+	s.AddProperty("ad3", "Voice 3: Attack/Decay (0xD413) - Attack Rate, Decay Rate", false, r.getAd3, r.setAd3)
+	s.AddProperty("sr3", "Voice 3: Sustain/Release (0xD414) - Sustain Level, Release Rate", false, r.getSr3, r.setSr3)
 	// Filtro
-	r.props.Add(board.CreatePropertyInfo("fcLO", "Filter Cutoff Frequency Low Byte (0xD415)", false, r.getFcLO, r.setFcLO))
-	r.props.Add(board.CreatePropertyInfo("fcHI", "Filter Cutoff Frequency High Byte (0xD416)", false, r.getFcHI, r.setFcHI))
-	r.props.Add(board.CreatePropertyInfo("resFilt", "Filter Resonance and Control Register (0xD417) - Resonance, Filter Mode, External Input", false, r.getResFilt, r.setResFilt))
-	r.props.Add(board.CreatePropertyInfo("modeVol", "SID Mode and Volume Register (0xD418) - Filter Mode, Voice 3 Mute, Volume", false, r.getModeVol, r.setModeVol))
+	s.AddProperty("fcLO", "Filter Cutoff Frequency Low Byte (0xD415)", false, r.getFcLO, r.setFcLO)
+	s.AddProperty("fcHI", "Filter Cutoff Frequency High Byte (0xD416)", false, r.getFcHI, r.setFcHI)
+	s.AddProperty("resFilt", "Filter Resonance and Control Register (0xD417) - Resonance, Filter Mode, External Input", false, r.getResFilt, r.setResFilt)
+	s.AddProperty("modeVol", "SID Mode and Volume Register (0xD418) - Filter Mode, Voice 3 Mute, Volume", false, r.getModeVol, r.setModeVol)
 	// POTX, POTY, OSC3, ENV3 (sola lettura)
-	r.props.Add(board.CreatePropertyInfo("potX", "POTX Register (0xD419) - Paddle X Input", false, r.getPotX, r.setPotX))
-	r.props.Add(board.CreatePropertyInfo("potY", "POTY Register (0xD41A) - Paddle Y Input", false, r.getPotY, r.setPotY))
-	r.props.Add(board.CreatePropertyInfo("osc3", "OSC3 Register (0xD41B) - Oscillator 3 Value", false, r.getOsc3, r.setOsc3))
-	r.props.Add(board.CreatePropertyInfo("env3", "ENV3 Register (0xD41C) - Envelope 3 Value", false, r.getEnv3, r.setEnv3))
+	s.AddProperty("potX", "POTX Register (0xD419) - Paddle X Input", false, r.getPotX, r.setPotX)
+	s.AddProperty("potY", "POTY Register (0xD41A) - Paddle Y Input", false, r.getPotY, r.setPotY)
+	s.AddProperty("osc3", "OSC3 Register (0xD41B) - Oscillator 3 Value", false, r.getOsc3, r.setOsc3)
+	s.AddProperty("env3", "ENV3 Register (0xD41C) - Envelope 3 Value", false, r.getEnv3, r.setEnv3)
 	return r
-}
-
-// GetProperties restituisce la mappa delle proprietà del SID.
-func (r *SidReflect) GetProperties() *board.Properties {
-	return r.props
-}
-
-func (r *SidReflect) RunCommand(cmd string, args []string) (map[string]interface{}, error) {
-	return nil, fmt.Errorf("unimplemented")
 }
 
 func (s *SidReflect) getFreqLO1() uint8  { return s.sid.registers[freqLO1] }

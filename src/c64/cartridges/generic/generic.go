@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
+	"github.com/markel1974/c64emu/src/components/board"
 )
 
 // cSize16K defines the size of 16 kilobytes (0x4000), commonly used for memory allocation or data validation.
@@ -14,7 +15,8 @@ const cSize8K = 0x2000
 
 // Generic represents the structure and functionality of a cartridge, including memory banks, intervals, and configuration.
 type Generic struct {
-	id         string
+	*board.BaseComponent
+	loaderId   string
 	b0Interval icartridge.RomInterval
 	b1Interval icartridge.RomInterval
 	bank0      []uint8
@@ -31,20 +33,22 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Generic cartridge implementing the ICartridge interface.
-func New() icartridge.ICartridge {
+func New(node *board.Node, suffix string) icartridge.ICartridge {
 	return &Generic{
-		game:       0,
-		exRom:      0,
-		b0Interval: 0,
-		b1Interval: 0,
-		intervals:  0,
+		BaseComponent: board.NewBaseComponent(node, "generic", suffix, nil),
+		loaderId:      "generic",
+		game:          0,
+		exRom:         0,
+		b0Interval:    0,
+		b1Interval:    0,
+		intervals:     0,
 	}
 }
 
 // Setup initializes the Generic cartridge by setting the board and loading data using the provided CRTLoader.
 func (c *Generic) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
-	c.id = ldr.GetId()
+	c.loaderId = ldr.GetId()
 	if ldr.GetType() == loader.TypeCrt {
 		return c.initCrt(ldr)
 	}
@@ -56,9 +60,9 @@ func (c *Generic) Reset() {
 
 }
 
-// GetId retrieves the unique identifier of the Generic instance.
-func (c *Generic) GetId() string {
-	return c.id
+// GetLoaderId retrieves the unique identifier of the Generic instance.
+func (c *Generic) GetLoaderId() string {
+	return c.loaderId
 }
 
 // initCrt initializes the cartridge configuration using the provided CRTLoader.

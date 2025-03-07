@@ -3,6 +3,8 @@ package reu
 import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
+	"github.com/markel1974/c64emu/src/components/board"
+	"strconv"
 )
 
 // Predefined constants representing memory sizes in bytes.
@@ -31,7 +33,8 @@ const (
 
 // REU represents a RAM Expansion Unit (REU) type with attributes for RAM, registers, IRQ masking, size, and expansion handling.
 type REU struct {
-	id        string
+	*board.BaseComponent
+	loaderId  string
 	ram       []uint8 // REU RAM
 	mask      uint32  // REU RAM address bit mask
 	regs      []uint8 // REU registers
@@ -42,63 +45,64 @@ type REU struct {
 
 // newReu initializes a new REU instance with a given size and returns an ICartridge implementation.
 // It sets up REU registers, memory size, and RAM contents, and performs an initial reset.
-func newReu(size int) icartridge.ICartridge {
+func newReu(node *board.Node, suffix string, size int) icartridge.ICartridge {
 	r := &REU{
-		id:        "",
-		regs:      make([]uint8, 16),
-		size:      size,
-		expansion: nil,
-		mask:      uint32(size) - 1,
-		ram:       make([]uint8, size),
-		irqMask:   0,
+		BaseComponent: board.NewBaseComponent(node, "reu", suffix, nil),
+		loaderId:      "reu" + strconv.Itoa(size),
+		regs:          make([]uint8, 16),
+		size:          size,
+		expansion:     nil,
+		mask:          uint32(size) - 1,
+		ram:           make([]uint8, size),
+		irqMask:       0,
 	}
 	r.Reset()
 	return r
 }
 
 // New128K creates and returns a new 128K REU cartridge implementing the ICartridge interface.
-func New128K() icartridge.ICartridge {
-	return newReu(size128K)
+func New128K(node *board.Node, suffix string) icartridge.ICartridge {
+	return newReu(node, suffix, size128K)
 }
 
 // New256K creates a new 256K REU (RAM Expansion Unit) cartridge and returns it as an ICartridge interface.
-func New256K() icartridge.ICartridge {
-	return newReu(size256K)
+func New256K(node *board.Node, suffix string) icartridge.ICartridge {
+	return newReu(node, suffix, size256K)
 }
 
 // New512K creates and returns a new instance of an ICartridge with a memory size of 512K.
-func New512K() icartridge.ICartridge {
-	return newReu(size512K)
+func New512K(node *board.Node, suffix string) icartridge.ICartridge {
+	return newReu(node, suffix, size512K)
 }
 
 // New1M creates a new 1M REU (RAM Expansion Unit) cartridge implementing the ICartridge interface.
-func New1M() icartridge.ICartridge {
-	return newReu(size1M)
+func New1M(node *board.Node, suffix string) icartridge.ICartridge {
+	return newReu(node, suffix, size1M)
 }
 
 // New2M creates and returns a new 2MB REU cartridge instance implementing the ICartridge interface.
-func New2M() icartridge.ICartridge {
-	return newReu(size2M)
+func New2M(node *board.Node, suffix string) icartridge.ICartridge {
+	return newReu(node, suffix, size2M)
 }
 
 // New4M creates and returns a new 4MB REU cartridge implementing the ICartridge interface.
-func New4M() icartridge.ICartridge {
-	return newReu(size4M)
+func New4M(node *board.Node, suffix string) icartridge.ICartridge {
+	return newReu(node, suffix, size4M)
 }
 
 // New8M creates and returns a new 8 MB REU (RAM Expansion Unit) cartridge implementing the ICartridge interface.
-func New8M() icartridge.ICartridge {
-	return newReu(size8M)
+func New8M(node *board.Node, suffix string) icartridge.ICartridge {
+	return newReu(node, suffix, size8M)
 }
 
 // New16M creates a new ICartridge instance with 16MB of memory, utilizing the REU (RAM Expansion Unit) implementation.
-func New16M() icartridge.ICartridge {
-	return newReu(size16M)
+func New16M(node *board.Node, suffix string) icartridge.ICartridge {
+	return newReu(node, suffix, size16M)
 }
 
-// GetId returns the identifier string of the REU instance.
-func (reu *REU) GetId() string {
-	return reu.id
+// GetLoaderId returns the identifier string of the REU instance.
+func (reu *REU) GetLoaderId() string {
+	return reu.loaderId
 }
 
 // EmulationRequired determines whether emulation is required for the REU instance. Always returns false.
@@ -129,7 +133,7 @@ func (reu *REU) Reset() {
 func (reu *REU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	//TODO from Setup
 	reu.expansion = board
-	reu.id = ldr.GetId()
+	reu.loaderId = ldr.GetId()
 	// Set kind bit in status register
 	if reu.size-1 > 0x20000 {
 		reu.regs[0] |= 0x10

@@ -30,6 +30,7 @@ const (
 
 // Board represents the central processing and coordination system for handling hardware components and peripherals.
 type Board struct {
+	*board.BaseComponent
 	db                  board.IDisplayBuffer
 	player              board.IPlayer
 	quartz              *quartz.Quartz
@@ -64,16 +65,17 @@ const componentId = "c64"
 // NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
 func NewBoard() *Board {
 	b := &Board{
+		BaseComponent:       board.NewBaseComponent(nil, "c64", "", nil),
 		db:                  nil,
 		player:              nil,
-		quartz:              quartz.NewQuartz(componentId, ""),
+		quartz:              nil,
 		iec:                 nil,
 		pic:                 nil,
 		keys:                nil,
 		joy1:                nil,
 		joy2:                nil,
 		hasClipboard:        false,
-		cartMan:             cartridges.NewManager(),
+		cartMan:             nil,
 		plaSocket:           nil,
 		expansionIrqTrigger: nil,
 		expansionIrqClear:   nil,
@@ -85,6 +87,9 @@ func NewBoard() *Board {
 		dt:                  nil,
 		tree:                nil,
 	}
+	b.tree = board.NewTree(b.GetNode())
+	b.quartz = quartz.NewQuartz(b.GetNode(), "")
+	b.cartMan = cartridges.NewManager(b.GetNode(), "")
 	return b
 }
 
@@ -108,21 +113,19 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	s.cia2Socket = NewCIA2Socket()
 	s.plaSocket = NewPLASocket()
 
-	s.pic = mos6510.NewPic(componentId, "")
-	s.iec = iec.NewIEC(componentId, "")
-	cpu := mos6510.NewCPU(componentId, "")
-	vic := mos6569.NewVIC(componentId, "")
-	sid := mos6581.NewSID(componentId, "")
-	cia1 := mos6526.NewCIA(componentId, "1")
-	cia2 := mos6526.NewCIA(componentId, "2")
-	plaC := pla.NewPLA(componentId, "")
-	s.keys = inputs.NewKeyboard()
-	s.joy1 = inputs.NewJoystick()
-	s.joy2 = inputs.NewJoystick()
-	s.expansion = NewExpansion(componentId, "")
-
-	//TODO REGISTER ALL COMPONENTS....
-	//s.tree = board.NewTree(sid)
+	node := s.GetNode()
+	s.pic = mos6510.NewPic(node, "")
+	s.iec = iec.NewIEC(node, "")
+	cpu := mos6510.NewCPU(node, "")
+	vic := mos6569.NewVIC(node, "")
+	sid := mos6581.NewSID(node, "")
+	cia1 := mos6526.NewCIA(node, "1")
+	cia2 := mos6526.NewCIA(node, "2")
+	plaC := pla.NewPLA(node, "")
+	s.keys = inputs.NewKeyboard(node, "")
+	s.joy1 = inputs.NewJoystick(node, "1")
+	s.joy2 = inputs.NewJoystick(node, "2")
+	s.expansion = NewExpansion(node, "")
 
 	s.expansion.Setup(s)
 	s.pic.Setup(s.quartz)
@@ -161,7 +164,15 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 
 	s.reset()
 
+	s.tree.Print(os.Stdout, " ")
+	//state, _ := s.tree.DumpAll()
+	//fmt.Println(state)
+
 	return nil
+}
+
+func (s *Board) Reset() {
+	//nothing to do
 }
 
 // reset resets the internal components of the Board to their initial states.

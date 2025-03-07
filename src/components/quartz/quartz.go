@@ -3,6 +3,7 @@ package quartz
 import (
 	"container/list"
 	"fmt"
+	"github.com/markel1974/c64emu/src/components/board"
 )
 
 // Quartz represents a scheduler that manages alarms based on cycles, enabling timed execution of associated callbacks.
@@ -10,30 +11,21 @@ import (
 // alarmsContainer provides a mapping of active alarms for quick accessibility and management.
 // alarms stores active alarms in a doubly linked list, sorted by their scheduled cycle execution times.
 type Quartz struct {
-	parentId        string
-	id              string
+	*board.BaseComponent
 	cycle           uint64
 	alarmsContainer map[*Alarm]*Alarm
 	alarms          *list.List
 }
 
 // NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
-func NewQuartz(parentId string, suffix string) *Quartz {
+func NewQuartz(node *board.Node, suffix string) *Quartz {
+	id := "quartz" + suffix
 	return &Quartz{
-		parentId:        parentId,
-		id:              "quartz" + suffix,
+		BaseComponent:   board.NewBaseComponent(node, id, suffix, nil),
 		cycle:           0,
 		alarmsContainer: make(map[*Alarm]*Alarm),
 		alarms:          list.New(),
 	}
-}
-
-func (s *Quartz) GetId() string {
-	return s.id
-}
-
-func (s *Quartz) GetParentId() string {
-	return s.parentId
 }
 
 // AddCycle increments the internal cycle counter and checks scheduled alarms against the updated cycle value.

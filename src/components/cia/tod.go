@@ -1,9 +1,10 @@
 package mos6526
 
+import "github.com/markel1974/c64emu/src/components/board"
+
 // TOD represents a Time of Day (TOD) and Alarm functionality with tracking for hours, minutes, seconds, and tenths.
 type TOD struct {
-	parentId       string
-	id             string
+	*board.BaseComponent
 	tod10ths       uint8 // TOD 10ths
 	todSec         uint8 // TOD sec
 	todMin         uint8 // TOD min
@@ -20,10 +21,9 @@ type TOD struct {
 }
 
 // NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
-func NewTOD(parentId string, suffix string) *TOD {
+func NewTOD(node *board.Node, suffix string) *TOD {
 	return &TOD{
-		parentId: parentId,
-		id:       "tod" + suffix,
+		BaseComponent: board.NewBaseComponent(node, "tod", suffix, nil),
 	}
 }
 
@@ -42,14 +42,6 @@ func (m *TOD) Reset() {
 	m.almSec = 0
 	m.almMin = 0
 	m.almHr = 0
-}
-
-func (m *TOD) GetId() string {
-	return m.id
-}
-
-func (m *TOD) GetParentId() string {
-	return m.parentId
 }
 
 // Set10ths updates the 10ths component of the time or alarm based on the `alarm` flag and provided `data`.

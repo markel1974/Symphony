@@ -1,5 +1,7 @@
 package mos6526
 
+import "github.com/markel1974/c64emu/src/components/board"
+
 // IRQUnderflowTimerA represents the IRQ flag for Timer A underflow.
 // IRQUnderflowTimerB represents the IRQ flag for Timer B underflow.
 // IRQTODAlarmEqual represents the IRQ flag for Time-of-Day alarm equality.
@@ -31,8 +33,7 @@ const (
 // timerA and timerB point to Timer A and Timer B functionality respectively.
 // socket represents the interface socket connected to peripheral and communication devices.
 type CIA struct {
-	parentId       string
-	id             string
+	*board.BaseComponent
 	prA            uint8
 	prB            uint8
 	ddrA           uint8
@@ -49,41 +50,23 @@ type CIA struct {
 }
 
 // NewCIA initializes and returns a new instance of the CIA struct with the specified ID and associated components.
-func NewCIA(parentId string, suffix string) *CIA {
-	const componentId = "cia"
-	id := componentId + suffix
+func NewCIA(parentNode *board.Node, suffix string) *CIA {
 	m := &CIA{
-		parentId: parentId,
-		id:       id,
-		tod:      NewTOD(id, ""),
-		timerA:   NewTimer(id, "A"),
-		timerB:   NewTimer(id, "B"),
+		BaseComponent: board.NewBaseComponent(parentNode, "cia", suffix, nil),
+		tod:           nil,
+		timerA:        nil,
+		timerB:        nil,
 	}
+	node := m.GetNode()
+	m.tod = NewTOD(node, "")
+	m.timerA = NewTimer(node, "A")
+	m.timerB = NewTimer(node, "B")
 	return m
 }
 
 // Setup initializes the CIA instance by assigning a provided ISocket connection to its socket field.
 func (m *CIA) Setup(conn ISocket) {
 	m.socket = conn
-}
-
-func (m *CIA) GetId() string {
-	return m.id
-}
-
-func (m *CIA) GetParentId() string {
-	return m.parentId
-}
-
-func (m *CIA) Dump() (map[string]interface{}, error) {
-	d := make(map[string]interface{})
-	//TODO
-	return d, nil
-}
-
-func (m *CIA) Restore(d map[string]interface{}) error {
-	//TODO
-	return nil
 }
 
 // Update checks the TOD alarm condition and triggers an IRQ if the alarm matches the timer.

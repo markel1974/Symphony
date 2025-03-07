@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
+	"github.com/markel1974/c64emu/src/components/board"
 )
 
 // CartridgeMagicDesk represents a software-implemented version of a Magic Desk cartridge for system emulation.
 // It implements the ICartridge interface for handling cartridge-specific functionality within an expansion board.
 type CartridgeMagicDesk struct {
-	id       string
+	*board.BaseComponent
+	loaderId string
 	spec     *icartridge.CartridgeSpec
 	banks    [][]byte
 	bankMask uint8
@@ -24,19 +26,21 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of a CartridgeMagicDesk implementing the icartridge.ICartridge interface.
-func New() icartridge.ICartridge {
+func New(node *board.Node, suffix string) icartridge.ICartridge {
 	return &CartridgeMagicDesk{
-		spec:     icartridge.GetCartridgeSpec(icartridge.CartridgeMode8K),
-		bankMask: 0x7f,
-		regVal:   0,
-		slot:     0,
+		BaseComponent: board.NewBaseComponent(node, "magicDesk", suffix, nil),
+		loaderId:      "magicDesk",
+		spec:          icartridge.GetCartridgeSpec(icartridge.CartridgeMode8K),
+		bankMask:      0x7f,
+		regVal:        0,
+		slot:          0,
 	}
 }
 
 // Setup initializes the CartridgeMagicDesk by configuring its board and loading data via the provided CRTLoader.
 func (c *CartridgeMagicDesk) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
-	c.id = ldr.GetId()
+	c.loaderId = ldr.GetId()
 	if ldr.GetType() == loader.TypeCrt {
 		return c.initCrt(ldr)
 	}
@@ -48,9 +52,9 @@ func (c *CartridgeMagicDesk) Reset() {
 
 }
 
-// GetId retrieves the unique identifier of the CartridgeMagicDesk instance.
-func (c *CartridgeMagicDesk) GetId() string {
-	return c.id
+// GetLoaderId retrieves the unique identifier of the CartridgeMagicDesk instance.
+func (c *CartridgeMagicDesk) GetLoaderId() string {
+	return c.loaderId
 }
 
 // Write attempts to write data to the cartridge at the specified ROM interval and address, returning true if write-protected.

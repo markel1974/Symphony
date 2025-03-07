@@ -2,6 +2,7 @@ package mos6510
 
 import (
 	"github.com/markel1974/c64emu/src/common/bits"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/quartz"
 )
 
@@ -27,8 +28,7 @@ const (
 
 // Pic represents a programmable interrupt controller with IRQ and NMI handling capabilities.
 type Pic struct {
-	id            string
-	parentId      string
+	*board.BaseComponent
 	quartz        *quartz.Quartz
 	all           bits.Bits
 	irq           bits.Bits
@@ -37,11 +37,15 @@ type Pic struct {
 	nmiExec       bool
 }
 
+func (i *Pic) Emulate() {
+	//TODO implement me
+	panic("implement me")
+}
+
 // NewPic initializes and returns a pointer to a new Pic instance with default values.
-func NewPic(parentId string, suffix string) *Pic {
+func NewPic(parentNode *board.Node, suffix string) *Pic {
 	return &Pic{
-		id:            "pic" + suffix,
-		parentId:      parentId,
+		BaseComponent: board.NewBaseComponent(parentNode, "pic", suffix, nil),
 		quartz:        nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,
@@ -54,14 +58,6 @@ func NewPic(parentId string, suffix string) *Pic {
 // Setup initializes the Pic instance with a Quartz instance, establishing internal dependencies.
 func (i *Pic) Setup(quartz *quartz.Quartz) {
 	i.quartz = quartz
-}
-
-func (i *Pic) GetId() string {
-	return i.id
-}
-
-func (i *Pic) GetParentId() string {
-	return i.parentId
 }
 
 // Reset reinitializes the Pic instance by clearing all internal state variables and flags.

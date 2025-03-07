@@ -24,6 +24,8 @@ const (
 )
 
 type Board struct {
+	*board.BaseComponent
+	tree                *board.Tree
 	cia1Socket          *CIA1Socket
 	cia2Socket          *CIA2Socket
 	vicSocket           *VicSocket
@@ -51,14 +53,16 @@ type Board struct {
 }
 
 func NewBoard() *Board {
+	id := "board"
 	b := &Board{
+		tree:                nil,
 		iec:                 nil,
 		pic:                 nil,
 		keys:                nil,
 		joy1:                nil,
 		joy2:                nil,
 		hasClipboard:        false,
-		cartMan:             cartridges.NewManager(),
+		cartMan:             nil,
 		pla:                 nil,
 		expansionIrqTrigger: nil,
 		expansionIrqClear:   nil,
@@ -69,6 +73,9 @@ func NewBoard() *Board {
 		joySwap:             true,
 		dt:                  nil,
 	}
+	b.BaseComponent = board.NewBaseComponent(nil, id, "", nil)
+	b.tree = board.NewTree(b.GetNode())
+	b.cartMan = cartridges.NewManager(b.GetNode(), "")
 	return b
 }
 
@@ -90,13 +97,12 @@ func (s *Board) Setup(db board.IDisplayBuffer, p board.IPlayer, cfg *config.Conf
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 
-	const componentId = "vic20"
-	s.pic = mos6510.NewPic(componentId, "")
-	s.iec = iec.NewIEC(componentId, "")
-	s.keys = inputs.NewKeyboard()
-	s.joy1 = inputs.NewJoystick()
-	s.joy2 = inputs.NewJoystick()
-	s.pla = pla.NewPLA(componentId, "")
+	s.pic = mos6510.NewPic(s.GetNode(), "")
+	s.iec = iec.NewIEC(s.GetNode(), "")
+	s.keys = inputs.NewKeyboard(s.GetNode(), "")
+	s.joy1 = inputs.NewJoystick(s.GetNode(), "1")
+	s.joy2 = inputs.NewJoystick(s.GetNode(), "2")
+	s.pla = pla.NewPLA(s.GetNode(), "")
 	s.expansion = NewExpansion(s)
 
 	s.iec.Setup(cfg)

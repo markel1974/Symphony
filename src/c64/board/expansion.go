@@ -2,23 +2,22 @@ package board
 
 import (
 	"github.com/markel1974/c64emu/src/common/signals"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/quartz"
 )
 
 // Expansion represents a logical structure that associates a parent ID, its own ID, and a reference to a Board.
 type Expansion struct {
-	parentId string
-	id       string
-	board    *Board
+	*board.BaseComponent
+	board *Board
 }
 
 // NewExpansion creates a new instance of the Expansion structure with the given parentId and suffix.
 // The `id` property is initialized by concatenating "expansion" with the specified suffix.
 // Returns a pointer to the newly created Expansion object.
-func NewExpansion(parentId string, suffix string) *Expansion {
+func NewExpansion(node *board.Node, suffix string) *Expansion {
 	return &Expansion{
-		parentId: parentId,
-		id:       "expansion" + suffix,
+		BaseComponent: board.NewBaseComponent(node, "expansion", suffix, nil),
 	}
 }
 
@@ -29,16 +28,6 @@ func (s *Expansion) Setup(board *Board) {
 
 // Reset reinitializes the state of the Expansion to its default configuration.
 func (s *Expansion) Reset() {
-}
-
-// GetId returns the unique identifier of the Expansion instance.
-func (s *Expansion) GetId() string {
-	return s.id
-}
-
-// GetParentId returns the parent ID of the current Expansion instance.
-func (s *Expansion) GetParentId() string {
-	return s.parentId
 }
 
 // Read reads a byte of data from the specified memory address using the associated board's PLA component.

@@ -3,6 +3,7 @@ package pla
 import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/common/filler"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/config"
 )
 
@@ -13,8 +14,7 @@ type WriteFn func(uint16, uint8)
 
 // PLA represents a structure managing memory configurations, ports, and sockets for emulation purposes.
 type PLA struct {
-	parentId        string
-	id              string
+	*board.BaseComponent
 	vic             ISocket
 	sid             ISocket
 	cia1            ISocket
@@ -40,11 +40,10 @@ type PLA struct {
 }
 
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
-func NewPLA(parentId string, suffix string) *PLA {
+func NewPLA(node *board.Node, suffix string) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
-		parentId:        parentId,
-		id:              "pla" + suffix,
+		BaseComponent:   board.NewBaseComponent(node, "pla", suffix, nil),
 		vic:             nil,
 		sid:             nil,
 		cia1:            nil,
@@ -58,7 +57,7 @@ func NewPLA(parentId string, suffix string) *PLA {
 		portRead:        make([]ReadFn, 0xf+1),
 		memoryMap:       mm,
 		memoryConfig:    mm.Get(0),
-		ports:           NewPorts(),
+		ports:           nil,
 		emulatorId:      NewEmulatorId(),
 		basic:           []byte{},
 		kernal:          []byte{},
@@ -68,6 +67,7 @@ func NewPLA(parentId string, suffix string) *PLA {
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
 	}
+	b.ports = NewPorts(b.GetNode(), "")
 	return b
 }
 
@@ -160,14 +160,6 @@ func (b *PLA) Setup(vic ISocket, sid ISocket, cia1 ISocket, cia2 ISocket, cartMa
 func (b *PLA) Reset() {
 	b.ports.Reset()
 	b.update()
-}
-
-func (b *PLA) GetId() string {
-	return b.id
-}
-
-func (b *PLA) GetParentId() string {
-	return b.parentId
 }
 
 //func (b *PLA) AsyncReset() {

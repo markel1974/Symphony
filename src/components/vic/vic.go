@@ -2,6 +2,7 @@ package mos6569
 
 import (
 	"github.com/markel1974/c64emu/src/common/bits"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/config"
 	"log"
 )
@@ -43,8 +44,7 @@ type cycleData struct {
 // The structure integrates functionality for sprite handling, display timing, bad line conditions, and IRQ management.
 // Graphics systems and border handling are also supported using their specific components within the VIC structure.
 type VIC struct {
-	parentId        string
-	id              string
+	*board.BaseComponent
 	cfg             *config.Config
 	collisions      *Collisions
 	sprites         *Sprites
@@ -110,10 +110,9 @@ type VIC struct {
 }
 
 // NewVIC creates and returns a pointer to a newly initialized VIC instance with default values and given id.
-func NewVIC(parentId string, suffix string) *VIC {
+func NewVIC(node *board.Node, suffix string) *VIC {
 	vic := &VIC{
-		parentId:         parentId,
-		id:               "vic" + suffix,
+		BaseComponent:    board.NewBaseComponent(node, "vic", suffix, nil),
 		banks:            nil,
 		mXx:              make([]uint16, SpriteNumber),
 		mXy:              make([]uint8, SpriteNumber),
@@ -185,14 +184,6 @@ func (vic *VIC) Setup(socket ISocket, cfg *config.Config) {
 	vic.graphics.Setup()
 	vic.sprites.Setup()
 	vic.curr = _pal
-}
-
-func (vic *VIC) GetId() string {
-	return vic.id
-}
-
-func (vic *VIC) GetParentId() string {
-	return vic.parentId
 }
 
 // Reset reinitializes the VIC instance to its default state by resetting its internal readiness flag.

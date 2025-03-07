@@ -84,8 +84,7 @@ const defaultTimerInit = 0xffff
 // The timer's behavior is determined by the countMode and the corresponding count function.
 // It supports various operational states applicable for different use cases.
 type Timer struct {
-	parentId     string
-	id           string
+	*board.BaseComponent
 	cr           uint8
 	crNew        uint8      // New values for cr
 	crNewPending bool       // New value for crNew pending
@@ -103,10 +102,9 @@ type Timer struct {
 
 // NewTimer initializes and returns a new Timer instance with the given parentId and suffix.
 // The Timer is set to its default state and its Reset method is called to ensure initialization.
-func NewTimer(parentId string, suffix string) *Timer {
+func NewTimer(node *board.Node, suffix string) *Timer {
 	m := &Timer{
-		parentId:      parentId,
-		id:            "timer" + suffix,
+		BaseComponent: board.NewBaseComponent(node, "timer", suffix, nil),
 		cr:            0,
 		crNew:         0,
 		crNewPending:  false,
@@ -137,22 +135,6 @@ func (m *Timer) Reset() {
 	m.toggleMode = false
 	m.count = m.countTick
 	m.cnt = false
-}
-
-// GetId retrieves the unique identifier of the Timer instance.
-func (m *Timer) GetId() string {
-	return m.id
-}
-
-// GetParentId retrieves the identifier of the parent associated with the timer instance.
-func (m *Timer) GetParentId() string {
-	return m.parentId
-}
-
-// GetProperties returns a map representing the properties of the timer and their respective metadata, or an error if any occurs.
-func (t *Timer) GetProperties() *board.Properties {
-	//TODO IMPLEMENT
-	return nil
 }
 
 // HasPBOn checks whether bit `crBitPBOn` is set in the control register `cr`. Returns true if set, otherwise false.
@@ -205,7 +187,7 @@ func (m *Timer) SetTimerHigh(prescaler uint8) {
 // SetControlRegister updates the control register with new data and sets the count mode for the timer.
 func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
 	if m.crNewPending {
-		fmt.Printf("TIMER %s has cr pending\n", m.id)
+		fmt.Printf("TIMER %s has cr pending\n", m.GetId())
 	}
 	m.crNewPending = true
 	m.crNew = data
@@ -220,15 +202,15 @@ func (m *Timer) updateCountMode(countMode uint8) {
 	case countModeTick:
 		m.count = m.countTick
 	case countModeCNT:
-		log.Printf("[timerCount] %s TODO Count Mode countModeCNT", m.id)
+		log.Printf("[timerCount] %s TODO Count Mode countModeCNT", m.GetId())
 		m.count = m.countCNT
 	case countModeTimerUnderflow:
 		m.count = m.countTimerUnderflow
 	case countModeTimerUnderflowCNT:
-		log.Printf("[timerCount] %s TODO Count Mode countModeTimerUnderflowCNT", m.id)
+		log.Printf("[timerCount] %s TODO Count Mode countModeTimerUnderflowCNT", m.GetId())
 		m.count = m.countTimerUnderflowCNT
 	default:
-		log.Printf("[timerCount] %s UNSUPPORTED Count Mode %d", m.id, m.countMode)
+		log.Printf("[timerCount] %s UNSUPPORTED Count Mode %d", m.GetId(), m.countMode)
 		m.count = m.countTick
 	}
 }
@@ -381,13 +363,13 @@ func (m *Timer) countTimerUnderflowCNT(underflowX bool) bool {
 // printTimerControlData displays detailed control register bit states for a Timer using the provided data byte.
 func (m *Timer) printTimerControlData(data uint8) {
 	fmt.Printf("\n")
-	fmt.Printf("%s Timer Control -> crBitStart: %v\n", m.id, data&crBitStart != 0)
-	fmt.Printf("%s Timer Control -> crBitSignalNoUnderflow: %v\n", m.id, data&crBitPBOn != 0)
-	fmt.Printf("%s Timer Control -> crBitSignalUnderflowInverted: %v\n", m.id, data&crBitOutMode != 0)
-	fmt.Printf("%s Timer Control -> crBitRunMode: %v\n", m.id, data&crBitRunMode != 0)
-	fmt.Printf("%s Timer Control -> crBitForceLoad: %v\n", m.id, data&crBitForceLoad != 0)
-	fmt.Printf("%s Timer Control -> crBitInMode: %v\n", m.id, data&crBitInMode != 0)
-	fmt.Printf("%s Timer Control -> crBitSPMode: %v\n", m.id, data&crBitSPMode != 0)
-	fmt.Printf("%s Timer Control -> crBitTODIn: %v\n", m.id, data&crBitTODIn != 0)
+	fmt.Printf("%s Timer Control -> crBitStart: %v\n", m.GetId(), data&crBitStart != 0)
+	fmt.Printf("%s Timer Control -> crBitSignalNoUnderflow: %v\n", m.GetId(), data&crBitPBOn != 0)
+	fmt.Printf("%s Timer Control -> crBitSignalUnderflowInverted: %v\n", m.GetId(), data&crBitOutMode != 0)
+	fmt.Printf("%s Timer Control -> crBitRunMode: %v\n", m.GetId(), data&crBitRunMode != 0)
+	fmt.Printf("%s Timer Control -> crBitForceLoad: %v\n", m.GetId(), data&crBitForceLoad != 0)
+	fmt.Printf("%s Timer Control -> crBitInMode: %v\n", m.GetId(), data&crBitInMode != 0)
+	fmt.Printf("%s Timer Control -> crBitSPMode: %v\n", m.GetId(), data&crBitSPMode != 0)
+	fmt.Printf("%s Timer Control -> crBitTODIn: %v\n", m.GetId(), data&crBitTODIn != 0)
 	fmt.Printf("\n")
 }

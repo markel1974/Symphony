@@ -7,6 +7,7 @@ import (
 
 // Joystick represents an input device for handling directional and button presses with customizable sensitivity settings.
 type Joystick struct {
+	*board.BaseComponent
 	storage *fifo.StaticFifo
 	joy     int
 	s1      uint
@@ -14,12 +15,13 @@ type Joystick struct {
 }
 
 // NewJoystick initializes and returns a new instance of Joystick with default settings and sensitivity for controls.
-func NewJoystick() *Joystick {
+func NewJoystick(node *board.Node, suffix string) *Joystick {
 	j := &Joystick{
-		storage: nil,
-		joy:     0xff,
-		s1:      0,
-		s2:      0,
+		BaseComponent: board.NewBaseComponent(node, "joystick", suffix, nil),
+		storage:       nil,
+		joy:           0xff,
+		s1:            0,
+		s2:            0,
 	}
 	j.Update(0x0000, 0xffff, 40)
 	return j

@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
+	"github.com/markel1974/c64emu/src/components/board"
 )
 
 // CartridgeOcean represents a cartridge model with bank switching and IO interaction mechanisms for ROM emulation.
 type CartridgeOcean struct {
-	id        string
+	*board.BaseComponent
+	loaderId  string
 	intervals icartridge.RomInterval
 	lastData  uint8
 	banks     [][]byte
@@ -25,20 +27,22 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridge interface.
-func New() icartridge.ICartridge {
+func New(node *board.Node, suffix string) icartridge.ICartridge {
 	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
 	return &CartridgeOcean{
-		game:      v.Game,
-		exRom:     v.ExRom,
-		intervals: v.IntervalLow | v.IntervalHigh,
-		lastData:  0,
+		BaseComponent: board.NewBaseComponent(node, "ocean", suffix, nil),
+		loaderId:      "ocean",
+		game:          v.Game,
+		exRom:         v.ExRom,
+		intervals:     v.IntervalLow | v.IntervalHigh,
+		lastData:      0,
 	}
 }
 
 // Setup initializes the cartridge with the specified expansion board and CRT loader, setting up necessary configurations.
 func (c *CartridgeOcean) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	c.board = board
-	c.id = ldr.GetId()
+	c.loaderId = ldr.GetId()
 	if ldr.GetType() == loader.TypeCrt {
 		return c.initCrt(ldr)
 	}
@@ -50,9 +54,9 @@ func (c *CartridgeOcean) Reset() {
 
 }
 
-// GetId returns the unique identifier of the CartridgeOcean instance.
-func (c *CartridgeOcean) GetId() string {
-	return c.id
+// GetLoaderId returns the unique identifier of the CartridgeOcean instance.
+func (c *CartridgeOcean) GetLoaderId() string {
+	return c.loaderId
 }
 
 // Write attempts to write data to the cartridge at the specified address and interval. Returns true if the write is blocked.

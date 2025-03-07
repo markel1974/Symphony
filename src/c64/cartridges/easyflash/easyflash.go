@@ -10,6 +10,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/c64/snapshot"
 	"github.com/markel1974/c64emu/src/common/filler"
+	"github.com/markel1974/c64emu/src/components/board"
 	"io"
 	"log"
 	"os"
@@ -18,11 +19,12 @@ import (
 // CartridgeEasyFlash represents the implementation of an EasyFlash cartridge for execution on supported hardware.
 // It contains fields for configuration, state management, memory mapping, flash state, and cartridge-specific options.
 type CartridgeEasyFlash struct {
+	*board.BaseComponent
+	loaderId        string
 	board           icartridge.IExpansion
 	intervalLo      icartridge.RomInterval
 	intervalHi      icartridge.RomInterval
 	memoryConfigIdx int
-	id              string
 	game            uint8
 	exRom           uint8
 	stateLow        *flash.Flash040 /* the 29F040B statemachine */
@@ -45,8 +47,10 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridge interface.
-func New() icartridge.ICartridge {
+func New(node *board.Node, suffix string) icartridge.ICartridge {
 	return &CartridgeEasyFlash{
+		BaseComponent:   board.NewBaseComponent(node, "easyFlash", suffix, nil),
+		loaderId:        "easyFlash",
 		game:            1,
 		exRom:           1,
 		register00:      0,
@@ -68,7 +72,7 @@ func New() icartridge.ICartridge {
 func (c *CartridgeEasyFlash) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
 	var rawCart []byte
 	c.board = board
-	c.id = ldr.GetId()
+	c.loaderId = ldr.GetId()
 	c.game = uint8(ldr.Game)
 	c.exRom = uint8(ldr.ExRom)
 	rp := filler.New(255, 2, 1, 0x100, 255, 0, 0, 0)
@@ -98,9 +102,9 @@ func (c *CartridgeEasyFlash) Reset() {
 
 }
 
-// GetId returns the unique identifier of the CartridgeEasyFlash as a string.
-func (c *CartridgeEasyFlash) GetId() string {
-	return c.id
+// GetLoaderId retrieves the unique identifier of the CartridgeEasyFlash instance.
+func (c *CartridgeEasyFlash) GetLoaderId() string {
+	return c.loaderId
 }
 
 // GetExRom returns the current value of the exRom property for the CartridgeEasyFlash instance as an unsigned 8-bit integer.

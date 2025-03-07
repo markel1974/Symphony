@@ -10,6 +10,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/magicdesk"
 	"github.com/markel1974/c64emu/src/c64/cartridges/ocean"
 	"github.com/markel1974/c64emu/src/c64/cartridges/reu"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/config"
 	"strconv"
 	"strings"
@@ -21,27 +22,29 @@ import (
 
 // Manager is responsible for managing cartridge interactions, configurations, and hardware registration in the system.
 type Manager struct {
+	*board.BaseComponent
 	idx                 int
 	board               icartridge.IExpansion
 	prefs               *config.Config
 	carts               []icartridge.ICartridge
 	emulate             []icartridge.ICartridge
-	registerHardware    map[string]func() icartridge.ICartridge
-	registerType        map[int]func() icartridge.ICartridge
-	registerSize        map[int]func() icartridge.ICartridge
-	registerSizeDefault func() icartridge.ICartridge
+	registerHardware    map[string]func(*board.Node, string) icartridge.ICartridge
+	registerType        map[int]func(*board.Node, string) icartridge.ICartridge
+	registerSize        map[int]func(*board.Node, string) icartridge.ICartridge
+	registerSizeDefault func(*board.Node, string) icartridge.ICartridge
 }
 
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
-func NewManager() *Manager {
+func NewManager(node *board.Node, suffix string) *Manager {
 	return &Manager{
+		BaseComponent:       board.NewBaseComponent(node, "cartridgeManager", suffix, nil),
 		idx:                 0,
 		board:               nil,
 		prefs:               nil,
 		carts:               nil,
-		registerHardware:    make(map[string]func() icartridge.ICartridge),
-		registerType:        make(map[int]func() icartridge.ICartridge),
-		registerSize:        make(map[int]func() icartridge.ICartridge),
+		registerHardware:    make(map[string]func(*board.Node, string) icartridge.ICartridge),
+		registerType:        make(map[int]func(*board.Node, string) icartridge.ICartridge),
+		registerSize:        make(map[int]func(*board.Node, string) icartridge.ICartridge),
 		registerSizeDefault: nil,
 	}
 }
@@ -207,7 +210,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if err := ldr.Setup(name, data); err != nil {
 		return "", err
 	}
-	var factory func() icartridge.ICartridge = nil
+	var factory func(*board.Node, string) icartridge.ICartridge = nil
 	if len(hardware) > 0 {
 		hardware = strings.ToUpper(strings.TrimSpace(hardware))
 		factory = f.registerHardware[hardware]
@@ -221,7 +224,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if factory == nil {
 		return "", fmt.Errorf("unsupported => %d", ldr.Kind)
 	}
-	cart := factory()
+	cart := factory(f.GetNode(), strconv.Itoa(f.idx))
 	f.idx++
 	f.carts = append(f.carts, cart)
 	if err := cart.Setup(f.board, ldr); err != nil {
@@ -237,14 +240,14 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 func (f *Manager) Remove(id string) error {
 	found := false
 	for s, cart := range f.carts {
-		if cart.GetId() == id {
+		if cart.GetLoaderId() == id {
 			f.carts = append(f.carts[:s], f.carts[s+1:]...)
 			found = true
 			break
 		}
 	}
 	for e, c := range f.emulate {
-		if c.GetId() == id {
+		if c.GetLoaderId() == id {
 			f.emulate = append(f.emulate[:e], f.emulate[e+1:]...)
 			break
 		}

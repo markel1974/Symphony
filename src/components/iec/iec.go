@@ -2,12 +2,16 @@ package iec
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/c1541/board"
+	"strconv"
+	"strings"
+
 	"github.com/markel1974/c64emu/src/common/signals"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/iec/fsdrive"
 	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/config"
-	"strings"
+
+	c1541board "github.com/markel1974/c64emu/src/c1541/board"
 )
 
 /*
@@ -36,8 +40,7 @@ const (
 */
 
 type IEC struct {
-	parentId        string
-	id              string
+	*board.BaseComponent
 	cfg             *config.Config
 	atnState        uint8
 	cpuPort         uint8
@@ -58,10 +61,9 @@ type IEC struct {
 	//emu1541 bool
 }
 
-func NewIEC(parentId string, suffix string) *IEC {
+func NewIEC(node *board.Node, suffix string) *IEC {
 	c := &IEC{
-		parentId:        parentId,
-		id:              "iec" + suffix,
+		BaseComponent:   board.NewBaseComponent(node, "iec", suffix, nil),
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),
@@ -69,7 +71,7 @@ func NewIEC(parentId string, suffix string) *IEC {
 	return c
 }
 
-func (c *IEC) AddPeripheral(peripheral *board.Board) {
+func (c *IEC) AddPeripheral(peripheral *c1541board.Board) {
 	//if c.peripheralsCount >= BusNum {
 	//	return
 	//}
@@ -85,7 +87,7 @@ func (c *IEC) AddPeripheral(peripheral *board.Board) {
 	//peripheral->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 }
 
-func (c *IEC) RemovePeripheral(peripheral *board.Board) {
+func (c *IEC) RemovePeripheral(peripheral *c1541board.Board) {
 	//found := false
 	//for i := uint8(0); i < c.peripheralsCount; i++ {
 	//	if c.peripheralStorage[i] == peripheral {
@@ -122,14 +124,6 @@ func (c *IEC) Setup(cfg *config.Config) {
 	//c.virtualDrives = append(c.virtualDrives, vd9)
 
 	//c.rebuildPeripherals()
-}
-
-func (c *IEC) GetId() string {
-	return c.id
-}
-
-func (c *IEC) GetParentId() string {
-	return c.parentId
 }
 
 func (c *IEC) configChanged() {
@@ -231,11 +225,11 @@ func (c *IEC) createVirtualDrive(kind string, opts string, deviceId uint8) virtu
 	var vd virtualdrive.IVirtualDrive
 	switch kind {
 	case "C1541":
-		vd = board.New(c, deviceId, deviceNumber, opts)
+		vd = c1541board.New(c.GetNode(), strconv.Itoa(int(deviceNumber)), c, deviceId, deviceNumber, opts)
 	case "FSDrive":
 		vd = fsdrive.New(c, deviceId, deviceNumber, opts)
 	default:
-		vd = board.New(c, deviceId, deviceNumber, opts)
+		vd = c1541board.New(c.GetNode(), strconv.Itoa(int(deviceNumber)), c, deviceId, deviceNumber, opts)
 	}
 	vd.Setup(c.cfg)
 	return vd

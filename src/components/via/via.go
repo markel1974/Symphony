@@ -2,6 +2,7 @@ package mos6522
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/components/board"
 )
 
 // see drive/iecieee/via2d.c [store_pra - store_prb]
@@ -13,29 +14,31 @@ const defaultViaTimeout = 0xffff
 
 // Via represents a Versatile Interface Adapter (VIA) with multiple registers for configuring I/O, timers, and control logic.
 type Via struct {
-	parentId string
-	id       string
-	pra      uint8
-	ddra     uint8
-	prb      uint8
-	ddrb     uint8
-	t1c      uint16
-	t1l      uint16
-	t2c      uint16
-	t2l      uint16
-	sr       uint8
-	acr      uint8
-	pcr      uint8
-	ifr      uint8
-	ier      uint8
-	socket   ISocket
+	*board.BaseComponent
+	pra    uint8
+	ddra   uint8
+	prb    uint8
+	ddrb   uint8
+	t1c    uint16
+	t1l    uint16
+	t2c    uint16
+	t2l    uint16
+	sr     uint8
+	acr    uint8
+	pcr    uint8
+	ifr    uint8
+	ier    uint8
+	socket ISocket
 }
 
 // NewVia creates and initializes a new Via instance with the specified identifier.
-func NewVia(parentId string, suffix string) *Via {
+func NewVia(node *board.Node, suffix string) *Via {
 	v := &Via{
-		parentId: parentId,
-		id:       "via" + suffix,
+		BaseComponent: board.NewBaseComponent(node, "via", suffix, nil),
+		pra:           0,
+		ddra:          0,
+		prb:           0,
+		ddrb:          0,
 	}
 	return v
 }
@@ -43,14 +46,6 @@ func NewVia(parentId string, suffix string) *Via {
 // Setup initializes the Via by assigning the provided ISocket instance to its internal socket reference.
 func (v *Via) Setup(socket ISocket) {
 	v.socket = socket
-}
-
-func (v *Via) GetId() string {
-	return v.id
-}
-
-func (v *Via) GetParentId() string {
-	return v.parentId
 }
 
 // Reset sets all internal registers of the Via instance to zero, effectively reinitializing its state.
@@ -115,7 +110,7 @@ func (v *Via) ReadByte(addr uint16) uint8 {
 	case 0xf: //0x180f:
 		return v.socket.ReadPRA(v.pra, v.ddra)
 	default:
-		fmt.Printf("%s READ UNKNOWN - %x\n", v.id, addr)
+		fmt.Printf("%s READ UNKNOWN - %x\n", v.GetId(), addr)
 		return 0
 	}
 }
@@ -170,7 +165,7 @@ func (v *Via) WriteByte(addr uint16, data uint8) {
 		v.pra = data
 		v.socket.WritePRA(v.pra, v.ddra)
 	default:
-		fmt.Printf("%s WRITE UNKNOWN - %x\n", v.id, addr)
+		fmt.Printf("%s WRITE UNKNOWN - %x\n", v.GetId(), addr)
 	}
 }
 

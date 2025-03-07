@@ -4,6 +4,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/components/6510"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/quartz"
 )
 
@@ -13,7 +14,8 @@ const Id = "SCPU"
 // ExternalCPU represents an external CPU module with its associated components and connections for system integration.
 // It includes an ID, expansion board, CPU socket, programmable interrupt controller, CPU, and quartz clock source.
 type ExternalCPU struct {
-	id        string
+	*board.BaseComponent
+	loaderId  string
 	board     icartridge.IExpansion
 	cpuSocket *CPUSocket
 	pic       *mos6510.Pic
@@ -22,21 +24,16 @@ type ExternalCPU struct {
 }
 
 // New returns a new instance of the ExternalCPU struct implementing the ICartridge interface.
-func New() icartridge.ICartridge {
+func New(node *board.Node, suffix string) icartridge.ICartridge {
 	r := &ExternalCPU{
-		id:        "",
-		board:     nil,
-		cpuSocket: nil,
-		pic:       nil,
-		cpu:       nil,
-		quartz:    nil,
+		BaseComponent: board.NewBaseComponent(node, "externalCpu", suffix, nil),
+		board:         nil,
+		cpuSocket:     nil,
+		pic:           nil,
+		cpu:           nil,
+		quartz:        nil,
 	}
 	return r
-}
-
-// GetId returns the unique identifier of the ExternalCPU as a string.
-func (s *ExternalCPU) GetId() string {
-	return s.id
 }
 
 // EmulationRequired determines if CPU emulation is needed for the associated external CPU instance. Always returns true.
@@ -46,18 +43,17 @@ func (s *ExternalCPU) EmulationRequired() bool {
 
 // Setup initializes the ExternalCPU with the provided expansion board and CRT loader, configuring its internal components.
 func (s *ExternalCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
-	const componentId = "externalCpu"
 	s.board = board
-	s.id = ldr.GetId()
+	s.loaderId = ldr.GetId()
 	s.board.SetDMALow(true)
 
-	s.quartz = quartz.NewQuartz(componentId, "")
-	s.pic = mos6510.NewPic(componentId, "")
+	s.quartz = quartz.NewQuartz(s.GetNode(), "")
+	s.pic = mos6510.NewPic(s.GetNode(), "")
 
 	s.pic.Setup(s.quartz)
 
 	s.cpuSocket = NewCPUSocket()
-	s.cpu = mos6510.NewCPU(componentId, "")
+	s.cpu = mos6510.NewCPU(s.GetNode(), "")
 
 	s.cpuSocket.Setup(s)
 	s.cpu.Setup(s.cpuSocket)
@@ -66,6 +62,10 @@ func (s *ExternalCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) 
 	s.board.IRQClearBind(s.pic.ClearIRQ)
 
 	return nil
+}
+
+func (s *ExternalCPU) GetLoaderId() string {
+	return s.loaderId
 }
 
 // Reset reinitializes the CPU to its default state by invoking its internal Reset method.

@@ -12,6 +12,7 @@ import (
 	"github.com/markel1974/c64emu/src/c1541/pla"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/components/6510"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/via"
@@ -30,6 +31,7 @@ const baseId = "c1541"
 
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
+	*board.BaseComponent
 	pic          *mos6510.Pic
 	iec          virtualdrive.IIec
 	quartz       *quartz.Quartz
@@ -46,19 +48,20 @@ type Board struct {
 }
 
 // New creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string) *Board {
+func New(node *board.Node, suffix string, iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string) *Board {
 	return &Board{
-		iec:          iec,
-		deviceId:     deviceId,
-		filePath:     opts,
-		deviceNumber: deviceNumber,
-		ledChanged:   signals.NewSignalUint32(),
-		cpuSocket:    nil,
-		via1Socket:   nil,
-		via2Socket:   nil,
-		pic:          nil,
-		banks:        nil,
-		cfg:          nil,
+		BaseComponent: board.NewBaseComponent(node, "c1541", suffix, nil),
+		iec:           iec,
+		deviceId:      deviceId,
+		filePath:      opts,
+		deviceNumber:  deviceNumber,
+		ledChanged:    signals.NewSignalUint32(),
+		cpuSocket:     nil,
+		via1Socket:    nil,
+		via2Socket:    nil,
+		pic:           nil,
+		banks:         nil,
+		cfg:           nil,
 	}
 }
 
@@ -67,13 +70,13 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.cfg = cfg
 	m.cfg.Bind(m.configChanged)
 	m.banks = pla.New()
-	m.quartz = quartz.NewQuartz(baseId, "")
-	m.pic = mos6510.NewPic(baseId, "")
-	cpu := mos6510.NewCPU(baseId, "")
+	m.quartz = quartz.NewQuartz(m.GetNode(), "")
+	m.pic = mos6510.NewPic(m.GetNode(), "")
+	cpu := mos6510.NewCPU(m.GetNode(), "")
 	m.mec = mechanic.NewMechanic()
 	m.mec.Setup(m.filePath)
-	via1 := mos6522.NewVia(baseId, "1")
-	via2 := mos6522.NewVia(baseId, "2")
+	via1 := mos6522.NewVia(m.GetNode(), "1")
+	via2 := mos6522.NewVia(m.GetNode(), "2")
 	m.cpuSocket = NewCPUSocket()
 	m.via1Socket = NewVia1Socket()
 	m.via2Socket = NewVia2Socket()
