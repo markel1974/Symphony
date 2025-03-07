@@ -1,43 +1,79 @@
 package board
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
-// Components manages a collection of IComponent instances using a map for storing and retrieving by their unique IDs.
+// Components manages a collection of IComponent instances, facilitating their registration and interaction.
+// It provides methods to manipulate properties, execute commands, and serialize/restore component states.
 type Components struct {
 	container map[string]IComponent
 }
 
-// NewComponents initializes and returns a pointer to a new Components instance with an empty container map.
+// NewComponents creates and returns a new instance of Components with an initialized container map.
 func NewComponents() *Components {
 	return &Components{
 		container: make(map[string]IComponent),
 	}
 }
 
-// Register adds the given IComponent to the container using its unique ID as the key.
-func (s *Components) Register(component IComponent) {
+// Register adds an IComponent to the Components container using its unique identifier as the key.
+func (m *Components) Register(component IComponent) {
 	id := component.GetId()
-	s.container[id] = component
+	m.container[id] = component
 }
 
-// Dump retrieves a component by its ID, initializes a dumper with its properties, and exports the component's state.
-func (m *Components) Dump(id string) error {
+// RunCommand executes a command for a specific component by ID, using the provided arguments, and returns the results or an error.
+func (m *Components) RunCommand(id string, cmd string, args string) (map[string]interface{}, error) {
+	c, ok := m.container[id]
+	if !ok {
+		return nil, fmt.Errorf("component '%s' not found", id)
+	}
+	values := strings.Split(args, " ")
+	d, err := c.GetProperties().Run(cmd, values)
+	return d, err
+}
+
+// SetProperty sets the specified property of a component to the provided value. Returns an error if the component or property is not found.
+func (m *Components) SetProperty(id string, prop string, val interface{}) error {
 	c, ok := m.container[id]
 	if !ok {
 		return fmt.Errorf("component '%s' not found", id)
 	}
-	dumper := NewDumper(c.GetProperties())
-	return c.Dump(dumper)
+	err := c.GetProperties().SetProperty(prop, val)
+	return err
 }
 
-// Restore attempts to restore the state of a component by its ID using a Dumper instance. Returns an error if not found.
-func (m *Components) Restore(id string) error {
+// GetProperty retrieves the value of a specified property from a given component by its id.
+// Returns the property value and an error if the component or property is not found.
+func (m *Components) GetProperty(id string, prop string) (interface{}, error) {
+	c, ok := m.container[id]
+	if !ok {
+		return fmt.Errorf("component '%s' not found", id), nil
+	}
+	v, err := c.GetProperties().GetProperty(prop)
+	return v, err
+}
+
+// Dump retrieves and returns a snapshot of all properties of the specified component by its ID. Returns an error if the component is not found.
+func (m *Components) Dump(id string) (map[string]interface{}, error) {
+	c, ok := m.container[id]
+	if !ok {
+		return nil, fmt.Errorf("component '%s' not found", id)
+	}
+	d, err := c.GetProperties().Dump()
+	return d, err
+}
+
+// Restore updates the properties of a component identified by the given id using the provided data map. Returns an error if the component is not found or the restore operation fails.
+func (m *Components) Restore(id string, d map[string]interface{}) error {
 	c, ok := m.container[id]
 	if !ok {
 		return fmt.Errorf("component '%s' not found", id)
 	}
-	dumper := NewDumper(c.GetProperties())
-	return c.Restore(dumper)
+	err := c.GetProperties().Restore(d)
+	return err
 }
 
 /*

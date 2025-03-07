@@ -5,13 +5,11 @@ import (
 	"fmt"
 	c64board "github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/sid"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/asciirender"
 	"github.com/markel1974/c64emu/src/render/glrender"
 	"github.com/markel1974/c64emu/src/version"
 	vic20board "github.com/markel1974/c64emu/src/vic20/board"
-	"os"
 )
 
 //TODO WASM
@@ -68,19 +66,35 @@ import (
 
 // -f "/Users/tinmr305/Downloads/c64carts/SamsJourneySeasonsSpecialV1_1+5D-GP.d64"
 
-func Test() {
-	components := board.NewComponents()
-	s := mos6581.NewSID("test", "")
-	components.Register(s)
-	components.Dump(s.GetId())
-	os.Exit(1)
-}
-
 type IRender interface {
 	Start() error
 }
 
+/*
+func Test() {
+	components := board.NewComponents()
+	s := mos6581.NewSID("test", "")
+	components.Register(s)
+	tst := make([]byte, 32)
+	for x := range tst {
+		tst[x] = uint8(x)
+	}
+	err := components.SetProperty(s.GetId(), "registers", tst)
+	if err != nil {
+		panic(err)
+	}
+	res, err := components.GetProperty(s.GetId(), "registers")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("res: %v\n", res)
+	components.Dump(s.GetId())
+	os.Exit(1)
+}
+*/
+
 func main() {
+	//Test()
 	var showHelp bool
 	var showVersion bool
 	var cartridges string

@@ -25,7 +25,7 @@ type SID struct {
 	registers    []uint8
 	cfg          *config.Config
 	audioBuilder *AudioBuilder
-	props        map[string]*board.PropertyInfo
+	reflect      *Reflect
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
@@ -37,11 +37,8 @@ func NewSID(parentId string, suffix string) *SID {
 		registers:    make([]uint8, RegisterCount),
 		cfg:          nil,
 		audioBuilder: nil,
-		props:        nil,
 	}
-	s.props = map[string]*board.PropertyInfo{
-		registersId: board.MustCreatePropertyInfo(s.registers, "SID register", false),
-	}
+	s.reflect = NewReflect(s)
 	return s
 }
 
@@ -69,20 +66,8 @@ func (sid *SID) GetParentId() string {
 }
 
 // GetProperties returns a map of property information related to the SID object, along with an error if any occurs.
-func (sid *SID) GetProperties() map[string]*board.PropertyInfo {
-	return sid.props
-}
-
-// Dump stores the SID's registers into the provided map using the registers identifier as the key.
-func (sid *SID) Dump(d *board.Dumper) error {
-	_ = d.Dump(registersId, sid.registers)
-	return nil
-}
-
-// Restore updates the SID's internal state using the provided map data, ensuring the registers are copied and validated.
-func (sid *SID) Restore(d *board.Dumper) error {
-	_ = d.Restore(registersId, &sid.registers, len(sid.registers))
-	return nil
+func (sid *SID) GetProperties() *board.Properties {
+	return sid.reflect.GetProperties()
 }
 
 // SetPotX sets the value of the POT X register in the SID chip using the given 8-bit value.

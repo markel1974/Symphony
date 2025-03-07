@@ -161,19 +161,24 @@ func (m *Timer) GetParentId() string {
 }
 
 // GetProperties returns a map representing the properties of the timer and their respective metadata, or an error if any occurs.
-func (t *Timer) GetProperties() (map[string]*board.PropertyInfo, error) {
-	return map[string]*board.PropertyInfo{
-		crId:            board.MustCreatePropertyInfo(t.cr, "Control Register (CR) of the timer.", false),
-		crNewId:         board.MustCreatePropertyInfo(t.crNew, "New value for the Control Register (CR).", false),
-		crNewPendingId:  board.MustCreatePropertyInfo(t.crNewPending, "Flag indicating if a new value for CR is pending.", false),
-		timerId:         board.MustCreatePropertyInfo(t.timer, "Current value of the timer.", false),
-		timerLatchId:    board.MustCreatePropertyInfo(t.timerLatch, "Latch value for the timer.", false),
-		toggleModeId:    board.MustCreatePropertyInfo(t.toggleMode, "Flag indicating if the timer is in toggle mode.", false),
-		timerLatchLowId: board.MustCreatePropertyInfo(t.timerLatchLow, "Low byte of the timer latch value.", false),
-		cntId:           board.MustCreatePropertyInfo(t.cnt, "CNT flag (specific to the CIA).", false),
-		timerStateId:    board.MustCreatePropertyInfo(t.timerState, "Current state of the timer.", false),
-		countModeId:     board.MustCreatePropertyInfo(t.countMode, "Current count mode of the timer.", false),
-	}, nil
+func (t *Timer) GetProperties() *board.Properties {
+	//TODO IMPLEMENT
+	return nil
+	/*
+		return map[string]*board.PropertyInfo{
+			crId:            board.MustCreatePropertyInfo(t.cr, "Control Register (CR) of the timer.", false),
+			crNewId:         board.MustCreatePropertyInfo(t.crNew, "New value for the Control Register (CR).", false),
+			crNewPendingId:  board.MustCreatePropertyInfo(t.crNewPending, "Flag indicating if a new value for CR is pending.", false),
+			timerId:         board.MustCreatePropertyInfo(t.timer, "Current value of the timer.", false),
+			timerLatchId:    board.MustCreatePropertyInfo(t.timerLatch, "Latch value for the timer.", false),
+			toggleModeId:    board.MustCreatePropertyInfo(t.toggleMode, "Flag indicating if the timer is in toggle mode.", false),
+			timerLatchLowId: board.MustCreatePropertyInfo(t.timerLatchLow, "Low byte of the timer latch value.", false),
+			cntId:           board.MustCreatePropertyInfo(t.cnt, "CNT flag (specific to the CIA).", false),
+			timerStateId:    board.MustCreatePropertyInfo(t.timerState, "Current state of the timer.", false),
+			countModeId:     board.MustCreatePropertyInfo(t.countMode, "Current count mode of the timer.", false),
+		}, nil
+
+	*/
 }
 
 // Dump serializes the Timer's internal state into the provided map using predefined keys.
