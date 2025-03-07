@@ -12,11 +12,6 @@ const (
 	potYRegisterIndex = 26
 )
 
-// registersId represents the key used to identify SID register properties in various operations.
-const (
-	registersId = "registers"
-)
-
 // SID represents a chip emulation containing configurations, registers, and audio handling functionality.
 type SID struct {
 	parentId     string
@@ -25,7 +20,7 @@ type SID struct {
 	registers    []uint8
 	cfg          *config.Config
 	audioBuilder *AudioBuilder
-	reflect      *Reflect
+	reflect      *SidReflect
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
@@ -38,7 +33,7 @@ func NewSID(parentId string, suffix string) *SID {
 		cfg:          nil,
 		audioBuilder: nil,
 	}
-	s.reflect = NewReflect(s)
+	s.reflect = NewSidReflect(s)
 	return s
 }
 

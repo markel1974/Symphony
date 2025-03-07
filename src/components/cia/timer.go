@@ -6,20 +6,6 @@ import (
 	"log"
 )
 
-// crId is the identifier for 'cr'.
-const (
-	crId            = "cr"
-	crNewId         = "crNew"
-	crNewPendingId  = "crNewPending"
-	timerId         = "timer"
-	timerLatchId    = "timerLatch"
-	toggleModeId    = "toggleMode"
-	timerLatchLowId = "timerLatchLow"
-	cntId           = "cnt"
-	timerStateId    = "timerState"
-	countModeId     = "countMode"
-)
-
 // TimerState represents the state of a timer, typically used to indicate different phases or statuses of a timing mechanism.
 type TimerState uint8
 
@@ -112,6 +98,7 @@ type Timer struct {
 	toggleMode    bool
 	timerLatchLow uint16
 	cnt           bool
+	reflect       *TimerReflect
 }
 
 // NewTimer initializes and returns a new Timer instance with the given parentId and suffix.
@@ -131,7 +118,9 @@ func NewTimer(parentId string, suffix string) *Timer {
 		timerLatchLow: 0,
 		count:         nil,
 		cnt:           false,
+		reflect:       nil,
 	}
+	m.reflect = NewTimerReflect(m)
 	m.Reset()
 	return m
 }
@@ -163,77 +152,6 @@ func (m *Timer) GetParentId() string {
 // GetProperties returns a map representing the properties of the timer and their respective metadata, or an error if any occurs.
 func (t *Timer) GetProperties() *board.Properties {
 	//TODO IMPLEMENT
-	return nil
-	/*
-		return map[string]*board.PropertyInfo{
-			crId:            board.MustCreatePropertyInfo(t.cr, "Control Register (CR) of the timer.", false),
-			crNewId:         board.MustCreatePropertyInfo(t.crNew, "New value for the Control Register (CR).", false),
-			crNewPendingId:  board.MustCreatePropertyInfo(t.crNewPending, "Flag indicating if a new value for CR is pending.", false),
-			timerId:         board.MustCreatePropertyInfo(t.timer, "Current value of the timer.", false),
-			timerLatchId:    board.MustCreatePropertyInfo(t.timerLatch, "Latch value for the timer.", false),
-			toggleModeId:    board.MustCreatePropertyInfo(t.toggleMode, "Flag indicating if the timer is in toggle mode.", false),
-			timerLatchLowId: board.MustCreatePropertyInfo(t.timerLatchLow, "Low byte of the timer latch value.", false),
-			cntId:           board.MustCreatePropertyInfo(t.cnt, "CNT flag (specific to the CIA).", false),
-			timerStateId:    board.MustCreatePropertyInfo(t.timerState, "Current state of the timer.", false),
-			countModeId:     board.MustCreatePropertyInfo(t.countMode, "Current count mode of the timer.", false),
-		}, nil
-
-	*/
-}
-
-// Dump serializes the Timer's internal state into the provided map using predefined keys.
-func (m *Timer) Dump(d map[string]interface{}) error {
-	//board.DumpSetUint8(d, crId, m.cr)
-	//board.DumpSetUint8(d, crNewId, m.crNew)
-	//board.DumpSetBool(d, crNewPendingId, m.crNewPending)
-	//board.DumpSetUint16(d, timerId, m.timer)
-	//board.DumpSetUint16(d, timerLatchId, m.timerLatch)
-	//board.DumpSetBool(d, toggleModeId, m.toggleMode)
-	//board.DumpSetUint16(d, timerLatchLowId, m.timerLatchLow)
-	//board.DumpSetBool(d, cntId, m.cnt)
-	//board.DumpSetUint8(d, timerStateId, uint8(m.timerState))
-	//board.DumpSetUint8(d, countModeId, m.countMode)
-	return nil
-}
-
-// Restore populates the Timer's fields using the provided map and handles type-specific conversions. Returns an error if any conversion fails.
-func (m *Timer) Restore(d map[string]interface{}) error {
-	/*
-		for k, v := range d {
-			var err error
-			switch k {
-			case crId:
-				err = board.DumpGetUint8(v, &m.cr)
-			case crNewId:
-				err = board.DumpGetUint8(v, &m.crNew)
-			case crNewPendingId:
-				err = board.DumpGetBool(v, &m.crNewPending)
-			case timerId:
-				err = board.DumpGetUint16(v, &m.timer)
-			case timerLatchId:
-				err = board.DumpGetUint16(v, &m.timerLatch)
-			case toggleModeId:
-				err = board.DumpGetBool(v, &m.toggleMode)
-			case timerLatchLowId:
-				err = board.DumpGetUint16(v, &m.timerLatchLow)
-			case cntId:
-				err = board.DumpGetBool(v, &m.cnt)
-			case timerStateId:
-				timerState := uint8(m.timerState)
-				if err = board.DumpGetUint8(v, &timerState); err == nil {
-					m.timerState = TimerState(timerState)
-				}
-			case countModeId:
-				countMode := m.countMode
-				if err = board.DumpGetUint8(v, &countMode); err == nil {
-					m.updateCountMode(countMode)
-				}
-			}
-			if err != nil {
-				return err
-			}
-		}
-	*/
 	return nil
 }
 

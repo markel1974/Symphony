@@ -56,7 +56,7 @@ type Board struct {
 	dmaLow              bool
 	prg                 *prg.PRG
 	dt                  board.IThrottling
-	components          *board.Components
+	tree                *board.Tree
 }
 
 const componentId = "c64"
@@ -83,7 +83,7 @@ func NewBoard() *Board {
 		prg:                 nil,
 		joySwap:             true,
 		dt:                  nil,
-		components:          board.NewComponents(),
+		tree:                nil,
 	}
 	return b
 }
@@ -122,7 +122,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	s.expansion = NewExpansion(componentId, "")
 
 	//TODO REGISTER ALL COMPONENTS....
-	s.components.Register(sid)
+	//s.tree = board.NewTree(sid)
 
 	s.expansion.Setup(s)
 	s.pic.Setup(s.quartz)

@@ -11,7 +11,6 @@ type RunFn func(cmd string, args []string) (map[string]interface{}, error)
 // PropertyInfo represents metadata and behavior for a property, including its ID, type details, description, and functionality.
 type PropertyInfo struct {
 	id          string
-	kind        reflect.Type
 	description string
 	readOnly    bool
 	getType     reflect.Type
@@ -28,28 +27,28 @@ type PropertyInfo struct {
 // ro indicates whether the property is read-only.
 // get is a function to retrieve the property's value, with signature func() <ret>.
 // set is a function to update the property's value, with signature func(v <arg>).
-func CreatePropertyInfo(id string, kind interface{}, desc string, ro bool, get interface{}, set interface{}) *PropertyInfo {
+func CreatePropertyInfo(id string, desc string, ro bool, get interface{}, set interface{}) *PropertyInfo {
 	const getError = "wrong get signature must be func get() <ret>"
 	const setError = "wrong get signature must be func set(v <arg>)"
-	p := &PropertyInfo{id: id, kind: reflect.TypeOf(kind), description: desc, readOnly: ro}
+	p := &PropertyInfo{id: id, description: desc, readOnly: ro}
 	p.getType = reflect.TypeOf(get)
 	p.getValue = reflect.ValueOf(get)
 	p.setType = reflect.TypeOf(set)
 	p.setValue = reflect.ValueOf(set)
 	if get == nil || p.getType.Kind() != reflect.Func {
-		panic(getError)
+		panic(fmt.Errorf("%s: %s", id, getError))
 	}
 	if p.getType.NumIn() != 0 || p.getType.NumOut() != 1 {
-		panic(getError)
+		panic(fmt.Errorf("%s: %s", id, getError))
 	}
 	if set == nil || p.setType.Kind() != reflect.Func {
-		panic(setError)
+		panic(fmt.Errorf("%s: %s", id, setError))
 	}
 	if p.setType.NumIn() != 1 || p.setType.NumOut() != 0 {
-		panic(setError)
+		panic(fmt.Errorf("%s: %s", id, setError))
 	}
 	if p.setType.NumOut() != 0 {
-		panic(setError)
+		panic(fmt.Errorf("%s: %s", id, setError))
 	}
 	p.set0Kind = p.setType.In(0).Kind()
 	return p
