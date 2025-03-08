@@ -37,7 +37,7 @@ func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		lastData:      0,
 	}
-	co.SetNode(board.CreateNode(parentNode, co))
+	board.AssignNode(parentNode, co)
 	return co
 }
 

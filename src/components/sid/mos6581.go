@@ -31,7 +31,7 @@ func NewSID(parentNode *board.Node, suffix string) *SID {
 		cfg:           nil,
 		audioBuilder:  nil,
 	}
-	s.SetNode(board.CreateNode(parentNode, s))
+	board.AssignNode(parentNode, s)
 	s.reflect = NewSidReflect(s)
 	return s
 }

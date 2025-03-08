@@ -25,11 +25,14 @@ type Node struct {
 
 // Node rappresenta un nodo nell'albero dei componenti.
 
-func CreateNode(parentNode *Node, component IComponent) *Node {
+func AssignNode(parentNode *Node, component IComponent) {
+	var node *Node
 	if parentNode != nil {
-		return parentNode.AddComponent(component)
+		node = parentNode.AddComponent(component)
+	} else {
+		node = newNode(component, nil)
 	}
-	return newNode(component, nil)
+	component.SetNode(node)
 }
 
 // NewNode creates a new Node with the given component and parent, initializing its path and children map.

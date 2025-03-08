@@ -63,7 +63,7 @@ func New(parentNode *board.Node, suffix string, iec virtualdrive.IIec, deviceId 
 		banks:         nil,
 		cfg:           nil,
 	}
-	b.SetNode(board.CreateNode(parentNode, b))
+	board.AssignNode(parentNode, b)
 	return b
 }
 

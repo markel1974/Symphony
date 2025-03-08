@@ -118,7 +118,7 @@ func NewTimer(parentNode *board.Node, suffix string) *Timer {
 		cnt:           false,
 		reflect:       nil,
 	}
-	m.SetNode(board.CreateNode(parentNode, m))
+	board.AssignNode(parentNode, m)
 	m.reflect = NewTimerReflect(m)
 	m.Reset()
 	return m

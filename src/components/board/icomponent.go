@@ -4,6 +4,8 @@ package board
 type IComponent interface {
 	GetId() string
 
+	SetNode(*Node)
+
 	GetNode() *Node
 
 	GetProperty(prop string) (interface{}, error)

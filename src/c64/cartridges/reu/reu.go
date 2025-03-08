@@ -56,7 +56,7 @@ func newReu(parentNode *board.Node, suffix string, size int) icartridge.ICartrid
 		ram:           make([]uint8, size),
 		irqMask:       0,
 	}
-	r.SetNode(board.CreateNode(parentNode, r))
+	board.AssignNode(parentNode, r)
 	r.Reset()
 	return r
 }

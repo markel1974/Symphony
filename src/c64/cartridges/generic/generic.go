@@ -43,7 +43,7 @@ func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 		b1Interval:    0,
 		intervals:     0,
 	}
-	g.SetNode(board.CreateNode(parentNode, g))
+	board.AssignNode(parentNode, g)
 	return g
 }
 

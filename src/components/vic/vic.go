@@ -165,7 +165,7 @@ func NewVIC(parentNode *board.Node, suffix string) *VIC {
 		ecm:              false,
 		columnSel:        false,
 	}
-	vic.SetNode(board.CreateNode(parentNode, vic))
+	board.AssignNode(parentNode, vic)
 	return vic
 }
 

@@ -40,7 +40,7 @@ func NewVia(parentNode *board.Node, suffix string) *Via {
 		prb:           0,
 		ddrb:          0,
 	}
-	v.SetNode(board.CreateNode(parentNode, v))
+	board.AssignNode(parentNode, v)
 	return v
 }
 

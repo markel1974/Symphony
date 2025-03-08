@@ -53,7 +53,7 @@ func NewPic(parentNode *board.Node, suffix string) *Pic {
 		irq:           bits.Bits(0),
 		nmiExec:       false,
 	}
-	p.SetNode(board.CreateNode(parentNode, p))
+	board.AssignNode(parentNode, p)
 	return p
 }
 

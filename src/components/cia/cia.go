@@ -57,7 +57,7 @@ func NewCIA(parentNode *board.Node, suffix string) *CIA {
 		timerA:        nil,
 		timerB:        nil,
 	}
-	m.SetNode(board.CreateNode(parentNode, m))
+	board.AssignNode(parentNode, m)
 	m.tod = NewTOD(m.GetNode(), "")
 	m.timerA = NewTimer(m.GetNode(), "A")
 	m.timerB = NewTimer(m.GetNode(), "B")

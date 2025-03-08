@@ -87,7 +87,7 @@ func NewBoard() *Board {
 		dt:                  nil,
 		tree:                nil,
 	}
-	b.SetNode(board.CreateNode(nil, b))
+	board.AssignNode(nil, b)
 	b.tree = board.NewTree(b.GetNode())
 	b.quartz = quartz.NewQuartz(b.GetNode(), "")
 	b.cartMan = cartridges.NewManager(b.GetNode(), "")

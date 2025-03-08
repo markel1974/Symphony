@@ -44,7 +44,7 @@ func NewPorts(parentNode *board.Node, suffix string) *Ports {
 		tapeMotorIn:   0,
 		//dirRead:     0,
 	}
-	p.SetNode(board.CreateNode(parentNode, p))
+	board.AssignNode(parentNode, p)
 	return p
 }
 

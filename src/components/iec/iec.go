@@ -68,7 +68,7 @@ func NewIEC(parentNode *board.Node, suffix string) *IEC {
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),
 	}
-	c.SetNode(board.CreateNode(parentNode, c))
+	board.AssignNode(parentNode, c)
 	return c
 }
 

@@ -66,7 +66,7 @@ func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 		memoryConfigIdx: -1,
 		updateEApi:      true,
 	}
-	ef.SetNode(board.CreateNode(parentNode, ef))
+	board.AssignNode(parentNode, ef)
 	return ef
 }
 

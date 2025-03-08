@@ -26,7 +26,7 @@ func NewKeyboard(parentNode *board.Node, suffix string) *Keyboard {
 		virtual:       NewVirtual(),
 		ascii:         NewAscii(),
 	}
-	k.SetNode(board.CreateNode(parentNode, k))
+	board.AssignNode(parentNode, k)
 	k.Reset()
 	return k
 }

@@ -51,7 +51,7 @@ func NewCPU(parentNode *board.Node, suffix string) *CPU {
 	cpu := &CPU{
 		BaseComponent: board.NewBaseComponent("mos6510", suffix, nil),
 	}
-	cpu.SetNode(board.CreateNode(parentNode, cpu))
+	board.AssignNode(parentNode, cpu)
 	return cpu
 }
 

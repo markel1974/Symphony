@@ -25,7 +25,7 @@ func NewQuartz(parentNode *board.Node, suffix string) *Quartz {
 		alarmsContainer: make(map[*Alarm]*Alarm),
 		alarms:          list.New(),
 	}
-	q.SetNode(board.CreateNode(parentNode, q))
+	board.AssignNode(parentNode, q)
 	return q
 }
 

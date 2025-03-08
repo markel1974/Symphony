@@ -47,7 +47,7 @@ func NewManager(parentNode *board.Node, suffix string) *Manager {
 		registerSize:        make(map[int]func(*board.Node, string) icartridge.ICartridge),
 		registerSizeDefault: nil,
 	}
-	m.SetNode(board.CreateNode(parentNode, m))
+	board.AssignNode(parentNode, m)
 	return m
 }
 

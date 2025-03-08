@@ -19,7 +19,7 @@ func NewExpansion(parentNode *board.Node, suffix string) *Expansion {
 	e := &Expansion{
 		BaseComponent: board.NewBaseComponent("expansion", suffix, nil),
 	}
-	e.SetNode(board.CreateNode(parentNode, e))
+	board.AssignNode(parentNode, e)
 	return e
 }
 

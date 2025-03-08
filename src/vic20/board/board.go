@@ -73,7 +73,7 @@ func NewBoard() *Board {
 		joySwap:             true,
 		dt:                  nil,
 	}
-	b.SetNode(board.CreateNode(nil, b))
+	board.AssignNode(nil, b)
 	b.tree = board.NewTree(b.GetNode())
 	b.cartMan = cartridges.NewManager(b.GetNode(), "")
 	return b

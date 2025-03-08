@@ -25,7 +25,7 @@ func NewTOD(parentNode *board.Node, suffix string) *TOD {
 	t := &TOD{
 		BaseComponent: board.NewBaseComponent("tod", suffix, nil),
 	}
-	t.SetNode(board.CreateNode(parentNode, t))
+	board.AssignNode(parentNode, t)
 	return t
 }
 

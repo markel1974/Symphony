@@ -67,7 +67,7 @@ func NewPLA(parentNode *board.Node, suffix string) *PLA {
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
 	}
-	b.SetNode(board.CreateNode(parentNode, b))
+	board.AssignNode(parentNode, b)
 	b.ports = NewPorts(b.GetNode(), "")
 	return b
 }

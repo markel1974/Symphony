@@ -23,7 +23,7 @@ func NewJoystick(parentNode *board.Node, suffix string) *Joystick {
 		s1:            0,
 		s2:            0,
 	}
-	j.SetNode(board.CreateNode(parentNode, j))
+	board.AssignNode(parentNode, j)
 	j.Update(0x0000, 0xffff, 40)
 	return j
 }

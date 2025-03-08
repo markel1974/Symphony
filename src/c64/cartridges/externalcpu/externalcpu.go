@@ -33,7 +33,7 @@ func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 		cpu:           nil,
 		quartz:        nil,
 	}
-	r.SetNode(board.CreateNode(parentNode, r))
+	board.AssignNode(parentNode, r)
 	return r
 }
 
