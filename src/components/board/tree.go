@@ -28,7 +28,7 @@ type Node struct {
 func AssignNode(parentNode *Node, component IComponent) {
 	var node *Node
 	if parentNode != nil {
-		node = parentNode.AddComponent(component)
+		node = parentNode.addComponent(component)
 	} else {
 		node = newNode(component, nil)
 	}
@@ -53,7 +53,7 @@ func (n *Node) GetComponent() IComponent {
 }
 
 // AddComponent adds a new component as a child node to the current node. It returns an error if addition fails.
-func (n *Node) AddComponent(component IComponent) *Node {
+func (n *Node) addComponent(component IComponent) *Node {
 	child := newNode(component, n)
 	n.AddChild(child)
 	return child
