@@ -30,14 +30,14 @@ func GetType() int {
 func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
 	co := &CartridgeOcean{
-		BaseComponent: board.NewBaseComponent(),
+		BaseComponent: board.NewBaseComponent("ocean", suffix, nil),
 		loaderId:      "ocean",
 		game:          v.Game,
 		exRom:         v.ExRom,
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		lastData:      0,
 	}
-	co.Register(co, "ocean", suffix, parentNode, nil)
+	co.SetNode(board.CreateNode(parentNode, co))
 	return co
 }
 

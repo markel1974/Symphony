@@ -35,7 +35,7 @@ func GetType() int {
 // New creates and returns a new instance of the Generic cartridge implementing the ICartridge interface.
 func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 	g := &Generic{
-		BaseComponent: board.NewBaseComponent(),
+		BaseComponent: board.NewBaseComponent("generic", suffix, nil),
 		loaderId:      "generic",
 		game:          0,
 		exRom:         0,
@@ -43,7 +43,7 @@ func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 		b1Interval:    0,
 		intervals:     0,
 	}
-	g.Register(g, "generic", suffix, parentNode, nil)
+	g.SetNode(board.CreateNode(parentNode, g))
 	return g
 }
 

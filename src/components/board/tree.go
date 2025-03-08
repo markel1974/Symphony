@@ -25,8 +25,15 @@ type Node struct {
 
 // Node rappresenta un nodo nell'albero dei componenti.
 
+func CreateNode(parentNode *Node, component IComponent) *Node {
+	if parentNode != nil {
+		return parentNode.AddComponent(component)
+	}
+	return newNode(component, nil)
+}
+
 // NewNode creates a new Node with the given component and parent, initializing its path and children map.
-func NewNode(component IComponent, parent *Node) *Node {
+func newNode(component IComponent, parent *Node) *Node {
 	if component == nil {
 		panic("nil component")
 	}
@@ -44,7 +51,7 @@ func (n *Node) GetComponent() IComponent {
 
 // AddComponent adds a new component as a child node to the current node. It returns an error if addition fails.
 func (n *Node) AddComponent(component IComponent) *Node {
-	child := NewNode(component, n)
+	child := newNode(component, n)
 	n.AddChild(child)
 	return child
 }

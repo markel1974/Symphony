@@ -34,13 +34,13 @@ type Via struct {
 // NewVia creates and initializes a new Via instance with the specified identifier.
 func NewVia(parentNode *board.Node, suffix string) *Via {
 	v := &Via{
-		BaseComponent: board.NewBaseComponent(),
+		BaseComponent: board.NewBaseComponent("via", suffix, nil),
 		pra:           0,
 		ddra:          0,
 		prb:           0,
 		ddrb:          0,
 	}
-	v.Register(v, "via", suffix, parentNode, nil)
+	v.SetNode(board.CreateNode(parentNode, v))
 	return v
 }
 

@@ -65,7 +65,7 @@ const componentId = "c64"
 // NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
 func NewBoard() *Board {
 	b := &Board{
-		BaseComponent:       board.NewBaseComponent(),
+		BaseComponent:       board.NewBaseComponent("c64", "", nil),
 		db:                  nil,
 		player:              nil,
 		quartz:              nil,
@@ -87,7 +87,7 @@ func NewBoard() *Board {
 		dt:                  nil,
 		tree:                nil,
 	}
-	b.Register(b, "c64", "", nil, nil)
+	b.SetNode(board.CreateNode(nil, b))
 	b.tree = board.NewTree(b.GetNode())
 	b.quartz = quartz.NewQuartz(b.GetNode(), "")
 	b.cartMan = cartridges.NewManager(b.GetNode(), "")

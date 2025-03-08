@@ -53,9 +53,8 @@ type Board struct {
 }
 
 func NewBoard() *Board {
-	id := "board"
 	b := &Board{
-		BaseComponent:       board.NewBaseComponent(),
+		BaseComponent:       board.NewBaseComponent("board", "", nil),
 		tree:                nil,
 		iec:                 nil,
 		pic:                 nil,
@@ -74,7 +73,7 @@ func NewBoard() *Board {
 		joySwap:             true,
 		dt:                  nil,
 	}
-	b.Register(b, id, "", nil, nil)
+	b.SetNode(board.CreateNode(nil, b))
 	b.tree = board.NewTree(b.GetNode())
 	b.cartMan = cartridges.NewManager(b.GetNode(), "")
 	return b

@@ -26,14 +26,14 @@ type ExternalCPU struct {
 // New returns a new instance of the ExternalCPU struct implementing the ICartridge interface.
 func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 	r := &ExternalCPU{
-		BaseComponent: board.NewBaseComponent(),
+		BaseComponent: board.NewBaseComponent("externalCpu", suffix, nil),
 		board:         nil,
 		cpuSocket:     nil,
 		pic:           nil,
 		cpu:           nil,
 		quartz:        nil,
 	}
-	r.Register(r, "externalCpu", suffix, parentNode, nil)
+	r.SetNode(board.CreateNode(parentNode, r))
 	return r
 }
 

@@ -63,12 +63,12 @@ type IEC struct {
 
 func NewIEC(parentNode *board.Node, suffix string) *IEC {
 	c := &IEC{
-		BaseComponent:   board.NewBaseComponent(),
+		BaseComponent:   board.NewBaseComponent("iec", suffix, nil),
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),
 	}
-	c.Register(c, "iec", suffix, parentNode, nil)
+	c.SetNode(board.CreateNode(parentNode, c))
 	return c
 }
 

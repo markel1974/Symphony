@@ -27,33 +27,26 @@ type BaseComponent struct {
 }
 
 // NewBaseComponent creates and returns a new instance of the BaseComponent.
-func NewBaseComponent() *BaseComponent {
-	bc := &BaseComponent{
-		id:         "",
-		node:       nil,
-		properties: nil,
-	}
-	return bc
-}
-
-// Register initializes the BaseComponent with a unique ID, properties, and hierarchical structure through parentNode.
-func (b *BaseComponent) Register(c IComponent, name string, suffix string, parentNode *Node, runFn RunFn) {
+func NewBaseComponent(name string, suffix string, runFn RunFn) *BaseComponent {
 	id := name
 	if len(suffix) > 0 {
 		id += "_" + suffix
 	}
-	b.id = id
-	b.properties = NewProperties(runFn)
-	if parentNode != nil {
-		b.node = parentNode.AddComponent(c)
-	} else {
-		b.node = NewNode(c, nil)
+	bc := &BaseComponent{
+		id:         id,
+		node:       nil,
+		properties: NewProperties(runFn),
 	}
+	return bc
 }
 
 // GetId returns the unique identifier (id) of the BaseComponent.
 func (b *BaseComponent) GetId() string {
 	return b.id
+}
+
+func (b *BaseComponent) SetNode(n *Node) {
+	b.node = n
 }
 
 // GetNode returns the path of the BaseComponent as a slice of strings.

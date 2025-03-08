@@ -50,7 +50,7 @@ type Board struct {
 // New creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
 func New(parentNode *board.Node, suffix string, iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string) *Board {
 	b := &Board{
-		BaseComponent: board.NewBaseComponent(),
+		BaseComponent: board.NewBaseComponent("c1541", suffix, nil),
 		iec:           iec,
 		deviceId:      deviceId,
 		filePath:      opts,
@@ -63,7 +63,7 @@ func New(parentNode *board.Node, suffix string, iec virtualdrive.IIec, deviceId 
 		banks:         nil,
 		cfg:           nil,
 	}
-	b.Register(b, "c1541", suffix, parentNode, nil)
+	b.SetNode(board.CreateNode(parentNode, b))
 	return b
 }
 

@@ -49,9 +49,9 @@ type CPU struct {
 // NewCPU initializes and returns a new CPU instance with the provided id.
 func NewCPU(parentNode *board.Node, suffix string) *CPU {
 	cpu := &CPU{
-		BaseComponent: board.NewBaseComponent(),
+		BaseComponent: board.NewBaseComponent("mos6510", suffix, nil),
 	}
-	cpu.Register(cpu, "mos6510", suffix, parentNode, nil)
+	cpu.SetNode(board.CreateNode(parentNode, cpu))
 	return cpu
 }
 

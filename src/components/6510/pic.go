@@ -45,7 +45,7 @@ func (i *Pic) Emulate() {
 // NewPic initializes and returns a pointer to a new Pic instance with default values.
 func NewPic(parentNode *board.Node, suffix string) *Pic {
 	p := &Pic{
-		BaseComponent: board.NewBaseComponent(),
+		BaseComponent: board.NewBaseComponent("pic", suffix, nil),
 		quartz:        nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,
@@ -53,7 +53,7 @@ func NewPic(parentNode *board.Node, suffix string) *Pic {
 		irq:           bits.Bits(0),
 		nmiExec:       false,
 	}
-	p.Register(p, "pic", suffix, parentNode, nil)
+	p.SetNode(board.CreateNode(parentNode, p))
 	return p
 }
 

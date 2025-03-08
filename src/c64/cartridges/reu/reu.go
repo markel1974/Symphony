@@ -47,7 +47,7 @@ type REU struct {
 // It sets up REU registers, memory size, and RAM contents, and performs an initial reset.
 func newReu(parentNode *board.Node, suffix string, size int) icartridge.ICartridge {
 	r := &REU{
-		BaseComponent: board.NewBaseComponent(),
+		BaseComponent: board.NewBaseComponent("reu", suffix, nil),
 		loaderId:      "reu" + strconv.Itoa(size),
 		regs:          make([]uint8, 16),
 		size:          size,
@@ -56,7 +56,7 @@ func newReu(parentNode *board.Node, suffix string, size int) icartridge.ICartrid
 		ram:           make([]uint8, size),
 		irqMask:       0,
 	}
-	r.Register(r, "reu", suffix, parentNode, nil)
+	r.SetNode(board.CreateNode(parentNode, r))
 	r.Reset()
 	return r
 }

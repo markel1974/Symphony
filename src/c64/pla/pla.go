@@ -43,7 +43,7 @@ type PLA struct {
 func NewPLA(parentNode *board.Node, suffix string) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
-		BaseComponent:   board.NewBaseComponent(),
+		BaseComponent:   board.NewBaseComponent("pla", suffix, nil),
 		vic:             nil,
 		sid:             nil,
 		cia1:            nil,
@@ -67,7 +67,7 @@ func NewPLA(parentNode *board.Node, suffix string) *PLA {
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
 	}
-	b.Register(b, "pla", suffix, parentNode, nil)
+	b.SetNode(board.CreateNode(parentNode, b))
 	b.ports = NewPorts(b.GetNode(), "")
 	return b
 }

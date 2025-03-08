@@ -37,7 +37,7 @@ type Manager struct {
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
 func NewManager(parentNode *board.Node, suffix string) *Manager {
 	m := &Manager{
-		BaseComponent:       board.NewBaseComponent(),
+		BaseComponent:       board.NewBaseComponent("cartridgeManager", suffix, nil),
 		idx:                 0,
 		board:               nil,
 		prefs:               nil,
@@ -47,7 +47,7 @@ func NewManager(parentNode *board.Node, suffix string) *Manager {
 		registerSize:        make(map[int]func(*board.Node, string) icartridge.ICartridge),
 		registerSizeDefault: nil,
 	}
-	m.Register(m, "cartridgeManager", suffix, parentNode, nil)
+	m.SetNode(board.CreateNode(parentNode, m))
 	return m
 }
 
