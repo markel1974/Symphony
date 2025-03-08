@@ -18,14 +18,16 @@ type Quartz struct {
 }
 
 // NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
-func NewQuartz(node *board.Node, suffix string) *Quartz {
+func NewQuartz(parentNode *board.Node, suffix string) *Quartz {
 	id := "quartz" + suffix
-	return &Quartz{
-		BaseComponent:   board.NewBaseComponent(node, id, suffix, nil),
+	q := &Quartz{
+		BaseComponent:   board.NewBaseComponent(),
 		cycle:           0,
 		alarmsContainer: make(map[*Alarm]*Alarm),
 		alarms:          list.New(),
 	}
+	q.Register(q, id, suffix, parentNode, nil)
+	return q
 }
 
 // AddCycle increments the internal cycle counter and checks scheduled alarms against the updated cycle value.
@@ -37,6 +39,14 @@ func (s *Quartz) AddCycle() {
 // Cycle returns the current cycle count of the Quartz instance.
 func (s *Quartz) Cycle() uint64 {
 	return s.cycle
+}
+
+func (s *Quartz) Emulate() {
+	//
+}
+
+func (s *Quartz) Reset() {
+	//
 }
 
 // NewAlarm creates a new alarm with the given name and callback, associates it with the Quartz instance, and returns it.

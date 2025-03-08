@@ -35,9 +35,9 @@ type Manager struct {
 }
 
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
-func NewManager(node *board.Node, suffix string) *Manager {
-	return &Manager{
-		BaseComponent:       board.NewBaseComponent(node, "cartridgeManager", suffix, nil),
+func NewManager(parentNode *board.Node, suffix string) *Manager {
+	m := &Manager{
+		BaseComponent:       board.NewBaseComponent(),
 		idx:                 0,
 		board:               nil,
 		prefs:               nil,
@@ -47,6 +47,8 @@ func NewManager(node *board.Node, suffix string) *Manager {
 		registerSize:        make(map[int]func(*board.Node, string) icartridge.ICartridge),
 		registerSizeDefault: nil,
 	}
+	m.Register(m, "cartridgeManager", suffix, parentNode, nil)
+	return m
 }
 
 // Setup initializes the Manager by setting up the expansion board, configuration preferences, and cartridge hardware mappings.

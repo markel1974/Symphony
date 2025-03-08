@@ -45,9 +45,9 @@ type REU struct {
 
 // newReu initializes a new REU instance with a given size and returns an ICartridge implementation.
 // It sets up REU registers, memory size, and RAM contents, and performs an initial reset.
-func newReu(node *board.Node, suffix string, size int) icartridge.ICartridge {
+func newReu(parentNode *board.Node, suffix string, size int) icartridge.ICartridge {
 	r := &REU{
-		BaseComponent: board.NewBaseComponent(node, "reu", suffix, nil),
+		BaseComponent: board.NewBaseComponent(),
 		loaderId:      "reu" + strconv.Itoa(size),
 		regs:          make([]uint8, 16),
 		size:          size,
@@ -56,6 +56,7 @@ func newReu(node *board.Node, suffix string, size int) icartridge.ICartridge {
 		ram:           make([]uint8, size),
 		irqMask:       0,
 	}
+	r.Register(r, "reu", suffix, parentNode, nil)
 	r.Reset()
 	return r
 }

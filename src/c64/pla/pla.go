@@ -40,10 +40,10 @@ type PLA struct {
 }
 
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
-func NewPLA(node *board.Node, suffix string) *PLA {
+func NewPLA(parentNode *board.Node, suffix string) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
-		BaseComponent:   board.NewBaseComponent(node, "pla", suffix, nil),
+		BaseComponent:   board.NewBaseComponent(),
 		vic:             nil,
 		sid:             nil,
 		cia1:            nil,
@@ -67,6 +67,7 @@ func NewPLA(node *board.Node, suffix string) *PLA {
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
 	}
+	b.Register(b, "pla", suffix, parentNode, nil)
 	b.ports = NewPorts(b.GetNode(), "")
 	return b
 }
@@ -160,6 +161,10 @@ func (b *PLA) Setup(vic ISocket, sid ISocket, cia1 ISocket, cia2 ISocket, cartMa
 func (b *PLA) Reset() {
 	b.ports.Reset()
 	b.update()
+}
+
+func (b *PLA) Emulate() {
+	//
 }
 
 //func (b *PLA) AsyncReset() {

@@ -44,8 +44,8 @@ func (i *Pic) Emulate() {
 
 // NewPic initializes and returns a pointer to a new Pic instance with default values.
 func NewPic(parentNode *board.Node, suffix string) *Pic {
-	return &Pic{
-		BaseComponent: board.NewBaseComponent(parentNode, "pic", suffix, nil),
+	p := &Pic{
+		BaseComponent: board.NewBaseComponent(),
 		quartz:        nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,
@@ -53,6 +53,8 @@ func NewPic(parentNode *board.Node, suffix string) *Pic {
 		irq:           bits.Bits(0),
 		nmiExec:       false,
 	}
+	p.Register(p, "pic", suffix, parentNode, nil)
+	return p
 }
 
 // Setup initializes the Pic instance with a Quartz instance, establishing internal dependencies.

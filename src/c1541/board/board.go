@@ -48,9 +48,9 @@ type Board struct {
 }
 
 // New creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func New(node *board.Node, suffix string, iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string) *Board {
-	return &Board{
-		BaseComponent: board.NewBaseComponent(node, "c1541", suffix, nil),
+func New(parentNode *board.Node, suffix string, iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string) *Board {
+	b := &Board{
+		BaseComponent: board.NewBaseComponent(),
 		iec:           iec,
 		deviceId:      deviceId,
 		filePath:      opts,
@@ -63,6 +63,8 @@ func New(node *board.Node, suffix string, iec virtualdrive.IIec, deviceId uint8,
 		banks:         nil,
 		cfg:           nil,
 	}
+	b.Register(b, "c1541", suffix, parentNode, nil)
+	return b
 }
 
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.

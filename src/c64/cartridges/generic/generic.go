@@ -33,9 +33,9 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Generic cartridge implementing the ICartridge interface.
-func New(node *board.Node, suffix string) icartridge.ICartridge {
-	return &Generic{
-		BaseComponent: board.NewBaseComponent(node, "generic", suffix, nil),
+func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
+	g := &Generic{
+		BaseComponent: board.NewBaseComponent(),
 		loaderId:      "generic",
 		game:          0,
 		exRom:         0,
@@ -43,6 +43,8 @@ func New(node *board.Node, suffix string) icartridge.ICartridge {
 		b1Interval:    0,
 		intervals:     0,
 	}
+	g.Register(g, "generic", suffix, parentNode, nil)
+	return g
 }
 
 // Setup initializes the Generic cartridge by setting the board and loading data using the provided CRTLoader.

@@ -21,10 +21,12 @@ type TOD struct {
 }
 
 // NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
-func NewTOD(node *board.Node, suffix string) *TOD {
-	return &TOD{
-		BaseComponent: board.NewBaseComponent(node, "tod", suffix, nil),
+func NewTOD(parentNode *board.Node, suffix string) *TOD {
+	t := &TOD{
+		BaseComponent: board.NewBaseComponent(),
 	}
+	t.Register(t, "tod", suffix, parentNode, nil)
+	return t
 }
 
 // Reset reinitializes the TOD registers, alarm registers, and control flags to their default states.
@@ -42,6 +44,10 @@ func (m *TOD) Reset() {
 	m.almSec = 0
 	m.almMin = 0
 	m.almHr = 0
+}
+
+func (m *TOD) Emulate() {
+	//
 }
 
 // Set10ths updates the 10ths component of the time or alarm based on the `alarm` flag and provided `data`.

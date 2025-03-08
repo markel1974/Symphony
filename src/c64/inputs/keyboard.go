@@ -19,13 +19,14 @@ type Keyboard struct {
 }
 
 // NewKeyboard initializes and returns a new Keyboard instance with default settings and a reset state.
-func NewKeyboard(node *board.Node, suffix string) *Keyboard {
+func NewKeyboard(parentNode *board.Node, suffix string) *Keyboard {
 	k := &Keyboard{
-		BaseComponent: board.NewBaseComponent(node, "keyboard", suffix, nil),
+		BaseComponent: board.NewBaseComponent(),
 		storage:       nil,
 		virtual:       NewVirtual(),
 		ascii:         NewAscii(),
 	}
+	k.Register(k, "keyboard", suffix, parentNode, nil)
 	k.Reset()
 	return k
 }
@@ -35,6 +36,10 @@ func (k *Keyboard) Reset() {
 	k.storage = fifo.NewStaticFifo(16384)
 	k.virtual.Reset()
 	k.ascii.Reset()
+}
+
+func (k *Keyboard) Emulate() {
+	//
 }
 
 // NumLockToggle toggles the current state of the Num Lock key by inverting its value on the virtual keyboard.

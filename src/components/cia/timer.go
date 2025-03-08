@@ -102,9 +102,9 @@ type Timer struct {
 
 // NewTimer initializes and returns a new Timer instance with the given parentId and suffix.
 // The Timer is set to its default state and its Reset method is called to ensure initialization.
-func NewTimer(node *board.Node, suffix string) *Timer {
+func NewTimer(parentNode *board.Node, suffix string) *Timer {
 	m := &Timer{
-		BaseComponent: board.NewBaseComponent(node, "timer", suffix, nil),
+		BaseComponent: board.NewBaseComponent(),
 		cr:            0,
 		crNew:         0,
 		crNewPending:  false,
@@ -118,6 +118,7 @@ func NewTimer(node *board.Node, suffix string) *Timer {
 		cnt:           false,
 		reflect:       nil,
 	}
+	m.Register(m, "timer", suffix, parentNode, nil)
 	m.reflect = NewTimerReflect(m)
 	m.Reset()
 	return m

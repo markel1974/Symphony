@@ -26,15 +26,17 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of a CartridgeMagicDesk implementing the icartridge.ICartridge interface.
-func New(node *board.Node, suffix string) icartridge.ICartridge {
-	return &CartridgeMagicDesk{
-		BaseComponent: board.NewBaseComponent(node, "magicDesk", suffix, nil),
+func New(parenNode *board.Node, suffix string) icartridge.ICartridge {
+	md := &CartridgeMagicDesk{
+		BaseComponent: board.NewBaseComponent(),
 		loaderId:      "magicDesk",
 		spec:          icartridge.GetCartridgeSpec(icartridge.CartridgeMode8K),
 		bankMask:      0x7f,
 		regVal:        0,
 		slot:          0,
 	}
+	md.Register(md, "magicDesk", suffix, parenNode, nil)
+	return md
 }
 
 // Setup initializes the CartridgeMagicDesk by configuring its board and loading data via the provided CRTLoader.

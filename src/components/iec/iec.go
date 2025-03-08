@@ -61,13 +61,14 @@ type IEC struct {
 	//emu1541 bool
 }
 
-func NewIEC(node *board.Node, suffix string) *IEC {
+func NewIEC(parentNode *board.Node, suffix string) *IEC {
 	c := &IEC{
-		BaseComponent:   board.NewBaseComponent(node, "iec", suffix, nil),
+		BaseComponent:   board.NewBaseComponent(),
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),
 	}
+	c.Register(c, "iec", suffix, parentNode, nil)
 	return c
 }
 

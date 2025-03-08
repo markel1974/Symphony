@@ -15,14 +15,15 @@ type Joystick struct {
 }
 
 // NewJoystick initializes and returns a new instance of Joystick with default settings and sensitivity for controls.
-func NewJoystick(node *board.Node, suffix string) *Joystick {
+func NewJoystick(parentNode *board.Node, suffix string) *Joystick {
 	j := &Joystick{
-		BaseComponent: board.NewBaseComponent(node, "joystick", suffix, nil),
+		BaseComponent: board.NewBaseComponent(),
 		storage:       nil,
 		joy:           0xff,
 		s1:            0,
 		s2:            0,
 	}
+	j.Register(j, "joystick", suffix, parentNode, nil)
 	j.Update(0x0000, 0xffff, 40)
 	return j
 }
@@ -38,6 +39,10 @@ func (k *Joystick) Update(min uint16, max uint16, sensitivity uint16) {
 func (k *Joystick) Reset() {
 	k.storage = fifo.NewStaticFifo(256)
 	k.joy = 0xff
+}
+
+func (k *Joystick) Emulate() {
+	//
 }
 
 // Move updates the joystick state based on x, y positions and button inputs, then stores the updated state in storage.

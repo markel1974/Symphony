@@ -15,6 +15,8 @@ type IComponent interface {
 	Restore(state map[string]interface{}) error
 
 	RunCommand(cmd string, args []string) (map[string]interface{}, error)
+
+	Reset()
 }
 
 // BaseComponent represents a fundamental component with an ID, hierarchical path, and associated properties.
@@ -24,30 +26,29 @@ type BaseComponent struct {
 	properties *Properties
 }
 
-// NewBaseComponent creates and initializes a new BaseComponent with a unique id, path, and associated properties.
-// Parameters:
-// - path: A slice of strings representing the hierarchical path for the component.
-// - name: A base name used to identify the component.
-// - suffix: A string to append to the name to create a unique id.
-// - runFn: A function of type RunFn to handle command execution logic.
-// Returns:
-// - A pointer to the newly created BaseComponent instance.
-func NewBaseComponent(parentNode *Node, name string, suffix string, runFn RunFn) *BaseComponent {
+// NewBaseComponent creates and returns a new instance of the BaseComponent.
+func NewBaseComponent() *BaseComponent {
+	bc := &BaseComponent{
+		id:         "",
+		node:       nil,
+		properties: nil,
+	}
+	return bc
+}
+
+// Register initializes the BaseComponent with a unique ID, properties, and hierarchical structure through parentNode.
+func (b *BaseComponent) Register(c IComponent, name string, suffix string, parentNode *Node, runFn RunFn) {
 	id := name
 	if len(suffix) > 0 {
 		id += "_" + suffix
 	}
-	bc := &BaseComponent{
-		id:         id,
-		node:       nil,
-		properties: NewProperties(runFn),
-	}
+	b.id = id
+	b.properties = NewProperties(runFn)
 	if parentNode != nil {
-		bc.node = parentNode.AddComponent(bc)
+		b.node = parentNode.AddComponent(c)
 	} else {
-		bc.node = NewNode(bc, nil)
+		b.node = NewNode(c, nil)
 	}
-	return bc
 }
 
 // GetId returns the unique identifier (id) of the BaseComponent.

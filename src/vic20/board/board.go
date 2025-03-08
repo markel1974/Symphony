@@ -55,6 +55,7 @@ type Board struct {
 func NewBoard() *Board {
 	id := "board"
 	b := &Board{
+		BaseComponent:       board.NewBaseComponent(),
 		tree:                nil,
 		iec:                 nil,
 		pic:                 nil,
@@ -73,7 +74,7 @@ func NewBoard() *Board {
 		joySwap:             true,
 		dt:                  nil,
 	}
-	b.BaseComponent = board.NewBaseComponent(nil, id, "", nil)
+	b.Register(b, id, "", nil, nil)
 	b.tree = board.NewTree(b.GetNode())
 	b.cartMan = cartridges.NewManager(b.GetNode(), "")
 	return b
@@ -116,6 +117,10 @@ func (s *Board) Setup(db board.IDisplayBuffer, p board.IPlayer, cfg *config.Conf
 	s.reset()
 
 	return nil
+}
+
+func (s *Board) Reset() {
+	//
 }
 
 func (s *Board) reset() {

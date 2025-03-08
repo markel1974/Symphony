@@ -47,9 +47,9 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridge interface.
-func New(node *board.Node, suffix string) icartridge.ICartridge {
-	return &CartridgeEasyFlash{
-		BaseComponent:   board.NewBaseComponent(node, "easyFlash", suffix, nil),
+func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
+	ef := &CartridgeEasyFlash{
+		BaseComponent:   board.NewBaseComponent(),
 		loaderId:        "easyFlash",
 		game:            1,
 		exRom:           1,
@@ -66,6 +66,8 @@ func New(node *board.Node, suffix string) icartridge.ICartridge {
 		memoryConfigIdx: -1,
 		updateEApi:      true,
 	}
+	ef.Register(ef, "easyFlash", suffix, parentNode, nil)
+	return ef
 }
 
 // Setup initializes the CartridgeEasyFlash instance with the provided board and CRT loader data.

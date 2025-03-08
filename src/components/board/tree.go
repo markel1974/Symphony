@@ -115,14 +115,17 @@ func (n *Node) GetChildren() []*Node {
 // Print writes the current node's path to the specified writer, optionally including component types, with indentation.
 // If showComponents is true and the node has a component, the component's type is displayed.
 // Children are printed recursively with increased indentation.
-func (n *Node) Print(w io.Writer, indent string) {
+func (n *Node) Print(w io.Writer, indent string, showComponents bool) {
 	if n == nil {
 		return
 	}
 	_, _ = fmt.Fprintf(w, "%s%s", indent, n.component.GetId())
-	_, _ = fmt.Fprintln(w) // A capo
+	if showComponents && n.GetComponent() != nil {
+		_, _ = fmt.Fprintf(w, " (%T)", n.GetComponent())
+	}
+	_, _ = fmt.Fprintln(w)
 	for _, child := range n.GetChildren() {
-		child.Print(w, indent+"  ")
+		child.Print(w, indent+"  ", showComponents)
 	}
 }
 

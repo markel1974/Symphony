@@ -27,16 +27,18 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridge interface.
-func New(node *board.Node, suffix string) icartridge.ICartridge {
+func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
-	return &CartridgeOcean{
-		BaseComponent: board.NewBaseComponent(node, "ocean", suffix, nil),
+	co := &CartridgeOcean{
+		BaseComponent: board.NewBaseComponent(),
 		loaderId:      "ocean",
 		game:          v.Game,
 		exRom:         v.ExRom,
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		lastData:      0,
 	}
+	co.Register(co, "ocean", suffix, parentNode, nil)
+	return co
 }
 
 // Setup initializes the cartridge with the specified expansion board and CRT loader, setting up necessary configurations.
