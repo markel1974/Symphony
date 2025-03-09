@@ -268,6 +268,8 @@ func (bc *BaseComponent) Print(w io.Writer, indent string, showComponents bool) 
 	}
 }
 
+const stateId = "state"
+
 // dump recursively processes nodes and their components, creating a map with the component's ID as the key and its data as the value.
 // Returns an error if the dump operation for any component fails.
 func (bc *BaseComponent) dump(component IComponent, stateMap map[string]interface{}) error {
@@ -282,13 +284,14 @@ func (bc *BaseComponent) dump(component IComponent, stateMap map[string]interfac
 	if err != nil {
 		return err
 	}
-	stateMap[id] = componentState
+	if len(componentState) > 0 {
+		stateMap[id] = map[string]interface{}{stateId: componentState}
+	}
 	if children := component.GetChildren(); len(children) > 0 {
-		if componentState == nil {
-			componentState = make(map[string]interface{})
-		}
+		childrenState := make(map[string]interface{})
+		stateMap[id] = childrenState
 		for _, child := range children {
-			if err = bc.dump(child, componentState); err != nil {
+			if err = bc.dump(child, childrenState); err != nil {
 				return err
 			}
 		}
@@ -306,10 +309,11 @@ func (bc *BaseComponent) restore(component IComponent, state map[string]interfac
 	if len(id) == 0 {
 		return nil
 	}
-	componentState, ok := state[id].(map[string]interface{})
-	if ok {
-		if err := component.Restore(componentState); err != nil {
-			return fmt.Errorf("error restoring component %s: %w", id, err)
+	if componentState, ok := state[id]; ok {
+		if stateData, ok := componentState.(map[string]interface{}); ok && len(stateData) > 0 {
+			if err := component.Restore(stateData); err != nil {
+				return fmt.Errorf("error restoring component %s: %w", id, err)
+			}
 		}
 	}
 	for _, child := range component.GetChildren() {
