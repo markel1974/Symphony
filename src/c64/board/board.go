@@ -1,8 +1,6 @@
 package board
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/markel1974/c64emu/src/c64/cartridges"
 	"github.com/markel1974/c64emu/src/c64/inputs"
 	"github.com/markel1974/c64emu/src/c64/pla"
@@ -164,12 +162,12 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	s.reset()
 
 	s.Print(os.Stdout, " ", true)
-	state, _ := s.DumpAll()
-	buf, _ := json.MarshalIndent(state, "", " ")
-	fmt.Println(string(buf))
-	if err := s.RestoreAll(state); err != nil {
-		fmt.Println(err)
-	}
+	//state, _ := s.DumpAll()
+	//buf, _ := json.MarshalIndent(state, "", " ")
+	//fmt.Println(string(buf))
+	//if err := s.RestoreAll(state); err != nil {
+	//	fmt.Println(err)
+	//}
 
 	return nil
 }

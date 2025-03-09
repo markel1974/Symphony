@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+const stateId = "state"
+
 // IHardware defines an interface for hardware components with a Reset method.
 type IHardware interface {
 	Reset()
@@ -268,8 +270,6 @@ func (bc *BaseComponent) Print(w io.Writer, indent string, showComponents bool) 
 	}
 }
 
-const stateId = "state"
-
 // dump recursively processes nodes and their components, creating a map with the component's ID as the key and its data as the value.
 // Returns an error if the dump operation for any component fails.
 func (bc *BaseComponent) dump(component IComponent, stateMap map[string]interface{}) error {
@@ -309,15 +309,23 @@ func (bc *BaseComponent) restore(component IComponent, state map[string]interfac
 	if len(id) == 0 {
 		return nil
 	}
-	if componentState, ok := state[id]; ok {
-		if stateData, ok := componentState.(map[string]interface{}); ok && len(stateData) > 0 {
-			if err := component.Restore(stateData); err != nil {
+	componentI, ok := state[id]
+	if !ok {
+		return nil
+	}
+	componentSegment, ok := componentI.(map[string]interface{})
+	if !ok || componentSegment == nil {
+		return fmt.Errorf("error restoring component %s: %s", id, "missing componentNode")
+	}
+	if stateI, ok := componentSegment[stateId]; ok {
+		if stateSegment, ok := stateI.(map[string]interface{}); ok && len(stateSegment) > 0 {
+			if err := component.Restore(stateSegment); err != nil {
 				return fmt.Errorf("error restoring component %s: %w", id, err)
 			}
 		}
 	}
 	for _, child := range component.GetChildren() {
-		if err := bc.restore(child, state); err != nil {
+		if err := bc.restore(child, componentSegment); err != nil {
 			return err
 		}
 	}
