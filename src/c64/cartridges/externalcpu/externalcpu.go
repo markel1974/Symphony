@@ -24,7 +24,7 @@ type ExternalCPU struct {
 }
 
 // New returns a new instance of the ExternalCPU struct implementing the ICartridge interface.
-func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
+func New(parent board.IComponent, suffix string) icartridge.ICartridge {
 	r := &ExternalCPU{
 		BaseComponent: board.NewBaseComponent("externalCpu", suffix, nil),
 		board:         nil,
@@ -33,7 +33,7 @@ func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 		cpu:           nil,
 		quartz:        nil,
 	}
-	board.AssignNode(parentNode, r)
+	board.Register(parent, r)
 	return r
 }
 
@@ -48,13 +48,13 @@ func (s *ExternalCPU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) 
 	s.loaderId = ldr.GetId()
 	s.board.SetDMALow(true)
 
-	s.quartz = quartz.NewQuartz(s.GetNode(), "")
-	s.pic = mos6510.NewPic(s.GetNode(), "")
+	s.quartz = quartz.NewQuartz(s, "")
+	s.pic = mos6510.NewPic(s, "")
 
 	s.pic.Setup(s.quartz)
 
 	s.cpuSocket = NewCPUSocket()
-	s.cpu = mos6510.NewCPU(s.GetNode(), "")
+	s.cpu = mos6510.NewCPU(s, "")
 
 	s.cpuSocket.Setup(s)
 	s.cpu.Setup(s.cpuSocket)

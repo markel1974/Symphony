@@ -71,8 +71,8 @@ func NewBoard() *Board {
 		joySwap:             true,
 		dt:                  nil,
 	}
-	board.AssignNode(nil, b)
-	b.cartMan = cartridges.NewManager(b.GetNode(), "")
+	board.Register(nil, b)
+	b.cartMan = cartridges.NewManager(b, "")
 	return b
 }
 
@@ -94,12 +94,12 @@ func (s *Board) Setup(db board.IDisplayBuffer, p board.IPlayer, cfg *config.Conf
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 
-	s.pic = mos6510.NewPic(s.GetNode(), "")
-	s.iec = iec.NewIEC(s.GetNode(), "")
-	s.keys = inputs.NewKeyboard(s.GetNode(), "")
-	s.joy1 = inputs.NewJoystick(s.GetNode(), "1")
-	s.joy2 = inputs.NewJoystick(s.GetNode(), "2")
-	s.pla = pla.NewPLA(s.GetNode(), "")
+	s.pic = mos6510.NewPic(s, "")
+	s.iec = iec.NewIEC(s, "")
+	s.keys = inputs.NewKeyboard(s, "")
+	s.joy1 = inputs.NewJoystick(s, "1")
+	s.joy2 = inputs.NewJoystick(s, "2")
+	s.pla = pla.NewPLA(s, "")
 	s.expansion = NewExpansion(s)
 
 	s.iec.Setup(cfg)

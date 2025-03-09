@@ -26,7 +26,7 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of a CartridgeMagicDesk implementing the icartridge.ICartridge interface.
-func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
+func New(parent board.IComponent, suffix string) icartridge.ICartridge {
 	md := &CartridgeMagicDesk{
 		BaseComponent: board.NewBaseComponent("magicDesk", suffix, nil),
 		loaderId:      "magicDesk",
@@ -35,7 +35,7 @@ func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 		regVal:        0,
 		slot:          0,
 	}
-	board.AssignNode(parentNode, md)
+	board.Register(parent, md)
 	return md
 }
 

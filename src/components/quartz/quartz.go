@@ -18,14 +18,14 @@ type Quartz struct {
 }
 
 // NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
-func NewQuartz(parentNode *board.Node, suffix string) *Quartz {
+func NewQuartz(parent board.IComponent, suffix string) *Quartz {
 	q := &Quartz{
 		BaseComponent:   board.NewBaseComponent("quartz", suffix, nil),
 		cycle:           0,
 		alarmsContainer: make(map[*Alarm]*Alarm),
 		alarms:          list.New(),
 	}
-	board.AssignNode(parentNode, q)
+	board.Register(parent, q)
 	return q
 }
 

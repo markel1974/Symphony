@@ -23,7 +23,7 @@ type SID struct {
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
-func NewSID(parentNode *board.Node, suffix string) *SID {
+func NewSID(parent board.IComponent, suffix string) *SID {
 	s := &SID{
 		BaseComponent: board.NewBaseComponent("sid", suffix, nil),
 		socket:        nil,
@@ -31,7 +31,7 @@ func NewSID(parentNode *board.Node, suffix string) *SID {
 		cfg:           nil,
 		audioBuilder:  nil,
 	}
-	board.AssignNode(parentNode, s)
+	board.Register(parent, s)
 	s.reflect = NewSidReflect(s)
 	return s
 }

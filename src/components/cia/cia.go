@@ -50,17 +50,17 @@ type CIA struct {
 }
 
 // NewCIA initializes and returns a new instance of the CIA struct with the specified ID and associated components.
-func NewCIA(parentNode *board.Node, suffix string) *CIA {
+func NewCIA(parent board.IComponent, suffix string) *CIA {
 	m := &CIA{
 		BaseComponent: board.NewBaseComponent("cia", suffix, nil),
 		tod:           nil,
 		timerA:        nil,
 		timerB:        nil,
 	}
-	board.AssignNode(parentNode, m)
-	m.tod = NewTOD(m.GetNode(), "")
-	m.timerA = NewTimer(m.GetNode(), "A")
-	m.timerB = NewTimer(m.GetNode(), "B")
+	board.Register(parent, m)
+	m.tod = NewTOD(m, "")
+	m.timerA = NewTimer(m, "A")
+	m.timerB = NewTimer(m, "B")
 	return m
 }
 

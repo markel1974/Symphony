@@ -45,7 +45,7 @@ type REU struct {
 
 // newReu initializes a new REU instance with a given size and returns an ICartridge implementation.
 // It sets up REU registers, memory size, and RAM contents, and performs an initial reset.
-func newReu(parentNode *board.Node, suffix string, size int) icartridge.ICartridge {
+func newReu(parent board.IComponent, suffix string, size int) icartridge.ICartridge {
 	r := &REU{
 		BaseComponent: board.NewBaseComponent("reu", suffix, nil),
 		loaderId:      "reu" + strconv.Itoa(size),
@@ -56,49 +56,49 @@ func newReu(parentNode *board.Node, suffix string, size int) icartridge.ICartrid
 		ram:           make([]uint8, size),
 		irqMask:       0,
 	}
-	board.AssignNode(parentNode, r)
+	board.Register(parent, r)
 	r.Reset()
 	return r
 }
 
 // New128K creates and returns a new 128K REU cartridge implementing the ICartridge interface.
-func New128K(node *board.Node, suffix string) icartridge.ICartridge {
-	return newReu(node, suffix, size128K)
+func New128K(parent board.IComponent, suffix string) icartridge.ICartridge {
+	return newReu(parent, suffix, size128K)
 }
 
 // New256K creates a new 256K REU (RAM Expansion Unit) cartridge and returns it as an ICartridge interface.
-func New256K(node *board.Node, suffix string) icartridge.ICartridge {
-	return newReu(node, suffix, size256K)
+func New256K(parent board.IComponent, suffix string) icartridge.ICartridge {
+	return newReu(parent, suffix, size256K)
 }
 
 // New512K creates and returns a new instance of an ICartridge with a memory size of 512K.
-func New512K(node *board.Node, suffix string) icartridge.ICartridge {
-	return newReu(node, suffix, size512K)
+func New512K(parent board.IComponent, suffix string) icartridge.ICartridge {
+	return newReu(parent, suffix, size512K)
 }
 
 // New1M creates a new 1M REU (RAM Expansion Unit) cartridge implementing the ICartridge interface.
-func New1M(node *board.Node, suffix string) icartridge.ICartridge {
-	return newReu(node, suffix, size1M)
+func New1M(parent board.IComponent, suffix string) icartridge.ICartridge {
+	return newReu(parent, suffix, size1M)
 }
 
 // New2M creates and returns a new 2MB REU cartridge instance implementing the ICartridge interface.
-func New2M(node *board.Node, suffix string) icartridge.ICartridge {
-	return newReu(node, suffix, size2M)
+func New2M(parent board.IComponent, suffix string) icartridge.ICartridge {
+	return newReu(parent, suffix, size2M)
 }
 
 // New4M creates and returns a new 4MB REU cartridge implementing the ICartridge interface.
-func New4M(node *board.Node, suffix string) icartridge.ICartridge {
-	return newReu(node, suffix, size4M)
+func New4M(parent board.IComponent, suffix string) icartridge.ICartridge {
+	return newReu(parent, suffix, size4M)
 }
 
 // New8M creates and returns a new 8 MB REU (RAM Expansion Unit) cartridge implementing the ICartridge interface.
-func New8M(node *board.Node, suffix string) icartridge.ICartridge {
-	return newReu(node, suffix, size8M)
+func New8M(parent board.IComponent, suffix string) icartridge.ICartridge {
+	return newReu(parent, suffix, size8M)
 }
 
 // New16M creates a new ICartridge instance with 16MB of memory, utilizing the REU (RAM Expansion Unit) implementation.
-func New16M(node *board.Node, suffix string) icartridge.ICartridge {
-	return newReu(node, suffix, size16M)
+func New16M(parent board.IComponent, suffix string) icartridge.ICartridge {
+	return newReu(parent, suffix, size16M)
 }
 
 // GetLoaderId returns the identifier string of the REU instance.

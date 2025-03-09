@@ -22,26 +22,14 @@ type Node struct {
 	children  map[string]*Node // Mappa dei figli (chiave: ID del figlio, valore: puntatore al nodo figlio).
 }
 
-// AssignNode assigns a component to a node, creating a new child node if a parentNode is provided, or a root node otherwise.
-// Updates the component to reference the assigned node in the hierarchical structure.
-func AssignNode(parentNode *Node, component IComponent) {
-	var node *Node
-	if parentNode != nil {
-		node = parentNode.AddComponent(component)
-	} else {
-		node = newNode(component, nil)
-	}
-	component.SetNode(node)
-}
-
 // NewNode creates a new Node with the given component and parent, initializing its path and children map.
-func newNode(component IComponent, parent *Node) *Node {
+func newNode(parentNode *Node, component IComponent) *Node {
 	if component == nil {
 		panic("nil component")
 	}
 	return &Node{
 		component: component,
-		parent:    parent,
+		parent:    parentNode,
 		children:  make(map[string]*Node),
 	}
 }
@@ -67,7 +55,7 @@ func (n *Node) AddChild(child *Node) {
 
 // AddComponent adds a new component as a child node to the current node. It returns an error if addition fails.
 func (n *Node) AddComponent(component IComponent) *Node {
-	child := newNode(component, n)
+	child := newNode(n, component)
 	n.AddChild(child)
 	return child
 }

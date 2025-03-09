@@ -28,26 +28,26 @@ type Manager struct {
 	prefs               *config.Config
 	carts               []icartridge.ICartridge
 	emulate             []icartridge.ICartridge
-	registerHardware    map[string]func(*board.Node, string) icartridge.ICartridge
-	registerType        map[int]func(*board.Node, string) icartridge.ICartridge
-	registerSize        map[int]func(*board.Node, string) icartridge.ICartridge
-	registerSizeDefault func(*board.Node, string) icartridge.ICartridge
+	registerHardware    map[string]func(board.IComponent, string) icartridge.ICartridge
+	registerType        map[int]func(board.IComponent, string) icartridge.ICartridge
+	registerSize        map[int]func(board.IComponent, string) icartridge.ICartridge
+	registerSizeDefault func(board.IComponent, string) icartridge.ICartridge
 }
 
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
-func NewManager(parentNode *board.Node, suffix string) *Manager {
+func NewManager(parent board.IComponent, suffix string) *Manager {
 	m := &Manager{
 		BaseComponent:       board.NewBaseComponent("cartridgeManager", suffix, nil),
 		idx:                 0,
 		board:               nil,
 		prefs:               nil,
 		carts:               nil,
-		registerHardware:    make(map[string]func(*board.Node, string) icartridge.ICartridge),
-		registerType:        make(map[int]func(*board.Node, string) icartridge.ICartridge),
-		registerSize:        make(map[int]func(*board.Node, string) icartridge.ICartridge),
+		registerHardware:    make(map[string]func(board.IComponent, string) icartridge.ICartridge),
+		registerType:        make(map[int]func(board.IComponent, string) icartridge.ICartridge),
+		registerSize:        make(map[int]func(board.IComponent, string) icartridge.ICartridge),
 		registerSizeDefault: nil,
 	}
-	board.AssignNode(parentNode, m)
+	board.Register(parent, m)
 	return m
 }
 
@@ -212,7 +212,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if err := ldr.Setup(name, data); err != nil {
 		return "", err
 	}
-	var factory func(*board.Node, string) icartridge.ICartridge = nil
+	var factory func(board.IComponent, string) icartridge.ICartridge = nil
 	if len(hardware) > 0 {
 		hardware = strings.ToUpper(strings.TrimSpace(hardware))
 		factory = f.registerHardware[hardware]
@@ -226,7 +226,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if factory == nil {
 		return "", fmt.Errorf("unsupported => %d", ldr.Kind)
 	}
-	cart := factory(f.GetNode(), strconv.Itoa(f.idx))
+	cart := factory(f, strconv.Itoa(f.idx))
 	f.idx++
 	f.carts = append(f.carts, cart)
 	if err := cart.Setup(f.board, ldr); err != nil {

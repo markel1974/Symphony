@@ -15,11 +15,11 @@ type Expansion struct {
 // NewExpansion creates a new instance of the Expansion structure with the given parentId and suffix.
 // The `id` property is initialized by concatenating "expansion" with the specified suffix.
 // Returns a pointer to the newly created Expansion object.
-func NewExpansion(parentNode *board.Node, suffix string) *Expansion {
+func NewExpansion(parent board.IComponent, suffix string) *Expansion {
 	e := &Expansion{
 		BaseComponent: board.NewBaseComponent("expansion", suffix, nil),
 	}
-	board.AssignNode(parentNode, e)
+	board.Register(parent, e)
 	return e
 }
 

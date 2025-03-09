@@ -1,6 +1,8 @@
 package board
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/markel1974/c64emu/src/c64/cartridges"
 	"github.com/markel1974/c64emu/src/c64/inputs"
 	"github.com/markel1974/c64emu/src/c64/pla"
@@ -85,9 +87,9 @@ func NewBoard() *Board {
 		joySwap:             true,
 		dt:                  nil,
 	}
-	board.AssignNode(nil, b)
-	b.quartz = quartz.NewQuartz(b.GetNode(), "")
-	b.cartMan = cartridges.NewManager(b.GetNode(), "")
+	board.Register(nil, b)
+	b.quartz = quartz.NewQuartz(b, "")
+	b.cartMan = cartridges.NewManager(b, "")
 	return b
 }
 
@@ -111,19 +113,18 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	s.cia2Socket = NewCIA2Socket()
 	s.plaSocket = NewPLASocket()
 
-	node := s.GetNode()
-	s.pic = mos6510.NewPic(node, "")
-	s.iec = iec.NewIEC(node, "")
-	cpu := mos6510.NewCPU(node, "")
-	vic := mos6569.NewVIC(node, "")
-	sid := mos6581.NewSID(node, "")
-	cia1 := mos6526.NewCIA(node, "1")
-	cia2 := mos6526.NewCIA(node, "2")
-	plaC := pla.NewPLA(node, "")
-	s.keys = inputs.NewKeyboard(node, "")
-	s.joy1 = inputs.NewJoystick(node, "1")
-	s.joy2 = inputs.NewJoystick(node, "2")
-	s.expansion = NewExpansion(node, "")
+	s.pic = mos6510.NewPic(s, "")
+	s.iec = iec.NewIEC(s, "")
+	cpu := mos6510.NewCPU(s, "")
+	vic := mos6569.NewVIC(s, "")
+	sid := mos6581.NewSID(s, "")
+	cia1 := mos6526.NewCIA(s, "1")
+	cia2 := mos6526.NewCIA(s, "2")
+	plaC := pla.NewPLA(s, "")
+	s.keys = inputs.NewKeyboard(s, "")
+	s.joy1 = inputs.NewJoystick(s, "1")
+	s.joy2 = inputs.NewJoystick(s, "2")
+	s.expansion = NewExpansion(s, "")
 
 	s.expansion.Setup(s)
 	s.pic.Setup(s.quartz)
@@ -163,8 +164,12 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	s.reset()
 
 	s.Print(os.Stdout, " ", true)
-	//state, _ := s.tree.DumpAll()
-	//fmt.Println(state)
+	state, _ := s.DumpAll()
+	buf, _ := json.MarshalIndent(state, "", " ")
+	fmt.Println(string(buf))
+	if err := s.RestoreAll(state); err != nil {
+		fmt.Println(err)
+	}
 
 	return nil
 }

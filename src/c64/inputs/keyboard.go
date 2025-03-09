@@ -19,14 +19,14 @@ type Keyboard struct {
 }
 
 // NewKeyboard initializes and returns a new Keyboard instance with default settings and a reset state.
-func NewKeyboard(parentNode *board.Node, suffix string) *Keyboard {
+func NewKeyboard(parent board.IComponent, suffix string) *Keyboard {
 	k := &Keyboard{
 		BaseComponent: board.NewBaseComponent("keyboard", suffix, nil),
 		storage:       nil,
 		virtual:       NewVirtual(),
 		ascii:         NewAscii(),
 	}
-	board.AssignNode(parentNode, k)
+	board.Register(parent, k)
 	k.Reset()
 	return k
 }

@@ -110,7 +110,7 @@ type VIC struct {
 }
 
 // NewVIC creates and returns a pointer to a newly initialized VIC instance with default values and given id.
-func NewVIC(parentNode *board.Node, suffix string) *VIC {
+func NewVIC(parent board.IComponent, suffix string) *VIC {
 	vic := &VIC{
 		BaseComponent:    board.NewBaseComponent("vic", suffix, nil),
 		banks:            nil,
@@ -165,7 +165,7 @@ func NewVIC(parentNode *board.Node, suffix string) *VIC {
 		ecm:              false,
 		columnSel:        false,
 	}
-	board.AssignNode(parentNode, vic)
+	board.Register(parent, vic)
 	return vic
 }
 

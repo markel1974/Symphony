@@ -21,11 +21,11 @@ type TOD struct {
 }
 
 // NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
-func NewTOD(parentNode *board.Node, suffix string) *TOD {
+func NewTOD(parent board.IComponent, suffix string) *TOD {
 	t := &TOD{
 		BaseComponent: board.NewBaseComponent("tod", suffix, nil),
 	}
-	board.AssignNode(parentNode, t)
+	board.Register(parent, t)
 	return t
 }
 

@@ -61,14 +61,14 @@ type IEC struct {
 	//emu1541 bool
 }
 
-func NewIEC(parentNode *board.Node, suffix string) *IEC {
+func NewIEC(parent board.IComponent, suffix string) *IEC {
 	c := &IEC{
 		BaseComponent:   board.NewBaseComponent("iec", suffix, nil),
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),
 	}
-	board.AssignNode(parentNode, c)
+	board.Register(parent, c)
 	return c
 }
 
@@ -226,11 +226,11 @@ func (c *IEC) createVirtualDrive(kind string, opts string, deviceId uint8) virtu
 	var vd virtualdrive.IVirtualDrive
 	switch kind {
 	case "C1541":
-		vd = c1541board.New(c.GetNode(), strconv.Itoa(int(deviceNumber)), c, deviceId, deviceNumber, opts)
+		vd = c1541board.New(c, strconv.Itoa(int(deviceNumber)), c, deviceId, deviceNumber, opts)
 	case "FSDrive":
 		vd = fsdrive.New(c, deviceId, deviceNumber, opts)
 	default:
-		vd = c1541board.New(c.GetNode(), strconv.Itoa(int(deviceNumber)), c, deviceId, deviceNumber, opts)
+		vd = c1541board.New(c, strconv.Itoa(int(deviceNumber)), c, deviceId, deviceNumber, opts)
 	}
 	vd.Setup(c.cfg)
 	return vd

@@ -27,7 +27,7 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridge interface.
-func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
+func New(parent board.IComponent, suffix string) icartridge.ICartridge {
 	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
 	co := &CartridgeOcean{
 		BaseComponent: board.NewBaseComponent("ocean", suffix, nil),
@@ -37,7 +37,7 @@ func New(parentNode *board.Node, suffix string) icartridge.ICartridge {
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		lastData:      0,
 	}
-	board.AssignNode(parentNode, co)
+	board.Register(parent, co)
 	return co
 }
 

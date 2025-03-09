@@ -48,7 +48,7 @@ type Board struct {
 }
 
 // New creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func New(parentNode *board.Node, suffix string, iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string) *Board {
+func New(parent board.IComponent, suffix string, iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string) *Board {
 	b := &Board{
 		BaseComponent: board.NewBaseComponent("c1541", suffix, nil),
 		iec:           iec,
@@ -63,7 +63,7 @@ func New(parentNode *board.Node, suffix string, iec virtualdrive.IIec, deviceId 
 		banks:         nil,
 		cfg:           nil,
 	}
-	board.AssignNode(parentNode, b)
+	board.Register(parent, b)
 	return b
 }
 
@@ -72,13 +72,13 @@ func (m *Board) Setup(cfg *config.Config) {
 	m.cfg = cfg
 	m.cfg.Bind(m.configChanged)
 	m.banks = pla.New()
-	m.quartz = quartz.NewQuartz(m.GetNode(), "")
-	m.pic = mos6510.NewPic(m.GetNode(), "")
-	cpu := mos6510.NewCPU(m.GetNode(), "")
+	m.quartz = quartz.NewQuartz(m, "")
+	m.pic = mos6510.NewPic(m, "")
+	cpu := mos6510.NewCPU(m, "")
 	m.mec = mechanic.NewMechanic()
 	m.mec.Setup(m.filePath)
-	via1 := mos6522.NewVia(m.GetNode(), "1")
-	via2 := mos6522.NewVia(m.GetNode(), "2")
+	via1 := mos6522.NewVia(m, "1")
+	via2 := mos6522.NewVia(m, "2")
 	m.cpuSocket = NewCPUSocket()
 	m.via1Socket = NewVia1Socket()
 	m.via2Socket = NewVia2Socket()

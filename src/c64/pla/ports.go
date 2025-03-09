@@ -27,7 +27,7 @@ type Ports struct {
 }
 
 // NewPorts initializes and returns a new instance of the Ports struct with default values set.
-func NewPorts(parentNode *board.Node, suffix string) *Ports {
+func NewPorts(parent board.IComponent, suffix string) *Ports {
 	p := &Ports{
 		BaseComponent: board.NewBaseComponent("ports", suffix, nil),
 		capsSense:     1,
@@ -44,7 +44,7 @@ func NewPorts(parentNode *board.Node, suffix string) *Ports {
 		tapeMotorIn:   0,
 		//dirRead:     0,
 	}
-	board.AssignNode(parentNode, p)
+	board.Register(parent, p)
 	return p
 }
 
