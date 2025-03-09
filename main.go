@@ -75,8 +75,8 @@ type IRender interface {
 
 func Test() {
 	s := mos6581.NewSID(nil, "")
-	components := board.NewTree(s.GetNode())
-	res, err := components.Dump()
+	board.AssignNode(nil, s)
+	res, err := s.Dump()
 	if err != nil {
 		panic(err)
 	}

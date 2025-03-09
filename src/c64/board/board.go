@@ -57,7 +57,6 @@ type Board struct {
 	dmaLow              bool
 	prg                 *prg.PRG
 	dt                  board.IThrottling
-	tree                *board.Tree
 }
 
 const componentId = "c64"
@@ -85,10 +84,8 @@ func NewBoard() *Board {
 		prg:                 nil,
 		joySwap:             true,
 		dt:                  nil,
-		tree:                nil,
 	}
 	board.AssignNode(nil, b)
-	b.tree = board.NewTree(b.GetNode())
 	b.quartz = quartz.NewQuartz(b.GetNode(), "")
 	b.cartMan = cartridges.NewManager(b.GetNode(), "")
 	return b
@@ -165,7 +162,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 
 	s.reset()
 
-	s.tree.Print(os.Stdout, " ", true)
+	s.Print(os.Stdout, " ", true)
 	//state, _ := s.tree.DumpAll()
 	//fmt.Println(state)
 

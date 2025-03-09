@@ -25,7 +25,6 @@ const (
 
 type Board struct {
 	*board.BaseComponent
-	tree                *board.Tree
 	cia1Socket          *CIA1Socket
 	cia2Socket          *CIA2Socket
 	vicSocket           *VicSocket
@@ -55,7 +54,6 @@ type Board struct {
 func NewBoard() *Board {
 	b := &Board{
 		BaseComponent:       board.NewBaseComponent("board", "", nil),
-		tree:                nil,
 		iec:                 nil,
 		pic:                 nil,
 		keys:                nil,
@@ -74,7 +72,6 @@ func NewBoard() *Board {
 		dt:                  nil,
 	}
 	board.AssignNode(nil, b)
-	b.tree = board.NewTree(b.GetNode())
 	b.cartMan = cartridges.NewManager(b.GetNode(), "")
 	return b
 }
