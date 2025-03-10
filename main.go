@@ -1,18 +1,15 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"fmt"
 	c64board "github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/components/board"
-	mos6581 "github.com/markel1974/c64emu/src/components/sid"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/render/asciirender"
 	"github.com/markel1974/c64emu/src/render/glrender"
 	"github.com/markel1974/c64emu/src/version"
 	vic20board "github.com/markel1974/c64emu/src/vic20/board"
-	"os"
 )
 
 //TODO WASM
@@ -71,52 +68,6 @@ import (
 
 type IRender interface {
 	Start() error
-}
-
-func TestDump() {
-	s := mos6581.NewSID(nil, "")
-	board.Register(nil, s)
-	res, err := s.Dump()
-	if err != nil {
-		panic(err)
-	}
-	body, _ := json.MarshalIndent(res, "", "  ")
-	fmt.Println(string(body))
-
-	//tst := make([]byte, 32)
-	//for x := range tst {
-	//	tst[x] = uint8(x)
-	//}
-	//err := components.SetProperty(s.GetId(), "registers", tst)
-	//if err != nil {
-	//	panic(err)
-	//}
-	//res, err := components.GetProperty(s.GetId(), "registers")
-	//if err != nil {
-	//	panic(err)
-	//}
-	//fmt.Printf("res: %v\n", res)
-
-	os.Exit(1)
-}
-
-func TestLauncher(a int, b int) bool {
-	return a > b
-}
-
-func TestCommand() {
-	c := board.NewCommands()
-	c.Add("test", "this a test command", TestLauncher)
-	v, err := c.Exec("test", []interface{}{3, 2})
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(v)
-	}
-	for _, v := range c.Documentation() {
-		fmt.Println(v)
-	}
-	os.Exit(1)
 }
 
 func main() {

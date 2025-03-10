@@ -17,7 +17,9 @@ type PropertyInfo struct {
 	getValue    reflect.Value
 	setType     reflect.Type
 	setValue    reflect.Value
-	set0Kind    reflect.Kind
+	//set0Kind    reflect.Kind
+	set0Type reflect.Type
+	//set0Numeric bool
 }
 
 // NewPropertyInfo initializes and returns a new PropertyInfo object with the given parameters.
@@ -50,7 +52,9 @@ func NewPropertyInfo(id string, desc string, ro bool, get interface{}, set inter
 	if p.setType.NumOut() != 0 {
 		panic(fmt.Errorf("%s: %s", id, setError))
 	}
-	p.set0Kind = p.setType.In(0).Kind()
+	p.set0Type = p.setType.In(0)
+	//p.set0Kind = p.setType.In(0).Kind()
+	//p.set0Numeric = IsNumeric(p.set0Kind)
 	return p
 }
 
@@ -64,14 +68,17 @@ func (prop *PropertyInfo) Set(arg interface{}) error {
 	if prop.readOnly {
 		return fmt.Errorf("property '%s' is read-only", prop.id)
 	}
-	argType := reflect.TypeOf(arg)
-	if argType.Kind() != prop.set0Kind {
-		return fmt.Errorf("property '%s' wrong input signature", prop.id)
-	}
 	argValue := reflect.ValueOf(arg)
-	args := []reflect.Value{argValue}
-	prop.setValue.Call(args)
-	return nil
+	if argValue.Type().AssignableTo(prop.set0Type) {
+		prop.setValue.Call([]reflect.Value{argValue})
+		return nil
+	}
+	if argValue.Type().ConvertibleTo(prop.set0Type) {
+		convertedArg := argValue.Convert(prop.set0Type)
+		prop.setValue.Call([]reflect.Value{convertedArg})
+		return nil
+	}
+	return fmt.Errorf("property '%s' expected type '%v', got '%T'", prop.id, prop.set0Type, arg)
 }
 
 // Get retrieves the value of the property by calling its getter function and returns the result or an error if any occurs.
