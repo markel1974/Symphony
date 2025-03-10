@@ -43,7 +43,7 @@ type PLA struct {
 func NewPLA(parent board.IComponent, suffix string) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
-		BaseComponent:   board.NewBaseComponent("pla", suffix, nil),
+		BaseComponent:   board.NewBaseComponent("pla", suffix),
 		vic:             nil,
 		sid:             nil,
 		cia1:            nil,

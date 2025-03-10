@@ -63,7 +63,7 @@ type IEC struct {
 
 func NewIEC(parent board.IComponent, suffix string) *IEC {
 	c := &IEC{
-		BaseComponent:   board.NewBaseComponent("iec", suffix, nil),
+		BaseComponent:   board.NewBaseComponent("iec", suffix),
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),

@@ -45,7 +45,7 @@ func (i *Pic) Emulate() {
 // NewPic initializes and returns a pointer to a new Pic instance with default values.
 func NewPic(parent board.IComponent, suffix string) *Pic {
 	p := &Pic{
-		BaseComponent: board.NewBaseComponent("pic", suffix, nil),
+		BaseComponent: board.NewBaseComponent("pic", suffix),
 		quartz:        nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,

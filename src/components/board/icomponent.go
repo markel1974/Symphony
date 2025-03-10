@@ -3,7 +3,6 @@ package board
 import (
 	"fmt"
 	"io"
-	"strings"
 )
 
 const stateId = "state"
@@ -45,13 +44,15 @@ type INavigate interface {
 
 	RestorePath(string, map[string]interface{}) error
 
-	RunCommand(string, []string) (map[string]interface{}, error)
+	CommandAdd(id string, desc string, command interface{})
 
-	RunCommandPath(string, string, string) (map[string]interface{}, error)
+	CommandExec(string, ...interface{}) (interface{}, error)
 
-	Path() string
+	CommandExecPath(string, string, ...interface{}) (interface{}, error)
 
 	Print(io.Writer, string, bool)
+
+	PrintHelp(io.Writer, string)
 }
 
 // IComponent represents a composite interface that combines IHardware and INavigate capabilities.
@@ -65,6 +66,7 @@ type BaseComponent struct {
 	id         string
 	node       *Node
 	properties *Properties
+	commands   *Commands
 }
 
 // Register associates the current BaseComponent instance with a specified parent Node, creating a new node if needed.
@@ -84,14 +86,15 @@ func Register(parent IComponent, component IComponent) {
 // NewBaseComponent creates and returns a new instance of BaseComponent with the specified name, suffix, and RunFn.
 // The id is constructed by concatenating the name and suffix with an underscore if the suffix is non-empty.
 // Initializes the BaseComponent with a properties map using the provided RunFn.
-func NewBaseComponent(name string, suffix string, runFn RunFn) *BaseComponent {
+func NewBaseComponent(name string, suffix string) *BaseComponent {
 	id := name
 	if len(suffix) > 0 {
 		id += "_" + suffix
 	}
 	bc := &BaseComponent{
 		id:         id,
-		properties: NewProperties(runFn),
+		properties: NewProperties(),
+		commands:   NewCommands(),
 	}
 	return bc
 }
@@ -125,9 +128,13 @@ func (bc *BaseComponent) GetComponentPath(path string) IComponent {
 	return node.GetComponent()
 }
 
+func (bc *BaseComponent) AddCommand(id string, desc string, command interface{}) {
+	bc.commands.Add(id, desc, command)
+}
+
 // AddProperty adds a new property to the BaseComponent with the specified ID, description, read-only flag, getter, and setter.
 func (bc *BaseComponent) AddProperty(id string, desc string, ro bool, get interface{}, set interface{}) {
-	p := CreatePropertyInfo(id, desc, ro, get, set)
+	p := NewPropertyInfo(id, desc, ro, get, set)
 	bc.properties.Add(p)
 }
 
@@ -228,34 +235,27 @@ func (bc *BaseComponent) RestoreAll(state map[string]interface{}) error {
 	return nil
 }
 
-// RunCommand executes a specified command with provided arguments using the component's properties and returns the result or an error.
-func (bc *BaseComponent) RunCommand(cmd string, args []string) (map[string]interface{}, error) {
-	d, err := bc.properties.Run(cmd, args)
+func (bc *BaseComponent) CommandAdd(id string, desc string, cmd interface{}) {
+	bc.commands.Add(id, desc, cmd)
+}
+
+// CommandExec executes a specified command with provided arguments using the component's properties and returns the result or an error.
+func (bc *BaseComponent) CommandExec(cmd string, args ...interface{}) (interface{}, error) {
+	d, err := bc.commands.Exec(cmd, args)
 	if err != nil {
 		return nil, err
 	}
 	return d, nil
 }
 
-// RunCommandPath executes a command on a specified path node with provided arguments and returns the result or an error.
-func (bc *BaseComponent) RunCommandPath(path string, cmd string, args string) (map[string]interface{}, error) {
+// CommandExecPath executes a command on a specified path node with provided arguments and returns the result or an error.
+func (bc *BaseComponent) CommandExecPath(path string, cmd string, args ...interface{}) (interface{}, error) {
 	node := bc.node.FindNode(path)
 	if node == nil {
 		return nil, fmt.Errorf("component %s not found", path)
 	}
-	values := strings.Split(args, " ")
-	d, err := node.GetComponent().RunCommand(cmd, values)
+	d, err := node.GetComponent().CommandExec(cmd, args...)
 	return d, err
-}
-
-// Path constructs and returns the hierarchical path of the component based on its parent's path and its own id.
-func (bc *BaseComponent) Path() string {
-	id := bc.GetId()
-	parent := bc.node.GetParent()
-	if parent == nil || id == "" {
-		return id
-	}
-	return parent.GetComponent().Path() + "." + id
 }
 
 // Print writes the component's ID to the provided writer with optional formatting for indent and child components.
@@ -267,6 +267,18 @@ func (bc *BaseComponent) Print(w io.Writer, indent string, showComponents bool) 
 	_, _ = fmt.Fprintln(w)
 	for _, child := range bc.node.GetChildren() {
 		child.GetComponent().Print(w, indent+"  ", showComponents)
+	}
+}
+
+// PrintHelp writes the component's ID to the provided writer with optional formatting for indent and child components.
+func (bc *BaseComponent) PrintHelp(w io.Writer, indent string) {
+	_, _ = fmt.Fprintf(w, "%s%s", indent, bc.GetId())
+	for _, v := range bc.commands.PrintHelp() {
+		_, _ = fmt.Fprintf(w, "%s%s", indent, v)
+	}
+	_, _ = fmt.Fprintln(w)
+	for _, child := range bc.node.GetChildren() {
+		child.GetComponent().PrintHelp(w, indent+"  ")
 	}
 }
 

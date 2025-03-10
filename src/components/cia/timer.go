@@ -104,7 +104,7 @@ type Timer struct {
 // The Timer is set to its default state and its Reset method is called to ensure initialization.
 func NewTimer(parent board.IComponent, suffix string) *Timer {
 	m := &Timer{
-		BaseComponent: board.NewBaseComponent("timer", suffix, nil),
+		BaseComponent: board.NewBaseComponent("timer", suffix),
 		cr:            0,
 		crNew:         0,
 		crNewPending:  false,

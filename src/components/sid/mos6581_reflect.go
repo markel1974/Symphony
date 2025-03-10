@@ -41,6 +41,7 @@ func NewSidReflect(s *SID) *SidReflect {
 	r := &SidReflect{
 		sid: s,
 	}
+	//s.AddCommand("sumRegister", "somma di due registri", r.sumTest)
 	// Voice 1
 	s.AddProperty("freqLO1", "Voice 1: Frequency Low Byte (0xD400)", false, r.getFreqLO1, r.setFreqLO1)
 	s.AddProperty("freqHI1", "Voice 1: Frequency High Byte (0xD401)", false, r.getFreqHI1, r.setFreqHI1)
@@ -77,6 +78,10 @@ func NewSidReflect(s *SID) *SidReflect {
 	s.AddProperty("env3", "ENV3 Register (0xD41C) - Envelope 3 Value", false, r.getEnv3, r.setEnv3)
 	return r
 }
+
+//func (s *SidReflect) sumTest(a int) int {
+//	return int(s.sid.registers[0]) + int(s.sid.registers[1]) + a
+//}
 
 func (s *SidReflect) getFreqLO1() uint8  { return s.sid.registers[freqLO1] }
 func (s *SidReflect) setFreqLO1(v uint8) { s.sid.registers[freqLO1] = v }

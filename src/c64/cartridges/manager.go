@@ -37,7 +37,7 @@ type Manager struct {
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
 func NewManager(parent board.IComponent, suffix string) *Manager {
 	m := &Manager{
-		BaseComponent:       board.NewBaseComponent("cartridgeManager", suffix, nil),
+		BaseComponent:       board.NewBaseComponent("cartridgeManager", suffix),
 		idx:                 0,
 		board:               nil,
 		prefs:               nil,

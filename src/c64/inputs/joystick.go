@@ -17,7 +17,7 @@ type Joystick struct {
 // NewJoystick initializes and returns a new instance of Joystick with default settings and sensitivity for controls.
 func NewJoystick(parent board.IComponent, suffix string) *Joystick {
 	j := &Joystick{
-		BaseComponent: board.NewBaseComponent("joystick", suffix, nil),
+		BaseComponent: board.NewBaseComponent("joystick", suffix),
 		storage:       nil,
 		joy:           0xff,
 		s1:            0,

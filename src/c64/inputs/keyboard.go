@@ -21,7 +21,7 @@ type Keyboard struct {
 // NewKeyboard initializes and returns a new Keyboard instance with default settings and a reset state.
 func NewKeyboard(parent board.IComponent, suffix string) *Keyboard {
 	k := &Keyboard{
-		BaseComponent: board.NewBaseComponent("keyboard", suffix, nil),
+		BaseComponent: board.NewBaseComponent("keyboard", suffix),
 		storage:       nil,
 		virtual:       NewVirtual(),
 		ascii:         NewAscii(),

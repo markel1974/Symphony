@@ -25,7 +25,7 @@ type SID struct {
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
 func NewSID(parent board.IComponent, suffix string) *SID {
 	s := &SID{
-		BaseComponent: board.NewBaseComponent("sid", suffix, nil),
+		BaseComponent: board.NewBaseComponent("sid", suffix),
 		socket:        nil,
 		registers:     make([]uint8, RegisterCount),
 		cfg:           nil,

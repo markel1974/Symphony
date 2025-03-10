@@ -53,7 +53,7 @@ type Board struct {
 
 func NewBoard() *Board {
 	b := &Board{
-		BaseComponent:       board.NewBaseComponent("board", "", nil),
+		BaseComponent:       board.NewBaseComponent("board", ""),
 		iec:                 nil,
 		pic:                 nil,
 		keys:                nil,

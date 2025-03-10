@@ -30,7 +30,7 @@ func GetType() int {
 func New(parent board.IComponent, suffix string) icartridge.ICartridge {
 	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
 	co := &CartridgeOcean{
-		BaseComponent: board.NewBaseComponent("ocean", suffix, nil),
+		BaseComponent: board.NewBaseComponent("ocean", suffix),
 		loaderId:      "ocean",
 		game:          v.Game,
 		exRom:         v.ExRom,

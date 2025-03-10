@@ -20,14 +20,14 @@ type PropertyInfo struct {
 	set0Kind    reflect.Kind
 }
 
-// CreatePropertyInfo initializes and returns a new PropertyInfo object with the given parameters.
+// NewPropertyInfo initializes and returns a new PropertyInfo object with the given parameters.
 // id specifies the unique identifier of the property.
 // kind defines the data type of the property.
 // desc provides a human-readable description of the property.
 // ro indicates whether the property is read-only.
 // get is a function to retrieve the property's value, with signature func() <ret>.
 // set is a function to update the property's value, with signature func(v <arg>).
-func CreatePropertyInfo(id string, desc string, ro bool, get interface{}, set interface{}) *PropertyInfo {
+func NewPropertyInfo(id string, desc string, ro bool, get interface{}, set interface{}) *PropertyInfo {
 	const getError = "wrong get signature must be func get() <ret>"
 	const setError = "wrong get signature must be func set(v <arg>)"
 	p := &PropertyInfo{id: id, description: desc, readOnly: ro}
@@ -87,13 +87,11 @@ func (prop *PropertyInfo) Get() (interface{}, error) {
 // Properties represents a collection of property definitions mapped by identifiers and a function to execute commands.
 type Properties struct {
 	properties map[string]*PropertyInfo
-	run        RunFn
 }
 
 // NewProperties creates a new instance of Properties with the provided RunFn and initializes an empty properties map.
-func NewProperties(run RunFn) *Properties {
+func NewProperties() *Properties {
 	return &Properties{
-		run:        run,
 		properties: make(map[string]*PropertyInfo),
 	}
 }
@@ -110,11 +108,6 @@ func (p *Properties) Add(prop *PropertyInfo) {
 // Get retrieves the PropertyInfo associated with the given id from the properties map. Returns nil if not found.
 func (p *Properties) Get(id string) *PropertyInfo {
 	return p.properties[id]
-}
-
-// Run executes the specified command with the given arguments and returns the result as a map or an error if one occurs.
-func (p *Properties) Run(cmd string, values []string) (map[string]interface{}, error) {
-	return p.run(cmd, values)
 }
 
 // GetProperty retrieves the value of a property by its id from the Properties instance. Returns the value or an error if not found.

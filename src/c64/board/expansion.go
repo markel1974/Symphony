@@ -17,7 +17,7 @@ type Expansion struct {
 // Returns a pointer to the newly created Expansion object.
 func NewExpansion(parent board.IComponent, suffix string) *Expansion {
 	e := &Expansion{
-		BaseComponent: board.NewBaseComponent("expansion", suffix, nil),
+		BaseComponent: board.NewBaseComponent("expansion", suffix),
 	}
 	board.Register(parent, e)
 	return e

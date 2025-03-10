@@ -73,7 +73,7 @@ type IRender interface {
 	Start() error
 }
 
-func Test() {
+func TestDump() {
 	s := mos6581.NewSID(nil, "")
 	board.Register(nil, s)
 	res, err := s.Dump()
@@ -100,8 +100,27 @@ func Test() {
 	os.Exit(1)
 }
 
+func TestLauncher(a int, b int) int {
+	return a + b
+}
+
+func TestCommand() {
+	c := board.NewCommands()
+	c.Add("run", "prova", TestLauncher)
+	v, err := c.Exec("run", []interface{}{1, 2})
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(v)
+	}
+	for _, v := range c.PrintHelp() {
+		fmt.Println(v)
+	}
+	os.Exit(1)
+}
+
 func main() {
-	//Test()
+	//TestCommand()
 	var showHelp bool
 	var showVersion bool
 	var cartridges string

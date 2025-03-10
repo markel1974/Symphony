@@ -64,7 +64,7 @@ const componentId = "c64"
 // NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
 func NewBoard() *Board {
 	b := &Board{
-		BaseComponent:       board.NewBaseComponent("c64", "", nil),
+		BaseComponent:       board.NewBaseComponent("c64", ""),
 		db:                  nil,
 		player:              nil,
 		quartz:              nil,

@@ -49,7 +49,7 @@ func GetType() int {
 // New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridge interface.
 func New(parent board.IComponent, suffix string) icartridge.ICartridge {
 	ef := &CartridgeEasyFlash{
-		BaseComponent:   board.NewBaseComponent("easyFlash", suffix, nil),
+		BaseComponent:   board.NewBaseComponent("easyFlash", suffix),
 		loaderId:        "easyFlash",
 		game:            1,
 		exRom:           1,

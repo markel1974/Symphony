@@ -29,7 +29,7 @@ type Ports struct {
 // NewPorts initializes and returns a new instance of the Ports struct with default values set.
 func NewPorts(parent board.IComponent, suffix string) *Ports {
 	p := &Ports{
-		BaseComponent: board.NewBaseComponent("ports", suffix, nil),
+		BaseComponent: board.NewBaseComponent("ports", suffix),
 		capsSense:     1,
 		pullUp:        0x17,
 		dataOut:       0,
