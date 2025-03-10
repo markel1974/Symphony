@@ -83,9 +83,7 @@ func Register(parent IComponent, component IComponent) {
 	}
 }
 
-// NewBaseComponent creates and returns a new instance of BaseComponent with the specified name, suffix, and RunFn.
-// The id is constructed by concatenating the name and suffix with an underscore if the suffix is non-empty.
-// Initializes the BaseComponent with a properties map using the provided RunFn.
+// NewBaseComponent creates a new instance of BaseComponent with the given name and suffix to generate an identifier.
 func NewBaseComponent(name string, suffix string) *BaseComponent {
 	id := name
 	if len(suffix) > 0 {
