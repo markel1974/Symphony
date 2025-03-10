@@ -107,20 +107,20 @@ func TestLauncher(a int, b int) bool {
 func TestCommand() {
 	c := board.NewCommands()
 	c.Add("test", "this a test command", TestLauncher)
-	v, err := c.Exec("test", []interface{}{1, 2})
+	v, err := c.Exec("test", []interface{}{3, 2})
 	if err != nil {
 		fmt.Println(err)
 	} else {
 		fmt.Println(v)
 	}
-	for _, v := range c.PrintHelp() {
+	for _, v := range c.Documentation() {
 		fmt.Println(v)
 	}
 	os.Exit(1)
 }
 
 func main() {
-	//TestCommand()
+	TestCommand()
 	var showHelp bool
 	var showVersion bool
 	var cartridges string

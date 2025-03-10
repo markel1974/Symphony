@@ -146,7 +146,7 @@ func TestCommands_PrintHelp(t *testing.T) {
 		return a + b
 	})
 
-	help := cmds.PrintHelp()
+	help := cmds.Documentation()
 	//fmt.Printf("%v\n", help)
 	assert.NotEmpty(t, help)
 	assert.Len(t, help, 2)

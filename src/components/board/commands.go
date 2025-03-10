@@ -3,20 +3,21 @@ package board
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 )
 
 // Command represents a structure that encapsulates an executable command, its metadata, and its expected inputs and outputs.
 type Command struct {
-	id           string
-	description  string
-	command      interface{}
-	args         []reflect.Kind
-	argsHelp     []string
-	retValue     reflect.Kind
-	retValueHelp string
-	exec         reflect.Value
-	signature    string
+	id          string
+	description string
+	command     interface{}
+	args        []reflect.Kind
+	argsHelp    []string
+	ret         []reflect.Kind
+	retHelp     []string
+	exec        reflect.Value
+	signature   string
 }
 
 // NewCommand creates a new Command instance with the provided id, description, and function reference.
@@ -40,15 +41,25 @@ func NewCommand(id string, desc string, command interface{}) *Command {
 	if commandType.NumOut() != 1 {
 		panic(fmt.Errorf("%s: %s", id, "command must return a single value"))
 	}
-	cOut := commandType.Out(0).Kind()
-	cmd.retValue = cOut
-	cmd.retValueHelp = cOut.String()
+
+	for x := 0; x < commandType.NumOut(); x++ {
+		cOut := commandType.Out(x).Kind()
+		cmd.ret = append(cmd.ret, cOut)
+		cmd.retHelp = append(cmd.retHelp, cOut.String())
+	}
+
 	for x := 0; x < commandType.NumIn(); x++ {
 		cIn := commandType.In(x).Kind()
 		cmd.args = append(cmd.args, cIn)
 		cmd.argsHelp = append(cmd.argsHelp, cIn.String())
 	}
-	cmd.signature = cmd.id + "(" + strings.Join(cmd.argsHelp, ", ") + ") " + cmd.retValueHelp
+	cmd.signature = cmd.id + "(" + strings.Join(cmd.argsHelp, ", ") + ")"
+	if len(cmd.retHelp) == 0 {
+	} else if len(cmd.retHelp) == 1 {
+		cmd.signature += " " + strings.Join(cmd.retHelp, ", ")
+	} else {
+		cmd.signature += " (" + strings.Join(cmd.retHelp, ", ") + ")"
+	}
 	return cmd
 }
 
@@ -66,11 +77,20 @@ func (cmd *Command) Exec(args []interface{}) (interface{}, error) {
 		rArgs = append(rArgs, reflect.ValueOf(args[x]))
 	}
 	results := cmd.exec.Call(rArgs)
-	if len(results) != 1 {
+	if len(results) != len(cmd.ret) {
 		return nil, fmt.Errorf("wrong number of results")
 	}
-	result := results[0].Interface()
-	return result, nil
+	if len(results) == 0 {
+		return nil, nil
+	} else if len(results) == 1 {
+		return results[0].Interface(), nil
+	} else {
+		var result []interface{}
+		for _, v := range results {
+			result = append(result, v.Interface())
+		}
+		return result, nil
+	}
 }
 
 // Commands is a collection that manages a set of Command instances identified by unique string IDs.
@@ -119,11 +139,13 @@ func (c *Commands) Exec(id string, args []interface{}) (interface{}, error) {
 	return v, nil
 }
 
-// PrintHelp returns a list of strings describing available commands, including their signature and description.
-func (c *Commands) PrintHelp() []string {
+// Documentation returns a map where keys are command IDs and values are their corresponding signatures from the Commands collection.
+func (c *Commands) Documentation() []string {
 	var out []string
 	for _, v := range c.commands {
-		out = append(out, v.signature+" : "+v.description)
+		signature := v.signature + " : " + v.description
+		out = append(out, signature)
 	}
+	sort.Strings(out)
 	return out
 }

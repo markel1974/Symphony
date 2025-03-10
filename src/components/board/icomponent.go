@@ -44,15 +44,15 @@ type INavigate interface {
 
 	RestorePath(string, map[string]interface{}) error
 
-	CommandAdd(id string, desc string, command interface{})
+	CommandAdd(id string, desc string, command interface{}) error
 
 	CommandExec(string, ...interface{}) (interface{}, error)
 
 	CommandExecPath(string, string, ...interface{}) (interface{}, error)
 
-	Print(io.Writer, string, bool)
+	CommandDocumentation(map[string]interface{})
 
-	PrintHelp(io.Writer, string)
+	Print(io.Writer, string, bool)
 }
 
 // IComponent represents a composite interface that combines IHardware and INavigate capabilities.
@@ -235,8 +235,8 @@ func (bc *BaseComponent) RestoreAll(state map[string]interface{}) error {
 	return nil
 }
 
-func (bc *BaseComponent) CommandAdd(id string, desc string, cmd interface{}) {
-	bc.commands.Add(id, desc, cmd)
+func (bc *BaseComponent) CommandAdd(id string, desc string, cmd interface{}) error {
+	return bc.commands.Add(id, desc, cmd)
 }
 
 // CommandExec executes a specified command with provided arguments using the component's properties and returns the result or an error.
@@ -258,6 +258,14 @@ func (bc *BaseComponent) CommandExecPath(path string, cmd string, args ...interf
 	return d, err
 }
 
+// CommandDocumentation writes the component's ID to the provided writer with optional formatting for indent and child components.
+func (bc *BaseComponent) CommandDocumentation(data map[string]interface{}) {
+	data[bc.GetId()] = bc.commands.Documentation()
+	for _, child := range bc.node.GetChildren() {
+		child.GetComponent().CommandDocumentation(data)
+	}
+}
+
 // Print writes the component's ID to the provided writer with optional formatting for indent and child components.
 func (bc *BaseComponent) Print(w io.Writer, indent string, showComponents bool) {
 	_, _ = fmt.Fprintf(w, "%s%s", indent, bc.GetId())
@@ -267,18 +275,6 @@ func (bc *BaseComponent) Print(w io.Writer, indent string, showComponents bool) 
 	_, _ = fmt.Fprintln(w)
 	for _, child := range bc.node.GetChildren() {
 		child.GetComponent().Print(w, indent+"  ", showComponents)
-	}
-}
-
-// PrintHelp writes the component's ID to the provided writer with optional formatting for indent and child components.
-func (bc *BaseComponent) PrintHelp(w io.Writer, indent string) {
-	_, _ = fmt.Fprintf(w, "%s%s", indent, bc.GetId())
-	for _, v := range bc.commands.PrintHelp() {
-		_, _ = fmt.Fprintf(w, "%s%s", indent, v)
-	}
-	_, _ = fmt.Fprintln(w)
-	for _, child := range bc.node.GetChildren() {
-		child.GetComponent().PrintHelp(w, indent+"  ")
 	}
 }
 
