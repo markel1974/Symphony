@@ -126,10 +126,6 @@ func (bc *BaseComponent) GetComponentPath(path string) IComponent {
 	return node.GetComponent()
 }
 
-func (bc *BaseComponent) AddCommand(id string, desc string, command interface{}) {
-	bc.commands.Add(id, desc, command)
-}
-
 // AddProperty adds a new property to the BaseComponent with the specified ID, description, read-only flag, getter, and setter.
 func (bc *BaseComponent) AddProperty(id string, desc string, ro bool, get interface{}, set interface{}) {
 	p := NewPropertyInfo(id, desc, ro, get, set)
