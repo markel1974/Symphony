@@ -100,14 +100,14 @@ func TestDump() {
 	os.Exit(1)
 }
 
-func TestLauncher(a int, b int) int {
-	return a + b
+func TestLauncher(a int, b int) bool {
+	return a > b
 }
 
 func TestCommand() {
 	c := board.NewCommands()
-	c.Add("run", "prova", TestLauncher)
-	v, err := c.Exec("run", []interface{}{1, 2})
+	c.Add("test", "this a test command", TestLauncher)
+	v, err := c.Exec("test", []interface{}{1, 2})
 	if err != nil {
 		fmt.Println(err)
 	} else {

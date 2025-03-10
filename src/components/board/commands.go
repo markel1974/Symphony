@@ -85,12 +85,20 @@ func NewCommands() *Commands {
 	}
 }
 
-// Add registers a new command with a unique ID, description, and executable function. Panics if the ID already exists.
-func (c *Commands) Add(id string, desc string, command interface{}) {
+// Add adds a new command to the Commands collection with a unique id, description, and function reference.
+// Returns an error if a command with the same id already exists.
+func (c *Commands) Add(id string, desc string, command interface{}) error {
 	if _, ok := c.commands[id]; ok {
-		panic(fmt.Errorf("command '%s' already exists", id))
+		return fmt.Errorf("command '%s' already exists", id)
 	}
 	c.commands[id] = NewCommand(id, desc, command)
+	return nil
+}
+
+// Exists checks if a command with the specified ID exists in the collection. Returns true if it exists, otherwise false.
+func (c *Commands) Exists(id string) bool {
+	_, ok := c.commands[id]
+	return ok
 }
 
 // Remove deletes a command from the commands map by its specified id.
