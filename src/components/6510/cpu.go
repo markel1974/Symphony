@@ -12,38 +12,34 @@ import (
 
 //Notes
 //https://codebase64.org/lib/exe/fetch.php?media=base:safely_freezing_the_c64.pdf
-/*
- *  - The zFlag variable has the inverse meaning of the 6510 Z flag
- *  - Only the highest bit of the nFlag variable is used
- */
 
 // CPU represents a simulated central processing unit with registers, flags, and associated helper components.
 type CPU struct {
 	*board.BaseComponent
-	banks          IBanks
-	pic            IPic
-	nFlag          uint8  // Negative flag
-	zFlag          uint8  // Zero flag
-	vFlag          uint8  // Overflow flag
-	dFlag          uint8  // Decimal mode flag
-	iFlag          uint8  // Interrupt disable flag
-	cFlag          uint8  // Carry flag
-	a              uint8  // Register
-	x              uint8  // Register
-	y              uint8  // Register
-	sp             uint8  // Stack pointer
-	pc             uint16 // Program counter
-	op             uint8  // Current opcode
-	ar             uint16 // Address register
-	ar2            uint16 // Address register 2
-	rmw            uint8  // Data buffer for RMW instructions
-	stop           bool   //
-	next           func(cpu *CPU)
-	rdyLow         bool // current RDY state
-	aecLow         bool // current AEC state
-	overflowBranch func() bool
-	opFlags        uint8
-	irqBreaker     bool
+	banks          IBanks         // banks represents the interface for accessing and managing memory banks within the CPU simulation.
+	pic            IPic           // pic represents the programmable interrupt controller (PIC) interface used by the CPU for interrupt handling.
+	next           func(cpu *CPU) // next is a function pointer that executes the next CPU instruction or operation during emulation.
+	overflowBranch func() bool    // overflowBranch determines if the CPU should branch based on the overflow condition.
+	nFlag          uint8          // Negative flag - Only the highest bit of the nFlag variable is used
+	zFlag          uint8          // Zero flag - The zFlag variable has the inverse meaning of the 6510 Z flag
+	vFlag          uint8          // Overflow flag
+	dFlag          uint8          // Decimal mode flag
+	iFlag          uint8          // Interrupt disable flag
+	cFlag          uint8          // Carry flag
+	a              uint8          // Register
+	x              uint8          // Register
+	y              uint8          // Register
+	sp             uint8          // Stack pointer
+	pc             uint16         // Program counter
+	op             uint8          // Current opcode
+	ar             uint16         // Address register
+	ar2            uint16         // Address register 2
+	rmw            uint8          // Data buffer for RMW instructions
+	stop           bool           // stop indicates whether the CPU execution is currently paused.
+	rdyLow         bool           // current RDY state
+	aecLow         bool           // current AEC state
+	opFlags        uint8          // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
+	irqBreaker     bool           // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
@@ -251,7 +247,6 @@ func (cpu *CPU) doSBC(data uint8) {
 func (cpu *CPU) printRegisters(qCycle uint64, baLow bool) {
 	fmt.Printf("CPU] %d|%d||%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d\n",
 		qCycle,
-		//cpu.state,
 		conversion.BoolToUint8(baLow),
 		cpu.nFlag,
 		cpu.zFlag,
@@ -268,5 +263,4 @@ func (cpu *CPU) printRegisters(qCycle uint64, baLow bool) {
 		cpu.ar,
 		cpu.ar2,
 		cpu.rmw)
-	//cpu.extConfig)
 }
