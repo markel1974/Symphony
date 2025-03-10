@@ -13,9 +13,7 @@ type Command struct {
 	description string
 	command     interface{}
 	args        []reflect.Kind
-	argsHelp    []string
 	ret         []reflect.Kind
-	retHelp     []string
 	exec        reflect.Value
 	signature   string
 }
@@ -29,7 +27,6 @@ func NewCommand(id string, desc string, command interface{}) *Command {
 	}
 	cmd := &Command{
 		id:          id,
-		argsHelp:    []string{},
 		description: desc,
 		command:     command,
 		exec:        reflect.ValueOf(command),
@@ -42,23 +39,26 @@ func NewCommand(id string, desc string, command interface{}) *Command {
 		panic(fmt.Errorf("%s: %s", id, "command must return a single value"))
 	}
 
+	var retHelp []string
 	for x := 0; x < commandType.NumOut(); x++ {
 		cOut := commandType.Out(x).Kind()
 		cmd.ret = append(cmd.ret, cOut)
-		cmd.retHelp = append(cmd.retHelp, cOut.String())
+		retHelp = append(retHelp, cOut.String())
 	}
-
+	var argsHelp []string
 	for x := 0; x < commandType.NumIn(); x++ {
 		cIn := commandType.In(x).Kind()
 		cmd.args = append(cmd.args, cIn)
-		cmd.argsHelp = append(cmd.argsHelp, cIn.String())
+		argsHelp = append(argsHelp, cIn.String())
 	}
-	cmd.signature = cmd.id + "(" + strings.Join(cmd.argsHelp, ", ") + ")"
-	if len(cmd.retHelp) == 0 {
-	} else if len(cmd.retHelp) == 1 {
-		cmd.signature += " " + strings.Join(cmd.retHelp, ", ")
+	const sep = ", "
+	cmd.signature = cmd.id + "(" + strings.Join(argsHelp, sep) + ")"
+	if len(retHelp) == 0 {
+		//nothing to do
+	} else if len(retHelp) == 1 {
+		cmd.signature += " " + strings.Join(retHelp, sep)
 	} else {
-		cmd.signature += " (" + strings.Join(cmd.retHelp, ", ") + ")"
+		cmd.signature += " (" + strings.Join(retHelp, sep) + ")"
 	}
 	return cmd
 }

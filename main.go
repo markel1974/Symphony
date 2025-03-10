@@ -120,7 +120,7 @@ func TestCommand() {
 }
 
 func main() {
-	TestCommand()
+	//TestCommand()
 	var showHelp bool
 	var showVersion bool
 	var cartridges string
