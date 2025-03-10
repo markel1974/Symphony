@@ -47,7 +47,7 @@ func TestCPU_Setup(t *testing.T) {
 	pic := &mockPic{}
 	socket := &mockSocket{banks: banks, pic: pic}
 
-	cpu := NewCPU("test")
+	cpu := NewCPU(nil, "")
 	cpu.Setup(socket)
 
 	assert.Equal(t, banks, cpu.banks)
@@ -59,7 +59,7 @@ func TestCPU_Reset(t *testing.T) {
 	pic := &mockPic{}
 	socket := &mockSocket{banks: banks, pic: pic}
 
-	cpu := NewCPU("test")
+	cpu := NewCPU(nil, "")
 	cpu.Setup(socket)
 	cpu.Reset()
 
@@ -69,7 +69,7 @@ func TestCPU_Reset(t *testing.T) {
 }
 
 func TestCPU_SetOverflowBranch(t *testing.T) {
-	cpu := NewCPU("test")
+	cpu := NewCPU(nil, "")
 	branchFn := func() bool { return true }
 	cpu.SetOverflowBranch(branchFn)
 
@@ -78,7 +78,7 @@ func TestCPU_SetOverflowBranch(t *testing.T) {
 }
 
 func TestCPU_SetAECLow(t *testing.T) {
-	cpu := NewCPU("test")
+	cpu := NewCPU(nil, "")
 
 	cpu.SetAECLow(true)
 	assert.True(t, cpu.aecLow)
@@ -90,7 +90,7 @@ func TestCPU_SetAECLow(t *testing.T) {
 }
 
 func TestCPU_SetRDYLow(t *testing.T) {
-	cpu := NewCPU("test")
+	cpu := NewCPU(nil, "")
 
 	cpu.SetRDYLow(true)
 	assert.True(t, cpu.rdyLow)
@@ -102,7 +102,7 @@ func TestCPU_SetRDYLow(t *testing.T) {
 }
 
 func TestCPU_Emulate(t *testing.T) {
-	cpu := NewCPU("test")
+	cpu := NewCPU(nil, "")
 	var nextCalled bool
 	cpu.next = func(_ *CPU) { nextCalled = true }
 
@@ -117,7 +117,7 @@ func TestCPU_Emulate(t *testing.T) {
 
 func TestCPU_read(t *testing.T) {
 	banks := &mockBanks{data: map[uint16]uint8{0x1000: 42}}
-	cpu := NewCPU("test")
+	cpu := NewCPU(nil, "")
 	cpu.banks = banks
 
 	cpu.SetRDYLow(true)
@@ -133,7 +133,7 @@ func TestCPU_read(t *testing.T) {
 }
 
 func TestCPU_popFlags(t *testing.T) {
-	cpu := NewCPU("test")
+	cpu := NewCPU(nil, "")
 	const target = 0xd3
 
 	cpu.popFlags(target) //11010011
@@ -147,7 +147,7 @@ func TestCPU_popFlags(t *testing.T) {
 }
 
 func TestCPU_pushFlags(t *testing.T) {
-	cpu := NewCPU("test")
+	cpu := NewCPU(nil, "")
 	cpu.nFlag = 0x80
 	cpu.vFlag = 0x40
 	cpu.dFlag = 0x08
@@ -162,7 +162,7 @@ func TestCPU_pushFlags(t *testing.T) {
 }
 
 func TestCPU_branch(t *testing.T) {
-	cpu := NewCPU("test")
+	cpu := NewCPU(nil, "")
 	cpu.pc = 0x0100
 
 	cpu.branch(0x7f)
