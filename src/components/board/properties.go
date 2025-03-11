@@ -5,9 +5,6 @@ import (
 	"reflect"
 )
 
-// RunFn defines a function type that executes a command with arguments and returns a result map or an error.
-type RunFn func(cmd string, args []string) (map[string]interface{}, error)
-
 // PropertyInfo represents metadata and behavior for a property, including its ID, type details, description, and functionality.
 type PropertyInfo struct {
 	id          string
@@ -20,62 +17,40 @@ type PropertyInfo struct {
 	set0Type    reflect.Type
 }
 
-// NewPropertyInfo creates a PropertyInfo instance, validating the signatures of the get and set functions.
-//
-// Parameters:
-//   - id: Unique identifier for the property.
-//   - desc: Description of the property.
-//   - ro: Flag indicating if the property is read-only.
-//   - get: Function with no parameters that returns the property's value.
-//   - set: Function with one parameter (the value to set) and an error as the return type.
-//
-// Returns:
-//   - A pointer to PropertyInfo if the signatures are valid, otherwise panics with an error.
-//
-// Signature Validation:
-//   - get must be a function with no parameters and a return value.
-//   - set must be a function with one parameter and an error as the return type.
-//
-// Example:
-//
-//	getFunc := func() int { return 42 }
-//	setFunc := func(v int) error { return nil }
-//	prop := NewPropertyInfo("myProperty", "A test property", false, getFunc, setFunc)
+// NewPropertyInfo initializes and returns a new PropertyInfo object with the given parameters.
+// id specifies the unique identifier of the property.
+// kind defines the data type of the property.
+// desc provides a human-readable description of the property.
+// ro indicates whether the property is read-only.
+// get is a function to retrieve the property's value, with signature func() <ret>.
+// set is a function to update the property's value, with signature func(v <arg>).
 func NewPropertyInfo(id string, desc string, ro bool, get interface{}, set interface{}) *PropertyInfo {
-	// Constants for error messages in case of invalid signatures.
 	const getError = "wrong get signature must be func get() <ret>"
 	const setError = "wrong set signature must be func set(v <arg>)error"
-	// Defines reference types for the expected signatures.
-	setReference := reflect.TypeOf(func() error { return nil })
+	setReference := reflect.TypeOf(func(int) error { return nil })
 	getReference := reflect.TypeOf(func() int { return 0 })
-
-	// Creates a PropertyInfo instance and stores the function information.
 	p := &PropertyInfo{id: id, description: desc, readOnly: ro}
 	p.getType = reflect.TypeOf(get)
 	p.getValue = reflect.ValueOf(get)
 	p.setType = reflect.TypeOf(set)
 	p.setValue = reflect.ValueOf(set)
-
-	// Validates the get function signature.
 	if get == nil || p.getType.Kind() != getReference.Kind() {
 		panic(fmt.Errorf("%s: %s", id, getError))
 	}
 	if p.getType.NumIn() != getReference.NumIn() || p.getType.NumOut() != getReference.NumOut() {
 		panic(fmt.Errorf("%s: %s", id, getError))
 	}
-
-	// Validates the set function signature.
 	if set == nil || p.setType.Kind() != setReference.Kind() {
 		panic(fmt.Errorf("%s: %s", id, setError))
 	}
 	if p.setType.NumIn() != setReference.NumIn() || p.setType.NumOut() != setReference.NumOut() {
 		panic(fmt.Errorf("%s: %s", id, setError))
 	}
-	if p.setType.Out(0) != reflect.TypeOf(setReference).Out(0) {
-		panic(fmt.Errorf("%s: %s", id, setError))
+	for x := 0; x < setReference.NumOut(); x++ {
+		if setReference.Out(x) != p.setType.Out(x) {
+			panic(fmt.Errorf("%s: %s", id, setError))
+		}
 	}
-
-	// Stores the type of the set function's input parameter.
 	p.set0Type = p.setType.In(0)
 	return p
 }
@@ -125,7 +100,7 @@ type Properties struct {
 	properties map[string]*PropertyInfo
 }
 
-// NewProperties creates a new instance of Properties with the provided RunFn and initializes an empty properties map.
+// NewProperties creates a new instance of Properties and initializes an empty properties map.
 func NewProperties() *Properties {
 	return &Properties{
 		properties: make(map[string]*PropertyInfo),
