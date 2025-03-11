@@ -25,36 +25,36 @@ const (
 )
 
 type FSDrive struct {
-	iec            virtualdrive.IIec
-	commands       *Commands
-	deviceId       uint8
-	deviceNumber   uint8
-	path           string
-	respond        *fifo.StaticFifo
-	_dir_path      string       // Path to directory
-	_orig_dir_path string       // Original directory path
-	_dir_title     string       // Directory title
-	_file          [16]*os.File // File pointers for each of the 16 channels
-	_read_char     [16]uint8    // Buffers for one-byte read-ahead
-	_ready         bool
-	atn            bool
-	state          int
-	cfg            *config.Config
+	iec          virtualdrive.IIec
+	commands     *Commands
+	deviceId     uint8
+	deviceNumber uint8
+	path         string
+	respond      *fifo.StaticFifo
+	dirPath      string       // Path to directory
+	origDirPath  string       // Original directory path
+	dirTitle     string       // Directory title
+	file         [16]*os.File // File pointers for each of the 16 channels
+	readChar     [16]uint8    // Buffers for one-byte read-ahead
+	ready        bool
+	atn          bool
+	state        int
+	cfg          *config.Config
 	//test           int64
 }
 
 func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, path string) *FSDrive {
 	v := &FSDrive{
-		iec:            iec,
-		deviceId:       deviceId,
-		deviceNumber:   deviceNumber,
-		path:           path,
-		respond:        fifo.NewStaticFifo(512),
-		commands:       NewCommands(),
-		_orig_dir_path: "",
-		atn:            false,
-		state:          0,
-		cfg:            nil,
+		iec:          iec,
+		deviceId:     deviceId,
+		deviceNumber: deviceNumber,
+		path:         path,
+		respond:      fifo.NewStaticFifo(512),
+		commands:     NewCommands(),
+		origDirPath:  "",
+		atn:          false,
+		state:        0,
+		cfg:          nil,
 	}
 	return v
 }
@@ -62,13 +62,13 @@ func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, path string)
 func (v *FSDrive) Setup(cfg *config.Config) {
 	v.cfg = cfg
 	v.cfg.Bind(v.configChanged)
-	v._orig_dir_path = v.path
-	if v.changeDirectory(v._orig_dir_path) {
+	v.origDirPath = v.path
+	if v.changeDirectory(v.origDirPath) {
 		for i := 0; i < 16; i++ {
-			v._file[i] = nil
+			v.file[i] = nil
 		}
 		v.Reset()
-		v._ready = true
+		v.ready = true
 	}
 }
 
@@ -99,7 +99,6 @@ func (v *FSDrive) AtnStateChanged(atnPrev bool, atn bool) {
 		value |= DATA_OUT
 		value |= CLK_OUT //ERROR
 		//value |= ATN_A
-
 		//value := uint8(DATA_OUT)
 		//value = ^value
 
@@ -180,7 +179,7 @@ func (v *FSDrive) LedTurnOff() {
 }
 
 func (v *FSDrive) GetPath() string {
-	return v._dir_path
+	return v.dirPath
 }
 
 func (v *FSDrive) Open(channel uint8, data []uint8) uint8 {
@@ -196,9 +195,9 @@ func (v *FSDrive) Open(channel uint8, data []uint8) uint8 {
 		return virtualdrive.StOk
 	}
 	// Close previous file if still open
-	if v._file[channel] != nil {
-		v._file[channel].Close()
-		v._file[channel] = nil
+	if v.file[channel] != nil {
+		v.file[channel].Close()
+		v.file[channel] = nil
 	}
 	if data[0] == '#' {
 		v.commands.SetError(virtualdrive.ERR_NOCHANNEL)
@@ -245,15 +244,15 @@ func (v *FSDrive) openFile(channel uint8, name string) uint8 {
 		perm = os.FileMode(0666)
 		flags = os.O_RDWR | os.O_APPEND
 	}
-	completeFileName := v._dir_path + string(os.PathSeparator) + plainName
+	completeFileName := v.dirPath + string(os.PathSeparator) + plainName
 	f, err := os.OpenFile(completeFileName, flags, perm)
 	if err != nil {
 		v.commands.SetError(virtualdrive.ERR_FILENOTFOUND)
 	} else {
-		v._file[channel] = f
+		v.file[channel] = f
 		data := make([]byte, 1)
 		_, _ = f.Read(data)
-		v._read_char[channel] = data[0]
+		v.readChar[channel] = data[0]
 	}
 	return virtualdrive.StOk
 }
@@ -264,9 +263,9 @@ func (v *FSDrive) Close(channel uint8) uint8 {
 		v.closeAllChannels()
 		return virtualdrive.StOk
 	}
-	if v._file[channel] != nil {
-		v._file[channel].Close()
-		v._file[channel] = nil
+	if v.file[channel] != nil {
+		v.file[channel].Close()
+		v.file[channel] = nil
 	}
 	return virtualdrive.StOk
 }
@@ -283,18 +282,18 @@ func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
 		return virtualdrive.StEof, data
 	}
 
-	if v._file[channel] == nil {
+	if v.file[channel] == nil {
 		return virtualdrive.StReadTimeout, 0
 	}
 
 	// Read one byte
-	data := v._read_char[channel]
+	data := v.readChar[channel]
 	buffer := make([]uint8, 1)
-	c, err := v._file[channel].Read(buffer)
+	c, err := v.file[channel].Read(buffer)
 	if err == io.EOF {
 		return virtualdrive.StEof, data
 	}
-	v._read_char[channel] = (uint8)(c)
+	v.readChar[channel] = (uint8)(c)
 	return virtualdrive.StOk, data
 }
 
@@ -309,11 +308,11 @@ func (v *FSDrive) Write(channel uint8, data uint8, eoi bool) uint8 {
 		}
 		return virtualdrive.StOk
 	}
-	if v._file[channel] == nil {
+	if v.file[channel] == nil {
 		v.commands.SetError(virtualdrive.ERR_FILENOTOPEN)
 		return virtualdrive.StTimeout
 	}
-	if _, err := v._file[channel].Write([]byte{data}); err == io.EOF {
+	if _, err := v.file[channel].Write([]byte{data}); err == io.EOF {
 		v.commands.SetError(virtualdrive.ERR_WRITE25)
 		return virtualdrive.StTimeout
 	}
@@ -335,16 +334,16 @@ func (v *FSDrive) changeDirectory(dirPath string) bool {
 	if !d.IsDir() {
 		return false
 	}
-	v._dir_path = dirPath
-	v._dir_title = v._dir_path
-	if len(v._dir_title) > 16 {
-		v._dir_title = v._dir_title[:16]
+	v.dirPath = dirPath
+	v.dirTitle = v.dirPath
+	if len(v.dirTitle) > 16 {
+		v.dirTitle = v.dirTitle[:16]
 	}
 	return true
 }
 
 func (v *FSDrive) findFirstFile(pattern string) (string, bool) {
-	items, _ := os.ReadDir(v._dir_path)
+	items, _ := os.ReadDir(v.dirPath)
 	matcher := NewMatcher()
 	for _, item := range items {
 		if item.IsDir() {

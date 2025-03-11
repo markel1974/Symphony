@@ -1,7 +1,7 @@
 package iec
 
 import (
-	"fmt"
+	"log"
 	"strconv"
 	"strings"
 
@@ -31,12 +31,7 @@ const (
 	CmdOpen  = 0xf0 // Open channel
 )
 
-const (
-	AtnListen   = 0x20
-	AtnUnlisten = 0x30
-	AtnTalk     = 0x40
-	AtnUntalk   = 0x5
-)
+
 */
 
 type IEC struct {
@@ -50,15 +45,6 @@ type IEC struct {
 	peripheralsData []uint8
 	virtualDrives   []virtualdrive.IVirtualDrive
 	ledSignal       *signals.Signal2[int, uint8]
-	//openData                []byte
-	//listener                virtualdrive.IVirtualDrive // Pointer to active listener
-	//talker                  virtualdrive.IVirtualDrive // Pointer to active talker
-	//listenerActive          bool                       // Listener selected, listener_data is valid
-	//talkerActive            bool                       // Talker selected, talker_data is valid
-	//listening               bool                       // Last ATN was listen (to decide between sec_listen/sec_talk)
-	//receivedCmd             uint8                      // Received command code ($x0)
-	//secAddr                 uint8                      // Received secondary address ($0x)
-	//emu1541 bool
 }
 
 func NewIEC(parent board.IComponent, suffix string) *IEC {
@@ -145,14 +131,6 @@ func (c *IEC) Emulate() {
 }
 
 func (c *IEC) Reset() {
-	//c.listener = nil
-	//c.talker = nil
-	//c.listenerActive = false
-	//c.talkerActive = false
-	//c.listening = false
-	//c.receivedCmd = 0
-	//c.secAddr = 0
-	//c.openData = nil
 	for _, vd := range c.virtualDrives {
 		if vd.Ready() {
 			vd.Reset()
@@ -227,7 +205,7 @@ func (c *IEC) createVirtualDrive(kind string, opts string, deviceId uint8) virtu
 	switch kind {
 	case "C1541":
 		vd = c1541board.New(c, strconv.Itoa(int(deviceNumber)), c, deviceId, deviceNumber, opts)
-	case "FSDrive":
+	case "FSDRIVE":
 		vd = fsdrive.New(c, deviceId, deviceNumber, opts)
 	default:
 		vd = c1541board.New(c, strconv.Itoa(int(deviceNumber)), c, deviceId, deviceNumber, opts)
@@ -267,7 +245,7 @@ func (c *IEC) debugCpuWrite(data uint8) {
 	if value&0x08 != 0 {
 		message = append(message, "[ATN_OUT]")
 	}
-	fmt.Printf("CPU SEND: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
+	log.Printf("CPU SEND: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
 }
 
 func (c *IEC) debugCpuRead(data uint8) {
@@ -288,272 +266,43 @@ func (c *IEC) debugCpuRead(data uint8) {
 	if value&0x08 != 0 {
 		message = append(message, "[ATN_OUT]")
 	}
-	fmt.Printf("CPU SEND: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
+	log.Printf("CPU SEND: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
 }
 
 /*
-func (c *IEC) debugPeripheralWrite(data uint8) {
-	value := data
-	var message []string
-	if value&0x02 != 0 {
-		message = append(message, "[DATA_OUT]")
-	}
-	if value&0x08 != 0 {
-		message = append(message, "[CLK_OUT]")
-	}
-	if value&0x10 != 0 {
-		message = append(message, "[ATN_IN]")
-	}
-	fmt.Printf("DRV RECV: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
+// virtualbus.go
+func (vb *VirtualBus) OutATN(data uint8) uint8 {
+    //Invia il comando
+    return vb.iec.CpuWrite(data)
 }
 
-func (c *IEC) debugPeripheralRead(data uint8) {
-	value := data
-	var message []string
-	if value&0x01 != 0 {
-		message = append(message, "[DATA_IN]")
-	}
-	if value&0x02 != 0 {
-		message = append(message, "[DATA_OUT]")
-	}
-	if value&0x04 != 0 {
-		message = append(message, "[CLK_IN]")
-	}
-	if value&0x08 != 0 {
-		message = append(message, "[CLK_OUT]")
-	}
-	if value&0x10 != 0 {
-		message = append(message, "[ATN_IN]")
-	}
-	if value&0x80 != 0 {
-		message = append(message, "[ATN_OUT]")
-	}
-	fmt.Printf("DRV RECV: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
-}
-*/
-/*
-void debug_iec_drv_write(unsigned int data)
-{
-    if (debug.iec) {
-        uint8_t value = data;
-        static uint8_t oldvalue = 0;
-
-        if (value != oldvalue) {
-            oldvalue = value;
-
-            log_debug("$1800 store: %s %s %s",
-                      value & 0x02 ? "DATA OUT" : "        ",
-                      value & 0x08 ? "CLK OUT" : "       ",
-                      value & 0x10 ? "ATNA   " : "       "
-                      );
-        }
-    }
+func (vb *VirtualBus) OutSec(data uint8) uint8 {
+     //Invia il comando
+     return vb.iec.CpuWrite(data)
 }
 
-void debug_iec_drv_read(unsigned int data)
-{
-    if (debug.iec) {
-        uint8_t value = data;
-        static uint8_t oldvalue = { 0 };
-        const char * data_correct = "";
-
-        if (value != oldvalue) {
-            unsigned int atn = value & 0x80 ? 1 : 0;
-            unsigned int atna = value & 0x10 ? 1 : 0;
-            unsigned int ddata = value & 0x01 ? 1 : 0;
-
-            oldvalue = value;
-
-            if (atn ^ atna) {
-                if (!ddata) {
-                    data_correct = " ***** ERROR: ATN, ATNA & DATA! *****";
-                }
-            }
-
-            log_debug("$1800 read:  %s %s %s %s %s %s%s",
-                      value & 0x02 ? "DATA OUT" : "        ",
-                      value & 0x08 ? "CLK OUT" : "       ",
-                      value & 0x10 ? "ATNA   " : "       ",
-
-                      value & 0x01 ? "DATA IN" : "       ",
-                      value & 0x04 ? "CLK IN" : "       ",
-                      value & 0x80 ? "ATN" : "   ",
-                      data_correct
-                      );
-        }
-    }
+func (vb *VirtualBus) Out(data uint8, eoi bool) uint8 {
+     //Invia il comando
+     return vb.iec.CpuWrite(data)
 }
 
-
-*/
-
-/*
-func (c *IEC) Out(data uint8, eoi bool) uint8 {
-	if c.listenerActive {
-		if c.receivedCmd == CmdOpen {
-			return c.openOut(data, eoi)
-		}
-		if c.receivedCmd == CmdData {
-			return c.dataOut(data, eoi)
-		}
-		return virtualdrive.StTimeout
-	} else {
-		return virtualdrive.StTimeout
-	}
+func (vb *VirtualBus) In() (uint8, uint8) {
+    return vb.iec.CpuRead()
 }
 
-func (c *IEC) OutATN(data uint8) uint8 {
-	c.receivedCmd = 0 // Command is sent with secondary address
-	c.secAddr = 0     // Command is sent with secondary address
-	d := data & 0xf0
-	switch d {
-	case AtnListen:
-		c.listening = true
-		return c.listen(d)
-	case AtnUnlisten:
-		c.listening = false
-		return c.unListen()
-	case AtnTalk:
-		c.listening = false
-		return c.talk(d)
-	case AtnUntalk:
-		c.listening = false
-		return c.unTalk()
-	}
-	return virtualdrive.StTimeout
+func (vb *VirtualBus) SetATN() {
+    // Non fare nulla (gestito internamente da IEC e dal 1541 emulato)
 }
 
-func (c *IEC) OutSec(data uint8) uint8 {
-	if c.listening {
-		if c.listenerActive {
-			c.secAddr = data & 0x0f
-			c.receivedCmd = data & 0xf0
-			return c.secListen()
-		}
-	} else {
-		if c.talkerActive {
-			c.secAddr = data & 0x0f
-			c.receivedCmd = data & 0xf0
-			return c.secTalk()
-		}
-	}
-	return virtualdrive.StTimeout
+func (vb *VirtualBus) RelATN() {
+    // Non fare nulla (gestito internamente da IEC e dal 1541 emulato)
 }
 
-func (c *IEC) In() (uint8, uint8) {
-	if c.talkerActive && (c.receivedCmd == CmdData) {
-		return c.dataIn()
-	}
-	return virtualdrive.StTimeout, 0
+func (vb *VirtualBus) Turnaround() {
+    // Non fare nulla (gestito internamente da IEC e dal 1541 emulato)
 }
 
-func (c *IEC) SetATN() {
-	// Only needed for real IEC
-}
-
-func (c *IEC) RelATN() {
-	// Only needed for real IEC
-}
-
-func (c *IEC) Turnaround() {
-	// Only needed for real IEC
-}
-
-func (c *IEC) Release() {
-	// Only needed for real IEC
-}
-
-func (c *IEC) listen(device uint8) uint8 {
-	c.listenerActive = false
-	if device < 8 || device > 11 {
-		return virtualdrive.StNotPresent
-	}
-	if c.listener = c.virtualDrives[device-8]; c.listener == nil {
-		return virtualdrive.StNotPresent
-	}
-	if !c.listener.Ready() {
-		return virtualdrive.StNotPresent
-	}
-	c.listenerActive = true
-	return virtualdrive.StOk
-}
-
-func (c *IEC) talk(device uint8) uint8 {
-	c.talkerActive = false
-	if device < 8 || device > 11 {
-		return virtualdrive.StNotPresent
-	}
-	if c.talker = c.virtualDrives[device-8]; c.talker == nil {
-		return virtualdrive.StNotPresent
-	}
-	if !c.talker.Ready() {
-		return virtualdrive.StNotPresent
-	}
-	c.talkerActive = true
-	return virtualdrive.StOk
-}
-
-func (c *IEC) unListen() uint8 {
-	c.listenerActive = false
-	return virtualdrive.StOk
-}
-
-func (c *IEC) unTalk() uint8 {
-	c.talkerActive = false
-	return virtualdrive.StOk
-}
-
-func (c *IEC) secListen() uint8 {
-	switch c.receivedCmd {
-	case CmdOpen:
-		c.openData = nil
-	case CmdClose:
-		if c.listener != nil {
-			return c.listener.Close(c.secAddr)
-		}
-	}
-	return virtualdrive.StOk
-}
-
-func (c *IEC) secTalk() uint8 {
-	return virtualdrive.StOk
-}
-
-func (c *IEC) openOut(data uint8, eoi bool) uint8 {
-	c.openData = append(c.openData, data)
-	if eoi {
-		if c.listener != nil {
-			return c.listener.Open(c.secAddr, c.openData)
-		}
-	}
-	return virtualdrive.StOk
-}
-
-func (c *IEC) dataOut(data uint8, eoi bool) uint8 {
-	if c.listener != nil {
-		return c.listener.Write(c.secAddr, data, eoi)
-	}
-	return virtualdrive.StOk
-}
-
-func (c *IEC) dataIn() (uint8, uint8) {
-	if c.talker != nil {
-		return c.talker.Read(c.secAddr)
-	}
-	return 0, 0
-}
-
-func (c *IEC) destroyVirtualDrive(vd virtualdrive.IVirtualDrive) {
-	if vd == nil {
-		return
-	}
-	if c.listener == vd {
-		c.listener = nil
-		c.listenerActive = false
-	}
-	if c.talker == vd {
-		c.talker = nil
-		c.talkerActive = false
-	}
+func (vb *VirtualBus) Release() {
+    // Non fare nulla (gestito internamente da IEC e dal 1541 emulato)
 }
 */
