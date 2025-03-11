@@ -83,89 +83,89 @@ func NewSidReflect(s *SID) *SidReflect {
 //	return int(s.sid.registers[0]) + int(s.sid.registers[1]) + a
 //}
 
-func (s *SidReflect) getFreqLO1() uint8  { return s.sid.registers[freqLO1] }
-func (s *SidReflect) setFreqLO1(v uint8) { s.sid.registers[freqLO1] = v }
+func (s *SidReflect) getFreqLO1() uint8        { return s.sid.registers[freqLO1] }
+func (s *SidReflect) setFreqLO1(v uint8) error { s.sid.registers[freqLO1] = v; return nil }
 
-func (s *SidReflect) getFreqHI1() uint8  { return s.sid.registers[freqHI1] }
-func (s *SidReflect) setFreqHI1(v uint8) { s.sid.registers[freqHI1] = v }
+func (s *SidReflect) getFreqHI1() uint8        { return s.sid.registers[freqHI1] }
+func (s *SidReflect) setFreqHI1(v uint8) error { s.sid.registers[freqHI1] = v; return nil }
 
-func (s *SidReflect) getPwLO1() uint8  { return s.sid.registers[pwLO1] }
-func (s *SidReflect) setPwLO1(v uint8) { s.sid.registers[pwLO1] = v }
+func (s *SidReflect) getPwLO1() uint8        { return s.sid.registers[pwLO1] }
+func (s *SidReflect) setPwLO1(v uint8) error { s.sid.registers[pwLO1] = v; return nil }
 
-func (s *SidReflect) getPwHI1() uint8  { return s.sid.registers[pwHI1] }
-func (s *SidReflect) setPwHI1(v uint8) { s.sid.registers[pwHI1] = v }
+func (s *SidReflect) getPwHI1() uint8        { return s.sid.registers[pwHI1] }
+func (s *SidReflect) setPwHI1(v uint8) error { s.sid.registers[pwHI1] = v; return nil }
 
-func (s *SidReflect) getCr1() uint8  { return s.sid.registers[cr1] }
-func (s *SidReflect) setCr1(v uint8) { s.sid.registers[cr1] = v }
+func (s *SidReflect) getCr1() uint8        { return s.sid.registers[cr1] }
+func (s *SidReflect) setCr1(v uint8) error { s.sid.registers[cr1] = v; return nil }
 
-func (s *SidReflect) getAd1() uint8  { return s.sid.registers[ad1] }
-func (s *SidReflect) setAd1(v uint8) { s.sid.registers[ad1] = v }
+func (s *SidReflect) getAd1() uint8        { return s.sid.registers[ad1] }
+func (s *SidReflect) setAd1(v uint8) error { s.sid.registers[ad1] = v; return nil }
 
-func (s *SidReflect) getSr1() uint8  { return s.sid.registers[sr1] }
-func (s *SidReflect) setSr1(v uint8) { s.sid.registers[sr1] = v }
+func (s *SidReflect) getSr1() uint8        { return s.sid.registers[sr1] }
+func (s *SidReflect) setSr1(v uint8) error { s.sid.registers[sr1] = v; return nil }
 
-func (s *SidReflect) getFreqLO2() uint8  { return s.sid.registers[freqLO2] }
-func (s *SidReflect) setFreqLO2(v uint8) { s.sid.registers[freqLO2] = v }
+func (s *SidReflect) getFreqLO2() uint8        { return s.sid.registers[freqLO2] }
+func (s *SidReflect) setFreqLO2(v uint8) error { s.sid.registers[freqLO2] = v; return nil }
 
-func (s *SidReflect) getFreqHI2() uint8  { return s.sid.registers[freqHI2] }
-func (s *SidReflect) setFreqHI2(v uint8) { s.sid.registers[freqHI2] = v }
+func (s *SidReflect) getFreqHI2() uint8        { return s.sid.registers[freqHI2] }
+func (s *SidReflect) setFreqHI2(v uint8) error { s.sid.registers[freqHI2] = v; return nil }
 
-func (s *SidReflect) getPwLO2() uint8  { return s.sid.registers[pwLO2] }
-func (s *SidReflect) setPwLO2(v uint8) { s.sid.registers[pwLO2] = v }
+func (s *SidReflect) getPwLO2() uint8        { return s.sid.registers[pwLO2] }
+func (s *SidReflect) setPwLO2(v uint8) error { s.sid.registers[pwLO2] = v; return nil }
 
-func (s *SidReflect) getPwHI2() uint8  { return s.sid.registers[pwHI2] }
-func (s *SidReflect) setPwHI2(v uint8) { s.sid.registers[pwHI2] = v }
+func (s *SidReflect) getPwHI2() uint8        { return s.sid.registers[pwHI2] }
+func (s *SidReflect) setPwHI2(v uint8) error { s.sid.registers[pwHI2] = v; return nil }
 
-func (s *SidReflect) getCr2() uint8  { return s.sid.registers[cr2] }
-func (s *SidReflect) setCr2(v uint8) { s.sid.registers[cr2] = v }
+func (s *SidReflect) getCr2() uint8        { return s.sid.registers[cr2] }
+func (s *SidReflect) setCr2(v uint8) error { s.sid.registers[cr2] = v; return nil }
 
-func (s *SidReflect) getAd2() uint8  { return s.sid.registers[ad2] }
-func (s *SidReflect) setAd2(v uint8) { s.sid.registers[ad2] = v }
+func (s *SidReflect) getAd2() uint8        { return s.sid.registers[ad2] }
+func (s *SidReflect) setAd2(v uint8) error { s.sid.registers[ad2] = v; return nil }
 
-func (s *SidReflect) getSr2() uint8  { return s.sid.registers[sr2] }
-func (s *SidReflect) setSr2(v uint8) { s.sid.registers[sr2] = v }
+func (s *SidReflect) getSr2() uint8        { return s.sid.registers[sr2] }
+func (s *SidReflect) setSr2(v uint8) error { s.sid.registers[sr2] = v; return nil }
 
-func (s *SidReflect) getFreqLO3() uint8  { return s.sid.registers[freqLO3] }
-func (s *SidReflect) setFreqLO3(v uint8) { s.sid.registers[freqLO3] = v }
+func (s *SidReflect) getFreqLO3() uint8        { return s.sid.registers[freqLO3] }
+func (s *SidReflect) setFreqLO3(v uint8) error { s.sid.registers[freqLO3] = v; return nil }
 
-func (s *SidReflect) getFreqHI3() uint8  { return s.sid.registers[freqHI3] }
-func (s *SidReflect) setFreqHI3(v uint8) { s.sid.registers[freqHI3] = v }
+func (s *SidReflect) getFreqHI3() uint8        { return s.sid.registers[freqHI3] }
+func (s *SidReflect) setFreqHI3(v uint8) error { s.sid.registers[freqHI3] = v; return nil }
 
-func (s *SidReflect) getPwLO3() uint8  { return s.sid.registers[pwLO3] }
-func (s *SidReflect) setPwLO3(v uint8) { s.sid.registers[pwLO3] = v }
+func (s *SidReflect) getPwLO3() uint8        { return s.sid.registers[pwLO3] }
+func (s *SidReflect) setPwLO3(v uint8) error { s.sid.registers[pwLO3] = v; return nil }
 
-func (s *SidReflect) getPwHI3() uint8  { return s.sid.registers[pwHI3] }
-func (s *SidReflect) setPwHI3(v uint8) { s.sid.registers[pwHI3] = v }
+func (s *SidReflect) getPwHI3() uint8        { return s.sid.registers[pwHI3] }
+func (s *SidReflect) setPwHI3(v uint8) error { s.sid.registers[pwHI3] = v; return nil }
 
-func (s *SidReflect) getCr3() uint8  { return s.sid.registers[cr3] }
-func (s *SidReflect) setCr3(v uint8) { s.sid.registers[cr3] = v }
+func (s *SidReflect) getCr3() uint8        { return s.sid.registers[cr3] }
+func (s *SidReflect) setCr3(v uint8) error { s.sid.registers[cr3] = v; return nil }
 
-func (s *SidReflect) getAd3() uint8  { return s.sid.registers[ad3] }
-func (s *SidReflect) setAd3(v uint8) { s.sid.registers[ad3] = v }
+func (s *SidReflect) getAd3() uint8        { return s.sid.registers[ad3] }
+func (s *SidReflect) setAd3(v uint8) error { s.sid.registers[ad3] = v; return nil }
 
-func (s *SidReflect) getSr3() uint8  { return s.sid.registers[sr3] }
-func (s *SidReflect) setSr3(v uint8) { s.sid.registers[sr3] = v }
+func (s *SidReflect) getSr3() uint8        { return s.sid.registers[sr3] }
+func (s *SidReflect) setSr3(v uint8) error { s.sid.registers[sr3] = v; return nil }
 
-func (s *SidReflect) getFcLO() uint8  { return s.sid.registers[fcLO] }
-func (s *SidReflect) setFcLO(v uint8) { s.sid.registers[fcLO] = v }
+func (s *SidReflect) getFcLO() uint8        { return s.sid.registers[fcLO] }
+func (s *SidReflect) setFcLO(v uint8) error { s.sid.registers[fcLO] = v; return nil }
 
-func (s *SidReflect) getFcHI() uint8  { return s.sid.registers[fcHI] }
-func (s *SidReflect) setFcHI(v uint8) { s.sid.registers[fcHI] = v }
+func (s *SidReflect) getFcHI() uint8        { return s.sid.registers[fcHI] }
+func (s *SidReflect) setFcHI(v uint8) error { s.sid.registers[fcHI] = v; return nil }
 
-func (s *SidReflect) getResFilt() uint8  { return s.sid.registers[resFilt] }
-func (s *SidReflect) setResFilt(v uint8) { s.sid.registers[resFilt] = v }
+func (s *SidReflect) getResFilt() uint8        { return s.sid.registers[resFilt] }
+func (s *SidReflect) setResFilt(v uint8) error { s.sid.registers[resFilt] = v; return nil }
 
-func (s *SidReflect) getModeVol() uint8  { return s.sid.registers[modeVol] }
-func (s *SidReflect) setModeVol(v uint8) { s.sid.registers[modeVol] = v }
+func (s *SidReflect) getModeVol() uint8        { return s.sid.registers[modeVol] }
+func (s *SidReflect) setModeVol(v uint8) error { s.sid.registers[modeVol] = v; return nil }
 
-func (s *SidReflect) getPotX() uint8  { return s.sid.registers[potX] }
-func (s *SidReflect) setPotX(v uint8) { s.sid.registers[potX] = v }
+func (s *SidReflect) getPotX() uint8        { return s.sid.registers[potX] }
+func (s *SidReflect) setPotX(v uint8) error { s.sid.registers[potX] = v; return nil }
 
-func (s *SidReflect) getPotY() uint8  { return s.sid.registers[potY] }
-func (s *SidReflect) setPotY(v uint8) { s.sid.registers[potY] = v }
+func (s *SidReflect) getPotY() uint8        { return s.sid.registers[potY] }
+func (s *SidReflect) setPotY(v uint8) error { s.sid.registers[potY] = v; return nil }
 
-func (s *SidReflect) getOsc3() uint8  { return s.sid.registers[osc3] }
-func (s *SidReflect) setOsc3(v uint8) { s.sid.registers[osc3] = v }
+func (s *SidReflect) getOsc3() uint8        { return s.sid.registers[osc3] }
+func (s *SidReflect) setOsc3(v uint8) error { s.sid.registers[osc3] = v; return nil }
 
-func (s *SidReflect) getEnv3() uint8  { return s.sid.registers[env3] }
-func (s *SidReflect) setEnv3(v uint8) { s.sid.registers[env3] = v }
+func (s *SidReflect) getEnv3() uint8        { return s.sid.registers[env3] }
+func (s *SidReflect) setEnv3(v uint8) error { s.sid.registers[env3] = v; return nil }

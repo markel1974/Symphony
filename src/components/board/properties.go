@@ -17,44 +17,66 @@ type PropertyInfo struct {
 	getValue    reflect.Value
 	setType     reflect.Type
 	setValue    reflect.Value
-	//set0Kind    reflect.Kind
-	set0Type reflect.Type
-	//set0Numeric bool
+	set0Type    reflect.Type
 }
 
-// NewPropertyInfo initializes and returns a new PropertyInfo object with the given parameters.
-// id specifies the unique identifier of the property.
-// kind defines the data type of the property.
-// desc provides a human-readable description of the property.
-// ro indicates whether the property is read-only.
-// get is a function to retrieve the property's value, with signature func() <ret>.
-// set is a function to update the property's value, with signature func(v <arg>).
+// NewPropertyInfo creates a PropertyInfo instance, validating the signatures of the get and set functions.
+//
+// Parameters:
+//   - id: Unique identifier for the property.
+//   - desc: Description of the property.
+//   - ro: Flag indicating if the property is read-only.
+//   - get: Function with no parameters that returns the property's value.
+//   - set: Function with one parameter (the value to set) and an error as the return type.
+//
+// Returns:
+//   - A pointer to PropertyInfo if the signatures are valid, otherwise panics with an error.
+//
+// Signature Validation:
+//   - get must be a function with no parameters and a return value.
+//   - set must be a function with one parameter and an error as the return type.
+//
+// Example:
+//
+//	getFunc := func() int { return 42 }
+//	setFunc := func(v int) error { return nil }
+//	prop := NewPropertyInfo("myProperty", "A test property", false, getFunc, setFunc)
 func NewPropertyInfo(id string, desc string, ro bool, get interface{}, set interface{}) *PropertyInfo {
+	// Constants for error messages in case of invalid signatures.
 	const getError = "wrong get signature must be func get() <ret>"
-	const setError = "wrong get signature must be func set(v <arg>)"
+	const setError = "wrong set signature must be func set(v <arg>)error"
+	// Defines reference types for the expected signatures.
+	setReference := reflect.TypeOf(func() error { return nil })
+	getReference := reflect.TypeOf(func() int { return 0 })
+
+	// Creates a PropertyInfo instance and stores the function information.
 	p := &PropertyInfo{id: id, description: desc, readOnly: ro}
 	p.getType = reflect.TypeOf(get)
 	p.getValue = reflect.ValueOf(get)
 	p.setType = reflect.TypeOf(set)
 	p.setValue = reflect.ValueOf(set)
-	if get == nil || p.getType.Kind() != reflect.Func {
+
+	// Validates the get function signature.
+	if get == nil || p.getType.Kind() != getReference.Kind() {
 		panic(fmt.Errorf("%s: %s", id, getError))
 	}
-	if p.getType.NumIn() != 0 || p.getType.NumOut() != 1 {
+	if p.getType.NumIn() != getReference.NumIn() || p.getType.NumOut() != getReference.NumOut() {
 		panic(fmt.Errorf("%s: %s", id, getError))
 	}
-	if set == nil || p.setType.Kind() != reflect.Func {
+
+	// Validates the set function signature.
+	if set == nil || p.setType.Kind() != setReference.Kind() {
 		panic(fmt.Errorf("%s: %s", id, setError))
 	}
-	if p.setType.NumIn() != 1 || p.setType.NumOut() != 0 {
+	if p.setType.NumIn() != setReference.NumIn() || p.setType.NumOut() != setReference.NumOut() {
 		panic(fmt.Errorf("%s: %s", id, setError))
 	}
-	if p.setType.NumOut() != 0 {
+	if p.setType.Out(0) != reflect.TypeOf(setReference).Out(0) {
 		panic(fmt.Errorf("%s: %s", id, setError))
 	}
+
+	// Stores the type of the set function's input parameter.
 	p.set0Type = p.setType.In(0)
-	//p.set0Kind = p.setType.In(0).Kind()
-	//p.set0Numeric = IsNumeric(p.set0Kind)
 	return p
 }
 
@@ -75,8 +97,15 @@ func (prop *PropertyInfo) Set(arg interface{}) error {
 	}
 	if argValue.Type().ConvertibleTo(prop.set0Type) {
 		convertedArg := argValue.Convert(prop.set0Type)
-		prop.setValue.Call([]reflect.Value{convertedArg})
-		return nil
+		results := prop.setValue.Call([]reflect.Value{convertedArg})
+		if len(results) != 1 {
+			return fmt.Errorf("property '%s' set failed", prop.id)
+		}
+		err, ok := results[0].Interface().(error)
+		if !ok {
+			return fmt.Errorf("property '%s' set failed", prop.id)
+		}
+		return err
 	}
 	return fmt.Errorf("property '%s' expected type '%v', got '%T'", prop.id, prop.set0Type, arg)
 }
@@ -91,7 +120,7 @@ func (prop *PropertyInfo) Get() (interface{}, error) {
 	return result, nil
 }
 
-// Properties represents a collection of property definitions mapped by identifiers and a function to execute commands.
+// Properties represent a collection of property definitions mapped by identifiers and a function to execute commands.
 type Properties struct {
 	properties map[string]*PropertyInfo
 }
@@ -112,7 +141,7 @@ func (p *Properties) Add(prop *PropertyInfo) {
 	p.properties[prop.Id()] = prop
 }
 
-// Get retrieves the PropertyInfo associated with the given id from the properties map. Returns nil if not found.
+// Get retrieves the PropertyInfo associated with the given id from the property map. Returns nil if not found.
 func (p *Properties) Get(id string) *PropertyInfo {
 	return p.properties[id]
 }
