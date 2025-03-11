@@ -2,6 +2,7 @@ package mos6510
 
 import (
 	"github.com/markel1974/c64emu/src/components/board"
+	"reflect"
 )
 
 // Costanti per i nomi delle proprietà della CPU (per l'introspezione).
@@ -83,4 +84,27 @@ func (r *Reflect) getSP() uint8 {
 
 func (r *Reflect) setSP(v uint8) {
 	r.cpu.sp = v
+}
+
+func (r *Reflect) getNext() string {
+	if r.cpu.next == nil {
+		return ""
+	}
+	name, ok := _opContainer[reflect.ValueOf(r.cpu.next)]
+	if !ok {
+		return ""
+	}
+	return name
+}
+
+func (r *Reflect) setNext(name string) {
+	f, ok := _opReverseContainer[name]
+	if !ok {
+		return
+	}
+	next, ok := f.Interface().(func(*CPU))
+	if !ok {
+		return
+	}
+	r.cpu.next = next
 }

@@ -70,8 +70,7 @@ func (cmd *Command) Exec(args []interface{}) (interface{}, error) {
 	}
 	var rArgs []reflect.Value
 	for x := 0; x < len(cmd.args); x++ {
-		t := reflect.TypeOf(args[x])
-		if t.Kind() != cmd.args[x] {
+		if t := reflect.TypeOf(args[x]); t.Kind() != cmd.args[x] {
 			return nil, fmt.Errorf("wrong argument type")
 		}
 		rArgs = append(rArgs, reflect.ValueOf(args[x]))
