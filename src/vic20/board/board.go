@@ -33,7 +33,7 @@ type Board struct {
 	db                  board.IDisplayBuffer
 	p                   board.IPlayer
 	pic                 *mos6510.Pic
-	iec                 *iec.IEC
+	iec                 *iec.Dispatcher
 	keys                *inputs.Keyboard
 	joy1                *inputs.Joystick
 	joy2                *inputs.Joystick
@@ -95,7 +95,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, p board.IPlayer, cfg *config.Conf
 	s.cia2Socket = NewCIA2Socket()
 
 	s.pic = mos6510.NewPic(s, "")
-	s.iec = iec.NewIEC(s, "")
+	s.iec = iec.NewDispatcher(s, "")
 	s.keys = inputs.NewKeyboard(s, "")
 	s.joy1 = inputs.NewJoystick(s, "1")
 	s.joy2 = inputs.NewJoystick(s, "2")

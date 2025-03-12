@@ -112,19 +112,19 @@ func (vb *VirtualBus) In() (uint8, uint8) {
 }
 
 func (vb *VirtualBus) SetATN() {
-	// Only needed for real IEC
+	// Only needed for real Dispatcher
 }
 
 func (vb *VirtualBus) RelATN() {
-	// Only needed for real IEC
+	// Only needed for real Dispatcher
 }
 
 func (vb *VirtualBus) Turnaround() {
-	// Only needed for real IEC
+	// Only needed for real Dispatcher
 }
 
 func (vb *VirtualBus) Release() {
-	// Only needed for real IEC
+	// Only needed for real Dispatcher
 }
 
 func (vb *VirtualBus) listen(device uint8) uint8 {
@@ -222,7 +222,7 @@ func (vb *VirtualBus) destroyVirtualDrive(vd IDrive) {
 }
 
 /*
-func (c *IEC) debugPeripheralWrite(data uint8) {
+func (c *Dispatcher) debugPeripheralWrite(data uint8) {
 	value := data
 	var message []string
 	if value&0x02 != 0 {
@@ -237,7 +237,7 @@ func (c *IEC) debugPeripheralWrite(data uint8) {
 	fmt.Printf("DRV RECV: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
 }
 
-func (c *IEC) debugPeripheralRead(data uint8) {
+func (c *Dispatcher) debugPeripheralRead(data uint8) {
 	value := data
 	var message []string
 	if value&0x01 != 0 {

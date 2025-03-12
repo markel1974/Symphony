@@ -42,7 +42,7 @@ type Board struct {
 	expansion           *Expansion
 	plaSocket           *PLASocket
 	pic                 *mos6510.Pic
-	iec                 *iec.IEC
+	iec                 *iec.Dispatcher
 	keys                *inputs.Keyboard
 	joy1                *inputs.Joystick
 	joy2                *inputs.Joystick
@@ -112,7 +112,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	s.plaSocket = NewPLASocket()
 
 	s.pic = mos6510.NewPic(s, "")
-	s.iec = iec.NewIEC(s, "")
+	s.iec = iec.NewDispatcher(s, "")
 	cpu := mos6510.NewCPU(s, "")
 	vic := mos6569.NewVIC(s, "")
 	sid := mos6581.NewSID(s, "")
@@ -190,7 +190,7 @@ func (s *Board) reset() {
 }
 
 // AsyncReset resets various components of the board asynchronously by invoking their respective reset methods.
-// It clears the low DMA state and initiates resets for the PLA, PIC, VIC, SID, CIA1, CIA2, IEC, and Expansion modules.
+// It clears the low DMA state and initiates resets for the PLA, PIC, VIC, SID, CIA1, CIA2, Dispatcher, and Expansion modules.
 func (s *Board) AsyncReset() {
 	s.plaSocket.Reset()
 	s.pic.TriggerReset()
