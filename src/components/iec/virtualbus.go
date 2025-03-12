@@ -26,6 +26,7 @@ type IDrive interface {
 }
 
 type VirtualBus struct {
+	deviceId       uint8
 	openData       []byte
 	listener       IDrive // Pointer to active listener
 	talker         IDrive // Pointer to active talker
@@ -37,8 +38,10 @@ type VirtualBus struct {
 	virtualDrives  []IDrive
 }
 
-func NewEmulator() *VirtualBus {
-	return &VirtualBus{}
+func NewEmulator(deviceId uint8) *VirtualBus {
+	return &VirtualBus{
+		deviceId: deviceId,
+	}
 }
 
 func (vb *VirtualBus) Reset() {
