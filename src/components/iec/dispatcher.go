@@ -2,12 +2,10 @@ package iec
 
 import (
 	"log"
-	"strconv"
 	"strings"
 
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/iec/fsdrive"
 	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/config"
 
@@ -24,20 +22,9 @@ const (
 	MaxDriveSize = 4
 )
 
-/*
-const (
-	CmdData  = 0x60 // Data transfer
-	CmdClose = 0xe0 // Close channel
-	CmdOpen  = 0xf0 // Open channel
-)
-
-
-*/
-
 type Dispatcher struct {
 	*board.BaseComponent
-	cfg             *config.Config
-	atnState        uint8
+	atn             bool
 	cpuPort         uint8
 	cpuData         uint8
 	cpuBus          uint8
@@ -45,14 +32,16 @@ type Dispatcher struct {
 	peripheralsData []uint8
 	virtualDrives   []virtualdrive.IVirtualDrive
 	ledSignal       *signals.Signal2[int, uint8]
+	factory         *DriveFactory
 }
 
 func NewDispatcher(parent board.IComponent, suffix string) *Dispatcher {
 	c := &Dispatcher{
-		BaseComponent:   board.NewBaseComponent("iec", suffix),
+		BaseComponent:   board.NewBaseComponent("iec_dispatcher", suffix),
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),
+		factory:         nil,
 	}
 	board.Register(parent, c)
 	return c
@@ -99,22 +88,14 @@ func (c *Dispatcher) RemovePeripheral(peripheral *c1541board.Board) {
 }
 
 func (c *Dispatcher) Setup(cfg *config.Config) {
-	c.cfg = cfg
-	c.cfg.Bind(c.configChanged)
+	c.factory = NewDriveFactory(c, "")
+	c.factory.Setup(cfg)
 
 	for idx, d := range cfg.GetDrives() {
-		vd := c.createVirtualDrive(d.Kind, d.Opts, uint8(idx))
+		vd := c.factory.Create(d.Kind, d.Opts, uint8(idx))
+		vd.Setup(c, cfg)
 		c.virtualDrives = append(c.virtualDrives, vd)
 	}
-
-	//vd9 := c.createVirtualDrive(9, 1)
-	//c.virtualDrives = append(c.virtualDrives, vd9)
-
-	//c.rebuildPeripherals()
-}
-
-func (c *Dispatcher) configChanged() {
-	//TODO IMPLEMENT
 }
 
 func (c *Dispatcher) Emulate() {
@@ -175,14 +156,6 @@ func (c *Dispatcher) CpuWrite(data uint8) {
 	//c.debugCpuWrite(^c.cpuBus)
 	c.updatePorts()
 	c.notifyCpuWrite()
-	//_board->GetRam()[0x90] |= _board->GetBus()->Out(_board->GetRam()[0x95], _board->GetRam()[0xa3] & 0x80);
-	//_board->GetRam()[0x90] |= _board->GetBus()->OutATN(_board->GetRam()[0x95]);
-	//_board->GetRam()[0x90] |= _board->GetBus()->OutSec(_board->GetRam()[0x95]);
-	//_board->GetRam()[0x90] |= _board->GetBus()->In(_a);
-	//_board->GetBus()->SetATN();
-	//_board->GetBus()->RelATN();
-	//_board->GetBus()->Turnaround();
-	//_board->GetBus()->Release();
 }
 
 func (c *Dispatcher) CpuRead() uint8 {
@@ -199,33 +172,18 @@ func (c *Dispatcher) PeripheralWrite(deviceNumber uint8, data uint8) {
 	c.updatePorts()
 }
 
-func (c *Dispatcher) createVirtualDrive(kind string, opts string, deviceId uint8) virtualdrive.IVirtualDrive {
-	deviceNumber := deviceId + 8
-	var vd virtualdrive.IVirtualDrive
-	switch kind {
-	case "C1541":
-		vd = c1541board.New(c, strconv.Itoa(int(deviceNumber)), c, deviceId, deviceNumber, opts)
-	case "FSDRIVE":
-		vd = fsdrive.New(c, deviceId, deviceNumber, opts)
-	default:
-		vd = c1541board.New(c, strconv.Itoa(int(deviceNumber)), c, deviceId, deviceNumber, opts)
-	}
-	vd.Setup(c.cfg)
-	return vd
-}
-
 func (c *Dispatcher) notifyCpuWrite() {
-	newAtnState := c.cpuBus & 0x10
-	if c.atnState == newAtnState {
+	newAtn := (c.cpuBus & 0x10) != 0
+	if newAtn != c.atn {
+		for _, vd := range c.virtualDrives {
+			vd.AtnStateChanged(newAtn)
+		}
+		c.atn = newAtn
+	} else {
 		for _, vd := range c.virtualDrives {
 			vd.BusStateChanged(c.peripheralsPort)
 		}
-		return
 	}
-	for _, vd := range c.virtualDrives {
-		vd.AtnStateChanged(c.atnState != 0, newAtnState != 0)
-	}
-	c.atnState = newAtnState
 }
 
 func (c *Dispatcher) ledStateChangedEventHandler(deviceNumber int, state uint8) {

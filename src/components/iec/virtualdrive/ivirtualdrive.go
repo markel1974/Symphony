@@ -18,12 +18,12 @@ type IIec interface {
 // AtnStateChanged handles changes in the Attention (ATN) line state.
 // BusStateChanged handles changes in the CPU bus state.
 type IVirtualDrive interface {
-	Setup(*config.Config)
+	Setup(IIec, *config.Config)
 	Reset()
 	Emulate()
 	Ready() bool
 	GetDeviceNumber() uint8
-	AtnStateChanged(bool, bool)
+	AtnStateChanged(bool)
 	BusStateChanged(uint8)
 
 	//GetPath() string

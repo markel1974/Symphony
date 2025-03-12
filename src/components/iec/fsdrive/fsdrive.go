@@ -3,6 +3,7 @@ package fsdrive
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/fifo"
+	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
 	"github.com/markel1974/c64emu/src/config"
 	"io"
@@ -25,6 +26,7 @@ const (
 )
 
 type FSDrive struct {
+	*board.BaseComponent
 	iec          virtualdrive.IIec
 	commands     *Commands
 	deviceId     uint8
@@ -43,23 +45,26 @@ type FSDrive struct {
 	//test           int64
 }
 
-func New(iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, path string) *FSDrive {
+func New(parent board.IComponent, suffix string, deviceId uint8, deviceNumber uint8, path string) *FSDrive {
 	v := &FSDrive{
-		iec:          iec,
-		deviceId:     deviceId,
-		deviceNumber: deviceNumber,
-		path:         path,
-		respond:      fifo.NewStaticFifo(512),
-		commands:     NewCommands(),
-		origDirPath:  "",
-		atn:          false,
-		state:        0,
-		cfg:          nil,
+		BaseComponent: board.NewBaseComponent("fs_drive", suffix),
+		iec:           nil,
+		deviceId:      deviceId,
+		deviceNumber:  deviceNumber,
+		path:          path,
+		respond:       fifo.NewStaticFifo(512),
+		commands:      NewCommands(),
+		origDirPath:   "",
+		atn:           false,
+		state:         0,
+		cfg:           nil,
 	}
+	board.Register(parent, v)
 	return v
 }
 
-func (v *FSDrive) Setup(cfg *config.Config) {
+func (v *FSDrive) Setup(iec virtualdrive.IIec, cfg *config.Config) {
+	v.iec = iec
 	v.cfg = cfg
 	v.cfg.Bind(v.configChanged)
 	v.origDirPath = v.path
@@ -84,7 +89,7 @@ func (v *FSDrive) Reset() {
 	//TODO IN FASE DI RESET CAMBIARE LO STATO DEL BUS
 }
 
-func (v *FSDrive) AtnStateChanged(atnPrev bool, atn bool) {
+func (v *FSDrive) AtnStateChanged(atn bool) {
 	//https://www.pagetable.com/?p=1135
 	// All devices on the bus have to respond to ATN by pulling DATA within 1000 µs (“ATN Response Timing”),
 	// and also eventually release CLK, because they are now receivers.

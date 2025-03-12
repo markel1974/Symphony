@@ -48,10 +48,10 @@ type Board struct {
 }
 
 // New creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func New(parent board.IComponent, suffix string, iec virtualdrive.IIec, deviceId uint8, deviceNumber uint8, opts string) *Board {
+func New(parent board.IComponent, suffix string, deviceId uint8, deviceNumber uint8, opts string) *Board {
 	b := &Board{
 		BaseComponent: board.NewBaseComponent("c1541", suffix),
-		iec:           iec,
+		iec:           nil,
 		deviceId:      deviceId,
 		filePath:      opts,
 		deviceNumber:  deviceNumber,
@@ -68,7 +68,8 @@ func New(parent board.IComponent, suffix string, iec virtualdrive.IIec, deviceId
 }
 
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
-func (m *Board) Setup(cfg *config.Config) {
+func (m *Board) Setup(iec virtualdrive.IIec, cfg *config.Config) {
+	m.iec = iec
 	m.cfg = cfg
 	m.cfg.Bind(m.configChanged)
 	m.banks = pla.New()
@@ -121,15 +122,14 @@ func (m *Board) GetDeviceNumber() uint8 {
 // AtnStateChanged handles changes in the ATN signal on the IEC bus and updates internal state accordingly.
 // It triggers the PRB signal on VIA1 and writes to the bank memory if the ATN signal is active.
 // Parameters:
-// - b: Indicates whether the ATN signal is active.
-// - b2: Currently unused, reserved for future extension.
-func (m *Board) AtnStateChanged(b bool, b2 bool) {
+// - newAtn: Indicates whether the ATN signal is active.
+func (m *Board) AtnStateChanged(newAtn bool) {
 	m.via1Socket.SignalPRB()
-	if b {
-		//fmt.Println("ATN", b, "RECEIVED - WAKE UP")
-		//https://sta.c64.org/cbm1541mem.html
+	if !newAtn {
 		//Interrupt by negative edge of ATN on IEC bus
+		//https://sta.c64.org/cbm1541mem.html
 		m.banks.Write(0x7c, 1)
+		//fmt.Println("ATN", b, "RECEIVED - WAKE UP")
 	}
 }
 

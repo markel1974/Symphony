@@ -312,5 +312,12 @@ void debug_iec_drv_read(unsigned int data)
     }
 }
 
-
+	//_board->GetRam()[0x90] |= _board->GetBus()->Out(_board->GetRam()[0x95], _board->GetRam()[0xa3] & 0x80);
+	//_board->GetRam()[0x90] |= _board->GetBus()->OutATN(_board->GetRam()[0x95]);
+	//_board->GetRam()[0x90] |= _board->GetBus()->OutSec(_board->GetRam()[0x95]);
+	//_board->GetRam()[0x90] |= _board->GetBus()->In(_a);
+	//_board->GetBus()->SetATN();
+	//_board->GetBus()->RelATN();
+	//_board->GetBus()->Turnaround();
+	//_board->GetBus()->Release();
 */
