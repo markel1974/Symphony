@@ -40,7 +40,7 @@ func (c *DriveFactory) configChanged() {
 	//TODO IMPLEMENT
 }
 
-// Create instantiates and returns a new virtual drive instance based on the specified type, options, and device ID.
+// Create instantiating and returns a new virtual drive instance based on the specified type, options, and device ID.
 func (c *DriveFactory) Create(kind string, opts string, deviceId uint8) virtualdrive.IVirtualDrive {
 	deviceNumber := deviceId + 8
 	suffix := strconv.Itoa(int(deviceNumber))

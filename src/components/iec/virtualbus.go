@@ -222,6 +222,44 @@ func (vb *VirtualBus) destroyVirtualDrive(vd IDrive) {
 }
 
 /*
+// virtualbus.go
+func (vb *VirtualBus) OutATN(data uint8) uint8 {
+    //Invia il comando
+    return vb.iec.CpuWrite(data)
+}
+
+func (vb *VirtualBus) OutSec(data uint8) uint8 {
+     //Invia il comando
+     return vb.iec.CpuWrite(data)
+}
+
+func (vb *VirtualBus) Out(data uint8, eoi bool) uint8 {
+     //Invia il comando
+     return vb.iec.CpuWrite(data)
+}
+
+func (vb *VirtualBus) In() (uint8, uint8) {
+    return vb.iec.CpuRead()
+}
+
+func (vb *VirtualBus) SetATN() {
+    // Non fare nulla (gestito internamente da Dispatcher e dal 1541 emulato)
+}
+
+func (vb *VirtualBus) RelATN() {
+    // Non fare nulla (gestito internamente da Dispatcher e dal 1541 emulato)
+}
+
+func (vb *VirtualBus) Turnaround() {
+    // Non fare nulla (gestito internamente da Dispatcher e dal 1541 emulato)
+}
+
+func (vb *VirtualBus) Release() {
+    // Non fare nulla (gestito internamente da Dispatcher e dal 1541 emulato)
+}
+*/
+
+/*
 func (c *Dispatcher) debugPeripheralWrite(data uint8) {
 	value := data
 	var message []string
