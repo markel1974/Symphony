@@ -3,7 +3,6 @@ package mos6510
 import (
 	"github.com/markel1974/c64emu/src/common/bits"
 	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/quartz"
 )
 
 // intrRstBit represents the bit position for the Reset interrupt signal.
@@ -29,7 +28,7 @@ const (
 // Pic represents a programmable interrupt controller with IRQ and NMI handling capabilities.
 type Pic struct {
 	*board.BaseComponent
-	quartz        *quartz.Quartz
+	quartz        board.IQuartz
 	all           bits.Bits
 	irq           bits.Bits
 	firstIrqCycle uint64
@@ -58,7 +57,7 @@ func NewPic(parent board.IComponent, suffix string) *Pic {
 }
 
 // Setup initializes the Pic instance with a Quartz instance, establishing internal dependencies.
-func (i *Pic) Setup(quartz *quartz.Quartz) {
+func (i *Pic) Setup(quartz board.IQuartz) {
 	i.quartz = quartz
 }
 

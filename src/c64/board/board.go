@@ -126,7 +126,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 
 	s.expansion.Setup(s)
 	s.pic.Setup(s.quartz)
-	s.iec.Setup(cfg)
+	s.iec.Setup(s.quartz, cfg)
 	s.cpuSocket.Setup(s, cpu)
 	s.vicSocket.Setup(s, vic)
 	s.sidSocket.Setup(s, sid)

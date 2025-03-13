@@ -27,7 +27,7 @@ type FSDrive struct {
 	cfg          *config.Config
 }
 
-func New(parent board.IComponent, suffix string, deviceId uint8, deviceNumber uint8, path string) *FSDrive {
+func New(parent board.IComponent, suffix string, q board.IQuartz, deviceId uint8, deviceNumber uint8, path string) *FSDrive {
 	fs := &FSDrive{
 		BaseComponent: board.NewBaseComponent("fs_drive", suffix),
 		deviceId:      deviceId,
@@ -37,7 +37,7 @@ func New(parent board.IComponent, suffix string, deviceId uint8, deviceNumber ui
 		origDirPath:   "",
 		cfg:           nil,
 	}
-	fs.Protocol = iecprotocol.NewProtocol(parent, suffix, deviceNumber, fs)
+	fs.Protocol = iecprotocol.NewProtocol(parent, suffix, q, deviceNumber, fs)
 	board.Register(fs.Protocol, fs)
 	return fs
 }

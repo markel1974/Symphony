@@ -42,8 +42,8 @@ func NewDispatcher(parent board.IComponent, suffix string) *Dispatcher {
 }
 
 // Setup initializes the Dispatcher by configuring the DriveFactory and setting up virtual drives based on the provided config.
-func (c *Dispatcher) Setup(cfg *config.Config) {
-	c.factory = NewDriveFactory(c, "")
+func (c *Dispatcher) Setup(q board.IQuartz, cfg *config.Config) {
+	c.factory = NewDriveFactory(c, "", q)
 	c.factory.Setup(cfg)
 
 	for idx, d := range cfg.GetDrives() {

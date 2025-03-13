@@ -103,9 +103,9 @@ type Protocol struct {
 	*board.BaseComponent
 	iec           iecdevice.IIec
 	device        iecdevice.IIecProtocolDevice
+	quartz        board.IQuartz
 	gs            *Global
 	cfg           *config.Config
-	clock         uint64
 	deviceNumber  uint8
 	stateMachine  uint8
 	flags         uint8
@@ -118,13 +118,13 @@ type Protocol struct {
 }
 
 // NewProtocol creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
-func NewProtocol(parent board.IComponent, suffix string, deviceNumber uint8, device iecdevice.IIecProtocolDevice) *Protocol {
+func NewProtocol(parent board.IComponent, suffix string, q board.IQuartz, deviceNumber uint8, device iecdevice.IIecProtocolDevice) *Protocol {
 	p := &Protocol{
 		BaseComponent: board.NewBaseComponent("iec_protocol", suffix),
+		quartz:        q,
 		gs:            _gs,
 		iec:           nil,
 		device:        device,
-		clock:         0,
 		deviceNumber:  deviceNumber,
 	}
 	board.Register(parent, p)
@@ -144,7 +144,7 @@ func (v *Protocol) Reset() {
 	for i := 0; i < len(v.state); i++ {
 		v.state[i] = 0
 	}
-	v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
+	v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
 }
 
 // Ready checks if the protocol is ready for operation and returns a boolean value indicating readiness.
@@ -171,18 +171,12 @@ func (v *Protocol) BusStateChanged(uint8) {
 	//TODO REMOVE
 }
 
-//var P_PRE0_100_time time.Time
-
 // Emulate handles the state transitions and bus communication logic for the Protocol according to the IEC device interface.
 func (v *Protocol) Emulate() {
-	//TODO USE THE REAL CLOCK
-	v.clock++
-	clkValue := v.clock
-	//Read bus
+	clkValue := v.quartz.Cycle()
 	bus := v.iec.PeripheralRead()
 
 	//log.Printf("serial_iec_device_exec_main(%u, %u) F=%i, S=%i, ATN=%i CLK=%i DTA=%i", deviceNumber, clkValue, device.flags, device.state, (bus & IECBUS_DEVICE_READ_ATN) ? 1 : 0, (bus & IECBUS_DEVICE_READ_CLK) ? 1 : 0, (bus & IECBUS_DEVICE_READ_DATA) ? 1 : 0)
-
 	if !conversion.Uint8ToBool(v.getFlags()&P_ATN) && !conversion.Uint8ToBool(bus&IECBUS_DEVICE_READ_ATN) {
 		//Falling flank on ATN (bus master addressing all devices) */
 		v.setStateMachine(P_PRE0)
@@ -191,11 +185,10 @@ func (v *Protocol) Emulate() {
 		v.setSecondaryPrev(v.getSecondary())
 		v.setSecondary(0)
 		v.setTimeout(clkValue, US2CYCLES(100))
-
 		//P_PRE0_100_time = time.Now()
 
 		//Set DATA=0("I am here").If nobody on the bus does this within 1 ms, bus-master will assume that "DeviceAdapter not present"
-		v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK)
+		v.transmitData(IECBUS_DEVICE_WRITE_CLK)
 	} else if conversion.Uint8ToBool(v.getFlags()&P_ATN) && conversion.Uint8ToBool(bus&IECBUS_DEVICE_READ_ATN) {
 		//Rising flank on ATN (bus master finished addressing all devices) */
 		v.setFlags(v.getFlags() & ^P_ATN)
@@ -237,7 +230,7 @@ func (v *Protocol) Emulate() {
 					log.Printf("device %d start listening", v.deviceNumber)
 				}
 				//set DATA=0 ("I am here")
-				v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK)
+				v.transmitData(IECBUS_DEVICE_WRITE_CLK)
 			} else if v.getPrimary() == 0x40+v.deviceNumber {
 				//We were told to talk
 				v.setFlags(v.getFlags() & ^P_LISTENING)
@@ -265,22 +258,21 @@ func (v *Protocol) Emulate() {
 		}
 
 		if !conversion.Uint8ToBool(v.getFlags() & (P_LISTENING | P_TALKING)) {
-			//We're neither listening nor talking => make sure we're not holding DATA  or CLOCK line to 0
-			v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
+			//We're neither listening nor talking => make sure we're not holding DATA  or CLOCK line to 0 )
+			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
 		}
 	}
 
 	if conversion.Uint8ToBool(v.getFlags() & (P_ATN | P_LISTENING)) {
-		v.doListening(bus)
+		v.doListening(bus, clkValue)
 	} else if conversion.Uint8ToBool(v.getFlags() & P_TALKING) {
-		v.doTalking(bus)
+		v.doTalking(bus, clkValue)
 	}
 }
 
 // doListening handles the state transitions for the device during the listening phase on the IEC bus based on the current clock and data signals.
 // It ensures proper synchronization, processes incoming data or commands, and acknowledges frames as needed or signals errors.
-func (v *Protocol) doListening(bus uint8) {
-	clkValue := v.clock
+func (v *Protocol) doListening(bus uint8, clkValue uint64) {
 	//We are either under ATN or in "listening" mode
 	//fmt.Println("State:", clkValue, device.getStateMachine())
 	switch v.getStateMachine() {
@@ -301,7 +293,7 @@ func (v *Protocol) doListening(bus uint8) {
 		// wait for rising flank on CLK ("ready-to-send")
 		if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
 			//React by setting DATA=1 ("ready-for-data")
-			v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
 			v.setTimeout(clkValue, US2CYCLES(200))
 			v.setStateMachine(P_READY)
 		}
@@ -313,14 +305,14 @@ func (v *Protocol) doListening(bus uint8) {
 			//Sender did not set CLK=0 within 200 us after we set DATA=1 => it is signaling EOI
 			//(not so if we are under ATN) acknowledge we received it by setting DATA=0 for 60us
 			log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.getSecondary()&0x0f)
-			v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK)
+			v.transmitData(IECBUS_DEVICE_WRITE_CLK)
 			v.setStateMachine(P_EOI)
 			v.setTimeout(clkValue, US2CYCLES(60))
 		}
 	case P_EOI:
 		if clkValue >= v.getTimeout() {
 			//Set DATA back to 1 and wait for sender to set CLK=0
-			v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
 			v.setStateMachine(P_EOIw)
 		}
 	case P_EOIw:
@@ -332,12 +324,12 @@ func (v *Protocol) doListening(bus uint8) {
 		if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
 			//Sender set CLK=1, signaling that the DATA line represents a valid bit
 			bit := uint8(1 << ((int(v.getStateMachine()) - P_BIT0) / 2))
-			p := uint8(0)
+			p1 := v.getByte() & ^bit
+			p2 := uint8(0)
 			if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
-				p = bit
+				p2 = bit
 			}
-			val := (v.getByte() & ^bit) | p
-			v.setByte(val)
+			v.setByte(p1 | p2)
 			//Go to associated P_BIT(n)w state, waiting for sender to set CLK=0
 			v.setStateMachineNext()
 		}
@@ -363,7 +355,7 @@ func (v *Protocol) doListening(bus uint8) {
 					v.setStateMachine(P_DONE0)
 				} else {
 					//Acknowledge frame by setting DATA=0
-					v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK)
+					v.transmitData(IECBUS_DEVICE_WRITE_CLK)
 					//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
 					v.setStateMachine(P_PRE2)
 				}
@@ -380,7 +372,7 @@ func (v *Protocol) doListening(bus uint8) {
 					v.setStateMachine(P_DONE0)
 				} else {
 					//Acknowledge frame by setting DATA=0
-					v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK)
+					v.transmitData(IECBUS_DEVICE_WRITE_CLK)
 					//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
 					v.setStateMachine(P_PRE2)
 				}
@@ -396,22 +388,20 @@ func (v *Protocol) doListening(bus uint8) {
 
 // doTalking handles the communication protocol for transmitting data between devices using a state machine.
 // It manages the transition between various states, timing, and signaling during the data transmission process.
-func (v *Protocol) doTalking(bus uint8) {
-	clkValue := v.clock
-
+func (v *Protocol) doTalking(bus uint8, clkValue uint64) {
 	switch v.getStateMachine() {
 	case P_PRE0:
 		if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
 			//Bus-master set CLK=1 (and before that should have set DATA=0)
 			//we are getting ready for role reversal.Set CLK=0,DATA=1
-			v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(IECBUS_DEVICE_WRITE_DATA)
 			v.setStateMachine(P_PRE1)
 			v.setTimeout(clkValue, US2CYCLES(80))
 		}
 	case P_PRE1:
 		if clkValue >= v.getTimeout() {
 			//Signal "ready-to-send" (CLK=1)
-			v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
 			v.setStateMachine(P_READY)
 		}
 	case P_READY:
@@ -458,7 +448,7 @@ func (v *Protocol) doTalking(bus uint8) {
 			if conversion.Uint8ToBool(v.getByte() & bit) {
 				res = IECBUS_DEVICE_WRITE_DATA
 			}
-			v.iec.PeripheralWrite(v.deviceNumber, res)
+			v.transmitData(res)
 			//Go to associated P_BIT(n)w state
 			v.setTimeout(clkValue, US2CYCLES(60))
 
@@ -469,9 +459,9 @@ func (v *Protocol) doTalking(bus uint8) {
 			//60 us have passed since we pulled CLK=0 and put the current bit on DATA.
 			//set CLK=1, keeping data as it is (this signals "data valid" to the receiver)
 			if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
-				v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
+				v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
 			} else {
-				v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK)
+				v.transmitData(IECBUS_DEVICE_WRITE_CLK)
 			}
 			//Go to associated P_BIT(n+1) state to send the next bit.
 			//If this was the final bit, then the next state is P_DONE0
@@ -482,7 +472,7 @@ func (v *Protocol) doTalking(bus uint8) {
 		if clkValue >= v.getTimeout() {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the final bit.
 			//Pull CLK=0 and set DATA=1.This prepares for the receiver acknowledgement.
-			v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(IECBUS_DEVICE_WRITE_DATA)
 			v.setTimeout(clkValue, US2CYCLES(1000))
 			v.setStateMachine(P_DONE1)
 		}
@@ -495,7 +485,7 @@ func (v *Protocol) doTalking(bus uint8) {
 				v.setFlags(v.getFlags() & ^P_TALKING)
 				v.setState(v.getSecondary(), 0)
 				//Release the CLOCK line to 1
-				v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
+				v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
 			} else {
 				//There is at least one more byte to send Start over from P_PRE1
 				v.setTimeout(clkValue, 0)
@@ -504,7 +494,7 @@ func (v *Protocol) doTalking(bus uint8) {
 		} else if clkValue >= v.getTimeout() {
 			//We didn't receive an acknowledgement within 1 ms.Set CLOCK=0 and after 100 us back to CLOCK=1
 			log.Printf("device %d got NACK on channel %d", v.deviceNumber, v.getSecondary())
-			v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
 			v.setTimeout(clkValue, US2CYCLES(100))
 			v.setStateMachine(P_FRAMEERR0)
 		}
@@ -512,7 +502,7 @@ func (v *Protocol) doTalking(bus uint8) {
 		if clkValue >= v.getTimeout() {
 			//Finished 1-0-1 sequence of CLOCK signal
 			//to acknowledge the frame-error.Now wait for sender to set DATA=0 so we can continue.
-			v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(IECBUS_DEVICE_WRITE_DATA)
 			v.setStateMachine(P_FRAMEERR1)
 		}
 	case P_FRAMEERR1:
@@ -611,6 +601,10 @@ func (v *Protocol) setState(idx uint8, s uint8) {
 func (v *Protocol) getState(idx uint8) uint8 {
 	x := idx & stateLast
 	return v.state[x]
+}
+
+func (v *Protocol) transmitData(data uint8) {
+	v.iec.PeripheralWrite(v.deviceNumber, data)
 }
 
 func (v *Protocol) print(id string, bus uint8) {

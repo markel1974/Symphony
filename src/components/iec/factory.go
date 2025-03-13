@@ -12,13 +12,15 @@ import (
 // DriveFactory represents a component responsible for creating and managing drive configurations and operations.
 type DriveFactory struct {
 	*board.BaseComponent
-	cfg *config.Config
+	cfg    *config.Config
+	quartz board.IQuartz
 }
 
 // NewDriveFactory creates and initializes a new DriveFactory instance, registers it with the provided parent component.
-func NewDriveFactory(parent board.IComponent, suffix string) *DriveFactory {
+func NewDriveFactory(parent board.IComponent, suffix string, q board.IQuartz) *DriveFactory {
 	df := &DriveFactory{
 		BaseComponent: board.NewBaseComponent("iec_drive_factory", suffix),
+		quartz:        q,
 		cfg:           nil,
 	}
 	board.Register(parent, df)
@@ -47,11 +49,11 @@ func (c *DriveFactory) Create(kind string, opts string, deviceId uint8) iecdevic
 	var vd iecdevice.IIecDevice
 	switch kind {
 	case "C1541":
-		vd = c1541board.New(c, suffix, deviceId, deviceNumber, opts)
+		vd = c1541board.New(c, suffix, c.quartz, deviceId, deviceNumber, opts)
 	case "FSDRIVE":
-		vd = fsdrive.New(c, suffix, deviceId, deviceNumber, opts)
+		vd = fsdrive.New(c, suffix, c.quartz, deviceId, deviceNumber, opts)
 	default:
-		vd = c1541board.New(c, suffix, deviceId, deviceNumber, opts)
+		vd = c1541board.New(c, suffix, c.quartz, deviceId, deviceNumber, opts)
 	}
 	return vd
 }

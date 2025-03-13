@@ -102,7 +102,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, p board.IPlayer, cfg *config.Conf
 	s.pla = pla.NewPLA(s, "")
 	s.expansion = NewExpansion(s)
 
-	s.iec.Setup(cfg)
+	//s.iec.Setup(s.quartz, cfg)
 	s.cpuSocket.Setup(s)
 	s.vicSocket.Setup(s, intrIrqVicBit)
 	//s.sidSocket.Setup(s)

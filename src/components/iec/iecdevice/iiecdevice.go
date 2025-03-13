@@ -1,6 +1,8 @@
 package iecdevice
 
-import "github.com/markel1974/c64emu/src/config"
+import (
+	"github.com/markel1974/c64emu/src/config"
+)
 
 // IIecDevice represents the interface for a virtual drive in the emulation environment.
 // Setup initializes the virtual drive with the given configuration.
