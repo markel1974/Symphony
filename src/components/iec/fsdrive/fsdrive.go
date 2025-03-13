@@ -1,10 +1,9 @@
 package fsdrive
 
 import (
-	"fmt"
-	"github.com/markel1974/c64emu/src/common/fifo"
 	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/iec/iecdevice"
+	"github.com/markel1974/c64emu/src/components/iec/iecprotocol"
 	"github.com/markel1974/c64emu/src/config"
 	"io"
 	"os"
@@ -21,50 +20,39 @@ const (
 	ATN_A    = 0x10
 )
 
-const (
-	NOOP = -1
-)
-
 type FSDrive struct {
 	*board.BaseComponent
-	iec          iecdevice.IIec
+	*iecprotocol.Protocol
 	commands     *Commands
 	deviceId     uint8
 	deviceNumber uint8
 	path         string
-	respond      *fifo.StaticFifo
 	dirPath      string       // Path to directory
 	origDirPath  string       // Original directory path
 	dirTitle     string       // Directory title
 	file         [16]*os.File // File pointers for each of the 16 channels
 	readChar     [16]uint8    // Buffers for one-byte read-ahead
 	ready        bool
-	atn          bool
-	state        int
 	cfg          *config.Config
-	//test           int64
 }
 
 func New(parent board.IComponent, suffix string, deviceId uint8, deviceNumber uint8, path string) *FSDrive {
-	v := &FSDrive{
+	fs := &FSDrive{
 		BaseComponent: board.NewBaseComponent("fs_drive", suffix),
-		iec:           nil,
 		deviceId:      deviceId,
 		deviceNumber:  deviceNumber,
 		path:          path,
-		respond:       fifo.NewStaticFifo(512),
 		commands:      NewCommands(),
 		origDirPath:   "",
-		atn:           false,
-		state:         0,
 		cfg:           nil,
 	}
-	board.Register(parent, v)
-	return v
+	fs.Protocol = iecprotocol.NewProtocol(parent, suffix, deviceNumber, fs)
+	board.Register(fs.Protocol, fs)
+	return fs
 }
 
 func (v *FSDrive) Setup(iec iecdevice.IIec, cfg *config.Config) {
-	v.iec = iec
+	v.Protocol.Setup(iec, cfg)
 	v.cfg = cfg
 	v.cfg.Bind(v.configChanged)
 	v.origDirPath = v.path
@@ -72,9 +60,9 @@ func (v *FSDrive) Setup(iec iecdevice.IIec, cfg *config.Config) {
 		for i := 0; i < 16; i++ {
 			v.file[i] = nil
 		}
-		v.Reset()
 		v.ready = true
 	}
+	v.Reset()
 }
 
 func (v *FSDrive) GetDeviceNumber() uint8 {
@@ -86,95 +74,8 @@ func (v *FSDrive) Reset() {
 	v.commands.CommandClear()
 	v.commands.SetError(ERR_STARTUP)
 
+	v.Protocol.Reset()
 	//TODO IN FASE DI RESET CAMBIARE LO STATO DEL BUS
-}
-
-func (v *FSDrive) AtnStateChanged(atn bool) {
-	//https://www.pagetable.com/?p=1135
-	// All devices on the bus have to respond to ATN by pulling DATA within 1000 µs (“ATN Response Timing”),
-	// and also eventually release CLK, because they are now receivers.
-	// Devices usually implement this in hardware by automatically answering ATN=1 with DATA=1,
-	// so that they can participate in receiving the command even when the CPU is busy and cannot be interrupted. /atn = !atn
-	//atn = !atn
-	fmt.Printf("ATN received %v", atn)
-	v.atn = atn
-	if atn {
-		v.state = 1
-		value := uint8(0)
-		value |= DATA_OUT
-		value |= CLK_OUT //ERROR
-		//value |= ATN_A
-		//value := uint8(DATA_OUT)
-		//value = ^value
-
-		v.respond.SetMulti(NOOP, 8)
-		v.respond.Set(int(value))
-		fmt.Printf("...atn is on, responding %03d [%08b]\n", value, value)
-	} else {
-		v.state = 0
-		//v.respond.AddMulti(NOOP, 8)
-		//v.respond.Add(int(0))
-		fmt.Printf("...atn is now off\n")
-	}
-}
-
-func (v *FSDrive) BusStateChanged(data uint8) {
-	fmt.Printf("DTA received %03d [%08b] ATN: [%v], %s", data, data, v.atn, data2string(data))
-	clkIn := data&CLK_IN != 0
-	dataIn := data&DATA_IN != 0
-	switch v.state {
-	case 1:
-		if clkIn && !dataIn {
-			//value := 0xfe
-			//value := uint8(DATA_OUT)
-
-			//value := data | DATA_OUT
-			//value = ^value
-
-			//value := 0xfe
-			value := ATN_A | DATA_OUT
-			v.respond.SetMulti(NOOP, 16)
-			v.respond.Set(value)
-			v.state = 2
-			fmt.Printf("...responding I'm Here %03d [%08b]\n", value, value)
-			return
-		}
-	case 2:
-		if !clkIn && dataIn {
-			value := ATN_A
-			v.respond.SetMulti(NOOP, 16)
-			v.respond.Set(value)
-			v.state = 3
-			fmt.Printf("...responding Ready %03d [%08b]\n", value, value)
-			return
-		}
-	}
-	fmt.Printf("...NOT RESPONDING!\n")
-
-}
-
-func (v *FSDrive) Emulate() {
-	if v.respond.Len() == 0 {
-		return
-	}
-	data, ok := v.respond.Next()
-	if !ok {
-		return
-	}
-	if data == NOOP {
-		return
-	}
-	fmt.Printf("SENDING %03d\n", uint8(data))
-	//if time.Now().UnixMilli() > v.test { //qCycle&0x800 != 0 {
-	v.iec.PeripheralWrite(v.deviceNumber, uint8(data))
-	//d := v.iec.PeripheralRead(v.deviceNumber)
-	//fmt.Printf("STATE: %s\n", strconv.FormatInt(int64(d), 2))
-	//	v.test = 0
-	//}
-}
-
-func (v *FSDrive) Ready() bool {
-	return true
 }
 
 func (v *FSDrive) LedTurnOn() {
@@ -187,7 +88,21 @@ func (v *FSDrive) GetPath() string {
 	return v.dirPath
 }
 
-func (v *FSDrive) Open(channel uint8, data []uint8) uint8 {
+func (v *FSDrive) Listen(sec uint8) {
+}
+
+func (v *FSDrive) Unlisten(sec uint8) {
+}
+
+func (v *FSDrive) Talk(sec uint8) {
+}
+
+func (v *FSDrive) Untalk(sec uint8) {
+}
+
+func (v *FSDrive) Open(channel uint8) uint8 {
+	//TODO DATA
+	var data []uint8
 	v.LedTurnOn()
 	// Channel 15: Execute file name as command
 	if channel == 15 {
@@ -214,54 +129,6 @@ func (v *FSDrive) Open(channel uint8, data []uint8) uint8 {
 	return v.openFile(channel, string(data))
 }
 
-func (v *FSDrive) openFile(channel uint8, name string) uint8 {
-	plainName, mode, kind, _ := ParseFileName(name, true)
-	// Channel 0 is READ, channel 1 is WRITE
-	if channel == 0 || channel == 1 {
-		mode = FMODE_READ
-		if channel != 0 {
-			mode = FMODE_WRITE
-		}
-		if kind == FTYPE_DEL {
-			kind = FTYPE_PRG
-		}
-	}
-	writing := mode == FMODE_WRITE || mode == FMODE_APPEND
-	if strings.Contains(plainName, "*") || strings.Contains(plainName, "?") {
-		if writing {
-			v.commands.SetError(ERR_SYNTAX33)
-			return StOk
-		} else {
-			v.findFirstFile(plainName)
-		}
-	}
-	if kind == FTYPE_REL {
-		v.commands.SetError(ERR_UNIMPLEMENTED)
-		return StOk
-	}
-	flags := os.O_RDONLY
-	perm := os.FileMode(0)
-	switch mode {
-	case FMODE_WRITE:
-		perm = os.FileMode(0666)
-		flags = os.O_RDWR
-	case FMODE_APPEND:
-		perm = os.FileMode(0666)
-		flags = os.O_RDWR | os.O_APPEND
-	}
-	completeFileName := v.dirPath + string(os.PathSeparator) + plainName
-	f, err := os.OpenFile(completeFileName, flags, perm)
-	if err != nil {
-		v.commands.SetError(ERR_FILENOTFOUND)
-	} else {
-		v.file[channel] = f
-		data := make([]byte, 1)
-		_, _ = f.Read(data)
-		v.readChar[channel] = data[0]
-	}
-	return StOk
-}
-
 func (v *FSDrive) Close(channel uint8) uint8 {
 	v.LedTurnOff()
 	if channel == 15 {
@@ -280,15 +147,15 @@ func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
 	if channel == 15 {
 		data := v.commands.RetrieveError()
 		if data != '\r' {
-			return StOk, data
+			return data, StOk
 		}
 		// End of message
 		v.commands.SetError(ERR_OK)
-		return StEof, data
+		return data, StEof
 	}
 
 	if v.file[channel] == nil {
-		return StReadTimeout, 0
+		return 0, StReadTimeout
 	}
 
 	// Read one byte
@@ -296,16 +163,19 @@ func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
 	buffer := make([]uint8, 1)
 	c, err := v.file[channel].Read(buffer)
 	if err == io.EOF {
-		return StEof, data
+		return data, StEof
 	}
 	v.readChar[channel] = (uint8)(c)
-	return StOk, data
+	return data, StOk
 }
 
-func (v *FSDrive) Write(channel uint8, data uint8, eoi bool) uint8 {
+func (v *FSDrive) Write(channel uint8, data uint8) uint8 {
+	//TODO EOI, eoi bool
+	eoi := false
 	// Channel 15: Collect chars and execute command on EOI
 	if channel == 15 {
 		if !v.commands.CommandSet(data) {
+
 			return StTimeout
 		}
 		if eoi {
@@ -366,6 +236,56 @@ func (v *FSDrive) closeAllChannels() {
 		v.Close(i)
 	}
 	v.commands.CommandClear()
+}
+
+func (v *FSDrive) openFile(channel uint8, name string) uint8 {
+	plainName, mode, kind, _ := ParseFileName(name, true)
+	// Channel 0 is READ, channel 1 is WRITE
+	if channel == 0 || channel == 1 {
+		mode = FMODE_READ
+		if channel != 0 {
+			mode = FMODE_WRITE
+		}
+		if kind == FTYPE_DEL {
+			kind = FTYPE_PRG
+		}
+	}
+	writing := mode == FMODE_WRITE || mode == FMODE_APPEND
+	if strings.Contains(plainName, "*") || strings.Contains(plainName, "?") {
+		if writing {
+			v.commands.SetError(ERR_SYNTAX33)
+			return StOk
+		} else {
+			v.findFirstFile(plainName)
+		}
+	}
+	if kind == FTYPE_REL {
+		v.commands.SetError(ERR_UNIMPLEMENTED)
+		return StOk
+	}
+	flags := os.O_RDONLY
+	perm := os.FileMode(0)
+	switch mode {
+	case FMODE_WRITE:
+		perm = os.FileMode(0666)
+		flags = os.O_RDWR
+	case FMODE_APPEND:
+		perm = os.FileMode(0666)
+		flags = os.O_RDWR | os.O_APPEND
+	default:
+		panic("unhandled default case")
+	}
+	completeFileName := v.dirPath + string(os.PathSeparator) + plainName
+	f, err := os.OpenFile(completeFileName, flags, perm)
+	if err != nil {
+		v.commands.SetError(ERR_FILENOTFOUND)
+	} else {
+		v.file[channel] = f
+		data := make([]byte, 1)
+		_, _ = f.Read(data)
+		v.readChar[channel] = data[0]
+	}
+	return StOk
 }
 
 func (v *FSDrive) openDirectory(channel uint8, name string) uint8 {

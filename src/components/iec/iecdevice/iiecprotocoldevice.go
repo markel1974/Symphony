@@ -10,13 +10,13 @@ package iecdevice
 // Talk instructs the device to enter talking mode on a specific secondary address.
 // Untalk instructs the device to exit talking mode on a specific secondary address.
 type IIecProtocolDevice interface {
-	Write(sec uint8, b uint8)
+	Write(sec uint8, b uint8) uint8
 
-	Read(sec uint8) uint8
+	Read(sec uint8) (uint8, uint8)
 
-	Open(sec uint8)
+	Open(sec uint8) uint8
 
-	Close(sec uint8)
+	Close(sec uint8) uint8
 
 	Listen(sec uint8)
 

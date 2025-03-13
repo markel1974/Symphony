@@ -131,6 +131,7 @@ func (c *Dispatcher) PeripheralRead() uint8 {
 
 func (c *Dispatcher) PeripheralWrite(deviceNumber uint8, data uint8) {
 	c.peripheralsData[deviceNumber] = data
+	//fmt.Println("CURRENT VALUE", data)
 	//c.debugPeripheralWrite(c.peripheralBus[deviceNumber])
 	c.updatePorts()
 }

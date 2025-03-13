@@ -39,6 +39,14 @@ func (s *DeviceAdapter) GetDeviceNumber() uint8 {
 	return s.deviceNumber
 }
 
+func (s *DeviceAdapter) SetFlags(v uint8) {
+	s.flags = v
+}
+
+func (s *DeviceAdapter) GetFlags() uint8 {
+	return s.flags
+}
+
 func (s *DeviceAdapter) SetByte(v uint8) {
 	s.byte = v
 }

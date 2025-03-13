@@ -66,6 +66,8 @@ import (
 
 // -f "/Users/tinmr305/Downloads/c64carts/SamsJourneySeasonsSpecialV1_1+5D-GP.d64"
 
+// -f "FSDRIVE:/Users/tinmr305/Downloads/c64carts/"
+
 type IRender interface {
 	Start() error
 }
