@@ -9,14 +9,14 @@ type DeviceAdapter struct {
 	*board.BaseComponent
 	iecdevice.IIecProtocolDevice
 	deviceNumber  uint8
-	state         uint8
+	machineState  uint8
 	flags         uint8
 	primary       uint8
 	secondaryPrev uint8
 	secondary     uint8
 	timeout       uint64
 	byte          uint8
-	st            [0xff]uint8
+	state         [0xff]uint8
 	gs            *Global
 }
 
@@ -56,15 +56,15 @@ func (s *DeviceAdapter) GetByte() uint8 {
 }
 
 func (s *DeviceAdapter) SetStateMachine(v uint8) {
-	s.state = v
+	s.machineState = v
 }
 
 func (s *DeviceAdapter) GetStateMachine() uint8 {
-	return s.state
+	return s.machineState
 }
 
 func (s *DeviceAdapter) SetStateMachineNext() {
-	s.state++
+	s.machineState++
 }
 
 func (s *DeviceAdapter) SetPrimary(v uint8) {
@@ -100,9 +100,9 @@ func (s *DeviceAdapter) GetTimeout() uint64 {
 }
 
 func (s *DeviceAdapter) SetState(idx uint8, v uint8) {
-	s.st[idx&0x0f] = v
+	s.state[idx&0x0f] = v
 }
 
 func (s *DeviceAdapter) GetState(idx uint8) uint8 {
-	return s.st[idx&0x0f]
+	return s.state[idx&0x0f]
 }

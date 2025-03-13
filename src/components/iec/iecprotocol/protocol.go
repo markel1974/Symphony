@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/iec/iecdevice"
 	"github.com/markel1974/c64emu/src/config"
+	"log"
 )
 
 //serial-iec-device.c
@@ -35,6 +36,19 @@ const (
 )
 
 */
+
+func US2CYCLES(v uint64) uint64 {
+	return v
+	/*
+		const cyclesPerUs = 1.0
+		out := (float64(v) * cyclesPerUs) + 0.5
+		ret := uint64(out)
+		if v != ret {
+			fmt.Println("Dii")
+		}
+		return ret
+	*/
+}
 
 const (
 	P_PRE0 = iota
@@ -180,7 +194,7 @@ func (v *Protocol) Emulate() {
 				if device.GetState(device.GetSecondary()) == 0 {
 					device.SetFlags(device.GetFlags() | P_LISTENING)
 					device.SetStateMachine(P_PRE1)
-					//log.Printf("device %i start listening", deviceNumber)
+					log.Printf("device %d start listening", deviceNumber)
 				}
 				//set DATA=0 ("I am here")
 				v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK)
@@ -189,12 +203,12 @@ func (v *Protocol) Emulate() {
 				device.SetFlags(device.GetFlags() & ^P_LISTENING)
 				device.SetFlags(device.GetFlags() | P_TALKING)
 				device.SetStateMachine(P_PRE0)
-				//log.Printf("device %i start talking", deviceNumber)
+				log.Printf("device %d start talking", deviceNumber)
 			}
 		} else if (device.GetPrimary() == 0x3f) && conversion.Uint8ToBool(device.GetFlags()&P_LISTENING) {
 			//All devices were told to stop listening
 			device.SetFlags(device.GetFlags() & ^P_LISTENING)
-			//log.Printf("device %i stop listening", deviceNumber)
+			log.Printf("device %d stop listening", deviceNumber)
 
 			//If this is an UNLISTEN that followed an OPEN (0x2_ 0xf_), then
 			//device.unlisten will try to open the file with the filename that
@@ -207,7 +221,7 @@ func (v *Protocol) Emulate() {
 			//All devices were told to stop talking
 			device.Untalk(device.GetSecondaryPrev())
 			device.SetFlags(device.GetFlags() & ^P_TALKING)
-			//log.Printf("device %i stop talking", deviceNumber)
+			log.Printf("device %d stop talking", deviceNumber)
 		}
 
 		if !conversion.Uint8ToBool(device.GetFlags() & (P_LISTENING | P_TALKING)) {
@@ -255,7 +269,7 @@ func (v *Protocol) doListening(bus uint8) {
 			device.SetStateMachine(P_BIT0)
 		} else if !conversion.Uint8ToBool(device.GetFlags()&P_ATN) && (clkValue >= device.GetTimeout()) {
 			//Sender did not set CLK=0 within 200 us after we set DATA=1 => it is signaling EOI (not so if we are under ATN) acknowledge we received it by setting DATA=0 for 60us
-			//log.Printf("device %i got EOI on channel %i", deviceNumber, device.secondary & 0x0f)
+			log.Printf("device %d got EOI on channel %d", deviceNumber, device.GetSecondary())
 			v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK)
 			device.SetStateMachine(P_EOI)
 			device.SetTimeout(clkValue + US2CYCLES(60))
@@ -291,7 +305,7 @@ func (v *Protocol) doListening(bus uint8) {
 	case P_BIT7w:
 		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
 			//Sender set CLK=0 and this was the last bit
-			//log.Printf("device %i received : 0x%02x (%c)", deviceNumber, device.byte, device.byte)
+			log.Printf("device %d received : 0x%02x (%c)", deviceNumber, device.byte, device.byte)
 			if conversion.Uint8ToBool(device.GetFlags() & P_ATN) {
 				//We are currently receiving under ATN. Store the first two bytes received (contain primary and secondary address)
 				if device.GetPrimary() == 0 {
@@ -311,7 +325,7 @@ func (v *Protocol) doListening(bus uint8) {
 				}
 			} else if conversion.Uint8ToBool(device.GetFlags() & P_LISTENING) {
 				//We are currently listening for data pass received byte on to the upper level
-				//log.Printf("device %i received 0x%02x (%c) on channel %i", deviceNumber, device.byte, isprint((unsigned char)device.byte) ? device.byte : '.', device.secondary & 0x0f)
+				log.Printf("device %d received 0x%02x (%c) on channel %d", deviceNumber, device.byte, device.byte, device.GetSecondary())
 				v.gs.SetState(device.GetState(device.GetSecondary()))
 				state := device.Write(device.GetSecondary(), device.GetByte())
 				device.SetState(device.GetSecondary(), state)
@@ -371,7 +385,7 @@ func (v *Protocol) doTalking(bus uint8) {
 				device.SetTimeout(clkValue)
 			} else if device.GetState(device.GetSecondary()) == 0x40 {
 				//Only this byte left to send => signal EOI by keeping CLK=1
-				//log.Printf(serial_iec_device_log,"device %i signaling EOI on channel %i", deviceNumber, device.secondary & 0x0f)
+				log.Printf("device %d signaling EOI on channel %d", deviceNumber, device.GetSecondary())
 				device.SetStateMachine(P_EOI)
 			} else {
 				//There was some kind of error; we have nothing to send.
@@ -395,9 +409,9 @@ func (v *Protocol) doTalking(bus uint8) {
 		if clkValue >= device.GetTimeout() {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the previous bit.
 			//Pull CLK=0 and put the next bit out of DATA.
-			bit := 1 << ((int(device.GetStateMachine()) - P_BIT0) / 2)
+			bit := uint8(1 << ((int(device.GetStateMachine()) - P_BIT0) / 2))
 			res := uint8(0)
-			if conversion.Uint8ToBool(device.GetByte() & uint8(bit)) {
+			if conversion.Uint8ToBool(device.GetByte() & bit) {
 				res = IECBUS_DEVICE_WRITE_DATA
 			}
 			v.iec.PeripheralWrite(deviceNumber, res)
@@ -432,7 +446,7 @@ func (v *Protocol) doTalking(bus uint8) {
 	case P_DONE1:
 		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
 			//Receiver set DATA=0, acknowledging the frame
-			//log.Printf("device %i sent 0x%02x (%c) on channel %i", deviceNumber, device.byte, device.byte, device.secondary & 0x0f)
+			log.Printf("device %d sent 0x%02x (%c) on channel %d", deviceNumber, device.byte, device.byte, device.GetSecondary())
 			if device.GetState(device.GetSecondary()) == 0x40 {
 				//This was the last byte => stop talking.This leaves us waiting for ATN.
 				device.SetFlags(device.GetFlags() & ^P_TALKING)
@@ -446,7 +460,7 @@ func (v *Protocol) doTalking(bus uint8) {
 			}
 		} else if clkValue >= device.GetTimeout() {
 			//We didn't receive an acknowledgement within 1 ms.Set CLOCK=0 and after 100 us back to CLOCK=1
-			//log.Printf("device %i got NACK on channel %i", deviceNumber, device.secondary & 0x0f)
+			log.Printf("device %d got NACK on channel %d", deviceNumber, device.GetSecondary())
 			v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
 			device.SetTimeout(clkValue + US2CYCLES(100))
 			device.SetStateMachine(P_FRAMEERR0)
@@ -467,8 +481,4 @@ func (v *Protocol) doTalking(bus uint8) {
 	default:
 		panic("unhandled default case")
 	}
-}
-
-func US2CYCLES(v uint64) uint64 {
-	return v
 }

@@ -101,6 +101,8 @@ func (v *FSDrive) Untalk(sec uint8) {
 }
 
 func (v *FSDrive) Open(channel uint8) uint8 {
+	//TEST TODO
+	channel &= 0xf
 	//TODO DATA
 	var data []uint8
 	v.LedTurnOn()
@@ -118,6 +120,10 @@ func (v *FSDrive) Open(channel uint8) uint8 {
 	if v.file[channel] != nil {
 		v.file[channel].Close()
 		v.file[channel] = nil
+	}
+	if len(data) == 0 {
+		v.commands.SetError(ERR_NOCHANNEL)
+		return StOk
 	}
 	if data[0] == '#' {
 		v.commands.SetError(ERR_NOCHANNEL)
