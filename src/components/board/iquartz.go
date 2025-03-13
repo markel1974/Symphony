@@ -4,4 +4,6 @@ package board
 // Cycle retrieves the number of cycles elapsed since the start of the quartz-based timing mechanism.
 type IQuartz interface {
 	Cycle() uint64
+
+	ToUSec(uint64) uint64
 }

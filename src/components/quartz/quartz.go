@@ -48,6 +48,11 @@ func (s *Quartz) Reset() {
 	//
 }
 
+// ToUSec converts a time value in microseconds (us) to clock cycles based on a specific conversion factor.
+func (s *Quartz) ToUSec(v uint64) uint64 {
+	return v
+}
+
 // NewAlarm creates a new alarm with the given name and callback, associates it with the Quartz instance, and returns it.
 func (s *Quartz) NewAlarm(name string, callback AlarmCallback) *Alarm {
 	a := NewAlarm(s, name, callback)

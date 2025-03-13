@@ -43,20 +43,6 @@ const (
 
 */
 
-// US2CYCLES converts a time value in microseconds (us) to clock cycles based on a specific conversion factor.
-func US2CYCLES(v uint64) uint64 {
-	return v
-	/*
-		const cyclesPerUs = 1.0
-		out := (float64(v) * cyclesPerUs) + 0.5
-		ret := uint64(out)
-		if v != ret {
-			fmt.Println("Dii")
-		}
-		return ret
-	*/
-}
-
 // P_PRE0 to P_FRAMEERR1 are constants representing various protocol states or phases in an iota enumeration.
 const (
 	P_PRE0 = 0 + iota
@@ -184,7 +170,7 @@ func (v *Protocol) Emulate() {
 		v.setPrimary(0)
 		v.setSecondaryPrev(v.getSecondary())
 		v.setSecondary(0)
-		v.setTimeout(clkValue, US2CYCLES(100))
+		v.setTimeout(100)
 		//P_PRE0_100_time = time.Now()
 
 		//Set DATA=0("I am here").If nobody on the bus does this within 1 ms, bus-master will assume that "DeviceAdapter not present"
@@ -294,7 +280,7 @@ func (v *Protocol) doListening(bus uint8, clkValue uint64) {
 		if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
 			//React by setting DATA=1 ("ready-for-data")
 			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
-			v.setTimeout(clkValue, US2CYCLES(200))
+			v.setTimeout(200)
 			v.setStateMachine(P_READY)
 		}
 	case P_READY:
@@ -307,7 +293,7 @@ func (v *Protocol) doListening(bus uint8, clkValue uint64) {
 			log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.getSecondary()&0x0f)
 			v.transmitData(IECBUS_DEVICE_WRITE_CLK)
 			v.setStateMachine(P_EOI)
-			v.setTimeout(clkValue, US2CYCLES(60))
+			v.setTimeout(60)
 		}
 	case P_EOI:
 		if clkValue >= v.getTimeout() {
@@ -396,7 +382,7 @@ func (v *Protocol) doTalking(bus uint8, clkValue uint64) {
 			//we are getting ready for role reversal.Set CLK=0,DATA=1
 			v.transmitData(IECBUS_DEVICE_WRITE_DATA)
 			v.setStateMachine(P_PRE1)
-			v.setTimeout(clkValue, US2CYCLES(80))
+			v.setTimeout(80)
 		}
 	case P_PRE1:
 		if clkValue >= v.getTimeout() {
@@ -416,7 +402,7 @@ func (v *Protocol) doTalking(bus uint8, clkValue uint64) {
 				//At least two bytes left to send. Go on to send the first bit.
 				v.setStateMachine(P_BIT0)
 				//no need to wait before sending the first bit
-				v.setTimeout(clkValue, 0)
+				v.setTimeout(0)
 			} else if v.getState(v.getSecondary()) == 0x40 {
 				//Only this byte left to send => signal EOI by keeping CLK=1
 				log.Printf("device %d signaling EOI on channel %d", v.deviceNumber, v.getSecondary())
@@ -437,7 +423,7 @@ func (v *Protocol) doTalking(bus uint8, clkValue uint64) {
 			//Receiver set DATA=1, final part of acknowledging the EOI. Go on to send first bit
 			v.setStateMachine(P_BIT0)
 			//no need to wait before sending the first bit
-			v.setTimeout(clkValue, 0)
+			v.setTimeout(0)
 		}
 	case P_BIT0, P_BIT1, P_BIT2, P_BIT3, P_BIT4, P_BIT5, P_BIT6, P_BIT7:
 		if clkValue >= v.getTimeout() {
@@ -450,7 +436,7 @@ func (v *Protocol) doTalking(bus uint8, clkValue uint64) {
 			}
 			v.transmitData(res)
 			//Go to associated P_BIT(n)w state
-			v.setTimeout(clkValue, US2CYCLES(60))
+			v.setTimeout(60)
 
 			v.setStateMachineNext()
 		}
@@ -465,7 +451,7 @@ func (v *Protocol) doTalking(bus uint8, clkValue uint64) {
 			}
 			//Go to associated P_BIT(n+1) state to send the next bit.
 			//If this was the final bit, then the next state is P_DONE0
-			v.setTimeout(clkValue, US2CYCLES(60))
+			v.setTimeout(60)
 			v.setStateMachineNext()
 		}
 	case P_DONE0:
@@ -473,7 +459,7 @@ func (v *Protocol) doTalking(bus uint8, clkValue uint64) {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the final bit.
 			//Pull CLK=0 and set DATA=1.This prepares for the receiver acknowledgement.
 			v.transmitData(IECBUS_DEVICE_WRITE_DATA)
-			v.setTimeout(clkValue, US2CYCLES(1000))
+			v.setTimeout(1000)
 			v.setStateMachine(P_DONE1)
 		}
 	case P_DONE1:
@@ -488,14 +474,14 @@ func (v *Protocol) doTalking(bus uint8, clkValue uint64) {
 				v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
 			} else {
 				//There is at least one more byte to send Start over from P_PRE1
-				v.setTimeout(clkValue, 0)
+				v.setTimeout(0)
 				v.setStateMachine(P_PRE1)
 			}
 		} else if clkValue >= v.getTimeout() {
 			//We didn't receive an acknowledgement within 1 ms.Set CLOCK=0 and after 100 us back to CLOCK=1
 			log.Printf("device %d got NACK on channel %d", v.deviceNumber, v.getSecondary())
 			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
-			v.setTimeout(clkValue, US2CYCLES(100))
+			v.setTimeout(100)
 			v.setStateMachine(P_FRAMEERR0)
 		}
 	case P_FRAMEERR0:
@@ -508,7 +494,7 @@ func (v *Protocol) doTalking(bus uint8, clkValue uint64) {
 	case P_FRAMEERR1:
 		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
 			// sender set DATA=0, we can retry to send the byte
-			v.setTimeout(clkValue, 0)
+			v.setTimeout(0)
 			v.setStateMachine(P_PRE1)
 		}
 	default:
@@ -582,8 +568,9 @@ func (v *Protocol) getSecondaryPrev() uint8 {
 }
 
 // setTimeout sets the timeout value for the protocol instance to the specified value.
-func (v *Protocol) setTimeout(t uint64, offset uint64) {
-	v.timeout = t + offset
+func (v *Protocol) setTimeout(offset uint64) {
+	val := v.quartz.ToUSec(offset)
+	v.timeout = v.quartz.Cycle() + val
 }
 
 // getTimeout retrieves the current timeout value set for the Protocol.
