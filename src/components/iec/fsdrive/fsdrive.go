@@ -53,7 +53,6 @@ func (v *FSDrive) Setup(iec iecdevice.IIec, cfg *config.Config) {
 		}
 		v.ready = true
 	}
-	v.Reset()
 }
 
 func (v *FSDrive) GetDeviceNumber() uint8 {
@@ -64,9 +63,8 @@ func (v *FSDrive) Reset() {
 	v.closeAllChannels()
 	v.commands.CommandClear()
 	v.commands.SetError(ERR_STARTUP)
-
-	v.Protocol.Reset()
 	//TODO IN FASE DI RESET CAMBIARE LO STATO DEL BUS
+	v.Protocol.Reset()
 }
 
 func (v *FSDrive) LedTurnOn() {

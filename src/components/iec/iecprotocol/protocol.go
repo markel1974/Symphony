@@ -26,7 +26,7 @@ const (
 	/* DATA_OUT*/
 	IECBUS_DEVICE_WRITE_DATA = 0x02
 	/* CLK_OUT*/ IECBUS_DEVICE_WRITE_CLK = 0x08
-	/* ATN_A */ IECBUS_DEVICE_ATNA = 0x10
+	///* ATN_A */ IECBUS_DEVICE_ATNA = 0x10
 )
 
 /*
@@ -96,6 +96,8 @@ const (
 	P_ATN       = uint8(0x80)
 )
 
+const stateLast = 0xf
+
 // Protocol represents a structure for managing IEC protocol-based communication and its state machine.
 type Protocol struct {
 	*board.BaseComponent
@@ -112,7 +114,7 @@ type Protocol struct {
 	secondary     uint8
 	timeout       uint64
 	byte          uint8
-	state         [0xff]uint8
+	state         [stateLast + 1]uint8
 }
 
 // NewProtocol creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
@@ -137,7 +139,12 @@ func (v *Protocol) Setup(iec iecdevice.IIec, cfg *config.Config) {
 
 // Reset resets the internal state of the Protocol to its initial configuration.
 func (v *Protocol) Reset() {
-	//TODO
+	v.flags = 0
+	v.timeout = 0
+	for i := 0; i < len(v.state); i++ {
+		v.state[i] = 0
+	}
+	v.iec.PeripheralWrite(v.deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
 }
 
 // Ready checks if the protocol is ready for operation and returns a boolean value indicating readiness.
@@ -596,13 +603,13 @@ func (v *Protocol) getTimeout() uint64 {
 
 // setState updates the protocol state for the given index with the specified state value, using a masked index.
 func (v *Protocol) setState(idx uint8, s uint8) {
-	x := idx & 0x0f
+	x := idx & stateLast
 	v.state[x] = s
 }
 
 // getState retrieves the state value at the specified index, masked to fit within the bounds of the state array.
 func (v *Protocol) getState(idx uint8) uint8 {
-	x := idx & 0x0f
+	x := idx & stateLast
 	return v.state[x]
 }
 
