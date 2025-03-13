@@ -1,4 +1,4 @@
-package virtualdrive
+package fsdrive
 
 // ParseFileName parses the provided file name and extracts relevant information including mode, type, and record length.
 // name: the input file name to parse.

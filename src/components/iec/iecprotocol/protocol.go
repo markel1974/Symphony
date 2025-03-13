@@ -1,8 +1,10 @@
-package iec
+package iecprotocol
 
 import (
 	"github.com/markel1974/c64emu/src/common/conversion"
-	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/components/board"
+	"github.com/markel1974/c64emu/src/components/iec/iecdevice"
+	"github.com/markel1974/c64emu/src/config"
 )
 
 //serial-iec-device.c
@@ -54,147 +56,69 @@ const (
 	P_ATN       = uint8(0x80)
 )
 
-//type IGlobalSt interface {
-//	GetSt() uint8
-//	SetSt() uint8
-//}
-
-type Device struct {
-	deviceNumber  uint8
-	state         uint8
-	flags         uint8
-	primary       uint8
-	secondaryPrev uint8
-	secondary     uint8
-	timeout       uint64
-	byte          uint8
-	st            [0xff]uint8
+type Protocol struct {
+	*board.BaseComponent
+	iec    iecdevice.IIec
+	gs     *Global
+	device *DeviceAdapter
+	cfg    *config.Config
 }
 
-func NewDevice(deviceNumber uint8) *Device {
-	v := &Device{
-		deviceNumber: deviceNumber,
+func NewProtocol(parent board.IComponent, suffix string, deviceNumber uint8, device iecdevice.IIecProtocolDevice) *Protocol {
+	p := &Protocol{
+		BaseComponent: board.NewBaseComponent("iec_protocol", suffix),
+		gs:            _gs,
+		iec:           nil,
+		device:        nil,
 	}
-	return v
+	board.Register(parent, p)
+	p.device = NewDeviceAdapter(p, "", deviceNumber, p.gs, device)
+	return p
 }
 
-func (s *Device) SetByte(v uint8) {
-	s.byte = v
+func (v *Protocol) Setup(iec iecdevice.IIec, cfg *config.Config) {
+	v.iec = iec
+	v.cfg = cfg
 }
 
-func (s *Device) GetByte() uint8 {
-	return s.byte
+func (v *Protocol) Reset() {
+	//TODO
 }
 
-func (s *Device) SetState(v uint8) {
-	s.state = v
+func (v *Protocol) Ready() bool {
+	return true
 }
 
-func (s *Device) GetState() uint8 {
-	return s.state
+func (v *Protocol) GetDeviceNumber() uint8 {
+	return v.device.GetDeviceNumber()
 }
 
-func (s *Device) SetPrimary(v uint8) {
-	s.primary = v
+func (v *Protocol) AtnStateChanged(bool) {
+	//Nothing TO DO
 }
 
-func (s *Device) GetPrimary() uint8 {
-	return s.primary
+func (v *Protocol) BusStateChanged(uint8) {
+	//TODO REMOVE
 }
 
-func (s *Device) SetSecondary(v uint8) {
-	s.secondary = v
-}
-
-func (s *Device) GetSecondary() uint8 {
-	return s.secondary
-}
-
-func (s *Device) SetSecondaryPrev(v uint8) {
-	s.secondaryPrev = v
-}
-
-func (s *Device) GetSecondaryPrev() uint8 {
-	return s.secondaryPrev
-}
-
-func (s *Device) SetTimeout(v uint64) {
-	s.timeout = v
-}
-
-func (s *Device) GetTimeout() uint64 {
-	return s.timeout
-}
-
-func (s *Device) SetStateNext() {
-	s.state++
-}
-
-func (s *Device) SetSt(idx uint8, v uint8) {
-	s.st[idx&0x0f] = v
-}
-
-func (s *Device) GetSt(idx uint8) uint8 {
-	return s.st[idx&0x0f]
-}
-
-func (s *Device) Listen(b uint8) {
-}
-
-func (s *Device) Write(b uint8, c uint8, val uint8) uint8 {
-	return val
-}
-
-func (s *Device) Read(b uint8, val uint8) (uint8, uint8) {
-	return 0, val
-}
-
-func (s *Device) Talk(b uint8) {
-}
-
-func (s *Device) Close(b uint8, val uint8) uint8 {
-	return val
-}
-
-func (s *Device) Open(b uint8, val uint8) uint8 {
-	return val
-}
-
-func (s *Device) Unlisten(b uint8, val uint8) uint8 {
-	return val
-}
-
-func (s *Device) Untalk(sec uint8) {
-}
-
-type Virtual struct {
-	iec virtualdrive.IIec
-}
-
-func NewVirtual(iec virtualdrive.IIec) *Virtual {
-	return &Virtual{
-		iec: iec,
-	}
-}
-
-func (v *Virtual) Emulate(device *Device, clkValue uint64) {
+func (v *Protocol) Emulate(clkValue uint64) {
 	//Read bus
 	bus := v.iec.PeripheralRead()
-
-	deviceNumber := device.deviceNumber
+	device := v.device
+	deviceNumber := v.device.GetDeviceNumber()
 
 	//log.Printf("serial_iec_device_exec_main(%u, %u) F=%i, S=%i, ATN=%i CLK=%i DTA=%i", deviceNumber, clkValue, device.flags, device.state, (bus & IECBUS_DEVICE_READ_ATN) ? 1 : 0, (bus & IECBUS_DEVICE_READ_CLK) ? 1 : 0, (bus & IECBUS_DEVICE_READ_DATA) ? 1 : 0)
 
 	if !conversion.Uint8ToBool(device.flags&P_ATN) && !conversion.Uint8ToBool(bus&IECBUS_DEVICE_READ_ATN) {
 		//Falling flank on ATN (bus master addressing all devices) */
-		device.SetState(P_PRE0)
+		device.SetStateMachine(P_PRE0)
 		device.flags |= P_ATN
 		device.SetPrimary(0)
 		device.SetSecondaryPrev(device.GetSecondary())
 		device.SetSecondary(0)
 		device.SetTimeout(clkValue + US2CYCLES(100))
 
-		//Set DATA=0("I am here").If nobody on the bus does this within 1 ms, bus-master will assume that "Device not present"
+		//Set DATA=0("I am here").If nobody on the bus does this within 1 ms, bus-master will assume that "DeviceAdapter not present"
 		v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK)
 	} else if conversion.Uint8ToBool(device.flags&P_ATN) && conversion.Uint8ToBool(bus&IECBUS_DEVICE_READ_ATN) {
 		//Rising flank on ATN (bus master finished addressing all devices) */
@@ -209,20 +133,17 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 					device.Talk(device.GetSecondary())
 				}
 			} else if (device.GetSecondary() & 0xf0) == 0xe0 {
-				//v.set_st(0)
-				val := device.Close(device.GetSecondary(), uint8(0))
-				device.SetSt(device.GetSecondary(), val)
-				//device.st[device.secondary&0x0f] = v.get_st()
+				v.gs.SetState(0)
+				device.Close(device.GetSecondary())
+				device.SetState(device.GetSecondary(), v.gs.GetState())
 			} else if (device.GetSecondary() & 0xf0) == 0xf0 {
 				//device.open() will not actually open the file (since we don't have a filename yet) but just set things up so that
 				//the characters passed to device.
 				//write() before the next call to device.unlisten() will be interpreted as the filename.
 				//The file will actually be opened during the next call to device.unlisten()
-
-				//v.set_st(0)
-				val := device.Open(device.GetSecondary(), uint8(0))
-				//device.st[device.secondary&0x0f] = v.get_st()
-				device.SetSt(device.GetSecondary(), val)
+				v.gs.SetState(0)
+				device.Open(device.GetSecondary())
+				device.SetState(device.GetSecondary(), v.gs.GetState())
 			}
 
 			if device.GetPrimary() == 0x20+deviceNumber {
@@ -230,9 +151,9 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 				device.flags &= ^P_TALKING
 				//st!=0 means that the previous OPEN command failed, i.e. we could not open a file for writing.
 				//In that case, ignore the "LISTEN" request which will signal the error to the sender
-				if device.GetSt(device.GetSecondary()) == 0 {
+				if device.GetState(device.GetSecondary()) == 0 {
 					device.flags |= P_LISTENING
-					device.SetState(P_PRE1)
+					device.SetStateMachine(P_PRE1)
 					//log.Printf("device %i start listening", deviceNumber)
 				}
 				//set DATA=0 ("I am here")
@@ -241,7 +162,7 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 				//We were told to talk
 				device.flags &= ^P_LISTENING
 				device.flags |= P_TALKING
-				device.SetState(P_PRE0)
+				device.SetStateMachine(P_PRE0)
 				//log.Printf("device %i start talking", deviceNumber)
 			}
 		} else if (device.GetPrimary() == 0x3f) && conversion.Uint8ToBool(device.flags&P_LISTENING) {
@@ -253,10 +174,9 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 			//device.unlisten will try to open the file with the filename that
 			//was received in between the OPEN and now.
 			//If the file cannot be opened, it will set st != 0.
-			//v.set_st(device.st[device.secondaryPrev&0x0f])
-			val := device.Unlisten(device.GetSecondaryPrev(), device.GetSt(device.GetSecondaryPrev()))
-			device.SetSt(device.GetSecondaryPrev(), val)
-			//device.st[device.secondaryPrev&0x0f] = v.get_st()
+			v.gs.SetState(device.GetState(device.GetSecondaryPrev()))
+			device.Unlisten(device.GetSecondaryPrev())
+			device.SetState(device.GetSecondaryPrev(), v.gs.GetState())
 		} else if (device.GetPrimary() == 0x5f) && conversion.Uint8ToBool(device.flags&P_TALKING) {
 			//All devices were told to stop talking
 			device.Untalk(device.GetSecondaryPrev())
@@ -272,17 +192,17 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 
 	if conversion.Uint8ToBool(device.flags & (P_ATN | P_LISTENING)) {
 		//We are either under ATN or in "listening" mode
-		switch device.GetState() {
+		switch device.GetStateMachine() {
 		case P_PRE0:
 			//Ignore anything that happens during the first 100 us after falling
 			//flank on ATN (other devices may have been sending and need some time to set CLK=1)
 			if clkValue >= device.GetTimeout() {
-				device.SetState(P_PRE1)
+				device.SetStateMachine(P_PRE1)
 			}
 		case P_PRE1:
 			//Make sure CLK=0 so we actually detect a rising flank instate P_PRE2
 			if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
-				device.SetState(P_PRE2)
+				device.SetStateMachine(P_PRE2)
 			}
 		case P_PRE2:
 			// wait for rising flank on CLK ("ready-to-send")
@@ -290,29 +210,29 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 				//React by setting DATA=1 ("ready-for-data")
 				v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
 				device.SetTimeout(clkValue + US2CYCLES(200))
-				device.SetState(P_READY)
+				device.SetStateMachine(P_READY)
 			}
 		case P_READY:
 			if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
 				//Sender set CLK=0, is about to send first bit
-				device.SetState(P_BIT0)
+				device.SetStateMachine(P_BIT0)
 			} else if !conversion.Uint8ToBool(device.flags&P_ATN) && (clkValue >= device.GetTimeout()) {
 				//Sender did not set CLK=0 within 200 us after we set DATA=1 => it is signaling EOI (not so if we are under ATN) acknowledge we received it by setting DATA=0 for 60us
 				//log.Printf("device %i got EOI on channel %i", deviceNumber, device.secondary & 0x0f)
 				v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK)
-				device.SetState(P_EOI)
+				device.SetStateMachine(P_EOI)
 				device.SetTimeout(clkValue + US2CYCLES(60))
 			}
 		case P_EOI:
 			if clkValue >= device.GetTimeout() {
 				//Set DATA back to 1 and wait for sender to set CLK=0
 				v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
-				device.SetState(P_EOIw)
+				device.SetStateMachine(P_EOIw)
 			}
 		case P_EOIw:
 			if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
 				//Sender set CLK=0, is about to send first bit
-				device.SetState(P_BIT0)
+				device.SetStateMachine(P_BIT0)
 			}
 		case P_BIT0:
 		case P_BIT1:
@@ -324,14 +244,14 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 		case P_BIT7:
 			if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
 				//Sender set CLK=1, signaling that the DATA line represents a valid bit
-				bit := uint8(1 << (uint8(device.GetState()-P_BIT0) / 2))
+				bit := uint8(1 << (uint8(device.GetStateMachine()-P_BIT0) / 2))
 				p := uint8(0)
 				if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
 					p = 1
 				}
 				device.SetByte((device.GetByte() & ^bit) | p)
 				//Go to associated P_BIT(n)w state, waiting for sender to set CLK=0
-				device.SetStateNext()
+				device.SetStateMachineNext()
 			}
 		case P_BIT0w:
 		case P_BIT1w:
@@ -342,7 +262,7 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 		case P_BIT6w:
 			if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
 				//Sender set CLK=0. go to P_BIT(n+1) state to receive the next bit
-				device.SetStateNext()
+				device.SetStateMachineNext()
 			}
 		case P_BIT7w:
 			if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
@@ -357,30 +277,29 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 					}
 					if device.GetPrimary() != 0x3f && device.GetPrimary() != 0x5f && ((uint8(device.GetPrimary()) & 0x1f) != deviceNumber) {
 						//This is NOT a UNLISTEN (0x3f) or UNTALK (0x5f) command and the primary address is not ours =>
-						//Don't acknowledge the frame and stop listening. If all devices on the bus do this, the bus-master knows that "Device not present"
-						device.SetState(P_DONE0)
+						//Don't acknowledge the frame and stop listening. If all devices on the bus do this, the bus-master knows that "DeviceAdapter not present"
+						device.SetStateMachine(P_DONE0)
 					} else {
 						//Acknowledge frame by setting DATA=0
 						v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK)
 						//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
-						device.SetState(P_PRE2)
+						device.SetStateMachine(P_PRE2)
 					}
 				} else if conversion.Uint8ToBool(device.flags & P_LISTENING) {
 					//We are currently listening for data pass received byte on to the upper level
 					//log.Printf("device %i received 0x%02x (%c) on channel %i", deviceNumber, device.byte, isprint((unsigned char)device.byte) ? device.byte : '.', device.secondary & 0x0f)
-					//v.set_st(device.st[device.secondary&0x0f])
-					val := device.Write(device.GetSecondary(), device.GetByte(), device.GetSt(device.GetSecondary()))
-					device.SetSt(device.GetSecondary(), val)
-					//ec.st[device.secondary&0x0f] = v.get_st()
+					v.gs.SetState(device.GetState(device.GetSecondary()))
+					device.Write(device.GetSecondary(), device.GetByte())
+					device.SetState(device.GetSecondary(), v.gs.GetState())
 
-					if device.GetSt(device.GetSecondary()) != 0 {
+					if device.GetState(device.GetSecondary()) != 0 {
 						//There was an error during iec_bus_write => stop listening. This will signal an error condition to the sender
-						device.SetState(P_DONE0)
+						device.SetStateMachine(P_DONE0)
 					} else {
 						//Acknowledge frame by setting DATA=0
 						v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK)
 						//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
-						device.SetState(P_PRE2)
+						device.SetStateMachine(P_PRE2)
 					}
 				}
 			}
@@ -391,39 +310,37 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 		}
 	} else if conversion.Uint8ToBool(device.flags & P_TALKING) {
 		//We are in "talking" mode
-		switch device.GetState() {
+		switch device.GetStateMachine() {
 		case P_PRE0:
 			if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
 				//Bus-master set CLK=1 (and before that should have set DATA=0)
 				//we are getting ready for role reversal.Set CLK=0,DATA=1
 				v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_DATA)
-				device.SetState(P_PRE1)
+				device.SetStateMachine(P_PRE1)
 				device.SetTimeout(clkValue + US2CYCLES(80))
 			}
 		case P_PRE1:
 			if clkValue >= device.GetTimeout() {
 				//Signal "ready-to-send" (CLK=1)
 				v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
-				device.SetState(P_READY)
+				device.SetStateMachine(P_READY)
 			}
 		case P_READY:
 			if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
 				//Receiver signaled "ready-for-data" (DATA=1)
-				//v.set_st(device.st[device.secondary&0x0f])
-
-				b, val := device.Read(device.GetSecondary(), device.GetSt(device.GetSecondary()))
+				v.gs.SetState(device.GetState(device.GetSecondary()))
+				b := device.Read(device.GetSecondary())
 				device.SetByte(b)
-				device.SetSt(device.GetSecondary(), val)
-				//device.st[device.secondary&0x0f] = v.get_st()
-				if device.GetSt(device.GetSecondary()) == 0 {
+				device.SetState(device.GetSecondary(), v.gs.GetState())
+				if device.GetState(device.GetSecondary()) == 0 {
 					//At least two bytes left to send. Go on to send the first bit.
-					device.SetState(P_BIT0)
+					device.SetStateMachine(P_BIT0)
 					//no need to wait before sending the first bit
 					device.SetTimeout(clkValue)
-				} else if device.GetSt(device.GetSecondary()) == 0x40 {
+				} else if device.GetState(device.GetSecondary()) == 0x40 {
 					//Only this byte left to send => signal EOI by keeping CLK=1
 					//log.Printf(serial_iec_device_log,"device %i signaling EOI on channel %i", deviceNumber, device.secondary & 0x0f)
-					device.SetState(P_EOI)
+					device.SetStateMachine(P_EOI)
 				} else {
 					//There was some kind of error; we have nothing to send.
 					//Just stop talking and wait for ATN (This will produce a "File not found" when loading)
@@ -433,12 +350,12 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 		case P_EOI:
 			if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
 				//Receiver set DATA=0, first part of acknowledging the EOI
-				device.SetState(P_EOIw)
+				device.SetStateMachine(P_EOIw)
 			}
 		case P_EOIw:
 			if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
 				//Receiver set DATA=1, final part of acknowledging the EOI. Go on to send first bit
-				device.SetState(P_BIT0)
+				device.SetStateMachine(P_BIT0)
 				//no need to wait before sending the first bit
 				device.SetTimeout(clkValue)
 			}
@@ -453,7 +370,7 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 			if clkValue >= device.GetTimeout() {
 				//60 us have passed since we set CLK=1 to signal "data valid" for the previous bit.
 				//Pull CLK=0 and put the next bit out of DATA.
-				bit := 1 << ((int(device.GetState()) - P_BIT0) / 2)
+				bit := 1 << ((int(device.GetStateMachine()) - P_BIT0) / 2)
 				res := uint8(0)
 				if conversion.Uint8ToBool(device.GetByte() & uint8(bit)) {
 					res = IECBUS_DEVICE_WRITE_DATA
@@ -463,7 +380,7 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 
 				//Go to associated P_BIT(n)w state
 				device.SetTimeout(clkValue + US2CYCLES(60))
-				device.SetStateNext()
+				device.SetStateMachineNext()
 			}
 		case P_BIT0w:
 		case P_BIT1w:
@@ -484,7 +401,7 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 				//Go to associated P_BIT(n+1) state to send the next bit.
 				//If this was the final bit, then the next state is P_DONE0
 				device.SetTimeout(clkValue + US2CYCLES(60))
-				device.SetStateNext()
+				device.SetStateMachineNext()
 			}
 		case P_DONE0:
 			if clkValue >= device.GetTimeout() {
@@ -492,42 +409,42 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 				//Pull CLK=0 and set DATA=1.This prepares for the receiver acknowledgement.
 				v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_DATA)
 				device.SetTimeout(clkValue + US2CYCLES(1000))
-				device.SetState(P_DONE1)
+				device.SetStateMachine(P_DONE1)
 			}
 		case P_DONE1:
 			if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
 				//Receiver set DATA=0, acknowledging the frame
 				//log.Printf("device %i sent 0x%02x (%c) on channel %i", deviceNumber, device.byte, device.byte, device.secondary & 0x0f)
-				if device.GetSt(device.GetSecondary()) == 0x40 {
+				if device.GetState(device.GetSecondary()) == 0x40 {
 					//This was the last byte => stop talking.This leaves us waiting for ATN.
 					device.flags &= ^P_TALKING
-					device.SetSt(device.GetSecondary(), 0)
+					device.SetState(device.GetSecondary(), 0)
 					//Release the CLOCK line to 1
 					v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
 				} else {
 					//There is at least one more byte to send Start over from P_PRE1
 					device.SetTimeout(clkValue)
-					device.SetState(P_PRE1)
+					device.SetStateMachine(P_PRE1)
 				}
 			} else if clkValue >= device.GetTimeout() {
 				//We didn't receive an acknowledgement within 1 ms.Set CLOCK=0 and after 100 us back to CLOCK=1
 				//log.Printf("device %i got NACK on channel %i", deviceNumber, device.secondary & 0x0f)
 				v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_CLK|IECBUS_DEVICE_WRITE_DATA)
 				device.SetTimeout(clkValue + US2CYCLES(100))
-				device.SetState(P_FRAMEERR0)
+				device.SetStateMachine(P_FRAMEERR0)
 			}
 		case P_FRAMEERR0:
 			if clkValue >= device.GetTimeout() {
 				//Finished 1-0-1 sequence of CLOCK signal
 				//to acknowledge the frame-error.Now wait for sender to set DATA=0 so we can continue.
 				v.iec.PeripheralWrite(deviceNumber, IECBUS_DEVICE_WRITE_DATA)
-				device.SetState(P_FRAMEERR1)
+				device.SetStateMachine(P_FRAMEERR1)
 			}
 		case P_FRAMEERR1:
 			if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
 				// sender set DATA=0, we can retry to send the byte
 				device.SetTimeout(clkValue)
-				device.SetState(P_PRE1)
+				device.SetStateMachine(P_PRE1)
 			}
 		default:
 			panic("unhandled default case")
@@ -538,12 +455,3 @@ func (v *Virtual) Emulate(device *Device, clkValue uint64) {
 func US2CYCLES(v uint64) uint64 {
 	return v
 }
-
-/*
-func (v *Virtual) set_st1(b uint8) {
-	v.serial_iec_device_st = b
-}
-
-func (v *Virtual) get_st1() uint8 {
-	return v.serial_iec_device_st
-}*/

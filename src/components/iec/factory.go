@@ -4,7 +4,7 @@ import (
 	c1541board "github.com/markel1974/c64emu/src/c1541/board"
 	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/iec/fsdrive"
-	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/components/iec/iecdevice"
 	"github.com/markel1974/c64emu/src/config"
 	"strconv"
 )
@@ -18,7 +18,7 @@ type DriveFactory struct {
 // NewDriveFactory creates and initializes a new DriveFactory instance, registers it with the provided parent component.
 func NewDriveFactory(parent board.IComponent, suffix string) *DriveFactory {
 	df := &DriveFactory{
-		BaseComponent: board.NewBaseComponent("drive_factory", suffix),
+		BaseComponent: board.NewBaseComponent("iec_drive_factory", suffix),
 		cfg:           nil,
 	}
 	board.Register(parent, df)
@@ -41,10 +41,10 @@ func (c *DriveFactory) configChanged() {
 }
 
 // Create instantiating and returns a new virtual drive instance based on the specified type, options, and device ID.
-func (c *DriveFactory) Create(kind string, opts string, deviceId uint8) virtualdrive.IVirtualDrive {
+func (c *DriveFactory) Create(kind string, opts string, deviceId uint8) iecdevice.IIecDevice {
 	deviceNumber := deviceId + 8
 	suffix := strconv.Itoa(int(deviceNumber))
-	var vd virtualdrive.IVirtualDrive
+	var vd iecdevice.IIecDevice
 	switch kind {
 	case "C1541":
 		vd = c1541board.New(c, suffix, deviceId, deviceNumber, opts)

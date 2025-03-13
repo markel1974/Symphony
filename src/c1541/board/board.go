@@ -13,7 +13,7 @@ import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/components/6510"
 	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/components/iec/iecdevice"
 	"github.com/markel1974/c64emu/src/components/quartz"
 	"github.com/markel1974/c64emu/src/components/via"
 	"github.com/markel1974/c64emu/src/config"
@@ -33,7 +33,7 @@ const baseId = "c1541"
 type Board struct {
 	*board.BaseComponent
 	pic          *mos6510.Pic
-	iec          virtualdrive.IIec
+	iec          iecdevice.IIec
 	quartz       *quartz.Quartz
 	cpuSocket    *CPUSocket
 	via1Socket   *Via1Socket
@@ -68,7 +68,7 @@ func New(parent board.IComponent, suffix string, deviceId uint8, deviceNumber ui
 }
 
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
-func (m *Board) Setup(iec virtualdrive.IIec, cfg *config.Config) {
+func (m *Board) Setup(iec iecdevice.IIec, cfg *config.Config) {
 	m.iec = iec
 	m.cfg = cfg
 	m.cfg.Bind(m.configChanged)

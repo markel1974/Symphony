@@ -1,7 +1,7 @@
 package iec
 
 import (
-	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/components/iec/virtualdevice"
 )
 
 const (
@@ -63,9 +63,9 @@ func (vb *VirtualBus) Out(data uint8, eoi bool) uint8 {
 		if vb.receivedCmd == CmdData {
 			return vb.dataOut(data, eoi)
 		}
-		return virtualdrive.StTimeout
+		return virtualdevice.StTimeout
 	} else {
-		return virtualdrive.StTimeout
+		return virtualdevice.StTimeout
 	}
 }
 
@@ -87,7 +87,7 @@ func (vb *VirtualBus) OutATN(data uint8) uint8 {
 		vb.listening = false
 		return vb.unTalk()
 	}
-	return virtualdrive.StTimeout
+	return virtualdevice.StTimeout
 }
 
 func (vb *VirtualBus) OutSec(data uint8) uint8 {
@@ -104,14 +104,14 @@ func (vb *VirtualBus) OutSec(data uint8) uint8 {
 			return vb.secTalk()
 		}
 	}
-	return virtualdrive.StTimeout
+	return virtualdevice.StTimeout
 }
 
 func (vb *VirtualBus) In() (uint8, uint8) {
 	if vb.talkerActive && (vb.receivedCmd == CmdData) {
 		return vb.dataIn()
 	}
-	return virtualdrive.StTimeout, 0
+	return virtualdevice.StTimeout, 0
 }
 
 func (vb *VirtualBus) SetATN() {
@@ -133,41 +133,41 @@ func (vb *VirtualBus) Release() {
 func (vb *VirtualBus) listen(device uint8) uint8 {
 	vb.listenerActive = false
 	if device < 8 || device > 11 {
-		return virtualdrive.StNotPresent
+		return virtualdevice.StNotPresent
 	}
 	if vb.listener = vb.virtualDrives[device-8]; vb.listener == nil {
-		return virtualdrive.StNotPresent
+		return virtualdevice.StNotPresent
 	}
 	if !vb.listener.Ready() {
-		return virtualdrive.StNotPresent
+		return virtualdevice.StNotPresent
 	}
 	vb.listenerActive = true
-	return virtualdrive.StOk
+	return virtualdevice.StOk
 }
 
 func (vb *VirtualBus) talk(device uint8) uint8 {
 	vb.talkerActive = false
 	if device < 8 || device > 11 {
-		return virtualdrive.StNotPresent
+		return virtualdevice.StNotPresent
 	}
 	if vb.talker = vb.virtualDrives[device-8]; vb.talker == nil {
-		return virtualdrive.StNotPresent
+		return virtualdevice.StNotPresent
 	}
 	if !vb.talker.Ready() {
-		return virtualdrive.StNotPresent
+		return virtualdevice.StNotPresent
 	}
 	vb.talkerActive = true
-	return virtualdrive.StOk
+	return virtualdevice.StOk
 }
 
 func (vb *VirtualBus) unListen() uint8 {
 	vb.listenerActive = false
-	return virtualdrive.StOk
+	return virtualdevice.StOk
 }
 
 func (vb *VirtualBus) unTalk() uint8 {
 	vb.talkerActive = false
-	return virtualdrive.StOk
+	return virtualdevice.StOk
 }
 
 func (vb *VirtualBus) secListen() uint8 {
@@ -179,11 +179,11 @@ func (vb *VirtualBus) secListen() uint8 {
 			return vb.listener.Close(vb.secAddr)
 		}
 	}
-	return virtualdrive.StOk
+	return virtualdevice.StOk
 }
 
 func (vb *VirtualBus) secTalk() uint8 {
-	return virtualdrive.StOk
+	return virtualdevice.StOk
 }
 
 func (vb *VirtualBus) openOut(data uint8, eoi bool) uint8 {
@@ -193,14 +193,14 @@ func (vb *VirtualBus) openOut(data uint8, eoi bool) uint8 {
 			return vb.listener.Open(vb.secAddr, vb.openData)
 		}
 	}
-	return virtualdrive.StOk
+	return virtualdevice.StOk
 }
 
 func (vb *VirtualBus) dataOut(data uint8, eoi bool) uint8 {
 	if vb.listener != nil {
 		return vb.listener.Write(vb.secAddr, data, eoi)
 	}
-	return virtualdrive.StOk
+	return virtualdevice.StOk
 }
 
 func (vb *VirtualBus) dataIn() (uint8, uint8) {

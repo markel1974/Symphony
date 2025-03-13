@@ -3,7 +3,7 @@ package iec
 import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/components/iec/iecdevice"
 	"github.com/markel1974/c64emu/src/config"
 )
 
@@ -23,7 +23,7 @@ type Dispatcher struct {
 	cpuBus          uint8
 	peripheralsPort uint8
 	peripheralsData []uint8
-	virtualDrives   []virtualdrive.IVirtualDrive
+	virtualDrives   []iecdevice.IIecDevice
 	ledSignal       *signals.Signal2[int, uint8]
 	factory         *DriveFactory
 }

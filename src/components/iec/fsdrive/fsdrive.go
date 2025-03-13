@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/fifo"
 	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/iec/virtualdrive"
+	"github.com/markel1974/c64emu/src/components/iec/iecdevice"
 	"github.com/markel1974/c64emu/src/config"
 	"io"
 	"os"
@@ -27,7 +27,7 @@ const (
 
 type FSDrive struct {
 	*board.BaseComponent
-	iec          virtualdrive.IIec
+	iec          iecdevice.IIec
 	commands     *Commands
 	deviceId     uint8
 	deviceNumber uint8
@@ -63,7 +63,7 @@ func New(parent board.IComponent, suffix string, deviceId uint8, deviceNumber ui
 	return v
 }
 
-func (v *FSDrive) Setup(iec virtualdrive.IIec, cfg *config.Config) {
+func (v *FSDrive) Setup(iec iecdevice.IIec, cfg *config.Config) {
 	v.iec = iec
 	v.cfg = cfg
 	v.cfg.Bind(v.configChanged)
@@ -84,7 +84,7 @@ func (v *FSDrive) GetDeviceNumber() uint8 {
 func (v *FSDrive) Reset() {
 	v.closeAllChannels()
 	v.commands.CommandClear()
-	v.commands.SetError(virtualdrive.ERR_STARTUP)
+	v.commands.SetError(ERR_STARTUP)
 
 	//TODO IN FASE DI RESET CAMBIARE LO STATO DEL BUS
 }
@@ -197,7 +197,7 @@ func (v *FSDrive) Open(channel uint8, data []uint8) uint8 {
 				v.Reset()
 			}
 		}
-		return virtualdrive.StOk
+		return StOk
 	}
 	// Close previous file if still open
 	if v.file[channel] != nil {
@@ -205,8 +205,8 @@ func (v *FSDrive) Open(channel uint8, data []uint8) uint8 {
 		v.file[channel] = nil
 	}
 	if data[0] == '#' {
-		v.commands.SetError(virtualdrive.ERR_NOCHANNEL)
-		return virtualdrive.StOk
+		v.commands.SetError(ERR_NOCHANNEL)
+		return StOk
 	}
 	if data[0] == '$' {
 		return v.openDirectory(channel, string(data))
@@ -215,64 +215,64 @@ func (v *FSDrive) Open(channel uint8, data []uint8) uint8 {
 }
 
 func (v *FSDrive) openFile(channel uint8, name string) uint8 {
-	plainName, mode, kind, _ := virtualdrive.ParseFileName(name, true)
+	plainName, mode, kind, _ := ParseFileName(name, true)
 	// Channel 0 is READ, channel 1 is WRITE
 	if channel == 0 || channel == 1 {
-		mode = virtualdrive.FMODE_READ
+		mode = FMODE_READ
 		if channel != 0 {
-			mode = virtualdrive.FMODE_WRITE
+			mode = FMODE_WRITE
 		}
-		if kind == virtualdrive.FTYPE_DEL {
-			kind = virtualdrive.FTYPE_PRG
+		if kind == FTYPE_DEL {
+			kind = FTYPE_PRG
 		}
 	}
-	writing := mode == virtualdrive.FMODE_WRITE || mode == virtualdrive.FMODE_APPEND
+	writing := mode == FMODE_WRITE || mode == FMODE_APPEND
 	if strings.Contains(plainName, "*") || strings.Contains(plainName, "?") {
 		if writing {
-			v.commands.SetError(virtualdrive.ERR_SYNTAX33)
-			return virtualdrive.StOk
+			v.commands.SetError(ERR_SYNTAX33)
+			return StOk
 		} else {
 			v.findFirstFile(plainName)
 		}
 	}
-	if kind == virtualdrive.FTYPE_REL {
-		v.commands.SetError(virtualdrive.ERR_UNIMPLEMENTED)
-		return virtualdrive.StOk
+	if kind == FTYPE_REL {
+		v.commands.SetError(ERR_UNIMPLEMENTED)
+		return StOk
 	}
 	flags := os.O_RDONLY
 	perm := os.FileMode(0)
 	switch mode {
-	case virtualdrive.FMODE_WRITE:
+	case FMODE_WRITE:
 		perm = os.FileMode(0666)
 		flags = os.O_RDWR
-	case virtualdrive.FMODE_APPEND:
+	case FMODE_APPEND:
 		perm = os.FileMode(0666)
 		flags = os.O_RDWR | os.O_APPEND
 	}
 	completeFileName := v.dirPath + string(os.PathSeparator) + plainName
 	f, err := os.OpenFile(completeFileName, flags, perm)
 	if err != nil {
-		v.commands.SetError(virtualdrive.ERR_FILENOTFOUND)
+		v.commands.SetError(ERR_FILENOTFOUND)
 	} else {
 		v.file[channel] = f
 		data := make([]byte, 1)
 		_, _ = f.Read(data)
 		v.readChar[channel] = data[0]
 	}
-	return virtualdrive.StOk
+	return StOk
 }
 
 func (v *FSDrive) Close(channel uint8) uint8 {
 	v.LedTurnOff()
 	if channel == 15 {
 		v.closeAllChannels()
-		return virtualdrive.StOk
+		return StOk
 	}
 	if v.file[channel] != nil {
 		v.file[channel].Close()
 		v.file[channel] = nil
 	}
-	return virtualdrive.StOk
+	return StOk
 }
 
 func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
@@ -280,15 +280,15 @@ func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
 	if channel == 15 {
 		data := v.commands.RetrieveError()
 		if data != '\r' {
-			return virtualdrive.StOk, data
+			return StOk, data
 		}
 		// End of message
-		v.commands.SetError(virtualdrive.ERR_OK)
-		return virtualdrive.StEof, data
+		v.commands.SetError(ERR_OK)
+		return StEof, data
 	}
 
 	if v.file[channel] == nil {
-		return virtualdrive.StReadTimeout, 0
+		return StReadTimeout, 0
 	}
 
 	// Read one byte
@@ -296,32 +296,32 @@ func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
 	buffer := make([]uint8, 1)
 	c, err := v.file[channel].Read(buffer)
 	if err == io.EOF {
-		return virtualdrive.StEof, data
+		return StEof, data
 	}
 	v.readChar[channel] = (uint8)(c)
-	return virtualdrive.StOk, data
+	return StOk, data
 }
 
 func (v *FSDrive) Write(channel uint8, data uint8, eoi bool) uint8 {
 	// Channel 15: Collect chars and execute command on EOI
 	if channel == 15 {
 		if !v.commands.CommandSet(data) {
-			return virtualdrive.StTimeout
+			return StTimeout
 		}
 		if eoi {
 			v.commands.CommandExecBuf()
 		}
-		return virtualdrive.StOk
+		return StOk
 	}
 	if v.file[channel] == nil {
-		v.commands.SetError(virtualdrive.ERR_FILENOTOPEN)
-		return virtualdrive.StTimeout
+		v.commands.SetError(ERR_FILENOTOPEN)
+		return StTimeout
 	}
 	if _, err := v.file[channel].Write([]byte{data}); err == io.EOF {
-		v.commands.SetError(virtualdrive.ERR_WRITE25)
-		return virtualdrive.StTimeout
+		v.commands.SetError(ERR_WRITE25)
+		return StTimeout
 	}
-	return virtualdrive.StOk
+	return StOk
 }
 
 func (v *FSDrive) initializeCmd() {
@@ -369,7 +369,7 @@ func (v *FSDrive) closeAllChannels() {
 }
 
 func (v *FSDrive) openDirectory(channel uint8, name string) uint8 {
-	return virtualdrive.StOk
+	return StOk
 }
 
 func (v *FSDrive) configChanged() {

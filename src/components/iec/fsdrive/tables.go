@@ -1,4 +1,4 @@
-package virtualdrive
+package fsdrive
 
 const (
 	StOk          = 0    // No error

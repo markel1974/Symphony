@@ -59,9 +59,9 @@ func (s *SAM) Exec() {
 	var c rune
 
 	// Get CPU registers and current memory configuration
-	//TheCPU->GetState(&R64);
+	//TheCPU->GetStateMachine(&R64);
 	//TheCPU->_ExtConfig = (~R64.ddr | R64.pr) & 7;
-	//TheCPU1541->GetState(&R1541);
+	//TheCPU1541->GetStateMachine(&R1541);
 
 	//_fin = stdin;
 	//_fout = stdout;
@@ -215,8 +215,8 @@ func (s *SAM) Exec() {
 	//fclose(_fout);
 
 	// Set CPU registers
-	//TheCPU->SetState(&R64);
-	//TheCPU1541->SetState(&R1541);
+	//TheCPU->SetStateMachine(&R64);
+	//TheCPU1541->SetStateMachine(&R1541);
 }
 
 func (s *SAM) getToken() (Token, error) {
@@ -1435,10 +1435,10 @@ MOS6526Registers cs;
 
 switch (get_char()) {
 case '1':
-TheCIA1->GetState(&cs);
+TheCIA1->GetStateMachine(&cs);
 break;
 case '2':
-TheCIA2->GetState(&cs);
+TheCIA2->GetStateMachine(&cs);
 break;
 default:
 error("Unknown command");
@@ -1518,7 +1518,7 @@ fputc('\n', _fout);
 void C64SAM::view_sid_state(void) {
 MOS6581Register ss;
 
-TheSID->GetState(&ss);
+TheSID->GetStateMachine(&ss);
 
 fprintf(_fout, "Voice 1\n");
 fprintf(_fout, " Frequency  : %04lx\n", (ss._freq_hi_1 << 8) | ss._freq_lo_1);
@@ -1578,7 +1578,7 @@ void C64SAM::view_vic_state(void) {
 MOS6569State vs;
 short i;
 
-TheVIC->GetState(&vs);
+TheVIC->GetStateMachine(&vs);
 
 fprintf(_fout, "Raster line       : %04lx\n", vs.raster | ((vs.ctrl1 & 0x80) << 1));
 fprintf(_fout, "IRQ raster line   : %04lx\n\n", vs.irq_raster);
