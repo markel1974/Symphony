@@ -113,6 +113,7 @@ func (c *Dispatcher) updatePorts() {
 
 // CpuWrite updates the CPU bus with the inverted data, adjusts port states, and triggers CPU write notifications.
 func (c *Dispatcher) CpuWrite(data uint8) {
+	//fmt.Printf("CpuWrite 0x%.2x\n", data)
 	c.cpuBus = c.buildCpuBus(^data)
 	//c.debugCpuWrite(^c.cpuBus)
 	c.updatePorts()
@@ -131,7 +132,7 @@ func (c *Dispatcher) PeripheralRead() uint8 {
 
 func (c *Dispatcher) PeripheralWrite(deviceNumber uint8, data uint8) {
 	c.peripheralsData[deviceNumber] = data
-	//fmt.Println("CURRENT VALUE", data)
+	//fmt.Printf("PeripheralWrite 0x%.2x\n", data)
 	//c.debugPeripheralWrite(c.peripheralBus[deviceNumber])
 	c.updatePorts()
 }

@@ -1,23 +1,14 @@
 package fsdrive
 
 import (
+	"io"
+	"os"
+	"strings"
+
 	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/components/iec/iecdevice"
 	"github.com/markel1974/c64emu/src/components/iec/iecprotocol"
 	"github.com/markel1974/c64emu/src/config"
-	"io"
-	"os"
-	"strings"
-)
-
-const (
-	ATN_IN  = 0x80
-	CLK_IN  = 0x04
-	DATA_IN = 0x01
-
-	DATA_OUT = 0x02
-	CLK_OUT  = 0x08
-	ATN_A    = 0x10
 )
 
 type FSDrive struct {
@@ -301,6 +292,18 @@ func (v *FSDrive) openDirectory(channel uint8, name string) uint8 {
 func (v *FSDrive) configChanged() {
 }
 
+/*
+
+const (
+	ATN_IN  = 0x80
+	CLK_IN  = 0x04
+	DATA_IN = 0x01
+
+	DATA_OUT = 0x02
+	CLK_OUT  = 0x08
+	ATN_A    = 0x10
+)
+
 func data2string(data uint8) string {
 	var message []string
 	if data&ATN_IN != 0 {
@@ -329,3 +332,4 @@ func data2string(data uint8) string {
 	}
 	return strings.Join(message, " ")
 }
+*/
