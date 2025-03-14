@@ -1,4 +1,4 @@
-package iecprotocol
+package iec
 
 import (
 	"fmt"

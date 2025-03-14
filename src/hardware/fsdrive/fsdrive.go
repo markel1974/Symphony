@@ -2,18 +2,18 @@ package fsdrive
 
 import (
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/references"
 	"io"
 	"os"
 	"strings"
 
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/iec/iecprotocol"
 )
 
 type FSDrive struct {
 	*component.BaseComponent
-	*iecprotocol.Protocol
+	*iec.Protocol
 	factory      references.IComponentFactory
 	parent       component.IComponent
 	suffix       string
@@ -50,10 +50,10 @@ func NewBoard(parent component.IComponent, factory references.IComponentFactory,
 	return fs
 }
 
-func (v *FSDrive) Setup(iec references.IIec, q references.IQuartzSocket, deviceId uint8, deviceNumber uint8, path string, cfg *config.Config) error {
-	v.Protocol = iecprotocol.NewProtocol(v.parent, v.suffix, q, v.deviceNumber, v)
+func (v *FSDrive) Setup(bus references.IIec, q references.IQuartzSocket, deviceId uint8, deviceNumber uint8, path string, cfg *config.Config) error {
+	v.Protocol = iec.NewProtocol(v.parent, v.suffix, q, v.deviceNumber, v)
 	component.Register(v.Protocol, v)
-	v.Protocol.Setup(iec, cfg)
+	v.Protocol.Setup(bus, cfg)
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
 	v.path = path

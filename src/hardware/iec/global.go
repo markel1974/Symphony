@@ -1,4 +1,4 @@
-package iecprotocol
+package iec
 
 type IGlobal interface {
 	GetState() uint8
