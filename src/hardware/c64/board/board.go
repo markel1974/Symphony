@@ -92,6 +92,10 @@ func NewBoard(parent component.IComponent, factory references.IComponentFactory,
 	return b
 }
 
+func NewBoardComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+	return NewBoard(parent, factory, suffix)
+}
+
 // Setup initializes the Board with provided display buffer, player, and configuration settings.
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, cfg *config.Config) error {
 	s.db = db

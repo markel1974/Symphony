@@ -44,6 +44,10 @@ type CPU struct {
 	irqBreaker     bool                  // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
 }
 
+func NewCPUComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+	return NewCPU(parent, factory, suffix)
+}
+
 // NewCPU initializes and returns a new CPU instance with the provided id.
 func NewCPU(parent component.IComponent, factory references.IComponentFactory, suffix string) *CPU {
 	cpu := &CPU{

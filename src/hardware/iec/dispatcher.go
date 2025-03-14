@@ -30,6 +30,10 @@ type Dispatcher struct {
 	driveFactory    *DriveFactory
 }
 
+func NewDispatcherComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+	return NewDispatcher(parent, factory, suffix)
+}
+
 // NewDispatcher creates and initializes a new Dispatcher instance with the given parent component and suffix.
 func NewDispatcher(parent component.IComponent, factory references.IComponentFactory, suffix string) *Dispatcher {
 	c := &Dispatcher{

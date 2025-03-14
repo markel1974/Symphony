@@ -31,8 +31,20 @@ type Factory struct {
 func NewFactory(cfg *config.Config) *Factory {
 	f := &Factory{cfg: cfg}
 	f.container = make(map[string]constructorFn)
+	f.container["c64"] = c64board.NewBoardComponent
+	f.container["vic20"] = vic20board.NewBoardComponent
+	f.container["c1541"] = c1541board.NewComponent
+	f.container["iec"] = iec.NewDispatcherComponent
+	f.container["mos6510"] = mos6510.NewCPUComponent
+	f.container["mos6502"] = mos6510.NewCPUComponent
 	f.container["mos6526"] = mos6526.NewCIAComponent
+	f.container["mos6581"] = mos6581.NewSIDComponent
+	f.container["mos6569"] = mos6569.NewVICComponent
 	f.container["mos6522"] = mos6522.NewViaComponent
+	f.container["quartz"] = quartz.NewQuartzComponent
+	f.container["joystick"] = joystick.NewJoystickComponent
+	f.container["keyboard"] = keyboard.NewKeyboardComponent
+	f.container["throttle"] = throttle.NewDynamicThrottleComponent
 	return f
 }
 
@@ -54,10 +66,10 @@ func (f *Factory) CreateComponent(parent component.IComponent, id string, suffix
 	case "vic20":
 		return vic20board.NewBoard(parent, f, suffix), nil
 	case "c1541":
-		return c1541board.New(parent, f, suffix), nil
+		return c1541board.NewBoard(parent, f, suffix), nil
 	case "iec":
 		return iec.NewDispatcher(parent, f, suffix), nil
-	case "mos65102":
+	case "mos6502":
 		return mos6510.NewCPU(parent, f, suffix), nil
 	case "mos6510":
 		return mos6510.NewCPU(parent, f, suffix), nil

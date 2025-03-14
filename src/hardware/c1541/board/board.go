@@ -46,8 +46,12 @@ type Board struct {
 	ledChanged     *signals.SignalUint32
 }
 
-// New creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) *Board {
+func NewComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+	return NewBoard(parent, factory, suffix)
+}
+
+// NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
+func NewBoard(parent component.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
 		BaseComponent:  component.NewBaseComponent("c1541", suffix),
 		factory:        factory,

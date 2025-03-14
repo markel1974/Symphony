@@ -111,6 +111,10 @@ type VIC struct {
 	columnSel        bool     //
 }
 
+func NewVICComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+	return NewVIC(parent, factory, suffix)
+}
+
 // NewVIC creates and returns a pointer to a newly initialized VIC instance with default values and given id.
 func NewVIC(parent component.IComponent, factory references.IComponentFactory, suffix string) *VIC {
 	vic := &VIC{

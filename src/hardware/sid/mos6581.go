@@ -24,6 +24,10 @@ type SID struct {
 	reflect      *SidReflect
 }
 
+func NewSIDComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+	return NewSID(parent, factory, suffix)
+}
+
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
 func NewSID(parent component.IComponent, factory references.IComponentFactory, suffix string) *SID {
 	s := &SID{
