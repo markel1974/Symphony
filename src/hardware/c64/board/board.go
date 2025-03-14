@@ -140,7 +140,9 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 
 	s.expansion.Setup(s)
 	s.pic.Setup(s.quartz)
-	s.iec.Setup(s.quartz, cfg)
+	if err = s.iec.Setup(s.quartz, cfg); err != nil {
+		return err
+	}
 	s.cpuSocket.Setup(s, cpu)
 	s.vicSocket.Setup(s, vic)
 	s.sidSocket.Setup(s, sid)

@@ -1,6 +1,7 @@
 package iec
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
@@ -27,7 +28,6 @@ type Dispatcher struct {
 	peripheralsData []uint8
 	virtualDrives   []references.IIecDevice
 	ledSignal       *signals.Signal2[int, uint8]
-	driveFactory    *DriveFactory
 }
 
 func NewDispatcherComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
@@ -42,23 +42,34 @@ func NewDispatcher(parent component.IComponent, factory references.IComponentFac
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),
-		driveFactory:    nil,
 	}
 	component.Register(parent, c)
 	return c
 }
 
 // Setup initializes the Dispatcher by configuring the DriveFactory and setting up virtual drives based on the provided config.
-func (c *Dispatcher) Setup(q references.IQuartzSocket, cfg *config.Config) {
-	c.driveFactory = NewDriveFactory(c, c.factory, "")
-	c.driveFactory.Setup(cfg)
+func (c *Dispatcher) Setup(q references.IQuartzSocket, cfg *config.Config) error {
 	for deviceId, d := range cfg.GetDrives() {
 		deviceNumber := deviceId + 8
 		suffix := strconv.Itoa(deviceNumber)
-		vd := c.driveFactory.Create(d.Kind, suffix)
-		vd.Setup(c, q, uint8(deviceId), uint8(deviceNumber), d.Opts, cfg)
+		kind := "c1541"
+		if len(d.Kind) > 0 {
+			kind = d.Kind
+		}
+		device, err := c.factory.Create(c, kind, suffix)
+		if err != nil {
+			return err
+		}
+		vd, ok := device.(references.IIecDevice)
+		if !ok {
+			return fmt.Errorf("device %s is not an IEC device", kind)
+		}
+		if err = vd.Setup(c, q, uint8(deviceId), uint8(deviceNumber), d.Opts, cfg); err != nil {
+			return err
+		}
 		c.virtualDrives = append(c.virtualDrives, vd)
 	}
+	return nil
 }
 
 // Emulate manages the emulation logic for all virtual drives linked to the Dispatcher, invoking their Emulate method sequentially.
