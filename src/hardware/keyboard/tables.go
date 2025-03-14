@@ -1,4 +1,4 @@
-package inputs
+package keyboard
 
 /*
 C64 keyboard matrix:

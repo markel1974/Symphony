@@ -3,6 +3,7 @@ package mos6526
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
 	"log"
 )
 
@@ -85,6 +86,7 @@ const defaultTimerInit = 0xffff
 // It supports various operational states applicable for different use cases.
 type Timer struct {
 	*component.BaseComponent
+	factory      references.IComponentFactory
 	cr           uint8
 	crNew        uint8      // New values for cr
 	crNewPending bool       // New value for crNew pending
@@ -102,9 +104,10 @@ type Timer struct {
 
 // NewTimer initializes and returns a new Timer instance with the given parentId and suffix.
 // The Timer is set to its default state and its Reset method is called to ensure initialization.
-func NewTimer(parent component.IComponent, suffix string) *Timer {
+func NewTimer(parent component.IComponent, factory references.IComponentFactory, suffix string) *Timer {
 	m := &Timer{
 		BaseComponent: component.NewBaseComponent("timer", suffix),
+		factory:       factory,
 		cr:            0,
 		crNew:         0,
 		crNewPending:  false,

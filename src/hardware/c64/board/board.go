@@ -6,10 +6,11 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/6510"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges"
-	"github.com/markel1974/c64emu/src/hardware/c64/inputs"
 	"github.com/markel1974/c64emu/src/hardware/c64/pla"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
 	"github.com/markel1974/c64emu/src/hardware/iec"
+	"github.com/markel1974/c64emu/src/hardware/joystick"
+	"github.com/markel1974/c64emu/src/hardware/keyboard"
 	"github.com/markel1974/c64emu/src/hardware/quartz"
 	"github.com/markel1974/c64emu/src/hardware/sid"
 	"github.com/markel1974/c64emu/src/hardware/throttle"
@@ -43,9 +44,9 @@ type Board struct {
 	plaSocket           *PLASocket
 	pic                 *mos6510.Pic
 	iec                 *iec.Dispatcher
-	keys                *inputs.Keyboard
-	joy1                *inputs.Joystick
-	joy2                *inputs.Joystick
+	keys                *keyboard.Keyboard
+	joy1                *joystick.Joystick
+	joy2                *joystick.Joystick
 	joySwap             bool
 	cfg                 *config.Config
 	hasClipboard        bool
@@ -56,7 +57,7 @@ type Board struct {
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
-	dt                  references.IThrottling
+	dt                  references.IThrottle
 	factory             references.IComponentFactory
 }
 
@@ -102,7 +103,8 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	}
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
-	s.dt = throttle.NewDynamicThrottling(mos6569.FrameInterval)
+	s.dt = throttle.NewDynamicThrottle(s, s.factory, "")
+	s.dt.SetInterval(mos6569.FrameInterval)
 
 	s.cpuSocket = NewCPUSocket()
 	s.vicSocket = NewVicSocket()
@@ -117,18 +119,19 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	vic := mos6569.NewVIC(s, s.factory, "")
 	sid := mos6581.NewSID(s, s.factory, "")
 
-	cia1, err := s.factory.Create(s, "mos6526", "1")
-	if err != nil {
+	var err error
+	var cia1 component.IComponent
+	var cia2 component.IComponent
+	if cia1, err = s.factory.Create(s, "mos6526", "1"); err != nil {
 		return err
 	}
-	cia2, err := s.factory.Create(s, "mos6526", "2")
-	if err != nil {
+	if cia2, err = s.factory.Create(s, "mos6526", "2"); err != nil {
 		return err
 	}
 	plaC := pla.NewPLA(s, "")
-	s.keys = inputs.NewKeyboard(s, "")
-	s.joy1 = inputs.NewJoystick(s, "1")
-	s.joy2 = inputs.NewJoystick(s, "2")
+	s.keys = keyboard.NewKeyboard(s, s.factory, "")
+	s.joy1 = joystick.NewJoystick(s, s.factory, "1")
+	s.joy2 = joystick.NewJoystick(s, s.factory, "2")
 	s.expansion = NewExpansion(s, "")
 
 	s.expansion.Setup(s)
@@ -151,7 +154,6 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	for _, cartName := range s.cfg.GetCartridges() {
 		var data []uint8
 		if len(cartName.Path) > 0 {
-			var err error
 			if data, err = os.ReadFile(cartName.Path); err != nil {
 				log.Printf("can't add cartridge: %s", err.Error())
 				continue
@@ -242,7 +244,7 @@ func (s *Board) Emulate() bool {
 }
 
 // Throttle returns the throttling service used by the board.
-func (s *Board) Throttle() references.IThrottling {
+func (s *Board) Throttle() references.IThrottle {
 	return s.dt
 }
 

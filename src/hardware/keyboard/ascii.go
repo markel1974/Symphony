@@ -1,4 +1,4 @@
-package inputs
+package keyboard
 
 // KeyData is a struct that holds encoded information with an integer value `r1` and a shift indicator `shifted`.
 type KeyData struct {

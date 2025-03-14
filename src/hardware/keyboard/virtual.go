@@ -1,4 +1,4 @@
-package inputs
+package keyboard
 
 import (
 	"github.com/markel1974/c64emu/src/component"

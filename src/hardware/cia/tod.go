@@ -2,11 +2,13 @@ package mos6526
 
 import (
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // TOD represents a Time of Day (TOD) and Alarm functionality with tracking for hours, minutes, seconds, and tenths.
 type TOD struct {
 	*component.BaseComponent
+	factory        references.IComponentFactory
 	tod10ths       uint8 // TOD 10ths
 	todSec         uint8 // TOD sec
 	todMin         uint8 // TOD min
@@ -23,8 +25,9 @@ type TOD struct {
 }
 
 // NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
-func NewTOD(parent component.IComponent, suffix string) *TOD {
+func NewTOD(parent component.IComponent, factory references.IComponentFactory, suffix string) *TOD {
 	t := &TOD{
+		factory:       factory,
 		BaseComponent: component.NewBaseComponent("tod", suffix),
 	}
 	component.Register(parent, t)

@@ -6,10 +6,11 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 	mos6510 "github.com/markel1974/c64emu/src/hardware/6510"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges"
-	inputs2 "github.com/markel1974/c64emu/src/hardware/c64/inputs"
 	"github.com/markel1974/c64emu/src/hardware/c64/pla"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
 	"github.com/markel1974/c64emu/src/hardware/iec"
+	"github.com/markel1974/c64emu/src/hardware/joystick"
+	inputs2 "github.com/markel1974/c64emu/src/hardware/keyboard"
 	"github.com/markel1974/c64emu/src/hardware/throttle"
 	mos6569 "github.com/markel1974/c64emu/src/hardware/vic"
 	"github.com/markel1974/c64emu/src/references"
@@ -37,8 +38,8 @@ type Board struct {
 	pic                 *mos6510.Pic
 	iec                 *iec.Dispatcher
 	keys                *inputs2.Keyboard
-	joy1                *inputs2.Joystick
-	joy2                *inputs2.Joystick
+	joy1                *joystick.Joystick
+	joy2                *joystick.Joystick
 	joySwap             bool
 	cfg                 *config.Config
 	hasClipboard        bool
@@ -50,7 +51,7 @@ type Board struct {
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
-	dt                  references.IThrottling
+	dt                  references.IThrottle
 }
 
 func NewBoard(parent component.IComponent, factory references.IComponentFactory, suffix string) *Board {
@@ -89,7 +90,8 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 	}
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
-	s.dt = throttle.NewDynamicThrottling(mos6569.FrameInterval)
+	s.dt = throttle.NewDynamicThrottle(s, s.factory, "")
+	s.dt.SetInterval(mos6569.FrameInterval)
 
 	s.cpuSocket = NewCPUSocket()
 	s.vicSocket = NewVicSocket()
@@ -99,9 +101,9 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 
 	s.pic = mos6510.NewPic(s, "")
 	s.iec = iec.NewDispatcher(s, s.factory, "")
-	s.keys = inputs2.NewKeyboard(s, "")
-	s.joy1 = inputs2.NewJoystick(s, "1")
-	s.joy2 = inputs2.NewJoystick(s, "2")
+	s.keys = inputs2.NewKeyboard(s, s.factory, "")
+	s.joy1 = joystick.NewJoystick(s, s.factory, "1")
+	s.joy2 = joystick.NewJoystick(s, s.factory, "2")
 	s.pla = pla.NewPLA(s, "")
 	s.expansion = NewExpansion(s)
 
@@ -276,6 +278,6 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	return rb
 }
 
-func (s *Board) Throttle() references.IThrottling {
+func (s *Board) Throttle() references.IThrottle {
 	return s.dt
 }

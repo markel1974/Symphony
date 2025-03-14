@@ -2,6 +2,11 @@ package hardware
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/hardware/iec"
+	"github.com/markel1974/c64emu/src/hardware/joystick"
+	"github.com/markel1974/c64emu/src/hardware/keyboard"
+	"github.com/markel1974/c64emu/src/hardware/throttle"
+	"github.com/markel1974/c64emu/src/references"
 	"strings"
 
 	"github.com/markel1974/c64emu/src/component"
@@ -17,15 +22,31 @@ import (
 	vic20board "github.com/markel1974/c64emu/src/hardware/vic20/board"
 )
 
+type constructorFn func(component.IComponent, references.IComponentFactory, string) component.IComponent
 type Factory struct {
-	cfg *config.Config
+	cfg       *config.Config
+	container map[string]constructorFn
 }
 
 func NewFactory(cfg *config.Config) *Factory {
-	return &Factory{cfg: cfg}
+	f := &Factory{cfg: cfg}
+	f.container = make(map[string]constructorFn)
+	f.container["mos6526"] = mos6526.NewCIAComponent
+	f.container["mos6522"] = mos6522.NewViaComponent
+	return f
 }
 
 func (f *Factory) Create(parent component.IComponent, id string, suffix string) (component.IComponent, error) {
+	val, ok := f.container[id]
+	if !ok {
+		return nil, fmt.Errorf("unknown component %s", id)
+	}
+	ret := val(parent, f, suffix)
+	//component.Register(parent, ret)
+	return ret, nil
+}
+
+func (f *Factory) CreateComponent(parent component.IComponent, id string, suffix string) (component.IComponent, error) {
 	rid := strings.ToLower(strings.TrimSpace(id))
 	switch rid {
 	case "c64":
@@ -34,6 +55,8 @@ func (f *Factory) Create(parent component.IComponent, id string, suffix string) 
 		return vic20board.NewBoard(parent, f, suffix), nil
 	case "c1541":
 		return c1541board.New(parent, f, suffix), nil
+	case "iec":
+		return iec.NewDispatcher(parent, f, suffix), nil
 	case "mos65102":
 		return mos6510.NewCPU(parent, f, suffix), nil
 	case "mos6510":
@@ -48,6 +71,12 @@ func (f *Factory) Create(parent component.IComponent, id string, suffix string) 
 		return mos6522.NewVia(parent, f, suffix), nil
 	case "quartz":
 		return quartz.NewQuartz(parent, f, suffix), nil
+	case "joystick":
+		return joystick.NewJoystick(parent, f, suffix), nil
+	case "keyboard":
+		return keyboard.NewKeyboard(parent, f, suffix), nil
+	case "throttle":
+		return throttle.NewDynamicThrottle(parent, f, suffix), nil
 	default:
 		return nil, fmt.Errorf("unknown component %s", id)
 	}

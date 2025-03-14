@@ -1,8 +1,9 @@
-package inputs
+package keyboard
 
 import (
 	"github.com/markel1974/c64emu/src/common/fifo"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // matrix computes and returns a combined integer value by shifting `a` to the left by 3 bits and performing a bitwise OR with `b`.
@@ -13,15 +14,17 @@ func matrix(a int, b int) int {
 // Keyboard represents an abstraction for handling virtual and ASCII keyboard states and input storage.
 type Keyboard struct {
 	*component.BaseComponent
+	factory references.IComponentFactory
 	storage *fifo.StaticFifo
 	virtual *Virtual
 	ascii   *Ascii
 }
 
 // NewKeyboard initializes and returns a new Keyboard instance with default settings and a reset state.
-func NewKeyboard(parent component.IComponent, suffix string) *Keyboard {
+func NewKeyboard(parent component.IComponent, factory references.IComponentFactory, suffix string) *Keyboard {
 	k := &Keyboard{
 		BaseComponent: component.NewBaseComponent("keyboard", suffix),
+		factory:       factory,
 		storage:       nil,
 		virtual:       NewVirtual(),
 		ascii:         NewAscii(),

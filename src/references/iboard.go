@@ -28,7 +28,7 @@ type IBoard interface {
 
 	SetMouse(x uint8, y uint8)
 
-	Throttle() IThrottling
+	Throttle() IThrottle
 
 	DiskChange()
 }
