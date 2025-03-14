@@ -26,6 +26,7 @@ const (
 
 type Board struct {
 	*component.BaseComponent
+	factory             references.IComponentFactory
 	cia1Socket          *CIA1Socket
 	cia2Socket          *CIA2Socket
 	vicSocket           *VicSocket
@@ -52,9 +53,10 @@ type Board struct {
 	dt                  references.IThrottling
 }
 
-func NewBoard() *Board {
+func NewBoard(parent component.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
-		BaseComponent:       component.NewBaseComponent("board", ""),
+		BaseComponent:       component.NewBaseComponent("vic20", suffix),
+		factory:             factory,
 		iec:                 nil,
 		pic:                 nil,
 		keys:                nil,
@@ -72,8 +74,8 @@ func NewBoard() *Board {
 		joySwap:             true,
 		dt:                  nil,
 	}
-	component.Register(nil, b)
-	b.cartMan = cartridges.NewManager(b, "")
+	component.Register(parent, b)
+	b.cartMan = cartridges.NewManager(b, b.factory, "")
 	return b
 }
 
@@ -96,7 +98,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 	s.cia2Socket = NewCIA2Socket()
 
 	s.pic = mos6510.NewPic(s, "")
-	s.iec = iec.NewDispatcher(s, "")
+	s.iec = iec.NewDispatcher(s, s.factory, "")
 	s.keys = inputs2.NewKeyboard(s, "")
 	s.joy1 = inputs2.NewJoystick(s, "1")
 	s.joy2 = inputs2.NewJoystick(s, "2")

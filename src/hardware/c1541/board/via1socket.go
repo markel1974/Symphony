@@ -1,10 +1,14 @@
 package board
 
-import mos6522 "github.com/markel1974/c64emu/src/hardware/via"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
+)
 
 // Via1Socket represents the interface between the VIA1 chip and the board, managing IRQs, filters, and dip switches.
 type Via1Socket struct {
-	via1      *mos6522.Via
+	via1      references.IVia
 	board     *Board
 	intrId    uint32
 	dipSwitch uint8
@@ -22,12 +26,17 @@ func NewVia1Socket() *Via1Socket {
 }
 
 // Setup initializes the Via1Socket by assigning the board and interrupt ID, setting filters, and configuring the dip switch.
-func (v *Via1Socket) Setup(board *Board, via1 *mos6522.Via) {
+func (v *Via1Socket) Setup(board *Board, v1 component.IComponent) error {
+	via1, ok := v1.(references.IVia)
+	if !ok {
+		return fmt.Errorf("unsupported component type")
+	}
 	v.board = board
+	v.via1 = via1
 	v.setFilters()
 	v.setDipSwitch(board.deviceNumber)
-	v.via1 = via1
 	v.via1.Setup(v)
+	return nil
 }
 
 func (v *Via1Socket) Emulate() {

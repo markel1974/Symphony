@@ -8,13 +8,15 @@ import (
 	"strings"
 
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/iec/iecdevice"
 	"github.com/markel1974/c64emu/src/hardware/iec/iecprotocol"
 )
 
 type FSDrive struct {
 	*component.BaseComponent
 	*iecprotocol.Protocol
+	factory      references.IComponentFactory
+	parent       component.IComponent
+	suffix       string
 	commands     *Commands
 	deviceId     uint8
 	deviceNumber uint8
@@ -28,23 +30,29 @@ type FSDrive struct {
 	cfg          *config.Config
 }
 
-func New(parent component.IComponent, suffix string, q references.IQuartzSocket, deviceId uint8, deviceNumber uint8, path string) *FSDrive {
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) *FSDrive {
 	fs := &FSDrive{
-		BaseComponent: component.NewBaseComponent("fs_drive", suffix),
-		deviceId:      deviceId,
-		deviceNumber:  deviceNumber,
-		path:          path,
+		BaseComponent: component.NewBaseComponent("fs_drive", ""),
+		parent:        parent,
+		suffix:        suffix,
+		factory:       factory,
+		deviceId:      0,
+		deviceNumber:  0,
+		path:          "",
 		commands:      NewCommands(),
 		origDirPath:   "",
 		cfg:           nil,
 	}
-	fs.Protocol = iecprotocol.NewProtocol(parent, suffix, q, deviceNumber, fs)
-	component.Register(fs.Protocol, fs)
 	return fs
 }
 
-func (v *FSDrive) Setup(iec iecdevice.IIec, cfg *config.Config) {
+func (v *FSDrive) Setup(iec references.IIec, q references.IQuartzSocket, deviceId uint8, deviceNumber uint8, path string, cfg *config.Config) error {
+	v.Protocol = iecprotocol.NewProtocol(v.parent, v.suffix, q, v.deviceNumber, v)
+	component.Register(v.Protocol, v)
 	v.Protocol.Setup(iec, cfg)
+	v.deviceId = deviceId
+	v.deviceNumber = deviceNumber
+	v.path = path
 	v.cfg = cfg
 	v.cfg.Bind(v.configChanged)
 	v.origDirPath = v.path
@@ -54,6 +62,7 @@ func (v *FSDrive) Setup(iec iecdevice.IIec, cfg *config.Config) {
 		}
 		v.ready = true
 	}
+	return nil
 }
 
 func (v *FSDrive) GetDeviceNumber() uint8 {

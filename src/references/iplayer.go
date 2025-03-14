@@ -5,5 +5,6 @@ package references
 // Write writes audio or data buffer with specified parameters.
 type IPlayer interface {
 	GetCurrentPosition() int
+
 	Write([]uint32, int, int)
 }

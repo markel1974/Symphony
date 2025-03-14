@@ -16,13 +16,6 @@ const (
 	defaultKeyState = 0xff
 )
 
-type ICia1 interface {
-	Setup(conn references.ICiaSocket)
-	Reset()
-	Emulate()
-	Update()
-}
-
 // CIA1Socket represents the state and behavior of the CIA1 socket in a computing system.
 // board refers to the system board connected to the CIA1 socket.
 // intrId represents the ID of the interrupt associated with CIA1.
@@ -32,7 +25,7 @@ type ICia1 interface {
 // joy1 denotes the state of joystick 1 connected to the system.
 // joy2 denotes the state of joystick 2 connected to the system.
 type CIA1Socket struct {
-	cia1        ICia1
+	cia1        references.ICia
 	board       *Board  //
 	intrId      uint32  //
 	prevLPState uint8   // Previous state of LP line (bit 4)
@@ -58,12 +51,12 @@ func NewCIA1Socket() *CIA1Socket {
 }
 
 // Setup initializes the CIA1Socket with the provided Board reference and interrupt ID.
-func (w *CIA1Socket) Setup(board *Board, cia1Component component.IComponent) error {
-	w.board = board
-	cia1, ok := cia1Component.(ICia1)
+func (w *CIA1Socket) Setup(board *Board, c1 component.IComponent) error {
+	cia1, ok := c1.(references.ICia)
 	if !ok {
-		return fmt.Errorf("unsupported interface")
+		return fmt.Errorf("unknown cia2 interface")
 	}
+	w.board = board
 	w.cia1 = cia1
 	w.cia1.Setup(w)
 	return nil

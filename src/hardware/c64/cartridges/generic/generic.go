@@ -3,8 +3,9 @@ package generic
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	icartridge2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
+	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
 	loader2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // cSize16K defines the size of 16 kilobytes (0x4000), commonly used for memory allocation or data validation.
@@ -16,15 +17,16 @@ const cSize8K = 0x2000
 // Generic represents the structure and functionality of a cartridge, including memory banks, intervals, and configuration.
 type Generic struct {
 	*component.BaseComponent
+	factory    references.IComponentFactory
 	loaderId   string
-	b0Interval icartridge2.RomInterval
-	b1Interval icartridge2.RomInterval
+	b0Interval icartridge.RomInterval
+	b1Interval icartridge.RomInterval
 	bank0      []uint8
 	bank1      []uint8
-	intervals  icartridge2.RomInterval
+	intervals  icartridge.RomInterval
 	game       uint8
 	exRom      uint8
-	board      icartridge2.IExpansion
+	board      icartridge.IExpansion
 }
 
 // GetType returns the constant value representing the CARTRIDGE_CRT type.
@@ -33,8 +35,9 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Generic cartridge implementing the ICartridge interface.
-func New(parent component.IComponent, suffix string) icartridge2.ICartridge {
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge.ICartridge {
 	g := &Generic{
+		factory:       factory,
 		BaseComponent: component.NewBaseComponent("generic", suffix),
 		loaderId:      "generic",
 		game:          0,
@@ -48,7 +51,7 @@ func New(parent component.IComponent, suffix string) icartridge2.ICartridge {
 }
 
 // Setup initializes the Generic cartridge by setting the board and loading data using the provided CRTLoader.
-func (c *Generic) Setup(board icartridge2.IExpansion, ldr *loader2.CRTLoader) error {
+func (c *Generic) Setup(board icartridge.IExpansion, ldr *loader2.CRTLoader) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
 	if ldr.GetType() == loader2.TypeCrt {
@@ -84,25 +87,25 @@ func (c *Generic) initCrt(ldr *loader2.CRTLoader) error {
 		if chip1.Size == cSize8K {
 			if chip2, _ := ldr.ReadChipHeader(); chip2 == nil {
 				copy(c.bank0, chip1.Data)
-				c.applyConfig(icartridge2.CartridgeMode8K)
+				c.applyConfig(icartridge.CartridgeMode8K)
 				return nil
 			} else if chip2.Size == cSize8K {
 				if chip2.Start == 0x8000 {
 					copy(c.bank0, chip1.Data)
 					copy(c.bank1, chip2.Data)
-					c.applyConfig(icartridge2.CartridgeMode16K)
+					c.applyConfig(icartridge.CartridgeMode16K)
 					return nil
 				} else if chip2.Start == 0xe000 {
 					copy(c.bank0, chip1.Data)
 					copy(c.bank1, chip2.Data)
-					c.applyConfig(icartridge2.CartridgeModeUltimax)
+					c.applyConfig(icartridge.CartridgeModeUltimax)
 					return nil
 				}
 			}
 		} else if chip1.Size == cSize16K {
 			copy(c.bank0, chip1.Data[:cSize8K])
 			copy(c.bank1, chip1.Data[cSize8K:])
-			c.applyConfig(icartridge2.CartridgeMode16K)
+			c.applyConfig(icartridge.CartridgeMode16K)
 			return nil
 		}
 	}
@@ -119,21 +122,21 @@ func (c *Generic) initRaw(data []byte) error {
 	}
 	if len(data) == cSize8K {
 		copy(c.bank0, data)
-		c.applyConfig(icartridge2.CartridgeMode8K)
+		c.applyConfig(icartridge.CartridgeMode8K)
 		return nil
 	}
 	if len(data) == cSize16K {
 		copy(c.bank0, data[:cSize8K])
 		copy(c.bank1, data[cSize8K:])
-		c.applyConfig(icartridge2.CartridgeMode16K)
+		c.applyConfig(icartridge.CartridgeMode16K)
 		return nil
 	}
 	return fmt.Errorf("invalid size")
 }
 
 // applyConfig configures the Generic cartridge by setting its memory intervals and control flags based on the provided CartridgeMode.
-func (c *Generic) applyConfig(ct icartridge2.CartridgeMode) {
-	v := icartridge2.GetCartridgeSpec(ct)
+func (c *Generic) applyConfig(ct icartridge.CartridgeMode) {
+	v := icartridge.GetCartridgeSpec(ct)
 	c.game = v.Game
 	c.exRom = v.ExRom
 	c.b0Interval = v.IntervalLow
@@ -142,7 +145,7 @@ func (c *Generic) applyConfig(ct icartridge2.CartridgeMode) {
 }
 
 // Write attempts to write data to the cartridge at the specified interval and address. Returns true if writing is not allowed.
-func (c *Generic) Write(i icartridge2.RomInterval, addr uint16, data uint8) bool {
+func (c *Generic) Write(i icartridge.RomInterval, addr uint16, data uint8) bool {
 	if (i & c.intervals) != 0 {
 		fmt.Printf("Generic Cartridge can't be write %x => %d\n", addr, data)
 		return true
@@ -151,7 +154,7 @@ func (c *Generic) Write(i icartridge2.RomInterval, addr uint16, data uint8) bool
 }
 
 // Read retrieves a byte and a success flag from the cartridge based on the provided address and ROM interval.
-func (c *Generic) Read(i icartridge2.RomInterval, addr uint16) (uint8, bool) {
+func (c *Generic) Read(i icartridge.RomInterval, addr uint16) (uint8, bool) {
 	if (i & c.intervals) != 0 {
 		if c.b0Interval == i {
 			return c.bank0[(addr & 0x1fff)], true

@@ -37,6 +37,7 @@ const (
 // socket represents the interface socket connected to peripheral and communication devices.
 type CIA struct {
 	*component.BaseComponent
+	factory        references.IComponentFactory
 	prA            uint8
 	prB            uint8
 	ddrA           uint8
@@ -53,9 +54,10 @@ type CIA struct {
 }
 
 // NewCIA initializes and returns a new instance of the CIA struct with the specified ID and associated components.
-func NewCIA(parent component.IComponent, suffix string) *CIA {
+func NewCIA(parent component.IComponent, factory references.IComponentFactory, suffix string) *CIA {
 	m := &CIA{
 		BaseComponent: component.NewBaseComponent("cia", suffix),
+		factory:       factory,
 		tod:           nil,
 		timerA:        nil,
 		timerB:        nil,

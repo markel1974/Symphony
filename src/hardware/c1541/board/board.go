@@ -14,8 +14,6 @@ import (
 	"github.com/markel1974/c64emu/src/hardware/6510"
 	"github.com/markel1974/c64emu/src/hardware/c1541/mechanic"
 	"github.com/markel1974/c64emu/src/hardware/c1541/pla"
-	"github.com/markel1974/c64emu/src/hardware/iec/iecdevice"
-	"github.com/markel1974/c64emu/src/hardware/via"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -32,8 +30,9 @@ const baseId = "c1541"
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
 	*component.BaseComponent
+	factory        references.IComponentFactory
 	pic            *mos6510.Pic
-	iec            iecdevice.IIec
+	iec            references.IIec
 	externalQuartz references.IQuartzSocket
 	cpuSocket      *CPUSocket
 	via1Socket     *Via1Socket
@@ -48,14 +47,15 @@ type Board struct {
 }
 
 // New creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func New(parent component.IComponent, suffix string, q references.IQuartzSocket, deviceId uint8, deviceNumber uint8, opts string) *Board {
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
 		BaseComponent:  component.NewBaseComponent("c1541", suffix),
-		externalQuartz: q,
+		factory:        factory,
+		externalQuartz: nil,
 		iec:            nil,
-		deviceId:       deviceId,
-		filePath:       opts,
-		deviceNumber:   deviceNumber,
+		deviceId:       0,
+		filePath:       "",
+		deviceNumber:   0,
 		ledChanged:     signals.NewSignalUint32(),
 		cpuSocket:      nil,
 		via1Socket:     nil,
@@ -69,26 +69,45 @@ func New(parent component.IComponent, suffix string, q references.IQuartzSocket,
 }
 
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
-func (m *Board) Setup(iec iecdevice.IIec, cfg *config.Config) {
+func (m *Board) Setup(iec references.IIec, quartz references.IQuartzSocket, deviceId uint8, deviceNumber uint8, opts string, cfg *config.Config) error {
+	var err error
+	var via1 component.IComponent
+	var via2 component.IComponent
+
 	m.iec = iec
 	m.cfg = cfg
+	m.deviceId = deviceId
+	m.deviceNumber = deviceNumber
+	m.filePath = opts
+	m.externalQuartz = quartz
 	m.cfg.Bind(m.configChanged)
 	m.banks = pla.New()
 	//m.quartz = quartz.NewQuartz(m, "")
 	m.pic = mos6510.NewPic(m, "")
-	cpu := mos6510.NewCPU(m, "")
+	cpu := mos6510.NewCPU(m, m.factory, "")
 	m.mec = mechanic.NewMechanic()
 	m.mec.Setup(m.filePath)
-	via1 := mos6522.NewVia(m, "1")
-	via2 := mos6522.NewVia(m, "2")
+	if via1, err = m.factory.Create(m, "mos6522", "1"); err != nil {
+		return err
+	}
+	if via2, err = m.factory.Create(m, "mos6522", "2"); err != nil {
+		return err
+	}
 	m.cpuSocket = NewCPUSocket()
 	m.via1Socket = NewVia1Socket()
 	m.via2Socket = NewVia2Socket()
-	m.via1Socket.Setup(m, via1)
-	m.via2Socket.Setup(m, via2)
-	m.banks.Setup(via1, via2, cfg)
+	if err = m.via1Socket.Setup(m, via1); err != nil {
+		return err
+	}
+	if err = m.via2Socket.Setup(m, via2); err != nil {
+		return err
+	}
+	if err = m.banks.Setup(via1, via2, cfg); err != nil {
+		return err
+	}
 	m.pic.Setup(m.externalQuartz)
 	m.cpuSocket.Setup(m, cpu)
+	return nil
 }
 
 // Reset reinitializes the Board's internal components to their default states by calling their respective Reset methods.

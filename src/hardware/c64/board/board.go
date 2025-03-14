@@ -4,10 +4,9 @@ import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware"
 	"github.com/markel1974/c64emu/src/hardware/6510"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges"
-	inputs2 "github.com/markel1974/c64emu/src/hardware/c64/inputs"
+	"github.com/markel1974/c64emu/src/hardware/c64/inputs"
 	"github.com/markel1974/c64emu/src/hardware/c64/pla"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
 	"github.com/markel1974/c64emu/src/hardware/iec"
@@ -44,9 +43,9 @@ type Board struct {
 	plaSocket           *PLASocket
 	pic                 *mos6510.Pic
 	iec                 *iec.Dispatcher
-	keys                *inputs2.Keyboard
-	joy1                *inputs2.Joystick
-	joy2                *inputs2.Joystick
+	keys                *inputs.Keyboard
+	joy1                *inputs.Joystick
+	joy2                *inputs.Joystick
 	joySwap             bool
 	cfg                 *config.Config
 	hasClipboard        bool
@@ -58,16 +57,14 @@ type Board struct {
 	dmaLow              bool
 	prg                 *prg.PRG
 	dt                  references.IThrottling
-
-	factory *hardware.Factory
+	factory             references.IComponentFactory
 }
 
-const componentId = "c64"
-
 // NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
-func NewBoard() *Board {
+func NewBoard(parent component.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
-		BaseComponent:       component.NewBaseComponent("c64", ""),
+		BaseComponent:       component.NewBaseComponent("c64", suffix),
+		factory:             factory,
 		db:                  nil,
 		player:              nil,
 		quartz:              nil,
@@ -87,11 +84,10 @@ func NewBoard() *Board {
 		prg:                 nil,
 		joySwap:             true,
 		dt:                  nil,
-		factory:             hardware.NewFactory(),
 	}
-	component.Register(nil, b)
-	b.quartz = quartz.NewQuartz(b, "")
-	b.cartMan = cartridges.NewManager(b, "")
+	component.Register(parent, b)
+	b.quartz = quartz.NewQuartz(b, b.factory, "")
+	b.cartMan = cartridges.NewManager(b, b.factory, "")
 	return b
 }
 
@@ -116,23 +112,23 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	s.plaSocket = NewPLASocket()
 
 	s.pic = mos6510.NewPic(s, "")
-	s.iec = iec.NewDispatcher(s, "")
-	cpu := mos6510.NewCPU(s, "")
-	vic := mos6569.NewVIC(s, "")
-	sid := mos6581.NewSID(s, "")
+	s.iec = iec.NewDispatcher(s, s.factory, "")
+	cpu := mos6510.NewCPU(s, s.factory, "")
+	vic := mos6569.NewVIC(s, s.factory, "")
+	sid := mos6581.NewSID(s, s.factory, "")
 
-	cia1, err := s.factory.Create(s, "cia", "1")
+	cia1, err := s.factory.Create(s, "mos6526", "1")
 	if err != nil {
 		return err
 	}
-	cia2, err := s.factory.Create(s, "cia", "2")
+	cia2, err := s.factory.Create(s, "mos6526", "2")
 	if err != nil {
 		return err
 	}
 	plaC := pla.NewPLA(s, "")
-	s.keys = inputs2.NewKeyboard(s, "")
-	s.joy1 = inputs2.NewJoystick(s, "1")
-	s.joy2 = inputs2.NewJoystick(s, "2")
+	s.keys = inputs.NewKeyboard(s, "")
+	s.joy1 = inputs.NewJoystick(s, "1")
+	s.joy2 = inputs.NewJoystick(s, "2")
 	s.expansion = NewExpansion(s, "")
 
 	s.expansion.Setup(s)
@@ -148,7 +144,9 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 		return err
 	}
 	s.cartMan.Setup(s.expansion, cfg)
-	_ = s.plaSocket.Setup(s, plaC, vic, sid, cia1, cia2, s.cartMan)
+	if err = s.plaSocket.Setup(s, plaC, vic, sid, cia1, cia2, s.cartMan); err != nil {
+		return err
+	}
 
 	for _, cartName := range s.cfg.GetCartridges() {
 		var data []uint8

@@ -5,5 +5,6 @@ package references
 // Counter returns the current count of throttled operations executed thus far.
 type IThrottling interface {
 	Throttle()
+
 	Counter() uint64
 }

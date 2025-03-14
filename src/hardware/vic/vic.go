@@ -46,6 +46,7 @@ type cycleData struct {
 // Graphics systems and border handling are also supported using their specific components within the VIC structure.
 type VIC struct {
 	*component.BaseComponent
+	factory         references.IComponentFactory
 	cfg             *config.Config
 	collisions      *Collisions
 	sprites         *Sprites
@@ -111,9 +112,10 @@ type VIC struct {
 }
 
 // NewVIC creates and returns a pointer to a newly initialized VIC instance with default values and given id.
-func NewVIC(parent component.IComponent, suffix string) *VIC {
+func NewVIC(parent component.IComponent, factory references.IComponentFactory, suffix string) *VIC {
 	vic := &VIC{
 		BaseComponent:    component.NewBaseComponent("vic", suffix),
+		factory:          factory,
 		banks:            nil,
 		mXx:              make([]uint16, SpriteNumber),
 		mXy:              make([]uint8, SpriteNumber),

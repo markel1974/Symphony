@@ -16,6 +16,7 @@ const (
 // SID represents a chip emulation containing configurations, registers, and audio handling functionality.
 type SID struct {
 	*component.BaseComponent
+	factory      references.IComponentFactory
 	socket       references.ISidSocket
 	registers    []uint8
 	cfg          *config.Config
@@ -24,9 +25,10 @@ type SID struct {
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
-func NewSID(parent component.IComponent, suffix string) *SID {
+func NewSID(parent component.IComponent, factory references.IComponentFactory, suffix string) *SID {
 	s := &SID{
 		BaseComponent: component.NewBaseComponent("sid", suffix),
+		factory:       factory,
 		socket:        nil,
 		registers:     make([]uint8, RegisterCount),
 		cfg:           nil,

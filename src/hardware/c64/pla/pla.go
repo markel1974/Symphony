@@ -5,6 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 type ReadFn func(uint16) uint8
@@ -17,8 +18,8 @@ type PLA struct {
 	*component.BaseComponent
 	vic             ISocket
 	sid             ISocket
-	cia1            ISocket
-	cia2            ISocket
+	cia1            references.ICia
+	cia2            references.ICia
 	cartMan         IExpansionSocket
 	roms            IRomSocket
 	ram             []byte
@@ -72,7 +73,7 @@ func NewPLA(parent component.IComponent, suffix string) *PLA {
 	return b
 }
 
-func (b *PLA) Setup(vic ISocket, sid ISocket, cia1 ISocket, cia2 ISocket, cartMan IExpansionSocket, roms IRomSocket, cfg *config.Config) {
+func (b *PLA) Setup(vic ISocket, sid ISocket, cia1 references.ICia, cia2 references.ICia, cartMan IExpansionSocket, roms IRomSocket, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1

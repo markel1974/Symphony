@@ -17,6 +17,7 @@ import (
 // CPU represents a simulated central processing unit with registers, flags, and associated helper components.
 type CPU struct {
 	*component.BaseComponent
+	factory        references.IComponentFactory
 	banks          references.I6510Banks // banks represents the interface for accessing and managing memory banks within the CPU simulation.
 	pic            references.I6510Pic   // pic represents the programmable interrupt controller (PIC) interface used by the CPU for interrupt handling.
 	next           func(cpu *CPU)        // next is a function pointer that executes the next CPU instruction or operation during emulation.
@@ -44,9 +45,10 @@ type CPU struct {
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
-func NewCPU(parent component.IComponent, suffix string) *CPU {
+func NewCPU(parent component.IComponent, factory references.IComponentFactory, suffix string) *CPU {
 	cpu := &CPU{
 		BaseComponent: component.NewBaseComponent("mos6510", suffix),
+		factory:       factory,
 	}
 	component.Register(parent, cpu)
 	return cpu

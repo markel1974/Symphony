@@ -5,6 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	pla2 "github.com/markel1974/c64emu/src/hardware/c64/pla"
 	"github.com/markel1974/c64emu/src/hardware/c64/roms"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // PLASocket represents a socket encapsulating a PLA and its associated board.
@@ -23,18 +24,18 @@ func NewPLASocket() *PLASocket {
 }
 
 // Setup initializes the PLASocket with the provided board, PLA, and associated components like VIC, SID, CIAs, and cartridge manager.
-func (w *PLASocket) Setup(board *Board, p *pla2.PLA, vic pla2.ISocket, sid pla2.ISocket, cia1Component component.IComponent, cia2Component component.IComponent, cartMan pla2.IExpansionSocket) error {
+func (w *PLASocket) Setup(board *Board, p *pla2.PLA, vic pla2.ISocket, sid pla2.ISocket, c1 component.IComponent, c2 component.IComponent, cartMan pla2.IExpansionSocket) error {
+	cia1, ok := c1.(references.ICia)
+	if !ok {
+		return fmt.Errorf("unknown cia1 interface")
+	}
+	cia2, ok := c2.(references.ICia)
+	if !ok {
+		return fmt.Errorf("unknown cia2 interface")
+	}
 	w.board = board
 	w.pla = p
 	rl := roms.NewRomLoader(w.board.cfg)
-	cia1, ok := cia1Component.(pla2.ISocket)
-	if !ok {
-		return fmt.Errorf("unsupported interface")
-	}
-	cia2, ok := cia2Component.(pla2.ISocket)
-	if !ok {
-		return fmt.Errorf("unsupported interface")
-	}
 	w.pla.Setup(vic, sid, cia1, cia2, cartMan, rl, w.board.cfg)
 	return nil
 }

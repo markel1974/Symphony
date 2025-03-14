@@ -4,6 +4,7 @@ import (
 	"container/list"
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // Quartz represents a scheduler that manages alarms based on cycles, enabling timed execution of associated callbacks.
@@ -12,15 +13,17 @@ import (
 // alarms stores active alarms in a doubly linked list, sorted by their scheduled cycle execution times.
 type Quartz struct {
 	*component.BaseComponent
+	factory         references.IComponentFactory
 	cycle           uint64
 	alarmsContainer map[*Alarm]*Alarm
 	alarms          *list.List
 }
 
 // NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
-func NewQuartz(parent component.IComponent, suffix string) *Quartz {
+func NewQuartz(parent component.IComponent, factory references.IComponentFactory, suffix string) *Quartz {
 	q := &Quartz{
 		BaseComponent:   component.NewBaseComponent("quartz", suffix),
+		factory:         factory,
 		cycle:           0,
 		alarmsContainer: make(map[*Alarm]*Alarm),
 		alarms:          list.New(),

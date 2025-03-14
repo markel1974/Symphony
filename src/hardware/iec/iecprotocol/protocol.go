@@ -5,7 +5,6 @@ import (
 	"github.com/markel1974/c64emu/src/common/conversion"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/iec/iecdevice"
 	"github.com/markel1974/c64emu/src/references"
 	"log"
 )
@@ -88,8 +87,8 @@ const stateLast = 0xf
 // Protocol represents a structure for managing IEC protocol-based communication and its state machine.
 type Protocol struct {
 	*component.BaseComponent
-	iec           iecdevice.IIec
-	device        iecdevice.IIecProtocolDevice
+	iec           references.IIec
+	device        references.IIecProtocolDevice
 	quartz        references.IQuartzSocket
 	gs            *Global
 	cfg           *config.Config
@@ -105,7 +104,7 @@ type Protocol struct {
 }
 
 // NewProtocol creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
-func NewProtocol(parent component.IComponent, suffix string, q references.IQuartzSocket, deviceNumber uint8, device iecdevice.IIecProtocolDevice) *Protocol {
+func NewProtocol(parent component.IComponent, suffix string, q references.IQuartzSocket, deviceNumber uint8, device references.IIecProtocolDevice) *Protocol {
 	p := &Protocol{
 		BaseComponent: component.NewBaseComponent("iec_protocol", suffix),
 		quartz:        q,
@@ -119,7 +118,7 @@ func NewProtocol(parent component.IComponent, suffix string, q references.IQuart
 }
 
 // Setup initializes the Protocol with the provided IEC interface and configuration settings.
-func (v *Protocol) Setup(iec iecdevice.IIec, cfg *config.Config) {
+func (v *Protocol) Setup(iec references.IIec, cfg *config.Config) {
 	v.iec = iec
 	v.cfg = cfg
 }

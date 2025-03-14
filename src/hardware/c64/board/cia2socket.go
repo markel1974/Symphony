@@ -6,17 +6,10 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-type ICia2 interface {
-	Setup(conn references.ICiaSocket)
-	Reset()
-	Emulate()
-	Update()
-}
-
 // CIA2Socket represents a connection interface to the CIA2 chip on a hardware board.
 // It contains a reference to the board and an interrupt identifier.
 type CIA2Socket struct {
-	cia2   ICia2
+	cia2   references.ICia
 	board  *Board
 	intrId uint32
 }
@@ -32,12 +25,12 @@ func NewCIA2Socket() *CIA2Socket {
 }
 
 // Setup initializes the CIA2Socket with the provided board reference and interrupt ID.
-func (w *CIA2Socket) Setup(board *Board, cia2Component component.IComponent) error {
-	w.board = board
-	cia2, ok := cia2Component.(ICia1)
+func (w *CIA2Socket) Setup(board *Board, c2 component.IComponent) error {
+	cia2, ok := c2.(references.ICia)
 	if !ok {
-		return fmt.Errorf("unsupported interface")
+		return fmt.Errorf("unknown cia2 interface")
 	}
+	w.board = board
 	w.cia2 = cia2
 	w.cia2.Setup(w)
 	return nil

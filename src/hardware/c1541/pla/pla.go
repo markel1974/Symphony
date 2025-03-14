@@ -1,9 +1,11 @@
 package pla
 
 import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/c1541/roms"
-	"github.com/markel1974/c64emu/src/hardware/via"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // $0000-$07ff _ram (2K)
@@ -21,8 +23,8 @@ const c1541RamSize = 0x0800
 type PLA struct {
 	ram  []uint8
 	rom  []uint8
-	via1 *mos6522.Via
-	via2 *mos6522.Via
+	via1 references.IVia
+	via2 references.IVia
 }
 
 // New creates and returns a new instance of PLA with initialized RAM of the specified size.
@@ -31,11 +33,20 @@ func New() *PLA {
 }
 
 // Setup initializes the PLA instance by configuring VIA components and loading required ROM based on the provided configuration.
-func (r *PLA) Setup(via1 *mos6522.Via, via2 *mos6522.Via, cfg *config.Config) {
+func (r *PLA) Setup(v1 component.IComponent, v2 component.IComponent, cfg *config.Config) error {
+	via1, ok := v1.(references.IVia)
+	if !ok {
+		return fmt.Errorf("unsupported via1 component type")
+	}
+	via2, ok := v2.(references.IVia)
+	if !ok {
+		return fmt.Errorf("unsupported via2 component type")
+	}
 	r.via1 = via1
 	r.via2 = via2
 	loader := roms.NewLoader()
 	r.rom = loader.Load(cfg.UseJiffy(), cfg.Get1541RomPath())
+	return nil
 }
 
 //func (r *PLA) AtnWakeUp() {

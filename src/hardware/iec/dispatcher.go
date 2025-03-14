@@ -4,8 +4,8 @@ import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/iec/iecdevice"
 	"github.com/markel1974/c64emu/src/references"
+	"strconv"
 )
 
 // BusNum defines the number of buses available in the system.
@@ -18,25 +18,27 @@ const (
 // Dispatcher is a structure responsible for managing CPU interactions, peripherals, virtual drives, and LED signals.
 type Dispatcher struct {
 	*component.BaseComponent
+	factory         references.IComponentFactory
 	atn             bool
 	cpuPort         uint8
 	cpuData         uint8
 	cpuBus          uint8
 	peripheralsPort uint8
 	peripheralsData []uint8
-	virtualDrives   []iecdevice.IIecDevice
+	virtualDrives   []references.IIecDevice
 	ledSignal       *signals.Signal2[int, uint8]
-	factory         *DriveFactory
+	driveFactory    *DriveFactory
 }
 
 // NewDispatcher creates and initializes a new Dispatcher instance with the given parent component and suffix.
-func NewDispatcher(parent component.IComponent, suffix string) *Dispatcher {
+func NewDispatcher(parent component.IComponent, factory references.IComponentFactory, suffix string) *Dispatcher {
 	c := &Dispatcher{
 		BaseComponent:   component.NewBaseComponent("iec_dispatcher", suffix),
+		factory:         factory,
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),
-		factory:         nil,
+		driveFactory:    nil,
 	}
 	component.Register(parent, c)
 	return c
@@ -44,12 +46,13 @@ func NewDispatcher(parent component.IComponent, suffix string) *Dispatcher {
 
 // Setup initializes the Dispatcher by configuring the DriveFactory and setting up virtual drives based on the provided config.
 func (c *Dispatcher) Setup(q references.IQuartzSocket, cfg *config.Config) {
-	c.factory = NewDriveFactory(c, "", q)
-	c.factory.Setup(cfg)
-
-	for idx, d := range cfg.GetDrives() {
-		vd := c.factory.Create(d.Kind, d.Opts, uint8(idx))
-		vd.Setup(c, cfg)
+	c.driveFactory = NewDriveFactory(c, c.factory, "")
+	c.driveFactory.Setup(cfg)
+	for deviceId, d := range cfg.GetDrives() {
+		deviceNumber := deviceId + 8
+		suffix := strconv.Itoa(deviceNumber)
+		vd := c.driveFactory.Create(d.Kind, suffix)
+		vd.Setup(c, q, uint8(deviceId), uint8(deviceNumber), d.Opts, cfg)
 		c.virtualDrives = append(c.virtualDrives, vd)
 	}
 }

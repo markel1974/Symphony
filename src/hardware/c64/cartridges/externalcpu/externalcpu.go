@@ -6,6 +6,7 @@ import (
 	icartridge2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/hardware/quartz"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // Id is a constant representing the identifier "SCPU" for a specific hardware type or component registration.
@@ -15,6 +16,7 @@ const Id = "SCPU"
 // It includes an ID, expansion board, CPU socket, programmable interrupt controller, CPU, and quartz clock source.
 type ExternalCPU struct {
 	*component.BaseComponent
+	factory   references.IComponentFactory
 	loaderId  string
 	board     icartridge2.IExpansion
 	cpuSocket *CPUSocket
@@ -24,9 +26,10 @@ type ExternalCPU struct {
 }
 
 // New returns a new instance of the ExternalCPU struct implementing the ICartridge interface.
-func New(parent component.IComponent, suffix string) icartridge2.ICartridge {
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge2.ICartridge {
 	r := &ExternalCPU{
 		BaseComponent: component.NewBaseComponent("externalCpu", suffix),
+		factory:       factory,
 		board:         nil,
 		cpuSocket:     nil,
 		pic:           nil,
@@ -48,13 +51,13 @@ func (s *ExternalCPU) Setup(board icartridge2.IExpansion, ldr *loader.CRTLoader)
 	s.loaderId = ldr.GetId()
 	s.board.SetDMALow(true)
 
-	s.quartz = quartz.NewQuartz(s, "")
+	s.quartz = quartz.NewQuartz(s, s.factory, "")
 	s.pic = mos6510.NewPic(s, "")
 
 	s.pic.Setup(s.quartz)
 
 	s.cpuSocket = NewCPUSocket()
-	s.cpu = mos6510.NewCPU(s, "")
+	s.cpu = mos6510.NewCPU(s, s.factory, "")
 
 	s.cpuSocket.Setup(s)
 	s.cpu.Setup(s.cpuSocket)

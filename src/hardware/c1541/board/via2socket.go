@@ -1,6 +1,10 @@
 package board
 
-import mos6522 "github.com/markel1974/c64emu/src/hardware/via"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
+)
 
 // headControl represents the bit mask for controlling the head movement direction in the PRB register of VIA2.
 const headControl = uint8(0x3)
@@ -28,7 +32,7 @@ const syncArrivedControl = ^dataArrivedControl
 
 // Via2Socket represents a socket interface for interacting with the VIA2 (Versatile Interface Adapter) component on the board.
 type Via2Socket struct {
-	via2    *mos6522.Via
+	via2    references.IVia
 	board   *Board
 	intrId  uint32
 	prbPrev uint8
@@ -45,10 +49,15 @@ func NewVia2Socket() *Via2Socket {
 }
 
 // Setup initializes the Via2Socket by associating it with a Board instance and configuring the interrupt ID.
-func (v *Via2Socket) Setup(board *Board, via2 *mos6522.Via) {
+func (v *Via2Socket) Setup(board *Board, v2 component.IComponent) error {
+	via2, ok := v2.(references.IVia)
+	if !ok {
+		return fmt.Errorf("unsupported component type")
+	}
 	v.board = board
 	v.via2 = via2
 	v.via2.Setup(v)
+	return nil
 }
 
 func (v *Via2Socket) Emulate() {

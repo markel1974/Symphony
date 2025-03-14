@@ -11,12 +11,36 @@ package references
 // IRQTrigger triggers an interrupt request to signal an event in the socket.
 type IViaSocket interface {
 	ReadPRA(uint8, uint8) uint8
+
 	ReadPRB(uint8, uint8) uint8
+
 	WritePRA(uint8, uint8)
+
 	WritePRB(uint8, uint8)
+
 	WriteDDRA(uint8, uint8)
+
 	WriteDDRB(uint8, uint8)
 
 	IRQClear()
+
 	IRQTrigger()
+}
+
+type IVia interface {
+	Setup(conn IViaSocket)
+
+	Reset()
+
+	Emulate()
+
+	ReadByte(addr uint16) uint8
+
+	WriteByte(addr uint16, data uint8)
+
+	SignalPRA()
+
+	SignalPRB()
+
+	ByteReady() bool
 }

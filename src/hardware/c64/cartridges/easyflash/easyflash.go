@@ -11,6 +11,7 @@ import (
 	icartridge2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
 	loader2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/hardware/c64/snapshot"
+	"github.com/markel1974/c64emu/src/references"
 	"io"
 	"log"
 	"os"
@@ -20,6 +21,7 @@ import (
 // It contains fields for configuration, state management, memory mapping, flash state, and cartridge-specific options.
 type CartridgeEasyFlash struct {
 	*component.BaseComponent
+	factory         references.IComponentFactory
 	loaderId        string
 	board           icartridge2.IExpansion
 	intervalLo      icartridge2.RomInterval
@@ -47,9 +49,10 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridge interface.
-func New(parent component.IComponent, suffix string) icartridge2.ICartridge {
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge2.ICartridge {
 	ef := &CartridgeEasyFlash{
 		BaseComponent:   component.NewBaseComponent("easyFlash", suffix),
+		factory:         factory,
 		loaderId:        "easyFlash",
 		game:            1,
 		exRom:           1,

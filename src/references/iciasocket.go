@@ -1,22 +1,49 @@
 package references
 
-// ICiaSocket defines an interface for interacting with external device ports and managing IRQ operations.
-// ReadPortA reads data from Port A using the provided peripheral and data direction registers.
-// ReadPortB reads data from Port B using the provided peripheral and data direction registers.
-// WritePortA writes data to Port A using the provided peripheral and data direction registers.
-// WritePortB writes data to Port B using the provided peripheral and data direction registers.
-// WriteDdrA modifies the Data Direction Register for Port A using the provided register values.
-// WriteDdrB modifies the Data Direction Register for Port B using the provided register values.
-// IRQTrigger signals an interrupt request activation.
-// IRQClear signals an interrupt request deactivation.
+// ICiaSocket defines an interface for interacting with CIA I/O ports and triggering IRQ events.
+// ReadPortA reads the current value of port A based on the peripheral and direction registers.
+// ReadPortB reads the current value of port B based on the peripheral and direction registers.
+// WritePortA updates the state of port A based on the peripheral and direction registers.
+// WritePortB updates the state of port B based on the peripheral and direction registers.
+// WriteDdrA updates the data direction register for port A.
+// WriteDdrB updates the data direction register for port B.
+// IRQTrigger triggers an interrupt request on the IRQ line.
+// IRQClear clears the interrupt request on the IRQ line.
 type ICiaSocket interface {
 	ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8
+
 	ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8
+
 	WritePortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
+
 	WritePortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
+
 	WriteDdrA(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
+
 	WriteDdrB(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
 
 	IRQTrigger()
+
 	IRQClear()
+}
+
+// ICia defines the interface for a CIA (Complex Interface Adapter) component in a computing or emulation context.
+// Setup initializes the CIA with the provided socket connection.
+// Reset resets the CIA to its default state.
+// Emulate executes the necessary operations for the current emulation cycle.
+// Update updates the CIA's state and handles any required operations for the current frame or step.
+// WriteRegister writes a byte of data to the CIA at the specified register address.
+// ReadRegister reads a byte of data from the CIA at the specified register address.
+type ICia interface {
+	Setup(conn ICiaSocket)
+
+	Reset()
+
+	Emulate()
+
+	Update()
+
+	WriteRegister(addr uint16, data uint8)
+
+	ReadRegister(addr uint16) uint8
 }

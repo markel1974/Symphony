@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/hardware"
 	c64board "github.com/markel1974/c64emu/src/hardware/c64/board"
 	vic20board "github.com/markel1974/c64emu/src/hardware/vic20/board"
 	"github.com/markel1974/c64emu/src/references"
@@ -103,6 +104,7 @@ func main() {
 		fmt.Println(version.AppName, version.AppVersion)
 		return
 	}
+
 	cfg := config.New()
 	if len(prg) > 0 {
 		cfg.SetPrg(prg)
@@ -134,11 +136,12 @@ func main() {
 
 	var g IRender
 	var b references.IBoard
+	factory := hardware.NewFactory(cfg)
 
 	if mode == "vic20" {
-		b = vic20board.NewBoard()
+		b = vic20board.NewBoard(nil, factory, "")
 	} else {
-		b = c64board.NewBoard()
+		b = c64board.NewBoard(nil, factory, "")
 	}
 
 	if ascii {

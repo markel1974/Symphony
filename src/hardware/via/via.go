@@ -16,26 +16,28 @@ const defaultViaTimeout = 0xffff
 // Via represents a Versatile Interface Adapter (VIA) with multiple registers for configuring I/O, timers, and control logic.
 type Via struct {
 	*component.BaseComponent
-	pra    uint8
-	ddra   uint8
-	prb    uint8
-	ddrb   uint8
-	t1c    uint16
-	t1l    uint16
-	t2c    uint16
-	t2l    uint16
-	sr     uint8
-	acr    uint8
-	pcr    uint8
-	ifr    uint8
-	ier    uint8
-	socket references.IViaSocket
+	factory references.IComponentFactory
+	pra     uint8
+	ddra    uint8
+	prb     uint8
+	ddrb    uint8
+	t1c     uint16
+	t1l     uint16
+	t2c     uint16
+	t2l     uint16
+	sr      uint8
+	acr     uint8
+	pcr     uint8
+	ifr     uint8
+	ier     uint8
+	socket  references.IViaSocket
 }
 
 // NewVia creates and initializes a new Via instance with the specified identifier.
-func NewVia(parent component.IComponent, suffix string) *Via {
+func NewVia(parent component.IComponent, factory references.IComponentFactory, suffix string) *Via {
 	v := &Via{
 		BaseComponent: component.NewBaseComponent("via", suffix),
+		factory:       factory,
 		pra:           0,
 		ddra:          0,
 		prb:           0,
