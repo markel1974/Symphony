@@ -1,6 +1,6 @@
 package board
 
-import mos6522 "github.com/markel1974/c64emu/src/components/via"
+import mos6522 "github.com/markel1974/c64emu/src/hardware/via"
 
 // Via1Socket represents the interface between the VIA1 chip and the board, managing IRQs, filters, and dip switches.
 type Via1Socket struct {

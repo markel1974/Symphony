@@ -1,8 +1,10 @@
 package board
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/c64/pla"
 	"github.com/markel1974/c64emu/src/c64/roms"
+	"github.com/markel1974/c64emu/src/component"
 )
 
 // PLASocket represents a socket encapsulating a PLA and its associated board.
@@ -21,11 +23,20 @@ func NewPLASocket() *PLASocket {
 }
 
 // Setup initializes the PLASocket with the provided board, PLA, and associated components like VIC, SID, CIAs, and cartridge manager.
-func (w *PLASocket) Setup(board *Board, p *pla.PLA, vic pla.ISocket, sid pla.ISocket, cia1 pla.ISocket, cia2 pla.ISocket, cartMan pla.IExpansionSocket) {
+func (w *PLASocket) Setup(board *Board, p *pla.PLA, vic pla.ISocket, sid pla.ISocket, cia1Component component.IComponent, cia2Component component.IComponent, cartMan pla.IExpansionSocket) error {
 	w.board = board
 	w.pla = p
 	rl := roms.NewRomLoader(w.board.cfg)
+	cia1, ok := cia1Component.(pla.ISocket)
+	if !ok {
+		return fmt.Errorf("unsupported interface")
+	}
+	cia2, ok := cia2Component.(pla.ISocket)
+	if !ok {
+		return fmt.Errorf("unsupported interface")
+	}
 	w.pla.Setup(vic, sid, cia1, cia2, cartMan, rl, w.board.cfg)
+	return nil
 }
 
 // Reset reinitializes the internal state of the PLA to its default configuration.

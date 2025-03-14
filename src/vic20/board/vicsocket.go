@@ -1,8 +1,7 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/components/board"
-	mos6569 "github.com/markel1974/c64emu/src/components/vic"
+	mos6569 "github.com/markel1974/c64emu/src/references"
 )
 
 type VicSocket struct {
@@ -28,11 +27,11 @@ func (v *VicSocket) Cycle() uint64 {
 	//return v.board.quartz.Cycle()
 }
 
-func (v *VicSocket) GetDisplayBuffer() board.IDisplayBuffer {
+func (v *VicSocket) GetDisplayBuffer() mos6569.IDisplayBuffer {
 	return v.board.db
 }
 
-func (v *VicSocket) GetBanks() mos6569.IBanks {
+func (v *VicSocket) GetBanks() mos6569.IVicBanks {
 	return v.board.pla
 }
 

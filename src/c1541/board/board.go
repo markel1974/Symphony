@@ -11,11 +11,12 @@ import (
 	"github.com/markel1974/c64emu/src/c1541/mechanic"
 	"github.com/markel1974/c64emu/src/c1541/pla"
 	"github.com/markel1974/c64emu/src/common/signals"
-	"github.com/markel1974/c64emu/src/components/6510"
-	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/iec/iecdevice"
-	"github.com/markel1974/c64emu/src/components/via"
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/hardware/6510"
+	"github.com/markel1974/c64emu/src/hardware/iec/iecdevice"
+	"github.com/markel1974/c64emu/src/hardware/via"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // intrIrqVIA1Bit represents the interrupt request bit for VIA1.
@@ -30,10 +31,10 @@ const baseId = "c1541"
 
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	pic            *mos6510.Pic
 	iec            iecdevice.IIec
-	externalQuartz board.IQuartz
+	externalQuartz references.IQuartzSocket
 	cpuSocket      *CPUSocket
 	via1Socket     *Via1Socket
 	via2Socket     *Via2Socket
@@ -47,9 +48,9 @@ type Board struct {
 }
 
 // New creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func New(parent board.IComponent, suffix string, q board.IQuartz, deviceId uint8, deviceNumber uint8, opts string) *Board {
+func New(parent component.IComponent, suffix string, q references.IQuartzSocket, deviceId uint8, deviceNumber uint8, opts string) *Board {
 	b := &Board{
-		BaseComponent:  board.NewBaseComponent("c1541", suffix),
+		BaseComponent:  component.NewBaseComponent("c1541", suffix),
 		externalQuartz: q,
 		iec:            nil,
 		deviceId:       deviceId,
@@ -63,7 +64,7 @@ func New(parent board.IComponent, suffix string, q board.IQuartz, deviceId uint8
 		banks:          nil,
 		cfg:            nil,
 	}
-	board.Register(parent, b)
+	component.Register(parent, b)
 	return b
 }
 

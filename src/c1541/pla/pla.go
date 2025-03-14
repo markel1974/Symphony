@@ -2,8 +2,8 @@ package pla
 
 import (
 	"github.com/markel1974/c64emu/src/c1541/roms"
-	"github.com/markel1974/c64emu/src/components/via"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/hardware/via"
 )
 
 // $0000-$07ff _ram (2K)

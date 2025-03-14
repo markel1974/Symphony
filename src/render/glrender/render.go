@@ -1,14 +1,14 @@
 package glrender
 
 import (
-	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/render/glrender/pixels"
 )
 
 type Render struct {
 	cfg          *config.Config
-	c64Board     board.IBoard
+	c64Board     references.IBoard
 	scale        float64
 	fullscreen   bool
 	showMap      bool
@@ -24,7 +24,7 @@ type Render struct {
 	audio        *Audio
 }
 
-func New(board board.IBoard, cfg *config.Config) *Render {
+func New(board references.IBoard, cfg *config.Config) *Render {
 	w, h := board.GetScreenSize()
 	g := &Render{
 		c64Board:     board,

@@ -1,12 +1,14 @@
 package pla
 
-import "github.com/markel1974/c64emu/src/components/board"
+import (
+	"github.com/markel1974/c64emu/src/component"
+)
 
 //from c64pla.c
 
 // Ports represents the state and management of hardware I/O ports used for device communication and control.
 type Ports struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	dataOut         uint8
 	dir             uint8
 	data            uint8
@@ -27,9 +29,9 @@ type Ports struct {
 }
 
 // NewPorts initializes and returns a new instance of the Ports struct with default values set.
-func NewPorts(parent board.IComponent, suffix string) *Ports {
+func NewPorts(parent component.IComponent, suffix string) *Ports {
 	p := &Ports{
-		BaseComponent: board.NewBaseComponent("ports", suffix),
+		BaseComponent: component.NewBaseComponent("ports", suffix),
 		capsSense:     1,
 		pullUp:        0x17,
 		dataOut:       0,
@@ -44,7 +46,7 @@ func NewPorts(parent board.IComponent, suffix string) *Ports {
 		tapeMotorIn:   0,
 		//dirRead:     0,
 	}
-	board.Register(parent, p)
+	component.Register(parent, p)
 	return p
 }
 

@@ -3,7 +3,7 @@ package reu
 import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
-	"github.com/markel1974/c64emu/src/components/board"
+	"github.com/markel1974/c64emu/src/component"
 	"strconv"
 )
 
@@ -33,7 +33,7 @@ const (
 
 // REU represents a RAM Expansion Unit (REU) type with attributes for RAM, registers, IRQ masking, size, and expansion handling.
 type REU struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	loaderId  string
 	ram       []uint8 // REU RAM
 	mask      uint32  // REU RAM address bit mask
@@ -45,9 +45,9 @@ type REU struct {
 
 // newReu initializes a new REU instance with a given size and returns an ICartridge implementation.
 // It sets up REU registers, memory size, and RAM contents, and performs an initial reset.
-func newReu(parent board.IComponent, suffix string, size int) icartridge.ICartridge {
+func newReu(parent component.IComponent, suffix string, size int) icartridge.ICartridge {
 	r := &REU{
-		BaseComponent: board.NewBaseComponent("reu", suffix),
+		BaseComponent: component.NewBaseComponent("reu", suffix),
 		loaderId:      "reu" + strconv.Itoa(size),
 		regs:          make([]uint8, 16),
 		size:          size,
@@ -56,48 +56,48 @@ func newReu(parent board.IComponent, suffix string, size int) icartridge.ICartri
 		ram:           make([]uint8, size),
 		irqMask:       0,
 	}
-	board.Register(parent, r)
+	component.Register(parent, r)
 	r.Reset()
 	return r
 }
 
 // New128K creates and returns a new 128K REU cartridge implementing the ICartridge interface.
-func New128K(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New128K(parent component.IComponent, suffix string) icartridge.ICartridge {
 	return newReu(parent, suffix, size128K)
 }
 
 // New256K creates a new 256K REU (RAM Expansion Unit) cartridge and returns it as an ICartridge interface.
-func New256K(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New256K(parent component.IComponent, suffix string) icartridge.ICartridge {
 	return newReu(parent, suffix, size256K)
 }
 
 // New512K creates and returns a new instance of an ICartridge with a memory size of 512K.
-func New512K(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New512K(parent component.IComponent, suffix string) icartridge.ICartridge {
 	return newReu(parent, suffix, size512K)
 }
 
 // New1M creates a new 1M REU (RAM Expansion Unit) cartridge implementing the ICartridge interface.
-func New1M(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New1M(parent component.IComponent, suffix string) icartridge.ICartridge {
 	return newReu(parent, suffix, size1M)
 }
 
 // New2M creates and returns a new 2MB REU cartridge instance implementing the ICartridge interface.
-func New2M(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New2M(parent component.IComponent, suffix string) icartridge.ICartridge {
 	return newReu(parent, suffix, size2M)
 }
 
 // New4M creates and returns a new 4MB REU cartridge implementing the ICartridge interface.
-func New4M(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New4M(parent component.IComponent, suffix string) icartridge.ICartridge {
 	return newReu(parent, suffix, size4M)
 }
 
 // New8M creates and returns a new 8 MB REU (RAM Expansion Unit) cartridge implementing the ICartridge interface.
-func New8M(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New8M(parent component.IComponent, suffix string) icartridge.ICartridge {
 	return newReu(parent, suffix, size8M)
 }
 
 // New16M creates a new ICartridge instance with 16MB of memory, utilizing the REU (RAM Expansion Unit) implementation.
-func New16M(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New16M(parent component.IComponent, suffix string) icartridge.ICartridge {
 	return newReu(parent, suffix, size16M)
 }
 

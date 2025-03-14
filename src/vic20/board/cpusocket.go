@@ -1,11 +1,13 @@
 package board
 
-import mos6510 "github.com/markel1974/c64emu/src/components/6510"
+import (
+	mos6510 "github.com/markel1974/c64emu/src/references"
+)
 
 type CPUSocket struct {
 	board *Board
-	pic   mos6510.IPic
-	banks mos6510.IBanks
+	pic   mos6510.I6510Pic
+	banks mos6510.I6510Banks
 }
 
 func NewCPUSocket() *CPUSocket {
@@ -23,10 +25,10 @@ func (w *CPUSocket) Reset() {
 	//w.board.cpu.Reset()
 }
 
-func (w *CPUSocket) GetPic() mos6510.IPic {
+func (w *CPUSocket) GetPic() mos6510.I6510Pic {
 	return w.pic
 }
 
-func (w *CPUSocket) GetBanks() mos6510.IBanks {
+func (w *CPUSocket) GetBanks() mos6510.I6510Banks {
 	return w.banks
 }

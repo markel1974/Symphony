@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
-	"github.com/markel1974/c64emu/src/components/board"
+	"github.com/markel1974/c64emu/src/component"
 )
 
 // cSize16K defines the size of 16 kilobytes (0x4000), commonly used for memory allocation or data validation.
@@ -15,7 +15,7 @@ const cSize8K = 0x2000
 
 // Generic represents the structure and functionality of a cartridge, including memory banks, intervals, and configuration.
 type Generic struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	loaderId   string
 	b0Interval icartridge.RomInterval
 	b1Interval icartridge.RomInterval
@@ -33,9 +33,9 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Generic cartridge implementing the ICartridge interface.
-func New(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New(parent component.IComponent, suffix string) icartridge.ICartridge {
 	g := &Generic{
-		BaseComponent: board.NewBaseComponent("generic", suffix),
+		BaseComponent: component.NewBaseComponent("generic", suffix),
 		loaderId:      "generic",
 		game:          0,
 		exRom:         0,
@@ -43,7 +43,7 @@ func New(parent board.IComponent, suffix string) icartridge.ICartridge {
 		b1Interval:    0,
 		intervals:     0,
 	}
-	board.Register(parent, g)
+	component.Register(parent, g)
 	return g
 }
 

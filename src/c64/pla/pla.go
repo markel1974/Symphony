@@ -3,7 +3,7 @@ package pla
 import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/common/filler"
-	"github.com/markel1974/c64emu/src/components/board"
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 )
 
@@ -14,7 +14,7 @@ type WriteFn func(uint16, uint8)
 
 // PLA represents a structure managing memory configurations, ports, and sockets for emulation purposes.
 type PLA struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	vic             ISocket
 	sid             ISocket
 	cia1            ISocket
@@ -40,10 +40,10 @@ type PLA struct {
 }
 
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
-func NewPLA(parent board.IComponent, suffix string) *PLA {
+func NewPLA(parent component.IComponent, suffix string) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
-		BaseComponent:   board.NewBaseComponent("pla", suffix),
+		BaseComponent:   component.NewBaseComponent("pla", suffix),
 		vic:             nil,
 		sid:             nil,
 		cia1:            nil,
@@ -67,7 +67,7 @@ func NewPLA(parent board.IComponent, suffix string) *PLA {
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
 	}
-	board.Register(parent, b)
+	component.Register(parent, b)
 	b.ports = NewPorts(b, "")
 	return b
 }

@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 	c64board "github.com/markel1974/c64emu/src/c64/board"
-	"github.com/markel1974/c64emu/src/components/board"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/render/asciirender"
 	"github.com/markel1974/c64emu/src/render/glrender"
 	"github.com/markel1974/c64emu/src/version"
@@ -133,7 +133,7 @@ func main() {
 	}
 
 	var g IRender
-	var b board.IBoard
+	var b references.IBoard
 
 	if mode == "vic20" {
 		b = vic20board.NewBoard()

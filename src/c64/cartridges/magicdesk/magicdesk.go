@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
-	"github.com/markel1974/c64emu/src/components/board"
+	"github.com/markel1974/c64emu/src/component"
 )
 
 // CartridgeMagicDesk represents a software-implemented version of a Magic Desk cartridge for system emulation.
 // It implements the ICartridge interface for handling cartridge-specific functionality within an expansion board.
 type CartridgeMagicDesk struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	loaderId string
 	spec     *icartridge.CartridgeSpec
 	banks    [][]byte
@@ -26,16 +26,16 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of a CartridgeMagicDesk implementing the icartridge.ICartridge interface.
-func New(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New(parent component.IComponent, suffix string) icartridge.ICartridge {
 	md := &CartridgeMagicDesk{
-		BaseComponent: board.NewBaseComponent("magicDesk", suffix),
+		BaseComponent: component.NewBaseComponent("magicDesk", suffix),
 		loaderId:      "magicDesk",
 		spec:          icartridge.GetCartridgeSpec(icartridge.CartridgeMode8K),
 		bankMask:      0x7f,
 		regVal:        0,
 		slot:          0,
 	}
-	board.Register(parent, md)
+	component.Register(parent, md)
 	return md
 }
 

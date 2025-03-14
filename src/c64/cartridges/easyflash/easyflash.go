@@ -10,7 +10,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/c64/snapshot"
 	"github.com/markel1974/c64emu/src/common/filler"
-	"github.com/markel1974/c64emu/src/components/board"
+	"github.com/markel1974/c64emu/src/component"
 	"io"
 	"log"
 	"os"
@@ -19,7 +19,7 @@ import (
 // CartridgeEasyFlash represents the implementation of an EasyFlash cartridge for execution on supported hardware.
 // It contains fields for configuration, state management, memory mapping, flash state, and cartridge-specific options.
 type CartridgeEasyFlash struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	loaderId        string
 	board           icartridge.IExpansion
 	intervalLo      icartridge.RomInterval
@@ -47,9 +47,9 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridge interface.
-func New(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New(parent component.IComponent, suffix string) icartridge.ICartridge {
 	ef := &CartridgeEasyFlash{
-		BaseComponent:   board.NewBaseComponent("easyFlash", suffix),
+		BaseComponent:   component.NewBaseComponent("easyFlash", suffix),
 		loaderId:        "easyFlash",
 		game:            1,
 		exRom:           1,
@@ -66,7 +66,7 @@ func New(parent board.IComponent, suffix string) icartridge.ICartridge {
 		memoryConfigIdx: -1,
 		updateEApi:      true,
 	}
-	board.Register(parent, ef)
+	component.Register(parent, ef)
 	return ef
 }
 

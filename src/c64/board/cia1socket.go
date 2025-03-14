@@ -1,8 +1,10 @@
 package board
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/common/bits"
-	mos6526 "github.com/markel1974/c64emu/src/components/cia"
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // defaultLPState represents the default state for LP (Launchpad) set to 0x10.
@@ -14,6 +16,13 @@ const (
 	defaultKeyState = 0xff
 )
 
+type ICia1 interface {
+	Setup(conn references.ICiaSocket)
+	Reset()
+	Emulate()
+	Update()
+}
+
 // CIA1Socket represents the state and behavior of the CIA1 socket in a computing system.
 // board refers to the system board connected to the CIA1 socket.
 // intrId represents the ID of the interrupt associated with CIA1.
@@ -23,7 +32,7 @@ const (
 // joy1 denotes the state of joystick 1 connected to the system.
 // joy2 denotes the state of joystick 2 connected to the system.
 type CIA1Socket struct {
-	cia1        *mos6526.CIA
+	cia1        ICia1
 	board       *Board  //
 	intrId      uint32  //
 	prevLPState uint8   // Previous state of LP line (bit 4)
@@ -49,10 +58,15 @@ func NewCIA1Socket() *CIA1Socket {
 }
 
 // Setup initializes the CIA1Socket with the provided Board reference and interrupt ID.
-func (w *CIA1Socket) Setup(board *Board, cia1 *mos6526.CIA) {
+func (w *CIA1Socket) Setup(board *Board, cia1Component component.IComponent) error {
 	w.board = board
+	cia1, ok := cia1Component.(ICia1)
+	if !ok {
+		return fmt.Errorf("unsupported interface")
+	}
 	w.cia1 = cia1
 	w.cia1.Setup(w)
+	return nil
 }
 
 // Reset reinitializes the CIA1Socket by resetting its board components, key matrices, joystick states, and light pen state.

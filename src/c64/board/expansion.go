@@ -2,24 +2,24 @@ package board
 
 import (
 	"github.com/markel1974/c64emu/src/common/signals"
-	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/quartz"
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/hardware/quartz"
 )
 
 // Expansion represents a logical structure that associates a parent ID, its own ID, and a reference to a Board.
 type Expansion struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	board *Board
 }
 
 // NewExpansion creates a new instance of the Expansion structure with the given parentId and suffix.
 // The `id` property is initialized by concatenating "expansion" with the specified suffix.
 // Returns a pointer to the newly created Expansion object.
-func NewExpansion(parent board.IComponent, suffix string) *Expansion {
+func NewExpansion(parent component.IComponent, suffix string) *Expansion {
 	e := &Expansion{
-		BaseComponent: board.NewBaseComponent("expansion", suffix),
+		BaseComponent: component.NewBaseComponent("expansion", suffix),
 	}
-	board.Register(parent, e)
+	component.Register(parent, e)
 	return e
 }
 

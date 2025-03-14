@@ -1,9 +1,9 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/components/board"
-	mos6581 "github.com/markel1974/c64emu/src/components/sid"
-	mos6569 "github.com/markel1974/c64emu/src/components/vic"
+	mos6581 "github.com/markel1974/c64emu/src/hardware/sid"
+	mos6569 "github.com/markel1974/c64emu/src/hardware/vic"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // SidSocket represents a socket connected to a Board for managing or interacting with its state or functionality.
@@ -47,6 +47,6 @@ func (w *SidSocket) Update() {
 }
 
 // GetPlayer returns the instance of IPlayer associated with the SidSocket's board.
-func (w *SidSocket) GetPlayer() board.IPlayer {
+func (w *SidSocket) GetPlayer() references.IPlayer {
 	return w.board.player
 }

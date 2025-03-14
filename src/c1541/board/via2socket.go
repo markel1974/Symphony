@@ -1,6 +1,6 @@
 package board
 
-import mos6522 "github.com/markel1974/c64emu/src/components/via"
+import mos6522 "github.com/markel1974/c64emu/src/hardware/via"
 
 // headControl represents the bit mask for controlling the head movement direction in the PRB register of VIA2.
 const headControl = uint8(0x3)

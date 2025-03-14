@@ -1,8 +1,8 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/components/board"
-	mos6569 "github.com/markel1974/c64emu/src/components/vic"
+	mos6569 "github.com/markel1974/c64emu/src/hardware/vic"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // VicSocket represents a virtual interface connector socket with a reference to a board and an interrupt identifier.
@@ -63,12 +63,12 @@ func (v *VicSocket) Cycle() uint64 {
 }
 
 // GetDisplayBuffer returns the IDisplayBuffer instance associated with the VicSocket's board.
-func (v *VicSocket) GetDisplayBuffer() board.IDisplayBuffer {
+func (v *VicSocket) GetDisplayBuffer() references.IDisplayBuffer {
 	return v.board.db
 }
 
-// GetBanks returns an implementation of the mos6569.IBanks interface, which provides access to memory handling operations.
-func (v *VicSocket) GetBanks() mos6569.IBanks {
+// GetBanks returns an implementation of the mos6569.IVicBanks interface, which provides access to memory handling operations.
+func (v *VicSocket) GetBanks() references.IVicBanks {
 	return v.board.plaSocket
 }
 

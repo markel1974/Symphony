@@ -1,6 +1,8 @@
 package inputs
 
-import "github.com/markel1974/c64emu/src/components/board"
+import (
+	"github.com/markel1974/c64emu/src/component"
+)
 
 // Virtual represents a virtual keyboard with states for num-lock and capital-lock toggles.
 type Virtual struct {
@@ -33,80 +35,80 @@ func (k *Virtual) CapitalToggle() {
 func (k *Virtual) FromVirtual(vKey int) int {
 	var result = -1
 	switch vKey {
-	case board.VKReturn:
+	case component.VKReturn:
 		return matrix(0, 1)
-	case board.VKBack:
+	case component.VKBack:
 		return matrix(7, 1) //matrix(0, 0)
-	case board.VKSpace:
+	case component.VKSpace:
 		return matrix(7, 4)
-	case board.VKEscape:
+	case component.VKEscape:
 		//RUN/STOP
 		return matrix(7, 7)
-	case board.VKTab:
+	case component.VKTab:
 		return -1
-	case board.VKDelete:
+	case component.VKDelete:
 		return matrix(0, 0)
-	case board.VKShift:
+	case component.VKShift:
 		return matrix(1, 7)
-	case board.VKControl:
+	case component.VKControl:
 		return matrix(7, 2)
-	case board.VKInsert:
+	case component.VKInsert:
 		return matrix(0, 0) | 0x80
-	case board.VKHome:
+	case component.VKHome:
 		return matrix(6, 3)
-	case board.VKEnd:
+	case component.VKEnd:
 		return matrix(6, 0)
-	case board.VKPrior:
+	case component.VKPrior:
 		return matrix(6, 6)
-	case board.VKNext:
+	case component.VKNext:
 		return matrix(6, 5)
-	case board.VKUp:
+	case component.VKUp:
 		return matrix(0, 7) | 0x80
-	case board.VKDown:
+	case component.VKDown:
 		return matrix(0, 7)
-	case board.VKLeft:
+	case component.VKLeft:
 		return matrix(0, 2) | 0x80
-	case board.VKRight:
+	case component.VKRight:
 		return matrix(0, 2)
-	case board.VKF1:
+	case component.VKF1:
 		return matrix(0, 4)
-	case board.VKF2:
+	case component.VKF2:
 		return matrix(0, 4) | 0x80
-	case board.VKF3:
+	case component.VKF3:
 		return matrix(0, 5)
-	case board.VKF4:
+	case component.VKF4:
 		return matrix(0, 5) | 0x80
-	case board.VKF5:
+	case component.VKF5:
 		return matrix(0, 6)
-	case board.VKF6:
+	case component.VKF6:
 		return matrix(0, 6) | 0x80
-	case board.VKF7:
+	case component.VKF7:
 		return matrix(0, 3)
-	case board.VKF8:
+	case component.VKF8:
 		return matrix(0, 3) | 0x80
-	case board.VKBracketLeft:
+	case component.VKBracketLeft:
 		return matrix(5, 6)
-	case board.VKAsterisk:
+	case component.VKAsterisk:
 		return matrix(6, 1)
-	case board.VKSlash:
+	case component.VKSlash:
 		return matrix(6, 7)
-	case board.VKSemicolon:
+	case component.VKSemicolon:
 		return matrix(5, 5)
-	case board.VKGrave:
+	case component.VKGrave:
 		return matrix(7, 1)
-	case board.VKMinus:
+	case component.VKMinus:
 		return matrix(5, 3)
-	case board.VKPlus:
+	case component.VKPlus:
 		return matrix(5, 0)
-	case board.VKEqual:
+	case component.VKEqual:
 		return matrix(6, 5)
-	case board.VKComma:
+	case component.VKComma:
 		return matrix(5, 7)
-	case board.VKPeriod:
+	case component.VKPeriod:
 		return matrix(5, 4)
-	case board.VKQuote:
+	case component.VKQuote:
 		return matrix(6, 2)
-	case board.VKBackslash:
+	case component.VKBackslash:
 		return matrix(6, 6)
 	case '0':
 		return matrix(4, 3)

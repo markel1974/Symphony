@@ -3,14 +3,15 @@ package asciirender
 import (
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/components/board"
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/references"
 	"os"
 )
 
 type Render struct {
 	cfg          *config.Config
-	c64Board     board.IBoard
+	c64Board     references.IBoard
 	scale        float64
 	fullscreen   bool
 	showMap      bool
@@ -22,7 +23,7 @@ type Render struct {
 	audio        *Audio
 }
 
-func New(c64board board.IBoard, cfg *config.Config) *Render {
+func New(c64board references.IBoard, cfg *config.Config) *Render {
 	w, h := c64board.GetScreenSize()
 	g := &Render{
 		c64Board:     c64board,
@@ -88,20 +89,20 @@ func (g *Render) Start() error {
 		case text := <-ch:
 			switch text[0] {
 			case 'A':
-				g.c64Board.Joy1SetKey(true, board.KeyJLeft)
-				g.c64Board.Joy1SetKey(false, board.KeyJLeft)
+				g.c64Board.Joy1SetKey(true, component.KeyJLeft)
+				g.c64Board.Joy1SetKey(false, component.KeyJLeft)
 			case 'D':
-				g.c64Board.Joy1SetKey(true, board.KeyJRight)
-				g.c64Board.Joy1SetKey(false, board.KeyJRight)
+				g.c64Board.Joy1SetKey(true, component.KeyJRight)
+				g.c64Board.Joy1SetKey(false, component.KeyJRight)
 			case 'W':
-				g.c64Board.Joy1SetKey(true, board.KeyJUp)
-				g.c64Board.Joy1SetKey(false, board.KeyJUp)
+				g.c64Board.Joy1SetKey(true, component.KeyJUp)
+				g.c64Board.Joy1SetKey(false, component.KeyJUp)
 			case 'S':
-				g.c64Board.Joy1SetKey(true, board.KeyJDown)
-				g.c64Board.Joy1SetKey(false, board.KeyJDown)
+				g.c64Board.Joy1SetKey(true, component.KeyJDown)
+				g.c64Board.Joy1SetKey(false, component.KeyJDown)
 			case 'F':
-				g.c64Board.Joy1SetKey(true, board.KeyJFire)
-				g.c64Board.Joy1SetKey(false, board.KeyJFire)
+				g.c64Board.Joy1SetKey(true, component.KeyJFire)
+				g.c64Board.Joy1SetKey(false, component.KeyJFire)
 			case 'Q':
 				run = false
 			default:

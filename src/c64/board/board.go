@@ -6,15 +6,16 @@ import (
 	"github.com/markel1974/c64emu/src/c64/pla"
 	"github.com/markel1974/c64emu/src/c64/prg"
 	"github.com/markel1974/c64emu/src/common/signals"
-	"github.com/markel1974/c64emu/src/components/6510"
-	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/cia"
-	"github.com/markel1974/c64emu/src/components/iec"
-	"github.com/markel1974/c64emu/src/components/quartz"
-	"github.com/markel1974/c64emu/src/components/sid"
-	"github.com/markel1974/c64emu/src/components/throttling"
-	"github.com/markel1974/c64emu/src/components/vic"
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/hardware"
+	"github.com/markel1974/c64emu/src/hardware/6510"
+	"github.com/markel1974/c64emu/src/hardware/iec"
+	"github.com/markel1974/c64emu/src/hardware/quartz"
+	"github.com/markel1974/c64emu/src/hardware/sid"
+	"github.com/markel1974/c64emu/src/hardware/throttle"
+	"github.com/markel1974/c64emu/src/hardware/vic"
+	"github.com/markel1974/c64emu/src/references"
 	"golang.design/x/clipboard"
 	"log"
 	"os"
@@ -30,9 +31,9 @@ const (
 
 // Board represents the central processing and coordination system for handling hardware components and peripherals.
 type Board struct {
-	*board.BaseComponent
-	db                  board.IDisplayBuffer
-	player              board.IPlayer
+	*component.BaseComponent
+	db                  references.IDisplayBuffer
+	player              references.IPlayer
 	quartz              *quartz.Quartz
 	cia1Socket          *CIA1Socket
 	cia2Socket          *CIA2Socket
@@ -56,7 +57,9 @@ type Board struct {
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
-	dt                  board.IThrottling
+	dt                  references.IThrottling
+
+	factory *hardware.Factory
 }
 
 const componentId = "c64"
@@ -64,7 +67,7 @@ const componentId = "c64"
 // NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
 func NewBoard() *Board {
 	b := &Board{
-		BaseComponent:       board.NewBaseComponent("c64", ""),
+		BaseComponent:       component.NewBaseComponent("c64", ""),
 		db:                  nil,
 		player:              nil,
 		quartz:              nil,
@@ -84,15 +87,16 @@ func NewBoard() *Board {
 		prg:                 nil,
 		joySwap:             true,
 		dt:                  nil,
+		factory:             hardware.NewFactory(),
 	}
-	board.Register(nil, b)
+	component.Register(nil, b)
 	b.quartz = quartz.NewQuartz(b, "")
 	b.cartMan = cartridges.NewManager(b, "")
 	return b
 }
 
 // Setup initializes the Board with provided display buffer, player, and configuration settings.
-func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config.Config) error {
+func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, cfg *config.Config) error {
 	s.db = db
 	s.player = player
 	if err := clipboard.Init(); err != nil {
@@ -102,7 +106,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	}
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
-	s.dt = throttling.NewDynamicThrottling(mos6569.FrameInterval)
+	s.dt = throttle.NewDynamicThrottling(mos6569.FrameInterval)
 
 	s.cpuSocket = NewCPUSocket()
 	s.vicSocket = NewVicSocket()
@@ -116,8 +120,15 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	cpu := mos6510.NewCPU(s, "")
 	vic := mos6569.NewVIC(s, "")
 	sid := mos6581.NewSID(s, "")
-	cia1 := mos6526.NewCIA(s, "1")
-	cia2 := mos6526.NewCIA(s, "2")
+
+	cia1, err := s.factory.Create(s, "cia", "1")
+	if err != nil {
+		return err
+	}
+	cia2, err := s.factory.Create(s, "cia", "2")
+	if err != nil {
+		return err
+	}
 	plaC := pla.NewPLA(s, "")
 	s.keys = inputs.NewKeyboard(s, "")
 	s.joy1 = inputs.NewJoystick(s, "1")
@@ -130,10 +141,14 @@ func (s *Board) Setup(db board.IDisplayBuffer, player board.IPlayer, cfg *config
 	s.cpuSocket.Setup(s, cpu)
 	s.vicSocket.Setup(s, vic)
 	s.sidSocket.Setup(s, sid)
-	s.cia1Socket.Setup(s, cia1)
-	s.cia2Socket.Setup(s, cia2)
+	if err = s.cia1Socket.Setup(s, cia1); err != nil {
+		return err
+	}
+	if err = s.cia2Socket.Setup(s, cia2); err != nil {
+		return err
+	}
 	s.cartMan.Setup(s.expansion, cfg)
-	s.plaSocket.Setup(s, plaC, vic, sid, cia1, cia2, s.cartMan)
+	_ = s.plaSocket.Setup(s, plaC, vic, sid, cia1, cia2, s.cartMan)
 
 	for _, cartName := range s.cfg.GetCartridges() {
 		var data []uint8
@@ -229,7 +244,7 @@ func (s *Board) Emulate() bool {
 }
 
 // Throttle returns the throttling service used by the board.
-func (s *Board) Throttle() board.IThrottling {
+func (s *Board) Throttle() references.IThrottling {
 	return s.dt
 }
 

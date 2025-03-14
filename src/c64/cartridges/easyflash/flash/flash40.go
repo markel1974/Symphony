@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/snapshot"
-	"github.com/markel1974/c64emu/src/components/quartz"
+	"github.com/markel1974/c64emu/src/hardware/quartz"
 )
 
 // DumpVerMajor represents the major version of the dump format.

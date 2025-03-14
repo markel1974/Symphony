@@ -10,7 +10,7 @@ import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/magicdesk"
 	"github.com/markel1974/c64emu/src/c64/cartridges/ocean"
 	"github.com/markel1974/c64emu/src/c64/cartridges/reu"
-	"github.com/markel1974/c64emu/src/components/board"
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"strconv"
 	"strings"
@@ -22,32 +22,32 @@ import (
 
 // Manager is responsible for managing cartridge interactions, configurations, and hardware registration in the system.
 type Manager struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	idx                 int
 	board               icartridge.IExpansion
 	prefs               *config.Config
 	carts               []icartridge.ICartridge
 	emulate             []icartridge.ICartridge
-	registerHardware    map[string]func(board.IComponent, string) icartridge.ICartridge
-	registerType        map[int]func(board.IComponent, string) icartridge.ICartridge
-	registerSize        map[int]func(board.IComponent, string) icartridge.ICartridge
-	registerSizeDefault func(board.IComponent, string) icartridge.ICartridge
+	registerHardware    map[string]func(component.IComponent, string) icartridge.ICartridge
+	registerType        map[int]func(component.IComponent, string) icartridge.ICartridge
+	registerSize        map[int]func(component.IComponent, string) icartridge.ICartridge
+	registerSizeDefault func(component.IComponent, string) icartridge.ICartridge
 }
 
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
-func NewManager(parent board.IComponent, suffix string) *Manager {
+func NewManager(parent component.IComponent, suffix string) *Manager {
 	m := &Manager{
-		BaseComponent:       board.NewBaseComponent("cartridgeManager", suffix),
+		BaseComponent:       component.NewBaseComponent("cartridgeManager", suffix),
 		idx:                 0,
 		board:               nil,
 		prefs:               nil,
 		carts:               nil,
-		registerHardware:    make(map[string]func(board.IComponent, string) icartridge.ICartridge),
-		registerType:        make(map[int]func(board.IComponent, string) icartridge.ICartridge),
-		registerSize:        make(map[int]func(board.IComponent, string) icartridge.ICartridge),
+		registerHardware:    make(map[string]func(component.IComponent, string) icartridge.ICartridge),
+		registerType:        make(map[int]func(component.IComponent, string) icartridge.ICartridge),
+		registerSize:        make(map[int]func(component.IComponent, string) icartridge.ICartridge),
 		registerSizeDefault: nil,
 	}
-	board.Register(parent, m)
+	component.Register(parent, m)
 	return m
 }
 
@@ -212,7 +212,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if err := ldr.Setup(name, data); err != nil {
 		return "", err
 	}
-	var factory func(board.IComponent, string) icartridge.ICartridge = nil
+	var factory func(component.IComponent, string) icartridge.ICartridge = nil
 	if len(hardware) > 0 {
 		hardware = strings.ToUpper(strings.TrimSpace(hardware))
 		factory = f.registerHardware[hardware]

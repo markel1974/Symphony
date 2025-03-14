@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
-	"github.com/markel1974/c64emu/src/components/board"
+	"github.com/markel1974/c64emu/src/component"
 )
 
 // CartridgeOcean represents a cartridge model with bank switching and IO interaction mechanisms for ROM emulation.
 type CartridgeOcean struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	loaderId  string
 	intervals icartridge.RomInterval
 	lastData  uint8
@@ -27,17 +27,17 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridge interface.
-func New(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New(parent component.IComponent, suffix string) icartridge.ICartridge {
 	v := icartridge.GetCartridgeSpec(icartridge.CartridgeMode16K)
 	co := &CartridgeOcean{
-		BaseComponent: board.NewBaseComponent("ocean", suffix),
+		BaseComponent: component.NewBaseComponent("ocean", suffix),
 		loaderId:      "ocean",
 		game:          v.Game,
 		exRom:         v.ExRom,
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		lastData:      0,
 	}
-	board.Register(parent, co)
+	component.Register(parent, co)
 	return co
 }
 

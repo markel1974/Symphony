@@ -1,11 +1,22 @@
 package board
 
-import mos6526 "github.com/markel1974/c64emu/src/components/cia"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
+)
+
+type ICia2 interface {
+	Setup(conn references.ICiaSocket)
+	Reset()
+	Emulate()
+	Update()
+}
 
 // CIA2Socket represents a connection interface to the CIA2 chip on a hardware board.
 // It contains a reference to the board and an interrupt identifier.
 type CIA2Socket struct {
-	cia2   *mos6526.CIA
+	cia2   ICia2
 	board  *Board
 	intrId uint32
 }
@@ -21,10 +32,15 @@ func NewCIA2Socket() *CIA2Socket {
 }
 
 // Setup initializes the CIA2Socket with the provided board reference and interrupt ID.
-func (w *CIA2Socket) Setup(board *Board, cia2 *mos6526.CIA) {
+func (w *CIA2Socket) Setup(board *Board, cia2Component component.IComponent) error {
 	w.board = board
+	cia2, ok := cia2Component.(ICia1)
+	if !ok {
+		return fmt.Errorf("unsupported interface")
+	}
 	w.cia2 = cia2
 	w.cia2.Setup(w)
+	return nil
 }
 
 func (w *CIA2Socket) Emulate() {

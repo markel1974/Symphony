@@ -6,12 +6,13 @@ import (
 	"github.com/markel1974/c64emu/src/c64/pla"
 	"github.com/markel1974/c64emu/src/c64/prg"
 	"github.com/markel1974/c64emu/src/common/signals"
-	mos6510 "github.com/markel1974/c64emu/src/components/6510"
-	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/iec"
-	"github.com/markel1974/c64emu/src/components/throttling"
-	mos6569 "github.com/markel1974/c64emu/src/components/vic"
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	mos6510 "github.com/markel1974/c64emu/src/hardware/6510"
+	"github.com/markel1974/c64emu/src/hardware/iec"
+	"github.com/markel1974/c64emu/src/hardware/throttle"
+	mos6569 "github.com/markel1974/c64emu/src/hardware/vic"
+	"github.com/markel1974/c64emu/src/references"
 	"golang.design/x/clipboard"
 	"log"
 )
@@ -24,14 +25,14 @@ const (
 )
 
 type Board struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	cia1Socket          *CIA1Socket
 	cia2Socket          *CIA2Socket
 	vicSocket           *VicSocket
 	cpuSocket           *CPUSocket
 	expansion           *Expansion
-	db                  board.IDisplayBuffer
-	p                   board.IPlayer
+	db                  references.IDisplayBuffer
+	p                   references.IPlayer
 	pic                 *mos6510.Pic
 	iec                 *iec.Dispatcher
 	keys                *inputs.Keyboard
@@ -48,12 +49,12 @@ type Board struct {
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
-	dt                  board.IThrottling
+	dt                  references.IThrottling
 }
 
 func NewBoard() *Board {
 	b := &Board{
-		BaseComponent:       board.NewBaseComponent("board", ""),
+		BaseComponent:       component.NewBaseComponent("board", ""),
 		iec:                 nil,
 		pic:                 nil,
 		keys:                nil,
@@ -71,12 +72,12 @@ func NewBoard() *Board {
 		joySwap:             true,
 		dt:                  nil,
 	}
-	board.Register(nil, b)
+	component.Register(nil, b)
 	b.cartMan = cartridges.NewManager(b, "")
 	return b
 }
 
-func (s *Board) Setup(db board.IDisplayBuffer, p board.IPlayer, cfg *config.Config) error {
+func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *config.Config) error {
 	s.db = db
 	s.p = p
 	if err := clipboard.Init(); err != nil {
@@ -86,7 +87,7 @@ func (s *Board) Setup(db board.IDisplayBuffer, p board.IPlayer, cfg *config.Conf
 	}
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
-	s.dt = throttling.NewDynamicThrottling(mos6569.FrameInterval)
+	s.dt = throttle.NewDynamicThrottling(mos6569.FrameInterval)
 
 	s.cpuSocket = NewCPUSocket()
 	s.vicSocket = NewVicSocket()
@@ -273,6 +274,6 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	return rb
 }
 
-func (s *Board) Throttle() board.IThrottling {
+func (s *Board) Throttle() references.IThrottling {
 	return s.dt
 }

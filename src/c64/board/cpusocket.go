@@ -1,6 +1,9 @@
 package board
 
-import mos6510 "github.com/markel1974/c64emu/src/components/6510"
+import (
+	mos6510 "github.com/markel1974/c64emu/src/hardware/6510"
+	"github.com/markel1974/c64emu/src/references"
+)
 
 // CPUSocket represents a CPU interface that connects to a board, picture processing unit, and memory banks for operations.
 type CPUSocket struct {
@@ -33,13 +36,13 @@ func (w *CPUSocket) Emulate() {
 	w.cpu.Emulate()
 }
 
-// GetPic retrieves the programmable interrupt controller (IPic) associated with the CPUSocket instance.
-func (w *CPUSocket) GetPic() mos6510.IPic {
+// GetPic retrieves the programmable interrupt controller (I6510Pic) associated with the CPUSocket instance.
+func (w *CPUSocket) GetPic() references.I6510Pic {
 	return w.board.pic
 }
 
 // GetBanks retrieves the memory banks interface associated with the CPUSocket.
-func (w *CPUSocket) GetBanks() mos6510.IBanks {
+func (w *CPUSocket) GetBanks() references.I6510Banks {
 	return w.board.plaSocket
 }
 

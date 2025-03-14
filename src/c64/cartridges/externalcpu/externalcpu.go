@@ -3,9 +3,9 @@ package externalcpu
 import (
 	"github.com/markel1974/c64emu/src/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/c64/cartridges/loader"
-	"github.com/markel1974/c64emu/src/components/6510"
-	"github.com/markel1974/c64emu/src/components/board"
-	"github.com/markel1974/c64emu/src/components/quartz"
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/hardware/6510"
+	"github.com/markel1974/c64emu/src/hardware/quartz"
 )
 
 // Id is a constant representing the identifier "SCPU" for a specific hardware type or component registration.
@@ -14,7 +14,7 @@ const Id = "SCPU"
 // ExternalCPU represents an external CPU module with its associated components and connections for system integration.
 // It includes an ID, expansion board, CPU socket, programmable interrupt controller, CPU, and quartz clock source.
 type ExternalCPU struct {
-	*board.BaseComponent
+	*component.BaseComponent
 	loaderId  string
 	board     icartridge.IExpansion
 	cpuSocket *CPUSocket
@@ -24,16 +24,16 @@ type ExternalCPU struct {
 }
 
 // New returns a new instance of the ExternalCPU struct implementing the ICartridge interface.
-func New(parent board.IComponent, suffix string) icartridge.ICartridge {
+func New(parent component.IComponent, suffix string) icartridge.ICartridge {
 	r := &ExternalCPU{
-		BaseComponent: board.NewBaseComponent("externalCpu", suffix),
+		BaseComponent: component.NewBaseComponent("externalCpu", suffix),
 		board:         nil,
 		cpuSocket:     nil,
 		pic:           nil,
 		cpu:           nil,
 		quartz:        nil,
 	}
-	board.Register(parent, r)
+	component.Register(parent, r)
 	return r
 }
 
