@@ -3,13 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	c64board "github.com/markel1974/c64emu/src/c64/board"
 	"github.com/markel1974/c64emu/src/config"
+	c64board "github.com/markel1974/c64emu/src/hardware/c64/board"
+	vic20board "github.com/markel1974/c64emu/src/hardware/vic20/board"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/render/asciirender"
 	"github.com/markel1974/c64emu/src/render/glrender"
 	"github.com/markel1974/c64emu/src/version"
-	vic20board "github.com/markel1974/c64emu/src/vic20/board"
 )
 
 //TODO WASM

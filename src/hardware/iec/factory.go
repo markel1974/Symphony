@@ -1,9 +1,9 @@
 package iec
 
 import (
-	c1541board "github.com/markel1974/c64emu/src/c1541/board"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	c1541board "github.com/markel1974/c64emu/src/hardware/c1541/board"
 	"github.com/markel1974/c64emu/src/hardware/iec/fsdrive"
 	"github.com/markel1974/c64emu/src/hardware/iec/iecdevice"
 	"github.com/markel1974/c64emu/src/references"
