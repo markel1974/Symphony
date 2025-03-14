@@ -30,7 +30,11 @@ type FSDrive struct {
 	cfg          *config.Config
 }
 
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) *FSDrive {
+func NewBoardComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+	return NewBoard(parent, factory, suffix)
+}
+
+func NewBoard(parent component.IComponent, factory references.IComponentFactory, suffix string) *FSDrive {
 	fs := &FSDrive{
 		BaseComponent: component.NewBaseComponent("fs_drive", ""),
 		parent:        parent,

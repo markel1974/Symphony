@@ -2,6 +2,7 @@ package hardware
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/hardware/fsdrive"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/hardware/joystick"
 	"github.com/markel1974/c64emu/src/hardware/keyboard"
@@ -33,7 +34,8 @@ func NewFactory(cfg *config.Config) *Factory {
 	f.container = make(map[string]constructorFn)
 	f.container["c64"] = c64board.NewBoardComponent
 	f.container["vic20"] = vic20board.NewBoardComponent
-	f.container["c1541"] = c1541board.NewComponent
+	f.container["c1541"] = c1541board.NewBoardComponent
+	f.container["fsdrive"] = fsdrive.NewBoardComponent
 	f.container["iec"] = iec.NewDispatcherComponent
 	f.container["mos6510"] = mos6510.NewCPUComponent
 	f.container["mos6502"] = mos6510.NewCPUComponent
@@ -67,6 +69,8 @@ func (f *Factory) CreateComponent(parent component.IComponent, id string, suffix
 		return vic20board.NewBoard(parent, f, suffix), nil
 	case "c1541":
 		return c1541board.NewBoard(parent, f, suffix), nil
+	case "fsdrive":
+		return fsdrive.NewBoard(parent, f, suffix), nil
 	case "iec":
 		return iec.NewDispatcher(parent, f, suffix), nil
 	case "mos6502":

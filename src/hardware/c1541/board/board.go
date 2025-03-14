@@ -46,7 +46,7 @@ type Board struct {
 	ledChanged     *signals.SignalUint32
 }
 
-func NewComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewBoardComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
 	return NewBoard(parent, factory, suffix)
 }
 

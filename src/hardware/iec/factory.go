@@ -4,7 +4,7 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	c1541board "github.com/markel1974/c64emu/src/hardware/c1541/board"
-	"github.com/markel1974/c64emu/src/hardware/iec/fsdrive"
+	"github.com/markel1974/c64emu/src/hardware/fsdrive"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -46,11 +46,11 @@ func (c *DriveFactory) Create(kind string, suffix string) references.IIecDevice 
 	var vd references.IIecDevice
 	switch kind {
 	case "C1541":
-		vd = c1541board.New(c, c.factory, suffix)
+		vd = c1541board.NewBoard(c, c.factory, suffix)
 	case "FSDRIVE":
-		vd = fsdrive.New(c, c.factory, suffix)
+		vd = fsdrive.NewBoard(c, c.factory, suffix)
 	default:
-		vd = c1541board.New(c, c.factory, suffix)
+		vd = c1541board.NewBoard(c, c.factory, suffix)
 	}
 	return vd
 }
