@@ -1,5 +1,9 @@
 package mos6510
 
+import (
+	"github.com/markel1974/c64emu/src/references"
+)
+
 // Jump - Branch
 
 // instOpJMP is the instruction handler for the JMP operation, updating the program counter and setting the next operation.
@@ -364,7 +368,7 @@ func instOpBPL(cpu *CPU) {
 // instOpBRAnp handles a branch operation without crossing a page boundary, updating the program counter and setting the next instruction.
 func instOpBRAnp(cpu *CPU) {
 	// No page crossed
-	cpu.opFlags |= opFlagIntDelayed
+	cpu.opFlags |= references.OpFlagIntDelayed
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}

@@ -3,8 +3,8 @@ package board
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	pla2 "github.com/markel1974/c64emu/src/hardware/c64/pla"
-	"github.com/markel1974/c64emu/src/hardware/c64/roms"
+	pla2 "github.com/markel1974/c64emu/src/hardware/pla_c64"
+	"github.com/markel1974/c64emu/src/hardware/roms_c64"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -35,7 +35,7 @@ func (w *PLASocket) Setup(board *Board, p *pla2.PLA, vic references.IVic, sid re
 	}
 	w.board = board
 	w.pla = p
-	rl := roms.NewRomLoader(w.board.cfg)
+	rl := roms_c64.NewRomLoader(w.board.cfg)
 	w.pla.Setup(vic, sid, cia1, cia2, cartMan, rl, w.board.cfg)
 	return nil
 }

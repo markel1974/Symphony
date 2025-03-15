@@ -4,13 +4,13 @@ import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
-	mos6510 "github.com/markel1974/c64emu/src/hardware/6510"
-	"github.com/markel1974/c64emu/src/hardware/c64/cartridges"
-	"github.com/markel1974/c64emu/src/hardware/c64/pla"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/hardware/joystick"
 	inputs2 "github.com/markel1974/c64emu/src/hardware/keyboard"
+	mos6510 "github.com/markel1974/c64emu/src/hardware/pic_6510"
+	"github.com/markel1974/c64emu/src/hardware/pla_c64"
 	"github.com/markel1974/c64emu/src/hardware/throttle"
 	mos6569 "github.com/markel1974/c64emu/src/hardware/vic"
 	"github.com/markel1974/c64emu/src/references"
@@ -43,8 +43,8 @@ type Board struct {
 	joySwap             bool
 	cfg                 *config.Config
 	hasClipboard        bool
-	cartMan             *cartridges.Manager
-	pla                 *pla.PLA
+	cartMan             *cartridges_c64.Manager
+	pla                 *pla_c64.PLA
 	expansionIrqTrigger *signals.SignalUint32
 	expansionIrqClear   *signals.SignalUint32
 	vBlank              bool
@@ -80,7 +80,7 @@ func NewBoard(parent component.IComponent, factory references.IComponentFactory,
 		dt:                  nil,
 	}
 	component.Register(parent, b)
-	b.cartMan = cartridges.NewManager(b, b.factory, "")
+	b.cartMan = cartridges_c64.NewManager(b, b.factory, "")
 	return b
 }
 
@@ -108,7 +108,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 	s.keys = inputs2.NewKeyboard(s, s.factory, "")
 	s.joy1 = joystick.NewJoystick(s, s.factory, "1")
 	s.joy2 = joystick.NewJoystick(s, s.factory, "2")
-	s.pla = pla.NewPLA(s, "")
+	s.pla = pla_c64.NewPLA(s, s.factory, "")
 	s.expansion = NewExpansion(s)
 
 	//s.iec.Setup(s.quartz, cfg)

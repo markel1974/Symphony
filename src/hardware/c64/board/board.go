@@ -5,12 +5,13 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/6510"
-	"github.com/markel1974/c64emu/src/hardware/c64/cartridges"
-	"github.com/markel1974/c64emu/src/hardware/c64/pla"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/hardware/joystick"
 	"github.com/markel1974/c64emu/src/hardware/keyboard"
+	"github.com/markel1974/c64emu/src/hardware/pic_6510"
+	"github.com/markel1974/c64emu/src/hardware/pla_c64"
 	"github.com/markel1974/c64emu/src/hardware/quartz"
 	"github.com/markel1974/c64emu/src/hardware/sid"
 	"github.com/markel1974/c64emu/src/hardware/throttle"
@@ -42,7 +43,7 @@ type Board struct {
 	cpuSocket           *CPUSocket
 	expansion           *Expansion
 	plaSocket           *PLASocket
-	pic                 *mos6510.Pic
+	pic                 *pic_6510.Pic
 	iec                 *iec.Dispatcher
 	keys                *keyboard.Keyboard
 	joy1                *joystick.Joystick
@@ -50,7 +51,7 @@ type Board struct {
 	joySwap             bool
 	cfg                 *config.Config
 	hasClipboard        bool
-	cartMan             *cartridges.Manager
+	cartMan             *cartridges_c64.Manager
 	expansionIrqTrigger *signals.SignalUint32
 	expansionIrqClear   *signals.SignalUint32
 	vBlank              bool
@@ -88,7 +89,7 @@ func NewBoard(parent component.IComponent, factory references.IComponentFactory,
 	}
 	component.Register(parent, b)
 	b.quartz = quartz.NewQuartz(b, b.factory, "")
-	b.cartMan = cartridges.NewManager(b, b.factory, "")
+	b.cartMan = cartridges_c64.NewManager(b, b.factory, "")
 	return b
 }
 
@@ -117,7 +118,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	s.cia2Socket = NewCIA2Socket()
 	s.plaSocket = NewPLASocket()
 
-	s.pic = mos6510.NewPic(s, "")
+	s.pic = pic_6510.NewPic(s, "")
 	s.iec = iec.NewDispatcher(s, s.factory, "")
 	cpu := mos6510.NewCPU(s, s.factory, "")
 	vic := mos6569.NewVIC(s, s.factory, "")
@@ -132,7 +133,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	if cia2, err = s.factory.Create(s, "mos6526", "2"); err != nil {
 		return err
 	}
-	plaC := pla.NewPLA(s, "")
+	plaC := pla_c64.NewPLA(s, s.factory, "")
 	s.keys = keyboard.NewKeyboard(s, s.factory, "")
 	s.joy1 = joystick.NewJoystick(s, s.factory, "1")
 	s.joy2 = joystick.NewJoystick(s, s.factory, "2")

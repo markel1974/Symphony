@@ -5,7 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// CPUSocket represents the CPU's interface to the board, providing access to the interrupt controller and memory banks.
+// CPUSocket represents the CPU's interface to the board, providing access to the interrupt controller and memory pla.
 type CPUSocket struct {
 	cpu   *mos6510.CPU
 	board *Board
@@ -28,7 +28,7 @@ func NewCPUSocket() *CPUSocket {
 func (w *CPUSocket) Setup(board *Board, cpu *mos6510.CPU) {
 	w.board = board
 	w.pic = board.pic
-	w.banks = board.banks
+	w.banks = board.pla
 	w.cpu = cpu
 	w.cpu.Setup(w)
 	w.cpu.SetOverflowBranch(w.board.via2Socket.ByteReady())

@@ -13,7 +13,9 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/6510"
 	"github.com/markel1974/c64emu/src/hardware/c1541/mechanic"
-	"github.com/markel1974/c64emu/src/hardware/c1541/pla"
+	"github.com/markel1974/c64emu/src/hardware/pic_6510"
+	"github.com/markel1974/c64emu/src/hardware/pla_c1541"
+	"github.com/markel1974/c64emu/src/hardware/roms_c1541"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -31,13 +33,13 @@ const baseId = "c1541"
 type Board struct {
 	*component.BaseComponent
 	factory        references.IComponentFactory
-	pic            *mos6510.Pic
+	pic            *pic_6510.Pic
 	iec            references.IIec
 	externalQuartz references.IQuartzSocket
 	cpuSocket      *CPUSocket
 	via1Socket     *Via1Socket
 	via2Socket     *Via2Socket
-	banks          *pla.PLA
+	pla            *pla_c1541.PLA
 	mec            *mechanic.Mechanic
 	deviceId       uint8
 	deviceNumber   uint8
@@ -65,7 +67,7 @@ func NewBoard(parent component.IComponent, factory references.IComponentFactory,
 		via1Socket:     nil,
 		via2Socket:     nil,
 		pic:            nil,
-		banks:          nil,
+		pla:            nil,
 		cfg:            nil,
 	}
 	component.Register(parent, b)
@@ -85,9 +87,9 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartzSocket, devi
 	m.filePath = opts
 	m.externalQuartz = quartz
 	m.cfg.Bind(m.configChanged)
-	m.banks = pla.New()
+	m.pla = pla_c1541.NewPLA(m, m.factory, "")
 	//m.quartz = quartz.NewQuartz(m, "")
-	m.pic = mos6510.NewPic(m, "")
+	m.pic = pic_6510.NewPic(m, "")
 	cpu := mos6510.NewCPU(m, m.factory, "")
 	m.mec = mechanic.NewMechanic()
 	m.mec.Setup(m.filePath)
@@ -106,7 +108,8 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartzSocket, devi
 	if err = m.via2Socket.Setup(m, via2); err != nil {
 		return err
 	}
-	if err = m.banks.Setup(via1, via2, cfg); err != nil {
+	loader := roms_c1541.NewRomLoader(cfg)
+	if err = m.pla.Setup(via1, via2, loader, cfg); err != nil {
 		return err
 	}
 	m.pic.Setup(m.externalQuartz)
@@ -151,7 +154,7 @@ func (m *Board) AtnStateChanged(newAtn bool) {
 	if !newAtn {
 		//Interrupt by negative edge of ATN on IEC bus
 		//https://sta.c64.org/cbm1541mem.html
-		m.banks.Write(0x7c, 1)
+		m.pla.Write(0x7c, 1)
 		//fmt.Println("ATN", b, "RECEIVED - WAKE UP")
 	}
 }

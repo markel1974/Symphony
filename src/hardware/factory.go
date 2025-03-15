@@ -2,10 +2,13 @@ package hardware
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/hardware/fsdrive"
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64"
+	"github.com/markel1974/c64emu/src/hardware/fs_drive"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/hardware/joystick"
 	"github.com/markel1974/c64emu/src/hardware/keyboard"
+	"github.com/markel1974/c64emu/src/hardware/pla_c1541"
+	"github.com/markel1974/c64emu/src/hardware/pla_c64"
 	"github.com/markel1974/c64emu/src/hardware/throttle"
 	"github.com/markel1974/c64emu/src/references"
 	"strings"
@@ -35,7 +38,8 @@ func NewFactory(cfg *config.Config) *Factory {
 	f.container["c64"] = c64board.NewBoardComponent
 	f.container["vic20"] = vic20board.NewBoardComponent
 	f.container["c1541"] = c1541board.NewBoardComponent
-	f.container["fsdrive"] = fsdrive.NewBoardComponent
+	f.container["fsdrive"] = fs_drive.NewBoardComponent
+	f.container["cartridges_c64"] = cartridges_c64.NewManagerComponent
 	f.container["iec"] = iec.NewDispatcherComponent
 	f.container["mos6510"] = mos6510.NewCPUComponent
 	f.container["mos6502"] = mos6510.NewCPUComponent
@@ -44,6 +48,8 @@ func NewFactory(cfg *config.Config) *Factory {
 	f.container["mos6569"] = mos6569.NewVICComponent
 	f.container["mos6522"] = mos6522.NewViaComponent
 	f.container["quartz"] = quartz.NewQuartzComponent
+	f.container["pla_c64"] = pla_c64.NewPLAComponent
+	f.container["pla_c1541"] = pla_c1541.NewPLAComponent
 	f.container["joystick"] = joystick.NewJoystickComponent
 	f.container["keyboard"] = keyboard.NewKeyboardComponent
 	f.container["throttle"] = throttle.NewDynamicThrottleComponent
@@ -70,7 +76,7 @@ func (f *Factory) CreateComponent(parent component.IComponent, id string, suffix
 	case "c1541":
 		return c1541board.NewBoard(parent, f, suffix), nil
 	case "fsdrive":
-		return fsdrive.NewBoard(parent, f, suffix), nil
+		return fs_drive.NewBoard(parent, f, suffix), nil
 	case "iec":
 		return iec.NewDispatcher(parent, f, suffix), nil
 	case "mos6502":
