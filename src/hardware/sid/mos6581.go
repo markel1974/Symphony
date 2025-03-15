@@ -44,7 +44,7 @@ func NewSID(parent component.IComponent, factory references.IComponentFactory, s
 }
 
 // Setup initializes the SID instance with the provided socket, configuration, fragment frequency, and raster count.
-func (sid *SID) Setup(socket references.ISidSocket, cfg *config.Config, fragFreq int, rasters int) {
+func (sid *SID) Setup(socket references.ISidSocket, fragFreq int, rasters int, cfg *config.Config) {
 	sid.socket = socket
 	sid.audioBuilder = NewAudioBuilder(sid.socket.GetPlayer(), true, fragFreq, rasters)
 	sid.cfg = cfg

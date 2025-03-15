@@ -3,37 +3,36 @@ package magicdesk
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	icartridge2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
-	loader2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
+	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/references"
 )
 
 // CartridgeMagicDesk represents a software-implemented version of a Magic Desk cartridge for system emulation.
-// It implements the ICartridge interface for handling cartridge-specific functionality within an expansion board.
+// It implements the IC64Cartridge interface for handling cartridge-specific functionality within an expansion board.
 type CartridgeMagicDesk struct {
 	*component.BaseComponent
 	factory  references.IComponentFactory
 	loaderId string
-	spec     *icartridge2.CartridgeSpec
+	spec     *references.CartridgeSpec
 	banks    [][]byte
 	bankMask uint8
 	regVal   uint8
 	slot     uint8
-	board    icartridge2.IExpansion
+	board    references.IC64Expansion
 }
 
 // GetType returns an integer identifier representing the type of the Magic Desk cartridge.
 func GetType() int {
-	return loader2.CARTRIDGE_MAGIC_DESK
+	return loader.CARTRIDGE_MAGIC_DESK
 }
 
-// New creates and returns a new instance of a CartridgeMagicDesk implementing the icartridge.ICartridge interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge2.ICartridge {
+// New creates a new instance of CartridgeMagicDesk, registers it with the provided parent, and sets its initial configuration.
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	md := &CartridgeMagicDesk{
 		factory:       factory,
 		BaseComponent: component.NewBaseComponent("magicDesk", suffix),
 		loaderId:      "magicDesk",
-		spec:          icartridge2.GetCartridgeSpec(icartridge2.CartridgeMode8K),
+		spec:          references.GetCartridgeSpec(references.CartridgeMode8K),
 		bankMask:      0x7f,
 		regVal:        0,
 		slot:          0,
@@ -43,10 +42,10 @@ func New(parent component.IComponent, factory references.IComponentFactory, suff
 }
 
 // Setup initializes the CartridgeMagicDesk by configuring its board and loading data via the provided CRTLoader.
-func (c *CartridgeMagicDesk) Setup(board icartridge2.IExpansion, ldr *loader2.CRTLoader) error {
+func (c *CartridgeMagicDesk) Setup(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
-	if ldr.GetType() == loader2.TypeCrt {
+	if loader.Type(ldr.GetType()) == loader.TypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr.GetData())
@@ -63,7 +62,7 @@ func (c *CartridgeMagicDesk) GetLoaderId() string {
 }
 
 // Write attempts to write data to the cartridge at the specified ROM interval and address, returning true if write-protected.
-func (c *CartridgeMagicDesk) Write(i icartridge2.RomInterval, addr uint16, data uint8) bool {
+func (c *CartridgeMagicDesk) Write(i references.RomInterval, addr uint16, data uint8) bool {
 	if (i & (c.spec.IntervalLow | c.spec.IntervalHigh)) != 0 {
 		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.slot, addr, data)
 		return true
@@ -72,7 +71,7 @@ func (c *CartridgeMagicDesk) Write(i icartridge2.RomInterval, addr uint16, data 
 }
 
 // Read retrieves the byte at the specified address if the interval matches the cartridge's configuration, else returns 0.
-func (c *CartridgeMagicDesk) Read(i icartridge2.RomInterval, addr uint16) (uint8, bool) {
+func (c *CartridgeMagicDesk) Read(i references.RomInterval, addr uint16) (uint8, bool) {
 	if (i & (c.spec.IntervalLow | c.spec.IntervalHigh)) != 0 {
 		//if c.b0Interval == i {
 		//	return c.banks[c.currBank][addr&0x1fff], true
@@ -101,11 +100,11 @@ func (c *CartridgeMagicDesk) IOWrite(addr uint16, data uint8) bool {
 		c.regVal = data & (0x80 | c.bankMask)
 		c.slot = data & c.bankMask
 		fmt.Println("magic desk slot", c.slot)
-		var spec *icartridge2.CartridgeSpec
+		var spec *references.CartridgeSpec
 		if (data & 0x80) != 0 {
-			spec = icartridge2.GetCartridgeSpec(icartridge2.CartridgeModeOff)
+			spec = references.GetCartridgeSpec(references.CartridgeModeOff)
 		} else {
-			spec = icartridge2.GetCartridgeSpec(icartridge2.CartridgeMode8K)
+			spec = references.GetCartridgeSpec(references.CartridgeMode8K)
 		}
 		if spec != c.spec {
 			fmt.Println("magic desk changing config", c.spec)
@@ -174,26 +173,26 @@ func (c *CartridgeMagicDesk) initBin(data []byte) error {
 
 // initCrt initializes the cartridge by reading chip headers and populating chip banks from a CRTLoader.
 // It validates bank numbers, chip sizes, and addresses and determines the appropriate bank mask. Returns an error if invalid.
-func (c *CartridgeMagicDesk) initCrt(loader *loader2.CRTLoader) error {
+func (c *CartridgeMagicDesk) initCrt(ldr references.IC64CartridgeLoader) error {
 	c.banks = [][]byte{}
 	lastBank := uint16(0)
 	c.bankMask = 0x7f
 	c.regVal = 0
 	c.slot = 0
 	for {
-		chip, err := loader.ReadChipHeader()
+		chip, err := ldr.ReadChipHeader()
 		if chip == nil {
 			break
 		}
 		if err != nil {
 			return err
 		}
-		if (chip.Bank > 128) || ((chip.Start != 0x8000) && (chip.Start != 0xa000)) || (chip.Size != 0x2000) {
+		if (chip.Bank() > 128) || ((chip.Start() != 0x8000) && (chip.Start() != 0xa000)) || (chip.Size() != 0x2000) {
 			return fmt.Errorf("invalid chip bank")
 		}
-		c.banks = append(c.banks, chip.Data)
-		if chip.Bank > lastBank {
-			lastBank = chip.Bank
+		c.banks = append(c.banks, chip.Data())
+		if chip.Bank() > lastBank {
+			lastBank = chip.Bank()
 		}
 	}
 	if lastBank >= 128 {

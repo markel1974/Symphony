@@ -3,23 +3,23 @@ package quartz
 import (
 	"container/list"
 	"fmt"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // AlarmCallback defines a function that is triggered by an alarm and receives the main CPU clock and an offset as parameters.
-type AlarmCallback func(mainCpuClk uint64, offset uint64)
 
 // Alarm represents a scheduled action, associated with a Quartz instance, capable of being set, unset, and destroyed.
 type Alarm struct {
 	quartz    *Quartz
 	name      string
-	callback  AlarmCallback
+	callback  references.QuartzAlarmCallback
 	destroyed bool
 	cycle     uint64
 	element   *list.Element
 }
 
 // NewAlarm creates and returns a new Alarm instance with a specified Quartz, name, and callback. It initializes the Alarm.
-func NewAlarm(quartz *Quartz, name string, callback AlarmCallback) *Alarm {
+func NewAlarm(quartz *Quartz, name string, callback references.QuartzAlarmCallback) *Alarm {
 	return &Alarm{
 		quartz:    quartz,
 		name:      name,

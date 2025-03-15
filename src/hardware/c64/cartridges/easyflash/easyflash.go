@@ -8,7 +8,6 @@ import (
 	"github.com/markel1974/c64emu/src/common/filler"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/easyflash/flash"
-	icartridge2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
 	loader2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/hardware/c64/snapshot"
 	"github.com/markel1974/c64emu/src/references"
@@ -23,9 +22,9 @@ type CartridgeEasyFlash struct {
 	*component.BaseComponent
 	factory         references.IComponentFactory
 	loaderId        string
-	board           icartridge2.IExpansion
-	intervalLo      icartridge2.RomInterval
-	intervalHi      icartridge2.RomInterval
+	board           references.IC64Expansion
+	intervalLo      references.RomInterval
+	intervalHi      references.RomInterval
 	memoryConfigIdx int
 	game            uint8
 	exRom           uint8
@@ -48,8 +47,8 @@ func GetType() int {
 	return loader2.CARTRIDGE_EASYFLASH
 }
 
-// New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridge interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge2.ICartridge {
+// New creates and returns a new instance of a CartridgeEasyFlash implementing the IC64Cartridge interface.
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	ef := &CartridgeEasyFlash{
 		BaseComponent:   component.NewBaseComponent("easyFlash", suffix),
 		factory:         factory,
@@ -58,8 +57,8 @@ func New(parent component.IComponent, factory references.IComponentFactory, suff
 		exRom:           1,
 		register00:      0,
 		register02:      0,
-		intervalHi:      icartridge2.ROM_HI_1,
-		intervalLo:      icartridge2.ROM_LO,
+		intervalHi:      references.ROM_HI_1,
+		intervalLo:      references.ROM_LO,
 		stateLow:        nil,
 		stateHigh:       nil,
 		filetype:        0,
@@ -74,18 +73,18 @@ func New(parent component.IComponent, factory references.IComponentFactory, suff
 }
 
 // Setup initializes the CartridgeEasyFlash instance with the provided board and CRT loader data.
-func (c *CartridgeEasyFlash) Setup(board icartridge2.IExpansion, ldr *loader2.CRTLoader) error {
+func (c *CartridgeEasyFlash) Setup(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	var rawCart []byte
 	c.board = board
 	c.loaderId = ldr.GetId()
-	c.game = uint8(ldr.Game)
-	c.exRom = uint8(ldr.ExRom)
+	c.game = uint8(ldr.Game())
+	c.exRom = uint8(ldr.ExRom())
 	rp := filler.New(255, 2, 1, 0x100, 255, 0, 0, 0)
 	rp.InitWithPattern(c.ram, CartRamSize)
-	c.filename = ldr.Name
+	c.filename = ldr.Name()
 	c.filetype = 0
 	var err error
-	if ldr.GetType() == loader2.TypeCrt {
+	if loader2.Type(ldr.GetType()) == loader2.TypeCrt {
 		c.filetype = loader2.TypeCrt
 		if rawCart, err = c.crtAttach(ldr); err != nil {
 			return err
@@ -187,15 +186,15 @@ func (c *CartridgeEasyFlash) initialize(rawCart []byte) {
 // Logs warnings for unsupported modes and invokes a board configuration change if required.
 func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 	c.register02 = value & 0x87 // led, mode, exrom, game [led 0x80, other 0x07]
-	mode := icartridge2.CartridgeModeOff
+	mode := references.CartridgeModeOff
 	mxg := value & 0x07
 	switch mxg {
 	case 0:
 		//GAME from jumper, EXROM high (i.e., Ultimax or Off)
 		if !c.jumper {
-			mode = icartridge2.CartridgeModeUltimax
+			mode = references.CartridgeModeUltimax
 		} else {
-			mode = icartridge2.CartridgeModeOff
+			mode = references.CartridgeModeOff
 		}
 	case 1, 3:
 		//Reserved, don’t use these
@@ -203,26 +202,26 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 	case 2:
 		//GAME from jumper, EXROM low (i.e. 16K or 8K)
 		if !c.jumper {
-			mode = icartridge2.CartridgeMode16K
+			mode = references.CartridgeMode16K
 		} else {
-			mode = icartridge2.CartridgeMode8K
+			mode = references.CartridgeMode8K
 		}
 	case 4:
 		//Cartridge ROM off (RAM at $DF00 still available)
-		mode = icartridge2.CartridgeModeOff
+		mode = references.CartridgeModeOff
 	case 5:
 		//Ultimax (Low bank at $8000, high bank at $e000) GAME = 0, EXROM = 1
-		mode = icartridge2.CartridgeModeUltimax
+		mode = references.CartridgeModeUltimax
 	case 6:
 		//8k Cartridge (Low bank at $8000) GAME = 1, EXROM = 0
-		mode = icartridge2.CartridgeMode8K
+		mode = references.CartridgeMode8K
 	case 7:
 		//16k cartridge (Low bank at $8000, high bank at $a000)
-		mode = icartridge2.CartridgeMode16K
+		mode = references.CartridgeMode16K
 	}
 	if int(mode) != c.memoryConfigIdx {
 		c.memoryConfigIdx = int(mode)
-		v := icartridge2.GetCartridgeSpec(mode)
+		v := references.GetCartridgeSpec(mode)
 		c.game = v.Game
 		c.exRom = v.ExRom
 		c.intervalLo = v.IntervalLow
@@ -239,7 +238,7 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 }
 
 // Write attempts to handle a write operation to the EasyFlash cartridge but currently does not implement writing logic.
-func (c *CartridgeEasyFlash) Write(i icartridge2.RomInterval, _ uint16, _ uint8) bool {
+func (c *CartridgeEasyFlash) Write(i references.RomInterval, _ uint16, _ uint8) bool {
 	if c.intervalLo == i {
 		fmt.Printf("EASYFLASH Write LOW NOT DEFINED\n")
 	} else if c.intervalHi == i {
@@ -249,7 +248,7 @@ func (c *CartridgeEasyFlash) Write(i icartridge2.RomInterval, _ uint16, _ uint8)
 }
 
 // Read retrieves a byte of data from the cartridge memory based on the provided ROM interval and address.
-func (c *CartridgeEasyFlash) Read(i icartridge2.RomInterval, addr uint16) (uint8, bool) {
+func (c *CartridgeEasyFlash) Read(i references.RomInterval, addr uint16) (uint8, bool) {
 	if c.intervalLo == i {
 		return c.romLRead(addr), true
 	} else if c.intervalHi == i {
@@ -344,9 +343,9 @@ func (c *CartridgeEasyFlash) io2Store(addr uint16, value uint8) {
 
 // writeChipIfNotEmpty writes the chip data to the given writer
 // if the chip data is not empty or optimization is disabled.
-func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip *loader2.CrtChipHeader) error {
-	for i := uint16(0); i < chip.Size; i++ {
-		if (chip.Data[i] != 0xff) || !c.optimize {
+func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip references.IC64CartridgeChipHeader) error {
+	for i := uint16(0); i < chip.Size(); i++ {
+		if (chip.Data()[i] != 0xff) || !c.optimize {
 			if err := chip.Write(fd); err != nil {
 				return err
 			}
@@ -357,7 +356,7 @@ func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip *loader2.Crt
 }
 
 // binAttach initializes a raw cartridge with default data and copies data from the provided CRTLoader into it.
-func (c *CartridgeEasyFlash) binAttach(ldr *loader2.CRTLoader) ([]byte, error) {
+func (c *CartridgeEasyFlash) binAttach(ldr references.IC64CartridgeLoader) ([]byte, error) {
 	rawCart := make([]uint8, 0x100000)
 	for idx := range rawCart {
 		rawCart[idx] = 0xff
@@ -368,7 +367,7 @@ func (c *CartridgeEasyFlash) binAttach(ldr *loader2.CRTLoader) ([]byte, error) {
 
 // crtAttach processes CRT cartridge data using the provided CRTLoader
 // and returns the formatted cartridge data or an error.
-func (c *CartridgeEasyFlash) crtAttach(ldr *loader2.CRTLoader) ([]byte, error) {
+func (c *CartridgeEasyFlash) crtAttach(ldr references.IC64CartridgeLoader) ([]byte, error) {
 	raw := make([]uint8, 0x100000)
 	for idx := range raw {
 		raw[idx] = 0xff
@@ -381,23 +380,23 @@ func (c *CartridgeEasyFlash) crtAttach(ldr *loader2.CRTLoader) ([]byte, error) {
 		if chip == nil {
 			break
 		}
-		if uint16(len(chip.Data)) != chip.Size {
+		if uint16(len(chip.Data())) != chip.Size() {
 			return nil, fmt.Errorf("invalid chip size")
 		}
-		if chip.Size == 0x2000 {
-			if chip.Bank >= NBanks || !(chip.Start == 0x8000 || chip.Start == 0xa000 || chip.Start == 0xe000) {
+		if chip.Size() == 0x2000 {
+			if chip.Bank() >= NBanks || !(chip.Start() == 0x8000 || chip.Start() == 0xa000 || chip.Start() == 0xe000) {
 				return nil, fmt.Errorf("invalid start")
 			}
-			index := uint(chip.Bank) << 14
-			offset := uint(chip.Start) & uint(chip.Size)
+			index := uint(chip.Bank()) << 14
+			offset := uint(chip.Start()) & uint(chip.Size())
 			target := index | offset
-			copy(raw[target:target+uint(chip.Size)], chip.Data)
-		} else if chip.Size == 0x4000 {
-			if chip.Bank >= NBanks || chip.Start != 0x8000 {
+			copy(raw[target:target+uint(chip.Size())], chip.Data())
+		} else if chip.Size() == 0x4000 {
+			if chip.Bank() >= NBanks || chip.Start() != 0x8000 {
 				return nil, fmt.Errorf("invalid start")
 			}
-			target := uint(chip.Bank) << 14
-			copy(raw[target:target+uint(chip.Size)], chip.Data)
+			target := uint(chip.Bank()) << 14
+			copy(raw[target:target+uint(chip.Size())], chip.Data())
 		} else {
 			return nil, fmt.Errorf("unkwnown chip size")
 		}

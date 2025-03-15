@@ -3,7 +3,7 @@ package board
 import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/hardware/quartz"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // Expansion represents a logical structure that associates a parent ID, its own ID, and a reference to a Board.
@@ -104,7 +104,7 @@ func (s *Expansion) Cycle() uint64 {
 }
 
 // CycleAlarm creates and registers a new alarm with a unique identifier and a callback function for execution upon triggering.
-func (s *Expansion) CycleAlarm(id string, callback quartz.AlarmCallback) *quartz.Alarm {
+func (s *Expansion) CycleAlarm(id string, callback references.QuartzAlarmCallback) references.IQuartzAlarm {
 	return s.board.quartz.NewAlarm(id, callback)
 }
 

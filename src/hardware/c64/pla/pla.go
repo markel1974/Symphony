@@ -4,7 +4,6 @@ import (
 	"github.com/markel1974/c64emu/src/common/filler"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -16,12 +15,12 @@ type WriteFn func(uint16, uint8)
 // PLA represents a structure managing memory configurations, ports, and sockets for emulation purposes.
 type PLA struct {
 	*component.BaseComponent
-	vic             ISocket
-	sid             ISocket
+	vic             references.IVic
+	sid             references.ISid
 	cia1            references.ICia
 	cia2            references.ICia
-	cartMan         IExpansionSocket
-	roms            IRomSocket
+	cartMan         references.IC64ExpansionSocket
+	roms            references.IC64RomSocket
 	ram             []byte
 	bankWrite       []WriteFn
 	bankRead        []ReadFn
@@ -73,7 +72,7 @@ func NewPLA(parent component.IComponent, suffix string) *PLA {
 	return b
 }
 
-func (b *PLA) Setup(vic ISocket, sid ISocket, cia1 references.ICia, cia2 references.ICia, cartMan IExpansionSocket, roms IRomSocket, cfg *config.Config) {
+func (b *PLA) Setup(vic references.IVic, sid references.ISid, cia1 references.ICia, cia2 references.ICia, cartMan references.IC64ExpansionSocket, roms references.IC64RomSocket, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1
@@ -445,7 +444,7 @@ func (b *PLA) ramRead0x7000(addr uint16) uint8 {
 func (b *PLA) ramRead0x8000(addr uint16) uint8 {
 	const bank = 0x8
 	if b.memoryConfig[bank] == ROL {
-		if v, ok := b.cartMan.Read(icartridge.ROM_LO, addr); ok {
+		if v, ok := b.cartMan.Read(references.ROM_LO, addr); ok {
 			return v
 		}
 	}
@@ -456,7 +455,7 @@ func (b *PLA) ramRead0x8000(addr uint16) uint8 {
 func (b *PLA) ramRead0x9000(addr uint16) uint8 {
 	const bank = 0x9
 	if b.memoryConfig[bank] == ROL {
-		if v, ok := b.cartMan.Read(icartridge.ROM_LO, addr); ok {
+		if v, ok := b.cartMan.Read(references.ROM_LO, addr); ok {
 			return v
 		}
 	}
@@ -470,7 +469,7 @@ func (b *PLA) ramRead0x9000(addr uint16) uint8 {
 func (b *PLA) ramRead0xA000(addr uint16) uint8 {
 	const bank = 0xa
 	if b.memoryConfig[bank] == ROH {
-		if v, ok := b.cartMan.Read(icartridge.ROM_HI_1, addr); ok {
+		if v, ok := b.cartMan.Read(references.ROM_HI_1, addr); ok {
 			return v
 		}
 
@@ -487,7 +486,7 @@ func (b *PLA) ramRead0xA000(addr uint16) uint8 {
 func (b *PLA) ramRead0xB000(addr uint16) uint8 {
 	const bank = 0xb
 	if b.memoryConfig[bank] == ROH {
-		if v, ok := b.cartMan.Read(icartridge.ROM_HI_1, addr); ok {
+		if v, ok := b.cartMan.Read(references.ROM_HI_1, addr); ok {
 			return v
 		}
 	} else if b.memoryConfig[bank] == BAS {
@@ -519,7 +518,7 @@ func (b *PLA) ramRead0xD000(addr uint16) uint8 {
 func (b *PLA) ramRead0xE000(addr uint16) uint8 {
 	const bank = 0xe
 	if b.memoryConfig[bank] == ROH {
-		if v, ok := b.cartMan.Read(icartridge.ROM_HI_2, addr); ok {
+		if v, ok := b.cartMan.Read(references.ROM_HI_2, addr); ok {
 			return v
 		}
 	} else if b.memoryConfig[bank] == KER {
@@ -532,7 +531,7 @@ func (b *PLA) ramRead0xE000(addr uint16) uint8 {
 func (b *PLA) ramRead0xF000(addr uint16) uint8 {
 	const bank = 0xf
 	if b.memoryConfig[bank] == ROH {
-		if v, ok := b.cartMan.Read(icartridge.ROM_HI_2, addr); ok {
+		if v, ok := b.cartMan.Read(references.ROM_HI_2, addr); ok {
 			return v
 		}
 	} else if b.memoryConfig[bank] == KER {

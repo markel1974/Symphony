@@ -3,8 +3,7 @@ package ocean
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	icartridge2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
-	loader2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
+	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -13,24 +12,24 @@ type CartridgeOcean struct {
 	*component.BaseComponent
 	factory   references.IComponentFactory
 	loaderId  string
-	intervals icartridge2.RomInterval
+	intervals references.RomInterval
 	lastData  uint8
 	banks     [][]byte
 	ioMask    uint8
 	currBank  uint8
 	game      uint8
 	exRom     uint8
-	board     icartridge2.IExpansion
+	board     references.IC64Expansion
 }
 
 // GetType returns the type identifier of the Ocean cartridge as an integer constant.
 func GetType() int {
-	return loader2.CARTRIDGE_OCEAN
+	return loader.CARTRIDGE_OCEAN
 }
 
-// New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridge interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge2.ICartridge {
-	v := icartridge2.GetCartridgeSpec(icartridge2.CartridgeMode16K)
+// New creates and returns a new instance of the Ocean Cartridge conforming to the IC64Cartridge interface.
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
+	v := references.GetCartridgeSpec(references.CartridgeMode16K)
 	co := &CartridgeOcean{
 		BaseComponent: component.NewBaseComponent("ocean", suffix),
 		factory:       factory,
@@ -45,10 +44,10 @@ func New(parent component.IComponent, factory references.IComponentFactory, suff
 }
 
 // Setup initializes the cartridge with the specified expansion board and CRT loader, setting up necessary configurations.
-func (c *CartridgeOcean) Setup(board icartridge2.IExpansion, ldr *loader2.CRTLoader) error {
+func (c *CartridgeOcean) Setup(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
-	if ldr.GetType() == loader2.TypeCrt {
+	if loader.Type(ldr.GetType()) == loader.TypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr.GetData())
@@ -65,7 +64,7 @@ func (c *CartridgeOcean) GetLoaderId() string {
 }
 
 // Write attempts to write data to the cartridge at the specified address and interval. Returns true if the write is blocked.
-func (c *CartridgeOcean) Write(i icartridge2.RomInterval, addr uint16, data uint8) bool {
+func (c *CartridgeOcean) Write(i references.RomInterval, addr uint16, data uint8) bool {
 	if i&c.intervals != 0 {
 		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.currBank, addr, data)
 		return true
@@ -74,7 +73,7 @@ func (c *CartridgeOcean) Write(i icartridge2.RomInterval, addr uint16, data uint
 }
 
 // Read reads a byte from the current bank, based on the specified ROM interval and address. Returns the byte and success status.
-func (c *CartridgeOcean) Read(i icartridge2.RomInterval, addr uint16) (uint8, bool) {
+func (c *CartridgeOcean) Read(i references.RomInterval, addr uint16) (uint8, bool) {
 	if i&c.intervals != 0 {
 		//if c.b0Interval == i {
 		//	return c.banks[c.currBank][addr&0x1fff], true
@@ -138,7 +137,7 @@ func (c *CartridgeOcean) Emulate() {
 // initBin initializes the cartridge by parsing binary data, validating it and segmenting it into fixed-size memory banks.
 // It calculates the I/O mask and sets initial values for `lastData` and `currBank`. Returns an error if validation fails.
 func (c *CartridgeOcean) initBin(data []byte) error {
-	if err := loader2.ValidateCartridge(data); err != nil {
+	if err := loader.ValidateCartridge(data); err != nil {
 		return err
 	}
 	const cSize = 0x2000
@@ -160,25 +159,25 @@ func (c *CartridgeOcean) initBin(data []byte) error {
 }
 
 // initCrt initializes the cartridge by reading chip headers from the provided CRTLoader and validates the chip data.
-func (c *CartridgeOcean) initCrt(loader *loader2.CRTLoader) error {
+func (c *CartridgeOcean) initCrt(ldr references.IC64CartridgeLoader) error {
 	c.banks = [][]byte{}
 	//c.exRom = uint8(loader.ExRom)
 	//c.game = uint8(loader.Game)
 
 	romSize := 0
 	for {
-		chip, err := loader.ReadChipHeader()
+		chip, err := ldr.ReadChipHeader()
 		if chip == nil {
 			break
 		}
 		if err != nil {
 			return err
 		}
-		if (chip.Bank > 63) || ((chip.Start != 0x8000) && (chip.Start != 0xa000)) || (chip.Size != 0x2000) {
+		if (chip.Bank() > 63) || ((chip.Start() != 0x8000) && (chip.Start() != 0xa000)) || (chip.Size() != 0x2000) {
 			return fmt.Errorf("invalid chip bank")
 		}
-		c.banks = append(c.banks, chip.Data)
-		romSize += int(chip.Size)
+		c.banks = append(c.banks, chip.Data())
+		romSize += int(chip.Size())
 	}
 	c.ioMask = uint8((romSize >> 13) - 1)
 	c.lastData = 0

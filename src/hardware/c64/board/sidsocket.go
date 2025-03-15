@@ -1,14 +1,13 @@
 package board
 
 import (
-	mos6581 "github.com/markel1974/c64emu/src/hardware/sid"
-	mos6569 "github.com/markel1974/c64emu/src/hardware/vic"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
 // SidSocket represents a socket connected to a Board for managing or interacting with its state or functionality.
 type SidSocket struct {
-	sid   *mos6581.SID
+	sid   references.ISid
 	board *Board
 }
 
@@ -19,10 +18,11 @@ func NewSidSocket() *SidSocket {
 }
 
 // Setup initializes the SidSocket with the provided Board instance, assigning it to the internal board field.
-func (w *SidSocket) Setup(board *Board, sid *mos6581.SID) {
+func (w *SidSocket) Setup(board *Board, sid references.ISid, fragFreq int, rasters int, cfg *config.Config) error {
 	w.board = board
 	w.sid = sid
-	w.sid.Setup(w, w.board.cfg, mos6569.ScreenFreq, mos6569.TotalRasters)
+	w.sid.Setup(w, fragFreq, rasters, cfg)
+	return nil
 }
 
 // Reset clears the state of the SID chip by resetting all registers and internal components to their default values.

@@ -1,13 +1,12 @@
 package board
 
 import (
-	mos6569 "github.com/markel1974/c64emu/src/hardware/vic"
 	"github.com/markel1974/c64emu/src/references"
 )
 
 // VicSocket represents a virtual interface connector socket with a reference to a board and an interrupt identifier.
 type VicSocket struct {
-	vic    *mos6569.VIC
+	vic    references.IVic
 	board  *Board
 	intrId uint32
 }
@@ -22,10 +21,11 @@ func NewVicSocket() *VicSocket {
 }
 
 // Setup initializes the VicSocket with the given board and interrupt ID.
-func (v *VicSocket) Setup(board *Board, vic *mos6569.VIC) {
+func (v *VicSocket) Setup(board *Board, vic references.IVic) error {
 	v.board = board
 	v.vic = vic
 	v.vic.Setup(v, v.board.cfg)
+	return nil
 }
 
 // Reset resets the VIC component of the associated board by invoking its Reset method.

@@ -2,7 +2,7 @@ package board
 
 import (
 	"github.com/markel1974/c64emu/src/common/signals"
-	"github.com/markel1974/c64emu/src/hardware/quartz"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 type Expansion struct {
@@ -77,7 +77,7 @@ func (s *Expansion) Cycle() uint64 {
 	return 0
 }
 
-func (s *Expansion) CycleAlarm(id string, callback quartz.AlarmCallback) *quartz.Alarm {
+func (s *Expansion) CycleAlarm(id string, callback references.QuartzAlarmCallback) references.IQuartzAlarm {
 	return nil
 	//return s.board.quartz.NewAlarm(id, callback)
 }

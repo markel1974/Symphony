@@ -3,6 +3,7 @@ package loader
 import (
 	"bytes"
 	"fmt"
+	"github.com/markel1974/c64emu/src/references"
 	"path"
 	"strings"
 )
@@ -27,10 +28,23 @@ type CRTLoader struct {
 	Version      uint16 /* version */
 	Kind         uint16 /* type of cartridge */
 	SubType      uint8  /* subtype/hardware revision of cartridge */
-	ExRom        int    /* exRom line status */
-	Game         int    /* game line status */
-	Name         string /* name of cartridge */
+	exRom        int    /* exRom line status */
+	game         int    /* game line status */
+	name         string /* name of cartridge */
 	kind         Type
+}
+
+func (cl *CRTLoader) Game() int {
+	return cl.game
+}
+
+func (cl *CRTLoader) ExRom() int {
+	return cl.exRom
+}
+
+func (cl *CRTLoader) Name() string {
+	//TODO implement me
+	return cl.name
 }
 
 // NewLoader initializes and returns a new CRTLoader instance with the given id and MachineType.
@@ -64,8 +78,8 @@ func (cl *CRTLoader) GetId() string {
 }
 
 // GetType returns the cartridge type of the CRTLoader instance as a Type.
-func (cl *CRTLoader) GetType() Type {
-	return cl.kind
+func (cl *CRTLoader) GetType() int {
+	return int(cl.kind)
 }
 
 // GetData retrieves the raw cartridge data as a byte slice.
@@ -106,21 +120,21 @@ func (cl *CRTLoader) open() error {
 	}
 	cl.SubType = crtHeader[0x1a]
 	if exRom := int(crtHeader[0x18]); exRom != 0 {
-		cl.ExRom = 0
+		cl.exRom = 0
 	} else {
-		cl.ExRom = 1
+		cl.exRom = 1
 	}
 	if game := int(crtHeader[0x19]); game != 0 {
-		cl.Game = 0
+		cl.game = 0
 	} else {
-		cl.Game = 1
+		cl.game = 1
 	}
-	cl.Name = string(crtHeader[0x20:])
+	cl.name = string(crtHeader[0x20:])
 	return nil
 }
 
 // ReadChipHeader parses the next chip header from the cartridge data and returns the CrtChipHeader or an error if invalid.
-func (cl *CRTLoader) ReadChipHeader() (*CrtChipHeader, error) {
+func (cl *CRTLoader) ReadChipHeader() (references.IC64CartridgeChipHeader, error) {
 	if cl.kind == TypeBin {
 		return nil, nil
 	}
@@ -137,42 +151,42 @@ func (cl *CRTLoader) ReadChipHeader() (*CrtChipHeader, error) {
 	}
 	var err error
 	header := NewChipHeader()
-	if header.Skip, err = cl.buf2uint32(chipHeader[4:8]); err != nil {
+	if header.skip, err = cl.buf2uint32(chipHeader[4:8]); err != nil {
 		return nil, err
 	}
-	if int(header.Skip) < chipHeaderSize {
+	if int(header.skip) < chipHeaderSize {
 		return nil, fmt.Errorf("invalid packet size")
 	}
-	header.Skip -= uint32(chipHeaderSize)
-	if header.Size, err = cl.buf2uint16(chipHeader[14:18]); err != nil {
+	header.skip -= uint32(chipHeaderSize)
+	if header.size, err = cl.buf2uint16(chipHeader[14:18]); err != nil {
 		return nil, err
 	}
-	if uint32(header.Size) > header.Skip {
+	if uint32(header.size) > header.skip {
 		return nil, fmt.Errorf("rom is bigger then total size")
 	}
-	header.Skip -= uint32(header.Size)
-	if header.Kind, err = cl.buf2uint16(chipHeader[8:12]); err != nil {
+	header.skip -= uint32(header.size)
+	if header.kind, err = cl.buf2uint16(chipHeader[8:12]); err != nil {
 		return nil, err
 	}
-	if header.Bank, err = cl.buf2uint16(chipHeader[10:14]); err != nil {
+	if header.bank, err = cl.buf2uint16(chipHeader[10:14]); err != nil {
 		return nil, err
 	}
-	if header.Start, err = cl.buf2uint16(chipHeader[12:16]); err != nil {
+	if header.start, err = cl.buf2uint16(chipHeader[12:16]); err != nil {
 		return nil, err
 	}
-	if int(header.Start)+int(header.Size) > 0x10000 {
+	if int(header.start)+int(header.size) > 0x10000 {
 		return nil, fmt.Errorf("rom crossing the 64k boundary")
 	}
-	if cl.cursor+int(header.Size) > len(cl.rowCartridge) {
+	if cl.cursor+int(header.size) > len(cl.rowCartridge) {
 		return nil, fmt.Errorf("corrupted data")
 	}
-	header.Data = make([]uint8, int(header.Size))
-	copy(header.Data, cl.rowCartridge[cl.cursor:cl.cursor+int(header.Size)])
+	header.data = make([]uint8, int(header.size))
+	copy(header.data, cl.rowCartridge[cl.cursor:cl.cursor+int(header.size)])
 	//header.Data = cl.rowCartridge[cl.cursor : cl.cursor+int(header.Size)]
-	cl.cursor += int(header.Size)
-	if header.Skip > 0 {
+	cl.cursor += int(header.size)
+	if header.skip > 0 {
 		//TODO verify
-		cl.cursor += int(header.Skip)
+		cl.cursor += int(header.skip)
 	}
 	return header, nil
 }

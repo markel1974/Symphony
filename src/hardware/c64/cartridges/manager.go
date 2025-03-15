@@ -7,8 +7,7 @@ import (
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/easyflash"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/externalcpu"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/generic"
-	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
-	loader2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
+	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/magicdesk"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/ocean"
 	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/reu"
@@ -26,14 +25,14 @@ type Manager struct {
 	*component.BaseComponent
 	factory             references.IComponentFactory
 	idx                 int
-	board               icartridge.IExpansion
+	board               references.IC64Expansion
 	prefs               *config.Config
-	carts               []icartridge.ICartridge
-	emulate             []icartridge.ICartridge
-	registerHardware    map[string]func(component.IComponent, references.IComponentFactory, string) icartridge.ICartridge
-	registerType        map[int]func(component.IComponent, references.IComponentFactory, string) icartridge.ICartridge
-	registerSize        map[int]func(component.IComponent, references.IComponentFactory, string) icartridge.ICartridge
-	registerSizeDefault func(component.IComponent, references.IComponentFactory, string) icartridge.ICartridge
+	carts               []references.IC64Cartridge
+	emulate             []references.IC64Cartridge
+	registerHardware    map[string]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge
+	registerType        map[int]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge
+	registerSize        map[int]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge
+	registerSizeDefault func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge
 }
 
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
@@ -45,9 +44,9 @@ func NewManager(parent component.IComponent, factory references.IComponentFactor
 		board:               nil,
 		prefs:               nil,
 		carts:               nil,
-		registerHardware:    make(map[string]func(component.IComponent, references.IComponentFactory, string) icartridge.ICartridge),
-		registerType:        make(map[int]func(component.IComponent, references.IComponentFactory, string) icartridge.ICartridge),
-		registerSize:        make(map[int]func(component.IComponent, references.IComponentFactory, string) icartridge.ICartridge),
+		registerHardware:    make(map[string]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge),
+		registerType:        make(map[int]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge),
+		registerSize:        make(map[int]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge),
 		registerSizeDefault: nil,
 	}
 	component.Register(parent, m)
@@ -55,7 +54,7 @@ func NewManager(parent component.IComponent, factory references.IComponentFactor
 }
 
 // Setup initializes the Manager by setting up the expansion board, configuration preferences, and cartridge hardware mappings.
-func (f *Manager) Setup(board icartridge.IExpansion, prefs *config.Config) {
+func (f *Manager) Setup(board references.IC64Expansion, prefs *config.Config) {
 	f.board = board
 	f.prefs = prefs
 	f.registerHardware[externalcpu.Id] = externalcpu.New
@@ -131,7 +130,7 @@ func (f *Manager) Emulate() {
 }
 
 // Read retrieves a value from the specified ROM interval and address. Returns the value and a boolean indicating success.
-func (f *Manager) Read(interval icartridge.RomInterval, addr uint16) (uint8, bool) {
+func (f *Manager) Read(interval references.RomInterval, addr uint16) (uint8, bool) {
 	if f.carts == nil {
 		return 0, false
 	}
@@ -153,7 +152,7 @@ func (f *Manager) Read(interval icartridge.RomInterval, addr uint16) (uint8, boo
 
 // Write attempts to write the given data to the specified address within the provided ROM interval for all managed cartridges.
 // Returns true if any cartridge successfully handles the write operation, otherwise returns false.
-func (f *Manager) Write(interval icartridge.RomInterval, addr uint16, data uint8) bool {
+func (f *Manager) Write(interval references.RomInterval, addr uint16, data uint8) bool {
 	if f.carts == nil {
 		return false
 	}
@@ -211,17 +210,17 @@ func (f *Manager) IORead(addr uint16) (uint8, bool) {
 // Add registers a new cartridge using the provided hardware type, name, and data, returning an identifier or an error if failed.
 func (f *Manager) Add(hardware string, name string, data []byte) (string, error) {
 	id := strconv.Itoa(f.idx)
-	ldr := loader2.NewLoader(id, loader2.MachineC64)
+	ldr := loader.NewLoader(id, loader.MachineC64)
 	if err := ldr.Setup(name, data); err != nil {
 		return "", err
 	}
-	var factory func(component.IComponent, references.IComponentFactory, string) icartridge.ICartridge = nil
+	var factory func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge = nil
 	if len(hardware) > 0 {
 		hardware = strings.ToUpper(strings.TrimSpace(hardware))
 		factory = f.registerHardware[hardware]
-	} else if ldr.GetType() == loader2.TypeCrt {
+	} else if loader.Type(ldr.GetType()) == loader.TypeCrt {
 		factory = f.registerType[int(ldr.Kind)]
-	} else if ldr.GetType() == loader2.TypeBin {
+	} else if loader.Type(ldr.GetType()) == loader.TypeBin {
 		if factory = f.registerSize[len(ldr.GetData())]; factory == nil {
 			factory = f.registerSizeDefault
 		}

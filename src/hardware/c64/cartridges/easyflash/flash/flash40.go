@@ -2,9 +2,8 @@ package flash
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
 	"github.com/markel1974/c64emu/src/hardware/c64/snapshot"
-	"github.com/markel1974/c64emu/src/hardware/quartz"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // DumpVerMajor represents the major version of the dump format.
@@ -79,13 +78,13 @@ type Flash040 struct {
 	flashDirty     int
 	flashType      Kind
 	lastRead       uint8
-	board          icartridge.IExpansion
-	eraseAlarm     *quartz.Alarm
+	board          references.IC64Expansion
+	eraseAlarm     references.IQuartzAlarm
 }
 
 // NewFlash040 initializes and returns a pointer to a Flash040 instance with the provided cartridge, type, and data.
 // It configures the flash memory state, sets up an erase alarm, and clears the erase mask.
-func NewFlash040(b icartridge.IExpansion, kind Kind, data []byte) *Flash040 {
+func NewFlash040(b references.IC64Expansion, kind Kind, data []byte) *Flash040 {
 	f := &Flash040{
 		board:          b,
 		flashType:      kind,

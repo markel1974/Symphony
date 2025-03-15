@@ -3,8 +3,6 @@ package externalcpu
 import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/6510"
-	icartridge2 "github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
-	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/hardware/quartz"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -18,15 +16,15 @@ type ExternalCPU struct {
 	*component.BaseComponent
 	factory   references.IComponentFactory
 	loaderId  string
-	board     icartridge2.IExpansion
+	board     references.IC64Expansion
 	cpuSocket *CPUSocket
 	pic       *mos6510.Pic
 	cpu       *mos6510.CPU
 	quartz    *quartz.Quartz
 }
 
-// New returns a new instance of the ExternalCPU struct implementing the ICartridge interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge2.ICartridge {
+// New returns a new instance of the ExternalCPU struct implementing the IC64Cartridge interface.
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	r := &ExternalCPU{
 		BaseComponent: component.NewBaseComponent("externalCpu", suffix),
 		factory:       factory,
@@ -46,7 +44,7 @@ func (s *ExternalCPU) EmulationRequired() bool {
 }
 
 // Setup initializes the ExternalCPU with the provided expansion board and CRT loader, configuring its internal components.
-func (s *ExternalCPU) Setup(board icartridge2.IExpansion, ldr *loader.CRTLoader) error {
+func (s *ExternalCPU) Setup(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	s.board = board
 	s.loaderId = ldr.GetId()
 	s.board.SetDMALow(true)
@@ -114,12 +112,12 @@ func (s *ExternalCPU) IOWrite(addr uint16, data uint8) bool {
 }
 
 // Write stores an 8-bit data value to a specified address within a given ROM interval and returns success status as a boolean.
-func (s *ExternalCPU) Write(i icartridge2.RomInterval, addr uint16, data uint8) bool {
+func (s *ExternalCPU) Write(i references.RomInterval, addr uint16, data uint8) bool {
 	return false
 }
 
 // Read fetches a byte and status from the specified address within the ROM interval.
-func (s *ExternalCPU) Read(i icartridge2.RomInterval, addr uint16) (uint8, bool) {
+func (s *ExternalCPU) Read(i references.RomInterval, addr uint16) (uint8, bool) {
 	return 0, false
 }
 

@@ -2,8 +2,6 @@ package reu
 
 import (
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/icartridge"
-	"github.com/markel1974/c64emu/src/hardware/c64/cartridges/loader"
 	"github.com/markel1974/c64emu/src/references"
 	"strconv"
 )
@@ -42,12 +40,12 @@ type REU struct {
 	regs      []uint8 // REU registers
 	size      int
 	irqMask   uint8
-	expansion icartridge.IExpansion
+	expansion references.IC64Expansion
 }
 
-// newReu initializes a new REU instance with a given size and returns an ICartridge implementation.
+// newReu initializes a new REU instance with a given size and returns an IC64Cartridge implementation.
 // It sets up REU registers, memory size, and RAM contents, and performs an initial reset.
-func newReu(parent component.IComponent, factory references.IComponentFactory, suffix string, size int) icartridge.ICartridge {
+func newReu(parent component.IComponent, factory references.IComponentFactory, suffix string, size int) references.IC64Cartridge {
 	r := &REU{
 		BaseComponent: component.NewBaseComponent("reu", suffix),
 		factory:       factory,
@@ -64,43 +62,43 @@ func newReu(parent component.IComponent, factory references.IComponentFactory, s
 	return r
 }
 
-// New128K creates and returns a new 128K REU cartridge implementing the ICartridge interface.
-func New128K(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge.ICartridge {
+// New128K creates and returns a new 128K REU cartridge implementing the IC64Cartridge interface.
+func New128K(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	return newReu(parent, factory, suffix, size128K)
 }
 
-// New256K creates a new 256K REU (RAM Expansion Unit) cartridge and returns it as an ICartridge interface.
-func New256K(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge.ICartridge {
+// New256K creates a new 256K REU (RAM Expansion Unit) cartridge and returns it as an IC64Cartridge interface.
+func New256K(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	return newReu(parent, factory, suffix, size256K)
 }
 
-// New512K creates and returns a new instance of an ICartridge with a memory size of 512K.
-func New512K(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge.ICartridge {
+// New512K creates and returns a new instance of an IC64Cartridge with a memory size of 512K.
+func New512K(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	return newReu(parent, factory, suffix, size512K)
 }
 
-// New1M creates a new 1M REU (RAM Expansion Unit) cartridge implementing the ICartridge interface.
-func New1M(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge.ICartridge {
+// New1M creates a new 1M REU (RAM Expansion Unit) cartridge implementing the IC64Cartridge interface.
+func New1M(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	return newReu(parent, factory, suffix, size1M)
 }
 
-// New2M creates and returns a new 2MB REU cartridge instance implementing the ICartridge interface.
-func New2M(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge.ICartridge {
+// New2M creates and returns a new 2MB REU cartridge instance implementing the IC64Cartridge interface.
+func New2M(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	return newReu(parent, factory, suffix, size2M)
 }
 
-// New4M creates and returns a new 4MB REU cartridge implementing the ICartridge interface.
-func New4M(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge.ICartridge {
+// New4M creates and returns a new 4MB REU cartridge implementing the IC64Cartridge interface.
+func New4M(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	return newReu(parent, factory, suffix, size4M)
 }
 
-// New8M creates and returns a new 8 MB REU (RAM Expansion Unit) cartridge implementing the ICartridge interface.
-func New8M(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge.ICartridge {
+// New8M creates and returns a new 8 MB REU (RAM Expansion Unit) cartridge implementing the IC64Cartridge interface.
+func New8M(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	return newReu(parent, factory, suffix, size8M)
 }
 
-// New16M creates a new ICartridge instance with 16MB of memory, utilizing the REU (RAM Expansion Unit) implementation.
-func New16M(parent component.IComponent, factory references.IComponentFactory, suffix string) icartridge.ICartridge {
+// New16M creates a new IC64Cartridge instance with 16MB of memory, utilizing the REU (RAM Expansion Unit) implementation.
+func New16M(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
 	return newReu(parent, factory, suffix, size16M)
 }
 
@@ -134,7 +132,7 @@ func (reu *REU) Reset() {
 }
 
 // Setup initializes the REU instance by configuring its expansion board, identifying the loader, and setting up memory.
-func (reu *REU) Setup(board icartridge.IExpansion, ldr *loader.CRTLoader) error {
+func (reu *REU) Setup(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	//TODO from Setup
 	reu.expansion = board
 	reu.loaderId = ldr.GetId()
@@ -245,12 +243,12 @@ func (reu *REU) triggerDMA(_ uint16, _ uint8) {
 }
 
 // Write attempts to write to a given ROM interval, address, and value, returning false as operation is unsupported.
-func (reu *REU) Write(_ icartridge.RomInterval, _ uint16, _ uint8) bool {
+func (reu *REU) Write(_ references.RomInterval, _ uint16, _ uint8) bool {
 	return false
 }
 
 // Read retrieves data from the specified ROM interval and memory address. Returns the data and a boolean indicating success.
-func (reu *REU) Read(_ icartridge.RomInterval, _ uint16) (uint8, bool) {
+func (reu *REU) Read(_ references.RomInterval, _ uint16) (uint8, bool) {
 	return 0, false
 }
 

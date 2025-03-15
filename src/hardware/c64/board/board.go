@@ -143,9 +143,15 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	if err = s.iec.Setup(s.quartz, cfg); err != nil {
 		return err
 	}
-	s.cpuSocket.Setup(s, cpu)
-	s.vicSocket.Setup(s, vic)
-	s.sidSocket.Setup(s, sid)
+	if err = s.cpuSocket.Setup(s, cpu); err != nil {
+		return err
+	}
+	if err = s.vicSocket.Setup(s, vic); err != nil {
+		return err
+	}
+	if err = s.sidSocket.Setup(s, sid, mos6569.ScreenFreq, mos6569.TotalRasters, cfg); err != nil {
+		return err
+	}
 	if err = s.cia1Socket.Setup(s, cia1); err != nil {
 		return err
 	}

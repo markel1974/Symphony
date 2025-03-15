@@ -61,7 +61,7 @@ func (s *Quartz) ToUSec(v uint64) uint64 {
 }
 
 // NewAlarm creates a new alarm with the given name and callback, associates it with the Quartz instance, and returns it.
-func (s *Quartz) NewAlarm(name string, callback AlarmCallback) *Alarm {
+func (s *Quartz) NewAlarm(name string, callback references.QuartzAlarmCallback) *Alarm {
 	a := NewAlarm(s, name, callback)
 	s.alarmsContainer[a] = a
 	return a

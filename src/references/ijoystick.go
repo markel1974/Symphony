@@ -1,6 +1,6 @@
 package references
 
-// IJoystick represents an interface for handling joystick operations and its state.
+// IJoystick defines an interface for handling joystick operations and interactions.
 type IJoystick interface {
 	Update()
 
