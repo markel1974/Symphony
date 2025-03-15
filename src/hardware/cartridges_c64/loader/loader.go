@@ -134,7 +134,7 @@ func (cl *CRTLoader) open() error {
 }
 
 // ReadChipHeader parses the next chip header from the cartridge data and returns the CrtChipHeader or an error if invalid.
-func (cl *CRTLoader) ReadChipHeader() (references.IC64CartridgeChipHeader, error) {
+func (cl *CRTLoader) ReadChipHeader() (references.ICartridgeChipHeaderC64, error) {
 	if cl.kind == TypeBin {
 		return nil, nil
 	}

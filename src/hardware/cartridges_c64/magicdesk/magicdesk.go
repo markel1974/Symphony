@@ -8,7 +8,7 @@ import (
 )
 
 // CartridgeMagicDesk represents a software-implemented version of a Magic Desk cartridge for system emulation.
-// It implements the IC64Cartridge interface for handling cartridge-specific functionality within an expansion board.
+// It implements the ICartridgeC64 interface for handling cartridge-specific functionality within an expansion board.
 type CartridgeMagicDesk struct {
 	*component.BaseComponent
 	factory  references.IComponentFactory
@@ -18,7 +18,7 @@ type CartridgeMagicDesk struct {
 	bankMask uint8
 	regVal   uint8
 	slot     uint8
-	board    references.IC64Expansion
+	board    references.IExpansionC64
 }
 
 // GetType returns an integer identifier representing the type of the Magic Desk cartridge.
@@ -27,7 +27,7 @@ func GetType() int {
 }
 
 // New creates a new instance of CartridgeMagicDesk, registers it with the provided parent, and sets its initial configuration.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
 	md := &CartridgeMagicDesk{
 		factory:       factory,
 		BaseComponent: component.NewBaseComponent("magicDesk", suffix),
@@ -42,7 +42,7 @@ func New(parent component.IComponent, factory references.IComponentFactory, suff
 }
 
 // Setup initializes the CartridgeMagicDesk by configuring its board and loading data via the provided CRTLoader.
-func (c *CartridgeMagicDesk) Setup(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
+func (c *CartridgeMagicDesk) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
 	if loader2.Type(ldr.GetType()) == loader2.TypeCrt {
@@ -173,7 +173,7 @@ func (c *CartridgeMagicDesk) initBin(data []byte) error {
 
 // initCrt initializes the cartridge by reading chip headers and populating chip banks from a CRTLoader.
 // It validates bank numbers, chip sizes, and addresses and determines the appropriate bank mask. Returns an error if invalid.
-func (c *CartridgeMagicDesk) initCrt(ldr references.IC64CartridgeLoader) error {
+func (c *CartridgeMagicDesk) initCrt(ldr references.ICartridgeLoaderC64) error {
 	c.banks = [][]byte{}
 	lastBank := uint16(0)
 	c.bankMask = 0x7f

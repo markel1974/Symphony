@@ -17,7 +17,7 @@ package references
 
 // https://www.c64-wiki.com/wiki/Expansion_Port
 
-// IC64Expansion defines an interface for C64 expansion boards, including memory access and hardware interaction methods.
+// IExpansionC64 defines an interface for C64 expansion boards, including memory access and hardware interaction methods.
 // Cycle returns the current cycle count.
 // CycleAlarm registers a cycle-based alarm with a callback and returns an alarm interface.
 // GameExRomConfigChanged notifies the board of a Game/ExRom configuration change.
@@ -35,7 +35,7 @@ package references
 // BusAvailable checks whether the system bus is available for access.
 // AECAvailable checks whether an AEC (Advanced Expansion Controller) is available.
 // RmwFlags retrieves flags for read-modify-write operations (non-standard).
-type IC64Expansion interface {
+type IExpansionC64 interface {
 	Cycle() uint64
 
 	CycleAlarm(string, QuartzAlarmCallback) IQuartzAlarm
@@ -71,12 +71,12 @@ type IC64Expansion interface {
 	RmwFlags() uint8 //TODO NOT STANDARD
 }
 
-// IC64ExpansionSocket defines an interface for managing expansion socket operations and interactions in a given system.
+// IExpansionSocketC64 defines an interface for managing expansion socket operations and interactions in a given system.
 // Config retrieves the configuration data of the expansion socket and additional state details.
 // Read fetches a value from a specified ROM interval and address, returning the value and success state.
 // IORead performs a read operation from an I/O address, returning the value and success state.
 // IOWrite executes a write operation to an I/O address with the specified data, indicating success.
-type IC64ExpansionSocket interface {
+type IExpansionSocketC64 interface {
 	Config() (uint8, uint8, bool)
 
 	Read(interval RomInterval, addr uint16) (uint8, bool)

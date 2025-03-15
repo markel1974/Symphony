@@ -22,7 +22,7 @@ type CartridgeEasyFlash struct {
 	*component.BaseComponent
 	factory         references.IComponentFactory
 	loaderId        string
-	board           references.IC64Expansion
+	board           references.IExpansionC64
 	intervalLo      references.RomInterval
 	intervalHi      references.RomInterval
 	memoryConfigIdx int
@@ -47,8 +47,8 @@ func GetType() int {
 	return loader.CARTRIDGE_EASYFLASH
 }
 
-// New creates and returns a new instance of a CartridgeEasyFlash implementing the IC64Cartridge interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
+// New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridgeC64 interface.
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
 	ef := &CartridgeEasyFlash{
 		BaseComponent:   component.NewBaseComponent("easyFlash", suffix),
 		factory:         factory,
@@ -73,7 +73,7 @@ func New(parent component.IComponent, factory references.IComponentFactory, suff
 }
 
 // Setup initializes the CartridgeEasyFlash instance with the provided board and CRT loader data.
-func (c *CartridgeEasyFlash) Setup(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
+func (c *CartridgeEasyFlash) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	var rawCart []byte
 	c.board = board
 	c.loaderId = ldr.GetId()
@@ -343,7 +343,7 @@ func (c *CartridgeEasyFlash) io2Store(addr uint16, value uint8) {
 
 // writeChipIfNotEmpty writes the chip data to the given writer
 // if the chip data is not empty or optimization is disabled.
-func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip references.IC64CartridgeChipHeader) error {
+func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip references.ICartridgeChipHeaderC64) error {
 	for i := uint16(0); i < chip.Size(); i++ {
 		if (chip.Data()[i] != 0xff) || !c.optimize {
 			if err := chip.Write(fd); err != nil {
@@ -356,7 +356,7 @@ func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip references.I
 }
 
 // binAttach initializes a raw cartridge with default data and copies data from the provided CRTLoader into it.
-func (c *CartridgeEasyFlash) binAttach(ldr references.IC64CartridgeLoader) ([]byte, error) {
+func (c *CartridgeEasyFlash) binAttach(ldr references.ICartridgeLoaderC64) ([]byte, error) {
 	rawCart := make([]uint8, 0x100000)
 	for idx := range rawCart {
 		rawCart[idx] = 0xff
@@ -367,7 +367,7 @@ func (c *CartridgeEasyFlash) binAttach(ldr references.IC64CartridgeLoader) ([]by
 
 // crtAttach processes CRT cartridge data using the provided CRTLoader
 // and returns the formatted cartridge data or an error.
-func (c *CartridgeEasyFlash) crtAttach(ldr references.IC64CartridgeLoader) ([]byte, error) {
+func (c *CartridgeEasyFlash) crtAttach(ldr references.ICartridgeLoaderC64) ([]byte, error) {
 	raw := make([]uint8, 0x100000)
 	for idx := range raw {
 		raw[idx] = 0xff

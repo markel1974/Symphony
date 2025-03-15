@@ -17,15 +17,15 @@ type ExternalCPU struct {
 	*component.BaseComponent
 	factory   references.IComponentFactory
 	loaderId  string
-	board     references.IC64Expansion
+	board     references.IExpansionC64
 	cpuSocket *CPUSocket
 	pic       *pic_6510.Pic
 	cpu       *mos6510.CPU
 	quartz    *quartz.Quartz
 }
 
-// New returns a new instance of the ExternalCPU struct implementing the IC64Cartridge interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
+// New returns a new instance of the ExternalCPU struct implementing the ICartridgeC64 interface.
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
 	r := &ExternalCPU{
 		BaseComponent: component.NewBaseComponent("externalCpu", suffix),
 		factory:       factory,
@@ -45,7 +45,7 @@ func (s *ExternalCPU) EmulationRequired() bool {
 }
 
 // Setup initializes the ExternalCPU with the provided expansion board and CRT loader, configuring its internal components.
-func (s *ExternalCPU) Setup(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
+func (s *ExternalCPU) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	s.board = board
 	s.loaderId = ldr.GetId()
 	s.board.SetDMALow(true)

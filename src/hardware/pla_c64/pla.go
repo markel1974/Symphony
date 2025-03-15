@@ -20,7 +20,7 @@ type PLA struct {
 	sid             references.ISid
 	cia1            references.ICia
 	cia2            references.ICia
-	cartMan         references.IC64ExpansionSocket
+	cartMan         references.IExpansionSocketC64
 	roms            references.IRomLoaderC64
 	ram             []byte
 	bankWrite       []WriteFn
@@ -78,7 +78,7 @@ func NewPLA(parent component.IComponent, factory references.IComponentFactory, s
 	return b
 }
 
-func (b *PLA) Setup(vic references.IVic, sid references.ISid, cia1 references.ICia, cia2 references.ICia, cartMan references.IC64ExpansionSocket, roms references.IRomLoaderC64, cfg *config.Config) {
+func (b *PLA) Setup(vic references.IVic, sid references.ISid, cia1 references.ICia, cia2 references.ICia, cartMan references.IExpansionSocketC64, roms references.IRomLoaderC64, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1

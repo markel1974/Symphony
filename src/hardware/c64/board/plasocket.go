@@ -24,7 +24,7 @@ func NewPLASocket() *PLASocket {
 }
 
 // Setup initializes the PLASocket with the provided board, PLA, and associated components like VIC, SID, CIAs, and cartridge manager.
-func (w *PLASocket) Setup(board *Board, p *pla2.PLA, vic references.IVic, sid references.ISid, c1 component.IComponent, c2 component.IComponent, cartMan references.IC64ExpansionSocket) error {
+func (w *PLASocket) Setup(board *Board, p *pla2.PLA, vic references.IVic, sid references.ISid, c1 component.IComponent, c2 component.IComponent, cartMan references.IExpansionSocketC64) error {
 	cia1, ok := c1.(references.ICia)
 	if !ok {
 		return fmt.Errorf("unknown cia1 interface")

@@ -55,7 +55,7 @@ func GetCartridgeSpec(ct CartridgeMode) *CartridgeSpec {
 	return _cartridgesSpec[ct]
 }
 
-// IC64Cartridge represents the interface for a C64-compatible cartridge, defining methods for setup, memory operations, and emulation.
+// ICartridgeC64 represents the interface for a C64-compatible cartridge, defining methods for setup, memory operations, and emulation.
 // Setup initializes the cartridge with the provided expansion board and loader.
 // GetLoaderId retrieves the unique identifier for the cartridge loader.
 // Reset resets the cartridge to its initial state.
@@ -68,8 +68,8 @@ func GetCartridgeSpec(ct CartridgeMode) *CartridgeSpec {
 // EmulationRequired checks if the cartridge requires emulation.
 // Emulate initiates the emulation process for the cartridge if required.
 // Detach detaches the cartridge, releasing any associated resources.
-type IC64Cartridge interface {
-	Setup(board IC64Expansion, loader IC64CartridgeLoader) error
+type ICartridgeC64 interface {
+	Setup(board IExpansionC64, loader ICartridgeLoaderC64) error
 	GetLoaderId() string
 	Reset()
 	Write(i RomInterval, addr uint16, data uint8) bool
@@ -83,7 +83,7 @@ type IC64Cartridge interface {
 	Detach() error
 }
 
-// IC64CartridgeLoader defines an interface for loading and managing C64 cartridge data.
+// ICartridgeLoaderC64 defines an interface for loading and managing C64 cartridge data.
 // Setup initializes the cartridge loader with the given identifier and data.
 // GetId retrieves the unique identifier for the cartridge.
 // GetType returns the type of the cartridge as an integer.
@@ -92,7 +92,7 @@ type IC64Cartridge interface {
 // ExRom retrieves the value representing the ExROM configuration.
 // Name returns the name associated with the cartridge.
 // ReadChipHeader reads and parses a chip header from the cartridge data, returning the header and any encountered error.
-type IC64CartridgeLoader interface {
+type ICartridgeLoaderC64 interface {
 	Setup(id string, data []byte) error
 	GetId() string
 	GetType() int
@@ -100,10 +100,10 @@ type IC64CartridgeLoader interface {
 	Game() int
 	ExRom() int
 	Name() string
-	ReadChipHeader() (IC64CartridgeChipHeader, error)
+	ReadChipHeader() (ICartridgeChipHeaderC64, error)
 }
 
-// IC64CartridgeChipHeader defines an interface for handling cartridge chip headers in CRT files.
+// ICartridgeChipHeaderC64 defines an interface for handling cartridge chip headers in CRT files.
 // Skip returns the number of bytes to skip after the chip data.
 // Kind retrieves the type of the chip as a 16-bit value.
 // Bank retrieves the chip's assigned bank number as a 16-bit value.
@@ -111,7 +111,7 @@ type IC64CartridgeLoader interface {
 // Size returns the size of the chip data in bytes.
 // Data retrieves the binary data associated with the chip.
 // Write writes the chip data to the provided io.Writer and returns an error if unsuccessful.
-type IC64CartridgeChipHeader interface {
+type ICartridgeChipHeaderC64 interface {
 	Skip() uint32
 	Kind() uint16
 	Bank() uint16

@@ -19,7 +19,7 @@ type CartridgeOcean struct {
 	currBank  uint8
 	game      uint8
 	exRom     uint8
-	board     references.IC64Expansion
+	board     references.IExpansionC64
 }
 
 // GetType returns the type identifier of the Ocean cartridge as an integer constant.
@@ -27,8 +27,8 @@ func GetType() int {
 	return loader2.CARTRIDGE_OCEAN
 }
 
-// New creates and returns a new instance of the Ocean Cartridge conforming to the IC64Cartridge interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
+// New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
 	v := references.GetCartridgeSpec(references.CartridgeMode16K)
 	co := &CartridgeOcean{
 		BaseComponent: component.NewBaseComponent("ocean", suffix),
@@ -44,7 +44,7 @@ func New(parent component.IComponent, factory references.IComponentFactory, suff
 }
 
 // Setup initializes the cartridge with the specified expansion board and CRT loader, setting up necessary configurations.
-func (c *CartridgeOcean) Setup(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
+func (c *CartridgeOcean) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
 	if loader2.Type(ldr.GetType()) == loader2.TypeCrt {
@@ -159,7 +159,7 @@ func (c *CartridgeOcean) initBin(data []byte) error {
 }
 
 // initCrt initializes the cartridge by reading chip headers from the provided CRTLoader and validates the chip data.
-func (c *CartridgeOcean) initCrt(ldr references.IC64CartridgeLoader) error {
+func (c *CartridgeOcean) initCrt(ldr references.ICartridgeLoaderC64) error {
 	c.banks = [][]byte{}
 	//c.exRom = uint8(loader.ExRom)
 	//c.game = uint8(loader.Game)

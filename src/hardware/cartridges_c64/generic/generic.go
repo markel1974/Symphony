@@ -25,7 +25,7 @@ type Generic struct {
 	intervals  references.RomInterval
 	game       uint8
 	exRom      uint8
-	board      references.IC64Expansion
+	board      references.IExpansionC64
 }
 
 // GetType returns the constant value representing the CARTRIDGE_CRT type.
@@ -33,8 +33,8 @@ func GetType() int {
 	return loader2.CARTRIDGE_CRT
 }
 
-// New creates and returns a new instance of the Generic cartridge implementing the IC64Cartridge interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.IC64Cartridge {
+// New creates and returns a new instance of the Generic cartridge implementing the ICartridgeC64 interface.
+func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
 	g := &Generic{
 		factory:       factory,
 		BaseComponent: component.NewBaseComponent("generic", suffix),
@@ -50,7 +50,7 @@ func New(parent component.IComponent, factory references.IComponentFactory, suff
 }
 
 // Setup initializes the Generic cartridge by setting the board and loading data using the provided CRTLoader.
-func (c *Generic) Setup(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
+func (c *Generic) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
 	if loader2.Type(ldr.GetType()) == loader2.TypeCrt {
@@ -72,7 +72,7 @@ func (c *Generic) GetLoaderId() string {
 // initCrt initializes the cartridge configuration using the provided CRTLoader.
 // It sets up memory banks and mode based on the cartridge chip headers.
 // Returns an error if the cartridge format or configuration is unsupported.
-func (c *Generic) initCrt(ldr references.IC64CartridgeLoader) error {
+func (c *Generic) initCrt(ldr references.ICartridgeLoaderC64) error {
 	c.bank0 = make([]uint8, cSize8K)
 	c.bank1 = make([]uint8, cSize8K)
 	chip1, err := ldr.ReadChipHeader()

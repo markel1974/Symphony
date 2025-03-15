@@ -25,14 +25,14 @@ type Manager struct {
 	*component.BaseComponent
 	factory             references.IComponentFactory
 	idx                 int
-	board               references.IC64Expansion
+	board               references.IExpansionC64
 	prefs               *config.Config
-	carts               []references.IC64Cartridge
-	emulate             []references.IC64Cartridge
-	registerHardware    map[string]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge
-	registerType        map[int]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge
-	registerSize        map[int]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge
-	registerSizeDefault func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge
+	carts               []references.ICartridgeC64
+	emulate             []references.ICartridgeC64
+	registerHardware    map[string]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64
+	registerType        map[int]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64
+	registerSize        map[int]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64
+	registerSizeDefault func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64
 }
 
 func NewManagerComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
@@ -48,9 +48,9 @@ func NewManager(parent component.IComponent, factory references.IComponentFactor
 		board:               nil,
 		prefs:               nil,
 		carts:               nil,
-		registerHardware:    make(map[string]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge),
-		registerType:        make(map[int]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge),
-		registerSize:        make(map[int]func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge),
+		registerHardware:    make(map[string]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64),
+		registerType:        make(map[int]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64),
+		registerSize:        make(map[int]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64),
 		registerSizeDefault: nil,
 	}
 	component.Register(parent, m)
@@ -58,7 +58,7 @@ func NewManager(parent component.IComponent, factory references.IComponentFactor
 }
 
 // Setup initializes the Manager by setting up the expansion board, configuration preferences, and cartridge hardware mappings.
-func (f *Manager) Setup(board references.IC64Expansion, prefs *config.Config) {
+func (f *Manager) Setup(board references.IExpansionC64, prefs *config.Config) {
 	f.board = board
 	f.prefs = prefs
 	f.registerHardware[externalcpu.Id] = externalcpu.New
@@ -218,7 +218,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if err := ldr.Setup(name, data); err != nil {
 		return "", err
 	}
-	var factory func(component.IComponent, references.IComponentFactory, string) references.IC64Cartridge = nil
+	var factory func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64 = nil
 	if len(hardware) > 0 {
 		hardware = strings.ToUpper(strings.TrimSpace(hardware))
 		factory = f.registerHardware[hardware]
