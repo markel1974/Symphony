@@ -31,7 +31,7 @@ func (v *VicSocket) GetDisplayBuffer() mos6569.IDisplayBuffer {
 	return v.board.db
 }
 
-func (v *VicSocket) GetBanks() mos6569.IVicBanks {
+func (v *VicSocket) GetBanks() mos6569.IVICBanks {
 	return v.board.pla
 }
 

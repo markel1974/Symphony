@@ -30,7 +30,7 @@ type VIA struct {
 	pcr     uint8
 	ifr     uint8
 	ier     uint8
-	socket  references.IViaSocket
+	socket  references.IVIASocket
 }
 
 func NewViaComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
@@ -53,7 +53,7 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the VIA by assigning the provided IViaSocket instance to its internal socket reference.
-func (v *VIA) Setup(socket references.IViaSocket) {
+func (v *VIA) Setup(socket references.IVIASocket) {
 	v.socket = socket
 }
 

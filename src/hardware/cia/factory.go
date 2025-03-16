@@ -19,7 +19,7 @@ func (t *Factory) Identifier() string {
 
 func (t *Factory) Kind() interface{} {
 	z := (*CIA)(nil)
-	return references.ICia(z)
+	return references.ICIA(z)
 }
 
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {

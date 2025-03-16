@@ -8,7 +8,7 @@ import (
 // CIA2Socket represents a connection interface to the CIA2 chip on a hardware board.
 // It contains a reference to the board and an interrupt identifier.
 type CIA2Socket struct {
-	cia2   references.ICia
+	cia2   references.ICIA
 	board  *Board
 	intrId uint32
 }
@@ -25,7 +25,7 @@ func NewCIA2Socket() *CIA2Socket {
 
 // Connect initializes the CIA2Socket with the provided board reference and interrupt ID.
 func (w *CIA2Socket) Connect(board *Board, c2 references.IComponent) error {
-	cia2, ok := c2.(references.ICia)
+	cia2, ok := c2.(references.ICIA)
 	if !ok {
 		return fmt.Errorf("unknown cia2 interface")
 	}

@@ -35,7 +35,7 @@ type Board struct {
 	factory        references.IComponentFactory
 	pic            references.IPic6510
 	iec            references.IIec
-	externalQuartz references.IQuartzSocket
+	externalQuartz references.IQuartz
 	cpuSocket      *CPUSocket
 	via1Socket     *VIA1Socket
 	via2Socket     *VIA2Socket
@@ -75,7 +75,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 }
 
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
-func (m *Board) Setup(iec references.IIec, quartz references.IQuartzSocket, deviceId uint8, deviceNumber uint8, opts string, cfg *config.Config) error {
+func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId uint8, deviceNumber uint8, opts string, cfg *config.Config) error {
 	var err error
 	m.iec = iec
 	m.cfg = cfg

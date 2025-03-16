@@ -24,7 +24,7 @@ const (
 // joy1 denotes the state of joystick 1 connected to the system.
 // joy2 denotes the state of joystick 2 connected to the system.
 type CIA1Socket struct {
-	cia1        references.ICia
+	cia1        references.ICIA
 	board       *Board  //
 	intrId      uint32  //
 	prevLPState uint8   // Previous state of LP line (bit 4)
@@ -51,7 +51,7 @@ func NewCIA1Socket() *CIA1Socket {
 
 // Setup initializes the CIA1Socket with the provided Board reference and interrupt ID.
 func (w *CIA1Socket) Connect(board *Board, c1 references.IComponent) error {
-	cia1, ok := c1.(references.ICia)
+	cia1, ok := c1.(references.ICIA)
 	if !ok {
 		return fmt.Errorf("unknown cia2 interface")
 	}

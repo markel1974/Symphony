@@ -17,11 +17,15 @@ const (
 type IPic6510 interface {
 	Reset()
 
-	Setup(IQuartzSocket)
+	Setup(IQuartz)
 
 	ClearIRQ(uint32)
 
 	TriggerIRQ(uint32)
+
+	TriggerReset()
+
+	TriggerNMI()
 
 	VerifyIrq(uint8, uint8) uint8
 

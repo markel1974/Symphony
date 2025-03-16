@@ -1,6 +1,6 @@
 package references
 
-// ICiaSocket defines an interface for interacting with CIA I/O ports and triggering IRQ events.
+// ICIASocket defines an interface for interacting with CIA I/O ports and triggering IRQ events.
 // ReadPortA reads the current value of port A based on the peripheral and direction registers.
 // ReadPortB reads the current value of port B based on the peripheral and direction registers.
 // WritePortA updates the state of port A based on the peripheral and direction registers.
@@ -9,7 +9,7 @@ package references
 // WriteDdrB updates the data direction register for port B.
 // IRQTrigger triggers an interrupt request on the IRQ line.
 // IRQClear clears the interrupt request on the IRQ line.
-type ICiaSocket interface {
+type ICIASocket interface {
 	ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8
 
 	ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8
@@ -27,15 +27,15 @@ type ICiaSocket interface {
 	IRQClear()
 }
 
-// ICia defines the interface for a CIA (Complex Interface Adapter) component in a computing or emulation context.
+// ICIA defines the interface for a CIA (Complex Interface Adapter) component in a computing or emulation context.
 // Setup initializes the CIA with the provided socket connection.
 // Reset resets the CIA to its default state.
 // Emulate executes the necessary operations for the current emulation cycle.
 // Update updates the CIA's state and handles any required operations for the current frame or step.
 // WriteRegister writes a byte of data to the CIA at the specified register address.
 // ReadRegister reads a byte of data from the CIA at the specified register address.
-type ICia interface {
-	Setup(conn ICiaSocket)
+type ICIA interface {
+	Setup(conn ICIASocket)
 
 	Reset()
 

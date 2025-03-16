@@ -50,7 +50,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	return fs
 }
 
-func (v *FSDrive) Setup(bus references.IIec, q references.IQuartzSocket, deviceId uint8, deviceNumber uint8, path string, cfg *config.Config) error {
+func (v *FSDrive) Setup(bus references.IIec, q references.IQuartz, deviceId uint8, deviceNumber uint8, path string, cfg *config.Config) error {
 	v.Protocol = iec.NewProtocol(v.parent, v.suffix, q, v.deviceNumber, v)
 	component.Register(v.Protocol, v)
 	v.Protocol.Setup(bus, cfg)

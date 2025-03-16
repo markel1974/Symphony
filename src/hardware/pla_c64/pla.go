@@ -16,10 +16,10 @@ type WriteFn func(uint16, uint8)
 type PLA struct {
 	*component.BaseComponent
 	factory         references.IComponentFactory
-	vic             references.IVic
+	vic             references.IVIC
 	sid             references.ISID
-	cia1            references.ICia
-	cia2            references.ICia
+	cia1            references.ICIA
+	cia2            references.ICIA
 	cartMan         references.IExpansionSocketC64
 	roms            references.IRomLoaderC64
 	ram             []byte
@@ -78,7 +78,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	return b
 }
 
-func (b *PLA) Setup(vic references.IVic, sid references.ISID, cia1 references.ICia, cia2 references.ICia, cartMan references.IExpansionSocketC64, roms references.IRomLoaderC64, cfg *config.Config) {
+func (b *PLA) Setup(vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.IExpansionSocketC64, roms references.IRomLoaderC64, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1

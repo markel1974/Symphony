@@ -36,22 +36,22 @@ type Board struct {
 	*component.BaseComponent
 	db                  references.IDisplayBuffer
 	player              references.IPlayer
-	quartz              *quartz.Quartz
+	quartz              references.IQuartz
+	pic                 references.IPic6510
+	iec                 references.IIec
+	keys                references.IKeyboard
+	joy1                references.IJoystick
+	joy2                references.IJoystick
 	cia1Socket          *CIA1Socket
 	cia2Socket          *CIA2Socket
 	vicSocket           *VICSocket
 	sidSocket           *SIDSocket
 	cpuSocket           *CPUSocket
 	plaSocket           *PLASocket
-	pic                 *pic_6510.Pic
-	iec                 *iec.Dispatcher
-	keys                *keyboard_c64.Keyboard
-	joy1                *joystick_c64.Joystick
-	joy2                *joystick_c64.Joystick
+	cartSocket          *CartridgeSocket
 	joySwap             bool
 	cfg                 *config.Config
 	hasClipboard        bool
-	cartSocket          *CartridgeSocket
 	expansionIrqTrigger *signals.SignalUint32
 	expansionIrqClear   *signals.SignalUint32
 	vBlank              bool
@@ -114,7 +114,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 
 	s.cpuSocket = NewCPUSocket()
 	s.vicSocket = NewVICSocket()
-	s.sidSocket = NewSidSocket()
+	s.sidSocket = NewSIDSocket()
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 	s.plaSocket = NewPLASocket()
@@ -122,9 +122,9 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 
 	s.pic = pic_6510.NewPic(s, s.factory, "")
 	s.iec = iec.NewDispatcher(s, s.factory, "")
-	cpu := mos6510.NewCPU(s, s.factory, "")
-	vic := mos6569.NewVIC(s, s.factory, "")
-	sid := mos6581.NewSID(s, s.factory, "")
+	var cpu references.I6510 = mos6510.NewCPU(s, s.factory, "")
+	var vic references.IVIC = mos6569.NewVIC(s, s.factory, "")
+	var sid references.ISID = mos6581.NewSID(s, s.factory, "")
 	cart := cartridges_c64.NewManager(s, s.factory, "")
 	rl := roms_c64.NewRomLoader(s, s.factory, "")
 	if err = rl.Setup(cfg); err != nil {

@@ -21,7 +21,7 @@ const (
 type Pic struct {
 	*component.BaseComponent
 	factory       references.IComponentFactory
-	quartz        references.IQuartzSocket
+	quartz        references.IQuartz
 	all           bits.Bits
 	irq           bits.Bits
 	firstIrqCycle uint64
@@ -51,7 +51,7 @@ func NewPic(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the Pic instance with a Quartz instance, establishing internal dependencies.
-func (i *Pic) Setup(quartz references.IQuartzSocket) {
+func (i *Pic) Setup(quartz references.IQuartz) {
 	i.quartz = quartz
 }
 

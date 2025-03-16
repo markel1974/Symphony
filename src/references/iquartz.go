@@ -1,12 +1,16 @@
 package references
 
-// IQuartzSocket defines an interface for time-related operations within the emulation environment.
+// IQuartz defines an interface for time-related operations within the emulation environment.
 // Cycle retrieves the current clock cycle of the system.
 // ToUSec converts a given clock cycle count into microseconds.
-type IQuartzSocket interface {
+type IQuartz interface {
 	Cycle() uint64
 
+	AddCycle()
+
 	ToUSec(uint64) uint64
+
+	NewAlarm(string, QuartzAlarmCallback) IQuartzAlarm
 }
 
 // QuartzAlarmCallback defines a function type executed by a Quartz instance, receiving main CPU clock and cycle offset.

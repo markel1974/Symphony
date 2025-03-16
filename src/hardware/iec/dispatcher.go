@@ -48,7 +48,7 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 }
 
 // Setup initializes the Dispatcher by configuring the DriveFactory and setting up virtual drives based on the provided config.
-func (c *Dispatcher) Setup(q references.IQuartzSocket, cfg *config.Config) error {
+func (c *Dispatcher) Setup(q references.IQuartz, cfg *config.Config) error {
 	for deviceId, d := range cfg.GetDrives() {
 		deviceNumber := deviceId + 8
 		suffix := strconv.Itoa(deviceNumber)

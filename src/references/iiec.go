@@ -5,6 +5,16 @@ import "github.com/markel1974/c64emu/src/config"
 // IIec defines an interface for reading from and writing to peripherals using device-specific implementations.
 // It provides methods for reading a byte and writing a byte to a designated device.
 type IIec interface {
+	Setup(IQuartz, *config.Config) error
+
+	Reset()
+
+	Emulate()
+
+	CpuRead() uint8
+
+	CpuWrite(data uint8)
+
 	PeripheralRead() uint8
 
 	PeripheralWrite(deviceNumber uint8, data uint8)
@@ -19,7 +29,7 @@ type IIec interface {
 // AtnStateChanged handles changes in the Attention (ATN) line state.
 // BusStateChanged handles changes in the CPU bus state.
 type IIecDevice interface {
-	Setup(IIec, IQuartzSocket, uint8, uint8, string, *config.Config) error
+	Setup(IIec, IQuartz, uint8, uint8, string, *config.Config) error
 
 	Reset()
 

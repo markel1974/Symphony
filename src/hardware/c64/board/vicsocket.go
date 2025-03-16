@@ -6,7 +6,7 @@ import (
 
 // VICSocket represents a virtual interface connector socket with a reference to a board and an interrupt identifier.
 type VICSocket struct {
-	vic    references.IVic
+	vic    references.IVIC
 	board  *Board
 	intrId uint32
 }
@@ -21,7 +21,7 @@ func NewVICSocket() *VICSocket {
 }
 
 // Connect initializes the VICSocket with the given board and interrupt ID.
-func (v *VICSocket) Connect(board *Board, vic references.IVic) error {
+func (v *VICSocket) Connect(board *Board, vic references.IVIC) error {
 	v.board = board
 	v.vic = vic
 	v.vic.Setup(v, v.board.cfg)
@@ -67,8 +67,8 @@ func (v *VICSocket) GetDisplayBuffer() references.IDisplayBuffer {
 	return v.board.db
 }
 
-// GetBanks returns an implementation of the mos6569.IVicBanks interface, which provides access to memory handling operations.
-func (v *VICSocket) GetBanks() references.IVicBanks {
+// GetBanks returns an implementation of the mos6569.IVICBanks interface, which provides access to memory handling operations.
+func (v *VICSocket) GetBanks() references.IVICBanks {
 	return v.board.plaSocket
 }
 

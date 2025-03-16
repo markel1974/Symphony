@@ -57,8 +57,8 @@ type VIC struct {
 	vBlankNextCycle bool
 	curr            *cycleData
 
-	socket           references.IVicSocket
-	banks            references.IVicBanks
+	socket           references.IVICSocket
+	banks            references.IVICBanks
 	mXx              []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
 	mXy              []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
 	mXc              []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
@@ -177,7 +177,7 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the VIC component with the provided socket and configuration.
-func (vic *VIC) Setup(socket references.IVicSocket, cfg *config.Config) {
+func (vic *VIC) Setup(socket references.IVICSocket, cfg *config.Config) {
 	vic.cfg = cfg
 	db := socket.GetDisplayBuffer()
 	vic.socket = socket

@@ -19,7 +19,7 @@ func (t *Factory) Identifier() string {
 
 func (t *Factory) Kind() interface{} {
 	z := (*Quartz)(nil)
-	return references.IQuartzSocket(z)
+	return references.IQuartz(z)
 }
 
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
