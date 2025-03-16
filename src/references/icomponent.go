@@ -90,5 +90,9 @@ type IComponent interface {
 
 // IComponentFactory defines an interface for creating IComponent instances with hierarchical and contextual parameters.
 type IComponentFactory interface {
-	Create(IComponent, string, string) (IComponent, error)
+	Create(parent IComponent, id string, suffix string) (IComponent, error)
+
+	CreateICIA(parent IComponent, id string, suffix string) (IComponent, ICIA, error)
+
+	CreateIVIA(parent IComponent, id string, suffix string) (IComponent, IVIA, error)
 }

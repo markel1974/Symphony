@@ -90,21 +90,13 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	cpu := mos6510.NewCPU(m, m.factory, "")
 	m.mec = mechanic.NewMechanic()
 	m.mec.Setup(m.filePath)
-	var v1 references.IComponent
-	if v1, err = m.factory.Create(m, "mos6522", "1"); err != nil {
+	_, via1, err := m.factory.CreateIVIA(m, "mos6522", "1")
+	if err != nil {
 		return err
 	}
-	via1, ok := v1.(references.IVIA)
-	if !ok {
-		return fmt.Errorf("via1 is not a Via")
-	}
-	var v2 references.IComponent
-	if v2, err = m.factory.Create(m, "mos6522", "2"); err != nil {
+	_, via2, err := m.factory.CreateIVIA(m, "mos6522", "2")
+	if err != nil {
 		return err
-	}
-	via2, ok := v2.(references.IVIA)
-	if !ok {
-		return fmt.Errorf("via2 is not a Via")
 	}
 	m.cpuSocket = NewCPUSocket()
 	m.via1Socket = NewVIA1Socket()

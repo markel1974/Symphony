@@ -1,7 +1,6 @@
 package board
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -21,15 +20,7 @@ func NewPLASocket() *PLASocket {
 }
 
 // Connect initializes the PLASocket with the provided board, PLA, and associated components like VIC, SID, CIAs, and cartridge manager.
-func (w *PLASocket) Connect(board *Board, p references.IPlaC64, vic references.IVIC, sid references.ISID, c1 references.IComponent, c2 references.IComponent, cartMan references.IExpansionSocketC64, roms references.IRomLoaderC64) error {
-	cia1, ok := c1.(references.ICIA)
-	if !ok {
-		return fmt.Errorf("unknown cia1 interface")
-	}
-	cia2, ok := c2.(references.ICIA)
-	if !ok {
-		return fmt.Errorf("unknown cia2 interface")
-	}
+func (w *PLASocket) Connect(board *Board, p references.IPlaC64, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.IExpansionSocketC64, roms references.IRomLoaderC64) error {
 	w.board = board
 	w.pla = p
 	w.pla.Setup(vic, sid, cia1, cia2, cartMan, roms, w.board.cfg)

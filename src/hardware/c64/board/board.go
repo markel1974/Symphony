@@ -131,12 +131,12 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 		return err
 	}
 
-	var cia1 references.IComponent
-	var cia2 references.IComponent
-	if cia1, err = s.factory.Create(s, "mos6526", "1"); err != nil {
+	_, cia1, err := s.factory.CreateICIA(s, "mos6526", "1")
+	if err != nil {
 		return err
 	}
-	if cia2, err = s.factory.Create(s, "mos6526", "2"); err != nil {
+	_, cia2, err := s.factory.CreateICIA(s, "mos6526", "2")
+	if err != nil {
 		return err
 	}
 	plaC := pla_c64.NewPLA(s, s.factory, "")

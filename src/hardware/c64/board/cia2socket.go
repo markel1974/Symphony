@@ -1,7 +1,6 @@
 package board
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -24,11 +23,7 @@ func NewCIA2Socket() *CIA2Socket {
 }
 
 // Connect initializes the CIA2Socket with the provided board reference and interrupt ID.
-func (w *CIA2Socket) Connect(board *Board, c2 references.IComponent) error {
-	cia2, ok := c2.(references.ICIA)
-	if !ok {
-		return fmt.Errorf("unknown cia2 interface")
-	}
+func (w *CIA2Socket) Connect(board *Board, cia2 references.ICIA) error {
 	w.board = board
 	w.cia2 = cia2
 	w.cia2.Setup(w)

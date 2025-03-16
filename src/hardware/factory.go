@@ -71,17 +71,26 @@ func (f *Factory) Create(parent references.IComponent, id string, suffix string)
 	return ret, nil
 }
 
-/*
-func (f *Factory) CreateIVIA(parent references.IComponent, id string, suffix string) (references.IVIA, error) {
-	v, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIVIA(parent references.IComponent, id string, suffix string) (references.IComponent, references.IVIA, error) {
+	component, err := f.Create(parent, id, suffix)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	val, ok := v.(references.IVIA)
+	v, ok := component.(references.IVIA)
 	if !ok {
-		return nil, fmt.Errorf("component %s is not a via", id)
+		return nil, nil, fmt.Errorf("component %s is not a via", id)
 	}
-	//component.Register(parent, ret)
-	return val, nil
+	return component, v, nil
 }
-*/
+
+func (f *Factory) CreateICIA(parent references.IComponent, id string, suffix string) (references.IComponent, references.ICIA, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.ICIA)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a cia", id)
+	}
+	return component, v, nil
+}
