@@ -1,4 +1,4 @@
-# g64 - Commodore 64 Emulator in Go
+# Symphony - A Configurable Emulation Platform
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
