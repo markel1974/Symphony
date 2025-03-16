@@ -2,8 +2,14 @@ package references
 
 import "github.com/markel1974/c64emu/src/config"
 
-// IIec defines an interface for reading from and writing to peripherals using device-specific implementations.
-// It provides methods for reading a byte and writing a byte to a designated device.
+// IIec defines the interface for interacting with Input/Output devices on the IEC (serial bus) in an emulation environment.
+// Setup initializes the IEC instance with the provided quartz instance and configuration, returning an error if unsuccessful.
+// Reset resets the state of the IEC interface to its initial default configuration.
+// Emulate executes an IEC emulation cycle, processing communication between the CPU and peripherals.
+// CpuRead handles read operations initiated by the CPU and returns the respective data byte.
+// CpuWrite performs write operations from the CPU to the IEC interface using the provided data byte.
+// PeripheralRead manages read operations performed by IEC peripherals and returns the relevant data byte.
+// PeripheralWrite handles write operations to peripherals on the IEC bus using the specified device number and data byte.
 type IIec interface {
 	Setup(IQuartz, *config.Config) error
 
