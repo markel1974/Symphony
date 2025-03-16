@@ -28,7 +28,7 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
 	v := references.GetCartridgeSpec(references.CartridgeMode16K)
 	co := &CartridgeOcean{
 		BaseComponent: component.NewBaseComponent("ocean", suffix),

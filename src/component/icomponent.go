@@ -2,76 +2,23 @@ package component
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/references"
 	"io"
 )
 
 const stateId = "state"
 
-// IHardware defines an interface for hardware components with a Reset method.
-type IHardware interface {
-	Reset()
-}
-
-// INavigate provides an interface for hierarchical navigation and manipulation of node structures and properties.
-type INavigate interface {
-	GetId() string
-
-	GetNode() *Node
-
-	SetNode(node *Node)
-
-	GetChildren() []IComponent
-
-	GetComponentPath(string) IComponent
-
-	GetProperty(string) (interface{}, error)
-
-	GetPropertyPath(string, string) (interface{}, error)
-
-	SetProperty(string, interface{}) error
-
-	SetPropertyPath(string, string, interface{}) error
-
-	Dump() (map[string]interface{}, error)
-
-	DumpPath(string) (map[string]interface{}, error)
-
-	DumpAll() (map[string]interface{}, error)
-
-	Restore(map[string]interface{}) error
-
-	RestoreAll(map[string]interface{}) error
-
-	RestorePath(string, map[string]interface{}) error
-
-	CommandAdd(id string, desc string, command interface{}) error
-
-	CommandExec(string, ...interface{}) (interface{}, error)
-
-	CommandExecPath(string, string, ...interface{}) (interface{}, error)
-
-	CommandDocumentation(map[string]interface{})
-
-	Print(io.Writer, string, bool)
-}
-
-// IComponent represents a composite interface that combines IHardware and INavigate capabilities.
-type IComponent interface {
-	IHardware
-	INavigate
-}
-
 // BaseComponent represents a foundational structure that implements IComponent, encapsulating an id, properties, and hierarchy.
 type BaseComponent struct {
 	id         string
-	node       *Node
+	node       references.INode
 	properties *Properties
 	commands   *Commands
 }
 
 // Register associates the current BaseComponent instance with a specified parent Node, creating a new node if needed.
-func Register(parent IComponent, component IComponent) {
-	var parentNode *Node = nil
+func Register(parent references.IComponent, component references.IComponent) {
+	var parentNode references.INode = nil
 	if parent != nil {
 		parentNode = parent.GetNode()
 	}
@@ -97,11 +44,11 @@ func NewBaseComponent(name string, suffix string) *BaseComponent {
 	return bc
 }
 
-func (bc *BaseComponent) GetNode() *Node {
+func (bc *BaseComponent) GetNode() references.INode {
 	return bc.node
 }
 
-func (bc *BaseComponent) SetNode(node *Node) {
+func (bc *BaseComponent) SetNode(node references.INode) {
 	bc.node = node
 }
 
@@ -110,15 +57,15 @@ func (bc *BaseComponent) GetId() string {
 	return bc.id
 }
 
-func (bc *BaseComponent) GetChildren() []IComponent {
-	var children []IComponent
+func (bc *BaseComponent) GetChildren() []references.IComponent {
+	var children []references.IComponent
 	for _, child := range bc.node.GetChildren() {
 		children = append(children, child.GetComponent())
 	}
 	return children
 }
 
-func (bc *BaseComponent) GetComponentPath(path string) IComponent {
+func (bc *BaseComponent) GetComponentPath(path string) references.IComponent {
 	node := bc.node.FindNode(path)
 	if node == nil {
 		return nil
@@ -274,7 +221,7 @@ func (bc *BaseComponent) Print(w io.Writer, indent string, showComponents bool) 
 
 // dump recursively processes nodes and their components, creating a map with the component's ID as the key and its data as the value.
 // Returns an error if the dump operation for any component fails.
-func (bc *BaseComponent) dump(component IComponent, stateMap map[string]interface{}) error {
+func (bc *BaseComponent) dump(component references.IComponent, stateMap map[string]interface{}) error {
 	if component == nil {
 		return nil
 	}
@@ -303,7 +250,7 @@ func (bc *BaseComponent) dump(component IComponent, stateMap map[string]interfac
 
 // restore traverses the node tree recursively, restoring the state of each component from the provided state map.
 // Returns an error if the restoration of a component's state fails or if any issues occur during traversal.
-func (bc *BaseComponent) restore(component IComponent, state map[string]interface{}) error {
+func (bc *BaseComponent) restore(component references.IComponent, state map[string]interface{}) error {
 	if component == nil {
 		return nil
 	}

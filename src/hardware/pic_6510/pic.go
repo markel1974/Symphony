@@ -34,7 +34,7 @@ func (i *Pic) Emulate() {
 }
 
 // NewPic initializes and returns a pointer to a new Pic instance with default values.
-func NewPic(parent component.IComponent, suffix string) *Pic {
+func NewPic(parent references.IComponent, suffix string) *Pic {
 	p := &Pic{
 		BaseComponent: component.NewBaseComponent("pic", suffix),
 		quartz:        nil,

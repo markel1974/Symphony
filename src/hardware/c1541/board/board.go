@@ -33,13 +33,13 @@ const baseId = "c1541"
 type Board struct {
 	*component.BaseComponent
 	factory        references.IComponentFactory
-	pic            *pic_6510.Pic
+	pic            references.IPic6510
 	iec            references.IIec
 	externalQuartz references.IQuartzSocket
 	cpuSocket      *CPUSocket
 	via1Socket     *Via1Socket
 	via2Socket     *Via2Socket
-	pla            *pla_c1541.PLA
+	pla            references.IPlaC1541
 	mec            *mechanic.Mechanic
 	deviceId       uint8
 	deviceNumber   uint8
@@ -48,12 +48,12 @@ type Board struct {
 	ledChanged     *signals.SignalUint32
 }
 
-func NewBoardComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewBoardComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
 	return NewBoard(parent, factory, suffix)
 }
 
 // NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func NewBoard(parent component.IComponent, factory references.IComponentFactory, suffix string) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
 		BaseComponent:  component.NewBaseComponent("c1541", suffix),
 		factory:        factory,
@@ -77,9 +77,6 @@ func NewBoard(parent component.IComponent, factory references.IComponentFactory,
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
 func (m *Board) Setup(iec references.IIec, quartz references.IQuartzSocket, deviceId uint8, deviceNumber uint8, opts string, cfg *config.Config) error {
 	var err error
-	var via1 component.IComponent
-	var via2 component.IComponent
-
 	m.iec = iec
 	m.cfg = cfg
 	m.deviceId = deviceId
@@ -93,11 +90,21 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartzSocket, devi
 	cpu := mos6510.NewCPU(m, m.factory, "")
 	m.mec = mechanic.NewMechanic()
 	m.mec.Setup(m.filePath)
-	if via1, err = m.factory.Create(m, "mos6522", "1"); err != nil {
+	var v1 references.IComponent
+	if v1, err = m.factory.Create(m, "mos6522", "1"); err != nil {
 		return err
 	}
-	if via2, err = m.factory.Create(m, "mos6522", "2"); err != nil {
+	via1, ok := v1.(references.IVia)
+	if ok {
+		return fmt.Errorf("via1 is not a Via")
+	}
+	var v2 references.IComponent
+	if v2, err = m.factory.Create(m, "mos6522", "2"); err != nil {
 		return err
+	}
+	via2, ok := v2.(references.IVia)
+	if ok {
+		return fmt.Errorf("via2 is not a Via")
 	}
 	m.cpuSocket = NewCPUSocket()
 	m.via1Socket = NewVia1Socket()

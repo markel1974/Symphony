@@ -19,7 +19,7 @@ type CPU struct {
 	*component.BaseComponent
 	factory        references.IComponentFactory
 	banks          references.I6510Banks // banks represents the interface for accessing and managing memory banks within the CPU simulation.
-	pic            references.I6510Pic   // pic represents the programmable interrupt controller (PIC) interface used by the CPU for interrupt handling.
+	pic            references.IPic6510   // pic represents the programmable interrupt controller (PIC) interface used by the CPU for interrupt handling.
 	next           func(cpu *CPU)        // next is a function pointer that executes the next CPU instruction or operation during emulation.
 	overflowBranch func() bool           // overflowBranch determines if the CPU should branch based on the overflow condition.
 	nFlag          uint8                 // Negative flag - Only the highest bit of the nFlag variable is used
@@ -44,12 +44,12 @@ type CPU struct {
 	irqBreaker     bool                  // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
 }
 
-func NewCPUComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewCPUComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
 	return NewCPU(parent, factory, suffix)
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
-func NewCPU(parent component.IComponent, factory references.IComponentFactory, suffix string) *CPU {
+func NewCPU(parent references.IComponent, factory references.IComponentFactory, suffix string) *CPU {
 	cpu := &CPU{
 		BaseComponent: component.NewBaseComponent("mos6510", suffix),
 		factory:       factory,

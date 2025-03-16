@@ -13,7 +13,6 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 	"strings"
 
-	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	mos6510 "github.com/markel1974/c64emu/src/hardware/6510"
 	c1541board "github.com/markel1974/c64emu/src/hardware/c1541/board"
@@ -26,7 +25,7 @@ import (
 	vic20board "github.com/markel1974/c64emu/src/hardware/vic20/board"
 )
 
-type constructorFn func(component.IComponent, references.IComponentFactory, string) component.IComponent
+type constructorFn func(references.IComponent, references.IComponentFactory, string) references.IComponent
 type Factory struct {
 	cfg       *config.Config
 	container map[string]constructorFn
@@ -56,7 +55,7 @@ func NewFactory(cfg *config.Config) *Factory {
 	return f
 }
 
-func (f *Factory) Create(parent component.IComponent, id string, suffix string) (component.IComponent, error) {
+func (f *Factory) Create(parent references.IComponent, id string, suffix string) (references.IComponent, error) {
 	val, ok := f.container[id]
 	if !ok {
 		return nil, fmt.Errorf("unknown component %s", id)
@@ -66,7 +65,7 @@ func (f *Factory) Create(parent component.IComponent, id string, suffix string) 
 	return ret, nil
 }
 
-func (f *Factory) CreateComponent(parent component.IComponent, id string, suffix string) (component.IComponent, error) {
+func (f *Factory) CreateComponent(parent references.IComponent, id string, suffix string) (references.IComponent, error) {
 	rid := strings.ToLower(strings.TrimSpace(id))
 	switch rid {
 	case "c64":

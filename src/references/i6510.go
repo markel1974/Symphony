@@ -9,7 +9,13 @@ type I6510Banks interface {
 	Write(uint16, uint8)
 }
 
-// I6510 represents an interface for a 6510 CPU implementation with methods for reset, emulation, and signal control.
+// I6510 represents the 6510 CPU interface for emulation and interaction with hardware components.
+// Reset reinitializes the CPU state to default values.
+// Emulate performs a single emulation step of the 6510 CPU.
+// Setup configures the CPU to interact with the specified I6510Socket.
+// SetRDYLow sets the RDY line state to low or high.
+// SetAECLow sets the AEC line state to low or high.
+// SetOverflowBranch assigns a callback function for signaling overflow during branch instructions.
 type I6510 interface {
 	Reset()
 
@@ -20,6 +26,8 @@ type I6510 interface {
 	SetRDYLow(rdyLow bool)
 
 	SetAECLow(aecLow bool)
+
+	SetOverflowBranch(sob func() bool)
 }
 
 // I6510Socket defines an interface for interacting with 6510 PIC and memory banks.
@@ -29,5 +37,5 @@ type I6510 interface {
 type I6510Socket interface {
 	GetBanks() I6510Banks
 
-	GetPic() I6510Pic
+	GetPic() IPic6510
 }

@@ -104,7 +104,7 @@ type Timer struct {
 
 // NewTimer initializes and returns a new Timer instance with the given parentId and suffix.
 // The Timer is set to its default state and its Reset method is called to ensure initialization.
-func NewTimer(parent component.IComponent, factory references.IComponentFactory, suffix string) *Timer {
+func NewTimer(parent references.IComponent, factory references.IComponentFactory, suffix string) *Timer {
 	m := &Timer{
 		BaseComponent: component.NewBaseComponent("timer", suffix),
 		factory:       factory,

@@ -1,7 +1,6 @@
 package pla_c1541
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
@@ -28,12 +27,12 @@ type PLA struct {
 	via2    references.IVia
 }
 
-func NewPLAComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewPLAComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
 	return NewPLA(parent, factory, suffix)
 }
 
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
-func NewPLA(parent component.IComponent, factory references.IComponentFactory, suffix string) *PLA {
+func NewPLA(parent references.IComponent, factory references.IComponentFactory, suffix string) *PLA {
 	p := &PLA{
 		BaseComponent: component.NewBaseComponent("pla_c1541", suffix),
 		factory:       factory,
@@ -49,15 +48,7 @@ func NewPLA(parent component.IComponent, factory references.IComponentFactory, s
 //}
 
 // Setup initializes the PLA instance by configuring VIA components and loading required ROM based on the provided configuration.
-func (r *PLA) Setup(v1 component.IComponent, v2 component.IComponent, roms references.IRomLoaderC1541, cfg *config.Config) error {
-	via1, ok := v1.(references.IVia)
-	if !ok {
-		return fmt.Errorf("unsupported via1 component type")
-	}
-	via2, ok := v2.(references.IVia)
-	if !ok {
-		return fmt.Errorf("unsupported via2 component type")
-	}
+func (r *PLA) Setup(via1 references.IVia, via2 references.IVia, roms references.IRomLoaderC1541, cfg *config.Config) error {
 	r.via1 = via1
 	r.via2 = via2
 	r.rom = roms.Load()

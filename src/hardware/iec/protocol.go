@@ -104,7 +104,7 @@ type Protocol struct {
 }
 
 // NewProtocol creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
-func NewProtocol(parent component.IComponent, suffix string, q references.IQuartzSocket, deviceNumber uint8, device references.IIecProtocolDevice) *Protocol {
+func NewProtocol(parent references.IComponent, suffix string, q references.IQuartzSocket, deviceNumber uint8, device references.IIecProtocolDevice) *Protocol {
 	p := &Protocol{
 		BaseComponent: component.NewBaseComponent("iec_protocol", suffix),
 		quartz:        q,

@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/references"
 	"strings"
 )
 
@@ -17,29 +18,39 @@ func createPathFromKey(key string) ([]string, error) {
 
 // Node represents a hierarchical structure used to manage components and their relationships.
 type Node struct {
-	component IComponent       // Il componente (CPU, VIC-II, ecc.), o nil per i nodi intermedi.
-	parent    *Node            // Puntatore al nodo genitore (nil per la radice).
-	children  map[string]*Node // Mappa dei figli (chiave: ID del figlio, valore: puntatore al nodo figlio).
+	component references.IComponent // Il componente (CPU, VIC-II, ecc.), o nil per i nodi intermedi.
+	parent    *Node                 // Puntatore al nodo genitore (nil per la radice).
+	children  map[string]*Node      // Mappa dei figli (chiave: ID del figlio, valore: puntatore al nodo figlio).
 }
 
 // NewNode creates a new Node with the given component and parent, initializing its path and children map.
-func newNode(parentNode *Node, component IComponent) *Node {
+func newNode(parent references.INode, component references.IComponent) *Node {
+	var parentNode *Node = nil
+	if parent != nil {
+		var ok bool
+		parentNode, ok = parent.(*Node)
+		if !ok {
+			panic(fmt.Sprintf("invalid parent node: %T", parent))
+		}
+	}
+
 	if component == nil {
 		panic("nil component")
 	}
-	return &Node{
+	n := &Node{
 		component: component,
 		parent:    parentNode,
 		children:  make(map[string]*Node),
 	}
+	return n
 }
 
-func (n *Node) GetParent() *Node {
+func (n *Node) GetParent() references.INode {
 	return n.parent
 }
 
 // GetComponent retrieves the component associated with the node, or nil if the node is an intermediate node.
-func (n *Node) GetComponent() IComponent {
+func (n *Node) GetComponent() references.IComponent {
 	return n.component
 }
 
@@ -54,14 +65,14 @@ func (n *Node) AddChild(child *Node) {
 }
 
 // AddComponent adds a new component as a child node to the current node. It returns an error if addition fails.
-func (n *Node) AddComponent(component IComponent) *Node {
+func (n *Node) AddComponent(component references.IComponent) references.INode {
 	child := newNode(n, component)
 	n.AddChild(child)
 	return child
 }
 
 // FindNode traverses the hierarchical structure of nodes to locate a specific node based on the given path string.
-func (n *Node) FindNode(path string) *Node {
+func (n *Node) FindNode(path string) references.INode {
 	parts, err := createPathFromKey(path)
 	if err != nil {
 		return nil
@@ -86,7 +97,7 @@ func (n *Node) FindNode(path string) *Node {
 }
 
 // GetChild retrieves the child node with the specified ID from the current node's children. Returns nil if not found.
-func (n *Node) GetChild(id string) *Node {
+func (n *Node) GetChild(id string) references.INode {
 	return n.children[id]
 }
 
@@ -96,8 +107,8 @@ func (n *Node) HasChild(id string) bool {
 }
 
 // GetChildren returns a slice of pointers to all child nodes of the current node.
-func (n *Node) GetChildren() []*Node {
-	var children []*Node
+func (n *Node) GetChildren() []references.INode {
+	var children []references.INode
 	for _, child := range n.children {
 		children = append(children, child)
 	}

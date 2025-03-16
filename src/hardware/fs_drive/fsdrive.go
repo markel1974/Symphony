@@ -15,7 +15,7 @@ type FSDrive struct {
 	*component.BaseComponent
 	*iec.Protocol
 	factory      references.IComponentFactory
-	parent       component.IComponent
+	parent       references.IComponent
 	suffix       string
 	commands     *Commands
 	deviceId     uint8
@@ -30,11 +30,11 @@ type FSDrive struct {
 	cfg          *config.Config
 }
 
-func NewBoardComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewBoardComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
 	return NewBoard(parent, factory, suffix)
 }
 
-func NewBoard(parent component.IComponent, factory references.IComponentFactory, suffix string) *FSDrive {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *FSDrive {
 	fs := &FSDrive{
 		BaseComponent: component.NewBaseComponent("fs_drive", ""),
 		parent:        parent,

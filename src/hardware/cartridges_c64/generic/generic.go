@@ -34,7 +34,7 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Generic cartridge implementing the ICartridgeC64 interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
 	g := &Generic{
 		factory:       factory,
 		BaseComponent: component.NewBaseComponent("generic", suffix),

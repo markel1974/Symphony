@@ -40,12 +40,12 @@ type PLA struct {
 	wTriggers       *WriteTriggers
 }
 
-func NewPLAComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewPLAComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
 	return NewPLA(parent, factory, suffix)
 }
 
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
-func NewPLA(parent component.IComponent, factory references.IComponentFactory, suffix string) *PLA {
+func NewPLA(parent references.IComponent, factory references.IComponentFactory, suffix string) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
 		BaseComponent:   component.NewBaseComponent("pla_c1541", suffix),

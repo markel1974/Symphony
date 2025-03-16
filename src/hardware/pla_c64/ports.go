@@ -2,6 +2,7 @@ package pla_c64
 
 import (
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 //from c64pla.c
@@ -29,7 +30,7 @@ type Ports struct {
 }
 
 // NewPorts initializes and returns a new instance of the Ports struct with default values set.
-func NewPorts(parent component.IComponent, suffix string) *Ports {
+func NewPorts(parent references.IComponent, suffix string) *Ports {
 	p := &Ports{
 		BaseComponent: component.NewBaseComponent("ports", suffix),
 		capsSense:     1,

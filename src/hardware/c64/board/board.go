@@ -63,7 +63,7 @@ type Board struct {
 }
 
 // NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
-func NewBoard(parent component.IComponent, factory references.IComponentFactory, suffix string) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
 		BaseComponent:       component.NewBaseComponent("c64", suffix),
 		factory:             factory,
@@ -93,7 +93,7 @@ func NewBoard(parent component.IComponent, factory references.IComponentFactory,
 	return b
 }
 
-func NewBoardComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewBoardComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
 	return NewBoard(parent, factory, suffix)
 }
 
@@ -125,8 +125,8 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	sid := mos6581.NewSID(s, s.factory, "")
 
 	var err error
-	var cia1 component.IComponent
-	var cia2 component.IComponent
+	var cia1 references.IComponent
+	var cia2 references.IComponent
 	if cia1, err = s.factory.Create(s, "mos6526", "1"); err != nil {
 		return err
 	}

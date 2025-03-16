@@ -29,18 +29,18 @@ type Manager struct {
 	prefs               *config.Config
 	carts               []references.ICartridgeC64
 	emulate             []references.ICartridgeC64
-	registerHardware    map[string]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64
-	registerType        map[int]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64
-	registerSize        map[int]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64
-	registerSizeDefault func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64
+	registerHardware    map[string]func(references.IComponent, references.IComponentFactory, string) references.ICartridgeC64
+	registerType        map[int]func(references.IComponent, references.IComponentFactory, string) references.ICartridgeC64
+	registerSize        map[int]func(references.IComponent, references.IComponentFactory, string) references.ICartridgeC64
+	registerSizeDefault func(references.IComponent, references.IComponentFactory, string) references.ICartridgeC64
 }
 
-func NewManagerComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewManagerComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
 	return NewManager(parent, factory, suffix)
 }
 
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
-func NewManager(parent component.IComponent, factory references.IComponentFactory, suffix string) *Manager {
+func NewManager(parent references.IComponent, factory references.IComponentFactory, suffix string) *Manager {
 	m := &Manager{
 		BaseComponent:       component.NewBaseComponent("cartridgeManager", suffix),
 		factory:             factory,
@@ -48,9 +48,9 @@ func NewManager(parent component.IComponent, factory references.IComponentFactor
 		board:               nil,
 		prefs:               nil,
 		carts:               nil,
-		registerHardware:    make(map[string]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64),
-		registerType:        make(map[int]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64),
-		registerSize:        make(map[int]func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64),
+		registerHardware:    make(map[string]func(references.IComponent, references.IComponentFactory, string) references.ICartridgeC64),
+		registerType:        make(map[int]func(references.IComponent, references.IComponentFactory, string) references.ICartridgeC64),
+		registerSize:        make(map[int]func(references.IComponent, references.IComponentFactory, string) references.ICartridgeC64),
 		registerSizeDefault: nil,
 	}
 	component.Register(parent, m)
@@ -218,7 +218,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if err := ldr.Setup(name, data); err != nil {
 		return "", err
 	}
-	var factory func(component.IComponent, references.IComponentFactory, string) references.ICartridgeC64 = nil
+	var factory func(references.IComponent, references.IComponentFactory, string) references.ICartridgeC64 = nil
 	if len(hardware) > 0 {
 		hardware = strings.ToUpper(strings.TrimSpace(hardware))
 		factory = f.registerHardware[hardware]

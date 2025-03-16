@@ -25,7 +25,7 @@ type ExternalCPU struct {
 }
 
 // New returns a new instance of the ExternalCPU struct implementing the ICartridgeC64 interface.
-func New(parent component.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
 	r := &ExternalCPU{
 		BaseComponent: component.NewBaseComponent("externalCpu", suffix),
 		factory:       factory,

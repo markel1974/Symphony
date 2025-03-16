@@ -2,8 +2,6 @@ package board
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/component"
-	pla2 "github.com/markel1974/c64emu/src/hardware/pla_c64"
 	"github.com/markel1974/c64emu/src/hardware/roms_c64"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -11,7 +9,7 @@ import (
 // PLASocket represents a socket encapsulating a PLA and its associated board.
 type PLASocket struct {
 	board *Board
-	pla   *pla2.PLA
+	pla   references.IPlaC64
 }
 
 // NewPLASocket creates a new instance of PLASocket with default uninitialized board and PLA components.
@@ -24,7 +22,7 @@ func NewPLASocket() *PLASocket {
 }
 
 // Setup initializes the PLASocket with the provided board, PLA, and associated components like VIC, SID, CIAs, and cartridge manager.
-func (w *PLASocket) Setup(board *Board, p *pla2.PLA, vic references.IVic, sid references.ISid, c1 component.IComponent, c2 component.IComponent, cartMan references.IExpansionSocketC64) error {
+func (w *PLASocket) Setup(board *Board, p references.IPlaC64, vic references.IVic, sid references.ISid, c1 references.IComponent, c2 references.IComponent, cartMan references.IExpansionSocketC64) error {
 	cia1, ok := c1.(references.ICia)
 	if !ok {
 		return fmt.Errorf("unknown cia1 interface")

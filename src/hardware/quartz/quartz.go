@@ -19,12 +19,12 @@ type Quartz struct {
 	alarms          *list.List
 }
 
-func NewQuartzComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewQuartzComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
 	return NewQuartz(parent, factory, suffix)
 }
 
 // NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
-func NewQuartz(parent component.IComponent, factory references.IComponentFactory, suffix string) *Quartz {
+func NewQuartz(parent references.IComponent, factory references.IComponentFactory, suffix string) *Quartz {
 	q := &Quartz{
 		BaseComponent:   component.NewBaseComponent("quartz", suffix),
 		factory:         factory,

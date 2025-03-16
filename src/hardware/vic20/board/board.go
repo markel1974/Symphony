@@ -54,11 +54,11 @@ type Board struct {
 	dt                  references.IThrottle
 }
 
-func NewBoardComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewBoardComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
 	return NewBoard(parent, factory, suffix)
 }
 
-func NewBoard(parent component.IComponent, factory references.IComponentFactory, suffix string) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
 		BaseComponent:       component.NewBaseComponent("vic20", suffix),
 		factory:             factory,

@@ -1,8 +1,6 @@
 package board
 
 import (
-	"fmt"
-	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -26,11 +24,7 @@ func NewVia1Socket() *Via1Socket {
 }
 
 // Setup initializes the Via1Socket by assigning the board and interrupt ID, setting filters, and configuring the dip switch.
-func (v *Via1Socket) Setup(board *Board, v1 component.IComponent) error {
-	via1, ok := v1.(references.IVia)
-	if !ok {
-		return fmt.Errorf("unsupported component type")
-	}
+func (v *Via1Socket) Setup(board *Board, via1 references.IVia) error {
 	v.board = board
 	v.via1 = via1
 	v.setFilters()

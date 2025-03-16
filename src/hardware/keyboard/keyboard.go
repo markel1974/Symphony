@@ -20,12 +20,12 @@ type Keyboard struct {
 	ascii   *Ascii
 }
 
-func NewKeyboardComponent(parent component.IComponent, factory references.IComponentFactory, suffix string) component.IComponent {
+func NewKeyboardComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
 	return NewKeyboard(parent, factory, suffix)
 }
 
 // NewKeyboard initializes and returns a new Keyboard instance with default settings and a reset state.
-func NewKeyboard(parent component.IComponent, factory references.IComponentFactory, suffix string) *Keyboard {
+func NewKeyboard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Keyboard {
 	k := &Keyboard{
 		BaseComponent: component.NewBaseComponent("keyboard", suffix),
 		factory:       factory,

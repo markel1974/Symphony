@@ -27,8 +27,8 @@ func (w *CPUSocket) Setup(board *Board, cpu references.I6510) error {
 	return nil
 }
 
-// GetPic retrieves the programmable interrupt controller (I6510Pic) associated with the CPUSocket instance.
-func (w *CPUSocket) GetPic() references.I6510Pic {
+// GetPic retrieves the programmable interrupt controller (IPic6510) associated with the CPUSocket instance.
+func (w *CPUSocket) GetPic() references.IPic6510 {
 	return w.board.pic
 }
 
