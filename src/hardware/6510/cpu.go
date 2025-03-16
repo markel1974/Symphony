@@ -19,7 +19,7 @@ type CPU struct {
 	*component.BaseComponent
 	factory        references.IComponentFactory
 	banks          references.I6510Banks // banks represents the interface for accessing and managing memory banks within the CPU simulation.
-	pic            references.IPic6510   // pic represents the programmable interrupt controller (PIC) interface used by the CPU for interrupt handling.
+	pic            references.IPIC6510   // pic represents the programmable interrupt controller (PIC) interface used by the CPU for interrupt handling.
 	next           func(cpu *CPU)        // next is a function pointer that executes the next CPU instruction or operation during emulation.
 	overflowBranch func() bool           // overflowBranch determines if the CPU should branch based on the overflow condition.
 	nFlag          uint8                 // Negative flag - Only the highest bit of the nFlag variable is used

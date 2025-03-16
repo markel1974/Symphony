@@ -94,3 +94,51 @@ func (f *Factory) CreateICIA(parent references.IComponent, id string, suffix str
 	}
 	return component, v, nil
 }
+
+func (f *Factory) CreateI6510(parent references.IComponent, id string, suffix string) (references.IComponent, references.I6510, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.I6510)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a 6510", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateIPIC6510(parent references.IComponent, id string, suffix string) (references.IComponent, references.IPIC6510, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IPIC6510)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a pic6510", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateIPLAc1541(parent references.IComponent, id string, suffix string) (references.IComponent, references.IPLAc1541, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IPLAc1541)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a cia", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateIROMLoaderC1541(parent references.IComponent, id string, suffix string) (references.IComponent, references.IROMLoaderC1541, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IROMLoaderC1541)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a cia", id)
+	}
+	return component, v, nil
+}

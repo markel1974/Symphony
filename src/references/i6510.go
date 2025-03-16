@@ -37,5 +37,5 @@ type I6510 interface {
 type I6510Socket interface {
 	GetBanks() I6510Banks
 
-	GetPic() IPic6510
+	GetPic() IPIC6510
 }

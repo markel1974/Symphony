@@ -20,7 +20,7 @@ func NewPLASocket() *PLASocket {
 }
 
 // Connect initializes the PLASocket with the provided board, PLA, and associated components like VIC, SID, CIAs, and cartridge manager.
-func (w *PLASocket) Connect(board *Board, p references.IPlaC64, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.IExpansionSocketC64, roms references.IRomLoaderC64) error {
+func (w *PLASocket) Connect(board *Board, p references.IPlaC64, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.IExpansionSocketC64, roms references.IROMLoaderC64) error {
 	w.board = board
 	w.pla = p
 	w.pla.Setup(vic, sid, cia1, cia2, cartMan, roms, w.board.cfg)

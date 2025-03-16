@@ -32,14 +32,14 @@ func (m *mockPic) VerifyIrq(iFlag uint8, opFlag uint8) uint8 {
 
 type mockSocket struct {
 	banks references.I6510Banks
-	pic   references.IPic6510
+	pic   references.IPIC6510
 }
 
 func (m *mockSocket) GetBanks() references.I6510Banks {
 	return m.banks
 }
 
-func (m *mockSocket) GetPic() references.IPic6510 {
+func (m *mockSocket) GetPic() references.IPIC6510 {
 	return m.pic
 }
 

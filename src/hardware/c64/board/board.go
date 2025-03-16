@@ -37,7 +37,7 @@ type Board struct {
 	db                  references.IDisplayBuffer
 	player              references.IPlayer
 	quartz              references.IQuartz
-	pic                 references.IPic6510
+	pic                 references.IPIC6510
 	iec                 references.IIec
 	keys                references.IKeyboard
 	joy1                references.IJoystick
@@ -120,7 +120,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	s.plaSocket = NewPLASocket()
 	s.cartSocket = NewCartridgeSocket()
 
-	s.pic = pic_6510.NewPic(s, s.factory, "")
+	s.pic = pic_6510.NewPIC(s, s.factory, "")
 	s.iec = iec.NewDispatcher(s, s.factory, "")
 	var cpu references.I6510 = mos6510.NewCPU(s, s.factory, "")
 	var vic references.IVIC = mos6569.NewVIC(s, s.factory, "")

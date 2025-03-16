@@ -103,7 +103,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 
-	s.pic = mos6510.NewPic(s, s.factory, "")
+	s.pic = mos6510.NewPIC(s, s.factory, "")
 	s.iec = iec.NewDispatcher(s, s.factory, "")
 	s.keys = inputs2.NewKeyboard(s, s.factory, "")
 	s.joy1 = joystick_c64.NewJoystick(s, s.factory, "1")

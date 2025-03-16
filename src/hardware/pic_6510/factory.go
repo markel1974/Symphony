@@ -19,9 +19,9 @@ func (t *Factory) Identifier() string {
 
 func (t *Factory) Kind() interface{} {
 	z := (*Pic)(nil)
-	return references.IPic6510(z)
+	return references.IPIC6510(z)
 }
 
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewPic(parent, factory, suffix)
+	return NewPIC(parent, factory, suffix)
 }

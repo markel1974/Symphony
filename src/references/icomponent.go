@@ -95,4 +95,12 @@ type IComponentFactory interface {
 	CreateICIA(parent IComponent, id string, suffix string) (IComponent, ICIA, error)
 
 	CreateIVIA(parent IComponent, id string, suffix string) (IComponent, IVIA, error)
+
+	CreateI6510(parent IComponent, id string, suffix string) (IComponent, I6510, error)
+
+	CreateIPIC6510(parent IComponent, id string, suffix string) (IComponent, IPIC6510, error)
+
+	CreateIPLAc1541(parent IComponent, id string, suffix string) (IComponent, IPLAc1541, error)
+
+	CreateIROMLoaderC1541(parent IComponent, id string, suffix string) (IComponent, IROMLoaderC1541, error)
 }

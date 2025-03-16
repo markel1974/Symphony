@@ -19,7 +19,7 @@ func (t *Factory) Identifier() string {
 
 func (t *Factory) Kind() interface{} {
 	z := (*RomLoader)(nil)
-	return references.IRomLoaderC64(z)
+	return references.IROMLoaderC64(z)
 }
 
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {

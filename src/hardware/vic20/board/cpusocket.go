@@ -6,7 +6,7 @@ import (
 
 type CPUSocket struct {
 	board *Board
-	pic   mos6510.IPic6510
+	pic   mos6510.IPIC6510
 	banks mos6510.I6510Banks
 }
 
@@ -25,7 +25,7 @@ func (w *CPUSocket) Reset() {
 	//w.board.cpu.Reset()
 }
 
-func (w *CPUSocket) GetPic() mos6510.IPic6510 {
+func (w *CPUSocket) GetPic() mos6510.IPIC6510 {
 	return w.pic
 }
 

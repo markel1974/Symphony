@@ -8,7 +8,7 @@ import (
 type CPUSocket struct {
 	board *Board
 	cpu   references.I6510
-	pic   references.IPic6510
+	pic   references.IPIC6510
 	banks references.I6510Banks
 }
 
@@ -43,7 +43,7 @@ func (w *CPUSocket) Emulate() {
 }
 
 // GetPic retrieves the programmable interrupt controller (PIC) associated with the CPUSocket instance.
-func (w *CPUSocket) GetPic() references.IPic6510 {
+func (w *CPUSocket) GetPic() references.IPIC6510 {
 	return w.pic
 }
 

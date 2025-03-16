@@ -11,11 +11,7 @@ import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/6510"
 	"github.com/markel1974/c64emu/src/hardware/c1541/mechanic"
-	"github.com/markel1974/c64emu/src/hardware/pic_6510"
-	"github.com/markel1974/c64emu/src/hardware/pla_c1541"
-	"github.com/markel1974/c64emu/src/hardware/roms_c1541"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -33,9 +29,9 @@ const baseId = "c1541"
 type Board struct {
 	*component.BaseComponent
 	factory        references.IComponentFactory
-	pic            references.IPic6510
+	pic            references.IPIC6510
 	iec            references.IIec
-	pla            references.IPlaC1541
+	pla            references.IPLAc1541
 	externalQuartz references.IQuartz
 	cpuSocket      *CPUSocket
 	via1Socket     *VIA1Socket
@@ -83,11 +79,22 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	m.deviceNumber = deviceNumber
 	m.filePath = opts
 	m.externalQuartz = quartz
-	m.cfg.Bind(m.configChanged)
-	m.pla = pla_c1541.NewPLA(m, m.factory, "")
 	//m.quartz = quartz.NewQuartz(m, "")
-	m.pic = pic_6510.NewPic(m, m.factory, "")
-	cpu := mos6510.NewCPU(m, m.factory, "")
+	m.cfg.Bind(m.configChanged)
+	if _, m.pla, err = m.factory.CreateIPLAc1541(m, "pla_c1541", ""); err != nil {
+		return err
+	}
+	if _, m.pic, err = m.factory.CreateIPIC6510(m, "pic_6510", ""); err != nil {
+		return err
+	}
+	var cpu references.I6510
+	if _, cpu, err = m.factory.CreateI6510(m, "mos6510", ""); err != nil {
+		return err
+	}
+	var loader references.IROMLoaderC1541
+	if _, loader, err = m.factory.CreateIROMLoaderC1541(m, "roms_c1541", ""); err != nil {
+		return err
+	}
 	m.mec = mechanic.NewMechanic()
 	m.mec.Setup(m.filePath)
 	_, via1, err := m.factory.CreateIVIA(m, "mos6522", "1")
@@ -107,7 +114,7 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	if err = m.via2Socket.Connect(m, via2); err != nil {
 		return err
 	}
-	loader := roms_c1541.NewRomLoader(m, m.factory, "")
+
 	if err = loader.Setup(m.cfg); err != nil {
 		return err
 	}

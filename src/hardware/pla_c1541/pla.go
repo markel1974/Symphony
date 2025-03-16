@@ -48,7 +48,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 //}
 
 // Setup initializes the PLA instance by configuring VIA components and loading required ROM based on the provided configuration.
-func (r *PLA) Setup(via1 references.IVIA, via2 references.IVIA, roms references.IRomLoaderC1541, cfg *config.Config) error {
+func (r *PLA) Setup(via1 references.IVIA, via2 references.IVIA, roms references.IROMLoaderC1541, cfg *config.Config) error {
 	r.via1 = via1
 	r.via2 = via2
 	r.rom = roms.Load()
