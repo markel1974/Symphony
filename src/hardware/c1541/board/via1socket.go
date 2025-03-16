@@ -24,7 +24,7 @@ func NewVIA1Socket() *VIA1Socket {
 }
 
 // Setup initializes the VIA1Socket by assigning the board and interrupt ID, setting filters, and configuring the dip switch.
-func (v *VIA1Socket) Setup(board *Board, via1 references.IVIA) error {
+func (v *VIA1Socket) Connect(board *Board, via1 references.IVIA) error {
 	v.board = board
 	v.via1 = via1
 	v.setFilters()

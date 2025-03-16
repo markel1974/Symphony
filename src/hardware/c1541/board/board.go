@@ -35,11 +35,11 @@ type Board struct {
 	factory        references.IComponentFactory
 	pic            references.IPic6510
 	iec            references.IIec
+	pla            references.IPlaC1541
 	externalQuartz references.IQuartz
 	cpuSocket      *CPUSocket
 	via1Socket     *VIA1Socket
 	via2Socket     *VIA2Socket
-	pla            references.IPlaC1541
 	mec            *mechanic.Mechanic
 	deviceId       uint8
 	deviceNumber   uint8
@@ -109,10 +109,10 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	m.cpuSocket = NewCPUSocket()
 	m.via1Socket = NewVIA1Socket()
 	m.via2Socket = NewVIA2Socket()
-	if err = m.via1Socket.Setup(m, via1); err != nil {
+	if err = m.via1Socket.Connect(m, via1); err != nil {
 		return err
 	}
-	if err = m.via2Socket.Setup(m, via2); err != nil {
+	if err = m.via2Socket.Connect(m, via2); err != nil {
 		return err
 	}
 	loader := roms_c1541.NewRomLoader(m, m.factory, "")
@@ -123,7 +123,7 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 		return err
 	}
 	m.pic.Setup(m.externalQuartz)
-	m.cpuSocket.Setup(m, cpu)
+	m.cpuSocket.Connect(m, cpu)
 	return nil
 }
 

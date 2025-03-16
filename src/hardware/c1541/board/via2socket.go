@@ -46,8 +46,8 @@ func NewVIA2Socket() *VIA2Socket {
 	}
 }
 
-// Setup initializes the VIA2Socket by associating it with a Board instance and configuring the interrupt ID.
-func (v *VIA2Socket) Setup(board *Board, via2 references.IVIA) error {
+// Connect initializes the VIA2Socket by associating it with a Board instance and configuring the interrupt ID.
+func (v *VIA2Socket) Connect(board *Board, via2 references.IVIA) error {
 	v.board = board
 	v.via2 = via2
 	v.via2.Setup(v)

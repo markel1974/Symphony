@@ -23,8 +23,8 @@ func NewCPUSocket() *CPUSocket {
 	return c
 }
 
-// Setup initializes the CPUSocket by associating it with the provided Board and configuring related components.
-func (w *CPUSocket) Setup(board *Board, cpu references.I6510) {
+// Connect initializes the CPUSocket by associating it with the provided Board and configuring related components.
+func (w *CPUSocket) Connect(board *Board, cpu references.I6510) {
 	w.board = board
 	w.pic = board.pic
 	w.banks = board.pla
