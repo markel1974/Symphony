@@ -1,5 +1,7 @@
 package references
 
+import "github.com/markel1974/c64emu/src/config"
+
 //OFF
 //GAME = 1, EXROM = 1
 
@@ -77,6 +79,8 @@ type IExpansionC64 interface {
 // IORead performs a read operation from an I/O address, returning the value and success state.
 // IOWrite executes a write operation to an I/O address with the specified data, indicating success.
 type IExpansionSocketC64 interface {
+	Setup(expansion IExpansionC64, cfg *config.Config) error
+
 	Config() (uint8, uint8, bool)
 
 	Read(interval RomInterval, addr uint16) (uint8, bool)
@@ -84,4 +88,10 @@ type IExpansionSocketC64 interface {
 	IORead(addr uint16) (uint8, bool)
 
 	IOWrite(addr uint16, data uint8) bool
+
+	Reset()
+
+	Emulate()
+
+	Add(kind string, path string, data []uint8) (string, error)
 }

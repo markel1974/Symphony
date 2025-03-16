@@ -17,7 +17,7 @@ const (
 type SID struct {
 	*component.BaseComponent
 	factory      references.IComponentFactory
-	socket       references.ISidSocket
+	socket       references.ISIDSocket
 	registers    []uint8
 	cfg          *config.Config
 	audioBuilder *AudioBuilder
@@ -31,7 +31,7 @@ func NewSIDComponent(parent references.IComponent, factory references.IComponent
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
 func NewSID(parent references.IComponent, factory references.IComponentFactory, suffix string) *SID {
 	s := &SID{
-		BaseComponent: component.NewBaseComponent("sid", suffix),
+		BaseComponent: component.NewBaseComponent(componentId, suffix),
 		factory:       factory,
 		socket:        nil,
 		registers:     make([]uint8, RegisterCount),
@@ -44,7 +44,7 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the SID instance with the provided socket, configuration, fragment frequency, and raster count.
-func (sid *SID) Setup(socket references.ISidSocket, fragFreq int, rasters int, cfg *config.Config) {
+func (sid *SID) Setup(socket references.ISIDSocket, fragFreq int, rasters int, cfg *config.Config) {
 	sid.socket = socket
 	sid.audioBuilder = NewAudioBuilder(sid.socket.GetPlayer(), true, fragFreq, rasters)
 	sid.cfg = cfg

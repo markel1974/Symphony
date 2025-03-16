@@ -1,4 +1,4 @@
-package keyboard
+package keyboard_c64
 
 /*
 C64 keyboard matrix:

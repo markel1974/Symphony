@@ -1,7 +1,9 @@
 package roms_c64
 
 import (
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/references"
 	"os"
 )
 
@@ -14,14 +16,29 @@ const (
 
 // RomLoader provides functionality to load ROM files, including kernal, basic, and character ROMs, with optional fallback handling.
 type RomLoader struct {
-	cfg *config.Config
+	*component.BaseComponent
+	factory references.IComponentFactory
+	cfg     *config.Config
 }
 
 // NewRomLoader initializes and returns a new instance of RomLoader configured with the provided Config.
-func NewRomLoader(cfg *config.Config) *RomLoader {
-	return &RomLoader{
-		cfg: cfg,
+func NewRomLoader(parent references.IComponent, factory references.IComponentFactory, suffix string) *RomLoader {
+	rl := &RomLoader{
+		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		factory:       factory,
+		cfg:           nil,
 	}
+	component.Register(parent, rl)
+	return rl
+}
+
+func (r *RomLoader) Setup(cfg *config.Config) error {
+	r.cfg = cfg
+	return nil
+}
+
+func (r *RomLoader) Reset() {
+
 }
 
 // LoadKernal loads the Kernal ROM, using the Jiffy ROM if Jiffy mode is enabled, otherwise defaults to the standard ROM.

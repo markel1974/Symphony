@@ -37,8 +37,8 @@ type Board struct {
 	iec            references.IIec
 	externalQuartz references.IQuartzSocket
 	cpuSocket      *CPUSocket
-	via1Socket     *Via1Socket
-	via2Socket     *Via2Socket
+	via1Socket     *VIA1Socket
+	via2Socket     *VIA2Socket
 	pla            references.IPlaC1541
 	mec            *mechanic.Mechanic
 	deviceId       uint8
@@ -55,7 +55,7 @@ func NewBoardComponent(parent references.IComponent, factory references.ICompone
 // NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
-		BaseComponent:  component.NewBaseComponent("c1541", suffix),
+		BaseComponent:  component.NewBaseComponent(componentId, suffix),
 		factory:        factory,
 		externalQuartz: nil,
 		iec:            nil,
@@ -86,7 +86,7 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartzSocket, devi
 	m.cfg.Bind(m.configChanged)
 	m.pla = pla_c1541.NewPLA(m, m.factory, "")
 	//m.quartz = quartz.NewQuartz(m, "")
-	m.pic = pic_6510.NewPic(m, "")
+	m.pic = pic_6510.NewPic(m, m.factory, "")
 	cpu := mos6510.NewCPU(m, m.factory, "")
 	m.mec = mechanic.NewMechanic()
 	m.mec.Setup(m.filePath)
@@ -94,28 +94,31 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartzSocket, devi
 	if v1, err = m.factory.Create(m, "mos6522", "1"); err != nil {
 		return err
 	}
-	via1, ok := v1.(references.IVia)
-	if ok {
+	via1, ok := v1.(references.IVIA)
+	if !ok {
 		return fmt.Errorf("via1 is not a Via")
 	}
 	var v2 references.IComponent
 	if v2, err = m.factory.Create(m, "mos6522", "2"); err != nil {
 		return err
 	}
-	via2, ok := v2.(references.IVia)
-	if ok {
+	via2, ok := v2.(references.IVIA)
+	if !ok {
 		return fmt.Errorf("via2 is not a Via")
 	}
 	m.cpuSocket = NewCPUSocket()
-	m.via1Socket = NewVia1Socket()
-	m.via2Socket = NewVia2Socket()
+	m.via1Socket = NewVIA1Socket()
+	m.via2Socket = NewVIA2Socket()
 	if err = m.via1Socket.Setup(m, via1); err != nil {
 		return err
 	}
 	if err = m.via2Socket.Setup(m, via2); err != nil {
 		return err
 	}
-	loader := roms_c1541.NewRomLoader(cfg)
+	loader := roms_c1541.NewRomLoader(m, m.factory, "")
+	if err = loader.Setup(m.cfg); err != nil {
+		return err
+	}
 	if err = m.pla.Setup(via1, via2, loader, cfg); err != nil {
 		return err
 	}

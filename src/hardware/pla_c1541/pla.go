@@ -23,8 +23,8 @@ type PLA struct {
 	factory references.IComponentFactory
 	ram     []uint8
 	rom     []uint8
-	via1    references.IVia
-	via2    references.IVia
+	via1    references.IVIA
+	via2    references.IVIA
 }
 
 func NewPLAComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
@@ -34,7 +34,7 @@ func NewPLAComponent(parent references.IComponent, factory references.IComponent
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
 func NewPLA(parent references.IComponent, factory references.IComponentFactory, suffix string) *PLA {
 	p := &PLA{
-		BaseComponent: component.NewBaseComponent("pla_c1541", suffix),
+		BaseComponent: component.NewBaseComponent(componentId, suffix),
 		factory:       factory,
 		ram:           make([]uint8, c1541RamSize),
 	}
@@ -48,7 +48,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 //}
 
 // Setup initializes the PLA instance by configuring VIA components and loading required ROM based on the provided configuration.
-func (r *PLA) Setup(via1 references.IVia, via2 references.IVia, roms references.IRomLoaderC1541, cfg *config.Config) error {
+func (r *PLA) Setup(via1 references.IVIA, via2 references.IVIA, roms references.IRomLoaderC1541, cfg *config.Config) error {
 	r.via1 = via1
 	r.via2 = via2
 	r.rom = roms.Load()

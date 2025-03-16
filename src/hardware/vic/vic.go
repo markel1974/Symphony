@@ -118,7 +118,7 @@ func NewVICComponent(parent references.IComponent, factory references.IComponent
 // NewVIC creates and returns a pointer to a newly initialized VIC instance with default values and given id.
 func NewVIC(parent references.IComponent, factory references.IComponentFactory, suffix string) *VIC {
 	vic := &VIC{
-		BaseComponent:    component.NewBaseComponent("vic", suffix),
+		BaseComponent:    component.NewBaseComponent(componentId, suffix),
 		factory:          factory,
 		banks:            nil,
 		mXx:              make([]uint16, SpriteNumber),

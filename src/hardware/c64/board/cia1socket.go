@@ -50,7 +50,7 @@ func NewCIA1Socket() *CIA1Socket {
 }
 
 // Setup initializes the CIA1Socket with the provided Board reference and interrupt ID.
-func (w *CIA1Socket) Setup(board *Board, c1 references.IComponent) error {
+func (w *CIA1Socket) Connect(board *Board, c1 references.IComponent) error {
 	cia1, ok := c1.(references.ICia)
 	if !ok {
 		return fmt.Errorf("unknown cia2 interface")

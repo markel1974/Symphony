@@ -1,4 +1,4 @@
-package keyboard
+package keyboard_c64
 
 import (
 	"github.com/markel1974/c64emu/src/common/fifo"
@@ -27,7 +27,7 @@ func NewKeyboardComponent(parent references.IComponent, factory references.IComp
 // NewKeyboard initializes and returns a new Keyboard instance with default settings and a reset state.
 func NewKeyboard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Keyboard {
 	k := &Keyboard{
-		BaseComponent: component.NewBaseComponent("keyboard", suffix),
+		BaseComponent: component.NewBaseComponent("keyboard_c64", suffix),
 		factory:       factory,
 		storage:       nil,
 		virtual:       NewVirtual(),

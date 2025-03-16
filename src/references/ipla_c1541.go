@@ -7,7 +7,7 @@ import "github.com/markel1974/c64emu/src/config"
 // Read retrieves the value from the specified memory address.
 // Write writes a value to the specified memory address.
 type IPlaC1541 interface {
-	Setup(via1 IVia, via2 IVia, roms IRomLoaderC1541, cfg *config.Config) error
+	Setup(via1 IVIA, via2 IVIA, roms IRomLoaderC1541, cfg *config.Config) error
 
 	Read(addr uint16) uint8
 

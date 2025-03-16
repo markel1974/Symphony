@@ -1,4 +1,4 @@
-package joystick
+package joystick_c64
 
 import (
 	"github.com/markel1974/c64emu/src/common/fifo"
@@ -23,7 +23,7 @@ func NewJoystickComponent(parent references.IComponent, factory references.IComp
 // NewJoystick initializes and returns a new instance of Joystick with default settings and sensitivity for controls.
 func NewJoystick(parent references.IComponent, factory references.IComponentFactory, suffix string) *Joystick {
 	j := &Joystick{
-		BaseComponent: component.NewBaseComponent("joystick", suffix),
+		BaseComponent: component.NewBaseComponent(componentId, suffix),
 		factory:       factory,
 		storage:       nil,
 		joy:           0xff,

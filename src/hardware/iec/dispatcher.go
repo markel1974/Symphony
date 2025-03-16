@@ -37,7 +37,7 @@ func NewDispatcherComponent(parent references.IComponent, factory references.ICo
 // NewDispatcher creates and initializes a new Dispatcher instance with the given parent component and suffix.
 func NewDispatcher(parent references.IComponent, factory references.IComponentFactory, suffix string) *Dispatcher {
 	c := &Dispatcher{
-		BaseComponent:   component.NewBaseComponent("iec_dispatcher", suffix),
+		BaseComponent:   component.NewBaseComponent(componentId, suffix),
 		factory:         factory,
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,

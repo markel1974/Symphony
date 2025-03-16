@@ -61,7 +61,7 @@ func NewCIAComponent(parent references.IComponent, factory references.IComponent
 // NewCIA initializes and returns a new instance of the CIA struct with the specified ID and associated components.
 func NewCIA(parent references.IComponent, factory references.IComponentFactory, suffix string) *CIA {
 	m := &CIA{
-		BaseComponent: component.NewBaseComponent("cia", suffix),
+		BaseComponent: component.NewBaseComponent(componentId, suffix),
 		factory:       factory,
 		tod:           nil,
 		timerA:        nil,

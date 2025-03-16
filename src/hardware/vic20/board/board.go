@@ -6,12 +6,12 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64"
+	"github.com/markel1974/c64emu/src/hardware/dynamic_throttle"
 	"github.com/markel1974/c64emu/src/hardware/iec"
-	"github.com/markel1974/c64emu/src/hardware/joystick"
-	inputs2 "github.com/markel1974/c64emu/src/hardware/keyboard"
+	"github.com/markel1974/c64emu/src/hardware/joystick_c64"
+	inputs2 "github.com/markel1974/c64emu/src/hardware/keyboard_c64"
 	mos6510 "github.com/markel1974/c64emu/src/hardware/pic_6510"
 	"github.com/markel1974/c64emu/src/hardware/pla_c64"
-	"github.com/markel1974/c64emu/src/hardware/throttle"
 	mos6569 "github.com/markel1974/c64emu/src/hardware/vic"
 	"github.com/markel1974/c64emu/src/references"
 	"golang.design/x/clipboard"
@@ -38,8 +38,8 @@ type Board struct {
 	pic                 *mos6510.Pic
 	iec                 *iec.Dispatcher
 	keys                *inputs2.Keyboard
-	joy1                *joystick.Joystick
-	joy2                *joystick.Joystick
+	joy1                *joystick_c64.Joystick
+	joy2                *joystick_c64.Joystick
 	joySwap             bool
 	cfg                 *config.Config
 	hasClipboard        bool
@@ -60,7 +60,7 @@ func NewBoardComponent(parent references.IComponent, factory references.ICompone
 
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
-		BaseComponent:       component.NewBaseComponent("vic20", suffix),
+		BaseComponent:       component.NewBaseComponent(componentId, suffix),
 		factory:             factory,
 		iec:                 nil,
 		pic:                 nil,
@@ -94,7 +94,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 	}
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
-	s.dt = throttle.NewDynamicThrottle(s, s.factory, "")
+	s.dt = dynamic_throttle.NewDynamicThrottle(s, s.factory, "")
 	s.dt.SetInterval(mos6569.FrameInterval)
 
 	s.cpuSocket = NewCPUSocket()
@@ -103,11 +103,11 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 
-	s.pic = mos6510.NewPic(s, "")
+	s.pic = mos6510.NewPic(s, s.factory, "")
 	s.iec = iec.NewDispatcher(s, s.factory, "")
 	s.keys = inputs2.NewKeyboard(s, s.factory, "")
-	s.joy1 = joystick.NewJoystick(s, s.factory, "1")
-	s.joy2 = joystick.NewJoystick(s, s.factory, "2")
+	s.joy1 = joystick_c64.NewJoystick(s, s.factory, "1")
+	s.joy2 = joystick_c64.NewJoystick(s, s.factory, "2")
 	s.pla = pla_c64.NewPLA(s, s.factory, "")
 	s.expansion = NewExpansion(s)
 
@@ -117,7 +117,9 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 	//s.sidSocket.Setup(s)
 	s.cia1Socket.Setup(s, intrIrqCia1Bit)
 	s.cia2Socket.Setup(s, intrIrqCia2Bit)
-	s.cartMan.Setup(s.expansion, cfg)
+	if err := s.cartMan.Setup(s.expansion, cfg); err != nil {
+		return err
+	}
 
 	s.reset()
 

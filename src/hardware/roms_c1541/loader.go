@@ -1,19 +1,35 @@
 package roms_c1541
 
 import (
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/references"
 	"os"
 )
 
 type RomLoader struct {
-	cfg *config.Config
+	*component.BaseComponent
+	factory references.IComponentFactory
+	cfg     *config.Config
 }
 
 // NewRomLoader initializes and returns a new instance of RomLoader configured with the provided Config.
-func NewRomLoader(cfg *config.Config) *RomLoader {
-	return &RomLoader{
-		cfg: cfg,
+func NewRomLoader(parent references.IComponent, factory references.IComponentFactory, suffix string) *RomLoader {
+	rl := &RomLoader{
+		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		factory:       factory,
+		cfg:           nil,
 	}
+	component.Register(parent, rl)
+	return rl
+}
+
+func (r *RomLoader) Setup(cfg *config.Config) error {
+	r.cfg = cfg
+	return nil
+}
+
+func (r *RomLoader) Reset() {
 }
 
 // Load attempts to load the ROM data from a file if a valid name is provided; otherwise, it returns embedded ROM data.

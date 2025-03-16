@@ -28,17 +28,17 @@ const noPhotocellControl = ^photocellControl
 // syncArrivedControl is the bitwise complement of dataArrivedControl, used to manage synchronization states in the system.
 const syncArrivedControl = ^dataArrivedControl
 
-// Via2Socket represents a socket interface for interacting with the VIA2 (Versatile Interface Adapter) component on the board.
-type Via2Socket struct {
-	via2    references.IVia
+// VIA2Socket represents a socket interface for interacting with the VIA2 (Versatile Interface Adapter) component on the board.
+type VIA2Socket struct {
+	via2    references.IVIA
 	board   *Board
 	intrId  uint32
 	prbPrev uint8
 }
 
-// NewVia2Socket creates and returns a new instance of Via2Socket with default initialized fields.
-func NewVia2Socket() *Via2Socket {
-	return &Via2Socket{
+// NewVIA2Socket creates and returns a new instance of VIA2Socket with default initialized fields.
+func NewVIA2Socket() *VIA2Socket {
+	return &VIA2Socket{
 		via2:    nil,
 		board:   nil,
 		intrId:  intrIrqVIA2Bit,
@@ -46,51 +46,51 @@ func NewVia2Socket() *Via2Socket {
 	}
 }
 
-// Setup initializes the Via2Socket by associating it with a Board instance and configuring the interrupt ID.
-func (v *Via2Socket) Setup(board *Board, via2 references.IVia) error {
+// Setup initializes the VIA2Socket by associating it with a Board instance and configuring the interrupt ID.
+func (v *VIA2Socket) Setup(board *Board, via2 references.IVIA) error {
 	v.board = board
 	v.via2 = via2
 	v.via2.Setup(v)
 	return nil
 }
 
-func (v *Via2Socket) Emulate() {
+func (v *VIA2Socket) Emulate() {
 	v.via2.Emulate()
 }
 
-// Reset reinitializes the Via2Socket to its default state by clearing prbPrev and invoking the Reset method on board.via2.
-func (v *Via2Socket) Reset() {
+// Reset reinitializes the VIA2Socket to its default state by clearing prbPrev and invoking the Reset method on board.via2.
+func (v *VIA2Socket) Reset() {
 	v.prbPrev = 0
 	v.via2.Reset()
 }
 
-func (v *Via2Socket) ByteReady() func() bool {
+func (v *VIA2Socket) ByteReady() func() bool {
 	return v.via2.ByteReady
 }
 
 // LedChanged updates the LED state by forwarding the provided data to the board's LED change handler.
-func (v *Via2Socket) LedChanged(data byte) {
+func (v *VIA2Socket) LedChanged(data byte) {
 	v.board.LedChanged(data)
 }
 
-// IRQClear clears the interrupt request associated with this Via2Socket instance by delegating to the board's IRQClear method.
-func (v *Via2Socket) IRQClear() {
+// IRQClear clears the interrupt request associated with this VIA2Socket instance by delegating to the board's IRQClear method.
+func (v *VIA2Socket) IRQClear() {
 	v.board.IRQClear(v.intrId)
 }
 
-// IRQTrigger triggers an interrupt request (IRQ) on the board using the interrupt ID associated with the Via2Socket instance.
-func (v *Via2Socket) IRQTrigger() {
+// IRQTrigger triggers an interrupt request (IRQ) on the board using the interrupt ID associated with the VIA2Socket instance.
+func (v *VIA2Socket) IRQTrigger() {
 	v.board.IRQTrigger(v.intrId)
 }
 
 // ReadPRA reads a byte from the board's `Mechanic` and returns the value.
-func (v *Via2Socket) ReadPRA(_ uint8, _ uint8) uint8 {
+func (v *VIA2Socket) ReadPRA(_ uint8, _ uint8) uint8 {
 	d := v.board.mec.ReadByte()
 	return d
 }
 
 // ReadPRB processes the PRB value, combines it with the write protection state, and adjusts based on synchronization status.
-func (v *Via2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
+func (v *VIA2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
 	p := prb & noPhotocellControl
 	photocellState := v.board.mec.WriteProtectionState()
 	if v.board.mec.SyncFound() {
@@ -101,12 +101,12 @@ func (v *Via2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
 }
 
 // WritePRA writes the given PRA value to the Mechanic's disk via the WriteByte method.
-func (v *Via2Socket) WritePRA(pra uint8, _ uint8) {
+func (v *VIA2Socket) WritePRA(pra uint8, _ uint8) {
 	v.board.mec.WriteByte(pra)
 }
 
-// WritePRB updates the state and behavior of the `Via2Socket` based on the given PRB byte input.
-func (v *Via2Socket) WritePRB(prb uint8, _ uint8) {
+// WritePRB updates the state and behavior of the `VIA2Socket` based on the given PRB byte input.
+func (v *VIA2Socket) WritePRB(prb uint8, _ uint8) {
 	prevPrb := v.prbPrev
 	v.prbPrev = prb
 	m := prevPrb ^ prb
@@ -162,11 +162,11 @@ func (v *Via2Socket) WritePRB(prb uint8, _ uint8) {
 }
 
 // WriteDDRA handles writing operations to the data direction register A (DDRA) for the VIA2 component. This method is unimplemented.
-func (v *Via2Socket) WriteDDRA(_ uint8, _ uint8) {
+func (v *VIA2Socket) WriteDDRA(_ uint8, _ uint8) {
 
 }
 
 // WriteDDRB sets the Data Direction Register B for VIA2 but currently contains no implementation.
-func (v *Via2Socket) WriteDDRB(_ uint8, _ uint8) {
+func (v *VIA2Socket) WriteDDRB(_ uint8, _ uint8) {
 
 }

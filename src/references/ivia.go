@@ -1,6 +1,6 @@
 package references
 
-// IViaSocket provides methods for interacting with a VIA socket, including reading, writing, and signaling operations.
+// IVIASocket provides methods for interacting with a VIA socket, including reading, writing, and signaling operations.
 // ReadPRA reads a value from Peripheral Register A (PRA) using a specified mask and shift.
 // ReadPRB reads a value from Peripheral Register B (PRB) using a specified mask and shift.
 // WritePRA writes a value to Peripheral Register A (PRA) using a specified mask and shift.
@@ -9,7 +9,7 @@ package references
 // WriteDDRB writes a value to the Data Direction Register B (DDRB) using a specified mask and shift.
 // IRQClear clears the interrupt request (IRQ) signal.
 // IRQTrigger triggers an interrupt request (IRQ) signal.
-type IViaSocket interface {
+type IVIASocket interface {
 	ReadPRA(uint8, uint8) uint8
 
 	ReadPRB(uint8, uint8) uint8
@@ -27,7 +27,7 @@ type IViaSocket interface {
 	IRQTrigger()
 }
 
-// IVia represents an interface for a VIA (Versatile Interface Adapter) component, managing communication and signaling.
+// IVIA represents an interface for a VIA (Versatile Interface Adapter) component, managing communication and signaling.
 // Setup initializes the IVia instance by associating it with a provided socket.
 // Reset reinitializes the state of the IVia to its default operational state.
 // Emulate performs an emulation cycle for the IVia.
@@ -36,8 +36,8 @@ type IViaSocket interface {
 // SignalPRA triggers the VIA PRA (Peripheral Register A) signal.
 // SignalPRB triggers the VIA PRB (Peripheral Register B) signal.
 // ByteReady checks if the VIA is ready to handle a new byte of data and returns true if ready.
-type IVia interface {
-	Setup(conn IViaSocket)
+type IVIA interface {
+	Setup(conn IVIASocket)
 
 	Reset()
 

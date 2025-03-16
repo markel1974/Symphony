@@ -19,8 +19,8 @@ func NewCPUSocket() *CPUSocket {
 	return c
 }
 
-// Setup initializes the CPUSocket by linking it with a given Board, setting the PIC and memory banks from the board.
-func (w *CPUSocket) Setup(board *Board, cpu references.I6510) error {
+// Connect initializes the CPUSocket by linking it with a given Board, setting the PIC and memory banks from the board.
+func (w *CPUSocket) Connect(board *Board, cpu references.I6510) error {
 	w.board = board
 	w.cpu = cpu
 	w.cpu.Setup(w)

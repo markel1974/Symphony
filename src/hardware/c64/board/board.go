@@ -7,14 +7,15 @@ import (
 	"github.com/markel1974/c64emu/src/hardware/6510"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64"
+	"github.com/markel1974/c64emu/src/hardware/dynamic_throttle"
 	"github.com/markel1974/c64emu/src/hardware/iec"
-	"github.com/markel1974/c64emu/src/hardware/joystick"
-	"github.com/markel1974/c64emu/src/hardware/keyboard"
+	"github.com/markel1974/c64emu/src/hardware/joystick_c64"
+	"github.com/markel1974/c64emu/src/hardware/keyboard_c64"
 	"github.com/markel1974/c64emu/src/hardware/pic_6510"
 	"github.com/markel1974/c64emu/src/hardware/pla_c64"
 	"github.com/markel1974/c64emu/src/hardware/quartz"
+	"github.com/markel1974/c64emu/src/hardware/roms_c64"
 	"github.com/markel1974/c64emu/src/hardware/sid"
-	"github.com/markel1974/c64emu/src/hardware/throttle"
 	"github.com/markel1974/c64emu/src/hardware/vic"
 	"github.com/markel1974/c64emu/src/references"
 	"golang.design/x/clipboard"
@@ -38,20 +39,19 @@ type Board struct {
 	quartz              *quartz.Quartz
 	cia1Socket          *CIA1Socket
 	cia2Socket          *CIA2Socket
-	vicSocket           *VicSocket
-	sidSocket           *SidSocket
+	vicSocket           *VICSocket
+	sidSocket           *SIDSocket
 	cpuSocket           *CPUSocket
-	expansion           *Expansion
 	plaSocket           *PLASocket
 	pic                 *pic_6510.Pic
 	iec                 *iec.Dispatcher
-	keys                *keyboard.Keyboard
-	joy1                *joystick.Joystick
-	joy2                *joystick.Joystick
+	keys                *keyboard_c64.Keyboard
+	joy1                *joystick_c64.Joystick
+	joy2                *joystick_c64.Joystick
 	joySwap             bool
 	cfg                 *config.Config
 	hasClipboard        bool
-	cartMan             *cartridges_c64.Manager
+	cartSocket          *CartridgeSocket
 	expansionIrqTrigger *signals.SignalUint32
 	expansionIrqClear   *signals.SignalUint32
 	vBlank              bool
@@ -65,7 +65,7 @@ type Board struct {
 // NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
-		BaseComponent:       component.NewBaseComponent("c64", suffix),
+		BaseComponent:       component.NewBaseComponent(componentId, suffix),
 		factory:             factory,
 		db:                  nil,
 		player:              nil,
@@ -76,7 +76,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		joy1:                nil,
 		joy2:                nil,
 		hasClipboard:        false,
-		cartMan:             nil,
+		cartSocket:          nil,
 		plaSocket:           nil,
 		expansionIrqTrigger: nil,
 		expansionIrqClear:   nil,
@@ -89,7 +89,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	}
 	component.Register(parent, b)
 	b.quartz = quartz.NewQuartz(b, b.factory, "")
-	b.cartMan = cartridges_c64.NewManager(b, b.factory, "")
 	return b
 }
 
@@ -99,32 +98,39 @@ func NewBoardComponent(parent references.IComponent, factory references.ICompone
 
 // Setup initializes the Board with provided display buffer, player, and configuration settings.
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, cfg *config.Config) error {
+	var err error
+
 	s.db = db
 	s.player = player
-	if err := clipboard.Init(); err != nil {
+	if err = clipboard.Init(); err != nil {
 		log.Printf("can't init clipboard: %s", err)
 	} else {
 		s.hasClipboard = true
 	}
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
-	s.dt = throttle.NewDynamicThrottle(s, s.factory, "")
+	s.dt = dynamic_throttle.NewDynamicThrottle(s, s.factory, "")
 	s.dt.SetInterval(mos6569.FrameInterval)
 
 	s.cpuSocket = NewCPUSocket()
-	s.vicSocket = NewVicSocket()
+	s.vicSocket = NewVICSocket()
 	s.sidSocket = NewSidSocket()
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 	s.plaSocket = NewPLASocket()
+	s.cartSocket = NewCartridgeSocket()
 
-	s.pic = pic_6510.NewPic(s, "")
+	s.pic = pic_6510.NewPic(s, s.factory, "")
 	s.iec = iec.NewDispatcher(s, s.factory, "")
 	cpu := mos6510.NewCPU(s, s.factory, "")
 	vic := mos6569.NewVIC(s, s.factory, "")
 	sid := mos6581.NewSID(s, s.factory, "")
+	cart := cartridges_c64.NewManager(s, s.factory, "")
+	rl := roms_c64.NewRomLoader(s, s.factory, "")
+	if err = rl.Setup(cfg); err != nil {
+		return err
+	}
 
-	var err error
 	var cia1 references.IComponent
 	var cia2 references.IComponent
 	if cia1, err = s.factory.Create(s, "mos6526", "1"); err != nil {
@@ -134,33 +140,38 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 		return err
 	}
 	plaC := pla_c64.NewPLA(s, s.factory, "")
-	s.keys = keyboard.NewKeyboard(s, s.factory, "")
-	s.joy1 = joystick.NewJoystick(s, s.factory, "1")
-	s.joy2 = joystick.NewJoystick(s, s.factory, "2")
-	s.expansion = NewExpansion(s, "")
 
-	s.expansion.Setup(s)
+	s.keys = keyboard_c64.NewKeyboard(s, s.factory, "")
+	s.joy1 = joystick_c64.NewJoystick(s, s.factory, "1")
+	s.joy2 = joystick_c64.NewJoystick(s, s.factory, "2")
+
+	expansion := NewExpansion(s, "")
+	expansion.Setup(s)
+
 	s.pic.Setup(s.quartz)
 	if err = s.iec.Setup(s.quartz, cfg); err != nil {
 		return err
 	}
-	if err = s.cpuSocket.Setup(s, cpu); err != nil {
+
+	if err = s.cpuSocket.Connect(s, cpu); err != nil {
 		return err
 	}
-	if err = s.vicSocket.Setup(s, vic); err != nil {
+	if err = s.vicSocket.Connect(s, vic); err != nil {
 		return err
 	}
-	if err = s.sidSocket.Setup(s, sid, mos6569.ScreenFreq, mos6569.TotalRasters, cfg); err != nil {
+	if err = s.sidSocket.Connect(s, sid, mos6569.ScreenFreq, mos6569.TotalRasters, cfg); err != nil {
 		return err
 	}
-	if err = s.cia1Socket.Setup(s, cia1); err != nil {
+	if err = s.cia1Socket.Connect(s, cia1); err != nil {
 		return err
 	}
-	if err = s.cia2Socket.Setup(s, cia2); err != nil {
+	if err = s.cia2Socket.Connect(s, cia2); err != nil {
 		return err
 	}
-	s.cartMan.Setup(s.expansion, cfg)
-	if err = s.plaSocket.Setup(s, plaC, vic, sid, cia1, cia2, s.cartMan); err != nil {
+	if err = s.cartSocket.Connect(s, cart, expansion, cfg); err != nil {
+		return err
+	}
+	if err = s.plaSocket.Connect(s, plaC, vic, sid, cia1, cia2, s.cartSocket, rl); err != nil {
 		return err
 	}
 
@@ -172,7 +183,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 				continue
 			}
 		}
-		if cartId, err := s.cartMan.Add(cartName.Kind, cartName.Path, data); err != nil {
+		if cartId, err := s.cartSocket.Add(cartName.Kind, cartName.Path, data); err != nil {
 			log.Printf("can't add cartridge: %s", err.Error())
 		} else {
 			log.Printf("cartridge: %s [%s] successfully added", cartName, cartId)
@@ -209,12 +220,12 @@ func (s *Board) reset() {
 	s.pic.Reset()
 	s.plaSocket.Reset()
 	s.cpuSocket.Reset()
-	s.cartMan.Reset()
+	s.cartSocket.Reset()
 	s.sidSocket.Reset()
 	s.cia1Socket.Reset()
 	s.cia2Socket.Reset()
 	s.iec.Reset()
-	s.expansion.Reset()
+	//s.expansion.Reset()
 }
 
 // AsyncReset resets various components of the board asynchronously by invoking their respective reset methods.
@@ -228,7 +239,7 @@ func (s *Board) AsyncReset() {
 	s.cia1Socket.Reset()
 	s.cia2Socket.Reset()
 	s.iec.Reset()
-	s.expansion.Reset()
+	//s.expansion.Reset()
 
 	s.dmaLow = false
 }
@@ -247,7 +258,7 @@ func (s *Board) Emulate() bool {
 	//PHI2
 	s.cia1Socket.Emulate()
 	s.cia2Socket.Emulate()
-	s.cartMan.Emulate()
+	s.cartSocket.Emulate()
 	s.iec.Emulate()
 	s.cpuSocket.Emulate()
 

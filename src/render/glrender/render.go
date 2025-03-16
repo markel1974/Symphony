@@ -48,7 +48,9 @@ func (g *Render) setup(pos pixels.Vec) {
 	g.matrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
 	g.display = NewDisplayBuffer(g.picture)
 	g.audio = NewAudio()
-	_ = g.c64Board.Setup(g.display, g.audio, g.cfg)
+	if err := g.c64Board.Setup(g.display, g.audio, g.cfg); err != nil {
+		panic(err)
+	}
 	g.inputs.Setup(g.c64Board, g.maxW, g.maxH)
 }
 

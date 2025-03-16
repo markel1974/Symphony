@@ -51,7 +51,7 @@ func (s *ExternalCPU) Setup(board references.IExpansionC64, ldr references.ICart
 	s.board.SetDMALow(true)
 
 	s.quartz = quartz.NewQuartz(s, s.factory, "")
-	s.pic = pic_6510.NewPic(s, "")
+	s.pic = pic_6510.NewPic(s, s.factory, "")
 
 	s.pic.Setup(s.quartz)
 

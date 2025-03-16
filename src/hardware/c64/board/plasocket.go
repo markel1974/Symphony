@@ -2,7 +2,6 @@ package board
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/hardware/roms_c64"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -21,8 +20,8 @@ func NewPLASocket() *PLASocket {
 	return c
 }
 
-// Setup initializes the PLASocket with the provided board, PLA, and associated components like VIC, SID, CIAs, and cartridge manager.
-func (w *PLASocket) Setup(board *Board, p references.IPlaC64, vic references.IVic, sid references.ISid, c1 references.IComponent, c2 references.IComponent, cartMan references.IExpansionSocketC64) error {
+// Connect initializes the PLASocket with the provided board, PLA, and associated components like VIC, SID, CIAs, and cartridge manager.
+func (w *PLASocket) Connect(board *Board, p references.IPlaC64, vic references.IVic, sid references.ISID, c1 references.IComponent, c2 references.IComponent, cartMan references.IExpansionSocketC64, roms references.IRomLoaderC64) error {
 	cia1, ok := c1.(references.ICia)
 	if !ok {
 		return fmt.Errorf("unknown cia1 interface")
@@ -33,8 +32,7 @@ func (w *PLASocket) Setup(board *Board, p references.IPlaC64, vic references.IVi
 	}
 	w.board = board
 	w.pla = p
-	rl := roms_c64.NewRomLoader(w.board.cfg)
-	w.pla.Setup(vic, sid, cia1, cia2, cartMan, rl, w.board.cfg)
+	w.pla.Setup(vic, sid, cia1, cia2, cartMan, roms, w.board.cfg)
 	return nil
 }
 

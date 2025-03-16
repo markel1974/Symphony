@@ -17,7 +17,7 @@ type PLA struct {
 	*component.BaseComponent
 	factory         references.IComponentFactory
 	vic             references.IVic
-	sid             references.ISid
+	sid             references.ISID
 	cia1            references.ICia
 	cia2            references.ICia
 	cartMan         references.IExpansionSocketC64
@@ -48,7 +48,7 @@ func NewPLAComponent(parent references.IComponent, factory references.IComponent
 func NewPLA(parent references.IComponent, factory references.IComponentFactory, suffix string) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
-		BaseComponent:   component.NewBaseComponent("pla_c1541", suffix),
+		BaseComponent:   component.NewBaseComponent(componentId, suffix),
 		factory:         factory,
 		vic:             nil,
 		sid:             nil,
@@ -78,7 +78,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	return b
 }
 
-func (b *PLA) Setup(vic references.IVic, sid references.ISid, cia1 references.ICia, cia2 references.ICia, cartMan references.IExpansionSocketC64, roms references.IRomLoaderC64, cfg *config.Config) {
+func (b *PLA) Setup(vic references.IVic, sid references.ISID, cia1 references.ICia, cia2 references.ICia, cartMan references.IExpansionSocketC64, roms references.IRomLoaderC64, cfg *config.Config) {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1

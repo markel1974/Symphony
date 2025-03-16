@@ -1,4 +1,4 @@
-package throttle
+package dynamic_throttle
 
 import (
 	"github.com/markel1974/c64emu/src/component"
@@ -23,7 +23,7 @@ func NewDynamicThrottleComponent(parent references.IComponent, factory reference
 // NewDynamicThrottle creates a new instance of DynamicThrottling with the specified frameInterval in milliseconds.
 func NewDynamicThrottle(parent references.IComponent, factory references.IComponentFactory, suffix string) *DynamicThrottle {
 	d := &DynamicThrottle{
-		BaseComponent: component.NewBaseComponent("dynamic_throttle", suffix),
+		BaseComponent: component.NewBaseComponent(componentId, suffix),
 		factory:       factory,
 		prev:          time.Now().UnixMilli(),
 		frameInterval: 0,

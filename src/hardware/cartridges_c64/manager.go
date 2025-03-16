@@ -42,7 +42,7 @@ func NewManagerComponent(parent references.IComponent, factory references.ICompo
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
 func NewManager(parent references.IComponent, factory references.IComponentFactory, suffix string) *Manager {
 	m := &Manager{
-		BaseComponent:       component.NewBaseComponent("cartridgeManager", suffix),
+		BaseComponent:       component.NewBaseComponent(componentId, suffix),
 		factory:             factory,
 		idx:                 0,
 		board:               nil,
@@ -58,7 +58,7 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 }
 
 // Setup initializes the Manager by setting up the expansion board, configuration preferences, and cartridge hardware mappings.
-func (f *Manager) Setup(board references.IExpansionC64, prefs *config.Config) {
+func (f *Manager) Setup(board references.IExpansionC64, prefs *config.Config) error {
 	f.board = board
 	f.prefs = prefs
 	f.registerHardware[externalcpu.Id] = externalcpu.New
@@ -80,6 +80,8 @@ func (f *Manager) Setup(board references.IExpansionC64, prefs *config.Config) {
 	f.registerSize[0x2000] = generic.New //cartridge8k.New
 	f.registerSize[0x4000] = generic.New //cartridge16k.New
 	f.registerSizeDefault = ocean.New
+
+	return nil
 }
 
 // Reset resets all cartridges managed by the Manager. If no cartridges exist, it performs no operations.

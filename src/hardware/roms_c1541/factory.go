@@ -1,0 +1,27 @@
+package roms_c1541
+
+import (
+	"github.com/markel1974/c64emu/src/references"
+)
+
+const componentId = "roms_c1541"
+
+type Factory struct {
+}
+
+func NewFactory() *Factory {
+	return &Factory{}
+}
+
+func (t *Factory) Identifier() string {
+	return componentId
+}
+
+func (t *Factory) Kind() interface{} {
+	z := (*RomLoader)(nil)
+	return references.IRomLoaderC1541(z)
+}
+
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
+	return NewRomLoader(parent, factory, suffix)
+}

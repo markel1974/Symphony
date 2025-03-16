@@ -51,7 +51,7 @@ func NewCPUComponent(parent references.IComponent, factory references.IComponent
 // NewCPU initializes and returns a new CPU instance with the provided id.
 func NewCPU(parent references.IComponent, factory references.IComponentFactory, suffix string) *CPU {
 	cpu := &CPU{
-		BaseComponent: component.NewBaseComponent("mos6510", suffix),
+		BaseComponent: component.NewBaseComponent(componentId, suffix),
 		factory:       factory,
 	}
 	component.Register(parent, cpu)
