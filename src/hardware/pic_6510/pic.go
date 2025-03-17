@@ -2,6 +2,7 @@ package pic_6510
 
 import (
 	"github.com/markel1974/c64emu/src/common/bits"
+	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -27,6 +28,9 @@ type Pic struct {
 	firstIrqCycle uint64
 	firstNMICycle uint64
 	nmiExec       bool
+
+	extIrqTrigger *signals.SignalUint32
+	extIrqClear   *signals.SignalUint32
 }
 
 func (i *Pic) Emulate() {
@@ -45,6 +49,8 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 		all:           bits.Bits(0),
 		irq:           bits.Bits(0),
 		nmiExec:       false,
+		extIrqTrigger: nil,
+		extIrqClear:   nil,
 	}
 	component.Register(parent, p)
 	return p
@@ -63,7 +69,24 @@ func (i *Pic) Reset() {
 	i.firstIrqCycle = 0
 	i.firstNMICycle = 0
 	i.nmiExec = false
-	//i.irqExec = false
+	i.extIrqTrigger = nil
+	i.extIrqClear = nil
+}
+
+// IRQTriggerBind binds a callback function to the IRQ trigger signal, which is called with a uint32 parameter upon trigger events.
+func (i *Pic) IRQTriggerBind(fn func(uint32)) {
+	if i.extIrqTrigger == nil {
+		i.extIrqTrigger = signals.NewSignalUint32()
+	}
+	i.extIrqTrigger.Bind(fn)
+}
+
+// IRQClearBind binds the provided callback function to the expansion IRQ clear signal for handling IRQ clear events.
+func (i *Pic) IRQClearBind(fn func(uint32)) {
+	if i.extIrqClear == nil {
+		i.extIrqClear = signals.NewSignalUint32()
+	}
+	i.extIrqClear.Bind(fn)
 }
 
 // TriggerReset sets the reset bit in the internal state to initiate a reset operation.
@@ -76,10 +99,6 @@ func (i *Pic) ClearReset() {
 	i.all.BitClear(intrRstBit)
 }
 
-//func (i *Pic) HasReset() bool {
-//	return i.all.BitCheck(i.intRstBit)
-//}
-
 // TriggerIRQ sets the specified interrupt bit and records the cycle if it's the first IRQ occurrence.
 func (i *Pic) TriggerIRQ(intr uint32) {
 	if i.irq == 0 {
@@ -87,6 +106,9 @@ func (i *Pic) TriggerIRQ(intr uint32) {
 	}
 	i.irq.BitSet(intr)
 	i.all.BitSet(intrIrqBit)
+	if i.extIrqTrigger != nil {
+		i.extIrqTrigger.Emit(intr)
+	}
 }
 
 // ClearIRQ clears the specified IRQ bit in the `irq` field and resets the `intrIrqBit` in `all` if no IRQs remain active.
@@ -95,6 +117,9 @@ func (i *Pic) ClearIRQ(intr uint32) {
 	i.irq.BitClear(intr)
 	if i.irq == 0 {
 		i.all.BitClear(intrIrqBit)
+	}
+	if i.extIrqClear != nil {
+		i.extIrqClear.Emit(intr)
 	}
 }
 
@@ -160,3 +185,7 @@ func (i *Pic) computeDistance(base uint64, hasDelay bool, distance uint64) bool 
 	}
 	return false
 }
+
+//func (i *Pic) HasReset() bool {
+//	return i.all.BitCheck(i.intRstBit)
+//}

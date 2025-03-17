@@ -32,4 +32,8 @@ type IPIC6510 interface {
 	ClearNMI()
 
 	HasNMI() bool
+
+	IRQTriggerBind(fn func(uint32))
+
+	IRQClearBind(fn func(uint32))
 }

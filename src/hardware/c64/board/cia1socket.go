@@ -14,21 +14,6 @@ const (
 	defaultKeyState = 0xff
 )
 
-// ICIA1SocketConnections defines an interface for specific CIA socket actions such as triggering or clearing IRQ lines.
-//
-// LightPenTrigger handles the activation of the Light Pen functionality connected to the socket.
-//
-// IRQTrigger activates an IRQ signal based on the provided interrupt vector or flag.
-//
-// IRQClear deactivates the IRQ signal corresponding to the provided interrupt vector or flag.
-type ICIA1SocketConnections interface {
-	LightPenTrigger()
-
-	IRQTrigger(v uint32)
-
-	IRQClear(v uint32)
-}
-
 // CIA1Socket represents a connector for CIA-1 chip emulation, managing keyboard, joystick, and external connections.
 // ICIA interface provides the core logic for the connected CIA chip functionality.
 // IKeyboard interface is used to handle input and state changes from a keyboard.
@@ -41,10 +26,11 @@ type ICIA1SocketConnections interface {
 // joy1State and joy2State track the current states of two connected joysticks.
 type CIA1Socket struct {
 	references.ICIA
+	pic         references.IPIC6510
+	vic         references.IVIC
 	keys        references.IKeyboard
 	joy1        references.IJoystick
 	joy2        references.IJoystick
-	connections ICIA1SocketConnections
 	intrId      uint32  //
 	prevLPState uint8   // Previous state of LP line (bit 4)
 	keyMatrix   []uint8 // keyboard matrix [0: down, 1: up]
@@ -57,10 +43,11 @@ type CIA1Socket struct {
 func NewCIA1Socket() *CIA1Socket {
 	c := &CIA1Socket{
 		ICIA:        nil,
+		pic:         nil,
+		vic:         nil,
 		keys:        nil,
 		joy1:        nil,
 		joy2:        nil,
-		connections: nil,
 		intrId:      intrIrqCia1Bit,
 		prevLPState: defaultLPState,
 		keyMatrix:   make([]uint8, 8),
@@ -73,9 +60,10 @@ func NewCIA1Socket() *CIA1Socket {
 
 // Connect initializes the CIA1Socket with the provided CIA instance, connections, keyboard, and joystick references.
 // It sets up the CIA via the Setup method and returns any errors encountered during initialization.
-func (w *CIA1Socket) Connect(cia1 references.ICIA, connections ICIA1SocketConnections, keys references.IKeyboard, joy1 references.IJoystick, joy2 references.IJoystick) error {
+func (w *CIA1Socket) Connect(cia1 references.ICIA, pic references.IPIC6510, vic references.IVIC, keys references.IKeyboard, joy1 references.IJoystick, joy2 references.IJoystick) error {
 	w.ICIA = cia1
-	w.connections = connections
+	w.pic = pic
+	w.vic = vic
 	w.keys = keys
 	w.joy1 = joy1
 	w.joy2 = joy2
@@ -179,17 +167,17 @@ func (w *CIA1Socket) WriteDdrB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
 // updateLightPen checks the state of the light pen line and triggers an action if the state has changed.
 func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
 	if ((prB | ^ddrB) & 0x10) != w.prevLPState {
-		w.connections.LightPenTrigger()
+		w.vic.LightPenTrigger()
 	}
 	w.prevLPState = (prB | ^ddrB) & 0x10
 }
 
 // IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
 func (w *CIA1Socket) IRQTrigger() {
-	w.connections.IRQTrigger(w.intrId)
+	w.pic.TriggerIRQ(w.intrId)
 }
 
 // IRQClear clears the interrupt request associated with the socket by invoking the IRQClear method on connections.
 func (w *CIA1Socket) IRQClear() {
-	w.connections.IRQClear(w.intrId)
+	w.pic.ClearIRQ(w.intrId)
 }

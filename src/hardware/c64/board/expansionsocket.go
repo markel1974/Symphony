@@ -10,10 +10,6 @@ import (
 // IRQClearBind binds a callback function to handle IRQ clearing with a uint32 parameter.
 type IExpansionSocketConnections interface {
 	DMALowTrigger(v bool)
-
-	IRQTriggerBind(fn func(uint32))
-
-	IRQClearBind(fn func(uint32))
 }
 
 // ExpansionSocket represents a connection point integrating various components like connections, PIC, PLA, VIC, and Quartz.
@@ -94,12 +90,12 @@ func (s *ExpansionSocket) IRQClear() {
 
 // IRQTriggerBind connects a callback function to the IRQ trigger event, enabling custom handling of IRQ signals.
 func (s *ExpansionSocket) IRQTriggerBind(fn func(uint32)) {
-	s.connections.IRQTriggerBind(fn)
+	s.pic.IRQTriggerBind(fn)
 }
 
 // IRQClearBind binds a callback function that is triggered when the IRQ clear event occurs.
 func (s *ExpansionSocket) IRQClearBind(fn func(uint32)) {
-	s.connections.IRQClearBind(fn)
+	s.pic.IRQClearBind(fn)
 }
 
 // BusAvailable checks whether the expansion bus is available by verifying the BA (Bus Available) line status of the VIC.

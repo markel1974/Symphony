@@ -2,7 +2,6 @@ package board
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
@@ -27,68 +26,66 @@ const (
 // Board represents a complex hardware configuration comprising various component sockets and related system functionalities.
 type Board struct {
 	*component.BaseComponent
-	db                  references.IDisplayBuffer
-	player              references.IPlayer
-	factory             references.IComponentFactory
-	keysSocket          *KeyboardSocket
-	joySocket1          *JoystickSocket
-	joySocket2          *JoystickSocket
-	quartzSocket        *QuartzSocket
-	rlSocket            *RomLoaderSocket
-	iecSocket           *IECSocket
-	picSocket           *PICSocket
-	cia1Socket          *CIA1Socket
-	cia2Socket          *CIA2Socket
-	vicSocket           *VICSocket
-	sidSocket           *SIDSocket
-	cpuSocket           *CPUSocket
-	plaSocket           *PLASocket
-	cartSocket          *CartridgeSocket
-	throttleSocket      *ThrottleSocket
-	expansionSocket     *ExpansionSocket
-	cfg                 *config.Config
-	expansionIrqTrigger *signals.SignalUint32
-	expansionIrqClear   *signals.SignalUint32
-	prg                 *prg.PRG
-	joySwap             bool
-	hasClipboard        bool
-	vBlank              bool
-	lastVicCycle        bool
-	dmaLow              bool
+	db              references.IDisplayBuffer
+	player          references.IPlayer
+	factory         references.IComponentFactory
+	keysSocket      *KeyboardSocket
+	joySocket1      *JoystickSocket
+	joySocket2      *JoystickSocket
+	quartzSocket    *QuartzSocket
+	romSocket       *RomLoaderSocket
+	iecSocket       *IECSocket
+	picSocket       *PICSocket
+	cia1Socket      *CIA1Socket
+	cia2Socket      *CIA2Socket
+	vicSocket       *VICSocket
+	sidSocket       *SIDSocket
+	cpuSocket       *CPUSocket
+	plaSocket       *PLASocket
+	cartSocket      *CartridgeSocket
+	throttleSocket  *ThrottleSocket
+	expansionSocket *ExpansionSocket
+	cfg             *config.Config
+	//expansionIrqTrigger *signals.SignalUint32
+	//expansionIrqClear   *signals.SignalUint32
+	prg          *prg.PRG
+	joySwap      bool
+	hasClipboard bool
+	vBlank       bool
+	lastVicCycle bool
+	dmaLow       bool
 }
 
 // NewBoard initializes and returns a new Board instance with specific sockets and properties configured.
 // It registers the created instance as a child of the provided parent IComponent.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
-		BaseComponent:       component.NewBaseComponent(componentId, suffix),
-		factory:             factory,
-		db:                  nil,
-		player:              nil,
-		keysSocket:          NewKeyboardSocket(),
-		joySocket1:          NewJoystickSocket(),
-		joySocket2:          NewJoystickSocket(),
-		quartzSocket:        NewQuartzSocket(),
-		rlSocket:            NewRomLoaderSocket(),
-		picSocket:           NewPICSocket(),
-		cpuSocket:           NewCPUSocket(),
-		iecSocket:           NewIECSocket(),
-		vicSocket:           NewVICSocket(),
-		sidSocket:           NewSIDSocket(),
-		cia1Socket:          NewCIA1Socket(),
-		cia2Socket:          NewCIA2Socket(),
-		plaSocket:           NewPLASocket(),
-		cartSocket:          NewCartridgeSocket(),
-		throttleSocket:      NewThrottleSocket(),
-		expansionSocket:     NewExpansionSocket(),
-		expansionIrqTrigger: nil,
-		expansionIrqClear:   nil,
-		vBlank:              false,
-		lastVicCycle:        false,
-		dmaLow:              false,
-		prg:                 nil,
-		joySwap:             true,
-		hasClipboard:        false,
+		BaseComponent:   component.NewBaseComponent(componentId, suffix),
+		factory:         factory,
+		db:              nil,
+		player:          nil,
+		keysSocket:      NewKeyboardSocket(),
+		joySocket1:      NewJoystickSocket(),
+		joySocket2:      NewJoystickSocket(),
+		quartzSocket:    NewQuartzSocket(),
+		romSocket:       NewRomLoaderSocket(),
+		picSocket:       NewPICSocket(),
+		cpuSocket:       NewCPUSocket(),
+		iecSocket:       NewIECSocket(),
+		vicSocket:       NewVICSocket(),
+		sidSocket:       NewSIDSocket(),
+		cia1Socket:      NewCIA1Socket(),
+		cia2Socket:      NewCIA2Socket(),
+		plaSocket:       NewPLASocket(),
+		cartSocket:      NewCartridgeSocket(),
+		throttleSocket:  NewThrottleSocket(),
+		expansionSocket: NewExpansionSocket(),
+		vBlank:          false,
+		lastVicCycle:    false,
+		dmaLow:          false,
+		prg:             nil,
+		joySwap:         true,
+		hasClipboard:    false,
 	}
 	component.Register(parent, b)
 	return b
@@ -138,7 +135,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	if err != nil {
 		return err
 	}
-	_, rl, err := s.factory.CreateIROMLoaderC64(s, "roms_c64", "")
+	_, rom, err := s.factory.CreateIROMLoaderC64(s, "roms_c64", "")
 	if err != nil {
 		return err
 	}
@@ -176,34 +173,34 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	if err = s.throttleSocket.Connect(throttle, mos6569.FrameInterval); err != nil {
 		return err
 	}
-	if err = s.rlSocket.Connect(rl, cfg); err != nil {
+	if err = s.romSocket.Connect(rom, cfg); err != nil {
 		return err
 	}
-	if err = s.picSocket.Connect(pic, s.quartzSocket); err != nil {
+	if err = s.picSocket.Connect(pic, quartz); err != nil {
 		return err
 	}
-	if err = s.iecSocket.Connect(iec, s.quartzSocket, cfg); err != nil {
+	if err = s.iecSocket.Connect(iec, quartz, cfg); err != nil {
 		return err
 	}
 	if err = s.cpuSocket.Connect(cpu, pic, pla); err != nil {
 		return err
 	}
-	if err = s.vicSocket.Connect(vic, s, db, pla, quartz, cfg); err != nil {
+	if err = s.vicSocket.Connect(vic, s, db, pic, pla, quartz, cfg); err != nil {
 		return err
 	}
 	if err = s.sidSocket.Connect(sid, player, mos6569.ScreenFreq, mos6569.TotalRasters, cfg); err != nil {
 		return err
 	}
-	if err = s.cia1Socket.Connect(cia1, s, keys, joy1, joy2); err != nil {
+	if err = s.cia1Socket.Connect(cia1, pic, vic, keys, joy1, joy2); err != nil {
 		return err
 	}
-	if err = s.cia2Socket.Connect(cia2, s, iec); err != nil {
+	if err = s.cia2Socket.Connect(cia2, pic, vic, iec); err != nil {
 		return err
 	}
 	if err = s.cartSocket.Connect(cart, s.expansionSocket, cfg); err != nil {
 		return err
 	}
-	if err = s.plaSocket.Connect(pla, vic, sid, cia1, cia2, cart, rl, cfg); err != nil {
+	if err = s.plaSocket.Connect(pla, vic, sid, cia1, cia2, cart, rom, cfg); err != nil {
 		return err
 	}
 	if err = s.keysSocket.Connect(keys); err != nil {
@@ -456,61 +453,9 @@ func (s *Board) AECLowTrigger(v bool) {
 	//TODO SIGNAL
 }
 
-// IRQTrigger triggers an interrupt request (IRQ) with the specified ID through the PIC socket and expansion IRQ handler if set.
-func (s *Board) IRQTrigger(i uint32) {
-	s.picSocket.TriggerIRQ(i)
-	if s.expansionIrqTrigger != nil {
-		s.expansionIrqTrigger.Emit(i)
-	}
-}
-
-// IRQClear clears the specified IRQ line identified by the provided index and triggers a signal if applicable.
-func (s *Board) IRQClear(i uint32) {
-	s.picSocket.ClearIRQ(i)
-	if s.expansionIrqClear != nil {
-		s.expansionIrqClear.Emit(i)
-	}
-}
-
-// LightPenTrigger triggers the light pen signal on the connected VIC socket of the Board instance.
-func (s *Board) LightPenTrigger() {
-	s.vicSocket.LightPenTrigger()
-}
-
-// NMITrigger triggers a Non-Maskable Interrupt (NMI) on the board via the connected PIC socket.
-func (s *Board) NMITrigger() {
-	s.picSocket.TriggerNMI()
-}
-
-// NMIClear clears the Non-Maskable Interrupt (NMI) state by invoking the ClearNMI method on the PICSocket instance.
-func (s *Board) NMIClear() {
-	s.picSocket.ClearNMI()
-}
-
 // LastCycleTrigger prepares the
 func (s *Board) LastCycleTrigger() {
 	s.sidSocket.Prepare()
-}
-
-// ChangedVATrigger notifies the VIC socket of a change in the VA (video address
-func (s *Board) ChangedVATrigger(v uint8) {
-	s.vicSocket.ChangedVA(v)
-}
-
-// IRQTriggerBind binds a callback function to the IRQ trigger signal, which is called with a uint32 parameter upon trigger events.
-func (s *Board) IRQTriggerBind(fn func(uint32)) {
-	if s.expansionIrqTrigger == nil {
-		s.expansionIrqTrigger = signals.NewSignalUint32()
-	}
-	s.expansionIrqTrigger.Bind(fn)
-}
-
-// IRQClearBind binds the provided callback function to the expansion IRQ clear signal for handling IRQ clear events.
-func (s *Board) IRQClearBind(fn func(uint32)) {
-	if s.expansionIrqClear == nil {
-		s.expansionIrqClear = signals.NewSignalUint32()
-	}
-	s.expansionIrqClear.Bind(fn)
 }
 
 // VBlankTrigger sets the vBlank flag to true and updates connected sockets and programmable logic if applicable.

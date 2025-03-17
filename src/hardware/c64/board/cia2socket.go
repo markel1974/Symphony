@@ -4,44 +4,35 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// CIA2SocketConnections defines an interface for managing NMI (Non-Maskable Interrupt) triggers and changes to the VA signal.
-// NMITrigger initiates an NMI event.
-// NMIClear clears the current NMI state.
-// ChangedVATrigger is invoked when the VA signal is modified, with the new value passed as a parameter.
-type CIA2SocketConnections interface {
-	NMITrigger()
-
-	NMIClear()
-
-	ChangedVATrigger(v uint8)
-}
-
 // CIA2Socket represents a specialized implementation of ICIA, handling interactions with CIA2 and emulation components.
 // The connections field manages CIA2-specific port and communication events.
 // The iec field facilitates communication over the IEC serial bus.
 // The intrId field defines the unique interrupt identifier for CIA2 within the system.
 type CIA2Socket struct {
 	references.ICIA
-	connections CIA2SocketConnections
-	iec         references.IIec
-	intrId      uint32
+	pic    references.IPIC6510
+	vic    references.IVIC
+	iec    references.IIec
+	intrId uint32
 }
 
 // NewCIA2Socket creates and returns a pointer to a new instance of CIA2Socket with default uninitialized fields.
 func NewCIA2Socket() *CIA2Socket {
 	c := &CIA2Socket{
-		ICIA:        nil,
-		connections: nil,
-		iec:         nil,
-		intrId:      intrIrqCia2Bit,
+		ICIA:   nil,
+		pic:    nil,
+		vic:    nil,
+		iec:    nil,
+		intrId: intrIrqCia2Bit,
 	}
 	return c
 }
 
 // Connect initializes the CIA2Socket instance with the provided CIA, connections, and IEC interface, and sets up the CIA.
-func (w *CIA2Socket) Connect(cia2 references.ICIA, connections CIA2SocketConnections, iec references.IIec) error {
+func (w *CIA2Socket) Connect(cia2 references.ICIA, pic references.IPIC6510, vic references.IVIC, iec references.IIec) error {
 	w.ICIA = cia2
-	w.connections = connections
+	w.pic = pic
+	w.vic = vic
 	w.iec = iec
 	if err := w.ICIA.Setup(w); err != nil {
 		return err
@@ -93,15 +84,15 @@ func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 	//%10, 2: Bank 1: $4000-$7FFF, 16384-32767
 	//%11, 3: Bank 0: $0000-$3FFF, 0-16383 (standard)
 	va := (^(prA | (^ddrA))) & 3
-	w.connections.ChangedVATrigger(va)
+	w.vic.ChangedVA(va)
 }
 
 // IRQTrigger triggers a Non-Maskable Interrupt (NMI) by invoking the NMITrigger method on the connected socket.
 func (w *CIA2Socket) IRQTrigger() {
-	w.connections.NMITrigger()
+	w.pic.TriggerNMI()
 }
 
 // IRQClear clears the NMI (Non-Maskable Interrupt) request by invoking the NMIClear method on the connections object.
 func (w *CIA2Socket) IRQClear() {
-	w.connections.NMIClear()
+	w.pic.ClearNMI()
 }

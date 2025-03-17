@@ -6,17 +6,13 @@ import (
 )
 
 type IVICSocketConnection interface {
-	IRQTrigger(v uint32)
-
-	IRQClear(v uint32)
-
-	RDYLowTrigger(d bool)
-
-	AECLowTrigger(d bool)
-
 	LastCycleTrigger()
 
 	VBlankTrigger()
+
+	RDYLowTrigger(v bool)
+
+	AECLowTrigger(v bool)
 }
 
 // VICSocket represents a virtual interface connector socket with a reference to a board and an interrupt identifier.
@@ -24,6 +20,7 @@ type VICSocket struct {
 	references.IVIC
 	connections IVICSocketConnection
 	db          references.IDisplayBuffer
+	pic         references.IPIC6510
 	pla         references.IPlaC64
 	quartz      references.IQuartz
 	intrId      uint32
@@ -35,16 +32,19 @@ func NewVICSocket() *VICSocket {
 		IVIC:        nil,
 		connections: nil,
 		db:          nil,
+		pic:         nil,
+		pla:         nil,
 		quartz:      nil,
 		intrId:      intrIrqVicBit,
 	}
 }
 
 // Connect initializes the VICSocket with the given board and interrupt ID.
-func (v *VICSocket) Connect(vic references.IVIC, connections IVICSocketConnection, db references.IDisplayBuffer, pla references.IPlaC64, quartz references.IQuartz, cfg *config.Config) error {
+func (v *VICSocket) Connect(vic references.IVIC, connection IVICSocketConnection, db references.IDisplayBuffer, pic references.IPIC6510, pla references.IPlaC64, quartz references.IQuartz, cfg *config.Config) error {
 	v.IVIC = vic
-	v.connections = connections
+	v.connections = connection
 	v.db = db
+	v.pic = pic
 	v.pla = pla
 	v.quartz = quartz
 	v.IVIC.Setup(v, cfg)
@@ -68,12 +68,12 @@ func (v *VICSocket) GetBanks() references.IVICBanks {
 
 // IRQTrigger signals an interrupt request by invoking the IRQ trigger mechanism on the associated board slot.
 func (v *VICSocket) IRQTrigger() {
-	v.connections.IRQTrigger(v.intrId)
+	v.pic.TriggerIRQ(v.intrId)
 }
 
 // IRQClear clears the interrupt request for the associated slot identified by the intrId of the VICSocket.
 func (v *VICSocket) IRQClear() {
-	v.connections.IRQClear(v.intrId)
+	v.pic.ClearIRQ(v.intrId)
 }
 
 // BALow sets the BA (Bus Available) line low or high based on the provided boolean value.
