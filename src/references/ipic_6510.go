@@ -17,7 +17,7 @@ const (
 type IPIC6510 interface {
 	Reset()
 
-	Setup(IQuartz)
+	Setup(IQuartz) error
 
 	ClearIRQ(uint32)
 

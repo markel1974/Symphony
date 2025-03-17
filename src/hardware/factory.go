@@ -71,6 +71,42 @@ func (f *Factory) Create(parent references.IComponent, id string, suffix string)
 	return ret, nil
 }
 
+func (f *Factory) CreateIQuartz(parent references.IComponent, id string, suffix string) (references.IComponent, references.IQuartz, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IQuartz)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a vic", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateIVIC(parent references.IComponent, id string, suffix string) (references.IComponent, references.IVIC, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IVIC)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a vic", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateISID(parent references.IComponent, id string, suffix string) (references.IComponent, references.ISID, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.ISID)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a sid", id)
+	}
+	return component, v, nil
+}
+
 func (f *Factory) CreateIVIA(parent references.IComponent, id string, suffix string) (references.IComponent, references.IVIA, error) {
 	component, err := f.Create(parent, id, suffix)
 	if err != nil {
@@ -119,6 +155,18 @@ func (f *Factory) CreateIPIC6510(parent references.IComponent, id string, suffix
 	return component, v, nil
 }
 
+func (f *Factory) CreateIPLAc64(parent references.IComponent, id string, suffix string) (references.IComponent, references.IPlaC64, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IPlaC64)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a pla (c1541)", id)
+	}
+	return component, v, nil
+}
+
 func (f *Factory) CreateIPLAc1541(parent references.IComponent, id string, suffix string) (references.IComponent, references.IPLAc1541, error) {
 	component, err := f.Create(parent, id, suffix)
 	if err != nil {
@@ -126,7 +174,55 @@ func (f *Factory) CreateIPLAc1541(parent references.IComponent, id string, suffi
 	}
 	v, ok := component.(references.IPLAc1541)
 	if !ok {
-		return nil, nil, fmt.Errorf("component %s is not a cia", id)
+		return nil, nil, fmt.Errorf("component %s is not a pla (c1541)", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateIEC(parent references.IComponent, id string, suffix string) (references.IComponent, references.IIec, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IIec)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not an iec", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateIExpansionSocketC64(parent references.IComponent, id string, suffix string) (references.IComponent, references.IExpansionSocketC64, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IExpansionSocketC64)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not an expansion socket", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateIThrottle(parent references.IComponent, id string, suffix string) (references.IComponent, references.IThrottle, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IThrottle)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a rom loader (c64)", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateIROMLoaderC64(parent references.IComponent, id string, suffix string) (references.IComponent, references.IROMLoaderC64, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IROMLoaderC64)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a rom loader (c64)", id)
 	}
 	return component, v, nil
 }
@@ -138,7 +234,31 @@ func (f *Factory) CreateIROMLoaderC1541(parent references.IComponent, id string,
 	}
 	v, ok := component.(references.IROMLoaderC1541)
 	if !ok {
-		return nil, nil, fmt.Errorf("component %s is not a cia", id)
+		return nil, nil, fmt.Errorf("component %s is not a rom loader (c1541)", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateIKeyboard(parent references.IComponent, id string, suffix string) (references.IComponent, references.IKeyboard, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IKeyboard)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a keyboard", id)
+	}
+	return component, v, nil
+}
+
+func (f *Factory) CreateIJoystick(parent references.IComponent, id string, suffix string) (references.IComponent, references.IJoystick, error) {
+	component, err := f.Create(parent, id, suffix)
+	if err != nil {
+		return nil, nil, err
+	}
+	v, ok := component.(references.IJoystick)
+	if !ok {
+		return nil, nil, fmt.Errorf("component %s is not a joystick", id)
 	}
 	return component, v, nil
 }

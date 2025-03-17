@@ -4,18 +4,7 @@ import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/6510"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64"
-	"github.com/markel1974/c64emu/src/hardware/dynamic_throttle"
-	"github.com/markel1974/c64emu/src/hardware/iec"
-	"github.com/markel1974/c64emu/src/hardware/joystick_c64"
-	"github.com/markel1974/c64emu/src/hardware/keyboard_c64"
-	"github.com/markel1974/c64emu/src/hardware/pic_6510"
-	"github.com/markel1974/c64emu/src/hardware/pla_c64"
-	"github.com/markel1974/c64emu/src/hardware/quartz"
-	"github.com/markel1974/c64emu/src/hardware/roms_c64"
-	"github.com/markel1974/c64emu/src/hardware/sid"
 	"github.com/markel1974/c64emu/src/hardware/vic"
 	"github.com/markel1974/c64emu/src/references"
 	"golang.design/x/clipboard"
@@ -42,6 +31,8 @@ type Board struct {
 	keys                references.IKeyboard
 	joy1                references.IJoystick
 	joy2                references.IJoystick
+	throttle            references.IThrottle
+	factory             references.IComponentFactory
 	cia1Socket          *CIA1Socket
 	cia2Socket          *CIA2Socket
 	vicSocket           *VICSocket
@@ -58,8 +49,6 @@ type Board struct {
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
-	dt                  references.IThrottle
-	factory             references.IComponentFactory
 }
 
 // NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
@@ -85,10 +74,9 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		dmaLow:              false,
 		prg:                 nil,
 		joySwap:             true,
-		dt:                  nil,
+		throttle:            nil,
 	}
 	component.Register(parent, b)
-	b.quartz = quartz.NewQuartz(b, b.factory, "")
 	return b
 }
 
@@ -99,7 +87,6 @@ func NewBoardComponent(parent references.IComponent, factory references.ICompone
 // Setup initializes the Board with provided display buffer, player, and configuration settings.
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, cfg *config.Config) error {
 	var err error
-
 	s.db = db
 	s.player = player
 	if err = clipboard.Init(); err != nil {
@@ -109,8 +96,6 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	}
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
-	s.dt = dynamic_throttle.NewDynamicThrottle(s, s.factory, "")
-	s.dt.SetInterval(mos6569.FrameInterval)
 
 	s.cpuSocket = NewCPUSocket()
 	s.vicSocket = NewVICSocket()
@@ -120,39 +105,76 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	s.plaSocket = NewPLASocket()
 	s.cartSocket = NewCartridgeSocket()
 
-	s.pic = pic_6510.NewPIC(s, s.factory, "")
-	s.iec = iec.NewDispatcher(s, s.factory, "")
-	var cpu references.I6510 = mos6510.NewCPU(s, s.factory, "")
-	var vic references.IVIC = mos6569.NewVIC(s, s.factory, "")
-	var sid references.ISID = mos6581.NewSID(s, s.factory, "")
-	cart := cartridges_c64.NewManager(s, s.factory, "")
-	rl := roms_c64.NewRomLoader(s, s.factory, "")
+	var cpu references.I6510
+	var vic references.IVIC
+	var sid references.ISID
+	var cia1 references.ICIA
+	var cia2 references.ICIA
+	var plaC references.IPlaC64
+	var cart references.IExpansionSocketC64
+	var rl references.IROMLoaderC64
+
+	if _, s.quartz, err = s.factory.CreateIQuartz(s, "quartz", ""); err != nil {
+		return err
+	}
+	if _, s.throttle, err = s.factory.CreateIThrottle(s, "dynamic_throttle", ""); err != nil {
+		return err
+	}
+	if _, s.pic, err = s.factory.CreateIPIC6510(s, "pic_6510", ""); err != nil {
+		return err
+	}
+	if _, cpu, err = s.factory.CreateI6510(s, "mos6510", ""); err != nil {
+		return err
+	}
+	if _, s.iec, err = s.factory.CreateIEC(s, "iec", ""); err != nil {
+		return err
+	}
+	if _, vic, err = s.factory.CreateIVIC(s, "mos6569", ""); err != nil {
+		return err
+	}
+	if _, sid, err = s.factory.CreateISID(s, "mos6581", ""); err != nil {
+		return err
+	}
+	if _, cart, err = s.factory.CreateIExpansionSocketC64(s, "cartridges_c64", ""); err != nil {
+		return err
+	}
+	if _, rl, err = s.factory.CreateIROMLoaderC64(s, "roms_c64", ""); err != nil {
+		return err
+	}
+	if _, cia1, err = s.factory.CreateICIA(s, "mos6526", "1"); err != nil {
+		return err
+	}
+	if _, cia2, err = s.factory.CreateICIA(s, "mos6526", "2"); err != nil {
+		return err
+	}
+	if _, plaC, err = s.factory.CreateIPLAc64(s, "pla_c64", ""); err != nil {
+		return err
+	}
+	if _, s.keys, err = s.factory.CreateIKeyboard(s, "keyboard_c64", ""); err != nil {
+		return err
+	}
+	if _, s.joy1, err = s.factory.CreateIJoystick(s, "joystick_c64", "1"); err != nil {
+		return err
+	}
+	if _, s.joy2, err = s.factory.CreateIJoystick(s, "joystick_c64", "2"); err != nil {
+		return err
+	}
+	expansion := NewExpansion(s, "")
+	if err = expansion.Setup(s); err != nil {
+		return err
+	}
+
+	s.throttle.SetInterval(mos6569.FrameInterval)
+
 	if err = rl.Setup(cfg); err != nil {
 		return err
 	}
-
-	_, cia1, err := s.factory.CreateICIA(s, "mos6526", "1")
-	if err != nil {
+	if err = s.pic.Setup(s.quartz); err != nil {
 		return err
 	}
-	_, cia2, err := s.factory.CreateICIA(s, "mos6526", "2")
-	if err != nil {
-		return err
-	}
-	plaC := pla_c64.NewPLA(s, s.factory, "")
-
-	s.keys = keyboard_c64.NewKeyboard(s, s.factory, "")
-	s.joy1 = joystick_c64.NewJoystick(s, s.factory, "1")
-	s.joy2 = joystick_c64.NewJoystick(s, s.factory, "2")
-
-	expansion := NewExpansion(s, "")
-	expansion.Setup(s)
-
-	s.pic.Setup(s.quartz)
 	if err = s.iec.Setup(s.quartz, cfg); err != nil {
 		return err
 	}
-
 	if err = s.cpuSocket.Connect(s, cpu); err != nil {
 		return err
 	}
@@ -269,7 +291,7 @@ func (s *Board) Emulate() bool {
 
 // Throttle returns the throttling service used by the board.
 func (s *Board) Throttle() references.IThrottle {
-	return s.dt
+	return s.throttle
 }
 
 // GetText retrieves the text data from the VIC component of the Board instance. It returns the text as a byte slice.

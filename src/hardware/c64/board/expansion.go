@@ -24,8 +24,9 @@ func NewExpansion(parent references.IComponent, suffix string) *Expansion {
 }
 
 // Setup initializes the Expansion by associating it with the provided board instance.
-func (s *Expansion) Setup(board *Board) {
+func (s *Expansion) Setup(board *Board) error {
 	s.board = board
+	return nil
 }
 
 // Reset reinitializes the state of the Expansion to its default configuration.

@@ -51,8 +51,9 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the Pic instance with a Quartz instance, establishing internal dependencies.
-func (i *Pic) Setup(quartz references.IQuartz) {
+func (i *Pic) Setup(quartz references.IQuartz) error {
 	i.quartz = quartz
+	return nil
 }
 
 // Reset reinitializes the Pic instance by clearing all internal state variables and flags.

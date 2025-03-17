@@ -92,6 +92,12 @@ type IComponent interface {
 type IComponentFactory interface {
 	Create(parent IComponent, id string, suffix string) (IComponent, error)
 
+	CreateIQuartz(parent IComponent, id string, suffix string) (IComponent, IQuartz, error)
+
+	CreateIVIC(parent IComponent, id string, suffix string) (IComponent, IVIC, error)
+
+	CreateISID(parent IComponent, id string, suffix string) (IComponent, ISID, error)
+
 	CreateICIA(parent IComponent, id string, suffix string) (IComponent, ICIA, error)
 
 	CreateIVIA(parent IComponent, id string, suffix string) (IComponent, IVIA, error)
@@ -100,7 +106,21 @@ type IComponentFactory interface {
 
 	CreateIPIC6510(parent IComponent, id string, suffix string) (IComponent, IPIC6510, error)
 
+	CreateIPLAc64(parent IComponent, id string, suffix string) (IComponent, IPlaC64, error)
+
 	CreateIPLAc1541(parent IComponent, id string, suffix string) (IComponent, IPLAc1541, error)
 
+	CreateIEC(parent IComponent, id string, suffix string) (IComponent, IIec, error)
+
+	CreateIROMLoaderC64(parent IComponent, id string, suffix string) (IComponent, IROMLoaderC64, error)
+
 	CreateIROMLoaderC1541(parent IComponent, id string, suffix string) (IComponent, IROMLoaderC1541, error)
+
+	CreateIExpansionSocketC64(parent IComponent, id string, suffix string) (IComponent, IExpansionSocketC64, error)
+
+	CreateIThrottle(parent IComponent, id string, suffix string) (IComponent, IThrottle, error)
+
+	CreateIKeyboard(parent IComponent, id string, suffix string) (IComponent, IKeyboard, error)
+
+	CreateIJoystick(parent IComponent, id string, suffix string) (IComponent, IJoystick, error)
 }
