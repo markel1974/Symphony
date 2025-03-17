@@ -24,7 +24,9 @@ func NewSIDSocket() *SIDSocket {
 func (w *SIDSocket) Connect(sid references.ISID, player references.IPlayer, fragFreq int, rasters int, cfg *config.Config) error {
 	w.ISID = sid
 	w.player = player
-	w.ISID.Setup(w, fragFreq, rasters, cfg)
+	if err := w.ISID.Setup(w, fragFreq, rasters, cfg); err != nil {
+		return err
+	}
 	return nil
 }
 

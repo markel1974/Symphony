@@ -9,6 +9,8 @@ package references
 // Poll retrieves the next key from the keyboard storage and indicates if a key is available.
 // SetCommand processes and stores input commands based on their mapped key representations.
 type IKeyboard interface {
+	Setup() error
+
 	Reset()
 
 	Emulate()

@@ -12,7 +12,7 @@ import "github.com/markel1974/c64emu/src/config"
 // WriteRegister writes data to a specific register address of the SID.
 // ReadRegister retrieves data from a specified register address of the SID.
 type ISID interface {
-	Setup(socket ISIDSocket, fragFreq int, rasters int, cfg *config.Config)
+	Setup(socket ISIDSocket, fragFreq int, rasters int, cfg *config.Config) error
 
 	Reset()
 

@@ -24,10 +24,6 @@ type SID struct {
 	reflect      *SidReflect
 }
 
-func NewSIDComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewSID(parent, factory, suffix)
-}
-
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
 func NewSID(parent references.IComponent, factory references.IComponentFactory, suffix string) *SID {
 	s := &SID{
@@ -44,11 +40,13 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the SID instance with the provided socket, configuration, fragment frequency, and raster count.
-func (sid *SID) Setup(socket references.ISIDSocket, fragFreq int, rasters int, cfg *config.Config) {
+func (sid *SID) Setup(socket references.ISIDSocket, fragFreq int, rasters int, cfg *config.Config) error {
 	sid.socket = socket
 	sid.audioBuilder = NewAudioBuilder(sid.socket.GetPlayer(), true, fragFreq, rasters)
 	sid.cfg = cfg
 	sid.cfg.Bind(sid.onConfigChanged)
+
+	return nil
 }
 
 // Emulate processes the main emulation logic for the SID component, handling internal updates and state changes.

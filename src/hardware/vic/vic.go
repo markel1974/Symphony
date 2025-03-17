@@ -177,7 +177,7 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the VIC component with the provided socket and configuration.
-func (vic *VIC) Setup(socket references.IVICSocket, cfg *config.Config) {
+func (vic *VIC) Setup(socket references.IVICSocket, cfg *config.Config) error {
 	vic.cfg = cfg
 	db := socket.GetDisplayBuffer()
 	vic.socket = socket
@@ -192,6 +192,8 @@ func (vic *VIC) Setup(socket references.IVICSocket, cfg *config.Config) {
 	vic.graphics.Setup()
 	vic.sprites.Setup()
 	vic.curr = _pal
+
+	return nil
 }
 
 // Reset reinitializes the VIC instance to its default state by resetting its internal readiness flag.

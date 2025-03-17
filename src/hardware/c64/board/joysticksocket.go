@@ -20,5 +20,8 @@ func NewJoystickSocket() *JoystickSocket {
 // Connect assigns the given IJoystick object to the JoystickSocket and prepares it for further operations.
 func (w *JoystickSocket) Connect(j references.IJoystick) error {
 	w.IJoystick = j
+	if err := w.IJoystick.Setup(); err != nil {
+		return err
+	}
 	return nil
 }

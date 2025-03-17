@@ -53,11 +53,6 @@ type CIA struct {
 	socket         references.ICIASocket
 }
 
-func NewCIAComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	v := NewCIA(parent, factory, suffix)
-	return v
-}
-
 // NewCIA initializes and returns a new instance of the CIA struct with the specified ID and associated components.
 func NewCIA(parent references.IComponent, factory references.IComponentFactory, suffix string) *CIA {
 	m := &CIA{

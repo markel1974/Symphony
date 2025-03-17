@@ -21,5 +21,8 @@ func NewKeyboardSocket() *KeyboardSocket {
 // Connect assigns the provided IKeyboard interface implementation to the KeyboardSocket and initializes it.
 func (w *KeyboardSocket) Connect(k references.IKeyboard) error {
 	w.IKeyboard = k
+	if err := w.IKeyboard.Setup(); err != nil {
+		return err
+	}
 	return nil
 }

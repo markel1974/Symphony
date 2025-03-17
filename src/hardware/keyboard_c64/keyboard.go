@@ -20,10 +20,6 @@ type Keyboard struct {
 	ascii   *Ascii
 }
 
-func NewKeyboardComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewKeyboard(parent, factory, suffix)
-}
-
 // NewKeyboard initializes and returns a new Keyboard instance with default settings and a reset state.
 func NewKeyboard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Keyboard {
 	k := &Keyboard{
@@ -36,6 +32,10 @@ func NewKeyboard(parent references.IComponent, factory references.IComponentFact
 	component.Register(parent, k)
 	k.Reset()
 	return k
+}
+
+func (k *Keyboard) Setup() error {
+	return nil
 }
 
 // Reset reinitializes the Keyboard by resetting its storage, virtual key states, and ASCII translations.

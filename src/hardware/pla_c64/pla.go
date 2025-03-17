@@ -40,10 +40,6 @@ type PLA struct {
 	wTriggers       *WriteTriggers
 }
 
-func NewPLAComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewPLA(parent, factory, suffix)
-}
-
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
 func NewPLA(parent references.IComponent, factory references.IComponentFactory, suffix string) *PLA {
 	mm := NewMemoryMap()
@@ -78,7 +74,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	return b
 }
 
-func (b *PLA) Setup(vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64, cfg *config.Config) {
+func (b *PLA) Setup(vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64, cfg *config.Config) error {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1
@@ -161,6 +157,8 @@ func (b *PLA) Setup(vic references.IVIC, sid references.ISID, cia1 references.IC
 	rc := filler.New(255, 128, 0, 0, 0, 0, 0, filler.InitRandomChanceHalf)
 	rc.InitWithPattern(b.color, uint(len(b.color)))
 	b.initRom()
+
+	return nil
 }
 
 // Reset reinitializes the state of PLA by resetting its ports and updating internal references or state.

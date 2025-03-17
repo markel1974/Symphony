@@ -16,10 +16,6 @@ type DynamicThrottle struct {
 	counter       uint64
 }
 
-func NewDynamicThrottleComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewDynamicThrottle(parent, factory, suffix)
-}
-
 // NewDynamicThrottle creates a new instance of DynamicThrottling with the specified frameInterval in milliseconds.
 func NewDynamicThrottle(parent references.IComponent, factory references.IComponentFactory, suffix string) *DynamicThrottle {
 	d := &DynamicThrottle{

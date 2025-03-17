@@ -15,7 +15,7 @@ import "github.com/markel1974/c64emu/src/config"
 // ChangedVA notifies the VIC of a change in the video address.
 // GetLastByte returns the last byte processed by the VIC.
 type IVIC interface {
-	Setup(socket IVICSocket, cfg *config.Config)
+	Setup(socket IVICSocket, cfg *config.Config) error
 
 	Reset()
 

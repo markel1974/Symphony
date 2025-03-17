@@ -8,6 +8,8 @@ package references
 // SetKey adjusts the joystick state based on key presses or releases with a specific joystick ID.
 // Poll retrieves the next joystick state and its validity, indicating if data is available.
 type IJoystick interface {
+	Setup() error
+
 	Update(min uint16, max uint16, sensitivity uint16)
 
 	Reset()

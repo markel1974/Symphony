@@ -47,7 +47,9 @@ func (v *VICSocket) Connect(vic references.IVIC, connection IVICSocketConnection
 	v.pic = pic
 	v.pla = pla
 	v.quartz = quartz
-	v.IVIC.Setup(v, cfg)
+	if err := v.IVIC.Setup(v, cfg); err != nil {
+		return err
+	}
 	return nil
 }
 

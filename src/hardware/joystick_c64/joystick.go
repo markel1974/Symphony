@@ -16,10 +16,6 @@ type Joystick struct {
 	s2      uint
 }
 
-func NewJoystickComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewJoystick(parent, factory, suffix)
-}
-
 // NewJoystick initializes and returns a new instance of Joystick with default settings and sensitivity for controls.
 func NewJoystick(parent references.IComponent, factory references.IComponentFactory, suffix string) *Joystick {
 	j := &Joystick{
@@ -40,6 +36,10 @@ func (k *Joystick) Update(min uint16, max uint16, sensitivity uint16) {
 	interval := max - min
 	k.s1 = uint(min + ((sensitivity * interval) / 100))
 	k.s2 = uint(min + (((100 - sensitivity) * interval) / 100))
+}
+
+func (k *Joystick) Setup() error {
+	return nil
 }
 
 // Reset reinitializes the joystick's storage buffer and sets its state to the default value.

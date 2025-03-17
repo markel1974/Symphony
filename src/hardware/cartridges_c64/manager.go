@@ -35,10 +35,6 @@ type Manager struct {
 	registerSizeDefault func(references.IComponent, references.IComponentFactory, string) references.ICartridgeC64
 }
 
-func NewManagerComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewManager(parent, factory, suffix)
-}
-
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
 func NewManager(parent references.IComponent, factory references.IComponentFactory, suffix string) *Manager {
 	m := &Manager{
