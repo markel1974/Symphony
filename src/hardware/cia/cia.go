@@ -75,8 +75,9 @@ func NewCIA(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the CIA instance by assigning a provided ISocket connection to its socket field.
-func (m *CIA) Setup(conn references.ICIASocket) {
+func (m *CIA) Setup(conn references.ICIASocket) error {
 	m.socket = conn
+	return nil
 }
 
 // Update checks the TOD alarm condition and triggers an IRQ if the alarm matches the timer.

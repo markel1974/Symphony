@@ -5,30 +5,34 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// headControl represents the bit mask for controlling the head movement direction in the PRB register of VIA2.
+// headControl is a bitmask (0x3) used for controlling the head step direction during mechanical operations.
 const headControl = uint8(0x3)
 
-// motorControl represents the bit mask for controlling the motor state in PRB. 0 indicates off; 1 indicates on.
+// motorControl represents the motor control bit in the VIA2 PRB register. 0 = Motor off; 1 = Motor on.
 const motorControl = uint8(0x4)
 
-// ledControl is a constant representing the LED control bit (bit [3]) in a control register. 0 = Off; 1 = On.
+// ledControl defines the bit mask for controlling the LED state; 0 represents Off, and 1 represents On.
 const ledControl = uint8(0x8)
 
-// photocellControl represents a uint8 configuration flag for enabling or indicating a photocell-related control feature.
+// photocellControl represents the control bitmask for managing photocell-related functionalities in a device.
 const photocellControl = uint8(0x10)
 
-// densityControl is a constant representing a fixed uint8 value of 0x60, typically used for density configuration or identification.
+// densityControl defines a constant with a uint8 value of 0x60, likely representing a control code for density settings.
 const densityControl = uint8(0x60)
 
-// dataArrivedControl is a constant that signals the presence of new data by its associated bit set in an 8-bit value.
+// dataArrivedControl is a constant used to indicate the presence of newly received data in certain control operations.
 const dataArrivedControl = uint8(0x80)
 
-// noPhotocellControl inverts all bits of photocellControl, disabling its effect when applied in certain operations.
+// noPhotocellControl is a constant used to disable the photocell control by flipping all bits of `photocellControl`.
 const noPhotocellControl = ^photocellControl
 
-// syncArrivedControl is the bitwise complement of dataArrivedControl, used to manage synchronization states in the system.
+// syncArrivedControl is the bitwise complement of dataArrivedControl, typically used to denote a sync state in operations.
 const syncArrivedControl = ^dataArrivedControl
 
+// IVIA2SocketConnections defines an interface for managing connections and signal events between VIA2 and a socket.
+// LedChanged signals a change in the LED state identified by the provided uint8 value.
+// IRQClear clears an interrupt request by using the specified interrupt ID as a uint32.
+// IRQTrigger triggers an interrupt using the specified interrupt ID as a uint32.
 type IVIA2SocketConnections interface {
 	LedChanged(uint8)
 
@@ -37,7 +41,10 @@ type IVIA2SocketConnections interface {
 	IRQTrigger(uint32)
 }
 
-// VIA2Socket represents a socket interface for interacting with the VIA2 (Versatile Interface Adapter) component on the board.
+// VIA2Socket represents a VIA (Versatile Interface Adapter) connected to a socket for communication and control.
+// It integrates a VIA interface, mechanic, and socket connection handlers for IRQ and LED signal changes.
+// intrId defines the unique interrupt ID for handling IRQs through the associated connections.
+// prbPrev tracks the previous state of the PRB (Peripheral Register B) for state change detection.
 type VIA2Socket struct {
 	references.IVIA
 	mec         *mechanic.Mechanic
@@ -46,7 +53,7 @@ type VIA2Socket struct {
 	prbPrev     uint8
 }
 
-// NewVIA2Socket creates and returns a new instance of VIA2Socket with default initialized fields.
+// NewVIA2Socket creates and returns a pointer to a new VIA2Socket instance with default initializations.
 func NewVIA2Socket() *VIA2Socket {
 	return &VIA2Socket{
 		IVIA:        nil,
@@ -57,7 +64,7 @@ func NewVIA2Socket() *VIA2Socket {
 	}
 }
 
-// Connect initializes the VIA2Socket by associating it with a Board instance and configuring the interrupt ID.
+// Connect initializes the VIA2Socket instance with the provided IVIA, connections, and Mechanic, and sets up the IVIA.
 func (v *VIA2Socket) Connect(via2 references.IVIA, connections IVIA2SocketConnections, mec *mechanic.Mechanic) error {
 	v.IVIA = via2
 	v.connections = connections
@@ -68,34 +75,34 @@ func (v *VIA2Socket) Connect(via2 references.IVIA, connections IVIA2SocketConnec
 	return nil
 }
 
-// Reset reinitializes the VIA2Socket to its default state by clearing prbPrev and invoking the Reset method on board.via2.
+// Reset reinitializes the state of the VIA2Socket and its associated VIA by resetting their internal configurations.
 func (v *VIA2Socket) Reset() {
 	v.prbPrev = 0
 	v.IVIA.Reset()
 }
 
-// LedChanged updates the LED state by forwarding the provided data to the board's LED change handler.
+// LedChanged notifies the connected system that the LED state has changed, passing the updated data byte as a parameter.
 func (v *VIA2Socket) LedChanged(data byte) {
 	v.connections.LedChanged(data)
 }
 
-// IRQClear clears the interrupt request associated with this VIA2Socket instance by delegating to the board's IRQClear method.
+// IRQClear clears the interrupt request associated with the intrId of the VIA2Socket instance by invoking the connections' IRQClear method.
 func (v *VIA2Socket) IRQClear() {
 	v.connections.IRQClear(v.intrId)
 }
 
-// IRQTrigger triggers an interrupt request (IRQ) on the board using the interrupt ID associated with the VIA2Socket instance.
+// IRQTrigger sends an interrupt request trigger signal through the associated connection using the stored interrupt ID.
 func (v *VIA2Socket) IRQTrigger() {
 	v.connections.IRQTrigger(v.intrId)
 }
 
-// ReadPRA reads a byte from the board's `Mechanic` and returns the value.
+// ReadPRA reads a byte of data from the Mechanic instance associated with the VIA2Socket and returns the value.
 func (v *VIA2Socket) ReadPRA(_ uint8, _ uint8) uint8 {
 	d := v.mec.ReadByte()
 	return d
 }
 
-// ReadPRB processes the PRB value, combines it with the write protection state, and adjusts based on synchronization status.
+// ReadPRB reads the PRB register, applies controls based on the photocell state and sync status, and returns the result.
 func (v *VIA2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
 	p := prb & noPhotocellControl
 	photocellState := v.mec.WriteProtectionState()
@@ -106,12 +113,12 @@ func (v *VIA2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
 	}
 }
 
-// WritePRA writes the given PRA value to the Mechanic's disk via the WriteByte method.
+// WritePRA writes the specified PRA (Peripheral Register A) value to the Mechanic via `WriteByte`.
 func (v *VIA2Socket) WritePRA(pra uint8, _ uint8) {
 	v.mec.WriteByte(pra)
 }
 
-// WritePRB updates the state and behavior of the `VIA2Socket` based on the given PRB byte input.
+// WritePRB processes a value written to the PRB register, updating hardware state based on changed bits in the input.
 func (v *VIA2Socket) WritePRB(prb uint8, _ uint8) {
 	prevPrb := v.prbPrev
 	v.prbPrev = prb
@@ -167,12 +174,12 @@ func (v *VIA2Socket) WritePRB(prb uint8, _ uint8) {
 	//}
 }
 
-// WriteDDRA handles writing operations to the data direction register A (DDRA) for the VIA2 component. This method is unimplemented.
+// WriteDDRA handles writing to the Data Direction Register A (DDRA) by accepting the current and next values, performing no action.
 func (v *VIA2Socket) WriteDDRA(_ uint8, _ uint8) {
 
 }
 
-// WriteDDRB sets the Data Direction Register B for VIA2 but currently contains no implementation.
+// WriteDDRB handles the write operation for DDRB (Data Direction Register B) with given input parameters.
 func (v *VIA2Socket) WriteDDRB(_ uint8, _ uint8) {
 
 }

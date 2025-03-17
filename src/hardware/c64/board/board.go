@@ -13,7 +13,10 @@ import (
 	"os"
 )
 
-// Constants representing interrupt request bits for various hardware components.
+// intrIrqVicBit represents the interrupt IRQ bit for the VIC.
+// intrIrqCia1Bit represents the interrupt IRQ bit for CIA1.
+// intrIrqCia2Bit represents the interrupt IRQ bit for CIA2.
+// intrIrqExpansionBit represents the interrupt IRQ bit for Expansion.
 const (
 	intrIrqVicBit       = 0
 	intrIrqCia1Bit      = 1
@@ -21,7 +24,7 @@ const (
 	intrIrqExpansionBit = 3
 )
 
-// Board represents the central processing and coordination system for handling hardware components and peripherals.
+// Board represents a complex hardware configuration comprising various component sockets and related system functionalities.
 type Board struct {
 	*component.BaseComponent
 	db                  references.IDisplayBuffer
@@ -54,7 +57,8 @@ type Board struct {
 	dmaLow              bool
 }
 
-// NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
+// NewBoard initializes and returns a new Board instance with specific sockets and properties configured.
+// It registers the created instance as a child of the provided parent IComponent.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
 		BaseComponent:       component.NewBaseComponent(componentId, suffix),
@@ -90,7 +94,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	return b
 }
 
-// Setup initializes the Board with provided display buffer, player, and configuration settings.
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, cfg *config.Config) error {
 	s.db = db
 	s.player = player
@@ -167,7 +170,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	if err = s.quartzSocket.Connect(quartz); err != nil {
 		return err
 	}
-	if err = s.expansionSocket.Connect(s); err != nil {
+	if err = s.expansionSocket.Connect(s, pic, pla, vic, quartz); err != nil {
 		return err
 	}
 	if err = s.throttleSocket.Connect(throttle, mos6569.FrameInterval); err != nil {
@@ -182,25 +185,25 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	if err = s.iecSocket.Connect(iec, s.quartzSocket, cfg); err != nil {
 		return err
 	}
-	if err = s.cpuSocket.Connect(s, cpu); err != nil {
+	if err = s.cpuSocket.Connect(cpu, pic, pla); err != nil {
 		return err
 	}
-	if err = s.vicSocket.Connect(s, vic); err != nil {
+	if err = s.vicSocket.Connect(vic, s, db, pla, quartz, cfg); err != nil {
 		return err
 	}
-	if err = s.sidSocket.Connect(s, sid, mos6569.ScreenFreq, mos6569.TotalRasters, cfg); err != nil {
+	if err = s.sidSocket.Connect(sid, player, mos6569.ScreenFreq, mos6569.TotalRasters, cfg); err != nil {
 		return err
 	}
-	if err = s.cia1Socket.Connect(s, cia1); err != nil {
+	if err = s.cia1Socket.Connect(cia1, s, keys, joy1, joy2); err != nil {
 		return err
 	}
-	if err = s.cia2Socket.Connect(s, cia2); err != nil {
+	if err = s.cia2Socket.Connect(cia2, s, iec); err != nil {
 		return err
 	}
 	if err = s.cartSocket.Connect(cart, s.expansionSocket, cfg); err != nil {
 		return err
 	}
-	if err = s.plaSocket.Connect(s, pla, vic, sid, cia1, cia2, s.cartSocket, rl); err != nil {
+	if err = s.plaSocket.Connect(pla, vic, sid, cia1, cia2, cart, rl, cfg); err != nil {
 		return err
 	}
 	if err = s.keysSocket.Connect(keys); err != nil {
@@ -234,11 +237,12 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	return nil
 }
 
+// Reset clears the state of the Board, restoring it back to its initial configuration.
 func (s *Board) Reset() {
 	//nothing to do
 }
 
-// reset resets the internal components of the Board to their initial states.
+// reset resets all the sockets of the Board to their initial state.
 func (s *Board) reset() {
 	s.picSocket.Reset()
 	s.plaSocket.Reset()
@@ -251,8 +255,7 @@ func (s *Board) reset() {
 	//s.expansion.Reset()
 }
 
-// AsyncReset resets various components of the board asynchronously by invoking their respective reset methods.
-// It clears the low DMA state and initiates resets for the PLA, PIC, VIC, SID, CIA1, CIA2, Dispatcher, and Expansion modules.
+// AsyncReset performs an asynchronous reset on various hardware components connected to the board.
 func (s *Board) AsyncReset() {
 	s.plaSocket.Reset()
 	s.picSocket.TriggerReset()
@@ -267,11 +270,12 @@ func (s *Board) AsyncReset() {
 	s.dmaLow = false
 }
 
-// configChanged handles updates or changes in the configuration settings for the Board instance.
+// configChanged is triggered whenever the board's configuration is updated to apply necessary changes.
 func (s *Board) configChanged() {
 }
 
-// Emulate executes the main emulation loop for the Board, coordinating CPU, VIC, CIA, and other components in sequence.
+// Emulate executes a single emulation cycle, triggering connected sockets and updating the system state.
+// Returns the current v
 func (s *Board) Emulate() bool {
 	s.vBlank = false
 
@@ -290,28 +294,29 @@ func (s *Board) Emulate() bool {
 	return s.vBlank
 }
 
-// Throttle returns the throttling service used by the board.
+// Throttle returns the IThrottle instance associated with the board to provide control over throttling behavior.
 func (s *Board) Throttle() references.IThrottle {
 	return s.throttleSocket
 }
 
-// GetText retrieves the text data from the VIC component of the Board instance. It returns the text as a byte slice.
+// GetText retrieves the textual representation of the board's content as a byte slice from the vicSocket.
 func (s *Board) GetText() []byte {
 	return s.vicSocket.GetText()
 }
 
-// GetScreenSize returns the dimensions of the screen as width and height in pixels.
+// GetScreenSize returns the width and height of the screen as two integers: width (X) and height (Y
 func (s *Board) GetScreenSize() (int, int) {
 	return mos6569.DisplayX, mos6569.DisplayY
 }
 
-// DiskChange triggers disk-related operations, such as switching the current disk and setting the drive configuration options.
+// DiskChange updates the disk configuration by switching the disk and resetting the drive options.
 func (s *Board) DiskChange() {
 	s.cfg.SwitchDisk()
 	s.cfg.SetDriveOpt("", 8)
 }
 
-// KeyboardPaste checks if the paste button is pressed and clipboard data is available, then sets the keyboard command from the clipboard data.
+// KeyboardPaste processes pasting text from the clipboard when a keyboard paste action is triggered.
+// It checks if the paste action is allowed and the clipboard has content before executing.
 func (s *Board) KeyboardPaste(pressed bool) {
 	if !pressed {
 		return
@@ -323,33 +328,33 @@ func (s *Board) KeyboardPaste(pressed bool) {
 	s.keysSocket.SetCommand(string(data))
 }
 
-// KeyboardSetCommand sets the specified command string to the keyboard input handler.
+// KeyboardSetCommand assigns the specified command to the keyboard's key socket for execution.
 func (s *Board) KeyboardSetCommand(cmd string) {
 	s.keysSocket.SetCommand(cmd)
 }
 
-// KeyboardNumLockToggle toggles the state of the Num Lock key on the keyboard.
+// KeyboardNumLockToggle toggles the Num Lock state on the keyboard via the associated keys socket.
 func (s *Board) KeyboardNumLockToggle() {
 	s.keysSocket.NumLockToggle()
 }
 
-// KeyboardCapitalToggle toggles the capital (Caps Lock) state of the keyboard.
+// Keyboard
 func (s *Board) KeyboardCapitalToggle() {
 	s.keysSocket.CapitalToggle()
 }
 
-// SetMouse sets the mouse position by providing x and y coordinates to the SID socket.
+// SetMouse sets the mouse's position on the board by updating the potentiometer X and Y coordinates.
 func (s *Board) SetMouse(x uint8, y uint8) {
 	s.sidSocket.SetPotX(x)
 	s.sidSocket.SetPotY(y)
 }
 
-// KeyboardSetVirtualKey modifies the state of a virtual key based on whether it is pressed or released.
+// KeyboardSetVirtualKey sets the state of a virtual key, allowing simulation of key presses
 func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
 	s.keysSocket.SetVirtualKey(pressed, vKey)
 }
 
-// Joy1SetKey sets the state of a key input for joystick 1 or swaps to joystick 2 depending on the joySwap flag.
+// Joy1SetKey sets the
 func (s *Board) Joy1SetKey(pressed bool, vKey int) {
 	if s.joySwap {
 		s.joySocket2.SetKey(pressed, vKey)
@@ -358,7 +363,7 @@ func (s *Board) Joy1SetKey(pressed bool, vKey int) {
 	}
 }
 
-// Joy2SetKey sets the state of a joystick key (pressed or released) for Joy2, swapping with Joy1 if joySwap is enabled.
+// Joy2SetKey handles key press events for joystick input, delegating the action to the appropriate joystick socket based on joySwap.
 func (s *Board) Joy2SetKey(pressed bool, vKey int) {
 	if s.joySwap {
 		s.joySocket1.SetKey(pressed, vKey)
@@ -367,7 +372,7 @@ func (s *Board) Joy2SetKey(pressed bool, vKey int) {
 	}
 }
 
-// Joystick1Move updates the position and button states of joystick 1, or joystick 2 if `joySwap` is enabled.
+// Joystick1Move processes joystick movement and button states for the first joystick or swaps to the second based on joySwap.
 func (s *Board) Joystick1Move(x uint, y uint, buttons uint) {
 	if s.joySwap {
 		s.joySocket2.Move(x, y, buttons)
@@ -376,8 +381,7 @@ func (s *Board) Joystick1Move(x uint, y uint, buttons uint) {
 	}
 }
 
-// Joystick2Move moves the second joystick based on the given x, y coordinates and button presses.
-// If joystick swapping is enabled, the move applies to the first joystick instead.
+// Joystick2Move controls the movement of the joystick depending on the joySwap flag, updating either joySocket1 or joySocket2.
 func (s *Board) Joystick2Move(x uint, y uint, buttons uint) {
 	if s.joySwap {
 		s.joySocket1.Move(x, y, buttons)
@@ -386,7 +390,7 @@ func (s *Board) Joystick2Move(x uint, y uint, buttons uint) {
 	}
 }
 
-// JoySwap toggles the joystick swap state and resets both joysticks if the passed button state is pressed.
+// JoySwap toggles the joystick swap state and resets both joystick sockets if the pressed parameter is true.
 func (s *Board) JoySwap(pressed bool) {
 	if !pressed {
 		return
@@ -396,7 +400,7 @@ func (s *Board) JoySwap(pressed bool) {
 	s.joySocket2.Reset()
 }
 
-// ExtRamWrite writes a byte of data to an external RAM address with an optional memory configuration switch.
+// ExtRamWrite writes a single byte of data to the external RAM at the specified address using the provided memory configuration.
 func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
 	var prev []uint8 = nil
 	if memConfig >= 0 {
@@ -409,9 +413,7 @@ func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
 	}
 }
 
-// ExtRamRead reads a byte from the external RAM at the specified address and memory configuration setting.
-// If memConfig is non-negative, it temporarily applies the memory configuration, performs the read operation,
-// and restores the previous memory configuration. Returns the retrieved byte value.
+// ExtRamRead reads a byte from external RAM at the specified address using the given memory configuration.
 func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	var prev []uint8 = nil
 	if memConfig >= 0 {
@@ -425,10 +427,8 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	return rb
 }
 
-// dmaLowSlot sets the DMA low slot state for the board by updating internal flags and CPU control lines.
-// If DMA is low, the CPU releases the bus for other devices to access memory via direct memory access (DMA).
-// The method updates CPU RDY and AEC lines depending on the DMA state and VIC-II bus access status.
-func (s *Board) dmaLowSlot(v bool) {
+// DMALowTrigger sets the DMA line state to request or release the CPU's access to the bus based on the
+func (s *Board) DMALowTrigger(v bool) {
 	//If _DMA=Low the CPU can be requested to release the bus.
 	//It will stop after the next read cycle, and all bus lines will go to high resistance state.
 	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
@@ -442,52 +442,79 @@ func (s *Board) dmaLowSlot(v bool) {
 	s.cpuSocket.SetAECLow(s.dmaLow || s.vicSocket.GetAECLow())
 }
 
-// rdyLowSlot updates the RDY signal based on the logical OR of the given value and the dmaLow state.
-func (s *Board) rdyLowSlot(v bool) {
+// RDYLowTrigger sets the RDY signal based on the logical AND between BA and DMA produced by chip U27.
+// It also updates the RDY state taking into consideration the provided value and the dmaLow state.
+func (s *Board) RDYLowTrigger(v bool) {
 	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
 	s.cpuSocket.SetRDYLow(v || s.dmaLow)
 	//TODO SIGNAL
 }
 
-// aecLowSlot sets the AEC (Address Enable Control) line state based on the provided value and the DMA state.
-func (s *Board) aecLowSlot(v bool) {
+// AECLowTrigger sets the AEC (Asynchronous Enable Control) low signal for the CPU socket based on the given value.
+func (s *Board) AECLowTrigger(v bool) {
 	s.cpuSocket.SetAECLow(v || s.dmaLow)
 	//TODO SIGNAL
 }
 
-// irqTriggerSlot triggers an interrupt request (IRQ) specified by the given identifier and emits it to expansion if available.
-func (s *Board) irqTriggerSlot(i uint32) {
+// IRQTrigger triggers an interrupt request (IRQ) with the specified ID through the PIC socket and expansion IRQ handler if set.
+func (s *Board) IRQTrigger(i uint32) {
 	s.picSocket.TriggerIRQ(i)
 	if s.expansionIrqTrigger != nil {
 		s.expansionIrqTrigger.Emit(i)
 	}
 }
 
-// irqClearSlot clears the specified IRQ signal on the PIC and emits a clear signal through expansionIrqClear if defined.
-func (s *Board) irqClearSlot(i uint32) {
+// IRQClear clears the specified IRQ line identified by the provided index and triggers a signal if applicable.
+func (s *Board) IRQClear(i uint32) {
 	s.picSocket.ClearIRQ(i)
 	if s.expansionIrqClear != nil {
 		s.expansionIrqClear.Emit(i)
 	}
 }
 
-// nmiTriggerSlot triggers a Non-Maskable Interrupt (NMI) via the board's Programmable Interrupt Controller (PIC).
-func (s *Board) nmiTriggerSlot() {
+// LightPenTrigger triggers the light pen signal on the connected VIC socket of the Board instance.
+func (s *Board) LightPenTrigger() {
+	s.vicSocket.LightPenTrigger()
+}
+
+// NMITrigger triggers a Non-Maskable Interrupt (NMI) on the board via the connected PIC socket.
+func (s *Board) NMITrigger() {
 	s.picSocket.TriggerNMI()
 }
 
-// nmiClearSlot clears the Non-Maskable Interrupt (NMI) by utilizing the PIC's `ClearNMI` method.
-func (s *Board) nmiClearSlot() {
+// NMIClear clears the Non-Maskable Interrupt (NMI) state by invoking the ClearNMI method on the PICSocket instance.
+func (s *Board) NMIClear() {
 	s.picSocket.ClearNMI()
 }
 
-// vicLastCycleSLot prepares the SID socket for operations during the last VIC-II cycle.
-func (s *Board) vicLastCycleSLot() {
+// LastCycleTrigger prepares the
+func (s *Board) LastCycleTrigger() {
 	s.sidSocket.Prepare()
 }
 
-// vicVBlankSlot handles the vertical blanking interval updates for connected components and processes injected programs if applicable.
-func (s *Board) vicVBlankSlot() {
+// ChangedVATrigger notifies the VIC socket of a change in the VA (video address
+func (s *Board) ChangedVATrigger(v uint8) {
+	s.vicSocket.ChangedVA(v)
+}
+
+// IRQTriggerBind binds a callback function to the IRQ trigger signal, which is called with a uint32 parameter upon trigger events.
+func (s *Board) IRQTriggerBind(fn func(uint32)) {
+	if s.expansionIrqTrigger == nil {
+		s.expansionIrqTrigger = signals.NewSignalUint32()
+	}
+	s.expansionIrqTrigger.Bind(fn)
+}
+
+// IRQClearBind binds the provided callback function to the expansion IRQ clear signal for handling IRQ clear events.
+func (s *Board) IRQClearBind(fn func(uint32)) {
+	if s.expansionIrqClear == nil {
+		s.expansionIrqClear = signals.NewSignalUint32()
+	}
+	s.expansionIrqClear.Bind(fn)
+}
+
+// VBlankTrigger sets the vBlank flag to true and updates connected sockets and programmable logic if applicable.
+func (s *Board) VBlankTrigger() {
 	s.vBlank = true
 	s.sidSocket.Update()
 	s.cia1Socket.Update()
@@ -499,8 +526,8 @@ func (s *Board) vicVBlankSlot() {
 	}
 }
 
-// ledStateChangedSlot is triggered to handle changes in the LED state for a specified device.
-func (s *Board) ledStateChangedSlot(_ int, _ uint8) {
+// LedStateChangedTrigger handles LED state change events for a specified device and updates the LED state accordingly.
+func (s *Board) LedStateChangedTrigger(_ int, _ uint8) {
 	//TODO IMPLEMENT
 	//deviceId := deviceNumber - 8
 	//if deviceId < 0 || deviceId >= MAX_DRIVE_COUNT {
@@ -510,6 +537,7 @@ func (s *Board) ledStateChangedSlot(_ int, _ uint8) {
 	//k.updateLedState()
 }
 
+// startPR
 func (s *Board) startPRG() error {
 	prgPath := s.cfg.GetPrg()
 	if len(prgPath) == 0 {

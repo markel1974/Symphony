@@ -5,40 +5,62 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// defaultLPState represents the default state for LP (Launchpad) set to 0x10.
-// defaultJoyState represents the default state for a joystick set to 0xff.
-// defaultKeyState represents the default state for a keyboard set to 0xff.
+// defaultLPState represents the default state value for Launchpad.
+// defaultJoyState represents the default joystick state value.
+// defaultKeyState represents the default keyboard state value.
 const (
 	defaultLPState  = 0x10
 	defaultJoyState = 0xff
 	defaultKeyState = 0xff
 )
 
-// CIA1Socket represents the state and behavior of the CIA1 socket in a computing system.
-// board refers to the system board connected to the CIA1 socket.
-// intrId represents the ID of the interrupt associated with CIA1.
-// prevLPState tracks the previous state of the light pen signal (bit 4).
-// keyMatrix holds the current state of the keyboard matrix (0: down, 1: up).
-// revMatrix represents the reversed keyboard matrix for compatibility or emulation purposes.
-// joy1 denotes the state of joystick 1 connected to the system.
-// joy2 denotes the state of joystick 2 connected to the system.
+// ICIA1SocketConnections defines an interface for specific CIA socket actions such as triggering or clearing IRQ lines.
+//
+// LightPenTrigger handles the activation of the Light Pen functionality connected to the socket.
+//
+// IRQTrigger activates an IRQ signal based on the provided interrupt vector or flag.
+//
+// IRQClear deactivates the IRQ signal corresponding to the provided interrupt vector or flag.
+type ICIA1SocketConnections interface {
+	LightPenTrigger()
+
+	IRQTrigger(v uint32)
+
+	IRQClear(v uint32)
+}
+
+// CIA1Socket represents a connector for CIA-1 chip emulation, managing keyboard, joystick, and external connections.
+// ICIA interface provides the core logic for the connected CIA chip functionality.
+// IKeyboard interface is used to handle input and state changes from a keyboard.
+// IJoystick interface specifies methods to interact with joystick devices (one or more).
+// ICIA1SocketConnections interface provides external event interactions like IRQ and light pen triggers.
+// intrId is used to track the IRQ identification bit for events.
+// prevLPState represents the prior state of the light pen (LP) input signal.
+// keyMatrix is a direct lookup table representing the state of the keyboard matrix.
+// revMatrix is the reversed lookup table to assist with keyboard matrix computation.
+// joy1State and joy2State track the current states of two connected joysticks.
 type CIA1Socket struct {
 	references.ICIA
-	board       *Board
+	keys        references.IKeyboard
+	joy1        references.IJoystick
+	joy2        references.IJoystick
+	connections ICIA1SocketConnections
 	intrId      uint32  //
 	prevLPState uint8   // Previous state of LP line (bit 4)
 	keyMatrix   []uint8 // keyboard matrix [0: down, 1: up]
 	revMatrix   []uint8 // Reversed keyboard matrix
 	joy1State   uint8   // Joystick 1
 	joy2State   uint8   // Joystick 2
-
 }
 
-// NewCIA1Socket creates and initializes a new instance of CIA1Socket with default values for its fields.
+// NewCIA1Socket creates and initializes a new instance of CIA1Socket with default state and properties.
 func NewCIA1Socket() *CIA1Socket {
 	c := &CIA1Socket{
 		ICIA:        nil,
-		board:       nil,
+		keys:        nil,
+		joy1:        nil,
+		joy2:        nil,
+		connections: nil,
 		intrId:      intrIrqCia1Bit,
 		prevLPState: defaultLPState,
 		keyMatrix:   make([]uint8, 8),
@@ -49,19 +71,25 @@ func NewCIA1Socket() *CIA1Socket {
 	return c
 }
 
-// Connect initializes the CIA1Socket with the provided Board reference and interrupt ID.
-func (w *CIA1Socket) Connect(board *Board, cia1 references.ICIA) error {
-	w.board = board
+// Connect initializes the CIA1Socket with the provided CIA instance, connections, keyboard, and joystick references.
+// It sets up the CIA via the Setup method and returns any errors encountered during initialization.
+func (w *CIA1Socket) Connect(cia1 references.ICIA, connections ICIA1SocketConnections, keys references.IKeyboard, joy1 references.IJoystick, joy2 references.IJoystick) error {
 	w.ICIA = cia1
-	w.ICIA.Setup(w)
+	w.connections = connections
+	w.keys = keys
+	w.joy1 = joy1
+	w.joy2 = joy2
+	if err := w.ICIA.Setup(w); err != nil {
+		return err
+	}
 	return nil
 }
 
-// Reset reinitializes the CIA1Socket by resetting its board components, key matrices, joystick states, and light pen state.
+// Reset resets the internal state of the CIA1Socket and its connected components to their default values.
 func (w *CIA1Socket) Reset() {
-	w.board.keysSocket.Reset()
-	w.board.joySocket1.Reset()
-	w.board.joySocket2.Reset()
+	w.keys.Reset()
+	w.joy1.Reset()
+	w.joy2.Reset()
 	w.ICIA.Reset()
 	for idx := range w.keyMatrix {
 		w.keyMatrix[idx] = defaultKeyState
@@ -74,15 +102,15 @@ func (w *CIA1Socket) Reset() {
 	w.prevLPState = defaultLPState
 }
 
-// Update synchronizes the joystick and keyboard states by polling their current inputs and updates the key matrices accordingly.
+// Update polls the state of connected joysticks and keyboard, and updates the key and reverse matrix based on input events.
 func (w *CIA1Socket) Update() {
-	if joy1State, ok := w.board.joySocket1.Poll(); ok {
+	if joy1State, ok := w.joy1.Poll(); ok {
 		w.joy1State = joy1State
 	}
-	if joy2State, ok := w.board.joySocket2.Poll(); ok {
+	if joy2State, ok := w.joy2.Poll(); ok {
 		w.joy2State = joy2State
 	}
-	if v, ok := w.board.keysSocket.Poll(); ok {
+	if v, ok := w.keys.Poll(); ok {
 		pressed := (v & 0x20000) != 0
 		shifted := (v & 0x10000) != 0
 		keyM := uint8(v & 0xff)
@@ -106,9 +134,7 @@ func (w *CIA1Socket) Update() {
 	w.ICIA.Update()
 }
 
-// ReadPortA reads data from Port A taking into account the provided port registers and joystick states.
-// The method integrates Port B and reads the reverse keyboard matrix when joystick inputs are active.
-// The result is masked with joystick 2's state before being returned.
+// ReadPortA reads data from port A by combining the given parameters with internal joystick states and matrices.
 func (w *CIA1Socket) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
 	ret := prA | ^ddrA
 	tst := (prB | ^ddrB) & w.joy1State
@@ -120,9 +146,7 @@ func (w *CIA1Socket) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uin
 	return ret & w.joy2State
 }
 
-// ReadPortB reads from Port B based on the provided port registers and data direction registers.
-// It considers joystick inputs and keyboard matrix states to compute the resulting value.
-// The method applies bitwise operations to determine the state of the port and filters results accordingly.
+// ReadPortB reads the state of Port B by combining the active bits of DDRB and PRB with the joystick and key matrix states.
 func (w *CIA1Socket) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
 	ret := ^ddrB
 	tst := (prA | ^ddrA) & w.joy2State
@@ -134,38 +158,38 @@ func (w *CIA1Socket) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uin
 	return (ret | (prB & ddrB)) & w.joy1State
 }
 
-// WritePortA writes data to Port A while considering the specified parameters but does not implement any functionality yet.
+// WritePortA handles data writing to port A based on the current state and provided parameters.
 func (w *CIA1Socket) WritePortA(_ uint8, _ uint8, _ uint8, _ uint8) {
 }
 
-// WriteDdrA handles writing to Data Direction Register A of CIA1 and updates relevant internal states accordingly.
+// WriteDdrA updates the Data Direction Register A (DDRA) with the provided parameters without performing any operation.
 func (w *CIA1Socket) WriteDdrA(_ uint8, _ uint8, _ uint8, _ uint8) {
 }
 
-// WritePortB updates the light pen state based on the provided port B latch and data direction register values.
+// WritePortB handles writing to port B by updating the light pen state based on the given port and data direction registers.
 func (w *CIA1Socket) WritePortB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
 	w.updateLightPen(prB, ddrB)
 }
 
-// WriteDdrB updates the light pen state based on the provided DDRB and PRB values.
+// WriteDdrB handles updates to the DDRB register and triggers updates to the light pen based on the PRB and DDRB values.
 func (w *CIA1Socket) WriteDdrB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
 	w.updateLightPen(prB, ddrB)
 }
 
-// updateLightPen updates the light pen state based on Port B and DDR B values and triggers the light pen event if state changes.
+// updateLightPen checks the state of the light pen line and triggers an action if the state has changed.
 func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
 	if ((prB | ^ddrB) & 0x10) != w.prevLPState {
-		w.board.vicSocket.LightPenTrigger()
+		w.connections.LightPenTrigger()
 	}
 	w.prevLPState = (prB | ^ddrB) & 0x10
 }
 
-// IRQTrigger triggers an interrupt request on the board's IRQ slot using the associated interrupt ID.
+// IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
 func (w *CIA1Socket) IRQTrigger() {
-	w.board.irqTriggerSlot(w.intrId)
+	w.connections.IRQTrigger(w.intrId)
 }
 
-// IRQClear clears the interrupt request for the associated hardware by invoking the board's irqClearSlot method.
+// IRQClear clears the interrupt request associated with the socket by invoking the IRQClear method on connections.
 func (w *CIA1Socket) IRQClear() {
-	w.board.irqClearSlot(w.intrId)
+	w.connections.IRQClear(w.intrId)
 }

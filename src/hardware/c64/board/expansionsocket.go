@@ -1,120 +1,138 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// ExpansionSocket represents a logical structure that associates a parent ID, its own ID, and a reference to a Board.
-type ExpansionSocket struct {
-	board *Board
+// IExpansionSocketConnections defines an interface for managing connections and triggers in an expansion socket system.
+// DMALowTrigger sets the DMA low line state to the specified boolean value.
+// IRQTriggerBind binds a callback function to handle IRQ triggers with a uint32 parameter.
+// IRQClearBind binds a callback function to handle IRQ clearing with a uint32 parameter.
+type IExpansionSocketConnections interface {
+	DMALowTrigger(v bool)
+
+	IRQTriggerBind(fn func(uint32))
+
+	IRQClearBind(fn func(uint32))
 }
 
-// NewExpansionSocket creates a new instance of the Expansion structure with the given parentId and suffix.
-// The `id` property is initialized by concatenating "expansion" with the specified suffix.
-// Returns a pointer to the newly created Expansion object.
+// ExpansionSocket represents a connection point integrating various components like connections, PIC, PLA, VIC, and Quartz.
+// It enables coordinated interaction and communication between connected emulation subsystems.
+type ExpansionSocket struct {
+	connections IExpansionSocketConnections
+	pic         references.IPIC6510
+	pla         references.IPlaC64
+	vic         references.IVIC
+	quartz      references.IQuartz
+}
+
+// NewExpansionSocket initializes and returns a pointer to a new ExpansionSocket instance with default nil values.
 func NewExpansionSocket() *ExpansionSocket {
-	e := &ExpansionSocket{}
+	e := &ExpansionSocket{
+		connections: nil,
+		pic:         nil,
+		pla:         nil,
+		vic:         nil,
+		quartz:      nil,
+	}
 	return e
 }
 
-// Connect initializes the Expansion by associating it with the provided board instance.
-func (s *ExpansionSocket) Connect(board *Board) error {
-	s.board = board
+// Connect initializes the ExpansionSocket with its dependencies and sets up the required connections.
+func (s *ExpansionSocket) Connect(connections IExpansionSocketConnections, pic references.IPIC6510, pla references.IPlaC64, vic references.IVIC, quartz references.IQuartz) error {
+	s.connections = connections
+	s.pic = pic
+	s.pla = pla
+	s.vic = vic
+	s.quartz = quartz
 	return nil
 }
 
-// Reset reinitializes the state of the Expansion to its default configuration.
+// Reset reinitializes the state of the ExpansionSocket and its connected components to their default values.
 func (s *ExpansionSocket) Reset() {
 }
 
-// Read reads a byte of data from the specified memory address using the associated board's PLA component.
+// Read performs a read operation from the specified 16-bit memory address and returns the corresponding 8-bit value.
 func (s *ExpansionSocket) Read(addr uint16) uint8 {
-	return s.board.plaSocket.Read(addr)
+	return s.pla.Read(addr)
 }
 
-// Write writes a value to the specified address through the board's PLA module.
+// Write performs a write operation to the specified memory address with the given data value.
 func (s *ExpansionSocket) Write(addr uint16, data uint8) {
-	s.board.plaSocket.Write(addr, data)
+	s.pla.Write(addr, data)
 }
 
-// GameExRomConfigChanged triggers a rebuild of the memory configuration within the PLA board.
+// GameExRomConfigChanged updates the memory configuration of the PLA by triggering a rebuild process.
 func (s *ExpansionSocket) GameExRomConfigChanged() {
-	s.board.plaSocket.RebuildMemoryConfig()
+	s.pla.RebuildMemoryConfig()
 }
 
-// NMITrigger triggers a Non-Maskable Interrupt (NMI) by invoking the associated method on the programmable interrupt controller.
+// NMITrigger triggers a non-maskable interrupt (NMI) by invoking the corresponding method on the programmable interrupt controller.
 func (s *ExpansionSocket) NMITrigger() {
-	s.board.picSocket.TriggerNMI()
+	s.pic.TriggerNMI()
 }
 
-// SetDMALow sets the DMA low signal state on the associated board.
+// SetDMALow triggers the DMA low state on the associated expansion socket connection based on the boolean value provided.
 func (s *ExpansionSocket) SetDMALow(v bool) {
-	s.board.dmaLowSlot(v)
+	s.connections.DMALowTrigger(v)
 }
 
-// ResetTrigger activates the reset sequence by invoking the TriggerReset function of the associated Pic instance.
+// ResetTrigger invokes a reset trigger on the connected IPIC6510 instance to reinitialize its state.
 func (s *ExpansionSocket) ResetTrigger() {
-	s.board.picSocket.TriggerReset()
+	s.pic.TriggerReset()
 }
 
-// IRQTrigger triggers the IRQ interrupt for the expansion module using the programmable interrupt controller (PIC).
+// IRQTrigger triggers an interrupt request (IRQ) using the programmable interrupt controller (PIC).
 func (s *ExpansionSocket) IRQTrigger() {
-	s.board.picSocket.TriggerIRQ(intrIrqExpansionBit)
+	s.pic.TriggerIRQ(intrIrqExpansionBit)
 }
 
-// IRQClear clears the IRQ signal for the expansion bit via the associated programmable interrupt controller (PIC).
+// IRQClear clears the IRQ signal associated with the expansion bit from the programmable interrupt controller (PIC).
 func (s *ExpansionSocket) IRQClear() {
-	s.board.picSocket.ClearIRQ(intrIrqExpansionBit)
+	s.pic.ClearIRQ(intrIrqExpansionBit)
 }
 
-// IRQTriggerBind binds the provided function to the IRQ trigger event, initializing the signal if not already done.
+// IRQTriggerBind connects a callback function to the IRQ trigger event, enabling custom handling of IRQ signals.
 func (s *ExpansionSocket) IRQTriggerBind(fn func(uint32)) {
-	if s.board.expansionIrqTrigger == nil {
-		s.board.expansionIrqTrigger = signals.NewSignalUint32()
-	}
-	s.board.expansionIrqTrigger.Bind(fn)
+	s.connections.IRQTriggerBind(fn)
 }
 
-// IRQClearBind binds a callback function to the clear interrupt request signal for the expansion.
+// IRQClearBind binds a callback function that is triggered when the IRQ clear event occurs.
 func (s *ExpansionSocket) IRQClearBind(fn func(uint32)) {
-	if s.board.expansionIrqClear == nil {
-		s.board.expansionIrqClear = signals.NewSignalUint32()
-	}
-	s.board.expansionIrqClear.Bind(fn)
+	s.connections.IRQClearBind(fn)
 }
 
-// BusAvailable checks if the bus is available by verifying if the BA (Bus Available) signal is not asserted low.
+// BusAvailable checks whether the expansion bus is available by verifying the BA (Bus Available) line status of the VIC.
 func (s *ExpansionSocket) BusAvailable() bool {
-	return !s.board.vicSocket.GetBALow()
+	return !s.vic.GetBALow()
 }
 
-// AECAvailable determines if the Address Enable Control (AEC) signal is available by checking if the AEC line is not low.
+// AECAvailable checks if the AEC (Address Enable Control) line is available and returns true if it's not low.
 func (s *ExpansionSocket) AECAvailable() bool {
-	return !s.board.vicSocket.GetAECLow()
+	return !s.vic.GetAECLow()
 }
 
-// Cycle returns the current cycle count as a uint64 from the underlying Quartz instance associated with the Expansion.
+// Cycle retrieves the current clock cycle count from the associated quartz instance.
 func (s *ExpansionSocket) Cycle() uint64 {
-	return s.board.quartzSocket.Cycle()
+	return s.quartz.Cycle()
 }
 
-// CycleAlarm creates and registers a new alarm with a unique identifier and a callback function for execution upon triggering.
+// CycleAlarm creates a new quartz alarm with the given id and callback, and returns the associated IQuartzAlarm instance.
 func (s *ExpansionSocket) CycleAlarm(id string, callback references.QuartzAlarmCallback) references.IQuartzAlarm {
-	return s.board.quartzSocket.NewAlarm(id, callback)
+	return s.quartz.NewAlarm(id, callback)
 }
 
-// RamSetWriteTrigger sets a write trigger for a specific RAM address and executes the provided callback on writes.
+// RamSetWriteTrigger sets a write trigger callback for a specified memory address, returning an identifier for the trigger.
 func (s *ExpansionSocket) RamSetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
-	return s.board.plaSocket.SetWriteTrigger(addr, fn)
+	return s.pla.SetWriteTrigger(addr, fn)
 }
 
-// RamRemoveWriteTrigger removes a write trigger from the specified RAM address using the given trigger id.
+// RamRemoveWriteTrigger removes a write trigger callback associated with the specified address and identifier.
 func (s *ExpansionSocket) RamRemoveWriteTrigger(addr uint16, id int) {
-	s.board.plaSocket.RemoveRamTrigger(addr, id)
+	s.pla.RemoveRamTrigger(addr, id)
 }
 
-// RmwFlags computes and returns the read-modify-write flags for CPU operations.
+// RmwFlags retrieves the Read-Modify-Write flags for CPU operations. Currently, this method is a placeholder for implementation.
 func (s *ExpansionSocket) RmwFlags() uint8 {
 	//TODO IMPLEMENT cpu rmw flags
 	return 0

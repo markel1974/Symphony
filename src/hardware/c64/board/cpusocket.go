@@ -4,37 +4,40 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// CPUSocket represents a CPU interface that connects to a board, picture processing unit, and memory banks for operations.
+// CPUSocket represents a connection hub for the 6510 CPU, PIC, and PLA components to integrate and interact cohesively.
 type CPUSocket struct {
-	board *Board
 	references.I6510
+	pic references.IPIC6510
+	pla references.IPlaC64
 }
 
-// NewCPUSocket creates and returns a new instance of CPUSocket with initialized properties.
+// NewCPUSocket creates and returns a new instance of CPUSocket with its internal references uninitialized.
 func NewCPUSocket() *CPUSocket {
 	c := &CPUSocket{
-		board: nil,
 		I6510: nil,
+		pic:   nil,
+		pla:   nil,
 	}
 	return c
 }
 
-// Connect initializes the CPUSocket by linking it with a given Board, setting the PIC and memory banks from the board.
-func (w *CPUSocket) Connect(board *Board, cpu references.I6510) error {
-	w.board = board
+// Connect initializes the CPUSocket with the provided CPU, PIC, and PLA, and sets up the CPU for interaction.
+func (w *CPUSocket) Connect(cpu references.I6510, pic references.IPIC6510, pla references.IPlaC64) error {
 	w.I6510 = cpu
+	w.pic = pic
+	w.pla = pla
 	if err := w.I6510.Setup(w); err != nil {
 		return err
 	}
 	return nil
 }
 
-// GetPic retrieves the programmable interrupt controller (IPIC6510) associated with the CPUSocket instance.
+// GetPic returns the programmable interrupt controller (PIC) associated with the CPUSocket.
 func (w *CPUSocket) GetPic() references.IPIC6510 {
-	return w.board.picSocket
+	return w.pic
 }
 
-// GetBanks retrieves the memory banks interface associated with the CPUSocket.
+// GetBanks retrieves the memory bank interface used for managing and accessing read/write operations within the CPU socket.
 func (w *CPUSocket) GetBanks() references.I6510Banks {
-	return w.board.plaSocket
+	return w.pla
 }

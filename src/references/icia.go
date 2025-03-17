@@ -35,7 +35,7 @@ type ICIASocket interface {
 // WriteRegister writes a byte of data to the CIA at the specified register address.
 // ReadRegister reads a byte of data from the CIA at the specified register address.
 type ICIA interface {
-	Setup(conn ICIASocket)
+	Setup(conn ICIASocket) error
 
 	Reset()
 

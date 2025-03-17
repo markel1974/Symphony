@@ -8,24 +8,27 @@ import (
 // SIDSocket represents a socket connected to a Board for managing or interacting with its state or functionality.
 type SIDSocket struct {
 	references.ISID
-	board *Board
+	player references.IPlayer
 }
 
 // NewSIDSocket creates and returns a new instance of SIDSocket with default initialization.
 func NewSIDSocket() *SIDSocket {
-	c := &SIDSocket{}
+	c := &SIDSocket{
+		ISID:   nil,
+		player: nil,
+	}
 	return c
 }
 
 // Connect initializes the SIDSocket with the provided Board instance, assigning it to the internal board field.
-func (w *SIDSocket) Connect(board *Board, sid references.ISID, fragFreq int, rasters int, cfg *config.Config) error {
-	w.board = board
+func (w *SIDSocket) Connect(sid references.ISID, player references.IPlayer, fragFreq int, rasters int, cfg *config.Config) error {
 	w.ISID = sid
+	w.player = player
 	w.ISID.Setup(w, fragFreq, rasters, cfg)
 	return nil
 }
 
 // GetPlayer returns the instance of IPlayer associated with the SIDSocket's board.
 func (w *SIDSocket) GetPlayer() references.IPlayer {
-	return w.board.player
+	return w.player
 }
