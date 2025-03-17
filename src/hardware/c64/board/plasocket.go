@@ -7,88 +7,22 @@ import (
 // PLASocket represents a socket encapsulating a PLA and its associated board.
 type PLASocket struct {
 	board *Board
-	pla   references.IPlaC64
+	references.IPlaC64
 }
 
 // NewPLASocket creates a new instance of PLASocket with default uninitialized board and PLA components.
 func NewPLASocket() *PLASocket {
 	c := &PLASocket{
-		board: nil,
-		pla:   nil,
+		board:   nil,
+		IPlaC64: nil,
 	}
 	return c
 }
 
 // Connect initializes the PLASocket with the provided board, PLA, and associated components like VIC, SID, CIAs, and cartridge manager.
-func (w *PLASocket) Connect(board *Board, p references.IPlaC64, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.IExpansionSocketC64, roms references.IROMLoaderC64) error {
+func (w *PLASocket) Connect(board *Board, p references.IPlaC64, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64) error {
 	w.board = board
-	w.pla = p
-	w.pla.Setup(vic, sid, cia1, cia2, cartMan, roms, w.board.cfg)
+	w.IPlaC64 = p
+	w.IPlaC64.Setup(vic, sid, cia1, cia2, cartMan, roms, w.board.cfg)
 	return nil
-}
-
-// Reset reinitializes the internal state of the PLA to its default configuration.
-func (w *PLASocket) Reset() {
-	w.pla.Reset()
-}
-
-// Emulate runs the core emulation cycle for this PLASocket instance, handling interactions and operations as defined.
-func (w *PLASocket) Emulate() {
-	// Emulate is empty because the PLA does not have its own emulation cycle,
-	// it works as a memory controller.
-}
-
-// GetMemoryConfig retrieves the current memory configuration as a slice of uint8 values.
-func (w *PLASocket) GetMemoryConfig() []uint8 {
-	return w.pla.GetMemoryConfig()
-}
-
-// SetMemoryEntry updates the current memory entry to the specified configuration value.
-func (w *PLASocket) SetMemoryEntry(m uint8) {
-	w.pla.SetMemoryEntry(m)
-}
-
-// SetMemoryConfig updates the memory configuration of the associated PLA using the provided configuration slice.
-func (w *PLASocket) SetMemoryConfig(m []uint8) {
-	w.pla.SetMemoryConfig(m)
-}
-
-// RebuildMemoryConfig triggers a reconstruction of the memory configuration in the associated PLA.
-func (w *PLASocket) RebuildMemoryConfig() {
-	w.pla.RebuildMemoryConfig()
-}
-
-// Write writes a byte of data to the specified memory address using the PLA's write functionality.
-func (w *PLASocket) Write(addr uint16, data uint8) {
-	w.pla.Write(addr, data)
-}
-
-// Read reads a byte of data from the specified memory address using the underlying PLA logic of the PLASocket.
-func (w *PLASocket) Read(addr uint16) uint8 {
-	return w.pla.Read(addr)
-}
-
-// ReadCharRom reads a character ROM value at the specified address and returns the corresponding byte.
-func (w *PLASocket) ReadCharRom(addr uint16) uint8 {
-	return w.pla.ReadCharRom(addr)
-}
-
-// ReadDirect reads a byte directly from the specified address without applying any memory management or configuration rules.
-func (w *PLASocket) ReadDirect(addr uint16) uint8 {
-	return w.pla.ReadDirect(addr)
-}
-
-// ReadColor reads a color value from the specified memory address in the PLA socket and returns it as a uint8.
-func (w *PLASocket) ReadColor(addr uint16) uint8 {
-	return w.pla.ReadColor(addr)
-}
-
-// SetWriteTrigger sets a write trigger at the specified memory address and associates it with the provided callback function.
-func (w *PLASocket) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
-	return w.pla.SetWriteTrigger(addr, fn)
-}
-
-// RemoveRamTrigger removes the RAM trigger with the specified id at the given memory address.
-func (w *PLASocket) RemoveRamTrigger(addr uint16, id int) {
-	w.pla.RemoveRamTrigger(addr, id)
 }

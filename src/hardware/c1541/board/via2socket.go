@@ -30,7 +30,7 @@ const syncArrivedControl = ^dataArrivedControl
 
 // VIA2Socket represents a socket interface for interacting with the VIA2 (Versatile Interface Adapter) component on the board.
 type VIA2Socket struct {
-	via2    references.IVIA
+	references.IVIA
 	board   *Board
 	intrId  uint32
 	prbPrev uint8
@@ -39,7 +39,7 @@ type VIA2Socket struct {
 // NewVIA2Socket creates and returns a new instance of VIA2Socket with default initialized fields.
 func NewVIA2Socket() *VIA2Socket {
 	return &VIA2Socket{
-		via2:    nil,
+		IVIA:    nil,
 		board:   nil,
 		intrId:  intrIrqVIA2Bit,
 		prbPrev: 0,
@@ -49,23 +49,19 @@ func NewVIA2Socket() *VIA2Socket {
 // Connect initializes the VIA2Socket by associating it with a Board instance and configuring the interrupt ID.
 func (v *VIA2Socket) Connect(board *Board, via2 references.IVIA) error {
 	v.board = board
-	v.via2 = via2
-	v.via2.Setup(v)
+	v.IVIA = via2
+	v.IVIA.Setup(v)
 	return nil
-}
-
-func (v *VIA2Socket) Emulate() {
-	v.via2.Emulate()
 }
 
 // Reset reinitializes the VIA2Socket to its default state by clearing prbPrev and invoking the Reset method on board.via2.
 func (v *VIA2Socket) Reset() {
 	v.prbPrev = 0
-	v.via2.Reset()
+	v.IVIA.Reset()
 }
 
 func (v *VIA2Socket) ByteReady() func() bool {
-	return v.via2.ByteReady
+	return v.IVIA.ByteReady
 }
 
 // LedChanged updates the LED state by forwarding the provided data to the board's LED change handler.

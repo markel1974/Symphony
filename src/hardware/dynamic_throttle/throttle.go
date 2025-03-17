@@ -34,10 +34,14 @@ func NewDynamicThrottle(parent references.IComponent, factory references.ICompon
 	return d
 }
 
-func (s *DynamicThrottle) Reset() {
-}
-func (s *DynamicThrottle) SetInterval(frameInterval int64) {
+// Setup initializes the DynamicThrottle by setting the desired frame interval in milliseconds.
+func (s *DynamicThrottle) Setup(frameInterval int64) error {
 	s.frameInterval = frameInterval
+	return nil
+}
+
+// Reset resets the internal state of the DynamicThrottle, including counters and timestamps, to their initial values.
+func (s *DynamicThrottle) Reset() {
 }
 
 // Throttle regulates code execution to maintain a consistent time interval between consecutive invocations.

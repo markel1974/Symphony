@@ -6,18 +6,16 @@ import (
 )
 
 type CartridgeSocket struct {
-	board *Board
-	references.IExpansionSocketC64
+	references.ICartridgeManagerC64
 }
 
 func NewCartridgeSocket() *CartridgeSocket {
 	return &CartridgeSocket{}
 }
 
-func (cs *CartridgeSocket) Connect(board *Board, m references.IExpansionSocketC64, b references.IExpansionC64, cfg *config.Config) error {
-	cs.board = board
-	cs.IExpansionSocketC64 = m
-	if err := cs.IExpansionSocketC64.Setup(b, cfg); err != nil {
+func (cs *CartridgeSocket) Connect(cartMan references.ICartridgeManagerC64, exp references.IExpansionC64, cfg *config.Config) error {
+	cs.ICartridgeManagerC64 = cartMan
+	if err := cs.ICartridgeManagerC64.Setup(exp, cfg); err != nil {
 		return err
 	}
 	return nil

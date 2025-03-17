@@ -1,9 +1,14 @@
 package references
 
-// IQuartz defines an interface for time-related operations within the emulation environment.
-// Cycle retrieves the current clock cycle of the system.
-// ToUSec converts a given clock cycle count into microseconds.
+// IQuartz defines an interface for managing clock cycles, alarms, and time conversion in an emulation environment.
+// Setup initializes the quartz instance and prepares it for usage.
+// Cycle retrieves the current clock cycle count.
+// AddCycle increments the internal cycle count by one.
+// ToUSec converts a given clock cycle count to microseconds.
+// NewAlarm creates a new alarm instance with a specified name and callback function.
 type IQuartz interface {
+	Setup() error
+
 	Cycle() uint64
 
 	AddCycle()

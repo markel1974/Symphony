@@ -4,7 +4,7 @@ package references
 // Throttle adjusts execution speed to meet a specified rate, ensuring operations run within defined limits.
 // Counter returns the current count of throttled operations executed thus far.
 type IThrottle interface {
-	SetInterval(int64)
+	Setup(int64) error
 
 	Throttle()
 

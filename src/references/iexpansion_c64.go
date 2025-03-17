@@ -73,12 +73,12 @@ type IExpansionC64 interface {
 	RmwFlags() uint8 //TODO NOT STANDARD
 }
 
-// IExpansionSocketC64 defines an interface for managing expansion socket operations and interactions in a given system.
+// ICartridgeManagerC64 defines an interface for managing expansion socket operations and interactions in a given system.
 // Config retrieves the configuration data of the expansion socket and additional state details.
 // Read fetches a value from a specified ROM interval and address, returning the value and success state.
 // IORead performs a read operation from an I/O address, returning the value and success state.
 // IOWrite executes a write operation to an I/O address with the specified data, indicating success.
-type IExpansionSocketC64 interface {
+type ICartridgeManagerC64 interface {
 	Setup(expansion IExpansionC64, cfg *config.Config) error
 
 	Config() (uint8, uint8, bool)

@@ -23,7 +23,7 @@ const (
 // joy1 denotes the state of joystick 1 connected to the system.
 // joy2 denotes the state of joystick 2 connected to the system.
 type CIA1Socket struct {
-	cia1        references.ICIA
+	references.ICIA
 	board       *Board  //
 	intrId      uint32  //
 	prevLPState uint8   // Previous state of LP line (bit 4)
@@ -36,7 +36,7 @@ type CIA1Socket struct {
 // NewCIA1Socket creates and initializes a new instance of CIA1Socket with default values for its fields.
 func NewCIA1Socket() *CIA1Socket {
 	c := &CIA1Socket{
-		cia1:        nil,
+		ICIA:        nil,
 		board:       nil,
 		intrId:      intrIrqCia1Bit,
 		prevLPState: defaultLPState,
@@ -51,8 +51,8 @@ func NewCIA1Socket() *CIA1Socket {
 // Connect initializes the CIA1Socket with the provided Board reference and interrupt ID.
 func (w *CIA1Socket) Connect(board *Board, cia1 references.ICIA) error {
 	w.board = board
-	w.cia1 = cia1
-	w.cia1.Setup(w)
+	w.ICIA = cia1
+	w.ICIA.Setup(w)
 	return nil
 }
 
@@ -61,7 +61,7 @@ func (w *CIA1Socket) Reset() {
 	w.board.keys.Reset()
 	w.board.joy1.Reset()
 	w.board.joy2.Reset()
-	w.cia1.Reset()
+	w.ICIA.Reset()
 	for idx := range w.keyMatrix {
 		w.keyMatrix[idx] = defaultKeyState
 	}
@@ -71,10 +71,6 @@ func (w *CIA1Socket) Reset() {
 	w.joy1 = defaultJoyState
 	w.joy2 = defaultJoyState
 	w.prevLPState = defaultLPState
-}
-
-func (w *CIA1Socket) Emulate() {
-	w.cia1.Emulate()
 }
 
 // Update synchronizes the joystick and keyboard states by polling their current inputs and updates the key matrices accordingly.
@@ -106,7 +102,7 @@ func (w *CIA1Socket) Update() {
 			w.revMatrix[revM] |= 1 << keyM
 		}
 	}
-	w.cia1.Update()
+	w.ICIA.Update()
 }
 
 // ReadPortA reads data from Port A taking into account the provided port registers and joystick states.

@@ -19,10 +19,6 @@ type Quartz struct {
 	alarms          *list.List
 }
 
-func NewQuartzComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewQuartz(parent, factory, suffix)
-}
-
 // NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
 func NewQuartz(parent references.IComponent, factory references.IComponentFactory, suffix string) *Quartz {
 	q := &Quartz{
@@ -34,6 +30,10 @@ func NewQuartz(parent references.IComponent, factory references.IComponentFactor
 	}
 	component.Register(parent, q)
 	return q
+}
+
+func (s *Quartz) Setup() error {
+	return nil
 }
 
 // AddCycle increments the internal cycle counter and checks scheduled alarms against the updated cycle value.

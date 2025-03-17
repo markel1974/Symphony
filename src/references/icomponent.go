@@ -116,7 +116,7 @@ type IComponentFactory interface {
 
 	CreateIROMLoaderC1541(parent IComponent, id string, suffix string) (IComponent, IROMLoaderC1541, error)
 
-	CreateIExpansionSocketC64(parent IComponent, id string, suffix string) (IComponent, IExpansionSocketC64, error)
+	CreateICartridgeManagerC64(parent IComponent, id string, suffix string) (IComponent, ICartridgeManagerC64, error)
 
 	CreateIThrottle(parent IComponent, id string, suffix string) (IComponent, IThrottle, error)
 

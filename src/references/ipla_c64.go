@@ -17,7 +17,7 @@ import "github.com/markel1974/c64emu/src/config"
 // SetWriteTrigger associates a callback function to trigger on writes at the specified 16-bit address.
 // RemoveRamTrigger removes a write trigger callback associated with a 16-bit address by its identifier.
 type IPlaC64 interface {
-	Setup(vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan IExpansionSocketC64, roms IROMLoaderC64, cfg *config.Config)
+	Setup(vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, roms IROMLoaderC64, cfg *config.Config)
 
 	Reset()
 

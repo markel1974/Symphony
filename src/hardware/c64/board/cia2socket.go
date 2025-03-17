@@ -7,7 +7,7 @@ import (
 // CIA2Socket represents a connection interface to the CIA2 chip on a hardware board.
 // It contains a reference to the board and an interrupt identifier.
 type CIA2Socket struct {
-	cia2   references.ICIA
+	references.ICIA
 	board  *Board
 	intrId uint32
 }
@@ -15,7 +15,7 @@ type CIA2Socket struct {
 // NewCIA2Socket creates and returns a new instance of CIA2Socket.
 func NewCIA2Socket() *CIA2Socket {
 	c := &CIA2Socket{
-		cia2:   nil,
+		ICIA:   nil,
 		board:  nil,
 		intrId: intrIrqCia2Bit,
 	}
@@ -25,28 +25,14 @@ func NewCIA2Socket() *CIA2Socket {
 // Connect initializes the CIA2Socket with the provided board reference and interrupt ID.
 func (w *CIA2Socket) Connect(board *Board, cia2 references.ICIA) error {
 	w.board = board
-	w.cia2 = cia2
-	w.cia2.Setup(w)
+	w.ICIA = cia2
+	w.ICIA.Setup(w)
 	return nil
-}
-
-func (w *CIA2Socket) Emulate() {
-	w.cia2.Emulate()
-}
-
-// Reset resets the connected CIA2 component to its default state by invoking its Reset method.
-func (w *CIA2Socket) Reset() {
-	w.cia2.Reset()
-}
-
-// Update invokes the Update method on the CIA2 instance associated with the CIA2Socket.
-func (w *CIA2Socket) Update() {
-	w.cia2.Update()
 }
 
 // ReadPortA reads data from Port A considering the data direction register and input from the CPU's IEC interface.
 func (w *CIA2Socket) ReadPortA(prA uint8, ddrA uint8, _ uint8, _ uint8) uint8 {
-	data := w.board.iec.CpuRead()
+	data := w.board.iecSocket.CpuRead()
 	ret := ((prA | (^ddrA)) & 0x3f) | data
 	return ret
 }
@@ -60,7 +46,7 @@ func (w *CIA2Socket) ReadPortB(_ uint8, _ uint8, prB uint8, ddrB uint8) uint8 {
 // WritePortA writes data to Port A by updating its virtual address and signaling the connected IEC interface.
 func (w *CIA2Socket) WritePortA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
 	w.updateVA(prA, ddrA)
-	w.board.iec.CpuWrite(prA)
+	w.board.iecSocket.CpuWrite(prA)
 }
 
 // WritePortB writes data to Port B with the given input parameters, modifying internal state as required.

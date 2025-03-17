@@ -191,12 +191,12 @@ func (f *Factory) CreateIEC(parent references.IComponent, id string, suffix stri
 	return component, v, nil
 }
 
-func (f *Factory) CreateIExpansionSocketC64(parent references.IComponent, id string, suffix string) (references.IComponent, references.IExpansionSocketC64, error) {
+func (f *Factory) CreateICartridgeManagerC64(parent references.IComponent, id string, suffix string) (references.IComponent, references.ICartridgeManagerC64, error) {
 	component, err := f.Create(parent, id, suffix)
 	if err != nil {
 		return nil, nil, err
 	}
-	v, ok := component.(references.IExpansionSocketC64)
+	v, ok := component.(references.ICartridgeManagerC64)
 	if !ok {
 		return nil, nil, fmt.Errorf("component %s is not an expansion socket", id)
 	}

@@ -7,7 +7,7 @@ import (
 // CPUSocket represents the CPU's interface to the board, providing access to the interrupt controller and memory pla.
 type CPUSocket struct {
 	board *Board
-	cpu   references.I6510
+	references.I6510
 	pic   references.IPIC6510
 	banks references.I6510Banks
 }
@@ -16,7 +16,7 @@ type CPUSocket struct {
 func NewCPUSocket() *CPUSocket {
 	c := &CPUSocket{
 		board: nil,
-		cpu:   nil,
+		I6510: nil,
 		pic:   nil,
 		banks: nil,
 	}
@@ -28,18 +28,9 @@ func (w *CPUSocket) Connect(board *Board, cpu references.I6510) {
 	w.board = board
 	w.pic = board.pic
 	w.banks = board.pla
-	w.cpu = cpu
-	w.cpu.Setup(w)
-	w.cpu.SetOverflowBranch(w.board.via2Socket.ByteReady())
-}
-
-// Reset reinitializes the CPU within the board to its default state.
-func (w *CPUSocket) Reset() {
-	w.cpu.Reset()
-}
-
-func (w *CPUSocket) Emulate() {
-	w.cpu.Emulate()
+	w.I6510 = cpu
+	w.I6510.Setup(w)
+	w.I6510.SetOverflowBranch(w.board.via2Socket.ByteReady())
 }
 
 // GetPic retrieves the programmable interrupt controller (PIC) associated with the CPUSocket instance.

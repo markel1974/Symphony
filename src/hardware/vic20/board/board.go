@@ -6,13 +6,11 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64"
-	"github.com/markel1974/c64emu/src/hardware/dynamic_throttle"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/hardware/joystick_c64"
 	inputs2 "github.com/markel1974/c64emu/src/hardware/keyboard_c64"
 	mos6510 "github.com/markel1974/c64emu/src/hardware/pic_6510"
 	"github.com/markel1974/c64emu/src/hardware/pla_c64"
-	mos6569 "github.com/markel1974/c64emu/src/hardware/vic"
 	"github.com/markel1974/c64emu/src/references"
 	"golang.design/x/clipboard"
 	"log"
@@ -94,8 +92,8 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 	}
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
-	s.dt = dynamic_throttle.NewDynamicThrottle(s, s.factory, "")
-	s.dt.SetInterval(mos6569.FrameInterval)
+	//s.dt = dynamic_throttle.NewDynamicThrottle(s, s.factory, "")
+	//s.dt.SetInterval(mos6569.FrameInterval)
 
 	s.cpuSocket = NewCPUSocket()
 	s.vicSocket = NewVicSocket()

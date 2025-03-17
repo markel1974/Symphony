@@ -6,7 +6,7 @@ import (
 
 // VIA1Socket represents the interface between the VIA1 chip and the board, managing IRQs, filters, and dip switches.
 type VIA1Socket struct {
-	via1      references.IVIA
+	references.IVIA
 	board     *Board
 	intrId    uint32
 	dipSwitch uint8
@@ -16,7 +16,7 @@ type VIA1Socket struct {
 // NewVIA1Socket creates and returns a new instance of VIA1Socket with default, uninitialized state values.
 func NewVIA1Socket() *VIA1Socket {
 	return &VIA1Socket{
-		via1:      nil,
+		IVIA:      nil,
 		board:     nil,
 		intrId:    intrIrqVIA1Bit,
 		prbFilter: 0,
@@ -26,24 +26,11 @@ func NewVIA1Socket() *VIA1Socket {
 // Connect initializes the VIA1Socket by assigning the board and interrupt ID, setting filters, and configuring the dip switch.
 func (v *VIA1Socket) Connect(board *Board, via1 references.IVIA) error {
 	v.board = board
-	v.via1 = via1
+	v.IVIA = via1
 	v.setFilters()
 	v.setDipSwitch(board.deviceNumber)
-	v.via1.Setup(v)
+	v.IVIA.Setup(v)
 	return nil
-}
-
-func (v *VIA1Socket) Emulate() {
-	v.via1.Emulate()
-}
-
-// Reset reinitializes the VIA1 socket by invoking the Reset method of the associated VIA instance.
-func (v *VIA1Socket) Reset() {
-	v.via1.Reset()
-}
-
-func (v *VIA1Socket) SignalPRB() {
-	v.via1.SignalPRB()
 }
 
 // IRQClear clears the interrupt request (IRQ) for the current VIA1Socket using the associated board and interrupt ID.
