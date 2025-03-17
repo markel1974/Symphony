@@ -1,4 +1,4 @@
-package externalcpu
+package external_cpu
 
 import (
 	"github.com/markel1974/c64emu/src/component"

@@ -5,7 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/externalcpu"
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/external_cpu"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/generic"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/magicdesk"
@@ -57,7 +57,7 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 func (f *Manager) Setup(board references.IExpansionC64, prefs *config.Config) error {
 	f.board = board
 	f.prefs = prefs
-	f.registerHardware[externalcpu.Id] = externalcpu.New
+	f.registerHardware[external_cpu.Id] = external_cpu.New
 	f.registerHardware[reu.Id128K] = reu.New128K
 	f.registerHardware[reu.Id256K] = reu.New256K
 	f.registerHardware[reu.Id512K] = reu.New512K

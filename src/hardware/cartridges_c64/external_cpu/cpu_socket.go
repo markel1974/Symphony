@@ -1,4 +1,4 @@
-package externalcpu
+package external_cpu
 
 import (
 	mos6510 "github.com/markel1974/c64emu/src/references"
