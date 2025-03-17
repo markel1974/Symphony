@@ -37,7 +37,7 @@ type IVIASocket interface {
 // SignalPRB triggers the VIA PRB (Peripheral Register B) signal.
 // ByteReady checks if the VIA is ready to handle a new byte of data and returns true if ready.
 type IVIA interface {
-	Setup(conn IVIASocket)
+	Setup(conn IVIASocket) error
 
 	Reset()
 

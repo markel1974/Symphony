@@ -28,43 +28,37 @@ const baseId = "c1541"
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
 	*component.BaseComponent
-	factory        references.IComponentFactory
-	pic            references.IPIC6510
-	iec            references.IIec
-	pla            references.IPLAc1541
-	externalQuartz references.IQuartz
-	cpuSocket      *CPUSocket
-	via1Socket     *VIA1Socket
-	via2Socket     *VIA2Socket
-	mec            *mechanic.Mechanic
-	deviceId       uint8
-	deviceNumber   uint8
-	filePath       string
-	cfg            *config.Config
-	ledChanged     *signals.SignalUint32
-}
-
-func NewBoardComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewBoard(parent, factory, suffix)
+	factory    references.IComponentFactory
+	iec        references.IIec
+	cpuSocket  *CPUSocket
+	via1Socket *VIA1Socket
+	via2Socket *VIA2Socket
+	picSocket  *PICSocket
+	plaSocket  *PLASocket
+	rlSocket   *RomLoaderSocket
+	mec        *mechanic.Mechanic
+	deviceId   uint8
+	filePath   string
+	cfg        *config.Config
+	ledChanged *signals.SignalUint32
 }
 
 // NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
 	b := &Board{
-		BaseComponent:  component.NewBaseComponent(componentId, suffix),
-		factory:        factory,
-		externalQuartz: nil,
-		iec:            nil,
-		deviceId:       0,
-		filePath:       "",
-		deviceNumber:   0,
-		ledChanged:     signals.NewSignalUint32(),
-		cpuSocket:      nil,
-		via1Socket:     nil,
-		via2Socket:     nil,
-		pic:            nil,
-		pla:            nil,
-		cfg:            nil,
+		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		factory:       factory,
+		iec:           nil,
+		deviceId:      0,
+		filePath:      "",
+		ledChanged:    signals.NewSignalUint32(),
+		cpuSocket:     NewCPUSocket(),
+		via1Socket:    NewVIA1Socket(),
+		via2Socket:    NewVIA2Socket(),
+		picSocket:     NewPICSocket(),
+		plaSocket:     NewPLASocket(),
+		rlSocket:      NewRomLoaderSocket(),
+		cfg:           nil,
 	}
 	component.Register(parent, b)
 	return b
@@ -76,27 +70,26 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	m.iec = iec
 	m.cfg = cfg
 	m.deviceId = deviceId
-	m.deviceNumber = deviceNumber
 	m.filePath = opts
-	m.externalQuartz = quartz
-	//m.quartz = quartz.NewQuartz(m, "")
+	//quartz := quartz.NewQuartz(m, "")
 	m.cfg.Bind(m.configChanged)
-	if _, m.pla, err = m.factory.CreateIPLAc1541(m, "pla_c1541", ""); err != nil {
+
+	_, rl, err := m.factory.CreateIROMLoaderC1541(m, "roms_c1541", "")
+	if err != nil {
 		return err
 	}
-	if _, m.pic, err = m.factory.CreateIPIC6510(m, "pic_6510", ""); err != nil {
+	_, pla, err := m.factory.CreateIPLAc1541(m, "pla_c1541", "")
+	if err != nil {
 		return err
 	}
-	var cpu references.I6510
-	if _, cpu, err = m.factory.CreateI6510(m, "mos6510", ""); err != nil {
+	_, pic, err := m.factory.CreateIPIC6510(m, "pic_6510", "")
+	if err != nil {
 		return err
 	}
-	var loader references.IROMLoaderC1541
-	if _, loader, err = m.factory.CreateIROMLoaderC1541(m, "roms_c1541", ""); err != nil {
+	_, cpu, err := m.factory.CreateI6510(m, "mos6510", "")
+	if err != nil {
 		return err
 	}
-	m.mec = mechanic.NewMechanic()
-	m.mec.Setup(m.filePath)
 	_, via1, err := m.factory.CreateIVIA(m, "mos6522", "1")
 	if err != nil {
 		return err
@@ -105,30 +98,34 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	if err != nil {
 		return err
 	}
-	m.cpuSocket = NewCPUSocket()
-	m.via1Socket = NewVIA1Socket()
-	m.via2Socket = NewVIA2Socket()
-	if err = m.via1Socket.Connect(m, via1); err != nil {
-		return err
-	}
-	if err = m.via2Socket.Connect(m, via2); err != nil {
-		return err
-	}
 
-	if err = loader.Setup(m.cfg); err != nil {
+	m.mec = mechanic.NewMechanic()
+	m.mec.Setup(m.filePath)
+
+	if err = m.rlSocket.Connect(rl, cfg); err != nil {
 		return err
 	}
-	if err = m.pla.Setup(via1, via2, loader, cfg); err != nil {
+	if err = m.plaSocket.Connect(pla, via1, via2, rl, cfg); err != nil {
 		return err
 	}
-	m.pic.Setup(m.externalQuartz)
-	m.cpuSocket.Connect(m, cpu)
+	if err = m.picSocket.Connect(pic, quartz); err != nil {
+		return err
+	}
+	if err = m.via1Socket.Connect(via1, m, iec, deviceNumber); err != nil {
+		return err
+	}
+	if err = m.via2Socket.Connect(via2, m, m.mec); err != nil {
+		return err
+	}
+	if err = m.cpuSocket.Connect(cpu, pic, pla, via2); err != nil {
+		return err
+	}
 	return nil
 }
 
 // Reset reinitializes the Board's internal components to their default states by calling their respective Reset methods.
 func (m *Board) Reset() {
-	m.pic.Reset()
+	m.picSocket.Reset()
 	m.cpuSocket.Reset()
 	m.via1Socket.Reset()
 	m.via2Socket.Reset()
@@ -151,7 +148,7 @@ func (m *Board) Ready() bool {
 
 // GetDeviceNumber retrieves the device number associated with the Board instance.
 func (m *Board) GetDeviceNumber() uint8 {
-	return m.deviceNumber
+	return m.via1Socket.GetDeviceNumber()
 }
 
 // AtnStateChanged handles changes in the ATN signal on the IEC bus and updates internal state accordingly.
@@ -163,7 +160,7 @@ func (m *Board) AtnStateChanged(newAtn bool) {
 	if !newAtn {
 		//Interrupt by negative edge of ATN on IEC bus
 		//https://sta.c64.org/cbm1541mem.html
-		m.pla.Write(0x7c, 1)
+		m.plaSocket.Write(0x7c, 1)
 		//fmt.Println("ATN", b, "RECEIVED - WAKE UP")
 	}
 }
@@ -186,16 +183,16 @@ func (m *Board) configChanged() {
 
 // LedChanged updates the state of the LED for the device and emits the change as a signal with the device identifier and status.
 func (m *Board) LedChanged(d byte) {
-	fmt.Println("LED", m.deviceNumber, d)
-	m.ledChanged.Emit(uint32(d)<<8 | uint32(m.deviceNumber))
+	fmt.Println("LED", m.via1Socket.GetDeviceNumber(), d)
+	m.ledChanged.Emit(uint32(d)<<8 | uint32(m.via1Socket.GetDeviceNumber()))
 }
 
 // IRQClear clears the specified interrupt request (IRQ) in the programmable interrupt controller (PIC) associated with the board.
 func (m *Board) IRQClear(intr uint32) {
-	m.pic.ClearIRQ(intr)
+	m.picSocket.ClearIRQ(intr)
 }
 
 // IRQTrigger triggers an IRQ by setting the specified interrupt bit in the programmable interrupt controller (PIC).
 func (m *Board) IRQTrigger(intr uint32) {
-	m.pic.TriggerIRQ(intr)
+	m.picSocket.TriggerIRQ(intr)
 }

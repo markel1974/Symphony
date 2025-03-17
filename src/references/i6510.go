@@ -21,7 +21,7 @@ type I6510 interface {
 
 	Emulate()
 
-	Setup(socket I6510Socket)
+	Setup(socket I6510Socket) error
 
 	SetRDYLow(rdyLow bool)
 

@@ -53,8 +53,9 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the VIA by assigning the provided IViaSocket instance to its internal socket reference.
-func (v *VIA) Setup(socket references.IVIASocket) {
+func (v *VIA) Setup(socket references.IVIASocket) error {
 	v.socket = socket
+	return nil
 }
 
 // Reset sets all internal registers of the VIA instance to zero, effectively reinitializing its state.

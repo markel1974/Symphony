@@ -23,7 +23,9 @@ func NewCPUSocket() *CPUSocket {
 func (w *CPUSocket) Connect(board *Board, cpu references.I6510) error {
 	w.board = board
 	w.I6510 = cpu
-	w.I6510.Setup(w)
+	if err := w.I6510.Setup(w); err != nil {
+		return err
+	}
 	return nil
 }
 

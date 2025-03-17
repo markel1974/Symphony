@@ -1,6 +1,7 @@
 package board
 
 import (
+	"github.com/markel1974/c64emu/src/hardware/c1541/mechanic"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -28,29 +29,42 @@ const noPhotocellControl = ^photocellControl
 // syncArrivedControl is the bitwise complement of dataArrivedControl, used to manage synchronization states in the system.
 const syncArrivedControl = ^dataArrivedControl
 
+type IVIA2SocketConnections interface {
+	LedChanged(uint8)
+
+	IRQClear(uint32)
+
+	IRQTrigger(uint32)
+}
+
 // VIA2Socket represents a socket interface for interacting with the VIA2 (Versatile Interface Adapter) component on the board.
 type VIA2Socket struct {
 	references.IVIA
-	board   *Board
-	intrId  uint32
-	prbPrev uint8
+	mec         *mechanic.Mechanic
+	connections IVIA2SocketConnections
+	intrId      uint32
+	prbPrev     uint8
 }
 
 // NewVIA2Socket creates and returns a new instance of VIA2Socket with default initialized fields.
 func NewVIA2Socket() *VIA2Socket {
 	return &VIA2Socket{
-		IVIA:    nil,
-		board:   nil,
-		intrId:  intrIrqVIA2Bit,
-		prbPrev: 0,
+		IVIA:        nil,
+		mec:         nil,
+		connections: nil,
+		intrId:      intrIrqVIA2Bit,
+		prbPrev:     0,
 	}
 }
 
 // Connect initializes the VIA2Socket by associating it with a Board instance and configuring the interrupt ID.
-func (v *VIA2Socket) Connect(board *Board, via2 references.IVIA) error {
-	v.board = board
+func (v *VIA2Socket) Connect(via2 references.IVIA, connections IVIA2SocketConnections, mec *mechanic.Mechanic) error {
 	v.IVIA = via2
-	v.IVIA.Setup(v)
+	v.connections = connections
+	v.mec = mec
+	if err := v.IVIA.Setup(v); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -60,36 +74,32 @@ func (v *VIA2Socket) Reset() {
 	v.IVIA.Reset()
 }
 
-func (v *VIA2Socket) ByteReady() func() bool {
-	return v.IVIA.ByteReady
-}
-
 // LedChanged updates the LED state by forwarding the provided data to the board's LED change handler.
 func (v *VIA2Socket) LedChanged(data byte) {
-	v.board.LedChanged(data)
+	v.connections.LedChanged(data)
 }
 
 // IRQClear clears the interrupt request associated with this VIA2Socket instance by delegating to the board's IRQClear method.
 func (v *VIA2Socket) IRQClear() {
-	v.board.IRQClear(v.intrId)
+	v.connections.IRQClear(v.intrId)
 }
 
 // IRQTrigger triggers an interrupt request (IRQ) on the board using the interrupt ID associated with the VIA2Socket instance.
 func (v *VIA2Socket) IRQTrigger() {
-	v.board.IRQTrigger(v.intrId)
+	v.connections.IRQTrigger(v.intrId)
 }
 
 // ReadPRA reads a byte from the board's `Mechanic` and returns the value.
 func (v *VIA2Socket) ReadPRA(_ uint8, _ uint8) uint8 {
-	d := v.board.mec.ReadByte()
+	d := v.mec.ReadByte()
 	return d
 }
 
 // ReadPRB processes the PRB value, combines it with the write protection state, and adjusts based on synchronization status.
 func (v *VIA2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
 	p := prb & noPhotocellControl
-	photocellState := v.board.mec.WriteProtectionState()
-	if v.board.mec.SyncFound() {
+	photocellState := v.mec.WriteProtectionState()
+	if v.mec.SyncFound() {
 		return (p & syncArrivedControl) | photocellState
 	} else {
 		return (p | dataArrivedControl) | photocellState
@@ -98,7 +108,7 @@ func (v *VIA2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
 
 // WritePRA writes the given PRA value to the Mechanic's disk via the WriteByte method.
 func (v *VIA2Socket) WritePRA(pra uint8, _ uint8) {
-	v.board.mec.WriteByte(pra)
+	v.mec.WriteByte(pra)
 }
 
 // WritePRB updates the state and behavior of the `VIA2Socket` based on the given PRB byte input.
@@ -113,16 +123,16 @@ func (v *VIA2Socket) WritePRB(prb uint8, _ uint8) {
 	//Increase value (%00-%01-%10-%11-%00...) to move head upwards
 	if (m & headControl) != 0 {
 		if (prevPrb & headControl) == ((prb + 1) & headControl) {
-			v.board.mec.MoveHeadOut()
+			v.mec.MoveHeadOut()
 		} else if (prevPrb & headControl) == ((prb - 1) & headControl) {
-			v.board.mec.MoveHeadIn()
+			v.mec.MoveHeadIn()
 		}
 	}
 	//bit [2]
 	//Motor control; 0 = Off; 1 = On.
 	if (m & motorControl) != 0 {
 		motorOn := (prb & motorControl) != 0
-		v.board.mec.SetMotor(motorOn)
+		v.mec.SetMotor(motorOn)
 		//fmt.Println("TODO - MOTOR", motorOn)
 	}
 	//bit [3]
@@ -132,7 +142,7 @@ func (v *VIA2Socket) WritePRB(prb uint8, _ uint8) {
 		if (prb & ledControl) != 0 {
 			led = 1
 		}
-		v.board.LedChanged(led)
+		v.connections.LedChanged(led)
 	}
 	//bit [4]
 	//Write protect photocell status; 0 = Write protect tab covered, disk protected; 1 = Tab uncovered, disk not protected.

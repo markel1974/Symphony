@@ -1,6 +1,7 @@
 package board
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
@@ -25,10 +26,10 @@ type Board struct {
 	*component.BaseComponent
 	db                  references.IDisplayBuffer
 	player              references.IPlayer
-	keys                references.IKeyboard
-	joy1                references.IJoystick
-	joy2                references.IJoystick
 	factory             references.IComponentFactory
+	keysSocket          *KeyboardSocket
+	joySocket1          *JoystickSocket
+	joySocket2          *JoystickSocket
 	quartzSocket        *QuartzSocket
 	rlSocket            *RomLoaderSocket
 	iecSocket           *IECSocket
@@ -42,15 +43,15 @@ type Board struct {
 	cartSocket          *CartridgeSocket
 	throttleSocket      *ThrottleSocket
 	expansionSocket     *ExpansionSocket
-	joySwap             bool
 	cfg                 *config.Config
-	hasClipboard        bool
 	expansionIrqTrigger *signals.SignalUint32
 	expansionIrqClear   *signals.SignalUint32
+	prg                 *prg.PRG
+	joySwap             bool
+	hasClipboard        bool
 	vBlank              bool
 	lastVicCycle        bool
 	dmaLow              bool
-	prg                 *prg.PRG
 }
 
 // NewBoard initializes and returns a pointer to a new Board instance with default settings and dependencies.
@@ -60,9 +61,9 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		factory:             factory,
 		db:                  nil,
 		player:              nil,
-		keys:                nil,
-		joy1:                nil,
-		joy2:                nil,
+		keysSocket:          NewKeyboardSocket(),
+		joySocket1:          NewJoystickSocket(),
+		joySocket2:          NewJoystickSocket(),
 		quartzSocket:        NewQuartzSocket(),
 		rlSocket:            NewRomLoaderSocket(),
 		picSocket:           NewPICSocket(),
@@ -91,73 +92,75 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 
 // Setup initializes the Board with provided display buffer, player, and configuration settings.
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, cfg *config.Config) error {
-	var err error
 	s.db = db
 	s.player = player
-	if err = clipboard.Init(); err != nil {
+	s.cfg = cfg
+	s.cfg.Bind(s.configChanged)
+	err := clipboard.Init()
+	if err != nil {
 		log.Printf("can't init clipboard: %s", err)
 	} else {
 		s.hasClipboard = true
 	}
-	s.cfg = cfg
-	s.cfg.Bind(s.configChanged)
 
-	var quartz references.IQuartz
-	var pic references.IPIC6510
-	var cpu references.I6510
-	var iec references.IIec
-	var vic references.IVIC
-	var sid references.ISID
-	var cia1 references.ICIA
-	var cia2 references.ICIA
-	var plaC references.IPlaC64
-	var cart references.ICartridgeManagerC64
-	var rl references.IROMLoaderC64
-	var throttle references.IThrottle
-
-	if _, quartz, err = s.factory.CreateIQuartz(s, "quartz", ""); err != nil {
+	_, quartz, err := s.factory.CreateIQuartz(s, "quartz", "")
+	if err != nil {
 		return err
 	}
-	if _, throttle, err = s.factory.CreateIThrottle(s, "dynamic_throttle", ""); err != nil {
+	_, throttle, err := s.factory.CreateIThrottle(s, "dynamic_throttle", "")
+	if err != nil {
 		return err
 	}
-	if _, pic, err = s.factory.CreateIPIC6510(s, "pic_6510", ""); err != nil {
+	_, pic, err := s.factory.CreateIPIC6510(s, "pic_6510", "")
+	if err != nil {
 		return err
 	}
-	if _, cpu, err = s.factory.CreateI6510(s, "mos6510", ""); err != nil {
+	_, cpu, err := s.factory.CreateI6510(s, "mos6510", "")
+	if err != nil {
 		return err
 	}
-	if _, iec, err = s.factory.CreateIEC(s, "iec", ""); err != nil {
+	_, iec, err := s.factory.CreateIEC(s, "iec", "")
+	if err != nil {
 		return err
 	}
-	if _, vic, err = s.factory.CreateIVIC(s, "mos6569", ""); err != nil {
+	_, vic, err := s.factory.CreateIVIC(s, "mos6569", "")
+	if err != nil {
 		return err
 	}
-	if _, sid, err = s.factory.CreateISID(s, "mos6581", ""); err != nil {
+	_, sid, err := s.factory.CreateISID(s, "mos6581", "")
+	if err != nil {
 		return err
 	}
-	if _, cart, err = s.factory.CreateICartridgeManagerC64(s, "cartridges_c64", ""); err != nil {
+	_, cart, err := s.factory.CreateICartridgeManagerC64(s, "cartridges_c64", "")
+	if err != nil {
 		return err
 	}
-	if _, rl, err = s.factory.CreateIROMLoaderC64(s, "roms_c64", ""); err != nil {
+	_, rl, err := s.factory.CreateIROMLoaderC64(s, "roms_c64", "")
+	if err != nil {
 		return err
 	}
-	if _, cia1, err = s.factory.CreateICIA(s, "mos6526", "1"); err != nil {
+	_, cia1, err := s.factory.CreateICIA(s, "mos6526", "1")
+	if err != nil {
 		return err
 	}
-	if _, cia2, err = s.factory.CreateICIA(s, "mos6526", "2"); err != nil {
+	_, cia2, err := s.factory.CreateICIA(s, "mos6526", "2")
+	if err != nil {
 		return err
 	}
-	if _, plaC, err = s.factory.CreateIPLAc64(s, "pla_c64", ""); err != nil {
+	_, pla, err := s.factory.CreateIPLAc64(s, "pla_c64", "")
+	if err != nil {
 		return err
 	}
-	if _, s.keys, err = s.factory.CreateIKeyboard(s, "keyboard_c64", ""); err != nil {
+	_, keys, err := s.factory.CreateIKeyboard(s, "keyboard_c64", "")
+	if err != nil {
 		return err
 	}
-	if _, s.joy1, err = s.factory.CreateIJoystick(s, "joystick_c64", "1"); err != nil {
+	_, joy1, err := s.factory.CreateIJoystick(s, "joystick_c64", "1")
+	if err != nil {
 		return err
 	}
-	if _, s.joy2, err = s.factory.CreateIJoystick(s, "joystick_c64", "2"); err != nil {
+	_, joy2, err := s.factory.CreateIJoystick(s, "joystick_c64", "2")
+	if err != nil {
 		return err
 	}
 
@@ -197,31 +200,25 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	if err = s.cartSocket.Connect(cart, s.expansionSocket, cfg); err != nil {
 		return err
 	}
-	if err = s.plaSocket.Connect(s, plaC, vic, sid, cia1, cia2, s.cartSocket, rl); err != nil {
+	if err = s.plaSocket.Connect(s, pla, vic, sid, cia1, cia2, s.cartSocket, rl); err != nil {
+		return err
+	}
+	if err = s.keysSocket.Connect(keys); err != nil {
+		return err
+	}
+	if err = s.joySocket1.Connect(joy1); err != nil {
+		return err
+	}
+	if err = s.joySocket2.Connect(joy2); err != nil {
 		return err
 	}
 
-	for _, cartName := range s.cfg.GetCartridges() {
-		var data []uint8
-		if len(cartName.Path) > 0 {
-			if data, err = os.ReadFile(cartName.Path); err != nil {
-				log.Printf("can't add cartridge: %s", err.Error())
-				continue
-			}
-		}
-		if cartId, err := s.cartSocket.Add(cartName.Kind, cartName.Path, data); err != nil {
-			log.Printf("can't add cartridge: %s", err.Error())
-		} else {
-			log.Printf("cartridge: %s [%s] successfully added", cartName, cartId)
-		}
+	if err = s.cartSocket.Initialize(); err != nil {
+		return err
 	}
 
-	if prgPath := s.cfg.GetPrg(); len(prgPath) > 0 {
-		s.prg = prg.NewPRG(plaC, s.keys)
-		if err := s.prg.Load(prgPath); err != nil {
-			log.Printf("can't load prg: %s", err.Error())
-			s.prg = nil
-		}
+	if err = s.startPRG(); err != nil {
+		return err
 	}
 
 	s.reset()
@@ -323,22 +320,22 @@ func (s *Board) KeyboardPaste(pressed bool) {
 		return
 	}
 	data := clipboard.Read(clipboard.FmtText)
-	s.keys.SetCommand(string(data))
+	s.keysSocket.SetCommand(string(data))
 }
 
 // KeyboardSetCommand sets the specified command string to the keyboard input handler.
 func (s *Board) KeyboardSetCommand(cmd string) {
-	s.keys.SetCommand(cmd)
+	s.keysSocket.SetCommand(cmd)
 }
 
 // KeyboardNumLockToggle toggles the state of the Num Lock key on the keyboard.
 func (s *Board) KeyboardNumLockToggle() {
-	s.keys.NumLockToggle()
+	s.keysSocket.NumLockToggle()
 }
 
 // KeyboardCapitalToggle toggles the capital (Caps Lock) state of the keyboard.
 func (s *Board) KeyboardCapitalToggle() {
-	s.keys.CapitalToggle()
+	s.keysSocket.CapitalToggle()
 }
 
 // SetMouse sets the mouse position by providing x and y coordinates to the SID socket.
@@ -349,33 +346,33 @@ func (s *Board) SetMouse(x uint8, y uint8) {
 
 // KeyboardSetVirtualKey modifies the state of a virtual key based on whether it is pressed or released.
 func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
-	s.keys.SetVirtualKey(pressed, vKey)
+	s.keysSocket.SetVirtualKey(pressed, vKey)
 }
 
 // Joy1SetKey sets the state of a key input for joystick 1 or swaps to joystick 2 depending on the joySwap flag.
 func (s *Board) Joy1SetKey(pressed bool, vKey int) {
 	if s.joySwap {
-		s.joy2.SetKey(pressed, vKey)
+		s.joySocket2.SetKey(pressed, vKey)
 	} else {
-		s.joy1.SetKey(pressed, vKey)
+		s.joySocket1.SetKey(pressed, vKey)
 	}
 }
 
 // Joy2SetKey sets the state of a joystick key (pressed or released) for Joy2, swapping with Joy1 if joySwap is enabled.
 func (s *Board) Joy2SetKey(pressed bool, vKey int) {
 	if s.joySwap {
-		s.joy1.SetKey(pressed, vKey)
+		s.joySocket1.SetKey(pressed, vKey)
 	} else {
-		s.joy2.SetKey(pressed, vKey)
+		s.joySocket2.SetKey(pressed, vKey)
 	}
 }
 
 // Joystick1Move updates the position and button states of joystick 1, or joystick 2 if `joySwap` is enabled.
 func (s *Board) Joystick1Move(x uint, y uint, buttons uint) {
 	if s.joySwap {
-		s.joy2.Move(x, y, buttons)
+		s.joySocket2.Move(x, y, buttons)
 	} else {
-		s.joy1.Move(x, y, buttons)
+		s.joySocket1.Move(x, y, buttons)
 	}
 }
 
@@ -383,9 +380,9 @@ func (s *Board) Joystick1Move(x uint, y uint, buttons uint) {
 // If joystick swapping is enabled, the move applies to the first joystick instead.
 func (s *Board) Joystick2Move(x uint, y uint, buttons uint) {
 	if s.joySwap {
-		s.joy1.Move(x, y, buttons)
+		s.joySocket1.Move(x, y, buttons)
 	} else {
-		s.joy2.Move(x, y, buttons)
+		s.joySocket2.Move(x, y, buttons)
 	}
 }
 
@@ -395,8 +392,8 @@ func (s *Board) JoySwap(pressed bool) {
 		return
 	}
 	s.joySwap = !s.joySwap
-	s.joy1.Reset()
-	s.joy2.Reset()
+	s.joySocket1.Reset()
+	s.joySocket2.Reset()
 }
 
 // ExtRamWrite writes a byte of data to an external RAM address with an optional memory configuration switch.
@@ -511,4 +508,17 @@ func (s *Board) ledStateChangedSlot(_ int, _ uint8) {
 	//}
 	//k.leds[deviceId] = state
 	//k.updateLedState()
+}
+
+func (s *Board) startPRG() error {
+	prgPath := s.cfg.GetPrg()
+	if len(prgPath) == 0 {
+		return nil
+	}
+	s.prg = prg.NewPRG(s.plaSocket, s.keysSocket)
+	if err := s.prg.Load(prgPath); err != nil {
+		s.prg = nil
+		return fmt.Errorf("can't load prg: %s", err.Error())
+	}
+	return nil
 }

@@ -59,9 +59,10 @@ func NewCPU(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the CPU by configuring its PIC and banks from the given socket.
-func (cpu *CPU) Setup(socket references.I6510Socket) {
+func (cpu *CPU) Setup(socket references.I6510Socket) error {
 	cpu.pic = socket.GetPic()
 	cpu.banks = socket.GetBanks()
+	return nil
 }
 
 // Reset initializes or restores the CPU to a default state by resetting internal flags, registers, and setting the program counter.

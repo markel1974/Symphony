@@ -24,13 +24,14 @@ const (
 // joy2 denotes the state of joystick 2 connected to the system.
 type CIA1Socket struct {
 	references.ICIA
-	board       *Board  //
+	board       *Board
 	intrId      uint32  //
 	prevLPState uint8   // Previous state of LP line (bit 4)
 	keyMatrix   []uint8 // keyboard matrix [0: down, 1: up]
 	revMatrix   []uint8 // Reversed keyboard matrix
-	joy1        uint8   // Joystick 1
-	joy2        uint8   // Joystick 2
+	joy1State   uint8   // Joystick 1
+	joy2State   uint8   // Joystick 2
+
 }
 
 // NewCIA1Socket creates and initializes a new instance of CIA1Socket with default values for its fields.
@@ -42,8 +43,8 @@ func NewCIA1Socket() *CIA1Socket {
 		prevLPState: defaultLPState,
 		keyMatrix:   make([]uint8, 8),
 		revMatrix:   make([]uint8, 8),
-		joy1:        defaultJoyState,
-		joy2:        defaultJoyState,
+		joy1State:   defaultJoyState,
+		joy2State:   defaultJoyState,
 	}
 	return c
 }
@@ -58,9 +59,9 @@ func (w *CIA1Socket) Connect(board *Board, cia1 references.ICIA) error {
 
 // Reset reinitializes the CIA1Socket by resetting its board components, key matrices, joystick states, and light pen state.
 func (w *CIA1Socket) Reset() {
-	w.board.keys.Reset()
-	w.board.joy1.Reset()
-	w.board.joy2.Reset()
+	w.board.keysSocket.Reset()
+	w.board.joySocket1.Reset()
+	w.board.joySocket2.Reset()
 	w.ICIA.Reset()
 	for idx := range w.keyMatrix {
 		w.keyMatrix[idx] = defaultKeyState
@@ -68,20 +69,20 @@ func (w *CIA1Socket) Reset() {
 	for idx := range w.revMatrix {
 		w.revMatrix[idx] = defaultKeyState
 	}
-	w.joy1 = defaultJoyState
-	w.joy2 = defaultJoyState
+	w.joy1State = defaultJoyState
+	w.joy2State = defaultJoyState
 	w.prevLPState = defaultLPState
 }
 
 // Update synchronizes the joystick and keyboard states by polling their current inputs and updates the key matrices accordingly.
 func (w *CIA1Socket) Update() {
-	if joy1State, ok := w.board.joy1.Poll(); ok {
-		w.joy1 = joy1State
+	if joy1State, ok := w.board.joySocket1.Poll(); ok {
+		w.joy1State = joy1State
 	}
-	if joy2State, ok := w.board.joy2.Poll(); ok {
-		w.joy2 = joy2State
+	if joy2State, ok := w.board.joySocket2.Poll(); ok {
+		w.joy2State = joy2State
 	}
-	if v, ok := w.board.keys.Poll(); ok {
+	if v, ok := w.board.keysSocket.Poll(); ok {
 		pressed := (v & 0x20000) != 0
 		shifted := (v & 0x10000) != 0
 		keyM := uint8(v & 0xff)
@@ -110,13 +111,13 @@ func (w *CIA1Socket) Update() {
 // The result is masked with joystick 2's state before being returned.
 func (w *CIA1Socket) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
 	ret := prA | ^ddrA
-	tst := (prB | ^ddrB) & w.joy1
+	tst := (prB | ^ddrB) & w.joy1State
 	for idx, bit := range bits.Uint8s {
 		if (tst & bit) == 0 {
 			ret &= w.revMatrix[idx]
 		}
 	}
-	return ret & w.joy2
+	return ret & w.joy2State
 }
 
 // ReadPortB reads from Port B based on the provided port registers and data direction registers.
@@ -124,13 +125,13 @@ func (w *CIA1Socket) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uin
 // The method applies bitwise operations to determine the state of the port and filters results accordingly.
 func (w *CIA1Socket) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
 	ret := ^ddrB
-	tst := (prA | ^ddrA) & w.joy2
+	tst := (prA | ^ddrA) & w.joy2State
 	for idx, bit := range bits.Uint8s {
 		if (tst & bit) == 0 {
 			ret &= w.keyMatrix[idx]
 		}
 	}
-	return (ret | (prB & ddrB)) & w.joy1
+	return (ret | (prB & ddrB)) & w.joy1State
 }
 
 // WritePortA writes data to Port A while considering the specified parameters but does not implement any functionality yet.
