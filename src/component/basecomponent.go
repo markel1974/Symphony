@@ -6,7 +6,9 @@ import (
 	"io"
 )
 
-const stateId = "state"
+const propertiesId = "properties"
+const childrenId = "children"
+const detailsId = "details"
 
 // BaseComponent represents a foundational structure that implements IComponent, encapsulating an id, properties, and hierarchy.
 type BaseComponent struct {
@@ -233,14 +235,19 @@ func (bc *BaseComponent) dump(component references.IComponent, stateMap map[stri
 	if err != nil {
 		return err
 	}
+	componentSegment := make(map[string]interface{})
+	stateMap[id] = componentSegment
+	componentSegment[detailsId] = map[string]interface{}{
+		"id": component.GetId(),
+	}
 	if len(componentState) > 0 {
-		stateMap[id] = map[string]interface{}{stateId: componentState}
+		componentSegment[propertiesId] = componentState
 	}
 	if children := component.GetChildren(); len(children) > 0 {
-		childrenState := make(map[string]interface{})
-		stateMap[id] = childrenState
+		childrenSegment := make(map[string]interface{})
+		componentSegment[childrenId] = childrenSegment
 		for _, child := range children {
-			if err = bc.dump(child, childrenState); err != nil {
+			if err = bc.dump(child, childrenSegment); err != nil {
 				return err
 			}
 		}
@@ -264,18 +271,33 @@ func (bc *BaseComponent) restore(component references.IComponent, state map[stri
 	}
 	componentSegment, ok := componentI.(map[string]interface{})
 	if !ok || componentSegment == nil {
-		return fmt.Errorf("error restoring component %s: %s", id, "missing componentNode")
+		return fmt.Errorf("error restoring component %s: %s", id, "missing component node")
 	}
-	if stateI, ok := componentSegment[stateId]; ok {
-		if stateSegment, ok := stateI.(map[string]interface{}); ok && len(stateSegment) > 0 {
-			if err := component.Restore(stateSegment); err != nil {
+	detailsI, ok := componentSegment[detailsId]
+	if !ok {
+		return fmt.Errorf("error restoring component %s: %s", id, "missing detail node")
+	}
+	detailsSegment, ok := detailsI.(map[string]interface{})
+	if !ok || detailsSegment == nil {
+		return fmt.Errorf("error restoring component %s: %s", id, "unknown details node")
+	}
+	//TODO Details Handler
+	if propertiesI, ok := componentSegment[propertiesId]; ok {
+		if propertiesSegment, ok := propertiesI.(map[string]interface{}); ok && len(propertiesSegment) > 0 {
+			if err := component.Restore(propertiesSegment); err != nil {
 				return fmt.Errorf("error restoring component %s: %w", id, err)
 			}
 		}
 	}
-	for _, child := range component.GetChildren() {
-		if err := bc.restore(child, componentSegment); err != nil {
-			return err
+	if childrenI, ok := componentSegment[childrenId]; ok {
+		childrenSegment, ok := childrenI.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("error restoring component %s: %s", id, "unknown children node")
+		}
+		for _, child := range component.GetChildren() {
+			if err := bc.restore(child, childrenSegment); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
