@@ -108,11 +108,8 @@ func (bc *BaseComponent) GetChild(id string) references.IComponent {
 
 // GetComponentPath navigates the node structure using the specified path and returns the associated component, or nil if not found.
 func (bc *BaseComponent) GetComponentPath(path string) references.IComponent {
-	node := bc.node.FindNode(path)
-	if node == nil {
-		return nil
-	}
-	return node.GetComponent()
+	component := bc.node.FindComponent(path)
+	return component
 }
 
 // AddProperty registers a new property to the BaseComponent with the specified ID, description, read-only flag, getter, and setter.
@@ -133,11 +130,11 @@ func (bc *BaseComponent) GetProperty(prop string) (interface{}, error) {
 // GetPropertyPath retrieves the value of a specified property from a component located at a given path in the node hierarchy.
 // Returns the property value and an error if the path or property is invalid.
 func (bc *BaseComponent) GetPropertyPath(path string, prop string) (interface{}, error) {
-	node := bc.node.FindNode(path)
-	if node == nil {
+	component := bc.node.FindComponent(path)
+	if component == nil {
 		return nil, fmt.Errorf("component %s not found", path)
 	}
-	v, err := node.GetComponent().GetProperty(prop)
+	v, err := component.GetProperty(prop)
 	if err != nil {
 		return nil, err
 	}
@@ -154,11 +151,11 @@ func (bc *BaseComponent) SetProperty(prop string, value interface{}) error {
 
 // SetPropertyPath sets a specific property value of a component identified by its path. Returns an error if the component is not found or setting the property fails.
 func (bc *BaseComponent) SetPropertyPath(path string, prop string, val interface{}) error {
-	node := bc.node.FindNode(path)
-	if node == nil {
+	component := bc.node.FindComponent(path)
+	if component == nil {
 		return fmt.Errorf("component %s not found", path)
 	}
-	err := node.GetComponent().SetProperty(prop, val)
+	err := component.SetProperty(prop, val)
 	return err
 }
 
@@ -173,11 +170,11 @@ func (bc *BaseComponent) Dump() (map[string]interface{}, error) {
 
 // DumpPath retrieves and returns the state of a component at a specified path in the node hierarchy. Returns an error if not found.
 func (bc *BaseComponent) DumpPath(path string) (map[string]interface{}, error) {
-	node := bc.node.FindNode(path)
-	if node == nil {
+	component := bc.node.FindComponent(path)
+	if component == nil {
 		return nil, fmt.Errorf("component %s not found", path)
 	}
-	d, err := node.GetComponent().Dump()
+	d, err := component.Dump()
 	return d, err
 }
 
@@ -201,11 +198,11 @@ func (bc *BaseComponent) Restore(state map[string]interface{}) error {
 // RestorePath restores the state of a component found at the given path using the provided data map.
 // Returns an error if the component is not found or if the restoration process fails.
 func (bc *BaseComponent) RestorePath(path string, d map[string]interface{}) error {
-	node := bc.node.FindNode(path)
-	if node == nil {
+	component := bc.node.FindComponent(path)
+	if component == nil {
 		return fmt.Errorf("component %s not found", path)
 	}
-	err := node.GetComponent().Restore(d)
+	err := component.Restore(d)
 	if err != nil {
 		return err
 	}
@@ -236,11 +233,11 @@ func (bc *BaseComponent) CommandExec(cmd string, args ...interface{}) (interface
 
 // CommandExecPath executes a command on a component located at the specified path, passing optional arguments to it.
 func (bc *BaseComponent) CommandExecPath(path string, cmd string, args ...interface{}) (interface{}, error) {
-	node := bc.node.FindNode(path)
-	if node == nil {
+	component := bc.node.FindComponent(path)
+	if component == nil {
 		return nil, fmt.Errorf("component %s not found", path)
 	}
-	d, err := node.GetComponent().CommandExec(cmd, args...)
+	d, err := component.CommandExec(cmd, args...)
 	return d, err
 }
 

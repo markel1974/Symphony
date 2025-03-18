@@ -74,8 +74,8 @@ func (n *Node) AddComponent(component references.IComponent) references.INode {
 	return child
 }
 
-// FindNode traverses the hierarchical structure of nodes to locate a specific node based on the given path string.
-func (n *Node) FindNode(path string) references.INode {
+// FindComponent traverses the hierarchical structure of nodes to locate a specific node based on the given path string.
+func (n *Node) FindComponent(path string) references.IComponent {
 	parts, err := createPathFromKey(path)
 	if err != nil {
 		return nil
@@ -96,7 +96,10 @@ func (n *Node) FindNode(path string) references.INode {
 		}
 		currentNode = nextNode
 	}
-	return currentNode
+	if currentNode == nil {
+		return nil
+	}
+	return currentNode.GetComponent()
 }
 
 // GetChild retrieves the child node with the specified ID from the current node's children. Returns nil if not found.

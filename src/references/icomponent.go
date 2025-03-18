@@ -12,7 +12,7 @@ type INode interface {
 	RemoveComponent(component IComponent) bool
 	GetComponent() IComponent
 	GetChildren() []INode
-	FindNode(path string) INode
+	FindComponent(path string) IComponent
 }
 
 // IHardware defines an interface for hardware functionalities with a method to reset the hardware state.
