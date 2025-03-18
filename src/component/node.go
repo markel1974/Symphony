@@ -54,20 +54,23 @@ func (n *Node) GetComponent() references.IComponent {
 	return n.component
 }
 
-// RemoveChild removes the specified child node from the current node's children map based on its path.
-func (n *Node) RemoveChild(child *Node) {
-	delete(n.children, child.component.GetId())
-}
-
-// AddChild adds a child node to the current node's children map. Returns an error if a child with the same ID already exists.
-func (n *Node) AddChild(child *Node) {
-	n.children[child.component.GetId()] = child
+// RemoveComponent removes the specified child node from the current node's children map based on its path.
+func (n *Node) RemoveComponent(component references.IComponent) bool {
+	if component == nil {
+		return false
+	}
+	id := component.GetId()
+	if _, ok := n.children[component.GetId()]; ok {
+		delete(n.children, id)
+		return true
+	}
+	return false
 }
 
 // AddComponent adds a new component as a child node to the current node. It returns an error if addition fails.
 func (n *Node) AddComponent(component references.IComponent) references.INode {
 	child := newNode(n, component)
-	n.AddChild(child)
+	n.children[child.component.GetId()] = child
 	return child
 }
 

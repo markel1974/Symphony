@@ -41,6 +41,11 @@ func Register(parent references.IComponent, component references.IComponent) {
 	}
 }
 
+// Unregister removes the specified component from the parent's node, detaching their hierarchical relationship.
+func Unregister(parent references.IComponent, component references.IComponent) {
+	parent.GetNode().RemoveComponent(component)
+}
+
 // NewBaseComponent creates a new instance of BaseComponent with a unique ID, name, label, and initialized properties and commands.
 func NewBaseComponent(name string, label string) *BaseComponent {
 	id := name

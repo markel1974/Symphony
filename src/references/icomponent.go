@@ -9,6 +9,7 @@ import "io"
 // FindNode searches for and returns a node based on a given path string.
 type INode interface {
 	AddComponent(component IComponent) INode
+	RemoveComponent(component IComponent) bool
 	GetComponent() IComponent
 	GetChildren() []INode
 	FindNode(path string) INode
