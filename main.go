@@ -69,6 +69,24 @@ import (
 
 // -f "FS_DRIVE:/Users/tinmr305/Downloads/c64carts/"
 
+/*
+func restoreTest(factory references.IComponentFactory) {
+	stub := make(map[string]interface{})
+	err := json.Unmarshal([]byte(treeStub), &stub)
+	if err != nil {
+		panic(err)
+	}
+	out, err := component.Restore(factory, nil, nil, stub)
+	if err != nil {
+		panic(err)
+	}
+	for _, v := range out.GetChildren() {
+		fmt.Println(v.GetId())
+	}
+	os.Exit(1)
+}
+*/
+
 type IRender interface {
 	Start() error
 }
@@ -137,6 +155,8 @@ func main() {
 	var g IRender
 	var b references.IBoard
 	factory := hardware.NewFactory(cfg)
+
+	//restoreTest(factory)
 
 	if mode == "vic20" {
 		b = vic20board.NewBoard(nil, factory, "")

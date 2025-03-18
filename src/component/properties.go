@@ -76,6 +76,10 @@ func (prop *PropertyInfo) Set(arg interface{}) error {
 		if len(results) != 1 {
 			return fmt.Errorf("property '%s' set failed", prop.id)
 		}
+		res := results[0].Interface()
+		if res == nil {
+			return nil
+		}
 		err, ok := results[0].Interface().(error)
 		if !ok {
 			return fmt.Errorf("property '%s' set failed", prop.id)

@@ -47,8 +47,8 @@ func GetType() int {
 	return loader.CARTRIDGE_EASYFLASH
 }
 
-// New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+// NewEasyFlash creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridgeC64 interface.
+func NewEasyFlash(parent references.IComponent, factory references.IComponentFactory, suffix string) *CartridgeEasyFlash {
 	ef := &CartridgeEasyFlash{
 		BaseComponent:   component.NewBaseComponent("easyFlash", suffix),
 		factory:         factory,
@@ -70,6 +70,11 @@ func New(parent references.IComponent, factory references.IComponentFactory, suf
 	}
 	component.Register(parent, ef)
 	return ef
+}
+
+// New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridgeC64 interface.
+func New(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+	return NewEasyFlash(parent, factory, suffix)
 }
 
 // Setup initializes the CartridgeEasyFlash instance with the provided board and CRT loader data.

@@ -228,7 +228,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 	//state, _ := s.DumpAll()
 	//buf, _ := json.MarshalIndent(state, "", " ")
 	//fmt.Println(string(buf))
-	//if err := s.RestoreAll(state); err != nil {
+	// err := s.RestoreAll(state); err != nil {
 	//	fmt.Println(err)
 	//}
 	return nil

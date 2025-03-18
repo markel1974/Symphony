@@ -7,6 +7,7 @@ import (
 	c1541board "github.com/markel1974/c64emu/src/hardware/c1541/board"
 	c64board "github.com/markel1974/c64emu/src/hardware/c64/board"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64"
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash"
 	"github.com/markel1974/c64emu/src/hardware/cia"
 	"github.com/markel1974/c64emu/src/hardware/dynamic_throttle"
 	"github.com/markel1974/c64emu/src/hardware/fs_drive"
@@ -55,6 +56,7 @@ func NewFactory(cfg *config.Config) *Factory {
 	hardware = append(hardware, mos6522.NewFactory())
 	hardware = append(hardware, mos6569.NewFactory())
 	hardware = append(hardware, vic20board.NewFactory())
+	hardware = append(hardware, easyflash.NewFactory())
 	for _, h := range hardware {
 		f.container[h.Identifier()] = h
 	}

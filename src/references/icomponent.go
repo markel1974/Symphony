@@ -43,9 +43,15 @@ type IHardware interface {
 type INavigate interface {
 	GetId() string
 
+	GetLabel() string
+
+	GetName() string
+
 	GetNode() INode
 
 	SetNode(node INode)
+
+	GetChild(id string) IComponent
 
 	GetChildren() []IComponent
 
