@@ -30,9 +30,9 @@ type Ports struct {
 }
 
 // NewPorts initializes and returns a new instance of the Ports struct with default values set.
-func NewPorts(parent references.IComponent, suffix string) *Ports {
+func NewPorts(parent references.IComponent, label int) *Ports {
 	p := &Ports{
-		BaseComponent: component.NewBaseComponent("ports", suffix),
+		BaseComponent: component.NewBaseComponent("ports", label, "PLA_ports"),
 		capsSense:     1,
 		pullUp:        0x17,
 		dataOut:       0,

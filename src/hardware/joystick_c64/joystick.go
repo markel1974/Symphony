@@ -17,9 +17,9 @@ type Joystick struct {
 }
 
 // NewJoystick initializes and returns a new instance of Joystick with default settings and sensitivity for controls.
-func NewJoystick(parent references.IComponent, factory references.IComponentFactory, suffix string) *Joystick {
+func NewJoystick(parent references.IComponent, factory references.IComponentFactory, label int) *Joystick {
 	j := &Joystick{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIJoystick),
 		factory:       factory,
 		storage:       nil,
 		joy:           0xff,

@@ -27,6 +27,8 @@ type ICIASocket interface {
 	IRQClear()
 }
 
+const IdICIA = "ICIA"
+
 // ICIA defines the interface for a CIA (Complex Interface Adapter) component in a computing or emulation context.
 // Setup initializes the CIA with the provided socket connection.
 // Reset resets the CIA to its default state.

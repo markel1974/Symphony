@@ -21,9 +21,9 @@ type Keyboard struct {
 }
 
 // NewKeyboard initializes and returns a new Keyboard instance with default settings and a reset state.
-func NewKeyboard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Keyboard {
+func NewKeyboard(parent references.IComponent, factory references.IComponentFactory, label int) *Keyboard {
 	k := &Keyboard{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIKeyboard),
 		factory:       factory,
 		storage:       nil,
 		virtual:       NewVirtual(),

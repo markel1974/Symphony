@@ -39,9 +39,9 @@ func (i *Pic) Emulate() {
 }
 
 // NewPIC initializes and returns a pointer to a new Pic instance with default values.
-func NewPIC(parent references.IComponent, factory references.IComponentFactory, suffix string) *Pic {
+func NewPIC(parent references.IComponent, factory references.IComponentFactory, label int) *Pic {
 	p := &Pic{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIPIC6510),
 		factory:       factory,
 		quartz:        nil,
 		firstIrqCycle: 0,

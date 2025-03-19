@@ -17,9 +17,9 @@ type DynamicThrottle struct {
 }
 
 // NewDynamicThrottle creates a new instance of DynamicThrottling with the specified frameInterval in milliseconds.
-func NewDynamicThrottle(parent references.IComponent, factory references.IComponentFactory, suffix string) *DynamicThrottle {
+func NewDynamicThrottle(parent references.IComponent, factory references.IComponentFactory, label int) *DynamicThrottle {
 	d := &DynamicThrottle{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIThrottle),
 		factory:       factory,
 		prev:          time.Now().UnixMilli(),
 		frameInterval: 0,

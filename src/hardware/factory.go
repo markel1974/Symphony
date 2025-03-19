@@ -63,18 +63,18 @@ func NewFactory(cfg *config.Config) *Factory {
 	return f
 }
 
-func (f *Factory) Create(parent references.IComponent, id string, suffix string) (references.IComponent, error) {
+func (f *Factory) Create(parent references.IComponent, id string, label int) (references.IComponent, error) {
 	val, ok := f.container[id]
 	if !ok {
 		return nil, fmt.Errorf("unknown component %s", id)
 	}
-	ret := val.Create(parent, f, suffix)
+	ret := val.Create(parent, f, label)
 	//component.Register(parent, ret)
 	return ret, nil
 }
 
-func (f *Factory) CreateIQuartz(parent references.IComponent, id string, suffix string) (references.IComponent, references.IQuartz, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIQuartz(parent references.IComponent, id string, label int) (references.IComponent, references.IQuartz, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -85,8 +85,8 @@ func (f *Factory) CreateIQuartz(parent references.IComponent, id string, suffix 
 	return component, v, nil
 }
 
-func (f *Factory) CreateIVIC(parent references.IComponent, id string, suffix string) (references.IComponent, references.IVIC, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIVIC(parent references.IComponent, id string, label int) (references.IComponent, references.IVIC, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -97,8 +97,8 @@ func (f *Factory) CreateIVIC(parent references.IComponent, id string, suffix str
 	return component, v, nil
 }
 
-func (f *Factory) CreateISID(parent references.IComponent, id string, suffix string) (references.IComponent, references.ISID, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateISID(parent references.IComponent, id string, label int) (references.IComponent, references.ISID, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -109,8 +109,8 @@ func (f *Factory) CreateISID(parent references.IComponent, id string, suffix str
 	return component, v, nil
 }
 
-func (f *Factory) CreateIVIA(parent references.IComponent, id string, suffix string) (references.IComponent, references.IVIA, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIVIA(parent references.IComponent, id string, label int) (references.IComponent, references.IVIA, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -121,8 +121,8 @@ func (f *Factory) CreateIVIA(parent references.IComponent, id string, suffix str
 	return component, v, nil
 }
 
-func (f *Factory) CreateICIA(parent references.IComponent, id string, suffix string) (references.IComponent, references.ICIA, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateICIA(parent references.IComponent, id string, label int) (references.IComponent, references.ICIA, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -133,8 +133,8 @@ func (f *Factory) CreateICIA(parent references.IComponent, id string, suffix str
 	return component, v, nil
 }
 
-func (f *Factory) CreateI6510(parent references.IComponent, id string, suffix string) (references.IComponent, references.I6510, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateI6510(parent references.IComponent, id string, label int) (references.IComponent, references.I6510, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -145,8 +145,8 @@ func (f *Factory) CreateI6510(parent references.IComponent, id string, suffix st
 	return component, v, nil
 }
 
-func (f *Factory) CreateIPIC6510(parent references.IComponent, id string, suffix string) (references.IComponent, references.IPIC6510, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIPIC6510(parent references.IComponent, id string, label int) (references.IComponent, references.IPIC6510, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -157,8 +157,8 @@ func (f *Factory) CreateIPIC6510(parent references.IComponent, id string, suffix
 	return component, v, nil
 }
 
-func (f *Factory) CreateIPLAc64(parent references.IComponent, id string, suffix string) (references.IComponent, references.IPlaC64, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIPLAc64(parent references.IComponent, id string, label int) (references.IComponent, references.IPlaC64, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -169,8 +169,8 @@ func (f *Factory) CreateIPLAc64(parent references.IComponent, id string, suffix 
 	return component, v, nil
 }
 
-func (f *Factory) CreateIPLAc1541(parent references.IComponent, id string, suffix string) (references.IComponent, references.IPLAc1541, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIPLAc1541(parent references.IComponent, id string, label int) (references.IComponent, references.IPLAc1541, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -181,8 +181,8 @@ func (f *Factory) CreateIPLAc1541(parent references.IComponent, id string, suffi
 	return component, v, nil
 }
 
-func (f *Factory) CreateIEC(parent references.IComponent, id string, suffix string) (references.IComponent, references.IIec, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIEC(parent references.IComponent, id string, label int) (references.IComponent, references.IIec, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -193,8 +193,8 @@ func (f *Factory) CreateIEC(parent references.IComponent, id string, suffix stri
 	return component, v, nil
 }
 
-func (f *Factory) CreateICartridgeManagerC64(parent references.IComponent, id string, suffix string) (references.IComponent, references.ICartridgeManagerC64, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateICartridgeManagerC64(parent references.IComponent, id string, label int) (references.IComponent, references.ICartridgeManagerC64, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -205,8 +205,8 @@ func (f *Factory) CreateICartridgeManagerC64(parent references.IComponent, id st
 	return component, v, nil
 }
 
-func (f *Factory) CreateIThrottle(parent references.IComponent, id string, suffix string) (references.IComponent, references.IThrottle, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIThrottle(parent references.IComponent, id string, label int) (references.IComponent, references.IThrottle, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -217,8 +217,8 @@ func (f *Factory) CreateIThrottle(parent references.IComponent, id string, suffi
 	return component, v, nil
 }
 
-func (f *Factory) CreateIROMLoaderC64(parent references.IComponent, id string, suffix string) (references.IComponent, references.IROMLoaderC64, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIROMLoaderC64(parent references.IComponent, id string, label int) (references.IComponent, references.IROMLoaderC64, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -229,8 +229,8 @@ func (f *Factory) CreateIROMLoaderC64(parent references.IComponent, id string, s
 	return component, v, nil
 }
 
-func (f *Factory) CreateIROMLoaderC1541(parent references.IComponent, id string, suffix string) (references.IComponent, references.IROMLoaderC1541, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIROMLoaderC1541(parent references.IComponent, id string, label int) (references.IComponent, references.IROMLoaderC1541, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -241,8 +241,8 @@ func (f *Factory) CreateIROMLoaderC1541(parent references.IComponent, id string,
 	return component, v, nil
 }
 
-func (f *Factory) CreateIKeyboard(parent references.IComponent, id string, suffix string) (references.IComponent, references.IKeyboard, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIKeyboard(parent references.IComponent, id string, label int) (references.IComponent, references.IKeyboard, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -253,8 +253,8 @@ func (f *Factory) CreateIKeyboard(parent references.IComponent, id string, suffi
 	return component, v, nil
 }
 
-func (f *Factory) CreateIJoystick(parent references.IComponent, id string, suffix string) (references.IComponent, references.IJoystick, error) {
-	component, err := f.Create(parent, id, suffix)
+func (f *Factory) CreateIJoystick(parent references.IComponent, id string, label int) (references.IComponent, references.IJoystick, error) {
+	component, err := f.Create(parent, id, label)
 	if err != nil {
 		return nil, nil, err
 	}

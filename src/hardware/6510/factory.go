@@ -22,6 +22,6 @@ func (t *Factory) Kind() interface{} {
 	return references.I6510(z)
 }
 
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewCPU(parent, factory, suffix)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
+	return NewCPU(parent, factory, label)
 }

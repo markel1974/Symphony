@@ -52,13 +52,9 @@ type Board struct {
 	dt                  references.IThrottle
 }
 
-func NewBoardComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewBoard(parent, factory, suffix)
-}
-
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, label int) *Board {
 	b := &Board{
-		BaseComponent:       component.NewBaseComponent(componentId, suffix),
+		BaseComponent:       component.NewBaseComponent(componentId, label, references.IdIBoardVIC20),
 		factory:             factory,
 		iec:                 nil,
 		pic:                 nil,
@@ -78,7 +74,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		dt:                  nil,
 	}
 	component.Register(parent, b)
-	b.cartMan = cartridges_c64.NewManager(b, b.factory, "")
+	b.cartMan = cartridges_c64.NewManager(b, b.factory, 0)
 	return b
 }
 
@@ -101,12 +97,12 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 
-	s.pic = mos6510.NewPIC(s, s.factory, "")
-	s.iec = iec.NewDispatcher(s, s.factory, "")
-	s.keys = inputs2.NewKeyboard(s, s.factory, "")
-	s.joy1 = joystick_c64.NewJoystick(s, s.factory, "1")
-	s.joy2 = joystick_c64.NewJoystick(s, s.factory, "2")
-	s.pla = pla_c64.NewPLA(s, s.factory, "")
+	s.pic = mos6510.NewPIC(s, s.factory, 0)
+	s.iec = iec.NewDispatcher(s, s.factory, 0)
+	s.keys = inputs2.NewKeyboard(s, s.factory, 0)
+	s.joy1 = joystick_c64.NewJoystick(s, s.factory, 0)
+	s.joy2 = joystick_c64.NewJoystick(s, s.factory, 1)
+	s.pla = pla_c64.NewPLA(s, s.factory, 0)
 	s.expansion = NewExpansion(s)
 
 	//s.iec.Setup(s.quartz, cfg)

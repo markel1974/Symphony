@@ -22,6 +22,6 @@ func (t *Factory) Kind() interface{} {
 	return references.ICIA(z)
 }
 
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewCIA(parent, factory, suffix)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
+	return NewCIA(parent, factory, label)
 }

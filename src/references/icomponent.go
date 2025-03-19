@@ -44,10 +44,6 @@ type IHardware interface {
 type INavigate interface {
 	GetId() string
 
-	GetLabel() string
-
-	GetName() string
-
 	GetNode() INode
 
 	SetNode(node INode)
@@ -97,37 +93,37 @@ type IComponent interface {
 
 // IComponentFactory defines an interface for creating IComponent instances with hierarchical and contextual parameters.
 type IComponentFactory interface {
-	Create(parent IComponent, id string, suffix string) (IComponent, error)
+	Create(parent IComponent, id string, instance int) (IComponent, error)
 
-	CreateIQuartz(parent IComponent, id string, suffix string) (IComponent, IQuartz, error)
+	CreateIQuartz(parent IComponent, id string, instance int) (IComponent, IQuartz, error)
 
-	CreateIVIC(parent IComponent, id string, suffix string) (IComponent, IVIC, error)
+	CreateIVIC(parent IComponent, id string, instance int) (IComponent, IVIC, error)
 
-	CreateISID(parent IComponent, id string, suffix string) (IComponent, ISID, error)
+	CreateISID(parent IComponent, id string, instance int) (IComponent, ISID, error)
 
-	CreateICIA(parent IComponent, id string, suffix string) (IComponent, ICIA, error)
+	CreateICIA(parent IComponent, id string, instance int) (IComponent, ICIA, error)
 
-	CreateIVIA(parent IComponent, id string, suffix string) (IComponent, IVIA, error)
+	CreateIVIA(parent IComponent, id string, instance int) (IComponent, IVIA, error)
 
-	CreateI6510(parent IComponent, id string, suffix string) (IComponent, I6510, error)
+	CreateI6510(parent IComponent, id string, instance int) (IComponent, I6510, error)
 
-	CreateIPIC6510(parent IComponent, id string, suffix string) (IComponent, IPIC6510, error)
+	CreateIPIC6510(parent IComponent, id string, instance int) (IComponent, IPIC6510, error)
 
-	CreateIPLAc64(parent IComponent, id string, suffix string) (IComponent, IPlaC64, error)
+	CreateIPLAc64(parent IComponent, id string, instance int) (IComponent, IPlaC64, error)
 
-	CreateIPLAc1541(parent IComponent, id string, suffix string) (IComponent, IPLAc1541, error)
+	CreateIPLAc1541(parent IComponent, id string, instance int) (IComponent, IPLAc1541, error)
 
-	CreateIEC(parent IComponent, id string, suffix string) (IComponent, IIec, error)
+	CreateIEC(parent IComponent, id string, instance int) (IComponent, IIec, error)
 
-	CreateIROMLoaderC64(parent IComponent, id string, suffix string) (IComponent, IROMLoaderC64, error)
+	CreateIROMLoaderC64(parent IComponent, id string, instance int) (IComponent, IROMLoaderC64, error)
 
-	CreateIROMLoaderC1541(parent IComponent, id string, suffix string) (IComponent, IROMLoaderC1541, error)
+	CreateIROMLoaderC1541(parent IComponent, id string, instance int) (IComponent, IROMLoaderC1541, error)
 
-	CreateICartridgeManagerC64(parent IComponent, id string, suffix string) (IComponent, ICartridgeManagerC64, error)
+	CreateICartridgeManagerC64(parent IComponent, id string, instance int) (IComponent, ICartridgeManagerC64, error)
 
-	CreateIThrottle(parent IComponent, id string, suffix string) (IComponent, IThrottle, error)
+	CreateIThrottle(parent IComponent, id string, instance int) (IComponent, IThrottle, error)
 
-	CreateIKeyboard(parent IComponent, id string, suffix string) (IComponent, IKeyboard, error)
+	CreateIKeyboard(parent IComponent, id string, instance int) (IComponent, IKeyboard, error)
 
-	CreateIJoystick(parent IComponent, id string, suffix string) (IComponent, IJoystick, error)
+	CreateIJoystick(parent IComponent, id string, instance int) (IComponent, IJoystick, error)
 }

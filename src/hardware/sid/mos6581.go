@@ -25,9 +25,9 @@ type SID struct {
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
-func NewSID(parent references.IComponent, factory references.IComponentFactory, suffix string) *SID {
+func NewSID(parent references.IComponent, factory references.IComponentFactory, label int) *SID {
 	s := &SID{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdISID),
 		factory:       factory,
 		socket:        nil,
 		registers:     make([]uint8, RegisterCount),

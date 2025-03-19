@@ -22,6 +22,6 @@ func (t *Factory) Kind() interface{} {
 	return references.ISID(z)
 }
 
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewSID(parent, factory, suffix)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
+	return NewSID(parent, factory, label)
 }

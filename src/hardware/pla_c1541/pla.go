@@ -27,14 +27,10 @@ type PLA struct {
 	via2    references.IVIA
 }
 
-func NewPLAComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewPLA(parent, factory, suffix)
-}
-
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
-func NewPLA(parent references.IComponent, factory references.IComponentFactory, suffix string) *PLA {
+func NewPLA(parent references.IComponent, factory references.IComponentFactory, label int) *PLA {
 	p := &PLA{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIPLAc1541),
 		factory:       factory,
 		ram:           make([]uint8, c1541RamSize),
 	}

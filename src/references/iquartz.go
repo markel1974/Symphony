@@ -1,5 +1,7 @@
 package references
 
+const IdIQuartz = "IQuartz"
+
 // IQuartz defines an interface for managing clock cycles, alarms, and time conversion in an emulation environment.
 // Setup initializes the quartz instance and prepares it for usage.
 // Cycle retrieves the current clock cycle count.

@@ -9,5 +9,5 @@ type IFactory interface {
 
 	Identifier() string
 
-	Create(parent IComponent, factory IComponentFactory, suffix string) IComponent
+	Create(parent IComponent, factory IComponentFactory, instance int) IComponent
 }

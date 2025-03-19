@@ -16,7 +16,7 @@ type FSDrive struct {
 	*iec.Protocol
 	factory      references.IComponentFactory
 	parent       references.IComponent
-	suffix       string
+	label        int
 	commands     *Commands
 	deviceId     uint8
 	deviceNumber uint8
@@ -30,11 +30,11 @@ type FSDrive struct {
 	cfg          *config.Config
 }
 
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *FSDrive {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, label int) *FSDrive {
 	fs := &FSDrive{
-		BaseComponent: component.NewBaseComponent("fs_drive", ""),
+		BaseComponent: component.NewBaseComponent("fs_drive", 0, references.IdIIecProtocolDevice),
 		parent:        parent,
-		suffix:        suffix,
+		label:         label,
 		factory:       factory,
 		deviceId:      0,
 		deviceNumber:  0,
@@ -47,7 +47,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 }
 
 func (v *FSDrive) Setup(bus references.IIec, q references.IQuartz, deviceId uint8, deviceNumber uint8, path string, cfg *config.Config) error {
-	v.Protocol = iec.NewProtocol(v.parent, v.suffix, q, v.deviceNumber, v)
+	v.Protocol = iec.NewProtocol(v.parent, v.label, q, v.deviceNumber, v)
 	component.Register(v.Protocol, v)
 	v.Protocol.Setup(bus, cfg)
 	v.deviceId = deviceId

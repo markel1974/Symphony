@@ -6,7 +6,6 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
-	"strconv"
 )
 
 // BusNum defines the number of buses available in the system.
@@ -30,14 +29,10 @@ type Dispatcher struct {
 	ledSignal       *signals.Signal2[int, uint8]
 }
 
-func NewDispatcherComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewDispatcher(parent, factory, suffix)
-}
-
 // NewDispatcher creates and initializes a new Dispatcher instance with the given parent component and suffix.
-func NewDispatcher(parent references.IComponent, factory references.IComponentFactory, suffix string) *Dispatcher {
+func NewDispatcher(parent references.IComponent, factory references.IComponentFactory, label int) *Dispatcher {
 	c := &Dispatcher{
-		BaseComponent:   component.NewBaseComponent(componentId, suffix),
+		BaseComponent:   component.NewBaseComponent(componentId, label, references.IdIIec),
 		factory:         factory,
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
@@ -51,12 +46,11 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 func (c *Dispatcher) Setup(q references.IQuartz, cfg *config.Config) error {
 	for deviceId, d := range cfg.GetDrives() {
 		deviceNumber := deviceId + 8
-		suffix := strconv.Itoa(deviceNumber)
 		kind := "c1541"
 		if len(d.Kind) > 0 {
 			kind = d.Kind
 		}
-		device, err := c.factory.Create(c, kind, suffix)
+		device, err := c.factory.Create(c, kind, deviceNumber)
 		if err != nil {
 			return err
 		}

@@ -58,9 +58,9 @@ type Board struct {
 
 // NewBoard initializes and returns a new Board instance with specific sockets and properties configured.
 // It registers the created instance as a child of the provided parent IComponent.
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, label int) *Board {
 	b := &Board{
-		BaseComponent:   component.NewBaseComponent(componentId, suffix),
+		BaseComponent:   component.NewBaseComponent(componentId, label, references.IdIBoardC64),
 		factory:         factory,
 		db:              nil,
 		player:          nil,
@@ -103,63 +103,63 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 		s.hasClipboard = true
 	}
 
-	_, quartz, err := s.factory.CreateIQuartz(s, "quartz", "")
+	_, quartz, err := s.factory.CreateIQuartz(s, "quartz", 0)
 	if err != nil {
 		return err
 	}
-	_, throttle, err := s.factory.CreateIThrottle(s, "dynamic_throttle", "")
+	_, throttle, err := s.factory.CreateIThrottle(s, "dynamic_throttle", 0)
 	if err != nil {
 		return err
 	}
-	_, pic, err := s.factory.CreateIPIC6510(s, "pic_6510", "")
+	_, pic, err := s.factory.CreateIPIC6510(s, "pic_6510", 0)
 	if err != nil {
 		return err
 	}
-	_, cpu, err := s.factory.CreateI6510(s, "mos6510", "")
+	_, cpu, err := s.factory.CreateI6510(s, "mos6510", 0)
 	if err != nil {
 		return err
 	}
-	_, iec, err := s.factory.CreateIEC(s, "iec", "")
+	_, iec, err := s.factory.CreateIEC(s, "iec", 0)
 	if err != nil {
 		return err
 	}
-	_, vic, err := s.factory.CreateIVIC(s, "mos6569", "")
+	_, vic, err := s.factory.CreateIVIC(s, "mos6569", 0)
 	if err != nil {
 		return err
 	}
-	_, sid, err := s.factory.CreateISID(s, "mos6581", "")
+	_, sid, err := s.factory.CreateISID(s, "mos6581", 0)
 	if err != nil {
 		return err
 	}
-	_, cart, err := s.factory.CreateICartridgeManagerC64(s, "cartridges_c64", "")
+	_, cart, err := s.factory.CreateICartridgeManagerC64(s, "cartridges_c64", 0)
 	if err != nil {
 		return err
 	}
-	_, rom, err := s.factory.CreateIROMLoaderC64(s, "roms_c64", "")
+	_, rom, err := s.factory.CreateIROMLoaderC64(s, "roms_c64", 0)
 	if err != nil {
 		return err
 	}
-	_, cia1, err := s.factory.CreateICIA(s, "mos6526", "1")
+	_, cia1, err := s.factory.CreateICIA(s, "mos6526", 0)
 	if err != nil {
 		return err
 	}
-	_, cia2, err := s.factory.CreateICIA(s, "mos6526", "2")
+	_, cia2, err := s.factory.CreateICIA(s, "mos6526", 1)
 	if err != nil {
 		return err
 	}
-	_, pla, err := s.factory.CreateIPLAc64(s, "pla_c64", "")
+	_, pla, err := s.factory.CreateIPLAc64(s, "pla_c64", 0)
 	if err != nil {
 		return err
 	}
-	_, keys, err := s.factory.CreateIKeyboard(s, "keyboard_c64", "")
+	_, keys, err := s.factory.CreateIKeyboard(s, "keyboard_c64", 0)
 	if err != nil {
 		return err
 	}
-	_, joy1, err := s.factory.CreateIJoystick(s, "joystick_c64", "1")
+	_, joy1, err := s.factory.CreateIJoystick(s, "joystick_c64", 0)
 	if err != nil {
 		return err
 	}
-	_, joy2, err := s.factory.CreateIJoystick(s, "joystick_c64", "2")
+	_, joy2, err := s.factory.CreateIJoystick(s, "joystick_c64", 1)
 	if err != nil {
 		return err
 	}

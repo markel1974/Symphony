@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/references"
 	"io"
+	"strconv"
 	"strings"
 )
 
@@ -19,8 +20,6 @@ const detailsId = "details"
 // BaseComponent provides a base implementation for composed components with properties, commands, and hierarchical structure.
 type BaseComponent struct {
 	id         string
-	name       string
-	label      string
 	node       references.INode
 	properties *Properties
 	commands   *Commands
@@ -47,15 +46,10 @@ func Unregister(parent references.IComponent, component references.IComponent) {
 }
 
 // NewBaseComponent creates a new instance of BaseComponent with a unique ID, name, label, and initialized properties and commands.
-func NewBaseComponent(name string, label string) *BaseComponent {
-	id := name
-	if len(label) > 0 {
-		id += ":" + label
-	}
+func NewBaseComponent(name string, instance int, kind string) *BaseComponent {
+	id := name + ":" + strconv.Itoa(instance) + ":" + kind
 	bc := &BaseComponent{
 		id:         id,
-		name:       name,
-		label:      label,
 		properties: NewProperties(),
 		commands:   NewCommands(),
 	}
@@ -75,16 +69,6 @@ func (bc *BaseComponent) SetNode(node references.INode) {
 // GetId returns the unique identifier of the BaseComponent instance.
 func (bc *BaseComponent) GetId() string {
 	return bc.id
-}
-
-// GetLabel returns the label of the BaseComponent.
-func (bc *BaseComponent) GetLabel() string {
-	return bc.label
-}
-
-// GetName returns the name of the component.
-func (bc *BaseComponent) GetName() string {
-	return bc.name
 }
 
 // GetChildren retrieves all child components of the current BaseComponent by traversing its associated node hierarchy.
@@ -367,12 +351,15 @@ func _restore(factory references.IComponentFactory, parentComponent references.I
 			return nil, fmt.Errorf("error restoring component: %s", "invalid key")
 		}
 		id := keys[0]
-		var label string
+		var instance int
 		if pos := strings.LastIndex(id, ":"); pos > 0 {
-			label = id[pos+1:]
+			v := id[pos+1:]
+			if instance, err = strconv.Atoi(v); err != nil {
+				return nil, fmt.Errorf("error restoring component: %s", err.Error())
+			}
 			id = id[:pos]
 		}
-		if component, err = factory.Create(parentComponent, id, label); err != nil {
+		if component, err = factory.Create(parentComponent, id, instance); err != nil {
 			return nil, err
 		}
 	}

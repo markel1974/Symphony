@@ -2,6 +2,8 @@ package references
 
 import "github.com/markel1974/c64emu/src/config"
 
+const IdIPlaC64 = "IPlaC64"
+
 // IPlaC64 defines the interface for a Programmable Logic Array implementation specifically for the C64 system.
 // Setup initializes the PLA with required components like VIC, SID, CIAs, cartridge manager, ROM loader, and configuration.
 // Reset reinitializes the state of the PLA to default values.

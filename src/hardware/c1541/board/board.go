@@ -44,9 +44,9 @@ type Board struct {
 }
 
 // NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, suffix string) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, label int) *Board {
 	b := &Board{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIBoardC1541),
 		factory:       factory,
 		iec:           nil,
 		deviceId:      0,
@@ -74,27 +74,27 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	//quartz := quartz.NewQuartz(m, "")
 	m.cfg.Bind(m.configChanged)
 
-	_, rl, err := m.factory.CreateIROMLoaderC1541(m, "roms_c1541", "")
+	_, rl, err := m.factory.CreateIROMLoaderC1541(m, "roms_c1541", 0)
 	if err != nil {
 		return err
 	}
-	_, pla, err := m.factory.CreateIPLAc1541(m, "pla_c1541", "")
+	_, pla, err := m.factory.CreateIPLAc1541(m, "pla_c1541", 0)
 	if err != nil {
 		return err
 	}
-	_, pic, err := m.factory.CreateIPIC6510(m, "pic_6510", "")
+	_, pic, err := m.factory.CreateIPIC6510(m, "pic_6510", 0)
 	if err != nil {
 		return err
 	}
-	_, cpu, err := m.factory.CreateI6510(m, "mos6510", "")
+	_, cpu, err := m.factory.CreateI6510(m, "mos6510", 0)
 	if err != nil {
 		return err
 	}
-	_, via1, err := m.factory.CreateIVIA(m, "mos6522", "1")
+	_, via1, err := m.factory.CreateIVIA(m, "mos6522", 0)
 	if err != nil {
 		return err
 	}
-	_, via2, err := m.factory.CreateIVIA(m, "mos6522", "2")
+	_, via2, err := m.factory.CreateIVIA(m, "mos6522", 1)
 	if err != nil {
 		return err
 	}

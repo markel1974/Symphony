@@ -25,10 +25,10 @@ type TOD struct {
 }
 
 // NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
-func NewTOD(parent references.IComponent, factory references.IComponentFactory, suffix string) *TOD {
+func NewTOD(parent references.IComponent, factory references.IComponentFactory, label int) *TOD {
 	t := &TOD{
 		factory:       factory,
-		BaseComponent: component.NewBaseComponent("tod", suffix),
+		BaseComponent: component.NewBaseComponent("tod", label, "CIA_tod"),
 	}
 	component.Register(parent, t)
 	return t

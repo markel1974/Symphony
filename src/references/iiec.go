@@ -2,6 +2,8 @@ package references
 
 import "github.com/markel1974/c64emu/src/config"
 
+const IdIIec = "IIec"
+
 // IIec defines the interface for interacting with Input/Output devices on the IEC (serial bus) in an emulation environment.
 // Setup initializes the IEC instance with the provided quartz instance and configuration, returning an error if unsuccessful.
 // Reset resets the state of the IEC interface to its initial default configuration.
@@ -26,6 +28,8 @@ type IIec interface {
 	PeripheralWrite(deviceNumber uint8, data uint8)
 }
 
+const IdIIecDevice = "IIecDevices"
+
 // IIecDevice represents the interface for a virtual drive in the emulation environment.
 // Setup initializes the virtual drive with the given configuration.
 // Reset resets the state of the virtual drive.
@@ -49,6 +53,8 @@ type IIecDevice interface {
 
 	BusStateChanged(uint8)
 }
+
+const IdIIecProtocolDevice = "IIecProtocolDevice"
 
 // IIecProtocolDevice defines an interface for interacting with devices using the IEC protocol.
 // Write sends a byte to a specific secondary address on the device.

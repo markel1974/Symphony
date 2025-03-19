@@ -159,9 +159,9 @@ func main() {
 	//restoreTest(factory)
 
 	if mode == "vic20" {
-		b = vic20board.NewBoard(nil, factory, "")
+		b = vic20board.NewBoard(nil, factory, 0)
 	} else {
-		b = c64board.NewBoard(nil, factory, "")
+		b = c64board.NewBoard(nil, factory, 0)
 	}
 
 	if ascii {

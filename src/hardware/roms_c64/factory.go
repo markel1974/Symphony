@@ -22,6 +22,6 @@ func (t *Factory) Kind() interface{} {
 	return references.IROMLoaderC64(z)
 }
 
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewRomLoader(parent, factory, suffix)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
+	return NewRomLoader(parent, factory, label)
 }

@@ -54,18 +54,18 @@ type CIA struct {
 }
 
 // NewCIA initializes and returns a new instance of the CIA struct with the specified ID and associated components.
-func NewCIA(parent references.IComponent, factory references.IComponentFactory, suffix string) *CIA {
+func NewCIA(parent references.IComponent, factory references.IComponentFactory, label int) *CIA {
 	m := &CIA{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdICIA),
 		factory:       factory,
 		tod:           nil,
 		timerA:        nil,
 		timerB:        nil,
 	}
 	component.Register(parent, m)
-	m.tod = NewTOD(m, factory, "")
-	m.timerA = NewTimer(m, factory, "A")
-	m.timerB = NewTimer(m, factory, "B")
+	m.tod = NewTOD(m, factory, 0)
+	m.timerA = NewTimer(m, factory, 0)
+	m.timerB = NewTimer(m, factory, 1)
 	return m
 }
 

@@ -25,9 +25,9 @@ type ExternalCPU struct {
 }
 
 // New returns a new instance of the ExternalCPU struct implementing the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New(parent references.IComponent, factory references.IComponentFactory, label int) references.ICartridgeC64 {
 	r := &ExternalCPU{
-		BaseComponent: component.NewBaseComponent("externalCpu", suffix),
+		BaseComponent: component.NewBaseComponent("externalCpu", label, references.IdICartridgeC64),
 		factory:       factory,
 		board:         nil,
 		cpuSocket:     nil,
@@ -50,13 +50,13 @@ func (s *ExternalCPU) Setup(board references.IExpansionC64, ldr references.ICart
 	s.loaderId = ldr.GetId()
 	s.board.SetDMALow(true)
 
-	s.quartz = quartz.NewQuartz(s, s.factory, "")
-	s.pic = pic_6510.NewPIC(s, s.factory, "")
+	s.quartz = quartz.NewQuartz(s, s.factory, 0)
+	s.pic = pic_6510.NewPIC(s, s.factory, 0)
 
 	s.pic.Setup(s.quartz)
 
 	s.cpuSocket = NewCPUSocket()
-	s.cpu = mos6510.NewCPU(s, s.factory, "")
+	s.cpu = mos6510.NewCPU(s, s.factory, 0)
 
 	s.cpuSocket.Setup(s)
 	s.cpu.Setup(s.cpuSocket)

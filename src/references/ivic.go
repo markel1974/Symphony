@@ -2,6 +2,8 @@ package references
 
 import "github.com/markel1974/c64emu/src/config"
 
+const IdIVIC = "IVIC"
+
 // IVIC defines an interface for a Video Interface Chip emulation, managing display rendering and register interactions.
 // Setup configures the VIC with a socket and a configuration object.
 // Reset reinitializes the VIC to its default state.

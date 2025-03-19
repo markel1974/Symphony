@@ -14,9 +14,9 @@ type RomLoader struct {
 }
 
 // NewRomLoader initializes and returns a new instance of RomLoader configured with the provided Config.
-func NewRomLoader(parent references.IComponent, factory references.IComponentFactory, suffix string) *RomLoader {
+func NewRomLoader(parent references.IComponent, factory references.IComponentFactory, label int) *RomLoader {
 	rl := &RomLoader{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIROMLoaderC1541),
 		factory:       factory,
 		cfg:           nil,
 	}

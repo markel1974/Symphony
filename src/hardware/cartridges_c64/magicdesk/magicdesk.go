@@ -27,10 +27,10 @@ func GetType() int {
 }
 
 // New creates a new instance of CartridgeMagicDesk, registers it with the provided parent, and sets its initial configuration.
-func New(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New(parent references.IComponent, factory references.IComponentFactory, label int) references.ICartridgeC64 {
 	md := &CartridgeMagicDesk{
 		factory:       factory,
-		BaseComponent: component.NewBaseComponent("magicDesk", suffix),
+		BaseComponent: component.NewBaseComponent("magicDesk", label, references.IdICartridgeC64),
 		loaderId:      "magicDesk",
 		spec:          references.GetCartridgeSpec(references.CartridgeMode8K),
 		bankMask:      0x7f,

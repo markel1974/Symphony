@@ -22,6 +22,6 @@ func (t *Factory) Kind() interface{} {
 	return references.IPIC6510(z)
 }
 
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewPIC(parent, factory, suffix)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
+	return NewPIC(parent, factory, label)
 }

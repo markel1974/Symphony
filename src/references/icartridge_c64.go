@@ -55,6 +55,8 @@ func GetCartridgeSpec(ct CartridgeMode) *CartridgeSpec {
 	return _cartridgesSpec[ct]
 }
 
+const IdICartridgeC64 = "ICartridgeC64"
+
 // ICartridgeC64 represents the interface for a C64-compatible cartridge, defining methods for setup, memory operations, and emulation.
 // Setup initializes the cartridge with the provided expansion board and loader.
 // GetLoaderId retrieves the unique identifier for the cartridge loader.

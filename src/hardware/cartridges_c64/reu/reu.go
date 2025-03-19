@@ -45,9 +45,9 @@ type REU struct {
 
 // newReu initializes a new REU instance with a given size and returns an ICartridgeC64 implementation.
 // It sets up REU registers, memory size, and RAM contents, and performs an initial reset.
-func newReu(parent references.IComponent, factory references.IComponentFactory, suffix string, size int) references.ICartridgeC64 {
+func newReu(parent references.IComponent, factory references.IComponentFactory, label int, size int) references.ICartridgeC64 {
 	r := &REU{
-		BaseComponent: component.NewBaseComponent("reu", suffix),
+		BaseComponent: component.NewBaseComponent("reu", label, references.IdICartridgeC64),
 		factory:       factory,
 		loaderId:      "reu" + strconv.Itoa(size),
 		regs:          make([]uint8, 16),
@@ -63,42 +63,42 @@ func newReu(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // New128K creates and returns a new 128K REU cartridge implementing the ICartridgeC64 interface.
-func New128K(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New128K(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
 	return newReu(parent, factory, suffix, size128K)
 }
 
 // New256K creates a new 256K REU (RAM Expansion Unit) cartridge and returns it as an ICartridgeC64 interface.
-func New256K(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New256K(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
 	return newReu(parent, factory, suffix, size256K)
 }
 
 // New512K creates and returns a new instance of an ICartridgeC64 with a memory size of 512K.
-func New512K(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New512K(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
 	return newReu(parent, factory, suffix, size512K)
 }
 
 // New1M creates a new 1M REU (RAM Expansion Unit) cartridge implementing the ICartridgeC64 interface.
-func New1M(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New1M(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
 	return newReu(parent, factory, suffix, size1M)
 }
 
 // New2M creates and returns a new 2MB REU cartridge instance implementing the ICartridgeC64 interface.
-func New2M(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New2M(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
 	return newReu(parent, factory, suffix, size2M)
 }
 
 // New4M creates and returns a new 4MB REU cartridge implementing the ICartridgeC64 interface.
-func New4M(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New4M(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
 	return newReu(parent, factory, suffix, size4M)
 }
 
 // New8M creates and returns a new 8 MB REU (RAM Expansion Unit) cartridge implementing the ICartridgeC64 interface.
-func New8M(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New8M(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
 	return newReu(parent, factory, suffix, size8M)
 }
 
 // New16M creates a new ICartridgeC64 instance with 16MB of memory, utilizing the REU (RAM Expansion Unit) implementation.
-func New16M(parent references.IComponent, factory references.IComponentFactory, suffix string) references.ICartridgeC64 {
+func New16M(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
 	return newReu(parent, factory, suffix, size16M)
 }
 

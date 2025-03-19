@@ -33,15 +33,10 @@ type VIA struct {
 	socket  references.IVIASocket
 }
 
-func NewViaComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	v := NewVIA(parent, factory, suffix)
-	return v
-}
-
 // NewVIA creates and initializes a new VIA instance with the specified identifier.
-func NewVIA(parent references.IComponent, factory references.IComponentFactory, suffix string) *VIA {
+func NewVIA(parent references.IComponent, factory references.IComponentFactory, label int) *VIA {
 	v := &VIA{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIVIA),
 		factory:       factory,
 		pra:           0,
 		ddra:          0,

@@ -1,5 +1,7 @@
 package references
 
+const IdIKeyboard = "IKeyboard"
+
 // IKeyboard defines an interface for managing keyboard input, including virtual key states and command processing.
 // Reset reinitializes the keyboard state, clearing any prior configurations or input data.
 // Emulate triggers an emulation process for the keyboard, typically used for virtualization behaviors.

@@ -44,14 +44,10 @@ type CPU struct {
 	irqBreaker     bool                  // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
 }
 
-func NewCPUComponent(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewCPU(parent, factory, suffix)
-}
-
 // NewCPU initializes and returns a new CPU instance with the provided id.
-func NewCPU(parent references.IComponent, factory references.IComponentFactory, suffix string) *CPU {
+func NewCPU(parent references.IComponent, factory references.IComponentFactory, label int) *CPU {
 	cpu := &CPU{
-		BaseComponent: component.NewBaseComponent(componentId, suffix),
+		BaseComponent: component.NewBaseComponent(componentId, label, references.IdI6510),
 		factory:       factory,
 	}
 	component.Register(parent, cpu)

@@ -22,6 +22,6 @@ func (t *Factory) Kind() interface{} {
 	return references.IIec(z)
 }
 
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, suffix string) references.IComponent {
-	return NewDispatcher(parent, factory, suffix)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
+	return NewDispatcher(parent, factory, label)
 }
