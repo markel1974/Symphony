@@ -28,7 +28,6 @@ type Board struct {
 	*component.BaseComponent
 	db              references.IDisplayBuffer
 	player          references.IPlayer
-	factory         references.IComponentFactory
 	keysSocket      *KeyboardSocket
 	joySocket1      *JoystickSocket
 	joySocket2      *JoystickSocket
@@ -58,10 +57,9 @@ type Board struct {
 
 // NewBoard initializes and returns a new Board instance with specific sockets and properties configured.
 // It registers the created instance as a child of the provided parent IComponent.
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, label int) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *Board {
 	b := &Board{
-		BaseComponent:   component.NewBaseComponent(componentId, label, references.IdIBoardC64),
-		factory:         factory,
+		BaseComponent:   component.NewBaseComponent(),
 		db:              nil,
 		player:          nil,
 		keysSocket:      NewKeyboardSocket(),
@@ -87,7 +85,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		joySwap:         true,
 		hasClipboard:    false,
 	}
-	component.Register(parent, b)
+	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIBoardC64(b))
 	return b
 }
 
@@ -103,63 +101,63 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, c
 		s.hasClipboard = true
 	}
 
-	_, quartz, err := s.factory.CreateIQuartz(s, "quartz", 0)
+	_, quartz, err := s.GetFactory().CreateIQuartz(s, "quartz", 0)
 	if err != nil {
 		return err
 	}
-	_, throttle, err := s.factory.CreateIThrottle(s, "dynamic_throttle", 0)
+	_, throttle, err := s.GetFactory().CreateIThrottle(s, "dynamic_throttle", 0)
 	if err != nil {
 		return err
 	}
-	_, pic, err := s.factory.CreateIPIC6510(s, "pic_6510", 0)
+	_, pic, err := s.GetFactory().CreateIPIC6510(s, "pic_6510", 0)
 	if err != nil {
 		return err
 	}
-	_, cpu, err := s.factory.CreateI6510(s, "mos6510", 0)
+	_, cpu, err := s.GetFactory().CreateI6510(s, "mos6510", 0)
 	if err != nil {
 		return err
 	}
-	_, iec, err := s.factory.CreateIEC(s, "iec", 0)
+	_, iec, err := s.GetFactory().CreateIEC(s, "iec", 0)
 	if err != nil {
 		return err
 	}
-	_, vic, err := s.factory.CreateIVIC(s, "mos6569", 0)
+	_, vic, err := s.GetFactory().CreateIVIC(s, "mos6569", 0)
 	if err != nil {
 		return err
 	}
-	_, sid, err := s.factory.CreateISID(s, "mos6581", 0)
+	_, sid, err := s.GetFactory().CreateISID(s, "mos6581", 0)
 	if err != nil {
 		return err
 	}
-	_, cart, err := s.factory.CreateICartridgeManagerC64(s, "cartridges_c64", 0)
+	_, cart, err := s.GetFactory().CreateICartridgeManagerC64(s, "cartridges_c64", 0)
 	if err != nil {
 		return err
 	}
-	_, rom, err := s.factory.CreateIROMLoaderC64(s, "roms_c64", 0)
+	_, rom, err := s.GetFactory().CreateIROMLoaderC64(s, "roms_c64", 0)
 	if err != nil {
 		return err
 	}
-	_, cia1, err := s.factory.CreateICIA(s, "mos6526", 0)
+	_, cia1, err := s.GetFactory().CreateICIA(s, "mos6526", 0)
 	if err != nil {
 		return err
 	}
-	_, cia2, err := s.factory.CreateICIA(s, "mos6526", 1)
+	_, cia2, err := s.GetFactory().CreateICIA(s, "mos6526", 1)
 	if err != nil {
 		return err
 	}
-	_, pla, err := s.factory.CreateIPLAc64(s, "pla_c64", 0)
+	_, pla, err := s.GetFactory().CreateIPLAc64(s, "pla_c64", 0)
 	if err != nil {
 		return err
 	}
-	_, keys, err := s.factory.CreateIKeyboard(s, "keyboard_c64", 0)
+	_, keys, err := s.GetFactory().CreateIKeyboard(s, "keyboard_c64", 0)
 	if err != nil {
 		return err
 	}
-	_, joy1, err := s.factory.CreateIJoystick(s, "joystick_c64", 0)
+	_, joy1, err := s.GetFactory().CreateIJoystick(s, "joystick_c64", 0)
 	if err != nil {
 		return err
 	}
-	_, joy2, err := s.factory.CreateIJoystick(s, "joystick_c64", 1)
+	_, joy2, err := s.GetFactory().CreateIJoystick(s, "joystick_c64", 1)
 	if err != nil {
 		return err
 	}
@@ -330,12 +328,12 @@ func (s *Board) KeyboardSetCommand(cmd string) {
 	s.keysSocket.SetCommand(cmd)
 }
 
-// KeyboardNumLockToggle toggles the Num Lock state on the keyboard via the associated keys socket.
+// KeyboardNumLockToggle toggles the Num Lock state on the keyboard via the associated keys' socket.
 func (s *Board) KeyboardNumLockToggle() {
 	s.keysSocket.NumLockToggle()
 }
 
-// Keyboard
+// KeyboardCapitalToggle toggles the capitalization state of the keyboard keys.
 func (s *Board) KeyboardCapitalToggle() {
 	s.keysSocket.CapitalToggle()
 }
@@ -424,7 +422,9 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 	return rb
 }
 
-// DMALowTrigger sets the DMA line state to request or release the CPU's access to the bus based on the
+// DMALowTrigger sets the DMA low trigger state, enabling or disabling the CPU bus release for direct memory access.
+// If set to true, the CPU enters a wait state, and its bus lines go to high resistance, allowing external hardware access.
+// The method adjusts the DMA state and configures the CPU's RDY and AEC lines based on the VIC-II chip's signals.
 func (s *Board) DMALowTrigger(v bool) {
 	//If _DMA=Low the CPU can be requested to release the bus.
 	//It will stop after the next read cycle, and all bus lines will go to high resistance state.
@@ -453,7 +453,7 @@ func (s *Board) AECLowTrigger(v bool) {
 	//TODO SIGNAL
 }
 
-// LastCycleTrigger prepares the
+// LastCycleTrigger performs the final preparation step by invoking the Prepare method on the sidSocket instance.
 func (s *Board) LastCycleTrigger() {
 	s.sidSocket.Prepare()
 }

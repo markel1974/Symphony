@@ -4,7 +4,9 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-const componentId = "vic20"
+func Identifier() string {
+	return "vic20"
+}
 
 type Factory struct {
 }
@@ -14,7 +16,7 @@ func NewFactory() *Factory {
 }
 
 func (t *Factory) Identifier() string {
-	return componentId
+	return Identifier()
 }
 
 func (t *Factory) Kind() interface{} {

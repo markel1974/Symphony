@@ -3,14 +3,13 @@ package ocean
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	loader2 "github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
 	"github.com/markel1974/c64emu/src/references"
 )
 
 // CartridgeOcean represents a cartridge model with bank switching and IO interaction mechanisms for ROM emulation.
 type CartridgeOcean struct {
 	*component.BaseComponent
-	factory   references.IComponentFactory
 	loaderId  string
 	intervals references.RomInterval
 	lastData  uint8
@@ -24,22 +23,22 @@ type CartridgeOcean struct {
 
 // GetType returns the type identifier of the Ocean cartridge as an integer constant.
 func GetType() int {
-	return loader2.CARTRIDGE_OCEAN
+	return loader.CARTRIDGE_OCEAN
 }
 
 // New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, label int) references.ICartridgeC64 {
+func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
 	v := references.GetCartridgeSpec(references.CartridgeMode16K)
+	const id = "ocean"
 	co := &CartridgeOcean{
-		BaseComponent: component.NewBaseComponent("ocean", label, references.IdICartridgeC64),
-		factory:       factory,
-		loaderId:      "ocean",
+		BaseComponent: component.NewBaseComponent(),
+		loaderId:      id,
 		game:          v.Game,
 		exRom:         v.ExRom,
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		lastData:      0,
 	}
-	component.Register(parent, co)
+	co.BaseComponent.Register(factory, parent, id, instance, co, references.IdICartridgeC64(co))
 	return co
 }
 
@@ -47,7 +46,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 func (c *CartridgeOcean) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
-	if loader2.Type(ldr.GetType()) == loader2.TypeCrt {
+	if loader.Type(ldr.GetType()) == loader.TypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr.GetData())
@@ -137,7 +136,7 @@ func (c *CartridgeOcean) Emulate() {
 // initBin initializes the cartridge by parsing binary data, validating it and segmenting it into fixed-size memory banks.
 // It calculates the I/O mask and sets initial values for `lastData` and `currBank`. Returns an error if validation fails.
 func (c *CartridgeOcean) initBin(data []byte) error {
-	if err := loader2.ValidateCartridge(data); err != nil {
+	if err := loader.ValidateCartridge(data); err != nil {
 		return err
 	}
 	const cSize = 0x2000

@@ -14,27 +14,25 @@ func matrix(a int, b int) int {
 // Keyboard represents an abstraction for handling virtual and ASCII keyboard states and input storage.
 type Keyboard struct {
 	*component.BaseComponent
-	factory references.IComponentFactory
 	storage *fifo.StaticFifo
 	virtual *Virtual
 	ascii   *Ascii
 }
 
 // NewKeyboard initializes and returns a new Keyboard instance with default settings and a reset state.
-func NewKeyboard(parent references.IComponent, factory references.IComponentFactory, label int) *Keyboard {
+func NewKeyboard(parent references.IComponent, factory references.IComponentFactory, instance int) *Keyboard {
 	k := &Keyboard{
-		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIKeyboard),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		storage:       nil,
 		virtual:       NewVirtual(),
 		ascii:         NewAscii(),
 	}
-	component.Register(parent, k)
-	k.Reset()
+	k.BaseComponent.Register(factory, parent, Identifier(), instance, k, references.IdIKeyboard(k))
 	return k
 }
 
 func (k *Keyboard) Setup() error {
+	k.Reset()
 	return nil
 }
 

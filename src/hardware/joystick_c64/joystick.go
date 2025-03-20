@@ -9,7 +9,6 @@ import (
 // Joystick represents an input device for handling directional and button presses with customizable sensitivity settings.
 type Joystick struct {
 	*component.BaseComponent
-	factory references.IComponentFactory
 	storage *fifo.StaticFifo
 	joy     int
 	s1      uint
@@ -17,18 +16,21 @@ type Joystick struct {
 }
 
 // NewJoystick initializes and returns a new instance of Joystick with default settings and sensitivity for controls.
-func NewJoystick(parent references.IComponent, factory references.IComponentFactory, label int) *Joystick {
+func NewJoystick(parent references.IComponent, factory references.IComponentFactory, instance int) *Joystick {
 	j := &Joystick{
-		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIJoystick),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		storage:       nil,
 		joy:           0xff,
 		s1:            0,
 		s2:            0,
 	}
-	component.Register(parent, j)
-	j.Update(0x0000, 0xffff, 40)
+	j.BaseComponent.Register(factory, parent, Identifier(), instance, j, references.IdIJoystick(j))
 	return j
+}
+
+func (k *Joystick) Setup() error {
+	k.Update(0x0000, 0xffff, 40)
+	return nil
 }
 
 // Update recalculates the joystick's sensitivity range based on the provided minimum, maximum, and sensitivity values.
@@ -36,10 +38,6 @@ func (k *Joystick) Update(min uint16, max uint16, sensitivity uint16) {
 	interval := max - min
 	k.s1 = uint(min + ((sensitivity * interval) / 100))
 	k.s2 = uint(min + (((100 - sensitivity) * interval) / 100))
-}
-
-func (k *Joystick) Setup() error {
-	return nil
 }
 
 // Reset reinitializes the joystick's storage buffer and sets its state to the default value.

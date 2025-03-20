@@ -5,8 +5,6 @@ package references
 // Identifier provides a unique string identifier for the factory.
 // Create instantiates a new component with a parent, associated factory, and a specific suffix.
 type IFactory interface {
-	Kind() interface{}
-
 	Identifier() string
 
 	Create(parent IComponent, factory IComponentFactory, instance int) IComponent

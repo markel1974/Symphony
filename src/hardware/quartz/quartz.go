@@ -13,22 +13,21 @@ import (
 // alarms stores active alarms in a doubly linked list, sorted by their scheduled cycle execution times.
 type Quartz struct {
 	*component.BaseComponent
-	factory         references.IComponentFactory
 	cycle           uint64
 	alarmsContainer map[*Alarm]*Alarm
 	alarms          *list.List
 }
 
 // NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
-func NewQuartz(parent references.IComponent, factory references.IComponentFactory, suffix int) *Quartz {
+func NewQuartz(parent references.IComponent, factory references.IComponentFactory, instance int) *Quartz {
 	q := &Quartz{
-		BaseComponent:   component.NewBaseComponent("quartz", suffix, references.IdIQuartz),
-		factory:         factory,
+		BaseComponent:   component.NewBaseComponent(),
 		cycle:           0,
 		alarmsContainer: make(map[*Alarm]*Alarm),
 		alarms:          list.New(),
 	}
-	component.Register(parent, q)
+	q.BaseComponent.Register(factory, parent, Identifier(), instance, q, references.IdIQuartz(q))
+	//q.BaseComponent.Register(parent, q)
 	return q
 }
 

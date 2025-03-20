@@ -14,9 +14,6 @@ import (
 type FSDrive struct {
 	*component.BaseComponent
 	*iec.Protocol
-	factory      references.IComponentFactory
-	parent       references.IComponent
-	label        int
 	commands     *Commands
 	deviceId     uint8
 	deviceNumber uint8
@@ -30,12 +27,9 @@ type FSDrive struct {
 	cfg          *config.Config
 }
 
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, label int) *FSDrive {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *FSDrive {
 	fs := &FSDrive{
-		BaseComponent: component.NewBaseComponent("fs_drive", 0, references.IdIIecProtocolDevice),
-		parent:        parent,
-		label:         label,
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		deviceId:      0,
 		deviceNumber:  0,
 		path:          "",
@@ -43,13 +37,16 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		origDirPath:   "",
 		cfg:           nil,
 	}
+	fs.Protocol = iec.NewProtocol(factory, parent, instance)
+	fs.Protocol.SetDevice(fs)
+	fs.BaseComponent.Register(factory, fs.Protocol, Identifier(), 0, fs, references.IdIIecProtocolDevice(fs))
 	return fs
 }
 
 func (v *FSDrive) Setup(bus references.IIec, q references.IQuartz, deviceId uint8, deviceNumber uint8, path string, cfg *config.Config) error {
-	v.Protocol = iec.NewProtocol(v.parent, v.label, q, v.deviceNumber, v)
-	component.Register(v.Protocol, v)
-	v.Protocol.Setup(bus, cfg)
+	if err := v.Protocol.Setup(bus, q, deviceId, deviceNumber, path, cfg); err != nil {
+		return err
+	}
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
 	v.path = path

@@ -1,6 +1,8 @@
 package references
 
-const IdIQuartz = "IQuartz"
+func IdIQuartz(_ IQuartz) string {
+	return "IQuartz"
+}
 
 // IQuartz defines an interface for managing clock cycles, alarms, and time conversion in an emulation environment.
 // Setup initializes the quartz instance and prepares it for usage.

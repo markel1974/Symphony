@@ -9,7 +9,9 @@ type I6510Banks interface {
 	Write(uint16, uint8)
 }
 
-const IdI6510 = "I6510"
+func IdI6510(_ I6510) string {
+	return "I6510"
+}
 
 // I6510 represents the 6510 CPU interface for emulation and interaction with hardware components.
 // Reset reinitializes the CPU state to default values.

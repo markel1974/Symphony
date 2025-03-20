@@ -6,6 +6,10 @@ import (
 
 const componentId = "c1541"
 
+func Identifier() string {
+	return componentId
+}
+
 type Factory struct {
 }
 
@@ -14,12 +18,7 @@ func NewFactory() *Factory {
 }
 
 func (t *Factory) Identifier() string {
-	return componentId
-}
-
-func (t *Factory) Kind() interface{} {
-	z := (*Board)(nil)
-	return references.IIecDevice(z)
+	return Identifier()
 }
 
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {

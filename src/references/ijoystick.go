@@ -1,6 +1,8 @@
 package references
 
-const IdIJoystick = "IJoystick"
+func IdIJoystick(_ IJoystick) string {
+	return "IJoystick"
+}
 
 // IJoystick defines an interface for joystick operations including updates, resets, emulation, movement, key setting, and polling.
 // Update defines a method to adjust sensitivity and recalibrate with minimum and maximum bounds.

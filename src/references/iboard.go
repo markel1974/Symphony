@@ -4,9 +4,17 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-const IdIBoardC64 = "IBoardC64"
-const IdIBoardC1541 = "IBoardC1541"
-const IdIBoardVIC20 = "IBoardVIC20"
+func IdIBoardC64(_ IBoard) string {
+	return "IBoardC64"
+}
+
+func IdIBoardC1541(_ IIecDevice) string {
+	return "IBoardC1541"
+}
+
+func IdIBoardVIC20(_ IBoard) string {
+	return "IBoardVIC20"
+}
 
 // IBoard represents the interface for controlling and managing a board-based system's input, output, and state.
 // Setup initializes the board with the provided display buffer, player, and configuration settings.

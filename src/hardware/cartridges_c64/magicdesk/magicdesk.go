@@ -11,7 +11,6 @@ import (
 // It implements the ICartridgeC64 interface for handling cartridge-specific functionality within an expansion board.
 type CartridgeMagicDesk struct {
 	*component.BaseComponent
-	factory  references.IComponentFactory
 	loaderId string
 	spec     *references.CartridgeSpec
 	banks    [][]byte
@@ -27,17 +26,17 @@ func GetType() int {
 }
 
 // New creates a new instance of CartridgeMagicDesk, registers it with the provided parent, and sets its initial configuration.
-func New(parent references.IComponent, factory references.IComponentFactory, label int) references.ICartridgeC64 {
+func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
+	const id = "magicDesk"
 	md := &CartridgeMagicDesk{
-		factory:       factory,
-		BaseComponent: component.NewBaseComponent("magicDesk", label, references.IdICartridgeC64),
-		loaderId:      "magicDesk",
+		BaseComponent: component.NewBaseComponent(),
+		loaderId:      id,
 		spec:          references.GetCartridgeSpec(references.CartridgeMode8K),
 		bankMask:      0x7f,
 		regVal:        0,
 		slot:          0,
 	}
-	component.Register(parent, md)
+	md.BaseComponent.Register(factory, parent, id, instance, md, references.IdICartridgeC64(md))
 	return md
 }
 

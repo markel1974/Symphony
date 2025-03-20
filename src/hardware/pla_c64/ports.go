@@ -30,9 +30,9 @@ type Ports struct {
 }
 
 // NewPorts initializes and returns a new instance of the Ports struct with default values set.
-func NewPorts(parent references.IComponent, label int) *Ports {
+func NewPorts(factory references.IComponentFactory, parent references.IComponent, instance int) *Ports {
 	p := &Ports{
-		BaseComponent: component.NewBaseComponent("ports", label, "PLA_ports"),
+		BaseComponent: component.NewBaseComponent(),
 		capsSense:     1,
 		pullUp:        0x17,
 		dataOut:       0,
@@ -47,7 +47,7 @@ func NewPorts(parent references.IComponent, label int) *Ports {
 		tapeMotorIn:   0,
 		//dirRead:     0,
 	}
-	component.Register(parent, p)
+	p.BaseComponent.Register(factory, parent, "ports", instance, p, "Ports")
 	return p
 }
 

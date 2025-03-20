@@ -104,23 +104,29 @@ type Protocol struct {
 }
 
 // NewProtocol creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
-func NewProtocol(parent references.IComponent, label int, q references.IQuartz, deviceNumber uint8, device references.IIecProtocolDevice) *Protocol {
+func NewProtocol(factory references.IComponentFactory, parent references.IComponent, instance int) *Protocol {
 	p := &Protocol{
-		BaseComponent: component.NewBaseComponent("iec_protocol", label, references.IdIIecDevice),
-		quartz:        q,
+		BaseComponent: component.NewBaseComponent(),
+		quartz:        nil,
 		gs:            _gs,
 		iec:           nil,
-		device:        device,
-		deviceNumber:  deviceNumber,
+		device:        nil,
 	}
-	component.Register(parent, p)
+	p.BaseComponent.Register(factory, parent, "iec_device_protocol", instance, p, references.IdIIecDevice(p))
 	return p
 }
 
+func (v *Protocol) SetDevice(device references.IIecProtocolDevice) {
+	v.device = device
+}
+
 // Setup initializes the Protocol with the provided IEC interface and configuration settings.
-func (v *Protocol) Setup(iec references.IIec, cfg *config.Config) {
+func (v *Protocol) Setup(iec references.IIec, quartz references.IQuartz, deviceNumber uint8, device uint8, opts string, cfg *config.Config) error {
 	v.iec = iec
+	v.quartz = quartz
+	v.deviceNumber = deviceNumber
 	v.cfg = cfg
+	return nil
 }
 
 // Reset resets the internal state of the Protocol to its initial configuration.

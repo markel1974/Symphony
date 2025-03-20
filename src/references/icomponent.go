@@ -23,7 +23,6 @@ type IHardware interface {
 // INavigate is an interface for managing and navigating hierarchical components and properties.
 // GetId retrieves the unique identifier of the component.
 // GetNode retrieves the associated node.
-// SetNode associates a node with the current component.
 // GetChildren returns a slice of child components attached to the current component.
 // GetComponentPath retrieves a component based on the provided path as a string.
 // GetProperty fetches a property by its key, returning a value or an error.
@@ -44,9 +43,11 @@ type IHardware interface {
 type INavigate interface {
 	GetId() string
 
+	GetFactory() IComponentFactory
+
 	GetNode() INode
 
-	SetNode(node INode)
+	Kind() string
 
 	GetChild(id string) IComponent
 

@@ -20,21 +20,19 @@ const c1541RamSize = 0x0800
 // PLA represents a memory management and I/O coordination unit, including RAM, ROM, and communication with VIAs.
 type PLA struct {
 	*component.BaseComponent
-	factory references.IComponentFactory
-	ram     []uint8
-	rom     []uint8
-	via1    references.IVIA
-	via2    references.IVIA
+	ram  []uint8
+	rom  []uint8
+	via1 references.IVIA
+	via2 references.IVIA
 }
 
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
-func NewPLA(parent references.IComponent, factory references.IComponentFactory, label int) *PLA {
+func NewPLA(parent references.IComponent, factory references.IComponentFactory, instance int) *PLA {
 	p := &PLA{
-		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIPLAc1541),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		ram:           make([]uint8, c1541RamSize),
 	}
-	component.Register(parent, p)
+	p.BaseComponent.Register(factory, parent, Identifier(), instance, p, references.IdIPLAc1541(p))
 	return p
 }
 

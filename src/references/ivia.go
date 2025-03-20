@@ -27,7 +27,9 @@ type IVIASocket interface {
 	IRQTrigger()
 }
 
-const IdIVIA = "VIA"
+func IdIVIA(_ IVIA) string {
+	return "IVIA"
+}
 
 // IVIA represents an interface for a VIA (Versatile Interface Adapter) component, managing communication and signaling.
 // Setup initializes the IVia instance by associating it with a provided socket.

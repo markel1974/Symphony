@@ -1,6 +1,8 @@
 package references
 
-const IdIKeyboard = "IKeyboard"
+func IdIKeyboard(_ IKeyboard) string {
+	return "IKeyboard"
+}
 
 // IKeyboard defines an interface for managing keyboard input, including virtual key states and command processing.
 // Reset reinitializes the keyboard state, clearing any prior configurations or input data.

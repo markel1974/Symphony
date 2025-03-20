@@ -2,7 +2,9 @@ package references
 
 import "github.com/markel1974/c64emu/src/config"
 
-const IdISID = "ISID"
+func IdISID(_ ISID) string {
+	return "ISID"
+}
 
 // ISID is an interface representing a Sound Interface Device (SID) for audio synthesis and emulation in a system.
 // Setup initializes the interface with a socket, frequency, rasters, and a configuration.

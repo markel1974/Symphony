@@ -25,7 +25,6 @@ const (
 
 type Board struct {
 	*component.BaseComponent
-	factory             references.IComponentFactory
 	cia1Socket          *CIA1Socket
 	cia2Socket          *CIA2Socket
 	vicSocket           *VicSocket
@@ -52,10 +51,9 @@ type Board struct {
 	dt                  references.IThrottle
 }
 
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, label int) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *Board {
 	b := &Board{
-		BaseComponent:       component.NewBaseComponent(componentId, label, references.IdIBoardVIC20),
-		factory:             factory,
+		BaseComponent:       component.NewBaseComponent(),
 		iec:                 nil,
 		pic:                 nil,
 		keys:                nil,
@@ -73,12 +71,13 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		joySwap:             true,
 		dt:                  nil,
 	}
-	component.Register(parent, b)
-	b.cartMan = cartridges_c64.NewManager(b, b.factory, 0)
+	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIBoardVIC20(b))
+
 	return b
 }
 
 func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *config.Config) error {
+	s.cartMan = cartridges_c64.NewManager(s, s.GetFactory(), 0)
 	s.db = db
 	s.p = p
 	if err := clipboard.Init(); err != nil {
@@ -97,12 +96,12 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *c
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 
-	s.pic = mos6510.NewPIC(s, s.factory, 0)
-	s.iec = iec.NewDispatcher(s, s.factory, 0)
-	s.keys = inputs2.NewKeyboard(s, s.factory, 0)
-	s.joy1 = joystick_c64.NewJoystick(s, s.factory, 0)
-	s.joy2 = joystick_c64.NewJoystick(s, s.factory, 1)
-	s.pla = pla_c64.NewPLA(s, s.factory, 0)
+	s.pic = mos6510.NewPIC(s, s.GetFactory(), 0)
+	s.iec = iec.NewDispatcher(s, s.GetFactory(), 0)
+	s.keys = inputs2.NewKeyboard(s, s.GetFactory(), 0)
+	s.joy1 = joystick_c64.NewJoystick(s, s.GetFactory(), 0)
+	s.joy2 = joystick_c64.NewJoystick(s, s.GetFactory(), 1)
+	s.pla = pla_c64.NewPLA(s, s.GetFactory(), 0)
 	s.expansion = NewExpansion(s)
 
 	//s.iec.Setup(s.quartz, cfg)

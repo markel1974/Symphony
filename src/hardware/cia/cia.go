@@ -37,7 +37,6 @@ const (
 // socket represents the interface socket connected to peripheral and communication devices.
 type CIA struct {
 	*component.BaseComponent
-	factory        references.IComponentFactory
 	prA            uint8
 	prB            uint8
 	ddrA           uint8
@@ -54,23 +53,22 @@ type CIA struct {
 }
 
 // NewCIA initializes and returns a new instance of the CIA struct with the specified ID and associated components.
-func NewCIA(parent references.IComponent, factory references.IComponentFactory, label int) *CIA {
+func NewCIA(parent references.IComponent, factory references.IComponentFactory, instance int) *CIA {
 	m := &CIA{
-		BaseComponent: component.NewBaseComponent(componentId, label, references.IdICIA),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		tod:           nil,
 		timerA:        nil,
 		timerB:        nil,
 	}
-	component.Register(parent, m)
-	m.tod = NewTOD(m, factory, 0)
-	m.timerA = NewTimer(m, factory, 0)
-	m.timerB = NewTimer(m, factory, 1)
+	m.BaseComponent.Register(factory, parent, Identifier(), instance, m, references.IdICIA(m))
 	return m
 }
 
 // Setup initializes the CIA instance by assigning a provided ISocket connection to its socket field.
 func (m *CIA) Setup(conn references.ICIASocket) error {
+	m.tod = NewTOD(m, m.GetFactory(), 0)
+	m.timerA = NewTimer(m, m.GetFactory(), 0)
+	m.timerB = NewTimer(m, m.GetFactory(), 1)
 	m.socket = conn
 	return nil
 }

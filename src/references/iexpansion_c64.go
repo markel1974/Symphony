@@ -73,7 +73,9 @@ type IExpansionC64 interface {
 	RmwFlags() uint8 //TODO NOT STANDARD
 }
 
-const IdICartridgeManagerC64 = "ICartridgeManagerC64"
+func IdICartridgeManagerC64(_ ICartridgeManagerC64) string {
+	return "ICartridgeManagerC64"
+}
 
 // ICartridgeManagerC64 defines an interface for managing expansion socket operations and interactions in a given system.
 // Config retrieves the configuration data of the expansion socket and additional state details.

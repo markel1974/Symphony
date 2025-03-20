@@ -28,7 +28,6 @@ const baseId = "c1541"
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
 	*component.BaseComponent
-	factory    references.IComponentFactory
 	iec        references.IIec
 	cpuSocket  *CPUSocket
 	via1Socket *VIA1Socket
@@ -44,10 +43,9 @@ type Board struct {
 }
 
 // NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, label int) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *Board {
 	b := &Board{
-		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIBoardC1541),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		iec:           nil,
 		deviceId:      0,
 		filePath:      "",
@@ -60,7 +58,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		rlSocket:      NewRomLoaderSocket(),
 		cfg:           nil,
 	}
-	component.Register(parent, b)
+	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIIecDevice(b))
 	return b
 }
 
@@ -74,27 +72,27 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	//quartz := quartz.NewQuartz(m, "")
 	m.cfg.Bind(m.configChanged)
 
-	_, rl, err := m.factory.CreateIROMLoaderC1541(m, "roms_c1541", 0)
+	_, rl, err := m.GetFactory().CreateIROMLoaderC1541(m, "roms_c1541", 0)
 	if err != nil {
 		return err
 	}
-	_, pla, err := m.factory.CreateIPLAc1541(m, "pla_c1541", 0)
+	_, pla, err := m.GetFactory().CreateIPLAc1541(m, "pla_c1541", 0)
 	if err != nil {
 		return err
 	}
-	_, pic, err := m.factory.CreateIPIC6510(m, "pic_6510", 0)
+	_, pic, err := m.GetFactory().CreateIPIC6510(m, "pic_6510", 0)
 	if err != nil {
 		return err
 	}
-	_, cpu, err := m.factory.CreateI6510(m, "mos6510", 0)
+	_, cpu, err := m.GetFactory().CreateI6510(m, "mos6510", 0)
 	if err != nil {
 		return err
 	}
-	_, via1, err := m.factory.CreateIVIA(m, "mos6522", 0)
+	_, via1, err := m.GetFactory().CreateIVIA(m, "mos6522", 0)
 	if err != nil {
 		return err
 	}
-	_, via2, err := m.factory.CreateIVIA(m, "mos6522", 1)
+	_, via2, err := m.GetFactory().CreateIVIA(m, "mos6522", 1)
 	if err != nil {
 		return err
 	}

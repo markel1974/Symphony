@@ -23,7 +23,6 @@ import (
 // Manager is responsible for managing cartridge interactions, configurations, and hardware registration in the system.
 type Manager struct {
 	*component.BaseComponent
-	factory             references.IComponentFactory
 	idx                 int
 	board               references.IExpansionC64
 	prefs               *config.Config
@@ -36,10 +35,9 @@ type Manager struct {
 }
 
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
-func NewManager(parent references.IComponent, factory references.IComponentFactory, label int) *Manager {
+func NewManager(parent references.IComponent, factory references.IComponentFactory, instance int) *Manager {
 	m := &Manager{
-		BaseComponent:       component.NewBaseComponent(componentId, label, references.IdICartridgeManagerC64),
-		factory:             factory,
+		BaseComponent:       component.NewBaseComponent(),
 		idx:                 0,
 		board:               nil,
 		prefs:               nil,
@@ -49,7 +47,7 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 		registerSize:        make(map[int]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64),
 		registerSizeDefault: nil,
 	}
-	component.Register(parent, m)
+	m.BaseComponent.Register(factory, parent, Identifier(), instance, m, references.IdICartridgeManagerC64(m))
 	return m
 }
 
@@ -230,7 +228,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if factory == nil {
 		return "", fmt.Errorf("unsupported => %d", ldr.Kind)
 	}
-	cart := factory(f, f.factory, f.idx)
+	cart := factory(f, f.GetFactory(), f.idx)
 	f.idx++
 	f.carts = append(f.carts, cart)
 	if err := cart.Setup(f.board, ldr); err != nil {

@@ -21,14 +21,12 @@ const (
 // Pic represents a programmable interrupt controller with IRQ and NMI handling capabilities.
 type Pic struct {
 	*component.BaseComponent
-	factory       references.IComponentFactory
 	quartz        references.IQuartz
 	all           bits.Bits
 	irq           bits.Bits
 	firstIrqCycle uint64
 	firstNMICycle uint64
 	nmiExec       bool
-
 	extIrqTrigger *signals.SignalUint32
 	extIrqClear   *signals.SignalUint32
 }
@@ -39,10 +37,9 @@ func (i *Pic) Emulate() {
 }
 
 // NewPIC initializes and returns a pointer to a new Pic instance with default values.
-func NewPIC(parent references.IComponent, factory references.IComponentFactory, label int) *Pic {
+func NewPIC(parent references.IComponent, factory references.IComponentFactory, instance int) *Pic {
 	p := &Pic{
-		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIPIC6510),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		quartz:        nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,
@@ -52,7 +49,7 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 		extIrqTrigger: nil,
 		extIrqClear:   nil,
 	}
-	component.Register(parent, p)
+	p.BaseComponent.Register(factory, parent, Identifier(), instance, p, references.IdIPIC6510(p))
 	return p
 }
 

@@ -9,7 +9,6 @@ import (
 // DynamicThrottle dynamically regulates task execution intervals to maintain a desired frame rate or time spacing.
 type DynamicThrottle struct {
 	*component.BaseComponent
-	factory       references.IComponentFactory
 	frameInterval int64
 	tuning        int64
 	prev          int64
@@ -17,16 +16,15 @@ type DynamicThrottle struct {
 }
 
 // NewDynamicThrottle creates a new instance of DynamicThrottling with the specified frameInterval in milliseconds.
-func NewDynamicThrottle(parent references.IComponent, factory references.IComponentFactory, label int) *DynamicThrottle {
+func NewDynamicThrottle(parent references.IComponent, factory references.IComponentFactory, instance int) *DynamicThrottle {
 	d := &DynamicThrottle{
-		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIThrottle),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		prev:          time.Now().UnixMilli(),
 		frameInterval: 0,
 		tuning:        0,
 		counter:       0,
 	}
-	component.Register(parent, d)
+	d.BaseComponent.Register(factory, parent, Identifier(), instance, d, references.IdIThrottle(d))
 	return d
 }
 

@@ -20,40 +20,51 @@ const detailsId = "details"
 // BaseComponent provides a base implementation for composed components with properties, commands, and hierarchical structure.
 type BaseComponent struct {
 	id         string
+	name       string
+	instance   int
+	kind       string
+	factory    references.IComponentFactory
 	node       references.INode
 	properties *Properties
 	commands   *Commands
 }
 
-// Register links a child component to a parent component by establishing a hierarchical node structure.
-// If a parent node exists, it adds the child to it; otherwise, it initializes a standalone node for the child.
-func Register(parent references.IComponent, component references.IComponent) {
-	var parentNode references.INode = nil
-	if parent != nil {
-		parentNode = parent.GetNode()
-	}
-	if parentNode != nil {
-		component.SetNode(newNode(parentNode, component))
-		parentNode.AddComponent(component)
-	} else {
-		component.SetNode(newNode(nil, component))
-	}
-}
-
-// Unregister removes the specified component from the parent's node, detaching their hierarchical relationship.
-func Unregister(parent references.IComponent, component references.IComponent) {
-	parent.GetNode().RemoveComponent(component)
-}
-
 // NewBaseComponent creates a new instance of BaseComponent with a unique ID, name, label, and initialized properties and commands.
-func NewBaseComponent(name string, instance int, kind string) *BaseComponent {
-	id := name + ":" + strconv.Itoa(instance) + ":" + kind
+func NewBaseComponent() *BaseComponent {
 	bc := &BaseComponent{
-		id:         id,
+		id:         "",
+		factory:    nil,
+		name:       "",
+		instance:   0,
+		kind:       "",
 		properties: NewProperties(),
 		commands:   NewCommands(),
 	}
 	return bc
+}
+
+func (bc *BaseComponent) Register(f references.IComponentFactory, parent references.IComponent, name string, instance int, component references.IComponent, kind string) {
+	bc.factory = f
+	bc.name = name
+	bc.instance = instance
+	bc.kind = kind
+	bc.id = bc.name + ":" + strconv.Itoa(instance) + ":" + bc.kind
+	if parent != nil && parent.GetNode() != nil {
+		pNode := parent.GetNode()
+		bc.node = newNode(pNode, component)
+		pNode.AddComponent(component)
+	} else {
+		bc.node = newNode(nil, component)
+	}
+}
+
+func (bc *BaseComponent) Kind() string {
+	return bc.kind
+}
+
+// GetFactory retrieves the INode instance associated with the BaseComponent.
+func (bc *BaseComponent) GetFactory() references.IComponentFactory {
+	return bc.factory
 }
 
 // GetNode retrieves the INode instance associated with the BaseComponent.
@@ -61,9 +72,9 @@ func (bc *BaseComponent) GetNode() references.INode {
 	return bc.node
 }
 
-// SetNode assigns the provided INode instance to the BaseComponent.
-func (bc *BaseComponent) SetNode(node references.INode) {
-	bc.node = node
+// Unregister removes the specified component from the parent's node, detaching their hierarchical relationship.
+func (bc *BaseComponent) Unregister(component references.IComponent) {
+	bc.node.RemoveComponent(component)
 }
 
 // GetId returns the unique identifier of the BaseComponent instance.

@@ -8,7 +8,6 @@ import (
 // TOD represents a Time of Day (TOD) and Alarm functionality with tracking for hours, minutes, seconds, and tenths.
 type TOD struct {
 	*component.BaseComponent
-	factory        references.IComponentFactory
 	tod10ths       uint8 // TOD 10ths
 	todSec         uint8 // TOD sec
 	todMin         uint8 // TOD min
@@ -25,12 +24,11 @@ type TOD struct {
 }
 
 // NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
-func NewTOD(parent references.IComponent, factory references.IComponentFactory, label int) *TOD {
+func NewTOD(parent references.IComponent, factory references.IComponentFactory, instance int) *TOD {
 	t := &TOD{
-		factory:       factory,
-		BaseComponent: component.NewBaseComponent("tod", label, "CIA_tod"),
+		BaseComponent: component.NewBaseComponent(),
 	}
-	component.Register(parent, t)
+	t.BaseComponent.Register(factory, parent, "tod", instance, t, "TOD")
 	return t
 }
 

@@ -86,7 +86,6 @@ const defaultTimerInit = 0xffff
 // It supports various operational states applicable for different use cases.
 type Timer struct {
 	*component.BaseComponent
-	factory      references.IComponentFactory
 	cr           uint8
 	crNew        uint8      // New values for cr
 	crNewPending bool       // New value for crNew pending
@@ -104,10 +103,9 @@ type Timer struct {
 
 // NewTimer initializes and returns a new Timer instance with the given parentId and suffix.
 // The Timer is set to its default state and its Reset method is called to ensure initialization.
-func NewTimer(parent references.IComponent, factory references.IComponentFactory, label int) *Timer {
+func NewTimer(parent references.IComponent, factory references.IComponentFactory, instance int) *Timer {
 	m := &Timer{
-		BaseComponent: component.NewBaseComponent("timer", label, "CIA_timer"),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		cr:            0,
 		crNew:         0,
 		crNewPending:  false,
@@ -121,7 +119,7 @@ func NewTimer(parent references.IComponent, factory references.IComponentFactory
 		cnt:           false,
 		reflect:       nil,
 	}
-	component.Register(parent, m)
+	m.BaseComponent.Register(factory, parent, "timer", instance, m, "Timer")
 	m.reflect = NewTimerReflect(m)
 	m.Reset()
 	return m

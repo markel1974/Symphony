@@ -17,18 +17,16 @@ const (
 // RomLoader provides functionality to load ROM files, including kernal, basic, and character ROMs, with optional fallback handling.
 type RomLoader struct {
 	*component.BaseComponent
-	factory references.IComponentFactory
-	cfg     *config.Config
+	cfg *config.Config
 }
 
 // NewRomLoader initializes and returns a new instance of RomLoader configured with the provided Config.
-func NewRomLoader(parent references.IComponent, factory references.IComponentFactory, label int) *RomLoader {
+func NewRomLoader(parent references.IComponent, factory references.IComponentFactory, instance int) *RomLoader {
 	rl := &RomLoader{
-		BaseComponent: component.NewBaseComponent(componentId, label, references.IdIROMLoaderC64),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		cfg:           nil,
 	}
-	component.Register(parent, rl)
+	rl.BaseComponent.Register(factory, parent, Identifier(), instance, rl, references.IdIROMLoaderC64(rl))
 	return rl
 }
 

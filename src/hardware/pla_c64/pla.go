@@ -15,7 +15,6 @@ type WriteFn func(uint16, uint8)
 // PLA represents a structure managing memory configurations, ports, and sockets for emulation purposes.
 type PLA struct {
 	*component.BaseComponent
-	factory         references.IComponentFactory
 	vic             references.IVIC
 	sid             references.ISID
 	cia1            references.ICIA
@@ -41,11 +40,10 @@ type PLA struct {
 }
 
 // NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
-func NewPLA(parent references.IComponent, factory references.IComponentFactory, label int) *PLA {
+func NewPLA(parent references.IComponent, factory references.IComponentFactory, instance int) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
-		BaseComponent:   component.NewBaseComponent(componentId, label, references.IdIPlaC64),
-		factory:         factory,
+		BaseComponent:   component.NewBaseComponent(),
 		vic:             nil,
 		sid:             nil,
 		cia1:            nil,
@@ -69,12 +67,12 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
 	}
-	component.Register(parent, b)
-	b.ports = NewPorts(b, 0)
+	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIPlaC64(b))
 	return b
 }
 
 func (b *PLA) Setup(vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64, cfg *config.Config) error {
+	b.ports = NewPorts(b.GetFactory(), b, 0)
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1

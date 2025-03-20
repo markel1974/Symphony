@@ -16,7 +16,6 @@ const cSize8K = 0x2000
 // Generic represents the structure and functionality of a cartridge, including memory banks, intervals, and configuration.
 type Generic struct {
 	*component.BaseComponent
-	factory    references.IComponentFactory
 	loaderId   string
 	b0Interval references.RomInterval
 	b1Interval references.RomInterval
@@ -34,10 +33,10 @@ func GetType() int {
 }
 
 // New creates and returns a new instance of the Generic cartridge implementing the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, label int) references.ICartridgeC64 {
+func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
+	const id = "generic"
 	g := &Generic{
-		factory:       factory,
-		BaseComponent: component.NewBaseComponent("generic", label, references.IdICartridgeC64),
+		BaseComponent: component.NewBaseComponent(),
 		loaderId:      "generic",
 		game:          0,
 		exRom:         0,
@@ -45,7 +44,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 		b1Interval:    0,
 		intervals:     0,
 	}
-	component.Register(parent, g)
+	g.BaseComponent.Register(factory, parent, id, instance, g, references.IdICartridgeC64(g))
 	return g
 }
 

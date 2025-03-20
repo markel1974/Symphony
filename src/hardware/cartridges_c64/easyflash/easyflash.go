@@ -20,7 +20,6 @@ import (
 // It contains fields for configuration, state management, memory mapping, flash state, and cartridge-specific options.
 type CartridgeEasyFlash struct {
 	*component.BaseComponent
-	factory         references.IComponentFactory
 	loaderId        string
 	board           references.IExpansionC64
 	intervalLo      references.RomInterval
@@ -48,10 +47,10 @@ func GetType() int {
 }
 
 // NewEasyFlash creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridgeC64 interface.
-func NewEasyFlash(parent references.IComponent, factory references.IComponentFactory, label int) *CartridgeEasyFlash {
+func NewEasyFlash(parent references.IComponent, factory references.IComponentFactory, instance int) *CartridgeEasyFlash {
+	const id = "easyFlash"
 	ef := &CartridgeEasyFlash{
-		BaseComponent:   component.NewBaseComponent("easyFlash", label, references.IdICartridgeC64),
-		factory:         factory,
+		BaseComponent:   component.NewBaseComponent(),
 		loaderId:        "easyFlash",
 		game:            1,
 		exRom:           1,
@@ -68,7 +67,7 @@ func NewEasyFlash(parent references.IComponent, factory references.IComponentFac
 		memoryConfigIdx: -1,
 		updateEApi:      true,
 	}
-	component.Register(parent, ef)
+	ef.BaseComponent.Register(factory, parent, id, instance, ef, references.IdICartridgeC64(ef))
 	return ef
 }
 

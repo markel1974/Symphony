@@ -18,7 +18,6 @@ const (
 // Dispatcher is a structure responsible for managing CPU interactions, peripherals, virtual drives, and LED signals.
 type Dispatcher struct {
 	*component.BaseComponent
-	factory         references.IComponentFactory
 	atn             bool
 	cpuPort         uint8
 	cpuData         uint8
@@ -30,15 +29,14 @@ type Dispatcher struct {
 }
 
 // NewDispatcher creates and initializes a new Dispatcher instance with the given parent component and suffix.
-func NewDispatcher(parent references.IComponent, factory references.IComponentFactory, label int) *Dispatcher {
+func NewDispatcher(parent references.IComponent, factory references.IComponentFactory, instance int) *Dispatcher {
 	c := &Dispatcher{
-		BaseComponent:   component.NewBaseComponent(componentId, label, references.IdIIec),
-		factory:         factory,
+		BaseComponent:   component.NewBaseComponent(),
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignal2[int, uint8](),
 	}
-	component.Register(parent, c)
+	c.BaseComponent.Register(factory, parent, Identifier(), instance, c, references.IdIIec(c))
 	return c
 }
 
@@ -50,7 +48,7 @@ func (c *Dispatcher) Setup(q references.IQuartz, cfg *config.Config) error {
 		if len(d.Kind) > 0 {
 			kind = d.Kind
 		}
-		device, err := c.factory.Create(c, kind, deviceNumber)
+		device, err := c.GetFactory().Create(c, kind, deviceNumber)
 		if err != nil {
 			return err
 		}

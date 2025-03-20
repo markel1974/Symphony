@@ -15,7 +15,6 @@ const Id = "SCPU"
 // It includes an ID, expansion board, CPU socket, programmable interrupt controller, CPU, and quartz clock source.
 type ExternalCPU struct {
 	*component.BaseComponent
-	factory   references.IComponentFactory
 	loaderId  string
 	board     references.IExpansionC64
 	cpuSocket *CPUSocket
@@ -25,17 +24,17 @@ type ExternalCPU struct {
 }
 
 // New returns a new instance of the ExternalCPU struct implementing the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, label int) references.ICartridgeC64 {
+func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
+	const id = "externalCpu"
 	r := &ExternalCPU{
-		BaseComponent: component.NewBaseComponent("externalCpu", label, references.IdICartridgeC64),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		board:         nil,
 		cpuSocket:     nil,
 		pic:           nil,
 		cpu:           nil,
 		quartz:        nil,
 	}
-	component.Register(parent, r)
+	r.BaseComponent.Register(factory, parent, id, instance, r, references.IdICartridgeC64(r))
 	return r
 }
 
@@ -50,16 +49,18 @@ func (s *ExternalCPU) Setup(board references.IExpansionC64, ldr references.ICart
 	s.loaderId = ldr.GetId()
 	s.board.SetDMALow(true)
 
-	s.quartz = quartz.NewQuartz(s, s.factory, 0)
-	s.pic = pic_6510.NewPIC(s, s.factory, 0)
+	s.quartz = quartz.NewQuartz(s, s.GetFactory(), 0)
+	s.pic = pic_6510.NewPIC(s, s.GetFactory(), 0)
 
 	s.pic.Setup(s.quartz)
 
 	s.cpuSocket = NewCPUSocket()
-	s.cpu = mos6510.NewCPU(s, s.factory, 0)
+	s.cpu = mos6510.NewCPU(s, s.GetFactory(), 0)
 
 	s.cpuSocket.Setup(s)
-	s.cpu.Setup(s.cpuSocket)
+	if err := s.cpu.Setup(s.cpuSocket); err != nil {
+		return err
+	}
 
 	s.board.IRQTriggerBind(s.pic.TriggerIRQ)
 	s.board.IRQClearBind(s.pic.ClearIRQ)

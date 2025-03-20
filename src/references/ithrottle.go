@@ -1,6 +1,8 @@
 package references
 
-const IdIThrottle = "IThrottle"
+func IdIThrottle(_ IThrottle) string {
+	return "IThrottle"
+}
 
 // IThrottle defines an interface for controlling the execution rate and tracking the count of operations executed.
 // Throttle adjusts execution speed to meet a specified rate, ensuring operations run within defined limits.

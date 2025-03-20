@@ -46,17 +46,15 @@ type cycleData struct {
 // Graphics systems and border handling are also supported using their specific components within the VIC structure.
 type VIC struct {
 	*component.BaseComponent
-	factory         references.IComponentFactory
-	cfg             *config.Config
-	collisions      *Collisions
-	sprites         *Sprites
-	graphics        *Graphics
-	borders         *Borders
-	lineStart       int
-	drawLine        bool
-	vBlankNextCycle bool
-	curr            *cycleData
-
+	cfg              *config.Config
+	collisions       *Collisions
+	sprites          *Sprites
+	graphics         *Graphics
+	borders          *Borders
+	lineStart        int
+	drawLine         bool
+	vBlankNextCycle  bool
+	curr             *cycleData
 	socket           references.IVICSocket
 	banks            references.IVICBanks
 	mXx              []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
@@ -112,10 +110,9 @@ type VIC struct {
 }
 
 // NewVIC creates and returns a pointer to a newly initialized VIC instance with default values and given id.
-func NewVIC(parent references.IComponent, factory references.IComponentFactory, label int) *VIC {
+func NewVIC(parent references.IComponent, factory references.IComponentFactory, instance int) *VIC {
 	vic := &VIC{
-		BaseComponent:    component.NewBaseComponent(componentId, label, references.IdIVIC),
-		factory:          factory,
+		BaseComponent:    component.NewBaseComponent(),
 		banks:            nil,
 		mXx:              make([]uint16, SpriteNumber),
 		mXy:              make([]uint8, SpriteNumber),
@@ -168,7 +165,7 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		ecm:              false,
 		columnSel:        false,
 	}
-	component.Register(parent, vic)
+	vic.BaseComponent.Register(factory, parent, Identifier(), instance, vic, references.IdIVIC(vic))
 	return vic
 }
 

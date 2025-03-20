@@ -33,7 +33,6 @@ const (
 // REU represents a RAM Expansion Unit (REU) type with attributes for RAM, registers, IRQ masking, size, and expansion handling.
 type REU struct {
 	*component.BaseComponent
-	factory   references.IComponentFactory
 	loaderId  string
 	ram       []uint8 // REU RAM
 	mask      uint32  // REU RAM address bit mask
@@ -45,10 +44,10 @@ type REU struct {
 
 // newReu initializes a new REU instance with a given size and returns an ICartridgeC64 implementation.
 // It sets up REU registers, memory size, and RAM contents, and performs an initial reset.
-func newReu(parent references.IComponent, factory references.IComponentFactory, label int, size int) references.ICartridgeC64 {
+func newReu(parent references.IComponent, factory references.IComponentFactory, instance int, size int) references.ICartridgeC64 {
+	const id = "reu"
 	r := &REU{
-		BaseComponent: component.NewBaseComponent("reu", label, references.IdICartridgeC64),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		loaderId:      "reu" + strconv.Itoa(size),
 		regs:          make([]uint8, 16),
 		size:          size,
@@ -57,7 +56,7 @@ func newReu(parent references.IComponent, factory references.IComponentFactory, 
 		ram:           make([]uint8, size),
 		irqMask:       0,
 	}
-	component.Register(parent, r)
+	r.BaseComponent.Register(factory, parent, id, instance, r, references.IdICartridgeC64(r))
 	r.Reset()
 	return r
 }

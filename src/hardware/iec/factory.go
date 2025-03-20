@@ -4,7 +4,9 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-const componentId = "iec"
+func Identifier() string {
+	return "iec"
+}
 
 type Factory struct {
 }
@@ -14,12 +16,7 @@ func NewFactory() *Factory {
 }
 
 func (t *Factory) Identifier() string {
-	return componentId
-}
-
-func (t *Factory) Kind() interface{} {
-	z := (*Dispatcher)(nil)
-	return references.IIec(z)
+	return Identifier()
 }
 
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {

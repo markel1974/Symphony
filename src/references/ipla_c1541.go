@@ -2,7 +2,9 @@ package references
 
 import "github.com/markel1974/c64emu/src/config"
 
-const IdIPLAc1541 = "IPLAc1541"
+func IdIPLAc1541(_ IPLAc1541) string {
+	return "IPLAc1541"
+}
 
 // IPLAc1541 represents an interface for handling PLA logic in a 1541 disk drive emulation.
 // Setup initializes the interface by linking it to VIA components, ROM loader, and configuration data.

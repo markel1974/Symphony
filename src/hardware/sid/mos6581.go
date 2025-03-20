@@ -16,7 +16,6 @@ const (
 // SID represents a chip emulation containing configurations, registers, and audio handling functionality.
 type SID struct {
 	*component.BaseComponent
-	factory      references.IComponentFactory
 	socket       references.ISIDSocket
 	registers    []uint8
 	cfg          *config.Config
@@ -25,16 +24,15 @@ type SID struct {
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
-func NewSID(parent references.IComponent, factory references.IComponentFactory, label int) *SID {
+func NewSID(parent references.IComponent, factory references.IComponentFactory, instance int) *SID {
 	s := &SID{
-		BaseComponent: component.NewBaseComponent(componentId, label, references.IdISID),
-		factory:       factory,
+		BaseComponent: component.NewBaseComponent(),
 		socket:        nil,
 		registers:     make([]uint8, RegisterCount),
 		cfg:           nil,
 		audioBuilder:  nil,
 	}
-	component.Register(parent, s)
+	s.BaseComponent.Register(factory, parent, Identifier(), instance, s, references.IdISID(s))
 	s.reflect = NewSidReflect(s)
 	return s
 }
@@ -45,7 +43,6 @@ func (sid *SID) Setup(socket references.ISIDSocket, fragFreq int, rasters int, c
 	sid.audioBuilder = NewAudioBuilder(sid.socket.GetPlayer(), true, fragFreq, rasters)
 	sid.cfg = cfg
 	sid.cfg.Bind(sid.onConfigChanged)
-
 	return nil
 }
 

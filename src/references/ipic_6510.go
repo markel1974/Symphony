@@ -9,7 +9,9 @@ const (
 	OpFlagIntDelayed  = 0x04
 )
 
-const IdIPIC6510 = "IPIC6510"
+func IdIPIC6510(_ IPIC6510) string {
+	return "IPIC6510"
+}
 
 // IPIC6510 provides an interface for managing the programmable interrupt controller (PIC) in a 6510 CPU simulation.
 // Reset reinitializes the state of the PIC to default values.
