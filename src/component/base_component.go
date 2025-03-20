@@ -249,7 +249,7 @@ func (bc *BaseComponent) CommandDocumentation(data map[string]interface{}) {
 func (bc *BaseComponent) Print(w io.Writer, indent string, showComponents bool) {
 	_, _ = fmt.Fprintf(w, "%s%s", indent, bc.GetId())
 	if showComponents {
-		_, _ = fmt.Fprintf(w, " (%T)", bc)
+		_, _ = fmt.Fprintf(w, " (%T)", bc.node.GetComponent())
 	}
 	_, _ = fmt.Fprintln(w)
 	for _, child := range bc.node.GetChildren() {
