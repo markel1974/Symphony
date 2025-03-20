@@ -27,6 +27,7 @@ type BaseComponent struct {
 	node       references.INode
 	properties *Properties
 	commands   *Commands
+	propagate  bool
 }
 
 // NewBaseComponent creates a new instance of BaseComponent with a unique ID, name, label, and initialized properties and commands.
@@ -39,6 +40,7 @@ func NewBaseComponent() *BaseComponent {
 		kind:       "",
 		properties: NewProperties(),
 		commands:   NewCommands(),
+		propagate:  true,
 	}
 	return bc
 }
@@ -56,6 +58,14 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 	} else {
 		bc.node = newNode(nil, component)
 	}
+}
+
+func (bc *BaseComponent) DisablePropagate() {
+	bc.propagate = false
+}
+
+func (bc *BaseComponent) Propagate() bool {
+	return bc.propagate
 }
 
 func (bc *BaseComponent) Kind() string {
@@ -392,6 +402,11 @@ func _restore(factory references.IComponentFactory, parentComponent references.I
 			return nil, fmt.Errorf("error restoring component %s: %w", id, err)
 		}
 	}
+
+	if !component.Propagate() {
+		return component, nil
+	}
+
 	if childrenSegment, _ := GetSegment(childrenId, stateI); len(childrenSegment) > 0 {
 		for k, childI := range childrenSegment {
 			if childI == nil {

@@ -61,6 +61,7 @@ func NewCIA(parent references.IComponent, factory references.IComponentFactory, 
 		timerB:        nil,
 	}
 	m.BaseComponent.Register(factory, parent, Identifier(), instance, m, references.IdICIA(m))
+	m.BaseComponent.DisablePropagate()
 	return m
 }
 

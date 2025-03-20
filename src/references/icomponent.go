@@ -49,6 +49,8 @@ type INavigate interface {
 
 	Kind() string
 
+	Propagate() bool
+
 	GetChild(id string) IComponent
 
 	GetChildren() []IComponent
