@@ -194,8 +194,10 @@ func (r *Server) handleConnection(nConn net.Conn) {
 			continue
 		}
 
+		r.auth.IsAuthenticated()
 		ctx := context.NewContext(r.ticker, channel, channel, r.auth, r.factory, r.template, r.prompt, r.autosave)
 		ctx.Setup()
+		//ctx.setAuthenticatedState()
 		//ctx.SetEnterKey(10)
 
 		// out-of-band requests

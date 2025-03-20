@@ -1,6 +1,9 @@
 package references
 
-import "io"
+import (
+	"github.com/markel1974/c64emu/src/shell/cli"
+	"io"
+)
 
 // INode represents a hierarchical node structure allowing management of components, child nodes, and traversal operations.
 // AddComponent adds a child component to the node and returns the new child node.
@@ -18,6 +21,18 @@ type INode interface {
 // IHardware defines an interface for hardware functionalities with a method to reset the hardware state.
 type IHardware interface {
 	Reset()
+}
+
+type ICommand interface {
+	GetCommand() *cli.Command
+
+	CommandAdd(id string, desc string, command interface{}) error
+
+	CommandExec(string, ...interface{}) (interface{}, error)
+
+	CommandExecPath(string, string, ...interface{}) (interface{}, error)
+
+	CommandDocumentation(map[string]interface{})
 }
 
 // INavigate is an interface for managing and navigating hierarchical components and properties.
@@ -77,14 +92,6 @@ type INavigate interface {
 
 	RestorePath(string, map[string]interface{}) error
 
-	CommandAdd(id string, desc string, command interface{}) error
-
-	CommandExec(string, ...interface{}) (interface{}, error)
-
-	CommandExecPath(string, string, ...interface{}) (interface{}, error)
-
-	CommandDocumentation(map[string]interface{})
-
 	Print(io.Writer, string, bool)
 }
 
@@ -92,6 +99,7 @@ type INavigate interface {
 type IComponent interface {
 	IHardware
 	INavigate
+	ICommand
 }
 
 // IComponentFactory defines an interface for creating IComponent instances with hierarchical and contextual parameters.

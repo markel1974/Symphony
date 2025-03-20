@@ -3,6 +3,7 @@ package component
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/shell/cli"
 	"io"
 	"strconv"
 	"strings"
@@ -19,6 +20,7 @@ const detailsId = "details"
 
 // BaseComponent provides a base implementation for composed components with properties, commands, and hierarchical structure.
 type BaseComponent struct {
+	cmd        *cli.Command
 	id         string
 	name       string
 	instance   int
@@ -41,6 +43,7 @@ func NewBaseComponent() *BaseComponent {
 		properties: NewProperties(),
 		commands:   NewCommands(),
 		propagate:  true,
+		cmd:        nil,
 	}
 	return bc
 }
@@ -51,10 +54,21 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 	bc.instance = instance
 	bc.kind = kind
 	bc.id = bc.name + ":" + strconv.Itoa(instance) + ":" + bc.kind
+
+	bc.cmd = cli.NewCommand()
+	bc.cmd.Run = func(cmd *cli.Command, pid int, args []string) {
+		_, _ = cmd.WriteLn([]byte{})
+		_, _ = cmd.WriteLn([]byte(bc.name))
+	}
+	bc.cmd.Use = bc.name
+	bc.cmd.Short = "Command " + bc.name
+	bc.cmd.Long = "This is a command"
+
 	if parent != nil && parent.GetNode() != nil {
 		pNode := parent.GetNode()
 		bc.node = newNode(pNode, component)
 		pNode.AddComponent(component)
+		_ = parent.GetCommand().AddCommand(bc.cmd)
 	} else {
 		bc.node = newNode(nil, component)
 	}
@@ -220,6 +234,10 @@ func (bc *BaseComponent) RestoreAll(state map[string]interface{}) error {
 		return err
 	}
 	return nil
+}
+
+func (bc *BaseComponent) GetCommand() *cli.Command {
+	return bc.cmd
 }
 
 // CommandAdd registers a new command with an identifier, description, and implementation; returns an error if the id exists.

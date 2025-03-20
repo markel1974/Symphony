@@ -1,9 +1,14 @@
 package glrender
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/render/glrender/pixels"
+	"github.com/markel1974/c64emu/src/shell"
+	"github.com/markel1974/c64emu/src/shell/authenticator"
+	"github.com/markel1974/c64emu/src/shell/cli"
+	"log"
 )
 
 type Render struct {
@@ -77,6 +82,12 @@ func (g *Render) run() {
 
 	c := win.Bounds().Center()
 	g.setup(c)
+
+	//v, ok := g.c64Board.(references.IComponent)
+	//if ok {
+	//	test(v.GetCommand())
+	//}
+
 	dt := g.c64Board.Throttle()
 
 	run := true
@@ -98,4 +109,29 @@ func (g *Render) run() {
 			run = !win.Closed()
 		}
 	}
+}
+
+func test(target *cli.Command) {
+	const prompt = "symphony" + " " + "1.4.3" + "> "
+	const port = 1234
+	const user = "u"
+	const secure = true
+	const pass = "p"
+
+	t := cli.NewCommand()
+	_ = t.AddCommand(target)
+	auth := authenticator.NewSimpleAuthenticator()
+	if err := auth.Setup(user, pass); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Starting shell")
+	fmt.Println("port", port)
+	fmt.Println("secure", secure)
+	fmt.Println("user", user)
+	k := shell.New(secure, auth, port, false)
+	k.SetPrompt(prompt)
+	k.SetTemplate(t)
+	go func() {
+		k.Start()
+	}()
 }

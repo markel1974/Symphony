@@ -69,7 +69,7 @@ func NewShell(auth interfaces.IAuthenticator, terminal interfaces.ITerminal, pro
 		state:         stateUndefined,
 	}
 	if auth.IsAuthenticated() {
-		c.state = stateAuthenticated
+		c.setAuthenticatedState()
 	}
 	return c
 }
