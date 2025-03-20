@@ -23,7 +23,7 @@ type CartridgeOcean struct {
 
 // GetType returns the type identifier of the Ocean cartridge as an integer constant.
 func GetType() int {
-	return loader.CARTRIDGE_OCEAN
+	return loader.CartridgeOcean
 }
 
 // New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.

@@ -29,7 +29,7 @@ type Generic struct {
 
 // GetType returns the constant value representing the CARTRIDGE_CRT type.
 func GetType() int {
-	return loader.CARTRIDGE_CRT
+	return loader.CartridgeCRT
 }
 
 // New creates and returns a new instance of the Generic cartridge implementing the ICartridgeC64 interface.
