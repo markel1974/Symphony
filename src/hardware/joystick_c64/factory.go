@@ -19,11 +19,6 @@ func (t *Factory) Identifier() string {
 	return Identifier()
 }
 
-func (t *Factory) Kind() interface{} {
-	z := (*Joystick)(nil)
-	return references.IJoystick(z)
-}
-
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewJoystick(parent, factory, label)
 }

@@ -19,11 +19,6 @@ func (t *Factory) Identifier() string {
 	return Identifier()
 }
 
-func (t *Factory) Kind() interface{} {
-	z := (*Board)(nil)
-	return references.IBoard(z)
-}
-
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewBoard(parent, factory, label)
 }

@@ -19,11 +19,6 @@ func (t *Factory) Identifier() string {
 	return Identifier()
 }
 
-func (t *Factory) Kind() interface{} {
-	z := (*DynamicThrottle)(nil)
-	return references.IThrottle(z)
-}
-
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewDynamicThrottle(parent, factory, label)
 }
