@@ -21,7 +21,7 @@ import (
 type CartridgeEasyFlash struct {
 	*component.BaseComponent
 	loaderId        string
-	board           references.IExpansionC64
+	expansion       references.IExpansionC64
 	intervalLo      references.RomInterval
 	intervalHi      references.RomInterval
 	memoryConfigIdx int
@@ -76,10 +76,10 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 	return NewEasyFlash(parent, factory, label)
 }
 
-// Setup initializes the CartridgeEasyFlash instance with the provided board and CRT loader data.
-func (c *CartridgeEasyFlash) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+// Setup initializes the CartridgeEasyFlash instance with the provided expansion and CRT loader data.
+func (c *CartridgeEasyFlash) Setup(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	var rawCart []byte
-	c.board = board
+	c.expansion = expansion
 	c.loaderId = ldr.GetId()
 	c.game = uint8(ldr.Game())
 	c.exRom = uint8(ldr.ExRom())
@@ -90,12 +90,12 @@ func (c *CartridgeEasyFlash) Setup(board references.IExpansionC64, ldr reference
 	var err error
 	if loader.Type(ldr.GetType()) == loader.TypeCrt {
 		c.filetype = loader.TypeCrt
-		if rawCart, err = c.crtAttach(ldr); err != nil {
+		if rawCart, err = c.initCrt(ldr); err != nil {
 			return err
 		}
 	} else {
 		c.filetype = loader.TypeBin
-		if rawCart, err = c.binAttach(ldr); err != nil {
+		if rawCart, err = c.initRaw(ldr); err != nil {
 			return err
 		}
 	}
@@ -168,8 +168,8 @@ func (c *CartridgeEasyFlash) initialize(rawCart []byte) {
 		copy(low[start:start+size], rawCart[p1:p1+size])
 		copy(high[start:start+size], rawCart[p2:p2+size])
 	}
-	c.stateLow = flash.NewFlash040(c.board, flash.KindB, low)
-	c.stateHigh = flash.NewFlash040(c.board, flash.KindB, high)
+	c.stateLow = flash.NewFlash040(c.expansion, flash.KindB, low)
+	c.stateHigh = flash.NewFlash040(c.expansion, flash.KindB, high)
 
 	if c.updateEApi {
 		eApiHeader := high[EApiStartAddress : EApiStartAddress+len(EApiHeader)]
@@ -187,7 +187,7 @@ func (c *CartridgeEasyFlash) initialize(rawCart []byte) {
 // controlUpdate handles updates to the cartridge control register
 // and adjusts the cartridge mode and configuration accordingly.
 // It manages changes to GAME/EXROM signal settings, LED state, and memory configuration based on input values.
-// Logs warnings for unsupported modes and invokes a board configuration change if required.
+// Logs warnings for unsupported modes and invokes a expansion configuration change if required.
 func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 	c.register02 = value & 0x87 // led, mode, exrom, game [led 0x80, other 0x07]
 	mode := references.CartridgeModeOff
@@ -232,7 +232,7 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 		c.intervalHi = v.IntervalHigh
 		//fmt.Println("EASYFLASH MEMORY CONFIG CHANGED:", mxg, "exrom:", c.exRom, "game:", c.game, "LO", c.intervalLo, "HIGH", c.intervalHi)
 		if update {
-			c.board.GameExRomConfigChanged()
+			c.expansion.GameExRomConfigChanged()
 		}
 	}
 	if led := value&0x80 == 0x80; led != c.led {
@@ -359,8 +359,8 @@ func (c *CartridgeEasyFlash) writeChipIfNotEmpty(fd io.Writer, chip references.I
 	return nil
 }
 
-// binAttach initializes a raw cartridge with default data and copies data from the provided CRTLoader into it.
-func (c *CartridgeEasyFlash) binAttach(ldr references.ICartridgeLoaderC64) ([]byte, error) {
+// initRaw initializes a raw cartridge with default data and copies data from the provided CRTLoader into it.
+func (c *CartridgeEasyFlash) initRaw(ldr references.ICartridgeLoaderC64) ([]byte, error) {
 	rawCart := make([]uint8, 0x100000)
 	for idx := range rawCart {
 		rawCart[idx] = 0xff
@@ -369,9 +369,9 @@ func (c *CartridgeEasyFlash) binAttach(ldr references.ICartridgeLoaderC64) ([]by
 	return rawCart, nil
 }
 
-// crtAttach processes CRT cartridge data using the provided CRTLoader
+// initCrt processes CRT cartridge data using the provided CRTLoader
 // and returns the formatted cartridge data or an error.
-func (c *CartridgeEasyFlash) crtAttach(ldr references.ICartridgeLoaderC64) ([]byte, error) {
+func (c *CartridgeEasyFlash) initCrt(ldr references.ICartridgeLoaderC64) ([]byte, error) {
 	raw := make([]uint8, 0x100000)
 	for idx := range raw {
 		raw[idx] = 0xff

@@ -49,7 +49,7 @@ func (c *CartridgeOcean) Setup(board references.IExpansionC64, ldr references.IC
 	if loader.Type(ldr.GetType()) == loader.TypeCrt {
 		return c.initCrt(ldr)
 	}
-	return c.initBin(ldr.GetData())
+	return c.initBin(ldr)
 }
 
 // Reset restores the CartridgeOcean state to its initial default, clearing any active configurations or settings.
@@ -135,7 +135,8 @@ func (c *CartridgeOcean) Emulate() {
 
 // initBin initializes the cartridge by parsing binary data, validating it and segmenting it into fixed-size memory banks.
 // It calculates the I/O mask and sets initial values for `lastData` and `currBank`. Returns an error if validation fails.
-func (c *CartridgeOcean) initBin(data []byte) error {
+func (c *CartridgeOcean) initBin(ldr references.ICartridgeLoaderC64) error {
+	data := ldr.GetData()
 	if err := loader.ValidateCartridge(data); err != nil {
 		return err
 	}

@@ -11,13 +11,13 @@ import (
 // It implements the ICartridgeC64 interface for handling cartridge-specific functionality within an expansion board.
 type CartridgeMagicDesk struct {
 	*component.BaseComponent
-	loaderId string
-	spec     *references.CartridgeSpec
-	banks    [][]byte
-	bankMask uint8
-	regVal   uint8
-	slot     uint8
-	board    references.IExpansionC64
+	loaderId  string
+	spec      *references.CartridgeSpec
+	banks     [][]byte
+	bankMask  uint8
+	regVal    uint8
+	slot      uint8
+	expansion references.IExpansionC64
 }
 
 // GetType returns an integer identifier representing the type of the Magic Desk cartridge.
@@ -42,12 +42,12 @@ func New(parent references.IComponent, factory references.IComponentFactory, ins
 
 // Setup initializes the CartridgeMagicDesk by configuring its board and loading data via the provided CRTLoader.
 func (c *CartridgeMagicDesk) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
-	c.board = board
+	c.expansion = board
 	c.loaderId = ldr.GetId()
 	if loader.Type(ldr.GetType()) == loader.TypeCrt {
 		return c.initCrt(ldr)
 	}
-	return c.initBin(ldr.GetData())
+	return c.initBin(ldr)
 }
 
 // Reset reinitializes the cartridge state, clearing registers and resetting to default configurations.
@@ -108,7 +108,7 @@ func (c *CartridgeMagicDesk) IOWrite(addr uint16, data uint8) bool {
 		if spec != c.spec {
 			fmt.Println("magic desk changing config", c.spec)
 			c.spec = spec
-			c.board.GameExRomConfigChanged()
+			c.expansion.GameExRomConfigChanged()
 		}
 	}
 	return false
@@ -142,7 +142,8 @@ func (c *CartridgeMagicDesk) Emulate() {
 
 // initBin initializes the cartridge by dividing the given binary data into 8KB banks and setting the bank mask based on size.
 // Returns an error if the size of the data is unsupported.
-func (c *CartridgeMagicDesk) initBin(data []byte) error {
+func (c *CartridgeMagicDesk) initBin(ldr references.ICartridgeLoaderC64) error {
+	data := ldr.GetData()
 	c.banks = [][]byte{}
 	c.bankMask = 0x7f
 	c.regVal = 0

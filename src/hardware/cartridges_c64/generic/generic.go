@@ -24,7 +24,7 @@ type Generic struct {
 	intervals  references.RomInterval
 	game       uint8
 	exRom      uint8
-	board      references.IExpansionC64
+	expansion  references.IExpansionC64
 }
 
 // GetType returns the constant value representing the CARTRIDGE_CRT type.
@@ -48,9 +48,9 @@ func New(parent references.IComponent, factory references.IComponentFactory, ins
 	return g
 }
 
-// Setup initializes the Generic cartridge by setting the board and loading data using the provided CRTLoader.
-func (c *Generic) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
-	c.board = board
+// Setup initializes the Generic cartridge by setting the expansion and loading data using the provided CRTLoader.
+func (c *Generic) Setup(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+	c.expansion = expansion
 	c.loaderId = ldr.GetId()
 	if loader.Type(ldr.GetType()) == loader.TypeCrt {
 		return c.initCrt(ldr)
