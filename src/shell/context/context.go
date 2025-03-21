@@ -299,6 +299,14 @@ func (c *Context) SetExit() {
 	c.Exit = true
 }
 
+func (c *Context) SetCWD(arg string) bool {
+	return c.tasks.SetCWD(arg)
+}
+
+func (c *Context) PrintPWD() string {
+	return c.tasks.PrintPWD()
+}
+
 func (c *Context) SetBasePath(arg string) {
 	c.tasks.SetBasePath(arg)
 }

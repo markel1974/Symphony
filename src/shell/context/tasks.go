@@ -21,7 +21,6 @@ import (
 	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -111,7 +110,9 @@ type TaskManager struct {
 	ticker     *adaptiveticker.AdaptiveTicker
 	foreground *Task
 	selector   *TaskSelector
-	root       *cli.Command
+	//cdCommand  *cli.Command
+	cwd        *cli.Command
+	rootD      *cli.Command
 	path       string
 	dirty      bool
 	width      int
@@ -127,23 +128,53 @@ func NewTaskManager(ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *a
 		foreground: nil,
 		selector:   NewTaskSelector(),
 		timersChan: timersChannel,
-		root:       root,
+		cwd:        root,
+		rootD:      root,
 		dirty:      false,
 		fullPaint:  true,
 		width:      80,
 		height:     24,
 		ids:        adaptiveticker.NewIds(1024),
+		//cdCommand:  cli.NewCommand(),
 	}
+	/*
+		t.cdCommand = cli.NewCommand()
+		t.cdCommand.Use = "cd"
+		t.cdCommand.Short = "cd"
+		t.cdCommand.Long = "cd"
+		t.cdCommand.Run = func(cmd *cli.Command, pid int, args []string) {
+			if len(args) != 1 {
+				if t.cwd != nil {
+					if r := t.cwd.GetRootContext(); r != nil {
+						r.WriteLn("")
+						r.WriteLn("Empty argument")
+					}
+				}
+				return
+			}
+			t.SetCWD(args[0])
+		}
 
+	*/
 	return t
 }
 
 func (c *TaskManager) Execute(line string, template *Task) bool {
-	if !c.root.Parse(line) {
+	if !c.cwd.Parse(line) {
 		return false
 	}
+	var pCmd *cli.Command
+	var flags []string
+	var err error = nil
 
-	pCmd, flags, err := c.root.Prepare()
+	//if strings.HasPrefix(line, "cd ") {
+	//	v := strings.TrimPrefix(line, "cd ")
+	//	pCmd = c.cdCommand
+	//	flags = []string{v}
+	//	err = nil
+	//} else {
+	pCmd, flags, err = c.cwd.Prepare()
+	//}
 	if err != nil {
 		return false
 	}
@@ -163,7 +194,7 @@ func (c *TaskManager) Execute(line string, template *Task) bool {
 		task.Scale = template.Scale
 	}
 
-	if err = c.root.Execute(task.cmd, flags, task.pid); err == nil {
+	if err = c.cwd.Execute(task.cmd, flags, task.pid); err == nil {
 		if task.cmd.Activate {
 			if !task.cmd.Background {
 				c.foreground = task
@@ -279,12 +310,32 @@ func (c *TaskManager) SetSelectionDisabled() {
 
 	c.PaintRequest()
 }
-
 func (c *TaskManager) SetBasePath(arg string) bool {
 	c.path = arg
+	return true
+}
+
+func (c *TaskManager) PrintPWD() string {
+	return c.cwd.CommandPath()
+}
+
+func (c *TaskManager) SetCWD(arg string) bool {
+	if arg == ".." {
+		if c.cwd.Parent() != nil {
+			c.cwd = c.cwd.Parent()
+			return true
+		}
+	} else {
+		path := strings.Split(arg, "/")
+		if cmd, _, err := c.cwd.Traverse(path); err == nil {
+			c.cwd = cmd
+			return true
+		}
+	}
+	return false
 
 	/*
-		var cmd * cli.Command
+		var cmd *cli.Command
 
 		arg = strings.Trim(arg, " ")
 
@@ -308,9 +359,8 @@ func (c *TaskManager) SetBasePath(arg string) bool {
 		if cmd != nil {
 			c.cmd = cmd
 		}
-	*/
 
-	return true
+	*/
 }
 
 func (c *TaskManager) SetSelectionOptions(option rune, value float64) bool {
@@ -376,16 +426,16 @@ func (c *TaskManager) GetSuggestion(in string, _ int) (string, []string, bool) {
 	args := strings.Split(in, " ")
 	if len(args) == 1 {
 		data = args[0]
-		cmd = c.root
+		cmd = c.cwd
 	} else if len(args) > 1 {
 		var e error
 		data = args[len(args)-1]
 		args = args[:len(args)-1]
 
-		if cmd, _, e = c.root.Traverse(args); e != nil {
+		if cmd, _, e = c.cwd.Traverse(args); e != nil {
 			cmd = nil
 		}
-		if cmd == c.root {
+		if cmd == c.cwd {
 			cmd = nil
 		}
 	}
@@ -621,7 +671,7 @@ func (c *TaskManager) ExecPaint(terminal interfaces.ITerminal) bool {
 func (c *TaskManager) ListTasks() []string {
 	var out []string
 	dir := "./"
-	if files, err := ioutil.ReadDir(dir); err == nil {
+	if files, err := os.ReadDir(dir); err == nil {
 		for _, f := range files {
 			if f.IsDir() {
 				continue
@@ -665,7 +715,7 @@ func (c *TaskManager) SaveTasks(name string) bool {
 
 	name += tasksFileExtension
 
-	if err = ioutil.WriteFile(name, data, 0644); err != nil {
+	if err = os.WriteFile(name, data, 0644); err != nil {
 		log.Println("Error writing task file ", name, ": ", err.Error())
 		return false
 	}
@@ -681,7 +731,7 @@ func (c *TaskManager) RestoreTasks(name string) bool {
 	}
 	name += tasksFileExtension
 
-	data, err := ioutil.ReadFile(name)
+	data, err := os.ReadFile(name)
 	if err != nil {
 		return false
 	}

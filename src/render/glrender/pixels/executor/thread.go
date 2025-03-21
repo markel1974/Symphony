@@ -16,6 +16,7 @@ func init() {
 }
 
 type Thread struct {
+	done          chan bool
 	postQueue     chan func()
 	callQueue     chan func()
 	callWaitQueue chan bool
@@ -23,6 +24,7 @@ type Thread struct {
 
 func NewThread() *Thread {
 	return &Thread{
+		done:          make(chan bool),
 		postQueue:     make(chan func(), queueCap),
 		callQueue:     make(chan func(), queueCap),
 		callWaitQueue: make(chan bool),
@@ -59,20 +61,20 @@ func (m *Thread) CallErr(f func() error) error {
 }
 
 func (m *Thread) Run(main func()) error {
-	done := make(chan bool)
-	m.mainLoop(main, done)
-	m.eventLoop(done)
+	m.mainLoop(main)
+	m.eventLoop()
 	return nil
 }
 
-func (m *Thread) mainLoop(fn func(), done chan bool) {
+func (m *Thread) mainLoop(main func()) {
 	go func() {
-		fn()
-		done <- true
+		main()
+		m.done <- true
 	}()
 }
 
-func (m *Thread) eventLoop(done chan bool) {
+func (m *Thread) eventLoop() {
+	defer close(m.done)
 	defer close(m.postQueue)
 	defer close(m.callQueue)
 	defer close(m.callWaitQueue)
@@ -84,7 +86,7 @@ func (m *Thread) eventLoop(done chan bool) {
 		case fnCq := <-m.callQueue:
 			fnCq()
 			m.callWaitQueue <- true
-		case <-done:
+		case <-m.done:
 			return
 		}
 	}

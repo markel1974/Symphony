@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware"
-	c64board "github.com/markel1974/c64emu/src/hardware/c64/board"
-	vic20board "github.com/markel1974/c64emu/src/hardware/vic20/board"
+	"github.com/markel1974/c64emu/src/player"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/render/asciirender"
 	"github.com/markel1974/c64emu/src/render/glrender"
+	"github.com/markel1974/c64emu/src/shell"
+	"github.com/markel1974/c64emu/src/shell/authenticator"
+	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/version"
+	"log"
 )
 
 //TODO WASM
@@ -88,7 +91,49 @@ func restoreTest(factory references.IComponentFactory) {
 */
 
 type IRender interface {
-	Start() error
+	Create(w int, h int) (references.IDisplayBuffer, error)
+	Start(board references.IBoard) error
+}
+
+func createShell(target *cli.Command) error {
+	const prompt = "symphony" + " " + "1.4.3" + "> "
+	const port = 1234
+	const user = "u"
+	const secure = true
+	const pass = "p"
+
+	t := cli.NewCommand()
+	_ = t.AddCommand(target)
+	auth := authenticator.NewSimpleAuthenticator()
+	if err := auth.Setup(user, pass); err != nil {
+		return err
+	}
+	fmt.Println("Starting shell")
+	fmt.Println("port", port)
+	fmt.Println("secure", secure)
+	fmt.Println("user", user)
+	k := shell.New(secure, auth, port, false)
+	k.SetPrompt(prompt)
+	k.SetTemplate(t)
+	go func() {
+		k.Start()
+	}()
+	return nil
+}
+
+func createRender(id string) IRender {
+	switch id {
+	case "ascii":
+		return asciirender.New()
+	case "gl":
+		return glrender.New()
+	default:
+		return glrender.New()
+	}
+}
+
+func createPlayer( /* playerId */ _ string) references.IPlayer {
+	return player.NewAudio()
 }
 
 func main() {
@@ -100,17 +145,20 @@ func main() {
 	var disks string
 	var prg string
 	var noJiffy bool
-	var ascii bool
-	var mode string
+	var boardId string
+	var playerId string
+	var renderId string
+
 	flag.BoolVar(&showHelp, "h", false, "show this help")
 	flag.BoolVar(&showVersion, "v", false, "show version")
 	flag.StringVar(&cartridges, "c", "", "cartridge path")
 	flag.StringVar(&drives, "d", "", "drives path")
 	flag.StringVar(&disks, "f", "", "disks")
-	flag.StringVar(&mode, "m", "", "hardware mode: vic20, c64")
+	flag.StringVar(&boardId, "m", "c64", "hardware: vic20, c64")
+	flag.StringVar(&renderId, "r", "gl", "graphics: gl, ascii")
+	flag.StringVar(&playerId, "a", "default", "audio: default")
 	flag.StringVar(&prg, "p", "", "prg path")
 	flag.BoolVar(&noJiffy, "j", false, "disable jiffy")
-	flag.BoolVar(&ascii, "a", false, "ascii render")
 	flag.Parse()
 
 	if showHelp {
@@ -152,26 +200,29 @@ func main() {
 		cfg.DisableJiffy()
 	}
 
-	var g IRender
-	var b references.IBoard
 	factory := hardware.NewFactory(cfg)
-
-	//restoreTest(factory)
-
-	if mode == "vic20" {
-		b = vic20board.NewBoard(nil, factory, 0)
-	} else {
-		b = c64board.NewBoard(nil, factory, 0)
+	component, err := factory.Create(nil, boardId, 0)
+	if err != nil {
+		log.Fatal(err)
 	}
-
-	if ascii {
-		g = asciirender.New(b, cfg)
-	} else {
-		g = glrender.New(b, cfg)
+	board, ok := component.(references.IBoard)
+	if !ok || board == nil {
+		log.Fatal("board is nil")
 	}
-
-	if err := g.Start(); err != nil {
-		fmt.Println(err)
-		return
+	render := createRender(renderId)
+	w, h := board.GetScreenSize()
+	display, err := render.Create(w, h)
+	if err != nil {
+		log.Fatal(err)
+	}
+	audio := createPlayer(playerId)
+	if err = board.Setup(display, audio, cfg); err != nil {
+		log.Fatal(err)
+	}
+	if err = createShell(component.GetCommand()); err != nil {
+		log.Fatal(err)
+	}
+	if err = render.Start(board); err != nil {
+		log.Fatal(err)
 	}
 }

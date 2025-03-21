@@ -799,7 +799,7 @@ func (c *Command) execute(a []string, pid int) (err error) {
 		argWoFlags = a
 	}
 
-	if err := c.ValidateArgs(argWoFlags); err != nil {
+	if err = c.ValidateArgs(argWoFlags); err != nil {
 		return err
 	}
 
@@ -815,14 +815,14 @@ func (c *Command) execute(a []string, pid int) (err error) {
 		}
 	}
 	if c.PreRunE != nil {
-		if err := c.PreRunE(c, pid, argWoFlags); err != nil {
+		if err = c.PreRunE(c, pid, argWoFlags); err != nil {
 			return err
 		}
 	} else if c.PreRun != nil {
 		c.PreRun(c, pid, argWoFlags)
 	}
 
-	if err := c.validateRequiredFlags(); err != nil {
+	if err = c.validateRequiredFlags(); err != nil {
 		return err
 	}
 	if c.RunE != nil {
@@ -869,6 +869,47 @@ func (c *Command) prepareCommand() (*Command, []string, error) {
 	var flags []string
 	var err error
 
+	//if c.HasParent() {
+	//	return c.Root().prepareCommand()
+	//}
+
+	// initialize help as the last point possible to allow for user overriding
+	c.InitDefaultHelpCmd()
+
+	args := c.args
+
+	if c.TraverseChildren {
+		cmd, flags, err = c.Traverse(args)
+	} else {
+		cmd, flags, err = c.Find(args)
+	}
+
+	if err != nil {
+		z := c
+		if cmd != nil {
+			z = cmd
+		}
+		if !z.SilenceErrors {
+			z.Printf(DefaultEol+"Error %s"+DefaultEol, err.Error())
+			z.Printf("Run '%v --help' for usage."+DefaultEol, c.CommandPath())
+		}
+		return z, flags, err
+	}
+
+	cmd.commandCalledAs.called = true
+	if cmd.commandCalledAs.name == "" {
+		cmd.commandCalledAs.name = cmd.Name()
+	}
+
+	return cmd, flags, err
+}
+
+/*
+func (c *Command) prepareCommand() (*Command, []string, error) {
+	var cmd *Command
+	var flags []string
+	var err error
+
 	if c.HasParent() {
 		return c.Root().prepareCommand()
 	}
@@ -903,6 +944,7 @@ func (c *Command) prepareCommand() (*Command, []string, error) {
 
 	return cmd, flags, err
 }
+*/
 
 func (c *Command) Execute(cmd *Command, flags []string, pid int) error {
 	if cmd == nil {

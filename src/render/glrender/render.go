@@ -1,65 +1,42 @@
 package glrender
 
 import (
-	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/render/glrender/pixels"
-	"github.com/markel1974/c64emu/src/shell"
-	"github.com/markel1974/c64emu/src/shell/authenticator"
-	"github.com/markel1974/c64emu/src/shell/cli"
-	"log"
 )
 
 type Render struct {
-	cfg          *config.Config
-	c64Board     references.IBoard
-	scale        float64
-	fullscreen   bool
-	showMap      bool
-	screenWidth  int
-	screenHeight int
-	maxW         float64
-	maxH         float64
-	picture      *pixels.Picture
-	matrix       pixels.Matrix
-	surface      *pixels.Sprite
-	display      *DisplayBuffer
-	inputs       *Inputs
-	audio        *Audio
+	board      references.IBoard
+	scale      float64
+	fullscreen bool
+	maxW       float64
+	maxH       float64
+	picture    *pixels.Picture
+	inputs     *Inputs
+	//player     references.IPlayer
 }
 
-func New(board references.IBoard, cfg *config.Config) *Render {
-	w, h := board.GetScreenSize()
+func New() *Render {
 	g := &Render{
-		c64Board:     board,
-		cfg:          cfg,
-		fullscreen:   false,
-		screenWidth:  w,
-		screenHeight: h,
-		scale:        3.0,
-		inputs:       NewInputs(),
+		board:      nil,
+		fullscreen: false,
+		scale:      3,
+		inputs:     NewInputs(),
 	}
-	g.maxW = float64(g.screenWidth) * g.scale
-	g.maxH = float64(g.screenHeight) * g.scale
 	return g
 }
 
-func (g *Render) setup(pos pixels.Vec) {
-	g.picture = pixels.NewPicture(pixels.NewRect(float64(0), float64(0), float64(g.screenWidth), float64(g.screenHeight)))
-	g.surface = pixels.NewSprite()
-	g.surface.SetCachedMode(pixels.CacheModeUpdate)
-	g.surface.Set(g.picture, g.picture.Bounds())
-	g.matrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
-	g.display = NewDisplayBuffer(g.picture)
-	g.audio = NewAudio()
-	if err := g.c64Board.Setup(g.display, g.audio, g.cfg); err != nil {
-		panic(err)
-	}
-	g.inputs.Setup(g.c64Board, g.maxW, g.maxH)
+func (g *Render) Create(w int, h int) (references.IDisplayBuffer, error) {
+	g.maxW = float64(w) * g.scale
+	g.maxH = float64(h) * g.scale
+	g.picture = pixels.NewPicture(pixels.NewRect(float64(0), float64(0), float64(w), float64(h)))
+	display := NewDisplayBuffer(g.picture)
+	return display, nil
 }
 
-func (g *Render) Start() error {
+func (g *Render) Start(board references.IBoard) error {
+	g.board = board
+	g.inputs.Setup(g.board)
 	return pixels.GLRun(g.run)
 }
 
@@ -70,26 +47,19 @@ func (g *Render) run() {
 		Undecorated: false,
 		Smooth:      false,
 	}
-
 	if g.fullscreen {
 		cfg.Monitor = pixels.PrimaryMonitor()
 	}
-
 	win, err := pixels.NewGLWindow(cfg)
 	if err != nil {
 		panic(err)
 	}
-
-	c := win.Bounds().Center()
-	g.setup(c)
-
-	//v, ok := g.c64Board.(references.IComponent)
-	//if ok {
-	//	test(v.GetCommand())
-	//}
-
-	dt := g.c64Board.Throttle()
-
+	pos := win.Bounds().Center()
+	surface := pixels.NewSprite()
+	surface.SetCachedMode(pixels.CacheModeUpdate)
+	surface.Set(g.picture, g.picture.Bounds())
+	matrix := pixels.IM.Moved(pos).Scaled(pos, g.scale)
+	dt := g.board.Throttle()
 	run := true
 	for run {
 		dt.Throttle()
@@ -98,40 +68,15 @@ func (g *Render) run() {
 		}
 		g.inputs.Keys(win.KeysPressed())
 		for {
-			if vBlank := g.c64Board.Emulate(); vBlank {
+			if vBlank := g.board.Emulate(); vBlank {
 				break
 			}
 		}
-		g.surface.Draw(win, g.matrix)
-		g.audio.Play()
+		surface.Draw(win, matrix)
+		//g.player.Write(nil, 0, 0)
 		win.Update()
 		if (dt.Counter() & 0xf) == 0xf {
 			run = !win.Closed()
 		}
 	}
-}
-
-func test(target *cli.Command) {
-	const prompt = "symphony" + " " + "1.4.3" + "> "
-	const port = 1234
-	const user = "u"
-	const secure = true
-	const pass = "p"
-
-	t := cli.NewCommand()
-	_ = t.AddCommand(target)
-	auth := authenticator.NewSimpleAuthenticator()
-	if err := auth.Setup(user, pass); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Starting shell")
-	fmt.Println("port", port)
-	fmt.Println("secure", secure)
-	fmt.Println("user", user)
-	k := shell.New(secure, auth, port, false)
-	k.SetPrompt(prompt)
-	k.SetTemplate(t)
-	go func() {
-		k.Start()
-	}()
 }

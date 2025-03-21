@@ -19,19 +19,15 @@ import (
 	"github.com/markel1974/c64emu/src/shell/cli"
 )
 
-func CreateCD(t commandcreator.ICreator) *cli.Command {
+func CreatePWD(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "cd"
-	root.Short = "cd"
-	root.Long = "cd"
+	root.Use = "pwd"
+	root.Short = "pwd"
+	root.Long = "pwd"
 	root.Run = func(cmd *cli.Command, pid int, args []string) {
 		r := cmd.GetRootContext()
 		r.WriteLn("")
-		if len(args) <= 0 {
-			r.WriteLn("Empty argument")
-			return
-		}
-		r.SetCWD(args[0])
+		r.WriteLn(r.PrintPWD())
 	}
 	return root
 }

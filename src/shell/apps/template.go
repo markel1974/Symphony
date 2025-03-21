@@ -25,29 +25,29 @@ import (
 	"io"
 )
 
-type template struct {
+type Template struct {
 	ctx    interfaces.IContext
 	writer io.Writer
 }
 
-func NewTemplate(ctx interfaces.IContext, writer io.Writer) *template {
-	return &template{
+func NewTemplate(ctx interfaces.IContext, writer io.Writer) *Template {
+	return &Template{
 		ctx:    ctx,
 		writer: writer,
 	}
 }
 
-func (t *template) Run(template *cli.Command) *cli.Command {
+func (t *Template) Run(template *cli.Command) *cli.Command {
 	root := t.createInternalCommands()
 	if template != nil {
-		//template childs only
+		//Template childs only
 		t.commandIterator(root, template)
 	}
 
 	return root
 }
 
-func (t *template) AddCommand(cmd *cli.Command, child *cli.Command) {
+func (t *Template) AddCommand(cmd *cli.Command, child *cli.Command) {
 	if !cmd.CommonCommands {
 		//cmd.AddCommand(t.createChangeDirectory(z))
 		cmd.CommonCommands = true
@@ -55,13 +55,13 @@ func (t *template) AddCommand(cmd *cli.Command, child *cli.Command) {
 	_ = cmd.AddCommand(child)
 }
 
-func (t *template) CreateCommand() *cli.Command {
+func (t *Template) CreateCommand() *cli.Command {
 	cmd := cli.NewCommand()
 	t.setupCommand(cmd)
 	return cmd
 }
 
-func (t *template) createInternalCommands() *cli.Command {
+func (t *Template) createInternalCommands() *cli.Command {
 	root := cli.NewCommand()
 
 	t.AddCommand(root, tasks.Create(t))
@@ -70,6 +70,8 @@ func (t *template) createInternalCommands() *cli.Command {
 	t.AddCommand(root, runtime.Create(t))
 
 	t.AddCommand(root, CreateExit(t))
+	t.AddCommand(root, CreateCD(t))
+	t.AddCommand(root, CreatePWD(t))
 	t.AddCommand(root, CreateActivate(t))
 	t.AddCommand(root, CreateKill(t))
 	t.AddCommand(root, CreateKillAll(t))
@@ -83,7 +85,7 @@ func (t *template) createInternalCommands() *cli.Command {
 	return root
 }
 
-func (t *template) cloneCommand(src *cli.Command) *cli.Command {
+func (t *Template) cloneCommand(src *cli.Command) *cli.Command {
 	dst := cli.NewCommand()
 
 	dst.Use = src.Use
@@ -139,7 +141,7 @@ func (t *template) cloneCommand(src *cli.Command) *cli.Command {
 	return dst
 }
 
-func (t *template) commandIterator(dst *cli.Command, src *cli.Command) {
+func (t *Template) commandIterator(dst *cli.Command, src *cli.Command) {
 	if src.HasSubCommands() {
 		for _, srcChild := range src.Childs() {
 			if srcChild != nil {
@@ -152,7 +154,7 @@ func (t *template) commandIterator(dst *cli.Command, src *cli.Command) {
 	}
 }
 
-func (t *template) setupCommand(cmd *cli.Command) {
+func (t *Template) setupCommand(cmd *cli.Command) {
 	cmd.SetRootContext(t.ctx)
 	cmd.SetOut(t.writer)
 	cmd.SetErr(t.writer)

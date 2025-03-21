@@ -8,34 +8,28 @@ import (
 )
 
 type Inputs struct {
-	b          references.IBoard
+	board      references.IBoard
 	keyMapper  []func(bool)
 	activeKeys map[pixels.Button]bool
 	joyKeys    bool
-	maxW       int
-	maxH       int
 	lastX      uint8
 	lastY      uint8
 }
 
 func NewInputs() *Inputs {
 	return &Inputs{
-		b:          nil,
+		board:      nil,
 		keyMapper:  nil,
 		joyKeys:    true,
 		activeKeys: make(map[pixels.Button]bool),
-		maxW:       0,
-		maxH:       0,
 		lastX:      0,
 		lastY:      0,
 	}
 }
 
-func (g *Inputs) Setup(b references.IBoard, maxW float64, maxH float64) {
+func (g *Inputs) Setup(b references.IBoard) {
 	const max = int(pixels.KeyLast + 1)
-	g.b = b
-	g.maxW = int(maxW)
-	g.maxH = int(maxH)
+	g.board = b
 	g.keyMapper = make([]func(bool), max)
 	for x := 0; x < max; x++ {
 		g.keyMapper[x] = func(b bool) {}
@@ -180,13 +174,13 @@ func (g *Inputs) MouseMove(x float64, y float64) {
 	if g.lastX != x1 || g.lastY != y1 {
 		g.lastX = x1
 		g.lastY = y1
-		g.b.SetMouse(uint8(x), uint8(y))
+		g.board.SetMouse(uint8(x), uint8(y))
 	}
 }
 
 func (g *Inputs) diskChange(p bool) {
 	if p {
-		g.b.DiskChange()
+		g.board.DiskChange()
 		fmt.Println("swapping disk")
 	}
 }

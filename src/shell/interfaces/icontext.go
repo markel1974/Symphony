@@ -27,6 +27,8 @@ type IContext interface {
 	PaintRequest(pid int) bool
 	SetCaption(pid int, caption string) bool
 	SetBasePath(arg string)
+	SetCWD(arg string) bool
+	PrintPWD() string
 	SetSelectionMode(int)
 	SetSelectionOptions(option rune, value float64) bool
 	SetSelectionModeNext()
