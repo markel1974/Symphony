@@ -209,3 +209,27 @@ func init() {
 		_opReverseContainer[name] = f
 	}
 }
+
+func GetOpId(v interface{}) (string, bool) {
+	if v == nil {
+		return "", false
+	}
+	r := reflect.ValueOf(v)
+	ret, ok := _opContainer[r]
+	if !ok {
+		return "", false
+	}
+	return ret, true
+}
+
+func GetOpFn(v string) (func(cpu *CPU), bool) {
+	r, ok := _opReverseContainer[v]
+	if !ok {
+		return nil, false
+	}
+	ret, ok := r.Interface().(func(cpu *CPU))
+	if !ok {
+		return nil, false
+	}
+	return ret, true
+}
