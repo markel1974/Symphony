@@ -9,10 +9,8 @@ import (
 )
 
 // BusNum defines the number of buses available in the system.
-// MaxDriveSize specifies the maximum size of a drive supported.
 const (
-	BusNum       = 32
-	MaxDriveSize = 4
+	BusNum = 32
 )
 
 // Dispatcher is a structure responsible for managing CPU interactions, peripherals, virtual drives, and LED signals.
@@ -124,9 +122,8 @@ func (c *Dispatcher) updatePorts() {
 
 // CpuWrite updates the CPU bus with the inverted data, adjusts port states, and triggers CPU write notifications.
 func (c *Dispatcher) CpuWrite(data uint8) {
-	//fmt.Printf("CpuWrite 0x%.2x\n", data)
 	c.cpuBus = c.buildCpuBus(^data)
-	//c.debugCpuWrite(^c.cpuBus)
+	//DebugCpuWrite(^c.cpuBus)
 	c.updatePorts()
 	c.notifyCpuWrite()
 }
@@ -143,23 +140,17 @@ func (c *Dispatcher) PeripheralRead() uint8 {
 
 func (c *Dispatcher) PeripheralWrite(deviceNumber uint8, data uint8) {
 	c.peripheralsData[deviceNumber] = data
-	//fmt.Printf("PeripheralWrite 0x%.2x\n", data)
-	//c.debugPeripheralWrite(c.peripheralBus[deviceNumber])
+	//DebugPeripheralWrite(c.peripheralBus[deviceNumber])
 	c.updatePorts()
 }
 
 // notifyCpuWrite adjusts the state of the CPU bus, notifying virtual drives of changes in ATN or bus states as necessary.
 func (c *Dispatcher) notifyCpuWrite() {
-	newAtn := (c.cpuBus & 0x10) != 0
-	if newAtn != c.atn {
+	if newAtn := (c.cpuBus & 0x10) != 0; newAtn != c.atn {
 		for _, vd := range c.virtualDrives {
 			vd.AtnStateChanged(newAtn)
 		}
 		c.atn = newAtn
-	} else {
-		for _, vd := range c.virtualDrives {
-			vd.BusStateChanged(c.peripheralsPort)
-		}
 	}
 }
 

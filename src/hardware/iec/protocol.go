@@ -158,11 +158,6 @@ func (v *Protocol) AtnStateChanged(atn bool) {
 	}
 }
 
-// BusStateChanged handles changes in the communication bus state and updates the Protocol's behavior accordingly.
-func (v *Protocol) BusStateChanged(uint8) {
-	//TODO REMOVE
-}
-
 // Emulate handles the state transitions and bus communication logic for the Protocol according to the IEC device interface.
 func (v *Protocol) Emulate() {
 	bus := v.iec.PeripheralRead()

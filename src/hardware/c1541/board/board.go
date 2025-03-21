@@ -163,11 +163,6 @@ func (m *Board) AtnStateChanged(newAtn bool) {
 	}
 }
 
-// BusStateChanged updates the board's state in response to changes on the bus. Currently, no implementation is provided.
-func (m *Board) BusStateChanged(u uint8) {
-	//nothing to do
-}
-
 // configChanged handles configuration changes by checking if the drive options have been updated and applies necessary adjustments.
 func (m *Board) configChanged() {
 	if opt, ok := m.cfg.GetDrivesOpt(m.deviceId); ok {

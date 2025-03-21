@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// DebugCpuWrite logs the CPU write operation, interpreting specific bits for data, clock, and attention signal outputs.
 func DebugCpuWrite(data uint8) {
 	//value := ^data
 	value := data
@@ -21,6 +22,7 @@ func DebugCpuWrite(data uint8) {
 	log.Printf("CPU SEND: [%x] [%08b] %s\n", value, value, strings.Join(message, " "))
 }
 
+// DebugCpuRead logs detailed information about CPU signal states based on the provided 8-bit data input.
 func DebugCpuRead(data uint8) {
 	value := data
 	var message []string

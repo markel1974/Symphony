@@ -41,7 +41,6 @@ func IdIIecDevice(_ IIecDevice) string {
 // Ready checks if the virtual drive is ready for operation.
 // GetDeviceNumber returns the device number associated with the virtual drive.
 // AtnStateChanged handles changes in the Attention (ATN) line state.
-// BusStateChanged handles changes in the CPU bus state.
 type IIecDevice interface {
 	Setup(IIec, IQuartz, uint8, uint8, string, *config.Config) error
 
@@ -54,8 +53,6 @@ type IIecDevice interface {
 	GetDeviceNumber() uint8
 
 	AtnStateChanged(bool)
-
-	BusStateChanged(uint8)
 }
 
 func IdIIecProtocolDevice(_ IIecProtocolDevice) string {
