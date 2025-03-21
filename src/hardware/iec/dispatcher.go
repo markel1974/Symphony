@@ -8,17 +8,32 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// BusNum defines the number of buses available in the system.
+// cpuClkIn represents the IEC signal for CPU clock input (Bit 7).
+// cpuDataIn represents the IEC signal for CPU data input (Bit 6).
+// cpuDataOut represents the IEC signal for CPU data output (Bit 5).
+// cpuClkOut represents the IEC signal for CPU clock output (Bit 4).
+// cpuAtnOut represents the IEC signal for CPU attention output (Bit 3).
+const (
+	// IEC Signals  (CPU - input).
+	cpuClkIn  = 0x80 // Bit 7: CLK (input)
+	cpuDataIn = 0x40 // Bit 6: DATA (input)
+
+	//  IEC Signals (CPU - output).
+	cpuDataOut = 0x20 // Bit 5: DATA (output)
+	cpuClkOut  = 0x10 // Bit 4: CLK (output)
+	cpuAtnOut  = 0x08 // Bit 3: ATN (output)
+)
+
+// BusNum defines the maximum number of peripherals or devices that can be supported by the dispatcher bus system.
 const (
 	BusNum = 32
 )
 
-// Dispatcher is a structure responsible for managing CPU interactions, peripherals, virtual drives, and LED signals.
+// Dispatcher represents a hardware communication interface for managing CPU and peripheral interactions.
 type Dispatcher struct {
 	*component.BaseComponent
 	atn             bool
 	cpuPort         uint8
-	cpuData         uint8
 	cpuBus          uint8
 	peripheralsPort uint8
 	peripheralsData []uint8
@@ -26,7 +41,8 @@ type Dispatcher struct {
 	ledSignal       *signals.Signal2[int, uint8]
 }
 
-// NewDispatcher creates and initializes a new Dispatcher instance with the given parent component and suffix.
+// NewDispatcher initializes a new Dispatcher instance with the given parent component, factory, and instance number.
+// It sets up base component properties, allocates memory for peripheral data, and initializes the LED signal.
 func NewDispatcher(parent references.IComponent, factory references.IComponentFactory, instance int) *Dispatcher {
 	c := &Dispatcher{
 		BaseComponent:   component.NewBaseComponent(),
@@ -38,7 +54,7 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 	return c
 }
 
-// Setup initializes the Dispatcher by configuring the DriveFactory and setting up virtual drives based on the provided config.
+// Setup initializes the Dispatcher component, configures drives based on the provided configuration, and prepares devices.
 func (c *Dispatcher) Setup(q references.IQuartz, cfg *config.Config) error {
 	for deviceId, d := range cfg.GetDrives() {
 		deviceNumber := deviceId + 8
@@ -62,7 +78,7 @@ func (c *Dispatcher) Setup(q references.IQuartz, cfg *config.Config) error {
 	return nil
 }
 
-// Emulate manages the emulation logic for all virtual drives linked to the Dispatcher, invoking their Emulate method sequentially.
+// Emulate processes the emulation logic for all virtual drives managed by the Dispatcher, calling each drive's Emulate method.
 func (c *Dispatcher) Emulate() {
 	if len(c.virtualDrives) == 0 {
 		return
@@ -76,7 +92,7 @@ func (c *Dispatcher) Emulate() {
 	}
 }
 
-// Reset reinitializes all ready virtual drives managed by the Dispatcher by invoking their individual Reset methods.
+// Reset iterates through all virtual drives and resets those that are in a ready state.
 func (c *Dispatcher) Reset() {
 	for _, vd := range c.virtualDrives {
 		if vd.Ready() {
@@ -85,26 +101,29 @@ func (c *Dispatcher) Reset() {
 	}
 }
 
-// buildCpuBus transforms the input data into a CPU bus value by shifting and masking specific bits.
+// buildCpuBus processes the given data and constructs a CPU bus value by combining specific signal bits.
 func (c *Dispatcher) buildCpuBus(data uint8) uint8 {
-	b6 := (data << 2) & 0x80
-	b5 := (data << 2) & 0x40
-	b4 := (data << 1) & 0x10
+	b6 := (data << 2) & cpuClkIn
+	b5 := (data << 2) & cpuDataIn
+	b4 := (data << 1) & cpuClkOut
 	value := b6 | b5 | b4
 	return value
 }
 
-// buildPeripheralBus calculates the peripheral bus value based on the CPU bus and data using bitwise operations.
+// buildPeripheralBus computes the peripheral bus signal based on the given cpuBus and data values.
+// It applies bitwise operations to manipulate the input signals to generate the resulting bus configuration.
+// The function utilizes specific input flags (cpuClkIn, cpuDataIn) to correctly modify and combine signals.
+// Returns the newly computed peripheral bus value as uint8.
 func (c *Dispatcher) buildPeripheralBus(cpuBus uint8, data uint8) uint8 {
 	nData := ^data
-	bBus := ((nData ^ cpuBus) << 3) & 0x80
-	p1 := (data << 3) & 0x40
+	bBus := ((nData ^ cpuBus) << 3) & cpuClkIn
+	p1 := (data << 3) & cpuDataIn
 	p2 := (data << 6) & bBus
 	value := p1 | p2
 	return value
 }
 
-// updatePorts recalculates the CPU and peripheral ports based on the current state of the CPU bus and peripheral data.
+// updatePorts updates the state of the CPU and peripherals ports based on the current bus and peripheral data values.
 func (c *Dispatcher) updatePorts() {
 	c.cpuPort = c.cpuBus
 	for _, vd := range c.virtualDrives {
@@ -115,12 +134,12 @@ func (c *Dispatcher) updatePorts() {
 	}
 	bp7 := (c.cpuPort >> 4) & 0x04
 	bp8 := c.cpuPort >> 7
-	bb5 := (c.cpuBus << 3) & 0x80
+	bb5 := (c.cpuBus << 3) & cpuClkIn
 	value := bp7 | bp8 | bb5
 	c.peripheralsPort = value
 }
 
-// CpuWrite updates the CPU bus with the inverted data, adjusts port states, and triggers CPU write notifications.
+// CpuWrite updates the CPU bus and synchronizes ports and peripherals based on the provided data.
 func (c *Dispatcher) CpuWrite(data uint8) {
 	c.cpuBus = c.buildCpuBus(^data)
 	//DebugCpuWrite(^c.cpuBus)
@@ -128,25 +147,26 @@ func (c *Dispatcher) CpuWrite(data uint8) {
 	c.notifyCpuWrite()
 }
 
-// CpuRead retrieves the current value of the CPU data port from the Dispatcher instance.
+// CpuRead returns the current value of the CPU port.
 func (c *Dispatcher) CpuRead() uint8 {
 	return c.cpuPort
 }
 
-// PeripheralRead retrieves the current state of the peripherals' port value.
+// PeripheralRead returns the current value from the peripherals port as a uint8.
 func (c *Dispatcher) PeripheralRead() uint8 {
 	return c.peripheralsPort
 }
 
+// PeripheralWrite updates the data for a specific peripheral device and triggers the port update mechanism.
 func (c *Dispatcher) PeripheralWrite(deviceNumber uint8, data uint8) {
 	c.peripheralsData[deviceNumber] = data
 	//DebugPeripheralWrite(c.peripheralBus[deviceNumber])
 	c.updatePorts()
 }
 
-// notifyCpuWrite adjusts the state of the CPU bus, notifying virtual drives of changes in ATN or bus states as necessary.
+// notifyCpuWrite checks if the attention (ATN) signal has changed and notifies all virtual drives of the new ATN state.
 func (c *Dispatcher) notifyCpuWrite() {
-	if newAtn := (c.cpuBus & 0x10) != 0; newAtn != c.atn {
+	if newAtn := (c.cpuBus & cpuClkOut) != 0; newAtn != c.atn {
 		for _, vd := range c.virtualDrives {
 			vd.AtnStateChanged(newAtn)
 		}
@@ -154,12 +174,12 @@ func (c *Dispatcher) notifyCpuWrite() {
 	}
 }
 
-// ledStateChangedEventHandler handles LED state change events and emits the updated state via the associated signal.
+// ledStateChangedEventHandler handles LED state change events for a specific device by emitting a signal with device and state.
 func (c *Dispatcher) ledStateChangedEventHandler(deviceNumber int, state uint8) {
 	c.ledSignal.Emit(deviceNumber, state)
 }
 
-// AddPeripheral registers a peripheral device of a specified kind and options to the dispatcher using the given device ID.
+// AddPeripheral adds a new peripheral to the dispatcher with the given kind, options, and device ID.
 func (c *Dispatcher) AddPeripheral(kind string, opts string, deviceId uint8) {
 	//if c.peripheralsCount >= BusNum {
 	//	return
@@ -176,7 +196,7 @@ func (c *Dispatcher) AddPeripheral(kind string, opts string, deviceId uint8) {
 	//peripheral->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
 }
 
-// RemovePeripheral removes a peripheral device from the dispatcher's peripheral list based on the provided device ID.
+// RemovePeripheral removes a peripheral identified by the given device ID from the dispatcher.
 func (c *Dispatcher) RemovePeripheral(deviceId uint8) {
 	//found := false
 	//for i := uint8(0); i < c.peripheralsCount; i++ {
