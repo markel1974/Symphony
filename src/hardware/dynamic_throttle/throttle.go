@@ -43,12 +43,11 @@ func (s *DynamicThrottle) Reset() {
 // Adjusts a tuning parameter dynamically to compensate for deviations in interval accuracy.
 // Updates the internal state, including the previous execution timestamp and invocation counter.
 func (s *DynamicThrottle) Throttle() {
-	now := time.Now().UnixMilli()
-	diff := now - s.prev
-	interval := s.frameInterval - diff
 	//https://codereview.stackexchange.com/questions/40473/portable-periodic-one-shot-timer-implementation?noredirect=1&lq=1
 	//https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-signalobjectandwait
-	if interval < s.frameInterval {
+	now := time.Now().UnixMilli()
+	diff := now - s.prev
+	if interval := s.frameInterval - diff; interval < s.frameInterval {
 		duration := now + interval
 		if sleep := interval - s.tuning; sleep > 1 {
 			time.Sleep(time.Duration(sleep) * time.Millisecond)

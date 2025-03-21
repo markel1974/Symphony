@@ -161,7 +161,7 @@ func (m *TOD) Update(rtc bool) bool {
 		m.todDivider--
 		return false
 	}
-	// Reload divider (50/60 Hz flag)
+	// Divider (50/60 Hz)
 	if rtc {
 		m.todDivider = 4
 	} else {
@@ -189,7 +189,7 @@ func (m *TOD) Update(rtc bool) bool {
 				m.todMin = 0
 				lo = (m.todHr & 0x0f) + 1
 				hi = (m.todHr >> 4) & 1
-				// AM/PM flag
+				// AM/PM
 				m.todHr &= 0x80
 				if lo > 9 {
 					lo = 0
