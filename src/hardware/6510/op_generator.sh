@@ -12,26 +12,31 @@ echo "package mos6510"
 echo
 echo "import \"reflect\""
 echo
-echo "var _opContainer = map[reflect.Value]string{"
+
+echo ""
+echo "var _opContainer = make(map[reflect.Value]string)"
+echo ""
+echo "var _opReverseContainer = make(map[string]reflect.Value)"
+
+echo ""
+echo "func init() {"
 find "$SRC_DIR" -name "inst_*.go" | while read -r file; do
   while IFS= read -r line; do
     func_name=$(echo "${line}" | sed -En 's/^func[ ]+(inst[a-zA-Z0-9]+).+/\1/p')
     [ -z "${func_name}" ] && continue
-    echo "    reflect.ValueOf(${func_name}): \"${func_name}\","
+    echo "  addOpId(${func_name}, \"${func_name}\")"
   done < "${file}"
 done
 echo "}"
 
 echo ""
-echo "var _opReverseContainer map[string]reflect.Value"
-echo ""
-echo "func init() {"
-echo "    _opReverseContainer = make(map[string]reflect.Value)"
-echo "    for f, name := range _opContainer {"
-echo "        _opReverseContainer[name] = f"
-echo "    }"
+echo "func addOpId(v func(cpu *CPU), id string) {"
+echo "	r := reflect.ValueOf(v)"
+echo "	_opContainer[r] = id"
+echo "	_opReverseContainer[id] = r"
 echo "}"
 
+echo ""
 echo "func GetOpId(v func(cpu *CPU)) (string, bool) {"
 echo "	if v == nil {"
 echo "		return "", false"
@@ -44,6 +49,7 @@ echo "	}"
 echo "	return ret, true"
 echo "}"
 
+echo ""
 echo "func GetOpFn(v string) (func(cpu *CPU), bool) {"
 echo "	r, ok := _opReverseContainer[v]"
 echo "	if !ok {"
