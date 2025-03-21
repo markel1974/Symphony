@@ -39,11 +39,8 @@ type cycleData struct {
 	cycleBorder uint8
 }
 
-// VIC represents the core component for emulating a video interface chip, managing graphics rendering and sprites.
-// It maintains configuration, collision detection, registers, and graphical memory base addresses.
-// This structure includes VIC-specific registers, raster positions, display modes, and control logic for video operations.
-// The structure integrates functionality for sprite handling, display timing, bad line conditions, and IRQ management.
-// Graphics systems and border handling are also supported using their specific components within the VIC structure.
+// VIC represents a versatile interface controller for managing video output and graphical resources in a system.
+// It encapsulates configurations, graphics components, collision detection, and rendering capabilities for the display.
 type VIC struct {
 	*component.BaseComponent
 	cfg              *config.Config
@@ -51,12 +48,12 @@ type VIC struct {
 	sprites          *Sprites
 	graphics         *Graphics
 	borders          *Borders
+	socket           references.IVICSocket
+	banks            references.IVICBanks
+	curr             *cycleData
 	lineStart        int
 	drawLine         bool
 	vBlankNextCycle  bool
-	curr             *cycleData
-	socket           references.IVICSocket
-	banks            references.IVICBanks
 	mXx              []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
 	mXy              []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
 	mXc              []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
@@ -84,8 +81,8 @@ type VIC struct {
 	bitmapBase       uint16   // Bitmap base
 	xScroll          uint16   // X scroll value
 	yScroll          uint16   // Y scroll value
-	irqLatch         uint8    //
-	irqMask          uint8    //
+	irqLatch         uint8    // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
+	irqMask          uint8    // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
 	irqRaster        uint16   // Interrupt raster line
 	sprExpY          uint8    // 8 sprite y expansion FlipFlops
 	sprBgrClx        uint8    // Sprite to background collision
@@ -100,16 +97,16 @@ type VIC struct {
 	badLineCondition bool     // Current line is bad line
 	baLow            bool     // BA Line
 	aecLow           bool     // AEC Line
-	aecLowNextCycle  uint64   //
+	aecLowNextCycle  uint64   // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
 	lastByte         uint8    // Last byte read by VIC
-	refreshCounter   uint8    //
-	den              bool     //
-	bmm              bool     //
-	ecm              bool     //
-	columnSel        bool     //
+	refreshCounter   uint8    // refreshCounter tracks the number of times a refresh operation has been performed.
+	den              bool     // den indicates a boolean value typically used as a flag or condition.
+	bmm              bool     // bmm indicates a boolean value used for specific conditional checks or state representation.
+	ecm              bool     // ecm indicates whether the ECM is active or not.
+	columnSel        bool     // columnSel indicates whether column selection mode is enabled.
 }
 
-// NewVIC creates and returns a pointer to a newly initialized VIC instance with default values and given id.
+// NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
 func NewVIC(parent references.IComponent, factory references.IComponentFactory, instance int) *VIC {
 	vic := &VIC{
 		BaseComponent:    component.NewBaseComponent(),
