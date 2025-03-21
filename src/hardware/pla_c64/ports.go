@@ -131,17 +131,17 @@ func (p *Ports) Update() {
 	if ((p.dir & p.data) & 0x20) != p.oldDataOut {
 		p.oldDataOut = (p.dir & p.data) & 0x20
 		//TODO IMPLEMENT
-		//tapeport_set_motor(TAPEPORT_PORT_1, !p.oldDataOut)
+		//tapePort.setMotor(TAPEPORT_PORT_1, !p.oldDataOut)
 	}
 	if ((^p.dir | p.data) & 0x8) != p.oldWriteBit {
 		p.oldWriteBit = (^p.dir | p.data) & 0x8
 		//TODO IMPLEMENT
-		//tapeport_toggle_write_bit(TAPEPORT_PORT_1, (^p.dir | p.data) & 0x8)
+		//tapePort.toggleWriteBit(TAPEPORT_PORT_1, (^p.dir | p.data) & 0x8)
 	}
 	if ((p.dir & p.data) & 0x10) != p.oldSenseOut {
 		p.oldSenseOut = (p.dir & p.data) & 0x10
 		//TODO IMPLEMENT
-		//tapeport_set_sense_out(TAPEPORT_PORT_1, !p.oldSenseOut)
+		//tapePort.setSenseOut(TAPEPORT_PORT_1, !p.oldSenseOut)
 	}
 	//p.dirRead = p.dir
 }
