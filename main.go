@@ -116,7 +116,7 @@ func createShell(target *cli.Command) error {
 	return nil
 }
 
-func createRender(id string) references.IDisplayRender {
+func createDisplayRender(id string) references.IDisplayRender {
 	switch id {
 	case "ascii":
 		return asciirender.New()
@@ -127,7 +127,7 @@ func createRender(id string) references.IDisplayRender {
 	}
 }
 
-func createPlayer( /* playerId */ _ string) references.IPlayer {
+func createAudioRender( /* playerId */ _ string) references.IAudioRender {
 	return player.NewAudio()
 }
 
@@ -204,13 +204,13 @@ func main() {
 	if !ok || board == nil {
 		log.Fatal("board is nil")
 	}
-	render := createRender(renderId)
+	render := createDisplayRender(renderId)
 	w, h := board.GetScreenSize()
-	display, err := render.Create(w, h)
+	display, err := render.CreateDisplayBuffer(w, h)
 	if err != nil {
 		log.Fatal(err)
 	}
-	audio := createPlayer(playerId)
+	audio := createAudioRender(playerId)
 	if err = board.Setup(display, audio, cfg); err != nil {
 		log.Fatal(err)
 	}

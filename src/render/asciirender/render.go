@@ -11,7 +11,7 @@ import (
 
 type Render struct {
 	board   references.IBoard
-	player  references.IPlayer
+	player  references.IAudioRender
 	cfg     *config.Config
 	display *DisplayBuffer
 }
@@ -25,7 +25,7 @@ func New() *Render {
 	return g
 }
 
-func (g *Render) Create(w int, h int) (references.IDisplayBuffer, error) {
+func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
 	g.display = NewDisplayBuffer()
 	return g.display, nil
 }

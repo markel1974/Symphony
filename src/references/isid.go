@@ -34,7 +34,7 @@ type ISID interface {
 }
 
 // ISIDSocket is an interface representing a socket for SID integration and player management functionality.
-// GetPlayer retrieves the IPlayer instance associated with the socket, enabling player-related operations.
+// GetPlayer retrieves the IAudioRender instance associated with the socket, enabling player-related operations.
 type ISIDSocket interface {
-	GetPlayer() IPlayer
+	GetPlayer() IAudioRender
 }

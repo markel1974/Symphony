@@ -31,7 +31,7 @@ type Board struct {
 	cpuSocket           *CPUSocket
 	expansion           *Expansion
 	db                  references.IDisplayBuffer
-	p                   references.IPlayer
+	p                   references.IAudioRender
 	pic                 *mos6510.Pic
 	iec                 *iec.Dispatcher
 	keys                *inputs2.Keyboard
@@ -76,7 +76,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	return b
 }
 
-func (s *Board) Setup(db references.IDisplayBuffer, p references.IPlayer, cfg *config.Config) error {
+func (s *Board) Setup(db references.IDisplayBuffer, p references.IAudioRender, cfg *config.Config) error {
 	s.cartMan = cartridges_c64.NewManager(s, s.GetFactory(), 0)
 	s.db = db
 	s.p = p

@@ -13,7 +13,7 @@ type Render struct {
 	maxH       float64
 	picture    *pixels.Picture
 	inputs     *Inputs
-	//player     references.IPlayer
+	//player     references.IAudioRender
 }
 
 func New() *Render {
@@ -26,7 +26,7 @@ func New() *Render {
 	return g
 }
 
-func (g *Render) Create(w int, h int) (references.IDisplayBuffer, error) {
+func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
 	g.maxW = float64(w) * g.scale
 	g.maxH = float64(h) * g.scale
 	g.picture = pixels.NewPicture(pixels.NewRect(float64(0), float64(0), float64(w), float64(h)))

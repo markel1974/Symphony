@@ -27,7 +27,7 @@ const (
 type Board struct {
 	*component.BaseComponent
 	db              references.IDisplayBuffer
-	player          references.IPlayer
+	player          references.IAudioRender
 	keysSocket      *KeyboardSocket
 	joySocket1      *JoystickSocket
 	joySocket2      *JoystickSocket
@@ -89,7 +89,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	return b
 }
 
-func (s *Board) Setup(db references.IDisplayBuffer, player references.IPlayer, cfg *config.Config) error {
+func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) error {
 	s.db = db
 	s.player = player
 	s.cfg = cfg

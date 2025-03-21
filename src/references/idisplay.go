@@ -11,9 +11,9 @@ type IDisplayBuffer interface {
 }
 
 // IDisplayRender is an interface for rendering operations, managing display buffers and starting visualizations on a board system.
-// Create initializes a new display buffer with specified width and height, returning the buffer and an error if applicable.
+// CreateDisplayBuffer initializes a new display buffer with specified width and height, returning the buffer and an error if applicable.
 // Start begins the rendering process for the given board, preparing it for graphical output or emulation execution.
 type IDisplayRender interface {
-	Create(w int, h int) (IDisplayBuffer, error)
+	CreateDisplayBuffer(w int, h int) (IDisplayBuffer, error)
 	Start(board IBoard) error
 }
