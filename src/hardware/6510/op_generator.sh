@@ -32,7 +32,7 @@ echo "        _opReverseContainer[name] = f"
 echo "    }"
 echo "}"
 
-echo "func GetOpId(v interface{}) (string, bool) {"
+echo "func GetOpId(v func(cpu *CPU)) (string, bool) {"
 echo "	if v == nil {"
 echo "		return "", false"
 echo "	}"

@@ -210,7 +210,7 @@ func init() {
 	}
 }
 
-func GetOpId(v interface{}) (string, bool) {
+func GetOpId(v func(cpu *CPU)) (string, bool) {
 	if v == nil {
 		return "", false
 	}
