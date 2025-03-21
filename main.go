@@ -90,11 +90,6 @@ func restoreTest(factory references.IComponentFactory) {
 }
 */
 
-type IRender interface {
-	Create(w int, h int) (references.IDisplayBuffer, error)
-	Start(board references.IBoard) error
-}
-
 func createShell(target *cli.Command) error {
 	const prompt = "symphony" + " " + "1.4.3" + "> "
 	const port = 1234
@@ -121,7 +116,7 @@ func createShell(target *cli.Command) error {
 	return nil
 }
 
-func createRender(id string) IRender {
+func createRender(id string) references.IDisplayRender {
 	switch id {
 	case "ascii":
 		return asciirender.New()
