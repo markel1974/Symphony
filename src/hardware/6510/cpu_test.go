@@ -21,14 +21,18 @@ func (m *mockBanks) Write(addr uint16, value uint8) {
 
 type mockPic struct{}
 
-func (m *mockPic) Reset()       {}
-func (m *mockPic) ClearNMI()    {}
-func (m *mockPic) HasNMI() bool { return false }
-func (m *mockPic) ClearIRQ()    {}
-func (m *mockPic) HasIRQ() bool { return false }
-func (m *mockPic) VerifyIrq(iFlag uint8, opFlag uint8) uint8 {
-	return 0
-}
+func (m *mockPic) Setup(quartz references.IQuartz) error     { return nil }
+func (m *mockPic) IRQTriggerBind(fn func(uint32))            {}
+func (m *mockPic) IRQClearBind(fn func(uint32))              {}
+func (m *mockPic) Reset()                                    {}
+func (m *mockPic) ClearNMI()                                 {}
+func (m *mockPic) ClearIRQ(u uint32)                         {}
+func (m *mockPic) HasNMI() bool                              { return false }
+func (m *mockPic) HasIRQ() bool                              { return false }
+func (m *mockPic) VerifyIrq(iFlag uint8, opFlag uint8) uint8 { return 0 }
+func (m *mockPic) TriggerIRQ(u uint32)                       {}
+func (m *mockPic) TriggerReset()                             {}
+func (m *mockPic) TriggerNMI()                               {}
 
 type mockSocket struct {
 	banks references.I6510Banks
@@ -48,8 +52,8 @@ func TestCPU_Setup(t *testing.T) {
 	pic := &mockPic{}
 	socket := &mockSocket{banks: banks, pic: pic}
 
-	cpu := NewCPU(nil, "")
-	cpu.Setup(socket)
+	cpu := NewCPU(nil, nil, 0)
+	_ = cpu.Setup(socket)
 
 	assert.Equal(t, banks, cpu.banks)
 	assert.Equal(t, pic, cpu.pic)
@@ -60,7 +64,7 @@ func TestCPU_Reset(t *testing.T) {
 	pic := &mockPic{}
 	socket := &mockSocket{banks: banks, pic: pic}
 
-	cpu := NewCPU(nil, "")
+	cpu := NewCPU(nil, nil, 0)
 	cpu.Setup(socket)
 	cpu.Reset()
 
@@ -70,7 +74,7 @@ func TestCPU_Reset(t *testing.T) {
 }
 
 func TestCPU_SetOverflowBranch(t *testing.T) {
-	cpu := NewCPU(nil, "")
+	cpu := NewCPU(nil, nil, 0)
 	branchFn := func() bool { return true }
 	cpu.SetOverflowBranch(branchFn)
 
@@ -79,7 +83,7 @@ func TestCPU_SetOverflowBranch(t *testing.T) {
 }
 
 func TestCPU_SetAECLow(t *testing.T) {
-	cpu := NewCPU(nil, "")
+	cpu := NewCPU(nil, nil, 0)
 
 	cpu.SetAECLow(true)
 	assert.True(t, cpu.aecLow)
@@ -91,7 +95,7 @@ func TestCPU_SetAECLow(t *testing.T) {
 }
 
 func TestCPU_SetRDYLow(t *testing.T) {
-	cpu := NewCPU(nil, "")
+	cpu := NewCPU(nil, nil, 0)
 
 	cpu.SetRDYLow(true)
 	assert.True(t, cpu.rdyLow)
@@ -103,7 +107,7 @@ func TestCPU_SetRDYLow(t *testing.T) {
 }
 
 func TestCPU_Emulate(t *testing.T) {
-	cpu := NewCPU(nil, "")
+	cpu := NewCPU(nil, nil, 0)
 	var nextCalled bool
 	cpu.next = func(_ *CPU) { nextCalled = true }
 
@@ -118,7 +122,7 @@ func TestCPU_Emulate(t *testing.T) {
 
 func TestCPU_read(t *testing.T) {
 	banks := &mockBanks{data: map[uint16]uint8{0x1000: 42}}
-	cpu := NewCPU(nil, "")
+	cpu := NewCPU(nil, nil, 0)
 	cpu.banks = banks
 
 	cpu.SetRDYLow(true)
@@ -134,7 +138,7 @@ func TestCPU_read(t *testing.T) {
 }
 
 func TestCPU_popFlags(t *testing.T) {
-	cpu := NewCPU(nil, "")
+	cpu := NewCPU(nil, nil, 0)
 	const target = 0xd3
 
 	cpu.popFlags(target) //11010011
@@ -148,7 +152,7 @@ func TestCPU_popFlags(t *testing.T) {
 }
 
 func TestCPU_pushFlags(t *testing.T) {
-	cpu := NewCPU(nil, "")
+	cpu := NewCPU(nil, nil, 0)
 	cpu.nFlag = 0x80
 	cpu.vFlag = 0x40
 	cpu.dFlag = 0x08
@@ -163,7 +167,7 @@ func TestCPU_pushFlags(t *testing.T) {
 }
 
 func TestCPU_branch(t *testing.T) {
-	cpu := NewCPU(nil, "")
+	cpu := NewCPU(nil, nil, 0)
 	cpu.pc = 0x0100
 
 	cpu.branch(0x7f)

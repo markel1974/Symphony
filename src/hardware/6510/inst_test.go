@@ -11,13 +11,19 @@ type MockPIC struct {
 	verifyIrqResult uint8
 }
 
+func (m *MockPIC) Setup(quartz references.IQuartz) error { return nil }
+func (m *MockPIC) ClearIRQ(u uint32)                     {}
+func (m *MockPIC) TriggerIRQ(u uint32)                   {}
+func (m *MockPIC) TriggerReset()                         {}
+func (m *MockPIC) TriggerNMI()                           {}
+func (m *MockPIC) IRQTriggerBind(fn func(uint32))        {}
+func (m *MockPIC) IRQClearBind(fn func(uint32))          {}
 func (m *MockPIC) VerifyIrq(iFlag uint8, opFlag uint8) uint8 {
 	return m.verifyIrqResult
 }
 func (m *MockPIC) Reset()       {}
 func (m *MockPIC) ClearNMI()    {}
 func (m *MockPIC) HasNMI() bool { return false }
-func (m *MockPIC) ClearIRQ()    {}
 func (m *MockPIC) HasIRQ() bool { return false }
 
 // MockBank is a mock implementation of the Bank interface for testing purposes.
@@ -114,7 +120,7 @@ func TestInstOpINI(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.cpu.Setup(&mockSocket{banks: tt.banks, pic: tt.pic})
+			_ = tt.cpu.Setup(&mockSocket{banks: tt.banks, pic: tt.pic})
 			// Call instOpINI
 			instOpINI(tt.cpu)
 			instOpINI(tt.cpu)
