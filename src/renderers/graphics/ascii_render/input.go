@@ -85,14 +85,14 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 
 	*/
 
-	g.keyMapper['\n'] = func(p bool) { b.KeyboardSetKey(p, component.VKReturn) }
-	//g.keyMapper['pixels.KeyDelete'] = func(p bool) { b.KeyboardSetKey(p, component.VKDelete) }
+	g.keyMapper[13] = func(p bool) { b.KeyboardSetKey(p, component.VKReturn) }
+	g.keyMapper[127] = func(p bool) { b.KeyboardSetKey(p, component.VKDelete) }
 	//g.keyMapper[pixels.KeyBackspace] = func(p bool) { b.KeyboardSetKey(p, component.VKBack) }
 	g.keyMapper[' '] = func(p bool) { b.KeyboardSetKey(p, component.VKSpace) }
 	g.keyMapper['.'] = func(p bool) { b.KeyboardSetKey(p, component.VKComma) }
 	//g.keyMapper[pixels.KeyPeriod] = func(p bool) { b.KeyboardSetKey(p, component.VKPeriod) }
-	g.keyMapper[';'] = func(p bool) { b.KeyboardSetKey(p, component.VKSemicolon) }
-	g.keyMapper['\''] = func(p bool) { b.KeyboardSetKey(p, component.VKQuote) }
+	g.keyMapper[':'] = func(p bool) { b.KeyboardSetKey(p, component.VKSemicolon) }
+	g.keyMapper[';'] = func(p bool) { b.KeyboardSetKey(p, component.VKQuote) }
 	g.keyMapper['*'] = func(p bool) { b.KeyboardSetKey(p, component.VKAsterisk) }
 	g.keyMapper['*'] = func(p bool) { b.KeyboardSetKey(p, component.VKAsterisk) }
 	g.keyMapper['-'] = func(p bool) { b.KeyboardSetKey(p, component.VKMinus) }
@@ -136,6 +136,33 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 	g.keyMapper['X'] = func(p bool) { b.KeyboardSetKey(p, 'X') }
 	g.keyMapper['Y'] = func(p bool) { b.KeyboardSetKey(p, 'Y') }
 	g.keyMapper['Z'] = func(p bool) { b.KeyboardSetKey(p, 'Z') }
+
+	g.keyMapper['a'] = func(p bool) { b.KeyboardSetKey(p, 'A') }
+	g.keyMapper['b'] = func(p bool) { b.KeyboardSetKey(p, 'B') }
+	g.keyMapper['c'] = func(p bool) { b.KeyboardSetKey(p, 'C') }
+	g.keyMapper['d'] = func(p bool) { b.KeyboardSetKey(p, 'D') }
+	g.keyMapper['e'] = func(p bool) { b.KeyboardSetKey(p, 'E') }
+	g.keyMapper['f'] = func(p bool) { b.KeyboardSetKey(p, 'F') }
+	g.keyMapper['g'] = func(p bool) { b.KeyboardSetKey(p, 'G') }
+	g.keyMapper['h'] = func(p bool) { b.KeyboardSetKey(p, 'H') }
+	g.keyMapper['i'] = func(p bool) { b.KeyboardSetKey(p, 'I') }
+	g.keyMapper['j'] = func(p bool) { b.KeyboardSetKey(p, 'J') }
+	g.keyMapper['k'] = func(p bool) { b.KeyboardSetKey(p, 'K') }
+	g.keyMapper['l'] = func(p bool) { b.KeyboardSetKey(p, 'L') }
+	g.keyMapper['m'] = func(p bool) { b.KeyboardSetKey(p, 'M') }
+	g.keyMapper['n'] = func(p bool) { b.KeyboardSetKey(p, 'N') }
+	g.keyMapper['o'] = func(p bool) { b.KeyboardSetKey(p, 'O') }
+	g.keyMapper['p'] = func(p bool) { b.KeyboardSetKey(p, 'P') }
+	g.keyMapper['q'] = func(p bool) { b.KeyboardSetKey(p, 'Q') }
+	g.keyMapper['r'] = func(p bool) { b.KeyboardSetKey(p, 'R') }
+	g.keyMapper['s'] = func(p bool) { b.KeyboardSetKey(p, 'S') }
+	g.keyMapper['t'] = func(p bool) { b.KeyboardSetKey(p, 'T') }
+	g.keyMapper['u'] = func(p bool) { b.KeyboardSetKey(p, 'U') }
+	g.keyMapper['v'] = func(p bool) { b.KeyboardSetKey(p, 'V') }
+	g.keyMapper['w'] = func(p bool) { b.KeyboardSetKey(p, 'W') }
+	g.keyMapper['x'] = func(p bool) { b.KeyboardSetKey(p, 'X') }
+	g.keyMapper['y'] = func(p bool) { b.KeyboardSetKey(p, 'Y') }
+	g.keyMapper['z'] = func(p bool) { b.KeyboardSetKey(p, 'Z') }
 
 	/*
 		g.keyMapper[Up] = func(p bool) {
