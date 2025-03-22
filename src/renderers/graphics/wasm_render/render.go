@@ -1,4 +1,4 @@
-package wasmrender
+package wasm_render
 
 // GOOS=js GOARCH=wasm go build -o g64.wasm ./src/render/wasmrender
 
@@ -55,6 +55,10 @@ func keyPressed(this js.Value, args []js.Value) interface{} {
 	// ... (invia il codice tasto al C64 emulato) ...
 	return nil
 }
+
+//TODO WASM
+// https://garciat.com/posts/go-wasm/
+// https://github.com/seqsense/webgl-go/tree/master
 
 func main() {
 	c := make(chan struct{}, 0)

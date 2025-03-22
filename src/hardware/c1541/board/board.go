@@ -218,7 +218,7 @@ func (m *Board) configChanged() {
 
 // mountConfigDisk mounts a configuration-specified disk to the Board by fetching its data and applying write protection settings.
 func (m *Board) mountConfigDisk(cfg *config.Config) error {
-	d := cfg.GetDrive(m.deviceId)
+	d := cfg.Drive(m.deviceId)
 	if d == nil {
 		return nil
 	}

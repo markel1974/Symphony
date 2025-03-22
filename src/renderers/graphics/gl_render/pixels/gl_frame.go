@@ -1,13 +1,13 @@
 package pixels
 
 import (
-	executor2 "github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
+	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels/executor"
 )
 
 // GLFrame represents a graphical frame used for rendering operations and managing pixel data efficiently.
 // It contains a frame object, boundary definitions, pixel data, and a flag indicating if the frame is dirty.
 type GLFrame struct {
-	frame  *executor2.Frame
+	frame  *executor.Frame
 	bounds Rect
 	pixels []uint8
 	dirty  bool
@@ -27,7 +27,7 @@ func (gf *GLFrame) SetBounds(bounds Rect) {
 		return
 	}
 
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		oldF := gf.frame
 
 		_, _, w, h := intBounds(bounds)
@@ -37,7 +37,7 @@ func (gf *GLFrame) SetBounds(bounds Rect) {
 		if h <= 0 {
 			h = 1
 		}
-		gf.frame = executor2.NewFrame(w, h, true)
+		gf.frame = executor.NewFrame(w, h, true)
 
 		if oldF != nil {
 			ox, oy, ow, oh := intBounds(bounds)
@@ -64,7 +64,7 @@ func (gf *GLFrame) Bounds() Rect {
 // Updates pixel data if the GLFrame is marked as dirty.
 func (gf *GLFrame) Color(at Vec) RGBA {
 	if gf.dirty {
-		executor2.GraphicThread.Call(func() {
+		executor.GraphicThread.Call(func() {
 			tex := gf.frame.Texture()
 			tex.Begin()
 			gf.pixels = tex.Pixels(0, 0, tex.Width(), tex.Height())
@@ -87,12 +87,12 @@ func (gf *GLFrame) Color(at Vec) RGBA {
 }
 
 // Frame returns the underlying executor.Frame instance associated with this GLFrame.
-func (gf *GLFrame) Frame() *executor2.Frame {
+func (gf *GLFrame) Frame() *executor.Frame {
 	return gf.frame
 }
 
 // Texture retrieves the underlying executor.Texture associated with the GLFrame instance.
-func (gf *GLFrame) Texture() *executor2.Texture {
+func (gf *GLFrame) Texture() *executor.Texture {
 	return gf.frame.Texture()
 }
 

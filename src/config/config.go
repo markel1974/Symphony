@@ -18,12 +18,15 @@ type Config struct {
 
 // New initializes and returns a Config instance with default values.
 func New() *Config {
-	return &Config{
-		cartridges: nil,
+	c := &Config{
+		cartridges: []*Cartridge{},
+		drives:     []*Drive{},
+		spareDisks: []*Drive{},
 		diskIndex:  0,
 		changed:    signals.NewSignal(),
 		jiffy:      true,
 	}
+	return c
 }
 
 // Bind associates the provided function with the Config's signal, triggering it whenever the signal is emitted.
@@ -31,6 +34,8 @@ func (p *Config) Bind(changed func()) {
 	p.changed.Bind(changed)
 }
 
+// BuildDrives parses a drive configuration string, creates Drive instances, and appends them to the Config's drives list.
+// Returns an error if any drive creation fails.
 func (p *Config) BuildDrives(d string) error {
 	for _, v := range KeyVal(d) {
 		drive, err := NewDrive(v.K, v.V)
@@ -42,6 +47,8 @@ func (p *Config) BuildDrives(d string) error {
 	return nil
 }
 
+// BuildSpareDisks parses the input string, creates Drive instances, and appends them to the spareDisks list in Config.
+// If the drives list is empty, the first spare disk is also added to the drives list.
 func (p *Config) BuildSpareDisks(d string) error {
 	for idx, v := range KeyVal(d) {
 		drive, err := NewDrive(v.K, v.V)
@@ -56,13 +63,13 @@ func (p *Config) BuildSpareDisks(d string) error {
 	return nil
 }
 
-// GetDrives returns the list of drives configured in the Config structure.
-func (p *Config) GetDrives() []*Drive {
+// Drives returns the list of drives configured in the Config structure.
+func (p *Config) Drives() []*Drive {
 	return p.drives
 }
 
-// GetDrive retrieves the Drive instance corresponding to the given id from the Config's drive list. Returns nil if not found.
-func (p *Config) GetDrive(id uint8) *Drive {
+// Drive retrieves the Drive instance corresponding to the given id from the Config's drive list. Returns nil if not found.
+func (p *Config) Drive(id uint8) *Drive {
 	if int(id) < len(p.drives) {
 		return p.drives[id]
 	}
@@ -86,11 +93,13 @@ func (p *Config) SetPrg(prg string) {
 	p.prg = prg
 }
 
-// GetPrg returns the value of the `prg` field from the Config struct.
-func (p *Config) GetPrg() string {
+// Prg returns the value of the `prg` field from the Config struct.
+func (p *Config) Prg() string {
 	return p.prg
 }
 
+// BuildCartridges processes a string defining cartridge configurations and appends created cartridges to the Config instance.
+// Returns an error if any cartridge creation fails.
 func (p *Config) BuildCartridges(c string) error {
 	for _, v := range KeyVal(c) {
 		crt, err := NewCartridge(v.K, v.V)
@@ -102,18 +111,28 @@ func (p *Config) BuildCartridges(c string) error {
 	return nil
 }
 
-// GetCartridges returns the list of configured cartridges in the Config structure.
-func (p *Config) GetCartridges() []*Cartridge {
+// Cartridges returns the list of configured cartridges in the Config structure.
+func (p *Config) Cartridges() []*Cartridge {
 	return p.cartridges
 }
 
-// Get1541RomPath returns the file path of the 1541 ROM as a string.
-func (p *Config) Get1541RomPath() string {
+// C1541RomPath returns the file path of the 1541 ROM as a string.
+func (p *Config) C1541RomPath() string {
 	return ""
 }
 
-// GetKernalRomPath returns the file path of the Kernal ROM as a string.
-func (p *Config) GetKernalRomPath() string {
+// C64RomKernalPath returns the file path of the Kernal ROM as a string.
+func (p *Config) C64RomKernalPath() string {
+	return ""
+}
+
+// C64RomBasicPath returns the file path of the Kernal ROM as a string.
+func (p *Config) C64RomBasicPath() string {
+	return ""
+}
+
+// C64RomCharPath returns the file path of the Kernal ROM as a string.
+func (p *Config) C64RomCharPath() string {
 	return ""
 }
 

@@ -50,7 +50,7 @@ func (v *FSDrive) Setup(bus references.IIec, q references.IQuartz, deviceId uint
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
 	v.cfg = cfg
-	if d := v.cfg.GetDrive(v.deviceId); d != nil {
+	if d := v.cfg.Drive(v.deviceId); d != nil {
 		v.path = d.GetId()
 	}
 	v.cfg = cfg

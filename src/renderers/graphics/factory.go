@@ -1,9 +1,9 @@
-package render
+package graphics
 
 import (
 	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/render/asciirender"
-	"github.com/markel1974/c64emu/src/render/glrender"
+	"github.com/markel1974/c64emu/src/renderers/graphics/ascii_render"
+	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render"
 	"strings"
 )
 
@@ -22,10 +22,10 @@ func NewFactory() *Factory {
 func (f *Factory) Create(id string) references.IDisplayRender {
 	switch strings.ToLower(strings.TrimSpace(id)) {
 	case "ascii":
-		return asciirender.New()
+		return ascii_render.New()
 	case "gl":
-		return glrender.New()
+		return gl_render.New()
 	default:
-		return glrender.New()
+		return gl_render.New()
 	}
 }

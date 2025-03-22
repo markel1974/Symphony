@@ -1,4 +1,4 @@
-package asciirender
+package ascii_render
 
 type DisplayBuffer struct {
 }

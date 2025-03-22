@@ -1,4 +1,4 @@
-package oto_player
+package oto_render
 
 import "github.com/markel1974/c64emu/src/config"
 

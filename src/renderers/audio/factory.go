@@ -1,8 +1,8 @@
 package audio
 
 import (
-	"github.com/markel1974/c64emu/src/audio/oto_player"
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/renderers/audio/oto_render"
 	"strings"
 )
 
@@ -20,8 +20,8 @@ func NewFactory() *Factory {
 func (f *Factory) Create(id string) references.IAudioRender {
 	switch strings.ToLower(strings.TrimSpace(id)) {
 	case "oto":
-		return oto_player.NewAudio()
+		return oto_render.NewAudio()
 	default:
-		return oto_player.NewAudio()
+		return oto_render.NewAudio()
 	}
 }

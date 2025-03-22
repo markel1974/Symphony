@@ -1,14 +1,14 @@
 package pixels
 
 import (
-	executor2 "github.com/markel1974/c64emu/src/render/glrender/pixels/executor"
+	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels/executor"
 	"math"
 )
 
 // GLPicture represents a graphical picture with texture, pixel data, and its bounding rectangle.
 type GLPicture struct {
 	bounds  Rect
-	texture *executor2.Texture
+	texture *executor.Texture
 	pixels  []uint8
 }
 
@@ -25,10 +25,10 @@ func NewGLPicture(p IPicture) *GLPicture {
 		_, _, bw, bh, pixels = extractPixelsFromPicture(p)
 	}
 
-	var texture *executor2.Texture
+	var texture *executor.Texture
 
-	executor2.GraphicThread.Call(func() {
-		texture = executor2.NewTexture(bw, bh, true, pixels)
+	executor.GraphicThread.Call(func() {
+		texture = executor.NewTexture(bw, bh, true, pixels)
 	})
 
 	gp := &GLPicture{
@@ -46,7 +46,7 @@ func (gp *GLPicture) Bounds() Rect {
 }
 
 // Texture returns the associated texture of the GLPicture instance.
-func (gp *GLPicture) Texture() *executor2.Texture {
+func (gp *GLPicture) Texture() *executor.Texture {
 	return gp.texture
 }
 
@@ -80,7 +80,7 @@ func (gp *GLPicture) Update(p IPicture) {
 		bx, by, bw, bh, pixels = extractPixelsFromPicture(p)
 	}
 
-	executor2.GraphicThread.Call(func() {
+	executor.GraphicThread.Call(func() {
 		gp.texture.Begin()
 		gp.texture.SetPixels(bx, by, bw, bh, pixels)
 		gp.texture.End()

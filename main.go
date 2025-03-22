@@ -3,21 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/markel1974/c64emu/src/audio"
+	"log"
+
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware"
 	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/render"
+	"github.com/markel1974/c64emu/src/renderers/audio"
+	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"github.com/markel1974/c64emu/src/shell"
 	"github.com/markel1974/c64emu/src/shell/authenticator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/version"
-	"log"
 )
-
-//TODO WASM
-// https://garciat.com/posts/go-wasm/
-// https://github.com/seqsense/webgl-go/tree/master
 
 // -c "SCPU:;REU16M:/Users/tinmr305/Downloads/c64carts/doom/doom.reu" -p /Users/tinmr305/Downloads/c64carts/doom/loader.prg
 
@@ -190,10 +187,10 @@ func main() {
 		log.Fatal("board is nil")
 	}
 
-	renderFactory := render.NewFactory()
+	graphicsFactory := graphics.NewFactory()
 	audioFactory := audio.NewFactory()
 
-	displayRender := renderFactory.Create(renderId)
+	displayRender := graphicsFactory.Create(renderId)
 	w, h := board.GetScreenSize()
 	display, err := displayRender.CreateDisplayBuffer(w, h)
 	if err != nil {

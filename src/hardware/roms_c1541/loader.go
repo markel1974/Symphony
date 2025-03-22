@@ -7,12 +7,13 @@ import (
 	"os"
 )
 
+// RomLoader is responsible for loading ROM files and managing their lifecycle within the application.
 type RomLoader struct {
 	*component.BaseComponent
 	cfg *config.Config
 }
 
-// NewRomLoader initializes and returns a new instance of RomLoader configured with the provided Config.
+// NewRomLoader initializes a new RomLoader instance and registers it with the given parent and component factory.
 func NewRomLoader(parent references.IComponent, factory references.IComponentFactory, instance int) *RomLoader {
 	rl := &RomLoader{
 		BaseComponent: component.NewBaseComponent(),
@@ -22,29 +23,30 @@ func NewRomLoader(parent references.IComponent, factory references.IComponentFac
 	return rl
 }
 
+// Setup configures the RomLoader with the provided configuration instance and initializes its internal settings.
 func (r *RomLoader) Setup(cfg *config.Config) error {
 	r.cfg = cfg
 	return nil
 }
 
+// Emulate triggers the emulation process for the ROM loader component.
 func (r *RomLoader) Emulate() {
 
 }
 
+// Reset reinitializes the RomLoader to its default state.
 func (r *RomLoader) Reset() {
 }
 
-// Load attempts to load the ROM data from a file if a valid name is provided; otherwise, it returns embedded ROM data.
-// If useJiffy is true, it returns the _jiffyRom; if not, it defaults to returning the _builtinRom.
+// Load attempts to load the appropriate ROM data based on configuration settings, falling back to a default if necessary.
 func (r *RomLoader) Load() []byte {
-	romName := r.cfg.Get1541RomPath()
-	if len(romName) > 0 {
+	if r.cfg.UseJiffy() {
+		return _jiffyRom
+	}
+	if romName := r.cfg.C1541RomPath(); len(romName) > 0 {
 		if dat, err := os.ReadFile(romName); err == nil {
 			return dat
 		}
-	}
-	if r.cfg.UseJiffy() {
-		return _jiffyRom
 	}
 	return _builtinRom
 }

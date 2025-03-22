@@ -1,6 +1,6 @@
 //go:build !windows
 
-package asciirender
+package ascii_render
 
 import (
 	"os"

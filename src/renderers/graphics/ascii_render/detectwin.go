@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-package asciirender
+package ascii_render
 
 import (
 	"syscall"
