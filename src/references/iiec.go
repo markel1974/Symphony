@@ -1,6 +1,7 @@
 package references
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/config"
 )
@@ -101,4 +102,15 @@ type IIecProtocolDevice interface {
 	Talk(sec uint8)
 
 	Untalk(sec uint8)
+}
+
+func ComponentToIEC(component IComponent, err error) (IIec, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IIec)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIIec(v))
+	}
+	return v, nil
 }

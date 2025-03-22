@@ -1,6 +1,9 @@
 package references
 
-import "github.com/markel1974/c64emu/src/config"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/config"
+)
 
 func IdIVIC(_ IVIC) string {
 	return "IVIC"
@@ -82,4 +85,15 @@ type IVICSocket interface {
 	VBlank()
 
 	LastCycle()
+}
+
+func ComponentToIVIC(component IComponent, err error) (IVIC, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IVIC)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIVIC(v))
+	}
+	return v, nil
 }

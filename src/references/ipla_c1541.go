@@ -1,6 +1,9 @@
 package references
 
-import "github.com/markel1974/c64emu/src/config"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/config"
+)
 
 func IdIPLAc1541(_ IPLAc1541) string {
 	return "IPLAc1541"
@@ -16,4 +19,15 @@ type IPLAc1541 interface {
 	Read(addr uint16) uint8
 
 	Write(addr uint16, data uint8)
+}
+
+func ComponentToIPLAc1541(component IComponent, err error) (IPLAc1541, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IPLAc1541)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIPLAc1541(v))
+	}
+	return v, nil
 }

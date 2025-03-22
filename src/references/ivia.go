@@ -1,5 +1,7 @@
 package references
 
+import "fmt"
+
 // IVIASocket provides methods for interacting with a VIA socket, including reading, writing, and signaling operations.
 // ReadPRA reads a value from Peripheral Register A (PRA) using a specified mask and shift.
 // ReadPRB reads a value from Peripheral Register B (PRB) using a specified mask and shift.
@@ -56,4 +58,15 @@ type IVIA interface {
 	SignalPRB()
 
 	ByteReady() bool
+}
+
+func ComponentToIVIA(component IComponent, err error) (IVIA, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IVIA)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIVIA(v))
+	}
+	return v, nil
 }

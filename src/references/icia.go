@@ -1,5 +1,7 @@
 package references
 
+import "fmt"
+
 // ICIASocket defines an interface for interacting with CIA I/O ports and triggering IRQ events.
 // ReadPortA reads the current value of port A based on the peripheral and direction registers.
 // ReadPortB reads the current value of port B based on the peripheral and direction registers.
@@ -50,4 +52,15 @@ type ICIA interface {
 	WriteRegister(addr uint16, data uint8)
 
 	ReadRegister(addr uint16) uint8
+}
+
+func ComponentToICIA(component IComponent, err error) (ICIA, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(ICIA)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdICIA(v))
+	}
+	return v, nil
 }

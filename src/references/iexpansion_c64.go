@@ -1,6 +1,9 @@
 package references
 
-import "github.com/markel1974/c64emu/src/config"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/config"
+)
 
 //OFF
 //GAME = 1, EXROM = 1
@@ -98,4 +101,15 @@ type ICartridgeManagerC64 interface {
 	Emulate()
 
 	Add(kind string, path string, data []uint8) (string, error)
+}
+
+func ComponentToICartridgeManagerC64(component IComponent, err error) (ICartridgeManagerC64, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(ICartridgeManagerC64)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdICartridgeManagerC64(v))
+	}
+	return v, nil
 }

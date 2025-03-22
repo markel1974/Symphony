@@ -71,27 +71,27 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	//quartz := quartz.NewQuartz(m, "")
 	m.cfg.Bind(m.configChanged)
 
-	_, rl, err := m.GetFactory().CreateIROMLoaderC1541(m, "roms_c1541", 0)
+	rl, err := references.ComponentToIROMLoaderC1541(m.GetFactory().Create(m, "roms_c1541", 0))
 	if err != nil {
 		return err
 	}
-	_, pla, err := m.GetFactory().CreateIPLAc1541(m, "pla_c1541", 0)
+	pla, err := references.ComponentToIPLAc1541(m.GetFactory().Create(m, "pla_c1541", 0))
 	if err != nil {
 		return err
 	}
-	_, pic, err := m.GetFactory().CreateIPIC6510(m, "pic_6510", 0)
+	pic, err := references.ComponentToIPIC6510(m.GetFactory().Create(m, "pic_6510", 0))
 	if err != nil {
 		return err
 	}
-	_, cpu, err := m.GetFactory().CreateI6510(m, "mos6510", 0)
+	cpu, err := references.ComponentToI6510(m.GetFactory().Create(m, "mos6510", 0))
 	if err != nil {
 		return err
 	}
-	_, via1, err := m.GetFactory().CreateIVIA(m, "mos6522", 0)
+	via1, err := references.ComponentToIVIA(m.GetFactory().Create(m, "mos6522", 0))
 	if err != nil {
 		return err
 	}
-	_, via2, err := m.GetFactory().CreateIVIA(m, "mos6522", 1)
+	via2, err := references.ComponentToIVIA(m.GetFactory().Create(m, "mos6522", 1))
 	if err != nil {
 		return err
 	}

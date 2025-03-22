@@ -1,5 +1,7 @@
 package references
 
+import "fmt"
+
 // I6510Banks represents an interface for managing and accessing memory banks in a system.
 // Read retrieve the value from a specified memory address within the bank.
 // Write sets the specified value at a given memory address in the bank.
@@ -42,4 +44,15 @@ type I6510Socket interface {
 	GetBanks() I6510Banks
 
 	GetPic() IPIC6510
+}
+
+func ComponentToI6510(component IComponent, err error) (I6510, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(I6510)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdI6510(v))
+	}
+	return v, nil
 }

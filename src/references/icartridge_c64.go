@@ -1,6 +1,7 @@
 package references
 
 import (
+	"fmt"
 	"io"
 )
 
@@ -74,16 +75,27 @@ func IdICartridgeC64(_ ICartridgeC64) string {
 // Detach detaches the cartridge, releasing any associated resources.
 type ICartridgeC64 interface {
 	Setup(board IExpansionC64, loader ICartridgeLoaderC64) error
+
 	GetLoaderId() string
+
 	Reset()
+
 	Write(i RomInterval, addr uint16, data uint8) bool
+
 	Read(i RomInterval, addr uint16) (uint8, bool)
+
 	IORead(addr uint16) (uint8, bool)
+
 	IOWrite(addr uint16, data uint8) bool
+
 	GetExRom() uint8
+
 	GetGame() uint8
+
 	EmulationRequired() bool
+
 	Emulate()
+
 	Detach() error
 }
 
@@ -98,12 +110,19 @@ type ICartridgeC64 interface {
 // ReadChipHeader reads and parses a chip header from the cartridge data, returning the header and any encountered error.
 type ICartridgeLoaderC64 interface {
 	Setup(id string, data []byte) error
+
 	GetId() string
+
 	GetType() int
+
 	GetData() []byte
+
 	Game() int
+
 	ExRom() int
+
 	Name() string
+
 	ReadChipHeader() (ICartridgeChipHeaderC64, error)
 }
 
@@ -117,10 +136,27 @@ type ICartridgeLoaderC64 interface {
 // Write writes the chip data to the provided io.Writer and returns an error if unsuccessful.
 type ICartridgeChipHeaderC64 interface {
 	Skip() uint32
+
 	Kind() uint16
+
 	Bank() uint16
+
 	Start() uint16
+
 	Size() uint16
+
 	Data() []byte
+
 	Write(w io.Writer) error
+}
+
+func ComponentToICartridgeC64(component IComponent, err error) (ICartridgeC64, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(ICartridgeC64)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdICartridgeC64(v))
+	}
+	return v, nil
 }

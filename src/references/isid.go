@@ -1,6 +1,9 @@
 package references
 
-import "github.com/markel1974/c64emu/src/config"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/config"
+)
 
 func IdISID(_ ISID) string {
 	return "ISID"
@@ -37,4 +40,15 @@ type ISID interface {
 // GetPlayer retrieves the IAudioRender instance associated with the socket, enabling player-related operations.
 type ISIDSocket interface {
 	GetPlayer() IAudioRender
+}
+
+func ComponentToISID(component IComponent, err error) (ISID, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(ISID)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdISID(v))
+	}
+	return v, nil
 }

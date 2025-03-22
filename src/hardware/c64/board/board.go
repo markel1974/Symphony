@@ -112,63 +112,63 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 		s.hasClipboard = true
 	}
 
-	_, quartz, err := s.GetFactory().CreateIQuartz(s, "quartz", 0)
+	quartz, err := references.ComponentToIQuartz(s.GetFactory().Create(s, "quartz", 0))
 	if err != nil {
 		return err
 	}
-	_, throttle, err := s.GetFactory().CreateIThrottle(s, "dynamic_throttle", 0)
+	throttle, err := references.ComponentToIThrottle(s.GetFactory().Create(s, "dynamic_throttle", 0))
 	if err != nil {
 		return err
 	}
-	_, pic, err := s.GetFactory().CreateIPIC6510(s, "pic_6510", 0)
+	pic, err := references.ComponentToIPIC6510(s.GetFactory().Create(s, "pic_6510", 0))
 	if err != nil {
 		return err
 	}
-	_, cpu, err := s.GetFactory().CreateI6510(s, "mos6510", 0)
+	cpu, err := references.ComponentToI6510(s.GetFactory().Create(s, "mos6510", 0))
 	if err != nil {
 		return err
 	}
-	_, iec, err := s.GetFactory().CreateIEC(s, "iec", 0)
+	iec, err := references.ComponentToIEC(s.GetFactory().Create(s, "iec", 0))
 	if err != nil {
 		return err
 	}
-	_, vic, err := s.GetFactory().CreateIVIC(s, "mos6569", 0)
+	vic, err := references.ComponentToIVIC(s.GetFactory().Create(s, "mos6569", 0))
 	if err != nil {
 		return err
 	}
-	_, sid, err := s.GetFactory().CreateISID(s, "mos6581", 0)
+	sid, err := references.ComponentToISID(s.GetFactory().Create(s, "mos6581", 0))
 	if err != nil {
 		return err
 	}
-	_, cart, err := s.GetFactory().CreateICartridgeManagerC64(s, "cartridges_c64", 0)
+	cart, err := references.ComponentToICartridgeManagerC64(s.GetFactory().Create(s, "cartridges_c64", 0))
 	if err != nil {
 		return err
 	}
-	_, rom, err := s.GetFactory().CreateIROMLoaderC64(s, "roms_c64", 0)
+	rom, err := references.ComponentToIROMLoaderC64(s.GetFactory().Create(s, "roms_c64", 0))
 	if err != nil {
 		return err
 	}
-	_, cia1, err := s.GetFactory().CreateICIA(s, "mos6526", 0)
+	cia1, err := references.ComponentToICIA(s.GetFactory().Create(s, "mos6526", 0))
 	if err != nil {
 		return err
 	}
-	_, cia2, err := s.GetFactory().CreateICIA(s, "mos6526", 1)
+	cia2, err := references.ComponentToICIA(s.GetFactory().Create(s, "mos6526", 1))
 	if err != nil {
 		return err
 	}
-	_, pla, err := s.GetFactory().CreateIPLAc64(s, "pla_c64", 0)
+	pla, err := references.ComponentToIPLAc64(s.GetFactory().Create(s, "pla_c64", 0))
 	if err != nil {
 		return err
 	}
-	_, keys, err := s.GetFactory().CreateIKeyboard(s, "keyboard_c64", 0)
+	keys, err := references.ComponentToIKeyboard(s.GetFactory().Create(s, "keyboard_c64", 0))
 	if err != nil {
 		return err
 	}
-	_, joy1, err := s.GetFactory().CreateIJoystick(s, "joystick_c64", 0)
+	joy1, err := references.ComponentToIJoystick(s.GetFactory().Create(s, "joystick_c64", 0))
 	if err != nil {
 		return err
 	}
-	_, joy2, err := s.GetFactory().CreateIJoystick(s, "joystick_c64", 1)
+	joy2, err := references.ComponentToIJoystick(s.GetFactory().Create(s, "joystick_c64", 1))
 	if err != nil {
 		return err
 	}

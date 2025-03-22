@@ -1,5 +1,7 @@
 package references
 
+import "fmt"
+
 func IdIQuartz(_ IQuartz) string {
 	return "IQuartz"
 }
@@ -36,4 +38,15 @@ type IQuartzAlarm interface {
 	Unset() error
 
 	Destroy()
+}
+
+func ComponentToIQuartz(component IComponent, err error) (IQuartz, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IQuartz)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIQuartz(v))
+	}
+	return v, nil
 }

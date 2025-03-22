@@ -1,5 +1,7 @@
 package references
 
+import "fmt"
+
 // opFlagIrqDisabled represents the flag for interrupt requests being disabled.
 // opFlagIrqEnabled represents the flag for interrupt requests being enabled.
 // opFlagIntDelayed represents the flag for delayed interrupt requests.
@@ -40,4 +42,15 @@ type IPIC6510 interface {
 	IRQTriggerBind(fn func(uint32))
 
 	IRQClearBind(fn func(uint32))
+}
+
+func ComponentToIPIC6510(component IComponent, err error) (IPIC6510, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IPIC6510)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIPIC6510(v))
+	}
+	return v, nil
 }

@@ -6,7 +6,9 @@ package references
 // Set8 sets an array of 8 bytes of data starting at the given index.
 type IDisplayBuffer interface {
 	Set(idx int, data uint8)
+
 	SetMulti8(idx int, data uint8)
+
 	Set8(idx int, data [8]uint8)
 }
 
@@ -15,5 +17,6 @@ type IDisplayBuffer interface {
 // Start begins the rendering process for the given board, preparing it for graphical output or emulation execution.
 type IDisplayRender interface {
 	CreateDisplayBuffer(w int, h int) (IDisplayBuffer, error)
+
 	Start(board IBoard) error
 }

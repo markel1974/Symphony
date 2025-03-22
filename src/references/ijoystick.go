@@ -1,5 +1,7 @@
 package references
 
+import "fmt"
+
 func IdIJoystick(_ IJoystick) string {
 	return "IJoystick"
 }
@@ -25,4 +27,15 @@ type IJoystick interface {
 	SetKey(pressed bool, jId int)
 
 	Poll() (uint8, bool)
+}
+
+func ComponentToIJoystick(component IComponent, err error) (IJoystick, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IJoystick)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIJoystick(v))
+	}
+	return v, nil
 }

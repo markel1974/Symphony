@@ -1,6 +1,9 @@
 package references
 
-import "github.com/markel1974/c64emu/src/config"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/config"
+)
 
 func IdIPlaC64(_ IPlaC64) string {
 	return "IPlaC64"
@@ -46,4 +49,15 @@ type IPlaC64 interface {
 	SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int
 
 	RemoveRamTrigger(addr uint16, id int)
+}
+
+func ComponentToIPLAc64(component IComponent, err error) (IPlaC64, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IPlaC64)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIPlaC64(v))
+	}
+	return v, nil
 }

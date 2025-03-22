@@ -1,30 +1,44 @@
 package references
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"io"
 )
 
-// INode represents a hierarchical node structure allowing management of components, child nodes, and traversal operations.
-// AddComponent adds a child component to the node and returns the new child node.
-// GetComponent retrieves the component associated with the node.
-// GetChildren returns a slice of all child nodes of the current node.
-// FindNode searches for and returns a node based on a given path string.
+// INode defines a hierarchical structure for managing components and their relationships in a tree-like format.
+// AddComponent adds a component as a child and returns the child node.
+// RemoveComponent removes a specified component from the children, returning true if successful.
+// GetComponent retrieves the component associated with the current node.
+// GetChildren returns a slice of all child nodes.
+// FindComponent traverses the structure to locate a component by its path.
 type INode interface {
 	AddComponent(component IComponent) INode
+
 	RemoveComponent(component IComponent) bool
+
 	GetComponent() IComponent
+
 	GetChildren() []INode
+
 	FindComponent(path string) IComponent
 }
 
-// IHardware defines an interface for hardware functionalities with a method to reset the hardware state.
+// IHardware defines an interface for hardware components, offering methods for emulation and reset operations.
+// Emulate starts or manages the emulation process for the hardware.
+// Reset reinitializes or restores the hardware to a default state.
 type IHardware interface {
 	Emulate()
 
 	Reset()
 }
 
+// ICommand defines an interface for managing and executing commands in a system.
+// GetCommand retrieves the underlying cli.Command object.
+// CommandAdd registers a new command with a specified ID, description, and handler.
+// CommandExec executes a registered command with the given arguments.
+// CommandExecPath executes a command at a specific path with the given arguments.
+// CommandDocumentation provides documentation for commands using a given map.
 type ICommand interface {
 	GetCommand() *cli.Command
 
@@ -52,10 +66,6 @@ type ICommand interface {
 // Restore reconstructs the internal state using a map of properties and configuration.
 // RestoreAll restores all configurations and properties for the current component and its children.
 // RestorePath restores the configuration of a specific component using a path and a map of properties.
-// CommandAdd adds a command to the component with a unique identifier and description.
-// CommandExec executes a component's command by its identifier and returns the result or an error.
-// CommandExecPath executes a command at a specific path of a component using an identifier, returning the result or error.
-// CommandDocumentation populates a map with descriptions of available commands.
 // Print outputs a formatted representation of the component to an io.Writer based on the provided format and flags.
 type INavigate interface {
 	GetId() string
@@ -97,46 +107,26 @@ type INavigate interface {
 	Print(io.Writer, string, bool)
 }
 
-// IComponent represents a composite interface that combines IHardware and INavigate capabilities.
+// IComponent represents the core interface for components, combining hardware, navigation, and command functionalities.
 type IComponent interface {
 	IHardware
+
 	INavigate
+
 	ICommand
 }
 
-// IComponentFactory defines an interface for creating IComponent instances with hierarchical and contextual parameters.
+// IComponentFactory defines methods for creating and managing various types of components in an emulation system.
 type IComponentFactory interface {
 	Create(parent IComponent, id string, instance int) (IComponent, error)
+}
 
-	CreateIQuartz(parent IComponent, id string, instance int) (IComponent, IQuartz, error)
-
-	CreateIVIC(parent IComponent, id string, instance int) (IComponent, IVIC, error)
-
-	CreateISID(parent IComponent, id string, instance int) (IComponent, ISID, error)
-
-	CreateICIA(parent IComponent, id string, instance int) (IComponent, ICIA, error)
-
-	CreateIVIA(parent IComponent, id string, instance int) (IComponent, IVIA, error)
-
-	CreateI6510(parent IComponent, id string, instance int) (IComponent, I6510, error)
-
-	CreateIPIC6510(parent IComponent, id string, instance int) (IComponent, IPIC6510, error)
-
-	CreateIPLAc64(parent IComponent, id string, instance int) (IComponent, IPlaC64, error)
-
-	CreateIPLAc1541(parent IComponent, id string, instance int) (IComponent, IPLAc1541, error)
-
-	CreateIEC(parent IComponent, id string, instance int) (IComponent, IIec, error)
-
-	CreateIROMLoaderC64(parent IComponent, id string, instance int) (IComponent, IROMLoaderC64, error)
-
-	CreateIROMLoaderC1541(parent IComponent, id string, instance int) (IComponent, IROMLoaderC1541, error)
-
-	CreateICartridgeManagerC64(parent IComponent, id string, instance int) (IComponent, ICartridgeManagerC64, error)
-
-	CreateIThrottle(parent IComponent, id string, instance int) (IComponent, IThrottle, error)
-
-	CreateIKeyboard(parent IComponent, id string, instance int) (IComponent, IKeyboard, error)
-
-	CreateIJoystick(parent IComponent, id string, instance int) (IComponent, IJoystick, error)
+func ComponentValidate(component IComponent, err error) error {
+	if err != nil {
+		return err
+	}
+	if component == nil {
+		return fmt.Errorf("nil component")
+	}
+	return nil
 }

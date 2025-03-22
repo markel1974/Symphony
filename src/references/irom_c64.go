@@ -1,6 +1,9 @@
 package references
 
-import "github.com/markel1974/c64emu/src/config"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/config"
+)
 
 func IdIROMLoaderC64(_ IROMLoaderC64) string {
 	return "IROMLoaderC64"
@@ -20,4 +23,15 @@ type IROMLoaderC64 interface {
 	LoadBasic() []byte
 
 	LoadChar() []byte
+}
+
+func ComponentToIROMLoaderC64(component IComponent, err error) (IROMLoaderC64, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IROMLoaderC64)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIROMLoaderC64(v))
+	}
+	return v, nil
 }

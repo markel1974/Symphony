@@ -1,5 +1,7 @@
 package references
 
+import "fmt"
+
 func IdIKeyboard(_ IKeyboard) string {
 	return "IKeyboard"
 }
@@ -28,4 +30,15 @@ type IKeyboard interface {
 	Poll() (uint32, bool)
 
 	SetCommand(cmd string)
+}
+
+func ComponentToIKeyboard(component IComponent, err error) (IKeyboard, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IKeyboard)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIKeyboard(v))
+	}
+	return v, nil
 }

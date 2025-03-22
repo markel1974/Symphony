@@ -1,5 +1,7 @@
 package references
 
+import "fmt"
+
 func IdIThrottle(_ IThrottle) string {
 	return "IThrottle"
 }
@@ -13,4 +15,15 @@ type IThrottle interface {
 	Counter() uint64
 
 	Throttle()
+}
+
+func ComponentToIThrottle(component IComponent, err error) (IThrottle, error) {
+	if err = ComponentValidate(component, err); err != nil {
+		return nil, err
+	}
+	v, ok := component.(IThrottle)
+	if !ok {
+		return nil, fmt.Errorf("component is not a %s", IdIThrottle(v))
+	}
+	return v, nil
 }
