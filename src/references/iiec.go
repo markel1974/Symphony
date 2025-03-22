@@ -24,7 +24,7 @@ func IdIIec(_ IIec) string {
 type IIec interface {
 	Setup(IQuartz, *config.Config) error
 
-	AddPeripheral(q IQuartz, cfg *config.Config, kind string, opts string, deviceId uint8) error
+	AddPeripheral(q IQuartz, cfg *config.Config, kind string, deviceId uint8) error
 
 	RemovePeripheral(deviceId uint8)
 
@@ -56,7 +56,7 @@ func IdIIecDevice(_ IIecDevice) string {
 // AtnStateChanged handles changes in the Attention (ATN) line state.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIecDevice interface {
-	Setup(IIec, IQuartz, uint8, uint8, string, *config.Config) error
+	Setup(IIec, IQuartz, uint8, uint8, *config.Config) error
 
 	Reset()
 

@@ -61,7 +61,7 @@ func (c *Dispatcher) Setup(q references.IQuartz, cfg *config.Config) error {
 		if len(d.Kind) > 0 {
 			kind = d.Kind
 		}
-		if err := c.AddPeripheral(q, cfg, kind, d.Opts, uint8(deviceId)); err != nil {
+		if err := c.AddPeripheral(q, cfg, kind, uint8(deviceId)); err != nil {
 			return err
 		}
 		/*
@@ -112,7 +112,7 @@ func (c *Dispatcher) Reset() {
 }
 
 // AddPeripheral adds a new peripheral to the dispatcher with the given kind, options, and device ID.
-func (c *Dispatcher) AddPeripheral(q references.IQuartz, cfg *config.Config, kind string, opts string, deviceId uint8) error {
+func (c *Dispatcher) AddPeripheral(q references.IQuartz, cfg *config.Config, kind string, deviceId uint8) error {
 	deviceNumber := deviceId + 8
 	device, err := c.GetFactory().Create(c, kind, int(deviceNumber))
 	if err != nil {
@@ -122,7 +122,7 @@ func (c *Dispatcher) AddPeripheral(q references.IQuartz, cfg *config.Config, kin
 	if !ok {
 		return fmt.Errorf("device %s is not an IEC device", kind)
 	}
-	if err = vd.Setup(c, q, deviceId, deviceNumber, opts, cfg); err != nil {
+	if err = vd.Setup(c, q, deviceId, deviceNumber, cfg); err != nil {
 		return err
 	}
 	vd.LEDSignal().Bind(func(state uint32) {

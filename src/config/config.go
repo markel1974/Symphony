@@ -59,12 +59,12 @@ func (p *Config) GetDrives() []Drive {
 	return p.drives
 }
 
-// GetDrivesOpt retrieves the options of a drive by its ID if it exists. Returns the options and true if found, else an empty string and false.
-func (p *Config) GetDrivesOpt(id uint8) (string, bool) {
+// GetDrive retrieves the options of a drive by its ID if it exists. Returns the options and true if found, else an empty string and false.
+func (p *Config) GetDrive(id uint8) (Drive, bool) {
 	if int(id) < len(p.drives) {
-		return p.drives[id].Opts, true
+		return p.drives[id], true
 	}
-	return "", false
+	return Drive{}, false
 }
 
 // SetDriveOpt updates the options for a specific drive identified by id and emits a signal if the update is successful.

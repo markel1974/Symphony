@@ -43,13 +43,16 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	return fs
 }
 
-func (v *FSDrive) Setup(bus references.IIec, q references.IQuartz, deviceId uint8, deviceNumber uint8, path string, cfg *config.Config) error {
-	if err := v.Protocol.Setup(bus, q, deviceId, deviceNumber, path, cfg); err != nil {
+func (v *FSDrive) Setup(bus references.IIec, q references.IQuartz, deviceId uint8, deviceNumber uint8, cfg *config.Config) error {
+	if err := v.Protocol.Setup(bus, q, deviceId, deviceNumber, cfg); err != nil {
 		return err
 	}
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
-	v.path = path
+	v.cfg = cfg
+	if d, ok := v.cfg.GetDrive(v.deviceId); ok {
+		v.path = d.Opts
+	}
 	v.cfg = cfg
 	v.cfg.Bind(v.configChanged)
 	v.origDirPath = v.path

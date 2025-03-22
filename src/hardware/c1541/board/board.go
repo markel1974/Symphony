@@ -66,21 +66,25 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 }
 
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
-func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId uint8, deviceNumber uint8, opts string, cfg *config.Config) error {
+func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId uint8, deviceNumber uint8, cfg *config.Config) error {
 	var err error
 	m.iec = iec
 	m.cfg = cfg
 	m.deviceId = deviceId
-	m.filePath = opts
+	m.filePath = ""
 	//quartz := quartz.NewQuartz(m, "")
 	m.cfg.Bind(m.configChanged)
 
 	if err = m.mec.Setup(); err != nil {
 		return err
 	}
-	if len(m.filePath) > 0 {
-		if err = m.InsertDisk(m.filePath); err != nil {
-			return err
+
+	if d, ok := m.cfg.GetDrive(m.deviceId); ok {
+		m.filePath = d.Opts
+		if len(m.filePath) > 0 {
+			if err = m.InsertDisk(m.filePath); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -183,9 +187,9 @@ func (m *Board) LEDSignal() *signals.SignalUint32 {
 
 // configChanged handles configuration changes by checking if the drive options have been updated and applies necessary adjustments.
 func (m *Board) configChanged() {
-	if opt, ok := m.cfg.GetDrivesOpt(m.deviceId); ok {
-		if opt != m.filePath {
-			m.filePath = opt
+	if d, ok := m.cfg.GetDrive(m.deviceId); ok {
+		if d.Opts != m.filePath {
+			m.filePath = d.Opts
 			m.Reset()
 			if err := m.InsertDisk(m.filePath); err != nil {
 				log.Println(err)

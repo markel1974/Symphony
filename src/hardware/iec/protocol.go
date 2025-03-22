@@ -123,7 +123,7 @@ func (v *Protocol) SetDevice(device references.IIecProtocolDevice) {
 }
 
 // Setup initializes the Protocol with the provided IEC interface and configuration settings.
-func (v *Protocol) Setup(iec references.IIec, quartz references.IQuartz, deviceNumber uint8, device uint8, opts string, cfg *config.Config) error {
+func (v *Protocol) Setup(iec references.IIec, quartz references.IQuartz, deviceNumber uint8, device uint8, cfg *config.Config) error {
 	v.iec = iec
 	v.quartz = quartz
 	v.deviceNumber = deviceNumber
