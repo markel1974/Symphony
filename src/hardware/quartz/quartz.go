@@ -38,7 +38,9 @@ func (s *Quartz) Setup() error {
 // Emulate increments the internal cycle counter and checks scheduled alarms against the updated cycle value.
 func (s *Quartz) Emulate() {
 	s.cycle++
-	s.alarmsCheck(s.cycle)
+	if s.alarms.Len() > 0 {
+		s.alarmsCheck(s.cycle)
+	}
 }
 
 func (s *Quartz) Reset() {
@@ -103,9 +105,6 @@ func (s *Quartz) alarmUnset(alarm *Alarm) error {
 
 // alarmsCheck executes all alarms whose scheduled cycle is less than or equal to the current cycle and removes them from the list.
 func (s *Quartz) alarmsCheck(cycle uint64) {
-	if s.alarms.Len() == 0 {
-		return
-	}
 	var next *list.Element
 	for e := s.alarms.Front(); e != nil; e = next {
 		next = e.Next()
