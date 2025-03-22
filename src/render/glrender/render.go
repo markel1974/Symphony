@@ -2,6 +2,7 @@ package glrender
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/render/glrender/pixels"
 )
@@ -42,12 +43,18 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 	return display, nil
 }
 
-func (g *Render) Start(board references.IBoard) error {
+func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	g.board = board
 	g.dt = board.Throttle()
 	g.board.VBlankSignal().Bind(g.vBlankSlot)
 	g.board.LEDSignal().Bind(g.ledSlot)
-	g.inputs.Setup(g.board)
+	if err := g.inputs.Setup(g.board, cfg); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *Render) Start() error {
 	return pixels.GLRun(g.runner)
 }
 

@@ -8,8 +8,6 @@ import (
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
 	"github.com/markel1974/c64emu/src/hardware/vic"
 	"github.com/markel1974/c64emu/src/references"
-	"golang.design/x/clipboard"
-	"log"
 	"os"
 )
 
@@ -48,7 +46,6 @@ type Board struct {
 	cfg             *config.Config
 	prg             *prg.PRG
 	joySwap         bool
-	hasClipboard    bool
 	dmaLow          bool
 	vBlankSignal    *signals.Signal
 	ledSignal       *signals.SignalUint32
@@ -82,7 +79,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		dmaLow:          false,
 		prg:             nil,
 		joySwap:         true,
-		hasClipboard:    false,
 		vBlankSignal:    signals.NewSignal(),
 		ledSignal:       signals.NewSignalUint32(),
 	}
@@ -103,12 +99,6 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 	s.player = player
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
-	err := clipboard.Init()
-	if err != nil {
-		log.Printf("can't init clipboard: %s", err)
-	} else {
-		s.hasClipboard = true
-	}
 
 	quartz, err := references.ComponentToIQuartz(s.GetFactory().Create(s, "quartz", 0))
 	if err != nil {
@@ -305,25 +295,6 @@ func (s *Board) GetScreenSize() (int, int) {
 	return mos6569.DisplayX, mos6569.DisplayY
 }
 
-// DiskChange updates the disk configuration by switching the disk and resetting the drive options.
-func (s *Board) DiskChange() {
-	s.cfg.SwitchDisk()
-	s.cfg.SetDriveOpt("", 8)
-}
-
-// KeyboardPaste processes pasting text from the clipboard when a keyboard paste action is triggered.
-// It checks if the paste action is allowed and the clipboard has content before executing.
-func (s *Board) KeyboardPaste(pressed bool) {
-	if !pressed {
-		return
-	}
-	if !s.hasClipboard {
-		return
-	}
-	data := clipboard.Read(clipboard.FmtText)
-	s.keysSocket.SetCommand(string(data))
-}
-
 // KeyboardSetCommand assigns the specified command to the keyboard's key socket for execution.
 func (s *Board) KeyboardSetCommand(cmd string) {
 	s.keysSocket.SetCommand(cmd)
@@ -387,10 +358,7 @@ func (s *Board) Joystick2Move(x uint, y uint, buttons uint) {
 }
 
 // JoySwap toggles the joystick swap state and resets both joystick sockets if the pressed parameter is true.
-func (s *Board) JoySwap(pressed bool) {
-	if !pressed {
-		return
-	}
+func (s *Board) JoySwap() {
 	s.joySwap = !s.joySwap
 	s.joySocket1.Reset()
 	s.joySocket2.Reset()

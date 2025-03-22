@@ -218,13 +218,19 @@ func main() {
 		log.Fatal(err)
 	}
 	audio := createAudioRender(playerId)
+	if err = audio.Setup(cfg); err != nil {
+		log.Fatal(err)
+	}
 	if err = board.Setup(display, audio, cfg); err != nil {
 		log.Fatal(err)
 	}
 	if err = createShell(component.GetCommand()); err != nil {
 		log.Fatal(err)
 	}
-	if err = render.Start(board); err != nil {
+	if err = render.Setup(board, cfg); err != nil {
+		log.Fatal(err)
+	}
+	if err = render.Start(); err != nil {
 		log.Fatal(err)
 	}
 }

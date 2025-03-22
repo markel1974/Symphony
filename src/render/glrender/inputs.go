@@ -3,33 +3,41 @@ package glrender
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/render/glrender/pixels"
+	"golang.design/x/clipboard"
+	"log"
 )
 
 type Inputs struct {
-	board      references.IBoard
-	keyMapper  []func(bool)
-	activeKeys map[pixels.Button]bool
-	joyKeys    bool
-	lastX      uint8
-	lastY      uint8
+	board        references.IBoard
+	cfg          *config.Config
+	keyMapper    []func(bool)
+	activeKeys   map[pixels.Button]bool
+	joyKeys      bool
+	lastX        uint8
+	lastY        uint8
+	hasClipboard bool
 }
 
 func NewInputs() *Inputs {
 	return &Inputs{
-		board:      nil,
-		keyMapper:  nil,
-		joyKeys:    true,
-		activeKeys: make(map[pixels.Button]bool),
-		lastX:      0,
-		lastY:      0,
+		board:        nil,
+		cfg:          nil,
+		keyMapper:    nil,
+		joyKeys:      true,
+		activeKeys:   make(map[pixels.Button]bool),
+		lastX:        0,
+		lastY:        0,
+		hasClipboard: false,
 	}
 }
 
-func (g *Inputs) Setup(b references.IBoard) {
+func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 	const max = int(pixels.KeyLast + 1)
 	g.board = b
+	g.cfg = cfg
 	g.keyMapper = make([]func(bool), max)
 	for x := 0; x < max; x++ {
 		g.keyMapper[x] = func(b bool) {}
@@ -38,11 +46,33 @@ func (g *Inputs) Setup(b references.IBoard) {
 	g.keyMapper[pixels.KeyCapsLock] = func(_ bool) { b.KeyboardCapitalToggle() }
 	g.keyMapper[pixels.KeyEscape] = func(p bool) { b.KeyboardSetVirtualKey(p, component.VKEscape) }
 
-	g.keyMapper[pixels.KeyF9] = g.swapJoyKey
-	g.keyMapper[pixels.KeyF10] = func(p bool) { b.JoySwap(p) }
-	g.keyMapper[pixels.KeyF11] = g.diskChange
-	g.keyMapper[pixels.KeyF12] = func(p bool) { b.KeyboardPaste(p) }
-
+	g.keyMapper[pixels.KeyF9] = func(p bool) {
+		if p {
+			g.joyKeys = !g.joyKeys
+			fmt.Println("joyKeys", g.joyKeys)
+		}
+	}
+	g.keyMapper[pixels.KeyF10] = func(p bool) {
+		if p {
+			b.JoySwap()
+		}
+	}
+	g.keyMapper[pixels.KeyF11] = func(p bool) {
+		if p {
+			g.cfg.SwitchDisk()
+			g.cfg.SetDriveOpt("", 8)
+			fmt.Println("swapping disk")
+		}
+	}
+	g.keyMapper[pixels.KeyF12] = func(p bool) {
+		if p {
+			if !g.hasClipboard {
+				return
+			}
+			data := clipboard.Read(clipboard.FmtText)
+			g.board.KeyboardSetCommand(string(data))
+		}
+	}
 	g.keyMapper[pixels.KeyF1] = func(p bool) { b.KeyboardSetVirtualKey(p, component.VKF1) }
 	g.keyMapper[pixels.KeyF2] = func(p bool) { b.KeyboardSetVirtualKey(p, component.VKF2) }
 	g.keyMapper[pixels.KeyF3] = func(p bool) { b.KeyboardSetVirtualKey(p, component.VKF3) }
@@ -146,6 +176,14 @@ func (g *Inputs) Setup(b references.IBoard) {
 	}
 	g.keyMapper[pixels.MouseButton1] = func(p bool) { b.Joy1SetKey(p, component.KeyJFire) }
 	g.keyMapper[pixels.MouseButton2] = func(p bool) { b.Joy1SetKey(p, component.KeyJUp) }
+
+	err := clipboard.Init()
+	if err != nil {
+		log.Printf("can't init clipboard: %s", err)
+	} else {
+		g.hasClipboard = true
+	}
+	return nil
 }
 
 func (g *Inputs) Keys(pressed map[pixels.Button]bool) {
@@ -175,19 +213,5 @@ func (g *Inputs) MouseMove(x float64, y float64) {
 		g.lastX = x1
 		g.lastY = y1
 		g.board.SetMouse(uint8(x), uint8(y))
-	}
-}
-
-func (g *Inputs) diskChange(p bool) {
-	if p {
-		g.board.DiskChange()
-		fmt.Println("swapping disk")
-	}
-}
-
-func (g *Inputs) swapJoyKey(p bool) {
-	if p {
-		g.joyKeys = !g.joyKeys
-		fmt.Println("joyKeys", g.joyKeys)
 	}
 }

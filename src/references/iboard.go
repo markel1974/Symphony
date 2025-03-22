@@ -54,9 +54,8 @@ type IBoard interface {
 	Joystick2Move(x uint, y uint, buttons uint)
 	Joy1SetKey(pressed bool, vKey int)
 	Joy2SetKey(pressed bool, vKey int)
-	JoySwap(p bool)
+	JoySwap()
 
-	KeyboardPaste(pressed bool)
 	KeyboardSetCommand(cmd string)
 	KeyboardNumLockToggle()
 	KeyboardCapitalToggle()
@@ -65,6 +64,4 @@ type IBoard interface {
 	SetMouse(x uint8, y uint8)
 
 	Throttle() IThrottle
-
-	DiskChange()
 }

@@ -30,17 +30,16 @@ func New() *Render {
 	return g
 }
 
-func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
-	g.display = NewDisplayBuffer()
-	return g.display, nil
-}
-
-func (g *Render) Start(board references.IBoard) error {
+func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	g.board = board
 	g.board.VBlankSignal().Bind(g.vBlank)
 	if err := MakeStdInRaw(); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (g *Render) Start() error {
 	go func() {
 		textData := make([]byte, 16)
 		for {
@@ -92,6 +91,11 @@ func (g *Render) vBlank() {
 	copy(g.textBuffer, b)
 	//counter++
 	//fmt.Printf("vblank %d\r\n", counter)
+}
+
+func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
+	g.display = NewDisplayBuffer()
+	return g.display, nil
 }
 
 func (g *Render) printBuffer(textBuffer []byte) {

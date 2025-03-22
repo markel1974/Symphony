@@ -248,10 +248,7 @@ func (s *Board) Joystick2Move(x uint, y uint, buttons uint) {
 	}
 }
 
-func (s *Board) JoySwap(pressed bool) {
-	if !pressed {
-		return
-	}
+func (s *Board) JoySwap() {
 	s.joySwap = !s.joySwap
 	s.joy1.Reset()
 	s.joy2.Reset()
