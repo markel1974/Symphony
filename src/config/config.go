@@ -31,23 +31,28 @@ func (p *Config) Bind(changed func()) {
 	p.changed.Bind(changed)
 }
 
-// AddDrive adds a new drive to the Config instance with the specified kind and options.
-func (p *Config) AddDrive(kind string, filePath string) error {
-	drive, err := NewDrive(kind, filePath)
-	if err != nil {
-		return err
+func (p *Config) BuildDrives(d string) error {
+	for _, v := range KeyVal(d) {
+		drive, err := NewDrive(v.K, v.V)
+		if err != nil {
+			return err
+		}
+		p.drives = append(p.drives, drive)
 	}
-	p.drives = append(p.drives, drive)
 	return nil
 }
 
-// AddDisk appends a new disk of the specified kind and options to the Config's disks list.
-func (p *Config) AddDisk(kind string, filePath string) error {
-	drive, err := NewDrive(kind, filePath)
-	if err != nil {
-		return err
+func (p *Config) BuildSpareDisks(d string) error {
+	for idx, v := range KeyVal(d) {
+		drive, err := NewDrive(v.K, v.V)
+		if err != nil {
+			return err
+		}
+		if idx == 0 && len(p.drives) == 0 {
+			p.drives = append(p.spareDisks, drive)
+		}
+		p.spareDisks = append(p.spareDisks, drive)
 	}
-	p.spareDisks = append(p.spareDisks, drive)
 	return nil
 }
 
@@ -56,12 +61,12 @@ func (p *Config) GetDrives() []*Drive {
 	return p.drives
 }
 
-// GetDrive retrieves the options of a drive by its ID if it exists. Returns the options and true if found, else an empty string and false.
-func (p *Config) GetDrive(id uint8) (*Drive, bool) {
+// GetDrive retrieves the Drive instance corresponding to the given id from the Config's drive list. Returns nil if not found.
+func (p *Config) GetDrive(id uint8) *Drive {
 	if int(id) < len(p.drives) {
-		return p.drives[id], true
+		return p.drives[id]
 	}
-	return nil, false
+	return nil
 }
 
 // SwitchDisk cycles through the available disks, updates the active drive's options, and emits a configuration change signal.
@@ -86,13 +91,14 @@ func (p *Config) GetPrg() string {
 	return p.prg
 }
 
-// AddCartridge appends a new Cartridge with the specified kind and path to the cartridges slice of the Config instance.
-func (p *Config) AddCartridge(kind string, filePath string) error {
-	crt, err := NewCartridge(kind, filePath)
-	if err != nil {
-		return err
+func (p *Config) BuildCartridges(c string) error {
+	for _, v := range KeyVal(c) {
+		crt, err := NewCartridge(v.K, v.V)
+		if err != nil {
+			return err
+		}
+		p.cartridges = append(p.cartridges, crt)
 	}
-	p.cartridges = append(p.cartridges, crt)
 	return nil
 }
 

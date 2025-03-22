@@ -3,12 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/markel1974/c64emu/src/audio"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware"
-	"github.com/markel1974/c64emu/src/player"
 	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/render/asciirender"
-	"github.com/markel1974/c64emu/src/render/glrender"
+	"github.com/markel1974/c64emu/src/render"
 	"github.com/markel1974/c64emu/src/shell"
 	"github.com/markel1974/c64emu/src/shell/authenticator"
 	"github.com/markel1974/c64emu/src/shell/cli"
@@ -123,21 +122,6 @@ func createShell(target *cli.Command) error {
 	return nil
 }
 
-func createDisplayRender(id string) references.IDisplayRender {
-	switch id {
-	case "ascii":
-		return asciirender.New()
-	case "gl":
-		return glrender.New()
-	default:
-		return glrender.New()
-	}
-}
-
-func createAudioRender( /* playerId */ _ string) references.IAudioRender {
-	return player.NewAudio()
-}
-
 func main() {
 	//TestCommand()
 	var showHelp bool
@@ -178,32 +162,18 @@ func main() {
 		cfg.SetPrg(prg)
 	}
 	if len(cartridges) > 0 {
-		kv := config.KeyVal(cartridges)
-		for _, v := range kv {
-			if err := cfg.AddCartridge(v.K, v.V); err != nil {
-				log.Fatal(err)
-			}
+		if err := cfg.BuildCartridges(cartridges); err != nil {
+			log.Fatal(err)
 		}
 	}
 	if len(drives) > 0 {
-		for _, v := range config.KeyVal(drives) {
-			if err := cfg.AddDrive(v.K, v.V); err != nil {
-				log.Fatal(err)
-			}
+		if err := cfg.BuildDrives(drives); err != nil {
+			log.Fatal(err)
 		}
 	}
 	if len(disks) > 0 {
-		if kv := config.KeyVal(disks); len(kv) > 0 {
-			if len(cfg.GetDrives()) == 0 {
-				if err := cfg.AddDrive(kv[0].K, kv[0].V); err != nil {
-					log.Fatal(err)
-				}
-			}
-			for _, v := range kv {
-				if err := cfg.AddDisk(v.K, v.V); err != nil {
-					log.Fatal(err)
-				}
-			}
+		if err := cfg.BuildSpareDisks(disks); err != nil {
+			log.Fatal(err)
 		}
 	}
 	if noJiffy {
@@ -219,26 +189,30 @@ func main() {
 	if !ok || board == nil {
 		log.Fatal("board is nil")
 	}
-	render := createDisplayRender(renderId)
+
+	renderFactory := render.NewFactory()
+	audioFactory := audio.NewFactory()
+
+	displayRender := renderFactory.Create(renderId)
 	w, h := board.GetScreenSize()
-	display, err := render.CreateDisplayBuffer(w, h)
+	display, err := displayRender.CreateDisplayBuffer(w, h)
 	if err != nil {
 		log.Fatal(err)
 	}
-	audio := createAudioRender(playerId)
-	if err = audio.Setup(cfg); err != nil {
+	audioRender := audioFactory.Create(playerId)
+	if err = audioRender.Setup(cfg); err != nil {
 		log.Fatal(err)
 	}
-	if err = board.Setup(display, audio, cfg); err != nil {
+	if err = board.Setup(display, audioRender, cfg); err != nil {
 		log.Fatal(err)
 	}
 	if err = createShell(component.GetCommand()); err != nil {
 		log.Fatal(err)
 	}
-	if err = render.Setup(board, cfg); err != nil {
+	if err = displayRender.Setup(board, cfg); err != nil {
 		log.Fatal(err)
 	}
-	if err = render.Start(); err != nil {
+	if err = displayRender.Start(); err != nil {
 		log.Fatal(err)
 	}
 }
