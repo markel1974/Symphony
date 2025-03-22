@@ -5,18 +5,18 @@ import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"io"
 	"os"
+	"path"
 )
 
 // Cartridge represents a cartridge with a specified kind and file path.
 type Cartridge struct {
 	Kind string
 	Name string
+	Path string
 	Data []byte
 }
 
-// Drive represents a storage device with a specified type and configuration options.
-// Kind specifies the type of the drive.
-// Opts defines additional options or settings for the drive.
+// Drive represents a data storage unit with specific characteristics such as type, ID, content, and write-protection status.
 type Drive struct {
 	Kind           string
 	Data           []byte
@@ -28,7 +28,7 @@ type Drive struct {
 type Config struct {
 	cartridges []Cartridge
 	drives     []Drive
-	disks      []Drive
+	spareDisks []Drive
 	changed    *signals.Signal
 	prg        string
 	diskIndex  int
@@ -66,7 +66,7 @@ func (p *Config) AddDisk(kind string, path string) error {
 	if err != nil {
 		return err
 	}
-	p.drives = append(p.drives, Drive{Kind: kind, Id: path, Data: data, WriteProtected: wp})
+	p.spareDisks = append(p.spareDisks, Drive{Kind: kind, Id: path, Data: data, WriteProtected: wp})
 	return nil
 }
 
@@ -83,34 +83,16 @@ func (p *Config) GetDrive(id uint8) (Drive, bool) {
 	return Drive{}, false
 }
 
-// SetDriveOpt updates the options for a specific drive identified by id and emits a signal if the update is successful.
-// Returns true if the update is performed; otherwise, it returns false. Only applicable if id is within drive array bounds.
-func (p *Config) SetDriveOpt(id uint8, path string) error {
-	if int(id) < len(p.drives) {
-		data, wp, err := getDataFromFile(path)
-		if err != nil {
-			return err
-		}
-		kind := p.drives[id].Kind
-		p.drives[id] = Drive{Kind: kind, Id: path, Data: data, WriteProtected: wp}
-		p.changed.Emit()
-		return nil
-	}
-	return nil
-}
-
 // SwitchDisk cycles through the available disks, updates the active drive's options, and emits a configuration change signal.
-func (p *Config) SwitchDisk() error {
-	if len(p.disks) == 0 {
-		return fmt.Errorf("nil disks")
+func (p *Config) SwitchDisk() (string, error) {
+	if len(p.drives) == 0 || len(p.spareDisks) == 0 {
+		return "", fmt.Errorf("nil disk")
 	}
 	p.diskIndex++
-	driveIndex := p.diskIndex % len(p.disks)
-	if err := p.SetDriveOpt(0, p.disks[driveIndex].Id); err != nil {
-		return err
-	}
+	driveIndex := p.diskIndex % len(p.spareDisks)
+	p.drives[0] = p.spareDisks[driveIndex]
 	p.changed.Emit()
-	return nil
+	return p.spareDisks[driveIndex].Id, nil
 }
 
 // SetPrg sets the program path in the Config instance.
@@ -129,8 +111,8 @@ func (p *Config) AddCartridge(kind string, filePath string) error {
 	if err != nil {
 		return err
 	}
-	name := filePath //path.Base(filePath)
-	p.cartridges = append(p.cartridges, Cartridge{Kind: kind, Name: name, Data: data})
+	name := path.Base(filePath)
+	p.cartridges = append(p.cartridges, Cartridge{Kind: kind, Name: name, Path: filePath, Data: data})
 	return nil
 }
 

@@ -1,7 +1,6 @@
 package glrender
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
@@ -49,7 +48,7 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 	g.keyMapper[pixels.KeyF9] = func(p bool) {
 		if p {
 			g.joyKeys = !g.joyKeys
-			fmt.Println("joyKeys", g.joyKeys)
+			log.Printf("joyKeys changed: %v", g.joyKeys)
 		}
 	}
 	g.keyMapper[pixels.KeyF10] = func(p bool) {
@@ -58,10 +57,12 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 		}
 	}
 	g.keyMapper[pixels.KeyF11] = func(p bool) {
-		if p {
-			g.cfg.SwitchDisk()
-			g.cfg.SetDriveOpt(8, "")
-			fmt.Println("swapping disk")
+		if !p {
+			if fp, err := g.cfg.SwitchDisk(); err != nil {
+				log.Printf("can't switch disk: %s", err)
+			} else {
+				log.Printf("swapping disk: %s", fp)
+			}
 		}
 	}
 	g.keyMapper[pixels.KeyF12] = func(p bool) {

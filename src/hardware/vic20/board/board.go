@@ -177,14 +177,6 @@ func (s *Board) GetScreenSize() (int, int) {
 	return 320, 200
 }
 
-func (s *Board) DiskChange() {
-	//s.cfg.GetDrives()
-	//aaa
-
-	s.cfg.SwitchDisk()
-	s.cfg.SetDriveOpt(8, "")
-}
-
 func (s *Board) KeyboardSetCommand(cmd string) {
 	s.keys.SetCommand(cmd)
 }
