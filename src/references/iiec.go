@@ -1,21 +1,31 @@
 package references
 
-import "github.com/markel1974/c64emu/src/config"
+import (
+	"github.com/markel1974/c64emu/src/common/signals"
+	"github.com/markel1974/c64emu/src/config"
+)
 
 func IdIIec(_ IIec) string {
 	return "IIec"
 }
 
-// IIec defines the interface for interacting with Input/Output devices on the IEC (serial bus) in an emulation environment.
-// Setup initializes the IEC instance with the provided quartz instance and configuration, returning an error if unsuccessful.
-// Reset resets the state of the IEC interface to its initial default configuration.
-// Emulate executes an IEC emulation cycle, processing communication between the CPU and peripherals.
-// CpuRead handles read operations initiated by the CPU and returns the respective data byte.
-// CpuWrite performs write operations from the CPU to the IEC interface using the provided data byte.
-// PeripheralRead manages read operations performed by IEC peripherals and returns the relevant data byte.
-// PeripheralWrite handles write operations to peripherals on the IEC bus using the specified device number and data byte.
+// IIec defines an interface for managing communication between a CPU and peripherals in an emulated environment.
+// Setup initializes the IIec instance with provided quartz and configuration objects.
+// AddPeripheral adds a new peripheral device with specified parameters, associating it with a unique device ID.
+// RemovePeripheral removes a peripheral device using its unique device ID.
+// Reset reinitializes the state of the IIec instance and all associated peripherals.
+// Emulate performs the emulation cycle for the IIec and connected peripherals.
+// CpuRead retrieves the data from the CPU bus.
+// CpuWrite writes data to the CPU bus for transmission to peripherals.
+// PeripheralRead retrieves data sent from peripherals to the CPU.
+// PeripheralWrite writes data from the CPU to a specific peripheral identified by its device number.
+// LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIec interface {
 	Setup(IQuartz, *config.Config) error
+
+	AddPeripheral(q IQuartz, cfg *config.Config, kind string, opts string, deviceId uint8) error
+
+	RemovePeripheral(deviceId uint8)
 
 	Reset()
 
@@ -28,6 +38,8 @@ type IIec interface {
 	PeripheralRead() uint8
 
 	PeripheralWrite(deviceNumber uint8, data uint8)
+
+	LEDSignal() *signals.SignalUint32
 }
 
 func IdIIecDevice(_ IIecDevice) string {
@@ -41,6 +53,7 @@ func IdIIecDevice(_ IIecDevice) string {
 // Ready checks if the virtual drive is ready for operation.
 // GetDeviceNumber returns the device number associated with the virtual drive.
 // AtnStateChanged handles changes in the Attention (ATN) line state.
+// LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIecDevice interface {
 	Setup(IIec, IQuartz, uint8, uint8, string, *config.Config) error
 
@@ -48,11 +61,15 @@ type IIecDevice interface {
 
 	Emulate()
 
+	Shutdown()
+
 	Ready() bool
 
 	GetDeviceNumber() uint8
 
 	AtnStateChanged(bool)
+
+	LEDSignal() *signals.SignalUint32
 }
 
 func IdIIecProtocolDevice(_ IIecProtocolDevice) string {

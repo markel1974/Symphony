@@ -34,7 +34,7 @@ const syncArrivedControl = ^dataArrivedControl
 // IRQClear clears an interrupt request by using the specified interrupt ID as a uint32.
 // IRQTrigger triggers an interrupt using the specified interrupt ID as a uint32.
 type IVIA2SocketConnections interface {
-	LedChanged(uint8)
+	LEDTrigger(uint8)
 
 	IRQClear(uint32)
 
@@ -81,9 +81,9 @@ func (v *VIA2Socket) Reset() {
 	v.IVIA.Reset()
 }
 
-// LedChanged notifies the connected system that the LED state has changed, passing the updated data byte as a parameter.
-func (v *VIA2Socket) LedChanged(data byte) {
-	v.connections.LedChanged(data)
+// LEDTrigger notifies the connected system that the LED state has changed, passing the updated data byte as a parameter.
+func (v *VIA2Socket) LEDTrigger(data byte) {
+	v.connections.LEDTrigger(data)
 }
 
 // IRQClear clears the interrupt request associated with the intrId of the VIA2Socket instance by invoking the connections' IRQClear method.
@@ -149,7 +149,7 @@ func (v *VIA2Socket) WritePRB(prb uint8, _ uint8) {
 		if (prb & ledControl) != 0 {
 			led = 1
 		}
-		v.connections.LedChanged(led)
+		v.connections.LEDTrigger(led)
 	}
 	//bit [4]
 	//Write protect photocell status; 0 = Write protect tab covered, disk protected; 1 = Tab uncovered, disk not protected.

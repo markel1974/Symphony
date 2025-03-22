@@ -38,7 +38,7 @@ type Dispatcher struct {
 	peripheralsPort uint8
 	peripheralsData []uint8
 	virtualDrives   []references.IIecDevice
-	ledSignal       *signals.Signal2[int, uint8]
+	ledSignal       *signals.SignalUint32 //*signals.Signal2[int, uint8]
 }
 
 // NewDispatcher initializes a new Dispatcher instance with the given parent component, factory, and instance number.
@@ -48,7 +48,7 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 		BaseComponent:   component.NewBaseComponent(),
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
-		ledSignal:       signals.NewSignal2[int, uint8](),
+		ledSignal:       signals.NewSignalUint32(), //ledSignal:       signals.NewSignal2[int, uint8](),
 	}
 	c.BaseComponent.Register(factory, parent, Identifier(), instance, c, references.IdIIec(c))
 	return c
@@ -57,23 +57,33 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 // Setup initializes the Dispatcher component, configures drives based on the provided configuration, and prepares devices.
 func (c *Dispatcher) Setup(q references.IQuartz, cfg *config.Config) error {
 	for deviceId, d := range cfg.GetDrives() {
-		deviceNumber := deviceId + 8
 		kind := "c1541"
 		if len(d.Kind) > 0 {
 			kind = d.Kind
 		}
-		device, err := c.GetFactory().Create(c, kind, deviceNumber)
-		if err != nil {
+		if err := c.AddPeripheral(q, cfg, kind, d.Opts, uint8(deviceId)); err != nil {
 			return err
 		}
-		vd, ok := device.(references.IIecDevice)
-		if !ok {
-			return fmt.Errorf("device %s is not an IEC device", kind)
-		}
-		if err = vd.Setup(c, q, uint8(deviceId), uint8(deviceNumber), d.Opts, cfg); err != nil {
-			return err
-		}
-		c.virtualDrives = append(c.virtualDrives, vd)
+		/*
+			deviceNumber := deviceId + 8
+
+			device, err := c.GetFactory().Create(c, kind, deviceNumber)
+			if err != nil {
+				return err
+			}
+			vd, ok := device.(references.IIecDevice)
+			if !ok {
+				return fmt.Errorf("device %s is not an IEC device", kind)
+			}
+			if err = vd.Setup(c, q, uint8(deviceId), uint8(deviceNumber), d.Opts, cfg); err != nil {
+				return err
+			}
+			vd.LEDSignal().Bind(func(state uint32) {
+				c.ledSignal.Emit(state)
+			})
+			c.virtualDrives = append(c.virtualDrives, vd)
+
+		*/
 	}
 	return nil
 }
@@ -99,6 +109,70 @@ func (c *Dispatcher) Reset() {
 			vd.Reset()
 		}
 	}
+}
+
+// AddPeripheral adds a new peripheral to the dispatcher with the given kind, options, and device ID.
+func (c *Dispatcher) AddPeripheral(q references.IQuartz, cfg *config.Config, kind string, opts string, deviceId uint8) error {
+	deviceNumber := deviceId + 8
+	device, err := c.GetFactory().Create(c, kind, int(deviceNumber))
+	if err != nil {
+		return err
+	}
+	vd, ok := device.(references.IIecDevice)
+	if !ok {
+		return fmt.Errorf("device %s is not an IEC device", kind)
+	}
+	if err = vd.Setup(c, q, deviceId, deviceNumber, opts, cfg); err != nil {
+		return err
+	}
+	vd.LEDSignal().Bind(func(state uint32) {
+		c.ledSignal.Emit(state)
+	})
+	c.virtualDrives = append(c.virtualDrives, vd)
+	//c.updatePorts()
+
+	return nil
+}
+
+// RemovePeripheral removes a peripheral identified by the given device ID from the dispatcher.
+func (c *Dispatcher) RemovePeripheral(deviceId uint8) {
+	deviceNumber := deviceId + 8
+	for x, v := range c.virtualDrives {
+		if v.GetDeviceNumber() == deviceNumber {
+			v.Shutdown()
+			c.virtualDrives = append(c.virtualDrives[:x], c.virtualDrives[x+1:]...)
+			//c.updatePorts()
+		}
+	}
+}
+
+func (c *Dispatcher) LEDSignal() *signals.SignalUint32 {
+	return c.ledSignal
+}
+
+// CpuWrite updates the CPU bus and synchronizes ports and peripherals based on the provided data.
+func (c *Dispatcher) CpuWrite(data uint8) {
+	c.cpuBus = c.buildCpuBus(^data)
+	//DebugCpuWrite(^c.cpuBus)
+	c.updatePorts()
+	c.notifyCpuWrite()
+}
+
+// CpuRead returns the current value of the CPU port.
+func (c *Dispatcher) CpuRead() uint8 {
+	return c.cpuPort
+}
+
+// PeripheralRead returns the current value from the peripherals port as a uint8.
+func (c *Dispatcher) PeripheralRead() uint8 {
+	return c.peripheralsPort
+}
+
+// PeripheralWrite updates the data for a specific peripheral device and triggers the port update mechanism.
+func (c *Dispatcher) PeripheralWrite(deviceNumber uint8, data uint8) {
+	c.peripheralsData[deviceNumber] = data
+	//DebugPeripheralWrite(c.peripheralBus[deviceNumber])
+	c.updatePorts()
 }
 
 // buildCpuBus processes the given data and constructs a CPU bus value by combining specific signal bits.
@@ -139,31 +213,6 @@ func (c *Dispatcher) updatePorts() {
 	c.peripheralsPort = value
 }
 
-// CpuWrite updates the CPU bus and synchronizes ports and peripherals based on the provided data.
-func (c *Dispatcher) CpuWrite(data uint8) {
-	c.cpuBus = c.buildCpuBus(^data)
-	//DebugCpuWrite(^c.cpuBus)
-	c.updatePorts()
-	c.notifyCpuWrite()
-}
-
-// CpuRead returns the current value of the CPU port.
-func (c *Dispatcher) CpuRead() uint8 {
-	return c.cpuPort
-}
-
-// PeripheralRead returns the current value from the peripherals port as a uint8.
-func (c *Dispatcher) PeripheralRead() uint8 {
-	return c.peripheralsPort
-}
-
-// PeripheralWrite updates the data for a specific peripheral device and triggers the port update mechanism.
-func (c *Dispatcher) PeripheralWrite(deviceNumber uint8, data uint8) {
-	c.peripheralsData[deviceNumber] = data
-	//DebugPeripheralWrite(c.peripheralBus[deviceNumber])
-	c.updatePorts()
-}
-
 // notifyCpuWrite checks if the attention (ATN) signal has changed and notifies all virtual drives of the new ATN state.
 func (c *Dispatcher) notifyCpuWrite() {
 	if newAtn := (c.cpuBus & cpuClkOut) != 0; newAtn != c.atn {
@@ -172,51 +221,4 @@ func (c *Dispatcher) notifyCpuWrite() {
 		}
 		c.atn = newAtn
 	}
-}
-
-// ledStateChangedEventHandler handles LED state change events for a specific device by emitting a signal with device and state.
-func (c *Dispatcher) ledStateChangedEventHandler(deviceNumber int, state uint8) {
-	c.ledSignal.Emit(deviceNumber, state)
-}
-
-// AddPeripheral adds a new peripheral to the dispatcher with the given kind, options, and device ID.
-func (c *Dispatcher) AddPeripheral(kind string, opts string, deviceId uint8) {
-	//if c.peripheralsCount >= BusNum {
-	//	return
-	//}
-	//for i := uint8(0); i < c.peripheralsCount; i++ {
-	//	if c.peripheralStorage[i] == peripheral {
-	//		return
-	//	}
-	//}
-	//c.peripheralStorage[c.peripheralsCount] = peripheral
-	//c.peripheralsCount++
-	//c.rebuildPeripherals()
-	//TODO
-	//peripheral->LedStateChangedEvent.Bind(new SignalExecutor2<IECBus, int, uint8>(this, &IECBus::ledStateChangedEventHandler));
-}
-
-// RemovePeripheral removes a peripheral identified by the given device ID from the dispatcher.
-func (c *Dispatcher) RemovePeripheral(deviceId uint8) {
-	//found := false
-	//for i := uint8(0); i < c.peripheralsCount; i++ {
-	//	if c.peripheralStorage[i] == peripheral {
-	//		c.peripheralsCount--
-	//		c.peripheralStorage[i] = nil
-	//		found = true
-	//		break
-	//	}
-	//}
-	//if found {
-	//	for i := uint8(0); i < c.peripheralsCount; i++ {
-	//		for j := i + 1; j < c.peripheralsCount; j++ {
-	//			if c.peripheralStorage[i].GetDeviceNumber() < c.peripheralStorage[j].GetDeviceNumber() {
-	//				tmp := c.peripheralStorage[i]
-	//				c.peripheralStorage[i] = c.peripheralStorage[j]
-	//				c.peripheralStorage[j] = tmp
-	//			}
-	//		}
-	//	}
-	//}
-	//c.rebuildPeripherals()
 }

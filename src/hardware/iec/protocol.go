@@ -3,6 +3,7 @@ package iec
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/conversion"
+	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
@@ -101,6 +102,7 @@ type Protocol struct {
 	timeout       uint64
 	byte          uint8
 	state         [stateLast + 1]uint8
+	ledSignal     *signals.SignalUint32
 }
 
 // NewProtocol creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
@@ -127,6 +129,10 @@ func (v *Protocol) Setup(iec references.IIec, quartz references.IQuartz, deviceN
 	v.deviceNumber = deviceNumber
 	v.cfg = cfg
 	return nil
+}
+
+func (v *Protocol) Shutdown() {
+	//
 }
 
 // Reset resets the internal state of the Protocol to its initial configuration.
@@ -254,6 +260,10 @@ func (v *Protocol) Emulate() {
 	} else if conversion.Uint8ToBool(v.getFlags() & P_TALKING) {
 		v.doTalk(bus)
 	}
+}
+
+func (v *Protocol) LEDSignal() *signals.SignalUint32 {
+	return v.ledSignal
 }
 
 // doListen handles the state transitions for the device during the listening phase on the IEC bus based on the current clock and data signals.

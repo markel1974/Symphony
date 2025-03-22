@@ -2,6 +2,7 @@ package mos6526
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
 	"log"
@@ -93,38 +94,46 @@ type Timer struct {
 	timerLatch   uint16     // Timer latch
 	timerState   TimerState // Timer states
 	// 0 = clock; 1 = positive CNT (Serial Port) transition; 2 = timerA underflow; 3 = timerA underflow while CNT (Serial Port) is high
-	countMode     uint8
-	count         func(bool) bool
-	toggleMode    bool
-	timerLatchLow uint16
-	cnt           bool
-	reflect       *TimerReflect
-	underflowIn   bool
-	underflowOut  bool
+	countMode          uint8
+	count              func(bool) bool
+	toggleMode         bool
+	timerLatchLow      uint16
+	cnt                bool
+	reflect            *TimerReflect
+	underflowIn        bool
+	underflowOut       bool
+	underflowOutSignal *signals.Signal
 }
 
 // NewTimer initializes and returns a new Timer instance with the given parentId and suffix.
 // The Timer is set to its default state and its Reset method is called to ensure initialization.
 func NewTimer(parent references.IComponent, factory references.IComponentFactory, instance int) *Timer {
 	m := &Timer{
-		BaseComponent: component.NewBaseComponent(),
-		cr:            0,
-		crNew:         0,
-		crNewPending:  false,
-		timer:         defaultTimerInit,
-		timerLatch:    defaultTimerInit,
-		timerState:    timerStop,
-		countMode:     countModeTick,
-		toggleMode:    false,
-		timerLatchLow: 0,
-		count:         nil,
-		cnt:           false,
-		reflect:       nil,
+		BaseComponent:      component.NewBaseComponent(),
+		cr:                 0,
+		crNew:              0,
+		crNewPending:       false,
+		timer:              defaultTimerInit,
+		timerLatch:         defaultTimerInit,
+		timerState:         timerStop,
+		countMode:          countModeTick,
+		toggleMode:         false,
+		timerLatchLow:      0,
+		count:              nil,
+		cnt:                false,
+		reflect:            nil,
+		underflowOutSignal: signals.NewSignal(),
+		underflowIn:        false,
+		underflowOut:       false,
 	}
 	m.BaseComponent.Register(factory, parent, "timer", instance, m, "Timer")
 	m.reflect = NewTimerReflect(m)
 	m.Reset()
 	return m
+}
+
+func (m *Timer) UnderflowSignal() *signals.Signal {
+	return m.underflowOutSignal
 }
 
 func (m *Timer) GetUnderflowOut() bool {
@@ -253,6 +262,7 @@ func (m *Timer) Emulate() {
 				m.timerState = timerLoadThenCount
 			}
 			m.underflowOut = true
+			m.underflowOutSignal.Emit()
 			return
 		}
 		m.cr &= crBitStartUnset //0xfe
@@ -269,6 +279,7 @@ func (m *Timer) Emulate() {
 				m.timerState = timerLoadThenCount
 			}
 			m.underflowOut = true
+			m.underflowOutSignal.Emit()
 			return
 		}
 	case timerWaitThenCount:

@@ -44,7 +44,8 @@ type Board struct {
 	pla                 *pla_c64.PLA
 	expansionIrqTrigger *signals.SignalUint32
 	expansionIrqClear   *signals.SignalUint32
-	vBlankEmitter       func()
+	vBlankSignal        *signals.Signal
+	ledSignal           *signals.SignalUint32
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
@@ -64,7 +65,8 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		pla:                 nil,
 		expansionIrqTrigger: nil,
 		expansionIrqClear:   nil,
-		vBlankEmitter:       nil,
+		vBlankSignal:        signals.NewSignal(),
+		ledSignal:           signals.NewSignalUint32(),
 		lastVicCycle:        false,
 		dmaLow:              false,
 		prg:                 nil,
@@ -76,8 +78,12 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	return b
 }
 
-func (s *Board) SetVBlankEmitter(fn func()) {
-	s.vBlankEmitter = fn
+func (s *Board) VBlankSignal() *signals.Signal {
+	return s.vBlankSignal
+}
+
+func (s *Board) LEDSignal() *signals.SignalUint32 {
+	return s.ledSignal
 }
 
 func (s *Board) Setup(db references.IDisplayBuffer, p references.IAudioRender, cfg *config.Config) error {

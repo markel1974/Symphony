@@ -1,6 +1,7 @@
 package glrender
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/render/glrender/pixels"
 )
@@ -44,7 +45,8 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 func (g *Render) Start(board references.IBoard) error {
 	g.board = board
 	g.dt = board.Throttle()
-	g.board.SetVBlankEmitter(g.vBlank)
+	g.board.VBlankSignal().Bind(g.vBlankSlot)
+	g.board.LEDSignal().Bind(g.ledSlot)
 	g.inputs.Setup(g.board)
 	return pixels.GLRun(g.runner)
 }
@@ -74,7 +76,7 @@ func (g *Render) runner() {
 	}
 }
 
-func (g *Render) vBlank() {
+func (g *Render) vBlankSlot() {
 	g.dt.Throttle()
 	if g.win.MouseInsideWindow() {
 		g.inputs.MouseMove(g.win.MousePositionXY())
@@ -86,4 +88,10 @@ func (g *Render) vBlank() {
 	if (g.dt.Counter() & 0xf) == 0xf {
 		g.run = !g.win.Closed()
 	}
+}
+
+func (g *Render) ledSlot(state uint32) {
+	device := uint8(state & 0xf)
+	led := uint8((state >> 8) & 0xf)
+	fmt.Println("LED STATE", device, led)
 }

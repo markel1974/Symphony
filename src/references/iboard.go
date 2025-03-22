@@ -1,6 +1,7 @@
 package references
 
 import (
+	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/config"
 )
 
@@ -37,7 +38,11 @@ func IdIBoardVIC20(_ IBoard) string {
 type IBoard interface {
 	Setup(db IDisplayBuffer, p IAudioRender, cfg *config.Config) error
 
-	SetVBlankEmitter(fn func())
+	VBlankSignal() *signals.Signal
+
+	LEDSignal() *signals.SignalUint32
+
+	Reset()
 
 	Emulate()
 

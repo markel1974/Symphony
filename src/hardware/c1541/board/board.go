@@ -7,7 +7,6 @@
 package board
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
@@ -39,7 +38,7 @@ type Board struct {
 	deviceId   uint8
 	filePath   string
 	cfg        *config.Config
-	ledChanged *signals.SignalUint32
+	ledSignal  *signals.SignalUint32
 }
 
 // NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
@@ -49,7 +48,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		iec:           nil,
 		deviceId:      0,
 		filePath:      "",
-		ledChanged:    signals.NewSignalUint32(),
+		ledSignal:     signals.NewSignalUint32(),
 		cpuSocket:     NewCPUSocket(),
 		via1Socket:    NewVIA1Socket(),
 		via2Socket:    NewVIA2Socket(),
@@ -121,6 +120,10 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	return nil
 }
 
+func (m *Board) Shutdown() {
+	//
+}
+
 // Reset reinitializes the Board's internal components to their default states by calling their respective Reset methods.
 func (m *Board) Reset() {
 	m.picSocket.Reset()
@@ -163,6 +166,10 @@ func (m *Board) AtnStateChanged(newAtn bool) {
 	}
 }
 
+func (m *Board) LEDSignal() *signals.SignalUint32 {
+	return m.ledSignal
+}
+
 // configChanged handles configuration changes by checking if the drive options have been updated and applies necessary adjustments.
 func (m *Board) configChanged() {
 	if opt, ok := m.cfg.GetDrivesOpt(m.deviceId); ok {
@@ -174,10 +181,9 @@ func (m *Board) configChanged() {
 	}
 }
 
-// LedChanged updates the state of the LED for the device and emits the change as a signal with the device identifier and status.
-func (m *Board) LedChanged(d byte) {
-	fmt.Println("LED", m.via1Socket.GetDeviceNumber(), d)
-	m.ledChanged.Emit(uint32(d)<<8 | uint32(m.via1Socket.GetDeviceNumber()))
+// LEDTrigger updates the state of the LED for the device and emits the change as a signal with the device identifier and status.
+func (m *Board) LEDTrigger(d byte) {
+	m.ledSignal.Emit(uint32(d)<<8 | uint32(m.via1Socket.GetDeviceNumber()))
 }
 
 // IRQClear clears the specified interrupt request (IRQ) in the programmable interrupt controller (PIC) associated with the board.

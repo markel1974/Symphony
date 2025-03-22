@@ -37,7 +37,7 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 
 func (g *Render) Start(board references.IBoard) error {
 	g.board = board
-	g.board.SetVBlankEmitter(g.vBlank)
+	g.board.VBlankSignal().Bind(g.vBlank)
 	if err := MakeStdInRaw(); err != nil {
 		return err
 	}

@@ -2,6 +2,7 @@ package board
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
@@ -47,12 +48,13 @@ type Board struct {
 	cfg             *config.Config
 	//expansionIrqTrigger *signals.SignalUint32
 	//expansionIrqClear   *signals.SignalUint32
-	prg           *prg.PRG
-	joySwap       bool
-	hasClipboard  bool
-	lastVicCycle  bool
-	dmaLow        bool
-	vBlankEmitter func()
+	prg          *prg.PRG
+	joySwap      bool
+	hasClipboard bool
+	lastVicCycle bool
+	dmaLow       bool
+	vBlankSignal *signals.Signal
+	ledSignal    *signals.SignalUint32
 }
 
 // NewBoard initializes and returns a new Board instance with specific sockets and properties configured.
@@ -83,13 +85,19 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		prg:             nil,
 		joySwap:         true,
 		hasClipboard:    false,
+		vBlankSignal:    signals.NewSignal(),
+		ledSignal:       signals.NewSignalUint32(),
 	}
 	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIBoardC64(b))
 	return b
 }
 
-func (s *Board) SetVBlankEmitter(fn func()) {
-	s.vBlankEmitter = fn
+func (s *Board) VBlankSignal() *signals.Signal {
+	return s.vBlankSignal
+}
+
+func (s *Board) LEDSignal() *signals.SignalUint32 {
+	return s.ledSignal
 }
 
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) error {
@@ -180,7 +188,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 	if err = s.picSocket.Connect(pic, quartz); err != nil {
 		return err
 	}
-	if err = s.iecSocket.Connect(iec, quartz, cfg); err != nil {
+	if err = s.iecSocket.Connect(iec, s, quartz, cfg); err != nil {
 		return err
 	}
 	if err = s.cpuSocket.Connect(cpu, pic, pla); err != nil {
@@ -459,7 +467,7 @@ func (s *Board) LastCycleTrigger() {
 
 // VBlankTrigger sets the vBlank flag to true and updates connected sockets and programmable logic if applicable.
 func (s *Board) VBlankTrigger() {
-	s.vBlankEmitter()
+	s.vBlankSignal.Emit()
 
 	s.sidSocket.Update()
 	s.cia1Socket.Update()
@@ -471,15 +479,9 @@ func (s *Board) VBlankTrigger() {
 	}
 }
 
-// LedStateChangedTrigger handles LED state change events for a specified device and updates the LED state accordingly.
-func (s *Board) LedStateChangedTrigger(_ int, _ uint8) {
-	//TODO IMPLEMENT
-	//deviceId := deviceNumber - 8
-	//if deviceId < 0 || deviceId >= MAX_DRIVE_COUNT {
-	//	return
-	//}
-	//k.leds[deviceId] = state
-	//k.updateLedState()
+// LedTrigger handles LED state change events for a specified device and updates the LED state accordingly.
+func (s *Board) LedTrigger(state uint32) {
+	s.ledSignal.Emit(state)
 }
 
 // startPR
