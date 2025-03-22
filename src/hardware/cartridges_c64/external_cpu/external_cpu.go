@@ -48,23 +48,21 @@ func (s *ExternalCPU) Setup(board references.IExpansionC64, ldr references.ICart
 	s.board = board
 	s.loaderId = ldr.GetId()
 	s.board.SetDMALow(true)
-
 	s.quartz = quartz.NewQuartz(s, s.GetFactory(), 0)
 	s.pic = pic_6510.NewPIC(s, s.GetFactory(), 0)
-
-	s.pic.Setup(s.quartz)
-
+	if err := s.pic.Setup(s.quartz); err != nil {
+		return err
+	}
 	s.cpuSocket = NewCPUSocket()
 	s.cpu = mos6510.NewCPU(s, s.GetFactory(), 0)
-
-	s.cpuSocket.Setup(s)
+	if err := s.cpuSocket.Setup(s); err != nil {
+		return err
+	}
 	if err := s.cpu.Setup(s.cpuSocket); err != nil {
 		return err
 	}
-
 	s.board.IRQTriggerBind(s.pic.TriggerIRQ)
 	s.board.IRQClearBind(s.pic.ClearIRQ)
-
 	return nil
 }
 
@@ -88,7 +86,7 @@ func (s *ExternalCPU) Emulate() {
 	s.cpu.SetAECLow(!aec)
 	for x := 0; x < mhz; x++ {
 		s.cpu.Emulate()
-		s.quartz.AddCycle()
+		s.quartz.Emulate()
 	}
 }
 

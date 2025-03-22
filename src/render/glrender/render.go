@@ -7,21 +7,28 @@ import (
 
 type Render struct {
 	board      references.IBoard
+	dt         references.IThrottle
 	scale      float64
 	fullscreen bool
 	maxW       float64
 	maxH       float64
 	picture    *pixels.Picture
 	inputs     *Inputs
-	//player     references.IAudioRender
+	win        *pixels.GLWindow
+	matrix     pixels.Matrix
+	surface    *pixels.Sprite
+	run        bool
 }
 
 func New() *Render {
 	g := &Render{
 		board:      nil,
+		dt:         nil,
+		win:        nil,
 		fullscreen: false,
 		scale:      3,
 		inputs:     NewInputs(),
+		run:        true,
 	}
 	return g
 }
@@ -36,11 +43,13 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 
 func (g *Render) Start(board references.IBoard) error {
 	g.board = board
+	g.dt = board.Throttle()
+	g.board.SetVBlankEmitter(g.vBlank)
 	g.inputs.Setup(g.board)
-	return pixels.GLRun(g.run)
+	return pixels.GLRun(g.runner)
 }
 
-func (g *Render) run() {
+func (g *Render) runner() {
 	cfg := pixels.WindowConfig{
 		Bounds:      pixels.NewRect(0, 0, g.maxW, g.maxH),
 		VSync:       true,
@@ -50,33 +59,31 @@ func (g *Render) run() {
 	if g.fullscreen {
 		cfg.Monitor = pixels.PrimaryMonitor()
 	}
-	win, err := pixels.NewGLWindow(cfg)
+	var err error
+	g.win, err = pixels.NewGLWindow(cfg)
 	if err != nil {
 		panic(err)
 	}
-	pos := win.Bounds().Center()
-	surface := pixels.NewSprite()
-	surface.SetCachedMode(pixels.CacheModeUpdate)
-	surface.Set(g.picture, g.picture.Bounds())
-	matrix := pixels.IM.Moved(pos).Scaled(pos, g.scale)
-	dt := g.board.Throttle()
-	run := true
-	for run {
-		dt.Throttle()
-		if win.MouseInsideWindow() {
-			g.inputs.MouseMove(win.MousePositionXY())
-		}
-		g.inputs.Keys(win.KeysPressed())
-		for {
-			if vBlank := g.board.Emulate(); vBlank {
-				break
-			}
-		}
-		surface.Draw(win, matrix)
-		//g.player.Write(nil, 0, 0)
-		win.Update()
-		if (dt.Counter() & 0xf) == 0xf {
-			run = !win.Closed()
-		}
+	pos := g.win.Bounds().Center()
+	g.surface = pixels.NewSprite()
+	g.surface.SetCachedMode(pixels.CacheModeUpdate)
+	g.surface.Set(g.picture, g.picture.Bounds())
+	g.matrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
+	for g.run {
+		g.board.Emulate()
+	}
+}
+
+func (g *Render) vBlank() {
+	g.dt.Throttle()
+	if g.win.MouseInsideWindow() {
+		g.inputs.MouseMove(g.win.MousePositionXY())
+	}
+	g.inputs.Keys(g.win.KeysPressed())
+	g.surface.Draw(g.win, g.matrix)
+	//g.player.Write(nil, 0, 0)
+	g.win.Update()
+	if (g.dt.Counter() & 0xf) == 0xf {
+		g.run = !g.win.Closed()
 	}
 }

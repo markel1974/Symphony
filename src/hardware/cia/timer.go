@@ -99,6 +99,8 @@ type Timer struct {
 	timerLatchLow uint16
 	cnt           bool
 	reflect       *TimerReflect
+	underflowIn   bool
+	underflowOut  bool
 }
 
 // NewTimer initializes and returns a new Timer instance with the given parentId and suffix.
@@ -123,6 +125,14 @@ func NewTimer(parent references.IComponent, factory references.IComponentFactory
 	m.reflect = NewTimerReflect(m)
 	m.Reset()
 	return m
+}
+
+func (m *Timer) GetUnderflowOut() bool {
+	return m.underflowOut
+}
+
+func (m *Timer) SetUnderflowIn(u bool) {
+	m.underflowIn = u
 }
 
 // Reset reinitializes the Timer's internal state to its default values and clears any pending or current configurations.
@@ -218,7 +228,7 @@ func (m *Timer) updateCountMode(countMode uint8) {
 }
 
 // Emulate processes the current timer state and performs actions such as counting or toggling based on the timer configuration.
-func (m *Timer) Emulate(underflowX bool) bool {
+func (m *Timer) Emulate() {
 	if m.crNewPending {
 		m.crNewPending = false
 		m.pendingVerify()
@@ -232,7 +242,7 @@ func (m *Timer) Emulate(underflowX bool) bool {
 		m.timerState = timerStop
 		m.cr &= crBitStartUnset
 	case timerCountThenStop:
-		if m.count(underflowX) {
+		if m.count(m.underflowIn) {
 			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
 			if (m.cr & crBitRunMode) != 0 {
 				m.timer = m.timerLatch
@@ -242,12 +252,13 @@ func (m *Timer) Emulate(underflowX bool) bool {
 				m.timer = m.timerLatch
 				m.timerState = timerLoadThenCount
 			}
-			return true
+			m.underflowOut = true
+			return
 		}
 		m.cr &= crBitStartUnset //0xfe
 		m.timerState = timerStop
 	case timerCount:
-		if m.count(underflowX) {
+		if m.count(m.underflowIn) {
 			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
 			if (m.cr & crBitRunMode) != 0 {
 				m.timer = m.timerLatch
@@ -257,7 +268,8 @@ func (m *Timer) Emulate(underflowX bool) bool {
 				m.timer = m.timerLatch
 				m.timerState = timerLoadThenCount
 			}
-			return true
+			m.underflowOut = true
+			return
 		}
 	case timerWaitThenCount:
 		m.timerState = timerCount
@@ -268,7 +280,8 @@ func (m *Timer) Emulate(underflowX bool) bool {
 		m.timer = m.timerLatch
 		m.timerState = timerWaitThenCount
 	}
-	return false
+	m.underflowOut = false
+	return
 }
 
 // pendingVerify handles the state transitions of the timer based on the control register and force load conditions.

@@ -10,17 +10,22 @@ import (
 )
 
 type Render struct {
-	board   references.IBoard
-	player  references.IAudioRender
-	cfg     *config.Config
-	display *DisplayBuffer
+	board      references.IBoard
+	player     references.IAudioRender
+	cfg        *config.Config
+	display    *DisplayBuffer
+	textBuffer []byte
+	ch         chan []byte
+	run        bool
 }
 
 func New() *Render {
 	g := &Render{
-		board:   nil,
-		cfg:     nil,
-		display: nil,
+		board:      nil,
+		cfg:        nil,
+		display:    nil,
+		textBuffer: make([]byte, 65000),
+		ch:         make(chan []byte),
 	}
 	return g
 }
@@ -32,67 +37,61 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 
 func (g *Render) Start(board references.IBoard) error {
 	g.board = board
+	g.board.SetVBlankEmitter(g.vBlank)
 	if err := MakeStdInRaw(); err != nil {
 		return err
 	}
-	run := true
-	ch := make(chan []byte)
 	go func() {
 		textData := make([]byte, 16)
 		for {
 			if n, err := os.Stdin.Read(textData); err == nil && n > 0 {
-				ch <- textData[:n]
+				g.ch <- textData[:n]
 			}
 		}
 	}()
-
-	dt := g.board.Throttle()
-	//counter := 0
-	textBuffer := make([]byte, 65000)
-	for run {
-		dt.Throttle()
-
-		select {
-		case text := <-ch:
-			switch text[0] {
-			case 'A':
-				g.board.Joy1SetKey(true, component.KeyJLeft)
-				g.board.Joy1SetKey(false, component.KeyJLeft)
-			case 'D':
-				g.board.Joy1SetKey(true, component.KeyJRight)
-				g.board.Joy1SetKey(false, component.KeyJRight)
-			case 'W':
-				g.board.Joy1SetKey(true, component.KeyJUp)
-				g.board.Joy1SetKey(false, component.KeyJUp)
-			case 'S':
-				g.board.Joy1SetKey(true, component.KeyJDown)
-				g.board.Joy1SetKey(false, component.KeyJDown)
-			case 'F':
-				g.board.Joy1SetKey(true, component.KeyJFire)
-				g.board.Joy1SetKey(false, component.KeyJFire)
-			case 'Q':
-				run = false
-			default:
-				g.board.KeyboardSetCommand(string(text))
-			}
-		default:
-		}
-
-		for {
-			if vBlank := g.board.Emulate(); vBlank {
-				break
-			}
-		}
-		b := g.board.GetText()
-		if v := bytes.Compare(b, textBuffer[:len(b)]); v == 0 {
-			continue
-		}
-		g.printBuffer(b)
-		copy(textBuffer, b)
-		//counter++
-		//fmt.Printf("vblank %d\r\n", counter)
+	for g.run {
+		g.board.Emulate()
 	}
 	return nil
+}
+
+func (g *Render) vBlank() {
+	dt := g.board.Throttle()
+	dt.Throttle()
+
+	select {
+	case text := <-g.ch:
+		switch text[0] {
+		case 'A':
+			g.board.Joy1SetKey(true, component.KeyJLeft)
+			g.board.Joy1SetKey(false, component.KeyJLeft)
+		case 'D':
+			g.board.Joy1SetKey(true, component.KeyJRight)
+			g.board.Joy1SetKey(false, component.KeyJRight)
+		case 'W':
+			g.board.Joy1SetKey(true, component.KeyJUp)
+			g.board.Joy1SetKey(false, component.KeyJUp)
+		case 'S':
+			g.board.Joy1SetKey(true, component.KeyJDown)
+			g.board.Joy1SetKey(false, component.KeyJDown)
+		case 'F':
+			g.board.Joy1SetKey(true, component.KeyJFire)
+			g.board.Joy1SetKey(false, component.KeyJFire)
+		case 'Q':
+			g.run = false
+		default:
+			g.board.KeyboardSetCommand(string(text))
+		}
+	default:
+	}
+	b := g.board.GetText()
+	if v := bytes.Compare(b, g.textBuffer[:len(b)]); v == 0 {
+		return
+	}
+	g.printBuffer(b)
+	copy(g.textBuffer, b)
+	//counter++
+	//fmt.Printf("vblank %d\r\n", counter)
 }
 
 func (g *Render) printBuffer(textBuffer []byte) {

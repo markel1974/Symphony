@@ -47,12 +47,12 @@ type Board struct {
 	cfg             *config.Config
 	//expansionIrqTrigger *signals.SignalUint32
 	//expansionIrqClear   *signals.SignalUint32
-	prg          *prg.PRG
-	joySwap      bool
-	hasClipboard bool
-	vBlank       bool
-	lastVicCycle bool
-	dmaLow       bool
+	prg           *prg.PRG
+	joySwap       bool
+	hasClipboard  bool
+	lastVicCycle  bool
+	dmaLow        bool
+	vBlankEmitter func()
 }
 
 // NewBoard initializes and returns a new Board instance with specific sockets and properties configured.
@@ -78,7 +78,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		cartSocket:      NewCartridgeSocket(),
 		throttleSocket:  NewThrottleSocket(),
 		expansionSocket: NewExpansionSocket(),
-		vBlank:          false,
 		lastVicCycle:    false,
 		dmaLow:          false,
 		prg:             nil,
@@ -87,6 +86,10 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	}
 	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIBoardC64(b))
 	return b
+}
+
+func (s *Board) SetVBlankEmitter(fn func()) {
+	s.vBlankEmitter = fn
 }
 
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) error {
@@ -271,9 +274,7 @@ func (s *Board) configChanged() {
 
 // Emulate executes a single emulation cycle, triggering connected sockets and updating the system state.
 // Returns the current v
-func (s *Board) Emulate() bool {
-	s.vBlank = false
-
+func (s *Board) Emulate() {
 	//PHI1
 	s.vicSocket.Emulate()
 
@@ -284,9 +285,7 @@ func (s *Board) Emulate() bool {
 	s.iecSocket.Emulate()
 	s.cpuSocket.Emulate()
 
-	s.quartzSocket.AddCycle()
-
-	return s.vBlank
+	s.quartzSocket.Emulate()
 }
 
 // Throttle returns the IThrottle instance associated with the board to provide control over throttling behavior.
@@ -460,7 +459,8 @@ func (s *Board) LastCycleTrigger() {
 
 // VBlankTrigger sets the vBlank flag to true and updates connected sockets and programmable logic if applicable.
 func (s *Board) VBlankTrigger() {
-	s.vBlank = true
+	s.vBlankEmitter()
+
 	s.sidSocket.Update()
 	s.cia1Socket.Update()
 	s.cia2Socket.Update()

@@ -20,6 +20,8 @@ type INode interface {
 
 // IHardware defines an interface for hardware functionalities with a method to reset the hardware state.
 type IHardware interface {
+	Emulate()
+
 	Reset()
 }
 

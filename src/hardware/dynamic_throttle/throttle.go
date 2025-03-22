@@ -34,6 +34,10 @@ func (s *DynamicThrottle) Setup(frameInterval int64) error {
 	return nil
 }
 
+func (s *DynamicThrottle) Emulate() {
+
+}
+
 // Reset resets the internal state of the DynamicThrottle, including counters and timestamps, to their initial values.
 func (s *DynamicThrottle) Reset() {
 }

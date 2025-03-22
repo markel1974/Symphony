@@ -53,6 +53,8 @@ func (r *PLA) Reset() {
 
 }
 
+func (r *PLA) Emulate() {}
+
 //func (r *PLA) AtnWakeUp() {
 //Interrupt by negative edge of ATN on IEC bus
 //	r.ram[0x7c] = 1

@@ -37,7 +37,9 @@ func IdIBoardVIC20(_ IBoard) string {
 type IBoard interface {
 	Setup(db IDisplayBuffer, p IAudioRender, cfg *config.Config) error
 
-	Emulate() bool
+	SetVBlankEmitter(fn func())
+
+	Emulate()
 
 	GetText() []byte
 

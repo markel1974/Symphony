@@ -35,6 +35,10 @@ func (r *RomLoader) Setup(cfg *config.Config) error {
 	return nil
 }
 
+func (r *RomLoader) Emulate() {
+
+}
+
 func (r *RomLoader) Reset() {
 
 }

@@ -10,7 +10,7 @@ func IdIThrottle(_ IThrottle) string {
 type IThrottle interface {
 	Setup(int64) error
 
-	Throttle()
-
 	Counter() uint64
+
+	Throttle()
 }

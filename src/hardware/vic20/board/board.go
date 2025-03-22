@@ -8,8 +8,8 @@ import (
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/hardware/joystick_c64"
-	inputs2 "github.com/markel1974/c64emu/src/hardware/keyboard_c64"
-	mos6510 "github.com/markel1974/c64emu/src/hardware/pic_6510"
+	"github.com/markel1974/c64emu/src/hardware/keyboard_c64"
+	"github.com/markel1974/c64emu/src/hardware/pic_6510"
 	"github.com/markel1974/c64emu/src/hardware/pla_c64"
 	"github.com/markel1974/c64emu/src/references"
 	"golang.design/x/clipboard"
@@ -32,9 +32,9 @@ type Board struct {
 	expansion           *Expansion
 	db                  references.IDisplayBuffer
 	p                   references.IAudioRender
-	pic                 *mos6510.Pic
+	pic                 *pic_6510.Pic
 	iec                 *iec.Dispatcher
-	keys                *inputs2.Keyboard
+	keys                *keyboard_c64.Keyboard
 	joy1                *joystick_c64.Joystick
 	joy2                *joystick_c64.Joystick
 	joySwap             bool
@@ -44,7 +44,7 @@ type Board struct {
 	pla                 *pla_c64.PLA
 	expansionIrqTrigger *signals.SignalUint32
 	expansionIrqClear   *signals.SignalUint32
-	vBlank              bool
+	vBlankEmitter       func()
 	lastVicCycle        bool
 	dmaLow              bool
 	prg                 *prg.PRG
@@ -64,7 +64,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		pla:                 nil,
 		expansionIrqTrigger: nil,
 		expansionIrqClear:   nil,
-		vBlank:              false,
+		vBlankEmitter:       nil,
 		lastVicCycle:        false,
 		dmaLow:              false,
 		prg:                 nil,
@@ -74,6 +74,10 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIBoardVIC20(b))
 
 	return b
+}
+
+func (s *Board) SetVBlankEmitter(fn func()) {
+	s.vBlankEmitter = fn
 }
 
 func (s *Board) Setup(db references.IDisplayBuffer, p references.IAudioRender, cfg *config.Config) error {
@@ -96,9 +100,9 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IAudioRender, c
 	s.cia1Socket = NewCIA1Socket()
 	s.cia2Socket = NewCIA2Socket()
 
-	s.pic = mos6510.NewPIC(s, s.GetFactory(), 0)
+	s.pic = pic_6510.NewPIC(s, s.GetFactory(), 0)
 	s.iec = iec.NewDispatcher(s, s.GetFactory(), 0)
-	s.keys = inputs2.NewKeyboard(s, s.GetFactory(), 0)
+	s.keys = keyboard_c64.NewKeyboard(s, s.GetFactory(), 0)
 	s.joy1 = joystick_c64.NewJoystick(s, s.GetFactory(), 0)
 	s.joy2 = joystick_c64.NewJoystick(s, s.GetFactory(), 1)
 	s.pla = pla_c64.NewPLA(s, s.GetFactory(), 0)
@@ -152,15 +156,10 @@ func (s *Board) AsyncReset() {
 func (s *Board) configChanged() {
 }
 
-func (s *Board) Emulate() bool {
-	s.vBlank = false
-
+func (s *Board) Emulate() {
 	s.cartMan.Emulate()
 	s.iec.Emulate()
-
 	//s.quartz.AddCycle()
-
-	return s.vBlank
 }
 
 func (s *Board) GetText() []byte {

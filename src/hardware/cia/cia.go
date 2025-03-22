@@ -96,7 +96,9 @@ func (m *CIA) Emulate() {
 		//m.irqTrigger()
 	}
 
-	underflowA := m.timerA.Emulate(false)
+	m.timerA.SetUnderflowIn(false)
+	m.timerA.Emulate()
+	underflowA := m.timerA.GetUnderflowOut()
 	if underflowA {
 		m.timerAIrqCycle = true
 		m.icr |= IRQUnderflowTimerA
@@ -104,7 +106,9 @@ func (m *CIA) Emulate() {
 		m.irqTrigger()
 	}
 
-	underFlowB := m.timerB.Emulate(underflowA)
+	m.timerB.SetUnderflowIn(underflowA)
+	m.timerB.Emulate()
+	underFlowB := m.timerB.GetUnderflowOut()
 	if underFlowB {
 		m.timerBIrqCycle = true
 		m.icr |= IRQUnderflowTimerB

@@ -35,23 +35,19 @@ func (s *Quartz) Setup() error {
 	return nil
 }
 
-// AddCycle increments the internal cycle counter and checks scheduled alarms against the updated cycle value.
-func (s *Quartz) AddCycle() {
+// Emulate increments the internal cycle counter and checks scheduled alarms against the updated cycle value.
+func (s *Quartz) Emulate() {
 	s.cycle++
 	s.alarmsCheck(s.cycle)
+}
+
+func (s *Quartz) Reset() {
+	//
 }
 
 // Cycle returns the current cycle count of the Quartz instance.
 func (s *Quartz) Cycle() uint64 {
 	return s.cycle
-}
-
-func (s *Quartz) Emulate() {
-	//
-}
-
-func (s *Quartz) Reset() {
-	//
 }
 
 // ToUSec converts a time value in microseconds (us) to clock cycles based on a specific conversion factor.
