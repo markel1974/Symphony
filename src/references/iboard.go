@@ -31,7 +31,7 @@ func IdIBoardVIC20(_ IBoard) string {
 // KeyboardSetCommand sends a specific command string to the keyboard.
 // KeyboardNumLockToggle toggles the state of the keyboard's Num Lock functionality.
 // KeyboardCapitalToggle toggles the state of the keyboard's Caps Lock functionality.
-// KeyboardSetVirtualKey updates the state of a specific virtual keyboard key.
+// KeyboardSetKey updates the state of a specific virtual keyboard key.
 // SetMouse updates the mouse position relative to the board's display.
 // Throttle retrieves the throttle interface for managing execution rates.
 // DiskChange triggers an event for changing the current disk in the board's system.
@@ -59,7 +59,7 @@ type IBoard interface {
 	KeyboardSetCommand(cmd string)
 	KeyboardNumLockToggle()
 	KeyboardCapitalToggle()
-	KeyboardSetVirtualKey(pressed bool, vKey int)
+	KeyboardSetKey(pressed bool, vKey int)
 
 	SetMouse(x uint8, y uint8)
 

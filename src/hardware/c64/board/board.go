@@ -316,9 +316,9 @@ func (s *Board) SetMouse(x uint8, y uint8) {
 	s.sidSocket.SetPotY(y)
 }
 
-// KeyboardSetVirtualKey sets the state of a virtual key, allowing simulation of key presses
-func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
-	s.keysSocket.SetVirtualKey(pressed, vKey)
+// KeyboardSetKey sets the state of a virtual key, allowing simulation of key presses
+func (s *Board) KeyboardSetKey(pressed bool, vKey int) {
+	s.keysSocket.SetKey(pressed, vKey)
 }
 
 // Joy1SetKey sets the

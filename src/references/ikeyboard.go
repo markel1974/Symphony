@@ -25,7 +25,7 @@ type IKeyboard interface {
 
 	CapitalToggle()
 
-	SetVirtualKey(pressed bool, vKey int)
+	SetKey(pressed bool, vKey int)
 
 	Poll() (uint32, bool)
 

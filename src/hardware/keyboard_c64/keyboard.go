@@ -57,8 +57,8 @@ func (k *Keyboard) CapitalToggle() {
 	k.virtual.CapitalToggle()
 }
 
-// SetVirtualKey processes a virtual key press or release by mapping it to a key code and updating the keyboard's storage.
-func (k *Keyboard) SetVirtualKey(pressed bool, vKey int) {
+// SetKey processes a virtual key press or release by mapping it to a key code and updating the keyboard's storage.
+func (k *Keyboard) SetKey(pressed bool, vKey int) {
 	if kc := k.virtual.FromVirtual(vKey); kc >= 0 {
 		v := keyCodeToC64(uint8(kc), -1, pressed)
 		k.storage.Set(int(v))

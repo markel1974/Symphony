@@ -185,17 +185,6 @@ func (s *Board) DiskChange() {
 	s.cfg.SetDriveOpt("", 8)
 }
 
-func (s *Board) KeyboardPaste(pressed bool) {
-	if !pressed {
-		return
-	}
-	if !s.hasClipboard {
-		return
-	}
-	data := clipboard.Read(clipboard.FmtText)
-	s.keys.SetCommand(string(data))
-}
-
 func (s *Board) KeyboardSetCommand(cmd string) {
 	s.keys.SetCommand(cmd)
 }
@@ -212,8 +201,8 @@ func (s *Board) SetMouse(x uint8, y uint8) {
 	//s.sidSocket.SetPotXY(x, y)
 }
 
-func (s *Board) KeyboardSetVirtualKey(pressed bool, vKey int) {
-	s.keys.SetVirtualKey(pressed, vKey)
+func (s *Board) KeyboardSetKey(pressed bool, vKey int) {
+	s.keys.SetKey(pressed, vKey)
 }
 
 func (s *Board) Joy1SetKey(pressed bool, vKey int) {
