@@ -182,7 +182,7 @@ func (s *Board) DiskChange() {
 	//aaa
 
 	s.cfg.SwitchDisk()
-	s.cfg.SetDriveOpt("", 8)
+	s.cfg.SetDriveOpt(8, "")
 }
 
 func (s *Board) KeyboardSetCommand(cmd string) {

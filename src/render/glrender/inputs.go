@@ -60,7 +60,7 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 	g.keyMapper[pixels.KeyF11] = func(p bool) {
 		if p {
 			g.cfg.SwitchDisk()
-			g.cfg.SetDriveOpt("", 8)
+			g.cfg.SetDriveOpt(8, "")
 			fmt.Println("swapping disk")
 		}
 	}

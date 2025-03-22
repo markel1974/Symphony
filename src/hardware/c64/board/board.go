@@ -210,8 +210,10 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 		return err
 	}
 
-	if err = s.cartSocket.Initialize(); err != nil {
-		return err
+	for _, crt := range cfg.GetCartridges() {
+		if _, err = s.cartSocket.Add(crt.Kind, crt.Name, crt.Data); err != nil {
+			return err
+		}
 	}
 
 	if prgPath := s.cfg.GetPrg(); len(prgPath) > 0 {

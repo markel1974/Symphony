@@ -180,21 +180,29 @@ func main() {
 	if len(cartridges) > 0 {
 		kv := config.KeyVal(cartridges)
 		for _, v := range kv {
-			cfg.AddCartridge(v.K, v.V)
+			if err := cfg.AddCartridge(v.K, v.V); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 	if len(drives) > 0 {
 		for _, v := range config.KeyVal(drives) {
-			cfg.AddDrive(v.K, v.V)
+			if err := cfg.AddDrive(v.K, v.V); err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 	if len(disks) > 0 {
 		if kv := config.KeyVal(disks); len(kv) > 0 {
 			if len(cfg.GetDrives()) == 0 {
-				cfg.AddDrive(kv[0].K, kv[0].V)
+				if err := cfg.AddDrive(kv[0].K, kv[0].V); err != nil {
+					log.Fatal(err)
+				}
 			}
 			for _, v := range kv {
-				cfg.AddDisk(v.K, v.V)
+				if err := cfg.AddDisk(v.K, v.V); err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 	}

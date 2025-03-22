@@ -13,9 +13,7 @@ import (
 	"github.com/markel1974/c64emu/src/hardware/c1541/disk"
 	"github.com/markel1974/c64emu/src/hardware/c1541/mechanic"
 	"github.com/markel1974/c64emu/src/references"
-	"io"
 	"log"
-	"os"
 )
 
 // intrIrqVIA1Bit represents the interrupt request bit for VIA1.
@@ -38,7 +36,7 @@ type Board struct {
 	mec        *mechanic.Mechanic
 	disks      *disk.Factory
 	deviceId   uint8
-	filePath   string
+	diskId     string
 	cfg        *config.Config
 	ledSignal  *signals.SignalUint32
 }
@@ -49,7 +47,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		BaseComponent: component.NewBaseComponent(),
 		iec:           nil,
 		deviceId:      0,
-		filePath:      "",
+		diskId:        "",
 		ledSignal:     signals.NewSignalUint32(),
 		cpuSocket:     NewCPUSocket(),
 		via1Socket:    NewVIA1Socket(),
@@ -71,7 +69,7 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	m.iec = iec
 	m.cfg = cfg
 	m.deviceId = deviceId
-	m.filePath = ""
+	m.diskId = ""
 	//quartz := quartz.NewQuartz(m, "")
 	m.cfg.Bind(m.configChanged)
 
@@ -80,9 +78,9 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	}
 
 	if d, ok := m.cfg.GetDrive(m.deviceId); ok {
-		m.filePath = d.Opts
-		if len(m.filePath) > 0 {
-			if err = m.InsertDisk(m.filePath); err != nil {
+		if len(d.Data) > 0 {
+			m.diskId = d.Id
+			if err = m.InsertDisk(d.Data, d.WriteProtected); err != nil {
 				return err
 			}
 		}
@@ -188,10 +186,10 @@ func (m *Board) LEDSignal() *signals.SignalUint32 {
 // configChanged handles configuration changes by checking if the drive options have been updated and applies necessary adjustments.
 func (m *Board) configChanged() {
 	if d, ok := m.cfg.GetDrive(m.deviceId); ok {
-		if d.Opts != m.filePath {
-			m.filePath = d.Opts
+		if d.Id != m.diskId {
+			m.diskId = d.Id
 			m.Reset()
-			if err := m.InsertDisk(m.filePath); err != nil {
+			if err := m.InsertDisk(d.Data, d.WriteProtected); err != nil {
 				log.Println(err)
 			}
 		}
@@ -213,27 +211,7 @@ func (m *Board) LEDTrigger(d byte) {
 	m.ledSignal.Emit(uint32(d)<<8 | uint32(m.via1Socket.GetDeviceNumber()))
 }
 
-func (m *Board) InsertDisk(filePath string) error {
-	writeProtected := false
-	fd, err := os.OpenFile(filePath, os.O_RDWR, 0)
-	if err != nil {
-		if fd, err = os.OpenFile(filePath, os.O_RDONLY, 0); err != nil {
-			return err
-		}
-		writeProtected = true
-	}
-	defer fd.Close()
-	image, err := io.ReadAll(fd)
-	if err != nil {
-		return err
-	}
-	if err = m.InsertDiskData(image, writeProtected); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (m *Board) InsertDiskData(image []byte, writeProtected bool) error {
+func (m *Board) InsertDisk(image []byte, writeProtected bool) error {
 	g, err := m.disks.Create(image, writeProtected)
 	if err != nil {
 		return err

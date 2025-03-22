@@ -3,8 +3,6 @@ package board
 import (
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
-	"log"
-	"os"
 )
 
 type CartridgeSocket struct {
@@ -21,23 +19,6 @@ func (cs *CartridgeSocket) Connect(cartMan references.ICartridgeManagerC64, exp 
 	cs.cfg = cfg
 	if err := cs.ICartridgeManagerC64.Setup(exp, cfg); err != nil {
 		return err
-	}
-	return nil
-}
-
-func (cs *CartridgeSocket) Initialize() error {
-	for _, cartName := range cs.cfg.GetCartridges() {
-		var data []uint8
-		if len(cartName.Path) > 0 {
-			var err error
-			if data, err = os.ReadFile(cartName.Path); err != nil {
-				log.Printf("can't add cartridge: %s", err.Error())
-				return err
-			}
-		}
-		if _, err := cs.Add(cartName.Kind, cartName.Path, data); err != nil {
-			return err
-		}
 	}
 	return nil
 }
