@@ -76,16 +76,6 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	if err = m.mec.Setup(); err != nil {
 		return err
 	}
-
-	if d, ok := m.cfg.GetDrive(m.deviceId); ok {
-		if len(d.Data) > 0 {
-			m.diskId = d.Id
-			if err = m.InsertDisk(d.Data, d.WriteProtected); err != nil {
-				return err
-			}
-		}
-	}
-
 	rl, err := references.ComponentToIROMLoaderC1541(m.GetFactory().Create(m, "roms_c1541", 0))
 	if err != nil {
 		return err
@@ -110,7 +100,6 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	if err != nil {
 		return err
 	}
-
 	if err = m.rlSocket.Connect(rl, cfg); err != nil {
 		return err
 	}
@@ -129,10 +118,13 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	if err = m.cpuSocket.Connect(cpu, pic, pla, via2); err != nil {
 		return err
 	}
-
+	if err = m.mountConfigDisk(m.cfg); err != nil {
+		return err
+	}
 	return nil
 }
 
+// Shutdown gracefully shuts down the Board's components, ensuring proper cleanup and resource deallocation.
 func (m *Board) Shutdown() {
 	//
 }
@@ -183,19 +175,6 @@ func (m *Board) LEDSignal() *signals.SignalUint32 {
 	return m.ledSignal
 }
 
-// configChanged handles configuration changes by checking if the drive options have been updated and applies necessary adjustments.
-func (m *Board) configChanged() {
-	if d, ok := m.cfg.GetDrive(m.deviceId); ok {
-		if d.Id != m.diskId {
-			m.diskId = d.Id
-			m.Reset()
-			if err := m.InsertDisk(d.Data, d.WriteProtected); err != nil {
-				log.Println(err)
-			}
-		}
-	}
-}
-
 // IRQClear clears the specified interrupt request (IRQ) in the programmable interrupt controller (PIC) associated with the board.
 func (m *Board) IRQClear(intr uint32) {
 	m.picSocket.ClearIRQ(intr)
@@ -211,7 +190,10 @@ func (m *Board) LEDTrigger(d byte) {
 	m.ledSignal.Emit(uint32(d)<<8 | uint32(m.via1Socket.GetDeviceNumber()))
 }
 
+// InsertDisk inserts a new disk into the board's disk drive using the provided image data and write protection status.
+// It resets the board, creates a disk object, and attempts to insert it into the mechanic component.
 func (m *Board) InsertDisk(image []byte, writeProtected bool) error {
+	m.Reset()
 	g, err := m.disks.Create(image, writeProtected)
 	if err != nil {
 		return err
@@ -222,6 +204,30 @@ func (m *Board) InsertDisk(image []byte, writeProtected bool) error {
 	return nil
 }
 
+// RemoveDisk removes the currently inserted disk from the mechanic component of the board. It returns an error if the operation fails.
 func (m *Board) RemoveDisk() error {
 	return m.mec.RemoveDisk()
+}
+
+// configChanged handles configuration changes by checking if the drive options have been updated and applies necessary adjustments.
+func (m *Board) configChanged() {
+	if err := m.mountConfigDisk(m.cfg); err != nil {
+		log.Printf("can't mount disk: %s", err.Error())
+	}
+}
+
+// mountConfigDisk mounts a configuration-specified disk to the Board by fetching its data and applying write protection settings.
+func (m *Board) mountConfigDisk(cfg *config.Config) error {
+	d, ok := cfg.GetDrive(m.deviceId)
+	if !ok || d == nil {
+		return nil
+	}
+	if d.GetId() == m.diskId {
+		return nil
+	}
+	m.diskId = d.GetId()
+	if err := m.InsertDisk(d.GetData(), d.IsWriteProtected()); err != nil {
+		return err
+	}
+	return nil
 }

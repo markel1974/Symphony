@@ -3,32 +3,13 @@ package config
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
-	"io"
-	"os"
-	"path"
 )
-
-// Cartridge represents a cartridge with a specified kind and file path.
-type Cartridge struct {
-	Kind string
-	Name string
-	Path string
-	Data []byte
-}
-
-// Drive represents a data storage unit with specific characteristics such as type, ID, content, and write-protection status.
-type Drive struct {
-	Kind           string
-	Data           []byte
-	Id             string
-	WriteProtected bool
-}
 
 // Config represents a configuration structure for managing cartridges, drives, disks, and various related options.
 type Config struct {
-	cartridges []Cartridge
-	drives     []Drive
-	spareDisks []Drive
+	cartridges []*Cartridge
+	drives     []*Drive
+	spareDisks []*Drive
 	changed    *signals.Signal
 	prg        string
 	diskIndex  int
@@ -51,36 +32,36 @@ func (p *Config) Bind(changed func()) {
 }
 
 // AddDrive adds a new drive to the Config instance with the specified kind and options.
-func (p *Config) AddDrive(kind string, path string) error {
-	data, wp, err := getDataFromFile(path)
+func (p *Config) AddDrive(kind string, filePath string) error {
+	drive, err := NewDrive(kind, filePath)
 	if err != nil {
 		return err
 	}
-	p.drives = append(p.drives, Drive{Kind: kind, Id: path, Data: data, WriteProtected: wp})
+	p.drives = append(p.drives, drive)
 	return nil
 }
 
 // AddDisk appends a new disk of the specified kind and options to the Config's disks list.
-func (p *Config) AddDisk(kind string, path string) error {
-	data, wp, err := getDataFromFile(path)
+func (p *Config) AddDisk(kind string, filePath string) error {
+	drive, err := NewDrive(kind, filePath)
 	if err != nil {
 		return err
 	}
-	p.spareDisks = append(p.spareDisks, Drive{Kind: kind, Id: path, Data: data, WriteProtected: wp})
+	p.spareDisks = append(p.spareDisks, drive)
 	return nil
 }
 
 // GetDrives returns the list of drives configured in the Config structure.
-func (p *Config) GetDrives() []Drive {
+func (p *Config) GetDrives() []*Drive {
 	return p.drives
 }
 
 // GetDrive retrieves the options of a drive by its ID if it exists. Returns the options and true if found, else an empty string and false.
-func (p *Config) GetDrive(id uint8) (Drive, bool) {
+func (p *Config) GetDrive(id uint8) (*Drive, bool) {
 	if int(id) < len(p.drives) {
 		return p.drives[id], true
 	}
-	return Drive{}, false
+	return nil, false
 }
 
 // SwitchDisk cycles through the available disks, updates the active drive's options, and emits a configuration change signal.
@@ -92,7 +73,7 @@ func (p *Config) SwitchDisk() (string, error) {
 	driveIndex := p.diskIndex % len(p.spareDisks)
 	p.drives[0] = p.spareDisks[driveIndex]
 	p.changed.Emit()
-	return p.spareDisks[driveIndex].Id, nil
+	return p.spareDisks[driveIndex].GetId(), nil
 }
 
 // SetPrg sets the program path in the Config instance.
@@ -107,17 +88,16 @@ func (p *Config) GetPrg() string {
 
 // AddCartridge appends a new Cartridge with the specified kind and path to the cartridges slice of the Config instance.
 func (p *Config) AddCartridge(kind string, filePath string) error {
-	data, _, err := getDataFromFile(filePath)
+	crt, err := NewCartridge(kind, filePath)
 	if err != nil {
 		return err
 	}
-	name := path.Base(filePath)
-	p.cartridges = append(p.cartridges, Cartridge{Kind: kind, Name: name, Path: filePath, Data: data})
+	p.cartridges = append(p.cartridges, crt)
 	return nil
 }
 
 // GetCartridges returns the list of configured cartridges in the Config structure.
-func (p *Config) GetCartridges() []Cartridge {
+func (p *Config) GetCartridges() []*Cartridge {
 	return p.cartridges
 }
 
@@ -139,24 +119,4 @@ func (p *Config) DisableJiffy() {
 // UseJiffy returns the current state of the jiffy mode in the configuration.
 func (p *Config) UseJiffy() bool {
 	return p.jiffy
-}
-
-func getDataFromFile(path string) ([]byte, bool, error) {
-	if len(path) == 0 {
-		return nil, false, nil
-	}
-	wp := false
-	fd, err := os.OpenFile(path, os.O_RDWR, 0)
-	if err != nil {
-		if fd, err = os.OpenFile(path, os.O_RDONLY, 0); err != nil {
-			return nil, true, err
-		}
-		wp = true
-	}
-	defer fd.Close()
-	image, err := io.ReadAll(fd)
-	if err != nil {
-		return nil, true, err
-	}
-	return image, wp, nil
 }

@@ -1,6 +1,10 @@
 package config
 
-import "strings"
+import (
+	"io"
+	"os"
+	"strings"
+)
 
 // KV represents a key-value pair with both key and value as strings.
 type KV struct {
@@ -21,4 +25,24 @@ func KeyVal(data string) []KV {
 		kvs = append(kvs, KV{k, v})
 	}
 	return kvs
+}
+
+func ImageFromFile(path string) ([]byte, bool, error) {
+	if len(path) == 0 {
+		return nil, false, nil
+	}
+	wp := false
+	fd, err := os.OpenFile(path, os.O_RDWR, 0)
+	if err != nil {
+		if fd, err = os.OpenFile(path, os.O_RDONLY, 0); err != nil {
+			return nil, true, err
+		}
+		wp = true
+	}
+	defer fd.Close()
+	image, err := io.ReadAll(fd)
+	if err != nil {
+		return nil, true, err
+	}
+	return image, wp, nil
 }

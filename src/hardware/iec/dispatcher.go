@@ -57,33 +57,9 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 // Setup initializes the Dispatcher component, configures drives based on the provided configuration, and prepares devices.
 func (c *Dispatcher) Setup(q references.IQuartz, cfg *config.Config) error {
 	for deviceId, d := range cfg.GetDrives() {
-		kind := "c1541"
-		if len(d.Kind) > 0 {
-			kind = d.Kind
-		}
-		if err := c.AddPeripheral(q, cfg, kind, uint8(deviceId)); err != nil {
+		if err := c.AddPeripheral(q, cfg, d.GetKind(), uint8(deviceId)); err != nil {
 			return err
 		}
-		/*
-			deviceNumber := deviceId + 8
-
-			device, err := c.GetFactory().Create(c, kind, deviceNumber)
-			if err != nil {
-				return err
-			}
-			vd, ok := device.(references.IIecDevice)
-			if !ok {
-				return fmt.Errorf("device %s is not an IEC device", kind)
-			}
-			if err = vd.Setup(c, q, uint8(deviceId), uint8(deviceNumber), d.Opts, cfg); err != nil {
-				return err
-			}
-			vd.LEDSignal().Bind(func(state uint32) {
-				c.ledSignal.Emit(state)
-			})
-			c.virtualDrives = append(c.virtualDrives, vd)
-
-		*/
 	}
 	return nil
 }

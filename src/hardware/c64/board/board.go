@@ -211,7 +211,7 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 	}
 
 	for _, crt := range cfg.GetCartridges() {
-		if _, err = s.cartSocket.Add(crt.Kind, crt.Name, crt.Data); err != nil {
+		if _, err = s.cartSocket.Add(crt.GetKind(), crt.GetName(), crt.GetData()); err != nil {
 			return err
 		}
 	}
