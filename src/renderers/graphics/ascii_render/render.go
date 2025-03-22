@@ -67,6 +67,7 @@ func (g *Render) vBlank() {
 	select {
 	case text := <-g.ch:
 		for _, v := range text {
+			//fmt.Println(v)
 			g.input.Key(v, true)
 			g.input.Key(v, false)
 		}
