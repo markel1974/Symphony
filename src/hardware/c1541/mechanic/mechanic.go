@@ -1,8 +1,7 @@
 package mechanic
 
 import (
-	"io"
-	"os"
+	"github.com/markel1974/c64emu/src/hardware/c1541/disk"
 )
 
 //see
@@ -19,13 +18,11 @@ const headHalfStep = headStep * 2 // headHalfStep represents the number of half-
 
 // Mechanic represents a drive mechanism that emulates disk operations and manages disk state, motor, and head movement.
 type Mechanic struct {
-	disk              IDisk
-	writeProtected    bool
+	void              disk.IDisk
+	disk              disk.IDisk
 	diskChanged       bool
 	filePath          string
 	motor             bool
-	empty             IDisk
-	factory           *Factory
 	headPos           uint8
 	rotationIntervals int
 	rotationCounter   int
@@ -35,16 +32,13 @@ type Mechanic struct {
 
 // NewMechanic creates a new instance of Mechanic, initializing its state and factory dependencies.
 func NewMechanic() *Mechanic {
-	factory := NewFactory()
-	empty, _ := factory.Create(nil)
+	void := NewVoidDisk()
 	j := &Mechanic{
-		disk:              empty,
-		writeProtected:    false,
+		void:              void,
+		disk:              void,
 		diskChanged:       false,
 		filePath:          "",
 		motor:             false,
-		empty:             empty,
-		factory:           factory,
 		headPos:           2,
 		rotationIntervals: 0,
 		rotationCounter:   0,
@@ -56,8 +50,6 @@ func NewMechanic() *Mechanic {
 
 // Reset restores the Mechanic to its initial state, clearing all internal state and resetting properties to their defaults.
 func (j *Mechanic) Reset() {
-	j.disk = j.empty
-	j.writeProtected = false
 	j.diskChanged = false
 	j.filePath = ""
 	j.motor = false
@@ -69,21 +61,23 @@ func (j *Mechanic) Reset() {
 	j.updateHeadPos()
 }
 
-// init initializes the Mechanic object by resetting its state and inserting a disk from the provided file path.
-func (j *Mechanic) init(fp string) error {
+// Setup initializes the Mechanic instance by invoking the init method with the provided file path.
+func (j *Mechanic) Setup() error {
 	j.Reset()
-	if err := j.insertDisk(fp); err != nil {
-		return err
-	}
-	j.filePath = fp
 	return nil
 }
 
-// Setup initializes the Mechanic instance by invoking the init method with the provided file path.
-func (j *Mechanic) Setup(fp string) {
-	if err := j.init(fp); err != nil {
-		return
-	}
+// InsertDisk initializes the Mechanic object by resetting its state and inserting a disk from the provided file path.
+func (j *Mechanic) InsertDisk(d disk.IDisk) error {
+	j.diskChanged = true
+	j.Reset()
+	j.disk = d
+	j.updateRotationIntervals()
+	return nil
+}
+
+func (j *Mechanic) RemoveDisk() error {
+	return j.InsertDisk(j.void)
 }
 
 // Emulate advances the disk's rotation and reads data while checking synchronization with the sync byte.
@@ -129,7 +123,6 @@ func (j *Mechanic) SyncFound() bool {
 		return true
 	}
 	return false
-
 	//if j.sync {
 	//	return true
 	//}
@@ -152,13 +145,13 @@ func (j *Mechanic) HasDisk() bool {
 func (j *Mechanic) WriteProtectionState() uint8 {
 	const wp = 0x10
 	if !j.diskChanged {
-		if !j.writeProtected {
+		if !j.disk.WriteProtected() {
 			return wp
 		}
 		return 0
 	}
 	j.diskChanged = false
-	if j.writeProtected {
+	if j.disk.WriteProtected() {
 		return wp
 	}
 	return 0
@@ -192,30 +185,6 @@ func (j *Mechanic) MoveHeadIn() {
 	}
 	j.headPos++
 	j.updateHeadPos()
-}
-
-// insertDisk loads a disk image from the specified file path and initializes it for use, setting write protection if necessary.
-// Returns an error if the file cannot be opened, read, or the disk cannot be created.
-func (j *Mechanic) insertDisk(filePath string) error {
-	fd, err := os.OpenFile(filePath, os.O_RDWR, 0)
-	if err != nil {
-		if fd, err = os.OpenFile(filePath, os.O_RDONLY, 0); err != nil {
-			return err
-		}
-		j.writeProtected = true
-	}
-	defer fd.Close()
-	image, err := io.ReadAll(fd)
-	if err != nil {
-		return err
-	}
-	g, err := j.factory.Create(image)
-	if err != nil {
-		return err
-	}
-	j.disk = g
-	j.updateRotationIntervals()
-	return nil
 }
 
 //func (j *Mechanic) Load(fp string) error {

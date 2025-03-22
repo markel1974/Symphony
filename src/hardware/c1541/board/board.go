@@ -10,8 +10,12 @@ import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/hardware/c1541/disk"
 	"github.com/markel1974/c64emu/src/hardware/c1541/mechanic"
 	"github.com/markel1974/c64emu/src/references"
+	"io"
+	"log"
+	"os"
 )
 
 // intrIrqVIA1Bit represents the interrupt request bit for VIA1.
@@ -20,9 +24,6 @@ const (
 	intrIrqVIA1Bit = 0
 	intrIrqVIA2Bit = 1
 )
-
-// baseId is a constant defining the base identifier used for initializing components like CPU and VIA instances.
-const baseId = "c1541"
 
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
@@ -35,6 +36,7 @@ type Board struct {
 	plaSocket  *PLASocket
 	rlSocket   *RomLoaderSocket
 	mec        *mechanic.Mechanic
+	disks      *disk.Factory
 	deviceId   uint8
 	filePath   string
 	cfg        *config.Config
@@ -56,6 +58,8 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		plaSocket:     NewPLASocket(),
 		rlSocket:      NewRomLoaderSocket(),
 		cfg:           nil,
+		disks:         disk.NewFactory(),
+		mec:           mechanic.NewMechanic(),
 	}
 	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIIecDevice(b))
 	return b
@@ -70,6 +74,15 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	m.filePath = opts
 	//quartz := quartz.NewQuartz(m, "")
 	m.cfg.Bind(m.configChanged)
+
+	if err = m.mec.Setup(); err != nil {
+		return err
+	}
+	if len(m.filePath) > 0 {
+		if err = m.InsertDisk(m.filePath); err != nil {
+			return err
+		}
+	}
 
 	rl, err := references.ComponentToIROMLoaderC1541(m.GetFactory().Create(m, "roms_c1541", 0))
 	if err != nil {
@@ -96,9 +109,6 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 		return err
 	}
 
-	m.mec = mechanic.NewMechanic()
-	m.mec.Setup(m.filePath)
-
 	if err = m.rlSocket.Connect(rl, cfg); err != nil {
 		return err
 	}
@@ -117,6 +127,7 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	if err = m.cpuSocket.Connect(cpu, pic, pla, via2); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -176,14 +187,11 @@ func (m *Board) configChanged() {
 		if opt != m.filePath {
 			m.filePath = opt
 			m.Reset()
-			m.mec.Setup(m.filePath)
+			if err := m.InsertDisk(m.filePath); err != nil {
+				log.Println(err)
+			}
 		}
 	}
-}
-
-// LEDTrigger updates the state of the LED for the device and emits the change as a signal with the device identifier and status.
-func (m *Board) LEDTrigger(d byte) {
-	m.ledSignal.Emit(uint32(d)<<8 | uint32(m.via1Socket.GetDeviceNumber()))
 }
 
 // IRQClear clears the specified interrupt request (IRQ) in the programmable interrupt controller (PIC) associated with the board.
@@ -194,4 +202,44 @@ func (m *Board) IRQClear(intr uint32) {
 // IRQTrigger triggers an IRQ by setting the specified interrupt bit in the programmable interrupt controller (PIC).
 func (m *Board) IRQTrigger(intr uint32) {
 	m.picSocket.TriggerIRQ(intr)
+}
+
+// LEDTrigger updates the state of the LED for the device and emits the change as a signal with the device identifier and status.
+func (m *Board) LEDTrigger(d byte) {
+	m.ledSignal.Emit(uint32(d)<<8 | uint32(m.via1Socket.GetDeviceNumber()))
+}
+
+func (m *Board) InsertDisk(filePath string) error {
+	writeProtected := false
+	fd, err := os.OpenFile(filePath, os.O_RDWR, 0)
+	if err != nil {
+		if fd, err = os.OpenFile(filePath, os.O_RDONLY, 0); err != nil {
+			return err
+		}
+		writeProtected = true
+	}
+	defer fd.Close()
+	image, err := io.ReadAll(fd)
+	if err != nil {
+		return err
+	}
+	if err = m.InsertDiskData(image, writeProtected); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Board) InsertDiskData(image []byte, writeProtected bool) error {
+	g, err := m.disks.Create(image, writeProtected)
+	if err != nil {
+		return err
+	}
+	if err = m.mec.InsertDisk(g); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *Board) RemoveDisk() error {
+	return m.mec.RemoveDisk()
 }

@@ -15,22 +15,28 @@ type Disk struct {
 	tracks       []*Track
 	currentTrack *Track
 	usable       bool
+	wp           bool
 }
 
 // NewDisk initializes a new Disk instance with tracks and sets it as usable with the start track as the current track.
-func NewDisk() *Disk {
+func NewDisk(wp bool) *Disk {
 	startTrack := getTrackStart()
 	tracks := getTrackCount()
 	g := &Disk{
-		//errorInfo:        make([]uint8, numSectors),
+		wp:     wp,
 		tracks: make([]*Track, tracks+startTrack),
 		usable: true,
+		//errorInfo:        make([]uint8, numSectors),
 	}
 	for trackIdx := startTrack; trackIdx <= tracks; trackIdx++ {
 		g.tracks[trackIdx] = NewTrack(trackIdx, getTrackSectors(trackIdx), false)
 	}
 	g.currentTrack = g.tracks[startTrack]
 	return g
+}
+
+func (e *Disk) WriteProtected() bool {
+	return e.wp
 }
 
 // Load initializes the Disk by reading from the provided image data and loading each track with its sectors and metadata.
