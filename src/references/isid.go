@@ -19,7 +19,7 @@ func IdISID(_ ISID) string {
 // WriteRegister writes data to a specific register address of the SID.
 // ReadRegister retrieves data from a specified register address of the SID.
 type ISID interface {
-	Setup(socket ISIDSocket, fragFreq int, rasters int, cfg *config.Config) error
+	Setup(socket ISIDSocket, player IAudioRender, fragFreq int, rasters int, cfg *config.Config) error
 
 	Reset()
 
@@ -39,7 +39,6 @@ type ISID interface {
 // ISIDSocket is an interface representing a socket for SID integration and player management functionality.
 // GetPlayer retrieves the IAudioRender instance associated with the socket, enabling player-related operations.
 type ISIDSocket interface {
-	GetPlayer() IAudioRender
 }
 
 func ComponentToISID(component IComponent, err error) (ISID, error) {

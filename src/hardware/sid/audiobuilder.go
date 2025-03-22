@@ -37,14 +37,14 @@ type AudioBuilder struct {
 	leadLoWater     int
 }
 
-func NewAudioBuilder(sp references.IAudioRender, useFilters bool, fragFreq int, rasters int) *AudioBuilder {
+func NewAudioBuilder(player references.IAudioRender, useFilters bool, fragFreq int, rasters int) *AudioBuilder {
 	bufferFrags := fragFreq                  // one frag per frame
 	fragSize := SampleFreq / fragFreq        // samples, not bytes
 	fragInterval := 1000 / fragFreq          // in milliseconds
 	bufferSize := 2 * fragSize * bufferFrags // bytes, not samples
 	maxLeadAvg := bufferFrags
 	d := &AudioBuilder{
-		player:          sp,
+		player:          player,
 		divisorTable:    NewDivisorTable(rasters, fragFreq),
 		voices:          nil,
 		fragSize:        fragSize,

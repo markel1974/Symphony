@@ -38,9 +38,9 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the SID instance with the provided socket, configuration, fragment frequency, and raster count.
-func (sid *SID) Setup(socket references.ISIDSocket, fragFreq int, rasters int, cfg *config.Config) error {
+func (sid *SID) Setup(socket references.ISIDSocket, player references.IAudioRender, fragFreq int, rasters int, cfg *config.Config) error {
 	sid.socket = socket
-	sid.audioBuilder = NewAudioBuilder(sid.socket.GetPlayer(), true, fragFreq, rasters)
+	sid.audioBuilder = NewAudioBuilder(player, true, fragFreq, rasters)
 	sid.cfg = cfg
 	sid.cfg.Bind(sid.onConfigChanged)
 	return nil

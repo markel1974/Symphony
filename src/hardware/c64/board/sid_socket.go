@@ -24,13 +24,8 @@ func NewSIDSocket() *SIDSocket {
 func (w *SIDSocket) Connect(sid references.ISID, player references.IAudioRender, fragFreq int, rasters int, cfg *config.Config) error {
 	w.ISID = sid
 	w.player = player
-	if err := w.ISID.Setup(w, fragFreq, rasters, cfg); err != nil {
+	if err := w.ISID.Setup(w, player, fragFreq, rasters, cfg); err != nil {
 		return err
 	}
 	return nil
-}
-
-// GetPlayer returns the instance of IAudioRender associated with the SIDSocket's board.
-func (w *SIDSocket) GetPlayer() references.IAudioRender {
-	return w.player
 }

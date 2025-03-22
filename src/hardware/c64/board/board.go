@@ -26,7 +26,6 @@ const (
 type Board struct {
 	*component.BaseComponent
 	db              references.IDisplayBuffer
-	player          references.IAudioRender
 	keysSocket      *KeyboardSocket
 	joySocket1      *JoystickSocket
 	joySocket2      *JoystickSocket
@@ -59,7 +58,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	b := &Board{
 		BaseComponent:   component.NewBaseComponent(),
 		db:              nil,
-		player:          nil,
 		keysSocket:      NewKeyboardSocket(),
 		joySocket1:      NewJoystickSocket(),
 		joySocket2:      NewJoystickSocket(),
@@ -96,7 +94,6 @@ func (s *Board) LEDSignal() *signals.SignalUint32 {
 
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) error {
 	s.db = db
-	s.player = player
 	s.cfg = cfg
 	s.cfg.Bind(s.configChanged)
 

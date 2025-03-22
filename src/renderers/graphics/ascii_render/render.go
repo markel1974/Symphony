@@ -3,9 +3,9 @@ package ascii_render
 import (
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
+	"log"
 	"os"
 )
 
@@ -17,6 +17,7 @@ type Render struct {
 	textBuffer []byte
 	ch         chan []byte
 	run        bool
+	input      *Inputs
 }
 
 func New() *Render {
@@ -26,6 +27,8 @@ func New() *Render {
 		display:    nil,
 		textBuffer: make([]byte, 65000),
 		ch:         make(chan []byte),
+		run:        true,
+		input:      NewInputs(),
 	}
 	return g
 }
@@ -33,8 +36,11 @@ func New() *Render {
 func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	g.board = board
 	g.board.VBlankSignal().Bind(g.vBlank)
-	if err := MakeStdInRaw(); err != nil {
+	if err := g.input.Setup(g.board, cfg); err != nil {
 		return err
+	}
+	if err := MakeStdInRaw(); err != nil {
+		log.Printf("can't make stdin raw: %s", err)
 	}
 	return nil
 }
@@ -60,7 +66,13 @@ func (g *Render) vBlank() {
 
 	select {
 	case text := <-g.ch:
-		switch text[0] {
+		for _, v := range text {
+			g.input.Key(v, true)
+			g.input.Key(v, false)
+		}
+
+	//switch text[0] {
+	/*
 		case 'A':
 			g.board.Joy1SetKey(true, component.KeyJLeft)
 			g.board.Joy1SetKey(false, component.KeyJLeft)
@@ -76,11 +88,14 @@ func (g *Render) vBlank() {
 		case 'F':
 			g.board.Joy1SetKey(true, component.KeyJFire)
 			g.board.Joy1SetKey(false, component.KeyJFire)
+
 		case 'Q':
 			g.run = false
-		default:
-			g.board.KeyboardSetCommand(string(text))
-		}
+
+	*/
+	//default:
+	//g.board.KeyboardSetCommand(string(text))
+	//}
 	default:
 	}
 	b := g.board.GetText()

@@ -177,8 +177,8 @@ func main() {
 		cfg.DisableJiffy()
 	}
 
-	factory := hardware.NewFactory(cfg)
-	component, err := factory.Create(nil, boardId, 0)
+	hwFactory := hardware.NewFactory(cfg)
+	component, err := hwFactory.Create(nil, boardId, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
