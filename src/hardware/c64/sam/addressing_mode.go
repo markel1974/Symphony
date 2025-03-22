@@ -2,9 +2,8 @@ package sam
 
 type AddressingMode int
 
+// Addressing modes
 const (
-	// Addressing modes
-
 	A_IMPL  AddressingMode = iota
 	A_ACCU                 // A
 	A_IMM                  // #zz
