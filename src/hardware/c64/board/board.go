@@ -46,15 +46,14 @@ type Board struct {
 	throttleSocket  *ThrottleSocket
 	expansionSocket *ExpansionSocket
 	cfg             *config.Config
+	prg             *prg.PRG
+	joySwap         bool
+	hasClipboard    bool
+	dmaLow          bool
+	vBlankSignal    *signals.Signal
+	ledSignal       *signals.SignalUint32
 	//expansionIrqTrigger *signals.SignalUint32
 	//expansionIrqClear   *signals.SignalUint32
-	prg          *prg.PRG
-	joySwap      bool
-	hasClipboard bool
-	lastVicCycle bool
-	dmaLow       bool
-	vBlankSignal *signals.Signal
-	ledSignal    *signals.SignalUint32
 }
 
 // NewBoard initializes and returns a new Board instance with specific sockets and properties configured.
@@ -80,7 +79,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		cartSocket:      NewCartridgeSocket(),
 		throttleSocket:  NewThrottleSocket(),
 		expansionSocket: NewExpansionSocket(),
-		lastVicCycle:    false,
 		dmaLow:          false,
 		prg:             nil,
 		joySwap:         true,
@@ -226,20 +224,16 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 		return err
 	}
 
-	if err = s.startPRG(); err != nil {
-		return err
+	if prgPath := s.cfg.GetPrg(); len(prgPath) > 0 {
+		if err = s.startPRG(prgPath); err != nil {
+			return err
+		}
 	}
 
 	s.reset()
 
 	s.Print(os.Stdout, " ", true)
 
-	//state, _ := s.DumpAll()
-	//buf, _ := json.MarshalIndent(state, "", " ")
-	//fmt.Println(string(buf))
-	// err := s.RestoreAll(state); err != nil {
-	//	fmt.Println(err)
-	//}
 	return nil
 }
 
@@ -485,11 +479,7 @@ func (s *Board) LedTrigger(state uint32) {
 }
 
 // startPR
-func (s *Board) startPRG() error {
-	prgPath := s.cfg.GetPrg()
-	if len(prgPath) == 0 {
-		return nil
-	}
+func (s *Board) startPRG(prgPath string) error {
 	s.prg = prg.NewPRG(s.plaSocket, s.keysSocket)
 	if err := s.prg.Load(prgPath); err != nil {
 		s.prg = nil

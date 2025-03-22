@@ -1,7 +1,6 @@
 package board
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"log"
@@ -36,11 +35,9 @@ func (cs *CartridgeSocket) Initialize() error {
 				return err
 			}
 		}
-		cartId, err := cs.Add(cartName.Kind, cartName.Path, data)
-		if err != nil {
-			return fmt.Errorf("can't add cartridge: %s", err.Error())
+		if _, err := cs.Add(cartName.Kind, cartName.Path, data); err != nil {
+			return err
 		}
-		log.Printf("cartridge: %s [%s] successfully added", cartName, cartId)
 	}
 	return nil
 }

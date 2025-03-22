@@ -74,6 +74,13 @@ import (
 
 /*
 func restoreTest(factory references.IComponentFactory) {
+	//state, _ := s.DumpAll()
+	//buf, _ := json.MarshalIndent(state, "", " ")
+	//fmt.Println(string(buf))
+	// err := s.RestoreAll(state); err != nil {
+	//	fmt.Println(err)
+	//}
+
 	stub := make(map[string]interface{})
 	err := json.Unmarshal([]byte(treeStub), &stub)
 	if err != nil {

@@ -100,7 +100,7 @@ type ICartridgeManagerC64 interface {
 
 	Emulate()
 
-	Add(kind string, path string, data []uint8) (string, error)
+	Add(kind string, name string, data []uint8) (string, error)
 }
 
 func ComponentToICartridgeManagerC64(component IComponent, err error) (ICartridgeManagerC64, error) {
