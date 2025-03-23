@@ -53,6 +53,10 @@ func (m *TOD) Emulate() {
 	//
 }
 
+func (m *TOD) EmulationRequired() bool {
+	return false
+}
+
 // Set10ths updates the 10ths component of the time or alarm based on the `alarm` flag and provided `data`.
 // If updating the time and TOD is halted, it resets the divider and unhalts TOD.
 func (m *TOD) Set10ths(alarm bool, data uint8) {

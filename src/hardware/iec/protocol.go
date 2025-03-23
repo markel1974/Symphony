@@ -262,6 +262,10 @@ func (v *Protocol) Emulate() {
 	}
 }
 
+func (v *Protocol) EmulationRequired() bool {
+	return true
+}
+
 func (v *Protocol) LEDSignal() *signals.SignalUint32 {
 	return v.ledSignal
 }

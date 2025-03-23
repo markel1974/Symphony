@@ -90,6 +90,10 @@ func (m *CIA) Emulate() {
 	m.timerB.Emulate()
 }
 
+func (m *CIA) EmulationRequired() bool {
+	return true
+}
+
 // timerAUnderflowSlot handles the underflow event of Timer A by setting the respective interrupt cycle flag and triggering IRQ.
 func (m *CIA) timerAUnderflowSlot() {
 	m.timerAIrqCycle = true

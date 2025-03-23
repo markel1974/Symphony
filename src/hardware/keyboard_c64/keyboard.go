@@ -47,6 +47,10 @@ func (k *Keyboard) Emulate() {
 	//
 }
 
+func (k *Keyboard) EmulationRequired() bool {
+	return false
+}
+
 // NumLockToggle toggles the current state of the Num Lock key by inverting its value on the virtual keyboard.
 func (k *Keyboard) NumLockToggle() {
 	k.virtual.NumLockToggle()

@@ -31,11 +31,6 @@ type Pic struct {
 	extIrqClear   *signals.SignalUint32
 }
 
-func (i *Pic) Emulate() {
-	//TODO implement me
-	panic("implement me")
-}
-
 // NewPIC initializes and returns a pointer to a new Pic instance with default values.
 func NewPIC(parent references.IComponent, factory references.IComponentFactory, instance int) *Pic {
 	p := &Pic{
@@ -57,6 +52,13 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 func (i *Pic) Setup(quartz references.IQuartz) error {
 	i.quartz = quartz
 	return nil
+}
+
+func (i *Pic) Emulate() {
+}
+
+func (i *Pic) EmulationRequired() bool {
+	return false
 }
 
 // Reset reinitializes the Pic instance by clearing all internal state variables and flags.

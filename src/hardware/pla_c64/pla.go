@@ -169,6 +169,10 @@ func (b *PLA) Emulate() {
 	//
 }
 
+func (m *PLA) EmulationRequired() bool {
+	return false
+}
+
 //func (b *PLA) AsyncReset() {
 //	b.initRom()
 //}

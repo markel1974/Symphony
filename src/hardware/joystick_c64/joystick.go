@@ -50,6 +50,10 @@ func (k *Joystick) Emulate() {
 	//
 }
 
+func (m *Joystick) EmulationRequired() bool {
+	return false
+}
+
 // Move updates the joystick state based on x, y positions and button inputs, then stores the updated state in storage.
 func (k *Joystick) Move(x uint, y uint, buttons uint) {
 	k.joy = 0xff

@@ -68,6 +68,10 @@ func (p *Ports) Emulate() {
 	//
 }
 
+func (p *Ports) EmulationRequired() bool {
+	return false
+}
+
 // SetDir sets the direction register of the Ports to the specified value.
 func (p *Ports) SetDir(data uint8) {
 	p.dir = data

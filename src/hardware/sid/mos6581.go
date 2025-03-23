@@ -51,6 +51,10 @@ func (sid *SID) Emulate() {
 
 }
 
+func (sid *SID) EmulationRequired() bool {
+	return false
+}
+
 // SetPotX sets the value of the POT X register in the SID chip using the given 8-bit value.
 func (sid *SID) SetPotX(pot uint8) {
 	// PX7 PX6 PX5 PX4 PX3 PX2 PX1 PX0

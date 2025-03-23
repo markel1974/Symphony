@@ -97,6 +97,10 @@ func (cpu *CPU) Emulate() {
 	cpu.next(cpu)
 }
 
+func (cpu *CPU) EmulationRequired() bool {
+	return true
+}
+
 // Read retrieves a byte from the specified memory address.
 //
 // Returns the byte read and a boolean indicating success.

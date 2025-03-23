@@ -279,6 +279,10 @@ func (s *Board) Emulate() {
 	s.quartzSocket.Emulate()
 }
 
+func (s *Board) EmulationRequired() bool {
+	return true
+}
+
 // Throttle returns the IThrottle instance associated with the board to provide control over throttling behavior.
 func (s *Board) Throttle() references.IThrottle {
 	return s.throttleSocket

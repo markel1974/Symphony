@@ -38,6 +38,10 @@ func (s *DynamicThrottle) Emulate() {
 
 }
 
+func (m *DynamicThrottle) EmulationRequired() bool {
+	return false
+}
+
 // Reset resets the internal state of the DynamicThrottle, including counters and timestamps, to their initial values.
 func (s *DynamicThrottle) Reset() {
 }

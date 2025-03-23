@@ -168,6 +168,10 @@ func (s *Board) Emulate() {
 	//s.quartz.AddCycle()
 }
 
+func (s *Board) EmulationRequired() bool {
+	return false
+}
+
 func (s *Board) GetText() []byte {
 	//return s.vic.GetText()
 	return nil

@@ -78,6 +78,10 @@ func (c *Dispatcher) Emulate() {
 	}
 }
 
+func (c *Dispatcher) EmulationRequired() bool {
+	return true
+}
+
 // Reset iterates through all virtual drives and resets those that are in a ready state.
 func (c *Dispatcher) Reset() {
 	for _, vd := range c.virtualDrives {

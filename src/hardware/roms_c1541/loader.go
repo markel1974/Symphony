@@ -34,6 +34,10 @@ func (r *RomLoader) Emulate() {
 
 }
 
+func (r *RomLoader) EmulationRequired() bool {
+	return false
+}
+
 // Reset reinitializes the RomLoader to its default state.
 func (r *RomLoader) Reset() {
 }

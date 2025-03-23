@@ -137,6 +137,10 @@ func (m *Board) Reset() {
 	m.via2Socket.Reset()
 }
 
+func (m *Board) EmulationRequired() bool {
+	return true
+}
+
 // Emulate executes one emulation cycle for the Board by simulating the VIA1, VIA2, CPU, and incrementing the quartz clock cycle.
 func (m *Board) Emulate() {
 	//m.mec.Emulate()

@@ -295,6 +295,10 @@ func (m *Timer) Emulate() {
 	return
 }
 
+func (m *Timer) EmulationRequired() bool {
+	return true
+}
+
 // pendingVerify handles the state transitions of the timer based on the control register and force load conditions.
 func (m *Timer) pendingVerify() {
 	m.cr = m.crNew & crBitForceLoadUnset //no force load set (strobe) (0xef)

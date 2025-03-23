@@ -129,6 +129,10 @@ func (f *Manager) Emulate() {
 	}
 }
 
+func (f *Manager) EmulationRequired() bool {
+	return true
+}
+
 // Read retrieves a value from the specified ROM interval and address. Returns the value and a boolean indicating success.
 func (f *Manager) Read(interval references.RomInterval, addr uint16) (uint8, bool) {
 	if f.carts == nil {

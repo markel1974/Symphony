@@ -198,6 +198,10 @@ func (v *VIA) Emulate() {
 	}
 }
 
+func (v *VIA) EmulationRequired() bool {
+	return true
+}
+
 // SignalPRA writes the current PRA (Port A register) value to the connected socket using the Data Direction Register A.
 func (v *VIA) SignalPRA() {
 	v.socket.WritePRA(v.pra, v.ddra)

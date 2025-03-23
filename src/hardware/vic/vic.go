@@ -214,6 +214,10 @@ func (vic *VIC) Emulate() {
 	vic.UpdateRasterX()
 }
 
+func (vic *VIC) EmulationRequired() bool {
+	return true
+}
+
 // GetRasterY returns the current vertical raster position as a uint16.
 func (vic *VIC) GetRasterY() uint16 {
 	return vic.rasterY

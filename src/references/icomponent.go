@@ -28,6 +28,8 @@ type INode interface {
 // Emulate starts or manages the emulation process for the hardware.
 // Reset reinitializes or restores the hardware to a default state.
 type IHardware interface {
+	EmulationRequired() bool
+
 	Emulate()
 
 	Reset()

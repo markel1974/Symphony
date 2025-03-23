@@ -43,6 +43,10 @@ func (s *Quartz) Emulate() {
 	}
 }
 
+func (m *Quartz) EmulationRequired() bool {
+	return true
+}
+
 func (s *Quartz) Reset() {
 	//
 }
