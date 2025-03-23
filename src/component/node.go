@@ -74,8 +74,8 @@ func (n *Node) AddComponent(component references.IComponent) references.INode {
 	return child
 }
 
-// FindComponent traverses the hierarchical structure of nodes to locate a specific node based on the given path string.
-func (n *Node) FindComponent(path string) references.IComponent {
+// Traverse traverses the hierarchical structure of nodes to locate a specific node based on the given path string.
+func (n *Node) Traverse(path string) references.IComponent {
 	parts, err := createPathFromKey(path)
 	if err != nil {
 		return nil

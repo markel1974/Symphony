@@ -11,7 +11,7 @@ import (
 // RemoveComponent removes a specified component from the children, returning true if successful.
 // GetComponent retrieves the component associated with the current node.
 // GetChildren returns a slice of all child nodes.
-// FindComponent traverses the structure to locate a component by its path.
+// Traverse traverses the structure to locate a component by its path.
 type INode interface {
 	AddComponent(component IComponent) INode
 
@@ -21,13 +21,17 @@ type INode interface {
 
 	GetChildren() []INode
 
-	FindComponent(path string) IComponent
+	Traverse(path string) IComponent
 }
 
 // IHardware defines an interface for hardware components, offering methods for emulation and reset operations.
+// GetId retrieves the unique identifier of the component.
+// EmulationRequired indicates whether emulation is necessary for the hardware component.
 // Emulate starts or manages the emulation process for the hardware.
 // Reset reinitializes or restores the hardware to a default state.
 type IHardware interface {
+	GetId() string
+
 	EmulationRequired() bool
 
 	Emulate()
@@ -54,7 +58,6 @@ type ICommand interface {
 }
 
 // INavigate is an interface for managing and navigating hierarchical components and properties.
-// GetId retrieves the unique identifier of the component.
 // GetNode retrieves the associated node.
 // GetChildren returns a slice of child components attached to the current component.
 // GetComponentPath retrieves a component based on the provided path as a string.
@@ -70,8 +73,6 @@ type ICommand interface {
 // RestorePath restores the configuration of a specific component using a path and a map of properties.
 // Print outputs a formatted representation of the component to an io.Writer based on the provided format and flags.
 type INavigate interface {
-	GetId() string
-
 	GetFactory() IComponentFactory
 
 	GetNode() INode
