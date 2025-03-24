@@ -1,6 +1,8 @@
 package references
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // I6510Banks represents an interface for managing and accessing memory banks in a system.
 // Read retrieve the value from a specified memory address within the bank.
@@ -11,8 +13,8 @@ type I6510Banks interface {
 	Write(uint16, uint8)
 }
 
-func IdI6510(_ I6510) string {
-	return "I6510"
+func IdI6510(_ I6510, instance int) string {
+	return IdInternalComponent("I6510", instance)
 }
 
 // I6510 represents the 6510 CPU interface for emulation and interaction with hardware components.
@@ -52,7 +54,7 @@ func ComponentToI6510(component IComponent, err error) (I6510, error) {
 	}
 	v, ok := component.(I6510)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdI6510(v))
+		return nil, fmt.Errorf("component is not a %s", IdI6510(v, 0))
 	}
 	return v, nil
 }

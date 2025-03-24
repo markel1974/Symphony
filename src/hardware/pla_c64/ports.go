@@ -47,7 +47,7 @@ func NewPorts(factory references.IComponentFactory, parent references.IComponent
 		tapeMotorIn:   0,
 		//dirRead:     0,
 	}
-	p.BaseComponent.Register(factory, parent, "ports", instance, p, "Ports")
+	p.BaseComponent.Register(factory, parent, "ports", p, references.IdInternalComponent("Ports", instance))
 	return p
 }
 

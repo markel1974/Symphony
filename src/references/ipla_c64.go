@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIPlaC64(_ IPlaC64) string {
-	return "IPlaC64"
+func IdIPlaC64(_ IPlaC64, instance int) string {
+	return IdInternalComponent("IPlaC64", instance)
 }
 
 // IPlaC64 defines the interface for a Programmable Logic Array implementation specifically for the C64 system.
@@ -57,7 +57,7 @@ func ComponentToIPLAc64(component IComponent, err error) (IPlaC64, error) {
 	}
 	v, ok := component.(IPlaC64)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIPlaC64(v))
+		return nil, fmt.Errorf("component is not a %s", IdIPlaC64(v, 0))
 	}
 	return v, nil
 }

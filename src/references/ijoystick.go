@@ -2,8 +2,8 @@ package references
 
 import "fmt"
 
-func IdIJoystick(_ IJoystick) string {
-	return "IJoystick"
+func IdIJoystick(_ IJoystick, instance int) string {
+	return IdInternalComponent("IJoystick", instance)
 }
 
 // IJoystick defines an interface for joystick operations including updates, resets, emulation, movement, key setting, and polling.
@@ -35,7 +35,7 @@ func ComponentToIJoystick(component IComponent, err error) (IJoystick, error) {
 	}
 	v, ok := component.(IJoystick)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIJoystick(v))
+		return nil, fmt.Errorf("component is not a %s", IdIJoystick(v, 0))
 	}
 	return v, nil
 }

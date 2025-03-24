@@ -32,7 +32,7 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 		cfg:           nil,
 		audioBuilder:  nil,
 	}
-	s.BaseComponent.Register(factory, parent, Identifier(), instance, s, references.IdISID(s))
+	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdISID(s, instance))
 	s.reflect = NewSidReflect(s)
 	return s
 }

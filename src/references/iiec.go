@@ -6,8 +6,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIIec(_ IIec) string {
-	return "IIec"
+func IdIIec(_ IIec, instance int) string {
+	return IdInternalComponent("IIec", instance)
 }
 
 // IIec defines an interface for managing communication between a CPU and peripherals in an emulated environment.
@@ -43,8 +43,8 @@ type IIec interface {
 	LEDSignal() *signals.SignalUint32
 }
 
-func IdIIecDevice(_ IIecDevice) string {
-	return "IIecDevices"
+func IdIIecDevice(_ IIecDevice, instance int) string {
+	return IdInternalComponent("IIecDevices", instance)
 }
 
 // IIecDevice represents the interface for a virtual drive in the emulation environment.
@@ -73,8 +73,8 @@ type IIecDevice interface {
 	LEDSignal() *signals.SignalUint32
 }
 
-func IdIIecProtocolDevice(_ IIecProtocolDevice) string {
-	return "IIecProtocolDevice"
+func IdIIecProtocolDevice(_ IIecProtocolDevice, instance int) string {
+	return IdInternalComponent("IIecProtocolDevice", instance)
 }
 
 // IIecProtocolDevice defines an interface for interacting with devices using the IEC protocol.
@@ -110,7 +110,7 @@ func ComponentToIEC(component IComponent, err error) (IIec, error) {
 	}
 	v, ok := component.(IIec)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIIec(v))
+		return nil, fmt.Errorf("component is not a %s", IdIIec(v, 0))
 	}
 	return v, nil
 }

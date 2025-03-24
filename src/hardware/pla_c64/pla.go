@@ -67,7 +67,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
 	}
-	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIPlaC64(b))
+	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIPlaC64(b, instance))
 	return b
 }
 

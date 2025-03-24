@@ -114,7 +114,7 @@ func NewProtocol(factory references.IComponentFactory, parent references.ICompon
 		iec:           nil,
 		device:        nil,
 	}
-	p.BaseComponent.Register(factory, parent, "iec_device_protocol", instance, p, references.IdIIecDevice(p))
+	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, instance))
 	return p
 }
 

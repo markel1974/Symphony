@@ -29,8 +29,8 @@ type IVIASocket interface {
 	IRQTrigger()
 }
 
-func IdIVIA(_ IVIA) string {
-	return "IVIA"
+func IdIVIA(_ IVIA, instance int) string {
+	return IdInternalComponent("IVIA", instance)
 }
 
 // IVIA represents an interface for a VIA (Versatile Interface Adapter) component, managing communication and signaling.
@@ -66,7 +66,7 @@ func ComponentToIVIA(component IComponent, err error) (IVIA, error) {
 	}
 	v, ok := component.(IVIA)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIVIA(v))
+		return nil, fmt.Errorf("component is not a %s", IdIVIA(v, 0))
 	}
 	return v, nil
 }

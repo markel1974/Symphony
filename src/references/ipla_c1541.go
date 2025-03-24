@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIPLAc1541(_ IPLAc1541) string {
-	return "IPLAc1541"
+func IdIPLAc1541(_ IPLAc1541, instance int) string {
+	return IdInternalComponent("IPLAc1541", instance)
 }
 
 // IPLAc1541 represents an interface for handling PLA logic in a 1541 disk drive emulation.
@@ -27,7 +27,7 @@ func ComponentToIPLAc1541(component IComponent, err error) (IPLAc1541, error) {
 	}
 	v, ok := component.(IPLAc1541)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIPLAc1541(v))
+		return nil, fmt.Errorf("component is not a %s", IdIPLAc1541(v, 0))
 	}
 	return v, nil
 }

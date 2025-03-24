@@ -10,7 +10,6 @@ import (
 
 type Render struct {
 	board      references.IBoard
-	dt         references.IThrottle
 	scale      float64
 	fullscreen bool
 	maxW       float64
@@ -26,7 +25,6 @@ type Render struct {
 func New() *Render {
 	g := &Render{
 		board:      nil,
-		dt:         nil,
 		win:        nil,
 		fullscreen: false,
 		scale:      3,
@@ -46,7 +44,6 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 
 func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	g.board = board
-	g.dt = board.Throttle()
 	g.board.VBlankSignal().Bind(g.vBlankSlot)
 	g.board.LEDSignal().Bind(g.ledSlot)
 	if err := g.inputs.Setup(g.board, cfg); err != nil {
@@ -85,16 +82,15 @@ func (g *Render) runner() {
 }
 
 func (g *Render) vBlankSlot() {
-	g.dt.Throttle()
 	if g.win.MouseInsideWindow() {
 		g.inputs.MouseMove(g.win.MousePositionXY())
 	}
 	g.inputs.Keys(g.win.KeysPressed())
 	g.surface.Draw(g.win, g.matrix)
 	g.win.Update()
-	if (g.dt.Counter() & 0xf) == 0xf {
-		g.run = !g.win.Closed()
-	}
+	//if (g.dt.Counter() & 0xf) == 0xf {
+	g.run = !g.win.Closed()
+	//}
 }
 
 func (g *Render) ledSlot(state uint32) {

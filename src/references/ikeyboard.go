@@ -2,8 +2,8 @@ package references
 
 import "fmt"
 
-func IdIKeyboard(_ IKeyboard) string {
-	return "IKeyboard"
+func IdIKeyboard(_ IKeyboard, instance int) string {
+	return IdInternalComponent("IKeyboard", instance)
 }
 
 // IKeyboard defines an interface for managing keyboard input, including virtual key states and command processing.
@@ -38,7 +38,7 @@ func ComponentToIKeyboard(component IComponent, err error) (IKeyboard, error) {
 	}
 	v, ok := component.(IKeyboard)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIKeyboard(v))
+		return nil, fmt.Errorf("component is not a %s", IdIKeyboard(v, 0))
 	}
 	return v, nil
 }

@@ -162,7 +162,7 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		ecm:              false,
 		columnSel:        false,
 	}
-	vic.BaseComponent.Register(factory, parent, Identifier(), instance, vic, references.IdIVIC(vic))
+	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIVIC(vic, instance))
 	return vic
 }
 

@@ -24,7 +24,7 @@ func NewDynamicThrottle(parent references.IComponent, factory references.ICompon
 		tuning:        0,
 		counter:       0,
 	}
-	d.BaseComponent.Register(factory, parent, Identifier(), instance, d, references.IdIThrottle(d))
+	d.BaseComponent.Register(factory, parent, Identifier(), d, references.IdIThrottle(d, instance))
 	return d
 }
 
@@ -46,11 +46,11 @@ func (m *DynamicThrottle) EmulationRequired() bool {
 func (s *DynamicThrottle) Reset() {
 }
 
-// Throttle regulates code execution to maintain a consistent time interval between consecutive invocations.
+// Update regulates code execution to maintain a consistent time interval between consecutive invocations.
 // It calculates the time difference from the previous execution and sleeps if necessary to enforce the interval.
 // Adjusts a tuning parameter dynamically to compensate for deviations in interval accuracy.
 // Updates the internal state, including the previous execution timestamp and invocation counter.
-func (s *DynamicThrottle) Throttle() {
+func (s *DynamicThrottle) Update() {
 	//https://codereview.stackexchange.com/questions/40473/portable-periodic-one-shot-timer-implementation?noredirect=1&lq=1
 	//https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-signalobjectandwait
 	now := time.Now().UnixMilli()

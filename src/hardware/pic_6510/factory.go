@@ -19,6 +19,6 @@ func (t *Factory) Identifier() string {
 	return Identifier()
 }
 
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
-	return NewPIC(parent, factory, label)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, instance int) references.IComponent {
+	return NewPIC(parent, factory, instance)
 }

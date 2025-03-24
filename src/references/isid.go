@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdISID(_ ISID) string {
-	return "ISID"
+func IdISID(_ ISID, instance int) string {
+	return IdInternalComponent("ISID", instance)
 }
 
 // ISID is an interface representing a Sound Interface Device (SID) for audio synthesis and emulation in a system.
@@ -47,7 +47,7 @@ func ComponentToISID(component IComponent, err error) (ISID, error) {
 	}
 	v, ok := component.(ISID)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdISID(v))
+		return nil, fmt.Errorf("component is not a %s", IdISID(v, 0))
 	}
 	return v, nil
 }

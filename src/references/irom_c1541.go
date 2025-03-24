@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIROMLoaderC1541(_ IROMLoaderC1541) string {
-	return "IROMLoaderC1541"
+func IdIROMLoaderC1541(_ IROMLoaderC1541, instance int) string {
+	return IdInternalComponent("IROMLoaderC1541", instance)
 }
 
 // IROMLoaderC1541 is an interface for handling ROM loading functionality specific to the C1541 drive emulation.
@@ -24,7 +24,7 @@ func ComponentToIROMLoaderC1541(component IComponent, err error) (IROMLoaderC154
 	}
 	v, ok := component.(IROMLoaderC1541)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIROMLoaderC1541(v))
+		return nil, fmt.Errorf("component is not a %s", IdIROMLoaderC1541(v, 0))
 	}
 	return v, nil
 }

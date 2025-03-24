@@ -44,11 +44,11 @@ type CPU struct {
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
-func NewCPU(parent references.IComponent, factory references.IComponentFactory, label int) *CPU {
+func NewCPU(parent references.IComponent, factory references.IComponentFactory, instance int) *CPU {
 	cpu := &CPU{
 		BaseComponent: component.NewBaseComponent(),
 	}
-	cpu.BaseComponent.Register(factory, parent, Identifier(), label, cpu, references.IdI6510(cpu))
+	cpu.BaseComponent.Register(factory, parent, Identifier(), cpu, references.IdI6510(cpu, instance))
 	return cpu
 }
 

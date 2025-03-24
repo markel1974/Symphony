@@ -38,7 +38,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, ins
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		lastData:      0,
 	}
-	co.BaseComponent.Register(factory, parent, id, instance, co, references.IdICartridgeC64(co))
+	co.BaseComponent.Register(factory, parent, id, co, references.IdICartridgeC64(co, instance))
 	return co
 }
 

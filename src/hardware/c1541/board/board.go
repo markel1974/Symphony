@@ -7,6 +7,7 @@
 package board
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
@@ -15,6 +16,12 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 	"log"
 )
+
+var _hardwareSequence = []string{
+	references.IdIVIA(nil, 0),
+	references.IdIVIA(nil, 1),
+	references.IdI6510(nil, 0),
+}
 
 // intrIrqVIA1Bit represents the interrupt request bit for VIA1.
 // intrIrqVIA2Bit represents the interrupt request bit for VIA2.
@@ -39,6 +46,8 @@ type Board struct {
 	diskId     string
 	cfg        *config.Config
 	ledSignal  *signals.SignalUint32
+	components map[string]references.IComponent
+	emulation  []func()
 }
 
 // NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
@@ -58,8 +67,10 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		cfg:           nil,
 		disks:         disk.NewFactory(),
 		mec:           mechanic.NewMechanic(),
+		components:    make(map[string]references.IComponent),
+		emulation:     []func(){},
 	}
-	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIIecDevice(b))
+	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIIecDevice(b, instance))
 	return b
 }
 
@@ -76,30 +87,35 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	if err = m.mec.Setup(); err != nil {
 		return err
 	}
-	rl, err := references.ComponentToIROMLoaderC1541(m.GetFactory().Create(m, "roms_c1541", 0))
+	rl, err := references.ComponentToIROMLoaderC1541(m.createComponent("roms_c1541", 0))
 	if err != nil {
 		return err
 	}
-	pla, err := references.ComponentToIPLAc1541(m.GetFactory().Create(m, "pla_c1541", 0))
+	pla, err := references.ComponentToIPLAc1541(m.createComponent("pla_c1541", 0))
 	if err != nil {
 		return err
 	}
-	pic, err := references.ComponentToIPIC6510(m.GetFactory().Create(m, "pic_6510", 0))
+	pic, err := references.ComponentToIPIC6510(m.createComponent("pic_6510", 0))
 	if err != nil {
 		return err
 	}
-	cpu, err := references.ComponentToI6510(m.GetFactory().Create(m, "mos6510", 0))
+	cpu, err := references.ComponentToI6510(m.createComponent("mos6510", 0))
 	if err != nil {
 		return err
 	}
-	via1, err := references.ComponentToIVIA(m.GetFactory().Create(m, "mos6522", 0))
+	via1, err := references.ComponentToIVIA(m.createComponent("mos6522", 0))
 	if err != nil {
 		return err
 	}
-	via2, err := references.ComponentToIVIA(m.GetFactory().Create(m, "mos6522", 1))
+	via2, err := references.ComponentToIVIA(m.createComponent("mos6522", 1))
 	if err != nil {
 		return err
 	}
+
+	if m.emulation, err = m.rebuildEmulation(m.components); err != nil {
+		return err
+	}
+
 	if err = m.rlSocket.Connect(rl, cfg); err != nil {
 		return err
 	}
@@ -143,11 +159,9 @@ func (m *Board) EmulationRequired() bool {
 
 // Emulate executes one emulation cycle for the Board by simulating the VIA1, VIA2, CPU, and incrementing the quartz clock cycle.
 func (m *Board) Emulate() {
-	//m.mec.Emulate()
-	m.via1Socket.Emulate()
-	m.via2Socket.Emulate()
-	m.cpuSocket.Emulate()
-	//m.quartz.AddCycle()
+	for _, fn := range m.emulation {
+		fn()
+	}
 }
 
 // Ready checks if the Board's internal state is prepared for operations and returns true if it is ready.
@@ -234,4 +248,28 @@ func (m *Board) mountConfigDisk(cfg *config.Config) error {
 		return err
 	}
 	return nil
+}
+
+func (m *Board) createComponent(id string, instance int) (references.IComponent, error) {
+	comp, err := m.GetFactory().Create(m, id, instance)
+	if err != nil {
+		return nil, err
+	}
+	m.components[comp.HardwareId()] = comp
+	return comp, nil
+}
+
+func (m *Board) rebuildEmulation(components map[string]references.IComponent) ([]func(), error) {
+	var emulation []func()
+	for _, x := range _hardwareSequence {
+		if comp, ok := components[x]; ok {
+			if comp.EmulationRequired() {
+				emulation = append(emulation, comp.Emulate)
+			}
+		}
+	}
+	if len(emulation) != len(_hardwareSequence) {
+		return nil, fmt.Errorf("emulation sequence is not complete")
+	}
+	return emulation, nil
 }

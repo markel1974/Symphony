@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIVIC(_ IVIC) string {
-	return "IVIC"
+func IdIVIC(_ IVIC, instance int) string {
+	return IdInternalComponent("IVIC", instance)
 }
 
 // IVIC defines an interface for a Video Interface Chip emulation, managing display rendering and register interactions.
@@ -93,7 +93,7 @@ func ComponentToIVIC(component IComponent, err error) (IVIC, error) {
 	}
 	v, ok := component.(IVIC)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIVIC(v))
+		return nil, fmt.Errorf("component is not a %s", IdIVIC(v, 0))
 	}
 	return v, nil
 }

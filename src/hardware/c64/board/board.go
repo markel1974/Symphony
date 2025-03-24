@@ -11,6 +11,16 @@ import (
 	"os"
 )
 
+var _hardwareSequence = []string{
+	references.IdIVIC(nil, 0),
+	references.IdICIA(nil, 0),
+	references.IdICIA(nil, 1),
+	references.IdICartridgeManagerC64(nil, 0),
+	references.IdIIec(nil, 0),
+	references.IdI6510(nil, 0),
+	references.IdIQuartz(nil, 0),
+}
+
 // intrIrqVicBit represents the interrupt IRQ bit for the VIC.
 // intrIrqCia1Bit represents the interrupt IRQ bit for CIA1.
 // intrIrqCia2Bit represents the interrupt IRQ bit for CIA2.
@@ -48,6 +58,8 @@ type Board struct {
 	dmaLow          bool
 	vBlankSignal    *signals.Signal
 	ledSignal       *signals.SignalUint32
+	components      map[string]references.IComponent
+	emulation       []func()
 	//expansionIrqTrigger *signals.SignalUint32
 	//expansionIrqClear   *signals.SignalUint32
 }
@@ -79,8 +91,10 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		joySwap:         true,
 		vBlankSignal:    signals.NewSignal(),
 		ledSignal:       signals.NewSignalUint32(),
+		components:      make(map[string]references.IComponent),
+		emulation:       []func(){},
 	}
-	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIBoardC64(b))
+	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIBoardC64(b, instance))
 	return b
 }
 
@@ -95,69 +109,70 @@ func (s *Board) LEDSignal() *signals.SignalUint32 {
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) error {
 	s.db = db
 	s.cfg = cfg
-	s.cfg.Bind(s.configChanged)
 
-	quartz, err := references.ComponentToIQuartz(s.GetFactory().Create(s, "quartz", 0))
+	vic, err := references.ComponentToIVIC(s.createComponent("mos6569", 0))
 	if err != nil {
 		return err
 	}
-	throttle, err := references.ComponentToIThrottle(s.GetFactory().Create(s, "dynamic_throttle", 0))
+	cia1, err := references.ComponentToICIA(s.createComponent("mos6526", 0))
 	if err != nil {
 		return err
 	}
-	pic, err := references.ComponentToIPIC6510(s.GetFactory().Create(s, "pic_6510", 0))
+	cia2, err := references.ComponentToICIA(s.createComponent("mos6526", 1))
 	if err != nil {
 		return err
 	}
-	cpu, err := references.ComponentToI6510(s.GetFactory().Create(s, "mos6510", 0))
+	cart, err := references.ComponentToICartridgeManagerC64(s.createComponent("cartridges_c64", 0))
 	if err != nil {
 		return err
 	}
-	iec, err := references.ComponentToIEC(s.GetFactory().Create(s, "iec", 0))
+	iec, err := references.ComponentToIEC(s.createComponent("iec", 0))
 	if err != nil {
 		return err
 	}
-	vic, err := references.ComponentToIVIC(s.GetFactory().Create(s, "mos6569", 0))
+	cpu, err := references.ComponentToI6510(s.createComponent("mos6510", 0))
 	if err != nil {
 		return err
 	}
-	sid, err := references.ComponentToISID(s.GetFactory().Create(s, "mos6581", 0))
+	pic, err := references.ComponentToIPIC6510(s.createComponent("pic_6510", 0))
 	if err != nil {
 		return err
 	}
-	cart, err := references.ComponentToICartridgeManagerC64(s.GetFactory().Create(s, "cartridges_c64", 0))
+	quartz, err := references.ComponentToIQuartz(s.createComponent("quartz", 0))
 	if err != nil {
 		return err
 	}
-	rom, err := references.ComponentToIROMLoaderC64(s.GetFactory().Create(s, "roms_c64", 0))
+	throttle, err := references.ComponentToIThrottle(s.createComponent("dynamic_throttle", 0))
 	if err != nil {
 		return err
 	}
-	cia1, err := references.ComponentToICIA(s.GetFactory().Create(s, "mos6526", 0))
+	sid, err := references.ComponentToISID(s.createComponent("mos6581", 0))
 	if err != nil {
 		return err
 	}
-	cia2, err := references.ComponentToICIA(s.GetFactory().Create(s, "mos6526", 1))
+	rom, err := references.ComponentToIROMLoaderC64(s.createComponent("roms_c64", 0))
 	if err != nil {
 		return err
 	}
-	pla, err := references.ComponentToIPLAc64(s.GetFactory().Create(s, "pla_c64", 0))
+	pla, err := references.ComponentToIPLAc64(s.createComponent("pla_c64", 0))
 	if err != nil {
 		return err
 	}
-	keys, err := references.ComponentToIKeyboard(s.GetFactory().Create(s, "keyboard_c64", 0))
+	keys, err := references.ComponentToIKeyboard(s.createComponent("keyboard_c64", 0))
 	if err != nil {
 		return err
 	}
-	joy1, err := references.ComponentToIJoystick(s.GetFactory().Create(s, "joystick_c64", 0))
+	joy1, err := references.ComponentToIJoystick(s.createComponent("joystick_c64", 0))
 	if err != nil {
 		return err
 	}
-	joy2, err := references.ComponentToIJoystick(s.GetFactory().Create(s, "joystick_c64", 1))
+	joy2, err := references.ComponentToIJoystick(s.createComponent("joystick_c64", 1))
 	if err != nil {
 		return err
 	}
-
+	if s.emulation, err = s.rebuildEmulation(s.components); err != nil {
+		return err
+	}
 	if err = s.quartzSocket.Connect(quartz); err != nil {
 		return err
 	}
@@ -259,33 +274,15 @@ func (s *Board) AsyncReset() {
 	s.dmaLow = false
 }
 
-// configChanged is triggered whenever the board's configuration is updated to apply necessary changes.
-func (s *Board) configChanged() {
-}
-
-// Emulate executes a single emulation cycle, triggering connected sockets and updating the system state.
-// Returns the current v
+// Emulate executes all functions in the Board's emulation sequence in order.
 func (s *Board) Emulate() {
-	//PHI1
-	s.vicSocket.Emulate()
-
-	//PHI2
-	s.cia1Socket.Emulate()
-	s.cia2Socket.Emulate()
-	s.cartSocket.Emulate()
-	s.iecSocket.Emulate()
-	s.cpuSocket.Emulate()
-
-	s.quartzSocket.Emulate()
+	for _, fn := range s.emulation {
+		fn()
+	}
 }
 
 func (s *Board) EmulationRequired() bool {
 	return true
-}
-
-// Throttle returns the IThrottle instance associated with the board to provide control over throttling behavior.
-func (s *Board) Throttle() references.IThrottle {
-	return s.throttleSocket
 }
 
 // GetText retrieves the textual representation of the board's content as a byte slice from the vicSocket.
@@ -433,15 +430,16 @@ func (s *Board) LastCycleTrigger() {
 // VBlankTrigger sets the vBlank flag to true and updates connected sockets and programmable logic if applicable.
 func (s *Board) VBlankTrigger() {
 	s.vBlankSignal.Emit()
-
 	s.sidSocket.Update()
 	s.cia1Socket.Update()
 	s.cia2Socket.Update()
+
 	if s.prg != nil {
 		if s.prg.Inject(s.vicSocket.GetText()) {
 			s.prg = nil
 		}
 	}
+	s.throttleSocket.Update()
 }
 
 // LedTrigger handles LED state change events for a specified device and updates the LED state accordingly.
@@ -457,4 +455,28 @@ func (s *Board) startPRG(prgPath string) error {
 		return fmt.Errorf("can't load prg: %s", err.Error())
 	}
 	return nil
+}
+
+func (s *Board) createComponent(id string, instance int) (references.IComponent, error) {
+	comp, err := s.GetFactory().Create(s, id, instance)
+	if err != nil {
+		return nil, err
+	}
+	s.components[comp.HardwareId()] = comp
+	return comp, nil
+}
+
+func (s *Board) rebuildEmulation(components map[string]references.IComponent) ([]func(), error) {
+	var emulation []func()
+	for _, x := range _hardwareSequence {
+		if comp, ok := components[x]; ok {
+			if comp.EmulationRequired() {
+				emulation = append(emulation, comp.Emulate)
+			}
+		}
+	}
+	if len(emulation) != len(_hardwareSequence) {
+		return nil, fmt.Errorf("emulation sequence is not complete")
+	}
+	return emulation, nil
 }

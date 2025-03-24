@@ -36,7 +36,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, ins
 		regVal:        0,
 		slot:          0,
 	}
-	md.BaseComponent.Register(factory, parent, id, instance, md, references.IdICartridgeC64(md))
+	md.BaseComponent.Register(factory, parent, id, md, references.IdICartridgeC64(md, instance))
 	return md
 }
 

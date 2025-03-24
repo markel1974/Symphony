@@ -26,7 +26,7 @@ func NewQuartz(parent references.IComponent, factory references.IComponentFactor
 		alarmsContainer: make(map[*Alarm]*Alarm),
 		alarms:          list.New(),
 	}
-	q.BaseComponent.Register(factory, parent, Identifier(), instance, q, references.IdIQuartz(q))
+	q.BaseComponent.Register(factory, parent, Identifier(), q, references.IdIQuartz(q, instance))
 	//q.BaseComponent.Register(parent, q)
 	return q
 }

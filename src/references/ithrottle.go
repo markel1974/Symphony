@@ -2,8 +2,8 @@ package references
 
 import "fmt"
 
-func IdIThrottle(_ IThrottle) string {
-	return "IThrottle"
+func IdIThrottle(_ IThrottle, instance int) string {
+	return IdInternalComponent("IThrottle", instance)
 }
 
 // IThrottle defines an interface for controlling the execution rate and tracking the count of operations executed.
@@ -14,7 +14,7 @@ type IThrottle interface {
 
 	Counter() uint64
 
-	Throttle()
+	Update()
 }
 
 func ComponentToIThrottle(component IComponent, err error) (IThrottle, error) {
@@ -23,7 +23,7 @@ func ComponentToIThrottle(component IComponent, err error) (IThrottle, error) {
 	}
 	v, ok := component.(IThrottle)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIThrottle(v))
+		return nil, fmt.Errorf("component is not a %s", IdIThrottle(v, 0))
 	}
 	return v, nil
 }

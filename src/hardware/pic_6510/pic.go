@@ -44,7 +44,7 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 		extIrqTrigger: nil,
 		extIrqClear:   nil,
 	}
-	p.BaseComponent.Register(factory, parent, Identifier(), instance, p, references.IdIPIC6510(p))
+	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIPIC6510(p, instance))
 	return p
 }
 

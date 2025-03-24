@@ -76,8 +76,8 @@ type IExpansionC64 interface {
 	RmwFlags() uint8 //TODO NOT STANDARD
 }
 
-func IdICartridgeManagerC64(_ ICartridgeManagerC64) string {
-	return "ICartridgeManagerC64"
+func IdICartridgeManagerC64(_ ICartridgeManagerC64, instance int) string {
+	return IdInternalComponent("ICartridgeManagerC64", instance)
 }
 
 // ICartridgeManagerC64 defines an interface for managing expansion socket operations and interactions in a given system.
@@ -109,7 +109,7 @@ func ComponentToICartridgeManagerC64(component IComponent, err error) (ICartridg
 	}
 	v, ok := component.(ICartridgeManagerC64)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdICartridgeManagerC64(v))
+		return nil, fmt.Errorf("component is not a %s", IdICartridgeManagerC64(v, 0))
 	}
 	return v, nil
 }

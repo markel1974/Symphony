@@ -50,7 +50,7 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignalUint32(), //ledSignal:       signals.NewSignal2[int, uint8](),
 	}
-	c.BaseComponent.Register(factory, parent, Identifier(), instance, c, references.IdIIec(c))
+	c.BaseComponent.Register(factory, parent, Identifier(), c, references.IdIIec(c, instance))
 	return c
 }
 

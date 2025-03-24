@@ -24,7 +24,7 @@ func NewJoystick(parent references.IComponent, factory references.IComponentFact
 		s1:            0,
 		s2:            0,
 	}
-	j.BaseComponent.Register(factory, parent, Identifier(), instance, j, references.IdIJoystick(j))
+	j.BaseComponent.Register(factory, parent, Identifier(), j, references.IdIJoystick(j, instance))
 	return j
 }
 

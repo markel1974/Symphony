@@ -56,8 +56,8 @@ func GetCartridgeSpec(ct CartridgeMode) *CartridgeSpec {
 	return _cartridgesSpec[ct]
 }
 
-func IdICartridgeC64(_ ICartridgeC64) string {
-	return "ICartridgeC64"
+func IdICartridgeC64(_ ICartridgeC64, instance int) string {
+	return IdInternalComponent("ICartridgeC64", instance)
 }
 
 // ICartridgeC64 represents the interface for a C64-compatible cartridge, defining methods for setup, memory operations, and emulation.
@@ -156,7 +156,7 @@ func ComponentToICartridgeC64(component IComponent, err error) (ICartridgeC64, e
 	}
 	v, ok := component.(ICartridgeC64)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdICartridgeC64(v))
+		return nil, fmt.Errorf("component is not a %s", IdICartridgeC64(v, 0))
 	}
 	return v, nil
 }

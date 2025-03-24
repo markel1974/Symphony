@@ -34,7 +34,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, ins
 		cpu:           nil,
 		quartz:        nil,
 	}
-	r.BaseComponent.Register(factory, parent, id, instance, r, references.IdICartridgeC64(r))
+	r.BaseComponent.Register(factory, parent, id, r, references.IdICartridgeC64(r, instance))
 	return r
 }
 

@@ -67,7 +67,7 @@ func NewEasyFlash(parent references.IComponent, factory references.IComponentFac
 		memoryConfigIdx: -1,
 		updateEApi:      true,
 	}
-	ef.BaseComponent.Register(factory, parent, id, instance, ef, references.IdICartridgeC64(ef))
+	ef.BaseComponent.Register(factory, parent, id, ef, references.IdICartridgeC64(ef, instance))
 	return ef
 }
 

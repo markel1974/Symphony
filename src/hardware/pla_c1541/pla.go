@@ -32,7 +32,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		BaseComponent: component.NewBaseComponent(),
 		ram:           make([]uint8, c1541RamSize),
 	}
-	p.BaseComponent.Register(factory, parent, Identifier(), instance, p, references.IdIPLAc1541(p))
+	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIPLAc1541(p, instance))
 	return p
 }
 

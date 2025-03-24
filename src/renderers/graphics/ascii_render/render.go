@@ -61,9 +61,6 @@ func (g *Render) Start() error {
 }
 
 func (g *Render) vBlank() {
-	dt := g.board.Throttle()
-	dt.Throttle()
-
 	select {
 	case text := <-g.ch:
 		for _, v := range text {

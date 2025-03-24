@@ -23,8 +23,7 @@ type BaseComponent struct {
 	cmd        *cli.Command
 	id         string
 	name       string
-	instance   int
-	kind       string
+	hardwareId string
 	factory    references.IComponentFactory
 	node       references.INode
 	properties *Properties
@@ -36,10 +35,9 @@ type BaseComponent struct {
 func NewBaseComponent() *BaseComponent {
 	bc := &BaseComponent{
 		id:         "",
+		hardwareId: "",
 		factory:    nil,
 		name:       "",
-		instance:   0,
-		kind:       "",
 		properties: NewProperties(),
 		commands:   NewCommands(),
 		propagate:  true,
@@ -48,12 +46,12 @@ func NewBaseComponent() *BaseComponent {
 	return bc
 }
 
-func (bc *BaseComponent) Register(f references.IComponentFactory, parent references.IComponent, name string, instance int, component references.IComponent, kind string) {
+func (bc *BaseComponent) Register(f references.IComponentFactory, parent references.IComponent, name string, component references.IComponent, hardwareId string) {
+	const sep = ":"
 	bc.factory = f
 	bc.name = name
-	bc.instance = instance
-	bc.kind = kind
-	bc.id = bc.name + ":" + strconv.Itoa(instance) + ":" + bc.kind
+	bc.hardwareId = hardwareId
+	bc.id = bc.name + sep + bc.hardwareId
 
 	bc.cmd = cli.NewCommand()
 	bc.cmd.Run = func(cmd *cli.Command, pid int, args []string) {
@@ -74,16 +72,21 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 	}
 }
 
+// GetId returns the unique identifier of the BaseComponent instance.
+func (bc *BaseComponent) GetId() string {
+	return bc.id
+}
+
+func (bc *BaseComponent) HardwareId() string {
+	return bc.hardwareId
+}
+
 func (bc *BaseComponent) DisablePropagate() {
 	bc.propagate = false
 }
 
 func (bc *BaseComponent) Propagate() bool {
 	return bc.propagate
-}
-
-func (bc *BaseComponent) Kind() string {
-	return bc.kind
 }
 
 // GetFactory retrieves the INode instance associated with the BaseComponent.
@@ -99,11 +102,6 @@ func (bc *BaseComponent) GetNode() references.INode {
 // Unregister removes the specified component from the parent's node, detaching their hierarchical relationship.
 func (bc *BaseComponent) Unregister(component references.IComponent) {
 	bc.node.RemoveComponent(component)
-}
-
-// GetId returns the unique identifier of the BaseComponent instance.
-func (bc *BaseComponent) GetId() string {
-	return bc.id
 }
 
 // GetChildren retrieves all child components of the current BaseComponent by traversing its associated node hierarchy.

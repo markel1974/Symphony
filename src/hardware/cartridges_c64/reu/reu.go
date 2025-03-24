@@ -56,7 +56,7 @@ func newReu(parent references.IComponent, factory references.IComponentFactory, 
 		ram:           make([]uint8, size),
 		irqMask:       0,
 	}
-	r.BaseComponent.Register(factory, parent, id, instance, r, references.IdICartridgeC64(r))
+	r.BaseComponent.Register(factory, parent, id, r, references.IdICartridgeC64(r, instance))
 	r.Reset()
 	return r
 }

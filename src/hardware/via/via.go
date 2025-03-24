@@ -41,7 +41,7 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 		prb:           0,
 		ddrb:          0,
 	}
-	v.BaseComponent.Register(factory, parent, Identifier(), instance, v, references.IdIVIA(v))
+	v.BaseComponent.Register(factory, parent, Identifier(), v, references.IdIVIA(v, instance))
 	return v
 }
 

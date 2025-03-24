@@ -19,7 +19,7 @@ func NewRomLoader(parent references.IComponent, factory references.IComponentFac
 		BaseComponent: component.NewBaseComponent(),
 		cfg:           nil,
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), instance, rl, references.IdIROMLoaderC64(rl))
+	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIROMLoaderC64(rl, instance))
 	return rl
 }
 

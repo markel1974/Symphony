@@ -47,7 +47,7 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 		registerSize:        make(map[int]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64),
 		registerSizeDefault: nil,
 	}
-	m.BaseComponent.Register(factory, parent, Identifier(), instance, m, references.IdICartridgeManagerC64(m))
+	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdICartridgeManagerC64(m, instance))
 	return m
 }
 

@@ -39,7 +39,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	}
 	fs.Protocol = iec.NewProtocol(factory, parent, instance)
 	fs.Protocol.SetDevice(fs)
-	fs.BaseComponent.Register(factory, fs.Protocol, Identifier(), 0, fs, references.IdIIecProtocolDevice(fs))
+	fs.BaseComponent.Register(factory, fs.Protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, 0))
 	return fs
 }
 

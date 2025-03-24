@@ -1,6 +1,8 @@
 package references
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // opFlagIrqDisabled represents the flag for interrupt requests being disabled.
 // opFlagIrqEnabled represents the flag for interrupt requests being enabled.
@@ -11,8 +13,8 @@ const (
 	OpFlagIntDelayed  = 0x04
 )
 
-func IdIPIC6510(_ IPIC6510) string {
-	return "IPIC6510"
+func IdIPIC6510(_ IPIC6510, instance int) string {
+	return IdInternalComponent("IPIC6510", instance)
 }
 
 // IPIC6510 provides an interface for managing the programmable interrupt controller (PIC) in a 6510 CPU simulation.
@@ -50,7 +52,7 @@ func ComponentToIPIC6510(component IComponent, err error) (IPIC6510, error) {
 	}
 	v, ok := component.(IPIC6510)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIPIC6510(v))
+		return nil, fmt.Errorf("component is not a %s", IdIPIC6510(v, 0))
 	}
 	return v, nil
 }

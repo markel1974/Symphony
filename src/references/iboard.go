@@ -5,16 +5,16 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIBoardC64(_ IBoard) string {
-	return "IBoardC64"
+func IdIBoardC64(_ IBoard, instance int) string {
+	return IdInternalComponent("IBoardC64", instance)
 }
 
-func IdIBoardC1541(_ IIecDevice) string {
-	return "IBoardC1541"
+func IdIBoardC1541(_ IIecDevice, instance int) string {
+	return IdInternalComponent("IBoardC1541", instance)
 }
 
-func IdIBoardVIC20(_ IBoard) string {
-	return "IBoardVIC20"
+func IdIBoardVIC20(_ IBoard, instance int) string {
+	return IdInternalComponent("IBoardVIC20", instance)
 }
 
 // IBoard represents the interface for controlling and managing a board-based system's input, output, and state.
@@ -62,6 +62,4 @@ type IBoard interface {
 	KeyboardSetKey(pressed bool, vKey int)
 
 	SetMouse(x uint8, y uint8)
-
-	Throttle() IThrottle
 }

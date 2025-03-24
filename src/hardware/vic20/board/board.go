@@ -73,7 +73,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		joySwap:             true,
 		dt:                  nil,
 	}
-	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIBoardVIC20(b))
+	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIBoardVIC20(b, instance))
 
 	return b
 }

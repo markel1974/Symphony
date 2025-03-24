@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"io"
+	"strconv"
 )
 
 // INode defines a hierarchical structure for managing components and their relationships in a tree-like format.
@@ -31,6 +32,8 @@ type INode interface {
 // Reset reinitializes or restores the hardware to a default state.
 type IHardware interface {
 	GetId() string
+
+	HardwareId() string
 
 	EmulationRequired() bool
 
@@ -77,8 +80,6 @@ type INavigate interface {
 
 	GetNode() INode
 
-	Kind() string
-
 	Propagate() bool
 
 	GetChild(id string) IComponent
@@ -122,6 +123,10 @@ type IComponent interface {
 // IComponentFactory defines methods for creating and managing various types of components in an emulation system.
 type IComponentFactory interface {
 	Create(parent IComponent, id string, instance int) (IComponent, error)
+}
+
+func IdInternalComponent(id string, instance int) string {
+	return id + ":" + strconv.Itoa(instance)
 }
 
 func ComponentValidate(component IComponent, err error) error {
