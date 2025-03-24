@@ -249,6 +249,8 @@ func (m *Board) mountConfigDisk(cfg *config.Config) error {
 	return nil
 }
 
+// rebuildEmulation constructs a sequence of emulation functions for hardware components requiring emulation.
+// Returns an error if the emulation sequence is incomplete.
 func (m *Board) rebuildEmulation(components map[string]references.IComponent) ([]func(), error) {
 	var emulation []func()
 	for _, x := range _hardwareSequence {

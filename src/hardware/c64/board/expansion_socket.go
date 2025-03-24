@@ -57,6 +57,7 @@ func (s *ExpansionSocket) Setup(c map[string]references.IComponent, _ *config.Co
 	return nil
 }
 
+// Connect establishes and finalizes the connections required between the ExpansionSocket and its associated components.
 func (w *ExpansionSocket) Connect() error {
 	return nil
 }

@@ -5,6 +5,11 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+// IVICSocketConnection defines an interface for responding to various triggers in the VIC socket connection lifecycle.
+// LastCycleTrigger is invoked on the completion of the last cycle.
+// VBlankTrigger handles vertical blanking interval initiation.
+// RDYLowTrigger sets the RDY (Ready) line to low or high based on the boolean value.
+// AECLowTrigger sets the AEC (Address Enable) line to low or high based on the boolean value.
 type IVICSocketConnection interface {
 	LastCycleTrigger()
 
@@ -15,7 +20,9 @@ type IVICSocketConnection interface {
 	AECLowTrigger(v bool)
 }
 
-// VICSocket represents a virtual interface connector socket with a reference to a board and an interrupt identifier.
+// VICSocket encapsulates the connections and components required for VIC chip socket emulation in the C64 system.
+// It integrates with display, quartz clocking, PLA memory, and programmable interrupt controller components.
+// Provides methods and triggers for managing display rendering and interaction with the C64 hardware components.
 type VICSocket struct {
 	references.IVIC
 	connections IVICSocketConnection
@@ -26,7 +33,7 @@ type VICSocket struct {
 	intrId      uint32
 }
 
-// NewVICSocket creates and returns a new instance of the VICSocket struct.
+// NewVICSocket creates and initializes a new VICSocket instance, setting up necessary connections for video interface control.
 func NewVICSocket(connections IVICSocketConnection) *VICSocket {
 	return &VICSocket{
 		IVIC:        nil,
@@ -39,16 +46,17 @@ func NewVICSocket(connections IVICSocketConnection) *VICSocket {
 	}
 }
 
+// SetDisplayBuffer sets the display buffer to the provided IDisplayBuffer instance.
 func (v *VICSocket) SetDisplayBuffer(db references.IDisplayBuffer) {
 	v.db = db
 }
 
-// GetDisplayBuffer returns the IDisplayBuffer instance associated with the VICSocket's board.
+// GetDisplayBuffer retrieves the currently associated display buffer instance from the VIC socket.
 func (v *VICSocket) GetDisplayBuffer() references.IDisplayBuffer {
 	return v.db
 }
 
-// Setup initializes the VICSocket with the given board and interrupt ID.
+// Setup initializes the VICSocket by resolving its dependencies and calling Setup on the IVIC component.
 func (v *VICSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	if v.IVIC, err = references.ComponentsToIVIC(c, 0); err != nil {
@@ -69,6 +77,7 @@ func (v *VICSocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	return nil
 }
 
+// Connect establishes a connection for the VIC socket by invoking the underlying IVIC's Connect method.
 func (v *VICSocket) Connect() error {
 	if err := v.IVIC.Connect(); err != nil {
 		return err
@@ -76,42 +85,42 @@ func (v *VICSocket) Connect() error {
 	return nil
 }
 
-// Cycle retrieves the current cycle count from the associated Quartz scheduler.
+// Cycle retrieves the current clock cycle count from the associated quartz instance.
 func (v *VICSocket) Cycle() uint64 {
 	return v.quartz.Cycle()
 }
 
-// GetBanks returns an implementation of the mos6569.IVICBanks interface, which provides access to memory handling operations.
+// GetBanks returns the IVICBanks interface, allowing access to methods for reading from VIC memory regions.
 func (v *VICSocket) GetBanks() references.IVICBanks {
 	return v.pla
 }
 
-// IRQTrigger signals an interrupt request by invoking the IRQ trigger mechanism on the associated board slot.
+// IRQTrigger triggers an interrupt request by invoking the PIC's TriggerIRQ method with the stored interrupt ID.
 func (v *VICSocket) IRQTrigger() {
 	v.pic.TriggerIRQ(v.intrId)
 }
 
-// IRQClear clears the interrupt request for the associated slot identified by the intrId of the VICSocket.
+// IRQClear clears any pending interrupt request associated with the VIC by invoking ClearIRQ on the programmable interrupt controller.
 func (v *VICSocket) IRQClear() {
 	v.pic.ClearIRQ(v.intrId)
 }
 
-// BALow sets the BA (Bus Available) line low or high based on the provided boolean value.
+// BALow toggles the BA (Bus Available) line state by triggering the associated RDYLow event with the given boolean value.
 func (v *VICSocket) BALow(d bool) {
 	v.connections.RDYLowTrigger(d)
 }
 
-// AECLow controls the state of the Address Enable Control (AEC) line. It sets the AEC signal to low if d is true.
+// AECLow sets the AEC (Address Enable) line state to low or high based on the provided boolean parameter.
 func (v *VICSocket) AECLow(d bool) {
 	v.connections.AECLowTrigger(d)
 }
 
-// LastCycle triggers the last cycle slot operation on the VIC through the connected board.
+// LastCycle triggers the LastCycle logic on the connected VICSocketConnection implementation.
 func (v *VICSocket) LastCycle() {
 	v.connections.LastCycleTrigger()
 }
 
-// VBlank handles the vertical blanking phase by triggering the corresponding slot on the associated board instance.
+// VBlank triggers the vertical blanking interval event by invoking the VBlankTrigger method on the connected interface.
 func (v *VICSocket) VBlank() {
 	v.connections.VBlankTrigger()
 }

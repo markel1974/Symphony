@@ -51,6 +51,7 @@ func (w *CIA2Socket) Setup(c map[string]references.IComponent, cfg *config.Confi
 	return nil
 }
 
+// Connect initializes and establishes a connection using the ICIA interface. Returns an error if the operation fails.
 func (w *CIA2Socket) Connect() error {
 	if err := w.ICIA.Connect(); err != nil {
 		return err

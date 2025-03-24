@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// PLASocket represents a socket that integrates a programmable logic array (PLA) into the board for emulation purposes.
-// It combines board interactions and the IPLAc1541 interface for managing the logic needed in emulation scenarios.
+// PLASocket represents a hardware abstraction for the Programmable Logic Array (PLA) in a 1541 drive emulation.
+// It integrates VIA components, ROM loading, and configuration management for disk drive emulation functionality.
 type PLASocket struct {
 	references.IPLAc1541
 	via1 references.IVIA
@@ -15,7 +15,7 @@ type PLASocket struct {
 	cfg  *config.Config
 }
 
-// NewPLASocket creates and returns a new instance of PLASocket with its fields initialized to nil.
+// NewPLASocket creates and returns a new instance of PLASocket with initial fields set to nil.
 func NewPLASocket() *PLASocket {
 	c := &PLASocket{
 		IPLAc1541: nil,
@@ -23,8 +23,7 @@ func NewPLASocket() *PLASocket {
 	return c
 }
 
-// Setup establishes links between the PLASocket and specified components, initializing them using the provided configuration.
-// It sets up the PLA logic by associating it with VIA components, the ROM loader, and the configuration data.
+// Setup initializes the PLASocket by resolving its components from the given map and applying configuration settings.
 func (w *PLASocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	w.IPLAc1541, err = references.ComponentsToIPLAc1541(c, 0)
@@ -49,6 +48,7 @@ func (w *PLASocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	return nil
 }
 
+// Connect establishes the necessary connections between the PLA, VIA components, and ROM loader for the PLASocket.
 func (w *PLASocket) Connect() error {
 	if err := w.IPLAc1541.Connect(w.via1, w.via2, w.roms); err != nil {
 		return err

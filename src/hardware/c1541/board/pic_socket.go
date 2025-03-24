@@ -5,21 +5,20 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// PICSocket is a type that embeds the IPIC6510 interface for interfacing with a programmable interrupt controller.
+// PICSocket is a struct that provides integration between a programmable interrupt controller (PIC) and a quartz clock.
 type PICSocket struct {
 	references.IPIC6510
 	quartz references.IQuartz
 }
 
-// NewPICSocket creates and initializes a new instance of PICSocket with a nil IPIC6510 interface.
+// NewPICSocket creates and returns a new instance of PICSocket with uninitialized dependencies.
 func NewPICSocket() *PICSocket {
 	return &PICSocket{
 		IPIC6510: nil,
 	}
 }
 
-// Setup sets up the programmable interrupt controller (PIC) with the provided quartz instance and assigns it to the socket.
-// Returns an error if the setup process fails.
+// Setup initializes the PICSocket by configuring its dependencies and setting up the IPIC6510 component with the provided config.
 func (s *PICSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	s.IPIC6510, err = references.ComponentsToIPIC6510(c, 0)
@@ -36,6 +35,7 @@ func (s *PICSocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	return nil
 }
 
+// Connect establishes a connection between the PIC and the specified quartz instance. Returns an error if the connection fails.
 func (s *PICSocket) Connect() error {
 	if err := s.IPIC6510.Connect(s.quartz); err != nil {
 		return err

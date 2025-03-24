@@ -5,18 +5,21 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+// CartridgeSocket represents a socket for handling interactions with a cartridge, expansion, and associated configuration.
 type CartridgeSocket struct {
 	references.ICartridgeManagerC64
 	expansion references.IExpansionC64
 	cfg       *config.Config
 }
 
+// NewCartridgeSocket creates and returns a new CartridgeSocket initialized with the provided expansion interface.
 func NewCartridgeSocket(expansion references.IExpansionC64) *CartridgeSocket {
 	return &CartridgeSocket{
 		expansion: expansion,
 	}
 }
 
+// Setup initializes the CartridgeSocket and its associated ICartridgeManagerC64 instance with provided components and config.
 func (cs *CartridgeSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	if cs.ICartridgeManagerC64, err = references.ComponentsToICartridgeManagerC64(c, 0); err != nil {
@@ -29,6 +32,7 @@ func (cs *CartridgeSocket) Setup(c map[string]references.IComponent, cfg *config
 	return nil
 }
 
+// Connect establishes a connection between the cartridge manager and the expansion.socket. Returns an error if it fails.
 func (cs *CartridgeSocket) Connect() error {
 	if err := cs.ICartridgeManagerC64.Connect(cs.expansion); err != nil {
 		return err

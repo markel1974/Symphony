@@ -93,6 +93,7 @@ func (w *CIA1Socket) Setup(c map[string]references.IComponent, cfg *config.Confi
 	return nil
 }
 
+// Connect establishes the connection for the CIA1Socket by invoking the Connect method of the underlying ICIA interface.
 func (w *CIA1Socket) Connect() error {
 	if err := w.ICIA.Connect(); err != nil {
 		return nil

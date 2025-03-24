@@ -40,6 +40,7 @@ func (w *SIDSocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	return nil
 }
 
+// Connect establishes a connection to the underlying ISID device using the configured audio render instance.
 func (w *SIDSocket) Connect() error {
 	if err := w.ISID.Connect(w.player); err != nil {
 		return err

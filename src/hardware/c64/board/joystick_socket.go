@@ -5,13 +5,13 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// JoystickSocket is a struct that embeds references.IJoystick to facilitate joystick operations and interactions.
+// JoystickSocket represents a joystick interface socket that integrates joystick functionality with a specific instance ID.
 type JoystickSocket struct {
 	references.IJoystick
 	instance int
 }
 
-// NewJoystickSocket creates and returns a new instance of JoystickSocket with no IJoystick implementation assigned.
+// NewJoystickSocket creates and returns a new JoystickSocket instance with a specified joystick reference and instance number.
 func NewJoystickSocket(instance int) *JoystickSocket {
 	c := &JoystickSocket{
 		IJoystick: nil,
@@ -20,7 +20,7 @@ func NewJoystickSocket(instance int) *JoystickSocket {
 	return c
 }
 
-// Setup assigns the given IJoystick object to the JoystickSocket and prepares it for further operations.
+// Setup initializes the JoystickSocket by resolving its IJoystick component and calling its Setup method with configuration.
 func (w *JoystickSocket) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	if w.IJoystick, err = references.ComponentsToIJoystick(cc, w.instance); err != nil {
@@ -32,6 +32,7 @@ func (w *JoystickSocket) Setup(cc map[string]references.IComponent, cfg *config.
 	return nil
 }
 
+// Connect establishes a connection using the underlying IJoystick interface. It returns an error if the connection fails.
 func (w *JoystickSocket) Connect() error {
 	if err := w.IJoystick.Connect(); err != nil {
 		return err

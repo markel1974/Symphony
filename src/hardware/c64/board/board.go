@@ -404,7 +404,7 @@ func (s *Board) LedTrigger(state uint32) {
 	s.ledSignal.Emit(state)
 }
 
-// startPR
+// startPRG initializes and loads a PRG file into the Board using the specified path, returning an error if loading fails.
 func (s *Board) startPRG(prgPath string) error {
 	s.prg = prg.NewPRG(s.plaSocket, s.keysSocket)
 	if err := s.prg.Load(prgPath); err != nil {
@@ -414,6 +414,8 @@ func (s *Board) startPRG(prgPath string) error {
 	return nil
 }
 
+// rebuildEmulation constructs a sequence of emulation functions based on the given components and hardware sequence.
+// Returns the constructed sequence of emulation functions or an error if the sequence is incomplete.
 func (s *Board) rebuildEmulation(components map[string]references.IComponent) ([]func(), error) {
 	var emulation []func()
 	for _, x := range _hardwareSequence {
