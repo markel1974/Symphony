@@ -71,7 +71,12 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	return b
 }
 
-func (b *PLA) Setup(vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64, cfg *config.Config) error {
+func (b *PLA) Setup(_ references.IPlaC64Socket, cfg *config.Config) error {
+	b.cfg = cfg
+	return nil
+}
+
+func (b *PLA) Connect(vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64) error {
 	b.ports = NewPorts(b.GetFactory(), b, 0)
 	b.vic = vic
 	b.sid = sid
@@ -79,8 +84,6 @@ func (b *PLA) Setup(vic references.IVIC, sid references.ISID, cia1 references.IC
 	b.cia2 = cia2
 	b.cartMan = cartMan
 	b.roms = roms
-
-	b.cfg = cfg
 	b.bankWrite[0x0] = b.ramWrite0x0000
 	b.bankWrite[0x1] = b.ramWrite0x1000
 	b.bankWrite[0x2] = b.ramWrite0x2000

@@ -2,10 +2,14 @@ package references
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIQuartz(_ IQuartz, instance int) string {
 	return IdInternalComponent("IQuartz", instance)
+}
+
+type IQuartzSocket interface {
 }
 
 // IQuartz defines an interface for managing clock cycles, alarms, and time conversion in an emulation environment.
@@ -15,7 +19,9 @@ func IdIQuartz(_ IQuartz, instance int) string {
 // ToUSec converts a given clock cycle count to microseconds.
 // NewAlarm creates a new alarm instance with a specified name and callback function.
 type IQuartz interface {
-	Setup() error
+	Setup(socket IQuartzSocket, cfg *config.Config) error
+
+	Connect() error
 
 	Cycle() uint64
 

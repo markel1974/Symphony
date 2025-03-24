@@ -7,13 +7,13 @@ import (
 
 type CartridgeSocket struct {
 	references.ICartridgeManagerC64
-	exp references.IExpansionC64
-	cfg *config.Config
+	expansion references.IExpansionC64
+	cfg       *config.Config
 }
 
-func NewCartridgeSocket(exp references.IExpansionC64) *CartridgeSocket {
+func NewCartridgeSocket(expansion references.IExpansionC64) *CartridgeSocket {
 	return &CartridgeSocket{
-		exp: exp,
+		expansion: expansion,
 	}
 }
 
@@ -23,12 +23,15 @@ func (cs *CartridgeSocket) Setup(c map[string]references.IComponent, cfg *config
 		return err
 	}
 	cs.cfg = cfg
-	if err = cs.ICartridgeManagerC64.Setup(cs.exp, cfg); err != nil {
+	if err = cs.ICartridgeManagerC64.Setup(cs, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (cs *CartridgeSocket) Connect() error {
+	if err := cs.ICartridgeManagerC64.Connect(cs.expansion); err != nil {
+		return err
+	}
 	return nil
 }

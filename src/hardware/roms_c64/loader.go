@@ -24,8 +24,12 @@ func NewRomLoader(parent references.IComponent, factory references.IComponentFac
 }
 
 // Setup initializes the RomLoader with the provided configuration. Returns an error if the setup fails.
-func (r *RomLoader) Setup(cfg *config.Config) error {
+func (r *RomLoader) Setup(_ references.IROMLoaderSocket, cfg *config.Config) error {
 	r.cfg = cfg
+	return nil
+}
+
+func (r *RomLoader) Connect() error {
 	return nil
 }
 

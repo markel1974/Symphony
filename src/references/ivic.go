@@ -24,6 +24,8 @@ func IdIVIC(_ IVIC, instance int) string {
 type IVIC interface {
 	Setup(socket IVICSocket, cfg *config.Config) error
 
+	Connect() error
+
 	Reset()
 
 	Emulate()

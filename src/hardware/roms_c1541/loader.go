@@ -24,8 +24,12 @@ func NewRomLoader(parent references.IComponent, factory references.IComponentFac
 }
 
 // Setup configures the RomLoader with the provided configuration instance and initializes its internal settings.
-func (r *RomLoader) Setup(cfg *config.Config) error {
+func (r *RomLoader) Setup(_ references.IROMLoaderC1541Socket, cfg *config.Config) error {
 	r.cfg = cfg
+	return nil
+}
+
+func (r *RomLoader) Connect() error {
 	return nil
 }
 

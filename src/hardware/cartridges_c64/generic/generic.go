@@ -3,6 +3,7 @@ package generic
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -49,7 +50,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, ins
 }
 
 // Setup initializes the Generic cartridge by setting the expansion and loading data using the provided CRTLoader.
-func (c *Generic) Setup(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+func (c *Generic) Setup(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64, _ *config.Config) error {
 	c.expansion = expansion
 	c.loaderId = ldr.GetId()
 	if loader.Type(ldr.GetType()) == loader.TypeCrt {

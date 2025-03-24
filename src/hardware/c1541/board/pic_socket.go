@@ -20,7 +20,7 @@ func NewPICSocket() *PICSocket {
 
 // Setup sets up the programmable interrupt controller (PIC) with the provided quartz instance and assigns it to the socket.
 // Returns an error if the setup process fails.
-func (s *PICSocket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+func (s *PICSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	s.IPIC6510, err = references.ComponentsToIPIC6510(c, 0)
 	if err != nil {
@@ -30,12 +30,15 @@ func (s *PICSocket) Setup(c map[string]references.IComponent, _ *config.Config) 
 	if err != nil {
 		return err
 	}
-	if err = s.IPIC6510.Setup(s.quartz); err != nil {
+	if err = s.IPIC6510.Setup(s, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *PICSocket) Connect() error {
+	if err := s.IPIC6510.Connect(s.quartz); err != nil {
+		return err
+	}
 	return nil
 }

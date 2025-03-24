@@ -120,9 +120,9 @@ func (s *Board) Setup(db references.IDisplayBuffer, p references.IAudioRender, c
 	//s.sidSocket.Setup(s)
 	s.cia1Socket.Setup(s, intrIrqCia1Bit)
 	s.cia2Socket.Setup(s, intrIrqCia2Bit)
-	if err := s.cartMan.Setup(s.expansion, cfg); err != nil {
-		return err
-	}
+	//if err := s.cartMan.Setup(s.expansion, cfg); err != nil {
+	//	return err
+	//}
 
 	s.reset()
 

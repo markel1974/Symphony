@@ -21,6 +21,8 @@ type SID struct {
 	cfg          *config.Config
 	audioBuilder *AudioBuilder
 	reflect      *SidReflect
+	fragFreq     int
+	rasters      int
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
@@ -38,11 +40,17 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the SID instance with the provided socket, configuration, fragment frequency, and raster count.
-func (sid *SID) Setup(socket references.ISIDSocket, player references.IAudioRender, fragFreq int, rasters int, cfg *config.Config) error {
+func (sid *SID) Setup(socket references.ISIDSocket, cfg *config.Config, fragFreq int, rasters int) error {
 	sid.socket = socket
-	sid.audioBuilder = NewAudioBuilder(player, true, fragFreq, rasters)
 	sid.cfg = cfg
+	sid.fragFreq = fragFreq
+	sid.rasters = rasters
 	sid.cfg.Bind(sid.onConfigChanged)
+	return nil
+}
+
+func (sid *SID) Connect(player references.IAudioRender) error {
+	sid.audioBuilder = NewAudioBuilder(player, true, sid.fragFreq, sid.rasters)
 	return nil
 }
 

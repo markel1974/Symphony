@@ -43,11 +43,14 @@ func (w *PLASocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	if err != nil {
 		return err
 	}
+	if err = w.IPLAc1541.Setup(w, w.cfg); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (w *PLASocket) Connect() error {
-	if err := w.IPLAc1541.Setup(w.via1, w.via2, w.roms, w.cfg); err != nil {
+	if err := w.IPLAc1541.Connect(w.via1, w.via2, w.roms); err != nil {
 		return err
 	}
 	return nil

@@ -14,7 +14,6 @@ type PLASocket struct {
 	cia2    references.ICIA
 	cartMan references.ICartridgeManagerC64
 	roms    references.IROMLoaderC64
-	cfg     *config.Config
 }
 
 // NewPLASocket creates a new instance of PLASocket with default uninitialized board and PLA components.
@@ -27,7 +26,6 @@ func NewPLASocket() *PLASocket {
 
 // Setup initializes the PLASocket with the provided board, PLA, and associated components like VIC, SID, CIAs, and cartridge manager.
 func (w *PLASocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
-	w.cfg = cfg
 	var err error
 	if w.IPlaC64, err = references.ComponentsToIPLAc64(c, 0); err != nil {
 		return err
@@ -50,11 +48,14 @@ func (w *PLASocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	if w.roms, err = references.ComponentsToIROMLoaderC64(c, 0); err != nil {
 		return err
 	}
+	if err = w.IPlaC64.Setup(w, cfg); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (w *PLASocket) Connect() error {
-	if err := w.IPlaC64.Setup(w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.roms, w.cfg); err != nil {
+	if err := w.IPlaC64.Connect(w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.roms); err != nil {
 		return err
 	}
 	return nil

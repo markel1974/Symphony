@@ -30,7 +30,7 @@ func NewCIA2Socket() *CIA2Socket {
 }
 
 // Setup initializes the CIA2Socket instance with the provided CIA, connections, and IEC interface, and sets up the CIA.
-func (w *CIA2Socket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+func (w *CIA2Socket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	w.ICIA, err = references.ComponentsToICIA(c, 1)
 	if err != nil {
@@ -45,13 +45,16 @@ func (w *CIA2Socket) Setup(c map[string]references.IComponent, _ *config.Config)
 		return err
 	}
 	w.iec, err = references.ComponentsToIEC(c, 0)
-	if err = w.ICIA.Setup(w); err != nil {
+	if err = w.ICIA.Setup(w, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (w *CIA2Socket) Connect() error {
+	if err := w.ICIA.Connect(); err != nil {
+		return err
+	}
 	return nil
 }
 

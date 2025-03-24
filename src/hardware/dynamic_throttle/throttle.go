@@ -2,6 +2,7 @@ package dynamic_throttle
 
 import (
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"time"
 )
@@ -29,8 +30,12 @@ func NewDynamicThrottle(parent references.IComponent, factory references.ICompon
 }
 
 // Setup initializes the DynamicThrottle by setting the desired frame interval in milliseconds.
-func (s *DynamicThrottle) Setup(frameInterval int64) error {
+func (s *DynamicThrottle) Setup(_ references.IThrottleSocket, _ *config.Config, frameInterval int64) error {
 	s.frameInterval = frameInterval
+	return nil
+}
+
+func (s *DynamicThrottle) Connect() error {
 	return nil
 }
 

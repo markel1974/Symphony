@@ -20,12 +20,15 @@ func (s *RomLoaderSocket) Setup(c map[string]references.IComponent, cfg *config.
 	if s.IROMLoaderC64, err = references.ComponentsToIROMLoaderC64(c, 0); err != nil {
 		return err
 	}
-	if err = s.IROMLoaderC64.Setup(cfg); err != nil {
+	if err = s.IROMLoaderC64.Setup(s, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *RomLoaderSocket) Connect() error {
+	if err := s.IROMLoaderC64.Connect(); err != nil {
+		return err
+	}
 	return nil
 }

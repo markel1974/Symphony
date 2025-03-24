@@ -2,6 +2,7 @@ package references
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/config"
 )
 
 // ICIASocket defines an interface for interacting with CIA I/O ports and triggering IRQ events.
@@ -43,7 +44,9 @@ func IdICIA(_ ICIA, instance int) string {
 // WriteRegister writes a byte of data to the CIA at the specified register address.
 // ReadRegister reads a byte of data from the CIA at the specified register address.
 type ICIA interface {
-	Setup(conn ICIASocket) error
+	Setup(conn ICIASocket, cfg *config.Config) error
+
+	Connect() error
 
 	Reset()
 

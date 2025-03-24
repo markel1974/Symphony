@@ -10,6 +10,9 @@ func IdIIec(_ IIec, instance int) string {
 	return IdInternalComponent("IIec", instance)
 }
 
+type IIecSocket interface {
+}
+
 // IIec defines an interface for managing communication between a CPU and peripherals in an emulated environment.
 // Setup initializes the IIec instance with provided quartz and configuration objects.
 // AddPeripheral adds a new peripheral device with specified parameters, associating it with a unique device ID.
@@ -22,7 +25,9 @@ func IdIIec(_ IIec, instance int) string {
 // PeripheralWrite writes data from the CPU to a specific peripheral identified by its device number.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIec interface {
-	Setup(q IComponent, cfg *config.Config) error
+	Setup(socket IIecSocket, cfg *config.Config) error
+
+	Connect(quartz IComponent) error
 
 	AddPeripheral(q IComponent, cfg *config.Config, kind string, deviceId uint8) error
 

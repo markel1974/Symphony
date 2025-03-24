@@ -25,7 +25,7 @@ type Manager struct {
 	*component.BaseComponent
 	idx                 int
 	board               references.IExpansionC64
-	prefs               *config.Config
+	cfg                 *config.Config
 	carts               []references.ICartridgeC64
 	emulate             []references.ICartridgeC64
 	registerHardware    map[string]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64
@@ -40,7 +40,7 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 		BaseComponent:       component.NewBaseComponent(),
 		idx:                 0,
 		board:               nil,
-		prefs:               nil,
+		cfg:                 nil,
 		carts:               nil,
 		registerHardware:    make(map[string]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64),
 		registerType:        make(map[int]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64),
@@ -52,9 +52,8 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 }
 
 // Setup initializes the Manager by setting up the expansion board, configuration preferences, and cartridge hardware mappings.
-func (f *Manager) Setup(board references.IExpansionC64, prefs *config.Config) error {
-	f.board = board
-	f.prefs = prefs
+func (f *Manager) Setup(_ references.ICartridgeManagerC64Socket, cfg *config.Config) error {
+	f.cfg = cfg
 	f.registerHardware[external_cpu.Id] = external_cpu.New
 	f.registerHardware[reu.Id128K] = reu.New128K
 	f.registerHardware[reu.Id256K] = reu.New256K
@@ -75,6 +74,11 @@ func (f *Manager) Setup(board references.IExpansionC64, prefs *config.Config) er
 	f.registerSize[0x4000] = generic.New //cartridge16k.New
 	f.registerSizeDefault = ocean.New
 
+	return nil
+}
+
+func (s *Manager) Connect(board references.IExpansionC64) error {
+	s.board = board
 	return nil
 }
 
@@ -235,7 +239,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	cart := factory(f, f.GetFactory(), f.idx)
 	f.idx++
 	f.carts = append(f.carts, cart)
-	if err := cart.Setup(f.board, ldr); err != nil {
+	if err := cart.Setup(f.board, ldr, f.cfg); err != nil {
 		return "", err
 	}
 	if cart.EmulationRequired() {

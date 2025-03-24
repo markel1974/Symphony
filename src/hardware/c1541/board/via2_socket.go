@@ -66,19 +66,22 @@ func NewVIA2Socket(connections IVIA2SocketConnections, mec *mechanic.Mechanic) *
 }
 
 // Setup initializes the VIA2Socket instance with the provided IVIA, connections, and Mechanic, and sets up the IVIA.
-func (v *VIA2Socket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+func (v *VIA2Socket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	via2, err := references.ComponentsToIVIA(c, 1)
 	if err != nil {
 		return err
 	}
 	v.IVIA = via2
-	if err = v.IVIA.Setup(v); err != nil {
+	if err = v.IVIA.Setup(v, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (v *VIA2Socket) Connect() error {
+	if err := v.IVIA.Connect(); err != nil {
+		return err
+	}
 	return nil
 }
 

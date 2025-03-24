@@ -1,9 +1,15 @@
 package references
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/config"
+)
 
 func IdIJoystick(_ IJoystick, instance int) string {
 	return IdInternalComponent("IJoystick", instance)
+}
+
+type IJoystickSocket interface {
 }
 
 // IJoystick defines an interface for joystick operations including updates, resets, emulation, movement, key setting, and polling.
@@ -14,7 +20,9 @@ func IdIJoystick(_ IJoystick, instance int) string {
 // SetKey adjusts the joystick state based on key presses or releases with a specific joystick ID.
 // Poll retrieves the next joystick state and its validity, indicating if data is available.
 type IJoystick interface {
-	Setup() error
+	Setup(s IJoystickSocket, cfg *config.Config) error
+
+	Connect() error
 
 	Update(min uint16, max uint16, sensitivity uint16)
 

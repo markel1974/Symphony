@@ -9,11 +9,16 @@ func IdIROMLoaderC1541(_ IROMLoaderC1541, instance int) string {
 	return IdInternalComponent("IROMLoaderC1541", instance)
 }
 
+type IROMLoaderC1541Socket interface {
+}
+
 // IROMLoaderC1541 is an interface for handling ROM loading functionality specific to the C1541 drive emulation.
 // Setup configures the ROM loader using the provided configuration.
 // Load retrieves the raw byte data of the ROM.
 type IROMLoaderC1541 interface {
-	Setup(cfg *config.Config) error
+	Setup(rom IROMLoaderC1541Socket, cfg *config.Config) error
+
+	Connect() error
 
 	Load() []byte
 }

@@ -9,6 +9,9 @@ func IdIPlaC64(_ IPlaC64, instance int) string {
 	return IdInternalComponent("IPlaC64", instance)
 }
 
+type IPlaC64Socket interface {
+}
+
 // IPlaC64 defines the interface for a Programmable Logic Array implementation specifically for the C64 system.
 // Setup initializes the PLA with required components like VIC, SID, CIAs, cartridge manager, ROM loader, and configuration.
 // Reset reinitializes the state of the PLA to default values.
@@ -24,7 +27,9 @@ func IdIPlaC64(_ IPlaC64, instance int) string {
 // SetWriteTrigger associates a callback function to trigger on writes at the specified 16-bit address.
 // RemoveRamTrigger removes a write trigger callback associated with a 16-bit address by its identifier.
 type IPlaC64 interface {
-	Setup(vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, roms IROMLoaderC64, cfg *config.Config) error
+	Setup(socket IPlaC64Socket, cfg *config.Config) error
+
+	Connect(vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, roms IROMLoaderC64) error
 
 	Reset()
 

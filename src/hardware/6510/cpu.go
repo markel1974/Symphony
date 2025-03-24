@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/conversion"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -53,9 +54,13 @@ func NewCPU(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the CPU by configuring its PIC and banks from the given socket.
-func (cpu *CPU) Setup(socket references.I6510Socket) error {
+func (cpu *CPU) Setup(socket references.I6510Socket, _ *config.Config) error {
 	cpu.pic = socket.GetPic()
 	cpu.banks = socket.GetBanks()
+	return nil
+}
+
+func (cpu *CPU) Connect() error {
 	return nil
 }
 

@@ -186,6 +186,10 @@ func (vic *VIC) Setup(socket references.IVICSocket, cfg *config.Config) error {
 	return nil
 }
 
+func (vic *VIC) Connect() error {
+	return nil
+}
+
 // Reset reinitializes the VIC instance to its default state by resetting its internal readiness flag.
 func (vic *VIC) Reset() {
 	//vic.core.ready = false

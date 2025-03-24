@@ -2,6 +2,7 @@ package references
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/config"
 )
 
 // opFlagIrqDisabled represents the flag for interrupt requests being disabled.
@@ -17,6 +18,9 @@ func IdIPIC6510(_ IPIC6510, instance int) string {
 	return IdInternalComponent("IPIC6510", instance)
 }
 
+type IPIC6510Socket interface {
+}
+
 // IPIC6510 provides an interface for managing the programmable interrupt controller (PIC) in a 6510 CPU simulation.
 // Reset reinitializes the state of the PIC to default values.
 // VerifyIrq determines and returns the type of interrupt request (IRQ) based on specified input conditions.
@@ -25,7 +29,9 @@ func IdIPIC6510(_ IPIC6510, instance int) string {
 type IPIC6510 interface {
 	Reset()
 
-	Setup(IQuartz) error
+	Setup(socket IPIC6510Socket, cfg *config.Config) error
+
+	Connect(quartz IQuartz) error
 
 	ClearIRQ(uint32)
 

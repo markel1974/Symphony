@@ -21,17 +21,20 @@ func NewJoystickSocket(instance int) *JoystickSocket {
 }
 
 // Setup assigns the given IJoystick object to the JoystickSocket and prepares it for further operations.
-func (w *JoystickSocket) Setup(cc map[string]references.IComponent, _ *config.Config) error {
+func (w *JoystickSocket) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	if w.IJoystick, err = references.ComponentsToIJoystick(cc, w.instance); err != nil {
 		return err
 	}
-	if err = w.IJoystick.Setup(); err != nil {
+	if err = w.IJoystick.Setup(w, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (w *JoystickSocket) Connect() error {
+	if err := w.IJoystick.Connect(); err != nil {
+		return err
+	}
 	return nil
 }

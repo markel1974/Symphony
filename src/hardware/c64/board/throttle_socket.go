@@ -17,17 +17,20 @@ func NewThrottleSocket(frameInterval int64) *ThrottleSocket {
 	}
 }
 
-func (s *ThrottleSocket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+func (s *ThrottleSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	if s.IThrottle, err = references.ComponentsToIThrottle(c, 0); err != nil {
 		return err
 	}
-	if err = s.IThrottle.Setup(s.frameInterval); err != nil {
+	if err = s.IThrottle.Setup(s, cfg, s.frameInterval); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *ThrottleSocket) Connect() error {
+	if err := s.IThrottle.Connect(); err != nil {
+		return err
+	}
 	return nil
 }

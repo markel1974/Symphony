@@ -20,17 +20,20 @@ func NewKeyboardSocket() *KeyboardSocket {
 }
 
 // Setup assigns the provided IKeyboard interface implementation to the KeyboardSocket and initializes it.
-func (w *KeyboardSocket) Setup(cc map[string]references.IComponent, _ *config.Config) error {
+func (w *KeyboardSocket) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	if w.IKeyboard, err = references.ComponentsToIKeyboard(cc, 0); err != nil {
 		return err
 	}
-	if err = w.IKeyboard.Setup(); err != nil {
+	if err = w.IKeyboard.Setup(w, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (w *KeyboardSocket) Connect() error {
+	if err := w.IKeyboard.Connect(); err != nil {
+		return err
+	}
 	return nil
 }

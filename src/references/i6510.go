@@ -2,6 +2,7 @@ package references
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/config"
 )
 
 // I6510Banks represents an interface for managing and accessing memory banks in a system.
@@ -29,7 +30,9 @@ type I6510 interface {
 
 	Emulate()
 
-	Setup(socket I6510Socket) error
+	Setup(socket I6510Socket, cfg *config.Config) error
+
+	Connect() error
 
 	SetRDYLow(rdyLow bool)
 

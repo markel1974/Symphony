@@ -61,7 +61,7 @@ func NewCIA1Socket() *CIA1Socket {
 
 // Setup initializes the CIA1Socket with the provided CIA instance, connections, keyboard, and joystick references.
 // It sets up the CIA via the Setup method and returns any errors encountered during initialization.
-func (w *CIA1Socket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+func (w *CIA1Socket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	w.ICIA, err = references.ComponentsToICIA(c, 0)
 	if err != nil {
@@ -87,13 +87,16 @@ func (w *CIA1Socket) Setup(c map[string]references.IComponent, _ *config.Config)
 	if err != nil {
 		return err
 	}
-	if err = w.ICIA.Setup(w); err != nil {
+	if err = w.ICIA.Setup(w, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (w *CIA1Socket) Connect() error {
+	if err := w.ICIA.Connect(); err != nil {
+		return nil
+	}
 	return nil
 }
 

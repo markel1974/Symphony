@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/filler"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash/flash"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash/snapshot"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
@@ -77,7 +78,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 }
 
 // Setup initializes the CartridgeEasyFlash instance with the provided expansion and CRT loader data.
-func (c *CartridgeEasyFlash) Setup(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeEasyFlash) Setup(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64, _ *config.Config) error {
 	var rawCart []byte
 	c.expansion = expansion
 	c.loaderId = ldr.GetId()

@@ -15,17 +15,20 @@ func NewQuartzSocket() *QuartzSocket {
 	}
 }
 
-func (s *QuartzSocket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+func (s *QuartzSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	if s.IQuartz, err = references.ComponentsToIQuartz(c, 0); err != nil {
 		return err
 	}
-	if err = s.IQuartz.Setup(); err != nil {
+	if err = s.IQuartz.Setup(s, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *QuartzSocket) Connect() error {
+	if err := s.IQuartz.Connect(); err != nil {
+		return err
+	}
 	return nil
 }

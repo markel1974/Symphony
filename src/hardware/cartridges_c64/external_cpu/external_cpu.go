@@ -2,6 +2,7 @@ package external_cpu
 
 import (
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/6510"
 	"github.com/markel1974/c64emu/src/hardware/pic_6510"
 	"github.com/markel1974/c64emu/src/hardware/quartz"
@@ -44,13 +45,16 @@ func (s *ExternalCPU) EmulationRequired() bool {
 }
 
 // Setup initializes the ExternalCPU with the provided expansion board and CRT loader, configuring its internal components.
-func (s *ExternalCPU) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+func (s *ExternalCPU) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64, cfg *config.Config) error {
 	s.board = board
 	s.loaderId = ldr.GetId()
 	s.board.SetDMALow(true)
 	s.quartz = quartz.NewQuartz(s, s.GetFactory(), 0)
 	s.pic = pic_6510.NewPIC(s, s.GetFactory(), 0)
-	if err := s.pic.Setup(s.quartz); err != nil {
+	if err := s.pic.Setup(s, cfg); err != nil {
+		return err
+	}
+	if err := s.pic.Connect(s.quartz); err != nil {
 		return err
 	}
 	s.cpuSocket = NewCPUSocket()
@@ -58,7 +62,7 @@ func (s *ExternalCPU) Setup(board references.IExpansionC64, ldr references.ICart
 	if err := s.cpuSocket.Setup(s); err != nil {
 		return err
 	}
-	if err := s.cpu.Setup(s.cpuSocket); err != nil {
+	if err := s.cpu.Setup(s.cpuSocket, cfg); err != nil {
 		return err
 	}
 	s.board.IRQTriggerBind(s.pic.TriggerIRQ)

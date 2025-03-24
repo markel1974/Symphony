@@ -1,6 +1,9 @@
 package references
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/config"
+)
 
 // IVIASocket provides methods for interacting with a VIA socket, including reading, writing, and signaling operations.
 // ReadPRA reads a value from Peripheral Register A (PRA) using a specified mask and shift.
@@ -43,7 +46,9 @@ func IdIVIA(_ IVIA, instance int) string {
 // SignalPRB triggers the VIA PRB (Peripheral Register B) signal.
 // ByteReady checks if the VIA is ready to handle a new byte of data and returns true if ready.
 type IVIA interface {
-	Setup(conn IVIASocket) error
+	Setup(conn IVIASocket, cfg *config.Config) error
+
+	Connect() error
 
 	Reset()
 

@@ -4,6 +4,7 @@ import (
 	"github.com/markel1974/c64emu/src/common/bits"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -48,8 +49,12 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 	return p
 }
 
-// Setup initializes the Pic instance with a Quartz instance, establishing internal dependencies.
-func (i *Pic) Setup(quartz references.IQuartz) error {
+func (i *Pic) Setup(_ references.IPIC6510Socket, _ *config.Config) error {
+	return nil
+}
+
+// Connect initializes the Pic instance with a Quartz instance, establishing internal dependencies.
+func (i *Pic) Connect(quartz references.IQuartz) error {
 	i.quartz = quartz
 	return nil
 }

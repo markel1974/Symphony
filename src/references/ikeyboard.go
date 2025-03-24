@@ -1,9 +1,15 @@
 package references
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/markel1974/c64emu/src/config"
+)
 
 func IdIKeyboard(_ IKeyboard, instance int) string {
 	return IdInternalComponent("IKeyboard", instance)
+}
+
+type IKeyboardSocket interface {
 }
 
 // IKeyboard defines an interface for managing keyboard input, including virtual key states and command processing.
@@ -15,7 +21,9 @@ func IdIKeyboard(_ IKeyboard, instance int) string {
 // Poll retrieves the next key from the keyboard storage and indicates if a key is available.
 // SetCommand processes and stores input commands based on their mapped key representations.
 type IKeyboard interface {
-	Setup() error
+	Setup(_ IKeyboardSocket, _ *config.Config) error
+
+	Connect() error
 
 	Reset()
 

@@ -6,7 +6,8 @@ import (
 )
 
 type PICSocket struct {
-	references.IPIC6510 // Incorpora l'interfaccia
+	references.IPIC6510
+	quartz references.IQuartz
 }
 
 func NewPICSocket() *PICSocket {
@@ -15,21 +16,23 @@ func NewPICSocket() *PICSocket {
 	}
 }
 
-func (s *PICSocket) Setup(cc map[string]references.IComponent, _ *config.Config) error {
+func (s *PICSocket) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	if s.IPIC6510, err = references.ComponentsToIPIC6510(cc, 0); err != nil {
 		return err
 	}
-	quart, err := references.ComponentsToIQuartz(cc, 0)
-	if err != nil {
+	if s.quartz, err = references.ComponentsToIQuartz(cc, 0); err != nil {
 		return err
 	}
-	if err = s.IPIC6510.Setup(quart); err != nil {
+	if err = s.IPIC6510.Setup(s, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (s *PICSocket) Connect() error {
+	if err := s.IPIC6510.Connect(s.quartz); err != nil {
+		return err
+	}
 	return nil
 }

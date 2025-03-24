@@ -9,12 +9,17 @@ func IdIPLAc1541(_ IPLAc1541, instance int) string {
 	return IdInternalComponent("IPLAc1541", instance)
 }
 
+type IPLAc1541Socket interface {
+}
+
 // IPLAc1541 represents an interface for handling PLA logic in a 1541 disk drive emulation.
 // Setup initializes the interface by linking it to VIA components, ROM loader, and configuration data.
 // Read retrieves the value from the specified memory address.
 // Write writes a value to the specified memory address.
 type IPLAc1541 interface {
-	Setup(via1 IVIA, via2 IVIA, roms IROMLoaderC1541, cfg *config.Config) error
+	Setup(socket IPLAc1541Socket, cfg *config.Config) error
+
+	Connect(via1 IVIA, via2 IVIA, roms IROMLoaderC1541) error
 
 	Read(addr uint16) uint8
 

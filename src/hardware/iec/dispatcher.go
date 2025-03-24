@@ -32,6 +32,7 @@ const (
 // Dispatcher represents a hardware communication interface for managing CPU and peripheral interactions.
 type Dispatcher struct {
 	*component.BaseComponent
+	cfg             *config.Config
 	atn             bool
 	cpuPort         uint8
 	cpuBus          uint8
@@ -55,9 +56,14 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 }
 
 // Setup initializes the Dispatcher component, configures drives based on the provided configuration, and prepares devices.
-func (c *Dispatcher) Setup(q references.IComponent, cfg *config.Config) error {
-	for deviceId, d := range cfg.Drives() {
-		if err := c.AddPeripheral(q, cfg, d.GetKind(), uint8(deviceId)); err != nil {
+func (c *Dispatcher) Setup(_ references.IIecSocket, cfg *config.Config) error {
+	c.cfg = cfg
+	return nil
+}
+
+func (c *Dispatcher) Connect(q references.IComponent) error {
+	for deviceId, d := range c.cfg.Drives() {
+		if err := c.AddPeripheral(q, c.cfg, d.GetKind(), uint8(deviceId)); err != nil {
 			return err
 		}
 	}

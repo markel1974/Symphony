@@ -2,6 +2,7 @@ package reu
 
 import (
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"strconv"
 )
@@ -131,7 +132,7 @@ func (reu *REU) Reset() {
 }
 
 // Setup initializes the REU instance by configuring its expansion board, identifying the loader, and setting up memory.
-func (reu *REU) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+func (reu *REU) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64, _ *config.Config) error {
 	//TODO from Setup
 	reu.expansion = board
 	reu.loaderId = ldr.GetId()

@@ -2,6 +2,7 @@ package mos6526
 
 import (
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -55,13 +56,17 @@ func NewCIA(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the CIA instance by creating timers, binding underflow events, and setting the socket connection.
-func (m *CIA) Setup(conn references.ICIASocket) error {
+func (m *CIA) Setup(conn references.ICIASocket, _ *config.Config) error {
 	m.tod = NewTOD(m, m.GetFactory(), 0)
 	m.timerA = NewTimer(m, m.GetFactory(), 0)
 	m.timerA.UnderflowSignal().Bind(m.timerAUnderflowSlot)
 	m.timerB = NewTimer(m, m.GetFactory(), 1)
 	m.timerB.UnderflowSignal().Bind(m.timerBUnderflowSlot)
 	m.socket = conn
+	return nil
+}
+
+func (m *CIA) Connect() error {
 	return nil
 }
 

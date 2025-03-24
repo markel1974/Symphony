@@ -13,6 +13,7 @@ type IIECSocketConnection interface {
 type IECSocket struct {
 	references.IIec
 	connection IIECSocketConnection
+	quartzC    references.IComponent
 }
 
 func NewIECSocket(connection IIECSocketConnection) *IECSocket {
@@ -28,11 +29,11 @@ func (s *IECSocket) Setup(cc map[string]references.IComponent, cfg *config.Confi
 	if err != nil {
 		return err
 	}
-	quartz, ok := cc[references.IdIQuartz(nil, 0)]
-	if !ok {
+	var ok bool
+	if s.quartzC, ok = cc[references.IdIQuartz(nil, 0)]; !ok {
 		return fmt.Errorf("nil quartz")
 	}
-	if err = s.IIec.Setup(quartz, cfg); err != nil {
+	if err = s.IIec.Setup(s, cfg); err != nil {
 		return err
 	}
 	s.IIec.LEDSignal().Bind(s.connection.LedTrigger)
@@ -40,5 +41,8 @@ func (s *IECSocket) Setup(cc map[string]references.IComponent, cfg *config.Confi
 }
 
 func (s *IECSocket) Connect() error {
+	if err := s.IIec.Connect(s.quartzC); err != nil {
+		return err
+	}
 	return nil
 }

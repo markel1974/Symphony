@@ -3,6 +3,7 @@ package mos6522
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -46,8 +47,12 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the VIA by assigning the provided IViaSocket instance to its internal socket reference.
-func (v *VIA) Setup(socket references.IVIASocket) error {
+func (v *VIA) Setup(socket references.IVIASocket, _ *config.Config) error {
 	v.socket = socket
+	return nil
+}
+
+func (v *VIA) Connect() error {
 	return nil
 }
 

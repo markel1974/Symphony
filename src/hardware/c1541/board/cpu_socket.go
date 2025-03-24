@@ -42,14 +42,17 @@ func (w *CPUSocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	if err != nil {
 		return err
 	}
+	if err = w.I6510.Setup(w, cfg); err != nil {
+		return err
+	}
+	w.I6510.SetOverflowBranch(w.via2.ByteReady)
 	return nil
 }
 
 func (w *CPUSocket) Connect() error {
-	if err := w.I6510.Setup(w); err != nil {
+	if err := w.I6510.Connect(); err != nil {
 		return err
 	}
-	w.I6510.SetOverflowBranch(w.via2.ByteReady)
 	return nil
 }
 

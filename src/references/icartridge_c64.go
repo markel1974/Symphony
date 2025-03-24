@@ -2,6 +2,7 @@ package references
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/config"
 	"io"
 )
 
@@ -74,7 +75,7 @@ func IdICartridgeC64(_ ICartridgeC64, instance int) string {
 // Emulate initiates the emulation process for the cartridge if required.
 // Detach detaches the cartridge, releasing any associated resources.
 type ICartridgeC64 interface {
-	Setup(board IExpansionC64, loader ICartridgeLoaderC64) error
+	Setup(board IExpansionC64, loader ICartridgeLoaderC64, cfg *config.Config) error
 
 	GetLoaderId() string
 

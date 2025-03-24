@@ -37,7 +37,7 @@ func NewVIA1Socket(connections IVIA1SocketConnections) *VIA1Socket {
 
 // Setup initializes the VIA1Socket with the provided VIA interface, socket connections, IEC interface, and device number.
 // It configures internal filters, DIP switch settings, and invokes the Setup method of the VIA interface.
-func (v *VIA1Socket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+func (v *VIA1Socket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
 	v.IVIA, err = references.ComponentsToIVIA(c, 0)
 	if err != nil {
@@ -49,13 +49,16 @@ func (v *VIA1Socket) Setup(c map[string]references.IComponent, _ *config.Config)
 	}
 	v.setFilters()
 	v.setDipSwitch(v.connections.GetDeviceNumber())
-	if err = v.IVIA.Setup(v); err != nil {
+	if err = v.IVIA.Setup(v, cfg); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (v *VIA1Socket) Connect() error {
+	if err := v.IVIA.Connect(); err != nil {
+		return err
+	}
 	return nil
 }
 

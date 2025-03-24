@@ -3,6 +3,7 @@ package magicdesk
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -41,7 +42,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, ins
 }
 
 // Setup initializes the CartridgeMagicDesk by configuring its board and loading data via the provided CRTLoader.
-func (c *CartridgeMagicDesk) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeMagicDesk) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64, _ *config.Config) error {
 	c.expansion = board
 	c.loaderId = ldr.GetId()
 	if loader.Type(ldr.GetType()) == loader.TypeCrt {

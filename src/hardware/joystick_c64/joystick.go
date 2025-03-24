@@ -3,6 +3,7 @@ package joystick_c64
 import (
 	"github.com/markel1974/c64emu/src/common/fifo"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -28,8 +29,12 @@ func NewJoystick(parent references.IComponent, factory references.IComponentFact
 	return j
 }
 
-func (k *Joystick) Setup() error {
+func (k *Joystick) Setup(_ references.IJoystickSocket, _ *config.Config) error {
 	k.Update(0x0000, 0xffff, 40)
+	return nil
+}
+
+func (k *Joystick) Connect() error {
 	return nil
 }
 

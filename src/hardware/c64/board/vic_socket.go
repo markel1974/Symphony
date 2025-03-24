@@ -70,6 +70,9 @@ func (v *VICSocket) Setup(c map[string]references.IComponent, cfg *config.Config
 }
 
 func (v *VICSocket) Connect() error {
+	if err := v.IVIC.Connect(); err != nil {
+		return err
+	}
 	return nil
 }
 
