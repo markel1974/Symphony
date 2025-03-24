@@ -11,12 +11,10 @@ import (
 	"os"
 )
 
-type keyVal struct {
+var _c64hardware = []struct {
 	id       string
 	instance int
-}
-
-var _c64hardware = []keyVal{
+}{
 	{"mos6569", 0},
 	{"mos6526", 0},
 	{"mos6526", 1},

@@ -23,12 +23,10 @@ var _hardwareSequence = []string{
 	references.IdI6510(nil, 0),
 }
 
-type keyVal struct {
+var _c1541hardware = []struct {
 	id       string
 	instance int
-}
-
-var _c1541hardware = []keyVal{
+}{
 	{"roms_c1541", 0},
 	{"pla_c1541", 0},
 	{"pic_6510", 0},
