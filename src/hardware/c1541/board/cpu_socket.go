@@ -8,9 +8,9 @@ import (
 // CPUSocket represents a CPU socket managing the integration of a 6510 CPU, programmable interrupt controller, memory banks, and VIA.
 type CPUSocket struct {
 	references.I6510
-	pic   references.IPIC6510
-	banks references.IPLAc1541
-	via2  references.IVIA
+	pic  references.IPIC6510
+	pla  references.IPLAc1541
+	via2 references.IVIA
 }
 
 // NewCPUSocket creates and initializes a new CPUSocket instance with default nil values for its fields.
@@ -18,7 +18,7 @@ func NewCPUSocket() *CPUSocket {
 	c := &CPUSocket{
 		I6510: nil,
 		pic:   nil,
-		banks: nil,
+		pla:   nil,
 	}
 	return c
 }
@@ -31,7 +31,7 @@ func (w *CPUSocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	if err != nil {
 		return err
 	}
-	w.banks, err = references.ComponentsToIPLAc1541(c, 0)
+	w.pla, err = references.ComponentsToIPLAc1541(c, 0)
 	if err != nil {
 		return err
 	}
@@ -65,5 +65,5 @@ func (w *CPUSocket) GetPic() references.IPIC6510 {
 
 // GetBanks retrieves the interface for managing and accessing memory banks in the CPUSocket.
 func (w *CPUSocket) GetBanks() references.I6510Banks {
-	return w.banks
+	return w.pla
 }
