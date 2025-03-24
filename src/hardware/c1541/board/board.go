@@ -95,14 +95,19 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 }
 
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
-func (m *Board) Setup(iec references.IComponent, quartz references.IComponent, deviceId uint8, deviceNumber uint8, cfg *config.Config) error {
-	var err error
+func (m *Board) Setup(_ references.IIecDeviceSocket, cfg *config.Config, deviceId uint8, deviceNumber uint8) error {
 	m.cfg = cfg
+	m.cfg.Bind(m.configChanged)
 	m.deviceId = deviceId
 	m.deviceNumber = deviceNumber
+	return nil
+}
+
+// Connect initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
+func (m *Board) Connect(iec references.IComponent, quartz references.IComponent) error {
+	var err error
 	m.diskId = ""
 	//quartz := quartz.NewQuartz(m, "")
-	m.cfg.Bind(m.configChanged)
 
 	if err = m.mec.Setup(); err != nil {
 		return err
@@ -121,7 +126,7 @@ func (m *Board) Setup(iec references.IComponent, quartz references.IComponent, d
 		components[comp.HardwareId()] = comp
 	}
 	for _, c := range m.connections {
-		if err = c.Setup(components, cfg); err != nil {
+		if err = c.Setup(components, m.cfg); err != nil {
 			return err
 		}
 	}

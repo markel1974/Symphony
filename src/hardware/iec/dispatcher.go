@@ -108,7 +108,10 @@ func (c *Dispatcher) AddPeripheral(q references.IComponent, cfg *config.Config, 
 	if !ok {
 		return fmt.Errorf("device %s is not an IEC device", kind)
 	}
-	if err = vd.Setup(c, q, deviceId, deviceNumber, cfg); err != nil {
+	if err = vd.Setup(c, cfg, deviceId, deviceNumber); err != nil {
+		return err
+	}
+	if err = vd.Connect(c, q); err != nil {
 		return err
 	}
 	vd.LEDSignal().Bind(func(state uint32) {

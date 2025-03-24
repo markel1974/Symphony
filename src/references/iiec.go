@@ -52,6 +52,9 @@ func IdIIecDevice(_ IIecDevice, instance int) string {
 	return IdInternalComponent("IIecDevices", instance)
 }
 
+type IIecDeviceSocket interface {
+}
+
 // IIecDevice represents the interface for a virtual drive in the emulation environment.
 // Setup initializes the virtual drive with the given configuration.
 // Reset resets the state of the virtual drive.
@@ -61,7 +64,9 @@ func IdIIecDevice(_ IIecDevice, instance int) string {
 // AtnStateChanged handles changes in the Attention (ATN) line state.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIecDevice interface {
-	Setup(iec IComponent, quartz IComponent, deviceId uint8, deviceNumber uint8, cfg *config.Config) error
+	Setup(socket IIecDeviceSocket, cfg *config.Config, deviceId uint8, deviceNumber uint8) error
+
+	Connect(iec IComponent, quartz IComponent) error
 
 	Reset()
 

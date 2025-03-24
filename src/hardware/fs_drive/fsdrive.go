@@ -44,7 +44,10 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 }
 
 func (v *FSDrive) Setup(iec references.IComponent, q references.IComponent, deviceId uint8, deviceNumber uint8, cfg *config.Config) error {
-	if err := v.Protocol.Setup(iec, q, deviceId, deviceNumber, cfg); err != nil {
+	if err := v.Protocol.Setup(v, cfg, deviceId, deviceNumber); err != nil {
+		return err
+	}
+	if err := v.Protocol.Connect(iec, q); err != nil {
 		return err
 	}
 	v.deviceId = deviceId
