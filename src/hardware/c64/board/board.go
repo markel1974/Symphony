@@ -55,12 +55,6 @@ const (
 	intrIrqExpansionBit = 3
 )
 
-type Connector interface {
-	Setup(cc map[string]references.IComponent, cfg *config.Config) error
-
-	Connect() error
-}
-
 // Board represents a complex hardware configuration comprising various component sockets and related system functionalities.
 type Board struct {
 	*component.BaseComponent
@@ -88,6 +82,7 @@ type Board struct {
 	vBlankSignal    *signals.Signal
 	ledSignal       *signals.SignalUint32
 	emulation       []func()
+	connections     []references.IConnector
 	//expansionIrqTrigger *signals.SignalUint32
 	//expansionIrqClear   *signals.SignalUint32
 }
@@ -95,7 +90,7 @@ type Board struct {
 // NewBoard initializes and returns a new Board instance with specific sockets and properties configured.
 // It registers the created instance as a child of the provided parent IComponent.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *Board {
-	b := &Board{
+	s := &Board{
 		BaseComponent: component.NewBaseComponent(),
 		db:            nil,
 		dmaLow:        false,
@@ -105,23 +100,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		ledSignal:     signals.NewSignalUint32(),
 		emulation:     []func(){},
 	}
-	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIBoardC64(b, instance))
-	return b
-}
-
-func (s *Board) VBlankSignal() *signals.Signal {
-	return s.vBlankSignal
-}
-
-func (s *Board) LEDSignal() *signals.SignalUint32 {
-	return s.ledSignal
-}
-
-func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) error {
-	s.db = db
-	s.cfg = cfg
-	components := make(map[string]references.IComponent)
-	var connections []Connector
+	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIBoardC64(s, instance))
 
 	s.keysSocket = NewKeyboardSocket()
 	s.joySocket1 = NewJoystickSocket(0)
@@ -140,22 +119,38 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 	s.plaSocket = NewPLASocket()
 	s.throttleSocket = NewThrottleSocket(mos6569.FrameInterval)
 
-	connections = append(connections, s.romSocket)
-	connections = append(connections, s.quartzSocket)
-	connections = append(connections, s.keysSocket)
-	connections = append(connections, s.joySocket1)
-	connections = append(connections, s.joySocket2)
-	connections = append(connections, s.iecSocket)
-	connections = append(connections, s.expansionSocket)
-	connections = append(connections, s.cartSocket)
-	connections = append(connections, s.picSocket)
-	connections = append(connections, s.cpuSocket)
-	connections = append(connections, s.vicSocket)
-	connections = append(connections, s.sidSocket)
-	connections = append(connections, s.cia1Socket)
-	connections = append(connections, s.cia2Socket)
-	connections = append(connections, s.plaSocket)
-	connections = append(connections, s.throttleSocket)
+	s.connections = append(s.connections, s.romSocket)
+	s.connections = append(s.connections, s.quartzSocket)
+	s.connections = append(s.connections, s.keysSocket)
+	s.connections = append(s.connections, s.joySocket1)
+	s.connections = append(s.connections, s.joySocket2)
+	s.connections = append(s.connections, s.iecSocket)
+	s.connections = append(s.connections, s.expansionSocket)
+	s.connections = append(s.connections, s.cartSocket)
+	s.connections = append(s.connections, s.picSocket)
+	s.connections = append(s.connections, s.cpuSocket)
+	s.connections = append(s.connections, s.vicSocket)
+	s.connections = append(s.connections, s.sidSocket)
+	s.connections = append(s.connections, s.cia1Socket)
+	s.connections = append(s.connections, s.cia2Socket)
+	s.connections = append(s.connections, s.plaSocket)
+	s.connections = append(s.connections, s.throttleSocket)
+
+	return s
+}
+
+func (s *Board) VBlankSignal() *signals.Signal {
+	return s.vBlankSignal
+}
+
+func (s *Board) LEDSignal() *signals.SignalUint32 {
+	return s.ledSignal
+}
+
+func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) error {
+	s.db = db
+	s.cfg = cfg
+	components := make(map[string]references.IComponent)
 
 	s.vicSocket.SetDisplayBuffer(db)
 	s.sidSocket.SetPlayer(player)
@@ -169,13 +164,12 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 		components[comp.HardwareId()] = comp
 	}
 
-	for _, c := range connections {
+	for _, c := range s.connections {
 		if err := c.Setup(components, cfg); err != nil {
 			return err
 		}
 	}
-
-	for _, c := range connections {
+	for _, c := range s.connections {
 		if err := c.Connect(); err != nil {
 			return err
 		}

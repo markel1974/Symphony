@@ -23,12 +23,6 @@ var _hardwareSequence = []string{
 	references.IdI6510(nil, 0),
 }
 
-type Connector interface {
-	Setup(cc map[string]references.IComponent, cfg *config.Config) error
-
-	Connect() error
-}
-
 type keyVal struct {
 	id       string
 	instance int
@@ -67,11 +61,12 @@ type Board struct {
 	cfg          *config.Config
 	ledSignal    *signals.SignalUint32
 	emulation    []func()
+	connections  []references.IConnector
 }
 
 // NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *Board {
-	b := &Board{
+	m := &Board{
 		BaseComponent: component.NewBaseComponent(),
 		deviceId:      0,
 		diskId:        "",
@@ -82,8 +77,23 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		emulation:     []func(){},
 	}
 
-	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIIecDevice(b, instance))
-	return b
+	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdIIecDevice(m, instance))
+
+	m.romSocket = NewRomLoaderSocket()
+	m.cpuSocket = NewCPUSocket()
+	m.via1Socket = NewVIA1Socket(m)
+	m.via2Socket = NewVIA2Socket(m, m.mec)
+	m.picSocket = NewPICSocket()
+	m.plaSocket = NewPLASocket()
+
+	m.connections = append(m.connections, m.romSocket)
+	m.connections = append(m.connections, m.cpuSocket)
+	m.connections = append(m.connections, m.via1Socket)
+	m.connections = append(m.connections, m.via2Socket)
+	m.connections = append(m.connections, m.picSocket)
+	m.connections = append(m.connections, m.plaSocket)
+
+	return m
 }
 
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
@@ -100,21 +110,6 @@ func (m *Board) Setup(iec references.IComponent, quartz references.IComponent, d
 		return err
 	}
 
-	m.romSocket = NewRomLoaderSocket()
-	m.cpuSocket = NewCPUSocket()
-	m.via1Socket = NewVIA1Socket(m)
-	m.via2Socket = NewVIA2Socket(m, m.mec)
-	m.picSocket = NewPICSocket()
-	m.plaSocket = NewPLASocket()
-
-	var connections []Connector
-	connections = append(connections, m.romSocket)
-	connections = append(connections, m.cpuSocket)
-	connections = append(connections, m.via1Socket)
-	connections = append(connections, m.via2Socket)
-	connections = append(connections, m.picSocket)
-	connections = append(connections, m.plaSocket)
-
 	//TODO REMOVE WHEN THREE IS READY...
 	components := make(map[string]references.IComponent)
 	components[iec.HardwareId()] = iec
@@ -127,12 +122,12 @@ func (m *Board) Setup(iec references.IComponent, quartz references.IComponent, d
 		}
 		components[comp.HardwareId()] = comp
 	}
-	for _, c := range connections {
+	for _, c := range m.connections {
 		if err = c.Setup(components, cfg); err != nil {
 			return err
 		}
 	}
-	for _, c := range connections {
+	for _, c := range m.connections {
 		if err = c.Connect(); err != nil {
 			return err
 		}

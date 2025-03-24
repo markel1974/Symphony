@@ -1,6 +1,7 @@
 package references
 
 import (
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"io"
 	"strconv"
@@ -117,6 +118,12 @@ type IComponent interface {
 	INavigate
 
 	ICommand
+}
+
+type IConnector interface {
+	Setup(c map[string]IComponent, cfg *config.Config) error
+
+	Connect() error
 }
 
 // IComponentFactory defines methods for creating and managing various types of components in an emulation system.
