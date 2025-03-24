@@ -43,8 +43,8 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	return fs
 }
 
-func (v *FSDrive) Setup(bus references.IIec, q references.IQuartz, deviceId uint8, deviceNumber uint8, cfg *config.Config) error {
-	if err := v.Protocol.Setup(bus, q, deviceId, deviceNumber, cfg); err != nil {
+func (v *FSDrive) Setup(iec references.IComponent, q references.IComponent, deviceId uint8, deviceNumber uint8, cfg *config.Config) error {
+	if err := v.Protocol.Setup(iec, q, deviceId, deviceNumber, cfg); err != nil {
 		return err
 	}
 	v.deviceId = deviceId

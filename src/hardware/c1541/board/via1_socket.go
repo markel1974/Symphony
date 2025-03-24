@@ -1,6 +1,7 @@
 package board
 
 import (
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -8,6 +9,7 @@ import (
 // IRQClear clears the specified interrupt request by its identifier.
 // IRQTrigger triggers the specified interrupt request by its identifier.
 type IVIA1SocketConnections interface {
+	GetDeviceNumber() uint8
 	IRQClear(uint32)
 	IRQTrigger(uint32)
 }
@@ -15,44 +17,51 @@ type IVIA1SocketConnections interface {
 // VIA1Socket represents a socket interface for a VIA1 device, managing communication, signaling, and device configuration.
 type VIA1Socket struct {
 	references.IVIA
-	connections  IVIA1SocketConnections
-	iec          references.IIec
-	intrId       uint32
-	dipSwitch    uint8
-	prbFilter    uint8
-	deviceNumber uint8
+	connections IVIA1SocketConnections
+	iec         references.IIec
+	intrId      uint32
+	dipSwitch   uint8
+	prbFilter   uint8
 }
 
 // NewVIA1Socket creates and initializes a new instance of VIA1Socket with default values.
-func NewVIA1Socket() *VIA1Socket {
+func NewVIA1Socket(connections IVIA1SocketConnections) *VIA1Socket {
 	return &VIA1Socket{
-		IVIA:         nil,
-		connections:  nil,
-		iec:          nil,
-		intrId:       intrIrqVIA1Bit,
-		prbFilter:    0,
-		deviceNumber: 0,
+		IVIA:        nil,
+		connections: connections,
+		iec:         nil,
+		intrId:      intrIrqVIA1Bit,
+		prbFilter:   0,
 	}
 }
 
-// Connect initializes the VIA1Socket with the provided VIA interface, socket connections, IEC interface, and device number.
+// Setup initializes the VIA1Socket with the provided VIA interface, socket connections, IEC interface, and device number.
 // It configures internal filters, DIP switch settings, and invokes the Setup method of the VIA interface.
-func (v *VIA1Socket) Connect(via1 references.IVIA, connections IVIA1SocketConnections, iec references.IIec, deviceNumber uint8) error {
-	v.IVIA = via1
-	v.connections = connections
-	v.iec = iec
-	v.deviceNumber = deviceNumber
+func (v *VIA1Socket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+	var err error
+	v.IVIA, err = references.ComponentsToIVIA(c, 0)
+	if err != nil {
+		return err
+	}
+	v.iec, err = references.ComponentsToIEC(c, 0)
+	if err != nil {
+		return err
+	}
 	v.setFilters()
-	v.setDipSwitch(v.deviceNumber)
-	if err := v.IVIA.Setup(v); err != nil {
+	v.setDipSwitch(v.connections.GetDeviceNumber())
+	if err = v.IVIA.Setup(v); err != nil {
 		return err
 	}
 	return nil
 }
 
+func (v *VIA1Socket) Connect() error {
+	return nil
+}
+
 // GetDeviceNumber retrieves the device number associated with the VIA1Socket instance.
 func (v *VIA1Socket) GetDeviceNumber() uint8 {
-	return v.deviceNumber
+	return v.connections.GetDeviceNumber()
 }
 
 // IRQClear clears the interrupt request (IRQ) signal by invoking the IRQClear method on the associated connections instance.
@@ -136,5 +145,5 @@ func (v *VIA1Socket) WriteDDRB(prb uint8, ddrb uint8) {
 func (v *VIA1Socket) peripheralWrite(prb uint8, ddrb uint8) {
 	p := prb | v.dipSwitch
 	wd := (^p) & ddrb
-	v.iec.PeripheralWrite(v.deviceNumber, wd)
+	v.iec.PeripheralWrite(v.connections.GetDeviceNumber(), wd)
 }

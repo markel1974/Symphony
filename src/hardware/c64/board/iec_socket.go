@@ -1,6 +1,7 @@
 package board
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -10,20 +11,34 @@ type IIECSocketConnection interface {
 }
 
 type IECSocket struct {
-	references.IIec // Incorpora l'interfaccia
+	references.IIec
+	connection IIECSocketConnection
 }
 
-func NewIECSocket() *IECSocket {
+func NewIECSocket(connection IIECSocketConnection) *IECSocket {
 	return &IECSocket{
-		IIec: nil,
+		IIec:       nil,
+		connection: connection,
 	}
 }
 
-func (s *IECSocket) Connect(iec references.IIec, connection IIECSocketConnection, quartz references.IQuartz, cfg *config.Config) error {
-	s.IIec = iec
-	if err := s.IIec.Setup(quartz, cfg); err != nil {
+func (s *IECSocket) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
+	var err error
+	s.IIec, err = references.ComponentsToIEC(cc, 0)
+	if err != nil {
 		return err
 	}
-	s.IIec.LEDSignal().Bind(connection.LedTrigger)
+	quartz, ok := cc[references.IdIQuartz(nil, 0)]
+	if !ok {
+		return fmt.Errorf("nil quartz")
+	}
+	if err = s.IIec.Setup(quartz, cfg); err != nil {
+		return err
+	}
+	s.IIec.LEDSignal().Bind(s.connection.LedTrigger)
+	return nil
+}
+
+func (s *IECSocket) Connect() error {
 	return nil
 }

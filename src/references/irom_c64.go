@@ -25,13 +25,22 @@ type IROMLoaderC64 interface {
 	LoadChar() []byte
 }
 
-func ComponentToIROMLoaderC64(component IComponent, err error) (IROMLoaderC64, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIROMLoaderC64(component IComponent) (IROMLoaderC64, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IROMLoaderC64)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIROMLoaderC64(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIROMLoaderC64(cc map[string]IComponent, instance int) (IROMLoaderC64, error) {
+	id := IdIROMLoaderC64(nil, instance)
+	c, err := ComponentToIROMLoaderC64(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

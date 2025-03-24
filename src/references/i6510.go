@@ -48,13 +48,22 @@ type I6510Socket interface {
 	GetPic() IPIC6510
 }
 
-func ComponentToI6510(component IComponent, err error) (I6510, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToI6510(component IComponent) (I6510, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(I6510)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdI6510(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToI6510(cc map[string]IComponent, instance int) (I6510, error) {
+	id := IdI6510(nil, instance)
+	c, err := ComponentToI6510(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

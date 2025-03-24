@@ -150,13 +150,22 @@ type ICartridgeChipHeaderC64 interface {
 	Write(w io.Writer) error
 }
 
-func ComponentToICartridgeC64(component IComponent, err error) (ICartridgeC64, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToICartridgeC64(component IComponent) (ICartridgeC64, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(ICartridgeC64)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdICartridgeC64(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToICartridgeC64(cc map[string]IComponent, instance int) (ICartridgeC64, error) {
+	id := IdICartridgeC64(nil, instance)
+	c, err := ComponentToICartridgeC64(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

@@ -1,6 +1,7 @@
 package board
 
 import (
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/c1541/mechanic"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -54,24 +55,30 @@ type VIA2Socket struct {
 }
 
 // NewVIA2Socket creates and returns a pointer to a new VIA2Socket instance with default initializations.
-func NewVIA2Socket() *VIA2Socket {
+func NewVIA2Socket(connections IVIA2SocketConnections, mec *mechanic.Mechanic) *VIA2Socket {
 	return &VIA2Socket{
 		IVIA:        nil,
-		mec:         nil,
-		connections: nil,
+		mec:         mec,
+		connections: connections,
 		intrId:      intrIrqVIA2Bit,
 		prbPrev:     0,
 	}
 }
 
-// Connect initializes the VIA2Socket instance with the provided IVIA, connections, and Mechanic, and sets up the IVIA.
-func (v *VIA2Socket) Connect(via2 references.IVIA, connections IVIA2SocketConnections, mec *mechanic.Mechanic) error {
-	v.IVIA = via2
-	v.connections = connections
-	v.mec = mec
-	if err := v.IVIA.Setup(v); err != nil {
+// Setup initializes the VIA2Socket instance with the provided IVIA, connections, and Mechanic, and sets up the IVIA.
+func (v *VIA2Socket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+	via2, err := references.ComponentsToIVIA(c, 1)
+	if err != nil {
 		return err
 	}
+	v.IVIA = via2
+	if err = v.IVIA.Setup(v); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *VIA2Socket) Connect() error {
 	return nil
 }
 

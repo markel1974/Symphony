@@ -41,13 +41,22 @@ type ISID interface {
 type ISIDSocket interface {
 }
 
-func ComponentToISID(component IComponent, err error) (ISID, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToISID(component IComponent) (ISID, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(ISID)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdISID(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToISID(cc map[string]IComponent, instance int) (ISID, error) {
+	id := IdISID(nil, instance)
+	c, err := ComponentToISID(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

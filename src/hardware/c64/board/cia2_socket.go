@@ -1,6 +1,7 @@
 package board
 
 import (
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -28,15 +29,29 @@ func NewCIA2Socket() *CIA2Socket {
 	return c
 }
 
-// Connect initializes the CIA2Socket instance with the provided CIA, connections, and IEC interface, and sets up the CIA.
-func (w *CIA2Socket) Connect(cia2 references.ICIA, pic references.IPIC6510, vic references.IVIC, iec references.IIec) error {
-	w.ICIA = cia2
-	w.pic = pic
-	w.vic = vic
-	w.iec = iec
-	if err := w.ICIA.Setup(w); err != nil {
+// Setup initializes the CIA2Socket instance with the provided CIA, connections, and IEC interface, and sets up the CIA.
+func (w *CIA2Socket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+	var err error
+	w.ICIA, err = references.ComponentsToICIA(c, 1)
+	if err != nil {
 		return err
 	}
+	w.pic, err = references.ComponentsToIPIC6510(c, 0)
+	if err != nil {
+		return err
+	}
+	w.vic, err = references.ComponentsToIVIC(c, 0)
+	if err != nil {
+		return err
+	}
+	w.iec, err = references.ComponentsToIEC(c, 0)
+	if err = w.ICIA.Setup(w); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *CIA2Socket) Connect() error {
 	return nil
 }
 

@@ -51,13 +51,22 @@ type IPlaC64 interface {
 	RemoveRamTrigger(addr uint16, id int)
 }
 
-func ComponentToIPLAc64(component IComponent, err error) (IPlaC64, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIPLAc64(component IComponent) (IPlaC64, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IPlaC64)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIPlaC64(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIPLAc64(cc map[string]IComponent, instance int) (IPlaC64, error) {
+	id := IdIPlaC64(nil, instance)
+	c, err := ComponentToIPLAc64(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

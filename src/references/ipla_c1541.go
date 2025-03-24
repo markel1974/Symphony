@@ -21,13 +21,22 @@ type IPLAc1541 interface {
 	Write(addr uint16, data uint8)
 }
 
-func ComponentToIPLAc1541(component IComponent, err error) (IPLAc1541, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIPLAc1541(component IComponent) (IPLAc1541, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IPLAc1541)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIPLAc1541(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIPLAc1541(cc map[string]IComponent, instance int) (IPLAc1541, error) {
+	id := IdIPLAc1541(nil, instance)
+	c, err := ComponentToIPLAc1541(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

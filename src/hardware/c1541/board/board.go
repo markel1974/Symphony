@@ -23,6 +23,26 @@ var _hardwareSequence = []string{
 	references.IdI6510(nil, 0),
 }
 
+type Connector interface {
+	Setup(cc map[string]references.IComponent, cfg *config.Config) error
+
+	Connect() error
+}
+
+type keyVal struct {
+	id       string
+	instance int
+}
+
+var _c1541hardware = []keyVal{
+	{"roms_c1541", 0},
+	{"pla_c1541", 0},
+	{"pic_6510", 0},
+	{"mos6510", 0},
+	{"mos6522", 0},
+	{"mos6522", 1},
+}
+
 // intrIrqVIA1Bit represents the interrupt request bit for VIA1.
 // intrIrqVIA2Bit represents the interrupt request bit for VIA2.
 const (
@@ -33,53 +53,45 @@ const (
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
 	*component.BaseComponent
-	iec        references.IIec
-	cpuSocket  *CPUSocket
-	via1Socket *VIA1Socket
-	via2Socket *VIA2Socket
-	picSocket  *PICSocket
-	plaSocket  *PLASocket
-	rlSocket   *RomLoaderSocket
-	mec        *mechanic.Mechanic
-	disks      *disk.Factory
-	deviceId   uint8
-	diskId     string
-	cfg        *config.Config
-	ledSignal  *signals.SignalUint32
-	components map[string]references.IComponent
-	emulation  []func()
+	cpuSocket    *CPUSocket
+	via1Socket   *VIA1Socket
+	via2Socket   *VIA2Socket
+	picSocket    *PICSocket
+	plaSocket    *PLASocket
+	romSocket    *RomLoaderSocket
+	mec          *mechanic.Mechanic
+	disks        *disk.Factory
+	deviceId     uint8
+	deviceNumber uint8
+	diskId       string
+	cfg          *config.Config
+	ledSignal    *signals.SignalUint32
+	emulation    []func()
 }
 
 // NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *Board {
 	b := &Board{
 		BaseComponent: component.NewBaseComponent(),
-		iec:           nil,
 		deviceId:      0,
 		diskId:        "",
 		ledSignal:     signals.NewSignalUint32(),
-		cpuSocket:     NewCPUSocket(),
-		via1Socket:    NewVIA1Socket(),
-		via2Socket:    NewVIA2Socket(),
-		picSocket:     NewPICSocket(),
-		plaSocket:     NewPLASocket(),
-		rlSocket:      NewRomLoaderSocket(),
 		cfg:           nil,
 		disks:         disk.NewFactory(),
 		mec:           mechanic.NewMechanic(),
-		components:    make(map[string]references.IComponent),
 		emulation:     []func(){},
 	}
+
 	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIIecDevice(b, instance))
 	return b
 }
 
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
-func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId uint8, deviceNumber uint8, cfg *config.Config) error {
+func (m *Board) Setup(iec references.IComponent, quartz references.IComponent, deviceId uint8, deviceNumber uint8, cfg *config.Config) error {
 	var err error
-	m.iec = iec
 	m.cfg = cfg
 	m.deviceId = deviceId
+	m.deviceNumber = deviceNumber
 	m.diskId = ""
 	//quartz := quartz.NewQuartz(m, "")
 	m.cfg.Bind(m.configChanged)
@@ -87,51 +99,45 @@ func (m *Board) Setup(iec references.IIec, quartz references.IQuartz, deviceId u
 	if err = m.mec.Setup(); err != nil {
 		return err
 	}
-	rl, err := references.ComponentToIROMLoaderC1541(m.createComponent("roms_c1541", 0))
-	if err != nil {
-		return err
-	}
-	pla, err := references.ComponentToIPLAc1541(m.createComponent("pla_c1541", 0))
-	if err != nil {
-		return err
-	}
-	pic, err := references.ComponentToIPIC6510(m.createComponent("pic_6510", 0))
-	if err != nil {
-		return err
-	}
-	cpu, err := references.ComponentToI6510(m.createComponent("mos6510", 0))
-	if err != nil {
-		return err
-	}
-	via1, err := references.ComponentToIVIA(m.createComponent("mos6522", 0))
-	if err != nil {
-		return err
-	}
-	via2, err := references.ComponentToIVIA(m.createComponent("mos6522", 1))
-	if err != nil {
-		return err
-	}
 
-	if m.emulation, err = m.rebuildEmulation(m.components); err != nil {
-		return err
-	}
+	m.romSocket = NewRomLoaderSocket()
+	m.cpuSocket = NewCPUSocket()
+	m.via1Socket = NewVIA1Socket(m)
+	m.via2Socket = NewVIA2Socket(m, m.mec)
+	m.picSocket = NewPICSocket()
+	m.plaSocket = NewPLASocket()
 
-	if err = m.rlSocket.Connect(rl, cfg); err != nil {
-		return err
+	var connections []Connector
+	connections = append(connections, m.romSocket)
+	connections = append(connections, m.cpuSocket)
+	connections = append(connections, m.via1Socket)
+	connections = append(connections, m.via2Socket)
+	connections = append(connections, m.picSocket)
+	connections = append(connections, m.plaSocket)
+
+	//TODO REMOVE WHEN THREE IS READY...
+	components := make(map[string]references.IComponent)
+	components[iec.HardwareId()] = iec
+	components[quartz.HardwareId()] = quartz
+
+	for _, hw := range _c1541hardware {
+		comp, err := m.GetFactory().Create(m, hw.id, hw.instance)
+		if err != nil {
+			return err
+		}
+		components[comp.HardwareId()] = comp
 	}
-	if err = m.plaSocket.Connect(pla, via1, via2, rl, cfg); err != nil {
-		return err
+	for _, c := range connections {
+		if err = c.Setup(components, cfg); err != nil {
+			return err
+		}
 	}
-	if err = m.picSocket.Connect(pic, quartz); err != nil {
-		return err
+	for _, c := range connections {
+		if err = c.Connect(); err != nil {
+			return err
+		}
 	}
-	if err = m.via1Socket.Connect(via1, m, iec, deviceNumber); err != nil {
-		return err
-	}
-	if err = m.via2Socket.Connect(via2, m, m.mec); err != nil {
-		return err
-	}
-	if err = m.cpuSocket.Connect(cpu, pic, pla, via2); err != nil {
+	if m.emulation, err = m.rebuildEmulation(components); err != nil {
 		return err
 	}
 	if err = m.mountConfigDisk(m.cfg); err != nil {
@@ -172,7 +178,7 @@ func (m *Board) Ready() bool {
 
 // GetDeviceNumber retrieves the device number associated with the Board instance.
 func (m *Board) GetDeviceNumber() uint8 {
-	return m.via1Socket.GetDeviceNumber()
+	return m.deviceNumber
 }
 
 // AtnStateChanged handles changes in the ATN signal on the IEC bus and updates internal state accordingly.
@@ -248,15 +254,6 @@ func (m *Board) mountConfigDisk(cfg *config.Config) error {
 		return err
 	}
 	return nil
-}
-
-func (m *Board) createComponent(id string, instance int) (references.IComponent, error) {
-	comp, err := m.GetFactory().Create(m, id, instance)
-	if err != nil {
-		return nil, err
-	}
-	m.components[comp.HardwareId()] = comp
-	return comp, nil
 }
 
 func (m *Board) rebuildEmulation(components map[string]references.IComponent) ([]func(), error) {

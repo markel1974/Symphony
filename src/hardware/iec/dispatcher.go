@@ -55,7 +55,7 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 }
 
 // Setup initializes the Dispatcher component, configures drives based on the provided configuration, and prepares devices.
-func (c *Dispatcher) Setup(q references.IQuartz, cfg *config.Config) error {
+func (c *Dispatcher) Setup(q references.IComponent, cfg *config.Config) error {
 	for deviceId, d := range cfg.Drives() {
 		if err := c.AddPeripheral(q, cfg, d.GetKind(), uint8(deviceId)); err != nil {
 			return err
@@ -92,7 +92,7 @@ func (c *Dispatcher) Reset() {
 }
 
 // AddPeripheral adds a new peripheral to the dispatcher with the given kind, options, and device ID.
-func (c *Dispatcher) AddPeripheral(q references.IQuartz, cfg *config.Config, kind string, deviceId uint8) error {
+func (c *Dispatcher) AddPeripheral(q references.IComponent, cfg *config.Config, kind string, deviceId uint8) error {
 	deviceNumber := deviceId + 8
 	device, err := c.GetFactory().Create(c, kind, int(deviceNumber))
 	if err != nil {

@@ -87,13 +87,22 @@ type IVICSocket interface {
 	LastCycle()
 }
 
-func ComponentToIVIC(component IComponent, err error) (IVIC, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIVIC(component IComponent) (IVIC, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IVIC)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIVIC(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIVIC(cc map[string]IComponent, instance int) (IVIC, error) {
+	id := IdIVIC(nil, instance)
+	c, err := ComponentToIVIC(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

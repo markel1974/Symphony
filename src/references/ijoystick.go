@@ -29,13 +29,22 @@ type IJoystick interface {
 	Poll() (uint8, bool)
 }
 
-func ComponentToIJoystick(component IComponent, err error) (IJoystick, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIJoystick(component IComponent) (IJoystick, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IJoystick)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIJoystick(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIJoystick(cc map[string]IComponent, instance int) (IJoystick, error) {
+	id := IdIJoystick(nil, instance)
+	c, err := ComponentToIJoystick(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

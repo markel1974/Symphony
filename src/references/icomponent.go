@@ -1,7 +1,6 @@
 package references
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"io"
 	"strconv"
@@ -127,14 +126,4 @@ type IComponentFactory interface {
 
 func IdInternalComponent(id string, instance int) string {
 	return id + ":" + strconv.Itoa(instance)
-}
-
-func ComponentValidate(component IComponent, err error) error {
-	if err != nil {
-		return err
-	}
-	if component == nil {
-		return fmt.Errorf("nil component")
-	}
-	return nil
 }

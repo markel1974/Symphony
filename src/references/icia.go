@@ -56,13 +56,22 @@ type ICIA interface {
 	ReadRegister(addr uint16) uint8
 }
 
-func ComponentToICIA(component IComponent, err error) (ICIA, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToICIA(component IComponent) (ICIA, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(ICIA)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdICIA(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToICIA(cc map[string]IComponent, instance int) (ICIA, error) {
+	id := IdICIA(nil, instance)
+	c, err := ComponentToICIA(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

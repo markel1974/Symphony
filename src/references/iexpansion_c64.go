@@ -103,13 +103,22 @@ type ICartridgeManagerC64 interface {
 	Add(kind string, name string, data []uint8) (string, error)
 }
 
-func ComponentToICartridgeManagerC64(component IComponent, err error) (ICartridgeManagerC64, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToICartridgeManagerC64(component IComponent) (ICartridgeManagerC64, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(ICartridgeManagerC64)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdICartridgeManagerC64(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToICartridgeManagerC64(cc map[string]IComponent, instance int) (ICartridgeManagerC64, error) {
+	id := IdICartridgeManagerC64(nil, instance)
+	c, err := ComponentToICartridgeManagerC64(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

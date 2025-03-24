@@ -22,9 +22,9 @@ func IdIIec(_ IIec, instance int) string {
 // PeripheralWrite writes data from the CPU to a specific peripheral identified by its device number.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIec interface {
-	Setup(IQuartz, *config.Config) error
+	Setup(q IComponent, cfg *config.Config) error
 
-	AddPeripheral(q IQuartz, cfg *config.Config, kind string, deviceId uint8) error
+	AddPeripheral(q IComponent, cfg *config.Config, kind string, deviceId uint8) error
 
 	RemovePeripheral(deviceId uint8)
 
@@ -56,7 +56,7 @@ func IdIIecDevice(_ IIecDevice, instance int) string {
 // AtnStateChanged handles changes in the Attention (ATN) line state.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIecDevice interface {
-	Setup(IIec, IQuartz, uint8, uint8, *config.Config) error
+	Setup(iec IComponent, quartz IComponent, deviceId uint8, deviceNumber uint8, cfg *config.Config) error
 
 	Reset()
 
@@ -104,13 +104,22 @@ type IIecProtocolDevice interface {
 	Untalk(sec uint8)
 }
 
-func ComponentToIEC(component IComponent, err error) (IIec, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIEC(component IComponent) (IIec, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IIec)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIIec(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIEC(cc map[string]IComponent, instance int) (IIec, error) {
+	id := IdIIec(nil, instance)
+	c, err := ComponentToIEC(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

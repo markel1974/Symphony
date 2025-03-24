@@ -60,13 +60,22 @@ type IVIA interface {
 	ByteReady() bool
 }
 
-func ComponentToIVIA(component IComponent, err error) (IVIA, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIVIA(component IComponent) (IVIA, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IVIA)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIVIA(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIVIA(cc map[string]IComponent, instance int) (IVIA, error) {
+	id := IdIVIA(nil, instance)
+	c, err := ComponentToIVIA(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

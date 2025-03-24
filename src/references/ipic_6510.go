@@ -46,13 +46,22 @@ type IPIC6510 interface {
 	IRQClearBind(fn func(uint32))
 }
 
-func ComponentToIPIC6510(component IComponent, err error) (IPIC6510, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIPIC6510(component IComponent) (IPIC6510, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IPIC6510)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIPIC6510(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIPIC6510(cc map[string]IComponent, instance int) (IPIC6510, error) {
+	id := IdIPIC6510(nil, instance)
+	c, err := ComponentToIPIC6510(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

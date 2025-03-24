@@ -18,12 +18,20 @@ func NewRomLoaderSocket() *RomLoaderSocket {
 	}
 }
 
-// Connect initializes the RomLoaderSocket by associating it with an IROMLoaderC1541 instance and configuring it using cfg.
+// Setup initializes the RomLoaderSocket by associating it with an IROMLoaderC1541 instance and configuring it using cfg.
 // Returns an error if the setup of the IROMLoaderC1541 fails.
-func (s *RomLoaderSocket) Connect(rl references.IROMLoaderC1541, cfg *config.Config) error {
-	s.IROMLoaderC1541 = rl
-	if err := s.IROMLoaderC1541.Setup(cfg); err != nil {
+func (s *RomLoaderSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+	var err error
+	s.IROMLoaderC1541, err = references.ComponentsToIROMLoaderC1541(c, 0)
+	if err != nil {
 		return err
 	}
+	if err = s.IROMLoaderC1541.Setup(cfg); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *RomLoaderSocket) Connect() error {
 	return nil
 }

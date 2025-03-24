@@ -1,6 +1,7 @@
 package board
 
 import (
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -23,9 +24,9 @@ type ExpansionSocket struct {
 }
 
 // NewExpansionSocket initializes and returns a pointer to a new ExpansionSocket instance with default nil values.
-func NewExpansionSocket() *ExpansionSocket {
+func NewExpansionSocket(connections IExpansionSocketConnections) *ExpansionSocket {
 	e := &ExpansionSocket{
-		connections: nil,
+		connections: connections,
 		pic:         nil,
 		pla:         nil,
 		vic:         nil,
@@ -34,13 +35,29 @@ func NewExpansionSocket() *ExpansionSocket {
 	return e
 }
 
-// Connect initializes the ExpansionSocket with its dependencies and sets up the required connections.
-func (s *ExpansionSocket) Connect(connections IExpansionSocketConnections, pic references.IPIC6510, pla references.IPlaC64, vic references.IVIC, quartz references.IQuartz) error {
-	s.connections = connections
-	s.pic = pic
-	s.pla = pla
-	s.vic = vic
-	s.quartz = quartz
+// Setup initializes the ExpansionSocket with its dependencies and sets up the required connections.
+func (s *ExpansionSocket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+	var err error
+	s.pic, err = references.ComponentsToIPIC6510(c, 0)
+	if err != nil {
+		return err
+	}
+	s.pla, err = references.ComponentsToIPLAc64(c, 0)
+	if err != nil {
+		return err
+	}
+	s.vic, err = references.ComponentsToIVIC(c, 0)
+	if err != nil {
+		return err
+	}
+	s.quartz, err = references.ComponentsToIQuartz(c, 0)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *ExpansionSocket) Connect() error {
 	return nil
 }
 

@@ -42,13 +42,22 @@ type IQuartzAlarm interface {
 	Destroy()
 }
 
-func ComponentToIQuartz(component IComponent, err error) (IQuartz, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIQuartz(component IComponent) (IQuartz, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IQuartz)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIQuartz(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIQuartz(cc map[string]IComponent, instance int) (IQuartz, error) {
+	quartzId := IdIQuartz(nil, instance)
+	c, err := ComponentToIQuartz(cc[quartzId])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

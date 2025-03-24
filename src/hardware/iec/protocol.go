@@ -123,9 +123,16 @@ func (v *Protocol) SetDevice(device references.IIecProtocolDevice) {
 }
 
 // Setup initializes the Protocol with the provided IEC interface and configuration settings.
-func (v *Protocol) Setup(iec references.IIec, quartz references.IQuartz, deviceNumber uint8, device uint8, cfg *config.Config) error {
-	v.iec = iec
-	v.quartz = quartz
+func (v *Protocol) Setup(iec references.IComponent, quartz references.IComponent, deviceNumber uint8, device uint8, cfg *config.Config) error {
+	var err error
+	v.iec, err = references.ComponentToIEC(iec)
+	if err != nil {
+		return err
+	}
+	v.quartz, err = references.ComponentToIQuartz(quartz)
+	if err != nil {
+		return err
+	}
 	v.deviceNumber = deviceNumber
 	v.cfg = cfg
 	return nil

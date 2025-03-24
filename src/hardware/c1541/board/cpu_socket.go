@@ -1,6 +1,7 @@
 package board
 
 import (
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -8,7 +9,8 @@ import (
 type CPUSocket struct {
 	references.I6510
 	pic   references.IPIC6510
-	banks references.I6510Banks
+	banks references.IPLAc1541
+	via2  references.IVIA
 }
 
 // NewCPUSocket initializes and returns a new instance of CPUSocket with default nil components.
@@ -21,15 +23,33 @@ func NewCPUSocket() *CPUSocket {
 	return c
 }
 
-// Connect initializes the CPUSocket by associating it with the provided Board and configuring related components.
-func (w *CPUSocket) Connect(cpu references.I6510, pic references.IPIC6510, pla references.IPLAc1541, via2 references.IVIA) error {
-	w.pic = pic
-	w.banks = pla
-	w.I6510 = cpu
+// Setup initializes the CPUSocket by associating it with the provided Board and configuring related components.
+func (w *CPUSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+	var err error
+	w.pic, err = references.ComponentsToIPIC6510(c, 0)
+	if err != nil {
+		return err
+	}
+	w.banks, err = references.ComponentsToIPLAc1541(c, 0)
+	if err != nil {
+		return err
+	}
+	w.I6510, err = references.ComponentsToI6510(c, 0)
+	if err != nil {
+		return err
+	}
+	w.via2, err = references.ComponentsToIVIA(c, 1)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *CPUSocket) Connect() error {
 	if err := w.I6510.Setup(w); err != nil {
 		return err
 	}
-	w.I6510.SetOverflowBranch(via2.ByteReady)
+	w.I6510.SetOverflowBranch(w.via2.ByteReady)
 	return nil
 }
 

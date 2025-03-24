@@ -11,6 +11,29 @@ import (
 	"os"
 )
 
+type keyVal struct {
+	id       string
+	instance int
+}
+
+var _c64hardware = []keyVal{
+	{"mos6569", 0},
+	{"mos6526", 0},
+	{"mos6526", 1},
+	{"cartridges_c64", 0},
+	{"iec", 0},
+	{"mos6510", 0},
+	{"pic_6510", 0},
+	{"quartz", 0},
+	{"dynamic_throttle", 0},
+	{"mos6581", 0},
+	{"roms_c64", 0},
+	{"pla_c64", 0},
+	{"keyboard_c64", 0},
+	{"joystick_c64", 0},
+	{"joystick_c64", 1},
+}
+
 var _hardwareSequence = []string{
 	references.IdIVIC(nil, 0),
 	references.IdICIA(nil, 0),
@@ -31,6 +54,12 @@ const (
 	intrIrqCia2Bit      = 2
 	intrIrqExpansionBit = 3
 )
+
+type Connector interface {
+	Setup(cc map[string]references.IComponent, cfg *config.Config) error
+
+	Connect() error
+}
 
 // Board represents a complex hardware configuration comprising various component sockets and related system functionalities.
 type Board struct {
@@ -58,7 +87,6 @@ type Board struct {
 	dmaLow          bool
 	vBlankSignal    *signals.Signal
 	ledSignal       *signals.SignalUint32
-	components      map[string]references.IComponent
 	emulation       []func()
 	//expansionIrqTrigger *signals.SignalUint32
 	//expansionIrqClear   *signals.SignalUint32
@@ -68,31 +96,14 @@ type Board struct {
 // It registers the created instance as a child of the provided parent IComponent.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *Board {
 	b := &Board{
-		BaseComponent:   component.NewBaseComponent(),
-		db:              nil,
-		keysSocket:      NewKeyboardSocket(),
-		joySocket1:      NewJoystickSocket(),
-		joySocket2:      NewJoystickSocket(),
-		quartzSocket:    NewQuartzSocket(),
-		romSocket:       NewRomLoaderSocket(),
-		picSocket:       NewPICSocket(),
-		cpuSocket:       NewCPUSocket(),
-		iecSocket:       NewIECSocket(),
-		vicSocket:       NewVICSocket(),
-		sidSocket:       NewSIDSocket(),
-		cia1Socket:      NewCIA1Socket(),
-		cia2Socket:      NewCIA2Socket(),
-		plaSocket:       NewPLASocket(),
-		cartSocket:      NewCartridgeSocket(),
-		throttleSocket:  NewThrottleSocket(),
-		expansionSocket: NewExpansionSocket(),
-		dmaLow:          false,
-		prg:             nil,
-		joySwap:         true,
-		vBlankSignal:    signals.NewSignal(),
-		ledSignal:       signals.NewSignalUint32(),
-		components:      make(map[string]references.IComponent),
-		emulation:       []func(){},
+		BaseComponent: component.NewBaseComponent(),
+		db:            nil,
+		dmaLow:        false,
+		prg:           nil,
+		joySwap:       true,
+		vBlankSignal:  signals.NewSignal(),
+		ledSignal:     signals.NewSignalUint32(),
+		emulation:     []func(){},
 	}
 	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIBoardC64(b, instance))
 	return b
@@ -109,116 +120,70 @@ func (s *Board) LEDSignal() *signals.SignalUint32 {
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) error {
 	s.db = db
 	s.cfg = cfg
+	components := make(map[string]references.IComponent)
+	var connections []Connector
 
-	vic, err := references.ComponentToIVIC(s.createComponent("mos6569", 0))
-	if err != nil {
-		return err
+	s.keysSocket = NewKeyboardSocket()
+	s.joySocket1 = NewJoystickSocket(0)
+	s.joySocket2 = NewJoystickSocket(1)
+	s.romSocket = NewRomLoaderSocket()
+	s.quartzSocket = NewQuartzSocket()
+	s.iecSocket = NewIECSocket(s)
+	s.expansionSocket = NewExpansionSocket(s)
+	s.cartSocket = NewCartridgeSocket(s.expansionSocket)
+	s.picSocket = NewPICSocket()
+	s.cpuSocket = NewCPUSocket()
+	s.vicSocket = NewVICSocket(s)
+	s.sidSocket = NewSIDSocket(mos6569.ScreenFreq, mos6569.TotalRasters)
+	s.cia1Socket = NewCIA1Socket()
+	s.cia2Socket = NewCIA2Socket()
+	s.plaSocket = NewPLASocket()
+	s.throttleSocket = NewThrottleSocket(mos6569.FrameInterval)
+
+	connections = append(connections, s.romSocket)
+	connections = append(connections, s.quartzSocket)
+	connections = append(connections, s.keysSocket)
+	connections = append(connections, s.joySocket1)
+	connections = append(connections, s.joySocket2)
+	connections = append(connections, s.iecSocket)
+	connections = append(connections, s.expansionSocket)
+	connections = append(connections, s.cartSocket)
+	connections = append(connections, s.picSocket)
+	connections = append(connections, s.cpuSocket)
+	connections = append(connections, s.vicSocket)
+	connections = append(connections, s.sidSocket)
+	connections = append(connections, s.cia1Socket)
+	connections = append(connections, s.cia2Socket)
+	connections = append(connections, s.plaSocket)
+	connections = append(connections, s.throttleSocket)
+
+	s.vicSocket.SetDisplayBuffer(db)
+	s.sidSocket.SetPlayer(player)
+
+	//TODO REMOVE WHEN THREE IS READY...
+	for _, hw := range _c64hardware {
+		comp, err := s.GetFactory().Create(s, hw.id, hw.instance)
+		if err != nil {
+			return err
+		}
+		components[comp.HardwareId()] = comp
 	}
-	cia1, err := references.ComponentToICIA(s.createComponent("mos6526", 0))
-	if err != nil {
-		return err
+
+	for _, c := range connections {
+		if err := c.Setup(components, cfg); err != nil {
+			return err
+		}
 	}
-	cia2, err := references.ComponentToICIA(s.createComponent("mos6526", 1))
-	if err != nil {
-		return err
+
+	for _, c := range connections {
+		if err := c.Connect(); err != nil {
+			return err
+		}
 	}
-	cart, err := references.ComponentToICartridgeManagerC64(s.createComponent("cartridges_c64", 0))
-	if err != nil {
-		return err
-	}
-	iec, err := references.ComponentToIEC(s.createComponent("iec", 0))
-	if err != nil {
-		return err
-	}
-	cpu, err := references.ComponentToI6510(s.createComponent("mos6510", 0))
-	if err != nil {
-		return err
-	}
-	pic, err := references.ComponentToIPIC6510(s.createComponent("pic_6510", 0))
-	if err != nil {
-		return err
-	}
-	quartz, err := references.ComponentToIQuartz(s.createComponent("quartz", 0))
-	if err != nil {
-		return err
-	}
-	throttle, err := references.ComponentToIThrottle(s.createComponent("dynamic_throttle", 0))
-	if err != nil {
-		return err
-	}
-	sid, err := references.ComponentToISID(s.createComponent("mos6581", 0))
-	if err != nil {
-		return err
-	}
-	rom, err := references.ComponentToIROMLoaderC64(s.createComponent("roms_c64", 0))
-	if err != nil {
-		return err
-	}
-	pla, err := references.ComponentToIPLAc64(s.createComponent("pla_c64", 0))
-	if err != nil {
-		return err
-	}
-	keys, err := references.ComponentToIKeyboard(s.createComponent("keyboard_c64", 0))
-	if err != nil {
-		return err
-	}
-	joy1, err := references.ComponentToIJoystick(s.createComponent("joystick_c64", 0))
-	if err != nil {
-		return err
-	}
-	joy2, err := references.ComponentToIJoystick(s.createComponent("joystick_c64", 1))
-	if err != nil {
-		return err
-	}
-	if s.emulation, err = s.rebuildEmulation(s.components); err != nil {
-		return err
-	}
-	if err = s.quartzSocket.Connect(quartz); err != nil {
-		return err
-	}
-	if err = s.expansionSocket.Connect(s, pic, pla, vic, quartz); err != nil {
-		return err
-	}
-	if err = s.throttleSocket.Connect(throttle, mos6569.FrameInterval); err != nil {
-		return err
-	}
-	if err = s.romSocket.Connect(rom, cfg); err != nil {
-		return err
-	}
-	if err = s.picSocket.Connect(pic, quartz); err != nil {
-		return err
-	}
-	if err = s.iecSocket.Connect(iec, s, quartz, cfg); err != nil {
-		return err
-	}
-	if err = s.cpuSocket.Connect(cpu, pic, pla); err != nil {
-		return err
-	}
-	if err = s.vicSocket.Connect(vic, s, db, pic, pla, quartz, cfg); err != nil {
-		return err
-	}
-	if err = s.sidSocket.Connect(sid, player, mos6569.ScreenFreq, mos6569.TotalRasters, cfg); err != nil {
-		return err
-	}
-	if err = s.cia1Socket.Connect(cia1, pic, vic, keys, joy1, joy2); err != nil {
-		return err
-	}
-	if err = s.cia2Socket.Connect(cia2, pic, vic, iec); err != nil {
-		return err
-	}
-	if err = s.cartSocket.Connect(cart, s.expansionSocket, cfg); err != nil {
-		return err
-	}
-	if err = s.plaSocket.Connect(pla, vic, sid, cia1, cia2, cart, rom, cfg); err != nil {
-		return err
-	}
-	if err = s.keysSocket.Connect(keys); err != nil {
-		return err
-	}
-	if err = s.joySocket1.Connect(joy1); err != nil {
-		return err
-	}
-	if err = s.joySocket2.Connect(joy2); err != nil {
+
+	var err error
+
+	if s.emulation, err = s.rebuildEmulation(components); err != nil {
 		return err
 	}
 
@@ -455,15 +420,6 @@ func (s *Board) startPRG(prgPath string) error {
 		return fmt.Errorf("can't load prg: %s", err.Error())
 	}
 	return nil
-}
-
-func (s *Board) createComponent(id string, instance int) (references.IComponent, error) {
-	comp, err := s.GetFactory().Create(s, id, instance)
-	if err != nil {
-		return nil, err
-	}
-	s.components[comp.HardwareId()] = comp
-	return comp, nil
 }
 
 func (s *Board) rebuildEmulation(components map[string]references.IComponent) ([]func(), error) {

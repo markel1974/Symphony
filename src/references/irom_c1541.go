@@ -18,13 +18,22 @@ type IROMLoaderC1541 interface {
 	Load() []byte
 }
 
-func ComponentToIROMLoaderC1541(component IComponent, err error) (IROMLoaderC1541, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIROMLoaderC1541(component IComponent) (IROMLoaderC1541, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IROMLoaderC1541)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIROMLoaderC1541(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIROMLoaderC1541(cc map[string]IComponent, instance int) (IROMLoaderC1541, error) {
+	id := IdIROMLoaderC1541(nil, instance)
+	c, err := ComponentToIROMLoaderC1541(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

@@ -9,6 +9,10 @@ import (
 // It combines board interactions and the IPLAc1541 interface for managing the logic needed in emulation scenarios.
 type PLASocket struct {
 	references.IPLAc1541
+	via1 references.IVIA
+	via2 references.IVIA
+	roms references.IROMLoaderC1541
+	cfg  *config.Config
 }
 
 // NewPLASocket creates and returns a new instance of PLASocket with its fields initialized to nil.
@@ -19,11 +23,31 @@ func NewPLASocket() *PLASocket {
 	return c
 }
 
-// Connect establishes links between the PLASocket and specified components, initializing them using the provided configuration.
+// Setup establishes links between the PLASocket and specified components, initializing them using the provided configuration.
 // It sets up the PLA logic by associating it with VIA components, the ROM loader, and the configuration data.
-func (w *PLASocket) Connect(pla references.IPLAc1541, via1 references.IVIA, via2 references.IVIA, roms references.IROMLoaderC1541, cfg *config.Config) error {
-	w.IPLAc1541 = pla
-	if err := w.IPLAc1541.Setup(via1, via2, roms, cfg); err != nil {
+func (w *PLASocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+	var err error
+	w.IPLAc1541, err = references.ComponentsToIPLAc1541(c, 0)
+	if err != nil {
+		return err
+	}
+	w.via1, err = references.ComponentsToIVIA(c, 0)
+	if err != nil {
+		return err
+	}
+	w.via2, err = references.ComponentsToIVIA(c, 1)
+	if err != nil {
+		return err
+	}
+	w.roms, err = references.ComponentsToIROMLoaderC1541(c, 0)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *PLASocket) Connect() error {
+	if err := w.IPLAc1541.Setup(w.via1, w.via2, w.roms, w.cfg); err != nil {
 		return err
 	}
 	return nil

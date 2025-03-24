@@ -17,13 +17,22 @@ type IThrottle interface {
 	Update()
 }
 
-func ComponentToIThrottle(component IComponent, err error) (IThrottle, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIThrottle(component IComponent) (IThrottle, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IThrottle)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIThrottle(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIThrottle(cc map[string]IComponent, instance int) (IThrottle, error) {
+	id := IdIThrottle(nil, instance)
+	c, err := ComponentToIThrottle(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

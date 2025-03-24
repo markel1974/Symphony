@@ -32,13 +32,22 @@ type IKeyboard interface {
 	SetCommand(cmd string)
 }
 
-func ComponentToIKeyboard(component IComponent, err error) (IKeyboard, error) {
-	if err = ComponentValidate(component, err); err != nil {
-		return nil, err
+func ComponentToIKeyboard(component IComponent) (IKeyboard, error) {
+	if component == nil {
+		return nil, fmt.Errorf("component is nil")
 	}
 	v, ok := component.(IKeyboard)
 	if !ok {
 		return nil, fmt.Errorf("component is not a %s", IdIKeyboard(v, 0))
 	}
 	return v, nil
+}
+
+func ComponentsToIKeyboard(cc map[string]IComponent, instance int) (IKeyboard, error) {
+	id := IdIKeyboard(nil, instance)
+	c, err := ComponentToIKeyboard(cc[id])
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }

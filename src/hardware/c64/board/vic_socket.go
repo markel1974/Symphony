@@ -27,10 +27,10 @@ type VICSocket struct {
 }
 
 // NewVICSocket creates and returns a new instance of the VICSocket struct.
-func NewVICSocket() *VICSocket {
+func NewVICSocket(connections IVICSocketConnection) *VICSocket {
 	return &VICSocket{
 		IVIC:        nil,
-		connections: nil,
+		connections: connections,
 		db:          nil,
 		pic:         nil,
 		pla:         nil,
@@ -39,28 +39,43 @@ func NewVICSocket() *VICSocket {
 	}
 }
 
-// Connect initializes the VICSocket with the given board and interrupt ID.
-func (v *VICSocket) Connect(vic references.IVIC, connection IVICSocketConnection, db references.IDisplayBuffer, pic references.IPIC6510, pla references.IPlaC64, quartz references.IQuartz, cfg *config.Config) error {
-	v.IVIC = vic
-	v.connections = connection
+func (v *VICSocket) SetDisplayBuffer(db references.IDisplayBuffer) {
 	v.db = db
-	v.pic = pic
-	v.pla = pla
-	v.quartz = quartz
-	if err := v.IVIC.Setup(v, cfg); err != nil {
+}
+
+// GetDisplayBuffer returns the IDisplayBuffer instance associated with the VICSocket's board.
+func (v *VICSocket) GetDisplayBuffer() references.IDisplayBuffer {
+	return v.db
+}
+
+// Setup initializes the VICSocket with the given board and interrupt ID.
+func (v *VICSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+	var err error
+	if v.IVIC, err = references.ComponentsToIVIC(c, 0); err != nil {
 		return err
 	}
+	if v.pic, err = references.ComponentsToIPIC6510(c, 0); err != nil {
+		return err
+	}
+	if v.pla, err = references.ComponentsToIPLAc64(c, 0); err != nil {
+		return err
+	}
+	if v.quartz, err = references.ComponentsToIQuartz(c, 0); err != nil {
+		return err
+	}
+	if err = v.IVIC.Setup(v, cfg); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *VICSocket) Connect() error {
 	return nil
 }
 
 // Cycle retrieves the current cycle count from the associated Quartz scheduler.
 func (v *VICSocket) Cycle() uint64 {
 	return v.quartz.Cycle()
-}
-
-// GetDisplayBuffer returns the IDisplayBuffer instance associated with the VICSocket's board.
-func (v *VICSocket) GetDisplayBuffer() references.IDisplayBuffer {
-	return v.db
 }
 
 // GetBanks returns an implementation of the mos6569.IVICBanks interface, which provides access to memory handling operations.
