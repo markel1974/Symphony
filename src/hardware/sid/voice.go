@@ -4,8 +4,18 @@ import (
 	"github.com/markel1974/c64emu/src/common/conversion"
 )
 
+// WaveFormType represents different waveform types used in a sound synthesis context.
 type WaveFormType int
 
+// WaveNone represents the absence of a waveform.
+// WaveTri represents a triangular waveform.
+// WaveSaw represents a sawtooth waveform.
+// WaveTriSaw represents a combined triangular and sawtooth waveform.
+// WaveRect represents a rectangular waveform.
+// WaveTriRect represents a combined triangular and rectangular waveform.
+// WaveSawRect represents a combined sawtooth and rectangular waveform.
+// WaveTriSawRect represents a combined triangular, sawtooth, and rectangular waveform.
+// WaveNoise represents a noise waveform.
 const (
 	WaveNone = WaveFormType(iota)
 	WaveTri
@@ -18,6 +28,10 @@ const (
 	WaveNoise
 )
 
+// EgIdle represents the idle state in the EGState enumeration.
+// EgAttack represents the attack state in the EGState enumeration.
+// EgDecay represents the decay state in the EGState enumeration.
+// EgRelease represents the release state in the EGState enumeration.
 const (
 	EgIdle = EGState(iota)
 	EgAttack
@@ -25,6 +39,7 @@ const (
 	EgRelease
 )
 
+// Voice represents a sound generator within a synthesizer.
 type Voice struct {
 	number  uint8
 	wave    WaveFormType // Selected waveform
@@ -49,6 +64,7 @@ type Voice struct {
 	seed    uint32
 }
 
+// NewVoice creates a new Voice instance with provided voice number and initializes its properties to default values.
 func NewVoice(number uint8) *Voice {
 	return &Voice{
 		number:  number,
@@ -75,11 +91,13 @@ func NewVoice(number uint8) *Voice {
 	}
 }
 
+// Setup initializes modulation relationships for the voice by setting the modulating and modulated voices.
 func (v *Voice) Setup(modBy *Voice, modTo *Voice) {
 	v.modBy = modBy
 	v.modTo = modTo
 }
 
+// Reset reinitializes the Voice instance to its default state, resetting all parameters and flags to their initial values.
 func (v *Voice) Reset() {
 	v.wave = WaveNone
 	v.egState = EgIdle
@@ -99,24 +117,29 @@ func (v *Voice) Reset() {
 	v.filter = false
 }
 
+// UpdateFreqA updates the lower 8 bits of the frequency register and recalculates the increment value for the waveform generator.
 func (v *Voice) UpdateFreqA(regIdx uint8) {
 	v.freq = (v.freq & 0xff00) | uint16(regIdx)
 	v.add = uint32(float64(v.freq) * Frequency / SampleFreq)
 }
 
+// UpdateFreqB updates the high byte of the frequency value and recalculates the corresponding increment value for the counter.
 func (v *Voice) UpdateFreqB(data uint8) {
 	v.freq = (v.freq & 0xff) | (uint16(data) << 8)
 	v.add = uint32(float64(v.freq) * Frequency / SampleFreq)
 }
 
+// UpdatePulseWidthA updates the lower 8 bits of the pulse width value while preserving the upper 8 bits.
 func (v *Voice) UpdatePulseWidthA(data uint8) {
 	v.pw = (v.pw & 0x0f00) | uint16(data)
 }
 
+// UpdatePulseWidthB updates the high 4 bits of the pulse-width value by masking and shifting the input data.
 func (v *Voice) UpdatePulseWidthB(data uint8) {
 	v.pw = (v.pw & 0xff) | ((uint16(data) & 0xf) << 8)
 }
 
+// UpdateWaveForm updates the waveform type and other voice properties such as gate, sync, ring modulation, and test mode.
 func (v *Voice) UpdateWaveForm(data uint8) {
 	v.wave = WaveFormType(data>>4) & 0xf
 	if conversion.Uint8ToBool(data&1) != v.gate {
@@ -139,16 +162,19 @@ func (v *Voice) UpdateWaveForm(data uint8) {
 	}
 }
 
+// UpdateEnvelopeGenerators updates the attack increment and decay decrement rates of the envelope generator using the provided data.
 func (v *Voice) UpdateEnvelopeGenerators(data uint8) {
 	v.aAdd = _eGTable[data>>4]
 	v.dSub = _eGTable[data&0xf]
 }
 
+// UpdateSustainLevel adjusts the sustain level and release decrement based on the given data value for the envelope generator.
 func (v *Voice) UpdateSustainLevel(data uint8) {
 	v.sLevel = (uint32(data) >> 4) * 0x111111
 	v.rSub = _eGTable[data&0xf]
 }
 
+// ComputeEnvelopeGenerators updates the envelope generator levels and transitions between states based on current values.
 func (v *Voice) ComputeEnvelopeGenerators() {
 	switch v.egState {
 	case EgAttack:
@@ -177,6 +203,7 @@ func (v *Voice) ComputeEnvelopeGenerators() {
 	}
 }
 
+// ComputeWaveForm generates and returns the waveform output for the voice based on its current waveform type and settings.
 func (v *Voice) ComputeWaveForm() uint16 {
 	output := uint16(0)
 	switch v.wave {

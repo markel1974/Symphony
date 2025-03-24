@@ -1,15 +1,19 @@
 package mos6581
 
+// SampleFreq defines the output frequency in Hz.
+// Frequency defines the SID frequency in Hz.
+// Cycles defines the SID clocks per sample frame.
+// SampleBufSize defines the size of the buffer for sampled voices (double buffered).
+// RegisterCount defines the number of registers in the SID.
 const (
-	SampleFreq    = 44100                  // SampleFreq define the output frequency in Hz
-	Frequency     = 985248                 // Frequency defines the SID frequency in Hz
-	Cycles        = Frequency / SampleFreq // Cycles defines the SID clocks per sample frame
-	SampleBufSize = 0x138 * 2              // SampleBufSize defines the size of the buffer for sampled voices (double buffered)
-	RegisterCount = 32                     // RegisterCount defines the number of registers in the SID.
-	//RegisterHistory = 1024                   // RegisterHistory defines the size of the register history buffer.
+	SampleFreq    = 44100
+	Frequency     = 985248
+	Cycles        = Frequency / SampleFreq
+	SampleBufSize = 0x138 * 2
+	RegisterCount = 32
 )
 
-// from a 6581R4
+// _triSawTable is a lookup table for triangular and sawtooth waveform computations in waveform generation scenarios.
 var _triSawTable = []uint16{
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -45,6 +49,7 @@ var _triSawTable = []uint16{
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x1010, 0x3C3C,
 }
 
+// _triRectTable is a lookup table used for generating waveform data in the triangular-rectangle wave synthesis process.
 var _triRectTable = []uint16{
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -80,6 +85,7 @@ var _triRectTable = []uint16{
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 }
 
+// _sawRectTable is a lookup table used for generating waveform data for a saw-tooth and rectangle wave combination.
 var _sawRectTable = []uint16{
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -115,6 +121,7 @@ var _sawRectTable = []uint16{
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x7878,
 }
 
+// _triSawRectTable is a lookup table used for generating waveform data for the TriSawRect wave mode in audio synthesis.
 var _triSawRectTable = []uint16{
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
@@ -150,6 +157,7 @@ var _triSawRectTable = []uint16{
 	0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
 }
 
+// _eGTable is a lookup table containing calculated envelope generator timing values based on system cycles.
 var _eGTable = [16]uint32{
 	(Cycles << 16) / 9, (Cycles << 16) / 32,
 	(Cycles << 16) / 63, (Cycles << 16) / 95,
@@ -161,6 +169,7 @@ var _eGTable = [16]uint32{
 	(Cycles << 16) / 19531, (Cycles << 16) / 31251,
 }
 
+// _eGDRShiftTable is a predefined lookup table used for envelope generator shift calculations based on the 16-bit upper egLevel.
 var _eGDRShiftTable = [256]uint8{
 	5, 5, 5, 5, 5, 5, 5, 5, 4, 4, 4, 4, 4, 4, 4, 4,
 	3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2,
@@ -180,6 +189,7 @@ var _eGDRShiftTable = [256]uint8{
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 }
 
+// _sampleTable is a lookup table containing 16 fixed int32 values used in audio calculations for waveform processing.
 var _sampleTable = [16]int32{
 	int32(0x8000),
 	int32(0x9111),
@@ -199,8 +209,10 @@ var _sampleTable = [16]int32{
 	int32(0x7fff),
 }
 
+// _triTable is a precomputed lookup table used to generate triangular waveforms more efficiently.
 var _triTable [0x1000 * 2]uint16
 
+// init initializes the _triTable array with computed values for triangular wave data.
 func init() {
 	// Calculate triangle table
 	for i := uint16(0); i < 0x1000; i++ {

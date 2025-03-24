@@ -60,6 +60,7 @@ func (cpu *CPU) Setup(socket references.I6510Socket, _ *config.Config) error {
 	return nil
 }
 
+// Connect establishes necessary connections for the CPU, preparing it for operation.
 func (cpu *CPU) Connect() error {
 	return nil
 }

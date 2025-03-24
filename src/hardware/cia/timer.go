@@ -132,14 +132,17 @@ func NewTimer(parent references.IComponent, factory references.IComponentFactory
 	return m
 }
 
+// UnderflowSignal returns the signal triggered on timer underflow for further handling or binding.
 func (m *Timer) UnderflowSignal() *signals.Signal {
 	return m.underflowOutSignal
 }
 
+// GetUnderflowOut retrieves the current state of the underflow output signal from the timer instance.
 func (m *Timer) GetUnderflowOut() bool {
 	return m.underflowOut
 }
 
+// SetUnderflowIn sets the underflow input signal state for the timer instance to the specified boolean value.
 func (m *Timer) SetUnderflowIn(u bool) {
 	m.underflowIn = u
 }

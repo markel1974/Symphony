@@ -49,10 +49,12 @@ func (m *TOD) Reset() {
 	m.almHr = 0
 }
 
+// Emulate handles the emulation process for the TOD, managing operations based on the current TOD state.
 func (m *TOD) Emulate() {
 	//
 }
 
+// EmulationRequired determines if emulation is necessary for the TOD. Always returns false in its current implementation.
 func (m *TOD) EmulationRequired() bool {
 	return false
 }

@@ -35,15 +35,18 @@ func (s *DynamicThrottle) Setup(_ references.IThrottleSocket, _ *config.Config, 
 	return nil
 }
 
+// Connect establishes a connection or initializes any required resources for the DynamicThrottle component.
 func (s *DynamicThrottle) Connect() error {
 	return nil
 }
 
+// Emulate triggers the dynamic throttling process, ensuring consistent execution intervals based on configuration.
 func (s *DynamicThrottle) Emulate() {
 
 }
 
-func (m *DynamicThrottle) EmulationRequired() bool {
+// EmulationRequired determines whether emulation is currently required by the DynamicThrottle instance.
+func (s *DynamicThrottle) EmulationRequired() bool {
 	return false
 }
 

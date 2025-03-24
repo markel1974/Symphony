@@ -5,8 +5,17 @@ import (
 	"math"
 )
 
+// FilterType represents the type of filter applied in the audio processing pipeline.
 type FilterType int
 
+// FilterNone represents no filtering.
+// FilterLp represents a low-pass filter.
+// FilterBp represents a band-pass filter.
+// FilterLpBp represents a combination of low-pass and band-pass filters.
+// FilterHp represents a high-pass filter.
+// FilterNotch represents a notch filter.
+// FilterHpBp represents a combination of high-pass and band-pass filters.
+// FilterAll represents applying all filters.
 const (
 	FilterNone = FilterType(iota)
 	FilterLp
@@ -18,16 +27,19 @@ const (
 	FilterAll
 )
 
+// calcResonanceLp computes the resonance low-pass filter value based on the given input x using a polynomial equation.
 func calcResonanceLp(x float64) float64 {
 	v := 227.755 - (1.7635 * x) - (0.0176385 * x * x) + (0.00333484 * x * x * x) - (9.05683e-6 * x * x * x * x)
 	return v
 }
 
+// calcResonanceHp computes the high-pass filter resonance value based on the input parameter x.
 func calcResonanceHp(x float64) float64 {
 	v := 366.374 - (14.0052 * x) + (0.603212 * x * x) - (0.000880196 * x * x * x)
 	return v
 }
 
+// Filters represents the state and configuration of an audio filter, including coefficients, resonance, and frequencies.
 type Filters struct {
 	filterType         FilterType   // Filter type
 	filterFreq         uint8        // SID filter frequency (upper 8 bits)
@@ -40,6 +52,7 @@ type Filters struct {
 	useFilters         bool
 }
 
+// NewFilters initializes a new Filters instance with default parameters and precomputes resonance lookup tables.
 func NewFilters(useFilters bool) *Filters {
 	f := &Filters{
 		useFilters: useFilters,
@@ -63,6 +76,7 @@ func NewFilters(useFilters bool) *Filters {
 	return f
 }
 
+// Reset reinitializes all filter parameters in the Filters struct to their default values, effectively clearing any previous state.
 func (f *Filters) Reset() {
 	f.filterType = FilterNone
 	f.filterFreq = 0
@@ -78,6 +92,7 @@ func (f *Filters) Reset() {
 	f.yn2 = 0.0
 }
 
+// Compute applies the filter defined in the Filters struct to the output signal and returns the resulting value.
 func (f *Filters) Compute(outputFilter int32) int32 {
 	if f.useFilters {
 		xn := float64(outputFilter) * f.filterAmpl
@@ -91,6 +106,7 @@ func (f *Filters) Compute(outputFilter int32) int32 {
 	return outputFilter
 }
 
+// UpdateFreq updates the filter frequency if the given data differs from the current frequency and recomputes if filters are active.
 func (f *Filters) UpdateFreq(data uint8) {
 	if data != f.filterFreq {
 		f.filterFreq = data
@@ -100,6 +116,7 @@ func (f *Filters) UpdateFreq(data uint8) {
 	}
 }
 
+// UpdateRes updates the filter resonance value using the upper 4 bits of the input and recalculates filters if enabled.
 func (f *Filters) UpdateRes(data uint8) {
 	v := data >> 4
 	if v != f.filterRes {
@@ -110,6 +127,7 @@ func (f *Filters) UpdateRes(data uint8) {
 	}
 }
 
+// UpdateType adjusts the filter type of the Filters instance based on the provided data and resets filter state if changed.
 func (f *Filters) UpdateType(data uint8) {
 	v := FilterType((data >> 4) & 7)
 	if v != f.filterType {
@@ -124,6 +142,7 @@ func (f *Filters) UpdateType(data uint8) {
 	}
 }
 
+// compute adjusts internal filter coefficients and characteristics based on filter type, frequency, and resonance settings.
 func (f *Filters) compute() {
 	var fr float64
 	// Check for some trivial cases

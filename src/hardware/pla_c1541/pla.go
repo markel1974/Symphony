@@ -14,10 +14,11 @@ import (
 // $2000-$bfff free
 // $c000-$ffff _rom (16K)
 
-// c1541RamSize defines the size of the RAM for a C1541 emulator, set to 2 KB (0x0800 bytes).
+// c1541RamSize represents the size of RAM in the C1541 disk drive, defined as 2 KB (0x0800).
 const c1541RamSize = 0x0800
 
-// PLA represents a memory management and I/O coordination unit, including RAM, ROM, and communication with VIAs.
+// PLA represents a programmable logic array that links memory and peripheral devices in a system.
+// It embeds BaseComponent and provides RAM, ROM, and connections to two VIA components.
 type PLA struct {
 	*component.BaseComponent
 	ram  []uint8
@@ -26,7 +27,8 @@ type PLA struct {
 	via2 references.IVIA
 }
 
-// NewPLA initializes and returns a pointer to a new instance of PLA with default memory and configurations set.
+// NewPLA initializes and returns a new instance of the PLA structure with specified parent, factory, and instance ID.
+// It sets up the PLA's RAM with a predefined size and registers the component in a hierarchy via the factory.
 func NewPLA(parent references.IComponent, factory references.IComponentFactory, instance int) *PLA {
 	p := &PLA{
 		BaseComponent: component.NewBaseComponent(),
@@ -36,16 +38,12 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	return p
 }
 
-// New creates and returns a new instance of PLA with initialized RAM of the specified size.
-//func New() *PLA {
-//	return &PLA{ram: make([]uint8, c1541RamSize)}
-//}
-
+// Setup initializes the PLA by configuring it with the provided socket and configuration details.
 func (r *PLA) Setup(_ references.IPLAc1541Socket, _ *config.Config) error {
 	return nil
 }
 
-// Connect initializes the PLA instance by configuring VIA components and loading required ROM based on the provided configuration.
+// Connect associates the PLA with two VIA interfaces and loads ROM data via the provided ROM loader.
 func (r *PLA) Connect(via1 references.IVIA, via2 references.IVIA, roms references.IROMLoaderC1541) error {
 	r.via1 = via1
 	r.via2 = via2
@@ -53,12 +51,15 @@ func (r *PLA) Connect(via1 references.IVIA, via2 references.IVIA, roms reference
 	return nil
 }
 
+// Reset restores the PLA instance to its initial state, clearing relevant data and resetting internal components.
 func (r *PLA) Reset() {
 
 }
 
+// Emulate performs a cycle of emulation logic for the PLA, handling memory and I/O operations as required.
 func (r *PLA) Emulate() {}
 
+// EmulationRequired determines if emulation is needed for the current component. Always returns false for this implementation.
 func (r *PLA) EmulationRequired() bool {
 	return false
 }
@@ -68,12 +69,12 @@ func (r *PLA) EmulationRequired() bool {
 //	r.ram[0x7c] = 1
 //}
 
-// ReadInterval returns a slice of bytes from the RAM starting at the provided start address for the specified count.
+// ReadInterval returns a slice of bytes from the PLA's RAM, starting at the specified address and spanning the given count.
 func (r *PLA) ReadInterval(start uint16, count uint16) []byte {
 	return r.ram[start : start+count]
 }
 
-// Read retrieves a byte at the specified memory address using prioritized access to ROM, RAM, or I/O.
+// Read retrieves a byte of data from the specified memory address, accessing either ROM, RAM, or I/O based on the address.
 func (r *PLA) Read(addr uint16) uint8 {
 	if addr >= 0xc000 {
 		return r.rom[addr&0x3fff]
@@ -84,7 +85,7 @@ func (r *PLA) Read(addr uint16) uint8 {
 	return r.readByteIO(addr)
 }
 
-// Write writes an 8-bit unsigned data value to the specified 16-bit memory address in the PLA instance.
+// Write stores a byte of data at a given memory address, handling RAM or calling IO write methods based on the address range.
 func (r *PLA) Write(addr uint16, data uint8) {
 	if addr < 0x1000 {
 		r.ram[addr&0x7ff] = data
@@ -96,7 +97,9 @@ func (r *PLA) Write(addr uint16, data uint8) {
 	r.writeByteIO(addr, data)
 }
 
-// readByteIO reads a byte from a specified I/O address, delegating to via1 or via2 if within their address ranges.
+// readByteIO reads a byte from a specified I/O address.
+// Delegates the read operation to via1 or via2 based on the address range.
+// Returns the high byte of the address if no match is found.
 func (r *PLA) readByteIO(addr uint16) uint8 {
 	v := addr & 0xfc00
 	if v == 0x1800 {
@@ -108,7 +111,7 @@ func (r *PLA) readByteIO(addr uint16) uint8 {
 	return uint8(addr >> 8)
 }
 
-// writeByteIO handles the writing of a byte to the VIA1 or VIA2 interfaces based on the provided address range conditions.
+// writeByteIO handles the write operations to I/O devices based on the given address and data.
 func (r *PLA) writeByteIO(addr uint16, data uint8) {
 	v := addr & 0xfc00
 	if v == 0x1800 {

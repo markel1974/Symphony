@@ -7,13 +7,13 @@ import (
 	"os"
 )
 
-// RomLoader is responsible for loading ROM files and managing their lifecycle within the application.
+// RomLoader is responsible for loading and managing ROM configurations and their associated resources.
 type RomLoader struct {
 	*component.BaseComponent
 	cfg *config.Config
 }
 
-// NewRomLoader initializes a new RomLoader instance and registers it with the given parent and component factory.
+// NewRomLoader creates a new instance of RomLoader, registers it, and initializes its base component with the provided parameters.
 func NewRomLoader(parent references.IComponent, factory references.IComponentFactory, instance int) *RomLoader {
 	rl := &RomLoader{
 		BaseComponent: component.NewBaseComponent(),
@@ -23,30 +23,32 @@ func NewRomLoader(parent references.IComponent, factory references.IComponentFac
 	return rl
 }
 
-// Setup configures the RomLoader with the provided configuration instance and initializes its internal settings.
+// Setup initializes the RomLoader with the provided configuration and socket reference.
 func (r *RomLoader) Setup(_ references.IROMLoaderC1541Socket, cfg *config.Config) error {
 	r.cfg = cfg
 	return nil
 }
 
+// Connect initializes the ROM loader's connection to required resources or systems, preparing it for further operations.
 func (r *RomLoader) Connect() error {
 	return nil
 }
 
-// Emulate triggers the emulation process for the ROM loader component.
+// Emulate begins the emulation process for the ROM loader, simulating its expected behavior within the system context.
 func (r *RomLoader) Emulate() {
 
 }
 
+// EmulationRequired checks if ROM emulation is necessary for the current configuration and returns the result.
 func (r *RomLoader) EmulationRequired() bool {
 	return false
 }
 
-// Reset reinitializes the RomLoader to its default state.
+// Reset reinitializes the RomLoader to its default state, clearing any runtime modifications or temporary data.
 func (r *RomLoader) Reset() {
 }
 
-// Load attempts to load the appropriate ROM data based on configuration settings, falling back to a default if necessary.
+// Load retrieves the ROM data based on the configuration, prioritizing Jiffy ROM, then custom ROM, and finally builtin ROM.
 func (r *RomLoader) Load() []byte {
 	if r.cfg.UseJiffy() {
 		return _jiffyRom

@@ -5,14 +5,40 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+// LatencyMin represents the minimum threshold for network latency in milliseconds.
+// LatencyMax represents the maximum threshold for network latency in milliseconds.
+// LatencyAvg represents the average threshold for network latency in milliseconds.
 const (
 	LatencyMin = 80
 	LatencyMax = 120
 	LatencyAvg = 280
 )
 
+// EGState represents the state of an envelope generator in a sound synthesis context.
 type EGState int
 
+// AudioBuilder is a structure used for constructing and managing audio processing components and state.
+// player is the audio render interface for handling playback operations.
+// fragSize specifies the size of audio fragments in samples.
+// bufferFrags determines the number of fragments in the buffer.
+// bufferSize represents the total buffer size in bytes for storing audio data.
+// volume controls the master volume level of the audio system.
+// v3Mute indicates whether voice 3 is muted.
+// voices holds the configuration and data for each individual voice generator.
+// sampleBuf is a buffer for storing sampled voice data.
+// sampleInPtr is the current position in sampleBuf where new samples are written.
+// soundBuffer is an array for holding audio output data before rendering.
+// toOutput tracks the amount of data left to output in the soundBuffer.
+// sbPos keeps the current position within the soundBuffer.
+// divisor defines the current divider value used for audio processing timing.
+// lead is an array for managing lead data used in audio rendering.
+// leadPos specifies the current position within the lead array.
+// registerToVoice maps registers to corresponding voice instances.
+// filters represents audio filters applied during playback.
+// divisorTable holds precomputed divisor values for efficient audio processing.
+// leadSmooth determines the smoothing level applied to the lead buffer.
+// leadHiWater defines the high-water threshold for lead buffer management.
+// leadLoWater sets the low-water threshold for lead buffer management.
 type AudioBuilder struct {
 	player          references.IAudioRender
 	fragSize        int                  // samples, not bytes
@@ -37,6 +63,7 @@ type AudioBuilder struct {
 	leadLoWater     int
 }
 
+// NewAudioBuilder initializes and returns a new instance of AudioBuilder with the specified parameters.
 func NewAudioBuilder(player references.IAudioRender, useFilters bool, fragFreq int, rasters int) *AudioBuilder {
 	bufferFrags := fragFreq                  // one frag per frame
 	fragSize := SampleFreq / fragFreq        // samples, not bytes
@@ -78,6 +105,7 @@ func NewAudioBuilder(player references.IAudioRender, useFilters bool, fragFreq i
 	return d
 }
 
+// Reset reinitializes the state of the AudioBuilder, clearing buffers, resetting filters, and setting default values.
 func (dr *AudioBuilder) Reset() {
 	dr.volume = 0
 	dr.v3Mute = false
@@ -101,8 +129,7 @@ func (dr *AudioBuilder) Reset() {
 	dr.sbPos = 0
 }
 
-var _audioRegisters = []uint8{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24}
-
+// LoadRegister processes a given register and applies an update to the corresponding voice or system parameter based on the register value.
 func (dr *AudioBuilder) LoadRegister(reg uint8, data uint8) {
 	switch reg {
 	case 0, 7, 14:
@@ -135,10 +162,12 @@ func (dr *AudioBuilder) LoadRegister(reg uint8, data uint8) {
 	}
 }
 
+// updateFilterFreq updates the filter frequency in the Filters instance using the given data.
 func (dr *AudioBuilder) updateFilterFreq(data uint8) {
 	dr.filters.UpdateFreq(data)
 }
 
+// updateVoiceFilters updates the individual filter settings for each voice and the overall filter resonance settings.
 func (dr *AudioBuilder) updateVoiceFilters(data uint8) {
 	dr.voices[0].filter = conversion.Uint8ToBool(data & 1)
 	dr.voices[1].filter = conversion.Uint8ToBool(data & 2)
@@ -146,12 +175,17 @@ func (dr *AudioBuilder) updateVoiceFilters(data uint8) {
 	dr.filters.UpdateRes(data)
 }
 
+// updateVolume adjusts the master volume, toggles voice 3 mute status, and updates the filter type based on input data.
 func (dr *AudioBuilder) updateVolume(data uint8) {
 	dr.volume = data & 0xf
 	dr.v3Mute = conversion.Uint8ToBool(data & 0x80)
 	dr.filters.UpdateType(data)
 }
 
+// calcBuffer processes audio data for the given buffer by applying waveform calculations and filters to generate output.
+// It iterates through the buffer, calculating the mixed output for each audio voice and summing the results.
+// The method uses sample data, master volume, envelopes, and other voice parameters for precise audio mixing.
+// Filtered and unfiltered outputs are computed and combined, then written into the provided buffer.
 func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 	const halfBufSize = SampleBufSize / 2
 	sampleCount := (dr.sampleInPtr + halfBufSize) << 16
@@ -188,6 +222,7 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 	}
 }
 
+// Update processes audio data for the buffer, updates sample values, and handles fragment writing when thresholds are met.
 func (dr *AudioBuilder) Update() {
 	dr.sampleBuf[dr.sampleInPtr] = dr.volume
 	dr.sampleInPtr = (dr.sampleInPtr + 1) % SampleBufSize
@@ -201,6 +236,7 @@ func (dr *AudioBuilder) Update() {
 	}
 }
 
+// write processes audio data and manages buffer positioning, adjusting for audio playback timing and synchronization.
 func (dr *AudioBuilder) write() {
 	// Compute the current lead in frags.
 	currentPosition := dr.player.GetCurrentPosition()

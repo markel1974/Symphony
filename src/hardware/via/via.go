@@ -11,10 +11,10 @@ import (
 // 1541, 1541II, 1571 and 2031
 // see https://sta.c64.org/cbm1541mem.html
 
-// defaultViaTimeout is the maximum threshold for VIA timer counters before triggering specific actions or interrupts.
+// defaultViaTimeout is the maximum threshold value used for timer underflow checks during VIA emulation.
 const defaultViaTimeout = 0xffff
 
-// VIA represents a Versatile Interface Adapter (VIA) with multiple registers for configuring I/O, timers, and control logic.
+// VIA represents a versatile interface adapter used for I/O, timing, and control in a system.
 type VIA struct {
 	*component.BaseComponent
 	pra    uint8
@@ -33,7 +33,8 @@ type VIA struct {
 	socket references.IVIASocket
 }
 
-// NewVIA creates and initializes a new VIA instance with the specified identifier.
+// NewVIA initializes and returns a new instance of the VIA type, associating it with a parent component and factory.
+// It sets the VIA's internal registers to their default values and registers the component within its hierarchy.
 func NewVIA(parent references.IComponent, factory references.IComponentFactory, instance int) *VIA {
 	v := &VIA{
 		BaseComponent: component.NewBaseComponent(),
@@ -46,17 +47,18 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 	return v
 }
 
-// Setup initializes the VIA by assigning the provided IViaSocket instance to its internal socket reference.
+// Setup initializes the VIA instance by associating it with the provided IVIASocket and prepares it for use.
 func (v *VIA) Setup(socket references.IVIASocket, _ *config.Config) error {
 	v.socket = socket
 	return nil
 }
 
+// Connect establishes a connection or initializes state for the VIA component, returning an error if any issue occurs.
 func (v *VIA) Connect() error {
 	return nil
 }
 
-// Reset sets all internal registers of the VIA instance to zero, effectively reinitializing its state.
+// Reset initializes all VIA internal registers to their default state of zero.
 func (v *VIA) Reset() {
 	v.pra = 0
 	v.ddra = 0
@@ -73,8 +75,7 @@ func (v *VIA) Reset() {
 	v.ier = 0
 }
 
-// ReadByte reads a byte from the VIA register specified by the given address.
-// It returns the value read from the corresponding register or 0 for unknown addresses.
+// ReadByte reads a byte from the specified VIA register address and returns the corresponding value based on its state.
 func (v *VIA) ReadByte(addr uint16) uint8 {
 	reg := addr & 0x0f
 	switch reg {
@@ -123,7 +124,7 @@ func (v *VIA) ReadByte(addr uint16) uint8 {
 	}
 }
 
-// WriteByte writes a byte to a specified address, handling internal registers and triggering necessary operations.
+// WriteByte writes a byte of data to the specified register address in the VIA and updates the internal state accordingly.
 func (v *VIA) WriteByte(addr uint16, data uint8) {
 	reg := addr & 0x0f
 	switch reg {
@@ -177,7 +178,7 @@ func (v *VIA) WriteByte(addr uint16, data uint8) {
 	}
 }
 
-// Emulate handles the timer countdown logic for Timer 1 and Timer 2, triggers interrupts, and reloads Timer 1 in free-run mode.
+// Emulate executes a single emulation cycle for VIA, decrementing timers and handling interrupts based on current settings.
 func (v *VIA) Emulate() {
 	t1c := uint(v.t1c) - 1
 	v.t1c = uint16(t1c)
@@ -203,22 +204,22 @@ func (v *VIA) Emulate() {
 	}
 }
 
+// EmulationRequired indicates whether emulation of the VIA functionality is required, always returning true.
 func (v *VIA) EmulationRequired() bool {
 	return true
 }
 
-// SignalPRA writes the current PRA (Port A register) value to the connected socket using the Data Direction Register A.
+// SignalPRA writes the current values of PRA and DDRA to the connected socket via the WritePRA method.
 func (v *VIA) SignalPRA() {
 	v.socket.WritePRA(v.pra, v.ddra)
 }
 
-// SignalPRB updates the socket with the current state and data direction of Port B (PRB and DDRB).
+// SignalPRB sends the current contents of the PRB and DDRB registers to the connected IVIASocket.
 func (v *VIA) SignalPRB() {
 	v.socket.WritePRB(v.prb, v.ddrb)
 }
 
-// ByteReady checks if the peripheral control register (PCR) indicates that the byte is ready for processing.
-// It returns true if the PCR's specific bits (0x0e) match the expected value, otherwise false.
+// ByteReady returns true if the peripheral control register (pcr) is in a ready state for data handling.
 func (v *VIA) ByteReady() bool {
 	if (v.pcr & 0x0e) == 0x0e {
 		return true

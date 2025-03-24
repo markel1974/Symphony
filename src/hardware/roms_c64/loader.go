@@ -29,6 +29,7 @@ func (r *RomLoader) Setup(_ references.IROMLoaderSocket, cfg *config.Config) err
 	return nil
 }
 
+// Connect establishes a connection for the RomLoader, preparing it for further operations. Returns an error if unsuccessful.
 func (r *RomLoader) Connect() error {
 	return nil
 }

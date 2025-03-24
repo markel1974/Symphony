@@ -55,7 +55,7 @@ func NewCIA(parent references.IComponent, factory references.IComponentFactory, 
 	return m
 }
 
-// Setup initializes the CIA instance by creating timers, binding underflow events, and setting the socket connection.
+// Setup initializes the CIA component, creating TOD and Timer instances, binding timer underflow signals, and setting the socket.
 func (m *CIA) Setup(conn references.ICIASocket, _ *config.Config) error {
 	m.tod = NewTOD(m, m.GetFactory(), 0)
 	m.timerA = NewTimer(m, m.GetFactory(), 0)
@@ -66,6 +66,7 @@ func (m *CIA) Setup(conn references.ICIASocket, _ *config.Config) error {
 	return nil
 }
 
+// Connect establishes the necessary connections for the CIA component and prepares it for operation.
 func (m *CIA) Connect() error {
 	return nil
 }
@@ -95,6 +96,7 @@ func (m *CIA) Emulate() {
 	m.timerB.Emulate()
 }
 
+// EmulationRequired returns true indicating that emulation is necessary for this CIA instance.
 func (m *CIA) EmulationRequired() bool {
 	return true
 }
