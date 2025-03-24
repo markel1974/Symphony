@@ -27,7 +27,7 @@ type Manager struct {
 	board               references.IExpansionC64
 	cfg                 *config.Config
 	carts               []references.ICartridgeC64
-	emulate             []references.ICartridgeC64
+	emulate             []func()
 	registerHardware    map[string]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64
 	registerType        map[int]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64
 	registerSize        map[int]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64
@@ -125,11 +125,11 @@ func (f *Manager) Emulate() {
 		return
 	}
 	if len(f.emulate) == 1 {
-		f.emulate[0].Emulate()
+		f.emulate[0]()
 		return
 	}
 	for _, c := range f.emulate {
-		c.Emulate()
+		c()
 	}
 }
 
@@ -243,7 +243,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 		return "", err
 	}
 	if cart.EmulationRequired() {
-		f.emulate = append(f.emulate, cart)
+		f.emulate = append(f.emulate, cart.Emulate)
 	}
 	return id, nil
 }
@@ -258,14 +258,14 @@ func (f *Manager) Remove(id string) error {
 			break
 		}
 	}
-	for e, c := range f.emulate {
-		if c.GetLoaderId() == id {
-			f.emulate = append(f.emulate[:e], f.emulate[e+1:]...)
-			break
-		}
-	}
 	if !found {
 		return fmt.Errorf("can't remove cartridge id %s", id)
+	}
+	f.emulate = []func(){}
+	for _, c := range f.carts {
+		if c.EmulationRequired() {
+			f.emulate = append(f.emulate, c.Emulate)
+		}
 	}
 	return nil
 }
