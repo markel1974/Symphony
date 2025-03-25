@@ -82,6 +82,19 @@ const (
 
 const stateLast = 0xf
 
+var _pBits [0xff]uint8
+
+func init() {
+	_pBits[P_BIT0] = uint8(0x01)
+	_pBits[P_BIT1] = uint8(0x02)
+	_pBits[P_BIT2] = uint8(0x04)
+	_pBits[P_BIT3] = uint8(0x08)
+	_pBits[P_BIT4] = uint8(0x10)
+	_pBits[P_BIT5] = uint8(0x20)
+	_pBits[P_BIT6] = uint8(0x40)
+	_pBits[P_BIT7] = uint8(0x80)
+}
+
 // Protocol represents a structure for managing IEC protocol-based communication and its state machine.
 type Protocol struct {
 	*component.BaseComponent
@@ -211,7 +224,7 @@ func (v *Protocol) Emulate() {
 		//Rising flank on ATN (bus master finished addressing all devices)
 		v.flagsRemove(P_ATN)
 
-		if (v.getPrimary() == (0x20 + v.deviceNumber)) || (v.getPrimary() == (0x40 + v.deviceNumber)) {
+		if (v.getPrimary() == (v.deviceNumber + 0x20)) || (v.getPrimary() == (v.deviceNumber + 0x40)) {
 			if (v.getSecondary() & 0xf0) == 0x60 {
 				switch v.getPrimary() & 0xf0 {
 				case 0x20:
@@ -237,10 +250,10 @@ func (v *Protocol) Emulate() {
 				//device.setState(device.getSecondary(), v.gs.getState())
 			}
 
-			if v.getPrimary() == 0x20+v.deviceNumber {
+			if v.getPrimary() == (v.deviceNumber + 0x20) {
 				//We were told to listen
 				v.flagsRemove(P_TALKING)
-				//st!=0 means that the previous OPEN command failed, i.e. we could not open a file for writing.
+				//The state !=0 means that the previous OPEN command failed, i.e. we could not open a file for writing.
 				//In that case, ignore the "LISTEN" request which will signal the error to the sender
 				if v.getState(v.getSecondary()) == 0 {
 					v.flagsSet(P_LISTENING)
@@ -249,7 +262,7 @@ func (v *Protocol) Emulate() {
 				}
 				//set DATA=0 ("I am here")
 				v.transmitData(DeviceWriteClk)
-			} else if v.getPrimary() == 0x40+v.deviceNumber {
+			} else if v.getPrimary() == (v.deviceNumber + 0x40) {
 				//We were told to talk
 				v.flagsRemove(P_LISTENING)
 				v.flagsSet(P_TALKING)
@@ -342,8 +355,9 @@ func (v *Protocol) doListen(busReadClk bool, busReadData bool) {
 	case P_BIT0, P_BIT1, P_BIT2, P_BIT3, P_BIT4, P_BIT5, P_BIT6, P_BIT7:
 		if busReadClk {
 			//Sender set CLK=1, signaling that the DATA line represents a valid bit
-			bit := uint8(1 << ((int(v.getStateMachine()) - P_BIT0) / 2))
-			p1 := v.getByte() & ^bit
+			bit := _pBits[v.getStateMachine()]
+			nBit := ^bit
+			p1 := v.getByte() & nBit
 			p2 := uint8(0)
 			if busReadData {
 				p2 = bit
@@ -462,7 +476,8 @@ func (v *Protocol) doTalk(busReadClk bool, busReadData bool) {
 		if v.timeoutExpired() {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the previous bit.
 			//Pull CLK=0 and put the next bit out of DATA.
-			bit := uint8(1 << ((int(v.getStateMachine()) - P_BIT0) / 2))
+			bit := _pBits[v.getStateMachine()]
+			//bit := uint8(1 << ((int(v.getStateMachine()) - P_BIT0) / 2))
 			res := uint8(0)
 			if (v.getByte() & bit) != 0 {
 				res = DeviceWriteData

@@ -39,6 +39,7 @@ type Dispatcher struct {
 	peripheralsPort uint8
 	peripheralsData []uint8
 	virtualDrives   []references.IIecDevice
+	emulation       []func()
 	ledSignal       *signals.SignalUint32 //*signals.Signal2[int, uint8]
 }
 
@@ -72,15 +73,16 @@ func (c *Dispatcher) Connect(q references.IComponent) error {
 
 // Emulate processes the emulation logic for all virtual drives managed by the Dispatcher, calling each drive's Emulate method.
 func (c *Dispatcher) Emulate() {
-	if len(c.virtualDrives) == 0 {
+	l := len(c.emulation)
+	if l == 0 {
 		return
 	}
-	if len(c.virtualDrives) == 1 {
-		c.virtualDrives[0].Emulate()
+	if l == 1 {
+		c.emulation[0]()
 		return
 	}
-	for _, vd := range c.virtualDrives {
-		vd.Emulate()
+	for _, vd := range c.emulation {
+		vd()
 	}
 }
 
@@ -119,7 +121,7 @@ func (c *Dispatcher) AddPeripheral(q references.IComponent, cfg *config.Config, 
 	})
 	c.virtualDrives = append(c.virtualDrives, vd)
 	//c.updatePorts()
-
+	c.rebuildEmulation()
 	return nil
 }
 
@@ -131,6 +133,16 @@ func (c *Dispatcher) RemovePeripheral(deviceId uint8) {
 			v.Shutdown()
 			c.virtualDrives = append(c.virtualDrives[:x], c.virtualDrives[x+1:]...)
 			//c.updatePorts()
+		}
+	}
+	c.rebuildEmulation()
+}
+
+func (c *Dispatcher) rebuildEmulation() {
+	c.emulation = nil
+	for _, v := range c.virtualDrives {
+		if v.EmulationRequired() {
+			c.emulation = append(c.emulation, v.Emulate)
 		}
 	}
 }
