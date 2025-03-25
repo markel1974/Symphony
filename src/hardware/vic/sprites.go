@@ -25,10 +25,10 @@ type Sprites struct {
 
 // NewSprites initializes and returns a new instance of the Sprites struct with default settings and allocations.
 // It sets up sprite data, counters, and dependencies using the provided VIC core, collisions, and display buffer.
-func NewSprites(core *VIC, collisions *Collisions, db references.IDisplayBuffer) *Sprites {
+func NewSprites(core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer) *Sprites {
 	s := &Sprites{
 		core:            core,
-		displayBuffer:   db,
+		displayBuffer:   displayBuffer,
 		collisions:      collisions,
 		dataPtr:         make([]uint16, SpriteNumber),
 		data:            make([][]uint8, SpriteNumber),
@@ -387,7 +387,7 @@ func (sp *Sprites) drawUnexpandedStandard(lineOffset int, sColor uint8, sData ui
 	if (foreMask & sData) != 0 {
 		// Set the sprite-to-graphics collision flag.
 		sp.collisions.SetGraphicsCollision(sBit)
-		if sp.core.mdp&sBit != 0 {
+		if (sp.core.mdp & sBit) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			sData &= ^foreMask // Mask the sprite data.
 		}

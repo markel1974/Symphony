@@ -45,7 +45,7 @@ var _backgroundSequencer = []func(*Graphics){
 type Graphics struct {
 	core              *VIC
 	collisions        *Collisions
-	db                references.IDisplayBuffer
+	displayBuffer     references.IDisplayBuffer
 	gfxData           uint8
 	colorData         uint8
 	charData          uint8
@@ -62,11 +62,11 @@ type Graphics struct {
 }
 
 // NewGraphics initializes and returns a new Graphics instance with the provided VIC core, collision handler, and display buffer.
-func NewGraphics(core *VIC, collisions *Collisions, db references.IDisplayBuffer) *Graphics {
+func NewGraphics(core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer) *Graphics {
 	gr := &Graphics{
 		core:              core,
 		collisions:        collisions,
-		db:                db,
+		displayBuffer:     displayBuffer,
 		gfxData:           0,
 		colorData:         0,
 		charData:          0,
@@ -392,7 +392,7 @@ func drawForegroundBitmapMulticolorInvalid(gr *Graphics, offset int) {
 
 // _drawDefault sets a color value from the _colors array into the display buffer at the specified offset.
 func _drawDefault(gr *Graphics, offset int, a uint8) {
-	gr.db.SetMulti8(offset, _colors[a])
+	gr.displayBuffer.SetMulti8(offset, _colors[a])
 }
 
 // _drawInvalidStandard updates graphics buffer based on x-scroll and sets color values in the display buffer.
@@ -401,7 +401,7 @@ func _drawInvalidStandard(gr *Graphics, offset int, a uint8) {
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
 
-	gr.db.SetMulti8(offset, _colors[a])
+	gr.displayBuffer.SetMulti8(offset, _colors[a])
 }
 
 // _drawInvalidMulticolor processes invalid multicolor graphics and updates collision and display buffers accordingly.
@@ -411,7 +411,7 @@ func _drawInvalidMulticolor(gr *Graphics, offset int, a uint8) {
 	p2 := p << (8 - gr.core.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
 
-	gr.db.SetMulti8(offset, _colors[a])
+	gr.displayBuffer.SetMulti8(offset, _colors[a])
 }
 
 // _drawStandard renders 8 pixels in standard mode (1 bit per pixel).
@@ -423,21 +423,21 @@ func _drawStandard(gr *Graphics, offset int, a uint8, b uint8) {
 
 	colorBuffer := [4]uint8{_colors[a], _colors[b], 0, 0}
 	data := gr.gfxData
-	gr.db.Set(offset+7, colorBuffer[data&1])
+	gr.displayBuffer.Set(offset+7, colorBuffer[data&1])
 	data >>= 1
-	gr.db.Set(offset+6, colorBuffer[data&1])
+	gr.displayBuffer.Set(offset+6, colorBuffer[data&1])
 	data >>= 1
-	gr.db.Set(offset+5, colorBuffer[data&1])
+	gr.displayBuffer.Set(offset+5, colorBuffer[data&1])
 	data >>= 1
-	gr.db.Set(offset+4, colorBuffer[data&1])
+	gr.displayBuffer.Set(offset+4, colorBuffer[data&1])
 	data >>= 1
-	gr.db.Set(offset+3, colorBuffer[data&1])
+	gr.displayBuffer.Set(offset+3, colorBuffer[data&1])
 	data >>= 1
-	gr.db.Set(offset+2, colorBuffer[data&1])
+	gr.displayBuffer.Set(offset+2, colorBuffer[data&1])
 	data >>= 1
-	gr.db.Set(offset+1, colorBuffer[data&1])
+	gr.displayBuffer.Set(offset+1, colorBuffer[data&1])
 	data >>= 1
-	gr.db.Set(offset, colorBuffer[data])
+	gr.displayBuffer.Set(offset, colorBuffer[data])
 }
 
 // _drawMulticolor renders 8 pixels in multicolor mode (2 bits per pixel).
@@ -451,18 +451,18 @@ func _drawMulticolor(gr *Graphics, offset int, a uint8, b uint8, c uint8, d uint
 	colorBuffer := [4]uint8{_colors[a], _colors[b], _colors[c], _colors[d]}
 	data := gr.gfxData
 	color := colorBuffer[data&3]
-	gr.db.Set(offset+7, color)
-	gr.db.Set(offset+6, color)
+	gr.displayBuffer.Set(offset+7, color)
+	gr.displayBuffer.Set(offset+6, color)
 	data >>= 2
 	color = colorBuffer[data&3]
-	gr.db.Set(offset+5, color)
-	gr.db.Set(offset+4, color)
+	gr.displayBuffer.Set(offset+5, color)
+	gr.displayBuffer.Set(offset+4, color)
 	data >>= 2
 	color = colorBuffer[data&3]
-	gr.db.Set(offset+3, color)
-	gr.db.Set(offset+2, color)
+	gr.displayBuffer.Set(offset+3, color)
+	gr.displayBuffer.Set(offset+2, color)
 	data >>= 2
 	color = colorBuffer[data]
-	gr.db.Set(offset+1, color)
-	gr.db.Set(offset, color)
+	gr.displayBuffer.Set(offset+1, color)
+	gr.displayBuffer.Set(offset, color)
 }

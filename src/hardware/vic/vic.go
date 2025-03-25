@@ -169,13 +169,13 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 // Setup initializes the VIC component with the provided socket and configuration.
 func (vic *VIC) Setup(socket references.IVICSocket, cfg *config.Config) error {
 	vic.cfg = cfg
-	db := socket.GetDisplayBuffer()
+	displayBuffer := socket.GetDisplayBuffer()
 	vic.socket = socket
 	vic.banks = vic.socket.GetBanks()
 	vic.collisions = NewCollisions(vic)
-	vic.graphics = NewGraphics(vic, vic.collisions, db)
-	vic.sprites = NewSprites(vic, vic.collisions, db)
-	vic.borders = NewBorder(vic, db)
+	vic.graphics = NewGraphics(vic, vic.collisions, displayBuffer)
+	vic.sprites = NewSprites(vic, vic.collisions, displayBuffer)
+	vic.borders = NewBorder(vic, displayBuffer)
 	vic.vBlankNextCycle = false
 	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)

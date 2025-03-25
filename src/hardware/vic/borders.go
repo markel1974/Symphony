@@ -25,7 +25,7 @@ const (
 // Borders represents the structure for handling visual border rendering in a VIC-based display system.
 type Borders struct {
 	core             *VIC
-	db               references.IDisplayBuffer
+	displayBuffer    references.IDisplayBuffer
 	mainFlipFlop     bool
 	verticalFlipFlop bool
 	samples          []bool
@@ -34,9 +34,9 @@ type Borders struct {
 }
 
 // NewBorder creates and initializes a new Borders instance with the provided VIC core and display buffer dependencies.
-func NewBorder(core *VIC, db references.IDisplayBuffer) *Borders {
+func NewBorder(core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
 	gr := &Borders{
-		db:               db,
+		displayBuffer:    displayBuffer,
 		core:             core,
 		samples:          make([]bool, BorderTypeLast),
 		colors:           make([]uint8, 0xff),
@@ -137,23 +137,23 @@ func (b *Borders) Draw( /*lineStart int*/ ) {
 
 	if b.samples[BorderTypeLeft] {
 		for idx, offset := border0Start, border0StartSize; idx < border1End; idx, offset = idx+1, offset+bSize {
-			b.db.SetMulti8(b.offset+offset, b.colors[idx])
+			b.displayBuffer.SetMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
 	if b.samples[BorderTypeMidLeft] {
-		b.db.SetMulti8(b.offset+(border1Offset), b.colors[border1End])
+		b.displayBuffer.SetMulti8(b.offset+(border1Offset), b.colors[border1End])
 	}
 	if b.samples[BorderTypeCenter] {
 		for idx, offset := border2Start, border2StartSize; idx < border2End; idx, offset = idx+1, offset+bSize {
-			b.db.SetMulti8(b.offset+offset, b.colors[idx])
+			b.displayBuffer.SetMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
 	if b.samples[BorderTypeMidRight] {
-		b.db.SetMulti8(b.offset+(border3Offset), b.colors[border2End])
+		b.displayBuffer.SetMulti8(b.offset+(border3Offset), b.colors[border2End])
 	}
 	if b.samples[BorderTypeRight] {
 		for idx, offset := border4Start, border4StartSize; idx < border4End; idx, offset = idx+1, offset+bSize {
-			b.db.SetMulti8(b.offset+offset, b.colors[idx])
+			b.displayBuffer.SetMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
 }
