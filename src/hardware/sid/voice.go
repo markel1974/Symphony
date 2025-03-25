@@ -1,9 +1,5 @@
 package mos6581
 
-import (
-	"github.com/markel1974/c64emu/src/common/conversion"
-)
-
 // WaveFormType represents different waveform types used in a sound synthesis context.
 type WaveFormType int
 
@@ -56,11 +52,11 @@ type Voice struct {
 	rSub    uint32       // rSub is the decrement value for the release phase of the envelope generator.
 	egLevel uint32       // Current EG level, 8.16 fixed
 	noise   uint32       // Last noise generator output value
-	gate    bool         // EG gate bit
-	ring    bool         // Ring modulation bit
-	test    bool         // Test bit
-	filter  bool         // Flag: Voice filtered
-	sync    bool         // The following bit is set for the modulating voices, not for the modulated one (as the SID bits)
+	gate    uint8        // EG gate bit
+	ring    uint8        // Ring modulation bit
+	test    uint8        // Test bit
+	filter  uint8        // Flag: Voice filtered
+	sync    uint8        // The following bit is set for the modulating voices, not for the modulated one (as the SID bits)
 	seed    uint32
 }
 
@@ -82,11 +78,11 @@ func NewVoice(number uint8) *Voice {
 		rSub:    0,
 		egLevel: 0,
 		noise:   0,
-		gate:    false,
-		ring:    false,
-		test:    false,
-		filter:  false,
-		sync:    false,
+		gate:    0,
+		ring:    0,
+		test:    0,
+		filter:  0,
+		sync:    0,
 		seed:    1,
 	}
 }
@@ -110,11 +106,11 @@ func (v *Voice) Reset() {
 	v.rSub = _eGTable[0]
 	v.dSub = _eGTable[0]
 	v.aAdd = _eGTable[0]
-	v.test = false
-	v.ring = false
-	v.gate = false
-	v.sync = false
-	v.filter = false
+	v.test = 0
+	v.ring = 0
+	v.gate = 0
+	v.sync = 0
+	v.filter = 0
 }
 
 // UpdateFreqA updates the lower 8 bits of the frequency register and recalculates the increment value for the waveform generator.
@@ -142,30 +138,44 @@ func (v *Voice) UpdatePulseWidthB(data uint8) {
 // UpdateWaveForm updates the waveform type and other voice properties such as gate, sync, ring modulation, and test mode.
 func (v *Voice) UpdateWaveForm(data uint8) {
 	v.wave = WaveFormType(data>>4) & 0xf
-	if conversion.Uint8ToBool(data&1) != v.gate {
-		if (data & 1) != 0 {
-			// Gate turned on
+	gate := uint8(0)
+	ring := uint8(0)
+	test := uint8(0)
+	sync := uint8(0)
+	if (data & 1) != 0 {
+		gate = 1
+	}
+	if (data & 2) != 0 {
+		sync = 1
+	}
+	if (data & 4) != 0 {
+		ring = 1
+	}
+	if (data & 8) != 0 {
+		test = 1
+	}
+	if gate != v.gate {
+		if gate != 0 {
 			v.egState = EgAttack
 		} else {
-			// Gate turned off
 			if v.egState != EgIdle {
 				v.egState = EgRelease
 			}
 		}
 	}
-	v.gate = conversion.Uint8ToBool(data & 1)
-	v.modBy.sync = conversion.Uint8ToBool(data & 2)
-	v.ring = conversion.Uint8ToBool(data & 4)
-	v.test = conversion.Uint8ToBool(data & 8)
-	if v.test {
+	v.gate = gate
+	v.modBy.sync = sync
+	v.ring = ring
+	v.test = test
+	if v.test != 0 {
 		v.count = 0
 	}
 }
 
 // UpdateEnvelopeGenerators updates the attack increment and decay decrement rates of the envelope generator using the provided data.
 func (v *Voice) UpdateEnvelopeGenerators(data uint8) {
-	v.aAdd = _eGTable[data>>4]
-	v.dSub = _eGTable[data&0xf]
+	v.aAdd = _eGTable[(data >> 4)]
+	v.dSub = _eGTable[(data & 0xf)]
 }
 
 // UpdateSustainLevel adjusts the sustain level and release decrement based on the given data value for the envelope generator.
@@ -208,7 +218,7 @@ func (v *Voice) ComputeWaveForm() uint16 {
 	output := uint16(0)
 	switch v.wave {
 	case WaveTri:
-		if v.ring {
+		if v.ring != 0 {
 			output = _triTable[(v.count^(v.modBy.count&0x800000))>>11]
 		} else {
 			output = _triTable[v.count>>11]

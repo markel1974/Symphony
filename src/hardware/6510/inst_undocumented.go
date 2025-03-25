@@ -1,7 +1,6 @@
 package mos6510
 
 import (
-	"github.com/markel1974/c64emu/src/common/conversion"
 	"log"
 	"os"
 )
@@ -120,7 +119,12 @@ func instOpDCP(cpu *CPU) {
 	cpu.ar = uint16(cpu.a) - uint16(cpu.rmw)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	if cpu.ar < stackAddr {
+		cpu.cFlag = 1
+	} else {
+		cpu.cFlag = 0
+	}
 	cpu.next = instOpINI
 }
 
@@ -240,7 +244,12 @@ func instOiSBX(cpu *CPU) {
 	cpu.x = uint8(cpu.ar)
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	if cpu.ar < stackAddr {
+		cpu.cFlag = 1
+	} else {
+		cpu.cFlag = 0
+	}
 	cpu.next = instOpINI
 }
 
@@ -291,7 +300,7 @@ func instOpSHA(cpu *CPU) {
 
 // instOpJAM logs an illegal opcode error with CPU context, resets the CPU, and exits the application.
 func instOpJAM(cpu *CPU) {
-	log.Printf("[%s] illegal opcode %02x at %04x.", cpu.GetId(), cpu.op, cpu.pc-1)
+	log.Printf("[%s] unknown opcode %02x at %04x.", cpu.GetId(), cpu.op, cpu.pc-1)
 	//TODO EVENT
 	cpu.Reset()
 	os.Exit(1)

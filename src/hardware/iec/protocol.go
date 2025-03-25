@@ -2,7 +2,6 @@ package iec
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/common/conversion"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
@@ -13,33 +12,31 @@ import (
 //serial-iec-device.c
 //static void serial_iec_device_exec_main(unsigned int devnr, CLOCK clk_value)
 
-// IECBUS_DEVICE_READ_ATN represents the signal for device read attention (ATN_IN).
-// IECBUS_DEVICE_READ_CLK represents the signal for device read clock (CLK_IN).
-// IECBUS_DEVICE_READ_DATA represents the signal for device read data (DATA_IN).
-// IECBUS_DEVICE_WRITE_DATA represents the signal for device write data (DATA_OUT).
-// IECBUS_DEVICE_WRITE_CLK represents the signal for device write clock (CLK_OUT).
+// DeviceReadAtn represents the signal for device read attention (ATN_IN).
+// DeviceReadClk represents the signal for device read clock (CLK_IN).
+// DeviceReadData represents the signal for device read data (DATA_IN).
+// DeviceWriteData represents the signal for device write data (DATA_OUT).
+// DeviceWriteClk represents the signal for device write clock (CLK_OUT).
 // IECBUS_DEVICE_ATNA represents the signal for attention acknowledge (ATN_A).
 const (
-	/* ATN_IN */ IECBUS_DEVICE_READ_ATN = 0x80
-	/*  CLK_IN */ IECBUS_DEVICE_READ_CLK = 0x04
-	/* DATA_IN */ IECBUS_DEVICE_READ_DATA = 0x01
-
-	/* DATA_OUT*/
-	IECBUS_DEVICE_WRITE_DATA = 0x02
-	/* CLK_OUT*/ IECBUS_DEVICE_WRITE_CLK = 0x08
-	///* ATN_A */ IECBUS_DEVICE_ATNA = 0x10
+	DeviceReadAtn   = 0x80 // ATN_IN
+	DeviceReadClk   = 0x04 //  CLK_IN
+	DeviceReadData  = 0x01 // DATA_IN
+	DeviceWriteData = 0x02 // DATA_OUT
+	DeviceWriteClk  = 0x08 // CLK_OUT
+	// DeviceAtnA = 0x10 // ATN_A
 )
 
 /*
 const (
-	IECBUS_DEVICE_READ_DATA = uint8(0x01)
-	IECBUS_DEVICE_READ_CLK  = uint8(0x04)
-	IECBUS_DEVICE_READ_ATN  = uint8(0x80)
+	DeviceReadData = uint8(0x01)
+	DeviceReadClk  = uint8(0x04)
+	DeviceReadAtn  = uint8(0x80)
 
 	IECBUS_DEVICE_ATNA = uint8(0x10)
 
-	IECBUS_DEVICE_WRITE_CLK  = uint8(0x40)
-	IECBUS_DEVICE_WRITE_DATA = uint8(0x80)
+	DeviceWriteClk  = uint8(0x40)
+	DeviceWriteData = uint8(0x80)
 )
 
 */
@@ -123,7 +120,7 @@ func (v *Protocol) SetDevice(device references.IIecProtocolDevice) {
 }
 
 // Setup initializes the Protocol with the provided IEC interface and configuration settings.
-func (v *Protocol) Setup(_ references.IIecDeviceSocket, cfg *config.Config, deviceNumber uint8, device uint8) error {
+func (v *Protocol) Setup(_ references.IIecDeviceSocket, cfg *config.Config, deviceNumber uint8 /* device */, _ uint8) error {
 	v.deviceNumber = deviceNumber
 	v.cfg = cfg
 	return nil
@@ -153,7 +150,7 @@ func (v *Protocol) Reset() {
 	for i := 0; i < len(v.state); i++ {
 		v.state[i] = 0
 	}
-	v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
+	v.transmitData(DeviceWriteClk | DeviceWriteData)
 }
 
 // Ready checks if the protocol is ready for operation and returns a boolean value indicating readiness.
@@ -179,11 +176,18 @@ func (v *Protocol) AtnStateChanged(atn bool) {
 func (v *Protocol) Emulate() {
 	bus := v.iec.PeripheralRead()
 
-	//log.Printf("serial_iec_device_exec_main(%u, %u) F=%i, S=%i, ATN=%i CLK=%i DTA=%i", deviceNumber, clkValue, device.flags, device.state, (bus & IECBUS_DEVICE_READ_ATN) ? 1 : 0, (bus & IECBUS_DEVICE_READ_CLK) ? 1 : 0, (bus & IECBUS_DEVICE_READ_DATA) ? 1 : 0)
-	if !conversion.Uint8ToBool(v.getFlags()&P_ATN) && !conversion.Uint8ToBool(bus&IECBUS_DEVICE_READ_ATN) {
+	busAtn := (bus & DeviceReadAtn) != 0
+	flagAtn := v.flagGet(P_ATN)
+	flagAtnOrListening := v.flagGet(P_ATN | P_LISTENING)
+	flagListening := v.flagGet(P_LISTENING)
+	flagListeningOrTalking := v.flagGet(P_LISTENING | P_TALKING)
+	flagTalking := v.flagGet(P_TALKING)
+
+	//log.Printf("serial_iec_device_exec_main(%u, %u) F=%i, S=%i, ATN=%i CLK=%i DTA=%i", deviceNumber, clkValue, device.flags, device.state, (bus & DeviceReadAtn) ? 1 : 0, (bus & DeviceReadClk) ? 1 : 0, (bus & DeviceReadData) ? 1 : 0)
+	if !flagAtn && !busAtn {
 		//Falling flank on ATN (bus master addressing all devices) */
 		v.setStateMachine(P_PRE0)
-		v.setFlags(v.getFlags() | P_ATN)
+		v.flagsSet(P_ATN)
 		v.setPrimary(0)
 		v.setSecondaryPrev(v.getSecondary())
 		v.setSecondary(0)
@@ -191,10 +195,10 @@ func (v *Protocol) Emulate() {
 		//P_PRE0_100_time = time.Now()
 
 		//Set DATA=0("I am here").If nobody on the bus does this within 1 ms, bus-master will assume that "DeviceAdapter not present"
-		v.transmitData(IECBUS_DEVICE_WRITE_CLK)
-	} else if conversion.Uint8ToBool(v.getFlags()&P_ATN) && conversion.Uint8ToBool(bus&IECBUS_DEVICE_READ_ATN) {
+		v.transmitData(DeviceWriteClk)
+	} else if flagAtn && busAtn {
 		//Rising flank on ATN (bus master finished addressing all devices) */
-		v.setFlags(v.getFlags() & ^P_ATN)
+		v.flagsRemove(P_ATN)
 
 		if (v.getPrimary() == 0x20+v.deviceNumber) || (v.getPrimary() == 0x40+v.deviceNumber) {
 			if (v.getSecondary() & 0xf0) == 0x60 {
@@ -224,26 +228,26 @@ func (v *Protocol) Emulate() {
 
 			if v.getPrimary() == 0x20+v.deviceNumber {
 				//We were told to listen
-				v.setFlags(v.getFlags() & ^P_TALKING)
+				v.flagsRemove(P_TALKING)
 				//st!=0 means that the previous OPEN command failed, i.e. we could not open a file for writing.
 				//In that case, ignore the "LISTEN" request which will signal the error to the sender
 				if v.getState(v.getSecondary()) == 0 {
-					v.setFlags(v.getFlags() | P_LISTENING)
+					v.flagsSet(P_LISTENING)
 					v.setStateMachine(P_PRE1)
 					log.Printf("device %d start listening", v.deviceNumber)
 				}
 				//set DATA=0 ("I am here")
-				v.transmitData(IECBUS_DEVICE_WRITE_CLK)
+				v.transmitData(DeviceWriteClk)
 			} else if v.getPrimary() == 0x40+v.deviceNumber {
 				//We were told to talk
-				v.setFlags(v.getFlags() & ^P_LISTENING)
-				v.setFlags(v.getFlags() | P_TALKING)
+				v.flagsRemove(P_LISTENING)
+				v.flagsSet(P_TALKING)
 				v.setStateMachine(P_PRE0)
 				log.Printf("device %d start talking", v.deviceNumber)
 			}
-		} else if (v.getPrimary() == 0x3f) && conversion.Uint8ToBool(v.getFlags()&P_LISTENING) {
+		} else if (v.getPrimary() == 0x3f) && flagListening {
 			//All devices were told to stop listening
-			v.setFlags(v.getFlags() & ^P_LISTENING)
+			v.flagsRemove(P_LISTENING)
 			log.Printf("device %d stop listening", v.deviceNumber)
 
 			//If this is an UNLISTEN that followed an OPEN (0x2_ 0xf_), then
@@ -253,22 +257,22 @@ func (v *Protocol) Emulate() {
 			v.gs.SetState(v.getState(v.getSecondaryPrev()))
 			v.device.Unlisten(v.getSecondaryPrev())
 			v.setState(v.getSecondaryPrev(), v.gs.GetState())
-		} else if (v.getPrimary() == 0x5f) && conversion.Uint8ToBool(v.getFlags()&P_TALKING) {
+		} else if (v.getPrimary() == 0x5f) && flagTalking {
 			//All devices were told to stop talking
 			v.device.Untalk(v.getSecondaryPrev())
-			v.setFlags(v.getFlags() & ^P_TALKING)
+			v.flagsRemove(P_TALKING)
 			log.Printf("device %d stop talking", v.deviceNumber)
 		}
 
-		if !conversion.Uint8ToBool(v.getFlags() & (P_LISTENING | P_TALKING)) {
+		if !flagListeningOrTalking {
 			//We're neither listening nor talking => make sure we're not holding DATA  or CLOCK line to 0 )
-			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(DeviceWriteClk | DeviceWriteData)
 		}
 	}
 
-	if conversion.Uint8ToBool(v.getFlags() & (P_ATN | P_LISTENING)) {
+	if flagAtnOrListening {
 		v.doListen(bus)
-	} else if conversion.Uint8ToBool(v.getFlags() & P_TALKING) {
+	} else if flagTalking {
 		v.doTalk(bus)
 	}
 }
@@ -284,6 +288,10 @@ func (v *Protocol) LEDSignal() *signals.SignalUint32 {
 // doListen handles the state transitions for the device during the listening phase on the IEC bus based on the current clock and data signals.
 // It ensures proper synchronization, processes incoming data or commands, and acknowledges frames as needed or signals errors.
 func (v *Protocol) doListen(bus uint8) {
+	busReadClk := (bus & DeviceReadClk) != 0
+	busReadData := (bus & DeviceReadData) != 0
+	flagAtn := v.flagGet(P_ATN)
+	flagListening := v.flagGet(P_LISTENING)
 	//We are either under ATN or in "listening" mode
 	//fmt.Println("State:", clkValue, device.getStateMachine())
 	switch v.getStateMachine() {
@@ -297,47 +305,47 @@ func (v *Protocol) doListen(bus uint8) {
 		}
 	case P_PRE1:
 		//Make sure CLK=0 so we actually detect a rising flank instate P_PRE2
-		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
+		if !busReadClk {
 			v.setStateMachine(P_PRE2)
 		}
 	case P_PRE2:
 		// wait for rising flank on CLK ("ready-to-send")
-		if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
+		if busReadClk {
 			//React by setting DATA=1 ("ready-for-data")
-			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(DeviceWriteClk | DeviceWriteData)
 			v.setTimeout(200)
 			v.setStateMachine(P_READY)
 		}
 	case P_READY:
-		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
+		if !busReadClk {
 			//Sender set CLK=0, is about to send first bit
 			v.setStateMachine(P_BIT0)
-		} else if !conversion.Uint8ToBool(v.getFlags()&P_ATN) && v.timeoutExpired() {
+		} else if !flagAtn && v.timeoutExpired() {
 			//Sender did not set CLK=0 within 200 us after we set DATA=1 => it is signaling EOI
 			//(not so if we are under ATN) acknowledge we received it by setting DATA=0 for 60us
 			log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.getSecondary()&0x0f)
-			v.transmitData(IECBUS_DEVICE_WRITE_CLK)
+			v.transmitData(DeviceWriteClk)
 			v.setStateMachine(P_EOI)
 			v.setTimeout(60)
 		}
 	case P_EOI:
 		if v.timeoutExpired() {
 			//Set DATA back to 1 and wait for sender to set CLK=0
-			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(DeviceWriteClk | DeviceWriteData)
 			v.setStateMachine(P_EOIw)
 		}
 	case P_EOIw:
-		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
+		if !busReadClk {
 			//Sender set CLK=0, is about to send first bit
 			v.setStateMachine(P_BIT0)
 		}
 	case P_BIT0, P_BIT1, P_BIT2, P_BIT3, P_BIT4, P_BIT5, P_BIT6, P_BIT7:
-		if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
+		if busReadClk {
 			//Sender set CLK=1, signaling that the DATA line represents a valid bit
 			bit := uint8(1 << ((int(v.getStateMachine()) - P_BIT0) / 2))
 			p1 := v.getByte() & ^bit
 			p2 := uint8(0)
-			if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
+			if busReadData {
 				p2 = bit
 			}
 			v.setByte(p1 | p2)
@@ -345,15 +353,15 @@ func (v *Protocol) doListen(bus uint8) {
 			v.setStateMachineNext()
 		}
 	case P_BIT0w, P_BIT1w, P_BIT2w, P_BIT3w, P_BIT4w, P_BIT5w, P_BIT6w:
-		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
+		if !busReadClk {
 			//Sender set CLK=0. go to P_BIT(n+1) state to receive the next bit
 			v.setStateMachineNext()
 		}
 	case P_BIT7w:
-		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
+		if !busReadClk {
 			//Sender set CLK=0 and this was the last bit
 			log.Printf("device %d received : 0x%02x (%c)", v.deviceNumber, v.getByte(), v.getByte())
-			if conversion.Uint8ToBool(v.getFlags() & P_ATN) {
+			if flagAtn {
 				//We are currently receiving under ATN. Store the first two bytes received (contain primary and secondary address)
 				if v.getPrimary() == 0 {
 					v.setPrimary(v.getByte())
@@ -366,11 +374,11 @@ func (v *Protocol) doListen(bus uint8) {
 					v.setStateMachine(P_DONE0)
 				} else {
 					//Acknowledge frame by setting DATA=0
-					v.transmitData(IECBUS_DEVICE_WRITE_CLK)
+					v.transmitData(DeviceWriteClk)
 					//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
 					v.setStateMachine(P_PRE2)
 				}
-			} else if conversion.Uint8ToBool(v.getFlags() & P_LISTENING) {
+			} else if flagListening {
 				//We are currently listening for data pass received byte on to the upper level
 				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.getByte(), v.getByte(), v.getSecondary())
 				v.gs.SetState(v.getState(v.getSecondary()))
@@ -383,7 +391,7 @@ func (v *Protocol) doListen(bus uint8) {
 					v.setStateMachine(P_DONE0)
 				} else {
 					//Acknowledge frame by setting DATA=0
-					v.transmitData(IECBUS_DEVICE_WRITE_CLK)
+					v.transmitData(DeviceWriteClk)
 					//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
 					v.setStateMachine(P_PRE2)
 				}
@@ -400,23 +408,25 @@ func (v *Protocol) doListen(bus uint8) {
 // doTalk handles the communication protocol for transmitting data between devices using a state machine.
 // It manages the transition between various states, timing, and signaling during the data transmission process.
 func (v *Protocol) doTalk(bus uint8) {
+	busReadClk := (bus & DeviceReadClk) != 0
+	busReadData := (bus & DeviceReadData) != 0
 	switch v.getStateMachine() {
 	case P_PRE0:
-		if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_CLK) {
+		if busReadClk {
 			//Bus-master set CLK=1 (and before that should have set DATA=0)
 			//we are getting ready for role reversal.Set CLK=0,DATA=1
-			v.transmitData(IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(DeviceWriteData)
 			v.setStateMachine(P_PRE1)
 			v.setTimeout(80)
 		}
 	case P_PRE1:
 		if v.timeoutExpired() {
 			//Signal "ready-to-send" (CLK=1)
-			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(DeviceWriteClk | DeviceWriteData)
 			v.setStateMachine(P_READY)
 		}
 	case P_READY:
-		if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
+		if busReadData {
 			//Receiver signaled "ready-for-data" (DATA=1)
 			v.gs.SetState(v.getState(v.getSecondary()))
 			b, state := v.device.Read(v.getSecondary())
@@ -435,16 +445,16 @@ func (v *Protocol) doTalk(bus uint8) {
 			} else {
 				//There was some kind of error; we have nothing to send.
 				//Just stop talking and wait for ATN (This will produce a "File not found" when loading)
-				v.setFlags(v.getFlags() & ^P_TALKING)
+				v.flagsRemove(P_TALKING)
 			}
 		}
 	case P_EOI:
-		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
+		if !busReadData {
 			//Receiver set DATA=0, first part of acknowledging the EOI
 			v.setStateMachine(P_EOIw)
 		}
 	case P_EOIw:
-		if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
+		if busReadData {
 			//Receiver set DATA=1, final part of acknowledging the EOI. Go on to send first bit
 			v.setStateMachine(P_BIT0)
 			//no need to wait before sending the first bit
@@ -456,8 +466,8 @@ func (v *Protocol) doTalk(bus uint8) {
 			//Pull CLK=0 and put the next bit out of DATA.
 			bit := uint8(1 << ((int(v.getStateMachine()) - P_BIT0) / 2))
 			res := uint8(0)
-			if conversion.Uint8ToBool(v.getByte() & bit) {
-				res = IECBUS_DEVICE_WRITE_DATA
+			if (v.getByte() & bit) != 0 {
+				res = DeviceWriteData
 			}
 			v.transmitData(res)
 			//Go to associated P_BIT(n)w state
@@ -469,10 +479,10 @@ func (v *Protocol) doTalk(bus uint8) {
 		if v.timeoutExpired() {
 			//60 us have passed since we pulled CLK=0 and put the current bit on DATA.
 			//set CLK=1, keeping data as it is (this signals "data valid" to the receiver)
-			if conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
-				v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
+			if busReadData {
+				v.transmitData(DeviceWriteClk | DeviceWriteData)
 			} else {
-				v.transmitData(IECBUS_DEVICE_WRITE_CLK)
+				v.transmitData(DeviceWriteClk)
 			}
 			//Go to associated P_BIT(n+1) state to send the next bit.
 			//If this was the final bit, then the next state is P_DONE0
@@ -483,20 +493,20 @@ func (v *Protocol) doTalk(bus uint8) {
 		if v.timeoutExpired() {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the final bit.
 			//Pull CLK=0 and set DATA=1.This prepares for the receiver acknowledgement.
-			v.transmitData(IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(DeviceWriteData)
 			v.setTimeout(1000)
 			v.setStateMachine(P_DONE1)
 		}
 	case P_DONE1:
-		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
+		if !busReadData {
 			//Receiver set DATA=0, acknowledging the frame
 			log.Printf("device %d sent 0x%02x (%c) on channel %d", v.deviceNumber, v.getByte(), v.getByte(), v.getSecondary())
 			if v.getState(v.getSecondary()) == 0x40 {
 				//This was the last byte => stop talking.This leaves us waiting for ATN.
-				v.setFlags(v.getFlags() & ^P_TALKING)
+				v.flagsRemove(P_TALKING)
 				v.setState(v.getSecondary(), 0)
 				//Release the CLOCK line to 1
-				v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
+				v.transmitData(DeviceWriteClk | DeviceWriteData)
 			} else {
 				//There is at least one more byte to send Start over from P_PRE1
 				v.setTimeout(0)
@@ -505,7 +515,7 @@ func (v *Protocol) doTalk(bus uint8) {
 		} else if v.timeoutExpired() {
 			//We didn't receive an acknowledgement within 1 ms.Set CLOCK=0 and after 100 us back to CLOCK=1
 			log.Printf("device %d got NACK on channel %d", v.deviceNumber, v.getSecondary())
-			v.transmitData(IECBUS_DEVICE_WRITE_CLK | IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(DeviceWriteClk | DeviceWriteData)
 			v.setTimeout(100)
 			v.setStateMachine(P_FRAMEERR0)
 		}
@@ -513,11 +523,11 @@ func (v *Protocol) doTalk(bus uint8) {
 		if v.timeoutExpired() {
 			//Finished 1-0-1 sequence of CLOCK signal
 			//to acknowledge the frame-error.Now wait for sender to set DATA=0 so we can continue.
-			v.transmitData(IECBUS_DEVICE_WRITE_DATA)
+			v.transmitData(DeviceWriteData)
 			v.setStateMachine(P_FRAMEERR1)
 		}
 	case P_FRAMEERR1:
-		if !conversion.Uint8ToBool(bus & IECBUS_DEVICE_READ_DATA) {
+		if !busReadData {
 			// sender set DATA=0, we can retry to send the byte
 			v.setTimeout(0)
 			v.setStateMachine(P_PRE1)
@@ -527,14 +537,19 @@ func (v *Protocol) doTalk(bus uint8) {
 	}
 }
 
-// setFlags sets the flags property in the Protocol struct to the provided uint8 value f.
-func (v *Protocol) setFlags(f uint8) {
-	v.flags = f
+// flagsSet sets the specified flags by performing a bitwise OR operation with the current flags value.
+func (v *Protocol) flagsSet(f uint8) {
+	v.flags |= f
+}
+
+// flagsRemove clears the specified flags by performing a bitwise AND with the complement of the flags value provided.
+func (v *Protocol) flagsRemove(f uint8) {
+	v.flags &= ^f
 }
 
 // getFlags retrieves the current flags value of the Protocol instance.
-func (v *Protocol) getFlags() uint8 {
-	return v.flags
+func (v *Protocol) flagGet(f uint8) bool {
+	return (v.flags & f) != 0
 }
 
 // setByte sets the value of the byte field in the Protocol struct.

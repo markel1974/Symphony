@@ -1,9 +1,5 @@
 package mos6510
 
-import (
-	"github.com/markel1974/c64emu/src/common/conversion"
-)
-
 // Arithmetic
 
 // instOpADC performs the ADC (Add with Carry) operation by reading data from memory and calling the ADC handler.
@@ -200,7 +196,12 @@ func instOpCMP(cpu *CPU) {
 	cpu.ar = uint16(cpu.a) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	if cpu.ar < stackAddr {
+		cpu.cFlag = 1
+	} else {
+		cpu.cFlag = 0
+	}
 	cpu.next = instOpINI
 }
 
@@ -214,7 +215,12 @@ func instOiCMP(cpu *CPU) {
 	cpu.ar = uint16(cpu.a) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	if cpu.ar < stackAddr {
+		cpu.cFlag = 1
+	} else {
+		cpu.cFlag = 0
+	}
 	cpu.next = instOpINI
 }
 
@@ -227,7 +233,12 @@ func instOpCPX(cpu *CPU) {
 	cpu.ar = uint16(cpu.x) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	if cpu.ar < stackAddr {
+		cpu.cFlag = 1
+	} else {
+		cpu.cFlag = 0
+	}
 	cpu.next = instOpINI
 }
 
@@ -243,7 +254,12 @@ func instOiCPX(cpu *CPU) {
 	cpu.ar = uint16(cpu.x) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	if cpu.ar < stackAddr {
+		cpu.cFlag = 1
+	} else {
+		cpu.cFlag = 0
+	}
 	cpu.next = instOpINI
 }
 
@@ -256,7 +272,12 @@ func instOpCPY(cpu *CPU) {
 	cpu.ar = uint16(cpu.y) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	if cpu.ar < stackAddr {
+		cpu.cFlag = 1
+	} else {
+		cpu.cFlag = 0
+	}
 	cpu.next = instOpINI
 }
 
@@ -272,7 +293,12 @@ func instOiCPY(cpu *CPU) {
 	cpu.ar = uint16(cpu.y) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
+	if cpu.ar < stackAddr {
+		cpu.cFlag = 1
+	} else {
+		cpu.cFlag = 0
+	}
 	cpu.next = instOpINI
 }
 

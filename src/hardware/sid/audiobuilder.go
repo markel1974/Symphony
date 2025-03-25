@@ -1,7 +1,6 @@
 package mos6581
 
 import (
-	"github.com/markel1974/c64emu/src/common/conversion"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -45,7 +44,7 @@ type AudioBuilder struct {
 	bufferFrags     int                  // frags the in buffer
 	bufferSize      int                  // bytes, not samples
 	volume          uint8                // Master volume
-	v3Mute          bool                 // Voice 3 muted
+	v3Mute          uint8                // Voice 3 muted
 	voices          []*Voice             // Data for 3 voices
 	sampleBuf       [SampleBufSize]uint8 // Buffer for sampled voices
 	sampleInPtr     int                  // Index in sample_buf for writing
@@ -108,7 +107,7 @@ func NewAudioBuilder(player references.IAudioRender, useFilters bool, fragFreq i
 // Reset reinitializes the state of the AudioBuilder, clearing buffers, resetting filters, and setting default values.
 func (dr *AudioBuilder) Reset() {
 	dr.volume = 0
-	dr.v3Mute = false
+	dr.v3Mute = 0
 	for _, voice := range dr.voices {
 		voice.Reset()
 	}
@@ -169,16 +168,32 @@ func (dr *AudioBuilder) updateFilterFreq(data uint8) {
 
 // updateVoiceFilters updates the individual filter settings for each voice and the overall filter resonance settings.
 func (dr *AudioBuilder) updateVoiceFilters(data uint8) {
-	dr.voices[0].filter = conversion.Uint8ToBool(data & 1)
-	dr.voices[1].filter = conversion.Uint8ToBool(data & 2)
-	dr.voices[2].filter = conversion.Uint8ToBool(data & 4)
+	f1 := uint8(0)
+	f2 := uint8(0)
+	f3 := uint8(0)
+	if (data & 1) != 0 {
+		f1 = 1
+	}
+	if (data & 2) != 0 {
+		f2 = 1
+	}
+	if (data & 4) != 0 {
+		f3 = 1
+	}
+	dr.voices[0].filter = f1
+	dr.voices[1].filter = f2
+	dr.voices[2].filter = f3
 	dr.filters.UpdateRes(data)
 }
 
 // updateVolume adjusts the master volume, toggles voice 3 mute status, and updates the filter type based on input data.
 func (dr *AudioBuilder) updateVolume(data uint8) {
+	mute := uint8(0)
+	if (data & 0x80) != 0 {
+		mute = 1
+	}
 	dr.volume = data & 0xf
-	dr.v3Mute = conversion.Uint8ToBool(data & 0x80)
+	dr.v3Mute = mute
 	dr.filters.UpdateType(data)
 }
 
@@ -202,15 +217,15 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 		for _, v := range dr.voices {
 			v.ComputeEnvelopeGenerators()
 			envelope := uint16((v.egLevel * uint32(masterVolume)) >> 20)
-			if !v.test {
+			if v.test == 0 {
 				v.count += v.add
 			}
-			if v.sync && (v.count > 0x1000000) {
+			if (v.sync != 0) && (v.count > 0x1000000) {
 				v.modTo.count = 0
 			}
 			v.count &= 0xffffff
 			output := v.ComputeWaveForm()
-			if v.filter {
+			if v.filter != 0 {
 				sumOutputFilter += int32((output ^ 0x8000) * envelope)
 			} else {
 				sumOutput += int32((output ^ 0x8000) * envelope)
