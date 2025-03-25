@@ -1,6 +1,7 @@
 package fs_drive
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/references"
@@ -148,6 +149,7 @@ func (v *FSDrive) Open(channel uint8) uint8 {
 }
 
 func (v *FSDrive) Close(channel uint8) uint8 {
+	channel &= 0xf
 	v.LedTurnOff()
 	if channel == 15 {
 		v.closeAllChannels()
@@ -161,6 +163,9 @@ func (v *FSDrive) Close(channel uint8) uint8 {
 }
 
 func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
+	channel &= 0xf
+
+	return 0, StReadTimeout
 	// Channel 15: Error channel
 	if channel == 15 {
 		data := v.commands.RetrieveError()
@@ -188,8 +193,14 @@ func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
 }
 
 func (v *FSDrive) Write(channel uint8, data uint8) uint8 {
+	channel &= 0xf
 	//TODO EOI, eoi bool
 	eoi := false
+
+	fmt.Printf("fsdrive_received: %s\n", string(data))
+
+	return StOk
+
 	// Channel 15: Collect chars and execute command on EOI
 	if channel == 15 {
 		if !v.commands.CommandSet(data) {
