@@ -149,5 +149,14 @@ func (v *VIA1Socket) WriteDDRB(prb uint8, ddrb uint8) {
 func (v *VIA1Socket) peripheralWrite(prb uint8, ddrb uint8) {
 	p := prb | v.dipSwitch
 	wd := (^p) & ddrb
+
+	//const DeviceWriteData = 0x02 // DATA_OUT
+	//const DeviceWriteClk = 0x08
+	//const DeviceWriteAtn = 0x10
+	//d := DeviceWriteData & wd
+	//c := DeviceWriteClk & wd
+	//a := DeviceWriteAtn & wd
+	//fmt.Printf("c1541 transmitting 0x%x - atn: 0x%x, clock: 0x%x, data: 0x%x\n", wd, a, c, d)
+
 	v.iec.PeripheralWrite(v.connections.GetDeviceNumber(), wd)
 }

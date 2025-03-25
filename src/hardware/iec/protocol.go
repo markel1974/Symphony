@@ -19,27 +19,14 @@ import (
 // DeviceWriteClk represents the signal for device write clock (CLK_OUT).
 // IECBUS_DEVICE_ATNA represents the signal for attention acknowledge (ATN_A).
 const (
-	DeviceReadAtn   = 0x80 // ATN_IN
-	DeviceReadClk   = 0x04 //  CLK_IN
-	DeviceReadData  = 0x01 // DATA_IN
-	DeviceWriteData = 0x02 // DATA_OUT
-	DeviceWriteClk  = 0x08 // CLK_OUT
-	// DeviceAtnA = 0x10 // ATN_A
+	DeviceReadData = uint8(0x01) // DATA_IN
+	DeviceReadClk  = uint8(0x04) //  CLK_IN
+	DeviceReadAtn  = uint8(0x80) // ATN_IN
+
+	DeviceWriteData = uint8(0x02) // DATA_OUT
+	DeviceWriteClk  = uint8(0x08) // CLK_OUT
+	DeviceWriteAtn  = uint8(0x10) // ATN_A
 )
-
-/*
-const (
-	DeviceReadData = uint8(0x01)
-	DeviceReadClk  = uint8(0x04)
-	DeviceReadAtn  = uint8(0x80)
-
-	IECBUS_DEVICE_ATNA = uint8(0x10)
-
-	DeviceWriteClk  = uint8(0x40)
-	DeviceWriteData = uint8(0x80)
-)
-
-*/
 
 // P_PRE0 to P_FRAMEERR1 are constants representing various protocol states or phases in an iota enumeration.
 const (
@@ -80,6 +67,11 @@ const (
 	P_ATN       = uint8(0x80)
 )
 
+const (
+	UNLISTEN = uint8(0x3f)
+	UNTALK   = uint8(0x5f)
+)
+
 const stateLast = 0xf
 
 var _pBits [0xff]uint8
@@ -110,7 +102,7 @@ type Protocol struct {
 	secondaryPrev uint8
 	secondary     uint8
 	timeout       uint64
-	byte          uint8
+	data          uint8
 	state         [stateLast + 1]uint8
 	ledSignal     *signals.SignalUint32
 }
@@ -356,13 +348,11 @@ func (v *Protocol) doListen(busReadClk bool, busReadData bool) {
 		if busReadClk {
 			//Sender set CLK=1, signaling that the DATA line represents a valid bit
 			bit := _pBits[v.getStateMachine()]
-			nBit := ^bit
-			p1 := v.getByte() & nBit
-			p2 := uint8(0)
 			if busReadData {
-				p2 = bit
+				v.dataSetBit(bit)
+			} else {
+				v.dataClearBit(bit)
 			}
-			v.setByte(p1 | p2)
 			//Go to associated P_BIT(n)w state, waiting for sender to set CLK=0
 			v.setStateMachineNext()
 		}
@@ -374,15 +364,15 @@ func (v *Protocol) doListen(busReadClk bool, busReadData bool) {
 	case P_BIT7w:
 		if !busReadClk {
 			//Sender set CLK=0 and this was the last bit
-			log.Printf("device %d received : 0x%02x (%c)", v.deviceNumber, v.getByte(), v.getByte())
+			log.Printf("device %d received : 0x%02x (%c)", v.deviceNumber, v.dataGetByte(), v.dataGetByte())
 			if v.flagGet(P_ATN) {
 				//We are currently receiving under ATN. Store the first two bytes received (contain primary and secondary address)
 				if v.getPrimary() == 0 {
-					v.setPrimary(v.getByte())
+					v.setPrimary(v.dataGetByte())
 				} else if v.getSecondary() == 0 {
-					v.setSecondary(v.getByte())
+					v.setSecondary(v.dataGetByte())
 				}
-				if v.getPrimary() != 0x3f && v.getPrimary() != 0x5f && ((uint8(v.getPrimary()) & 0x1f) != v.deviceNumber) {
+				if (v.getPrimary() != UNLISTEN) && (v.getPrimary() != UNTALK) && ((v.getPrimary() & 0x1f) != v.deviceNumber) {
 					//This is NOT a UNLISTEN (0x3f) or UNTALK (0x5f) command and the primary address is not ours =>
 					//Don't acknowledge the frame and stop listening. If all devices on the bus do this, the bus-master knows that "DeviceAdapter not present"
 					v.setStateMachine(P_DONE0)
@@ -394,9 +384,9 @@ func (v *Protocol) doListen(busReadClk bool, busReadData bool) {
 				}
 			} else if v.flagGet(P_LISTENING) {
 				//We are currently listening for data pass received byte on to the upper level
-				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.getByte(), v.getByte(), v.getSecondary())
+				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.dataGetByte(), v.dataGetByte(), v.getSecondary())
 				v.gs.SetState(v.getState(v.getSecondary()))
-				state := v.device.Write(v.getSecondary(), v.getByte())
+				state := v.device.Write(v.getSecondary(), v.dataGetByte())
 				v.setState(v.getSecondary(), state)
 				//device.setState(device.getSecondary(), v.gs.getState())
 
@@ -442,7 +432,7 @@ func (v *Protocol) doTalk(busReadClk bool, busReadData bool) {
 			//Receiver signaled "ready-for-data" (DATA=1)
 			v.gs.SetState(v.getState(v.getSecondary()))
 			b, state := v.device.Read(v.getSecondary())
-			v.setByte(b)
+			v.dataSetByte(b)
 			v.setState(v.getSecondary(), state)
 			//device.gs.setState(device.getSecondary(), v.gs.getState())
 			if v.getState(v.getSecondary()) == 0 {
@@ -478,14 +468,13 @@ func (v *Protocol) doTalk(busReadClk bool, busReadData bool) {
 			//Pull CLK=0 and put the next bit out of DATA.
 			bit := _pBits[v.getStateMachine()]
 			//bit := uint8(1 << ((int(v.getStateMachine()) - P_BIT0) / 2))
-			res := uint8(0)
-			if (v.getByte() & bit) != 0 {
-				res = DeviceWriteData
+			if v.dataHasBit(bit) {
+				v.transmitData(DeviceWriteData)
+			} else {
+				v.transmitData(0)
 			}
-			v.transmitData(res)
 			//Go to associated P_BIT(n)w state
 			v.setTimeout(60)
-
 			v.setStateMachineNext()
 		}
 	case P_BIT0w, P_BIT1w, P_BIT2w, P_BIT3w, P_BIT4w, P_BIT5w, P_BIT6w, P_BIT7w:
@@ -513,7 +502,7 @@ func (v *Protocol) doTalk(busReadClk bool, busReadData bool) {
 	case P_DONE1:
 		if !busReadData {
 			//Receiver set DATA=0, acknowledging the frame
-			log.Printf("device %d sent 0x%02x (%c) on channel %d", v.deviceNumber, v.getByte(), v.getByte(), v.getSecondary())
+			log.Printf("device %d sent 0x%02x (%c) on channel %d", v.deviceNumber, v.dataGetByte(), v.dataGetByte(), v.getSecondary())
 			if v.getState(v.getSecondary()) == 0x40 {
 				//This was the last byte => stop talking.This leaves us waiting for ATN.
 				v.flagsRemove(P_TALKING)
@@ -565,14 +554,32 @@ func (v *Protocol) flagGet(f uint8) bool {
 	return (v.flags & f) != 0
 }
 
-// setByte sets the value of the byte field in the Protocol struct.
-func (v *Protocol) setByte(b uint8) {
-	v.byte = b
+// dataHasBit checks whether the specified bit is set within the `byte` field of the Protocol instance and returns a boolean value.
+func (v *Protocol) dataHasBit(bit uint8) bool {
+	return (v.data & bit) != 0
 }
 
-// getByte retrieves the current byte value stored in the Protocol struct.
-func (v *Protocol) getByte() uint8 {
-	return v.byte
+// dataSetBit sets the specified bit in the `byte` field by performing a bitwise OR operation with the provided mask.
+func (v *Protocol) dataSetBit(m uint8) {
+	//m := uint8(1 << pos)
+	v.data |= m
+}
+
+// dataClearBit clears the bit at the specified position in the `byte` field using a bitwise AND with the complement of the mask.
+func (v *Protocol) dataClearBit(m uint8) {
+	//m := uint8(^(1 << pos))
+	n := ^m
+	v.data &= n
+}
+
+// dataSetByte sets the value of the byte field in the Protocol struct.
+func (v *Protocol) dataSetByte(b uint8) {
+	v.data = b
+}
+
+// dataSetByte retrieves the current byte value stored in the Protocol struct.
+func (v *Protocol) dataGetByte() uint8 {
+	return v.data
 }
 
 // setStateMachine sets the state machine value to the specified uint8 value.
@@ -646,6 +653,9 @@ func (v *Protocol) getState(idx uint8) uint8 {
 }
 
 func (v *Protocol) transmitData(data uint8) {
+	d := DeviceWriteData & data
+	c := DeviceWriteClk & data
+	fmt.Printf("transmitting %d - clock %v, data %v\n", data, c, d)
 	v.iec.PeripheralWrite(v.deviceNumber, data)
 }
 
