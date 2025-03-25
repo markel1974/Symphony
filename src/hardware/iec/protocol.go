@@ -102,6 +102,11 @@ type Protocol struct {
 	ledSignal     *signals.SignalUint32
 }
 
+// NewProtocolDevice creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
+func NewProtocolDevice(factory references.IComponentFactory, parent references.IComponent, instance int) references.IIecDevice {
+	return NewProtocol(factory, parent, instance)
+}
+
 // NewProtocol creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
 func NewProtocol(factory references.IComponentFactory, parent references.IComponent, instance int) *Protocol {
 	p := &Protocol{
@@ -110,6 +115,7 @@ func NewProtocol(factory references.IComponentFactory, parent references.ICompon
 		gs:            _gs,
 		iec:           nil,
 		device:        nil,
+		ledSignal:     signals.NewSignalUint32(),
 	}
 	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, instance))
 	return p
@@ -170,6 +176,11 @@ func (v *Protocol) AtnStateChanged(atn bool) {
 	} else {
 		fmt.Println("ATN STATE CHANGED", "OFF")
 	}
+}
+
+// EmulationRequired checks whether emulation is required for the current protocol state and returns a boolean value.
+func (v *Protocol) EmulationRequired() bool {
+	return true
 }
 
 // Emulate handles the state transitions and bus communication logic for the Protocol according to the IEC device interface.
@@ -277,10 +288,6 @@ func (v *Protocol) Emulate() {
 	}
 }
 
-func (v *Protocol) EmulationRequired() bool {
-	return true
-}
-
 func (v *Protocol) LEDSignal() *signals.SignalUint32 {
 	return v.ledSignal
 }
@@ -292,6 +299,7 @@ func (v *Protocol) doListen(bus uint8) {
 	busReadData := (bus & DeviceReadData) != 0
 	flagAtn := v.flagGet(P_ATN)
 	flagListening := v.flagGet(P_LISTENING)
+
 	//We are either under ATN or in "listening" mode
 	//fmt.Println("State:", clkValue, device.getStateMachine())
 	switch v.getStateMachine() {

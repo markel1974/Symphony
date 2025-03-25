@@ -66,7 +66,7 @@ import (
 
 // -f "/Users/tinmr305/Downloads/c64carts/SamsJourneySeasonsSpecialV1_1+5D-GP.d64"
 
-// -f "FS_DRIVE:/Users/tinmr305/Downloads/c64carts/"
+// -f "fs_drive:/Users/tinmr305/Downloads/c64carts/"
 
 /*
 func restoreTest(factory references.IComponentFactory) {

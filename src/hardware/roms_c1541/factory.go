@@ -2,6 +2,7 @@ package roms_c1541
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // Identifier returns the unique identifier string "roms_c1541" for the associated component.
@@ -26,4 +27,8 @@ func (t *Factory) Identifier() string {
 // Create instantiates a new RomLoader component using the provided parent, factory, and label as parameters.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewRomLoader(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

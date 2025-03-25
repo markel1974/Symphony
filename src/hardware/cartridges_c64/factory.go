@@ -2,6 +2,7 @@ package cartridges_c64
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // Identifier returns a string that serves as a unique identifier for a specific component or entity.
@@ -26,4 +27,8 @@ func (t *Factory) Identifier() string {
 // Create initializes and returns a new IComponent instance using the provided parent, factory, and label parameters.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewManager(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

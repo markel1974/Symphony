@@ -2,6 +2,7 @@ package easyflash
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 const componentId = "easyFlash"
@@ -24,4 +25,8 @@ func (t *Factory) Kind() interface{} {
 
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewEasyFlash(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

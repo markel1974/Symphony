@@ -11,13 +11,10 @@ type Drive struct {
 // NewDrive creates a new Drive instance with the specified kind and file path, initializing its data and write protection status.
 // It returns the created Drive pointer and an error if the file cannot be accessed or read.
 func NewDrive(kind string, path string) (*Drive, error) {
-	data, wp, err := ImageFromFile(path)
-	if err != nil {
-		return nil, err
-	}
 	if len(kind) == 0 {
 		kind = "c1541"
 	}
+	data, wp, _ := ImageFromFile(path)
 	d := &Drive{
 		kind:           kind,
 		id:             path,

@@ -12,9 +12,9 @@ import (
 // Id is a constant representing the identifier "SCPU" for a specific hardware type or component registration.
 const Id = "SCPU"
 
-// ExternalCPU represents an external CPU module with its associated components and connections for system integration.
+// CartridgeExternalCPU represents an external CPU module with its associated components and connections for system integration.
 // It includes an ID, expansion board, CPU socket, programmable interrupt controller, CPU, and quartz clock source.
-type ExternalCPU struct {
+type CartridgeExternalCPU struct {
 	*component.BaseComponent
 	loaderId  string
 	board     references.IExpansionC64
@@ -24,10 +24,9 @@ type ExternalCPU struct {
 	quartz    *quartz.Quartz
 }
 
-// New returns a new instance of the ExternalCPU struct implementing the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
-	const id = "externalCpu"
-	r := &ExternalCPU{
+// NewExternalCPU returns a new instance of the CartridgeExternalCPU struct implementing the ICartridgeC64 interface.
+func NewExternalCPU(parent references.IComponent, factory references.IComponentFactory, instance int) *CartridgeExternalCPU {
+	r := &CartridgeExternalCPU{
 		BaseComponent: component.NewBaseComponent(),
 		board:         nil,
 		cpuSocket:     nil,
@@ -35,17 +34,21 @@ func New(parent references.IComponent, factory references.IComponentFactory, ins
 		cpu:           nil,
 		quartz:        nil,
 	}
-	r.BaseComponent.Register(factory, parent, id, r, references.IdICartridgeC64(r, instance))
+	r.BaseComponent.Register(factory, parent, Identifier(), r, references.IdICartridgeC64(r, instance))
 	return r
 }
 
+func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
+	return NewExternalCPU(parent, factory, instance)
+}
+
 // EmulationRequired determines if CPU emulation is needed for the associated external CPU instance. Always returns true.
-func (s *ExternalCPU) EmulationRequired() bool {
+func (s *CartridgeExternalCPU) EmulationRequired() bool {
 	return true
 }
 
-// Setup initializes the ExternalCPU with the provided expansion board and CRT loader, configuring its internal components.
-func (s *ExternalCPU) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64, cfg *config.Config) error {
+// Setup initializes the CartridgeExternalCPU with the provided expansion board and CRT loader, configuring its internal components.
+func (s *CartridgeExternalCPU) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64, cfg *config.Config) error {
 	s.board = board
 	s.loaderId = ldr.GetId()
 	s.board.SetDMALow(true)
@@ -70,17 +73,17 @@ func (s *ExternalCPU) Setup(board references.IExpansionC64, ldr references.ICart
 	return nil
 }
 
-func (s *ExternalCPU) GetLoaderId() string {
+func (s *CartridgeExternalCPU) GetLoaderId() string {
 	return s.loaderId
 }
 
 // Reset reinitializes the CPU to its default state by invoking its internal Reset method.
-func (s *ExternalCPU) Reset() {
+func (s *CartridgeExternalCPU) Reset() {
 	s.cpu.Reset()
 }
 
 // Emulate simulates the operation of the external CPU at a fixed frequency by processing cycles and managing bus signals.
-func (s *ExternalCPU) Emulate() {
+func (s *CartridgeExternalCPU) Emulate() {
 	// TEST SUPER CPU.....
 	const mhz = 20
 	// TODO TRIGGER BALOW-AECLOW HAS SIGNAL
@@ -95,38 +98,38 @@ func (s *ExternalCPU) Emulate() {
 }
 
 // GetExRom returns the external ROM configuration signal as a uint8 value. It often indicates the cartridge's EXROM state.
-func (s *ExternalCPU) GetExRom() uint8 {
+func (s *CartridgeExternalCPU) GetExRom() uint8 {
 	return 1
 }
 
-// GetGame retrieves the current game signal state for the ExternalCPU, returning a uint8 representation of its value.
-func (s *ExternalCPU) GetGame() uint8 {
+// GetGame retrieves the current game signal state for the CartridgeExternalCPU, returning a uint8 representation of its value.
+func (s *CartridgeExternalCPU) GetGame() uint8 {
 	return 1
 }
 
 // IORead reads data from the specified memory address and returns the value along with a success status flag.
-func (s *ExternalCPU) IORead(addr uint16) (uint8, bool) {
+func (s *CartridgeExternalCPU) IORead(addr uint16) (uint8, bool) {
 	return 0, false
 }
 
 // IOWrite writes a byte of data to the specified address in the I/O space.
 // Returns true if the write operation is handled; otherwise, false.
-func (s *ExternalCPU) IOWrite(addr uint16, data uint8) bool {
+func (s *CartridgeExternalCPU) IOWrite(addr uint16, data uint8) bool {
 	return false
 }
 
 // Write stores an 8-bit data value to a specified address within a given ROM interval and returns success status as a boolean.
-func (s *ExternalCPU) Write(i references.RomInterval, addr uint16, data uint8) bool {
+func (s *CartridgeExternalCPU) Write(i references.RomInterval, addr uint16, data uint8) bool {
 	return false
 }
 
 // Read fetches a byte and status from the specified address within the ROM interval.
-func (s *ExternalCPU) Read(i references.RomInterval, addr uint16) (uint8, bool) {
+func (s *CartridgeExternalCPU) Read(i references.RomInterval, addr uint16) (uint8, bool) {
 	return 0, false
 }
 
-// Detach releases the resources and internal bindings associated with the ExternalCPU, ensuring proper cleanup.
-func (s *ExternalCPU) Detach() error {
+// Detach releases the resources and internal bindings associated with the CartridgeExternalCPU, ensuring proper cleanup.
+func (s *CartridgeExternalCPU) Detach() error {
 	//TODO IMPLEMENT
 	return nil
 }

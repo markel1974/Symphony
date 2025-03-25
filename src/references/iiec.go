@@ -70,6 +70,8 @@ type IIecDevice interface {
 
 	Reset()
 
+	EmulationRequired() bool
+
 	Emulate()
 
 	Shutdown()

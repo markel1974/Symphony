@@ -14,8 +14,8 @@ const cSize16K = 0x4000
 // cSize8K defines a constant representing 8 kilobytes (8192 bytes) in hexadecimal format (0x2000).
 const cSize8K = 0x2000
 
-// Generic represents the structure and functionality of a cartridge, including memory banks, intervals, and configuration.
-type Generic struct {
+// CartridgeGeneric represents the structure and functionality of a cartridge, including memory banks, intervals, and configuration.
+type CartridgeGeneric struct {
 	*component.BaseComponent
 	loaderId   string
 	b0Interval references.RomInterval
@@ -33,24 +33,28 @@ func GetType() int {
 	return loader.CartridgeCRT
 }
 
-// New creates and returns a new instance of the Generic cartridge implementing the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
-	const id = "generic"
-	g := &Generic{
+// NewCartridgeGeneric creates and returns a new instance of the CartridgeGeneric cartridge implementing the ICartridgeC64 interface.
+func NewCartridgeGeneric(parent references.IComponent, factory references.IComponentFactory, instance int) *CartridgeGeneric {
+	g := &CartridgeGeneric{
 		BaseComponent: component.NewBaseComponent(),
-		loaderId:      "generic",
+		loaderId:      Identifier(),
 		game:          0,
 		exRom:         0,
 		b0Interval:    0,
 		b1Interval:    0,
 		intervals:     0,
 	}
-	g.BaseComponent.Register(factory, parent, id, g, references.IdICartridgeC64(g, instance))
+	g.BaseComponent.Register(factory, parent, Identifier(), g, references.IdICartridgeC64(g, instance))
 	return g
 }
 
-// Setup initializes the Generic cartridge by setting the expansion and loading data using the provided CRTLoader.
-func (c *Generic) Setup(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64, _ *config.Config) error {
+// New creates and returns a new instance of the CartridgeGeneric cartridge implementing the ICartridgeC64 interface.
+func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
+	return NewCartridgeGeneric(parent, factory, instance)
+}
+
+// Setup initializes the CartridgeGeneric cartridge by setting the expansion and loading data using the provided CRTLoader.
+func (c *CartridgeGeneric) Setup(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64, _ *config.Config) error {
 	c.expansion = expansion
 	c.loaderId = ldr.GetId()
 	if loader.Type(ldr.GetType()) == loader.TypeCrt {
@@ -59,20 +63,20 @@ func (c *Generic) Setup(expansion references.IExpansionC64, ldr references.ICart
 	return c.initRaw(ldr.GetData())
 }
 
-// Reset reinitializes the Generic cartridge to its default state, clearing all settings and memory banks.
-func (c *Generic) Reset() {
+// Reset reinitializes the CartridgeGeneric cartridge to its default state, clearing all settings and memory banks.
+func (c *CartridgeGeneric) Reset() {
 
 }
 
-// GetLoaderId retrieves the unique identifier of the Generic instance.
-func (c *Generic) GetLoaderId() string {
+// GetLoaderId retrieves the unique identifier of the CartridgeGeneric instance.
+func (c *CartridgeGeneric) GetLoaderId() string {
 	return c.loaderId
 }
 
 // initCrt initializes the cartridge configuration using the provided CRTLoader.
 // It sets up memory banks and mode based on the cartridge chip headers.
 // Returns an error if the cartridge format or configuration is unsupported.
-func (c *Generic) initCrt(ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeGeneric) initCrt(ldr references.ICartridgeLoaderC64) error {
 	c.bank0 = make([]uint8, cSize8K)
 	c.bank1 = make([]uint8, cSize8K)
 	chip1, err := ldr.ReadChipHeader()
@@ -113,7 +117,7 @@ func (c *Generic) initCrt(ldr references.ICartridgeLoaderC64) error {
 
 // initRaw initializes the raw cartridge data, validates its size, and configures the banks and cartridge mode accordingly.
 // Returns an error if the cartridge size is invalid or validation fails.
-func (c *Generic) initRaw(data []byte) error {
+func (c *CartridgeGeneric) initRaw(data []byte) error {
 	c.bank0 = make([]uint8, cSize8K)
 	c.bank1 = make([]uint8, cSize8K)
 	if err := loader.ValidateCartridge(data); err != nil {
@@ -133,8 +137,8 @@ func (c *Generic) initRaw(data []byte) error {
 	return fmt.Errorf("invalid size")
 }
 
-// applyConfig configures the Generic cartridge by setting its memory intervals and control flags based on the provided CartridgeMode.
-func (c *Generic) applyConfig(ct references.CartridgeMode) {
+// applyConfig configures the CartridgeGeneric cartridge by setting its memory intervals and control flags based on the provided CartridgeMode.
+func (c *CartridgeGeneric) applyConfig(ct references.CartridgeMode) {
 	v := references.GetCartridgeSpec(ct)
 	c.game = v.Game
 	c.exRom = v.ExRom
@@ -144,16 +148,16 @@ func (c *Generic) applyConfig(ct references.CartridgeMode) {
 }
 
 // Write attempts to write data to the cartridge at the specified interval and address. Returns true if writing is not allowed.
-func (c *Generic) Write(i references.RomInterval, addr uint16, data uint8) bool {
+func (c *CartridgeGeneric) Write(i references.RomInterval, addr uint16, data uint8) bool {
 	if (i & c.intervals) != 0 {
-		fmt.Printf("Generic Cartridge can't be write %x => %d\n", addr, data)
+		fmt.Printf("CartridgeGeneric Cartridge can't be write %x => %d\n", addr, data)
 		return true
 	}
 	return false
 }
 
 // Read retrieves a byte and a success flag from the cartridge based on the provided address and ROM interval.
-func (c *Generic) Read(i references.RomInterval, addr uint16) (uint8, bool) {
+func (c *CartridgeGeneric) Read(i references.RomInterval, addr uint16) (uint8, bool) {
 	if (i & c.intervals) != 0 {
 		if c.b0Interval == i {
 			return c.bank0[(addr & 0x1fff)], true
@@ -166,36 +170,36 @@ func (c *Generic) Read(i references.RomInterval, addr uint16) (uint8, bool) {
 }
 
 // IORead performs an I/O read operation and always returns 0 and false, indicating no data is available for the requested address.
-func (c *Generic) IORead(_ uint16) (uint8, bool) {
+func (c *CartridgeGeneric) IORead(_ uint16) (uint8, bool) {
 	return 0, false
 }
 
-// IOWrite handles IO write operations for the Generic cartridge, always returning false to indicate no action is performed.
-func (c *Generic) IOWrite(_ uint16, _ uint8) bool {
+// IOWrite handles IO write operations for the CartridgeGeneric cartridge, always returning false to indicate no action is performed.
+func (c *CartridgeGeneric) IOWrite(_ uint16, _ uint8) bool {
 	return false
 }
 
-// GetExRom retrieves the current state of the ExRom line associated with the Generic cartridge, returning its value as uint8.
-func (c *Generic) GetExRom() uint8 {
+// GetExRom retrieves the current state of the ExRom line associated with the CartridgeGeneric cartridge, returning its value as uint8.
+func (c *CartridgeGeneric) GetExRom() uint8 {
 	return c.exRom
 }
 
-// GetGame returns the game identifier associated with the Generic cartridge.
-func (c *Generic) GetGame() uint8 {
+// GetGame returns the game identifier associated with the CartridgeGeneric cartridge.
+func (c *CartridgeGeneric) GetGame() uint8 {
 	return c.game
 }
 
-// EmulationRequired checks if the cartridge requires emulation to function properly. Returns false for Generic cartridges.
-func (c *Generic) EmulationRequired() bool {
+// EmulationRequired checks if the cartridge requires emulation to function properly. Returns false for CartridgeGeneric cartridges.
+func (c *CartridgeGeneric) EmulationRequired() bool {
 	return false
 }
 
-// Emulate performs the main emulation cycle logic for the Generic type, enabling behavior specific to the cartridge type.
-func (c *Generic) Emulate() {
+// Emulate performs the main emulation cycle logic for the CartridgeGeneric type, enabling behavior specific to the cartridge type.
+func (c *CartridgeGeneric) Emulate() {
 }
 
 // Detach gracefully detaches the cartridge from the associated expansion, releasing any allocated resources or states.
-func (c *Generic) Detach() error {
+func (c *CartridgeGeneric) Detach() error {
 	//TODO
 	return nil
 }

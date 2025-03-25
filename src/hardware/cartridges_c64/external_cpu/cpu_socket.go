@@ -17,7 +17,7 @@ func NewCPUSocket() *CPUSocket {
 }
 
 // Setup initializes the CPUSocket by setting its programmable interrupt controller and memory banks from the provided board.
-func (w *CPUSocket) Setup(board *ExternalCPU) error {
+func (w *CPUSocket) Setup(board *CartridgeExternalCPU) error {
 	w.pic = board.pic
 	w.banks = board.board
 	return nil

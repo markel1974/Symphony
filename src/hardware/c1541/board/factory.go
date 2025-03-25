@@ -2,6 +2,7 @@ package board
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // componentId is a constant that holds the unique identifier for a component.
@@ -29,4 +30,8 @@ func (t *Factory) Identifier() string {
 // Create initializes a new Board component using the given parent, factory, and label, and returns it as IComponent.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewBoard(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

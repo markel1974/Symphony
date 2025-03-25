@@ -2,6 +2,7 @@ package mos6526
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // Identifier returns the identifier string for the component, which in this case is "mos6526".
@@ -26,4 +27,8 @@ func (t *Factory) Identifier() string {
 // Create initializes and returns a new IComponent instance, associating it with the given parent, factory, and label.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewCIA(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

@@ -13,7 +13,8 @@ import (
 
 type FSDrive struct {
 	*component.BaseComponent
-	*iec.Protocol
+	references.IIecDevice
+	protocol     *iec.Protocol
 	commands     *Commands
 	deviceId     uint8
 	deviceNumber uint8
@@ -28,8 +29,11 @@ type FSDrive struct {
 }
 
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *FSDrive {
+	protocol := iec.NewProtocol(factory, parent, instance)
 	fs := &FSDrive{
 		BaseComponent: component.NewBaseComponent(),
+		IIecDevice:    protocol,
+		protocol:      protocol,
 		deviceId:      0,
 		deviceNumber:  0,
 		path:          "",
@@ -37,33 +41,39 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		origDirPath:   "",
 		cfg:           nil,
 	}
-	fs.Protocol = iec.NewProtocol(factory, parent, instance)
-	fs.Protocol.SetDevice(fs)
-	fs.BaseComponent.Register(factory, fs.Protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, 0))
+	fs.protocol.SetDevice(fs)
+	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, 0))
 	return fs
 }
 
-func (v *FSDrive) Setup(iec references.IComponent, q references.IComponent, deviceId uint8, deviceNumber uint8, cfg *config.Config) error {
-	if err := v.Protocol.Setup(v, cfg, deviceId, deviceNumber); err != nil {
-		return err
-	}
-	if err := v.Protocol.Connect(iec, q); err != nil {
-		return err
-	}
+func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.IIecDevice {
+	return NewBoard(parent, factory, instance)
+}
+
+func (v *FSDrive) Setup(_ references.IIecDeviceSocket, cfg *config.Config, deviceId uint8, deviceNumber uint8) error {
+	v.cfg = cfg
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
-	v.cfg = cfg
+	v.cfg.Bind(v.configChanged)
+	v.origDirPath = v.path
+	if err := v.protocol.Setup(v, cfg, deviceId, deviceNumber); err != nil {
+		return err
+	}
 	if d := v.cfg.Drive(v.deviceId); d != nil {
 		v.path = d.GetId()
 	}
-	v.cfg = cfg
-	v.cfg.Bind(v.configChanged)
-	v.origDirPath = v.path
 	if v.changeDirectory(v.origDirPath) {
 		for i := 0; i < 16; i++ {
 			v.file[i] = nil
 		}
 		v.ready = true
+	}
+	return nil
+}
+
+func (v *FSDrive) Connect(iec references.IComponent, quartz references.IComponent) error {
+	if err := v.protocol.Connect(iec, quartz); err != nil {
+		return err
 	}
 	return nil
 }
@@ -77,7 +87,7 @@ func (v *FSDrive) Reset() {
 	v.commands.CommandClear()
 	v.commands.SetError(ERR_STARTUP)
 	//TODO IN FASE DI RESET CAMBIARE LO STATO DEL BUS
-	v.Protocol.Reset()
+	v.protocol.Reset()
 }
 
 func (v *FSDrive) LedTurnOn() {

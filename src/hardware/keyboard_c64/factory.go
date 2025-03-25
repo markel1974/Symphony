@@ -2,6 +2,7 @@ package keyboard_c64
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 func Identifier() string {
@@ -21,4 +22,8 @@ func (t *Factory) Identifier() string {
 
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewKeyboard(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

@@ -1,4 +1,4 @@
-package board
+package ocean
 
 import (
 	"github.com/markel1974/c64emu/src/references"
@@ -6,7 +6,7 @@ import (
 )
 
 func Identifier() string {
-	return "vic20"
+	return "ocean"
 }
 
 type Factory struct {
@@ -20,8 +20,13 @@ func (t *Factory) Identifier() string {
 	return Identifier()
 }
 
+func (t *Factory) Kind() interface{} {
+	z := (*CartridgeOcean)(nil)
+	return references.ICartridgeC64(z)
+}
+
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
-	return NewBoard(parent, factory, label)
+	return NewCartridgeOcean(parent, factory, label)
 }
 
 func init() {

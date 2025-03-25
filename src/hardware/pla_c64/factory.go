@@ -2,6 +2,7 @@ package pla_c64
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // Identifier returns a fixed string identifier to represent the component type or functionality in the system.
@@ -26,4 +27,8 @@ func (t *Factory) Identifier() string {
 // Create initializes a new PLA instance with the specified parent component, factory, and label, and returns it.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewPLA(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

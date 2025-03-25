@@ -2,6 +2,7 @@ package roms_c64
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // Identifier returns a string identifier for the component, typically used for registration or reference purposes.
@@ -26,4 +27,8 @@ func (t *Factory) Identifier() string {
 // Create initializes and returns a new RomLoader component with the specified parent, factory, and label.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewRomLoader(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

@@ -2,6 +2,7 @@ package mos6510
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // Identifier returns the string "mos6510", representing a unique identifier.
@@ -26,4 +27,8 @@ func (t *Factory) Identifier() string {
 // Create instantiates and returns a new IComponent of type CPU with the specified parent, factory, and label.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewCPU(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

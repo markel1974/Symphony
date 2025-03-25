@@ -2,6 +2,7 @@ package pic_6510
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // Identifier returns a static string value representing the identifier "pic_6510".
@@ -26,4 +27,8 @@ func (t *Factory) Identifier() string {
 // Create creates a new instance of IComponent by initializing a Pic object with the specified parent, factory, and instance.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, instance int) references.IComponent {
 	return NewPIC(parent, factory, instance)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

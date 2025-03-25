@@ -27,20 +27,24 @@ func GetType() int {
 	return loader.CartridgeOcean
 }
 
-// New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
+// NewCartridgeOcean creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
+func NewCartridgeOcean(parent references.IComponent, factory references.IComponentFactory, instance int) *CartridgeOcean {
 	v := references.GetCartridgeSpec(references.CartridgeMode16K)
-	const id = "ocean"
 	co := &CartridgeOcean{
 		BaseComponent: component.NewBaseComponent(),
-		loaderId:      id,
+		loaderId:      Identifier(),
 		game:          v.Game,
 		exRom:         v.ExRom,
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		lastData:      0,
 	}
-	co.BaseComponent.Register(factory, parent, id, co, references.IdICartridgeC64(co, instance))
+	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdICartridgeC64(co, instance))
 	return co
+}
+
+// New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
+func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
+	return NewCartridgeOcean(parent, factory, instance)
 }
 
 // Setup initializes the cartridge with the specified expansion board and CRT loader, setting up necessary configurations.

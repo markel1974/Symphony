@@ -2,6 +2,7 @@ package dynamic_throttle
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // Identifier returns a constant string "dynamic_throttle" used for uniquely identifying the component or factory.
@@ -26,4 +27,8 @@ func (t *Factory) Identifier() string {
 // Create instantiates a new DynamicThrottle component using the provided parent, factory, and label parameters.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewDynamicThrottle(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

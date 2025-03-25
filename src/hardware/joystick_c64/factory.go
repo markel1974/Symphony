@@ -2,6 +2,7 @@ package joystick_c64
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // Identifier returns the unique identifier string for the joystick component.
@@ -26,4 +27,8 @@ func (t *Factory) Identifier() string {
 // Create initializes a new joystick component using the specified parent, factory, and label parameters.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewJoystick(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }

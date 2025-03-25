@@ -4,7 +4,6 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
-	"strconv"
 )
 
 // Predefined constants representing memory sizes in bytes.
@@ -45,11 +44,10 @@ type REU struct {
 
 // newReu initializes a new REU instance with a given size and returns an ICartridgeC64 implementation.
 // It sets up REU registers, memory size, and RAM contents, and performs an initial reset.
-func newReu(parent references.IComponent, factory references.IComponentFactory, instance int, size int) references.ICartridgeC64 {
-	const id = "reu"
+func newReu(parent references.IComponent, factory references.IComponentFactory, instance int, id string, size int) *REU {
 	r := &REU{
 		BaseComponent: component.NewBaseComponent(),
-		loaderId:      "reu" + strconv.Itoa(size),
+		loaderId:      id,
 		regs:          make([]uint8, 16),
 		size:          size,
 		expansion:     nil,
@@ -64,42 +62,42 @@ func newReu(parent references.IComponent, factory references.IComponentFactory, 
 
 // New128K creates and returns a new 128K REU cartridge implementing the ICartridgeC64 interface.
 func New128K(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
-	return newReu(parent, factory, suffix, size128K)
+	return newReu(parent, factory, suffix, baseId+identifier128K, size128K)
 }
 
 // New256K creates a new 256K REU (RAM Expansion Unit) cartridge and returns it as an ICartridgeC64 interface.
 func New256K(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
-	return newReu(parent, factory, suffix, size256K)
+	return newReu(parent, factory, suffix, baseId+identifier256K, size256K)
 }
 
 // New512K creates and returns a new instance of an ICartridgeC64 with a memory size of 512K.
 func New512K(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
-	return newReu(parent, factory, suffix, size512K)
+	return newReu(parent, factory, suffix, baseId+identifier512K, size512K)
 }
 
 // New1M creates a new 1M REU (RAM Expansion Unit) cartridge implementing the ICartridgeC64 interface.
 func New1M(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
-	return newReu(parent, factory, suffix, size1M)
+	return newReu(parent, factory, suffix, baseId+identifier1M, size1M)
 }
 
 // New2M creates and returns a new 2MB REU cartridge instance implementing the ICartridgeC64 interface.
 func New2M(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
-	return newReu(parent, factory, suffix, size2M)
+	return newReu(parent, factory, suffix, baseId+identifier2M, size2M)
 }
 
 // New4M creates and returns a new 4MB REU cartridge implementing the ICartridgeC64 interface.
 func New4M(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
-	return newReu(parent, factory, suffix, size4M)
+	return newReu(parent, factory, suffix, baseId+identifier4M, size4M)
 }
 
 // New8M creates and returns a new 8 MB REU (RAM Expansion Unit) cartridge implementing the ICartridgeC64 interface.
 func New8M(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
-	return newReu(parent, factory, suffix, size8M)
+	return newReu(parent, factory, suffix, baseId+identifier8M, size8M)
 }
 
 // New16M creates a new ICartridgeC64 instance with 16MB of memory, utilizing the REU (RAM Expansion Unit) implementation.
 func New16M(parent references.IComponent, factory references.IComponentFactory, suffix int) references.ICartridgeC64 {
-	return newReu(parent, factory, suffix, size16M)
+	return newReu(parent, factory, suffix, baseId+identifier16M, size16M)
 }
 
 // GetLoaderId returns the identifier string of the REU instance.

@@ -19,7 +19,7 @@ func KeyVal(data string) []KV {
 		k := ""
 		v := c
 		if opts := strings.Split(c, ":"); len(opts) > 1 {
-			k = strings.ToUpper(strings.TrimSpace(opts[0]))
+			k = strings.TrimSpace(opts[0])
 			v = strings.TrimSpace(opts[1])
 		}
 		kvs = append(kvs, KV{k, v})
@@ -35,14 +35,14 @@ func ImageFromFile(path string) ([]byte, bool, error) {
 	fd, err := os.OpenFile(path, os.O_RDWR, 0)
 	if err != nil {
 		if fd, err = os.OpenFile(path, os.O_RDONLY, 0); err != nil {
-			return nil, true, err
+			return nil, false, err
 		}
 		wp = true
 	}
 	defer fd.Close()
 	image, err := io.ReadAll(fd)
 	if err != nil {
-		return nil, true, err
+		return nil, false, err
 	}
 	return image, wp, nil
 }

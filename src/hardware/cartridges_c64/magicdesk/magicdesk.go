@@ -26,19 +26,23 @@ func GetType() int {
 	return loader.CartridgeMAGIC_DESK
 }
 
-// New creates a new instance of CartridgeMagicDesk, registers it with the provided parent, and sets its initial configuration.
-func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
-	const id = "magicDesk"
+// NewMagicDesk creates a new instance of CartridgeMagicDesk, registers it with the provided parent, and sets its initial configuration.
+func NewMagicDesk(parent references.IComponent, factory references.IComponentFactory, instance int) *CartridgeMagicDesk {
 	md := &CartridgeMagicDesk{
 		BaseComponent: component.NewBaseComponent(),
-		loaderId:      id,
+		loaderId:      Identifier(),
 		spec:          references.GetCartridgeSpec(references.CartridgeMode8K),
 		bankMask:      0x7f,
 		regVal:        0,
 		slot:          0,
 	}
-	md.BaseComponent.Register(factory, parent, id, md, references.IdICartridgeC64(md, instance))
+	md.BaseComponent.Register(factory, parent, Identifier(), md, references.IdICartridgeC64(md, instance))
 	return md
+}
+
+// New creates a new instance of CartridgeMagicDesk, registers it with the provided parent, and sets its initial configuration.
+func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
+	return NewMagicDesk(parent, factory, instance)
 }
 
 // Setup initializes the CartridgeMagicDesk by configuring its board and loading data via the provided CRTLoader.

@@ -2,6 +2,7 @@ package quartz
 
 import (
 	"github.com/markel1974/c64emu/src/references"
+	"github.com/markel1974/c64emu/src/registry"
 )
 
 // Factory provides methods to identify and create new component instances within a system. It acts as a component factory.
@@ -26,4 +27,8 @@ func (t *Factory) Identifier() string {
 // Create initializes and returns a new Quartz instance using the specified parent component, factory, and label.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
 	return NewQuartz(parent, factory, label)
+}
+
+func init() {
+	registry.RegisterComponentFactory(NewFactory())
 }
