@@ -672,7 +672,6 @@ func (v *Protocol) getState(idx uint8) uint8 {
 func (v *Protocol) peripheralWrite(data uint8, atn bool) {
 	//d := DeviceWriteData & data
 	//c := DeviceWriteClk & data
-
 	//TODO VERIFICA ATN
 	if atn {
 		data |= DeviceWriteAtn
