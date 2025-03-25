@@ -116,6 +116,7 @@ func NewProtocol(factory references.IComponentFactory, parent references.ICompon
 		iec:           nil,
 		device:        nil,
 		ledSignal:     signals.NewSignalUint32(),
+		flags:         0,
 	}
 	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, instance))
 	return p
@@ -126,7 +127,7 @@ func (v *Protocol) SetDevice(device references.IIecProtocolDevice) {
 }
 
 // Setup initializes the Protocol with the provided IEC interface and configuration settings.
-func (v *Protocol) Setup(_ references.IIecDeviceSocket, cfg *config.Config, deviceNumber uint8 /* device */, _ uint8) error {
+func (v *Protocol) Setup(_ references.IIecDeviceSocket, cfg *config.Config, deviceId uint8, deviceNumber uint8) error {
 	v.deviceNumber = deviceNumber
 	v.cfg = cfg
 	return nil
@@ -164,6 +165,10 @@ func (v *Protocol) Ready() bool {
 	return true
 }
 
+func (v *Protocol) LEDSignal() *signals.SignalUint32 {
+	return v.ledSignal
+}
+
 // GetDeviceNumber returns the device number associated with the Protocol instance.
 func (v *Protocol) GetDeviceNumber() uint8 {
 	return v.deviceNumber
@@ -187,31 +192,26 @@ func (v *Protocol) EmulationRequired() bool {
 func (v *Protocol) Emulate() {
 	bus := v.iec.PeripheralRead()
 
-	busAtn := (bus & DeviceReadAtn) != 0
-	flagAtn := v.flagGet(P_ATN)
-	flagAtnOrListening := v.flagGet(P_ATN | P_LISTENING)
-	flagListening := v.flagGet(P_LISTENING)
-	flagListeningOrTalking := v.flagGet(P_LISTENING | P_TALKING)
-	flagTalking := v.flagGet(P_TALKING)
+	busReadData := (bus & DeviceReadData) != 0
+	busReadClk := (bus & DeviceReadClk) != 0
+	busReadAtn := (bus & DeviceReadAtn) != 0
 
-	//log.Printf("serial_iec_device_exec_main(%u, %u) F=%i, S=%i, ATN=%i CLK=%i DTA=%i", deviceNumber, clkValue, device.flags, device.state, (bus & DeviceReadAtn) ? 1 : 0, (bus & DeviceReadClk) ? 1 : 0, (bus & DeviceReadData) ? 1 : 0)
-	if !flagAtn && !busAtn {
-		//Falling flank on ATN (bus master addressing all devices) */
+	//log.Printf("protocol.Emulate(%d, %d) F=%d, S=%d, ATN=%v CLK=%v DTA=%v", v.deviceNumber, v.quartz.Cycle(), v.flags, v.state, busReadAtn, busReadClk, busReadData)
+	if !v.flagGet(P_ATN) && !busReadAtn {
+		//Falling flank on ATN (bus master addressing all devices)
 		v.setStateMachine(P_PRE0)
 		v.flagsSet(P_ATN)
 		v.setPrimary(0)
 		v.setSecondaryPrev(v.getSecondary())
 		v.setSecondary(0)
 		v.setTimeout(100)
-		//P_PRE0_100_time = time.Now()
-
 		//Set DATA=0("I am here").If nobody on the bus does this within 1 ms, bus-master will assume that "DeviceAdapter not present"
 		v.transmitData(DeviceWriteClk)
-	} else if flagAtn && busAtn {
-		//Rising flank on ATN (bus master finished addressing all devices) */
+	} else if v.flagGet(P_ATN) && busReadAtn {
+		//Rising flank on ATN (bus master finished addressing all devices)
 		v.flagsRemove(P_ATN)
 
-		if (v.getPrimary() == 0x20+v.deviceNumber) || (v.getPrimary() == 0x40+v.deviceNumber) {
+		if (v.getPrimary() == (0x20 + v.deviceNumber)) || (v.getPrimary() == (0x40 + v.deviceNumber)) {
 			if (v.getSecondary() & 0xf0) == 0x60 {
 				switch v.getPrimary() & 0xf0 {
 				case 0x20:
@@ -256,7 +256,7 @@ func (v *Protocol) Emulate() {
 				v.setStateMachine(P_PRE0)
 				log.Printf("device %d start talking", v.deviceNumber)
 			}
-		} else if (v.getPrimary() == 0x3f) && flagListening {
+		} else if (v.getPrimary() == 0x3f) && v.flagGet(P_LISTENING) {
 			//All devices were told to stop listening
 			v.flagsRemove(P_LISTENING)
 			log.Printf("device %d stop listening", v.deviceNumber)
@@ -268,41 +268,33 @@ func (v *Protocol) Emulate() {
 			v.gs.SetState(v.getState(v.getSecondaryPrev()))
 			v.device.Unlisten(v.getSecondaryPrev())
 			v.setState(v.getSecondaryPrev(), v.gs.GetState())
-		} else if (v.getPrimary() == 0x5f) && flagTalking {
+		} else if (v.getPrimary() == 0x5f) && v.flagGet(P_TALKING) {
 			//All devices were told to stop talking
 			v.device.Untalk(v.getSecondaryPrev())
 			v.flagsRemove(P_TALKING)
 			log.Printf("device %d stop talking", v.deviceNumber)
 		}
 
-		if !flagListeningOrTalking {
+		if !v.flagGet(P_LISTENING | P_TALKING) {
 			//We're neither listening nor talking => make sure we're not holding DATA  or CLOCK line to 0 )
 			v.transmitData(DeviceWriteClk | DeviceWriteData)
 		}
 	}
 
-	if flagAtnOrListening {
-		v.doListen(bus)
-	} else if flagTalking {
-		v.doTalk(bus)
+	if v.flagGet(P_ATN | P_LISTENING) {
+		v.doListen(busReadClk, busReadData)
+	} else if v.flagGet(P_TALKING) {
+		v.doTalk(busReadClk, busReadData)
 	}
-}
-
-func (v *Protocol) LEDSignal() *signals.SignalUint32 {
-	return v.ledSignal
 }
 
 // doListen handles the state transitions for the device during the listening phase on the IEC bus based on the current clock and data signals.
 // It ensures proper synchronization, processes incoming data or commands, and acknowledges frames as needed or signals errors.
-func (v *Protocol) doListen(bus uint8) {
-	busReadClk := (bus & DeviceReadClk) != 0
-	busReadData := (bus & DeviceReadData) != 0
-	flagAtn := v.flagGet(P_ATN)
-	flagListening := v.flagGet(P_LISTENING)
-
+func (v *Protocol) doListen(busReadClk bool, busReadData bool) {
 	//We are either under ATN or in "listening" mode
 	//fmt.Println("State:", clkValue, device.getStateMachine())
-	switch v.getStateMachine() {
+	sm := v.getStateMachine()
+	switch sm {
 	case P_PRE0:
 		//Ignore anything that happens during the first 100 us after falling
 		//flank on ATN (other devices may have been sending and need some time to set CLK=1)
@@ -328,7 +320,7 @@ func (v *Protocol) doListen(bus uint8) {
 		if !busReadClk {
 			//Sender set CLK=0, is about to send first bit
 			v.setStateMachine(P_BIT0)
-		} else if !flagAtn && v.timeoutExpired() {
+		} else if !v.flagGet(P_ATN) && v.timeoutExpired() {
 			//Sender did not set CLK=0 within 200 us after we set DATA=1 => it is signaling EOI
 			//(not so if we are under ATN) acknowledge we received it by setting DATA=0 for 60us
 			log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.getSecondary()&0x0f)
@@ -369,7 +361,7 @@ func (v *Protocol) doListen(bus uint8) {
 		if !busReadClk {
 			//Sender set CLK=0 and this was the last bit
 			log.Printf("device %d received : 0x%02x (%c)", v.deviceNumber, v.getByte(), v.getByte())
-			if flagAtn {
+			if v.flagGet(P_ATN) {
 				//We are currently receiving under ATN. Store the first two bytes received (contain primary and secondary address)
 				if v.getPrimary() == 0 {
 					v.setPrimary(v.getByte())
@@ -386,7 +378,7 @@ func (v *Protocol) doListen(bus uint8) {
 					//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
 					v.setStateMachine(P_PRE2)
 				}
-			} else if flagListening {
+			} else if v.flagGet(P_LISTENING) {
 				//We are currently listening for data pass received byte on to the upper level
 				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.getByte(), v.getByte(), v.getSecondary())
 				v.gs.SetState(v.getState(v.getSecondary()))
@@ -415,9 +407,7 @@ func (v *Protocol) doListen(bus uint8) {
 
 // doTalk handles the communication protocol for transmitting data between devices using a state machine.
 // It manages the transition between various states, timing, and signaling during the data transmission process.
-func (v *Protocol) doTalk(bus uint8) {
-	busReadClk := (bus & DeviceReadClk) != 0
-	busReadData := (bus & DeviceReadData) != 0
+func (v *Protocol) doTalk(busReadClk bool, busReadData bool) {
 	switch v.getStateMachine() {
 	case P_PRE0:
 		if busReadClk {
@@ -622,8 +612,10 @@ func (v *Protocol) setTimeout(offset uint64) {
 }
 
 func (v *Protocol) timeoutExpired() bool {
-	b := v.quartz.Cycle() >= v.timeout
-	return b
+	if b := v.quartz.Cycle(); b >= v.timeout {
+		return true
+	}
+	return false
 }
 
 // setState updates the protocol state for the given index with the specified state value, using a masked index.
