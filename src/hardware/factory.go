@@ -23,6 +23,7 @@ import (
 	_ "github.com/markel1974/c64emu/src/hardware/joystick_c64"
 	_ "github.com/markel1974/c64emu/src/hardware/keyboard_c64"
 	_ "github.com/markel1974/c64emu/src/hardware/pic_6510"
+	_ "github.com/markel1974/c64emu/src/hardware/pla_c1541"
 	_ "github.com/markel1974/c64emu/src/hardware/pla_c64"
 	_ "github.com/markel1974/c64emu/src/hardware/quartz"
 	_ "github.com/markel1974/c64emu/src/hardware/roms_c1541"
