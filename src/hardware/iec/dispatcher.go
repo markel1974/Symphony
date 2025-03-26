@@ -178,24 +178,27 @@ func (c *Dispatcher) PeripheralWrite(deviceNumber uint8, data uint8) {
 
 // buildCpuBus processes the given data and constructs a CPU bus value by combining specific signal bits.
 func (c *Dispatcher) buildCpuBus(data uint8) uint8 {
-	b6 := (data << 2) & cpuClkIn
-	b5 := (data << 2) & cpuDataIn
-	b4 := (data << 1) & cpuClkOut
-	value := b6 | b5 | b4
-	return value
+	clkIn := (data << 2) & cpuClkIn
+	dataIn := (data << 2) & cpuDataIn
+	clkOut := (data << 1) & cpuClkOut
+	ret := clkIn | dataIn | clkOut
+	return ret
 }
 
 // buildPeripheralBus computes the peripheral bus signal based on the given cpuBus and data values.
 // It applies bitwise operations to manipulate the input signals to generate the resulting bus configuration.
-// The function utilizes specific input flags (cpuClkIn, cpuDataIn) to correctly modify and combine signals.
+// The function uses specific input flags (cpuClkIn, cpuDataIn) to correctly modify and combine signals.
 // Returns the newly computed peripheral bus value as uint8.
 func (c *Dispatcher) buildPeripheralBus(cpuBus uint8, data uint8) uint8 {
+	//data &= 0xa //NON FUNZIONA
+	//data &= 0x1a //FUNZIONA
+	dataIn := (data << 3) & cpuDataIn //0x40 bit 7
 	nData := ^data
-	bBus := ((nData ^ cpuBus) << 3) & cpuClkIn
-	p1 := (data << 3) & cpuDataIn
-	p2 := (data << 6) & bBus
-	value := p1 | p2
-	return value
+	bus := nData ^ cpuBus
+	busClockIn := (bus << 3) & cpuClkIn //0x80 bit 8 - Attention: relies on ATN A
+	clockIn := (data << 6) & busClockIn
+	ret := dataIn | clockIn
+	return ret
 }
 
 // updatePorts updates the state of the CPU and peripherals ports based on the current bus and peripheral data values.

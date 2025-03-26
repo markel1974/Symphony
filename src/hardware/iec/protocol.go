@@ -677,6 +677,7 @@ func (v *Protocol) peripheralWrite(clkDataBits uint8, atn bool) {
 		clkDataBits |= DeviceWriteAtn
 	}
 	output := clkDataBits & defaultDDRBMask
+	//output = output | 229
 	//d := DeviceWriteData & clkDataBits
 	//c := DeviceWriteClk & clkDataBits
 	//fmt.Printf("transmitting %d - clock %v, data %v\n", clkDataBits, c, d)
