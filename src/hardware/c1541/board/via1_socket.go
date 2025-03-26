@@ -47,8 +47,8 @@ func (v *VIA1Socket) Setup(c map[string]references.IComponent, cfg *config.Confi
 	if err != nil {
 		return err
 	}
-	v.setFilters()
-	v.setDipSwitch(v.connections.GetDeviceNumber())
+	v.prbFilter = v.createFilter()
+	v.dipSwitch = v.createDipSwitch(v.connections.GetDeviceNumber())
 	if err = v.IVIA.Setup(v, cfg); err != nil {
 		return err
 	}
@@ -78,37 +78,41 @@ func (v *VIA1Socket) IRQTrigger() {
 	v.connections.IRQTrigger(v.intrId)
 }
 
-// setFilters configures the appropriate bit values for the `prbFilter` field based on specific hardware function requirements.
-func (v *VIA1Socket) setFilters() {
-	v.prbFilter |= 0 << 0 //Bit #0: DATA IN; 0 = Low; 1 = High.
-	v.prbFilter |= 1 << 1 //Bit #1: DATA OUT; 0 = Low; 1 = High.
-	v.prbFilter |= 0 << 2 //Bit #2: CLOCK IN; 0 = Low; 1 = High.
-	v.prbFilter |= 1 << 3 //Bit #3: CLOCK OUT; 0 = Low; 1 = High..
-	v.prbFilter |= 1 << 4 //Bit #4: ATNA OUT; 1 = Enable device presence detection by automatically acknowledging ATN IN signals on DATA OUT.
-	v.prbFilter |= 1 << 5 //Bits #5 - #6: Device number, set with jumper, minus 8; % 00 = 8; % 01 = 9; % 10 = 10; % 11 = 11. Default: % 00, 8.
-	v.prbFilter |= 1 << 6
-	v.prbFilter |= 0 << 7 //Bit #7: ATN IN; 0 = Low; 1 = High.
+// createFilter configures the appropriate bit values for the `prbFilter` field based on specific hardware function requirements.
+func (v *VIA1Socket) createFilter() uint8 {
+	prbFilter := uint8(0)
+	prbFilter |= 0 << 0 //Bit #0: DATA IN; 0 = Low; 1 = High.
+	prbFilter |= 1 << 1 //Bit #1: DATA OUT; 0 = Low; 1 = High.
+	prbFilter |= 0 << 2 //Bit #2: CLOCK IN; 0 = Low; 1 = High.
+	prbFilter |= 1 << 3 //Bit #3: CLOCK OUT; 0 = Low; 1 = High..
+	prbFilter |= 1 << 4 //Bit #4: ATNA OUT; 1 = Enable device presence detection by automatically acknowledging ATN IN signals on DATA OUT.
+	prbFilter |= 1 << 5 //Bits #5 - #6: Device number, set with jumper, minus 8; % 00 = 8; % 01 = 9; % 10 = 10; % 11 = 11. Default: % 00, 8.
+	prbFilter |= 1 << 6
+	prbFilter |= 0 << 7 //Bit #7: ATN IN; 0 = Low; 1 = High.
+	return prbFilter
 }
 
-// setDipSwitch configures the dipSwitch field based on the input device number by adjusting specific bits in the field.
-func (v *VIA1Socket) setDipSwitch(deviceNumber uint8) {
+// createDipSwitch configures the dipSwitch field based on the input device number by adjusting specific bits in the field.
+func (v *VIA1Socket) createDipSwitch(deviceNumber uint8) uint8 {
+	dipSwitch := uint8(0)
 	switch deviceNumber - 8 {
 	case 0:
-		v.dipSwitch |= 0 << 5
-		v.dipSwitch |= 0 << 6
+		dipSwitch |= 0 << 5
+		dipSwitch |= 0 << 6
 	case 1:
-		v.dipSwitch |= 1 << 5
-		v.dipSwitch |= 0 << 6
+		dipSwitch |= 1 << 5
+		dipSwitch |= 0 << 6
 	case 2:
-		v.dipSwitch |= 0 << 5
-		v.dipSwitch |= 1 << 6
+		dipSwitch |= 0 << 5
+		dipSwitch |= 1 << 6
 	case 3:
-		v.dipSwitch |= 1 << 5
-		v.dipSwitch |= 1 << 6
+		dipSwitch |= 1 << 5
+		dipSwitch |= 1 << 6
 	default:
-		v.dipSwitch |= 0 << 5
-		v.dipSwitch |= 0 << 6
+		dipSwitch |= 0 << 5
+		dipSwitch |= 0 << 6
 	}
+	return dipSwitch
 }
 
 // ReadPRA reads a value from Peripheral Register A (PRA) and always returns 0xff to maintain compatibility with 1541C ROMs.
