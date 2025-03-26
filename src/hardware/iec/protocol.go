@@ -26,6 +26,9 @@ const (
 
 */
 
+// Corrisponde a DeviceWriteData | DeviceWriteClk | DeviceWriteAtn
+const defaultDDRBMask = uint8((1 << 1) | (1 << 3) | (1 << 4))
+
 // DeviceReadAtn represents the signal for device read attention (ATN_IN).
 // DeviceReadClk represents the signal for device read clock (CLK_IN).
 // DeviceReadData represents the signal for device read data (DATA_IN).
@@ -39,10 +42,10 @@ const (
 
 	DeviceWriteData = uint8(0x02) // DATA_OUT
 	DeviceWriteClk  = uint8(0x08) // CLK_OUT
+	DeviceWriteAtn  = uint8(0x10) // ATN_A
+
 	//DeviceWriteClk  = uint8(0x40)
 	//DeviceWriteData = uint8(0x80)
-
-	DeviceWriteAtn = uint8(0x10) // ATN_A
 )
 
 // P_PRE0 to P_FRAMEERR1 are constants representing various protocol states or phases in an iota enumeration.
@@ -669,15 +672,15 @@ func (v *Protocol) getState(idx uint8) uint8 {
 	return v.state[x]
 }
 
-func (v *Protocol) peripheralWrite(data uint8, atn bool) {
-	//d := DeviceWriteData & data
-	//c := DeviceWriteClk & data
-	//TODO VERIFICA ATN
+func (v *Protocol) peripheralWrite(clkDataBits uint8, atn bool) {
 	if atn {
-		data |= DeviceWriteAtn
+		clkDataBits |= DeviceWriteAtn
 	}
-	//fmt.Printf("transmitting %d - clock %v, data %v\n", data, c, d)
-	v.iec.PeripheralWrite(v.deviceNumber, data)
+	output := clkDataBits & defaultDDRBMask
+	//d := DeviceWriteData & clkDataBits
+	//c := DeviceWriteClk & clkDataBits
+	//fmt.Printf("transmitting %d - clock %v, data %v\n", clkDataBits, c, d)
+	v.iec.PeripheralWrite(v.deviceNumber, output)
 }
 
 func (v *Protocol) print(id string, bus uint8) {

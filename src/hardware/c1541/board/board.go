@@ -189,7 +189,7 @@ func (m *Board) AtnStateChanged(newAtn bool) {
 		//Interrupt by negative edge of ATN on IEC bus
 		//https://sta.c64.org/cbm1541mem.html
 		m.plaSocket.Write(0x7c, 1)
-		//fmt.Println("ATN", b, "RECEIVED - WAKE UP")
+		//fmt.Println("ATN", "RECEIVED - WAKE UP")
 	}
 }
 
