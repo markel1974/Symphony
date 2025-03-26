@@ -47,7 +47,7 @@ func (v *VIA1Socket) Setup(c map[string]references.IComponent, cfg *config.Confi
 	if err != nil {
 		return err
 	}
-	v.prbFilter = v.createFilter()
+	v.prbFilter = v.createPRBFilter()
 	v.dipSwitch = v.createDipSwitch(v.connections.GetDeviceNumber())
 	if err = v.IVIA.Setup(v, cfg); err != nil {
 		return err
@@ -79,7 +79,7 @@ func (v *VIA1Socket) IRQTrigger() {
 }
 
 // createFilter configures the appropriate bit values for the `prbFilter` field based on specific hardware function requirements.
-func (v *VIA1Socket) createFilter() uint8 {
+func (v *VIA1Socket) createPRBFilter() uint8 {
 	prbFilter := uint8(0)
 	prbFilter |= 0 << 0 //Bit #0: DATA IN; 0 = Low; 1 = High.
 	prbFilter |= 1 << 1 //Bit #1: DATA OUT; 0 = Low; 1 = High.
