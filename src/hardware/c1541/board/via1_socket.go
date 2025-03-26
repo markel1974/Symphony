@@ -123,10 +123,11 @@ func (v *VIA1Socket) ReadPRA(_ uint8, _ uint8) uint8 {
 
 // ReadPRB reads the Peripheral Register B (PRB) value, applies filters and dipswitch adjustments, then modifies the result.
 func (v *VIA1Socket) ReadPRB(prb uint8, _ uint8) uint8 {
+	//bit 0 - 2 - 7 = 0x85
+	const bits = uint8((1 << 0) | (1 << 2) | (1 << 7))
 	data := v.iec.PeripheralRead()
 	p := (prb | v.dipSwitch) & v.prbFilter
-	//bit 0 - 2 - 7 = 0x85
-	ret := (p | data) ^ 0x85
+	ret := (p | data) ^ bits //0x85
 	return ret
 }
 
@@ -152,7 +153,8 @@ func (v *VIA1Socket) WriteDDRB(prb uint8, ddrb uint8) {
 // peripheralWrite computes the write data for the peripheral bus and sends it to the corresponding device via IIec.
 func (v *VIA1Socket) peripheralWrite(prb uint8, ddrb uint8) {
 	p := prb | v.dipSwitch
-	wd := (^p) & ddrb
+	np := ^p
+	wd := np & ddrb
 
 	//const DeviceWriteData = 0x02 // DATA_OUT
 	//const DeviceWriteClk = 0x08
