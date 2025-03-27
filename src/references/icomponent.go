@@ -84,8 +84,6 @@ type INavigate interface {
 
 	GetNode() INode
 
-	Propagate() bool
-
 	GetChild(id string) IComponent
 
 	GetChildren() []IComponent

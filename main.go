@@ -178,11 +178,11 @@ func main() {
 	}
 
 	hwFactory := hardware.NewFactory(cfg)
-	component, err := hwFactory.Create(nil, boardId, 0)
+	boardComponent, err := hwFactory.Create(nil, boardId, 0)
 	if err != nil {
 		log.Fatal(err)
 	}
-	board, ok := component.(references.IBoard)
+	board, ok := boardComponent.(references.IBoard)
 	if !ok || board == nil {
 		log.Fatal("board is nil")
 	}
@@ -200,10 +200,14 @@ func main() {
 	if err = audioRender.Setup(cfg); err != nil {
 		log.Fatal(err)
 	}
+
 	if err = board.Setup(display, audioRender, cfg); err != nil {
 		log.Fatal(err)
 	}
-	if err = createShell(component.GetCommand()); err != nil {
+	if err = boardComponent.Connect(); err != nil {
+		log.Fatal(err)
+	}
+	if err = createShell(boardComponent.GetCommand()); err != nil {
 		log.Fatal(err)
 	}
 	if err = displayRender.Setup(board, cfg); err != nil {

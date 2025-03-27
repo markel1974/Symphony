@@ -28,7 +28,6 @@ type BaseComponent struct {
 	node       references.INode
 	properties *Properties
 	commands   *Commands
-	propagate  bool
 }
 
 // NewBaseComponent creates a new instance of BaseComponent with a unique ID, name, label, and initialized properties and commands.
@@ -40,7 +39,6 @@ func NewBaseComponent() *BaseComponent {
 		name:       "",
 		properties: NewProperties(),
 		commands:   NewCommands(),
-		propagate:  true,
 		cmd:        nil,
 	}
 	return bc
@@ -79,14 +77,6 @@ func (bc *BaseComponent) GetId() string {
 
 func (bc *BaseComponent) HardwareId() string {
 	return bc.hardwareId
-}
-
-func (bc *BaseComponent) DisablePropagate() {
-	bc.propagate = false
-}
-
-func (bc *BaseComponent) Propagate() bool {
-	return bc.propagate
 }
 
 // GetFactory retrieves the INode instance associated with the BaseComponent.
@@ -368,9 +358,12 @@ func (bc *BaseComponent) restore(component references.IComponent, state map[stri
 // Restore reconstructs an IComponent with its hierarchical state using a factory, parentComponent, and a state map.
 // It returns the restored IComponent or an error if the process fails.
 func Restore(factory references.IComponentFactory, parentComponent references.IComponent, component references.IComponent, state map[string]interface{}) (references.IComponent, error) {
-	root, err := _restore(factory, parentComponent, component, state)
-	if err != nil {
-		return nil, err
+	var root references.IComponent
+	for x := 0; x < 3; x++ {
+		var err error
+		if root, err = _restore(x, factory, parentComponent, component, state); err != nil {
+			return nil, err
+		}
 	}
 	return root, nil
 }
@@ -378,8 +371,11 @@ func Restore(factory references.IComponentFactory, parentComponent references.IC
 // _restore reconstructs an IComponent and its hierarchy from a serialized state using the provided component factory.
 // It initializes a component if nil, restores its properties and child components, and handles state validation.
 // Returns the restored component or any error encountered during the restoration process.
-func _restore(factory references.IComponentFactory, parentComponent references.IComponent, component references.IComponent, s map[string]interface{}) (references.IComponent, error) {
-	if component == nil {
+func _restore(step int, factory references.IComponentFactory, parentComponent references.IComponent, component references.IComponent, s map[string]interface{}) (references.IComponent, error) {
+	if step == 0 {
+		if component != nil {
+			return nil, fmt.Errorf("error restoring component: %s already exists", component.GetId())
+		}
 		keys, err := GetSegmentKeys(s)
 		if err != nil {
 			return nil, err
@@ -392,34 +388,45 @@ func _restore(factory references.IComponentFactory, parentComponent references.I
 		if pos := strings.LastIndex(id, ":"); pos > 0 {
 			v := id[pos+1:]
 			if instance, err = strconv.Atoi(v); err != nil {
-				return nil, fmt.Errorf("error restoring component: %s", err.Error())
+				return nil, fmt.Errorf("error restoring component %s: %s", id, err.Error())
 			}
 			id = id[:pos]
 		}
 		if component, err = factory.Create(parentComponent, id, instance); err != nil {
 			return nil, err
 		}
+	} else if step == 1 {
+		if component == nil {
+			return nil, fmt.Errorf("error restoring component: nil component")
+		}
+		if err := component.Connect(); err != nil {
+			return nil, err
+		}
 	}
+
 	id := component.GetId()
 	if len(id) == 0 {
-		return nil, nil
+		return nil, fmt.Errorf("error restoring component: %s", "missing component id")
 	}
 	stateI := s[id]
 	if stateI == nil {
 		return nil, fmt.Errorf("error restoring component %s: %s", id, "missing component node")
 	}
-	//TODO Details Handler
-	//detailsSegment, err := GetSegment(detailsId, stateI)
-	//if err != nil {
-	//	return nil, err
-	//}
-	if propertiesSegment, _ := GetSegment(propertiesId, stateI); len(propertiesSegment) > 0 {
-		if err := component.Restore(propertiesSegment); err != nil {
-			return nil, fmt.Errorf("error restoring component %s: %w", id, err)
+
+	if step == 2 {
+		//TODO Details Handler
+		//detailsSegment, err := GetSegment(detailsId, stateI)
+		//if err != nil {
+		//	return nil, err
+		//}
+		if propertiesSegment, _ := GetSegment(propertiesId, stateI); len(propertiesSegment) > 0 {
+			if err := component.Restore(propertiesSegment); err != nil {
+				return nil, fmt.Errorf("error restoring component %s: %w", id, err)
+			}
 		}
 	}
 
-	if !component.Propagate() {
+	if component.Internal() {
 		return component, nil
 	}
 
@@ -434,7 +441,7 @@ func _restore(factory references.IComponentFactory, parentComponent references.I
 			}
 			fullChild := map[string]interface{}{k: child}
 			c := component.GetChild(k)
-			if _, err := _restore(factory, component, c, fullChild); err != nil {
+			if _, err := _restore(step, factory, component, c, fullChild); err != nil {
 				return nil, err
 			}
 		}

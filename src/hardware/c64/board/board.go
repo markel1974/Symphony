@@ -81,6 +81,7 @@ type Board struct {
 	ledSignal       *signals.SignalUint32
 	emulation       []func()
 	connections     []references.IConnector
+	components      map[string]references.IComponent
 	//expansionIrqTrigger *signals.SignalUint32
 	//expansionIrqClear   *signals.SignalUint32
 }
@@ -148,7 +149,7 @@ func (s *Board) LEDSignal() *signals.SignalUint32 {
 func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) error {
 	s.db = db
 	s.cfg = cfg
-	components := make(map[string]references.IComponent)
+	s.components = make(map[string]references.IComponent)
 
 	s.vicSocket.SetDisplayBuffer(db)
 	s.sidSocket.SetPlayer(player)
@@ -159,14 +160,18 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 		if err != nil {
 			return err
 		}
-		components[comp.HardwareId()] = comp
+		s.components[comp.HardwareId()] = comp
 	}
 
 	for _, c := range s.connections {
-		if err := c.Setup(components, cfg); err != nil {
+		if err := c.Setup(s.components, cfg); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *Board) Connect() error {
 	for _, c := range s.connections {
 		if err := c.Connect(); err != nil {
 			return err
@@ -175,11 +180,11 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 
 	var err error
 
-	if s.emulation, err = s.rebuildEmulation(components); err != nil {
+	if s.emulation, err = s.rebuildEmulation(s.components); err != nil {
 		return err
 	}
 
-	for _, crt := range cfg.Cartridges() {
+	for _, crt := range s.cfg.Cartridges() {
 		if _, err = s.cartSocket.Add(crt.GetKind(), crt.GetName(), crt.GetData()); err != nil {
 			return err
 		}
@@ -195,10 +200,6 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 
 	s.Print(os.Stdout, " ", true)
 
-	return nil
-}
-
-func (s *Board) Connect() error {
 	return nil
 }
 
