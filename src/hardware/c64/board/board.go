@@ -11,27 +11,6 @@ import (
 	"os"
 )
 
-var _c64hardware = []struct {
-	id       string
-	instance int
-}{
-	{"mos6569", 0},
-	{"mos6526", 0},
-	{"mos6526", 1},
-	{"cartridges_c64", 0},
-	{"iec", 0},
-	{"mos6510", 0},
-	{"pic_6510", 0},
-	{"quartz", 0},
-	{"dynamic_throttle", 0},
-	{"mos6581", 0},
-	{"roms_c64", 0},
-	{"pla_c64", 0},
-	{"keyboard_c64", 0},
-	{"joystick_c64", 0},
-	{"joystick_c64", 1},
-}
-
 var _hardwareSequence = []string{
 	references.IdIVIC(nil, 0),
 	references.IdICIA(nil, 0),
@@ -146,22 +125,13 @@ func (s *Board) LEDSignal() *signals.SignalUint32 {
 	return s.ledSignal
 }
 
-func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) error {
+func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, components map[string]references.IComponent, cfg *config.Config) error {
 	s.db = db
 	s.cfg = cfg
-	s.components = make(map[string]references.IComponent)
+	s.components = components
 
 	s.vicSocket.SetDisplayBuffer(db)
 	s.sidSocket.SetPlayer(player)
-
-	//TODO REMOVE WHEN THREE IS READY...
-	for _, hw := range _c64hardware {
-		comp, err := s.GetFactory().Create(s, hw.id, hw.instance)
-		if err != nil {
-			return err
-		}
-		s.components[comp.HardwareId()] = comp
-	}
 
 	for _, c := range s.connections {
 		if err := c.Setup(s.components, cfg); err != nil {

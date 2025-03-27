@@ -36,7 +36,7 @@ func IdIBoardVIC20(_ IBoard, instance int) string {
 // Throttle retrieves the throttle interface for managing execution rates.
 // DiskChange triggers an event for changing the current disk in the board's system.
 type IBoard interface {
-	Setup(db IDisplayBuffer, p IAudioRender, cfg *config.Config) error
+	Setup(db IDisplayBuffer, p IAudioRender, components map[string]IComponent, cfg *config.Config) error
 
 	VBlankSignal() *signals.Signal
 

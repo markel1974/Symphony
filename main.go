@@ -68,6 +68,27 @@ import (
 
 // -f "fs_drive:/Users/tinmr305/Downloads/c64carts/"
 
+var _c64DefaultHardware = []struct {
+	id       string
+	instance int
+}{
+	{"mos6569", 0},
+	{"mos6526", 0},
+	{"mos6526", 1},
+	{"cartridges_c64", 0},
+	{"iec", 0},
+	{"mos6510", 0},
+	{"pic_6510", 0},
+	{"quartz", 0},
+	{"dynamic_throttle", 0},
+	{"mos6581", 0},
+	{"roms_c64", 0},
+	{"pla_c64", 0},
+	{"keyboard_c64", 0},
+	{"joystick_c64", 0},
+	{"joystick_c64", 1},
+}
+
 /*
 func restoreTest(factory references.IComponentFactory) {
 	//state, _ := s.DumpAll()
@@ -178,6 +199,7 @@ func main() {
 	}
 
 	hwFactory := hardware.NewFactory(cfg)
+
 	boardComponent, err := hwFactory.Create(nil, boardId, 0)
 	if err != nil {
 		log.Fatal(err)
@@ -185,6 +207,15 @@ func main() {
 	board, ok := boardComponent.(references.IBoard)
 	if !ok || board == nil {
 		log.Fatal("board is nil")
+	}
+
+	components := make(map[string]references.IComponent)
+	for _, hw := range _c64DefaultHardware {
+		var comp references.IComponent
+		if comp, err = hwFactory.Create(boardComponent, hw.id, hw.instance); err != nil {
+			log.Fatal(err.Error())
+		}
+		components[comp.HardwareId()] = comp
 	}
 
 	graphicsFactory := graphics.NewFactory()
@@ -201,7 +232,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err = board.Setup(display, audioRender, cfg); err != nil {
+	if err = board.Setup(display, audioRender, components, cfg); err != nil {
 		log.Fatal(err)
 	}
 	if err = boardComponent.Connect(); err != nil {
