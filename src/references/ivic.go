@@ -72,8 +72,6 @@ type IVICBanks interface {
 type IVICSocket interface {
 	Cycle() uint64
 
-	GetDisplayBuffer() IDisplayBuffer
-
 	GetBanks() IVICBanks
 
 	IRQTrigger()

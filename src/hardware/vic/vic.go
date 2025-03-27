@@ -168,8 +168,8 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 
 // Setup initializes the VIC component with the provided socket and configuration.
 func (vic *VIC) Setup(socket references.IVICSocket, cfg *config.Config) error {
+	displayBuffer := vic.GetFactory().GetIDisplayBuffer()
 	vic.cfg = cfg
-	displayBuffer := socket.GetDisplayBuffer()
 	vic.socket = socket
 	vic.banks = vic.socket.GetBanks()
 	vic.collisions = NewCollisions(vic)

@@ -35,7 +35,6 @@ const (
 // Board represents a complex hardware configuration comprising various component sockets and related system functionalities.
 type Board struct {
 	*component.BaseComponent
-	db              references.IDisplayBuffer
 	keysSocket      *KeyboardSocket
 	joySocket1      *JoystickSocket
 	joySocket2      *JoystickSocket
@@ -70,7 +69,6 @@ type Board struct {
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *Board {
 	s := &Board{
 		BaseComponent: component.NewBaseComponent(),
-		db:            nil,
 		dmaLow:        false,
 		prg:           nil,
 		joySwap:       true,
@@ -125,13 +123,9 @@ func (s *Board) LEDSignal() *signals.SignalUint32 {
 	return s.ledSignal
 }
 
-func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRender, components map[string]references.IComponent, cfg *config.Config) error {
-	s.db = db
+func (s *Board) Setup(components map[string]references.IComponent, cfg *config.Config) error {
 	s.cfg = cfg
 	s.components = components
-
-	s.vicSocket.SetDisplayBuffer(db)
-	s.sidSocket.SetPlayer(player)
 
 	for _, c := range s.connections {
 		if err := c.Setup(s.components, cfg); err != nil {
@@ -224,11 +218,6 @@ func (s *Board) EmulationRequired() bool {
 // GetText retrieves the textual representation of the board's content as a byte slice from the vicSocket.
 func (s *Board) GetText() []byte {
 	return s.vicSocket.GetText()
-}
-
-// GetScreenSize returns the width and height of the screen as two integers: width (X) and height (Y
-func (s *Board) GetScreenSize() (int, int) {
-	return mos6569.DisplayX, mos6569.DisplayY
 }
 
 // KeyboardSetCommand assigns the specified command to the keyboard's key socket for execution.

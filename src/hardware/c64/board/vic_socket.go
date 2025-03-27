@@ -46,16 +46,6 @@ func NewVICSocket(connections IVICSocketConnection) *VICSocket {
 	}
 }
 
-// SetDisplayBuffer sets the display buffer to the provided IDisplayBuffer instance.
-func (v *VICSocket) SetDisplayBuffer(db references.IDisplayBuffer) {
-	v.db = db
-}
-
-// GetDisplayBuffer retrieves the currently associated display buffer instance from the VIC socket.
-func (v *VICSocket) GetDisplayBuffer() references.IDisplayBuffer {
-	return v.db
-}
-
 // Setup initializes the VICSocket by resolving its dependencies and calling Setup on the IVIC component.
 func (v *VICSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error

@@ -19,7 +19,7 @@ func IdISID(_ ISID, instance int) string {
 // WriteRegister writes data to a specific register address of the SID.
 // ReadRegister retrieves data from a specified register address of the SID.
 type ISID interface {
-	Setup(socket ISIDSocket, cfg *config.Config, player IAudioRender, fragFreq int, rasters int) error
+	Setup(socket ISIDSocket, cfg *config.Config, fragFreq int, rasters int) error
 
 	Connect() error
 

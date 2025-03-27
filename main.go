@@ -198,7 +198,19 @@ func main() {
 		cfg.DisableJiffy()
 	}
 
-	hwFactory := hardware.NewFactory(cfg)
+	graphicsFactory := graphics.NewFactory()
+	audioFactory := audio.NewFactory()
+	displayRender := graphicsFactory.Create(renderId)
+	display, err := displayRender.CreateDisplayBuffer(0x180, 0x110) //mos6569.DisplayX, mos6569.DisplayY
+	if err != nil {
+		log.Fatal(err)
+	}
+	audioRender := audioFactory.Create(playerId)
+	if err = audioRender.Setup(cfg); err != nil {
+		log.Fatal(err)
+	}
+
+	hwFactory := hardware.NewFactory(display, audioRender, cfg)
 
 	boardComponent, err := hwFactory.Create(nil, boardId, 0)
 	if err != nil {
@@ -218,21 +230,7 @@ func main() {
 		components[comp.HardwareId()] = comp
 	}
 
-	graphicsFactory := graphics.NewFactory()
-	audioFactory := audio.NewFactory()
-
-	displayRender := graphicsFactory.Create(renderId)
-	w, h := board.GetScreenSize()
-	display, err := displayRender.CreateDisplayBuffer(w, h)
-	if err != nil {
-		log.Fatal(err)
-	}
-	audioRender := audioFactory.Create(playerId)
-	if err = audioRender.Setup(cfg); err != nil {
-		log.Fatal(err)
-	}
-
-	if err = board.Setup(display, audioRender, components, cfg); err != nil {
+	if err = board.Setup(components, cfg); err != nil {
 		log.Fatal(err)
 	}
 	if err = boardComponent.Connect(); err != nil {

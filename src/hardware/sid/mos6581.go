@@ -22,7 +22,6 @@ type SID struct {
 	socket       references.ISIDSocket
 	registers    []uint8
 	cfg          *config.Config
-	player       references.IAudioRender
 	audioBuilder *AudioBuilder
 	reflect      *SidReflect
 	fragFreq     int
@@ -44,10 +43,9 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the SID instance with the provided socket, configuration, fragment frequency, and raster count.
-func (sid *SID) Setup(socket references.ISIDSocket, cfg *config.Config, player references.IAudioRender, fragFreq int, rasters int) error {
+func (sid *SID) Setup(socket references.ISIDSocket, cfg *config.Config, fragFreq int, rasters int) error {
 	sid.socket = socket
 	sid.cfg = cfg
-	sid.player = player
 	sid.fragFreq = fragFreq
 	sid.rasters = rasters
 	sid.cfg.Bind(sid.onConfigChanged)
@@ -55,7 +53,7 @@ func (sid *SID) Setup(socket references.ISIDSocket, cfg *config.Config, player r
 }
 
 func (sid *SID) Connect() error {
-	sid.audioBuilder = NewAudioBuilder(sid.player, true, sid.fragFreq, sid.rasters)
+	sid.audioBuilder = NewAudioBuilder(sid.GetFactory().GetIAudioRender(), true, sid.fragFreq, sid.rasters)
 	return nil
 }
 

@@ -131,6 +131,10 @@ type IConnector interface {
 // IComponentFactory defines methods for creating and managing various types of components in an emulation system.
 type IComponentFactory interface {
 	Create(parent IComponent, id string, instance int) (IComponent, error)
+
+	GetIDisplayBuffer() IDisplayBuffer
+
+	GetIAudioRender() IAudioRender
 }
 
 func IdInternalComponent(id string, instance int) string {

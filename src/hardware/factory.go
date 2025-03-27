@@ -35,13 +35,17 @@ import (
 
 type Factory struct {
 	cfg       *config.Config
+	db        references.IDisplayBuffer
+	player    references.IAudioRender
 	container map[string]references.IFactory
 }
 
-func NewFactory(cfg *config.Config) *Factory {
+func NewFactory(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) *Factory {
 	f := &Factory{
-		container: registry.ComponentFactories(),
+		db:        db,
+		player:    player,
 		cfg:       cfg,
+		container: registry.ComponentFactories(),
 	}
 	return f
 }
@@ -54,4 +58,12 @@ func (f *Factory) Create(parent references.IComponent, id string, label int) (re
 	ret := val.Create(parent, f, label)
 	//component.Register(parent, ret)
 	return ret, nil
+}
+
+func (f *Factory) GetIDisplayBuffer() references.IDisplayBuffer {
+	return f.db
+}
+
+func (f *Factory) GetIAudioRender() references.IAudioRender {
+	return f.player
 }
