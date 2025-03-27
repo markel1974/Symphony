@@ -28,11 +28,3 @@ func (s *QuartzSocket) Setup(c map[string]references.IComponent, cfg *config.Con
 	}
 	return nil
 }
-
-// Connect establishes a connection to the underlying quartz instance and returns an error if the connection fails.
-func (s *QuartzSocket) Connect() error {
-	if err := s.IQuartz.Connect(); err != nil {
-		return err
-	}
-	return nil
-}

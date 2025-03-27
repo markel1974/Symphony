@@ -25,9 +25,9 @@ type IIecSocket interface {
 // PeripheralWrite writes data from the CPU to a specific peripheral identified by its device number.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIec interface {
-	Setup(socket IIecSocket, cfg *config.Config) error
+	Setup(socket IIecSocket, cfg *config.Config, quartz IComponent) error
 
-	Connect(quartz IComponent) error
+	Connect() error
 
 	AddPeripheral(q IComponent, cfg *config.Config, kind string, deviceId uint8) error
 
@@ -64,9 +64,9 @@ type IIecDeviceSocket interface {
 // AtnStateChanged handles changes in the Attention (ATN) line state.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIecDevice interface {
-	Setup(socket IIecDeviceSocket, cfg *config.Config, deviceId uint8, deviceNumber uint8) error
+	Setup(socket IIecDeviceSocket, cfg *config.Config, iec IComponent, quartz IComponent, deviceId uint8, deviceNumber uint8) error
 
-	Connect(iec IComponent, quartz IComponent) error
+	Connect() error
 
 	Reset()
 

@@ -53,6 +53,8 @@ type Board struct {
 	romSocket    *RomLoaderSocket
 	mec          *mechanic.Mechanic
 	disks        *disk.Factory
+	iec          references.IComponent
+	quartz       references.IComponent
 	deviceId     uint8
 	deviceNumber uint8
 	diskId       string
@@ -95,16 +97,18 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 }
 
 // Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
-func (m *Board) Setup(_ references.IIecDeviceSocket, cfg *config.Config, deviceId uint8, deviceNumber uint8) error {
+func (m *Board) Setup(_ references.IIecDeviceSocket, cfg *config.Config, iec references.IComponent, quartz references.IComponent, deviceId uint8, deviceNumber uint8) error {
 	m.cfg = cfg
 	m.cfg.Bind(m.configChanged)
+	m.iec = iec
+	m.quartz = quartz
 	m.deviceId = deviceId
 	m.deviceNumber = deviceNumber
 	return nil
 }
 
 // Connect initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
-func (m *Board) Connect(iec references.IComponent, quartz references.IComponent) error {
+func (m *Board) Connect() error {
 	var err error
 	m.diskId = ""
 	//quartz := quartz.NewQuartz(m, "")
@@ -115,8 +119,8 @@ func (m *Board) Connect(iec references.IComponent, quartz references.IComponent)
 
 	//TODO REMOVE WHEN THREE IS READY...
 	components := make(map[string]references.IComponent)
-	components[iec.HardwareId()] = iec
-	components[quartz.HardwareId()] = quartz
+	components[m.iec.HardwareId()] = m.iec
+	components[m.quartz.HardwareId()] = m.quartz
 
 	for _, hw := range _c1541hardware {
 		comp, err := m.GetFactory().Create(m, hw.id, hw.instance)
@@ -142,6 +146,10 @@ func (m *Board) Connect(iec references.IComponent, quartz references.IComponent)
 		return err
 	}
 	return nil
+}
+
+func (m *Board) Internal() bool {
+	return false
 }
 
 // Shutdown gracefully shuts down the Board's components, ensuring proper cleanup and resource deallocation.

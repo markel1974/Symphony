@@ -57,6 +57,14 @@ func (c *CartridgeOcean) Setup(board references.IExpansionC64, ldr references.IC
 	return c.initBin(ldr)
 }
 
+func (c *CartridgeOcean) Connect() error {
+	return nil
+}
+
+func (c *CartridgeOcean) Internal() bool {
+	return false
+}
+
 // Reset restores the CartridgeOcean state to its initial default, clearing any active configurations or settings.
 func (c *CartridgeOcean) Reset() {
 

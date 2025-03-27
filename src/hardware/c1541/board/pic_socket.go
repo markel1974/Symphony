@@ -29,15 +29,7 @@ func (s *PICSocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	if err != nil {
 		return err
 	}
-	if err = s.IPIC6510.Setup(s, cfg); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Connect establishes a connection between the PIC and the specified quartz instance. Returns an error if the connection fails.
-func (s *PICSocket) Connect() error {
-	if err := s.IPIC6510.Connect(s.quartz); err != nil {
+	if err = s.IPIC6510.Setup(s, cfg, s.quartz); err != nil {
 		return err
 	}
 	return nil

@@ -31,11 +31,3 @@ func (w *JoystickSocket) Setup(cc map[string]references.IComponent, cfg *config.
 	}
 	return nil
 }
-
-// Connect establishes a connection using the underlying IJoystick interface. It returns an error if the connection fails.
-func (w *JoystickSocket) Connect() error {
-	if err := w.IJoystick.Connect(); err != nil {
-		return err
-	}
-	return nil
-}

@@ -35,9 +35,13 @@ type IHardware interface {
 
 	HardwareId() string
 
+	Connect() error
+
 	EmulationRequired() bool
 
 	Emulate()
+
+	Internal() bool
 
 	Reset()
 }

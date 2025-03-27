@@ -51,14 +51,6 @@ func (w *CIA2Socket) Setup(c map[string]references.IComponent, cfg *config.Confi
 	return nil
 }
 
-// Connect initializes and establishes a connection using the ICIA interface. Returns an error if the operation fails.
-func (w *CIA2Socket) Connect() error {
-	if err := w.ICIA.Connect(); err != nil {
-		return err
-	}
-	return nil
-}
-
 // ReadPortA reads the value of port A by combining peripheral data, data direction bits, and the IEC CpuRead result.
 func (w *CIA2Socket) ReadPortA(prA uint8, ddrA uint8, _ uint8, _ uint8) uint8 {
 	data := w.iec.CpuRead()

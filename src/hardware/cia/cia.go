@@ -71,6 +71,10 @@ func (m *CIA) Connect() error {
 	return nil
 }
 
+func (m *CIA) Internal() bool {
+	return false
+}
+
 // Update checks the TOD alarm condition against the RTC, triggers an IRQ if conditions match, and sets the alarm flag.
 func (m *CIA) Update() {
 	if m.tod.Update(m.timerA.GetRTC()) {

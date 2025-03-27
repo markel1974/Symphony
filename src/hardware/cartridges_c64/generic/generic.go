@@ -68,6 +68,14 @@ func (c *CartridgeGeneric) Reset() {
 
 }
 
+func (c *CartridgeGeneric) Connect() error {
+	return nil
+}
+
+func (c *CartridgeGeneric) Internal() bool {
+	return false
+}
+
 // GetLoaderId retrieves the unique identifier of the CartridgeGeneric instance.
 func (c *CartridgeGeneric) GetLoaderId() string {
 	return c.loaderId

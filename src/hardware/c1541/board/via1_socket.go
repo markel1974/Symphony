@@ -55,14 +55,6 @@ func (v *VIA1Socket) Setup(c map[string]references.IComponent, cfg *config.Confi
 	return nil
 }
 
-// Connect establishes a connection for the VIA1Socket by invoking the Connect method of its embedded IVIA component.
-func (v *VIA1Socket) Connect() error {
-	if err := v.IVIA.Connect(); err != nil {
-		return err
-	}
-	return nil
-}
-
 // GetDeviceNumber retrieves the device number associated with the current VIA1 socket connection.
 func (v *VIA1Socket) GetDeviceNumber() uint8 {
 	return v.connections.GetDeviceNumber()

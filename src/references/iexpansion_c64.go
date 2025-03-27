@@ -89,11 +89,11 @@ type ICartridgeManagerC64Socket interface {
 // IORead performs a read operation from an I/O address, returning the value and success state.
 // IOWrite executes a write operation to an I/O address with the specified data, indicating success.
 type ICartridgeManagerC64 interface {
-	Setup(i ICartridgeManagerC64Socket, cfg *config.Config) error
-
-	Connect(expansion IExpansionC64) error
+	Setup(i ICartridgeManagerC64Socket, cfg *config.Config, expansion IExpansionC64) error
 
 	Config() (uint8, uint8, bool)
+
+	Connect() error
 
 	Read(interval RomInterval, addr uint16) (uint8, bool)
 

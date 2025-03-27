@@ -29,11 +29,3 @@ func (w *KeyboardSocket) Setup(cc map[string]references.IComponent, cfg *config.
 	}
 	return nil
 }
-
-// Connect establishes a connection to the underlying keyboard component and returns an error if the connection fails.
-func (w *KeyboardSocket) Connect() error {
-	if err := w.IKeyboard.Connect(); err != nil {
-		return err
-	}
-	return nil
-}

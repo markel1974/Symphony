@@ -30,11 +30,3 @@ func (s *ThrottleSocket) Setup(c map[string]references.IComponent, cfg *config.C
 	}
 	return nil
 }
-
-// Connect establishes a connection using the underlying IThrottle interface. Returns an error if the connection fails.
-func (s *ThrottleSocket) Connect() error {
-	if err := s.IThrottle.Connect(); err != nil {
-		return err
-	}
-	return nil
-}

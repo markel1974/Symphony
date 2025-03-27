@@ -51,13 +51,13 @@ func New(parent references.IComponent, factory references.IComponentFactory, ins
 	return NewBoard(parent, factory, instance)
 }
 
-func (v *FSDrive) Setup(_ references.IIecDeviceSocket, cfg *config.Config, deviceId uint8, deviceNumber uint8) error {
+func (v *FSDrive) Setup(_ references.IIecDeviceSocket, cfg *config.Config, iec references.IComponent, quartz references.IComponent, deviceId uint8, deviceNumber uint8) error {
 	v.cfg = cfg
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
 	v.cfg.Bind(v.configChanged)
 	v.origDirPath = v.path
-	if err := v.protocol.Setup(v, cfg, deviceId, deviceNumber); err != nil {
+	if err := v.protocol.Setup(v, cfg, iec, quartz, deviceId, deviceNumber); err != nil {
 		return err
 	}
 	if d := v.cfg.Drive(v.deviceId); d != nil {
@@ -72,11 +72,15 @@ func (v *FSDrive) Setup(_ references.IIecDeviceSocket, cfg *config.Config, devic
 	return nil
 }
 
-func (v *FSDrive) Connect(iec references.IComponent, quartz references.IComponent) error {
-	if err := v.protocol.Connect(iec, quartz); err != nil {
+func (v *FSDrive) Connect() error {
+	if err := v.protocol.Connect(); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (v *FSDrive) Internal() bool {
+	return false
 }
 
 func (v *FSDrive) GetDeviceNumber() uint8 {

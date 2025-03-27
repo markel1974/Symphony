@@ -77,14 +77,6 @@ func (v *VICSocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	return nil
 }
 
-// Connect establishes a connection for the VIC socket by invoking the underlying IVIC's Connect method.
-func (v *VICSocket) Connect() error {
-	if err := v.IVIC.Connect(); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Cycle retrieves the current clock cycle count from the associated quartz instance.
 func (v *VICSocket) Cycle() uint64 {
 	return v.quartz.Cycle()

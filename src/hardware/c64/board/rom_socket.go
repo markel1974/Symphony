@@ -28,11 +28,3 @@ func (s *RomLoaderSocket) Setup(c map[string]references.IComponent, cfg *config.
 	}
 	return nil
 }
-
-// Connect establishes a connection using the underlying IROMLoaderC64 interface. Returns an error if the connection fails.
-func (s *RomLoaderSocket) Connect() error {
-	if err := s.IROMLoaderC64.Connect(); err != nil {
-		return err
-	}
-	return nil
-}

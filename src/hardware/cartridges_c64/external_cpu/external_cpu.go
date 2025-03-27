@@ -54,10 +54,10 @@ func (s *CartridgeExternalCPU) Setup(board references.IExpansionC64, ldr referen
 	s.board.SetDMALow(true)
 	s.quartz = quartz.NewQuartz(s, s.GetFactory(), 0)
 	s.pic = pic_6510.NewPIC(s, s.GetFactory(), 0)
-	if err := s.pic.Setup(s, cfg); err != nil {
+	if err := s.pic.Setup(s, cfg, s.quartz); err != nil {
 		return err
 	}
-	if err := s.pic.Connect(s.quartz); err != nil {
+	if err := s.pic.Connect(); err != nil {
 		return err
 	}
 	s.cpuSocket = NewCPUSocket()
@@ -80,6 +80,14 @@ func (s *CartridgeExternalCPU) GetLoaderId() string {
 // Reset reinitializes the CPU to its default state by invoking its internal Reset method.
 func (s *CartridgeExternalCPU) Reset() {
 	s.cpu.Reset()
+}
+
+func (s *CartridgeExternalCPU) Connect() error {
+	return nil
+}
+
+func (s *CartridgeExternalCPU) Internal() bool {
+	return false
 }
 
 // Emulate simulates the operation of the external CPU at a fixed frequency by processing cycles and managing bus signals.

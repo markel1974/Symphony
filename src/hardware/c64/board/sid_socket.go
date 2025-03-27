@@ -34,15 +34,7 @@ func (w *SIDSocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	if w.ISID, err = references.ComponentsToISID(c, 0); err != nil {
 		return err
 	}
-	if err = w.ISID.Setup(w, cfg, w.fragFreq, w.rasters); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Connect establishes a connection to the underlying ISID device using the configured audio render instance.
-func (w *SIDSocket) Connect() error {
-	if err := w.ISID.Connect(w.player); err != nil {
+	if err = w.ISID.Setup(w, cfg, w.player, w.fragFreq, w.rasters); err != nil {
 		return err
 	}
 	return nil

@@ -106,6 +106,14 @@ func (c *CartridgeEasyFlash) Setup(expansion references.IExpansionC64, ldr refer
 	return nil
 }
 
+func (c *CartridgeEasyFlash) Connect() error {
+	return nil
+}
+
+func (c *CartridgeEasyFlash) Internal() bool {
+	return false
+}
+
 // Reset reinitializes the CartridgeEasyFlash state, clearing any temporary data and restoring default settings.
 func (c *CartridgeEasyFlash) Reset() {
 

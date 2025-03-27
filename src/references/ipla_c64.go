@@ -27,9 +27,9 @@ type IPlaC64Socket interface {
 // SetWriteTrigger associates a callback function to trigger on writes at the specified 16-bit address.
 // RemoveRamTrigger removes a write trigger callback associated with a 16-bit address by its identifier.
 type IPlaC64 interface {
-	Setup(socket IPlaC64Socket, cfg *config.Config) error
+	Setup(socket IPlaC64Socket, cfg *config.Config, vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, roms IROMLoaderC64) error
 
-	Connect(vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, roms IROMLoaderC64) error
+	Connect() error
 
 	Reset()
 

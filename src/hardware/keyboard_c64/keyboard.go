@@ -41,6 +41,10 @@ func (k *Keyboard) Connect() error {
 	return nil
 }
 
+func (k *Keyboard) Internal() bool {
+	return false
+}
+
 // Reset reinitializes the Keyboard by resetting its storage, virtual key states, and ASCII translations.
 func (k *Keyboard) Reset() {
 	k.storage = fifo.NewStaticFifo(16384)

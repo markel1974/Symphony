@@ -49,15 +49,7 @@ func (w *PLASocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	if w.roms, err = references.ComponentsToIROMLoaderC64(c, 0); err != nil {
 		return err
 	}
-	if err = w.IPlaC64.Setup(w, cfg); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Connect establishes connections between PLASocket components and initializes the IPlaC64 interface for proper functionality.
-func (w *PLASocket) Connect() error {
-	if err := w.IPlaC64.Connect(w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.roms); err != nil {
+	if err = w.IPlaC64.Setup(w, cfg, w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.roms); err != nil {
 		return err
 	}
 	return nil

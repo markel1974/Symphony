@@ -43,14 +43,6 @@ func (w *CPUSocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	return nil
 }
 
-// Connect establishes the connection for the 6510 CPU interface and returns an error if the operation fails.
-func (w *CPUSocket) Connect() error {
-	if err := w.I6510.Connect(); err != nil {
-		return err
-	}
-	return nil
-}
-
 // GetPic returns the programmable interrupt controller (PIC) associated with the CPUSocket.
 func (w *CPUSocket) GetPic() references.IPIC6510 {
 	return w.pic

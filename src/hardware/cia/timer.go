@@ -132,19 +132,12 @@ func NewTimer(parent references.IComponent, factory references.IComponentFactory
 	return m
 }
 
-// UnderflowSignal returns the signal triggered on timer underflow for further handling or binding.
-func (m *Timer) UnderflowSignal() *signals.Signal {
-	return m.underflowOutSignal
+func (m *Timer) Connect() error {
+	return nil
 }
 
-// GetUnderflowOut retrieves the current state of the underflow output signal from the timer instance.
-func (m *Timer) GetUnderflowOut() bool {
-	return m.underflowOut
-}
-
-// SetUnderflowIn sets the underflow input signal state for the timer instance to the specified boolean value.
-func (m *Timer) SetUnderflowIn(u bool) {
-	m.underflowIn = u
+func (m *Timer) Internal() bool {
+	return true
 }
 
 // Reset reinitializes the Timer's internal state to its default values and clears any pending or current configurations.
@@ -159,6 +152,21 @@ func (m *Timer) Reset() {
 	m.toggleMode = false
 	m.count = m.countTick
 	m.cnt = false
+}
+
+// UnderflowSignal returns the signal triggered on timer underflow for further handling or binding.
+func (m *Timer) UnderflowSignal() *signals.Signal {
+	return m.underflowOutSignal
+}
+
+// GetUnderflowOut retrieves the current state of the underflow output signal from the timer instance.
+func (m *Timer) GetUnderflowOut() bool {
+	return m.underflowOut
+}
+
+// SetUnderflowIn sets the underflow input signal state for the timer instance to the specified boolean value.
+func (m *Timer) SetUnderflowIn(u bool) {
+	m.underflowIn = u
 }
 
 // HasPBOn checks whether bit `crBitPBOn` is set in the control register `cr`. Returns true if set, otherwise false.

@@ -198,6 +198,14 @@ func (s *Board) Setup(db references.IDisplayBuffer, player references.IAudioRend
 	return nil
 }
 
+func (s *Board) Connect() error {
+	return nil
+}
+
+func (s *Board) Internal() bool {
+	return false
+}
+
 // Reset clears the state of the Board, restoring it back to its initial configuration.
 func (s *Board) Reset() {
 	//nothing to do

@@ -105,6 +105,16 @@ func (reu *REU) GetLoaderId() string {
 	return reu.loaderId
 }
 
+// Connect establishes necessary bindings or configurations between the PIC and other components, returning an error if it fails.
+func (reu *REU) Connect() error {
+	return nil
+}
+
+// Internal indicates if the `Pic` is set as an internal device. Always returns false in this implementation.
+func (reu *REU) Internal() bool {
+	return false
+}
+
 // EmulationRequired determines whether emulation is required for the REU instance. Always returns false.
 func (reu *REU) EmulationRequired() bool {
 	return false

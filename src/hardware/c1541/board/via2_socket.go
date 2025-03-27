@@ -75,14 +75,6 @@ func (v *VIA2Socket) Setup(c map[string]references.IComponent, cfg *config.Confi
 	return nil
 }
 
-// Connect establishes a connection by delegating the operation to the embedded IVIA instance. Returns an error if it fails.
-func (v *VIA2Socket) Connect() error {
-	if err := v.IVIA.Connect(); err != nil {
-		return err
-	}
-	return nil
-}
-
 // Reset reinitializes the VIA2Socket's internal state by setting prbPrev to 0 and invoking the Reset method of IVIA.
 func (v *VIA2Socket) Reset() {
 	v.prbPrev = 0

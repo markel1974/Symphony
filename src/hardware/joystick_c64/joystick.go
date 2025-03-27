@@ -38,6 +38,10 @@ func (k *Joystick) Connect() error {
 	return nil
 }
 
+func (k *Joystick) Internal() bool {
+	return false
+}
+
 // Update recalculates the joystick's sensitivity range based on the provided minimum, maximum, and sensitivity values.
 func (k *Joystick) Update(min uint16, max uint16, sensitivity uint16) {
 	interval := max - min
@@ -55,7 +59,7 @@ func (k *Joystick) Emulate() {
 	//
 }
 
-func (m *Joystick) EmulationRequired() bool {
+func (k *Joystick) EmulationRequired() bool {
 	return false
 }
 

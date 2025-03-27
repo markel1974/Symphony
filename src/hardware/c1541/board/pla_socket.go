@@ -24,7 +24,7 @@ func NewPLASocket() *PLASocket {
 }
 
 // Setup initializes the PLASocket by resolving its components from the given map and applying configuration settings.
-func (w *PLASocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+func (w *PLASocket) Setup(c map[string]references.IComponent, _ *config.Config) error {
 	var err error
 	w.IPLAc1541, err = references.ComponentsToIPLAc1541(c, 0)
 	if err != nil {
@@ -42,15 +42,7 @@ func (w *PLASocket) Setup(c map[string]references.IComponent, cfg *config.Config
 	if err != nil {
 		return err
 	}
-	if err = w.IPLAc1541.Setup(w, w.cfg); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Connect establishes the necessary connections between the PLA, VIA components, and ROM loader for the PLASocket.
-func (w *PLASocket) Connect() error {
-	if err := w.IPLAc1541.Connect(w.via1, w.via2, w.roms); err != nil {
+	if err = w.IPLAc1541.Setup(w, w.cfg, w.via1, w.via2, w.roms); err != nil {
 		return err
 	}
 	return nil

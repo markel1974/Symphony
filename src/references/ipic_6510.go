@@ -29,9 +29,9 @@ type IPIC6510Socket interface {
 type IPIC6510 interface {
 	Reset()
 
-	Setup(socket IPIC6510Socket, cfg *config.Config) error
+	Setup(socket IPIC6510Socket, cfg *config.Config, quartz IQuartz) error
 
-	Connect(quartz IQuartz) error
+	Connect() error
 
 	ClearIRQ(uint32)
 

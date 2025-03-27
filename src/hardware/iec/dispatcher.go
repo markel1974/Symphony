@@ -33,6 +33,7 @@ const (
 type Dispatcher struct {
 	*component.BaseComponent
 	cfg             *config.Config
+	quartz          references.IComponent
 	atn             bool
 	cpuPort         uint8
 	cpuBus          uint8
@@ -57,18 +58,23 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 }
 
 // Setup initializes the Dispatcher component, configures drives based on the provided configuration, and prepares devices.
-func (c *Dispatcher) Setup(_ references.IIecSocket, cfg *config.Config) error {
+func (c *Dispatcher) Setup(_ references.IIecSocket, cfg *config.Config, quartz references.IComponent) error {
 	c.cfg = cfg
+	c.quartz = quartz
 	return nil
 }
 
-func (c *Dispatcher) Connect(q references.IComponent) error {
+func (c *Dispatcher) Connect() error {
 	for deviceId, d := range c.cfg.Drives() {
-		if err := c.AddPeripheral(q, c.cfg, d.GetKind(), uint8(deviceId)); err != nil {
+		if err := c.AddPeripheral(c.quartz, c.cfg, d.GetKind(), uint8(deviceId)); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (c *Dispatcher) Internal() bool {
+	return false
 }
 
 // Emulate processes the emulation logic for all virtual drives managed by the Dispatcher, calling each drive's Emulate method.
@@ -100,7 +106,7 @@ func (c *Dispatcher) Reset() {
 }
 
 // AddPeripheral adds a new peripheral to the dispatcher with the given kind, options, and device ID.
-func (c *Dispatcher) AddPeripheral(q references.IComponent, cfg *config.Config, kind string, deviceId uint8) error {
+func (c *Dispatcher) AddPeripheral(quartz references.IComponent, cfg *config.Config, kind string, deviceId uint8) error {
 	deviceNumber := deviceId + 8
 	device, err := c.GetFactory().Create(c, kind, int(deviceNumber))
 	if err != nil {
@@ -110,10 +116,10 @@ func (c *Dispatcher) AddPeripheral(q references.IComponent, cfg *config.Config, 
 	if !ok {
 		return fmt.Errorf("device %s is not an IEC device", kind)
 	}
-	if err = vd.Setup(c, cfg, deviceId, deviceNumber); err != nil {
+	if err = vd.Setup(c, cfg, c, quartz, deviceId, deviceNumber); err != nil {
 		return err
 	}
-	if err = vd.Connect(c, q); err != nil {
+	if err = vd.Connect(); err != nil {
 		return err
 	}
 	vd.LEDSignal().Bind(func(state uint32) {

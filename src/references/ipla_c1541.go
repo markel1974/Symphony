@@ -17,9 +17,9 @@ type IPLAc1541Socket interface {
 // Read retrieves the value from the specified memory address.
 // Write writes a value to the specified memory address.
 type IPLAc1541 interface {
-	Setup(socket IPLAc1541Socket, cfg *config.Config) error
+	Setup(socket IPLAc1541Socket, cfg *config.Config, via1 IVIA, via2 IVIA, roms IROMLoaderC1541) error
 
-	Connect(via1 IVIA, via2 IVIA, roms IROMLoaderC1541) error
+	Connect() error
 
 	Read(addr uint16) uint8
 

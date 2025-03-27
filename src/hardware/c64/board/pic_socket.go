@@ -27,15 +27,7 @@ func (s *PICSocket) Setup(cc map[string]references.IComponent, cfg *config.Confi
 	if s.quartz, err = references.ComponentsToIQuartz(cc, 0); err != nil {
 		return err
 	}
-	if err = s.IPIC6510.Setup(s, cfg); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Connect establishes a connection between the PICSocket and the quartz component using the IPIC6510 interface.
-func (s *PICSocket) Connect() error {
-	if err := s.IPIC6510.Connect(s.quartz); err != nil {
+	if err = s.IPIC6510.Setup(s, cfg, s.quartz); err != nil {
 		return err
 	}
 	return nil

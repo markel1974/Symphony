@@ -51,6 +51,14 @@ func NewPorts(factory references.IComponentFactory, parent references.IComponent
 	return p
 }
 
+func (p *Ports) Connect() error {
+	return nil
+}
+
+func (p *Ports) Internal() bool {
+	return true
+}
+
 // Reset resets all port-related variables in the Ports struct to their default state.
 func (p *Ports) Reset() {
 	p.data = 0

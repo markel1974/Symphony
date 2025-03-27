@@ -37,17 +37,9 @@ func (s *IECSocket) Setup(cc map[string]references.IComponent, cfg *config.Confi
 	if s.quartzC, ok = cc[references.IdIQuartz(nil, 0)]; !ok {
 		return fmt.Errorf("nil quartz")
 	}
-	if err = s.IIec.Setup(s, cfg); err != nil {
+	if err = s.IIec.Setup(s, cfg, s.quartzC); err != nil {
 		return err
 	}
 	s.IIec.LEDSignal().Bind(s.connection.LedTrigger)
-	return nil
-}
-
-// Connect establishes a connection between the IECSocket and its quartz component using the IIec interface. Returns error on failure.
-func (s *IECSocket) Connect() error {
-	if err := s.IIec.Connect(s.quartzC); err != nil {
-		return err
-	}
 	return nil
 }

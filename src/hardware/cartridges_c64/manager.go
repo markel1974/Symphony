@@ -52,8 +52,9 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 }
 
 // Setup initializes the Manager by setting up the expansion board, configuration preferences, and cartridge hardware mappings.
-func (f *Manager) Setup(_ references.ICartridgeManagerC64Socket, cfg *config.Config) error {
+func (f *Manager) Setup(_ references.ICartridgeManagerC64Socket, cfg *config.Config, board references.IExpansionC64) error {
 	f.cfg = cfg
+	f.board = board
 	f.registerHardware[external_cpu.Id] = external_cpu.New
 	f.registerHardware[reu.Id128K] = reu.New128K
 	f.registerHardware[reu.Id256K] = reu.New256K
@@ -77,9 +78,12 @@ func (f *Manager) Setup(_ references.ICartridgeManagerC64Socket, cfg *config.Con
 	return nil
 }
 
-func (s *Manager) Connect(board references.IExpansionC64) error {
-	s.board = board
+func (f *Manager) Connect() error {
 	return nil
+}
+
+func (f *Manager) Internal() bool {
+	return false
 }
 
 // Reset resets all cartridges managed by the Manager. If no cartridges exist, it performs no operations.

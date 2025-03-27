@@ -34,6 +34,10 @@ func (r *RomLoader) Connect() error {
 	return nil
 }
 
+func (r *RomLoader) Internal() bool {
+	return false
+}
+
 // Emulate initializes and begins the emulation process for the ROM data loaded in the RomLoader instance.
 func (r *RomLoader) Emulate() {
 

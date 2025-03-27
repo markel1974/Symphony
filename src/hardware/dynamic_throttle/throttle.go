@@ -35,6 +35,11 @@ func (s *DynamicThrottle) Setup(_ references.IThrottleSocket, _ *config.Config, 
 	return nil
 }
 
+// Internal indicates if the `Pic` is set as an internal device. Always returns false in this implementation.
+func (s *DynamicThrottle) Internal() bool {
+	return false
+}
+
 // Connect establishes a connection or initializes any required resources for the DynamicThrottle component.
 func (s *DynamicThrottle) Connect() error {
 	return nil

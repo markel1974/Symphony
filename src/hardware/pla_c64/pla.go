@@ -73,15 +73,8 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the PLA instance with the provided socket and configuration and returns an error if any issue occurs.
-func (b *PLA) Setup(_ references.IPlaC64Socket, cfg *config.Config) error {
+func (b *PLA) Setup(_ references.IPlaC64Socket, cfg *config.Config, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64) error {
 	b.cfg = cfg
-	return nil
-}
-
-// Connect initializes the PLA by setting up ports, memory banks, and registers, and connects required hardware references.
-// It performs initializations for RAM, memory banks, color registers, and ROM configurations.
-// Returns an error if any part of the setup fails.
-func (b *PLA) Connect(vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64) error {
 	b.ports = NewPorts(b.GetFactory(), b, 0)
 	b.vic = vic
 	b.sid = sid
@@ -89,6 +82,13 @@ func (b *PLA) Connect(vic references.IVIC, sid references.ISID, cia1 references.
 	b.cia2 = cia2
 	b.cartMan = cartMan
 	b.roms = roms
+	return nil
+}
+
+// Connect initializes the PLA by setting up ports, memory banks, and registers, and connects required hardware references.
+// It performs initializations for RAM, memory banks, color registers, and ROM configurations.
+// Returns an error if any part of the setup fails.
+func (b *PLA) Connect() error {
 	b.bankWrite[0x0] = b.ramWrite0x0000
 	b.bankWrite[0x1] = b.ramWrite0x1000
 	b.bankWrite[0x2] = b.ramWrite0x2000
@@ -165,6 +165,10 @@ func (b *PLA) Connect(vic references.IVIC, sid references.ISID, cia1 references.
 	b.initRom()
 
 	return nil
+}
+
+func (b *PLA) Internal() bool {
+	return false
 }
 
 // Reset reinitializes the internal state of the PLA, including resetting its ports and updating related configurations.

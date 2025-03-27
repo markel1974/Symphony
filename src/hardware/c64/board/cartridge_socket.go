@@ -26,15 +26,7 @@ func (cs *CartridgeSocket) Setup(c map[string]references.IComponent, cfg *config
 		return err
 	}
 	cs.cfg = cfg
-	if err = cs.ICartridgeManagerC64.Setup(cs, cfg); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Connect establishes a connection between the cartridge manager and the expansion.socket. Returns an error if it fails.
-func (cs *CartridgeSocket) Connect() error {
-	if err := cs.ICartridgeManagerC64.Connect(cs.expansion); err != nil {
+	if err = cs.ICartridgeManagerC64.Setup(cs, cfg, cs.expansion); err != nil {
 		return err
 	}
 	return nil

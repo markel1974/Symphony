@@ -58,6 +58,10 @@ func (v *VIA) Connect() error {
 	return nil
 }
 
+func (v *VIA) Internal() bool {
+	return false
+}
+
 // Reset initializes all VIA internal registers to their default state of zero.
 func (v *VIA) Reset() {
 	v.pra = 0

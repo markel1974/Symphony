@@ -64,6 +64,10 @@ func (cpu *CPU) Connect() error {
 	return nil
 }
 
+func (cpu *CPU) Internal() bool {
+	return false
+}
+
 // Reset initializes or restores the CPU to a default state by resetting internal flags, registers, and setting the program counter.
 func (cpu *CPU) Reset() {
 	cpu.pic.Reset()

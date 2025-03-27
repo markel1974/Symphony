@@ -40,16 +40,20 @@ func (s *Quartz) Connect() error {
 	return nil
 }
 
+func (s *Quartz) Internal() bool {
+	return false
+}
+
+func (s *Quartz) EmulationRequired() bool {
+	return true
+}
+
 // Emulate increments the internal cycle counter and checks scheduled alarms against the updated cycle value.
 func (s *Quartz) Emulate() {
 	s.cycle++
 	if s.alarms.Len() > 0 {
 		s.alarmsCheck(s.cycle)
 	}
-}
-
-func (m *Quartz) EmulationRequired() bool {
-	return true
 }
 
 func (s *Quartz) Reset() {

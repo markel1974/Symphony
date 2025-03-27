@@ -49,6 +49,14 @@ func (m *TOD) Reset() {
 	m.almHr = 0
 }
 
+func (m *TOD) Connect() error {
+	return nil
+}
+
+func (m *TOD) Internal() bool {
+	return true
+}
+
 // Emulate handles the emulation process for the TOD, managing operations based on the current TOD state.
 func (m *TOD) Emulate() {
 	//

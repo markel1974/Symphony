@@ -27,34 +27,22 @@ func NewCPUSocket() *CPUSocket {
 // Returns an error if any component setup or binding fails.
 func (w *CPUSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
 	var err error
-	w.pic, err = references.ComponentsToIPIC6510(c, 0)
-	if err != nil {
+	if w.pic, err = references.ComponentsToIPIC6510(c, 0); err != nil {
 		return err
 	}
-	w.pla, err = references.ComponentsToIPLAc1541(c, 0)
-	if err != nil {
+	if w.pla, err = references.ComponentsToIPLAc1541(c, 0); err != nil {
 		return err
 	}
-	w.I6510, err = references.ComponentsToI6510(c, 0)
-	if err != nil {
+	if w.I6510, err = references.ComponentsToI6510(c, 0); err != nil {
 		return err
 	}
-	w.via2, err = references.ComponentsToIVIA(c, 1)
-	if err != nil {
+	if w.via2, err = references.ComponentsToIVIA(c, 1); err != nil {
 		return err
 	}
 	if err = w.I6510.Setup(w, cfg); err != nil {
 		return err
 	}
 	w.I6510.SetOverflowBranch(w.via2.ByteReady)
-	return nil
-}
-
-// Connect establishes the connection for the 6510 CPU interface and returns an error if the operation fails.
-func (w *CPUSocket) Connect() error {
-	if err := w.I6510.Connect(); err != nil {
-		return err
-	}
 	return nil
 }
 

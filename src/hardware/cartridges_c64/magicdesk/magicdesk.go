@@ -60,6 +60,14 @@ func (c *CartridgeMagicDesk) Reset() {
 
 }
 
+func (c *CartridgeMagicDesk) Connect() error {
+	return nil
+}
+
+func (c *CartridgeMagicDesk) Internal() bool {
+	return false
+}
+
 // GetLoaderId retrieves the unique identifier of the CartridgeMagicDesk instance.
 func (c *CartridgeMagicDesk) GetLoaderId() string {
 	return c.loaderId

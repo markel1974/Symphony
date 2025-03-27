@@ -21,10 +21,11 @@ const c1541RamSize = 0x0800
 // It embeds BaseComponent and provides RAM, ROM, and connections to two VIA components.
 type PLA struct {
 	*component.BaseComponent
-	ram  []uint8
-	rom  []uint8
-	via1 references.IVIA
-	via2 references.IVIA
+	ram       []uint8
+	rom       []uint8
+	via1      references.IVIA
+	via2      references.IVIA
+	romLoader references.IROMLoaderC1541
 }
 
 // NewPLA initializes and returns a new instance of the PLA structure with specified parent, factory, and instance ID.
@@ -39,16 +40,21 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the PLA by configuring it with the provided socket and configuration details.
-func (r *PLA) Setup(_ references.IPLAc1541Socket, _ *config.Config) error {
+func (r *PLA) Setup(_ references.IPLAc1541Socket, _ *config.Config, via1 references.IVIA, via2 references.IVIA, romLoader references.IROMLoaderC1541) error {
+	r.via1 = via1
+	r.via2 = via2
+	r.romLoader = romLoader
 	return nil
 }
 
 // Connect associates the PLA with two VIA interfaces and loads ROM data via the provided ROM loader.
-func (r *PLA) Connect(via1 references.IVIA, via2 references.IVIA, roms references.IROMLoaderC1541) error {
-	r.via1 = via1
-	r.via2 = via2
-	r.rom = roms.Load()
+func (r *PLA) Connect() error {
+	r.rom = r.romLoader.Load()
 	return nil
+}
+
+func (r *PLA) Internal() bool {
+	return false
 }
 
 // Reset restores the PLA instance to its initial state, clearing relevant data and resetting internal components.
