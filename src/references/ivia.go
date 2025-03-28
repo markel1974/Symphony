@@ -32,8 +32,8 @@ type IVIASocket interface {
 	IRQTrigger()
 }
 
-func IdIVIA(_ IVIA, instance int) string {
-	return IdInternalComponent("IVIA", instance)
+func IdIVIA(_ IVIA, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IVIA")
 }
 
 // IVIA represents an interface for a VIA (Versatile Interface Adapter) component, managing communication and signaling.
@@ -46,7 +46,9 @@ func IdIVIA(_ IVIA, instance int) string {
 // SignalPRB triggers the VIA PRB (Peripheral Register B) signal.
 // ByteReady checks if the VIA is ready to handle a new byte of data and returns true if ready.
 type IVIA interface {
-	Setup(conn IVIASocket, cfg *config.Config) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(conn IVIASocket) error
 
 	Connect() error
 
@@ -67,17 +69,17 @@ type IVIA interface {
 
 func ComponentToIVIA(component IComponent) (IVIA, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component IVIA is nil")
 	}
 	v, ok := component.(IVIA)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIVIA(v, 0))
+		return nil, fmt.Errorf("component is not a IVIA")
 	}
 	return v, nil
 }
 
-func ComponentsToIVIA(cc map[string]IComponent, instance int) (IVIA, error) {
-	id := IdIVIA(nil, instance)
+func ComponentsToIVIA(cc map[string]IComponent, label string, instance int) (IVIA, error) {
+	id := IdIVIA(nil, label, instance)
 	c, err := ComponentToIVIA(cc[id])
 	if err != nil {
 		return nil, err

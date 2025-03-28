@@ -19,13 +19,13 @@ func NewThrottleSocket(frameInterval int64) *ThrottleSocket {
 	}
 }
 
-// Setup initializes the ThrottleSocket by configuring its IThrottle implementation using the given components and configuration.
-func (s *ThrottleSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the ThrottleSocket by configuring its IThrottle implementation using the given components and configuration.
+func (s *ThrottleSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	if s.IThrottle, err = references.ComponentsToIThrottle(c, 0); err != nil {
+	if s.IThrottle, err = references.ComponentsToIThrottle(cc, label, 0); err != nil {
 		return err
 	}
-	if err = s.IThrottle.Setup(s, cfg, s.frameInterval); err != nil {
+	if err = s.IThrottle.Bind(s, s.frameInterval); err != nil {
 		return err
 	}
 	return nil

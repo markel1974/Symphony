@@ -17,7 +17,7 @@ type Joystick struct {
 }
 
 // NewJoystick initializes and returns a new instance of Joystick with default settings and sensitivity for controls.
-func NewJoystick(parent references.IComponent, factory references.IComponentFactory, instance int) *Joystick {
+func NewJoystick(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Joystick {
 	j := &Joystick{
 		BaseComponent: component.NewBaseComponent(),
 		storage:       nil,
@@ -25,12 +25,16 @@ func NewJoystick(parent references.IComponent, factory references.IComponentFact
 		s1:            0,
 		s2:            0,
 	}
-	j.BaseComponent.Register(factory, parent, Identifier(), j, references.IdIJoystick(j, instance))
+	j.BaseComponent.Register(factory, parent, Identifier(), j, references.IdIJoystick(j, label, instance))
 	return j
 }
 
-func (k *Joystick) Setup(_ references.IJoystickSocket, _ *config.Config) error {
+func (k *Joystick) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
 	k.Update(0x0000, 0xffff, 40)
+	return nil
+}
+
+func (k *Joystick) Bind(_ references.IJoystickSocket) error {
 	return nil
 }
 

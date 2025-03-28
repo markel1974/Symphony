@@ -25,8 +25,8 @@ func (t *Factory) Identifier() string {
 }
 
 // Create instantiates and returns a new IComponent of type CPU with the specified parent, factory, and label.
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
-	return NewCPU(parent, factory, label)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IComponent {
+	return NewCPU(parent, factory, label, instance)
 }
 
 func init() {

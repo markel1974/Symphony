@@ -107,7 +107,7 @@ type VIC struct {
 }
 
 // NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
-func NewVIC(parent references.IComponent, factory references.IComponentFactory, instance int) *VIC {
+func NewVIC(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *VIC {
 	vic := &VIC{
 		BaseComponent:    component.NewBaseComponent(),
 		banks:            nil,
@@ -162,14 +162,18 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		ecm:              false,
 		columnSel:        false,
 	}
-	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIVIC(vic, instance))
+	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIVIC(vic, label, instance))
 	return vic
 }
 
-// Setup initializes the VIC component with the provided socket and configuration.
-func (vic *VIC) Setup(socket references.IVICSocket, cfg *config.Config) error {
-	displayBuffer := vic.GetFactory().GetIDisplayBuffer()
+func (vic *VIC) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
 	vic.cfg = cfg
+	return nil
+}
+
+func (vic *VIC) Bind(socket references.IVICSocket) error {
+	displayBuffer := vic.GetFactory().GetIDisplayBuffer()
+
 	vic.socket = socket
 	vic.banks = vic.socket.GetBanks()
 	vic.collisions = NewCollisions(vic)

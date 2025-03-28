@@ -11,16 +11,6 @@ import (
 	"os"
 )
 
-var _hardwareSequence = []string{
-	references.IdIVIC(nil, 0),
-	references.IdICIA(nil, 0),
-	references.IdICIA(nil, 1),
-	references.IdICartridgeManagerC64(nil, 0),
-	references.IdIIec(nil, 0),
-	references.IdI6510(nil, 0),
-	references.IdIQuartz(nil, 0),
-}
-
 // intrIrqVicBit represents the interrupt IRQ bit for the VIC.
 // intrIrqCia1Bit represents the interrupt IRQ bit for CIA1.
 // intrIrqCia2Bit represents the interrupt IRQ bit for CIA2.
@@ -35,38 +25,40 @@ const (
 // Board represents a complex hardware configuration comprising various component sockets and related system functionalities.
 type Board struct {
 	*component.BaseComponent
-	keysSocket      *KeyboardSocket
-	joySocket1      *JoystickSocket
-	joySocket2      *JoystickSocket
-	quartzSocket    *QuartzSocket
-	romSocket       *RomLoaderSocket
-	iecSocket       *IECSocket
-	picSocket       *PICSocket
-	cia1Socket      *CIA1Socket
-	cia2Socket      *CIA2Socket
-	vicSocket       *VICSocket
-	sidSocket       *SIDSocket
-	cpuSocket       *CPUSocket
-	plaSocket       *PLASocket
-	cartSocket      *CartridgeSocket
-	throttleSocket  *ThrottleSocket
-	expansionSocket *ExpansionSocket
-	cfg             *config.Config
-	prg             *prg.PRG
-	joySwap         bool
-	dmaLow          bool
-	vBlankSignal    *signals.Signal
-	ledSignal       *signals.SignalUint32
-	emulation       []func()
-	connections     []references.IConnector
-	components      map[string]references.IComponent
+	keysSocket       *KeyboardSocket
+	joySocket1       *JoystickSocket
+	joySocket2       *JoystickSocket
+	quartzSocket     *QuartzSocket
+	romSocket        *RomLoaderSocket
+	iecSocket        *IECSocket
+	picSocket        *PICSocket
+	cia1Socket       *CIA1Socket
+	cia2Socket       *CIA2Socket
+	vicSocket        *VICSocket
+	sidSocket        *SIDSocket
+	cpuSocket        *CPUSocket
+	plaSocket        *PLASocket
+	cartSocket       *CartridgeSocket
+	throttleSocket   *ThrottleSocket
+	expansionSocket  *ExpansionSocket
+	cfg              *config.Config
+	prg              *prg.PRG
+	joySwap          bool
+	dmaLow           bool
+	vBlankSignal     *signals.Signal
+	ledSignal        *signals.SignalUint32
+	emulation        []func()
+	sockets          []references.ISocket
+	components       map[string]references.IComponent
+	hardwareSequence []string
+	label            string
 	//expansionIrqTrigger *signals.SignalUint32
 	//expansionIrqClear   *signals.SignalUint32
 }
 
 // NewBoard initializes and returns a new Board instance with specific sockets and properties configured.
 // It registers the created instance as a child of the provided parent IComponent.
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Board {
 	s := &Board{
 		BaseComponent: component.NewBaseComponent(),
 		dmaLow:        false,
@@ -75,8 +67,19 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		vBlankSignal:  signals.NewSignal(),
 		ledSignal:     signals.NewSignalUint32(),
 		emulation:     []func(){},
+		label:         label,
 	}
-	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIBoardC64(s, instance))
+	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIBoardC64(s, label, instance))
+
+	s.hardwareSequence = []string{
+		references.IdIVIC(nil, label, 0),
+		references.IdICIA(nil, label, 0),
+		references.IdICIA(nil, label, 1),
+		references.IdICartridgeManagerC64(nil, label, 0),
+		references.IdIIec(nil, label, 0),
+		references.IdI6510(nil, label, 0),
+		references.IdIQuartz(nil, label, 0),
+	}
 
 	s.keysSocket = NewKeyboardSocket()
 	s.joySocket1 = NewJoystickSocket(0)
@@ -95,22 +98,22 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	s.plaSocket = NewPLASocket()
 	s.throttleSocket = NewThrottleSocket(mos6569.FrameInterval)
 
-	s.connections = append(s.connections, s.romSocket)
-	s.connections = append(s.connections, s.quartzSocket)
-	s.connections = append(s.connections, s.keysSocket)
-	s.connections = append(s.connections, s.joySocket1)
-	s.connections = append(s.connections, s.joySocket2)
-	s.connections = append(s.connections, s.iecSocket)
-	s.connections = append(s.connections, s.expansionSocket)
-	s.connections = append(s.connections, s.cartSocket)
-	s.connections = append(s.connections, s.picSocket)
-	s.connections = append(s.connections, s.cpuSocket)
-	s.connections = append(s.connections, s.vicSocket)
-	s.connections = append(s.connections, s.sidSocket)
-	s.connections = append(s.connections, s.cia1Socket)
-	s.connections = append(s.connections, s.cia2Socket)
-	s.connections = append(s.connections, s.plaSocket)
-	s.connections = append(s.connections, s.throttleSocket)
+	s.sockets = append(s.sockets, s.romSocket)
+	s.sockets = append(s.sockets, s.quartzSocket)
+	s.sockets = append(s.sockets, s.keysSocket)
+	s.sockets = append(s.sockets, s.joySocket1)
+	s.sockets = append(s.sockets, s.joySocket2)
+	s.sockets = append(s.sockets, s.iecSocket)
+	s.sockets = append(s.sockets, s.expansionSocket)
+	s.sockets = append(s.sockets, s.cartSocket)
+	s.sockets = append(s.sockets, s.picSocket)
+	s.sockets = append(s.sockets, s.cpuSocket)
+	s.sockets = append(s.sockets, s.vicSocket)
+	s.sockets = append(s.sockets, s.sidSocket)
+	s.sockets = append(s.sockets, s.cia1Socket)
+	s.sockets = append(s.sockets, s.cia2Socket)
+	s.sockets = append(s.sockets, s.plaSocket)
+	s.sockets = append(s.sockets, s.throttleSocket)
 
 	return s
 }
@@ -126,44 +129,36 @@ func (s *Board) LEDSignal() *signals.SignalUint32 {
 func (s *Board) Setup(components map[string]references.IComponent, cfg *config.Config) error {
 	s.cfg = cfg
 	s.components = components
+	return nil
+}
 
-	for _, c := range s.connections {
-		if err := c.Setup(s.components, cfg); err != nil {
+func (s *Board) Connect() error {
+	for _, c := range s.sockets {
+		if err := c.Mount(s.components, s.cfg, s.label); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Board) Connect() error {
-	for _, c := range s.connections {
-		if err := c.Connect(); err != nil {
-			return err
-		}
-	}
-
+func (s *Board) Start() error {
 	var err error
-
-	if s.emulation, err = s.rebuildEmulation(s.components); err != nil {
+	if s.emulation, err = s.rebuildEmulation(s.hardwareSequence, s.components); err != nil {
 		return err
 	}
-
-	for _, crt := range s.cfg.Cartridges() {
-		if _, err = s.cartSocket.Add(crt.GetKind(), crt.GetName(), crt.GetData()); err != nil {
-			return err
-		}
+	if err = s.iecSocket.CreatePeripherals(); err != nil {
+		return err
 	}
-
+	if err = s.cartSocket.CreateCartridges(); err != nil {
+		return err
+	}
 	if prgPath := s.cfg.Prg(); len(prgPath) > 0 {
 		if err = s.startPRG(prgPath); err != nil {
 			return err
 		}
 	}
-
 	s.reset()
-
 	s.Print(os.Stdout, " ", true)
-
 	return nil
 }
 
@@ -384,16 +379,16 @@ func (s *Board) startPRG(prgPath string) error {
 
 // rebuildEmulation constructs a sequence of emulation functions based on the given components and hardware sequence.
 // Returns the constructed sequence of emulation functions or an error if the sequence is incomplete.
-func (s *Board) rebuildEmulation(components map[string]references.IComponent) ([]func(), error) {
+func (s *Board) rebuildEmulation(seq []string, components map[string]references.IComponent) ([]func(), error) {
 	var emulation []func()
-	for _, x := range _hardwareSequence {
+	for _, x := range seq {
 		if comp, ok := components[x]; ok {
 			if comp.EmulationRequired() {
 				emulation = append(emulation, comp.Emulate)
 			}
 		}
 	}
-	if len(emulation) != len(_hardwareSequence) {
+	if len(emulation) != len(seq) {
 		return nil, fmt.Errorf("emulation sequence is not complete")
 	}
 	return emulation, nil

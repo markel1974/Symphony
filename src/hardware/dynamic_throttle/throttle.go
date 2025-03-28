@@ -17,7 +17,7 @@ type DynamicThrottle struct {
 }
 
 // NewDynamicThrottle creates a new instance of DynamicThrottling with the specified frameInterval in milliseconds.
-func NewDynamicThrottle(parent references.IComponent, factory references.IComponentFactory, instance int) *DynamicThrottle {
+func NewDynamicThrottle(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *DynamicThrottle {
 	d := &DynamicThrottle{
 		BaseComponent: component.NewBaseComponent(),
 		prev:          time.Now().UnixMilli(),
@@ -25,12 +25,15 @@ func NewDynamicThrottle(parent references.IComponent, factory references.ICompon
 		tuning:        0,
 		counter:       0,
 	}
-	d.BaseComponent.Register(factory, parent, Identifier(), d, references.IdIThrottle(d, instance))
+	d.BaseComponent.Register(factory, parent, Identifier(), d, references.IdIThrottle(d, label, instance))
 	return d
 }
 
-// Setup initializes the DynamicThrottle by setting the desired frame interval in milliseconds.
-func (s *DynamicThrottle) Setup(_ references.IThrottleSocket, _ *config.Config, frameInterval int64) error {
+func (s *DynamicThrottle) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
+}
+
+func (s *DynamicThrottle) Bind(_ references.IThrottleSocket, frameInterval int64) error {
 	s.frameInterval = frameInterval
 	return nil
 }

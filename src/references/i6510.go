@@ -14,8 +14,8 @@ type I6510Banks interface {
 	Write(uint16, uint8)
 }
 
-func IdI6510(_ I6510, instance int) string {
-	return IdInternalComponent("I6510", instance)
+func IdI6510(_ I6510, label string, instance int) string {
+	return IdInternalComponent(label, instance, "I6510")
 }
 
 // I6510 represents the 6510 CPU interface for emulation and interaction with hardware components.
@@ -26,13 +26,15 @@ func IdI6510(_ I6510, instance int) string {
 // SetAECLow sets the AEC line state to low or high.
 // SetOverflowBranch assigns a callback function for signaling overflow during branch instructions.
 type I6510 interface {
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket I6510Socket, pic IPIC6510, banks I6510Banks) error
+
+	Connect() error
+
 	Reset()
 
 	Emulate()
-
-	Setup(socket I6510Socket, cfg *config.Config) error
-
-	Connect() error
 
 	SetRDYLow(rdyLow bool)
 
@@ -42,28 +44,22 @@ type I6510 interface {
 }
 
 // I6510Socket defines an interface for interacting with 6510 PIC and memory banks.
-// Provides methods to retrieve the programmable interrupt controller (PIC) and banked memory interface.
-// GetBanks retrieves the memory bank interface for read/write operations.
-// GetPic retrieves the programmable interrupt controller for managing IRQ/NMI and resets.
 type I6510Socket interface {
-	GetBanks() I6510Banks
-
-	GetPic() IPIC6510
 }
 
 func ComponentToI6510(component IComponent) (I6510, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component I6510 is nil")
 	}
 	v, ok := component.(I6510)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdI6510(v, 0))
+		return nil, fmt.Errorf("component is not a I6510")
 	}
 	return v, nil
 }
 
-func ComponentsToI6510(cc map[string]IComponent, instance int) (I6510, error) {
-	id := IdI6510(nil, instance)
+func ComponentsToI6510(cc map[string]IComponent, label string, instance int) (I6510, error) {
+	id := IdI6510(nil, label, instance)
 	c, err := ComponentToI6510(cc[id])
 	if err != nil {
 		return nil, err

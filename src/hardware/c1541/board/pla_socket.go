@@ -9,10 +9,10 @@ import (
 // It integrates VIA components, ROM loading, and configuration management for disk drive emulation functionality.
 type PLASocket struct {
 	references.IPLAc1541
-	via1 references.IVIA
-	via2 references.IVIA
-	roms references.IROMLoaderC1541
-	cfg  *config.Config
+	via1      references.IVIA
+	via2      references.IVIA
+	romLoader references.IROMLoaderC1541
+	cfg       *config.Config
 }
 
 // NewPLASocket creates and returns a new instance of PLASocket with initial fields set to nil.
@@ -23,26 +23,26 @@ func NewPLASocket() *PLASocket {
 	return c
 }
 
-// Setup initializes the PLASocket by resolving its components from the given map and applying configuration settings.
-func (w *PLASocket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+// Mount initializes the PLASocket by resolving its components from the given map and applying configuration settings.
+func (w *PLASocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	w.IPLAc1541, err = references.ComponentsToIPLAc1541(c, 0)
+	w.via1, err = references.ComponentsToIVIA(cc, label, 0)
 	if err != nil {
 		return err
 	}
-	w.via1, err = references.ComponentsToIVIA(c, 0)
+	w.via2, err = references.ComponentsToIVIA(cc, label, 1)
 	if err != nil {
 		return err
 	}
-	w.via2, err = references.ComponentsToIVIA(c, 1)
+	w.romLoader, err = references.ComponentsToIROMLoaderC1541(cc, label, 0)
 	if err != nil {
 		return err
 	}
-	w.roms, err = references.ComponentsToIROMLoaderC1541(c, 0)
+	w.IPLAc1541, err = references.ComponentsToIPLAc1541(cc, label, 0)
 	if err != nil {
 		return err
 	}
-	if err = w.IPLAc1541.Setup(w, w.cfg, w.via1, w.via2, w.roms); err != nil {
+	if err = w.IPLAc1541.Bind(w, w.via1, w.via2, w.romLoader); err != nil {
 		return err
 	}
 	return nil

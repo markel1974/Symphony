@@ -28,7 +28,7 @@ func GetType() int {
 }
 
 // NewCartridgeOcean creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
-func NewCartridgeOcean(parent references.IComponent, factory references.IComponentFactory, instance int) *CartridgeOcean {
+func NewCartridgeOcean(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeOcean {
 	v := references.GetCartridgeSpec(references.CartridgeMode16K)
 	co := &CartridgeOcean{
 		BaseComponent: component.NewBaseComponent(),
@@ -38,17 +38,21 @@ func NewCartridgeOcean(parent references.IComponent, factory references.ICompone
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		lastData:      0,
 	}
-	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdICartridgeC64(co, instance))
+	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdICartridgeC64(co, label, instance))
 	return co
 }
 
 // New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
-	return NewCartridgeOcean(parent, factory, instance)
+func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.ICartridgeC64 {
+	return NewCartridgeOcean(parent, factory, label, instance)
 }
 
 // Setup initializes the cartridge with the specified expansion board and CRT loader, setting up necessary configurations.
-func (c *CartridgeOcean) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64, _ *config.Config) error {
+func (c *CartridgeOcean) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
+}
+
+func (c *CartridgeOcean) Bind(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
 	if loader.Type(ldr.GetType()) == loader.TypeCrt {

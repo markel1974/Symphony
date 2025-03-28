@@ -5,8 +5,6 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"io"
-	"strconv"
-	"strings"
 )
 
 // propertiesId is a constant string used as a key to reference component properties in state maps.
@@ -383,16 +381,12 @@ func _restore(step int, factory references.IComponentFactory, parentComponent re
 		if len(keys) != 1 {
 			return nil, fmt.Errorf("error restoring component: %s", "invalid key")
 		}
-		id := keys[0]
-		var instance int
-		if pos := strings.LastIndex(id, ":"); pos > 0 {
-			v := id[pos+1:]
-			if instance, err = strconv.Atoi(v); err != nil {
-				return nil, fmt.Errorf("error restoring component %s: %s", id, err.Error())
-			}
-			id = id[:pos]
+		data := keys[0]
+		label, id, instance, err := ComponentData(data)
+		if err != nil {
+			return nil, err
 		}
-		if component, err = factory.Create(parentComponent, id, instance); err != nil {
+		if component, err = factory.Create(parentComponent, label, id, instance); err != nil {
 			return nil, err
 		}
 	} else if step == 1 {

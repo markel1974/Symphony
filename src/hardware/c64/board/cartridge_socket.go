@@ -19,14 +19,16 @@ func NewCartridgeSocket(expansion references.IExpansionC64) *CartridgeSocket {
 	}
 }
 
-// Setup initializes the CartridgeSocket and its associated ICartridgeManagerC64 instance with provided components and config.
-func (cs *CartridgeSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the CartridgeSocket and its associated ICartridgeManagerC64 instance with provided components and config.
+func (cs *CartridgeSocket) Mount(cc map[string]references.IComponent, cfg *config.Config, label string) error {
 	var err error
-	if cs.ICartridgeManagerC64, err = references.ComponentsToICartridgeManagerC64(c, 0); err != nil {
+	if cs.ICartridgeManagerC64, err = references.ComponentsToICartridgeManagerC64(cc, label, 0); err != nil {
 		return err
 	}
 	cs.cfg = cfg
-	if err = cs.ICartridgeManagerC64.Setup(cs, cfg, cs.expansion); err != nil {
+
+	//TODO expansion an IComponent
+	if err = cs.ICartridgeManagerC64.Bind(cs, cs.expansion); err != nil {
 		return err
 	}
 	return nil

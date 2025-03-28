@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdISID(_ ISID, instance int) string {
-	return IdInternalComponent("ISID", instance)
+func IdISID(_ ISID, label string, instance int) string {
+	return IdInternalComponent(label, instance, "ISID")
 }
 
 // ISID is an interface representing a Sound Interface Device (SID) for audio synthesis and emulation in a system.
@@ -19,7 +19,9 @@ func IdISID(_ ISID, instance int) string {
 // WriteRegister writes data to a specific register address of the SID.
 // ReadRegister retrieves data from a specified register address of the SID.
 type ISID interface {
-	Setup(socket ISIDSocket, cfg *config.Config, fragFreq int, rasters int) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket ISIDSocket, fragFreq int, rasters int) error
 
 	Connect() error
 
@@ -45,17 +47,17 @@ type ISIDSocket interface {
 
 func ComponentToISID(component IComponent) (ISID, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component ISID is nil")
 	}
 	v, ok := component.(ISID)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdISID(v, 0))
+		return nil, fmt.Errorf("component is not a ISID")
 	}
 	return v, nil
 }
 
-func ComponentsToISID(cc map[string]IComponent, instance int) (ISID, error) {
-	id := IdISID(nil, instance)
+func ComponentsToISID(cc map[string]IComponent, label string, instance int) (ISID, error) {
+	id := IdISID(nil, label, instance)
 	c, err := ComponentToISID(cc[id])
 	if err != nil {
 		return nil, err

@@ -2,6 +2,7 @@ package pla_c64
 
 import (
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -30,7 +31,7 @@ type Ports struct {
 }
 
 // NewPorts initializes and returns a new instance of the Ports struct with default values set.
-func NewPorts(factory references.IComponentFactory, parent references.IComponent, instance int) *Ports {
+func NewPorts(factory references.IComponentFactory, parent references.IComponent, label string, instance int) *Ports {
 	p := &Ports{
 		BaseComponent: component.NewBaseComponent(),
 		capsSense:     1,
@@ -47,8 +48,12 @@ func NewPorts(factory references.IComponentFactory, parent references.IComponent
 		tapeMotorIn:   0,
 		//dirRead:     0,
 	}
-	p.BaseComponent.Register(factory, parent, "ports", p, references.IdInternalComponent("Ports", instance))
+	p.BaseComponent.Register(factory, parent, "ports", p, references.IdInternalComponent(label, instance, "Ports"))
 	return p
+}
+
+func (p *Ports) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
 }
 
 func (p *Ports) Connect() error {

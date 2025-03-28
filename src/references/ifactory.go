@@ -7,5 +7,5 @@ package references
 type IFactory interface {
 	Identifier() string
 
-	Create(parent IComponent, factory IComponentFactory, instance int) IComponent
+	Create(parent IComponent, factory IComponentFactory, label string, instance int) IComponent
 }

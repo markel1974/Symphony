@@ -17,13 +17,20 @@ func NewRomLoaderSocket() *RomLoaderSocket {
 	}
 }
 
-// Setup initializes the RomLoaderSocket by setting up its IROMLoaderC64 interface and applying the provided configuration.
-func (s *RomLoaderSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
-	var err error
-	if s.IROMLoaderC64, err = references.ComponentsToIROMLoaderC64(c, 0); err != nil {
+func (s *RomLoaderSocket) Bind() error {
+	if err := s.IROMLoaderC64.Bind(s); err != nil {
 		return err
 	}
-	if err = s.IROMLoaderC64.Setup(s, cfg); err != nil {
+	return nil
+}
+
+// Mount initializes the RomLoaderSocket by setting up its IROMLoaderC64 interface and applying the provided configuration.
+func (s *RomLoaderSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
+	var err error
+	if s.IROMLoaderC64, err = references.ComponentsToIROMLoaderC64(cc, label, 0); err != nil {
+		return err
+	}
+	if err = s.IROMLoaderC64.Bind(s); err != nil {
 		return err
 	}
 	return nil

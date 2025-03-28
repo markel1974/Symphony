@@ -76,8 +76,8 @@ type IExpansionC64 interface {
 	RmwFlags() uint8 //TODO NOT STANDARD
 }
 
-func IdICartridgeManagerC64(_ ICartridgeManagerC64, instance int) string {
-	return IdInternalComponent("ICartridgeManagerC64", instance)
+func IdICartridgeManagerC64(_ ICartridgeManagerC64, label string, instance int) string {
+	return IdInternalComponent(label, instance, "ICartridgeManagerC64")
 }
 
 type ICartridgeManagerC64Socket interface {
@@ -89,11 +89,15 @@ type ICartridgeManagerC64Socket interface {
 // IORead performs a read operation from an I/O address, returning the value and success state.
 // IOWrite executes a write operation to an I/O address with the specified data, indicating success.
 type ICartridgeManagerC64 interface {
-	Setup(i ICartridgeManagerC64Socket, cfg *config.Config, expansion IExpansionC64) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket ICartridgeManagerC64Socket, expansion IExpansionC64) error //TODO expansion Must be an IComponent
 
 	Config() (uint8, uint8, bool)
 
 	Connect() error
+
+	CreateCartridges() error
 
 	Read(interval RomInterval, addr uint16) (uint8, bool)
 
@@ -110,17 +114,17 @@ type ICartridgeManagerC64 interface {
 
 func ComponentToICartridgeManagerC64(component IComponent) (ICartridgeManagerC64, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component ICartridgeManagerC64 is nil")
 	}
 	v, ok := component.(ICartridgeManagerC64)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdICartridgeManagerC64(v, 0))
+		return nil, fmt.Errorf("component is not a ICartridgeManagerC64")
 	}
 	return v, nil
 }
 
-func ComponentsToICartridgeManagerC64(cc map[string]IComponent, instance int) (ICartridgeManagerC64, error) {
-	id := IdICartridgeManagerC64(nil, instance)
+func ComponentsToICartridgeManagerC64(cc map[string]IComponent, label string, instance int) (ICartridgeManagerC64, error) {
+	id := IdICartridgeManagerC64(nil, label, instance)
 	c, err := ComponentToICartridgeManagerC64(cc[id])
 	if err != nil {
 		return nil, err

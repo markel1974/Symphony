@@ -29,23 +29,23 @@ func NewCIA2Socket() *CIA2Socket {
 	return c
 }
 
-// Setup initializes the CIA2Socket instance with the provided CIA, connections, and IEC interface, and sets up the CIA.
-func (w *CIA2Socket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the CIA2Socket instance with the provided CIA, connections, and IEC interface, and sets up the CIA.
+func (w *CIA2Socket) Mount(c map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	w.ICIA, err = references.ComponentsToICIA(c, 1)
+	w.ICIA, err = references.ComponentsToICIA(c, label, 1)
 	if err != nil {
 		return err
 	}
-	w.pic, err = references.ComponentsToIPIC6510(c, 0)
+	w.pic, err = references.ComponentsToIPIC6510(c, label, 0)
 	if err != nil {
 		return err
 	}
-	w.vic, err = references.ComponentsToIVIC(c, 0)
+	w.vic, err = references.ComponentsToIVIC(c, label, 0)
 	if err != nil {
 		return err
 	}
-	w.iec, err = references.ComponentsToIEC(c, 0)
-	if err = w.ICIA.Setup(w, cfg); err != nil {
+	w.iec, err = references.ComponentsToIEC(c, label, 0)
+	if err = w.ICIA.Bind(w); err != nil {
 		return err
 	}
 	return nil

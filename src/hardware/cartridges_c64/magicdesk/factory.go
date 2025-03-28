@@ -25,8 +25,8 @@ func (t *Factory) Kind() interface{} {
 	return references.ICartridgeC64(z)
 }
 
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
-	return NewMagicDesk(parent, factory, label)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IComponent {
+	return NewMagicDesk(parent, factory, label, instance)
 }
 
 func init() {

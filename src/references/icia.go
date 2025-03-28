@@ -32,8 +32,8 @@ type ICIASocket interface {
 	IRQClear()
 }
 
-func IdICIA(_ ICIA, instance int) string {
-	return IdInternalComponent("ICIA", instance)
+func IdICIA(_ ICIA, label string, instance int) string {
+	return IdInternalComponent(label, instance, "ICIA")
 }
 
 // ICIA defines the interface for a CIA (Complex Interface Adapter) component in a computing or emulation context.
@@ -44,7 +44,9 @@ func IdICIA(_ ICIA, instance int) string {
 // WriteRegister writes a byte of data to the CIA at the specified register address.
 // ReadRegister reads a byte of data from the CIA at the specified register address.
 type ICIA interface {
-	Setup(conn ICIASocket, cfg *config.Config) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(conn ICIASocket) error
 
 	Connect() error
 
@@ -61,17 +63,17 @@ type ICIA interface {
 
 func ComponentToICIA(component IComponent) (ICIA, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component ICIA is nil")
 	}
 	v, ok := component.(ICIA)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdICIA(v, 0))
+		return nil, fmt.Errorf("component is not a ICIA")
 	}
 	return v, nil
 }
 
-func ComponentsToICIA(cc map[string]IComponent, instance int) (ICIA, error) {
-	id := IdICIA(nil, instance)
+func ComponentsToICIA(cc map[string]IComponent, label string, instance int) (ICIA, error) {
+	id := IdICIA(nil, label, instance)
 	c, err := ComponentToICIA(cc[id])
 	if err != nil {
 		return nil, err

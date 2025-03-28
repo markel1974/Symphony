@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIPlaC64(_ IPlaC64, instance int) string {
-	return IdInternalComponent("IPlaC64", instance)
+func IdIPlaC64(_ IPlaC64, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IPlaC64")
 }
 
 type IPlaC64Socket interface {
@@ -27,7 +27,9 @@ type IPlaC64Socket interface {
 // SetWriteTrigger associates a callback function to trigger on writes at the specified 16-bit address.
 // RemoveRamTrigger removes a write trigger callback associated with a 16-bit address by its identifier.
 type IPlaC64 interface {
-	Setup(socket IPlaC64Socket, cfg *config.Config, vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, roms IROMLoaderC64) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket IPlaC64Socket, vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, roms IROMLoaderC64) error
 
 	Connect() error
 
@@ -58,17 +60,17 @@ type IPlaC64 interface {
 
 func ComponentToIPLAc64(component IComponent) (IPlaC64, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component IPlaC64 is nil")
 	}
 	v, ok := component.(IPlaC64)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIPlaC64(v, 0))
+		return nil, fmt.Errorf("component is not a IPlaC64")
 	}
 	return v, nil
 }
 
-func ComponentsToIPLAc64(cc map[string]IComponent, instance int) (IPlaC64, error) {
-	id := IdIPlaC64(nil, instance)
+func ComponentsToIPLAc64(cc map[string]IComponent, label string, instance int) (IPlaC64, error) {
+	id := IdIPlaC64(nil, label, instance)
 	c, err := ComponentToIPLAc64(cc[id])
 	if err != nil {
 		return nil, err

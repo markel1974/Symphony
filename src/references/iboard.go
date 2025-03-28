@@ -5,16 +5,16 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIBoardC64(_ IBoard, instance int) string {
-	return IdInternalComponent("IBoardC64", instance)
+func IdIBoardC64(_ IBoard, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IBoardC64")
 }
 
-func IdIBoardC1541(_ IIecDevice, instance int) string {
-	return IdInternalComponent("IBoardC1541", instance)
+func IdIBoardC1541(_ IIecDevice, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IBoardC1541")
 }
 
-func IdIBoardVIC20(_ IBoard, instance int) string {
-	return IdInternalComponent("IBoardVIC20", instance)
+func IdIBoardVIC20(_ IBoard, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IBoardVIC20")
 }
 
 // IBoard represents the interface for controlling and managing a board-based system's input, output, and state.
@@ -37,6 +37,8 @@ func IdIBoardVIC20(_ IBoard, instance int) string {
 // DiskChange triggers an event for changing the current disk in the board's system.
 type IBoard interface {
 	Setup(components map[string]IComponent, cfg *config.Config) error
+
+	Start() error
 
 	VBlankSignal() *signals.Signal
 

@@ -46,22 +46,22 @@ func NewVICSocket(connections IVICSocketConnection) *VICSocket {
 	}
 }
 
-// Setup initializes the VICSocket by resolving its dependencies and calling Setup on the IVIC component.
-func (v *VICSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the VICSocket by resolving its dependencies and calling Setup on the IVIC component.
+func (v *VICSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	if v.IVIC, err = references.ComponentsToIVIC(c, 0); err != nil {
+	if v.IVIC, err = references.ComponentsToIVIC(cc, label, 0); err != nil {
 		return err
 	}
-	if v.pic, err = references.ComponentsToIPIC6510(c, 0); err != nil {
+	if v.pic, err = references.ComponentsToIPIC6510(cc, label, 0); err != nil {
 		return err
 	}
-	if v.pla, err = references.ComponentsToIPLAc64(c, 0); err != nil {
+	if v.pla, err = references.ComponentsToIPLAc64(cc, label, 0); err != nil {
 		return err
 	}
-	if v.quartz, err = references.ComponentsToIQuartz(c, 0); err != nil {
+	if v.quartz, err = references.ComponentsToIQuartz(cc, label, 0); err != nil {
 		return err
 	}
-	if err = v.IVIC.Setup(v, cfg); err != nil {
+	if err = v.IVIC.Bind(v); err != nil {
 		return err
 	}
 	return nil

@@ -17,17 +17,12 @@ import (
 	"log"
 )
 
-var _hardwareSequence = []string{
-	references.IdIVIA(nil, 0),
-	references.IdIVIA(nil, 1),
-	references.IdI6510(nil, 0),
-}
-
 var _c1541hardware = []struct {
 	id       string
 	instance int
 }{
 	{"roms_c1541", 0},
+	{"quartz", 0},
 	{"pla_c1541", 0},
 	{"pic_6510", 0},
 	{"mos6510", 0},
@@ -45,27 +40,29 @@ const (
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
 	*component.BaseComponent
-	cpuSocket    *CPUSocket
-	via1Socket   *VIA1Socket
-	via2Socket   *VIA2Socket
-	picSocket    *PICSocket
-	plaSocket    *PLASocket
-	romSocket    *RomLoaderSocket
-	mec          *mechanic.Mechanic
-	disks        *disk.Factory
-	iec          references.IComponent
-	quartz       references.IComponent
-	deviceId     uint8
-	deviceNumber uint8
-	diskId       string
-	cfg          *config.Config
-	ledSignal    *signals.SignalUint32
-	emulation    []func()
-	connections  []references.IConnector
+	cpuSocket        *CPUSocket
+	via1Socket       *VIA1Socket
+	via2Socket       *VIA2Socket
+	picSocket        *PICSocket
+	plaSocket        *PLASocket
+	romSocket        *RomLoaderSocket
+	quartzSocket     *QuartzSocket
+	mec              *mechanic.Mechanic
+	disks            *disk.Factory
+	deviceId         uint8
+	deviceNumber     uint8
+	diskId           string
+	cfg              *config.Config
+	ledSignal        *signals.SignalUint32
+	emulation        []func()
+	sockets          []references.ISocket
+	hardwareSequence []string
+	label            string
+	//cc               map[string]references.IComponent
 }
 
 // NewBoard creates and initializes a new Board with the specified IEC interface, device ID, device number, and options string.
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *Board {
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Board {
 	m := &Board{
 		BaseComponent: component.NewBaseComponent(),
 		deviceId:      0,
@@ -75,35 +72,57 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		disks:         disk.NewFactory(),
 		mec:           mechanic.NewMechanic(),
 		emulation:     []func(){},
+		label:         label,
 	}
 
-	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdIIecDevice(m, instance))
+	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdIIecDevice(m, label, instance))
 
-	m.romSocket = NewRomLoaderSocket()
-	m.cpuSocket = NewCPUSocket()
-	m.via1Socket = NewVIA1Socket(m)
-	m.via2Socket = NewVIA2Socket(m, m.mec)
-	m.picSocket = NewPICSocket()
-	m.plaSocket = NewPLASocket()
-
-	m.connections = append(m.connections, m.romSocket)
-	m.connections = append(m.connections, m.cpuSocket)
-	m.connections = append(m.connections, m.via1Socket)
-	m.connections = append(m.connections, m.via2Socket)
-	m.connections = append(m.connections, m.picSocket)
-	m.connections = append(m.connections, m.plaSocket)
+	m.hardwareSequence = []string{
+		references.IdIVIA(nil, label, 0),
+		references.IdIVIA(nil, label, 1),
+		references.IdI6510(nil, label, 0),
+		references.IdIQuartz(nil, label, 0),
+	}
 
 	return m
 }
 
-// Setup initializes the Board instance by configuring its components and setting up the necessary connections using the given config.
-func (m *Board) Setup(_ references.IIecDeviceSocket, cfg *config.Config, iec references.IComponent, quartz references.IComponent, deviceId uint8, deviceNumber uint8) error {
+func (m *Board) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
+	//m.cc = cc
 	m.cfg = cfg
 	m.cfg.Bind(m.configChanged)
-	m.iec = iec
-	m.quartz = quartz
+
+	return nil
+}
+
+func (m *Board) Bind(_ references.IIecDeviceSocket, iecC references.IComponent, deviceId uint8, deviceNumber uint8) error {
+	iec, ok := iecC.(references.IIec)
+	if !ok {
+		return fmt.Errorf("invalid IEC interface")
+	}
+	//q, ok := quartzC.(references.IQuartz)
+	//if !ok {
+	//	return fmt.Errorf("invalid IEC interface")
+	//}
 	m.deviceId = deviceId
 	m.deviceNumber = deviceNumber
+
+	m.romSocket = NewRomLoaderSocket()
+	m.quartzSocket = NewQuartzSocket()
+	m.cpuSocket = NewCPUSocket()
+	m.via1Socket = NewVIA1Socket(m, iec)
+	m.via2Socket = NewVIA2Socket(m, m.mec)
+	m.picSocket = NewPICSocket()
+	m.plaSocket = NewPLASocket()
+
+	m.sockets = append(m.sockets, m.romSocket)
+	m.sockets = append(m.sockets, m.quartzSocket)
+	m.sockets = append(m.sockets, m.cpuSocket)
+	m.sockets = append(m.sockets, m.via1Socket)
+	m.sockets = append(m.sockets, m.via2Socket)
+	m.sockets = append(m.sockets, m.picSocket)
+	m.sockets = append(m.sockets, m.plaSocket)
+
 	return nil
 }
 
@@ -119,26 +138,29 @@ func (m *Board) Connect() error {
 
 	//TODO REMOVE WHEN THREE IS READY...
 	components := make(map[string]references.IComponent)
-	components[m.iec.HardwareId()] = m.iec
-	components[m.quartz.HardwareId()] = m.quartz
-
+	var hardware []references.IComponent
 	for _, hw := range _c1541hardware {
-		comp, err := m.GetFactory().Create(m, hw.id, hw.instance)
+		comp, err := m.GetFactory().Create(m, m.label, hw.id, hw.instance)
 		if err != nil {
 			return err
 		}
 		components[comp.HardwareId()] = comp
+		hardware = append(hardware, comp)
 	}
-	for _, c := range m.connections {
-		if err = c.Setup(components, m.cfg); err != nil {
+	for _, comp := range hardware {
+		if err = comp.Setup(components, m.cfg); err != nil {
 			return err
 		}
 	}
-	for _, c := range m.connections {
-		if err = c.Connect(); err != nil {
+
+	//components := m.cc
+
+	for _, c := range m.sockets {
+		if err = c.Mount(components, m.cfg, m.label); err != nil {
 			return err
 		}
 	}
+
 	if m.emulation, err = m.rebuildEmulation(components); err != nil {
 		return err
 	}
@@ -266,14 +288,14 @@ func (m *Board) mountConfigDisk(cfg *config.Config) error {
 // Returns an error if the emulation sequence is incomplete.
 func (m *Board) rebuildEmulation(components map[string]references.IComponent) ([]func(), error) {
 	var emulation []func()
-	for _, x := range _hardwareSequence {
+	for _, x := range m.hardwareSequence {
 		if comp, ok := components[x]; ok {
 			if comp.EmulationRequired() {
 				emulation = append(emulation, comp.Emulate)
 			}
 		}
 	}
-	if len(emulation) != len(_hardwareSequence) {
+	if len(emulation) != len(m.hardwareSequence) {
 		return nil, fmt.Errorf("emulation sequence is not complete")
 	}
 	return emulation, nil

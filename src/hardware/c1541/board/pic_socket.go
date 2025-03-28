@@ -15,21 +15,20 @@ type PICSocket struct {
 func NewPICSocket() *PICSocket {
 	return &PICSocket{
 		IPIC6510: nil,
+		quartz:   nil,
 	}
 }
 
-// Setup initializes the PICSocket by configuring its dependencies and setting up the IPIC6510 component with the provided config.
-func (s *PICSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the PICSocket by configuring its dependencies and setting up the IPIC6510 component with the provided config.
+func (s *PICSocket) Mount(c map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	s.IPIC6510, err = references.ComponentsToIPIC6510(c, 0)
-	if err != nil {
+	if s.quartz, err = references.ComponentsToIQuartz(c, label, 0); err != nil {
 		return err
 	}
-	s.quartz, err = references.ComponentsToIQuartz(c, 0)
-	if err != nil {
+	if s.IPIC6510, err = references.ComponentsToIPIC6510(c, label, 0); err != nil {
 		return err
 	}
-	if err = s.IPIC6510.Setup(s, cfg, s.quartz); err != nil {
+	if err = s.IPIC6510.Bind(s, s.quartz); err != nil {
 		return err
 	}
 	return nil

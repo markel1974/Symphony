@@ -35,7 +35,7 @@ type VIA struct {
 
 // NewVIA initializes and returns a new instance of the VIA type, associating it with a parent component and factory.
 // It sets the VIA's internal registers to their default values and registers the component within its hierarchy.
-func NewVIA(parent references.IComponent, factory references.IComponentFactory, instance int) *VIA {
+func NewVIA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *VIA {
 	v := &VIA{
 		BaseComponent: component.NewBaseComponent(),
 		pra:           0,
@@ -43,12 +43,15 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 		prb:           0,
 		ddrb:          0,
 	}
-	v.BaseComponent.Register(factory, parent, Identifier(), v, references.IdIVIA(v, instance))
+	v.BaseComponent.Register(factory, parent, Identifier(), v, references.IdIVIA(v, label, instance))
 	return v
 }
 
-// Setup initializes the VIA instance by associating it with the provided IVIASocket and prepares it for use.
-func (v *VIA) Setup(socket references.IVIASocket, _ *config.Config) error {
+func (v *VIA) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
+}
+
+func (v *VIA) Bind(socket references.IVIASocket) error {
 	v.socket = socket
 	return nil
 }

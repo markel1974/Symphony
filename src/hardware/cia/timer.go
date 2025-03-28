@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"log"
 )
@@ -107,7 +108,7 @@ type Timer struct {
 
 // NewTimer initializes and returns a new Timer instance with the given parentId and suffix.
 // The Timer is set to its default state and its Reset method is called to ensure initialization.
-func NewTimer(parent references.IComponent, factory references.IComponentFactory, instance int) *Timer {
+func NewTimer(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Timer {
 	m := &Timer{
 		BaseComponent:      component.NewBaseComponent(),
 		cr:                 0,
@@ -126,10 +127,14 @@ func NewTimer(parent references.IComponent, factory references.IComponentFactory
 		underflowIn:        false,
 		underflowOut:       false,
 	}
-	m.BaseComponent.Register(factory, parent, "timer", m, references.IdInternalComponent("Timer", instance))
+	m.BaseComponent.Register(factory, parent, "timer", m, references.IdInternalComponent(label, instance, "Timer"))
 	m.reflect = NewTimerReflect(m)
 	m.Reset()
 	return m
+}
+
+func (m *Timer) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
 }
 
 func (m *Timer) Connect() error {

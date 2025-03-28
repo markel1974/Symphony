@@ -6,8 +6,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIIec(_ IIec, instance int) string {
-	return IdInternalComponent("IIec", instance)
+func IdIIec(_ IIec, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IIec")
 }
 
 type IIecSocket interface {
@@ -25,11 +25,15 @@ type IIecSocket interface {
 // PeripheralWrite writes data from the CPU to a specific peripheral identified by its device number.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIec interface {
-	Setup(socket IIecSocket, cfg *config.Config, quartz IComponent) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket IIecSocket, q IComponent) error
 
 	Connect() error
 
-	AddPeripheral(q IComponent, cfg *config.Config, kind string, deviceId uint8) error
+	CreatePeripherals() error
+
+	AddPeripheral(kind string, deviceId uint8) error
 
 	RemovePeripheral(deviceId uint8)
 
@@ -48,8 +52,8 @@ type IIec interface {
 	LEDSignal() *signals.SignalUint32
 }
 
-func IdIIecDevice(_ IIecDevice, instance int) string {
-	return IdInternalComponent("IIecDevices", instance)
+func IdIIecDevice(_ IIecDevice, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IIecDevices")
 }
 
 type IIecDeviceSocket interface {
@@ -64,7 +68,9 @@ type IIecDeviceSocket interface {
 // AtnStateChanged handles changes in the Attention (ATN) line state.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIecDevice interface {
-	Setup(socket IIecDeviceSocket, cfg *config.Config, iec IComponent, quartz IComponent, deviceId uint8, deviceNumber uint8) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket IIecDeviceSocket, iec IComponent, deviceId uint8, deviceNumber uint8) error
 
 	Connect() error
 
@@ -85,8 +91,8 @@ type IIecDevice interface {
 	LEDSignal() *signals.SignalUint32
 }
 
-func IdIIecProtocolDevice(_ IIecProtocolDevice, instance int) string {
-	return IdInternalComponent("IIecProtocolDevice", instance)
+func IdIIecProtocolDevice(_ IIecProtocolDevice, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IIecProtocolDevice")
 }
 
 // IIecProtocolDevice defines an interface for interacting with devices using the IEC protocol.
@@ -118,17 +124,17 @@ type IIecProtocolDevice interface {
 
 func ComponentToIEC(component IComponent) (IIec, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component IIec is nil")
 	}
 	v, ok := component.(IIec)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIIec(v, 0))
+		return nil, fmt.Errorf("component is not a IIec")
 	}
 	return v, nil
 }
 
-func ComponentsToIEC(cc map[string]IComponent, instance int) (IIec, error) {
-	id := IdIIec(nil, instance)
+func ComponentsToIEC(cc map[string]IComponent, label string, instance int) (IIec, error) {
+	id := IdIIec(nil, label, instance)
 	c, err := ComponentToIEC(cc[id])
 	if err != nil {
 		return nil, err

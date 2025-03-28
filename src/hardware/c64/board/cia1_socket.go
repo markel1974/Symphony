@@ -59,35 +59,35 @@ func NewCIA1Socket() *CIA1Socket {
 	return c
 }
 
-// Setup initializes the CIA1Socket with the provided CIA instance, connections, keyboard, and joystick references.
+// Mount initializes the CIA1Socket with the provided CIA instance, connections, keyboard, and joystick references.
 // It sets up the CIA via the Setup method and returns any errors encountered during initialization.
-func (w *CIA1Socket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+func (w *CIA1Socket) Mount(c map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	w.ICIA, err = references.ComponentsToICIA(c, 0)
+	w.ICIA, err = references.ComponentsToICIA(c, label, 0)
 	if err != nil {
 		return err
 	}
-	w.pic, err = references.ComponentsToIPIC6510(c, 0)
+	w.pic, err = references.ComponentsToIPIC6510(c, label, 0)
 	if err != nil {
 		return err
 	}
-	w.vic, err = references.ComponentsToIVIC(c, 0)
+	w.vic, err = references.ComponentsToIVIC(c, label, 0)
 	if err != nil {
 		return err
 	}
-	w.keys, err = references.ComponentsToIKeyboard(c, 0)
+	w.keys, err = references.ComponentsToIKeyboard(c, label, 0)
 	if err != nil {
 		return err
 	}
-	w.joy1, err = references.ComponentsToIJoystick(c, 0)
+	w.joy1, err = references.ComponentsToIJoystick(c, label, 0)
 	if err != nil {
 		return err
 	}
-	w.joy2, err = references.ComponentsToIJoystick(c, 1)
+	w.joy2, err = references.ComponentsToIJoystick(c, label, 1)
 	if err != nil {
 		return err
 	}
-	if err = w.ICIA.Setup(w, cfg); err != nil {
+	if err = w.ICIA.Bind(w); err != nil {
 		return err
 	}
 	return nil

@@ -56,8 +56,8 @@ func (t *Factory) Kind() interface{} {
 	return references.ICartridgeC64(z)
 }
 
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, instance int) references.IComponent {
-	return newReu(parent, factory, instance, t.kind, t.size)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IComponent {
+	return newReu(parent, factory, label, instance, t.kind, t.size)
 }
 
 func init() {

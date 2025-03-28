@@ -25,8 +25,8 @@ func (t *Factory) Identifier() string {
 }
 
 // Create initializes a new PLA instance with the specified parent component, factory, and label, and returns it.
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
-	return NewPLA(parent, factory, label)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IComponent {
+	return NewPLA(parent, factory, label, instance)
 }
 
 func init() {

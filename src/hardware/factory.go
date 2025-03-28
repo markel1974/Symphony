@@ -50,12 +50,12 @@ func NewFactory(db references.IDisplayBuffer, player references.IAudioRender, cf
 	return f
 }
 
-func (f *Factory) Create(parent references.IComponent, id string, label int) (references.IComponent, error) {
+func (f *Factory) Create(parent references.IComponent, label string, id string, instance int) (references.IComponent, error) {
 	val, ok := f.container[id]
 	if !ok {
 		return nil, fmt.Errorf("unknown component %s", id)
 	}
-	ret := val.Create(parent, f, label)
+	ret := val.Create(parent, f, label, instance)
 	//component.Register(parent, ret)
 	return ret, nil
 }

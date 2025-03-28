@@ -19,22 +19,14 @@ func NewRomLoaderSocket() *RomLoaderSocket {
 	}
 }
 
-// Setup initializes the RomLoaderSocket by mapping components and configuring the associated IROMLoaderC1541.
-func (s *RomLoaderSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the RomLoaderSocket by mapping components and configuring the associated IROMLoaderC1541.
+func (s *RomLoaderSocket) Mount(c map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	s.IROMLoaderC1541, err = references.ComponentsToIROMLoaderC1541(c, 0)
+	s.IROMLoaderC1541, err = references.ComponentsToIROMLoaderC1541(c, label, 0)
 	if err != nil {
 		return err
 	}
-	if err = s.IROMLoaderC1541.Setup(s, cfg); err != nil {
-		return err
-	}
-	return nil
-}
-
-// Connect establishes a connection by invoking the Connect method of the IROMLoaderC1541 interface. Returns an error if unsuccessful.
-func (s *RomLoaderSocket) Connect() error {
-	if err := s.IROMLoaderC1541.Connect(); err != nil {
+	if err = s.IROMLoaderC1541.Bind(s); err != nil {
 		return err
 	}
 	return nil

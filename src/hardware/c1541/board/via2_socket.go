@@ -62,14 +62,13 @@ func NewVIA2Socket(connections IVIA2SocketConnections, mec *mechanic.Mechanic) *
 	}
 }
 
-// Setup initializes the VIA2Socket by configuring its IVIA component and applying its configuration settings.
-func (v *VIA2Socket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
-	via2, err := references.ComponentsToIVIA(c, 1)
-	if err != nil {
+// Mount initializes the VIA2Socket by configuring its IVIA component and applying its configuration settings.
+func (v *VIA2Socket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
+	var err error
+	if v.IVIA, err = references.ComponentsToIVIA(cc, label, 1); err != nil {
 		return err
 	}
-	v.IVIA = via2
-	if err = v.IVIA.Setup(v, cfg); err != nil {
+	if err = v.IVIA.Bind(v); err != nil {
 		return err
 	}
 	return nil

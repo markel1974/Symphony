@@ -38,10 +38,11 @@ type PLA struct {
 	color           []byte
 	cfg             *config.Config
 	wTriggers       *WriteTriggers
+	label           string
 }
 
 // NewPLA initializes and returns a new instance of the PLA component with its memory map and configurations set up.
-func NewPLA(parent references.IComponent, factory references.IComponentFactory, instance int) *PLA {
+func NewPLA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
 		BaseComponent:   component.NewBaseComponent(),
@@ -67,28 +68,27 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		cfg:             nil,
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
+		label:           label,
 	}
-	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIPlaC64(b, instance))
+	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIPlaC64(b, label, instance))
 	return b
 }
 
 // Setup initializes the PLA instance with the provided socket and configuration and returns an error if any issue occurs.
-func (b *PLA) Setup(_ references.IPlaC64Socket, cfg *config.Config, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64) error {
+func (b *PLA) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
 	b.cfg = cfg
-	b.ports = NewPorts(b.GetFactory(), b, 0)
+	b.ports = NewPorts(b.GetFactory(), b, b.label, 0)
+	return nil
+}
+
+func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64) error {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1
 	b.cia2 = cia2
 	b.cartMan = cartMan
 	b.roms = roms
-	return nil
-}
 
-// Connect initializes the PLA by setting up ports, memory banks, and registers, and connects required hardware references.
-// It performs initializations for RAM, memory banks, color registers, and ROM configurations.
-// Returns an error if any part of the setup fails.
-func (b *PLA) Connect() error {
 	b.bankWrite[0x0] = b.ramWrite0x0000
 	b.bankWrite[0x1] = b.ramWrite0x1000
 	b.bankWrite[0x2] = b.ramWrite0x2000
@@ -163,7 +163,10 @@ func (b *PLA) Connect() error {
 	rc := filler.New(255, 128, 0, 0, 0, 0, 0, filler.InitRandomChanceHalf)
 	rc.InitWithPattern(b.color, uint(len(b.color)))
 	b.initRom()
+	return nil
+}
 
+func (b *PLA) Connect() error {
 	return nil
 }
 
@@ -183,7 +186,7 @@ func (b *PLA) Emulate() {
 }
 
 // EmulationRequired checks if emulation is needed for the current PLA instance and returns false by default.
-func (m *PLA) EmulationRequired() bool {
+func (b *PLA) EmulationRequired() bool {
 	return false
 }
 

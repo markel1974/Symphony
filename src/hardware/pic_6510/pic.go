@@ -33,7 +33,7 @@ type Pic struct {
 }
 
 // NewPIC creates and initializes a new instance of Pic with default values and registers it with the specified parent and factory.
-func NewPIC(parent references.IComponent, factory references.IComponentFactory, instance int) *Pic {
+func NewPIC(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Pic {
 	p := &Pic{
 		BaseComponent: component.NewBaseComponent(),
 		quartz:        nil,
@@ -45,13 +45,17 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 		extIrqTrigger: nil,
 		extIrqClear:   nil,
 	}
-	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIPIC6510(p, instance))
+	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIPIC6510(p, label, instance))
 	return p
 }
 
 // Setup initializes the Pic instance with the provided quartz reference and other dependencies. Returns an error on failure.
-func (i *Pic) Setup(_ references.IPIC6510Socket, _ *config.Config, quartz references.IQuartz) error {
-	i.quartz = quartz
+func (i *Pic) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
+}
+
+func (i *Pic) Bind(_ references.IPIC6510Socket, q references.IQuartz) error {
+	i.quartz = q
 	return nil
 }
 

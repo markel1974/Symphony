@@ -25,31 +25,31 @@ func NewPLASocket() *PLASocket {
 	return c
 }
 
-// Setup initializes the PLASocket by resolving dependencies and setting up its components. Returns an error if any failure occurs.
-func (w *PLASocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the PLASocket by resolving dependencies and setting up its components. Returns an error if any failure occurs.
+func (w *PLASocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	if w.IPlaC64, err = references.ComponentsToIPLAc64(c, 0); err != nil {
+	if w.IPlaC64, err = references.ComponentsToIPLAc64(cc, label, 0); err != nil {
 		return err
 	}
-	if w.vic, err = references.ComponentsToIVIC(c, 0); err != nil {
+	if w.vic, err = references.ComponentsToIVIC(cc, label, 0); err != nil {
 		return err
 	}
-	if w.sid, err = references.ComponentsToISID(c, 0); err != nil {
+	if w.sid, err = references.ComponentsToISID(cc, label, 0); err != nil {
 		return err
 	}
-	if w.cia1, err = references.ComponentsToICIA(c, 0); err != nil {
+	if w.cia1, err = references.ComponentsToICIA(cc, label, 0); err != nil {
 		return err
 	}
-	if w.cia2, err = references.ComponentsToICIA(c, 1); err != nil {
+	if w.cia2, err = references.ComponentsToICIA(cc, label, 1); err != nil {
 		return err
 	}
-	if w.cartMan, err = references.ComponentsToICartridgeManagerC64(c, 0); err != nil {
+	if w.cartMan, err = references.ComponentsToICartridgeManagerC64(cc, label, 0); err != nil {
 		return err
 	}
-	if w.roms, err = references.ComponentsToIROMLoaderC64(c, 0); err != nil {
+	if w.roms, err = references.ComponentsToIROMLoaderC64(cc, label, 0); err != nil {
 		return err
 	}
-	if err = w.IPlaC64.Setup(w, cfg, w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.roms); err != nil {
+	if err = w.IPlaC64.Bind(w, w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.roms); err != nil {
 		return err
 	}
 	return nil

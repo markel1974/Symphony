@@ -2,6 +2,7 @@ package mos6526
 
 import (
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -24,12 +25,16 @@ type TOD struct {
 }
 
 // NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
-func NewTOD(parent references.IComponent, factory references.IComponentFactory, instance int) *TOD {
+func NewTOD(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *TOD {
 	t := &TOD{
 		BaseComponent: component.NewBaseComponent(),
 	}
-	t.BaseComponent.Register(factory, parent, "tod", t, references.IdInternalComponent("TOD", instance))
+	t.BaseComponent.Register(factory, parent, "tod", t, references.IdInternalComponent(label, instance, "TOD"))
 	return t
+}
+
+func (m *TOD) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
 }
 
 // Reset reinitializes the TOD registers, alarm registers, and control flags to their default states.

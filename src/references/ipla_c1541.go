@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIPLAc1541(_ IPLAc1541, instance int) string {
-	return IdInternalComponent("IPLAc1541", instance)
+func IdIPLAc1541(_ IPLAc1541, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IPLAc1541")
 }
 
 type IPLAc1541Socket interface {
@@ -17,7 +17,9 @@ type IPLAc1541Socket interface {
 // Read retrieves the value from the specified memory address.
 // Write writes a value to the specified memory address.
 type IPLAc1541 interface {
-	Setup(socket IPLAc1541Socket, cfg *config.Config, via1 IVIA, via2 IVIA, roms IROMLoaderC1541) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket IPLAc1541Socket, via1 IVIA, via2 IVIA, romLoader IROMLoaderC1541) error
 
 	Connect() error
 
@@ -28,17 +30,17 @@ type IPLAc1541 interface {
 
 func ComponentToIPLAc1541(component IComponent) (IPLAc1541, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component IPLAc1541 is nil")
 	}
 	v, ok := component.(IPLAc1541)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIPLAc1541(v, 0))
+		return nil, fmt.Errorf("component is not a IPLAc1541")
 	}
 	return v, nil
 }
 
-func ComponentsToIPLAc1541(cc map[string]IComponent, instance int) (IPLAc1541, error) {
-	id := IdIPLAc1541(nil, instance)
+func ComponentsToIPLAc1541(cc map[string]IComponent, label string, instance int) (IPLAc1541, error) {
+	id := IdIPLAc1541(nil, label, instance)
 	c, err := ComponentToIPLAc1541(cc[id])
 	if err != nil {
 		return nil, err

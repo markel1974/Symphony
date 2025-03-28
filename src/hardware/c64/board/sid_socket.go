@@ -22,13 +22,13 @@ func NewSIDSocket(fragFreq int, rasters int) *SIDSocket {
 	return c
 }
 
-// Setup initializes the SIDSocket with the provided Board instance, assigning it to the internal board field.
-func (w *SIDSocket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the SIDSocket with the provided Board instance, assigning it to the internal board field.
+func (w *SIDSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	if w.ISID, err = references.ComponentsToISID(c, 0); err != nil {
+	if w.ISID, err = references.ComponentsToISID(cc, label, 0); err != nil {
 		return err
 	}
-	if err = w.ISID.Setup(w, cfg, w.fragFreq, w.rasters); err != nil {
+	if err = w.ISID.Bind(w, w.fragFreq, w.rasters); err != nil {
 		return err
 	}
 	return nil

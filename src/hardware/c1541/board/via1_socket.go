@@ -26,30 +26,30 @@ type VIA1Socket struct {
 }
 
 // NewVIA1Socket initializes and returns a new instance of VIA1Socket with the provided IVIA1SocketConnections implementation.
-func NewVIA1Socket(connections IVIA1SocketConnections) *VIA1Socket {
+func NewVIA1Socket(connections IVIA1SocketConnections, iec references.IIec) *VIA1Socket {
 	return &VIA1Socket{
 		IVIA:        nil,
+		iec:         iec,
 		connections: connections,
-		iec:         nil,
 		intrId:      intrIrqVIA1Bit,
 		prbFilter:   0,
 	}
 }
 
-// Setup initializes the VIA1Socket by setting up dependencies and configurations provided in the input parameters.
-func (v *VIA1Socket) Setup(c map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the VIA1Socket by setting up dependencies and configurations provided in the input parameters.
+func (v *VIA1Socket) Mount(c map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	v.IVIA, err = references.ComponentsToIVIA(c, 0)
+	v.IVIA, err = references.ComponentsToIVIA(c, label, 0)
 	if err != nil {
 		return err
 	}
-	v.iec, err = references.ComponentsToIEC(c, 0)
-	if err != nil {
-		return err
-	}
+	//v.iec, err = references.ComponentsToIEC(c, label, 0)
+	//if err != nil {
+	//	return err
+	//}
 	v.prbFilter = v.createPRBFilter()
 	v.dipSwitch = v.createDipSwitch(v.connections.GetDeviceNumber())
-	if err = v.IVIA.Setup(v, cfg); err != nil {
+	if err = v.IVIA.Bind(v); err != nil {
 		return err
 	}
 	return nil

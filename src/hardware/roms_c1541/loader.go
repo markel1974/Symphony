@@ -14,18 +14,22 @@ type RomLoader struct {
 }
 
 // NewRomLoader creates a new instance of RomLoader, registers it, and initializes its base component with the provided parameters.
-func NewRomLoader(parent references.IComponent, factory references.IComponentFactory, instance int) *RomLoader {
+func NewRomLoader(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *RomLoader {
 	rl := &RomLoader{
 		BaseComponent: component.NewBaseComponent(),
 		cfg:           nil,
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIROMLoaderC1541(rl, instance))
+	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIROMLoaderC1541(rl, label, instance))
 	return rl
 }
 
 // Setup initializes the RomLoader with the provided configuration and socket reference.
-func (r *RomLoader) Setup(_ references.IROMLoaderC1541Socket, cfg *config.Config) error {
+func (r *RomLoader) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
 	r.cfg = cfg
+	return nil
+}
+
+func (r *RomLoader) Bind(_ references.IROMLoaderC1541Socket) error {
 	return nil
 }
 

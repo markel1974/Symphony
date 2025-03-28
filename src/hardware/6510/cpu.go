@@ -44,18 +44,22 @@ type CPU struct {
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
-func NewCPU(parent references.IComponent, factory references.IComponentFactory, instance int) *CPU {
+func NewCPU(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CPU {
 	cpu := &CPU{
 		BaseComponent: component.NewBaseComponent(),
 	}
-	cpu.BaseComponent.Register(factory, parent, Identifier(), cpu, references.IdI6510(cpu, instance))
+	cpu.BaseComponent.Register(factory, parent, Identifier(), cpu, references.IdI6510(cpu, label, instance))
 	return cpu
 }
 
 // Setup initializes the CPU by configuring its PIC and banks from the given socket.
-func (cpu *CPU) Setup(socket references.I6510Socket, _ *config.Config) error {
-	cpu.pic = socket.GetPic()
-	cpu.banks = socket.GetBanks()
+func (cpu *CPU) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
+}
+
+func (cpu *CPU) Bind(_ references.I6510Socket, pic references.IPIC6510, banks references.I6510Banks) error {
+	cpu.pic = pic
+	cpu.banks = banks
 	return nil
 }
 

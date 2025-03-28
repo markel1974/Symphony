@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIQuartz(_ IQuartz, instance int) string {
-	return IdInternalComponent("IQuartz", instance)
+func IdIQuartz(_ IQuartz, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IQuartz")
 }
 
 type IQuartzSocket interface {
@@ -19,7 +19,9 @@ type IQuartzSocket interface {
 // ToUSec converts a given clock cycle count to microseconds.
 // NewAlarm creates a new alarm instance with a specified name and callback function.
 type IQuartz interface {
-	Setup(socket IQuartzSocket, cfg *config.Config) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket IQuartzSocket) error
 
 	Connect() error
 
@@ -50,17 +52,17 @@ type IQuartzAlarm interface {
 
 func ComponentToIQuartz(component IComponent) (IQuartz, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component IQuartz is nil")
 	}
 	v, ok := component.(IQuartz)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIQuartz(v, 0))
+		return nil, fmt.Errorf("component is not a IQuartz")
 	}
 	return v, nil
 }
 
-func ComponentsToIQuartz(cc map[string]IComponent, instance int) (IQuartz, error) {
-	quartzId := IdIQuartz(nil, instance)
+func ComponentsToIQuartz(cc map[string]IComponent, label string, instance int) (IQuartz, error) {
+	quartzId := IdIQuartz(nil, label, instance)
 	c, err := ComponentToIQuartz(cc[quartzId])
 	if err != nil {
 		return nil, err

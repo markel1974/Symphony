@@ -35,22 +35,22 @@ func NewExpansionSocket(connections IExpansionSocketConnections) *ExpansionSocke
 	return e
 }
 
-// Setup initializes the ExpansionSocket with its dependencies and sets up the required connections.
-func (s *ExpansionSocket) Setup(c map[string]references.IComponent, _ *config.Config) error {
+// Mount initializes the ExpansionSocket with its dependencies and sets up the required connections.
+func (s *ExpansionSocket) Mount(c map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	s.pic, err = references.ComponentsToIPIC6510(c, 0)
+	s.pic, err = references.ComponentsToIPIC6510(c, label, 0)
 	if err != nil {
 		return err
 	}
-	s.pla, err = references.ComponentsToIPLAc64(c, 0)
+	s.pla, err = references.ComponentsToIPLAc64(c, label, 0)
 	if err != nil {
 		return err
 	}
-	s.vic, err = references.ComponentsToIVIC(c, 0)
+	s.vic, err = references.ComponentsToIVIC(c, label, 0)
 	if err != nil {
 		return err
 	}
-	s.quartz, err = references.ComponentsToIQuartz(c, 0)
+	s.quartz, err = references.ComponentsToIQuartz(c, label, 0)
 	if err != nil {
 		return err
 	}

@@ -15,7 +15,7 @@ type IIECSocketConnection interface {
 type IECSocket struct {
 	references.IIec
 	connection IIECSocketConnection
-	quartzC    references.IComponent
+	quartz     references.IComponent
 }
 
 // NewIECSocket creates and returns a new IECSocket instance using the provided IIECSocketConnection.
@@ -26,18 +26,18 @@ func NewIECSocket(connection IIECSocketConnection) *IECSocket {
 	}
 }
 
-// Setup initializes the IECSocket instance, configuring components, quartz, and binding LED signals. Returns an error if any issue occurs.
-func (s *IECSocket) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the IECSocket instance, configuring components, quartz, and binding LED signals. Returns an error if any issue occurs.
+func (s *IECSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	s.IIec, err = references.ComponentsToIEC(cc, 0)
+	s.IIec, err = references.ComponentsToIEC(cc, label, 0)
 	if err != nil {
 		return err
 	}
 	var ok bool
-	if s.quartzC, ok = cc[references.IdIQuartz(nil, 0)]; !ok {
+	if s.quartz, ok = cc[references.IdIQuartz(nil, label, 0)]; !ok {
 		return fmt.Errorf("nil quartz")
 	}
-	if err = s.IIec.Setup(s, cfg, s.quartzC); err != nil {
+	if err = s.IIec.Bind(s, s.quartz); err != nil {
 		return err
 	}
 	s.IIec.LEDSignal().Bind(s.connection.LedTrigger)

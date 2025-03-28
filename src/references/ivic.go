@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIVIC(_ IVIC, instance int) string {
-	return IdInternalComponent("IVIC", instance)
+func IdIVIC(_ IVIC, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IVIC")
 }
 
 // IVIC defines an interface for a Video Interface Chip emulation, managing display rendering and register interactions.
@@ -22,7 +22,9 @@ func IdIVIC(_ IVIC, instance int) string {
 // ChangedVA notifies the VIC of a change in the video address.
 // GetLastByte returns the last byte processed by the VIC.
 type IVIC interface {
-	Setup(socket IVICSocket, cfg *config.Config) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket IVICSocket) error
 
 	Connect() error
 
@@ -89,17 +91,17 @@ type IVICSocket interface {
 
 func ComponentToIVIC(component IComponent) (IVIC, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component IVIC is nil")
 	}
 	v, ok := component.(IVIC)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIVIC(v, 0))
+		return nil, fmt.Errorf("component is not a IVIC")
 	}
 	return v, nil
 }
 
-func ComponentsToIVIC(cc map[string]IComponent, instance int) (IVIC, error) {
-	id := IdIVIC(nil, instance)
+func ComponentsToIVIC(cc map[string]IComponent, label string, instance int) (IVIC, error) {
+	id := IdIVIC(nil, label, instance)
 	c, err := ComponentToIVIC(cc[id])
 	if err != nil {
 		return nil, err

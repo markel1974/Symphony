@@ -18,13 +18,13 @@ func NewKeyboardSocket() *KeyboardSocket {
 	return c
 }
 
-// Setup initializes the KeyboardSocket by resolving and setting IKeyboard and invoking its Setup method with provided config.
-func (w *KeyboardSocket) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the KeyboardSocket by resolving and setting IKeyboard and invoking its Setup method with provided config.
+func (w *KeyboardSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	if w.IKeyboard, err = references.ComponentsToIKeyboard(cc, 0); err != nil {
+	if w.IKeyboard, err = references.ComponentsToIKeyboard(cc, label, 0); err != nil {
 		return err
 	}
-	if err = w.IKeyboard.Setup(w, cfg); err != nil {
+	if err = w.IKeyboard.Bind(w); err != nil {
 		return err
 	}
 	return nil

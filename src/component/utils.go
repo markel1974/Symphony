@@ -1,6 +1,10 @@
 package component
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+)
 
 func GetSegmentKeys(s interface{}) ([]string, error) {
 	if s == nil {
@@ -34,4 +38,18 @@ func GetSegment(id string, s interface{}) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("error getting segment %s: %s", id, "invalid segment interface")
 	}
 	return segment, nil
+}
+
+func ComponentData(data string) (string, string, int, error) {
+	p := strings.Split(data, ":")
+	if len(p) < 3 {
+		return "", "", 0, fmt.Errorf("error restoring component %s: %s", data, "invalid component id")
+	}
+	label := p[0]
+	id := p[1]
+	instance, err := strconv.Atoi(p[2])
+	if err != nil {
+		return "", "", 0, fmt.Errorf("error restoring component %s: %s", id, err.Error())
+	}
+	return label, id, instance, nil
 }

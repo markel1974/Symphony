@@ -40,28 +40,34 @@ type CIA struct {
 	timerA         *Timer
 	timerB         *Timer
 	socket         references.ICIASocket
+	label          string
 }
 
 // NewCIA creates and initializes a new instance of CIA, registering it with the provided factory, parent, and instance ID.
-func NewCIA(parent references.IComponent, factory references.IComponentFactory, instance int) *CIA {
+func NewCIA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CIA {
 	m := &CIA{
 		BaseComponent: component.NewBaseComponent(),
 		tod:           nil,
 		timerA:        nil,
 		timerB:        nil,
+		label:         label,
 	}
-	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdICIA(m, instance))
+	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdICIA(m, label, instance))
 	return m
 }
 
 // Setup initializes the CIA component, creating TOD and Timer instances, binding timer underflow signals, and setting the socket.
-func (m *CIA) Setup(conn references.ICIASocket, _ *config.Config) error {
-	m.tod = NewTOD(m, m.GetFactory(), 0)
-	m.timerA = NewTimer(m, m.GetFactory(), 0)
+func (m *CIA) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	m.tod = NewTOD(m, m.GetFactory(), m.label, 0)
+	m.timerA = NewTimer(m, m.GetFactory(), m.label, 0)
 	m.timerA.UnderflowSignal().Bind(m.timerAUnderflowSlot)
-	m.timerB = NewTimer(m, m.GetFactory(), 1)
+	m.timerB = NewTimer(m, m.GetFactory(), m.label, 1)
 	m.timerB.UnderflowSignal().Bind(m.timerBUnderflowSlot)
-	m.socket = conn
+	return nil
+}
+
+func (m *CIA) Bind(socket references.ICIASocket) error {
+	m.socket = socket
 	return nil
 }
 

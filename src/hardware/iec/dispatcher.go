@@ -41,32 +41,42 @@ type Dispatcher struct {
 	peripheralsData []uint8
 	virtualDrives   []references.IIecDevice
 	emulation       []func()
+	cc              map[string]references.IComponent
 	ledSignal       *signals.SignalUint32 //*signals.Signal2[int, uint8]
 }
 
 // NewDispatcher initializes a new Dispatcher instance with the given parent component, factory, and instance number.
 // It sets up base component properties, allocates memory for peripheral data, and initializes the LED signal.
-func NewDispatcher(parent references.IComponent, factory references.IComponentFactory, instance int) *Dispatcher {
+func NewDispatcher(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Dispatcher {
 	c := &Dispatcher{
 		BaseComponent:   component.NewBaseComponent(),
 		peripheralsData: make([]uint8, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignalUint32(), //ledSignal:       signals.NewSignal2[int, uint8](),
 	}
-	c.BaseComponent.Register(factory, parent, Identifier(), c, references.IdIIec(c, instance))
+	c.BaseComponent.Register(factory, parent, Identifier(), c, references.IdIIec(c, label, instance))
 	return c
 }
 
 // Setup initializes the Dispatcher component, configures drives based on the provided configuration, and prepares devices.
-func (c *Dispatcher) Setup(_ references.IIecSocket, cfg *config.Config, quartz references.IComponent) error {
+func (c *Dispatcher) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
+	c.cc = cc
 	c.cfg = cfg
-	c.quartz = quartz
+	return nil
+}
+
+func (c *Dispatcher) Bind(_ references.IIecSocket, q references.IComponent) error {
+	c.quartz = q
 	return nil
 }
 
 func (c *Dispatcher) Connect() error {
+	return nil
+}
+
+func (c *Dispatcher) CreatePeripherals() error {
 	for deviceId, d := range c.cfg.Drives() {
-		if err := c.AddPeripheral(c.quartz, c.cfg, d.GetKind(), uint8(deviceId)); err != nil {
+		if err := c.AddPeripheral(d.GetKind(), uint8(deviceId)); err != nil {
 			return err
 		}
 	}
@@ -106,9 +116,10 @@ func (c *Dispatcher) Reset() {
 }
 
 // AddPeripheral adds a new peripheral to the dispatcher with the given kind, options, and device ID.
-func (c *Dispatcher) AddPeripheral(quartz references.IComponent, cfg *config.Config, kind string, deviceId uint8) error {
+func (c *Dispatcher) AddPeripheral(kind string, deviceId uint8) error {
 	deviceNumber := deviceId + 8
-	device, err := c.GetFactory().Create(c, kind, int(deviceNumber))
+	label := kind //kind + "_" + fmt.Sprint(deviceNumber)
+	device, err := c.GetFactory().Create(c, label, kind, int(deviceNumber))
 	if err != nil {
 		return err
 	}
@@ -116,7 +127,10 @@ func (c *Dispatcher) AddPeripheral(quartz references.IComponent, cfg *config.Con
 	if !ok {
 		return fmt.Errorf("device %s is not an IEC device", kind)
 	}
-	if err = vd.Setup(c, cfg, c, quartz, deviceId, deviceNumber); err != nil {
+	if err = vd.Setup(c.cc, c.cfg); err != nil {
+		return err
+	}
+	if err = vd.Bind(c, c, deviceId, deviceNumber); err != nil {
 		return err
 	}
 	if err = vd.Connect(); err != nil {

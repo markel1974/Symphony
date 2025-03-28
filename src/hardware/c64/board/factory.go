@@ -25,8 +25,8 @@ func (t *Factory) Identifier() string {
 }
 
 // Create initializes and returns a new instance of IComponent using the provided parent, factory, and label parameters.
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
-	return NewBoard(parent, factory, label)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IComponent {
+	return NewBoard(parent, factory, label, instance)
 }
 
 func init() {

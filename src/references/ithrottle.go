@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIThrottle(_ IThrottle, instance int) string {
-	return IdInternalComponent("IThrottle", instance)
+func IdIThrottle(_ IThrottle, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IThrottle")
 }
 
 type IThrottleSocket interface {
@@ -16,7 +16,9 @@ type IThrottleSocket interface {
 // Throttle adjusts execution speed to meet a specified rate, ensuring operations run within defined limits.
 // Counter returns the current count of throttled operations executed thus far.
 type IThrottle interface {
-	Setup(socket IThrottleSocket, cfg *config.Config, interval int64) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket IThrottleSocket, frameInterval int64) error
 
 	Connect() error
 
@@ -27,17 +29,17 @@ type IThrottle interface {
 
 func ComponentToIThrottle(component IComponent) (IThrottle, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component is IThrottle nil")
 	}
 	v, ok := component.(IThrottle)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIThrottle(v, 0))
+		return nil, fmt.Errorf("component is not a IThrottle")
 	}
 	return v, nil
 }
 
-func ComponentsToIThrottle(cc map[string]IComponent, instance int) (IThrottle, error) {
-	id := IdIThrottle(nil, instance)
+func ComponentsToIThrottle(cc map[string]IComponent, label string, instance int) (IThrottle, error) {
+	id := IdIThrottle(nil, label, instance)
 	c, err := ComponentToIThrottle(cc[id])
 	if err != nil {
 		return nil, err

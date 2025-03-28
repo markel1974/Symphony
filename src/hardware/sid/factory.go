@@ -25,8 +25,8 @@ func (t *Factory) Identifier() string {
 }
 
 // Create instantiates a new SID component with a specified parent, factory, and label, initializing it for emulation.
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
-	return NewSID(parent, factory, label)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IComponent {
+	return NewSID(parent, factory, label, instance)
 }
 
 func init() {

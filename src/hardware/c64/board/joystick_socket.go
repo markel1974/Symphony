@@ -20,13 +20,13 @@ func NewJoystickSocket(instance int) *JoystickSocket {
 	return c
 }
 
-// Setup initializes the JoystickSocket by resolving its IJoystick component and calling its Setup method with configuration.
-func (w *JoystickSocket) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the JoystickSocket by resolving its IJoystick component and calling its Setup method with configuration.
+func (w *JoystickSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	if w.IJoystick, err = references.ComponentsToIJoystick(cc, w.instance); err != nil {
+	if w.IJoystick, err = references.ComponentsToIJoystick(cc, label, w.instance); err != nil {
 		return err
 	}
-	if err = w.IJoystick.Setup(w, cfg); err != nil {
+	if err = w.IJoystick.Bind(w); err != nil {
 		return err
 	}
 	return nil

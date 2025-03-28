@@ -20,19 +20,23 @@ type Quartz struct {
 }
 
 // NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
-func NewQuartz(parent references.IComponent, factory references.IComponentFactory, instance int) *Quartz {
+func NewQuartz(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Quartz {
 	q := &Quartz{
 		BaseComponent:   component.NewBaseComponent(),
 		cycle:           0,
 		alarmsContainer: make(map[*Alarm]*Alarm),
 		alarms:          list.New(),
 	}
-	q.BaseComponent.Register(factory, parent, Identifier(), q, references.IdIQuartz(q, instance))
+	q.BaseComponent.Register(factory, parent, Identifier(), q, references.IdIQuartz(q, label, instance))
 	//q.BaseComponent.Register(parent, q)
 	return q
 }
 
-func (s *Quartz) Setup(_ references.IQuartzSocket, _ *config.Config) error {
+func (s *Quartz) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
+}
+
+func (s *Quartz) Bind(_ references.IQuartzSocket) error {
 	return nil
 }
 

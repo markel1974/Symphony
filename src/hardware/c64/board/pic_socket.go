@@ -18,16 +18,16 @@ func NewPICSocket() *PICSocket {
 	}
 }
 
-// Setup initializes the PICSocket by resolving and configuring referenced components. Returns error if setup fails.
-func (s *PICSocket) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
+// Mount initializes the PICSocket by resolving and configuring referenced components. Returns error if setup fails.
+func (s *PICSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
 	var err error
-	if s.IPIC6510, err = references.ComponentsToIPIC6510(cc, 0); err != nil {
+	if s.IPIC6510, err = references.ComponentsToIPIC6510(cc, label, 0); err != nil {
 		return err
 	}
-	if s.quartz, err = references.ComponentsToIQuartz(cc, 0); err != nil {
+	if s.quartz, err = references.ComponentsToIQuartz(cc, label, 0); err != nil {
 		return err
 	}
-	if err = s.IPIC6510.Setup(s, cfg, s.quartz); err != nil {
+	if err = s.IPIC6510.Bind(s, s.quartz); err != nil {
 		return err
 	}
 	return nil

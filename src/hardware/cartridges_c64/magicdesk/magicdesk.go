@@ -27,7 +27,7 @@ func GetType() int {
 }
 
 // NewMagicDesk creates a new instance of CartridgeMagicDesk, registers it with the provided parent, and sets its initial configuration.
-func NewMagicDesk(parent references.IComponent, factory references.IComponentFactory, instance int) *CartridgeMagicDesk {
+func NewMagicDesk(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeMagicDesk {
 	md := &CartridgeMagicDesk{
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
@@ -36,17 +36,20 @@ func NewMagicDesk(parent references.IComponent, factory references.IComponentFac
 		regVal:        0,
 		slot:          0,
 	}
-	md.BaseComponent.Register(factory, parent, Identifier(), md, references.IdICartridgeC64(md, instance))
+	md.BaseComponent.Register(factory, parent, Identifier(), md, references.IdICartridgeC64(md, label, instance))
 	return md
 }
 
 // New creates a new instance of CartridgeMagicDesk, registers it with the provided parent, and sets its initial configuration.
-func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
-	return NewMagicDesk(parent, factory, instance)
+func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.ICartridgeC64 {
+	return NewMagicDesk(parent, factory, label, instance)
 }
 
-// Setup initializes the CartridgeMagicDesk by configuring its board and loading data via the provided CRTLoader.
-func (c *CartridgeMagicDesk) Setup(board references.IExpansionC64, ldr references.ICartridgeLoaderC64, _ *config.Config) error {
+func (c *CartridgeMagicDesk) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
+}
+
+func (c *CartridgeMagicDesk) Bind(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	c.expansion = board
 	c.loaderId = ldr.GetId()
 	if loader.Type(ldr.GetType()) == loader.TypeCrt {

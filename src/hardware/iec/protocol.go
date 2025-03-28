@@ -128,22 +128,21 @@ type Protocol struct {
 }
 
 // NewProtocolDevice creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
-func NewProtocolDevice(factory references.IComponentFactory, parent references.IComponent, instance int) references.IIecDevice {
-	return NewProtocol(factory, parent, instance)
+func NewProtocolDevice(factory references.IComponentFactory, parent references.IComponent, label string, instance int) references.IIecDevice {
+	return NewProtocol(factory, parent, label, instance)
 }
 
 // NewProtocol creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
-func NewProtocol(factory references.IComponentFactory, parent references.IComponent, instance int) *Protocol {
+func NewProtocol(factory references.IComponentFactory, parent references.IComponent, label string, instance int) *Protocol {
 	p := &Protocol{
 		BaseComponent: component.NewBaseComponent(),
-		quartz:        nil,
 		gs:            _gs,
 		iec:           nil,
 		device:        nil,
 		ledSignal:     signals.NewSignalUint32(),
 		flags:         0,
 	}
-	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, instance))
+	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, label, instance))
 	return p
 }
 
@@ -151,16 +150,15 @@ func (v *Protocol) SetDevice(device references.IIecProtocolDevice) {
 	v.device = device
 }
 
-// Setup initializes the Protocol with the provided IEC interface and configuration settings.
-func (v *Protocol) Setup(_ references.IIecDeviceSocket, cfg *config.Config, iec references.IComponent, quartz references.IComponent, deviceId uint8, deviceNumber uint8) error {
-	v.deviceNumber = deviceNumber
+func (v *Protocol) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
 	v.cfg = cfg
+	return nil
+}
+
+func (v *Protocol) Bind(_ references.IIecDeviceSocket, iec references.IComponent, deviceId uint8, deviceNumber uint8) error {
+	v.deviceNumber = deviceNumber
 	var err error
 	v.iec, err = references.ComponentToIEC(iec)
-	if err != nil {
-		return err
-	}
-	v.quartz, err = references.ComponentToIQuartz(quartz)
 	if err != nil {
 		return err
 	}

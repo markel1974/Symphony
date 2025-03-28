@@ -35,6 +35,8 @@ type IHardware interface {
 
 	HardwareId() string
 
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
 	Connect() error
 
 	EmulationRequired() bool
@@ -122,21 +124,19 @@ type IComponent interface {
 	ICommand
 }
 
-type IConnector interface {
-	Setup(c map[string]IComponent, cfg *config.Config) error
-
-	Connect() error
+type ISocket interface {
+	Mount(c map[string]IComponent, cfg *config.Config, label string) error
 }
 
 // IComponentFactory defines methods for creating and managing various types of components in an emulation system.
 type IComponentFactory interface {
-	Create(parent IComponent, id string, instance int) (IComponent, error)
+	Create(parent IComponent, label string, id string, instance int) (IComponent, error)
 
 	GetIDisplayBuffer() IDisplayBuffer
 
 	GetIAudioRender() IAudioRender
 }
 
-func IdInternalComponent(id string, instance int) string {
-	return id + ":" + strconv.Itoa(instance)
+func IdInternalComponent(label string, instance int, id string) string {
+	return label + ":" + id + ":" + strconv.Itoa(instance)
 }

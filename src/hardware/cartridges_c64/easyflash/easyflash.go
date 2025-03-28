@@ -48,7 +48,7 @@ func GetType() int {
 }
 
 // NewEasyFlash creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridgeC64 interface.
-func NewEasyFlash(parent references.IComponent, factory references.IComponentFactory, instance int) *CartridgeEasyFlash {
+func NewEasyFlash(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeEasyFlash {
 	const id = "easyFlash"
 	ef := &CartridgeEasyFlash{
 		BaseComponent:   component.NewBaseComponent(),
@@ -68,17 +68,20 @@ func NewEasyFlash(parent references.IComponent, factory references.IComponentFac
 		memoryConfigIdx: -1,
 		updateEApi:      true,
 	}
-	ef.BaseComponent.Register(factory, parent, id, ef, references.IdICartridgeC64(ef, instance))
+	ef.BaseComponent.Register(factory, parent, id, ef, references.IdICartridgeC64(ef, label, instance))
 	return ef
 }
 
 // New creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, label int) references.ICartridgeC64 {
-	return NewEasyFlash(parent, factory, label)
+func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.ICartridgeC64 {
+	return NewEasyFlash(parent, factory, label, instance)
 }
 
-// Setup initializes the CartridgeEasyFlash instance with the provided expansion and CRT loader data.
-func (c *CartridgeEasyFlash) Setup(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64, _ *config.Config) error {
+func (c *CartridgeEasyFlash) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
+}
+
+func (c *CartridgeEasyFlash) Bind(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	var rawCart []byte
 	c.expansion = expansion
 	c.loaderId = ldr.GetId()

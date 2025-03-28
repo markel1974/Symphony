@@ -29,8 +29,8 @@ type FSDrive struct {
 	cfg          *config.Config
 }
 
-func NewBoard(parent references.IComponent, factory references.IComponentFactory, instance int) *FSDrive {
-	protocol := iec.NewProtocol(factory, parent, instance)
+func NewBoard(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *FSDrive {
+	protocol := iec.NewProtocol(factory, parent, label, instance)
 	fs := &FSDrive{
 		BaseComponent: component.NewBaseComponent(),
 		IIecDevice:    protocol,
@@ -43,21 +43,28 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		cfg:           nil,
 	}
 	fs.protocol.SetDevice(fs)
-	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, 0))
+	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, label, 0))
 	return fs
 }
 
-func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.IIecDevice {
-	return NewBoard(parent, factory, instance)
+func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IIecDevice {
+	return NewBoard(parent, factory, label, instance)
 }
 
-func (v *FSDrive) Setup(_ references.IIecDeviceSocket, cfg *config.Config, iec references.IComponent, quartz references.IComponent, deviceId uint8, deviceNumber uint8) error {
+func (v *FSDrive) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
 	v.cfg = cfg
+	v.cfg.Bind(v.configChanged)
+	if err := v.protocol.Setup(cc, v.cfg); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v *FSDrive) Bind(_ references.IIecDeviceSocket, iec references.IComponent, deviceId uint8, deviceNumber uint8) error {
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
-	v.cfg.Bind(v.configChanged)
 	v.origDirPath = v.path
-	if err := v.protocol.Setup(v, cfg, iec, quartz, deviceId, deviceNumber); err != nil {
+	if err := v.protocol.Bind(v, iec, deviceId, deviceNumber); err != nil {
 		return err
 	}
 	if d := v.cfg.Drive(v.deviceId); d != nil {

@@ -5,8 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
-func IdIJoystick(_ IJoystick, instance int) string {
-	return IdInternalComponent("IJoystick", instance)
+func IdIJoystick(_ IJoystick, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IJoystick")
 }
 
 type IJoystickSocket interface {
@@ -20,7 +20,9 @@ type IJoystickSocket interface {
 // SetKey adjusts the joystick state based on key presses or releases with a specific joystick ID.
 // Poll retrieves the next joystick state and its validity, indicating if data is available.
 type IJoystick interface {
-	Setup(s IJoystickSocket, cfg *config.Config) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket IJoystickSocket) error
 
 	Connect() error
 
@@ -39,17 +41,17 @@ type IJoystick interface {
 
 func ComponentToIJoystick(component IComponent) (IJoystick, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component IJoystick is nil")
 	}
 	v, ok := component.(IJoystick)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIJoystick(v, 0))
+		return nil, fmt.Errorf("component is not a IJoystick")
 	}
 	return v, nil
 }
 
-func ComponentsToIJoystick(cc map[string]IComponent, instance int) (IJoystick, error) {
-	id := IdIJoystick(nil, instance)
+func ComponentsToIJoystick(cc map[string]IComponent, label string, instance int) (IJoystick, error) {
+	id := IdIJoystick(nil, label, instance)
 	c, err := ComponentToIJoystick(cc[id])
 	if err != nil {
 		return nil, err

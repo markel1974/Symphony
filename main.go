@@ -69,24 +69,57 @@ import (
 // -f "fs_drive:/Users/tinmr305/Downloads/c64carts/"
 
 var _c64DefaultHardware = []struct {
+	label    string
 	id       string
 	instance int
 }{
-	{"mos6569", 0},
-	{"mos6526", 0},
-	{"mos6526", 1},
-	{"cartridges_c64", 0},
-	{"iec", 0},
-	{"mos6510", 0},
-	{"pic_6510", 0},
-	{"quartz", 0},
-	{"dynamic_throttle", 0},
-	{"mos6581", 0},
-	{"roms_c64", 0},
-	{"pla_c64", 0},
-	{"keyboard_c64", 0},
-	{"joystick_c64", 0},
-	{"joystick_c64", 1},
+	{"c64", "c64", 0},
+	{"c64", "iec", 0},
+	{"c64", "mos6569", 0},
+	{"c64", "mos6526", 0},
+	{"c64", "mos6526", 1},
+	{"c64", "cartridges_c64", 0},
+	{"c64", "mos6510", 0},
+	{"c64", "pic_6510", 0},
+	{"c64", "dynamic_throttle", 0},
+	{"c64", "mos6581", 0},
+	{"c64", "roms_c64", 0},
+	{"c64", "pla_c64", 0},
+	{"c64", "keyboard_c64", 0},
+	{"c64", "joystick_c64", 0},
+	{"c64", "joystick_c64", 1},
+	{"c64", "quartz", 0},
+
+	/*
+		{"c1541_8", "roms_c1541", 0},
+		{"c1541_8", "pla_c1541", 0},
+		{"c1541_8", "pic_6510", 0},
+		{"c1541_8", "mos6510", 0},
+		{"c1541_8", "mos6522", 0},
+		{"c1541_8", "mos6522", 1},
+
+		{"c1541_9", "roms_c1541", 0},
+		{"c1541_9", "pla_c1541", 0},
+		{"c1541_9", "pic_6510", 0},
+		{"c1541_9", "mos6510", 0},
+		{"c1541_9", "mos6522", 0},
+		{"c1541_9", "mos6522", 1},
+
+		{"c1541_10", "roms_c1541", 0},
+		{"c1541_10", "pla_c1541", 0},
+		{"c1541_10", "pic_6510", 0},
+		{"c1541_10", "mos6510", 0},
+		{"c1541_10", "mos6522", 0},
+		{"c1541_10", "mos6522", 1},
+
+		{"c1541_11", "roms_c1541", 0},
+		{"c1541_11", "pla_c1541", 0},
+		{"c1541_11", "pic_6510", 0},
+		{"c1541_11", "mos6510", 0},
+		{"c1541_11", "mos6522", 0},
+		{"c1541_11", "mos6522", 1},
+
+	*/
 }
 
 /*
@@ -212,30 +245,47 @@ func main() {
 
 	hwFactory := hardware.NewFactory(display, audioRender, cfg)
 
-	boardComponent, err := hwFactory.Create(nil, boardId, 0)
-	if err != nil {
-		log.Fatal(err)
-	}
-	board, ok := boardComponent.(references.IBoard)
-	if !ok || board == nil {
-		log.Fatal("board is nil")
-	}
-
+	var boardComponent references.IComponent = nil
+	var hw []references.IComponent
 	components := make(map[string]references.IComponent)
-	for _, hw := range _c64DefaultHardware {
+	for _, h := range _c64DefaultHardware {
 		var comp references.IComponent
-		if comp, err = hwFactory.Create(boardComponent, hw.id, hw.instance); err != nil {
+		if comp, err = hwFactory.Create(boardComponent, h.label, h.id, h.instance); err != nil {
 			log.Fatal(err.Error())
 		}
 		components[comp.HardwareId()] = comp
+		if boardComponent == nil {
+			boardComponent = comp
+		}
+		hw = append(hw, comp)
 	}
 
-	if err = board.Setup(components, cfg); err != nil {
+	if boardComponent == nil {
+		log.Fatal("board is nil")
+	}
+	board, ok := boardComponent.(references.IBoard)
+	if !ok {
+		log.Fatal("invalid board")
+	}
+
+	//TODO REMOVE WHEN TREE IS READY
+	//BEGIN
+	for _, c := range hw {
+		if err = c.Setup(components, cfg); err != nil {
+			log.Fatal(err)
+		}
+	}
+	for _, c := range hw {
+		if err = c.Connect(); err != nil {
+			log.Fatal(err)
+		}
+	}
+	//END
+
+	if err = board.Start(); err != nil {
 		log.Fatal(err)
 	}
-	if err = boardComponent.Connect(); err != nil {
-		log.Fatal(err)
-	}
+
 	if err = createShell(boardComponent.GetCommand()); err != nil {
 		log.Fatal(err)
 	}

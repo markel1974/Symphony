@@ -30,26 +30,29 @@ type PLA struct {
 
 // NewPLA initializes and returns a new instance of the PLA structure with specified parent, factory, and instance ID.
 // It sets up the PLA's RAM with a predefined size and registers the component in a hierarchy via the factory.
-func NewPLA(parent references.IComponent, factory references.IComponentFactory, instance int) *PLA {
+func NewPLA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *PLA {
 	p := &PLA{
 		BaseComponent: component.NewBaseComponent(),
 		ram:           make([]uint8, c1541RamSize),
 	}
-	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIPLAc1541(p, instance))
+	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIPLAc1541(p, label, instance))
 	return p
 }
 
-// Setup initializes the PLA by configuring it with the provided socket and configuration details.
-func (r *PLA) Setup(_ references.IPLAc1541Socket, _ *config.Config, via1 references.IVIA, via2 references.IVIA, romLoader references.IROMLoaderC1541) error {
+func (r *PLA) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
+}
+
+func (r *PLA) Bind(_ references.IPLAc1541Socket, via1 references.IVIA, via2 references.IVIA, romLoader references.IROMLoaderC1541) error {
 	r.via1 = via1
 	r.via2 = via2
 	r.romLoader = romLoader
+	r.rom = r.romLoader.Load()
 	return nil
 }
 
 // Connect associates the PLA with two VIA interfaces and loads ROM data via the provided ROM loader.
 func (r *PLA) Connect() error {
-	r.rom = r.romLoader.Load()
 	return nil
 }
 

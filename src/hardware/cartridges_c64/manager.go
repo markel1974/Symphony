@@ -28,33 +28,37 @@ type Manager struct {
 	cfg                 *config.Config
 	carts               []references.ICartridgeC64
 	emulate             []func()
-	registerHardware    map[string]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64
-	registerType        map[int]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64
-	registerSize        map[int]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64
-	registerSizeDefault func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64
+	registerHardware    map[string]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
+	registerType        map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
+	registerSize        map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
+	registerSizeDefault func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
+	cc                  map[string]references.IComponent
+	label               string
 }
 
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
-func NewManager(parent references.IComponent, factory references.IComponentFactory, instance int) *Manager {
+func NewManager(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Manager {
 	m := &Manager{
 		BaseComponent:       component.NewBaseComponent(),
 		idx:                 0,
 		board:               nil,
 		cfg:                 nil,
 		carts:               nil,
-		registerHardware:    make(map[string]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64),
-		registerType:        make(map[int]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64),
-		registerSize:        make(map[int]func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64),
+		registerHardware:    make(map[string]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64),
+		registerType:        make(map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64),
+		registerSize:        make(map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64),
 		registerSizeDefault: nil,
+		label:               label,
 	}
-	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdICartridgeManagerC64(m, instance))
+	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdICartridgeManagerC64(m, label, instance))
 	return m
 }
 
 // Setup initializes the Manager by setting up the expansion board, configuration preferences, and cartridge hardware mappings.
-func (f *Manager) Setup(_ references.ICartridgeManagerC64Socket, cfg *config.Config, board references.IExpansionC64) error {
+func (f *Manager) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
 	f.cfg = cfg
-	f.board = board
+	f.cc = cc
+
 	f.registerHardware[external_cpu.Id] = external_cpu.New
 	f.registerHardware[reu.Id128K] = reu.New128K
 	f.registerHardware[reu.Id256K] = reu.New256K
@@ -78,6 +82,11 @@ func (f *Manager) Setup(_ references.ICartridgeManagerC64Socket, cfg *config.Con
 	return nil
 }
 
+func (f *Manager) Bind(_ references.ICartridgeManagerC64Socket, board references.IExpansionC64) error {
+	f.board = board
+	return nil
+}
+
 func (f *Manager) Connect() error {
 	return nil
 }
@@ -97,6 +106,15 @@ func (f *Manager) Reset() {
 	for _, cart := range f.carts {
 		cart.Reset()
 	}
+}
+
+func (f *Manager) CreateCartridges() error {
+	for _, crt := range f.cfg.Cartridges() {
+		if _, err := f.Add(crt.GetKind(), crt.GetName(), crt.GetData()); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Config returns the Game and ExROM status along with a boolean indicating whether configuration was successful.
@@ -226,7 +244,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if err := ldr.Setup(name, data); err != nil {
 		return "", err
 	}
-	var factory func(references.IComponent, references.IComponentFactory, int) references.ICartridgeC64 = nil
+	var factory func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64 = nil
 	if len(hardware) > 0 {
 		hardware = strings.ToUpper(strings.TrimSpace(hardware))
 		factory = f.registerHardware[hardware]
@@ -240,10 +258,13 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if factory == nil {
 		return "", fmt.Errorf("unsupported => %d", ldr.Kind)
 	}
-	cart := factory(f, f.GetFactory(), f.idx)
+	cart := factory(f, f.GetFactory(), f.label, f.idx)
 	f.idx++
 	f.carts = append(f.carts, cart)
-	if err := cart.Setup(f.board, ldr, f.cfg); err != nil {
+	if err := cart.Setup(f.cc, f.cfg); err != nil {
+		return "", err
+	}
+	if err := cart.Bind(f.board, ldr); err != nil {
 		return "", err
 	}
 	if cart.EmulationRequired() {

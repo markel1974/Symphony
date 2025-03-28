@@ -14,8 +14,8 @@ const (
 	OpFlagIntDelayed  = 0x04
 )
 
-func IdIPIC6510(_ IPIC6510, instance int) string {
-	return IdInternalComponent("IPIC6510", instance)
+func IdIPIC6510(_ IPIC6510, label string, instance int) string {
+	return IdInternalComponent(label, instance, "IPIC6510")
 }
 
 type IPIC6510Socket interface {
@@ -29,7 +29,9 @@ type IPIC6510Socket interface {
 type IPIC6510 interface {
 	Reset()
 
-	Setup(socket IPIC6510Socket, cfg *config.Config, quartz IQuartz) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(socket IPIC6510Socket, quartz IQuartz) error
 
 	Connect() error
 
@@ -54,17 +56,17 @@ type IPIC6510 interface {
 
 func ComponentToIPIC6510(component IComponent) (IPIC6510, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component IPIC6510 is nil")
 	}
 	v, ok := component.(IPIC6510)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdIPIC6510(v, 0))
+		return nil, fmt.Errorf("component is not a IPIC6510")
 	}
 	return v, nil
 }
 
-func ComponentsToIPIC6510(cc map[string]IComponent, instance int) (IPIC6510, error) {
-	id := IdIPIC6510(nil, instance)
+func ComponentsToIPIC6510(cc map[string]IComponent, label string, instance int) (IPIC6510, error) {
+	id := IdIPIC6510(nil, label, instance)
 	c, err := ComponentToIPIC6510(cc[id])
 	if err != nil {
 		return nil, err

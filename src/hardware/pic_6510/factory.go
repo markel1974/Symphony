@@ -25,8 +25,8 @@ func (t *Factory) Identifier() string {
 }
 
 // Create creates a new instance of IComponent by initializing a Pic object with the specified parent, factory, and instance.
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, instance int) references.IComponent {
-	return NewPIC(parent, factory, instance)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IComponent {
+	return NewPIC(parent, factory, label, instance)
 }
 
 func init() {

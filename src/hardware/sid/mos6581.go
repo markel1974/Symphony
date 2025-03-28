@@ -19,41 +19,37 @@ var _audioRegisters = []uint8{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
 // SID represents a chip emulation containing configurations, registers, and audio handling functionality.
 type SID struct {
 	*component.BaseComponent
-	socket       references.ISIDSocket
 	registers    []uint8
 	cfg          *config.Config
 	audioBuilder *AudioBuilder
 	reflect      *SidReflect
-	fragFreq     int
-	rasters      int
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
-func NewSID(parent references.IComponent, factory references.IComponentFactory, instance int) *SID {
+func NewSID(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *SID {
 	s := &SID{
 		BaseComponent: component.NewBaseComponent(),
-		socket:        nil,
 		registers:     make([]uint8, RegisterCount),
 		cfg:           nil,
 		audioBuilder:  nil,
 	}
-	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdISID(s, instance))
+	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdISID(s, label, instance))
 	s.reflect = NewSidReflect(s)
 	return s
 }
 
-// Setup initializes the SID instance with the provided socket, configuration, fragment frequency, and raster count.
-func (sid *SID) Setup(socket references.ISIDSocket, cfg *config.Config, fragFreq int, rasters int) error {
-	sid.socket = socket
+func (sid *SID) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
 	sid.cfg = cfg
-	sid.fragFreq = fragFreq
-	sid.rasters = rasters
 	sid.cfg.Bind(sid.onConfigChanged)
 	return nil
 }
 
+func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int, rasters int) error {
+	sid.audioBuilder = NewAudioBuilder(sid.GetFactory().GetIAudioRender(), true, fragFreq, rasters)
+	return nil
+}
+
 func (sid *SID) Connect() error {
-	sid.audioBuilder = NewAudioBuilder(sid.GetFactory().GetIAudioRender(), true, sid.fragFreq, sid.rasters)
 	return nil
 }
 

@@ -57,8 +57,8 @@ func GetCartridgeSpec(ct CartridgeMode) *CartridgeSpec {
 	return _cartridgesSpec[ct]
 }
 
-func IdICartridgeC64(_ ICartridgeC64, instance int) string {
-	return IdInternalComponent("ICartridgeC64", instance)
+func IdICartridgeC64(_ ICartridgeC64, label string, instance int) string {
+	return IdInternalComponent(label, instance, "ICartridgeC64")
 }
 
 // ICartridgeC64 represents the interface for a C64-compatible cartridge, defining methods for setup, memory operations, and emulation.
@@ -75,7 +75,9 @@ func IdICartridgeC64(_ ICartridgeC64, instance int) string {
 // Emulate initiates the emulation process for the cartridge if required.
 // Detach detaches the cartridge, releasing any associated resources.
 type ICartridgeC64 interface {
-	Setup(board IExpansionC64, loader ICartridgeLoaderC64, cfg *config.Config) error
+	Setup(cc map[string]IComponent, cfg *config.Config) error
+
+	Bind(board IExpansionC64, loader ICartridgeLoaderC64) error
 
 	GetLoaderId() string
 
@@ -153,17 +155,17 @@ type ICartridgeChipHeaderC64 interface {
 
 func ComponentToICartridgeC64(component IComponent) (ICartridgeC64, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component is nil")
+		return nil, fmt.Errorf("component ICartridgeC64 is nil")
 	}
 	v, ok := component.(ICartridgeC64)
 	if !ok {
-		return nil, fmt.Errorf("component is not a %s", IdICartridgeC64(v, 0))
+		return nil, fmt.Errorf("component is not a ICartridgeC64")
 	}
 	return v, nil
 }
 
-func ComponentsToICartridgeC64(cc map[string]IComponent, instance int) (ICartridgeC64, error) {
-	id := IdICartridgeC64(nil, instance)
+func ComponentsToICartridgeC64(cc map[string]IComponent, label string, instance int) (ICartridgeC64, error) {
+	id := IdICartridgeC64(nil, label, instance)
 	c, err := ComponentToICartridgeC64(cc[id])
 	if err != nil {
 		return nil, err

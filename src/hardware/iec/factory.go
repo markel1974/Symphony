@@ -25,8 +25,8 @@ func (t *Factory) Identifier() string {
 }
 
 // Create initializes and returns a new Dispatcher instance while registering it with the specified parent and factory.
-func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label int) references.IComponent {
-	return NewDispatcher(parent, factory, label)
+func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IComponent {
+	return NewDispatcher(parent, factory, label, instance)
 }
 
 func init() {

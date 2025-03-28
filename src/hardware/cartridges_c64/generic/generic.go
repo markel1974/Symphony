@@ -34,7 +34,7 @@ func GetType() int {
 }
 
 // NewCartridgeGeneric creates and returns a new instance of the CartridgeGeneric cartridge implementing the ICartridgeC64 interface.
-func NewCartridgeGeneric(parent references.IComponent, factory references.IComponentFactory, instance int) *CartridgeGeneric {
+func NewCartridgeGeneric(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeGeneric {
 	g := &CartridgeGeneric{
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
@@ -44,17 +44,20 @@ func NewCartridgeGeneric(parent references.IComponent, factory references.ICompo
 		b1Interval:    0,
 		intervals:     0,
 	}
-	g.BaseComponent.Register(factory, parent, Identifier(), g, references.IdICartridgeC64(g, instance))
+	g.BaseComponent.Register(factory, parent, Identifier(), g, references.IdICartridgeC64(g, label, instance))
 	return g
 }
 
 // New creates and returns a new instance of the CartridgeGeneric cartridge implementing the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, instance int) references.ICartridgeC64 {
-	return NewCartridgeGeneric(parent, factory, instance)
+func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.ICartridgeC64 {
+	return NewCartridgeGeneric(parent, factory, label, instance)
 }
 
-// Setup initializes the CartridgeGeneric cartridge by setting the expansion and loading data using the provided CRTLoader.
-func (c *CartridgeGeneric) Setup(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64, _ *config.Config) error {
+func (c *CartridgeGeneric) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+	return nil
+}
+
+func (c *CartridgeGeneric) Bind(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	c.expansion = expansion
 	c.loaderId = ldr.GetId()
 	if loader.Type(ldr.GetType()) == loader.TypeCrt {
