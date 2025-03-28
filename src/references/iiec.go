@@ -27,7 +27,7 @@ type IIecSocket interface {
 type IIec interface {
 	Setup(cc map[string]IComponent, cfg *config.Config) error
 
-	Bind(socket IIecSocket, q IComponent) error
+	Bind(socket IIecSocket) error
 
 	Connect() error
 

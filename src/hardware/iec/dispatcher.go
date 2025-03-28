@@ -33,7 +33,6 @@ const (
 type Dispatcher struct {
 	*component.BaseComponent
 	cfg             *config.Config
-	quartz          references.IComponent
 	atn             bool
 	cpuPort         uint8
 	cpuBus          uint8
@@ -65,8 +64,7 @@ func (c *Dispatcher) Setup(cc map[string]references.IComponent, cfg *config.Conf
 	return nil
 }
 
-func (c *Dispatcher) Bind(_ references.IIecSocket, q references.IComponent) error {
-	c.quartz = q
+func (c *Dispatcher) Bind(_ references.IIecSocket) error {
 	return nil
 }
 

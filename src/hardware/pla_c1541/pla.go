@@ -21,11 +21,10 @@ const c1541RamSize = 0x0800
 // It embeds BaseComponent and provides RAM, ROM, and connections to two VIA components.
 type PLA struct {
 	*component.BaseComponent
-	ram       []uint8
-	rom       []uint8
-	via1      references.IVIA
-	via2      references.IVIA
-	romLoader references.IROMLoaderC1541
+	ram  []uint8
+	rom  []uint8
+	via1 references.IVIA
+	via2 references.IVIA
 }
 
 // NewPLA initializes and returns a new instance of the PLA structure with specified parent, factory, and instance ID.
@@ -46,8 +45,7 @@ func (r *PLA) Setup(_ map[string]references.IComponent, _ *config.Config) error 
 func (r *PLA) Bind(_ references.IPLAc1541Socket, via1 references.IVIA, via2 references.IVIA, romLoader references.IROMLoaderC1541) error {
 	r.via1 = via1
 	r.via2 = via2
-	r.romLoader = romLoader
-	r.rom = r.romLoader.Load()
+	r.rom = romLoader.Load()
 	return nil
 }
 
@@ -72,11 +70,6 @@ func (r *PLA) Emulate() {}
 func (r *PLA) EmulationRequired() bool {
 	return false
 }
-
-//func (r *PLA) AtnWakeUp() {
-//Interrupt by negative edge of ATN on IEC bus
-//	r.ram[0x7c] = 1
-//}
 
 // ReadInterval returns a slice of bytes from the PLA's RAM, starting at the specified address and spanning the given count.
 func (r *PLA) ReadInterval(start uint16, count uint16) []byte {
