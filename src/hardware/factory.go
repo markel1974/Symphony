@@ -37,7 +37,8 @@ type Factory struct {
 	cfg       *config.Config
 	db        references.IDisplayBuffer
 	player    references.IAudioRender
-	container map[string]references.IFactory
+	factories []references.IFactory
+	byId      map[string]references.IFactory
 }
 
 func NewFactory(db references.IDisplayBuffer, player references.IAudioRender, cfg *config.Config) *Factory {
@@ -45,13 +46,17 @@ func NewFactory(db references.IDisplayBuffer, player references.IAudioRender, cf
 		db:        db,
 		player:    player,
 		cfg:       cfg,
-		container: registry.ComponentFactories(),
+		factories: registry.ComponentFactories(),
+		byId:      make(map[string]references.IFactory),
+	}
+	for _, v := range f.factories {
+		f.byId[v.Identifier()] = v
 	}
 	return f
 }
 
 func (f *Factory) Create(parent references.IComponent, label string, id string, instance int) (references.IComponent, error) {
-	val, ok := f.container[id]
+	val, ok := f.byId[id]
 	if !ok {
 		return nil, fmt.Errorf("unknown component %s", id)
 	}
@@ -66,4 +71,7 @@ func (f *Factory) GetIDisplayBuffer() references.IDisplayBuffer {
 
 func (f *Factory) GetIAudioRender() references.IAudioRender {
 	return f.player
+}
+func (f *Factory) GetConfig() *config.Config {
+	return f.cfg
 }

@@ -1,7 +1,6 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -18,6 +17,9 @@ type IVIA1SocketConnections interface {
 // VIA1Socket represents a VIA (Versatile Interface Adapter) socket implementation with specific connection and signaling logic.
 type VIA1Socket struct {
 	references.IVIA
+	label       string
+	parent      references.IComponent
+	component   references.IComponent
 	connections IVIA1SocketConnections
 	iec         references.IIec
 	intrId      uint32
@@ -26,9 +28,11 @@ type VIA1Socket struct {
 }
 
 // NewVIA1Socket initializes and returns a new instance of VIA1Socket with the provided IVIA1SocketConnections implementation.
-func NewVIA1Socket(connections IVIA1SocketConnections, iec references.IIec) *VIA1Socket {
+func NewVIA1Socket(parent references.IComponent, label string, connections IVIA1SocketConnections, iec references.IIec) *VIA1Socket {
 	return &VIA1Socket{
 		IVIA:        nil,
+		parent:      parent,
+		label:       label,
 		iec:         iec,
 		connections: connections,
 		intrId:      intrIrqVIA1Bit,
@@ -37,16 +41,13 @@ func NewVIA1Socket(connections IVIA1SocketConnections, iec references.IIec) *VIA
 }
 
 // Mount initializes the VIA1Socket by setting up dependencies and configurations provided in the input parameters.
-func (v *VIA1Socket) Mount(c map[string]references.IComponent, _ *config.Config, label string) error {
+func (v *VIA1Socket) Mount() error {
 	var err error
-	v.IVIA, err = references.ComponentsToIVIA(c, label, 0)
-	if err != nil {
+	idVIA1 := references.IdIVIA(v.IVIA, v.label, 0)
+	if v.IVIA, err = references.ComponentToIVIA(v.parent.GetChildByHardwareId(idVIA1)); err != nil {
 		return err
 	}
-	//v.iec, err = references.ComponentsToIEC(c, label, 0)
-	//if err != nil {
-	//	return err
-	//}
+
 	v.prbFilter = v.createPRBFilter()
 	v.dipSwitch = v.createDipSwitch(v.connections.GetDeviceNumber())
 	if err = v.IVIA.Bind(v); err != nil {

@@ -86,7 +86,7 @@ type INavigate interface {
 
 	GetNode() INode
 
-	GetChild(id string) IComponent
+	GetChildByHardwareId(id string) IComponent
 
 	GetChildren() []IComponent
 
@@ -125,7 +125,7 @@ type IComponent interface {
 }
 
 type ISocket interface {
-	Mount(c map[string]IComponent, cfg *config.Config, label string) error
+	Mount() error
 }
 
 // IComponentFactory defines methods for creating and managing various types of components in an emulation system.
@@ -135,6 +135,8 @@ type IComponentFactory interface {
 	GetIDisplayBuffer() IDisplayBuffer
 
 	GetIAudioRender() IAudioRender
+
+	GetConfig() *config.Config
 }
 
 func IdInternalComponent(label string, instance int, id string) string {

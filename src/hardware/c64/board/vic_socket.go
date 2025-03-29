@@ -1,7 +1,6 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -25,6 +24,9 @@ type IVICSocketConnection interface {
 // Provides methods and triggers for managing display rendering and interaction with the C64 hardware components.
 type VICSocket struct {
 	references.IVIC
+	label       string
+	parent      references.IComponent
+	component   references.IComponent
 	connections IVICSocketConnection
 	db          references.IDisplayBuffer
 	pic         references.IPIC6510
@@ -34,9 +36,11 @@ type VICSocket struct {
 }
 
 // NewVICSocket creates and initializes a new VICSocket instance, setting up necessary connections for video interface control.
-func NewVICSocket(connections IVICSocketConnection) *VICSocket {
+func NewVICSocket(parent references.IComponent, label string, connections IVICSocketConnection) *VICSocket {
 	return &VICSocket{
 		IVIC:        nil,
+		parent:      parent,
+		label:       label,
 		connections: connections,
 		db:          nil,
 		pic:         nil,
@@ -47,18 +51,22 @@ func NewVICSocket(connections IVICSocketConnection) *VICSocket {
 }
 
 // Mount initializes the VICSocket by resolving its dependencies and calling Setup on the IVIC component.
-func (v *VICSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
+func (v *VICSocket) Mount() error {
 	var err error
-	if v.IVIC, err = references.ComponentsToIVIC(cc, label, 0); err != nil {
+	idIVIC := references.IdIVIC(v.IVIC, v.label, 0)
+	if v.IVIC, err = references.ComponentToIVIC(v.parent.GetChildByHardwareId(idIVIC)); err != nil {
 		return err
 	}
-	if v.pic, err = references.ComponentsToIPIC6510(cc, label, 0); err != nil {
+	idPIC := references.IdIPIC6510(v.pic, v.label, 0)
+	if v.pic, err = references.ComponentToIPIC6510(v.parent.GetChildByHardwareId(idPIC)); err != nil {
 		return err
 	}
-	if v.pla, err = references.ComponentsToIPLAc64(cc, label, 0); err != nil {
+	idPla := references.IdIPlaC64(v.pla, v.label, 0)
+	if v.pla, err = references.ComponentToIPLAc64(v.parent.GetChildByHardwareId(idPla)); err != nil {
 		return err
 	}
-	if v.quartz, err = references.ComponentsToIQuartz(cc, label, 0); err != nil {
+	idQuartz := references.IdIQuartz(v.quartz, v.label, 0)
+	if v.quartz, err = references.ComponentToIQuartz(v.parent.GetChildByHardwareId(idQuartz)); err != nil {
 		return err
 	}
 	if err = v.IVIC.Bind(v); err != nil {

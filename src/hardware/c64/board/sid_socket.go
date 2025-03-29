@@ -1,21 +1,25 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
 // SIDSocket represents a socket connected to a Board for managing or interacting with its state or functionality.
 type SIDSocket struct {
 	references.ISID
-	fragFreq int
-	rasters  int
+	label     string
+	parent    references.IComponent
+	component references.IComponent
+	fragFreq  int
+	rasters   int
 }
 
 // NewSIDSocket creates and returns a new instance of SIDSocket with default initialization.
-func NewSIDSocket(fragFreq int, rasters int) *SIDSocket {
+func NewSIDSocket(parent references.IComponent, label string, fragFreq int, rasters int) *SIDSocket {
 	c := &SIDSocket{
 		ISID:     nil,
+		parent:   parent,
+		label:    label,
 		fragFreq: fragFreq,
 		rasters:  rasters,
 	}
@@ -23,9 +27,10 @@ func NewSIDSocket(fragFreq int, rasters int) *SIDSocket {
 }
 
 // Mount initializes the SIDSocket with the provided Board instance, assigning it to the internal board field.
-func (w *SIDSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
+func (w *SIDSocket) Mount() error {
 	var err error
-	if w.ISID, err = references.ComponentsToISID(cc, label, 0); err != nil {
+	idSID := references.IdISID(w.ISID, w.label, 0)
+	if w.ISID, err = references.ComponentToISID(w.parent.GetChildByHardwareId(idSID)); err != nil {
 		return err
 	}
 	if err = w.ISID.Bind(w, w.fragFreq, w.rasters); err != nil {

@@ -1,28 +1,33 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
 // ThrottleSocket wraps an IThrottle implementation for managing execution rate with a specific frame interval setting.
 type ThrottleSocket struct {
 	references.IThrottle
+	label         string
+	parent        references.IComponent
+	component     references.IComponent
 	frameInterval int64
 }
 
 // NewThrottleSocket initializes and returns a new instance of ThrottleSocket with the specified frame interval.
-func NewThrottleSocket(frameInterval int64) *ThrottleSocket {
+func NewThrottleSocket(parent references.IComponent, label string, frameInterval int64) *ThrottleSocket {
 	return &ThrottleSocket{
 		IThrottle:     nil,
+		parent:        parent,
+		label:         label,
 		frameInterval: frameInterval,
 	}
 }
 
 // Mount initializes the ThrottleSocket by configuring its IThrottle implementation using the given components and configuration.
-func (s *ThrottleSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
+func (s *ThrottleSocket) Mount() error {
 	var err error
-	if s.IThrottle, err = references.ComponentsToIThrottle(cc, label, 0); err != nil {
+	idThrottle := references.IdIThrottle(s.IThrottle, s.label, 0)
+	if s.IThrottle, err = references.ComponentToIThrottle(s.parent.GetChildByHardwareId(idThrottle)); err != nil {
 		return err
 	}
 	if err = s.IThrottle.Bind(s, s.frameInterval); err != nil {

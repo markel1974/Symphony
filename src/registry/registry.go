@@ -2,16 +2,17 @@ package registry
 
 import "github.com/markel1974/c64emu/src/references"
 
-var _componentFactories = make(map[string]references.IFactory)
+var _componentFactories []references.IFactory
 
 func RegisterComponentFactory(factory references.IFactory) {
-	_componentFactories[factory.Identifier()] = factory
+	_componentFactories = append(_componentFactories, factory)
 }
 
-func ComponentFactories() map[string]references.IFactory {
-	container := make(map[string]references.IFactory)
-	for k, v := range _componentFactories {
-		container[k] = v
+func ComponentFactories() []references.IFactory {
+	if len(_componentFactories) == 0 {
+		return nil
 	}
-	return container
+	factories := make([]references.IFactory, len(_componentFactories))
+	copy(factories, _componentFactories)
+	return factories
 }

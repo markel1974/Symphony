@@ -1,7 +1,6 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -12,23 +11,28 @@ type IIECSocketConnection interface {
 
 // IECSocket represents a socket interface for managing communication and connections within an emulated environment.
 type IECSocket struct {
+	label     string
+	parent    references.IComponent
+	component references.IComponent
 	references.IIec
 	connection IIECSocketConnection
 }
 
 // NewIECSocket creates and returns a new IECSocket instance using the provided IIECSocketConnection.
-func NewIECSocket(connection IIECSocketConnection) *IECSocket {
+func NewIECSocket(parent references.IComponent, label string, connection IIECSocketConnection) *IECSocket {
 	return &IECSocket{
 		IIec:       nil,
+		parent:     parent,
+		label:      label,
 		connection: connection,
 	}
 }
 
 // Mount initializes the IECSocket instance, configuring components, quartz, and binding LED signals. Returns an error if any issue occurs.
-func (s *IECSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
+func (s *IECSocket) Mount() error {
 	var err error
-	s.IIec, err = references.ComponentsToIEC(cc, label, 0)
-	if err != nil {
+	idIEC := references.IdIIec(s.IIec, s.label, 0)
+	if s.IIec, err = references.ComponentToIEC(s.parent.GetChildByHardwareId(idIEC)); err != nil {
 		return err
 	}
 	if err = s.IIec.Bind(s); err != nil {

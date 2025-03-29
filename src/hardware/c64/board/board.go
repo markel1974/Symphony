@@ -81,22 +81,22 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		references.IdIQuartz(nil, label, 0),
 	}
 
-	s.keysSocket = NewKeyboardSocket()
-	s.joySocket1 = NewJoystickSocket(0)
-	s.joySocket2 = NewJoystickSocket(1)
-	s.romSocket = NewRomLoaderSocket()
-	s.quartzSocket = NewQuartzSocket()
-	s.iecSocket = NewIECSocket(s)
-	s.expansionSocket = NewExpansionSocket(s)
-	s.cartSocket = NewCartridgeSocket(s.expansionSocket)
-	s.picSocket = NewPICSocket()
-	s.cpuSocket = NewCPUSocket()
-	s.vicSocket = NewVICSocket(s)
-	s.sidSocket = NewSIDSocket(mos6569.ScreenFreq, mos6569.TotalRasters)
-	s.cia1Socket = NewCIA1Socket()
-	s.cia2Socket = NewCIA2Socket()
-	s.plaSocket = NewPLASocket()
-	s.throttleSocket = NewThrottleSocket(mos6569.FrameInterval)
+	s.keysSocket = NewKeyboardSocket(s, s.label)
+	s.joySocket1 = NewJoystickSocket(s, s.label, 0)
+	s.joySocket2 = NewJoystickSocket(s, s.label, 1)
+	s.romSocket = NewRomLoaderSocket(s, s.label)
+	s.quartzSocket = NewQuartzSocket(s, s.label)
+	s.iecSocket = NewIECSocket(s, s.label, s)
+	s.expansionSocket = NewExpansionSocket(s, s.label, s)
+	s.cartSocket = NewCartridgeSocket(s, s.label, s.expansionSocket)
+	s.picSocket = NewPICSocket(s, s.label)
+	s.cpuSocket = NewCPUSocket(s, s.label)
+	s.vicSocket = NewVICSocket(s, s.label, s)
+	s.sidSocket = NewSIDSocket(s, s.label, mos6569.ScreenFreq, mos6569.TotalRasters)
+	s.cia1Socket = NewCIA1Socket(s, s.label)
+	s.cia2Socket = NewCIA2Socket(s, s.label)
+	s.plaSocket = NewPLASocket(s, s.label)
+	s.throttleSocket = NewThrottleSocket(s, s.label, mos6569.FrameInterval)
 
 	s.sockets = append(s.sockets, s.romSocket)
 	s.sockets = append(s.sockets, s.quartzSocket)
@@ -134,7 +134,7 @@ func (s *Board) Setup(components map[string]references.IComponent, cfg *config.C
 
 func (s *Board) Connect() error {
 	for _, c := range s.sockets {
-		if err := c.Mount(s.components, s.cfg, s.label); err != nil {
+		if err := c.Mount(); err != nil {
 			return err
 		}
 	}

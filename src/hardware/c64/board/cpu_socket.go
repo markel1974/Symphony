@@ -1,35 +1,46 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/config"
+	"fmt"
 	"github.com/markel1974/c64emu/src/references"
 )
 
 // CPUSocket represents a connection hub for the 6510 CPU, PIC, and PLA components to integrate and interact cohesively.
 type CPUSocket struct {
 	references.I6510
-	pic   references.IPIC6510
-	banks references.IPlaC64
+	label     string
+	parent    references.IComponent
+	component references.IComponent
+	pic       references.IPIC6510
+	banks     references.IPlaC64
 }
 
 // NewCPUSocket creates and returns a new instance of CPUSocket with its internal references uninitialized.
-func NewCPUSocket() *CPUSocket {
+func NewCPUSocket(parent references.IComponent, label string) *CPUSocket {
 	c := &CPUSocket{
-		I6510: nil,
+		I6510:  nil,
+		parent: parent,
+		label:  label,
 	}
 	return c
 }
 
 // Mount initializes the CPUSocket with the provided CPU, PIC, and PLA, and sets up the CPU for interaction.
-func (w *CPUSocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
+func (w *CPUSocket) Mount() error {
 	var err error
-	if w.I6510, err = references.ComponentsToI6510(cc, label, 0); err != nil {
+	cpuId := references.IdI6510(w.I6510, w.label, 0)
+	if w.component = w.parent.GetChildByHardwareId(cpuId); w.component == nil {
+		return fmt.Errorf("cpu not found")
+	}
+	if w.I6510, err = references.ComponentToI6510(w.component); err != nil {
 		return err
 	}
-	if w.pic, err = references.ComponentsToIPIC6510(cc, label, 0); err != nil {
+	picId := references.IdIPIC6510(w.pic, w.label, 0)
+	if w.pic, err = references.ComponentToIPIC6510(w.parent.GetChildByHardwareId(picId)); err != nil {
 		return err
 	}
-	if w.banks, err = references.ComponentsToIPLAc64(cc, label, 0); err != nil {
+	plaId := references.IdIPlaC64(w.banks, w.label, 0)
+	if w.banks, err = references.ComponentToIPLAc64(w.parent.GetChildByHardwareId(plaId)); err != nil {
 		return err
 	}
 	if err = w.I6510.Bind(w, w.pic, w.banks); err != nil {

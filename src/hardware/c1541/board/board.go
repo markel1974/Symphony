@@ -107,13 +107,13 @@ func (m *Board) Bind(_ references.IIecDeviceSocket, iecC references.IComponent, 
 	m.deviceId = deviceId
 	m.deviceNumber = deviceNumber
 
-	m.romSocket = NewRomLoaderSocket()
-	m.quartzSocket = NewQuartzSocket()
-	m.cpuSocket = NewCPUSocket()
-	m.via1Socket = NewVIA1Socket(m, iec)
-	m.via2Socket = NewVIA2Socket(m, m.mec)
-	m.picSocket = NewPICSocket()
-	m.plaSocket = NewPLASocket()
+	m.romSocket = NewRomLoaderSocket(m, m.label)
+	m.quartzSocket = NewQuartzSocket(m, m.label)
+	m.cpuSocket = NewCPUSocket(m, m.label)
+	m.via1Socket = NewVIA1Socket(m, m.label, m, iec)
+	m.via2Socket = NewVIA2Socket(m, m.label, m, m.mec)
+	m.picSocket = NewPICSocket(m, m.label)
+	m.plaSocket = NewPLASocket(m, m.label)
 
 	m.sockets = append(m.sockets, m.romSocket)
 	m.sockets = append(m.sockets, m.quartzSocket)
@@ -130,13 +130,11 @@ func (m *Board) Bind(_ references.IIecDeviceSocket, iecC references.IComponent, 
 func (m *Board) Connect() error {
 	var err error
 	m.diskId = ""
-	//quartz := quartz.NewQuartz(m, "")
-
 	if err = m.mec.Setup(); err != nil {
 		return err
 	}
 
-	//TODO REMOVE WHEN THREE IS READY...
+	//TODO REMOVE WHEN THREE IS READY... BEGIN
 	components := make(map[string]references.IComponent)
 	var hardware []references.IComponent
 	for _, hw := range _c1541hardware {
@@ -152,11 +150,10 @@ func (m *Board) Connect() error {
 			return err
 		}
 	}
-
-	//components := m.cc
+	//TODO REMOVE WHEN THREE IS READY... END
 
 	for _, c := range m.sockets {
-		if err = c.Mount(components, m.cfg, m.label); err != nil {
+		if err = c.Mount(); err != nil {
 			return err
 		}
 	}

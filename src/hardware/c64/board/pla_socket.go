@@ -1,7 +1,6 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -9,44 +8,56 @@ import (
 // It integrates major C64 subsystems including the VIC, SID, CIAs, cartridge manager, and ROM loader.
 type PLASocket struct {
 	references.IPlaC64
-	vic     references.IVIC
-	sid     references.ISID
-	cia1    references.ICIA
-	cia2    references.ICIA
-	cartMan references.ICartridgeManagerC64
-	roms    references.IROMLoaderC64
+	label     string
+	parent    references.IComponent
+	component references.IComponent
+	vic       references.IVIC
+	sid       references.ISID
+	cia1      references.ICIA
+	cia2      references.ICIA
+	cartMan   references.ICartridgeManagerC64
+	roms      references.IROMLoaderC64
 }
 
 // NewPLASocket initializes and returns a new instance of PLASocket with default nil values for its components.
-func NewPLASocket() *PLASocket {
+func NewPLASocket(parent references.IComponent, label string) *PLASocket {
 	c := &PLASocket{
 		IPlaC64: nil,
+		parent:  parent,
+		label:   label,
 	}
 	return c
 }
 
 // Mount initializes the PLASocket by resolving dependencies and setting up its components. Returns an error if any failure occurs.
-func (w *PLASocket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
+func (w *PLASocket) Mount() error {
 	var err error
-	if w.IPlaC64, err = references.ComponentsToIPLAc64(cc, label, 0); err != nil {
+	idPlaC64 := references.IdIPlaC64(w.IPlaC64, w.label, 0)
+	if w.IPlaC64, err = references.ComponentToIPLAc64(w.parent.GetChildByHardwareId(idPlaC64)); err != nil {
 		return err
 	}
-	if w.vic, err = references.ComponentsToIVIC(cc, label, 0); err != nil {
+	idVIC := references.IdIVIC(w.vic, w.label, 0)
+	if w.vic, err = references.ComponentToIVIC(w.parent.GetChildByHardwareId(idVIC)); err != nil {
 		return err
 	}
-	if w.sid, err = references.ComponentsToISID(cc, label, 0); err != nil {
+	idSID := references.IdISID(w.sid, w.label, 0)
+	if w.sid, err = references.ComponentToISID(w.parent.GetChildByHardwareId(idSID)); err != nil {
 		return err
 	}
-	if w.cia1, err = references.ComponentsToICIA(cc, label, 0); err != nil {
+	idCIA1 := references.IdICIA(w.cia1, w.label, 0)
+	if w.cia1, err = references.ComponentToICIA(w.parent.GetChildByHardwareId(idCIA1)); err != nil {
 		return err
 	}
-	if w.cia2, err = references.ComponentsToICIA(cc, label, 1); err != nil {
+	idCIA2 := references.IdICIA(w.cia2, w.label, 1)
+	if w.cia2, err = references.ComponentToICIA(w.parent.GetChildByHardwareId(idCIA2)); err != nil {
 		return err
 	}
-	if w.cartMan, err = references.ComponentsToICartridgeManagerC64(cc, label, 0); err != nil {
+	idCartridgeManager := references.IdICartridgeManagerC64(w.cartMan, w.label, 0)
+	if w.cartMan, err = references.ComponentToICartridgeManagerC64(w.parent.GetChildByHardwareId(idCartridgeManager)); err != nil {
 		return err
 	}
-	if w.roms, err = references.ComponentsToIROMLoaderC64(cc, label, 0); err != nil {
+	idRomLoader := references.IdIROMLoaderC64(w.roms, w.label, 0)
+	if w.roms, err = references.ComponentToIROMLoaderC64(w.parent.GetChildByHardwareId(idRomLoader)); err != nil {
 		return err
 	}
 	if err = w.IPlaC64.Bind(w, w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.roms); err != nil {

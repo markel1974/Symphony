@@ -43,11 +43,10 @@ func NewBaseComponent() *BaseComponent {
 }
 
 func (bc *BaseComponent) Register(f references.IComponentFactory, parent references.IComponent, name string, component references.IComponent, hardwareId string) {
-	const sep = ":"
 	bc.factory = f
 	bc.name = name
 	bc.hardwareId = hardwareId
-	bc.id = bc.name + sep + bc.hardwareId
+	bc.id = bc.hardwareId
 
 	bc.cmd = cli.NewCommand()
 	bc.cmd.Run = func(cmd *cli.Command, pid int, args []string) {
@@ -101,10 +100,10 @@ func (bc *BaseComponent) GetChildren() []references.IComponent {
 	return children
 }
 
-// GetChild retrieves a child component by its unique identifier. Returns nil if no child with the specified ID exists.
-func (bc *BaseComponent) GetChild(id string) references.IComponent {
+// GetChildByHardwareId retrieves a child component by its unique identifier. Returns nil if no child with the specified ID exists.
+func (bc *BaseComponent) GetChildByHardwareId(id string) references.IComponent {
 	for _, child := range bc.node.GetChildren() {
-		if child.GetComponent().GetId() == id {
+		if child.GetComponent().HardwareId() == id {
 			return child.GetComponent()
 		}
 	}
@@ -434,7 +433,7 @@ func _restore(step int, factory references.IComponentFactory, parentComponent re
 				return nil, fmt.Errorf("error restoring component %s: %s", id, "unknown children node")
 			}
 			fullChild := map[string]interface{}{k: child}
-			c := component.GetChild(k)
+			c := component.GetChildByHardwareId(k)
 			if _, err := _restore(step, factory, component, c, fullChild); err != nil {
 				return nil, err
 			}

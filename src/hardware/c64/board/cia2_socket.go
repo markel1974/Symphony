@@ -1,7 +1,6 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -11,15 +10,20 @@ import (
 // The intrId field defines the unique interrupt identifier for CIA2 within the system.
 type CIA2Socket struct {
 	references.ICIA
-	pic    references.IPIC6510
-	vic    references.IVIC
-	iec    references.IIec
-	intrId uint32
+	label     string
+	parent    references.IComponent
+	component references.IComponent
+	pic       references.IPIC6510
+	vic       references.IVIC
+	iec       references.IIec
+	intrId    uint32
 }
 
 // NewCIA2Socket creates and returns a pointer to a new instance of CIA2Socket with default uninitialized fields.
-func NewCIA2Socket() *CIA2Socket {
+func NewCIA2Socket(parent references.IComponent, label string) *CIA2Socket {
 	c := &CIA2Socket{
+		parent: parent,
+		label:  label,
 		ICIA:   nil,
 		pic:    nil,
 		vic:    nil,
@@ -30,21 +34,24 @@ func NewCIA2Socket() *CIA2Socket {
 }
 
 // Mount initializes the CIA2Socket instance with the provided CIA, connections, and IEC interface, and sets up the CIA.
-func (w *CIA2Socket) Mount(c map[string]references.IComponent, _ *config.Config, label string) error {
+func (w *CIA2Socket) Mount() error {
 	var err error
-	w.ICIA, err = references.ComponentsToICIA(c, label, 1)
-	if err != nil {
+	idCIA2 := references.IdICIA(w.ICIA, w.label, 1)
+	if w.ICIA, err = references.ComponentToICIA(w.parent.GetChildByHardwareId(idCIA2)); err != nil {
 		return err
 	}
-	w.pic, err = references.ComponentsToIPIC6510(c, label, 0)
-	if err != nil {
+	idPIC := references.IdIPIC6510(w.pic, w.label, 0)
+	if w.pic, err = references.ComponentToIPIC6510(w.parent.GetChildByHardwareId(idPIC)); err != nil {
 		return err
 	}
-	w.vic, err = references.ComponentsToIVIC(c, label, 0)
-	if err != nil {
+	idVIC := references.IdIVIC(w.vic, w.label, 0)
+	if w.vic, err = references.ComponentToIVIC(w.parent.GetChildByHardwareId(idVIC)); err != nil {
 		return err
 	}
-	w.iec, err = references.ComponentsToIEC(c, label, 0)
+	idIEC := references.IdIIec(w.iec, w.label, 0)
+	if w.iec, err = references.ComponentToIEC(w.parent.GetChildByHardwareId(idIEC)); err != nil {
+		return err
+	}
 	if err = w.ICIA.Bind(w); err != nil {
 		return err
 	}

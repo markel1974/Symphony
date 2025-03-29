@@ -2,7 +2,6 @@ package board
 
 import (
 	"github.com/markel1974/c64emu/src/common/bits"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -27,6 +26,9 @@ const (
 // joy1State and joy2State track the current states of two connected joysticks.
 type CIA1Socket struct {
 	references.ICIA
+	label       string
+	parent      references.IComponent
+	component   references.IComponent
 	pic         references.IPIC6510
 	vic         references.IVIC
 	keys        references.IKeyboard
@@ -41,8 +43,10 @@ type CIA1Socket struct {
 }
 
 // NewCIA1Socket creates and initializes a new instance of CIA1Socket with default state and properties.
-func NewCIA1Socket() *CIA1Socket {
+func NewCIA1Socket(parent references.IComponent, label string) *CIA1Socket {
 	c := &CIA1Socket{
+		parent:      parent,
+		label:       label,
 		ICIA:        nil,
 		pic:         nil,
 		vic:         nil,
@@ -61,30 +65,30 @@ func NewCIA1Socket() *CIA1Socket {
 
 // Mount initializes the CIA1Socket with the provided CIA instance, connections, keyboard, and joystick references.
 // It sets up the CIA via the Setup method and returns any errors encountered during initialization.
-func (w *CIA1Socket) Mount(c map[string]references.IComponent, _ *config.Config, label string) error {
+func (w *CIA1Socket) Mount() error {
 	var err error
-	w.ICIA, err = references.ComponentsToICIA(c, label, 0)
-	if err != nil {
+	idCIA1 := references.IdICIA(w.ICIA, w.label, 0)
+	if w.ICIA, err = references.ComponentToICIA(w.parent.GetChildByHardwareId(idCIA1)); err != nil {
 		return err
 	}
-	w.pic, err = references.ComponentsToIPIC6510(c, label, 0)
-	if err != nil {
+	idPIC := references.IdIPIC6510(w.pic, w.label, 0)
+	if w.pic, err = references.ComponentToIPIC6510(w.parent.GetChildByHardwareId(idPIC)); err != nil {
 		return err
 	}
-	w.vic, err = references.ComponentsToIVIC(c, label, 0)
-	if err != nil {
+	idVIC := references.IdIVIC(w.vic, w.label, 0)
+	if w.vic, err = references.ComponentToIVIC(w.parent.GetChildByHardwareId(idVIC)); err != nil {
 		return err
 	}
-	w.keys, err = references.ComponentsToIKeyboard(c, label, 0)
-	if err != nil {
+	idKeys := references.IdIKeyboard(w.keys, w.label, 0)
+	if w.keys, err = references.ComponentToIKeyboard(w.parent.GetChildByHardwareId(idKeys)); err != nil {
 		return err
 	}
-	w.joy1, err = references.ComponentsToIJoystick(c, label, 0)
-	if err != nil {
+	idJoy1 := references.IdIJoystick(w.joy1, w.label, 0)
+	if w.joy1, err = references.ComponentToIJoystick(w.parent.GetChildByHardwareId(idJoy1)); err != nil {
 		return err
 	}
-	w.joy2, err = references.ComponentsToIJoystick(c, label, 1)
-	if err != nil {
+	idJoy2 := references.IdIJoystick(w.joy1, w.label, 1)
+	if w.joy2, err = references.ComponentToIJoystick(w.parent.GetChildByHardwareId(idJoy2)); err != nil {
 		return err
 	}
 	if err = w.ICIA.Bind(w); err != nil {

@@ -1,7 +1,6 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -17,6 +16,9 @@ type IExpansionSocketConnections interface {
 // It enables coordinated interaction and communication between connected emulation subsystems.
 type ExpansionSocket struct {
 	connections IExpansionSocketConnections
+	label       string
+	parent      references.IComponent
+	component   references.IComponent
 	pic         references.IPIC6510
 	pla         references.IPlaC64
 	vic         references.IVIC
@@ -24,8 +26,10 @@ type ExpansionSocket struct {
 }
 
 // NewExpansionSocket initializes and returns a pointer to a new ExpansionSocket instance with default nil values.
-func NewExpansionSocket(connections IExpansionSocketConnections) *ExpansionSocket {
+func NewExpansionSocket(parent references.IComponent, label string, connections IExpansionSocketConnections) *ExpansionSocket {
 	e := &ExpansionSocket{
+		parent:      parent,
+		label:       label,
 		connections: connections,
 		pic:         nil,
 		pla:         nil,
@@ -36,22 +40,22 @@ func NewExpansionSocket(connections IExpansionSocketConnections) *ExpansionSocke
 }
 
 // Mount initializes the ExpansionSocket with its dependencies and sets up the required connections.
-func (s *ExpansionSocket) Mount(c map[string]references.IComponent, _ *config.Config, label string) error {
+func (s *ExpansionSocket) Mount() error {
 	var err error
-	s.pic, err = references.ComponentsToIPIC6510(c, label, 0)
-	if err != nil {
+	idIPIC := references.IdIPIC6510(s.pic, s.label, 0)
+	if s.pic, err = references.ComponentToIPIC6510(s.parent.GetChildByHardwareId(idIPIC)); err != nil {
 		return err
 	}
-	s.pla, err = references.ComponentsToIPLAc64(c, label, 0)
-	if err != nil {
+	idIPLA := references.IdIPlaC64(s.pla, s.label, 0)
+	if s.pla, err = references.ComponentToIPLAc64(s.parent.GetChildByHardwareId(idIPLA)); err != nil {
 		return err
 	}
-	s.vic, err = references.ComponentsToIVIC(c, label, 0)
-	if err != nil {
+	idVIC := references.IdIVIC(s.vic, s.label, 0)
+	if s.vic, err = references.ComponentToIVIC(s.parent.GetChildByHardwareId(idVIC)); err != nil {
 		return err
 	}
-	s.quartz, err = references.ComponentsToIQuartz(c, label, 0)
-	if err != nil {
+	idQuartz := references.IdIQuartz(s.quartz, s.label, 0)
+	if s.quartz, err = references.ComponentToIQuartz(s.parent.GetChildByHardwareId(idQuartz)); err != nil {
 		return err
 	}
 	return nil

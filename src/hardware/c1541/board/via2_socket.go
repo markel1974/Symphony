@@ -1,7 +1,6 @@
 package board
 
 import (
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/c1541/mechanic"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -45,6 +44,9 @@ type IVIA2SocketConnections interface {
 // VIA2Socket represents a data and signal interface between a VIA chip and a socket, utilizing a mechanic component for operations.
 type VIA2Socket struct {
 	references.IVIA
+	label       string
+	parent      references.IComponent
+	component   references.IComponent
 	mec         *mechanic.Mechanic
 	connections IVIA2SocketConnections
 	intrId      uint32
@@ -52,9 +54,11 @@ type VIA2Socket struct {
 }
 
 // NewVIA2Socket initializes a new VIA2Socket with the provided connections and mechanic, configuring IRQ and initial state.
-func NewVIA2Socket(connections IVIA2SocketConnections, mec *mechanic.Mechanic) *VIA2Socket {
+func NewVIA2Socket(parent references.IComponent, label string, connections IVIA2SocketConnections, mec *mechanic.Mechanic) *VIA2Socket {
 	return &VIA2Socket{
 		IVIA:        nil,
+		parent:      parent,
+		label:       label,
 		mec:         mec,
 		connections: connections,
 		intrId:      intrIrqVIA2Bit,
@@ -63,9 +67,10 @@ func NewVIA2Socket(connections IVIA2SocketConnections, mec *mechanic.Mechanic) *
 }
 
 // Mount initializes the VIA2Socket by configuring its IVIA component and applying its configuration settings.
-func (v *VIA2Socket) Mount(cc map[string]references.IComponent, _ *config.Config, label string) error {
+func (v *VIA2Socket) Mount() error {
 	var err error
-	if v.IVIA, err = references.ComponentsToIVIA(cc, label, 1); err != nil {
+	idVIA2 := references.IdIVIA(v.IVIA, v.label, 1)
+	if v.IVIA, err = references.ComponentToIVIA(v.parent.GetChildByHardwareId(idVIA2)); err != nil {
 		return err
 	}
 	if err = v.IVIA.Bind(v); err != nil {
