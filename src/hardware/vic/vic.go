@@ -166,8 +166,8 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 	return vic
 }
 
-func (vic *VIC) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
-	vic.cfg = cfg
+func (vic *VIC) Setup() error {
+	vic.cfg = vic.GetFactory().GetConfig()
 	return nil
 }
 

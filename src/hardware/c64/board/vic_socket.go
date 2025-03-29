@@ -33,11 +33,12 @@ type VICSocket struct {
 	pla         references.IPlaC64
 	quartz      references.IQuartz
 	intrId      uint32
+	hwId        string
 }
 
 // NewVICSocket creates and initializes a new VICSocket instance, setting up necessary connections for video interface control.
 func NewVICSocket(parent references.IComponent, label string, connections IVICSocketConnection) *VICSocket {
-	return &VICSocket{
+	v := &VICSocket{
 		IVIC:        nil,
 		parent:      parent,
 		label:       label,
@@ -48,13 +49,19 @@ func NewVICSocket(parent references.IComponent, label string, connections IVICSo
 		quartz:      nil,
 		intrId:      intrIrqVicBit,
 	}
+	v.hwId = references.IdIVIC(v, label, 0)
+	return v
+}
+
+func (v *VICSocket) HardwareId() string {
+	return v.hwId
 }
 
 // Mount initializes the VICSocket by resolving its dependencies and calling Setup on the IVIC component.
 func (v *VICSocket) Mount() error {
 	var err error
-	idIVIC := references.IdIVIC(v.IVIC, v.label, 0)
-	if v.IVIC, err = references.ComponentToIVIC(v.parent.GetChildByHardwareId(idIVIC)); err != nil {
+	v.component = v.parent.GetChildByHardwareId(v.HardwareId())
+	if v.IVIC, err = references.ComponentToIVIC(v.component); err != nil {
 		return err
 	}
 	idPIC := references.IdIPIC6510(v.pic, v.label, 0)

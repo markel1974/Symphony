@@ -2,7 +2,6 @@ package dynamic_throttle
 
 import (
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"time"
 )
@@ -29,7 +28,7 @@ func NewDynamicThrottle(parent references.IComponent, factory references.ICompon
 	return d
 }
 
-func (s *DynamicThrottle) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (s *DynamicThrottle) Setup() error {
 	return nil
 }
 

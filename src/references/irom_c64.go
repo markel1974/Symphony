@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIROMLoaderC64(_ IROMLoaderC64, label string, instance int) string {
@@ -17,7 +16,7 @@ type IROMLoaderSocket interface {
 // LoadBasic loads the Basic ROM bytes and returns the data as a slice of bytes.
 // LoadChar loads the Character ROM bytes and returns the data as a slice of bytes.
 type IROMLoaderC64 interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket IROMLoaderSocket) error
 

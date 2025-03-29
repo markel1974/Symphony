@@ -32,7 +32,6 @@ type Manager struct {
 	registerType        map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
 	registerSize        map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
 	registerSizeDefault func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
-	cc                  map[string]references.IComponent
 	label               string
 }
 
@@ -55,9 +54,8 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 }
 
 // Setup initializes the Manager by setting up the expansion board, configuration preferences, and cartridge hardware mappings.
-func (f *Manager) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
-	f.cfg = cfg
-	f.cc = cc
+func (f *Manager) Setup() error {
+	f.cfg = f.GetFactory().GetConfig()
 
 	f.registerHardware[external_cpu.Id] = external_cpu.New
 	f.registerHardware[reu.Id128K] = reu.New128K
@@ -261,7 +259,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	cart := factory(f, f.GetFactory(), f.label, f.idx)
 	f.idx++
 	f.carts = append(f.carts, cart)
-	if err := cart.Setup(f.cc, f.cfg); err != nil {
+	if err := cart.Setup(); err != nil {
 		return "", err
 	}
 	if err := cart.Bind(f.board, ldr); err != nil {

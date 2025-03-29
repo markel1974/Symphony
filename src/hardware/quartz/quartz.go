@@ -4,7 +4,6 @@ import (
 	"container/list"
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -32,7 +31,7 @@ func NewQuartz(parent references.IComponent, factory references.IComponentFactor
 	return q
 }
 
-func (s *Quartz) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (s *Quartz) Setup() error {
 	return nil
 }
 

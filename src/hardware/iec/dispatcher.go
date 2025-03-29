@@ -40,7 +40,6 @@ type Dispatcher struct {
 	peripheralsData []uint8
 	virtualDrives   []references.IIecDevice
 	emulation       []func()
-	cc              map[string]references.IComponent
 	ledSignal       *signals.SignalUint32 //*signals.Signal2[int, uint8]
 }
 
@@ -58,9 +57,8 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 }
 
 // Setup initializes the Dispatcher component, configures drives based on the provided configuration, and prepares devices.
-func (c *Dispatcher) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
-	c.cc = cc
-	c.cfg = cfg
+func (c *Dispatcher) Setup() error {
+	c.cfg = c.GetFactory().GetConfig()
 	return nil
 }
 
@@ -125,10 +123,10 @@ func (c *Dispatcher) AddPeripheral(kind string, deviceId uint8) error {
 	if !ok {
 		return fmt.Errorf("device %s is not an IEC device", kind)
 	}
-	if err = vd.Setup(c.cc, c.cfg); err != nil {
+	if err = vd.Setup(); err != nil {
 		return err
 	}
-	if err = vd.Bind(c, c, deviceId, deviceNumber); err != nil {
+	if err = vd.Bind(c, deviceId, deviceNumber); err != nil {
 		return err
 	}
 	if err = vd.Connect(); err != nil {

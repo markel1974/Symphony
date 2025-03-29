@@ -10,29 +10,29 @@ type RomLoaderSocket struct {
 	label     string
 	parent    references.IComponent
 	component references.IComponent
+	hwId      string
 }
 
 // NewRomLoaderSocket initializes and returns a new instance of RomLoaderSocket structure.
 func NewRomLoaderSocket(parent references.IComponent, label string) *RomLoaderSocket {
-	return &RomLoaderSocket{
+	s := &RomLoaderSocket{
 		IROMLoaderC64: nil,
 		parent:        parent,
 		label:         label,
 	}
+	s.hwId = references.IdIROMLoaderC64(s.IROMLoaderC64, s.label, 0)
+	return s
 }
 
-func (s *RomLoaderSocket) Bind() error {
-	if err := s.IROMLoaderC64.Bind(s); err != nil {
-		return err
-	}
-	return nil
+func (s *RomLoaderSocket) HardwareId() string {
+	return s.hwId
 }
 
 // Mount initializes the RomLoaderSocket by setting up its IROMLoaderC64 interface and applying the provided configuration.
 func (s *RomLoaderSocket) Mount() error {
 	var err error
-	idROMLoader := references.IdIROMLoaderC64(s.IROMLoaderC64, s.label, 0)
-	if s.IROMLoaderC64, err = references.ComponentToIROMLoaderC64(s.parent.GetChildByHardwareId(idROMLoader)); err != nil {
+	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
+	if s.IROMLoaderC64, err = references.ComponentToIROMLoaderC64(s.component); err != nil {
 		return err
 	}
 	if err = s.IROMLoaderC64.Bind(s); err != nil {

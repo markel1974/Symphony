@@ -17,6 +17,7 @@ type CIA2Socket struct {
 	vic       references.IVIC
 	iec       references.IIec
 	intrId    uint32
+	hwId      string
 }
 
 // NewCIA2Socket creates and returns a pointer to a new instance of CIA2Socket with default uninitialized fields.
@@ -30,14 +31,19 @@ func NewCIA2Socket(parent references.IComponent, label string) *CIA2Socket {
 		iec:    nil,
 		intrId: intrIrqCia2Bit,
 	}
+	c.hwId = references.IdICIA(c.ICIA, c.label, 1)
 	return c
+}
+
+func (w *CIA2Socket) HardwareId() string {
+	return w.hwId
 }
 
 // Mount initializes the CIA2Socket instance with the provided CIA, connections, and IEC interface, and sets up the CIA.
 func (w *CIA2Socket) Mount() error {
 	var err error
-	idCIA2 := references.IdICIA(w.ICIA, w.label, 1)
-	if w.ICIA, err = references.ComponentToICIA(w.parent.GetChildByHardwareId(idCIA2)); err != nil {
+	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
+	if w.ICIA, err = references.ComponentToICIA(w.component); err != nil {
 		return err
 	}
 	idPIC := references.IdIPIC6510(w.pic, w.label, 0)

@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIPlaC64(_ IPlaC64, label string, instance int) string {
@@ -27,7 +26,7 @@ type IPlaC64Socket interface {
 // SetWriteTrigger associates a callback function to trigger on writes at the specified 16-bit address.
 // RemoveRamTrigger removes a write trigger callback associated with a 16-bit address by its identifier.
 type IPlaC64 interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket IPlaC64Socket, vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, roms IROMLoaderC64) error
 

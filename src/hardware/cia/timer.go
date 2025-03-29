@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"log"
 )
@@ -133,7 +132,7 @@ func NewTimer(parent references.IComponent, factory references.IComponentFactory
 	return m
 }
 
-func (m *Timer) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (m *Timer) Setup() error {
 	return nil
 }
 

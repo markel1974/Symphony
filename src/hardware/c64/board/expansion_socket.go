@@ -23,6 +23,7 @@ type ExpansionSocket struct {
 	pla         references.IPlaC64
 	vic         references.IVIC
 	quartz      references.IQuartz
+	hwId        string
 }
 
 // NewExpansionSocket initializes and returns a pointer to a new ExpansionSocket instance with default nil values.
@@ -36,14 +37,19 @@ func NewExpansionSocket(parent references.IComponent, label string, connections 
 		vic:         nil,
 		quartz:      nil,
 	}
+	e.hwId = references.IdIPIC6510(e.pic, e.label, 0)
 	return e
+}
+
+func (s *ExpansionSocket) HardwareId() string {
+	return s.hwId
 }
 
 // Mount initializes the ExpansionSocket with its dependencies and sets up the required connections.
 func (s *ExpansionSocket) Mount() error {
 	var err error
-	idIPIC := references.IdIPIC6510(s.pic, s.label, 0)
-	if s.pic, err = references.ComponentToIPIC6510(s.parent.GetChildByHardwareId(idIPIC)); err != nil {
+	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
+	if s.pic, err = references.ComponentToIPIC6510(s.component); err != nil {
 		return err
 	}
 	idIPLA := references.IdIPlaC64(s.pla, s.label, 0)

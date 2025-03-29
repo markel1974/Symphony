@@ -11,27 +11,34 @@ type PICSocket struct {
 	parent    references.IComponent
 	component references.IComponent
 	quartz    references.IQuartz
+	hwId      string
 }
 
 // NewPICSocket creates and returns a new instance of PICSocket with uninitialized dependencies.
 func NewPICSocket(parent references.IComponent, label string) *PICSocket {
-	return &PICSocket{
+	s := &PICSocket{
 		IPIC6510: nil,
 		parent:   parent,
 		label:    label,
 		quartz:   nil,
 	}
+	s.hwId = references.IdIPIC6510(s.IPIC6510, s.label, 0)
+	return s
+}
+
+func (s *PICSocket) HardwareId() string {
+	return s.hwId
 }
 
 // Mount initializes the PICSocket by configuring its dependencies and setting up the IPIC6510 component with the provided config.
 func (s *PICSocket) Mount() error {
 	var err error
-	idQuartz := references.IdIQuartz(s.quartz, s.label, 0)
-	if s.quartz, err = references.ComponentToIQuartz(s.parent.GetChildByHardwareId(idQuartz)); err != nil {
+	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
+	if s.IPIC6510, err = references.ComponentToIPIC6510(s.component); err != nil {
 		return err
 	}
-	idPIC := references.IdIPIC6510(s.IPIC6510, s.label, 0)
-	if s.IPIC6510, err = references.ComponentToIPIC6510(s.parent.GetChildByHardwareId(idPIC)); err != nil {
+	idQuartz := references.IdIQuartz(s.quartz, s.label, 0)
+	if s.quartz, err = references.ComponentToIQuartz(s.parent.GetChildByHardwareId(idQuartz)); err != nil {
 		return err
 	}
 	if err = s.IPIC6510.Bind(s, s.quartz); err != nil {

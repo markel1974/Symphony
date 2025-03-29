@@ -12,6 +12,7 @@ type SIDSocket struct {
 	component references.IComponent
 	fragFreq  int
 	rasters   int
+	hwId      string
 }
 
 // NewSIDSocket creates and returns a new instance of SIDSocket with default initialization.
@@ -23,14 +24,19 @@ func NewSIDSocket(parent references.IComponent, label string, fragFreq int, rast
 		fragFreq: fragFreq,
 		rasters:  rasters,
 	}
+	c.hwId = references.IdISID(c.ISID, c.label, 0)
 	return c
+}
+
+func (w *SIDSocket) HardwareId() string {
+	return w.hwId
 }
 
 // Mount initializes the SIDSocket with the provided Board instance, assigning it to the internal board field.
 func (w *SIDSocket) Mount() error {
 	var err error
-	idSID := references.IdISID(w.ISID, w.label, 0)
-	if w.ISID, err = references.ComponentToISID(w.parent.GetChildByHardwareId(idSID)); err != nil {
+	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
+	if w.ISID, err = references.ComponentToISID(w.component); err != nil {
 		return err
 	}
 	if err = w.ISID.Bind(w, w.fragFreq, w.rasters); err != nil {

@@ -10,22 +10,29 @@ type QuartzSocket struct {
 	label              string
 	parent             references.IComponent
 	component          references.IComponent
+	hwId               string
 }
 
 // NewQuartzSocket creates and returns a new instance of QuartzSocket with its IQuartz interface initialized as nil.
 func NewQuartzSocket(parent references.IComponent, label string) *QuartzSocket {
-	return &QuartzSocket{
+	s := &QuartzSocket{
 		IQuartz: nil,
 		parent:  parent,
 		label:   label,
 	}
+	s.hwId = references.IdIQuartz(s.IQuartz, s.label, 0)
+	return s
+}
+
+func (s *QuartzSocket) HardwareId() string {
+	return s.hwId
 }
 
 // Mount initializes the QuartzSocket by associating it with IQuartz and applying configuration settings.
 func (s *QuartzSocket) Mount() error {
-	idQuartz := references.IdIQuartz(s.IQuartz, s.label, 0)
 	var err error
-	if s.IQuartz, err = references.ComponentToIQuartz(s.parent.GetChildByHardwareId(idQuartz)); err != nil {
+	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
+	if s.IQuartz, err = references.ComponentToIQuartz(s.component); err != nil {
 		return err
 	}
 	if err = s.IQuartz.Bind(s); err != nil {

@@ -51,11 +51,12 @@ type VIA2Socket struct {
 	connections IVIA2SocketConnections
 	intrId      uint32
 	prbPrev     uint8
+	hwId        string
 }
 
 // NewVIA2Socket initializes a new VIA2Socket with the provided connections and mechanic, configuring IRQ and initial state.
 func NewVIA2Socket(parent references.IComponent, label string, connections IVIA2SocketConnections, mec *mechanic.Mechanic) *VIA2Socket {
-	return &VIA2Socket{
+	v := &VIA2Socket{
 		IVIA:        nil,
 		parent:      parent,
 		label:       label,
@@ -64,13 +65,19 @@ func NewVIA2Socket(parent references.IComponent, label string, connections IVIA2
 		intrId:      intrIrqVIA2Bit,
 		prbPrev:     0,
 	}
+	v.hwId = references.IdIVIA(v.IVIA, v.label, 1)
+	return v
+}
+
+func (v *VIA2Socket) HardwareId() string {
+	return v.hwId
 }
 
 // Mount initializes the VIA2Socket by configuring its IVIA component and applying its configuration settings.
 func (v *VIA2Socket) Mount() error {
 	var err error
-	idVIA2 := references.IdIVIA(v.IVIA, v.label, 1)
-	if v.IVIA, err = references.ComponentToIVIA(v.parent.GetChildByHardwareId(idVIA2)); err != nil {
+	v.component = v.parent.GetChildByHardwareId(v.HardwareId())
+	if v.IVIA, err = references.ComponentToIVIA(v.component); err != nil {
 		return err
 	}
 	if err = v.IVIA.Bind(v); err != nil {

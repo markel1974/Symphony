@@ -23,8 +23,8 @@ func NewRomLoader(parent references.IComponent, factory references.IComponentFac
 	return rl
 }
 
-func (r *RomLoader) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
-	r.cfg = cfg
+func (r *RomLoader) Setup() error {
+	r.cfg = r.GetFactory().GetConfig()
 	return nil
 }
 

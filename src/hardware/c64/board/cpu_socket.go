@@ -1,7 +1,6 @@
 package board
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -13,6 +12,7 @@ type CPUSocket struct {
 	component references.IComponent
 	pic       references.IPIC6510
 	banks     references.IPlaC64
+	hwId      string
 }
 
 // NewCPUSocket creates and returns a new instance of CPUSocket with its internal references uninitialized.
@@ -22,16 +22,18 @@ func NewCPUSocket(parent references.IComponent, label string) *CPUSocket {
 		parent: parent,
 		label:  label,
 	}
+	c.hwId = references.IdI6510(c.I6510, c.label, 0)
 	return c
+}
+
+func (w *CPUSocket) HardwareId() string {
+	return w.hwId
 }
 
 // Mount initializes the CPUSocket with the provided CPU, PIC, and PLA, and sets up the CPU for interaction.
 func (w *CPUSocket) Mount() error {
 	var err error
-	cpuId := references.IdI6510(w.I6510, w.label, 0)
-	if w.component = w.parent.GetChildByHardwareId(cpuId); w.component == nil {
-		return fmt.Errorf("cpu not found")
-	}
+	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
 	if w.I6510, err = references.ComponentToI6510(w.component); err != nil {
 		return err
 	}

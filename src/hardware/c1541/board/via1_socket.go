@@ -25,11 +25,12 @@ type VIA1Socket struct {
 	intrId      uint32
 	dipSwitch   uint8
 	prbFilter   uint8
+	hwId        string
 }
 
 // NewVIA1Socket initializes and returns a new instance of VIA1Socket with the provided IVIA1SocketConnections implementation.
 func NewVIA1Socket(parent references.IComponent, label string, connections IVIA1SocketConnections, iec references.IIec) *VIA1Socket {
-	return &VIA1Socket{
+	v := &VIA1Socket{
 		IVIA:        nil,
 		parent:      parent,
 		label:       label,
@@ -38,13 +39,19 @@ func NewVIA1Socket(parent references.IComponent, label string, connections IVIA1
 		intrId:      intrIrqVIA1Bit,
 		prbFilter:   0,
 	}
+	v.hwId = references.IdIVIA(v.IVIA, v.label, 0)
+	return v
+}
+
+func (v *VIA1Socket) HardwareId() string {
+	return v.hwId
 }
 
 // Mount initializes the VIA1Socket by setting up dependencies and configurations provided in the input parameters.
 func (v *VIA1Socket) Mount() error {
 	var err error
-	idVIA1 := references.IdIVIA(v.IVIA, v.label, 0)
-	if v.IVIA, err = references.ComponentToIVIA(v.parent.GetChildByHardwareId(idVIA1)); err != nil {
+	v.component = v.parent.GetChildByHardwareId(v.HardwareId())
+	if v.IVIA, err = references.ComponentToIVIA(v.component); err != nil {
 		return err
 	}
 

@@ -3,7 +3,6 @@ package references
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIIec(_ IIec, label string, instance int) string {
@@ -25,7 +24,7 @@ type IIecSocket interface {
 // PeripheralWrite writes data from the CPU to a specific peripheral identified by its device number.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIec interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket IIecSocket) error
 
@@ -68,9 +67,9 @@ type IIecDeviceSocket interface {
 // AtnStateChanged handles changes in the Attention (ATN) line state.
 // LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIecDevice interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
-	Bind(socket IIecDeviceSocket, iec IComponent, deviceId uint8, deviceNumber uint8) error
+	Bind(socket IIecDeviceSocket, deviceId uint8, deviceNumber uint8) error
 
 	Connect() error
 

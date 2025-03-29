@@ -2,7 +2,6 @@ package pla_c1541
 
 import (
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -38,7 +37,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	return p
 }
 
-func (r *PLA) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (r *PLA) Setup() error {
 	return nil
 }
 

@@ -38,8 +38,8 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 	return s
 }
 
-func (sid *SID) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
-	sid.cfg = cfg
+func (sid *SID) Setup() error {
+	sid.cfg = sid.GetFactory().GetConfig()
 	sid.cfg.Bind(sid.onConfigChanged)
 	return nil
 }

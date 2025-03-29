@@ -10,6 +10,7 @@ type KeyboardSocket struct {
 	label     string
 	parent    references.IComponent
 	component references.IComponent
+	hwId      string
 }
 
 // NewKeyboardSocket initializes and returns a new instance of KeyboardSocket with IKeyboard set to nil.
@@ -19,14 +20,19 @@ func NewKeyboardSocket(parent references.IComponent, label string) *KeyboardSock
 		parent:    parent,
 		label:     label,
 	}
+	c.hwId = references.IdIKeyboard(c.IKeyboard, c.label, 0)
 	return c
+}
+
+func (w *KeyboardSocket) HardwareId() string {
+	return w.hwId
 }
 
 // Mount initializes the KeyboardSocket by resolving and setting IKeyboard and invoking its Setup method with provided config.
 func (w *KeyboardSocket) Mount() error {
 	var err error
-	idKeys := references.IdIKeyboard(w.IKeyboard, w.label, 0)
-	if w.IKeyboard, err = references.ComponentToIKeyboard(w.parent.GetChildByHardwareId(idKeys)); err != nil {
+	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
+	if w.IKeyboard, err = references.ComponentToIKeyboard(w.component); err != nil {
 		return err
 	}
 	if err = w.IKeyboard.Bind(w); err != nil {

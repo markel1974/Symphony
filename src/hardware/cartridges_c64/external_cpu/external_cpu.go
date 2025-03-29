@@ -47,8 +47,8 @@ func (s *CartridgeExternalCPU) EmulationRequired() bool {
 	return true
 }
 
-func (s *CartridgeExternalCPU) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
-	s.cfg = cfg
+func (s *CartridgeExternalCPU) Setup() error {
+	s.cfg = s.GetFactory().GetConfig()
 	return nil
 }
 
@@ -88,7 +88,7 @@ func (s *CartridgeExternalCPU) Bind(board references.IExpansionC64, ldr referenc
 	cc[q.HardwareId()] = q
 
 	for _, v := range cc {
-		if err = v.Setup(cc, s.cfg); err != nil {
+		if err = v.Setup(); err != nil {
 			return err
 		}
 	}

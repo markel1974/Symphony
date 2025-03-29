@@ -17,6 +17,7 @@ type PLASocket struct {
 	cia2      references.ICIA
 	cartMan   references.ICartridgeManagerC64
 	roms      references.IROMLoaderC64
+	hwId      string
 }
 
 // NewPLASocket initializes and returns a new instance of PLASocket with default nil values for its components.
@@ -26,14 +27,19 @@ func NewPLASocket(parent references.IComponent, label string) *PLASocket {
 		parent:  parent,
 		label:   label,
 	}
+	c.hwId = references.IdIPlaC64(c.IPlaC64, c.label, 0)
 	return c
+}
+
+func (w *PLASocket) HardwareId() string {
+	return w.hwId
 }
 
 // Mount initializes the PLASocket by resolving dependencies and setting up its components. Returns an error if any failure occurs.
 func (w *PLASocket) Mount() error {
 	var err error
-	idPlaC64 := references.IdIPlaC64(w.IPlaC64, w.label, 0)
-	if w.IPlaC64, err = references.ComponentToIPLAc64(w.parent.GetChildByHardwareId(idPlaC64)); err != nil {
+	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
+	if w.IPlaC64, err = references.ComponentToIPLAc64(w.component); err != nil {
 		return err
 	}
 	idVIC := references.IdIVIC(w.vic, w.label, 0)

@@ -2,7 +2,6 @@ package pla_c64
 
 import (
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -52,7 +51,7 @@ func NewPorts(factory references.IComponentFactory, parent references.IComponent
 	return p
 }
 
-func (p *Ports) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (p *Ports) Setup() error {
 	return nil
 }
 

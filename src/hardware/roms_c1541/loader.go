@@ -24,8 +24,8 @@ func NewRomLoader(parent references.IComponent, factory references.IComponentFac
 }
 
 // Setup initializes the RomLoader with the provided configuration and socket reference.
-func (r *RomLoader) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
-	r.cfg = cfg
+func (r *RomLoader) Setup() error {
+	r.cfg = r.GetFactory().GetConfig()
 	return nil
 }
 

@@ -16,6 +16,7 @@ type PLASocket struct {
 	via2      references.IVIA
 	romLoader references.IROMLoaderC1541
 	cfg       *config.Config
+	hwId      string
 }
 
 // NewPLASocket creates and returns a new instance of PLASocket with initial fields set to nil.
@@ -25,12 +26,21 @@ func NewPLASocket(parent references.IComponent, label string) *PLASocket {
 		parent:    parent,
 		label:     label,
 	}
+	c.hwId = references.IdIPLAc1541(c.IPLAc1541, c.label, 0)
 	return c
+}
+
+func (w *PLASocket) HardwareId() string {
+	return w.hwId
 }
 
 // Mount initializes the PLASocket by resolving its components from the given map and applying configuration settings.
 func (w *PLASocket) Mount() error {
 	var err error
+	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
+	if w.IPLAc1541, err = references.ComponentToIPLAc1541(w.component); err != nil {
+		return err
+	}
 	idVIA1 := references.IdIVIA(w.via1, w.label, 0)
 	if w.via1, err = references.ComponentToIVIA(w.parent.GetChildByHardwareId(idVIA1)); err != nil {
 		return err
@@ -43,10 +53,7 @@ func (w *PLASocket) Mount() error {
 	if w.romLoader, err = references.ComponentToIROMLoaderC1541(w.parent.GetChildByHardwareId(idRomLoader)); err != nil {
 		return err
 	}
-	idPLA := references.IdIPLAc1541(w.IPLAc1541, w.label, 0)
-	if w.IPLAc1541, err = references.ComponentToIPLAc1541(w.parent.GetChildByHardwareId(idPLA)); err != nil {
-		return err
-	}
+
 	if err = w.IPLAc1541.Bind(w, w.via1, w.via2, w.romLoader); err != nil {
 		return err
 	}

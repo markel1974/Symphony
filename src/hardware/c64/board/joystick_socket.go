@@ -11,6 +11,7 @@ type JoystickSocket struct {
 	parent    references.IComponent
 	component references.IComponent
 	instance  int
+	hwId      string
 }
 
 // NewJoystickSocket creates and returns a new JoystickSocket instance with a specified joystick reference and instance number.
@@ -21,14 +22,19 @@ func NewJoystickSocket(parent references.IComponent, label string, instance int)
 		label:     label,
 		instance:  instance,
 	}
+	c.hwId = references.IdIJoystick(c.IJoystick, c.label, c.instance)
 	return c
+}
+
+func (w *JoystickSocket) HardwareId() string {
+	return w.hwId
 }
 
 // Mount initializes the JoystickSocket by resolving its IJoystick component and calling its Setup method with configuration.
 func (w *JoystickSocket) Mount() error {
 	var err error
-	idJoy := references.IdIJoystick(w.IJoystick, w.label, w.instance)
-	if w.IJoystick, err = references.ComponentToIJoystick(w.parent.GetChildByHardwareId(idJoy)); err != nil {
+	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
+	if w.IJoystick, err = references.ComponentToIJoystick(w.component); err != nil {
 		return err
 	}
 	if err = w.IJoystick.Bind(w); err != nil {

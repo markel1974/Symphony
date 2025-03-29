@@ -75,8 +75,8 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the PLA instance with the provided socket and configuration and returns an error if any issue occurs.
-func (b *PLA) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
-	b.cfg = cfg
+func (b *PLA) Setup() error {
+	b.cfg = b.GetFactory().GetConfig()
 	b.ports = NewPorts(b.GetFactory(), b, b.label, 0)
 	return nil
 }

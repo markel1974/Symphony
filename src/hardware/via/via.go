@@ -3,7 +3,6 @@ package mos6522
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -47,7 +46,7 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 	return v
 }
 
-func (v *VIA) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (v *VIA) Setup() error {
 	return nil
 }
 

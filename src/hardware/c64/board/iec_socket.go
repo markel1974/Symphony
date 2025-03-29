@@ -16,23 +16,30 @@ type IECSocket struct {
 	component references.IComponent
 	references.IIec
 	connection IIECSocketConnection
+	hwId       string
 }
 
 // NewIECSocket creates and returns a new IECSocket instance using the provided IIECSocketConnection.
 func NewIECSocket(parent references.IComponent, label string, connection IIECSocketConnection) *IECSocket {
-	return &IECSocket{
+	s := &IECSocket{
 		IIec:       nil,
 		parent:     parent,
 		label:      label,
 		connection: connection,
 	}
+	s.hwId = references.IdIIec(s.IIec, s.label, 0)
+	return s
+}
+
+func (s *IECSocket) HardwareId() string {
+	return s.hwId
 }
 
 // Mount initializes the IECSocket instance, configuring components, quartz, and binding LED signals. Returns an error if any issue occurs.
 func (s *IECSocket) Mount() error {
 	var err error
-	idIEC := references.IdIIec(s.IIec, s.label, 0)
-	if s.IIec, err = references.ComponentToIEC(s.parent.GetChildByHardwareId(idIEC)); err != nil {
+	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
+	if s.IIec, err = references.ComponentToIEC(s.component); err != nil {
 		return err
 	}
 	if err = s.IIec.Bind(s); err != nil {

@@ -2,7 +2,6 @@ package mos6526
 
 import (
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -57,7 +56,7 @@ func NewCIA(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the CIA component, creating TOD and Timer instances, binding timer underflow signals, and setting the socket.
-func (m *CIA) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (m *CIA) Setup() error {
 	m.tod = NewTOD(m, m.GetFactory(), m.label, 0)
 	m.timerA = NewTimer(m, m.GetFactory(), m.label, 0)
 	m.timerA.UnderflowSignal().Bind(m.timerAUnderflowSlot)

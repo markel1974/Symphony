@@ -13,6 +13,7 @@ type CPUSocket struct {
 	pic       references.IPIC6510
 	pla       references.IPLAc1541
 	via2      references.IVIA
+	hwId      string
 }
 
 // NewCPUSocket creates and initializes a new CPUSocket instance with default nil values for its fields.
@@ -24,23 +25,28 @@ func NewCPUSocket(parent references.IComponent, label string) *CPUSocket {
 		pic:    nil,
 		pla:    nil,
 	}
+	c.hwId = references.IdI6510(c.I6510, c.label, 0)
 	return c
+}
+
+func (w *CPUSocket) HardwareId() string {
+	return w.hwId
 }
 
 // Mount initializes the CPUSocket by linking required components and configuring dependencies using the provided map and config.
 // Returns an error if any component setup or binding fails.
 func (w *CPUSocket) Mount() error {
 	var err error
+	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
+	if w.I6510, err = references.ComponentToI6510(w.component); err != nil {
+		return err
+	}
 	idPIC := references.IdIPIC6510(w.pic, w.label, 0)
 	if w.pic, err = references.ComponentToIPIC6510(w.parent.GetChildByHardwareId(idPIC)); err != nil {
 		return err
 	}
 	idPLA := references.IdIPLAc1541(w.pla, w.label, 0)
 	if w.pla, err = references.ComponentToIPLAc1541(w.parent.GetChildByHardwareId(idPLA)); err != nil {
-		return err
-	}
-	idI6510 := references.IdI6510(w.I6510, w.label, 0)
-	if w.I6510, err = references.ComponentToI6510(w.parent.GetChildByHardwareId(idI6510)); err != nil {
 		return err
 	}
 	idVIA2 := references.IdIVIA(w.via2, w.label, 1)

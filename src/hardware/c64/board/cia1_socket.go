@@ -40,6 +40,7 @@ type CIA1Socket struct {
 	revMatrix   []uint8 // Reversed keyboard matrix
 	joy1State   uint8   // Joystick 1
 	joy2State   uint8   // Joystick 2
+	hwId        string
 }
 
 // NewCIA1Socket creates and initializes a new instance of CIA1Socket with default state and properties.
@@ -60,15 +61,20 @@ func NewCIA1Socket(parent references.IComponent, label string) *CIA1Socket {
 		joy1State:   defaultJoyState,
 		joy2State:   defaultJoyState,
 	}
+	c.hwId = references.IdICIA(c.ICIA, c.label, 0)
 	return c
+}
+
+func (w *CIA1Socket) HardwareId() string {
+	return w.hwId
 }
 
 // Mount initializes the CIA1Socket with the provided CIA instance, connections, keyboard, and joystick references.
 // It sets up the CIA via the Setup method and returns any errors encountered during initialization.
 func (w *CIA1Socket) Mount() error {
 	var err error
-	idCIA1 := references.IdICIA(w.ICIA, w.label, 0)
-	if w.ICIA, err = references.ComponentToICIA(w.parent.GetChildByHardwareId(idCIA1)); err != nil {
+	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
+	if w.ICIA, err = references.ComponentToICIA(w.component); err != nil {
 		return err
 	}
 	idPIC := references.IdIPIC6510(w.pic, w.label, 0)

@@ -3,7 +3,6 @@ package ocean
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -48,7 +47,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 }
 
 // Setup initializes the cartridge with the specified expansion board and CRT loader, setting up necessary configurations.
-func (c *CartridgeOcean) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (c *CartridgeOcean) Setup() error {
 	return nil
 }
 

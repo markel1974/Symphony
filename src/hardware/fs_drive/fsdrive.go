@@ -51,20 +51,20 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 	return NewBoard(parent, factory, label, instance)
 }
 
-func (v *FSDrive) Setup(cc map[string]references.IComponent, cfg *config.Config) error {
-	v.cfg = cfg
+func (v *FSDrive) Setup() error {
+	v.cfg = v.GetFactory().GetConfig()
 	v.cfg.Bind(v.configChanged)
-	if err := v.protocol.Setup(cc, v.cfg); err != nil {
+	if err := v.protocol.Setup(); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (v *FSDrive) Bind(_ references.IIecDeviceSocket, iec references.IComponent, deviceId uint8, deviceNumber uint8) error {
+func (v *FSDrive) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber uint8) error {
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
 	v.origDirPath = v.path
-	if err := v.protocol.Bind(v, iec, deviceId, deviceNumber); err != nil {
+	if err := v.protocol.Bind(v, deviceId, deviceNumber); err != nil {
 		return err
 	}
 	if d := v.cfg.Drive(v.deviceId); d != nil {

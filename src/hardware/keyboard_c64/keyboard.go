@@ -3,7 +3,6 @@ package keyboard_c64
 import (
 	"github.com/markel1974/c64emu/src/common/fifo"
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -32,7 +31,7 @@ func NewKeyboard(parent references.IComponent, factory references.IComponentFact
 	return k
 }
 
-func (k *Keyboard) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (k *Keyboard) Setup() error {
 	k.Reset()
 	return nil
 }

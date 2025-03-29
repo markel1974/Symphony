@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIVIC(_ IVIC, label string, instance int) string {
@@ -22,7 +21,7 @@ func IdIVIC(_ IVIC, label string, instance int) string {
 // ChangedVA notifies the VIC of a change in the video address.
 // GetLastByte returns the last byte processed by the VIC.
 type IVIC interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket IVICSocket) error
 

@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 // I6510Banks represents an interface for managing and accessing memory banks in a system.
@@ -26,7 +25,7 @@ func IdI6510(_ I6510, label string, instance int) string {
 // SetAECLow sets the AEC line state to low or high.
 // SetOverflowBranch assigns a callback function for signaling overflow during branch instructions.
 type I6510 interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket I6510Socket, pic IPIC6510, banks I6510Banks) error
 

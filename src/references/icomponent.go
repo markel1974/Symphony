@@ -35,7 +35,7 @@ type IHardware interface {
 
 	HardwareId() string
 
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Connect() error
 
@@ -125,6 +125,8 @@ type IComponent interface {
 }
 
 type ISocket interface {
+	HardwareId() string
+
 	Mount() error
 }
 

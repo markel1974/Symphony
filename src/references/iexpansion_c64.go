@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 //OFF
@@ -89,7 +88,7 @@ type ICartridgeManagerC64Socket interface {
 // IORead performs a read operation from an I/O address, returning the value and success state.
 // IOWrite executes a write operation to an I/O address with the specified data, indicating success.
 type ICartridgeManagerC64 interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket ICartridgeManagerC64Socket, expansion IExpansionC64) error //TODO expansion Must be an IComponent
 

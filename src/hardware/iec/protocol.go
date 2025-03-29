@@ -150,15 +150,15 @@ func (v *Protocol) SetDevice(device references.IIecProtocolDevice) {
 	v.device = device
 }
 
-func (v *Protocol) Setup(_ map[string]references.IComponent, cfg *config.Config) error {
-	v.cfg = cfg
+func (v *Protocol) Setup() error {
+	v.cfg = v.GetFactory().GetConfig()
 	return nil
 }
 
-func (v *Protocol) Bind(_ references.IIecDeviceSocket, iec references.IComponent, deviceId uint8, deviceNumber uint8) error {
+func (v *Protocol) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber uint8) error {
 	v.deviceNumber = deviceNumber
 	var err error
-	v.iec, err = references.ComponentToIEC(iec)
+	v.iec, err = references.ComponentToIEC(v.Parent())
 	if err != nil {
 		return err
 	}

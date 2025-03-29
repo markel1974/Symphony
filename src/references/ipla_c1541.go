@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIPLAc1541(_ IPLAc1541, label string, instance int) string {
@@ -17,7 +16,7 @@ type IPLAc1541Socket interface {
 // Read retrieves the value from the specified memory address.
 // Write writes a value to the specified memory address.
 type IPLAc1541 interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket IPLAc1541Socket, via1 IVIA, via2 IVIA, romLoader IROMLoaderC1541) error
 

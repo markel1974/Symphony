@@ -2,7 +2,6 @@ package mos6526
 
 import (
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -33,7 +32,7 @@ func NewTOD(parent references.IComponent, factory references.IComponentFactory, 
 	return t
 }
 
-func (m *TOD) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (m *TOD) Setup() error {
 	return nil
 }
 

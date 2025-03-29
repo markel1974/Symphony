@@ -2,7 +2,6 @@ package reu
 
 import (
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -139,7 +138,7 @@ func (reu *REU) Reset() {
 	}
 }
 
-func (reu *REU) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (reu *REU) Setup() error {
 	return nil
 }
 

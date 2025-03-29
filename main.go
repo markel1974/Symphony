@@ -271,7 +271,7 @@ func main() {
 	//TODO REMOVE WHEN TREE IS READY
 	//BEGIN
 	for _, c := range hw {
-		if err = c.Setup(components, cfg); err != nil {
+		if err = c.Setup(); err != nil {
 			log.Fatal(err)
 		}
 	}

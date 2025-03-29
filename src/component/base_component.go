@@ -23,6 +23,7 @@ type BaseComponent struct {
 	name       string
 	hardwareId string
 	factory    references.IComponentFactory
+	parent     references.IComponent
 	node       references.INode
 	properties *Properties
 	commands   *Commands
@@ -44,6 +45,7 @@ func NewBaseComponent() *BaseComponent {
 
 func (bc *BaseComponent) Register(f references.IComponentFactory, parent references.IComponent, name string, component references.IComponent, hardwareId string) {
 	bc.factory = f
+	bc.parent = parent
 	bc.name = name
 	bc.hardwareId = hardwareId
 	bc.id = bc.hardwareId
@@ -70,6 +72,10 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 // GetId returns the unique identifier of the BaseComponent instance.
 func (bc *BaseComponent) GetId() string {
 	return bc.id
+}
+
+func (bc *BaseComponent) Parent() references.IComponent {
+	return bc.parent
 }
 
 func (bc *BaseComponent) HardwareId() string {

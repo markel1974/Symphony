@@ -4,7 +4,6 @@ import (
 	"github.com/markel1974/c64emu/src/common/bits"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -50,7 +49,7 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 }
 
 // Setup initializes the Pic instance with the provided quartz reference and other dependencies. Returns an error on failure.
-func (i *Pic) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (i *Pic) Setup() error {
 	return nil
 }
 

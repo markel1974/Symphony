@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIThrottle(_ IThrottle, label string, instance int) string {
@@ -16,7 +15,7 @@ type IThrottleSocket interface {
 // Throttle adjusts execution speed to meet a specified rate, ensuring operations run within defined limits.
 // Counter returns the current count of throttled operations executed thus far.
 type IThrottle interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket IThrottleSocket, frameInterval int64) error
 

@@ -2,7 +2,6 @@ package references
 
 import (
 	"github.com/markel1974/c64emu/src/common/signals"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIBoardC64(_ IBoard, label string, instance int) string {
@@ -36,7 +35,7 @@ func IdIBoardVIC20(_ IBoard, label string, instance int) string {
 // Throttle retrieves the throttle interface for managing execution rates.
 // DiskChange triggers an event for changing the current disk in the board's system.
 type IBoard interface {
-	Setup(components map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Start() error
 

@@ -25,33 +25,31 @@ const (
 // Board represents a complex hardware configuration comprising various component sockets and related system functionalities.
 type Board struct {
 	*component.BaseComponent
-	keysSocket       *KeyboardSocket
-	joySocket1       *JoystickSocket
-	joySocket2       *JoystickSocket
-	quartzSocket     *QuartzSocket
-	romSocket        *RomLoaderSocket
-	iecSocket        *IECSocket
-	picSocket        *PICSocket
-	cia1Socket       *CIA1Socket
-	cia2Socket       *CIA2Socket
-	vicSocket        *VICSocket
-	sidSocket        *SIDSocket
-	cpuSocket        *CPUSocket
-	plaSocket        *PLASocket
-	cartSocket       *CartridgeSocket
-	throttleSocket   *ThrottleSocket
-	expansionSocket  *ExpansionSocket
-	cfg              *config.Config
-	prg              *prg.PRG
-	joySwap          bool
-	dmaLow           bool
-	vBlankSignal     *signals.Signal
-	ledSignal        *signals.SignalUint32
-	emulation        []func()
-	sockets          []references.ISocket
-	components       map[string]references.IComponent
-	hardwareSequence []string
-	label            string
+	keysSocket      *KeyboardSocket
+	joySocket1      *JoystickSocket
+	joySocket2      *JoystickSocket
+	quartzSocket    *QuartzSocket
+	romSocket       *RomLoaderSocket
+	iecSocket       *IECSocket
+	picSocket       *PICSocket
+	cia1Socket      *CIA1Socket
+	cia2Socket      *CIA2Socket
+	vicSocket       *VICSocket
+	sidSocket       *SIDSocket
+	cpuSocket       *CPUSocket
+	plaSocket       *PLASocket
+	cartSocket      *CartridgeSocket
+	throttleSocket  *ThrottleSocket
+	expansionSocket *ExpansionSocket
+	cfg             *config.Config
+	prg             *prg.PRG
+	joySwap         bool
+	dmaLow          bool
+	vBlankSignal    *signals.Signal
+	ledSignal       *signals.SignalUint32
+	emulation       []func()
+	sockets         []references.ISocket
+	label           string
 	//expansionIrqTrigger *signals.SignalUint32
 	//expansionIrqClear   *signals.SignalUint32
 }
@@ -70,16 +68,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		label:         label,
 	}
 	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIBoardC64(s, label, instance))
-
-	s.hardwareSequence = []string{
-		references.IdIVIC(nil, label, 0),
-		references.IdICIA(nil, label, 0),
-		references.IdICIA(nil, label, 1),
-		references.IdICartridgeManagerC64(nil, label, 0),
-		references.IdIIec(nil, label, 0),
-		references.IdI6510(nil, label, 0),
-		references.IdIQuartz(nil, label, 0),
-	}
 
 	s.keysSocket = NewKeyboardSocket(s, s.label)
 	s.joySocket1 = NewJoystickSocket(s, s.label, 0)
@@ -126,9 +114,8 @@ func (s *Board) LEDSignal() *signals.SignalUint32 {
 	return s.ledSignal
 }
 
-func (s *Board) Setup(components map[string]references.IComponent, cfg *config.Config) error {
-	s.cfg = cfg
-	s.components = components
+func (s *Board) Setup() error {
+	s.cfg = s.GetFactory().GetConfig()
 	return nil
 }
 
@@ -143,7 +130,7 @@ func (s *Board) Connect() error {
 
 func (s *Board) Start() error {
 	var err error
-	if s.emulation, err = s.rebuildEmulation(s.hardwareSequence, s.components); err != nil {
+	if s.emulation, err = s.rebuildEmulation(); err != nil {
 		return err
 	}
 	if err = s.iecSocket.CreatePeripherals(); err != nil {
@@ -379,16 +366,38 @@ func (s *Board) startPRG(prgPath string) error {
 
 // rebuildEmulation constructs a sequence of emulation functions based on the given components and hardware sequence.
 // Returns the constructed sequence of emulation functions or an error if the sequence is incomplete.
-func (s *Board) rebuildEmulation(seq []string, components map[string]references.IComponent) ([]func(), error) {
+func (s *Board) rebuildEmulation() ([]func(), error) {
+	hardwareSequence := []string{
+		s.vicSocket.HardwareId(),
+		s.cia1Socket.HardwareId(),
+		s.cia2Socket.HardwareId(),
+		s.cartSocket.HardwareId(),
+		s.iecSocket.HardwareId(),
+		s.cpuSocket.HardwareId(),
+		s.quartzSocket.HardwareId(),
+
+		//references.IdIVIC(nil, label, 0),
+		//references.IdICIA(nil, label, 0),
+		//references.IdICIA(nil, label, 1),
+		//references.IdICartridgeManagerC64(nil, label, 0),
+		//references.IdIIec(nil, label, 0),
+		//references.IdI6510(nil, label, 0),
+		//references.IdIQuartz(nil, label, 0),
+	}
+
 	var emulation []func()
-	for _, x := range seq {
+	components := make(map[string]references.IComponent)
+	for _, v := range s.GetChildren() {
+		components[v.HardwareId()] = v
+	}
+	for _, x := range hardwareSequence {
 		if comp, ok := components[x]; ok {
 			if comp.EmulationRequired() {
 				emulation = append(emulation, comp.Emulate)
 			}
 		}
 	}
-	if len(emulation) != len(seq) {
+	if len(emulation) != len(hardwareSequence) {
 		return nil, fmt.Errorf("emulation sequence is not complete")
 	}
 	return emulation, nil

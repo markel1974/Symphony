@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIKeyboard(_ IKeyboard, label string, instance int) string {
@@ -21,7 +20,7 @@ type IKeyboardSocket interface {
 // Poll retrieves the next key from the keyboard storage and indicates if a key is available.
 // SetCommand processes and stores input commands based on their mapped key representations.
 type IKeyboard interface {
-	Setup(cc map[string]IComponent, _ *config.Config) error
+	Setup() error
 
 	Bind(socket IKeyboardSocket) error
 

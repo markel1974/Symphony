@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIJoystick(_ IJoystick, label string, instance int) string {
@@ -20,7 +19,7 @@ type IJoystickSocket interface {
 // SetKey adjusts the joystick state based on key presses or releases with a specific joystick ID.
 // Poll retrieves the next joystick state and its validity, indicating if data is available.
 type IJoystick interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket IJoystickSocket) error
 

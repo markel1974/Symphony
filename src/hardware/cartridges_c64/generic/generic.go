@@ -3,7 +3,6 @@ package generic
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -53,7 +52,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 	return NewCartridgeGeneric(parent, factory, label, instance)
 }
 
-func (c *CartridgeGeneric) Setup(_ map[string]references.IComponent, _ *config.Config) error {
+func (c *CartridgeGeneric) Setup() error {
 	return nil
 }
 

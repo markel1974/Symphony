@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 // opFlagIrqDisabled represents the flag for interrupt requests being disabled.
@@ -29,7 +28,7 @@ type IPIC6510Socket interface {
 type IPIC6510 interface {
 	Reset()
 
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket IPIC6510Socket, quartz IQuartz) error
 

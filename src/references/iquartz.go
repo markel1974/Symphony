@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIQuartz(_ IQuartz, label string, instance int) string {
@@ -19,7 +18,7 @@ type IQuartzSocket interface {
 // ToUSec converts a given clock cycle count to microseconds.
 // NewAlarm creates a new alarm instance with a specified name and callback function.
 type IQuartz interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket IQuartzSocket) error
 

@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdIROMLoaderC1541(_ IROMLoaderC1541, label string, instance int) string {
@@ -16,7 +15,7 @@ type IROMLoaderC1541Socket interface {
 // Setup configures the ROM loader using the provided configuration.
 // Load retrieves the raw byte data of the ROM.
 type IROMLoaderC1541 interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(rom IROMLoaderC1541Socket) error
 

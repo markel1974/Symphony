@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
 )
 
 func IdISID(_ ISID, label string, instance int) string {
@@ -19,7 +18,7 @@ func IdISID(_ ISID, label string, instance int) string {
 // WriteRegister writes data to a specific register address of the SID.
 // ReadRegister retrieves data from a specified register address of the SID.
 type ISID interface {
-	Setup(cc map[string]IComponent, cfg *config.Config) error
+	Setup() error
 
 	Bind(socket ISIDSocket, fragFreq int, rasters int) error
 
