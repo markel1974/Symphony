@@ -1,7 +1,6 @@
 package iec
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
@@ -209,9 +208,9 @@ func (v *Protocol) GetDeviceNumber() uint8 {
 // AtnStateChanged toggles the ATN (Attention) state and prints the current state as "ON" or "OFF".
 func (v *Protocol) AtnStateChanged(atn bool) {
 	if !atn {
-		fmt.Println("ATN STATE CHANGED", "ON")
+		log.Println("ATN STATE CHANGED", "ON")
 	} else {
-		fmt.Println("ATN STATE CHANGED", "OFF")
+		log.Println("ATN STATE CHANGED", "OFF")
 	}
 }
 
@@ -681,15 +680,15 @@ func (v *Protocol) getState(idx uint8) uint8 {
 	return v.state[x]
 }
 
-func (v *Protocol) peripheralWrite(clkDataBits uint8, atn bool) {
+func (v *Protocol) peripheralWrite(data uint8, busReadAtn bool) {
 	sidecarData := references.IECSidecarEnabled | references.IECSidecarAtnAEnabled
-	if atn {
+	if busReadAtn {
 		sidecarData |= uint16(references.IECAtnABit) << 8
 	}
-	data := sidecarData | uint16(clkDataBits&defaultDDRBMask)
-	v.iec.PeripheralWrite(v.deviceNumber, data)
+	out := sidecarData | uint16(data&defaultDDRBMask)
+	v.iec.PeripheralWrite(v.deviceNumber, out)
 }
 
 func (v *Protocol) print(id string, bus uint8) {
-	fmt.Printf("%s -> bus: %d, stateMachine: %d, flags: %d, primary: %d, secondary: %d, secondaryPrev: %d\n", id, bus, v.stateMachine, v.flags, v.primary, v.secondary, v.secondaryPrev)
+	log.Printf("%s -> bus: %d, stateMachine: %d, flags: %d, primary: %d, secondary: %d, secondaryPrev: %d\n", id, bus, v.stateMachine, v.flags, v.primary, v.secondary, v.secondaryPrev)
 }

@@ -1,12 +1,12 @@
 package fs_drive
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/common/fifo"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/references"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -118,7 +118,7 @@ func (v *FSDrive) GetPath() string {
 }
 
 func (v *FSDrive) Listen(sec uint8) {
-	fmt.Println("LISTEN", sec)
+	log.Println("FSDrive LISTEN", sec)
 }
 
 func (v *FSDrive) Unlisten(sec uint8) {
@@ -127,15 +127,15 @@ func (v *FSDrive) Unlisten(sec uint8) {
 	for _, k := range data {
 		v.test.Set(int(k))
 	}
-	fmt.Println("UNLISTEN", sec)
+	log.Println("FSDrive UNLISTEN", sec)
 }
 
 func (v *FSDrive) Talk(sec uint8) {
-	fmt.Println("TALK", sec)
+	log.Println("FSDrive TALK", sec)
 }
 
 func (v *FSDrive) Untalk(sec uint8) {
-	fmt.Println("UNTALK", sec)
+	log.Println("FSDrive UNTALK", sec)
 }
 
 func (v *FSDrive) Open(channel uint8) uint8 {
@@ -200,7 +200,7 @@ func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
 	if !ok {
 		return 0, StReadTimeout
 	}
-	fmt.Println("Read:", string(byte(d)))
+	log.Printf("FSDrive Read: %d (%s)", d, string(byte(d)))
 	if v.test.Len() == 0 {
 		v.commands.SetError(ERR_OK)
 		return uint8(d), StEof
@@ -259,7 +259,7 @@ func (v *FSDrive) Write(channel uint8, data uint8) uint8 {
 		//TODO EOI, eoi bool
 		eoi := false
 
-		fmt.Printf("fsdrive_received: %s\n", string(data))
+		log.Printf("FSDrive received: %s\n", string(data))
 
 		return StOk
 
