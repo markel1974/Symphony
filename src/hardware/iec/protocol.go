@@ -147,6 +147,7 @@ func NewProtocol(factory references.IComponentFactory, parent references.ICompon
 	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, label, instance))
 
 	p.quartz = quartz.NewQuartz(p, factory, label, 0)
+
 	return p
 }
 
@@ -246,14 +247,14 @@ func (v *Protocol) Emulate() {
 			if (v.getSecondary() & 0xf0) == 0x60 {
 				switch v.getPrimary() & 0xf0 {
 				case 0x20:
-					v.device.Listen(v.getSecondary())
+					v.device.Listen(v.getSecondary() & 0xf)
 					v.print("after device.Listen", bus)
 				case 0x40:
-					v.device.Talk(v.getSecondary())
+					v.device.Talk(v.getSecondary() & 0xf)
 				}
 			} else if (v.getSecondary() & 0xf0) == 0xe0 {
 				v.gs.SetState(0)
-				state := v.device.Close(v.getSecondary())
+				state := v.device.Close(v.getSecondary() & 0xf)
 				v.setState(v.getSecondary(), state)
 				//device.setState(device.getSecondary(), v.gs.getState())
 			} else if (v.getSecondary() & 0xf0) == 0xf0 {
@@ -262,7 +263,7 @@ func (v *Protocol) Emulate() {
 				//write() before the next call to device.unlisten() will be interpreted as the filename.
 				//The file will actually be opened during the next call to device.unlisten()
 				v.gs.SetState(0)
-				state := v.device.Open(v.getSecondary())
+				state := v.device.Open(v.getSecondary() & 0xf)
 				v.print("after device.Open", bus)
 				v.setState(v.getSecondary(), state)
 				//device.setState(device.getSecondary(), v.gs.getState())
@@ -297,11 +298,11 @@ func (v *Protocol) Emulate() {
 			//was received in between the OPEN and now.
 			//If the file cannot be opened, it will set st != 0.
 			v.gs.SetState(v.getState(v.getSecondaryPrev()))
-			v.device.Unlisten(v.getSecondaryPrev())
+			v.device.Unlisten(v.getSecondaryPrev() & 0xf)
 			v.setState(v.getSecondaryPrev(), v.gs.GetState())
 		} else if (v.getPrimary() == 0x5f) && v.flagGet(P_TALKING) {
 			//All devices were told to stop talking
-			v.device.Untalk(v.getSecondaryPrev())
+			v.device.Untalk(v.getSecondaryPrev() & 0xf)
 			v.flagsRemove(P_TALKING)
 			log.Printf("device %d stop talking", v.deviceNumber)
 		}
@@ -414,7 +415,7 @@ func (v *Protocol) doListen(busReadAtn bool, busReadClk bool, busReadData bool) 
 				//We are currently listening for data pass received byte on to the upper level
 				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.dataGetByte(), v.dataGetByte(), v.getSecondary())
 				v.gs.SetState(v.getState(v.getSecondary()))
-				state := v.device.Write(v.getSecondary(), v.dataGetByte())
+				state := v.device.Write(v.getSecondary()&0xf, v.dataGetByte())
 				v.setState(v.getSecondary(), state)
 				//device.setState(device.getSecondary(), v.gs.getState())
 
@@ -459,7 +460,7 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 		if busReadData {
 			//Receiver signaled "ready-for-data" (DATA=1)
 			v.gs.SetState(v.getState(v.getSecondary()))
-			b, state := v.device.Read(v.getSecondary())
+			b, state := v.device.Read(v.getSecondary() & 0xf)
 			v.dataSetByte(b)
 			v.setState(v.getSecondary(), state)
 			//device.gs.setState(device.getSecondary(), v.gs.getState())

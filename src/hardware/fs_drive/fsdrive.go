@@ -2,6 +2,7 @@ package fs_drive
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/common/fifo"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/references"
@@ -27,6 +28,8 @@ type FSDrive struct {
 	readChar     [16]uint8    // Buffers for one-byte read-ahead
 	ready        bool
 	cfg          *config.Config
+	buffer       [0xf][]byte
+	test         *fifo.StaticFifo
 }
 
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *FSDrive {
@@ -41,6 +44,8 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		commands:      NewCommands(),
 		origDirPath:   "",
 		cfg:           nil,
+		buffer:        [0xf][]byte{},
+		test:          fifo.NewStaticFifo(32),
 	}
 	fs.protocol.SetDevice(fs)
 	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, label, 0))
@@ -113,54 +118,71 @@ func (v *FSDrive) GetPath() string {
 }
 
 func (v *FSDrive) Listen(sec uint8) {
+	fmt.Println("LISTEN", sec)
 }
 
 func (v *FSDrive) Unlisten(sec uint8) {
+	data := v.openDirectory(sec, "", "PROVA")
+	v.test = fifo.NewStaticFifo(uint(len(data)))
+	for _, k := range data {
+		v.test.Set(int(k))
+	}
+	fmt.Println("UNLISTEN", sec)
 }
 
 func (v *FSDrive) Talk(sec uint8) {
+	fmt.Println("TALK", sec)
 }
 
 func (v *FSDrive) Untalk(sec uint8) {
+	fmt.Println("UNTALK", sec)
 }
 
 func (v *FSDrive) Open(channel uint8) uint8 {
-	//TEST TODO
-	channel &= 0xf
-	//TODO DATA
-	var data []uint8
-	v.LedTurnOn()
-	// Channel 15: Execute file name as command
-	if channel == 15 {
-		action, ok := v.commands.CommandExec(data)
-		if ok {
-			if action == 1 {
-				v.Reset()
+	//TODO initialize channel
+
+	//for _, c := range "PROVA" {
+	//	v.test.Set(int(c))
+	//}
+
+	v.buffer[channel] = []byte{}
+	return StOk
+	/*
+		//TODO DATA
+		var data []uint8
+		v.LedTurnOn()
+		// Channel 15: Execute file name as command
+		if channel == 15 {
+			action, ok := v.commands.CommandExec(data)
+			if ok {
+				if action == 1 {
+					v.Reset()
+				}
 			}
+			return StOk
 		}
-		return StOk
-	}
-	// Close previous file if still open
-	if v.file[channel] != nil {
-		v.file[channel].Close()
-		v.file[channel] = nil
-	}
-	if len(data) == 0 {
-		v.commands.SetError(ERR_NOCHANNEL)
-		return StOk
-	}
-	if data[0] == '#' {
-		v.commands.SetError(ERR_NOCHANNEL)
-		return StOk
-	}
-	if data[0] == '$' {
-		return v.openDirectory(channel, string(data))
-	}
-	return v.openFile(channel, string(data))
+		// Close previous file if still open
+		if v.file[channel] != nil {
+			v.file[channel].Close()
+			v.file[channel] = nil
+		}
+		if len(data) == 0 {
+			v.commands.SetError(ERR_NOCHANNEL)
+			return StOk
+		}
+		if data[0] == '#' {
+			v.commands.SetError(ERR_NOCHANNEL)
+			return StOk
+		}
+		if data[0] == '$' {
+			return v.openDirectory(channel, string(data))
+		}
+		return v.openFile(channel, string(data))
+
+	*/
 }
 
 func (v *FSDrive) Close(channel uint8) uint8 {
-	channel &= 0xf
 	v.LedTurnOff()
 	if channel == 15 {
 		v.closeAllChannels()
@@ -174,7 +196,16 @@ func (v *FSDrive) Close(channel uint8) uint8 {
 }
 
 func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
-	channel &= 0xf
+	d, ok := v.test.Next()
+	if !ok {
+		return 0, StReadTimeout
+	}
+	fmt.Println("Read:", string(byte(d)))
+	if v.test.Len() == 0 {
+		v.commands.SetError(ERR_OK)
+		return uint8(d), StEof
+	}
+	return uint8(d), StOk
 
 	return 0, StReadTimeout
 	// Channel 15: Error channel
@@ -204,18 +235,11 @@ func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
 }
 
 func (v *FSDrive) Write(channel uint8, data uint8) uint8 {
-	channel &= 0xf
 	//TODO EOI, eoi bool
 	eoi := false
 
-	fmt.Printf("fsdrive_received: %s\n", string(data))
-
-	return StOk
-
-	// Channel 15: Collect chars and execute command on EOI
 	if channel == 15 {
 		if !v.commands.CommandSet(data) {
-
 			return StTimeout
 		}
 		if eoi {
@@ -223,15 +247,44 @@ func (v *FSDrive) Write(channel uint8, data uint8) uint8 {
 		}
 		return StOk
 	}
-	if v.file[channel] == nil {
-		v.commands.SetError(ERR_FILENOTOPEN)
-		return StTimeout
-	}
-	if _, err := v.file[channel].Write([]byte{data}); err == io.EOF {
-		v.commands.SetError(ERR_WRITE25)
-		return StTimeout
-	}
+	//if v.buffer[channel] == nil {
+	//	v.commands.SetError(ERR_FILENOTOPEN)
+	//	return StTimeout
+	//}
+
+	v.buffer[channel] = append(v.buffer[channel], data)
 	return StOk
+
+	/*
+		//TODO EOI, eoi bool
+		eoi := false
+
+		fmt.Printf("fsdrive_received: %s\n", string(data))
+
+		return StOk
+
+		// Channel 15: Collect chars and execute command on EOI
+		if channel == 15 {
+			if !v.commands.CommandSet(data) {
+
+				return StTimeout
+			}
+			if eoi {
+				v.commands.CommandExecBuf()
+			}
+			return StOk
+		}
+		if v.file[channel] == nil {
+			v.commands.SetError(ERR_FILENOTOPEN)
+			return StTimeout
+		}
+		if _, err := v.file[channel].Write([]byte{data}); err == io.EOF {
+			v.commands.SetError(ERR_WRITE25)
+			return StTimeout
+		}
+		return StOk
+
+	*/
 }
 
 func (v *FSDrive) initializeCmd() {
@@ -328,51 +381,124 @@ func (v *FSDrive) openFile(channel uint8, name string) uint8 {
 	return StOk
 }
 
-func (v *FSDrive) openDirectory(channel uint8, name string) uint8 {
-	return StOk
+func (v *FSDrive) openDirectory(channel uint8, pattern string, dirName string) []byte {
+	// Special treatment for "$0"
+	if len(pattern) > 0 {
+		if pattern[0] == '0' && len(pattern) == 1 {
+			pattern = ""
+		}
+	}
+
+	if p := strings.Index(pattern, ":"); p >= 0 {
+		p++
+		if len(pattern) < p {
+			pattern = pattern[p:]
+		}
+	}
+
+	const titleStart = "\001\004\001\001\000\000\022\042"
+	const titleEnd = "\042 00 2A"
+	const blocksFreeStart = "\001\001\000\000"
+	const blockFreeEnd = "\000\000"
+
+	title := make([]byte, 16)
+	for idx := range title {
+		title[idx] = ' '
+		if idx < len(dirName) {
+			title[idx] = dirName[idx]
+		}
+	}
+
+	var buf []byte
+
+	buf = append(buf, titleStart...)
+	buf = append(buf, title...)
+	buf = append(buf, titleEnd...)
+
+	/*
+
+	   // Create and write one line for every directory entry
+	   std::vector<C64DirEntry>::const_iterator i, end = _file_info.end();
+	   for (i = _file_info.begin(); i != end; i++) {
+	           // Include only files matching the pattern
+	           if (pattern_len == 0 || match(pattern, pattern_len, (uint8*)i->name)) {
+	                   // Clear line with spaces and terminate with null byte
+	                   memset(buf, ' ', 31);
+	                   buf[31] = 0;
+
+	                   uint8* p = (uint8*)buf;
+	                   *p++ = 0x01;    // Dummy line link
+	                   *p++ = 0x01;
+
+	                   // Calculate size in blocks (254 bytes each)
+	                   int n = (i->size + 254) / 254;
+	                   *p++ = n & 0xff;
+	                   *p++ = (n >> 8) & 0xff;
+
+	                   p++;
+	                   if (n < 10) p++;        // Less than 10: add one space
+	                   if (n < 100) p++;       // Less than 100: add another space
+
+	                   // Convert and insert file name
+	                   *p++ = '\"';
+	                   uint8* q = p;
+	                   for (int j = 0; j < 16 && i->name[j]; j++) {
+	                           *q++ = i->name[j];
+	                   }
+	                   *q++ = '\"';
+	                   p += 18;
+
+	                   // File type
+	                   switch (i->type) {
+	                           case FTYPE_DEL:
+	                           *p++ = 'D';
+	                           *p++ = 'E';
+	                           *p++ = 'L';
+	                           break;
+	                           case FTYPE_SEQ:
+	                           *p++ = 'S';
+	                           *p++ = 'E';
+	                           *p++ = 'Q';
+	                           break;
+	                           case FTYPE_PRG:
+	                           *p++ = 'P';
+	                           *p++ = 'R';
+	                           *p++ = 'G';
+	                           break;
+	                           case FTYPE_USR:
+	                           *p++ = 'U';
+	                           *p++ = 'S';
+	                           *p++ = 'R';
+	                           break;
+	                           case FTYPE_REL:
+	                           *p++ = 'R';
+	                           *p++ = 'E';
+	                           *p++ = 'L';
+	                           break;
+	                           default:
+	                           *p++ = '?';
+	                           *p++ = '?';
+	                           *p++ = '?';
+	                           break;
+	                   }
+
+	                   // Write line
+	                   fwrite(buf, 1, 32, _fileChannel[channel]);
+	           }
+	   }
+
+	*/
+
+	buf = append(buf, blocksFreeStart...)
+	buf = append(buf, "BLOCKS FREE.             "...)
+	buf = append(buf, blockFreeEnd...)
+
+	// Rewind file for reading and read first byte
+	//rewind(_fileChannel[channel]);
+	//_read_char[channel] = (uint8)getc(_fileChannel[channel]);
+
+	return buf
 }
 
 func (v *FSDrive) configChanged() {
 }
-
-/*
-
-const (
-	ATN_IN  = 0x80
-	CLK_IN  = 0x04
-	DATA_IN = 0x01
-
-	DATA_OUT = 0x02
-	CLK_OUT  = 0x08
-	ATN_A    = 0x10
-)
-
-func data2string(data uint8) string {
-	var message []string
-	if data&ATN_IN != 0 {
-		message = append(message, "[ATN_IN]")
-	}
-	if data&0x40 != 0 {
-		message = append(message, "[UNKNOWN BIT 7]")
-	}
-	if data&0x20 != 0 {
-		message = append(message, "[UNKNOWN BIT 6]")
-	}
-	if data&ATN_A != 0 {
-		message = append(message, "[ATN_A]")
-	}
-	if data&CLK_OUT != 0 {
-		message = append(message, "[CLK_OUT]")
-	}
-	if data&CLK_IN != 0 {
-		message = append(message, "[CLK_IN]")
-	}
-	if data&DATA_OUT != 0 {
-		message = append(message, "[DATA_OUT]")
-	}
-	if data&DATA_IN != 0 {
-		message = append(message, "[DATA_IN]")
-	}
-	return strings.Join(message, " ")
-}
-*/
