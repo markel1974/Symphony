@@ -188,7 +188,7 @@ func (v *Protocol) Reset() {
 	for i := 0; i < len(v.state); i++ {
 		v.state[i] = 0
 	}
-	v.peripheralWrite(DeviceWriteClk|DeviceWriteData, false)
+	v.peripheralWrite(false, DeviceWriteClk|DeviceWriteData)
 }
 
 // Ready checks if the protocol is ready for operation and returns a boolean value indicating readiness.
@@ -237,7 +237,7 @@ func (v *Protocol) Emulate() {
 		v.setSecondary(0)
 		v.setTimeout(100)
 		//Set DATA=0("I am here").If nobody on the bus does this within 1 ms, bus-master will assume that "DeviceAdapter not present"
-		v.peripheralWrite(DeviceWriteClk, busReadAtn)
+		v.peripheralWrite(busReadAtn, DeviceWriteClk)
 	} else if v.flagGet(P_ATN) && busReadAtn {
 		//Rising flank on ATN (bus master finished addressing all devices)
 		v.flagsRemove(P_ATN)
@@ -279,7 +279,7 @@ func (v *Protocol) Emulate() {
 					log.Printf("device %d start listening", v.deviceNumber)
 				}
 				//set DATA=0 ("I am here")
-				v.peripheralWrite(DeviceWriteClk, busReadAtn)
+				v.peripheralWrite(busReadAtn, DeviceWriteClk)
 			} else if v.getPrimary() == (v.deviceNumber + 0x40) {
 				//We were told to talk
 				v.flagsRemove(P_LISTENING)
@@ -308,7 +308,7 @@ func (v *Protocol) Emulate() {
 
 		if !v.flagGet(P_LISTENING | P_TALKING) {
 			//We're neither listening nor talking => make sure we're not holding DATA  or CLOCK line to 0 )
-			v.peripheralWrite(DeviceWriteClk|DeviceWriteData, busReadAtn)
+			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 		}
 	}
 
@@ -345,7 +345,7 @@ func (v *Protocol) doListen(busReadAtn bool, busReadClk bool, busReadData bool) 
 		// wait for rising flank on CLK ("ready-to-send")
 		if busReadClk {
 			//React by setting DATA=1 ("ready-for-data")
-			v.peripheralWrite(DeviceWriteClk|DeviceWriteData, busReadAtn)
+			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			v.setTimeout(200)
 			v.setStateMachine(P_READY)
 		}
@@ -357,14 +357,14 @@ func (v *Protocol) doListen(busReadAtn bool, busReadClk bool, busReadData bool) 
 			//Sender did not set CLK=0 within 200 us after we set DATA=1 => it is signaling EOI
 			//(not so if we are under ATN) acknowledge we received it by setting DATA=0 for 60us
 			log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.getSecondary()&0x0f)
-			v.peripheralWrite(DeviceWriteClk, busReadAtn)
+			v.peripheralWrite(busReadAtn, DeviceWriteClk)
 			v.setStateMachine(P_EOI)
 			v.setTimeout(60)
 		}
 	case P_EOI:
 		if v.timeoutExpired() {
 			//Set DATA back to 1 and wait for sender to set CLK=0
-			v.peripheralWrite(DeviceWriteClk|DeviceWriteData, busReadAtn)
+			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			v.setStateMachine(P_EOIw)
 		}
 	case P_EOIw:
@@ -406,7 +406,7 @@ func (v *Protocol) doListen(busReadAtn bool, busReadClk bool, busReadData bool) 
 					v.setStateMachine(P_DONE0)
 				} else {
 					//Acknowledge frame by setting DATA=0
-					v.peripheralWrite(DeviceWriteClk, busReadAtn)
+					v.peripheralWrite(busReadAtn, DeviceWriteClk)
 					//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
 					v.setStateMachine(P_PRE2)
 				}
@@ -423,7 +423,7 @@ func (v *Protocol) doListen(busReadAtn bool, busReadClk bool, busReadData bool) 
 					v.setStateMachine(P_DONE0)
 				} else {
 					//Acknowledge frame by setting DATA=0
-					v.peripheralWrite(DeviceWriteClk, busReadAtn)
+					v.peripheralWrite(busReadAtn, DeviceWriteClk)
 					//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
 					v.setStateMachine(P_PRE2)
 				}
@@ -445,14 +445,14 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 		if busReadClk {
 			//Bus-master set CLK=1 (and before that should have set DATA=0)
 			//we are getting ready for role reversal.Set CLK=0,DATA=1
-			v.peripheralWrite(DeviceWriteData, busReadAtn)
+			v.peripheralWrite(busReadAtn, DeviceWriteData)
 			v.setStateMachine(P_PRE1)
 			v.setTimeout(80)
 		}
 	case P_PRE1:
 		if v.timeoutExpired() {
 			//Signal "ready-to-send" (CLK=1)
-			v.peripheralWrite(DeviceWriteClk|DeviceWriteData, busReadAtn)
+			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			v.setStateMachine(P_READY)
 		}
 	case P_READY:
@@ -497,9 +497,9 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 			bit := _pBits[v.getStateMachine()]
 			//bit := uint8(1 << ((int(v.getStateMachine()) - P_BIT0) / 2))
 			if v.dataHasBit(bit) {
-				v.peripheralWrite(DeviceWriteData, busReadAtn)
+				v.peripheralWrite(busReadAtn, DeviceWriteData)
 			} else {
-				v.peripheralWrite(0, busReadAtn)
+				v.peripheralWrite(busReadAtn, 0)
 			}
 			//Go to associated P_BIT(n)w state
 			v.setTimeout(60)
@@ -510,9 +510,9 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 			//60 us have passed since we pulled CLK=0 and put the current bit on DATA.
 			//set CLK=1, keeping data as it is (this signals "data valid" to the receiver)
 			if busReadData {
-				v.peripheralWrite(DeviceWriteClk|DeviceWriteData, busReadAtn)
+				v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			} else {
-				v.peripheralWrite(DeviceWriteClk, busReadAtn)
+				v.peripheralWrite(busReadAtn, DeviceWriteClk)
 			}
 			//Go to associated P_BIT(n+1) state to send the next bit.
 			//If this was the final bit, then the next state is P_DONE0
@@ -523,7 +523,7 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 		if v.timeoutExpired() {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the final bit.
 			//Pull CLK=0 and set DATA=1.This prepares for the receiver acknowledgement.
-			v.peripheralWrite(DeviceWriteData, busReadAtn)
+			v.peripheralWrite(busReadAtn, DeviceWriteData)
 			v.setTimeout(1000)
 			v.setStateMachine(P_DONE1)
 		}
@@ -536,7 +536,7 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 				v.flagsRemove(P_TALKING)
 				v.setState(v.getSecondary(), 0)
 				//Release the CLOCK line to 1
-				v.peripheralWrite(DeviceWriteClk|DeviceWriteData, busReadAtn)
+				v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			} else {
 				//There is at least one more byte to send Start over from P_PRE1
 				v.setTimeout(0)
@@ -545,7 +545,7 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 		} else if v.timeoutExpired() {
 			//We didn't receive an acknowledgement within 1 ms.Set CLOCK=0 and after 100 us back to CLOCK=1
 			log.Printf("device %d got NACK on channel %d", v.deviceNumber, v.getSecondary())
-			v.peripheralWrite(DeviceWriteClk|DeviceWriteData, busReadAtn)
+			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			v.setTimeout(100)
 			v.setStateMachine(P_FRAMEERR0)
 		}
@@ -553,7 +553,7 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 		if v.timeoutExpired() {
 			//Finished 1-0-1 sequence of CLOCK signal
 			//to acknowledge the frame-error.Now wait for sender to set DATA=0 so we can continue.
-			v.peripheralWrite(DeviceWriteData, busReadAtn)
+			v.peripheralWrite(busReadAtn, DeviceWriteData)
 			v.setStateMachine(P_FRAMEERR1)
 		}
 	case P_FRAMEERR1:
@@ -680,7 +680,7 @@ func (v *Protocol) getState(idx uint8) uint8 {
 	return v.state[x]
 }
 
-func (v *Protocol) peripheralWrite(data uint8, busReadAtn bool) {
+func (v *Protocol) peripheralWrite(busReadAtn bool, data uint8) {
 	sidecarData := references.IECSidecarEnabled | references.IECSidecarAtnAEnabled
 	if busReadAtn {
 		sidecarData |= uint16(references.IECAtnABit) << 8
