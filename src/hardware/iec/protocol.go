@@ -683,7 +683,7 @@ func (v *Protocol) peripheralWrite(clkDataBits uint8, atn bool) {
 	//d := DeviceWriteData & clkDataBits
 	//c := DeviceWriteClk & clkDataBits
 	//fmt.Printf("transmitting %d - clock %v, data %v\n", clkDataBits, c, d)
-	v.iec.PeripheralWrite(v.deviceNumber, output)
+	v.iec.PeripheralWrite(v.deviceNumber, uint16(output))
 }
 
 func (v *Protocol) print(id string, bus uint8) {

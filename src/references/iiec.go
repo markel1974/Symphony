@@ -5,6 +5,15 @@ import (
 	"github.com/markel1974/c64emu/src/common/signals"
 )
 
+const (
+	IECAtnABit = 0x10
+)
+
+const (
+	IECSidecarEnabled = 0x1
+	IECSidecarAtnAEnabled
+)
+
 func IdIIec(_ IIec, label string, instance int) string {
 	return IdInternalComponent(label, instance, "IIec")
 }
@@ -46,7 +55,7 @@ type IIec interface {
 
 	PeripheralRead() uint8
 
-	PeripheralWrite(deviceNumber uint8, data uint8)
+	PeripheralWrite(deviceNumber uint8, data uint16)
 
 	LEDSignal() *signals.SignalUint32
 }

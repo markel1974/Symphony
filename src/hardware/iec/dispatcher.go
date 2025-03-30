@@ -37,7 +37,7 @@ type Dispatcher struct {
 	cpuPort         uint8
 	cpuBus          uint8
 	peripheralsPort uint8
-	peripheralsData []uint8
+	peripheralsData []uint16
 	virtualDrives   []references.IIecDevice
 	emulation       []func()
 	ledSignal       *signals.SignalUint32 //*signals.Signal2[int, uint8]
@@ -48,7 +48,7 @@ type Dispatcher struct {
 func NewDispatcher(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Dispatcher {
 	c := &Dispatcher{
 		BaseComponent:   component.NewBaseComponent(),
-		peripheralsData: make([]uint8, BusNum),
+		peripheralsData: make([]uint16, BusNum),
 		virtualDrives:   nil,
 		ledSignal:       signals.NewSignalUint32(), //ledSignal:       signals.NewSignal2[int, uint8](),
 	}
@@ -186,7 +186,7 @@ func (c *Dispatcher) PeripheralRead() uint8 {
 }
 
 // PeripheralWrite updates the data for a specific peripheral device and triggers the port update mechanism.
-func (c *Dispatcher) PeripheralWrite(deviceNumber uint8, data uint8) {
+func (c *Dispatcher) PeripheralWrite(deviceNumber uint8, data uint16) {
 	c.peripheralsData[deviceNumber] = data
 	//DebugPeripheralWrite(c.peripheralBus[deviceNumber])
 	c.updatePorts()
@@ -205,9 +205,12 @@ func (c *Dispatcher) buildCpuBus(data uint8) uint8 {
 // It applies bitwise operations to manipulate the input signals to generate the resulting bus configuration.
 // The function uses specific input flags (cpuClkIn, cpuDataIn) to correctly modify and combine signals.
 // Returns the newly computed peripheral bus value as uint8.
-func (c *Dispatcher) buildPeripheralBus(cpuBus uint8, data uint8) uint8 {
-	//data &= 0xa //NON FUNZIONA
-	//data &= 0x1a //FUNZIONA
+func (c *Dispatcher) buildPeripheralBus(cpuBus uint8, d uint16) uint8 {
+	data := uint8(d & 0xff)
+	if sidecar := d & 0xff00; sidecar != 0 {
+		sidecar >>= 8
+		fmt.Println("SIDECAR DATA: ", sidecar)
+	}
 	dataIn := (data << 3) & cpuDataIn //0x40 bit 7
 	nData := ^data
 	bus := nData ^ cpuBus

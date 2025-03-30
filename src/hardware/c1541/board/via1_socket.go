@@ -163,6 +163,8 @@ func (v *VIA1Socket) peripheralWrite(prb uint8, ddrb uint8) {
 	//c := DeviceWriteClk & wd
 	//a := DeviceWriteAtn & wd
 	//fmt.Printf("c1541 transmitting 0x%x - atn: 0x%x, clock: 0x%x, data: 0x%x\n", wd, a, c, d)
-
-	v.iec.PeripheralWrite(v.connections.GetDeviceNumber(), wd)
+	//0x1 use sidecar | use external atn a | external atn a
+	sidecarData := uint16(references.IECSidecarEnabled|references.IECSidecarAtnAEnabled|(wd&references.IECAtnABit)) << 8
+	data := sidecarData | uint16(wd)
+	v.iec.PeripheralWrite(v.connections.GetDeviceNumber(), data)
 }
