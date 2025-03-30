@@ -207,14 +207,21 @@ func (c *Dispatcher) buildCpuBus(data uint8) uint8 {
 // Returns the newly computed peripheral bus value as uint8.
 func (c *Dispatcher) buildPeripheralBus(cpuBus uint8, d uint16) uint8 {
 	data := uint8(d & 0xff)
-	if sidecar := d & 0xff00; sidecar != 0 {
-		sidecar >>= 8
-		fmt.Println("SIDECAR DATA: ", sidecar)
+	busClockIn := uint8(0xff)
+	sidecar := d & 0xff00
+	//sidecar handling
+	if (sidecar & references.IECSidecarEnabled) != 0 {
+		if (sidecar & references.IECSidecarAtnAEnabled) != 0 {
+			atnA := uint8(sidecar>>8) & references.IECAtnABit
+			nAtnA := ^atnA
+			res := nAtnA ^ cpuBus
+			busClockIn = (res << 3) & cpuClkIn
+		}
+		if (sidecar & references.IECSidecarDrop) != 0 {
+			return 0xff
+		}
 	}
 	dataIn := (data << 3) & cpuDataIn //0x40 bit 7
-	nData := ^data
-	bus := nData ^ cpuBus
-	busClockIn := (bus << 3) & cpuClkIn //0x80 bit 8 - Attention: relies on ATN A
 	clockIn := (data << 6) & busClockIn
 	ret := dataIn | clockIn
 	return ret

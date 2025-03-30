@@ -6,12 +6,14 @@ import (
 )
 
 const (
-	IECAtnABit = 0x10
+	IECAtnABit = uint8(0x10)
 )
 
 const (
-	IECSidecarEnabled = 0x1
-	IECSidecarAtnAEnabled
+	IECSidecarEnabled     = uint16(0x100)
+	IECSidecarAtnAEnabled = uint16(0x200)
+	IECSidecarDrop        = uint16(0x400)
+	IECSidecarAtnABit     = uint16(uint16(IECAtnABit) << 8)
 )
 
 func IdIIec(_ IIec, label string, instance int) string {

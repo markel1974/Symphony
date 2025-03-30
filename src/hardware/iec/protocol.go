@@ -5,6 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/hardware/quartz"
 	"github.com/markel1974/c64emu/src/references"
 	"log"
 )
@@ -140,9 +141,12 @@ func NewProtocol(factory references.IComponentFactory, parent references.ICompon
 		iec:           nil,
 		device:        nil,
 		ledSignal:     signals.NewSignalUint32(),
+		quartz:        nil,
 		flags:         0,
 	}
 	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, label, instance))
+
+	p.quartz = quartz.NewQuartz(p, factory, label, 0)
 	return p
 }
 
@@ -313,6 +317,8 @@ func (v *Protocol) Emulate() {
 	} else if v.flagGet(P_TALKING) {
 		v.doTalk(busReadAtn, busReadClk, busReadData)
 	}
+
+	v.quartz.Emulate()
 }
 
 // doListen handles the state transitions for the device during the listening phase on the IEC bus based on the current clock and data signals.
@@ -675,15 +681,12 @@ func (v *Protocol) getState(idx uint8) uint8 {
 }
 
 func (v *Protocol) peripheralWrite(clkDataBits uint8, atn bool) {
+	sidecarData := references.IECSidecarEnabled | references.IECSidecarAtnAEnabled
 	if atn {
-		clkDataBits |= DeviceWriteAtn
+		sidecarData |= uint16(references.IECAtnABit) << 8
 	}
-	output := clkDataBits & defaultDDRBMask
-	//output = output | 229
-	//d := DeviceWriteData & clkDataBits
-	//c := DeviceWriteClk & clkDataBits
-	//fmt.Printf("transmitting %d - clock %v, data %v\n", clkDataBits, c, d)
-	v.iec.PeripheralWrite(v.deviceNumber, uint16(output))
+	data := sidecarData | uint16(clkDataBits&defaultDDRBMask)
+	v.iec.PeripheralWrite(v.deviceNumber, data)
 }
 
 func (v *Protocol) print(id string, bus uint8) {
