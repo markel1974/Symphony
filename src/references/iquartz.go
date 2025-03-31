@@ -2,11 +2,14 @@ package references
 
 import (
 	"fmt"
+	"time"
 )
 
 func IdIQuartz(_ IQuartz, label string, instance int) string {
 	return IdInternalComponent(label, instance, "IQuartz")
 }
+
+const IQuartz1Mhz = uint64(time.Second / time.Microsecond)
 
 type IQuartzSocket interface {
 }
@@ -20,7 +23,7 @@ type IQuartzSocket interface {
 type IQuartz interface {
 	Setup() error
 
-	Bind(socket IQuartzSocket) error
+	Bind(socket IQuartzSocket, hz uint64) error
 
 	Connect() error
 
@@ -28,7 +31,7 @@ type IQuartz interface {
 
 	Emulate()
 
-	ToUSec(uint64) uint64
+	USecToCycle(uint64) float64
 
 	NewAlarm(string, QuartzAlarmCallback) IQuartzAlarm
 }

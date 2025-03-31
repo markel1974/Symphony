@@ -1,6 +1,7 @@
 package iec
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
@@ -156,12 +157,18 @@ func (v *Protocol) SetDevice(device references.IIecProtocolDevice) {
 
 func (v *Protocol) Setup() error {
 	v.cfg = v.GetFactory().GetConfig()
+	if err := v.quartz.Setup(); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (v *Protocol) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber uint8) error {
 	v.deviceNumber = deviceNumber
 	var err error
+	if err = v.quartz.Bind(v, references.IQuartz1Mhz); err != nil {
+		return err
+	}
 	v.iec, err = references.ComponentToIEC(v.Parent())
 	if err != nil {
 		return err
@@ -493,6 +500,7 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 		}
 	case P_BIT0, P_BIT1, P_BIT2, P_BIT3, P_BIT4, P_BIT5, P_BIT6, P_BIT7:
 		if v.timeoutExpired() {
+			fmt.Println("BUS READ CLOCK", busReadClk)
 			//60 us have passed since we set CLK=1 to signal "data valid" for the previous bit.
 			//Pull CLK=0 and put the next bit out of DATA.
 			bit := _pBits[sm]
@@ -658,8 +666,8 @@ func (v *Protocol) getSecondaryPrev() uint8 {
 
 // setTimeout sets the timeout value for the protocol instance to the specified value.
 func (v *Protocol) setTimeout(offset uint64) {
-	val := v.quartz.ToUSec(offset)
-	v.timeout = v.quartz.Cycle() + val
+	val := v.quartz.USecToCycle(offset)
+	v.timeout = v.quartz.Cycle() + uint64(val)
 }
 
 func (v *Protocol) timeoutExpired() bool {

@@ -16,6 +16,8 @@ type Quartz struct {
 	cycle           uint64
 	alarmsContainer map[*Alarm]*Alarm
 	alarms          *list.List
+	hz              uint64
+	factor          float64
 }
 
 // NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
@@ -25,9 +27,10 @@ func NewQuartz(parent references.IComponent, factory references.IComponentFactor
 		cycle:           0,
 		alarmsContainer: make(map[*Alarm]*Alarm),
 		alarms:          list.New(),
+		hz:              0,
+		factor:          0,
 	}
 	q.BaseComponent.Register(factory, parent, Identifier(), q, references.IdIQuartz(q, label, instance))
-	//q.BaseComponent.Register(parent, q)
 	return q
 }
 
@@ -35,7 +38,9 @@ func (s *Quartz) Setup() error {
 	return nil
 }
 
-func (s *Quartz) Bind(_ references.IQuartzSocket) error {
+func (s *Quartz) Bind(_ references.IQuartzSocket, hz uint64) error {
+	s.hz = hz
+	s.factor = float64(s.hz) / float64(references.IQuartz1Mhz)
 	return nil
 }
 
@@ -60,7 +65,9 @@ func (s *Quartz) Emulate() {
 }
 
 func (s *Quartz) Reset() {
-	//
+	s.cycle = 0
+	s.alarmsContainer = make(map[*Alarm]*Alarm)
+	s.alarms = list.New()
 }
 
 // Cycle returns the current cycle count of the Quartz instance.
@@ -68,9 +75,9 @@ func (s *Quartz) Cycle() uint64 {
 	return s.cycle
 }
 
-// ToUSec converts a time value in microseconds (us) to clock cycles based on a specific conversion factor.
-func (s *Quartz) ToUSec(v uint64) uint64 {
-	return v
+// USecToCycle converts a time value in microseconds (us) to clock cycles based on a specific conversion factor.
+func (s *Quartz) USecToCycle(v uint64) float64 {
+	return float64(v) * s.factor
 }
 
 // NewAlarm creates a new alarm with the given name and callback, associates it with the Quartz instance, and returns it.

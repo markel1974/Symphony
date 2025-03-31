@@ -35,7 +35,7 @@ func (s *QuartzSocket) Mount() error {
 	if s.IQuartz, err = references.ComponentToIQuartz(s.component); err != nil {
 		return err
 	}
-	if err = s.IQuartz.Bind(s); err != nil {
+	if err = s.IQuartz.Bind(s, references.IQuartz1Mhz); err != nil {
 		return err
 	}
 	return nil
