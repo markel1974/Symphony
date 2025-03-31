@@ -7,10 +7,7 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// Quartz represents a scheduler that manages alarms based on cycles, enabling timed execution of associated callbacks.
-// cycle tracks the current cycle count in the Quartz instance.
-// alarmsContainer provides a mapping of active alarms for quick accessibility and management.
-// alarms stores active alarms in a doubly linked list, sorted by their scheduled cycle execution times.
+// Quartz represents a timing system with configurable frequency, alarms, and a processing cycle mechanism.
 type Quartz struct {
 	*component.BaseComponent
 	cycle           uint64
@@ -20,7 +17,7 @@ type Quartz struct {
 	factor          float64
 }
 
-// NewQuartz creates and returns a new instance of Quartz, initializing its cycle counter, alarms container, and alarms list.
+// NewQuartz creates and initializes a new Quartz instance with the specified parent, factory, label, and instance number.
 func NewQuartz(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Quartz {
 	q := &Quartz{
 		BaseComponent:   component.NewBaseComponent(),
@@ -34,29 +31,34 @@ func NewQuartz(parent references.IComponent, factory references.IComponentFactor
 	return q
 }
 
+// Setup initializes the Quartz component and prepares it for operation.
 func (s *Quartz) Setup() error {
 	return nil
 }
 
+// Bind sets the clock frequency (hz) for the Quartz instance and calculates the scale factor based on 1 MHz reference.
 func (s *Quartz) Bind(_ references.IQuartzSocket, hz uint64) error {
 	s.hz = hz
 	s.factor = float64(s.hz) / float64(references.IQuartz1Mhz)
 	return nil
 }
 
+// Connect establishes the necessary connections or initializes the state for the Quartz component to operate properly.
 func (s *Quartz) Connect() error {
 	return nil
 }
 
+// Internal determines if the Quartz operates as an internal component. Returns false by default.
 func (s *Quartz) Internal() bool {
 	return false
 }
 
+// EmulationRequired returns true to indicate that emulation by the Quartz component is necessary.
 func (s *Quartz) EmulationRequired() bool {
 	return true
 }
 
-// Emulate increments the internal cycle counter and checks scheduled alarms against the updated cycle value.
+// Emulate processes a single emulation cycle by incrementing the cycle counter and checking for any active alarms.
 func (s *Quartz) Emulate() {
 	s.cycle++
 	if s.alarms.Len() > 0 {
@@ -64,35 +66,41 @@ func (s *Quartz) Emulate() {
 	}
 }
 
+// Reset clears the internal counters and reinitializes the alarms and container for the Quartz instance.
 func (s *Quartz) Reset() {
 	s.cycle = 0
 	s.alarmsContainer = make(map[*Alarm]*Alarm)
 	s.alarms = list.New()
 }
 
-// Cycle returns the current cycle count of the Quartz instance.
+// Cycle returns the current cycle count of the Quartz component.
 func (s *Quartz) Cycle() uint64 {
 	return s.cycle
 }
 
-// USecToCycle converts a time value in microseconds (us) to clock cycles based on a specific conversion factor.
+// USecToCycle converts the given microsecond duration `v` into cycles based on the Quartz clock's frequency factor.
 func (s *Quartz) USecToCycle(v uint64) float64 {
 	return float64(v) * s.factor
 }
 
-// NewAlarm creates a new alarm with the given name and callback, associates it with the Quartz instance, and returns it.
+// USecToCycleRounded converts a given duration in microseconds to the corresponding cycle count (rounded to the nearest integer).
+func (s *Quartz) USecToCycleRounded(v uint64) uint64 {
+	return uint64(float64(v)*s.factor + 0.5)
+}
+
+// NewAlarm creates a new alarm with the specified name and callback, adds it to the alarms container, and returns it.
 func (s *Quartz) NewAlarm(name string, callback references.QuartzAlarmCallback) references.IQuartzAlarm {
 	a := NewAlarm(s, name, callback)
 	s.alarmsContainer[a] = a
 	return a
 }
 
-// alarmDestroy removes the specified alarm from the alarmsContainer within the Quartz instance.
+// alarmDestroy removes the specified alarm from the alarmsContainer, effectively disabling it.
 func (s *Quartz) alarmDestroy(alarm *Alarm) {
 	delete(s.alarmsContainer, alarm)
 }
 
-// alarmSet schedules an alarm to trigger after a specified number of cycles. Returns an error if the alarm is already set.
+// alarmSet schedules an alarm to trigger after a specified cycle distance and adjusts its placement in the alarm list.
 func (s *Quartz) alarmSet(alarm *Alarm, dist uint64) error {
 	if alarm.element != nil {
 		return fmt.Errorf("alarm already set")
@@ -116,7 +124,7 @@ func (s *Quartz) alarmSet(alarm *Alarm, dist uint64) error {
 	return nil
 }
 
-// alarmUnset removes the specified alarm from the scheduled list and clears its element reference. Returns an error if the alarm is not set.
+// alarmUnset removes the specified alarm from the scheduling list. Returns an error if the alarm is not currently set.
 func (s *Quartz) alarmUnset(alarm *Alarm) error {
 	if alarm.element == nil {
 		return fmt.Errorf("alarm not setted")
@@ -126,7 +134,7 @@ func (s *Quartz) alarmUnset(alarm *Alarm) error {
 	return nil
 }
 
-// alarmsCheck executes all alarms whose scheduled cycle is less than or equal to the current cycle and removes them from the list.
+// alarmsCheck processes the alarms linked to the Quartz instance, triggering and removing those due for execution.
 func (s *Quartz) alarmsCheck(cycle uint64) {
 	var next *list.Element
 	for e := s.alarms.Front(); e != nil; e = next {

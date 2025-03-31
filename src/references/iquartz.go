@@ -33,6 +33,8 @@ type IQuartz interface {
 
 	USecToCycle(uint64) float64
 
+	USecToCycleRounded(v uint64) uint64
+
 	NewAlarm(string, QuartzAlarmCallback) IQuartzAlarm
 }
 
