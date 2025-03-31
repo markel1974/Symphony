@@ -375,7 +375,7 @@ func (v *Protocol) doListen(busReadAtn bool, busReadClk bool, busReadData bool) 
 	case P_BIT0, P_BIT1, P_BIT2, P_BIT3, P_BIT4, P_BIT5, P_BIT6, P_BIT7:
 		if busReadClk {
 			//Sender set CLK=1, signaling that the DATA line represents a valid bit
-			bit := _pBits[v.getStateMachine()]
+			bit := _pBits[sm]
 			if busReadData {
 				v.dataSetBit(bit)
 			} else {
@@ -440,7 +440,8 @@ func (v *Protocol) doListen(busReadAtn bool, busReadClk bool, busReadData bool) 
 // doTalk handles the communication protocol for transmitting data between devices using a state machine.
 // It manages the transition between various states, timing, and signaling during the data transmission process.
 func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
-	switch v.getStateMachine() {
+	sm := v.getStateMachine()
+	switch sm {
 	case P_PRE0:
 		if busReadClk {
 			//Bus-master set CLK=1 (and before that should have set DATA=0)
@@ -494,7 +495,7 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 		if v.timeoutExpired() {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the previous bit.
 			//Pull CLK=0 and put the next bit out of DATA.
-			bit := _pBits[v.getStateMachine()]
+			bit := _pBits[sm]
 			//bit := uint8(1 << ((int(v.getStateMachine()) - P_BIT0) / 2))
 			if v.dataHasBit(bit) {
 				v.peripheralWrite(busReadAtn, DeviceWriteData)
