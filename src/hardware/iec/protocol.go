@@ -1,7 +1,6 @@
 package iec
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
@@ -500,11 +499,9 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 		}
 	case P_BIT0, P_BIT1, P_BIT2, P_BIT3, P_BIT4, P_BIT5, P_BIT6, P_BIT7:
 		if v.timeoutExpired() {
-			fmt.Println("BUS READ CLOCK", busReadClk)
 			//60 us have passed since we set CLK=1 to signal "data valid" for the previous bit.
 			//Pull CLK=0 and put the next bit out of DATA.
 			bit := _pBits[sm]
-			//bit := uint8(1 << ((int(v.getStateMachine()) - P_BIT0) / 2))
 			if v.dataHasBit(bit) {
 				v.peripheralWrite(busReadAtn, DeviceWriteData)
 			} else {
