@@ -665,9 +665,9 @@ func (v *Protocol) getSecondaryPrev() uint8 {
 }
 
 // setTimeout sets the timeout value for the protocol instance to the specified value.
-func (v *Protocol) setTimeout(offset uint64) {
-	val := v.quartz.USecToCycle(offset)
-	v.timeout = v.quartz.Cycle() + uint64(val)
+func (v *Protocol) setTimeout(uSec uint64) {
+	cycles := uint64(v.quartz.USecToCycle(uSec) + 0.5)
+	v.timeout = v.quartz.Cycle() + cycles
 }
 
 func (v *Protocol) timeoutExpired() bool {
