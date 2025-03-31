@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"unicode"
 
 	"github.com/markel1974/c64emu/src/config"
 )
@@ -66,14 +67,14 @@ func (v *FSDrive) Setup() error {
 }
 
 func (v *FSDrive) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber uint8) error {
+	if d := v.cfg.Drive(v.deviceId); d != nil {
+		v.path = d.GetId()
+	}
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
 	v.origDirPath = v.path
 	if err := v.protocol.Bind(v, deviceId, deviceNumber); err != nil {
 		return err
-	}
-	if d := v.cfg.Drive(v.deviceId); d != nil {
-		v.path = d.GetId()
 	}
 	if v.changeDirectory(v.origDirPath) {
 		for i := 0; i < 16; i++ {
@@ -122,7 +123,7 @@ func (v *FSDrive) Listen(sec uint8) {
 }
 
 func (v *FSDrive) Unlisten(sec uint8) {
-	data := v.openDirectory(sec, "", "PROVA")
+	data, _ := v.openDirectory(sec, "", "PROVA")
 	v.test = fifo.NewStaticFifo(uint(len(data)))
 	for _, k := range data {
 		v.test.Set(int(k))
@@ -381,7 +382,7 @@ func (v *FSDrive) openFile(channel uint8, name string) uint8 {
 	return StOk
 }
 
-func (v *FSDrive) openDirectory(channel uint8, pattern string, dirName string) []byte {
+func (v *FSDrive) openDirectory(channel uint8, pattern string, dirName string) ([]byte, error) {
 	// Special treatment for "$0"
 	if len(pattern) > 0 {
 		if pattern[0] == '0' && len(pattern) == 1 {
@@ -396,24 +397,19 @@ func (v *FSDrive) openDirectory(channel uint8, pattern string, dirName string) [
 		}
 	}
 
-	const titleStart = "\001\004\001\001\000\000\022\042"
-	const titleEnd = "\042 00 2A"
+	const titleStart = "\001\004\001\001\000\000\022\""
+	const titleEnd = "\" 00 2A"
 	const blocksFreeStart = "\001\001\000\000"
 	const blockFreeEnd = "\000\000"
 
-	title := make([]byte, 16)
-	for idx := range title {
-		title[idx] = ' '
-		if idx < len(dirName) {
-			title[idx] = dirName[idx]
-		}
-	}
+	title := v.fillName(dirName)
 
 	var buf []byte
 
-	buf = append(buf, titleStart...)
-	buf = append(buf, title...)
-	buf = append(buf, titleEnd...)
+	fullTile := titleStart + string(title) + titleEnd
+
+	buf = append(buf, fullTile...)
+	buf = append(buf, 0)
 
 	/*
 
@@ -489,15 +485,94 @@ func (v *FSDrive) openDirectory(channel uint8, pattern string, dirName string) [
 
 	*/
 
+	entries, err := os.ReadDir(v.dirPath)
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		z := v.createFileEntry(e.Name(), 32456, 0)
+		buf = append(buf, z...)
+	}
 	buf = append(buf, blocksFreeStart...)
 	buf = append(buf, "BLOCKS FREE.             "...)
 	buf = append(buf, blockFreeEnd...)
+	buf = append(buf, 0)
 
-	// Rewind file for reading and read first byte
-	//rewind(_fileChannel[channel]);
-	//_read_char[channel] = (uint8)getc(_fileChannel[channel]);
+	return buf, nil
+}
 
-	return buf
+func (v *FSDrive) createFileEntry(name string, size int, kind int) []byte {
+	//const maxFileName = 16
+	//if len(name) > maxFileName {
+	//	name = name[:maxFileName]
+	//}
+	vName := v.cleanFileName(name)
+	n := (size + 254) / 254
+	ret := make([]byte, 32)
+	for x := range ret {
+		ret[x] = ' '
+	}
+	ret[0] = 0x1
+	ret[1] = 0x1
+	ret[2] = uint8(n & 0xff)
+	ret[3] = uint8((n >> 8) & 0xff)
+	ret[4] = ' '
+	ret[5] = ' '
+	ret[6] = '"'
+	for x, i := range vName {
+		ret[7+x] = i //uint8(unicode.ToUpper(i))
+	}
+	ret[7+len(vName)] = '"'
+	ret[28] = 'P'
+	ret[29] = 'R'
+	ret[30] = 'G'
+	ret[31] = 0
+	return ret
+}
+
+func (v *FSDrive) cleanFileName(name string) []uint8 {
+	const maxName = 16
+	var vName []rune
+	for _, k := range name {
+		if k >= 'a' && k <= 'z' {
+			vName = append(vName, unicode.ToUpper(k))
+		} else if k >= 'A' && k <= 'Z' {
+			vName = append(vName, k)
+		} else if k >= '0' && k <= '9' {
+			vName = append(vName, k)
+		} else if k == '.' {
+			vName = append(vName, k)
+		} else {
+			vName = append(vName, ' ')
+		}
+	}
+	name = string(vName)
+	//if ext := path.Ext(name); len(ext) > 0 {
+	//	name = name[:len(name)-len(ext)]
+
+	//if len(name) > maxName {
+	//	name = name[:maxName]
+	//}
+	//return []uint8(name)
+	//}
+	if len(name) > maxName {
+		name = name[:maxName]
+	}
+	return []uint8(name)
+}
+
+func (v *FSDrive) fillName(n string) []byte {
+	name := make([]byte, 16)
+	for idx := range name {
+		name[idx] = ' '
+		if idx < len(n) {
+			name[idx] = n[idx]
+		}
+	}
+	return name
 }
 
 func (v *FSDrive) configChanged() {

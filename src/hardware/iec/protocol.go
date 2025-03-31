@@ -508,7 +508,7 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 				v.peripheralWrite(busReadAtn, 0)
 			}
 			//Go to associated P_BIT(n)w state
-			v.setTimeout(60)
+			v.setTimeout(90) //orig 60
 			v.setStateMachineNext()
 		}
 	case P_BIT0w, P_BIT1w, P_BIT2w, P_BIT3w, P_BIT4w, P_BIT5w, P_BIT6w, P_BIT7w:
@@ -522,7 +522,7 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 			}
 			//Go to associated P_BIT(n+1) state to send the next bit.
 			//If this was the final bit, then the next state is P_DONE0
-			v.setTimeout(60)
+			v.setTimeout(90) //orig 60
 			v.setStateMachineNext()
 		}
 	case P_DONE0:
