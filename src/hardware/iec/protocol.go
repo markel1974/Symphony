@@ -261,24 +261,26 @@ func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
 		if (v.ps.SecondaryGet() & 0xf0) == pTalking|pListening {
 			switch v.ps.PrimaryGet() & 0xf0 {
 			case pRequestListen:
-				v.device.Listen(v.ps.SecondaryGet())
+				target := v.ps.SecondaryGet()
+				state := v.device.Listen(target)
+				v.ps.StateSet(target, state)
 			case pRequestTalking:
-				v.device.Talk(v.ps.SecondaryGet())
+				target := v.ps.SecondaryGet()
+				state := v.device.Talk(target)
+				v.ps.StateSet(target, state)
 			}
 		} else if (v.ps.SecondaryGet() & 0xf0) == pTalking|pListening|pAtn {
-			//v.gs.SetState(0)
-			state := v.device.Close(v.ps.SecondaryGet())
-			v.ps.StateSet(v.ps.SecondaryGet(), state)
-			//device.StateSet(device.SecondaryGet(), v.gs.StateGet())
+			target := v.ps.SecondaryGet()
+			state := v.device.Close(target)
+			v.ps.StateSet(target, state)
 		} else if (v.ps.SecondaryGet() & 0xf0) == 0xf0 {
 			//v.device.Open() will not actually open the file (since we don't have a filename yet) but just set things up so that
 			//the characters passed to device.
 			//v.device.Write() before the next call to device.unlisten() will be interpreted as the filename.
 			//The file will actually be opened during the next call to device.unlisten()
-			//v.gs.SetState(0)
-			state := v.device.Open(v.ps.SecondaryGet())
-			v.ps.StateSet(v.ps.SecondaryGet(), state)
-			//device.StateSet(device.SecondaryGet(), v.gs.StateGet())
+			target := v.ps.SecondaryGet()
+			state := v.device.Open(target)
+			v.ps.StateSet(target, state)
 		}
 
 		if v.ps.PrimaryGet() == (v.deviceNumber + pRequestListen) {
@@ -304,17 +306,18 @@ func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
 		//All devices were told to stop listening
 		v.ps.FlagsRemove(pListening)
 		log.Printf("device %d stop listening", v.deviceNumber)
-
 		//If this is an UNLISTEN that followed an OPEN (0x2_ 0xf_), then
 		//device.unlisten will try to open the file with the filename that
 		//was received in between the OPEN and now.
 		//If the file cannot be opened, it will set st != 0.
-		//v.gs.SetState(v.StateGet(v.SecondaryPrevGet()))
-		v.device.Unlisten(v.ps.SecondaryPrevGet())
-		//v.StateSet(v.SecondaryPrevGet(), v.gs.GetState())
+		target := v.ps.SecondaryPrevGet()
+		state := v.device.Unlisten(target)
+		v.ps.StateSet(target, state)
 	} else if (v.ps.PrimaryGet() == 0x5f) && v.ps.FlagGet(pTalking) {
 		//All devices were told to stop talking
-		v.device.Untalk(v.ps.SecondaryPrevGet())
+		target := v.ps.SecondaryPrevGet()
+		state := v.device.Untalk(target)
+		v.ps.StateSet(target, state)
 		v.ps.FlagsRemove(pTalking)
 		log.Printf("device %d stop talking", v.deviceNumber)
 	}
@@ -417,10 +420,9 @@ func (v *Protocol) doAtnOrListen(busReadAtn bool, busReadClk bool, busReadData b
 			} else if v.ps.FlagGet(pListening) {
 				//We are currently listening for data pass received byte on to the upper level
 				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte(), v.ps.SecondaryGet())
-				//v.gs.SetState(v.StateGet(v.SecondaryGet()))
-				state := v.device.Write(v.ps.SecondaryGet(), v.ps.DataGetByte())
-				v.ps.StateSet(v.ps.SecondaryGet(), state)
-				//device.StateSet(device.SecondaryGet(), v.gs.StateGet())
+				target := v.ps.SecondaryGet()
+				state := v.device.Write(target, v.ps.DataGetByte())
+				v.ps.StateSet(target, state)
 
 				if v.ps.StateGet(v.ps.SecondaryGet()) != 0 {
 					//There was an error during iec_bus_write => stop listening. This will signal an error condition to the sender
@@ -463,9 +465,10 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 		if busReadData {
 			//Receiver signaled "ready-for-data" (DATA=1)
 			//v.gs.SetState(v.StateGet(v.SecondaryGet()))
-			b, state := v.device.Read(v.ps.SecondaryGet() & 0xf)
+			target := v.ps.SecondaryGet()
+			b, state := v.device.Read(target)
+			v.ps.StateSet(target, state)
 			v.ps.DataSetByte(b)
-			v.ps.StateSet(v.ps.SecondaryGet(), state)
 			//device.gs.StateSet(device.SecondaryGet(), v.gs.StateGet())
 			if v.ps.StateGet(v.ps.SecondaryGet()) == 0 {
 				//At least two bytes left to send. Go on to send the first bit.

@@ -123,13 +123,13 @@ type IIecProtocolDevice interface {
 
 	Close(sec uint8) uint8
 
-	Listen(sec uint8)
+	Listen(sec uint8) uint8
 
-	Unlisten(sec uint8)
+	Unlisten(sec uint8) uint8
 
-	Talk(sec uint8)
+	Talk(sec uint8) uint8
 
-	Untalk(sec uint8)
+	Untalk(sec uint8) uint8
 }
 
 func ComponentToIEC(component IComponent) (IIec, error) {

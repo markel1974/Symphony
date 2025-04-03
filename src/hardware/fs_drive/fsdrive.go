@@ -5,7 +5,6 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/references"
-	"io"
 	"log"
 	"os"
 	"strings"
@@ -118,12 +117,13 @@ func (v *FSDrive) GetPath() string {
 	return v.dirPath
 }
 
-func (v *FSDrive) Listen(d uint8) {
+func (v *FSDrive) Listen(d uint8) uint8 {
 	sec := d & 0xf
 	log.Println("FSDrive LISTEN", sec)
+	return StOk
 }
 
-func (v *FSDrive) Unlisten(d uint8) {
+func (v *FSDrive) Unlisten(d uint8) uint8 {
 	//TODO
 	//If this is an UNLISTEN that followed an OPEN (0x2_ 0xf_), then
 	//device.unlisten will try to open the file with the filename that
@@ -136,16 +136,19 @@ func (v *FSDrive) Unlisten(d uint8) {
 		v.test.Set(int(k))
 	}
 	log.Println("FSDrive UNLISTEN", channel)
+	return StOk
 }
 
-func (v *FSDrive) Talk(d uint8) {
+func (v *FSDrive) Talk(d uint8) uint8 {
 	channel := d & 0xf
 	log.Println("FSDrive TALK", channel)
+	return StOk
 }
 
-func (v *FSDrive) Untalk(d uint8) {
+func (v *FSDrive) Untalk(d uint8) uint8 {
 	channel := d & 0xf
 	log.Println("FSDrive UNTALK", channel)
+	return StOk
 }
 
 func (v *FSDrive) Open(d uint8) uint8 {
@@ -207,43 +210,46 @@ func (v *FSDrive) Close(d uint8) uint8 {
 	return StOk
 }
 
-func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
-	d, ok := v.test.Next()
+func (v *FSDrive) Read(d uint8) (uint8, uint8) {
+	//channel := d & 0xf
+	b, ok := v.test.Next()
 	if !ok {
 		return 0, StReadTimeout
 	}
-	log.Printf("FSDrive Read: %d (%s)", d, string(byte(d)))
+	log.Printf("FSDrive Read: %d (%s)", b, string(byte(b)))
 	if v.test.Len() == 0 {
 		v.commands.SetError(ERR_OK)
-		return uint8(d), StEof
+		return uint8(b), StEof
 	}
-	return uint8(d), StOk
+	return uint8(b), StOk
 
-	return 0, StReadTimeout
-	// Channel 15: Error channel
-	if channel == 15 {
-		data := v.commands.RetrieveError()
-		if data != '\r' {
-			return data, StOk
-		}
-		// End of message
-		v.commands.SetError(ERR_OK)
-		return data, StEof
-	}
-
-	if v.file[channel] == nil {
+	/*
 		return 0, StReadTimeout
-	}
+		// Channel 15: Error channel
+		if channel == 15 {
+			data := v.commands.RetrieveError()
+			if data != '\r' {
+				return data, StOk
+			}
+			// End of message
+			v.commands.SetError(ERR_OK)
+			return data, StEof
+		}
 
-	// Read one byte
-	data := v.readChar[channel]
-	buffer := make([]uint8, 1)
-	c, err := v.file[channel].Read(buffer)
-	if err == io.EOF {
-		return data, StEof
-	}
-	v.readChar[channel] = (uint8)(c)
-	return data, StOk
+		if v.file[channel] == nil {
+			return 0, StReadTimeout
+		}
+
+		// Read one byte
+		data := v.readChar[channel]
+		buffer := make([]uint8, 1)
+		c, err := v.file[channel].Read(buffer)
+		if err == io.EOF {
+			return data, StEof
+		}
+		v.readChar[channel] = (uint8)(c)
+		return data, StOk
+	*/
 }
 
 func (v *FSDrive) Write(d uint8, data uint8) uint8 {
