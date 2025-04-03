@@ -9,7 +9,7 @@ import (
 // Joystick represents an input device for handling directional and button presses with customizable sensitivity settings.
 type Joystick struct {
 	*component.BaseComponent
-	storage *fifo.StaticFifo
+	storage *fifo.CircularQueue
 	joy     int
 	s1      uint
 	s2      uint
@@ -54,7 +54,7 @@ func (k *Joystick) Update(min uint16, max uint16, sensitivity uint16) {
 
 // Reset reinitializes the joystick's storage buffer and sets its state to the default value.
 func (k *Joystick) Reset() {
-	k.storage = fifo.NewStaticFifo(256)
+	k.storage = fifo.NewCircularQueue(256)
 	k.joy = 0xff
 }
 
@@ -85,26 +85,26 @@ func (k *Joystick) Move(x uint, y uint, buttons uint) {
 	if (buttons & 2) != 0 {
 		//TODO SID POTX / POTY
 	}
-	k.storage.Set(k.joy)
+	k.storage.Push(k.joy)
 }
 
 // SetKey updates the joystick's state based on the key press or release and stores the new state in the storage.
 func (k *Joystick) SetKey(pressed bool, jId int) {
 	if pressed {
 		k.joy = joyKeyDown(k.joy, jId)
-		k.storage.Set(k.joy)
+		k.storage.Push(k.joy)
 	} else {
 		k.joy = joyKeyUp(k.joy, jId)
-		k.storage.Set(k.joy)
+		k.storage.Push(k.joy)
 	}
 }
 
 // Poll retrieves and returns the next joystick state and its validity. It returns (0, false) if no state is available.
 func (k *Joystick) Poll() (uint8, bool) {
-	if k.storage.Len() == 0 {
+	if k.storage.IsEmpty() {
 		return 0, false
 	}
-	joy, ok := k.storage.Next()
+	joy, ok := k.storage.Pop()
 	if !ok {
 		return 0, false
 	}

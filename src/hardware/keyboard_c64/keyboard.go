@@ -14,7 +14,7 @@ func matrix(a int, b int) int {
 // Keyboard represents an abstraction for handling virtual and ASCII keyboard states and input storage.
 type Keyboard struct {
 	*component.BaseComponent
-	storage *fifo.StaticFifo
+	storage *fifo.CircularQueue
 	virtual *Virtual
 	ascii   *Ascii
 }
@@ -50,7 +50,7 @@ func (k *Keyboard) Internal() bool {
 
 // Reset reinitializes the Keyboard by resetting its storage, virtual key states, and ASCII translations.
 func (k *Keyboard) Reset() {
-	k.storage = fifo.NewStaticFifo(16384)
+	k.storage = fifo.NewCircularQueue(16384)
 	k.virtual.Reset()
 	k.ascii.Reset()
 }
@@ -77,17 +77,17 @@ func (k *Keyboard) CapitalToggle() {
 func (k *Keyboard) SetKey(pressed bool, vKey int) {
 	if kc := k.virtual.FromVirtual(vKey); kc >= 0 {
 		v := keyCodeToC64(uint8(kc), -1, pressed)
-		k.storage.Set(int(v))
+		k.storage.Push(int(v))
 	}
 }
 
 // Poll retrieves the next key from the keyboard storage as a uint32 and indicates if a key was available.
 // Returns the key value and true if a key was retrieved, otherwise returns 0 and false.
 func (k *Keyboard) Poll() (uint32, bool) {
-	if k.storage.Len() == 0 {
+	if k.storage.IsEmpty() {
 		return 0, false
 	}
-	key, ok := k.storage.Next()
+	key, ok := k.storage.Pop()
 	if !ok {
 		return 0, false
 	}
@@ -99,11 +99,11 @@ func (k *Keyboard) SetCommand(cmd string) {
 	for _, c := range cmd {
 		v := k.ascii.FromAscii(uint8(c))
 		p1 := keyCodeToC64(uint8(v.r1), v.shifted, true)
-		if !k.storage.Set(int(p1)) {
+		if !k.storage.Push(int(p1)) {
 			return
 		}
 		p2 := keyCodeToC64(uint8(v.r1), v.shifted, false)
-		if !k.storage.Set(int(p2)) {
+		if !k.storage.Push(int(p2)) {
 			return
 		}
 	}

@@ -3,14 +3,14 @@ package fs_drive
 import "github.com/markel1974/c64emu/src/common/fifo"
 
 type Channel struct {
-	data   *fifo.StaticFifo
+	data   *fifo.CircularQueue
 	buffer []byte
 	mode   uint8
 }
 
 func NewChannel() *Channel {
 	c := &Channel{
-		data:   fifo.NewStaticFifo(32),
+		data:   fifo.NewCircularQueue(32),
 		buffer: []byte{},
 		mode:   0,
 	}
@@ -18,13 +18,13 @@ func NewChannel() *Channel {
 }
 
 func (c *Channel) Reset() {
-	c.data = fifo.NewStaticFifo(32)
+	c.data = fifo.NewCircularQueue(32)
 	c.buffer = []byte{}
 	c.mode = 0
 }
 
 func (c *Channel) Close() {
-	c.data = fifo.NewStaticFifo(32)
+	c.data = fifo.NewCircularQueue(32)
 	c.buffer = []byte{}
 	c.mode = 0
 }
@@ -38,21 +38,26 @@ func (c *Channel) BufferGet() []byte {
 }
 
 func (c *Channel) DataSet(data []byte) {
-	c.data = fifo.NewStaticFifo(uint(len(data)))
+	c.data = fifo.NewCircularQueue(len(data))
 	for _, k := range data {
-		c.data.Set(int(k))
+		c.data.Push(int(k))
 	}
 }
 
 func (c *Channel) DataNext() (uint8, bool) {
-	b, ok := c.data.Next()
+	b, ok := c.data.Pop()
 	return uint8(b), ok
 }
 
-func (c *Channel) DataLen() int {
-	l := c.data.Len()
+func (c *Channel) DataIsEmpty() bool {
+	l := c.data.IsEmpty()
 	return l
 }
+
+//func (c *Channel) DataLen() int {
+//	l := c.data.Len()
+//	return l
+//}
 
 func (c *Channel) ModeSet(d uint8) {
 	c.mode = d

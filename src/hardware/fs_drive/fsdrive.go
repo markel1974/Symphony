@@ -219,7 +219,7 @@ func (v *FSDrive) Read(d uint8) (uint8, uint8) {
 		return 0, StReadTimeout
 	}
 	log.Printf("FSDrive Read: %d (%s)", b, string(byte(b)))
-	if v.channels[channel].DataLen() == 0 {
+	if v.channels[channel].DataIsEmpty() {
 		v.commands.SetError(ERR_OK)
 		return b, StEof
 	}

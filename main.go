@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
-
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware"
 	"github.com/markel1974/c64emu/src/references"
@@ -14,6 +12,7 @@ import (
 	"github.com/markel1974/c64emu/src/shell/authenticator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/version"
+	"log"
 )
 
 // -c "SCPU:;REU16M:/Users/tinmr305/Downloads/c64carts/doom/doom.reu" -p /Users/tinmr305/Downloads/c64carts/doom/loader.prg
@@ -174,6 +173,8 @@ func createShell(target *cli.Command) error {
 }
 
 func main() {
+	//https://sergetoro.com/posts/golang-round-robin-queue-from-scratch/
+	//fifoBlockTest()
 	//TestCommand()
 	var showHelp bool
 	var showVersion bool
