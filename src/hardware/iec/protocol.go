@@ -12,29 +12,15 @@ import (
 //serial-iec-device.c
 //static void serial_iec_device_exec_main(unsigned int devnr, CLOCK clk_value)
 
-/*
-const (
-	IECBUS_DEVICE_READ_DATA = uint8(0x01)
-	IECBUS_DEVICE_READ_CLK  = uint8(0x04)
-	IECBUS_DEVICE_READ_ATN  = uint8(0x80)
-
-	IECBUS_DEVICE_ATNA = uint8(0x10)
-
-	IECBUS_DEVICE_WRITE_CLK  = uint8(0x40)
-	IECBUS_DEVICE_WRITE_DATA = uint8(0x80)
-)
-
-*/
-
-// Corrisponde a DeviceWriteData | DeviceWriteClk | DeviceWriteAtn
+// defaultDDRBMask defines a bitmask for configuring data direction on DDRB, enabling specific pins for peripheral control.
 const defaultDDRBMask = uint8((1 << 1) | (1 << 3) | (1 << 4))
 
-// DeviceReadAtn represents the signal for device read attention (ATN_IN).
-// DeviceReadClk represents the signal for device read clock (CLK_IN).
-// DeviceReadData represents the signal for device read data (DATA_IN).
-// DeviceWriteData represents the signal for device write data (DATA_OUT).
-// DeviceWriteClk represents the signal for device write clock (CLK_OUT).
-// IECBUS_DEVICE_ATNA represents the signal for attention acknowledge (ATN_A).
+// DeviceReadData represents the data input signal for a device.
+// DeviceReadClk represents the clock input signal for a device.
+// DeviceReadAtn represents the attention input signal for a device.
+// DeviceWriteData represents the data output signal for a device.
+// DeviceWriteClk represents the clock output signal for a device.
+// DeviceWriteAtn represents the attention output signal for a device.
 const (
 	DeviceReadData = uint8(0x01) // DATA_IN
 	DeviceReadClk  = uint8(0x04) // CLK_IN
@@ -48,72 +34,86 @@ const (
 	//DeviceWriteData = uint8(0x80)
 )
 
-// P_PRE0 to P_FRAMEERR1 are constants representing various protocol states or phases in an iota enumeration.
+// pPre0 to pPre2 represent pre-process states.
+// pReady denotes the ready state.
+// pEOI and pEOIw signify end-of-input and its waiting state.
+// pBit0 to pBit7 indicate bit processing states.
+// pBit0w to pBit7w represent waiting states for corresponding bit processing.
+// pDone0 and pDone1 symbolize completion states.
+// pFrameError0 and PFrameError1 represent error states in a frame.
 const (
-	P_PRE0 = 0 + iota
-	P_PRE1
-	P_PRE2
-	P_READY
-	P_EOI
-	P_EOIw
-	P_BIT0
-	P_BIT0w
-	P_BIT1
-	P_BIT1w
-	P_BIT2
-	P_BIT2w
-	P_BIT3
-	P_BIT3w
-	P_BIT4
-	P_BIT4w
-	P_BIT5
-	P_BIT5w
-	P_BIT6
-	P_BIT6w
-	P_BIT7
-	P_BIT7w
-	P_DONE0
-	P_DONE1
-	P_FRAMEERR0
-	P_FRAMEERR1
+	pPre0 = 0 + iota
+	pPre1
+	pPre2
+	pReady
+	pEOI
+	pEOIw
+	pBit0
+	pBit0w
+	pBit1
+	pBit1w
+	pBit2
+	pBit2w
+	pBit3
+	pBit3w
+	pBit4
+	pBit4w
+	pBit5
+	pBit5w
+	pBit6
+	pBit6w
+	pBit7
+	pBit7w
+	pDone0
+	pDone1
+	pFrameError0
+	PFrameError1
 )
 
-// P_TALKING represents a state or flag with the value 0x20.
-// P_LISTENING represents a state or flag with the value 0x40.
-// P_ATN represents a state or flag with the value 0x80.
+// pTalking represents a state indicating talking in progress.
+// pListening represents a state indicating listening in progress.
+// pAtn represents a state indicating attention state.
+// pRequestListen represents a request to transition to listening state.
+// pRequestTalking represents a request to transition to talking state.
+// pUnlisten represents a mask to clear the listening state.
+// pUntalk represents a mask to clear the talking state.
 const (
-	P_TALKING   = uint8(0x20)
-	P_LISTENING = uint8(0x40)
-	P_ATN       = uint8(0x80)
+	pTalking   = uint8(0x20)
+	pListening = uint8(0x40)
+	pAtn       = uint8(0x80)
+
+	pRequestListen  = uint8(0x20)
+	pRequestTalking = uint8(0x40)
+
+	pUnlisten = uint8(0x3f)
+	pUntalk   = uint8(0x5f)
 )
 
-const (
-	UNLISTEN = uint8(0x3f)
-	UNTALK   = uint8(0x5f)
-)
-
+// stateLast defines the last valid index for the state array, used as a mask for ensuring proper index bounds.
 const stateLast = 0xf
 
+// _pBits is a lookup table mapping protocol state machine states to corresponding bit masks for an 8-bit data line.
 var _pBits [0xff]uint8
 
+// init initializes the _pBits array with bit masks corresponding to constants pBit0 through pBit7.
 func init() {
-	_pBits[P_BIT0] = uint8(0x01)
-	_pBits[P_BIT1] = uint8(0x02)
-	_pBits[P_BIT2] = uint8(0x04)
-	_pBits[P_BIT3] = uint8(0x08)
-	_pBits[P_BIT4] = uint8(0x10)
-	_pBits[P_BIT5] = uint8(0x20)
-	_pBits[P_BIT6] = uint8(0x40)
-	_pBits[P_BIT7] = uint8(0x80)
+	_pBits[pBit0] = uint8(0x01)
+	_pBits[pBit1] = uint8(0x02)
+	_pBits[pBit2] = uint8(0x04)
+	_pBits[pBit3] = uint8(0x08)
+	_pBits[pBit4] = uint8(0x10)
+	_pBits[pBit5] = uint8(0x20)
+	_pBits[pBit6] = uint8(0x40)
+	_pBits[pBit7] = uint8(0x80)
 }
 
-// Protocol represents a structure for managing IEC protocol-based communication and its state machine.
+// Protocol represents a communication protocol structure encapsulating configurations, state, and linked components.
 type Protocol struct {
 	*component.BaseComponent
-	iec           references.IIec
-	device        references.IIecProtocolDevice
-	quartz        references.IQuartz
-	gs            *Global
+	iec    references.IIec
+	device references.IIecProtocolDevice
+	quartz references.IQuartz
+	//gs            *Global
 	cfg           *config.Config
 	deviceNumber  uint8
 	stateMachine  uint8
@@ -127,21 +127,21 @@ type Protocol struct {
 	ledSignal     *signals.SignalUint32
 }
 
-// NewProtocolDevice creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
+// NewProtocolDevice creates a new IIecDevice instance using the provided component factory, parent, label, and instance parameters.
 func NewProtocolDevice(factory references.IComponentFactory, parent references.IComponent, label string, instance int) references.IIecDevice {
 	return NewProtocol(factory, parent, label, instance)
 }
 
-// NewProtocol creates a new Protocol instance, initializes it with the provided parameters, and registers it with the parent.
+// NewProtocol creates a new instance of the Protocol component, initializes its fields, and registers it within the component hierarchy.
 func NewProtocol(factory references.IComponentFactory, parent references.IComponent, label string, instance int) *Protocol {
 	p := &Protocol{
 		BaseComponent: component.NewBaseComponent(),
-		gs:            _gs,
-		iec:           nil,
-		device:        nil,
-		ledSignal:     signals.NewSignalUint32(),
-		quartz:        nil,
-		flags:         0,
+		//gs:            _gs,
+		iec:       nil,
+		device:    nil,
+		ledSignal: signals.NewSignalUint32(),
+		quartz:    nil,
+		flags:     0,
 	}
 	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, label, instance))
 
@@ -150,10 +150,12 @@ func NewProtocol(factory references.IComponentFactory, parent references.ICompon
 	return p
 }
 
+// SetDevice assigns the specified IIecProtocolDevice to the Protocol instance for handling device-specific operations.
 func (v *Protocol) SetDevice(device references.IIecProtocolDevice) {
 	v.device = device
 }
 
+// Setup initializes the Protocol by configuring its settings and setting up the quartz component.
 func (v *Protocol) Setup() error {
 	v.cfg = v.GetFactory().GetConfig()
 	if err := v.quartz.Setup(); err != nil {
@@ -162,6 +164,7 @@ func (v *Protocol) Setup() error {
 	return nil
 }
 
+// Bind associates a Protocol instance with a device socket, device ID, and device number, initializing the quartz and IEC components.
 func (v *Protocol) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber uint8) error {
 	v.deviceNumber = deviceNumber
 	var err error
@@ -175,19 +178,22 @@ func (v *Protocol) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNum
 	return nil
 }
 
+// Connect establishes a connection using the protocol. Returns an error if the connection fails.
 func (v *Protocol) Connect() error {
 	return nil
 }
 
+// Internal checks if the protocol operates purely in internal mode without external interactions.
 func (v *Protocol) Internal() bool {
 	return false
 }
 
+// Shutdown gracefully stops the Protocol's operations, ensuring all resources are properly released and cleaned up.
 func (v *Protocol) Shutdown() {
 	//
 }
 
-// Reset resets the internal state of the Protocol to its initial configuration.
+// Reset resets the state of the Protocol by clearing flags, timeout, and state, and performs a peripheral write operation.
 func (v *Protocol) Reset() {
 	v.flags = 0
 	v.timeout = 0
@@ -197,188 +203,197 @@ func (v *Protocol) Reset() {
 	v.peripheralWrite(false, DeviceWriteClk|DeviceWriteData)
 }
 
-// Ready checks if the protocol is ready for operation and returns a boolean value indicating readiness.
+// Ready returns a boolean indicating whether the protocol is ready to operate.
 func (v *Protocol) Ready() bool {
 	return true
 }
 
+// LEDSignal returns a signal of type SignalUint32 used to manage LED-related events or data changes.
 func (v *Protocol) LEDSignal() *signals.SignalUint32 {
 	return v.ledSignal
 }
 
-// GetDeviceNumber returns the device number associated with the Protocol instance.
+// GetDeviceNumber returns the device number associated with the Protocol instance. It is stored as an unsigned 8-bit integer.
 func (v *Protocol) GetDeviceNumber() uint8 {
 	return v.deviceNumber
 }
 
-// AtnStateChanged toggles the ATN (Attention) state and prints the current state as "ON" or "OFF".
+// AtnStateChanged handles changes in the ATN (Attention) state by performing specific actions based on the boolean input.
 func (v *Protocol) AtnStateChanged(atn bool) {
-	if !atn {
-		log.Println("ATN STATE CHANGED", "ON")
-	} else {
-		log.Println("ATN STATE CHANGED", "OFF")
-	}
+	//if !atn {
+	//	log.Println("ATN STATE CHANGED", "ON")
+	//} else {
+	//	log.Println("ATN STATE CHANGED", "OFF")
+	//}
 }
 
-// EmulationRequired checks whether emulation is required for the current protocol state and returns a boolean value.
+// EmulationRequired determines if emulation is required by returning a boolean value.
 func (v *Protocol) EmulationRequired() bool {
 	return true
 }
 
-// Emulate handles the state transitions and bus communication logic for the Protocol according to the IEC device interface.
+// Emulate processes the current state of the protocol by reading from the peripheral bus and updating the state machine.
 func (v *Protocol) Emulate() {
-	bus := v.iec.PeripheralRead()
-
-	busReadData := (bus & DeviceReadData) != 0
-	busReadClk := (bus & DeviceReadClk) != 0
-	busReadAtn := (bus & DeviceReadAtn) != 0
-
+	b := v.iec.PeripheralRead()
+	busReadAtn := (b & DeviceReadAtn) != 0
 	//log.Printf("protocol.Emulate(%d, %d) F=%d, S=%d, ATN=%v CLK=%v DTA=%v", v.deviceNumber, v.quartz.Cycle(), v.flags, v.state, busReadAtn, busReadClk, busReadData)
-	if !v.flagGet(P_ATN) && !busReadAtn {
-		//Falling flank on ATN (bus master addressing all devices)
-		v.setStateMachine(P_PRE0)
-		v.flagsSet(P_ATN)
-		v.setPrimary(0)
-		v.setSecondaryPrev(v.getSecondary())
-		v.setSecondary(0)
-		v.setTimeout(100)
-		//Set DATA=0("I am here").If nobody on the bus does this within 1 ms, bus-master will assume that "DeviceAdapter not present"
-		v.peripheralWrite(busReadAtn, DeviceWriteClk)
-	} else if v.flagGet(P_ATN) && busReadAtn {
-		//Rising flank on ATN (bus master finished addressing all devices)
-		v.flagsRemove(P_ATN)
-
-		if (v.getPrimary() == (v.deviceNumber + 0x20)) || (v.getPrimary() == (v.deviceNumber + 0x40)) {
-			if (v.getSecondary() & 0xf0) == 0x60 {
-				switch v.getPrimary() & 0xf0 {
-				case 0x20:
-					v.device.Listen(v.getSecondary() & 0xf)
-					v.print("after device.Listen", bus)
-				case 0x40:
-					v.device.Talk(v.getSecondary() & 0xf)
-				}
-			} else if (v.getSecondary() & 0xf0) == 0xe0 {
-				v.gs.SetState(0)
-				state := v.device.Close(v.getSecondary() & 0xf)
-				v.setState(v.getSecondary(), state)
-				//device.setState(device.getSecondary(), v.gs.getState())
-			} else if (v.getSecondary() & 0xf0) == 0xf0 {
-				//device.open() will not actually open the file (since we don't have a filename yet) but just set things up so that
-				//the characters passed to device.
-				//write() before the next call to device.unlisten() will be interpreted as the filename.
-				//The file will actually be opened during the next call to device.unlisten()
-				v.gs.SetState(0)
-				state := v.device.Open(v.getSecondary() & 0xf)
-				v.print("after device.Open", bus)
-				v.setState(v.getSecondary(), state)
-				//device.setState(device.getSecondary(), v.gs.getState())
-			}
-
-			if v.getPrimary() == (v.deviceNumber + 0x20) {
-				//We were told to listen
-				v.flagsRemove(P_TALKING)
-				//The state !=0 means that the previous OPEN command failed, i.e. we could not open a file for writing.
-				//In that case, ignore the "LISTEN" request which will signal the error to the sender
-				if v.getState(v.getSecondary()) == 0 {
-					v.flagsSet(P_LISTENING)
-					v.setStateMachine(P_PRE1)
-					log.Printf("device %d start listening", v.deviceNumber)
-				}
-				//set DATA=0 ("I am here")
-				v.peripheralWrite(busReadAtn, DeviceWriteClk)
-			} else if v.getPrimary() == (v.deviceNumber + 0x40) {
-				//We were told to talk
-				v.flagsRemove(P_LISTENING)
-				v.flagsSet(P_TALKING)
-				v.setStateMachine(P_PRE0)
-				log.Printf("device %d start talking", v.deviceNumber)
-			}
-		} else if (v.getPrimary() == 0x3f) && v.flagGet(P_LISTENING) {
-			//All devices were told to stop listening
-			v.flagsRemove(P_LISTENING)
-			log.Printf("device %d stop listening", v.deviceNumber)
-
-			//If this is an UNLISTEN that followed an OPEN (0x2_ 0xf_), then
-			//device.unlisten will try to open the file with the filename that
-			//was received in between the OPEN and now.
-			//If the file cannot be opened, it will set st != 0.
-			v.gs.SetState(v.getState(v.getSecondaryPrev()))
-			v.device.Unlisten(v.getSecondaryPrev() & 0xf)
-			v.setState(v.getSecondaryPrev(), v.gs.GetState())
-		} else if (v.getPrimary() == 0x5f) && v.flagGet(P_TALKING) {
-			//All devices were told to stop talking
-			v.device.Untalk(v.getSecondaryPrev() & 0xf)
-			v.flagsRemove(P_TALKING)
-			log.Printf("device %d stop talking", v.deviceNumber)
-		}
-
-		if !v.flagGet(P_LISTENING | P_TALKING) {
-			//We're neither listening nor talking => make sure we're not holding DATA  or CLOCK line to 0 )
-			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
-		}
+	if !v.flagGet(pAtn) && !busReadAtn {
+		v.doAtnFallingFlank(busReadAtn)
+	} else if v.flagGet(pAtn) && busReadAtn {
+		v.doAtnRisingFlank(busReadAtn)
 	}
-
-	if v.flagGet(P_ATN | P_LISTENING) {
-		v.doListen(busReadAtn, busReadClk, busReadData)
-	} else if v.flagGet(P_TALKING) {
-		v.doTalk(busReadAtn, busReadClk, busReadData)
+	if v.flagGet(pAtn | pListening) {
+		v.doAtnOrListen(busReadAtn, (b&DeviceReadClk) != 0, (b&DeviceReadData) != 0)
+	} else if v.flagGet(pTalking) {
+		v.doTalk(busReadAtn, (b&DeviceReadClk) != 0, (b&DeviceReadData) != 0)
 	}
-
 	v.quartz.Emulate()
 }
 
-// doListen handles the state transitions for the device during the listening phase on the IEC bus based on the current clock and data signals.
-// It ensures proper synchronization, processes incoming data or commands, and acknowledges frames as needed or signals errors.
-func (v *Protocol) doListen(busReadAtn bool, busReadClk bool, busReadData bool) {
+// doAtnFallingFlank handles the logic triggered on the falling edge of the ATN signal during bus communication.
+// It sets the protocol state machine, updates flags and primary/secondary addresses, initializes a timeout,
+// and performs a peripheral write signaling presence on the bus.
+func (v *Protocol) doAtnFallingFlank(busReadAtn bool) {
+	//bus master addressing all devices
+	v.setStateMachine(pPre0)
+	v.flagsSet(pAtn)
+	v.setPrimary(0)
+	v.setSecondaryPrev(v.getSecondary())
+	v.setSecondary(0)
+	v.setTimeout(100)
+	//Set DATA=0("I am here").If nobody on the bus does this within 1 ms,
+	//bus-master will assume that "DeviceAdapter not present"
+	v.peripheralWrite(busReadAtn, DeviceWriteClk)
+}
+
+// doAtnRisingFlank handles the state transitions of a device when the ATN signal's rising edge is detected on the bus.
+// It determines the device's action (e.g., listening, talking, unlistening, or untalking) based on the received commands.
+// This method updates the device's flags and state machine based on the addressing and operation requests.
+// It ensures proper handling of bus communication lines for the device's operational state.
+func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
+	//bus master finished addressing all devices
+	v.flagsRemove(pAtn)
+
+	if (v.getPrimary() == (v.deviceNumber + pRequestListen)) || (v.getPrimary() == (v.deviceNumber + pRequestTalking)) {
+		if (v.getSecondary() & 0xf0) == pTalking|pListening {
+			switch v.getPrimary() & 0xf0 {
+			case pRequestListen:
+				v.device.Listen(v.getSecondary())
+			case pRequestTalking:
+				v.device.Talk(v.getSecondary())
+			}
+		} else if (v.getSecondary() & 0xf0) == pTalking|pListening|pAtn {
+			//v.gs.SetState(0)
+			state := v.device.Close(v.getSecondary())
+			v.setState(v.getSecondary(), state)
+			//device.setState(device.getSecondary(), v.gs.getState())
+		} else if (v.getSecondary() & 0xf0) == 0xf0 {
+			//v.device.Open() will not actually open the file (since we don't have a filename yet) but just set things up so that
+			//the characters passed to device.
+			//v.device.Write() before the next call to device.unlisten() will be interpreted as the filename.
+			//The file will actually be opened during the next call to device.unlisten()
+			//v.gs.SetState(0)
+			state := v.device.Open(v.getSecondary())
+			v.setState(v.getSecondary(), state)
+			//device.setState(device.getSecondary(), v.gs.getState())
+		}
+
+		if v.getPrimary() == (v.deviceNumber + pRequestListen) {
+			//We were told to listen
+			v.flagsRemove(pTalking)
+			//The state !=0 means that the previous OPEN command failed, i.e. we could not open a file for writing.
+			//In that case, ignore the "LISTEN" request which will signal the error to the sender
+			if v.getState(v.getSecondary()) == 0 {
+				v.flagsSet(pListening)
+				v.setStateMachine(pPre1)
+				log.Printf("device %d start listening", v.deviceNumber)
+			}
+			//set DATA=0 ("I am here")
+			v.peripheralWrite(busReadAtn, DeviceWriteClk)
+		} else if v.getPrimary() == (v.deviceNumber + pRequestTalking) {
+			//We were told to talk
+			v.flagsRemove(pListening)
+			v.flagsSet(pTalking)
+			v.setStateMachine(pPre0)
+			log.Printf("device %d start talking", v.deviceNumber)
+		}
+	} else if (v.getPrimary() == 0x3f) && v.flagGet(pListening) {
+		//All devices were told to stop listening
+		v.flagsRemove(pListening)
+		log.Printf("device %d stop listening", v.deviceNumber)
+
+		//If this is an UNLISTEN that followed an OPEN (0x2_ 0xf_), then
+		//device.unlisten will try to open the file with the filename that
+		//was received in between the OPEN and now.
+		//If the file cannot be opened, it will set st != 0.
+		//v.gs.SetState(v.getState(v.getSecondaryPrev()))
+		v.device.Unlisten(v.getSecondaryPrev())
+		//v.setState(v.getSecondaryPrev(), v.gs.GetState())
+	} else if (v.getPrimary() == 0x5f) && v.flagGet(pTalking) {
+		//All devices were told to stop talking
+		v.device.Untalk(v.getSecondaryPrev())
+		v.flagsRemove(pTalking)
+		log.Printf("device %d stop talking", v.deviceNumber)
+	}
+
+	if !v.flagGet(pListening | pTalking) {
+		//We're neither listening nor talking => make sure we're not holding DATA  or CLOCK line to 0 )
+		v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
+	}
+}
+
+// doAtnOrListen handles the protocol state transitions based on the bus signals during ATN or listening mode.
+// It processes conditions such as clock state changes, timeouts, and received bits to update the state machine.
+func (v *Protocol) doAtnOrListen(busReadAtn bool, busReadClk bool, busReadData bool) {
 	//We are either under ATN or in "listening" mode
 	//fmt.Println("State:", clkValue, device.getStateMachine())
 	sm := v.getStateMachine()
 	switch sm {
-	case P_PRE0:
+	case pPre0:
 		//Ignore anything that happens during the first 100 us after falling
 		//flank on ATN (other devices may have been sending and need some time to set CLK=1)
 		if v.timeoutExpired() {
 			//test := time.Since(P_PRE0_100_time)
 			//fmt.Println("P_PRE0_100_time", test)
-			v.setStateMachine(P_PRE1)
+			v.setStateMachine(pPre1)
 		}
-	case P_PRE1:
-		//Make sure CLK=0 so we actually detect a rising flank instate P_PRE2
+	case pPre1:
+		//Make sure CLK=0 so we actually detect a rising flank instate pPre2
 		if !busReadClk {
-			v.setStateMachine(P_PRE2)
+			v.setStateMachine(pPre2)
 		}
-	case P_PRE2:
+	case pPre2:
 		// wait for rising flank on CLK ("ready-to-send")
 		if busReadClk {
 			//React by setting DATA=1 ("ready-for-data")
 			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			v.setTimeout(200)
-			v.setStateMachine(P_READY)
+			v.setStateMachine(pReady)
 		}
-	case P_READY:
+	case pReady:
 		if !busReadClk {
 			//Sender set CLK=0, is about to send first bit
-			v.setStateMachine(P_BIT0)
-		} else if !v.flagGet(P_ATN) && v.timeoutExpired() {
+			v.setStateMachine(pBit0)
+		} else if !v.flagGet(pAtn) && v.timeoutExpired() {
 			//Sender did not set CLK=0 within 200 us after we set DATA=1 => it is signaling EOI
 			//(not so if we are under ATN) acknowledge we received it by setting DATA=0 for 60us
 			log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.getSecondary()&0x0f)
 			v.peripheralWrite(busReadAtn, DeviceWriteClk)
-			v.setStateMachine(P_EOI)
+			v.setStateMachine(pEOI)
 			v.setTimeout(60)
 		}
-	case P_EOI:
+	case pEOI:
 		if v.timeoutExpired() {
 			//Set DATA back to 1 and wait for sender to set CLK=0
 			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
-			v.setStateMachine(P_EOIw)
+			v.setStateMachine(pEOIw)
 		}
-	case P_EOIw:
+	case pEOIw:
 		if !busReadClk {
 			//Sender set CLK=0, is about to send first bit
-			v.setStateMachine(P_BIT0)
+			v.setStateMachine(pBit0)
 		}
-	case P_BIT0, P_BIT1, P_BIT2, P_BIT3, P_BIT4, P_BIT5, P_BIT6, P_BIT7:
+	case pBit0, pBit1, pBit2, pBit3, pBit4, pBit5, pBit6, pBit7:
 		if busReadClk {
 			//Sender set CLK=1, signaling that the DATA line represents a valid bit
 			bit := _pBits[sm]
@@ -390,52 +405,52 @@ func (v *Protocol) doListen(busReadAtn bool, busReadClk bool, busReadData bool) 
 			//Go to associated P_BIT(n)w state, waiting for sender to set CLK=0
 			v.setStateMachineNext()
 		}
-	case P_BIT0w, P_BIT1w, P_BIT2w, P_BIT3w, P_BIT4w, P_BIT5w, P_BIT6w:
+	case pBit0w, pBit1w, pBit2w, pBit3w, pBit4w, pBit5w, pBit6w:
 		if !busReadClk {
 			//Sender set CLK=0. go to P_BIT(n+1) state to receive the next bit
 			v.setStateMachineNext()
 		}
-	case P_BIT7w:
+	case pBit7w:
 		if !busReadClk {
 			//Sender set CLK=0 and this was the last bit
 			log.Printf("device %d received : 0x%02x (%c)", v.deviceNumber, v.dataGetByte(), v.dataGetByte())
-			if v.flagGet(P_ATN) {
+			if v.flagGet(pAtn) {
 				//We are currently receiving under ATN. Store the first two bytes received (contain primary and secondary address)
 				if v.getPrimary() == 0 {
 					v.setPrimary(v.dataGetByte())
 				} else if v.getSecondary() == 0 {
 					v.setSecondary(v.dataGetByte())
 				}
-				if (v.getPrimary() != UNLISTEN) && (v.getPrimary() != UNTALK) && ((v.getPrimary() & 0x1f) != v.deviceNumber) {
+				if (v.getPrimary() != pUnlisten) && (v.getPrimary() != pUntalk) && ((v.getPrimary() & 0x1f) != v.deviceNumber) {
 					//This is NOT a UNLISTEN (0x3f) or UNTALK (0x5f) command and the primary address is not ours =>
 					//Don't acknowledge the frame and stop listening. If all devices on the bus do this, the bus-master knows that "DeviceAdapter not present"
-					v.setStateMachine(P_DONE0)
+					v.setStateMachine(pDone0)
 				} else {
 					//Acknowledge frame by setting DATA=0
 					v.peripheralWrite(busReadAtn, DeviceWriteClk)
-					//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
-					v.setStateMachine(P_PRE2)
+					//repeat from pPre2 (we know that CLK=0 so no need to go to pPre1)
+					v.setStateMachine(pPre2)
 				}
-			} else if v.flagGet(P_LISTENING) {
+			} else if v.flagGet(pListening) {
 				//We are currently listening for data pass received byte on to the upper level
 				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.dataGetByte(), v.dataGetByte(), v.getSecondary())
-				v.gs.SetState(v.getState(v.getSecondary()))
-				state := v.device.Write(v.getSecondary()&0xf, v.dataGetByte())
+				//v.gs.SetState(v.getState(v.getSecondary()))
+				state := v.device.Write(v.getSecondary(), v.dataGetByte())
 				v.setState(v.getSecondary(), state)
 				//device.setState(device.getSecondary(), v.gs.getState())
 
 				if v.getState(v.getSecondary()) != 0 {
 					//There was an error during iec_bus_write => stop listening. This will signal an error condition to the sender
-					v.setStateMachine(P_DONE0)
+					v.setStateMachine(pDone0)
 				} else {
 					//Acknowledge frame by setting DATA=0
 					v.peripheralWrite(busReadAtn, DeviceWriteClk)
-					//repeat from P_PRE2 (we know that CLK=0 so no need to go to P_PRE1)
-					v.setStateMachine(P_PRE2)
+					//repeat from pPre2 (we know that CLK=0 so no need to go to pPre1)
+					v.setStateMachine(pPre2)
 				}
 			}
 		}
-	case P_DONE0:
+	case pDone0:
 		//fmt.Println("We're just waiting for the bus-master to set ATN back to 1")
 		//We're just waiting for the bus-master to set ATN back to 1
 	default:
@@ -443,61 +458,60 @@ func (v *Protocol) doListen(busReadAtn bool, busReadClk bool, busReadData bool) 
 	}
 }
 
-// doTalk handles the communication protocol for transmitting data between devices using a state machine.
-// It manages the transition between various states, timing, and signaling during the data transmission process.
+// doTalk handles the communication protocol state machine for a device, managing data transmission and error handling.
 func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 	sm := v.getStateMachine()
 	switch sm {
-	case P_PRE0:
+	case pPre0:
 		if busReadClk {
 			//Bus-master set CLK=1 (and before that should have set DATA=0)
 			//we are getting ready for role reversal.Set CLK=0,DATA=1
 			v.peripheralWrite(busReadAtn, DeviceWriteData)
-			v.setStateMachine(P_PRE1)
+			v.setStateMachine(pPre1)
 			v.setTimeout(80)
 		}
-	case P_PRE1:
+	case pPre1:
 		if v.timeoutExpired() {
 			//Signal "ready-to-send" (CLK=1)
 			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
-			v.setStateMachine(P_READY)
+			v.setStateMachine(pReady)
 		}
-	case P_READY:
+	case pReady:
 		if busReadData {
 			//Receiver signaled "ready-for-data" (DATA=1)
-			v.gs.SetState(v.getState(v.getSecondary()))
+			//v.gs.SetState(v.getState(v.getSecondary()))
 			b, state := v.device.Read(v.getSecondary() & 0xf)
 			v.dataSetByte(b)
 			v.setState(v.getSecondary(), state)
 			//device.gs.setState(device.getSecondary(), v.gs.getState())
 			if v.getState(v.getSecondary()) == 0 {
 				//At least two bytes left to send. Go on to send the first bit.
-				v.setStateMachine(P_BIT0)
+				v.setStateMachine(pBit0)
 				//no need to wait before sending the first bit
 				v.setTimeout(0)
-			} else if v.getState(v.getSecondary()) == 0x40 {
+			} else if v.getState(v.getSecondary()) == pRequestTalking {
 				//Only this byte left to send => signal EOI by keeping CLK=1
 				log.Printf("device %d signaling EOI on channel %d", v.deviceNumber, v.getSecondary())
-				v.setStateMachine(P_EOI)
+				v.setStateMachine(pEOI)
 			} else {
 				//There was some kind of error; we have nothing to send.
 				//Just stop talking and wait for ATN (This will produce a "File not found" when loading)
-				v.flagsRemove(P_TALKING)
+				v.flagsRemove(pTalking)
 			}
 		}
-	case P_EOI:
+	case pEOI:
 		if !busReadData {
 			//Receiver set DATA=0, first part of acknowledging the EOI
-			v.setStateMachine(P_EOIw)
+			v.setStateMachine(pEOIw)
 		}
-	case P_EOIw:
+	case pEOIw:
 		if busReadData {
 			//Receiver set DATA=1, final part of acknowledging the EOI. Go on to send first bit
-			v.setStateMachine(P_BIT0)
+			v.setStateMachine(pBit0)
 			//no need to wait before sending the first bit
 			v.setTimeout(0)
 		}
-	case P_BIT0, P_BIT1, P_BIT2, P_BIT3, P_BIT4, P_BIT5, P_BIT6, P_BIT7:
+	case pBit0, pBit1, pBit2, pBit3, pBit4, pBit5, pBit6, pBit7:
 		if v.timeoutExpired() {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the previous bit.
 			//Pull CLK=0 and put the next bit out of DATA.
@@ -511,7 +525,7 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 			v.setTimeout(90) //orig 60
 			v.setStateMachineNext()
 		}
-	case P_BIT0w, P_BIT1w, P_BIT2w, P_BIT3w, P_BIT4w, P_BIT5w, P_BIT6w, P_BIT7w:
+	case pBit0w, pBit1w, pBit2w, pBit3w, pBit4w, pBit5w, pBit6w, pBit7w:
 		if v.timeoutExpired() {
 			//60 us have passed since we pulled CLK=0 and put the current bit on DATA.
 			//set CLK=1, keeping data as it is (this signals "data valid" to the receiver)
@@ -521,152 +535,153 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 				v.peripheralWrite(busReadAtn, DeviceWriteClk)
 			}
 			//Go to associated P_BIT(n+1) state to send the next bit.
-			//If this was the final bit, then the next state is P_DONE0
+			//If this was the final bit, then the next state is pDone0
 			v.setTimeout(90) //orig 60
 			v.setStateMachineNext()
 		}
-	case P_DONE0:
+	case pDone0:
 		if v.timeoutExpired() {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the final bit.
 			//Pull CLK=0 and set DATA=1.This prepares for the receiver acknowledgement.
 			v.peripheralWrite(busReadAtn, DeviceWriteData)
 			v.setTimeout(1000)
-			v.setStateMachine(P_DONE1)
+			v.setStateMachine(pDone1)
 		}
-	case P_DONE1:
+	case pDone1:
 		if !busReadData {
 			//Receiver set DATA=0, acknowledging the frame
 			log.Printf("device %d sent 0x%02x (%c) on channel %d", v.deviceNumber, v.dataGetByte(), v.dataGetByte(), v.getSecondary())
-			if v.getState(v.getSecondary()) == 0x40 {
+			if v.getState(v.getSecondary()) == pRequestTalking {
 				//This was the last byte => stop talking.This leaves us waiting for ATN.
-				v.flagsRemove(P_TALKING)
+				v.flagsRemove(pTalking)
 				v.setState(v.getSecondary(), 0)
 				//Release the CLOCK line to 1
 				v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			} else {
-				//There is at least one more byte to send Start over from P_PRE1
+				//There is at least one more byte to send Start over from pPre1
 				v.setTimeout(0)
-				v.setStateMachine(P_PRE1)
+				v.setStateMachine(pPre1)
 			}
 		} else if v.timeoutExpired() {
 			//We didn't receive an acknowledgement within 1 ms.Set CLOCK=0 and after 100 us back to CLOCK=1
 			log.Printf("device %d got NACK on channel %d", v.deviceNumber, v.getSecondary())
 			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			v.setTimeout(100)
-			v.setStateMachine(P_FRAMEERR0)
+			v.setStateMachine(pFrameError0)
 		}
-	case P_FRAMEERR0:
+	case pFrameError0:
 		if v.timeoutExpired() {
 			//Finished 1-0-1 sequence of CLOCK signal
 			//to acknowledge the frame-error.Now wait for sender to set DATA=0 so we can continue.
 			v.peripheralWrite(busReadAtn, DeviceWriteData)
-			v.setStateMachine(P_FRAMEERR1)
+			v.setStateMachine(PFrameError1)
 		}
-	case P_FRAMEERR1:
+	case PFrameError1:
 		if !busReadData {
 			// sender set DATA=0, we can retry to send the byte
 			v.setTimeout(0)
-			v.setStateMachine(P_PRE1)
+			v.setStateMachine(pPre1)
 		}
 	default:
 		panic("unhandled default case")
 	}
 }
 
-// flagsSet sets the specified flags by performing a bitwise OR operation with the current flags value.
+// flagsSet sets the specified flags in the Protocol's internal flags field using a bitwise OR operation.
 func (v *Protocol) flagsSet(f uint8) {
 	v.flags |= f
 }
 
-// flagsRemove clears the specified flags by performing a bitwise AND with the complement of the flags value provided.
+// flagsRemove removes specific flags from the Protocol's flags field using bitwise operations.
 func (v *Protocol) flagsRemove(f uint8) {
 	v.flags &= ^f
 }
 
-// getFlags retrieves the current flags value of the Protocol instance.
+// flagGet checks if the specified flag is set in the Protocol's internal flags field. Returns true if set, false otherwise.
 func (v *Protocol) flagGet(f uint8) bool {
 	return (v.flags & f) != 0
 }
 
-// dataHasBit checks whether the specified bit is set within the `byte` field of the Protocol instance and returns a boolean value.
+// dataHasBit checks if the specified bit is set in the data field of the Protocol instance. Returns true if the bit is set.
 func (v *Protocol) dataHasBit(bit uint8) bool {
 	return (v.data & bit) != 0
 }
 
-// dataSetBit sets the specified bit in the `byte` field by performing a bitwise OR operation with the provided mask.
+// dataSetBit sets the specified bit(s) in the `data` field to 1 without altering other bits.
 func (v *Protocol) dataSetBit(m uint8) {
 	//m := uint8(1 << pos)
 	v.data |= m
 }
 
-// dataClearBit clears the bit at the specified position in the `byte` field using a bitwise AND with the complement of the mask.
+// dataClearBit clears specific bits in the `data` field of the Protocol struct, based on the provided mask `m`.
 func (v *Protocol) dataClearBit(m uint8) {
 	//m := uint8(^(1 << pos))
 	n := ^m
 	v.data &= n
 }
 
-// dataSetByte sets the value of the byte field in the Protocol struct.
+// dataSetByte sets the Protocol's `data` field to the specified byte value `b`.
 func (v *Protocol) dataSetByte(b uint8) {
 	v.data = b
 }
 
-// dataSetByte retrieves the current byte value stored in the Protocol struct.
+// dataGetByte returns the current value of the `data` field in the Protocol structure.
 func (v *Protocol) dataGetByte() uint8 {
 	return v.data
 }
 
-// setStateMachine sets the state machine value to the specified uint8 value.
+// setStateMachine sets the state machine to the specified state value.
 func (v *Protocol) setStateMachine(m uint8) {
 	v.stateMachine = m
 }
 
-// getStateMachine retrieves the current value of the stateMachine field in the Protocol instance.
+// getStateMachine returns the current state of the protocol's state machine as an unsigned 8-bit integer.
 func (v *Protocol) getStateMachine() uint8 {
 	return v.stateMachine
 }
 
-// setStateMachineNext increments the state machine counter by 1.
+// setStateMachineNext increments the stateMachine variable by one, advancing the state machine to the next state.
 func (v *Protocol) setStateMachineNext() {
 	v.stateMachine++
 }
 
-// setPrimary sets the primary address of the protocol to the specified value.
+// setPrimary sets the primary device address to the specified value.
 func (v *Protocol) setPrimary(p uint8) {
 	v.primary = p
 }
 
-// getPrimary returns the primary address of the Protocol instance as an unsigned 8-bit integer.
+// getPrimary retrieves the current primary address of the Protocol. Returns the value as an unsigned 8-bit integer.
 func (v *Protocol) getPrimary() uint8 {
 	return v.primary
 }
 
-// setSecondary sets the secondary value of the protocol to the provided uint8 value.
+// setSecondary sets the value of the secondary address/state in the Protocol instance.
 func (v *Protocol) setSecondary(s uint8) {
 	v.secondary = s
 }
 
-// getSecondary retrieves the current value of the `secondary` field in the Protocol instance.
+// getSecondary retrieves the current value of the secondary byte in the Protocol instance.
 func (v *Protocol) getSecondary() uint8 {
 	return v.secondary
 }
 
-// setSecondaryPrev sets the value of the secondaryPrev field in the Protocol struct.
+// setSecondaryPrev sets the secondary previous address value in the Protocol instance.
 func (v *Protocol) setSecondaryPrev(s uint8) {
 	v.secondaryPrev = s
 }
 
-// getSecondaryPrev retrieves the value of the secondaryPrev field, representing the previous secondary state in the protocol.
+// getSecondaryPrev retrieves the previous value of the secondary byte within the Protocol structure.
 func (v *Protocol) getSecondaryPrev() uint8 {
 	return v.secondaryPrev
 }
 
-// setTimeout sets the timeout value for the protocol instance to the specified value.
+// setTimeout sets a timeout in microseconds by calculating the required number of cycles and updating the timeout property.
 func (v *Protocol) setTimeout(uSec uint64) {
 	cycles := v.quartz.USecToCycleRounded(uSec)
 	v.timeout = v.quartz.Cycle() + cycles
 }
 
+// timeoutExpired checks if the current cycle exceeds or equals the timeout value, indicating that the timeout has expired.
 func (v *Protocol) timeoutExpired() bool {
 	if b := v.quartz.Cycle(); b >= v.timeout {
 		return true
@@ -674,18 +689,19 @@ func (v *Protocol) timeoutExpired() bool {
 	return false
 }
 
-// setState updates the protocol state for the given index with the specified state value, using a masked index.
+// setState updates the state at the given index after masking the index with stateLast.
 func (v *Protocol) setState(idx uint8, s uint8) {
 	x := idx & stateLast
 	v.state[x] = s
 }
 
-// getState retrieves the state value at the specified index, masked to fit within the bounds of the state array.
+// getState retrieves the state value at the given index from the state array after masking the index with stateLast.
 func (v *Protocol) getState(idx uint8) uint8 {
 	x := idx & stateLast
 	return v.state[x]
 }
 
+// peripheralWrite writes data to a peripheral device, with optional ATN (Attention) line assertion based on busReadAtn.
 func (v *Protocol) peripheralWrite(busReadAtn bool, data uint8) {
 	sidecarData := references.IECSidecarEnabled | references.IECSidecarAtnAEnabled
 	if busReadAtn {
@@ -695,6 +711,40 @@ func (v *Protocol) peripheralWrite(busReadAtn bool, data uint8) {
 	v.iec.PeripheralWrite(v.deviceNumber, out)
 }
 
+// print logs the current state of the Protocol instance along with an identifier and bus number.
 func (v *Protocol) print(id string, bus uint8) {
 	log.Printf("%s -> bus: %d, stateMachine: %d, flags: %d, primary: %d, secondary: %d, secondaryPrev: %d\n", id, bus, v.stateMachine, v.flags, v.primary, v.secondary, v.secondaryPrev)
 }
+
+/*
+// IGlobal represents an interface for managing and retrieving a state value as an unsigned 8-bit integer.
+type IGlobal interface {
+	GetState() uint8
+	SetState() uint8
+}
+
+// Global represents a structure encapsulating the state of a global entity as an unsigned 8-bit integer.
+type Global struct {
+	state uint8
+}
+
+// NewGlobalState initializes and returns a pointer to a new Global instance with its state set to 0.
+func NewGlobalState() *Global {
+	return &Global{
+		state: 0,
+	}
+}
+
+// SetState updates the internal state of the Global instance with the given value.
+func (v *Global) SetState(state uint8) {
+	v.state = state
+}
+
+// GetState retrieves the current state value of the Global instance.
+func (v *Global) GetState() uint8 {
+	return v.state
+}
+
+// _gs is a singleton instance of Global, initialized using NewGlobalState, and shared across various components.
+var _gs = NewGlobalState()
+*/

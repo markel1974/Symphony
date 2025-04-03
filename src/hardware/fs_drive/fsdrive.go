@@ -118,28 +118,38 @@ func (v *FSDrive) GetPath() string {
 	return v.dirPath
 }
 
-func (v *FSDrive) Listen(sec uint8) {
+func (v *FSDrive) Listen(d uint8) {
+	sec := d & 0xf
 	log.Println("FSDrive LISTEN", sec)
 }
 
-func (v *FSDrive) Unlisten(sec uint8) {
-	data, _ := v.openDirectory(sec, "", "PROVA")
+func (v *FSDrive) Unlisten(d uint8) {
+	//TODO
+	//If this is an UNLISTEN that followed an OPEN (0x2_ 0xf_), then
+	//device.unlisten will try to open the file with the filename that
+	//was received in between the OPEN and now.
+	//If the file cannot be opened, it will set st != 0.
+	channel := d & 0xf
+	data, _ := v.openDirectory(channel, "", "PROVA")
 	v.test = fifo.NewStaticFifo(uint(len(data)))
 	for _, k := range data {
 		v.test.Set(int(k))
 	}
-	log.Println("FSDrive UNLISTEN", sec)
+	log.Println("FSDrive UNLISTEN", channel)
 }
 
-func (v *FSDrive) Talk(sec uint8) {
-	log.Println("FSDrive TALK", sec)
+func (v *FSDrive) Talk(d uint8) {
+	channel := d & 0xf
+	log.Println("FSDrive TALK", channel)
 }
 
-func (v *FSDrive) Untalk(sec uint8) {
-	log.Println("FSDrive UNTALK", sec)
+func (v *FSDrive) Untalk(d uint8) {
+	channel := d & 0xf
+	log.Println("FSDrive UNTALK", channel)
 }
 
-func (v *FSDrive) Open(channel uint8) uint8 {
+func (v *FSDrive) Open(d uint8) uint8 {
+	channel := d & 0xf
 	//TODO initialize channel
 
 	//for _, c := range "PROVA" {
@@ -183,7 +193,8 @@ func (v *FSDrive) Open(channel uint8) uint8 {
 	*/
 }
 
-func (v *FSDrive) Close(channel uint8) uint8 {
+func (v *FSDrive) Close(d uint8) uint8 {
+	channel := d & 0xf
 	v.LedTurnOff()
 	if channel == 15 {
 		v.closeAllChannels()
@@ -235,8 +246,9 @@ func (v *FSDrive) Read(channel uint8) (uint8, uint8) {
 	return data, StOk
 }
 
-func (v *FSDrive) Write(channel uint8, data uint8) uint8 {
+func (v *FSDrive) Write(d uint8, data uint8) uint8 {
 	//TODO EOI, eoi bool
+	channel := d & 0xf
 	eoi := false
 
 	if channel == 15 {
