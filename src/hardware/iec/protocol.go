@@ -110,43 +110,29 @@ func init() {
 // Protocol represents a communication protocol structure encapsulating configurations, state, and linked components.
 type Protocol struct {
 	*component.BaseComponent
-	iec    references.IIec
-	device references.IIecProtocolDevice
-	quartz references.IQuartz
+	iec          references.IIec
+	device       references.IIecProtocolDevice
+	quartz       references.IQuartz
+	ps           *ProtocolState
+	cfg          *config.Config
+	deviceNumber uint8
+	ledSignal    *signals.SignalUint32
 	//gs            *Global
-	cfg           *config.Config
-	deviceNumber  uint8
-	stateMachine  uint8
-	flags         uint8
-	primary       uint8
-	secondaryPrev uint8
-	secondary     uint8
-	timeout       uint64
-	data          uint8
-	state         [stateLast + 1]uint8
-	ledSignal     *signals.SignalUint32
-}
-
-// NewProtocolDevice creates a new IIecDevice instance using the provided component factory, parent, label, and instance parameters.
-func NewProtocolDevice(factory references.IComponentFactory, parent references.IComponent, label string, instance int) references.IIecDevice {
-	return NewProtocol(factory, parent, label, instance)
 }
 
 // NewProtocol creates a new instance of the Protocol component, initializes its fields, and registers it within the component hierarchy.
 func NewProtocol(factory references.IComponentFactory, parent references.IComponent, label string, instance int) *Protocol {
 	p := &Protocol{
 		BaseComponent: component.NewBaseComponent(),
+		ps:            NewProtocolState(),
+		iec:           nil,
+		device:        nil,
+		ledSignal:     signals.NewSignalUint32(),
+		quartz:        nil,
 		//gs:            _gs,
-		iec:       nil,
-		device:    nil,
-		ledSignal: signals.NewSignalUint32(),
-		quartz:    nil,
-		flags:     0,
 	}
 	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, label, instance))
-
 	p.quartz = quartz.NewQuartz(p, factory, label, 0)
-
 	return p
 }
 
@@ -195,11 +181,7 @@ func (v *Protocol) Shutdown() {
 
 // Reset resets the state of the Protocol by clearing flags, timeout, and state, and performs a peripheral write operation.
 func (v *Protocol) Reset() {
-	v.flags = 0
-	v.timeout = 0
-	for i := 0; i < len(v.state); i++ {
-		v.state[i] = 0
-	}
+	v.ps.Reset()
 	v.peripheralWrite(false, DeviceWriteClk|DeviceWriteData)
 }
 
@@ -237,14 +219,14 @@ func (v *Protocol) Emulate() {
 	b := v.iec.PeripheralRead()
 	busReadAtn := (b & DeviceReadAtn) != 0
 	//log.Printf("protocol.Emulate(%d, %d) F=%d, S=%d, ATN=%v CLK=%v DTA=%v", v.deviceNumber, v.quartz.Cycle(), v.flags, v.state, busReadAtn, busReadClk, busReadData)
-	if !v.flagGet(pAtn) && !busReadAtn {
+	if !v.ps.FlagGet(pAtn) && !busReadAtn {
 		v.doAtnFallingFlank(busReadAtn)
-	} else if v.flagGet(pAtn) && busReadAtn {
+	} else if v.ps.FlagGet(pAtn) && busReadAtn {
 		v.doAtnRisingFlank(busReadAtn)
 	}
-	if v.flagGet(pAtn | pListening) {
+	if v.ps.FlagGet(pAtn | pListening) {
 		v.doAtnOrListen(busReadAtn, (b&DeviceReadClk) != 0, (b&DeviceReadData) != 0)
-	} else if v.flagGet(pTalking) {
+	} else if v.ps.FlagGet(pTalking) {
 		v.doTalk(busReadAtn, (b&DeviceReadClk) != 0, (b&DeviceReadData) != 0)
 	}
 	v.quartz.Emulate()
@@ -255,12 +237,13 @@ func (v *Protocol) Emulate() {
 // and performs a peripheral write signaling presence on the bus.
 func (v *Protocol) doAtnFallingFlank(busReadAtn bool) {
 	//bus master addressing all devices
-	v.setStateMachine(pPre0)
-	v.flagsSet(pAtn)
-	v.setPrimary(0)
-	v.setSecondaryPrev(v.getSecondary())
-	v.setSecondary(0)
-	v.setTimeout(100)
+	v.ps.StateMachineSet(pPre0)
+	v.ps.FlagsSet(pAtn)
+	v.ps.PrimarySet(0)
+	v.ps.SecondaryPrevSet()
+	v.ps.SecondarySet(0)
+	v.ps.TimeoutSet(v.quartz, 100)
+
 	//Set DATA=0("I am here").If nobody on the bus does this within 1 ms,
 	//bus-master will assume that "DeviceAdapter not present"
 	v.peripheralWrite(busReadAtn, DeviceWriteClk)
@@ -272,71 +255,71 @@ func (v *Protocol) doAtnFallingFlank(busReadAtn bool) {
 // It ensures proper handling of bus communication lines for the device's operational state.
 func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
 	//bus master finished addressing all devices
-	v.flagsRemove(pAtn)
+	v.ps.FlagsRemove(pAtn)
 
-	if (v.getPrimary() == (v.deviceNumber + pRequestListen)) || (v.getPrimary() == (v.deviceNumber + pRequestTalking)) {
-		if (v.getSecondary() & 0xf0) == pTalking|pListening {
-			switch v.getPrimary() & 0xf0 {
+	if (v.ps.PrimaryGet() == (v.deviceNumber + pRequestListen)) || (v.ps.PrimaryGet() == (v.deviceNumber + pRequestTalking)) {
+		if (v.ps.SecondaryGet() & 0xf0) == pTalking|pListening {
+			switch v.ps.PrimaryGet() & 0xf0 {
 			case pRequestListen:
-				v.device.Listen(v.getSecondary())
+				v.device.Listen(v.ps.SecondaryGet())
 			case pRequestTalking:
-				v.device.Talk(v.getSecondary())
+				v.device.Talk(v.ps.SecondaryGet())
 			}
-		} else if (v.getSecondary() & 0xf0) == pTalking|pListening|pAtn {
+		} else if (v.ps.SecondaryGet() & 0xf0) == pTalking|pListening|pAtn {
 			//v.gs.SetState(0)
-			state := v.device.Close(v.getSecondary())
-			v.setState(v.getSecondary(), state)
-			//device.setState(device.getSecondary(), v.gs.getState())
-		} else if (v.getSecondary() & 0xf0) == 0xf0 {
+			state := v.device.Close(v.ps.SecondaryGet())
+			v.ps.StateSet(v.ps.SecondaryGet(), state)
+			//device.StateSet(device.SecondaryGet(), v.gs.StateGet())
+		} else if (v.ps.SecondaryGet() & 0xf0) == 0xf0 {
 			//v.device.Open() will not actually open the file (since we don't have a filename yet) but just set things up so that
 			//the characters passed to device.
 			//v.device.Write() before the next call to device.unlisten() will be interpreted as the filename.
 			//The file will actually be opened during the next call to device.unlisten()
 			//v.gs.SetState(0)
-			state := v.device.Open(v.getSecondary())
-			v.setState(v.getSecondary(), state)
-			//device.setState(device.getSecondary(), v.gs.getState())
+			state := v.device.Open(v.ps.SecondaryGet())
+			v.ps.StateSet(v.ps.SecondaryGet(), state)
+			//device.StateSet(device.SecondaryGet(), v.gs.StateGet())
 		}
 
-		if v.getPrimary() == (v.deviceNumber + pRequestListen) {
+		if v.ps.PrimaryGet() == (v.deviceNumber + pRequestListen) {
 			//We were told to listen
-			v.flagsRemove(pTalking)
+			v.ps.FlagsRemove(pTalking)
 			//The state !=0 means that the previous OPEN command failed, i.e. we could not open a file for writing.
 			//In that case, ignore the "LISTEN" request which will signal the error to the sender
-			if v.getState(v.getSecondary()) == 0 {
-				v.flagsSet(pListening)
-				v.setStateMachine(pPre1)
+			if v.ps.StateGet(v.ps.SecondaryGet()) == 0 {
+				v.ps.FlagsSet(pListening)
+				v.ps.StateMachineSet(pPre1)
 				log.Printf("device %d start listening", v.deviceNumber)
 			}
 			//set DATA=0 ("I am here")
 			v.peripheralWrite(busReadAtn, DeviceWriteClk)
-		} else if v.getPrimary() == (v.deviceNumber + pRequestTalking) {
+		} else if v.ps.PrimaryGet() == (v.deviceNumber + pRequestTalking) {
 			//We were told to talk
-			v.flagsRemove(pListening)
-			v.flagsSet(pTalking)
-			v.setStateMachine(pPre0)
+			v.ps.FlagsRemove(pListening)
+			v.ps.FlagsSet(pTalking)
+			v.ps.StateMachineSet(pPre0)
 			log.Printf("device %d start talking", v.deviceNumber)
 		}
-	} else if (v.getPrimary() == 0x3f) && v.flagGet(pListening) {
+	} else if (v.ps.PrimaryGet() == 0x3f) && v.ps.FlagGet(pListening) {
 		//All devices were told to stop listening
-		v.flagsRemove(pListening)
+		v.ps.FlagsRemove(pListening)
 		log.Printf("device %d stop listening", v.deviceNumber)
 
 		//If this is an UNLISTEN that followed an OPEN (0x2_ 0xf_), then
 		//device.unlisten will try to open the file with the filename that
 		//was received in between the OPEN and now.
 		//If the file cannot be opened, it will set st != 0.
-		//v.gs.SetState(v.getState(v.getSecondaryPrev()))
-		v.device.Unlisten(v.getSecondaryPrev())
-		//v.setState(v.getSecondaryPrev(), v.gs.GetState())
-	} else if (v.getPrimary() == 0x5f) && v.flagGet(pTalking) {
+		//v.gs.SetState(v.StateGet(v.SecondaryPrevGet()))
+		v.device.Unlisten(v.ps.SecondaryPrevGet())
+		//v.StateSet(v.SecondaryPrevGet(), v.gs.GetState())
+	} else if (v.ps.PrimaryGet() == 0x5f) && v.ps.FlagGet(pTalking) {
 		//All devices were told to stop talking
-		v.device.Untalk(v.getSecondaryPrev())
-		v.flagsRemove(pTalking)
+		v.device.Untalk(v.ps.SecondaryPrevGet())
+		v.ps.FlagsRemove(pTalking)
 		log.Printf("device %d stop talking", v.deviceNumber)
 	}
 
-	if !v.flagGet(pListening | pTalking) {
+	if !v.ps.FlagGet(pListening | pTalking) {
 		//We're neither listening nor talking => make sure we're not holding DATA  or CLOCK line to 0 )
 		v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 	}
@@ -346,107 +329,107 @@ func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
 // It processes conditions such as clock state changes, timeouts, and received bits to update the state machine.
 func (v *Protocol) doAtnOrListen(busReadAtn bool, busReadClk bool, busReadData bool) {
 	//We are either under ATN or in "listening" mode
-	//fmt.Println("State:", clkValue, device.getStateMachine())
-	sm := v.getStateMachine()
+	//fmt.Println("State:", clkValue, device.StateMachineGet())
+	sm := v.ps.StateMachineGet()
 	switch sm {
 	case pPre0:
 		//Ignore anything that happens during the first 100 us after falling
 		//flank on ATN (other devices may have been sending and need some time to set CLK=1)
-		if v.timeoutExpired() {
+		if v.ps.TimeoutExpired(v.quartz) {
 			//test := time.Since(P_PRE0_100_time)
 			//fmt.Println("P_PRE0_100_time", test)
-			v.setStateMachine(pPre1)
+			v.ps.StateMachineSet(pPre1)
 		}
 	case pPre1:
 		//Make sure CLK=0 so we actually detect a rising flank instate pPre2
 		if !busReadClk {
-			v.setStateMachine(pPre2)
+			v.ps.StateMachineSet(pPre2)
 		}
 	case pPre2:
 		// wait for rising flank on CLK ("ready-to-send")
 		if busReadClk {
 			//React by setting DATA=1 ("ready-for-data")
 			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
-			v.setTimeout(200)
-			v.setStateMachine(pReady)
+			v.ps.TimeoutSet(v.quartz, 200)
+			v.ps.StateMachineSet(pReady)
 		}
 	case pReady:
 		if !busReadClk {
 			//Sender set CLK=0, is about to send first bit
-			v.setStateMachine(pBit0)
-		} else if !v.flagGet(pAtn) && v.timeoutExpired() {
+			v.ps.StateMachineSet(pBit0)
+		} else if !v.ps.FlagGet(pAtn) && v.ps.TimeoutExpired(v.quartz) {
 			//Sender did not set CLK=0 within 200 us after we set DATA=1 => it is signaling EOI
 			//(not so if we are under ATN) acknowledge we received it by setting DATA=0 for 60us
-			log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.getSecondary()&0x0f)
+			log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.ps.SecondaryGet()&0x0f)
 			v.peripheralWrite(busReadAtn, DeviceWriteClk)
-			v.setStateMachine(pEOI)
-			v.setTimeout(60)
+			v.ps.StateMachineSet(pEOI)
+			v.ps.TimeoutSet(v.quartz, 60)
 		}
 	case pEOI:
-		if v.timeoutExpired() {
+		if v.ps.TimeoutExpired(v.quartz) {
 			//Set DATA back to 1 and wait for sender to set CLK=0
 			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
-			v.setStateMachine(pEOIw)
+			v.ps.StateMachineSet(pEOIw)
 		}
 	case pEOIw:
 		if !busReadClk {
 			//Sender set CLK=0, is about to send first bit
-			v.setStateMachine(pBit0)
+			v.ps.StateMachineSet(pBit0)
 		}
 	case pBit0, pBit1, pBit2, pBit3, pBit4, pBit5, pBit6, pBit7:
 		if busReadClk {
 			//Sender set CLK=1, signaling that the DATA line represents a valid bit
 			bit := _pBits[sm]
 			if busReadData {
-				v.dataSetBit(bit)
+				v.ps.DataSetBit(bit)
 			} else {
-				v.dataClearBit(bit)
+				v.ps.DataClearBit(bit)
 			}
 			//Go to associated P_BIT(n)w state, waiting for sender to set CLK=0
-			v.setStateMachineNext()
+			v.ps.StateMachineAdvance()
 		}
 	case pBit0w, pBit1w, pBit2w, pBit3w, pBit4w, pBit5w, pBit6w:
 		if !busReadClk {
 			//Sender set CLK=0. go to P_BIT(n+1) state to receive the next bit
-			v.setStateMachineNext()
+			v.ps.StateMachineAdvance()
 		}
 	case pBit7w:
 		if !busReadClk {
 			//Sender set CLK=0 and this was the last bit
-			log.Printf("device %d received : 0x%02x (%c)", v.deviceNumber, v.dataGetByte(), v.dataGetByte())
-			if v.flagGet(pAtn) {
+			log.Printf("device %d received : 0x%02x (%c)", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte())
+			if v.ps.FlagGet(pAtn) {
 				//We are currently receiving under ATN. Store the first two bytes received (contain primary and secondary address)
-				if v.getPrimary() == 0 {
-					v.setPrimary(v.dataGetByte())
-				} else if v.getSecondary() == 0 {
-					v.setSecondary(v.dataGetByte())
+				if v.ps.PrimaryGet() == 0 {
+					v.ps.PrimarySet(v.ps.DataGetByte())
+				} else if v.ps.SecondaryGet() == 0 {
+					v.ps.SecondarySet(v.ps.DataGetByte())
 				}
-				if (v.getPrimary() != pUnlisten) && (v.getPrimary() != pUntalk) && ((v.getPrimary() & 0x1f) != v.deviceNumber) {
+				if (v.ps.PrimaryGet() != pUnlisten) && (v.ps.PrimaryGet() != pUntalk) && ((v.ps.PrimaryGet() & 0x1f) != v.deviceNumber) {
 					//This is NOT a UNLISTEN (0x3f) or UNTALK (0x5f) command and the primary address is not ours =>
 					//Don't acknowledge the frame and stop listening. If all devices on the bus do this, the bus-master knows that "DeviceAdapter not present"
-					v.setStateMachine(pDone0)
+					v.ps.StateMachineSet(pDone0)
 				} else {
 					//Acknowledge frame by setting DATA=0
 					v.peripheralWrite(busReadAtn, DeviceWriteClk)
 					//repeat from pPre2 (we know that CLK=0 so no need to go to pPre1)
-					v.setStateMachine(pPre2)
+					v.ps.StateMachineSet(pPre2)
 				}
-			} else if v.flagGet(pListening) {
+			} else if v.ps.FlagGet(pListening) {
 				//We are currently listening for data pass received byte on to the upper level
-				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.dataGetByte(), v.dataGetByte(), v.getSecondary())
-				//v.gs.SetState(v.getState(v.getSecondary()))
-				state := v.device.Write(v.getSecondary(), v.dataGetByte())
-				v.setState(v.getSecondary(), state)
-				//device.setState(device.getSecondary(), v.gs.getState())
+				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte(), v.ps.SecondaryGet())
+				//v.gs.SetState(v.StateGet(v.SecondaryGet()))
+				state := v.device.Write(v.ps.SecondaryGet(), v.ps.DataGetByte())
+				v.ps.StateSet(v.ps.SecondaryGet(), state)
+				//device.StateSet(device.SecondaryGet(), v.gs.StateGet())
 
-				if v.getState(v.getSecondary()) != 0 {
+				if v.ps.StateGet(v.ps.SecondaryGet()) != 0 {
 					//There was an error during iec_bus_write => stop listening. This will signal an error condition to the sender
-					v.setStateMachine(pDone0)
+					v.ps.StateMachineSet(pDone0)
 				} else {
 					//Acknowledge frame by setting DATA=0
 					v.peripheralWrite(busReadAtn, DeviceWriteClk)
 					//repeat from pPre2 (we know that CLK=0 so no need to go to pPre1)
-					v.setStateMachine(pPre2)
+					v.ps.StateMachineSet(pPre2)
 				}
 			}
 		}
@@ -460,73 +443,73 @@ func (v *Protocol) doAtnOrListen(busReadAtn bool, busReadClk bool, busReadData b
 
 // doTalk handles the communication protocol state machine for a device, managing data transmission and error handling.
 func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
-	sm := v.getStateMachine()
+	sm := v.ps.StateMachineGet()
 	switch sm {
 	case pPre0:
 		if busReadClk {
 			//Bus-master set CLK=1 (and before that should have set DATA=0)
 			//we are getting ready for role reversal.Set CLK=0,DATA=1
 			v.peripheralWrite(busReadAtn, DeviceWriteData)
-			v.setStateMachine(pPre1)
-			v.setTimeout(80)
+			v.ps.StateMachineSet(pPre1)
+			v.ps.TimeoutSet(v.quartz, 80)
 		}
 	case pPre1:
-		if v.timeoutExpired() {
+		if v.ps.TimeoutExpired(v.quartz) {
 			//Signal "ready-to-send" (CLK=1)
 			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
-			v.setStateMachine(pReady)
+			v.ps.StateMachineSet(pReady)
 		}
 	case pReady:
 		if busReadData {
 			//Receiver signaled "ready-for-data" (DATA=1)
-			//v.gs.SetState(v.getState(v.getSecondary()))
-			b, state := v.device.Read(v.getSecondary() & 0xf)
-			v.dataSetByte(b)
-			v.setState(v.getSecondary(), state)
-			//device.gs.setState(device.getSecondary(), v.gs.getState())
-			if v.getState(v.getSecondary()) == 0 {
+			//v.gs.SetState(v.StateGet(v.SecondaryGet()))
+			b, state := v.device.Read(v.ps.SecondaryGet() & 0xf)
+			v.ps.DataSetByte(b)
+			v.ps.StateSet(v.ps.SecondaryGet(), state)
+			//device.gs.StateSet(device.SecondaryGet(), v.gs.StateGet())
+			if v.ps.StateGet(v.ps.SecondaryGet()) == 0 {
 				//At least two bytes left to send. Go on to send the first bit.
-				v.setStateMachine(pBit0)
+				v.ps.StateMachineSet(pBit0)
 				//no need to wait before sending the first bit
-				v.setTimeout(0)
-			} else if v.getState(v.getSecondary()) == pRequestTalking {
+				v.ps.TimeoutSet(v.quartz, 0)
+			} else if v.ps.StateGet(v.ps.SecondaryGet()) == pRequestTalking {
 				//Only this byte left to send => signal EOI by keeping CLK=1
-				log.Printf("device %d signaling EOI on channel %d", v.deviceNumber, v.getSecondary())
-				v.setStateMachine(pEOI)
+				log.Printf("device %d signaling EOI on channel %d", v.deviceNumber, v.ps.SecondaryGet())
+				v.ps.StateMachineSet(pEOI)
 			} else {
 				//There was some kind of error; we have nothing to send.
 				//Just stop talking and wait for ATN (This will produce a "File not found" when loading)
-				v.flagsRemove(pTalking)
+				v.ps.FlagsRemove(pTalking)
 			}
 		}
 	case pEOI:
 		if !busReadData {
 			//Receiver set DATA=0, first part of acknowledging the EOI
-			v.setStateMachine(pEOIw)
+			v.ps.StateMachineSet(pEOIw)
 		}
 	case pEOIw:
 		if busReadData {
 			//Receiver set DATA=1, final part of acknowledging the EOI. Go on to send first bit
-			v.setStateMachine(pBit0)
+			v.ps.StateMachineSet(pBit0)
 			//no need to wait before sending the first bit
-			v.setTimeout(0)
+			v.ps.TimeoutSet(v.quartz, 0)
 		}
 	case pBit0, pBit1, pBit2, pBit3, pBit4, pBit5, pBit6, pBit7:
-		if v.timeoutExpired() {
+		if v.ps.TimeoutExpired(v.quartz) {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the previous bit.
 			//Pull CLK=0 and put the next bit out of DATA.
 			bit := _pBits[sm]
-			if v.dataHasBit(bit) {
+			if v.ps.DataHasBit(bit) {
 				v.peripheralWrite(busReadAtn, DeviceWriteData)
 			} else {
 				v.peripheralWrite(busReadAtn, 0)
 			}
 			//Go to associated P_BIT(n)w state
-			v.setTimeout(90) //orig 60
-			v.setStateMachineNext()
+			v.ps.TimeoutSet(v.quartz, 90) //orig 60
+			v.ps.StateMachineAdvance()
 		}
 	case pBit0w, pBit1w, pBit2w, pBit3w, pBit4w, pBit5w, pBit6w, pBit7w:
-		if v.timeoutExpired() {
+		if v.ps.TimeoutExpired(v.quartz) {
 			//60 us have passed since we pulled CLK=0 and put the current bit on DATA.
 			//set CLK=1, keeping data as it is (this signals "data valid" to the receiver)
 			if busReadData {
@@ -536,169 +519,55 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 			}
 			//Go to associated P_BIT(n+1) state to send the next bit.
 			//If this was the final bit, then the next state is pDone0
-			v.setTimeout(90) //orig 60
-			v.setStateMachineNext()
+			v.ps.TimeoutSet(v.quartz, 90) //orig 60
+			v.ps.StateMachineAdvance()
 		}
 	case pDone0:
-		if v.timeoutExpired() {
+		if v.ps.TimeoutExpired(v.quartz) {
 			//60 us have passed since we set CLK=1 to signal "data valid" for the final bit.
 			//Pull CLK=0 and set DATA=1.This prepares for the receiver acknowledgement.
 			v.peripheralWrite(busReadAtn, DeviceWriteData)
-			v.setTimeout(1000)
-			v.setStateMachine(pDone1)
+			v.ps.TimeoutSet(v.quartz, 1000)
+			v.ps.StateMachineSet(pDone1)
 		}
 	case pDone1:
 		if !busReadData {
 			//Receiver set DATA=0, acknowledging the frame
-			log.Printf("device %d sent 0x%02x (%c) on channel %d", v.deviceNumber, v.dataGetByte(), v.dataGetByte(), v.getSecondary())
-			if v.getState(v.getSecondary()) == pRequestTalking {
+			log.Printf("device %d sent 0x%02x (%c) on channel %d", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte(), v.ps.SecondaryGet())
+			if v.ps.StateGet(v.ps.SecondaryGet()) == pRequestTalking {
 				//This was the last byte => stop talking.This leaves us waiting for ATN.
-				v.flagsRemove(pTalking)
-				v.setState(v.getSecondary(), 0)
+				v.ps.FlagsRemove(pTalking)
+				v.ps.StateSet(v.ps.SecondaryGet(), 0)
 				//Release the CLOCK line to 1
 				v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			} else {
 				//There is at least one more byte to send Start over from pPre1
-				v.setTimeout(0)
-				v.setStateMachine(pPre1)
+				v.ps.TimeoutSet(v.quartz, 0)
+				v.ps.StateMachineSet(pPre1)
 			}
-		} else if v.timeoutExpired() {
+		} else if v.ps.TimeoutExpired(v.quartz) {
 			//We didn't receive an acknowledgement within 1 ms.Set CLOCK=0 and after 100 us back to CLOCK=1
-			log.Printf("device %d got NACK on channel %d", v.deviceNumber, v.getSecondary())
+			log.Printf("device %d got NACK on channel %d", v.deviceNumber, v.ps.SecondaryGet())
 			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
-			v.setTimeout(100)
-			v.setStateMachine(pFrameError0)
+			v.ps.TimeoutSet(v.quartz, 100)
+			v.ps.StateMachineSet(pFrameError0)
 		}
 	case pFrameError0:
-		if v.timeoutExpired() {
+		if v.ps.TimeoutExpired(v.quartz) {
 			//Finished 1-0-1 sequence of CLOCK signal
 			//to acknowledge the frame-error.Now wait for sender to set DATA=0 so we can continue.
 			v.peripheralWrite(busReadAtn, DeviceWriteData)
-			v.setStateMachine(PFrameError1)
+			v.ps.StateMachineSet(PFrameError1)
 		}
 	case PFrameError1:
 		if !busReadData {
 			// sender set DATA=0, we can retry to send the byte
-			v.setTimeout(0)
-			v.setStateMachine(pPre1)
+			v.ps.TimeoutSet(v.quartz, 0)
+			v.ps.StateMachineSet(pPre1)
 		}
 	default:
 		panic("unhandled default case")
 	}
-}
-
-// flagsSet sets the specified flags in the Protocol's internal flags field using a bitwise OR operation.
-func (v *Protocol) flagsSet(f uint8) {
-	v.flags |= f
-}
-
-// flagsRemove removes specific flags from the Protocol's flags field using bitwise operations.
-func (v *Protocol) flagsRemove(f uint8) {
-	v.flags &= ^f
-}
-
-// flagGet checks if the specified flag is set in the Protocol's internal flags field. Returns true if set, false otherwise.
-func (v *Protocol) flagGet(f uint8) bool {
-	return (v.flags & f) != 0
-}
-
-// dataHasBit checks if the specified bit is set in the data field of the Protocol instance. Returns true if the bit is set.
-func (v *Protocol) dataHasBit(bit uint8) bool {
-	return (v.data & bit) != 0
-}
-
-// dataSetBit sets the specified bit(s) in the `data` field to 1 without altering other bits.
-func (v *Protocol) dataSetBit(m uint8) {
-	//m := uint8(1 << pos)
-	v.data |= m
-}
-
-// dataClearBit clears specific bits in the `data` field of the Protocol struct, based on the provided mask `m`.
-func (v *Protocol) dataClearBit(m uint8) {
-	//m := uint8(^(1 << pos))
-	n := ^m
-	v.data &= n
-}
-
-// dataSetByte sets the Protocol's `data` field to the specified byte value `b`.
-func (v *Protocol) dataSetByte(b uint8) {
-	v.data = b
-}
-
-// dataGetByte returns the current value of the `data` field in the Protocol structure.
-func (v *Protocol) dataGetByte() uint8 {
-	return v.data
-}
-
-// setStateMachine sets the state machine to the specified state value.
-func (v *Protocol) setStateMachine(m uint8) {
-	v.stateMachine = m
-}
-
-// getStateMachine returns the current state of the protocol's state machine as an unsigned 8-bit integer.
-func (v *Protocol) getStateMachine() uint8 {
-	return v.stateMachine
-}
-
-// setStateMachineNext increments the stateMachine variable by one, advancing the state machine to the next state.
-func (v *Protocol) setStateMachineNext() {
-	v.stateMachine++
-}
-
-// setPrimary sets the primary device address to the specified value.
-func (v *Protocol) setPrimary(p uint8) {
-	v.primary = p
-}
-
-// getPrimary retrieves the current primary address of the Protocol. Returns the value as an unsigned 8-bit integer.
-func (v *Protocol) getPrimary() uint8 {
-	return v.primary
-}
-
-// setSecondary sets the value of the secondary address/state in the Protocol instance.
-func (v *Protocol) setSecondary(s uint8) {
-	v.secondary = s
-}
-
-// getSecondary retrieves the current value of the secondary byte in the Protocol instance.
-func (v *Protocol) getSecondary() uint8 {
-	return v.secondary
-}
-
-// setSecondaryPrev sets the secondary previous address value in the Protocol instance.
-func (v *Protocol) setSecondaryPrev(s uint8) {
-	v.secondaryPrev = s
-}
-
-// getSecondaryPrev retrieves the previous value of the secondary byte within the Protocol structure.
-func (v *Protocol) getSecondaryPrev() uint8 {
-	return v.secondaryPrev
-}
-
-// setTimeout sets a timeout in microseconds by calculating the required number of cycles and updating the timeout property.
-func (v *Protocol) setTimeout(uSec uint64) {
-	cycles := v.quartz.USecToCycleRounded(uSec)
-	v.timeout = v.quartz.Cycle() + cycles
-}
-
-// timeoutExpired checks if the current cycle exceeds or equals the timeout value, indicating that the timeout has expired.
-func (v *Protocol) timeoutExpired() bool {
-	if b := v.quartz.Cycle(); b >= v.timeout {
-		return true
-	}
-	return false
-}
-
-// setState updates the state at the given index after masking the index with stateLast.
-func (v *Protocol) setState(idx uint8, s uint8) {
-	x := idx & stateLast
-	v.state[x] = s
-}
-
-// getState retrieves the state value at the given index from the state array after masking the index with stateLast.
-func (v *Protocol) getState(idx uint8) uint8 {
-	x := idx & stateLast
-	return v.state[x]
 }
 
 // peripheralWrite writes data to a peripheral device, with optional ATN (Attention) line assertion based on busReadAtn.
@@ -711,8 +580,154 @@ func (v *Protocol) peripheralWrite(busReadAtn bool, data uint8) {
 	v.iec.PeripheralWrite(v.deviceNumber, out)
 }
 
-// print logs the current state of the Protocol instance along with an identifier and bus number.
-func (v *Protocol) print(id string, bus uint8) {
+type ProtocolState struct {
+	flags         uint8
+	primary       uint8
+	secondaryPrev uint8
+	secondary     uint8
+	data          uint8
+	stateMachine  uint8
+	state         [stateLast + 1]uint8
+	timeout       uint64
+}
+
+func NewProtocolState() *ProtocolState {
+	return &ProtocolState{
+		flags:         0,
+		primary:       0,
+		secondaryPrev: 0,
+		secondary:     0,
+		data:          0,
+		stateMachine:  0,
+		timeout:       0,
+	}
+}
+
+func (v *ProtocolState) Reset() {
+	v.flags = 0
+	v.timeout = 0
+	for i := 0; i < len(v.state); i++ {
+		v.state[i] = 0
+	}
+}
+
+// FlagsSet sets the specified flags in the Protocol's internal flags field using a bitwise OR operation.
+func (v *ProtocolState) FlagsSet(f uint8) {
+	v.flags |= f
+}
+
+// FlagsRemove removes specific flags from the Protocol's flags field using bitwise operations.
+func (v *ProtocolState) FlagsRemove(f uint8) {
+	v.flags &= ^f
+}
+
+// FlagGet checks if the specified flag is set in the Protocol's internal flags field. Returns true if set, false otherwise.
+func (v *ProtocolState) FlagGet(f uint8) bool {
+	return (v.flags & f) != 0
+}
+
+// DataHasBit checks if the specified bit is set in the data field of the Protocol instance. Returns true if the bit is set.
+func (v *ProtocolState) DataHasBit(bit uint8) bool {
+	return (v.data & bit) != 0
+}
+
+// DataSetBit sets the specified bit(s) in the `data` field to 1 without altering other bits.
+func (v *ProtocolState) DataSetBit(m uint8) {
+	//m := uint8(1 << pos)
+	v.data |= m
+}
+
+// DataClearBit clears specific bits in the `data` field of the Protocol struct, based on the provided mask `m`.
+func (v *ProtocolState) DataClearBit(m uint8) {
+	//m := uint8(^(1 << pos))
+	n := ^m
+	v.data &= n
+}
+
+// DataSetByte sets the Protocol's `data` field to the specified byte value `b`.
+func (v *ProtocolState) DataSetByte(b uint8) {
+	v.data = b
+}
+
+// DataGetByte returns the current value of the `data` field in the Protocol structure.
+func (v *ProtocolState) DataGetByte() uint8 {
+	return v.data
+}
+
+// StateMachineSet sets the state machine to the specified state value.
+func (v *ProtocolState) StateMachineSet(m uint8) {
+	v.stateMachine = m
+}
+
+// StateMachineGet returns the current state of the protocol's state machine as an unsigned 8-bit integer.
+func (v *ProtocolState) StateMachineGet() uint8 {
+	return v.stateMachine
+}
+
+// StateMachineAdvance increments the stateMachine variable by one, advancing the state machine to the next state.
+func (v *ProtocolState) StateMachineAdvance() {
+	v.stateMachine++
+}
+
+// PrimarySet sets the primary device address to the specified value.
+func (v *ProtocolState) PrimarySet(p uint8) {
+	v.primary = p
+}
+
+// PrimaryGet retrieves the current primary address of the Protocol. Returns the value as an unsigned 8-bit integer.
+func (v *ProtocolState) PrimaryGet() uint8 {
+	return v.primary
+}
+
+// SecondarySet sets the value of the secondary address/state in the Protocol instance.
+func (v *ProtocolState) SecondarySet(s uint8) {
+	v.secondary = s
+}
+
+// SecondaryGet retrieves the current value of the secondary byte in the Protocol instance.
+func (v *ProtocolState) SecondaryGet() uint8 {
+	return v.secondary
+}
+
+// SecondaryPrevSet sets the secondary previous address value in the Protocol instance.
+func (v *ProtocolState) SecondaryPrevSet() {
+	s := v.secondary
+	v.secondaryPrev = s
+}
+
+// SecondaryPrevGet retrieves the previous value of the secondary byte within the Protocol structure.
+func (v *ProtocolState) SecondaryPrevGet() uint8 {
+	return v.secondaryPrev
+}
+
+// StateSet updates the state at the given index after masking the index with stateLast.
+func (v *ProtocolState) StateSet(idx uint8, s uint8) {
+	x := idx & stateLast
+	v.state[x] = s
+}
+
+// StateGet retrieves the state value at the given index from the state array after masking the index with stateLast.
+func (v *ProtocolState) StateGet(idx uint8) uint8 {
+	x := idx & stateLast
+	return v.state[x]
+}
+
+// TimeoutSet sets a timeout in microseconds by calculating the required number of cycles and updating the timeout property.
+func (v *ProtocolState) TimeoutSet(q references.IQuartz, uSec uint64) {
+	cycles := q.USecToCycleRounded(uSec)
+	v.timeout = q.Cycle() + cycles
+}
+
+// TimeoutExpired checks if the current cycle exceeds or equals the timeout value, indicating that the timeout has expired.
+func (v *ProtocolState) TimeoutExpired(q references.IQuartz) bool {
+	if b := q.Cycle(); b >= v.timeout {
+		return true
+	}
+	return false
+}
+
+// Print logs the current state of the Protocol instance along with an identifier and bus number.
+func (v *ProtocolState) Print(id string, bus uint8) {
 	log.Printf("%s -> bus: %d, stateMachine: %d, flags: %d, primary: %d, secondary: %d, secondaryPrev: %d\n", id, bus, v.stateMachine, v.flags, v.primary, v.secondary, v.secondaryPrev)
 }
 
