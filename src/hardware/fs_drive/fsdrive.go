@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"unicode"
 
 	"github.com/markel1974/c64emu/src/config"
 )
@@ -420,7 +419,7 @@ func (v *FSDrive) openDirectory(channel uint8, pattern string, dirName string) (
 	const blocksFreeStart = "\001\001\000\000"
 	const blockFreeEnd = "\000\000"
 
-	title := v.fillName(dirName)
+	title := FillName(dirName)
 
 	var buf []byte
 
@@ -527,7 +526,7 @@ func (v *FSDrive) createFileEntry(name string, size int, kind int) []byte {
 	//if len(name) > maxFileName {
 	//	name = name[:maxFileName]
 	//}
-	vName := v.cleanFileName(name)
+	vName := CleanFileName(name)
 	n := (size + 254) / 254
 	ret := make([]byte, 32)
 	for x := range ret {
@@ -549,48 +548,6 @@ func (v *FSDrive) createFileEntry(name string, size int, kind int) []byte {
 	ret[30] = 'G'
 	ret[31] = 0
 	return ret
-}
-
-func (v *FSDrive) cleanFileName(name string) []uint8 {
-	const maxName = 16
-	var vName []rune
-	for _, k := range name {
-		if k >= 'a' && k <= 'z' {
-			vName = append(vName, unicode.ToUpper(k))
-		} else if k >= 'A' && k <= 'Z' {
-			vName = append(vName, k)
-		} else if k >= '0' && k <= '9' {
-			vName = append(vName, k)
-		} else if k == '.' {
-			vName = append(vName, k)
-		} else {
-			vName = append(vName, ' ')
-		}
-	}
-	name = string(vName)
-	//if ext := path.Ext(name); len(ext) > 0 {
-	//	name = name[:len(name)-len(ext)]
-
-	//if len(name) > maxName {
-	//	name = name[:maxName]
-	//}
-	//return []uint8(name)
-	//}
-	if len(name) > maxName {
-		name = name[:maxName]
-	}
-	return []uint8(name)
-}
-
-func (v *FSDrive) fillName(n string) []byte {
-	name := make([]byte, 16)
-	for idx := range name {
-		name[idx] = ' '
-		if idx < len(n) {
-			name[idx] = n[idx]
-		}
-	}
-	return name
 }
 
 func (v *FSDrive) configChanged() {
