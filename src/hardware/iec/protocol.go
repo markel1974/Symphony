@@ -117,7 +117,6 @@ type Protocol struct {
 	cfg          *config.Config
 	deviceNumber uint8
 	ledSignal    *signals.SignalUint32
-	//gs            *Global
 }
 
 // NewProtocol creates a new instance of the Protocol component, initializes its fields, and registers it within the component hierarchy.
@@ -129,7 +128,6 @@ func NewProtocol(factory references.IComponentFactory, parent references.ICompon
 		device:        nil,
 		ledSignal:     signals.NewSignalUint32(),
 		quartz:        nil,
-		//gs:            _gs,
 	}
 	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, label, instance))
 	p.quartz = quartz.NewQuartz(p, factory, label, 0)
@@ -261,26 +259,18 @@ func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
 		if (v.ps.SecondaryGet() & 0xf0) == pTalking|pListening {
 			switch v.ps.PrimaryGet() & 0xf0 {
 			case pRequestListen:
-				target := v.ps.SecondaryGet()
-				state := v.device.Listen(target)
-				v.ps.StateSet(target, state)
+				v.ps.StateSet(v.ps.SecondaryGet(), v.device.Listen(v.ps.SecondaryGet()))
 			case pRequestTalking:
-				target := v.ps.SecondaryGet()
-				state := v.device.Talk(target)
-				v.ps.StateSet(target, state)
+				v.ps.StateSet(v.ps.SecondaryGet(), v.device.Talk(v.ps.SecondaryGet()))
 			}
 		} else if (v.ps.SecondaryGet() & 0xf0) == pTalking|pListening|pAtn {
-			target := v.ps.SecondaryGet()
-			state := v.device.Close(target)
-			v.ps.StateSet(target, state)
+			v.ps.StateSet(v.ps.SecondaryGet(), v.device.Close(v.ps.SecondaryGet()))
 		} else if (v.ps.SecondaryGet() & 0xf0) == 0xf0 {
 			//v.device.Open() will not actually open the file (since we don't have a filename yet) but just set things up so that
 			//the characters passed to device.
 			//v.device.Write() before the next call to device.unlisten() will be interpreted as the filename.
 			//The file will actually be opened during the next call to device.unlisten()
-			target := v.ps.SecondaryGet()
-			state := v.device.Open(target)
-			v.ps.StateSet(target, state)
+			v.ps.StateSet(v.ps.SecondaryGet(), v.device.Open(v.ps.SecondaryGet()))
 		}
 
 		if v.ps.PrimaryGet() == (v.deviceNumber + pRequestListen) {
@@ -310,14 +300,10 @@ func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
 		//device.unlisten will try to open the file with the filename that
 		//was received in between the OPEN and now.
 		//If the file cannot be opened, it will set st != 0.
-		target := v.ps.SecondaryPrevGet()
-		state := v.device.Unlisten(target)
-		v.ps.StateSet(target, state)
+		v.ps.StateSet(v.ps.SecondaryPrevGet(), v.device.Unlisten(v.ps.SecondaryPrevGet()))
 	} else if (v.ps.PrimaryGet() == 0x5f) && v.ps.FlagGet(pTalking) {
 		//All devices were told to stop talking
-		target := v.ps.SecondaryPrevGet()
-		state := v.device.Untalk(target)
-		v.ps.StateSet(target, state)
+		v.ps.StateSet(v.ps.SecondaryPrevGet(), v.device.Untalk(v.ps.SecondaryPrevGet()))
 		v.ps.FlagsRemove(pTalking)
 		log.Printf("device %d stop talking", v.deviceNumber)
 	}
@@ -420,10 +406,7 @@ func (v *Protocol) doAtnOrListen(busReadAtn bool, busReadClk bool, busReadData b
 			} else if v.ps.FlagGet(pListening) {
 				//We are currently listening for data pass received byte on to the upper level
 				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte(), v.ps.SecondaryGet())
-				target := v.ps.SecondaryGet()
-				state := v.device.Write(target, v.ps.DataGetByte())
-				v.ps.StateSet(target, state)
-
+				v.ps.StateSet(v.ps.SecondaryGet(), v.device.Write(v.ps.SecondaryGet(), v.ps.DataGetByte()))
 				if v.ps.StateGet(v.ps.SecondaryGet()) != 0 {
 					//There was an error during iec_bus_write => stop listening. This will signal an error condition to the sender
 					v.ps.StateMachineSet(pDone0)
@@ -464,12 +447,9 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 	case pReady:
 		if busReadData {
 			//Receiver signaled "ready-for-data" (DATA=1)
-			//v.gs.SetState(v.StateGet(v.SecondaryGet()))
-			target := v.ps.SecondaryGet()
-			b, state := v.device.Read(target)
-			v.ps.StateSet(target, state)
+			b, state := v.device.Read(v.ps.SecondaryGet())
+			v.ps.StateSet(v.ps.SecondaryGet(), state)
 			v.ps.DataSetByte(b)
-			//device.gs.StateSet(device.SecondaryGet(), v.gs.StateGet())
 			if v.ps.StateGet(v.ps.SecondaryGet()) == 0 {
 				//At least two bytes left to send. Go on to send the first bit.
 				v.ps.StateMachineSet(pBit0)
@@ -733,36 +713,3 @@ func (v *ProtocolState) TimeoutExpired(q references.IQuartz) bool {
 func (v *ProtocolState) Print(id string, bus uint8) {
 	log.Printf("%s -> bus: %d, stateMachine: %d, flags: %d, primary: %d, secondary: %d, secondaryPrev: %d\n", id, bus, v.stateMachine, v.flags, v.primary, v.secondary, v.secondaryPrev)
 }
-
-/*
-// IGlobal represents an interface for managing and retrieving a state value as an unsigned 8-bit integer.
-type IGlobal interface {
-	GetState() uint8
-	SetState() uint8
-}
-
-// Global represents a structure encapsulating the state of a global entity as an unsigned 8-bit integer.
-type Global struct {
-	state uint8
-}
-
-// NewGlobalState initializes and returns a pointer to a new Global instance with its state set to 0.
-func NewGlobalState() *Global {
-	return &Global{
-		state: 0,
-	}
-}
-
-// SetState updates the internal state of the Global instance with the given value.
-func (v *Global) SetState(state uint8) {
-	v.state = state
-}
-
-// GetState retrieves the current state value of the Global instance.
-func (v *Global) GetState() uint8 {
-	return v.state
-}
-
-// _gs is a singleton instance of Global, initialized using NewGlobalState, and shared across various components.
-var _gs = NewGlobalState()
-*/
