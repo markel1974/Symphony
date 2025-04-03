@@ -1,6 +1,7 @@
 package fs_drive
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/references"
@@ -123,6 +124,11 @@ func (v *FSDrive) Unlisten(d uint8) uint8 {
 
 	channel := d & 0xf
 
+	mode := v.channels[channel].ModeGet() & 0xf0
+	if mode != 0x20 && mode != 0xf0 {
+		return StOk
+	}
+
 	data := v.channels[channel].BufferGet()
 
 	v.LedTurnOn()
@@ -176,9 +182,12 @@ func (v *FSDrive) Untalk(d uint8) uint8 {
 
 func (v *FSDrive) Open(d uint8) uint8 {
 	channel := d & 0xf
+
+	fmt.Println("FSDrive OPEN", d, channel)
 	//TODO initialize channel
 
 	v.channels[channel].Reset()
+	v.channels[channel].ModeSet(d)
 
 	//for _, c := range "PROVA" {
 	//	v.test.Set(int(c))
