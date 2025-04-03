@@ -1,7 +1,6 @@
 package fs_drive
 
 import (
-	"github.com/markel1974/c64emu/src/common/fifo"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/references"
@@ -19,16 +18,9 @@ type FSDrive struct {
 	commands     *Commands
 	deviceId     uint8
 	deviceNumber uint8
-	path         string
-	dirPath      string       // Path to directory
-	origDirPath  string       // Original directory path
-	dirTitle     string       // Directory title
-	file         [16]*os.File // File pointers for each of the 16 channels
-	readChar     [16]uint8    // Buffers for one-byte read-ahead
-	ready        bool
+	dirPath      string
 	cfg          *config.Config
-	buffer       [0xf][]byte
-	test         *fifo.StaticFifo
+	channels     [16]*Channel
 }
 
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *FSDrive {
@@ -39,15 +31,16 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		protocol:      protocol,
 		deviceId:      0,
 		deviceNumber:  0,
-		path:          "",
 		commands:      NewCommands(),
-		origDirPath:   "",
 		cfg:           nil,
-		buffer:        [0xf][]byte{},
-		test:          fifo.NewStaticFifo(32),
 	}
-	fs.protocol.SetDevice(fs)
 	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, label, 0))
+	fs.protocol.SetDevice(fs)
+
+	for idx := range fs.channels {
+		fs.channels[idx] = NewChannel()
+	}
+
 	return fs
 }
 
@@ -65,20 +58,19 @@ func (v *FSDrive) Setup() error {
 }
 
 func (v *FSDrive) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber uint8) error {
+	path := ""
 	if d := v.cfg.Drive(v.deviceId); d != nil {
-		v.path = d.GetId()
+		path = d.GetId()
 	}
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
-	v.origDirPath = v.path
 	if err := v.protocol.Bind(v, deviceId, deviceNumber); err != nil {
 		return err
 	}
-	if v.changeDirectory(v.origDirPath) {
-		for i := 0; i < 16; i++ {
-			v.file[i] = nil
+	if v.changeDirectory(path) {
+		for idx := range v.channels {
+			v.channels[idx].Reset()
 		}
-		v.ready = true
 	}
 	return nil
 }
@@ -128,14 +120,46 @@ func (v *FSDrive) Unlisten(d uint8) uint8 {
 	//device.unlisten will try to open the file with the filename that
 	//was received in between the OPEN and now.
 	//If the file cannot be opened, it will set st != 0.
+
 	channel := d & 0xf
-	data, _ := v.openDirectory(channel, "", "PROVA")
-	v.test = fifo.NewStaticFifo(uint(len(data)))
-	for _, k := range data {
-		v.test.Set(int(k))
+
+	data := v.channels[channel].BufferGet()
+
+	v.LedTurnOn()
+	// Channel 15: Execute file name as command
+	if channel == 15 {
+		action, ok := v.commands.CommandExec(data)
+		if ok {
+			if action == 1 {
+				v.Reset()
+			}
+		}
+		return StOk
 	}
-	log.Println("FSDrive UNLISTEN", channel)
+
+	v.channels[channel].Close()
+
+	if len(data) == 0 {
+		v.commands.SetError(ERR_NOCHANNEL)
+		return StOk
+	}
+	if data[0] == '#' {
+		v.commands.SetError(ERR_NOCHANNEL)
+		return StOk
+	}
+	if data[0] == '$' {
+		dir, _ := v.openDirectory("", v.dirPath)
+		v.channels[channel].DataSet(dir)
+		return StOk
+	}
+
+	//return v.openFile(channel, string(data))
 	return StOk
+
+	//data, _ := v.openDirectory("", v.dirPath)
+	//v.channels[channel].DataSet(data)
+	//log.Println("FSDrive UNLISTEN", channel)
+	//return StOk
 }
 
 func (v *FSDrive) Talk(d uint8) uint8 {
@@ -154,45 +178,14 @@ func (v *FSDrive) Open(d uint8) uint8 {
 	channel := d & 0xf
 	//TODO initialize channel
 
+	v.channels[channel].Reset()
+
 	//for _, c := range "PROVA" {
 	//	v.test.Set(int(c))
 	//}
 
-	v.buffer[channel] = []byte{}
+	//v.buffer[channel] = []byte{}
 	return StOk
-	/*
-		//TODO DATA
-		var data []uint8
-		v.LedTurnOn()
-		// Channel 15: Execute file name as command
-		if channel == 15 {
-			action, ok := v.commands.CommandExec(data)
-			if ok {
-				if action == 1 {
-					v.Reset()
-				}
-			}
-			return StOk
-		}
-		// Close previous file if still open
-		if v.file[channel] != nil {
-			v.file[channel].Close()
-			v.file[channel] = nil
-		}
-		if len(data) == 0 {
-			v.commands.SetError(ERR_NOCHANNEL)
-			return StOk
-		}
-		if data[0] == '#' {
-			v.commands.SetError(ERR_NOCHANNEL)
-			return StOk
-		}
-		if data[0] == '$' {
-			return v.openDirectory(channel, string(data))
-		}
-		return v.openFile(channel, string(data))
-
-	*/
 }
 
 func (v *FSDrive) Close(d uint8) uint8 {
@@ -202,25 +195,26 @@ func (v *FSDrive) Close(d uint8) uint8 {
 		v.closeAllChannels()
 		return StOk
 	}
-	if v.file[channel] != nil {
-		v.file[channel].Close()
-		v.file[channel] = nil
-	}
+	v.channels[channel].Close()
+	//if v.file[channel] != nil {
+	//	v.file[channel].Close()
+	//	v.file[channel] = nil
+	//}
 	return StOk
 }
 
 func (v *FSDrive) Read(d uint8) (uint8, uint8) {
-	//channel := d & 0xf
-	b, ok := v.test.Next()
+	channel := d & 0xf
+	b, ok := v.channels[channel].DataNext()
 	if !ok {
 		return 0, StReadTimeout
 	}
 	log.Printf("FSDrive Read: %d (%s)", b, string(byte(b)))
-	if v.test.Len() == 0 {
+	if v.channels[channel].DataLen() == 0 {
 		v.commands.SetError(ERR_OK)
-		return uint8(b), StEof
+		return b, StEof
 	}
-	return uint8(b), StOk
+	return b, StOk
 
 	/*
 		return 0, StReadTimeout
@@ -270,7 +264,7 @@ func (v *FSDrive) Write(d uint8, data uint8) uint8 {
 	//	return StTimeout
 	//}
 
-	v.buffer[channel] = append(v.buffer[channel], data)
+	v.channels[channel].BufferAdd(data)
 	return StOk
 
 	/*
@@ -321,10 +315,6 @@ func (v *FSDrive) changeDirectory(dirPath string) bool {
 		return false
 	}
 	v.dirPath = dirPath
-	v.dirTitle = v.dirPath
-	if len(v.dirTitle) > 16 {
-		v.dirTitle = v.dirTitle[:16]
-	}
 	return true
 }
 
@@ -374,32 +364,42 @@ func (v *FSDrive) openFile(channel uint8, name string) uint8 {
 		v.commands.SetError(ERR_UNIMPLEMENTED)
 		return StOk
 	}
-	flags := os.O_RDONLY
-	perm := os.FileMode(0)
-	switch mode {
-	case FMODE_WRITE:
-		perm = os.FileMode(0666)
-		flags = os.O_RDWR
-	case FMODE_APPEND:
-		perm = os.FileMode(0666)
-		flags = os.O_RDWR | os.O_APPEND
-	default:
-		panic("unhandled default case")
-	}
+	/*
+		flags := os.O_RDONLY
+		perm := os.FileMode(0)
+		switch mode {
+		case FMODE_WRITE:
+			perm = os.FileMode(0666)
+			flags = os.O_RDWR
+		case FMODE_APPEND:
+			perm = os.FileMode(0666)
+			flags = os.O_RDWR | os.O_APPEND
+		default:
+			panic("unhandled default case")
+		}
+		f, err := os.OpenFile(completeFileName, flags, perm)
+		if err != nil {
+			v.commands.SetError(ERR_FILENOTFOUND)
+		} else {
+			os.ReadFile
+			v.file[channel] = f
+			data := make([]byte, 1)
+			_, _ = f.Read(data)
+			v.readChar[channel] = data[0]
+		}
+	*/
+
 	completeFileName := v.dirPath + string(os.PathSeparator) + plainName
-	f, err := os.OpenFile(completeFileName, flags, perm)
+	data, err := os.ReadFile(completeFileName)
 	if err != nil {
 		v.commands.SetError(ERR_FILENOTFOUND)
 	} else {
-		v.file[channel] = f
-		data := make([]byte, 1)
-		_, _ = f.Read(data)
-		v.readChar[channel] = data[0]
+		v.channels[channel].DataSet(data)
 	}
 	return StOk
 }
 
-func (v *FSDrive) openDirectory(channel uint8, pattern string, dirName string) ([]byte, error) {
+func (v *FSDrive) openDirectory(pattern string, dirName string) ([]byte, error) {
 	// Special treatment for "$0"
 	if len(pattern) > 0 {
 		if pattern[0] == '0' && len(pattern) == 1 {

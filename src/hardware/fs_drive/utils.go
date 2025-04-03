@@ -1,6 +1,11 @@
 package fs_drive
 
-import "unicode"
+import (
+	"path"
+	"unicode"
+)
+
+const maxName = 16
 
 // ParseFileName parses the provided file name and extracts relevant information including mode, type, and record length.
 // name: the input file name to parse.
@@ -14,19 +19,22 @@ func ParseFileName(name string, convertCharset bool) (string, int, int, int) {
 	return "", mode, kind, 0
 }
 
-func FillName(n string) []byte {
-	name := make([]byte, 16)
+func FillName(in string) []byte {
+	v := CleanFileName(path.Base(in))
+	name := make([]byte, maxName)
 	for idx := range name {
 		name[idx] = ' '
-		if idx < len(n) {
-			name[idx] = n[idx]
+	}
+	for idx := range v {
+		name[idx] = ' '
+		if idx < len(v) {
+			name[idx] = v[idx]
 		}
 	}
 	return name
 }
 
 func CleanFileName(name string) []uint8 {
-	const maxName = 16
 	var vName []rune
 	for _, k := range name {
 		if k >= 'a' && k <= 'z' {
