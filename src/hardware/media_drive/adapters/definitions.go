@@ -9,18 +9,6 @@ const (
 )
 
 const (
-	DRVLED_OFF   = iota // Inactive LED off
-	DRVLED_ON           // Active LED on
-	DRVLED_ERROR        // Error blink LED
-)
-
-const (
-	FILE_IMAGE_TYPE = iota
-	FILE_ARCH_TYPE
-	FILE_UNKNOWN_TYPE
-)
-
-const (
 	ERR_OK            = iota // 00 OK
 	ERR_SCRATCHED            // 01 FILES SCRATCHED
 	ERR_UNIMPLEMENTED        // 03 UNIMPLEMENTED
