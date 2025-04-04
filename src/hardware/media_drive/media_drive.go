@@ -42,18 +42,10 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	}
 	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, label, 0))
 	fs.protocol.SetDevice(fs)
-
 	for idx := range fs.channels {
 		fs.channels[idx] = NewChannel()
 	}
-
 	return fs
-}
-
-// New initializes and returns a new IIecDevice implementation as a MediaDrive using the specified parent component,
-// factory, label, and instance.
-func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IIecDevice {
-	return NewBoard(parent, factory, label, instance)
 }
 
 // Setup initializes the MediaDrive by configuring its settings and preparing the protocol for use.
@@ -378,31 +370,25 @@ func (v *MediaDrive) openFile(channel uint8, name string) ([]uint8, error) {
 
 // openDirectory generates a directory listing based on a pattern and returns it as a byte slice, or returns an error if failed.
 func (v *MediaDrive) openDirectory(pattern string) ([]byte, error) {
+	const titleStart = "\001\004\001\001\000\000\022\""
+	const titleEnd = "\" 00 2A"
+	const blocksFreeStart = "\001\001\000\000"
+	const blockFreeEnd = "\000\000"
 	// Special treatment for "$0"
 	if len(pattern) > 0 {
 		if pattern[0] == '0' && len(pattern) == 1 {
 			pattern = ""
 		}
 	}
-
 	if p := strings.Index(pattern, ":"); p >= 0 {
 		p++
 		if len(pattern) < p {
 			pattern = pattern[p:]
 		}
 	}
-
-	const titleStart = "\001\004\001\001\000\000\022\""
-	const titleEnd = "\" 00 2A"
-	const blocksFreeStart = "\001\001\000\000"
-	const blockFreeEnd = "\000\000"
-
 	title := CreateFileNameFilled(v.adapter.Name(), ' ')
-
-	var buf []byte
-
 	fullTile := titleStart + string(title) + titleEnd
-
+	var buf []byte
 	buf = append(buf, fullTile...)
 	buf = append(buf, 0)
 
