@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/iec"
+	"github.com/markel1974/c64emu/src/hardware/media_drive/adapters"
 	"github.com/markel1974/c64emu/src/references"
 	"strings"
 
@@ -18,30 +19,33 @@ import (
 type MediaDrive struct {
 	*component.BaseComponent
 	references.IIecDevice
-	protocol     *iec.Protocol
-	commands     *Commands
-	deviceId     uint8
-	deviceNumber uint8
-	cfg          *config.Config
-	channels     [16]*Channel
-	adapter      IAdapter
+	protocol       *iec.Protocol
+	commands       *Commands
+	deviceId       uint8
+	deviceNumber   uint8
+	cfg            *config.Config
+	channels       [16]*Channel
+	adapter        adapters.IAdapter
+	adapterFactory *adapters.Factory
 }
 
 // NewBoard creates and initializes a new MediaDrive instance with the specified parent component, component factory, label, and instance number.
 func NewBoard(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *MediaDrive {
 	protocol := iec.NewProtocol(factory, parent, label, instance)
 	fs := &MediaDrive{
-		BaseComponent: component.NewBaseComponent(),
-		IIecDevice:    protocol,
-		protocol:      protocol,
-		deviceId:      0,
-		deviceNumber:  0,
-		commands:      NewCommands(),
-		cfg:           nil,
-		adapter:       NewAdapterVoid(),
+		BaseComponent:  component.NewBaseComponent(),
+		IIecDevice:     protocol,
+		protocol:       protocol,
+		deviceId:       0,
+		deviceNumber:   0,
+		commands:       NewCommands(),
+		cfg:            nil,
+		adapterFactory: adapters.NewFactory(),
+		adapter:        nil,
 	}
 	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, label, 0))
 	fs.protocol.SetDevice(fs)
+	fs.adapter = fs.adapterFactory.Void()
 	for idx := range fs.channels {
 		fs.channels[idx] = NewChannel()
 	}
@@ -69,7 +73,7 @@ func (v *MediaDrive) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceN
 	if err := v.protocol.Bind(v, deviceId, deviceNumber); err != nil {
 		return err
 	}
-	adapter, err := NewAdapterFileSystem(path)
+	adapter, err := v.adapterFactory.Create(path)
 	if err != nil {
 		return err
 	}

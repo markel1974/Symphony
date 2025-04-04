@@ -1,4 +1,4 @@
-package media_drive
+package adapters
 
 import (
 	"fmt"
@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-// AdapterFileSystem represents a file system adapter for managing files and directories within a specified path.
+// FileSystem represents a file system adapter for managing files and directories within a specified path.
 // The `path` field denotes the root directory where operations are performed.
-type AdapterFileSystem struct {
+type FileSystem struct {
 	path string
 }
 
-// NewAdapterFileSystem creates a new AdapterFileSystem instance for the specified directory path.
+// NewFileSystem creates a new AdapterFileSystem instance for the specified directory path.
 // It ensures the provided path ends with a path separator and verifies if the path is a valid directory.
-func NewAdapterFileSystem(path string) (*AdapterFileSystem, error) {
+func NewFileSystem(path string) (*FileSystem, error) {
 	if !strings.HasSuffix(path, string(os.PathSeparator)) {
 		path = path + string(os.PathSeparator)
 	}
@@ -25,16 +25,16 @@ func NewAdapterFileSystem(path string) (*AdapterFileSystem, error) {
 	if !d.IsDir() {
 		return nil, fmt.Errorf("not a directory: %s", path)
 	}
-	return &AdapterFileSystem{path: path}, nil
+	return &FileSystem{path: path}, nil
 }
 
 // Name returns the path associated with the AdapterFileSystem instance.
-func (a *AdapterFileSystem) Name() string {
+func (a *FileSystem) Name() string {
 	return a.path
 }
 
 // ReadDir reads the content of the directory specified in the AdapterFileSystem and returns a slice of os.FileInfo.
-func (a *AdapterFileSystem) ReadDir() ([]os.FileInfo, error) {
+func (a *FileSystem) ReadDir() ([]os.FileInfo, error) {
 	items, err := os.ReadDir(a.path)
 	if err != nil {
 		return nil, err
@@ -52,7 +52,7 @@ func (a *AdapterFileSystem) ReadDir() ([]os.FileInfo, error) {
 
 // ReadFile reads the contents of a file located at the given path relative to the AdapterFileSystem's base path.
 // It returns the file's data as a byte slice or an error if the file cannot be read.
-func (a *AdapterFileSystem) ReadFile(plainName string) ([]byte, error) {
+func (a *FileSystem) ReadFile(plainName string) ([]byte, error) {
 	completeFileName := a.path + plainName
 	data, err := os.ReadFile(completeFileName)
 	if err != nil {
@@ -64,7 +64,7 @@ func (a *AdapterFileSystem) ReadFile(plainName string) ([]byte, error) {
 // WriteFile writes the provided data to a file with the specified name within the adapter's file path.
 // It creates the file if it does not exist or overwrites it if it does.
 // Returns an error if the write operation fails.
-func (a *AdapterFileSystem) WriteFile(plainName string, data []byte) error {
+func (a *FileSystem) WriteFile(plainName string, data []byte) error {
 	completeFileName := a.path + plainName
 	if err := os.WriteFile(completeFileName, data, 0644); err != nil {
 		return err
