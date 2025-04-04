@@ -15,6 +15,9 @@
         <method importPath="strings" receiver="*Builder" name="WriteRune" />
         <method importPath="math/rand" receiver="*Rand" name="Read" />
         <method importPath="os" receiver="*File" name="Close" />
+        <method importPath="archive/zip" receiver="*ReadCloser" name="Close" />
+        <method importPath="archive/zip" receiver="*Writer" name="Close" />
+        <method importPath="io" receiver="ReadCloser" name="Close" />
       </methods>
     </inspection_tool>
   </profile>

@@ -28,6 +28,8 @@ func NewFileSystem(path string) (*FileSystem, error) {
 	return &FileSystem{path: path}, nil
 }
 
+func (a *FileSystem) Extension() string { return "" }
+
 // Name returns the path associated with the AdapterFileSystem instance.
 func (a *FileSystem) Name() string {
 	return a.path
@@ -53,8 +55,21 @@ func (a *FileSystem) ReadDir() ([]os.FileInfo, error) {
 // ReadFile reads the contents of a file located at the given path relative to the AdapterFileSystem's base path.
 // It returns the file's data as a byte slice or an error if the file cannot be read.
 func (a *FileSystem) ReadFile(plainName string) ([]byte, error) {
-	completeFileName := a.path + plainName
-	data, err := os.ReadFile(completeFileName)
+	f, err := a.ReadDir()
+	if err != nil {
+		return nil, err
+	}
+	var name = ""
+	for _, item := range f {
+		if string(CreateFileName(item.Name())) == plainName {
+			name = item.Name()
+			break
+		}
+	}
+	if len(name) == 0 {
+		return nil, fmt.Errorf("file not found %s", plainName)
+	}
+	data, err := os.ReadFile(a.path + name)
 	if err != nil {
 		return nil, err
 	}

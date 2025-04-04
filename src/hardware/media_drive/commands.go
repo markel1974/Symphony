@@ -3,6 +3,7 @@ package media_drive
 import (
 	"bytes"
 	"fmt"
+	"github.com/markel1974/c64emu/src/hardware/media_drive/adapters"
 )
 
 type Commands struct {
@@ -20,7 +21,7 @@ func NewCommands() *Commands {
 }
 
 func (vd *Commands) SetErrorIdx(e int) {
-	vd.errorData = Errors[e]
+	vd.errorData = adapters.Errors[e]
 	vd.errorIdx = 0
 }
 
@@ -64,7 +65,7 @@ func (vd *Commands) CommandExec(cmd []uint8) (int, bool) {
 	action := 0
 	//vd.executeCmd(vd.cmdBuf, vd.cmdLen)
 	if len(cmd) == 0 {
-		vd.SetErrorIdx(ERR_SYNTAX31)
+		vd.SetErrorIdx(adapters.ERR_SYNTAX31)
 		return 0, false
 	}
 	// Strip trailing CRs
@@ -102,7 +103,7 @@ func (vd *Commands) CommandExec(cmd []uint8) (int, bool) {
 	switch cmd[0] {
 	case 'B': // Block/buffer
 		if len(minus) == 0 {
-			vd.SetErrorIdx(ERR_SYNTAX31)
+			vd.SetErrorIdx(adapters.ERR_SYNTAX31)
 			return 0, false
 		}
 		// Parse arguments (up to 4 decimal numbers separated by
@@ -132,14 +133,14 @@ func (vd *Commands) CommandExec(cmd []uint8) (int, bool) {
 		case 'P':
 			vd.bufferPointerCmd(arg1, arg2)
 		default:
-			vd.SetErrorIdx(ERR_SYNTAX31)
+			vd.SetErrorIdx(adapters.ERR_SYNTAX31)
 			return 0, false
 		}
 
 	case 'M':
 		// Memory
 		if cmd[1] != '-' {
-			vd.SetErrorIdx(ERR_SYNTAX31)
+			vd.SetErrorIdx(adapters.ERR_SYNTAX31)
 			return 0, false
 		}
 		// Read parameters
@@ -158,7 +159,7 @@ func (vd *Commands) CommandExec(cmd []uint8) (int, bool) {
 		case 'E':
 			vd.memExecuteCmd(addr)
 		default:
-			vd.SetErrorIdx(ERR_SYNTAX31)
+			vd.SetErrorIdx(adapters.ERR_SYNTAX31)
 			return 0, false
 		}
 
@@ -168,11 +169,11 @@ func (vd *Commands) CommandExec(cmd []uint8) (int, bool) {
 		fmt.Println("CommandExec: TODO VERIFY")
 		test := len(comma) > 0 && len(comma) < len(equal)
 		if len(colon) == 0 {
-			vd.SetErrorIdx(ERR_SYNTAX31)
+			vd.SetErrorIdx(adapters.ERR_SYNTAX31)
 			return 0, false
 		}
 		if len(equal) == 0 || bytes.Index(cmd, []byte("*")) > 0 || bytes.Index(cmd, []byte("?")) > 0 || test {
-			vd.SetErrorIdx(ERR_SYNTAX30)
+			vd.SetErrorIdx(adapters.ERR_SYNTAX30)
 			return 0, false
 		}
 		//TODO IMPLEMENT
@@ -187,11 +188,11 @@ func (vd *Commands) CommandExec(cmd []uint8) (int, bool) {
 
 	case 'R': // Rename
 		if len(colon) == 0 {
-			vd.SetErrorIdx(ERR_SYNTAX34)
+			vd.SetErrorIdx(adapters.ERR_SYNTAX34)
 			return 0, false
 		}
 		if len(equal) == 0 || len(comma) > 0 || bytes.Index(cmd, []byte("*")) > 0 || bytes.Index(cmd, []byte("?")) > 0 {
-			vd.SetErrorIdx(ERR_SYNTAX30)
+			vd.SetErrorIdx(adapters.ERR_SYNTAX30)
 			return 0, false
 		}
 		//TODO IMPLEMENT
@@ -207,7 +208,7 @@ func (vd *Commands) CommandExec(cmd []uint8) (int, bool) {
 	case 'S':
 		// Scratch
 		if len(colon) == 0 {
-			vd.SetErrorIdx(ERR_SYNTAX34)
+			vd.SetErrorIdx(adapters.ERR_SYNTAX34)
 			return 0, false
 		}
 		//TODO IMPLEMENT
@@ -226,7 +227,7 @@ func (vd *Commands) CommandExec(cmd []uint8) (int, bool) {
 
 	case 'N': // New (format)
 		if len(colon) == 0 {
-			vd.SetErrorIdx(ERR_SYNTAX34)
+			vd.SetErrorIdx(adapters.ERR_SYNTAX34)
 			return 0, false
 		}
 		//TODO IMPLEMENT
@@ -271,15 +272,15 @@ func (vd *Commands) CommandExec(cmd []uint8) (int, bool) {
 			case 10: // U:/UJ: Reset
 				action = 1 //RESET
 			default:
-				vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+				vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 				return 0, false
 			}
 		}
 	default:
-		vd.SetErrorIdx(ERR_SYNTAX31)
+		vd.SetErrorIdx(adapters.ERR_SYNTAX31)
 		return 0, false
 	}
-	vd.SetErrorIdx(ERR_OK)
+	vd.SetErrorIdx(adapters.ERR_OK)
 	return action, true
 }
 
@@ -324,29 +325,29 @@ func (vd *Commands) parseBlockCmdArgs(p []uint8) (int, int, int, int) {
 }
 
 func (vd *Commands) blockReadCmd(channel int, track int, sector int, userCmd bool) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 func (vd *Commands) blockWriteCmd(channel int, track int, sector int, userCmd bool) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 func (vd *Commands) blockExecuteCmd(channel int, track int, sector int) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 // BLOCK-ALLOCATE:0,track,sector
 func (vd *Commands) blockAllocateCmd(track int, sector int) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 // BLOCK-FREE:0,track,sector
 func (vd *Commands) blockFreeCmd(track int, sector int) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 func (vd *Commands) bufferPointerCmd(channel int, pos int) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 // M-R<adr low><adr high>[<number>]
@@ -356,47 +357,47 @@ func (vd *Commands) memReadCmd(addr uint16, length uint8) {
 	//error_ptr = error_buf
 	//error_buf[0] = 0
 	//error_len = 0
-	vd.SetErrorIdx(ERR_OK)
+	vd.SetErrorIdx(adapters.ERR_OK)
 }
 
 // M-W<adr low><adr high><number><data...>
 func (vd *Commands) memWriteCmd(addr uint16, length uint8, p []uint8) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 // M-E<adr low><adr high>
 func (vd *Commands) memExecuteCmd(addr uint16) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 func (vd *Commands) copyCmd(newFile []uint8, oldFiles []uint8) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 func (vd *Commands) renameCmd(newFile []uint8, oldFile []uint8) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 func (vd *Commands) scratchCmd(file []uint8) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 // P<channel><record low><record high><byte>
 func (vd *Commands) positionCmd(cmd []uint8) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 // INITIALIZE
 func (vd *Commands) initializeCmd() {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 func (vd *Commands) newCmd(name []uint8, comma []uint8) {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 func (vd *Commands) validateCmd() {
-	vd.SetErrorIdx(ERR_UNIMPLEMENTED)
+	vd.SetErrorIdx(adapters.ERR_UNIMPLEMENTED)
 }
 
 func (vd *Commands) unsupportedCmd() {

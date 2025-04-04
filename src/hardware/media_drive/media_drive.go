@@ -106,7 +106,7 @@ func (v *MediaDrive) GetDeviceNumber() uint8 {
 func (v *MediaDrive) Reset() {
 	v.closeAllChannels()
 	v.commands.CommandClear()
-	v.commands.SetErrorIdx(ERR_STARTUP)
+	v.commands.SetErrorIdx(adapters.ERR_STARTUP)
 	v.protocol.Reset()
 }
 
@@ -126,7 +126,7 @@ func (v *MediaDrive) GetPath() string {
 // Listen processes the device identifier and returns the standard operational status code.
 func (v *MediaDrive) Listen(d uint8) uint8 {
 	//channel := d & 0xf
-	return StOk
+	return adapters.StOk
 }
 
 // Unlisten handles the UNLISTEN command for a specified channel in the MediaDrive.
@@ -142,7 +142,7 @@ func (v *MediaDrive) Unlisten(d uint8) uint8 {
 
 	mode := v.channels[channel].ModeGet() & 0xf0
 	if mode != 0x20 && mode != 0xf0 {
-		return StOk
+		return adapters.StOk
 	}
 
 	data := v.channels[channel].BufferGet()
@@ -156,48 +156,48 @@ func (v *MediaDrive) Unlisten(d uint8) uint8 {
 				v.Reset()
 			}
 		}
-		return StOk
+		return adapters.StOk
 	}
 
 	v.channels[channel].Close()
 
 	if len(data) == 0 {
-		v.commands.SetErrorIdx(ERR_NOCHANNEL)
-		return StOk
+		v.commands.SetErrorIdx(adapters.ERR_NOCHANNEL)
+		return adapters.StOk
 	}
 	if data[0] == '#' {
-		v.commands.SetErrorIdx(ERR_NOCHANNEL)
-		return StOk
+		v.commands.SetErrorIdx(adapters.ERR_NOCHANNEL)
+		return adapters.StOk
 	}
 	if data[0] == '$' {
 		dirData, err := v.openDirectory("")
 		if err != nil {
 			v.commands.SetError(err)
-			return StOk
+			return adapters.StOk
 		}
 		v.channels[channel].DataSet(dirData)
-		return StOk
+		return adapters.StOk
 	}
 	fileData, err := v.openFile(channel, string(data))
 	if err != nil {
 		v.commands.SetError(err)
-		return StOk
+		return adapters.StOk
 	}
 	v.channels[channel].DataSet(fileData)
-	return StOk
+	return adapters.StOk
 }
 
 // Talk sends a command to a specific device channel and returns a status code indicating the operation result.
 func (v *MediaDrive) Talk(d uint8) uint8 {
 	//channel := d & 0xf
-	return StOk
+	return adapters.StOk
 }
 
 // Untalk disables the "talk" state for a given channel identified by the lower 4 bits of the input parameter d.
 // Returns StOk on successful execution.
 func (v *MediaDrive) Untalk(d uint8) uint8 {
 	//channel := d & 0xf
-	return StOk
+	return adapters.StOk
 }
 
 // Open initializes the specified channel in the MediaDrive, setting its mode and resetting its state.
@@ -205,7 +205,7 @@ func (v *MediaDrive) Open(d uint8) uint8 {
 	channel := d & 0xf
 	v.channels[channel].Reset()
 	v.channels[channel].ModeSet(d)
-	return StOk
+	return adapters.StOk
 }
 
 // Close shuts down the specified channel `d` and turns off the LED. If `d` equals 15, all channels are closed. Returns status.
@@ -214,10 +214,10 @@ func (v *MediaDrive) Close(d uint8) uint8 {
 	v.LedTurnOff()
 	if channel == 15 {
 		v.closeAllChannels()
-		return StOk
+		return adapters.StOk
 	}
 	v.channels[channel].Close()
-	return StOk
+	return adapters.StOk
 }
 
 // Read retrieves the next byte of data from the specified channel and returns its status.
@@ -237,13 +237,13 @@ func (v *MediaDrive) Read(d uint8) (uint8, uint8) {
 	}
 	b, ok := v.channels[channel].DataNext()
 	if !ok {
-		return 0, StReadTimeout
+		return 0, adapters.StReadTimeout
 	}
 	if v.channels[channel].DataIsEmpty() {
-		v.commands.SetErrorIdx(ERR_OK)
-		return b, StEof
+		v.commands.SetErrorIdx(adapters.ERR_OK)
+		return b, adapters.StEof
 	}
-	return b, StOk
+	return b, adapters.StOk
 }
 
 // Write writes a byte of data to a specific channel and executes commands for channel 15, returning a status code.
@@ -254,12 +254,12 @@ func (v *MediaDrive) Write(d uint8, data uint8) uint8 {
 
 	if channel == 15 {
 		if !v.commands.CommandSet(data) {
-			return StTimeout
+			return adapters.StTimeout
 		}
 		if eoi {
 			v.commands.CommandExecBuf()
 		}
-		return StOk
+		return adapters.StOk
 	}
 	//if v.buffer[channel] == nil {
 	//	v.commands.SetError(ERR_FILENOTOPEN)
@@ -267,7 +267,7 @@ func (v *MediaDrive) Write(d uint8, data uint8) uint8 {
 	//}
 
 	v.channels[channel].BufferAdd(data)
-	return StOk
+	return adapters.StOk
 
 	/*
 		//TODO EOI, eoi bool
@@ -340,34 +340,34 @@ func (v *MediaDrive) closeAllChannels() {
 // It handles file name parsing, mode checks (read/write), and wildcards, returning appropriate errors for invalid cases.
 // Errors include syntax issues, file not found, or unimplemented file types like relative files.
 func (v *MediaDrive) openFile(channel uint8, name string) ([]uint8, error) {
-	plainName, mode, kind, _ := ParseFileName(name)
+	plainName, mode, kind, _ := adapters.ParseFileName(name)
 	// Channel 0 is READ, channel 1 is WRITE
 	if channel == 0 || channel == 1 {
-		mode = FMODE_READ
+		mode = adapters.FMODE_READ
 		if channel != 0 {
-			mode = FMODE_WRITE
+			mode = adapters.FMODE_WRITE
 		}
-		if kind == FTYPE_DEL {
-			kind = FTYPE_PRG
+		if kind == adapters.FTYPE_DEL {
+			kind = adapters.FTYPE_PRG
 		}
 	}
 	if strings.Contains(plainName, "*") || strings.Contains(plainName, "?") {
-		if mode == FMODE_WRITE || mode == FMODE_APPEND {
-			return nil, errors.New(string(Errors[ERR_SYNTAX33]))
+		if mode == adapters.FMODE_WRITE || mode == adapters.FMODE_APPEND {
+			return nil, errors.New(string(adapters.Errors[adapters.ERR_SYNTAX33]))
 		}
 		n, ok := v.findFirstFile(plainName)
 		if !ok {
-			return nil, errors.New(string(Errors[ERR_FILENOTFOUND]))
+			return nil, errors.New(string(adapters.Errors[adapters.ERR_FILENOTFOUND]))
 		}
 		plainName = n
 	}
-	if kind == FTYPE_REL {
-		return nil, errors.New(string(Errors[ERR_UNIMPLEMENTED]))
+	if kind == adapters.FTYPE_REL {
+		return nil, errors.New(string(adapters.Errors[adapters.ERR_UNIMPLEMENTED]))
 	}
 
 	data, err := v.adapter.ReadFile(plainName)
 	if err != nil {
-		return nil, errors.New(string(Errors[ERR_FILENOTFOUND]))
+		return nil, errors.New(string(adapters.Errors[adapters.ERR_FILENOTFOUND]))
 	}
 	return data, nil
 }
@@ -390,7 +390,7 @@ func (v *MediaDrive) openDirectory(pattern string) ([]byte, error) {
 			pattern = pattern[p:]
 		}
 	}
-	title := CreateFileNameFilled(v.adapter.Name(), ' ')
+	title := adapters.CreateFileNameFilled(v.adapter.Name(), ' ')
 	fullTile := titleStart + string(title) + titleEnd
 	var buf []byte
 	buf = append(buf, fullTile...)
@@ -418,7 +418,7 @@ func (v *MediaDrive) openDirectory(pattern string) ([]byte, error) {
 // createFileEntry generates a directory entry for a file with the specified name, size, and type, returning a byte slice.
 func (v *MediaDrive) createFileEntry(name string, size int, kind int) []byte {
 	const dirEntryMax = 32
-	vName := CreateFileName(name)
+	vName := adapters.CreateFileName(name)
 	n := (size + 254) / 254
 	ret := make([]byte, dirEntryMax)
 	for x := range ret {

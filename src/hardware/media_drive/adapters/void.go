@@ -19,6 +19,8 @@ func (a *Void) Name() string {
 	return "empty"
 }
 
+func (a *Void) Extension() string { return "" }
+
 // ReadDir returns an error indicating that the adapter is invalid and does not support directory reading.
 func (a *Void) ReadDir() ([]os.FileInfo, error) {
 	return nil, fmt.Errorf("invalid void adapter")

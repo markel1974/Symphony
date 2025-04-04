@@ -1,4 +1,4 @@
-package media_drive
+package adapters
 
 const (
 	StOk          = 0    // No error
