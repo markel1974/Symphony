@@ -70,7 +70,7 @@ type Zip struct {
 	path string
 }
 
-// NewZip initializes and returns a new FileSystem instance with the specified path. Returns an error if initialization fails.
+// NewZip initializes and returns a new Directory instance with the specified path. Returns an error if initialization fails.
 func NewZip(path string) (*Zip, error) {
 	z := &Zip{path: path}
 	return z, nil

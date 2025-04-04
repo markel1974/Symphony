@@ -1,7 +1,6 @@
 package adapters
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -32,11 +31,11 @@ func (f *Factory) Create(p string) (IAdapter, error) {
 		return nil, err
 	}
 	if d.IsDir() {
-		return NewFileSystem(p)
+		return NewDirectory(p)
 	}
 	ext := strings.TrimSpace(strings.ToLower(path.Ext(p)))
 	if ext == ".zip" {
 		return NewZip(p)
 	}
-	return nil, fmt.Errorf("unsupported file: %s", p)
+	return NewFile(p)
 }
