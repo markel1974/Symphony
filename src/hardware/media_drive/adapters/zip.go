@@ -65,6 +65,8 @@ func CreateZipHeader(name string, data []byte, zipMode uint16) (*zip.FileHeader,
 	return header, nil
 }
 
+func ZipExtension() string { return ".zip" }
+
 // Zip represents a ZIP archive file located at a specific path on the filesystem.
 type Zip struct {
 	path string
@@ -76,7 +78,7 @@ func NewZip(path string) (*Zip, error) {
 	return z, nil
 }
 
-func (a *Zip) Extension() string { return ".zip" }
+func (a *Zip) Extension() string { return ZipExtension() }
 
 // Name returns the file path of the current Zip archive instance.
 func (a *Zip) Name() string {

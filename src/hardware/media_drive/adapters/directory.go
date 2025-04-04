@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+func DirectoryExtension() string { return "" }
+
 // Directory represents a file system adapter for managing files and directories within a specified path.
 // The `path` field denotes the root directory where operations are performed.
 type Directory struct {
@@ -28,7 +30,7 @@ func NewDirectory(path string) (*Directory, error) {
 	return &Directory{path: path}, nil
 }
 
-func (a *Directory) Extension() string { return "" }
+func (a *Directory) Extension() string { return DirectoryExtension() }
 
 // Name returns the path associated with the AdapterFileSystem instance.
 func (a *Directory) Name() string {

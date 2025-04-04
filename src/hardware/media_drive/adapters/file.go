@@ -4,6 +4,8 @@ import (
 	"os"
 )
 
+func FileExtension() string { return "*" }
+
 // File represents a file with an associated path.
 type File struct {
 	path string
@@ -15,7 +17,7 @@ func NewFile(path string) (*File, error) {
 }
 
 // Extension returns the file extension of the associated file path.
-func (a *File) Extension() string { return "*" }
+func (a *File) Extension() string { return FileExtension() }
 
 // Name returns the path of the file as a string.
 func (a *File) Name() string {

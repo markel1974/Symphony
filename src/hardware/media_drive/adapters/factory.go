@@ -26,16 +26,15 @@ func (f *Factory) Void() IAdapter {
 
 // Create initializes and returns a new IAdapter instance for a specified path or an error if the operation fails.
 func (f *Factory) Create(p string) (IAdapter, error) {
-	d, err := os.Stat(p)
-	if err != nil {
-		return nil, err
-	}
-	if d.IsDir() {
-		return NewDirectory(p)
-	}
-	ext := strings.TrimSpace(strings.ToLower(path.Ext(p)))
-	if ext == ".zip" {
-		return NewZip(p)
+	if fs, err := os.Stat(p); err == nil {
+		if fs.IsDir() {
+			return NewDirectory(p)
+		}
+		ext := strings.TrimSpace(strings.ToLower(path.Ext(p)))
+		switch ext {
+		case ZipExtension():
+			return NewZip(p)
+		}
 	}
 	return NewFile(p)
 }
