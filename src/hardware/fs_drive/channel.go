@@ -18,13 +18,13 @@ func NewChannel() *Channel {
 }
 
 func (c *Channel) Reset() {
-	c.data = fifo.NewCircularQueue(32)
+	c.data.Initialize(0)
 	c.buffer = []byte{}
 	c.mode = 0
 }
 
 func (c *Channel) Close() {
-	c.data = fifo.NewCircularQueue(32)
+	c.data.Initialize(0)
 	c.buffer = []byte{}
 	c.mode = 0
 }
@@ -38,7 +38,7 @@ func (c *Channel) BufferGet() []byte {
 }
 
 func (c *Channel) DataSet(data []byte) {
-	c.data = fifo.NewCircularQueue(len(data))
+	c.data.Initialize(len(data))
 	for _, k := range data {
 		c.data.Push(int(k))
 	}
