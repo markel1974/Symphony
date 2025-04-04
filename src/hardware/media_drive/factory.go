@@ -1,4 +1,4 @@
-package fs_drive
+package media_drive
 
 import (
 	"github.com/markel1974/c64emu/src/references"

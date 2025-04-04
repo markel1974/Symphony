@@ -1,4 +1,4 @@
-package fs_drive
+package media_drive
 
 // Matcher represents a structure for handling wildcard-based string pattern matching.
 // S defines the single-character wildcard symbol.
