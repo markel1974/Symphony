@@ -117,6 +117,7 @@ type Protocol struct {
 	cfg          *config.Config
 	deviceNumber uint8
 	ledSignal    *signals.SignalUint32
+	debug        bool
 }
 
 // NewProtocol creates a new instance of the Protocol component, initializes its fields, and registers it within the component hierarchy.
@@ -128,6 +129,7 @@ func NewProtocol(factory references.IComponentFactory, parent references.ICompon
 		device:        nil,
 		ledSignal:     signals.NewSignalUint32(),
 		quartz:        nil,
+		debug:         false,
 	}
 	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, label, instance))
 	p.quartz = quartz.NewQuartz(p, factory, label, 0)
@@ -200,11 +202,13 @@ func (v *Protocol) GetDeviceNumber() uint8 {
 
 // AtnStateChanged handles changes in the ATN (Attention) state by performing specific actions based on the boolean input.
 func (v *Protocol) AtnStateChanged(atn bool) {
-	//if !atn {
-	//	log.Println("ATN STATE CHANGED", "ON")
-	//} else {
-	//	log.Println("ATN STATE CHANGED", "OFF")
-	//}
+	if v.debug {
+		if !atn {
+			log.Println("ATN STATE CHANGED", "ON")
+		} else {
+			log.Println("ATN STATE CHANGED", "OFF")
+		}
+	}
 }
 
 // EmulationRequired determines if emulation is required by returning a boolean value.
@@ -281,7 +285,9 @@ func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
 			if v.ps.StateGet(v.ps.SecondaryGet()) == 0 {
 				v.ps.FlagsSet(pListening)
 				v.ps.StateMachineSet(pPre1)
-				log.Printf("device %d start listening", v.deviceNumber)
+				if v.debug {
+					log.Printf("device %d start listening", v.deviceNumber)
+				}
 			}
 			//set DATA=0 ("I am here")
 			v.peripheralWrite(busReadAtn, DeviceWriteClk)
@@ -290,12 +296,16 @@ func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
 			v.ps.FlagsRemove(pListening)
 			v.ps.FlagsSet(pTalking)
 			v.ps.StateMachineSet(pPre0)
-			log.Printf("device %d start talking", v.deviceNumber)
+			if v.debug {
+				log.Printf("device %d start talking", v.deviceNumber)
+			}
 		}
 	} else if (v.ps.PrimaryGet() == 0x3f) && v.ps.FlagGet(pListening) {
 		//All devices were told to stop listening
 		v.ps.FlagsRemove(pListening)
-		log.Printf("device %d stop listening", v.deviceNumber)
+		if v.debug {
+			log.Printf("device %d stop listening", v.deviceNumber)
+		}
 		//If this is an UNLISTEN that followed an OPEN (0x2_ 0xf_), then
 		//device.unlisten will try to open the file with the filename that
 		//was received in between the OPEN and now.
@@ -305,7 +315,9 @@ func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
 		//All devices were told to stop talking
 		v.ps.StateSet(v.ps.SecondaryPrevGet(), v.device.Untalk(v.ps.SecondaryPrevGet()))
 		v.ps.FlagsRemove(pTalking)
-		log.Printf("device %d stop talking", v.deviceNumber)
+		if v.debug {
+			log.Printf("device %d stop talking", v.deviceNumber)
+		}
 	}
 
 	if !v.ps.FlagGet(pListening | pTalking) {
@@ -349,7 +361,9 @@ func (v *Protocol) doAtnOrListen(busReadAtn bool, busReadClk bool, busReadData b
 		} else if !v.ps.FlagGet(pAtn) && v.ps.TimeoutExpired(v.quartz) {
 			//Sender did not set CLK=0 within 200 us after we set DATA=1 => it is signaling EOI
 			//(not so if we are under ATN) acknowledge we received it by setting DATA=0 for 60us
-			log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.ps.SecondaryGet()&0x0f)
+			if v.debug {
+				log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.ps.SecondaryGet()&0x0f)
+			}
 			v.peripheralWrite(busReadAtn, DeviceWriteClk)
 			v.ps.StateMachineSet(pEOI)
 			v.ps.TimeoutSet(v.quartz, 60)
@@ -385,7 +399,9 @@ func (v *Protocol) doAtnOrListen(busReadAtn bool, busReadClk bool, busReadData b
 	case pBit7w:
 		if !busReadClk {
 			//Sender set CLK=0 and this was the last bit
-			log.Printf("device %d received : 0x%02x (%c)", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte())
+			if v.debug {
+				log.Printf("device %d received : 0x%02x (%c)", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte())
+			}
 			if v.ps.FlagGet(pAtn) {
 				//We are currently receiving under ATN. Store the first two bytes received (contain primary and secondary address)
 				if v.ps.PrimaryGet() == 0 {
@@ -405,7 +421,9 @@ func (v *Protocol) doAtnOrListen(busReadAtn bool, busReadClk bool, busReadData b
 				}
 			} else if v.ps.FlagGet(pListening) {
 				//We are currently listening for data pass received byte on to the upper level
-				log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte(), v.ps.SecondaryGet())
+				if v.debug {
+					log.Printf("device %d received 0x%02x (%c) on channel %d", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte(), v.ps.SecondaryGet())
+				}
 				v.ps.StateSet(v.ps.SecondaryGet(), v.device.Write(v.ps.SecondaryGet(), v.ps.DataGetByte()))
 				if v.ps.StateGet(v.ps.SecondaryGet()) != 0 {
 					//There was an error during iec_bus_write => stop listening. This will signal an error condition to the sender
@@ -457,7 +475,9 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 				v.ps.TimeoutSet(v.quartz, 0)
 			} else if v.ps.StateGet(v.ps.SecondaryGet()) == pRequestTalking {
 				//Only this byte left to send => signal EOI by keeping CLK=1
-				log.Printf("device %d signaling EOI on channel %d", v.deviceNumber, v.ps.SecondaryGet())
+				if v.debug {
+					log.Printf("device %d signaling EOI on channel %d", v.deviceNumber, v.ps.SecondaryGet())
+				}
 				v.ps.StateMachineSet(pEOI)
 			} else {
 				//There was some kind of error; we have nothing to send.
@@ -516,7 +536,9 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 	case pDone1:
 		if !busReadData {
 			//Receiver set DATA=0, acknowledging the frame
-			log.Printf("device %d sent 0x%02x (%c) on channel %d", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte(), v.ps.SecondaryGet())
+			if v.debug {
+				log.Printf("device %d sent 0x%02x (%c) on channel %d", v.deviceNumber, v.ps.DataGetByte(), v.ps.DataGetByte(), v.ps.SecondaryGet())
+			}
 			if v.ps.StateGet(v.ps.SecondaryGet()) == pRequestTalking {
 				//This was the last byte => stop talking.This leaves us waiting for ATN.
 				v.ps.FlagsRemove(pTalking)
@@ -530,7 +552,9 @@ func (v *Protocol) doTalk(busReadAtn bool, busReadClk bool, busReadData bool) {
 			}
 		} else if v.ps.TimeoutExpired(v.quartz) {
 			//We didn't receive an acknowledgement within 1 ms.Set CLOCK=0 and after 100 us back to CLOCK=1
-			log.Printf("device %d got NACK on channel %d", v.deviceNumber, v.ps.SecondaryGet())
+			if v.debug {
+				log.Printf("device %d got NACK on channel %d", v.deviceNumber, v.ps.SecondaryGet())
+			}
 			v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
 			v.ps.TimeoutSet(v.quartz, 100)
 			v.ps.StateMachineSet(pFrameError0)

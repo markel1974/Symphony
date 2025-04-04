@@ -2,64 +2,111 @@ package fs_drive
 
 import (
 	"path"
-	"unicode"
+	"strconv"
+	"strings"
 )
 
+// _asciiToPetsciiTable is a lookup table for converting ASCII characters to PETSCII equivalents.
+var _asciiToPetsciiTable [256]byte
+
+// maxName defines the maximum allowable length for a name, typically used for filename constraints or similar purposes.
 const maxName = 16
 
-// ParseFileName parses the provided file name and extracts relevant information including mode, type, and record length.
-// name: the input file name to parse.
-// convertCharset: a boolean flag to determine if the character set should be converted.
-// Returns the cleaned filename as a string, the mode as an int, the file type as an int, and the record length as an int.
-func ParseFileName(name string, convertCharset bool) (string, int, int, int) {
-	//TODO IMPLEMENT
-	mode := FMODE_READ
-	kind := FTYPE_PRG
-	//dest uint8* , dest_len int& , mode int& , kind int, rec_len int& ,
-	return "", mode, kind, 0
+// init initializes the ASCII to PETSCII translation table with default mappings and specific character conversions.
+func init() {
+	const replacement byte = '?'
+	for i := range _asciiToPetsciiTable {
+		_asciiToPetsciiTable[i] = replacement
+	}
+	const cx = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_"
+	for _, c := range []byte(cx) {
+		_asciiToPetsciiTable[c] = c
+	}
+	for c := byte('a'); c <= 'z'; c++ {
+		_asciiToPetsciiTable[c] = c - 32
+	}
+	_asciiToPetsciiTable['\n'] = 0x0D
 }
 
-func FillName(in string) []byte {
-	v := CleanFileName(path.Base(in))
+func ParseFileName(nameWithParams string) (string, int, int, int) {
+	mode := FMODE_READ
+	filetype := FTYPE_PRG
+	recLen := 0
+	parts := strings.SplitN(nameWithParams, ",", 2)
+	filename := strings.TrimSpace(parts[0])
+	if len(filename) > maxName {
+		filename = filename[:maxName]
+	}
+
+	if len(parts) > 1 {
+		params := strings.Split(parts[1], ",")
+		parsingRecLen := false
+		for _, p := range params {
+			param := strings.TrimSpace(strings.ToUpper(p))
+			if parsingRecLen {
+				rl, err := strconv.Atoi(param)
+				if err == nil && rl > 0 {
+					recLen = rl
+				} else {
+					// Errore: parametro non numerico dopo L, o valore non valido TODO ERRORE
+				}
+				parsingRecLen = false
+				continue
+			}
+
+			if len(param) == 1 {
+				switch param[0] {
+				case 'D':
+					filetype = FTYPE_DEL
+				case 'S':
+					filetype = FTYPE_SEQ
+				case 'P':
+					filetype = FTYPE_PRG
+				case 'U':
+					filetype = FTYPE_USR
+				case 'L':
+					filetype = FTYPE_REL
+					parsingRecLen = true
+				case 'R':
+					mode = FMODE_READ
+				case 'W':
+					mode = FMODE_WRITE
+				case 'A':
+					mode = FMODE_APPEND
+				case 'M':
+					mode = FMODE_M
+				}
+			}
+		}
+		if parsingRecLen {
+			// Errore: L senza lunghezza record
+		}
+	}
+	return filename, mode, filetype, recLen
+}
+
+// CreateFileNameFilled generates a byte slice with a file name padded to a fixed length, filling with the specified byte.
+func CreateFileNameFilled(in string, fill uint8) []byte {
+	v := CreateFileName(path.Base(in))
 	name := make([]byte, maxName)
 	for idx := range name {
-		name[idx] = ' '
-	}
-	for idx := range v {
-		name[idx] = ' '
 		if idx < len(v) {
 			name[idx] = v[idx]
+		} else {
+			name[idx] = fill
 		}
 	}
 	return name
 }
 
-func CleanFileName(name string) []uint8 {
-	var vName []rune
+// CreateFileName converts a string to a PETSCII-encoded filename as a slice of bytes, truncated to a maximum length.
+func CreateFileName(name string) []uint8 {
+	var vName []uint8
 	for _, k := range name {
-		if k >= 'a' && k <= 'z' {
-			vName = append(vName, unicode.ToUpper(k))
-		} else if k >= 'A' && k <= 'Z' {
-			vName = append(vName, k)
-		} else if k >= '0' && k <= '9' {
-			vName = append(vName, k)
-		} else if k == '.' {
-			vName = append(vName, k)
-		} else {
-			vName = append(vName, ' ')
+		vName = append(vName, _asciiToPetsciiTable[k&0xff])
+		if len(vName) >= maxName {
+			break
 		}
 	}
-	name = string(vName)
-	//if ext := path.Ext(name); len(ext) > 0 {
-	//	name = name[:len(name)-len(ext)]
-
-	//if len(name) > maxName {
-	//	name = name[:maxName]
-	//}
-	//return []uint8(name)
-	//}
-	if len(name) > maxName {
-		name = name[:maxName]
-	}
-	return []uint8(name)
+	return vName
 }

@@ -1,11 +1,10 @@
 package fs_drive
 
 import (
-	"fmt"
+	"errors"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/references"
-	"log"
 	"os"
 	"strings"
 
@@ -94,8 +93,7 @@ func (v *FSDrive) GetDeviceNumber() uint8 {
 func (v *FSDrive) Reset() {
 	v.closeAllChannels()
 	v.commands.CommandClear()
-	v.commands.SetError(ERR_STARTUP)
-	//TODO IN FASE DI RESET CAMBIARE LO STATO DEL BUS
+	v.commands.SetErrorIdx(ERR_STARTUP)
 	v.protocol.Reset()
 }
 
@@ -110,8 +108,7 @@ func (v *FSDrive) GetPath() string {
 }
 
 func (v *FSDrive) Listen(d uint8) uint8 {
-	sec := d & 0xf
-	log.Println("FSDrive LISTEN", sec)
+	//channel := d & 0xf
 	return StOk
 }
 
@@ -146,54 +143,45 @@ func (v *FSDrive) Unlisten(d uint8) uint8 {
 	v.channels[channel].Close()
 
 	if len(data) == 0 {
-		v.commands.SetError(ERR_NOCHANNEL)
+		v.commands.SetErrorIdx(ERR_NOCHANNEL)
 		return StOk
 	}
 	if data[0] == '#' {
-		v.commands.SetError(ERR_NOCHANNEL)
+		v.commands.SetErrorIdx(ERR_NOCHANNEL)
 		return StOk
 	}
 	if data[0] == '$' {
-		dir, _ := v.openDirectory("", v.dirPath)
-		v.channels[channel].DataSet(dir)
+		dirData, err := v.openDirectory("", v.dirPath)
+		if err != nil {
+			v.commands.SetError(err)
+			return StOk
+		}
+		v.channels[channel].DataSet(dirData)
 		return StOk
 	}
-
-	//return v.openFile(channel, string(data))
+	fileData, err := v.openFile(channel, string(data))
+	if err != nil {
+		v.commands.SetError(err)
+		return StOk
+	}
+	v.channels[channel].DataSet(fileData)
 	return StOk
-
-	//data, _ := v.openDirectory("", v.dirPath)
-	//v.channels[channel].DataSet(data)
-	//log.Println("FSDrive UNLISTEN", channel)
-	//return StOk
 }
 
 func (v *FSDrive) Talk(d uint8) uint8 {
-	channel := d & 0xf
-	log.Println("FSDrive TALK", channel)
+	//channel := d & 0xf
 	return StOk
 }
 
 func (v *FSDrive) Untalk(d uint8) uint8 {
-	channel := d & 0xf
-	log.Println("FSDrive UNTALK", channel)
+	//channel := d & 0xf
 	return StOk
 }
 
 func (v *FSDrive) Open(d uint8) uint8 {
 	channel := d & 0xf
-
-	fmt.Println("FSDrive OPEN", d, channel)
-	//TODO initialize channel
-
 	v.channels[channel].Reset()
 	v.channels[channel].ModeSet(d)
-
-	//for _, c := range "PROVA" {
-	//	v.test.Set(int(c))
-	//}
-
-	//v.buffer[channel] = []byte{}
 	return StOk
 }
 
@@ -205,53 +193,30 @@ func (v *FSDrive) Close(d uint8) uint8 {
 		return StOk
 	}
 	v.channels[channel].Close()
-	//if v.file[channel] != nil {
-	//	v.file[channel].Close()
-	//	v.file[channel] = nil
-	//}
 	return StOk
 }
 
 func (v *FSDrive) Read(d uint8) (uint8, uint8) {
 	channel := d & 0xf
+	if channel == 15 {
+		//TODO ERROR channel
+		//data := v.commands.RetrieveError()
+		//if data != '\r' {
+		//	return data, StOk
+		//}
+		// End of message
+		//v.commands.SetError(ERR_OK)
+		//return data, StEof
+	}
 	b, ok := v.channels[channel].DataNext()
 	if !ok {
 		return 0, StReadTimeout
 	}
-	log.Printf("FSDrive Read: %d (%s)", b, string(byte(b)))
 	if v.channels[channel].DataIsEmpty() {
-		v.commands.SetError(ERR_OK)
+		v.commands.SetErrorIdx(ERR_OK)
 		return b, StEof
 	}
 	return b, StOk
-
-	/*
-		return 0, StReadTimeout
-		// Channel 15: Error channel
-		if channel == 15 {
-			data := v.commands.RetrieveError()
-			if data != '\r' {
-				return data, StOk
-			}
-			// End of message
-			v.commands.SetError(ERR_OK)
-			return data, StEof
-		}
-
-		if v.file[channel] == nil {
-			return 0, StReadTimeout
-		}
-
-		// Read one byte
-		data := v.readChar[channel]
-		buffer := make([]uint8, 1)
-		c, err := v.file[channel].Read(buffer)
-		if err == io.EOF {
-			return data, StEof
-		}
-		v.readChar[channel] = (uint8)(c)
-		return data, StOk
-	*/
 }
 
 func (v *FSDrive) Write(d uint8, data uint8) uint8 {
@@ -348,8 +313,8 @@ func (v *FSDrive) closeAllChannels() {
 	v.commands.CommandClear()
 }
 
-func (v *FSDrive) openFile(channel uint8, name string) uint8 {
-	plainName, mode, kind, _ := ParseFileName(name, true)
+func (v *FSDrive) openFile(channel uint8, name string) ([]uint8, error) {
+	plainName, mode, kind, _ := ParseFileName(name)
 	// Channel 0 is READ, channel 1 is WRITE
 	if channel == 0 || channel == 1 {
 		mode = FMODE_READ
@@ -360,52 +325,25 @@ func (v *FSDrive) openFile(channel uint8, name string) uint8 {
 			kind = FTYPE_PRG
 		}
 	}
-	writing := mode == FMODE_WRITE || mode == FMODE_APPEND
 	if strings.Contains(plainName, "*") || strings.Contains(plainName, "?") {
-		if writing {
-			v.commands.SetError(ERR_SYNTAX33)
-			return StOk
-		} else {
-			v.findFirstFile(plainName)
+		if mode == FMODE_WRITE || mode == FMODE_APPEND {
+			return nil, errors.New(string(Errors[ERR_SYNTAX33]))
 		}
+		n, ok := v.findFirstFile(plainName)
+		if !ok {
+			return nil, errors.New(string(Errors[ERR_FILENOTFOUND]))
+		}
+		plainName = n
 	}
 	if kind == FTYPE_REL {
-		v.commands.SetError(ERR_UNIMPLEMENTED)
-		return StOk
+		return nil, errors.New(string(Errors[ERR_UNIMPLEMENTED]))
 	}
-	/*
-		flags := os.O_RDONLY
-		perm := os.FileMode(0)
-		switch mode {
-		case FMODE_WRITE:
-			perm = os.FileMode(0666)
-			flags = os.O_RDWR
-		case FMODE_APPEND:
-			perm = os.FileMode(0666)
-			flags = os.O_RDWR | os.O_APPEND
-		default:
-			panic("unhandled default case")
-		}
-		f, err := os.OpenFile(completeFileName, flags, perm)
-		if err != nil {
-			v.commands.SetError(ERR_FILENOTFOUND)
-		} else {
-			os.ReadFile
-			v.file[channel] = f
-			data := make([]byte, 1)
-			_, _ = f.Read(data)
-			v.readChar[channel] = data[0]
-		}
-	*/
-
 	completeFileName := v.dirPath + string(os.PathSeparator) + plainName
 	data, err := os.ReadFile(completeFileName)
 	if err != nil {
-		v.commands.SetError(ERR_FILENOTFOUND)
-	} else {
-		v.channels[channel].DataSet(data)
+		return nil, errors.New(string(Errors[ERR_FILENOTFOUND]))
 	}
-	return StOk
+	return data, nil
 }
 
 func (v *FSDrive) openDirectory(pattern string, dirName string) ([]byte, error) {
@@ -428,7 +366,7 @@ func (v *FSDrive) openDirectory(pattern string, dirName string) ([]byte, error) 
 	const blocksFreeStart = "\001\001\000\000"
 	const blockFreeEnd = "\000\000"
 
-	title := FillName(dirName)
+	title := CreateFileNameFilled(dirName, ' ')
 
 	var buf []byte
 
@@ -437,89 +375,19 @@ func (v *FSDrive) openDirectory(pattern string, dirName string) ([]byte, error) 
 	buf = append(buf, fullTile...)
 	buf = append(buf, 0)
 
-	/*
-
-	   // Create and write one line for every directory entry
-	   std::vector<C64DirEntry>::const_iterator i, end = _file_info.end();
-	   for (i = _file_info.begin(); i != end; i++) {
-	           // Include only files matching the pattern
-	           if (pattern_len == 0 || match(pattern, pattern_len, (uint8*)i->name)) {
-	                   // Clear line with spaces and terminate with null byte
-	                   memset(buf, ' ', 31);
-	                   buf[31] = 0;
-
-	                   uint8* p = (uint8*)buf;
-	                   *p++ = 0x01;    // Dummy line link
-	                   *p++ = 0x01;
-
-	                   // Calculate size in blocks (254 bytes each)
-	                   int n = (i->size + 254) / 254;
-	                   *p++ = n & 0xff;
-	                   *p++ = (n >> 8) & 0xff;
-
-	                   p++;
-	                   if (n < 10) p++;        // Less than 10: add one space
-	                   if (n < 100) p++;       // Less than 100: add another space
-
-	                   // Convert and insert file name
-	                   *p++ = '\"';
-	                   uint8* q = p;
-	                   for (int j = 0; j < 16 && i->name[j]; j++) {
-	                           *q++ = i->name[j];
-	                   }
-	                   *q++ = '\"';
-	                   p += 18;
-
-	                   // File type
-	                   switch (i->type) {
-	                           case FTYPE_DEL:
-	                           *p++ = 'D';
-	                           *p++ = 'E';
-	                           *p++ = 'L';
-	                           break;
-	                           case FTYPE_SEQ:
-	                           *p++ = 'S';
-	                           *p++ = 'E';
-	                           *p++ = 'Q';
-	                           break;
-	                           case FTYPE_PRG:
-	                           *p++ = 'P';
-	                           *p++ = 'R';
-	                           *p++ = 'G';
-	                           break;
-	                           case FTYPE_USR:
-	                           *p++ = 'U';
-	                           *p++ = 'S';
-	                           *p++ = 'R';
-	                           break;
-	                           case FTYPE_REL:
-	                           *p++ = 'R';
-	                           *p++ = 'E';
-	                           *p++ = 'L';
-	                           break;
-	                           default:
-	                           *p++ = '?';
-	                           *p++ = '?';
-	                           *p++ = '?';
-	                           break;
-	                   }
-
-	                   // Write line
-	                   fwrite(buf, 1, 32, _fileChannel[channel]);
-	           }
-	   }
-
-	*/
-
 	entries, err := os.ReadDir(v.dirPath)
 	if err != nil {
 		return nil, err
 	}
 	for _, e := range entries {
-		if e.IsDir() {
+		fInfo, err := e.Info()
+		if err != nil {
 			continue
 		}
-		z := v.createFileEntry(e.Name(), 32456, 0)
+		if fInfo.IsDir() {
+			continue
+		}
+		z := v.createFileEntry(e.Name(), int(fInfo.Size()), 0)
 		buf = append(buf, z...)
 	}
 	buf = append(buf, blocksFreeStart...)
@@ -531,13 +399,10 @@ func (v *FSDrive) openDirectory(pattern string, dirName string) ([]byte, error) 
 }
 
 func (v *FSDrive) createFileEntry(name string, size int, kind int) []byte {
-	//const maxFileName = 16
-	//if len(name) > maxFileName {
-	//	name = name[:maxFileName]
-	//}
-	vName := CleanFileName(name)
+	const dirEntryMax = 32
+	vName := CreateFileName(name)
 	n := (size + 254) / 254
-	ret := make([]byte, 32)
+	ret := make([]byte, dirEntryMax)
 	for x := range ret {
 		ret[x] = ' '
 	}
@@ -545,13 +410,19 @@ func (v *FSDrive) createFileEntry(name string, size int, kind int) []byte {
 	ret[1] = 0x1
 	ret[2] = uint8(n & 0xff)
 	ret[3] = uint8((n >> 8) & 0xff)
-	ret[4] = ' '
-	ret[5] = ' '
-	ret[6] = '"'
-	for x, i := range vName {
-		ret[7+x] = i //uint8(unicode.ToUpper(i))
+	nameIdx := 4
+	if n < 10 {
+		nameIdx++
 	}
-	ret[7+len(vName)] = '"'
+	if n < 100 {
+		nameIdx++
+	}
+	ret[nameIdx] = '"'
+	nameIdx++
+	ret[nameIdx+len(vName)] = '"'
+	for x, i := range vName {
+		ret[nameIdx+x] = i
+	}
 	ret[28] = 'P'
 	ret[29] = 'R'
 	ret[30] = 'G'
