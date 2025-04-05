@@ -156,7 +156,6 @@ func (v *MediaDrive) Unlisten(d uint8) uint8 {
 	data := v.channels[channel].BufferGet()
 
 	v.LedTurnOn()
-	// Channel 15: Execute file name as command
 	if channel == errChannel {
 		if action, err := v.commands.CommandExec(data); err != nil {
 			v.channels[errChannel].DataSetError(err)
@@ -178,7 +177,7 @@ func (v *MediaDrive) Unlisten(d uint8) uint8 {
 		return adapters.StOk
 	}
 	if data[0] == '$' {
-		dirData, err := v.openDirectory("")
+		dirData, err := v.openDirectory(channel, string(data))
 		if err != nil {
 			v.channels[errChannel].DataSetError(err)
 			return adapters.StOk
@@ -362,7 +361,7 @@ func (v *MediaDrive) openFile(channel uint8, name string) ([]uint8, error) {
 }
 
 // openDirectory generates a directory listing based on a pattern and returns it as a byte slice, or returns an error if failed.
-func (v *MediaDrive) openDirectory(pattern string) ([]byte, error) {
+func (v *MediaDrive) openDirectory( /* channel */ _ uint8, pattern string) ([]byte, error) {
 	const titleStart = "\001\004\001\001\000\000\022\""
 	const titleEnd = "\" 00 2A"
 	const blocksFreeStart = "\001\001\000\000"
@@ -379,6 +378,7 @@ func (v *MediaDrive) openDirectory(pattern string) ([]byte, error) {
 			pattern = pattern[p:]
 		}
 	}
+	//TODO PATTERN
 	title := adapters.CreateFileNameFilled(v.adapter.Name(), ' ')
 	fullTile := titleStart + string(title) + titleEnd
 	var buf []byte
@@ -393,6 +393,7 @@ func (v *MediaDrive) openDirectory(pattern string) ([]byte, error) {
 		if e.IsDir() {
 			continue
 		}
+		//TODO kind
 		z := v.createFileEntry(e.Name(), int(e.Size()), 0)
 		buf = append(buf, z...)
 	}
