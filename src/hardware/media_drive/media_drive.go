@@ -27,6 +27,7 @@ type MediaDrive struct {
 	channels       [16]*Channel
 	adapter        adapters.IAdapter
 	adapterFactory *adapters.Factory
+	matcher        *Matcher
 }
 
 // NewBoard creates and initializes a new MediaDrive instance with the specified parent component, component factory, label, and instance number.
@@ -42,6 +43,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		cfg:            nil,
 		adapterFactory: adapters.NewFactory(),
 		adapter:        nil,
+		matcher:        NewMatcher(),
 	}
 	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, label, 0))
 	fs.protocol.SetDevice(fs)
@@ -310,24 +312,6 @@ func (v *MediaDrive) initializeCmd() {
 func (v *MediaDrive) validateCmd() {
 }
 
-// findFirstFile searches for the first file matching the given pattern in the directory and returns its name and success status.
-func (v *MediaDrive) findFirstFile(pattern string) (string, bool) {
-	items, err := v.adapter.ReadDir()
-	if err != nil {
-		return "", false
-	}
-	matcher := NewMatcher()
-	for _, item := range items {
-		if item.IsDir() {
-			continue
-		}
-		if b, err := matcher.Match(pattern, item.Name()); err == nil && b {
-			return item.Name(), false
-		}
-	}
-	return "", false
-}
-
 // closeAllChannels closes all active channels and clears the command queue in the MediaDrive instance.
 func (v *MediaDrive) closeAllChannels() {
 	for i := uint8(0); i < 15; i++ {
@@ -351,20 +335,30 @@ func (v *MediaDrive) openFile(channel uint8, name string) ([]uint8, error) {
 			kind = adapters.FTYPE_PRG
 		}
 	}
-	if strings.Contains(plainName, "*") || strings.Contains(plainName, "?") {
+	if v.matcher.Contains(plainName) {
 		if mode == adapters.FMODE_WRITE || mode == adapters.FMODE_APPEND {
 			return nil, errors.New(string(adapters.Errors[adapters.ERR_SYNTAX33]))
 		}
-		n, ok := v.findFirstFile(plainName)
-		if !ok {
+		items, err := v.adapter.ReadDir()
+		if err != nil {
 			return nil, errors.New(string(adapters.Errors[adapters.ERR_FILENOTFOUND]))
 		}
-		plainName = n
+		found := false
+		for _, item := range items {
+			if !item.IsDir() {
+				if found = v.matcher.Match(plainName, item.Name()); found {
+					plainName = item.Name()
+					break
+				}
+			}
+		}
+		if !found {
+			return nil, errors.New(string(adapters.Errors[adapters.ERR_FILENOTFOUND]))
+		}
 	}
 	if kind == adapters.FTYPE_REL {
 		return nil, errors.New(string(adapters.Errors[adapters.ERR_UNIMPLEMENTED]))
 	}
-
 	data, err := v.adapter.ReadFile(plainName)
 	if err != nil {
 		return nil, errors.New(string(adapters.Errors[adapters.ERR_FILENOTFOUND]))

@@ -1,18 +1,20 @@
 package media_drive
 
+import "strings"
+
 // Matcher represents a structure for handling wildcard-based string pattern matching.
 // S defines the single-character wildcard symbol.
 // M defines the multi-character wildcard symbol.
 type Matcher struct {
-	S byte
-	M byte
+	s byte
+	m byte
 }
 
 // NewMatcher creates and returns a new instance of Matcher with default wildcard characters '?' and '*'.
 func NewMatcher() *Matcher {
 	return &Matcher{
-		S: '?',
-		M: '*',
+		s: '?',
+		m: '*',
 	}
 }
 
@@ -20,30 +22,34 @@ func NewMatcher() *Matcher {
 func (m *Matcher) isWildPattern(pattern string) bool {
 	for i := range pattern {
 		c := pattern[i]
-		if c == m.M {
+		if c == m.m {
 			return true
 		}
-		if c == m.S {
+		if c == m.s {
 			return true
 		}
 	}
 	return false
 }
 
+func (m *Matcher) Contains(plainName string) bool {
+	return strings.Contains(plainName, string(m.m)) || strings.Contains(plainName, string(m.s))
+}
+
 // Match checks if the given string `s` matches the `pattern` using wildcard characters defined in the Matcher instance.
 // Returns a boolean indicating the match result and an error if applicable.
-func (m *Matcher) Match(pattern string, s string) (bool, error) {
-	if pattern == string(m.M) {
-		return true, nil
+func (m *Matcher) Match(pattern string, s string) bool {
+	if pattern == string(m.m) {
+		return true
 	}
 	if pattern == "" {
 		if s == "" {
-			return true, nil
+			return true
 		}
-		return false, nil
+		return false
 	}
 	if !m.isWildPattern(pattern) {
-		return pattern == s, nil
+		return pattern == s
 	}
 	lp := len(pattern)
 	ls := len(s)
@@ -53,7 +59,7 @@ func (m *Matcher) Match(pattern string, s string) (bool, error) {
 	}
 	dp[0][0] = true
 	for i := 0; i < lp; i++ {
-		if pattern[i] == m.M {
+		if pattern[i] == m.m {
 			dp[i+1][0] = dp[i][0]
 		} else {
 			dp[i+1][0] = false
@@ -67,9 +73,9 @@ func (m *Matcher) Match(pattern string, s string) (bool, error) {
 			pc := pattern[i]
 			sc := s[j]
 			switch pattern[i] {
-			case m.M:
+			case m.m:
 				dp[i+1][j+1] = dp[i][j] || dp[i][j+1] || dp[i+1][j]
-			case m.S:
+			case m.s:
 				dp[i+1][j+1] = dp[i][j]
 			default:
 				if pc == sc {
@@ -80,5 +86,5 @@ func (m *Matcher) Match(pattern string, s string) (bool, error) {
 			}
 		}
 	}
-	return dp[lp][ls], nil
+	return dp[lp][ls]
 }

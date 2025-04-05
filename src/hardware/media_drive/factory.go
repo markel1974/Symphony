@@ -6,7 +6,7 @@ import (
 )
 
 func Identifier() string {
-	return "fs_drive"
+	return "media"
 }
 
 type Factory struct {
