@@ -29,8 +29,8 @@ func init() {
 }
 
 func ParseFileName(nameWithParams string) (string, int, int, int) {
-	mode := FMODE_READ
-	filetype := FTYPE_PRG
+	mode := FModeRead
+	filetype := FTypePrg
 	recLen := 0
 	parts := strings.SplitN(nameWithParams, ",", 2)
 	filename := strings.TrimSpace(parts[0])
@@ -57,24 +57,24 @@ func ParseFileName(nameWithParams string) (string, int, int, int) {
 			if len(param) == 1 {
 				switch param[0] {
 				case 'D':
-					filetype = FTYPE_DEL
+					filetype = FTypeDel
 				case 'S':
-					filetype = FTYPE_SEQ
+					filetype = FTypeSeq
 				case 'P':
-					filetype = FTYPE_PRG
+					filetype = FTypePrg
 				case 'U':
-					filetype = FTYPE_USR
+					filetype = FTypeUsr
 				case 'L':
-					filetype = FTYPE_REL
+					filetype = FTypeRel
 					parsingRecLen = true
 				case 'R':
-					mode = FMODE_READ
+					mode = FModeRead
 				case 'W':
-					mode = FMODE_WRITE
+					mode = FModeWrite
 				case 'A':
-					mode = FMODE_APPEND
+					mode = FModeAppend
 				case 'M':
-					mode = FMODE_M
+					mode = FModeM
 				}
 			}
 		}

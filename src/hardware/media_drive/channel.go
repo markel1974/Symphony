@@ -43,6 +43,14 @@ func (c *Channel) BufferGet() []byte {
 	return c.buffer
 }
 
+func (c *Channel) DataSetError(err error) {
+	if err == nil {
+		c.DataSet([]byte("nil error"))
+		return
+	}
+	c.DataSet([]byte(err.Error()))
+}
+
 // DataSet initializes the channel's data queue and pushes each byte from the provided slice into the queue.
 func (c *Channel) DataSet(data []byte) {
 	c.data.Initialize(len(data))
