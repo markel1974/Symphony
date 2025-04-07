@@ -81,8 +81,9 @@ func (r *CircularQueue) Pop() (int, bool) {
 // String returns a string representation of the CircularQueue, showing its state, size, boundaries, and stored data.
 func (r *CircularQueue) String() string {
 	return fmt.Sprintf(
-		"[RRQ full:%v size:%d start:%d end:%d data:%v]",
+		"[CQueue full:%v empty:%v size:%d start:%d end:%d data:%v]",
 		r.isFull,
+		r.isEmpty,
 		len(r.data),
 		r.start,
 		r.end,
