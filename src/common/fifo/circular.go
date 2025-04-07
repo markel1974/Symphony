@@ -82,10 +82,5 @@ func (r *CircularQueue) Pop() (int, bool) {
 func (r *CircularQueue) String() string {
 	return fmt.Sprintf(
 		"[CQueue full:%v empty:%v size:%d start:%d end:%d data:%v]",
-		r.isFull,
-		r.isEmpty,
-		len(r.data),
-		r.start,
-		r.end,
-		r.data)
+		r.isFull, r.isEmpty, len(r.data), r.start, r.end, r.data)
 }
