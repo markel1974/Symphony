@@ -84,10 +84,6 @@ func (c *Context) GetWriter() io.Writer {
 	return c.writer
 }
 
-func (c *Context) Childs() []string {
-	return c.tasks.CWDChilds()
-}
-
 func (c *Context) SetScreenSize(width int, height int) {
 	c.terminal.SetSize(width, height)
 	c.tasks.SetScreenSize(width, height)
@@ -305,12 +301,16 @@ func (c *Context) SetExit() {
 	c.Exit = true
 }
 
-func (c *Context) SetCWD(arg string) bool {
+func (c *Context) CWDSet(arg string) bool {
 	return c.tasks.CWDSet(arg)
 }
 
-func (c *Context) GetPWD() string {
+func (c *Context) PWDGet() string {
 	return c.tasks.CWDGet()
+}
+
+func (c *Context) CWDChilds() []string {
+	return c.tasks.CWDChilds()
 }
 
 func (c *Context) SetSelectionMode(pid int) {

@@ -29,9 +29,9 @@ type IContext interface {
 	StopTimer(pid int, tid int) bool
 	PaintRequest(pid int) bool
 	SetCaption(pid int, caption string) bool
-	SetCWD(arg string) bool
-	GetPWD() string
-	Childs() []string
+	CWDSet(arg string) bool
+	PWDGet() string
+	CWDChilds() []string
 	SetSelectionMode(int)
 	SetSelectionOptions(option rune, value float64) bool
 	SetSelectionModeNext()

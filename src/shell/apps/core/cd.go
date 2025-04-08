@@ -31,7 +31,7 @@ func CreateCD(t commandcreator.ICreator) *cli.Command {
 			r.WriteLn("Empty argument")
 			return nil
 		}
-		r.SetCWD(args[0])
+		r.CWDSet(args[0])
 		return nil
 	}
 	return root

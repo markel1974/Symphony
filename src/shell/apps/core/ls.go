@@ -14,7 +14,7 @@ func CreateLs(t commandcreator.ICreator) *cli.Command {
 	root.Long = "ls"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
-		for _, c := range r.Childs() {
+		for _, c := range r.CWDChilds() {
 			r.WriteLn(c)
 		}
 		return nil

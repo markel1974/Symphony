@@ -641,7 +641,7 @@ func (c *Command) Execute(r interfaces.IContext, a []string, pid int) error {
 		return mflag.ErrHelp
 	}
 
-	// for back-compat, only add version mflag behavior if version is defined
+	// for back-compat, only add version mFlag behavior if version is defined
 	if c.Version != "" {
 		versionVal, err := c.Flags().GetBool("version")
 		if err != nil {
@@ -1354,23 +1354,20 @@ func (c *Command) ParseFlags(args []string) error {
 	if c.DisableFlagParsing {
 		return nil
 	}
-
 	if c.flagErrorBuf == nil {
 		c.flagErrorBuf = new(bytes.Buffer)
 	}
 	beforeErrorBufLen := c.flagErrorBuf.Len()
 	c.mergePersistentFlags()
-
-	//do it here after merging all flags and just before parse
 	c.Flags().ParseErrorsWhitelist = mflag.ParseErrorsWhitelist(c.FParseErrWhitelist)
-
-	err := c.Flags().Parse(args)
+	if err := c.Flags().Parse(args); err != nil {
+		return err
+	}
 	// Print warnings if they occurred (e.g., deprecated flag messages).
-	if c.flagErrorBuf.Len()-beforeErrorBufLen > 0 && err == nil {
+	if c.flagErrorBuf.Len()-beforeErrorBufLen > 0 {
 		//c.Print(c.flagErrorBuf.String())
 	}
-
-	return err
+	return nil
 }
 
 func (c *Command) RootParent() *Command {

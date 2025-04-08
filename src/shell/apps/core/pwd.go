@@ -26,9 +26,8 @@ func CreatePWD(t commandcreator.ICreator) *cli.Command {
 	root.Short = "pwd"
 	root.Long = "pwd"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
-		//r := cmd.GetRootContext()
 		r.WriteLn("")
-		r.WriteLn(r.GetPWD())
+		r.WriteLn(r.PWDGet())
 		return nil
 	}
 	return root
