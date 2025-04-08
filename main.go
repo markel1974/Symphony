@@ -163,7 +163,7 @@ func createShell(target *cli.Command) error {
 	fmt.Println("port", port)
 	fmt.Println("secure", secure)
 	fmt.Println("user", user)
-	k := shell.New(secure, auth, port, false)
+	k := shell.NewServer(secure, auth, port, false)
 	k.SetPrompt(prompt)
 	k.SetTemplate(t)
 	go func() {

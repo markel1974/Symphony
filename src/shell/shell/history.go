@@ -16,7 +16,7 @@ package shell
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"sync"
 )
 
@@ -48,19 +48,19 @@ func NewHistoryHandler(max uint, autosave bool) *HistoryHandler {
 func (h *HistoryHandler) save() {
 	if out, err := json.Marshal(h); err == nil {
 		historySaveLock.Lock()
-		ioutil.WriteFile("history.json", out, 0644)
+		_ = os.WriteFile("history.json", out, 0644)
 		historySaveLock.Unlock()
 	}
 }
 
 func (h *HistoryHandler) restore() {
 	historySaveLock.Lock()
-	body, err := ioutil.ReadFile("history.json")
+	body, err := os.ReadFile("history.json")
 	historySaveLock.Unlock()
 
 	if err == nil {
 		h.Clear()
-		json.Unmarshal(body, h)
+		_ = json.Unmarshal(body, h)
 		h.queuePos = len(h.Queue) - 1
 		h.def = ""
 	}

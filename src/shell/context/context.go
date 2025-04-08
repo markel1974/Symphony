@@ -17,9 +17,9 @@ package context
 import (
 	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
 	"github.com/markel1974/c64emu/src/shell/apps"
-	"github.com/markel1974/c64emu/src/shell/apps/shell"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/shell"
 	"github.com/markel1974/c64emu/src/shell/terminal"
 	"io"
 )
