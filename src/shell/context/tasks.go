@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/cli/mflag"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"log"
 	"os"
@@ -113,6 +114,7 @@ type TaskManager struct {
 	//cdCommand  *cli.Command
 	cwd        *cli.Command
 	rootD      *cli.Command
+	system     *cli.Command
 	path       string
 	dirty      bool
 	width      int
@@ -122,14 +124,15 @@ type TaskManager struct {
 	ids        *adaptiveticker.Ids
 }
 
-func NewTaskManager(ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, root *cli.Command) *TaskManager {
+func NewTaskManager(ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, system *cli.Command, commands *cli.Command) *TaskManager {
 	t := &TaskManager{
 		ticker:     ticker,
 		foreground: nil,
 		selector:   NewTaskSelector(),
 		timersChan: timersChannel,
-		cwd:        root,
-		rootD:      root,
+		system:     system,
+		cwd:        commands,
+		rootD:      commands,
 		dirty:      false,
 		fullPaint:  true,
 		width:      80,
@@ -160,53 +163,64 @@ func NewTaskManager(ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *a
 }
 
 func (c *TaskManager) Execute(line string, template *Task) bool {
-	if !c.cwd.Parse(line) {
-		return false
-	}
-	var pCmd *cli.Command
-	var flags []string
-	var err error = nil
-
-	//if strings.HasPrefix(line, "cd ") {
-	//	v := strings.TrimPrefix(line, "cd ")
-	//	pCmd = c.cdCommand
-	//	flags = []string{v}
-	//	err = nil
-	//} else {
-	pCmd, flags, err = c.cwd.Prepare()
-	//}
+	args, err := cli.Parse(line)
 	if err != nil {
 		return false
 	}
-
-	if pCmd == nil {
+	if len(args) == 0 {
 		return false
 	}
+	name := args[0]
+	sel := c.cwd.FindChildren(name)
+	if sel == nil {
+		sel = c.system.FindChildren(name)
+	}
+	if sel == nil {
+		return false
+	}
+	flags := args[1:]
+	if len(flags) > 0 {
+		if sel, flags, err = sel.Find(flags); err != nil || sel == nil {
+			return false
+		}
+	}
 
-	task, err := c.create(pCmd, line)
+	task2, err := c.create(sel, line)
 	if err != nil {
 		return false
 	}
 
 	if template != nil {
-		task.OffsetY = template.OffsetY
-		task.OffsetX = template.OffsetX
-		task.Scale = template.Scale
+		task2.OffsetY = template.OffsetY
+		task2.OffsetX = template.OffsetX
+		task2.Scale = template.Scale
 	}
 
-	if err = c.cwd.Execute(task.cmd, flags, task.pid); err == nil {
-		if task.cmd.Activate {
-			if !task.cmd.Background {
-				c.foreground = task
-			}
-			task.state = taskStateRunning
+	err = sel.Execute(flags, task2.pid)
+	if err != nil {
+		if errors.Is(err, mflag.ErrHelp) {
+			// Always show help if requested, even if SilenceErrors is in effect
+			sel.HelpFunc()(sel, args)
+			err = nil
+		} else if errors.Is(err, cli.ErrSubCommandRequired) {
+			sel.HelpFunc()(sel, args)
+		} else if !sel.SilenceErrors {
+			sel.Println(cli.DefaultEol+"Error:", err.Error(), cli.DefaultEol)
+		} else if !sel.SilenceUsage {
+			sel.Println(sel.UsageString())
 		}
 	}
-
-	if task.state == taskStateSetup {
-		c.Kill(task.pid)
+	if err == nil {
+		if sel.Activate {
+			if !sel.Background {
+				c.foreground = task2
+			}
+			task2.state = taskStateRunning
+		}
 	}
-
+	if task2.state == taskStateSetup {
+		c.Kill(task2.pid)
+	}
 	return true
 }
 
@@ -423,18 +437,27 @@ func (c *TaskManager) GetSuggestion(in string, _ int) (string, []string, bool) {
 	var data string
 	var cmd *cli.Command = nil
 
-	args := strings.Split(in, " ")
+	const sep = " "
+	args := strings.Split(in, sep)
 	if len(args) == 1 {
 		data = args[0]
 		cmd = c.cwd
+		//if w := c.cwd.FindChildrenPrefix(data); w != nil {
+		//	cmd = w
+		//} else if w = c.system.FindChildrenPrefix(data); w != nil {
+		//	cmd = w
+		//}
 	} else if len(args) > 1 {
 		var e error
 		data = args[len(args)-1]
 		args = args[:len(args)-1]
-
-		if cmd, _, e = c.cwd.Traverse(args); e != nil {
+		cmd, _, e = c.cwd.Traverse(args)
+		if e != nil {
 			cmd = nil
 		}
+		//if e != nil {
+		//	cmd, _, e = c.system.Traverse(args)
+		//}
 		if cmd == c.cwd {
 			cmd = nil
 		}

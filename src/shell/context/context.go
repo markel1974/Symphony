@@ -34,7 +34,7 @@ type Context struct {
 	reader      io.Reader
 	writer      io.Writer
 	factory     *terminal.EquipmentFactory
-	template    *cli.Command
+	commands    *cli.Command
 	terminal    interfaces.ITerminal
 	auth        interfaces.IAuthenticator
 	defaultApp  *shell.Shell
@@ -46,14 +46,14 @@ type Context struct {
 	autosave    bool
 }
 
-func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer io.Writer, auth interfaces.IAuthenticator, factory *terminal.EquipmentFactory, template *cli.Command, prompt string, autosave bool) *Context {
+func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer io.Writer, auth interfaces.IAuthenticator, factory *terminal.EquipmentFactory, commands *cli.Command, prompt string, autosave bool) *Context {
 	ctx := &Context{
 		ticker:      ticker,
 		reader:      reader,
 		writer:      writer,
 		auth:        auth,
 		factory:     factory,
-		template:    template,
+		commands:    commands,
 		Exit:        false,
 		prompt:      prompt,
 		enterKey:    -1,
@@ -72,10 +72,9 @@ func (c *Context) Setup() {
 		c.terminal.SetEnterKey(c.enterKey)
 	}
 
-	template := apps.NewTemplate(c, c.writer)
-	root := template.Run(c.template)
-
-	c.tasks = NewTaskManager(c.ticker, c.timersChan, root)
+	system := apps.NewApps(c, c.writer)
+	systemCommands, commands := system.Build(c.commands)
+	c.tasks = NewTaskManager(c.ticker, c.timersChan, systemCommands, commands)
 
 	c.defaultApp = shell.NewShell(c.auth, c.terminal, c.prompt, c.autosave)
 	c.defaultApp.ExecCommand = c.execCommand

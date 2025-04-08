@@ -12,23 +12,46 @@
  * limitations under the License.
  */
 
-package tasks
+package apps
 
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
+	"strconv"
+	"strings"
 )
 
-func CreateTasksList(t commandcreator.ICreator) *cli.Command {
+func CreateHistory(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "list"
-	root.Short = "List"
-	root.Long = "List"
+	root.Use = "history"
+	root.Short = "History"
+	root.Long = "History"
+	root.Aliases = []string{"h"}
 	root.Run = func(cmd *cli.Command, pid int, args []string) {
 		r := cmd.GetRootContext()
-		r.WriteLn("")
-		for _, task := range r.ListTasks() {
-			r.WriteLn(task)
+		if len(args) == 0 {
+			r.History(interfaces.HistoryActionList, -1)
+			return
+
+		}
+		if idx, err := strconv.Atoi(args[0]); err == nil {
+			r.History(interfaces.HistoryActionExec, idx)
+			return
+		}
+		name := strings.TrimSpace(strings.ToLower(args[0]))
+		args = args[1:]
+		switch name {
+		case "clear":
+			r.History(interfaces.HistoryActionClear, -1)
+		case "exec":
+			if len(args) > 0 {
+				if idx, err := strconv.Atoi(args[0]); err == nil {
+					r.History(interfaces.HistoryActionExec, idx)
+				}
+			}
+		case "list":
+			r.History(interfaces.HistoryActionList, -1)
 		}
 	}
 	return root

@@ -55,13 +55,12 @@ type Command struct {
 	DisableFlagsInUseLine      bool
 	DisableSuggestions         bool
 	SuggestionsMinimumDistance int
-	TraverseChildren           bool
-	FParseErrWhitelist         FParseErrWhitelist
+	//TraverseChildren           bool
+	FParseErrWhitelist FParseErrWhitelist
 
-	Activate       bool
-	Background     bool
-	CommonCommands bool
-	Pid            int
+	Activate   bool
+	Background bool
+	Pid        int
 
 	// The *Run functions are executed in the following order:
 	//   * PersistentPreRun()
@@ -114,8 +113,6 @@ type Command struct {
 
 	rootCtx interfaces.IContext
 
-	// args is actual args parsed from flags.
-	args []string
 	// flagErrorBuf contains all error messages from pflag.
 	flagErrorBuf *bytes.Buffer
 	// flags is full set of flags.
@@ -159,15 +156,6 @@ type Command struct {
 
 func NewCommand() *Command {
 	return &Command{}
-}
-
-func (c *Command) Parse(line string) bool {
-	args, err := Parse(line)
-	if err != nil {
-		return false
-	}
-	c.args = args
-	return true
 }
 
 // SetOutput sets the destination for usage and error messages.
@@ -599,24 +587,40 @@ func isFlagArg(arg string) bool {
 		(len(arg) >= 2 && arg[0] == '-' && arg[1] != '-')
 }
 
+func (c *Command) FindChildren(name string) *Command {
+	for _, cmd := range c.commands {
+		if cmd.Name() == name || cmd.HasAlias(name) {
+			cmd.commandCalledAs.name = name
+			return cmd
+		}
+	}
+	return nil
+}
+
+func (c *Command) FindChildrenPrefix(prefix string) *Command {
+	for _, cmd := range c.commands {
+		if strings.HasPrefix(cmd.Name(), prefix) {
+			return cmd
+		}
+	}
+	return nil
+}
+
 // Find the target command given the args and command tree meant to be run on the highest node. Only searches down.
 func (c *Command) Find(args []string) (*Command, []string, error) {
 	var innerFind func(*Command, []string) (*Command, []string)
-
 	innerFind = func(c *Command, innerArgs []string) (*Command, []string) {
 		var argsWOFlags = stripFlags(innerArgs, c)
 		if len(argsWOFlags) == 0 {
 			return c, innerArgs
 		}
 		nextSubCmd := argsWOFlags[0]
-
 		var cmd = c.findNext(nextSubCmd)
 		if cmd != nil {
 			return innerFind(cmd, argsMinusFirstX(innerArgs, nextSubCmd))
 		}
 		return c, innerArgs
 	}
-
 	commandFound, a := innerFind(c, args)
 	if commandFound.Args == nil {
 		return commandFound, a, legacyArgs(commandFound, stripFlags(a, commandFound))
@@ -745,7 +749,7 @@ func (c *Command) ArgsLenAtDash() int {
 	return c.Flags().ArgsLenAtDash()
 }
 
-func (c *Command) execute(a []string, pid int) (err error) {
+func (c *Command) Execute(a []string, pid int) (err error) {
 	if len(c.Deprecated) > 0 {
 		c.Printf("Command %q is deprecated, %s"+DefaultEol, c.Name(), c.Deprecated)
 	}
@@ -860,25 +864,16 @@ func (c *Command) preRun() {
 	}
 }
 
-func (c *Command) Prepare() (*Command, []string, error) {
-	return c.prepareCommand()
-}
-
-func (c *Command) prepareCommand() (*Command, []string, error) {
+/*
+func (c *Command) Prepare(args []string, traverse bool) (*Command, []string, error) {
 	var cmd *Command
 	var flags []string
 	var err error
 
-	//if c.HasParent() {
-	//	return c.Root().prepareCommand()
-	//}
-
 	// initialize help as the last point possible to allow for user overriding
 	c.InitDefaultHelpCmd()
 
-	args := c.args
-
-	if c.TraverseChildren {
+	if traverse {
 		cmd, flags, err = c.Traverse(args)
 	} else {
 		cmd, flags, err = c.Find(args)
@@ -904,6 +899,8 @@ func (c *Command) prepareCommand() (*Command, []string, error) {
 	return cmd, flags, err
 }
 
+
+*/
 /*
 func (c *Command) prepareCommand() (*Command, []string, error) {
 	var cmd *Command
@@ -946,24 +943,25 @@ func (c *Command) prepareCommand() (*Command, []string, error) {
 }
 */
 
-func (c *Command) Execute(cmd *Command, flags []string, pid int) error {
+/*
+func (c *Command) Execute(cmd *Command, flags []string, args []string, pid int) error {
 	if cmd == nil {
 		return errors.New("called Execute() on a nil Command")
 	}
 
-	err := cmd.execute(flags, pid)
+	err := cmd.Execute2(flags, pid)
 	if err != nil {
 		// Always show help if requested, even if SilenceErrors is in effect
-		if err == mflag.ErrHelp {
-			cmd.HelpFunc()(cmd, c.args)
+		if errors.Is(err, mflag.ErrHelp) {
+			cmd.HelpFunc()(cmd, args)
 			return nil
 		}
 
 		// If command wasn't runnable, show full help, but do return the error.
 		// This will result in apps by default returning a non-success exit code, but also gives them the option to
 		// handle specially.
-		if err == ErrSubCommandRequired {
-			cmd.HelpFunc()(cmd, c.args)
+		if errors.Is(err, ErrSubCommandRequired) {
+			cmd.HelpFunc()(cmd, args)
 			return err
 		}
 
@@ -979,6 +977,7 @@ func (c *Command) Execute(cmd *Command, flags []string, pid int) error {
 	}
 	return err
 }
+*/
 
 func (c *Command) ValidateArgs(args []string) error {
 	if c.Args == nil {
@@ -1059,14 +1058,19 @@ func (c *Command) InitDefaultHelpCmd() {
 			Short: "Help about any command",
 			Long:  `Help provides help for any command in the application. Simply type ` + c.Name() + ` help [path to command] for full details.`,
 			Run: func(c *Command, pid int, args []string) {
-				cmd, _, e := c.Root().Find(args)
-				if cmd == nil || e != nil {
-					c.Printf("Unknown help topic %#q"+DefaultEol, args)
-					_ = c.Root().Usage()
-				} else {
-					cmd.InitDefaultHelpFlag() // make possible 'help' flag to be shown
-					_ = cmd.Help()
-				}
+				//TODO IMPLEMENT
+				fmt.Println("TODO IMPLEMENT!!")
+				/*
+					cmd, _, e := c.Root().Find(args)
+					if cmd == nil || e != nil {
+						c.Printf("Unknown help topic %#q"+DefaultEol, args)
+						_ = c.Root().Usage()
+					} else {
+						cmd.InitDefaultHelpFlag() // make possible 'help' flag to be shown
+						_ = cmd.Help()
+					}
+
+				*/
 			},
 		}
 	}
@@ -1195,7 +1199,7 @@ func (c *Command) PrintErrf(format string, i ...interface{}) {
 // CommandPath returns the full path to this command.
 func (c *Command) CommandPath() string {
 	if c.HasParent() {
-		return c.Parent().CommandPath() + " " + c.Name()
+		return c.Parent().CommandPath() + "/" + c.Name()
 	}
 	return c.Name()
 }

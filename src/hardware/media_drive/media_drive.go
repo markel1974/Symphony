@@ -394,7 +394,7 @@ func (v *MediaDrive) openDirectory( /* channel */ _ uint8, pattern string) ([]by
 			continue
 		}
 		//TODO kind
-		z := v.createFileEntry(e.Name(), int(e.Size()), 0)
+		z := v.createDirEntry(e.Name(), int(e.Size()), 0)
 		buf = append(buf, z...)
 	}
 	buf = append(buf, blocksFreeStart...)
@@ -406,7 +406,7 @@ func (v *MediaDrive) openDirectory( /* channel */ _ uint8, pattern string) ([]by
 }
 
 // createFileEntry generates a directory entry for a file with the specified name, size, and type, returning a byte slice.
-func (v *MediaDrive) createFileEntry(name string, size int, kind int) []byte {
+func (v *MediaDrive) createDirEntry(name string, size int, kind int) []byte {
 	const dirEntryMax = 32
 	vName := adapters.CreateFileName(name)
 	n := (size + 254) / 254

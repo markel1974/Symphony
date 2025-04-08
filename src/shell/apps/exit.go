@@ -21,9 +21,10 @@ import (
 
 func CreateExit(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "quit"
-	root.Short = "Quit"
-	root.Long = "Quit"
+	root.Use = "exit"
+	root.Aliases = []string{"quit"}
+	root.Short = "Exit"
+	root.Long = "Exit"
 	root.Run = func(cmd *cli.Command, pid int, args []string) {
 		r := cmd.GetRootContext()
 		r.SetExit()
