@@ -23,9 +23,9 @@ import (
 
 func CreateGC(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "gc"
-	root.Short = "Start Garbage"
-	root.Long = "Start Garbage"
+	root.SetName("gc", nil)
+	root.ShortHelp = "Start Garbage"
+	root.LongHelp = "Start Garbage"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		r.WriteLn("")

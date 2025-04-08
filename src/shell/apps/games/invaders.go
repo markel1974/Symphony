@@ -23,9 +23,9 @@ import (
 
 func CreateInvaders(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "invaders"
-	root.Short = "Invaders"
-	root.Long = "Invaders"
+	root.SetName("invaders", nil)
+	root.ShortHelp = "Invaders"
+	root.LongHelp = "Invaders"
 	root.Activate = true
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		w, h := r.GetScreenSize()

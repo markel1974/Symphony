@@ -23,9 +23,9 @@ import (
 
 func CreateSnake(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "snake"
-	root.Short = "Snake"
-	root.Long = "Snake"
+	root.SetName("snake", nil)
+	root.ShortHelp = "Snake"
+	root.LongHelp = "Snake"
 	root.Activate = true
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()

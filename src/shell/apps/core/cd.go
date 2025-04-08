@@ -22,17 +22,17 @@ import (
 
 func CreateCD(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "cd"
-	root.Short = "cd"
-	root.Long = "cd"
+	root.SetName("cd", nil)
+	root.ShortHelp = "cd"
+	root.LongHelp = "cd"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		if len(args) <= 0 {
-			r.WriteLn("cd: empty file or directory")
+			r.WriteLn("cd: empty directory")
 			return nil
 		}
 		if !r.CWDSet(args[0]) {
-			r.WriteLn("cd: no such file or directory: " + args[0])
+			r.WriteLn("cd: no such directory: " + args[0])
 		}
 		return nil
 	}

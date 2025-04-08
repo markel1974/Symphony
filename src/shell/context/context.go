@@ -72,7 +72,7 @@ func (c *Context) Setup() {
 		c.terminal.SetEnterKey(c.enterKey)
 	}
 	system := apps.NewRoot()
-	systemCommands, commands := system.Build(c.commands)
+	systemCommands, commands := system.Build(c, c.commands)
 	c.tasks = NewTaskManager(c, c.ticker, c.timersChan, systemCommands, commands)
 
 	c.defaultApp = shell.NewShell(c.auth, c.terminal, c.prompt, c.autosave)
@@ -301,12 +301,20 @@ func (c *Context) SetExit() {
 	c.Exit = true
 }
 
+func (c *Context) CWD() *cli.Command {
+	return c.tasks.CWD()
+}
+
 func (c *Context) CWDSet(arg string) bool {
 	return c.tasks.CWDSet(arg)
 }
 
-func (c *Context) PWDGet() string {
+func (c *Context) CWDGet() string {
 	return c.tasks.CWDGet()
+}
+
+func (c *Context) CWDPath() []string {
+	return c.tasks.CWDPath()
 }
 
 func (c *Context) CWDChilds() []string {

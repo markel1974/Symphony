@@ -23,9 +23,9 @@ import (
 
 func CreateKill(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "kill"
-	root.Short = "Kill"
-	root.Long = "Kill"
+	root.SetName("kill", nil)
+	root.ShortHelp = "Kill"
+	root.LongHelp = "Kill"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		r.WriteLn("")

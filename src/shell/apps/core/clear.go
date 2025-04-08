@@ -22,9 +22,9 @@ import (
 
 func CreateClear(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "clear"
-	root.Short = "Clear"
-	root.Long = "Clear"
+	root.SetName("clear", nil)
+	root.ShortHelp = "Clear"
+	root.LongHelp = "Clear"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.ClearScreen()
 		return nil

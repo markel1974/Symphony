@@ -24,10 +24,9 @@ import (
 
 func CreateHistory(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "history"
-	root.Short = "History"
-	root.Long = "History"
-	root.Aliases = []string{"h"}
+	root.SetName("history", []string{"h"})
+	root.ShortHelp = "History"
+	root.LongHelp = "History"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		if len(args) == 0 {

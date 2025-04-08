@@ -57,9 +57,9 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 		r.WriteLn(bc.name)
 		return nil
 	}
-	bc.cmd.Use = bc.name
-	bc.cmd.Short = "Command " + bc.name
-	bc.cmd.Long = "This is a command"
+	bc.cmd.SetName(bc.name, nil)
+	bc.cmd.ShortHelp = "Command " + bc.name
+	bc.cmd.LongHelp = "This is a command"
 
 	if parent != nil && parent.GetNode() != nil {
 		pNode := parent.GetNode()

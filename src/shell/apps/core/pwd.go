@@ -22,12 +22,12 @@ import (
 
 func CreatePWD(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "pwd"
-	root.Short = "pwd"
-	root.Long = "pwd"
+	root.SetName("pwd", nil)
+	root.ShortHelp = "pwd"
+	root.LongHelp = "pwd"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
-		r.WriteLn(r.PWDGet())
+		r.WriteLn(r.CWDGet())
 		return nil
 	}
 	return root

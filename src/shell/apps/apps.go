@@ -20,6 +20,7 @@ import (
 	"github.com/markel1974/c64emu/src/shell/apps/runtime"
 	"github.com/markel1974/c64emu/src/shell/apps/stats"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
 type Root struct {
@@ -38,9 +39,23 @@ func (t *Root) CreateCommand() *cli.Command {
 	return cmd
 }
 
-func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
-	bin.Use = "bin"
-	bin.Short = "Bin"
+func (t *Root) Build(r interfaces.IContext, bin *cli.Command) (*cli.Command, *cli.Command) {
+	bin.SetName("bin", nil)
+	bin.ShortHelp = "Bin"
+
+	root := t.CreateCommand()
+	sbin := t.CreateCommand()
+	sbin.SetName("sbin", nil)
+	sbin.ShortHelp = "SBin"
+
+	t.AddCommand(sbin, stats.Create(t))
+	t.AddCommand(sbin, runtime.Create(t))
+
+	t.AddCommand(root, sbin)
+	t.AddCommand(root, bin)
+	t.AddCommand(root, games.Create(t))
+
+	//root.InitDefaultHelpCmd(r.GetWriter())
 
 	coreC := t.CreateCommand()
 	t.AddCommand(coreC, core.CreateExit(t))
@@ -55,17 +70,7 @@ func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	t.AddCommand(coreC, core.CreateHistory(t))
 	t.AddCommand(coreC, core.CreateTasks(t))
 	t.AddCommand(coreC, core.CreateLs(t))
+	t.AddCommand(coreC, core.CreateHelp(t, root))
 
-	root := t.CreateCommand()
-	sbin := t.CreateCommand()
-	sbin.Use = "sbin"
-	sbin.Short = "SBin"
-
-	t.AddCommand(sbin, stats.Create(t))
-	t.AddCommand(sbin, runtime.Create(t))
-
-	t.AddCommand(root, sbin)
-	t.AddCommand(root, bin)
-	t.AddCommand(root, games.Create(t))
 	return coreC, root
 }

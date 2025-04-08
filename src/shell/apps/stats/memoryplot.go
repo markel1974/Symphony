@@ -32,9 +32,9 @@ type rtPlotData struct {
 
 func CreateMemoryPlot(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "rtplot"
-	root.Short = "Runtime Plot"
-	root.Long = "Runtime Plot"
+	root.SetName("rtplot", nil)
+	root.ShortHelp = "Runtime Plot"
+	root.LongHelp = "Runtime Plot"
 	root.Activate = true
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		plt := &rtPlotData{

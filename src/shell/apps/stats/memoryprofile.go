@@ -25,9 +25,9 @@ import (
 
 func CreateProfileMemory(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "memprofile"
-	root.Short = "Memory profiling"
-	root.Long = "Memory profiling"
+	root.SetName("memprofile", nil)
+	root.ShortHelp = "Memory profiling"
+	root.LongHelp = "Memory profiling"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		r.WriteLn("")

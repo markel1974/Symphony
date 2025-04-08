@@ -23,9 +23,9 @@ import (
 
 func CreateKillAll(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "killall"
-	root.Short = "Kill All"
-	root.Long = "Kill All"
+	root.SetName("killall", nil)
+	root.ShortHelp = "Kill All"
+	root.LongHelp = "Kill All"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		var arg string

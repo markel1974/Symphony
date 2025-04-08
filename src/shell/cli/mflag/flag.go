@@ -92,9 +92,9 @@ type Flag struct {
 	Changed             bool                // If the user set the value (or if left to default)
 	NoOptDefVal         string              // default value (as text); if the flag is on the command line without any options
 	Deprecated          string              // If this flag is deprecated, this string is the new or now thing to use
-	Hidden              bool                // used by cobra.Command to allow flags to be hidden from help/usage text
+	Hidden              bool                // used by command to allow flags to be hidden from help/usage text
 	ShorthandDeprecated string              // If the shorthand of this flag is deprecated, this string is the new or now thing to use
-	Annotations         map[string][]string // used by cobra.Command bash autocomple code
+	Annotations         map[string][]string // used by autocompletion code
 }
 
 // Value is the interface to the dynamic value stored in a flag.
@@ -283,9 +283,8 @@ func (f *FlagSet) getFlagType(name string, ftype string, convFunc func(sval stri
 		err := fmt.Errorf("trying to get %s value of flag of type %s", ftype, flag.Value.Type())
 		return nil, err
 	}
-
-	sval := flag.Value.String()
-	result, err := convFunc(sval)
+	sVal := flag.Value.String()
+	result, err := convFunc(sVal)
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +511,6 @@ func wrapN(i, slop int, s string) (string, string) {
 	if i+slop > len(s) {
 		return s, ""
 	}
-
 	w := strings.LastIndexAny(s[:i], " \t\n")
 	if w <= 0 {
 		return s, ""
@@ -527,17 +525,14 @@ func wrapN(i, slop int, s string) (string, string) {
 // Wraps the string `s` to a maximum width `w` with leading indent
 // `i`. The first line is not indented (this is assumed to be done by
 // caller). Pass `w` == 0 to do no wrapping
-func wrap(i, w int, s string) string {
+func wrapper(i, w int, s string) string {
 	if w == 0 {
 		return strings.Replace(s, "\n", "\n"+strings.Repeat(" ", i), -1)
 	}
-
 	// space between indent i and end of line width w into which
 	// we should wrap the text.
 	wrap := w - i
-
 	var r, l string
-
 	// Not enough space for sensible wrapping. Wrap as a block on
 	// the next line instead.
 	if wrap < 24 {
@@ -549,26 +544,21 @@ func wrap(i, w int, s string) string {
 	if wrap < 24 {
 		return strings.Replace(s, "\n", r, -1)
 	}
-
 	// Try to avoid short orphan words on the final line, by
 	// allowing wrapN to go a bit over if that would fit in the
 	// remainder of the line.
 	slop := 5
 	wrap = wrap - slop
-
 	// Handle first line, which is indented by the caller (or the
 	// special case above)
 	l, s = wrapN(wrap, slop, s)
 	r = r + strings.Replace(l, "\n", "\n"+strings.Repeat(" ", i), -1)
-
 	// Now wrap the rest
 	for s != "" {
 		var t string
-
 		t, s = wrapN(wrap, slop, s)
 		r = r + "\n" + strings.Repeat(" ", i) + strings.Replace(t, "\n", "\n"+strings.Repeat(" ", i), -1)
 	}
-
 	return r
 
 }
@@ -578,10 +568,8 @@ func wrap(i, w int, s string) string {
 // wrapping)
 func (f *FlagSet) FlagUsagesWrapped(cols int) string {
 	buf := new(bytes.Buffer)
-
 	lines := make([]string, 0, len(f.formal))
-
-	maxlen := 0
+	maxLen := 0
 	f.VisitAll(func(flag *Flag) {
 		if flag.Hidden {
 			return
@@ -594,9 +582,9 @@ func (f *FlagSet) FlagUsagesWrapped(cols int) string {
 			line = fmt.Sprintf("      --%s", flag.Name)
 		}
 
-		varname, usage := UnquoteUsage(flag)
-		if varname != "" {
-			line += " " + varname
+		varName, usage := UnquoteUsage(flag)
+		if varName != "" {
+			line += " " + varName
 		}
 		if flag.NoOptDefVal != "" {
 			switch flag.Value.Type() {
@@ -614,14 +602,10 @@ func (f *FlagSet) FlagUsagesWrapped(cols int) string {
 				line += fmt.Sprintf("[=%s]", flag.NoOptDefVal)
 			}
 		}
-
-		// This special character will be replaced with spacing once the
-		// correct alignment is calculated
 		line += "\x00"
-		if len(line) > maxlen {
-			maxlen = len(line)
+		if len(line) > maxLen {
+			maxLen = len(line)
 		}
-
 		line += usage
 		if !flag.defaultIsZeroValue() {
 			if flag.Value.Type() == "string" {
@@ -636,14 +620,11 @@ func (f *FlagSet) FlagUsagesWrapped(cols int) string {
 
 		lines = append(lines, line)
 	})
-
 	for _, line := range lines {
-		sidx := strings.Index(line, "\x00")
-		spacing := strings.Repeat(" ", maxlen-sidx)
-		// maxlen + 2 comes from + 1 for the \x00 and + 1 for the (deliberate) off-by-one in maxlen-sidx
-		fmt.Fprintln(buf, line[:sidx], spacing, wrap(maxlen+2, cols, line[sidx+1:]))
+		sIdx := strings.Index(line, "\x00")
+		spacing := strings.Repeat(" ", maxLen-sIdx)
+		_, _ = fmt.Fprintln(buf, line[:sIdx], spacing, wrapper(maxLen+2, cols, line[sIdx+1:]))
 	}
-
 	return buf.String()
 }
 
@@ -805,7 +786,7 @@ func VarP(writer io.Writer, value Value, name, shorthand, usage string) {
 	CommandLine.VarP(writer, value, name, shorthand, usage)
 }
 
-// failf prints to standard error a formatted error and usage message and
+// failFn prints to standard error a formatted error and usage message and
 // returns the error.
 func (f *FlagSet) failf(writer io.Writer, format string, a ...interface{}) error {
 	err := fmt.Errorf(format, a...)

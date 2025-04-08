@@ -8,10 +8,9 @@ import (
 
 func CreateLs(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "ls"
-	root.Aliases = []string{"dir"}
-	root.Short = "ls"
-	root.Long = "ls"
+	root.SetName("ls", []string{"dir"})
+	root.ShortHelp = "ls"
+	root.LongHelp = "ls"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		for _, c := range r.CWDChilds() {

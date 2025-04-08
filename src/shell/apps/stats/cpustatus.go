@@ -24,9 +24,9 @@ import (
 
 func CreateCPUStatus(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "cpu"
-	root.Short = "CPUs status"
-	root.Long = "CPUs status"
+	root.SetName("cpu", nil)
+	root.ShortHelp = "CPUs status"
+	root.LongHelp = "CPUs status"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn(fmt.Sprintf("Number of logical CPUs: %d", runtime.NumCPU()))

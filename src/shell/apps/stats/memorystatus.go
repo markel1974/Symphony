@@ -24,9 +24,9 @@ import (
 
 func CreateMemoryStatus(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "rt"
-	root.Short = "Runtime Status"
-	root.Long = "Runtime Status"
+	root.SetName("rt", nil)
+	root.ShortHelp = "Runtime Status"
+	root.LongHelp = "Runtime Status"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)

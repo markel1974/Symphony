@@ -179,15 +179,15 @@ func (c *TaskManager) Execute(line string, template *Task) bool {
 	err = sel.Execute(c.rootCtx, flags, task2.pid)
 	if err != nil {
 		if errors.Is(err, mflag.ErrHelp) {
-			c.rootCtx.Write(sel.Help(args))
+			sel.Help(c.rootCtx.GetWriter())
 			err = nil
 		} else if errors.Is(err, cli.ErrSubCommandRequired) {
-			c.rootCtx.Write(sel.Help(args))
+			sel.Help(c.rootCtx.GetWriter())
 		} else if !sel.SilenceErrors {
 			c.rootCtx.Write(cli.DefaultEol + "Error:" + err.Error() + cli.DefaultEol)
 		} else if !sel.SilenceUsage {
 			c.rootCtx.Write(cli.DefaultEol + "Error:" + err.Error() + cli.DefaultEol)
-			c.rootCtx.Write(sel.Usage())
+			sel.Usage(c.rootCtx.GetWriter())
 			//c.rootCtx.Write(sel.UsageString())
 		}
 	}
@@ -314,8 +314,16 @@ func (c *TaskManager) CWDChilds() []string {
 	return out
 }
 
+func (c *TaskManager) CWD() *cli.Command {
+	return c.cwd
+}
+
 func (c *TaskManager) CWDGet() string {
 	return c.cwd.CommandPath()
+}
+
+func (c *TaskManager) CWDPath() []string {
+	return c.cwd.Path()
 }
 
 func (c *TaskManager) CWDSet(arg string) bool {
@@ -328,6 +336,9 @@ func (c *TaskManager) CWDSet(arg string) bool {
 		path := strings.Split(arg, "/")
 		if cmd, _, err := c.cwd.Traverse(c.rootCtx.GetWriter(), path); err == nil {
 			if cmd == c.cwd {
+				return false
+			}
+			if !cmd.HasSubCommands() {
 				return false
 			}
 			c.cwd = cmd
@@ -417,11 +428,9 @@ func (c *TaskManager) GetSuggestion(in string, _ int) (string, []string, bool) {
 			cmd = nil
 		}
 	}
-
 	if cmd == nil {
 		return data, nil, false
 	}
-
 	return data, cmd.SuggestionsFor(data), true
 }
 

@@ -24,9 +24,9 @@ import (
 
 func CreateCPUUsage(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "usage"
-	root.Short = "CPU usage"
-	root.Long = "CPU usage"
+	root.SetName("usage", nil)
+	root.ShortHelp = "CPU usage"
+	root.LongHelp = "CPU usage"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn("Computing cpu usage")

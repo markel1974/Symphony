@@ -23,9 +23,9 @@ import (
 
 func CreateFg(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "fg"
-	root.Short = "Foreground"
-	root.Long = "Foreground"
+	root.SetName("fg", nil)
+	root.ShortHelp = "Foreground"
+	root.LongHelp = "Foreground"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		if len(args) <= 0 {

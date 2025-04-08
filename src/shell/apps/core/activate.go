@@ -23,9 +23,9 @@ import (
 
 func CreateActivate(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "activate"
-	root.Short = "Activate"
-	root.Long = "Activate"
+	root.SetName("activate", nil)
+	root.ShortHelp = "Activate"
+	root.LongHelp = "Activate"
 	root.Activate = true
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		targetPid := -1

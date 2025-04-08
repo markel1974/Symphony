@@ -24,9 +24,9 @@ import (
 
 func CreateProfileCPUStart(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "startcpuprofile"
-	root.Short = "Start cpu profiling"
-	root.Long = "Start cpu profiling"
+	root.SetName("startcpuprofile", nil)
+	root.ShortHelp = "Start cpu profiling"
+	root.LongHelp = "Start cpu profiling"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		if len(args) <= 0 {

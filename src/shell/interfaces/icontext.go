@@ -14,7 +14,9 @@
 
 package interfaces
 
-import "io"
+import (
+	"io"
+)
 
 type IContext interface {
 	GetWriter() io.Writer
@@ -30,7 +32,8 @@ type IContext interface {
 	PaintRequest(pid int) bool
 	SetCaption(pid int, caption string) bool
 	CWDSet(arg string) bool
-	PWDGet() string
+	CWDGet() string
+	CWDPath() []string
 	CWDChilds() []string
 	SetSelectionMode(int)
 	SetSelectionOptions(option rune, value float64) bool

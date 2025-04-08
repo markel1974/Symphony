@@ -22,9 +22,9 @@ import (
 
 func Create(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "runtime"
-	root.Short = "Runtime"
-	root.Long = "Runtime"
+	root.SetName("runtime", nil)
+	root.ShortHelp = "Runtime"
+	root.LongHelp = "Runtime"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		return nil
 	}

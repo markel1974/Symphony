@@ -22,9 +22,9 @@ import (
 
 func CreatePs(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "ps"
-	root.Short = "Processes"
-	root.Long = "Processes"
+	root.SetName("ps", nil)
+	root.ShortHelp = "Processes"
+	root.LongHelp = "Processes"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn(r.TaskList())
 		return nil

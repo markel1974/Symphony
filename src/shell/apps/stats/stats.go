@@ -22,9 +22,9 @@ import (
 
 func Create(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "stats"
-	root.Short = "System Stats"
-	root.Long = "System Stats"
+	root.SetName("stats", nil)
+	root.ShortHelp = "System Stats"
+	root.LongHelp = "System Stats"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		return nil
 	}

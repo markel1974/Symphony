@@ -23,9 +23,9 @@ import (
 
 func CreateProfileCPUStop(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "stopcpuprofile"
-	root.Short = "Stop cpu profiling"
-	root.Long = "Stop cpu profiling"
+	root.SetName("stopcpuprofile", nil)
+	root.ShortHelp = "Stop cpu profiling"
+	root.LongHelp = "Stop cpu profiling"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		pprof.StopCPUProfile()

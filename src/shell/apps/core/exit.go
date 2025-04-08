@@ -22,10 +22,9 @@ import (
 
 func CreateExit(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "exit"
-	root.Aliases = []string{"quit"}
-	root.Short = "Exit"
-	root.Long = "Exit"
+	root.SetName("exit", []string{"quit"})
+	root.ShortHelp = "Exit"
+	root.LongHelp = "Exit"
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.SetExit()
 		return nil

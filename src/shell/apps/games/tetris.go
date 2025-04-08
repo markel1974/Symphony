@@ -23,9 +23,9 @@ import (
 
 func CreateTetris(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "tetris"
-	root.Short = "Tetris"
-	root.Long = "Tetris"
+	root.SetName("tetris", nil)
+	root.ShortHelp = "Tetris"
+	root.LongHelp = "Tetris"
 	root.Activate = true
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()

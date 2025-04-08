@@ -21,33 +21,28 @@ import (
 	"strings"
 )
 
-func CreateTasks(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("task", nil)
-	root.ShortHelp = "Task"
-	root.LongHelp = "Task"
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
-		if len(args) <= 0 {
+func CreateHelp(t commandcreator.ICreator, root *cli.Command) *cli.Command {
+	help := t.CreateCommand()
+	help.SetName("help", nil)
+	help.ShortHelp = "Help about any command"
+	help.LongHelp = `Help provides help for any command in the application. Simply type ` + help.Name() + ` help [path to command] for full details.`
+	help.Run = func(r interfaces.IContext, c *cli.Command, pid int, args []string) error {
+		if len(args) == 0 {
 			return nil
 		}
-		kind := strings.TrimSpace(strings.ToLower(args[0]))
-		args = args[1:]
-		switch kind {
-		case "list":
+		path := r.CWDPath()
+		path = append(path, args[0])
+		cmd, _, err := root.Traverse(r.GetWriter(), path)
+		if cmd == nil || err != nil || cmd == root {
 			r.WriteLn("")
-			for _, task := range r.ListTasks() {
-				r.WriteLn(task)
-			}
-		case "restore":
-			if len(args) > 0 {
-				r.RestoreTasks(args[0])
-			}
-		case "save":
-			if len(args) > 0 {
-				r.SaveTasks(args[0])
-			}
+			r.WriteLn("unknown help topic: " + strings.Join(args, " "))
+			c.Root().Usage(r.GetWriter())
+		} else {
+			r.WriteLn("")
+			cmd.InitDefaultHelpFlag(r.GetWriter())
+			cmd.Help(r.GetWriter())
 		}
 		return nil
 	}
-	return root
+	return help
 }
