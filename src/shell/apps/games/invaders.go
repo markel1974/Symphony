@@ -27,27 +27,34 @@ func CreateInvaders(t commandcreator.ICreator) *cli.Command {
 	root.Short = "Invaders"
 	root.Long = "Invaders"
 	root.Activate = true
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		w, h := r.GetScreenSize()
 		g := invaders.NewGame(w, h)
 		g.SetMenuState()
 		r.SetContext(pid, g)
 		r.CreateTimer(pid, 0, 100, -1)
+		return nil
 	}
-	root.ReadEvent = func(cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
-		g := ctx.(*invaders.Invaders)
+	root.ReadEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
+		g, ok := ctx.(*invaders.Invaders)
+		if !ok {
+			return
+		}
 		g.HandleKey(key)
 	}
-	root.TimerEvent = func(cmd *cli.Command, pid int, tid int, ctx interface{}, interval int) {
-		r := cmd.GetRootContext()
-		g := ctx.(*invaders.Invaders)
+	root.TimerEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, tid int, ctx interface{}, interval int) {
+		g, ok := ctx.(*invaders.Invaders)
+		if !ok {
+			return
+		}
 		g.Update()
 		r.PaintRequest(pid)
 	}
-	root.PaintEvent = func(cmd *cli.Command, pid int, ctx interface{}, surface interfaces.ISurface) {
-		g := ctx.(*invaders.Invaders)
-
+	root.PaintEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, surface interfaces.ISurface) {
+		g, ok := ctx.(*invaders.Invaders)
+		if !ok {
+			return
+		}
 		rows, columns := surface.GetSize()
 		w, h := g.GetSize()
 		if h != rows || w != columns {

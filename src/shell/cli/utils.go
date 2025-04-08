@@ -34,11 +34,7 @@ var initializers []func()
 // EnablePrefixMatching allows setting automatic prefix matching.
 // Automatic prefix matching can be a dangerous thing to automatically enable in CLI tools.
 // Set this to true to enable it.
-var EnablePrefixMatching = false
-
-// EnableCommandSorting controls sorting of the slice of commands, which is turned on by default.
-// To disable sorting, set it to false.
-var EnableCommandSorting = true
+//var EnablePrefixMatching = false
 
 // AddTemplateFunc adds a template function that's available to Usage and Help template generation.
 func _(name string, tmplFunc interface{}) {

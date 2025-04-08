@@ -20,20 +20,13 @@ import (
 	"github.com/markel1974/c64emu/src/shell/apps/runtime"
 	"github.com/markel1974/c64emu/src/shell/apps/stats"
 	"github.com/markel1974/c64emu/src/shell/cli"
-	"github.com/markel1974/c64emu/src/shell/interfaces"
-	"io"
 )
 
 type Root struct {
-	ctx    interfaces.IContext
-	writer io.Writer
 }
 
-func NewRoot(ctx interfaces.IContext, writer io.Writer) *Root {
-	return &Root{
-		ctx:    ctx,
-		writer: writer,
-	}
+func NewRoot() *Root {
+	return &Root{}
 }
 
 func (t *Root) AddCommand(cmd *cli.Command, child *cli.Command) {
@@ -42,10 +35,6 @@ func (t *Root) AddCommand(cmd *cli.Command, child *cli.Command) {
 
 func (t *Root) CreateCommand() *cli.Command {
 	cmd := cli.NewCommand()
-
-	cmd.SetRootContext(t.ctx)
-	cmd.SetOut(t.writer)
-	cmd.SetErr(t.writer)
 	return cmd
 }
 
@@ -65,6 +54,7 @@ func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	t.AddCommand(coreC, core.CreateFg(t))
 	t.AddCommand(coreC, core.CreateHistory(t))
 	t.AddCommand(coreC, core.CreateTasks(t))
+	t.AddCommand(coreC, core.CreateLs(t))
 
 	root := t.CreateCommand()
 	sbin := t.CreateCommand()

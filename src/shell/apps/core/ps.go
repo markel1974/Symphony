@@ -17,6 +17,7 @@ package core
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
 func CreatePs(t commandcreator.ICreator) *cli.Command {
@@ -24,9 +25,9 @@ func CreatePs(t commandcreator.ICreator) *cli.Command {
 	root.Use = "ps"
 	root.Short = "Processes"
 	root.Long = "Processes"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn(r.TaskList())
+		return nil
 	}
 
 	return root

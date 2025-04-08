@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"runtime"
 )
 
@@ -26,16 +27,15 @@ func CreateMemoryStatus(t commandcreator.ICreator) *cli.Command {
 	root.Use = "rt"
 	root.Short = "Runtime Status"
 	root.Long = "Runtime Status"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		var m runtime.MemStats
-
 		runtime.ReadMemStats(&m)
 		r.WriteLn("")
 		r.WriteLn(fmt.Sprintf("Allocated memory in heap objects: %.3f MB", bToMb(m.Alloc)))
 		r.WriteLn(fmt.Sprintf("Total memory allocated for heap objects: %.3f MB", bToMb(m.TotalAlloc)))
 		r.WriteLn(fmt.Sprintf("Total memory obtained from the OS: %.3f MB", bToMb(m.Sys)))
 		r.WriteLn(fmt.Sprintf("Number of completed GC cycles: %d", m.NumGC))
+		return nil
 	}
 	return root
 }

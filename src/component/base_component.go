@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"io"
 )
 
@@ -51,9 +52,10 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 	bc.id = bc.hardwareId
 
 	bc.cmd = cli.NewCommand()
-	bc.cmd.Run = func(cmd *cli.Command, pid int, args []string) {
-		_, _ = cmd.WriteLn([]byte{})
-		_, _ = cmd.WriteLn([]byte(bc.name))
+	bc.cmd.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		r.WriteLn("")
+		r.WriteLn(bc.name)
+		return nil
 	}
 	bc.cmd.Use = bc.name
 	bc.cmd.Short = "Command " + bc.name

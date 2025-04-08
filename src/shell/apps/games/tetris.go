@@ -27,42 +27,52 @@ func CreateTetris(t commandcreator.ICreator) *cli.Command {
 	root.Short = "Tetris"
 	root.Long = "Tetris"
 	root.Activate = true
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		//r := cmd.GetRootContext()
 		//w, h := r.GetScreenSize()
 
-		t := tetris.New(10, 18)
+		tx := tetris.New(10, 18)
 		//s.SetSize(h, w)
-		r.SetContext(pid, t)
+		r.SetContext(pid, tx)
 		r.CreateTimer(pid, 0, 300, -1)
+		return nil
 	}
-	root.ReadEvent = func(cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
-		t := ctx.(*tetris.Tetris)
+	root.ReadEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
+		tx, ok := ctx.(*tetris.Tetris)
+		if !ok {
+			return
+		}
 		switch key {
 		case 'a':
-			t.MoveLeft()
+			tx.MoveLeft()
 		case 'd':
-			t.MoveRight()
+			tx.MoveRight()
 		case 'w':
-			t.RotateRight()
+			tx.RotateRight()
 		case 's':
-			t.MoveDown()
+			tx.MoveDown()
 		case ' ':
-			t.Drop()
+			tx.Drop()
 		case '1':
 			//r := cmd.GetRootContext()
 			//w, h := r.GetScreenSize()
-			t.Init(10, 18)
+			tx.Init(10, 18)
 		}
 	}
-	root.TimerEvent = func(cmd *cli.Command, pid int, tid int, ctx interface{}, interval int) {
-		r := cmd.GetRootContext()
-		t := ctx.(*tetris.Tetris)
-		t.ApplyGravity()
+	root.TimerEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, tid int, ctx interface{}, interval int) {
+		//r := cmd.GetRootContext()
+		tx, ok := ctx.(*tetris.Tetris)
+		if !ok {
+			return
+		}
+		tx.ApplyGravity()
 		r.PaintRequest(pid)
 	}
-	root.PaintEvent = func(cmd *cli.Command, pid int, ctx interface{}, surface interfaces.ISurface) {
-		t := ctx.(*tetris.Tetris)
+	root.PaintEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, surface interfaces.ISurface) {
+		tx, ok := ctx.(*tetris.Tetris)
+		if !ok {
+			return
+		}
 
 		//rows, columns := surface.GetSize()
 
@@ -72,7 +82,7 @@ func CreateTetris(t commandcreator.ICreator) *cli.Command {
 		//	t.Init(rows, columns)
 		//}
 
-		t.Draw(surface)
+		tx.Draw(surface)
 	}
 
 	return root

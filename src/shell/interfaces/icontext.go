@@ -14,7 +14,10 @@
 
 package interfaces
 
+import "io"
+
 type IContext interface {
+	GetWriter() io.Writer
 	Write(data string)
 	WriteLn(data string)
 	WriteColor(data string, fg ColorDef, bg ColorDef, mode ColorMode)
@@ -26,9 +29,9 @@ type IContext interface {
 	StopTimer(pid int, tid int) bool
 	PaintRequest(pid int) bool
 	SetCaption(pid int, caption string) bool
-	SetBasePath(arg string)
 	SetCWD(arg string) bool
-	PrintPWD() string
+	GetPWD() string
+	Childs() []string
 	SetSelectionMode(int)
 	SetSelectionOptions(option rune, value float64) bool
 	SetSelectionModeNext()

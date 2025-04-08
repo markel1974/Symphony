@@ -17,6 +17,7 @@ package stats
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"os"
 	"runtime/pprof"
 )
@@ -26,29 +27,24 @@ func CreateProfileCPUStart(t commandcreator.ICreator) *cli.Command {
 	root.Use = "startcpuprofile"
 	root.Short = "Start cpu profiling"
 	root.Long = "Start cpu profiling"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
-
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
-
 		if len(args) <= 0 {
 			r.WriteLn("could not create cpu profile: " + "missing filename")
-			return
+			return nil
 		}
-
 		f, err := os.Create(args[0])
 		if err != nil {
 			r.WriteLn("could not create CPU profile: " + err.Error())
-			return
+			return nil
 		}
 		defer f.Close()
-
-		if err := pprof.StartCPUProfile(f); err != nil {
+		if err = pprof.StartCPUProfile(f); err != nil {
 			r.WriteLn("could not start CPU profile: " + err.Error())
-			return
+			return nil
 		}
-
 		r.WriteLn("Cpu Profiling started")
+		return nil
 	}
 
 	return root

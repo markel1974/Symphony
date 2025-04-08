@@ -17,6 +17,7 @@ package core
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"strings"
 )
 
@@ -25,11 +26,10 @@ func CreateTasks(t commandcreator.ICreator) *cli.Command {
 	root.Use = "task"
 	root.Short = "Task"
 	root.Long = "Task"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		if len(args) <= 0 {
-			return
+			return nil
 		}
-		r := cmd.GetRootContext()
 		kind := strings.TrimSpace(strings.ToLower(args[0]))
 		args = args[1:]
 		switch kind {
@@ -47,6 +47,7 @@ func CreateTasks(t commandcreator.ICreator) *cli.Command {
 				r.SaveTasks(args[0])
 			}
 		}
+		return nil
 	}
 	return root
 }

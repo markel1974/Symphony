@@ -17,6 +17,7 @@ package core
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
 func CreatePWD(t commandcreator.ICreator) *cli.Command {
@@ -24,10 +25,11 @@ func CreatePWD(t commandcreator.ICreator) *cli.Command {
 	root.Use = "pwd"
 	root.Short = "pwd"
 	root.Long = "pwd"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		//r := cmd.GetRootContext()
 		r.WriteLn("")
-		r.WriteLn(r.PrintPWD())
+		r.WriteLn(r.GetPWD())
+		return nil
 	}
 	return root
 }

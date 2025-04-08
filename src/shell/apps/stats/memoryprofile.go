@@ -17,6 +17,7 @@ package stats
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -27,18 +28,18 @@ func CreateProfileMemory(t commandcreator.ICreator) *cli.Command {
 	root.Use = "memprofile"
 	root.Short = "Memory profiling"
 	root.Long = "Memory profiling"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		//r := cmd.GetRootContext()
 		r.WriteLn("")
 		if len(args) <= 0 {
 			r.WriteLn("could not create mem profile: " + "missing filename")
-			return
+			return nil
 		}
 
 		f, err := os.Create(args[0])
 		if err != nil {
 			r.WriteLn("could not create mem profile: " + err.Error())
-			return
+			return nil
 		}
 		defer f.Close()
 
@@ -48,6 +49,8 @@ func CreateProfileMemory(t commandcreator.ICreator) *cli.Command {
 		}
 
 		r.WriteLn("Cpu Profiling started")
+
+		return nil
 	}
 	return root
 }

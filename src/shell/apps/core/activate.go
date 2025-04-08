@@ -27,18 +27,15 @@ func CreateActivate(t commandcreator.ICreator) *cli.Command {
 	root.Short = "Activate"
 	root.Long = "Activate"
 	root.Activate = true
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		targetPid := -1
-
 		if len(args) > 0 {
 			targetPid, _ = strconv.Atoi(args[0])
 		}
-
 		r.SetSelectionMode(targetPid)
+		return nil
 	}
-	root.ReadEvent = func(cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
-		r := cmd.GetRootContext()
+	root.ReadEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
 		if code == 1 {
 			switch interfaces.CursorCodeDef(key) {
 			case interfaces.CursorUpDef:

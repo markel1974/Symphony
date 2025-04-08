@@ -27,15 +27,16 @@ func CreateSnake(t commandcreator.ICreator) *cli.Command {
 	root.Short = "Snake"
 	root.Long = "Snake"
 	root.Activate = true
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		//r := cmd.GetRootContext()
 		w, h := r.GetScreenSize()
 		s := snake.New()
 		s.SetSize(h, w)
 		r.SetContext(pid, s)
 		r.CreateTimer(pid, 0, 200, -1)
+		return nil
 	}
-	root.ReadEvent = func(cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
+	root.ReadEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
 		s := ctx.(*snake.Snake)
 		switch key {
 		case 'a':
@@ -58,20 +59,24 @@ func CreateSnake(t commandcreator.ICreator) *cli.Command {
 			s.Start()
 		}
 	}
-	root.TimerEvent = func(cmd *cli.Command, pid int, tid int, ctx interface{}, interval int) {
-		r := cmd.GetRootContext()
-		s := ctx.(*snake.Snake)
+	root.TimerEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, tid int, ctx interface{}, interval int) {
+		s, ok := ctx.(*snake.Snake)
+		if !ok {
+			return
+		}
 		s.Advance()
 		r.PaintRequest(pid)
 	}
-	root.PaintEvent = func(cmd *cli.Command, pid int, ctx interface{}, surface interfaces.ISurface) {
-		s := ctx.(*snake.Snake)
+	root.PaintEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, surface interfaces.ISurface) {
+		s, ok := ctx.(*snake.Snake)
+		if !ok {
+			return
+		}
 		rows, columns := surface.GetSize()
 		if s.Rows != rows || s.Columns != columns {
 			s.SetSize(rows, columns)
 		}
 		s.Draw(surface)
 	}
-
 	return root
 }

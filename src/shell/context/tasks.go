@@ -43,6 +43,7 @@ const (
 )
 
 type Task struct {
+	rootCtx interfaces.IContext
 	cmd     *cli.Command
 	context interface{}
 	timers  []int
@@ -55,8 +56,9 @@ type Task struct {
 	Scale   float64
 }
 
-func NewTask(cmd *cli.Command, line string) *Task {
+func NewTask(r interfaces.IContext, cmd *cli.Command, line string) *Task {
 	return &Task{
+		rootCtx: r,
 		cmd:     cmd,
 		context: nil,
 		state:   taskStateSetup,
@@ -89,7 +91,7 @@ func (t *Task) Paint(surface *Surface) {
 	surface.SetScale(t.Scale)
 	surface.SetCaption(caption)
 	surface.Begin()
-	t.cmd.PaintEvent(t.cmd, t.pid, t.context, surface)
+	t.cmd.PaintEvent(t.rootCtx, t.cmd, t.pid, t.context, surface)
 	surface.End()
 }
 
@@ -108,14 +110,12 @@ func NewTaskSelector() *TaskSelector {
 }
 
 type TaskManager struct {
+	rootCtx    interfaces.IContext
 	ticker     *adaptiveticker.AdaptiveTicker
 	foreground *Task
 	selector   *TaskSelector
-	//cdCommand  *cli.Command
 	cwd        *cli.Command
-	rootD      *cli.Command
 	system     *cli.Command
-	path       string
 	dirty      bool
 	width      int
 	height     int
@@ -124,41 +124,21 @@ type TaskManager struct {
 	ids        *adaptiveticker.Ids
 }
 
-func NewTaskManager(ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, system *cli.Command, commands *cli.Command) *TaskManager {
+func NewTaskManager(r interfaces.IContext, ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, system *cli.Command, commands *cli.Command) *TaskManager {
 	t := &TaskManager{
+		rootCtx:    r,
 		ticker:     ticker,
 		foreground: nil,
 		selector:   NewTaskSelector(),
 		timersChan: timersChannel,
 		system:     system,
 		cwd:        commands,
-		rootD:      commands,
 		dirty:      false,
 		fullPaint:  true,
 		width:      80,
 		height:     24,
 		ids:        adaptiveticker.NewIds(1024),
-		//cdCommand:  cli.NewCommand(),
 	}
-	/*
-		t.cdCommand = cli.NewCommand()
-		t.cdCommand.Use = "cd"
-		t.cdCommand.Short = "cd"
-		t.cdCommand.Long = "cd"
-		t.cdCommand.Run = func(cmd *cli.Command, pid int, args []string) {
-			if len(args) != 1 {
-				if t.cwd != nil {
-					if r := t.cwd.GetRootContext(); r != nil {
-						r.WriteLn("")
-						r.WriteLn("Empty argument")
-					}
-				}
-				return
-			}
-			t.SetCWD(args[0])
-		}
-
-	*/
 	return t
 }
 
@@ -196,18 +176,19 @@ func (c *TaskManager) Execute(line string, template *Task) bool {
 		task2.Scale = template.Scale
 	}
 
-	err = sel.Execute(flags, task2.pid)
+	err = sel.Execute(c.rootCtx, flags, task2.pid)
 	if err != nil {
 		if errors.Is(err, mflag.ErrHelp) {
-			// Always show help if requested, even if SilenceErrors is in effect
-			sel.HelpFunc()(sel, args)
+			c.rootCtx.Write(sel.Help(args))
 			err = nil
 		} else if errors.Is(err, cli.ErrSubCommandRequired) {
-			sel.HelpFunc()(sel, args)
+			c.rootCtx.Write(sel.Help(args))
 		} else if !sel.SilenceErrors {
-			sel.Println(cli.DefaultEol+"Error:", err.Error(), cli.DefaultEol)
+			c.rootCtx.Write(cli.DefaultEol + "Error:" + err.Error() + cli.DefaultEol)
 		} else if !sel.SilenceUsage {
-			sel.Println(sel.UsageString())
+			c.rootCtx.Write(cli.DefaultEol + "Error:" + err.Error() + cli.DefaultEol)
+			c.rootCtx.Write(sel.Usage())
+			//c.rootCtx.Write(sel.UsageString())
 		}
 	}
 	if err == nil {
@@ -225,7 +206,7 @@ func (c *TaskManager) Execute(line string, template *Task) bool {
 }
 
 func (c *TaskManager) create(cmd *cli.Command, line string) (*Task, error) {
-	task := NewTask(cmd, line)
+	task := NewTask(c.rootCtx, cmd, line)
 
 	c.ids.Set(task)
 	if task.pid == adaptiveticker.UnknownId {
@@ -324,16 +305,20 @@ func (c *TaskManager) SetSelectionDisabled() {
 
 	c.PaintRequest()
 }
-func (c *TaskManager) SetBasePath(arg string) bool {
-	c.path = arg
-	return true
+
+func (c *TaskManager) CWDChilds() []string {
+	var out []string
+	for _, z := range c.cwd.Childs() {
+		out = append(out, z.Name())
+	}
+	return out
 }
 
-func (c *TaskManager) PrintPWD() string {
+func (c *TaskManager) CWDGet() string {
 	return c.cwd.CommandPath()
 }
 
-func (c *TaskManager) SetCWD(arg string) bool {
+func (c *TaskManager) CWDSet(arg string) bool {
 	if arg == ".." {
 		if c.cwd.Parent() != nil {
 			c.cwd = c.cwd.Parent()
@@ -347,34 +332,6 @@ func (c *TaskManager) SetCWD(arg string) bool {
 		}
 	}
 	return false
-
-	/*
-		var cmd *cli.Command
-
-		arg = strings.Trim(arg, " ")
-
-		if arg == ".." {
-			if c.cmd.Parent() != nil {
-				cmd = c.cmd.Parent()
-			}
-		} else {
-			path := strings.Split(arg, "/")
-			if len(path) > 0 {
-				var e error
-				fmt.Println("TRAVERSING", path)
-				if cmd, _, e = c.cmd.Traverse(path); e != nil {
-					cmd = nil
-				} else {
-					fmt.Println("NEW CMD", cmd)
-				}
-			}
-		}
-
-		if cmd != nil {
-			c.cmd = cmd
-		}
-
-	*/
 }
 
 func (c *TaskManager) SetSelectionOptions(option rune, value float64) bool {
@@ -382,9 +339,7 @@ func (c *TaskManager) SetSelectionOptions(option rune, value float64) bool {
 	if !ok {
 		return false
 	}
-
 	task := t.(*Task)
-
 	switch option {
 	case 'y':
 		task.OffsetY += int(value)
@@ -395,11 +350,8 @@ func (c *TaskManager) SetSelectionOptions(option rune, value float64) bool {
 			task.Scale = scale
 		}
 	}
-
 	c.fullPaint = true
-
 	c.PaintRequest()
-
 	return true
 }
 
@@ -616,7 +568,7 @@ func (c *TaskManager) ExecTimer(pid int, tid int, interval int) bool {
 	if t, ok := c.ids.Get(pid); ok {
 		task := t.(*Task)
 		if task.cmd.TimerEvent != nil {
-			task.cmd.TimerEvent(task.cmd, task.pid, tid, task.context, interval)
+			task.cmd.TimerEvent(task.rootCtx, task.cmd, task.pid, tid, task.context, interval)
 			ret = true
 		}
 	}
@@ -629,7 +581,7 @@ func (c *TaskManager) ExecRead(pid int, code int, buffer rune) bool {
 	if t, ok := c.ids.Get(pid); ok {
 		task := t.(*Task)
 		if task.cmd.ReadEvent != nil {
-			task.cmd.ReadEvent(task.cmd, task.pid, task.context, code, buffer)
+			task.cmd.ReadEvent(task.rootCtx, task.cmd, task.pid, task.context, code, buffer)
 			ret = true
 		}
 	}

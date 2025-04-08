@@ -17,6 +17,7 @@ package runtime
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"runtime"
 )
 
@@ -25,11 +26,12 @@ func CreateGC(t commandcreator.ICreator) *cli.Command {
 	root.Use = "gc"
 	root.Short = "Start Garbage"
 	root.Long = "Start Garbage"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		//r := cmd.GetRootContext()
 		r.WriteLn("")
 		runtime.GC()
 		r.WriteLn("GC Done")
+		return nil
 	}
 	return root
 }

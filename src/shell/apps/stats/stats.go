@@ -17,6 +17,7 @@ package stats
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
 func Create(t commandcreator.ICreator) *cli.Command {
@@ -24,7 +25,9 @@ func Create(t commandcreator.ICreator) *cli.Command {
 	root.Use = "stats"
 	root.Short = "System Stats"
 	root.Long = "System Stats"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {}
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		return nil
+	}
 
 	t.AddCommand(root, CreateProfileCPUStart(t))
 	t.AddCommand(root, CreateProfileCPUStop(t))

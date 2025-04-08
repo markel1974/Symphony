@@ -17,6 +17,7 @@ package core
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"strconv"
 )
 
@@ -25,17 +26,15 @@ func CreateKillAll(t commandcreator.ICreator) *cli.Command {
 	root.Use = "killall"
 	root.Short = "Kill All"
 	root.Long = "Kill All"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		var arg string
 		if len(args) > 0 {
 			arg = args[0]
 		}
-
 		count := r.DeactivateAll(arg)
-
 		r.WriteLn("Task deactivated: " + strconv.Itoa(count))
+		return nil
 	}
 	return root
 }

@@ -17,6 +17,7 @@ package core
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"strconv"
 )
 
@@ -25,24 +26,21 @@ func CreateFg(t commandcreator.ICreator) *cli.Command {
 	root.Use = "fg"
 	root.Short = "Foreground"
 	root.Long = "Foreground"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
-
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
-
 		if len(args) <= 0 {
 			r.WriteLn("Empty argument")
-			return
+			return nil
 		}
 		pid, err := strconv.Atoi(args[0])
 		if err != nil {
 			r.WriteLn("Invalid argument: " + args[0])
-			return
+			return nil
 		}
-
 		if !r.SetFg(pid) {
 			r.WriteLn("Unknown task: " + args[0])
 		}
+		return nil
 	}
 
 	return root

@@ -36,9 +36,7 @@ func CreateMemoryPlot(t commandcreator.ICreator) *cli.Command {
 	root.Short = "Runtime Plot"
 	root.Long = "Runtime Plot"
 	root.Activate = true
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
-
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		plt := &rtPlotData{
 			rtPlotType:   0,
 			rtPlotAuto:   true,
@@ -46,7 +44,6 @@ func CreateMemoryPlot(t commandcreator.ICreator) *cli.Command {
 			rtPlotMinVal: math.Inf(1),
 			rtPlotMaxVal: math.Inf(-1),
 		}
-
 		if len(args) > 0 {
 			switch args[0] {
 			case "alloc":
@@ -61,8 +58,9 @@ func CreateMemoryPlot(t commandcreator.ICreator) *cli.Command {
 		}
 		r.SetContext(pid, plt)
 		r.CreateTimer(pid, 0, 300, -1)
+		return nil
 	}
-	root.ReadEvent = func(cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
+	root.ReadEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
 		plt := ctx.(*rtPlotData)
 
 		interval := math.Abs(plt.rtPlotMaxVal - plt.rtPlotMinVal)
@@ -82,8 +80,8 @@ func CreateMemoryPlot(t commandcreator.ICreator) *cli.Command {
 		}
 
 	}
-	root.TimerEvent = func(cmd *cli.Command, pid int, tid int, ctx interface{}, interval int) {
-		var r = cmd.GetRootContext()
+	root.TimerEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, tid int, ctx interface{}, interval int) {
+		//var r = cmd.GetRootContext()
 		var m runtime.MemStats
 		plt := ctx.(*rtPlotData)
 
@@ -116,7 +114,7 @@ func CreateMemoryPlot(t commandcreator.ICreator) *cli.Command {
 
 		r.PaintRequest(pid)
 	}
-	root.PaintEvent = func(cmd *cli.Command, pid int, ctx interface{}, surface interfaces.ISurface) {
+	root.PaintEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, surface interfaces.ISurface) {
 		var min float64 = 0
 		var max float64 = 0
 		plt := ctx.(*rtPlotData)

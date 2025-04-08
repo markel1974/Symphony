@@ -71,14 +71,21 @@ func (c *Context) Setup() {
 	if c.enterKey > -1 {
 		c.terminal.SetEnterKey(c.enterKey)
 	}
-
-	system := apps.NewRoot(c, c.writer)
+	system := apps.NewRoot()
 	systemCommands, commands := system.Build(c.commands)
-	c.tasks = NewTaskManager(c.ticker, c.timersChan, systemCommands, commands)
+	c.tasks = NewTaskManager(c, c.ticker, c.timersChan, systemCommands, commands)
 
 	c.defaultApp = shell.NewShell(c.auth, c.terminal, c.prompt, c.autosave)
 	c.defaultApp.ExecCommand = c.execCommand
 	c.defaultApp.ExecSuggestion = c.execSuggestion
+}
+
+func (c *Context) GetWriter() io.Writer {
+	return c.writer
+}
+
+func (c *Context) Childs() []string {
+	return c.tasks.CWDChilds()
 }
 
 func (c *Context) SetScreenSize(width int, height int) {
@@ -299,15 +306,11 @@ func (c *Context) SetExit() {
 }
 
 func (c *Context) SetCWD(arg string) bool {
-	return c.tasks.SetCWD(arg)
+	return c.tasks.CWDSet(arg)
 }
 
-func (c *Context) PrintPWD() string {
-	return c.tasks.PrintPWD()
-}
-
-func (c *Context) SetBasePath(arg string) {
-	c.tasks.SetBasePath(arg)
+func (c *Context) GetPWD() string {
+	return c.tasks.CWDGet()
 }
 
 func (c *Context) SetSelectionMode(pid int) {

@@ -28,16 +28,16 @@ func CreateHistory(t commandcreator.ICreator) *cli.Command {
 	root.Short = "History"
 	root.Long = "History"
 	root.Aliases = []string{"h"}
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		//r := cmd.GetRootContext()
 		if len(args) == 0 {
 			r.History(interfaces.HistoryActionList, -1)
-			return
+			return nil
 
 		}
 		if idx, err := strconv.Atoi(args[0]); err == nil {
 			r.History(interfaces.HistoryActionExec, idx)
-			return
+			return nil
 		}
 		name := strings.TrimSpace(strings.ToLower(args[0]))
 		args = args[1:]
@@ -53,6 +53,7 @@ func CreateHistory(t commandcreator.ICreator) *cli.Command {
 		case "list":
 			r.History(interfaces.HistoryActionList, -1)
 		}
+		return nil
 	}
 	return root
 }

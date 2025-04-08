@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"time"
 )
 
@@ -26,8 +27,7 @@ func CreateCPUUsage(t commandcreator.ICreator) *cli.Command {
 	root.Use = "usage"
 	root.Short = "CPU usage"
 	root.Long = "CPU usage"
-	root.Run = func(cmd *cli.Command, pid int, args []string) {
-		r := cmd.GetRootContext()
+	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn("Computing cpu usage")
 		idle0, total0 := getCPUSample()
@@ -37,6 +37,7 @@ func CreateCPUUsage(t commandcreator.ICreator) *cli.Command {
 		totalTicks := float64(total1 - total0)
 		cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
 		r.WriteLn(fmt.Sprintf("CPU Usage: %f", cpuUsage))
+		return nil
 	}
 
 	return root
