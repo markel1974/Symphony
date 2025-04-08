@@ -28,10 +28,12 @@ func CreateCD(t commandcreator.ICreator) *cli.Command {
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		if len(args) <= 0 {
-			r.WriteLn("Empty argument")
+			r.WriteLn("cd: empty file or directory")
 			return nil
 		}
-		r.CWDSet(args[0])
+		if !r.CWDSet(args[0]) {
+			r.WriteLn("cd: no such file or directory: " + args[0])
+		}
 		return nil
 	}
 	return root

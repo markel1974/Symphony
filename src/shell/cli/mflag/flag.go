@@ -76,8 +76,7 @@ type FlagSet struct {
 	args              []string // arguments after flags
 	argsLenAtDash     int      // len(args) when a '--' was located when parsing, or -1 if no --
 	errorHandling     ErrorHandling
-	output            io.Writer // nil means stderr; use out() accessor
-	interspersed      bool      // allow interspersed option/non-option args
+	interspersed      bool // allow interspersed option/non-option args
 	normalizeNameFunc func(f *FlagSet, name string) NormalizedName
 
 	addedGoFlagSets []*goflag.FlagSet
@@ -171,19 +170,6 @@ func (f *FlagSet) normalizeFlagName(name string) NormalizedName {
 	return n(f, name)
 }
 
-func (f *FlagSet) out() io.Writer {
-	if f.output == nil {
-		return os.Stderr
-	}
-	return f.output
-}
-
-// SetOutput sets the destination for usage and error messages.
-// If output is nil, os.Stderr is used.
-func (f *FlagSet) SetOutput(output io.Writer) {
-	f.output = output
-}
-
 // VisitAll visits the flags in lexicographical order or
 // in primordial order if f.SortFlags is false, calling fn for each.
 // It visits all flags, even those not set.
@@ -268,14 +254,13 @@ func (f *FlagSet) Lookup(name string) *Flag {
 // ShorthandLookup returns the Flag structure of the short handed flag,
 // returning nil if none exists.
 // It panics, if len(name) > 1.
-func (f *FlagSet) ShorthandLookup(name string) *Flag {
+func (f *FlagSet) ShorthandLookup(writer io.Writer, name string) *Flag {
 	if name == "" {
 		return nil
 	}
 	if len(name) > 1 {
-		msg := fmt.Sprintf("can not look up shorthand which is more than one ASCII character: %q", name)
-		fmt.Fprintf(f.out(), msg)
-		panic(msg)
+		_, _ = fmt.Fprintf(writer, "can not look up shorthand which is more than one ASCII character: %q", name)
+		return nil
 	}
 	c := name[0]
 	return f.shorthands[c]
@@ -364,12 +349,12 @@ func Lookup(name string) *Flag {
 
 // ShorthandLookup returns the Flag structure of the short handed flag,
 // returning nil if none exists.
-func ShorthandLookup(name string) *Flag {
-	return CommandLine.ShorthandLookup(name)
+func ShorthandLookup(writer io.Writer, name string) *Flag {
+	return CommandLine.ShorthandLookup(writer, name)
 }
 
 // Set sets the value of the named flag.
-func (f *FlagSet) Set(name, value string) error {
+func (f *FlagSet) Set(writer io.Writer, name string, value string) error {
 	normalName := f.normalizeFlagName(name)
 	flag, ok := f.formal[normalName]
 	if !ok {
@@ -398,7 +383,7 @@ func (f *FlagSet) Set(name, value string) error {
 	}
 
 	if flag.Deprecated != "" {
-		fmt.Fprintf(f.out(), "Flag --%s has been deprecated, %s\n", flag.Name, flag.Deprecated)
+		_, _ = fmt.Fprintf(writer, "Flag --%s has been deprecated, %s\n", flag.Name, flag.Deprecated)
 	}
 	return nil
 }
@@ -431,15 +416,15 @@ func (f *FlagSet) Changed(name string) bool {
 }
 
 // Set sets the value of the named command-line flag.
-func Set(name, value string) error {
-	return CommandLine.Set(name, value)
+func Set(writer io.Writer, name string, value string) error {
+	return CommandLine.Set(writer, name, value)
 }
 
 // PrintDefaults prints, to standard error unless configured
 // otherwise, the default values of all defined flags in the set.
-func (f *FlagSet) PrintDefaults() {
+func (f *FlagSet) PrintDefaults(writer io.Writer) {
 	usages := f.FlagUsages()
-	fmt.Fprint(f.out(), usages)
+	_, _ = fmt.Fprint(writer, usages)
 }
 
 // defaultIsZeroValue returns true if the default value for this flag represents a zero value.
@@ -669,14 +654,14 @@ func (f *FlagSet) FlagUsages() string {
 }
 
 // PrintDefaults prints to standard error the default values of all defined command-line flags.
-func PrintDefaults() {
-	CommandLine.PrintDefaults()
+func PrintDefaults(writer io.Writer) {
+	CommandLine.PrintDefaults(writer)
 }
 
 // defaultUsage is the default function to print a usage message.
-func defaultUsage(f *FlagSet) {
-	fmt.Fprintf(f.out(), "Usage of %s:\n", f.name)
-	f.PrintDefaults()
+func defaultUsage(writer io.Writer, f *FlagSet) {
+	_, _ = fmt.Fprintf(writer, "Usage of %s:\n", f.name)
+	f.PrintDefaults(writer)
 }
 
 // NOTE: Usage is not just defaultUsage(CommandLine)
@@ -687,9 +672,9 @@ func defaultUsage(f *FlagSet) {
 // The function is a variable that may be changed to point to a custom function.
 // By default it prints a simple header and calls PrintDefaults; for details about the
 // format of the output and how to control it, see the documentation for PrintDefaults.
-var Usage = func() {
-	fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-	PrintDefaults()
+var Usage = func(writer io.Writer) {
+	_, _ = fmt.Fprintf(writer, "Usage of %s:\n", os.Args[0])
+	PrintDefaults(writer)
 }
 
 // NFlag returns the number of flags that have been set.
@@ -731,12 +716,12 @@ func Args() []string { return CommandLine.args }
 // caller could create a flag that turns a comma-separated string into a slice
 // of strings by giving the slice the methods of Value; in particular, Set would
 // decompose the comma-separated string into the slice.
-func (f *FlagSet) Var(value Value, name string, usage string) {
-	f.VarP(value, name, "", usage)
+func (f *FlagSet) Var(writer io.Writer, value Value, name string, usage string) {
+	f.VarP(writer, value, name, "", usage)
 }
 
 // VarPF is like VarP, but returns the flag created
-func (f *FlagSet) VarPF(value Value, name, shorthand, usage string) *Flag {
+func (f *FlagSet) VarPF(writer io.Writer, value Value, name string, shorthand string, usage string) *Flag {
 	// Remember the default value as a string; it won't change.
 	flag := &Flag{
 		Name:      name,
@@ -745,24 +730,23 @@ func (f *FlagSet) VarPF(value Value, name, shorthand, usage string) *Flag {
 		Value:     value,
 		DefValue:  value.String(),
 	}
-	f.AddFlag(flag)
+	f.AddFlag(writer, flag)
 	return flag
 }
 
 // VarP is like Var, but accepts a shorthand letter that can be used after a single dash.
-func (f *FlagSet) VarP(value Value, name, shorthand, usage string) {
-	f.VarPF(value, name, shorthand, usage)
+func (f *FlagSet) VarP(writer io.Writer, value Value, name, shorthand, usage string) {
+	f.VarPF(writer, value, name, shorthand, usage)
 }
 
 // AddFlag will add the flag to the FlagSet
-func (f *FlagSet) AddFlag(flag *Flag) {
+func (f *FlagSet) AddFlag(writer io.Writer, flag *Flag) {
 	normalizedFlagName := f.normalizeFlagName(flag.Name)
-
 	_, alreadyThere := f.formal[normalizedFlagName]
 	if alreadyThere {
 		msg := fmt.Sprintf("%s flag redefined: %s", f.name, flag.Name)
-		fmt.Fprintln(f.out(), msg)
-		panic(msg) // Happens only if flags are declared with identical names
+		_, _ = fmt.Fprintln(writer, msg)
+		return
 	}
 	if f.formal == nil {
 		f.formal = make(map[NormalizedName]*Flag)
@@ -777,8 +761,8 @@ func (f *FlagSet) AddFlag(flag *Flag) {
 	}
 	if len(flag.Shorthand) > 1 {
 		msg := fmt.Sprintf("%q shorthand is more than one ASCII character", flag.Shorthand)
-		fmt.Fprintf(f.out(), msg)
-		panic(msg)
+		_, _ = fmt.Fprintln(writer, msg)
+		return
 	}
 	if f.shorthands == nil {
 		f.shorthands = make(map[byte]*Flag)
@@ -787,21 +771,21 @@ func (f *FlagSet) AddFlag(flag *Flag) {
 	used, alreadyThere := f.shorthands[c]
 	if alreadyThere {
 		msg := fmt.Sprintf("unable to redefine %q shorthand in %q flagset: it's already used for %q flag", c, f.name, used.Name)
-		fmt.Fprintf(f.out(), msg)
-		panic(msg)
+		_, _ = fmt.Fprintln(writer, msg)
+		return
 	}
 	f.shorthands[c] = flag
 }
 
 // AddFlagSet adds one FlagSet to another. If a flag is already present in f
 // the flag from newSet will be ignored.
-func (f *FlagSet) AddFlagSet(newSet *FlagSet) {
+func (f *FlagSet) AddFlagSet(writer io.Writer, newSet *FlagSet) {
 	if newSet == nil {
 		return
 	}
 	newSet.VisitAll(func(flag *Flag) {
 		if f.Lookup(flag.Name) == nil {
-			f.AddFlag(flag)
+			f.AddFlag(writer, flag)
 		}
 	})
 }
@@ -812,33 +796,33 @@ func (f *FlagSet) AddFlagSet(newSet *FlagSet) {
 // caller could create a flag that turns a comma-separated string into a slice
 // of strings by giving the slice the methods of Value; in particular, Set would
 // decompose the comma-separated string into the slice.
-func Var(value Value, name string, usage string) {
-	CommandLine.VarP(value, name, "", usage)
+func Var(writer io.Writer, value Value, name string, usage string) {
+	CommandLine.VarP(writer, value, name, "", usage)
 }
 
 // VarP is like Var, but accepts a shorthand letter that can be used after a single dash.
-func VarP(value Value, name, shorthand, usage string) {
-	CommandLine.VarP(value, name, shorthand, usage)
+func VarP(writer io.Writer, value Value, name, shorthand, usage string) {
+	CommandLine.VarP(writer, value, name, shorthand, usage)
 }
 
 // failf prints to standard error a formatted error and usage message and
 // returns the error.
-func (f *FlagSet) failf(format string, a ...interface{}) error {
+func (f *FlagSet) failf(writer io.Writer, format string, a ...interface{}) error {
 	err := fmt.Errorf(format, a...)
 	if f.errorHandling != ContinueOnError {
-		fmt.Fprintln(f.out(), err)
-		f.usage()
+		_, _ = fmt.Fprintln(writer, err)
+		f.usage(writer)
 	}
 	return err
 }
 
 // usage calls the Usage method for the flag set, or the usage function if
 // the flag set is CommandLine.
-func (f *FlagSet) usage() {
+func (f *FlagSet) usage(writer io.Writer) {
 	if f == CommandLine {
-		Usage()
+		Usage(writer)
 	} else if f.Usage == nil {
-		defaultUsage(f)
+		defaultUsage(writer, f)
 	} else {
 		f.Usage()
 	}
@@ -866,11 +850,11 @@ func stripUnknownFlagValue(args []string) []string {
 	return nil
 }
 
-func (f *FlagSet) parseLongArg(s string, args []string, fn parseFunc) (a []string, err error) {
+func (f *FlagSet) parseLongArg(writer io.Writer, s string, args []string, fn parseFunc) (a []string, err error) {
 	a = args
 	name := s[2:]
 	if len(name) == 0 || name[0] == '-' || name[0] == '=' {
-		err = f.failf("bad flag syntax: %s", s)
+		err = f.failf(writer, "bad flag syntax: %s", s)
 		return
 	}
 
@@ -881,7 +865,7 @@ func (f *FlagSet) parseLongArg(s string, args []string, fn parseFunc) (a []strin
 	if !exists {
 		switch {
 		case name == "help":
-			f.usage()
+			f.usage(writer)
 			return a, ErrHelp
 		case f.ParseErrorsWhitelist.UnknownFlags:
 			// --unknown=unknownval arg ...
@@ -892,7 +876,7 @@ func (f *FlagSet) parseLongArg(s string, args []string, fn parseFunc) (a []strin
 
 			return stripUnknownFlagValue(a), nil
 		default:
-			err = f.failf("unknown flag: --%s", name)
+			err = f.failf(writer, "unknown flag: --%s", name)
 			return
 		}
 	}
@@ -910,18 +894,18 @@ func (f *FlagSet) parseLongArg(s string, args []string, fn parseFunc) (a []strin
 		a = a[1:]
 	} else {
 		// '--flag' (arg was required)
-		err = f.failf("flag needs an argument: %s", s)
+		err = f.failf(writer, "flag needs an argument: %s", s)
 		return
 	}
 
 	err = fn(flag, value)
 	if err != nil {
-		f.failf(err.Error())
+		_ = f.failf(writer, err.Error())
 	}
 	return
 }
 
-func (f *FlagSet) parseSingleShortArg(shorthands string, args []string, fn parseFunc) (outShorts string, outArgs []string, err error) {
+func (f *FlagSet) parseSingleShortArg(writer io.Writer, shorthands string, args []string, fn parseFunc) (outShorts string, outArgs []string, err error) {
 	outArgs = args
 
 	if strings.HasPrefix(shorthands, "test.") {
@@ -935,7 +919,7 @@ func (f *FlagSet) parseSingleShortArg(shorthands string, args []string, fn parse
 	if !exists {
 		switch {
 		case c == 'h':
-			f.usage()
+			f.usage(writer)
 			err = ErrHelp
 			return
 		case f.ParseErrorsWhitelist.UnknownFlags:
@@ -949,7 +933,7 @@ func (f *FlagSet) parseSingleShortArg(shorthands string, args []string, fn parse
 			outArgs = stripUnknownFlagValue(outArgs)
 			return
 		default:
-			err = f.failf("unknown shorthand flag: %q in -%s", c, shorthands)
+			err = f.failf(writer, "unknown shorthand flag: %q in -%s", c, shorthands)
 			return
 		}
 	}
@@ -972,28 +956,28 @@ func (f *FlagSet) parseSingleShortArg(shorthands string, args []string, fn parse
 		outArgs = args[1:]
 	} else {
 		// '-f' (arg was required)
-		err = f.failf("flag needs an argument: %q in -%s", c, shorthands)
+		err = f.failf(writer, "flag needs an argument: %q in -%s", c, shorthands)
 		return
 	}
 
 	if flag.ShorthandDeprecated != "" {
-		fmt.Fprintf(f.out(), "Flag shorthand -%s has been deprecated, %s\n", flag.Shorthand, flag.ShorthandDeprecated)
+		_, _ = fmt.Fprintf(writer, "Flag shorthand -%s has been deprecated, %s\n", flag.Shorthand, flag.ShorthandDeprecated)
 	}
 
 	err = fn(flag, value)
 	if err != nil {
-		f.failf(err.Error())
+		_ = f.failf(writer, err.Error())
 	}
 	return
 }
 
-func (f *FlagSet) parseShortArg(s string, args []string, fn parseFunc) (a []string, err error) {
+func (f *FlagSet) parseShortArg(writer io.Writer, s string, args []string, fn parseFunc) (a []string, err error) {
 	a = args
 	shorthands := s[1:]
 
 	// "shorthands" can be a series of shorthand letters of flags (e.g. "-vvv").
 	for len(shorthands) > 0 {
-		shorthands, a, err = f.parseSingleShortArg(shorthands, args, fn)
+		shorthands, a, err = f.parseSingleShortArg(writer, shorthands, args, fn)
 		if err != nil {
 			return
 		}
@@ -1002,7 +986,7 @@ func (f *FlagSet) parseShortArg(s string, args []string, fn parseFunc) (a []stri
 	return
 }
 
-func (f *FlagSet) parseArgs(args []string, fn parseFunc) (err error) {
+func (f *FlagSet) parseArgs(writer io.Writer, args []string, fn parseFunc) (err error) {
 	for len(args) > 0 {
 		s := args[0]
 		args = args[1:]
@@ -1022,9 +1006,9 @@ func (f *FlagSet) parseArgs(args []string, fn parseFunc) (err error) {
 				f.args = append(f.args, args...)
 				break
 			}
-			args, err = f.parseLongArg(s, args, fn)
+			args, err = f.parseLongArg(writer, s, args, fn)
 		} else {
-			args, err = f.parseShortArg(s, args, fn)
+			args, err = f.parseShortArg(writer, s, args, fn)
 		}
 		if err != nil {
 			return
@@ -1037,10 +1021,10 @@ func (f *FlagSet) parseArgs(args []string, fn parseFunc) (err error) {
 // include the command name.  Must be called after all flags in the FlagSet
 // are defined and before flags are accessed by the program.
 // The return value will be ErrHelp if -help was set but not defined.
-func (f *FlagSet) Parse(arguments []string) error {
+func (f *FlagSet) Parse(writer io.Writer, arguments []string) error {
 	if f.addedGoFlagSets != nil {
 		for _, goFlagSet := range f.addedGoFlagSets {
-			goFlagSet.Parse(nil)
+			_ = goFlagSet.Parse(nil)
 		}
 	}
 	f.parsed = true
@@ -1052,10 +1036,10 @@ func (f *FlagSet) Parse(arguments []string) error {
 	f.args = make([]string, 0, len(arguments))
 
 	set := func(flag *Flag, value string) error {
-		return f.Set(flag.Name, value)
+		return f.Set(writer, flag.Name, value)
 	}
 
-	err := f.parseArgs(arguments, set)
+	err := f.parseArgs(writer, arguments, set)
 	if err != nil {
 		switch f.errorHandling {
 		case ContinueOnError:
@@ -1077,11 +1061,11 @@ type parseFunc func(flag *Flag, value string) error
 // called after all flags in the FlagSet are defined and before flags are
 // accessed by the program. The return value will be ErrHelp if -help was set
 // but not defined.
-func (f *FlagSet) ParseAll(arguments []string, fn func(flag *Flag, value string) error) error {
+func (f *FlagSet) ParseAll(writer io.Writer, arguments []string, fn func(flag *Flag, value string) error) error {
 	f.parsed = true
 	f.args = make([]string, 0, len(arguments))
 
-	err := f.parseArgs(arguments, fn)
+	err := f.parseArgs(writer, arguments, fn)
 	if err != nil {
 		switch f.errorHandling {
 		case ContinueOnError:
@@ -1102,17 +1086,17 @@ func (f *FlagSet) Parsed() bool {
 
 // Parse parses the command-line flags from os.Args[1:].  Must be called
 // after all flags are defined and before flags are accessed by the program.
-func Parse() {
+func Parse(writer io.Writer) error {
 	// Ignore errors; CommandLine is set for ExitOnError.
-	CommandLine.Parse(os.Args[1:])
+	return CommandLine.Parse(writer, os.Args[1:])
 }
 
 // ParseAll parses the command-line flags from os.Args[1:] and called fn for each.
 // The arguments for fn are flag and value. Must be called after all flags are
 // defined and before flags are accessed by the program.
-func ParseAll(fn func(flag *Flag, value string) error) {
+func ParseAll(writer io.Writer, fn func(flag *Flag, value string) error) error {
 	// Ignore errors; CommandLine is set for ExitOnError.
-	CommandLine.ParseAll(os.Args[1:], fn)
+	return CommandLine.ParseAll(writer, os.Args[1:], fn)
 }
 
 // SetInterspersed sets whether to support interspersed option/non-option arguments.

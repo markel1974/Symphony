@@ -160,7 +160,7 @@ func (c *TaskManager) Execute(line string, template *Task) bool {
 	}
 	flags := args[1:]
 	if len(flags) > 0 {
-		if sel, flags, err = sel.Find(flags); err != nil || sel == nil {
+		if sel, flags, err = sel.Find(c.rootCtx.GetWriter(), flags); err != nil || sel == nil {
 			return false
 		}
 	}
@@ -326,7 +326,10 @@ func (c *TaskManager) CWDSet(arg string) bool {
 		}
 	} else {
 		path := strings.Split(arg, "/")
-		if cmd, _, err := c.cwd.Traverse(path); err == nil {
+		if cmd, _, err := c.cwd.Traverse(c.rootCtx.GetWriter(), path); err == nil {
+			if cmd == c.cwd {
+				return false
+			}
 			c.cwd = cmd
 			return true
 		}
@@ -403,7 +406,7 @@ func (c *TaskManager) GetSuggestion(in string, _ int) (string, []string, bool) {
 		var e error
 		data = args[len(args)-1]
 		args = args[:len(args)-1]
-		cmd, _, e = c.cwd.Traverse(args)
+		cmd, _, e = c.cwd.Traverse(c.rootCtx.GetWriter(), args)
 		if e != nil {
 			cmd = nil
 		}

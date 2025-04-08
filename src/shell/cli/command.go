@@ -91,9 +91,6 @@ type Command struct {
 		name   string
 		called bool
 	}
-
-	// flagErrorBuf contains all error messages from pflag.
-	flagErrorBuf *bytes.Buffer
 	// flags is full set of flags.
 	flags *mflag.FlagSet
 	// pflags contains persistent flags.
@@ -225,7 +222,7 @@ func (c *Command) _usageFunc(w io.Writer) (f func(*Command) error) {
 		return c.Parent()._usageFunc(w)
 	}
 	return func(c *Command) error {
-		c.mergePersistentFlags()
+		c.mergePersistentFlags(w)
 		err := tmpl(w, c.UsageTemplate(), c)
 		if err != nil {
 			log.Printf("_usageFunc: %s", err.Error())
@@ -254,7 +251,7 @@ func (c *Command) _helpFunc(w io.Writer) func(*Command, []string) {
 		return c.Parent()._helpFunc(w)
 	}
 	return func(c *Command, a []string) {
-		c.mergePersistentFlags()
+		c.mergePersistentFlags(w)
 		err := tmpl(w, c.HelpTemplate(), c)
 		if err != nil {
 			log.Printf("_helpFunc: %s", err.Error())
@@ -391,23 +388,23 @@ func hasNoOptDefVal(name string, fs *mflag.FlagSet) bool {
 	return xFlag.NoOptDefVal != ""
 }
 
-func shortHasNoOptDefVal(name string, fs *mflag.FlagSet) bool {
+func shortHasNoOptDefVal(writer io.Writer, name string, fs *mflag.FlagSet) bool {
 	if len(name) == 0 {
 		return false
 	}
 
-	xFlag := fs.ShorthandLookup(name[:1])
+	xFlag := fs.ShorthandLookup(writer, name[:1])
 	if xFlag == nil {
 		return false
 	}
 	return xFlag.NoOptDefVal != ""
 }
 
-func stripFlags(args []string, c *Command) []string {
+func stripFlags(writer io.Writer, args []string, c *Command) []string {
 	if len(args) == 0 {
 		return args
 	}
-	c.mergePersistentFlags()
+	c.mergePersistentFlags(writer)
 
 	var commands []string
 	flags := c.Flags()
@@ -424,7 +421,7 @@ Loop:
 			// If '--flag arg' then
 			// delete arg from args.
 			fallthrough // (do the same as below)
-		case strings.HasPrefix(s, "-") && !strings.Contains(s, "=") && len(s) == 2 && !shortHasNoOptDefVal(s[1:], flags):
+		case strings.HasPrefix(s, "-") && !strings.Contains(s, "=") && len(s) == 2 && !shortHasNoOptDefVal(writer, s[1:], flags):
 			// If '-f arg' then
 			// delete 'arg' from args or break the loop if len(args) <= 1.
 			if len(args) <= 1 {
@@ -480,10 +477,10 @@ func (c *Command) FindChildrenPrefix(prefix string) *Command {
 }
 
 // Find the target command given the args and command tree meant to be run on the highest node. Only searches down.
-func (c *Command) Find(args []string) (*Command, []string, error) {
+func (c *Command) Find(writer io.Writer, args []string) (*Command, []string, error) {
 	var innerFind func(*Command, []string) (*Command, []string)
 	innerFind = func(c *Command, innerArgs []string) (*Command, []string) {
-		var argsWOFlags = stripFlags(innerArgs, c)
+		var argsWOFlags = stripFlags(writer, innerArgs, c)
 		if len(argsWOFlags) == 0 {
 			return c, innerArgs
 		}
@@ -496,7 +493,7 @@ func (c *Command) Find(args []string) (*Command, []string, error) {
 	}
 	commandFound, a := innerFind(c, args)
 	if commandFound.Args == nil {
-		return commandFound, a, legacyArgs(commandFound, stripFlags(a, commandFound))
+		return commandFound, a, legacyArgs(commandFound, stripFlags(writer, a, commandFound))
 	}
 	return commandFound, a, nil
 }
@@ -539,7 +536,7 @@ func (c *Command) findNext(next string) *Command {
 	return nil
 }
 
-func (c *Command) Traverse(args []string) (*Command, []string, error) {
+func (c *Command) Traverse(writer io.Writer, args []string) (*Command, []string, error) {
 	var flags []string
 	inFlag := false
 
@@ -552,7 +549,7 @@ func (c *Command) Traverse(args []string) (*Command, []string, error) {
 			flags = append(flags, arg)
 			continue
 		// A short mflag with a space separated value
-		case strings.HasPrefix(arg, "-") && !strings.Contains(arg, "=") && len(arg) == 2 && !shortHasNoOptDefVal(arg[1:], c.Flags()):
+		case strings.HasPrefix(arg, "-") && !strings.Contains(arg, "=") && len(arg) == 2 && !shortHasNoOptDefVal(writer, arg[1:], c.Flags()):
 			inFlag = true
 			flags = append(flags, arg)
 			continue
@@ -572,10 +569,10 @@ func (c *Command) Traverse(args []string) (*Command, []string, error) {
 			return c, args, nil
 		}
 
-		if err := c.ParseFlags(flags); err != nil {
+		if err := c.ParseFlags(writer, flags); err != nil {
 			return nil, args, err
 		}
-		return cmd.Traverse(args[i+1:])
+		return cmd.Traverse(writer, args[i+1:])
 	}
 	return c, args, nil
 }
@@ -623,10 +620,10 @@ func (c *Command) ArgsLenAtDash() int {
 }
 
 func (c *Command) Execute(r interfaces.IContext, a []string, pid int) error {
-	c.InitDefaultHelpFlag()
-	c.InitDefaultVersionFlag()
+	c.InitDefaultHelpFlag(r.GetWriter())
+	c.InitDefaultVersionFlag(r.GetWriter())
 
-	if err := c.ParseFlags(a); err != nil {
+	if err := c.ParseFlags(r.GetWriter(), a); err != nil {
 		return c._flagErrorFunc()(c, err)
 	}
 
@@ -637,7 +634,7 @@ func (c *Command) Execute(r interfaces.IContext, a []string, pid int) error {
 	}
 
 	if helpVal {
-		_ = c.Flags().Set("help", "false")
+		_ = c.Flags().Set(r.GetWriter(), "help", "false")
 		return mflag.ErrHelp
 	}
 
@@ -828,8 +825,8 @@ func (c *Command) validateRequiredFlags() error {
 // InitDefaultHelpFlag adds default help flag to c.
 // It is called automatically by executing the c or by calling help and usage.
 // If c already has help flag, it will do nothing.
-func (c *Command) InitDefaultHelpFlag() {
-	c.mergePersistentFlags()
+func (c *Command) InitDefaultHelpFlag(writer io.Writer) {
+	c.mergePersistentFlags(writer)
 
 	if c.Flags().Lookup("help") == nil {
 		usage := "help for "
@@ -838,7 +835,7 @@ func (c *Command) InitDefaultHelpFlag() {
 		} else {
 			usage += c.Name()
 		}
-		c.Flags().BoolP("help", "h", false, usage)
+		c.Flags().BoolP(writer, "help", "h", false, usage)
 	}
 }
 
@@ -846,12 +843,11 @@ func (c *Command) InitDefaultHelpFlag() {
 // It is called automatically by executing the c.
 // If c already has a version flag, it will do nothing.
 // If c.Version is empty, it will do nothing.
-func (c *Command) InitDefaultVersionFlag() {
+func (c *Command) InitDefaultVersionFlag(writer io.Writer) {
 	if c.Version == "" {
 		return
 	}
-
-	c.mergePersistentFlags()
+	c.mergePersistentFlags(writer)
 	if c.Flags().Lookup("version") == nil {
 		usage := "version for "
 		if c.Name() == "" {
@@ -859,14 +855,14 @@ func (c *Command) InitDefaultVersionFlag() {
 		} else {
 			usage += c.Name()
 		}
-		c.Flags().Bool("version", false, usage)
+		c.Flags().Bool(writer, "version", false, usage)
 	}
 }
 
 // InitDefaultHelpCmd adds default help command to c.
 // It is called automatically by executing the c or by calling help and usage.
 // If c already has help command or c has no subcommands, it will do nothing.
-func (c *Command) InitDefaultHelpCmd() {
+func (c *Command) InitDefaultHelpCmd(writer io.Writer) {
 	if !c.HasSubCommands() {
 		return
 	}
@@ -876,12 +872,12 @@ func (c *Command) InitDefaultHelpCmd() {
 			Short: "Help about any command",
 			Long:  `Help provides help for any command in the application. Simply type ` + c.Name() + ` help [path to command] for full details.`,
 			Run: func(r interfaces.IContext, c *Command, pid int, args []string) error {
-				cmd, _, e := c.Root().Find(args)
+				cmd, _, e := c.Root().Find(writer, args)
 				if cmd == nil || e != nil {
 					r.WriteLn("Unknown help topic %#q" + DefaultEol + strings.Join(args, " "))
 					r.WriteLn(c.Root().Usage())
 				} else {
-					cmd.InitDefaultHelpFlag()
+					cmd.InitDefaultHelpFlag(writer)
 					r.WriteLn(cmd.Help(args))
 				}
 				return nil
@@ -1000,22 +996,19 @@ func (c *Command) UseLine() string {
 }
 
 // DebugFlags used to determine which flags have been assigned to which commands and which persist.
-func (c *Command) DebugFlags() []string {
-	var writer []string
-	writer = append(writer, "DebugFlags called on "+c.Name())
+func (c *Command) DebugFlags(writer io.Writer) {
+	_, _ = writer.Write([]byte("DebugFlags called on " + c.Name()))
 	var debugFlags func(*Command)
-
 	debugFlags = func(x *Command) {
 		if x.HasFlags() || x.HasPersistentFlags() {
-			writer = append(writer, x.Name())
-
+			_, _ = writer.Write([]byte(x.Name()))
 		}
 		if x.HasFlags() {
 			x.flags.VisitAll(func(f *mflag.Flag) {
-				if x.HasPersistentFlags() && x.persistentFlag(f.Name) != nil {
-					writer = append(writer, "  -"+f.Shorthand+","+"--"+f.Name+"["+f.DefValue+"]"+""+f.Value.String()+"  [LP]")
+				if x.HasPersistentFlags() && x.persistentFlag(writer, f.Name) != nil {
+					_, _ = writer.Write([]byte("  -" + f.Shorthand + "," + "--" + f.Name + "[" + f.DefValue + "]" + "" + f.Value.String() + "  [LP]"))
 				} else {
-					writer = append(writer, "  -"+f.Shorthand+","+"--"+f.Name+"["+f.DefValue+"]"+""+f.Value.String()+"  [L]")
+					_, _ = writer.Write([]byte("  -" + f.Shorthand + "," + "--" + f.Name + "[" + f.DefValue + "]" + "" + f.Value.String() + "  [L]"))
 				}
 			})
 		}
@@ -1023,14 +1016,13 @@ func (c *Command) DebugFlags() []string {
 			x.pflags.VisitAll(func(f *mflag.Flag) {
 				if x.HasFlags() {
 					if x.flags.Lookup(f.Name) == nil {
-						writer = append(writer, "  -"+f.Shorthand+","+"--"+f.Name, "["+f.DefValue+"]"+""+f.Value.String()+"  [P]")
+						_, _ = writer.Write([]byte("  -" + f.Shorthand + "," + "--" + f.Name + "[" + f.DefValue + "]" + "" + f.Value.String() + "  [P]"))
 					}
 				} else {
-					writer = append(writer, "  -"+f.Shorthand+","+"--"+f.Name+"["+f.DefValue+"]"+""+f.Value.String()+"  [P]")
+					_, _ = writer.Write([]byte("  -" + f.Shorthand + "," + "--" + f.Name + "[" + f.DefValue + "]" + "" + f.Value.String() + "  [P]"))
 				}
 			})
 		}
-		writer = append(writer, x.flagErrorBuf.String())
 		if x.HasSubCommands() {
 			for _, y := range x.commands {
 				debugFlags(y)
@@ -1038,7 +1030,6 @@ func (c *Command) DebugFlags() []string {
 		}
 	}
 	debugFlags(c)
-	return writer
 }
 
 // Name returns the command's name: the first word in the use line.
@@ -1180,47 +1171,36 @@ func (c *Command) GlobalNormalizationFunc() func(f *mflag.FlagSet, name string) 
 func (c *Command) Flags() *mflag.FlagSet {
 	if c.flags == nil {
 		c.flags = mflag.NewFlagSet(c.Name(), mflag.ContinueOnError)
-		if c.flagErrorBuf == nil {
-			c.flagErrorBuf = new(bytes.Buffer)
-		}
-		c.flags.SetOutput(c.flagErrorBuf)
 	}
-
 	return c.flags
 }
 
 // LocalNonPersistentFlags are flags specific to this command which will NOT persist to subcommands.
-func (c *Command) LocalNonPersistentFlags() *mflag.FlagSet {
+func (c *Command) LocalNonPersistentFlags(writer io.Writer) *mflag.FlagSet {
 	persistentFlags := c.PersistentFlags()
 
 	out := mflag.NewFlagSet(c.Name(), mflag.ContinueOnError)
-	c.LocalFlags().VisitAll(func(f *mflag.Flag) {
+	c.LocalFlags(writer).VisitAll(func(f *mflag.Flag) {
 		if persistentFlags.Lookup(f.Name) == nil {
-			out.AddFlag(f)
+			out.AddFlag(writer, f)
 		}
 	})
 	return out
 }
 
 // LocalFlags returns the local FlagSet specifically set in the current command.
-func (c *Command) LocalFlags() *mflag.FlagSet {
-	c.mergePersistentFlags()
-
+func (c *Command) LocalFlags(writer io.Writer) *mflag.FlagSet {
+	c.mergePersistentFlags(writer)
 	if c.lflags == nil {
 		c.lflags = mflag.NewFlagSet(c.Name(), mflag.ContinueOnError)
-		if c.flagErrorBuf == nil {
-			c.flagErrorBuf = new(bytes.Buffer)
-		}
-		c.lflags.SetOutput(c.flagErrorBuf)
 	}
 	c.lflags.SortFlags = c.Flags().SortFlags
 	if c.globNormFunc != nil {
 		c.lflags.SetNormalizeFunc(c.globNormFunc)
 	}
-
 	addToLocal := func(f *mflag.Flag) {
 		if c.lflags.Lookup(f.Name) == nil && c.parentsPflags.Lookup(f.Name) == nil {
-			c.lflags.AddFlag(f)
+			c.lflags.AddFlag(writer, f)
 		}
 	}
 	c.Flags().VisitAll(addToLocal)
@@ -1229,56 +1209,40 @@ func (c *Command) LocalFlags() *mflag.FlagSet {
 }
 
 // InheritedFlags returns all flags that were inherited from parent commands.
-func (c *Command) InheritedFlags() *mflag.FlagSet {
-	c.mergePersistentFlags()
-
+func (c *Command) InheritedFlags(writer io.Writer) *mflag.FlagSet {
+	c.mergePersistentFlags(writer)
 	if c.iflags == nil {
 		c.iflags = mflag.NewFlagSet(c.Name(), mflag.ContinueOnError)
-		if c.flagErrorBuf == nil {
-			c.flagErrorBuf = new(bytes.Buffer)
-		}
-		c.iflags.SetOutput(c.flagErrorBuf)
 	}
-
-	local := c.LocalFlags()
+	local := c.LocalFlags(writer)
 	if c.globNormFunc != nil {
 		c.iflags.SetNormalizeFunc(c.globNormFunc)
 	}
-
 	c.parentsPflags.VisitAll(func(f *mflag.Flag) {
 		if c.iflags.Lookup(f.Name) == nil && local.Lookup(f.Name) == nil {
-			c.iflags.AddFlag(f)
+			c.iflags.AddFlag(writer, f)
 		}
 	})
 	return c.iflags
 }
 
 // NonInheritedFlags returns all flags that were not inherited from parent commands.
-func (c *Command) NonInheritedFlags() *mflag.FlagSet {
-	return c.LocalFlags()
+func (c *Command) NonInheritedFlags(writer io.Writer) *mflag.FlagSet {
+	return c.LocalFlags(writer)
 }
 
 // PersistentFlags returns the persistent FlagSet specifically set in the current command.
 func (c *Command) PersistentFlags() *mflag.FlagSet {
 	if c.pflags == nil {
 		c.pflags = mflag.NewFlagSet(c.Name(), mflag.ContinueOnError)
-		if c.flagErrorBuf == nil {
-			c.flagErrorBuf = new(bytes.Buffer)
-		}
-		c.pflags.SetOutput(c.flagErrorBuf)
 	}
 	return c.pflags
 }
 
 // ResetFlags deletes all flags from command.
 func (c *Command) ResetFlags() {
-	c.flagErrorBuf = new(bytes.Buffer)
-	c.flagErrorBuf.Reset()
 	c.flags = mflag.NewFlagSet(c.Name(), mflag.ContinueOnError)
-	c.flags.SetOutput(c.flagErrorBuf)
 	c.pflags = mflag.NewFlagSet(c.Name(), mflag.ContinueOnError)
-	c.pflags.SetOutput(c.flagErrorBuf)
-
 	c.lflags = nil
 	c.iflags = nil
 	c.parentsPflags = nil
@@ -1295,13 +1259,13 @@ func (c *Command) HasPersistentFlags() bool {
 }
 
 // HasLocalFlags checks if the command has flags specifically declared locally.
-func (c *Command) HasLocalFlags() bool {
-	return c.LocalFlags().HasFlags()
+func (c *Command) HasLocalFlags(writer io.Writer) bool {
+	return c.LocalFlags(writer).HasFlags()
 }
 
 // HasInheritedFlags checks if the command has flags inherited from its parent command.
-func (c *Command) HasInheritedFlags() bool {
-	return c.InheritedFlags().HasFlags()
+func (c *Command) HasInheritedFlags(writer io.Writer) bool {
+	return c.InheritedFlags(writer).HasFlags()
 }
 
 // HasAvailableFlags checks if the command contains any flags (local plus persistent from the entire
@@ -1316,56 +1280,48 @@ func (c *Command) HasAvailablePersistentFlags() bool {
 }
 
 // HasAvailableLocalFlags checks if the command has flags specifically declared locally which are not hidden or deprecated.
-func (c *Command) HasAvailableLocalFlags() bool {
-	return c.LocalFlags().HasAvailableFlags()
+func (c *Command) HasAvailableLocalFlags(writer io.Writer) bool {
+	return c.LocalFlags(writer).HasAvailableFlags()
 }
 
 // HasAvailableInheritedFlags checks if the command has flags inherited from its parent command which are not hidden or deprecated.
-func (c *Command) HasAvailableInheritedFlags() bool {
-	return c.InheritedFlags().HasAvailableFlags()
+func (c *Command) HasAvailableInheritedFlags(writer io.Writer) bool {
+	return c.InheritedFlags(writer).HasAvailableFlags()
 }
 
 // Flag climbs up the command tree looking for matching a flag.
-func (c *Command) Flag(name string) (xFlag *mflag.Flag) {
+func (c *Command) Flag(writer io.Writer, name string) (xFlag *mflag.Flag) {
 	xFlag = c.Flags().Lookup(name)
 
 	if xFlag == nil {
-		xFlag = c.persistentFlag(name)
+		xFlag = c.persistentFlag(writer, name)
 	}
 
 	return
 }
 
 // Recursively find matching a persistent flag.
-func (c *Command) persistentFlag(name string) (pFlag *mflag.Flag) {
+func (c *Command) persistentFlag(writer io.Writer, name string) (pFlag *mflag.Flag) {
 	if c.HasPersistentFlags() {
 		pFlag = c.PersistentFlags().Lookup(name)
 	}
 
 	if pFlag == nil {
-		c.updateParentsFlags()
+		c.updateParentsFlags(writer)
 		pFlag = c.parentsPflags.Lookup(name)
 	}
 	return
 }
 
 // ParseFlags parses persistent flag tree and local flags.
-func (c *Command) ParseFlags(args []string) error {
+func (c *Command) ParseFlags(writer io.Writer, args []string) error {
 	if c.DisableFlagParsing {
 		return nil
 	}
-	if c.flagErrorBuf == nil {
-		c.flagErrorBuf = new(bytes.Buffer)
-	}
-	beforeErrorBufLen := c.flagErrorBuf.Len()
-	c.mergePersistentFlags()
+	c.mergePersistentFlags(writer)
 	c.Flags().ParseErrorsWhitelist = mflag.ParseErrorsWhitelist(c.FParseErrWhitelist)
-	if err := c.Flags().Parse(args); err != nil {
+	if err := c.Flags().Parse(writer, args); err != nil {
 		return err
-	}
-	// Print warnings if they occurred (e.g., deprecated flag messages).
-	if c.flagErrorBuf.Len()-beforeErrorBufLen > 0 {
-		//c.Print(c.flagErrorBuf.String())
 	}
 	return nil
 }
@@ -1394,19 +1350,18 @@ func (c *Command) Childs() []*Command {
 
 // mergePersistentFlags merges c.PersistentFlags() to c.Flags()
 // and adds missing persistent flags of all parents.
-func (c *Command) mergePersistentFlags() {
-	c.updateParentsFlags()
-	c.Flags().AddFlagSet(c.PersistentFlags())
-	c.Flags().AddFlagSet(c.parentsPflags)
+func (c *Command) mergePersistentFlags(writer io.Writer) {
+	c.updateParentsFlags(writer)
+	c.Flags().AddFlagSet(writer, c.PersistentFlags())
+	c.Flags().AddFlagSet(writer, c.parentsPflags)
 }
 
 // updateParentsFlags updates c.parentsPflags by adding
 // new persistent flags of all parents.
 // If c.parentsFlags == nil, it makes new.
-func (c *Command) updateParentsFlags() {
+func (c *Command) updateParentsFlags(writer io.Writer) {
 	if c.parentsPflags == nil {
 		c.parentsPflags = mflag.NewFlagSet(c.Name(), mflag.ContinueOnError)
-		c.parentsPflags.SetOutput(c.flagErrorBuf)
 		c.parentsPflags.SortFlags = false
 	}
 
@@ -1414,9 +1369,9 @@ func (c *Command) updateParentsFlags() {
 		c.parentsPflags.SetNormalizeFunc(c.globNormFunc)
 	}
 
-	c.Root().PersistentFlags().AddFlagSet(mflag.CommandLine)
+	c.Root().PersistentFlags().AddFlagSet(writer, mflag.CommandLine)
 
 	c.VisitParents(func(parent *Command) {
-		c.parentsPflags.AddFlagSet(parent.PersistentFlags())
+		c.parentsPflags.AddFlagSet(writer, parent.PersistentFlags())
 	})
 }
