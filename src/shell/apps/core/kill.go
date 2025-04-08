@@ -12,22 +12,40 @@
  * limitations under the License.
  */
 
-package apps
+package core
 
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"strconv"
 )
 
-func CreateExit(t commandcreator.ICreator) *cli.Command {
+func CreateKill(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "exit"
-	root.Aliases = []string{"quit"}
-	root.Short = "Exit"
-	root.Long = "Exit"
+	root.Use = "kill"
+	root.Short = "Kill"
+	root.Long = "Kill"
 	root.Run = func(cmd *cli.Command, pid int, args []string) {
 		r := cmd.GetRootContext()
-		r.SetExit()
+		r.WriteLn("")
+		if len(args) <= 0 {
+			r.WriteLn("Empty argument")
+			return
+		}
+		pid, err := strconv.Atoi(args[0])
+		if err != nil {
+			r.WriteLn("Invalid argument: " + args[0])
+			return
+		}
+		if !r.IsActive(pid) {
+			r.WriteLn("Unknown Task: " + args[0])
+			return
+		}
+		if r.Deactivate(pid) {
+			r.WriteLn("Task deactivated: " + args[0])
+		} else {
+			r.WriteLn("Task can't be deactivated: " + args[0])
+		}
 	}
 	return root
 }

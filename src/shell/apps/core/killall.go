@@ -12,26 +12,30 @@
  * limitations under the License.
  */
 
-package apps
+package core
 
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"strconv"
 )
 
-func CreateCD(t commandcreator.ICreator) *cli.Command {
+func CreateKillAll(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "cd"
-	root.Short = "cd"
-	root.Long = "cd"
+	root.Use = "killall"
+	root.Short = "Kill All"
+	root.Long = "Kill All"
 	root.Run = func(cmd *cli.Command, pid int, args []string) {
 		r := cmd.GetRootContext()
 		r.WriteLn("")
-		if len(args) <= 0 {
-			r.WriteLn("Empty argument")
-			return
+		var arg string
+		if len(args) > 0 {
+			arg = args[0]
 		}
-		r.SetCWD(args[0])
+
+		count := r.DeactivateAll(arg)
+
+		r.WriteLn("Task deactivated: " + strconv.Itoa(count))
 	}
 	return root
 }

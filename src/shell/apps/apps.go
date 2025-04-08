@@ -15,6 +15,7 @@
 package apps
 
 import (
+	"github.com/markel1974/c64emu/src/shell/apps/core"
 	"github.com/markel1974/c64emu/src/shell/apps/games"
 	"github.com/markel1974/c64emu/src/shell/apps/runtime"
 	"github.com/markel1974/c64emu/src/shell/apps/stats"
@@ -23,23 +24,23 @@ import (
 	"io"
 )
 
-type Apps struct {
+type Root struct {
 	ctx    interfaces.IContext
 	writer io.Writer
 }
 
-func NewApps(ctx interfaces.IContext, writer io.Writer) *Apps {
-	return &Apps{
+func NewRoot(ctx interfaces.IContext, writer io.Writer) *Root {
+	return &Root{
 		ctx:    ctx,
 		writer: writer,
 	}
 }
 
-func (t *Apps) AddCommand(cmd *cli.Command, child *cli.Command) {
+func (t *Root) AddCommand(cmd *cli.Command, child *cli.Command) {
 	_ = cmd.AddCommand(child)
 }
 
-func (t *Apps) CreateCommand() *cli.Command {
+func (t *Root) CreateCommand() *cli.Command {
 	cmd := cli.NewCommand()
 
 	cmd.SetRootContext(t.ctx)
@@ -48,22 +49,22 @@ func (t *Apps) CreateCommand() *cli.Command {
 	return cmd
 }
 
-func (t *Apps) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
+func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	bin.Use = "bin"
 	bin.Short = "Bin"
 
-	system := t.CreateCommand()
-	t.AddCommand(system, CreateExit(t))
-	t.AddCommand(system, CreateCD(t))
-	t.AddCommand(system, CreatePWD(t))
-	t.AddCommand(system, CreateActivate(t))
-	t.AddCommand(system, CreateKill(t))
-	t.AddCommand(system, CreateKillAll(t))
-	t.AddCommand(system, CreatePs(t))
-	t.AddCommand(system, CreateClear(t))
-	t.AddCommand(system, CreateFg(t))
-	t.AddCommand(system, CreateHistory(t))
-	t.AddCommand(system, CreateTasks(t))
+	coreC := t.CreateCommand()
+	t.AddCommand(coreC, core.CreateExit(t))
+	t.AddCommand(coreC, core.CreateCD(t))
+	t.AddCommand(coreC, core.CreatePWD(t))
+	t.AddCommand(coreC, core.CreateActivate(t))
+	t.AddCommand(coreC, core.CreateKill(t))
+	t.AddCommand(coreC, core.CreateKillAll(t))
+	t.AddCommand(coreC, core.CreatePs(t))
+	t.AddCommand(coreC, core.CreateClear(t))
+	t.AddCommand(coreC, core.CreateFg(t))
+	t.AddCommand(coreC, core.CreateHistory(t))
+	t.AddCommand(coreC, core.CreateTasks(t))
 
 	root := t.CreateCommand()
 	sbin := t.CreateCommand()
@@ -76,5 +77,5 @@ func (t *Apps) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	t.AddCommand(root, sbin)
 	t.AddCommand(root, bin)
 	t.AddCommand(root, games.Create(t))
-	return system, root
+	return coreC, root
 }

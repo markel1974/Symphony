@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package apps
+package core
 
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
@@ -20,22 +20,30 @@ import (
 	"strconv"
 )
 
-func CreateKillAll(t commandcreator.ICreator) *cli.Command {
+func CreateFg(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "killall"
-	root.Short = "Kill All"
-	root.Long = "Kill All"
+	root.Use = "fg"
+	root.Short = "Foreground"
+	root.Long = "Foreground"
 	root.Run = func(cmd *cli.Command, pid int, args []string) {
 		r := cmd.GetRootContext()
+
 		r.WriteLn("")
-		var arg string
-		if len(args) > 0 {
-			arg = args[0]
+
+		if len(args) <= 0 {
+			r.WriteLn("Empty argument")
+			return
+		}
+		pid, err := strconv.Atoi(args[0])
+		if err != nil {
+			r.WriteLn("Invalid argument: " + args[0])
+			return
 		}
 
-		count := r.DeactivateAll(arg)
-
-		r.WriteLn("Task deactivated: " + strconv.Itoa(count))
+		if !r.SetFg(pid) {
+			r.WriteLn("Unknown task: " + args[0])
+		}
 	}
+
 	return root
 }

@@ -12,22 +12,21 @@
  * limitations under the License.
  */
 
-package apps
+package core
 
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 )
 
-func CreatePs(t commandcreator.ICreator) *cli.Command {
+func CreateClear(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "ps"
-	root.Short = "Processes"
-	root.Long = "Processes"
+	root.Use = "clear"
+	root.Short = "Clear"
+	root.Long = "Clear"
 	root.Run = func(cmd *cli.Command, pid int, args []string) {
 		r := cmd.GetRootContext()
-		r.WriteLn(r.TaskList())
+		r.ClearScreen()
 	}
-
 	return root
 }

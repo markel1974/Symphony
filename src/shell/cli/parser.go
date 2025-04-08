@@ -7,13 +7,19 @@ import (
 	"unicode"
 )
 
+// ParseEnv determines whether environment variables should be parsed and expanded in command-line arguments.
 var ParseEnv bool = false
+
+// ParseBacktick determines whether backtick expressions should be parsed as subshell commands during parsing.
 var ParseBacktick bool = false
 
+// getEnv retrieves the value of an environment variable identified by the given name. Returns an empty string if not found.
 func getEnv(_ string) string {
 	return ""
 }
 
+// replaceEnv replaces substrings in the input string `s` using the provided `env` function for variable substitution.
+// If `env` is nil, a default implementation (`getEnv`) is used for substitution.
 func replaceEnv(env func(string) string, s string) string {
 	if env == nil {
 		env = getEnv
@@ -87,6 +93,7 @@ func replaceEnv(env func(string) string, s string) string {
 	return buf.String()
 }
 
+// Parser represents a command-line arguments and environment variables parser with customizable behavior.
 type Parser struct {
 	ParseEnv      bool
 	ParseBacktick bool
@@ -95,6 +102,7 @@ type Parser struct {
 	GetEnv        func(string) string
 }
 
+// NewParser initializes and returns a new instance of the Parser struct with default settings.
 func NewParser() *Parser {
 	return &Parser{
 		ParseEnv:      ParseEnv,
@@ -104,14 +112,19 @@ func NewParser() *Parser {
 	}
 }
 
+// argType defines a custom integer type used to represent argument constants or enumerations.
 type argType int
 
+// argNo represents an argument type with no value.
+// argSingle represents an argument type with a single value.
+// argQuoted represents an argument type with a quoted value.
 const (
 	argNo argType = iota
 	argSingle
 	argQuoted
 )
 
+// Parse processes a command-line string, splitting it into arguments and handling quotes, backticks, and environment variables.
 func (p *Parser) Parse(line string) ([]string, error) {
 	var args []string
 	buf := ""
@@ -271,6 +284,7 @@ loop:
 	return args, nil
 }
 
+// ParseWithEnvs splits a line into environment variables and arguments, returning them separately along with any parse error.
 func (p *Parser) ParseWithEnvs(line string) (envs []string, args []string, err error) {
 	_args, err := p.Parse(line)
 	if err != nil {
@@ -292,10 +306,12 @@ func (p *Parser) ParseWithEnvs(line string) (envs []string, args []string, err e
 	return envs, args, nil
 }
 
+// isEnv determines if the provided string argument follows the format of an environment variable (key=value).
 func isEnv(arg string) bool {
 	return len(strings.Split(arg, "=")) == 2
 }
 
+// Parse splits a command-line string into separate arguments and returns them along with any error encountered during parsing.
 func Parse(line string) ([]string, error) {
 	return NewParser().Parse(line)
 }

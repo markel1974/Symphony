@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package apps
+package core
 
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"

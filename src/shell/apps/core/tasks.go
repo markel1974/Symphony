@@ -12,21 +12,41 @@
  * limitations under the License.
  */
 
-package apps
+package core
 
 import (
 	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"strings"
 )
 
-func CreateClear(t commandcreator.ICreator) *cli.Command {
+func CreateTasks(t commandcreator.ICreator) *cli.Command {
 	root := t.CreateCommand()
-	root.Use = "clear"
-	root.Short = "Clear"
-	root.Long = "Clear"
+	root.Use = "task"
+	root.Short = "Task"
+	root.Long = "Task"
 	root.Run = func(cmd *cli.Command, pid int, args []string) {
+		if len(args) <= 0 {
+			return
+		}
 		r := cmd.GetRootContext()
-		r.ClearScreen()
+		kind := strings.TrimSpace(strings.ToLower(args[0]))
+		args = args[1:]
+		switch kind {
+		case "list":
+			r.WriteLn("")
+			for _, task := range r.ListTasks() {
+				r.WriteLn(task)
+			}
+		case "restore":
+			if len(args) > 0 {
+				r.RestoreTasks(args[0])
+			}
+		case "save":
+			if len(args) > 0 {
+				r.SaveTasks(args[0])
+			}
+		}
 	}
 	return root
 }

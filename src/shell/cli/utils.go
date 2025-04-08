@@ -26,13 +26,13 @@ var templateFuncs = template.FuncMap{
 	"trim":                    strings.TrimSpace,
 	"trimRightSpace":          trimRightSpace,
 	"trimTrailingWhitespaces": trimRightSpace,
-	"rpad":                    rpad,
+	"rPad":                    rPad,
 }
 
 var initializers []func()
 
-// EnablePrefixMatching allows to set automatic prefix matching. Automatic prefix matching can be a dangerous thing
-// to automatically enable in CLI tools.
+// EnablePrefixMatching allows setting automatic prefix matching.
+// Automatic prefix matching can be a dangerous thing to automatically enable in CLI tools.
 // Set this to true to enable it.
 var EnablePrefixMatching = false
 
@@ -45,7 +45,7 @@ func _(name string, tmplFunc interface{}) {
 	templateFuncs[name] = tmplFunc
 }
 
-// AddTemplateFuncs adds multiple template functions that are available to Usage and  Help template generation.
+// AddTemplateFuncs adds multiple template functions that are available to Usage and Help template generation.
 func _(tmplFuncs template.FuncMap) {
 	for k, v := range tmplFuncs {
 		templateFuncs[k] = v
@@ -61,7 +61,7 @@ func trimRightSpace(s string) string {
 	return strings.TrimRightFunc(s, unicode.IsSpace)
 }
 
-func rpad(s string, padding int) string {
+func rPad(s string, padding int) string {
 	t := fmt.Sprintf("%%-%ds", padding)
 	return fmt.Sprintf(t, s)
 }
