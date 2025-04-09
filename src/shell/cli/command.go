@@ -16,16 +16,12 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"io"
 	"log"
 	"sort"
 	"strings"
 )
-
-// DefaultEol defines the default end-of-line sequence used in the application, which is set to "\r\n".
-var DefaultEol = "\r\n"
 
 // minUsagePadding specifies the minimum padding length used for aligning command usage text in help output.
 var _minUsagePadding = 25
@@ -37,31 +33,19 @@ type Command struct {
 	SuggestFor                 []string
 	ShortHelp                  string
 	LongHelp                   string
-	ValidArgs                  []string
-	Args                       PositionalArgs
-	ArgAliases                 []string
-	Hidden                     bool
-	version                    string
-	SilenceErrors              bool
-	SilenceUsage               bool
-	DisableFlagParsing         bool
-	DisableFlagsInUseLine      bool
-	DisableSuggestions         bool
-	SuggestionsMinimumDistance int
+	suggestionsMinimumDistance int
 	Activate                   bool
 	Background                 bool
-	Pid                        int
 	template                   *Template
 	Run                        func(r interfaces.IContext, cmd *Command, pid int, args []string) error
 	TimerEvent                 func(r interfaces.IContext, cmd *Command, pid int, tid int, ctx interface{}, interval int)
 	ReadEvent                  func(r interfaces.IContext, cmd *Command, pid int, ctx interface{}, code int, key rune)
 	PaintEvent                 func(r interfaces.IContext, cmd *Command, pid int, ctx interface{}, surface interfaces.ISurface)
-	commands                   []*Command // commands is the list of commands supported by this program.
-	parent                     *Command   // parent is a parent command for this command.
+	commands                   []*Command
+	parent                     *Command
 	commandsMaxUseLen          int
 	commandsMaxCommandPathLen  int
 	commandsMaxNameLen         int
-	commandsAreSorted          bool
 }
 
 // NewCommand creates and returns a new instance of Command with a pre-defined template.
@@ -69,11 +53,6 @@ func NewCommand() *Command {
 	return &Command{
 		template: NewTemplate(),
 	}
-}
-
-// Version returns the version of the command.
-func (c *Command) Version() string {
-	return c.version
 }
 
 // SetName sets the name of the command and its aliases. Name is truncated at the first space if present.
@@ -110,7 +89,8 @@ func (c *Command) Childs() []*Command {
 
 // Usage returns the usage information of the command as a string.
 func (c *Command) Usage(w io.Writer) {
-	err := c.template.Exec(w, c, c.UsageTemplate())
+	usage := c.template.Usage()
+	err := c.template.Exec(w, c, usage)
 	if err != nil {
 		log.Printf("Usage: %s", err.Error())
 	}
@@ -118,19 +98,10 @@ func (c *Command) Usage(w io.Writer) {
 
 // Help returns a string containing the help details for the command, generated using its associated help function.
 func (c *Command) Help(w io.Writer) {
-	err := c.template.Exec(w, c, c.templateHelp())
+	help := c.template.Help()
+	err := c.template.Exec(w, c, help)
 	if err != nil {
 		log.Printf("Help: %s", err.Error())
-	}
-}
-
-// _flagErrorFunc retrieves the flag error function for the command, cascading to the parent command if not defined.
-func (c *Command) _flagErrorFunc() (f func(*Command, error) error) {
-	if c.HasParent() {
-		return c.parent._flagErrorFunc()
-	}
-	return func(c *Command, err error) error {
-		return err
 	}
 }
 
@@ -199,26 +170,7 @@ func (c *Command) Find(args []string) (*Command, []string, error) {
 		return c, innerArgs
 	}
 	commandFound, a := innerFind(c, args)
-	if commandFound.Args == nil {
-		return commandFound, a, legacyArgs(commandFound, a)
-	}
 	return commandFound, a, nil
-}
-
-// FindSuggestions generates a string of suggestion messages for the given argument if there are relevant suggestions available.
-// Suggestions are returned only if DisableSuggestions is false and relevant matches are found through SuggestionsFor.
-func (c *Command) FindSuggestions(arg string) string {
-	if c.DisableSuggestions {
-		return ""
-	}
-	suggestionsString := ""
-	if suggestions := c.SuggestionsFor(arg); len(suggestions) > 0 {
-		suggestionsString += DefaultEol + DefaultEol + "Did you mean this?" + DefaultEol
-		for _, s := range suggestions {
-			suggestionsString += fmt.Sprintf("\t%v"+DefaultEol, s)
-		}
-	}
-	return suggestionsString
 }
 
 // findNext searches for the next command matching the specified name or alias in the list of subcommands.
@@ -253,7 +205,7 @@ func (c *Command) Traverse(writer io.Writer, args []string) (*Command, []string,
 // SuggestionsFor returns a list of command suggestions based on the provided typedName, considering prefix and edit distance.
 func (c *Command) SuggestionsFor(typedName string) []string {
 	var suggestions []string
-	distance := c.SuggestionsMinimumDistance
+	distance := c.suggestionsMinimumDistance
 	if distance <= 0 {
 		distance = 2
 	}
@@ -275,6 +227,18 @@ func (c *Command) SuggestionsFor(typedName string) []string {
 	return suggestions
 }
 
+// FindSuggestions generates a string of suggestion messages for the given argument if there are relevant suggestions available.
+// Suggestions are returned only if DisableSuggestions is false and relevant matches are found through SuggestionsFor.
+func (c *Command) FindSuggestions(arg string) []string {
+	var ret []string
+	if suggestions := c.SuggestionsFor(arg); len(suggestions) > 0 {
+		for _, s := range suggestions {
+			ret = append(ret, s)
+		}
+	}
+	return ret
+}
+
 // VisitParents calls the provided function for each parent command in the hierarchy, traversing upwards recursively.
 func (c *Command) VisitParents(fn func(*Command)) {
 	if c.HasParent() {
@@ -288,35 +252,10 @@ func (c *Command) Execute(r interfaces.IContext, arg []string, pid int) error {
 	if !c.Runnable() {
 		return errors.New("run is required")
 	}
-	c.preRun()
-	if err := c.ValidateArgs(arg); err != nil {
-		return err
-	}
 	if err := c.Run(r, c, pid, arg); err != nil {
 		return err
 	}
 	return nil
-}
-
-// preRun executes all initializer functions provided in the _initializers slice before the command is run.
-func (c *Command) preRun() {
-	for _, x := range _initializers {
-		x()
-	}
-}
-
-// ValidateArgs validates the provided arguments against the defined Args function, returning an error on failure.
-func (c *Command) ValidateArgs(args []string) error {
-	if c.Args == nil {
-		return nil
-	}
-	return c.Args(c, args)
-}
-
-// ResetCommands clears all state in the Command, including parent, sub-commands, help command, and persistent flags.
-func (c *Command) ResetCommands() {
-	c.parent = nil
-	c.commands = nil
 }
 
 // Commands returns a sorted slice of subcommands by their names.
@@ -346,9 +285,7 @@ func (c *Command) AddCommand(cx ...*Command) error {
 			c.commandsMaxNameLen = nameLen
 		}
 		c.commands = append(c.commands, x)
-		c.commandsAreSorted = false
 	}
-
 	return nil
 }
 
@@ -451,9 +388,6 @@ func (c *Command) HasSubCommands() bool {
 
 // IsAvailableCommand determines if the command is visible and runnable or has available subcommands, excluding hidden commands.
 func (c *Command) IsAvailableCommand() bool {
-	if c.Hidden {
-		return false
-	}
 	if c.HasParent() {
 		return false
 	}
@@ -465,11 +399,9 @@ func (c *Command) IsAvailableCommand() bool {
 
 // IsAdditionalHelpTopicCommand determines if the command is a help topic by checking its runnability, visibility, and subcommands.
 func (c *Command) IsAdditionalHelpTopicCommand() bool {
-	// if a command is runnable, deprecated, or hidden, it is not a 'help' command
-	if c.Runnable() || c.Hidden {
+	if c.Runnable() {
 		return false
 	}
-
 	// if any non-help sub commands are found, the command is not a 'help' command
 	for _, sub := range c.commands {
 		if !sub.IsAdditionalHelpTopicCommand() {
@@ -504,28 +436,4 @@ func (c *Command) HasAvailableSubCommands() bool {
 // HasParent checks if the command has a parent by verifying if the parent field is not nil. Returns true if parent exists.
 func (c *Command) HasParent() bool {
 	return c.parent != nil
-}
-
-// templateHelp retrieves the help template of the command, delegating to the parent command if one exists.
-func (c *Command) templateHelp() string {
-	if c.HasParent() {
-		return c.parent.templateHelp()
-	}
-	return c.template.Help()
-}
-
-// templateVersion retrieves the template version of the command, delegating to the parent if one exists.
-func (c *Command) templateVersion() string {
-	if c.HasParent() {
-		return c.parent.templateVersion()
-	}
-	return c.template.Version()
-}
-
-// UsageTemplate returns the usage template string for the command. If the command has a parent, it delegates to the parent.
-func (c *Command) UsageTemplate() string {
-	if c.HasParent() {
-		return c.parent.UsageTemplate()
-	}
-	return c.template.Usage()
 }

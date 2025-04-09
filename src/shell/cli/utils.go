@@ -17,42 +17,15 @@ package cli
 import (
 	"fmt"
 	"strings"
-	"text/template"
 	"unicode"
 )
 
-var _templateFuncs = template.FuncMap{
-	"trim":                    strings.TrimSpace,
-	"trimRightSpace":          trimRightSpace,
-	"trimTrailingWhitespaces": trimRightSpace,
-	"rPad":                    rPad,
-}
-
 // commandSorterByName is a type that represents a slice of *Command used for sorting commands by their names.
-
-var _initializers []func()
 
 // EnablePrefixMatching allows setting automatic prefix matching.
 // Automatic prefix matching can be a dangerous thing to automatically enable in CLI tools.
 // Set this to true to enable it.
 //var EnablePrefixMatching = false
-
-// AddTemplateFunc adds a template function that's available to Usage and Help template generation.
-func _(name string, tmplFunc interface{}) {
-	_templateFuncs[name] = tmplFunc
-}
-
-// AddTemplateFuncs adds multiple template functions that are available to Usage and Help template generation.
-func _(tmplFuncs template.FuncMap) {
-	for k, v := range tmplFuncs {
-		_templateFuncs[k] = v
-	}
-}
-
-// OnInitialize sets the passed functions to be run when each command's Execute method is called.
-func _(y ...func()) {
-	_initializers = append(_initializers, y...)
-}
 
 func trimRightSpace(s string) string {
 	return strings.TrimRightFunc(s, unicode.IsSpace)
@@ -98,15 +71,6 @@ func levenshteinDistance(s string, s2 string, ignoreCase bool) int {
 	return d[len(s)][len(s2)]
 }
 
-func stringInSlice(a string, list []string) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
 // argsMinusFirstX removes the first occurrence of the string x from the slice args and returns the resulting slice.
 func argsMinusFirstX(args []string, x string) []string {
 	for i, y := range args {
@@ -118,10 +82,4 @@ func argsMinusFirstX(args []string, x string) []string {
 		}
 	}
 	return args
-}
-
-// isFlagArg checks if the given string represents a flag argument, either in long format (--flag) or short format (-f).
-func isFlagArg(arg string) bool {
-	return (len(arg) >= 3 && arg[1] == '-') ||
-		(len(arg) >= 2 && arg[0] == '-' && arg[1] != '-')
 }

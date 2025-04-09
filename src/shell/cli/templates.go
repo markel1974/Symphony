@@ -42,8 +42,15 @@ const helpTemplate = `
 
 func updateTemplate(in string) string {
 	out := strings.Replace(in, "\r", "", -1)
-	out = strings.Replace(out, "\n", DefaultEol, -1)
+	out = strings.Replace(out, "\n", "\r\n", -1)
 	return out
+}
+
+var _templateFuncs = template.FuncMap{
+	"trim":                    strings.TrimSpace,
+	"trimRightSpace":          trimRightSpace,
+	"trimTrailingWhitespaces": trimRightSpace,
+	"rPad":                    rPad,
 }
 
 type Template struct {
@@ -99,7 +106,6 @@ func (t *Template) Exec(writer io.Writer, c *Command, text string) error {
 	}
 	z := Component{
 		Name:           c.Name(),
-		Version:        c.version,
 		LongHelp:       c.LongHelp,
 		ShortHelp:      c.ShortHelp,
 		Runnable:       c.Runnable(),
