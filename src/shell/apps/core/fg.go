@@ -21,9 +21,7 @@ import (
 )
 
 func CreateFg() *cli.Command {
-	root := cli.NewCommand("fg", nil, false)
-	root.SetHelp("Foreground", "Foreground")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		if len(args) <= 0 {
 			r.WriteLn("Empty argument")
@@ -39,6 +37,9 @@ func CreateFg() *cli.Command {
 		}
 		return nil
 	}
+
+	root := cli.NewCommand("fg", nil, false, run)
+	root.SetHelp("Foreground", "Foreground")
 
 	return root
 }

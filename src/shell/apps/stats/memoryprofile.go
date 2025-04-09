@@ -23,9 +23,7 @@ import (
 )
 
 func CreateProfileMemory() *cli.Command {
-	root := cli.NewCommand("memprofile", nil, false)
-	root.SetHelp("Memory profiling", "Memory profiling")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		r.WriteLn("")
 		if len(args) <= 0 {
@@ -49,5 +47,8 @@ func CreateProfileMemory() *cli.Command {
 
 		return nil
 	}
+	root := cli.NewCommand("memprofile", nil, false, run)
+	root.SetHelp("Memory profiling", "Memory profiling")
+
 	return root
 }

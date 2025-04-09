@@ -20,11 +20,12 @@ import (
 )
 
 func Create() *cli.Command {
-	root := cli.NewCommand("runtime", nil, false)
-	root.SetHelp("Runtime", "Runtime")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		return nil
 	}
+	root := cli.NewCommand("runtime", nil, false, run)
+	root.SetHelp("Runtime", "Runtime")
+
 	gc := CreateGC()
 	_ = root.AddCommand(gc)
 	return root

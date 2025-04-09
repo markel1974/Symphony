@@ -32,7 +32,7 @@ type Command struct {
 	daemon                     bool
 	background                 bool
 	template                   *Template
-	Run                        func(r interfaces.IContext, cmd *Command, pid int, args []string) error
+	run                        func(r interfaces.IContext, cmd *Command, pid int, args []string) error
 	TimerEvent                 func(r interfaces.IContext, cmd *Command, pid int, tid int, ctx interface{}, interval int)
 	ReadEvent                  func(r interfaces.IContext, cmd *Command, pid int, ctx interface{}, code int, key rune)
 	PaintEvent                 func(r interfaces.IContext, cmd *Command, pid int, ctx interface{}, surface interfaces.ISurface)
@@ -44,7 +44,12 @@ type Command struct {
 }
 
 // NewCommand creates and returns a new instance of Command with a pre-defined template.
-func NewCommand(name string, aliases []string, daemon bool) *Command {
+func NewCommand(name string, aliases []string, daemon bool, run func(r interfaces.IContext, cmd *Command, pid int, args []string) error) *Command {
+	if run == nil {
+		panic(
+			"run function is required for command " + name +
+				", please provide a function that implements the command's behavior")
+	}
 	if i := strings.Index(name, " "); i >= 0 {
 		name = name[:i]
 	}
@@ -53,6 +58,7 @@ func NewCommand(name string, aliases []string, daemon bool) *Command {
 		aliases:  aliases,
 		template: NewTemplate(),
 		daemon:   daemon,
+		run:      run,
 	}
 }
 
@@ -211,10 +217,7 @@ func (c *Command) VisitParents(fn func(*Command)) {
 
 // Execute runs the command with the provided context, arguments, and process ID, handling flags and validations.
 func (c *Command) Execute(r interfaces.IContext, arg []string, pid int) error {
-	if !c.Runnable() {
-		return errors.New("run is required")
-	}
-	if err := c.Run(r, c, pid, arg); err != nil {
+	if err := c.run(r, c, pid, arg); err != nil {
 		return err
 	}
 	return nil
@@ -339,10 +342,6 @@ func (c *Command) NameAndAliases() string {
 	return strings.Join(append([]string{c.Name()}, c.aliases...), ", ")
 }
 
-func (c *Command) Runnable() bool {
-	return c.Run != nil
-}
-
 // HasSubCommands checks if the Command has any subcommands. Returns true if there are subcommands, otherwise false.
 func (c *Command) HasSubCommands() bool {
 	return len(c.commands) > 0
@@ -353,7 +352,7 @@ func (c *Command) IsAvailableCommand() bool {
 	if c.HasParent() {
 		return false
 	}
-	if c.Runnable() || c.HasAvailableSubCommands() {
+	if c.HasAvailableSubCommands() {
 		return true
 	}
 	return false
@@ -361,9 +360,6 @@ func (c *Command) IsAvailableCommand() bool {
 
 // IsAdditionalHelpTopicCommand determines if the command is a help topic by checking its runnability, visibility, and subcommands.
 func (c *Command) IsAdditionalHelpTopicCommand() bool {
-	if c.Runnable() {
-		return false
-	}
 	// if any non-help sub commands are found, the command is not a 'help' command
 	for _, sub := range c.commands {
 		if !sub.IsAdditionalHelpTopicCommand() {

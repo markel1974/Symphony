@@ -6,14 +6,15 @@ import (
 )
 
 func CreateLs() *cli.Command {
-	root := cli.NewCommand("ls", []string{"dir"}, false)
-	root.SetHelp("ls", "ls")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		for _, c := range r.CWDChilds() {
 			r.WriteLn(c)
 		}
 		return nil
 	}
+	root := cli.NewCommand("ls", []string{"dir"}, false, run)
+	root.SetHelp("ls", "ls")
+
 	return root
 }

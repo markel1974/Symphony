@@ -22,9 +22,7 @@ import (
 )
 
 func CreateCPUUsage() *cli.Command {
-	root := cli.NewCommand("usage", nil, false)
-	root.SetHelp("CPU usage", "CPU usage")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn("Computing cpu usage")
 		idle0, total0 := getCPUSample()
@@ -36,6 +34,8 @@ func CreateCPUUsage() *cli.Command {
 		r.WriteLn(fmt.Sprintf("CPU Usage: %f", cpuUsage))
 		return nil
 	}
+	root := cli.NewCommand("usage", nil, false, run)
+	root.SetHelp("CPU usage", "CPU usage")
 
 	return root
 }

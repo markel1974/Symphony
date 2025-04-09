@@ -20,12 +20,13 @@ import (
 )
 
 func CreatePWD() *cli.Command {
-	root := cli.NewCommand("pwd", nil, false)
-	root.SetHelp("pwd", "pwd")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn(r.CWDGet())
 		return nil
 	}
+	root := cli.NewCommand("pwd", nil, false, run)
+	root.SetHelp("pwd", "pwd")
+
 	return root
 }

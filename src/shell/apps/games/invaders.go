@@ -21,9 +21,7 @@ import (
 )
 
 func CreateInvaders() *cli.Command {
-	root := cli.NewCommand("invaders", nil, true)
-	root.SetHelp("Invaders", "Invaders")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		w, h := r.GetScreenSize()
 		g := invaders.NewGame(w, h)
 		g.SetMenuState()
@@ -31,6 +29,9 @@ func CreateInvaders() *cli.Command {
 		r.CreateTimer(pid, 0, 100, -1)
 		return nil
 	}
+	root := cli.NewCommand("invaders", nil, true, run)
+	root.SetHelp("Invaders", "Invaders")
+
 	root.ReadEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {

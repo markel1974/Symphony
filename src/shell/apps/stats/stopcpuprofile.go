@@ -21,13 +21,14 @@ import (
 )
 
 func CreateProfileCPUStop() *cli.Command {
-	root := cli.NewCommand("stopcpuprofile", nil, false)
-	root.SetHelp("Stop cpu profiling", "Stop cpu profiling")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		pprof.StopCPUProfile()
 		r.WriteLn("Cpu Profiling stopped")
 		return nil
 	}
+	root := cli.NewCommand("stopcpuprofile", nil, false, run)
+	root.SetHelp("Stop cpu profiling", "Stop cpu profiling")
+
 	return root
 }

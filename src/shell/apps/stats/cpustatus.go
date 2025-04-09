@@ -22,9 +22,7 @@ import (
 )
 
 func CreateCPUStatus() *cli.Command {
-	root := cli.NewCommand("cpu", nil, false)
-	root.SetHelp("CPUs status", "CPUs status")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn(fmt.Sprintf("Number of logical CPUs: %d", runtime.NumCPU()))
 		r.WriteLn(fmt.Sprintf("Maximum number of CPUs that can be executing simultaneously: %d", runtime.GOMAXPROCS(0)))
@@ -32,5 +30,8 @@ func CreateCPUStatus() *cli.Command {
 		r.WriteLn(fmt.Sprintf("Number of cgo calls made by the current process: %d", runtime.NumCgoCall()))
 		return nil
 	}
+	root := cli.NewCommand("cpu", nil, false, run)
+	root.SetHelp("CPUs status", "CPUs status")
+
 	return root
 }

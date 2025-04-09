@@ -30,9 +30,7 @@ type rtPlotData struct {
 }
 
 func CreateMemoryPlot() *cli.Command {
-	root := cli.NewCommand("rtplot", nil, true)
-	root.SetHelp("Runtime Plot", "Runtime Plot")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		plt := &rtPlotData{
 			rtPlotType:   0,
 			rtPlotAuto:   true,
@@ -56,6 +54,9 @@ func CreateMemoryPlot() *cli.Command {
 		r.CreateTimer(pid, 0, 300, -1)
 		return nil
 	}
+	root := cli.NewCommand("rtplot", nil, true, run)
+	root.SetHelp("Runtime Plot", "Runtime Plot")
+
 	root.ReadEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
 		plt := ctx.(*rtPlotData)
 

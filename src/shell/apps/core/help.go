@@ -21,9 +21,7 @@ import (
 )
 
 func CreateHelp(root *cli.Command) *cli.Command {
-	help := cli.NewCommand("help", nil, false)
-	help.SetHelp("Help about any command", `Help provides help for any command in the application. Simply type `+help.Name()+` help [path to command] for full details.`)
-	help.Run = func(r interfaces.IContext, c *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, c *cli.Command, pid int, args []string) error {
 		if len(args) == 0 {
 			return nil
 		}
@@ -40,5 +38,9 @@ func CreateHelp(root *cli.Command) *cli.Command {
 		}
 		return nil
 	}
+
+	help := cli.NewCommand("help", nil, false, run)
+	help.SetHelp("Help about any command", `Help provides help for any command in the application. Simply type `+help.Name()+` help [path to command] for full details.`)
+
 	return help
 }

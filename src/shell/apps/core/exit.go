@@ -20,11 +20,12 @@ import (
 )
 
 func CreateExit() *cli.Command {
-	root := cli.NewCommand("exit", []string{"quit"}, false)
-	root.SetHelp("Exit", "Exit")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.SetExit()
 		return nil
 	}
+	root := cli.NewCommand("exit", []string{"quit"}, false, run)
+	root.SetHelp("Exit", "Exit")
+
 	return root
 }

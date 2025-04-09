@@ -20,11 +20,12 @@ import (
 )
 
 func Create() *cli.Command {
-	root := cli.NewCommand("games", nil, false)
-	root.SetHelp("Games", "Games")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		return nil
 	}
+	root := cli.NewCommand("games", nil, false, run)
+	root.SetHelp("Games", "Games")
+
 	_ = root.AddCommand(CreateSnake())
 	_ = root.AddCommand(CreateTetris())
 	_ = root.AddCommand(CreateInvaders())

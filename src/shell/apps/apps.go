@@ -20,6 +20,7 @@ import (
 	"github.com/markel1974/c64emu/src/shell/apps/runtime"
 	"github.com/markel1974/c64emu/src/shell/apps/stats"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
 type Root struct {
@@ -30,18 +31,27 @@ func NewRoot() *Root {
 }
 
 func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
-	sbin := cli.NewCommand("sbin", nil, false)
+	sbinRun := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		return nil
+	}
+	sbin := cli.NewCommand("sbin", nil, false, sbinRun)
 	sbin.SetHelp("SBin", "SBin")
 
 	_ = sbin.AddCommand(stats.Create())
 	_ = sbin.AddCommand(runtime.Create())
 
-	root := cli.NewCommand("", nil, false)
+	rootRun := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		return nil
+	}
+	root := cli.NewCommand("", nil, false, rootRun)
 	_ = root.AddCommand(sbin)
 	_ = root.AddCommand(bin)
 	_ = root.AddCommand(games.Create())
 
-	coreC := cli.NewCommand("", nil, false)
+	coreCRun := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		return nil
+	}
+	coreC := cli.NewCommand("", nil, false, coreCRun)
 	coreC.SetHelp("Core", "Core")
 	_ = coreC.AddCommand(core.CreateExit())
 	_ = coreC.AddCommand(core.CreateCD())

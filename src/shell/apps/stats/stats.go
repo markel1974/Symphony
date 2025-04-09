@@ -20,11 +20,11 @@ import (
 )
 
 func Create() *cli.Command {
-	root := cli.NewCommand("stats", nil, false)
-	root.SetHelp("System Stats", "System Stats")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		return nil
 	}
+	root := cli.NewCommand("stats", nil, false, run)
+	root.SetHelp("System Stats", "System Stats")
 
 	_ = root.AddCommand(CreateProfileCPUStart())
 	_ = root.AddCommand(CreateProfileCPUStop())

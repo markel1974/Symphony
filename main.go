@@ -11,6 +11,7 @@ import (
 	"github.com/markel1974/c64emu/src/shell"
 	"github.com/markel1974/c64emu/src/shell/authenticator"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"github.com/markel1974/c64emu/src/version"
 	"log"
 )
@@ -153,7 +154,10 @@ func createShell(target *cli.Command) error {
 	const secure = true
 	const pass = "p"
 
-	t := cli.NewCommand("bin", nil, false)
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+		return nil
+	}
+	t := cli.NewCommand("bin", nil, false, run)
 	t.SetHelp("Bin", "Bin")
 	_ = t.AddCommand(target)
 	auth := authenticator.NewSimpleAuthenticator()

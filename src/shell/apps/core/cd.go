@@ -20,9 +20,7 @@ import (
 )
 
 func CreateCD() *cli.Command {
-	root := cli.NewCommand("cd", nil, false)
-	root.SetHelp("cd", "cd")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		if len(args) <= 0 {
 			r.WriteLn("cd: empty directory")
@@ -33,5 +31,8 @@ func CreateCD() *cli.Command {
 		}
 		return nil
 	}
+	root := cli.NewCommand("cd", nil, false, run)
+	root.SetHelp("cd", "cd")
+
 	return root
 }

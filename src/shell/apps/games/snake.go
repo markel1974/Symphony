@@ -21,9 +21,7 @@ import (
 )
 
 func CreateSnake() *cli.Command {
-	root := cli.NewCommand("snake", nil, true)
-	root.SetHelp("Snake", "Snake")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		w, h := r.GetScreenSize()
 		s := snake.New()
 		s.SetSize(h, w)
@@ -31,6 +29,9 @@ func CreateSnake() *cli.Command {
 		r.CreateTimer(pid, 0, 200, -1)
 		return nil
 	}
+	root := cli.NewCommand("snake", nil, true, run)
+	root.SetHelp("Snake", "Snake")
+
 	root.ReadEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
 		s := ctx.(*snake.Snake)
 		switch key {

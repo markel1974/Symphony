@@ -20,12 +20,13 @@ import (
 )
 
 func CreatePs() *cli.Command {
-	root := cli.NewCommand("ps", nil, false)
-	root.SetHelp("Processes", "Processes")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn(r.TaskList())
 		return nil
 	}
+
+	root := cli.NewCommand("ps", nil, false, run)
+	root.SetHelp("Processes", "Processes")
 
 	return root
 }

@@ -21,9 +21,7 @@ import (
 )
 
 func CreateKillAll() *cli.Command {
-	root := cli.NewCommand("killall", nil, false)
-	root.SetHelp("Kill All", "Kill All")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		var arg string
 		if len(args) > 0 {
@@ -33,5 +31,8 @@ func CreateKillAll() *cli.Command {
 		r.WriteLn("Task deactivated: " + strconv.Itoa(count))
 		return nil
 	}
+	root := cli.NewCommand("killall", nil, false, run)
+	root.SetHelp("Kill All", "Kill All")
+
 	return root
 }

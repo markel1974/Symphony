@@ -20,11 +20,12 @@ import (
 )
 
 func CreateClear() *cli.Command {
-	root := cli.NewCommand("clear", nil, false)
-	root.SetHelp("Clear", "Clear")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.ClearScreen()
 		return nil
 	}
+	root := cli.NewCommand("clear", nil, false, run)
+	root.SetHelp("Clear", "Clear")
+
 	return root
 }

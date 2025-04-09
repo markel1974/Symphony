@@ -22,10 +22,7 @@ import (
 )
 
 func CreateHistory() *cli.Command {
-	root := cli.NewCommand("history", []string{"h"}, false)
-	root.SetHelp("History", "History")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
-		//r := cmd.GetRootContext()
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		if len(args) == 0 {
 			r.History(interfaces.HistoryActionList, -1)
 			return nil
@@ -51,5 +48,8 @@ func CreateHistory() *cli.Command {
 		}
 		return nil
 	}
+	root := cli.NewCommand("history", []string{"h"}, false, run)
+	root.SetHelp("History", "History")
+
 	return root
 }

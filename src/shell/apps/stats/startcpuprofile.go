@@ -22,9 +22,7 @@ import (
 )
 
 func CreateProfileCPUStart() *cli.Command {
-	root := cli.NewCommand("startcpuprofile", nil, false)
-	root.SetHelp("Start cpu profiling", "Start cpu profiling")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		if len(args) <= 0 {
 			r.WriteLn("could not create cpu profile: " + "missing filename")
@@ -43,6 +41,7 @@ func CreateProfileCPUStart() *cli.Command {
 		r.WriteLn("Cpu Profiling started")
 		return nil
 	}
-
+	root := cli.NewCommand("startcpuprofile", nil, false, run)
+	root.SetHelp("Start cpu profiling", "Start cpu profiling")
 	return root
 }

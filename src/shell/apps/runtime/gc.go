@@ -21,14 +21,15 @@ import (
 )
 
 func CreateGC() *cli.Command {
-	root := cli.NewCommand("gc", nil, false)
-	root.SetHelp("Start Garbage", "Start Garbage")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		r.WriteLn("")
 		runtime.GC()
 		r.WriteLn("GC Done")
 		return nil
 	}
+	root := cli.NewCommand("gc", nil, false, run)
+	root.SetHelp("Start Garbage", "Start Garbage")
+
 	return root
 }

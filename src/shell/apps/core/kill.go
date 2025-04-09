@@ -21,9 +21,7 @@ import (
 )
 
 func CreateKill() *cli.Command {
-	root := cli.NewCommand("kill", nil, false)
-	root.SetHelp("Kill", "Kill")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		r.WriteLn("")
 		if len(args) <= 0 {
@@ -46,5 +44,8 @@ func CreateKill() *cli.Command {
 		}
 		return nil
 	}
+	root := cli.NewCommand("kill", nil, false, run)
+	root.SetHelp("Kill", "Kill")
+
 	return root
 }

@@ -58,7 +58,6 @@ func (t *Template) Exec(c *Command, text string) (string, error) {
 		Version                 string
 		LongHelp                string
 		ShortHelp               string
-		Runnable                bool
 		HasSubCommands          bool
 		UsageString             string
 		HasAvailableSubCommands bool
@@ -70,7 +69,6 @@ func (t *Template) Exec(c *Command, text string) (string, error) {
 		Name:                    c.Name(),
 		LongHelp:                c.longHelp,
 		ShortHelp:               c.shortHelp,
-		Runnable:                c.Runnable(),
 		HasSubCommands:          c.HasSubCommands(),
 		HasAvailableSubCommands: c.HasAvailableSubCommands(),
 		IsAvailableCommand:      c.IsAvailableCommand(),

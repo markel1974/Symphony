@@ -22,9 +22,7 @@ import (
 )
 
 func CreateMemoryStatus() *cli.Command {
-	root := cli.NewCommand("rt", nil, false)
-	root.SetHelp("Runtime Status", "Runtime Status")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
 		r.WriteLn("")
@@ -34,5 +32,8 @@ func CreateMemoryStatus() *cli.Command {
 		r.WriteLn(fmt.Sprintf("Number of completed GC cycles: %d", m.NumGC))
 		return nil
 	}
+	root := cli.NewCommand("rt", nil, false, run)
+	root.SetHelp("Runtime Status", "Runtime Status")
+
 	return root
 }

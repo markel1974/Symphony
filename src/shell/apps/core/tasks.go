@@ -21,9 +21,7 @@ import (
 )
 
 func CreateTasks() *cli.Command {
-	root := cli.NewCommand("task", nil, false)
-	root.SetHelp("Task", "Task")
-	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		if len(args) <= 0 {
 			return nil
 		}
@@ -46,5 +44,8 @@ func CreateTasks() *cli.Command {
 		}
 		return nil
 	}
+	root := cli.NewCommand("task", nil, false, run)
+	root.SetHelp("Task", "Task")
+
 	return root
 }
