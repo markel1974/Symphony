@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -28,7 +29,7 @@ func init() {
 	_asciiToPetsciiTable['\n'] = 0x0D
 }
 
-func ParseFileName(nameWithParams string) (string, int, int, int) {
+func ParseFileName(nameWithParams string) (string, FMode, FType, int) {
 	mode := FModeRead
 	filetype := FTypePrg
 	recLen := 0
@@ -109,4 +110,67 @@ func CreateFileName(name string) []uint8 {
 		}
 	}
 	return vName
+}
+
+func CreateDir(realTitle string, entries []os.FileInfo, pattern string) []byte {
+	const titleStart = "\001\004\001\001\000\000\022\""
+	const titleEnd = "\" 00 2A"
+	const blocksFreeStart = "\001\001\000\000"
+	const blockFreeEnd = "\000\000"
+
+	//TODO PATTERN
+	title := CreateFileNameFilled(realTitle, ' ')
+	fullTile := titleStart + string(title) + titleEnd
+	var buf []byte
+	buf = append(buf, fullTile...)
+	buf = append(buf, 0)
+
+	for _, e := range entries {
+		name, _, kind, _ := ParseFileName(e.Name())
+		if e.IsDir() {
+			continue
+		}
+		//TODO kind
+		z := CreateDirEntry(name, int(e.Size()), kind)
+		buf = append(buf, z...)
+	}
+	buf = append(buf, blocksFreeStart...)
+	buf = append(buf, "BLOCKS FREE.             "...)
+	buf = append(buf, blockFreeEnd...)
+	buf = append(buf, 0)
+	return buf
+}
+
+// CreateDirEntry generates a directory entry for a file with the specified name, size, and type, returning a byte slice.
+func CreateDirEntry(name string, size int, kind FType) []byte {
+	const dirEntryMax = 32
+	vName := CreateFileName(name)
+	n := (size + 254) / 254
+	ret := make([]byte, dirEntryMax)
+	for x := range ret {
+		ret[x] = ' '
+	}
+	ret[0] = 0x1
+	ret[1] = 0x1
+	ret[2] = uint8(n & 0xff)
+	ret[3] = uint8((n >> 8) & 0xff)
+	nameIdx := 4
+	if n < 10 {
+		nameIdx++
+	}
+	if n < 100 {
+		nameIdx++
+	}
+	ret[nameIdx] = '"'
+	nameIdx++
+	ret[nameIdx+len(vName)] = '"'
+	for x, i := range vName {
+		ret[nameIdx+x] = i
+	}
+	//fmt.Println("KIND", kind)
+	ret[28] = 'P'
+	ret[29] = 'R'
+	ret[30] = 'G'
+	ret[31] = 0
+	return ret
 }

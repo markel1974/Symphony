@@ -2,12 +2,10 @@ package media_drive
 
 import (
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/iec"
 	"github.com/markel1974/c64emu/src/hardware/media_drive/adapters"
 	"github.com/markel1974/c64emu/src/references"
-	"strings"
-
-	"github.com/markel1974/c64emu/src/config"
 )
 
 const errChannel = 15
@@ -24,11 +22,10 @@ type MediaDrive struct {
 	commands       *Commands
 	deviceId       uint8
 	deviceNumber   uint8
+	path           string
 	cfg            *config.Config
 	channels       [16]*Channel
-	adapter        adapters.IAdapter
 	adapterFactory *adapters.Factory
-	matcher        *Matcher
 }
 
 // NewBoard creates and initializes a new MediaDrive instance with the specified parent component, component factory, label, and instance number.
@@ -43,14 +40,13 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		commands:       NewCommands(),
 		cfg:            nil,
 		adapterFactory: adapters.NewFactory(),
-		adapter:        nil,
-		matcher:        NewMatcher(),
+		path:           "",
 	}
 	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, label, 0))
 	fs.protocol.SetDevice(fs)
-	fs.adapter = fs.adapterFactory.Void()
+	adapter := fs.adapterFactory.Void()
 	for idx := range fs.channels {
-		fs.channels[idx] = NewChannel()
+		fs.channels[idx] = NewChannel(idx, adapter)
 	}
 	return fs
 }
@@ -73,6 +69,7 @@ func (v *MediaDrive) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceN
 	}
 	v.deviceId = deviceId
 	v.deviceNumber = deviceNumber
+	v.path = path
 	if err := v.protocol.Bind(v, deviceId, deviceNumber); err != nil {
 		return err
 	}
@@ -80,8 +77,8 @@ func (v *MediaDrive) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceN
 	if err != nil {
 		return err
 	}
-	v.adapter = adapter
 	for idx := range v.channels {
+		v.channels[idx].SetAdapter(adapter)
 		v.channels[idx].Reset()
 	}
 	return nil
@@ -95,25 +92,20 @@ func (v *MediaDrive) Connect() error {
 	return nil
 }
 
-// Internal returns a boolean indicating whether the MediaDrive is an internal device. Always returns false.
-func (v *MediaDrive) Internal() bool {
-	return false
-}
-
-// GetDeviceNumber retrieves the device number associated with the MediaDrive instance.
-func (v *MediaDrive) GetDeviceNumber() uint8 {
-	return v.deviceNumber
-}
-
 // Reset reinitializes the MediaDrive by closing all channels, clearing commands, setting the error index, and resetting the protocol.
 func (v *MediaDrive) Reset() {
 	v.LedTurnOff()
 	for i := uint8(0); i < uint8(len(v.channels)); i++ {
-		v.channels[i].Close()
+		v.channels[i].Reset()
 	}
 	v.commands.CommandClear()
-	v.channels[errChannel].DataSetError(adapters.Error(adapters.ErrStartup))
+	v.channels[errChannel].SetError(adapters.Error(adapters.ErrStartup))
 	v.protocol.Reset()
+}
+
+// Internal returns a boolean indicating whether the MediaDrive is an internal device. Always returns false.
+func (v *MediaDrive) Internal() bool {
+	return false
 }
 
 // LedTurnOn activates the LED of the MediaDrive, indicating an active or operational state.
@@ -128,11 +120,29 @@ func (v *MediaDrive) LedTurnOff() {
 
 // GetPath returns the name of the adapter associated with the MediaDrive.
 func (v *MediaDrive) GetPath() string {
-	return v.adapter.Name()
+	return v.path
+}
+
+// GetDeviceNumber retrieves the device number associated with the MediaDrive instance.
+func (v *MediaDrive) GetDeviceNumber() uint8 {
+	return v.deviceNumber
+}
+
+// Talk sends a command to a specific device channel and returns a status code indicating the operation result.
+func (v *MediaDrive) Talk(_ uint8) uint8 {
+	//channel := d & 0xf
+	return adapters.StOk
+}
+
+// Untalk disables the "talk" state for a given channel identified by the lower 4 bits of the input parameter d.
+// Returns StOk on successful execution.
+func (v *MediaDrive) Untalk(_ uint8) uint8 {
+	//channel := d & 0xf
+	return adapters.StOk
 }
 
 // Listen processes the device identifier and returns the standard operational status code.
-func (v *MediaDrive) Listen(d uint8) uint8 {
+func (v *MediaDrive) Listen(_ uint8) uint8 {
 	//channel := d & 0xf
 	return adapters.StOk
 }
@@ -146,87 +156,75 @@ func (v *MediaDrive) Unlisten(d uint8) uint8 {
 	//was received in between the OPEN and now.
 	//If the file cannot be opened, it will set st != 0.
 
-	channel := d & 0xf
+	channelId := d & 0xf
+	channel := v.channels[channelId]
 
-	mode := v.channels[channel].ModeGet() & 0xf0
-	if mode != 0x20 && mode != 0xf0 {
+	if openMode := channel.OpenModeGet() & 0xf0; openMode != 0x20 && openMode != 0xf0 {
 		return adapters.StOk
 	}
-
-	data := v.channels[channel].BufferGet()
-
 	v.LedTurnOn()
-	if channel == errChannel {
-		if action, err := v.commands.CommandExec(data); err != nil {
-			v.channels[errChannel].DataSetError(err)
-		} else {
-			if action == 1 {
-				v.Reset()
+	data := channel.Buffer()
+	if channelId == errChannel {
+		action, err := v.commands.CommandExec(data)
+		if err != nil {
+			v.channels[errChannel].SetError(err)
+			return adapters.StOk
+		}
+		if action == 1 {
+			for i := uint8(0); i < uint8(len(v.channels)); i++ {
+				v.channels[i].Reset()
 			}
+			v.commands.CommandClear()
 		}
 		return adapters.StOk
 	}
-	v.channels[channel].Close()
 
+	channel.Reset()
 	if len(data) == 0 {
-		v.channels[errChannel].DataSetError(adapters.Error(adapters.ErrNoChannel))
+		v.channels[errChannel].SetError(adapters.Error(adapters.ErrNoChannel))
 		return adapters.StOk
 	}
 	if data[0] == '#' {
-		v.channels[errChannel].DataSetError(adapters.Error(adapters.ErrNoChannel))
+		v.channels[errChannel].SetError(adapters.Error(adapters.ErrNoChannel))
 		return adapters.StOk
 	}
 	if data[0] == '$' {
-		dirData, err := v.openDirectory(channel, string(data))
-		if err != nil {
-			v.channels[errChannel].DataSetError(err)
+		if err := channel.OpenDirectory(string(data)); err != nil {
+			v.channels[errChannel].SetError(err)
 			return adapters.StOk
 		}
-		v.channels[channel].DataSet(dirData)
 		return adapters.StOk
 	}
-	fileData, err := v.openFile(channel, string(data))
-	if err != nil {
-		v.channels[errChannel].DataSetError(err)
+	if err := channel.OpenFile(string(data)); err != nil {
+		v.channels[errChannel].SetError(err)
 		return adapters.StOk
 	}
-	v.channels[channel].DataSet(fileData)
-	return adapters.StOk
-}
-
-// Talk sends a command to a specific device channel and returns a status code indicating the operation result.
-func (v *MediaDrive) Talk(d uint8) uint8 {
-	//channel := d & 0xf
-	return adapters.StOk
-}
-
-// Untalk disables the "talk" state for a given channel identified by the lower 4 bits of the input parameter d.
-// Returns StOk on successful execution.
-func (v *MediaDrive) Untalk(d uint8) uint8 {
-	//channel := d & 0xf
 	return adapters.StOk
 }
 
 // Open initializes the specified channel in the MediaDrive, setting its mode and resetting its state.
 func (v *MediaDrive) Open(d uint8) uint8 {
-	channel := d & 0xf
-	v.channels[channel].Reset()
-	v.channels[channel].ModeSet(d)
+	channelId := d & 0xf
+	channel := v.channels[channelId]
+	channel.Reset()
+	channel.OpenModeSet(d)
 	return adapters.StOk
 }
 
 // Close shuts down the specified channel `d` and turns off the LED. If `d` equals 15, all channels are closed. Returns status.
 func (v *MediaDrive) Close(d uint8) uint8 {
-	channel := d & 0xf
+	channelId := d & 0xf
 	v.LedTurnOff()
-	if channel == errChannel {
+	if channelId == errChannel {
 		for i := uint8(0); i < uint8(len(v.channels)); i++ {
-			v.channels[i].Close()
+			_ = v.channels[i].Close()
 		}
 		v.commands.CommandClear()
 		return adapters.StOk
 	}
-	v.channels[channel].Close()
+	if err := v.channels[channelId].Close(); err != nil {
+		v.channels[errChannel].SetError(err)
+	}
 	return adapters.StOk
 }
 
@@ -234,208 +232,40 @@ func (v *MediaDrive) Close(d uint8) uint8 {
 // If the channel is 15, an error is processed. When data is available, it is returned along with the status.
 // Returns StReadTimeout if no data is available or StEof if the channel is empty.
 func (v *MediaDrive) Read(d uint8) (uint8, uint8) {
-	channel := d & 0xf
-	b, ok := v.channels[channel].DataNext()
+	channelId := d & 0xf
+	channel := v.channels[channelId]
+	data, ok := channel.Read()
 	if !ok {
 		return 0, adapters.StReadTimeout
 	}
-	if v.channels[channel].DataIsEmpty() {
-		v.channels[errChannel].DataSetError(adapters.Error(adapters.ErrOk))
-		return b, adapters.StEof
+	if channel.ReadIsEmpty() {
+		v.channels[errChannel].SetError(adapters.Error(adapters.ErrOk))
+		return data, adapters.StEof
 	}
-	return b, adapters.StOk
+	return data, adapters.StOk
 }
 
 // Write writes a byte of data to a specific channel and executes commands for channel 15, returning a status code.
 func (v *MediaDrive) Write(d uint8, data uint8) uint8 {
-	//TODO EOI, eoi bool
-	channel := d & 0xf
+	//TODO EOI
+	channelId := d & 0xf
+	channel := v.channels[channelId]
 	eoi := false
-
-	if channel == errChannel {
+	if channelId == errChannel {
 		if !v.commands.CommandSet(data) {
 			return adapters.StTimeout
 		}
 		if eoi {
 			if _, err := v.commands.CommandExecBuf(); err != nil {
-				v.channels[errChannel].DataSetError(err)
+				v.channels[errChannel].SetError(err)
 			} else {
-				v.channels[errChannel].DataSetError(adapters.Error(adapters.ErrOk))
+				v.channels[errChannel].SetError(adapters.Error(adapters.ErrOk))
 			}
 		}
 		return adapters.StOk
 	}
-	//if v.buffer[channel] == nil {
-	//	v.commands.SetError(ErrFileNotOpen)
-	//	return StTimeout
-	//}
-
-	v.channels[channel].BufferAdd(data)
+	channel.BufferAdd(data)
 	return adapters.StOk
-
-	/*
-		//TODO EOI, eoi bool
-		eoi := false
-
-		log.Printf("MediaDrive received: %s\n", string(data))
-
-		return StOk
-
-		// Channel 15: Collect chars and execute command on EOI
-		if channel == errChannel {
-			if !v.commands.CommandSet(data) {
-
-				return StTimeout
-			}
-			if eoi {
-				v.commands.CommandExecBuf()
-			}
-			return StOk
-		}
-		if v.file[channel] == nil {
-			v.commands.SetError(ErrFileNotOpen)
-			return StTimeout
-		}
-		if _, err := v.file[channel].Write([]byte{data}); err == io.EOF {
-			v.commands.SetError(ErrWrite25)
-			return StTimeout
-		}
-		return StOk
-
-	*/
-}
-
-// initializeCmd sets up and initializes necessary commands or operations for the MediaDrive instance.
-func (v *MediaDrive) initializeCmd() {
-	//v.closeAllChannels()
-}
-
-// validateCmd ensures that the current state or command of the MediaDrive is valid according to its protocol or configuration.
-func (v *MediaDrive) validateCmd() {
-}
-
-// openFile attempts to open a file based on the specified channel and name, returning its content or an error if unsuccessful.
-// It handles file name parsing, mode checks (read/write), and wildcards, returning appropriate errors for invalid cases.
-// Errors include syntax issues, file not found, or unimplemented file types like relative files.
-func (v *MediaDrive) openFile(channel uint8, name string) ([]uint8, error) {
-	plainName, mode, kind, _ := adapters.ParseFileName(name)
-	// Channel 0 is READ, channel 1 is WRITE
-	if channel == 0 || channel == 1 {
-		mode = adapters.FModeRead
-		if channel != 0 {
-			mode = adapters.FModeWrite
-		}
-		if kind == adapters.FTypeDel {
-			kind = adapters.FTypePrg
-		}
-	}
-	if v.matcher.Contains(plainName) {
-		if mode == adapters.FModeWrite || mode == adapters.FModeAppend {
-			return nil, adapters.Error(adapters.ErrSyntax33)
-		}
-		items, err := v.adapter.ReadDir()
-		if err != nil {
-			return nil, adapters.Error(adapters.ErrFileNotFound)
-		}
-		found := false
-		for _, item := range items {
-			if !item.IsDir() {
-				if found = v.matcher.Match(plainName, item.Name()); found {
-					plainName = item.Name()
-					break
-				}
-			}
-		}
-		if !found {
-			return nil, adapters.Error(adapters.ErrFileNotFound)
-		}
-	}
-	if kind == adapters.FTypeRel {
-		return nil, adapters.Error(adapters.ErrUnimplemented)
-	}
-	data, err := v.adapter.ReadFile(plainName)
-	if err != nil {
-		return nil, adapters.Error(adapters.ErrFileNotFound)
-	}
-	return data, nil
-}
-
-// openDirectory generates a directory listing based on a pattern and returns it as a byte slice, or returns an error if failed.
-func (v *MediaDrive) openDirectory( /* channel */ _ uint8, pattern string) ([]byte, error) {
-	const titleStart = "\001\004\001\001\000\000\022\""
-	const titleEnd = "\" 00 2A"
-	const blocksFreeStart = "\001\001\000\000"
-	const blockFreeEnd = "\000\000"
-	// Special treatment for "$0"
-	if len(pattern) > 0 {
-		if pattern[0] == '0' && len(pattern) == 1 {
-			pattern = ""
-		}
-	}
-	if p := strings.Index(pattern, ":"); p >= 0 {
-		p++
-		if len(pattern) < p {
-			pattern = pattern[p:]
-		}
-	}
-	//TODO PATTERN
-	title := adapters.CreateFileNameFilled(v.adapter.Name(), ' ')
-	fullTile := titleStart + string(title) + titleEnd
-	var buf []byte
-	buf = append(buf, fullTile...)
-	buf = append(buf, 0)
-
-	entries, err := v.adapter.ReadDir()
-	if err != nil {
-		return nil, err
-	}
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		//TODO kind
-		z := v.createDirEntry(e.Name(), int(e.Size()), 0)
-		buf = append(buf, z...)
-	}
-	buf = append(buf, blocksFreeStart...)
-	buf = append(buf, "BLOCKS FREE.             "...)
-	buf = append(buf, blockFreeEnd...)
-	buf = append(buf, 0)
-
-	return buf, nil
-}
-
-// createFileEntry generates a directory entry for a file with the specified name, size, and type, returning a byte slice.
-func (v *MediaDrive) createDirEntry(name string, size int, kind int) []byte {
-	const dirEntryMax = 32
-	vName := adapters.CreateFileName(name)
-	n := (size + 254) / 254
-	ret := make([]byte, dirEntryMax)
-	for x := range ret {
-		ret[x] = ' '
-	}
-	ret[0] = 0x1
-	ret[1] = 0x1
-	ret[2] = uint8(n & 0xff)
-	ret[3] = uint8((n >> 8) & 0xff)
-	nameIdx := 4
-	if n < 10 {
-		nameIdx++
-	}
-	if n < 100 {
-		nameIdx++
-	}
-	ret[nameIdx] = '"'
-	nameIdx++
-	ret[nameIdx+len(vName)] = '"'
-	for x, i := range vName {
-		ret[nameIdx+x] = i
-	}
-	ret[28] = 'P'
-	ret[29] = 'R'
-	ret[30] = 'G'
-	ret[31] = 0
-	return ret
 }
 
 // configChanged is a callback invoked when the component's configuration changes to apply updates dynamically.

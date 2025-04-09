@@ -11,12 +11,14 @@ import (
 // StEof indicates the end of file has been reached.
 // StNotPresent indicates the device is not present.
 const (
-	StOk          = 0    // No error
-	StReadTimeout = 0x02 // Timeout on reading
-	StTimeout     = 0x03 // Timeout
-	StEof         = 0x40 // End of file
-	StNotPresent  = 0x80 // Device not present
+	StOk          uint8 = 0    // No error
+	StReadTimeout       = 0x02 // Timeout on reading
+	StTimeout           = 0x03 // Timeout
+	StEof               = 0x40 // End of file
+	StNotPresent        = 0x80 // Device not present
 )
+
+type FType uint8
 
 // FTypeDel represents a deleted file type.
 // FTypeSeq represents a sequential file type.
@@ -25,20 +27,23 @@ const (
 // FTypeRel represents a relative file type.
 // FTypeUnk represents an unknown file type.
 const (
-	FTypeDel = iota // Deleted
-	FTypeSeq        // Sequential
-	FTypePrg        // Program
-	FTypeUsr        // User
-	FTypeRel        // Relative
-	FTypeUnk
+	FTypeUnk FType = iota
+	FTypeDel       // Deleted
+	FTypeSeq       // Sequential
+	FTypePrg       // Program
+	FTypeUsr       // User
+	FTypeRel       // Relative
 )
+
+type FMode uint8
 
 // FModeRead represents the file mode for reading.
 // FModeWrite represents the file mode for writing.
 // FModeAppend represents the file mode for appending.
 // FModeM represents the file mode for reading an open file.
 const (
-	FModeRead   = iota // Read
+	FModeUnknown FMode = iota
+	FModeRead          // Read
 	FModeWrite         // Write
 	FModeAppend        // Append
 	FModeM             // Read open file
