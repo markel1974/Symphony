@@ -39,7 +39,6 @@ func CreateHelp(t commandcreator.ICreator, root *cli.Command) *cli.Command {
 			c.Root().Usage(r.GetWriter())
 		} else {
 			r.WriteLn("")
-			cmd.InitDefaultHelpFlag(r.GetWriter())
 			cmd.Help(r.GetWriter())
 		}
 		return nil

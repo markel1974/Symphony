@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
 	"github.com/markel1974/c64emu/src/shell/cli"
-	"github.com/markel1974/c64emu/src/shell/cli/mflag"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"log"
 	"os"
@@ -142,15 +141,16 @@ func NewTaskManager(r interfaces.IContext, ticker *adaptiveticker.AdaptiveTicker
 	return t
 }
 
-func (c *TaskManager) Execute(line string, template *Task) bool {
-	args, err := cli.Parse(line)
+func (c *TaskManager) Execute(line string, tTask *Task) bool {
+	el, err := cli.Parse(line)
 	if err != nil {
 		return false
 	}
-	if len(args) == 0 {
+	if len(el) == 0 {
 		return false
 	}
-	name := args[0]
+	name := el[0]
+	args := el[1:]
 	sel := c.cwd.FindChildren(name)
 	if sel == nil {
 		sel = c.system.FindChildren(name)
@@ -158,49 +158,32 @@ func (c *TaskManager) Execute(line string, template *Task) bool {
 	if sel == nil {
 		return false
 	}
-	flags := args[1:]
-	if len(flags) > 0 {
-		if sel, flags, err = sel.Find(c.rootCtx.GetWriter(), flags); err != nil || sel == nil {
+	if len(args) > 0 {
+		if sel, args, err = sel.Find(args); err != nil || sel == nil {
 			return false
 		}
 	}
-
-	task2, err := c.create(sel, line)
+	task, err := c.create(sel, line)
 	if err != nil {
 		return false
 	}
-
-	if template != nil {
-		task2.OffsetY = template.OffsetY
-		task2.OffsetX = template.OffsetX
-		task2.Scale = template.Scale
+	if tTask != nil {
+		task.OffsetY = tTask.OffsetY
+		task.OffsetX = tTask.OffsetX
+		task.Scale = tTask.Scale
 	}
-
-	err = sel.Execute(c.rootCtx, flags, task2.pid)
-	if err != nil {
-		if errors.Is(err, mflag.ErrHelp) {
-			sel.Help(c.rootCtx.GetWriter())
-			err = nil
-		} else if errors.Is(err, cli.ErrSubCommandRequired) {
-			sel.Help(c.rootCtx.GetWriter())
-		} else if !sel.SilenceErrors {
-			c.rootCtx.Write(cli.DefaultEol + "Error:" + err.Error() + cli.DefaultEol)
-		} else if !sel.SilenceUsage {
-			c.rootCtx.Write(cli.DefaultEol + "Error:" + err.Error() + cli.DefaultEol)
-			sel.Usage(c.rootCtx.GetWriter())
-			//c.rootCtx.Write(sel.UsageString())
-		}
+	if err = sel.Execute(c.rootCtx, args, task.pid); err != nil {
+		c.rootCtx.Write("Error:" + err.Error())
+		c.Kill(task.pid)
+		return true
 	}
-	if err == nil {
-		if sel.Activate {
-			if !sel.Background {
-				c.foreground = task2
-			}
-			task2.state = taskStateRunning
-		}
+	if !sel.Activate {
+		c.Kill(task.pid)
+		return true
 	}
-	if task2.state == taskStateSetup {
-		c.Kill(task2.pid)
+	task.state = taskStateRunning
+	if !sel.Background {
+		c.foreground = task
 	}
 	return true
 }
