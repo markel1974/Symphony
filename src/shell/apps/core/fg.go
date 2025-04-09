@@ -15,17 +15,14 @@
 package core
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"strconv"
 )
 
-func CreateFg(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("fg", nil)
-	root.ShortHelp = "Foreground"
-	root.LongHelp = "Foreground"
+func CreateFg() *cli.Command {
+	root := cli.NewCommand("fg", nil, false)
+	root.SetHelp("Foreground", "Foreground")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		if len(args) <= 0 {

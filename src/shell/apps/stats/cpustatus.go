@@ -16,17 +16,14 @@ package stats
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"runtime"
 )
 
-func CreateCPUStatus(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("cpu", nil)
-	root.ShortHelp = "CPUs status"
-	root.LongHelp = "CPUs status"
+func CreateCPUStatus() *cli.Command {
+	root := cli.NewCommand("cpu", nil, false)
+	root.SetHelp("CPUs status", "CPUs status")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn(fmt.Sprintf("Number of logical CPUs: %d", runtime.NumCPU()))

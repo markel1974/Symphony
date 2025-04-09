@@ -15,18 +15,14 @@
 package core
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"strconv"
 )
 
-func CreateActivate(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("activate", nil)
-	root.ShortHelp = "Activate"
-	root.LongHelp = "Activate"
-	root.Activate = true
+func CreateActivate() *cli.Command {
+	root := cli.NewCommand("activate", nil, true)
+	root.SetHelp("Activate", "Activate")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		targetPid := -1
 		if len(args) > 0 {

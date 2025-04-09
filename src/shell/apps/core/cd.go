@@ -15,16 +15,13 @@
 package core
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
-func CreateCD(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("cd", nil)
-	root.ShortHelp = "cd"
-	root.LongHelp = "cd"
+func CreateCD() *cli.Command {
+	root := cli.NewCommand("cd", nil, false)
+	root.SetHelp("cd", "cd")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		if len(args) <= 0 {

@@ -15,7 +15,6 @@
 package stats
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"os"
@@ -23,11 +22,9 @@ import (
 	"runtime/pprof"
 )
 
-func CreateProfileMemory(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("memprofile", nil)
-	root.ShortHelp = "Memory profiling"
-	root.LongHelp = "Memory profiling"
+func CreateProfileMemory() *cli.Command {
+	root := cli.NewCommand("memprofile", nil, false)
+	root.SetHelp("Memory profiling", "Memory profiling")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		r.WriteLn("")

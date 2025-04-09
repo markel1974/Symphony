@@ -72,7 +72,7 @@ func (c *Context) Setup() {
 		c.terminal.SetEnterKey(c.enterKey)
 	}
 	system := apps.NewRoot()
-	systemCommands, commands := system.Build(c, c.commands)
+	systemCommands, commands := system.Build(c.commands)
 	c.tasks = NewTaskManager(c, c.ticker, c.timersChan, systemCommands, commands)
 
 	c.defaultApp = shell.NewShell(c.auth, c.terminal, c.prompt, c.autosave)

@@ -15,18 +15,15 @@
 package core
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"strconv"
 	"strings"
 )
 
-func CreateHistory(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("history", []string{"h"})
-	root.ShortHelp = "History"
-	root.LongHelp = "History"
+func CreateHistory() *cli.Command {
+	root := cli.NewCommand("history", []string{"h"}, false)
+	root.SetHelp("History", "History")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		if len(args) == 0 {

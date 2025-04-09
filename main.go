@@ -153,7 +153,8 @@ func createShell(target *cli.Command) error {
 	const secure = true
 	const pass = "p"
 
-	t := cli.NewCommand()
+	t := cli.NewCommand("bin", nil, false)
+	t.SetHelp("Bin", "Bin")
 	_ = t.AddCommand(target)
 	auth := authenticator.NewSimpleAuthenticator()
 	if err := auth.Setup(user, pass); err != nil {

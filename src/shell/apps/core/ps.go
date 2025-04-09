@@ -15,16 +15,13 @@
 package core
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
-func CreatePs(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("ps", nil)
-	root.ShortHelp = "Processes"
-	root.LongHelp = "Processes"
+func CreatePs() *cli.Command {
+	root := cli.NewCommand("ps", nil, false)
+	root.SetHelp("Processes", "Processes")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn(r.TaskList())
 		return nil

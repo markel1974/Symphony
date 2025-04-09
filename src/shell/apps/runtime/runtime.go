@@ -15,23 +15,17 @@
 package runtime
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
-func Create(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("runtime", nil)
-	root.ShortHelp = "Runtime"
-	root.LongHelp = "Runtime"
+func Create() *cli.Command {
+	root := cli.NewCommand("runtime", nil, false)
+	root.SetHelp("Runtime", "Runtime")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		return nil
 	}
-
-	gc := CreateGC(t)
-
-	t.AddCommand(root, gc)
-
+	gc := CreateGC()
+	_ = root.AddCommand(gc)
 	return root
 }

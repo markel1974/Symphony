@@ -15,22 +15,17 @@
 package games
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/apps/games/tetris"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
-func CreateTetris(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("tetris", nil)
-	root.ShortHelp = "Tetris"
-	root.LongHelp = "Tetris"
-	root.Activate = true
+func CreateTetris() *cli.Command {
+	root := cli.NewCommand("tetris", nil, true)
+	root.SetHelp("Tetris", "Tetris")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		//w, h := r.GetScreenSize()
-
 		tx := tetris.New(10, 18)
 		//s.SetSize(h, w)
 		r.SetContext(pid, tx)

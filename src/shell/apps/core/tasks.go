@@ -15,17 +15,14 @@
 package core
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"strings"
 )
 
-func CreateTasks(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("task", nil)
-	root.ShortHelp = "Task"
-	root.LongHelp = "Task"
+func CreateTasks() *cli.Command {
+	root := cli.NewCommand("task", nil, false)
+	root.SetHelp("Task", "Task")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		if len(args) <= 0 {
 			return nil

@@ -20,7 +20,6 @@ import (
 	"github.com/markel1974/c64emu/src/shell/apps/runtime"
 	"github.com/markel1974/c64emu/src/shell/apps/stats"
 	"github.com/markel1974/c64emu/src/shell/cli"
-	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
 type Root struct {
@@ -30,47 +29,33 @@ func NewRoot() *Root {
 	return &Root{}
 }
 
-func (t *Root) AddCommand(cmd *cli.Command, child *cli.Command) {
-	_ = cmd.AddCommand(child)
-}
+func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
+	sbin := cli.NewCommand("sbin", nil, false)
+	sbin.SetHelp("SBin", "SBin")
 
-func (t *Root) CreateCommand() *cli.Command {
-	cmd := cli.NewCommand()
-	return cmd
-}
+	_ = sbin.AddCommand(stats.Create())
+	_ = sbin.AddCommand(runtime.Create())
 
-func (t *Root) Build(r interfaces.IContext, bin *cli.Command) (*cli.Command, *cli.Command) {
-	bin.SetName("bin", nil)
-	bin.ShortHelp = "Bin"
+	root := cli.NewCommand("", nil, false)
+	_ = root.AddCommand(sbin)
+	_ = root.AddCommand(bin)
+	_ = root.AddCommand(games.Create())
 
-	root := t.CreateCommand()
-	sbin := t.CreateCommand()
-	sbin.SetName("sbin", nil)
-	sbin.ShortHelp = "SBin"
-
-	t.AddCommand(sbin, stats.Create(t))
-	t.AddCommand(sbin, runtime.Create(t))
-
-	t.AddCommand(root, sbin)
-	t.AddCommand(root, bin)
-	t.AddCommand(root, games.Create(t))
-
-	//root.InitDefaultHelpCmd(r.GetWriter())
-
-	coreC := t.CreateCommand()
-	t.AddCommand(coreC, core.CreateExit(t))
-	t.AddCommand(coreC, core.CreateCD(t))
-	t.AddCommand(coreC, core.CreatePWD(t))
-	t.AddCommand(coreC, core.CreateActivate(t))
-	t.AddCommand(coreC, core.CreateKill(t))
-	t.AddCommand(coreC, core.CreateKillAll(t))
-	t.AddCommand(coreC, core.CreatePs(t))
-	t.AddCommand(coreC, core.CreateClear(t))
-	t.AddCommand(coreC, core.CreateFg(t))
-	t.AddCommand(coreC, core.CreateHistory(t))
-	t.AddCommand(coreC, core.CreateTasks(t))
-	t.AddCommand(coreC, core.CreateLs(t))
-	t.AddCommand(coreC, core.CreateHelp(t, root))
+	coreC := cli.NewCommand("", nil, false)
+	coreC.SetHelp("Core", "Core")
+	_ = coreC.AddCommand(core.CreateExit())
+	_ = coreC.AddCommand(core.CreateCD())
+	_ = coreC.AddCommand(core.CreatePWD())
+	_ = coreC.AddCommand(core.CreateActivate())
+	_ = coreC.AddCommand(core.CreateKill())
+	_ = coreC.AddCommand(core.CreateKillAll())
+	_ = coreC.AddCommand(core.CreatePs())
+	_ = coreC.AddCommand(core.CreateClear())
+	_ = coreC.AddCommand(core.CreateFg())
+	_ = coreC.AddCommand(core.CreateHistory())
+	_ = coreC.AddCommand(core.CreateTasks())
+	_ = coreC.AddCommand(core.CreateLs())
+	_ = coreC.AddCommand(core.CreateHelp(root))
 
 	return coreC, root
 }

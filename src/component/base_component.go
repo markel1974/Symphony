@@ -51,16 +51,13 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 	bc.hardwareId = hardwareId
 	bc.id = bc.hardwareId
 
-	bc.cmd = cli.NewCommand()
+	bc.cmd = cli.NewCommand(bc.name, nil, false)
 	bc.cmd.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn(bc.name)
 		return nil
 	}
-	bc.cmd.SetName(bc.name, nil)
-	bc.cmd.ShortHelp = "Command " + bc.name
-	bc.cmd.LongHelp = "This is a command"
-
+	bc.cmd.SetHelp("Command "+bc.name, "This is a command")
 	if parent != nil && parent.GetNode() != nil {
 		pNode := parent.GetNode()
 		bc.node = newNode(pNode, component)

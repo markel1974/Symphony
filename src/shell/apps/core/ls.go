@@ -1,16 +1,13 @@
 package core
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
-func CreateLs(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("ls", []string{"dir"})
-	root.ShortHelp = "ls"
-	root.LongHelp = "ls"
+func CreateLs() *cli.Command {
+	root := cli.NewCommand("ls", []string{"dir"}, false)
+	root.SetHelp("ls", "ls")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		for _, c := range r.CWDChilds() {

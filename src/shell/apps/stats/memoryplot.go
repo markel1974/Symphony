@@ -15,7 +15,6 @@
 package stats
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"math"
@@ -30,12 +29,9 @@ type rtPlotData struct {
 	rtPlotAuto   bool
 }
 
-func CreateMemoryPlot(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("rtplot", nil)
-	root.ShortHelp = "Runtime Plot"
-	root.LongHelp = "Runtime Plot"
-	root.Activate = true
+func CreateMemoryPlot() *cli.Command {
+	root := cli.NewCommand("rtplot", nil, true)
+	root.SetHelp("Runtime Plot", "Runtime Plot")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		plt := &rtPlotData{
 			rtPlotType:   0,

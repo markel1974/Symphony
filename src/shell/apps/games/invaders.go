@@ -15,18 +15,14 @@
 package games
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/apps/games/invaders"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
-func CreateInvaders(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("invaders", nil)
-	root.ShortHelp = "Invaders"
-	root.LongHelp = "Invaders"
-	root.Activate = true
+func CreateInvaders() *cli.Command {
+	root := cli.NewCommand("invaders", nil, true)
+	root.SetHelp("Invaders", "Invaders")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		w, h := r.GetScreenSize()
 		g := invaders.NewGame(w, h)

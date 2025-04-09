@@ -15,31 +15,28 @@
 package core
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"strings"
 )
 
-func CreateHelp(t commandcreator.ICreator, root *cli.Command) *cli.Command {
-	help := t.CreateCommand()
-	help.SetName("help", nil)
-	help.ShortHelp = "Help about any command"
-	help.LongHelp = `Help provides help for any command in the application. Simply type ` + help.Name() + ` help [path to command] for full details.`
+func CreateHelp(root *cli.Command) *cli.Command {
+	help := cli.NewCommand("help", nil, false)
+	help.SetHelp("Help about any command", `Help provides help for any command in the application. Simply type `+help.Name()+` help [path to command] for full details.`)
 	help.Run = func(r interfaces.IContext, c *cli.Command, pid int, args []string) error {
 		if len(args) == 0 {
 			return nil
 		}
 		path := r.CWDPath()
 		path = append(path, args[0])
-		cmd, _, err := root.Traverse(r.GetWriter(), path)
+		cmd, _, err := root.Traverse(path)
 		if cmd == nil || err != nil || cmd == root {
 			r.WriteLn("")
 			r.WriteLn("unknown help topic: " + strings.Join(args, " "))
-			c.Root().Usage(r.GetWriter())
+			r.WriteLn(c.Root().Help())
 		} else {
 			r.WriteLn("")
-			cmd.Help(r.GetWriter())
+			r.WriteLn(cmd.Help())
 		}
 		return nil
 	}

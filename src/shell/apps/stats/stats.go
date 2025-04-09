@@ -15,27 +15,24 @@
 package stats
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
-func Create(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("stats", nil)
-	root.ShortHelp = "System Stats"
-	root.LongHelp = "System Stats"
+func Create() *cli.Command {
+	root := cli.NewCommand("stats", nil, false)
+	root.SetHelp("System Stats", "System Stats")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		return nil
 	}
 
-	t.AddCommand(root, CreateProfileCPUStart(t))
-	t.AddCommand(root, CreateProfileCPUStop(t))
-	t.AddCommand(root, CreateProfileMemory(t))
-	t.AddCommand(root, CreateMemoryStatus(t))
-	t.AddCommand(root, CreateMemoryPlot(t))
-	t.AddCommand(root, CreateCPUStatus(t))
-	t.AddCommand(root, CreateCPUUsage(t))
+	_ = root.AddCommand(CreateProfileCPUStart())
+	_ = root.AddCommand(CreateProfileCPUStop())
+	_ = root.AddCommand(CreateProfileMemory())
+	_ = root.AddCommand(CreateMemoryStatus())
+	_ = root.AddCommand(CreateMemoryPlot())
+	_ = root.AddCommand(CreateCPUStatus())
+	_ = root.AddCommand(CreateCPUUsage())
 
 	return root
 }

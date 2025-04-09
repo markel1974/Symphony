@@ -16,17 +16,14 @@ package stats
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"time"
 )
 
-func CreateCPUUsage(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("usage", nil)
-	root.ShortHelp = "CPU usage"
-	root.LongHelp = "CPU usage"
+func CreateCPUUsage() *cli.Command {
+	root := cli.NewCommand("usage", nil, false)
+	root.SetHelp("CPU usage", "CPU usage")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn("Computing cpu usage")

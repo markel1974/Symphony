@@ -15,20 +15,15 @@
 package games
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/apps/games/snake"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
-func CreateSnake(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("snake", nil)
-	root.ShortHelp = "Snake"
-	root.LongHelp = "Snake"
-	root.Activate = true
+func CreateSnake() *cli.Command {
+	root := cli.NewCommand("snake", nil, true)
+	root.SetHelp("Snake", "Snake")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
-		//r := cmd.GetRootContext()
 		w, h := r.GetScreenSize()
 		s := snake.New()
 		s.SetSize(h, w)

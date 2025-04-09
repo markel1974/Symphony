@@ -16,17 +16,14 @@ package stats
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"runtime"
 )
 
-func CreateMemoryStatus(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("rt", nil)
-	root.ShortHelp = "Runtime Status"
-	root.LongHelp = "Runtime Status"
+func CreateMemoryStatus() *cli.Command {
+	root := cli.NewCommand("rt", nil, false)
+	root.SetHelp("Runtime Status", "Runtime Status")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)

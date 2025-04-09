@@ -15,17 +15,14 @@
 package stats
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"runtime/pprof"
 )
 
-func CreateProfileCPUStop(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("stopcpuprofile", nil)
-	root.ShortHelp = "Stop cpu profiling"
-	root.LongHelp = "Stop cpu profiling"
+func CreateProfileCPUStop() *cli.Command {
+	root := cli.NewCommand("stopcpuprofile", nil, false)
+	root.SetHelp("Stop cpu profiling", "Stop cpu profiling")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		r.WriteLn("")
 		pprof.StopCPUProfile()

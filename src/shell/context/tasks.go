@@ -177,12 +177,12 @@ func (c *TaskManager) Execute(line string, tTask *Task) bool {
 		c.Kill(task.pid)
 		return true
 	}
-	if !sel.Activate {
+	if !sel.Daemon() {
 		c.Kill(task.pid)
 		return true
 	}
 	task.state = taskStateRunning
-	if !sel.Background {
+	if !sel.Background() {
 		c.foreground = task
 	}
 	return true
@@ -317,7 +317,7 @@ func (c *TaskManager) CWDSet(arg string) bool {
 		}
 	} else {
 		path := strings.Split(arg, "/")
-		if cmd, _, err := c.cwd.Traverse(c.rootCtx.GetWriter(), path); err == nil {
+		if cmd, _, err := c.cwd.Traverse(path); err == nil {
 			if cmd == c.cwd {
 				return false
 			}
@@ -400,7 +400,7 @@ func (c *TaskManager) GetSuggestion(in string, _ int) (string, []string, bool) {
 		var e error
 		data = args[len(args)-1]
 		args = args[:len(args)-1]
-		cmd, _, e = c.cwd.Traverse(c.rootCtx.GetWriter(), args)
+		cmd, _, e = c.cwd.Traverse(args)
 		if e != nil {
 			cmd = nil
 		}

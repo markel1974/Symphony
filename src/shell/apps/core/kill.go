@@ -15,17 +15,14 @@
 package core
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"strconv"
 )
 
-func CreateKill(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("kill", nil)
-	root.ShortHelp = "Kill"
-	root.LongHelp = "Kill"
+func CreateKill() *cli.Command {
+	root := cli.NewCommand("kill", nil, false)
+	root.SetHelp("Kill", "Kill")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		//r := cmd.GetRootContext()
 		r.WriteLn("")

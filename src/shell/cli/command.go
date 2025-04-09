@@ -17,25 +17,20 @@ package cli
 import (
 	"errors"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
-	"io"
 	"log"
 	"sort"
 	"strings"
 )
 
-// minUsagePadding specifies the minimum padding length used for aligning command usage text in help output.
-var _minUsagePadding = 25
-
 // Command defines the structure for application commands, holding metadata, behavior, and configuration properties.
 type Command struct {
 	name                       string
 	aliases                    []string
-	SuggestFor                 []string
-	ShortHelp                  string
-	LongHelp                   string
+	shortHelp                  string
+	longHelp                   string
 	suggestionsMinimumDistance int
-	Activate                   bool
-	Background                 bool
+	daemon                     bool
+	background                 bool
 	template                   *Template
 	Run                        func(r interfaces.IContext, cmd *Command, pid int, args []string) error
 	TimerEvent                 func(r interfaces.IContext, cmd *Command, pid int, tid int, ctx interface{}, interval int)
@@ -49,19 +44,29 @@ type Command struct {
 }
 
 // NewCommand creates and returns a new instance of Command with a pre-defined template.
-func NewCommand() *Command {
+func NewCommand(name string, aliases []string, daemon bool) *Command {
+	if i := strings.Index(name, " "); i >= 0 {
+		name = name[:i]
+	}
 	return &Command{
+		name:     name,
+		aliases:  aliases,
 		template: NewTemplate(),
+		daemon:   daemon,
 	}
 }
 
-// SetName sets the name of the command and its aliases. Name is truncated at the first space if present.
-func (c *Command) SetName(name string, aliases []string) {
-	c.name = name
-	if i := strings.Index(name, " "); i >= 0 {
-		c.name = c.name[:i]
-	}
-	c.aliases = aliases
+func (c *Command) Daemon() bool {
+	return c.daemon
+}
+
+func (c *Command) Background() bool {
+	return c.background
+}
+
+func (c *Command) SetHelp(short string, long string) {
+	c.shortHelp = short
+	c.longHelp = long
 }
 
 // Name returns the name of the command.
@@ -87,52 +92,14 @@ func (c *Command) Childs() []*Command {
 	return c.commands
 }
 
-// Usage returns the usage information of the command as a string.
-func (c *Command) Usage(w io.Writer) {
-	usage := c.template.Usage()
-	err := c.template.Exec(w, c, usage)
-	if err != nil {
-		log.Printf("Usage: %s", err.Error())
-	}
-}
-
 // Help returns a string containing the help details for the command, generated using its associated help function.
-func (c *Command) Help(w io.Writer) {
+func (c *Command) Help() string {
 	help := c.template.Help()
-	err := c.template.Exec(w, c, help)
+	data, err := c.template.Exec(c, help)
 	if err != nil {
 		log.Printf("Help: %s", err.Error())
 	}
-}
-
-// UsagePadding calculates and returns the appropriate padding value for a command's usage output alignment.
-func (c *Command) UsagePadding() int {
-	if c.parent == nil || _minUsagePadding > c.parent.commandsMaxUseLen {
-		return _minUsagePadding
-	}
-	return c.parent.commandsMaxUseLen
-}
-
-// minCommandPathPadding defines the minimum padding length for command path alignment in output formatting.
-var minCommandPathPadding = 11
-
-// CommandPathPadding calculates and returns the padding size for the command path based on its parent attributes.
-func (c *Command) CommandPathPadding() int {
-	if c.parent == nil || minCommandPathPadding > c.parent.commandsMaxCommandPathLen {
-		return minCommandPathPadding
-	}
-	return c.parent.commandsMaxCommandPathLen
-}
-
-// minNamePadding defines the minimum padding for command names to ensure proper alignment in output formatting.
-var minNamePadding = 11
-
-// NamePadding returns the padding value for command names based on their length or a minimum padding value.
-func (c *Command) NamePadding() int {
-	if c.parent == nil || minNamePadding > c.parent.commandsMaxNameLen {
-		return minNamePadding
-	}
-	return c.parent.commandsMaxNameLen
+	return data
 }
 
 // FindChildren searches for a child command by its name or alias and returns it. Returns nil if no matching command is found.
@@ -191,13 +158,13 @@ func (c *Command) findNext(next string) *Command {
 }
 
 // Traverse navigates through commands and flags based on the provided arguments and returns the matched command, remaining arguments, and error if any.
-func (c *Command) Traverse(writer io.Writer, args []string) (*Command, []string, error) {
+func (c *Command) Traverse(args []string) (*Command, []string, error) {
 	for i, arg := range args {
 		cmd := c.findNext(arg)
 		if cmd == nil {
 			return c, args, nil
 		}
-		return cmd.Traverse(writer, args[i+1:])
+		return cmd.Traverse(args[i+1:])
 	}
 	return c, args, nil
 }
@@ -216,11 +183,6 @@ func (c *Command) SuggestionsFor(typedName string) []string {
 			suggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))
 			if suggestByLevenshtein || suggestByPrefix {
 				suggestions = append(suggestions, cmd.Name())
-			}
-			for _, explicitSuggestion := range cmd.SuggestFor {
-				if strings.EqualFold(typedName, explicitSuggestion) {
-					suggestions = append(suggestions, cmd.Name())
-				}
 			}
 		}
 	}

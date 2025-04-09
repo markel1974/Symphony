@@ -15,21 +15,18 @@
 package games
 
 import (
-	"github.com/markel1974/c64emu/src/shell/apps/commandcreator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
-func Create(t commandcreator.ICreator) *cli.Command {
-	root := t.CreateCommand()
-	root.SetName("games", nil)
-	root.ShortHelp = "Game"
-	root.LongHelp = "Games"
+func Create() *cli.Command {
+	root := cli.NewCommand("games", nil, false)
+	root.SetHelp("Games", "Games")
 	root.Run = func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
 		return nil
 	}
-	t.AddCommand(root, CreateSnake(t))
-	t.AddCommand(root, CreateTetris(t))
-	t.AddCommand(root, CreateInvaders(t))
+	_ = root.AddCommand(CreateSnake())
+	_ = root.AddCommand(CreateTetris())
+	_ = root.AddCommand(CreateInvaders())
 	return root
 }
