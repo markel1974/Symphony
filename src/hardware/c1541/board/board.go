@@ -8,7 +8,6 @@ package board
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/c1541/disk"
@@ -40,6 +39,7 @@ const (
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
 	*component.BaseComponent
+	iec          references.IIec
 	cpuSocket    *CPUSocket
 	via1Socket   *VIA1Socket
 	via2Socket   *VIA2Socket
@@ -53,7 +53,6 @@ type Board struct {
 	deviceNumber uint8
 	diskId       string
 	cfg          *config.Config
-	ledSignal    *signals.SignalUint32
 	emulation    []func()
 	sockets      []references.ISocket
 	label        string
@@ -65,7 +64,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		BaseComponent: component.NewBaseComponent(),
 		deviceId:      0,
 		diskId:        "",
-		ledSignal:     signals.NewSignalUint32(),
 		cfg:           nil,
 		disks:         disk.NewFactory(),
 		mec:           mechanic.NewMechanic(),
@@ -89,6 +87,7 @@ func (m *Board) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber
 	if err != nil {
 		return err
 	}
+	m.iec = iec
 	m.deviceId = deviceId
 	m.deviceNumber = deviceNumber
 
@@ -203,8 +202,8 @@ func (m *Board) AtnStateChanged(newAtn bool) {
 	}
 }
 
-func (m *Board) LEDSignal() *signals.SignalUint32 {
-	return m.ledSignal
+func (m *Board) LedActivity(led bool) {
+	m.iec.LedActivity(m.deviceNumber, led)
 }
 
 // IRQClear clears the specified interrupt request (IRQ) in the programmable interrupt controller (PIC) associated with the board.
@@ -215,11 +214,6 @@ func (m *Board) IRQClear(intr uint32) {
 // IRQTrigger triggers an IRQ by setting the specified interrupt bit in the programmable interrupt controller (PIC).
 func (m *Board) IRQTrigger(intr uint32) {
 	m.picSocket.TriggerIRQ(intr)
-}
-
-// LEDTrigger updates the state of the LED for the device and emits the change as a signal with the device identifier and status.
-func (m *Board) LEDTrigger(d byte) {
-	m.ledSignal.Emit(uint32(d)<<8 | uint32(m.via1Socket.GetDeviceNumber()))
 }
 
 // InsertDisk inserts a new disk into the board's disk drive using the provided image data and write protection status.

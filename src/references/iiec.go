@@ -2,7 +2,6 @@ package references
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/common/signals"
 )
 
 const (
@@ -21,6 +20,7 @@ func IdIIec(_ IIec, label string, instance int) string {
 }
 
 type IIecSocket interface {
+	LedActivity(deviceNumber uint8, led bool)
 }
 
 // IIec defines an interface for managing communication between a CPU and peripherals in an emulated environment.
@@ -33,7 +33,7 @@ type IIecSocket interface {
 // CpuWrite writes data to the CPU bus for transmission to peripherals.
 // PeripheralRead retrieves data sent from peripherals to the CPU.
 // PeripheralWrite writes data from the CPU to a specific peripheral identified by its device number.
-// LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
+// LedActivity provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIec interface {
 	Setup() error
 
@@ -59,7 +59,7 @@ type IIec interface {
 
 	PeripheralWrite(deviceNumber uint8, data uint16)
 
-	LEDSignal() *signals.SignalUint32
+	LedActivity(deviceNumber uint8, led bool)
 }
 
 func IdIIecDevice(_ IIecDevice, label string, instance int) string {
@@ -76,7 +76,7 @@ type IIecDeviceSocket interface {
 // Ready checks if the virtual drive is ready for operation.
 // GetDeviceNumber returns the device number associated with the virtual drive.
 // AtnStateChanged handles changes in the Attention (ATN) line state.
-// LEDSignal provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
+// LedActivity provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
 type IIecDevice interface {
 	Setup() error
 
@@ -98,7 +98,7 @@ type IIecDevice interface {
 
 	AtnStateChanged(bool)
 
-	LEDSignal() *signals.SignalUint32
+	LedActivity(led bool)
 }
 
 func IdIIecProtocolDevice(_ IIecProtocolDevice, label string, instance int) string {

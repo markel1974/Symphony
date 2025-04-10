@@ -190,9 +190,9 @@ func (v *Protocol) Ready() bool {
 	return true
 }
 
-// LEDSignal returns a signal of type SignalUint32 used to manage LED-related events or data changes.
-func (v *Protocol) LEDSignal() *signals.SignalUint32 {
-	return v.ledSignal
+// LedActivity controls the LED state of the device by enabling or disabling it based on the provided boolean parameter.
+func (v *Protocol) LedActivity(led bool) {
+	v.iec.LedActivity(v.deviceNumber, led)
 }
 
 // GetDeviceNumber returns the device number associated with the Protocol instance. It is stored as an unsigned 8-bit integer.

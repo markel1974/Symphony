@@ -6,7 +6,7 @@ import (
 
 // IIECSocketConnection defines an interface for managing socket communication and triggering LED signals.
 type IIECSocketConnection interface {
-	LedTrigger(uint33 uint32)
+	LedActivity(deviceNumber uint8, led bool)
 }
 
 // IECSocket represents a socket interface for managing communication and connections within an emulated environment.
@@ -45,6 +45,9 @@ func (s *IECSocket) Mount() error {
 	if err = s.IIec.Bind(s); err != nil {
 		return err
 	}
-	s.IIec.LEDSignal().Bind(s.connection.LedTrigger)
 	return nil
+}
+
+func (s *IECSocket) LedActivity(deviceNumber uint8, led bool) {
+	s.connection.LedActivity(deviceNumber, led)
 }

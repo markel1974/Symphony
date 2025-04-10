@@ -44,6 +44,7 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 
 func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	g.board = board
+	//g.board.Connect(g)
 	g.board.VBlankSignal().Bind(g.vBlankSlot)
 	g.board.LEDSignal().Bind(g.ledSlot)
 	if err := g.inputs.Setup(g.board, cfg); err != nil {

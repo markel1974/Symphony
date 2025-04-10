@@ -62,3 +62,9 @@ type IBoard interface {
 
 	SetMouse(x uint8, y uint8)
 }
+
+type IBoardConnections interface {
+	VBlank()
+
+	LedActivity(deviceNumber uint8, led bool)
+}

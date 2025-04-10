@@ -94,7 +94,7 @@ func (v *MediaDrive) Connect() error {
 
 // Reset reinitializes the MediaDrive by closing all channels, clearing commands, setting the error index, and resetting the protocol.
 func (v *MediaDrive) Reset() {
-	v.LedTurnOff()
+	v.LedActivity(false)
 	for i := uint8(0); i < uint8(len(v.channels)); i++ {
 		v.channels[i].Reset()
 	}
@@ -106,16 +106,6 @@ func (v *MediaDrive) Reset() {
 // Internal returns a boolean indicating whether the MediaDrive is an internal device. Always returns false.
 func (v *MediaDrive) Internal() bool {
 	return false
-}
-
-// LedTurnOn activates the LED of the MediaDrive, indicating an active or operational state.
-func (v *MediaDrive) LedTurnOn() {
-	v.LEDSignal().Emit(uint32(1)<<8 | uint32(v.deviceNumber))
-}
-
-// LedTurnOff turns off the LED indicator for the MediaDrive.
-func (v *MediaDrive) LedTurnOff() {
-	v.LEDSignal().Emit(uint32(0)<<8 | uint32(v.deviceNumber))
 }
 
 // GetPath returns the name of the adapter associated with the MediaDrive.
@@ -162,7 +152,7 @@ func (v *MediaDrive) Unlisten(d uint8) uint8 {
 	if openMode := channel.OpenModeGet() & 0xf0; openMode != 0x20 && openMode != 0xf0 {
 		return adapters.StOk
 	}
-	v.LedTurnOn()
+	v.LedActivity(true)
 	data := channel.Buffer()
 	if channelId == errChannel {
 		action, err := v.commands.CommandExec(data)
@@ -214,7 +204,7 @@ func (v *MediaDrive) Open(d uint8) uint8 {
 // Close shuts down the specified channel `d` and turns off the LED. If `d` equals 15, all channels are closed. Returns status.
 func (v *MediaDrive) Close(d uint8) uint8 {
 	channelId := d & 0xf
-	v.LedTurnOff()
+	v.LedActivity(false)
 	if channelId == errChannel {
 		for i := uint8(0); i < uint8(len(v.channels)); i++ {
 			_ = v.channels[i].Close()

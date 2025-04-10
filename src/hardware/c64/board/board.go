@@ -349,9 +349,14 @@ func (s *Board) VBlankTrigger() {
 	s.throttleSocket.Update()
 }
 
-// LedTrigger emits a signal to change the state of the LED to the specified value.
-func (s *Board) LedTrigger(state uint32) {
-	s.ledSignal.Emit(state)
+// LedActivity emits a signal to change the state of the LED to the specified value.
+func (s *Board) LedActivity(deviceNumber uint8, led bool) {
+	l := uint32(0)
+	if led {
+		l = 1
+	}
+	val := (l << 8) | uint32(deviceNumber)
+	s.ledSignal.Emit(val)
 }
 
 // startPRG initializes and loads a PRG from the specified file path. It returns an error if loading the PRG fails.

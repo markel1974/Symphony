@@ -2,7 +2,6 @@ package iec
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
@@ -33,6 +32,7 @@ const (
 type Dispatcher struct {
 	*component.BaseComponent
 	cfg             *config.Config
+	socket          references.IIecSocket
 	atn             bool
 	cpuPort         uint8
 	cpuBus          uint8
@@ -40,7 +40,6 @@ type Dispatcher struct {
 	peripheralsData []uint16
 	virtualDrives   []references.IIecDevice
 	emulation       []func()
-	ledSignal       *signals.SignalUint32 //*signals.Signal2[int, uint8]
 }
 
 // NewDispatcher initializes a new Dispatcher instance with the given parent component, factory, and instance number.
@@ -50,7 +49,6 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 		BaseComponent:   component.NewBaseComponent(),
 		peripheralsData: make([]uint16, BusNum),
 		virtualDrives:   nil,
-		ledSignal:       signals.NewSignalUint32(), //ledSignal:       signals.NewSignal2[int, uint8](),
 	}
 	c.BaseComponent.Register(factory, parent, Identifier(), c, references.IdIIec(c, label, instance))
 	return c
@@ -62,7 +60,8 @@ func (c *Dispatcher) Setup() error {
 	return nil
 }
 
-func (c *Dispatcher) Bind(_ references.IIecSocket) error {
+func (c *Dispatcher) Bind(socket references.IIecSocket) error {
+	c.socket = socket
 	return nil
 }
 
@@ -132,9 +131,6 @@ func (c *Dispatcher) AddPeripheral(kind string, deviceId uint8) error {
 	if err = vd.Connect(); err != nil {
 		return err
 	}
-	vd.LEDSignal().Bind(func(state uint32) {
-		c.ledSignal.Emit(state)
-	})
 	c.virtualDrives = append(c.virtualDrives, vd)
 	//c.updatePorts()
 	c.rebuildEmulation()
@@ -163,8 +159,8 @@ func (c *Dispatcher) rebuildEmulation() {
 	}
 }
 
-func (c *Dispatcher) LEDSignal() *signals.SignalUint32 {
-	return c.ledSignal
+func (c *Dispatcher) LedActivity(deviceNumber uint8, led bool) {
+	c.socket.LedActivity(deviceNumber, led)
 }
 
 // CpuWrite updates the CPU bus and synchronizes ports and peripherals based on the provided data.
