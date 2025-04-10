@@ -21,7 +21,7 @@ import (
 )
 
 func CreateProfileCPUStop() *cli.Command {
-	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		r.WriteLn("")
 		pprof.StopCPUProfile()
 		r.WriteLn("Cpu Profiling stopped")

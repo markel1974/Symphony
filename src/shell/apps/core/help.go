@@ -21,7 +21,7 @@ import (
 )
 
 func CreateHelp(root *cli.Command) *cli.Command {
-	run := func(r interfaces.IContext, c *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, c interfaces.ICommand, pid int, args []string) error {
 		if len(args) == 0 {
 			return nil
 		}

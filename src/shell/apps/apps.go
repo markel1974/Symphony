@@ -31,7 +31,7 @@ func NewRoot() *Root {
 }
 
 func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
-	sbinRun := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	sbinRun := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		return nil
 	}
 	sbin := cli.NewCommand("sbin", nil, false, sbinRun)
@@ -40,7 +40,7 @@ func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	_ = sbin.AddCommand(stats.Create())
 	_ = sbin.AddCommand(runtime.Create())
 
-	rootRun := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	rootRun := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		return nil
 	}
 	root := cli.NewCommand("", nil, false, rootRun)
@@ -48,7 +48,7 @@ func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	_ = root.AddCommand(bin)
 	_ = root.AddCommand(games.Create())
 
-	coreCRun := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	coreCRun := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		return nil
 	}
 	coreC := cli.NewCommand("", nil, false, coreCRun)

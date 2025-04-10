@@ -305,7 +305,7 @@ func (c *Context) SetExit() {
 	c.Exit = true
 }
 
-func (c *Context) CWD() *cli.Command {
+func (c *Context) CWD() interfaces.ICommand {
 	return c.tasks.CWD()
 }
 

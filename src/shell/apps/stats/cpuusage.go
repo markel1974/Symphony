@@ -22,7 +22,7 @@ import (
 )
 
 func CreateCPUUsage() *cli.Command {
-	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn("Computing cpu usage")
 		idle0, total0 := getCPUSample()

@@ -32,10 +32,10 @@ type Command struct {
 	daemon                     bool
 	background                 bool
 	template                   *Template
-	run                        func(r interfaces.IContext, cmd *Command, pid int, args []string) error
-	TimerEvent                 func(r interfaces.IContext, cmd *Command, pid int, tid int, ctx interface{}, interval int)
-	ReadEvent                  func(r interfaces.IContext, cmd *Command, pid int, ctx interface{}, code int, key rune)
-	PaintEvent                 func(r interfaces.IContext, cmd *Command, pid int, ctx interface{}, surface interfaces.ISurface)
+	run                        interfaces.RunFn
+	timerEvent                 interfaces.TimerFn
+	readEvent                  interfaces.ReadFn
+	paintEvent                 interfaces.PaintFn
 	commands                   []*Command
 	parent                     *Command
 	commandsMaxUseLen          int
@@ -44,11 +44,11 @@ type Command struct {
 }
 
 // NewCommand creates and returns a new instance of Command with a pre-defined template.
-func NewCommand(name string, aliases []string, daemon bool, run func(r interfaces.IContext, cmd *Command, pid int, args []string) error) *Command {
+func NewCommand(name string, aliases []string, daemon bool, run interfaces.RunFn) *Command {
 	if run == nil {
-		panic(
-			"run function is required for command " + name +
-				", please provide a function that implements the command's behavior")
+		run = func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
+			return nil
+		}
 	}
 	if i := strings.Index(name, " "); i >= 0 {
 		name = name[:i]
@@ -60,6 +60,30 @@ func NewCommand(name string, aliases []string, daemon bool, run func(r interface
 		daemon:   daemon,
 		run:      run,
 	}
+}
+
+func (c *Command) PaintEvent() interfaces.PaintFn {
+	return c.paintEvent
+}
+
+func (c *Command) ReadEvent() interfaces.ReadFn {
+	return c.readEvent
+}
+
+func (c *Command) TimerEvent() interfaces.TimerFn {
+	return c.timerEvent
+}
+
+func (c *Command) SetReadFn(fn interfaces.ReadFn) {
+	c.readEvent = fn
+}
+
+func (c *Command) SetTimerFn(fn interfaces.TimerFn) {
+	c.timerEvent = fn
+}
+
+func (c *Command) SetPaintFn(fn interfaces.PaintFn) {
+	c.paintEvent = fn
 }
 
 func (c *Command) Daemon() bool {
@@ -81,7 +105,7 @@ func (c *Command) Name() string {
 }
 
 // Root navigates up the command hierarchy and returns the root command of the current command hierarchy.
-func (c *Command) Root() *Command {
+func (c *Command) Root() interfaces.ICommand {
 	if c.HasParent() {
 		return c.Parent().Root()
 	}
@@ -89,13 +113,17 @@ func (c *Command) Root() *Command {
 }
 
 // Parent returns the immediate parent command of the current command, or nil if the command has no parent.
-func (c *Command) Parent() *Command {
+func (c *Command) Parent() interfaces.ICommand {
 	return c.parent
 }
 
 // Childs returns a slice of pointers to the Command's child commands.
-func (c *Command) Childs() []*Command {
-	return c.commands
+func (c *Command) Childs() []interfaces.ICommand {
+	var commands []interfaces.ICommand
+	for _, cmd := range c.commands {
+		commands = append(commands, cmd)
+	}
+	return commands
 }
 
 // Help returns a string containing the help details for the command, generated using its associated help function.
@@ -109,7 +137,7 @@ func (c *Command) Help() string {
 }
 
 // FindChildren searches for a child command by its name or alias and returns it. Returns nil if no matching command is found.
-func (c *Command) FindChildren(name string) *Command {
+func (c *Command) FindChildren(name string) interfaces.ICommand {
 	for _, cmd := range c.commands {
 		if cmd.Name() == name || cmd.HasAlias(name) {
 			return cmd
@@ -119,7 +147,7 @@ func (c *Command) FindChildren(name string) *Command {
 }
 
 // FindChildrenPrefix searches for a child command whose name starts with the given prefix and returns it if found.
-func (c *Command) FindChildrenPrefix(prefix string) *Command {
+func (c *Command) FindChildrenPrefix(prefix string) interfaces.ICommand {
 	for _, cmd := range c.commands {
 		if strings.HasPrefix(cmd.Name(), prefix) {
 			return cmd
@@ -128,7 +156,7 @@ func (c *Command) FindChildrenPrefix(prefix string) *Command {
 	return nil
 }
 
-func (c *Command) Find(args []string) (*Command, []string, error) {
+func (c *Command) Find(args []string) (interfaces.ICommand, []string, error) {
 	var innerFind func(*Command, []string) (*Command, []string)
 	innerFind = func(c *Command, innerArgs []string) (*Command, []string) {
 		var argsWOFlags = innerArgs
@@ -164,7 +192,7 @@ func (c *Command) findNext(next string) *Command {
 }
 
 // Traverse navigates through commands and flags based on the provided arguments and returns the matched command, remaining arguments, and error if any.
-func (c *Command) Traverse(args []string) (*Command, []string, error) {
+func (c *Command) Traverse(args []string) (interfaces.ICommand, []string, error) {
 	for i, arg := range args {
 		cmd := c.findNext(arg)
 		if cmd == nil {
@@ -206,7 +234,7 @@ func (c *Command) FindSuggestions(arg string) []string {
 }
 
 // VisitParents calls the provided function for each parent command in the hierarchy, traversing upwards recursively.
-func (c *Command) VisitParents(fn func(*Command)) {
+func (c *Command) VisitParents(fn func(interfaces.ICommand)) {
 	if c.HasParent() {
 		fn(c.Parent())
 		c.Parent().VisitParents(fn)
@@ -222,9 +250,13 @@ func (c *Command) Execute(r interfaces.IContext, arg []string, pid int) error {
 }
 
 // Commands returns a sorted slice of subcommands by their names.
-func (c *Command) Commands() []*Command {
+func (c *Command) Commands() []interfaces.ICommand {
 	sort.Sort(commandSorterByName(c.commands))
-	return c.commands
+	var commands []interfaces.ICommand
+	for _, cmd := range c.commands {
+		commands = append(commands, cmd)
+	}
+	return commands
 }
 
 // AddCommand adds one or more subcommands to the current command.
@@ -286,12 +318,10 @@ main:
 	}
 }
 
-const pathSeparator = "/"
-
 // CommandPath returns the full path to the command by appending parent command names separated by a slash.
 func (c *Command) CommandPath() string {
 	if c.HasParent() {
-		return c.Parent().CommandPath() + pathSeparator + c.Name()
+		return c.Parent().CommandPath() + interfaces.PathSeparator + c.Name()
 	}
 	return c.Name()
 }

@@ -21,7 +21,7 @@ import (
 )
 
 func CreateActivate() *cli.Command {
-	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		targetPid := -1
 		if len(args) > 0 {
 			targetPid, _ = strconv.Atoi(args[0])
@@ -29,11 +29,7 @@ func CreateActivate() *cli.Command {
 		r.SetSelectionMode(targetPid)
 		return nil
 	}
-
-	root := cli.NewCommand("activate", nil, true, run)
-	root.SetHelp("Activate", "Activate")
-
-	root.ReadEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
+	readFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, ctx interface{}, code int, key rune) {
 		if code == 1 {
 			switch interfaces.CursorCodeDef(key) {
 			case interfaces.CursorUpDef:
@@ -66,6 +62,10 @@ func CreateActivate() *cli.Command {
 			}
 		}
 	}
+
+	root := cli.NewCommand("activate", nil, true, run)
+	root.SetHelp("Activate", "Activate")
+	root.SetReadFn(readFn)
 
 	return root
 }

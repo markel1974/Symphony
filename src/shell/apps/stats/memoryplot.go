@@ -30,7 +30,7 @@ type rtPlotData struct {
 }
 
 func CreateMemoryPlot() *cli.Command {
-	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		plt := &rtPlotData{
 			rtPlotType:   0,
 			rtPlotAuto:   true,
@@ -54,10 +54,7 @@ func CreateMemoryPlot() *cli.Command {
 		r.CreateTimer(pid, 0, 300, -1)
 		return nil
 	}
-	root := cli.NewCommand("rtplot", nil, true, run)
-	root.SetHelp("Runtime Plot", "Runtime Plot")
-
-	root.ReadEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, code int, key rune) {
+	readFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, ctx interface{}, code int, key rune) {
 		plt := ctx.(*rtPlotData)
 
 		interval := math.Abs(plt.rtPlotMaxVal - plt.rtPlotMinVal)
@@ -77,7 +74,7 @@ func CreateMemoryPlot() *cli.Command {
 		}
 
 	}
-	root.TimerEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, tid int, ctx interface{}, interval int) {
+	timerFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, tid int, ctx interface{}, interval int) {
 		//var r = cmd.GetRootContext()
 		var m runtime.MemStats
 		plt := ctx.(*rtPlotData)
@@ -111,7 +108,7 @@ func CreateMemoryPlot() *cli.Command {
 
 		r.PaintRequest(pid)
 	}
-	root.PaintEvent = func(r interfaces.IContext, cmd *cli.Command, pid int, ctx interface{}, surface interfaces.ISurface) {
+	paintFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, ctx interface{}, surface interfaces.ISurface) {
 		var min float64 = 0
 		var max float64 = 0
 		plt := ctx.(*rtPlotData)
@@ -119,9 +116,13 @@ func CreateMemoryPlot() *cli.Command {
 			min = plt.rtPlotMinVal
 			max = plt.rtPlotMaxVal
 		}
-
 		surface.DrawSeries(plt.rtPlotData, -1, -1, min, max)
 	}
+	root := cli.NewCommand("rtplot", nil, true, run)
+	root.SetHelp("Runtime Plot", "Runtime Plot")
+	root.SetTimerFn(timerFn)
+	root.SetPaintFn(paintFn)
+	root.SetReadFn(readFn)
 
 	return root
 }

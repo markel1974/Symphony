@@ -22,7 +22,7 @@ import (
 )
 
 func CreateMemoryStatus() *cli.Command {
-	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
 		r.WriteLn("")

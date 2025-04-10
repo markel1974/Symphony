@@ -22,7 +22,7 @@ import (
 )
 
 func CreateProfileCPUStart() *cli.Command {
-	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		r.WriteLn("")
 		if len(args) <= 0 {
 			r.WriteLn("could not create cpu profile: " + "missing filename")

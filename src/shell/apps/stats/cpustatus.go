@@ -22,7 +22,7 @@ import (
 )
 
 func CreateCPUStatus() *cli.Command {
-	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn(fmt.Sprintf("Number of logical CPUs: %d", runtime.NumCPU()))
 		r.WriteLn(fmt.Sprintf("Maximum number of CPUs that can be executing simultaneously: %d", runtime.GOMAXPROCS(0)))

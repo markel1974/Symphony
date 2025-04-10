@@ -51,7 +51,7 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 	bc.hardwareId = hardwareId
 	bc.id = bc.hardwareId
 
-	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		r.WriteLn("")
 		r.WriteLn(bc.name)
 		return nil

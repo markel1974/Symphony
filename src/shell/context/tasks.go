@@ -43,7 +43,7 @@ const (
 
 type Task struct {
 	rootCtx interfaces.IContext
-	cmd     *cli.Command
+	cmd     interfaces.ICommand
 	context interface{}
 	timers  []int
 	pid     int
@@ -55,7 +55,7 @@ type Task struct {
 	Scale   float64
 }
 
-func NewTask(r interfaces.IContext, cmd *cli.Command, line string) *Task {
+func NewTask(r interfaces.IContext, cmd interfaces.ICommand, line string) *Task {
 	return &Task{
 		rootCtx: r,
 		cmd:     cmd,
@@ -78,7 +78,8 @@ func (t *Task) Unset() {
 }
 
 func (t *Task) Paint(surface *Surface) {
-	if t.cmd.PaintEvent == nil {
+	fn := t.cmd.PaintEvent()
+	if fn == nil {
 		return
 	}
 	caption := strconv.Itoa(t.pid)
@@ -90,7 +91,7 @@ func (t *Task) Paint(surface *Surface) {
 	surface.SetScale(t.Scale)
 	surface.SetCaption(caption)
 	surface.Begin()
-	t.cmd.PaintEvent(t.rootCtx, t.cmd, t.pid, t.context, surface)
+	fn(t.rootCtx, t.cmd, t.pid, t.context, surface)
 	surface.End()
 }
 
@@ -113,8 +114,8 @@ type TaskManager struct {
 	ticker     *adaptiveticker.AdaptiveTicker
 	foreground *Task
 	selector   *TaskSelector
-	cwd        *cli.Command
-	system     *cli.Command
+	cwd        interfaces.ICommand
+	system     interfaces.ICommand
 	dirty      bool
 	width      int
 	height     int
@@ -188,7 +189,7 @@ func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
 	return true, nil
 }
 
-func (c *TaskManager) create(cmd *cli.Command, line string) (*Task, error) {
+func (c *TaskManager) create(cmd interfaces.ICommand, line string) (*Task, error) {
 	task := NewTask(c.rootCtx, cmd, line)
 
 	c.ids.Set(task)
@@ -297,7 +298,7 @@ func (c *TaskManager) CWDChilds() []string {
 	return out
 }
 
-func (c *TaskManager) CWD() *cli.Command {
+func (c *TaskManager) CWD() interfaces.ICommand {
 	return c.cwd
 }
 
@@ -384,7 +385,7 @@ func (c *TaskManager) SetFg(pid int) bool {
 
 func (c *TaskManager) GetSuggestion(in string, _ int) (string, []string, bool) {
 	var data string
-	var cmd *cli.Command = nil
+	var cmd interfaces.ICommand = nil
 
 	const sep = " "
 	args := strings.Split(in, sep)
@@ -562,8 +563,8 @@ func (c *TaskManager) ExecTimer(pid int, tid int, interval int) bool {
 	ret := false
 	if t, ok := c.ids.Get(pid); ok {
 		task := t.(*Task)
-		if task.cmd.TimerEvent != nil {
-			task.cmd.TimerEvent(task.rootCtx, task.cmd, task.pid, tid, task.context, interval)
+		if fn := task.cmd.TimerEvent(); fn != nil {
+			fn(task.rootCtx, task.cmd, task.pid, tid, task.context, interval)
 			ret = true
 		}
 	}
@@ -575,8 +576,8 @@ func (c *TaskManager) ExecRead(pid int, code int, buffer rune) bool {
 	ret := false
 	if t, ok := c.ids.Get(pid); ok {
 		task := t.(*Task)
-		if task.cmd.ReadEvent != nil {
-			task.cmd.ReadEvent(task.rootCtx, task.cmd, task.pid, task.context, code, buffer)
+		if fn := task.cmd.ReadEvent(); fn != nil {
+			fn(task.rootCtx, task.cmd, task.pid, task.context, code, buffer)
 			ret = true
 		}
 	}

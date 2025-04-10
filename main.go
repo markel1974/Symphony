@@ -154,7 +154,7 @@ func createShell(target *cli.Command) error {
 	const secure = true
 	const pass = "p"
 
-	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
+	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
 		return nil
 	}
 	t := cli.NewCommand("bin", nil, false, run)
