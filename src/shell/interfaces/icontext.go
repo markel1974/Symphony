@@ -18,35 +18,65 @@ import (
 	"io"
 )
 
+// IContext defines an interface for managing application I/O, state, task control, and context-specific configurations.
 type IContext interface {
 	GetWriter() io.Writer
+
 	Write(data string)
+
 	WriteLn(data string)
+
 	WriteColor(data string, fg ColorDef, bg ColorDef, mode ColorMode)
+
 	WriteColorLn(data string, fg ColorDef, bg ColorDef, mode ColorMode)
+
 	GetScreenSize() (int, int)
+
 	SetContext(pid int, ctx interface{}) bool
+
 	IsActive(pid int) bool
+
 	CreateTimer(pid int, first int, interval int, count int) bool
+
 	StopTimer(pid int, tid int) bool
+
 	PaintRequest(pid int) bool
+
 	SetCaption(pid int, caption string) bool
+
 	CWDSet(arg string) bool
+
 	CWDGet() string
+
 	CWDPath() []string
+
 	CWDChilds() []string
+
 	SetSelectionMode(int)
+
 	SetSelectionOptions(option rune, value float64) bool
+
 	SetSelectionModeNext()
+
 	SetSelectionModePrevious()
+
 	Deactivate(pid int) bool
+
 	DeactivateAll(name string) int
+
 	History(verb HistoryAction, idx int)
+
 	ClearScreen()
+
 	TaskList() string
+
 	SaveTasks(name string) bool
+
 	RestoreTasks(name string) bool
+
 	ListTasks() []string
+
 	SetExit()
+
 	SetFg(pid int) bool
 }
