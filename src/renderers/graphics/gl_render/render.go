@@ -1,7 +1,6 @@
 package gl_render
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels"
@@ -16,9 +15,13 @@ type Render struct {
 	picture    *pixels.Picture
 	inputs     *Inputs
 	win        *pixels.GLWindow
-	matrix     pixels.Matrix
+	surfaceM   pixels.Matrix
 	surface    *pixels.Sprite
-	run        bool
+
+	ledSurface  *pixels.Sprite
+	ledSurfaceM pixels.Matrix
+	run         bool
+	led         bool
 }
 
 func New() *Render {
@@ -29,6 +32,7 @@ func New() *Render {
 		scale:      3,
 		inputs:     NewInputs(),
 		run:        true,
+		led:        false,
 	}
 	return g
 }
@@ -75,7 +79,12 @@ func (g *Render) runner() {
 	g.surface = pixels.NewSprite()
 	g.surface.SetCachedMode(pixels.CacheModeUpdate)
 	g.surface.Set(g.picture, g.picture.Bounds())
-	g.matrix = pixels.IM.Moved(pos).Scaled(pos, g.scale)
+	g.surfaceM = pixels.IM.Moved(pos).Scaled(pos, g.scale)
+
+	g.ledSurface = pixels.NewSprite()
+	g.ledSurface.SetCachedMode(pixels.CacheModeUpdate)
+	g.ledSurface.Set(g.picture, g.picture.Bounds())
+	g.ledSurfaceM = pixels.IM.Moved(pos).Scaled(pos, 0.1)
 	for g.run {
 		g.board.Emulate()
 	}
@@ -86,11 +95,15 @@ func (g *Render) VBlank() {
 		g.inputs.MouseMove(g.win.MousePositionXY())
 	}
 	g.inputs.Keys(g.win.KeysPressed())
-	g.surface.Draw(g.win, g.matrix)
+	g.surface.Draw(g.win, g.surfaceM)
+	if g.led {
+		g.ledSurface.Draw(g.win, g.ledSurfaceM)
+	}
 	g.win.Update()
 	g.run = !g.win.Closed()
 }
 
 func (g *Render) LedActivity(deviceNumber uint8, led bool) {
-	fmt.Println("LED STATE", deviceNumber, led)
+	g.led = led
+	//fmt.Println("LED STATE", deviceNumber, led)
 }
