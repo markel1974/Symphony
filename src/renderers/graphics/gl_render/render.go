@@ -2,7 +2,6 @@ package gl_render
 
 import (
 	"fmt"
-
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels"
@@ -93,8 +92,5 @@ func (g *Render) VBlank() {
 }
 
 func (g *Render) LedActivity(deviceNumber uint8, led bool) {
-	//device := uint8(state & 0xf)
-	//led := uint8((state >> 8) & 0xf)
-	//fmt.Println("LED STATE", device, led)
 	fmt.Println("LED STATE", deviceNumber, led)
 }
