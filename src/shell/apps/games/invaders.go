@@ -21,30 +21,33 @@ import (
 )
 
 func CreateInvaders() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		w, h := r.GetScreenSize()
+	run := func(task interfaces.ITask, args []string) error {
+		w, h := task.GetScreenSize()
 		g := invaders.NewGame(w, h)
 		g.SetMenuState()
-		r.SetContext(pid, g)
-		r.CreateTimer(pid, 0, 100, -1)
+		task.SetContext(g)
+		task.CreateTimer(0, 100, -1)
 		return nil
 	}
-	readFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, ctx interface{}, code int, key rune) {
+	readFn := func(task interfaces.ITask, code int, key rune) {
+		ctx := task.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
 			return
 		}
 		g.HandleKey(key)
 	}
-	timerFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, tid int, ctx interface{}, interval int) {
+	timerFn := func(task interfaces.ITask, tid int, interval int) {
+		ctx := task.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
 			return
 		}
 		g.Update()
-		r.PaintRequest(pid)
+		task.PaintRequest()
 	}
-	paintFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, ctx interface{}, surface interfaces.ISurface) {
+	paintFn := func(task interfaces.ITask, surface interfaces.ISurface) {
+		ctx := task.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
 			return

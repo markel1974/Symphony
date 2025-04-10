@@ -22,16 +22,16 @@ import (
 )
 
 func CreateCPUUsage() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		r.WriteLn("")
-		r.WriteLn("Computing cpu usage")
+	run := func(task interfaces.ITask, args []string) error {
+		task.WriteLn("")
+		task.WriteLn("Computing cpu usage")
 		idle0, total0 := getCPUSample()
 		time.Sleep(3 * time.Second)
 		idle1, total1 := getCPUSample()
 		idleTicks := float64(idle1 - idle0)
 		totalTicks := float64(total1 - total0)
 		cpuUsage := 100 * (totalTicks - idleTicks) / totalTicks
-		r.WriteLn(fmt.Sprintf("CPU Usage: %f", cpuUsage))
+		task.WriteLn(fmt.Sprintf("CPU Usage: %f", cpuUsage))
 		return nil
 	}
 	root := cli.NewCommand("usage", nil, false, run)

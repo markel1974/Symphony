@@ -21,7 +21,7 @@ import (
 )
 
 func CreateTasks() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
+	run := func(task interfaces.ITask, args []string) error {
 		if len(args) <= 0 {
 			return nil
 		}
@@ -29,17 +29,17 @@ func CreateTasks() *cli.Command {
 		args = args[1:]
 		switch kind {
 		case "list":
-			r.WriteLn("")
-			for _, task := range r.ListTasks() {
-				r.WriteLn(task)
+			task.WriteLn("")
+			for _, l := range task.ListTasks() {
+				task.WriteLn(l)
 			}
 		case "restore":
 			if len(args) > 0 {
-				r.RestoreTasks(args[0])
+				task.RestoreTasks(args[0])
 			}
 		case "save":
 			if len(args) > 0 {
-				r.SaveTasks(args[0])
+				task.SaveTasks(args[0])
 			}
 		}
 		return nil

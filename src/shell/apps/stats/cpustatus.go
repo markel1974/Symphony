@@ -22,12 +22,12 @@ import (
 )
 
 func CreateCPUStatus() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		r.WriteLn("")
-		r.WriteLn(fmt.Sprintf("Number of logical CPUs: %d", runtime.NumCPU()))
-		r.WriteLn(fmt.Sprintf("Maximum number of CPUs that can be executing simultaneously: %d", runtime.GOMAXPROCS(0)))
-		r.WriteLn(fmt.Sprintf("Number of goroutines that currently exist: %d", runtime.NumGoroutine()))
-		r.WriteLn(fmt.Sprintf("Number of cgo calls made by the current process: %d", runtime.NumCgoCall()))
+	run := func(task interfaces.ITask, args []string) error {
+		task.WriteLn("")
+		task.WriteLn(fmt.Sprintf("Number of logical CPUs: %d", runtime.NumCPU()))
+		task.WriteLn(fmt.Sprintf("Maximum number of CPUs that can be executing simultaneously: %d", runtime.GOMAXPROCS(0)))
+		task.WriteLn(fmt.Sprintf("Number of goroutines that currently exist: %d", runtime.NumGoroutine()))
+		task.WriteLn(fmt.Sprintf("Number of cgo calls made by the current process: %d", runtime.NumCgoCall()))
 		return nil
 	}
 	root := cli.NewCommand("cpu", nil, false, run)

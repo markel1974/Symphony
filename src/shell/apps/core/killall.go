@@ -21,14 +21,14 @@ import (
 )
 
 func CreateKillAll() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		r.WriteLn("")
+	run := func(task interfaces.ITask, args []string) error {
+		task.WriteLn("")
 		var arg string
 		if len(args) > 0 {
 			arg = args[0]
 		}
-		count := r.DeactivateAll(arg)
-		r.WriteLn("Task deactivated: " + strconv.Itoa(count))
+		count := task.DeactivateAll(arg)
+		task.WriteLn("Task deactivated: " + strconv.Itoa(count))
 		return nil
 	}
 	root := cli.NewCommand("killall", nil, false, run)

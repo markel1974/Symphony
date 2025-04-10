@@ -20,9 +20,9 @@ import (
 )
 
 func CreatePWD() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		r.WriteLn("")
-		r.WriteLn(r.CWDGet())
+	run := func(task interfaces.ITask, args []string) error {
+		task.WriteLn("")
+		task.WriteLn(task.CWDGet())
 		return nil
 	}
 	root := cli.NewCommand("pwd", nil, false, run)

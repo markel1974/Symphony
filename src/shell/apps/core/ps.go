@@ -20,8 +20,8 @@ import (
 )
 
 func CreatePs() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		r.WriteLn(r.TaskList())
+	run := func(task interfaces.ITask, args []string) error {
+		task.WriteLn(task.TaskList())
 		return nil
 	}
 

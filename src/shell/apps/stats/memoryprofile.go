@@ -23,27 +23,27 @@ import (
 )
 
 func CreateProfileMemory() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
+	run := func(task interfaces.ITask, args []string) error {
 		//r := cmd.GetRootContext()
-		r.WriteLn("")
+		task.WriteLn("")
 		if len(args) <= 0 {
-			r.WriteLn("could not create mem profile: " + "missing filename")
+			task.WriteLn("could not create mem profile: " + "missing filename")
 			return nil
 		}
 
 		f, err := os.Create(args[0])
 		if err != nil {
-			r.WriteLn("could not create mem profile: " + err.Error())
+			task.WriteLn("could not create mem profile: " + err.Error())
 			return nil
 		}
 		defer f.Close()
 
 		runtime.GC()
 		if err := pprof.WriteHeapProfile(f); err != nil {
-			r.WriteLn("could not write mem profile: " + err.Error())
+			task.WriteLn("could not write mem profile: " + err.Error())
 		}
 
-		r.WriteLn("Cpu Profiling started")
+		task.WriteLn("Cpu Profiling started")
 
 		return nil
 	}

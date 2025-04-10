@@ -21,20 +21,20 @@ import (
 )
 
 func CreateHelp(root *cli.Command) *cli.Command {
-	run := func(r interfaces.IContext, c interfaces.ICommand, pid int, args []string) error {
+	run := func(task interfaces.ITask, args []string) error {
 		if len(args) == 0 {
 			return nil
 		}
-		path := r.CWDPath()
+		path := task.CWDPath()
 		path = append(path, args[0])
 		cmd, _, err := root.Traverse(path)
 		if cmd == nil || err != nil || cmd == root {
-			r.WriteLn("")
-			r.WriteLn("unknown help topic: " + strings.Join(args, " "))
-			r.WriteLn(c.Root().Help())
+			task.WriteLn("")
+			task.WriteLn("unknown help topic: " + strings.Join(args, " "))
+			task.WriteLn(task.GetCommand().Root().Help())
 		} else {
-			r.WriteLn("")
-			r.WriteLn(cmd.Help())
+			task.WriteLn("")
+			task.WriteLn(cmd.Help())
 		}
 		return nil
 	}

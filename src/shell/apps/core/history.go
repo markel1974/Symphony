@@ -22,29 +22,29 @@ import (
 )
 
 func CreateHistory() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
+	run := func(task interfaces.ITask, args []string) error {
 		if len(args) == 0 {
-			r.History(interfaces.HistoryActionList, -1)
+			task.History(interfaces.HistoryActionList, -1)
 			return nil
 
 		}
 		if idx, err := strconv.Atoi(args[0]); err == nil {
-			r.History(interfaces.HistoryActionExec, idx)
+			task.History(interfaces.HistoryActionExec, idx)
 			return nil
 		}
 		name := strings.TrimSpace(strings.ToLower(args[0]))
 		args = args[1:]
 		switch name {
 		case "clear":
-			r.History(interfaces.HistoryActionClear, -1)
+			task.History(interfaces.HistoryActionClear, -1)
 		case "exec":
 			if len(args) > 0 {
 				if idx, err := strconv.Atoi(args[0]); err == nil {
-					r.History(interfaces.HistoryActionExec, idx)
+					task.History(interfaces.HistoryActionExec, idx)
 				}
 			}
 		case "list":
-			r.History(interfaces.HistoryActionList, -1)
+			task.History(interfaces.HistoryActionList, -1)
 		}
 		return nil
 	}

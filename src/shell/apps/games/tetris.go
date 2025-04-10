@@ -21,16 +21,20 @@ import (
 )
 
 func CreateTetris() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
+	run := func(task interfaces.ITask, args []string) error {
 		//r := cmd.GetRootContext()
 		//w, h := r.GetScreenSize()
 		tx := tetris.New(10, 18)
 		//s.SetSize(h, w)
-		r.SetContext(pid, tx)
-		r.CreateTimer(pid, 0, 300, -1)
+		//pid := task.PID()
+		task.SetContext(tx)
+		//r.SetContext(pid, tx)
+		task.CreateTimer(0, 300, -1)
+		//r.CreateTimer(pid, 0, 300, -1)
 		return nil
 	}
-	readFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, ctx interface{}, code int, key rune) {
+	readFn := func(task interfaces.ITask, code int, key rune) {
+		ctx := task.GetContext()
 		tx, ok := ctx.(*tetris.Tetris)
 		if !ok {
 			return
@@ -52,16 +56,17 @@ func CreateTetris() *cli.Command {
 			tx.Init(10, 18)
 		}
 	}
-	TimerFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, tid int, ctx interface{}, interval int) {
-		//r := cmd.GetRootContext()
+	TimerFn := func(task interfaces.ITask, tid int, interval int) {
+		ctx := task.GetContext()
 		tx, ok := ctx.(*tetris.Tetris)
 		if !ok {
 			return
 		}
 		tx.ApplyGravity()
-		r.PaintRequest(pid)
+		task.PaintRequest()
 	}
-	paintFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, ctx interface{}, surface interfaces.ISurface) {
+	paintFn := func(task interfaces.ITask, surface interfaces.ISurface) {
+		ctx := task.GetContext()
 		tx, ok := ctx.(*tetris.Tetris)
 		if !ok {
 			return

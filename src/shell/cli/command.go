@@ -46,7 +46,7 @@ type Command struct {
 // NewCommand creates and returns a new instance of Command with a pre-defined template.
 func NewCommand(name string, aliases []string, daemon bool, run interfaces.RunFn) *Command {
 	if run == nil {
-		run = func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
+		run = func(task interfaces.ITask, args []string) error {
 			return nil
 		}
 	}
@@ -242,8 +242,8 @@ func (c *Command) VisitParents(fn func(interfaces.ICommand)) {
 }
 
 // Execute runs the command with the provided context, arguments, and process ID, handling flags and validations.
-func (c *Command) Execute(r interfaces.IContext, arg []string, pid int) error {
-	if err := c.run(r, c, pid, arg); err != nil {
+func (c *Command) Execute(task interfaces.ITask, arg []string) error {
+	if err := c.run(task, arg); err != nil {
 		return err
 	}
 	return nil

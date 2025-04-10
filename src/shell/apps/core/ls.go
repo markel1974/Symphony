@@ -6,10 +6,10 @@ import (
 )
 
 func CreateLs() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		r.WriteLn("")
-		for _, c := range r.CWDChilds() {
-			r.WriteLn(c)
+	run := func(task interfaces.ITask, args []string) error {
+		task.WriteLn("")
+		for _, c := range task.CWDChilds() {
+			task.WriteLn(c)
 		}
 		return nil
 	}

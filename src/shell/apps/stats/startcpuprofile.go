@@ -22,23 +22,23 @@ import (
 )
 
 func CreateProfileCPUStart() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		r.WriteLn("")
+	run := func(task interfaces.ITask, args []string) error {
+		task.WriteLn("")
 		if len(args) <= 0 {
-			r.WriteLn("could not create cpu profile: " + "missing filename")
+			task.WriteLn("could not create cpu profile: " + "missing filename")
 			return nil
 		}
 		f, err := os.Create(args[0])
 		if err != nil {
-			r.WriteLn("could not create CPU profile: " + err.Error())
+			task.WriteLn("could not create CPU profile: " + err.Error())
 			return nil
 		}
 		defer f.Close()
 		if err = pprof.StartCPUProfile(f); err != nil {
-			r.WriteLn("could not start CPU profile: " + err.Error())
+			task.WriteLn("could not start CPU profile: " + err.Error())
 			return nil
 		}
-		r.WriteLn("Cpu Profiling started")
+		task.WriteLn("Cpu Profiling started")
 		return nil
 	}
 	root := cli.NewCommand("startcpuprofile", nil, false, run)

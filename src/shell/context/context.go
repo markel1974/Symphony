@@ -223,14 +223,6 @@ func (c *Context) shutdown() {
 
 //CLI INTERFACE
 
-func (c *Context) SetFg(pid int) bool {
-	return c.tasks.SetFg(pid)
-}
-
-func (c *Context) TaskList() string {
-	return c.tasks.List()
-}
-
 func (c *Context) Write(data string) {
 	_, _ = c.terminal.Write(data)
 }
@@ -253,92 +245,8 @@ func (c *Context) ClearScreen() {
 	_, _ = c.terminal.ClearScreen()
 }
 
-func (c *Context) SaveTasks(name string) bool {
-	return c.tasks.SaveTasks(name)
-}
-
-func (c *Context) RestoreTasks(name string) bool {
-	return c.tasks.RestoreTasks(name)
-}
-
-func (c *Context) ListTasks() []string {
-	return c.tasks.ListTasks()
-}
-
-func (c *Context) SetContext(pid int, ctx interface{}) bool {
-	return c.tasks.SetContext(pid, ctx)
-}
-
-func (c *Context) SetCaption(pid int, caption string) bool {
-	return c.tasks.SetCaption(pid, caption)
-}
-
-func (c *Context) PaintRequest(_ int) bool {
-	return c.tasks.PaintRequest()
-}
-
-func (c *Context) CreateTimer(pid int, first int, interval int, count int) bool {
-	return c.tasks.CreateTimer(pid, first, interval, count)
-}
-
-func (c *Context) StopTimer(pid int, tid int) bool {
-	return c.tasks.StopTimer(pid, tid)
-}
-
-func (c *Context) IsActive(pid int) bool {
-	return c.tasks.IsActive(pid)
-}
-
-func (c *Context) Deactivate(pid int) bool {
-	return c.tasks.Kill(pid)
-}
-
-func (c *Context) DeactivateAll(name string) int {
-	return c.tasks.KillAll(name)
-}
-
-func (c *Context) GetScreenSize() (int, int) {
-	return c.tasks.GetScreenSize()
-}
-
 func (c *Context) SetExit() {
 	c.Exit = true
-}
-
-func (c *Context) CWD() interfaces.ICommand {
-	return c.tasks.CWD()
-}
-
-func (c *Context) CWDSet(arg string) bool {
-	return c.tasks.CWDSet(arg)
-}
-
-func (c *Context) CWDGet() string {
-	return c.tasks.CWDGet()
-}
-
-func (c *Context) CWDPath() []string {
-	return c.tasks.CWDPath()
-}
-
-func (c *Context) CWDChilds() []string {
-	return c.tasks.CWDChilds()
-}
-
-func (c *Context) SetSelectionMode(pid int) {
-	c.tasks.SetSelectionMode(pid)
-}
-
-func (c *Context) SetSelectionModeNext() {
-	c.tasks.SetSelectionModePrevious()
-}
-
-func (c *Context) SetSelectionModePrevious() {
-	c.tasks.SetSelectionModePrevious()
-}
-
-func (c *Context) SetSelectionOptions(option rune, value float64) bool {
-	return c.tasks.SetSelectionOptions(option, value)
 }
 
 func (c *Context) History(verb interfaces.HistoryAction, idx int) {

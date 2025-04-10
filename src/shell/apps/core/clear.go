@@ -20,8 +20,8 @@ import (
 )
 
 func CreateClear() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		r.ClearScreen()
+	run := func(task interfaces.ITask, args []string) error {
+		task.ClearScreen()
 		return nil
 	}
 	root := cli.NewCommand("clear", nil, false, run)

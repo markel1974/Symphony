@@ -22,14 +22,14 @@ import (
 )
 
 func CreateMemoryStatus() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
+	run := func(task interfaces.ITask, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
-		r.WriteLn("")
-		r.WriteLn(fmt.Sprintf("Allocated memory in heap objects: %.3f MB", bToMb(m.Alloc)))
-		r.WriteLn(fmt.Sprintf("Total memory allocated for heap objects: %.3f MB", bToMb(m.TotalAlloc)))
-		r.WriteLn(fmt.Sprintf("Total memory obtained from the OS: %.3f MB", bToMb(m.Sys)))
-		r.WriteLn(fmt.Sprintf("Number of completed GC cycles: %d", m.NumGC))
+		task.WriteLn("")
+		task.WriteLn(fmt.Sprintf("Allocated memory in heap objects: %.3f MB", bToMb(m.Alloc)))
+		task.WriteLn(fmt.Sprintf("Total memory allocated for heap objects: %.3f MB", bToMb(m.TotalAlloc)))
+		task.WriteLn(fmt.Sprintf("Total memory obtained from the OS: %.3f MB", bToMb(m.Sys)))
+		task.WriteLn(fmt.Sprintf("Number of completed GC cycles: %d", m.NumGC))
 		return nil
 	}
 	root := cli.NewCommand("rt", nil, false, run)

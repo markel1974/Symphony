@@ -20,8 +20,8 @@ import (
 )
 
 func CreateExit() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		r.SetExit()
+	run := func(task interfaces.ITask, args []string) error {
+		task.SetExit()
 		return nil
 	}
 	root := cli.NewCommand("exit", []string{"quit"}, false, run)

@@ -23,7 +23,6 @@ import (
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -41,60 +40,6 @@ const (
 	commandTask     = "task"
 )
 
-type Task struct {
-	rootCtx interfaces.IContext
-	cmd     interfaces.ICommand
-	context interface{}
-	timers  []int
-	pid     int
-	state   taskState
-	caption string
-	Line    string
-	OffsetX int
-	OffsetY int
-	Scale   float64
-}
-
-func NewTask(r interfaces.IContext, cmd interfaces.ICommand, line string) *Task {
-	return &Task{
-		rootCtx: r,
-		cmd:     cmd,
-		context: nil,
-		state:   taskStateSetup,
-		caption: "",
-		Line:    line,
-		OffsetX: 0,
-		OffsetY: 0,
-		Scale:   1.0,
-	}
-}
-
-func (t *Task) SetId(id int) {
-	t.pid = id
-}
-
-func (t *Task) Unset() {
-	t.pid = adaptiveticker.UnknownId
-}
-
-func (t *Task) Paint(surface *Surface) {
-	fn := t.cmd.PaintEvent()
-	if fn == nil {
-		return
-	}
-	caption := strconv.Itoa(t.pid)
-	if len(t.caption) > 0 {
-		caption += " - " + t.caption
-	}
-	surface.SetOffsetX(t.OffsetX)
-	surface.SetOffsetY(t.OffsetY)
-	surface.SetScale(t.Scale)
-	surface.SetCaption(caption)
-	surface.Begin()
-	fn(t.rootCtx, t.cmd, t.pid, t.context, surface)
-	surface.End()
-}
-
 type TaskSelector struct {
 	pid       int
 	available []int
@@ -110,7 +55,7 @@ func NewTaskSelector() *TaskSelector {
 }
 
 type TaskManager struct {
-	rootCtx    interfaces.IContext
+	rootCtx    *Context
 	ticker     *adaptiveticker.AdaptiveTicker
 	foreground *Task
 	selector   *TaskSelector
@@ -124,7 +69,7 @@ type TaskManager struct {
 	ids        *adaptiveticker.Ids
 }
 
-func NewTaskManager(r interfaces.IContext, ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, system *cli.Command, commands *cli.Command) *TaskManager {
+func NewTaskManager(r *Context, ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, system *cli.Command, commands *cli.Command) *TaskManager {
 	t := &TaskManager{
 		rootCtx:    r,
 		ticker:     ticker,
@@ -173,8 +118,8 @@ func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
 		task.OffsetX = tTask.OffsetX
 		task.Scale = tTask.Scale
 	}
-	if err = sel.Execute(c.rootCtx, args, task.pid); err != nil {
-		//c.rootCtx.Write("Error:" + err.Error())
+	if err = sel.Execute(task, args); err != nil {
+		//c.ctx.Write("Error:" + err.Error())
 		c.Kill(task.pid)
 		return true, err
 	}
@@ -190,7 +135,7 @@ func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
 }
 
 func (c *TaskManager) create(cmd interfaces.ICommand, line string) (*Task, error) {
-	task := NewTask(c.rootCtx, cmd, line)
+	task := NewTask(c, c.rootCtx, cmd, line)
 
 	c.ids.Set(task)
 	if task.pid == adaptiveticker.UnknownId {
@@ -363,16 +308,6 @@ func (c *TaskManager) SetCaption(pid int, caption string) bool {
 	return true
 }
 
-func (c *TaskManager) SetContext(pid int, context interface{}) bool {
-	t, ok := c.ids.Get(pid)
-	if !ok {
-		return false
-	}
-	task := t.(*Task)
-	task.context = context
-	return true
-}
-
 func (c *TaskManager) SetFg(pid int) bool {
 	t, ok := c.ids.Get(pid)
 	if !ok {
@@ -437,14 +372,11 @@ func (c *TaskManager) CreateTimer(pid int, first int, interval int, count int) b
 	if task.cmd.TimerEvent == nil {
 		return false
 	}
-
 	m := newMessageTimer(pid, interval)
-
 	m.tid = c.ticker.Create(c.timersChan, m, int64(first), int64(interval), int64(count))
 	if m.tid > -1 {
 		task.timers = append(task.timers, m.tid)
 	}
-
 	return true
 }
 
@@ -564,7 +496,7 @@ func (c *TaskManager) ExecTimer(pid int, tid int, interval int) bool {
 	if t, ok := c.ids.Get(pid); ok {
 		task := t.(*Task)
 		if fn := task.cmd.TimerEvent(); fn != nil {
-			fn(task.rootCtx, task.cmd, task.pid, tid, task.context, interval)
+			fn(task, tid, interval)
 			ret = true
 		}
 	}
@@ -577,7 +509,7 @@ func (c *TaskManager) ExecRead(pid int, code int, buffer rune) bool {
 	if t, ok := c.ids.Get(pid); ok {
 		task := t.(*Task)
 		if fn := task.cmd.ReadEvent(); fn != nil {
-			fn(task.rootCtx, task.cmd, task.pid, task.context, code, buffer)
+			fn(task, code, buffer)
 			ret = true
 		}
 	}

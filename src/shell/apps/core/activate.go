@@ -21,44 +21,44 @@ import (
 )
 
 func CreateActivate() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
+	run := func(task interfaces.ITask, args []string) error {
 		targetPid := -1
 		if len(args) > 0 {
 			targetPid, _ = strconv.Atoi(args[0])
 		}
-		r.SetSelectionMode(targetPid)
+		task.SetSelectionMode(targetPid)
 		return nil
 	}
-	readFn := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, ctx interface{}, code int, key rune) {
+	readFn := func(task interfaces.ITask, code int, key rune) {
 		if code == 1 {
 			switch interfaces.CursorCodeDef(key) {
 			case interfaces.CursorUpDef:
-				r.SetSelectionOptions('y', -1)
+				task.SetSelectionOptions('y', -1)
 			case interfaces.CursorDownDef:
-				r.SetSelectionOptions('y', 1)
+				task.SetSelectionOptions('y', 1)
 			case interfaces.CursorLeftDef:
-				r.SetSelectionOptions('x', -1)
+				task.SetSelectionOptions('x', -1)
 			case interfaces.CursorRightDef:
-				r.SetSelectionOptions('x', 1)
+				task.SetSelectionOptions('x', 1)
 			}
 		} else {
 			switch key {
 			case 'w':
-				r.SetSelectionOptions('y', -1)
+				task.SetSelectionOptions('y', -1)
 			case 's':
-				r.SetSelectionOptions('y', 1)
+				task.SetSelectionOptions('y', 1)
 			case 'a':
-				r.SetSelectionOptions('x', -1)
+				task.SetSelectionOptions('x', -1)
 			case 'd':
-				r.SetSelectionOptions('x', 1)
+				task.SetSelectionOptions('x', 1)
 			case '+':
-				r.SetSelectionOptions('z', 0.1)
+				task.SetSelectionOptions('z', 0.1)
 			case '-':
-				r.SetSelectionOptions('z', -0.1)
+				task.SetSelectionOptions('z', -0.1)
 			case '\t':
-				r.SetSelectionModeNext()
+				task.SetSelectionModeNext()
 			case 'q':
-				r.SetSelectionModePrevious()
+				task.SetSelectionModePrevious()
 			}
 		}
 	}

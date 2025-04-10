@@ -21,19 +21,19 @@ import (
 )
 
 func CreateFg() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
-		r.WriteLn("")
+	run := func(task interfaces.ITask, args []string) error {
+		task.WriteLn("")
 		if len(args) <= 0 {
-			r.WriteLn("Empty argument")
+			task.WriteLn("Empty argument")
 			return nil
 		}
 		pid, err := strconv.Atoi(args[0])
 		if err != nil {
-			r.WriteLn("Invalid argument: " + args[0])
+			task.WriteLn("Invalid argument: " + args[0])
 			return nil
 		}
-		if !r.SetFg(pid) {
-			r.WriteLn("Unknown task: " + args[0])
+		if !task.SetFg(pid) {
+			task.WriteLn("Unknown task: " + args[0])
 		}
 		return nil
 	}

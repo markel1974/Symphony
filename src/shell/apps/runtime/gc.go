@@ -21,11 +21,11 @@ import (
 )
 
 func CreateGC() *cli.Command {
-	run := func(r interfaces.IContext, cmd interfaces.ICommand, pid int, args []string) error {
+	run := func(task interfaces.ITask, args []string) error {
 		//r := cmd.GetRootContext()
-		r.WriteLn("")
+		task.WriteLn("")
 		runtime.GC()
-		r.WriteLn("GC Done")
+		task.WriteLn("GC Done")
 		return nil
 	}
 	root := cli.NewCommand("gc", nil, false, run)
