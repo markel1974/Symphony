@@ -2,7 +2,6 @@ package board
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/c64/prg"
 	"github.com/markel1974/c64emu/src/hardware/vic"
@@ -42,13 +41,10 @@ type Board struct {
 	prg             *prg.PRG
 	joySwap         bool
 	dmaLow          bool
-	vBlankSignal    *signals.Signal
-	ledSignal       *signals.SignalUint32
 	emulation       []func()
 	sockets         []references.ISocket
 	label           string
-	//expansionIrqTrigger *signals.SignalUint32
-	//expansionIrqClear   *signals.SignalUint32
+	connections     references.IBoardConnections
 }
 
 // NewBoard initializes and returns a new Board instance configured with various hardware sockets and components.
@@ -58,8 +54,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		dmaLow:        false,
 		prg:           nil,
 		joySwap:       true,
-		vBlankSignal:  signals.NewSignal(),
-		ledSignal:     signals.NewSignalUint32(),
 		emulation:     []func(){},
 		label:         label,
 	}
@@ -100,16 +94,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	return s
 }
 
-// VBlankSignal returns a pointer to the signal associated with the vertical blanking interval.
-func (s *Board) VBlankSignal() *signals.Signal {
-	return s.vBlankSignal
-}
-
-// LEDSignal returns the current LED signal of the board as a SignalUint32 pointer.
-func (s *Board) LEDSignal() *signals.SignalUint32 {
-	return s.ledSignal
-}
-
 // Setup initializes the Board by assigning its configuration using the associated factory method. Returns an error if any issue occurs.
 func (s *Board) Setup() error {
 	return nil
@@ -122,6 +106,11 @@ func (s *Board) Connect() error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (s *Board) Mount(conn references.IBoardConnections) error {
+	s.connections = conn
 	return nil
 }
 
@@ -320,13 +309,11 @@ func (s *Board) DMALowTrigger(v bool) {
 func (s *Board) RDYLowTrigger(v bool) {
 	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
 	s.cpuSocket.SetRDYLow(v || s.dmaLow)
-	//TODO SIGNAL
 }
 
 // AECLowTrigger sets the AEC (Address Enable Control) low signal based on the given value and DMA low state.
 func (s *Board) AECLowTrigger(v bool) {
 	s.cpuSocket.SetAECLow(v || s.dmaLow)
-	//TODO SIGNAL
 }
 
 // LastCycleTrigger triggers the preparation of the socket in the last cycle of board operations.
@@ -336,7 +323,8 @@ func (s *Board) LastCycleTrigger() {
 
 // VBlankTrigger handles the vertical blank interrupt by emitting signals and updating connected hardware components.
 func (s *Board) VBlankTrigger() {
-	s.vBlankSignal.Emit()
+	s.connections.VBlank()
+
 	s.sidSocket.Update()
 	s.cia1Socket.Update()
 	s.cia2Socket.Update()
@@ -351,12 +339,7 @@ func (s *Board) VBlankTrigger() {
 
 // LedActivity emits a signal to change the state of the LED to the specified value.
 func (s *Board) LedActivity(deviceNumber uint8, led bool) {
-	l := uint32(0)
-	if led {
-		l = 1
-	}
-	val := (l << 8) | uint32(deviceNumber)
-	s.ledSignal.Emit(val)
+	s.connections.LedActivity(deviceNumber, led)
 }
 
 // startPRG initializes and loads a PRG from the specified file path. It returns an error if loading the PRG fails.

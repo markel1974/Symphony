@@ -288,14 +288,13 @@ func main() {
 	}
 	//END
 
-	if err = board.Start(); err != nil {
-		log.Fatal(err)
-	}
-
 	if err = createShell(boardComponent.GetCommand()); err != nil {
 		log.Fatal(err)
 	}
 	if err = displayRender.Setup(board, cfg); err != nil {
+		log.Fatal(err)
+	}
+	if err = board.Start(); err != nil {
 		log.Fatal(err)
 	}
 	if err = displayRender.Start(); err != nil {

@@ -35,7 +35,9 @@ func New() *Render {
 
 func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	g.board = board
-	g.board.VBlankSignal().Bind(g.vBlank)
+	if err := g.board.Mount(g); err != nil {
+		return err
+	}
 	if err := g.input.Setup(g.board, cfg); err != nil {
 		return err
 	}
@@ -60,7 +62,7 @@ func (g *Render) Start() error {
 	return nil
 }
 
-func (g *Render) vBlank() {
+func (g *Render) VBlank() {
 	select {
 	case text := <-g.ch:
 		for _, v := range text {
@@ -121,4 +123,11 @@ func (g *Render) printBuffer(textBuffer []byte) {
 		}
 		fmt.Printf("%c", v)
 	}
+}
+
+func (g *Render) LedActivity(deviceNumber uint8, led bool) {
+	//device := uint8(state & 0xf)
+	//led := uint8((state >> 8) & 0xf)
+	//fmt.Println("LED STATE", device, led)
+	fmt.Println("LED STATE", deviceNumber, led)
 }

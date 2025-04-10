@@ -1,9 +1,5 @@
 package references
 
-import (
-	"github.com/markel1974/c64emu/src/common/signals"
-)
-
 func IdIBoardC64(_ IBoard, label string, instance int) string {
 	return IdInternalComponent(label, instance, "IBoardC64")
 }
@@ -37,11 +33,9 @@ func IdIBoardVIC20(_ IBoard, label string, instance int) string {
 type IBoard interface {
 	Setup() error
 
+	Mount(conn IBoardConnections) error
+
 	Start() error
-
-	VBlankSignal() *signals.Signal
-
-	LEDSignal() *signals.SignalUint32
 
 	Reset()
 

@@ -44,9 +44,9 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 
 func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	g.board = board
-	//g.board.Connect(g)
-	g.board.VBlankSignal().Bind(g.vBlankSlot)
-	g.board.LEDSignal().Bind(g.ledSlot)
+	if err := g.board.Mount(g); err != nil {
+		return err
+	}
 	if err := g.inputs.Setup(g.board, cfg); err != nil {
 		return err
 	}
@@ -82,7 +82,7 @@ func (g *Render) runner() {
 	}
 }
 
-func (g *Render) vBlankSlot() {
+func (g *Render) VBlank() {
 	if g.win.MouseInsideWindow() {
 		g.inputs.MouseMove(g.win.MousePositionXY())
 	}
@@ -94,8 +94,9 @@ func (g *Render) vBlankSlot() {
 	//}
 }
 
-func (g *Render) ledSlot(state uint32) {
-	device := uint8(state & 0xf)
-	led := uint8((state >> 8) & 0xf)
-	fmt.Println("LED STATE", device, led)
+func (g *Render) LedActivity(deviceNumber uint8, led bool) {
+	//device := uint8(state & 0xf)
+	//led := uint8((state >> 8) & 0xf)
+	//fmt.Println("LED STATE", device, led)
+	fmt.Println("LED STATE", deviceNumber, led)
 }

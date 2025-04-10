@@ -97,7 +97,6 @@ The `board` package is used internally by the main emulation loop to drive the s
 
 *   **Cycle Accuracy:** The package is designed to support cycle-accurate emulation by synchronizing component operations to a central clock.
 *   **Modularity:** The use of sockets enhances modularity, making it easier to add or modify components.
-*   **Signals:** The package use a signal system.
 * **Clock:** the package use a clock management system.
 * **Interrupt:** the package use an interrupt management system.
 * **Memory:** the package use a memory management system.
