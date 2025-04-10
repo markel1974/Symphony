@@ -26,6 +26,8 @@ type ICartridgeManagerConnections interface {
 	RSTTrigger()
 
 	DMALowTrigger(v bool)
+
+	LedActivityTrigger(device uint8, led bool)
 }
 
 // CartridgeManagerSocket represents a connection point integrating various components like connections, PIC, PLA, VIC, and Quartz.
@@ -157,4 +159,8 @@ func (s *CartridgeManagerSocket) RamRemoveWriteTrigger(addr uint16, id int) {
 func (s *CartridgeManagerSocket) RmwFlags() uint8 {
 	//TODO IMPLEMENT cpu rmw flags
 	return 0
+}
+
+func (s *CartridgeManagerSocket) LedActivity(deviceNumber uint8, led bool) {
+	s.connections.LedActivityTrigger(deviceNumber, led)
 }

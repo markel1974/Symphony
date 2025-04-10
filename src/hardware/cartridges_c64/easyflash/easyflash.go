@@ -248,7 +248,7 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 	}
 	if led := value&0x80 == 0x80; led != c.led {
 		c.led = led
-		fmt.Println("EASYFLASH LED:", c.led)
+		c.expansion.LedActivity(128, c.led)
 	}
 }
 

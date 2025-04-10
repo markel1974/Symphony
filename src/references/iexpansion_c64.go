@@ -67,6 +67,8 @@ type IExpansionC64 interface {
 	AECAvailable() bool //TODO NOT STANDARD
 
 	RmwFlags() uint8 //TODO NOT STANDARD
+
+	LedActivity(uint8, bool)
 }
 
 func IdICartridgeManagerC64(_ ICartridgeManagerC64, label string, instance int) string {

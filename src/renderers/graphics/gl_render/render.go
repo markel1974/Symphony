@@ -89,9 +89,7 @@ func (g *Render) VBlank() {
 	g.inputs.Keys(g.win.KeysPressed())
 	g.surface.Draw(g.win, g.matrix)
 	g.win.Update()
-	//if (g.dt.Counter() & 0xf) == 0xf {
 	g.run = !g.win.Closed()
-	//}
 }
 
 func (g *Render) LedActivity(deviceNumber uint8, led bool) {

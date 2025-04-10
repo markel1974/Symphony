@@ -231,7 +231,7 @@ func (s *Board) IRQTrigger(d uint32) {
 	s.cartridgeSocket.IRQ(d)
 }
 
-// IRQClearTrigger clears the interrupt request associated with the socket by invoking the IRQClearTrigger method on connections.
+// IRQClearTrigger clears the interrupt request (IRQ) trigger for the provided device identifier.
 func (s *Board) IRQClearTrigger(d uint32) {
 	s.picSocket.ClearIRQ(d)
 	s.cartridgeSocket.IRQClear(d)
@@ -242,7 +242,7 @@ func (s *Board) NMITrigger() {
 	s.picSocket.TriggerNMI()
 }
 
-// NMIClearTrigger clears the Non-Maskable Interrupt (NMI) trigger on the board by signaling the PIC socket to reset NMI.
+// NMIClearTrigger clears the NMI (Non-Maskable Interrupt) trigger by invoking the ClearNMI method on the PIC socket.
 func (s *Board) NMIClearTrigger() {
 	s.picSocket.ClearNMI()
 }
