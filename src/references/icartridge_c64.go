@@ -90,6 +90,10 @@ type ICartridgeC64 interface {
 
 	IOWrite(addr uint16, data uint8) bool
 
+	IRQ(d uint32)
+
+	IRQCLear(d uint32)
+
 	GetExRom() uint8
 
 	GetGame() uint8

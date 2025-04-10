@@ -123,6 +123,14 @@ func (c *CartridgeOcean) IOWrite(addr uint16, data uint8) bool {
 	return false
 }
 
+// IRQ handles the Interrupt Request (IRQ) signal for the CartridgeGeneric, enabling appropriate cartridge-specific behavior.
+func (c *CartridgeOcean) IRQ(_ uint32) {
+}
+
+// IRQCLear clears the state of any active Interrupt Requests (IRQ) for the CartridgeGeneric.
+func (c *CartridgeOcean) IRQCLear(_ uint32) {
+}
+
 // GetExRom returns the value of the ExROM line, which indicates the configuration of the cartridge in the memory map.
 func (c *CartridgeOcean) GetExRom() uint8 {
 	return c.exRom

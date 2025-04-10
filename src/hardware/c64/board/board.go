@@ -228,15 +228,13 @@ func (s *Board) AECLowTrigger(v bool) {
 // IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
 func (s *Board) IRQTrigger(d uint32) {
 	s.picSocket.TriggerIRQ(d)
-	//TODO
-	//s.cartridgeSocket.IRQEmit(d)
+	s.cartridgeSocket.IRQSignal(d)
 }
 
 // IRQClearTrigger clears the interrupt request associated with the socket by invoking the IRQClear method on connections.
 func (s *Board) IRQClearTrigger(d uint32) {
 	s.picSocket.ClearIRQ(d)
-	//TODO
-	//s.cartridgeSocket.IRQClearEmit(d)
+	s.cartridgeSocket.IRQClearSignal(d)
 }
 
 // NMITrigger initiates a Non-Maskable Interrupt (NMI) on the board through the connected PIC socket.
@@ -252,18 +250,6 @@ func (s *Board) NMIClearTrigger() {
 // RSTTrigger triggers a reset signal using the PIC socket implementation within the Board structure.
 func (s *Board) RSTTrigger() {
 	s.picSocket.TriggerReset()
-}
-
-// IRQTriggerBind connects a callback function to the IRQ trigger event, enabling custom handling of IRQ signals.
-func (s *Board) IRQTriggerBind(fn func(uint32)) {
-	//TODO REMOVE
-	s.picSocket.IRQTriggerBind(fn)
-}
-
-// IRQClearBind binds a callback function that is triggered when the IRQ clear event occurs.
-func (s *Board) IRQClearBind(fn func(uint32)) {
-	//TODO REMOVE
-	s.picSocket.IRQClearBind(fn)
 }
 
 // LastCycleTrigger triggers the preparation of the socket in the last cycle of board operations.

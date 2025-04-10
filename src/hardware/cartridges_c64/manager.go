@@ -235,6 +235,30 @@ func (f *Manager) IORead(addr uint16) (uint8, bool) {
 	return val, ret
 }
 
+func (f *Manager) IRQSignal(d uint32) {
+	if f.carts == nil {
+		return
+	}
+	if len(f.carts) == 1 {
+		f.carts[0].IRQ(d)
+	}
+	for _, cart := range f.carts {
+		cart.IRQ(d)
+	}
+}
+
+func (f *Manager) IRQClearSignal(d uint32) {
+	if f.carts == nil {
+		return
+	}
+	if len(f.carts) == 1 {
+		f.carts[0].IRQ(d)
+	}
+	for _, cart := range f.carts {
+		cart.IRQCLear(d)
+	}
+}
+
 // Add registers a new cartridge using the provided hardware type, name, and data, returning an identifier or an error if failed.
 func (f *Manager) Add(hardware string, name string, data []byte) (string, error) {
 	id := strconv.Itoa(f.idx)

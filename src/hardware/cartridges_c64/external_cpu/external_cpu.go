@@ -86,24 +86,19 @@ func (s *CartridgeExternalCPU) Bind(board references.IExpansionC64, ldr referenc
 	cc[cpu.HardwareId()] = cpu
 	cc[p.HardwareId()] = p
 	cc[q.HardwareId()] = q
-
 	for _, v := range cc {
 		if err = v.Setup(); err != nil {
 			return err
 		}
 	}
-
 	if err = s.cpu.Bind(s, s.pic, s.board); err != nil {
 		return err
 	}
-
 	for _, v := range cc {
 		if err = v.Connect(); err != nil {
 			return err
 		}
 	}
-	s.board.IRQTriggerBind(s.pic.TriggerIRQ)
-	s.board.IRQClearBind(s.pic.ClearIRQ)
 	return nil
 }
 
@@ -158,6 +153,16 @@ func (s *CartridgeExternalCPU) IORead(addr uint16) (uint8, bool) {
 // Returns true if the write operation is handled; otherwise, false.
 func (s *CartridgeExternalCPU) IOWrite(addr uint16, data uint8) bool {
 	return false
+}
+
+// IRQ handles the Interrupt Request (IRQ) signal for the CartridgeGeneric, enabling appropriate cartridge-specific behavior.
+func (s *CartridgeExternalCPU) IRQ(d uint32) {
+	s.pic.TriggerIRQ(d)
+}
+
+// IRQCLear clears the state of any active Interrupt Requests (IRQ) for the CartridgeGeneric.
+func (s *CartridgeExternalCPU) IRQCLear(d uint32) {
+	s.pic.ClearIRQ(d)
 }
 
 // Write stores an 8-bit data value to a specified address within a given ROM interval and returns success status as a boolean.

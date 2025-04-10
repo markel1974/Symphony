@@ -1,7 +1,6 @@
 package iec
 
 import (
-	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/quartz"
@@ -116,7 +115,6 @@ type Protocol struct {
 	ps           *ProtocolState
 	cfg          *config.Config
 	deviceNumber uint8
-	ledSignal    *signals.SignalUint32
 	debug        bool
 }
 
@@ -127,7 +125,6 @@ func NewProtocol(factory references.IComponentFactory, parent references.ICompon
 		ps:            NewProtocolState(),
 		iec:           nil,
 		device:        nil,
-		ledSignal:     signals.NewSignalUint32(),
 		quartz:        nil,
 		debug:         false,
 	}

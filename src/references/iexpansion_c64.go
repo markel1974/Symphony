@@ -62,10 +62,6 @@ type IExpansionC64 interface {
 
 	IRQClear()
 
-	IRQTriggerBind(fn func(uint32))
-
-	IRQClearBind(fn func(uint32))
-
 	SetDMALow(bool)
 
 	BusAvailable() bool
@@ -90,7 +86,7 @@ type ICartridgeManagerC64Socket interface {
 type ICartridgeManagerC64 interface {
 	Setup() error
 
-	Bind(socket ICartridgeManagerC64Socket, expansion IExpansionC64) error //TODO expansion Must be an IComponent
+	Bind(socket ICartridgeManagerC64Socket, expansion IExpansionC64) error
 
 	Config() (uint8, uint8, bool)
 
@@ -103,6 +99,10 @@ type ICartridgeManagerC64 interface {
 	IORead(addr uint16) (uint8, bool)
 
 	IOWrite(addr uint16, data uint8) bool
+
+	IRQSignal(d uint32)
+
+	IRQClearSignal(d uint32)
 
 	Reset()
 

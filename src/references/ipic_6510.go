@@ -47,10 +47,6 @@ type IPIC6510 interface {
 	ClearNMI()
 
 	HasNMI() bool
-
-	IRQTriggerBind(fn func(uint32))
-
-	IRQClearBind(fn func(uint32))
 }
 
 func ComponentToIPIC6510(component IComponent) (IPIC6510, error) {

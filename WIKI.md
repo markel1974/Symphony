@@ -97,10 +97,6 @@ Welcome to the official wiki for `g64`, a high-fidelity, cycle-accurate emulator
 
 The core of `g64` is driven by a central clock (`src/components/quartz`) that synchronizes all components. Each component advances based on clock cycles, enabling precise cycle-accurate emulation without explicit timing management.
 
-### Signal-Based Decoupling
-
-`g64` uses a custom signal system (`src/signals`) for communication between components. This method enables significant decoupling, improving modularity and simplifying future extensions.
-
 ### Socket-Based Interfacing
 
 Components in `g64` interact through socket interfaces (e.g., `CPUSocket`, `VicSocket`, `SidSocket`). These sockets define clear communication paths and encapsulate each component's internal logic. This method enhances modularity and maintainability.

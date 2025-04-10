@@ -179,6 +179,14 @@ func (c *CartridgeGeneric) Read(i references.RomInterval, addr uint16) (uint8, b
 	return 0, false
 }
 
+// IRQ handles the Interrupt Request (IRQ) signal for the CartridgeGeneric, enabling appropriate cartridge-specific behavior.
+func (c *CartridgeGeneric) IRQ(_ uint32) {
+}
+
+// IRQCLear clears the state of any active Interrupt Requests (IRQ) for the CartridgeGeneric.
+func (c *CartridgeGeneric) IRQCLear(_ uint32) {
+}
+
 // IORead performs an I/O read operation and always returns 0 and false, indicating no data is available for the requested address.
 func (c *CartridgeGeneric) IORead(_ uint16) (uint8, bool) {
 	return 0, false

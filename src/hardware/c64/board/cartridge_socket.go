@@ -4,9 +4,15 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// IExpansionSocketConnections defines an interface for managing connections and triggers in an expansion socket system.
-// DMALowTrigger sets the DMA low line state to the specified boolean value.
-type IExpansionSocketConnections interface {
+// ICartridgeManagerConnections defines the interface for managing hardware connection signals for a cartridge system.
+// BALow checks the state of the Bus Available (BA) signal, returning true if low.
+// AECLow checks the state of the Address Enable Control (AEC) signal, returning true if low.
+// NMITrigger triggers a Non-Maskable Interrupt (NMI) signal in the system.
+// IRQTrigger sends an Interrupt Request (IRQ) signal with a specified delay value.
+// IRQClearTrigger clears a triggered IRQ signal after the specified delay value.
+// RSTTrigger triggers a system Reset (RST) signal in the hardware.
+// DMALowTrigger controls the state of the Direct Memory Access (DMA) signal, accepting a boolean value.
+type ICartridgeManagerConnections interface {
 	BALow() bool
 
 	AECLow() bool
@@ -20,17 +26,13 @@ type IExpansionSocketConnections interface {
 	RSTTrigger()
 
 	DMALowTrigger(v bool)
-
-	IRQTriggerBind(fn func(uint32))
-
-	IRQClearBind(fn func(uint32))
 }
 
 // CartridgeManagerSocket represents a connection point integrating various components like connections, PIC, PLA, VIC, and Quartz.
 // It enables coordinated interaction and communication between connected emulation subsystems.
 type CartridgeManagerSocket struct {
 	references.ICartridgeManagerC64
-	connections IExpansionSocketConnections
+	connections ICartridgeManagerConnections
 	label       string
 	parent      references.IComponent
 	component   references.IComponent
@@ -40,7 +42,7 @@ type CartridgeManagerSocket struct {
 }
 
 // NewExpansionSocket initializes and returns a pointer to a new CartridgeManagerSocket instance with default nil values.
-func NewExpansionSocket(parent references.IComponent, label string, connections IExpansionSocketConnections) *CartridgeManagerSocket {
+func NewExpansionSocket(parent references.IComponent, label string, connections ICartridgeManagerConnections) *CartridgeManagerSocket {
 	e := &CartridgeManagerSocket{
 		parent:      parent,
 		label:       label,
@@ -119,16 +121,6 @@ func (s *CartridgeManagerSocket) IRQTrigger() {
 // IRQClear clears the IRQ signal associated with the expansion bit from the programmable interrupt controller (PIC).
 func (s *CartridgeManagerSocket) IRQClear() {
 	s.connections.IRQClearTrigger(intrIrqExpansionBit)
-}
-
-// IRQTriggerBind connects a callback function to the IRQ trigger event, enabling custom handling of IRQ signals.
-func (s *CartridgeManagerSocket) IRQTriggerBind(fn func(uint32)) {
-	s.connections.IRQTriggerBind(fn)
-}
-
-// IRQClearBind binds a callback function triggered when the IRQ clear event occurs.
-func (s *CartridgeManagerSocket) IRQClearBind(fn func(uint32)) {
-	s.connections.IRQClearBind(fn)
 }
 
 // BusAvailable checks whether the expansion bus is available by verifying the BA (Bus Available) line status of the VIC.

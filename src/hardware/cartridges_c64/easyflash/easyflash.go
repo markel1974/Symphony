@@ -313,6 +313,14 @@ func (c *CartridgeEasyFlash) IOWrite(addr uint16, data uint8) bool {
 	return false
 }
 
+// IRQ handles the Interrupt Request (IRQ) signal for the CartridgeGeneric, enabling appropriate cartridge-specific behavior.
+func (c *CartridgeEasyFlash) IRQ(_ uint32) {
+}
+
+// IRQCLear clears the state of any active Interrupt Requests (IRQ) for the CartridgeGeneric.
+func (c *CartridgeEasyFlash) IRQCLear(_ uint32) {
+}
+
 // romLRead reads a byte from the low ROM bank at the given address within the EasyFlash cartridge.
 func (c *CartridgeEasyFlash) romLRead(addr uint16) uint8 {
 	v := (uint(c.register00) * 0x2000) + (uint(addr) & 0x1fff)

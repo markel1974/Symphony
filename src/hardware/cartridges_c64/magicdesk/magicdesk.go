@@ -129,6 +129,14 @@ func (c *CartridgeMagicDesk) IOWrite(addr uint16, data uint8) bool {
 	return false
 }
 
+// IRQ handles the Interrupt Request (IRQ) signal for the CartridgeGeneric, enabling appropriate cartridge-specific behavior.
+func (c *CartridgeMagicDesk) IRQ(_ uint32) {
+}
+
+// IRQCLear clears the state of any active Interrupt Requests (IRQ) for the CartridgeGeneric.
+func (c *CartridgeMagicDesk) IRQCLear(_ uint32) {
+}
+
 // GetExRom retrieves the ExRom value from the cartridge specification.
 func (c *CartridgeMagicDesk) GetExRom() uint8 {
 	return c.spec.ExRom

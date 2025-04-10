@@ -2,7 +2,6 @@ package pic_6510
 
 import (
 	"github.com/markel1974/c64emu/src/common/bits"
-	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
 )
@@ -27,8 +26,6 @@ type Pic struct {
 	firstIrqCycle uint64
 	firstNMICycle uint64
 	nmiExec       bool
-	extIrqTrigger *signals.SignalUint32
-	extIrqClear   *signals.SignalUint32
 }
 
 // NewPIC creates and initializes a new instance of Pic with default values and registers it with the specified parent and factory.
@@ -41,8 +38,6 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 		all:           bits.Bits(0),
 		irq:           bits.Bits(0),
 		nmiExec:       false,
-		extIrqTrigger: nil,
-		extIrqClear:   nil,
 	}
 	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIPIC6510(p, label, instance))
 	return p
@@ -84,24 +79,6 @@ func (i *Pic) Reset() {
 	i.firstIrqCycle = 0
 	i.firstNMICycle = 0
 	i.nmiExec = false
-	i.extIrqTrigger = nil
-	i.extIrqClear = nil
-}
-
-// IRQTriggerBind binds a callback function to the external IRQ trigger signal, initializing the signal if not already set.
-func (i *Pic) IRQTriggerBind(fn func(uint32)) {
-	if i.extIrqTrigger == nil {
-		i.extIrqTrigger = signals.NewSignalUint32()
-	}
-	i.extIrqTrigger.Bind(fn)
-}
-
-// IRQClearBind binds a callback function that is triggered when an IRQ clear event occurs.
-func (i *Pic) IRQClearBind(fn func(uint32)) {
-	if i.extIrqClear == nil {
-		i.extIrqClear = signals.NewSignalUint32()
-	}
-	i.extIrqClear.Bind(fn)
 }
 
 // TriggerReset sets the reset interrupt flag in the internal bitfield to signal a reset condition.
@@ -120,9 +97,6 @@ func (i *Pic) TriggerIRQ(intr uint32) {
 	}
 	i.irq.BitSet(intr)
 	i.all.BitSet(intrIrqBit)
-	if i.extIrqTrigger != nil {
-		i.extIrqTrigger.Emit(intr)
-	}
 }
 
 // ClearIRQ clears the specified interrupt request (IRQ) bit and updates related signals if necessary.
@@ -131,9 +105,6 @@ func (i *Pic) ClearIRQ(intr uint32) {
 	i.irq.BitClear(intr)
 	if i.irq == 0 {
 		i.all.BitClear(intrIrqBit)
-	}
-	if i.extIrqClear != nil {
-		i.extIrqClear.Emit(intr)
 	}
 }
 

@@ -138,6 +138,14 @@ func (reu *REU) Reset() {
 	}
 }
 
+func (reu *REU) IRQ(_ uint32) {
+
+}
+
+func (reu *REU) IRQCLear(_ uint32) {
+
+}
+
 func (reu *REU) Setup() error {
 	return nil
 }
