@@ -183,13 +183,11 @@ func (c *Command) SuggestionsFor(typedName string) []string {
 		distance = 2
 	}
 	for _, cmd := range c.commands {
-		if cmd.IsAvailableCommand() {
-			ld := levenshteinDistance(typedName, cmd.Name(), true)
-			suggestByLevenshtein := ld <= distance
-			suggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))
-			if suggestByLevenshtein || suggestByPrefix {
-				suggestions = append(suggestions, cmd.Name())
-			}
+		ld := levenshteinDistance(typedName, cmd.Name(), true)
+		suggestByLevenshtein := ld <= distance
+		suggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))
+		if suggestByLevenshtein || suggestByPrefix {
+			suggestions = append(suggestions, cmd.Name())
 		}
 	}
 	return suggestions
@@ -347,17 +345,6 @@ func (c *Command) HasSubCommands() bool {
 	return len(c.commands) > 0
 }
 
-// IsAvailableCommand determines if the command is visible and runnable or has available subcommands, excluding hidden commands.
-func (c *Command) IsAvailableCommand() bool {
-	if c.HasParent() {
-		return false
-	}
-	if c.HasAvailableSubCommands() {
-		return true
-	}
-	return false
-}
-
 // IsAdditionalHelpTopicCommand determines if the command is a help topic by checking its runnability, visibility, and subcommands.
 func (c *Command) IsAdditionalHelpTopicCommand() bool {
 	// if any non-help sub commands are found, the command is not a 'help' command
@@ -376,18 +363,6 @@ func (c *Command) HasHelpSubCommands() bool {
 			return true
 		}
 	}
-	return false
-}
-
-// HasAvailableSubCommands checks if the command has any non-deprecated, non-hidden, or non-help subcommands available.
-func (c *Command) HasAvailableSubCommands() bool {
-	// return true on the first found available (non deprecated/help/hidden) sub command
-	for _, sub := range c.commands {
-		if sub.IsAvailableCommand() {
-			return true
-		}
-	}
-	// the command either has no sub commands, or no available (non deprecated/help/hidden) sub commands
 	return false
 }
 

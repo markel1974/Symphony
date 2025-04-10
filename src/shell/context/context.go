@@ -28,6 +28,8 @@ const (
 	contextMaQueueLen = 1024
 )
 
+const eol = "\r\n"
+
 type Context struct {
 	Exit        bool
 	ticker      *adaptiveticker.AdaptiveTicker
@@ -136,7 +138,7 @@ func (c *Context) Exec() {
 	c.eventLoop()
 }
 
-func (c *Context) execCommand(line string) bool {
+func (c *Context) execCommand(line string) (bool, error) {
 	return c.tasks.Execute(line, nil)
 }
 
@@ -232,8 +234,10 @@ func (c *Context) TaskList() string {
 func (c *Context) Write(data string) {
 	_, _ = c.terminal.Write(data)
 }
+
 func (c *Context) WriteLn(data string) {
-	_, _ = c.terminal.Write(data + "\r\n")
+	c.Write(data)
+	c.Write(eol)
 }
 
 func (c *Context) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
@@ -241,8 +245,8 @@ func (c *Context) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.
 }
 
 func (c *Context) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	_, _ = c.terminal.WriteColor(data, fg, bg, mode)
-	_, _ = c.terminal.Write("\r\n")
+	c.WriteColor(data, fg, bg, mode)
+	c.Write(eol)
 }
 
 func (c *Context) ClearScreen() {

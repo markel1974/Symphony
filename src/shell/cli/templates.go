@@ -66,14 +66,12 @@ func (t *Template) Exec(c *Command, text string) (string, error) {
 		CommandPath             string
 	}
 	z := Component{
-		Name:                    c.Name(),
-		LongHelp:                c.longHelp,
-		ShortHelp:               c.shortHelp,
-		HasSubCommands:          c.HasSubCommands(),
-		HasAvailableSubCommands: c.HasAvailableSubCommands(),
-		IsAvailableCommand:      c.IsAvailableCommand(),
-		Commands:                c.commands,
-		CommandPath:             c.CommandPath(),
+		Name:           c.Name(),
+		LongHelp:       c.longHelp,
+		ShortHelp:      c.shortHelp,
+		HasSubCommands: c.HasSubCommands(),
+		Commands:       c.commands,
+		CommandPath:    c.CommandPath(),
 	}
 	tpl := template.New("top")
 	tpl.Funcs(_templateFuncs)

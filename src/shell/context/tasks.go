@@ -141,13 +141,13 @@ func NewTaskManager(r interfaces.IContext, ticker *adaptiveticker.AdaptiveTicker
 	return t
 }
 
-func (c *TaskManager) Execute(line string, tTask *Task) bool {
+func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
 	el, err := cli.Parse(line)
 	if err != nil {
-		return false
+		return false, err
 	}
 	if len(el) == 0 {
-		return false
+		return false, fmt.Errorf("invalid command: '%s'", line)
 	}
 	name := el[0]
 	args := el[1:]
@@ -156,16 +156,16 @@ func (c *TaskManager) Execute(line string, tTask *Task) bool {
 		sel = c.system.FindChildren(name)
 	}
 	if sel == nil {
-		return false
+		return false, fmt.Errorf("unknown command: '%s'", name)
 	}
 	if len(args) > 0 {
 		if sel, args, err = sel.Find(args); err != nil || sel == nil {
-			return false
+			return false, fmt.Errorf("invalid command: '%s %s'", name, strings.Join(args, " "))
 		}
 	}
 	task, err := c.create(sel, line)
 	if err != nil {
-		return false
+		return false, fmt.Errorf("error creating task: %s", err.Error())
 	}
 	if tTask != nil {
 		task.OffsetY = tTask.OffsetY
@@ -173,19 +173,19 @@ func (c *TaskManager) Execute(line string, tTask *Task) bool {
 		task.Scale = tTask.Scale
 	}
 	if err = sel.Execute(c.rootCtx, args, task.pid); err != nil {
-		c.rootCtx.Write("Error:" + err.Error())
+		//c.rootCtx.Write("Error:" + err.Error())
 		c.Kill(task.pid)
-		return true
+		return true, err
 	}
 	if !sel.Daemon() {
 		c.Kill(task.pid)
-		return true
+		return true, nil
 	}
 	task.state = taskStateRunning
 	if !sel.Background() {
 		c.foreground = task
 	}
-	return true
+	return true, nil
 }
 
 func (c *TaskManager) create(cmd *cli.Command, line string) (*Task, error) {
@@ -715,10 +715,10 @@ func (c *TaskManager) RestoreTasks(name string) bool {
 		if strings.HasPrefix(task.Line, commandTask) {
 			continue
 		}
-		c.Execute(task.Line, task)
+		_, _ = c.Execute(task.Line, task)
 	}
 
-	c.Execute(commandActivate, nil)
+	_, _ = c.Execute(commandActivate, nil)
 
 	return true
 }
@@ -734,7 +734,7 @@ func (c *TaskManager) ExecActivate() bool {
 	}
 
 	c.SetBackground()
-	c.Execute(fmt.Sprint(commandActivate, " ", pid), nil)
+	_, _ = c.Execute(fmt.Sprint(commandActivate, " ", pid), nil)
 
 	return false
 }

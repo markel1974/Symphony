@@ -21,12 +21,13 @@ import (
 
 func CreateCD() *cli.Command {
 	run := func(r interfaces.IContext, cmd *cli.Command, pid int, args []string) error {
-		r.WriteLn("")
 		if len(args) <= 0 {
+			r.WriteLn("")
 			r.WriteLn("cd: empty directory")
 			return nil
 		}
 		if !r.CWDSet(args[0]) {
+			r.WriteLn("")
 			r.WriteLn("cd: no such directory: " + args[0])
 		}
 		return nil

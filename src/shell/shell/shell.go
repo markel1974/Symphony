@@ -36,7 +36,7 @@ const (
 
 type ExecSuggestionType func(in string, count int) bool
 
-type ExecCommandType func(command string) bool
+type ExecCommandType func(command string) (bool, error)
 
 type Shell struct {
 	current  []rune
@@ -179,12 +179,10 @@ func (c *Shell) enterPressed() bool {
 		case stateAuthenticated:
 			c.history.AddToHistory(buffer)
 			c.history.SetDefault("")
-
 			if c.ExecCommand != nil {
-				c.ExecCommand(buffer)
+				_, _ = c.ExecCommand(buffer)
 			}
 			//c.quit = c.execCommand(buffer)
-
 		default:
 			quit = true
 		}
