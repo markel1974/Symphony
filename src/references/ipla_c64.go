@@ -67,12 +67,3 @@ func ComponentToIPLAc64(component IComponent) (IPlaC64, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIPLAc64(cc map[string]IComponent, label string, instance int) (IPlaC64, error) {
-	id := IdIPlaC64(nil, label, instance)
-	c, err := ComponentToIPLAc64(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

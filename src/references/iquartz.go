@@ -64,12 +64,3 @@ func ComponentToIQuartz(component IComponent) (IQuartz, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIQuartz(cc map[string]IComponent, label string, instance int) (IQuartz, error) {
-	quartzId := IdIQuartz(nil, label, instance)
-	c, err := ComponentToIQuartz(cc[quartzId])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

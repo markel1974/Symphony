@@ -51,12 +51,3 @@ func ComponentToIKeyboard(component IComponent) (IKeyboard, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIKeyboard(cc map[string]IComponent, label string, instance int) (IKeyboard, error) {
-	id := IdIKeyboard(nil, label, instance)
-	c, err := ComponentToIKeyboard(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

@@ -36,12 +36,3 @@ func ComponentToIThrottle(component IComponent) (IThrottle, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIThrottle(cc map[string]IComponent, label string, instance int) (IThrottle, error) {
-	id := IdIThrottle(nil, label, instance)
-	c, err := ComponentToIThrottle(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

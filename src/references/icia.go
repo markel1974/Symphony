@@ -70,12 +70,3 @@ func ComponentToICIA(component IComponent) (ICIA, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToICIA(cc map[string]IComponent, label string, instance int) (ICIA, error) {
-	id := IdICIA(nil, label, instance)
-	c, err := ComponentToICIA(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

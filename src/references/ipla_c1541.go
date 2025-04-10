@@ -37,12 +37,3 @@ func ComponentToIPLAc1541(component IComponent) (IPLAc1541, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIPLAc1541(cc map[string]IComponent, label string, instance int) (IPLAc1541, error) {
-	id := IdIPLAc1541(nil, label, instance)
-	c, err := ComponentToIPLAc1541(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

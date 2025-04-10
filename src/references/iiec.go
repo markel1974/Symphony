@@ -142,12 +142,3 @@ func ComponentToIEC(component IComponent) (IIec, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIEC(cc map[string]IComponent, label string, instance int) (IIec, error) {
-	id := IdIIec(nil, label, instance)
-	c, err := ComponentToIEC(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

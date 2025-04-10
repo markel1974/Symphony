@@ -6,8 +6,6 @@ import (
 
 // IExpansionSocketConnections defines an interface for managing connections and triggers in an expansion socket system.
 // DMALowTrigger sets the DMA low line state to the specified boolean value.
-// IRQTriggerBind binds a callback function to handle IRQ triggers with a uint32 parameter.
-// IRQClearBind binds a callback function to handle IRQ clearing with a uint32 parameter.
 type IExpansionSocketConnections interface {
 	DMALowTrigger(v bool)
 }

@@ -48,12 +48,3 @@ func ComponentToIJoystick(component IComponent) (IJoystick, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIJoystick(cc map[string]IComponent, label string, instance int) (IJoystick, error) {
-	id := IdIJoystick(nil, label, instance)
-	c, err := ComponentToIJoystick(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

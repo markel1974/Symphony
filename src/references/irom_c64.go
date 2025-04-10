@@ -41,12 +41,3 @@ func ComponentToIROMLoaderC64(component IComponent) (IROMLoaderC64, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIROMLoaderC64(cc map[string]IComponent, label string, instance int) (IROMLoaderC64, error) {
-	id := IdIROMLoaderC64(nil, label, instance)
-	c, err := ComponentToIROMLoaderC64(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

@@ -76,12 +76,3 @@ func ComponentToIVIA(component IComponent) (IVIA, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIVIA(cc map[string]IComponent, label string, instance int) (IVIA, error) {
-	id := IdIVIA(nil, label, instance)
-	c, err := ComponentToIVIA(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

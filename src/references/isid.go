@@ -54,12 +54,3 @@ func ComponentToISID(component IComponent) (ISID, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToISID(cc map[string]IComponent, label string, instance int) (ISID, error) {
-	id := IdISID(nil, label, instance)
-	c, err := ComponentToISID(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

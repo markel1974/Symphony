@@ -34,12 +34,3 @@ func ComponentToIROMLoaderC1541(component IComponent) (IROMLoaderC1541, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIROMLoaderC1541(cc map[string]IComponent, label string, instance int) (IROMLoaderC1541, error) {
-	id := IdIROMLoaderC1541(nil, label, instance)
-	c, err := ComponentToIROMLoaderC1541(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

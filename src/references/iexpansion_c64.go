@@ -121,12 +121,3 @@ func ComponentToICartridgeManagerC64(component IComponent) (ICartridgeManagerC64
 	}
 	return v, nil
 }
-
-func ComponentsToICartridgeManagerC64(cc map[string]IComponent, label string, instance int) (ICartridgeManagerC64, error) {
-	id := IdICartridgeManagerC64(nil, label, instance)
-	c, err := ComponentToICartridgeManagerC64(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

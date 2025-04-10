@@ -98,12 +98,3 @@ func ComponentToIVIC(component IComponent) (IVIC, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToIVIC(cc map[string]IComponent, label string, instance int) (IVIC, error) {
-	id := IdIVIC(nil, label, instance)
-	c, err := ComponentToIVIC(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

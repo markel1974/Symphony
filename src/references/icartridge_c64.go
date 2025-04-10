@@ -162,12 +162,3 @@ func ComponentToICartridgeC64(component IComponent) (ICartridgeC64, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToICartridgeC64(cc map[string]IComponent, label string, instance int) (ICartridgeC64, error) {
-	id := IdICartridgeC64(nil, label, instance)
-	c, err := ComponentToICartridgeC64(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}

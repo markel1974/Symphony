@@ -56,12 +56,3 @@ func ComponentToI6510(component IComponent) (I6510, error) {
 	}
 	return v, nil
 }
-
-func ComponentsToI6510(cc map[string]IComponent, label string, instance int) (I6510, error) {
-	id := IdI6510(nil, label, instance)
-	c, err := ComponentToI6510(cc[id])
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
