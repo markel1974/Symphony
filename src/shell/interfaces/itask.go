@@ -2,21 +2,22 @@ package interfaces
 
 import "io"
 
-// PathSeparator defines the standard character used to separate elements in a file system path.
+// PathSeparator is the string used to separate elements in a hierarchical path format, typically a forward slash "/".
 const PathSeparator = "/"
 
-// RunFn defines a function type executed with a given context, command, process ID, and arguments, returning an error if any.
+// RunFn defines a function type that performs a task execution with given arguments and returns an error if any occurs.
 type RunFn func(task ITask, args []string) error
 
-// TimerFn defines a function type for handling timer-based events within a context, providing arguments for event details.
+// TimerFn defines a function type for tasks invoked at regular intervals, receiving the task, timer id, and interval.
 type TimerFn func(task ITask, tid int, interval int)
 
-// ReadFn defines a function type for handling read events, providing context, command, process ID, and input details.
+// ReadFn defines a function type invoked for processing input events with a task, an event code, and a key character.
 type ReadFn func(task ITask, code int, key rune)
 
-// PaintFn defines a function type responsible for handling paint events given the context, command, process ID, user context, and surface.
+// PaintFn defines a function type used to handle painting tasks on a specified surface in the context of a task.
 type PaintFn func(task ITask, surface ISurface)
 
+// ITask defines a task interface providing functions for process handling, context management, and terminal interactions.
 type ITask interface {
 	PID() int
 

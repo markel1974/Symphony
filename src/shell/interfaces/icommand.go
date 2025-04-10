@@ -1,6 +1,6 @@
 package interfaces
 
-// ICommand represents an interface for building hierarchical command structures with event handling and utility methods.
+// ICommand defines an interface for handling hierarchical commands with support for events, execution, and navigation.
 type ICommand interface {
 	PaintEvent() PaintFn
 

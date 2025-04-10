@@ -22,12 +22,13 @@ import (
 	"math"
 )
 
+// Surface represents a graphical or textual grid-based render surface for visual output and interaction.
 type Surface struct {
 	terminal  interfaces.ITerminal
 	rows      int
 	columns   int
 	surface   [][]string
-	rmax      int
+	rMax      int
 	scale     float64
 	offsetX   int
 	offsetY   int
@@ -40,6 +41,7 @@ type Surface struct {
 	iColumns  int
 }
 
+// newSurface creates and initializes a new Surface with the specified dimensions and associates it with the given terminal.
 func newSurface(terminal interfaces.ITerminal, rows int, columns int) *Surface {
 	s := &Surface{
 		terminal: terminal,
@@ -48,7 +50,7 @@ func newSurface(terminal interfaces.ITerminal, rows int, columns int) *Surface {
 		scale:    1.0,
 		offsetX:  0,
 		offsetY:  0,
-		rmax:     0,
+		rMax:     0,
 		border:   1,
 		full:     false,
 	}
@@ -63,16 +65,19 @@ func newSurface(terminal interfaces.ITerminal, rows int, columns int) *Surface {
 	return s
 }
 
+// Begin initializes the Surface for user-defined operations by setting the user flag to true and updating its dimensions.
 func (s *Surface) Begin() {
 	s.user = true
 	s.iRows, s.iColumns = s.GetSize()
 }
 
+// End terminates user interaction with the `Surface`, resets the `user` flag, and redraws the window interface.
 func (s *Surface) End() {
 	s.user = false
 	s.drawWindow()
 }
 
+// GetSize calculates and returns the available rows and columns for the surface, considering scaling and borders if applicable.
 func (s *Surface) GetSize() (int, int) {
 	rows := s.rows
 	columns := s.columns
@@ -87,30 +92,37 @@ func (s *Surface) GetSize() (int, int) {
 	return rows, columns
 }
 
+// SetCompletePaint sets the `full` property of the Surface to true, indicating a complete repaint is required.
 func (s *Surface) SetCompletePaint() {
 	s.full = true
 }
 
+// SetSelectionMode sets the selection mode state of the Surface. If true, selection mode is enabled; otherwise, it is disabled.
 func (s *Surface) SetSelectionMode(selection bool) {
 	s.selection = selection
 }
 
+// SetCaption sets the caption text for the surface, typically displayed at the top of the rendered surface.
 func (s *Surface) SetCaption(caption string) {
 	s.caption = caption
 }
 
+// SetOffsetX sets the horizontal offset for the surface rendering. This affects the positioning of elements drawn on the surface.
 func (s *Surface) SetOffsetX(offsetX int) {
 	s.offsetX = offsetX
 }
 
+// SetOffsetY sets the vertical offset for the surface by updating the offsetY property of the Surface instance.
 func (s *Surface) SetOffsetY(offsetY int) {
 	s.offsetY = offsetY
 }
 
+// SetScale sets the scale factor for the surface, which is used to adjust the size of rows and columns.
 func (s *Surface) SetScale(scale float64) {
 	s.scale = scale
 }
 
+// Draw places a given rune at the specified row and column on the surface, applying necessary bounds and offset checks.
 func (s *Surface) Draw(rs int, cs int, text rune) {
 	rows, columns := s.compute(rs, cs)
 	if rows < 0 {
@@ -130,13 +142,14 @@ func (s *Surface) Draw(rs int, cs int, text rune) {
 	if len(s.surface) > rows {
 		if len(s.surface[rows]) > columns {
 			s.surface[rows][columns] = string(text)
-			if rows > s.rmax {
-				s.rmax = rows
+			if rows > s.rMax {
+				s.rMax = rows
 			}
 		}
 	}
 }
 
+// DrawColor draws a colored character at the specified row and column using the provided foreground, background, and mode settings.
 func (s *Surface) DrawColor(rs int, cs int, text rune, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
 	rows, columns := s.compute(rs, cs)
 	if rows < 0 {
@@ -158,25 +171,29 @@ func (s *Surface) DrawColor(rs int, cs int, text rune, fg interfaces.ColorDef, b
 		if len(s.surface[rows]) > columns {
 			colorized := s.terminal.Colorize(string(text), int(fg), int(bg), mode)
 			s.surface[rows][columns] = colorized
-			if rows > s.rmax {
-				s.rmax = rows
+			if rows > s.rMax {
+				s.rMax = rows
 			}
 		}
 	}
 }
 
+// DrawText draws a string of text onto the surface starting at the specified row and column.
+// Each character in the string is drawn sequentially.
 func (s *Surface) DrawText(rows int, column int, text string) {
 	for x, d := range text {
 		s.Draw(rows, column+x, d)
 	}
 }
 
+// DrawTextColor renders a string with specified foreground and background colors at a given position on the surface.
 func (s *Surface) DrawTextColor(rows int, column int, text string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
 	for x, d := range text {
 		s.DrawColor(rows, column+x, d, fg, bg, mode)
 	}
 }
 
+// DrawSeries visualizes a series of data points by plotting them on the surface, adapting to given dimensions and range.
 func (s *Surface) DrawSeries(data []float64, w int, h int, min float64, max float64) {
 	rows, columns := s.GetSize()
 	if h <= 0 {
@@ -194,6 +211,8 @@ func (s *Surface) DrawSeries(data []float64, w int, h int, min float64, max floa
 	g.Draw(s)
 }
 
+// compute calculates the absolute row and column positions based on the given offsets and border adjustments.
+// It returns the computed row and column indices as integers.
 func (s *Surface) compute(r int, c int) (int, int) {
 	rows := r + s.offsetY
 	column := c + s.offsetX
@@ -204,6 +223,7 @@ func (s *Surface) compute(r int, c int) (int, int) {
 	return rows, column
 }
 
+// GetBuffer generates a byte buffer representing the current state of the Surface, respecting size and boundaries.
 func (s *Surface) GetBuffer() []byte {
 	var lines bytes.Buffer
 	var max int
@@ -211,7 +231,7 @@ func (s *Surface) GetBuffer() []byte {
 	if s.full {
 		max = s.rows * s.columns
 	} else {
-		max = (s.rmax + 1) * s.columns
+		max = (s.rMax + 1) * s.columns
 	}
 
 	var counter = 0
@@ -238,6 +258,7 @@ func (s *Surface) GetBuffer() []byte {
 	return lines.Bytes()
 }
 
+// Render writes the current buffer to the terminal, preserving the cursor position and resetting it after completion.
 func (s *Surface) Render() {
 	var buffer = string(s.GetBuffer())
 	_, _ = s.terminal.SaveCursor()
@@ -246,6 +267,7 @@ func (s *Surface) Render() {
 	_, _ = s.terminal.RestoreCursor()
 }
 
+// drawWindow renders a bordered window with optional caption text, adjusting colors based on the selection state.
 func (s *Surface) drawWindow() {
 	rows, columns := s.GetSize()
 	fg := interfaces.ColorWhiteDef
