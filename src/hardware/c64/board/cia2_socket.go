@@ -4,32 +4,40 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+// CIA2SocketConnection defines an interface for managing trigger and clear operations for CIA2 socket connections.
+// NMITrigger triggers a Non-Maskable Interrupt (NMI) signal in the CIA2 socket.
+// NMIClearTrigger clears the Non-Maskable Interrupt (NMI) signal in the CIA2 socket.
+type CIA2SocketConnection interface {
+	NMITrigger()
+	NMIClearTrigger()
+}
+
 // CIA2Socket represents a specialized implementation of ICIA, handling interactions with CIA2 and emulation components.
 // The connections field manages CIA2-specific port and communication events.
 // The iec field facilitates communication over the IEC serial bus.
 // The intrId field defines the unique interrupt identifier for CIA2 within the system.
 type CIA2Socket struct {
 	references.ICIA
-	label     string
-	parent    references.IComponent
-	component references.IComponent
-	pic       references.IPIC6510
-	vic       references.IVIC
-	iec       references.IIec
-	intrId    uint32
-	hwId      string
+	label       string
+	parent      references.IComponent
+	component   references.IComponent
+	connections CIA2SocketConnection
+	vic         references.IVIC
+	iec         references.IIec
+	intrId      uint32
+	hwId        string
 }
 
 // NewCIA2Socket creates and returns a pointer to a new instance of CIA2Socket with default uninitialized fields.
-func NewCIA2Socket(parent references.IComponent, label string) *CIA2Socket {
+func NewCIA2Socket(parent references.IComponent, label string, connections CIA2SocketConnection) *CIA2Socket {
 	c := &CIA2Socket{
-		parent: parent,
-		label:  label,
-		ICIA:   nil,
-		pic:    nil,
-		vic:    nil,
-		iec:    nil,
-		intrId: intrIrqCia2Bit,
+		parent:      parent,
+		label:       label,
+		connections: connections,
+		ICIA:        nil,
+		vic:         nil,
+		iec:         nil,
+		intrId:      intrIrqCia2Bit,
 	}
 	c.hwId = references.IdICIA(c.ICIA, c.label, 1)
 	return c
@@ -44,10 +52,6 @@ func (w *CIA2Socket) Mount() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
 	if w.ICIA, err = references.ComponentToICIA(w.component); err != nil {
-		return err
-	}
-	idPIC := references.IdIPIC6510(w.pic, w.label, 0)
-	if w.pic, err = references.ComponentToIPIC6510(w.parent.GetChildByHardwareId(idPIC)); err != nil {
 		return err
 	}
 	idVIC := references.IdIVIC(w.vic, w.label, 0)
@@ -113,10 +117,10 @@ func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 
 // IRQTrigger triggers a Non-Maskable Interrupt (NMI) by invoking the NMITrigger method on the connected socket.
 func (w *CIA2Socket) IRQTrigger() {
-	w.pic.TriggerNMI()
+	w.connections.NMITrigger()
 }
 
 // IRQClear clears the NMI (Non-Maskable Interrupt) request by invoking the NMIClear method on the connections object.
 func (w *CIA2Socket) IRQClear() {
-	w.pic.ClearNMI()
+	w.connections.NMIClearTrigger()
 }

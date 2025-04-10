@@ -7,7 +7,23 @@ import (
 // IExpansionSocketConnections defines an interface for managing connections and triggers in an expansion socket system.
 // DMALowTrigger sets the DMA low line state to the specified boolean value.
 type IExpansionSocketConnections interface {
+	BALow() bool
+
+	AECLow() bool
+
+	NMITrigger()
+
+	IRQTrigger(d uint32)
+
+	IRQClearTrigger(d uint32)
+
+	RSTTrigger()
+
 	DMALowTrigger(v bool)
+
+	IRQTriggerBind(fn func(uint32))
+
+	IRQClearBind(fn func(uint32))
 }
 
 // CartridgeManagerSocket represents a connection point integrating various components like connections, PIC, PLA, VIC, and Quartz.
@@ -18,9 +34,7 @@ type CartridgeManagerSocket struct {
 	label       string
 	parent      references.IComponent
 	component   references.IComponent
-	pic         references.IPIC6510
 	pla         references.IPlaC64
-	vic         references.IVIC
 	quartz      references.IQuartz
 	hwId        string
 }
@@ -31,9 +45,7 @@ func NewExpansionSocket(parent references.IComponent, label string, connections 
 		parent:      parent,
 		label:       label,
 		connections: connections,
-		pic:         nil,
 		pla:         nil,
-		vic:         nil,
 		quartz:      nil,
 	}
 	e.hwId = references.IdICartridgeManagerC64(e.ICartridgeManagerC64, e.label, 0)
@@ -54,16 +66,8 @@ func (s *CartridgeManagerSocket) Mount() error {
 	if err = s.ICartridgeManagerC64.Bind(s, s); err != nil {
 		return err
 	}
-	idPic := references.IdIPIC6510(s.pic, s.label, 0)
-	if s.pic, err = references.ComponentToIPIC6510(s.parent.GetChildByHardwareId(idPic)); err != nil {
-		return err
-	}
 	idIPLA := references.IdIPlaC64(s.pla, s.label, 0)
 	if s.pla, err = references.ComponentToIPLAc64(s.parent.GetChildByHardwareId(idIPLA)); err != nil {
-		return err
-	}
-	idVIC := references.IdIVIC(s.vic, s.label, 0)
-	if s.vic, err = references.ComponentToIVIC(s.parent.GetChildByHardwareId(idVIC)); err != nil {
 		return err
 	}
 	idQuartz := references.IdIQuartz(s.quartz, s.label, 0)
@@ -94,7 +98,7 @@ func (s *CartridgeManagerSocket) GameExRomConfigChanged() {
 
 // NMITrigger triggers a non-maskable interrupt (NMI) by invoking the corresponding method on the programmable interrupt controller.
 func (s *CartridgeManagerSocket) NMITrigger() {
-	s.pic.TriggerNMI()
+	s.connections.NMITrigger()
 }
 
 // SetDMALow triggers the DMA low state on the associated expansion socket connection based on the boolean value provided.
@@ -104,37 +108,37 @@ func (s *CartridgeManagerSocket) SetDMALow(v bool) {
 
 // ResetTrigger invokes a reset trigger on the connected IPIC6510 instance to reinitialize its state.
 func (s *CartridgeManagerSocket) ResetTrigger() {
-	s.pic.TriggerReset()
+	s.connections.RSTTrigger()
 }
 
 // IRQTrigger triggers an interrupt request (IRQ) using the programmable interrupt controller (PIC).
 func (s *CartridgeManagerSocket) IRQTrigger() {
-	s.pic.TriggerIRQ(intrIrqExpansionBit)
+	s.connections.IRQTrigger(intrIrqExpansionBit)
 }
 
 // IRQClear clears the IRQ signal associated with the expansion bit from the programmable interrupt controller (PIC).
 func (s *CartridgeManagerSocket) IRQClear() {
-	s.pic.ClearIRQ(intrIrqExpansionBit)
+	s.connections.IRQClearTrigger(intrIrqExpansionBit)
 }
 
 // IRQTriggerBind connects a callback function to the IRQ trigger event, enabling custom handling of IRQ signals.
 func (s *CartridgeManagerSocket) IRQTriggerBind(fn func(uint32)) {
-	s.pic.IRQTriggerBind(fn)
+	s.connections.IRQTriggerBind(fn)
 }
 
-// IRQClearBind binds a callback function that is triggered when the IRQ clear event occurs.
+// IRQClearBind binds a callback function triggered when the IRQ clear event occurs.
 func (s *CartridgeManagerSocket) IRQClearBind(fn func(uint32)) {
-	s.pic.IRQClearBind(fn)
+	s.connections.IRQClearBind(fn)
 }
 
 // BusAvailable checks whether the expansion bus is available by verifying the BA (Bus Available) line status of the VIC.
 func (s *CartridgeManagerSocket) BusAvailable() bool {
-	return !s.vic.GetBALow()
+	return !s.connections.BALow()
 }
 
 // AECAvailable checks if the AEC (Address Enable Control) line is available and returns true if it's not low.
 func (s *CartridgeManagerSocket) AECAvailable() bool {
-	return !s.vic.GetAECLow()
+	return !s.connections.AECLow()
 }
 
 // Cycle retrieves the current clock cycle count from the associated quartz instance.

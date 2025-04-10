@@ -14,6 +14,14 @@ const (
 	defaultKeyState = 0xff
 )
 
+// CIA1SocketConnection is an interface for handling external interactions like IRQ triggers for CIA-1 components.
+// IRQTrigger simulates an Interrupt Request (IRQ) activation for the given event identifier.
+// IRQClearTrigger simulates clearing an IRQ activation for the provided event identifier.
+type CIA1SocketConnection interface {
+	IRQTrigger(d uint32)
+	IRQClearTrigger(d uint32)
+}
+
 // CIA1Socket represents a connector for CIA-1 chip emulation, managing keyboard, joystick, and external connections.
 // ICIA interface provides the core logic for the connected CIA chip functionality.
 // IKeyboard interface is used to handle input and state changes from a keyboard.
@@ -29,7 +37,7 @@ type CIA1Socket struct {
 	label       string
 	parent      references.IComponent
 	component   references.IComponent
-	pic         references.IPIC6510
+	connection  CIA1SocketConnection
 	vic         references.IVIC
 	keys        references.IKeyboard
 	joy1        references.IJoystick
@@ -44,12 +52,12 @@ type CIA1Socket struct {
 }
 
 // NewCIA1Socket creates and initializes a new instance of CIA1Socket with default state and properties.
-func NewCIA1Socket(parent references.IComponent, label string) *CIA1Socket {
+func NewCIA1Socket(parent references.IComponent, label string, connection CIA1SocketConnection) *CIA1Socket {
 	c := &CIA1Socket{
 		parent:      parent,
 		label:       label,
+		connection:  connection,
 		ICIA:        nil,
-		pic:         nil,
 		vic:         nil,
 		keys:        nil,
 		joy1:        nil,
@@ -75,10 +83,6 @@ func (w *CIA1Socket) Mount() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
 	if w.ICIA, err = references.ComponentToICIA(w.component); err != nil {
-		return err
-	}
-	idPIC := references.IdIPIC6510(w.pic, w.label, 0)
-	if w.pic, err = references.ComponentToIPIC6510(w.parent.GetChildByHardwareId(idPIC)); err != nil {
 		return err
 	}
 	idVIC := references.IdIVIC(w.vic, w.label, 0)
@@ -204,10 +208,10 @@ func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
 
 // IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
 func (w *CIA1Socket) IRQTrigger() {
-	w.pic.TriggerIRQ(w.intrId)
+	w.connection.IRQTrigger(w.intrId)
 }
 
 // IRQClear clears the interrupt request associated with the socket by invoking the IRQClear method on connections.
 func (w *CIA1Socket) IRQClear() {
-	w.pic.ClearIRQ(w.intrId)
+	w.connection.IRQClearTrigger(w.intrId)
 }

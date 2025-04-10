@@ -4,11 +4,13 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// IVICSocketConnection defines an interface for responding to various triggers in the VIC socket connection lifecycle.
-// LastCycleTrigger is invoked on the completion of the last cycle.
-// VBlankTrigger handles vertical blanking interval initiation.
-// RDYLowTrigger sets the RDY (Ready) line to low or high based on the boolean value.
-// AECLowTrigger sets the AEC (Address Enable) line to low or high based on the boolean value.
+// IVICSocketConnection represents an interface for managing triggers associated with a VIC chip in an emulation environment.
+// LastCycleTrigger signals operations to perform at the last cycle of an emulation frame.
+// VBlankTrigger triggers the start of a vertical blanking interval.
+// RDYLowTrigger sets the RDY (Ready) signal line low or high based on the parameter.
+// AECLowTrigger sets the AEC (Address Enable) signal line low or high based on the parameter.
+// IRQTrigger generates an interrupt request and passes its designated value.
+// IRQClearTrigger clears an interrupt request with the specified value.
 type IVICSocketConnection interface {
 	LastCycleTrigger()
 
@@ -17,6 +19,10 @@ type IVICSocketConnection interface {
 	RDYLowTrigger(v bool)
 
 	AECLowTrigger(v bool)
+
+	IRQTrigger(d uint32)
+
+	IRQClearTrigger(d uint32)
 }
 
 // VICSocket encapsulates the connections and components required for VIC chip socket emulation in the C64 system.
@@ -29,7 +35,6 @@ type VICSocket struct {
 	component   references.IComponent
 	connections IVICSocketConnection
 	db          references.IDisplayBuffer
-	pic         references.IPIC6510
 	pla         references.IPlaC64
 	quartz      references.IQuartz
 	intrId      uint32
@@ -44,7 +49,6 @@ func NewVICSocket(parent references.IComponent, label string, connections IVICSo
 		label:       label,
 		connections: connections,
 		db:          nil,
-		pic:         nil,
 		pla:         nil,
 		quartz:      nil,
 		intrId:      intrIrqVicBit,
@@ -62,10 +66,6 @@ func (v *VICSocket) Mount() error {
 	var err error
 	v.component = v.parent.GetChildByHardwareId(v.HardwareId())
 	if v.IVIC, err = references.ComponentToIVIC(v.component); err != nil {
-		return err
-	}
-	idPIC := references.IdIPIC6510(v.pic, v.label, 0)
-	if v.pic, err = references.ComponentToIPIC6510(v.parent.GetChildByHardwareId(idPIC)); err != nil {
 		return err
 	}
 	idPla := references.IdIPlaC64(v.pla, v.label, 0)
@@ -94,12 +94,12 @@ func (v *VICSocket) GetBanks() references.IVICBanks {
 
 // IRQTrigger triggers an interrupt request by invoking the PIC's TriggerIRQ method with the stored interrupt ID.
 func (v *VICSocket) IRQTrigger() {
-	v.pic.TriggerIRQ(v.intrId)
+	v.connections.IRQTrigger(v.intrId)
 }
 
 // IRQClear clears any pending interrupt request associated with the VIC by invoking ClearIRQ on the programmable interrupt controller.
 func (v *VICSocket) IRQClear() {
-	v.pic.ClearIRQ(v.intrId)
+	v.connections.IRQClearTrigger(v.intrId)
 }
 
 // BALow toggles the BA (Bus Available) line state by triggering the associated RDYLow event with the given boolean value.

@@ -70,8 +70,8 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	s.cpuSocket = NewCPUSocket(s, s.label)
 	s.vicSocket = NewVICSocket(s, s.label, s)
 	s.sidSocket = NewSIDSocket(s, s.label, mos6569.ScreenFreq, mos6569.TotalRasters)
-	s.cia1Socket = NewCIA1Socket(s, s.label)
-	s.cia2Socket = NewCIA2Socket(s, s.label)
+	s.cia1Socket = NewCIA1Socket(s, s.label, s)
+	s.cia2Socket = NewCIA2Socket(s, s.label, s)
 	s.plaSocket = NewPLASocket(s, s.label)
 	s.throttleSocket = NewThrottleSocket(s, s.label, mos6569.FrameInterval)
 
@@ -186,6 +186,112 @@ func (s *Board) EmulationRequired() bool {
 	return true
 }
 
+// AECLow checks if the AEC (Automatic Exposure Control) is in the low state via the vicSocket connection.
+func (s *Board) AECLow() bool {
+	return s.vicSocket.GetAECLow()
+}
+
+// BALow checks if the 'BALow' status is set via the vicSocket and returns a boolean indicating the result.
+func (s *Board) BALow() bool {
+	return s.vicSocket.GetBALow()
+}
+
+// DMALowTrigger sets the DMA line to low or high, controlling CPU bus access and enabling other units to utilize the hardware.
+// When set to low, the CPU halts after the next read cycle, and all bus lines shift to high impedance state.
+// This state allows devices such as those on the expansion port to perform direct memory access (DMA) to the main RAM.
+// Additionally, the CPU's AEC line is forced low, effectively placing the CPU in a wait state.
+func (s *Board) DMALowTrigger(v bool) {
+	//If _DMA=Low the CPU can be requested to release the bus.
+	//It will stop after the next read cycle, and all bus lines will go to high resistance state.
+	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
+	//The DMA line on the expansion port gets pulled low, or the VIC-II's BA line goes low.
+	//The DMA line is used to put the CPU in a wait state.
+	//The DMA line also forces the CPU's AEC line low, so while it's waiting, its R/W, address bus and data bus lines are put in HighZ,
+	//so they don't have any influence over the buses.
+	//This allows a device on the expansion port, such as an REU, to perform direct memory accesses (DMA) to the main RAM.
+	s.dmaLow = v
+	s.cpuSocket.SetRDYLow(s.dmaLow || s.vicSocket.GetBALow())
+	s.cpuSocket.SetAECLow(s.dmaLow || s.vicSocket.GetAECLow())
+}
+
+// RDYLowTrigger controls the RDY signal based on the logical conditions of BA and DMA as set by chip U27.
+func (s *Board) RDYLowTrigger(v bool) {
+	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
+	s.cpuSocket.SetRDYLow(v || s.dmaLow)
+}
+
+// AECLowTrigger sets the AEC (Address Enable Control) low signal based on the given value and DMA low state.
+func (s *Board) AECLowTrigger(v bool) {
+	s.cpuSocket.SetAECLow(v || s.dmaLow)
+}
+
+// IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
+func (s *Board) IRQTrigger(d uint32) {
+	s.picSocket.TriggerIRQ(d)
+	//TODO
+	//s.cartridgeSocket.IRQEmit(d)
+}
+
+// IRQClearTrigger clears the interrupt request associated with the socket by invoking the IRQClear method on connections.
+func (s *Board) IRQClearTrigger(d uint32) {
+	s.picSocket.ClearIRQ(d)
+	//TODO
+	//s.cartridgeSocket.IRQClearEmit(d)
+}
+
+// NMITrigger initiates a Non-Maskable Interrupt (NMI) on the board through the connected PIC socket.
+func (s *Board) NMITrigger() {
+	s.picSocket.TriggerNMI()
+}
+
+// NMIClearTrigger clears the Non-Maskable Interrupt (NMI) trigger on the board by signaling the PIC socket to reset NMI.
+func (s *Board) NMIClearTrigger() {
+	s.picSocket.ClearNMI()
+}
+
+// RSTTrigger triggers a reset signal using the PIC socket implementation within the Board structure.
+func (s *Board) RSTTrigger() {
+	s.picSocket.TriggerReset()
+}
+
+// IRQTriggerBind connects a callback function to the IRQ trigger event, enabling custom handling of IRQ signals.
+func (s *Board) IRQTriggerBind(fn func(uint32)) {
+	//TODO REMOVE
+	s.picSocket.IRQTriggerBind(fn)
+}
+
+// IRQClearBind binds a callback function that is triggered when the IRQ clear event occurs.
+func (s *Board) IRQClearBind(fn func(uint32)) {
+	//TODO REMOVE
+	s.picSocket.IRQClearBind(fn)
+}
+
+// LastCycleTrigger triggers the preparation of the socket in the last cycle of board operations.
+func (s *Board) LastCycleTrigger() {
+	s.sidSocket.Prepare()
+}
+
+// VBlankTrigger handles the vertical blank interrupt by emitting signals and updating connected hardware components.
+func (s *Board) VBlankTrigger() {
+	s.connections.VBlank()
+
+	s.sidSocket.Update()
+	s.cia1Socket.Update()
+	s.cia2Socket.Update()
+
+	if s.prg != nil {
+		if s.prg.Inject(s.vicSocket.GetText()) {
+			s.prg = nil
+		}
+	}
+	s.throttleSocket.Update()
+}
+
+// LedActivityTrigger emits a signal to change the state of the LED to the specified value.
+func (s *Board) LedActivityTrigger(deviceNumber uint8, led bool) {
+	s.connections.LedActivity(deviceNumber, led)
+}
+
 // GetText retrieves a byte slice containing the text data from the underlying vicSocket of the Board.
 func (s *Board) GetText() []byte {
 	return s.vicSocket.GetText()
@@ -285,61 +391,6 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 		s.plaSocket.SetMemoryConfig(prev)
 	}
 	return rb
-}
-
-// DMALowTrigger sets the DMA line to low or high, controlling CPU bus access and enabling other units to utilize the hardware.
-// When set to low, the CPU halts after the next read cycle, and all bus lines shift to high impedance state.
-// This state allows devices such as those on the expansion port to perform direct memory access (DMA) to the main RAM.
-// Additionally, the CPU's AEC line is forced low, effectively placing the CPU in a wait state.
-func (s *Board) DMALowTrigger(v bool) {
-	//If _DMA=Low the CPU can be requested to release the bus.
-	//It will stop after the next read cycle, and all bus lines will go to high resistance state.
-	//So other units can use the computer hardware. At _DMA=High the CPU continues to work.
-	//The DMA line on the expansion port gets pulled low, or the VIC-II's BA line goes low.
-	//The DMA line is used to put the CPU in a wait state.
-	//The DMA line also forces the CPU's AEC line low, so while it's waiting, its R/W, address bus and data bus lines are put in HighZ,
-	//so they don't have any influence over the buses.
-	//This allows a device on the expansion port, such as an REU, to perform direct memory accesses (DMA) to the main RAM.
-	s.dmaLow = v
-	s.cpuSocket.SetRDYLow(s.dmaLow || s.vicSocket.GetBALow())
-	s.cpuSocket.SetAECLow(s.dmaLow || s.vicSocket.GetAECLow())
-}
-
-// RDYLowTrigger controls the RDY signal based on the logical conditions of BA and DMA as set by chip U27.
-func (s *Board) RDYLowTrigger(v bool) {
-	//The RDY signal the result of logical AND between BA and DMA produced by the chip U27
-	s.cpuSocket.SetRDYLow(v || s.dmaLow)
-}
-
-// AECLowTrigger sets the AEC (Address Enable Control) low signal based on the given value and DMA low state.
-func (s *Board) AECLowTrigger(v bool) {
-	s.cpuSocket.SetAECLow(v || s.dmaLow)
-}
-
-// LastCycleTrigger triggers the preparation of the socket in the last cycle of board operations.
-func (s *Board) LastCycleTrigger() {
-	s.sidSocket.Prepare()
-}
-
-// VBlankTrigger handles the vertical blank interrupt by emitting signals and updating connected hardware components.
-func (s *Board) VBlankTrigger() {
-	s.connections.VBlank()
-
-	s.sidSocket.Update()
-	s.cia1Socket.Update()
-	s.cia2Socket.Update()
-
-	if s.prg != nil {
-		if s.prg.Inject(s.vicSocket.GetText()) {
-			s.prg = nil
-		}
-	}
-	s.throttleSocket.Update()
-}
-
-// LedActivity emits a signal to change the state of the LED to the specified value.
-func (s *Board) LedActivity(deviceNumber uint8, led bool) {
-	s.connections.LedActivity(deviceNumber, led)
 }
 
 // startPRG initializes and loads a PRG from the specified file path. It returns an error if loading the PRG fails.

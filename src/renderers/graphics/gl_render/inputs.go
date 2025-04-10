@@ -53,6 +53,7 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 	}
 	g.keyMapper[pixels.KeyF10] = func(p bool) {
 		if p {
+			log.Printf("joyKeys swap")
 			b.JoySwap()
 		}
 	}

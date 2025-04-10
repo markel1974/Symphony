@@ -4,9 +4,10 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// IIECSocketConnection defines an interface for managing socket communication and triggering LED signals.
+// IIECSocketConnection is an interface for managing LED activity in IEC socket connections.
+// LedActivityTrigger toggles the LED state for a given device number with a boolean value.
 type IIECSocketConnection interface {
-	LedActivity(deviceNumber uint8, led bool)
+	LedActivityTrigger(deviceNumber uint8, led bool)
 }
 
 // IECSocket represents a socket interface for managing communication and connections within an emulated environment.
@@ -49,5 +50,5 @@ func (s *IECSocket) Mount() error {
 }
 
 func (s *IECSocket) LedActivity(deviceNumber uint8, led bool) {
-	s.connection.LedActivity(deviceNumber, led)
+	s.connection.LedActivityTrigger(deviceNumber, led)
 }
