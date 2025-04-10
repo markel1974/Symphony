@@ -120,7 +120,7 @@ func (w *CIA2Socket) IRQTrigger() {
 	w.connections.NMITrigger()
 }
 
-// IRQClear clears the NMI (Non-Maskable Interrupt) request by invoking the NMIClear method on the connections object.
-func (w *CIA2Socket) IRQClear() {
+// IRQClearTrigger clears the NMI (Non-Maskable Interrupt) request by invoking the NMIClear method on the connections object.
+func (w *CIA2Socket) IRQClearTrigger() {
 	w.connections.NMIClearTrigger()
 }

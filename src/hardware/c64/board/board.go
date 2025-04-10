@@ -228,13 +228,13 @@ func (s *Board) AECLowTrigger(v bool) {
 // IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
 func (s *Board) IRQTrigger(d uint32) {
 	s.picSocket.TriggerIRQ(d)
-	s.cartridgeSocket.IRQSignal(d)
+	s.cartridgeSocket.IRQ(d)
 }
 
-// IRQClearTrigger clears the interrupt request associated with the socket by invoking the IRQClear method on connections.
+// IRQClearTrigger clears the interrupt request associated with the socket by invoking the IRQClearTrigger method on connections.
 func (s *Board) IRQClearTrigger(d uint32) {
 	s.picSocket.ClearIRQ(d)
-	s.cartridgeSocket.IRQClearSignal(d)
+	s.cartridgeSocket.IRQClear(d)
 }
 
 // NMITrigger initiates a Non-Maskable Interrupt (NMI) on the board through the connected PIC socket.

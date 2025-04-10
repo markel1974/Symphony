@@ -211,7 +211,7 @@ func (w *CIA1Socket) IRQTrigger() {
 	w.connection.IRQTrigger(w.intrId)
 }
 
-// IRQClear clears the interrupt request associated with the socket by invoking the IRQClear method on connections.
-func (w *CIA1Socket) IRQClear() {
+// IRQClearTrigger clears the interrupt request associated with the socket by invoking the IRQClearTrigger method on connections.
+func (w *CIA1Socket) IRQClearTrigger() {
 	w.connection.IRQClearTrigger(w.intrId)
 }

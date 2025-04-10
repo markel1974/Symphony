@@ -65,7 +65,7 @@ type IVICBanks interface {
 // GetDisplayBuffer retrieves the associated display buffer.
 // GetBanks retrieves the associated VIC bank interface.
 // IRQTrigger triggers an interrupt request.
-// IRQClear clears an interrupt request.
+// IRQClearTrigger clears an interrupt request.
 // BALow sets the BA (Bus Available) line low or high.
 // AECLow sets the AEC (Address Enable) line low or high.
 // VBlank signals the start of a vertical blanking interval.
@@ -77,7 +77,7 @@ type IVICSocket interface {
 
 	IRQTrigger()
 
-	IRQClear()
+	IRQClearTrigger()
 
 	BALow(d bool)
 

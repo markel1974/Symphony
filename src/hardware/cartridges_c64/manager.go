@@ -100,6 +100,7 @@ func (f *Manager) Reset() {
 	}
 	if len(f.carts) == 1 {
 		f.carts[0].Reset()
+		return
 	}
 	for _, cart := range f.carts {
 		cart.Reset()
@@ -235,24 +236,26 @@ func (f *Manager) IORead(addr uint16) (uint8, bool) {
 	return val, ret
 }
 
-func (f *Manager) IRQSignal(d uint32) {
+func (f *Manager) IRQ(d uint32) {
 	if f.carts == nil {
 		return
 	}
 	if len(f.carts) == 1 {
 		f.carts[0].IRQ(d)
+		return
 	}
 	for _, cart := range f.carts {
 		cart.IRQ(d)
 	}
 }
 
-func (f *Manager) IRQClearSignal(d uint32) {
+func (f *Manager) IRQClear(d uint32) {
 	if f.carts == nil {
 		return
 	}
 	if len(f.carts) == 1 {
 		f.carts[0].IRQ(d)
+		return
 	}
 	for _, cart := range f.carts {
 		cart.IRQCLear(d)

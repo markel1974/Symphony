@@ -191,7 +191,7 @@ func (m *CIA) ReadRegister(addr uint16) uint8 {
 		icr := m.icr
 		m.icr = 0
 		if icr != 0 {
-			m.socket.IRQClear()
+			m.socket.IRQClearTrigger()
 			//fmt.Println("CLEARING ", m.id)
 		}
 		return icr

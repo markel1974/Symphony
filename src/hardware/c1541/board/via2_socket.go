@@ -31,12 +31,12 @@ const syncArrivedControl = ^dataArrivedControl
 
 // IVIA2SocketConnections represents an interface for managing socket communication specific to VIA2 interactions.
 // LEDTrigger is responsible for controlling LED signals, accepting an 8-bit unsigned integer as an argument.
-// IRQClear clears the IRQ (Interrupt Request) signal, taking a 32-bit unsigned integer as input.
+// IRQClearTrigger clears the IRQ (Interrupt Request) signal, taking a 32-bit unsigned integer as input.
 // IRQTrigger triggers the IRQ signal, taking a 32-bit unsigned integer as an input parameter.
 type IVIA2SocketConnections interface {
 	LedActivity(bool2 bool)
 
-	IRQClear(uint32)
+	IRQClearTrigger(uint32)
 
 	IRQTrigger(uint32)
 }
@@ -97,9 +97,9 @@ func (v *VIA2Socket) LedActivity(led bool) {
 	v.connections.LedActivity(led)
 }
 
-// IRQClear clears the interrupt request (IRQ) signal associated with the current VIA2Socket instance.
-func (v *VIA2Socket) IRQClear() {
-	v.connections.IRQClear(v.intrId)
+// IRQClearTrigger clears the interrupt request (IRQ) signal associated with the current VIA2Socket instance.
+func (v *VIA2Socket) IRQClearTrigger() {
+	v.connections.IRQClearTrigger(v.intrId)
 }
 
 // IRQTrigger triggers an interrupt request (IRQ) for the associated connection using the stored interrupt ID.

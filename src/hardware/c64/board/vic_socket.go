@@ -97,8 +97,8 @@ func (v *VICSocket) IRQTrigger() {
 	v.connections.IRQTrigger(v.intrId)
 }
 
-// IRQClear clears any pending interrupt request associated with the VIC by invoking ClearIRQ on the programmable interrupt controller.
-func (v *VICSocket) IRQClear() {
+// IRQClearTrigger clears any pending interrupt request associated with the VIC by invoking ClearIRQ on the programmable interrupt controller.
+func (v *VICSocket) IRQClearTrigger() {
 	v.connections.IRQClearTrigger(v.intrId)
 }
 

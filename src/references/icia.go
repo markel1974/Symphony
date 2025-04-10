@@ -12,7 +12,7 @@ import (
 // WriteDdrA updates the data direction register for port A.
 // WriteDdrB updates the data direction register for port B.
 // IRQTrigger triggers an interrupt request on the IRQ line.
-// IRQClear clears the interrupt request on the IRQ line.
+// IRQClearTrigger clears the interrupt request on the IRQ line.
 type ICIASocket interface {
 	ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8
 
@@ -28,7 +28,7 @@ type ICIASocket interface {
 
 	IRQTrigger()
 
-	IRQClear()
+	IRQClearTrigger()
 }
 
 func IdICIA(_ ICIA, label string, instance int) string {

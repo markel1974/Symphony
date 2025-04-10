@@ -32,9 +32,7 @@ import (
 // ResetTrigger sends a hardware reset signal to the board.
 // NMITrigger triggers a non-maskable interrupt.
 // IRQTrigger triggers an interrupt request.
-// IRQClear clears an active interrupt request.
-// IRQTriggerBind binds a callback function to IRQ triggering events.
-// IRQClearBind binds a callback function to IRQ clearing events.
+// IRQClearTrigger clears an active interrupt request.
 // SetDMALow sets the DMA (Direct Memory Access) low state.
 // BusAvailable checks whether the system bus is available for access.
 // AECAvailable checks whether an AEC (Advanced Expansion Controller) is available.
@@ -60,7 +58,7 @@ type IExpansionC64 interface {
 
 	IRQTrigger()
 
-	IRQClear()
+	IRQClearTrigger()
 
 	SetDMALow(bool)
 
@@ -100,9 +98,9 @@ type ICartridgeManagerC64 interface {
 
 	IOWrite(addr uint16, data uint8) bool
 
-	IRQSignal(d uint32)
+	IRQ(d uint32)
 
-	IRQClearSignal(d uint32)
+	IRQClear(d uint32)
 
 	Reset()
 

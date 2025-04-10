@@ -206,8 +206,8 @@ func (m *Board) LedActivity(led bool) {
 	m.iec.LedActivity(m.deviceNumber, led)
 }
 
-// IRQClear clears the specified interrupt request (IRQ) in the programmable interrupt controller (PIC) associated with the board.
-func (m *Board) IRQClear(intr uint32) {
+// IRQClearTrigger clears the specified interrupt request (IRQ) in the programmable interrupt controller (PIC) associated with the board.
+func (m *Board) IRQClearTrigger(intr uint32) {
 	m.picSocket.ClearIRQ(intr)
 }
 

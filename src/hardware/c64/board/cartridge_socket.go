@@ -118,8 +118,8 @@ func (s *CartridgeManagerSocket) IRQTrigger() {
 	s.connections.IRQTrigger(intrIrqExpansionBit)
 }
 
-// IRQClear clears the IRQ signal associated with the expansion bit from the programmable interrupt controller (PIC).
-func (s *CartridgeManagerSocket) IRQClear() {
+// IRQClearTrigger clears the IRQ signal associated with the expansion bit from the programmable interrupt controller (PIC).
+func (s *CartridgeManagerSocket) IRQClearTrigger() {
 	s.connections.IRQClearTrigger(intrIrqExpansionBit)
 }
 

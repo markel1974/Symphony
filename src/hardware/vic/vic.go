@@ -608,7 +608,7 @@ func (vic *VIC) WriteRegister(addr2 uint16, data uint8) {
 		//if (vic.irqLatch & vic.irqMask) != 0 {
 		//	vic.irqLatch |= irqMasterBit // Set master bit if allowed interrupt still pending
 		//} else {
-		//	vic.socket.IRQClear()
+		//	vic.socket.IRQClearTrigger()
 		//}
 	case 0x1a: // IRQ mask
 		vic.irqMask = data & 0xf
@@ -693,6 +693,6 @@ func (vic *VIC) irqVerify() {
 		vic.socket.IRQTrigger() // Trigger interrupt if pending (now allowed)
 	} else {
 		vic.irqLatch &= irqUnsetMasterBit
-		vic.socket.IRQClear()
+		vic.socket.IRQClearTrigger()
 	}
 }

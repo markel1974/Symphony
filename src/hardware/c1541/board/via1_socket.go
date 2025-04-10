@@ -6,11 +6,13 @@ import (
 
 // IVIA1SocketConnections defines an interface for managing socket-specific connections for a VIA1 adapter.
 // GetDeviceNumber retrieves the device number associated with the socket.
-// IRQClear clears the specified interrupt request (IRQ) using the provided bitmask.
+// IRQClearTrigger clears the specified interrupt request (IRQ) using the provided bitmask.
 // IRQTrigger triggers the specified interrupt request (IRQ) using the provided bitmask.
 type IVIA1SocketConnections interface {
 	GetDeviceNumber() uint8
-	IRQClear(uint32)
+
+	IRQClearTrigger(uint32)
+
 	IRQTrigger(uint32)
 }
 
@@ -68,9 +70,9 @@ func (v *VIA1Socket) GetDeviceNumber() uint8 {
 	return v.connections.GetDeviceNumber()
 }
 
-// IRQClear clears the interrupt request (IRQ) associated with the VIA1 socket by invoking the IRQClear method on its connections.
-func (v *VIA1Socket) IRQClear() {
-	v.connections.IRQClear(v.intrId)
+// IRQClearTrigger clears the interrupt request (IRQ) associated with the VIA1 socket by invoking the IRQClearTrigger method on its connections.
+func (v *VIA1Socket) IRQClearTrigger() {
+	v.connections.IRQClearTrigger(v.intrId)
 }
 
 // IRQTrigger triggers an interrupt request (IRQ) signal using the associated interrupt ID of the VIA1Socket connection.

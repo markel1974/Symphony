@@ -95,7 +95,7 @@ func (v *VIA) ReadByte(addr uint16) uint8 {
 		return v.ddra
 	case 0x4: //x1804:
 		v.ifr &= 0xbf
-		v.socket.IRQClear()
+		v.socket.IRQClearTrigger()
 		//v.signalIRQClear.Emit(v.intrId) //intrVIA1Id)
 		return uint8(v.t1c)
 	case 0x5: //0x1805:

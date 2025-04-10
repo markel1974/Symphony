@@ -50,7 +50,7 @@ type VIA struct {
   * **Timers (`$x4`-`$x9`):** Returns the low/high bytes of timer counters or latches. Reading T1 counter low (`$x4`) or T2 counter (`$x8`) also clears their respective interrupt flags in the IFR.
   * **SR (`$xA`):** Returns the Shift Register value.
   * **ACR/PCR (`$xB`, `$xC`):** Returns the control register values.
-  * **IFR (`$xD`):** Returns the Interrupt Flag Register. If any enabled interrupt is pending, sets the top bit (`0x80`). Reading IFR *clears* all pending flags in `ifr` and signals `socket.IRQClear()`.
+  * **IFR (`$xD`):** Returns the Interrupt Flag Register. If any enabled interrupt is pending, sets the top bit (`0x80`). Reading IFR *clears* all pending flags in `ifr` and signals `socket.IRQClearTrigger()`.
   * **IER (`$xE`):** Returns the Interrupt Enable Register (with bit 7 always set).
 * **`WriteByte(addr uint16, data uint8)`:** Handles writes to the VIA's registers.
   * **Ports A/B (`$x0`, `$x1`, `$xF`):** Updates the internal data register (`pra`/`prb`) and calls `socket.WritePRA/B()` to allow the socket to handle the actual output based on DDR.
@@ -75,7 +75,7 @@ The VIA component relies heavily on an object implementing the `references.IVIAS
 
 * Reading the actual state of physical input pins connected to Port A and Port B (`ReadPRA`, `ReadPRB`).
 * Handling the output to physical pins connected to Port A and Port B based on the VIA's internal state (`WritePRA`, `WritePRB`, `WriteDDRA`, `WriteDDRB`). This includes platform-specific logic (like IEC line driving in the C1541).
-* Receiving interrupt requests from the VIA and forwarding them to the system's interrupt controller (`IRQTrigger`, `IRQClear`).
+* Receiving interrupt requests from the VIA and forwarding them to the system's interrupt controller (`IRQTrigger`, `IRQClearTrigger`).
 
 ## Dependencies
 

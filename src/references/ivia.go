@@ -11,7 +11,7 @@ import (
 // WritePRB writes a value to Peripheral Register B (PRB) using a specified mask and shift.
 // WriteDDRA writes a value to the Data Direction Register A (DDRA) using a specified mask and shift.
 // WriteDDRB writes a value to the Data Direction Register B (DDRB) using a specified mask and shift.
-// IRQClear clears the interrupt request (IRQ) signal.
+// IRQClearTrigger clears the interrupt request (IRQ) signal.
 // IRQTrigger triggers an interrupt request (IRQ) signal.
 type IVIASocket interface {
 	ReadPRA(uint8, uint8) uint8
@@ -26,7 +26,7 @@ type IVIASocket interface {
 
 	WriteDDRB(uint8, uint8)
 
-	IRQClear()
+	IRQClearTrigger()
 
 	IRQTrigger()
 }
