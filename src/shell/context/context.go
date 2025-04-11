@@ -163,7 +163,7 @@ func (c *Context) execSuggestion(in string, count int) bool {
 			if idx < sLen {
 				complete := suggestions[idx]
 				if len(complete) > len(data) {
-					tabLine := in + complete[len(data):]
+					tabLine := complete
 					c.defaultApp.DoRedraw(tabLine)
 					c.defaultApp.SetHistoryDefault(tabLine)
 					ret = true

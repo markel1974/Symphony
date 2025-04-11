@@ -78,17 +78,24 @@ func (c *Shell) KeyEvent(event *interfaces.KeyData) bool {
 	ret := false
 	switch event.GetType() {
 	case interfaces.KeyTypeEnter:
+		c.tabCount = 0
 		ret = c.enterPressed()
 	case interfaces.KeyTypeTab:
 		c.tabPressed()
 	case interfaces.KeyTypeCancel:
+		c.tabCount = 0
 		c.textCancel()
 	case interfaces.KeyTypeBackspace:
+		c.tabCount = 0
 		c.textBackspace()
 	case interfaces.KeyTypeKey:
+		c.tabCount = 0
 		c.keyPressed(event.Key)
 	case interfaces.KeyTypeCursor:
+		c.tabCount = 0
 		c.cursorPressed(interfaces.CursorCodeDef(event.Key))
+	default:
+		log.Println("KeyEvent: Unknown key type")
 	}
 	return ret
 }
@@ -194,25 +201,27 @@ func (c *Shell) enterPressed() bool {
 }
 
 func (c *Shell) tabPressed() {
-	if c.state == stateAuthenticated {
-		if c.tabCount == 0 {
-			c.tabFound = false
-			c.tabData = ""
-
-			if c.pos == len(c.current) {
-				c.tabData = string(c.current[:c.pos])
-				c.tabFound = true
-			}
-		}
-		if c.tabFound {
-
-			if c.ExecSuggestion != nil {
-				c.ExecSuggestion(c.tabData, c.tabCount)
-			}
-			//c.terminalExecSuggestion(c.tabData, c.tabCount)
-		}
-		c.tabCount++
+	if c.state != stateAuthenticated {
+		return
 	}
+	if c.tabCount == 0 {
+		c.tabFound = false
+		c.tabData = ""
+		if c.pos >= 0 && c.pos <= len(c.current) {
+			if c.pos < len(c.current) {
+				c.tabData = string(c.current[:c.pos])
+			} else {
+				c.tabData = string(c.current)
+			}
+			c.tabFound = true
+		}
+	}
+	if c.tabFound {
+		if c.ExecSuggestion != nil {
+			c.ExecSuggestion(c.tabData, c.tabCount)
+		}
+	}
+	c.tabCount++
 }
 
 func (c *Shell) keyPressed(key rune) {
@@ -242,7 +251,7 @@ func (c *Shell) keyPressed(key rune) {
 
 	if c.state == stateAuthenticated {
 		c.history.SetDefault(string(c.current))
-		c.tabCount = 0
+		//c.tabCount = 0
 	}
 }
 
