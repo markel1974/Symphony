@@ -68,17 +68,6 @@ func (a *Ids) Get(id int) (IIds, bool) {
 	return element.Value.(IIds), true
 }
 
-// All returns a slice of all elements currently stored in the Ids list, thread-safe for concurrent access.
-func (a *Ids) All() []IIds {
-	a.lock.RLock()
-	defer a.lock.RUnlock()
-	out := make([]IIds, 0, a.ll.Len())
-	for e := a.ll.Front(); e != nil; e = e.Next() {
-		out = append(out, e.Value.(IIds))
-	}
-	return out
-}
-
 // Unset removes an object from the Ids collection, marks the id as free, and resets the object's id to UnknownId.
 // Returns true if the id was successfully removed; otherwise, returns false.
 func (a *Ids) Unset(id int) bool {
@@ -109,4 +98,26 @@ func (a *Ids) Len() int {
 // Cap returns the maximum capacity of IDs that can be managed by the Ids structure.
 func (a *Ids) Cap() int {
 	return a.max
+}
+
+// Range iterates over all elements in the Ids list, invoking the provided function for each element until it returns false.
+func (a *Ids) Range(f func(obj IIds) bool) {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
+	for e := a.ll.Front(); e != nil; e = e.Next() {
+		if !f(e.Value.(IIds)) {
+			break
+		}
+	}
+}
+
+// All returns a slice of all elements currently stored in the Ids list, thread-safe for concurrent access.
+func (a *Ids) All() []IIds {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
+	out := make([]IIds, 0, a.ll.Len())
+	for e := a.ll.Front(); e != nil; e = e.Next() {
+		out = append(out, e.Value.(IIds))
+	}
+	return out
 }

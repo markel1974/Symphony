@@ -153,8 +153,8 @@ func (c *TaskManager) SetSelectionMode(requestedPid int) {
 
 	c.selector.Clear()
 
-	for _, e := range c.ids.All() {
-		task, ok := e.(*Task)
+	c.ids.Range(func(item adaptiveticker.IIds) bool {
+		task, ok := item.(*Task)
 		if ok && task != nil {
 			if task.cmd.PaintEvent() != nil {
 				c.selector.AddAvailable(task.pid)
@@ -168,8 +168,8 @@ func (c *TaskManager) SetSelectionMode(requestedPid int) {
 				idx++
 			}
 		}
-	}
-
+		return true
+	})
 	if c.selector.PID() == adaptiveticker.UnknownId {
 		if firstPid == adaptiveticker.UnknownId {
 			return
@@ -436,12 +436,23 @@ func (c *TaskManager) Kill(pid int) bool {
 func (c *TaskManager) KillAll(name string) int {
 	count := 0
 	var tasks []*Task
-	for _, e := range c.ids.All() {
-		task, ok := e.(*Task)
+
+	c.ids.Range(func(item adaptiveticker.IIds) bool {
+		task, ok := item.(*Task)
 		if ok && task != nil {
 			tasks = append(tasks, task)
 		}
-	}
+		return true
+	})
+
+	/*
+		for _, e := range c.ids.All() {
+			task, ok := e.(*Task)
+			if ok && task != nil {
+				tasks = append(tasks, task)
+			}
+		}
+	*/
 
 	for _, task := range tasks {
 		deactivate := false
@@ -465,12 +476,13 @@ func (c *TaskManager) KillAll(name string) int {
 // List returns a formatted string listing all tasks with their process IDs and names.
 func (c *TaskManager) List() string {
 	out := "\r\nPid: Task"
-	for _, e := range c.ids.All() {
-		task, ok := e.(*Task)
+	c.ids.Range(func(item adaptiveticker.IIds) bool {
+		task, ok := item.(*Task)
 		if ok && task != nil {
 			out += fmt.Sprintf("\r\n%d: %s", task.pid, task.cmd.Name())
 		}
-	}
+		return true
+	})
 	return out
 }
 
@@ -518,24 +530,8 @@ func (c *TaskManager) ExecPaint(terminal interfaces.ITerminal) bool {
 
 	var selectedTask *Task = nil
 
-	//TODO Z-INDEX!!!!!
-
-	/*
-		for _, pid := range c.ids.All() {
-			if t, ok := c.ids.Get(pid); ok {
-				task := t.(*Task)
-				if task.PID() == c.selector.PID() {
-					selectedTask = task
-				} else {
-					surface.SetSelectionMode(false)
-					task.Paint(surface)
-				}
-			}
-		}
-	*/
-
-	for _, e := range c.ids.All() {
-		task, ok := e.(*Task)
+	c.ids.Range(func(item adaptiveticker.IIds) bool {
+		task, ok := item.(*Task)
 		if ok && task != nil {
 			if task.PID() == c.selector.PID() {
 				selectedTask = task
@@ -544,7 +540,8 @@ func (c *TaskManager) ExecPaint(terminal interfaces.ITerminal) bool {
 				task.Paint(surface)
 			}
 		}
-	}
+		return true
+	})
 
 	if selectedTask != nil {
 		surface.SetSelectionMode(true)
@@ -585,22 +582,20 @@ func (c *TaskManager) SaveTasks(name string) bool {
 	var tasks map[int]*Task
 	tasks = make(map[int]*Task)
 
-	for _, e := range c.ids.All() {
-		task, ok := e.(*Task)
+	c.ids.Range(func(item adaptiveticker.IIds) bool {
+		task, ok := item.(*Task)
 		if ok && task != nil {
-			if strings.HasPrefix(task.Line, commandTask) {
-				continue
+			if !strings.HasPrefix(task.Line, commandTask) {
+				tasks[task.pid] = task
 			}
-			tasks[task.pid] = task
 		}
-	}
-
+		return true
+	})
 	data, err := json.Marshal(tasks)
 	if err != nil {
 		log.Println("Error marshalling task file ", name, ": ", err.Error())
 		return false
 	}
-
 	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
 		name = name[pos+1:]
 	}
