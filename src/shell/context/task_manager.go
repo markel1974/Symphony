@@ -42,6 +42,7 @@ type TaskManager struct {
 	ticker     *adaptiveticker.AdaptiveTicker
 	foreground *Task
 	selector   *TaskSelector
+	root       interfaces.ICommand
 	cwd        interfaces.ICommand
 	system     interfaces.ICommand
 	dirty      bool
@@ -50,6 +51,7 @@ type TaskManager struct {
 	fullPaint  bool
 	timersChan chan *adaptiveticker.TimerHandler
 	ids        *adaptiveticker.Ids
+	suggestion *Suggestion
 }
 
 // NewTaskManager initializes and returns a new instance of TaskManager with the provided context, ticker, timers channel, and commands.
@@ -62,11 +64,13 @@ func NewTaskManager(ctx *Context, ticker *adaptiveticker.AdaptiveTicker, timersC
 		timersChan: timersChannel,
 		system:     system,
 		cwd:        commands,
+		root:       commands,
 		dirty:      false,
 		fullPaint:  true,
 		width:      80,
 		height:     24,
 		ids:        adaptiveticker.NewIds(1024),
+		suggestion: NewSuggestion(commands, system),
 	}
 	return t
 }
@@ -297,6 +301,13 @@ func (c *TaskManager) SetFg(pid int) bool {
 	return true
 }
 
+func (c *TaskManager) GetSuggestion(in string, cursorPos int) (string, []string, bool) {
+	prefix, suggestions, found := c.suggestion.Get(c.cwd, in, cursorPos)
+	return prefix, suggestions, found
+}
+
+/*
+
 // GetSuggestion attempts to find command suggestions based on input, returning matched suggestions and their status.
 func (c *TaskManager) GetSuggestion(in string, _ int) (string, []string, bool) {
 	var data string
@@ -332,6 +343,8 @@ func (c *TaskManager) GetSuggestion(in string, _ int) (string, []string, bool) {
 	}
 	return data, cmd.SuggestionsFor(data), true
 }
+
+*/
 
 // PaintRequest marks the TaskManager as dirty and initiates a paint request if not already pending.
 func (c *TaskManager) PaintRequest() bool {
