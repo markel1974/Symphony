@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package adaptiveticker
 
 import (
@@ -19,107 +5,108 @@ import (
 	"sync"
 )
 
+// UnknownId is a constant representing an invalid or uninitialized ID, typically used as a default or error value.
 const UnknownId = -1
 
+// IIds represents an interface that defines a method for setting an identifier for an object.
 type IIds interface {
 	SetId(int)
-	Unset()
 }
 
+// Ids manages a set of unique integer IDs with allocation, retrieval, and deallocation functionality.
 type Ids struct {
-	slots       []bool
-	currentSlot int
-	kv          map[int]*list.Element
-	ll          *list.List
-	lock        sync.RWMutex
+	max     int
+	kv      map[int]*list.Element
+	ll      *list.List
+	freeIds []int
+	lock    sync.RWMutex
 }
 
+// NewIds initializes and returns a new instance of Ids with a specified maximum capacity for unique identifiers.
+// If the provided max is less than or equal to zero, a default capacity of 1024 is used.
+// The returned Ids structure includes pre-initialized maps, lists, and free ID slices for managing identifiers efficiently.
 func NewIds(max int) *Ids {
-	a := &Ids{
-		slots:       make([]bool, max),
-		kv:          make(map[int]*list.Element),
-		ll:          list.New(),
-		currentSlot: 0,
+	if max <= 0 {
+		max = 1024
 	}
-	return a
+	free := make([]int, max)
+	for i := 0; i < max; i++ {
+		free[i] = i
+	}
+	return &Ids{
+		max:     max,
+		kv:      make(map[int]*list.Element, max),
+		ll:      list.New(),
+		freeIds: free,
+	}
 }
 
-func (a *Ids) Set(obj IIds) int {
+func (a *Ids) Set(obj IIds) bool {
 	a.lock.Lock()
 	defer a.lock.Unlock()
-	var id = UnknownId
-
-	if a.currentSlot >= len(a.slots) {
-		a.currentSlot = 0
+	if len(a.freeIds) == 0 {
+		obj.SetId(UnknownId)
+		return false
 	}
-
-	_, exists := a.kv[a.currentSlot]
-	if !exists {
-		id = a.currentSlot
-	} else {
-		for slot := 0; slot < len(a.slots); slot++ {
-			if !a.slots[slot] {
-				id = slot
-				break
-			}
-		}
-	}
-
-	if id != UnknownId {
-		a.slots[id] = true
-		element := a.ll.PushBack(obj)
-		a.kv[id] = element
-	}
-
+	lastIndex := len(a.freeIds) - 1
+	id := a.freeIds[lastIndex]
+	a.freeIds = a.freeIds[:lastIndex]
 	obj.SetId(id)
-
-	a.currentSlot++
-
-	return id
+	element := a.ll.PushBack(obj)
+	a.kv[id] = element
+	return true
 }
 
+// Get retrieves the element associated with the given id. It returns the element and true if found, otherwise nil and false.
 func (a *Ids) Get(id int) (IIds, bool) {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
-	var obj IIds = nil
-	var e, ok = a.kv[id]
-	if ok {
-		obj = e.Value.(IIds)
+	element, ok := a.kv[id]
+	if !ok {
+		return nil, false
 	}
-	return obj, ok
+	return element.Value.(IIds), true
 }
 
+// All returns a slice of all elements currently stored in the Ids list, thread-safe for concurrent access.
 func (a *Ids) All() []IIds {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
-	var out []IIds
+	out := make([]IIds, 0, a.ll.Len())
 	for e := a.ll.Front(); e != nil; e = e.Next() {
-		var obj = e.Value.(IIds)
-		out = append(out, obj)
+		out = append(out, e.Value.(IIds))
 	}
 	return out
 }
 
+// Unset removes an object from the Ids collection, marks the id as free, and resets the object's id to UnknownId.
+// Returns true if the id was successfully removed; otherwise, returns false.
 func (a *Ids) Unset(id int) bool {
 	a.lock.Lock()
 	defer a.lock.Unlock()
-	if id < 0 {
+	if id < 0 || id >= a.max {
 		return false
 	}
-	if id >= len(a.slots) {
-		return false
-	}
-	var element, ok = a.kv[id]
+	element, ok := a.kv[id]
 	if !ok {
 		return false
 	}
-
-	var obj = element.Value.(IIds)
-	obj.Unset()
-
+	obj := element.Value.(IIds)
 	a.ll.Remove(element)
 	delete(a.kv, id)
-	a.slots[id] = false
-
+	a.freeIds = append(a.freeIds, id)
+	obj.SetId(UnknownId)
 	return true
+}
+
+// Len returns the number of elements currently stored in the Ids structure. It is safe for concurrent use.
+func (a *Ids) Len() int {
+	a.lock.RLock()
+	defer a.lock.RUnlock()
+	return len(a.kv)
+}
+
+// Cap returns the maximum capacity of IDs that can be managed by the Ids structure.
+func (a *Ids) Cap() int {
+	return a.max
 }

@@ -1,10 +1,19 @@
 package context
 
 import (
-	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"io"
 	"strconv"
+)
+
+// TaskState represents the state of a task, typically managed by a TaskManager within an application.
+type TaskState int
+
+// TaskStateSetup represents the initial setup state of a task.
+// TaskStateRunning represents the running state of a task.
+const (
+	TaskStateSetup   TaskState = iota
+	TaskStateRunning TaskState = iota
 )
 
 // Task represents a unit of work managed by a TaskManager and associated with a specific context, command, and state.
@@ -15,7 +24,7 @@ type Task struct {
 	context interface{}
 	timers  []int
 	pid     int
-	state   taskState
+	state   TaskState
 	caption string
 	Line    string
 	OffsetX int
@@ -30,7 +39,7 @@ func NewTask(tasks *TaskManager, ctx *Context, cmd interfaces.ICommand, line str
 		ctx:     ctx,
 		cmd:     cmd,
 		context: nil,
-		state:   taskStateSetup,
+		state:   TaskStateSetup,
 		caption: "",
 		Line:    line,
 		OffsetX: 0,
@@ -163,11 +172,6 @@ func (t *Task) SetSelectionOptions(option rune, value float64) bool {
 // SetId sets the task's process ID (PID) to the provided integer value.
 func (t *Task) SetId(id int) {
 	t.pid = id
-}
-
-// Unset resets the task's process ID (pid) to adaptiveticker.UnknownId.
-func (t *Task) Unset() {
-	t.pid = adaptiveticker.UnknownId
 }
 
 // Paint renders the task's visual representation on the provided surface by applying transformations and calling the paint function.

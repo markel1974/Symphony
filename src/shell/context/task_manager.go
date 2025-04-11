@@ -26,16 +26,6 @@ import (
 	"strings"
 )
 
-// taskState represents the state of a task, typically managed by a TaskManager within an application.
-type taskState int
-
-// taskStateSetup represents the initial setup state of a task.
-// taskStateRunning represents the running state of a task.
-const (
-	taskStateSetup   taskState = iota
-	taskStateRunning taskState = iota
-)
-
 // tasksFileExtension defines the file extension used for storing task-related files.
 const tasksFileExtension = ".task"
 
@@ -45,22 +35,6 @@ const (
 	commandActivate = "activate"
 	commandTask     = "task"
 )
-
-// TaskSelector tracks the state for task selection, including process ID, available tasks, and current index.
-type TaskSelector struct {
-	pid       int
-	available []int
-	idx       int
-}
-
-// NewTaskSelector initializes and returns a new instance of TaskSelector with default values.
-func NewTaskSelector() *TaskSelector {
-	return &TaskSelector{
-		pid:       adaptiveticker.UnknownId,
-		available: nil,
-		idx:       0,
-	}
-}
 
 // TaskManager handles task scheduling, execution, and management within a context.
 type TaskManager struct {
@@ -130,7 +104,6 @@ func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
 		task.Scale = tTask.Scale
 	}
 	if err = sel.Execute(task, args); err != nil {
-		//c.ctx.Write("Error:" + err.Error())
 		c.Kill(task.pid)
 		return true, err
 	}
@@ -138,7 +111,7 @@ func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
 		c.Kill(task.pid)
 		return true, nil
 	}
-	task.state = taskStateRunning
+	task.state = TaskStateRunning
 	if !sel.Background() {
 		c.foreground = task
 	}
@@ -148,14 +121,9 @@ func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
 // create initializes a new Task instance, associates it with the provided ICommand and input string, and assigns an ID.
 func (c *TaskManager) create(cmd interfaces.ICommand, line string) (*Task, error) {
 	task := NewTask(c, c.ctx, cmd, line)
-
-	c.ids.Set(task)
-	if task.pid == adaptiveticker.UnknownId {
+	if !c.ids.Set(task) {
 		return nil, errors.New("max slot reached")
 	}
-
-	//c.tasks[task.pid] = task
-
 	return task, nil
 }
 
@@ -183,34 +151,30 @@ func (c *TaskManager) SetSelectionMode(requestedPid int) {
 	var firstPid = adaptiveticker.UnknownId
 	var firstIdx = 0
 
-	c.selector.idx = 0
-	c.selector.pid = adaptiveticker.UnknownId
-	c.selector.available = nil
+	c.selector.Clear()
 
 	for _, e := range c.ids.All() {
 		task, ok := e.(*Task)
 		if ok && task != nil {
-			if task.cmd.PaintEvent != nil {
-				c.selector.available = append(c.selector.available, task.pid)
+			if task.cmd.PaintEvent() != nil {
+				c.selector.AddAvailable(task.pid)
 				if firstPid == adaptiveticker.UnknownId {
-					firstPid = task.pid
+					firstPid = task.PID()
 					firstIdx = idx
 				}
-				if task.pid == requestedPid {
-					c.selector.pid = requestedPid
-					c.selector.idx = idx
+				if task.PID() == requestedPid {
+					c.selector.Set(requestedPid, idx)
 				}
 				idx++
 			}
 		}
 	}
 
-	if c.selector.pid == adaptiveticker.UnknownId {
+	if c.selector.PID() == adaptiveticker.UnknownId {
 		if firstPid == adaptiveticker.UnknownId {
 			return
 		}
-		c.selector.pid = firstPid
-		c.selector.idx = firstIdx
+		c.selector.Set(firstPid, firstIdx)
 	}
 
 	c.PaintRequest()
@@ -218,39 +182,23 @@ func (c *TaskManager) SetSelectionMode(requestedPid int) {
 
 // SetSelectionModeNext increments the selection index to the next in the available list, wrapping to the start if necessary.
 func (c *TaskManager) SetSelectionModeNext() {
-	if len(c.selector.available) == 0 {
+	if !c.selector.Next() {
 		return
 	}
-	next := c.selector.idx + 1
-	if next >= len(c.selector.available) {
-		next = 0
-	}
-	c.selector.idx = next
-	c.selector.pid = c.selector.available[next]
-
 	c.PaintRequest()
 }
 
 // SetSelectionModePrevious sets the selection mode to the previous available task in the TaskManager.
 func (c *TaskManager) SetSelectionModePrevious() {
-	if len(c.selector.available) == 0 {
+	if !c.selector.Prev() {
 		return
 	}
-	prev := c.selector.idx - 1
-	if prev < 0 {
-		prev = len(c.selector.available) - 1
-	}
-	c.selector.idx = prev
-	c.selector.pid = c.selector.available[prev]
-
 	c.PaintRequest()
 }
 
 // SetSelectionDisabled resets the selection state by clearing index, process ID, and available options, and requests a repaint.
 func (c *TaskManager) SetSelectionDisabled() {
-	c.selector.idx = 0
-	c.selector.pid = adaptiveticker.UnknownId
-	c.selector.available = nil
+	c.selector.Clear()
 
 	c.PaintRequest()
 }
@@ -306,7 +254,7 @@ func (c *TaskManager) CWDSet(arg string) bool {
 // Returns true if the operation succeeds, otherwise false.
 // Valid options are 'y', 'x', and 'z' for adjusting vertical offset, horizontal offset, and scale respectively.
 func (c *TaskManager) SetSelectionOptions(option rune, value float64) bool {
-	t, ok := c.ids.Get(c.selector.pid)
+	t, ok := c.ids.Get(c.selector.PID())
 	if !ok {
 		return false
 	}
@@ -434,40 +382,35 @@ func (c *TaskManager) IsActive(pid int) bool {
 
 // GetForegroundPid retrieves the process ID of the currently active foreground task or returns UnknownId if none exists.
 func (c *TaskManager) GetForegroundPid() int {
-	pid := adaptiveticker.UnknownId
-	if c.foreground != nil {
-		pid = c.foreground.pid
+	if c.foreground == nil {
+		return adaptiveticker.UnknownId
 	}
-	return pid
+	return c.foreground.PID()
 }
 
 // GetForegroundName returns the PID and name of the current foreground task. If none exists, it returns UnknownId and an empty string.
 func (c *TaskManager) GetForegroundName() (int, string) {
-	var name string
-	pid := adaptiveticker.UnknownId
-
-	if c.foreground != nil {
-		pid = c.foreground.pid
-		name = c.foreground.cmd.Name()
+	if c.foreground == nil {
+		return adaptiveticker.UnknownId, ""
 	}
-	return pid, name
+	return c.foreground.PID(), c.foreground.GetCommand().Name()
 }
 
 // SetBackground sets the task manager to background mode by clearing the foreground context and returns true if successful.
 func (c *TaskManager) SetBackground() bool {
-	ret := false
-	if c.foreground != nil {
-		c.foreground = nil
-		ret = true
+	if c.foreground == nil {
+		return false
 	}
-	return ret
+	c.foreground = nil
+	return true
 }
 
 // KillForeground terminates the currently active foreground process if one exists.
 func (c *TaskManager) KillForeground() {
-	if c.foreground != nil {
-		c.Kill(c.foreground.pid)
+	if c.foreground == nil {
+		return
 	}
+	c.Kill(c.foreground.pid)
 }
 
 // Kill terminates a task with the specified pid. Returns true if the task is successfully found and removed, false otherwise.
@@ -476,21 +419,16 @@ func (c *TaskManager) Kill(pid int) bool {
 	if !ok {
 		return false
 	}
-
 	task := t.(*Task)
-
 	if len(task.timers) > 0 {
 		c.ticker.Remove(task.timers)
 	}
-
 	if c.foreground != nil {
-		if c.foreground.pid == pid {
+		if c.foreground.PID() == pid {
 			c.foreground = nil
 		}
 	}
-
 	c.ids.Unset(pid)
-
 	return true
 }
 
@@ -586,7 +524,7 @@ func (c *TaskManager) ExecPaint(terminal interfaces.ITerminal) bool {
 		for _, pid := range c.ids.All() {
 			if t, ok := c.ids.Get(pid); ok {
 				task := t.(*Task)
-				if task.pid == c.selector.pid {
+				if task.PID() == c.selector.PID() {
 					selectedTask = task
 				} else {
 					surface.SetSelectionMode(false)
@@ -599,7 +537,7 @@ func (c *TaskManager) ExecPaint(terminal interfaces.ITerminal) bool {
 	for _, e := range c.ids.All() {
 		task, ok := e.(*Task)
 		if ok && task != nil {
-			if task.pid == c.selector.pid {
+			if task.PID() == c.selector.PID() {
 				selectedTask = task
 			} else {
 				surface.SetSelectionMode(false)
