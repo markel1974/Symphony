@@ -323,7 +323,7 @@ func (c *Command) CommandPath() string {
 	if c.HasParent() {
 		return c.Parent().CommandPath() + interfaces.PathSeparator + c.Name()
 	}
-	return c.Name()
+	return interfaces.PathSeparator
 }
 
 func (c *Command) Path() []string {
@@ -403,65 +403,43 @@ func (c *Command) HasParent() bool {
 
 func (c *Command) SuggestionsFor_NEW(prefix string) []string {
 	const levenshteinThreshold = 2
+	const levenshteinMin = 2
 	if strings.Contains(prefix, " ") {
-		// Completamento argomenti gestito altrove (es. PropertyCommandNode)
 		return nil
 	}
 	suggestionsMap := make(map[string]bool)
 	itemToComplete := prefix
 	itemToCompleteLower := strings.ToLower(itemToComplete)
-
-	//children := c.GetChildren()
-	children := c.Childs()
-	for _, child := range children {
-		if child != nil && strings.HasPrefix(strings.ToLower(child.Name()), itemToCompleteLower) {
-			suggestionsMap[child.Name()] = true
-		}
-	}
-
-	//props := b.GetProperties()
 	props := map[string]string{"prop1": "desc1", "prop2": "desc2"}
-	for propName := range props {
-		if strings.HasPrefix(strings.ToLower(propName), itemToCompleteLower) {
-			suggestionsMap[propName] = true
-		}
-	}
-
 	commands := map[string]string{"cmd1": "desc1", "cmd2": "desc2"}
-	for _, cmdInfo := range commands {
-		if strings.HasPrefix(strings.ToLower(cmdInfo), itemToCompleteLower) {
-			suggestionsMap[cmdInfo] = true
+	var items []string
+	for _, cmd := range c.commands {
+		items = append(items, cmd.Name())
+	}
+	for prop := range props {
+		items = append(items, prop)
+	}
+	for command := range commands {
+		items = append(items, command)
+	}
+	for _, item := range items {
+		if strings.HasPrefix(strings.ToLower(item), itemToCompleteLower) {
+			suggestionsMap[item] = true
 		}
 	}
-
-	// Esegui solo se il Pass 1 non ha trovato nulla e il prefisso non è banale
-	if len(suggestionsMap) == 0 && len(itemToComplete) > 1 {
-		for _, child := range children {
-			if child != nil {
-				distance := levenshteinDistance(itemToComplete, child.Name(), true)
-				if distance <= levenshteinThreshold {
-					suggestionsMap[child.Name()] = true
+	if len(suggestionsMap) == 0 && len(itemToComplete) >= levenshteinMin {
+		for _, item := range items {
+			if len(item) >= levenshteinMin {
+				if d := levenshteinDistance(itemToComplete, item, true); d <= levenshteinThreshold {
+					suggestionsMap[item] = true
 				}
 			}
 		}
-		for propName := range props {
-			distance := levenshteinDistance(itemToComplete, propName, true)
-			if distance <= levenshteinThreshold {
-				suggestionsMap[propName] = true
-			}
-		}
-		// Controlla Comandi Custom
-		for _, cmdInfo := range commands {
-			distance := levenshteinDistance(itemToComplete, cmdInfo, true)
-			if distance <= levenshteinThreshold {
-				suggestionsMap[cmdInfo] = true
-			}
-		}
 	}
-	finalSuggestions := make([]string, 0, len(suggestionsMap))
+	ret := make([]string, 0, len(suggestionsMap))
 	for suggestion := range suggestionsMap {
-		finalSuggestions = append(finalSuggestions, suggestion)
+		ret = append(ret, suggestion)
 	}
-	sort.Strings(finalSuggestions)
-	return finalSuggestions
+	sort.Strings(ret)
+	return ret
 }

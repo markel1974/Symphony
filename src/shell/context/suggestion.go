@@ -1,7 +1,6 @@
 package context
 
 import (
-	"errors"
 	"fmt"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"sort"
@@ -18,30 +17,35 @@ type Suggestion struct {
 
 // NewSuggestion creates and returns a new instance of Suggestion with the specified root and system ICommand instances.
 func NewSuggestion(root interfaces.ICommand, system interfaces.ICommand) *Suggestion {
-	return &Suggestion{root: root, system: system}
+	if root == nil {
+		panic("root command is nil")
+	}
+	if system == nil {
+		panic("system command is nil")
+	}
+	return &Suggestion{
+		root:   root,
+		system: system,
+	}
 }
 
 // Get generates suggestions based on the input string and cursor position within the command hierarchy.
 // It returns the prefix to complete, a list of suggestions, and a boolean indicating if suggestions were found.
-func (c *Suggestion) Get(cwd interfaces.ICommand, in string, cursorPos int) (string, []string, bool) {
-	nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInputForCompletion(in, cursorPos, c.root, cwd)
-	if err != nil {
+func (c *Suggestion) Get(cwd interfaces.ICommand, in string) (string, []string, bool) {
+	textBeforeSegment, cmd, prefix, basePath, isCompletingCommand, err := c.parseInput(in, cwd)
+	if err != nil || cmd == nil {
 		return "", nil, false
-	}
-	prefix := prefixToComplete
-	if nodeToQuery == nil {
-		return prefix, nil, false
 	}
 
 	var rawSuggestions []string
 	if isCompletingCommand {
-		rawSuggestions = nodeToQuery.SuggestionsFor_NEW(prefixToComplete)
-		if !strings.Contains(prefixToComplete, interfaces.PathSeparator) && c.system != nil {
-			coreSuggestions := c.system.SuggestionsFor_NEW(prefixToComplete)
+		rawSuggestions = cmd.SuggestionsFor_NEW(prefix)
+		if !strings.Contains(prefix, interfaces.PathSeparator) && c.system != nil {
+			coreSuggestions := c.system.SuggestionsFor_NEW(prefix)
 			rawSuggestions = c.mergeSuggestions(rawSuggestions, coreSuggestions)
 		}
 	} else {
-		rawSuggestions = nodeToQuery.SuggestionsFor_NEW(prefixToComplete)
+		rawSuggestions = cmd.SuggestionsFor_NEW(prefix)
 	}
 
 	if rawSuggestions == nil || len(rawSuggestions) == 0 {
@@ -63,7 +67,7 @@ func (c *Suggestion) Get(cwd interfaces.ICommand, in string, cursorPos int) (str
 			fullSuggestion = rawSuggestion
 		}
 
-		if suggestionNode := nodeToQuery.FindChildren(rawSuggestion); suggestionNode != nil {
+		if suggestionNode := cmd.FindChildren(rawSuggestion); suggestionNode != nil {
 			if suggestionNode.HasSubCommands() {
 				if !strings.HasSuffix(fullSuggestion, interfaces.PathSeparator) {
 					fullSuggestion += interfaces.PathSeparator
@@ -74,94 +78,78 @@ func (c *Suggestion) Get(cwd interfaces.ICommand, in string, cursorPos int) (str
 	}
 	if len(suggestions) > 1 {
 		sort.Strings(suggestions)
-		suggestions = c.deduplicateSuggestions(suggestions) // Rimuovi duplicati esatti
+		suggestions = c.deduplicateSuggestions(suggestions)
+	}
+
+	if len(textBeforeSegment) > 0 {
+		for i, suggestion := range suggestions {
+			suggestions[i] = textBeforeSegment + " " + suggestion
+		}
 	}
 	found := len(suggestions) > 0
 	return prefix, suggestions, found
 }
 
-// parseInputForCompletion identifies the command node, base path, and completion prefix from user input and cursor position.
+// parseInput identifies the command node, base path, and completion prefix from user input and cursor position.
 // It returns the node to query, the prefix to complete, the base path, whether completing a command, and an error if any.
 // Validation errors arise for invalid cursor positions, nil root, or current working directory commands.
 // Traverses input paths to locate and validate nodes, supporting both absolute and relative paths.
 // Handles completion for commands and subcommands by analyzing the input and directory structure.
-func (c *Suggestion) parseInputForCompletion(in string, cursorPos int, root interfaces.ICommand, cwd interfaces.ICommand) (interfaces.ICommand, string, string, bool, error) {
-	if cursorPos < 0 || cursorPos > len(in) {
-		return nil, "", "", false, errors.New("invalid cursor position")
-	}
+func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, interfaces.ICommand, string, string, bool, error) {
 	isCompletingCommand := false
-	relevantInput := in[:cursorPos]
-	lastSpacePos := strings.LastIndex(relevantInput, " ")
-	var currentSegment string
-	var textBeforeSegment string
-	if lastSpacePos == -1 {
-		currentSegment = relevantInput
-		textBeforeSegment = ""
+	pathPart := ""
+	textBeforeSegment := ""
+
+	//TODO BETTER IMPLEMENTATION
+	if pos := strings.LastIndex(input, " "); pos < 0 {
+		pathPart = input
 		isCompletingCommand = true
 	} else {
-		currentSegment = relevantInput[lastSpacePos+1:]
-		textBeforeSegment = strings.TrimSpace(relevantInput[:lastSpacePos])
-		isCompletingCommand = textBeforeSegment == ""
+		pathPart = input[pos+1:]
+		textBeforeSegment = input[:pos]
+		isCompletingCommand = strings.TrimSpace(textBeforeSegment) == ""
 	}
-	prefixToComplete := currentSegment
 
-	var baseNode interfaces.ICommand
-	pathPart := currentSegment
+	baseNode := cwd
 	isAbsolute := strings.HasPrefix(pathPart, pathSeparator)
 	if isAbsolute {
-		if root == nil {
-			return nil, "", "", isCompletingCommand, errors.New("root command is nil")
-		}
-		baseNode = root
+		baseNode = c.root
 		pathPart = strings.TrimPrefix(pathPart, pathSeparator)
-	} else {
-		if cwd == nil {
-			return nil, "", "", isCompletingCommand, errors.New("cwd command is nil")
-		}
-		baseNode = cwd
 	}
 
-	var dirParts []string
+	prefixToComplete := ""
+	node := baseNode
+
 	if parts := strings.Split(pathPart, pathSeparator); len(parts) > 0 {
 		prefixToComplete = parts[len(parts)-1]
-		dirParts = parts[:len(parts)-1]
-	} else {
-		prefixToComplete = ""
-		dirParts = []string{}
-	}
-
-	nodeToQuery := baseNode
-	var traversedPathParts []string
-	for _, part := range dirParts {
-		if part == "" {
-			if isAbsolute && len(traversedPathParts) == 0 {
-				continue
-			} else if !isAbsolute && len(traversedPathParts) == 0 {
-				continue
-			} else {
-				continue
+		dirParts := parts[:len(parts)-1]
+		var traversedPathParts []string
+		for _, part := range dirParts {
+			if part == "" {
+				if isAbsolute && len(traversedPathParts) == 0 {
+					continue
+				} else if !isAbsolute && len(traversedPathParts) == 0 {
+					continue
+				} else {
+					continue
+				}
 			}
+			foundNode := node.FindChildren(part)
+			if foundNode == nil {
+				return "", nil, "", "", isCompletingCommand, fmt.Errorf("path not found: %s", part)
+			}
+			if !foundNode.HasSubCommands() && len(dirParts) > len(traversedPathParts)+1 {
+				return "", nil, "", "", isCompletingCommand, fmt.Errorf("cannot traverse into non-directory: %s", part)
+			}
+			node = foundNode
+			traversedPathParts = append(traversedPathParts, part)
 		}
-		foundNode := nodeToQuery.FindChildren(part)
-		if foundNode == nil {
-			return nil, "", "", isCompletingCommand, fmt.Errorf("path not found: %s", part)
-		}
-		if !foundNode.HasSubCommands() && len(dirParts) > len(traversedPathParts)+1 {
-			return nil, "", "", isCompletingCommand, fmt.Errorf("cannot traverse into non-directory: %s", part)
-		}
-		nodeToQuery = foundNode
-		traversedPathParts = append(traversedPathParts, part)
 	}
-	basePath := nodeToQuery.CommandPath()
-
-	//	   if isAbsolute {
-	//	       basePath = pathSeparator + strings.Join(traversedPathParts,pathSeparator)
-	//	   } else {
-	//	       // Need cwd path + traversed parts... complex. Let's rely on nodeToQuery.CommandPath()
-	//	       basePath = nodeToQuery.CommandPath()
-	//	   }
-
-	return nodeToQuery, prefixToComplete, basePath, isCompletingCommand, nil
+	basePath := ""
+	if isAbsolute {
+		basePath = node.CommandPath()
+	}
+	return textBeforeSegment, node, prefixToComplete, basePath, isCompletingCommand, nil
 }
 
 // mergeSuggestions combines two slices of suggestion strings into a single deduplicated slice.

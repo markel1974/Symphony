@@ -155,7 +155,7 @@ func (c *Context) ctrlPressed(key rune) {
 
 func (c *Context) execSuggestion(in string, count int) bool {
 	ret := false
-	data, suggestions, found := c.tasks.GetSuggestion(in, count)
+	data, suggestions, found := c.tasks.GetSuggestion(in)
 	if found {
 		sLen := len(suggestions)
 		if sLen > 0 {

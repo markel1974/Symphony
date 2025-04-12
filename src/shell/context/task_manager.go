@@ -301,50 +301,10 @@ func (c *TaskManager) SetFg(pid int) bool {
 	return true
 }
 
-func (c *TaskManager) GetSuggestion(in string, cursorPos int) (string, []string, bool) {
-	prefix, suggestions, found := c.suggestion.Get(c.cwd, in, cursorPos)
+func (c *TaskManager) GetSuggestion(in string) (string, []string, bool) {
+	prefix, suggestions, found := c.suggestion.Get(c.cwd, in)
 	return prefix, suggestions, found
 }
-
-/*
-
-// GetSuggestion attempts to find command suggestions based on input, returning matched suggestions and their status.
-func (c *TaskManager) GetSuggestion(in string, _ int) (string, []string, bool) {
-	var data string
-	var cmd interfaces.ICommand = nil
-
-	const sep = " "
-	args := strings.Split(in, sep)
-	if len(args) == 1 {
-		data = args[0]
-		cmd = c.cwd
-		//if w := c.cwd.FindChildrenPrefix(data); w != nil {
-		//	cmd = w
-		//} else if w = c.system.FindChildrenPrefix(data); w != nil {
-		//	cmd = w
-		//}
-	} else if len(args) > 1 {
-		var e error
-		data = args[len(args)-1]
-		args = args[:len(args)-1]
-		cmd, _, e = c.cwd.Traverse(args)
-		if e != nil {
-			cmd = nil
-		}
-		//if e != nil {
-		//	cmd, _, e = c.system.Traverse(args)
-		//}
-		if cmd == c.cwd {
-			cmd = nil
-		}
-	}
-	if cmd == nil {
-		return data, nil, false
-	}
-	return data, cmd.SuggestionsFor(data), true
-}
-
-*/
 
 // PaintRequest marks the TaskManager as dirty and initiates a paint request if not already pending.
 func (c *TaskManager) PaintRequest() bool {
@@ -457,15 +417,6 @@ func (c *TaskManager) KillAll(name string) int {
 		}
 		return true
 	})
-
-	/*
-		for _, e := range c.ids.All() {
-			task, ok := e.(*Task)
-			if ok && task != nil {
-				tasks = append(tasks, task)
-			}
-		}
-	*/
 
 	for _, task := range tasks {
 		deactivate := false
