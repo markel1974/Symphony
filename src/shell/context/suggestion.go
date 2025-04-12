@@ -117,12 +117,22 @@ func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, 
 		pathPart = strings.TrimPrefix(pathPart, pathSeparator)
 	}
 
+	var pathSegments []string
+	for _, part := range strings.Split(pathPart, pathSeparator) {
+		if len(part) > 0 {
+			pathSegments = append(pathSegments, part)
+		}
+	}
+
 	prefixToComplete := ""
 	var dirParts []string
 
-	if parts := strings.Split(pathPart, pathSeparator); len(parts) > 0 {
-		prefixToComplete = parts[len(parts)-1]
-		dirParts = parts[:len(parts)-1]
+	if len(pathSegments) > 0 && !strings.HasSuffix(pathPart, pathSeparator) {
+		prefixToComplete = pathSegments[len(pathSegments)-1]
+		dirParts = pathSegments[:len(pathSegments)-1]
+	} else {
+		prefixToComplete = ""
+		dirParts = pathSegments
 	}
 
 	var basePath string

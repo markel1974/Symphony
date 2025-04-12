@@ -239,7 +239,13 @@ func (c *TaskManager) CWDSet(arg string) bool {
 			return true
 		}
 	} else {
-		path := strings.Split(arg, "/")
+
+		var path []string
+		for _, part := range strings.Split(arg, interfaces.PathSeparator) {
+			if len(part) > 0 {
+				path = append(path, part)
+			}
+		}
 		if cmd, _, err := c.cwd.Traverse(path); err == nil {
 			if cmd == c.cwd {
 				return false
