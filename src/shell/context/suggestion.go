@@ -100,7 +100,6 @@ func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, 
 	pathPart := ""
 	textBeforeSegment := ""
 
-	//TODO BETTER IMPLEMENTATION
 	if pos := strings.LastIndex(input, " "); pos < 0 {
 		pathPart = input
 		isCompletingCommand = true
@@ -111,6 +110,7 @@ func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, 
 	}
 
 	baseNode := cwd
+	currentNode := baseNode
 	isAbsolute := strings.HasPrefix(pathPart, pathSeparator)
 	if isAbsolute {
 		baseNode = c.root
@@ -118,56 +118,53 @@ func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, 
 	}
 
 	prefixToComplete := ""
-	node := baseNode
 	var dirParts []string
 
 	if parts := strings.Split(pathPart, pathSeparator); len(parts) > 0 {
 		prefixToComplete = parts[len(parts)-1]
 		dirParts = parts[:len(parts)-1]
-		var traversedPathParts []string
-		for _, part := range dirParts {
-			if part == "" {
-				if isAbsolute && len(traversedPathParts) == 0 {
-					continue
-				} else if !isAbsolute && len(traversedPathParts) == 0 {
-					continue
-				} else {
-					continue
-				}
-			}
-			foundNode := node.FindChildren(part)
-			if foundNode == nil {
-				return "", nil, "", "", isCompletingCommand, fmt.Errorf("path not found: %s", part)
-			}
-			if !foundNode.HasSubCommands() && len(dirParts) > len(traversedPathParts)+1 {
-				return "", nil, "", "", isCompletingCommand, fmt.Errorf("cannot traverse into non-directory: %s", part)
-			}
-			node = foundNode
-			traversedPathParts = append(traversedPathParts, part)
-		}
 	}
-	var basePath string
-	pathToComplete := strings.Join(dirParts, interfaces.PathSeparator)
 
-	if isAbsolute {
-		basePath = interfaces.PathSeparator + pathToComplete
-	} else {
-		basePath = pathToComplete
-	}
+	var basePath string
 
 	if len(dirParts) == 0 {
 		if isAbsolute {
 			basePath = interfaces.PathSeparator
-		} else {
-			basePath = ""
 		}
 	} else if len(dirParts) > 0 {
+		if isAbsolute {
+			basePath = interfaces.PathSeparator + strings.Join(dirParts, interfaces.PathSeparator)
+		} else {
+			basePath = strings.Join(dirParts, interfaces.PathSeparator)
+		}
 		if !strings.HasSuffix(basePath, interfaces.PathSeparator) {
 			basePath += interfaces.PathSeparator
 		}
 	}
 
-	return textBeforeSegment, node, prefixToComplete, basePath, isCompletingCommand, nil
+	var traversedPathParts []string
+	for _, part := range dirParts {
+		if part == "" {
+			if isAbsolute && len(traversedPathParts) == 0 {
+				continue
+			} else if !isAbsolute && len(traversedPathParts) == 0 {
+				continue
+			} else {
+				continue
+			}
+		}
+		foundNode := currentNode.FindChildren(part)
+		if foundNode == nil {
+			return "", nil, "", "", isCompletingCommand, fmt.Errorf("path not found: %s", part)
+		}
+		if !foundNode.HasSubCommands() && len(dirParts) > len(traversedPathParts)+1 {
+			return "", nil, "", "", isCompletingCommand, fmt.Errorf("cannot traverse into non-directory: %s", part)
+		}
+		currentNode = foundNode
+		traversedPathParts = append(traversedPathParts, part)
+	}
+
+	return textBeforeSegment, currentNode, prefixToComplete, basePath, isCompletingCommand, nil
 }
 
 // mergeSuggestions combines two slices of suggestion strings into a single deduplicated slice.
