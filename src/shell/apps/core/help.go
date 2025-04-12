@@ -25,8 +25,11 @@ func CreateHelp(root *cli.Command) *cli.Command {
 		if len(args) == 0 {
 			return nil
 		}
-		path := task.CWDPath()
-		path = append(path, args[0])
+		var path []string
+		if !interfaces.IsPathAbsolute(args[0]) {
+			path = append(path, task.CWDPath()...)
+		}
+		path = append(path, interfaces.PathToSegments(args[0])...)
 		cmd := root.Traverse(path)
 		if cmd == nil {
 			task.WriteLn("")

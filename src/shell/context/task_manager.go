@@ -77,7 +77,7 @@ func NewTaskManager(ctx *Context, ticker *adaptiveticker.AdaptiveTicker, timersC
 
 // Execute parses and executes a given command line string, associating it with a task, and manages its lifecycle.
 func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
-	el, err := cli.Parse(line)
+	el, err := cli.Parse(line, false, false)
 	if err != nil {
 		return false, err
 	}
@@ -86,17 +86,11 @@ func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
 	}
 	name := el[0]
 	args := el[1:]
-	//
-	var dirPath []string
-	for _, part := range strings.Split(name, interfaces.PathSeparator) {
-		if len(part) > 0 {
-			dirPath = append(dirPath, part)
-		}
-	}
 	node := c.cwd
-	if strings.HasPrefix(name, interfaces.PathSeparator) {
+	if interfaces.IsPathAbsolute(name) {
 		node = c.root
 	}
+	dirPath := interfaces.PathToSegments(name)
 	sel := node.Traverse(dirPath)
 	if sel == nil {
 		for _, n := range c.system {
@@ -318,8 +312,8 @@ func (c *TaskManager) SetFg(pid int) bool {
 	return true
 }
 
-func (c *TaskManager) GetSuggestion(in string) (string, []string, bool) {
-	prefix, suggestions, found := c.suggestion.Get(c.cwd, in)
+func (c *TaskManager) GetSuggestion(in string, cursor int) (string, []string, bool) {
+	prefix, suggestions, found := c.suggestion.Get(c.cwd, in, cursor)
 	return prefix, suggestions, found
 }
 

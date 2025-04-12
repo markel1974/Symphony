@@ -7,11 +7,17 @@ import (
 	"unicode"
 )
 
-// ParseEnv determines whether environment variables should be parsed and expanded in command-line arguments.
-var ParseEnv bool = false
+// argType defines a custom integer type used to represent argument constants or enumerations.
+type argType int
 
-// ParseBacktick determines whether backtick expressions should be parsed as subshell commands during parsing.
-var ParseBacktick bool = false
+// argNo represents an argument type with no value.
+// argSingle represents an argument type with a single value.
+// argQuoted represents an argument type with a quoted value.
+const (
+	argNo argType = iota
+	argSingle
+	argQuoted
+)
 
 // getEnv retrieves the value of an environment variable identified by the given name. Returns an empty string if not found.
 func getEnv(_ string) string {
@@ -103,34 +109,25 @@ type Parser struct {
 }
 
 // NewParser initializes and returns a new instance of the Parser struct with default settings.
-func NewParser() *Parser {
+func NewParser(parseEnv bool, parseBacktick bool) *Parser {
 	return &Parser{
-		ParseEnv:      ParseEnv,
-		ParseBacktick: ParseBacktick,
+		ParseEnv:      parseEnv,
+		ParseBacktick: parseBacktick,
 		Position:      0,
 		Dir:           "",
 	}
 }
 
-// argType defines a custom integer type used to represent argument constants or enumerations.
-type argType int
-
-// argNo represents an argument type with no value.
-// argSingle represents an argument type with a single value.
-// argQuoted represents an argument type with a quoted value.
-const (
-	argNo argType = iota
-	argSingle
-	argQuoted
-)
-
 // Parse processes a command-line string, splitting it into arguments and handling quotes, backticks, and environment variables.
 func (p *Parser) Parse(line string) ([]string, error) {
 	var args []string
 	buf := ""
-	var escaped, doubleQuoted, singleQuoted, backQuote, dollarQuote bool
+	escaped := false
+	doubleQuoted := false
+	singleQuoted := false
+	backQuote := false
+	dollarQuote := false
 	backtick := ""
-
 	pos := -1
 	got := argNo
 
@@ -168,11 +165,11 @@ loop:
 				if p.ParseEnv {
 					if got == argSingle {
 						parser := &Parser{ParseEnv: false, ParseBacktick: false, Position: 0, Dir: p.Dir}
-						strs, err := parser.Parse(replaceEnv(p.GetEnv, buf))
+						elements, err := parser.Parse(replaceEnv(p.GetEnv, buf))
 						if err != nil {
 							return nil, err
 						}
-						args = append(args, strs...)
+						args = append(args, elements...)
 					} else {
 						args = append(args, replaceEnv(p.GetEnv, buf))
 					}
@@ -312,16 +309,6 @@ func isEnv(arg string) bool {
 }
 
 // Parse splits a command-line string into separate arguments and returns them along with any error encountered during parsing.
-func Parse(line string) ([]string, error) {
-	return NewParser().Parse(line)
+func Parse(line string, parseEnv bool, parseBacktick bool) ([]string, error) {
+	return NewParser(parseEnv, parseBacktick).Parse(line)
 }
-
-/*
-func Parse(line string) ([]string, bool) {
-	args := strings.Split(line, " ")
-	if len(args) <= 0 {
-		return nil, false
-	}
-	return args, true
-}
-*/

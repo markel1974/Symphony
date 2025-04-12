@@ -153,9 +153,9 @@ func (c *Context) ctrlPressed(key rune) {
 	}
 }
 
-func (c *Context) execSuggestion(in string, count int) (int, bool) {
+func (c *Context) execSuggestion(in string, cursor int, count int) (int, bool) {
 	ret := false
-	data, suggestions, found := c.tasks.GetSuggestion(in)
+	data, suggestions, found := c.tasks.GetSuggestion(in, cursor)
 	sLen := 0
 	if found && len(suggestions) > 0 {
 		sLen = len(suggestions)

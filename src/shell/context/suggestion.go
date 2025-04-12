@@ -34,8 +34,8 @@ func (c *Suggestion) AddSearchPath(sp interfaces.ICommand) {
 
 // Get generates command suggestions based on the provided input and current directory context.
 // It returns the input prefix, a list of suggestions, and a boolean indicating if suggestions exist.
-func (c *Suggestion) Get(cwd interfaces.ICommand, in string) (string, []string, bool) {
-	textBeforeSegment, nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInput(in, cwd)
+func (c *Suggestion) Get(cwd interfaces.ICommand, in string, cursor int) (string, []string, bool) {
+	textBeforeSegment, nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInput(cwd, in, cursor)
 	if err != nil || nodeToQuery == nil {
 		return "", nil, false
 	}
@@ -104,11 +104,34 @@ func (c *Suggestion) Get(cwd interfaces.ICommand, in string) (string, []string, 
 // parseInput parses the input string to determine the relevant command context, path, and completion prefix details.
 // It returns the text before the path segment, the current command node, the prefix for completion, the base path,
 // a boolean indicating if the input addresses a command name, and any error encountered during processing.
-func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, interfaces.ICommand, string, string, bool, error) {
+func (c *Suggestion) parseInput(cwd interfaces.ICommand, in string, cursor int) (string, interfaces.ICommand, string, string, bool, error) {
+	var input string
+	if cursor < len(in) {
+		input = in[:cursor]
+	} else {
+		input = in
+	}
+
 	isCompletingCommand := false
 	pathPart := ""
 	textBeforeSegment := ""
 
+	//el, err := cli.Parse(input)
+	//if err != nil {
+	//	return "", nil, "", "", false, err
+	//}
+	//if len(el) == 0 {
+	//	isCompletingCommand = true
+	//} else if len(el) == 1 {
+	//	pathPart = el[0]
+	//	isCompletingCommand = true
+	//} else if len(el) > 1 {
+	//	textBeforeSegment = el[0]
+	//	pathPart = el[1]
+	//	isCompletingCommand = len(strings.TrimSpace(textBeforeSegment)) == 0
+	//}
+
+	//TODO BETTER IMPLEMENTATION.....
 	if pos := strings.LastIndex(input, " "); pos < 0 {
 		pathPart = input
 		isCompletingCommand = true
@@ -120,18 +143,13 @@ func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, 
 
 	baseNode := cwd
 	currentNode := baseNode
-	isAbsolute := strings.HasPrefix(pathPart, pathSeparator)
+	isAbsolute := interfaces.IsPathAbsolute(pathPart)
 	if isAbsolute {
 		baseNode = c.root
 		pathPart = strings.TrimPrefix(pathPart, pathSeparator)
 	}
 
-	var pathSegments []string
-	for _, part := range strings.Split(pathPart, pathSeparator) {
-		if len(part) > 0 {
-			pathSegments = append(pathSegments, part)
-		}
-	}
+	pathSegments := interfaces.PathToSegments(pathPart)
 
 	prefixToComplete := ""
 	var dirParts []string

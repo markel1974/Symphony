@@ -1,9 +1,27 @@
 package interfaces
 
-import "io"
+import (
+	"io"
+	"strings"
+)
 
 // PathSeparator is the string used to separate elements in a hierarchical path format, typically a forward slash "/".
 const PathSeparator = "/"
+
+func PathToSegments(path string) []string {
+	var segments []string
+	for _, part := range strings.Split(path, PathSeparator) {
+		if len(part) > 0 {
+			segments = append(segments, part)
+		}
+	}
+	return segments
+}
+
+func IsPathAbsolute(path string) bool {
+	isAbsolute := strings.HasPrefix(path, PathSeparator)
+	return isAbsolute
+}
 
 // RunFn defines a function type that performs a task execution with given arguments and returns an error if any occurs.
 type RunFn func(task ITask, args []string) error
