@@ -119,10 +119,11 @@ func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, 
 
 	prefixToComplete := ""
 	node := baseNode
+	var dirParts []string
 
 	if parts := strings.Split(pathPart, pathSeparator); len(parts) > 0 {
 		prefixToComplete = parts[len(parts)-1]
-		dirParts := parts[:len(parts)-1]
+		dirParts = parts[:len(parts)-1]
 		var traversedPathParts []string
 		for _, part := range dirParts {
 			if part == "" {
@@ -145,10 +146,27 @@ func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, 
 			traversedPathParts = append(traversedPathParts, part)
 		}
 	}
-	basePath := ""
+	var basePath string
+	pathToComplete := strings.Join(dirParts, interfaces.PathSeparator)
+
 	if isAbsolute {
-		basePath = node.CommandPath()
+		basePath = interfaces.PathSeparator + pathToComplete
+	} else {
+		basePath = pathToComplete
 	}
+
+	if len(dirParts) == 0 {
+		if isAbsolute {
+			basePath = interfaces.PathSeparator
+		} else {
+			basePath = ""
+		}
+	} else if len(dirParts) > 0 {
+		if !strings.HasSuffix(basePath, interfaces.PathSeparator) {
+			basePath += interfaces.PathSeparator
+		}
+	}
+
 	return textBeforeSegment, node, prefixToComplete, basePath, isCompletingCommand, nil
 }
 
