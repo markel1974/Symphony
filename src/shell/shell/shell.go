@@ -34,7 +34,7 @@ const (
 	maxPasswordRetry = 3
 )
 
-type ExecSuggestionType func(in string, count int) bool
+type ExecSuggestionType func(in string, count int) (int, bool)
 
 type ExecCommandType func(command string) (bool, error)
 
@@ -216,12 +216,15 @@ func (c *Shell) tabPressed() {
 			c.tabFound = true
 		}
 	}
+	c.tabCount++
 	if c.tabFound {
 		if c.ExecSuggestion != nil {
-			c.ExecSuggestion(c.tabData, c.tabCount)
+			if l, ok := c.ExecSuggestion(c.tabData, c.tabCount); l == 1 && ok {
+				c.tabCount = 0
+				c.history.SetDefault(string(c.current))
+			}
 		}
 	}
-	c.tabCount++
 }
 
 func (c *Shell) keyPressed(key rune) {

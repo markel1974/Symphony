@@ -320,10 +320,14 @@ main:
 
 // CommandPath returns the full path to the command by appending parent command names separated by a slash.
 func (c *Command) CommandPath() string {
-	if c.HasParent() {
-		return c.Parent().CommandPath() + interfaces.PathSeparator + c.Name()
+	if !c.HasParent() {
+		return interfaces.PathSeparator
 	}
-	return interfaces.PathSeparator
+	parentPath := c.Parent().CommandPath()
+	if !c.Parent().HasParent() {
+		return parentPath + c.Name()
+	}
+	return parentPath + interfaces.PathSeparator + c.Name()
 }
 
 func (c *Command) Path() []string {

@@ -153,25 +153,22 @@ func (c *Context) ctrlPressed(key rune) {
 	}
 }
 
-func (c *Context) execSuggestion(in string, count int) bool {
+func (c *Context) execSuggestion(in string, count int) (int, bool) {
 	ret := false
 	data, suggestions, found := c.tasks.GetSuggestion(in)
-	if found {
-		sLen := len(suggestions)
-		if sLen > 0 {
-			idx := count % sLen
-			if idx < sLen {
-				complete := suggestions[idx]
-				if len(complete) > len(data) {
-					tabLine := complete
-					c.defaultApp.DoRedraw(tabLine)
-					c.defaultApp.SetHistoryDefault(tabLine)
-					ret = true
-				}
+	sLen := 0
+	if found && len(suggestions) > 0 {
+		sLen = len(suggestions)
+		if idx := count % sLen; idx < sLen {
+			if complete := suggestions[idx]; len(complete) > len(data) {
+				tabLine := complete
+				c.defaultApp.DoRedraw(tabLine)
+				c.defaultApp.SetHistoryDefault(tabLine)
+				ret = true
 			}
 		}
 	}
-	return ret
+	return sLen, ret
 }
 
 func (c *Context) eventLoop() {
