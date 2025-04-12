@@ -75,7 +75,7 @@ func (c *Context) Setup() {
 	}
 	system := apps.NewRoot()
 	systemCommands, commands := system.Build(c.commands)
-	c.tasks = NewTaskManager(c, c.ticker, c.timersChan, systemCommands, commands)
+	c.tasks = NewTaskManager(c, c.ticker, c.timersChan, []interfaces.ICommand{systemCommands}, commands)
 
 	c.defaultApp = shell.NewShell(c.auth, c.terminal, c.prompt, c.autosave)
 	c.defaultApp.ExecCommand = c.execCommand

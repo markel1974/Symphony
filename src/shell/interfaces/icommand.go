@@ -36,7 +36,7 @@ type ICommand interface {
 
 	Find(args []string) (ICommand, []string, error)
 
-	Traverse(args []string) (ICommand, []string, error)
+	Traverse(args []string) ICommand
 
 	//TODO REMOVE
 	SuggestionsFor(typedName string) []string

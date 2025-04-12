@@ -44,7 +44,7 @@ type TaskManager struct {
 	selector   *TaskSelector
 	root       interfaces.ICommand
 	cwd        interfaces.ICommand
-	system     interfaces.ICommand
+	system     []interfaces.ICommand
 	dirty      bool
 	width      int
 	height     int
@@ -55,7 +55,7 @@ type TaskManager struct {
 }
 
 // NewTaskManager initializes and returns a new instance of TaskManager with the provided context, ticker, timers channel, and commands.
-func NewTaskManager(ctx *Context, ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, system *cli.Command, commands *cli.Command) *TaskManager {
+func NewTaskManager(ctx *Context, ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, system []interfaces.ICommand, commands interfaces.ICommand) *TaskManager {
 	t := &TaskManager{
 		ctx:        ctx,
 		ticker:     ticker,
@@ -86,18 +86,34 @@ func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
 	}
 	name := el[0]
 	args := el[1:]
-	sel := c.cwd.FindChildren(name)
+	//
+	var dirPath []string
+	for _, part := range strings.Split(name, interfaces.PathSeparator) {
+		if len(part) > 0 {
+			dirPath = append(dirPath, part)
+		}
+	}
+	node := c.cwd
+	if strings.HasPrefix(name, interfaces.PathSeparator) {
+		node = c.root
+	}
+	sel := node.Traverse(dirPath)
 	if sel == nil {
-		sel = c.system.FindChildren(name)
+		for _, n := range c.system {
+			sel = n.Traverse(dirPath)
+			if sel != nil {
+				break
+			}
+		}
 	}
 	if sel == nil {
 		return false, fmt.Errorf("unknown command: '%s'", name)
 	}
-	if len(args) > 0 {
-		if sel, args, err = sel.Find(args); err != nil || sel == nil {
-			return false, fmt.Errorf("invalid command: '%s %s'", name, strings.Join(args, " "))
-		}
-	}
+	//if len(args) > 0 {
+	//	if sel, args, err = sel.Find(args); err != nil || sel == nil {
+	//		return false, fmt.Errorf("invalid command: '%s %s'", name, strings.Join(args, " "))
+	//	}
+	//}
 	task, err := c.create(sel, line)
 	if err != nil {
 		return false, fmt.Errorf("error creating task: %s", err.Error())
@@ -233,29 +249,24 @@ func (c *TaskManager) CWDPath() []string {
 
 // CWDSet updates the current working directory to the specified path and returns true if the operation is successful.
 func (c *TaskManager) CWDSet(arg string) bool {
-	if arg == ".." {
-		if c.cwd.Parent() != nil {
-			c.cwd = c.cwd.Parent()
-			return true
+	//if arg == ".." {
+	//	if c.cwd.Parent() != nil {
+	//		c.cwd = c.cwd.Parent()
+	//		return true
+	//	}
+	//} else {
+	var path []string
+	for _, part := range strings.Split(arg, interfaces.PathSeparator) {
+		if len(part) > 0 {
+			path = append(path, part)
 		}
-	} else {
-
-		var path []string
-		for _, part := range strings.Split(arg, interfaces.PathSeparator) {
-			if len(part) > 0 {
-				path = append(path, part)
-			}
+	}
+	if cmd := c.cwd.Traverse(path); cmd != nil {
+		if !cmd.HasSubCommands() {
+			return false
 		}
-		if cmd, _, err := c.cwd.Traverse(path); err == nil {
-			if cmd == c.cwd {
-				return false
-			}
-			if !cmd.HasSubCommands() {
-				return false
-			}
-			c.cwd = cmd
-			return true
-		}
+		c.cwd = cmd
+		return true
 	}
 	return false
 }

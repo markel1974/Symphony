@@ -7,68 +7,79 @@ import (
 	"strings"
 )
 
+// pathSeparator is a constant string representing the character used to separate components in a path, typically "/".
 const pathSeparator = "/"
 
-// Suggestion provides mechanisms to handle and generate command suggestion operations in a hierarchical command system.
+// Suggestion provides utilities for command hierarchy traversal and completion suggestions.
 type Suggestion struct {
-	root   interfaces.ICommand
-	system interfaces.ICommand
+	root        interfaces.ICommand
+	searchPaths []interfaces.ICommand
 }
 
-// NewSuggestion creates and returns a new instance of Suggestion with the specified root and system ICommand instances.
-func NewSuggestion(root interfaces.ICommand, system interfaces.ICommand) *Suggestion {
-	if root == nil {
-		panic("root command is nil")
-	}
-	if system == nil {
-		panic("system command is nil")
+// NewSuggestion initializes and returns a new Suggestion instance with the given root command and an empty search path list.
+func NewSuggestion(root interfaces.ICommand, searchPaths []interfaces.ICommand) *Suggestion {
+	if searchPaths == nil {
+		searchPaths = []interfaces.ICommand{}
 	}
 	return &Suggestion{
-		root:   root,
-		system: system,
+		root:        root,
+		searchPaths: searchPaths,
 	}
 }
 
-// Get generates suggestions based on the input string and cursor position within the command hierarchy.
-// It returns the prefix to complete, a list of suggestions, and a boolean indicating if suggestions were found.
+// AddSearchPath adds a new ICommand instance to the searchPaths slice for suggestion resolution.
+func (c *Suggestion) AddSearchPath(sp interfaces.ICommand) {
+	c.searchPaths = append(c.searchPaths, sp)
+}
+
+// Get generates command suggestions based on the provided input and current directory context.
+// It returns the input prefix, a list of suggestions, and a boolean indicating if suggestions exist.
 func (c *Suggestion) Get(cwd interfaces.ICommand, in string) (string, []string, bool) {
-	textBeforeSegment, cmd, prefix, basePath, isCompletingCommand, err := c.parseInput(in, cwd)
-	if err != nil || cmd == nil {
+	textBeforeSegment, nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInput(in, cwd)
+	if err != nil || nodeToQuery == nil {
 		return "", nil, false
 	}
+	prefix := prefixToComplete
 
-	var rawSuggestions []string
-	if isCompletingCommand {
-		rawSuggestions = cmd.SuggestionsFor_NEW(prefix)
-		if !strings.Contains(prefix, interfaces.PathSeparator) && c.system != nil {
-			coreSuggestions := c.system.SuggestionsFor_NEW(prefix)
-			rawSuggestions = c.mergeSuggestions(rawSuggestions, coreSuggestions)
+	rawSuggestions := nodeToQuery.SuggestionsFor_NEW(prefixToComplete)
+	isFromSearchPath := false
+
+	if len(rawSuggestions) == 0 && isCompletingCommand {
+		for _, searchRoot := range c.searchPaths {
+			if searchRoot == nil {
+				continue
+			}
+			pathSuggestions := searchRoot.SuggestionsFor_NEW(prefixToComplete)
+			if len(pathSuggestions) > 0 {
+				rawSuggestions = pathSuggestions
+				isFromSearchPath = true
+				break
+			}
 		}
-	} else {
-		rawSuggestions = cmd.SuggestionsFor_NEW(prefix)
 	}
 
-	if rawSuggestions == nil || len(rawSuggestions) == 0 {
+	if len(rawSuggestions) == 0 {
 		return prefix, nil, false
 	}
 
 	suggestions := make([]string, 0, len(rawSuggestions))
 	for _, rawSuggestion := range rawSuggestions {
 		fullSuggestion := ""
-		if basePath == interfaces.PathSeparator {
-			fullSuggestion = interfaces.PathSeparator + rawSuggestion
-		} else if basePath != "" {
-			bp := basePath
-			if !strings.HasSuffix(bp, interfaces.PathSeparator) {
-				bp += interfaces.PathSeparator
-			}
-			fullSuggestion = bp + rawSuggestion
-		} else {
+		if isFromSearchPath {
 			fullSuggestion = rawSuggestion
-		}
-
-		if suggestionNode := cmd.FindChildren(rawSuggestion); suggestionNode != nil {
-			if suggestionNode.HasSubCommands() {
+		} else {
+			if basePath == interfaces.PathSeparator {
+				fullSuggestion = interfaces.PathSeparator + rawSuggestion
+			} else if basePath != "" {
+				bp := basePath
+				if !strings.HasSuffix(bp, interfaces.PathSeparator) {
+					bp += interfaces.PathSeparator
+				}
+				fullSuggestion = bp + rawSuggestion
+			} else {
+				fullSuggestion = rawSuggestion
+			}
+			if sNode := nodeToQuery.FindChildren(rawSuggestion); sNode != nil && sNode.HasSubCommands() {
 				if !strings.HasSuffix(fullSuggestion, interfaces.PathSeparator) {
 					fullSuggestion += interfaces.PathSeparator
 				}
@@ -76,6 +87,7 @@ func (c *Suggestion) Get(cwd interfaces.ICommand, in string) (string, []string, 
 		}
 		suggestions = append(suggestions, fullSuggestion)
 	}
+
 	if len(suggestions) > 1 {
 		sort.Strings(suggestions)
 		suggestions = c.deduplicateSuggestions(suggestions)
@@ -86,15 +98,12 @@ func (c *Suggestion) Get(cwd interfaces.ICommand, in string) (string, []string, 
 			suggestions[i] = textBeforeSegment + " " + suggestion
 		}
 	}
-	found := len(suggestions) > 0
-	return prefix, suggestions, found
+	return prefix, suggestions, len(suggestions) > 0
 }
 
-// parseInput identifies the command node, base path, and completion prefix from user input and cursor position.
-// It returns the node to query, the prefix to complete, the base path, whether completing a command, and an error if any.
-// Validation errors arise for invalid cursor positions, nil root, or current working directory commands.
-// Traverses input paths to locate and validate nodes, supporting both absolute and relative paths.
-// Handles completion for commands and subcommands by analyzing the input and directory structure.
+// parseInput parses the input string to determine the relevant command context, path, and completion prefix details.
+// It returns the text before the path segment, the current command node, the prefix for completion, the base path,
+// a boolean indicating if the input addresses a command name, and any error encountered during processing.
 func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, interfaces.ICommand, string, string, bool, error) {
 	isCompletingCommand := false
 	pathPart := ""
@@ -177,10 +186,7 @@ func (c *Suggestion) parseInput(input string, cwd interfaces.ICommand) (string, 
 	return textBeforeSegment, currentNode, prefixToComplete, basePath, isCompletingCommand, nil
 }
 
-// mergeSuggestions combines two slices of suggestion strings into a single deduplicated slice.
-// If either input slice is nil, the other is deduplicated and returned.
-// Deduplication is achieved by using a map to track unique entries.
-// Returns the merged and deduplicated slice of suggestions.
+// mergeSuggestions merges two slices of suggestions, removes duplicates, and returns the combined slice.
 func (c *Suggestion) mergeSuggestions(s1 []string, s2 []string) []string {
 	if s1 == nil {
 		return c.deduplicateSuggestions(s2)
@@ -202,7 +208,7 @@ func (c *Suggestion) mergeSuggestions(s1 []string, s2 []string) []string {
 	return merged
 }
 
-// deduplicateSuggestions removes duplicate strings from the provided slice and returns a slice with unique elements in order.
+// deduplicateSuggestions removes duplicate strings from the input slice and maintains the original order of unique elements.
 func (c *Suggestion) deduplicateSuggestions(s []string) []string {
 	if len(s) < 2 {
 		return s

@@ -178,6 +178,10 @@ func (c *Command) Find(args []string) (interfaces.ICommand, []string, error) {
 // It returns the matching command or nil if no suitable match is found.
 // If only one command partially matches the name during prefix matching, it will return that command.
 func (c *Command) findNext(next string) *Command {
+	if next == ".." {
+		return c.parent
+	}
+
 	matches := make([]*Command, 0)
 	for _, cmd := range c.commands {
 		if cmd.Name() == next || cmd.HasAlias(next) {
@@ -192,15 +196,18 @@ func (c *Command) findNext(next string) *Command {
 }
 
 // Traverse navigates through commands and flags based on the provided arguments and returns the matched command, remaining arguments, and error if any.
-func (c *Command) Traverse(args []string) (interfaces.ICommand, []string, error) {
-	for i, arg := range args {
+func (c *Command) Traverse(path []string) interfaces.ICommand {
+	for i, arg := range path {
 		cmd := c.findNext(arg)
 		if cmd == nil {
-			return c, args, nil
+			return nil
 		}
-		return cmd.Traverse(args[i+1:])
+		if next := path[i+1:]; len(next) > 0 {
+			return cmd.Traverse(next)
+		}
+		return cmd
 	}
-	return c, args, nil
+	return nil
 }
 
 // SuggestionsFor returns a list of command suggestions based on the provided typedName, considering prefix and edit distance.

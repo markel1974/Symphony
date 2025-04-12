@@ -27,8 +27,8 @@ func CreateHelp(root *cli.Command) *cli.Command {
 		}
 		path := task.CWDPath()
 		path = append(path, args[0])
-		cmd, _, err := root.Traverse(path)
-		if cmd == nil || err != nil || cmd == root {
+		cmd := root.Traverse(path)
+		if cmd == nil {
 			task.WriteLn("")
 			task.WriteLn("unknown help topic: " + strings.Join(args, " "))
 			task.WriteLn(task.GetCommand().Root().Help())
