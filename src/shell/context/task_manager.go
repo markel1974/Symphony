@@ -408,7 +408,6 @@ func (c *TaskManager) ExecTimer(pid int, tid int, interval int) bool {
 			ret = true
 		}
 	}
-
 	return ret
 }
 
@@ -476,13 +475,11 @@ func (c *TaskManager) ListTasks() []string {
 			if f.IsDir() {
 				continue
 			}
-
 			file := f.Name()
 			pos := strings.LastIndex(file, tasksFileExtension)
 			if pos < 0 {
 				continue
 			}
-
 			out = append(out, file[:pos])
 		}
 	}
@@ -492,7 +489,6 @@ func (c *TaskManager) ListTasks() []string {
 // SaveTasks saves the current state of tasks to a file with the specified name and returns true if the operation succeeds.
 func (c *TaskManager) SaveTasks(name string) bool {
 	options := make(map[int]*TaskOptions)
-
 	c.ids.Range(func(item adaptiveticker.IIds) bool {
 		task, ok := item.(*Task)
 		if ok && task != nil {
@@ -510,62 +506,49 @@ func (c *TaskManager) SaveTasks(name string) bool {
 	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
 		name = name[pos+1:]
 	}
-
 	name += tasksFileExtension
-
 	if err = os.WriteFile(name, data, 0644); err != nil {
 		log.Println("Error writing task file ", name, ": ", err.Error())
 		return false
 	}
-
 	return true
 }
 
 // RestoreTasks restores tasks from a file identified by the given name, reinitializing their state. Returns success status.
 func (c *TaskManager) RestoreTasks(name string) bool {
 	var tasks map[int]*TaskOptions
-
 	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
 		name = name[pos+1:]
 	}
 	name += tasksFileExtension
-
 	data, err := os.ReadFile(name)
 	if err != nil {
 		return false
 	}
-
-	err = json.Unmarshal(data, &tasks)
-	if err != nil {
+	if err = json.Unmarshal(data, &tasks); err != nil {
 		return false
 	}
-
 	for _, task := range tasks {
 		if strings.HasPrefix(task.Line, commandTask) {
 			continue
 		}
 		_, _ = c.Execute(task.Line, task)
 	}
-
 	_, _ = c.Execute(commandActivate, nil)
-
 	return true
 }
 
 // ExecActivate attempts to activate a background process if it is not already active or invalid. Returns false in all cases.
 func (c *TaskManager) ExecActivate() bool {
 	pid, name := c.GetForegroundName()
-
 	if pid == adaptiveticker.UnknownId {
 		return false
 	}
 	if name == commandActivate {
 		return false
 	}
-
 	c.SetBackground()
 	_, _ = c.Execute(fmt.Sprint(commandActivate, " ", pid), nil)
-
 	return false
 }
 
