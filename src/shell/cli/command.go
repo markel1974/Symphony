@@ -392,11 +392,6 @@ func (c *Command) NameAndAliases() string {
 	return strings.Join(append([]string{c.Name()}, c.aliases...), ", ")
 }
 
-// HasSubCommands checks if the Command has any subcommands. Returns true if there are subcommands, otherwise false.
-func (c *Command) HasSubCommands() bool {
-	return len(c.commands) > 0
-}
-
 // IsAdditionalHelpTopicCommand determines if the command is a help topic by checking its runnability, visibility, and subcommands.
 func (c *Command) IsAdditionalHelpTopicCommand() bool {
 	// if any non-help sub commands are found, the command is not a 'help' command

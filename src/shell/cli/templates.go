@@ -58,7 +58,6 @@ func (t *Template) Exec(c *Command, text string) (string, error) {
 		Version                 string
 		LongHelp                string
 		ShortHelp               string
-		HasSubCommands          bool
 		UsageString             string
 		HasAvailableSubCommands bool
 		IsAvailableCommand      bool
@@ -66,12 +65,11 @@ func (t *Template) Exec(c *Command, text string) (string, error) {
 		CommandPath             string
 	}
 	z := Component{
-		Name:           c.Name(),
-		LongHelp:       c.longHelp,
-		ShortHelp:      c.shortHelp,
-		HasSubCommands: c.HasSubCommands(),
-		Commands:       c.commands,
-		CommandPath:    c.CommandPath(),
+		Name:        c.Name(),
+		LongHelp:    c.longHelp,
+		ShortHelp:   c.shortHelp,
+		Commands:    c.commands,
+		CommandPath: c.CommandPath(),
 	}
 	tpl := template.New("top")
 	tpl.Funcs(_templateFuncs)

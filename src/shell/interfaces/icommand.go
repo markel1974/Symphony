@@ -75,8 +75,6 @@ type ICommand interface {
 
 	NameAndAliases() string
 
-	HasSubCommands() bool
-
 	IsAdditionalHelpTopicCommand() bool
 
 	HasHelpSubCommands() bool

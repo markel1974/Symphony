@@ -59,7 +59,7 @@ func (c *CommandInteractor) CWDSet(arg string) bool {
 		}
 	}
 	if cmd := c.cwd.Traverse(path); cmd != nil {
-		if !cmd.HasSubCommands() {
+		if cmd.Type() != interfaces.CommandTypeDirectory {
 			return false
 		}
 		c.cwd = cmd
@@ -174,7 +174,7 @@ func (c *CommandInteractor) Suggestion(in string, cursor int) (string, []string,
 			} else {
 				fullSuggestion = rawSuggestion
 			}
-			if sNode := nodeToQuery.FindChildren(rawSuggestion); sNode != nil && sNode.HasSubCommands() {
+			if sNode := nodeToQuery.FindChildren(rawSuggestion); sNode != nil && sNode.Type() == interfaces.CommandTypeDirectory {
 				if !strings.HasSuffix(fullSuggestion, interfaces.PathSeparator) {
 					fullSuggestion += interfaces.PathSeparator
 				}
@@ -289,7 +289,7 @@ func (c *CommandInteractor) parseInput(cwd interfaces.ICommand, in string, curso
 		if foundNode == nil {
 			return "", nil, "", "", isCompletingCommand, fmt.Errorf("path not found: %s", part)
 		}
-		if !foundNode.HasSubCommands() && len(dirParts) > len(traversedPathParts)+1 {
+		if foundNode.Type() != interfaces.CommandTypeDirectory && len(dirParts) > len(traversedPathParts)+1 {
 			return "", nil, "", "", isCompletingCommand, fmt.Errorf("cannot traverse into non-directory: %s", part)
 		}
 		currentNode = foundNode
