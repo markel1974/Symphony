@@ -24,7 +24,7 @@ func CreateClear() *cli.Command {
 		task.ClearScreen()
 		return nil
 	}
-	root := cli.NewCommand("clear", nil, false, run)
+	root := cli.NewCommand("clear", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Clear", "Clear")
 
 	return root

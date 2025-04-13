@@ -57,7 +57,7 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 		return nil
 	}
 
-	bc.cmd = cli.NewCommand(bc.name, nil, false, run)
+	bc.cmd = cli.NewCommand(bc.name, interfaces.CommandTypeDirectory, nil, false, run)
 
 	bc.cmd.SetHelp("Command "+bc.name, "This is a command")
 	if parent != nil && parent.GetNode() != nil {

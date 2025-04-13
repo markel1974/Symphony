@@ -120,7 +120,7 @@ func CreateMemoryPlot() *cli.Command {
 		}
 		surface.DrawSeries(plt.rtPlotData, -1, -1, min, max)
 	}
-	root := cli.NewCommand("rtplot", nil, true, run)
+	root := cli.NewCommand("rtplot", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Runtime Plot", "Runtime Plot")
 	root.SetTimerFn(timerFn)
 	root.SetPaintFn(paintFn)

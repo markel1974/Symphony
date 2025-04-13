@@ -44,7 +44,7 @@ func CreateTasks() *cli.Command {
 		}
 		return nil
 	}
-	root := cli.NewCommand("task", nil, false, run)
+	root := cli.NewCommand("task", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Task", "Task")
 
 	return root

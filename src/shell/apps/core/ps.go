@@ -25,7 +25,7 @@ func CreatePs() *cli.Command {
 		return nil
 	}
 
-	root := cli.NewCommand("ps", nil, false, run)
+	root := cli.NewCommand("ps", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Processes", "Processes")
 
 	return root

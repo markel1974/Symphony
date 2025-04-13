@@ -25,7 +25,7 @@ func CreatePWD() *cli.Command {
 		task.WriteLn(task.CWDGet())
 		return nil
 	}
-	root := cli.NewCommand("pwd", nil, false, run)
+	root := cli.NewCommand("pwd", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("pwd", "pwd")
 
 	return root

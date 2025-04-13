@@ -23,7 +23,7 @@ func Create() *cli.Command {
 	run := func(task interfaces.ITask, args []string) error {
 		return nil
 	}
-	root := cli.NewCommand("runtime", nil, false, run)
+	root := cli.NewCommand("runtime", interfaces.CommandTypeDirectory, nil, false, run)
 	root.SetHelp("Runtime", "Runtime")
 
 	gc := CreateGC()

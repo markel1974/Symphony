@@ -32,7 +32,7 @@ func CreateCD() *cli.Command {
 		}
 		return nil
 	}
-	root := cli.NewCommand("cd", nil, false, run)
+	root := cli.NewCommand("cd", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("cd", "cd")
 
 	return root

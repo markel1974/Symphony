@@ -31,7 +31,7 @@ func CreateKillAll() *cli.Command {
 		task.WriteLn("Task deactivated: " + strconv.Itoa(count))
 		return nil
 	}
-	root := cli.NewCommand("killall", nil, false, run)
+	root := cli.NewCommand("killall", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Kill All", "Kill All")
 
 	return root

@@ -38,7 +38,7 @@ func CreateFg() *cli.Command {
 		return nil
 	}
 
-	root := cli.NewCommand("fg", nil, false, run)
+	root := cli.NewCommand("fg", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Foreground", "Foreground")
 
 	return root

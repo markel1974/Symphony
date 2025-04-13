@@ -16,6 +16,7 @@ package cli
 
 import (
 	"errors"
+	"fmt"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"log"
 	"sort"
@@ -25,6 +26,7 @@ import (
 // Command defines the structure for application commands, holding metadata, behavior, and configuration properties.
 type Command struct {
 	name                       string
+	kind                       interfaces.CommandType
 	aliases                    []string
 	shortHelp                  string
 	longHelp                   string
@@ -44,7 +46,7 @@ type Command struct {
 }
 
 // NewCommand creates and returns a new instance of Command with a pre-defined template.
-func NewCommand(name string, aliases []string, daemon bool, run interfaces.RunFn) *Command {
+func NewCommand(name string, kind interfaces.CommandType, aliases []string, daemon bool, run interfaces.RunFn) *Command {
 	if run == nil {
 		run = func(task interfaces.ITask, args []string) error {
 			return nil
@@ -55,11 +57,16 @@ func NewCommand(name string, aliases []string, daemon bool, run interfaces.RunFn
 	}
 	return &Command{
 		name:     name,
+		kind:     kind,
 		aliases:  aliases,
 		template: NewTemplate(),
 		daemon:   daemon,
 		run:      run,
 	}
+}
+
+func (c *Command) Type() interfaces.CommandType {
+	return c.kind
 }
 
 func (c *Command) PaintEvent() interfaces.PaintFn {
@@ -269,6 +276,10 @@ func (c *Command) Commands() []interfaces.ICommand {
 // AddCommand adds one or more subcommands to the current command.
 // It ensures a command cannot be added as a child of itself.
 func (c *Command) AddCommand(cx ...*Command) error {
+	if c.kind != interfaces.CommandTypeDirectory {
+		return fmt.Errorf("can't add subcommands to a non-directory command: %s", c.name)
+	}
+
 	for i, x := range cx {
 		if cx[i] == c {
 			return errors.New("command can't be a child of itself")

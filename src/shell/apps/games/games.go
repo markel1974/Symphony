@@ -23,7 +23,7 @@ func Create() *cli.Command {
 	run := func(task interfaces.ITask, args []string) error {
 		return nil
 	}
-	root := cli.NewCommand("games", nil, false, run)
+	root := cli.NewCommand("games", interfaces.CommandTypeDirectory, nil, false, run)
 	root.SetHelp("Games", "Games")
 
 	_ = root.AddCommand(CreateSnake())

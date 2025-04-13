@@ -28,7 +28,7 @@ func CreateGC() *cli.Command {
 		task.WriteLn("GC Done")
 		return nil
 	}
-	root := cli.NewCommand("gc", nil, false, run)
+	root := cli.NewCommand("gc", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Start Garbage", "Start Garbage")
 
 	return root

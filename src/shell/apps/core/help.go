@@ -37,7 +37,7 @@ func CreateHelp() *cli.Command {
 		}
 		return nil
 	}
-	help := cli.NewCommand("help", nil, false, run)
+	help := cli.NewCommand("help", interfaces.CommandTypeFile, nil, false, run)
 	help.SetHelp("Help about any command", `Help provides help for any command in the application. Simply type `+help.Name()+` help [path to command] for full details.`)
 	return help
 }

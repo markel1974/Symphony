@@ -77,7 +77,7 @@ func CreateSnake() *cli.Command {
 		}
 		s.Draw(surface)
 	}
-	root := cli.NewCommand("snake", nil, true, run)
+	root := cli.NewCommand("snake", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Snake", "Snake")
 	root.SetTimerFn(TimerFn)
 	root.SetReadFn(readFn)

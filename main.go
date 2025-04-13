@@ -157,7 +157,7 @@ func createShell(target *cli.Command) error {
 	run := func(task interfaces.ITask, args []string) error {
 		return nil
 	}
-	t := cli.NewCommand("bin", nil, false, run)
+	t := cli.NewCommand("bin", interfaces.CommandTypeDirectory, nil, false, run)
 	t.SetHelp("Bin", "Bin")
 	_ = t.AddCommand(target)
 	auth := authenticator.NewSimpleAuthenticator()

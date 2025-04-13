@@ -27,7 +27,7 @@ func CreateProfileCPUStop() *cli.Command {
 		task.WriteLn("Cpu Profiling stopped")
 		return nil
 	}
-	root := cli.NewCommand("stopcpuprofile", nil, false, run)
+	root := cli.NewCommand("stopcpuprofile", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Stop cpu profiling", "Stop cpu profiling")
 
 	return root

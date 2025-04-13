@@ -34,7 +34,7 @@ func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	sbinRun := func(task interfaces.ITask, args []string) error {
 		return nil
 	}
-	sbin := cli.NewCommand("sbin", nil, false, sbinRun)
+	sbin := cli.NewCommand("sbin", interfaces.CommandTypeDirectory, nil, false, sbinRun)
 	sbin.SetHelp("SBin", "SBin")
 
 	_ = sbin.AddCommand(stats.Create())
@@ -43,7 +43,7 @@ func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	rootRun := func(task interfaces.ITask, args []string) error {
 		return nil
 	}
-	root := cli.NewCommand("", nil, false, rootRun)
+	root := cli.NewCommand("", interfaces.CommandTypeDirectory, nil, false, rootRun)
 	_ = root.AddCommand(sbin)
 	_ = root.AddCommand(bin)
 	_ = root.AddCommand(games.Create())
@@ -51,7 +51,7 @@ func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	coreCRun := func(task interfaces.ITask, args []string) error {
 		return nil
 	}
-	coreC := cli.NewCommand("", nil, false, coreCRun)
+	coreC := cli.NewCommand("", interfaces.CommandTypeDirectory, nil, false, coreCRun)
 	coreC.SetHelp("Core", "Core")
 	_ = coreC.AddCommand(core.CreateExit())
 	_ = coreC.AddCommand(core.CreateCD())

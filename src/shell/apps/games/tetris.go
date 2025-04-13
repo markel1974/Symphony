@@ -80,7 +80,7 @@ func CreateTetris() *cli.Command {
 		tx.Draw(surface)
 	}
 
-	root := cli.NewCommand("tetris", nil, true, run)
+	root := cli.NewCommand("tetris", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Tetris", "Tetris")
 	root.SetReadFn(readFn)
 	root.SetTimerFn(TimerFn)

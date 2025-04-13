@@ -13,7 +13,7 @@ func CreateLs() *cli.Command {
 		}
 		return nil
 	}
-	root := cli.NewCommand("ls", []string{"dir"}, false, run)
+	root := cli.NewCommand("ls", interfaces.CommandTypeFile, []string{"dir"}, false, run)
 	root.SetHelp("ls", "ls")
 
 	return root

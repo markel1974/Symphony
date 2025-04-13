@@ -47,7 +47,7 @@ func CreateProfileMemory() *cli.Command {
 
 		return nil
 	}
-	root := cli.NewCommand("memprofile", nil, false, run)
+	root := cli.NewCommand("memprofile", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Memory profiling", "Memory profiling")
 
 	return root

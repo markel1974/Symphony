@@ -62,7 +62,7 @@ func CreateInvaders() *cli.Command {
 		g.Draw(surface)
 	}
 
-	root := cli.NewCommand("invaders", nil, true, run)
+	root := cli.NewCommand("invaders", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Invaders", "Invaders")
 	root.SetTimerFn(timerFn)
 	root.SetPaintFn(paintFn)

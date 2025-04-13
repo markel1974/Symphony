@@ -24,7 +24,7 @@ func CreateExit() *cli.Command {
 		task.SetExit()
 		return nil
 	}
-	root := cli.NewCommand("exit", []string{"quit"}, false, run)
+	root := cli.NewCommand("exit", interfaces.CommandTypeFile, []string{"quit"}, false, run)
 	root.SetHelp("Exit", "Exit")
 
 	return root

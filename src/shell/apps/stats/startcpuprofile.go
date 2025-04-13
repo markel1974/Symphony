@@ -41,7 +41,7 @@ func CreateProfileCPUStart() *cli.Command {
 		task.WriteLn("Cpu Profiling started")
 		return nil
 	}
-	root := cli.NewCommand("startcpuprofile", nil, false, run)
+	root := cli.NewCommand("startcpuprofile", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Start cpu profiling", "Start cpu profiling")
 	return root
 }

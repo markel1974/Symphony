@@ -63,7 +63,7 @@ func CreateActivate() *cli.Command {
 		}
 	}
 
-	root := cli.NewCommand("activate", nil, true, run)
+	root := cli.NewCommand("activate", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Activate", "Activate")
 	root.SetReadFn(readFn)
 

@@ -23,7 +23,7 @@ func Create() *cli.Command {
 	run := func(task interfaces.ITask, args []string) error {
 		return nil
 	}
-	root := cli.NewCommand("stats", nil, false, run)
+	root := cli.NewCommand("stats", interfaces.CommandTypeDirectory, nil, false, run)
 	root.SetHelp("System Stats", "System Stats")
 
 	_ = root.AddCommand(CreateProfileCPUStart())

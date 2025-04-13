@@ -43,7 +43,7 @@ func CreateKill() *cli.Command {
 		}
 		return nil
 	}
-	root := cli.NewCommand("kill", nil, false, run)
+	root := cli.NewCommand("kill", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Kill", "Kill")
 
 	return root

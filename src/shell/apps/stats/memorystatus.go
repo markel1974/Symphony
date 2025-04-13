@@ -32,7 +32,7 @@ func CreateMemoryStatus() *cli.Command {
 		task.WriteLn(fmt.Sprintf("Number of completed GC cycles: %d", m.NumGC))
 		return nil
 	}
-	root := cli.NewCommand("rt", nil, false, run)
+	root := cli.NewCommand("rt", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Runtime Status", "Runtime Status")
 
 	return root

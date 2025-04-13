@@ -34,7 +34,7 @@ func CreateCPUUsage() *cli.Command {
 		task.WriteLn(fmt.Sprintf("CPU Usage: %f", cpuUsage))
 		return nil
 	}
-	root := cli.NewCommand("usage", nil, false, run)
+	root := cli.NewCommand("usage", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("CPU usage", "CPU usage")
 
 	return root

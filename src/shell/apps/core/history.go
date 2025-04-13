@@ -48,7 +48,7 @@ func CreateHistory() *cli.Command {
 		}
 		return nil
 	}
-	root := cli.NewCommand("history", []string{"h"}, false, run)
+	root := cli.NewCommand("history", interfaces.CommandTypeFile, []string{"h"}, false, run)
 	root.SetHelp("History", "History")
 
 	return root
