@@ -20,30 +20,24 @@ import (
 	"strings"
 )
 
-func CreateHelp(root *cli.Command) *cli.Command {
+func CreateHelp() *cli.Command {
 	run := func(task interfaces.ITask, args []string) error {
 		if len(args) == 0 {
 			return nil
 		}
-		var path []string
-		if !interfaces.IsPathAbsolute(args[0]) {
-			path = append(path, task.CWDPath()...)
-		}
-		path = append(path, interfaces.PathToSegments(args[0])...)
-		cmd := root.Traverse(path)
-		if cmd == nil {
+
+		help, err := task.Help(args[0])
+		if err != nil {
 			task.WriteLn("")
 			task.WriteLn("unknown help topic: " + strings.Join(args, " "))
-			task.WriteLn(task.GetCommand().Root().Help())
 		} else {
 			task.WriteLn("")
-			task.WriteLn(cmd.Help())
+			task.WriteLn(help)
+			return nil
 		}
 		return nil
 	}
-
 	help := cli.NewCommand("help", nil, false, run)
 	help.SetHelp("Help about any command", `Help provides help for any command in the application. Simply type `+help.Name()+` help [path to command] for full details.`)
-
 	return help
 }

@@ -102,4 +102,6 @@ type ITask interface {
 	ClearScreen()
 
 	SetExit()
+
+	Help(arg string) (string, error)
 }

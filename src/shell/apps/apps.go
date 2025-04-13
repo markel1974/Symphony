@@ -65,7 +65,7 @@ func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	_ = coreC.AddCommand(core.CreateHistory())
 	_ = coreC.AddCommand(core.CreateTasks())
 	_ = coreC.AddCommand(core.CreateLs())
-	_ = coreC.AddCommand(core.CreateHelp(root))
+	_ = coreC.AddCommand(core.CreateHelp())
 
 	return coreC, root
 }

@@ -16,10 +16,8 @@ package context
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
-	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"log"
 	"os"
@@ -42,16 +40,13 @@ type TaskManager struct {
 	ticker     *adaptiveticker.AdaptiveTicker
 	foreground *Task
 	selector   *TaskSelector
-	root       interfaces.ICommand
-	cwd        interfaces.ICommand
-	system     []interfaces.ICommand
 	dirty      bool
 	width      int
 	height     int
 	fullPaint  bool
 	timersChan chan *adaptiveticker.TimerHandler
 	ids        *adaptiveticker.Ids
-	suggestion *Suggestion
+	interactor *CommandInteractor
 }
 
 // NewTaskManager initializes and returns a new instance of TaskManager with the provided context, ticker, timers channel, and commands.
@@ -62,83 +57,40 @@ func NewTaskManager(ctx *Context, ticker *adaptiveticker.AdaptiveTicker, timersC
 		foreground: nil,
 		selector:   NewTaskSelector(),
 		timersChan: timersChannel,
-		system:     system,
-		cwd:        commands,
-		root:       commands,
 		dirty:      false,
 		fullPaint:  true,
 		width:      80,
 		height:     24,
 		ids:        adaptiveticker.NewIds(1024),
-		suggestion: NewSuggestion(commands, system),
+		interactor: NewCommandInteractor(commands, system),
 	}
 	return t
 }
 
 // Execute parses and executes a given command line string, associating it with a task, and manages its lifecycle.
-func (c *TaskManager) Execute(line string, tTask *Task) (bool, error) {
-	el, err := cli.Parse(line, false, false)
+func (c *TaskManager) Execute(line string, options *TaskOptions) (bool, error) {
+	cmd, args, err := c.interactor.Find(line)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error creating task: invalid command '%s'", line)
 	}
-	if len(el) == 0 {
-		return false, fmt.Errorf("invalid command: '%s'", line)
+	task := NewTask(c, c.ctx, cmd, line)
+	if !c.ids.Set(task) {
+		return false, fmt.Errorf("error creating task: can't set pid")
 	}
-	name := el[0]
-	args := el[1:]
-	node := c.cwd
-	if interfaces.IsPathAbsolute(name) {
-		node = c.root
-	}
-	dirPath := interfaces.PathToSegments(name)
-	sel := node.Traverse(dirPath)
-	if sel == nil {
-		for _, n := range c.system {
-			sel = n.Traverse(dirPath)
-			if sel != nil {
-				break
-			}
-		}
-	}
-	if sel == nil {
-		return false, fmt.Errorf("unknown command: '%s'", name)
-	}
-	//if len(args) > 0 {
-	//	if sel, args, err = sel.Find(args); err != nil || sel == nil {
-	//		return false, fmt.Errorf("invalid command: '%s %s'", name, strings.Join(args, " "))
-	//	}
-	//}
-	task, err := c.create(sel, line)
-	if err != nil {
-		return false, fmt.Errorf("error creating task: %s", err.Error())
-	}
-	if tTask != nil {
-		task.OffsetY = tTask.OffsetY
-		task.OffsetX = tTask.OffsetX
-		task.Scale = tTask.Scale
-	}
-	if err = sel.Execute(task, args); err != nil {
+	task.SetOptions(options)
+	if err = cmd.Execute(task, args); err != nil {
 		c.Kill(task.pid)
 		return true, err
 	}
-	if !sel.Daemon() {
+	if !cmd.Daemon() {
 		c.Kill(task.pid)
 		return true, nil
 	}
 	task.state = TaskStateRunning
-	if !sel.Background() {
+	if !cmd.Background() {
 		c.foreground = task
 	}
 	return true, nil
-}
-
-// create initializes a new Task instance, associates it with the provided ICommand and input string, and assigns an ID.
-func (c *TaskManager) create(cmd interfaces.ICommand, line string) (*Task, error) {
-	task := NewTask(c, c.ctx, cmd, line)
-	if !c.ids.Set(task) {
-		return nil, errors.New("max slot reached")
-	}
-	return task, nil
 }
 
 // SetScreenSize sets the screen dimensions for the TaskManager to the specified width and height, triggering a full repaint.
@@ -213,56 +165,41 @@ func (c *TaskManager) SetSelectionModePrevious() {
 // SetSelectionDisabled resets the selection state by clearing index, process ID, and available options, and requests a repaint.
 func (c *TaskManager) SetSelectionDisabled() {
 	c.selector.Clear()
-
 	c.PaintRequest()
 }
 
 // CWDChilds retrieves the names of all child files or directories under the current working directory as a string slice.
 func (c *TaskManager) CWDChilds() []string {
 	var out []string
-	for _, z := range c.cwd.Childs() {
+	for _, z := range c.interactor.CWD().Childs() {
 		out = append(out, z.Name())
 	}
 	return out
 }
 
-// CWD retrieves the current working directory command interface used by the TaskManager.
+// CWD retrieves the current working directory command interface.
 func (c *TaskManager) CWD() interfaces.ICommand {
-	return c.cwd
+	return c.interactor.CWD()
 }
 
 // CWDGet retrieves the current working directory path as a string using the TaskManager's command interface.
 func (c *TaskManager) CWDGet() string {
-	return c.cwd.CommandPath()
+	return c.interactor.CWD().CommandPath()
 }
 
 // CWDPath returns the current working directory path as a slice of strings by delegating to the TaskManager's implementation.
 func (c *TaskManager) CWDPath() []string {
-	return c.cwd.Path()
+	return c.interactor.CWD().Path()
 }
 
 // CWDSet updates the current working directory to the specified path and returns true if the operation is successful.
 func (c *TaskManager) CWDSet(arg string) bool {
-	//if arg == ".." {
-	//	if c.cwd.Parent() != nil {
-	//		c.cwd = c.cwd.Parent()
-	//		return true
-	//	}
-	//} else {
-	var path []string
-	for _, part := range strings.Split(arg, interfaces.PathSeparator) {
-		if len(part) > 0 {
-			path = append(path, part)
-		}
-	}
-	if cmd := c.cwd.Traverse(path); cmd != nil {
-		if !cmd.HasSubCommands() {
-			return false
-		}
-		c.cwd = cmd
-		return true
-	}
-	return false
+	return c.interactor.CWDSet(arg)
+}
+
+// Help updates the current working directory to the specified path and returns true if the operation is successful.
+func (c *TaskManager) Help(arg string) (string, error) {
+	return c.interactor.Help(arg)
 }
 
 // SetSelectionOptions updates selection attributes for a task identified by the current process ID based on the given option and value.
@@ -276,12 +213,12 @@ func (c *TaskManager) SetSelectionOptions(option rune, value float64) bool {
 	task := t.(*Task)
 	switch option {
 	case 'y':
-		task.OffsetY += int(value)
+		task.SetOffsetY(task.OffsetY() + int(value))
 	case 'x':
-		task.OffsetX += int(value)
+		task.SetOffsetX(task.OffsetX() + int(value))
 	case 'z':
-		if scale := task.Scale + value; scale >= 0.2 && scale <= 1 {
-			task.Scale = scale
+		if scale := task.Scale() + value; scale >= 0.2 && scale <= 1 {
+			task.SetScale(scale)
 		}
 	}
 	c.fullPaint = true
@@ -313,7 +250,7 @@ func (c *TaskManager) SetFg(pid int) bool {
 }
 
 func (c *TaskManager) GetSuggestion(in string, cursor int) (string, []string, bool) {
-	prefix, suggestions, found := c.suggestion.Get(c.cwd, in, cursor)
+	prefix, suggestions, found := c.interactor.Suggestion(in, cursor)
 	return prefix, suggestions, found
 }
 
@@ -554,19 +491,18 @@ func (c *TaskManager) ListTasks() []string {
 
 // SaveTasks saves the current state of tasks to a file with the specified name and returns true if the operation succeeds.
 func (c *TaskManager) SaveTasks(name string) bool {
-	var tasks map[int]*Task
-	tasks = make(map[int]*Task)
+	options := make(map[int]*TaskOptions)
 
 	c.ids.Range(func(item adaptiveticker.IIds) bool {
 		task, ok := item.(*Task)
 		if ok && task != nil {
-			if !strings.HasPrefix(task.Line, commandTask) {
-				tasks[task.pid] = task
+			if !strings.HasPrefix(task.Line(), commandTask) {
+				options[task.pid] = task.Options()
 			}
 		}
 		return true
 	})
-	data, err := json.Marshal(tasks)
+	data, err := json.Marshal(options)
 	if err != nil {
 		log.Println("Error marshalling task file ", name, ": ", err.Error())
 		return false
@@ -587,7 +523,7 @@ func (c *TaskManager) SaveTasks(name string) bool {
 
 // RestoreTasks restores tasks from a file identified by the given name, reinitializing their state. Returns success status.
 func (c *TaskManager) RestoreTasks(name string) bool {
-	var tasks map[int]*Task
+	var tasks map[int]*TaskOptions
 
 	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
 		name = name[pos+1:]

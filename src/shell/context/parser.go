@@ -1,4 +1,4 @@
-package cli
+package context
 
 import (
 	"bytes"
@@ -19,16 +19,20 @@ const (
 	argQuoted
 )
 
-// getEnv retrieves the value of an environment variable identified by the given name. Returns an empty string if not found.
-func getEnv(_ string) string {
-	return ""
+type GetEnvFn func(_ string) string
+
+// isEnv determines if the provided string argument follows the format of an environment variable (key=value).
+func isEnv(arg string) bool {
+	return len(strings.Split(arg, "=")) == 2
 }
 
 // replaceEnv replaces substrings in the input string `s` using the provided `env` function for variable substitution.
 // If `env` is nil, a default implementation (`getEnv`) is used for substitution.
-func replaceEnv(env func(string) string, s string) string {
+func replaceEnv(env GetEnvFn, s string) string {
 	if env == nil {
-		env = getEnv
+		env = func(_ string) string {
+			return ""
+		}
 	}
 
 	var buf bytes.Buffer
@@ -101,20 +105,20 @@ func replaceEnv(env func(string) string, s string) string {
 
 // Parser represents a command-line arguments and environment variables parser with customizable behavior.
 type Parser struct {
-	ParseEnv      bool
-	ParseBacktick bool
-	Position      int
-	Dir           string
-	GetEnv        func(string) string
+	parseEnv      bool
+	parseBacktick bool
+	position      int
+	dir           string
+	getEnv        func(string) string
 }
 
 // NewParser initializes and returns a new instance of the Parser struct with default settings.
-func NewParser(parseEnv bool, parseBacktick bool) *Parser {
+func NewParser(parseEnv bool, parseBacktick bool, dir string) *Parser {
 	return &Parser{
-		ParseEnv:      parseEnv,
-		ParseBacktick: parseBacktick,
-		Position:      0,
-		Dir:           "",
+		parseEnv:      parseEnv,
+		parseBacktick: parseBacktick,
+		position:      0,
+		dir:           dir,
 	}
 }
 
@@ -162,16 +166,16 @@ loop:
 				buf += string(r)
 				backtick += string(r)
 			} else if got != argNo {
-				if p.ParseEnv {
+				if p.parseEnv {
 					if got == argSingle {
-						parser := &Parser{ParseEnv: false, ParseBacktick: false, Position: 0, Dir: p.Dir}
-						elements, err := parser.Parse(replaceEnv(p.GetEnv, buf))
+						parser := NewParser(false, false, p.dir)
+						elements, err := parser.Parse(replaceEnv(p.getEnv, buf))
 						if err != nil {
 							return nil, err
 						}
 						args = append(args, elements...)
 					} else {
-						args = append(args, replaceEnv(p.GetEnv, buf))
+						args = append(args, replaceEnv(p.getEnv, buf))
 					}
 				} else {
 					args = append(args, buf)
@@ -185,7 +189,7 @@ loop:
 		switch r {
 		case '`':
 			if !singleQuoted && !doubleQuoted && !dollarQuote {
-				if p.ParseBacktick {
+				if p.parseBacktick {
 					if backQuote {
 						buf = buf[:len(buf)-len(backtick)]
 					}
@@ -198,7 +202,7 @@ loop:
 			}
 		case ')':
 			if !singleQuoted && !doubleQuoted && !backQuote {
-				if p.ParseBacktick {
+				if p.parseBacktick {
 					if dollarQuote {
 						buf = buf[:len(buf)-len(backtick)-2]
 					}
@@ -256,39 +260,36 @@ loop:
 	}
 
 	if got != argNo {
-		if p.ParseEnv {
+		if p.parseEnv {
 			if got == argSingle {
-				parser := &Parser{ParseEnv: false, ParseBacktick: false, Position: 0, Dir: p.Dir}
-				strs, err := parser.Parse(replaceEnv(p.GetEnv, buf))
+				parser := NewParser(false, false, p.dir)
+				elements, err := parser.Parse(replaceEnv(p.getEnv, buf))
 				if err != nil {
 					return nil, err
 				}
-				args = append(args, strs...)
+				args = append(args, elements...)
 			} else {
-				args = append(args, replaceEnv(p.GetEnv, buf))
+				args = append(args, replaceEnv(p.getEnv, buf))
 			}
 		} else {
 			args = append(args, buf)
 		}
 	}
-
 	if escaped || singleQuoted || doubleQuoted || backQuote || dollarQuote {
 		return nil, errors.New("invalid command line string")
 	}
-
-	p.Position = pos
-
+	p.position = pos
 	return args, nil
 }
 
 // ParseWithEnvs splits a line into environment variables and arguments, returning them separately along with any parse error.
-func (p *Parser) ParseWithEnvs(line string) (envs []string, args []string, err error) {
+func (p *Parser) ParseWithEnvs(line string) ([]string, []string, error) {
 	_args, err := p.Parse(line)
 	if err != nil {
 		return nil, nil, err
 	}
-	envs = []string{}
-	args = []string{}
+	var envs []string
+	var args []string
 	parsingEnv := true
 	for _, arg := range _args {
 		if parsingEnv && isEnv(arg) {
@@ -301,14 +302,4 @@ func (p *Parser) ParseWithEnvs(line string) (envs []string, args []string, err e
 		}
 	}
 	return envs, args, nil
-}
-
-// isEnv determines if the provided string argument follows the format of an environment variable (key=value).
-func isEnv(arg string) bool {
-	return len(strings.Split(arg, "=")) == 2
-}
-
-// Parse splits a command-line string into separate arguments and returns them along with any error encountered during parsing.
-func Parse(line string, parseEnv bool, parseBacktick bool) ([]string, error) {
-	return NewParser(parseEnv, parseBacktick).Parse(line)
 }

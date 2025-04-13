@@ -16,8 +16,16 @@ const (
 	TaskStateRunning TaskState = iota
 )
 
+type TaskOptions struct {
+	OffsetY int
+	OffsetX int
+	Scale   float64
+	Line    string
+}
+
 // Task represents a unit of work managed by a TaskManager and associated with a specific context, command, and state.
 type Task struct {
+	*TaskOptions
 	tasks   *TaskManager
 	ctx     *Context
 	cmd     interfaces.ICommand
@@ -26,26 +34,73 @@ type Task struct {
 	pid     int
 	state   TaskState
 	caption string
-	Line    string
-	OffsetX int
-	OffsetY int
-	Scale   float64
+	offsetY int
+	offsetX int
+	scale   float64
+	line    string
 }
 
 // NewTask creates a new Task instance associated with TaskManager, Context, a command, and initializes its state.
 func NewTask(tasks *TaskManager, ctx *Context, cmd interfaces.ICommand, line string) *Task {
-	return &Task{
+	t := &Task{
 		tasks:   tasks,
 		ctx:     ctx,
 		cmd:     cmd,
 		context: nil,
 		state:   TaskStateSetup,
 		caption: "",
-		Line:    line,
-		OffsetX: 0,
-		OffsetY: 0,
-		Scale:   1.0,
+		line:    line,
+		offsetX: 0,
+		offsetY: 0,
+		scale:   1.0,
 	}
+	return t
+}
+
+func (t *Task) SetOptions(options *TaskOptions) {
+	if options == nil {
+		return
+	}
+	t.scale = options.Scale
+	t.offsetY = options.OffsetY
+	t.offsetX = options.OffsetX
+}
+
+func (t *Task) Options() *TaskOptions {
+	return &TaskOptions{
+		OffsetY: t.offsetY,
+		OffsetX: t.offsetX,
+		Scale:   t.scale,
+		Line:    t.line,
+	}
+}
+
+func (t *Task) OffsetX() int {
+	return t.offsetX
+}
+
+func (t *Task) SetOffsetX(x int) {
+	t.offsetX = x
+}
+
+func (t *Task) OffsetY() int {
+	return t.offsetY
+}
+
+func (t *Task) SetOffsetY(y int) {
+	t.offsetY = y
+}
+
+func (t *Task) Scale() float64 {
+	return t.scale
+}
+
+func (t *Task) SetScale(scale float64) {
+	t.scale = scale
+}
+
+func (t *Task) Line() string {
+	return t.line
 }
 
 // PID returns the process identifier (PID) of the task.
@@ -149,6 +204,10 @@ func (t *Task) CWDChilds() []string {
 	return t.tasks.CWDChilds()
 }
 
+func (t *Task) Help(arg string) (string, error) {
+	return t.tasks.Help(arg)
+}
+
 // SetSelectionMode sets the selection mode for a task identified by the given pid.
 func (t *Task) SetSelectionMode(pid int) {
 	t.tasks.SetSelectionMode(pid)
@@ -184,9 +243,9 @@ func (t *Task) Paint(surface *Surface) {
 	if len(t.caption) > 0 {
 		caption += " - " + t.caption
 	}
-	surface.SetOffsetX(t.OffsetX)
-	surface.SetOffsetY(t.OffsetY)
-	surface.SetScale(t.Scale)
+	surface.SetOffsetX(t.offsetX)
+	surface.SetOffsetY(t.offsetY)
+	surface.SetScale(t.scale)
 	surface.SetCaption(caption)
 	surface.Begin()
 	fn(t, surface)
