@@ -41,7 +41,7 @@ type Context struct {
 	auth        interfaces.IAuthenticator
 	defaultApp  *shell.Shell
 	enterKey    rune
-	tasks       *TaskManager
+	tasks       *Kernel
 	messageChan chan iMessage
 	timersChan  chan *adaptiveticker.TimerHandler
 	prompt      string
@@ -75,7 +75,7 @@ func (c *Context) Setup() {
 	}
 	system := apps.NewRoot()
 	systemCommands, commands := system.Build(c.commands)
-	c.tasks = NewTaskManager(c, c.ticker, c.timersChan, []interfaces.ICommand{systemCommands}, commands)
+	c.tasks = NewKernel(c, c.ticker, c.timersChan, []interfaces.ICommand{systemCommands}, commands)
 
 	c.defaultApp = shell.NewShell(c.auth, c.terminal, c.prompt, c.autosave)
 	c.defaultApp.ExecCommand = c.execCommand

@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-// TaskState represents the state of a task, typically managed by a TaskManager within an application.
+// TaskState represents the state of a task, typically managed by a Kernel within an application.
 type TaskState int
 
 // TaskStateSetup represents the initial setup state of a task.
@@ -23,10 +23,10 @@ type TaskOptions struct {
 	Line    string
 }
 
-// Task represents a unit of work managed by a TaskManager and associated with a specific context, command, and state.
+// Task represents a unit of work managed by a Kernel and associated with a specific context, command, and state.
 type Task struct {
 	*TaskOptions
-	tasks   *TaskManager
+	tasks   *Kernel
 	ctx     *Context
 	cmd     interfaces.ICommand
 	context interface{}
@@ -40,8 +40,8 @@ type Task struct {
 	line    string
 }
 
-// NewTask creates a new Task instance associated with TaskManager, Context, a command, and initializes its state.
-func NewTask(tasks *TaskManager, ctx *Context, cmd interfaces.ICommand, line string) *Task {
+// NewTask creates a new Task instance associated with Kernel, Context, a command, and initializes its state.
+func NewTask(tasks *Kernel, ctx *Context, cmd interfaces.ICommand, line string) *Task {
 	t := &Task{
 		tasks:   tasks,
 		ctx:     ctx,
@@ -159,7 +159,7 @@ func (t *Task) RestoreTasks(name string) bool {
 	return t.tasks.RestoreTasks(name)
 }
 
-// ListTasks retrieves the list of all task names currently managed by the TaskManager. It returns a slice of strings.
+// ListTasks retrieves the list of all task names currently managed by the Kernel. It returns a slice of strings.
 func (t *Task) ListTasks() []string {
 	return t.tasks.ListTasks()
 }
@@ -169,7 +169,7 @@ func (t *Task) SetCaption(caption string) bool {
 	return t.tasks.SetCaption(t.pid, caption)
 }
 
-// PaintRequest forwards a paint request to the TaskManager and returns a boolean indicating success.
+// PaintRequest forwards a paint request to the Kernel and returns a boolean indicating success.
 func (t *Task) PaintRequest() bool {
 	return t.tasks.PaintRequest()
 }
@@ -194,7 +194,7 @@ func (t *Task) CWDGet() string {
 	return t.tasks.CWDGet()
 }
 
-// CWDPath retrieves the current working directory path as a slice of strings. It delegates the call to the underlying TaskManager.
+// CWDPath retrieves the current working directory path as a slice of strings. It delegates the call to the underlying Kernel.
 func (t *Task) CWDPath() []string {
 	return t.tasks.CWDPath()
 }
@@ -262,7 +262,7 @@ func (t *Task) SetFg(pid int) bool {
 	return t.tasks.SetFg(pid)
 }
 
-// TaskList returns a string representation of all tasks managed by the TaskManager.
+// TaskList returns a string representation of all tasks managed by the Kernel.
 func (t *Task) TaskList() string {
 	return t.tasks.List()
 }

@@ -34,8 +34,8 @@ const (
 	commandTask     = "task"
 )
 
-// TaskManager handles task scheduling, execution, and management within a context.
-type TaskManager struct {
+// Kernel handles task scheduling, execution, and management within a context.
+type Kernel struct {
 	ctx        *Context
 	ticker     *adaptiveticker.AdaptiveTicker
 	foreground *Task
@@ -49,9 +49,9 @@ type TaskManager struct {
 	interactor *CommandInteractor
 }
 
-// NewTaskManager initializes and returns a new instance of TaskManager with the provided context, ticker, timers channel, and commands.
-func NewTaskManager(ctx *Context, ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, system []interfaces.ICommand, commands interfaces.ICommand) *TaskManager {
-	t := &TaskManager{
+// NewKernel initializes and returns a new instance of Kernel with the provided context, ticker, timers channel, and commands.
+func NewKernel(ctx *Context, ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, system []interfaces.ICommand, commands interfaces.ICommand) *Kernel {
+	t := &Kernel{
 		ctx:        ctx,
 		ticker:     ticker,
 		foreground: nil,
@@ -68,7 +68,7 @@ func NewTaskManager(ctx *Context, ticker *adaptiveticker.AdaptiveTicker, timersC
 }
 
 // Execute parses and executes a given command line string, associating it with a task, and manages its lifecycle.
-func (c *TaskManager) Execute(line string, options *TaskOptions) (bool, error) {
+func (c *Kernel) Execute(line string, options *TaskOptions) (bool, error) {
 	cmd, args, err := c.interactor.Find(line)
 	if err != nil {
 		return false, fmt.Errorf("error creating task: invalid command '%s'", line)
@@ -93,8 +93,8 @@ func (c *TaskManager) Execute(line string, options *TaskOptions) (bool, error) {
 	return true, nil
 }
 
-// SetScreenSize sets the screen dimensions for the TaskManager to the specified width and height, triggering a full repaint.
-func (c *TaskManager) SetScreenSize(width int, height int) {
+// SetScreenSize sets the screen dimensions for the Kernel to the specified width and height, triggering a full repaint.
+func (c *Kernel) SetScreenSize(width int, height int) {
 	c.width = width
 	c.height = height
 	c.fullPaint = true
@@ -105,14 +105,14 @@ func (c *TaskManager) SetScreenSize(width int, height int) {
 }
 
 // GetScreenSize retrieves the current screen width and height as two integer values.
-func (c *TaskManager) GetScreenSize() (int, int) {
+func (c *Kernel) GetScreenSize() (int, int) {
 	return c.width, c.height
 }
 
 // SetSelectionMode updates the current selection state based on the requested PID or defaults to the first available task.
 // If no task matching the requested PID is found, the first available task is selected.
 // Triggers a repaint request after updating the selection.
-func (c *TaskManager) SetSelectionMode(requestedPid int) {
+func (c *Kernel) SetSelectionMode(requestedPid int) {
 	var idx = 0
 	var firstPid = adaptiveticker.UnknownId
 	var firstIdx = 0
@@ -147,15 +147,15 @@ func (c *TaskManager) SetSelectionMode(requestedPid int) {
 }
 
 // SetSelectionModeNext increments the selection index to the next in the available list, wrapping to the start if necessary.
-func (c *TaskManager) SetSelectionModeNext() {
+func (c *Kernel) SetSelectionModeNext() {
 	if !c.selector.Next() {
 		return
 	}
 	c.PaintRequest()
 }
 
-// SetSelectionModePrevious sets the selection mode to the previous available task in the TaskManager.
-func (c *TaskManager) SetSelectionModePrevious() {
+// SetSelectionModePrevious sets the selection mode to the previous available task in the Kernel.
+func (c *Kernel) SetSelectionModePrevious() {
 	if !c.selector.Prev() {
 		return
 	}
@@ -163,13 +163,13 @@ func (c *TaskManager) SetSelectionModePrevious() {
 }
 
 // SetSelectionDisabled resets the selection state by clearing index, process ID, and available options, and requests a repaint.
-func (c *TaskManager) SetSelectionDisabled() {
+func (c *Kernel) SetSelectionDisabled() {
 	c.selector.Clear()
 	c.PaintRequest()
 }
 
 // CWDChilds retrieves the names of all child files or directories under the current working directory as a string slice.
-func (c *TaskManager) CWDChilds() []string {
+func (c *Kernel) CWDChilds() []string {
 	var out []string
 	for _, z := range c.interactor.CWD().Childs() {
 		out = append(out, z.Name())
@@ -178,34 +178,34 @@ func (c *TaskManager) CWDChilds() []string {
 }
 
 // CWD retrieves the current working directory command interface.
-func (c *TaskManager) CWD() interfaces.ICommand {
+func (c *Kernel) CWD() interfaces.ICommand {
 	return c.interactor.CWD()
 }
 
-// CWDGet retrieves the current working directory path as a string using the TaskManager's command interface.
-func (c *TaskManager) CWDGet() string {
+// CWDGet retrieves the current working directory path as a string using the Kernel's command interface.
+func (c *Kernel) CWDGet() string {
 	return c.interactor.CWD().CommandPath()
 }
 
-// CWDPath returns the current working directory path as a slice of strings by delegating to the TaskManager's implementation.
-func (c *TaskManager) CWDPath() []string {
+// CWDPath returns the current working directory path as a slice of strings by delegating to the Kernel's implementation.
+func (c *Kernel) CWDPath() []string {
 	return c.interactor.CWD().Path()
 }
 
 // CWDSet updates the current working directory to the specified path and returns true if the operation is successful.
-func (c *TaskManager) CWDSet(arg string) bool {
+func (c *Kernel) CWDSet(arg string) bool {
 	return c.interactor.CWDSet(arg)
 }
 
 // Help updates the current working directory to the specified path and returns true if the operation is successful.
-func (c *TaskManager) Help(arg string) (string, error) {
+func (c *Kernel) Help(arg string) (string, error) {
 	return c.interactor.Help(arg)
 }
 
 // SetSelectionOptions updates selection attributes for a task identified by the current process ID based on the given option and value.
 // Returns true if the operation succeeds, otherwise false.
 // Valid options are 'y', 'x', and 'z' for adjusting vertical offset, horizontal offset, and scale respectively.
-func (c *TaskManager) SetSelectionOptions(option rune, value float64) bool {
+func (c *Kernel) SetSelectionOptions(option rune, value float64) bool {
 	t, ok := c.ids.Get(c.selector.PID())
 	if !ok {
 		return false
@@ -228,7 +228,7 @@ func (c *TaskManager) SetSelectionOptions(option rune, value float64) bool {
 
 // SetCaption updates the caption of a task identified by the given pid.
 // Returns true if the caption was successfully updated, false if no task with the given pid exists.
-func (c *TaskManager) SetCaption(pid int, caption string) bool {
+func (c *Kernel) SetCaption(pid int, caption string) bool {
 	t, ok := c.ids.Get(pid)
 	if !ok {
 		return false
@@ -239,7 +239,7 @@ func (c *TaskManager) SetCaption(pid int, caption string) bool {
 }
 
 // SetFg sets the task with the given process ID as the foreground task and returns true if successful, false otherwise.
-func (c *TaskManager) SetFg(pid int) bool {
+func (c *Kernel) SetFg(pid int) bool {
 	t, ok := c.ids.Get(pid)
 	if !ok {
 		return false
@@ -249,13 +249,13 @@ func (c *TaskManager) SetFg(pid int) bool {
 	return true
 }
 
-func (c *TaskManager) GetSuggestion(in string, cursor int) (string, []string, bool) {
+func (c *Kernel) GetSuggestion(in string, cursor int) (string, []string, bool) {
 	prefix, suggestions, found := c.interactor.Suggestion(in, cursor)
 	return prefix, suggestions, found
 }
 
-// PaintRequest marks the TaskManager as dirty and initiates a paint request if not already pending.
-func (c *TaskManager) PaintRequest() bool {
+// PaintRequest marks the Kernel as dirty and initiates a paint request if not already pending.
+func (c *Kernel) PaintRequest() bool {
 	ret := false
 	if !c.dirty {
 		c.dirty = true
@@ -267,7 +267,7 @@ func (c *TaskManager) PaintRequest() bool {
 
 // CreateTimer initializes a timer for a task with a given process ID, start delay, interval, and repeat count.
 // Returns true if the timer is successfully created; otherwise, false.
-func (c *TaskManager) CreateTimer(pid int, first int, interval int, count int) bool {
+func (c *Kernel) CreateTimer(pid int, first int, interval int, count int) bool {
 	t, ok := c.ids.Get(pid)
 	if !ok {
 		return false
@@ -286,7 +286,7 @@ func (c *TaskManager) CreateTimer(pid int, first int, interval int, count int) b
 
 // StopTimer stops a timer identified by the given task ID (tid) for the process identified by the given process ID (pid).
 // Returns true if the timer was successfully stopped; otherwise, returns false.
-func (c *TaskManager) StopTimer(pid int, tid int) bool {
+func (c *Kernel) StopTimer(pid int, tid int) bool {
 	t, ok := c.ids.Get(pid)
 	if !ok {
 		return false
@@ -295,14 +295,14 @@ func (c *TaskManager) StopTimer(pid int, tid int) bool {
 	return c.closeTimer(task, tid)
 }
 
-// IsActive checks if a task with the specified process ID (pid) exists and is currently active in the TaskManager.
-func (c *TaskManager) IsActive(pid int) bool {
+// IsActive checks if a task with the specified process ID (pid) exists and is currently active in the Kernel.
+func (c *Kernel) IsActive(pid int) bool {
 	_, ret := c.ids.Get(pid)
 	return ret
 }
 
 // GetForegroundPid retrieves the process ID of the currently active foreground task or returns UnknownId if none exists.
-func (c *TaskManager) GetForegroundPid() int {
+func (c *Kernel) GetForegroundPid() int {
 	if c.foreground == nil {
 		return adaptiveticker.UnknownId
 	}
@@ -310,7 +310,7 @@ func (c *TaskManager) GetForegroundPid() int {
 }
 
 // GetForegroundName returns the PID and name of the current foreground task. If none exists, it returns UnknownId and an empty string.
-func (c *TaskManager) GetForegroundName() (int, string) {
+func (c *Kernel) GetForegroundName() (int, string) {
 	if c.foreground == nil {
 		return adaptiveticker.UnknownId, ""
 	}
@@ -318,7 +318,7 @@ func (c *TaskManager) GetForegroundName() (int, string) {
 }
 
 // SetBackground sets the task manager to background mode by clearing the foreground context and returns true if successful.
-func (c *TaskManager) SetBackground() bool {
+func (c *Kernel) SetBackground() bool {
 	if c.foreground == nil {
 		return false
 	}
@@ -327,7 +327,7 @@ func (c *TaskManager) SetBackground() bool {
 }
 
 // KillForeground terminates the currently active foreground process if one exists.
-func (c *TaskManager) KillForeground() {
+func (c *Kernel) KillForeground() {
 	if c.foreground == nil {
 		return
 	}
@@ -335,7 +335,7 @@ func (c *TaskManager) KillForeground() {
 }
 
 // Kill terminates a task with the specified pid. Returns true if the task is successfully found and removed, false otherwise.
-func (c *TaskManager) Kill(pid int) bool {
+func (c *Kernel) Kill(pid int) bool {
 	t, ok := c.ids.Get(pid)
 	if !ok {
 		return false
@@ -353,8 +353,8 @@ func (c *TaskManager) Kill(pid int) bool {
 	return true
 }
 
-// KillAll terminates all tasks managed by TaskManager matching the provided name, or all tasks if name is empty. Returns the count of terminated tasks.
-func (c *TaskManager) KillAll(name string) int {
+// KillAll terminates all tasks managed by Kernel matching the provided name, or all tasks if name is empty. Returns the count of terminated tasks.
+func (c *Kernel) KillAll(name string) int {
 	count := 0
 	var tasks []*Task
 
@@ -386,7 +386,7 @@ func (c *TaskManager) KillAll(name string) int {
 }
 
 // List returns a formatted string listing all tasks with their process IDs and names.
-func (c *TaskManager) List() string {
+func (c *Kernel) List() string {
 	out := "\r\nPid: Task"
 	c.ids.Range(func(item adaptiveticker.IIds) bool {
 		task, ok := item.(*Task)
@@ -399,7 +399,7 @@ func (c *TaskManager) List() string {
 }
 
 // ExecTimer triggers a timer event for a specific task if the task and its timer function exist, returning true if successful.
-func (c *TaskManager) ExecTimer(pid int, tid int, interval int) bool {
+func (c *Kernel) ExecTimer(pid int, tid int, interval int) bool {
 	ret := false
 	if t, ok := c.ids.Get(pid); ok {
 		task := t.(*Task)
@@ -413,7 +413,7 @@ func (c *TaskManager) ExecTimer(pid int, tid int, interval int) bool {
 
 // ExecRead triggers a read event for a task identified by pid with the provided code and buffer values.
 // Returns true if the event execution is successful; otherwise, false.
-func (c *TaskManager) ExecRead(pid int, code int, buffer rune) bool {
+func (c *Kernel) ExecRead(pid int, code int, buffer rune) bool {
 	ret := false
 	if t, ok := c.ids.Get(pid); ok {
 		task := t.(*Task)
@@ -426,7 +426,7 @@ func (c *TaskManager) ExecRead(pid int, code int, buffer rune) bool {
 }
 
 // ExecPaint renders the current task manager state onto the terminal by painting tasks and handling selection logic.
-func (c *TaskManager) ExecPaint(terminal interfaces.ITerminal) bool {
+func (c *Kernel) ExecPaint(terminal interfaces.ITerminal) bool {
 	if !c.dirty {
 		return false
 	}
@@ -467,7 +467,7 @@ func (c *TaskManager) ExecPaint(terminal interfaces.ITerminal) bool {
 }
 
 // ListTasks retrieves the names of all tasks available in the current directory with the specified file extension.
-func (c *TaskManager) ListTasks() []string {
+func (c *Kernel) ListTasks() []string {
 	var out []string
 	dir := "./"
 	if files, err := os.ReadDir(dir); err == nil {
@@ -487,7 +487,7 @@ func (c *TaskManager) ListTasks() []string {
 }
 
 // SaveTasks saves the current state of tasks to a file with the specified name and returns true if the operation succeeds.
-func (c *TaskManager) SaveTasks(name string) bool {
+func (c *Kernel) SaveTasks(name string) bool {
 	options := make(map[int]*TaskOptions)
 	c.ids.Range(func(item adaptiveticker.IIds) bool {
 		task, ok := item.(*Task)
@@ -515,7 +515,7 @@ func (c *TaskManager) SaveTasks(name string) bool {
 }
 
 // RestoreTasks restores tasks from a file identified by the given name, reinitializing their state. Returns success status.
-func (c *TaskManager) RestoreTasks(name string) bool {
+func (c *Kernel) RestoreTasks(name string) bool {
 	var tasks map[int]*TaskOptions
 	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
 		name = name[pos+1:]
@@ -539,7 +539,7 @@ func (c *TaskManager) RestoreTasks(name string) bool {
 }
 
 // ExecActivate attempts to activate a background process if it is not already active or invalid. Returns false in all cases.
-func (c *TaskManager) ExecActivate() bool {
+func (c *Kernel) ExecActivate() bool {
 	pid, name := c.GetForegroundName()
 	if pid == adaptiveticker.UnknownId {
 		return false
@@ -553,7 +553,7 @@ func (c *TaskManager) ExecActivate() bool {
 }
 
 // closeTimer removes a timer identified by tid from the task's timer list and returns true if the operation is successful.
-func (c *TaskManager) closeTimer(task *Task, tid int) bool {
+func (c *Kernel) closeTimer(task *Task, tid int) bool {
 	ret := false
 	if task != nil {
 		for _, timer := range task.timers {
