@@ -140,12 +140,12 @@ func (c *FileSystem) Suggestion(in string, cursor int) (string, []string, bool) 
 	}
 	prefix := prefixToComplete
 
-	rawSuggestions := nodeToQuery.SuggestionsFor_NEW(prefixToComplete)
+	rawSuggestions := nodeToQuery.SuggestionsFor(prefixToComplete)
 	isFromSearchPath := false
 
 	if len(rawSuggestions) == 0 && isCompletingCommand {
 		for _, s := range c.searchPaths {
-			if pathSuggestions := s.SuggestionsFor_NEW(prefixToComplete); len(pathSuggestions) > 0 {
+			if pathSuggestions := s.SuggestionsFor(prefixToComplete); len(pathSuggestions) > 0 {
 				rawSuggestions = pathSuggestions
 				isFromSearchPath = true
 				break

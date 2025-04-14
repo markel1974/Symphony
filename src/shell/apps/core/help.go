@@ -25,7 +25,6 @@ func CreateHelp() *cli.Command {
 		if len(args) == 0 {
 			return nil
 		}
-
 		help, err := task.Help(args[0])
 		if err != nil {
 			task.WriteLn("")
@@ -38,6 +37,6 @@ func CreateHelp() *cli.Command {
 		return nil
 	}
 	help := cli.NewCommand("help", interfaces.CommandTypeFile, nil, false, run)
-	help.SetHelp("Help about any command", `Help provides help for any command in the application. Simply type `+help.Name()+` help [path to command] for full details.`)
+	help.SetHelp("Help about any command", `Help provides help for any command`)
 	return help
 }

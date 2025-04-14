@@ -18,12 +18,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
-	"log"
 	"sort"
 	"strings"
 )
 
-// Command defines the structure for application commands, holding metadata, behavior, and configuration properties.
+// Command represents a structured command with metadata, associated functions, and subcommands in a CLI application.
 type Command struct {
 	name                       string
 	kind                       interfaces.CommandType
@@ -33,7 +32,6 @@ type Command struct {
 	suggestionsMinimumDistance int
 	daemon                     bool
 	background                 bool
-	template                   *Template
 	run                        interfaces.RunFn
 	timerEvent                 interfaces.TimerFn
 	readEvent                  interfaces.ReadFn
@@ -45,7 +43,7 @@ type Command struct {
 	commandsMaxNameLen         int
 }
 
-// NewCommand creates and returns a new instance of Command with a pre-defined template.
+// NewCommand creates a new Command instance with the specified name, type, aliases, daemon status, and execution function.
 func NewCommand(name string, kind interfaces.CommandType, aliases []string, daemon bool, run interfaces.RunFn) *Command {
 	if run == nil {
 		run = func(task interfaces.ITask, args []string) error {
@@ -56,62 +54,71 @@ func NewCommand(name string, kind interfaces.CommandType, aliases []string, daem
 		name = name[:i]
 	}
 	return &Command{
-		name:     name,
-		kind:     kind,
-		aliases:  aliases,
-		template: NewTemplate(),
-		daemon:   daemon,
-		run:      run,
+		name:    name,
+		kind:    kind,
+		aliases: aliases,
+		daemon:  daemon,
+		run:     run,
 	}
 }
 
+// Type returns the structural nature of the command represented as interfaces.CommandType.
 func (c *Command) Type() interfaces.CommandType {
 	return c.kind
 }
 
+// PaintEvent returns the PaintFn associated with the command, which handles rendering or drawing operations.
 func (c *Command) PaintEvent() interfaces.PaintFn {
 	return c.paintEvent
 }
 
+// ReadEvent retrieves the function assigned to handle read events for the command.
 func (c *Command) ReadEvent() interfaces.ReadFn {
 	return c.readEvent
 }
 
+// TimerEvent returns the TimerFn associated with the Command, used to define the timer-based behavior for the command.
 func (c *Command) TimerEvent() interfaces.TimerFn {
 	return c.timerEvent
 }
 
+// SetReadFn sets the function to handle read-related events for the command.
 func (c *Command) SetReadFn(fn interfaces.ReadFn) {
 	c.readEvent = fn
 }
 
+// SetTimerFn sets the TimerFn callback function for the command's timer event.
 func (c *Command) SetTimerFn(fn interfaces.TimerFn) {
 	c.timerEvent = fn
 }
 
+// SetPaintFn configures a custom function to handle paint events for the command.
 func (c *Command) SetPaintFn(fn interfaces.PaintFn) {
 	c.paintEvent = fn
 }
 
+// Daemon returns whether the command is configured to run in daemon mode.
 func (c *Command) Daemon() bool {
 	return c.daemon
 }
 
+// Background returns true if the command is marked to run in the background.
 func (c *Command) Background() bool {
 	return c.background
 }
 
+// SetHelp sets the short and long help text for the command. Short help is used for summaries, long help for details.
 func (c *Command) SetHelp(short string, long string) {
 	c.shortHelp = short
 	c.longHelp = long
 }
 
-// Name returns the name of the command.
+// Name returns the name of the Command.
 func (c *Command) Name() string {
 	return c.name
 }
 
-// Root navigates up the command hierarchy and returns the root command of the current command hierarchy.
+// Root returns the root command by recursively traversing the parent commands. If no parent exists, it returns itself.
 func (c *Command) Root() interfaces.ICommand {
 	if c.HasParent() {
 		return c.Parent().Root()
@@ -119,12 +126,12 @@ func (c *Command) Root() interfaces.ICommand {
 	return c
 }
 
-// Parent returns the immediate parent command of the current command, or nil if the command has no parent.
+// Parent returns the parent command of the current command, or nil if the command does not have a parent.
 func (c *Command) Parent() interfaces.ICommand {
 	return c.parent
 }
 
-// Childs returns a slice of pointers to the Command's child commands.
+// Childs returns a slice of ICommand representing all direct child commands of the current command.
 func (c *Command) Childs() []interfaces.ICommand {
 	var commands []interfaces.ICommand
 	for _, cmd := range c.commands {
@@ -133,17 +140,18 @@ func (c *Command) Childs() []interfaces.ICommand {
 	return commands
 }
 
-// Help returns a string containing the help details for the command, generated using its associated help function.
+// Help returns detailed help information for the command. If long help is unavailable, short help is returned.
 func (c *Command) Help() string {
-	help := c.template.Help()
-	data, err := c.template.Exec(c, help)
-	if err != nil {
-		log.Printf("Help: %s", err.Error())
+	if len(c.longHelp) > 0 {
+		return c.longHelp
 	}
-	return data
+	if len(c.shortHelp) > 0 {
+		return c.shortHelp
+	}
+	return ""
 }
 
-// FindChildren searches for a child command by its name or alias and returns it. Returns nil if no matching command is found.
+// FindChildren searches for a sub-command by its name or alias and returns it if found; otherwise, returns nil.
 func (c *Command) FindChildren(name string) interfaces.ICommand {
 	for _, cmd := range c.commands {
 		if cmd.Name() == name || cmd.HasAlias(name) {
@@ -154,6 +162,7 @@ func (c *Command) FindChildren(name string) interfaces.ICommand {
 }
 
 // FindChildrenPrefix searches for a child command whose name starts with the given prefix and returns it if found.
+// Returns nil if no matching child command is found.
 func (c *Command) FindChildrenPrefix(prefix string) interfaces.ICommand {
 	for _, cmd := range c.commands {
 		if strings.HasPrefix(cmd.Name(), prefix) {
@@ -163,6 +172,8 @@ func (c *Command) FindChildrenPrefix(prefix string) interfaces.ICommand {
 	return nil
 }
 
+// Find locates a subcommand and its remaining arguments by traversing the command's hierarchy recursively.
+// It returns the matched command, remaining arguments, and an error if something goes wrong.
 func (c *Command) Find(args []string) (interfaces.ICommand, []string, error) {
 	var innerFind func(*Command, []string) (*Command, []string)
 	innerFind = func(c *Command, innerArgs []string) (*Command, []string) {
@@ -181,9 +192,7 @@ func (c *Command) Find(args []string) (interfaces.ICommand, []string, error) {
 	return commandFound, a, nil
 }
 
-// findNext searches for the next command matching the specified name or alias in the list of subcommands.
-// It returns the matching command or nil if no suitable match is found.
-// If only one command partially matches the name during prefix matching, it will return that command.
+// findNext searches for the next command by name or alias and returns it, returning the parent command if next is "..".
 func (c *Command) findNext(next string) *Command {
 	if next == ".." {
 		return c.parent
@@ -202,7 +211,7 @@ func (c *Command) findNext(next string) *Command {
 	return nil
 }
 
-// Traverse navigates through commands and flags based on the provided arguments and returns the matched command, remaining arguments, and error if any.
+// Traverse navigates through a command hierarchy based on the provided path and returns the matching ICommand or nil if not found.
 func (c *Command) Traverse(path []string) interfaces.ICommand {
 	for i, arg := range path {
 		cmd := c.findNext(arg)
@@ -217,45 +226,7 @@ func (c *Command) Traverse(path []string) interfaces.ICommand {
 	return nil
 }
 
-// SuggestionsFor returns a list of command suggestions based on the provided typedName, considering prefix and edit distance.
-func (c *Command) SuggestionsFor(typedName string) []string {
-	var suggestions []string
-	distance := c.suggestionsMinimumDistance
-	if distance <= 0 {
-		distance = 2
-	}
-	for _, cmd := range c.commands {
-		ld := levenshteinDistance(typedName, cmd.Name(), true)
-		suggestByLevenshtein := ld <= distance
-		suggestByPrefix := strings.HasPrefix(strings.ToLower(cmd.Name()), strings.ToLower(typedName))
-		if suggestByLevenshtein || suggestByPrefix {
-			suggestions = append(suggestions, cmd.Name())
-		}
-	}
-	return suggestions
-}
-
-// FindSuggestions generates a string of suggestion messages for the given argument if there are relevant suggestions available.
-// Suggestions are returned only if DisableSuggestions is false and relevant matches are found through SuggestionsFor.
-func (c *Command) FindSuggestions(arg string) []string {
-	var ret []string
-	if suggestions := c.SuggestionsFor(arg); len(suggestions) > 0 {
-		for _, s := range suggestions {
-			ret = append(ret, s)
-		}
-	}
-	return ret
-}
-
-// VisitParents calls the provided function for each parent command in the hierarchy, traversing upwards recursively.
-func (c *Command) VisitParents(fn func(interfaces.ICommand)) {
-	if c.HasParent() {
-		fn(c.Parent())
-		c.Parent().VisitParents(fn)
-	}
-}
-
-// Execute runs the command with the provided context, arguments, and process ID, handling flags and validations.
+// Execute runs the command using the provided task and arguments, returning an error if execution fails.
 func (c *Command) Execute(task interfaces.ITask, arg []string) error {
 	if err := c.run(task, arg); err != nil {
 		return err
@@ -263,7 +234,7 @@ func (c *Command) Execute(task interfaces.ITask, arg []string) error {
 	return nil
 }
 
-// Commands returns a sorted slice of subcommands by their names.
+// Commands returns a sorted list of ICommand instances associated with the Command.
 func (c *Command) Commands() []interfaces.ICommand {
 	sort.Sort(commandSorterByName(c.commands))
 	var commands []interfaces.ICommand
@@ -273,8 +244,8 @@ func (c *Command) Commands() []interfaces.ICommand {
 	return commands
 }
 
-// AddCommand adds one or more subcommands to the current command.
-// It ensures a command cannot be added as a child of itself.
+// AddCommand adds one or more subcommands to the current command if it is of type CommandTypeDirectory.
+// It returns an error if attempting to add subcommands to a non-directory command or if a command is its own child.
 func (c *Command) AddCommand(cx ...*Command) error {
 	if c.kind != interfaces.CommandTypeDirectory {
 		return fmt.Errorf("can't add subcommands to a non-directory command: %s", c.name)
@@ -302,7 +273,7 @@ func (c *Command) AddCommand(cx ...*Command) error {
 	return nil
 }
 
-// RemoveCommand removes one or more specified subcommands from the current command's list of subcommands.
+// RemoveCommand removes one or more subcommands from the parent command and updates parent-related references.
 func (c *Command) RemoveCommand(cx ...*Command) {
 	var commands []*Command
 main:
@@ -336,7 +307,7 @@ main:
 	}
 }
 
-// CommandPath returns the full path to the command by appending parent command names separated by a slash.
+// CommandPath returns the full path to the command including parent commands, separated by the defined path separator.
 func (c *Command) CommandPath() string {
 	if !c.HasParent() {
 		return interfaces.PathSeparator
@@ -348,6 +319,7 @@ func (c *Command) CommandPath() string {
 	return parentPath + interfaces.PathSeparator + c.Name()
 }
 
+// Path returns the hierarchical path of command names, starting from the root, representing the command structure.
 func (c *Command) Path() []string {
 	if c.HasParent() {
 		var out []string
@@ -365,7 +337,7 @@ func (c *Command) Path() []string {
 	return []string{c.Name()}
 }
 
-// HasAlias checks if the given string matches any of the aliases of the command and returns true if a match is found.
+// HasAlias checks if the given string matches any alias of the command. Returns true if a match is found.
 func (c *Command) HasAlias(s string) bool {
 	for _, a := range c.aliases {
 		if a == s {
@@ -388,11 +360,12 @@ func (c *Command) hasNameOrAliasPrefix(prefix string) bool {
 	return false
 }
 
+// NameAndAliases returns a comma-separated string of the command name followed by its aliases.
 func (c *Command) NameAndAliases() string {
 	return strings.Join(append([]string{c.Name()}, c.aliases...), ", ")
 }
 
-// IsAdditionalHelpTopicCommand determines if the command is a help topic by checking its runnability, visibility, and subcommands.
+// IsAdditionalHelpTopicCommand checks if the command and its subcommands are categorized as 'help' commands.
 func (c *Command) IsAdditionalHelpTopicCommand() bool {
 	// if any non-help sub commands are found, the command is not a 'help' command
 	for _, sub := range c.commands {
@@ -403,7 +376,7 @@ func (c *Command) IsAdditionalHelpTopicCommand() bool {
 	return true
 }
 
-// HasHelpSubCommands checks if the command has any subcommands that are additional help topics.
+// HasHelpSubCommands checks if the command has any subcommands that are categorized as additional help topics and returns true if so.
 func (c *Command) HasHelpSubCommands() bool {
 	for _, sub := range c.commands {
 		if sub.IsAdditionalHelpTopicCommand() {
@@ -413,12 +386,15 @@ func (c *Command) HasHelpSubCommands() bool {
 	return false
 }
 
-// HasParent checks if the command has a parent by verifying if the parent field is not nil. Returns true if parent exists.
+// HasParent checks if the command has a parent command and returns true if a parent exists, otherwise false.
 func (c *Command) HasParent() bool {
 	return c.parent != nil
 }
 
-func (c *Command) SuggestionsFor_NEW(prefix string) []string {
+// SuggestionsFor generates a sorted list of suggestions based on the provided prefix.
+// It uses exact prefix matching and Levenshtein distance for approximate matches.
+// Suggestions include command names, properties, and other registered items.
+func (c *Command) SuggestionsFor(prefix string) []string {
 	const levenshteinThreshold = 2
 	const levenshteinMin = 2
 	if strings.Contains(prefix, " ") {

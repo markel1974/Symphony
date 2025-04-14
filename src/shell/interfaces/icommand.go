@@ -50,14 +50,7 @@ type ICommand interface {
 
 	Traverse(args []string) ICommand
 
-	//TODO REMOVE
 	SuggestionsFor(typedName string) []string
-
-	SuggestionsFor_NEW(typedName string) []string
-
-	FindSuggestions(arg string) []string
-
-	VisitParents(fn func(ICommand))
 
 	Execute(task ITask, arg []string) error
 
