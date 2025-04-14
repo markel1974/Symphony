@@ -15,7 +15,7 @@
 package invaders
 
 import (
-	"github.com/markel1974/c64emu/src/shell/context/matrix"
+	matrix2 "github.com/markel1974/c64emu/src/shell/context/render/matrix"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"math/rand"
 )
@@ -216,7 +216,7 @@ GYYYYYYG
 )
 
 type Alien struct {
-	*matrix.Entity
+	*matrix2.Entity
 	idx     int
 	reward  int
 	counter int
@@ -224,15 +224,15 @@ type Alien struct {
 
 func NewAlien(idx int, x int, y int, sprite []string, reward int) *Alien {
 	return &Alien{
-		Entity:  matrix.NewEntity(-1, x, y, 1, 1, 0, sprite, -1),
+		Entity:  matrix2.NewEntity(-1, x, y, 1, 1, 0, sprite, -1),
 		idx:     idx,
 		reward:  reward,
 		counter: 3,
 	}
 }
 
-func newUfo() *matrix.Entity {
-	u := matrix.NewEntity(-1, 0, 0, 1, 0.5, 0.5, ufoSprite, -1)
+func newUfo() *matrix2.Entity {
+	u := matrix2.NewEntity(-1, 0, 0, 1, 0.5, 0.5, ufoSprite, -1)
 	u.MoveTo(0-u.GetWidth(), u.GetHeight())
 	return u
 }
@@ -259,7 +259,7 @@ type Aliens struct {
 
 	w    int
 	h    int
-	tree *matrix.AABBTree
+	tree *matrix2.AABBTree
 }
 
 func NewAliens() *Aliens {
@@ -327,7 +327,7 @@ func (a *Aliens) Setup(w int, h int) {
 
 	a.container = make([]*Alien, a.columns*a.rows)
 
-	a.tree = matrix.NewAABBTree(uint(a.columns * a.rows))
+	a.tree = matrix2.NewAABBTree(uint(a.columns * a.rows))
 
 	a.alienBullets.Setup(a.columns * a.rows / 10)
 
@@ -376,7 +376,7 @@ func (a *Aliens) MakeAliens(aliensHorizontal int, x int, y int, rows int, cols i
 	return y, offset + rows*cols
 }
 
-func (a *Aliens) DoBulletCollision(bullet *matrix.Entity) (bool, int) {
+func (a *Aliens) DoBulletCollision(bullet *matrix2.Entity) (bool, int) {
 	var reward = 0
 	var found = false
 

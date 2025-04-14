@@ -18,6 +18,8 @@ import (
 	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
 	"github.com/markel1974/c64emu/src/shell/apps"
 	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/shell/context/file_system"
+	"github.com/markel1974/c64emu/src/shell/context/render"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"github.com/markel1974/c64emu/src/shell/shell"
 	"github.com/markel1974/c64emu/src/shell/terminal"
@@ -27,8 +29,6 @@ import (
 const (
 	contextMaQueueLen = 1024
 )
-
-const eol = "\r\n"
 
 type Context struct {
 	ticker   *adaptiveticker.AdaptiveTicker
@@ -63,10 +63,10 @@ func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer 
 func (c *Context) Setup(enterKey rune) {
 	ioAdapter := interfaces.IInputOutput(c)
 	term := c.factory.Create("VT100", ioAdapter, enterKey)
-	c.render = NewRender(term)
+	c.render = render.NewRender(term)
 	system := apps.NewRoot()
 	systemCommands, commands := system.Build(c.commands)
-	fs := NewCommandInteractor(commands, []interfaces.ICommand{systemCommands})
+	fs := file_system.NewCommandInteractor(commands, []interfaces.ICommand{systemCommands})
 
 	c.kernel = NewKernel(c.ticker, c.render, ioAdapter, fs)
 	c.sh = shell.NewShell(c.auth, term, c, c.prompt, c.autosave)

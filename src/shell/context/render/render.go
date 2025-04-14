@@ -1,8 +1,10 @@
-package context
+package render
 
 import (
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
+
+const eol = "\r\n"
 
 type Render struct {
 	terminal  interfaces.ITerminal

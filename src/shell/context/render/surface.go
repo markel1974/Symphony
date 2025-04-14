@@ -12,11 +12,11 @@
  * limitations under the License.
  */
 
-package context
+package render
 
 import (
 	"bytes"
-	"github.com/markel1974/c64emu/src/shell/context/plotter"
+	"github.com/markel1974/c64emu/src/shell/context/render/plotter"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"math"
 )
