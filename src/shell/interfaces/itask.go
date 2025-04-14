@@ -1,7 +1,6 @@
 package interfaces
 
 import (
-	"io"
 	"strings"
 )
 
@@ -65,6 +64,8 @@ type ITask interface {
 
 	GetScreenSize() (int, int)
 
+	Paint(surface ISurface)
+
 	PaintRequest() bool
 
 	SetCaption(caption string) bool
@@ -86,8 +87,6 @@ type ITask interface {
 	ListTasks() []string
 
 	SetFg(pid int) bool
-
-	GetWriter() io.Writer
 
 	Write(data string)
 

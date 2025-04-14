@@ -27,7 +27,6 @@ import (
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"github.com/markel1974/c64emu/src/shell/terminal"
 	"golang.org/x/crypto/ssh"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -67,7 +66,7 @@ func (r *Server) Setup() {
 		return
 	}
 
-	if authorizedKeys, err := ioutil.ReadFile("authorized_keys"); err == nil {
+	if authorizedKeys, err := os.ReadFile("authorized_keys"); err == nil {
 		for len(authorizedKeys) > 0 {
 			pubKey, _, _, rest, err := ssh.ParseAuthorizedKey(authorizedKeys)
 			if err != nil {
@@ -100,7 +99,7 @@ func (r *Server) Setup() {
 	var signer ssh.Signer
 
 	if _, err := os.Stat(r.privateKeyFilename); err == nil {
-		privateBytes, err := ioutil.ReadFile(r.privateKeyFilename)
+		privateBytes, err := os.ReadFile(r.privateKeyFilename)
 		if err != nil {
 			log.Fatal("Failed to parse private key: ", err)
 		}
@@ -168,7 +167,7 @@ func (r *Server) AsyncStart() {
 }
 
 func (r *Server) handleConnection(nConn net.Conn) {
-	conn, chans, reqs, err := ssh.NewServerConn(nConn, r.config)
+	conn, channels, reqs, err := ssh.NewServerConn(nConn, r.config)
 	if err != nil {
 		log.Println("failed to handshake: ", err)
 		return
@@ -181,7 +180,7 @@ func (r *Server) handleConnection(nConn net.Conn) {
 	// The incoming Request channel must be serviced.
 	go ssh.DiscardRequests(reqs)
 
-	for newChannel := range chans {
+	for newChannel := range channels {
 		// Channels have a type, depending on the application level protocol intended.
 		// In the case of a shell, the type is "session" and ServerShell may be used to present a terminal interface.
 		if newChannel.ChannelType() != "session" {
@@ -195,8 +194,9 @@ func (r *Server) handleConnection(nConn net.Conn) {
 		}
 
 		r.auth.IsAuthenticated()
+
 		ctx := context.NewContext(r.ticker, channel, channel, r.auth, r.factory, r.template, r.prompt, r.autosave)
-		ctx.Setup()
+		ctx.Setup(-1)
 		//ctx.setAuthenticatedState()
 		//ctx.SetEnterKey(10)
 
@@ -234,7 +234,7 @@ func (r *Server) generatePrivateKey(bitSize int) (*rsa.PrivateKey, error) {
 func (r *Server) savePrivateKey(filename string, key *rsa.PrivateKey) error {
 	keyBytes := x509.MarshalPKCS1PrivateKey(key)
 	keyPem := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: keyBytes})
-	return ioutil.WriteFile(filename, keyPem, 0600)
+	return os.WriteFile(filename, keyPem, 0600)
 }
 
 func (r *Server) parseSize(b []byte) (uint32, uint32) {

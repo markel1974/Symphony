@@ -24,56 +24,105 @@ import (
 	"strings"
 )
 
-// tasksFileExtension defines the file extension used for storing task-related files.
+// tasksFileExtension defines the standard file extension used for task-related files in the application.
 const tasksFileExtension = ".task"
 
-// commandActivate represents the string command for activating a feature or functionality.
-// commandTask represents the string command for initiating or managing a task.
+// commandActivate represents the string command for "activate" functionality.
+// commandTask represents the string command for "task" functionality.
 const (
 	commandActivate = "activate"
 	commandTask     = "task"
 )
 
-// Kernel handles task scheduling, execution, and management within a context.
+// Kernel represents the core scheduler and manager for tasks and system resources, facilitating interaction and control.
 type Kernel struct {
-	ctx        *Context
-	ticker     *adaptiveticker.AdaptiveTicker
-	foreground *Task
-	selector   *TaskSelector
-	dirty      bool
-	width      int
-	height     int
-	fullPaint  bool
-	timersChan chan *adaptiveticker.TimerHandler
-	ids        *adaptiveticker.Ids
-	interactor *CommandInteractor
+	ticker      *adaptiveticker.AdaptiveTicker
+	render      interfaces.IRender
+	io          interfaces.IInputOutput
+	foreground  interfaces.ITask
+	selector    *TaskSelector
+	timersChan  chan *adaptiveticker.TimerHandler
+	ids         *adaptiveticker.Ids
+	fs          interfaces.IFileSystem
+	messageChan chan iMessage
+	exit        bool
 }
 
-// NewKernel initializes and returns a new instance of Kernel with the provided context, ticker, timers channel, and commands.
-func NewKernel(ctx *Context, ticker *adaptiveticker.AdaptiveTicker, timersChannel chan *adaptiveticker.TimerHandler, system []interfaces.ICommand, commands interfaces.ICommand) *Kernel {
+// NewKernel initializes and returns a new Kernel instance with provided ticker, render, I/O, and filesystem components.
+func NewKernel(ticker *adaptiveticker.AdaptiveTicker, render interfaces.IRender, io interfaces.IInputOutput, fs interfaces.IFileSystem) *Kernel {
 	t := &Kernel{
-		ctx:        ctx,
-		ticker:     ticker,
-		foreground: nil,
-		selector:   NewTaskSelector(),
-		timersChan: timersChannel,
-		dirty:      false,
-		fullPaint:  true,
-		width:      80,
-		height:     24,
-		ids:        adaptiveticker.NewIds(1024),
-		interactor: NewCommandInteractor(commands, system),
+		ticker:      ticker,
+		render:      render,
+		io:          io,
+		fs:          fs,
+		foreground:  nil,
+		selector:    NewTaskSelector(),
+		ids:         adaptiveticker.NewIds(1024),
+		messageChan: make(chan iMessage, contextMaQueueLen),
+		timersChan:  make(chan *adaptiveticker.TimerHandler, contextMaQueueLen),
+		exit:        false,
 	}
 	return t
 }
 
-// Execute parses and executes a given command line string, associating it with a task, and manages its lifecycle.
-func (c *Kernel) Execute(line string, options *TaskOptions) (bool, error) {
-	cmd, args, err := c.interactor.Find(line)
+// SetScreenSize resizes the screen dimensions by setting the width and height parameters for the rendering engine.
+func (c *Kernel) SetScreenSize(w int, h int) {
+	c.render.SetScreenSize(w, h)
+}
+
+// GetScreenSize returns the screen's width and height as integers.
+func (c *Kernel) GetScreenSize() (int, int) {
+	return c.render.GetScreenSize()
+}
+
+// Write writes the provided data string to the kernel's render for processing or output.
+func (c *Kernel) Write(data string) {
+	c.render.Write(data)
+}
+
+// WriteLn writes a string followed by a newline to the kernel's output stream.
+func (c *Kernel) WriteLn(data string) {
+	c.render.WriteLn(data)
+}
+
+// WriteColor outputs text with specified foreground and background colors and applies the given color rendering mode.
+func (c *Kernel) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
+	c.render.WriteColor(data, fg, bg, mode)
+}
+
+// WriteColorLn writes a line of text with specified foreground color, background color, and color mode to the output.
+func (c *Kernel) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
+	c.render.WriteColorLn(data, fg, bg, mode)
+}
+
+// ClearScreen clears the output screen by invoking the render's ClearScreen method.
+func (c *Kernel) ClearScreen() {
+	c.render.ClearScreen()
+}
+
+// ExecActivate attempts to activate a foreground process by sending an activate command to its associated identifier.
+// Returns false if the process ID or name is invalid, or if the process is already in an active state.
+func (c *Kernel) ExecActivate() bool {
+	pid, name := c.GetForegroundName()
+	if pid == adaptiveticker.UnknownId {
+		return false
+	}
+	if name == commandActivate {
+		return false
+	}
+	c.SetBackground()
+	_, _ = c.ExecCommand(fmt.Sprint(commandActivate, " ", pid), nil)
+	return false
+}
+
+// ExecCommand executes a command from the given input line and applies the provided task options for configuration.
+// Returns a boolean indicating task creation success and an error if the command execution fails.
+func (c *Kernel) ExecCommand(line string, options *TaskOptions) (bool, error) {
+	cmd, args, err := c.fs.Find(line)
 	if err != nil {
 		return false, fmt.Errorf("error creating task: invalid command '%s'", line)
 	}
-	task := NewTask(c, c.ctx, cmd, line)
+	task := NewTask(c, cmd, line)
 	if !c.ids.Set(task) {
 		return false, fmt.Errorf("error creating task: can't set pid")
 	}
@@ -93,25 +142,7 @@ func (c *Kernel) Execute(line string, options *TaskOptions) (bool, error) {
 	return true, nil
 }
 
-// SetScreenSize sets the screen dimensions for the Kernel to the specified width and height, triggering a full repaint.
-func (c *Kernel) SetScreenSize(width int, height int) {
-	c.width = width
-	c.height = height
-	c.fullPaint = true
-
-	//if fgPid := c.GetForegroundPid(); fgPid > unknownId {
-	//	c.PaintRequest()
-	//}
-}
-
-// GetScreenSize retrieves the current screen width and height as two integer values.
-func (c *Kernel) GetScreenSize() (int, int) {
-	return c.width, c.height
-}
-
-// SetSelectionMode updates the current selection state based on the requested PID or defaults to the first available task.
-// If no task matching the requested PID is found, the first available task is selected.
-// Triggers a repaint request after updating the selection.
+// SetSelectionMode updates the task selection based on a requested process ID and resets selection if needed.
 func (c *Kernel) SetSelectionMode(requestedPid int) {
 	var idx = 0
 	var firstPid = adaptiveticker.UnknownId
@@ -142,69 +173,86 @@ func (c *Kernel) SetSelectionMode(requestedPid int) {
 		}
 		c.selector.Set(firstPid, firstIdx)
 	}
-
-	c.PaintRequest()
+	c.doPaintRequest(false)
 }
 
-// SetSelectionModeNext increments the selection index to the next in the available list, wrapping to the start if necessary.
+// PaintRequest determines whether a paint operation is required by invoking the underlying kernel logic.
+func (c *Kernel) PaintRequest() bool {
+	return c.doPaintRequest(false)
+}
+
+// doPaintRequest attempts to initiate a paint request. If successful, it triggers a timer for repaint and returns true.
+func (c *Kernel) doPaintRequest(full bool) bool {
+	if c.render.PaintRequest(full) {
+		c.ticker.Create(c.timersChan, newMessagePaint(), -1, -1, 1)
+		return true
+	}
+	return false
+}
+
+// SetSelectionModeNext advances the task selection to the next available task and triggers a paint request if successful.
 func (c *Kernel) SetSelectionModeNext() {
 	if !c.selector.Next() {
 		return
 	}
-	c.PaintRequest()
+	c.doPaintRequest(false)
 }
 
-// SetSelectionModePrevious sets the selection mode to the previous available task in the Kernel.
+// SetSelectionModePrevious switches the selection mode to the previous item in the task selector and triggers a repaint.
 func (c *Kernel) SetSelectionModePrevious() {
 	if !c.selector.Prev() {
 		return
 	}
-	c.PaintRequest()
+	c.doPaintRequest(false)
 }
 
-// SetSelectionDisabled resets the selection state by clearing index, process ID, and available options, and requests a repaint.
+// SetSelectionDisabled clears the task selector state and disables ongoing selection, triggering a paint request.
 func (c *Kernel) SetSelectionDisabled() {
 	c.selector.Clear()
-	c.PaintRequest()
+	c.doPaintRequest(false)
 }
 
-// CWDChilds retrieves the names of all child files or directories under the current working directory as a string slice.
+// ExitRequested sets the kernel's exit flag to true, signaling a request to terminate its execution.
+func (c *Kernel) ExitRequested() {
+	c.exit = true
+}
+
+// CWDChilds retrieves the names of child items in the current working directory of the kernel's filesystem.
 func (c *Kernel) CWDChilds() []string {
 	var out []string
-	for _, z := range c.interactor.CWD().Childs() {
+	for _, z := range c.fs.CWD().Childs() {
 		out = append(out, z.Name())
 	}
 	return out
 }
 
-// CWD retrieves the current working directory command interface.
+// CWD retrieves the current working directory command associated with the kernel, returning an instance of ICommand.
 func (c *Kernel) CWD() interfaces.ICommand {
-	return c.interactor.CWD()
+	return c.fs.CWD()
 }
 
-// CWDGet retrieves the current working directory path as a string using the Kernel's command interface.
+// CWDGet returns the current working directory path as a string from the kernel's filesystem.
 func (c *Kernel) CWDGet() string {
-	return c.interactor.CWD().CommandPath()
+	return c.fs.CWD().CommandPath()
 }
 
-// CWDPath returns the current working directory path as a slice of strings by delegating to the Kernel's implementation.
+// CWDPath returns the current working directory path as a slice of strings.
 func (c *Kernel) CWDPath() []string {
-	return c.interactor.CWD().Path()
+	return c.fs.CWD().Path()
 }
 
-// CWDSet updates the current working directory to the specified path and returns true if the operation is successful.
+// CWDSet sets the current working directory for the kernel to the provided path and returns true if successful.
 func (c *Kernel) CWDSet(arg string) bool {
-	return c.interactor.CWDSet(arg)
+	return c.fs.CWDSet(arg)
 }
 
-// Help updates the current working directory to the specified path and returns true if the operation is successful.
+// Help retrieves help text associated with the provided argument and returns it along with any potential error.
 func (c *Kernel) Help(arg string) (string, error) {
-	return c.interactor.Help(arg)
+	return c.fs.Help(arg)
 }
 
-// SetSelectionOptions updates selection attributes for a task identified by the current process ID based on the given option and value.
-// Returns true if the operation succeeds, otherwise false.
-// Valid options are 'y', 'x', and 'z' for adjusting vertical offset, horizontal offset, and scale respectively.
+// SetSelectionOptions adjusts specific task attributes based on the provided option and value, triggering a paint update.
+// Returns true if successful; otherwise, false if the task is not found.
 func (c *Kernel) SetSelectionOptions(option rune, value float64) bool {
 	t, ok := c.ids.Get(c.selector.PID())
 	if !ok {
@@ -221,24 +269,11 @@ func (c *Kernel) SetSelectionOptions(option rune, value float64) bool {
 			task.SetScale(scale)
 		}
 	}
-	c.fullPaint = true
-	c.PaintRequest()
+	c.doPaintRequest(true)
 	return true
 }
 
-// SetCaption updates the caption of a task identified by the given pid.
-// Returns true if the caption was successfully updated, false if no task with the given pid exists.
-func (c *Kernel) SetCaption(pid int, caption string) bool {
-	t, ok := c.ids.Get(pid)
-	if !ok {
-		return false
-	}
-	task := t.(*Task)
-	task.caption = caption
-	return true
-}
-
-// SetFg sets the task with the given process ID as the foreground task and returns true if successful, false otherwise.
+// SetFg sets the task with the specified PID as the foreground task if it exists and returns true; otherwise, returns false.
 func (c *Kernel) SetFg(pid int) bool {
 	t, ok := c.ids.Get(pid)
 	if !ok {
@@ -249,24 +284,15 @@ func (c *Kernel) SetFg(pid int) bool {
 	return true
 }
 
+// GetSuggestion generates command-line suggestions based on the input and current cursor position.
+// It returns the shared prefix, a list of suggestions, and a boolean indicating if suggestions were found.
 func (c *Kernel) GetSuggestion(in string, cursor int) (string, []string, bool) {
-	prefix, suggestions, found := c.interactor.Suggestion(in, cursor)
+	prefix, suggestions, found := c.fs.Suggestion(in, cursor)
 	return prefix, suggestions, found
 }
 
-// PaintRequest marks the Kernel as dirty and initiates a paint request if not already pending.
-func (c *Kernel) PaintRequest() bool {
-	ret := false
-	if !c.dirty {
-		c.dirty = true
-		ret = true
-		c.ticker.Create(c.timersChan, newMessagePaint(), -1, -1, 1)
-	}
-	return ret
-}
-
-// CreateTimer initializes a timer for a task with a given process ID, start delay, interval, and repeat count.
-// Returns true if the timer is successfully created; otherwise, false.
+// CreateTimer initializes a timer for a specific process and adds it to the task's timer list.
+// Returns true if the timer is successfully created; otherwise, returns false.
 func (c *Kernel) CreateTimer(pid int, first int, interval int, count int) bool {
 	t, ok := c.ids.Get(pid)
 	if !ok {
@@ -284,8 +310,7 @@ func (c *Kernel) CreateTimer(pid int, first int, interval int, count int) bool {
 	return true
 }
 
-// StopTimer stops a timer identified by the given task ID (tid) for the process identified by the given process ID (pid).
-// Returns true if the timer was successfully stopped; otherwise, returns false.
+// StopTimer stops the timer associated with the given process ID (pid) and timer ID (tid). Returns true if successful.
 func (c *Kernel) StopTimer(pid int, tid int) bool {
 	t, ok := c.ids.Get(pid)
 	if !ok {
@@ -295,13 +320,13 @@ func (c *Kernel) StopTimer(pid int, tid int) bool {
 	return c.closeTimer(task, tid)
 }
 
-// IsActive checks if a task with the specified process ID (pid) exists and is currently active in the Kernel.
+// IsActive checks if a process with the given pid is currently active in the kernel and returns true if so.
 func (c *Kernel) IsActive(pid int) bool {
 	_, ret := c.ids.Get(pid)
 	return ret
 }
 
-// GetForegroundPid retrieves the process ID of the currently active foreground task or returns UnknownId if none exists.
+// GetForegroundPid returns the process ID (PID) of the current foreground process or a default invalid ID if none exists.
 func (c *Kernel) GetForegroundPid() int {
 	if c.foreground == nil {
 		return adaptiveticker.UnknownId
@@ -309,7 +334,7 @@ func (c *Kernel) GetForegroundPid() int {
 	return c.foreground.PID()
 }
 
-// GetForegroundName returns the PID and name of the current foreground task. If none exists, it returns UnknownId and an empty string.
+// GetForegroundName returns the PID and command name of the currently foregrounded process, or a default if none exists.
 func (c *Kernel) GetForegroundName() (int, string) {
 	if c.foreground == nil {
 		return adaptiveticker.UnknownId, ""
@@ -317,7 +342,8 @@ func (c *Kernel) GetForegroundName() (int, string) {
 	return c.foreground.PID(), c.foreground.GetCommand().Name()
 }
 
-// SetBackground sets the task manager to background mode by clearing the foreground context and returns true if successful.
+// SetBackground resets the foreground process of the kernel to nil.
+// Returns true if the operation is successful; false otherwise.
 func (c *Kernel) SetBackground() bool {
 	if c.foreground == nil {
 		return false
@@ -326,15 +352,15 @@ func (c *Kernel) SetBackground() bool {
 	return true
 }
 
-// KillForeground terminates the currently active foreground process if one exists.
+// KillForeground terminates the process currently running in the foreground if one exists.
 func (c *Kernel) KillForeground() {
 	if c.foreground == nil {
 		return
 	}
-	c.Kill(c.foreground.pid)
+	c.Kill(c.foreground.PID())
 }
 
-// Kill terminates a task with the specified pid. Returns true if the task is successfully found and removed, false otherwise.
+// Kill removes the task identified by the given PID from the kernel and deallocates its resources. Returns true if successful.
 func (c *Kernel) Kill(pid int) bool {
 	t, ok := c.ids.Get(pid)
 	if !ok {
@@ -353,7 +379,7 @@ func (c *Kernel) Kill(pid int) bool {
 	return true
 }
 
-// KillAll terminates all tasks managed by Kernel matching the provided name, or all tasks if name is empty. Returns the count of terminated tasks.
+// KillAll terminates all tasks with a specified name or all tasks if the name is empty, returning the count of terminated tasks.
 func (c *Kernel) KillAll(name string) int {
 	count := 0
 	var tasks []*Task
@@ -385,7 +411,7 @@ func (c *Kernel) KillAll(name string) int {
 	return count
 }
 
-// List returns a formatted string listing all tasks with their process IDs and names.
+// List returns a formatted string that lists all tasks, including their process ID and command name.
 func (c *Kernel) List() string {
 	out := "\r\nPid: Task"
 	c.ids.Range(func(item adaptiveticker.IIds) bool {
@@ -398,7 +424,8 @@ func (c *Kernel) List() string {
 	return out
 }
 
-// ExecTimer triggers a timer event for a specific task if the task and its timer function exist, returning true if successful.
+// ExecTimer triggers a timer event for a task identified by pid and tid with the specified interval.
+// It returns true if the event is successfully executed; otherwise, it returns false.
 func (c *Kernel) ExecTimer(pid int, tid int, interval int) bool {
 	ret := false
 	if t, ok := c.ids.Get(pid); ok {
@@ -411,8 +438,9 @@ func (c *Kernel) ExecTimer(pid int, tid int, interval int) bool {
 	return ret
 }
 
-// ExecRead triggers a read event for a task identified by pid with the provided code and buffer values.
-// Returns true if the event execution is successful; otherwise, false.
+// ExecRead attempts to execute a read operation for the specified process ID using the given code and buffer values.
+// It fetches the task by pid, invokes its registered read event if available, and returns true upon success.
+// Returns false if the process ID is not found or no read event is registered.
 func (c *Kernel) ExecRead(pid int, code int, buffer rune) bool {
 	ret := false
 	if t, ok := c.ids.Get(pid); ok {
@@ -425,48 +453,28 @@ func (c *Kernel) ExecRead(pid int, code int, buffer rune) bool {
 	return ret
 }
 
-// ExecPaint renders the current task manager state onto the terminal by painting tasks and handling selection logic.
-func (c *Kernel) ExecPaint(terminal interfaces.ITerminal) bool {
-	if !c.dirty {
+// ExecPaint processes and renders tasks, prioritizing the task matching the current selector's PID, if any.
+func (c *Kernel) ExecPaint() bool {
+	if !c.render.IsDirty() {
 		return false
 	}
-
-	w, h := c.GetScreenSize()
-	surface := newSurface(terminal, h, w)
-
-	if c.fullPaint {
-		surface.SetCompletePaint()
-		c.fullPaint = false
-	}
-
-	var selectedTask *Task = nil
-
+	var selectedTask interfaces.ITask = nil
+	var tasks []interfaces.ITask
 	c.ids.Range(func(item adaptiveticker.IIds) bool {
 		task, ok := item.(*Task)
 		if ok && task != nil {
 			if task.PID() == c.selector.PID() {
 				selectedTask = task
 			} else {
-				surface.SetSelectionMode(false)
-				task.Paint(surface)
+				tasks = append(tasks, task)
 			}
 		}
 		return true
 	})
-
-	if selectedTask != nil {
-		surface.SetSelectionMode(true)
-		selectedTask.Paint(surface)
-	}
-
-	surface.Render()
-
-	c.dirty = false
-
-	return true
+	return c.render.ExecPaint(selectedTask, tasks)
 }
 
-// ListTasks retrieves the names of all tasks available in the current directory with the specified file extension.
+// ListTasks retrieves a list of task names by scanning files in the current directory with the specific task file extension.
 func (c *Kernel) ListTasks() []string {
 	var out []string
 	dir := "./"
@@ -486,7 +494,7 @@ func (c *Kernel) ListTasks() []string {
 	return out
 }
 
-// SaveTasks saves the current state of tasks to a file with the specified name and returns true if the operation succeeds.
+// SaveTasks saves the current task options to a file with the specified name in JSON format. Returns true if successful.
 func (c *Kernel) SaveTasks(name string) bool {
 	options := make(map[int]*TaskOptions)
 	c.ids.Range(func(item adaptiveticker.IIds) bool {
@@ -514,7 +522,7 @@ func (c *Kernel) SaveTasks(name string) bool {
 	return true
 }
 
-// RestoreTasks restores tasks from a file identified by the given name, reinitializing their state. Returns success status.
+// RestoreTasks restores a set of tasks from a file identified by name, initializing and activating them. Returns true on success.
 func (c *Kernel) RestoreTasks(name string) bool {
 	var tasks map[int]*TaskOptions
 	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
@@ -532,27 +540,19 @@ func (c *Kernel) RestoreTasks(name string) bool {
 		if strings.HasPrefix(task.Line, commandTask) {
 			continue
 		}
-		_, _ = c.Execute(task.Line, task)
+		_, _ = c.ExecCommand(task.Line, task)
 	}
-	_, _ = c.Execute(commandActivate, nil)
+	_, _ = c.ExecCommand(commandActivate, nil)
 	return true
 }
 
-// ExecActivate attempts to activate a background process if it is not already active or invalid. Returns false in all cases.
-func (c *Kernel) ExecActivate() bool {
-	pid, name := c.GetForegroundName()
-	if pid == adaptiveticker.UnknownId {
-		return false
-	}
-	if name == commandActivate {
-		return false
-	}
-	c.SetBackground()
-	_, _ = c.Execute(fmt.Sprint(commandActivate, " ", pid), nil)
-	return false
+// History performs a history operation using the specified action and index in the kernel context.
+func (c *Kernel) History(verb interfaces.HistoryAction, idx int) {
+	//TODO IMPLEMENT
+	c.io.History(verb, idx)
 }
 
-// closeTimer removes a timer identified by tid from the task's timer list and returns true if the operation is successful.
+// closeTimer removes a timer identified by tid from the task's list of timers and returns true if successful, false otherwise.
 func (c *Kernel) closeTimer(task *Task, tid int) bool {
 	ret := false
 	if task != nil {
@@ -564,4 +564,76 @@ func (c *Kernel) closeTimer(task *Task, tid int) bool {
 		}
 	}
 	return ret
+}
+
+// shutdown terminates all running processes associated with the Kernel by invoking KillAll with an empty string argument.
+func (c *Kernel) shutdown() {
+	c.KillAll("")
+}
+
+// Start initializes and begins the main event loop of the Kernel, handling I/O operations and event dispatching.
+func (c *Kernel) Start() {
+	d := make(chan bool)
+	go func() {
+		d <- true
+		readBuffer := make([]byte, 1024)
+		for {
+			n, err := c.io.Read(readBuffer)
+			if err == nil {
+				if n > 0 {
+					re := newMessageRead(readBuffer, n)
+					re.postEvent(c.messageChan)
+				}
+			} else {
+				qe := newMessageQuit()
+				qe.postEvent(c.messageChan)
+				return
+			}
+		}
+	}()
+	_ = <-d
+	c.eventLoop()
+}
+
+// eventLoop continuously processes messages and timers, delegating events to the appropriate handler until exit is triggered.
+func (c *Kernel) eventLoop() {
+	for {
+		select {
+		case m := <-c.messageChan:
+			c.messageEventHandler(m)
+		case t := <-c.timersChan:
+			c.messageEventHandler(t.Event.(iMessage))
+		}
+		if c.exit {
+			c.shutdown()
+			return
+		}
+	}
+}
+
+// messageEventHandler processes different message types and performs appropriate actions based on the message type.
+func (c *Kernel) messageEventHandler(m iMessage) {
+	if m != nil {
+		switch m.getType() {
+		case MessageTypeRead:
+			if mm, ok := m.(*MessageRead); ok {
+				c.render.Scan(mm.data)
+			}
+
+		case MessageTypeTimer:
+			if mt, ok := m.(*MessageTimer); ok {
+				c.ExecTimer(mt.pid, mt.tid, mt.interval)
+			}
+
+		case MessageTypePaint:
+			if _, ok := m.(*MessagePaint); ok {
+				c.ExecPaint()
+			}
+
+		case MessageTypeQuit:
+			if _, ok := m.(*MessageQuit); ok {
+				c.exit = true
+			}
+		}
+	}
 }

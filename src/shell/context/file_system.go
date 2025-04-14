@@ -10,16 +10,16 @@ import (
 // pathSeparator is a constant string representing the character used to separate components in a path, typically "/".
 const pathSeparator = "/"
 
-// CommandInteractor provides utilities for command hierarchy traversal and completion suggestions.
-type CommandInteractor struct {
+// FileSystem provides utilities for command hierarchy traversal and completion suggestions.
+type FileSystem struct {
 	root        interfaces.ICommand
 	searchPaths []interfaces.ICommand
 	cwd         interfaces.ICommand
 	parser      *Parser
 }
 
-// NewCommandInteractor initializes and returns a new CommandInteractor instance with the given root command and an empty search path list.
-func NewCommandInteractor(root interfaces.ICommand, sp []interfaces.ICommand) *CommandInteractor {
+// NewCommandInteractor initializes and returns a new FileSystem instance with the given root command and an empty search path list.
+func NewCommandInteractor(root interfaces.ICommand, sp []interfaces.ICommand) *FileSystem {
 	var searchPath []interfaces.ICommand
 	for _, k := range sp {
 		if k != nil {
@@ -29,7 +29,7 @@ func NewCommandInteractor(root interfaces.ICommand, sp []interfaces.ICommand) *C
 	if searchPath == nil {
 		searchPath = []interfaces.ICommand{}
 	}
-	return &CommandInteractor{
+	return &FileSystem{
 		root:        root,
 		cwd:         root,
 		searchPaths: searchPath,
@@ -37,8 +37,8 @@ func NewCommandInteractor(root interfaces.ICommand, sp []interfaces.ICommand) *C
 	}
 }
 
-// AddSearchPath adds a new ICommand instance to the searchPaths slice for interactor resolution.
-func (c *CommandInteractor) AddSearchPath(sp interfaces.ICommand) {
+// AddSearchPath adds a new ICommand instance to the searchPaths slice for fs resolution.
+func (c *FileSystem) AddSearchPath(sp interfaces.ICommand) {
 	if sp == nil {
 		return
 	}
@@ -46,12 +46,12 @@ func (c *CommandInteractor) AddSearchPath(sp interfaces.ICommand) {
 }
 
 // CWD retrieves the current working directory command interface.
-func (c *CommandInteractor) CWD() interfaces.ICommand {
+func (c *FileSystem) CWD() interfaces.ICommand {
 	return c.cwd
 }
 
 // CWDSet updates the current working directory to the specified path and returns true if the operation is successful.
-func (c *CommandInteractor) CWDSet(arg string) bool {
+func (c *FileSystem) CWDSet(arg string) bool {
 	var path []string
 	for _, part := range strings.Split(arg, interfaces.PathSeparator) {
 		if len(part) > 0 {
@@ -69,7 +69,7 @@ func (c *CommandInteractor) CWDSet(arg string) bool {
 }
 
 // Find parses and executes a given command line string, associating it with a task, and manages its lifecycle.
-func (c *CommandInteractor) Find(line string) (interfaces.ICommand, []string, error) {
+func (c *FileSystem) Find(line string) (interfaces.ICommand, []string, error) {
 	el, err := c.parser.Parse(line)
 	if err != nil {
 		return nil, nil, err
@@ -106,7 +106,7 @@ func (c *CommandInteractor) Find(line string) (interfaces.ICommand, []string, er
 
 // Help retrieves help information for a given command line string,
 // resolving it within the current context and search paths.
-func (c *CommandInteractor) Help(path string) (string, error) {
+func (c *FileSystem) Help(path string) (string, error) {
 	var pathSegments []string
 	absolute := interfaces.IsPathAbsolute(path)
 	if !absolute {
@@ -133,7 +133,7 @@ func (c *CommandInteractor) Help(path string) (string, error) {
 
 // Suggestion generates command suggestions based on the provided input and current directory context.
 // It returns the input prefix, a list of suggestions, and a boolean indicating if suggestions exist.
-func (c *CommandInteractor) Suggestion(in string, cursor int) (string, []string, bool) {
+func (c *FileSystem) Suggestion(in string, cursor int) (string, []string, bool) {
 	textBeforeSegment, nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInput(c.cwd, in, cursor)
 	if err != nil || nodeToQuery == nil {
 		return "", nil, false
@@ -199,7 +199,7 @@ func (c *CommandInteractor) Suggestion(in string, cursor int) (string, []string,
 // parseInput parses the input string to determine the relevant command context, path, and completion prefix details.
 // It returns the text before the path segment, the current command node, the prefix for completion, the base path,
 // a boolean indicating if the input addresses a command name, and any error encountered during processing.
-func (c *CommandInteractor) parseInput(cwd interfaces.ICommand, in string, cursor int) (string, interfaces.ICommand, string, string, bool, error) {
+func (c *FileSystem) parseInput(cwd interfaces.ICommand, in string, cursor int) (string, interfaces.ICommand, string, string, bool, error) {
 	var input string
 	if cursor < len(in) {
 		input = in[:cursor]
@@ -300,7 +300,7 @@ func (c *CommandInteractor) parseInput(cwd interfaces.ICommand, in string, curso
 }
 
 // mergeSuggestions merges two slices of suggestions, removes duplicates, and returns the combined slice.
-func (c *CommandInteractor) mergeSuggestions(s1 []string, s2 []string) []string {
+func (c *FileSystem) mergeSuggestions(s1 []string, s2 []string) []string {
 	if s1 == nil {
 		return c.deduplicateSuggestions(s2)
 	}
@@ -322,7 +322,7 @@ func (c *CommandInteractor) mergeSuggestions(s1 []string, s2 []string) []string 
 }
 
 // deduplicateSuggestions removes duplicate strings from the input slice and maintains the original order of unique elements.
-func (c *CommandInteractor) deduplicateSuggestions(s []string) []string {
+func (c *FileSystem) deduplicateSuggestions(s []string) []string {
 	if len(s) < 2 {
 		return s
 	}

@@ -63,7 +63,7 @@ func (r *Server) handleConnection(c net.Conn) {
 
 	ctx := context.NewContext(r.ticker, telnetSession, telnetSession, r.auth, r.factory, r.template, r.prompt, r.autosave)
 
-	ctx.Setup()
+	ctx.Setup(-1)
 
 	telnetSession.SetListenFunc(func(code session.IOCode, data []byte) {
 		switch code {

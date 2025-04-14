@@ -34,35 +34,35 @@ const (
 	maxPasswordRetry = 3
 )
 
-type ExecSuggestionType func(in string, cursor int, count int) (int, bool)
-
-type ExecCommandType func(command string) (bool, error)
+type IExecutor interface {
+	ExecCommand(line string) (bool, error)
+	ExecSuggestion(in string, cursor int, count int) (int, bool)
+}
 
 type Shell struct {
-	current  []rune
-	pos      int
-	echo     bool
-	history  *HistoryHandler
-	tabData  string
-	tabFound bool
-	tabCount int
-	terminal interfaces.ITerminal
-
+	current         []rune
+	pos             int
+	echo            bool
+	history         *HistoryHandler
+	tabData         string
+	tabFound        bool
+	tabCount        int
+	terminal        interfaces.ITerminal
+	executor        IExecutor
 	defaultPrompt   string
 	prompt          string
 	currentUsername string
 	passwordRetry   int
 	state           int
 	auth            interfaces.IAuthenticator
-	ExecSuggestion  ExecSuggestionType
-	ExecCommand     ExecCommandType
 }
 
-func NewShell(auth interfaces.IAuthenticator, terminal interfaces.ITerminal, prompt string, autosave bool) *Shell {
+func NewShell(auth interfaces.IAuthenticator, terminal interfaces.ITerminal, executor IExecutor, prompt string, autosave bool) *Shell {
 	c := &Shell{
 		history:       NewHistoryHandler(128, autosave),
 		echo:          true,
 		terminal:      terminal,
+		executor:      executor,
 		auth:          auth,
 		defaultPrompt: prompt,
 		passwordRetry: 0,
@@ -74,9 +74,9 @@ func NewShell(auth interfaces.IAuthenticator, terminal interfaces.ITerminal, pro
 	return c
 }
 
-func (c *Shell) KeyEvent(event *interfaces.KeyData) bool {
+func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) bool {
 	ret := false
-	switch event.GetType() {
+	switch kind {
 	case interfaces.KeyTypeEnter:
 		c.tabCount = 0
 		ret = c.enterPressed()
@@ -90,10 +90,10 @@ func (c *Shell) KeyEvent(event *interfaces.KeyData) bool {
 		c.textBackspace()
 	case interfaces.KeyTypeKey:
 		c.tabCount = 0
-		c.keyPressed(event.Key)
+		c.keyPressed(key)
 	case interfaces.KeyTypeCursor:
 		c.tabCount = 0
-		c.cursorPressed(interfaces.CursorCodeDef(event.Key))
+		c.cursorPressed(interfaces.CursorCodeDef(key))
 	default:
 		log.Println("KeyEvent: Unknown key type")
 	}
@@ -186,9 +186,8 @@ func (c *Shell) enterPressed() bool {
 		case stateAuthenticated:
 			c.history.AddToHistory(buffer)
 			c.history.SetDefault("")
-			if c.ExecCommand != nil {
-				_, _ = c.ExecCommand(buffer)
-			}
+			_, _ = c.executor.ExecCommand(buffer)
+
 			//c.quit = c.execCommand(buffer)
 		default:
 			quit = true
@@ -209,23 +208,14 @@ func (c *Shell) tabPressed() {
 		c.tabData = ""
 		if c.pos >= 0 && c.pos <= len(c.current) {
 			c.tabData = string(c.current)
-			/*
-				if c.pos < len(c.current) {
-					c.tabData = string(c.current[:c.pos])
-				} else {
-					c.tabData = string(c.current)
-				}
-			*/
 			c.tabFound = true
 		}
 	}
 	c.tabCount++
 	if c.tabFound {
-		if c.ExecSuggestion != nil {
-			if l, ok := c.ExecSuggestion(c.tabData, c.pos, c.tabCount); l == 1 && ok {
-				c.tabCount = 0
-				c.history.SetDefault(string(c.current))
-			}
+		if l, ok := c.executor.ExecSuggestion(c.tabData, c.pos, c.tabCount); l == 1 && ok {
+			c.tabCount = 0
+			c.history.SetDefault(string(c.current))
 		}
 	}
 }

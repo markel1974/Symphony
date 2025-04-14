@@ -48,10 +48,6 @@ const (
 type KeyFunc func(event *KeyData)
 
 type ITerminal interface {
-	SetKeyFunc(k KeyFunc)
-
-	SetEnterKey(key rune)
-
 	Colorize(text string, fg int, bg int, mode ColorMode) string
 
 	WriteColor(text string, fg ColorDef, bg ColorDef, mode ColorMode) (int, error)

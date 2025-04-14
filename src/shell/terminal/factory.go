@@ -17,7 +17,6 @@ package terminal
 import (
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"github.com/markel1974/c64emu/src/shell/terminal/vt100"
-	"io"
 )
 
 type EquipmentFactory struct {
@@ -27,6 +26,6 @@ func NewEquipmentFactory() *EquipmentFactory {
 	return &EquipmentFactory{}
 }
 
-func (f *EquipmentFactory) Create(_ string, z io.Writer) interfaces.ITerminal {
-	return vt100.NewVt100(z)
+func (f *EquipmentFactory) Create(_ string, io interfaces.IInputOutput, enterKey rune) interfaces.ITerminal {
+	return vt100.NewVt100(io, enterKey)
 }

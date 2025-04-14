@@ -2,20 +2,20 @@ package context
 
 import (
 	"github.com/markel1974/c64emu/src/shell/interfaces"
-	"io"
 	"strconv"
 )
 
-// TaskState represents the state of a task, typically managed by a Kernel within an application.
+// TaskState represents the state of a task within a task management or process control system.
 type TaskState int
 
-// TaskStateSetup represents the initial setup state of a task.
-// TaskStateRunning represents the running state of a task.
+// TaskStateSetup represents the state where a task is being prepared for execution.
+// TaskStateRunning represents the state where a task is currently executing.
 const (
 	TaskStateSetup   TaskState = iota
 	TaskStateRunning TaskState = iota
 )
 
+// TaskOptions defines configuration options for a task, including positional offsets, scaling, and associated command line.
 type TaskOptions struct {
 	OffsetY int
 	OffsetX int
@@ -23,16 +23,16 @@ type TaskOptions struct {
 	Line    string
 }
 
-// Task represents a unit of work managed by a Kernel and associated with a specific context, command, and state.
+// Task represents a unit of work associated with a command, managing state, context, timers, offsets, and scaling.
 type Task struct {
 	*TaskOptions
-	tasks   *Kernel
-	ctx     *Context
+	kernel  *Kernel
 	cmd     interfaces.ICommand
 	context interface{}
 	timers  []int
 	pid     int
 	state   TaskState
+	label   string
 	caption string
 	offsetY int
 	offsetX int
@@ -40,15 +40,14 @@ type Task struct {
 	line    string
 }
 
-// NewTask creates a new Task instance associated with Kernel, Context, a command, and initializes its state.
-func NewTask(tasks *Kernel, ctx *Context, cmd interfaces.ICommand, line string) *Task {
+// NewTask initializes and returns a new Task instance with the given Kernel, ICommand, and command line string input.
+func NewTask(kernel *Kernel, cmd interfaces.ICommand, line string) *Task {
 	t := &Task{
-		tasks:   tasks,
-		ctx:     ctx,
+		kernel:  kernel,
 		cmd:     cmd,
 		context: nil,
 		state:   TaskStateSetup,
-		caption: "",
+		label:   cmd.Name(),
 		line:    line,
 		offsetX: 0,
 		offsetY: 0,
@@ -57,6 +56,7 @@ func NewTask(tasks *Kernel, ctx *Context, cmd interfaces.ICommand, line string) 
 	return t
 }
 
+// SetOptions updates the Task's scale, offsetY, and offsetX properties based on the provided TaskOptions.
 func (t *Task) SetOptions(options *TaskOptions) {
 	if options == nil {
 		return
@@ -66,6 +66,8 @@ func (t *Task) SetOptions(options *TaskOptions) {
 	t.offsetX = options.OffsetX
 }
 
+// Options returns a pointer to a TaskOptions struct populated with the current task's offset, scale, and line properties.```go
+// Options returns a pointer to a TaskOptions object with values set based on the current Task's properties.
 func (t *Task) Options() *TaskOptions {
 	return &TaskOptions{
 		OffsetY: t.offsetY,
@@ -75,229 +77,236 @@ func (t *Task) Options() *TaskOptions {
 	}
 }
 
+// OffsetX returns the current horizontal offset of the task.
 func (t *Task) OffsetX() int {
 	return t.offsetX
 }
 
+// SetOffsetX sets the horizontal offset of the Task to the specified value x.
 func (t *Task) SetOffsetX(x int) {
 	t.offsetX = x
 }
 
+// OffsetY returns the vertical offset value for the task.
 func (t *Task) OffsetY() int {
 	return t.offsetY
 }
 
+// SetOffsetY sets the vertical offset value for the task to the specified value y.
 func (t *Task) SetOffsetY(y int) {
 	t.offsetY = y
 }
 
+// Scale returns the current scale factor of the Task.
 func (t *Task) Scale() float64 {
 	return t.scale
 }
 
+// SetScale updates the scale attribute of the task to the specified value.
 func (t *Task) SetScale(scale float64) {
 	t.scale = scale
 }
 
+// Line retrieves the line property of the Task, returning it as a string.
 func (t *Task) Line() string {
 	return t.line
 }
 
-// PID returns the process identifier (PID) of the task.
+// PID returns the process ID (PID) associated with the Task instance.
 func (t *Task) PID() int {
 	return t.pid
 }
 
-// GetCommand returns the ICommand instance associated with the Task.
+// GetCommand retrieves the command associated with the task, implementing the ICommand interface.
 func (t *Task) GetCommand() interfaces.ICommand {
 	return t.cmd
 }
 
-// SetContext sets the context of the Task to the provided value.
+// SetContext sets the context of the task to the given interface value.
 func (t *Task) SetContext(ctx interface{}) {
 	t.context = ctx
 }
 
-// GetContext retrieves the current context associated with the Task instance.
-// It returns the context as an interface{}.
+// GetContext retrieves the context object associated with the task.
 func (t *Task) GetContext() interface{} {
 	return t.context
 }
 
-// CreateTimer initializes a timer with specified delay, interval, and repetition count for the current task. Returns success status.
+// CreateTimer creates and starts a timer with specified initial delay, interval, and repetition count for the task.
 func (t *Task) CreateTimer(first int, interval int, count int) bool {
-	return t.tasks.CreateTimer(t.pid, first, interval, count)
+	return t.kernel.CreateTimer(t.pid, first, interval, count)
 }
 
-// StopTimer stops a timer with the given timer ID (tid) associated with the task and returns true if successful.
+// StopTimer stops a timer associated with the given timer ID (tid) for the current task and returns true if successful.
 func (t *Task) StopTimer(tid int) bool {
-	return t.tasks.StopTimer(t.pid, tid)
+	return t.kernel.StopTimer(t.pid, tid)
 }
 
-// IsActive checks if the task with the given process ID (pid) is currently active. Returns true if active, false otherwise.
+// IsActive checks if a process with the provided pid is active in the kernel context and returns true if active.
 func (t *Task) IsActive(pid int) bool {
-	return t.tasks.IsActive(pid)
+	return t.kernel.IsActive(pid)
 }
 
-// Deactivate terminates the task identified by the given pid and returns true if successfully terminated, false otherwise.
+// Deactivate terminates the task identified by the given pid, returning true if successful or false otherwise.
 func (t *Task) Deactivate(pid int) bool {
-	return t.tasks.Kill(pid)
+	return t.kernel.Kill(pid)
 }
 
-// DeactivateAll deactivates all tasks matching the provided name and returns the count of tasks that were deactivated.
+// DeactivateAll terminates all tasks that match the specified name and returns the count of tasks deactivated.
 func (t *Task) DeactivateAll(name string) int {
-	return t.tasks.KillAll(name)
+	return t.kernel.KillAll(name)
 }
 
-// SaveTasks saves the current tasks to a storage medium using the provided name and returns true if successful.
+// SaveTasks saves the current tasks under the specified name and returns true if successful or false otherwise.
 func (t *Task) SaveTasks(name string) bool {
-	return t.tasks.SaveTasks(name)
+	return t.kernel.SaveTasks(name)
 }
 
-// RestoreTasks restores previously saved tasks identified by the provided name. Returns true if successful, false otherwise.
+// RestoreTasks attempts to restore previously saved task states associated with the specified name. Returns true on success.
 func (t *Task) RestoreTasks(name string) bool {
-	return t.tasks.RestoreTasks(name)
+	return t.kernel.RestoreTasks(name)
 }
 
-// ListTasks retrieves the list of all task names currently managed by the Kernel. It returns a slice of strings.
+// ListTasks retrieves the list of all currently active task names from the kernel.
 func (t *Task) ListTasks() []string {
-	return t.tasks.ListTasks()
+	return t.kernel.ListTasks()
 }
 
-// SetCaption sets the caption for the task and returns true if the operation was successful, otherwise false.
+// SetCaption updates the task's caption using the provided label and the task's PID. Returns true upon completion.
 func (t *Task) SetCaption(caption string) bool {
-	return t.tasks.SetCaption(t.pid, caption)
+	t.label = caption
+	t.caption = strconv.Itoa(t.pid)
+	if len(t.label) > 0 {
+		t.caption += " - " + t.label
+	}
+	return true
 }
 
-// PaintRequest forwards a paint request to the Kernel and returns a boolean indicating success.
+// PaintRequest checks if a paint operation is required for the task by delegating to the underlying kernel.
 func (t *Task) PaintRequest() bool {
-	return t.tasks.PaintRequest()
+	return t.kernel.PaintRequest()
 }
 
-// GetScreenSize returns the width and height of the screen as two integer values.
+// GetScreenSize returns the width and height of the screen as integers.
 func (t *Task) GetScreenSize() (int, int) {
-	return t.tasks.GetScreenSize()
+	return t.kernel.GetScreenSize()
 }
 
-// CWD returns the current working directory command interface associated with the task.
+// CWD retrieves the current working directory command associated with the task.
 func (t *Task) CWD() interfaces.ICommand {
-	return t.tasks.CWD()
+	return t.kernel.CWD()
 }
 
-// CWDSet sets the current working directory for the task to the specified path and returns true if successful.
+// CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
 func (t *Task) CWDSet(arg string) bool {
-	return t.tasks.CWDSet(arg)
+	return t.kernel.CWDSet(arg)
 }
 
-// CWDGet retrieves the current working directory as a string for the task.
+// CWDGet retrieves the current working directory string for the task from the associated kernel.
 func (t *Task) CWDGet() string {
-	return t.tasks.CWDGet()
+	return t.kernel.CWDGet()
 }
 
-// CWDPath retrieves the current working directory path as a slice of strings. It delegates the call to the underlying Kernel.
+// CWDPath returns the current working directory path as a slice of strings.
 func (t *Task) CWDPath() []string {
-	return t.tasks.CWDPath()
+	return t.kernel.CWDPath()
 }
 
-// CWDChilds retrieves the names of child directories or files under the current working directory.
+// CWDChilds retrieves a list of child command names in the current working directory context of the task.
 func (t *Task) CWDChilds() []string {
-	return t.tasks.CWDChilds()
+	return t.kernel.CWDChilds()
 }
 
+// Help calls the kernel's Help method with the provided argument and returns the resulting help text or an error.
 func (t *Task) Help(arg string) (string, error) {
-	return t.tasks.Help(arg)
+	return t.kernel.Help(arg)
 }
 
-// SetSelectionMode sets the selection mode for a task identified by the given pid.
+// SetSelectionMode configures the selection mode for the Task using the specified process ID.
 func (t *Task) SetSelectionMode(pid int) {
-	t.tasks.SetSelectionMode(pid)
+	t.kernel.SetSelectionMode(pid)
 }
 
-// SetSelectionModeNext moves the task selection mode to the next item via the task manager.
+// SetSelectionModeNext switches the selection mode to the next state by delegating to the kernel's previous mode setter.
 func (t *Task) SetSelectionModeNext() {
-	t.tasks.SetSelectionModePrevious()
+	t.kernel.SetSelectionModePrevious()
 }
 
-// SetSelectionModePrevious sets the selection mode to the previous task in the task manager.
+// SetSelectionModePrevious sets the selection mode to the previous item using the kernel configuration.
 func (t *Task) SetSelectionModePrevious() {
-	t.tasks.SetSelectionModePrevious()
+	t.kernel.SetSelectionModePrevious()
 }
 
-// SetSelectionOptions configures selection mode options using the given option rune and value. Returns true if successful.
+// SetSelectionOptions configures selection options using the provided option rune and value. Returns true on success.
 func (t *Task) SetSelectionOptions(option rune, value float64) bool {
-	return t.tasks.SetSelectionOptions(option, value)
+	return t.kernel.SetSelectionOptions(option, value)
 }
 
-// SetId sets the task's process ID (PID) to the provided integer value.
+// SetId assigns a unique process ID to the task and updates the caption based on the ID and any associated label.
 func (t *Task) SetId(id int) {
 	t.pid = id
+	t.caption = strconv.Itoa(t.pid)
+	if len(t.label) > 0 {
+		t.caption += " - " + t.label
+	}
 }
 
-// Paint renders the task's visual representation on the provided surface by applying transformations and calling the paint function.
-func (t *Task) Paint(surface *Surface) {
+// Paint renders the task's output on the given ISurface, initializing offsets, scale, and caption before invoking PaintEvent.
+func (t *Task) Paint(surface interfaces.ISurface) {
 	fn := t.cmd.PaintEvent()
 	if fn == nil {
 		return
 	}
-	caption := strconv.Itoa(t.pid)
-	if len(t.caption) > 0 {
-		caption += " - " + t.caption
-	}
 	surface.SetOffsetX(t.offsetX)
 	surface.SetOffsetY(t.offsetY)
 	surface.SetScale(t.scale)
-	surface.SetCaption(caption)
+	surface.SetCaption(t.caption)
 	surface.Begin()
 	fn(t, surface)
 	surface.End()
 }
 
-// GetWriter returns an io.Writer instance associated with the current task's context.
-func (t *Task) GetWriter() io.Writer {
-	return t.ctx.GetWriter()
-}
-
-// SetFg sets the specified process ID (pid) as the foreground task and returns true if successful.
+// SetFg sets the specified process ID (pid) as the foreground process. Returns true if successful, or false otherwise.
 func (t *Task) SetFg(pid int) bool {
-	return t.tasks.SetFg(pid)
+	return t.kernel.SetFg(pid)
 }
 
-// TaskList returns a string representation of all tasks managed by the Kernel.
+// TaskList returns a string representation of the task list as managed by the kernel.
 func (t *Task) TaskList() string {
-	return t.tasks.List()
+	return t.kernel.List()
 }
 
-// Write sends the provided string `data` to the underlying context for writing.
+// Write sends the provided data string to the underlying kernel for processing or output.
 func (t *Task) Write(data string) {
-	t.ctx.Write(data)
+	t.kernel.Write(data)
 }
 
-// WriteLn writes a line of text (data) to the task's associated context, followed by a newline.
+// WriteLn writes a line of text followed by a newline to the kernel's output stream.
 func (t *Task) WriteLn(data string) {
-	t.ctx.WriteLn(data)
+	t.kernel.WriteLn(data)
 }
 
-// WriteColor outputs the given text with specified foreground and background colors and the specified color mode.
+// WriteColor outputs the given text in specified foreground and background colors with a specific color rendering mode.
 func (t *Task) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	t.ctx.WriteColor(data, fg, bg, mode)
+	t.kernel.WriteColor(data, fg, bg, mode)
 }
 
-// WriteColorLn writes the provided string to the output with the specified foreground and background colors in the given mode.
+// WriteColorLn writes a line of text with specified foreground, background colors, and color mode to the task's output.
 func (t *Task) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	t.ctx.WriteColorLn(data, fg, bg, mode)
+	t.kernel.WriteColorLn(data, fg, bg, mode)
 }
 
-// ClearScreen clears the screen of the current context associated with the task.
+// ClearScreen clears the current output screen of the task by invoking the kernel's ClearScreen method.
 func (t *Task) ClearScreen() {
-	t.ctx.ClearScreen()
+	t.kernel.ClearScreen()
 }
 
-// SetExit signals the context to exit, marking the task for termination or indicating it should stop execution immediately.
+// SetExit signals a request to exit the kernel associated with the task.
 func (t *Task) SetExit() {
-	t.ctx.SetExit()
+	t.kernel.ExitRequested()
 }
 
-// History performs a history-related action specified by the provided verb and index on the task's context.
+// History performs a kernel-level history operation based on the specified action and index.
 func (t *Task) History(verb interfaces.HistoryAction, idx int) {
-	t.ctx.History(verb, idx)
+	t.kernel.History(verb, idx)
 }
