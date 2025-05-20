@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 package wasm_render
 
 type DisplayBuffer struct {

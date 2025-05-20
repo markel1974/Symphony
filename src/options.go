@@ -1,15 +1,38 @@
 package symphony
 
-type Options struct {
-	RenderId   string
-	PlayerId   string
-	Prg        string
-	Cartridges string
-	Drives     string
-	Disks      string
-	NoJiffy    bool
+import "github.com/markel1974/c64emu/src/references"
+
+type IGraphicFactory interface {
+	Create(id string) references.IDisplayRender
 }
 
-func NewOptions() *Options {
-	return &Options{}
+type IAudioFactory interface {
+	Create(id string) references.IAudioRender
+}
+
+type Options struct {
+	RenderId        string
+	PlayerId        string
+	Prg             string
+	Cartridges      string
+	Drives          string
+	Disks           string
+	NoJiffy         bool
+	graphicsFactory IGraphicFactory
+	audioFactory    IAudioFactory
+}
+
+func NewOptions(gFactory IGraphicFactory, aFactory IAudioFactory) *Options {
+	return &Options{
+		graphicsFactory: gFactory,
+		audioFactory:    aFactory,
+	}
+}
+
+func (o *Options) GetGraphicsFactory() IGraphicFactory {
+	return o.graphicsFactory
+}
+
+func (o *Options) GetAudioFactory() IAudioFactory {
+	return o.audioFactory
 }

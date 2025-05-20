@@ -9,26 +9,56 @@ import (
 )
 
 type RenderStub struct {
-	error
+	err error
 }
 
 func New() *RenderStub {
 	return &RenderStub{
-		error: fmt.Errorf("WASM renderer is not supported on this platform"),
+		err: fmt.Errorf("WASM renderer is not supported on this platform"),
 	}
 }
 
 func (g *RenderStub) Setup(board references.IBoard, cfg *config.Config) error {
-	return g.error
+	return g.err
 }
 
 func (g *RenderStub) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
-	return nil, g.error
+	return nil, g.err
 }
 
 func (g *RenderStub) Start() error {
-	return g.error
+	return g.err
 }
 
 func (g *RenderStub) VBlank() {
+}
+
+type AudioStub struct {
+	err error
+}
+
+func NewAudio() *AudioStub {
+	return &AudioStub{
+		err: fmt.Errorf("WASM renderer is not supported on this platform"),
+	}
+}
+
+func (a *AudioStub) Setup(cfg *config.Config) error {
+	return a.err
+}
+
+func (a *AudioStub) GetCurrentPosition() int {
+	return 0
+}
+
+func (a *AudioStub) Write(_ []uint32, pos int, samples int) {
+}
+
+func (a *AudioStub) Play() {
+}
+
+func (a *AudioStub) Pause() {
+}
+
+func (a *AudioStub) Resume() {
 }

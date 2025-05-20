@@ -5,8 +5,6 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware"
 	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/renderers/audio"
-	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"log"
 )
 
@@ -79,6 +77,14 @@ func New() *Symphony {
 }
 
 func (s *Symphony) Setup(opt *Options) error {
+	gFactory := opt.GetGraphicsFactory()
+	if gFactory == nil {
+		return fmt.Errorf("graphics factory is nil")
+	}
+	aFactory := opt.GetAudioFactory()
+	if aFactory == nil {
+		return fmt.Errorf("audio factory is nil")
+	}
 	s.cfg = config.New()
 	if len(opt.Prg) > 0 {
 		s.cfg.SetPrg(opt.Prg)
@@ -102,20 +108,16 @@ func (s *Symphony) Setup(opt *Options) error {
 		s.cfg.DisableJiffy()
 	}
 
-	graphicsFactory := graphics.NewFactory()
-	audioFactory := audio.NewFactory()
-	s.displayRender = graphicsFactory.Create(opt.RenderId)
+	s.displayRender = gFactory.Create(opt.RenderId)
 	display, err := s.displayRender.CreateDisplayBuffer(0x180, 0x110) //mos6569.DisplayX, mos6569.DisplayY
 	if err != nil {
 		return err
 	}
-	audioRender := audioFactory.Create(opt.PlayerId)
+	audioRender := aFactory.Create(opt.PlayerId)
 	if err = audioRender.Setup(s.cfg); err != nil {
 		return err
 	}
-
 	hwFactory := hardware.NewFactory(display, audioRender, s.cfg)
-
 	s.boardComponent = nil
 	var hw []references.IComponent
 	components := make(map[string]references.IComponent)

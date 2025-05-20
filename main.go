@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	symphony "github.com/markel1974/c64emu/src"
+	"github.com/markel1974/c64emu/src/renderers/audio"
+	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"github.com/markel1974/c64emu/src/shell"
 	"github.com/markel1974/c64emu/src/shell/authenticator"
 	"github.com/markel1974/c64emu/src/shell/cli"
@@ -154,7 +156,7 @@ func main() {
 		return
 	}
 
-	opt := symphony.NewOptions()
+	opt := symphony.NewOptions(graphics.NewFactory(), audio.NewFactory())
 	opt.Prg = prg
 	opt.Cartridges = cartridges
 	opt.Drives = drives
