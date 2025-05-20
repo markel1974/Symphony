@@ -19,25 +19,9 @@ WebAssembly.instantiateStreaming(fetch("symphony.wasm"), go.importObject).then((
 
         // Ottieni il display buffer.
         const buffer = go.exports.getDisplayBuffer();
-        const uint8array = new Uint8Array(buffer);
-        // Itera sui dati nel buffer e disegna i caratteri sul canvas.
-        for (let y = 0; y < 25; y++) {
-            for (let x = 0; x < 40; x++) {
-                const charIndex = (y * 40 + x) * 2;
-                const charCode = uint8array[charIndex]
-                const colorCode = uint8array[charIndex+1]
 
-                const char = String.fromCharCode(charCode); // Dovresti usare una tabella di conversione PETSCII -> Unicode!
-                const fgColor = convertC64ColorToCSS(colorCode & 0x0F); // Funzione di conversione da implementare
-                const bgColor = convertC64ColorToCSS((colorCode >> 4) & 0x0F);
-
-                //TODO
-                //document.getElementById("canvas").getContext("2d").putImageData(new
-                //ImageData(Uint8ClampedArray.from(x), 1, 1), 1, 1);
-
-                drawChar(char, fgColor, bgColor, x * 8, y * 8); // Assumendo una griglia di 8x8 pixel per carattere
-            }
-        }
+        //INTEGRAZIONE PER IL DISEGNO DEL BUFFER
+        // Disegna il display buffer.
 
         // Richiedi il prossimo frame.
         requestAnimationFrame(renderFrame);
