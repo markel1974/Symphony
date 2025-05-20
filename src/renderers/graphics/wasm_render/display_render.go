@@ -9,8 +9,6 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// GOOS=js GOARCH=wasm go build -o symphony.wasm ./src/render/wasmrender
-
 /*
 //go:embed g64.wasm
 var wasmFS embed.FS
@@ -24,6 +22,8 @@ type Render struct {
 	board         references.IBoard
 	displayBuffer *DisplayBuffer
 	vBlank        bool
+	w             int
+	h             int
 }
 
 func New() *Render {
@@ -46,6 +46,8 @@ func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 }
 
 func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
+	g.w = w
+	g.h = h
 	g.displayBuffer = NewDisplayBuffer(w, h)
 	return g.displayBuffer, nil
 }
@@ -75,10 +77,19 @@ func (g *Render) Start() error {
 		return nil
 	}
 
+	getDisplayWidth := func(this js.Value, args []js.Value) interface{} {
+		return js.ValueOf(g.w)
+	}
+
+	getDisplayHeight := func(this js.Value, args []js.Value) interface{} {
+		return js.ValueOf(g.h)
+	}
+
 	// Esponi le funzioni Go a JavaScript.
 	js.Global().Set("emulateFrame", js.FuncOf(emulateFrame))
-	//js.Global().Set("keyPressed", js.FuncOf(keyPressed))
 	js.Global().Set("getDisplayBuffer", js.FuncOf(getDisplayBuffer))
+	js.Global().Set("getDisplayWidth", js.FuncOf(getDisplayWidth))
+	js.Global().Set("getDisplayHeight", js.FuncOf(getDisplayHeight))
 	js.Global().Set("keyPressed", js.FuncOf(keyPressed))
 
 	<-c

@@ -6,11 +6,13 @@
     <title>WASM + WebGL Integration</title>
     <style>
         body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #333; }
-        canvas { border: 1px solid white; } /* Potresti voler adattare le dimensioni del canvas */
+        canvas { border: 1px solid white; }
     </style>
+
+    <script src="wasm_exec.js"></script>
 </head>
 <body>
-<canvas id="canvas" width="640" height="480"></canvas> {/* Assicurati che le dimensioni siano adatte */}
+<canvas id="canvas" width="640" height="480"></canvas>
 
 <script>
     // --- Variabili Globali per WebGL ---
@@ -26,6 +28,11 @@
     const go = new Go();
     WebAssembly.instantiateStreaming(fetch("symphony.wasm"), go.importObject).then((result) => {
         go.run(result.instance);
+
+        console.log("typeof getDisplayWidth:", typeof getDisplayWidth);
+        console.log("typeof getDisplayHeight:", typeof getDisplayHeight);
+        console.log("typeof emulateFrame:", typeof emulateFrame);
+        console.log("typeof getDisplayBuffer:", typeof getDisplayBuffer);
 
         // Ottieni un riferimento al canvas e imposta il contesto WebGL.
         const canvas = document.getElementById("canvas");
@@ -75,16 +82,10 @@
 
         // --- Ottieni dimensioni immagine dal WASM o definiscile ---
         // Sostituisci con la logica corretta
-        if (go.exports.getDisplayWidth && go.exports.getDisplayHeight) {
-            imageWidth = go.exports.getDisplayWidth();
-            imageHeight = go.exports.getDisplayHeight();
-        } else {
-            // IMPOSTA VALORI DI DEFAULT O LEGGI DA COSTANTI
-            // Queste dimensioni DEVONO corrispondere ai dati del buffer!
-            imageWidth = 64; // Esempio, la larghezza reale dell'output del tuo WASM
-            imageHeight = 32; // Esempio, l'altezza reale
-            console.warn("Usando larghezza/altezza di default per il buffer. Assicurati che siano corrette!");
-        }
+
+        imageWidth = getDisplayWidth();
+        imageHeight = getDisplayHeight();
+
         // Puoi impostare le dimensioni del canvas qui se necessario, es:
         // canvas.width = imageWidth;
         // canvas.height = imageHeight;
@@ -106,10 +107,10 @@
         // Ciclo principale (eseguito a ogni frame).
         function renderFrame() {
             // Esegui un frame di emulazione.
-            go.exports.emulateFrame();
+            emulateFrame();
 
             // Ottieni il display buffer (assumiamo Uint8Array RGBA).
-            const buffer = go.exports.getDisplayBuffer(); // Assumiamo ritorni un Uint8Array
+            const buffer = getDisplayBuffer(); // Assumiamo ritorni un Uint8Array
 
             if (buffer && buffer.byteLength > 0) { // Assicurati che il buffer sia valido
                 // Aggiorna la texture WebGL con i nuovi dati del buffer
