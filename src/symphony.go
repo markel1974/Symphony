@@ -89,18 +89,18 @@ func (s *Symphony) Setup(opt *Options) error {
 	if len(opt.Prg) > 0 {
 		s.cfg.SetPrg(opt.Prg)
 	}
-	if len(opt.Cartridges) > 0 {
-		if err := s.cfg.BuildCartridges(opt.Cartridges); err != nil {
+	for _, c := range opt.Cartridges {
+		if err := s.cfg.AddCartridge(c); err != nil {
 			return err
 		}
 	}
-	if len(opt.Drives) > 0 {
-		if err := s.cfg.BuildDrives(opt.Drives); err != nil {
+	for _, c := range opt.Drives {
+		if err := s.cfg.AddDrive(c); err != nil {
 			return err
 		}
 	}
-	if len(opt.Disks) > 0 {
-		if err := s.cfg.BuildSpareDisks(opt.Disks); err != nil {
+	for _, c := range opt.Disks {
+		if err := s.cfg.AddSpareDisk(c); err != nil {
 			return err
 		}
 	}

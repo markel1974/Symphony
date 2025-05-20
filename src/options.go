@@ -1,6 +1,9 @@
 package symphony
 
-import "github.com/markel1974/c64emu/src/references"
+import (
+	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/references"
+)
 
 type IGraphicFactory interface {
 	Create(id string) references.IDisplayRender
@@ -14,9 +17,9 @@ type Options struct {
 	RenderId        string
 	PlayerId        string
 	Prg             string
-	Cartridges      string
-	Drives          string
-	Disks           string
+	Cartridges      []*config.Cartridge
+	Drives          []*config.Drive
+	Disks           []*config.Drive
 	NoJiffy         bool
 	graphicsFactory IGraphicFactory
 	audioFactory    IAudioFactory

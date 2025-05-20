@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	symphony "github.com/markel1974/c64emu/src"
+	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"github.com/markel1974/c64emu/src/shell"
@@ -121,6 +122,40 @@ func createShell(target *cli.Command) error {
 	return nil
 }
 
+func BuildCartridges(c string) ([]*config.Cartridge, error) {
+	var cartridges []*config.Cartridge
+	for _, v := range config.KeyVal(c) {
+		data, _, err := config.ImageFromFile(v.V)
+		if err != nil {
+			return nil, err
+		}
+		cartridge, err := config.NewCartridge(v.K, v.V, data)
+		if err != nil {
+			return nil, err
+		}
+		cartridges = append(cartridges, cartridge)
+	}
+	return cartridges, nil
+}
+
+// BuildDrives parses a drive configuration string, creates Drive instances, and appends them to the Config's drives list.
+// Returns an error if any drive creation fails.
+func BuildDrives(d string) ([]*config.Drive, error) {
+	var drives []*config.Drive
+	for _, v := range config.KeyVal(d) {
+		data, wp, err := config.ImageFromFile(v.V)
+		if err != nil {
+			return nil, err
+		}
+		drive, err := config.NewDrive(v.K, v.V, data, wp)
+		if err != nil {
+			return nil, err
+		}
+		drives = append(drives, drive)
+	}
+	return drives, nil
+}
+
 func main() {
 	//https://sergetoro.com/posts/golang-round-robin-queue-from-scratch/
 	//fifoBlockTest()
@@ -157,23 +192,35 @@ func main() {
 	}
 
 	opt := symphony.NewOptions(graphics.NewFactory(), audio.NewFactory())
+	cCartridges, err := BuildCartridges(cartridges)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cDrives, err := BuildDrives(drives)
+	if err != nil {
+		log.Fatal(err)
+	}
+	cDisks, err := BuildDrives(disks)
+	if err != nil {
+		log.Fatal(err)
+	}
 	opt.Prg = prg
-	opt.Cartridges = cartridges
-	opt.Drives = drives
-	opt.Disks = disks
+	opt.Cartridges = cCartridges
+	opt.Drives = cDrives
+	opt.Disks = cDisks
 	opt.NoJiffy = noJiffy
 	opt.PlayerId = playerId
 	opt.RenderId = renderId
 
 	emulator := symphony.New()
-	if err := emulator.Setup(opt); err != nil {
+	if err = emulator.Setup(opt); err != nil {
 		log.Fatal(err)
 	}
 	board := emulator.GetBoard()
-	if err := createShell(board.GetCommand()); err != nil {
+	if err = createShell(board.GetCommand()); err != nil {
 		log.Fatal(err)
 	}
-	if err := emulator.Start(); err != nil {
+	if err = emulator.Start(); err != nil {
 		log.Fatal(err)
 	}
 }

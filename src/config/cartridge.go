@@ -12,11 +12,7 @@ type Cartridge struct {
 
 // NewCartridge creates a new Cartridge instance using the specified kind and file path, loading its data from the file.
 // Returns a pointer to the Cartridge and an error if the file cannot be read or loaded.
-func NewCartridge(kind string, filePath string) (*Cartridge, error) {
-	data, _, err := ImageFromFile(filePath)
-	if err != nil {
-		return nil, err
-	}
+func NewCartridge(kind string, filePath string, data []byte) (*Cartridge, error) {
 	name := path.Base(filePath)
 	c := &Cartridge{
 		kind: kind,

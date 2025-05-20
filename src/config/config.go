@@ -34,32 +34,18 @@ func (p *Config) Bind(changed func()) {
 	p.changed.Bind(changed)
 }
 
-// BuildDrives parses a drive configuration string, creates Drive instances, and appends them to the Config's drives list.
-// Returns an error if any drive creation fails.
-func (p *Config) BuildDrives(d string) error {
-	for _, v := range KeyVal(d) {
-		drive, err := NewDrive(v.K, v.V)
-		if err != nil {
-			return err
-		}
-		p.drives = append(p.drives, drive)
-	}
+// AddDrive adds a new Drive instance to the Config's drives list and returns an error if any issues occur during the process.
+func (p *Config) AddDrive(drive *Drive) error {
+	p.drives = append(p.drives, drive)
 	return nil
 }
 
-// BuildSpareDisks parses the input string, creates Drive instances, and appends them to the spareDisks list in Config.
-// If the drives list is empty, the first spare disk is also added to the drives list.
-func (p *Config) BuildSpareDisks(d string) error {
-	for idx, v := range KeyVal(d) {
-		drive, err := NewDrive(v.K, v.V)
-		if err != nil {
-			return err
-		}
-		if idx == 0 && len(p.drives) == 0 {
-			p.drives = append(p.spareDisks, drive)
-		}
-		p.spareDisks = append(p.spareDisks, drive)
+// AddSpareDisk adds the specified Drive to the spareDisks list in the Config structure and updates drives if empty.
+func (p *Config) AddSpareDisk(drive *Drive) error {
+	if len(p.drives) == 0 {
+		p.drives = append(p.spareDisks, drive)
 	}
+	p.spareDisks = append(p.spareDisks, drive)
 	return nil
 }
 
@@ -98,16 +84,8 @@ func (p *Config) Prg() string {
 	return p.prg
 }
 
-// BuildCartridges processes a string defining cartridge configurations and appends created cartridges to the Config instance.
-// Returns an error if any cartridge creation fails.
-func (p *Config) BuildCartridges(c string) error {
-	for _, v := range KeyVal(c) {
-		crt, err := NewCartridge(v.K, v.V)
-		if err != nil {
-			return err
-		}
-		p.cartridges = append(p.cartridges, crt)
-	}
+func (p *Config) AddCartridge(crt *Cartridge) error {
+	p.cartridges = append(p.cartridges, crt)
 	return nil
 }
 
