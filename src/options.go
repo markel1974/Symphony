@@ -16,7 +16,7 @@ type IAudioFactory interface {
 type Options struct {
 	RenderId        string
 	PlayerId        string
-	Prg             string
+	Prg             []byte
 	Cartridges      []*config.Cartridge
 	Drives          []*config.Drive
 	Disks           []*config.Drive

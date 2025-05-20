@@ -11,7 +11,7 @@ type Config struct {
 	drives     []*Drive
 	spareDisks []*Drive
 	changed    *signals.Signal
-	prg        string
+	prg        []byte
 	diskIndex  int
 	jiffy      bool
 }
@@ -75,12 +75,12 @@ func (p *Config) SwitchDisk() (string, error) {
 }
 
 // SetPrg sets the program path in the Config instance.
-func (p *Config) SetPrg(prg string) {
+func (p *Config) SetPrg(prg []byte) {
 	p.prg = prg
 }
 
 // Prg returns the value of the `prg` field from the Config struct.
-func (p *Config) Prg() string {
+func (p *Config) Prg() []byte {
 	return p.prg
 }
 

@@ -128,8 +128,8 @@ func (s *Board) Start() error {
 	if err = s.cartridgeSocket.CreateCartridges(); err != nil {
 		return err
 	}
-	if prgPath := cfg.Prg(); len(prgPath) > 0 {
-		if err = s.startPRG(prgPath); err != nil {
+	if prgData := cfg.Prg(); len(prgData) > 0 {
+		if err = s.startPRG(prgData); err != nil {
 			return err
 		}
 	}
@@ -380,7 +380,7 @@ func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
 }
 
 // startPRG initializes and loads a PRG from the specified file path. It returns an error if loading the PRG fails.
-func (s *Board) startPRG(prgPath string) error {
+func (s *Board) startPRG(prgPath []byte) error {
 	s.prg = prg.NewPRG(s.plaSocket, s.keysSocket)
 	if err := s.prg.Load(prgPath); err != nil {
 		s.prg = nil

@@ -3,7 +3,6 @@ package prg
 import (
 	"bytes"
 	"fmt"
-	"os"
 )
 
 // Keys represents an interface defining a method for setting a command string in an implementing struct.
@@ -44,11 +43,7 @@ func (b *PRG) SetCommand(cmd string) {
 }
 
 // Load reads a PRG file from the specified path and loads its contents into memory, returning an error if it fails.
-func (b *PRG) Load(prgFile string) error {
-	src, err := os.ReadFile(prgFile)
-	if err != nil {
-		return err
-	}
+func (b *PRG) Load(src []byte) error {
 	return b.LoadData(src)
 }
 

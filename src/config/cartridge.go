@@ -1,7 +1,5 @@
 package config
 
-import "path"
-
 // Cartridge represents a data structure containing metadata and binary data of a cartridge file.
 type Cartridge struct {
 	kind string
@@ -12,8 +10,7 @@ type Cartridge struct {
 
 // NewCartridge creates a new Cartridge instance using the specified kind and file path, loading its data from the file.
 // Returns a pointer to the Cartridge and an error if the file cannot be read or loaded.
-func NewCartridge(kind string, filePath string, data []byte) (*Cartridge, error) {
-	name := path.Base(filePath)
+func NewCartridge(kind string, filePath string, name string, data []byte) (*Cartridge, error) {
 	c := &Cartridge{
 		kind: kind,
 		name: name,

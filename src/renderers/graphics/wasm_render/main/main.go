@@ -14,6 +14,11 @@ func main() {
 	aFactory := NewAudioFactory()
 
 	opt := symphony.NewOptions(gFactory, aFactory)
+	//cart, err := config.NewCartridge("", "mayhem", "mayhem", _stub)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//opt.Cartridges = []*config.Cartridge{cart}
 	emulator := symphony.New()
 	if err := emulator.Setup(opt); err != nil {
 		log.Fatal(err)

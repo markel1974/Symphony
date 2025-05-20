@@ -13,6 +13,8 @@ import (
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"github.com/markel1974/c64emu/src/version"
 	"log"
+	"os"
+	"path"
 )
 
 // -c "SCPU:;REU16M:/Users/tinmr305/Downloads/c64carts/doom/doom.reu" -p /Users/tinmr305/Downloads/c64carts/doom/loader.prg
@@ -122,6 +124,17 @@ func createShell(target *cli.Command) error {
 	return nil
 }
 
+func BuildPrg(prgFile string) ([]byte, error) {
+	if len(prgFile) == 0 {
+		return []byte{}, nil
+	}
+	src, err := os.ReadFile(prgFile)
+	if err != nil {
+		return nil, err
+	}
+	return src, nil
+}
+
 func BuildCartridges(c string) ([]*config.Cartridge, error) {
 	var cartridges []*config.Cartridge
 	for _, v := range config.KeyVal(c) {
@@ -129,7 +142,8 @@ func BuildCartridges(c string) ([]*config.Cartridge, error) {
 		if err != nil {
 			return nil, err
 		}
-		cartridge, err := config.NewCartridge(v.K, v.V, data)
+		name := path.Base(v.V)
+		cartridge, err := config.NewCartridge(v.K, v.V, name, data)
 		if err != nil {
 			return nil, err
 		}
@@ -204,7 +218,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	opt.Prg = prg
+	cPrg, err := BuildPrg(prg)
+	if err != nil {
+		log.Fatal(err)
+	}
+	opt.Prg = cPrg
 	opt.Cartridges = cCartridges
 	opt.Drives = cDrives
 	opt.Disks = cDisks
