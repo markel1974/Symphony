@@ -121,3 +121,7 @@ func (c *Render) SaveCursor() {
 func (c *Render) RestoreCursor() {
 	_, _ = c.terminal.RestoreCursor()
 }
+
+func (c *Render) EOL() string {
+	return eol
+}

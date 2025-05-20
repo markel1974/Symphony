@@ -123,7 +123,7 @@ func (c *Shell) SetHistoryDefault(data string) {
 
 func (c *Shell) NextLine() {
 	c.resetBuffer()
-	c.render.WriteColor("\r\n", interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.render.WriteColor(c.render.EOL(), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 	c.render.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
@@ -175,11 +175,12 @@ func (c *Shell) enterPressed() bool {
 				c.setAuthenticatedState()
 			} else {
 				c.passwordRetry++
+				eol := c.render.EOL()
 				if c.passwordRetry >= maxPasswordRetry {
-					c.render.WriteColor("\r\nUnauthorized\r\n", interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+					c.render.WriteColor(eol+"Unauthorized"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 					quit = true
 				} else {
-					c.render.WriteColor("\r\nLogin incorrect\r\n", interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+					c.render.WriteColor(eol+"Login incorrect"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 				}
 			}
 

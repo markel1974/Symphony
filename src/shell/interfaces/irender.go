@@ -32,4 +32,6 @@ type IRender interface {
 	SaveCursor()
 
 	RestoreCursor()
+
+	EOL() string
 }
