@@ -4,6 +4,7 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/renderers/graphics/ascii_render"
 	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render"
+	"github.com/markel1974/c64emu/src/renderers/graphics/wasm_render"
 	"strings"
 )
 
@@ -25,6 +26,8 @@ func (f *Factory) Create(id string) references.IDisplayRender {
 		return ascii_render.New()
 	case "gl":
 		return gl_render.New()
+	case "wasm":
+		return wasm_render.New()
 	default:
 		return gl_render.New()
 	}

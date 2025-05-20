@@ -1,75 +1,107 @@
+//go:build js && wasm
+
 package wasm_render
+
+import (
+	"syscall/js"
+
+	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/references"
+)
 
 // GOOS=js GOARCH=wasm go build -o symphony.wasm ./src/render/wasmrender
 
 /*
-
-import (
-"embed"
-"net/http"
-)
-
 //go:embed g64.wasm
 var wasmFS embed.FS
-
 func main() {
 	http.Handle("/", http.FileServer(http.FS(wasmFS)))
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
-
 */
 
-/*
-import (
-"syscall/js" // Per interagire con JavaScript
-)
-
-var (
-	c64 *C64 // Ipotetico oggetto che rappresenta l'emulatore C64
-	displayBuffer []byte // Buffer per l'output testuale (da riempire)
-)
-
-func emulateFrame(this js.Value, args []js.Value) interface{} {
-	// Esegui un frame di emulazione.
-	c64.EmulateFrame() // Ipotetica funzione
-
-	// Aggiorna il display buffer.
-	// (Questo è un esempio *molto semplificato*.  Dovresti adattarlo
-	// al modo in cui il VIC-II gestisce la memoria video.)
-	// for i := 0; i < 1000; i++ { // 40x25 caratteri
-	//     displayBuffer[i*2] = c64.Memory.Read(0x0400 + uint16(i)) // Carattere
-	//     displayBuffer[i*2+1] = c64.Memory.Read(0xD800 + uint16(i)) // Colore
-	// }
-	// Invia il buffer
-	return nil
+type Render struct {
+	board         references.IBoard
+	displayBuffer *DisplayBuffer
+	vBlank        bool
 }
-func GetDisplayBuffer(this js.Value, args []js.Value) interface{} {
-	//copy(displayBuffer, ...);
+
+func New() *Render {
+	return &Render{
+		displayBuffer: nil, //NewDisplayBuffer(320, 200),
+		board:         nil,
+		vBlank:        false,
+	}
+}
+
+func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
+	g.board = board
+	if err := g.board.Mount(g); err != nil {
+		return err
+	}
+	//if err := g.inputs.Setup(g.board, cfg); err != nil {
+	//	return err
+	//}
 	return nil
 }
 
-func keyPressed(this js.Value, args []js.Value) interface{} {
-	// Gestisci la pressione di un tasto (esempio).
-	keyCode := args[0].Int()
-	// ... (converti keyCode in un codice tasto del C64) ...
-	// ... (invia il codice tasto al C64 emulato) ...
+func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
+	g.displayBuffer = NewDisplayBuffer(w, h)
+	return g.displayBuffer, nil
+}
+
+func (g *Render) Start() error {
+	c := make(chan struct{}, 0)
+	emulateFrame := func(this js.Value, args []js.Value) interface{} {
+		for {
+			g.board.Emulate()
+			if g.vBlank {
+				g.vBlank = false
+				return nil
+			}
+		}
+	}
+	getDisplayBuffer := func(this js.Value, args []js.Value) interface{} {
+		return g.displayBuffer.GetSurface()
+	}
+	keyPressed := func(this js.Value, args []js.Value) interface{} {
+		// Gestisci la pressione di un tasto (esempio).
+		//keyCode := args[0].Int()
+		// ... (converti keyCode in un codice tasto del C64) ...
+		// ... (invia il codice tasto al C64 emulato) ...
+		return nil
+	}
+
+	// Esponi le funzioni Go a JavaScript.
+	js.Global().Set("emulateFrame", js.FuncOf(emulateFrame))
+	//js.Global().Set("keyPressed", js.FuncOf(keyPressed))
+	js.Global().Set("getDisplayBuffer", js.FuncOf(getDisplayBuffer))
+	js.Global().Set("keyPressed", js.FuncOf(keyPressed))
+
+	<-c
+
 	return nil
+}
+
+func (g *Render) VBlank() {
+	g.vBlank = true
+	//if g.win.MouseInsideWindow() {
+	//	g.inputs.MouseMove(g.win.MousePositionXY())
+	//}
+	//g.inputs.Keys(g.win.KeysPressed())
+	//g.surface.Draw(g.win, g.surfaceM)
+	//if g.led {
+	//	g.ledSurface.Draw(g.win, g.ledSurfaceM)
+	//}
+	//g.win.Update()
+	//g.run = !g.win.Closed()
+}
+
+func (g *Render) LedActivity(deviceNumber uint8, led bool) {
+	//g.led = led
+	//fmt.Println("LED STATE", deviceNumber, led)
 }
 
 //TODO WASM
 // https://garciat.com/posts/go-wasm/
 // https://github.com/seqsense/webgl-go/tree/master
-
-func main() {
-	c := make(chan struct{}, 0)
-	// Inizializza l'emulatore.
-	c64 = NewC64() // Ipotetica funzione
-
-	// Esponi le funzioni Go a JavaScript.
-	js.Global().Set("emulateFrame", js.FuncOf(emulateFrame))
-	js.Global().Set("keyPressed", js.FuncOf(keyPressed))
-	js.Global().Set("getDisplayBuffer", js.FuncOf(GetDisplayBuffer))
-
-	<-c
-}
-*/
