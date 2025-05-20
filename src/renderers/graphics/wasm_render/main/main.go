@@ -2,6 +2,7 @@ package main
 
 import (
 	symphony "github.com/markel1974/c64emu/src"
+	"github.com/markel1974/c64emu/src/config"
 	"log"
 )
 
@@ -14,16 +15,18 @@ func main() {
 	aFactory := NewAudioFactory()
 
 	opt := symphony.NewOptions(gFactory, aFactory)
-	//cart, err := config.NewCartridge("", "mayhem", "mayhem", _stub)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//opt.Cartridges = []*config.Cartridge{cart}
-	emulator := symphony.New()
-	if err := emulator.Setup(opt); err != nil {
-		log.Fatal(err)
+	cart, err := config.NewCartridge("", "mayhem.crt", "mayhem.crt", _stub)
+	if err != nil {
+		log.Println(err)
+		return
 	}
-	if err := emulator.Start(); err != nil {
-		log.Fatal(err)
+	opt.Cartridges = []*config.Cartridge{cart}
+	emulator := symphony.New()
+	if err = emulator.Setup(opt); err != nil {
+		log.Println(err)
+		return
+	}
+	if err = emulator.Start(); err != nil {
+		log.Println(err)
 	}
 }

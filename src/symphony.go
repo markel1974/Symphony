@@ -160,13 +160,13 @@ func (s *Symphony) Start() error {
 		return fmt.Errorf("board component is not a board")
 	}
 	if err := s.displayRender.Setup(board, s.cfg); err != nil {
-		return nil
+		return err
 	}
 	if err := board.Start(); err != nil {
-		return nil
+		return err
 	}
 	if err := s.displayRender.Start(); err != nil {
-		return nil
+		return err
 	}
 	return nil
 }
