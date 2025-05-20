@@ -3,11 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware"
-	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/renderers/audio"
-	"github.com/markel1974/c64emu/src/renderers/graphics"
+	symphony "github.com/markel1974/c64emu/src"
 	"github.com/markel1974/c64emu/src/shell"
 	"github.com/markel1974/c64emu/src/shell/authenticator"
 	"github.com/markel1974/c64emu/src/shell/cli"
@@ -67,60 +63,6 @@ import (
 // -f "/Users/tinmr305/Downloads/c64carts/SamsJourneySeasonsSpecialV1_1+5D-GP.d64"
 
 // -f "fs_drive:/Users/tinmr305/Downloads/c64carts/"
-
-var _c64DefaultHardware = []struct {
-	label    string
-	id       string
-	instance int
-}{
-	{"c64", "c64", 0},
-	{"c64", "iec", 0},
-	{"c64", "mos6569", 0},
-	{"c64", "mos6526", 0},
-	{"c64", "mos6526", 1},
-	{"c64", "cartridges_c64", 0},
-	{"c64", "mos6510", 0},
-	{"c64", "pic_6510", 0},
-	{"c64", "dynamic_throttle", 0},
-	{"c64", "mos6581", 0},
-	{"c64", "roms_c64", 0},
-	{"c64", "pla_c64", 0},
-	{"c64", "keyboard_c64", 0},
-	{"c64", "joystick_c64", 0},
-	{"c64", "joystick_c64", 1},
-	{"c64", "quartz", 0},
-
-	/*
-		{"c1541_8", "roms_c1541", 0},
-		{"c1541_8", "pla_c1541", 0},
-		{"c1541_8", "pic_6510", 0},
-		{"c1541_8", "mos6510", 0},
-		{"c1541_8", "mos6522", 0},
-		{"c1541_8", "mos6522", 1},
-
-		{"c1541_9", "roms_c1541", 0},
-		{"c1541_9", "pla_c1541", 0},
-		{"c1541_9", "pic_6510", 0},
-		{"c1541_9", "mos6510", 0},
-		{"c1541_9", "mos6522", 0},
-		{"c1541_9", "mos6522", 1},
-
-		{"c1541_10", "roms_c1541", 0},
-		{"c1541_10", "pla_c1541", 0},
-		{"c1541_10", "pic_6510", 0},
-		{"c1541_10", "mos6510", 0},
-		{"c1541_10", "mos6522", 0},
-		{"c1541_10", "mos6522", 1},
-
-		{"c1541_11", "roms_c1541", 0},
-		{"c1541_11", "pla_c1541", 0},
-		{"c1541_11", "pic_6510", 0},
-		{"c1541_11", "mos6510", 0},
-		{"c1541_11", "mos6522", 0},
-		{"c1541_11", "mos6522", 1},
-
-	*/
-}
 
 /*
 func restoreTest(factory references.IComponentFactory) {
@@ -188,7 +130,6 @@ func main() {
 	var disks string
 	var prg string
 	var noJiffy bool
-	var boardId string
 	var playerId string
 	var renderId string
 
@@ -197,7 +138,6 @@ func main() {
 	flag.StringVar(&cartridges, "c", "", "cartridge path")
 	flag.StringVar(&drives, "d", "", "drives path")
 	flag.StringVar(&disks, "f", "", "disks")
-	flag.StringVar(&boardId, "m", "c64", "hardware: vic20, c64")
 	flag.StringVar(&renderId, "r", "gl", "graphics: gl, ascii")
 	flag.StringVar(&playerId, "a", "default", "audio: default")
 	flag.StringVar(&prg, "p", "", "prg path")
@@ -214,90 +154,24 @@ func main() {
 		return
 	}
 
-	cfg := config.New()
-	if len(prg) > 0 {
-		cfg.SetPrg(prg)
-	}
-	if len(cartridges) > 0 {
-		if err := cfg.BuildCartridges(cartridges); err != nil {
-			log.Fatal(err)
-		}
-	}
-	if len(drives) > 0 {
-		if err := cfg.BuildDrives(drives); err != nil {
-			log.Fatal(err)
-		}
-	}
-	if len(disks) > 0 {
-		if err := cfg.BuildSpareDisks(disks); err != nil {
-			log.Fatal(err)
-		}
-	}
-	if noJiffy {
-		cfg.DisableJiffy()
-	}
+	opt := symphony.NewOptions()
+	opt.Prg = prg
+	opt.Cartridges = cartridges
+	opt.Drives = drives
+	opt.Disks = disks
+	opt.NoJiffy = noJiffy
+	opt.PlayerId = playerId
+	opt.RenderId = renderId
 
-	graphicsFactory := graphics.NewFactory()
-	audioFactory := audio.NewFactory()
-	displayRender := graphicsFactory.Create(renderId)
-	display, err := displayRender.CreateDisplayBuffer(0x180, 0x110) //mos6569.DisplayX, mos6569.DisplayY
-	if err != nil {
+	emulator := symphony.New()
+	if err := emulator.Setup(opt); err != nil {
 		log.Fatal(err)
 	}
-	audioRender := audioFactory.Create(playerId)
-	if err = audioRender.Setup(cfg); err != nil {
+	board := emulator.GetBoard()
+	if err := createShell(board.GetCommand()); err != nil {
 		log.Fatal(err)
 	}
-
-	hwFactory := hardware.NewFactory(display, audioRender, cfg)
-
-	var boardComponent references.IComponent = nil
-	var hw []references.IComponent
-	components := make(map[string]references.IComponent)
-	for _, h := range _c64DefaultHardware {
-		var comp references.IComponent
-		if comp, err = hwFactory.Create(boardComponent, h.label, h.id, h.instance); err != nil {
-			log.Fatal(err.Error())
-		}
-		components[comp.HardwareId()] = comp
-		if boardComponent == nil {
-			boardComponent = comp
-		}
-		hw = append(hw, comp)
-	}
-
-	if boardComponent == nil {
-		log.Fatal("board is nil")
-	}
-	board, ok := boardComponent.(references.IBoard)
-	if !ok {
-		log.Fatal("invalid board")
-	}
-
-	//TODO REMOVE WHEN TREE IS READY
-	//BEGIN
-	for _, c := range hw {
-		if err = c.Setup(); err != nil {
-			log.Fatal(err)
-		}
-	}
-	for _, c := range hw {
-		if err = c.Connect(); err != nil {
-			log.Fatal(err)
-		}
-	}
-	//END
-
-	if err = createShell(boardComponent.GetCommand()); err != nil {
-		log.Fatal(err)
-	}
-	if err = displayRender.Setup(board, cfg); err != nil {
-		log.Fatal(err)
-	}
-	if err = board.Start(); err != nil {
-		log.Fatal(err)
-	}
-	if err = displayRender.Start(); err != nil {
+	if err := emulator.Start(); err != nil {
 		log.Fatal(err)
 	}
 }
