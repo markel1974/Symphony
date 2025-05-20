@@ -10,17 +10,26 @@ import (
 //cp wasm.html in static_content
 //GOOS=js GOARCH=wasm go build -o  ./src/renderers/graphics/wasm_render/server/static_content/symphony.wasm ./src/renderers/graphics/wasm_render/main
 
+func stubCartridges() ([]*config.Cartridge, error) {
+	cart, err := config.NewCartridge("", "mayhem.crt", "mayhem.crt", _stub)
+	if err != nil {
+		return nil, err
+	}
+	return []*config.Cartridge{cart}, nil
+}
+
 func main() {
+	var cCarts []*config.Cartridge = nil
+	var err error
 	gFactory := NewGraphicsFactory()
 	aFactory := NewAudioFactory()
 
 	opt := symphony.NewOptions(gFactory, aFactory)
-	cart, err := config.NewCartridge("", "mayhem.crt", "mayhem.crt", _stub)
-	if err != nil {
+	if cCarts, err = stubCartridges(); err != nil {
 		log.Println(err)
 		return
 	}
-	opt.Cartridges = []*config.Cartridge{cart}
+	opt.Cartridges = cCarts
 	emulator := symphony.New()
 	if err = emulator.Setup(opt); err != nil {
 		log.Println(err)
@@ -28,5 +37,6 @@ func main() {
 	}
 	if err = emulator.Start(); err != nil {
 		log.Println(err)
+		return
 	}
 }
