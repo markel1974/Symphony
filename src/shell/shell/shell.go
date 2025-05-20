@@ -121,13 +121,13 @@ func (c *Shell) SetHistoryDefault(data string) {
 	c.history.SetDefault(data)
 }
 
-func (c *Shell) DoNext() {
+func (c *Shell) Next() {
 	c.resetBuffer()
 	_, _ = c.terminal.WriteColor("\r\n", interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 	_, _ = c.terminal.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
-func (c *Shell) DoRedraw(line string) {
+func (c *Shell) Redraw(line string) {
 	c.current = []rune(line)
 	c.pos = len(c.current)
 	_, _ = c.terminal.ClearLine(line)
@@ -139,11 +139,11 @@ func (c *Shell) cursorPressed(code interfaces.CursorCodeDef) {
 	switch code {
 	case interfaces.CursorUpDef:
 		if data, valid := c.history.GetHistoryPrev(); valid {
-			c.DoRedraw(data)
+			c.Redraw(data)
 		}
 	case interfaces.CursorDownDef:
 		if data, valid := c.history.GetHistoryNext(); valid {
-			c.DoRedraw(data)
+			c.Redraw(data)
 		}
 
 	case interfaces.CursorLeftDef:
@@ -194,7 +194,7 @@ func (c *Shell) enterPressed() bool {
 		}
 	}
 
-	c.DoNext()
+	c.Next()
 
 	return quit
 }

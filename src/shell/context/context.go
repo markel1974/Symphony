@@ -74,7 +74,7 @@ func (c *Context) Setup(enterKey rune) {
 
 func (c *Context) Exec() {
 	c.render.WriteColor("Admin Console Ready", interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
-	c.sh.DoNext()
+	c.sh.Next()
 	c.kernel.Start()
 }
 
@@ -84,7 +84,7 @@ func (c *Context) Type(kind interfaces.KeyType, key rune) {
 		case 3:
 			c.kernel.SetSelectionDisabled()
 			c.kernel.KillForeground()
-			c.sh.DoNext()
+			c.sh.Next()
 		case 4:
 			c.kernel.ExecActivate()
 		}
@@ -123,7 +123,7 @@ func (c *Context) ExecSuggestion(in string, cursor int, count int) (int, bool) {
 		if idx := count % sLen; idx < sLen {
 			if complete := suggestions[idx]; len(complete) > len(data) {
 				tabLine := complete
-				c.sh.DoRedraw(tabLine)
+				c.sh.Redraw(tabLine)
 				c.sh.SetHistoryDefault(tabLine)
 				ret = true
 			}
