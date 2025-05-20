@@ -22,18 +22,16 @@ import (
 
 func CreateHelp() *cli.Command {
 	run := func(task interfaces.ITask, args []string) error {
+		task.WriteLn("")
 		if len(args) == 0 {
-			task.WriteLn("")
 			task.WriteLn("usage help [command]")
 			return nil
 		}
 		help, err := task.Help(args[0])
 		if err != nil || len(help) == 0 {
-			task.WriteLn("")
 			task.WriteLn("unknown help topic: " + strings.Join(args, " "))
 			return nil
 		}
-		task.WriteLn("")
 		task.WriteLn(help)
 		return nil
 	}
