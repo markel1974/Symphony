@@ -62,7 +62,10 @@ func (g *Render) Start() error {
 		}
 	}
 	getDisplayBuffer := func(this js.Value, args []js.Value) interface{} {
-		return g.displayBuffer.GetSurface()
+		surfaceBytes := g.displayBuffer.GetSurface()
+		jsBuffer := js.Global().Get("Uint8Array").New(len(surfaceBytes))
+		js.CopyBytesToJS(jsBuffer, surfaceBytes)
+		return jsBuffer
 	}
 	keyPressed := func(this js.Value, args []js.Value) interface{} {
 		// Gestisci la pressione di un tasto (esempio).
