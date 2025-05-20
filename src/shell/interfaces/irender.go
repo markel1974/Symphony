@@ -22,4 +22,14 @@ type IRender interface {
 	ClearScreen()
 
 	Scan(data []byte)
+
+	ClearLine(line string)
+
+	MoveCursorLeft()
+
+	MoveCursorRight()
+
+	SaveCursor()
+
+	RestoreCursor()
 }

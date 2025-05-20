@@ -47,7 +47,7 @@ type Shell struct {
 	tabData         string
 	tabFound        bool
 	tabCount        int
-	terminal        interfaces.ITerminal
+	render          interfaces.IRender
 	executor        IExecutor
 	defaultPrompt   string
 	prompt          string
@@ -57,11 +57,11 @@ type Shell struct {
 	auth            interfaces.IAuthenticator
 }
 
-func NewShell(auth interfaces.IAuthenticator, terminal interfaces.ITerminal, executor IExecutor, prompt string, autosave bool) *Shell {
+func NewShell(auth interfaces.IAuthenticator, render interfaces.IRender, executor IExecutor, prompt string, autosave bool) *Shell {
 	c := &Shell{
 		history:       NewHistoryHandler(128, autosave),
 		echo:          true,
-		terminal:      terminal,
+		render:        render,
 		executor:      executor,
 		auth:          auth,
 		defaultPrompt: prompt,
@@ -121,18 +121,18 @@ func (c *Shell) SetHistoryDefault(data string) {
 	c.history.SetDefault(data)
 }
 
-func (c *Shell) Next() {
+func (c *Shell) NextLine() {
 	c.resetBuffer()
-	_, _ = c.terminal.WriteColor("\r\n", interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-	_, _ = c.terminal.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.render.WriteColor("\r\n", interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.render.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
 func (c *Shell) Redraw(line string) {
 	c.current = []rune(line)
 	c.pos = len(c.current)
-	_, _ = c.terminal.ClearLine(line)
-	_, _ = c.terminal.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-	_, _ = c.terminal.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.render.ClearLine(line)
+	c.render.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.render.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
 func (c *Shell) cursorPressed(code interfaces.CursorCodeDef) {
@@ -149,12 +149,12 @@ func (c *Shell) cursorPressed(code interfaces.CursorCodeDef) {
 	case interfaces.CursorLeftDef:
 		if c.pos > 0 {
 			c.pos--
-			_, _ = c.terminal.MoveCursorLeft()
+			c.render.MoveCursorLeft()
 		}
 	case interfaces.CursorRightDef:
 		if c.pos >= 0 && c.pos < len(c.current) {
 			c.pos++
-			_, _ = c.terminal.MoveCursorRight()
+			c.render.MoveCursorRight()
 		}
 	}
 }
@@ -176,10 +176,10 @@ func (c *Shell) enterPressed() bool {
 			} else {
 				c.passwordRetry++
 				if c.passwordRetry >= maxPasswordRetry {
-					_, _ = c.terminal.WriteColor("\r\nUnauthorized\r\n", interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+					c.render.WriteColor("\r\nUnauthorized\r\n", interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 					quit = true
 				} else {
-					_, _ = c.terminal.WriteColor("\r\nLogin incorrect\r\n", interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+					c.render.WriteColor("\r\nLogin incorrect\r\n", interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 				}
 			}
 
@@ -194,7 +194,7 @@ func (c *Shell) enterPressed() bool {
 		}
 	}
 
-	c.Next()
+	c.NextLine()
 
 	return quit
 }
@@ -226,17 +226,17 @@ func (c *Shell) keyPressed(key rune) {
 			log.Println("doTextInsert: negative pos", c.pos)
 		} else if c.pos == len(c.current) {
 			if c.echo {
-				_, _ = c.terminal.WriteColor(string(key), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.render.WriteColor(string(key), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 			}
 			c.current = append(c.current, key)
 			c.pos++
 		} else if c.pos < len(c.current) {
 			if c.echo {
-				_, _ = c.terminal.WriteColor(string(key), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-				_, _ = c.terminal.SaveCursor()
-				_, _ = c.terminal.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.render.WriteColor(string(key), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.render.SaveCursor()
+				c.render.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 			}
-			_, _ = c.terminal.RestoreCursor()
+			c.render.RestoreCursor()
 
 			c.current = insertAtPos(c.current, key, c.pos)
 			c.pos++
@@ -276,13 +276,12 @@ func (c *Shell) textBackspace() {
 	if c.pos > 0 {
 		c.pos--
 		c.current = removeAtPos(c.current, c.pos)
-
 		if c.echo {
-			_, _ = c.terminal.MoveCursorLeft()
-			_, _ = c.terminal.SaveCursor()
-			_, _ = c.terminal.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			_, _ = c.terminal.WriteColor(string(' '), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			_, _ = c.terminal.RestoreCursor()
+			c.render.MoveCursorLeft()
+			c.render.SaveCursor()
+			c.render.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+			c.render.WriteColor(string(' '), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+			c.render.RestoreCursor()
 		}
 	}
 }
@@ -292,10 +291,10 @@ func (c *Shell) textCancel() {
 		c.current = removeAtPos(c.current, c.pos)
 
 		if c.echo {
-			_, _ = c.terminal.SaveCursor()
-			_, _ = c.terminal.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			_, _ = c.terminal.WriteColor(string(' '), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			_, _ = c.terminal.RestoreCursor()
+			c.render.SaveCursor()
+			c.render.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+			c.render.WriteColor(string(' '), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+			c.render.RestoreCursor()
 		}
 	}
 }

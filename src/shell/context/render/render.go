@@ -101,3 +101,23 @@ func (c *Render) ClearScreen() {
 func (c *Render) Scan(data []byte) {
 	c.terminal.Scan(data)
 }
+
+func (c *Render) ClearLine(line string) {
+	_, _ = c.terminal.ClearLine(line)
+}
+
+func (c *Render) MoveCursorLeft() {
+	_, _ = c.terminal.MoveCursorLeft()
+}
+
+func (c *Render) MoveCursorRight() {
+	_, _ = c.terminal.MoveCursorRight()
+}
+
+func (c *Render) SaveCursor() {
+	_, _ = c.terminal.SaveCursor()
+}
+
+func (c *Render) RestoreCursor() {
+	_, _ = c.terminal.RestoreCursor()
+}

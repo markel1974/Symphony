@@ -69,12 +69,12 @@ func (c *Context) Setup(enterKey rune) {
 	fs := file_system.NewCommandInteractor(commands, []interfaces.ICommand{systemCommands})
 
 	c.kernel = NewKernel(c.ticker, c.render, ioAdapter, fs)
-	c.sh = shell.NewShell(c.auth, term, c, c.prompt, c.autosave)
+	c.sh = shell.NewShell(c.auth, c.render, c, c.prompt, c.autosave)
 }
 
 func (c *Context) Exec() {
 	c.render.WriteColor("Admin Console Ready", interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
-	c.sh.Next()
+	c.sh.NextLine()
 	c.kernel.Start()
 }
 
@@ -84,7 +84,7 @@ func (c *Context) Type(kind interfaces.KeyType, key rune) {
 		case 3:
 			c.kernel.SetSelectionDisabled()
 			c.kernel.KillForeground()
-			c.sh.Next()
+			c.sh.NextLine()
 		case 4:
 			c.kernel.ExecActivate()
 		}
