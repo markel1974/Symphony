@@ -1,45 +1,40 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WASM + WebGL Integration</title>
+    <title>Symphony Emulator</title>
     <style>
         body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #333; }
-        canvas { border: 1px solid white; }
+        canvas { border: 1px solid black; }
     </style>
-
     <script src="wasm_exec.js"></script>
 </head>
 <body>
 <canvas id="canvas" width="640" height="480"></canvas>
 
 <script>
-    // --- Variabili Globali per WebGL ---
     let gl;
     let shaderProgramInfo;
     let buffers;
     let webGLTexture;
-    let imageWidth;  // Da impostare o ottenere dal WASM
-    let imageHeight; // Da impostare o ottenere dal WASM
-    // ------------------------------------
+    let imageWidth;
+    let imageHeight;
 
-    // Carica il modulo WASM.
     const go = new Go();
     WebAssembly.instantiateStreaming(fetch("symphony.wasm"), go.importObject).then((result) => {
         go.run(result.instance);
 
-        console.log("typeof getDisplayWidth:", typeof getDisplayWidth);
-        console.log("typeof getDisplayHeight:", typeof getDisplayHeight);
-        console.log("typeof emulateFrame:", typeof emulateFrame);
-        console.log("typeof getDisplayBuffer:", typeof getDisplayBuffer);
+        //console.log("typeof getDisplayWidth:", typeof getDisplayWidth);
+        //console.log("typeof getDisplayHeight:", typeof getDisplayHeight);
+        //console.log("typeof emulateFrame:", typeof emulateFrame);
+        //console.log("typeof getDisplayBuffer:", typeof getDisplayBuffer);
 
-        // Ottieni un riferimento al canvas e imposta il contesto WebGL.
         const canvas = document.getElementById("canvas");
         gl = canvas.getContext("webgl");
 
         if (!gl) {
-            alert("WebGL non è supportato o è disabilitato.");
+            alert("WebGL not supported or disabled");
             return;
         }
 
@@ -77,84 +72,44 @@
             },
         };
 
-        buffers = initBuffers(gl); // Buffer per un quad che copre lo schermo
-        webGLTexture = createAndSetupTexture(gl); // Crea la texture una volta
-
-        // --- Ottieni dimensioni immagine dal WASM o definiscile ---
-        // Sostituisci con la logica corretta
+        buffers = initBuffers(gl);
+        webGLTexture = createAndSetupTexture(gl);
 
         imageWidth = getDisplayWidth();
         imageHeight = getDisplayHeight();
 
-        // Puoi impostare le dimensioni del canvas qui se necessario, es:
         // canvas.width = imageWidth;
         // canvas.height = imageHeight;
-        // gl.viewport(0, 0, gl.canvas.width, gl.canvas.height); // Aggiorna la viewport
-        // ---------------------------------------------------------
+        // gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
-
-        // Funzione per disegnare un singolo carattere (NON USATA CON WEBGL PER IL BUFFER INTERO).
-        /*
-        function drawChar(char, fgColor, bgColor, x, y) {
-            // QUESTA FUNZIONE USAVA IL CONTESTO 2D.
-            // Con WebGL, l'intero buffer viene disegnato come una texture.
-            // Se hai bisogno di disegnare testo sopra la scena WebGL,
-            // avresti bisogno di una libreria di testo WebGL o di un canvas 2D sovrapposto.
-            console.log("drawChar chiamata, ma il rendering è gestito da WebGL con il buffer completo.");
-        }
-        */
-
-        // Ciclo principale (eseguito a ogni frame).
         function renderFrame() {
-            // Esegui un frame di emulazione.
             emulateFrame();
+            const buffer = getDisplayBuffer();
 
-            // Ottieni il display buffer (assumiamo Uint8Array RGBA).
-            const buffer = getDisplayBuffer(); // Assumiamo ritorni un Uint8Array
-
-            if (buffer && buffer.byteLength > 0) { // Assicurati che il buffer sia valido
-                // Aggiorna la texture WebGL con i nuovi dati del buffer
+            if (buffer && buffer.byteLength > 0) {
                 updateTextureWithData(gl, webGLTexture, imageWidth, imageHeight, buffer);
-
-                // Disegna la scena WebGL (il quad con la texture)
                 drawWebGLScene(gl, shaderProgramInfo, buffers, webGLTexture);
-            } else {
-                // console.warn("Buffer non valido o vuoto da getDisplayBuffer.");
             }
 
-            // Richiedi il prossimo frame.
             requestAnimationFrame(renderFrame);
         }
 
-        // Gestisci gli eventi di tastiera.
         document.addEventListener("keydown", (event) => {
-            // Potresti voler inviare event.key o gestire la mappatura qui
-            // invece di event.keyCode che è deprecato.
-            go.exports.keyPressed(event.key); // Esempio con event.key
+            keyPressed(event.key);
         });
 
-        // Avvia il ciclo principale.
         renderFrame();
     });
-
-
-    // --- Funzioni Helper WebGL (dal precedente esempio) ---
 
     function createAndSetupTexture(gl) {
         const texture = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, texture);
 
-        // Impostazioni per texture (pixel art style, no flip)
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-
-        // Inizializza la texture con dati placeholder o vuoti se le dimensioni sono note
-        // Altrimenti, il primo caricamento in updateTextureWithData la configurerà.
-        // Se imageWidth e imageHeight sono già noti qui, potresti fare:
-        // gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, imageWidth, imageHeight, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
         gl.bindTexture(gl.TEXTURE_2D, null);
         return texture;
@@ -173,30 +128,25 @@
             gl.UNSIGNED_BYTE, // type
             dataArray         // pixels (Uint8Array)
         );
-        // Non è necessario unbind qui se la usi subito dopo in drawWebGLScene
     }
 
     function initBuffers(gl) {
         const positions = new Float32Array([
-            // Triangolo 1
-            -1.0, -1.0,
-            1.0, -1.0,
-            -1.0,  1.0,
-            // Triangolo 2
-            -1.0,  1.0,
-            1.0, -1.0,
-            1.0,  1.0,
+            // Triangle 1
+            -1.0, -1.0, 1.0, -1.0, -1.0,  1.0,
+            // Triangle 2
+            -1.0,  1.0, 1.0, -1.0, 1.0,  1.0,
         ]);
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
 
         const textureCoordinates = new Float32Array([
-            // Triangolo 1 (corrispondente ai vertici sopra)
+            // Triangle 1 (upper vertex)
             0.0,  0.0, // Basso sx texture
             1.0,  0.0, // Basso dx texture
             0.0,  1.0, // Alto sx texture
-            // Triangolo 2
+            // Triangle 2
             0.0,  1.0, // Alto sx texture
             1.0,  0.0, // Basso dx texture
             1.0,  1.0, // Alto dx texture
@@ -208,12 +158,12 @@
         return {
             position: positionBuffer,
             textureCoord: textureCoordBuffer,
-            vertexCount: 6, // Disegniamo 2 triangoli = 6 vertici
+            vertexCount: 6, // 2 triangles = 6 vertex
         };
     }
 
     function drawWebGLScene(gl, programInfo, buffers, texture) {
-        gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Nero, o il colore di sfondo che preferisci
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);//black
         gl.clearDepth(1.0);
         // gl.enable(gl.DEPTH_TEST); // Probabilmente non necessario per una scena 2D singola
         // gl.depthFunc(gl.LEQUAL);
@@ -221,14 +171,14 @@
 
         gl.useProgram(programInfo.program);
 
-        // Posizioni vertici
+        // vertex coordinates
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
         gl.vertexAttribPointer(
             programInfo.attribLocations.vertexPosition,
             2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
 
-        // Coordinate texture
+        // texture coordinates
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
         gl.vertexAttribPointer(
             programInfo.attribLocations.textureCoord,
@@ -254,7 +204,7 @@
         gl.linkProgram(shaderProgram);
 
         if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-            console.error('Impossibile inizializzare il programma shader: ' + gl.getProgramInfoLog(shaderProgram));
+            console.error('can\'t initialize shader: ' + gl.getProgramInfoLog(shaderProgram));
             return null;
         }
         return shaderProgram;
@@ -266,7 +216,7 @@
         gl.compileShader(shader);
 
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            console.error('Errore durante la compilazione dello shader (' + (type === gl.VERTEX_SHADER ? "Vertex" : "Fragment") + '): ' + gl.getShaderInfoLog(shader));
+            console.error('error while compiling shader (' + (type === gl.VERTEX_SHADER ? "Vertex" : "Fragment") + '): ' + gl.getShaderInfoLog(shader));
             gl.deleteShader(shader);
             return null;
         }
