@@ -5,4 +5,4 @@ const MinorVersion = "0"
 const PatchVersion = "0"
 const AppVersionShort = MajorVersion + "." + MinorVersion + "." + PatchVersion + "." + BuildVersion
 const AppVersion = MajorVersion + "." + MinorVersion + "." + PatchVersion + "." + BuildVersion + " [" + BuildDate + "]"
-const AppName = "g64"
+const AppName = "symphony"

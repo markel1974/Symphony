@@ -1,6 +1,6 @@
 // Carica il modulo WASM.
 const go = new Go();
-WebAssembly.instantiateStreaming(fetch("g64.wasm"), go.importObject).then((result) => {
+WebAssembly.instantiateStreaming(fetch("symphony.wasm"), go.importObject).then((result) => {
     go.run(result.instance);
 
     // Ottieni un riferimento al canvas.

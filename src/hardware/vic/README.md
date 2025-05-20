@@ -48,12 +48,12 @@ The `vic` package is organized into the following files:
 ## Dependencies
 
 *   `github.com/markel1974/c64emu/src/components/mos6510` (for CPU interaction, specifically the `ISocket` interface).
-*   An implementation of the `ISocket` interface (provided by `board.go` in the main `g64` emulator).
+*   An implementation of the `ISocket` interface (provided by `board.go` in the main `symphony` emulator).
 *   `github.com/markel1974/c64emu/src/pixels`
 
 ## Usage
 
-The `mos6569` package is not intended for direct use outside of the `g64` emulator. It is tightly integrated with the other components of the emulator (CPU, memory, etc.). However, a basic understanding of the VIC-II registers and memory map is essential for using the emulator effectively and for developing software for the emulated C64.
+The `mos6569` package is not intended for direct use outside of the `symphony` emulator. It is tightly integrated with the other components of the emulator (CPU, memory, etc.). However, a basic understanding of the VIC-II registers and memory map is essential for using the emulator effectively and for developing software for the emulated C64.
 
 [**TODO:** Add a brief section on how to access VIC-II registers from BASIC using POKE, if you plan to support that in your "bridge".]
 
@@ -91,4 +91,4 @@ This project is released under the [Apache 2.0 License](https://opensource.org/l
 *   **TODOs:**  Includes a TODO list for future improvements.
 * **Usage:**
 
-This `README.md` provides a good starting point for understanding the VIC-II emulation in `g64`. Remember to fill in the TODO sections and to thoroughly review and update the information as the project evolves.
+This `README.md` provides a good starting point for understanding the VIC-II emulation in `symphony`. Remember to fill in the TODO sections and to thoroughly review and update the information as the project evolves.

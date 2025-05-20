@@ -1,6 +1,6 @@
-# g64: An Accurate and Innovative Commodore 64 Emulator
+# symphony: An Accurate and Innovative Commodore 64 Emulator
 
-Welcome to the official wiki for `g64`, a high-fidelity, cycle-accurate emulator for the Commodore 64 (C64) and VIC-20 computers. This wiki serves as a comprehensive guide to the emulator's architecture, components, features, and usage.
+Welcome to the official wiki for `symphony`, a high-fidelity, cycle-accurate emulator for the Commodore 64 (C64) and VIC-20 computers. This wiki serves as a comprehensive guide to the emulator's architecture, components, features, and usage.
 
 ## Table of Contents
 
@@ -55,7 +55,7 @@ Welcome to the official wiki for `g64`, a high-fidelity, cycle-accurate emulator
 
 ## Introduction
 
-`g64` is a meticulously crafted emulator designed to faithfully replicate the experience of using a Commodore 64 and VIC-20 computer. Built entirely in Go, `g64` prioritizes cycle-accurate emulation, modularity, and a high degree of accuracy.
+`symphony` is a meticulously crafted emulator designed to faithfully replicate the experience of using a Commodore 64 and VIC-20 computer. Built entirely in Go, `symphony` prioritizes cycle-accurate emulation, modularity, and a high degree of accuracy.
 
 ## Key Features
 
@@ -91,15 +91,15 @@ Welcome to the official wiki for `g64`, a high-fidelity, cycle-accurate emulator
 
 ## Architecture Overview
 
-`g64` features an innovative architecture that emphasizes accuracy, modularity, and maintainability.
+`symphony` features an innovative architecture that emphasizes accuracy, modularity, and maintainability.
 
 ### Cycle-Accurate Emulation
 
-The core of `g64` is driven by a central clock (`src/components/quartz`) that synchronizes all components. Each component advances based on clock cycles, enabling precise cycle-accurate emulation without explicit timing management.
+The core of `symphony` is driven by a central clock (`src/components/quartz`) that synchronizes all components. Each component advances based on clock cycles, enabling precise cycle-accurate emulation without explicit timing management.
 
 ### Socket-Based Interfacing
 
-Components in `g64` interact through socket interfaces (e.g., `CPUSocket`, `VicSocket`, `SidSocket`). These sockets define clear communication paths and encapsulate each component's internal logic. This method enhances modularity and maintainability.
+Components in `symphony` interact through socket interfaces (e.g., `CPUSocket`, `VicSocket`, `SidSocket`). These sockets define clear communication paths and encapsulate each component's internal logic. This method enhances modularity and maintainability.
 ### Clock Management
 The clock management is handled by the `src/components/quartz` package.
 ### Memory Management
@@ -186,7 +186,7 @@ The project provide the ability to use three different types of renderers.
 
 ## Cartridges
 
-`g64` supports a variety of cartridge types.
+`symphony` supports a variety of cartridge types.
 
 ### Generic Cartridges
 
@@ -215,7 +215,7 @@ The project provide the ability to use three different types of renderers.
 
 ## Renderers
 
-`g64` supports three different rendering methods.
+`symphony` supports three different rendering methods.
 
 ### OpenGL Renderer (`glrender`)
 
@@ -234,7 +234,7 @@ The project provide the ability to use three different types of renderers.
 
 ## Inputs
 
-`g64` supports keyboard, joystick, and mouse inputs.
+`symphony` supports keyboard, joystick, and mouse inputs.
 
 ### Keyboard
 
@@ -295,7 +295,7 @@ The project provide the ability to use three different types of renderers.
 2.  Build the project:
 
     ```bash
-    go build -o g64 main.go
+    go build -o symphony main.go
     ```
 
 ## Contributing

@@ -1,16 +1,16 @@
-# g64 - Commodore 64 Emulator in Go
+# symphony - Commodore 64 Emulator in Go
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# g64 - Commodore 64 Emulator - Architectural Overview
+# symphony - Commodore 64 Emulator - Architectural Overview
 
 ## 1. Introduction
 
-g64 is a Commodore 64 emulator written in Go. It aims for high accuracy, including cycle-accurate emulation of the VIC-II video chip and the 6510 CPU. The emulator is designed to be modular, with distinct components responsible for different aspects of the C64 hardware. It does not rely on external emulation libraries (apart from `github.com/go-gl/gl/v3.2-core/gl` for the graphic renderer and  `github.com/go-gl/glfw/v3.3/glfw` for the window), and most of the code is written from scratch.
+symphony is a Commodore 64 emulator written in Go. It aims for high accuracy, including cycle-accurate emulation of the VIC-II video chip and the 6510 CPU. The emulator is designed to be modular, with distinct components responsible for different aspects of the C64 hardware. It does not rely on external emulation libraries (apart from `github.com/go-gl/gl/v3.2-core/gl` for the graphic renderer and  `github.com/go-gl/glfw/v3.3/glfw` for the window), and most of the code is written from scratch.
 
 ## 2. High-Level Architecture
 
-The g64 emulator can be conceptually divided into the following major components:
+The symphony emulator can be conceptually divided into the following major components:
 
 *   **CPU (6510):** Emulates the MOS 6510 CPU, including instruction execution, register management, flag manipulation, and interrupt handling.
 *   **VIC-II (Video Interface Chip):** Emulates the VIC-II graphics chip, responsible for generating the video output.

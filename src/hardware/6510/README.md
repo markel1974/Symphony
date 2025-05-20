@@ -1,8 +1,8 @@
 # Package mos6510
 
-This package (`src/components/mos6510`) provides an emulation of the MOS 6510 microprocessor, a variant of the 6502, used in the Commodore 64 home computer.  The emulator is designed for accuracy, aiming for cycle-accurate emulation where feasible. It's used as the CPU component within the `g64` Commodore 64 emulator.
+This package (`src/components/mos6510`) provides an emulation of the MOS 6510 microprocessor, a variant of the 6502, used in the Commodore 64 home computer.  The emulator is designed for accuracy, aiming for cycle-accurate emulation where feasible. It's used as the CPU component within the `symphony` Commodore 64 emulator.
 
-**Note:** This emulator is part of a larger project (`g64`) and is not intended for standalone use. It relies on other components of `g64` (specifically the `memory.Memory` interface and `IBanks`, `IPic` interfaces) for its operation.
+**Note:** This emulator is part of a larger project (`symphony`) and is not intended for standalone use. It relies on other components of `symphony` (specifically the `memory.Memory` interface and `IBanks`, `IPic` interfaces) for its operation.
 
 ## Architecture
 

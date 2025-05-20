@@ -1,6 +1,6 @@
 package wasm_render
 
-// GOOS=js GOARCH=wasm go build -o g64.wasm ./src/render/wasmrender
+// GOOS=js GOARCH=wasm go build -o symphony.wasm ./src/render/wasmrender
 
 /*
 
