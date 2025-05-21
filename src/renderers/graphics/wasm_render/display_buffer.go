@@ -1,11 +1,11 @@
-//go:build js && wasm
-
 package wasm_render
 
+const rgbaLen = 4
+const rgba8Len = rgbaLen * 8
+
 type DisplayBuffer struct {
-	//coords  []int
-	colors  [][]uint8
-	colors8 [][]uint8
+	colors  [][rgbaLen]uint8
+	colors8 [][rgba8Len]uint8
 	surface []byte
 	maxLen  int
 }
@@ -18,25 +18,16 @@ func NewDisplayBuffer(w int, h int) *DisplayBuffer {
 	//paletteR := []byte{0x00, 0xfc, 0x80, 0x87, 0x82, 0x6e, 0x39, 0xdc, 0x8a, 0x52, 0xb7, 0x52, 0x7d, 0xbb, 0x79, 0xaf}
 	//paletteG := []byte{0x00, 0xfc, 0x41, 0xc3, 0x46, 0xa9, 0x2d, 0xe9, 0x5c, 0x40, 0x79, 0x52, 0x7d, 0xf9, 0x6c, 0xaf}
 	//paletteB := []byte{0x00, 0xfc, 0x32, 0xd2, 0xb4, 0x39, 0xa3, 0x6c, 0x22, 0x03, 0x6a, 0x52, 0x7d, 0x83, 0xea, 0xaf}
-
-	//var coords []int
-	//h := p.Height()
-	//w := p.Width()
-	//for y := 0; y < h; y++ {
-	//	for x := 0; x < w; x++ {
-	//		coords = append(coords, p.ComputeIndex(x, y))
-	//	}
-	//}
-	colors := make([][]uint8, 256)
-	colors8 := make([][]uint8, 256)
+	colors := make([][rgbaLen]uint8, 256)
+	colors8 := make([][rgba8Len]uint8, 256)
 	for j := 0; j < 16; j++ {
 		red := paletteR[j]
 		green := paletteG[j]
 		blue := paletteB[j]
 		alfa := uint8(255)
-		rgba := []uint8{red, green, blue, alfa}
+		rgba := [rgbaLen]uint8{red, green, blue, alfa}
 		colors[j] = rgba
-		rgba8 := []uint8{
+		rgba8 := [rgba8Len]uint8{
 			red, green, blue, alfa,
 			red, green, blue, alfa,
 			red, green, blue, alfa,
@@ -54,7 +45,6 @@ func NewDisplayBuffer(w int, h int) *DisplayBuffer {
 	}
 	surface := make([]byte, w*h*4)
 	return &DisplayBuffer{
-		//coords:  coords,
 		colors:  colors,
 		colors8: colors8,
 		surface: surface,
@@ -67,34 +57,31 @@ func (db *DisplayBuffer) GetSurface() []byte {
 }
 
 func (db *DisplayBuffer) Set(idx int, data uint8) {
-	target := idx * 4
-	targetMax := target + 7
-	if targetMax >= db.maxLen {
+	target := idx * rgbaLen
+	if (target + rgbaLen) > db.maxLen {
 		return
 	}
-	for x, b := range db.colors[data] {
-		db.surface[target+x] = b
-	}
+	copy(db.surface[target:], db.colors[data][:])
 }
 
 func (db *DisplayBuffer) Set8(idx int, data [8]uint8) {
-	target := idx * 4
-	targetMax := target + 7
-	if targetMax >= db.maxLen {
+	if max := (idx * rgbaLen) + (8 * rgbaLen); max > db.maxLen {
 		return
 	}
-	for x := target; x <= targetMax; x++ {
-		db.Set(idx+x, data[x])
-		//db.p.SetRGBADirectArray(db.coords[idx+x], db.colors[data[x]])
-	}
+	copy(db.surface[(idx+0)*rgbaLen:], db.colors[data[0]][:])
+	copy(db.surface[(idx+1)*rgbaLen:], db.colors[data[1]][:])
+	copy(db.surface[(idx+2)*rgbaLen:], db.colors[data[2]][:])
+	copy(db.surface[(idx+3)*rgbaLen:], db.colors[data[3]][:])
+	copy(db.surface[(idx+4)*rgbaLen:], db.colors[data[4]][:])
+	copy(db.surface[(idx+5)*rgbaLen:], db.colors[data[5]][:])
+	copy(db.surface[(idx+6)*rgbaLen:], db.colors[data[6]][:])
+	copy(db.surface[(idx+7)*rgbaLen:], db.colors[data[7]][:])
 }
 
 func (db *DisplayBuffer) SetMulti8(idx int, data uint8) {
-	target := idx * 4
-	if (target) >= db.maxLen {
+	target := idx * rgbaLen
+	if (target + rgba8Len) > db.maxLen {
 		return
 	}
-	for x, b := range db.colors8[data] {
-		db.surface[target+x] = b
-	}
+	copy(db.surface[target:], db.colors8[data][:])
 }
