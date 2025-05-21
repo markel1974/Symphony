@@ -23,7 +23,8 @@
 
     const go = new Go();
     WebAssembly.instantiateStreaming(fetch("symphony.wasm"), go.importObject).then((result) => {
-        go.run(result.instance);
+        const wasmInstance = result.instance;
+        go.run(wasmInstance);
 
         //console.log("typeof getDisplayWidth:", typeof getDisplayWidth);
         //console.log("typeof getDisplayHeight:", typeof getDisplayHeight);
@@ -75,6 +76,10 @@
         buffers = initBuffers(gl);
         webGLTexture = createAndSetupTexture(gl);
 
+        const initialSurfacePtr = getSurfacePointer();
+        const initialSurfaceLen = getSurfaceLen();
+        let surfaceViewFromWasm = new Uint8Array(wasmInstance.exports.mem.buffer, initialSurfacePtr, initialSurfaceLen);
+
         imageWidth = getDisplayWidth();
         imageHeight = getDisplayHeight();
 
@@ -84,12 +89,17 @@
 
         function renderFrame() {
             emulateFrame();
-            const buffer = getDisplayBuffer();
 
-            if (buffer && buffer.byteLength > 0) {
-                updateTextureWithData(gl, webGLTexture, imageWidth, imageHeight, buffer);
-                drawWebGLScene(gl, shaderProgramInfo, buffers, webGLTexture);
+            const currentWasmMemoryBuffer = wasmInstance.exports.mem.buffer;
+            if (surfaceViewFromWasm.buffer !== currentWasmMemoryBuffer || surfaceViewFromWasm.byteLength === 0) {
+                surfaceViewFromWasm = new Uint8Array(currentWasmMemoryBuffer, initialSurfacePtr, initialSurfaceLen);
             }
+            updateTextureWithData(gl, webGLTexture, imageWidth, imageHeight, surfaceViewFromWasm);
+            drawWebGLScene(gl, shaderProgramInfo, buffers, webGLTexture);
+
+            //const buffer = getDisplayBuffer();
+            //updateTextureWithData(gl, webGLTexture, imageWidth, imageHeight, buffer);
+            //drawWebGLScene(gl, shaderProgramInfo, buffers, webGLTexture);
 
             requestAnimationFrame(renderFrame);
         }
@@ -117,44 +127,28 @@
 
     function updateTextureWithData(gl, texture, width, height, dataArray) {
         gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(
-            gl.TEXTURE_2D,    // target
-            0,                // level
-            gl.RGBA,          // internalformat
-            width,            // width
-            height,           // height
-            0,                // border
-            gl.RGBA,          // format
-            gl.UNSIGNED_BYTE, // type
-            dataArray         // pixels (Uint8Array)
-        );
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, dataArray);
     }
 
     function initBuffers(gl) {
         const positions = new Float32Array([
-            // Triangle 1
-            -1.0, -1.0, 1.0, -1.0, -1.0,  1.0,
-            // Triangle 2
-            -1.0,  1.0, 1.0, -1.0, 1.0,  1.0,
+            -1.0, -1.0, 1.0, -1.0, -1.0,  1.0, // Triangle 1
+            -1.0,  1.0, 1.0, -1.0, 1.0,  1.0,  // Triangle 2
         ]);
         const positionBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
-
         const textureCoordinates = new Float32Array([
-            // Triangle 1 (upper vertex)
-            0.0,  0.0, // Basso sx texture
-            1.0,  0.0, // Basso dx texture
-            0.0,  1.0, // Alto sx texture
-            // Triangle 2
-            0.0,  1.0, // Alto sx texture
-            1.0,  0.0, // Basso dx texture
-            1.0,  1.0, // Alto dx texture
+            0.0,  0.0, // Triangle 1 Basso sx texture
+            1.0,  0.0, // Triangle 1 Basso dx texture
+            0.0,  1.0, // Triangle 1 Alto sx texture
+            0.0,  1.0, // Triangle 2 Alto sx texture
+            1.0,  0.0, // Triangle 2 Basso dx texture
+            1.0,  1.0, // Triangle 2 Alto dx texture
         ]);
         const textureCoordBuffer = gl.createBuffer();
         gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, textureCoordinates, gl.STATIC_DRAW);
-
         return {
             position: positionBuffer,
             textureCoord: textureCoordBuffer,
@@ -173,16 +167,12 @@
 
         // vertex coordinates
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-        gl.vertexAttribPointer(
-            programInfo.attribLocations.vertexPosition,
-            2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
 
         // texture coordinates
         gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
-        gl.vertexAttribPointer(
-            programInfo.attribLocations.textureCoord,
-            2, gl.FLOAT, false, 0, 0);
+        gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
 
         // Specifica la texture da usare

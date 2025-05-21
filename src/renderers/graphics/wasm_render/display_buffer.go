@@ -1,5 +1,7 @@
 package wasm_render
 
+import "unsafe"
+
 const rgbaLen = 4
 const rgba8Len = rgbaLen * 8
 
@@ -54,6 +56,14 @@ func NewDisplayBuffer(w int, h int) *DisplayBuffer {
 
 func (db *DisplayBuffer) GetSurface() []byte {
 	return db.surface
+}
+
+func (db *DisplayBuffer) GetSurfaceLen() int {
+	return len(db.surface)
+}
+
+func (db *DisplayBuffer) GetSurfacePointer() unsafe.Pointer {
+	return unsafe.Pointer(&db.surface[0])
 }
 
 func (db *DisplayBuffer) Set(idx int, data uint8) {

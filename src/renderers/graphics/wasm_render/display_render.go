@@ -63,11 +63,24 @@ func (g *Render) Start() error {
 			}
 		}
 	}
+	getSurfacePointer := func(this js.Value, args []js.Value) interface{} {
+		surfacePtr := g.displayBuffer.GetSurfacePointer()
+		return uintptr(surfacePtr)
+	}
+	getSurfaceLen := func(this js.Value, args []js.Value) interface{} {
+		return js.ValueOf(g.displayBuffer.GetSurfaceLen())
+	}
 	getDisplayBuffer := func(this js.Value, args []js.Value) interface{} {
 		surfaceBytes := g.displayBuffer.GetSurface()
 		jsBuffer := js.Global().Get("Uint8Array").New(len(surfaceBytes))
 		js.CopyBytesToJS(jsBuffer, surfaceBytes)
 		return jsBuffer
+	}
+	getDisplayWidth := func(this js.Value, args []js.Value) interface{} {
+		return js.ValueOf(g.w)
+	}
+	getDisplayHeight := func(this js.Value, args []js.Value) interface{} {
+		return js.ValueOf(g.h)
 	}
 	keyPressed := func(this js.Value, args []js.Value) interface{} {
 		// Gestisci la pressione di un tasto (esempio).
@@ -77,19 +90,13 @@ func (g *Render) Start() error {
 		return nil
 	}
 
-	getDisplayWidth := func(this js.Value, args []js.Value) interface{} {
-		return js.ValueOf(g.w)
-	}
-
-	getDisplayHeight := func(this js.Value, args []js.Value) interface{} {
-		return js.ValueOf(g.h)
-	}
-
 	// Esponi le funzioni Go a JavaScript.
-	js.Global().Set("emulateFrame", js.FuncOf(emulateFrame))
 	js.Global().Set("getDisplayBuffer", js.FuncOf(getDisplayBuffer))
 	js.Global().Set("getDisplayWidth", js.FuncOf(getDisplayWidth))
 	js.Global().Set("getDisplayHeight", js.FuncOf(getDisplayHeight))
+	js.Global().Set("getSurfacePointer", js.FuncOf(getSurfacePointer))
+	js.Global().Set("getSurfaceLen", js.FuncOf(getSurfaceLen))
+	js.Global().Set("emulateFrame", js.FuncOf(emulateFrame))
 	js.Global().Set("keyPressed", js.FuncOf(keyPressed))
 
 	<-c
