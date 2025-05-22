@@ -6,7 +6,7 @@
     <title>Symphony Emulator</title>
     <style>
         body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #333; }
-        canvas { border: 1px solid black; }
+        canvas { width: 100%; height: 100% }
     </style>
     <script src="wasm_exec.js"></script>
 </head>
@@ -25,11 +25,6 @@
     WebAssembly.instantiateStreaming(fetch("symphony.wasm"), go.importObject).then((result) => {
         const wasmInstance = result.instance;
         go.run(wasmInstance);
-
-        //console.log("typeof getDisplayWidth:", typeof getDisplayWidth);
-        //console.log("typeof getDisplayHeight:", typeof getDisplayHeight);
-        //console.log("typeof emulateFrame:", typeof emulateFrame);
-        //console.log("typeof getDisplayBuffer:", typeof getDisplayBuffer);
 
         const canvas = document.getElementById("canvas");
         gl = canvas.getContext("webgl");
@@ -83,9 +78,9 @@
         imageWidth = getDisplayWidth();
         imageHeight = getDisplayHeight();
 
-        // canvas.width = imageWidth;
-        // canvas.height = imageHeight;
-        // gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+        //canvas.width = imageWidth * 3;
+        //canvas.height = imageHeight * 3;
+        //gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         function renderFrame() {
             emulateFrame();
@@ -110,7 +105,6 @@
         document.addEventListener("keyup", (event) => {
             keyReleased(event.key);
         });
-
 
         renderFrame();
     });

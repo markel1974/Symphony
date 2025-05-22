@@ -7,6 +7,7 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+// Inputs encapsulates input configurations, mappings, and state for joystick, keyboard, and clipboard interactions.
 type Inputs struct {
 	board        references.IBoard
 	cfg          *config.Config
@@ -17,6 +18,7 @@ type Inputs struct {
 	hasClipboard bool
 }
 
+// NewInputs initializes and returns a pointer to a new Inputs instance with default values.
 func NewInputs() *Inputs {
 	return &Inputs{
 		board:        nil,
@@ -29,6 +31,8 @@ func NewInputs() *Inputs {
 	}
 }
 
+// Setup initializes the input mappings for a given board and configuration.
+// It assigns key mappings to appropriate actions and handles setup logic for keyboard and joystick interactions.
 func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 	g.board = b
 	g.cfg = cfg
@@ -157,6 +161,7 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 	return nil
 }
 
+// Key updates the state of a specified virtual key and triggers its associated function if mapped.
 func (g *Inputs) Key(p string, pressed bool) {
 	fmt.Println("Trying to press key", p, pressed)
 	if f, ok := g.keyMapper[p]; ok {

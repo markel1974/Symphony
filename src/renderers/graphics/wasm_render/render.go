@@ -18,6 +18,8 @@ func main() {
 }
 */
 
+// Render manages the display rendering process and user interaction through inputs and a linked board implementation.
+// It integrates with a DisplayBuffer for screen updates and relies on IBoard for controlling board operations.
 type Render struct {
 	board         references.IBoard
 	displayBuffer *DisplayBuffer
@@ -27,6 +29,7 @@ type Render struct {
 	input         *Inputs
 }
 
+// NewRender initializes and returns a pointer to a new instance of the Render struct with default values.
 func NewRender() *Render {
 	return &Render{
 		displayBuffer: nil, //NewDisplayBuffer(320, 200),
@@ -36,6 +39,8 @@ func NewRender() *Render {
 	}
 }
 
+// Setup initializes the Render object with the given IBoard and Config instances, setting up the necessary components.
+// Returns an error if the board or input setup fails.
 func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	g.board = board
 	if err := g.board.Mount(g); err != nil {
@@ -47,6 +52,7 @@ func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	return nil
 }
 
+// CreateDisplayBuffer initializes a new display buffer with the specified width and height, stores it, and returns it.
 func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
 	g.w = w
 	g.h = h
@@ -54,6 +60,8 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 	return g.displayBuffer, nil
 }
 
+// Start initializes the rendering process and exposes Go functions for JavaScript interaction via the global scope.
+// It blocks indefinitely using a channel to keep the Go routine alive.
 func (g *Render) Start() error {
 	c := make(chan struct{}, 0)
 	emulateFrame := func(this js.Value, args []js.Value) interface{} {
@@ -117,6 +125,7 @@ func (g *Render) Start() error {
 	return nil
 }
 
+// VBlank sets the vBlank flag to true, signaling the start of the vertical blanking interval in the rendering process.
 func (g *Render) VBlank() {
 	g.vBlank = true
 	//if g.win.MouseInsideWindow() {
@@ -131,6 +140,7 @@ func (g *Render) VBlank() {
 	//g.run = !g.win.Closed()
 }
 
+// LedActivity toggles the LED state for the specified device number based on the given boolean value.
 func (g *Render) LedActivity(deviceNumber uint8, led bool) {
 	//g.led = led
 	//fmt.Println("LED STATE", deviceNumber, led)
