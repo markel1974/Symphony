@@ -26,7 +26,7 @@ type Render struct {
 	h             int
 }
 
-func New() *Render {
+func NewRender() *Render {
 	return &Render{
 		displayBuffer: nil, //NewDisplayBuffer(320, 200),
 		board:         nil,

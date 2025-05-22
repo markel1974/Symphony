@@ -12,7 +12,7 @@ type RenderStub struct {
 	err error
 }
 
-func New() *RenderStub {
+func NewRender() *RenderStub {
 	return &RenderStub{
 		err: fmt.Errorf("WASM renderer is not supported on this platform"),
 	}

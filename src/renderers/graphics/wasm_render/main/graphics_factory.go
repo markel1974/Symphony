@@ -13,5 +13,5 @@ func NewGraphicsFactory() *GraphicsFactory {
 }
 
 func (g *GraphicsFactory) Create(_ string) references.IDisplayRender {
-	return wasm_render.New()
+	return wasm_render.NewRender()
 }
