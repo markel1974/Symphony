@@ -12,14 +12,15 @@ import (
 
 // Audio represents a structure handling audio virtualization and integration with JavaScript AudioContext.
 type Audio struct {
-	cfg              *config.Config
-	pos              int
-	audioCtx         js.Value  // Reference to the JavaScript AudioContext
-	sampleRate       float64   // Sample rate of the AudioContext
-	goBuffer         []float32 // Buffer in Go to accumulate samples
-	onSamplesReady   js.Value  // JS callback function to send samples
-	bufferSizeCycles int       // Buffer size in emulation cycles (approximately)
-	cyclesSinceFlush int
+	cfg               *config.Config
+	pos               int
+	audioCtx          js.Value  // Reference to the JavaScript AudioContext
+	sampleRate        float64   // Sample rate of the AudioContext
+	goBuffer          []float32 // Buffer in Go to accumulate samples
+	goBufferTargetLen int
+	onSamplesReady    js.Value // JS callback function to send samples
+	bufferSizeCycles  int      // Buffer size in emulation cycles (approximately)
+	cyclesSinceFlush  int
 	//jsTypedArray     js.Value  // Uint8Array or Float32Array in JS to pass data
 }
 
@@ -46,9 +47,6 @@ func (a *Audio) GetCurrentPosition() int {
 
 // Write processes input audio samples, normalizes them, and appends them to the internal buffer. Sends data to JS if buffer is full.
 func (a *Audio) Write(buffer []uint32, _ int, samplesOutputCount int) {
-	//if len(buffer) != samples {
-	//	fmt.Println("Write Error: Invalid samples", len(buffer), samples)
-	//}
 	if a.audioCtx.IsUndefined() {
 		fmt.Println("Write Error: AudioContext not initialized")
 		a.pos += samplesOutputCount
@@ -59,7 +57,6 @@ func (a *Audio) Write(buffer []uint32, _ int, samplesOutputCount int) {
 		a.pos += samplesOutputCount
 		return
 	}
-
 	numUint32sToProcess := 0
 	if samplesOutputCount > 0 {
 		if (samplesOutputCount % 2) != 0 {
@@ -70,7 +67,6 @@ func (a *Audio) Write(buffer []uint32, _ int, samplesOutputCount int) {
 		}
 		numUint32sToProcess = samplesOutputCount / 2
 	}
-
 	if len(buffer) < numUint32sToProcess {
 		fmt.Printf("Write Error: Input buffer too small. Has %d uint32s, expected %d for %d output samples.\n", len(buffer), numUint32sToProcess, samplesOutputCount)
 		// Potresti voler troncare numUint32sToProcess a len(buffer) o ritornare un errore.
@@ -101,7 +97,7 @@ func (a *Audio) Write(buffer []uint32, _ int, samplesOutputCount int) {
 	a.pos += samplesOutputCount
 	a.cyclesSinceFlush += samplesOutputCount // Assumiamo 1 campione = 1 ciclo "audio" per semplicità qui
 
-	if len(a.goBuffer) >= cap(a.goBuffer) || a.cyclesSinceFlush >= a.bufferSizeCycles {
+	if len(a.goBuffer) >= a.goBufferTargetLen || a.cyclesSinceFlush >= a.bufferSizeCycles {
 		if len(a.goBuffer) > 0 {
 			// Converti a.goBuffer (slice di float32) in []byte
 			// Ogni float32 è 4 byte.
@@ -190,8 +186,10 @@ func (a *Audio) initWasm() error {
 		// La dimensione di goBuffer deve essere scelta per accumulare abbastanza campioni
 		// prima di inviarli a JS, per evitare troppe chiamate JS.
 		// Ad es. 1024 o 2048 campioni.
-		a.goBuffer = make([]float32, 0, 2048) // Buffer di accumulo in Go
-		a.bufferSizeCycles = 20000            // Valore indicativo, da affinare
+		const targetSamplesPerFlush = 3528
+		a.goBufferTargetLen = targetSamplesPerFlush
+		a.goBuffer = make([]float32, 0, targetSamplesPerFlush+512) // Capacità leggermente maggiore per sicurezza
+		a.bufferSizeCycles = targetSamplesPerFlush                 // Valore indicativo, da affinare
 
 		println("Go Audio: AudioContext initialized, sampleRate:", a.sampleRate)
 		return nil
