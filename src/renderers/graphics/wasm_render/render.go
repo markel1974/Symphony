@@ -24,6 +24,7 @@ type Render struct {
 	vBlank        bool
 	w             int
 	h             int
+	input         *Inputs
 }
 
 func NewRender() *Render {
@@ -31,6 +32,7 @@ func NewRender() *Render {
 		displayBuffer: nil, //NewDisplayBuffer(320, 200),
 		board:         nil,
 		vBlank:        false,
+		input:         NewInputs(),
 	}
 }
 
@@ -39,9 +41,9 @@ func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	if err := g.board.Mount(g); err != nil {
 		return err
 	}
-	//if err := g.inputs.Setup(g.board, cfg); err != nil {
-	//	return err
-	//}
+	if err := g.input.Setup(g.board, cfg); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -83,10 +85,21 @@ func (g *Render) Start() error {
 		return js.ValueOf(g.h)
 	}
 	keyPressed := func(this js.Value, args []js.Value) interface{} {
-		// Gestisci la pressione di un tasto (esempio).
-		//keyCode := args[0].Int()
-		// ... (converti keyCode in un codice tasto del C64) ...
-		// ... (invia il codice tasto al C64 emulato) ...
+		if len(args) > 0 {
+			if args[0].Type() == js.TypeString {
+				keyCode := args[0].String()
+				g.input.Key(keyCode, true)
+			}
+		}
+		return nil
+	}
+	keyReleased := func(this js.Value, args []js.Value) interface{} {
+		if len(args) > 0 {
+			if args[0].Type() == js.TypeString {
+				keyCode := args[0].String()
+				g.input.Key(keyCode, false)
+			}
+		}
 		return nil
 	}
 
@@ -98,7 +111,7 @@ func (g *Render) Start() error {
 	js.Global().Set("getSurfaceLen", js.FuncOf(getSurfaceLen))
 	js.Global().Set("emulateFrame", js.FuncOf(emulateFrame))
 	js.Global().Set("keyPressed", js.FuncOf(keyPressed))
-
+	js.Global().Set("keyReleased", js.FuncOf(keyReleased))
 	<-c
 
 	return nil
