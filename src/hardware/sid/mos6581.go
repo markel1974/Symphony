@@ -20,9 +20,11 @@ var _audioRegisters = []uint8{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 
 type SID struct {
 	*component.BaseComponent
 	registers    []uint8
+	history      [][]uint8
 	cfg          *config.Config
 	audioBuilder *AudioBuilder
 	reflect      *SidReflect
+	historyCount int
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
@@ -30,8 +32,13 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 	s := &SID{
 		BaseComponent: component.NewBaseComponent(),
 		registers:     make([]uint8, RegisterCount),
+		history:       make([][]uint8, RegisterHistory),
 		cfg:           nil,
 		audioBuilder:  nil,
+		historyCount:  0,
+	}
+	for x := range s.history {
+		s.history[x] = make([]uint8, RegisterCount)
 	}
 	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdISID(s, label, instance))
 	s.reflect = NewSidReflect(s)
@@ -92,6 +99,7 @@ func (sid *SID) Reset() {
 	sid.SetPotY(0xff)
 
 	sid.audioBuilder.Reset()
+	sid.historyCount = 0
 
 	//PADDLE TEST
 	//sid.WriteRegister(0xDC00, 0x40) //Control-Port 1 selected
@@ -114,14 +122,21 @@ func (sid *SID) WriteRegister(addr uint16, data uint8) {
 
 // Prepare loads necessary SID register values into the AudioBuilder for audio processing.
 func (sid *SID) Prepare() {
-	for _, x := range _audioRegisters {
-		sid.audioBuilder.LoadRegister(x, sid.registers[x])
+	if sid.historyCount < len(sid.history) {
+		copy(sid.history[sid.historyCount], sid.registers)
+		sid.historyCount++
 	}
 }
 
 // Update triggers the audioBuilder's internal Update method, updating audio sampling and processing within the SID.
 func (sid *SID) Update() {
-	sid.audioBuilder.Update()
+	for regs := 0; regs < sid.historyCount; regs++ {
+		for _, x := range _audioRegisters {
+			sid.audioBuilder.LoadRegister(x, sid.history[regs][x])
+		}
+		sid.audioBuilder.Update()
+	}
+	sid.historyCount = 0
 }
 
 // GetLastByte retrieves the last byte from the SID's internal state or configuration.

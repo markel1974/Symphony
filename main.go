@@ -136,6 +136,9 @@ func BuildPrg(prgFile string) ([]byte, error) {
 }
 
 func BuildCartridges(c string) ([]*config.Cartridge, error) {
+	if len(c) == 0 {
+		return nil, nil
+	}
 	var cartridges []*config.Cartridge
 	for _, v := range config.KeyVal(c) {
 		data, _, err := config.ImageFromFile(v.V)
@@ -155,6 +158,9 @@ func BuildCartridges(c string) ([]*config.Cartridge, error) {
 // BuildDrives parses a drive configuration string, creates Drive instances, and appends them to the Config's drives list.
 // Returns an error if any drive creation fails.
 func BuildDrives(d string) ([]*config.Drive, error) {
+	if len(d) == 0 {
+		return nil, nil
+	}
 	var drives []*config.Drive
 	for _, v := range config.KeyVal(d) {
 		data, wp, err := config.ImageFromFile(v.V)

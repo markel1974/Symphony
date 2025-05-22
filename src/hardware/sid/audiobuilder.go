@@ -244,6 +244,7 @@ func (dr *AudioBuilder) Update() {
 	dr.divisor += SampleFreq
 	dr.toOutput += int(dr.divisorTable.GetOut(dr.divisor))
 	dr.divisor = int(dr.divisorTable.GetDivisor(dr.divisor))
+
 	// Calculate the sound data only when we have enough to fill the buffer entirely.
 	if dr.toOutput >= dr.fragSize {
 		dr.toOutput -= dr.fragSize

@@ -6,11 +6,12 @@ package mos6581
 // SampleBufSize defines the size of the buffer for sampled voices (double buffered).
 // RegisterCount defines the number of registers in the SID.
 const (
-	SampleFreq    = 44100
-	Frequency     = 985248
-	Cycles        = Frequency / SampleFreq
-	SampleBufSize = 0x138 * 2
-	RegisterCount = 32
+	SampleFreq      = 44100
+	Frequency       = 985248
+	Cycles          = Frequency / SampleFreq
+	SampleBufSize   = 0x138 * 2
+	RegisterCount   = 32
+	RegisterHistory = 1024
 )
 
 // _triSawTable is a lookup table for triangular and sawtooth waveform computations in waveform generation scenarios.
