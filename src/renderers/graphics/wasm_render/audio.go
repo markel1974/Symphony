@@ -10,6 +10,10 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 )
 
+const (
+	targetSamplesPerFlush = 3528
+)
+
 // Audio represents a structure handling audio virtualization and integration with JavaScript AudioContext.
 type Audio struct {
 	cfg               *config.Config
@@ -195,7 +199,7 @@ func (a *Audio) initWasm() error {
 		// La dimensione di goBuffer deve essere scelta per accumulare abbastanza campioni
 		// prima di inviarli a JS, per evitare troppe chiamate JS.
 		// Ad es. 1024 o 2048 campioni.
-		const targetSamplesPerFlush = 3528
+
 		a.goBufferTargetLen = targetSamplesPerFlush
 		a.goBuffer = make([]float32, 0, targetSamplesPerFlush+512) // Capacità leggermente maggiore per sicurezza
 		a.bufferSizeCycles = targetSamplesPerFlush                 // Valore indicativo, da affinare

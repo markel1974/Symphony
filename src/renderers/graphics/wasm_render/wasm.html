@@ -227,8 +227,17 @@
 
             // Funzione callback che Go chiamerà con i campioni pronti
             const samplesReadyCallback = (jsFloat32Array) => {
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume().then(() => {
+                        console.log("JS: AudioContext resumed on data arrival.");
+                        // Potresti dover richiamare schedulePlayback o gestire il buffer appena arrivato
+                    });
+                }
                 // jsFloat32Array è un Float32Array creato in Go e passato a JS
                 if (jsFloat32Array && jsFloat32Array.length > 0) {
+                    //console.log("RECEIVED AUDIO DATA")
+                    //console.log(jsFloat32Array.slice(0, 10))
+
                     const audioBuffer = audioCtx.createBuffer(1, jsFloat32Array.length, sampleRate);
                     audioBuffer.getChannelData(0).set(jsFloat32Array);
                     audioQueue.push(audioBuffer);
@@ -243,7 +252,7 @@
                 if (audioCtx.state === 'suspended') {
                     audioCtx.resume().then(() => {
                         console.log('AudioContext resumed on user interaction.');
-                        //chiamare wasmAudioPlay()?
+                        // Potresti voler chiamare wasmAudioPlay() qui se l'emulazione era in attesa
                     });
                 }
             }, { once: true });
@@ -252,6 +261,25 @@
             alert("Web Audio API is not supported in this browser");
         }
     }
+
+    /*
+    function schedulePlayback() {
+        while (audioQueue.length > 0 && audioCtx.currentTime + scheduleLookahead > nextStartTime) {
+            const bufferToPlay = audioQueue.shift();
+            const source = audioCtx.createBufferSource();
+            source.buffer = bufferToPlay;
+            source.connect(audioCtx.destination);
+
+            if (nextStartTime < audioCtx.currentTime + Sicherheitsabstand) { // Se siamo troppo vicini o in ritardo
+                nextStartTime = audioCtx.currentTime + Sicherheitsabstand;
+            }
+
+            source.start(nextStartTime);
+            // console.log("Scheduling buffer at:", nextStartTime, "duration:", bufferToPlay.duration, "ctxTime:", audioCtx.currentTime);
+            nextStartTime += bufferToPlay.duration;
+        }
+    }
+    */
 
     function schedulePlayback() {
         if (audioCtx.state === 'suspended') {
