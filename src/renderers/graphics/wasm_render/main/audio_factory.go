@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 package main
 
 import (
@@ -13,5 +15,6 @@ func NewAudioFactory() *AudioFactory {
 }
 
 func (a *AudioFactory) Create(_ string) references.IAudioRender {
-	return wasm_render.NewAudio()
+	audio := wasm_render.NewAudio()
+	return audio
 }

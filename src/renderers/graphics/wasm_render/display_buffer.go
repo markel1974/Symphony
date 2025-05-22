@@ -13,6 +13,8 @@ const rgba8Len = rgbaLen * 8
 // The surface property maintains a byte slice representing the screen's current pixel data.
 // maxLen determines the maximum allowable size of the surface buffer to prevent out-of-bounds operations.
 type DisplayBuffer struct {
+	w       int
+	h       int
 	colors  [][rgbaLen]uint8
 	colors8 [][rgba8Len]uint8
 	surface []byte
@@ -55,11 +57,21 @@ func NewDisplayBuffer(w int, h int) *DisplayBuffer {
 	}
 	surface := make([]byte, w*h*4)
 	return &DisplayBuffer{
+		w:       w,
+		h:       h,
 		colors:  colors,
 		colors8: colors8,
 		surface: surface,
 		maxLen:  len(surface),
 	}
+}
+
+func (db *DisplayBuffer) GetWidth() int {
+	return db.w
+}
+
+func (db *DisplayBuffer) GetHeight() int {
+	return db.h
 }
 
 // GetSurface returns the internal surface buffer as a slice of bytes.

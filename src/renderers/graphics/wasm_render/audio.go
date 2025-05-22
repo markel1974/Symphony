@@ -11,14 +11,14 @@ import (
 
 // Audio represents a structure handling audio virtualization and integration with JavaScript AudioContext.
 type Audio struct {
-	cfg              *config.Config
-	pos              int
-	audioCtx         js.Value  // Reference to the JavaScript AudioContext
-	sampleRate       float64   // Sample rate of the AudioContext
-	goBuffer         []float32 // Buffer in Go to accumulate samples
-	jsTypedArray     js.Value  // Uint8Array or Float32Array in JS to pass data
-	onSamplesReady   js.Value  // JS callback function to send samples
-	bufferSizeCycles int       // Buffer size in emulation cycles (approximately)
+	cfg        *config.Config
+	pos        int
+	audioCtx   js.Value  // Reference to the JavaScript AudioContext
+	sampleRate float64   // Sample rate of the AudioContext
+	goBuffer   []float32 // Buffer in Go to accumulate samples
+	//jsTypedArray     js.Value  // Uint8Array or Float32Array in JS to pass data
+	onSamplesReady   js.Value // JS callback function to send samples
+	bufferSizeCycles int      // Buffer size in emulation cycles (approximately)
 	cyclesSinceFlush int
 }
 
@@ -33,6 +33,9 @@ func NewAudio() *Audio {
 func (a *Audio) Setup(cfg *config.Config) error {
 	// Initialize audioCtx and sampleRate from JavaScript in a later phase (e.g., Start or an exported func)
 	a.cfg = cfg
+	if err := a.initWasm(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -120,7 +123,7 @@ func (a *Audio) Resume() {
 }
 
 // GlobalSetupWasmAudio exports Go methods to JavaScript for initializing, playing, and pausing the AudioContext.
-func GlobalSetupWasmAudio(a *Audio) {
+func (a *Audio) initWasm() error {
 	// init initializes the AudioContext with provided arguments and sets up a sample-ready callback.
 	init := func(this js.Value, args []js.Value) interface{} {
 		if len(args) < 3 {
@@ -164,4 +167,6 @@ func GlobalSetupWasmAudio(a *Audio) {
 	js.Global().Set("initAudioContextAndGetCallback", js.FuncOf(init))
 	js.Global().Set("wasmAudioPlay", js.FuncOf(play))
 	js.Global().Set("wasmAudioPause", js.FuncOf(pause))
+
+	return nil
 }

@@ -9,15 +9,6 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-/*
-//go:embed g64.wasm
-var wasmFS embed.FS
-func main() {
-	http.Handle("/", http.FileServer(http.FS(wasmFS)))
-	log.Fatal(http.ListenAndServe(":8080", nil))
-}
-*/
-
 // Render manages the display rendering process and user interaction through inputs and a linked board implementation.
 // It integrates with a DisplayBuffer for screen updates and relies on IBoard for controlling board operations.
 type Render struct {
@@ -39,6 +30,14 @@ func NewRender() *Render {
 	}
 }
 
+// CreateDisplayBuffer initializes a new display buffer with the specified width and height, stores it, and returns it.
+func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
+	g.w = w
+	g.h = h
+	g.displayBuffer = NewDisplayBuffer(w, h)
+	return g.displayBuffer, nil
+}
+
 // Setup initializes the Render object with the given IBoard and Config instances, setting up the necessary components.
 // Returns an error if the board or input setup fails.
 func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
@@ -49,21 +48,42 @@ func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
 	if err := g.input.Setup(g.board, cfg); err != nil {
 		return err
 	}
+	if err := g.initWasm(); err != nil {
+		return err
+	}
 	return nil
-}
-
-// CreateDisplayBuffer initializes a new display buffer with the specified width and height, stores it, and returns it.
-func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
-	g.w = w
-	g.h = h
-	g.displayBuffer = NewDisplayBuffer(w, h)
-	return g.displayBuffer, nil
 }
 
 // Start initializes the rendering process and exposes Go functions for JavaScript interaction via the global scope.
 // It blocks indefinitely using a channel to keep the Go routine alive.
 func (g *Render) Start() error {
-	c := make(chan struct{}, 0)
+	c := make(chan struct{})
+	<-c
+	return nil
+}
+
+// VBlank sets the vBlank flag to true, signaling the start of the vertical blanking interval in the rendering process.
+func (g *Render) VBlank() {
+	g.vBlank = true
+	//if g.win.MouseInsideWindow() {
+	//	g.inputs.MouseMove(g.win.MousePositionXY())
+	//}
+	//g.inputs.Keys(g.win.KeysPressed())
+	//g.surface.Draw(g.win, g.surfaceM)
+	//if g.led {
+	//	g.ledSurface.Draw(g.win, g.ledSurfaceM)
+	//}
+	//g.win.Update()
+	//g.run = !g.win.Closed()
+}
+
+// LedActivity toggles the LED state for the specified device number based on the given boolean value.
+func (g *Render) LedActivity(deviceNumber uint8, led bool) {
+	//g.led = led
+	//fmt.Println("LED STATE", deviceNumber, led)
+}
+
+func (g *Render) initWasm() error {
 	emulateFrame := func(this js.Value, args []js.Value) interface{} {
 		for {
 			g.board.Emulate()
@@ -110,8 +130,6 @@ func (g *Render) Start() error {
 		}
 		return nil
 	}
-
-	// Esponi le funzioni Go a JavaScript.
 	js.Global().Set("getDisplayBuffer", js.FuncOf(getDisplayBuffer))
 	js.Global().Set("getDisplayWidth", js.FuncOf(getDisplayWidth))
 	js.Global().Set("getDisplayHeight", js.FuncOf(getDisplayHeight))
@@ -120,32 +138,5 @@ func (g *Render) Start() error {
 	js.Global().Set("emulateFrame", js.FuncOf(emulateFrame))
 	js.Global().Set("keyPressed", js.FuncOf(keyPressed))
 	js.Global().Set("keyReleased", js.FuncOf(keyReleased))
-	<-c
-
 	return nil
 }
-
-// VBlank sets the vBlank flag to true, signaling the start of the vertical blanking interval in the rendering process.
-func (g *Render) VBlank() {
-	g.vBlank = true
-	//if g.win.MouseInsideWindow() {
-	//	g.inputs.MouseMove(g.win.MousePositionXY())
-	//}
-	//g.inputs.Keys(g.win.KeysPressed())
-	//g.surface.Draw(g.win, g.surfaceM)
-	//if g.led {
-	//	g.ledSurface.Draw(g.win, g.ledSurfaceM)
-	//}
-	//g.win.Update()
-	//g.run = !g.win.Closed()
-}
-
-// LedActivity toggles the LED state for the specified device number based on the given boolean value.
-func (g *Render) LedActivity(deviceNumber uint8, led bool) {
-	//g.led = led
-	//fmt.Println("LED STATE", deviceNumber, led)
-}
-
-//TODO WASM
-// https://garciat.com/posts/go-wasm/
-// https://github.com/seqsense/webgl-go/tree/master

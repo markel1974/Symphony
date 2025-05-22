@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 package main
 
 import (
@@ -13,5 +15,6 @@ func NewGraphicsFactory() *GraphicsFactory {
 }
 
 func (g *GraphicsFactory) Create(_ string) references.IDisplayRender {
-	return wasm_render.NewRender()
+	render := wasm_render.NewRender()
+	return render
 }

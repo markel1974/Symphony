@@ -1,3 +1,5 @@
+//go:build js && wasm
+
 package main // o il tuo package
 
 var _stub = []byte{
