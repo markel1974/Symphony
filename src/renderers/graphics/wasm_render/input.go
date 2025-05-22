@@ -163,10 +163,9 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 
 // Key updates the state of a specified virtual key and triggers its associated function if mapped.
 func (g *Inputs) Key(p string, pressed bool) {
-	fmt.Println("Trying to press key", p, pressed)
 	if f, ok := g.keyMapper[p]; ok {
 		f(pressed)
 	} else {
-		fmt.Println("Can't find key", p)
+		fmt.Println("Can't find key", p, pressed)
 	}
 }

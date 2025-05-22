@@ -3,6 +3,7 @@
 package wasm_render
 
 import (
+	"fmt"
 	"syscall/js"
 	"unsafe"
 
@@ -11,15 +12,15 @@ import (
 
 // Audio represents a structure handling audio virtualization and integration with JavaScript AudioContext.
 type Audio struct {
-	cfg        *config.Config
-	pos        int
-	audioCtx   js.Value  // Reference to the JavaScript AudioContext
-	sampleRate float64   // Sample rate of the AudioContext
-	goBuffer   []float32 // Buffer in Go to accumulate samples
-	//jsTypedArray     js.Value  // Uint8Array or Float32Array in JS to pass data
-	onSamplesReady   js.Value // JS callback function to send samples
-	bufferSizeCycles int      // Buffer size in emulation cycles (approximately)
+	cfg              *config.Config
+	pos              int
+	audioCtx         js.Value  // Reference to the JavaScript AudioContext
+	sampleRate       float64   // Sample rate of the AudioContext
+	goBuffer         []float32 // Buffer in Go to accumulate samples
+	onSamplesReady   js.Value  // JS callback function to send samples
+	bufferSizeCycles int       // Buffer size in emulation cycles (approximately)
 	cyclesSinceFlush int
+	//jsTypedArray     js.Value  // Uint8Array or Float32Array in JS to pass data
 }
 
 // NewAudio creates and returns a new instance of the Audio structure with default initialization for playback management.
@@ -31,7 +32,6 @@ func NewAudio() *Audio {
 
 // Setup initializes the Audio instance with the given configuration and prepares it for further setup steps.
 func (a *Audio) Setup(cfg *config.Config) error {
-	// Initialize audioCtx and sampleRate from JavaScript in a later phase (e.g., Start or an exported func)
 	a.cfg = cfg
 	if err := a.initWasm(); err != nil {
 		return err
@@ -45,57 +45,92 @@ func (a *Audio) GetCurrentPosition() int {
 }
 
 // Write processes input audio samples, normalizes them, and appends them to the internal buffer. Sends data to JS if buffer is full.
-func (a *Audio) Write(buffer []uint32, _ int, samples int) {
-	if a.audioCtx.IsUndefined() || !a.onSamplesReady.Truthy() {
-		// AudioContext non ancora inizializzato da JS o callback mancante
-		a.pos += samples // Avanza comunque la posizione
+func (a *Audio) Write(buffer []uint32, _ int, samplesOutputCount int) {
+	//if len(buffer) != samples {
+	//	fmt.Println("Write Error: Invalid samples", len(buffer), samples)
+	//}
+	if a.audioCtx.IsUndefined() {
+		fmt.Println("Write Error: AudioContext not initialized")
+		a.pos += samplesOutputCount
+		return
+	}
+	if a.onSamplesReady.IsUndefined() || !a.onSamplesReady.Truthy() {
+		fmt.Println("Write Error: OnSamplesReady not initialized")
+		a.pos += samplesOutputCount
 		return
 	}
 
-	// Normalize and add samples to goBuffer
-	// This is a SIMPLIFICATION. Normalization depends on the SID's output range.
-	// The C64 SID has a complex output, often a filter is used and then normalized.
-	// Here we assume that the uint32 values are already in a range we can map to float32.
-	for i := 0; i < samples; i++ {
-		// Esempio di normalizzazione (DA ADATTARE ALL'OUTPUT REALE DEL SID!)
-		// Se buffer[i] è un valore a 16bit (0-65535)
-		// sampleFloat32 := (float32(buffer[i]) / 32768.0) - 1.0
-		// Se buffer[i] è un valore a 8bit (0-255) dal SID (improbabile per qualità)
-		// sampleFloat32 := (float32(buffer[i]) / 128.0) - 1.0
-		// Per ora, usiamo un placeholder. Devi implementare la normalizzazione corretta.
-		// Il buffer in input è []uint32, ma il SID produce tipicamente valori più piccoli.
-		// Assumiamo che i valori in `buffer` siano già pre-processati o che questa sia
-		// una rappresentazione intermedia.
-		// Per questo esempio, convertiamo semplicemente e scaliamo (NON CORRETTO PER IL SID REALE):
-		sampleFloat32 := float32(int32(buffer[i])) / float32(0x7FFFFFFF) // Placeholder
-		a.goBuffer = append(a.goBuffer, sampleFloat32)
+	numUint32sToProcess := 0
+	if samplesOutputCount > 0 {
+		if (samplesOutputCount % 2) != 0 {
+			// Questo sarebbe un errore di logica da parte del chiamante, samplesOutputCount dovrebbe essere pari
+			fmt.Printf("Write Warning: samplesOutputCount (%d) is odd, implies half a uint32.\n", samplesOutputCount)
+			// Decidi come gestire: troncare, arrotondare, errore? Per ora, tronchiamo.
+			samplesOutputCount--
+		}
+		numUint32sToProcess = samplesOutputCount / 2
 	}
 
-	a.pos += samples
-	a.cyclesSinceFlush += samples // Assumiamo 1 campione = 1 ciclo "audio" per semplicità qui
+	if len(buffer) < numUint32sToProcess {
+		fmt.Printf("Write Error: Input buffer too small. Has %d uint32s, expected %d for %d output samples.\n", len(buffer), numUint32sToProcess, samplesOutputCount)
+		// Potresti voler troncare numUint32sToProcess a len(buffer) o ritornare un errore.
+		// Se si tronca, anche samplesOutputCount dovrebbe essere aggiustato:
+		// numUint32sToProcess = len(buffer)
+		// samplesOutputCount = numUint32sToProcess * 2
+		// Per ora, usciamo se c'è un mismatch grave per evidenziare il problema.
+		// In produzione, potresti voler gestire diversamente.
+		return
+	}
 
-	// Se abbiamo accumulato abbastanza campioni o cicli, inviali a JavaScript
+	// Processa ogni uint32 per estrarre due campioni float32
+	for i := 0; i < numUint32sToProcess; i++ {
+		inputUint32 := buffer[i]
+
+		// QUI DEVI IMPLEMENTARE L'ESTRAZIONE E LA NORMALIZZAZIONE CORRETTA
+		// Esempio: se inputUint32 contiene due campioni a 16 bit (firmati, little-endian)
+		sample1_raw_int16 := int16(inputUint32 & 0xFFFF)
+		sample2_raw_int16 := int16((inputUint32 >> 16) & 0xFFFF)
+
+		// Normalizza a float32 (da -1.0 a 1.0)
+		sample1_float32 := float32(sample1_raw_int16) / 32768.0
+		sample2_float32 := float32(sample2_raw_int16) / 32768.0
+
+		a.goBuffer = append(a.goBuffer, sample1_float32)
+		a.goBuffer = append(a.goBuffer, sample2_float32)
+	}
+	a.pos += samplesOutputCount
+	a.cyclesSinceFlush += samplesOutputCount // Assumiamo 1 campione = 1 ciclo "audio" per semplicità qui
+
 	if len(a.goBuffer) >= cap(a.goBuffer) || a.cyclesSinceFlush >= a.bufferSizeCycles {
 		if len(a.goBuffer) > 0 {
-			// Crea o riutilizza il Float32Array JavaScript
-			// È più efficiente creare una volta e riempire se possibile, ma CopyBytesToJS è più semplice
-			// per iniziare e gestisce la creazione di un nuovo ArrayBuffer in JS.
-			// Per performance massime, si dovrebbe scrivere direttamente nella memoria WASM
-			// un Float32Array e passare il puntatore/lunghezza a JS, come per il video.
-			// Ma la Web Audio API preferisce ricevere Float32Array direttamente.
-
-			jsBuffer := js.Global().Get("Float32Array").New(len(a.goBuffer))
-			// Converti goBuffer (slice di float32) in []byte per CopyBytesToJS
-			// Questo richiede di "reinterpretare" la slice di float32 come una slice di byte.
+			// Converti a.goBuffer (slice di float32) in []byte
 			// Ogni float32 è 4 byte.
+			// Questa parte per ottenere byteSlice è corretta:
 			header := (*[3]uintptr)(unsafe.Pointer(&a.goBuffer))
 			byteSlice := (*[1 << 30]byte)(unsafe.Pointer(header[0]))[: len(a.goBuffer)*4 : len(a.goBuffer)*4]
 
-			js.CopyBytesToJS(jsBuffer, byteSlice)
+			// 1. Crea un ArrayBuffer in JavaScript
+			jsArrayBuffer := js.Global().Get("ArrayBuffer").New(len(byteSlice))
 
-			a.onSamplesReady.Invoke(jsBuffer)
+			// 2. Crea una vista Uint8Array di questo ArrayBuffer
+			jsUint8Array := js.Global().Get("Uint8Array").New(jsArrayBuffer)
 
-			a.goBuffer = make([]float32, 0, cap(a.goBuffer)) // Oppure a.goBuffer = a.goBuffer[:0]
+			// 3. Copia i byte da Go alla Uint8Array JavaScript
+			// js.CopyBytesToJS restituisce il numero di byte copiati.
+			copiedCount := js.CopyBytesToJS(jsUint8Array, byteSlice)
+			if copiedCount != len(byteSlice) {
+				fmt.Println("Attenzione: js.CopyBytesToJS non ha copiato tutti i byte.")
+				// Potresti voler gestire questo caso in modo più robusto
+			}
+
+			// 4. Crea una vista Float32Array dello stesso ArrayBuffer
+			jsFloat32Array := js.Global().Get("Float32Array").New(jsArrayBuffer)
+
+			// 5. Invoca la callback JavaScript con il Float32Array
+			a.onSamplesReady.Invoke(jsFloat32Array)
+
+			// Resetta goBuffer (a.goBuffer[:0] è più efficiente se la capacità è già adeguata)
+			a.goBuffer = a.goBuffer[:0]
 		}
 		a.cyclesSinceFlush = 0
 	}
@@ -103,6 +138,9 @@ func (a *Audio) Write(buffer []uint32, _ int, samples int) {
 
 // Play resumes audio playback if the AudioContext is suspended. Resets or starts AudioBufferSourceNode if needed.
 func (a *Audio) Play() {
+	if a.audioCtx.IsUndefined() {
+		fmt.Println("Play Error: AudioContext not initialized")
+	}
 	if a.audioCtx.Truthy() && a.audioCtx.Get("state").String() == "suspended" {
 		a.audioCtx.Call("resume")
 		println("Go Audio: Resumed")
@@ -111,6 +149,9 @@ func (a *Audio) Play() {
 
 // Pause suspends audio playback if the underlying AudioContext is currently in the "running" state.
 func (a *Audio) Pause() {
+	if a.audioCtx.IsUndefined() {
+		fmt.Println("Pause Error: AudioContext not initialized")
+	}
 	if a.audioCtx.Truthy() && a.audioCtx.Get("state").String() == "running" {
 		a.audioCtx.Call("suspend")
 		println("Go Audio: Suspended")
