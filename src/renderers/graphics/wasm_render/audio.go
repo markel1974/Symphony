@@ -45,88 +45,97 @@ func (a *Audio) GetCurrentPosition() int {
 	return a.pos
 }
 
-// Write processes input audio samples, normalizes them, and appends them to the internal buffer. Sends data to JS if buffer is full.
-func (a *Audio) Write(buffer []uint32, _ int, samplesOutputCount int) {
+// Audio.Write modificato per gestire l'output attuale di calcBuffer
+func (a *Audio) Write(bufferInput []uint32, writePosHint int, samplesOutputCountExpectedByCaller int) {
+	// samplesOutputCountExpectedByCaller è il valore (es. 1764) che il chiamante si aspetta
+	// in termini di avanzamento o dimensione logica del blocco.
+
+	// Controlli iniziali (audioCtx, onSamplesReady) - mantienili come sono
 	if a.audioCtx.IsUndefined() {
-		fmt.Println("Write Error: AudioContext not initialized")
-		a.pos += samplesOutputCount
+		fmt.Println("Go Audio.Write: Errore - AudioContext non inizializzato")
+		// Come gestire a.pos qui? Se il chiamante si aspetta un avanzamento,
+		// potresti dover usare samplesOutputCountExpectedByCaller.
+		// Per ora, lo lasciamo così, ma è da considerare.
+		a.pos += samplesOutputCountExpectedByCaller // O forse 0 se non si processa nulla?
 		return
 	}
 	if a.onSamplesReady.IsUndefined() || !a.onSamplesReady.Truthy() {
-		fmt.Println("Write Error: OnSamplesReady not initialized")
-		a.pos += samplesOutputCount
+		fmt.Println("Go Audio.Write: Errore - OnSamplesReady non inizializzato")
+		a.pos += samplesOutputCountExpectedByCaller // Come sopra
 		return
 	}
-	numUint32sToProcess := 0
-	if samplesOutputCount > 0 {
-		if (samplesOutputCount % 2) != 0 {
-			// Questo sarebbe un errore di logica da parte del chiamante, samplesOutputCount dovrebbe essere pari
-			fmt.Printf("Write Warning: samplesOutputCount (%d) is odd, implies half a uint32.\n", samplesOutputCount)
-			// Decidi come gestire: troncare, arrotondare, errore? Per ora, tronchiamo.
-			samplesOutputCount--
+
+	// 1. Determina quanti uint32 nel bufferInput sono stati effettivamente riempiti da calcBuffer
+	var numUint32sConDatiValidi int
+	if len(bufferInput) > 0 {
+		// calcBuffer riempie (len(bufferInput_originale_passato_a_calcBuffer) / 2) + 1 elementi.
+		// Assumiamo che bufferInput sia la slice originale passata a calcBuffer.
+		numUint32sConDatiValidi = (len(bufferInput) / 2) + 1
+		// Mettiamo un limite di sicurezza per non leggere oltre la fine di bufferInput,
+		// anche se la formula sopra dovrebbe essere corretta se len(bufferInput) è la stessa
+		// dimensione usata da calcBuffer come riferimento per len(buf)/2.
+		if numUint32sConDatiValidi > len(bufferInput) {
+			numUint32sConDatiValidi = len(bufferInput)
 		}
-		numUint32sToProcess = samplesOutputCount / 2
-	}
-	if len(buffer) < numUint32sToProcess {
-		fmt.Printf("Write Error: Input buffer too small. Has %d uint32s, expected %d for %d output samples.\n", len(buffer), numUint32sToProcess, samplesOutputCount)
-		// Potresti voler troncare numUint32sToProcess a len(buffer) o ritornare un errore.
-		// Se si tronca, anche samplesOutputCount dovrebbe essere aggiustato:
-		// numUint32sToProcess = len(buffer)
-		// samplesOutputCount = numUint32sToProcess * 2
-		// Per ora, usciamo se c'è un mismatch grave per evidenziare il problema.
-		// In produzione, potresti voler gestire diversamente.
-		return
+	} else {
+		numUint32sConDatiValidi = 0
 	}
 
-	// Processa ogni uint32 per estrarre due campioni float32
-	for i := 0; i < numUint32sToProcess; i++ {
-		inputUint32 := buffer[i]
+	// 2. Processa solo gli uint32 validi, estraendo un singolo campione mono da ciascuno
+	numFloat32CampioniProdotti := 0
+	for i := 0; i < numUint32sConDatiValidi; i++ {
+		valUint32 := bufferInput[i]
 
-		// QUI DEVI IMPLEMENTARE L'ESTRAZIONE E LA NORMALIZZAZIONE CORRETTA
-		// Esempio: se inputUint32 contiene due campioni a 16 bit (firmati, little-endian)
-		sample1_raw_int16 := int16(inputUint32 & 0xFFFF)
-		sample2_raw_int16 := int16((inputUint32 >> 16) & 0xFFFF)
+		// Estrai il singolo campione mono a 16 bit (assumiamo sia nei 16 bit inferiori)
+		// I 16 bit superiori vengono ignorati perché calcBuffer scrive un solo valore.
+		campioneInt16 := int16(valUint32 & 0xFFFF)
 
-		// Normalizza a float32 (da -1.0 a 1.0)
-		sample1_float32 := float32(sample1_raw_int16) / 32768.0
-		sample2_float32 := float32(sample2_raw_int16) / 32768.0
+		// Normalizza a float32
+		campioneFloat32 := float32(campioneInt16) / 32768.0 // Normalizzazione per int16
 
-		a.goBuffer = append(a.goBuffer, sample1_float32)
-		a.goBuffer = append(a.goBuffer, sample2_float32)
+		a.goBuffer = append(a.goBuffer, campioneFloat32)
+		numFloat32CampioniProdotti++
 	}
-	a.pos += samplesOutputCount
-	a.cyclesSinceFlush += samplesOutputCount // Assumiamo 1 campione = 1 ciclo "audio" per semplicità qui
 
-	if len(a.goBuffer) >= a.goBufferTargetLen || a.cyclesSinceFlush >= a.bufferSizeCycles {
+	// 3. Aggiorna la posizione e i cicli
+	// a.pos: Questa è la parte più incerta.
+	// Se a.pos deve riflettere l'avanzamento come inteso dal chiamante (AudioBuilder),
+	// allora dovrebbe usare samplesOutputCountExpectedByCaller (es. 1764).
+	// AudioBuilder aggiorna dr.sbPos con quel valore.
+	// Se invece a.pos traccia i campioni effettivamente gestiti da Audio.Write,
+	// allora dovrebbe usare numFloat32CampioniProdotti.
+	// Per coerenza con come AudioBuilder sembra gestire la sua posizione (sbPos),
+	// potresti voler usare samplesOutputCountExpectedByCaller.
+	// Scegli una delle due o chiarisci il ruolo di a.pos.
+	// Opzione 1: Usa l'aspettativa del chiamante
+	a.pos += samplesOutputCountExpectedByCaller
+	// Opzione 2: Usa i campioni effettivi (meno probabile se il chiamante gestisce la posizione esterna)
+	// a.pos += numFloat32CampioniProdotti
+
+	// a.cyclesSinceFlush deve tracciare i campioni effettivamente aggiunti a goBuffer
+	a.cyclesSinceFlush += numFloat32CampioniProdotti
+
+	// 4. Invia i dati a JavaScript quando goBuffer è pieno (questa logica rimane simile)
+	if len(a.goBuffer) >= cap(a.goBuffer) || a.cyclesSinceFlush >= a.bufferSizeCycles {
 		if len(a.goBuffer) > 0 {
-			// Converti a.goBuffer (slice di float32) in []byte
-			// Ogni float32 è 4 byte.
-			// Questa parte per ottenere byteSlice è corretta:
+			// ... (codice per creare jsArrayBuffer, jsUint8Array, js.CopyBytesToJS, jsFloat32Array)
+			// Questo codice che hai già dovrebbe funzionare,
+			// jsFloat32Array verrà creato con len(a.goBuffer) che ora riflette
+			// il numero corretto di campioni float32 singoli.
+
 			header := (*[3]uintptr)(unsafe.Pointer(&a.goBuffer))
 			byteSlice := (*[1 << 30]byte)(unsafe.Pointer(header[0]))[: len(a.goBuffer)*4 : len(a.goBuffer)*4]
 
-			// 1. Crea un ArrayBuffer in JavaScript
 			jsArrayBuffer := js.Global().Get("ArrayBuffer").New(len(byteSlice))
-
-			// 2. Crea una vista Uint8Array di questo ArrayBuffer
 			jsUint8Array := js.Global().Get("Uint8Array").New(jsArrayBuffer)
 
-			// 3. Copia i byte da Go alla Uint8Array JavaScript
-			// js.CopyBytesToJS restituisce il numero di byte copiati.
-			copiedCount := js.CopyBytesToJS(jsUint8Array, byteSlice)
-			if copiedCount != len(byteSlice) {
-				fmt.Println("Attenzione: js.CopyBytesToJS non ha copiato tutti i byte.")
-				// Potresti voler gestire questo caso in modo più robusto
-			}
+			js.CopyBytesToJS(jsUint8Array, byteSlice)
 
-			// 4. Crea una vista Float32Array dello stesso ArrayBuffer
 			jsFloat32Array := js.Global().Get("Float32Array").New(jsArrayBuffer)
 
-			// 5. Invoca la callback JavaScript con il Float32Array
 			a.onSamplesReady.Invoke(jsFloat32Array)
 
-			// Resetta goBuffer (a.goBuffer[:0] è più efficiente se la capacità è già adeguata)
-			a.goBuffer = a.goBuffer[:0]
+			a.goBuffer = a.goBuffer[:0] // Resetta la lunghezza mantenendo la capacità
 		}
 		a.cyclesSinceFlush = 0
 	}

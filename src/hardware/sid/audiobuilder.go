@@ -203,13 +203,13 @@ func (dr *AudioBuilder) updateVolume(data uint8) {
 // Filtered and unfiltered outputs are computed and combined, then written into the provided buffer.
 func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 	const halfBufSize = SampleBufSize / 2
-	sampleCount := (dr.sampleInPtr + halfBufSize) << 16
+	sampleCount := uint32((dr.sampleInPtr + halfBufSize) << 16)
 	count := len(buf)
 	count >>= 1 // 16 bit mono output, count is in bytes
 	//count >>= 2; // 16 bit stereo output, count is in bytes
 	idx := 0
 	for ; count >= 0; count, idx = count-1, idx+1 {
-		var sumOutputFilter int32 = 0
+		sumOutputFilter := int32(0)
 		// Get current master volume from sample buffer, calculate sampled voices
 		masterVolume := dr.sampleBuf[(sampleCount>>16)%SampleBufSize]
 		sampleCount += ((0x138 * 50) << 16) / SampleFreq
@@ -226,12 +226,18 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 			v.count &= 0xffffff
 			output := v.ComputeWaveForm()
 			if v.filter != 0 {
-				sumOutputFilter += int32((output ^ 0x8000) * envelope)
+				sumOutputFilter += int32(int16(output^0x8000)) * int32(envelope)
 			} else {
-				sumOutput += int32((output ^ 0x8000) * envelope)
+				sumOutput += int32(int16(output^0x8000)) * int32(envelope)
 			}
 		}
 		sumOutputFilter = dr.filters.Compute(sumOutputFilter)
+
+		//if idx < 5 { // Stampa solo per i primi campioni di questo blocco
+		//	valoreSintetizzatoRaw := sumOutput + sumOutputFilter
+		//	valoreScalato := valoreSintetizzatoRaw >> 10 // Questo è ciò che viene messo nel buffer uint32
+		//	fmt.Printf("calcBuffer: idx=%d, rawSum=%d, scaledValue=%d, uint32_in_buf=0x%X\n", idx, valoreSintetizzatoRaw, valoreScalato, uint32(valoreScalato))
+		//}
 
 		buf[idx] = uint32((sumOutput + sumOutputFilter) >> 10)
 	}
