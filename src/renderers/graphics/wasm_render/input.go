@@ -35,10 +35,10 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 
 	g.keyMapper["Enter"] = func(p bool) { b.KeyboardSetKey(p, component.VKReturn) }
 	g.keyMapper["Del"] = func(p bool) { b.KeyboardSetKey(p, component.VKDelete) }
-	//g.keyMapper[pixels.KeyBackspace] = func(p bool) { b.KeyboardSetKey(p, component.VKBack) }
+	//g.keyMapper["backspace"] = func(p bool) { b.KeyboardSetKey(p, component.VKBack) }
 	g.keyMapper[" "] = func(p bool) { b.KeyboardSetKey(p, component.VKSpace) }
 	g.keyMapper["."] = func(p bool) { b.KeyboardSetKey(p, component.VKComma) }
-	//g.keyMapper[pixels.KeyPeriod] = func(p bool) { b.KeyboardSetKey(p, component.VKPeriod) }
+	//g.keyMapper["period"] = func(p bool) { b.KeyboardSetKey(p, component.VKPeriod) }
 	g.keyMapper[":"] = func(p bool) { b.KeyboardSetKey(p, component.VKSemicolon) }
 	g.keyMapper[";"] = func(p bool) { b.KeyboardSetKey(p, component.VKQuote) }
 	g.keyMapper["*"] = func(p bool) { b.KeyboardSetKey(p, component.VKAsterisk) }
