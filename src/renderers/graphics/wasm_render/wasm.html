@@ -22,13 +22,10 @@
     let imageHeight;
     let jsFrameBuffer;
 
-    //let audioCtx;
-    let nextStartTime = 0;     // Tiene traccia di quando il prossimo buffer dovrebbe iniziare a suonare
+
     //let audioQueue = [];       // Coda per i buffer audio ricevuti da Go
     //let isPlaying = false;
 
-
-    // --- Variabili globali o accessibili allo scheduler ---
     let audioCtx; // Il tuo AudioContext, assicurati sia inizializzato e 'running'
     //const audioQueue = []; // La coda dove Go aggiunge gli AudioBuffer
     //let nextScheduleTime = 0; // L'AudioContext time in cui il prossimo buffer dovrebbe iniziare
@@ -36,6 +33,7 @@
     //let schedulerTimerId = null; // ID del timer per setTimeout
     let hasUserInteracted = false;
     let audioSampleRate = 0;
+    let nextStartTime = 0;
 
     // --- Parametri configurabili per lo scheduler ---
     //const SCHEDULE_AHEAD_TIME = 0.1; // Quanto avanti schedulare (es. 100ms)
@@ -281,32 +279,25 @@
             console.error("JS samplesReadyCallback: AudioContext non inizializzato.");
             return;
         }
-
         if (audioCtx.state !== 'running') {
             console.warn("JS samplesReadyCallback: AudioContext non 'running'. Stato:", audioCtx.state, ". Buffer scartato.");
             return;
         }
-
-        // Se sei qui, audioCtx.state === 'running'
         if (!jsFloat32Array || jsFloat32Array.length === 0) {
-            // console.log("samplesReadyCallback: null or empty buffer");
             return;
         }
-
         const audioBuffer = audioCtx.createBuffer(1, jsFloat32Array.length, audioSampleRate);
         audioBuffer.getChannelData(0).set(jsFloat32Array);
-
         const source = audioCtx.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioCtx.destination);
-
         const currentTime = audioCtx.currentTime;
         let startTime = nextStartTime;
-
-        if (startTime === 0) { // Solo per il vero primo avvio assoluto (improbabile se onUserFirstInteraction setta nextStartTime)
+        if (startTime === 0) {
             console.log(`JS: First ever buffer, scheduling at currentTime + 0.010s`);
             startTime = currentTime + 0.010;
-        } else if (startTime < currentTime - 0.1) { // Se siamo MOLTO in ritardo (100ms)
+        } else if (startTime < currentTime - 0.1) {
+            // Se siamo MOLTO in ritardo (100ms)
             console.warn(`JS: Major lag detected. Resetting start time. Ideal: ${startTime.toFixed(4)}, Current: ${currentTime.toFixed(4)}. Starting in 10ms.`);
             startTime = currentTime + 0.010;
         } else if (startTime < currentTime) {

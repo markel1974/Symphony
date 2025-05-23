@@ -43,10 +43,7 @@ func main() {
 	fileServer := http.FileServer(http.FS(subFS))
 	http.Handle("/", fileServer)
 
-	log.Println("\nServer avviato su http://localhost:8080")
-	log.Println("Se 'wasm.html' è listato sopra in 'subFS (server root)', dovrebbe essere accessibile a http://localhost:8080/wasm.html")
-	log.Println("Se 'symphony.wasm' è listato sopra in 'subFS (server root)', dovrebbe essere accessibile a http://localhost:8080/symphony.wasm")
-
+	log.Println("\nServer avviato su http://0.0.0.0:8080")
 	if err = http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatal("Errore ListenAndServe: ", err)
 	}
