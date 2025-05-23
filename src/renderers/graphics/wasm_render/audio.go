@@ -215,10 +215,16 @@ func (a *Audio) initWasm() error {
 		a.Pause()
 		return nil
 	}
+	flush := func(this js.Value, args []js.Value) interface{} {
+		a.goBuffer = a.goBuffer[:0]
+		a.cyclesSinceFlush = 0
+		return nil
+	}
 
-	js.Global().Set("initAudioContextAndGetCallback", js.FuncOf(init))
+	js.Global().Set("wasmAudioInit", js.FuncOf(init))
 	js.Global().Set("wasmAudioPlay", js.FuncOf(play))
 	js.Global().Set("wasmAudioPause", js.FuncOf(pause))
+	js.Global().Set("wasmAudioFlush", js.FuncOf(flush))
 
 	return nil
 }

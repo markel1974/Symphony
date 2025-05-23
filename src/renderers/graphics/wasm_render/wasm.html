@@ -25,12 +25,12 @@
     //let audioCtx;
     let nextStartTime = 0;     // Tiene traccia di quando il prossimo buffer dovrebbe iniziare a suonare
     //let audioQueue = [];       // Coda per i buffer audio ricevuti da Go
-    let isPlaying = false;
+    //let isPlaying = false;
 
 
     // --- Variabili globali o accessibili allo scheduler ---
     let audioCtx; // Il tuo AudioContext, assicurati sia inizializzato e 'running'
-    const audioQueue = []; // La coda dove Go aggiunge gli AudioBuffer
+    //const audioQueue = []; // La coda dove Go aggiunge gli AudioBuffer
     //let nextScheduleTime = 0; // L'AudioContext time in cui il prossimo buffer dovrebbe iniziare
     //let isSchedulerActive = false; // Flag per sapere se il loop dello scheduler è attivo
     //let schedulerTimerId = null; // ID del timer per setTimeout
@@ -255,21 +255,20 @@
             audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 })
             //audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             audioSampleRate = audioCtx.sampleRate;
-            initAudioContextAndGetCallback(audioCtx, audioSampleRate, samplesReadyCallback);
+            wasmAudioInit(audioCtx, audioSampleRate, samplesReadyCallback);
 
-            //let hasUserInteracted = false;
             document.body.addEventListener('click', async () => {
                 if (!hasUserInteracted && audioCtx && audioCtx.state === 'suspended') {
                     try {
                         await audioCtx.resume();
                         console.log("JS: AudioContext resumed by user gesture. State:", audioCtx.state);
+                        wasmAudioFlush();
                         hasUserInteracted = true;
-                        //if (!isSchedulerActive && audioQueue.length > 0) {
-                        //    startAudioScheduler();
-                        //}
+                        //const resumedTime = audioCtx.currentTime;
+                        nextStartTime = 0 //resumedTime + 0.020;
                     } catch (e) { console.error("JS: Error resuming AudioContext on gesture", e); }
                 }
-            }, { once: true }); // 'once: true' per eseguire una sola volta
+            }, { once: true });
             //document.body.addEventListener('click', onUserAudioInteraction, { once: true });
         } catch (e) {
             console.error("Web Audio API is not supported in this browser", e);
@@ -278,46 +277,46 @@
     }
 
     function samplesReadyCallback(jsFloat32Array)  {
-        if (audioCtx.state === 'suspended') {
-            audioCtx.resume().then(() => {
-                console.log("JS: AudioContext resumed on data arrival.");
-                // Potresti dover richiamare schedulePlayback o gestire il buffer appena arrivato
-            });
-        }
-        if (jsFloat32Array && jsFloat32Array.length > 0) {
-            const audioBuffer = audioCtx.createBuffer(1, jsFloat32Array.length, audioSampleRate);
-            audioBuffer.getChannelData(0).set(jsFloat32Array);
-            audioQueue.push(audioBuffer);
-            schedulePlayback();
-        }
-    }
-
-    function schedulePlayback() {
-        if (audioCtx.state === 'suspended') {
+        if (!audioCtx) {
+            console.error("JS samplesReadyCallback: AudioContext non inizializzato.");
             return;
         }
-        let totalQueuedSamples = 0;
-        for(const buffer of audioQueue) {
-            totalQueuedSamples += buffer.length;
-        }
-        if (isPlaying && audioQueue.length > 0 || (!isPlaying && totalQueuedSamples >= 1)) {
-            isPlaying = true;
-            while (audioQueue.length > 0) {
-                const audioBuffer = audioQueue.shift();
-                const source = audioCtx.createBufferSource();
-                source.buffer = audioBuffer;
-                source.connect(audioCtx.destination);
 
-                const currentTime = audioCtx.currentTime;
-                if (nextStartTime < currentTime) {
-                    nextStartTime = currentTime;
-                }
-                source.start(nextStartTime);
-                nextStartTime += audioBuffer.duration;
-            }
-        } else if (audioQueue.length === 0) {
-            isPlaying = false;
+        if (audioCtx.state !== 'running') {
+            console.warn("JS samplesReadyCallback: AudioContext non 'running'. Stato:", audioCtx.state, ". Buffer scartato.");
+            return;
         }
+
+        // Se sei qui, audioCtx.state === 'running'
+        if (!jsFloat32Array || jsFloat32Array.length === 0) {
+            // console.log("samplesReadyCallback: null or empty buffer");
+            return;
+        }
+
+        const audioBuffer = audioCtx.createBuffer(1, jsFloat32Array.length, audioSampleRate);
+        audioBuffer.getChannelData(0).set(jsFloat32Array);
+
+        const source = audioCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(audioCtx.destination);
+
+        const currentTime = audioCtx.currentTime;
+        let startTime = nextStartTime;
+
+        if (startTime === 0) { // Solo per il vero primo avvio assoluto (improbabile se onUserFirstInteraction setta nextStartTime)
+            console.log(`JS: First ever buffer, scheduling at currentTime + 0.010s`);
+            startTime = currentTime + 0.010;
+        } else if (startTime < currentTime - 0.1) { // Se siamo MOLTO in ritardo (100ms)
+            console.warn(`JS: Major lag detected. Resetting start time. Ideal: ${startTime.toFixed(4)}, Current: ${currentTime.toFixed(4)}. Starting in 10ms.`);
+            startTime = currentTime + 0.010;
+        } else if (startTime < currentTime) {
+            // Lag minore, schedula al tempo ideale passato
+            // const lag = currentTime - startTime;
+            // console.log(`JS: Scheduling with slightly past time. Ideal: ${startTime.toFixed(4)}, Current: ${currentTime.toFixed(4)}, Lag: ${lag.toFixed(4)}s`);
+            // Non c'è bisogno di modificare startTime, Web Audio lo gestirà.
+        }
+        source.start(startTime);
+        nextStartTime = startTime + audioBuffer.duration;
     }
 
     /*
