@@ -20,12 +20,28 @@
     let webGLTexture;
     let imageWidth;
     let imageHeight;
+    let jsFrameBuffer;
 
-    let audioCtx;
+    //let audioCtx;
     let nextStartTime = 0;     // Tiene traccia di quando il prossimo buffer dovrebbe iniziare a suonare
-    let audioQueue = [];       // Coda per i buffer audio ricevuti da Go
+    //let audioQueue = [];       // Coda per i buffer audio ricevuti da Go
     let isPlaying = false;
-    let minSamplesForPlayback = 1024; // Inizia a suonare quando abbiamo almeno questi campioni in coda
+
+
+    // --- Variabili globali o accessibili allo scheduler ---
+    let audioCtx; // Il tuo AudioContext, assicurati sia inizializzato e 'running'
+    const audioQueue = []; // La coda dove Go aggiunge gli AudioBuffer
+    //let nextScheduleTime = 0; // L'AudioContext time in cui il prossimo buffer dovrebbe iniziare
+    //let isSchedulerActive = false; // Flag per sapere se il loop dello scheduler è attivo
+    //let schedulerTimerId = null; // ID del timer per setTimeout
+    let hasUserInteracted = false;
+    let audioSampleRate = 0;
+
+    // --- Parametri configurabili per lo scheduler ---
+    //const SCHEDULE_AHEAD_TIME = 0.1; // Quanto avanti schedulare (es. 100ms)
+    //const SCHEDULER_INTERVAL_MS = 10; // Ogni quanto far girare lo scheduler (es. 25ms)
+    //const MIN_START_OFFSET = 0.020;   // Piccolo offset per il primissimo avvio (20ms)
+    //const SAFETY_OFFSET_ON_LAG = 0.005; // Piccolo offset se siamo in ritardo (5ms)
 
 
     const go = new Go();
@@ -80,32 +96,46 @@
         buffers = initBuffers(gl);
         webGLTexture = createAndSetupTexture(gl);
 
-        const initialSurfacePtr = getSurfacePointer();
-        const initialSurfaceLen = getSurfaceLen();
-        let surfaceViewFromWasm = new Uint8Array(wasmInstance.exports.mem.buffer, initialSurfacePtr, initialSurfaceLen);
+        //const initialSurfacePtr = getSurfacePointer();
+        //const initialSurfaceLen = getSurfaceLen();
+        //let surfaceViewFromWasm = new Uint8Array(wasmInstance.exports.mem.buffer, initialSurfacePtr, initialSurfaceLen);
 
         imageWidth = getDisplayWidth();
         imageHeight = getDisplayHeight();
 
+        initRender(5000, onVBlank)
+
+        setInterval(() => { emulate(); }, 0)
+
+        function onVBlank() {
+            //const currentWasmMemoryBuffer = wasmInstance.exports.mem.buffer;
+            //if (surfaceViewFromWasm.buffer !== currentWasmMemoryBuffer || surfaceViewFromWasm.byteLength === 0) {
+            //    surfaceViewFromWasm = new Uint8Array(currentWasmMemoryBuffer, initialSurfacePtr, initialSurfaceLen);
+            //}
+            //jsFrameBuffer = new Uint8Array(surfaceViewFromWasm)
+            jsFrameBuffer = getDisplayBuffer();
+            requestAnimationFrame(renderFrame);
+            //renderFrame()
+        }
         //canvas.width = imageWidth * 3;
         //canvas.height = imageHeight * 3;
         //gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         function renderFrame() {
-            emulateFrame();
-
-            const currentWasmMemoryBuffer = wasmInstance.exports.mem.buffer;
-            if (surfaceViewFromWasm.buffer !== currentWasmMemoryBuffer || surfaceViewFromWasm.byteLength === 0) {
-                surfaceViewFromWasm = new Uint8Array(currentWasmMemoryBuffer, initialSurfacePtr, initialSurfaceLen);
-            }
-            updateTextureWithData(gl, webGLTexture, imageWidth, imageHeight, surfaceViewFromWasm);
+            if (!jsFrameBuffer) return;
+            //emulateFrame();
+            //const currentWasmMemoryBuffer = wasmInstance.exports.mem.buffer;
+            //if (surfaceViewFromWasm.buffer !== currentWasmMemoryBuffer || surfaceViewFromWasm.byteLength === 0) {
+            //    surfaceViewFromWasm = new Uint8Array(currentWasmMemoryBuffer, initialSurfacePtr, initialSurfaceLen);
+            //}
+            updateTextureWithData(gl, webGLTexture, imageWidth, imageHeight, jsFrameBuffer);
             drawWebGLScene(gl, shaderProgramInfo, buffers, webGLTexture);
 
             //const buffer = getDisplayBuffer();
             //updateTextureWithData(gl, webGLTexture, imageWidth, imageHeight, buffer);
             //drawWebGLScene(gl, shaderProgramInfo, buffers, webGLTexture);
 
-            requestAnimationFrame(renderFrame);
+            //requestAnimationFrame(renderFrame);
         }
 
         document.addEventListener("keydown", (event) => {
@@ -222,64 +252,45 @@
 
     function setupAudio() {
         try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const sampleRate = audioCtx.sampleRate;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 44100 })
+            //audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioSampleRate = audioCtx.sampleRate;
+            initAudioContextAndGetCallback(audioCtx, audioSampleRate, samplesReadyCallback);
 
-            // Funzione callback che Go chiamerà con i campioni pronti
-            const samplesReadyCallback = (jsFloat32Array) => {
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume().then(() => {
-                        console.log("JS: AudioContext resumed on data arrival.");
-                        // Potresti dover richiamare schedulePlayback o gestire il buffer appena arrivato
-                    });
+            //let hasUserInteracted = false;
+            document.body.addEventListener('click', async () => {
+                if (!hasUserInteracted && audioCtx && audioCtx.state === 'suspended') {
+                    try {
+                        await audioCtx.resume();
+                        console.log("JS: AudioContext resumed by user gesture. State:", audioCtx.state);
+                        hasUserInteracted = true;
+                        //if (!isSchedulerActive && audioQueue.length > 0) {
+                        //    startAudioScheduler();
+                        //}
+                    } catch (e) { console.error("JS: Error resuming AudioContext on gesture", e); }
                 }
-                // jsFloat32Array è un Float32Array creato in Go e passato a JS
-                if (jsFloat32Array && jsFloat32Array.length > 0) {
-                    //console.log("RECEIVED AUDIO DATA")
-                    //console.log(jsFloat32Array.slice(0, 10))
-
-                    const audioBuffer = audioCtx.createBuffer(1, jsFloat32Array.length, sampleRate);
-                    audioBuffer.getChannelData(0).set(jsFloat32Array);
-                    audioQueue.push(audioBuffer);
-                    schedulePlayback();
-                }
-            };
-
-            initAudioContextAndGetCallback(audioCtx, sampleRate, samplesReadyCallback);
-
-            // Prova a sbloccare l'AudioContext (richiesto da alcuni browser dopo interazione utente)
-            document.body.addEventListener('click', () => {
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume().then(() => {
-                        console.log('AudioContext resumed on user interaction.');
-                        // Potresti voler chiamare wasmAudioPlay() qui se l'emulazione era in attesa
-                    });
-                }
-            }, { once: true });
+            }, { once: true }); // 'once: true' per eseguire una sola volta
+            //document.body.addEventListener('click', onUserAudioInteraction, { once: true });
         } catch (e) {
             console.error("Web Audio API is not supported in this browser", e);
             alert("Web Audio API is not supported in this browser");
         }
     }
 
-    /*
-    function schedulePlayback() {
-        while (audioQueue.length > 0 && audioCtx.currentTime + scheduleLookahead > nextStartTime) {
-            const bufferToPlay = audioQueue.shift();
-            const source = audioCtx.createBufferSource();
-            source.buffer = bufferToPlay;
-            source.connect(audioCtx.destination);
-
-            if (nextStartTime < audioCtx.currentTime + Sicherheitsabstand) { // Se siamo troppo vicini o in ritardo
-                nextStartTime = audioCtx.currentTime + Sicherheitsabstand;
-            }
-
-            source.start(nextStartTime);
-            // console.log("Scheduling buffer at:", nextStartTime, "duration:", bufferToPlay.duration, "ctxTime:", audioCtx.currentTime);
-            nextStartTime += bufferToPlay.duration;
+    function samplesReadyCallback(jsFloat32Array)  {
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().then(() => {
+                console.log("JS: AudioContext resumed on data arrival.");
+                // Potresti dover richiamare schedulePlayback o gestire il buffer appena arrivato
+            });
+        }
+        if (jsFloat32Array && jsFloat32Array.length > 0) {
+            const audioBuffer = audioCtx.createBuffer(1, jsFloat32Array.length, audioSampleRate);
+            audioBuffer.getChannelData(0).set(jsFloat32Array);
+            audioQueue.push(audioBuffer);
+            schedulePlayback();
         }
     }
-    */
 
     function schedulePlayback() {
         if (audioCtx.state === 'suspended') {
@@ -289,7 +300,7 @@
         for(const buffer of audioQueue) {
             totalQueuedSamples += buffer.length;
         }
-        if (isPlaying && audioQueue.length > 0 || (!isPlaying && totalQueuedSamples >= minSamplesForPlayback)) {
+        if (isPlaying && audioQueue.length > 0 || (!isPlaying && totalQueuedSamples >= 1)) {
             isPlaying = true;
             while (audioQueue.length > 0) {
                 const audioBuffer = audioQueue.shift();
@@ -308,6 +319,116 @@
             isPlaying = false;
         }
     }
+
+    /*
+function samplesReadyCallback(jsFloat32Array) {
+    if (!audioCtx) {
+        console.error("JS: AudioContext non inizializzato in samplesReadyCallback.");
+        return;
+    }
+    if (audioCtx.state !== 'running') {
+        console.warn("JS: AudioContext non è 'running' in samplesReadyCallback. Stato:", audioCtx.state);
+        return;
+    }
+    // Crea l'AudioBuffer dai dati float32 (la tua logica attuale)
+    // const newAudioBuffer = audioCtx.createBuffer(1, jsFloat32Array.length, audioCtx.sampleRate);
+    // newAudioBuffer.getChannelData(0).set(jsFloat32Array);
+    const newAudioBuffer = createMyAudioBuffer(jsFloat32Array);
+    if (newAudioBuffer) {
+        audioQueue.push(newAudioBuffer);
+        if (!isSchedulerActive) {
+            startAudioScheduler();
+        }
+    }
+}
+
+function startAudioScheduler() {
+    if (isSchedulerActive) return;
+    if (!audioCtx || audioCtx.state !== 'running') {
+        console.log("JS: Impossibile avviare lo scheduler, AudioContext non pronto.");
+        return;
+    }
+    if (nextScheduleTime < audioCtx.currentTime) {
+        nextScheduleTime = audioCtx.currentTime + MIN_START_OFFSET;
+    }
+    isSchedulerActive = true;
+    schedulerTimerId = setTimeout(schedulerLoop, SCHEDULER_INTERVAL_MS);
+}
+
+function schedulerLoop() {
+    if (!audioCtx || audioCtx.state !== 'running') {
+        console.warn("JS Scheduler: AudioContext non più 'running'. Arresto scheduler.");
+        isSchedulerActive = false;
+        return;
+    }
+
+    // Continua a schedulare buffer finché ce ne sono in coda
+    // il tempo di scheduling previsto è all'interno della nostra finestra di lookahead.
+    while (audioQueue.length > 0 && nextScheduleTime < audioCtx.currentTime + SCHEDULE_AHEAD_TIME) {
+        const bufferToSchedule = audioQueue.shift();
+        const sourceNode = audioCtx.createBufferSource();
+        sourceNode.buffer = bufferToSchedule;
+        sourceNode.connect(audioCtx.destination);
+
+        // Se, nonostante il lookahead, nextScheduleTime è rimasto indietro rispetto a currentTime,
+        // significa che il sistema sta faticando. Schedula il prima possibile.
+        // Questo è il punto dove un "tic" potrebbe ancora verificarsi se il lag è severo,
+        // ma il lookahead dovrebbe rendere questa situazione rara.
+
+
+        //if (nextScheduleTime < audioCtx.currentTime) {
+        //    console.warn("JS WARN (Scheduler): nextScheduleTime era nel passato! Old:", nextScheduleTime.toFixed(4), "CtxTime:", audioCtx.currentTime.toFixed(4), ". Schedulazione ASAP con piccolo offset.");
+        //    nextScheduleTime = audioCtx.currentTime + SAFETY_OFFSET_ON_LAG;
+        //}
+        //sourceNode.start(nextScheduleTime);
+        //nextScheduleTime += bufferToSchedule.duration; // Avanza per il prossimo buffer
+        const currentTime = audioCtx.currentTime; // Prendi il tempo corrente una volta
+
+// --- INIZIO MODIFICA SUGGERITA ---
+        if (nextScheduleTime < currentTime) {
+            const lag = currentTime - nextScheduleTime;
+            console.warn(`JS WARN (Scheduler): Scheduling con tempo nel passato. nextScheduleTime IDEALE: ${nextScheduleTime.toFixed(4)}, currentTime REALE: ${currentTime.toFixed(4)}, Lag effettivo: ${lag.toFixed(4)}s`);
+
+            // NON resettare nextScheduleTime a currentTime + SAFETY_OFFSET_ON_LAG per piccoli lag.
+            // Lasciamo che sourceNode.start() usi il nextScheduleTime originale (anche se è nel passato).
+            // Il browser lo suonerà "appena possibile" (effettivamente a currentTime).
+        }
+
+        sourceNode.start(nextScheduleTime); // Schedula al tempo IDEALE, anche se è leggermente nel passato
+
+        // console.log(`JS LOG (Scheduler): Schedulato buffer. IdealStartTime: ${nextScheduleTime.toFixed(4)}, CtxAttuale: ${currentTime.toFixed(4)}, Dur: ${bufferToSchedule.duration.toFixed(4)}`);
+
+        // Avanza SEMPRE nextScheduleTime (la variabile globale) basandoti
+        // sulla fine di QUESTO buffer rispetto al SUO tempo di inizio IDEALE.
+        nextScheduleTime += bufferToSchedule.duration;
+        // --- FINE MODIFICA SUGGERITA ---
+    }
+
+    if (audioQueue.length > 0 || nextScheduleTime > audioCtx.currentTime) {
+        schedulerTimerId = setTimeout(schedulerLoop, SCHEDULER_INTERVAL_MS);
+    } else {
+        console.log("JS: Scheduler arrestato. Coda vuota e riproduzione terminata/raggiunta.");
+        isSchedulerActive = false;
+    }
+}
+
+function createMyAudioBuffer(jsFloat32Array) {
+    if (!jsFloat32Array || jsFloat32Array.length === 0) return null;
+    if (!audioCtx || audioCtx.state !== 'running') {
+        console.warn("JS createMyAudioBuffer: AudioContext non pronto per creare buffer.");
+        return null; // O gestisci diversamente, es. accodando il Float32Array grezzo
+    }
+    try {
+        const buffer = audioCtx.createBuffer(1, jsFloat32Array.length, audioCtx.sampleRate);
+        buffer.getChannelData(0).set(jsFloat32Array);
+        return buffer;
+    } catch (e) {
+        console.error("JS: Errore durante la creazione di AudioBuffer:", e, "Stato Contesto:", audioCtx.state);
+        return null;
+    }
+}
+*/
+
 
 </script>
 </body>

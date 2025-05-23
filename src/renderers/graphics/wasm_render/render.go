@@ -17,10 +17,11 @@ import (
 type Render struct {
 	board         references.IBoard
 	displayBuffer *DisplayBuffer
-	vBlank        bool
 	w             int
 	h             int
 	input         *Inputs
+	onVBlank      js.Value
+	emulateRate   int
 }
 
 // NewRender initializes and returns a pointer to a new instance of the Render struct with default values.
@@ -28,8 +29,8 @@ func NewRender() *Render {
 	return &Render{
 		displayBuffer: nil, //NewDisplayBuffer(320, 200),
 		board:         nil,
-		vBlank:        false,
 		input:         NewInputs(),
+		emulateRate:   5000,
 	}
 }
 
@@ -67,17 +68,7 @@ func (g *Render) Start() error {
 
 // VBlank sets the vBlank flag to true, signaling the start of the vertical blanking interval in the rendering process.
 func (g *Render) VBlank() {
-	g.vBlank = true
-	//if g.win.MouseInsideWindow() {
-	//	g.inputs.MouseMove(g.win.MousePositionXY())
-	//}
-	//g.inputs.Keys(g.win.KeysPressed())
-	//g.surface.Draw(g.win, g.surfaceM)
-	//if g.led {
-	//	g.ledSurface.Draw(g.win, g.ledSurfaceM)
-	//}
-	//g.win.Update()
-	//g.run = !g.win.Closed()
+	g.onVBlank.Invoke()
 }
 
 // LedActivity toggles the LED state for the specified device number based on the given boolean value.
@@ -87,14 +78,20 @@ func (g *Render) LedActivity(deviceNumber uint8, led bool) {
 }
 
 func (g *Render) initWasm() error {
-	emulateFrame := func(this js.Value, args []js.Value) interface{} {
-		for {
-			g.board.Emulate()
-			if g.vBlank {
-				g.vBlank = false
-				return nil
-			}
+	initRender := func(this js.Value, args []js.Value) interface{} {
+		if len(args) < 2 {
+			println("Error: initRender emulateRate, vBlankCallback")
+			return nil
 		}
+		g.emulateRate = args[0].Int()
+		g.onVBlank = args[1]
+		return nil
+	}
+	emulate := func(this js.Value, args []js.Value) interface{} {
+		for x := 0; x < g.emulateRate; x++ {
+			g.board.Emulate()
+		}
+		return nil
 	}
 	getSurfacePointer := func(this js.Value, args []js.Value) interface{} {
 		surfacePtr := g.displayBuffer.GetSurfacePointer()
@@ -133,12 +130,13 @@ func (g *Render) initWasm() error {
 		}
 		return nil
 	}
+	js.Global().Set("initRender", js.FuncOf(initRender))
 	js.Global().Set("getDisplayBuffer", js.FuncOf(getDisplayBuffer))
 	js.Global().Set("getDisplayWidth", js.FuncOf(getDisplayWidth))
 	js.Global().Set("getDisplayHeight", js.FuncOf(getDisplayHeight))
 	js.Global().Set("getSurfacePointer", js.FuncOf(getSurfacePointer))
 	js.Global().Set("getSurfaceLen", js.FuncOf(getSurfaceLen))
-	js.Global().Set("emulateFrame", js.FuncOf(emulateFrame))
+	js.Global().Set("emulate", js.FuncOf(emulate))
 	js.Global().Set("keyPressed", js.FuncOf(keyPressed))
 	js.Global().Set("keyReleased", js.FuncOf(keyReleased))
 	return nil
