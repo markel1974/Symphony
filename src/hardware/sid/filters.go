@@ -41,33 +41,33 @@ func calcResonanceHp(x float64) float64 {
 
 // Filters represents the state and configuration of an audio filter, including coefficients, resonance, and frequencies.
 type Filters struct {
-	filterType         FilterType   // Filter type
-	filterFreq         uint8        // SID filter frequency (upper 8 bits)
+	filterType         FilterType // Filter type
+	filterFreqHigh     uint8      // SID filter frequency (upper 8 bits)
+	filterFreqLow      uint8
 	filterRes          uint8        // Filter resonance (0..15)
 	filterAmpl         float64      // IIR filter input attenuation;
 	d1, d2, g1, g2     float64      // IIR filter coefficients
 	xn1, xn2, yn1, yn2 float64      // IIR filter previous input/output signal
 	resonanceLP        [256]float64 // shortcut for calc_filter
 	resonanceHP        [256]float64
-	useFilters         bool
 }
 
 // NewFilters initializes a new Filters instance with default parameters and precomputes resonance lookup tables.
-func NewFilters(useFilters bool) *Filters {
+func NewFilters() *Filters {
 	f := &Filters{
-		useFilters: useFilters,
-		filterType: FilterNone,
-		filterFreq: 0,
-		filterRes:  0,
-		filterAmpl: 1.0,
-		d1:         0.0,
-		d2:         0.0,
-		g1:         0.0,
-		g2:         0.0,
-		xn1:        0.0,
-		xn2:        0.0,
-		yn1:        0.0,
-		yn2:        0.0,
+		filterType:     FilterNone,
+		filterFreqHigh: 0,
+		filterFreqLow:  0,
+		filterRes:      0,
+		filterAmpl:     1.0,
+		d1:             0.0,
+		d2:             0.0,
+		g1:             0.0,
+		g2:             0.0,
+		xn1:            0.0,
+		xn2:            0.0,
+		yn1:            0.0,
+		yn2:            0.0,
 	}
 	for i := 0; i < 256; i++ {
 		f.resonanceLP[i] = calcResonanceLp(float64(i))
@@ -79,7 +79,7 @@ func NewFilters(useFilters bool) *Filters {
 // Reset reinitializes all filter parameters in the Filters struct to their default values, effectively clearing any previous state.
 func (f *Filters) Reset() {
 	f.filterType = FilterNone
-	f.filterFreq = 0
+	f.filterFreqHigh = 0
 	f.filterRes = 0
 	f.filterAmpl = 1.0
 	f.d1 = 0.0
@@ -94,25 +94,29 @@ func (f *Filters) Reset() {
 
 // Compute applies the filter defined in the Filters struct to the output signal and returns the resulting value.
 func (f *Filters) Compute(outputFilter int32) int32 {
-	if f.useFilters {
-		xn := float64(outputFilter) * f.filterAmpl
-		yn := xn + (f.d1 * f.xn1) + (f.d2 * f.xn2) - (f.g1 * f.yn1) - (f.g2 * f.yn2)
-		f.yn2 = f.yn1
-		f.yn1 = yn
-		f.xn2 = f.xn1
-		f.xn1 = xn
-		outputFilter = int32(yn)
-	}
+	xn := float64(outputFilter) * f.filterAmpl
+	yn := xn + (f.d1 * f.xn1) + (f.d2 * f.xn2) - (f.g1 * f.yn1) - (f.g2 * f.yn2)
+	f.yn2 = f.yn1
+	f.yn1 = yn
+	f.xn2 = f.xn1
+	f.xn1 = xn
+	outputFilter = int32(yn)
 	return outputFilter
 }
 
-// UpdateFreq updates the filter frequency if the given data differs from the current frequency and recomputes if filters are active.
-func (f *Filters) UpdateFreq(data uint8) {
-	if data != f.filterFreq {
-		f.filterFreq = data
-		if f.useFilters {
-			f.compute()
-		}
+// UpdateFreqLow sets the low part of the filter frequency and recalculates filter coefficients if the value is changed.
+func (f *Filters) UpdateFreqLow(data uint8) {
+	if data != f.filterFreqLow {
+		f.filterFreqLow = data
+		f.compute()
+	}
+}
+
+// UpdateFreqHigh updates the high part of the filter frequency and recalculates filter coefficients if the value changes.
+func (f *Filters) UpdateFreqHigh(data uint8) {
+	if data != f.filterFreqHigh {
+		f.filterFreqHigh = data
+		f.compute()
 	}
 }
 
@@ -121,9 +125,7 @@ func (f *Filters) UpdateRes(data uint8) {
 	v := data >> 4
 	if v != f.filterRes {
 		f.filterRes = v
-		if f.useFilters {
-			f.compute()
-		}
+		f.compute()
 	}
 }
 
@@ -136,9 +138,7 @@ func (f *Filters) UpdateType(data uint8) {
 		f.xn2 = 0.0
 		f.yn1 = 0.0
 		f.yn2 = 0.0
-		if f.useFilters {
-			f.compute()
-		}
+		f.compute()
 	}
 }
 
@@ -162,11 +162,18 @@ func (f *Filters) compute() {
 		return
 	}
 
+	// Combina i byte di frequenza per ottenere il valore a 11 bit (0-2047)
+	cutoff11bit := (uint16(f.filterFreqHigh) << 8) | uint16(f.filterFreqLow)
+
+	// Mappa il valore a 11 bit all'indice a 8 bit (0-255) per le tabelle di lookup
+	// Usiamo gli 8 bit più significativi
+	filterIndex := uint8(cutoff11bit >> 3)
+
 	// Calculate resonance frequency
 	if f.filterType == FilterLp || f.filterType == FilterLpBp {
-		fr = f.resonanceLP[f.filterFreq]
+		fr = f.resonanceLP[filterIndex]
 	} else {
-		fr = f.resonanceHP[f.filterFreq]
+		fr = f.resonanceHP[filterIndex]
 	}
 	// Limit to <1/2 sample frequency, avoid div by 0 in case FilterBp below
 	arg := fr / float64(SampleFreq>>1)

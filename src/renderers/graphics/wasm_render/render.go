@@ -9,6 +9,9 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+//TODO 5000 cicli max per emulate e creare callback per vblank
+//Fette Ragionevoli: Dividere il lavoro di un VBlank (19656 cicli) in 2-4 fette (quindi ogni fetta esegue 5000-10000 cicli C64 e dura circa 5-10ms di tempo reale) è spesso un buon compromesso. Questo crea 100-200 "slot liberi" al secondo per il loop dell'emulatore, il che è ampiamente sufficiente per far girare uno scheduler audio con un intervallo di 10ms in modo molto più affidabile.
+
 // Render manages the display rendering process and user interaction through inputs and a linked board implementation.
 // It integrates with a DisplayBuffer for screen updates and relies on IBoard for controlling board operations.
 type Render struct {

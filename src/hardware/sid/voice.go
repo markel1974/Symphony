@@ -37,13 +37,13 @@ const (
 
 // Voice represents a sound generator within a synthesizer.
 type Voice struct {
-	number  uint8
+	number  uint8        // number represents the numerical identifier of the voice in the synthesizer.
 	wave    WaveFormType // Selected waveform
 	egState EGState      // Current state of EG
 	modBy   *Voice       // Voice that modulates this one
 	modTo   *Voice       // Voice that is modulated by this one
 	count   uint32       // Counter for waveform generator, 8.16 fixed
-	add     uint32       // Added to counter in every frame
+	add     uint32       // Added to the counter in every frame
 	freq    uint16       // SID frequency value
 	pw      uint16       // SID pulse-width value
 	aAdd    uint32       // EG parameters
@@ -57,7 +57,7 @@ type Voice struct {
 	test    uint8        // Test bit
 	filter  uint8        // Flag: Voice filtered
 	sync    uint8        // The following bit is set for the modulating voices, not for the modulated one (as the SID bits)
-	seed    uint32
+	seed    uint32       // seed represents the current state of the random number generator for noise waveform generation.
 }
 
 // NewVoice creates a new Voice instance with provided voice number and initializes its properties to default values.
@@ -113,9 +113,19 @@ func (v *Voice) Reset() {
 	v.filter = 0
 }
 
+// SetFilter updates the filter flag for the voice to indicate whether it should be filtered, using the given value.
+func (v *Voice) SetFilter(f uint8) {
+	v.filter = f
+}
+
+// Filter returns the filter flag for the voice, indicating whether the voice is filtered.
+func (v *Voice) Filter() uint8 {
+	return v.filter
+}
+
 // UpdateFreqA updates the lower 8 bits of the frequency register and recalculates the increment value for the waveform generator.
-func (v *Voice) UpdateFreqA(regIdx uint8) {
-	v.freq = (v.freq & 0xff00) | uint16(regIdx)
+func (v *Voice) UpdateFreqA(data uint8) {
+	v.freq = (v.freq & 0xff00) | uint16(data)
 	v.add = uint32(float64(v.freq) * Frequency / SampleFreq)
 }
 

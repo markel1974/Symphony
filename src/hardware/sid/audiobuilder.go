@@ -13,6 +13,16 @@ const (
 	LatencyAvg = 280
 )
 
+// _audioRegisters defines the array of SID audio-related register indices used for audio processing in the SID chip.
+//var _audioRegisters = []uint8{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 22, 23, 24}
+
+var _audioRegisters = []uint8{
+	0, 1, 2, 3, 4, 5, 6, // Voce 1
+	7, 8, 9, 10, 11, 12, 13, // Voce 2
+	14, 15, 16, 17, 18, 19, 20, // Voce 3
+	21, 22, 23, 24, // Filtro & Globali
+}
+
 // EGState represents the state of an envelope generator in a sound synthesis context.
 type EGState int
 
@@ -40,14 +50,14 @@ type EGState int
 // leadLoWater sets the low-water threshold for lead buffer management.
 type AudioBuilder struct {
 	player          references.IAudioRender
-	fragSize        int                  // samples, not bytes
-	bufferFrags     int                  // frags the in buffer
-	bufferSize      int                  // bytes, not samples
-	volume          uint8                // Master volume
-	v3Mute          uint8                // Voice 3 muted
-	voices          []*Voice             // Data for 3 voices
-	sampleBuf       [SampleBufSize]uint8 // Buffer for sampled voices
-	sampleInPtr     int                  // Index in sample_buf for writing
+	fragSize        int      // samples, not bytes
+	bufferFrags     int      // frags the in buffer
+	bufferSize      int      // bytes, not samples
+	volume          uint8    // Master volume
+	v3Mute          uint8    // Voice 3 muted
+	voices          []*Voice // Data for 3 voices
+	sampleBuf       []uint8  // Buffer for sampled voices
+	sampleInPtr     int      // Index in sample_buf for writing
 	soundBuffer     []uint32
 	toOutput        int
 	sbPos           int
@@ -71,13 +81,14 @@ func NewAudioBuilder(player references.IAudioRender, useFilters bool, fragFreq i
 	maxLeadAvg := bufferFrags
 	d := &AudioBuilder{
 		player:          player,
+		sampleBuf:       make([]uint8, SampleBufSize),
 		divisorTable:    NewDivisorTable(rasters, fragFreq),
 		voices:          nil,
 		fragSize:        fragSize,
 		bufferFrags:     fragFreq,
 		bufferSize:      bufferSize,
 		registerToVoice: make([]*Voice, RegisterCount),
-		filters:         NewFilters(useFilters),
+		filters:         NewFilters(),
 		lead:            make([]int, maxLeadAvg),
 		leadSmooth:      LatencyAvg / fragInterval,
 		leadHiWater:     LatencyMax / fragInterval,
@@ -128,42 +139,64 @@ func (dr *AudioBuilder) Reset() {
 	dr.sbPos = 0
 }
 
-// LoadRegister processes a given register and applies an update to the corresponding voice or system parameter based on the register value.
-func (dr *AudioBuilder) LoadRegister(reg uint8, data uint8) {
-	switch reg {
-	case 0, 7, 14:
-		voice := dr.registerToVoice[reg]
-		voice.UpdateFreqA(reg)
-	case 1, 8, 15:
-		voice := dr.registerToVoice[reg]
-		voice.UpdateFreqB(data)
-	case 2, 9, 16:
-		voice := dr.registerToVoice[reg]
-		voice.UpdatePulseWidthA(data)
-	case 3, 10, 17:
-		voice := dr.registerToVoice[reg]
-		voice.UpdatePulseWidthB(data)
-	case 4, 11, 18:
-		voice := dr.registerToVoice[reg]
-		voice.UpdateWaveForm(data)
-	case 5, 12, 19:
-		voice := dr.registerToVoice[reg]
-		voice.UpdateEnvelopeGenerators(data)
-	case 6, 13, 20:
-		voice := dr.registerToVoice[reg]
-		voice.UpdateSustainLevel(data)
-	case 22:
-		dr.updateFilterFreq(data)
-	case 23:
-		dr.updateVoiceFilters(data)
-	case 24:
-		dr.updateVolume(data)
+// LoadRegister processes audio register data to update voice properties, filter settings, and master volume, generating sound.
+func (dr *AudioBuilder) LoadRegister(registers []uint8) {
+	for _, reg := range _audioRegisters {
+		data := registers[reg]
+		switch reg {
+		case 0, 7, 14:
+			voice := dr.registerToVoice[reg]
+			voice.UpdateFreqA(data)
+		case 1, 8, 15:
+			voice := dr.registerToVoice[reg]
+			voice.UpdateFreqB(data)
+		case 2, 9, 16:
+			voice := dr.registerToVoice[reg]
+			voice.UpdatePulseWidthA(data)
+		case 3, 10, 17:
+			voice := dr.registerToVoice[reg]
+			voice.UpdatePulseWidthB(data)
+		case 4, 11, 18:
+			voice := dr.registerToVoice[reg]
+			voice.UpdateWaveForm(data)
+		case 5, 12, 19:
+			voice := dr.registerToVoice[reg]
+			voice.UpdateEnvelopeGenerators(data)
+		case 6, 13, 20:
+			voice := dr.registerToVoice[reg]
+			voice.UpdateSustainLevel(data)
+		case 21:
+			dr.updateFilterFreqLow(data)
+		case 22:
+			// Il registro 22 ($D416) usa solo i 3 bit più bassi per la frequenza
+			dr.updateFilterFreqHigh(data & 0x07)
+		case 23:
+			dr.updateVoiceFilters(data)
+		case 24:
+			dr.updateVolume(data)
+		}
+	}
+	dr.sampleBuf[dr.sampleInPtr] = dr.volume
+	dr.sampleInPtr = (dr.sampleInPtr + 1) % SampleBufSize
+	dr.divisor += SampleFreq
+	dr.toOutput += int(dr.divisorTable.GetOut(dr.divisor))
+	dr.divisor = int(dr.divisorTable.GetDivisor(dr.divisor))
+
+	// Calculate the sound data only when we have enough to fill the buffer entirely.
+	if dr.toOutput >= dr.fragSize {
+		dr.toOutput -= dr.fragSize
+		dr.write()
 	}
 }
 
 // updateFilterFreq updates the filter frequency in the Filters instance using the given data.
-func (dr *AudioBuilder) updateFilterFreq(data uint8) {
-	dr.filters.UpdateFreq(data)
+func (dr *AudioBuilder) updateFilterFreqLow(data uint8) {
+	dr.filters.UpdateFreqLow(data)
+}
+
+// updateFilterFreq updates the filter frequency in the Filters instance using the given data.
+func (dr *AudioBuilder) updateFilterFreqHigh(data uint8) {
+	dr.filters.UpdateFreqHigh(data)
 }
 
 // updateVoiceFilters updates the individual filter settings for each voice and the overall filter resonance settings.
@@ -180,9 +213,9 @@ func (dr *AudioBuilder) updateVoiceFilters(data uint8) {
 	if (data & 4) != 0 {
 		f3 = 1
 	}
-	dr.voices[0].filter = f1
-	dr.voices[1].filter = f2
-	dr.voices[2].filter = f3
+	dr.voices[0].SetFilter(f1)
+	dr.voices[1].SetFilter(f2)
+	dr.voices[2].SetFilter(f3)
 	dr.filters.UpdateRes(data)
 }
 
@@ -225,7 +258,7 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 			}
 			v.count &= 0xffffff
 			output := v.ComputeWaveForm()
-			if v.filter != 0 {
+			if v.Filter() != 0 {
 				sumOutputFilter += int32(int16(output^0x8000)) * int32(envelope)
 			} else {
 				sumOutput += int32(int16(output^0x8000)) * int32(envelope)
@@ -240,21 +273,6 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 		//}
 
 		buf[idx] = uint32((sumOutput + sumOutputFilter) >> 10)
-	}
-}
-
-// Update processes audio data for the buffer, updates sample values, and handles fragment writing when thresholds are met.
-func (dr *AudioBuilder) Update() {
-	dr.sampleBuf[dr.sampleInPtr] = dr.volume
-	dr.sampleInPtr = (dr.sampleInPtr + 1) % SampleBufSize
-	dr.divisor += SampleFreq
-	dr.toOutput += int(dr.divisorTable.GetOut(dr.divisor))
-	dr.divisor = int(dr.divisorTable.GetDivisor(dr.divisor))
-
-	// Calculate the sound data only when we have enough to fill the buffer entirely.
-	if dr.toOutput >= dr.fragSize {
-		dr.toOutput -= dr.fragSize
-		dr.write()
 	}
 }
 
