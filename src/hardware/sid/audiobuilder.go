@@ -237,9 +237,10 @@ func (dr *AudioBuilder) updateVolume(data uint8) {
 // It iterates through the buffer, calculating the mixed output for each audio voice and summing the results.
 // The method uses sample data, master volume, envelopes, and other voice parameters for precise audio mixing.
 // Filtered and unfiltered outputs are computed and combined, then written into the provided buffer.
-func (dr *AudioBuilder) calcBuffer(buf []uint32) {
+func (dr *AudioBuilder) calcBuffer(buf []uint32, sampleInPtr int) {
 	const halfBufSize = SampleBufSize / 2
-	sampleCount := uint32((dr.sampleInPtr + halfBufSize) << 16)
+	const samples = ((0x138 * 50) << 16) / SampleFreq
+	sampleCount := uint32((sampleInPtr + halfBufSize) << 16)
 	count := len(buf)
 	count >>= 1 // 16 bit mono output, count is in bytes
 	//count >>= 2; // 16 bit stereo output, count is in bytes
@@ -248,33 +249,26 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32) {
 		sumOutputFilter := int32(0)
 		// Get current master volume from sample buffer, calculate sampled voices
 		masterVolume := dr.sampleBuf[(sampleCount>>16)%SampleBufSize]
-		sampleCount += ((0x138 * 50) << 16) / SampleFreq
+		sampleCount += samples
 		sumOutput := _sampleTable[masterVolume] << 8
-		for _, v := range dr.voices {
-			v.ComputeEnvelopeGenerators()
-			envelope := uint16((v.egLevel * uint32(masterVolume)) >> 20)
-			if v.test == 0 {
-				v.count += v.add
+		for _, voice := range dr.voices {
+			voice.ComputeEnvelopeGenerators()
+			envelope := uint16((voice.egLevel * uint32(masterVolume)) >> 20)
+			if voice.test == 0 {
+				voice.count += voice.add
 			}
-			if (v.sync != 0) && (v.count > 0x1000000) {
-				v.modTo.count = 0
+			if (voice.sync != 0) && (voice.count > 0x1000000) {
+				voice.modTo.count = 0
 			}
-			v.count &= 0xffffff
-			output := v.ComputeWaveForm()
-			if v.Filter() != 0 {
+			voice.count &= 0xffffff
+			output := voice.ComputeWaveForm()
+			if voice.Filter() != 0 {
 				sumOutputFilter += int32(int16(output^0x8000)) * int32(envelope)
 			} else {
 				sumOutput += int32(int16(output^0x8000)) * int32(envelope)
 			}
 		}
 		sumOutputFilter = dr.filters.Compute(sumOutputFilter)
-
-		//if idx < 5 { // Stampa solo per i primi campioni di questo blocco
-		//	valoreSintetizzatoRaw := sumOutput + sumOutputFilter
-		//	valoreScalato := valoreSintetizzatoRaw >> 10 // Questo è ciò che viene messo nel buffer uint32
-		//	fmt.Printf("calcBuffer: idx=%d, rawSum=%d, scaledValue=%d, uint32_in_buf=0x%X\n", idx, valoreSintetizzatoRaw, valoreScalato, uint32(valoreScalato))
-		//}
-
 		buf[idx] = uint32((sumOutput + sumOutputFilter) >> 10)
 	}
 }
@@ -313,14 +307,14 @@ func (dr *AudioBuilder) write() {
 	}
 	// Calculate one frag
 	nSamples := dr.fragSize
-	dr.calcBuffer(dr.soundBuffer)
+	dr.calcBuffer(dr.soundBuffer, dr.sampleInPtr)
 	// If we're getting too far behind the audio add an extra frag.
 	if avgLead < dr.leadLoWater {
 		for i := 0; i < dr.leadSmooth; i++ {
 			dr.lead[i]++
 		}
 		//fmt.Printf("Adding an extra frag...\n");
-		dr.calcBuffer(dr.soundBuffer[dr.fragSize:])
+		dr.calcBuffer(dr.soundBuffer[dr.fragSize:], dr.sampleInPtr)
 		nSamples += dr.fragSize
 	}
 	// Write the frags to the player and update out write position.
