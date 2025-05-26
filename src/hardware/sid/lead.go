@@ -45,8 +45,8 @@ func (l *Lead) Average(leadInFrags int) (int, bool) {
 	}
 	avgLead /= l.smooth
 	//fmt.Printf("lead = %d, avg = %d\n", leadInFrags, avgLead)
-	//If we're getting too far ahead of the audio skip a frag.
 	if avgLead > l.hiWater {
+		//too far ahead of the audio skip a frag.
 		for i := 0; i < l.smooth; i++ {
 			l.data[i]--
 		}
