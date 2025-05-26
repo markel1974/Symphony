@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Symphony Emulator</title>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #333; }
+        canvas { width: 100%; height: 100% }
+    </style>
+    <script src="wasm_exec.js"></script>
+    <script src="graphics.js"></script>
+    <script src="audio.js"></script>
+    <script src="inputs.js"></script>
+    <script src="graphics.js"></script>
+</head>
+<body>
+<canvas id="canvas" width="640" height="480"></canvas>
+
+<script>
+    const go = new Go();
+    WebAssembly.instantiateStreaming(fetch("symphony.wasm"), go.importObject).then((result) => {
+        const inst = result.instance;
+        go.run(inst);
+
+        setupAudio(inst, 44100);
+
+        setupInputs(inst);
+
+        setupGraphics(inst, 4000);
+
+        setInterval(() => { emulate(); }, 1)
+    });
+</script>
+</body>
+</html>
