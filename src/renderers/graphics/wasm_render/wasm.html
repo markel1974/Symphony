@@ -20,7 +20,6 @@
     let webGLTexture;
     let imageWidth;
     let imageHeight;
-    let jsFrameBuffer;
 
 
     //let audioQueue = [];       // Coda per i buffer audio ricevuti da Go
@@ -94,46 +93,32 @@
         buffers = initBuffers(gl);
         webGLTexture = createAndSetupTexture(gl);
 
-        //const initialSurfacePtr = getSurfacePointer();
-        //const initialSurfaceLen = getSurfaceLen();
-        //let surfaceViewFromWasm = new Uint8Array(wasmInstance.exports.mem.buffer, initialSurfacePtr, initialSurfaceLen);
+        const initialSurfacePtr = getSurfacePointer();
+        const initialSurfaceLen = getSurfaceLen();
+        let surfaceViewFromWasm = new Uint8Array(wasmInstance.exports.mem.buffer, initialSurfacePtr, initialSurfaceLen);
 
         imageWidth = getDisplayWidth();
         imageHeight = getDisplayHeight();
 
         initRender(5000, onVBlank)
 
-        setInterval(() => { emulate(); }, 0)
+        setInterval(() => { emulate(); }, 1)
 
         function onVBlank() {
-            //const currentWasmMemoryBuffer = wasmInstance.exports.mem.buffer;
-            //if (surfaceViewFromWasm.buffer !== currentWasmMemoryBuffer || surfaceViewFromWasm.byteLength === 0) {
-            //    surfaceViewFromWasm = new Uint8Array(currentWasmMemoryBuffer, initialSurfacePtr, initialSurfaceLen);
-            //}
-            //jsFrameBuffer = new Uint8Array(surfaceViewFromWasm)
-            jsFrameBuffer = getDisplayBuffer();
+            const currentWasmMemoryBuffer = wasmInstance.exports.mem.buffer;
+            if (surfaceViewFromWasm.buffer !== currentWasmMemoryBuffer || surfaceViewFromWasm.byteLength === 0) {
+                surfaceViewFromWasm = new Uint8Array(currentWasmMemoryBuffer, initialSurfacePtr, initialSurfaceLen);
+            }
+            //const jsFrameBuffer = getDisplayBuffer();
+            updateTextureWithData(gl, webGLTexture, imageWidth, imageHeight, surfaceViewFromWasm);
             requestAnimationFrame(renderFrame);
-            //renderFrame()
         }
         //canvas.width = imageWidth * 3;
         //canvas.height = imageHeight * 3;
         //gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
         function renderFrame() {
-            if (!jsFrameBuffer) return;
-            //emulateFrame();
-            //const currentWasmMemoryBuffer = wasmInstance.exports.mem.buffer;
-            //if (surfaceViewFromWasm.buffer !== currentWasmMemoryBuffer || surfaceViewFromWasm.byteLength === 0) {
-            //    surfaceViewFromWasm = new Uint8Array(currentWasmMemoryBuffer, initialSurfacePtr, initialSurfaceLen);
-            //}
-            updateTextureWithData(gl, webGLTexture, imageWidth, imageHeight, jsFrameBuffer);
             drawWebGLScene(gl, shaderProgramInfo, buffers, webGLTexture);
-
-            //const buffer = getDisplayBuffer();
-            //updateTextureWithData(gl, webGLTexture, imageWidth, imageHeight, buffer);
-            //drawWebGLScene(gl, shaderProgramInfo, buffers, webGLTexture);
-
-            //requestAnimationFrame(renderFrame);
         }
 
         document.addEventListener("keydown", (event) => {
