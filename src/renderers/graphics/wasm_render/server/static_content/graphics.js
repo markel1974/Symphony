@@ -87,31 +87,28 @@ function initBuffers(gl) {
     };
 }
 
-function drawWebGLScene(gl, programInfo, buffers, texture) {
-    //gl.clearColor(0.0, 0.0, 0.0, 1.0);//black
-    //gl.clearDepth(1.0);
-    // gl.enable(gl.DEPTH_TEST); // Probabilmente non necessario per una scena 2D singola
-    // gl.depthFunc(gl.LEQUAL);
-    //gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    gl.useProgram(programInfo.program);
+function setupScene(gl, programInfo, buffers) {
+    // Queste chiamate settano lo stato di WebGL per il rendering
+    // e non cambiano a meno che tu non cambi il tipo di oggetto, shader, ecc.
 
-    // vertex coordinates
+    gl.useProgram(programInfo.program); // Specifica lo shader program da usare (solitamente una volta)
+
+    // Attributi dei vertici (posizione)
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
     gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
 
-    // texture coordinates
+    // Attributi delle coordinate texture
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
     gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
 
-    // Specifica la texture da usare
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
-
-    gl.drawArrays(gl.TRIANGLES, 0, buffers.vertexCount);
+    // Queste impostazioni sono generali e di solito fisse per il rendering di frame
+    gl.clearColor(0.0, 0.0, 0.0, 1.0); // Una volta all'inizio o solo se il colore di clear cambia
+    gl.clearDepth(1.0); // Idem
+    // gl.enable(gl.DEPTH_TEST); // Solo se stai facendo 3D e non hai un singolo quad 2D
+    // gl.depthFunc(gl.LEQUAL); // Idem
 }
 
 function setupGraphics(wasmInstance, frameInterval) {
@@ -139,15 +136,13 @@ function setupGraphics(wasmInstance, frameInterval) {
 
     const graphicsBuffers = initBuffers(graphicsGL);
     const graphicsTexture = createAndSetupTexture(graphicsGL);
-
+    const graphicsImageWidth = getDisplayWidth();
+    const graphicsImageHeight = getDisplayHeight();
     const initialSurfacePtr = getSurfacePointer();
     const initialSurfaceLen = getSurfaceLen();
     let surfaceViewFromWasm = new Uint8Array(wasmInstance.exports.mem.buffer, initialSurfacePtr, initialSurfaceLen);
 
-    const _graphicsImageWidth = getDisplayWidth();
-    const _graphicsImageHeight = getDisplayHeight();
-
-    initRender(frameInterval, onVBlank)
+    setupScene(graphicsGL, graphicsShaderProgramInfo, graphicsBuffers)
 
     function onVBlank() {
         const currentWasmMemoryBuffer = wasmInstance.exports.mem.buffer;
@@ -156,11 +151,18 @@ function setupGraphics(wasmInstance, frameInterval) {
         }
         //const jsFrameBuffer = getDisplayBuffer();
         graphicsGL.bindTexture(graphicsGL.TEXTURE_2D, graphicsTexture);
-        graphicsGL.texImage2D(graphicsGL.TEXTURE_2D, 0, graphicsGL.RGBA, _graphicsImageWidth, _graphicsImageHeight, 0, graphicsGL.RGBA, graphicsGL.UNSIGNED_BYTE, surfaceViewFromWasm);
+        graphicsGL.texImage2D(graphicsGL.TEXTURE_2D, 0, graphicsGL.RGBA, graphicsImageWidth, graphicsImageHeight, 0, graphicsGL.RGBA, graphicsGL.UNSIGNED_BYTE, surfaceViewFromWasm);
         requestAnimationFrame(() => {
-            drawWebGLScene(graphicsGL, graphicsShaderProgramInfo, graphicsBuffers, graphicsTexture);
+            //drawWebGLScene(graphicsGL, graphicsShaderProgramInfo, graphicsBuffers, graphicsTexture);
+            graphicsGL.activeTexture(graphicsGL.TEXTURE0); // Attiva la texture unit 0
+            graphicsGL.bindTexture(graphicsGL.TEXTURE_2D, graphicsTexture); // Collega la tua texture a quella unit
+            graphicsGL.uniform1i(graphicsShaderProgramInfo.uniformLocations.uSampler, 0); // Comunica allo shader che uSampler è sulla texture unit 0
+            graphicsGL.drawArrays(graphicsGL.TRIANGLES, 0, 6); // Assumendo un quad fatto da 6 vertici (2 triangoli)
+            //drawFrame(graphicsGL, graphicsShaderProgramInfo, graphicsTexture);
         });
     }
+
+    initRender(frameInterval, onVBlank)
     //canvas.width = imageWidth * 3;
     //canvas.height = imageHeight * 3;
     //gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
