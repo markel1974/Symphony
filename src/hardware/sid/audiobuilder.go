@@ -176,6 +176,9 @@ func (dr *AudioBuilder) LoadRegister(registers []uint8) {
 			dr.updateVolume(data)
 		}
 	}
+}
+
+func (dr *AudioBuilder) Flush() {
 	dr.sampleBuf[dr.sampleInPtr] = dr.volume
 	dr.sampleInPtr = (dr.sampleInPtr + 1) % SampleBufSize
 	dr.divisor += SampleFreq

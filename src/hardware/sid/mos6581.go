@@ -131,6 +131,7 @@ func (sid *SID) Update() {
 		sid.audioBuilder.LoadRegister(sid.history[regs])
 	}
 	sid.historyCount = 0
+	sid.audioBuilder.Flush()
 }
 
 // GetLastByte retrieves the last byte from the SID's internal state or configuration.
