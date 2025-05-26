@@ -144,21 +144,17 @@ function setupGraphics(wasmInstance, frameInterval) {
 
     setupScene(graphicsGL, graphicsShaderProgramInfo, graphicsBuffers)
 
+    graphicsGL.activeTexture(graphicsGL.TEXTURE0);
+    graphicsGL.bindTexture(graphicsGL.TEXTURE_2D, graphicsTexture);
+
     function onVBlank() {
         const currentWasmMemoryBuffer = wasmInstance.exports.mem.buffer;
         if (surfaceViewFromWasm.buffer !== currentWasmMemoryBuffer || surfaceViewFromWasm.byteLength === 0) {
             surfaceViewFromWasm = new Uint8Array(currentWasmMemoryBuffer, initialSurfacePtr, initialSurfaceLen);
         }
-        //const jsFrameBuffer = getDisplayBuffer();
-        graphicsGL.bindTexture(graphicsGL.TEXTURE_2D, graphicsTexture);
         graphicsGL.texImage2D(graphicsGL.TEXTURE_2D, 0, graphicsGL.RGBA, graphicsImageWidth, graphicsImageHeight, 0, graphicsGL.RGBA, graphicsGL.UNSIGNED_BYTE, surfaceViewFromWasm);
         requestAnimationFrame(() => {
-            //drawWebGLScene(graphicsGL, graphicsShaderProgramInfo, graphicsBuffers, graphicsTexture);
-            graphicsGL.activeTexture(graphicsGL.TEXTURE0); // Attiva la texture unit 0
-            graphicsGL.bindTexture(graphicsGL.TEXTURE_2D, graphicsTexture); // Collega la tua texture a quella unit
-            graphicsGL.uniform1i(graphicsShaderProgramInfo.uniformLocations.uSampler, 0); // Comunica allo shader che uSampler è sulla texture unit 0
             graphicsGL.drawArrays(graphicsGL.TRIANGLES, 0, 6); // Assumendo un quad fatto da 6 vertici (2 triangoli)
-            //drawFrame(graphicsGL, graphicsShaderProgramInfo, graphicsTexture);
         });
     }
 
