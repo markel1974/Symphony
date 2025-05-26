@@ -35,19 +35,14 @@ type EGState int
 // v3Mute indicates whether voice 3 is muted.
 // voices holds the configuration and data for each individual voice generator.
 // sampleBuf is a buffer for storing sampled voice data.
-// sampleInPtr is the current position in sampleBuf where new samples are written.
+// sampleBufIdx is the current position in sampleBuf where new samples are written.
 // soundBuffer is an array for holding audio output data before rendering.
 // toOutput tracks the amount of data left to output in the soundBuffer.
 // sbPos keeps the current position within the soundBuffer.
 // divisor defines the current divider value used for audio processing timing.
-// lead is an array for managing lead data used in audio rendering.
-// leadPos specifies the current position within the lead array.
 // registerToVoice maps registers to corresponding voice instances.
 // filters represents audio filters applied during playback.
 // divisorTable holds precomputed divisor values for efficient audio processing.
-// leadSmooth determines the smoothing level applied to the lead buffer.
-// leadHiWater defines the high-water threshold for lead buffer management.
-// leadLoWater sets the low-water threshold for lead buffer management.
 type AudioBuilder struct {
 	player          references.IAudioRender
 	fragSize        int      // samples, not bytes
@@ -57,28 +52,23 @@ type AudioBuilder struct {
 	v3Mute          uint8    // Voice 3 muted
 	voices          []*Voice // Data for 3 voices
 	sampleBuf       []uint8  // Buffer for sampled voices
-	sampleInPtr     int      // Index in sample_buf for writing
+	sampleBufIdx    int      // Index in sample_buf for writing
 	soundBuffer     []uint32
 	toOutput        int
 	sbPos           int
 	divisor         int
-	lead            []int
-	leadPos         int
 	registerToVoice []*Voice
 	filters         *Filters
 	divisorTable    *DivisorTable
-	leadSmooth      int
-	leadHiWater     int
-	leadLoWater     int
+	lead            *Lead
 }
 
 // NewAudioBuilder initializes and returns a new instance of AudioBuilder with the specified parameters.
 func NewAudioBuilder(player references.IAudioRender, useFilters bool, fragFreq int, rasters int) *AudioBuilder {
-	bufferFrags := fragFreq                  // one frag per frame
-	fragSize := SampleFreq / fragFreq        // samples, not bytes
-	fragInterval := 1000 / fragFreq          // in milliseconds
-	bufferSize := 2 * fragSize * bufferFrags // bytes, not samples
-	maxLeadAvg := bufferFrags
+	// one frag per frame
+	fragSize := SampleFreq / fragFreq     // samples, not bytes
+	bufferSize := 2 * fragSize * fragFreq // bytes, not samples
+
 	d := &AudioBuilder{
 		player:          player,
 		sampleBuf:       make([]uint8, SampleBufSize),
@@ -89,11 +79,8 @@ func NewAudioBuilder(player references.IAudioRender, useFilters bool, fragFreq i
 		bufferSize:      bufferSize,
 		registerToVoice: make([]*Voice, RegisterCount),
 		filters:         NewFilters(),
-		lead:            make([]int, maxLeadAvg),
-		leadSmooth:      LatencyAvg / fragInterval,
-		leadHiWater:     LatencyMax / fragInterval,
-		leadLoWater:     LatencyMin / fragInterval,
 		soundBuffer:     make([]uint32, 2*fragSize),
+		lead:            NewLead(fragFreq),
 	}
 
 	voice0 := NewVoice(0)
@@ -123,7 +110,7 @@ func (dr *AudioBuilder) Reset() {
 		voice.Reset()
 	}
 	dr.filters.Reset()
-	dr.sampleInPtr = 0
+	dr.sampleBufIdx = 0
 	for x := range dr.sampleBuf {
 		dr.sampleBuf[x] = 0
 	}
@@ -132,10 +119,7 @@ func (dr *AudioBuilder) Reset() {
 	for x := range dr.soundBuffer {
 		dr.soundBuffer[x] = 0
 	}
-	for x := range dr.lead {
-		dr.lead[x] = 0
-	}
-	dr.leadPos = 0
+	dr.lead.Reset()
 	dr.sbPos = 0
 }
 
@@ -179,8 +163,8 @@ func (dr *AudioBuilder) LoadRegister(registers []uint8) {
 }
 
 func (dr *AudioBuilder) Flush() {
-	dr.sampleBuf[dr.sampleInPtr] = dr.volume
-	dr.sampleInPtr = (dr.sampleInPtr + 1) % SampleBufSize
+	dr.sampleBuf[dr.sampleBufIdx] = dr.volume
+	dr.sampleBufIdx = (dr.sampleBufIdx + 1) % SampleBufSize
 	dr.divisor += SampleFreq
 	dr.toOutput += int(dr.divisorTable.GetOut(dr.divisor))
 	dr.divisor = int(dr.divisorTable.GetDivisor(dr.divisor))
@@ -237,10 +221,10 @@ func (dr *AudioBuilder) updateVolume(data uint8) {
 // It iterates through the buffer, calculating the mixed output for each audio voice and summing the results.
 // The method uses sample data, master volume, envelopes, and other voice parameters for precise audio mixing.
 // Filtered and unfiltered outputs are computed and combined, then written into the provided buffer.
-func (dr *AudioBuilder) calcBuffer(buf []uint32, sampleInPtr int) {
+func (dr *AudioBuilder) calcBuffer(buf []uint32, sampleBufIdx int) {
 	const halfBufSize = SampleBufSize / 2
 	const samples = ((0x138 * 50) << 16) / SampleFreq
-	sampleCount := uint32((sampleInPtr + halfBufSize) << 16)
+	sampleCount := uint32((sampleBufIdx + halfBufSize) << 16)
 	count := len(buf)
 	count >>= 1 // 16 bit mono output, count is in bytes
 	//count >>= 2; // 16 bit stereo output, count is in bytes
@@ -285,36 +269,18 @@ func (dr *AudioBuilder) write() {
 		leadInBytes -= dr.bufferSize
 	}
 	leadInFrags := leadInBytes / 2 * dr.fragSize
-	dr.lead[dr.leadPos] = leadInFrags
-	dr.leadPos++
-	if dr.leadPos == dr.leadSmooth {
-		dr.leadPos = 0
-	}
-	// Compute the average lead in frags.
-	avgLead := 0
-	for i := 0; i < dr.leadSmooth; i++ {
-		avgLead += dr.lead[i]
-	}
-	avgLead /= dr.leadSmooth
-	//fmt.Printf("lead = %d, avg = %d\n", leadInFrags, avgLead)
-	//If we're getting too far ahead of the audio skip a frag.
-	if avgLead > dr.leadHiWater {
-		for i := 0; i < dr.leadSmooth; i++ {
-			dr.lead[i]--
-		}
-		//fmt.Printf("Skipping a frag...\n")
+	avgLead, ok := dr.lead.Average(leadInFrags)
+	if !ok {
 		return
 	}
 	// Calculate one frag
 	nSamples := dr.fragSize
-	dr.calcBuffer(dr.soundBuffer, dr.sampleInPtr)
+	dr.calcBuffer(dr.soundBuffer, dr.sampleBufIdx)
 	// If we're getting too far behind the audio add an extra frag.
-	if avgLead < dr.leadLoWater {
-		for i := 0; i < dr.leadSmooth; i++ {
-			dr.lead[i]++
-		}
+	if avgLead < dr.lead.GetLoWater() {
+		dr.lead.Update()
 		//fmt.Printf("Adding an extra frag...\n");
-		dr.calcBuffer(dr.soundBuffer[dr.fragSize:], dr.sampleInPtr)
+		dr.calcBuffer(dr.soundBuffer[dr.fragSize:], dr.sampleBufIdx)
 		nSamples += dr.fragSize
 	}
 	// Write the frags to the player and update out write position.
