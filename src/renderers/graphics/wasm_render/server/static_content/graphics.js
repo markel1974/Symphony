@@ -88,10 +88,7 @@ function initBuffers(gl) {
 }
 
 
-function setupScene(gl, programInfo, buffers) {
-    // Queste chiamate settano lo stato di WebGL per il rendering
-    // e non cambiano a meno che tu non cambi il tipo di oggetto, shader, ecc.
-
+function setupScene(gl, programInfo, buffers, graphicsTexture) {
     gl.useProgram(programInfo.program); // Specifica lo shader program da usare (solitamente una volta)
 
     // Attributi dei vertici (posizione)
@@ -109,6 +106,10 @@ function setupScene(gl, programInfo, buffers) {
     gl.clearDepth(1.0); // Idem
     // gl.enable(gl.DEPTH_TEST); // Solo se stai facendo 3D e non hai un singolo quad 2D
     // gl.depthFunc(gl.LEQUAL); // Idem
+
+    // Texture
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, graphicsTexture);
 }
 
 function setupGraphics(wasmInstance, frameInterval) {
@@ -142,10 +143,7 @@ function setupGraphics(wasmInstance, frameInterval) {
     const initialSurfaceLen = getSurfaceLen();
     let surfaceViewFromWasm = new Uint8Array(wasmInstance.exports.mem.buffer, initialSurfacePtr, initialSurfaceLen);
 
-    setupScene(graphicsGL, graphicsShaderProgramInfo, graphicsBuffers)
-
-    graphicsGL.activeTexture(graphicsGL.TEXTURE0);
-    graphicsGL.bindTexture(graphicsGL.TEXTURE_2D, graphicsTexture);
+    setupScene(graphicsGL, graphicsShaderProgramInfo, graphicsBuffers, graphicsTexture)
 
     function onVBlank() {
         const currentWasmMemoryBuffer = wasmInstance.exports.mem.buffer;
@@ -154,7 +152,7 @@ function setupGraphics(wasmInstance, frameInterval) {
         }
         graphicsGL.texImage2D(graphicsGL.TEXTURE_2D, 0, graphicsGL.RGBA, graphicsImageWidth, graphicsImageHeight, 0, graphicsGL.RGBA, graphicsGL.UNSIGNED_BYTE, surfaceViewFromWasm);
         requestAnimationFrame(() => {
-            graphicsGL.drawArrays(graphicsGL.TRIANGLES, 0, 6); // Assumendo un quad fatto da 6 vertici (2 triangoli)
+              graphicsGL.drawArrays(graphicsGL.TRIANGLES, 0, 6); // Assumendo un quad fatto da 6 vertici (2 triangoli)
         });
     }
 
