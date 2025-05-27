@@ -32,7 +32,6 @@ type EGState int
 // bufferFrags determines the number of fragments in the buffer.
 // bufferSize represents the total buffer size in bytes for storing audio data.
 // volume controls the master volume level of the audio system.
-// v3Mute indicates whether voice 3 is muted.
 // voices holds the configuration and data for each individual voice generator.
 // sampleBuf is a buffer for storing sampled voice data.
 // sampleBufIdx is the current position in sampleBuf where new samples are written.
@@ -49,7 +48,6 @@ type AudioBuilder struct {
 	bufferFrags     int      // frags the in buffer
 	bufferSize      int      // bytes, not samples
 	volume          uint8    // Master volume
-	v3Mute          uint8    // Voice 3 muted
 	voices          []*Voice // Data for 3 voices
 	sampleBuf       []uint8  // Buffer for sampled voices
 	sampleBufIdx    int      // Index in sample_buf for writing
@@ -105,7 +103,6 @@ func NewAudioBuilder(player references.IAudioRender, useFilters bool, fragFreq i
 // Reset reinitializes the state of the AudioBuilder, clearing buffers, resetting filters, and setting default values.
 func (dr *AudioBuilder) Reset() {
 	dr.volume = 0
-	dr.v3Mute = 0
 	for _, voice := range dr.voices {
 		voice.Reset()
 	}
@@ -208,12 +205,12 @@ func (dr *AudioBuilder) updateVoiceFilters(data uint8) {
 
 // updateVolume adjusts the master volume, toggles voice 3 mute status, and updates the filter type based on input data.
 func (dr *AudioBuilder) updateVolume(data uint8) {
-	mute := uint8(0)
+	mute := false
 	if (data & 0x80) != 0 {
-		mute = 1
+		mute = true
 	}
 	dr.volume = data & 0xf
-	dr.v3Mute = mute
+	dr.voices[2].mute = mute
 	dr.filters.UpdateType(data)
 }
 
@@ -237,14 +234,11 @@ func (dr *AudioBuilder) calcBuffer(buf []uint32, sampleBufIdx int) {
 		sumOutput := _sampleTable[masterVolume] << 8
 		for _, voice := range dr.voices {
 			voice.ComputeEnvelopeGenerators()
-			envelope := uint16((voice.egLevel * uint32(masterVolume)) >> 20)
-			if voice.test == 0 {
-				voice.count += voice.add
+			envelope := uint16((voice.EgLevel() * uint32(masterVolume)) >> 20)
+			if voice.IsMuted() {
+				continue
 			}
-			if (voice.sync != 0) && (voice.count > 0x1000000) {
-				voice.modTo.count = 0
-			}
-			voice.count &= 0xffffff
+			voice.UpdateCount()
 			output := voice.ComputeWaveForm()
 			if voice.Filter() != 0 {
 				sumOutputFilter += int32(int16(output^0x8000)) * int32(envelope)

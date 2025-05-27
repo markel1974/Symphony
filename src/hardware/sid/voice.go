@@ -58,6 +58,7 @@ type Voice struct {
 	filter  uint8        // Flag: Voice filtered
 	sync    uint8        // The following bit is set for the modulating voices, not for the modulated one (as the SID bits)
 	seed    uint32       // seed represents the current state of the random number generator for noise waveform generation.
+	mute    bool
 }
 
 // NewVoice creates a new Voice instance with provided voice number and initializes its properties to default values.
@@ -84,6 +85,7 @@ func NewVoice(number uint8) *Voice {
 		filter:  0,
 		sync:    0,
 		seed:    1,
+		mute:    false,
 	}
 }
 
@@ -111,6 +113,15 @@ func (v *Voice) Reset() {
 	v.gate = 0
 	v.sync = 0
 	v.filter = 0
+	v.mute = false
+}
+
+func (v *Voice) IsMuted() bool {
+	return v.mute
+}
+
+func (v *Voice) EgLevel() uint32 {
+	return v.egLevel
 }
 
 // SetFilter updates the filter flag for the voice to indicate whether it should be filtered, using the given value.
@@ -192,6 +203,16 @@ func (v *Voice) UpdateEnvelopeGenerators(data uint8) {
 func (v *Voice) UpdateSustainLevel(data uint8) {
 	v.sLevel = (uint32(data) >> 4) * 0x111111
 	v.rSub = _eGTable[data&0xf]
+}
+
+func (v *Voice) UpdateCount() {
+	if v.test == 0 {
+		v.count += v.add
+	}
+	if (v.sync != 0) && (v.count > 0x1000000) {
+		v.modTo.count = 0
+	}
+	v.count &= 0xffffff
 }
 
 // ComputeEnvelopeGenerators updates the envelope generator levels and transitions between states based on current values.
