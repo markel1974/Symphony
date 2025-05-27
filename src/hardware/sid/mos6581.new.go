@@ -40,7 +40,6 @@ type SID struct {
 	bufferFrags int   // frags the in buffer
 	bufferSize  int   // bytes, not samples
 	volume      uint8 // Master volume
-	//v3Mute             uint8    // Voice 3 muted
 	voices             []*Voice // Data for 3 voices
 	sampleBuf          []uint8  // Buffer for sampled voices
 	sampleBufIdx       int      // Index in sample_buf for writing
@@ -163,7 +162,6 @@ func (sid *SID) Reset() {
 	sid.SetPotY(0xff)
 
 	sid.volume = 0
-	//sid.v3Mute = 0
 	for _, voice := range sid.voices {
 		voice.Reset()
 	}
@@ -247,9 +245,7 @@ func (sid *SID) WriteRegister(addr uint16, data uint8) {
 			mute = true
 		}
 		sid.volume = data & 0xf
-
 		sid.voices[2].mute = mute
-		//sid.v3Mute = mute
 		sid.filters.UpdateType(data)
 	}
 }
