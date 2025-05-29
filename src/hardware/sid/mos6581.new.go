@@ -148,10 +148,36 @@ func (sid *SID) Reset() {
 }
 
 // ReadRegister reads the value of the SID register at the given address. The address is masked to a valid register range.
+//
+//	func (sid *SID) ReadRegister(addr uint16) uint8 {
+//		reg := addr & 0x1f
+//		v := sid.registers[reg]
+//		return v
+//	}
 func (sid *SID) ReadRegister(addr uint16) uint8 {
 	reg := addr & 0x1f
-	v := sid.registers[reg]
-	return v
+
+	switch reg {
+	case 27: // OSC3 - Oscillator 3 Value ($D41B)
+		// Restituisce il byte più significativo (MSB) dell'output corrente
+		// dell'oscillatore della voce 2.
+		// La funzione ComputeWaveForm() in voice.go restituisce un uint16.
+		if len(sid.voices) > 2 && sid.voices[2] != nil {
+			return uint8(sid.voices[2].ComputeWaveForm() >> 8) //
+		}
+		return 0 // Fallback se la voce non è inizializzata
+	case 28: // ENV3 - Envelope 3 Value ($D41C)
+		// Restituisce il byte più significativo (MSB) del livello corrente
+		// dell'inviluppo della voce 2.
+		// La funzione EgLevel() in voice.go restituisce un uint32 (valore a 24 bit).
+		if len(sid.voices) > 2 && sid.voices[2] != nil {
+			return uint8(sid.voices[2].EgLevel() >> 16) //
+		}
+		return 0 // Fallback se la voce non è inizializzata
+	default:
+		// Per tutti gli altri registri, restituisce il valore memorizzato.
+		return sid.registers[reg]
+	}
 }
 
 // WriteRegister updates a specific SID register at `addr` with the given `data` and triggers related updates for voices or filters.
@@ -243,7 +269,7 @@ func (sid *SID) Prepare() {
 
 // Update processes and writes sound data to the audio player buffer using the current state of the SID.
 func (sid *SID) Update() {
-	sid.calcBuffer(sid.soundBuffer, sid.sampleBufIdx)
+	sid.calcSoundBuffer()
 
 	//TODO RIMUOVERE 2 * sid.fragSize e pos
 	soundBufferSamples := 2 * sid.fragSize
@@ -256,19 +282,21 @@ func (sid *SID) GetLastByte() uint8 {
 }
 
 // calcBuffer generates an audio buffer by combining waveform data, filters, and envelope generators for SID voices.
-func (sid *SID) calcBuffer(buf []uint32, sampleBufIdx int) {
+func (sid *SID) calcSoundBuffer() {
 	const halfBufSize = SampleBufSize / 2
 	const samples = ((0x138 * 50) << 16) / SampleFreq
-	sampleCount := uint32((sampleBufIdx + halfBufSize) << 16)
-	count := len(buf)
+	sampleCount := uint32((sid.sampleBufIdx + halfBufSize) << 16)
+	count := len(sid.soundBuffer)
 	count >>= 1 // 16 bit mono output, count is in bytes
 	//count >>= 2; // 16 bit stereo output, count is in bytes
 	idx := 0
 	for ; count >= 0; count, idx = count-1, idx+1 {
-		sumOutputFilter := int32(0)
+
 		// Get current master volume from sample buffer, calculate sampled voices
 		masterVolume := sid.sampleBuf[(sampleCount>>16)%SampleBufSize]
 		sampleCount += samples
+		sumOutputFilter := int32(0)
+
 		sumOutput := _sampleTable[masterVolume] << 8
 		for _, voice := range sid.voices {
 			voice.ComputeEnvelopeGenerators()
@@ -285,6 +313,6 @@ func (sid *SID) calcBuffer(buf []uint32, sampleBufIdx int) {
 			}
 		}
 		sumOutputFilter = sid.filters.Compute(sumOutputFilter)
-		buf[idx] = uint32((sumOutput + sumOutputFilter) >> 10)
+		sid.soundBuffer[idx] = uint32((sumOutput + sumOutputFilter) >> 10)
 	}
 }

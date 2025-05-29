@@ -6,7 +6,7 @@ import (
 )
 
 // FilterType represents the type of filter applied in the audio processing pipeline.
-type FilterType int
+//type FilterType int
 
 // FilterNone represents no filtering.
 // FilterLp represents a low-pass filter.
@@ -16,6 +16,8 @@ type FilterType int
 // FilterNotch represents a notch filter.
 // FilterHpBp represents a combination of high-pass and band-pass filters.
 // FilterAll represents applying all filters.
+
+/*
 const (
 	FilterNone = FilterType(iota)
 	FilterLp
@@ -25,6 +27,17 @@ const (
 	FilterNotch
 	FilterHpBp
 	FilterAll
+)
+
+*/
+
+type FilterType uint8
+
+const (
+	FilterNone FilterType = 0b000
+	FilterLp   FilterType = 0b001 // Bit 0 (Low Pass)
+	FilterBp   FilterType = 0b010 // Bit 1 (Band Pass)
+	FilterHp   FilterType = 0b100 // Bit 2 (High Pass)
 )
 
 // calcResonanceLp computes the resonance low-pass filter value based on the given input x using a polynomial equation.
@@ -39,17 +52,20 @@ func calcResonanceHp(x float64) float64 {
 	return v
 }
 
+// const resonanceSize = 1 << 11
+const resonanceSize = 1 << 8
+
 // Filters represents the state and configuration of an audio filter, including coefficients, resonance, and frequencies.
 type Filters struct {
 	filterType         FilterType // Filter type
 	filterFreqHigh     uint8      // SID filter frequency (upper 8 bits)
 	filterFreqLow      uint8
-	filterRes          uint8        // Filter resonance (0..15)
-	filterAmpl         float64      // IIR filter input attenuation;
-	d1, d2, g1, g2     float64      // IIR filter coefficients
-	xn1, xn2, yn1, yn2 float64      // IIR filter previous input/output signal
-	resonanceLP        [256]float64 // shortcut for calc_filter
-	resonanceHP        [256]float64
+	filterRes          uint8   // Filter resonance (0..15)
+	filterAmpl         float64 // IIR filter input attenuation;
+	d1, d2, g1, g2     float64 // IIR filter coefficients
+	xn1, xn2, yn1, yn2 float64 // IIR filter previous input/output signal
+	resonanceLP        [resonanceSize]float64
+	resonanceHP        [resonanceSize]float64
 }
 
 // NewFilters initializes a new Filters instance with default parameters and precomputes resonance lookup tables.
@@ -69,7 +85,7 @@ func NewFilters() *Filters {
 		yn1:            0.0,
 		yn2:            0.0,
 	}
-	for i := 0; i < 256; i++ {
+	for i := 0; i < resonanceSize; i++ {
 		f.resonanceLP[i] = calcResonanceLp(float64(i))
 		f.resonanceHP[i] = calcResonanceHp(float64(i))
 	}
@@ -142,6 +158,96 @@ func (f *Filters) UpdateType(data uint8) {
 	}
 }
 
+func (f *Filters) compute() {
+	// Controlla casi speciali per ottimizzazione
+	if f.filterType == FilterNone {
+		f.d1, f.d2, f.g1, f.g2 = 0.0, 0.0, 0.0, 0.0
+		f.filterAmpl = 0.0
+		return
+	}
+
+	// Calcola frequenza di taglio a 11 bit
+	cutoff11bit := (uint16(f.filterFreqHigh) << 8) | uint16(f.filterFreqLow)
+
+	// Usa tutti gli 11 bit per l'indice (0-2047)
+	//filterIndex := cutoff11bit
+	// Usiamo gli 8 bit più significativi
+	filterIndex := uint8(cutoff11bit >> 3)
+
+	// Determina quali filtri sono attivi
+	hasLP := (f.filterType & FilterLp) != 0
+	hasBP := (f.filterType & FilterBp) != 0
+	hasHP := (f.filterType & FilterHp) != 0
+
+	// Seleziona tabella di risonanza
+	var fr float64
+	if hasLP || hasBP {
+		fr = f.resonanceLP[filterIndex]
+	} else {
+		fr = f.resonanceHP[filterIndex]
+	}
+
+	// Calcola argomento normalizzato
+	arg := fr / float64(SampleFreq>>1)
+	if arg > 0.99 {
+		arg = 0.99
+	} else if arg < 0.01 {
+		arg = 0.01
+	}
+
+	// Calcola poli del filtro
+	f.g2 = 0.55 + 1.2*arg*arg - 1.2*arg + float64(f.filterRes)*0.0133333333
+	f.g1 = -2.0 * math.Sqrt(f.g2) * math.Cos(math.Pi*arg)
+
+	// Aumenta risonanza se Band Pass è combinato con altri filtri
+	if hasBP {
+		f.g2 += 0.1
+	}
+
+	// Stabilizzazione filtro
+	if math.Abs(f.g1) >= (f.g2 + 1.0) {
+		f.g1 = math.Copysign(f.g2+0.99, f.g1)
+	}
+
+	// Calcola coefficienti in base alla combinazione
+	switch {
+	case hasLP && hasHP: // Notch Filter
+		f.d1 = -2.0 * math.Cos(math.Pi*arg)
+		f.d2 = 1.0
+		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 + math.Cos(math.Pi*arg)) / math.Sin(math.Pi*arg)
+
+	case hasLP && hasBP: // Low Pass + Band Pass
+		f.d1 = 2.0
+		f.d2 = 1.0
+		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2)
+
+	case hasHP && hasBP: // High Pass + Band Pass
+		f.d1 = -2.0
+		f.d2 = 1.0
+		f.filterAmpl = 0.25 * (1.0 - f.g1 + f.g2)
+
+	case hasLP: // Solo Low Pass
+		f.d1 = 2.0
+		f.d2 = 1.0
+		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2)
+
+	case hasHP: // Solo High Pass
+		f.d1 = -2.0
+		f.d2 = 1.0
+		f.filterAmpl = 0.25 * (1.0 - f.g1 + f.g2)
+
+	case hasBP: // Solo Band Pass
+		f.d1 = 0.0
+		f.d2 = -1.0
+		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 + math.Cos(math.Pi*arg)) / math.Sin(math.Pi*arg)
+
+	default: // Combinazioni non gestite
+		log.Printf("Unsupported filter combination: %b", f.filterType)
+		f.filterAmpl = 0.0
+	}
+}
+
+/*
 // compute adjusts internal filter coefficients and characteristics based on filter type, frequency, and resonance settings.
 func (f *Filters) compute() {
 	var fr float64
@@ -167,7 +273,8 @@ func (f *Filters) compute() {
 
 	// Mappa il valore a 11 bit all'indice a 8 bit (0-255) per le tabelle di lookup
 	// Usiamo gli 8 bit più significativi
-	filterIndex := uint8(cutoff11bit >> 3)
+	//filterIndex := uint8(cutoff11bit >> 3)
+	filterIndex := uint8(cutoff11bit)
 
 	// Calculate resonance frequency
 	if f.filterType == FilterLp || f.filterType == FilterLpBp {
@@ -220,3 +327,4 @@ func (f *Filters) compute() {
 		log.Printf("SID FILTER NOT IMPLEMENTED %d\n", f.filterType)
 	}
 }
+*/

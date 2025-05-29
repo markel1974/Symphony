@@ -60,8 +60,9 @@ type Voice struct {
 	test    uint8        // Test bit
 	filter  uint8        // Flag: Voice filtered
 	sync    uint8        // The following bit is set for the modulating voices, not for the modulated one (as the SID bits)
-	seed    uint32       // seed represents the current state of the random number generator for noise waveform generation.
-	mute    bool
+	//seed    uint32       // seed represents the current state of the random number generator for noise waveform generation.
+	noiseLFSR uint32
+	mute      bool
 }
 
 // NewVoice creates a new Voice instance with provided voice number and initializes its properties to default values.
@@ -87,8 +88,9 @@ func NewVoice(number uint8) *Voice {
 		test:    0,
 		filter:  0,
 		sync:    0,
-		seed:    1,
-		mute:    false,
+		//seed:    1,
+		noiseLFSR: 0x7FFFFF,
+		mute:      false,
 	}
 }
 
@@ -116,6 +118,7 @@ func (v *Voice) Reset() {
 	v.gate = 0
 	v.sync = 0
 	v.filter = 0
+	v.noiseLFSR = 0x7FFFFF
 	v.mute = false
 }
 
@@ -190,9 +193,17 @@ func (v *Voice) UpdateWaveForm(data uint8) {
 	v.gate = gate
 	v.modBy.sync = sync
 	v.ring = ring
-	v.test = test
-	if v.test != 0 {
-		v.count = 0
+	//v.test = test
+	//if v.test != 0 {
+	//	v.count = 0
+	//}
+	if test != v.test { // Se lo stato del test bit cambia
+		v.test = test
+		if v.test != 0 {
+			v.count = 0            // Resetta l'accumulatore di fase principale
+			v.noiseLFSR = 0x7FFFFF // Resetta l'LFSR del rumore al suo stato iniziale
+			// Qui andrebbero gestiti anche altri effetti del test bit sugli inviluppi, etc.
+		}
 	}
 }
 
@@ -219,7 +230,17 @@ func (v *Voice) UpdateCount() {
 }
 
 // ComputeEnvelopeGenerators updates the envelope generator levels and transitions between states based on current values.
+// File: voice.go
+
+// ComputeEnvelopeGenerators updates the envelope generator levels and transitions between states based on current values.
 func (v *Voice) ComputeEnvelopeGenerators() {
+	if v.test != 0 {
+		// Se il bit TEST è attivo, gli inviluppi sono congelati/disabilitati.
+		// Non viene eseguita alcuna progressione di Attack, Decay o Release.
+		// Il livello corrente v.egLevel viene mantenuto.
+		return
+	}
+
 	switch v.egState {
 	case EgAttack:
 		v.egLevel += v.aAdd
@@ -228,7 +249,7 @@ func (v *Voice) ComputeEnvelopeGenerators() {
 			v.egState = EgDecay
 		}
 	case EgDecay:
-		if v.egLevel <= v.sLevel || v.egLevel > 0xffffff {
+		if v.egLevel <= v.sLevel || v.egLevel > 0xffffff { // La condizione > 0xffffff gestisce l'underflow
 			v.egLevel = v.sLevel
 		} else {
 			v.egLevel -= v.dSub >> _eGDRShiftTable[v.egLevel>>16]
@@ -238,7 +259,7 @@ func (v *Voice) ComputeEnvelopeGenerators() {
 		}
 	case EgRelease:
 		v.egLevel -= v.rSub >> _eGDRShiftTable[v.egLevel>>16]
-		if v.egLevel > 0xffffff {
+		if v.egLevel > 0xffffff { // Underflow (diventato > 0xffffff dopo la sottrazione)
 			v.egLevel = 0
 			v.egState = EgIdle
 		}
@@ -249,6 +270,50 @@ func (v *Voice) ComputeEnvelopeGenerators() {
 
 // ComputeWaveForm generates and returns the waveform output for the voice based on its current waveform type and settings.
 func (v *Voice) ComputeWaveForm() uint16 {
+	if v.test != 0 {
+		// Se il bit TEST è attivo, le forme d'onda si comportano diversamente.
+		// L'accumulatore v.count è stato resettato a 0 e non avanza.
+		switch v.wave {
+		case WaveTri:
+			// Il triangolo diventa un livello DC.
+			// Poiché v.count è 0, l'output da _triTable[0] è una scelta comune.
+			return _triTable[0] // Potrebbe anche essere 0x0000 o 0x8000 a seconda delle interpretazioni.
+		case WaveSaw:
+			// Il dente di sega con v.count = 0 produce output 0.
+			return 0x0000
+		case WaveRect:
+			// L'onda quadra/pulse è tipicamente tenuta alta.
+			return 0xFFFF
+		case WaveNoise:
+			// Il generatore di rumore LFSR è stato resettato a 0x7FFFFF.
+			// L'output sarà costante basato su questo stato resettato,
+			// poiché l'LFSR non viene cloccato ulteriormente qui se TEST è attivo
+			// (la sua progressione avviene solo se v.test == 0 più avanti).
+			// O, se l'LFSR venisse cloccato comunque, l'output cambierebbe.
+			// Per "noise waveform is also reset", un output fisso dal valore resettato
+			// ha senso.
+			// Ricalcoliamo l'output basato sullo stato resettato dell'LFSR:
+			return uint16(((v.noiseLFSR >> 15) & 0xFF) << 8) // Stessa logica di output del noise normale
+
+		// Per le forme d'onda combinate, il comportamento con TEST=1 può essere complesso.
+		// Una semplificazione comune è forzarle a un output specifico,
+		// ad esempio quello di una delle loro componenti o un valore fisso.
+		// Qui le impostiamo a 0xFFFF come l'onda quadra, ma potrebbe richiedere affinamento.
+		case WaveTriSaw:
+			return 0xFFFF // o _triSawTable[0] se v.count è 0
+		case WaveTriRect:
+			return 0xFFFF // o _triRectTable[0]
+		case WaveSawRect:
+			return 0xFFFF // o _sawRectTable[0]
+		case WaveTriSawRect:
+			return 0xFFFF // o _triSawRectTable[0]
+		default:
+			// WaveNone o casi non gestiti
+			return 0x8000 // Valore centrale
+		}
+	}
+
+	// Logica normale di generazione della forma d'onda (se v.test == 0)
 	output := uint16(0)
 	switch v.wave {
 	case WaveTri:
@@ -260,7 +325,9 @@ func (v *Voice) ComputeWaveForm() uint16 {
 	case WaveSaw:
 		output = uint16(v.count >> 8)
 	case WaveRect:
-		if v.count > uint32(v.pw<<12) {
+		// La soglia pw è a 12 bit, l'accumulatore count è a 24 bit.
+		// Il confronto è (count_24bit > pw_12bit_shl_12)
+		if v.count > (uint32(v.pw) << 12) {
 			output = 0xffff
 		} else {
 			output = 0
@@ -268,33 +335,31 @@ func (v *Voice) ComputeWaveForm() uint16 {
 	case WaveTriSaw:
 		output = _triSawTable[v.count>>16]
 	case WaveTriRect:
-		if v.count > uint32(v.pw<<12) {
+		if v.count > (uint32(v.pw) << 12) {
 			output = _triRectTable[v.count>>16]
 		} else {
-			output = 0
+			output = 0 // O _triRectTable_low[v.count>>16] se esistesse una parte bassa
 		}
 	case WaveSawRect:
-		if v.count > uint32(v.pw<<12) {
+		if v.count > (uint32(v.pw) << 12) {
 			output = _sawRectTable[v.count>>16]
 		} else {
-			output = 0
+			output = 0 // O _sawRectTable_low[v.count>>16]
 		}
 	case WaveTriSawRect:
-		if v.count > uint32(v.pw<<12) {
+		if v.count > (uint32(v.pw) << 12) {
 			output = _triSawRectTable[v.count>>16]
 		} else {
-			output = 0
+			output = 0 // O _triSawRectTable_low[v.count>>16]
 		}
 	case WaveNoise:
-		if v.count > 0x100000 {
-			v.seed = (v.seed * 1103515245) + 12345
-			noise := v.seed >> 16
-			v.noise = noise << 8
-			output = uint16(v.noise)
-			v.count &= 0xfffff
-		} else {
-			output = uint16(v.noise)
-		}
+		// Avanza l'LFSR a 23 bit
+		msb := (v.noiseLFSR >> 22) & 1
+		tapBit := (v.noiseLFSR >> 17) & 1
+		feedback := msb ^ tapBit
+		v.noiseLFSR = ((v.noiseLFSR << 1) | feedback) & 0x7FFFFF
+
+		output = uint16(((v.noiseLFSR >> 15) & 0xFF) << 8)
 	default:
 		output = 0x8000
 	}
