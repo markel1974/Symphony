@@ -1,8 +1,6 @@
 package mos6581
 
-/*
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
@@ -35,11 +33,11 @@ type SID struct {
 	//audioBuilder *AudioBuilder
 	reflect *SidReflect
 	//historyCount int
-	player      references.IAudioRender
-	fragSize    int   // samples, not bytes
-	bufferFrags int   // frags the in buffer
-	bufferSize  int   // bytes, not samples
-	volume      uint8 // Master volume
+	player             references.IAudioRender
+	fragSize           int      // samples, not bytes
+	bufferFrags        int      // frags the in buffer
+	bufferSize         int      // bytes, not samples
+	volume             uint8    // Master volume
 	voices             []*Voice // Data for 3 voices
 	sampleBuf          []uint8  // Buffer for sampled voices
 	sampleBufIdx       int      // Index in sample_buf for writing
@@ -250,8 +248,6 @@ func (sid *SID) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
-var _callFillBuffer int = 0
-
 // Prepare loads necessary SID register values into the AudioBuilder for audio processing.
 func (sid *SID) Prepare() {
 	sid.sampleBuf[sid.sampleBufIdx] = sid.volume
@@ -264,16 +260,11 @@ func (sid *SID) Prepare() {
 	if sid.toOutput >= sid.fragSize {
 		sid.toOutput -= sid.fragSize
 		sid.fillBuffer()
-		_callFillBuffer++
 	}
 }
 
 // Update triggers the audioBuilder's internal Update method, updating audio sampling and processing within the SID.
 func (sid *SID) Update() {
-	if _callFillBuffer > 1 {
-		fmt.Println("ERROR")
-	}
-	_callFillBuffer = 0
 	sid.player.Write(sid.soundBuffer, 0, sid.soundBufferSamples)
 }
 
@@ -353,4 +344,3 @@ func (sid *SID) fillBuffer() {
 	sid.sbPos = (sid.sbPos + samples) % sid.bufferSize
 	sid.soundBufferSamples = samples
 }
-*/

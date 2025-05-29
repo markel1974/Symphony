@@ -1,5 +1,6 @@
 package mos6581
 
+/*
 import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
@@ -138,3 +139,6 @@ func (sid *SID) Update() {
 func (sid *SID) GetLastByte() uint8 {
 	return 0
 }
+
+
+*/

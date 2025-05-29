@@ -1,8 +1,10 @@
 package mos6581
 
+/*
 import (
 	"github.com/markel1974/c64emu/src/references"
 )
+
 
 // LatencyMin represents the minimum threshold for network latency in milliseconds.
 // LatencyMax represents the maximum threshold for network latency in milliseconds.
@@ -283,3 +285,6 @@ func (dr *AudioBuilder) write() {
 	dr.sbPos = (dr.sbPos + samples) % dr.bufferSize
 	dr.player.Write(dr.soundBuffer, currPos, samples)
 }
+
+
+*/

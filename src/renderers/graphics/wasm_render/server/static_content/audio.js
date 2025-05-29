@@ -62,12 +62,15 @@ function samplesReadyCallback(jsFloat32Array)  {
     const currentTime = _audioCtx.currentTime;
     let startTime = _audioNextStartTime;
     if (startTime === 0) {
-        console.log(`JS: First ever buffer, scheduling at currentTime + 0.010s`);
-        startTime = currentTime + 0.010;
+        //console.log(`JS: First ever buffer, scheduling at currentTime + 0.010s`);
+        console.log(`JS: First ever buffer, scheduling at currentTime`);
+        startTime = currentTime //+ 0.010;
     } else if (startTime < currentTime - 0.1) {
         // Se siamo MOLTO in ritardo (100ms)
         console.warn(`JS: Major lag detected. Resetting start time. Ideal: ${startTime.toFixed(4)}, Current: ${currentTime.toFixed(4)}. Starting in 10ms.`);
-        startTime = currentTime + 0.010;
+        _audioNextStartTime = 0
+        return;
+        //startTime = currentTime + 0.010;
     } else if (startTime < currentTime) {
         // Lag minore, schedula al tempo ideale passato
         // const lag = currentTime - startTime;

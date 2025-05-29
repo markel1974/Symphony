@@ -1,260 +1,133 @@
 package oto_render
 
-import "github.com/markel1974/c64emu/src/config"
-
-//TODO OTO
-//https://github.com/ebitengine/oto
-/*
-
-package main
-
 import (
-	"flag"
 	"fmt"
-	"io"
-	"math"
-	"runtime"
-	"sync"
+	"github.com/hajimehoshi/oto/v2"
+	"github.com/markel1974/c64emu/src/config"
+	"log"
 	"time"
-
-	"github.com/ebitengine/oto/v3"
 )
-
-var (
-	sampleRate   = flag.Int("samplerate", 48000, "sample rate")
-	channelCount = flag.Int("channelcount", 2, "number of channel")
-	format       = flag.String("format", "s16le", "source format (u8, s16le, or f32le)")
-)
-
-type SineWave struct {
-	freq   float64
-	length int64
-	pos    int64
-
-	channelCount int
-	format       oto.Format
-
-	remaining []byte
-}
-
-func formatByteLength(format oto.Format) int {
-	switch format {
-	case oto.FormatFloat32LE:
-		return 4
-	case oto.FormatUnsignedInt8:
-		return 1
-	case oto.FormatSignedInt16LE:
-		return 2
-	default:
-		panic(fmt.Sprintf("unexpected format: %d", format))
-	}
-}
-
-func NewSineWave(freq float64, duration time.Duration, channelCount int, format oto.Format) *SineWave {
-	l := int64(channelCount) * int64(formatByteLength(format)) * int64(*sampleRate) * int64(duration) / int64(time.Second)
-	l = l / 4 * 4
-	return &SineWave{
-		freq:         freq,
-		length:       l,
-		channelCount: channelCount,
-		format:       format,
-	}
-}
-
-func (s *SineWave) Read(buf []byte) (int, error) {
-	if len(s.remaining) > 0 {
-		n := copy(buf, s.remaining)
-		copy(s.remaining, s.remaining[n:])
-		s.remaining = s.remaining[:len(s.remaining)-n]
-		return n, nil
-	}
-
-	if s.pos == s.length {
-		return 0, io.EOF
-	}
-
-	eof := false
-	if s.pos+int64(len(buf)) > s.length {
-		buf = buf[:s.length-s.pos]
-		eof = true
-	}
-
-	var origBuf []byte
-	if len(buf)%4 > 0 {
-		origBuf = buf
-		buf = make([]byte, len(origBuf)+4-len(origBuf)%4)
-	}
-
-	length := float64(*sampleRate) / float64(s.freq)
-
-	num := formatByteLength(s.format) * s.channelCount
-	p := s.pos / int64(num)
-	switch s.format {
-	case oto.FormatFloat32LE:
-		for i := 0; i < len(buf)/num; i++ {
-			bs := math.Float32bits(float32(math.Sin(2*math.Pi*float64(p)/length) * 0.3))
-			for ch := 0; ch < *channelCount; ch++ {
-				buf[num*i+4*ch] = byte(bs)
-				buf[num*i+1+4*ch] = byte(bs >> 8)
-				buf[num*i+2+4*ch] = byte(bs >> 16)
-				buf[num*i+3+4*ch] = byte(bs >> 24)
-			}
-			p++
-		}
-	case oto.FormatUnsignedInt8:
-		for i := 0; i < len(buf)/num; i++ {
-			const max = 127
-			b := int(math.Sin(2*math.Pi*float64(p)/length) * 0.3 * max)
-			for ch := 0; ch < *channelCount; ch++ {
-				buf[num*i+ch] = byte(b + 128)
-			}
-			p++
-		}
-	case oto.FormatSignedInt16LE:
-		for i := 0; i < len(buf)/num; i++ {
-			const max = 32767
-			b := int16(math.Sin(2*math.Pi*float64(p)/length) * 0.3 * max)
-			for ch := 0; ch < *channelCount; ch++ {
-				buf[num*i+2*ch] = byte(b)
-				buf[num*i+1+2*ch] = byte(b >> 8)
-			}
-			p++
-		}
-	}
-
-	s.pos += int64(len(buf))
-
-	n := len(buf)
-	if origBuf != nil {
-		n = copy(origBuf, buf)
-		s.remaining = buf[n:]
-	}
-
-	if eof {
-		return n, io.EOF
-	}
-	return n, nil
-}
-
-func play(context *oto.Context, freq float64, duration time.Duration, channelCount int, format oto.Format) *oto.Player {
-	p := context.NewPlayer(NewSineWave(freq, duration, channelCount, format))
-	p.Play()
-	return p
-}
-
-func run() error {
-	const (
-		freqC = 523.3
-		freqE = 659.3
-		freqG = 784.0
-	)
-
-	op := &oto.NewContextOptions{}
-	op.SampleRate = *sampleRate
-	op.ChannelCount = *channelCount
-
-	switch *format {
-	case "f32le":
-		op.Format = oto.FormatFloat32LE
-	case "u8":
-		op.Format = oto.FormatUnsignedInt8
-	case "s16le":
-		op.Format = oto.FormatSignedInt16LE
-	default:
-		return fmt.Errorf("format must be u8, s16le, or f32le but: %s", *format)
-	}
-	c, ready, err := oto.NewContext(op)
-	if err != nil {
-		return err
-	}
-	<-ready
-
-	var wg sync.WaitGroup
-	var players []*oto.Player
-	var m sync.Mutex
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		p := play(c, freqC, 3*time.Second, op.ChannelCount, op.Format)
-		m.Lock()
-		players = append(players, p)
-		m.Unlock()
-		time.Sleep(3 * time.Second)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		time.Sleep(1 * time.Second)
-		p := play(c, freqE, 3*time.Second, op.ChannelCount, op.Format)
-		m.Lock()
-		players = append(players, p)
-		m.Unlock()
-		time.Sleep(3 * time.Second)
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		time.Sleep(2 * time.Second)
-		p := play(c, freqG, 3*time.Second, op.ChannelCount, op.Format)
-		m.Lock()
-		players = append(players, p)
-		m.Unlock()
-		time.Sleep(3 * time.Second)
-	}()
-
-	wg.Wait()
-
-	// Pin the players not to GC the players.
-	runtime.KeepAlive(players)
-
-	return nil
-}
-
-func main() {
-	flag.Parse()
-	if err := run(); err != nil {
-		panic(err)
-	}
-}
-*/
 
 type Audio struct {
-	cfg *config.Config
-	pos int
+	audioContext       *oto.Context
+	player             oto.Player
+	audioSampleRate    int
+	audioNextStartTime time.Time
+	audioReader        *ContinuousReader
+	cfg                *config.Config
+	pos                int
 }
 
 func NewAudio() *Audio {
 	return &Audio{
-		pos: 0,
+		audioSampleRate: 44100,
+		pos:             0,
 	}
 }
 
-func (a *Audio) Setup(cfg *config.Config) error {
-	a.cfg = cfg
+func (d *Audio) Setup(cfg *config.Config) error {
+	//StartStub()
+	d.cfg = cfg
+
+	//ctx, ready, err := oto.NewContext(d.audioSampleRate, 1, oto.FormatFloat32LE)
+	ctx, ready, err := oto.NewContext(d.audioSampleRate, 1, oto.FormatFloat32LE)
+	if err != nil {
+		return fmt.Errorf("failed to create oto context: %w", err)
+	}
+	<-ready
+	d.audioContext = ctx
+	d.audioReader = NewContinuousReader()
+	d.player = d.audioContext.NewPlayer(d.audioReader)
+
+	d.player.(oto.BufferSizeSetter).SetBufferSize(1764 * 2)
+
+	d.player.SetVolume(1.0)
+
+	go func() {
+		log.Println("Starting continuous audio player...")
+		for {
+			d.player.Play()
+			if playerErr := d.player.Err(); playerErr != nil {
+				log.Println("Error playing audio:", playerErr)
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		log.Println("Continuous audio player stopped.", err)
+	}()
 	return nil
 }
 
-func (a *Audio) GetCurrentPosition() int {
-	return a.pos
+func (d *Audio) GetCurrentPosition() int {
+	return d.pos
 }
 
-func (a *Audio) Write(_ []uint32, pos int, samples int) {
-	//TODO
-	a.pos = pos + samples
-	//fmt.Println("AUDIO STREAM ", b, pos, samples)
+// SamplesReadyCallback ora invia i nuovi chunk al reader del player esistente.
+func (d *Audio) Write(values []uint32, pos int, samples int) {
+	d.pos += samples
+	if len(values) == 0 {
+		return
+	}
+	d.audioReader.AddChunk(values, samples)
+
+	currentTime := time.Now()
+	// bufferDuration è già calcolato correttamente ora
+	durationMs := (float64(len(values)) / float64(d.audioSampleRate)) * 1000.0
+	bufferDuration := time.Duration(durationMs) * time.Millisecond
+
+	if d.audioNextStartTime.IsZero() {
+		// Inizializza solo la prima volta, o dopo un reset completo
+		d.audioNextStartTime = currentTime //.Add(10 * time.Millisecond) // Piccola latenza iniziale se vuoi
+	} else {
+		// Se siamo MOLTO in ritardo (es. > 100ms), resettiamo il tempo di partenza.
+		// Questo allinea la riproduzione al "NOW" per evitare un lag infinito.
+		const lagThreshold = 20 * time.Millisecond // Puoi sperimentare con questo valore
+		if d.audioNextStartTime.Before(currentTime.Add(-lagThreshold)) {
+			log.Printf("Go: Major lag detected. Resetting start time. Ideal: %s, Current: %s. Data still being buffered.\n",
+				d.audioNextStartTime.Format("15:04:05.000"), currentTime.Format("15:04:05.000"))
+			// Resetta audioNextStartTime al tempo attuale (o leggermente in avanti)
+			d.audioNextStartTime = currentTime //.Add(10 * time.Millisecond)
+		}
+	}
+	// Fa avanzare il tempo ideale per il prossimo buffer
+	d.audioNextStartTime = d.audioNextStartTime.Add(bufferDuration)
+
+	//log.Printf("Debug: audioNextStartTime before add: %s, bufferDuration: %v, after add: %s",
+	//	d.audioNextStartTime.Add(-bufferDuration).Format("15:04:05.000.000"), bufferDuration, d.audioNextStartTime.Format("15:04:05.000.000"))
 }
 
-func (a *Audio) Play() {
-	//TODO
+func (d *Audio) Play() {
 }
 
-func (a *Audio) Pause() {
-
+func (d *Audio) Pause() {
 }
 
-func (a *Audio) Resume() {
-
+func (d *Audio) Resume() {
 }
+
+/*
+func main() {
+	if err := InitializeAudio(); err != nil {
+		log.Fatalf("Error initializing audio: %v", err)
+	}
+
+	// Esempio d'uso: Simula la ricezione di chunk audio come []uint32
+	// Ora inviamo i chunk a intervalli regolari, e il singolo player li riprodurrà.
+	for i := 0; i < 20; i++ { // Simuliamo più chunk per vedere il flusso continuo
+		// Crea un buffer dummy (ad es. 1 secondo di onda sinusoidale)
+		dummyUint32Buffer := make([]uint32, audioSampleRate/2) // 0.5 secondi di audio per chunk
+		for j := 0; j < len(dummyUint32Buffer); j++ {
+			// Crea una sinusoide semplice per il test
+			val := float32(math.Sin(float64(j)/float64(audioSampleRate)*2*math.Pi*440)) * 0.2 // Volume ridotto
+			dummyUint32Buffer[j] = math.Float32bits(val)
+		}
+		samplesReadyCallback(dummyUint32Buffer)
+		time.Sleep(450 * time.Millisecond) // Invia un nuovo chunk leggermente prima che il precedente finisca
+	}
+
+	// Lascia il main goroutine attivo per consentire la riproduzione audio
+	log.Println("Finished sending chunks. Player should continue playing buffered audio.")
+	time.Sleep(5 * time.Second) // Attendi ancora un po' per l'audio residuo
+	fmt.Println("Example finished.")
+}
+*/
