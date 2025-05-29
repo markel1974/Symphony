@@ -196,15 +196,14 @@ func (v *Voice) UpdateWaveForm(data uint8) {
 	v.gate = gate
 	v.modBy.sync = sync
 	v.ring = ring
-	//v.test = test
-	//if v.test != 0 {
-	//	v.count = 0
-	//}
 	if test != v.test { // Se lo stato del test bit cambia
 		v.test = test
 		if v.test != 0 {
 			v.count = 0            // Resetta l'accumulatore di fase principale
 			v.noiseLFSR = 0x7FFFFF // Resetta l'LFSR del rumore al suo stato iniziale
+
+			v.egLevel = 0
+			v.egState = EgIdle
 			// Qui andrebbero gestiti anche altri effetti del test bit sugli inviluppi, etc.
 		}
 	}
