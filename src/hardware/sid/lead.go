@@ -16,7 +16,8 @@ type Lead struct {
 
 func NewLead(fragFreq int) *Lead {
 	fragInterval := 1000 / fragFreq // in milliseconds
-	maxLeadAvg := fragFreq
+	//maxLeadAvg := fragFreq
+	maxLeadAvg := LatencyAvg / fragInterval
 	return &Lead{
 		data:    make([]int, maxLeadAvg),
 		smooth:  LatencyAvg / fragInterval,

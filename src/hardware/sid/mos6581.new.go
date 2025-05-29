@@ -27,30 +27,22 @@ type EGState int
 // SID represents a chip emulation containing configurations, registers, and audio handling functionality.
 type SID struct {
 	*component.BaseComponent
-	registers []uint8
-	//history      [][]uint8
-	cfg *config.Config
-	//audioBuilder *AudioBuilder
-	reflect *SidReflect
-	//historyCount int
-	player             references.IAudioRender
-	fragSize           int      // samples, not bytes
-	bufferFrags        int      // frags the in buffer
-	bufferSize         int      // bytes, not samples
-	volume             uint8    // Master volume
-	voices             []*Voice // Data for 3 voices
-	sampleBuf          []uint8  // Buffer for sampled voices
-	sampleBufIdx       int      // Index in sample_buf for writing
-	soundBuffer        []uint32
-	soundBufferSamples int
-	toOutput           int
-	sbPos              int
-	sbCurrentPosition  int
-	divisor            int
-	registerToVoice    []*Voice
-	filters            *Filters
-	divisorTable       *DivisorTable
-	lead               *Lead
+	registers       []uint8
+	cfg             *config.Config
+	reflect         *SidReflect
+	player          references.IAudioRender
+	fragSize        int      // samples, not bytes
+	bufferFrags     int      // frags the in buffer
+	volume          uint8    // Master volume
+	voices          []*Voice // Data for 3 voices
+	sampleBuf       []uint8  // Buffer for sampled voices
+	sampleBufIdx    int      // Index in sample_buf for writing
+	soundBuffer     []uint32
+	toOutput        int
+	divisor         int
+	registerToVoice []*Voice
+	filters         *Filters
+	divisorTable    *DivisorTable
 }
 
 // NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
@@ -58,15 +50,9 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 	s := &SID{
 		BaseComponent: component.NewBaseComponent(),
 		registers:     make([]uint8, RegisterCount),
-		//history:       make([][]uint8, RegisterHistory),
-		player: nil,
-		cfg:    nil,
-		//audioBuilder: nil,
-		//historyCount:  0,
+		player:        nil,
+		cfg:           nil,
 	}
-	//for x := range s.history {
-	//	s.history[x] = make([]uint8, RegisterCount)
-	//}
 	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdISID(s, label, instance))
 	s.reflect = NewSidReflect(s)
 	return s
@@ -79,10 +65,7 @@ func (sid *SID) Setup() error {
 }
 
 func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int, rasters int) error {
-	//sid.audioBuilder = NewAudioBuilder(sid.GetFactory().GetIAudioRender(), true, fragFreq, rasters)
-
-	fragSize := SampleFreq / fragFreq     // samples, not bytes
-	bufferSize := 2 * fragSize * fragFreq // bytes, not samples
+	fragSize := SampleFreq / fragFreq // samples, not bytes
 
 	sid.player = sid.GetFactory().GetIAudioRender()
 	sid.sampleBuf = make([]uint8, SampleBufSize)
@@ -90,12 +73,9 @@ func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int, rasters int) error {
 	sid.voices = nil
 	sid.fragSize = fragSize
 	sid.bufferFrags = fragFreq
-	sid.bufferSize = bufferSize
 	sid.registerToVoice = make([]*Voice, RegisterCount)
 	sid.filters = NewFilters()
 	sid.soundBuffer = make([]uint32, 2*fragSize)
-	sid.lead = NewLead(fragFreq)
-	sid.sbCurrentPosition = 0
 
 	voice0 := NewVoice(0)
 	voice1 := NewVoice(1)
@@ -173,9 +153,8 @@ func (sid *SID) Reset() {
 	for x := range sid.soundBuffer {
 		sid.soundBuffer[x] = 0
 	}
-	sid.lead.Reset()
-	sid.sbPos = 0
-	sid.sbCurrentPosition = 0
+	//sid.lead.Reset()
+	//sid.sbPos = 0
 
 	//PADDLE TEST
 	//sid.WriteRegister(0xDC00, 0x40) //Control-Port 1 selected
@@ -259,13 +238,15 @@ func (sid *SID) Prepare() {
 	// Calculate the sound data only when we have enough to fill the buffer entirely.
 	if sid.toOutput >= sid.fragSize {
 		sid.toOutput -= sid.fragSize
-		sid.fillBuffer()
+		sid.calcBuffer(sid.soundBuffer, sid.sampleBufIdx)
 	}
 }
 
 // Update triggers the audioBuilder's internal Update method, updating audio sampling and processing within the SID.
 func (sid *SID) Update() {
-	sid.player.Write(sid.soundBuffer, 0, sid.soundBufferSamples)
+	//TODO RIMUOVERE 2 * sid.fragSize e pos
+	soundBufferSamples := 2 * sid.fragSize
+	sid.player.Write(sid.soundBuffer, 0, soundBufferSamples)
 }
 
 // GetLastByte retrieves the last byte from the SID's internal state or configuration.
@@ -308,39 +289,4 @@ func (sid *SID) calcBuffer(buf []uint32, sampleBufIdx int) {
 		sumOutputFilter = sid.filters.Compute(sumOutputFilter)
 		buf[idx] = uint32((sumOutput + sumOutputFilter) >> 10)
 	}
-}
-
-// write processes audio data and manages buffer positioning, adjusting for audio playback timing and synchronization.
-func (sid *SID) fillBuffer() {
-	// Compute the current lead in frags.
-	//currentPosition := dr.player.GetCurrentPosition()
-	currentPosition := sid.sbCurrentPosition
-	if currentPosition == -1 {
-		return
-	}
-	leadInBytes := (sid.sbPos - currentPosition + sid.bufferSize) % sid.bufferSize
-	if leadInBytes >= sid.bufferSize/2 {
-		leadInBytes -= sid.bufferSize
-	}
-	leadInFrags := leadInBytes / 2 * sid.fragSize
-	avgLead, ok := sid.lead.Average(leadInFrags)
-	if !ok {
-		return
-	}
-	// Calculate one frag
-	nSamples := sid.fragSize
-	sid.calcBuffer(sid.soundBuffer, sid.sampleBufIdx)
-	// If we're getting too far behind the audio add an extra frag.
-	if avgLead < sid.lead.GetLoWater() {
-		sid.lead.Update()
-		//fmt.Printf("Adding an extra frag...\n");
-		sid.calcBuffer(sid.soundBuffer[sid.fragSize:], sid.sampleBufIdx)
-		nSamples += sid.fragSize
-	}
-	// Write the frags to the player and update out write position.
-	//currPos := dr.sbPos
-	samples := 2 * nSamples
-	sid.sbCurrentPosition += samples
-	sid.sbPos = (sid.sbPos + samples) % sid.bufferSize
-	sid.soundBufferSamples = samples
 }
