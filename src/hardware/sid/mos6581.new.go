@@ -38,7 +38,7 @@ type SID struct {
 	sampleBuf       []uint8  // Buffer for sampled voices
 	sampleBufIdx    int      // Index in sample_buf for writing
 	soundBuffer     []uint32
-	toOutput        int
+	fragCurrent     int
 	divisor         int
 	registerToVoice []*Voice
 	filters         *Filters
@@ -148,7 +148,7 @@ func (sid *SID) Reset() {
 	for x := range sid.sampleBuf {
 		sid.sampleBuf[x] = 0
 	}
-	sid.toOutput = 0
+	sid.fragCurrent = 0
 	sid.divisor = 0
 	for x := range sid.soundBuffer {
 		sid.soundBuffer[x] = 0
@@ -232,12 +232,12 @@ func (sid *SID) Prepare() {
 	sid.sampleBuf[sid.sampleBufIdx] = sid.volume
 	sid.sampleBufIdx = (sid.sampleBufIdx + 1) % SampleBufSize
 	sid.divisor += SampleFreq
-	sid.toOutput += int(sid.divisorTable.GetOut(sid.divisor))
+	sid.fragCurrent += int(sid.divisorTable.GetOut(sid.divisor))
 	sid.divisor = int(sid.divisorTable.GetDivisor(sid.divisor))
 
 	// Calculate the sound data only when we have enough to fill the buffer entirely.
-	if sid.toOutput >= sid.fragSize {
-		sid.toOutput -= sid.fragSize
+	if sid.fragCurrent >= sid.fragSize {
+		sid.fragCurrent -= sid.fragSize
 		sid.calcBuffer(sid.soundBuffer, sid.sampleBufIdx)
 	}
 }
