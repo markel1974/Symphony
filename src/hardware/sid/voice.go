@@ -24,6 +24,9 @@ const (
 	WaveNoise
 )
 
+// EGState represents the state of an envelope generator (EG) in sound synthesis, defining phases like attack, decay, sustain, and release.
+type EGState int
+
 // EgIdle represents the idle state in the EGState enumeration.
 // EgAttack represents the attack state in the EGState enumeration.
 // EgDecay represents the decay state in the EGState enumeration.

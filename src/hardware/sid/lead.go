@@ -1,5 +1,14 @@
 package mos6581
 
+// LatencyMin represents the minimum threshold for network latency in milliseconds.
+// LatencyMax represents the maximum threshold for network latency in milliseconds.
+// LatencyAvg represents the average threshold for network latency in milliseconds.
+const (
+	LatencyMin = 80
+	LatencyMax = 120
+	LatencyAvg = 280
+)
+
 // Lead
 // data is an array for managing lead data used in audio rendering.
 // pos specifies the current position within the lead array.

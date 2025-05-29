@@ -122,9 +122,9 @@ func (f *Filters) UpdateFreqHigh(data uint8) {
 
 // UpdateRes updates the filter resonance value using the upper 4 bits of the input and recalculates filters if enabled.
 func (f *Filters) UpdateRes(data uint8) {
-	v := data >> 4
-	if v != f.filterRes {
-		f.filterRes = v
+	resonance := data >> 4
+	if resonance != f.filterRes {
+		f.filterRes = resonance
 		f.compute()
 	}
 }

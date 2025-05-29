@@ -1,18 +1,7 @@
 package mos6581
 
-/*
 import (
 	"github.com/markel1974/c64emu/src/references"
-)
-
-
-// LatencyMin represents the minimum threshold for network latency in milliseconds.
-// LatencyMax represents the maximum threshold for network latency in milliseconds.
-// LatencyAvg represents the average threshold for network latency in milliseconds.
-const (
-	LatencyMin = 80
-	LatencyMax = 120
-	LatencyAvg = 280
 )
 
 // _audioRegisters defines the array of SID audio-related register indices used for audio processing in the SID chip.
@@ -26,7 +15,6 @@ var _audioRegisters = []uint8{
 }
 
 // EGState represents the state of an envelope generator in a sound synthesis context.
-type EGState int
 
 // AudioBuilder is a structure used for constructing and managing audio processing components and state.
 // player is the audio render interface for handling playback operations.
@@ -38,7 +26,7 @@ type EGState int
 // sampleBuf is a buffer for storing sampled voice data.
 // sampleBufIdx is the current position in sampleBuf where new samples are written.
 // soundBuffer is an array for holding audio output data before rendering.
-// toOutput tracks the amount of data left to output in the soundBuffer.
+// fragCurrent tracks the amount of data left to output in the soundBuffer.
 // sbPos keeps the current position within the soundBuffer.
 // divisor defines the current divider value used for audio processing timing.
 // registerToVoice maps registers to corresponding voice instances.
@@ -54,7 +42,7 @@ type AudioBuilder struct {
 	sampleBuf       []uint8  // Buffer for sampled voices
 	sampleBufIdx    int      // Index in sample_buf for writing
 	soundBuffer     []uint32
-	toOutput        int
+	fragCurrent     int
 	sbPos           int
 	divisor         int
 	registerToVoice []*Voice
@@ -113,7 +101,7 @@ func (dr *AudioBuilder) Reset() {
 	for x := range dr.sampleBuf {
 		dr.sampleBuf[x] = 0
 	}
-	dr.toOutput = 0
+	dr.fragCurrent = 0
 	dr.divisor = 0
 	for x := range dr.soundBuffer {
 		dr.soundBuffer[x] = 0
@@ -165,12 +153,12 @@ func (dr *AudioBuilder) Flush() {
 	dr.sampleBuf[dr.sampleBufIdx] = dr.volume
 	dr.sampleBufIdx = (dr.sampleBufIdx + 1) % SampleBufSize
 	dr.divisor += SampleFreq
-	dr.toOutput += int(dr.divisorTable.GetOut(dr.divisor))
+	dr.fragCurrent += int(dr.divisorTable.GetOut(dr.divisor))
 	dr.divisor = int(dr.divisorTable.GetDivisor(dr.divisor))
 
 	// Calculate the sound data only when we have enough to fill the buffer entirely.
-	if dr.toOutput >= dr.fragSize {
-		dr.toOutput -= dr.fragSize
+	if dr.fragCurrent >= dr.fragSize {
+		dr.fragCurrent -= dr.fragSize
 		dr.write()
 	}
 }
@@ -285,6 +273,3 @@ func (dr *AudioBuilder) write() {
 	dr.sbPos = (dr.sbPos + samples) % dr.bufferSize
 	dr.player.Write(dr.soundBuffer, currPos, samples)
 }
-
-
-*/

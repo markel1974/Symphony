@@ -6,46 +6,33 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// potXRegisterIndex represents the register index for the X-axis potentiometer.
-// potYRegisterIndex represents the register index for the Y-axis potentiometer.
+// potXRegisterIndex represents the index of the potentiometer X register.
+// potYRegisterIndex represents the index of the potentiometer Y register.
 const (
 	potXRegisterIndex = 25
 	potYRegisterIndex = 26
 )
 
-// LatencyMin represents the minimum threshold for network latency in milliseconds.
-// LatencyMax represents the maximum threshold for network latency in milliseconds.
-// LatencyAvg represents the average threshold for network latency in milliseconds.
-const (
-	LatencyMin = 80
-	LatencyMax = 120
-	LatencyAvg = 280
-)
-
-type EGState int
-
-// SID represents a chip emulation containing configurations, registers, and audio handling functionality.
+// SID represents the core structure of a Sound Interface Device that processes and renders audio signals.
 type SID struct {
 	*component.BaseComponent
-	registers       []uint8
-	cfg             *config.Config
-	reflect         *SidReflect
-	player          references.IAudioRender
-	fragSize        int      // samples, not bytes
-	bufferFrags     int      // frags the in buffer
-	volume          uint8    // Master volume
-	voices          []*Voice // Data for 3 voices
-	sampleBuf       []uint8  // Buffer for sampled voices
-	sampleBufIdx    int      // Index in sample_buf for writing
-	soundBuffer     []uint32
-	fragCurrent     int
-	divisor         int
-	registerToVoice []*Voice
-	filters         *Filters
-	divisorTable    *DivisorTable
+	registers    []uint8
+	cfg          *config.Config
+	reflect      *SidReflect
+	player       references.IAudioRender
+	fragSize     int      // samples, not bytes
+	bufferFrags  int      // frags the in buffer
+	volume       uint8    // Master volume
+	voices       []*Voice // Data for 3 voices
+	sampleBuf    []uint8  // Buffer for sampled voices
+	sampleBufIdx int      // Index in sample_buf for writing
+	soundBuffer  []uint32
+	filters      *Filters
+	//divisorTable    *DivisorTable
+	//divisor         int
 }
 
-// NewSID creates a new SID instance with a specified parent ID and suffix, initializing its registers and settings.
+// NewSID creates and initializes a new SID instance with specified parent component, factory, label, and instance number.
 func NewSID(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *SID {
 	s := &SID{
 		BaseComponent: component.NewBaseComponent(),
@@ -58,22 +45,23 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 	return s
 }
 
+// Setup initializes the SID configuration and binds it to configuration change events.
 func (sid *SID) Setup() error {
 	sid.cfg = sid.GetFactory().GetConfig()
 	sid.cfg.Bind(sid.onConfigChanged)
 	return nil
 }
 
+// Bind initializes the SID player, voice structures, and buffer configurations for audio emulation.
 func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int, rasters int) error {
 	fragSize := SampleFreq / fragFreq // samples, not bytes
 
 	sid.player = sid.GetFactory().GetIAudioRender()
 	sid.sampleBuf = make([]uint8, SampleBufSize)
-	sid.divisorTable = NewDivisorTable(rasters, fragFreq)
+	//sid.divisorTable = NewDivisorTable(rasters, fragFreq)
 	sid.voices = nil
 	sid.fragSize = fragSize
 	sid.bufferFrags = fragFreq
-	sid.registerToVoice = make([]*Voice, RegisterCount)
 	sid.filters = NewFilters()
 	sid.soundBuffer = make([]uint32, 2*fragSize)
 
@@ -84,54 +72,51 @@ func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int, rasters int) error {
 	voice0.Setup(voice2, voice1)
 	voice1.Setup(voice0, voice2)
 	voice2.Setup(voice1, voice0)
-
 	sid.voices = append(sid.voices, voice0, voice1, voice2)
-
-	for x := range sid.registerToVoice {
-		vIdx := (x / 7) % len(sid.voices)
-		sid.registerToVoice[x] = sid.voices[vIdx]
-	}
 
 	sid.Reset()
 
 	return nil
 }
 
+// Connect establishes a connection or initializes necessary resources for the SID component. Returns an error if unsuccessful.
 func (sid *SID) Connect() error {
 	return nil
 }
 
+// Internal indicates whether the SID instance is operating in an internal mode. Always returns false.
 func (sid *SID) Internal() bool {
 	return false
 }
 
-// Emulate processes the main emulation logic for the SID component, handling internal updates and state changes.
+// Emulate processes the SID chip emulation logic, generating audio output based on the internal state and registers.
 func (sid *SID) Emulate() {
 
 }
 
+// EmulationRequired determines if emulation is required for the SID component. Returns false if not required.
 func (sid *SID) EmulationRequired() bool {
 	return false
 }
 
-// SetPotX sets the value of the POT X register in the SID chip using the given 8-bit value.
+// SetPotX updates the X-axis potentiometer value by assigning it to the corresponding register in the SID chip.
 func (sid *SID) SetPotX(pot uint8) {
 	// PX7 PX6 PX5 PX4 PX3 PX2 PX1 PX0
 	sid.registers[potXRegisterIndex] = pot
 }
 
-// SetPotY sets the value of the POT Y register to the specified 8-bit value in the SID chip.
+// SetPotY sets the potentiometer value for the Y-axis in the SID registers at the potYRegisterIndex.
 func (sid *SID) SetPotY(pot uint8) {
 	//PY7 PY6 PY5 PY4 PY3 PY2 PY1 PY0
 	sid.registers[potYRegisterIndex] = pot
 }
 
-// onConfigChanged is triggered when the configuration bound to the SID instance changes.
+// onConfigChanged is triggered when the configuration is modified, allowing the SID instance to handle configuration updates.
 func (sid *SID) onConfigChanged() {
 	//TODO
 }
 
-// Reset initializes all SID registers to 0 and sets default values for PotX and PotY. It also resets the audio builder.
+// Reset initializes all registers, voices, and buffers of the SID instance to default states.
 func (sid *SID) Reset() {
 	for x := range sid.registers {
 		sid.registers[x] = 0
@@ -148,8 +133,8 @@ func (sid *SID) Reset() {
 	for x := range sid.sampleBuf {
 		sid.sampleBuf[x] = 0
 	}
-	sid.fragCurrent = 0
-	sid.divisor = 0
+	//sid.fragCurrent = 0
+	//sid.divisor = 0
 	for x := range sid.soundBuffer {
 		sid.soundBuffer[x] = 0
 	}
@@ -162,40 +147,61 @@ func (sid *SID) Reset() {
 	//sid.WriteRegister(0xD419, 0x7F) //Paddle Y value
 }
 
-// ReadRegister retrieves the value from the specified address within the SID's registers. Only the lower 5 bits of the address are used.
+// ReadRegister reads the value of the SID register at the given address. The address is masked to a valid register range.
 func (sid *SID) ReadRegister(addr uint16) uint8 {
 	reg := addr & 0x1f
 	v := sid.registers[reg]
 	return v
 }
 
-// WriteRegister writes an 8-bit value to a specific register at the given address by mapping it within a 32-register range.
+// WriteRegister updates a specific SID register at `addr` with the given `data` and triggers related updates for voices or filters.
 func (sid *SID) WriteRegister(addr uint16, data uint8) {
 	reg := addr & 0x1f
 	sid.registers[reg] = data
 
 	switch reg {
-	case 0, 7, 14:
-		voice := sid.registerToVoice[reg]
-		voice.UpdateFreqA(data)
-	case 1, 8, 15:
-		voice := sid.registerToVoice[reg]
-		voice.UpdateFreqB(data)
-	case 2, 9, 16:
-		voice := sid.registerToVoice[reg]
-		voice.UpdatePulseWidthA(data)
-	case 3, 10, 17:
-		voice := sid.registerToVoice[reg]
-		voice.UpdatePulseWidthB(data)
-	case 4, 11, 18:
-		voice := sid.registerToVoice[reg]
-		voice.UpdateWaveForm(data)
-	case 5, 12, 19:
-		voice := sid.registerToVoice[reg]
-		voice.UpdateEnvelopeGenerators(data)
-	case 6, 13, 20:
-		voice := sid.registerToVoice[reg]
-		voice.UpdateSustainLevel(data)
+	case 0:
+		sid.voices[0].UpdateFreqA(data)
+	case 1:
+		sid.voices[0].UpdateFreqB(data)
+	case 2:
+		sid.voices[0].UpdatePulseWidthA(data)
+	case 3:
+		sid.voices[0].UpdatePulseWidthB(data)
+	case 4:
+		sid.voices[0].UpdateWaveForm(data)
+	case 5:
+		sid.voices[0].UpdateEnvelopeGenerators(data)
+	case 6:
+		sid.voices[0].UpdateSustainLevel(data)
+	case 7:
+		sid.voices[1].UpdateFreqA(data)
+	case 8:
+		sid.voices[1].UpdateFreqB(data)
+	case 9:
+		sid.voices[1].UpdatePulseWidthA(data)
+	case 10:
+		sid.voices[1].UpdatePulseWidthB(data)
+	case 11:
+		sid.voices[1].UpdateWaveForm(data)
+	case 12:
+		sid.voices[1].UpdateEnvelopeGenerators(data)
+	case 13:
+		sid.voices[1].UpdateSustainLevel(data)
+	case 14:
+		sid.voices[2].UpdateFreqA(data)
+	case 15:
+		sid.voices[2].UpdateFreqB(data)
+	case 16:
+		sid.voices[2].UpdatePulseWidthA(data)
+	case 17:
+		sid.voices[2].UpdatePulseWidthB(data)
+	case 18:
+		sid.voices[2].UpdateWaveForm(data)
+	case 19:
+		sid.voices[2].UpdateEnvelopeGenerators(data)
+	case 20:
+		sid.voices[2].UpdateSustainLevel(data)
 	case 21:
 		sid.filters.UpdateFreqLow(data)
 	case 22:
@@ -227,37 +233,29 @@ func (sid *SID) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
-// Prepare loads necessary SID register values into the AudioBuilder for audio processing.
+// Prepare updates the sample buffer with the current volume, increments the buffer index, and calculates the divisor value.
 func (sid *SID) Prepare() {
 	sid.sampleBuf[sid.sampleBufIdx] = sid.volume
 	sid.sampleBufIdx = (sid.sampleBufIdx + 1) % SampleBufSize
-	sid.divisor += SampleFreq
-	sid.fragCurrent += int(sid.divisorTable.GetOut(sid.divisor))
-	sid.divisor = int(sid.divisorTable.GetDivisor(sid.divisor))
-
-	// Calculate the sound data only when we have enough to fill the buffer entirely.
-	if sid.fragCurrent >= sid.fragSize {
-		sid.fragCurrent -= sid.fragSize
-		sid.calcBuffer(sid.soundBuffer, sid.sampleBufIdx)
-	}
+	//sid.divisor += SampleFreq
+	//sid.divisor = int(sid.divisorTable.GetDivisor(sid.divisor))
 }
 
-// Update triggers the audioBuilder's internal Update method, updating audio sampling and processing within the SID.
+// Update processes and writes sound data to the audio player buffer using the current state of the SID.
 func (sid *SID) Update() {
+	sid.calcBuffer(sid.soundBuffer, sid.sampleBufIdx)
+
 	//TODO RIMUOVERE 2 * sid.fragSize e pos
 	soundBufferSamples := 2 * sid.fragSize
 	sid.player.Write(sid.soundBuffer, 0, soundBufferSamples)
 }
 
-// GetLastByte retrieves the last byte from the SID's internal state or configuration.
+// GetLastByte retrieves the last byte value processed or stored in the SID instance.
 func (sid *SID) GetLastByte() uint8 {
 	return 0
 }
 
-// calcBuffer processes audio data for the given buffer by applying waveform calculations and filters to generate output.
-// It iterates through the buffer, calculating the mixed output for each audio voice and summing the results.
-// The method uses sample data, master volume, envelopes, and other voice parameters for precise audio mixing.
-// Filtered and unfiltered outputs are computed and combined, then written into the provided buffer.
+// calcBuffer generates an audio buffer by combining waveform data, filters, and envelope generators for SID voices.
 func (sid *SID) calcBuffer(buf []uint32, sampleBufIdx int) {
 	const halfBufSize = SampleBufSize / 2
 	const samples = ((0x138 * 50) << 16) / SampleFreq
