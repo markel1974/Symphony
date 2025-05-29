@@ -40,58 +40,61 @@ const (
 
 // Voice represents a sound generator within a synthesizer.
 type Voice struct {
-	number  uint8        // number represents the numerical identifier of the voice in the synthesizer.
-	wave    WaveFormType // Selected waveform
-	egState EGState      // Current state of EG
-	modBy   *Voice       // Voice that modulates this one
-	modTo   *Voice       // Voice that is modulated by this one
-	count   uint32       // Counter for waveform generator, 8.16 fixed
-	add     uint32       // Added to the counter in every frame
-	freq    uint16       // SID frequency value
-	pw      uint16       // SID pulse-width value
-	aAdd    uint32       // EG parameters
-	dSub    uint32       // dSub is the decrement value for the decay phase of the envelope generator.
-	sLevel  uint32       // sLevel represents the sustain level of the envelope generator.
-	rSub    uint32       // rSub is the decrement value for the release phase of the envelope generator.
-	egLevel uint32       // Current EG level, 8.16 fixed
-	noise   uint32       // Last noise generator output value
-	gate    uint8        // EG gate bit
-	ring    uint8        // Ring modulation bit
-	test    uint8        // Test bit
-	filter  uint8        // Flag: Voice filtered
-	sync    uint8        // The following bit is set for the modulating voices, not for the modulated one (as the SID bits)
-	//seed    uint32       // seed represents the current state of the random number generator for noise waveform generation.
-	noiseLFSR uint32
-	mute      bool
+	number       uint8        // number represents the numerical identifier of the voice in the synthesizer.
+	wave         WaveFormType // Selected waveform
+	egState      EGState      // Current state of EG
+	modBy        *Voice       // Voice that modulates this one
+	modTo        *Voice       // Voice that is modulated by this one
+	count        uint32       // Counter for waveform generator, 8.16 fixed
+	add          uint32       // Added to the counter in every frame
+	freq         uint16       // SID frequency value
+	pw           uint16       // SID pulse-width value
+	aAdd         uint32       // EG parameters
+	dSub         uint32       // dSub is the decrement value for the decay phase of the envelope generator.
+	sLevel       uint32       // sLevel represents the sustain level of the envelope generator.
+	rSub         uint32       // rSub is the decrement value for the release phase of the envelope generator.
+	egLevel      uint32       // Current EG level, 8.16 fixed
+	gate         uint8        // EG gate bit
+	ring         uint8        // Ring modulation bit
+	test         uint8        // Test bit
+	filter       uint8        // Flag: Voice filtered
+	sync         uint8        // The following bit is set for the modulating voices, not for the modulated one (as the SID bits)
+	noiseLFSR    uint32
+	mute         bool
+	waveForm     []func() uint16
+	waveFormTest []func() uint16
+	eg           []func()
 }
 
 // NewVoice creates a new Voice instance with provided voice number and initializes its properties to default values.
 func NewVoice(number uint8) *Voice {
-	return &Voice{
-		number:  number,
-		wave:    0,
-		egState: 0,
-		modBy:   nil,
-		modTo:   nil,
-		count:   0,
-		add:     0,
-		freq:    0,
-		pw:      0,
-		aAdd:    0,
-		dSub:    0,
-		sLevel:  0,
-		rSub:    0,
-		egLevel: 0,
-		noise:   0,
-		gate:    0,
-		ring:    0,
-		test:    0,
-		filter:  0,
-		sync:    0,
-		//seed:    1,
+	v := &Voice{
+		number:    number,
+		wave:      0,
+		egState:   0,
+		modBy:     nil,
+		modTo:     nil,
+		count:     0,
+		add:       0,
+		freq:      0,
+		pw:        0,
+		aAdd:      0,
+		dSub:      0,
+		sLevel:    0,
+		rSub:      0,
+		egLevel:   0,
+		gate:      0,
+		ring:      0,
+		test:      0,
+		filter:    0,
+		sync:      0,
 		noiseLFSR: 0x7FFFFF,
 		mute:      false,
 	}
+	v.eg = v.buildEnvelopeGenerator()
+	v.waveForm = v.buildWaveForm()
+	v.waveFormTest = v.buildWaveFormTest()
+	return v
 }
 
 // Setup initializes modulation relationships for the voice by setting the modulating and modulated voices.
@@ -230,9 +233,6 @@ func (v *Voice) UpdateCount() {
 }
 
 // ComputeEnvelopeGenerators updates the envelope generator levels and transitions between states based on current values.
-// File: voice.go
-
-// ComputeEnvelopeGenerators updates the envelope generator levels and transitions between states based on current values.
 func (v *Voice) ComputeEnvelopeGenerators() {
 	if v.test != 0 {
 		// Se il bit TEST è attivo, gli inviluppi sono congelati/disabilitati.
@@ -240,15 +240,30 @@ func (v *Voice) ComputeEnvelopeGenerators() {
 		// Il livello corrente v.egLevel viene mantenuto.
 		return
 	}
+	v.eg[v.egState]()
+}
 
-	switch v.egState {
-	case EgAttack:
+func (v *Voice) ComputeWaveForm() uint16 {
+	idx := v.wave
+	if v.test != 0 {
+		return v.waveFormTest[idx]()
+	}
+	return v.waveForm[idx]()
+}
+
+func (v *Voice) buildEnvelopeGenerator() []func() {
+	eg := make([]func(), 0xf)
+	for x := range eg {
+		eg[x] = func() {}
+	}
+	eg[EgAttack] = func() {
 		v.egLevel += v.aAdd
 		if v.egLevel > 0xffffff {
 			v.egLevel = 0xffffff
 			v.egState = EgDecay
 		}
-	case EgDecay:
+	}
+	eg[EgDecay] = func() {
 		if v.egLevel <= v.sLevel || v.egLevel > 0xffffff { // La condizione > 0xffffff gestisce l'underflow
 			v.egLevel = v.sLevel
 		} else {
@@ -257,94 +272,103 @@ func (v *Voice) ComputeEnvelopeGenerators() {
 				v.egLevel = v.sLevel
 			}
 		}
-	case EgRelease:
+	}
+	eg[EgRelease] = func() {
 		v.egLevel -= v.rSub >> _eGDRShiftTable[v.egLevel>>16]
 		if v.egLevel > 0xffffff { // Underflow (diventato > 0xffffff dopo la sottrazione)
 			v.egLevel = 0
 			v.egState = EgIdle
 		}
-	case EgIdle:
+	}
+	eg[EgIdle] = func() {
 		v.egLevel = 0
 	}
+	return eg
 }
 
-// ComputeWaveForm generates and returns the waveform output for the voice based on its current waveform type and settings.
-func (v *Voice) ComputeWaveForm() uint16 {
-	if v.test != 0 {
-		// Comportamento fisico reale del SID quando TEST=1
-		switch v.wave {
-		case WaveTri:
-			// Forza l'onda triangolare a valore massimo
-			return 0xFFFF
-		case WaveSaw:
-			// Congela il dente di sega al valore corrente
-			frozen := v.count >> 8
-			return uint16(frozen | (frozen << 8))
-		case WaveRect:
-			// Modalità "ring modulation forzata"
-			if v.modBy.count&0x800000 != 0 {
-				return 0xFFFF
-			}
-			return 0x0000
-		case WaveNoise:
-			// Modalità deterministic output
-			lfsr := v.noiseLFSR | 0x400000
-			return uint16(((lfsr>>12)&0xFF)<<8 | (lfsr & 0xFF))
-		default:
-			// Per waveform combinate: usa maschera bitwise
+func (v *Voice) buildWaveFormTest() []func() uint16 {
+	waveForm := make([]func() uint16, 0xf)
+	for x := range waveForm {
+		waveForm[x] = func() uint16 {
 			return _triTable[v.count>>11] & _sawRectTable[v.count>>16]
 		}
 	}
-
-	// Logica normale di generazione della forma d'onda (se v.test == 0)
-	output := uint16(0)
-	switch v.wave {
-	case WaveTri:
-		if v.ring != 0 {
-			output = _triTable[(v.count^(v.modBy.count&0x800000))>>11]
-		} else {
-			output = _triTable[v.count>>11]
+	waveForm[WaveTri] = func() uint16 {
+		return 0xFFF
+	}
+	waveForm[WaveSaw] = func() uint16 {
+		// Congela il dente di sega al valore corrente
+		frozen := v.count >> 8
+		return uint16(frozen | (frozen << 8))
+	}
+	waveForm[WaveRect] = func() uint16 {
+		// Modalità "ring modulation forzata"
+		if (v.modBy.count & 0x800000) != 0 {
+			return 0xFFFF
 		}
-	case WaveSaw:
-		output = uint16(v.count >> 8)
-	case WaveRect:
+		return 0x0000
+	}
+	waveForm[WaveNoise] = func() uint16 {
+		// Modalità deterministic output
+		lfsr := v.noiseLFSR | 0x400000
+		return uint16(((lfsr>>12)&0xFF)<<8 | (lfsr & 0xFF))
+	}
+	return waveForm
+}
+
+func (v *Voice) buildWaveForm() []func() uint16 {
+	waveForm := make([]func() uint16, 0xf)
+	for x := range waveForm {
+		waveForm[x] = func() uint16 {
+			return 0x8000
+		}
+	}
+	waveForm[WaveTri] = func() uint16 {
+		if v.ring != 0 {
+			return _triTable[(v.count^(v.modBy.count&0x800000))>>11]
+		}
+		return _triTable[v.count>>11]
+	}
+	waveForm[WaveSaw] = func() uint16 {
+		return uint16(v.count >> 8)
+	}
+	waveForm[WaveRect] = func() uint16 {
 		// La soglia pw è a 12 bit, l'accumulatore count è a 24 bit.
 		// Il confronto è (count_24bit > pw_12bit_shl_12)
 		if v.count > (uint32(v.pw) << 12) {
-			output = 0xffff
-		} else {
-			output = 0
+			return 0xffff
 		}
-	case WaveTriSaw:
-		output = _triSawTable[v.count>>16]
-	case WaveTriRect:
+		return 0
+	}
+	waveForm[WaveTriSaw] = func() uint16 {
+		return _triSawTable[v.count>>16]
+	}
+	waveForm[WaveTriRect] = func() uint16 {
 		if v.count > (uint32(v.pw) << 12) {
-			output = _triRectTable[v.count>>16]
+			return _triRectTable[v.count>>16]
 		} else {
-			output = 0 // O _triRectTable_low[v.count>>16] se esistesse una parte bassa
+			return 0 // O _triRectTable_low[v.count>>16] se esistesse una parte bassa
 		}
-	case WaveSawRect:
+	}
+	waveForm[WaveSawRect] = func() uint16 {
 		if v.count > (uint32(v.pw) << 12) {
-			output = _sawRectTable[v.count>>16]
-		} else {
-			output = 0 // O _sawRectTable_low[v.count>>16]
+			return _sawRectTable[v.count>>16]
 		}
-	case WaveTriSawRect:
+		return 0 // O _sawRectTable_low[v.count>>16]
+	}
+	waveForm[WaveTriSawRect] = func() uint16 {
 		if v.count > (uint32(v.pw) << 12) {
-			output = _triSawRectTable[v.count>>16]
-		} else {
-			output = 0 // O _triSawRectTable_low[v.count>>16]
+			return _triSawRectTable[v.count>>16]
 		}
-	case WaveNoise:
+		return 0 // O _triSawRectTable_low[v.count>>16]
+	}
+	waveForm[WaveNoise] = func() uint16 {
 		// Avanza l'LFSR a 23 bit
 		msb := (v.noiseLFSR >> 22) & 1
 		tapBit := (v.noiseLFSR >> 17) & 1
 		feedback := msb ^ tapBit
 		v.noiseLFSR = ((v.noiseLFSR << 1) | feedback) & 0x7FFFFF
-
-		output = uint16(((v.noiseLFSR >> 15) & 0xFF) << 8)
-	default:
-		output = 0x8000
+		return uint16(((v.noiseLFSR >> 15) & 0xFF) << 8)
 	}
-	return output
+	return waveForm
 }
