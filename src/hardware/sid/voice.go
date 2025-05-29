@@ -271,45 +271,28 @@ func (v *Voice) ComputeEnvelopeGenerators() {
 // ComputeWaveForm generates and returns the waveform output for the voice based on its current waveform type and settings.
 func (v *Voice) ComputeWaveForm() uint16 {
 	if v.test != 0 {
-		// Se il bit TEST è attivo, le forme d'onda si comportano diversamente.
-		// L'accumulatore v.count è stato resettato a 0 e non avanza.
+		// Comportamento fisico reale del SID quando TEST=1
 		switch v.wave {
 		case WaveTri:
-			// Il triangolo diventa un livello DC.
-			// Poiché v.count è 0, l'output da _triTable[0] è una scelta comune.
-			return _triTable[0] // Potrebbe anche essere 0x0000 o 0x8000 a seconda delle interpretazioni.
-		case WaveSaw:
-			// Il dente di sega con v.count = 0 produce output 0.
-			return 0x0000
-		case WaveRect:
-			// L'onda quadra/pulse è tipicamente tenuta alta.
+			// Forza l'onda triangolare a valore massimo
 			return 0xFFFF
+		case WaveSaw:
+			// Congela il dente di sega al valore corrente
+			frozen := v.count >> 8
+			return uint16(frozen | (frozen << 8))
+		case WaveRect:
+			// Modalità "ring modulation forzata"
+			if v.modBy.count&0x800000 != 0 {
+				return 0xFFFF
+			}
+			return 0x0000
 		case WaveNoise:
-			// Il generatore di rumore LFSR è stato resettato a 0x7FFFFF.
-			// L'output sarà costante basato su questo stato resettato,
-			// poiché l'LFSR non viene cloccato ulteriormente qui se TEST è attivo
-			// (la sua progressione avviene solo se v.test == 0 più avanti).
-			// O, se l'LFSR venisse cloccato comunque, l'output cambierebbe.
-			// Per "noise waveform is also reset", un output fisso dal valore resettato
-			// ha senso.
-			// Ricalcoliamo l'output basato sullo stato resettato dell'LFSR:
-			return uint16(((v.noiseLFSR >> 15) & 0xFF) << 8) // Stessa logica di output del noise normale
-
-		// Per le forme d'onda combinate, il comportamento con TEST=1 può essere complesso.
-		// Una semplificazione comune è forzarle a un output specifico,
-		// ad esempio quello di una delle loro componenti o un valore fisso.
-		// Qui le impostiamo a 0xFFFF come l'onda quadra, ma potrebbe richiedere affinamento.
-		case WaveTriSaw:
-			return 0xFFFF // o _triSawTable[0] se v.count è 0
-		case WaveTriRect:
-			return 0xFFFF // o _triRectTable[0]
-		case WaveSawRect:
-			return 0xFFFF // o _sawRectTable[0]
-		case WaveTriSawRect:
-			return 0xFFFF // o _triSawRectTable[0]
+			// Modalità deterministic output
+			lfsr := v.noiseLFSR | 0x400000
+			return uint16(((lfsr>>12)&0xFF)<<8 | (lfsr & 0xFF))
 		default:
-			// WaveNone o casi non gestiti
-			return 0x8000 // Valore centrale
+			// Per waveform combinate: usa maschera bitwise
+			return _triTable[v.count>>11] & _sawRectTable[v.count>>16]
 		}
 	}
 

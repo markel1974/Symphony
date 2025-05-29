@@ -276,8 +276,6 @@ func (sid *SID) Update() {
 	sid.player.Write(sid.soundBuffer, 0, soundBufferSamples)
 }
 
-// File: mos6581.new.go
-
 // calcSoundBuffer generates the audio samples for the current block, applying mixing, filtering, and volume adjustments.
 func (sid *SID) calcSoundBuffer() {
 	const halfSampleBufSize = SampleBufSize / 2 // 624 / 2 = 312

@@ -5,6 +5,35 @@ import (
 	"math"
 )
 
+type FilterConfig struct {
+	d1, d2, g1, g2, ampl float64
+}
+
+// Definisci i preset come variabile globale
+var _filterPresets = map[FilterType]FilterConfig{
+	0b101: { // LP+HP (Notch Filter)
+		d1:   -2.0,
+		d2:   1.0,
+		g1:   0.6,
+		g2:   0.3,
+		ampl: 0.22,
+	},
+	0b110: { // BP+HP
+		d1:   -2.1,
+		d2:   1.05,
+		g1:   0.7,
+		g2:   0.4,
+		ampl: 0.18,
+	},
+	0b111: { // LP+BP+HP
+		d1:   -2.0,
+		d2:   1.0,
+		g1:   0.65,
+		g2:   0.35,
+		ampl: 0.25,
+	},
+}
+
 // FilterType represents the type of filter configuration as a bitmask.
 type FilterType uint8
 
@@ -146,7 +175,6 @@ func (f *Filters) UpdateType(data uint8) {
 
 // compute recalculates filter coefficients and configurations based on the current filter type, frequency, and resonance.
 func (f *Filters) compute() {
-	// Controlla casi speciali per ottimizzazione
 	if f.filterType == FilterNone {
 		f.d1, f.d2, f.g1, f.g2 = 0.0, 0.0, 0.0, 0.0
 		f.filterAmpl = 0.0
@@ -197,22 +225,38 @@ func (f *Filters) compute() {
 		f.g1 = math.Copysign(f.g2+0.99, f.g1)
 	}
 
+	if preset, ok := _filterPresets[f.filterType]; ok {
+		f.d1 = preset.d1
+		f.d2 = preset.d2
+		f.g1 = preset.g1
+		f.g2 = preset.g2
+		f.filterAmpl = preset.ampl
+		return
+	}
+
 	// Calcola coefficienti in base alla combinazione
 	switch {
-	case hasLP && hasHP: // Notch Filter
+	case hasLP && hasBP && hasHP: // LP+BP+HP (raro)
 		f.d1 = -2.0 * math.Cos(math.Pi*arg)
 		f.d2 = 1.0
-		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 + math.Cos(math.Pi*arg)) / math.Sin(math.Pi*arg)
+		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 - math.Cos(math.Pi*arg)) / math.Sin(math.Pi*arg)
+
+	case hasBP && hasHP: // BP+HP
+		f.d1 = -2.0
+		f.d2 = 1.0
+		f.filterAmpl = 0.25 * (1.0 - f.g1 + f.g2) * (1.0 + math.Cos(math.Pi*arg))
+
+	case hasLP && hasHP:
+		// Utilizza una formula più precisa basata su documentazione MOS6581
+		notchWidth := 0.1 // Regolabile in base al resonance
+		f.d1 = -2.0 * math.Cos(math.Pi*(arg+notchWidth/2))
+		f.d2 = 1.0
+		f.filterAmpl = 0.5 * (1.0 + f.g1 + f.g2) / (1.0 + notchWidth)
 
 	case hasLP && hasBP: // Low Pass + Band Pass
 		f.d1 = 2.0
 		f.d2 = 1.0
 		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2)
-
-	case hasHP && hasBP: // High Pass + Band Pass
-		f.d1 = -2.0
-		f.d2 = 1.0
-		f.filterAmpl = 0.25 * (1.0 - f.g1 + f.g2)
 
 	case hasLP: // Solo Low Pass
 		f.d1 = 2.0
@@ -234,3 +278,13 @@ func (f *Filters) compute() {
 		f.filterAmpl = 0.0
 	}
 }
+
+//case hasHP && hasBP: // High Pass + Band Pass
+//	f.d1 = -2.0
+//	f.d2 = 1.0
+//	f.filterAmpl = 0.25 * (1.0 - f.g1 + f.g2)
+
+//case hasLP && hasHP: // Notch Filter
+//	f.d1 = -2.0 * math.Cos(math.Pi*arg)
+//	f.d2 = 1.0
+//	f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 + math.Cos(math.Pi*arg)) / math.Sin(math.Pi*arg)
