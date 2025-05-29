@@ -1,16 +1,14 @@
 package oto_render
 
 import (
-	"fmt"
-	"github.com/hajimehoshi/oto/v2"
 	"github.com/markel1974/c64emu/src/config"
 	"log"
 	"time"
 )
 
 type Audio struct {
-	audioContext       *oto.Context
-	player             oto.Player
+	//audioContext       *oto.Context
+	//player             oto.Player
 	audioSampleRate    int
 	audioNextStartTime time.Time
 	audioReader        *ContinuousReader
@@ -28,26 +26,17 @@ func NewAudio() *Audio {
 func (d *Audio) Setup(cfg *config.Config) error {
 	//StartStub()
 	d.cfg = cfg
-
-	//ctx, ready, err := oto.NewContext(d.audioSampleRate, 1, oto.FormatFloat32LE)
-	ctx, ready, err := oto.NewContext(d.audioSampleRate, 1, oto.FormatFloat32LE)
+	reader, err := NewContinuousReader(d.audioSampleRate)
 	if err != nil {
-		return fmt.Errorf("failed to create oto context: %w", err)
+		return err
 	}
-	<-ready
-	d.audioContext = ctx
-	d.audioReader = NewContinuousReader()
-	d.player = d.audioContext.NewPlayer(d.audioReader)
-
-	d.player.(oto.BufferSizeSetter).SetBufferSize(1764 * 2)
-
-	d.player.SetVolume(1.0)
+	d.audioReader = reader
 
 	go func() {
 		log.Println("Starting continuous audio player...")
 		for {
-			d.player.Play()
-			if playerErr := d.player.Err(); playerErr != nil {
+			d.audioReader.Play()
+			if playerErr := d.audioReader.Err(); playerErr != nil {
 				log.Println("Error playing audio:", playerErr)
 				break
 			}

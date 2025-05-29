@@ -2,19 +2,39 @@ package oto_render
 
 import (
 	"encoding/binary"
+	"fmt"
+	"github.com/hajimehoshi/oto/v2"
 	"math"
 	"sync"
 )
 
+const offset = 4
+
 type ContinuousReader struct {
 	lock             sync.Mutex
 	lastChunk        []uint32
-	currentPos       int
 	lastChunkSamples int
+	player           oto.Player
 }
 
-func NewContinuousReader() *ContinuousReader {
-	return &ContinuousReader{}
+func NewContinuousReader(audioSampleRate int) (*ContinuousReader, error) {
+	ctx, ready, err := oto.NewContext(audioSampleRate, 1, oto.FormatFloat32LE)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create oto context: %w", err)
+	}
+	<-ready
+	r := &ContinuousReader{}
+	r.player = ctx.NewPlayer(r)
+	r.player.SetVolume(1.0)
+	return r, nil
+}
+
+func (r *ContinuousReader) Play() {
+	r.player.Play()
+}
+
+func (r *ContinuousReader) Err() error {
+	return r.player.Err()
 }
 
 func (r *ContinuousReader) AddChunk(chunk []uint32, samples int) {
@@ -26,93 +46,93 @@ func (r *ContinuousReader) AddChunk(chunk []uint32, samples int) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	if chunkLen != len(r.lastChunk) {
-		r.lastChunk = make([]uint32, len(chunk))
+		r.player.(oto.BufferSizeSetter).SetBufferSize((chunkLen / 2) * offset)
+		r.lastChunk = make([]uint32, chunkLen)
 	}
 	copy(r.lastChunk, chunk)
-	r.currentPos = 0
 	r.lastChunkSamples = lastChunkSamples
 }
 
 func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	if r.lastChunk == nil || r.currentPos >= len(r.lastChunk) {
+	if r.lastChunk == nil || r.lastChunkSamples == 0 {
 		return 0, nil
 	}
 	written := 0
 	for x := 0; x < r.lastChunkSamples; x++ {
 		start := written
-		end := start + 4
+		end := start + offset
 		if end > len(buf) {
 			break
 		}
-		curr := r.lastChunk[x]
-		const divisor = float32(1 << 20)
-		campioneFloat32 := float32(int32(curr)) / divisor
+		curr := int32(r.lastChunk[x])
+		const divisor = float32(1 << 15)
+		campioneFloat32 := float32(curr) / divisor
 		binary.LittleEndian.PutUint32(buf[start:end], math.Float32bits(campioneFloat32))
-		written += 4
-		r.currentPos++
-		/*
-			start := written
-			end := start + 4
-			if end > len(buf) {
-				break
-			}
-			val := float32(r.lastChunk[x]) / 32768.0
-			binary.LittleEndian.PutUint32(buf[start:end], math.Float32bits(val))
-			written += 4
-			r.currentPos++
-
-		*/
-		/*
-			start := written
-			end := start + 4
-			if end > len(buf) {
-				break
-			}
-			// 2. Normalizza questo int32 a float32.
-			// Il divisore deve essere il valore massimo teorico che i tuoi int32 raggiungono dopo lo shift >> 10.
-			// Questo è 2^(31-10) = 2^21.
-			const normalizationDivisor = float32(1 << 21) // Valore: 2097152.0
-			campioneFloat32 := float32(r.lastChunk[x]) / normalizationDivisor
-
-			// 3. **** (OPZIONALE) AMPLIFICA PER IL VOLUME ****
-			// Questo è il punto per aumentare il volume se i tuoi campioni originali sono deboli.
-			// Sperimenta con questo valore (es. 10.0, 50.0, 100.0, 200.0)
-			//const amplificationFactor = float32(100.0) // Esempio: fattore di amplificazione
-			//campioneFloat32 *= amplificationFactor
-
-			// 4. (OPZIONALE) Clampa il valore per evitare clipping (distorsione)
-			//if campioneFloat32 > 1.0 {
-			//	campioneFloat32 = 1.0
-			//} else if campioneFloat32 < -1.0 {
-			//	campioneFloat32 = -1.0
-			//}
-
-			// 5. Converti il float32 normalizzato nei suoi bit uint32 per oto (FormatFloat32LE)
-			binary.LittleEndian.PutUint32(buf[start:end], math.Float32bits(campioneFloat32))
-			written += 4
-			r.currentPos++
-
-		*/
-		/*
-			start := written
-			end := start + 4
-			if end > len(buf) {
-				break
-			}
-			curr := r.lastChunk[x]
-			campioneInt16 := int16(curr & 0xFFFF)
-			campioneFloat32 := float32(campioneInt16) / 32768.0
-			val := math.Float32bits(campioneFloat32)
-			binary.LittleEndian.PutUint32(buf[start:end], val)
-			written += 4
-			r.currentPos++
-
-		*/
+		written += offset
 	}
 	return written, nil
 }
+
+/*
+	start := written
+	end := start + 4
+	if end > len(buf) {
+		break
+	}
+	val := float32(r.lastChunk[x]) / 32768.0
+	binary.LittleEndian.PutUint32(buf[start:end], math.Float32bits(val))
+	written += 4
+	r.currentPos++
+
+*/
+/*
+	start := written
+	end := start + 4
+	if end > len(buf) {
+		break
+	}
+	// 2. Normalizza questo int32 a float32.
+	// Il divisore deve essere il valore massimo teorico che i tuoi int32 raggiungono dopo lo shift >> 10.
+	// Questo è 2^(31-10) = 2^21.
+	const normalizationDivisor = float32(1 << 21) // Valore: 2097152.0
+	campioneFloat32 := float32(r.lastChunk[x]) / normalizationDivisor
+
+	// 3. **** (OPZIONALE) AMPLIFICA PER IL VOLUME ****
+	// Questo è il punto per aumentare il volume se i tuoi campioni originali sono deboli.
+	// Sperimenta con questo valore (es. 10.0, 50.0, 100.0, 200.0)
+	//const amplificationFactor = float32(100.0) // Esempio: fattore di amplificazione
+	//campioneFloat32 *= amplificationFactor
+
+	// 4. (OPZIONALE) Clampa il valore per evitare clipping (distorsione)
+	//if campioneFloat32 > 1.0 {
+	//	campioneFloat32 = 1.0
+	//} else if campioneFloat32 < -1.0 {
+	//	campioneFloat32 = -1.0
+	//}
+
+	// 5. Converti il float32 normalizzato nei suoi bit uint32 per oto (FormatFloat32LE)
+	binary.LittleEndian.PutUint32(buf[start:end], math.Float32bits(campioneFloat32))
+	written += 4
+	r.currentPos++
+
+*/
+/*
+	start := written
+	end := start + 4
+	if end > len(buf) {
+		break
+	}
+	curr := r.lastChunk[x]
+	campioneInt16 := int16(curr & 0xFFFF)
+	campioneFloat32 := float32(campioneInt16) / 32768.0
+	val := math.Float32bits(campioneFloat32)
+	binary.LittleEndian.PutUint32(buf[start:end], val)
+	written += 4
+	r.currentPos++
+
+*/
 
 /*
 func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
