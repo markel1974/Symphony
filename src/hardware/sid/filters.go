@@ -40,20 +40,24 @@ const (
 	FilterHp   FilterType = 0b100 // Bit 2 (High Pass)
 )
 
-// calcResonanceLp computes the resonance low-pass filter value based on the given input x using a polynomial equation.
+// calcResonanceLp per input a 11 bit (0-2047)
 func calcResonanceLp(x float64) float64 {
+	x = x / 8.0 // Scalatura a un range equivalente a 8 bit (0 - 255.875)
+	// I coefficienti del polinomio rimangono gli stessi
 	v := 227.755 - (1.7635 * x) - (0.0176385 * x * x) + (0.00333484 * x * x * x) - (9.05683e-6 * x * x * x * x)
 	return v
 }
 
-// calcResonanceHp computes the high-pass filter resonance value based on the input parameter x.
+// calcResonanceHp per input a 11 bit (0-2047)
 func calcResonanceHp(x float64) float64 {
+	x = x / 8.0 // Scalatura a un range equivalente a 8 bit (0 - 255.875)
+	// I coefficienti del polinomio rimangono gli stessi
 	v := 366.374 - (14.0052 * x) + (0.603212 * x * x) - (0.000880196 * x * x * x)
 	return v
 }
 
-// const resonanceSize = 1 << 11
-const resonanceSize = 1 << 8
+// const resonanceSize = 1 << 8
+const resonanceSize = 1 << 11
 
 // Filters represents the state and configuration of an audio filter, including coefficients, resonance, and frequencies.
 type Filters struct {
@@ -169,10 +173,11 @@ func (f *Filters) compute() {
 	// Calcola frequenza di taglio a 11 bit
 	cutoff11bit := (uint16(f.filterFreqHigh) << 8) | uint16(f.filterFreqLow)
 
-	// Usa tutti gli 11 bit per l'indice (0-2047)
-	//filterIndex := cutoff11bit
 	// Usiamo gli 8 bit più significativi
-	filterIndex := uint8(cutoff11bit >> 3)
+	//filterIndex := uint8(cutoff11bit >> 3)
+
+	// Usa tutti gli 11 bit per l'indice (0-2047)
+	filterIndex := cutoff11bit
 
 	// Determina quali filtri sono attivi
 	hasLP := (f.filterType & FilterLp) != 0
