@@ -5,34 +5,13 @@ import (
 	"math"
 )
 
-// FilterType represents the type of filter applied in the audio processing pipeline.
-//type FilterType int
-
-// FilterNone represents no filtering.
-// FilterLp represents a low-pass filter.
-// FilterBp represents a band-pass filter.
-// FilterLpBp represents a combination of low-pass and band-pass filters.
-// FilterHp represents a high-pass filter.
-// FilterNotch represents a notch filter.
-// FilterHpBp represents a combination of high-pass and band-pass filters.
-// FilterAll represents applying all filters.
-
-/*
-const (
-	FilterNone = FilterType(iota)
-	FilterLp
-	FilterBp
-	FilterLpBp
-	FilterHp
-	FilterNotch
-	FilterHpBp
-	FilterAll
-)
-
-*/
-
+// FilterType represents the type of filter configuration as a bitmask.
 type FilterType uint8
 
+// FilterNone represents no filter applied (binary value 000).
+// FilterLp represents a low-pass filter (binary value 001, Bit 0).
+// FilterBp represents a band-pass filter (binary value 010, Bit 1).
+// FilterHp represents a high-pass filter (binary value 100, Bit 2).
 const (
 	FilterNone FilterType = 0b000
 	FilterLp   FilterType = 0b001 // Bit 0 (Low Pass)
@@ -40,7 +19,7 @@ const (
 	FilterHp   FilterType = 0b100 // Bit 2 (High Pass)
 )
 
-// calcResonanceLp per input a 11 bit (0-2047)
+// calcResonanceLp calculates the low-pass filter resonance factor based on the input value scaled to an 8-bit range.
 func calcResonanceLp(x float64) float64 {
 	x = x / 8.0 // Scalatura a un range equivalente a 8 bit (0 - 255.875)
 	// I coefficienti del polinomio rimangono gli stessi
@@ -48,7 +27,9 @@ func calcResonanceLp(x float64) float64 {
 	return v
 }
 
-// calcResonanceHp per input a 11 bit (0-2047)
+// calcResonanceHp calculates the resonance high-pass filter value based on the input parameter x.
+// The input x is scaled to a range equivalent to 8 bits before applying the polynomial function.
+// The function uses a cubic polynomial to compute the high-pass resonance value.
 func calcResonanceHp(x float64) float64 {
 	x = x / 8.0 // Scalatura a un range equivalente a 8 bit (0 - 255.875)
 	// I coefficienti del polinomio rimangono gli stessi
@@ -56,10 +37,10 @@ func calcResonanceHp(x float64) float64 {
 	return v
 }
 
-// const resonanceSize = 1 << 8
+// resonanceSize represents the size of the resonance arrays used in filter calculations, defined as 2048 (2^11).
 const resonanceSize = 1 << 11
 
-// Filters represents the state and configuration of an audio filter, including coefficients, resonance, and frequencies.
+// Filters represents an audio filter system with various configuration and IIR filter coefficients.
 type Filters struct {
 	filterType         FilterType // Filter type
 	filterFreqHigh     uint8      // SID filter frequency (upper 8 bits)
@@ -72,7 +53,7 @@ type Filters struct {
 	resonanceHP        [resonanceSize]float64
 }
 
-// NewFilters initializes a new Filters instance with default parameters and precomputes resonance lookup tables.
+// NewFilters initializes and returns a new instance of Filters with default values and precomputed resonance data.
 func NewFilters() *Filters {
 	f := &Filters{
 		filterType:     FilterNone,
@@ -96,7 +77,7 @@ func NewFilters() *Filters {
 	return f
 }
 
-// Reset reinitializes all filter parameters in the Filters struct to their default values, effectively clearing any previous state.
+// Reset reinitializes all filter parameters to their default values, clearing any previous configuration or state.
 func (f *Filters) Reset() {
 	f.filterType = FilterNone
 	f.filterFreqHigh = 0
@@ -112,7 +93,7 @@ func (f *Filters) Reset() {
 	f.yn2 = 0.0
 }
 
-// Compute applies the filter defined in the Filters struct to the output signal and returns the resulting value.
+// Compute applies an IIR filter to the given output signal and updates internal state variables for future computations.
 func (f *Filters) Compute(outputFilter int32) int32 {
 	xn := float64(outputFilter) * f.filterAmpl
 	yn := xn + (f.d1 * f.xn1) + (f.d2 * f.xn2) - (f.g1 * f.yn1) - (f.g2 * f.yn2)
@@ -124,7 +105,7 @@ func (f *Filters) Compute(outputFilter int32) int32 {
 	return outputFilter
 }
 
-// UpdateFreqLow sets the low part of the filter frequency and recalculates filter coefficients if the value is changed.
+// UpdateFreqLow updates the low byte of the filter frequency if it differs from the current value and triggers computation.
 func (f *Filters) UpdateFreqLow(data uint8) {
 	if data != f.filterFreqLow {
 		f.filterFreqLow = data
@@ -132,7 +113,8 @@ func (f *Filters) UpdateFreqLow(data uint8) {
 	}
 }
 
-// UpdateFreqHigh updates the high part of the filter frequency and recalculates filter coefficients if the value changes.
+// UpdateFreqHigh updates the high byte of the filter frequency if the provided value is different from the current value.
+// If updated, this method triggers a recalculation of the filter's coefficients by invoking the compute method.
 func (f *Filters) UpdateFreqHigh(data uint8) {
 	if data != f.filterFreqHigh {
 		f.filterFreqHigh = data
@@ -140,7 +122,7 @@ func (f *Filters) UpdateFreqHigh(data uint8) {
 	}
 }
 
-// UpdateRes updates the filter resonance value using the upper 4 bits of the input and recalculates filters if enabled.
+// UpdateRes updates the filter resonance by extracting the upper 4 bits of the provided data and recalculates filter settings.
 func (f *Filters) UpdateRes(data uint8) {
 	resonance := data >> 4
 	if resonance != f.filterRes {
@@ -149,7 +131,7 @@ func (f *Filters) UpdateRes(data uint8) {
 	}
 }
 
-// UpdateType adjusts the filter type of the Filters instance based on the provided data and resets filter state if changed.
+// UpdateType updates the filter type based on the provided data and resets filter states if a change occurs.
 func (f *Filters) UpdateType(data uint8) {
 	v := FilterType((data >> 4) & 7)
 	if v != f.filterType {
@@ -162,6 +144,7 @@ func (f *Filters) UpdateType(data uint8) {
 	}
 }
 
+// compute recalculates filter coefficients and configurations based on the current filter type, frequency, and resonance.
 func (f *Filters) compute() {
 	// Controlla casi speciali per ottimizzazione
 	if f.filterType == FilterNone {
@@ -251,85 +234,3 @@ func (f *Filters) compute() {
 		f.filterAmpl = 0.0
 	}
 }
-
-/*
-// compute adjusts internal filter coefficients and characteristics based on filter type, frequency, and resonance settings.
-func (f *Filters) compute() {
-	var fr float64
-	// Check for some trivial cases
-	if f.filterType == FilterAll {
-		f.d1 = 0.0
-		f.d2 = 0.0
-		f.g1 = 0.0
-		f.g2 = 0.0
-		f.filterAmpl = 1.0
-		return
-	} else if f.filterType == FilterNone {
-		f.d1 = 0.0
-		f.d2 = 0.0
-		f.g1 = 0.0
-		f.g2 = 0.0
-		f.filterAmpl = 0.0
-		return
-	}
-
-	// Combina i byte di frequenza per ottenere il valore a 11 bit (0-2047)
-	cutoff11bit := (uint16(f.filterFreqHigh) << 8) | uint16(f.filterFreqLow)
-
-	// Mappa il valore a 11 bit all'indice a 8 bit (0-255) per le tabelle di lookup
-	// Usiamo gli 8 bit più significativi
-	//filterIndex := uint8(cutoff11bit >> 3)
-	filterIndex := uint8(cutoff11bit)
-
-	// Calculate resonance frequency
-	if f.filterType == FilterLp || f.filterType == FilterLpBp {
-		fr = f.resonanceLP[filterIndex]
-	} else {
-		fr = f.resonanceHP[filterIndex]
-	}
-	// Limit to <1/2 sample frequency, avoid div by 0 in case FilterBp below
-	arg := fr / float64(SampleFreq>>1)
-	if arg > 0.99 {
-		arg = 0.99
-	}
-	if arg < 0.01 {
-		arg = 0.01
-	}
-	// Calculate poles (resonance frequency and resonance)
-	f.g2 = 0.55 + 1.2*arg*arg - 1.2*arg + float64(f.filterRes)*0.0133333333
-	f.g1 = -2.0 * math.Sqrt(f.g2) * math.Cos(math.Pi*arg)
-	// Increase resonance if LP/HP combined with BP
-	if f.filterType == FilterLpBp || f.filterType == FilterHpBp {
-		f.g2 += 0.1
-	}
-	// Stabilize filter
-	if math.Abs(f.g1) >= (f.g2 + 1.0) {
-		if f.g1 > 0.0 {
-			f.g1 = f.g2 + 0.99
-		} else {
-			f.g1 = -(f.g2 + 0.99)
-		}
-	}
-	// Calculate roots (filter characteristic) and input attenuation
-	switch f.filterType {
-	case FilterLpBp, FilterLp:
-		f.d1 = 2.0
-		f.d2 = 1.0
-		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2)
-	case FilterHpBp, FilterHp:
-		f.d1 = -2.0
-		f.d2 = 1.0
-		f.filterAmpl = 0.25 * (1.0 - f.g1 + f.g2)
-	case FilterBp:
-		f.d1 = 0.0
-		f.d2 = -1.0
-		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 + math.Cos(math.Pi*arg)) / math.Sin(math.Pi*arg)
-	case FilterNotch:
-		f.d1 = -2.0 * math.Cos(math.Pi*arg)
-		f.d2 = 1.0
-		f.filterAmpl = 0.25 * (1.0 + f.g1 + f.g2) * (1.0 + math.Cos(math.Pi*arg)) / math.Sin(math.Pi*arg)
-	default:
-		log.Printf("SID FILTER NOT IMPLEMENTED %d\n", f.filterType)
-	}
-}
-*/
