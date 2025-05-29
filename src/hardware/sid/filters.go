@@ -5,11 +5,11 @@ import (
 	"math"
 )
 
+/*
 type FilterConfig struct {
 	d1, d2, g1, g2, ampl float64
 }
 
-// Definisci i preset come variabile globale
 var _filterPresets = map[FilterType]FilterConfig{
 	0b101: { // LP+HP (Notch Filter)
 		d1:   -2.0,
@@ -33,6 +33,8 @@ var _filterPresets = map[FilterType]FilterConfig{
 		ampl: 0.25,
 	},
 }
+
+*/
 
 // FilterType represents the type of filter configuration as a bitmask.
 type FilterType uint8
@@ -225,14 +227,14 @@ func (f *Filters) compute() {
 		f.g1 = math.Copysign(f.g2+0.99, f.g1)
 	}
 
-	if preset, ok := _filterPresets[f.filterType]; ok {
-		f.d1 = preset.d1
-		f.d2 = preset.d2
-		f.g1 = preset.g1
-		f.g2 = preset.g2
-		f.filterAmpl = preset.ampl
-		return
-	}
+	//if preset, ok := _filterPresets[f.filterType]; ok {
+	//	f.d1 = preset.d1
+	//	f.d2 = preset.d2
+	//	f.g1 = preset.g1
+	//	f.g2 = preset.g2
+	//	f.filterAmpl = preset.ampl
+	//	return
+	//}
 
 	// Calcola coefficienti in base alla combinazione
 	switch {
