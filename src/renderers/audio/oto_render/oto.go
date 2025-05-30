@@ -7,19 +7,19 @@ import (
 )
 
 type Audio struct {
-	//audioContext       *oto.Context
-	//player             oto.Player
 	audioSampleRate    int
 	audioNextStartTime time.Time
 	audioReader        *ContinuousReader
 	cfg                *config.Config
 	pos                int
+	debug              bool
 }
 
 func NewAudio() *Audio {
 	return &Audio{
 		audioSampleRate: 44100,
 		pos:             0,
+		debug:           false,
 	}
 }
 
@@ -54,35 +54,33 @@ func (d *Audio) GetCurrentPosition() int {
 // SamplesReadyCallback ora invia i nuovi chunk al reader del player esistente.
 func (d *Audio) Write(values []uint32, pos int, samples int) {
 	d.pos += samples
-	if len(values) == 0 {
-		return
-	}
 	d.audioReader.AddChunk(values, samples)
 
-	currentTime := time.Now()
-	// bufferDuration è già calcolato correttamente ora
-	durationMs := (float64(len(values)) / float64(d.audioSampleRate)) * 1000.0
-	bufferDuration := time.Duration(durationMs) * time.Millisecond
+	if d.debug {
+		currentTime := time.Now()
+		// bufferDuration è già calcolato correttamente ora
+		durationMs := (float64(len(values)) / float64(d.audioSampleRate)) * 1000.0
+		bufferDuration := time.Duration(durationMs) * time.Millisecond
 
-	if d.audioNextStartTime.IsZero() {
-		// Inizializza solo la prima volta, o dopo un reset completo
-		d.audioNextStartTime = currentTime //.Add(10 * time.Millisecond) // Piccola latenza iniziale se vuoi
-	} else {
-		// Se siamo MOLTO in ritardo (es. > 100ms), resettiamo il tempo di partenza.
-		// Questo allinea la riproduzione al "NOW" per evitare un lag infinito.
-		const lagThreshold = 20 * time.Millisecond // Puoi sperimentare con questo valore
-		if d.audioNextStartTime.Before(currentTime.Add(-lagThreshold)) {
-			log.Printf("Go: Major lag detected. Resetting start time. Ideal: %s, Current: %s. Data still being buffered.\n",
-				d.audioNextStartTime.Format("15:04:05.000"), currentTime.Format("15:04:05.000"))
-			// Resetta audioNextStartTime al tempo attuale (o leggermente in avanti)
-			d.audioNextStartTime = currentTime //.Add(10 * time.Millisecond)
+		if d.audioNextStartTime.IsZero() {
+			// Inizializza solo la prima volta, o dopo un reset completo
+			d.audioNextStartTime = currentTime //.Add(10 * time.Millisecond) // Piccola latenza iniziale se vuoi
+		} else {
+			// Se siamo MOLTO in ritardo (es. > 100ms), resettiamo il tempo di partenza.
+			// Questo allinea la riproduzione al "NOW" per evitare un lag infinito.
+			const lagThreshold = 20 * time.Millisecond // Puoi sperimentare con questo valore
+			if d.audioNextStartTime.Before(currentTime.Add(-lagThreshold)) {
+				log.Printf("Go: Major lag detected. Resetting start time. Ideal: %s, Current: %s. Data still being buffered.\n",
+					d.audioNextStartTime.Format("15:04:05.000"), currentTime.Format("15:04:05.000"))
+				// Resetta audioNextStartTime al tempo attuale (o leggermente in avanti)
+				d.audioNextStartTime = currentTime //.Add(10 * time.Millisecond)
+			}
 		}
+		// Fa avanzare il tempo ideale per il prossimo buffer
+		d.audioNextStartTime = d.audioNextStartTime.Add(bufferDuration)
+		//log.Printf("Debug: audioNextStartTime before add: %s, bufferDuration: %v, after add: %s",
+		//	d.audioNextStartTime.Add(-bufferDuration).Format("15:04:05.000.000"), bufferDuration, d.audioNextStartTime.Format("15:04:05.000.000"))
 	}
-	// Fa avanzare il tempo ideale per il prossimo buffer
-	d.audioNextStartTime = d.audioNextStartTime.Add(bufferDuration)
-
-	//log.Printf("Debug: audioNextStartTime before add: %s, bufferDuration: %v, after add: %s",
-	//	d.audioNextStartTime.Add(-bufferDuration).Format("15:04:05.000.000"), bufferDuration, d.audioNextStartTime.Format("15:04:05.000.000"))
 }
 
 func (d *Audio) Play() {

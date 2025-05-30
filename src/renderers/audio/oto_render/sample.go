@@ -18,7 +18,7 @@ import (
 const (
 	sampleRate   = 44100
 	channelCount = 1
-	format       = oto.FormatFloat32LE
+	audioFormat  = oto.FormatFloat32LE
 )
 
 type otoFormat int
@@ -146,7 +146,7 @@ func run() error {
 		freqG = 784.0
 	)
 
-	c, ready, err := oto.NewContext(sampleRate, channelCount, format)
+	c, ready, err := oto.NewContext(sampleRate, channelCount, audioFormat)
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func run() error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		p := play(c, freqC, 3*time.Second, channelCount, format)
+		p := play(c, freqC, 3*time.Second, channelCount, audioFormat)
 		m.Lock()
 		players = append(players, p)
 		m.Unlock()
@@ -170,7 +170,7 @@ func run() error {
 	go func() {
 		defer wg.Done()
 		time.Sleep(1 * time.Second)
-		p := play(c, freqE, 3*time.Second, channelCount, format)
+		p := play(c, freqE, 3*time.Second, channelCount, audioFormat)
 		m.Lock()
 		players = append(players, p)
 		m.Unlock()
@@ -181,7 +181,7 @@ func run() error {
 	go func() {
 		defer wg.Done()
 		time.Sleep(2 * time.Second)
-		p := play(c, freqG, 3*time.Second, channelCount, format)
+		p := play(c, freqG, 3*time.Second, channelCount, audioFormat)
 		m.Lock()
 		players = append(players, p)
 		m.Unlock()
