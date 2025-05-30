@@ -47,23 +47,27 @@ type ContinuousReader struct {
 
 // NewContinuousReader initializes a new ContinuousReader for streaming audio based on the specified sample rate.
 // Returns a pointer to the ContinuousReader instance and an error if the initialization fails.
-func NewContinuousReader(audioSampleRate int, channelCount int) (*ContinuousReader, error) {
-	format, ok := _formats["PCM16"]
+func NewContinuousReader() *ContinuousReader {
+	r := &ContinuousReader{}
+	return r
+}
+
+// Setup initializes the ContinuousReader with a given sample rate, channel count, and audio format. Returns an error if failed.
+func (r *ContinuousReader) Setup(sampleRate int, channelCount int, fo string) error {
+	format, ok := _formats[fo]
 	if !ok {
-		return nil, fmt.Errorf("audio format not found")
+		return fmt.Errorf("audio format not found")
 	}
-	ctx, ready, err := oto.NewContext(audioSampleRate, channelCount, format.Format)
+	ctx, ready, err := oto.NewContext(sampleRate, channelCount, format.Format)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create oto context: %w", err)
+		return fmt.Errorf("failed to create oto context: %w", err)
 	}
 	<-ready
-	r := &ContinuousReader{
-		bytes:   format.Bytes,
-		writeFn: format.Func,
-	}
+	r.bytes = format.Bytes
+	r.writeFn = format.Func
 	r.player = ctx.NewPlayer(r)
 	r.player.SetVolume(1.0)
-	return r, nil
+	return nil
 }
 
 // Play starts or resumes audio playback using the underlying oto.Player.

@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// Audio represents a structure for managing audio playback and configuration in a continuous stream setup.
+// It includes options for sample rate, channel count, playback control, debugging, and current audio position tracking.
+// The type integrates with ContinuousReader for audio streaming and playback functionality.
 type Audio struct {
 	audioSampleRate    int
 	audioChannelCount  int
@@ -16,6 +19,7 @@ type Audio struct {
 	debug              bool
 }
 
+// NewAudio creates and returns a new instance of the Audio type with default configurations for sample rate and channel count.
 func NewAudio() *Audio {
 	return &Audio{
 		audioSampleRate:   44100,
@@ -25,35 +29,35 @@ func NewAudio() *Audio {
 	}
 }
 
+// Setup initializes the Audio instance with the specified configuration and sets up continuous audio playback.
 func (d *Audio) Setup(cfg *config.Config) error {
 	//StartStub()
 	d.cfg = cfg
-	reader, err := NewContinuousReader(d.audioSampleRate, d.audioChannelCount)
-	if err != nil {
+	reader := NewContinuousReader()
+	if err := reader.Setup(d.audioSampleRate, d.audioChannelCount, "PCM16"); err != nil {
 		return err
 	}
 	d.audioReader = reader
-
 	go func() {
 		log.Println("Starting continuous audio player...")
 		for {
 			d.audioReader.Play()
-			if playerErr := d.audioReader.Err(); playerErr != nil {
-				log.Println("Error playing audio:", playerErr)
+			if err := d.audioReader.Err(); err != nil {
+				log.Println("Error playing audio:", err)
 				break
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
-		log.Println("Continuous audio player stopped.", err)
 	}()
 	return nil
 }
 
+// GetCurrentPosition returns the current playback position of the audio.
 func (d *Audio) GetCurrentPosition() int {
 	return d.pos
 }
 
-// SamplesReadyCallback ora invia i nuovi chunk al reader del player esistente.
+// Write processes and buffers audio samples for playback, updating the current position and managing playback timing.
 func (d *Audio) Write(values []uint32, pos int, samples int) {
 	d.pos += samples
 	d.audioReader.AddChunk(values, samples)
@@ -85,12 +89,15 @@ func (d *Audio) Write(values []uint32, pos int, samples int) {
 	}
 }
 
+// Play starts or resumes the audio playback for the Audio instance, leveraging the associated continuous reader.
 func (d *Audio) Play() {
 }
 
+// Pause halts the current audio playback, maintaining the current playback position.
 func (d *Audio) Pause() {
 }
 
+// Resume resumes audio playback by restarting the associated audio reader or player.
 func (d *Audio) Resume() {
 }
 
