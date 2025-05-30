@@ -8,6 +8,7 @@ import (
 
 type Audio struct {
 	audioSampleRate    int
+	audioChannelCount  int
 	audioNextStartTime time.Time
 	audioReader        *ContinuousReader
 	cfg                *config.Config
@@ -17,16 +18,17 @@ type Audio struct {
 
 func NewAudio() *Audio {
 	return &Audio{
-		audioSampleRate: 44100,
-		pos:             0,
-		debug:           false,
+		audioSampleRate:   44100,
+		audioChannelCount: 1,
+		pos:               0,
+		debug:             false,
 	}
 }
 
 func (d *Audio) Setup(cfg *config.Config) error {
 	//StartStub()
 	d.cfg = cfg
-	reader, err := NewContinuousReader(d.audioSampleRate)
+	reader, err := NewContinuousReader(d.audioSampleRate, d.audioChannelCount)
 	if err != nil {
 		return err
 	}
