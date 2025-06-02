@@ -7,6 +7,8 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+//RegisterHistory = 1024
+
 // potXRegisterIndex represents the register index for the X-axis potentiometer.
 // potYRegisterIndex represents the register index for the Y-axis potentiometer.
 const (

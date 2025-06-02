@@ -39,8 +39,6 @@ type SID struct {
 	filters      *Filters
 	writes       [RegisterCount]WriteFn
 	reads        [RegisterCount]ReadFn
-	//divisorTable    *DivisorTable
-	//divisor         int
 }
 
 // NewSID initializes and returns a new SID component instance with the given parent, factory, label, and instance number.
@@ -70,7 +68,6 @@ func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int, rasters int) error {
 
 	sid.player = sid.GetFactory().GetIAudioRender()
 	sid.sampleBuf = make([]uint8, SampleBufSize)
-	//sid.divisorTable = NewDivisorTable(rasters, fragFreq)
 	sid.voices = nil
 	sid.fragSize = fragSize
 	sid.bufferFrags = fragFreq
