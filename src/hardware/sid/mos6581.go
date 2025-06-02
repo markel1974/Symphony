@@ -14,7 +14,7 @@ const (
 )
 
 // RegMax defines the maximum number of SID chip registers plus one, typically used as a boundary for register operations.
-const RegMax = 0x1f + 1
+//const RegMax = 0x1f + 1
 
 // WriteFn defines a function type that processes an 8-bit unsigned integer as input.
 type WriteFn func(data uint8)
@@ -37,8 +37,8 @@ type SID struct {
 	sampleBufIdx int      // Index in sample_buf for writing
 	soundBuffer  []uint32
 	filters      *Filters
-	writes       [RegMax]WriteFn
-	reads        [RegMax]ReadFn
+	writes       [RegisterCount]WriteFn
+	reads        [RegisterCount]ReadFn
 	//divisorTable    *DivisorTable
 	//divisor         int
 }
@@ -61,8 +61,6 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 func (sid *SID) Setup() error {
 	sid.cfg = sid.GetFactory().GetConfig()
 	sid.cfg.Bind(sid.onConfigChanged)
-	sid.writes = sid.createWriteRegister()
-	sid.reads = sid.createReadRegister()
 	return nil
 }
 
@@ -87,6 +85,8 @@ func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int, rasters int) error {
 	voice2.Setup(voice1, voice0)
 	sid.voices = append(sid.voices, voice0, voice1, voice2)
 
+	sid.writes = sid.createWriteRegister()
+	sid.reads = sid.createReadRegister()
 	sid.Reset()
 
 	return nil
@@ -110,18 +110,6 @@ func (sid *SID) Emulate() {
 // EmulationRequired checks whether emulation is required for the specified SID and returns a boolean result.
 func (sid *SID) EmulationRequired() bool {
 	return false
-}
-
-// SetPotX sets the value of the POTX (paddle) register to control the position of the X-axis paddle input.
-func (sid *SID) SetPotX(pot uint8) {
-	// PX7 PX6 PX5 PX4 PX3 PX2 PX1 PX0
-	sid.registers[potXRegisterIndex] = pot
-}
-
-// SetPotY sets the pot value for the Y-axis register of the SID. This value updates the corresponding SID register directly.
-func (sid *SID) SetPotY(pot uint8) {
-	//PY7 PY6 PY5 PY4 PY3 PY2 PY1 PY0
-	sid.registers[potYRegisterIndex] = pot
 }
 
 // onConfigChanged handles updates or adjustments to the configuration settings dynamically during runtime.
@@ -160,24 +148,6 @@ func (sid *SID) Reset() {
 	//sid.WriteRegister(0xD419, 0x7F) //Paddle Y value
 }
 
-// ReadRegister reads the value of a specified SID register identified by the provided address.
-func (sid *SID) ReadRegister(addr uint16) uint8 {
-	reg := addr & 0x1f
-	return sid.reads[reg](addr)
-}
-
-// WriteRegister writes a value to a specific register within the range of the SID's addressable space.
-func (sid *SID) WriteRegister(addr uint16, data uint8) {
-	reg := addr & 0x1f
-	sid.registers[reg] = data
-	sid.writes[reg](data)
-}
-
-// GetLastByte retrieves the last byte of the SID structure and returns it as an unsigned 8-bit integer.
-func (sid *SID) GetLastByte() uint8 {
-	return 0
-}
-
 // Prepare updates the sample buffer with the current volume and increments the buffer index in a circular manner.
 func (sid *SID) Prepare() {
 	// sid.volume viene aggiornato da WriteRegister quando $D418 è scritto.
@@ -193,6 +163,36 @@ func (sid *SID) Update() {
 	//TODO RIMUOVERE 2 * sid.fragSize e pos
 	soundBufferSamples := 2 * sid.fragSize
 	sid.player.Write(sid.soundBuffer, 0, soundBufferSamples)
+}
+
+// ReadRegister reads the value of a specified SID register identified by the provided address.
+func (sid *SID) ReadRegister(addr uint16) uint8 {
+	reg := addr & 0x1f
+	return sid.reads[reg](addr)
+}
+
+// WriteRegister writes a value to a specific register within the range of the SID's addressable space.
+func (sid *SID) WriteRegister(addr uint16, data uint8) {
+	reg := addr & 0x1f
+	sid.registers[reg] = data
+	sid.writes[reg](data)
+}
+
+// SetPotX sets the value of the POTX (paddle) register to control the position of the X-axis paddle input.
+func (sid *SID) SetPotX(pot uint8) {
+	// PX7 PX6 PX5 PX4 PX3 PX2 PX1 PX0
+	sid.registers[potXRegisterIndex] = pot
+}
+
+// SetPotY sets the pot value for the Y-axis register of the SID. This value updates the corresponding SID register directly.
+func (sid *SID) SetPotY(pot uint8) {
+	//PY7 PY6 PY5 PY4 PY3 PY2 PY1 PY0
+	sid.registers[potYRegisterIndex] = pot
+}
+
+// GetLastByte retrieves the last byte of the SID structure and returns it as an unsigned 8-bit integer.
+func (sid *SID) GetLastByte() uint8 {
+	return 0
 }
 
 // calcSoundBuffer generates audio samples for the current block, applying volume changes and filtering for each voice.
@@ -271,8 +271,8 @@ func (sid *SID) calcSoundBuffer() {
 
 // createReadRegister initializes and returns an array of ReadFn functions mapped to SID register addresses.
 // It sets a default read function for most registers and customized functions for specific addresses like 27 and 28.
-func (sid *SID) createReadRegister() [RegMax]ReadFn {
-	var reads [RegMax]ReadFn
+func (sid *SID) createReadRegister() [RegisterCount]ReadFn {
+	var reads [RegisterCount]ReadFn
 	defaultFn := func(addr uint16) uint8 {
 		reg := addr & 0x1f
 		return sid.registers[reg]
@@ -286,8 +286,8 @@ func (sid *SID) createReadRegister() [RegMax]ReadFn {
 }
 
 // createWriteRegister initializes and returns an array of WriteFn mapped to SID register write operations.
-func (sid *SID) createWriteRegister() [RegMax]WriteFn {
-	var writes [RegMax]WriteFn
+func (sid *SID) createWriteRegister() [RegisterCount]WriteFn {
+	var writes [RegisterCount]WriteFn
 	emptyFn := func(data uint8) {}
 	for idx := range writes {
 		writes[idx] = emptyFn
