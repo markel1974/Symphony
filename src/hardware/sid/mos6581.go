@@ -13,9 +13,6 @@ const (
 	potYRegisterIndex = 26
 )
 
-// RegMax defines the maximum number of SID chip registers plus one, typically used as a boundary for register operations.
-//const RegMax = 0x1f + 1
-
 // WriteFn defines a function type that processes an 8-bit unsigned integer as input.
 type WriteFn func(data uint8)
 
@@ -131,14 +128,9 @@ func (sid *SID) Reset() {
 	for x := range sid.sampleBuf {
 		sid.sampleBuf[x] = 0
 	}
-	//sid.fragCurrent = 0
-	//sid.divisor = 0
 	for x := range sid.soundBuffer {
 		sid.soundBuffer[x] = 0
 	}
-	//sid.lead.Reset()
-	//sid.sbPos = 0
-
 	//PADDLE TEST
 	//sid.WriteRegister(0xDC00, 0x40) //Control-Port 1 selected
 	//sid.WriteRegister(0xD419, 0x7F) //Paddle X value
@@ -285,9 +277,9 @@ func (sid *SID) createReadRegister() [RegisterCount]ReadFn {
 // createWriteRegister initializes and returns an array of WriteFn mapped to SID register write operations.
 func (sid *SID) createWriteRegister() [RegisterCount]WriteFn {
 	var writes [RegisterCount]WriteFn
-	emptyFn := func(data uint8) {}
+	defaultFn := func(data uint8) {}
 	for idx := range writes {
-		writes[idx] = emptyFn
+		writes[idx] = defaultFn
 	}
 	writes[0] = sid.writeVoice0UpdateFreqA
 	writes[1] = sid.writeVoice0UpdateFreqB
