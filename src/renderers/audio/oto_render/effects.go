@@ -2,10 +2,16 @@ package oto_render
 
 import "math"
 
-func Float32ToPCM16(sample float32) uint16 {
-	const target16 = 1 << 15
-	sample = clamp(sample)
-	return uint16(sample * target16)
+func Float32ToPCM16(sample float32) int16 {
+	const scaleFactor float32 = math.MaxInt16 + 1 // target16
+	//clampedSample := clamp(sample)                // sample è ora in [-1.0, 1.0]
+	scaledFloat := sample * scaleFactor // Risultato float nell'intervallo [-32768.0, 32768.0]
+	if scaledFloat > math.MaxInt16 {
+		return math.MaxInt16 // Massimo valore int16 positivo
+	} else if scaledFloat < math.MinInt16 {
+		return math.MinInt16
+	}
+	return int16(scaledFloat)
 }
 
 func AmplifyCopy(samples []float32, gain float32) []float32 {

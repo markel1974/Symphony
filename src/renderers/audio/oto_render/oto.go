@@ -34,7 +34,7 @@ func (d *Audio) Setup(cfg *config.Config) error {
 	//StartStub()
 	d.cfg = cfg
 	reader := NewContinuousReader()
-	if err := reader.Setup(d.audioSampleRate, d.audioChannelCount, "PCM16"); err != nil {
+	if err := reader.Setup(d.audioSampleRate, d.audioChannelCount, "FLOAT32LE"); err != nil {
 		return err
 	}
 	d.audioReader = reader
@@ -58,7 +58,7 @@ func (d *Audio) GetCurrentPosition() int {
 }
 
 // Write processes and buffers audio samples for playback, updating the current position and managing playback timing.
-func (d *Audio) Write(values []uint32, pos int, samples int) {
+func (d *Audio) Write(values []float32, pos int, samples int) {
 	d.pos += samples
 	d.audioReader.AddChunk(values, samples)
 

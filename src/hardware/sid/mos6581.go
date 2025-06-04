@@ -32,7 +32,7 @@ type SID struct {
 	voices       []*Voice // Data for 3 voices
 	sampleBuf    []uint8  // Buffer for sampled voices
 	sampleBufIdx int      // Index in sample_buf for writing
-	soundBuffer  []uint32
+	soundBuffer  []float32
 	filters      *Filters
 	writes       [RegisterCount]WriteFn
 	reads        [RegisterCount]ReadFn
@@ -69,7 +69,7 @@ func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int, rasters int) error {
 	sid.fragSize = fragSize
 	sid.bufferFrags = fragFreq
 	sid.filters = NewFilters()
-	sid.soundBuffer = make([]uint32, 2*fragSize)
+	sid.soundBuffer = make([]float32, fragSize)
 
 	voice0 := NewVoice(0)
 	voice1 := NewVoice(1)
@@ -150,8 +150,8 @@ func (sid *SID) Update() {
 	sid.calcSoundBuffer()
 
 	//TODO RIMUOVERE 2 * sid.fragSize e pos
-	soundBufferSamples := 2 * sid.fragSize
-	sid.player.Write(sid.soundBuffer, 0, soundBufferSamples)
+	//soundBufferSamples := 2 * sid.fragSize
+	sid.player.Write(sid.soundBuffer, 0, sid.fragSize)
 }
 
 // ReadRegister reads the value of a specified SID register identified by the provided address.
@@ -248,13 +248,13 @@ func (sid *SID) calcSoundBuffer() {
 		sumOutputFiltered = sid.filters.Compute(sumOutputFiltered)
 		mixedSignal := sumOutputNonFiltered + sumOutputFiltered
 
-		// Applica il volume letto da sampleBuf (0-15)
-		// Questo currentVolumeValue cambia circa ogni 2-3 campioni audio.
-		volumeAppliedSignal := (mixedSignal * int32(currentVolumeValue)) / 15
-
-		finalSampleValue := volumeAppliedSignal >> 10 // Scala verso il basso
-
-		sid.soundBuffer[idx] = uint32(finalSampleValue)
+		const sidVolumeMax = 15.0          // 0-15
+		const normalizedIntValue = 32767.0 // interval -1.0, 1.0
+		const scalingFactor = 1024.0       // scaling factor (eq: 1 >> 10)
+		const divisor = normalizedIntValue * scalingFactor
+		volumeFactor := float32(currentVolumeValue) / sidVolumeMax
+		val := float32(mixedSignal) * volumeFactor
+		sid.soundBuffer[idx] = val / divisor
 	}
 }
 

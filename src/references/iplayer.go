@@ -10,5 +10,5 @@ type IAudioRender interface {
 
 	GetCurrentPosition() int
 
-	Write([]uint32, int, int)
+	Write([]float32, int, int)
 }
