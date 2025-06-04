@@ -36,9 +36,17 @@ func NewInputs() *Inputs {
 func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 	g.board = b
 	g.cfg = cfg
-
+	g.keyMapper["Escape"] = func(p bool) { b.KeyboardSetKey(p, component.VKEscape) }
 	g.keyMapper["Enter"] = func(p bool) { b.KeyboardSetKey(p, component.VKReturn) }
 	g.keyMapper["Del"] = func(p bool) { b.KeyboardSetKey(p, component.VKDelete) }
+	g.keyMapper["F1"] = func(p bool) { b.KeyboardSetKey(p, component.VKF1) }
+	g.keyMapper["F2"] = func(p bool) { b.KeyboardSetKey(p, component.VKF2) }
+	g.keyMapper["F3"] = func(p bool) { b.KeyboardSetKey(p, component.VKF3) }
+	g.keyMapper["F4"] = func(p bool) { b.KeyboardSetKey(p, component.VKF4) }
+	g.keyMapper["F5"] = func(p bool) { b.KeyboardSetKey(p, component.VKF5) }
+	g.keyMapper["F6"] = func(p bool) { b.KeyboardSetKey(p, component.VKF6) }
+	g.keyMapper["F7"] = func(p bool) { b.KeyboardSetKey(p, component.VKF7) }
+	g.keyMapper["F8"] = func(p bool) { b.KeyboardSetKey(p, component.VKF8) }
 	//g.keyMapper["backspace"] = func(p bool) { b.KeyboardSetKey(p, component.VKBack) }
 	g.keyMapper[" "] = func(p bool) { b.KeyboardSetKey(p, component.VKSpace) }
 	g.keyMapper["."] = func(p bool) { b.KeyboardSetKey(p, component.VKComma) }

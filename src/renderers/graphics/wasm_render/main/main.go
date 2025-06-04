@@ -24,11 +24,7 @@ func stubCartridges() ([]*config.Cartridge, error) {
 
 func main() {
 	var cCarts []*config.Cartridge = nil
-	var err error
-	gFactory := NewGraphicsFactory()
-	aFactory := NewAudioFactory()
 
-	opt := symphony.NewOptions(gFactory, aFactory)
 	symphonyConfig := js.Global().Get("symphonyConfig")
 	if symphonyConfig.IsUndefined() {
 		log.Println("undefined symphonyConfig")
@@ -43,6 +39,7 @@ func main() {
 
 	useStub, _ := JsBooleanToGoBool(symphonyConfig.Get("useStub"))
 	if useStub {
+		var err error
 		if cCarts, err = stubCartridges(); err != nil {
 			log.Println(err)
 			return
@@ -50,9 +47,9 @@ func main() {
 	} else {
 		cartName, _ := JsStringToGoString(symphonyConfig.Get("cartridgeName"))
 		if len(cartName) > 0 {
-			cartBuffer, cErr := JsBufferToGoBytes(symphonyConfig.Get("cartridgeBuffer"))
-			if cErr != nil {
-				log.Println(cErr)
+			cartBuffer, err := JsBufferToGoBytes(symphonyConfig.Get("cartridgeBuffer"))
+			if err != nil {
+				log.Println(err)
 				return
 			}
 			cart, err = config.NewCartridge("", cartName, cartName, cartBuffer)
@@ -64,13 +61,18 @@ func main() {
 		}
 	}
 
+	gFactory := NewGraphicsFactory()
+	aFactory := NewAudioFactory()
+
+	opt := symphony.NewOptions(gFactory, aFactory)
+
 	opt.Cartridges = cCarts
 	emulator := symphony.New()
-	if err = emulator.Setup(opt); err != nil {
+	if err := emulator.Setup(opt); err != nil {
 		log.Println(err)
 		return
 	}
-	if err = emulator.Start(); err != nil {
+	if err := emulator.Start(); err != nil {
 		log.Println(err)
 		return
 	}
