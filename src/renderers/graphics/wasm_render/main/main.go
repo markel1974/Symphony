@@ -39,26 +39,23 @@ func main() {
 		return
 	}
 
-	var buffer []byte
-	var name string
 	var cart *config.Cartridge
-	jsUseStub := symphonyConfig.Get("useStub")
-	if !jsUseStub.IsUndefined() && jsUseStub.Type() == js.TypeBoolean && jsUseStub.Bool() {
+
+	useStub, _ := JsBooleanToGoBool(symphonyConfig.Get("useStub"))
+	if useStub {
 		if cCarts, err = stubCartridges(); err != nil {
 			log.Println(err)
 			return
 		}
 	} else {
-		jsCartName := symphonyConfig.Get("cartridgeName")
-		jsCartBuffer := symphonyConfig.Get("cartridgeBuffer")
-		if !jsCartName.IsUndefined() && jsCartName.Type() == js.TypeString {
-			name = jsCartName.String()
-			buffer, err = ConvertJsBufferToGoBytes(jsCartBuffer)
-			if err != nil {
-				log.Println(err)
+		cartName, _ := JsStringToGoString(symphonyConfig.Get("cartridgeName"))
+		if len(cartName) > 0 {
+			cartBuffer, cErr := JsBufferToGoBytes(symphonyConfig.Get("cartridgeBuffer"))
+			if cErr != nil {
+				log.Println(cErr)
 				return
 			}
-			cart, err = config.NewCartridge("", name, name, buffer)
+			cart, err = config.NewCartridge("", cartName, cartName, cartBuffer)
 			if err != nil {
 				log.Println(err)
 				return
