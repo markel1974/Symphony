@@ -113,9 +113,9 @@ func (v *Voice) Reset() {
 	v.freq = 0
 	v.sLevel = 0
 	v.egLevel = 0
-	v.rSub = _eGTable[0]
-	v.dSub = _eGTable[0]
-	v.aAdd = _eGTable[0]
+	v.rSub = egTable(0)
+	v.dSub = egTable(0)
+	v.aAdd = egTable(0)
 	v.test = 0
 	v.ring = 0
 	v.gate = 0
@@ -211,14 +211,14 @@ func (v *Voice) UpdateWaveForm(data uint8) {
 
 // UpdateEnvelopeGenerators updates the attack increment and decay decrement rates of the envelope generator using the provided data.
 func (v *Voice) UpdateEnvelopeGenerators(data uint8) {
-	v.aAdd = _eGTable[(data >> 4)]
-	v.dSub = _eGTable[(data & 0xf)]
+	v.aAdd = egTable(data >> 4)
+	v.dSub = egTable(data)
 }
 
 // UpdateSustainLevel adjusts the sustain level and release decrement based on the given data value for the envelope generator.
 func (v *Voice) UpdateSustainLevel(data uint8) {
 	v.sLevel = (uint32(data) >> 4) * 0x111111
-	v.rSub = _eGTable[data&0xf]
+	v.rSub = egTable(data)
 }
 
 func (v *Voice) UpdateCount() {
@@ -252,8 +252,9 @@ func (v *Voice) ComputeWaveForm() uint16 {
 
 func (v *Voice) buildEnvelopeGenerator() []func() {
 	eg := make([]func(), 0xf)
+	defaultFn := func() {}
 	for x := range eg {
-		eg[x] = func() {}
+		eg[x] = defaultFn
 	}
 	eg[EgAttack] = func() {
 		v.egLevel += v.aAdd
@@ -266,14 +267,14 @@ func (v *Voice) buildEnvelopeGenerator() []func() {
 		if v.egLevel <= v.sLevel || v.egLevel > 0xffffff { // La condizione > 0xffffff gestisce l'underflow
 			v.egLevel = v.sLevel
 		} else {
-			v.egLevel -= v.dSub >> _eGDRShiftTable[v.egLevel>>16]
+			v.egLevel -= v.dSub >> eGDRShiftTable(v.egLevel)
 			if v.egLevel <= v.sLevel || v.egLevel > 0xffffff {
 				v.egLevel = v.sLevel
 			}
 		}
 	}
 	eg[EgRelease] = func() {
-		v.egLevel -= v.rSub >> _eGDRShiftTable[v.egLevel>>16]
+		v.egLevel -= v.rSub >> eGDRShiftTable(v.egLevel)
 		if v.egLevel > 0xffffff { // Underflow (diventato > 0xffffff dopo la sottrazione)
 			v.egLevel = 0
 			v.egState = EgIdle
@@ -287,10 +288,13 @@ func (v *Voice) buildEnvelopeGenerator() []func() {
 
 func (v *Voice) buildWaveFormTest() []func() uint16 {
 	waveForm := make([]func() uint16, 0xf)
+	defaultFn := func() uint16 {
+		p1 := triTable(v.count)
+		p2 := sawRectTable(v.count)
+		return p1 & p2
+	}
 	for x := range waveForm {
-		waveForm[x] = func() uint16 {
-			return _triTable[v.count>>11] & _sawRectTable[v.count>>16]
-		}
+		waveForm[x] = defaultFn
 	}
 	waveForm[WaveTri] = func() uint16 {
 		return 0xFFF
@@ -317,16 +321,18 @@ func (v *Voice) buildWaveFormTest() []func() uint16 {
 
 func (v *Voice) buildWaveForm() []func() uint16 {
 	waveForm := make([]func() uint16, 0xf)
+	defaultFn := func() uint16 {
+		return 0x8000
+	}
 	for x := range waveForm {
-		waveForm[x] = func() uint16 {
-			return 0x8000
-		}
+		waveForm[x] = defaultFn
 	}
 	waveForm[WaveTri] = func() uint16 {
 		if v.ring != 0 {
-			return _triTable[(v.count^(v.modBy.count&0x800000))>>11]
+			count := v.count ^ (v.modBy.count & 0x800000)
+			return triTable(count)
 		}
-		return _triTable[v.count>>11]
+		return triTable(v.count)
 	}
 	waveForm[WaveSaw] = func() uint16 {
 		return uint16(v.count >> 8)
@@ -340,24 +346,24 @@ func (v *Voice) buildWaveForm() []func() uint16 {
 		return 0
 	}
 	waveForm[WaveTriSaw] = func() uint16 {
-		return _triSawTable[v.count>>16]
+		return triSawTable(v.count)
 	}
 	waveForm[WaveTriRect] = func() uint16 {
 		if v.count > (uint32(v.pw) << 12) {
-			return _triRectTable[v.count>>16]
+			return triRectTable(v.count)
 		} else {
 			return 0 // O _triRectTable_low[v.count>>16] se esistesse una parte bassa
 		}
 	}
 	waveForm[WaveSawRect] = func() uint16 {
 		if v.count > (uint32(v.pw) << 12) {
-			return _sawRectTable[v.count>>16]
+			return sawRectTable(v.count)
 		}
 		return 0 // O _sawRectTable_low[v.count>>16]
 	}
 	waveForm[WaveTriSawRect] = func() uint16 {
 		if v.count > (uint32(v.pw) << 12) {
-			return _triSawRectTable[v.count>>16]
+			return triSawRectTable(v.count)
 		}
 		return 0 // O _triSawRectTable_low[v.count>>16]
 	}
