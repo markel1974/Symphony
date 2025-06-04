@@ -14,14 +14,6 @@ import (
 //cp index.html in static_content
 //GOOS=js GOARCH=wasm go build -o  ./src/renderers/graphics/wasm_render/server/static_content/symphony.wasm ./src/renderers/graphics/wasm_render/main
 
-func stubCartridges() ([]*config.Cartridge, error) {
-	cart, err := config.NewCartridge("", "mayhem.crt", "mayhem.crt", _stub)
-	if err != nil {
-		return nil, err
-	}
-	return []*config.Cartridge{cart}, nil
-}
-
 func main() {
 	var cCarts []*config.Cartridge = nil
 
@@ -35,15 +27,15 @@ func main() {
 		return
 	}
 
-	var cart *config.Cartridge
-
 	useStub, _ := JsBooleanToGoBool(symphonyConfig.Get("useStub"))
 	if useStub {
 		var err error
-		if cCarts, err = stubCartridges(); err != nil {
+		cart, err := config.NewCartridge("", "mayhem.crt", "mayhem.crt", _stub)
+		if err != nil {
 			log.Println(err)
 			return
 		}
+		cCarts = []*config.Cartridge{cart}
 	} else {
 		cartName, _ := JsStringToGoString(symphonyConfig.Get("cartridgeName"))
 		if len(cartName) > 0 {
@@ -52,6 +44,7 @@ func main() {
 				log.Println(err)
 				return
 			}
+			var cart *config.Cartridge
 			cart, err = config.NewCartridge("", cartName, cartName, cartBuffer)
 			if err != nil {
 				log.Println(err)
