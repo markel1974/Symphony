@@ -40,6 +40,7 @@ type CIA struct {
 	timerB           *Timer
 	sdrShiftRegister uint8 // Lo shift register interno
 	sdrShiftCounter  uint8 // Contatore per i bit (da 8 a 0)
+	todClockDivider  int
 	socket           references.ICIASocket
 	label            string
 }
@@ -83,10 +84,10 @@ func (m *CIA) Internal() bool {
 
 // Update checks the TOD alarm condition against the RTC, triggers an IRQ if conditions match, and sets the alarm flag.
 func (m *CIA) Update() {
-	if m.tod.Update(m.timerA.GetRTC()) {
-		m.icr |= IRQTODAlarmEqual
-		m.irqTrigger()
-	}
+	//if m.tod.Update(m.timerA.GetRTC()) {
+	//	m.icr |= IRQTODAlarmEqual
+	//	m.irqTrigger()
+	//}
 }
 
 // Emulate performs one emulation cycle, updating internal state, timers, and their interactions without triggering IRQs.
@@ -104,6 +105,21 @@ func (m *CIA) Emulate() {
 	m.timerA.Emulate()
 	m.timerB.SetUnderflowIn(m.timerA.GetUnderflowOut())
 	m.timerB.Emulate()
+
+	m.todClockDivider--
+	if m.todClockDivider <= 0 {
+		var freq int
+		if m.timerA.GetRTC() {
+			freq = 20000 // 50 Hz (PAL) 1,000,000 / 50 = 20,000
+		} else {
+			freq = 16667 // 60 Hz (NTSC) 1,000,000 / 60 = 16,667
+		}
+		m.todClockDivider = freq
+		if m.tod.Update() {
+			m.icr |= IRQTODAlarmEqual
+			m.irqTrigger()
+		}
+	}
 }
 
 // EmulationRequired returns true indicating that emulation is necessary for this CIA instance.
@@ -169,6 +185,7 @@ func (m *CIA) Reset() {
 	m.irqMask = 0
 	m.timerAIrqCycle = false
 	m.timerBIrqCycle = false
+	m.todClockDivider = 0
 	m.sdrShiftRegister = 0
 	m.sdrShiftCounter = 0
 	m.timerA.Reset()
@@ -275,10 +292,8 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 		if (m.timerA.GetCR() & crBitSPMode) != 0 {
 			m.sdrShiftRegister = data
 			m.sdrShiftCounter = 8
-			// L'interrupt NON viene generato qui, ma alla fine della trasmissione.
+			//sdr interrupt at the end of the transmission
 		}
-		//m.icr |= IRQSDRFullOrEmpty
-		//m.irqTrigger()
 	case 0x0d:
 		m.irqUpdateMask(data)
 		m.irqTrigger()

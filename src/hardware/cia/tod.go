@@ -8,12 +8,12 @@ import (
 // TOD represents a Time of Day (TOD) and Alarm functionality with tracking for hours, minutes, seconds, and tenths.
 type TOD struct {
 	*component.BaseComponent
-	tod10ths       uint8 // TOD 10ths
-	todSec         uint8 // TOD sec
-	todMin         uint8 // TOD min
-	todHr          uint8 // TOD hr
-	todHalt        bool  // TOD halted
-	todDivider     int   // TOD frequency divider
+	tod10ths uint8 // TOD 10ths
+	todSec   uint8 // TOD sec
+	todMin   uint8 // TOD min
+	todHr    uint8 // TOD hr
+	todHalt  bool  // TOD halted
+	//todDivider     int   // TOD frequency divider
 	todShadow10ths int
 	todShadowSec   int
 	todShadowMin   int
@@ -39,7 +39,7 @@ func (m *TOD) Setup() error {
 // Reset reinitializes the TOD registers, alarm registers, and control flags to their default states.
 func (m *TOD) Reset() {
 	m.todHalt = false
-	m.todDivider = 0
+	//m.todDivider = 0
 	m.tod10ths = 0
 	m.todSec = 0
 	m.todMin = 0
@@ -80,7 +80,7 @@ func (m *TOD) Set10ths(alarm bool, data uint8) {
 	} else {
 		m.tod10ths = d
 		if m.todHalt {
-			m.todDivider = 0
+			//m.todDivider = 0
 			m.todHalt = false
 		}
 	}
@@ -171,20 +171,20 @@ func (m *TOD) unfreeze() {
 // The rtc parameter determines the TOD frequency divider (50Hz or 60Hz).
 // Automatically handles AM/PM and 24-hour format transitions.
 // Resets the divider when time fields are updated.
-func (m *TOD) Update(rtc bool) bool {
+func (m *TOD) Update() bool {
 	if m.todHalt {
 		return false
 	}
-	if m.todDivider > 0 {
-		m.todDivider--
-		return false
-	}
+	//if m.todDivider > 0 {
+	//	m.todDivider--
+	//	return false
+	//}
 	// Divider (50/60 Hz)
-	if rtc {
-		m.todDivider = 4
-	} else {
-		m.todDivider = 5
-	}
+	//if rtc {
+	//	m.todDivider = 4
+	//} else {
+	//	m.todDivider = 5
+	//}
 	// 1/10 seconds
 	m.tod10ths++
 	if m.tod10ths > 9 {

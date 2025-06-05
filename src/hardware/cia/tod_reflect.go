@@ -73,12 +73,12 @@ func (r *Reflect) getTodShadow10ths() int {
 	return r.tod.todShadow10ths
 }
 
-func (r *Reflect) getTodDivider() int {
-	return r.tod.todDivider
-}
+//func (r *Reflect) getTodDivider() int {
+//	return r.tod.todDivider
+//}
 
-func (r *Reflect) setTodDivider(v int) {
-	r.tod.todDivider = v
-}
+//func (r *Reflect) setTodDivider(v int) {
+//	r.tod.todDivider = v
+//}
 
 // Funzioni mancanti
