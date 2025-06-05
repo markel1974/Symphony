@@ -22,20 +22,21 @@ type ReadFn func(addr uint16) uint8
 // SID represents a Sound Interface Device, a component used to generate and handle audio synthesis in the system.
 type SID struct {
 	*component.BaseComponent
-	registers    []uint8
-	cfg          *config.Config
-	reflect      *SidReflect
-	player       references.IAudioRender
-	fragSize     int      // samples, not bytes
-	bufferFrags  int      // frags the in buffer
-	volume       uint8    // Master volume
-	voices       []*Voice // Data for 3 voices
-	sampleBuf    []uint8  // Buffer for sampled voices
-	sampleBufIdx int      // Index in sample_buf for writing
-	soundBuffer  []float32
-	filters      *Filters
-	writes       [RegisterCount]WriteFn
-	reads        [RegisterCount]ReadFn
+	registers                 []uint8
+	cfg                       *config.Config
+	reflect                   *SidReflect
+	player                    references.IAudioRender
+	fragSize                  int      // samples, not bytes
+	bufferFrags               int      // frags the in buffer
+	volume                    uint8    // Master volume
+	voices                    []*Voice // Data for 3 voices
+	sampleBuf                 []uint8  // Buffer for sampled voices
+	sampleBufIdx              int      // Index in sample_buf for writing
+	soundBuffer               []float32
+	audioSamplesPerVolumeStep float64
+	filters                   *Filters
+	writes                    [RegisterCount]WriteFn
+	reads                     [RegisterCount]ReadFn
 }
 
 // NewSID initializes and returns a new SID component instance with the given parent, factory, label, and instance number.
@@ -60,16 +61,15 @@ func (sid *SID) Setup() error {
 }
 
 // Bind initializes the SID instance with the given socket, fragment frequency, and raster count, returning an error if any.
-func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int, rasters int) error {
-	fragSize := SampleFreq / fragFreq // samples, not bytes
-
+func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int /* rasters */, _ int) error {
 	sid.player = sid.GetFactory().GetIAudioRender()
 	sid.sampleBuf = make([]uint8, SampleBufSize)
 	sid.voices = nil
-	sid.fragSize = fragSize
+	sid.fragSize = SampleFreq / fragFreq // samples, not bytes
 	sid.bufferFrags = fragFreq
 	sid.filters = NewFilters()
-	sid.soundBuffer = make([]float32, fragSize)
+	sid.audioSamplesPerVolumeStep = float64(sid.fragSize) / float64(SampleBufHalfSize)
+	sid.soundBuffer = make([]float32, sid.fragSize)
 
 	voice0 := NewVoice(0)
 	voice1 := NewVoice(1)
@@ -137,10 +137,9 @@ func (sid *SID) Reset() {
 	//sid.WriteRegister(0xD419, 0x7F) //Paddle Y value
 }
 
-// Prepare updates the sample buffer with the current volume and increments the buffer index in a circular manner.
+// Prepare updates the sample buffer with the current volume and increments the buffer index circularly.
 func (sid *SID) Prepare() {
-	// sid.volume viene aggiornato da WriteRegister quando $D418 è scritto.
-	// Qui salviamo quel valore in sampleBuf.
+	// sid.volume is updated by WriteRegister when $D418 is written.
 	sid.sampleBuf[sid.sampleBufIdx] = sid.volume
 	sid.sampleBufIdx = (sid.sampleBufIdx + 1) % SampleBufSize
 }
@@ -183,42 +182,28 @@ func (sid *SID) GetLastByte() uint8 {
 
 // calcSoundBuffer generates audio samples for the current block, applying volume changes and filtering for each voice.
 func (sid *SID) calcSoundBuffer() {
-	// Numero di campioni audio da generare in questa chiamata (per 20ms a 44.1kHz)
-	numAudioSamplesInBlock := sid.fragSize
-	// Numero di aggiornamenti del volume da sampleBuf attesi per questo blocco
-	// (corrispondenti alle chiamate a Prepare() in un frame PAL)
-	numVolumeUpdatesInBlock := SampleBufHalfSize
-	// Calcola l'indice di partenza da cui leggere in sampleBuf per questo blocco.
-	// sid.sampleBufIdx è il puntatore di SCRITTURA (dove Prepare scriverà il prossimo valore).
-	// Dobbiamo leggere i 312 valori scritti NEL FRAME PRECEDENTE.
-	// Quindi, l'ultimo valore scritto per il blocco precedente è a (sid.sampleBufIdx - 1 + SampleBufSize) % SampleBufSize
-	// Il primo valore per il blocco precedente (di 312 valori) è a
-	// (sid.sampleBufIdx - numVolumeUpdatesInBlock + SampleBufSize) % SampleBufSize
-	currentVolumeBufferReadIdx := (sid.sampleBufIdx - numVolumeUpdatesInBlock + SampleBufSize) % SampleBufSize
-	// Legge il primo valore di volume che sarà usato per i primi campioni audio.
+	// Calculate the starting index to read from sampleBuf for this block
+	currentVolumeBufferReadIdx := (sid.sampleBufIdx - SampleBufHalfSize + SampleBufSize) % SampleBufSize
+	// Read the first volume value to be used for initial audio samples
 	currentVolumeValue := sid.sampleBuf[currentVolumeBufferReadIdx]
-	// Rapporto per determinare quando passare al successivo valore di volume da sampleBuf
-	audioSamplesPerVolumeStep := float64(numAudioSamplesInBlock) / float64(numVolumeUpdatesInBlock) // Circa 882 / 312 = 2.8269...
-	// `nextChangeAtAudioSampleIdx` è l'indice del campione audio `idx` (a partire da 0.0)
-	// al quale dovremmo passare al prossimo valore di volume da `sampleBuf`.
-	// Il primo cambio avverrà dopo `audioSamplesPerVolumeStep` campioni.
-	nextChangeAtAudioSampleIdx := audioSamplesPerVolumeStep
-	// `volumeStepsTaken` conta quanti dei 312 valori di volume abbiamo già utilizzato.
-	// Inizia da 0 perché il primo valore (indice 0 dei 312) è già in currentVolumeValue.
+	// Ratio to determine when to move to the next volume value from sampleBuf
+	// nextChangeAtAudioSampleIdx is the audio sample index at which we should
+	// move to the next volume value from sampleBuf
+	nextChangeAtAudioSampleIdx := sid.audioSamplesPerVolumeStep
+	// Count how many of the 312 volume values we've already used
 	volumeStepsTaken := 0
-	for idx := 0; idx < numAudioSamplesInBlock; idx++ { // Loop per 882 campioni audio
-		// Controlla se è il momento di aggiornare il currentVolumeValue leggendo il prossimo
-		// valore da sampleBuf.
-		// Questo avviene quando l'indice del campione audio corrente (idx) supera o eguaglia
-		// la soglia calcolata (nextChangeAtAudioSampleIdx).
-		// Ci assicuriamo anche di non superare il numero di aggiornamenti del volume disponibili.
-		if float64(idx) >= nextChangeAtAudioSampleIdx && volumeStepsTaken < numVolumeUpdatesInBlock-1 {
+	for idx := 0; idx < sid.fragSize; idx++ {
+		// Check if it's time to update currentVolumeValue by reading next value from sampleBuf.
+		// This happens when the current audio sample index (idx)
+		// exceeds or equals a calculated threshold (nextChangeAtAudioSampleIdx).
+		// Also ensure we don't exceed available volume updates.
+		if float64(idx) >= nextChangeAtAudioSampleIdx && volumeStepsTaken < SampleBufHalfSize-1 {
 			volumeStepsTaken++
-			// Avanza all'indice successivo nel ring buffer sampleBuf
+			// Advance to the next index in ring buffer sampleBuf
 			currentVolumeBufferReadIdx = (currentVolumeBufferReadIdx + 1) % SampleBufSize
 			currentVolumeValue = sid.sampleBuf[currentVolumeBufferReadIdx]
-			// Calcola la soglia per il prossimo cambio di volume
-			nextChangeAtAudioSampleIdx += audioSamplesPerVolumeStep
+			// Calculate a threshold for the next volume change
+			nextChangeAtAudioSampleIdx += sid.audioSamplesPerVolumeStep
 		}
 
 		// Voice Mixing
@@ -232,7 +217,7 @@ func (sid *SID) calcSoundBuffer() {
 				continue
 			}
 			voice.UpdateCount()
-			waveOutput := voice.ComputeWaveForm() // La gestione del bit TEST è interna
+			waveOutput := voice.ComputeWaveForm()
 			signedWaveOutput := int32(int16(waveOutput ^ 0x8000))
 			voiceContribution := signedWaveOutput * int32(effectiveEnvelope)
 			if voice.Filter() != 0 {
@@ -306,21 +291,21 @@ func (sid *SID) createWriteRegister() [RegisterCount]WriteFn {
 }
 
 // readVoice2Waveform retrieves the most significant byte (MSB) of the current level of oscillator for voice 2.
-// It uses the ComputeWaveForm() function from voice.go, which returns a uint16 value.
+// It uses the ComputeWaveForm() function from voice.go, which returns an uint16 value.
 func (sid *SID) readVoice2Waveform(_ uint16) uint8 {
 	// OSC3 - Oscillator 3 Value ($D41B)
-	// Restituisce il byte più significativo (MSB) dell'output corrente
-	// dell'oscillatore (waveform) della voce 2.
-	// La funzione ComputeWaveForm() in voice.go restituisce un uint16.
+	// Returns the most significant byte (MSB) of the current output
+	// of the oscillator (waveform) for voice 2.
+	// The ComputeWaveForm() function in voice.go returns an uint16.
 	return uint8(sid.voices[2].ComputeWaveForm() >> 8)
 }
 
 // readVoice2EgLevel retrieves the most significant byte (MSB) of the current envelope output for voice 2.
 func (sid *SID) readVoice2EgLevel(_ uint16) uint8 {
 	// ENV3 - Envelope 3 Value ($D41C)
-	// Restituisce il byte più significativo (MSB) del livello corrente
-	// dell'inviluppo (Envelope Generator) della voce 2.
-	// La funzione EgLevel() in voice.go restituisce un uint32 (valore a 24 bit).
+	// Returns the most significant byte (MSB) of the current level
+	// of the envelope (Envelope Generator) for voice 2.
+	// The EgLevel() function in voice.go returns an uint32 (24-bit value).
 	return uint8(sid.voices[2].EgLevel() >> 16)
 }
 
@@ -463,7 +448,7 @@ func (sid *SID) writeFiltersRegister(data uint8) {
 	sid.filters.UpdateRes(data)
 }
 
-// writeMasterVolumeAndFilterType updates the master volume, filter type, and mute state based on the given input data.
+// writeMasterVolumeAndFilterType updates master volume, filter type, and mute state based on the given input data.
 func (sid *SID) writeMasterVolumeAndFilterType(data uint8) {
 	mute := false //uint8(0)
 	if (data & 0x80) != 0 {
