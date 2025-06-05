@@ -26,20 +26,22 @@ const (
 // CIA represents the Complex Interface Adapter, a chip used for I/O operations and timers.
 type CIA struct {
 	*component.BaseComponent
-	prA            uint8
-	prB            uint8
-	ddrA           uint8
-	ddrB           uint8
-	sdr            uint8
-	icr            uint8 // Pending interrupts
-	irqMask        uint8 // Enabled interrupts
-	timerAIrqCycle bool  // Flag: Trigger Timer A IRQ in next cycle
-	timerBIrqCycle bool  // Flag: Trigger Timer B IRQ in next cycle
-	tod            *TOD
-	timerA         *Timer
-	timerB         *Timer
-	socket         references.ICIASocket
-	label          string
+	prA              uint8
+	prB              uint8
+	ddrA             uint8
+	ddrB             uint8
+	sdr              uint8
+	icr              uint8 // Pending interrupts
+	irqMask          uint8 // Enabled interrupts
+	timerAIrqCycle   bool  // Flag: Trigger Timer A IRQ in next cycle
+	timerBIrqCycle   bool  // Flag: Trigger Timer B IRQ in next cycle
+	tod              *TOD
+	timerA           *Timer
+	timerB           *Timer
+	sdrShiftRegister uint8 // Lo shift register interno
+	sdrShiftCounter  uint8 // Contatore per i bit (da 8 a 0)
+	socket           references.ICIASocket
+	label            string
 }
 
 // NewCIA creates and initializes a new instance of CIA, registering it with the provided factory, parent, and instance ID.
@@ -111,6 +113,37 @@ func (m *CIA) EmulationRequired() bool {
 
 // timerAUnderflowSlot handles the underflow event of Timer A by setting the respective interrupt cycle flag and triggering IRQ.
 func (m *CIA) timerAUnderflowSlot() {
+	// If a serial bit shift is in progress...
+	if m.sdrShiftCounter > 0 {
+		// Check Timer A mode (input or output)
+		if (m.timerA.GetCR() & crBitSPMode) != 0 {
+			// Send the most significant bit (MSB) to SP pin
+			// (bit 7 of our shift register)
+			msbIsSet := (m.sdrShiftRegister & 0x80) != 0
+			m.socket.WriteSP(msbIsSet)
+			// Shift bits left to prepare for next one
+			m.sdrShiftRegister <<= 1
+		} else {
+			// Read bit from SP pin
+			bit := m.socket.ReadSP()
+			// Shift bits left
+			m.sdrShiftRegister <<= 1
+			// Insert new bit at the end (at LSB, bit 0)
+			if bit {
+				m.sdrShiftRegister |= 1
+			}
+		}
+		m.sdrShiftCounter--
+		// If we have finished shifting all 8 bits...
+		if m.sdrShiftCounter == 0 {
+			// In INPUT mode, copy received byte to visible SDR register
+			if (m.timerA.GetCR() & crBitSPMode) == 0 {
+				m.sdr = m.sdrShiftRegister
+			}
+			m.icr |= IRQSDRFullOrEmpty
+			m.irqTrigger()
+		}
+	}
 	m.timerAIrqCycle = true
 	m.icr |= IRQUnderflowTimerA
 	//fmt.Println("EMITTING TIMER A", m.id, m.timerA.timerLatch)
@@ -136,6 +169,8 @@ func (m *CIA) Reset() {
 	m.irqMask = 0
 	m.timerAIrqCycle = false
 	m.timerBIrqCycle = false
+	m.sdrShiftRegister = 0
+	m.sdrShiftCounter = 0
 	m.timerA.Reset()
 	m.timerB.Reset()
 	m.tod.Reset()
@@ -237,8 +272,13 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 		m.tod.SetHour(m.timerB.GetRTC(), data)
 	case 0x0c:
 		m.sdr = data
-		m.icr |= IRQSDRFullOrEmpty
-		m.irqTrigger()
+		if (m.timerA.GetCR() & crBitSPMode) != 0 {
+			m.sdrShiftRegister = data
+			m.sdrShiftCounter = 8
+			// L'interrupt NON viene generato qui, ma alla fine della trasmissione.
+		}
+		//m.icr |= IRQSDRFullOrEmpty
+		//m.irqTrigger()
 	case 0x0d:
 		m.irqUpdateMask(data)
 		m.irqTrigger()

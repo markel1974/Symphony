@@ -241,12 +241,10 @@ func (m *Timer) updateCountMode(countMode uint8) {
 	case countModeTick:
 		m.countFn = m.countTick
 	case countModeCNT:
-		log.Printf("[timerCount] %s TODO Count Mode countModeCNT", m.GetId())
 		m.countFn = m.countCNT
 	case countModeTimerUnderflow:
 		m.countFn = m.countTimerUnderflow
 	case countModeTimerUnderflowCNT:
-		log.Printf("[timerCount] %s TODO Count Mode countModeTimerUnderflowCNT", m.GetId())
 		m.countFn = m.countTimerUnderflowCNT
 	default:
 		log.Printf("[timerCount] %s UNSUPPORTED Count Mode %d", m.GetId(), m.countMode)

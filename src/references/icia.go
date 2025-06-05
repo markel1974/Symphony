@@ -26,6 +26,10 @@ type ICIASocket interface {
 
 	WriteDdrB(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
 
+	ReadSP() bool
+
+	WriteSP(level bool)
+
 	IRQTrigger()
 
 	IRQClearTrigger()

@@ -198,12 +198,13 @@ func (w *CIA1Socket) WriteDdrB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
 	w.updateLightPen(prB, ddrB)
 }
 
-// updateLightPen checks the state of the light pen line and triggers an action if the state has changed.
-func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
-	if ((prB | ^ddrB) & 0x10) != w.prevLPState {
-		w.vic.LightPenTrigger()
-	}
-	w.prevLPState = (prB | ^ddrB) & 0x10
+func (w *CIA1Socket) ReadSP() bool {
+	//TODO ATTACH
+	return false
+}
+
+func (w *CIA1Socket) WriteSP(level bool) {
+	//TODO ATTACH
 }
 
 // IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
@@ -214,4 +215,12 @@ func (w *CIA1Socket) IRQTrigger() {
 // IRQClearTrigger clears the interrupt request associated with the socket by invoking the IRQClearTrigger method on connections.
 func (w *CIA1Socket) IRQClearTrigger() {
 	w.connection.IRQClearTrigger(w.intrId)
+}
+
+// updateLightPen checks the state of the light pen line and triggers an action if the state has changed.
+func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
+	if ((prB | ^ddrB) & 0x10) != w.prevLPState {
+		w.vic.LightPenTrigger()
+	}
+	w.prevLPState = (prB | ^ddrB) & 0x10
 }

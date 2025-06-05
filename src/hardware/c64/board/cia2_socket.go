@@ -100,6 +100,15 @@ func (w *CIA2Socket) WriteDdrA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
 func (w *CIA2Socket) WriteDdrB(_ uint8, _ uint8, _ uint8, _ uint8) {
 }
 
+func (w *CIA2Socket) ReadSP() bool {
+	//TODO ATTACH
+	return false
+}
+
+func (w *CIA2Socket) WriteSP(level bool) {
+	//TODO ATTACH
+}
+
 // updateVA updates the VIC-memory bank based on the current states of prA and ddrA and triggers a corresponding VA change event.
 func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 	//Bit 0..1: Select the position of the VIC-memory
