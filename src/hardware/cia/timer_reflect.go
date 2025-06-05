@@ -90,10 +90,10 @@ func (r *TimerReflect) setTimerLatchLow(v uint16) error {
 }
 
 func (r *TimerReflect) getCNT() bool {
-	return r.timer.cnt
+	return r.timer.cntLevel
 }
 func (r *TimerReflect) setCNT(v bool) error {
-	r.timer.cnt = v
+	r.timer.cntLevel = v
 	return nil
 }
 

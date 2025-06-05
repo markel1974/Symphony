@@ -89,16 +89,16 @@ func (m *CIA) Update() {
 
 // Emulate performs one emulation cycle, updating internal state, timers, and their interactions without triggering IRQs.
 func (m *CIA) Emulate() {
-	//if m.timerAIrqCycle {
-	//	m.timerAIrqCycle = false //next cycle trigger
-	//  m.irqTrigger()
-	//}
-	//if m.timerBIrqCycle {
-	//	m.timerBIrqCycle = false  //next cycle trigger
-	//	m.irqTrigger()
-	//}
-	m.timerAIrqCycle = false
-	m.timerBIrqCycle = false
+	if m.timerAIrqCycle {
+		m.timerAIrqCycle = false //next cycle trigger
+		m.irqTrigger()
+	}
+	if m.timerBIrqCycle {
+		m.timerBIrqCycle = false //next cycle trigger
+		m.irqTrigger()
+	}
+	//m.timerAIrqCycle = false
+	//m.timerBIrqCycle = false
 	m.timerA.Emulate()
 	m.timerB.SetUnderflowIn(m.timerA.GetUnderflowOut())
 	m.timerB.Emulate()
@@ -114,7 +114,7 @@ func (m *CIA) timerAUnderflowSlot() {
 	m.timerAIrqCycle = true
 	m.icr |= IRQUnderflowTimerA
 	//fmt.Println("EMITTING TIMER A", m.id, m.timerA.timerLatch)
-	m.irqTrigger()
+	//m.irqTrigger()
 }
 
 // timerBUnderflowSlot handles the underflow event for Timer B, sets the IRQ flag, and triggers an interrupt request.
@@ -122,7 +122,7 @@ func (m *CIA) timerBUnderflowSlot() {
 	m.timerBIrqCycle = true
 	m.icr |= IRQUnderflowTimerB
 	//fmt.Println("EMITTING TIMER B", m.id, m.timerA.timerLatch)
-	m.irqTrigger()
+	//m.irqTrigger()
 }
 
 // Reset reinitializes the internal state of the CIA by resetting all registers, timers, and the time of day (TOD) clock.
@@ -264,6 +264,17 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 // GetLastByte returns the last byte that was operated on or updated in the CIA component.
 func (m *CIA) GetLastByte() uint8 {
 	return 0
+}
+
+// SetCNTLevel sets the CNT pin state for both Timer A and Timer B to the specified level.
+func (m *CIA) SetCNTLevel(level bool) {
+	m.timerA.SetCNTLevel(level)
+	m.timerB.SetCNTLevel(level)
+}
+
+// SetCNTPulse sends a pulse signal to Timer A's CNT line, triggering it to perform a defined operation.
+func (m *CIA) SetCNTPulse() {
+	m.timerA.SetCNTPulse()
 }
 
 // irqTrigger checks active interrupts against the current IRQ mask and triggers an IRQ if conditions are met.

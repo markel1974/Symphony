@@ -95,10 +95,11 @@ type Timer struct {
 	timerState   TimerState // Timer states
 	// 0 = clock; 1 = positive CNT (Serial Port) transition; 2 = timerA underflow; 3 = timerA underflow while CNT (Serial Port) is high
 	countMode          uint8
-	count              func(bool) bool
+	countFn            func(bool) bool
 	toggleMode         bool
 	timerLatchLow      uint16
-	cnt                bool
+	cntPulse           bool
+	cntLevel           bool
 	reflect            *TimerReflect
 	underflowIn        bool
 	underflowOut       bool
@@ -119,8 +120,9 @@ func NewTimer(parent references.IComponent, factory references.IComponentFactory
 		countMode:          countModeTick,
 		toggleMode:         false,
 		timerLatchLow:      0,
-		count:              nil,
-		cnt:                false,
+		countFn:            nil,
+		cntLevel:           false,
+		cntPulse:           false,
 		reflect:            nil,
 		underflowOutSignal: signals.NewSignal(),
 		underflowIn:        false,
@@ -154,8 +156,9 @@ func (m *Timer) Reset() {
 	m.timerState = timerStop
 	m.countMode = countModeTick
 	m.toggleMode = false
-	m.count = m.countTick
-	m.cnt = false
+	m.countFn = m.countTick
+	m.cntLevel = false
+	m.cntPulse = false
 }
 
 // UnderflowSignal returns the signal triggered on timer underflow for further handling or binding.
@@ -236,18 +239,18 @@ func (m *Timer) updateCountMode(countMode uint8) {
 	m.countMode = countMode
 	switch m.countMode {
 	case countModeTick:
-		m.count = m.countTick
+		m.countFn = m.countTick
 	case countModeCNT:
 		log.Printf("[timerCount] %s TODO Count Mode countModeCNT", m.GetId())
-		m.count = m.countCNT
+		m.countFn = m.countCNT
 	case countModeTimerUnderflow:
-		m.count = m.countTimerUnderflow
+		m.countFn = m.countTimerUnderflow
 	case countModeTimerUnderflowCNT:
 		log.Printf("[timerCount] %s TODO Count Mode countModeTimerUnderflowCNT", m.GetId())
-		m.count = m.countTimerUnderflowCNT
+		m.countFn = m.countTimerUnderflowCNT
 	default:
 		log.Printf("[timerCount] %s UNSUPPORTED Count Mode %d", m.GetId(), m.countMode)
-		m.count = m.countTick
+		m.countFn = m.countTick
 	}
 }
 
@@ -266,7 +269,7 @@ func (m *Timer) Emulate() {
 		m.timerState = timerStop
 		m.cr &= crBitStartUnset
 	case timerCountThenStop:
-		if m.count(m.underflowIn) {
+		if m.countFn(m.underflowIn) {
 			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
 			if (m.cr & crBitRunMode) != 0 {
 				m.timer = m.timerLatch
@@ -283,7 +286,7 @@ func (m *Timer) Emulate() {
 		m.cr &= crBitStartUnset //0xfe
 		m.timerState = timerStop
 	case timerCount:
-		if m.count(m.underflowIn) {
+		if m.countFn(m.underflowIn) {
 			m.toggleMode = !m.toggleMode // Toggle PB6/PB7 output
 			if (m.cr & crBitRunMode) != 0 {
 				m.timer = m.timerLatch
@@ -310,8 +313,19 @@ func (m *Timer) Emulate() {
 	return
 }
 
+// EmulationRequired checks if emulation is required for the Timer instance and returns true if so.
 func (m *Timer) EmulationRequired() bool {
 	return true
+}
+
+// SetCNTLevel sets the CNT (counter) level for the Timer instance based on the provided boolean value.
+func (m *Timer) SetCNTLevel(level bool) {
+	m.cntLevel = level
+}
+
+// SetCNTPulse enables the CNT pulse by setting the cntPulse field to true.
+func (m *Timer) SetCNTPulse() {
+	m.cntPulse = true
 }
 
 // pendingVerify handles the state transitions of the timer based on the control register and force load conditions.
@@ -371,7 +385,8 @@ func (m *Timer) countTick(_ bool) bool {
 
 // countCNT checks if the `cnt` flag is true, then decrements the timer and returns true if it underflows, otherwise false.
 func (m *Timer) countCNT(_ bool) bool {
-	if m.cnt {
+	if m.cntPulse {
+		m.cntPulse = false
 		if m.timer <= 1 {
 			m.timer = 0
 			return true
@@ -395,7 +410,7 @@ func (m *Timer) countTimerUnderflow(underflowX bool) bool {
 
 // countTimerUnderflowCNT checks for a combined condition of underflow and CNT signal to decrement the timer or reset it to 0.
 func (m *Timer) countTimerUnderflowCNT(underflowX bool) bool {
-	if underflowX && m.cnt {
+	if underflowX && m.cntLevel {
 		if m.timer <= 1 {
 			m.timer = 0
 			return true
