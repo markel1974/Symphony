@@ -7,11 +7,12 @@ package mos6581
 // RegisterCount specifies the number of registers available.
 // triTableSize indicates the size of the triangular waveform lookup table.
 const (
-	SampleFreq    = 44100
-	Frequency     = 985248
-	Cycles        = Frequency / SampleFreq
-	SampleBufSize = 0x138 * 2
-	RegisterCount = 32
+	SampleFreq        = 44100
+	Frequency         = 985248
+	Cycles            = Frequency / SampleFreq
+	SampleBufHalfSize = 0x138
+	SampleBufSize     = SampleBufHalfSize * 2
+	RegisterCount     = 32
 
 	triTableSize = 8192 //1 << 13 //0x1fff
 )

@@ -183,12 +183,11 @@ func (sid *SID) GetLastByte() uint8 {
 
 // calcSoundBuffer generates audio samples for the current block, applying volume changes and filtering for each voice.
 func (sid *SID) calcSoundBuffer() {
-	const halfSampleBufSize = SampleBufSize / 2 // 624 / 2 = 312
 	// Numero di campioni audio da generare in questa chiamata (per 20ms a 44.1kHz)
-	numAudioSamplesInBlock := sid.fragSize // Assumiamo sid.fragSize = 882
+	numAudioSamplesInBlock := sid.fragSize
 	// Numero di aggiornamenti del volume da sampleBuf attesi per questo blocco
 	// (corrispondenti alle chiamate a Prepare() in un frame PAL)
-	numVolumeUpdatesInBlock := halfSampleBufSize
+	numVolumeUpdatesInBlock := SampleBufHalfSize
 	// Calcola l'indice di partenza da cui leggere in sampleBuf per questo blocco.
 	// sid.sampleBufIdx è il puntatore di SCRITTURA (dove Prepare scriverà il prossimo valore).
 	// Dobbiamo leggere i 312 valori scritti NEL FRAME PRECEDENTE.
