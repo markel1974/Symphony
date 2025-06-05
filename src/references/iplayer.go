@@ -8,7 +8,5 @@ import "github.com/markel1974/c64emu/src/config"
 type IAudioRender interface {
 	Setup(cfg *config.Config) error
 
-	GetCurrentPosition() int
-
-	Write([]float32, int, int)
+	Write([]float32, int)
 }

@@ -13,7 +13,6 @@ import (
 // Audio represents a structure handling audio virtualization and integration with JavaScript AudioContext.
 type Audio struct {
 	cfg            *config.Config
-	pos            int
 	audioCtx       js.Value  // Reference to the JavaScript AudioContext
 	sampleRate     float64   // Sample rate of the AudioContext
 	goBuffer       []float32 // Buffer in Go to accumulate samples
@@ -22,9 +21,7 @@ type Audio struct {
 
 // NewAudio creates and returns a new instance of the Audio structure with default initialization for playback management.
 func NewAudio() *Audio {
-	return &Audio{
-		pos: 0,
-	}
+	return &Audio{}
 }
 
 // Setup initializes the Audio instance with the given configuration and prepares it for further setup steps.
@@ -36,15 +33,8 @@ func (a *Audio) Setup(cfg *config.Config) error {
 	return nil
 }
 
-// GetCurrentPosition returns the current playback position of the audio in cycles or buffer updates.
-func (a *Audio) GetCurrentPosition() int {
-	return a.pos
-}
-
 // Audio.Write modificato per gestire l'output attuale di calcBuffer
-func (a *Audio) Write(bufferInput []float32, writePosHint int, samples int) {
-	a.pos += samples
-
+func (a *Audio) Write(bufferInput []float32, samples int) {
 	if a.audioCtx.IsUndefined() {
 		fmt.Println("Go Audio.Write: Errore - AudioContext non inizializzato")
 		return

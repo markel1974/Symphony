@@ -15,7 +15,6 @@ type Audio struct {
 	audioNextStartTime time.Time
 	audioReader        *ContinuousReader
 	cfg                *config.Config
-	pos                int
 	debug              bool
 }
 
@@ -24,7 +23,6 @@ func NewAudio() *Audio {
 	return &Audio{
 		audioSampleRate:   44100,
 		audioChannelCount: 1,
-		pos:               0,
 		debug:             false,
 	}
 }
@@ -52,14 +50,8 @@ func (d *Audio) Setup(cfg *config.Config) error {
 	return nil
 }
 
-// GetCurrentPosition returns the current playback position of the audio.
-func (d *Audio) GetCurrentPosition() int {
-	return d.pos
-}
-
 // Write processes and buffers audio samples for playback, updating the current position and managing playback timing.
-func (d *Audio) Write(values []float32, pos int, samples int) {
-	d.pos += samples
+func (d *Audio) Write(values []float32, samples int) {
 	d.audioReader.AddChunk(values, samples)
 
 	if d.debug {
