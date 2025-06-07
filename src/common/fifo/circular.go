@@ -65,6 +65,15 @@ func (r *CircularQueue) Push(elem int) bool {
 	return true
 }
 
+// Peek retrieves the oldest element in the circular queue without removing it and returns true if successful.
+func (r *CircularQueue) Peek() (int, bool) {
+	if r.isEmpty {
+		return 0, false
+	}
+	res := r.data[r.start]
+	return res, true
+}
+
 // Pop removes and returns the oldest element in the circular queue and a boolean indicating success.
 // Returns (0, false) if the queue is empty.
 func (r *CircularQueue) Pop() (int, bool) {
