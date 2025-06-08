@@ -119,7 +119,7 @@ func (v *VIA1Socket) createDipSwitch(deviceNumber uint8) uint8 {
 
 // ReadPRA reads a value from Peripheral Register A (PRA) and always returns 0xff to maintain compatibility with 1541C ROMs.
 func (v *VIA1Socket) ReadPRA(_ uint8, _ uint8) uint8 {
-	// Keep 1541C ROMs happy (track 0 sensor)
+	//We ha respond 0xff for track 0 sensor
 	return 0xff
 }
 
