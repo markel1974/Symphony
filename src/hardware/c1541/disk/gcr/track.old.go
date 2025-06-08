@@ -1,7 +1,7 @@
 package gcr
 
+/*
 import (
-	"bytes"
 	"fmt"
 	"log"
 )
@@ -43,6 +43,12 @@ func NewTrack(trackIdx uint8, sectors uint8, overlap bool) *Track {
 		cursor:     0,
 		writeCount: 0,
 	}
+	t.data = make([]uint8, int(t.sectors)*gcrSectorLen)
+	if !overlap {
+		for i := range t.data {
+			t.data[i] = gapByte
+		}
+	}
 	return t
 }
 
@@ -66,106 +72,21 @@ func (t *Track) Sectors() uint8 {
 	return t.sectors
 }
 
-func (t *Track) Load(diskImage []byte, headerLen uint8, id1 uint8, id2 uint8, trackOffset uint16) error {
-	numSectors, cyclesPerByte := getTrackInfo(t.trackIdx)
-	if numSectors == 0 {
-		return nil
-	}
-	totalTrackBytes := int(rotationTimeCycles / cyclesPerByte)
-	totalUsedBySectors := int(numSectors) * gcrSectorLen
-	totalEmptySpace := totalTrackBytes - totalUsedBySectors
-	if totalEmptySpace < 0 {
-		return nil
-	}
-	const maxTailGap = 400 // Il limite di timeout che hai scoperto
-	var tailGapSize int
-	var spaceToDistribute int
-
-	if totalEmptySpace > maxTailGap {
-		tailGapSize = maxTailGap
-		spaceToDistribute = totalEmptySpace - maxTailGap
-	} else {
-		tailGapSize = totalEmptySpace
-		spaceToDistribute = 0
-	}
-
-	var extraGapPerSector int
-	if numSectors > 0 && spaceToDistribute > 0 {
-		extraGapPerSector = spaceToDistribute / int(numSectors)
-	}
-	var trackBuffer bytes.Buffer
-	trackBuffer.Grow(totalTrackBytes)
-	interleaveTable := getInterleaveTable(t.trackIdx, numSectors)
-
-	for _, sectorToLoad := range interleaveTable {
-		sectorData, err := rawSector(diskImage, headerLen, trackOffset, sectorToLoad)
+// Load reads sectors from a disk, converts them to GCR format, and stores the data in the track's buffer.
+func (t *Track) Load(disk []uint8, headerLen, bam1 uint8, bam2 uint8, trackOffset uint16) error {
+	for sectorIdx := uint8(0); sectorIdx < t.sectors; sectorIdx++ {
+		sector, err := rawSector(disk, headerLen, trackOffset, sectorIdx)
 		if err != nil {
-			sectorData = [blockBytesLen]uint8{}
+			return fmt.Errorf("failed to read sector %d: %w", sectorIdx, err)
 		}
-		gcrBlock := sector2gcr(sectorData, id1, id2, t.trackIdx, sectorToLoad)
-		trackBuffer.Write(gcrBlock[:])
-
-		if extraGapPerSector > 0 {
-			extraGap := make([]byte, extraGapPerSector)
-			for i := range extraGap {
-				extraGap[i] = gapByte
-			}
-			trackBuffer.Write(extraGap)
+		gcr := sector2gcr(sector, bam1, bam2, t.trackIdx, sectorIdx)
+		start := uint(sectorIdx) * uint(len(gcr))
+		end := start + uint(len(gcr))
+		if start >= uint(len(disk)) || end > uint(len(disk)) {
+			return fmt.Errorf("sector index out of range")
 		}
+		copy(t.data[start:end], gcr[:])
 	}
-	if tailGapSize > 0 {
-		trackBuffer.Write(make([]byte, tailGapSize))
-	}
-	finalAdjustment := totalTrackBytes - trackBuffer.Len()
-	if finalAdjustment > 0 {
-		trackBuffer.Write(make([]byte, finalAdjustment))
-	}
-	t.data = trackBuffer.Bytes()
-	return nil
-}
-
-// Load2 populates the track's data buffer by reading, converting, and organizing sectors from a disk image in GCR format.
-func (t *Track) Load2(diskImage []byte, headerLen uint8, id1 uint8, id2 uint8, trackOffset uint16) error {
-	numSectors, cyclesPerByte := getTrackInfo(t.trackIdx)
-	if cyclesPerByte == 0 {
-		return nil
-	}
-	totalTrackBytes := int(rotationTimeCycles / cyclesPerByte)
-	totalUsedBySectors := int(numSectors) * gcrSectorLen
-	extraGapPerSector := 0
-	if totalGapSpaceToDistribute := totalTrackBytes - totalUsedBySectors; totalGapSpaceToDistribute > 0 {
-		extraGapPerSector = totalGapSpaceToDistribute / int(numSectors)
-		if extraGapPerSector > 22 {
-			extraGapPerSector = 22
-		}
-	}
-	var trackBuffer bytes.Buffer
-	interleaveTable := getInterleaveTable(t.trackIdx, numSectors)
-
-	for _, sectorToLoad := range interleaveTable {
-		sectorData, err := rawSector(diskImage, headerLen, trackOffset, sectorToLoad)
-		if err != nil {
-			sectorData = [blockBytesLen]uint8{}
-		}
-		gcr := sector2gcr(sectorData, id1, id2, t.trackIdx, sectorToLoad)
-		trackBuffer.Write(gcr[:])
-		if extraGapPerSector > 0 {
-			extraGap := make([]byte, extraGapPerSector)
-			for i := range extraGap {
-				extraGap[i] = gapByte
-			}
-			trackBuffer.Write(extraGap)
-		}
-	}
-	finalGap := totalTrackBytes - trackBuffer.Len()
-	if finalGap > 0 {
-		if finalGap > 400 {
-			fmt.Println("Final Gap", t.trackIdx, finalGap)
-			//finalGap = 400
-		}
-		trackBuffer.Write(make([]byte, finalGap))
-	}
-	t.data = trackBuffer.Bytes()
 	return nil
 }
 
@@ -221,3 +142,4 @@ func (t *Track) Write(data uint8) {
 	//TODO
 	//fmt.Printf("%d - %d Write %02x\n", t.Index(), t.Cursor(), data)
 }
+*/

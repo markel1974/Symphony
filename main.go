@@ -71,6 +71,8 @@ import (
 
 // -f "fs_drive:/Users/tinmr305/Downloads/c64carts/"
 
+// -c "/Users/tinmr305/Downloads/c64carts/1541DiagnosticCart/1541diagcart.crt" -f "/Users/tinmr305/Downloads/c64carts/hessian-xth.d64"
+
 /*
 func restoreTest(factory references.IComponentFactory) {
 	//state, _ := s.DumpAll()

@@ -47,7 +47,8 @@ type Board struct {
 	plaSocket    *PLASocket
 	romSocket    *RomLoaderSocket
 	quartzSocket *QuartzSocket
-	mec          *mechanic.Mechanic
+	mechanics    *mechanic.Factory
+	mec          mechanic.IMechanic
 	disks        *disk.Factory
 	deviceId     uint8
 	deviceNumber uint8
@@ -66,7 +67,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		diskId:        "",
 		cfg:           nil,
 		disks:         disk.NewFactory(),
-		mec:           mechanic.NewMechanic(),
+		mechanics:     mechanic.NewFactory(),
 		emulation:     []func(){},
 		label:         label,
 	}
@@ -90,12 +91,13 @@ func (m *Board) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber
 	m.iec = iec
 	m.deviceId = deviceId
 	m.deviceNumber = deviceNumber
+	m.mec = m.mechanics.Create("async")
 
 	m.romSocket = NewRomLoaderSocket(m, m.label)
 	m.quartzSocket = NewQuartzSocket(m, m.label)
-	m.cpuSocket = NewCPUSocket(m, m.label)
 	m.via1Socket = NewVIA1Socket(m, m.label, m, iec)
 	m.via2Socket = NewVIA2Socket(m, m.label, m, m.mec)
+	m.cpuSocket = NewCPUSocket(m, m.label, m.via2Socket)
 	m.picSocket = NewPICSocket(m, m.label)
 	m.plaSocket = NewPLASocket(m, m.label)
 
@@ -282,5 +284,11 @@ func (m *Board) rebuildEmulation() ([]func(), error) {
 	if len(emulation) != len(hardwareSequence) {
 		return nil, fmt.Errorf("emulation sequence is not complete")
 	}
+
+	//TODO Better implementation of emulation sequence
+	if m.mec.EmulationRequired() {
+		emulation = append(emulation, m.mec.Emulate)
+	}
+
 	return emulation, nil
 }

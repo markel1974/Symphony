@@ -52,7 +52,7 @@ func (e *VoidDisk) SetHeadHalfTrack(uint8) int {
 }
 
 // MicroSecPerByte returns the number of microseconds required to process a single byte in the Void implementation.
-func (e *VoidDisk) MicroSecPerByte() uint8 {
+func (e *VoidDisk) MicroSecPerByte() float64 {
 	return 0
 }
 

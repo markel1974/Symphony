@@ -47,7 +47,7 @@ type VIA2Socket struct {
 	label       string
 	parent      references.IComponent
 	component   references.IComponent
-	mec         *mechanic.Mechanic
+	mec         mechanic.IMechanic
 	connections IVIA2SocketConnections
 	intrId      uint32
 	prbPrev     uint8
@@ -55,7 +55,7 @@ type VIA2Socket struct {
 }
 
 // NewVIA2Socket initializes a new VIA2Socket with the provided connections and mechanic, configuring IRQ and initial state.
-func NewVIA2Socket(parent references.IComponent, label string, connections IVIA2SocketConnections, mec *mechanic.Mechanic) *VIA2Socket {
+func NewVIA2Socket(parent references.IComponent, label string, connections IVIA2SocketConnections, mec mechanic.IMechanic) *VIA2Socket {
 	v := &VIA2Socket{
 		IVIA:        nil,
 		parent:      parent,
@@ -199,4 +199,22 @@ func (v *VIA2Socket) WriteDDRA(_ uint8, _ uint8) {
 // WriteDDRB writes data to the Data Direction Register B (DDRB) of the VIA2Socket, configuring the I/O port direction.
 func (v *VIA2Socket) WriteDDRB(_ uint8, _ uint8) {
 
+}
+
+func (v *VIA2Socket) WriteCA2(w bool) {
+	v.mec.SetWrite(w)
+}
+
+func (v *VIA2Socket) WriteCB2(bool) {
+
+}
+
+// ByteReady returns true if the peripheral control register (pcr) is in a ready state for data handling.
+// Control SetOverflowBranch on 6502 cpu
+func (v *VIA2Socket) ByteReady() bool {
+	pcr := v.IVIA.ReadByte(0xc)
+	if (pcr & 0x0e) == 0x0e {
+		return v.mec.ByteReady()
+	}
+	return false
 }

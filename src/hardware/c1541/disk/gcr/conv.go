@@ -161,6 +161,57 @@ func sector2gcr(sector [blockBytesLen]uint8, id1 uint8, id2 uint8, trackIdx uint
 }
 
 /*
+// BuildTrackImage costruisce l'immagine binaria completa di una singola traccia.
+// Prende come input l'indice della traccia, una mappa dei dati dei settori e l'ID del disco.
+// Restituisce una slice di byte che rappresenta la traccia GCR completa, pronta per essere letta dal mechanic.
+func BuildTrackImage(trackIdx uint8, sectorsData map[uint8][blockBytesLen]uint8, id1, id2 uint8) []byte {
+	numSectors, usPerByte := getTrackInfo(trackIdx)
+	if numSectors == 0 {
+		return nil // Traccia non valida o vuota
+	}
+
+	// --- PASSO 1: Calcola la dimensione totale corretta della traccia in byte ---
+	// Questa è la correzione fondamentale al tuo approccio statico.
+	totalTrackBytes := int(rotationTimeUs / usPerByte)
+
+	// Usiamo un buffer per costruire dinamicamente la nostra traccia.
+	var trackBuffer bytes.Buffer
+	trackBuffer.Grow(totalTrackBytes)
+
+	// --- PASSO 2: Scrivi tutti i settori formattati nel buffer ---
+	for sectorIdx := uint8(0); sectorIdx < numSectors; sectorIdx++ {
+		sectorData, ok := sectorsData[sectorIdx]
+		if !ok {
+			// Se mancano i dati per un settore, lo creiamo vuoto.
+			sectorData = [blockBytesLen]uint8{}
+		}
+
+		// Usiamo la tua funzione esistente per creare il blocco GCR del settore.
+		gcrSectorBlock := sector2gcr(sectorData, id1, id2, trackIdx, sectorIdx)
+		trackBuffer.Write(gcrSectorBlock[:])
+	}
+
+	// --- PASSO 3: Calcola e aggiungi il "Tail Gap" finale ---
+	// Questo è lo spazio vuoto alla fine della traccia per completare i 200,000µs.
+	currentLength := trackBuffer.Len()
+	tailGapSize := totalTrackBytes - currentLength
+
+	if tailGapSize > 0 {
+		tailGap := make([]byte, tailGapSize)
+		for i := range tailGap {
+			tailGap[i] = gapByte // Riempiamo il gap con 0x55
+		}
+		trackBuffer.Write(tailGap)
+	} else if tailGapSize < 0 {
+		// Questo è un segnale di errore: i settori occupano più spazio di quello disponibile sulla traccia.
+		fmt.Printf("ATTENZIONE: La Traccia %d è troppo lunga di %d byte!\n", trackIdx, -tailGapSize)
+	}
+
+	return trackBuffer.Bytes()
+}
+*/
+
+/*
 //Users/tinmr305/Desktop/emu/vice-emu-code-r45201-trunk-vice/src/gcr.c
 func (g *GCR) gcr2sector(block []uint8, track int, sector int) []uint8 {
 	var shift, i, j int

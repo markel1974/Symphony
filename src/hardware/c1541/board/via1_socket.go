@@ -173,3 +173,10 @@ func (v *VIA1Socket) peripheralWrite(prb uint8, ddrb uint8) {
 
 	v.iec.PeripheralWrite(v.connections.GetDeviceNumber(), data)
 }
+
+func (v *VIA1Socket) WriteCA2(w bool) {
+}
+
+func (v *VIA1Socket) WriteCB2(bool) {
+
+}

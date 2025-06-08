@@ -96,7 +96,7 @@ func (g *Disk) TrackLen() int {
 }
 
 // MicroSecPerByte returns the number of microseconds required to process a single byte for the current track.
-func (g *Disk) MicroSecPerByte() uint8 {
+func (g *Disk) MicroSecPerByte() float64 {
 	return getMicroSecPerByte(g.currentTrack.trackIdx)
 }
 

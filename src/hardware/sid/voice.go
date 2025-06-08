@@ -287,7 +287,7 @@ func (v *Voice) buildEnvelopeGenerator() []func() {
 }
 
 func (v *Voice) buildWaveFormTest() []func() uint16 {
-	waveForm := make([]func() uint16, 0xf)
+	waveForm := make([]func() uint16, 0xf+1)
 	defaultFn := func() uint16 {
 		p1 := triTable(v.count)
 		p2 := sawRectTable(v.count)
@@ -320,7 +320,7 @@ func (v *Voice) buildWaveFormTest() []func() uint16 {
 }
 
 func (v *Voice) buildWaveForm() []func() uint16 {
-	waveForm := make([]func() uint16, 0xf)
+	waveForm := make([]func() uint16, 0xf+1)
 	defaultFn := func() uint16 {
 		return 0x8000
 	}

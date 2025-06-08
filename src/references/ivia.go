@@ -26,6 +26,10 @@ type IVIASocket interface {
 
 	WriteDDRB(uint8, uint8)
 
+	WriteCA2(bool)
+
+	WriteCB2(bool)
+
 	IRQClearTrigger()
 
 	IRQTrigger()
@@ -63,7 +67,7 @@ type IVIA interface {
 
 	SignalPRB()
 
-	ByteReady() bool
+	//ByteReady() bool
 }
 
 func ComponentToIVIA(component IComponent) (IVIA, error) {

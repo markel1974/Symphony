@@ -4,26 +4,32 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+type ICPUSocketConnections interface {
+	ByteReady() bool
+}
+
 // CPUSocket represents a CPU socket managing the integration of a 6510 CPU, programmable interrupt controller, memory banks, and VIA.
 type CPUSocket struct {
 	references.I6510
-	label     string
-	parent    references.IComponent
-	component references.IComponent
-	pic       references.IPIC6510
-	pla       references.IPLAc1541
-	via2      references.IVIA
-	hwId      string
+	label       string
+	connections ICPUSocketConnections
+	parent      references.IComponent
+	component   references.IComponent
+	pic         references.IPIC6510
+	pla         references.IPLAc1541
+	via2        references.IVIA
+	hwId        string
 }
 
 // NewCPUSocket creates and initializes a new CPUSocket instance with default nil values for its fields.
-func NewCPUSocket(parent references.IComponent, label string) *CPUSocket {
+func NewCPUSocket(parent references.IComponent, label string, connections ICPUSocketConnections) *CPUSocket {
 	c := &CPUSocket{
-		I6510:  nil,
-		parent: parent,
-		label:  label,
-		pic:    nil,
-		pla:    nil,
+		I6510:       nil,
+		parent:      parent,
+		label:       label,
+		connections: connections,
+		pic:         nil,
+		pla:         nil,
 	}
 	c.hwId = references.IdI6510(c.I6510, c.label, 0)
 	return c
@@ -56,6 +62,7 @@ func (w *CPUSocket) Mount() error {
 	if err = w.I6510.Bind(w, w.pic, w.pla); err != nil {
 		return err
 	}
-	w.I6510.SetOverflowBranch(w.via2.ByteReady)
+	//w.I6510.SetOverflowBranch(w.via2.ByteReady)
+	w.I6510.SetOverflowBranch(w.connections.ByteReady)
 	return nil
 }
