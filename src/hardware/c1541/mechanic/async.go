@@ -13,13 +13,12 @@ type Async struct {
 	void            disk.IDisk
 	disk            disk.IDisk
 	diskChanged     bool
-	filePath        string
 	motor           bool
 	headPos         uint8
 	writing         bool
 	motorSpinUpTime int
-	headSeekTime    int     // Contatore per il delay del movimento testina (in µs)
-	timeToNextByte  float64 // Contatore per il tempo che manca alla lettura/scrittura del prossimo byte (in µs)
+	headSeekTime    int
+	timeToNextByte  float64
 	dataWrite       int
 	dataRead        int
 	syncCounter     int
@@ -32,7 +31,6 @@ func NewAsync() *Async {
 		void:            void,
 		disk:            void,
 		diskChanged:     false,
-		filePath:        "",
 		motor:           false,
 		headPos:         2,
 		writing:         false,
@@ -49,7 +47,6 @@ func NewAsync() *Async {
 // Reset reinitializes the Mechanic's state, clearing data, resetting counters, and updating the disk head position.
 func (j *Async) Reset() {
 	j.diskChanged = false
-	j.filePath = ""
 	j.motor = false
 	j.headPos = 2
 	j.writing = false

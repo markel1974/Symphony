@@ -91,7 +91,7 @@ func (m *Board) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber
 	m.iec = iec
 	m.deviceId = deviceId
 	m.deviceNumber = deviceNumber
-	m.mec = m.mechanics.Create("sync")
+	m.mec = m.mechanics.Create("async")
 
 	m.romSocket = NewRomLoaderSocket(m, m.label)
 	m.quartzSocket = NewQuartzSocket(m, m.label)
