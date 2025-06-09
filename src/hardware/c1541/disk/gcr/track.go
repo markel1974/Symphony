@@ -8,23 +8,21 @@ import (
 
 // Track represents a data structure for managing a disk's track with its associated data and state.
 type Track struct {
-	trackIdx   uint8
-	overlap    bool
-	data       []uint8
-	sectors    uint8
-	cursor     uint32
-	writeCount int
+	trackIdx uint8
+	overlap  bool
+	data     []uint8
+	sectors  uint8
+	cursor   uint32
 }
 
 // NewTrack initializes a new Track with the specified track index, sectors, and overlap settings, allocating its data buffer.
 func NewTrack(trackIdx uint8, sectors uint8, overlap bool) *Track {
 	t := &Track{
-		trackIdx:   trackIdx,
-		sectors:    sectors,
-		overlap:    overlap,
-		data:       nil,
-		cursor:     0,
-		writeCount: 0,
+		trackIdx: trackIdx,
+		sectors:  sectors,
+		overlap:  overlap,
+		data:     nil,
+		cursor:   0,
 	}
 	return t
 }
@@ -49,6 +47,11 @@ func (t *Track) Sectors() uint8 {
 	return t.sectors
 }
 
+// Load initializes the track data by processing sectors from the provided disk image and allocating gaps where necessary.
+// diskImage represents the entire disk in bytes; headerLen defines the size of the header per sector.
+// id1 and id2 specify the unique disk IDs; trackOffset determines the starting byte for this track.
+// It calculates interleave, creates GCR-encoded sectors, and adds inter-sector and tail gaps.
+// Returns an error if sector extraction or processing fails.
 func (t *Track) Load(diskImage []byte, headerLen uint8, id1 uint8, id2 uint8, trackOffset uint16) error {
 	const maxTailGap = 380 //400  timeout limit
 	//const maxTailGap = 1000000000
@@ -107,16 +110,10 @@ func (t *Track) Cursor() uint32 {
 // Enter sets the cursor to the specified position modulo the track data length and resets the write count to zero.
 func (t *Track) Enter(cursor uint32) {
 	t.cursor = cursor % uint32(len(t.data))
-	t.writeCount = 0
-	//fmt.Println("ENTERING TRACK", t.Index(), len(t.data))
 }
 
 // Leave resets the write count of the track to zero, indicating no pending writes on the track.
 func (t *Track) Leave() {
-	//if t.writeCount > 0 {
-	//	fmt.Println("LEAVING TRACK", t.Index(), len(t.data), t.writeCount)
-	//}
-	t.writeCount = 0
 }
 
 // Advance increments the cursor position within the track and wraps around to the start if the end is reached.
@@ -144,10 +141,4 @@ func (t *Track) Next() uint8 {
 // Write writes the specified byte of data to the current cursor position in the track.
 func (t *Track) Write(data uint8) {
 	t.data[t.cursor] = data
-	t.writeCount++
-	//if t.Index() == 18 {
-	//	fmt.Printf("Write %d -> %02x\n", t.Cursor(), data)
-	//}
-	//TODO
-	//fmt.Printf("%d - %d Write %02x\n", t.Index(), t.Cursor(), data)
 }
