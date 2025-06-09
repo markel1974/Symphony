@@ -1,39 +1,30 @@
 package mechanic
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/hardware/c1541/disk"
 )
 
 // Sync represents a drive mechanism that emulates disk operations and manages disk state, motor, and head movement.
 type Sync struct {
-	void              disk.IDisk
-	disk              disk.IDisk
-	diskChanged       bool
-	filePath          string
-	motor             bool
-	headPos           uint8
-	rotationIntervals int
-	rotationCounter   int
-	data              uint8
-	sync              bool
-	writing           bool
+	void        disk.IDisk
+	disk        disk.IDisk
+	diskChanged bool
+	motor       bool
+	headPos     uint8
+	writing     bool
 }
 
 // NewSync creates a new instance of Mechanic, initializing its state and factory dependencies.
 func NewSync() *Sync {
 	void := NewVoidDisk()
 	j := &Sync{
-		void:              void,
-		disk:              void,
-		diskChanged:       false,
-		filePath:          "",
-		motor:             false,
-		headPos:           2,
-		rotationIntervals: 0,
-		rotationCounter:   0,
-		data:              0,
-		sync:              false,
-		writing:           false,
+		void:        void,
+		disk:        void,
+		diskChanged: false,
+		motor:       false,
+		headPos:     2,
+		writing:     false,
 	}
 	return j
 }
@@ -41,15 +32,10 @@ func NewSync() *Sync {
 // Reset restores the Mechanic to its initial state, clearing all internal state and resetting properties to their defaults.
 func (j *Sync) Reset() {
 	j.diskChanged = false
-	j.filePath = ""
 	j.motor = false
-	j.data = 0
-	j.sync = false
 	j.headPos = 2
-	j.rotationIntervals = 0
-	j.rotationCounter = 0
 	j.writing = false
-	j.updateHeadPos()
+	j.updateHeadPos(j.headPos)
 }
 
 // Setup initializes the Mechanic instance by invoking the init method with the provided file path.
@@ -63,7 +49,6 @@ func (j *Sync) InsertDisk(d disk.IDisk) error {
 	j.diskChanged = true
 	j.Reset()
 	j.disk = d
-	j.updateRotationIntervals()
 	return nil
 }
 
@@ -86,9 +71,6 @@ func (j *Sync) Emulate() {
 
 // ReadByte reads a byte from the current disk, rotates the disk, and returns the read value.
 func (j *Sync) ReadByte() uint8 {
-	//var distance = _emulateCounter - _readCounter
-	//fmt.Println("READ DISTANCE uSec", distance)
-	//_readCounter = _emulateCounter
 	data := j.disk.Read()
 	j.disk.Rotate()
 	return data
@@ -102,9 +84,6 @@ func (j *Sync) WriteByte(data uint8) {
 
 // SyncFound checks if the disk drive's current position aligns to a synchronization byte sequence and returns true if found.
 func (j *Sync) SyncFound() bool {
-	//var distance = _emulateCounter - _syncCounter
-	//fmt.Println("SYNC DISTANCE uSec", distance)
-	//_syncCounter = _emulateCounter
 	if !j.motor {
 		return true
 	}
@@ -122,8 +101,6 @@ func (j *Sync) ByteReady() bool {
 // SetMotor toggles the motor state, resets the data to 0, and clears the sync status.
 func (j *Sync) SetMotor(m bool) {
 	j.motor = m
-	j.data = 0
-	j.sync = false
 }
 
 // HasDisk returns true if a usable disk is present, otherwise false.
@@ -147,13 +124,13 @@ func (j *Sync) WriteProtectionState() uint8 {
 	return 0
 }
 
-// MoveHeadOut decreases the `headPos` of the Mechanic by one step, ensuring it doesn't go below the minimum allowable position.
+// MoveHeadOut decreases the `headPosRequired` of the Mechanic by one step, ensuring it doesn't go below the minimum allowable position.
 func (j *Sync) MoveHeadOut() {
 	if j.headPos <= 2 {
 		return
 	}
 	j.headPos--
-	j.updateHeadPos()
+	j.updateHeadPos(j.headPos)
 }
 
 // MoveHeadIn increments the head position of the Mechanic unless it has reached the maximum limit (headHalfStep).
@@ -162,17 +139,11 @@ func (j *Sync) MoveHeadIn() {
 		return
 	}
 	j.headPos++
-	j.updateHeadPos()
+	j.updateHeadPos(j.headPos)
 }
 
 // updateHeadPos adjusts the disk head position by setting the half-track and recalculating rotation intervals.
-func (j *Sync) updateHeadPos() {
-	j.disk.SetHeadHalfTrack(j.headPos)
-	j.updateRotationIntervals()
-}
-
-// updateRotationIntervals recalculates and updates the rotation intervals based on the disk's microseconds per byte rate.
-func (j *Sync) updateRotationIntervals() {
-	j.rotationIntervals = int(j.disk.MicroSecPerByte())
-	//log.Printf("halfTrack: %d, track: %d => rotation intervals: %d", j.headPos, j.headPos>>1, j.rotationIntervals)
+func (j *Sync) updateHeadPos(headPos uint8) {
+	j.disk.SetHeadHalfTrack(headPos)
+	fmt.Printf("MOVE HEAD %d: %f\n", headPos/2, j.disk.MicroSecPerByte())
 }

@@ -1,6 +1,7 @@
 package mechanic
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/hardware/c1541/disk"
 )
 
@@ -14,7 +15,8 @@ type Async struct {
 	disk            disk.IDisk
 	diskChanged     bool
 	motor           bool
-	headPos         uint8
+	headPosCurrent  uint8
+	headPosRequired uint8
 	writing         bool
 	motorSpinUpTime int
 	headSeekTime    int
@@ -32,7 +34,8 @@ func NewAsync() *Async {
 		disk:            void,
 		diskChanged:     false,
 		motor:           false,
-		headPos:         2,
+		headPosCurrent:  0,
+		headPosRequired: 2,
 		writing:         false,
 		syncCounter:     0,
 		motorSpinUpTime: 0,
@@ -48,7 +51,6 @@ func NewAsync() *Async {
 func (j *Async) Reset() {
 	j.diskChanged = false
 	j.motor = false
-	j.headPos = 2
 	j.writing = false
 	j.syncCounter = 0
 	j.motorSpinUpTime = 0
@@ -56,7 +58,9 @@ func (j *Async) Reset() {
 	j.timeToNextByte = 0
 	j.dataWrite = notReady
 	j.dataRead = notReady
-	j.disk.SetHeadHalfTrack(j.headPos)
+	j.headPosRequired = 2
+	j.headPosCurrent = j.headPosRequired
+	j.disk.SetHeadHalfTrack(j.headPosCurrent)
 }
 
 // Setup resets the Mechanic state to its default values and ensures proper initialization.
@@ -93,18 +97,33 @@ func (j *Async) Emulate() {
 	if !j.motor {
 		return
 	}
-	isBusy := false
+
 	if j.motorSpinUpTime > 0 {
 		j.motorSpinUpTime--
-		isBusy = true
-	}
-	if j.headSeekTime > 0 {
-		j.headSeekTime--
-		isBusy = true
-	}
-	if isBusy {
 		return
 	}
+
+	if j.headSeekTime > 0 {
+		j.headSeekTime--
+		return
+	}
+
+	if j.headPosRequired != j.headPosCurrent {
+		headPos := j.headPosCurrent
+		if j.headPosRequired > j.headPosCurrent {
+			headPos++
+		} else {
+			headPos--
+		}
+		fmt.Printf("MOVE HEAD OLD %d NEW %d: %f\n", j.headPosCurrent, headPos, j.disk.MicroSecPerByte())
+		j.disk.SetHeadHalfTrack(headPos)
+		j.headPosCurrent = headPos
+		j.headSeekTime = stepDelay
+		j.dataRead = notReady
+		j.syncCounter = 0
+		return
+	}
+
 	j.timeToNextByte--
 	if j.timeToNextByte > 0 {
 		return
@@ -158,10 +177,7 @@ func (j *Async) SyncFound() bool {
 	if !j.motor {
 		return true
 	}
-	if j.syncCounter >= syncTolerance {
-		return true
-	}
-	return false
+	return j.syncCounter >= syncTolerance
 }
 
 // SetMotor controls the state of the motor. Enables spin-up delay if turning on from an off state.
@@ -195,27 +211,16 @@ func (j *Async) WriteProtectionState() uint8 {
 
 // MoveHeadOut moves the head outward by decrementing the position if it is greater than the minimum limit (2).
 func (j *Async) MoveHeadOut() {
-	if j.headPos <= 2 {
+	if j.headPosRequired <= 2 {
 		return
 	}
-	j.headPos--
-	j.updateHeadPos(j.headPos)
+	j.headPosRequired--
 }
 
 // MoveHeadIn increments the head position by one step unless it is already at or beyond the maximum position.
 func (j *Async) MoveHeadIn() {
-	if j.headPos >= headHalfStep {
+	if j.headPosRequired >= headHalfStep {
 		return
 	}
-	j.headPos++
-	j.updateHeadPos(j.headPos)
-}
-
-// updateHeadPos updates the disk head to the given half-track position and resets related state variables.
-func (j *Async) updateHeadPos(headPos uint8) {
-	j.disk.SetHeadHalfTrack(headPos)
-	j.headSeekTime = stepDelay / 2
-	j.dataRead = notReady
-	j.syncCounter = 0
-	//fmt.Printf("MOVE HEAD %d: %f\n", headPos/2, j.disk.MicroSecPerByte())
+	j.headPosRequired++
 }

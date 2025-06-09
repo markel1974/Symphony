@@ -71,9 +71,11 @@ func (t *Track) Load(diskImage []byte, headerLen uint8, id1 uint8, id2 uint8, tr
 			if spaceToDistribute > 0 {
 				sectorGapSize := spaceToDistribute / int(numSectors)
 				sectorGap = createGap(sectorGapSize)
+				//fmt.Printf("track %d -> sector gap %d\n", t.trackIdx, len(sectorGap))
 			}
 		}
 		tailGap = createGap(tailGapSize)
+		//fmt.Printf("track %d -> tail gap %d\n", t.trackIdx, len(sectorGap))
 	}
 	var trackBuffer bytes.Buffer
 	trackBuffer.Grow(totalTrackBytes)
