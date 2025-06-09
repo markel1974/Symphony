@@ -1,16 +1,21 @@
 package gcr
 
+import (
+	"fmt"
+	"log"
+)
+
 const (
-	//zone3Sectors            = 21
-	//zone2Sectors            = 19
-	//zone1Sectors            = 18
-	//zone0Sectors            = 17
-	//tailGap                 = 19
-	//sectorGap               = 15
-	//z3                      = ((gcrSectorLen + sectorGap) * zone3Sectors) + tailGap
-	//z2                      = ((gcrSectorLen + sectorGap) * zone2Sectors) + tailGap
-	//z1                      = ((gcrSectorLen + sectorGap) * zone1Sectors) + tailGap
-	//z0                      = ((gcrSectorLen + sectorGap) * zone0Sectors) + tailGap
+	//zone3Sectors = 21
+	//zone2Sectors = 19
+	//zone1Sectors = 18
+	//zone0Sectors = 17
+	//tailGap = 19
+	//sectorGap = 15
+	//z3 = ((gcrSectorLen + sectorGap) * zone3Sectors) + tailGap
+	//z2 = ((gcrSectorLen + sectorGap) * zone2Sectors) + tailGap
+	//z1 = ((gcrSectorLen + sectorGap) * zone1Sectors) + tailGap
+	//z0 = ((gcrSectorLen + sectorGap) * zone0Sectors) + tailGap
 	realTrackSizeBytesZone3 = 7936.0 // Per tracce 1-17 (21 settori)
 	realTrackSizeBytesZone2 = 7680.0 // Per tracce 18-24 (19 settori)
 	realTrackSizeBytesZone1 = 7168.0 // Per tracce 25-30 (18 settori)
@@ -104,7 +109,10 @@ func getMicroSecPerByte(idx uint8) float64 {
 }
 
 // Aggiungi questa funzione helper da qualche parte nel tuo package
-func getInterleaveTable(trackIdx uint8, numSectors uint8) []uint8 {
+func getInterleaveTable(trackIdx uint8, numSectors uint8) (uint8, []uint8) {
+	if numSectors <= 0 {
+		return 0, nil
+	}
 	skew := 10 // Interleave di 10 per le tracce dati
 	if trackIdx == 18 {
 		skew = 3 // Interleave di 3 per la traccia directory
@@ -114,12 +122,40 @@ func getInterleaveTable(trackIdx uint8, numSectors uint8) []uint8 {
 		table[i] = 0xff // Inizializza con un valore non valido
 	}
 	currentSector := 0
-	for i := 0; i < int(numSectors); i++ {
+
+	for idx := 0; idx < int(numSectors); idx++ {
 		for table[currentSector] != 0xff {
 			currentSector = (currentSector + 1) % int(numSectors)
 		}
-		table[currentSector] = uint8(i)
+		table[currentSector] = uint8(idx)
 		currentSector = (currentSector + skew) % int(numSectors)
 	}
-	return table
+
+	last := table[len(table)-1]
+	//fmt.Println(table)
+	return last, table
+}
+
+// createGap creates and returns a byte slice of specified size filled with a constant gap byte value.
+func createGap(s int) []byte {
+	gap := make([]byte, s)
+	for i := range gap {
+		gap[i] = gapByte
+	}
+	return gap
+}
+
+// rawSector extracts a specific sector from a disk image based on track offset, header length, and sector index.
+// Returns a sector-sized buffer and an error if the extraction fails due to bounds or other inconsistencies.
+func rawSector(disk []uint8, headerLen uint8, trackOffset uint16, sectorIdx uint8) ([blockBytesLen]uint8, error) {
+	var buffer [blockBytesLen]uint8
+	rOffset := (int(trackOffset) + int(sectorIdx)) << 8
+	begin := rOffset + int(headerLen)
+	end := begin + blockBytesLen
+	if begin > len(disk) || end > len(disk) {
+		log.Printf("invalid start/end: %d - %d", begin, end)
+		return buffer, fmt.Errorf("sector index out of range")
+	}
+	copy(buffer[:], disk[begin:end])
+	return buffer, nil
 }

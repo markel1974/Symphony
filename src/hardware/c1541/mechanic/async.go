@@ -4,6 +4,10 @@ import (
 	"github.com/markel1974/c64emu/src/hardware/c1541/disk"
 )
 
+const (
+	notReady = 1
+)
+
 // Async represents the main handler for managing disk mechanics and operations including reading and writing data.
 type Async struct {
 	void            disk.IDisk
@@ -16,10 +20,8 @@ type Async struct {
 	motorSpinUpTime int
 	headSeekTime    int     // Contatore per il delay del movimento testina (in µs)
 	timeToNextByte  float64 // Contatore per il tempo che manca alla lettura/scrittura del prossimo byte (in µs)
-	byteToWrite     uint8
-	dataRead        uint8
-	byteRead        bool
-	byteWritten     bool
+	dataWrite       int
+	dataRead        int
 	syncCounter     int
 }
 
@@ -38,10 +40,8 @@ func NewAsync() *Async {
 		motorSpinUpTime: 0,
 		headSeekTime:    0,
 		timeToNextByte:  0,
-		byteToWrite:     0,
-		byteRead:        false,
-		byteWritten:     false,
-		dataRead:        0,
+		dataWrite:       notReady,
+		dataRead:        notReady,
 	}
 	return j
 }
@@ -57,10 +57,8 @@ func (j *Async) Reset() {
 	j.motorSpinUpTime = 0
 	j.headSeekTime = 0
 	j.timeToNextByte = 0
-	j.byteToWrite = 0
-	j.byteWritten = false
-	j.byteRead = false
-	j.dataRead = 0
+	j.dataWrite = notReady
+	j.dataRead = notReady
 	j.disk.SetHeadHalfTrack(j.headPos)
 }
 
@@ -116,9 +114,9 @@ func (j *Async) Emulate() {
 	}
 	j.timeToNextByte += j.disk.MicroSecPerByte()
 	if j.writing {
-		if !j.byteWritten {
-			j.disk.Write(j.byteToWrite)
-			j.byteWritten = true
+		if j.dataWrite != notReady {
+			j.disk.Write(uint8(j.dataWrite))
+			j.dataWrite = notReady
 		}
 	} else {
 		current := j.disk.Read()
@@ -127,16 +125,14 @@ func (j *Async) Emulate() {
 		} else {
 			j.syncCounter = 0
 		}
-		j.dataRead = current
-		j.byteRead = true
+		j.dataRead = int(current)
 	}
 	j.disk.Rotate()
 }
 
-// WriteByte sets the byte value to be written to the disk by assigning it to the `byteToWrite` field of the Mechanic instance.
+// WriteByte sets the byte value to be written to the disk by assigning it to the `dataWrite` field of the Mechanic instance.
 func (j *Async) WriteByte(data uint8) {
-	j.byteToWrite = data
-	j.byteWritten = false
+	j.dataWrite = int(data)
 }
 
 // ReadByte retrieves the next byte of data from the Mechanic if the motor is active. Returns 0 if the motor is off.
@@ -144,19 +140,20 @@ func (j *Async) ReadByte() uint8 {
 	if !j.motor {
 		return 0
 	}
-	if !j.byteRead {
+	if j.dataRead == notReady {
 		return 0
 	}
-	j.byteRead = false
-	return j.dataRead
+	v := uint8(j.dataRead)
+	j.dataRead = notReady
+	return v
 }
 
 // ByteReady returns true if the mechanic's system is ready to read or write the next byte of data.
 func (j *Async) ByteReady() bool {
 	if j.writing {
-		return j.byteWritten
+		return j.dataWrite == notReady
 	}
-	return j.byteRead
+	return j.dataRead != notReady
 }
 
 // SyncFound checks if the mechanic has detected a synchronization state based on motor status and sync counter value.
@@ -221,8 +218,7 @@ func (j *Async) MoveHeadIn() {
 func (j *Async) updateHeadPos(headPos uint8) {
 	j.disk.SetHeadHalfTrack(headPos)
 	j.headSeekTime = stepDelay / 2
-	j.dataRead = 0
-	j.byteRead = false
+	j.dataRead = notReady
 	j.syncCounter = 0
 	//fmt.Printf("MOVE HEAD %d: %f\n", headPos/2, j.disk.MicroSecPerByte())
 }
