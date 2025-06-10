@@ -58,15 +58,19 @@ func init() {
 	}
 }
 
-func getTrackInfo(trackIdx uint8) (sectors uint8, cyclesPerByte float64, size int) {
+func getTrackInfo(trackIdx uint8) (sectors uint8, cyclesPerByte int, size int) {
 	if trackIdx >= 1 && trackIdx <= 17 {
-		return zone3Sectors, cyclesPerByteZone3, realTrackSizeBytesZone3
+		cpb := cyclesPerByteZone3
+		return zone3Sectors, int(cpb), realTrackSizeBytesZone3
 	} else if trackIdx >= 18 && trackIdx <= 24 {
-		return zone2Sectors, cyclesPerByteZone2, realTrackSizeBytesZone2
+		cpb := cyclesPerByteZone2
+		return zone2Sectors, int(cpb), realTrackSizeBytesZone2
 	} else if trackIdx >= 25 && trackIdx <= 30 {
-		return zone1Sectors, cyclesPerByteZone1, realTrackSizeBytesZone1
+		cpb := cyclesPerByteZone1
+		return zone1Sectors, int(cpb), realTrackSizeBytesZone1
 	} else if trackIdx >= 31 && trackIdx <= 35 {
-		return zone0Sectors, cyclesPerByteZone0, realTrackSizeBytesZone0
+		cpb := cyclesPerByteZone0
+		return zone0Sectors, int(cpb), realTrackSizeBytesZone0
 	}
 	return 0, 0, 0
 }
@@ -105,7 +109,7 @@ func getTrackOffset(idx uint8) uint16 {
 
 // getMicroSecPerByte returns the number of microseconds required to process a single byte for the given track index.
 // If the provided index exceeds the available tracks, it returns 0.
-func getMicroSecPerByte(idx uint8) float64 {
+func getMicroSecPerByte(idx uint8) int {
 	if idx >= uint8(len(_tracks)) {
 		return 0
 	}

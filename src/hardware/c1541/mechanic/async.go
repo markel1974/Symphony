@@ -20,7 +20,7 @@ type Async struct {
 	writing         bool
 	motorSpinUpTime int
 	headSeekTime    int
-	timeToNextByte  float64
+	timeToNextByte  int
 	dataWrite       int
 	dataRead        int
 	syncCounter     int
@@ -115,7 +115,7 @@ func (j *Async) Emulate() {
 		} else {
 			headPos--
 		}
-		fmt.Printf("MOVE HEAD OLD %d NEW %d: %f\n", j.headPosCurrent, headPos, j.disk.MicroSecPerByte())
+		fmt.Printf("MOVE HEAD OLD %d NEW %d: %d\n", j.headPosCurrent, headPos, j.disk.MicroSecPerByte())
 		j.disk.SetHeadHalfTrack(headPos)
 		j.headPosCurrent = headPos
 		j.headSeekTime = stepDelay

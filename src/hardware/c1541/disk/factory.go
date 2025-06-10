@@ -33,7 +33,7 @@ type IDisk interface {
 
 	TrackSectors() uint8
 
-	MicroSecPerByte() float64
+	MicroSecPerByte() int
 
 	Rotate()
 

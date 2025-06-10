@@ -4,13 +4,13 @@ package gcr
 type TrackData struct {
 	id              uint8
 	sectors         uint8
-	microSecPerByte float64
+	microSecPerByte int
 	rawKBit         float64
 	offset          uint16
 }
 
 // NewTrackData initializes a new TrackData structure with the specified id and offset.
-func NewTrackData(id uint8, offset uint16, sectors uint8, microSecPerByte float64) *TrackData {
+func NewTrackData(id uint8, offset uint16, sectors uint8, microSecPerByte int) *TrackData {
 	return &TrackData{
 		id:              id,
 		offset:          offset,
