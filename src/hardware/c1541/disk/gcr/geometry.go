@@ -6,27 +6,31 @@ import (
 )
 
 const (
-	//zone3Sectors = 21
-	//zone2Sectors = 19
-	//zone1Sectors = 18
-	//zone0Sectors = 17
-	//tailGap = 19
-	//sectorGap = 15
-	//z3 = ((gcrSectorLen + sectorGap) * zone3Sectors) + tailGap
-	//z2 = ((gcrSectorLen + sectorGap) * zone2Sectors) + tailGap
-	//z1 = ((gcrSectorLen + sectorGap) * zone1Sectors) + tailGap
-	//z0 = ((gcrSectorLen + sectorGap) * zone0Sectors) + tailGap
-	realTrackSizeBytesZone3 = 7936.0 // Per tracce 1-17 (21 settori)
-	realTrackSizeBytesZone2 = 7680.0 // Per tracce 18-24 (19 settori)
-	realTrackSizeBytesZone1 = 7168.0 // Per tracce 25-30 (18 settori)
-	realTrackSizeBytesZone0 = 6656.0 // Per tracce 31-35 (17 settori)
-	rpm                     = 300.0
-	systemClock             = 1000000.0 //985248.0.
-	rotationTimeCycles      = (60.0 / rpm) * systemClock
-	cyclesPerByteZone3      = rotationTimeCycles / realTrackSizeBytesZone3 // Risultato: ~25.2 cicli
-	cyclesPerByteZone2      = rotationTimeCycles / realTrackSizeBytesZone2 // Risultato: ~26.0 cicli
-	cyclesPerByteZone1      = rotationTimeCycles / realTrackSizeBytesZone1 // Risultato: ~27.9 cicli
-	cyclesPerByteZone0      = rotationTimeCycles / realTrackSizeBytesZone0 // Risultato: ~30.0 cicli
+	zone3Sectors = 21
+	zone2Sectors = 19
+	zone1Sectors = 18
+	zone0Sectors = 17
+
+	zone3Gap = 90
+	zone2Gap = 262
+	zone1Gap = 150
+	zone0Gap = 93
+
+	rpm                = 300.0
+	systemClockReal    = 1000000.0 //  985248.0 1_022_727.0
+	systemClockFactor  = 1.0       //systemClockReal / 985248.0
+	systemClock        = systemClockReal * systemClockFactor
+	rotationTimeCycles = (60.0 / rpm) * systemClock
+
+	realTrackSizeBytesZone3 = (gcrSectorLen * zone3Sectors) + zone3Gap // 7692 // Per tracce 1-17 (21 settori * 362)
+	realTrackSizeBytesZone2 = (gcrSectorLen * zone2Sectors) + zone2Gap // 7140 // Per tracce 18-24 (19 settori)
+	realTrackSizeBytesZone1 = (gcrSectorLen * zone1Sectors) + zone1Gap // 6666 // Per tracce 25-30 (18 settori)
+	realTrackSizeBytesZone0 = (gcrSectorLen * zone0Sectors) + zone0Gap // 6247 // Per tracce 31-35 (17 settori)
+
+	cyclesPerByteZone3 = rotationTimeCycles / realTrackSizeBytesZone3
+	cyclesPerByteZone2 = rotationTimeCycles / realTrackSizeBytesZone2
+	cyclesPerByteZone1 = rotationTimeCycles / realTrackSizeBytesZone1
+	cyclesPerByteZone0 = rotationTimeCycles / realTrackSizeBytesZone0
 )
 
 // _tracks stores a list of TrackData pointers representing track metadata, including sectors, speed zones, and offsets.
@@ -37,15 +41,10 @@ var _totalSectors uint
 
 // init initializes the track data and updates track properties based on predefined ranges and configurations.
 func init() {
-	r := systemClock / 985248.0
 	_totalSectors = 0
 	currentOffset := uint16(0)
 	for trackIdx := uint8(0); trackIdx <= 35; trackIdx++ {
-		sectors, cyclesPerByte := getTrackInfo(trackIdx)
-		cyclesPerByte *= r
-		//if cyclesPerByte > 0 {
-		//	cyclesPerByte = 20
-		//}
+		sectors, cyclesPerByte, _ := getTrackInfo(trackIdx)
 		track := NewTrackData(trackIdx, currentOffset, sectors, cyclesPerByte)
 		currentOffset += uint16(track.sectors)
 		_tracks = append(_tracks, track)
@@ -53,18 +52,17 @@ func init() {
 	}
 }
 
-func getTrackInfo(trackIdx uint8) (sectors uint8, cyclesPerByte float64) {
+func getTrackInfo(trackIdx uint8) (sectors uint8, cyclesPerByte float64, size int) {
 	if trackIdx >= 1 && trackIdx <= 17 {
-		return 21, cyclesPerByteZone3
+		return zone3Sectors, cyclesPerByteZone3, realTrackSizeBytesZone3
 	} else if trackIdx >= 18 && trackIdx <= 24 {
-		return 19, cyclesPerByteZone2
+		return zone2Sectors, cyclesPerByteZone2, realTrackSizeBytesZone2
 	} else if trackIdx >= 25 && trackIdx <= 30 {
-		return 18, cyclesPerByteZone1
+		return zone1Sectors, cyclesPerByteZone1, realTrackSizeBytesZone1
 	} else if trackIdx >= 31 && trackIdx <= 35 {
-		return 17, cyclesPerByteZone0
+		return zone0Sectors, cyclesPerByteZone0, realTrackSizeBytesZone0
 	}
-	// Aggiungi qui la logica per le tracce 36-40 se vuoi supportarle
-	return 0, 0
+	return 0, 0, 0
 }
 
 // getImageSize calculates the total size of the image in bytes based on the number of sectors and bytes per sector.

@@ -2,6 +2,7 @@ package gcr
 
 import (
 	"bytes"
+	"fmt"
 )
 
 //real size: 7
@@ -53,20 +54,18 @@ func (t *Track) Sectors() uint8 {
 // It calculates interleave, creates GCR-encoded sectors, and adds inter-sector and tail gaps.
 // Returns an error if sector extraction or processing fails.
 func (t *Track) Load(diskImage []byte, headerLen uint8, id1 uint8, id2 uint8, trackOffset uint16) error {
-	const maxTailGap = 380 //400  timeout limit
-	//const maxTailGap = 1000000000
-	numSectors, cyclesPerByte := getTrackInfo(t.trackIdx)
+	numSectors, _, totalTrackBytes := getTrackInfo(t.trackIdx)
 	if numSectors == 0 {
 		return nil
 	}
-	totalTrackBytes := int(rotationTimeCycles / cyclesPerByte)
 	totalUsedBySectors := int(numSectors) * gcrSectorLen
 	tailGap := []byte(nil)
 	sectorGap := []byte(nil)
 	if totalEmptySpace := totalTrackBytes - totalUsedBySectors; totalEmptySpace > 0 {
 		tailGapSize := totalEmptySpace
-		if tailGapSize > maxTailGap {
-			tailGapSize = maxTailGap
+		if tailGapSize > gcrSectorLen {
+			fmt.Printf("track %d exceeding tail gap limit (%d), resizing to %d\n", t.trackIdx, tailGapSize, gcrSectorLen)
+			tailGapSize = gcrSectorLen
 			spaceToDistribute := totalEmptySpace - tailGapSize
 			if spaceToDistribute > 0 {
 				sectorGapSize := spaceToDistribute / int(numSectors)

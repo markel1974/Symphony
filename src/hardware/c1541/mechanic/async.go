@@ -129,6 +129,7 @@ func (j *Async) Emulate() {
 		return
 	}
 	j.timeToNextByte += j.disk.MicroSecPerByte()
+
 	if j.writing {
 		if j.dataWrite != notReady {
 			j.disk.Write(uint8(j.dataWrite))
@@ -140,8 +141,8 @@ func (j *Async) Emulate() {
 			j.syncCounter++
 		} else {
 			j.syncCounter = 0
+			j.dataRead = int(current)
 		}
-		j.dataRead = int(current)
 	}
 	j.disk.Rotate()
 }
@@ -160,6 +161,7 @@ func (j *Async) ReadByte() uint8 {
 		return 0
 	}
 	v := uint8(j.dataRead)
+	//fmt.Printf("ReadByte %d From Track %d\n", v, j.headPosCurrent)
 	j.dataRead = notReady
 	return v
 }
@@ -169,7 +171,9 @@ func (j *Async) ByteReady() bool {
 	if j.writing {
 		return j.dataWrite == notReady
 	}
-	return j.dataRead != notReady
+	v := j.dataRead != notReady
+	//fmt.Println("BYTE READY", v)
+	return v
 }
 
 // SyncFound checks if the mechanic has detected a synchronization state based on motor status and sync counter value.
@@ -224,3 +228,23 @@ func (j *Async) MoveHeadIn() {
 	}
 	j.headPosRequired++
 }
+
+/*
+ 	const rpm = 300
+	const systemClockReal = 1000000.0 //  985248.0 1_022_727.0
+	const systemClockFactor = systemClockReal / 985248.0
+	const systemClock = systemClockReal * systemClockFactor
+	const rotationTimeCycles = (60.0 / rpm) * systemClock
+
+	j.masterClock++
+	v := rotationTimeCycles
+	// Ottiene il numero di byte per la traccia corrente
+	byte_totali := j.disk.TrackLen()
+	tempo_nel_giro := j.masterClock % int64(v)
+	progresso_del_giro := float64(tempo_nel_giro) / float64(rotationTimeCycles)
+	byte_offset := int(progresso_del_giro * float64(byte_totali))
+	if float64(byte_offset) == j.timeToNextByte {
+		return
+	}
+	j.timeToNextByte = float64(byte_offset)
+*/
