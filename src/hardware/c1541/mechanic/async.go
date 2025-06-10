@@ -141,6 +141,8 @@ func (j *Async) Emulate() {
 			j.syncCounter++
 		} else {
 			j.syncCounter = 0
+		}
+		if j.dataRead == notReady {
 			j.dataRead = int(current)
 		}
 	}
