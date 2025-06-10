@@ -5,6 +5,12 @@ import (
 	"log"
 )
 
+//Zone	Track	Sectors	Data(362*N) Tail Gap 	Capacity	Value Timer VIA
+//3   	1-17	21  	7602 byte	90  byte	7692 byte	32 / $20
+//2   	18-24	19   	6878 byte	262 byte	7140 byte	30 / $1E
+//1     25-30	18   	6516 byte	150 byte	6666 byte	28 / $1C
+//0   	31-35	17  	6154 byte	93  byte	6247 byte	26 / $1A
+
 const (
 	zone3Sectors = 21
 	zone2Sectors = 19
@@ -106,7 +112,9 @@ func getMicroSecPerByte(idx uint8) float64 {
 	return _tracks[idx].microSecPerByte
 }
 
-// Aggiungi questa funzione helper da qualche parte nel tuo package
+// getInterleaveTable calculates and returns the interleave table for a track and the last sector index in the table.
+// trackIdx specifies the track index for which the interleave table is generated.
+// numSectors defines the total number of sectors in the track.
 func getInterleaveTable(trackIdx uint8, numSectors uint8) (uint8, []uint8) {
 	if numSectors <= 0 {
 		return 0, nil
@@ -120,7 +128,6 @@ func getInterleaveTable(trackIdx uint8, numSectors uint8) (uint8, []uint8) {
 		table[i] = 0xff // Inizializza con un valore non valido
 	}
 	currentSector := 0
-
 	for idx := 0; idx < int(numSectors); idx++ {
 		for table[currentSector] != 0xff {
 			currentSector = (currentSector + 1) % int(numSectors)
@@ -128,9 +135,7 @@ func getInterleaveTable(trackIdx uint8, numSectors uint8) (uint8, []uint8) {
 		table[currentSector] = uint8(idx)
 		currentSector = (currentSector + skew) % int(numSectors)
 	}
-
 	last := table[len(table)-1]
-	//fmt.Println(table)
 	return last, table
 }
 
