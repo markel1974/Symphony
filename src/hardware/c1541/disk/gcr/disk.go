@@ -11,7 +11,6 @@ import (
 // Disk represents a storage medium comprising multiple tracks that can store and manage data.
 // It maintains the current track and indicates whether the disk is usable.
 type Disk struct {
-	//errorInfo        []uint8
 	tracks       []*Track
 	currentTrack *Track
 	usable       bool
@@ -26,10 +25,10 @@ func NewDisk(wp bool) *Disk {
 		wp:     wp,
 		tracks: make([]*Track, tracks+startTrack),
 		usable: true,
-		//errorInfo:        make([]uint8, numSectors),
 	}
 	for trackIdx := startTrack; trackIdx <= tracks; trackIdx++ {
-		g.tracks[trackIdx] = NewTrack(trackIdx, getTrackSectors(trackIdx), false)
+		track := NewTrack(trackIdx, getTrackSectors(trackIdx), false)
+		g.tracks[trackIdx] = track
 	}
 	g.currentTrack = g.tracks[startTrack]
 	return g
