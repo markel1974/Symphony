@@ -3,6 +3,7 @@ package gcr
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
 )
 
 //real size: 7
@@ -101,6 +102,12 @@ func (t *Track) Load(diskImage []byte, headerLen uint8, id1 uint8, id2 uint8, tr
 	}
 	t.data = trackBuffer.Bytes()
 	return nil
+}
+
+func (t *Track) Randomize() {
+	for i := range t.data {
+		t.data[i] = uint8(rand.Intn(0xff))
+	}
 }
 
 // Cursor returns the current cursor position of the track as an unsigned 32-bit integer.

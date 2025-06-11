@@ -59,7 +59,9 @@ func (g *Disk) Load(image []byte) error {
 		if track == nil {
 			continue
 		}
-		if err := track.Load(image, hLen, id1, id2, getTrackOffset(track.Index())); err != nil {
+		index := track.Index()
+		offset := getTrackOffset(index)
+		if err := track.Load(image, hLen, id1, id2, offset); err != nil {
 			return err
 		}
 	}
