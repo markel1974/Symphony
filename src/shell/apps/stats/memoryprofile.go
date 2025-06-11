@@ -39,7 +39,7 @@ func CreateProfileMemory() *cli.Command {
 		defer f.Close()
 
 		runtime.GC()
-		if err := pprof.WriteHeapProfile(f); err != nil {
+		if err = pprof.WriteHeapProfile(f); err != nil {
 			task.WriteLn("could not write mem profile: " + err.Error())
 		}
 

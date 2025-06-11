@@ -110,15 +110,15 @@ func CreateMemoryPlot() *cli.Command {
 		task.PaintRequest()
 	}
 	paintFn := func(task interfaces.ITask, surface interfaces.ISurface) {
-		var min float64 = 0
-		var max float64 = 0
+		var minPlot float64 = 0
+		var maxPlot float64 = 0
 		ctx := task.GetContext()
 		plt := ctx.(*rtPlotData)
 		if !plt.rtPlotAuto {
-			min = plt.rtPlotMinVal
-			max = plt.rtPlotMaxVal
+			minPlot = plt.rtPlotMinVal
+			maxPlot = plt.rtPlotMaxVal
 		}
-		surface.DrawSeries(plt.rtPlotData, -1, -1, min, max)
+		surface.DrawSeries(plt.rtPlotData, -1, -1, minPlot, maxPlot)
 	}
 	root := cli.NewCommand("rtplot", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Runtime Plot", "Runtime Plot")
