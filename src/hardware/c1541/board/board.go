@@ -285,7 +285,6 @@ func (m *Board) rebuildEmulation() ([]func(), error) {
 		return nil, fmt.Errorf("emulation sequence is not complete")
 	}
 
-	//TODO Better implementation of emulation sequence
 	if m.mec.EmulationRequired() {
 		emulation = append(emulation, m.mec.Emulate)
 	}

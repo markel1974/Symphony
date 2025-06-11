@@ -81,6 +81,7 @@ func (b *PLA) Setup() error {
 	return nil
 }
 
+// Bind initializes and connects various components to the PLA, including VIC, SID, CIA1, CIA2, cartridge manager, and ROM loader.
 func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64) error {
 	b.vic = vic
 	b.sid = sid
@@ -166,10 +167,12 @@ func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid referenc
 	return nil
 }
 
+// Connect establishes a connection using the PLA object and returns an error if the connection fails.
 func (b *PLA) Connect() error {
 	return nil
 }
 
+// Internal checks internal state or behavior specific to the PLA instance and returns a boolean value.
 func (b *PLA) Internal() bool {
 	return false
 }
