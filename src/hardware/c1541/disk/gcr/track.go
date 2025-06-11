@@ -15,6 +15,7 @@ type Track struct {
 	data     []uint8
 	sectors  uint8
 	cursor   uint32
+	rng      *rand.Rand
 }
 
 // NewTrack initializes a new Track with the specified track index, sectors, and overlap settings, allocating its data buffer.
@@ -25,6 +26,7 @@ func NewTrack(trackIdx uint8, sectors uint8, overlap bool) *Track {
 		overlap:  overlap,
 		data:     nil,
 		cursor:   0,
+		rng:      rand.New(rand.NewSource(int64(trackIdx))),
 	}
 	return t
 }
@@ -104,9 +106,26 @@ func (t *Track) Load(diskImage []byte, headerLen uint8, id1 uint8, id2 uint8, tr
 	return nil
 }
 
-func (t *Track) Randomize() {
-	for i := range t.data {
-		t.data[i] = uint8(rand.Intn(0xff))
+// ApplyNoise introduces random bit-level corruption to the track data at predefined probabilities for data and gap bytes.
+func (t *Track) ApplyNoise() {
+	const dataCorruptionChance float32 = 0.03 // 3% probabilità per i byte di dati/header
+	const gapCorruptionChance float32 = 0.10  // 10% probabilità per i byte di gap
+	const syncMark byte = 0xFF
+	const gapFill byte = 0x55
+	for i, b := range t.data {
+		if b == syncMark {
+			continue
+		}
+		var chance float32
+		if b == gapFill {
+			chance = gapCorruptionChance
+		} else {
+			chance = dataCorruptionChance
+		}
+		if t.rng.Float32() < chance {
+			bitToFlip := uint8(1 << t.rng.Intn(8))
+			t.data[i] = b ^ bitToFlip
+		}
 	}
 }
 
