@@ -6,8 +6,6 @@ import (
 	"math/rand"
 )
 
-//real size: 7
-
 // Track represents a data structure for managing a disk's track with its associated data and state.
 type Track struct {
 	trackIdx uint8
@@ -35,10 +33,12 @@ func NewTrack(trackIdx uint8, valid bool, sectors uint8, readable bool, overlap 
 	return t
 }
 
+// Valid checks whether the track is in a valid state and returns true if valid, otherwise false.
 func (t *Track) Valid() bool {
 	return t.valid
 }
 
+// Readable checks if the track is in a readable state and returns true if it is, otherwise false.
 func (t *Track) Readable() bool {
 	return t.readable
 }

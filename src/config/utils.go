@@ -27,6 +27,7 @@ func KeyVal(data string) []KV {
 	return kvs
 }
 
+// ImageFromFile reads a file from the given path and returns its content as a byte slice, its write protection state, and an error.
 func ImageFromFile(path string) ([]byte, bool, error) {
 	if len(path) == 0 {
 		return nil, false, nil

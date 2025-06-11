@@ -43,7 +43,8 @@ Symphony's power stems from its carefully designed architecture:
 
 [**TODO:** Add detailed build and run instructions. Mention headless execution.]
 
-## Live Evaluation
+
+🚀 Try Symphony Live in Your Browser! 🚀
 https://markel1974.itch.io/symphony
 
 ```bash
