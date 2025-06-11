@@ -25,7 +25,7 @@ const (
 	motorSpinUpDelay = 300_000 // 300ms per avviamento
 
 	headMinHalfStep = 2
-	headMaxHalfStep = 70
+	headMaxHalfStep = 71
 
 	headBaseDamping           = 1500
 	headBacklashDelay         = 1000

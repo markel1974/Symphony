@@ -11,7 +11,7 @@ import (
 // Disk represents a storage medium comprising multiple tracks that can store and manage data.
 // It maintains the current track and indicates whether the disk is usable.
 type Disk struct {
-	tracks       []*Track
+	halfTracks   []*Track
 	currentTrack *Track
 	usable       bool
 	wp           bool
@@ -19,18 +19,24 @@ type Disk struct {
 
 // NewDisk initializes a new Disk instance with tracks and sets it as usable with the start track as the current track.
 func NewDisk(wp bool) *Disk {
-	startTrack := getTrackStart()
-	tracks := getTrackCount()
+	halfTrackStart := getHalfTrackStart()
 	g := &Disk{
-		wp:     wp,
-		tracks: make([]*Track, tracks+startTrack),
-		usable: true,
+		wp:         wp,
+		halfTracks: make([]*Track, 70+halfTrackStart), //getHalfTrackCount()+1),
+		usable:     true,
 	}
-	for trackIdx := startTrack; trackIdx <= tracks; trackIdx++ {
-		track := NewTrack(trackIdx, getTrackSectors(trackIdx), false)
-		g.tracks[trackIdx] = track
+	for idx := range g.halfTracks {
+		halfTrackIdx := uint8(idx)
+		trackIdx := halfTrackIdx >> 1
+		valid := halfTrackIdx >= halfTrackStart
+		readable := false
+		if valid {
+			readable = halfTrackIdx&1 == 0
+		}
+		track := NewTrack(trackIdx, valid, getTrackSectors(trackIdx), readable, false)
+		g.halfTracks[idx] = track
 	}
-	g.currentTrack = g.tracks[startTrack]
+	g.currentTrack = g.halfTracks[halfTrackStart]
 	return g
 }
 
@@ -55,17 +61,20 @@ func (g *Disk) Load(image []byte) error {
 		id1 = bam[162]
 		id2 = bam[163]
 	}
-	for _, track := range g.tracks {
-		if track == nil {
+	for _, halfTrack := range g.halfTracks {
+		if !halfTrack.Valid() {
 			continue
 		}
-		index := track.Index()
+		index := halfTrack.Index()
 		offset := getTrackOffset(index)
-		if err := track.Load(image, hLen, id1, id2, offset); err != nil {
+		if err := halfTrack.Load(image, hLen, id1, id2, offset); err != nil {
 			return err
 		}
+		if !halfTrack.Readable() {
+			halfTrack.ApplyNoise()
+		}
 	}
-	g.currentTrack = g.tracks[getTrackStart()]
+	g.currentTrack = g.halfTracks[getHalfTrackStart()]
 	return nil
 }
 
@@ -77,16 +86,14 @@ func (g *Disk) Usable() bool {
 // SetHeadHalfTrack sets the disk head to the specified half-track position and returns the length of the target track.
 // If the half-track is invalid, it logs an error and returns -1.
 func (g *Disk) SetHeadHalfTrack(halfTrack uint8) bool {
-	track := halfTrack >> 1
-	if track >= uint8(len(g.tracks)) {
+	if halfTrack >= uint8(len(g.halfTracks)) {
 		log.Printf("invalid half track: %d", halfTrack)
 		return false
 	}
 	//Simulate all track rotation
 	cursor := g.currentTrack.Cursor()
 	g.currentTrack.Leave()
-
-	g.currentTrack = g.tracks[track]
+	g.currentTrack = g.halfTracks[halfTrack]
 	g.currentTrack.Enter(cursor)
 	return true
 }

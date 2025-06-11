@@ -11,6 +11,8 @@ import (
 // Track represents a data structure for managing a disk's track with its associated data and state.
 type Track struct {
 	trackIdx uint8
+	valid    bool
+	readable bool
 	overlap  bool
 	data     []uint8
 	sectors  uint8
@@ -19,16 +21,26 @@ type Track struct {
 }
 
 // NewTrack initializes a new Track with the specified track index, sectors, and overlap settings, allocating its data buffer.
-func NewTrack(trackIdx uint8, sectors uint8, overlap bool) *Track {
+func NewTrack(trackIdx uint8, valid bool, sectors uint8, readable bool, overlap bool) *Track {
 	t := &Track{
 		trackIdx: trackIdx,
+		valid:    valid,
 		sectors:  sectors,
+		readable: readable,
 		overlap:  overlap,
 		data:     nil,
 		cursor:   0,
 		rng:      rand.New(rand.NewSource(int64(trackIdx))),
 	}
 	return t
+}
+
+func (t *Track) Valid() bool {
+	return t.valid
+}
+
+func (t *Track) Readable() bool {
+	return t.readable
 }
 
 // Index returns the index of the track as a uint8.

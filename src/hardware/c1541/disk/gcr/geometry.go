@@ -81,13 +81,13 @@ func getImageSize() uint {
 }
 
 // getTrackStart returns the index of the first usable track on the disk.
-func getTrackStart() uint8 {
-	return 1
+func getHalfTrackStart() uint8 {
+	return 2
 }
 
 // getTrackCount calculates and returns the total number of tracks in the disk as a uint8 value.
-func getTrackCount() uint8 {
-	return uint8(len(_tracks))
+func getHalfTrackCount() uint8 {
+	return uint8(len(_tracks) * 2)
 }
 
 // getTrackSectors returns the number of sectors for the specified track index. If the index is invalid, it returns 0.

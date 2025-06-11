@@ -126,11 +126,17 @@ func (j *Sync) WriteProtectionState() uint8 {
 
 // MoveHeadOut decreases the `headPosRequired` of the Mechanic by one step, ensuring it doesn't go below the minimum allowable position.
 func (j *Sync) MoveHeadOut() {
+	if j.headPos <= headMinHalfStep {
+		return
+	}
 	j.updateHeadPos(j.headPos - 1)
 }
 
 // MoveHeadIn increments the head position of the Mechanic unless it has reached the maximum limit (headHalfStep).
 func (j *Sync) MoveHeadIn() {
+	if j.headPos >= headMaxHalfStep {
+		return
+	}
 	j.updateHeadPos(j.headPos + 1)
 }
 
