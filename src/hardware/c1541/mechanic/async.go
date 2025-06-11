@@ -4,198 +4,11 @@ import (
 	"github.com/markel1974/c64emu/src/hardware/c1541/disk"
 )
 
-const (
-	directionNone    = 0
-	directionInward  = 1  // Verso tracce più alte
-	directionOutward = -1 // Verso tracce più basse
-)
-
-const (
-	notReady = 1
-)
-
-type Motor struct {
-	active     bool
-	spinUpTime int
-}
-
-func NewMotor() *Motor {
-	v := &Motor{
-		active:     false,
-		spinUpTime: 0,
-	}
-	v.Reset()
-	return v
-}
-
-func (m *Motor) Reset() {
-	m.active = false
-	m.spinUpTime = 0
-}
-
-func (m *Motor) IsActive() bool {
-	return m.active
-}
-
-func (m *Motor) SetActive(active bool) {
-	if active && !m.active {
-		m.spinUpTime = motorSpinUpDelay
-	}
-	m.active = active
-}
-
-func (m *Motor) SpinUp() bool {
-	if m.spinUpTime > 0 {
-		m.spinUpTime--
-		return true
-	}
-	return false
-}
-
-type Head struct {
-	defaultPos       uint8
-	currentPos       uint8
-	consecutiveSteps int
-	direction        int
-	seekTime         int
-	writing          bool
-	dataWrite        int
-	dataRead         int
-	syncCounter      int
-}
-
-func NewHead(defaultPos uint8) *Head {
-	h := &Head{
-		defaultPos:       defaultPos,
-		currentPos:       defaultPos,
-		consecutiveSteps: 0,
-		seekTime:         0,
-		direction:        directionNone,
-		writing:          false,
-		syncCounter:      0,
-		dataWrite:        notReady,
-		dataRead:         notReady,
-	}
-	return h
-}
-
-func (h *Head) Reset() {
-	h.currentPos = h.defaultPos
-	h.consecutiveSteps = 0
-	h.seekTime = 0
-	h.direction = directionNone
-	h.writing = false
-	h.syncCounter = 0
-	h.dataWrite = notReady
-	h.dataRead = notReady
-}
-
-func (h *Head) SetWritingMode(w bool) {
-	h.writing = w
-}
-
-func (h *Head) WriteByte(d uint8) {
-	h.dataWrite = int(d)
-}
-
-func (h *Head) ReadByte() uint8 {
-	if h.dataRead == notReady {
-		return 0
-	}
-	v := uint8(h.dataRead)
-	//fmt.Printf("ReadByte %d From Track %d\n", v, j.currentPos)
-	h.dataRead = notReady
-	return v
-}
-
-func (h *Head) ReadWrite(disk disk.IDisk) {
-	if h.writing {
-		if h.dataWrite != notReady {
-			disk.Write(uint8(h.dataWrite))
-			h.dataWrite = notReady
-		}
-	} else {
-		current := disk.Read()
-		if current == syncByte {
-			h.syncCounter++
-		} else {
-			h.syncCounter = 0
-		}
-		if h.dataRead == notReady {
-			h.dataRead = int(current)
-		}
-	}
-}
-
-func (h *Head) ByteReady() bool {
-	if h.writing {
-		return h.dataWrite == notReady
-	}
-	v := h.dataRead != notReady
-	return v
-}
-
-func (h *Head) HasSync() bool {
-	return h.syncCounter >= syncTolerance
-}
-
-func (h *Head) Move(disk disk.IDisk, headPosRequired uint8) bool {
-	if h.seekTime > 0 {
-		h.seekTime--
-		return true
-	}
-	if headPosRequired == h.currentPos {
-		h.consecutiveSteps = 0
-		h.direction = directionNone
-		return false
-	}
-	newPos := h.currentPos
-	var direction int
-	var polarity int
-	var seekTime int
-	if isMovingInward := headPosRequired > h.currentPos; isMovingInward {
-		newPos++
-		direction = directionInward
-		seekTime = headInwardDelay + headBaseDamping
-		polarity = headInwardPolarityDelay
-	} else {
-		newPos--
-		direction = directionOutward
-		seekTime = headOutwardDelay + headBaseDamping
-		polarity = headBackwardPolarityDelay
-	}
-
-	if h.direction != direction {
-		h.consecutiveSteps = 0
-		if h.direction != directionNone {
-			seekTime += headBacklashDelay + polarity
-		}
-	}
-
-	if h.consecutiveSteps++; h.consecutiveSteps > 1 {
-		seekTime += (h.consecutiveSteps - 1) * headExtraSettlingPerStep
-	}
-	if seekTime > headMaxDelay {
-		seekTime = headMaxDelay
-	}
-
-	//fmt.Printf("ASYNC MOVE HEAD OLD %d NEW %d REQ %d: %d\n", h.currentPos, newPos, headPosRequired, disk.MicroSecPerByte())
-	if disk.SetHeadHalfTrack(newPos) {
-		h.currentPos = newPos
-		h.seekTime = seekTime
-		h.direction = direction
-		h.dataRead = notReady
-		h.syncCounter = 0
-	}
-	return true
-}
-
 // Async represents the main handler for managing disk mechanics and operations including reading and writing data.
 type Async struct {
 	empty           disk.IDisk
 	disk            disk.IDisk
 	diskChanged     bool
-	rotationCycles  int
 	headPosRequired uint8
 	head            *Head
 	motor           *Motor
@@ -208,7 +21,6 @@ func NewAsync() *Async {
 		empty:           void,
 		disk:            void,
 		diskChanged:     false,
-		rotationCycles:  0,
 		motor:           NewMotor(),
 		head:            NewHead(headMinHalfStep),
 		headPosRequired: headMinHalfStep,
@@ -220,7 +32,6 @@ func NewAsync() *Async {
 func (j *Async) Reset() {
 	j.diskChanged = false
 	j.headPosRequired = 2
-	j.rotationCycles = 0
 	j.motor.Reset()
 	j.head.Reset()
 	j.disk.SetHeadHalfTrack(j.headPosRequired)
@@ -266,13 +77,12 @@ func (j *Async) Emulate() {
 	if j.head.Move(j.disk, j.headPosRequired) {
 		return
 	}
-	j.rotationCycles--
-	if j.rotationCycles > 0 {
+	j.head.DecayVibration()
+	if !j.motor.TryRotate() {
 		return
 	}
-	j.rotationCycles += j.disk.MicroSecPerByte()
 	j.head.ReadWrite(j.disk)
-	j.disk.Rotate()
+	j.motor.Rotate(j.disk)
 }
 
 // WriteByte sets the byte value to be written to the disk by assigning it to the `dataWrite` field of the Mechanic instance.
@@ -339,33 +149,3 @@ func (j *Async) MoveHeadIn() {
 	}
 	j.headPosRequired++
 }
-
-/*
-func (h *Head) MoveOld(disk disk.IDisk, headPosRequired uint8) bool {
-	if h.seekTime > 0 {
-		h.seekTime--
-		return true
-	}
-
-	if headPosRequired == h.currentPos {
-		return false
-	}
-	newPos := h.currentPos
-	var seekTime = 0
-	if headPosRequired > h.currentPos {
-		newPos++
-		seekTime = headInwardDelay
-	} else {
-		newPos--
-		seekTime = headOutwardDelay
-	}
-
-	fmt.Printf("ASYNC MOVE HEAD OLD %d NEW %d: %d\n", h.currentPos, newPos, disk.MicroSecPerByte())
-	disk.SetHeadHalfTrack(newPos)
-	h.currentPos = newPos
-	h.seekTime = seekTime
-	h.dataRead = notReady
-	h.syncCounter = 0
-	return true
-}
-*/
