@@ -22,7 +22,6 @@ import (
 	"github.com/markel1974/c64emu/src/shell/context/render"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"github.com/markel1974/c64emu/src/shell/shell"
-	"github.com/markel1974/c64emu/src/shell/terminal"
 	"io"
 )
 
@@ -34,7 +33,6 @@ type Context struct {
 	ticker   *adaptiveticker.AdaptiveTicker
 	reader   io.Reader
 	writer   io.Writer
-	factory  *terminal.EquipmentFactory
 	commands *cli.Command
 	render   interfaces.IRender
 	auth     interfaces.IAuthenticator
@@ -45,13 +43,12 @@ type Context struct {
 	autosave bool
 }
 
-func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer io.Writer, auth interfaces.IAuthenticator, factory *terminal.EquipmentFactory, commands *cli.Command, prompt string, autosave bool) *Context {
+func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer io.Writer, auth interfaces.IAuthenticator, commands *cli.Command, prompt string, autosave bool) *Context {
 	ctx := &Context{
 		ticker:   ticker,
 		reader:   reader,
 		writer:   writer,
 		auth:     auth,
-		factory:  factory,
 		commands: commands,
 		prompt:   prompt,
 		kernel:   nil,
@@ -60,14 +57,12 @@ func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer 
 	return ctx
 }
 
-func (c *Context) Setup(enterKey rune) {
-	ioAdapter := interfaces.IInputOutput(c)
-	term := c.factory.Create("VT100", ioAdapter, enterKey)
-	c.render = render.NewRender(term)
+func (c *Context) Setup(terminal interfaces.ITerminal) {
+	c.render = render.NewRender(terminal)
 	system := apps.NewRoot()
 	systemCommands, commands := system.Build(c.commands)
 	fs := file_system.NewCommandInteractor(commands, []interfaces.ICommand{systemCommands})
-
+	ioAdapter := interfaces.IInputOutput(c)
 	c.kernel = NewKernel(c.ticker, c.render, ioAdapter, fs)
 	c.sh = shell.NewShell(c.auth, c.render, c, c.prompt, c.autosave)
 }

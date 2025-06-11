@@ -195,8 +195,10 @@ func (r *Server) handleConnection(nConn net.Conn) {
 
 		r.auth.IsAuthenticated()
 
-		ctx := context.NewContext(r.ticker, channel, channel, r.auth, r.factory, r.template, r.prompt, r.autosave)
-		ctx.Setup(-1)
+		ctx := context.NewContext(r.ticker, channel, channel, r.auth, r.template, r.prompt, r.autosave)
+		ioAdapter := interfaces.IInputOutput(ctx)
+		term := r.factory.Create("VT100", ioAdapter, -1)
+		ctx.Setup(term)
 		//ctx.setAuthenticatedState()
 		//ctx.SetEnterKey(10)
 
