@@ -25,10 +25,13 @@ import (
 	"io"
 )
 
+// contextMaQueueLen defines the default length for message and timer channels used within the context's queue system.
 const (
 	contextMaQueueLen = 1024
 )
 
+// Context is a container for managing and coordinating various dependencies and resources needed for application execution.
+// It encapsulates input/output handlers, commands, shell interactions, rendering, authentication, and runtime configurations.
 type Context struct {
 	ticker   *adaptiveticker.AdaptiveTicker
 	reader   io.Reader
@@ -43,6 +46,7 @@ type Context struct {
 	autosave bool
 }
 
+// NewContext creates and initializes a new Context with the provided parameters, including ticker, reader, writer, and others.
 func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer io.Writer, auth interfaces.IAuthenticator, commands *cli.Command, prompt string, autosave bool) *Context {
 	ctx := &Context{
 		ticker:   ticker,
@@ -57,6 +61,7 @@ func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer 
 	return ctx
 }
 
+// Setup initializes the context with the terminal, rendering, system commands, file system, kernel, and shell instances.
 func (c *Context) Setup(terminal interfaces.ITerminal) {
 	c.render = render.NewRender(terminal)
 	system := apps.NewRoot()
@@ -67,12 +72,14 @@ func (c *Context) Setup(terminal interfaces.ITerminal) {
 	c.sh = shell.NewShell(c.auth, c.render, c, c.prompt, c.autosave)
 }
 
+// Exec initializes the admin console display, advances the shell line, and starts the kernel.
 func (c *Context) Exec() {
 	c.render.WriteColor("Admin Console Ready", interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
 	c.sh.NextLine()
 	c.kernel.Start()
 }
 
+// Type processes a key event based on its type and value, influencing execution, interaction, or system state.
 func (c *Context) Type(kind interfaces.KeyType, key rune) {
 	if kind == interfaces.KeyTypeCtrl {
 		switch key {
@@ -94,21 +101,27 @@ func (c *Context) Type(kind interfaces.KeyType, key rune) {
 	}
 }
 
+// Read reads data into the provided byte slice from the underlying reader and returns the number of bytes read and any error.
 func (c *Context) Read(p []byte) (int, error) {
 	return c.reader.Read(p)
 }
 
+// Write writes the provided byte slice to the underlying writer in the context.
+// Returns the number of bytes written and any write error encountered.
 func (c *Context) Write(data []byte) (int, error) {
 	return c.writer.Write(data)
 }
 
+// Close releases any resources held by the Context and ensures a clean termination of its operations.
 func (c *Context) Close() {
 }
 
+// ExecCommand executes a provided command line within the current kernel context and returns the success status and an error.
 func (c *Context) ExecCommand(line string) (bool, error) {
 	return c.kernel.ExecCommand(line, nil)
 }
 
+// ExecSuggestion executes a suggestion mechanism based on input, cursor position, and count, returning total suggestions and success status.
 func (c *Context) ExecSuggestion(in string, cursor int, count int) (int, bool) {
 	ret := false
 	data, suggestions, found := c.kernel.GetSuggestion(in, cursor)
@@ -127,10 +140,12 @@ func (c *Context) ExecSuggestion(in string, cursor int, count int) (int, bool) {
 	return sLen, ret
 }
 
+// SetScreenSize adjusts the terminal's display dimensions to the specified width (w) and height (h).
 func (c *Context) SetScreenSize(w int, h int) {
 	c.kernel.SetScreenSize(w, h)
 }
 
+// History performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
 func (c *Context) History(verb interfaces.HistoryAction, idx int) {
 	switch verb {
 	case interfaces.HistoryActionClear:

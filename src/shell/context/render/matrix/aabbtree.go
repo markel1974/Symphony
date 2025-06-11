@@ -19,10 +19,13 @@ import (
 	"math"
 )
 
+// IAABB represents an interface for objects that can provide an axis-aligned bounding box (AABB).
+// GetAABB retrieves the AABB associated with the object implementing this interface.
 type IAABB interface {
 	GetAABB() *AABB
 }
 
+// AABB represents an axis-aligned bounding box in 3D space with minimum and maximum coordinates along each axis.
 type AABB struct {
 	minX        float64
 	minY        float64
@@ -33,11 +36,15 @@ type AABB struct {
 	surfaceArea float64
 }
 
+// calculateSurfaceArea computes and returns the surface area of the AABB.
+// The surface area is the sum of the areas of all six faces of the AABB.
 func (a *AABB) calculateSurfaceArea() float64 {
 	s := 2.0 * (a.getWidth()*a.getHeight() + a.getWidth()*a.getDepth() + a.getHeight()*a.getDepth())
 	return s
 }
 
+// NewAABB creates a new axis-aligned bounding box (AABB) with specified minimum and maximum coordinates.
+// It calculates and initializes the surface area of the bounding box.
 func NewAABB(minX float64, minY float64, minZ float64, maxX float64, maxY float64, maxZ float64) *AABB {
 	a := &AABB{
 		minX: minX,
@@ -53,6 +60,7 @@ func NewAABB(minX float64, minY float64, minZ float64, maxX float64, maxY float6
 	return a
 }
 
+// overlaps checks if the current AABB intersects with another AABB in 3D space. Returns true if they overlap.
 func (a *AABB) overlaps(other *AABB) bool {
 	// y is deliberately first in the list of checks below as it is seen as more likely than things
 	// collide on x,z but not on y than they do on y thus we drop out sooner on a y fail
@@ -64,6 +72,7 @@ func (a *AABB) overlaps(other *AABB) bool {
 		a.minZ < other.maxZ
 }
 
+// contains checks if the current AABB completely contains the provided AABB within its boundaries.
 func (a *AABB) contains(other *AABB) bool {
 	return other.minX >= a.minX &&
 		other.maxX <= a.maxX &&
@@ -73,32 +82,42 @@ func (a *AABB) contains(other *AABB) bool {
 		other.maxZ <= a.maxZ
 }
 
+// merge returns a new AABB that is the minimum bounding box enclosing both the current AABB and the other AABB provided.
 func (a *AABB) merge(other *AABB) *AABB {
 	b := NewAABB(math.Min(a.minX, other.minX), math.Min(a.minY, other.minY), math.Min(a.minZ, other.minZ),
 		math.Max(a.maxX, other.maxX), math.Max(a.maxY, other.maxY), math.Max(a.maxZ, other.maxZ))
 	return b
 }
 
+// intersection calculates the overlapping region between two AABBs and returns a new AABB representing this region.
+// If there is no intersection, the returned AABB may have invalid dimensions.
 func (a *AABB) intersection(other *AABB) *AABB {
 	b := NewAABB(math.Max(a.minX, other.minX), math.Max(a.minY, other.minY), math.Max(a.minZ, other.minZ),
 		math.Min(a.maxX, other.maxX), math.Min(a.maxY, other.maxY), math.Min(a.maxZ, other.maxZ))
 	return b
 }
 
+// getWidth calculates and returns the width of the AABB by subtracting minX from maxX.
 func (a *AABB) getWidth() float64 {
 	return a.maxX - a.minX
 }
 
+// getHeight returns the height of the AABB, computed as the difference between maxY and minY.
 func (a *AABB) getHeight() float64 {
 	return a.maxY - a.minY
 }
 
+// getDepth calculates and returns the depth of the AABB by subtracting minZ from maxZ.
 func (a *AABB) getDepth() float64 {
 	return a.maxZ - a.minZ
 }
 
+// AABBNullNode represents a special constant used to indicate an uninitialized or null node in an AABB tree structure.
 const AABBNullNode = 0xffffffff
 
+// AABBNode represents a node in an Axis-Aligned Bounding Box (AABB) tree structure used for efficient spatial queries.
+// Each node contains AABB data, references to child nodes, parent node, and an object that implements the IAABB interface.
+// A null index is represented by a predefined constant, and it is used for nodes that do not have children or parents.
 type AABBNode struct {
 	aabb            *AABB
 	object          IAABB
@@ -108,6 +127,7 @@ type AABBNode struct {
 	nextNodeIndex   uint
 }
 
+// NewAABBNode creates and returns a new instance of AABBNode, initializing its fields with default values.
 func NewAABBNode() *AABBNode {
 	node := &AABBNode{
 		aabb:            &AABB{},
@@ -120,10 +140,16 @@ func NewAABBNode() *AABBNode {
 	return node
 }
 
+// isLeaf checks if the current node is a leaf node by verifying if it has no left child. Returns true if leaf, false otherwise.
 func (a *AABBNode) isLeaf() bool {
 	return a.leftNodeIndex == AABBNullNode
 }
 
+// AABBTree represents a dynamic AABB tree used for spatial partitioning and collision detection.
+//
+// This structure maintains a set of nodes, each containing an Axis-Aligned Bounding Box (AABB) and associated object.
+// It supports efficient insertion, removal, and updating of objects, as well as querying for potential overlaps.
+// The tree dynamically resizes as needed and optimizes its structure for performance.
 type AABBTree struct {
 	objectNodeIndexMap map[IAABB]uint
 	nodes              []*AABBNode
@@ -134,6 +160,7 @@ type AABBTree struct {
 	growthSize         uint
 }
 
+// NewAABBTree creates and initializes a new AABBTree with the specified initial node capacity and growth size.
 func NewAABBTree(initialSize uint) *AABBTree {
 	t := &AABBTree{
 		rootNodeIndex:      AABBNullNode,
@@ -157,6 +184,8 @@ func NewAABBTree(initialSize uint) *AABBTree {
 	return t
 }
 
+// allocateNode reserves and initializes a node from the free list or expands the node capacity if necessary.
+// It returns the index of the allocated node and a reference to the node itself.
 func (a *AABBTree) allocateNode() (uint, *AABBNode) {
 	if a.nextFreeNodeIndex == AABBNullNode {
 		//assert(a.allocatedNodeCount == a.nodeCapacity)
@@ -186,6 +215,7 @@ func (a *AABBTree) allocateNode() (uint, *AABBNode) {
 	return nodeIndex, allocatedNode
 }
 
+// deallocateNode releases a node by marking it as free and linking it to the free list for reuse.
 func (a *AABBTree) deallocateNode(nodeIndex uint) {
 	if len(a.nodes) == 0 {
 		return
@@ -199,6 +229,7 @@ func (a *AABBTree) deallocateNode(nodeIndex uint) {
 	}
 }
 
+// InsertObject inserts the given object into the AABBTree, associating it with a new node and updating the structure.
 func (a *AABBTree) InsertObject(object IAABB) {
 	nodeIndex, node := a.allocateNode()
 	node.object = object
@@ -208,6 +239,7 @@ func (a *AABBTree) InsertObject(object IAABB) {
 	a.objectNodeIndexMap[object] = nodeIndex
 }
 
+// RemoveObject removes the specified object from the AABB tree and deallocates its corresponding node.
 func (a *AABBTree) RemoveObject(object IAABB) {
 	if nodeIndex, ok := a.objectNodeIndexMap[object]; ok {
 		a.removeLeaf(nodeIndex)
@@ -216,12 +248,14 @@ func (a *AABBTree) RemoveObject(object IAABB) {
 	}
 }
 
+// UpdateObject updates the AABB of an object if it exists in the tree by recalculating its corresponding leaf.
 func (a *AABBTree) UpdateObject(object IAABB) {
 	if nodeIndex, ok := a.objectNodeIndexMap[object]; ok {
 		a.updateLeaf(nodeIndex, object.GetAABB())
 	}
 }
 
+// QueryOverlaps returns all objects in the AABB tree that overlap with the given object's AABB, excluding the object itself.
 func (a *AABBTree) QueryOverlaps(object IAABB) []IAABB {
 	var overlaps []IAABB
 
@@ -253,6 +287,7 @@ func (a *AABBTree) QueryOverlaps(object IAABB) []IAABB {
 	return overlaps
 }
 
+// insertLeaf inserts a new leaf node into the AABB tree at the optimal position based on surface area and depth heuristics.
 func (a *AABBTree) insertLeaf(leafNodeIndex uint) {
 	// make sure we're inserting a new leaf
 	//assert(a.nodes[leafNodeIndex].parentNodeIndex == AABBNullNode)
@@ -348,6 +383,7 @@ func (a *AABBTree) insertLeaf(leafNodeIndex uint) {
 	a.fixUpwardsTree(treeNodeIndex)
 }
 
+// removeLeaf removes a leaf node from the AABBTree and adjusts the tree structure accordingly, ensuring it remains balanced.
 func (a *AABBTree) removeLeaf(leafNodeIndex uint) {
 	// if the leaf is the root then we can just clear the root pointer and return
 	if leafNodeIndex == a.rootNodeIndex {
@@ -392,6 +428,7 @@ func (a *AABBTree) removeLeaf(leafNodeIndex uint) {
 	leafNode.parentNodeIndex = AABBNullNode
 }
 
+// updateLeaf updates the AABB of a leaf node and reinserts it into the tree if it has changed.
 func (a *AABBTree) updateLeaf(leafNodeIndex uint, newAaab *AABB) {
 	node := a.nodes[leafNodeIndex]
 
@@ -407,6 +444,7 @@ func (a *AABBTree) updateLeaf(leafNodeIndex uint, newAaab *AABB) {
 	a.insertLeaf(leafNodeIndex)
 }
 
+// fixUpwardsTree updates nodes upwards from the given index, merging AABBs and recalculating bounding volumes.
 func (a *AABBTree) fixUpwardsTree(treeNodeIndex uint) {
 	for treeNodeIndex != AABBNullNode {
 		treeNode := a.nodes[treeNodeIndex]

@@ -21,6 +21,10 @@ import (
 	"unicode"
 )
 
+// stateUndefined represents an undefined state in the authentication process.
+// stateUsernameRequired indicates that a username is required for authentication.
+// statePasswordRequired indicates that a password is required for authentication.
+// stateAuthenticated represents a successful authentication state.
 const (
 	stateUndefined        = iota
 	stateUsernameRequired = iota
@@ -28,17 +32,22 @@ const (
 	stateAuthenticated    = iota
 )
 
+// usernamePrompt is the prompt text displayed when asking for the username.
+// passwordPrompt is the prompt text displayed when asking for the password.
+// maxPasswordRetry defines the maximum number of password retry attempts allowed.
 const (
 	usernamePrompt   = "Username: "
 	passwordPrompt   = "Password: "
 	maxPasswordRetry = 3
 )
 
+// IExecutor defines an interface for executing commands and handling autocomplete suggestions in a shell environment.
 type IExecutor interface {
 	ExecCommand(line string) (bool, error)
 	ExecSuggestion(in string, cursor int, count int) (int, bool)
 }
 
+// Shell defines a command-line interface entity with support for input management, authentication, rendering, and history.
 type Shell struct {
 	current         []rune
 	pos             int
@@ -57,6 +66,7 @@ type Shell struct {
 	auth            interfaces.IAuthenticator
 }
 
+// NewShell initializes and returns a new instance of *Shell configured with dependencies and initial settings.
 func NewShell(auth interfaces.IAuthenticator, render interfaces.IRender, executor IExecutor, prompt string, autosave bool) *Shell {
 	c := &Shell{
 		history:       NewHistoryHandler(128, autosave),
@@ -74,6 +84,7 @@ func NewShell(auth interfaces.IAuthenticator, render interfaces.IRender, executo
 	return c
 }
 
+// KeyEvent handles keyboard inputs based on the provided key type and key value, executing corresponding actions.
 func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) bool {
 	ret := false
 	switch kind {
@@ -100,14 +111,17 @@ func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) bool {
 	return ret
 }
 
+// ClearHistory clears the shell's command history by invoking the Clear method on the history handler.
 func (c *Shell) ClearHistory() {
 	c.history.Clear()
 }
 
+// GetHistoryAtPos retrieves the history entry at the specified index. Returns the entry and a boolean indicating success.
 func (c *Shell) GetHistoryAtPos(idx int) (string, bool) {
 	return c.history.GetHistoryAtPos(idx)
 }
 
+// GetHistory retrieves the current history of commands executed in the shell as a formatted string.
 func (c *Shell) GetHistory() string {
 	out := ""
 	for n, x := range c.history.GetHistory() {
@@ -117,16 +131,19 @@ func (c *Shell) GetHistory() string {
 	return out
 }
 
+// SetHistoryDefault sets the default history entry to the specified string value, replacing any existing default entry.
 func (c *Shell) SetHistoryDefault(data string) {
 	c.history.SetDefault(data)
 }
 
+// NextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
 func (c *Shell) NextLine() {
 	c.resetBuffer()
 	c.render.WriteColor(c.render.EOL(), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 	c.render.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
+// Redraw refreshes the current shell display with the given line, updates internal state, and re-renders the prompt and line.
 func (c *Shell) Redraw(line string) {
 	c.current = []rune(line)
 	c.pos = len(c.current)
@@ -135,6 +152,7 @@ func (c *Shell) Redraw(line string) {
 	c.render.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
+// cursorPressed handles cursor navigation events based on the given CursorCodeDef.
 func (c *Shell) cursorPressed(code interfaces.CursorCodeDef) {
 	switch code {
 	case interfaces.CursorUpDef:
@@ -159,6 +177,7 @@ func (c *Shell) cursorPressed(code interfaces.CursorCodeDef) {
 	}
 }
 
+// enterPressed handles the Enter key press event, processes the input based on the current shell state, and updates the state accordingly.
 func (c *Shell) enterPressed() bool {
 	buffer := string(c.current)
 	quit := false
@@ -200,6 +219,7 @@ func (c *Shell) enterPressed() bool {
 	return quit
 }
 
+// tabPressed handles tab key events, providing intelligent autocompletion based on current input and command context.
 func (c *Shell) tabPressed() {
 	if c.state != stateAuthenticated {
 		return
@@ -221,6 +241,7 @@ func (c *Shell) tabPressed() {
 	}
 }
 
+// keyPressed processes a printable key input and updates the current input buffer, cursor position, and visual rendering.
 func (c *Shell) keyPressed(key rune) {
 	if unicode.IsPrint(key) {
 		if c.pos < 0 {
@@ -252,6 +273,7 @@ func (c *Shell) keyPressed(key rune) {
 	}
 }
 
+// setUsernameRequiredState transitions the Shell into a state where the username is required and disables history.
 func (c *Shell) setUsernameRequiredState() {
 	c.echo = true
 	c.prompt = usernamePrompt
@@ -259,6 +281,7 @@ func (c *Shell) setUsernameRequiredState() {
 	c.state = stateUsernameRequired
 }
 
+// setPasswordRequiredState sets the shell state to require a password, disables history, hides input echo, and sets the prompt to "Password:".
 func (c *Shell) setPasswordRequiredState() {
 	c.echo = false
 	c.prompt = passwordPrompt
@@ -266,6 +289,7 @@ func (c *Shell) setPasswordRequiredState() {
 	c.state = statePasswordRequired
 }
 
+// setAuthenticatedState updates the shell to an authenticated state, enabling command history and setting the default prompt.
 func (c *Shell) setAuthenticatedState() {
 	c.echo = true
 	c.prompt = c.defaultPrompt
@@ -273,6 +297,7 @@ func (c *Shell) setAuthenticatedState() {
 	c.state = stateAuthenticated
 }
 
+// textBackspace removes the character at the current cursor position and updates the Shell state accordingly.
 func (c *Shell) textBackspace() {
 	if c.pos > 0 {
 		c.pos--
@@ -287,6 +312,7 @@ func (c *Shell) textBackspace() {
 	}
 }
 
+// textCancel removes the character at the current cursor position and updates the display if echo mode is enabled.
 func (c *Shell) textCancel() {
 	if c.pos >= 0 {
 		c.current = removeAtPos(c.current, c.pos)
@@ -300,6 +326,7 @@ func (c *Shell) textCancel() {
 	}
 }
 
+// resetBuffer clears the current input buffer by resetting it to nil and setting the buffer position to zero.
 func (c *Shell) resetBuffer() {
 	c.current = nil
 	c.pos = 0

@@ -20,6 +20,7 @@ import (
 	"math"
 )
 
+// Plotter is responsible for rendering graph-like plots based on given series and configuration parameters.
 type Plotter struct {
 	maximum   float64
 	minimum   float64
@@ -39,6 +40,7 @@ type Plotter struct {
 	Column int
 }
 
+// NewPlotter creates and initializes a new Plotter instance with the specified width and height.
 func NewPlotter(w int, h int) *Plotter {
 	return &Plotter{
 		ratio:     1,
@@ -49,6 +51,7 @@ func NewPlotter(w int, h int) *Plotter {
 	}
 }
 
+// minMaxFloat64Slice calculates and returns the minimum and maximum values of a slice of float64 numbers.
 func (p *Plotter) minMaxFloat64Slice(v []float64) (min, max float64) {
 	min = math.Inf(1)
 	max = math.Inf(-1)
@@ -66,6 +69,7 @@ func (p *Plotter) minMaxFloat64Slice(v []float64) (min, max float64) {
 	return
 }
 
+// round rounds a given float64 input to the nearest whole number based on its decimal value.
 func (p *Plotter) round(input float64) float64 {
 	if math.IsNaN(input) {
 		return math.NaN()
@@ -85,10 +89,12 @@ func (p *Plotter) round(input float64) float64 {
 	return rounded * sign
 }
 
+// linearInterpolate performs linear interpolation between two points, returning the value at a specified ratio (`atPoint`).
 func (p *Plotter) linearInterpolate(before, after, atPoint float64) float64 {
 	return before + (after-before)*atPoint
 }
 
+// interpolateArray performs linear interpolation on the input data to generate a new array with the specified width.
 func (p *Plotter) interpolateArray(data []float64, width int) []float64 {
 	var interpolatedData []float64
 	springFactor := float64(len(data)-1) / float64(width-1)
@@ -111,6 +117,7 @@ func (p *Plotter) interpolateArray(data []float64, width int) []float64 {
 	return interpolatedData
 }
 
+// Setup initializes the Plotter with a data series, input minimum, and input maximum values.
 func (p *Plotter) Setup(series []float64, inputMinimum float64, inputMaximum float64) {
 	if len(series) == 0 {
 		return
@@ -174,6 +181,7 @@ func (p *Plotter) Setup(series []float64, inputMinimum float64, inputMaximum flo
 	p.Column = len(p.series) + p.offset
 }
 
+// Draw visualizes the data series onto the given ISurface implementation using graphical or textual elements.
 func (p *Plotter) Draw(surface interfaces.ISurface) {
 	if len(p.series) == 0 {
 		return

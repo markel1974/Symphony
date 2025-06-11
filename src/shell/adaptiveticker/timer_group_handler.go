@@ -14,11 +14,13 @@
 
 package adaptiveticker
 
+// TimerGroupHandler represents a collection of TimerHandler instances grouped by a shared deadline for efficient processing.
 type TimerGroupHandler struct {
 	deadline  int64
 	container []*TimerHandler
 }
 
+// NewGroupEvent creates a new TimerGroupHandler initialized with the given TimerHandler and sets its deadline.
 func NewGroupEvent(event *TimerHandler) *TimerGroupHandler {
 	g := &TimerGroupHandler{
 		deadline: event.deadline,
@@ -28,6 +30,7 @@ func NewGroupEvent(event *TimerHandler) *TimerGroupHandler {
 	return g
 }
 
+// Add appends a TimerHandler event to the container within the TimerGroupHandler.
 func (g *TimerGroupHandler) Add(event *TimerHandler) {
 	g.container = append(g.container, event)
 }

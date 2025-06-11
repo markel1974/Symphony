@@ -23,13 +23,16 @@ import (
 	"github.com/markel1974/c64emu/src/shell/interfaces"
 )
 
+// Root represents the top-level structure used to build and organize CLI command hierarchies.
 type Root struct {
 }
 
+// NewRoot creates and returns a new instance of the Root structure.
 func NewRoot() *Root {
 	return &Root{}
 }
 
+// Build constructs and returns two command trees, coreC and root, initialized with their respective subcommands and functionality.
 func (t *Root) Build(bin *cli.Command) (*cli.Command, *cli.Command) {
 	sbinRun := func(task interfaces.ITask, args []string) error {
 		return nil

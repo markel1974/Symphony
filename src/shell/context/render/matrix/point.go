@@ -14,11 +14,13 @@
 
 package matrix
 
+// Point represents a 2D coordinate with x and y float64 values.
 type Point struct {
 	x float64
 	y float64
 }
 
+// NewPointFloat creates a new Point instance with specified x and y float64 coordinates.
 func NewPointFloat(x float64, y float64) Point {
 	return Point{
 		x: x,
@@ -26,36 +28,44 @@ func NewPointFloat(x float64, y float64) Point {
 	}
 }
 
+// AddTo modifies the current point by adding the specified x and y values to its coordinates.
 func (p *Point) AddTo(x float64, y float64) {
 	p.x += x
 	p.y += y
 }
 
+// AddToX adds the given value to the x coordinate of the Point.
 func (p *Point) AddToX(x float64) {
 	p.x += x
 }
 
+// AddToY adds the specified value to the y-coordinate of the Point.
 func (p *Point) AddToY(y float64) {
 	p.y += y
 }
 
+// MoveTo repositions the Point to the specified x and y coordinates.
 func (p *Point) MoveTo(x float64, y float64) {
 	p.x = x
 	p.y = y
 }
 
+// MoveToX updates the x-coordinate of the Point to the specified value.
 func (p *Point) MoveToX(x float64) {
 	p.x = x
 }
 
+// MoveToY sets the y-coordinate of the Point to the specified value.
 func (p *Point) MoveToY(y float64) {
 	p.y = y
 }
 
+// GetX returns the x-coordinate of the Point.
 func (p *Point) GetX() float64 {
 	return p.x
 }
 
+// GetY returns the y-coordinate of the Point as a float64.
 func (p *Point) GetY() float64 {
 	return p.y
 }

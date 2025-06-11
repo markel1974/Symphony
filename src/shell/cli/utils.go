@@ -27,15 +27,19 @@ import (
 // Set this to true to enable it.
 //var EnablePrefixMatching = false
 
+// trimRightSpace removes all trailing whitespace characters from the input string and returns the modified string.
 func trimRightSpace(s string) string {
 	return strings.TrimRightFunc(s, unicode.IsSpace)
 }
 
+// rPad right-pads the input string 's' with spaces to match the specified 'padding' length.
 func rPad(s string, padding int) string {
 	t := fmt.Sprintf("%%-%ds", padding)
 	return fmt.Sprintf(t, s)
 }
 
+// levenshteinDistance computes the Levenshtein distance between two strings s and s2.
+// If ignoreCase is true, the comparison is case-insensitive.
 func levenshteinDistance(s string, s2 string, ignoreCase bool) int {
 	if ignoreCase {
 		s = strings.ToLower(s)
@@ -71,7 +75,7 @@ func levenshteinDistance(s string, s2 string, ignoreCase bool) int {
 	return d[len(s)][len(s2)]
 }
 
-// argsMinusFirstX removes the first occurrence of the string x from the slice args and returns the resulting slice.
+// argsMinusFirstX removes the first occurrence of the string x from the args slice and returns the modified slice.
 func argsMinusFirstX(args []string, x string) []string {
 	for i, y := range args {
 		if x == y {

@@ -14,6 +14,9 @@
 
 package shell
 
+// insertAtPos inserts a rune `key` at the specified index `idx` in the slice `src`, shifting elements as needed.
+// If `idx` is out of bounds, the slice remains unchanged.
+// Returns the updated slice.
 func insertAtPos(src []rune, key rune, idx int) []rune {
 	if idx < len(src) {
 		last := len(src) - 1
@@ -24,6 +27,7 @@ func insertAtPos(src []rune, key rune, idx int) []rune {
 	return src
 }
 
+// removeAtPos removes the element at the specified index from a slice of runes and returns the updated slice.
 func removeAtPos(src []rune, idx int) []rune {
 	if idx < len(src) {
 		copy(src[idx:], src[idx+1:])

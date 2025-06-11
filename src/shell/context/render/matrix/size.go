@@ -14,19 +14,23 @@
 
 package matrix
 
+// Size represents a 2D dimension with width (w) and height (h) as float64 values.
 type Size struct {
 	w float64
 	h float64
 }
 
+// NewSize creates and returns a new Size instance with the specified width (w) and height (h).
 func NewSize(w float64, h float64) Size {
 	return Size{w: w, h: h}
 }
 
+// GetWidth returns the width value of the Size instance as a float64.
 func (s *Size) GetWidth() float64 {
 	return s.w
 }
 
+// GetHeight returns the height value of the Size instance.
 func (s *Size) GetHeight() float64 {
 	return s.h
 }

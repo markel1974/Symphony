@@ -18,11 +18,53 @@ import (
 	"strconv"
 )
 
+// IOCode represents an integer code used for defining input/output operations or control commands.
 type IOCode int
 
+// byteToCode maps a byte value to its corresponding IOCode representation.
 var byteToCode map[byte]IOCode
+
+// codeToByte maps IOCode values to their corresponding byte representations for protocol command handling.
 var codeToByte map[IOCode]byte
 
+// NUL represents NULL or no operation.
+// ECHO represents the Echo operation.
+// SGA represents Suppress-go-ahead.
+// ST represents Status.
+// TM represents Timing mark.
+// BEL represents Bell.
+// BS represents Backspace.
+// HT represents Horizontal tab.
+// LF represents Line feed.
+// FF represents Form feed.
+// CR represents Carriage return.
+// TT represents Terminal type.
+// WS represents Window size.
+// TS represents Terminal speed.
+// RFC represents Remote flow control.
+// LM represents Line mode.
+// EV represents Environment variables.
+// SE represents End of sub negotiation parameters.
+// NOP represents No operation.
+// DM represents Data Mark, accompanied by a TCP Urgent notification.
+// BRK represents Break, or NVT character BRK.
+// IP represents Interrupt Process.
+// AO represents Abort Output.
+// AYT represents Are You There.
+// EC represents Erase Character.
+// EL represents Erase Line.
+// GA represents Go Ahead signal.
+// SB indicates sub negotiation of the indicated option.
+// WILL indicates a desire to begin or confirmation of performing the indicated option.
+// WONT indicates refusal or cessation of performing the indicated option.
+// DO indicates a request or confirmation expecting the other party to perform the indicated option.
+// DONT indicates a demand or confirmation the other party stops performing the indicated option.
+// IAC represents Interpret as Command.
+// CMP1 represents MCCP Compress.
+// CMP2 represents MCCP Compress2.
+// AARD represents Aardwolf MUD out of band communication.
+// ATCP represents Achaea Telnet Client Protocol.
+// GMCP represents Generic Mud Communication Protocol.
 const (
 	NUL  IOCode = iota // NULL, no operation
 	ECHO IOCode = iota // Echo
@@ -66,6 +108,7 @@ const (
 	GMCP IOCode = iota // Generic Mud Communication Protocol
 )
 
+// init initializes the mappings between byte values and IOCode enums for bidirectional lookup.
 func init() {
 	byteToCode = map[byte]IOCode{}
 	codeToByte = map[IOCode]byte{}
@@ -115,7 +158,7 @@ func init() {
 	}
 }
 
-// ToString
+// _ converts a slice of bytes into a string representation, converting each byte using ByteToCodeString and separating with spaces.
 func _(bytes []byte) string {
 	str := ""
 	for _, b := range bytes {
@@ -127,6 +170,7 @@ func _(bytes []byte) string {
 	return str
 }
 
+// ByteToCodeString converts a given byte to its corresponding code string representation or a fallback formatted string if not found.
 func ByteToCodeString(b byte) string {
 	code, found := byteToCode[b]
 	if !found {
@@ -135,6 +179,7 @@ func ByteToCodeString(b byte) string {
 	return CodeToString(code)
 }
 
+// CodeToString converts an IOCode value to its corresponding string representation. If not matched, returns an empty string.
 func CodeToString(code IOCode) string {
 	switch code {
 	case NUL:

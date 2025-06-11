@@ -6,6 +6,8 @@ import (
 	"math/rand"
 )
 
+// Entity represents a game object with physical properties and visual sprites.
+// It embeds Rect for positional and size-related attributes.
 type Entity struct {
 	Rect
 	Mass    float64
@@ -17,6 +19,7 @@ type Entity struct {
 	Gravity bool
 }
 
+// NewEntity creates a new Entity object with given position, mass, velocity, sprites, and optional starting index.
 func NewEntity(base rune, x int, y int, mass float64, vx float64, vy float64, raw []string, startIdx int) *Entity {
 	var sprites []*Sprite
 	var width float64 = 0
@@ -58,6 +61,7 @@ func NewEntity(base rune, x int, y int, mass float64, vx float64, vy float64, ra
 	return a
 }
 
+// Draw renders the current frame of the Entity's sprite onto the provided ISurface instance.
 func (e *Entity) Draw(surface interfaces.ISurface) {
 	if len(e.sprites) == 0 {
 		return
@@ -73,14 +77,17 @@ func (e *Entity) Draw(surface interfaces.ISurface) {
 	}
 }
 
+// Next advances the index of the current sprite in the Entity by incrementing it.
 func (e *Entity) Next() {
 	e.index++
 }
 
+// HasCollision checks whether the current entity intersects or collides with another entity based on their rectangular bounds.
 func (e *Entity) HasCollision(obj2 *Entity) bool {
 	return e.rectIntersect(e.point.x, e.point.y, e.size.w, e.size.h, obj2.point.x, obj2.point.y, obj2.size.w, obj2.size.h)
 }
 
+// rectIntersect determines whether two rectangles intersect, given their positions and dimensions as input parameters.
 func (e *Entity) rectIntersect(x1 float64, y1 float64, w1 float64, h1 float64, x2 float64, y2 float64, w2 float64, h2 float64) bool {
 	if x2 > w1+x1 || x1 > w2+x2 || y2 > h1+y1 || y1 > h2+y2 {
 		return false
@@ -88,6 +95,8 @@ func (e *Entity) rectIntersect(x1 float64, y1 float64, w1 float64, h1 float64, x
 	return true
 }
 
+// DoPhysics calculates the collision response between two entities, updating their velocities accordingly.
+// Returns true if the entities are moving away from each other post-collision, otherwise returns false.
 func (e *Entity) DoPhysics(obj2 *Entity) bool {
 	away := false
 	if e.Bounce {
@@ -120,6 +129,8 @@ func (e *Entity) DoPhysics(obj2 *Entity) bool {
 	return away
 }
 
+// getDistance calculates the Euclidean distance between two points (x1, y1) and (x2, y2).
+// If the distance is zero, it returns a small value to avoid division by zero scenarios.
 func (e *Entity) getDistance(x1 float64, y1 float64, x2 float64, y2 float64) float64 {
 	d := math.Sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1))
 	if d == 0 {

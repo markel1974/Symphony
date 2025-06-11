@@ -5,15 +5,15 @@ import (
 	"sync"
 )
 
-// UnknownId is a constant representing an invalid or uninitialized ID, typically used as a default or error value.
+// UnknownId is a constant representing an invalid or uninitialized identifier with a value of -1.
 const UnknownId = -1
 
-// IIds represents an interface that defines a method for setting an identifier for an object.
+// IIds represents an interface requiring a method to set an integer ID for implementing types.
 type IIds interface {
 	SetId(int)
 }
 
-// Ids manages a set of unique integer IDs with allocation, retrieval, and deallocation functionality.
+// Ids manages a pool of reusable integer IDs and their associated objects with thread-safe access.
 type Ids struct {
 	max     int
 	kv      map[int]*list.Element
@@ -22,9 +22,7 @@ type Ids struct {
 	lock    sync.RWMutex
 }
 
-// NewIds initializes and returns a new instance of Ids with a specified maximum capacity for unique identifiers.
-// If the provided max is less than or equal to zero, a default capacity of 1024 is used.
-// The returned Ids structure includes pre-initialized maps, lists, and free ID slices for managing identifiers efficiently.
+// NewIds initializes and returns a pointer to an Ids structure with a specified maximum capacity or a default of 1024.
 func NewIds(max int) *Ids {
 	if max <= 0 {
 		max = 1024
@@ -41,6 +39,7 @@ func NewIds(max int) *Ids {
 	}
 }
 
+// Set assigns a free ID to the provided object and stores it in the internal structures, returning true on success.
 func (a *Ids) Set(obj IIds) bool {
 	a.lock.Lock()
 	defer a.lock.Unlock()
@@ -57,7 +56,7 @@ func (a *Ids) Set(obj IIds) bool {
 	return true
 }
 
-// Get retrieves the element associated with the given id. It returns the element and true if found, otherwise nil and false.
+// Get retrieves an element by its ID from the map. Returns the element and true if found, otherwise nil and false.
 func (a *Ids) Get(id int) (IIds, bool) {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
@@ -68,8 +67,7 @@ func (a *Ids) Get(id int) (IIds, bool) {
 	return element.Value.(IIds), true
 }
 
-// Unset removes an object from the Ids collection, marks the id as free, and resets the object's id to UnknownId.
-// Returns true if the id was successfully removed; otherwise, returns false.
+// Unset removes an ID and its associated object, marking the ID as free and resetting the object's ID. Returns true on success.
 func (a *Ids) Unset(id int) bool {
 	a.lock.Lock()
 	defer a.lock.Unlock()
@@ -88,19 +86,21 @@ func (a *Ids) Unset(id int) bool {
 	return true
 }
 
-// Len returns the number of elements currently stored in the Ids structure. It is safe for concurrent use.
+// Len returns the number of elements currently stored in the Ids instance. It is safe for concurrent use.
 func (a *Ids) Len() int {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
 	return len(a.kv)
 }
 
-// Cap returns the maximum capacity of IDs that can be managed by the Ids structure.
+// Cap returns the maximum number of IDs that can be managed by the Ids instance.
 func (a *Ids) Cap() int {
 	return a.max
 }
 
-// Range iterates over all elements in the Ids list, invoking the provided function for each element until it returns false.
+// Range iterates over all elements in the list, applying the provided function to each element.
+// Stops iteration if the function returns false.
+// The method provides read-locking to ensure thread-safety.
 func (a *Ids) Range(f func(obj IIds) bool) {
 	a.lock.RLock()
 	defer a.lock.RUnlock()
@@ -111,7 +111,7 @@ func (a *Ids) Range(f func(obj IIds) bool) {
 	}
 }
 
-// All returns a slice of all elements currently stored in the Ids list, thread-safe for concurrent access.
+// All returns a slice of all IIds elements currently stored in the Ids structure. It is thread-safe for concurrent use.
 func (a *Ids) All() []IIds {
 	a.lock.RLock()
 	defer a.lock.RUnlock()

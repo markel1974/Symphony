@@ -18,6 +18,7 @@ import (
 	"time"
 )
 
+// getEpochMs returns the current time in milliseconds since the Unix epoch.
 func getEpochMs() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }

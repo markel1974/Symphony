@@ -16,6 +16,8 @@ package adaptiveticker
 
 import "sync"
 
+// Session represents a controlled lifecycle with acquire and release callbacks.
+// It ensures thread-safe operations using a mutex and tracks a timestamp.
 type Session struct {
 	mutex     sync.Mutex
 	now       int64
@@ -23,6 +25,7 @@ type Session struct {
 	releaseFn []func()
 }
 
+// NewSession creates and returns a new Session instance with provided acquire and release function slices.
 func NewSession(acquireFn []func(), releaseFn []func()) *Session {
 	return &Session{
 		acquireFn: acquireFn,
@@ -30,6 +33,7 @@ func NewSession(acquireFn []func(), releaseFn []func()) *Session {
 	}
 }
 
+// Acquire locks the session, updates the current timestamp, and executes all registered acquisition functions, if any.
 func (s *Session) Acquire() {
 	s.mutex.Lock()
 	s.now = getEpochMs()
@@ -40,6 +44,7 @@ func (s *Session) Acquire() {
 	}
 }
 
+// Release unlocks the Session's mutex and executes all registered release functions in the releaseFn slice, if any exist.
 func (s *Session) Release() {
 	if s.releaseFn != nil {
 		for _, fn := range s.releaseFn {
@@ -49,6 +54,7 @@ func (s *Session) Release() {
 	s.mutex.Unlock()
 }
 
+// Now returns the current epoch time in milliseconds stored in the session.
 func (s *Session) Now() int64 {
 	return s.now
 }

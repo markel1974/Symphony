@@ -21,11 +21,14 @@ import (
 	"time"
 )
 
+// maxEventsPerSecond defines the maximum number of events allowed per second for rate limiting.
+// adaptiveTickerMaxQueueLen specifies the maximum length of the queue for adaptive ticking mechanisms.
 const (
 	maxEventsPerSecond        = 10
 	adaptiveTickerMaxQueueLen = 1024
 )
 
+// AdaptiveTicker manages scheduled events, handling their creation, execution, removal, and expiration efficiently.
 type AdaptiveTicker struct {
 	container   list.List
 	timer       *time.Timer
@@ -43,6 +46,7 @@ type AdaptiveTicker struct {
 	statsExpired      int64
 }
 
+// NewAdaptiveTicker initializes and returns a pointer to an AdaptiveTicker with default configurations and event loop setup.
 func NewAdaptiveTicker() *AdaptiveTicker {
 	a := &AdaptiveTicker{
 		timer:       nil,
@@ -60,6 +64,7 @@ func NewAdaptiveTicker() *AdaptiveTicker {
 	return a
 }
 
+// Create initializes a new TimerHandler, assigns it an ID, and posts a create event to the message channel.
 func (a *AdaptiveTicker) Create(target chan *TimerHandler, event interface{}, first int64, interval int64, count int64) int {
 	var current = NewTimerHandler(target, event, first, interval, count, a.minInterval)
 
@@ -80,6 +85,7 @@ func (a *AdaptiveTicker) Create(target chan *TimerHandler, event interface{}, fi
 	return current.id
 }
 
+// Remove deletes the specified IDs from the AdaptiveTicker. Returns true if all IDs were successfully removed, false otherwise.
 func (a *AdaptiveTicker) Remove(tids []int) bool {
 	var removed []int
 
@@ -101,6 +107,7 @@ func (a *AdaptiveTicker) Remove(tids []int) bool {
 	return len(tids) == len(removed)
 }
 
+// Quit gracefully stops the AdaptiveTicker by setting the quit flag and emitting a quit event to the message channel.
 func (a *AdaptiveTicker) Quit() {
 	var emit = false
 	a.lock.Lock()
@@ -116,6 +123,7 @@ func (a *AdaptiveTicker) Quit() {
 	}
 }
 
+// doExpire checks for expired timers and handles their processing, returning a slice of expired TimerHandler instances.
 func (a *AdaptiveTicker) doExpire(now int64) []*TimerHandler {
 	var expired []*TimerHandler
 
@@ -152,6 +160,9 @@ func (a *AdaptiveTicker) doExpire(now int64) []*TimerHandler {
 	return expired
 }
 
+// doHeadRun schedules the next timer event execution based on the current time and the nearest deadline in the container.
+// It resets or creates a new timer as needed to trigger the expiration event at the appropriate time.
+// If the container is empty or a run is already scheduled (runDeadline > 0), the method returns immediately.
 func (a *AdaptiveTicker) doHeadRun(now int64) {
 	if a.container.Len() == 0 {
 		return
@@ -189,6 +200,8 @@ func (a *AdaptiveTicker) doHeadRun(now int64) {
 	}
 }
 
+// doAdd adds a TimerHandler to the appropriate TimerGroupHandler based on its deadline and the provided current time.
+// It ensures the TimerHandler is organized into a sorted container for efficient processing of expiration events.
 func (a *AdaptiveTicker) doAdd(now int64, event *TimerHandler) {
 	event.Prepare(now)
 
@@ -239,6 +252,7 @@ func (a *AdaptiveTicker) doAdd(now int64, event *TimerHandler) {
 	//fmt.Println("ADDING", event.id, event.interval, event.deadline, "$ ITERATION", count)
 }
 
+// doQuit stops the timer, resets the run deadline to 0, and clears the container.
 func (a *AdaptiveTicker) doQuit() {
 	if a.timer != nil {
 		a.timer.Stop()
@@ -248,6 +262,8 @@ func (a *AdaptiveTicker) doQuit() {
 	a.container.Init()
 }
 
+// eventLoop continuously handles incoming events from the messages channel and processes them based on their event type.
+// It spawns a goroutine to manage event handling and terminates when a quit event is received.
 func (a *AdaptiveTicker) eventLoop() {
 	go func() {
 		for {
@@ -269,17 +285,20 @@ func (a *AdaptiveTicker) eventLoop() {
 	}()
 }
 
+// createEventHandler processes a createEvent by adding its handler and scheduling the next timer execution.
 func (a *AdaptiveTicker) createEventHandler(event *createEvent) {
 	var now = getEpochMs()
 	a.doAdd(now, event.handler)
 	a.doHeadRun(now)
 }
 
+// removeEventHandler is a method used to manage the removal of event handlers and update the ticker's state accordingly.
 func (a *AdaptiveTicker) removeEventHandler() {
 	var now = getEpochMs()
 	a.doHeadRun(now)
 }
 
+// expireEventHandler processes expired timer events by determining expired handlers, rescheduling, and posting events.
 func (a *AdaptiveTicker) expireEventHandler() {
 	var now = getEpochMs()
 	var expired = a.doExpire(now)
@@ -292,11 +311,13 @@ func (a *AdaptiveTicker) expireEventHandler() {
 	}
 }
 
+// quitEventHandler handles the quit event by performing cleanup operations and ensuring the ticker stops gracefully.
 func (a *AdaptiveTicker) quitEventHandler() {
 	//var now = getEpochMs()
 	a.doQuit()
 }
 
+// computeEps updates internal statistics based on expired events per second and prints aggregated data when the second changes.
 func (a *AdaptiveTicker) computeEps(now int64, expired int64) {
 	var epsSecond = now / 1000
 	if epsSecond == a.statsEpsSecond {

@@ -19,28 +19,36 @@ import (
 	"strings"
 )
 
+// spriteAttributes defines the foreground color, background color, and character for a sprite component.
 type spriteAttributes struct {
 	fg  interfaces.ColorDef
 	bg  interfaces.ColorDef
 	cur rune
 }
 
+// GetFg retrieves the foreground color (fg) of the spriteAttributes instance as a ColorDef value.
 func (s *spriteAttributes) GetFg() interfaces.ColorDef {
 	return s.fg
 }
+
+// GetBg retrieves the background color definition of the spriteAttributes instance.
 func (s *spriteAttributes) GetBg() interfaces.ColorDef {
 	return s.bg
 }
+
+// GetCur returns the current rune value stored in the spriteAttributes.
 func (s *spriteAttributes) GetCur() rune {
 	return s.cur
 }
 
+// Sprite represents a 2D visual object composed of attributes, size, and a base character.
 type Sprite struct {
 	attr [][]spriteAttributes
 	size Size
 	base rune
 }
 
+// NewSprite creates a new Sprite instance from a raw string and a base rune. If base is -1, the default rune '▓' is used.
 func NewSprite(raw string, base rune) *Sprite {
 	if base == -1 {
 		base = '▓'
@@ -53,6 +61,7 @@ func NewSprite(raw string, base rune) *Sprite {
 	return s
 }
 
+// setup initializes the sprite attributes and dimensions based on the provided string input.
 func (s *Sprite) setup(raw string) {
 	var fg = interfaces.ColorNoneDef
 	var bg = interfaces.ColorNoneDef

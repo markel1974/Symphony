@@ -7,10 +7,10 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
-	"github.com/markel1974/c64emu/src/shell"
-	"github.com/markel1974/c64emu/src/shell/authenticator"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/servers"
+	"github.com/markel1974/c64emu/src/shell/servers/authenticator"
 	"github.com/markel1974/c64emu/src/version"
 	"log"
 	"os"
@@ -119,7 +119,7 @@ func createShell(target *cli.Command) error {
 	fmt.Println("port", port)
 	fmt.Println("secure", secure)
 	fmt.Println("user", user)
-	k := shell.NewServer(secure, auth, port, false)
+	k := servers.NewServer(secure, auth, port, false)
 	k.SetPrompt(prompt)
 	k.SetTemplate(t)
 	go func() {

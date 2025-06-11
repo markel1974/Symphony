@@ -20,7 +20,7 @@ import (
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"github.com/markel1974/c64emu/src/shell/context"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
-	"github.com/markel1974/c64emu/src/shell/telnet/session"
+	session2 "github.com/markel1974/c64emu/src/shell/servers/telnet/session"
 	"github.com/markel1974/c64emu/src/shell/terminal"
 	"log"
 	"net"
@@ -59,16 +59,16 @@ func (r *Server) handleConnection(c net.Conn) {
 		}
 	}()
 
-	telnetSession := session.NewTelnet(c)
+	telnetSession := session2.NewTelnet(c)
 
 	ctx := context.NewContext(r.ticker, telnetSession, telnetSession, r.auth, r.template, r.prompt, r.autosave)
 	ioAdapter := interfaces.IInputOutput(ctx)
 	term := r.factory.Create("VT100", ioAdapter, -1)
 	ctx.Setup(term)
 
-	telnetSession.SetListenFunc(func(code session.IOCode, data []byte) {
+	telnetSession.SetListenFunc(func(code session2.IOCode, data []byte) {
 		switch code {
-		case session.WS:
+		case session2.WS:
 			if len(data) != 4 {
 				log.Println("Malformed window size data:", data)
 				return
@@ -78,7 +78,7 @@ func (r *Server) handleConnection(c net.Conn) {
 			height := int(255*data[2]) + int(data[3])
 			ctx.SetScreenSize(width, height)
 
-		case session.TT:
+		case session2.TT:
 			//c.terminal.SetTerminalType(string(data))
 
 		default:
