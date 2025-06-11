@@ -10,7 +10,7 @@ import (
 // Read retrieves the current byte from the disk at the cursor position of the active track.
 // Write writes a byte value to the current position on the active track of the disk.
 // Next retrieves the byte value at the next position without advancing the track cursor.
-// SetHeadHalfTrack updates the disk head to a specified half-track position and returns the track's length.
+// SetHeadHalfTrack updates the disk head to a specified half-track position.
 // TrackLen provides the length of the current track's data in bytes.
 // TrackSectors returns the total number of sectors present in the current disk track.
 // MicroSecPerByte calculates and returns the time required to process one byte on the current track in microseconds.
@@ -27,7 +27,7 @@ type IDisk interface {
 
 	Next() uint8
 
-	SetHeadHalfTrack(uint8) int
+	SetHeadHalfTrack(uint8) bool
 
 	TrackLen() int
 

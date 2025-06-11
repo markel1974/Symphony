@@ -21,15 +21,14 @@ import "github.com/markel1974/c64emu/src/hardware/c1541/disk"
 const (
 	syncByte         = 0xff
 	syncTolerance    = 5 // 3 or 5
-	headStep         = 35
-	headHalfStep     = headStep * 2 // headHalfStep represents the number of half-tracks the head can move, calculated as twice the value of headStep.
-	motorSpinUpDelay = 300_000      // 300ms per avviamento
-	stepDelay        = 3000         // 3ms per traccia (simula il motore passo-passo)
-	//rpm              = 300
-	//stepsPerSec  = 1_000_000
-	//usPerStep    = 1_000_000 / stepsPerSec
-	//degreesPerUs = (360.0 * float64(rpm)) / float64(60*1_000_000)
-	//degreesPerUs = float64(0.0018)
+	minHeadHalfStep  = 2
+	maxHeadHalfStep  = 72
+	motorSpinUpDelay = 300_000 // 300ms per avviamento
+	headActivation   = 1500
+	headInwardDelay  = headActivation + 1300 //2800
+	headOutwardDelay = headActivation + 1700 //3200
+
+	//headHalfStepDelay = 3000    // 3ms per traccia (simula il motore passo-passo)
 )
 
 type IMechanic interface {

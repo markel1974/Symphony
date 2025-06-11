@@ -17,6 +17,7 @@ type Async struct {
 	motor           bool
 	headPosCurrent  uint8
 	headPosRequired uint8
+	//headConsecutiveStep int
 	writing         bool
 	motorSpinUpTime int
 	headSeekTime    int
@@ -36,6 +37,7 @@ func NewAsync() *Async {
 		motor:           false,
 		headPosCurrent:  0,
 		headPosRequired: 2,
+		//headConsecutiveStep: 0,
 		writing:         false,
 		syncCounter:     0,
 		motorSpinUpTime: 0,
@@ -59,6 +61,7 @@ func (j *Async) Reset() {
 	j.dataWrite = notReady
 	j.dataRead = notReady
 	j.headPosRequired = 2
+	//j.headConsecutiveStep = 0
 	j.headPosCurrent = j.headPosRequired
 	j.disk.SetHeadHalfTrack(j.headPosCurrent)
 }
@@ -110,18 +113,23 @@ func (j *Async) Emulate() {
 
 	if j.headPosRequired != j.headPosCurrent {
 		headPos := j.headPosCurrent
+		var headSeekTime = 0
 		if j.headPosRequired > j.headPosCurrent {
 			headPos++
+			headSeekTime = headInwardDelay
 		} else {
 			headPos--
+			headSeekTime = headOutwardDelay
 		}
-		fmt.Printf("MOVE HEAD OLD %d NEW %d: %d\n", j.headPosCurrent, headPos, j.disk.MicroSecPerByte())
-		j.disk.SetHeadHalfTrack(headPos)
-		j.headPosCurrent = headPos
-		j.headSeekTime = stepDelay
-		j.dataRead = notReady
-		j.syncCounter = 0
-		return
+		fmt.Printf("ASYNC MOVE HEAD OLD %d NEW %d: %d\n", j.headPosCurrent, headPos, j.disk.MicroSecPerByte())
+		if j.disk.SetHeadHalfTrack(headPos) {
+			j.headPosCurrent = headPos
+			j.headSeekTime = headSeekTime
+			j.dataRead = notReady
+			j.syncCounter = 0
+			//j.headConsecutiveStep = 0
+			return
+		}
 	}
 
 	j.timeToNextByte--
@@ -217,18 +225,20 @@ func (j *Async) WriteProtectionState() uint8 {
 
 // MoveHeadOut moves the head outward by decrementing the position if it is greater than the minimum limit (2).
 func (j *Async) MoveHeadOut() {
-	if j.headPosRequired <= 2 {
-		return
-	}
 	j.headPosRequired--
+	//j.headConsecutiveStep++
+	//if j.headConsecutiveStep > 1 {
+	//	fmt.Println("TEST")
+	//}
 }
 
 // MoveHeadIn increments the head position by one step unless it is already at or beyond the maximum position.
 func (j *Async) MoveHeadIn() {
-	if j.headPosRequired >= headHalfStep {
-		return
-	}
 	j.headPosRequired++
+	//j.headConsecutiveStep++
+	//if j.headConsecutiveStep > 1 {
+	//	fmt.Println("TEST")
+	//}
 }
 
 /*

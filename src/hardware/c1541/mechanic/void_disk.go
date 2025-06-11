@@ -47,8 +47,8 @@ func (e *VoidDisk) Next() uint8 {
 // SetHeadHalfTrack sets the current head position to a specified half-track.
 // The input is a uint8 representing the desired half-track position.
 // Returns an integer indicating the result of the operation.
-func (e *VoidDisk) SetHeadHalfTrack(uint8) int {
-	return 0
+func (e *VoidDisk) SetHeadHalfTrack(uint8) bool {
+	return false
 }
 
 // MicroSecPerByte returns the number of microseconds required to process a single byte in the Void implementation.

@@ -75,12 +75,12 @@ func (g *Disk) Usable() bool {
 }
 
 // SetHeadHalfTrack sets the disk head to the specified half-track position and returns the length of the target track.
-// If the half-track is invalid, it logs an error and returns -1. The function also retains the cursor position on the track.
-func (g *Disk) SetHeadHalfTrack(halfTrack uint8) int {
+// If the half-track is invalid, it logs an error and returns -1.
+func (g *Disk) SetHeadHalfTrack(halfTrack uint8) bool {
 	track := halfTrack >> 1
 	if track >= uint8(len(g.tracks)) {
 		log.Printf("invalid half track: %d", halfTrack)
-		return -1
+		return false
 	}
 	//Simulate all track rotation
 	cursor := g.currentTrack.Cursor()
@@ -88,7 +88,7 @@ func (g *Disk) SetHeadHalfTrack(halfTrack uint8) int {
 
 	g.currentTrack = g.tracks[track]
 	g.currentTrack.Enter(cursor)
-	return g.currentTrack.Len()
+	return true
 }
 
 // TrackLen returns the length of the current track's data in bytes.

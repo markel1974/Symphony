@@ -126,24 +126,20 @@ func (j *Sync) WriteProtectionState() uint8 {
 
 // MoveHeadOut decreases the `headPosRequired` of the Mechanic by one step, ensuring it doesn't go below the minimum allowable position.
 func (j *Sync) MoveHeadOut() {
-	if j.headPos <= 2 {
-		return
-	}
-	j.headPos--
-	j.updateHeadPos(j.headPos)
+	j.updateHeadPos(j.headPos - 1)
 }
 
 // MoveHeadIn increments the head position of the Mechanic unless it has reached the maximum limit (headHalfStep).
 func (j *Sync) MoveHeadIn() {
-	if j.headPos >= headHalfStep {
-		return
-	}
-	j.headPos++
-	j.updateHeadPos(j.headPos)
+	j.updateHeadPos(j.headPos + 1)
 }
 
 // updateHeadPos adjusts the disk head position by setting the half-track and recalculating rotation intervals.
-func (j *Sync) updateHeadPos(headPos uint8) {
-	j.disk.SetHeadHalfTrack(headPos)
-	fmt.Printf("MOVE HEAD %d: %f\n", headPos/2, j.disk.MicroSecPerByte())
+func (j *Sync) updateHeadPos(headPos uint8) bool {
+	fmt.Printf("MOVE HEAD %d: %d\n", headPos/2, j.disk.MicroSecPerByte())
+	if j.disk.SetHeadHalfTrack(headPos) {
+		j.headPos = headPos
+		return true
+	}
+	return false
 }
