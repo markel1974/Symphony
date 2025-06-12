@@ -181,8 +181,7 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 
 	//TEST
 	g.keyMapper[pixels.MouseButton2] = func(p bool) {
-		b.HardwareButton(true, 1)
-		b.HardwareButton(false, 1)
+		b.HardwareButton(p, 1)
 	}
 
 	err := clipboard.Init()

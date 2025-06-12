@@ -145,6 +145,7 @@ func (f *Manager) HardwareButton(pressed bool, value uint8) {
 	}
 	if len(f.carts) == 1 {
 		f.carts[0].HardwareButton(pressed, value)
+		return
 	}
 	for _, cart := range f.carts {
 		cart.HardwareButton(pressed, value)
