@@ -119,9 +119,6 @@ func (s *Board) Mount(conn references.IBoardConnections) error {
 func (s *Board) Start() error {
 	cfg := s.GetFactory().GetConfig()
 	var err error
-	if s.emulation, err = s.rebuildEmulation(); err != nil {
-		return err
-	}
 	if err = s.iecSocket.CreatePeripherals(); err != nil {
 		return err
 	}
@@ -132,6 +129,9 @@ func (s *Board) Start() error {
 		if err = s.startPRG(prgData); err != nil {
 			return err
 		}
+	}
+	if s.emulation, err = s.rebuildEmulation(); err != nil {
+		return err
 	}
 	s.reset()
 	s.Print(os.Stdout, " ", true)
@@ -408,14 +408,16 @@ func (s *Board) rebuildEmulation() ([]func(), error) {
 	for _, v := range s.GetChildren() {
 		components[v.HardwareId()] = v
 	}
+	emulationCounter := 0
 	for _, x := range hardwareSequence {
 		if comp, ok := components[x]; ok {
+			emulationCounter++
 			if comp.EmulationRequired() {
 				emulation = append(emulation, comp.Emulate)
 			}
 		}
 	}
-	if len(emulation) != len(hardwareSequence) {
+	if emulationCounter != len(hardwareSequence) {
 		return nil, fmt.Errorf("emulation sequence is not complete")
 	}
 	return emulation, nil

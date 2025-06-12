@@ -132,6 +132,9 @@ func (f *Manager) Emulate() {
 }
 
 func (f *Manager) EmulationRequired() bool {
+	if len(f.emulate) == 0 {
+		return false
+	}
 	return true
 }
 
