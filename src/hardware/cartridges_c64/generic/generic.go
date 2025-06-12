@@ -157,6 +157,10 @@ func (c *CartridgeGeneric) applyConfig(ct references.CartridgeMode) {
 	c.intervals = v.IntervalLow | v.IntervalHigh
 }
 
+// HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.
+func (c *CartridgeGeneric) HardwareButton(pressed bool, value uint8) {
+}
+
 // Write attempts to write data to the cartridge at the specified interval and address. Returns true if writing is not allowed.
 func (c *CartridgeGeneric) Write(i references.RomInterval, addr uint16, data uint8) bool {
 	if (i & c.intervals) != 0 {

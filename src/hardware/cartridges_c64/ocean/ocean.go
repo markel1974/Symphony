@@ -78,6 +78,10 @@ func (c *CartridgeOcean) GetLoaderId() string {
 	return c.loaderId
 }
 
+// HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.
+func (c *CartridgeOcean) HardwareButton(pressed bool, value uint8) {
+}
+
 // Write attempts to write data to the cartridge at the specified address and interval. Returns true if the write is blocked.
 func (c *CartridgeOcean) Write(i references.RomInterval, addr uint16, data uint8) bool {
 	if i&c.intervals != 0 {

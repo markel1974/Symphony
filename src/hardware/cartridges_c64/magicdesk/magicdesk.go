@@ -70,6 +70,10 @@ func (c *CartridgeMagicDesk) GetLoaderId() string {
 	return c.loaderId
 }
 
+// HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.
+func (c *CartridgeMagicDesk) HardwareButton(pressed bool, value uint8) {
+}
+
 // Write attempts to write data to the cartridge at the specified ROM interval and address, returning true if write-protected.
 func (c *CartridgeMagicDesk) Write(i references.RomInterval, addr uint16, data uint8) bool {
 	if (i & (c.spec.IntervalLow | c.spec.IntervalHigh)) != 0 {

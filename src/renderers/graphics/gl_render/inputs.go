@@ -179,6 +179,12 @@ func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
 	g.keyMapper[pixels.MouseButton1] = func(p bool) { b.Joy1SetKey(p, component.KeyJFire) }
 	g.keyMapper[pixels.MouseButton2] = func(p bool) { b.Joy1SetKey(p, component.KeyJUp) }
 
+	//TEST
+	g.keyMapper[pixels.MouseButton2] = func(p bool) {
+		b.HardwareButton(true, 1)
+		b.HardwareButton(false, 1)
+	}
+
 	err := clipboard.Init()
 	if err != nil {
 		log.Printf("can't init clipboard: %s", err)

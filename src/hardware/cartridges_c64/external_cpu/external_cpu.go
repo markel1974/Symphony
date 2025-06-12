@@ -165,6 +165,10 @@ func (s *CartridgeExternalCPU) IRQCLear(d uint32) {
 	s.pic.ClearIRQ(d)
 }
 
+// HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.
+func (s *CartridgeExternalCPU) HardwareButton(pressed bool, value uint8) {
+}
+
 // Write stores an 8-bit data value to a specified address within a given ROM interval and returns success status as a boolean.
 func (s *CartridgeExternalCPU) Write(i references.RomInterval, addr uint16, data uint8) bool {
 	return false

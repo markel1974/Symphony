@@ -94,6 +94,8 @@ type ICartridgeManagerC64 interface {
 
 	CreateCartridges() error
 
+	HardwareButton(pressed bool, value uint8)
+
 	Read(interval RomInterval, addr uint16) (uint8, bool)
 
 	Write(interval RomInterval, addr uint16, data uint8) bool

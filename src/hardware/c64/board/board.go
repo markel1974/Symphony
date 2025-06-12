@@ -283,6 +283,11 @@ func (s *Board) GetText() []byte {
 	return s.vicSocket.GetText()
 }
 
+// HardwareButton handles the state of a hardware button, passing the pressed state and a value to the cartridge socket.
+func (s *Board) HardwareButton(pressed bool, val uint8) {
+	s.cartridgeSocket.HardwareButton(pressed, val)
+}
+
 // KeyboardSetCommand sets the given command to the keysSocket for the Board.
 func (s *Board) KeyboardSetCommand(cmd string) {
 	s.keysSocket.SetCommand(cmd)

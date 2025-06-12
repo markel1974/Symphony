@@ -252,6 +252,10 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 	}
 }
 
+// HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.
+func (c *CartridgeEasyFlash) HardwareButton(pressed bool, value uint8) {
+}
+
 // Write attempts to handle a write operation to the EasyFlash cartridge but currently does not implement writing logic.
 func (c *CartridgeEasyFlash) Write(i references.RomInterval, _ uint16, _ uint8) bool {
 	if c.intervalLo == i {

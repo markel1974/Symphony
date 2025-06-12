@@ -73,6 +73,7 @@ func IdICartridgeC64(_ ICartridgeC64, label string, instance int) string {
 // Setup initializes the cartridge with the provided expansion board and loader.
 // GetLoaderId retrieves the unique identifier for the cartridge loader.
 // Reset resets the cartridge to its initial state.
+// HardwareButton handles the response to a physical button press event
 // Write writes data to a specified memory address within a ROM interval and returns success status.
 // Read reads data from a specified memory address within a ROM interval and returns the data and success status.
 // IORead performs an I/O read from a specified address and returns the data and success status.
@@ -90,6 +91,8 @@ type ICartridgeC64 interface {
 	GetLoaderId() string
 
 	Reset()
+
+	HardwareButton(pressed bool, value uint8)
 
 	Write(i RomInterval, addr uint16, data uint8) bool
 

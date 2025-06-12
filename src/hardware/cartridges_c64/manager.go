@@ -138,6 +138,19 @@ func (f *Manager) EmulationRequired() bool {
 	return true
 }
 
+// HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.
+func (f *Manager) HardwareButton(pressed bool, value uint8) {
+	if f.carts == nil {
+		return
+	}
+	if len(f.carts) == 1 {
+		f.carts[0].HardwareButton(pressed, value)
+	}
+	for _, cart := range f.carts {
+		cart.HardwareButton(pressed, value)
+	}
+}
+
 // Read retrieves a value from the specified ROM interval and address. Returns the value and a boolean indicating success.
 func (f *Manager) Read(interval references.RomInterval, addr uint16) (uint8, bool) {
 	if f.carts == nil {

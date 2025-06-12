@@ -260,6 +260,10 @@ func (reu *REU) triggerDMA(_ uint16, _ uint8) {
 	}
 }
 
+// HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.
+func (reu *REU) HardwareButton(pressed bool, value uint8) {
+}
+
 // Write attempts to write to a given ROM interval, address, and value, returning false as operation is unsupported.
 func (reu *REU) Write(_ references.RomInterval, _ uint16, _ uint8) bool {
 	return false

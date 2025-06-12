@@ -49,6 +49,8 @@ type IBoard interface {
 	Joy2SetKey(pressed bool, vKey int)
 	JoySwap()
 
+	HardwareButton(pressed bool, val uint8)
+
 	KeyboardSetCommand(cmd string)
 	KeyboardNumLockToggle()
 	KeyboardCapitalToggle()

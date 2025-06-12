@@ -9,8 +9,8 @@ import (
 
 // CartridgeFinalCartridgeIII represents the Final Cartridge III hardware component for the system.
 // It includes memory banks, control register, and operational states for emulation of cartridge behavior.
-// roml_banks contains all "low" 8KB banks mapped to $8000-$9FFF memory addresses.
-// romh_banks contains all "high" 8KB banks mapped to $A000-$BFFF memory addresses.
+// romLBanks contains all "low" 8KB banks mapped to $8000-$9FFF memory addresses.
+// romHBanks contains all "high" 8KB banks mapped to $A000-$BFFF memory addresses.
 // numBanks indicates the conceptual number of 16KB banks (can be 4 or 16).
 // regEnabled denotes whether the control register is currently enabled.
 // loaderId stores the identifier for the ROM being loaded.
@@ -131,6 +131,13 @@ func (c *CartridgeFinalCartridgeIII) GetLoaderId() string {
 	return c.loaderId
 }
 
+// HardwareButton triggers a non-maskable interrupt (NMI) on the board if the button is pressed.
+func (c *CartridgeFinalCartridgeIII) HardwareButton(pressed bool, value uint8) {
+	if pressed {
+		c.board.NMITrigger()
+	}
+}
+
 // Write attempts to write data to the cartridge at the specified address within the given ROM interval.
 // Returns true if the operation is invalid for the cartridge, otherwise false.
 func (c *CartridgeFinalCartridgeIII) Write(i references.RomInterval, addr uint16, data uint8) bool {
@@ -224,8 +231,8 @@ func (c *CartridgeFinalCartridgeIII) initCrt(ldr references.ICartridgeLoaderC64)
 	if banksLoaded != 4 && banksLoaded != 16 {
 		return fmt.Errorf("unsupported banks number in crt file (%d)", banksLoaded)
 	}
-	finalRomData := rawCart[:banksLoaded*0x4000]
-	return c.loadData(finalRomData)
+	data := rawCart[:banksLoaded*0x4000]
+	return c.loadData(data)
 }
 
 // loadData loads the provided ROM data into the cartridge while validating its size and formatting it into banks.
