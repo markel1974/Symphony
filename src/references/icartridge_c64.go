@@ -51,6 +51,15 @@ func init() {
 	_cartridgesSpec[CartridgeModeOff] = &CartridgeSpec{Game: 1, ExRom: 1, IntervalLow: 0, IntervalHigh: 0}
 }
 
+func GetCartridgeSpecFromDetails(game uint8, exRom uint8) *CartridgeSpec {
+	for _, spec := range _cartridgesSpec {
+		if spec.Game == game && spec.ExRom == exRom {
+			return spec
+		}
+	}
+	return nil
+}
+
 // GetCartridgeSpec retrieves the CartridgeSpec associated with a given CartridgeMode from the predefined set of specifications.
 func GetCartridgeSpec(ct CartridgeMode) *CartridgeSpec {
 	return _cartridgesSpec[ct]

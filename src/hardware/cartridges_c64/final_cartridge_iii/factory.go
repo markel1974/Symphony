@@ -10,6 +10,10 @@ func Identifier() string {
 	return "ocean"
 }
 
+func GetType() int {
+	return catalog.CartridgeFinalIII
+}
+
 type Factory struct {
 }
 

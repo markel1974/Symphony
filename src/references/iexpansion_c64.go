@@ -96,6 +96,8 @@ type ICartridgeManagerC64 interface {
 
 	Read(interval RomInterval, addr uint16) (uint8, bool)
 
+	Write(interval RomInterval, addr uint16, data uint8) bool
+
 	IORead(addr uint16) (uint8, bool)
 
 	IOWrite(addr uint16, data uint8) bool
