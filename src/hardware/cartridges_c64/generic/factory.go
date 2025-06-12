@@ -1,6 +1,7 @@
 package generic
 
 import (
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/registry"
 )
@@ -31,4 +32,8 @@ func (t *Factory) Create(parent references.IComponent, factory references.ICompo
 
 func init() {
 	registry.RegisterComponentFactory(NewFactory())
+
+	catalog.RegisterType(GetType(), New)
+	catalog.RegisterSize(0x2000, New) //cartridge8k.New
+	catalog.RegisterSize(0x4000, New) //cartridge16k.New
 }

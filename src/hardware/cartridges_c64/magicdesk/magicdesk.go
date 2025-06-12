@@ -3,7 +3,7 @@ package magicdesk
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -18,11 +18,6 @@ type CartridgeMagicDesk struct {
 	regVal    uint8
 	slot      uint8
 	expansion references.IExpansionC64
-}
-
-// GetType returns an integer identifier representing the type of the Magic Desk cartridge.
-func GetType() int {
-	return loader.CartridgeMAGIC_DESK
 }
 
 // NewMagicDesk creates a new instance of CartridgeMagicDesk, registers it with the provided parent, and sets its initial configuration.
@@ -51,7 +46,7 @@ func (c *CartridgeMagicDesk) Setup() error {
 func (c *CartridgeMagicDesk) Bind(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	c.expansion = board
 	c.loaderId = ldr.GetId()
-	if loader.Type(ldr.GetType()) == loader.TypeCrt {
+	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr)

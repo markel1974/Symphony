@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/filler"
 	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash/flash"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash/snapshot"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
 	"github.com/markel1974/c64emu/src/references"
 	"io"
 	"log"
@@ -36,14 +36,14 @@ type CartridgeEasyFlash struct {
 	register02      uint8   /* backup of the registers */
 	ram             []uint8 /* extra RAM */
 	filename        string  /* filename when attached */
-	filetype        loader.Type
+	filetype        catalog.Type
 	led             bool
 	updateEApi      bool
 }
 
 // GetType returns the cartridge type constant representing an EasyFlash cartridge.
 func GetType() int {
-	return loader.CartridgeEASYFLASH
+	return catalog.CartridgeEASYFLASH
 }
 
 // NewEasyFlash creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridgeC64 interface.
@@ -91,13 +91,13 @@ func (c *CartridgeEasyFlash) Bind(expansion references.IExpansionC64, ldr refere
 	c.filename = ldr.Name()
 	c.filetype = 0
 	var err error
-	if loader.Type(ldr.GetType()) == loader.TypeCrt {
-		c.filetype = loader.TypeCrt
+	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
+		c.filetype = catalog.TypeCrt
 		if rawCart, err = c.initCrt(ldr); err != nil {
 			return err
 		}
 	} else {
-		c.filetype = loader.TypeBin
+		c.filetype = catalog.TypeBin
 		if rawCart, err = c.initRaw(ldr); err != nil {
 			return err
 		}
@@ -445,9 +445,9 @@ func (c *CartridgeEasyFlash) flushImage() error {
 	if len(c.filename) == 0 {
 		return nil
 	}
-	if c.filetype == loader.TypeBin {
+	if c.filetype == catalog.TypeBin {
 		return c.binSave(c.filename)
-	} else if c.filetype == loader.TypeCrt {
+	} else if c.filetype == catalog.TypeCrt {
 		return c.crtSave(c.filename)
 	}
 	return fmt.Errorf("unknown cartridget type")

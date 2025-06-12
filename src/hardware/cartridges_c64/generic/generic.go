@@ -3,7 +3,7 @@ package generic
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -29,7 +29,7 @@ type CartridgeGeneric struct {
 
 // GetType returns the constant value representing the CARTRIDGE_CRT type.
 func GetType() int {
-	return loader.CartridgeCRT
+	return catalog.CartridgeCRT
 }
 
 // NewCartridgeGeneric creates and returns a new instance of the CartridgeGeneric cartridge implementing the ICartridgeC64 interface.
@@ -59,7 +59,7 @@ func (c *CartridgeGeneric) Setup() error {
 func (c *CartridgeGeneric) Bind(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	c.expansion = expansion
 	c.loaderId = ldr.GetId()
-	if loader.Type(ldr.GetType()) == loader.TypeCrt {
+	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initRaw(ldr.GetData())
@@ -130,7 +130,7 @@ func (c *CartridgeGeneric) initCrt(ldr references.ICartridgeLoaderC64) error {
 func (c *CartridgeGeneric) initRaw(data []byte) error {
 	c.bank0 = make([]uint8, cSize8K)
 	c.bank1 = make([]uint8, cSize8K)
-	if err := loader.ValidateCartridge(data); err != nil {
+	if err := catalog.ValidateCartridge(data); err != nil {
 		return err
 	}
 	if len(data) == cSize8K {

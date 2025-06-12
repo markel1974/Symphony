@@ -2,18 +2,21 @@ package cartridges_c64
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/external_cpu"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/generic"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/loader"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/magicdesk"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/ocean"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/reu"
-	"github.com/markel1974/c64emu/src/references"
 	"strconv"
 	"strings"
+
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
+	"github.com/markel1974/c64emu/src/references"
+
+	_ "github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash"
+	_ "github.com/markel1974/c64emu/src/hardware/cartridges_c64/external_cpu"
+	_ "github.com/markel1974/c64emu/src/hardware/cartridges_c64/final_cartridge_iii"
+	_ "github.com/markel1974/c64emu/src/hardware/cartridges_c64/generic"
+	_ "github.com/markel1974/c64emu/src/hardware/cartridges_c64/magicdesk"
+	_ "github.com/markel1974/c64emu/src/hardware/cartridges_c64/ocean"
+	_ "github.com/markel1974/c64emu/src/hardware/cartridges_c64/reu"
 )
 
 //https://www.c64-wiki.com/wiki/Bank_Switching
@@ -23,31 +26,23 @@ import (
 // Manager is responsible for managing cartridge interactions, configurations, and hardware registration in the system.
 type Manager struct {
 	*component.BaseComponent
-	idx                 int
-	board               references.IExpansionC64
-	cfg                 *config.Config
-	carts               []references.ICartridgeC64
-	emulate             []func()
-	registerHardware    map[string]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
-	registerType        map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
-	registerSize        map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
-	registerSizeDefault func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
-	label               string
+	idx     int
+	board   references.IExpansionC64
+	cfg     *config.Config
+	carts   []references.ICartridgeC64
+	emulate []func()
+	label   string
 }
 
 // NewManager initializes and returns a new instance of the Manager type, setting up default configurations and maps.
 func NewManager(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Manager {
 	m := &Manager{
-		BaseComponent:       component.NewBaseComponent(),
-		idx:                 0,
-		board:               nil,
-		cfg:                 nil,
-		carts:               nil,
-		registerHardware:    make(map[string]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64),
-		registerType:        make(map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64),
-		registerSize:        make(map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64),
-		registerSizeDefault: nil,
-		label:               label,
+		BaseComponent: component.NewBaseComponent(),
+		idx:           0,
+		board:         nil,
+		cfg:           nil,
+		carts:         nil,
+		label:         label,
 	}
 	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdICartridgeManagerC64(m, label, instance))
 	return m
@@ -56,39 +51,21 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 // Setup initializes the Manager by setting up the expansion board, configuration preferences, and cartridge hardware mappings.
 func (f *Manager) Setup() error {
 	f.cfg = f.GetFactory().GetConfig()
-
-	f.registerHardware[external_cpu.Id] = external_cpu.New
-	f.registerHardware[reu.Id128K] = reu.New128K
-	f.registerHardware[reu.Id256K] = reu.New256K
-	f.registerHardware[reu.Id512K] = reu.New512K
-	f.registerHardware[reu.Id1M] = reu.New1M
-	f.registerHardware[reu.Id2M] = reu.New2M
-	f.registerHardware[reu.Id4M] = reu.New4M
-	f.registerHardware[reu.Id8M] = reu.New8M
-	f.registerHardware[reu.Id16M] = reu.New16M
-
-	f.registerType[ocean.GetType()] = ocean.New
-	f.registerType[magicdesk.GetType()] = magicdesk.New
-	f.registerType[easyflash.GetType()] = easyflash.New
-	f.registerType[generic.GetType()] = generic.New
-	//f.registerType[cartridge16k.GetType()] = cartridge16k.New
-
-	f.registerSize[0x2000] = generic.New //cartridge8k.New
-	f.registerSize[0x4000] = generic.New //cartridge16k.New
-	f.registerSizeDefault = ocean.New
-
 	return nil
 }
 
+// Bind associates the Manager with an expansion board, enabling integration with the provided hardware references.
 func (f *Manager) Bind(_ references.ICartridgeManagerC64Socket, board references.IExpansionC64) error {
 	f.board = board
 	return nil
 }
 
+// Connect establishes the Manager's connection, preparing it for interactions and operations. Returns an error if the connection fails.
 func (f *Manager) Connect() error {
 	return nil
 }
 
+// Internal indicates whether the Manager's operation is internal and returns a boolean result.
 func (f *Manager) Internal() bool {
 	return false
 }
@@ -265,19 +242,19 @@ func (f *Manager) IRQClear(d uint32) {
 // Add registers a new cartridge using the provided hardware type, name, and data, returning an identifier or an error if failed.
 func (f *Manager) Add(hardware string, name string, data []byte) (string, error) {
 	id := strconv.Itoa(f.idx)
-	ldr := loader.NewLoader(id, loader.MachineC64)
+	ldr := catalog.NewLoader(id, catalog.MachineC64)
 	if err := ldr.Setup(name, data); err != nil {
 		return "", err
 	}
 	var factory func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64 = nil
 	if len(hardware) > 0 {
 		hardware = strings.ToUpper(strings.TrimSpace(hardware))
-		factory = f.registerHardware[hardware]
-	} else if loader.Type(ldr.GetType()) == loader.TypeCrt {
-		factory = f.registerType[int(ldr.Kind)]
-	} else if loader.Type(ldr.GetType()) == loader.TypeBin {
-		if factory = f.registerSize[len(ldr.GetData())]; factory == nil {
-			factory = f.registerSizeDefault
+		factory = catalog.ByHardware(hardware)
+	} else if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
+		factory = catalog.ByType(int(ldr.Kind))
+	} else if catalog.Type(ldr.GetType()) == catalog.TypeBin {
+		if factory = catalog.BySize(len(ldr.GetData())); factory == nil {
+			factory = catalog.BySizeDefault()
 		}
 	}
 	if factory == nil {

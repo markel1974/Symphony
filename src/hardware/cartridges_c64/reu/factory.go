@@ -1,6 +1,7 @@
 package reu
 
 import (
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/registry"
 )
@@ -69,4 +70,13 @@ func init() {
 	registry.RegisterComponentFactory(NewFactory(identifier4M))
 	registry.RegisterComponentFactory(NewFactory(identifier8M))
 	registry.RegisterComponentFactory(NewFactory(identifier16M))
+
+	catalog.RegisterHardware(Id128K, New128K)
+	catalog.RegisterHardware(Id256K, New256K)
+	catalog.RegisterHardware(Id512K, New512K)
+	catalog.RegisterHardware(Id1M, New1M)
+	catalog.RegisterHardware(Id2M, New2M)
+	catalog.RegisterHardware(Id4M, New4M)
+	catalog.RegisterHardware(Id8M, New8M)
+	catalog.RegisterHardware(Id16M, New16M)
 }

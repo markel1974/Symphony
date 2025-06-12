@@ -1,4 +1,4 @@
-package easyflash
+package final_cartridge_iii
 
 import (
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
@@ -6,7 +6,9 @@ import (
 	"github.com/markel1974/c64emu/src/registry"
 )
 
-const componentId = "easyFlash"
+func Identifier() string {
+	return "ocean"
+}
 
 type Factory struct {
 }
@@ -16,16 +18,16 @@ func NewFactory() *Factory {
 }
 
 func (t *Factory) Identifier() string {
-	return componentId
+	return Identifier()
 }
 
 func (t *Factory) Kind() interface{} {
-	z := (*CartridgeEasyFlash)(nil)
+	z := (*CartridgeFinalCartridgeIII)(nil)
 	return references.ICartridgeC64(z)
 }
 
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IComponent {
-	return NewEasyFlash(parent, factory, label, instance)
+	return NewCartridgeFinalCartridgeIII(parent, factory, label, instance)
 }
 
 func init() {

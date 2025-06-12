@@ -1,6 +1,7 @@
 package external_cpu
 
 import (
+	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/registry"
 )
@@ -31,4 +32,6 @@ func (t *Factory) Create(parent references.IComponent, factory references.ICompo
 
 func init() {
 	registry.RegisterComponentFactory(NewFactory())
+
+	catalog.RegisterHardware(Id, New)
 }
