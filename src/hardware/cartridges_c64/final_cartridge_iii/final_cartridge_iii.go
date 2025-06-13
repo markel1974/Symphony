@@ -31,18 +31,18 @@ const (
 // lastData stores the last accessed data byte from the cartridge.
 type CartridgeFinalCartridgeIII struct {
 	*component.BaseComponent
-	romLBanks  [][]byte // Tutti i banchi "bassi" da 8KB ($8000-$9FFF)
-	romHBanks  [][]byte // Tutti i banchi "alti" da 8KB ($A000-$BFFF)
-	numBanks   int      // Numero di banchi concettuali da 16KB (4 o 16)
-	reg        uint8
-	regEnabled bool
-	loaderId   string
-	intervals  references.RomInterval
-	currBank   uint8
-	game       uint8
-	exRom      uint8
-	freeze     int
-	board      references.IExpansionC64
+	romLBanks     [][]byte // Tutti i banchi "bassi" da 8KB ($8000-$9FFF)
+	romHBanks     [][]byte // Tutti i banchi "alti" da 8KB ($A000-$BFFF)
+	numBanks      int      // Numero di banchi concettuali da 16KB (4 o 16)
+	reg           uint8
+	regEnabled    bool
+	loaderId      string
+	intervals     references.RomInterval
+	currBank      uint8
+	game          uint8
+	exRom         uint8
+	freezeCounter int
+	board         references.IExpansionC64
 }
 
 // NewCartridgeFinalCartridgeIII creates and initializes a new Final Cartridge III component for use in the emulation system.
@@ -58,7 +58,7 @@ func NewCartridgeFinalCartridgeIII(parent references.IComponent, factory referen
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		currBank:      0,
 		regEnabled:    true,
-		freeze:        0,
+		freezeCounter: 0,
 	}
 	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdICartridgeC64(co, label, instance))
 	return co
@@ -102,7 +102,7 @@ func (c *CartridgeFinalCartridgeIII) Reset() {
 	c.currBank = 0
 	c.regEnabled = true
 	c.reg = 0
-	c.freeze = 0
+	c.freezeCounter = 0
 }
 
 // IRQ is a placeholder method for handling IRQ-related logic for the CartridgeFinalCartridgeIII.
@@ -147,14 +147,6 @@ func (c *CartridgeFinalCartridgeIII) HardwareButton(pressed bool, value uint8) {
 	if pressed {
 		if c.board.AECAvailable() && c.board.BusAvailable() {
 			c.doFreeze()
-			/*
-				funcId = c.board.RamSetWriteTrigger(0xfffa, func(addr uint16, _ uint8) {
-				})
-			*/
-			//t := c.board.CycleAlarm("Freezer", func(mainCpuClk uint64, offset uint64) {
-
-			//})
-			//_ = t.Set(10)
 			return
 		}
 	}
@@ -200,25 +192,6 @@ func (c *CartridgeFinalCartridgeIII) Read(i references.RomInterval, addr uint16)
 	}
 }
 
-// IORead handles I/O read requests by decoding the given address and fetching the corresponding data from ROM banks.
-// Returns the data byte and a boolean indicating success or failure based on the address validity and current state.
-func (c *CartridgeFinalCartridgeIII) IOReadOld(addr uint16) (uint8, bool) {
-	var offset uint16
-	switch addr & 0xff00 {
-	case 0xde00:
-		offset = 0x1e00 + (addr & 0x00ff)
-	case 0xdf00:
-		offset = 0x1f00 + (addr & 0x00ff)
-	default:
-		return 0, false
-	}
-	bank := c.currBank
-	if int(bank) >= len(c.romLBanks) {
-		return 0, false
-	}
-	return c.romLBanks[bank][offset], true
-}
-
 func (c *CartridgeFinalCartridgeIII) IORead(addr uint16) (uint8, bool) {
 	target := addr & 0xff00
 	if target == 0xde00 {
@@ -230,14 +203,10 @@ func (c *CartridgeFinalCartridgeIII) IORead(addr uint16) (uint8, bool) {
 		return c.romLBanks[c.currBank][offset], true
 	}
 	if target == 0xdf00 {
-		// Questa pagina ha un comportamento speciale per l'indirizzo $DFFF.
 		if addr == 0xdfff {
-			// Il valore restituito dipende dal bit 7 dell'ultimo valore scritto in `c.reg`.
 			if (c.reg & 0x80) != 0 {
-				// Caso 1: Bit 7 era 1, restituisce $FF.
 				return 0xff, true
 			}
-			// Caso 2: Bit 7 era 0, calcola il valore.
 			val := ((c.reg - 1) & 2) / 2 * 0xFF
 			return val, true
 		}
@@ -266,20 +235,20 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 	} else {
 		c.currBank = data & (uint8(c.numBanks) - 1)
 	}
+	var spec *references.CartridgeSpec = nil
 	command := (data >> 4) & 0x03
 	switch command {
 	case 0b00:
-		spec := references.GetCartridgeSpec(references.CartridgeMode16K)
-		c.game, c.exRom, c.intervals = spec.Data()
-		c.board.GameExRomConfigChanged()
+		spec = references.GetCartridgeSpec(references.CartridgeMode16K)
 	case 0b01:
 		c.doFreeze()
+		return true
 	case 0b10:
-		spec := references.GetCartridgeSpec(references.CartridgeMode8K)
-		c.game, c.exRom, c.intervals = spec.Data()
-		c.board.GameExRomConfigChanged()
+		spec = references.GetCartridgeSpec(references.CartridgeMode8K)
 	case 0b11:
-		spec := references.GetCartridgeSpec(references.CartridgeModeOff)
+		spec = references.GetCartridgeSpec(references.CartridgeModeOff)
+	}
+	if spec != nil {
 		c.game, c.exRom, c.intervals = spec.Data()
 		c.board.GameExRomConfigChanged()
 	}
@@ -288,8 +257,8 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 
 // doFreeze increments the freeze counter, modifies bank switching, and triggers configuration updates for cartridge mode.
 func (c *CartridgeFinalCartridgeIII) doFreeze() {
-	c.freeze++
-	if c.freeze != 1 {
+	c.freezeCounter++
+	if c.freezeCounter != 1 {
 		return
 	}
 	c.currBank = uint8(c.numBanks - 1)
@@ -297,6 +266,11 @@ func (c *CartridgeFinalCartridgeIII) doFreeze() {
 	c.game, c.exRom, c.intervals = spec.Data()
 	c.board.GameExRomConfigChanged()
 	c.board.NMITrigger()
+
+	t := c.board.CycleAlarm("Freezer", func(mainCpuClk uint64, offset uint64) {
+		c.freezeCounter = 0
+	})
+	_ = t.Set(5000000)
 }
 
 // initCrt initializes the CRT by loading cartridge data via the provided loader and validates the chip structure and sizes.
