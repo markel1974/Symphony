@@ -23,14 +23,9 @@ type CartridgeOcean struct {
 
 // NewCartridgeOcean creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
 func NewCartridgeOcean(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeOcean {
-	v := references.GetCartridgeSpec(references.CartridgeMode16K)
 	co := &CartridgeOcean{
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
-		game:          v.Game,
-		exRom:         v.ExRom,
-		intervals:     v.IntervalLow | v.IntervalHigh,
-		lastData:      0,
 	}
 	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdICartridgeC64(co, label, instance))
 	return co
@@ -41,8 +36,19 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 	return NewCartridgeOcean(parent, factory, label, instance)
 }
 
+func (c *CartridgeOcean) reset(hard bool) {
+	c.game, c.exRom, c.intervals = references.GetCartridgeSpec(references.CartridgeMode16K).Data()
+	c.lastData = 0
+	c.currBank = 0
+	if hard {
+		c.ioMask = 0
+		c.banks = nil
+	}
+}
+
 // Setup initializes the cartridge with the specified expansion board and CRT loader, setting up necessary configurations.
 func (c *CartridgeOcean) Setup() error {
+	c.reset(true)
 	return nil
 }
 
@@ -65,7 +71,7 @@ func (c *CartridgeOcean) Internal() bool {
 
 // Reset restores the CartridgeOcean state to its initial default, clearing any active configurations or settings.
 func (c *CartridgeOcean) Reset() {
-
+	c.reset(false)
 }
 
 // GetLoaderId returns the unique identifier of the CartridgeOcean instance.
