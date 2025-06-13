@@ -52,6 +52,7 @@ func (c *CartridgeOcean) Setup() error {
 	return nil
 }
 
+// Bind associates the CartridgeOcean instance with the provided expansion board and cartridge loader, initializing it accordingly.
 func (c *CartridgeOcean) Bind(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
@@ -61,6 +62,7 @@ func (c *CartridgeOcean) Bind(board references.IExpansionC64, ldr references.ICa
 	return c.initBin(ldr)
 }
 
+// Connect establishes a connection or initializes the cartridge within the system context, returning an error if unsuccessful.
 func (c *CartridgeOcean) Connect() error {
 	return nil
 }
@@ -95,12 +97,6 @@ func (c *CartridgeOcean) Write(i references.RomInterval, addr uint16, data uint8
 // Read reads a byte from the current bank, based on the specified ROM interval and address. Returns the byte and success status.
 func (c *CartridgeOcean) Read(i references.RomInterval, addr uint16) (uint8, bool) {
 	if i&c.intervals != 0 {
-		//if c.b0Interval == i {
-		//	return c.banks[c.currBank][addr&0x1fff], true
-		//}
-		//if c.b1Interval == i {
-		//	return c.banks[c.currBank][addr&0x1fff], true
-		//}
 		return c.banks[c.currBank][addr&0x1fff], true
 	}
 	return 0, false
@@ -117,13 +113,10 @@ func (c *CartridgeOcean) IORead(addr uint16) (uint8, bool) {
 // IOWrite processes writes to the cartridge's I/O address space, handling bank switching and configuration updates.
 func (c *CartridgeOcean) IOWrite(addr uint16, data uint8) bool {
 	if (addr & 0xfff0) == 0xde00 {
-		//exRomDisabled := (data & 0x80) != 0
-		//currBank := data & 0x7f
 		currBank := (data & c.ioMask) & 0x3f
 		c.currBank = currBank
 		c.lastData = data
-		//TODO board.updateMemoryConfig()
-		fmt.Printf("[OCEAN] Bank switching %x => %d, %d\n", addr, data, c.currBank)
+		//fmt.Printf("[OCEAN] Bank switching %x => %d, %d\n", addr, data, c.currBank)
 	}
 	return false
 }
@@ -190,9 +183,6 @@ func (c *CartridgeOcean) initBin(ldr references.ICartridgeLoaderC64) error {
 // initCrt initializes the cartridge by reading chip headers from the provided CRTLoader and validates the chip data.
 func (c *CartridgeOcean) initCrt(ldr references.ICartridgeLoaderC64) error {
 	c.banks = [][]byte{}
-	//c.exRom = uint8(loader.ExRom)
-	//c.game = uint8(loader.Game)
-
 	romSize := 0
 	for {
 		chip, err := ldr.ReadChipHeader()

@@ -13,9 +13,9 @@ const (
 	chipHeaderSize = 0x10
 )
 
-// CrtChipHeader represents a structured header for a cartridge chip including metadata and associated data.
+// ChipHeader represents a structured header for a cartridge chip including metadata and associated data.
 // Designed for handling cartridge chip data with specific attributes such as skip, kind, bank, start, size, and data.
-type CrtChipHeader struct {
+type ChipHeader struct {
 	skip  uint32
 	kind  uint16
 	bank  uint16
@@ -25,13 +25,13 @@ type CrtChipHeader struct {
 }
 
 // NewChipHeader creates and returns a new instance of CrtChipHeader with its fields initialized to default zero values.
-func NewChipHeader() *CrtChipHeader {
-	ch := &CrtChipHeader{}
+func NewChipHeader() *ChipHeader {
+	ch := &ChipHeader{}
 	return ch
 }
 
 // Setup initializes the CrtChipHeader by parsing the given byte slice and updating the cursor position. Returns updated cursor and error.
-func (h *CrtChipHeader) Setup(rowCartridge []byte, cursor int) (int, error) {
+func (h *ChipHeader) Setup(rowCartridge []byte, cursor int) (int, error) {
 	if cursor+chipHeaderSize > len(rowCartridge) {
 		return cursor, nil
 	}
@@ -83,37 +83,37 @@ func (h *CrtChipHeader) Setup(rowCartridge []byte, cursor int) (int, error) {
 }
 
 // Skip returns the `skip` field from the CrtChipHeader, representing the remaining size after the chip header and data.
-func (h *CrtChipHeader) Skip() uint32 {
+func (h *ChipHeader) Skip() uint32 {
 	return h.skip
 }
 
 // Kind returns the kind field of the CrtChipHeader as a uint16.
-func (h *CrtChipHeader) Kind() uint16 {
+func (h *ChipHeader) Kind() uint16 {
 	return h.kind
 }
 
 // Bank returns the bank identifier as a 16-bit unsigned integer from the CrtChipHeader.
-func (h *CrtChipHeader) Bank() uint16 {
+func (h *ChipHeader) Bank() uint16 {
 	return h.bank
 }
 
 // Start retrieves the starting address of the chip data within the CrtChipHeader. It returns the value as a uint16.
-func (h *CrtChipHeader) Start() uint16 {
+func (h *ChipHeader) Start() uint16 {
 	return h.start
 }
 
 // Size returns the size of the chip header as a 16-bit unsigned integer.
-func (h *CrtChipHeader) Size() uint16 {
+func (h *ChipHeader) Size() uint16 {
 	return h.size
 }
 
 // Data retrieves the data slice associated with the CrtChipHeader instance.
-func (h *CrtChipHeader) Data() []byte {
+func (h *ChipHeader) Data() []byte {
 	return h.data
 }
 
 // Write writes the CrtChipHeader's contents to the provided io.Writer and returns an error if the write operation fails.
-func (h *CrtChipHeader) Write(w io.Writer) error {
+func (h *ChipHeader) Write(w io.Writer) error {
 	//TODO IMPLEMENT
 	return fmt.Errorf("unimplemented")
 }

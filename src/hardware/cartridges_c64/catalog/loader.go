@@ -24,8 +24,8 @@ const (
 	TypeCrt
 )
 
-// CRTLoader represents a structure for handling CRT cartridge files with relevant metadata and methods for processing.
-type CRTLoader struct {
+// Loader represents a structure for handling a cartridge file with relevant metadata and methods for processing.
+type Loader struct {
 	id           string
 	rowCartridge []byte
 	cursor       int
@@ -39,25 +39,9 @@ type CRTLoader struct {
 	kind         Type
 }
 
-// Game returns the current game line status of the CRTLoader instance.
-func (cl *CRTLoader) Game() int {
-	return cl.game
-}
-
-// ExRom retrieves the status of the ExRom line from the CRTLoader instance. Returns 0 or 1 based on the ExRom state.
-func (cl *CRTLoader) ExRom() int {
-	return cl.exRom
-}
-
-// Name retrieves the name of the cartridge associated with the CRTLoader instance.
-func (cl *CRTLoader) Name() string {
-	//TODO implement me
-	return cl.name
-}
-
 // NewLoader initializes and returns a new CRTLoader instance with the specified ID and machine type.
-func NewLoader(id string, mc MachineType) *CRTLoader {
-	return &CRTLoader{
+func NewLoader(id string, mc MachineType) *Loader {
+	return &Loader{
 		id:           id,
 		rowCartridge: nil,
 		cursor:       0,
@@ -67,7 +51,7 @@ func NewLoader(id string, mc MachineType) *CRTLoader {
 }
 
 // Setup initializes the CRTLoader with the given identifier and data, determining its type and processing accordingly.
-func (cl *CRTLoader) Setup(id string, data []byte) error {
+func (cl *Loader) Setup(id string, data []byte) error {
 	cl.kind = TypeBin
 	cl.rowCartridge = data
 	lp := strings.ToLower(strings.TrimSpace(id))
@@ -81,22 +65,37 @@ func (cl *CRTLoader) Setup(id string, data []byte) error {
 }
 
 // GetId returns the unique identifier of the CRTLoader instance as a string.
-func (cl *CRTLoader) GetId() string {
+func (cl *Loader) GetId() string {
 	return cl.id
 }
 
 // GetType returns the type of the cartridge as an integer by converting the internal kind field to an int.
-func (cl *CRTLoader) GetType() int {
+func (cl *Loader) GetType() int {
 	return int(cl.kind)
 }
 
 // GetData returns the raw cartridge data as a byte slice.
-func (cl *CRTLoader) GetData() []byte {
+func (cl *Loader) GetData() []byte {
 	return cl.rowCartridge
 }
 
+// Game returns the current game line status of the CRTLoader instance.
+func (cl *Loader) Game() int {
+	return cl.game
+}
+
+// ExRom retrieves the status of the ExRom line from the CRTLoader instance. Returns 0 or 1 based on the ExRom state.
+func (cl *Loader) ExRom() int {
+	return cl.exRom
+}
+
+// Name retrieves the name of the cartridge associated with the CRTLoader instance.
+func (cl *Loader) Name() string {
+	return cl.name
+}
+
 // read initializes the CRTLoader by parsing the CRT header and validating its format. Returns an error if validation fails.
-func (cl *CRTLoader) read() error {
+func (cl *Loader) read() error {
 	if cl.kind == TypeBin {
 		return nil
 	}
@@ -107,7 +106,6 @@ func (cl *CRTLoader) read() error {
 	}
 	crtHeader := cl.rowCartridge[:crtHeaderLen]
 	cl.cursor = crtHeaderLen
-	//cl.Machine = -1
 	err := ValidateMachine(cl.mc, string(crtHeader[0:16]))
 	if err != nil {
 		return err
@@ -136,13 +134,22 @@ func (cl *CRTLoader) read() error {
 	} else {
 		cl.game = 1
 	}
-	cl.name = string(crtHeader[0x20:])
+	name := crtHeader[0x20:]
+	beginName := 0
+	endName := 0
+	for x := 0; x < len(name); x++ {
+		if name[x] == 0 {
+			endName = x
+			break
+		}
+	}
+	cl.name = string(name[beginName:endName])
 	return nil
 }
 
 // ReadChipHeader reads and initializes a chip header from the cartridge data at the current cursor position.
 // Returns the parsed ICartridgeChipHeaderC64 instance or an error if the operation fails.
-func (cl *CRTLoader) ReadChipHeader() (references.ICartridgeChipHeaderC64, error) {
+func (cl *Loader) ReadChipHeader() (references.ICartridgeChipHeaderC64, error) {
 	if cl.kind == TypeBin {
 		return nil, nil
 	}
