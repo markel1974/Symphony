@@ -5,7 +5,6 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
 	"github.com/markel1974/c64emu/src/references"
-	"log"
 )
 
 const (
@@ -48,19 +47,12 @@ type CartridgeFinalCartridgeIII struct {
 // NewCartridgeFinalCartridgeIII creates and initializes a new Final Cartridge III component for use in the emulation system.
 // It registers the cartridge with the provided parent component, factory, label, and instance identifier.
 func NewCartridgeFinalCartridgeIII(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeFinalCartridgeIII {
-	v := references.GetCartridgeSpec(references.CartridgeMode16K)
 	co := &CartridgeFinalCartridgeIII{
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
-		reg:           0,
-		game:          v.Game,
-		exRom:         v.ExRom,
-		intervals:     v.IntervalLow | v.IntervalHigh,
-		currBank:      0,
-		regEnabled:    true,
-		freezeCounter: 0,
 	}
 	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdICartridgeC64(co, label, instance))
+	co.Reset()
 	return co
 }
 
@@ -72,6 +64,16 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 // Setup initializes the CartridgeFinalCartridgeIII instance, preparing it for use.
 func (c *CartridgeFinalCartridgeIII) Setup() error {
 	return nil
+}
+
+// Reset initializes or reinitializes the cartridge state, setting core properties to their default values.
+func (c *CartridgeFinalCartridgeIII) Reset() {
+	spec := references.GetCartridgeSpec(references.CartridgeMode16K)
+	c.game, c.exRom, c.intervals = spec.Data()
+	c.currBank = 0
+	c.regEnabled = true
+	c.reg = 0
+	c.freezeCounter = 0
 }
 
 // Bind initializes the cartridge by associating it with the provided board and loader, loading ROM data in the process.
@@ -92,17 +94,6 @@ func (c *CartridgeFinalCartridgeIII) Connect() error {
 // Internal checks if the cartridge operates internally or externally.
 func (c *CartridgeFinalCartridgeIII) Internal() bool {
 	return false
-}
-
-func (c *CartridgeFinalCartridgeIII) Reset() {
-	v := references.GetCartridgeSpec(references.CartridgeMode16K)
-	c.game = v.Game
-	c.exRom = v.ExRom
-	c.intervals = v.IntervalLow | v.IntervalHigh
-	c.currBank = 0
-	c.regEnabled = true
-	c.reg = 0
-	c.freezeCounter = 0
 }
 
 // IRQ is a placeholder method for handling IRQ-related logic for the CartridgeFinalCartridgeIII.
@@ -172,7 +163,7 @@ func (c *CartridgeFinalCartridgeIII) Read(i references.RomInterval, addr uint16)
 	}
 	bank := c.currBank
 	if int(bank) >= c.numBanks {
-		log.Printf("Read: invalid bank %d >= %d", bank, c.numBanks)
+		fmt.Printf("Read: invalid bank %d >= %d", bank, c.numBanks)
 		return 0, false
 	}
 	//if addr >= 0xda00 {
@@ -192,10 +183,13 @@ func (c *CartridgeFinalCartridgeIII) Read(i references.RomInterval, addr uint16)
 	}
 }
 
+// IORead reads data from the cartridge memory at the specified address and returns the value with a success flag.
+// It handles mirroring logic for $DE00 (second-to-last page) and $DFxx (last page), with special handling for $DFFF.
+// Returns 0 and false if the address is invalid or out of bounds.
 func (c *CartridgeFinalCartridgeIII) IORead(addr uint16) (uint8, bool) {
 	target := addr & 0xff00
 	if target == 0xde00 {
-		// La logica di mirroring per $DE00 rimane invariata (penultima pagina).
+		// mirroring logic for $DE00 (second-to-last page).
 		if int(c.currBank) >= len(c.romLBanks) {
 			return 0, false
 		}
@@ -210,7 +204,7 @@ func (c *CartridgeFinalCartridgeIII) IORead(addr uint16) (uint8, bool) {
 			val := ((c.reg - 1) & 2) / 2 * 0xFF
 			return val, true
 		}
-		// Per gli altri indirizzi in $DFxx ($DF00-$DFFE), usiamo il mirroring standard dell'ultima pagina
+		// for other addresses in $DFxx ($DF00-$DFFE), use standard mirroring of the last page
 		if int(c.currBank) >= len(c.romLBanks) {
 			return 0, false
 		}
@@ -223,13 +217,11 @@ func (c *CartridgeFinalCartridgeIII) IORead(addr uint16) (uint8, bool) {
 // IOWrite writes data to the cartridge control register if enabled and the address is within the valid range (0xDF00-0xDFFF).
 // Updates internal state, including the configuration of EXROM, GAME, and memory intervals. Returns true if the write was successful.
 func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
-	// La scrittura deve avvenire a $DFFF per cambiare lo stato (secondo la tabella)
-	// e il registro deve essere abilitato.
 	if !c.regEnabled || (addr&0xff) != 0xff {
 		return false
 	}
 	c.reg = data
-	c.regEnabled = ((data >> 7) & 1) == 0 // Il bit 7 gestisce la visibilità del registro
+	c.regEnabled = ((data >> 7) & 1) == 0
 	if (data & 0x80) != 0 {
 		c.currBank = 0
 	} else {
