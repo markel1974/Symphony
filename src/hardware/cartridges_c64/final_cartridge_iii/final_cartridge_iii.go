@@ -30,18 +30,18 @@ const (
 // lastData stores the last accessed data byte from the cartridge.
 type CartridgeFinalCartridgeIII struct {
 	*component.BaseComponent
-	romLBanks     [][]byte // Tutti i banchi "bassi" da 8KB ($8000-$9FFF)
-	romHBanks     [][]byte // Tutti i banchi "alti" da 8KB ($A000-$BFFF)
-	numBanks      int      // Numero di banchi concettuali da 16KB (4 o 16)
-	reg           uint8
-	regEnabled    bool
+	board         references.IExpansionC64
+	romLBanks     [][]byte
+	romHBanks     [][]byte
+	numBanks      int
 	loaderId      string
-	intervals     references.RomInterval
-	currBank      uint8
 	game          uint8
 	exRom         uint8
+	intervals     references.RomInterval
+	reg           uint8
+	regEnabled    bool
+	currBank      uint8
 	freezeCounter int
-	board         references.IExpansionC64
 }
 
 // NewCartridgeFinalCartridgeIII creates and initializes a new Final Cartridge III component for use in the emulation system.
