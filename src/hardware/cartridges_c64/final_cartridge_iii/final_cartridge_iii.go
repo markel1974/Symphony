@@ -146,32 +146,13 @@ func (c *CartridgeFinalCartridgeIII) GetLoaderId() string {
 func (c *CartridgeFinalCartridgeIII) HardwareButton(pressed bool, value uint8) {
 	if pressed {
 		if c.board.AECAvailable() && c.board.BusAvailable() {
-			c.freeze = 1
-			c.currBank = uint8(c.numBanks - 1)
-			spec := references.GetCartridgeSpec(references.CartridgeModeUltimax)
-			c.game, c.exRom, c.intervals = spec.Data()
-			c.board.GameExRomConfigChanged()
-			c.board.NMITrigger()
+			c.doFreeze()
 			/*
-				var funcId int
-				fmt.Println("HardwareButton: NMI triggered")
-				c.board.NMITrigger()
 				funcId = c.board.RamSetWriteTrigger(0xfffa, func(addr uint16, _ uint8) {
-					spec := references.GetCartridgeSpec(references.CartridgeModeUltimax)
-					c.exRom = spec.ExRom
-					c.game = spec.Game
-					c.intervals = spec.IntervalHigh | spec.IntervalLow
-					c.board.GameExRomConfigChanged()
-					c.board.RamRemoveWriteTrigger(0xfffa, funcId)
 				})
 			*/
-
 			//t := c.board.CycleAlarm("Freezer", func(mainCpuClk uint64, offset uint64) {
-			//  spec := references.GetCartridgeSpec(references.CartridgeMode8K)
-			//	c.exRom = spec.ExRom
-			//	c.game = spec.Game
-			//	c.intervals = spec.IntervalHigh | spec.IntervalLow
-			//	c.board.GameExRomConfigChanged()
+
 			//})
 			//_ = t.Set(10)
 			return
@@ -285,37 +266,37 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 	} else {
 		c.currBank = data & (uint8(c.numBanks) - 1)
 	}
-
 	command := (data >> 4) & 0x03
-	if c.freeze > 0 {
-		fmt.Printf("[%d]IOWrite: Freezer command %d\n", c.board.Cycle(), command)
-	}
-	// Decodifichiamo il comando dai bit 4 e 5
-
 	switch command {
-	case 0b00: // 0: Turn on 16KB
+	case 0b00:
 		spec := references.GetCartridgeSpec(references.CartridgeMode16K)
 		c.game, c.exRom, c.intervals = spec.Data()
 		c.board.GameExRomConfigChanged()
-	case 0b01: // 1: Start Freezer
-		c.freeze++
-		if c.freeze == 1 {
-			c.currBank = uint8(c.numBanks - 1)
-			spec := references.GetCartridgeSpec(references.CartridgeModeUltimax)
-			c.game, c.exRom, c.intervals = spec.Data()
-			c.board.GameExRomConfigChanged()
-			c.board.NMITrigger()
-		}
-	case 0b10: // 2: Turn on 8KB
+	case 0b01:
+		c.doFreeze()
+	case 0b10:
 		spec := references.GetCartridgeSpec(references.CartridgeMode8K)
 		c.game, c.exRom, c.intervals = spec.Data()
 		c.board.GameExRomConfigChanged()
-	case 0b11: // 3: Turn off FC3
+	case 0b11:
 		spec := references.GetCartridgeSpec(references.CartridgeModeOff)
 		c.game, c.exRom, c.intervals = spec.Data()
 		c.board.GameExRomConfigChanged()
 	}
 	return true
+}
+
+// doFreeze increments the freeze counter, modifies bank switching, and triggers configuration updates for cartridge mode.
+func (c *CartridgeFinalCartridgeIII) doFreeze() {
+	c.freeze++
+	if c.freeze != 1 {
+		return
+	}
+	c.currBank = uint8(c.numBanks - 1)
+	spec := references.GetCartridgeSpec(references.CartridgeModeUltimax)
+	c.game, c.exRom, c.intervals = spec.Data()
+	c.board.GameExRomConfigChanged()
+	c.board.NMITrigger()
 }
 
 // initCrt initializes the CRT by loading cartridge data via the provided loader and validates the chip structure and sizes.
