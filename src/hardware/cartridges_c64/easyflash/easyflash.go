@@ -43,7 +43,7 @@ type CartridgeEasyFlash struct {
 
 // GetType returns the cartridge type constant representing an EasyFlash cartridge.
 func GetType() int {
-	return catalog.CartridgeEASYFLASH
+	return catalog.CartridgeEasyFlash
 }
 
 // NewEasyFlash creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridgeC64 interface.

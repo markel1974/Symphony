@@ -21,11 +21,6 @@ type CartridgeOcean struct {
 	board     references.IExpansionC64
 }
 
-// GetType returns the type identifier of the Ocean cartridge as an integer constant.
-func GetType() int {
-	return catalog.CartridgeOcean
-}
-
 // NewCartridgeOcean creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
 func NewCartridgeOcean(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeOcean {
 	v := references.GetCartridgeSpec(references.CartridgeMode16K)

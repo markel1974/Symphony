@@ -10,6 +10,11 @@ func Identifier() string {
 	return "ocean"
 }
 
+// GetType returns the type identifier of the Ocean cartridge as an integer constant.
+func GetType() int {
+	return catalog.CartridgeOcean
+}
+
 type Factory struct {
 }
 

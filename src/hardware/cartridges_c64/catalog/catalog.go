@@ -36,97 +36,88 @@ const (
 	CartridgeDEBUGCART          = -124
 )
 
-// Known cartridge types
-const (
-	CartridgeULTIMAX      = -6
-	CartridgeGENERIC_8KB  = -3
-	CartridgeGENERIC_16KB = -2
-	CartridgeNONE         = -1
-	CartridgeCRT          = 0
-)
-
 // the following must match the CRT IDs
 const (
-	CartridgeActionReplay       = 1
-	CartridgeKCSPower           = 2
-	CartridgeFinalIII           = 3
-	CartridgeSimonsBasic        = 4
-	CartridgeOcean              = 5
-	CartridgeEXPERT             = 6
-	CartridgeFUNPLAY            = 7
-	CartridgeSUPER_GAMES        = 8
-	CartridgeATOMIC_POWER       = 9
-	CartridgeEPYX_FASTLOAD      = 10
-	CartridgeWESTERMANN         = 11
-	CartridgeREX                = 12
-	CartridgeFINAL_I            = 13
-	CartridgeMAGIC_FORMEL       = 14
-	CartridgeGS                 = 15
-	CartridgeWARPSPEED          = 16
-	CartridgeDINAMIC            = 17
-	CartridgeZAXXON             = 18
-	CartridgeMAGIC_DESK         = 19
-	CartridgeSUPER_SNAPSHOT_V5  = 20
-	CartridgeCOMAL80            = 21
-	CartridgeSTRUCTURED_BASIC   = 22
-	CartridgeROSS               = 23
-	CartridgeDELA_EP64          = 24
-	CartridgeDELA_EP7x8         = 25
-	CartridgeDELA_EP256         = 26
-	CartridgeREX_EP256          = 27
-	CartridgeMIKRO_ASSEMBLER    = 28
-	CartridgeFINAL_PLUS         = 29
-	CartridgeACTION_REPLAY4     = 30
-	CartridgeSTARDOS            = 31
-	CartridgeEASYFLASH          = 32
-	CartridgeEASYFLASH_XBANK    = 33
-	CartridgeCAPTURE            = 34
-	CartridgeACTION_REPLAY3     = 35
-	CartridgeRETRO_REPLAY       = 36
-	CartridgeMMC64              = 37
-	CartridgeMMC_REPLAY         = 38
-	CartridgeIDE64              = 39
-	CartridgeSUPER_SNAPSHOT     = 40
-	CartridgeIEEE488            = 41
-	CartridgeGAME_KILLER        = 42
-	CartridgeP64                = 43
-	CartridgeEXOS               = 44
-	CartridgeFREEZE_FRAME       = 45
-	CartridgeFREEZE_MACHINE     = 46
-	CartridgeSNAPSHOT64         = 47
-	CartridgeSUPER_EXPLODE_V5   = 48
-	CartridgeMAGIC_VOICE        = 49
-	CartridgeACTION_REPLAY2     = 50
-	CartridgeMACH5              = 51
-	CartridgeDIASHOW_MAKER      = 52
-	CartridgePAGEFOX            = 53
-	CartridgeKINGSOFT           = 54
-	CartridgeSILVERROCK_128     = 55
-	CartridgeFORMEL64           = 56
-	CartridgeRGCD               = 57
-	CartridgeRRNETMK3           = 58
-	CartridgeEASYCALC           = 59
-	CartridgeGMOD2              = 60
-	CartridgeMAX_BASIC          = 61
-	CartridgeGMOD3              = 62
-	CartridgeZIPPCODE48         = 63
-	CartridgeBLACKBOX8          = 64
-	CartridgeBLACKBOX3          = 65
-	CartridgeBLACKBOX4          = 66
-	CartridgeREX_RAMFLOPPY      = 67
-	CartridgeBISPLUS            = 68
-	CartridgeSDBOX              = 69
-	CartridgeMULTIMAX           = 70
-	CartridgeBLACKBOX9          = 71
-	CartridgeLT_KERNAL          = 72
-	CartridgeRAMLINK            = 73
-	CartridgeDREAN              = 74
-	CartridgeIEEEFLASH64        = 75
-	CartridgeTURTLE_GRAPHICS_II = 76
-	CartridgeFREEZE_FRAME_MK2   = 77
-	CartridgePARTNER64          = 78
-	CartridgeHYPERBASIC         = 79
-	CartridgeLAST               = 79
+	CartridgeCRT = iota
+	CartridgeActionReplay
+	CartridgeKCSPower
+	CartridgeFinalIII
+	CartridgeSimonsBasic
+	CartridgeOcean
+	CartridgeEXPERT
+	CartridgeFUNPLAY
+	CartridgeSUPER_GAMES
+	CartridgeATOMIC_POWER
+	CartridgeEPYX_FASTLOAD
+	CartridgeWESTERMANN
+	CartridgeREX
+	CartridgeFINAL_I
+	CartridgeMAGIC_FORMEL
+	CartridgeGS
+	CartridgeWARPSPEED
+	CartridgeDINAMIC
+	CartridgeZAXXON
+	CartridgeMagicDesk
+	CartridgeSUPER_SNAPSHOT_V5
+	CartridgeCOMAL80
+	CartridgeSTRUCTURED_BASIC
+	CartridgeROSS
+	CartridgeDELA_EP64
+	CartridgeDELA_EP7x8
+	CartridgeDELA_EP256
+	CartridgeREX_EP256
+	CartridgeMIKRO_ASSEMBLER
+	CartridgeFINAL_PLUS
+	CartridgeACTION_REPLAY4
+	CartridgeSTARDOS
+	CartridgeEasyFlash
+	CartridgeEASYFLASH_XBANK
+	CartridgeCAPTURE
+	CartridgeACTION_REPLAY3
+	CartridgeRETRO_REPLAY
+	CartridgeMMC64
+	CartridgeMMC_REPLAY
+	CartridgeIDE64
+	CartridgeSUPER_SNAPSHOT
+	CartridgeIEEE488
+	CartridgeGAME_KILLER
+	CartridgeP64
+	CartridgeEXOS
+	CartridgeFREEZE_FRAME
+	CartridgeFREEZE_MACHINE
+	CartridgeSNAPSHOT64
+	CartridgeSUPER_EXPLODE_V5
+	CartridgeMAGIC_VOICE
+	CartridgeACTION_REPLAY2
+	CartridgeMACH5
+	CartridgeDIASHOW_MAKER
+	CartridgePAGEFOX
+	CartridgeKINGSOFT
+	CartridgeSILVERROCK_128
+	CartridgeFORMEL64
+	CartridgeRGCD
+	CartridgeRRNETMK3
+	CartridgeEASYCALC
+	CartridgeGMOD2
+	CartridgeMAX_BASIC
+	CartridgeGMOD3
+	CartridgeZIPPCODE48
+	CartridgeBLACKBOX8
+	CartridgeBLACKBOX3
+	CartridgeBLACKBOX4
+	CartridgeREX_RAMFLOPPY
+	CartridgeBISPLUS
+	CartridgeSDBOX
+	CartridgeMULTIMAX
+	CartridgeBLACKBOX9
+	CartridgeLT_KERNAL
+	CartridgeRAMLINK
+	CartridgeDREAN
+	CartridgeIEEEFLASH64
+	CartridgeTURTLE_GRAPHICS_II
+	CartridgeFREEZE_FRAME_MK2
+	CartridgePARTNER64
+	CartridgeHYPERBASIC
 )
 
 // _registerHardware is a map that associates hardware names with factory functions to create ICartridgeC64 instances.

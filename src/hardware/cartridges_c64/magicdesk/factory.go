@@ -27,7 +27,7 @@ func (t *Factory) Identifier() string {
 
 // GetType returns an integer identifier representing the type of the Magic Desk cartridge.
 func GetType() int {
-	return catalog.CartridgeMAGIC_DESK
+	return catalog.CartridgeMagicDesk
 }
 
 // Kind returns an instance implementing the ICartridgeC64 interface associated with the CartridgeMagicDesk type.
