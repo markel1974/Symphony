@@ -41,6 +41,7 @@ type CartridgeFinalCartridgeIII struct {
 	currBank   uint8
 	game       uint8
 	exRom      uint8
+	freeze     bool
 	board      references.IExpansionC64
 }
 
@@ -57,6 +58,7 @@ func NewCartridgeFinalCartridgeIII(parent references.IComponent, factory referen
 		intervals:     v.IntervalLow | v.IntervalHigh,
 		currBank:      0,
 		regEnabled:    true,
+		freeze:        false,
 	}
 	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdICartridgeC64(co, label, instance))
 	return co
@@ -100,6 +102,7 @@ func (c *CartridgeFinalCartridgeIII) Reset() {
 	c.currBank = 0
 	c.regEnabled = true
 	c.reg = 0
+	c.freeze = false
 }
 
 // IRQ is a placeholder method for handling IRQ-related logic for the CartridgeFinalCartridgeIII.
@@ -143,18 +146,29 @@ func (c *CartridgeFinalCartridgeIII) GetLoaderId() string {
 func (c *CartridgeFinalCartridgeIII) HardwareButton(pressed bool, value uint8) {
 	if pressed {
 		if c.board.AECAvailable() && c.board.BusAvailable() {
-			spec := references.GetCartridgeSpec(references.CartridgeMode8K)
-			c.exRom = spec.ExRom
-			c.game = spec.Game
-			c.intervals = spec.IntervalHigh | spec.IntervalLow
-			c.board.GameExRomConfigChanged()
-			c.board.NMITrigger()
-			fmt.Println("HardwareButton: NMI triggered")
+			c.freezer()
+			/*
+				var funcId int
+				fmt.Println("HardwareButton: NMI triggered")
+				c.board.NMITrigger()
+				funcId = c.board.RamSetWriteTrigger(0xfffa, func(addr uint16, _ uint8) {
+					spec := references.GetCartridgeSpec(references.CartridgeModeUltimax)
+					c.exRom = spec.ExRom
+					c.game = spec.Game
+					c.intervals = spec.IntervalHigh | spec.IntervalLow
+					c.board.GameExRomConfigChanged()
+					c.board.RamRemoveWriteTrigger(0xfffa, funcId)
+				})
+			*/
+
 			//t := c.board.CycleAlarm("Freezer", func(mainCpuClk uint64, offset uint64) {
-			//	fmt.Println("AVAILABLE", c.board.AECAvailable() && c.board.BusAvailable())
-			//	c.board.NMITrigger()
+			//  spec := references.GetCartridgeSpec(references.CartridgeMode8K)
+			//	c.exRom = spec.ExRom
+			//	c.game = spec.Game
+			//	c.intervals = spec.IntervalHigh | spec.IntervalLow
+			//	c.board.GameExRomConfigChanged()
 			//})
-			//_ = t.Set(3)
+			//_ = t.Set(10)
 			return
 		}
 	}
@@ -181,6 +195,9 @@ func (c *CartridgeFinalCartridgeIII) Read(i references.RomInterval, addr uint16)
 	if int(c.currBank) >= c.numBanks {
 		log.Printf("Read: invalid bank %d >= %d", c.currBank, c.numBanks)
 		return 0, false
+	}
+	if addr >= 0xda00 {
+		fmt.Printf("[%d][Read] Ultimax mode read addr: 0x%x\n", c.board.Cycle(), addr)
 	}
 	// The FCIII logic in this mode performs a mirroring
 	// of the 16KB bank on the entire $8000-$FFFF area.
@@ -220,8 +237,9 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 	if !c.regEnabled || (addr&0xff00) != 0xdf00 {
 		return false
 	}
+	freeze := c.freeze
 	c.reg = data
-	nmi := (data & 0x40) == 0
+	c.freeze = (data & 0x40) == 0
 	c.regEnabled = ((data >> 7) & 1) == 0
 	c.exRom = (data >> 4) & 1
 	c.game = (data >> 5) & 1
@@ -234,11 +252,21 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 		c.intervals = v.IntervalHigh | v.IntervalLow
 	}
 	c.board.GameExRomConfigChanged()
-	if nmi {
+	if !freeze && c.freeze {
+		c.freezer()
 		fmt.Printf("[%d][IOWrite] current data before NMI trigger %08b (0x%x) addr: 0x%x - game: %d, exRom: %d\n", c.board.Cycle(), data, data, addr, c.game, c.exRom)
-		c.board.NMITrigger()
 	}
 	return true
+}
+
+func (c *CartridgeFinalCartridgeIII) freezer() {
+	spec := references.GetCartridgeSpec(references.CartridgeModeUltimax)
+	c.currBank = uint8(c.numBanks - 1)
+	c.exRom = spec.ExRom
+	c.game = spec.Game
+	c.intervals = spec.IntervalHigh | spec.IntervalLow
+	c.board.GameExRomConfigChanged()
+	c.board.NMITrigger()
 }
 
 // initCrt initializes the CRT by loading cartridge data via the provided loader and validates the chip structure and sizes.
