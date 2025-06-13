@@ -2,6 +2,8 @@ package mos6510
 
 import (
 	"fmt"
+	"log"
+	"os"
 )
 
 // Undocumented functions
@@ -300,7 +302,8 @@ func instOpSHA(cpu *CPU) {
 // instOpJAM logs an illegal opcode error with CPU context, resets the CPU, and exits the application.
 func instOpJAM(cpu *CPU) {
 	err := fmt.Errorf("[%s] unknown opcode %02x at %04x", cpu.GetId(), cpu.op, cpu.pc-1)
+	log.Println(err.Error())
+	os.Exit(1)
 	//TODO EVENT
-	cpu.Reset()
-	panic(err)
+	//cpu.Reset()
 }

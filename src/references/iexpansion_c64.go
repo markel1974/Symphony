@@ -42,8 +42,6 @@ type IExpansionC64 interface {
 
 	CycleAlarm(string, QuartzAlarmCallback) IQuartzAlarm
 
-	GameExRomConfigChanged()
-
 	Read(uint16) uint8
 
 	Write(uint16, uint8)
@@ -65,6 +63,8 @@ type IExpansionC64 interface {
 	BusAvailable() bool
 
 	AECAvailable() bool //TODO NOT STANDARD
+
+	GameExRomConfigChanged()
 
 	RmwFlags() uint8 //TODO NOT STANDARD
 

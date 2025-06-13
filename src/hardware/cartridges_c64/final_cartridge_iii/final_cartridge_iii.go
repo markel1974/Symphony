@@ -5,6 +5,15 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
 	"github.com/markel1974/c64emu/src/references"
+	"log"
+)
+
+const (
+	minBanks = 4
+	maxBanks = 16
+
+	bankSize16k = 0x4000
+	bankSize8k  = 0x2000
 )
 
 // CartridgeFinalCartridgeIII represents the Final Cartridge III hardware component for the system.
@@ -20,20 +29,19 @@ import (
 // exRom sets the EXROM line status for cartridge interaction.
 // board represents the associated expansion interface of the C64.
 // lastData stores the last accessed data byte from the cartridge.
-// freezeStatus tracks the freeze mode state of the cartridge.
 type CartridgeFinalCartridgeIII struct {
 	*component.BaseComponent
-	romLBanks    [][]byte // Tutti i banchi "bassi" da 8KB ($8000-$9FFF)
-	romHBanks    [][]byte // Tutti i banchi "alti" da 8KB ($A000-$BFFF)
-	numBanks     int      // Numero di banchi concettuali da 16KB (4 o 16)
-	regEnabled   bool
-	loaderId     string
-	intervals    references.RomInterval
-	currBank     uint8
-	game         uint8
-	exRom        uint8
-	board        references.IExpansionC64
-	freezeStatus uint8
+	romLBanks  [][]byte // Tutti i banchi "bassi" da 8KB ($8000-$9FFF)
+	romHBanks  [][]byte // Tutti i banchi "alti" da 8KB ($A000-$BFFF)
+	numBanks   int      // Numero di banchi concettuali da 16KB (4 o 16)
+	reg        uint8
+	regEnabled bool
+	loaderId   string
+	intervals  references.RomInterval
+	currBank   uint8
+	game       uint8
+	exRom      uint8
+	board      references.IExpansionC64
 }
 
 // NewCartridgeFinalCartridgeIII creates and initializes a new Final Cartridge III component for use in the emulation system.
@@ -43,10 +51,10 @@ func NewCartridgeFinalCartridgeIII(parent references.IComponent, factory referen
 	co := &CartridgeFinalCartridgeIII{
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
+		reg:           0,
 		game:          v.Game,
 		exRom:         v.ExRom,
 		intervals:     v.IntervalLow | v.IntervalHigh,
-		freezeStatus:  0,
 		currBank:      0,
 		regEnabled:    true,
 	}
@@ -89,9 +97,9 @@ func (c *CartridgeFinalCartridgeIII) Reset() {
 	c.game = v.Game
 	c.exRom = v.ExRom
 	c.intervals = v.IntervalLow | v.IntervalHigh
-	c.freezeStatus = 0
 	c.currBank = 0
 	c.regEnabled = true
+	c.reg = 0
 }
 
 // IRQ is a placeholder method for handling IRQ-related logic for the CartridgeFinalCartridgeIII.
@@ -134,38 +142,58 @@ func (c *CartridgeFinalCartridgeIII) GetLoaderId() string {
 // HardwareButton triggers a non-maskable interrupt (NMI) on the board if the button is pressed.
 func (c *CartridgeFinalCartridgeIII) HardwareButton(pressed bool, value uint8) {
 	if pressed {
-		c.board.NMITrigger()
+		if c.board.AECAvailable() && c.board.BusAvailable() {
+			spec := references.GetCartridgeSpec(references.CartridgeMode8K)
+			c.exRom = spec.ExRom
+			c.game = spec.Game
+			c.intervals = spec.IntervalHigh | spec.IntervalLow
+			c.board.GameExRomConfigChanged()
+			c.board.NMITrigger()
+			fmt.Println("HardwareButton: NMI triggered")
+			//t := c.board.CycleAlarm("Freezer", func(mainCpuClk uint64, offset uint64) {
+			//	fmt.Println("AVAILABLE", c.board.AECAvailable() && c.board.BusAvailable())
+			//	c.board.NMITrigger()
+			//})
+			//_ = t.Set(3)
+			return
+		}
 	}
 }
 
 // Write attempts to write data to the cartridge at the specified address within the given ROM interval.
 // Returns true if the operation is invalid for the cartridge, otherwise false.
 func (c *CartridgeFinalCartridgeIII) Write(i references.RomInterval, addr uint16, data uint8) bool {
-	if i&c.intervals != 0 {
-		fmt.Printf("CartridgeFinalCartridgeIII can't be write [bank %d] %x => %d\n", c.currBank, addr, data)
+	if (i & c.intervals) != 0 {
+		fmt.Printf("Write: can't write [bank %d] %x => %d\n", c.currBank, addr, data)
 		return true
 	}
 	return false
 }
 
-// Read retrieves a byte from the specified address and interval. Returns the byte and a bool indicating success.
+// Read recupera un byte dalla ROM della cartuccia.
+// MODIFICATA per gestire correttamente la modalità Ultimax/Freezer.
 func (c *CartridgeFinalCartridgeIII) Read(i references.RomInterval, addr uint16) (uint8, bool) {
+	// IOWrite must have set `c.intervals` to cover the entire $8000-$FFFF area when entering Freezer mode.
 	if (i & c.intervals) == 0 {
+		fmt.Printf("Read: invalid interval %d != %d", c.intervals, i)
 		return 0, false
 	}
-	offset := addr & 0x1fff
-	if addr >= 0x8000 && addr <= 0x9fff {
-		if int(c.currBank) >= len(c.romLBanks) {
-			return 0, false
-		}
-		return c.romLBanks[c.currBank][offset], true
-	} else if addr >= 0xa000 && addr <= 0xBfff {
-		if int(c.currBank) >= len(c.romHBanks) {
-			return 0, false
-		}
-		return c.romHBanks[c.currBank][offset], true
+	if int(c.currBank) >= c.numBanks {
+		log.Printf("Read: invalid bank %d >= %d", c.currBank, c.numBanks)
+		return 0, false
 	}
-	return 0, false
+	// The FCIII logic in this mode performs a mirroring
+	// of the 16KB bank on the entire $8000-$FFFF area.
+	// The mask & 0x3FFF handles this mirroring automatically.
+	// Example: a read at $FFFA becomes a read at offset $3FFA of the bank.
+	// A read at $BFFC becomes a read at offset $3FFC of the bank.
+	offset16k := addr & 0x3FFF
+	if offset16k < bankSize8k {
+		return c.romLBanks[c.currBank][offset16k], true
+	} else {
+		offset8k := offset16k & 0x1FFF
+		return c.romHBanks[c.currBank][offset8k], true
+	}
 }
 
 // IORead handles I/O read requests by decoding the given address and fetching the corresponding data from ROM banks.
@@ -192,14 +220,24 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 	if !c.regEnabled || (addr&0xff00) != 0xdf00 {
 		return false
 	}
+	c.reg = data
+	nmi := (data & 0x40) == 0
 	c.regEnabled = ((data >> 7) & 1) == 0
 	c.exRom = (data >> 4) & 1
 	c.game = (data >> 5) & 1
 	c.currBank = data & (uint8(c.numBanks) - 1)
+
 	if v := references.GetCartridgeSpecFromDetails(c.game, c.exRom); v != nil {
+		if v.IntervalLow|v.IntervalHigh != c.intervals {
+			fmt.Printf("[%d][IOWrite] configuration changed: game %d, exRom %d\n", c.board.Cycle(), c.game, c.exRom)
+		}
 		c.intervals = v.IntervalHigh | v.IntervalLow
 	}
 	c.board.GameExRomConfigChanged()
+	if nmi {
+		fmt.Printf("[%d][IOWrite] current data before NMI trigger %08b (0x%x) addr: 0x%x - game: %d, exRom: %d\n", c.board.Cycle(), data, data, addr, c.game, c.exRom)
+		c.board.NMITrigger()
+	}
 	return true
 }
 
@@ -218,20 +256,20 @@ func (c *CartridgeFinalCartridgeIII) initCrt(ldr references.ICartridgeLoaderC64)
 		if chip.Start() != 0x8000 {
 			return fmt.Errorf("invalid chip start")
 		}
-		if chip.Size() != 0x4000 {
+		if chip.Size() != bankSize16k {
 			return fmt.Errorf("invalid chip size")
 		}
-		offset := int(chip.Bank()) * 0x4000
-		if offset+int(chip.Size()) > len(rawCart) {
+		offset := int(chip.Bank()) * bankSize16k
+		if (offset + int(chip.Size())) > len(rawCart) {
 			return fmt.Errorf("bank data %d out of bounds", chip.Bank())
 		}
 		copy(rawCart[offset:], chip.Data())
 		banksLoaded++
 	}
-	if banksLoaded != 4 && banksLoaded != 16 {
+	if banksLoaded != minBanks && banksLoaded != maxBanks {
 		return fmt.Errorf("unsupported banks number in crt file (%d)", banksLoaded)
 	}
-	data := rawCart[:banksLoaded*0x4000]
+	data := rawCart[:(banksLoaded * bankSize16k)]
 	return c.loadData(data)
 }
 
@@ -239,14 +277,12 @@ func (c *CartridgeFinalCartridgeIII) initCrt(ldr references.ICartridgeLoaderC64)
 // It ensures the ROM data size is a multiple of 16KB and supports only specific numbers of banks (4 or 16).
 // Returns an error if the ROM size is invalid or unsupported.
 func (c *CartridgeFinalCartridgeIII) loadData(data []byte) error {
-	const bankSize16k = 0x4000
-	const bankSize8k = 0x2000
 	size := len(data)
 	if (size % bankSize16k) != 0 {
 		return fmt.Errorf("rom size %d is not a multiple of 16KB", size)
 	}
 	numBanks := size / bankSize16k
-	if numBanks != 4 && numBanks != 16 {
+	if numBanks != minBanks && numBanks != maxBanks {
 		return fmt.Errorf("number of banks (%d) not supported", numBanks)
 	}
 	c.romLBanks = make([][]byte, numBanks)
@@ -254,8 +290,8 @@ func (c *CartridgeFinalCartridgeIII) loadData(data []byte) error {
 	c.numBanks = numBanks
 	for i := 0; i < numBanks; i++ {
 		start := i * bankSize16k
-		c.romLBanks[i] = data[start : start+bankSize8k]
-		c.romHBanks[i] = data[start+bankSize8k : start+bankSize16k]
+		c.romLBanks[i] = data[start:(start + bankSize8k)]
+		c.romHBanks[i] = data[(start + bankSize8k):(start + bankSize16k)]
 	}
 	return nil
 }
@@ -273,3 +309,25 @@ func (c *CartridgeFinalCartridgeIII) initBin(ldr references.ICartridgeLoaderC64)
 	}
 	return c.loadData(data)
 }
+
+/*
+// ReadOld retrieves a byte from the specified address and interval. Returns the byte and a bool indicating success.
+func (c *CartridgeFinalCartridgeIII) ReadOld(i references.RomInterval, addr uint16) (uint8, bool) {
+	if (i & c.intervals) == 0 {
+		return 0, false
+	}
+	offset := addr & 0x1fff
+	if addr >= 0x8000 && addr <= 0x9fff {
+		if int(c.currBank) >= len(c.romLBanks) {
+			return 0, false
+		}
+		return c.romLBanks[c.currBank][offset], true
+	} else if addr >= 0xa000 && addr <= 0xBfff {
+		if int(c.currBank) >= len(c.romHBanks) {
+			return 0, false
+		}
+		return c.romHBanks[c.currBank][offset], true
+	}
+	return 0, false
+}
+*/
