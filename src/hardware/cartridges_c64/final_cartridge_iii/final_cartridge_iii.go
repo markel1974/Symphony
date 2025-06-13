@@ -146,6 +146,7 @@ func (c *CartridgeFinalCartridgeIII) GetLoaderId() string {
 func (c *CartridgeFinalCartridgeIII) HardwareButton(pressed bool, value uint8) {
 	if pressed {
 		if c.board.AECAvailable() && c.board.BusAvailable() {
+			c.freeze = 1
 			c.currBank = uint8(c.numBanks - 1)
 			spec := references.GetCartridgeSpec(references.CartridgeModeUltimax)
 			c.game, c.exRom, c.intervals = spec.Data()
@@ -220,7 +221,7 @@ func (c *CartridgeFinalCartridgeIII) Read(i references.RomInterval, addr uint16)
 
 // IORead handles I/O read requests by decoding the given address and fetching the corresponding data from ROM banks.
 // Returns the data byte and a boolean indicating success or failure based on the address validity and current state.
-func (c *CartridgeFinalCartridgeIII) IORead(addr uint16) (uint8, bool) {
+func (c *CartridgeFinalCartridgeIII) IOReadOld(addr uint16) (uint8, bool) {
 	var offset uint16
 	switch addr & 0xff00 {
 	case 0xde00:
@@ -235,6 +236,38 @@ func (c *CartridgeFinalCartridgeIII) IORead(addr uint16) (uint8, bool) {
 		return 0, false
 	}
 	return c.romLBanks[bank][offset], true
+}
+
+func (c *CartridgeFinalCartridgeIII) IORead(addr uint16) (uint8, bool) {
+	target := addr & 0xff00
+	if target == 0xde00 {
+		// La logica di mirroring per $DE00 rimane invariata (penultima pagina).
+		if int(c.currBank) >= len(c.romLBanks) {
+			return 0, false
+		}
+		offset := 0x1e00 + (addr & 0x00ff)
+		return c.romLBanks[c.currBank][offset], true
+	}
+	if target == 0xdf00 {
+		// Questa pagina ha un comportamento speciale per l'indirizzo $DFFF.
+		if addr == 0xdfff {
+			// Il valore restituito dipende dal bit 7 dell'ultimo valore scritto in `c.reg`.
+			if (c.reg & 0x80) != 0 {
+				// Caso 1: Bit 7 era 1, restituisce $FF.
+				return 0xff, true
+			}
+			// Caso 2: Bit 7 era 0, calcola il valore.
+			val := ((c.reg - 1) & 2) / 2 * 0xFF
+			return val, true
+		}
+		// Per gli altri indirizzi in $DFxx ($DF00-$DFFE), usiamo il mirroring standard dell'ultima pagina
+		if int(c.currBank) >= len(c.romLBanks) {
+			return 0, false
+		}
+		offset := 0x1f00 + (addr & 0x00ff)
+		return c.romLBanks[c.currBank][offset], true
+	}
+	return 0, false
 }
 
 // IOWrite writes data to the cartridge control register if enabled and the address is within the valid range (0xDF00-0xDFFF).
@@ -252,11 +285,15 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 	} else {
 		c.currBank = data & (uint8(c.numBanks) - 1)
 	}
-	// Decodifichiamo il comando dai bit 4 e 5
+
 	command := (data >> 4) & 0x03
+	if c.freeze > 0 {
+		fmt.Printf("[%d]IOWrite: Freezer command %d\n", c.board.Cycle(), command)
+	}
+	// Decodifichiamo il comando dai bit 4 e 5
+
 	switch command {
 	case 0b00: // 0: Turn on 16KB
-		//c.freeze = false
 		spec := references.GetCartridgeSpec(references.CartridgeMode16K)
 		c.game, c.exRom, c.intervals = spec.Data()
 		c.board.GameExRomConfigChanged()
@@ -270,12 +307,10 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 			c.board.NMITrigger()
 		}
 	case 0b10: // 2: Turn on 8KB
-		//c.freeze = false
 		spec := references.GetCartridgeSpec(references.CartridgeMode8K)
 		c.game, c.exRom, c.intervals = spec.Data()
 		c.board.GameExRomConfigChanged()
 	case 0b11: // 3: Turn off FC3
-		//c.freeze = false
 		spec := references.GetCartridgeSpec(references.CartridgeModeOff)
 		c.game, c.exRom, c.intervals = spec.Data()
 		c.board.GameExRomConfigChanged()
