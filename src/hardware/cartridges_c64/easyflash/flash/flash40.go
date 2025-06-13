@@ -2,7 +2,6 @@ package flash
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash/snapshot"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -202,57 +201,6 @@ func (f *Flash040) Peek(addr uint32) uint8 {
 	return f.flashData[addr]
 }
 
-// SnapshotWriteModule writes the state of the Flash040 module into the provided snapshot module with the specified name.
-func (f *Flash040) SnapshotWriteModule(s *snapshot.Snapshot, name string) error {
-	//m := s.NewModule(name, DumpVerMajor, DumpVerMinor)
-	//state := uint8(f.flashState)
-	//baseState := uint8(f.flashBaseState)
-	//m.Add("state", state)
-	//m.Add("base_state", baseState)
-	//m.Add("programByte", f.programByte)
-	//m.Add("eraseMask", f.eraseMask)
-	//m.Add("lastRead", f.lastRead)
-	return nil
-}
-
-// SnapshotReadModule restores the module-specific state from a snapshot using the provided snapshot object and module name.
-func (f *Flash040) SnapshotReadModule(s *snapshot.Snapshot, name string) error {
-	m := s.GetModule(name)
-	if m == nil {
-		return fmt.Errorf("unknown module")
-	}
-	if m.Major != DumpVerMajor {
-		return fmt.Errorf("invalid version")
-	}
-	v := m.Get("state")
-	if t, ok := v.(State); ok {
-		f.flashState = t
-	}
-	v = m.Get("base_state")
-	if t, ok := v.(State); ok {
-		f.flashBaseState = t
-	}
-	v = m.Get("programByte")
-	if t, ok := v.(uint8); ok {
-		f.programByte = t
-	}
-	v = m.Get("eraseMask")
-	if t, ok := v.([8]uint8); ok {
-		f.eraseMask = t
-	}
-	v = m.Get("lastRead")
-	if t, ok := v.(uint8); ok {
-		f.lastRead = t
-	}
-	/* Restore alarm if needed */
-	switch f.flashState {
-	case SectorEraseTimeout, StateSectorErase, StateChipErase:
-		_ = f.eraseAlarm.Set(uint64(flashTypes[f.flashType].eraseSectorCycles))
-	default:
-	}
-	return nil
-}
-
 // flashMagic1 evaluates a given address using the magic1Mask and magic1Addr to determine a match, returning 1 if true.
 func (f *Flash040) flashMagic1(addr uint) int {
 	p1 := flashTypes[f.flashType].magic1Mask
@@ -426,7 +374,7 @@ func (f *Flash040) storeInternal(dist uint64, addr uint, data uint8) {
 		}
 	case StateByteProgram:
 		if f.flashProgramByte(addr, data) != 0 {
-			/* The byte program time is short enough to ignore */
+			// The byte program time is short enough to ignore
 			f.flashState = f.flashBaseState
 		} else {
 			f.flashState = StateByteProgramError

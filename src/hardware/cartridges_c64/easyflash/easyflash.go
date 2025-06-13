@@ -9,11 +9,9 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/catalog"
 	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash/flash"
-	"github.com/markel1974/c64emu/src/hardware/cartridges_c64/easyflash/snapshot"
 	"github.com/markel1974/c64emu/src/references"
 	"io"
 	"log"
-	"os"
 )
 
 // CartridgeEasyFlash represents the implementation of an EasyFlash cartridge for execution on supported hardware.
@@ -39,11 +37,6 @@ type CartridgeEasyFlash struct {
 	filetype        catalog.Type
 	led             bool
 	updateEApi      bool
-}
-
-// GetType returns the cartridge type constant representing an EasyFlash cartridge.
-func GetType() int {
-	return catalog.CartridgeEasyFlash
 }
 
 // NewEasyFlash creates and returns a new instance of a CartridgeEasyFlash implementing the ICartridgeC64 interface.
@@ -434,9 +427,10 @@ func (c *CartridgeEasyFlash) initCrt(ldr references.ICartridgeLoaderC64) ([]byte
 // Detach finalizes and detaches the EasyFlash cartridge, ensuring any pending writes are flushed before shutdown.
 func (c *CartridgeEasyFlash) Detach() error {
 	if c.writeEnabled {
-		if err := c.flushImage(); err != nil {
-			return err
-		}
+		//TODO Serialize
+		//if err := c.flushImage(); err != nil {
+		//	return err
+		//}
 	}
 	c.stateLow.Shutdown()
 	c.stateHigh.Shutdown()
@@ -444,6 +438,7 @@ func (c *CartridgeEasyFlash) Detach() error {
 	return nil
 }
 
+/*
 // flushImage saves the current cartridge data to the specified file based on its type or returns an error if unsuccessful.
 func (c *CartridgeEasyFlash) flushImage() error {
 	if len(c.filename) == 0 {
@@ -500,22 +495,4 @@ func (c *CartridgeEasyFlash) crtSave(_ string) error {
 	//TODO IMPLEMENT
 	return fmt.Errorf("unimplemented")
 }
-
-// snapshotWriteModule serializes the module state of the CartridgeEasyFlash into the provided snapshot.
-func (c *CartridgeEasyFlash) snapshotWriteModule(s *snapshot.Snapshot) error {
-	//m := s.NewModule(snapModuleName, SnapMajor, SnapMinor)
-	//m.Add("jumper", c.jumper)
-	//m.Add("register00", c.register00)
-	//m.Add("register00", c.register00)
-	//m.Add("ram", c.ram)
-	//TODO
-	//m.Add("romLBanks", c.romLBanks)
-	//m.Add("romHBanks", c.romHBanks)
-	//if err := c.stateLow.SnapshotWriteModule(s, flashSnapModuleName); err != nil {
-	//	return err
-	//}
-	//if err := c.stateHigh.SnapshotWriteModule(s, flashSnapModuleName); err != nil {
-	//	return err
-	//}
-	return nil
-}
+*/

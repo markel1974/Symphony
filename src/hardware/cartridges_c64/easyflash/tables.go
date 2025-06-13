@@ -16,19 +16,6 @@ const (
 	BankMask  = (NBanks) - 1
 )
 
-// snapModuleName represents the module identifier used for the CartridgeEasyFlash snapshot functionality.
-const snapModuleName = "CARTEF"
-
-// flashSnapModuleName defines the module name used for snapshot serialization of the EasyFlash cartridge state.
-const flashSnapModuleName = "FLASH040EF"
-
-// SnapMajor represents the major version of the Snap software, initialized to 0.
-// SnapMinor represents the minor version of the Snap software, initialized to 0.
-const (
-	SnapMajor = 0
-	SnapMinor = 0
-)
-
 // EApiHeader represents the header identifier for the EAPI (Embedded API).
 // EApiStartAddress defines the starting memory address for the EAPI operations.
 const (

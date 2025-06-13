@@ -6,7 +6,14 @@ import (
 	"github.com/markel1974/c64emu/src/registry"
 )
 
-const componentId = "easyFlash"
+func Identifier() string {
+	return "easyFlash"
+}
+
+// GetType returns the cartridge type constant representing an EasyFlash cartridge.
+func GetType() int {
+	return catalog.CartridgeEasyFlash
+}
 
 type Factory struct {
 }
@@ -16,7 +23,7 @@ func NewFactory() *Factory {
 }
 
 func (t *Factory) Identifier() string {
-	return componentId
+	return Identifier()
 }
 
 func (t *Factory) Kind() interface{} {
