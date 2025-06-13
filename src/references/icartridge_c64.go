@@ -39,6 +39,10 @@ type CartridgeSpec struct {
 	IntervalHigh RomInterval
 }
 
+func (c *CartridgeSpec) Data() (uint8, uint8, RomInterval) {
+	return c.Game, c.ExRom, c.IntervalLow | c.IntervalHigh
+}
+
 // _cartridgesSpec stores specifications for each cartridge mode as a slice of pointers to CartridgeSpec.
 var _cartridgesSpec []*CartridgeSpec
 
