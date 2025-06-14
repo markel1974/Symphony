@@ -14,29 +14,29 @@ func LinearInterpolation(originalTable []uint16, newSize int) []uint16 {
 	newTable := make([]uint16, newSize)
 	scaleFactor := float64(newSize) / float64(originalSize)
 	for i := 0; i < newSize; i++ {
-		// Calcola la posizione corrispondente (come float) nella tabella originale
+		// Calculate the corresponding position (as float) in the original table
 		posInOriginal := float64(i) / scaleFactor
 
-		// Trova gli indici interi della tabella originale che circondano questa posizione
+		// Find the integer indices in the original table that surround this position
 		idx0 := int(math.Floor(posInOriginal))
 		idx1 := idx0 + 1
 
 		var interpolatedValue uint16
 
 		if idx0 >= originalSize-1 {
-			// Se siamo all'ultimo punto della tabella originale (o oltre),
-			// usa semplicemente l'ultimo valore della tabella originale.
-			// Questo gestisce il caso in cui posInOriginal è molto vicino a (originalSize - 1).
+			// If we're at (or beyond) the last point in the original table,
+			// simply use the last value from the original table.
+			// This handles the case where posInOriginal is very close to (originalSize - 1).
 			interpolatedValue = originalTable[originalSize-1]
 		} else {
-			// Altrimenti, esegui l'interpolazione lineare
+			// Otherwise, perform linear interpolation
 			val0 := float64(originalTable[idx0])
 			val1 := float64(originalTable[idx1])
 
-			// 'fraction' è quanto siamo "oltre" idx0, verso idx1
+			// 'fraction' represents how far we are beyond idx0, toward idx1
 			fraction := posInOriginal - float64(idx0)
 
-			// Formula dell'interpolazione lineare
+			// Linear interpolation formula
 			calcValue := val0*(1.0-fraction) + val1*fraction
 			interpolatedValue = uint16(math.Round(calcValue))
 		}

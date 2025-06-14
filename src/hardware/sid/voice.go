@@ -302,36 +302,36 @@ func (v *Voice) buildEnvelopeGenerator() []func() {
 // buildWaveFormTest initializes and returns a slice of waveform functions for testing purposes, including default behavior.
 // Each function determines the waveform output based on the voice's current state and attributes, such as count and noiseLFSR.
 func (v *Voice) buildWaveFormTest() []func() uint16 {
-	waveForm := make([]func() uint16, 0xf+1)
+	waveFormTest := make([]func() uint16, 0xf+1)
 	defaultFn := func() uint16 {
 		p1 := triTable(v.count)
 		p2 := sawRectTable(v.count)
 		return p1 & p2
 	}
-	for x := range waveForm {
-		waveForm[x] = defaultFn
+	for x := range waveFormTest {
+		waveFormTest[x] = defaultFn
 	}
-	waveForm[WaveTri] = func() uint16 {
+	waveFormTest[WaveTri] = func() uint16 {
 		return 0xFFF
 	}
-	waveForm[WaveSaw] = func() uint16 {
-		// Freezes the sawtooth value at the current value
-		frozen := v.count >> 8
-		return uint16(frozen | (frozen << 8))
+	waveFormTest[WaveSaw] = func() uint16 {
+		//return uint16(v.count >> 8)
+		frozen := (v.count >> 12) << 4
+		return uint16(frozen)
 	}
-	waveForm[WaveRect] = func() uint16 {
+	waveFormTest[WaveRect] = func() uint16 {
 		// Forced ring modulation mode
 		if (v.modBy.count & 0x800000) != 0 {
 			return 0xFFFF
 		}
 		return 0x0000
 	}
-	waveForm[WaveNoise] = func() uint16 {
+	waveFormTest[WaveNoise] = func() uint16 {
 		// Deterministic output mode
 		lfsr := v.noiseLFSR | 0x400000
 		return uint16(((lfsr>>12)&0xFF)<<8 | (lfsr & 0xFF))
 	}
-	return waveForm
+	return waveFormTest
 }
 
 // buildWaveForm initializes and returns an array of waveform generation functions for the Voice instance.
@@ -351,7 +351,19 @@ func (v *Voice) buildWaveForm() []func() uint16 {
 		return triTable(v.count)
 	}
 	waveForm[WaveSaw] = func() uint16 {
-		return uint16(v.count >> 8)
+		const scaleFactorRegular = 17
+		const scaleFactorFaulty = 14
+		accum := v.count >> 12
+		// 6581 DAC's non-linearity:
+		// The idea is that not all bits have the same "weight".
+		// The contribution of the first 11 bits (the more "regular" part of the ramp).
+		output := (accum & 0x7FF) * scaleFactorRegular
+		// The most significant bit (MSB, value 0x800) is the "faulty" one
+		// and contributes differently. We apply its contribution separately.
+		if (accum & 0x800) != 0 {
+			output += 0x800 * scaleFactorFaulty
+		}
+		return uint16(output >> 4)
 	}
 	waveForm[WaveRect] = func() uint16 {
 		// The pw threshold is 12 bit, the count accumulator is 24 bit.
