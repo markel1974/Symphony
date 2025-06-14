@@ -4,11 +4,6 @@ import (
 	"fmt"
 )
 
-// IdIRamC64 generates a unique identifier string for an IRamC64 component using its label, instance ID, and a fixed identifier.
-func IdIRamC64(_ IRamC64, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IdIRamC64")
-}
-
 // IRamC64Socket defines an interface representing a socket interface for C64 RAM-related operations or communication.
 type IRamC64Socket interface {
 }
@@ -36,6 +31,11 @@ type IRamC64 interface {
 	Write(addr uint16, data uint8)
 
 	Size() int
+}
+
+// IdIRamC64 generates a unique identifier string for an IRamC64 component using its label, instance ID, and a fixed identifier.
+func IdIRamC64(v IRamC64, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
 }
 
 // ComponentToIRamC64 converts an IComponent to an IRamC64 instance, returning an error if the conversion is invalid.

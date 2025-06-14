@@ -4,15 +4,17 @@ import (
 	"fmt"
 )
 
-// IVIASocket provides methods for interacting with a VIA socket, including reading, writing, and signaling operations.
-// ReadPRA reads a value from Peripheral Register A (PRA) using a specified mask and shift.
-// ReadPRB reads a value from Peripheral Register B (PRB) using a specified mask and shift.
-// WritePRA writes a value to Peripheral Register A (PRA) using a specified mask and shift.
-// WritePRB writes a value to Peripheral Register B (PRB) using a specified mask and shift.
-// WriteDDRA writes a value to the Data Direction Register A (DDRA) using a specified mask and shift.
-// WriteDDRB writes a value to the Data Direction Register B (DDRB) using a specified mask and shift.
-// IRQClearTrigger clears the interrupt request (IRQ) signal.
-// IRQTrigger triggers an interrupt request (IRQ) signal.
+// IVIASocket represents an interface for socket communication and control in a system with read/write and IRQ operations.
+// ReadPRA reads the value of port A register at the specified indexes.
+// ReadPRB reads the value of port B register at the specified indexes.
+// WritePRA writes a value to the port A register at the specified indexes.
+// WritePRB writes a value to the port B register at the specified indexes.
+// WriteDDRA writes a value to the data direction register A at the specified indexes.
+// WriteDDRB writes a value to the data direction register B at the specified indexes.
+// WriteCA2 writes a boolean control value for the CA2 pin.
+// WriteCB2 writes a boolean control value for the CB2 pin.
+// IRQClearTrigger clears the IRQ trigger state.
+// IRQTrigger triggers an IRQ signal.
 type IVIASocket interface {
 	ReadPRA(uint8, uint8) uint8
 
@@ -35,19 +37,16 @@ type IVIASocket interface {
 	IRQTrigger()
 }
 
-func IdIVIA(_ IVIA, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IVIA")
-}
-
-// IVIA represents an interface for a VIA (Versatile Interface Adapter) component, managing communication and signaling.
-// Setup initializes the IVia instance by associating it with a provided socket.
-// Reset reinitializes the state of the IVia to its default operational state.
-// Emulate performs an emulation cycle for the IVia.
-// ReadByte retrieves a byte of data from the specified memory address.
-// WriteByte writes a byte of data to the specified memory address.
-// SignalPRA triggers the VIA PRA (Peripheral Register A) signal.
-// SignalPRB triggers the VIA PRB (Peripheral Register B) signal.
-// ByteReady checks if the VIA is ready to handle a new byte of data and returns true if ready.
+// IVIA defines an interface for a Versatile Interface Adapter (VIA) with setup, binding, and signaling functionalities.
+// Setup initializes the VIA and prepares it for operation.
+// Bind connects the VIA to a given IVIASocket for external interactions.
+// Connect establishes any required connections after initialization.
+// Reset reinitializes the VIA to its default state.
+// Emulate processes emulation cycles for the VIA.
+// ReadByte reads an 8-bit value from the specified memory address.
+// WriteByte writes an 8-bit value to the specified memory address.
+// SignalPRA triggers a signal specific to Port A.
+// SignalPRB triggers a signal specific to Port B.
 type IVIA interface {
 	Setup() error
 
@@ -70,6 +69,12 @@ type IVIA interface {
 	//ByteReady() bool
 }
 
+// IdIVIA generates a unique identifier for a VIA component based on the provided label, instance, and interface name.
+func IdIVIA(v IVIA, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+// ComponentToIVIA converts an IComponent instance to an IVIA if possible or returns an error if the conversion fails.
 func ComponentToIVIA(component IComponent) (IVIA, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component IVIA is nil")

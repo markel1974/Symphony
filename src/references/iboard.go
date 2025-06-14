@@ -1,35 +1,23 @@
 package references
 
-func IdIBoardC64(_ IBoard, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IBoardC64")
-}
-
-func IdIBoardC1541(_ IIecDevice, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IBoardC1541")
-}
-
-func IdIBoardVIC20(_ IBoard, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IBoardVIC20")
-}
-
-// IBoard represents the interface for controlling and managing a board-based system's input, output, and state.
-// Setup initializes the board with the provided display buffer, player, and configuration settings.
-// Emulate executes the emulation cycle and returns whether it should continue running.
-// GetText retrieves the textual representation of the board's screen content.
-// GetScreenSize returns the width and height of the board's screen in pixels.
-// Joystick1Move updates the state of joystick 1, including axis positions and button states.
-// Joystick2Move updates the state of joystick 2, including axis positions and button states.
-// Joy1SetKey sets the key state for joystick 1 based on the given virtual key and pressed state.
-// Joy2SetKey sets the key state for joystick 2 based on the given virtual key and pressed state.
-// JoySwap toggles or sets the swapping of joystick 1 and 2 controls.
-// KeyboardPaste simulates pasting input to the keyboard.
-// KeyboardSetCommand sends a specific command string to the keyboard.
-// KeyboardNumLockToggle toggles the state of the keyboard's Num Lock functionality.
-// KeyboardCapitalToggle toggles the state of the keyboard's Caps Lock functionality.
-// KeyboardSetKey updates the state of a specific virtual keyboard key.
-// SetMouse updates the mouse position relative to the board's display.
-// Throttle retrieves the throttle interface for managing execution rates.
-// DiskChange triggers an event for changing the current disk in the board's system.
+// IBoard defines the interface for managing and interacting with a board component in the system.
+// Setup initializes the board component and returns an error if setup fails.
+// Mount connects IBoard with IBoardConnections and returns an error if the process fails.
+// Start begins the operation of the board and returns an error if starting fails.
+// Reset resets the state of the board to its initial configuration.
+// Emulate triggers the emulation process managed by the board.
+// GetText retrieves the current text buffer from the board as a slice of bytes.
+// Joystick1Move sends joystick 1 movement data with x, y coordinates and button states.
+// Joystick2Move sends joystick 2 movement data with x, y coordinates and button states.
+// Joy1SetKey sets the state of a joystick 1 key, specifying if it is pressed and the virtual key.
+// Joy2SetKey sets the state of a joystick 2 key, specifying if it is pressed and the virtual key.
+// JoySwap swaps the configurations of joystick 1 and joystick 2.
+// HardwareButton processes hardware button inputs, specifying if pressed and its value.
+// KeyboardSetCommand sends a keyboard command to the board.
+// KeyboardNumLockToggle toggles the Num Lock state on the board's keyboard.
+// KeyboardCapitalToggle toggles the Caps Lock state on the board's keyboard.
+// KeyboardSetKey sets the state of a keyboard key, specifying if it is pressed and the virtual key.
+// SetMouse updates the mouse position with x, y coordinates.
 type IBoard interface {
 	Setup() error
 
@@ -59,8 +47,24 @@ type IBoard interface {
 	SetMouse(x uint8, y uint8)
 }
 
+// IBoardConnections defines the interface for board connection interactions, such as VBlank execution and LED activity control.
+// VBlank handles vertical blanking operations during rendering.
+// LedActivity manages LED state for specified device numbers.
 type IBoardConnections interface {
 	VBlank()
 
 	LedActivity(deviceNumber uint8, led bool)
 }
+
+// IdIBoardC64 generates a unique identifier for an IBoard interface using its label, instance, and interface name.
+func IdIBoardC64(v IBoard, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+//func IdIBoardC1541(_ IIecDevice, label string, instance int) string {
+//	return IdInternalComponent(label, instance, "IBoardC1541")
+//}
+
+//func IdIBoardVIC20(_ IBoard, label string, instance int) string {
+//	return IdInternalComponent(label, instance, "IBoardVIC20")
+//}

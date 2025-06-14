@@ -4,21 +4,11 @@ import (
 	"fmt"
 )
 
-func IdIKeyboard(_ IKeyboard, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IKeyboard")
-}
-
+// IKeyboardSocket represents an interface that allows binding with a keyboard for input handling and operations.
 type IKeyboardSocket interface {
 }
 
-// IKeyboard defines an interface for managing keyboard input, including virtual key states and command processing.
-// Reset reinitializes the keyboard state, clearing any prior configurations or input data.
-// Emulate triggers an emulation process for the keyboard, typically used for virtualization behaviors.
-// NumLockToggle toggles the state of the Num Lock key on the keyboard.
-// CapitalToggle toggles the state of the Caps Lock key on the keyboard.
-// SetVirtualKey processes a virtual key with a pressed state and associated virtual keycode.
-// Poll retrieves the next key from the keyboard storage and indicates if a key is available.
-// SetCommand processes and stores input commands based on their mapped key representations.
+// IKeyboard defines an interface for keyboard functionality, including setup, binding, connection, and key state management.
 type IKeyboard interface {
 	Setup() error
 
@@ -41,6 +31,12 @@ type IKeyboard interface {
 	SetCommand(cmd string)
 }
 
+// IdIKeyboard generates a unique identifier for an IKeyboard interface by combining the label, instance, and interface name.
+func IdIKeyboard(v IKeyboard, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+// ComponentToIKeyboard converts an IComponent implementation to an IKeyboard interface or returns an error if invalid.
 func ComponentToIKeyboard(component IComponent) (IKeyboard, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component IKeyboard is nil")

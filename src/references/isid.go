@@ -4,19 +4,21 @@ import (
 	"fmt"
 )
 
-func IdISID(_ ISID, label string, instance int) string {
-	return IdInternalComponent(label, instance, "ISID")
+// ISIDSocket is an interface representing a socket for communication with an ISID implementation.
+type ISIDSocket interface {
 }
 
-// ISID is an interface representing a Sound Interface Device (SID) for audio synthesis and emulation in a system.
-// Setup initializes the interface with a socket, frequency, rasters, and a configuration.
-// Reset resets the internal state of the SID to default.
-// SetPotX sets the X-axis of the paddle controller input.
-// SetPotY sets the Y-axis of the paddle controller input.
-// Prepare prepares the SID for the next operational update.
-// Update processes the SID's internal state and audio generation for the current cycle.
-// WriteRegister writes data to a specific register address of the SID.
-// ReadRegister retrieves data from a specified register address of the SID.
+// ISID defines an interface for interacting with a SID (Sound Interface Device) component.
+// Setup initializes the SID component, preparing it for operation.
+// Bind attaches the SID to a socket with specified frame and raster frequencies.
+// Connect establishes any required connections for the SID to function in a system.
+// Reset reinitializes the SID to its default state.
+// SetPotX adjusts the X-axis potentiometer for the SID to a specific 8-bit value.
+// SetPotY adjusts the Y-axis potentiometer for the SID to a specific 8-bit value.
+// Prepare prepares the SID for updates or operational adjustments.
+// Update processes any changes or updates required for the SID's functioning.
+// WriteRegister writes an 8-bit value to a specified 16-bit memory address in the SID.
+// ReadRegister reads an 8-bit value from a specified 16-bit memory address in the SID.
 type ISID interface {
 	Setup() error
 
@@ -39,11 +41,12 @@ type ISID interface {
 	ReadRegister(addr uint16) uint8
 }
 
-// ISIDSocket is an interface representing a socket for SID integration and player management functionality.
-// GetPlayer retrieves the IAudioRender instance associated with the socket, enabling player-related operations.
-type ISIDSocket interface {
+// IdISID generates a unique identifier string for an ISID component using its label, instance number, and interface name.
+func IdISID(v ISID, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
 }
 
+// ComponentToISID converts an IComponent into an ISID if possible, returning an error if the conversion fails.
 func ComponentToISID(component IComponent) (ISID, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component ISID is nil")

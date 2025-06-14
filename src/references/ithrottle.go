@@ -4,16 +4,16 @@ import (
 	"fmt"
 )
 
-func IdIThrottle(_ IThrottle, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IThrottle")
-}
-
+// IThrottleSocket represents a socket interface used for binding and communication in throttling mechanisms.
 type IThrottleSocket interface {
 }
 
-// IThrottle defines an interface for controlling the execution rate and tracking the count of operations executed.
-// Throttle adjusts execution speed to meet a specified rate, ensuring operations run within defined limits.
-// Counter returns the current count of throttled operations executed thus far.
+// IThrottle is an interface for managing and controlling throttled execution of operations.
+// Setup initializes the throttle instance, preparing it for usage.
+// Bind associates a throttle with a socket and sets a frame interval for execution control.
+// Connect establishes connections or dependencies required for throttle operation.
+// Counter retrieves the current count of throttle cycles or executions.
+// Update performs an update cycle for the throttle, managing execution intervals or changes.
 type IThrottle interface {
 	Setup() error
 
@@ -26,6 +26,12 @@ type IThrottle interface {
 	Update()
 }
 
+// IdIThrottle constructs a unique identifier string for an IThrottle instance using label, instance, and interface name.
+func IdIThrottle(v IThrottle, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+// ComponentToIThrottle converts an IComponent to an IThrottle, returning an error if conversion is not possible or input is nil.
 func ComponentToIThrottle(component IComponent) (IThrottle, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component is IThrottle nil")

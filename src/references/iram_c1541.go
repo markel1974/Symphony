@@ -4,23 +4,18 @@ import (
 	"fmt"
 )
 
-// IdIRamC1541 generates a unique identifier for an IRamC1541 component based on a label, instance, and constant ID string.
-func IdIRamC1541(_ IRamC1541, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IdIRamC1541")
-}
-
-// IRamC1541Socket represents an interface for interacting with a RAM C1541 socket structure or component.
+// IRamC1541Socket represents an interface for binding and integrating a RAM instance specific to C1541 functionality.
 type IRamC1541Socket interface {
 }
 
-// IRamC1541 defines the interface for interacting with a RAM module compatible with the C1541 system.
-// Setup initializes the RAM module.
-// Bind associates the RAM module with an IRamC1541Socket instance for communication.
-// Connect establishes the connection for the RAM module with other components.
-// Reset clears or prepares the RAM to its initial state.
-// Read retrieves the data stored at the specified memory address.
-// Write stores data at the specified memory address in the RAM.
-// Size provides the total memory size of the RAM module.
+// IRamC1541 represents an interface for managing a RAM module in a C1541 drive emulation system.
+// Setup initializes the RAM module and prepares it for interaction.
+// Bind associates the RAM module with a provided IRamC1541Socket.
+// Connect establishes the necessary connections for the RAM module to operate within the system.
+// Reset reinitializes the RAM module to its default state.
+// Read retrieves an 8-bit value from the specified memory address in the RAM module.
+// Write stores an 8-bit value at the specified memory address in the RAM module.
+// Size returns the total size of the RAM module in bytes.
 type IRamC1541 interface {
 	Setup() error
 
@@ -37,7 +32,12 @@ type IRamC1541 interface {
 	Size() int
 }
 
-// ComponentToIRamC1541 converts an IComponent to an IRamC1541 and returns an error if the conversion is invalid or unsupported.
+// IdIRamC1541 generates a unique hardware ID for an IRamC1541 component using a label, instance number, and reference.
+func IdIRamC1541(v IRamC1541, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+// ComponentToIRamC1541 converts an IComponent to an IRamC1541, ensuring type compatibility and returning an error if invalid.
 func ComponentToIRamC1541(component IComponent) (IRamC1541, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component IRamC1541 is nil")

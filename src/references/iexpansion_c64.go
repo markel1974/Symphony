@@ -21,22 +21,7 @@ import (
 
 // https://www.c64-wiki.com/wiki/Expansion_Port
 
-// IExpansionC64 defines an interface for C64 expansion boards, including memory access and hardware interaction methods.
-// Cycle returns the current cycle count.
-// CycleAlarm registers a cycle-based alarm with a callback and returns an alarm interface.
-// GameExRomConfigChanged notifies the board of a Game/ExRom configuration change.
-// Read reads a byte from a given memory address.
-// Write writes a byte to a given memory address.
-// RamSetWriteTrigger assigns a write trigger function to a memory address, returning the trigger ID.
-// RamRemoveWriteTrigger removes a write trigger from a memory address by ID.
-// ResetTrigger sends a hardware reset signal to the board.
-// NMITrigger triggers a non-maskable interrupt.
-// IRQTrigger triggers an interrupt request.
-// IRQClearTrigger clears an active interrupt request.
-// SetDMALow sets the DMA (Direct Memory Access) low state.
-// BusAvailable checks whether the system bus is available for access.
-// AECAvailable checks whether an AEC (Advanced Expansion Controller) is available.
-// RmwFlags retrieves flags for read-modify-write operations (non-standard).
+// IExpansionC64 defines an interface for managing expansion hardware behavior and state in the C64 system.
 type IExpansionC64 interface {
 	Cycle() uint64
 
@@ -71,18 +56,11 @@ type IExpansionC64 interface {
 	LedActivity(uint8, bool)
 }
 
-func IdICartridgeManagerC64(_ ICartridgeManagerC64, label string, instance int) string {
-	return IdInternalComponent(label, instance, "ICartridgeManagerC64")
-}
-
+// ICartridgeManagerC64Socket represents an interface for managing socket interactions in a C64 cartridge system.
 type ICartridgeManagerC64Socket interface {
 }
 
-// ICartridgeManagerC64 defines an interface for managing expansion socket operations and interactions in a given system.
-// Config retrieves the configuration data of the expansion socket and additional state details.
-// Read fetches a value from a specified ROM interval and address, returning the value and success state.
-// IORead performs a read operation from an I/O address, returning the value and success state.
-// IOWrite executes a write operation to an I/O address with the specified data, indicating success.
+// ICartridgeManagerC64 defines an interface for managing C64 cartridges and their interactions within an emulator system.
 type ICartridgeManagerC64 interface {
 	Setup() error
 
@@ -115,6 +93,12 @@ type ICartridgeManagerC64 interface {
 	Add(kind string, name string, data []uint8) (string, error)
 }
 
+// IdICartridgeManagerC64 generates a unique identifier for an ICartridgeManagerC64 interface using the given label and instance.
+func IdICartridgeManagerC64(v ICartridgeManagerC64, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+// ComponentToICartridgeManagerC64 converts an IComponent to an ICartridgeManagerC64, returning an error if the cast fails.
 func ComponentToICartridgeManagerC64(component IComponent) (ICartridgeManagerC64, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component ICartridgeManagerC64 is nil")

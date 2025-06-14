@@ -4,6 +4,8 @@ import (
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/shell/cli"
 	"io"
+	"log"
+	"reflect"
 	"strconv"
 )
 
@@ -143,4 +145,13 @@ type IComponentFactory interface {
 
 func IdInternalComponent(label string, instance int, id string) string {
 	return label + ":" + id + ":" + strconv.Itoa(instance)
+}
+
+func InterfaceName(v interface{}) string {
+	t := reflect.TypeOf(v)
+	if t.Kind() == reflect.Ptr && t.Elem().Kind() == reflect.Interface {
+		return t.Elem().Name()
+	}
+	log.Fatal("not an interface")
+	return ""
 }

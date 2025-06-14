@@ -4,22 +4,7 @@ import (
 	"fmt"
 )
 
-func IdIVIC(_ IVIC, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IVIC")
-}
-
-// IVIC defines an interface for a Video Interface Chip emulation, managing display rendering and register interactions.
-// Setup configures the VIC with a socket and a configuration object.
-// Reset reinitializes the VIC to its default state.
-// Emulate performs a single cycle of VIC emulation.
-// GetBALow returns the current state of the BA (Bus Available) line.
-// GetAECLow returns the current state of the AEC (Address Enable) line.
-// WriteRegister writes a value to a specified register address.
-// ReadRegister reads a value from a specified register address.
-// LightPenTrigger simulates the activation of the light pen input.
-// GetText retrieves the text data associated with the VIC.
-// ChangedVA notifies the VIC of a change in the video address.
-// GetLastByte returns the last byte processed by the VIC.
+// IVIC defines an interface for emulating a VIC component with methods for setup, interaction, state management, and operations.
 type IVIC interface {
 	Setup() error
 
@@ -48,10 +33,10 @@ type IVIC interface {
 	GetLastByte() uint8
 }
 
-// IVICBanks represents an interface providing methods to read data from various VIC memory regions, like character ROM and colors.
-// ReadCharRom reads data from the character ROM memory mapped at a given address.
-// ReadDirect reads data directly from memory at the specified address.
-// ReadColor reads color information from memory at the specified address.
+// IVICBanks provides methods to interact with various VIC memory regions, including character ROM and color memory.
+// ReadCharRom reads a byte from the character ROM at the specified address.
+// ReadDirect reads a byte from direct memory at the specified address.
+// ReadColor retrieves a color byte from VIC memory at the given address.
 type IVICBanks interface {
 	ReadCharRom(uint16) uint8
 
@@ -60,16 +45,15 @@ type IVICBanks interface {
 	ReadColor(uint16) uint8
 }
 
-// IVICSocket defines an interface for interacting with a VIC chip's socket, supporting display buffer and bank operations.
-// Cycle returns the current cycle count.
-// GetDisplayBuffer retrieves the associated display buffer.
-// GetBanks retrieves the associated VIC bank interface.
-// IRQTrigger triggers an interrupt request.
-// IRQClearTrigger clears an interrupt request.
-// BALow sets the BA (Bus Available) line low or high.
-// AECLow sets the AEC (Address Enable) line low or high.
-// VBlank signals the start of a vertical blanking interval.
-// LastCycle performs logic associated with the last cycle in an operation.
+// IVICSocket defines the interface for VIC's connection socket, providing methods for synchronization and signal control.
+// Cycle returns the current cycle count of the VIC socket.
+// GetBanks retrieves the associated IVICBanks for memory access operations.
+// IRQTrigger signals an interrupt request trigger on the VIC socket.
+// IRQClearTrigger clears an active interrupt request signal on the VIC socket.
+// BALow sets or unsets the state of the BA (Bus Available) line.
+// AECLow sets or unsets the state of the AEC (Address Enable Control) line.
+// VBlank notifies the VIC to enter vertical blanking interval.
+// LastCycle is invoked to finalize operations at the last cycle of the frame.
 type IVICSocket interface {
 	Cycle() uint64
 
@@ -88,6 +72,14 @@ type IVICSocket interface {
 	LastCycle()
 }
 
+// IdIVIC generates a unique identifier for an IVIC interface based on the given label, instance, and interface name.
+func IdIVIC(v IVIC, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+// ComponentToIVIC converts an IComponent to an IVIC if the provided component matches the IVIC interface type.
+// Returns an IVIC instance and nil error if successful, or nil and an error if the conversion fails.
+// An error is also returned if the input component is nil.
 func ComponentToIVIC(component IComponent) (IVIC, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component IVIC is nil")

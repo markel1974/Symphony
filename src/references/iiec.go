@@ -4,10 +4,15 @@ import (
 	"fmt"
 )
 
+// IECAtnABit represents the bit mask for the ATN (Attention) line used in peripheral communication.
 const (
 	IECAtnABit = uint8(0x10)
 )
 
+// IECSidecarEnabled represents the flag for enabling the IEC sidecar functionality.
+// IECSidecarAtnAEnabled represents the flag for enabling attention A in the IEC sidecar.
+// IECSidecarDrop represents the flag for dropping the IEC sidecar functionality.
+// IECSidecarAtnABit represents the shifted value of IECAtnABit for use in the IEC sidecar configuration.
 const (
 	IECSidecarEnabled     = uint16(0x100)
 	IECSidecarAtnAEnabled = uint16(0x200)
@@ -15,25 +20,13 @@ const (
 	IECSidecarAtnABit     = uint16(uint16(IECAtnABit) << 8)
 )
 
-func IdIIec(_ IIec, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IIec")
-}
-
+// IIecSocket represents an interface for handling LED activity status for devices in an IEC communication setup.
+// LedActivity manipulates the LED state for a specified device, toggling it on or off.
 type IIecSocket interface {
 	LedActivity(deviceNumber uint8, led bool)
 }
 
-// IIec defines an interface for managing communication between a CPU and peripherals in an emulated environment.
-// Setup initializes the IIec instance with provided quartz and configuration objects.
-// AddPeripheral adds a new peripheral device with specified parameters, associating it with a unique device ID.
-// RemovePeripheral removes a peripheral device using its unique device ID.
-// Reset reinitializes the state of the IIec instance and all associated peripherals.
-// Emulate performs the emulation cycle for the IIec and connected peripherals.
-// CpuRead retrieves the data from the CPU bus.
-// CpuWrite writes data to the CPU bus for transmission to peripherals.
-// PeripheralRead retrieves data sent from peripherals to the CPU.
-// PeripheralWrite writes data from the CPU to a specific peripheral identified by its device number.
-// LedActivity provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
+// IIec defines an interface for managing IEC bus operations, including setup, peripheral control, and data communication.
 type IIec interface {
 	Setup() error
 
@@ -62,21 +55,16 @@ type IIec interface {
 	LedActivity(deviceNumber uint8, led bool)
 }
 
+// IdIIecDevice generates a unique identifier for an IIecDevice by combining its label, instance, and a fixed ID string.
 func IdIIecDevice(_ IIecDevice, label string, instance int) string {
 	return IdInternalComponent(label, instance, "IIecDevices")
 }
 
+// IIecDeviceSocket represents an interface for an IEC device connection socket, providing a binding mechanism for devices.
 type IIecDeviceSocket interface {
 }
 
-// IIecDevice represents the interface for a virtual drive in the emulation environment.
-// Setup initializes the virtual drive with the given configuration.
-// Reset resets the state of the virtual drive.
-// Emulate executes the emulation cycle for the virtual drive.
-// Ready checks if the virtual drive is ready for operation.
-// GetDeviceNumber returns the device number associated with the virtual drive.
-// AtnStateChanged handles changes in the Attention (ATN) line state.
-// LedActivity provides access to the LED signal, allowing observation of state changes via a SignalUint32 instance.
+// IIecDevice defines the interface for an IEC device, providing methods for setup, binding, connection, and emulation.
 type IIecDevice interface {
 	Setup() error
 
@@ -101,19 +89,20 @@ type IIecDevice interface {
 	LedActivity(led bool)
 }
 
+// IdIIecProtocolDevice generates a unique identifier string for an IIecProtocolDevice using a label and instance number.
 func IdIIecProtocolDevice(_ IIecProtocolDevice, label string, instance int) string {
 	return IdInternalComponent(label, instance, "IIecProtocolDevice")
 }
 
-// IIecProtocolDevice defines an interface for interacting with devices using the IEC protocol.
-// Write sends a byte to a specific secondary address on the device.
-// Read retrieves a byte from a specific secondary address on the device.
-// Open initiates communication with a specific secondary address on the device.
-// Close terminates communication with a specific secondary address on the device.
-// Listen signals the device to start listening on a specific secondary address.
-// Unlisten signals the device to stop listening on a specific secondary address.
-// Talk instructs the device to enter talking mode on a specific secondary address.
-// Untalk instructs the device to exit talking mode on a specific secondary address.
+// IIecProtocolDevice defines an interface for handling IEC protocol device operations.
+// Write sends data to a device at a given secondary address and returns a status or result code.
+// Read retrieves data from a device at a given secondary address along with a status or reply code.
+// Open initializes or prepares a device at the specified secondary address for communication.
+// Close terminates communication with a device at the specified secondary address.
+// Listen sets the device to listen mode at the specified secondary address.
+// Unlisten disables the listen mode for the device at the specified secondary address.
+// Talk sets the device to talk mode at the specified secondary address.
+// Untalk disables the talk mode for the device at the specified secondary address.
 type IIecProtocolDevice interface {
 	Write(sec uint8, b uint8) uint8
 
@@ -132,6 +121,12 @@ type IIecProtocolDevice interface {
 	Untalk(sec uint8) uint8
 }
 
+// IdIIec generates a unique identifier for an IIec component using the provided label, instance, and interface name.
+func IdIIec(v IIec, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+// ComponentToIEC converts an IComponent to an IIec type, returning an error if the conversion is invalid or nil.
 func ComponentToIEC(component IComponent) (IIec, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component IIec is nil")

@@ -4,27 +4,26 @@ import (
 	"fmt"
 )
 
-func IdIPlaC64(_ IPlaC64, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IPlaC64")
-}
-
+// IPlaC64Socket represents an interface for socket communication with the PLA, facilitating component interaction and integration.
 type IPlaC64Socket interface {
 }
 
-// IPlaC64 defines the interface for a Programmable Logic Array implementation specifically for the C64 system.
-// Setup initializes the PLA with required components like VIC, SID, CIAs, cartridge manager, ROM loader, and configuration.
-// Reset reinitializes the state of the PLA to default values.
-// GetMemoryConfig retrieves the current memory configuration array as a slice of uint8.
-// SetMemoryEntry sets a single memory entry in the configuration to the specified value.
-// SetMemoryConfig updates the entire memory configuration array with a new slice of uint8.
-// RebuildMemoryConfig recalculates the memory configuration based on current settings and inputs.
-// Write performs a write operation for a given 16-bit address and 8-bit data value.
-// Read performs a read operation from a given 16-bit memory address, returning the corresponding 8-bit value.
-// ReadCharRom retrieves data from the Character ROM at a specified 16-bit address.
-// ReadDirect performs a direct memory read from the specified 16-bit address without any access filtering.
-// ReadColor reads the color RAM value from a specified address in the range of the memory map.
-// SetWriteTrigger associates a callback function to trigger on writes at the specified 16-bit address.
-// RemoveRamTrigger removes a write trigger callback associated with a 16-bit address by its identifier.
+// IPlaC64 defines the interface for the Programmable Logic Array (PLA) component of the C64 system.
+// Setup initializes the PLA component for operation.
+// Bind links the PLA to various system components, including socket, VIC, SID, CIAs, cartridge manager, RAM, and ROM loader.
+// Connect establishes the necessary connections for the PLA to interact with other components.
+// Reset reinitializes the PLA to its default state.
+// GetMemoryConfig retrieves the current memory configuration as a slice of 8-bit values.
+// SetMemoryEntry sets a specific memory configuration entry using an 8-bit value.
+// SetMemoryConfig updates the entire memory configuration using a slice of 8-bit values.
+// RebuildMemoryConfig reconstructs the memory configuration based on current system state.
+// Write writes an 8-bit data value to a specified 16-bit memory address.
+// Read reads an 8-bit data value from a specified 16-bit memory address.
+// ReadCharRom reads an 8-bit character ROM value from a specified 16-bit memory address.
+// ReadDirect reads an 8-bit value directly from a specified 16-bit memory address bypassing memory configuration.
+// ReadColor retrieves an 8-bit color value from a specified 16-bit memory address.
+// SetWriteTrigger assigns a trigger function that executes when writing to a specific 16-bit memory address.
+// RemoveRamTrigger removes a previously set write trigger function for a specified 16-bit memory address identified by a trigger ID.
 type IPlaC64 interface {
 	Setup() error
 
@@ -57,6 +56,12 @@ type IPlaC64 interface {
 	RemoveRamTrigger(addr uint16, id int)
 }
 
+// IdIPlaC64 generates a unique identifier for an IPlaC64 interface instance using the specified label and instance index.
+func IdIPlaC64(v IPlaC64, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+// ComponentToIPLAc64 converts an IComponent to an IPlaC64 if possible, returning an error if the conversion fails.
 func ComponentToIPLAc64(component IComponent) (IPlaC64, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component IPlaC64 is nil")

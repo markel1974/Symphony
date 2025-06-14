@@ -4,17 +4,16 @@ import (
 	"fmt"
 )
 
-func IdIPLAc1541(_ IPLAc1541, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IPLAc1541")
-}
-
+// IPLAc1541Socket defines an interface that serves as a connection point for integrating components with the PLA system.
 type IPLAc1541Socket interface {
 }
 
-// IPLAc1541 represents an interface for handling PLA logic in a 1541 disk drive emulation.
-// Setup initializes the interface by linking it to VIA components, ROM loader, and configuration data.
-// Read retrieves the value from the specified memory address.
-// Write writes a value to the specified memory address.
+// IPLAc1541 represents an interface for managing and simulating the Programmable Logic Array (PLA) in a C1541 system.
+// Setup initializes the PLA and prepares it for operation.
+// Bind connects the PLA to compatible components, including VIAs, RAM, and ROM loader, for functional integration.
+// Connect establishes necessary runtime connections for the PLA to interact within the system.
+// Read retrieves an 8-bit value from the specified memory address in the PLA's memory map.
+// Write stores an 8-bit value at the specified memory address in the PLA's memory map.
 type IPLAc1541 interface {
 	Setup() error
 
@@ -27,6 +26,12 @@ type IPLAc1541 interface {
 	Write(addr uint16, data uint8)
 }
 
+// IdIPLAc1541 generates a unique identifier string for an IPLAc1541 component based on its label, instance, and interface name.
+func IdIPLAc1541(v IPLAc1541, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+// ComponentToIPLAc1541 converts an IComponent to an IPLAc1541 instance, returning an error if the conversion fails.
 func ComponentToIPLAc1541(component IComponent) (IPLAc1541, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component IPLAc1541 is nil")

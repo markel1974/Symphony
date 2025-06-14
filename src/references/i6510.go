@@ -4,26 +4,28 @@ import (
 	"fmt"
 )
 
-// I6510Banks represents an interface for managing and accessing memory banks in a system.
-// Read retrieve the value from a specified memory address within the bank.
-// Write sets the specified value at a given memory address in the bank.
+// I6510Banks represents an interface for reading from and writing to memory banks in the 6510 CPU simulation.
+// Read retrieves an 8-bit unsigned value from the specified 16-bit memory address.
+// Write stores an 8-bit unsigned value at the specified 16-bit memory address.
 type I6510Banks interface {
 	Read(uint16) uint8
 
 	Write(uint16, uint8)
 }
 
-func IdI6510(_ I6510, label string, instance int) string {
-	return IdInternalComponent(label, instance, "I6510")
+// I6510Socket provides an interface for facilitating communication and interaction with the 6510 CPU.
+type I6510Socket interface {
 }
 
-// I6510 represents the 6510 CPU interface for emulation and interaction with hardware components.
-// Reset reinitializes the CPU state to default values.
-// Emulate performs a single emulation step of the 6510 CPU.
-// Setup configures the CPU to interact with the specified I6510Socket.
-// SetRDYLow sets the RDY line state to low or high.
-// SetAECLow sets the AEC line state to low or high.
-// SetOverflowBranch assigns a callback function for signaling overflow during branch instructions.
+// I6510 defines the interface for a simulation of the 6510 CPU, including setup, binding, connection, and operation methods.
+// Setup initializes the 6510 simulation, returning an error if setup fails.
+// Bind associates necessary components like socket, PIC, and memory banks to the CPU simulation, returning an error if binding fails.
+// Connect finalizes the connection process for the 6510, making it operational in the simulation.
+// Reset reinitializes the CPU simulation to its default state.
+// Emulate executes one emulation cycle of the 6510 logic, advancing its internal state.
+// SetRDYLow alters the RDY line state, taking a boolean to indicate if it should be set low.
+// SetAECLow changes the AEC line state, taking a boolean to specify if it should be lowered.
+// SetOverflowBranch assigns an overflow branch function, which should return a boolean representing overflow status.
 type I6510 interface {
 	Setup() error
 
@@ -42,10 +44,12 @@ type I6510 interface {
 	SetOverflowBranch(sob func() bool)
 }
 
-// I6510Socket defines an interface for interacting with 6510 PIC and memory banks.
-type I6510Socket interface {
+// IdI6510 generates a unique identifier for an I6510 component using its label, instance index, and reference identity.
+func IdI6510(v I6510, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
 }
 
+// ComponentToI6510 converts a given IComponent to an I6510 type, returning an error if the conversion is invalid or the component is nil.
 func ComponentToI6510(component IComponent) (I6510, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component I6510 is nil")

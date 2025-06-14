@@ -4,20 +4,11 @@ import (
 	"fmt"
 )
 
-func IdIJoystick(_ IJoystick, label string, instance int) string {
-	return IdInternalComponent(label, instance, "IJoystick")
-}
-
+// IJoystickSocket defines an interface for connecting a joystick device to external systems or components.
 type IJoystickSocket interface {
 }
 
-// IJoystick defines an interface for joystick operations including updates, resets, emulation, movement, key setting, and polling.
-// Update defines a method to adjust sensitivity and recalibrate with minimum and maximum bounds.
-// Reset defines a method to reinitialize the joystick state to default settings.
-// Emulate defines a method to simulate joystick behavior or states.
-// Move provides a method to update the joystick position and button states.
-// SetKey adjusts the joystick state based on key presses or releases with a specific joystick ID.
-// Poll retrieves the next joystick state and its validity, indicating if data is available.
+// IJoystick defines an interface for managing joystick-related operations and interactions in a system.
 type IJoystick interface {
 	Setup() error
 
@@ -38,6 +29,12 @@ type IJoystick interface {
 	Poll() (uint8, bool)
 }
 
+// IdIJoystick generates a unique hardware identifier for an IJoystick instance using its label, instance number, and interface name.
+func IdIJoystick(v IJoystick, label string, instance int) string {
+	return IdInternalComponent(label, instance, InterfaceName(&v))
+}
+
+// ComponentToIJoystick converts an IComponent to an IJoystick interface if possible, returning an error on type mismatch or nil.
 func ComponentToIJoystick(component IComponent) (IJoystick, error) {
 	if component == nil {
 		return nil, fmt.Errorf("component IJoystick is nil")
