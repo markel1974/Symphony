@@ -1,141 +1,77 @@
-# MOS6581 SID Chip Emulator in Go
+# MOS 6581 SID Chip Emulator in Go
 
-This project is a Go-based emulation of the MOS Technology 6581 Sound Interface Device (SID), the iconic sound chip used in the Commodore 64 and other 8-bit computers. It aims to replicate the sound generation capabilities of the SID, including its three distinct voices, various waveform types, envelope generators, and its characteristic resonant filter.
+[![Go](https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://go.dev/)
+[![License](https://img.shields.io/badge/License-LGPL_v2.1-blue.svg)](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
+[![Go Report Card](https://goreportcard.com/badge/github.com/markel1974/symphony)](https://goreportcard.com/report/github.com/markel1974/symphony)
 
-## Features
+This project is a high-fidelity emulation of the **MOS Technology 6581 Sound Interface Device (SID)**, the iconic sound chip from the Commodore 64 home computer, written entirely in Go. It aims to accurately replicate the behavior and sonic nuances of the original chip, providing a robust and performant component for integration into larger emulation frameworks.
 
-* **Three Independent Voices:** Each voice can be programmed with its own frequency, waveform, envelope, and modulation parameters.
-* **Multiple Waveforms:**
-    * Triangle
-    * Sawtooth
-    * Pulse (with variable pulse width)
-    * Noise (pseudo-random)
-    * Combined waveforms (Triangle+Sawtooth, Triangle+Pulse, Sawtooth+Pulse, Triangle+Sawtooth+Pulse - though combined waveforms often result in specific behaviors rather than simple mixing in a real SID, and the implementation reflects this through lookup tables or specific logic for mixed modes).
-* **ADSR Envelope Generators:** Each voice has an Attack, Decay, Sustain, Release envelope generator for dynamic volume control.
-* **Synchronization & Ring Modulation:** Voices can synchronize their phase or apply ring modulation effects with preceding voices.
-* **Programmable Filter:**
-    * Low-Pass
-    * Band-Pass
-    * High-Pass
-    * Notch (Low-Pass + High-Pass)
-    * Configurable cutoff frequency and resonance.
-    * Ability to route individual voices through the filter.
-* **Master Volume Control.**
-* **External Audio Input (Conceptual):** While not fully detailed in processing, register bits for external input filtering are present.
-* **Potentiometer Registers:** Read-only registers for emulating paddle inputs (`POTX`, `POTY`).
-* **Oscillator/Envelope Read-Back:** Registers for reading the current state of oscillator 3 and envelope 3.
-* **TEST Bit Functionality:** Implements the TEST bit behavior which can reset/freeze oscillators and affect waveform generation.
-* **Reflection API:** Provides getter/setter methods for all SID registers, facilitating debugging and external control (via `mos6581_reflect.go`).
-* **Component-Based Design:** Designed to be integrated as a component within a larger emulation system (e.g., a C64 emulator), as suggested by `factory.go` and `component.BaseComponent`.
+## Key Features
+
+This emulator implements all key features of the SID 6581 with a strong focus on accuracy.
+
+* **Three Independent Voices**: Each of the three voices is a complete and programmable oscillator with its own frequency, waveform, and envelope parameters.
+
+* **Multiple, Accurate Waveforms**:
+    * Triangle, Pulse (with variable pulse width), and pseudo-random Noise.
+    * **Non-Linear Sawtooth**: The sawtooth waveform is implemented using a model that simulates the 6581's DAC non-linearity, replicating its characteristic raw sound.
+    * **Combined Waveforms**: Waveform combinations are handled via lookup tables to emulate the specific behavior of the SID, which often does not correspond to a simple mathematical sum.
+
+* **Per-Voice ADSR Envelope Generators**: Each voice features a complete Attack/Decay/Sustain/Release envelope generator, including a simulation of the SID's characteristic non-linear decay/release rates via a lookup table.
+
+* **Inter-Voice Modulation**:
+    * **Oscillator Synchronization**: A voice can reset the phase of another voice's oscillator to create complex, metallic, and harmonic-rich sounds.
+    * **Ring Modulation**: Applies ring modulation to the triangle waveform for dissonant and bell-like effects.
+
+* **Multi-Mode Resonant Filter**:
+    * Implementation of Low-Pass, Band-Pass, and High-Pass filter modes.
+    * Handles all filter combinations, including a **dynamic-width Notch filter (LP+HP)** whose bandwidth correctly varies based on the resonance setting.
+    * Includes **filter stabilization logic** to prevent instability at high resonance settings.
+    * Provides the ability to route each voice through the filter individually.
+
+* **Accurate `TEST` Bit Handling**: The `TEST` bit correctly resets the oscillator and noise generator phase **without altering the ADSR envelope state**, ensuring compatibility with games and demos that use advanced programming techniques.
+
+* **`float32` Audio Pipeline**: The entire mixing and final output generation process uses floating-point arithmetic (`float32`) for maximum precision and audio quality before being sent to the audio driver.
+
+* **Interpolated Master Volume**: Changes to the master volume are interpolated across audio samples to produce smooth transitions and prevent audible "clicks".
+
+* **Reflection API for Debugging**: A comprehensive reflection API provides programmatic getter/setter access to all SID registers via human-readable names, facilitating debugging and external control.
+
+## Architecture and Design
+
+The emulator was designed with modern software engineering principles to ensure clarity, maintainability, and performance.
+
+* **High-Fidelity Behavioral Model**: The approach is to replicate the observable *behavior* of the real chip with the highest possible fidelity, implementing its known non-linearities and idiosyncrasies through mathematical models and lookup tables.
+* **Dispatch Table Pattern**: Throughout the package, state- and type-based decisions (waveform selection, envelope state, filter type, register handling) are implemented using **dispatch tables (arrays of functions)** instead of large `switch` statements. This architectural pattern, applied consistently, reduces branching, improves performance, and makes the code highly modular and readable.
+* **Component-Based ("Headless") Design**: As indicated by the `factory.go` file, this package is designed as a "headless" component for integration into the "Symphony" emulation framework. The core SID logic is completely decoupled from the audio output and user interface.
 
 ## File Structure
 
-The emulator is organized into several Go files:
-
-* `mos6581.go`: The core SID emulation logic, including register handling, voice mixing, filter processing, and audio buffer generation.
-* `voice.go`: Implements the logic for a single SID voice, including waveform generation, envelope processing, and modulation.
-* `filters.go`: Implements the SID's resonant filter, including different filter types and coefficient calculations.
-* `tables.go`: Contains precomputed lookup tables for waveforms, envelope rates, and various constants used in the emulation.
-* `factory.go`: Provides a factory pattern for creating SID component instances, likely for use in a larger emulator framework.
-* `mos6581_reflect.go`: Defines constants for register indices and provides a reflection interface for easy register access by name.
-
-## Core Concepts
-
-### Voices (`voice.go`)
-
-Each of the three voices in the SID is an independent sound generator. Key aspects include:
-
-* **Waveform Generation:** Selected via control registers. The `count` variable acts as a phase accumulator, incremented by `add` (derived from the frequency registers). Different waveforms (Triangle, Sawtooth, Pulse, Noise) are generated based on this accumulator. Combined waveforms often use lookup tables or specific logic derived from analyzing SID behavior. The `TEST` bit significantly alters waveform generation, often producing fixed or specific test outputs.
-* **Envelope Generator (ADSR):** Controls the amplitude of the voice over time.
-    * `EGState`: Tracks current phase (Attack, Decay, Sustain, Release, Idle).
-    * `aAdd`, `dSub`, `rSub`: Rates for Attack, Decay, and Release phases, derived from lookup tables (`_eGTable`).
-    * `sLevel`: Sustain level.
-    * `gate`: Bit that triggers the Attack phase and holds the envelope in Sustain/Decay, or starts Release when cleared.
-    * The `_eGDRShiftTable` is used to implement the non-linear decay/release rates characteristic of the SID.
-* **Modulation:**
-    * **Synchronization (`sync`):** The phase accumulator of a voice can be reset when the preceding voice's accumulator overflows.
-    * **Ring Modulation (`ring`):** Modifies the phase of the triangle waveform based on the output of the preceding voice.
-* **Pulse Width (`pw`):** For the pulse waveform, this 12-bit value determines the duty cycle.
-
-### Filters (`filters.go`)
-
-The SID features a versatile analog filter that can be applied to voice outputs.
-
-* **Filter Types:** Low-Pass, Band-Pass, High-Pass, and combinations (e.g., Notch from LP+HP).
-* **Cutoff Frequency:** A 11-bit value set by `fcLO` (3 bits) and `fcHI` (8 bits) registers. The implementation uses these bits to index into precomputed resonance tables.
-* **Resonance (`filterRes`):** A 4-bit value that controls the 'peakiness' of the filter.
-* **IIR Filter:** The filter is implemented as an Infinite Impulse Response (IIR) filter. The `compute()` method updates coefficients (`d1`, `d2`, `g1`, `g2`) based on the filter type, cutoff, and resonance.
-    * `resonanceLP` and `resonanceHP` arrays store pre-calculated values based on polynomial functions to determine the filter's response.
-    * The `arg` variable, derived from the cutoff frequency and resonance table, is crucial for calculating filter pole positions.
-    * Different coefficient formulas are used for various combinations of LP, BP, and HP active modes.
-    * Filter stabilization logic is included to prevent extreme behavior.
-
-### Main SID Logic (`mos6581.go`)
-
-This file ties everything together:
-
-* **Register Handling:**
-    * `registers`: A slice holding the current state of all 29 SID registers.
-    * `WriteRegister(addr, data)`: Handles writes to SID registers. It updates the `registers` slice and then calls a specific write handler function for that register (from `writes` array). These handlers often trigger updates in voices or filters.
-    * `ReadRegister(addr)`: Handles reads from SID registers. For most registers, it returns the stored value. Special read handlers (from `reads` array) exist for `OSC3` (reads voice 2's waveform output) and `ENV3` (reads voice 2's envelope level).
-* **Sound Generation (`calcSoundBuffer`)**: This is the heart of the audio output.
-    1.  **Volume Interpolation:** The master volume (from register `$D418`) is sampled periodically (via `Prepare()`) into `sampleBuf`. `calcSoundBuffer` interpolates these volume changes across the audio samples being generated in the current block to provide smoother volume transitions.
-    2.  **Voice Processing Loop:** For each voice:
-        * `ComputeEnvelopeGenerators()`: Updates the voice's envelope.
-        * `UpdateCount()`: Advances the voice's phase accumulator.
-        * `ComputeWaveForm()`: Generates the raw waveform output for the voice.
-        * The output is scaled by the current envelope level.
-        * Voice outputs are summed into either a `sumOutputFiltered` or `sumOutputNonFiltered` path, depending on whether the voice is routed to the filter.
-    3.  **Filter Application:** `sumOutputFiltered` is processed by `filters.Compute()`.
-    4.  **Mixing:** The filtered and non-filtered signals are added together.
-    5.  **Master Volume:** The interpolated master volume is applied.
-    6.  **Scaling:** The final signal is scaled down to fit into the output `soundBuffer`.
-* **Audio Output:** The generated `soundBuffer` is passed to an `IAudioRender` interface, which handles the actual playback.
-* **Initialization (`NewSID`, `Bind`, `Setup`):** Sets up voices, filters, register maps, and prepares for audio generation.
-
-### Lookup Tables (`tables.go`)
-
-To improve performance and emulate certain SID characteristics more accurately, several lookup tables are used:
-
-* `_triTable`, `_triSawTable`, `_triRectTable`, `_sawRectTable`, `_triSawRectTable`: Used for generating combined or complex waveforms.
-* `_eGTable`: Contains pre-calculated rates for the ADSR envelope generator phases.
-* `_eGDRShiftTable`: Used for the non-linear decay/release characteristic of the SID envelope.
-* Constants like `SampleFreq`, SID `Frequency`, `Cycles` per sample, `RegisterCount`, etc.
+* `mos6581.go`: Contains the core SID logic, register handling, voice mixing, and final audio buffer generation.
+* `voice.go`: Implements a single SID voice, with all logic for waveform generation and ADSR envelope management.
+* `filters.go`: Implements the multi-mode resonant filter, including coefficient calculations and the dispatch logic.
+* `tables.go`: Contains constants and pre-calculated lookup tables for performance and accuracy.
+* `mos6581_reflect.go`: Provides the reflection API for programmatic register access.
+* `factory.go`: Implements the factory pattern for integration into the Symphony framework.
+* `interpolations.go`: Provides utility functions, such as linear interpolation.
+* `ARCHITECTURE.md`: Describes the SID register map.
 
 ## How to Use (Integration)
 
-This SID emulator is designed as a component to be integrated into a larger system, such as a Commodore 64 emulator.
-
-1.  **Creation:**
-    * Use `NewFactory().Create(...)` if using the provided factory pattern.
-    * Or directly call `mos6581.NewSID(parent, factory, label, instance)`.
-2.  **Setup & Binding:**
-    * Call `sid.Setup()` for initial configuration.
-    * Call `sid.Bind(sidSocket, fragFreq, rasters)` to initialize audio parameters like fragment frequency, buffer sizes, and associate with an audio rendering backend.
-3.  **Register Access:**
-    * **Writing:** Use `sid.WriteRegister(address, value)` to write to SID registers (e.g., `0xD400` to `0xD41C`). This will trigger internal state changes in voices and filters.
-    * **Reading:** Use `sid.ReadRegister(address)` to read from SID registers.
-4.  **Sound Generation Cycle:**
-    * **`Prepare()`:** Call this method regularly (e.g., once per emulated raster line or a fixed number of times per frame) to sample the current master volume setting. This builds up `sampleBuf` which is used by `calcSoundBuffer`.
-    * **`Update()`:** Call this method at the desired audio fragment rate (e.g., 50Hz or 60Hz for PAL/NTSC). This triggers `calcSoundBuffer()` to generate the next block of audio samples and sends it to the audio player.
-5.  **Reset:**
-    * Call `sid.Reset()` to reset the SID to its power-on state.
+This SID emulator is designed as a component. The typical lifecycle is:
+1.  **Creation**: Use `NewSID()` to create an instance.
+2.  **Binding**: Call `Bind()` to connect it to an audio backend and configure timing parameters (e.g., 50/60Hz refresh rate).
+3.  **Register Access**: Use `WriteRegister(address, value)` and `ReadRegister(address)` to simulate the emulated CPU's access to the SID registers.
+4.  **Audio Generation Cycle**:
+    * Call `Prepare()` regularly (e.g., once per emulated raster line) to sample the master volume state.
+    * Call `Update()` at the audio buffer refresh rate (e.g., 50Hz). This method triggers `calcSoundBuffer()` to generate the block of audio samples and sends it to the player.
+5.  **Reset**: Call `Reset()` to return the SID to its power-on state.
 
 ## Dependencies
 
-* `github.com/markel1974/c64emu/src/component`
-* `github.com/markel1974/c64emu/src/config`
-* `github.com/markel1974/c64emu/src/references`
-* `github.com/markel1974/c64emu/src/registry`
+* `github.com/markel1974/symphony/src/component`
+* `github.com/markel1974/symphony/src/config`
+* `github.com/markel1974/symphony/src/references`
+* `github.com/markel1974/symphony/src/registry`
 
-(These suggest the SID emulator is part of a larger `c64emu` project.)
-
-## Notes and Considerations
-
-* **Accuracy:** The level of detail, especially in filter coefficient calculations, waveform generation logic (including the TEST bit), and envelope characteristics, suggests a focus on accurate emulation.
-* **Filter Implementation Details:** The filter coefficients are dynamically calculated based on a normalized argument `arg` derived from the cutoff frequency and resonance tables. Specific formulas are applied for different filter mode combinations (e.g., LP+HP, BP+HP).
-* **TEST Bit:** The TEST bit (bit 3 of the voice control register) has specific effects on each waveform type (e.g., resetting phase, outputting fixed values, or altering noise generation). It also freezes envelope progression.
-* **`SampleFreq`:** The code is hardcoded for a `SampleFreq` of 44100 Hz. Other audio constants are derived from this.
-* **Reflection API (`mos6581_reflect.go`):** This provides a convenient way to inspect and modify SID registers using human-readable names, which is very useful for debugging or building development tools.
-
-This README provides a comprehensive overview of your MOS6581 SID emulator. You can adapt and expand it further as needed.
+(These suggest the SID emulator is part of the larger `symphony` project.)
