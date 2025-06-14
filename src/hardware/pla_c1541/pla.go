@@ -14,16 +14,17 @@ import (
 // $c000-$ffff _rom (16K)
 
 // c1541RamSize represents the size of RAM in the C1541 disk drive, defined as 2 KB (0x0800).
-const c1541RamSize = 0x0800
 
 // PLA represents a programmable logic array that links memory and peripheral devices in a system.
 // It embeds BaseComponent and provides RAM, ROM, and connections to two VIA components.
 type PLA struct {
 	*component.BaseComponent
-	ram  []uint8
-	rom  []uint8
-	via1 references.IVIA
-	via2 references.IVIA
+	rom       []uint8
+	ram       references.IRamC1541
+	bankRead  func(uint16) uint8
+	bankWrite func(uint16, uint8)
+	via1      references.IVIA
+	via2      references.IVIA
 }
 
 // NewPLA initializes and returns a new instance of the PLA structure with specified parent, factory, and instance ID.
@@ -31,7 +32,6 @@ type PLA struct {
 func NewPLA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *PLA {
 	p := &PLA{
 		BaseComponent: component.NewBaseComponent(),
-		ram:           make([]uint8, c1541RamSize),
 	}
 	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIPLAc1541(p, label, instance))
 	return p
@@ -41,9 +41,12 @@ func (r *PLA) Setup() error {
 	return nil
 }
 
-func (r *PLA) Bind(_ references.IPLAc1541Socket, via1 references.IVIA, via2 references.IVIA, romLoader references.IROMLoaderC1541) error {
+func (r *PLA) Bind(_ references.IPLAc1541Socket, via1 references.IVIA, via2 references.IVIA, ram references.IRamC1541, romLoader references.IROMLoaderC1541) error {
 	r.via1 = via1
 	r.via2 = via2
+	r.ram = ram
+	r.bankRead = r.ram.Read
+	r.bankWrite = r.ram.Write
 	r.rom = romLoader.Load()
 	return nil
 }
@@ -70,18 +73,13 @@ func (r *PLA) EmulationRequired() bool {
 	return false
 }
 
-// ReadInterval returns a slice of bytes from the PLA's RAM, starting at the specified address and spanning the given count.
-func (r *PLA) ReadInterval(start uint16, count uint16) []byte {
-	return r.ram[start : start+count]
-}
-
 // Read retrieves a byte of data from the specified memory address, accessing either ROM, RAM, or I/O based on the address.
 func (r *PLA) Read(addr uint16) uint8 {
 	if addr >= 0xc000 {
 		return r.rom[addr&0x3fff]
 	}
 	if addr < 0x1000 {
-		return r.ram[addr&0x07ff]
+		return r.bankRead(addr & 0x07ff)
 	}
 	return r.readByteIO(addr)
 }
@@ -89,7 +87,7 @@ func (r *PLA) Read(addr uint16) uint8 {
 // Write stores a byte of data at a given memory address, handling RAM or calling IO write methods based on the address range.
 func (r *PLA) Write(addr uint16, data uint8) {
 	if addr < 0x1000 {
-		r.ram[addr&0x7ff] = data
+		r.bankWrite(addr&0x7ff, data)
 		//if addr == 0x7c {
 		//	fmt.Println("--------------------------- ADDR 0x7c", data)
 		//}

@@ -15,7 +15,7 @@ type IRamC64Socket interface {
 
 // IRamC64 provides an interface for implementing a memory module for the C64 system with read, write, and setup functions.
 // Setup initializes the memory module.
-// Bind associates the memory module with an IROMLoaderSocket instance.
+// Bind associates the memory module with an IRamC64Socket instance.
 // Connect finalizes the connection of the memory module.
 // Reset reinitializes the memory module to its default state.
 // Read retrieves a byte of data from the specified address.
@@ -41,11 +41,11 @@ type IRamC64 interface {
 // ComponentToIRamC64 converts an IComponent to an IRamC64 instance, returning an error if the conversion is invalid.
 func ComponentToIRamC64(component IComponent) (IRamC64, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component IROMLoaderC64 is nil")
+		return nil, fmt.Errorf("component IRamC64 is nil")
 	}
 	v, ok := component.(IRamC64)
 	if !ok {
-		return nil, fmt.Errorf("component is not a IROMLoaderC64")
+		return nil, fmt.Errorf("component is not a IRamC64")
 	}
 	return v, nil
 }

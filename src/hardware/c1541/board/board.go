@@ -21,6 +21,7 @@ var _c1541hardware = []struct {
 	instance int
 }{
 	{"roms_c1541", 0},
+	{"ram_c1541", 0},
 	{"quartz", 0},
 	{"pla_c1541", 0},
 	{"pic_6510", 0},
@@ -45,6 +46,7 @@ type Board struct {
 	via2Socket   *VIA2Socket
 	picSocket    *PICSocket
 	plaSocket    *PLASocket
+	ram          *RamSocket
 	romSocket    *RomLoaderSocket
 	quartzSocket *QuartzSocket
 	mechanics    *mechanic.Factory
@@ -94,6 +96,7 @@ func (m *Board) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber
 	m.mec = m.mechanics.Create("sync")
 
 	m.romSocket = NewRomLoaderSocket(m, m.label)
+	m.ram = NewRamSocket(m, m.label)
 	m.quartzSocket = NewQuartzSocket(m, m.label)
 	m.via1Socket = NewVIA1Socket(m, m.label, m, iec)
 	m.via2Socket = NewVIA2Socket(m, m.label, m, m.mec)
@@ -102,6 +105,7 @@ func (m *Board) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber
 	m.plaSocket = NewPLASocket(m, m.label)
 
 	m.sockets = append(m.sockets, m.romSocket)
+	m.sockets = append(m.sockets, m.ram)
 	m.sockets = append(m.sockets, m.quartzSocket)
 	m.sockets = append(m.sockets, m.cpuSocket)
 	m.sockets = append(m.sockets, m.via1Socket)

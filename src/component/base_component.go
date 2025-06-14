@@ -110,7 +110,8 @@ func (bc *BaseComponent) GetChildren() []references.IComponent {
 // GetChildByHardwareId retrieves a child component by its unique identifier. Returns nil if no child with the specified ID exists.
 func (bc *BaseComponent) GetChildByHardwareId(id string) references.IComponent {
 	for _, child := range bc.node.GetChildren() {
-		if child.GetComponent().HardwareId() == id {
+		hwId := child.GetComponent().HardwareId()
+		if hwId == id {
 			return child.GetComponent()
 		}
 	}
