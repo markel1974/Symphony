@@ -22,7 +22,7 @@ type PLA struct {
 	cia2            references.ICIA
 	cartMan         references.ICartridgeManagerC64
 	roms            references.IROMLoaderC64
-	ram             []byte
+	ram             references.IRamC64
 	bankWrite       []WriteFn
 	bankRead        []ReadFn
 	portWrite       []WriteFn
@@ -52,7 +52,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		cia2:            nil,
 		cartMan:         nil,
 		roms:            nil,
-		ram:             make([]byte, 0x10000),
+		ram:             nil,
 		bankWrite:       make([]WriteFn, 0xf+1),
 		bankRead:        make([]ReadFn, 0xf+1),
 		portWrite:       make([]WriteFn, 0xf+1),
@@ -82,44 +82,31 @@ func (b *PLA) Setup() error {
 }
 
 // Bind initializes and connects various components to the PLA, including VIC, SID, CIA1, CIA2, cartridge manager, and ROM loader.
-func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, roms references.IROMLoaderC64) error {
+func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, ram references.IRamC64, roms references.IROMLoaderC64) error {
 	b.vic = vic
 	b.sid = sid
 	b.cia1 = cia1
 	b.cia2 = cia2
 	b.cartMan = cartMan
+	b.ram = ram
 	b.roms = roms
 
+	for idx := range b.bankWrite {
+		b.bankWrite[idx] = b.ram.Write
+	}
+	for idx := range b.bankRead {
+		b.bankRead[idx] = b.ram.Read
+	}
+	//pla write mapping
 	b.bankWrite[0x0] = b.ramWrite0x0000
-	b.bankWrite[0x1] = b.ramWrite0x1000
-	b.bankWrite[0x2] = b.ramWrite0x2000
-	b.bankWrite[0x3] = b.ramWrite0x3000
-	b.bankWrite[0x4] = b.ramWrite0x4000
-	b.bankWrite[0x5] = b.ramWrite0x5000
-	b.bankWrite[0x6] = b.ramWrite0x6000
-	b.bankWrite[0x7] = b.ramWrite0x7000
-	b.bankWrite[0x8] = b.ramWrite0x8000
-	b.bankWrite[0x9] = b.ramWrite0x9000
-	b.bankWrite[0xa] = b.ramWrite0xA000
-	b.bankWrite[0xb] = b.ramWrite0xB000
-	b.bankWrite[0xc] = b.ramWrite0xC000
 	b.bankWrite[0xd] = b.ramWrite0xD000
-	b.bankWrite[0xe] = b.ramWrite0xE000
-	b.bankWrite[0xf] = b.ramWrite0xF000
 
+	//pla read mapping
 	b.bankRead[0x0] = b.ramRead0x0000
-	b.bankRead[0x1] = b.ramRead0x1000
-	b.bankRead[0x2] = b.ramRead0x2000
-	b.bankRead[0x3] = b.ramRead0x3000
-	b.bankRead[0x4] = b.ramRead0x4000
-	b.bankRead[0x5] = b.ramRead0x5000
-	b.bankRead[0x6] = b.ramRead0x6000
-	b.bankRead[0x7] = b.ramRead0x7000
 	b.bankRead[0x8] = b.ramRead0x8000
 	b.bankRead[0x9] = b.ramRead0x9000
 	b.bankRead[0xa] = b.ramRead0xA000
 	b.bankRead[0xb] = b.ramRead0xB000
-	b.bankRead[0xc] = b.ramRead0xC000
 	b.bankRead[0xd] = b.ramRead0xD000
 	b.bankRead[0xe] = b.ramRead0xE000
 	b.bankRead[0xf] = b.ramRead0xF000
@@ -157,9 +144,6 @@ func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid referenc
 	b.portRead[0xd] = b.cia2.ReadRegister
 	b.portRead[0xe] = b.portReadIO
 	b.portRead[0xf] = b.portReadIO
-
-	ri := filler.New(255, 128, 0, 0, 0, 0, 0, 0)
-	ri.InitWithPattern(b.ram, uint(len(b.ram)))
 
 	rc := filler.New(255, 128, 0, 0, 0, 0, 0, filler.InitRandomChanceHalf)
 	rc.InitWithPattern(b.color, uint(len(b.color)))
@@ -280,12 +264,12 @@ func (b *PLA) Read(addr uint16) uint8 {
 
 // ReadDirect accesses and returns the value stored at the specified memory address without any additional logic.
 func (b *PLA) ReadDirect(addr uint16) uint8 {
-	return b.ram[addr]
+	return b.ram.Read(addr)
 }
 
 // WriteDirect writes the provided data to the specified address in RAM and executes any write triggers if set.
 func (b *PLA) WriteDirect(addr uint16, data uint8) {
-	b.ram[addr] = data
+	b.ram.Write(addr, data)
 	if b.wTriggers == nil {
 		return
 	}
@@ -304,26 +288,10 @@ func (b *PLA) Write(addr uint16, data uint8) {
 	b.wTriggers.Exec(addr, data)
 }
 
-// ramWrite0x0000 writes a byte to the specified RAM address, handling special cases for addresses 0x0000 and 0x0001.
-func (b *PLA) ramWrite0x0000(addr uint16, data uint8) {
-	if addr == 0 {
-		b.ports.SetDir(data)
-		b.ram[0] = b.vic.GetLastByte()
-		b.update()
-		return
-	} else if addr == 1 {
-		b.ports.SetData(data)
-		b.ram[1] = b.vic.GetLastByte()
-		b.update()
-		return
-	}
-	b.ram[addr] = data
-}
-
 // SetWriteTrigger sets a write trigger function for the specified address and returns the trigger ID.
 func (b *PLA) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
 	if b.wTriggers == nil {
-		b.wTriggers = NewWriteTriggers(len(b.ram))
+		b.wTriggers = NewWriteTriggers(b.ram.Size())
 	}
 	return b.wTriggers.Add(addr, fn)
 }
@@ -336,68 +304,20 @@ func (b *PLA) RemoveRamTrigger(addr uint16, id int) {
 	b.wTriggers.Remove(addr, id)
 }
 
-// ramWrite0x1000 writes a byte of data to the specified address in the RAM starting at 0x1000.
-func (b *PLA) ramWrite0x1000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0x2000 writes a byte of data to the specified RAM address in the 0x2000 range.
-// addr specifies the memory address to write to within the 0x2000 range.
-// data represents the byte value to be written to the specified RAM address.
-func (b *PLA) ramWrite0x2000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0x3000 writes a byte of data to the specified address in the 0x3000 memory range.
-func (b *PLA) ramWrite0x3000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0x4000 writes the given data byte to the specified memory address within the 0x4000 range of RAM.
-func (b *PLA) ramWrite0x4000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0x5000 writes the given byte of data to the specified address in the 0x5000 memory range.
-func (b *PLA) ramWrite0x5000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0x6000 writes the given data byte to the RAM at the specified 0x6000 bank-aligned address.
-func (b *PLA) ramWrite0x6000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0x7000 writes a byte of data to the specified address in the RAM at offset 0x7000.
-func (b *PLA) ramWrite0x7000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0x8000 writes a byte of data to the provided memory address in the RAM bank starting at 0x8000.
-func (b *PLA) ramWrite0x8000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0x9000 writes a byte of data to the specified address in the 0x9000 memory bank.
-// addr specifies the target memory address within the 0x9000 bank.
-// data is the byte to be written to the specified address in RAM.
-func (b *PLA) ramWrite0x9000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0xA000 writes a byte of data to the specified address in the memory mapped to A000 range in the PLA.
-func (b *PLA) ramWrite0xA000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0xB000 writes a single byte of data to the specified address within RAM starting at 0xB000.
-func (b *PLA) ramWrite0xB000(addr uint16, data uint8) {
-	b.ram[addr] = data
-}
-
-// ramWrite0xC000 writes a byte of data to the specified address in the 0xC000 region of the RAM.
-func (b *PLA) ramWrite0xC000(addr uint16, data uint8) {
-	b.ram[addr] = data
+// ramWrite0x0000 writes a byte to the specified RAM address, handling special cases for addresses 0x0000 and 0x0001.
+func (b *PLA) ramWrite0x0000(addr uint16, data uint8) {
+	if addr == 0 {
+		b.ports.SetDir(data)
+		b.ram.Write(0, b.vic.GetLastByte())
+		b.update()
+		return
+	} else if addr == 1 {
+		b.ports.SetData(data)
+		b.ram.Write(1, b.vic.GetLastByte())
+		b.update()
+		return
+	}
+	b.ram.Write(addr, data)
 }
 
 // ramWrite0xD000 writes a byte of data to the specified address in the 0xD000 memory range based on the memory configuration.
@@ -408,19 +328,7 @@ func (b *PLA) ramWrite0xD000(addr uint16, data uint8) {
 		b.portWrite[p](addr, data)
 		return
 	}
-	b.ram[addr] = data
-}
-
-// ramWrite0xE000 writes the given data byte to the RAM at the specified address in the 0xE000 range.
-func (b *PLA) ramWrite0xE000(addr uint16, data uint8) {
-	b.ram[addr] = data
-	return
-}
-
-// ramWrite0xF000 writes a byte of data to the memory address specified in the 0xF000 range of the PLA's RAM.
-func (b *PLA) ramWrite0xF000(addr uint16, data uint8) {
-	b.ram[addr] = data
-	return
+	b.ram.Write(addr, data)
 }
 
 // ramRead0x0000 reads a byte from RAM or retrieves data from port registers based on the provided address.
@@ -430,42 +338,7 @@ func (b *PLA) ramRead0x0000(addr uint16) uint8 {
 	} else if addr == 1 {
 		return b.ports.GetDataRead()
 	}
-	return b.ram[addr]
-}
-
-// ramRead0x1000 reads a byte from the RAM at the specified 16-bit memory address within the range 0x1000.
-func (b *PLA) ramRead0x1000(addr uint16) uint8 {
-	return b.ram[addr]
-}
-
-// ramRead0x2000 reads a byte of data from the RAM located at the specified 16-bit address in the range of 0x2000.
-func (b *PLA) ramRead0x2000(addr uint16) uint8 {
-	return b.ram[addr]
-}
-
-// ramRead0x3000 reads a byte from the RAM at the specified address within the 0x3000 range.
-func (b *PLA) ramRead0x3000(addr uint16) uint8 {
-	return b.ram[addr]
-}
-
-// ramRead0x4000 reads and returns a byte from the RAM at the specified address within the 0x4000 memory region.
-func (b *PLA) ramRead0x4000(addr uint16) uint8 {
-	return b.ram[addr]
-}
-
-// ramRead0x5000 reads and returns a byte from the RAM at the specified address within the 0x5000 range.
-func (b *PLA) ramRead0x5000(addr uint16) uint8 {
-	return b.ram[addr]
-}
-
-// ramRead0x6000 retrieves a byte from the memory at the given address within the 0x6000 range in the PLA instance.
-func (b *PLA) ramRead0x6000(addr uint16) uint8 {
-	return b.ram[addr]
-}
-
-// ramRead0x7000 reads and returns a byte from the RAM at the specified 0x7000-specific address.
-func (b *PLA) ramRead0x7000(addr uint16) uint8 {
-	return b.ram[addr]
+	return b.ram.Read(addr)
 }
 
 // ramRead0x8000 reads a byte from RAM at the specified address or from a cartridge if configured in ROM_LO mode.
@@ -476,7 +349,7 @@ func (b *PLA) ramRead0x8000(addr uint16) uint8 {
 			return v
 		}
 	}
-	return b.ram[addr]
+	return b.ram.Read(addr)
 }
 
 // ramRead0x9000 reads a byte of data from the RAM or cartridge memory at a given address within the 0x9000 bank range.
@@ -488,7 +361,7 @@ func (b *PLA) ramRead0x9000(addr uint16) uint8 {
 			return v
 		}
 	}
-	return b.ram[addr]
+	return b.ram.Read(addr)
 }
 
 // ramRead0xA000 reads data from memory mapped to the 0xA000 address range based on the current memory configuration.
@@ -505,7 +378,7 @@ func (b *PLA) ramRead0xA000(addr uint16) uint8 {
 	} else if b.memoryConfig[bank] == BAS {
 		return b.basic[addr&0x1fff]
 	}
-	return b.ram[addr]
+	return b.ram.Read(addr)
 }
 
 // ramRead0xB000 handles reading from the 0xB000 bank based on memory configuration and address.
@@ -521,12 +394,7 @@ func (b *PLA) ramRead0xB000(addr uint16) uint8 {
 	} else if b.memoryConfig[bank] == BAS {
 		return b.basic[addr&0x1fff]
 	}
-	return b.ram[addr]
-}
-
-// ramRead0xC000 reads a byte of data from the RAM at the specified address within the 0xC000 range.
-func (b *PLA) ramRead0xC000(addr uint16) uint8 {
-	return b.ram[addr]
+	return b.ram.Read(addr)
 }
 
 // ramRead0xD000 reads data from memory address 0xD000 and handles different configurations like I/O, character, or RAM access.
@@ -542,7 +410,7 @@ func (b *PLA) ramRead0xD000(addr uint16) uint8 {
 	} else if b.memoryConfig[bank] == CHA {
 		return b.char[addr&0x0fff]
 	}
-	return b.ram[addr]
+	return b.ram.Read(addr)
 }
 
 // ramRead0xE000 handles reading from the 0xE000-0xEFFF memory range based on the current memory configuration.
@@ -556,7 +424,7 @@ func (b *PLA) ramRead0xE000(addr uint16) uint8 {
 	} else if b.memoryConfig[bank] == KER {
 		return b.kernal[addr&0x1fff]
 	}
-	return b.ram[addr]
+	return b.ram.Read(addr)
 }
 
 // ramRead0xF000 reads a byte from the 0xF000 memory range based on the current memory configuration and provided address.
@@ -571,7 +439,7 @@ func (b *PLA) ramRead0xF000(addr uint16) uint8 {
 	} else if b.memoryConfig[bank] == KER {
 		return b.kernal[addr&0x1fff]
 	}
-	return b.ram[addr]
+	return b.ram.Read(addr)
 }
 
 // portWriteColor writes a color value to the color buffer at the given address, using only the lower 4 bits of the data.

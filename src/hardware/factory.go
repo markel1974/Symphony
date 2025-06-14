@@ -26,6 +26,7 @@ import (
 	_ "github.com/markel1974/c64emu/src/hardware/pla_c1541"
 	_ "github.com/markel1974/c64emu/src/hardware/pla_c64"
 	_ "github.com/markel1974/c64emu/src/hardware/quartz"
+	_ "github.com/markel1974/c64emu/src/hardware/ram_c64"
 	_ "github.com/markel1974/c64emu/src/hardware/roms_c1541"
 	_ "github.com/markel1974/c64emu/src/hardware/roms_c64"
 	_ "github.com/markel1974/c64emu/src/hardware/sid"

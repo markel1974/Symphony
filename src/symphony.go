@@ -23,6 +23,7 @@ var _c64DefaultHardware = []struct {
 	{"c64", "pic_6510", 0},
 	{"c64", "dynamic_throttle", 0},
 	{"c64", "mos6581", 0},
+	{"c64", "ram_c64", 0},
 	{"c64", "roms_c64", 0},
 	{"c64", "pla_c64", 0},
 	{"c64", "keyboard_c64", 0},
