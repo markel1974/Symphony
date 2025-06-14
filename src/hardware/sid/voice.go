@@ -1,16 +1,16 @@
 package mos6581
 
-// WaveFormType represents different waveform types used in a sound synthesis context.
+// WaveFormType defines the type of waveform to be generated in a synthesizer, such as Triangle, Saw, or Noise.
 type WaveFormType int
 
-// WaveNone represents the absence of a waveform.
+// WaveNone represents a waveform type with no signal.
 // WaveTri represents a triangular waveform.
 // WaveSaw represents a sawtooth waveform.
-// WaveTriSaw represents a combined triangular and sawtooth waveform.
+// WaveTriSaw represents a combination of triangular and sawtooth waveforms.
 // WaveRect represents a rectangular waveform.
-// WaveTriRect represents a combined triangular and rectangular waveform.
-// WaveSawRect represents a combined sawtooth and rectangular waveform.
-// WaveTriSawRect represents a combined triangular, sawtooth, and rectangular waveform.
+// WaveTriRect represents a combination of triangular and rectangular waveforms.
+// WaveSawRect represents a combination of sawtooth and rectangular waveforms.
+// WaveTriSawRect represents a combination of triangular, sawtooth, and rectangular waveforms.
 // WaveNoise represents a noise waveform.
 const (
 	WaveNone = WaveFormType(iota)
@@ -24,13 +24,18 @@ const (
 	WaveNoise
 )
 
-// EGState represents the state of an envelope generator (EG) in sound synthesis, defining phases like attack, decay, sustain, and release.
+const (
+	DefaultNoiseLFSR = 0x7FFFFF
+	Max24BitValue    = 0xFFFFFF
+)
+
+// EGState defines the states of an envelope generator in a synthesizer, such as idle, attack, decay, and release.
 type EGState int
 
-// EgIdle represents the idle state in the EGState enumeration.
-// EgAttack represents the attack state in the EGState enumeration.
-// EgDecay represents the decay state in the EGState enumeration.
-// EgRelease represents the release state in the EGState enumeration.
+// EgIdle represents the idle state in the envelope generator.
+// EgAttack represents the attack state in the envelope generator.
+// EgDecay represents the decay state in the envelope generator.
+// EgRelease represents the release state in the envelope generator.
 const (
 	EgIdle = EGState(iota)
 	EgAttack
@@ -38,7 +43,7 @@ const (
 	EgRelease
 )
 
-// Voice represents a sound generator within a synthesizer.
+// Voice represents a synthesizer voice with state and parameters for waveform generation and modulation.
 type Voice struct {
 	number       uint8        // number represents the numerical identifier of the voice in the synthesizer.
 	wave         WaveFormType // Selected waveform
@@ -66,7 +71,7 @@ type Voice struct {
 	eg           []func()
 }
 
-// NewVoice creates a new Voice instance with provided voice number and initializes its properties to default values.
+// NewVoice creates and initializes a new Voice instance with the specified number. Returns a pointer to the Voice object.
 func NewVoice(number uint8) *Voice {
 	v := &Voice{
 		number:    number,
@@ -88,7 +93,7 @@ func NewVoice(number uint8) *Voice {
 		test:      0,
 		filter:    0,
 		sync:      0,
-		noiseLFSR: 0x7FFFFF,
+		noiseLFSR: DefaultNoiseLFSR,
 		mute:      false,
 	}
 	v.eg = v.buildEnvelopeGenerator()
@@ -97,13 +102,13 @@ func NewVoice(number uint8) *Voice {
 	return v
 }
 
-// Setup initializes modulation relationships for the voice by setting the modulating and modulated voices.
+// Setup initializes the voice's modulation relationships by assigning modBy and modTo properties.
 func (v *Voice) Setup(modBy *Voice, modTo *Voice) {
 	v.modBy = modBy
 	v.modTo = modTo
 }
 
-// Reset reinitializes the Voice instance to its default state, resetting all parameters and flags to their initial values.
+// Reset reinitializes the Voice instance by setting its state and attributes to their default values.
 func (v *Voice) Reset() {
 	v.wave = WaveNone
 	v.egState = EgIdle
@@ -121,51 +126,53 @@ func (v *Voice) Reset() {
 	v.gate = 0
 	v.sync = 0
 	v.filter = 0
-	v.noiseLFSR = 0x7FFFFF
+	v.noiseLFSR = DefaultNoiseLFSR
 	v.mute = false
 }
 
+// IsMuted checks if the Voice is currently muted and returns true if it is, otherwise false.
 func (v *Voice) IsMuted() bool {
 	return v.mute
 }
 
+// EgLevel returns the current envelope generator level of the voice as a uint32.
 func (v *Voice) EgLevel() uint32 {
 	return v.egLevel
 }
 
-// SetFilter updates the filter flag for the voice to indicate whether it should be filtered, using the given value.
+// SetFilter sets the filter value for the Voice instance, influencing its sound properties.
 func (v *Voice) SetFilter(f uint8) {
 	v.filter = f
 }
 
-// Filter returns the filter flag for the voice, indicating whether the voice is filtered.
+// Filter returns the current filter value for the Voice instance.
 func (v *Voice) Filter() uint8 {
 	return v.filter
 }
 
-// UpdateFreqA updates the lower 8 bits of the frequency register and recalculates the increment value for the waveform generator.
+// UpdateFreqA updates the low byte of the frequency register and recalculates the phase increment for waveform generation.
 func (v *Voice) UpdateFreqA(data uint8) {
 	v.freq = (v.freq & 0xff00) | uint16(data)
 	v.add = uint32(float64(v.freq) * Frequency / SampleFreq)
 }
 
-// UpdateFreqB updates the high byte of the frequency value and recalculates the corresponding increment value for the counter.
+// UpdateFreqB updates the high byte of the frequency and recalculates the phase increment based on `Frequency` and `SampleFreq`.
 func (v *Voice) UpdateFreqB(data uint8) {
 	v.freq = (v.freq & 0xff) | (uint16(data) << 8)
 	v.add = uint32(float64(v.freq) * Frequency / SampleFreq)
 }
 
-// UpdatePulseWidthA updates the lower 8 bits of the pulse width value while preserving the upper 8 bits.
+// UpdatePulseWidthA updates the lower 8 bits of the pulse width while preserving the upper 4 bits.
 func (v *Voice) UpdatePulseWidthA(data uint8) {
 	v.pw = (v.pw & 0x0f00) | uint16(data)
 }
 
-// UpdatePulseWidthB updates the high 4 bits of the pulse-width value by masking and shifting the input data.
+// UpdatePulseWidthB updates the high nibble of the pulse width value with the provided 8-bit data.
 func (v *Voice) UpdatePulseWidthB(data uint8) {
 	v.pw = (v.pw & 0xff) | ((uint16(data) & 0xf) << 8)
 }
 
-// UpdateWaveForm updates the waveform type and other voice properties such as gate, sync, ring modulation, and test mode.
+// UpdateWaveForm updates the waveform type and controls, including gate, sync, ring, and test flags, based on the given data.
 func (v *Voice) UpdateWaveForm(data uint8) {
 	v.wave = WaveFormType(data>>4) & 0xf
 	gate := uint8(0)
@@ -196,31 +203,30 @@ func (v *Voice) UpdateWaveForm(data uint8) {
 	v.gate = gate
 	v.modBy.sync = sync
 	v.ring = ring
-	if test != v.test { // Se lo stato del test bit cambia
+	if test != v.test {
 		v.test = test
 		if v.test != 0 {
-			v.count = 0            // Resetta l'accumulatore di fase principale
-			v.noiseLFSR = 0x7FFFFF // Resetta l'LFSR del rumore al suo stato iniziale
-
-			v.egLevel = 0
-			v.egState = EgIdle
-			// Qui andrebbero gestiti anche altri effetti del test bit sugli inviluppi, etc.
+			v.count = 0
+			v.noiseLFSR = DefaultNoiseLFSR
 		}
 	}
 }
 
-// UpdateEnvelopeGenerators updates the attack increment and decay decrement rates of the envelope generator using the provided data.
+// UpdateEnvelopeGenerators updates the attack increment and decay decrement values using a lookup table based on input data.
 func (v *Voice) UpdateEnvelopeGenerators(data uint8) {
 	v.aAdd = egTable(data >> 4)
 	v.dSub = egTable(data)
 }
 
-// UpdateSustainLevel adjusts the sustain level and release decrement based on the given data value for the envelope generator.
+// UpdateSustainLevel sets the sustain level and release decrement rate based on the provided data.
 func (v *Voice) UpdateSustainLevel(data uint8) {
 	v.sLevel = (uint32(data) >> 4) * 0x111111
 	v.rSub = egTable(data)
 }
 
+// UpdateCount updates the voice's internal counter based on the current add value and test flag.
+// Resets the modulator target counter if sync is enabled and count exceeds a threshold.
+// Ensures the count remains within a 24-bit range.
 func (v *Voice) UpdateCount() {
 	if v.test == 0 {
 		v.count += v.add
@@ -228,20 +234,22 @@ func (v *Voice) UpdateCount() {
 	if (v.sync != 0) && (v.count > 0x1000000) {
 		v.modTo.count = 0
 	}
-	v.count &= 0xffffff
+	v.count &= Max24BitValue
 }
 
-// ComputeEnvelopeGenerators updates the envelope generator levels and transitions between states based on current values.
+// ComputeEnvelopeGenerators updates the envelope generator state based on the current state and settings of the Voice.
+// If the TEST bit is active, the envelope progression is halted, and the current level is maintained.
 func (v *Voice) ComputeEnvelopeGenerators() {
 	if v.test != 0 {
-		// Se il bit TEST è attivo, gli inviluppi sono congelati/disabilitati.
-		// Non viene eseguita alcuna progressione di Attack, Decay o Release.
-		// Il livello corrente v.egLevel viene mantenuto.
+		// If the TEST bit is active, the envelopes are frozen/disabled.
+		// No attack, decay or release progression is executed.
+		// The current v.egLevel is maintained.
 		return
 	}
 	v.eg[v.egState]()
 }
 
+// ComputeWaveForm generates the current waveform value based on the voice's wave type and test status.
 func (v *Voice) ComputeWaveForm() uint16 {
 	idx := v.wave
 	if v.test != 0 {
@@ -250,6 +258,7 @@ func (v *Voice) ComputeWaveForm() uint16 {
 	return v.waveForm[idx]()
 }
 
+// buildEnvelopeGenerator initializes and returns envelope generator functions representing different envelope states.
 func (v *Voice) buildEnvelopeGenerator() []func() {
 	eg := make([]func(), 0xf)
 	defaultFn := func() {}
@@ -258,24 +267,28 @@ func (v *Voice) buildEnvelopeGenerator() []func() {
 	}
 	eg[EgAttack] = func() {
 		v.egLevel += v.aAdd
-		if v.egLevel > 0xffffff {
-			v.egLevel = 0xffffff
+		if v.egLevel > Max24BitValue {
+			v.egLevel = Max24BitValue
 			v.egState = EgDecay
 		}
 	}
 	eg[EgDecay] = func() {
-		if v.egLevel <= v.sLevel || v.egLevel > 0xffffff { // La condizione > 0xffffff gestisce l'underflow
+		if v.egLevel <= v.sLevel || v.egLevel > Max24BitValue {
+			// The condition > egLevelMax handles underflow
 			v.egLevel = v.sLevel
 		} else {
-			v.egLevel -= v.dSub >> eGDRShiftTable(v.egLevel)
-			if v.egLevel <= v.sLevel || v.egLevel > 0xffffff {
+			level := v.dSub >> eGDRShiftTable(v.egLevel)
+			v.egLevel -= level
+			if v.egLevel <= v.sLevel || v.egLevel > Max24BitValue {
 				v.egLevel = v.sLevel
 			}
 		}
 	}
 	eg[EgRelease] = func() {
-		v.egLevel -= v.rSub >> eGDRShiftTable(v.egLevel)
-		if v.egLevel > 0xffffff { // Underflow (diventato > 0xffffff dopo la sottrazione)
+		level := v.rSub >> eGDRShiftTable(v.egLevel)
+		v.egLevel -= level
+		if v.egLevel > Max24BitValue {
+			// Underflow (become > 0egLevelMax after subtraction)
 			v.egLevel = 0
 			v.egState = EgIdle
 		}
@@ -286,6 +299,8 @@ func (v *Voice) buildEnvelopeGenerator() []func() {
 	return eg
 }
 
+// buildWaveFormTest initializes and returns a slice of waveform functions for testing purposes, including default behavior.
+// Each function determines the waveform output based on the voice's current state and attributes, such as count and noiseLFSR.
 func (v *Voice) buildWaveFormTest() []func() uint16 {
 	waveForm := make([]func() uint16, 0xf+1)
 	defaultFn := func() uint16 {
@@ -300,25 +315,26 @@ func (v *Voice) buildWaveFormTest() []func() uint16 {
 		return 0xFFF
 	}
 	waveForm[WaveSaw] = func() uint16 {
-		// Congela il dente di sega al valore corrente
+		// Freezes the sawtooth value at the current value
 		frozen := v.count >> 8
 		return uint16(frozen | (frozen << 8))
 	}
 	waveForm[WaveRect] = func() uint16 {
-		// Modalità "ring modulation forzata"
+		// Forced ring modulation mode
 		if (v.modBy.count & 0x800000) != 0 {
 			return 0xFFFF
 		}
 		return 0x0000
 	}
 	waveForm[WaveNoise] = func() uint16 {
-		// Modalità deterministic output
+		// Deterministic output mode
 		lfsr := v.noiseLFSR | 0x400000
 		return uint16(((lfsr>>12)&0xFF)<<8 | (lfsr & 0xFF))
 	}
 	return waveForm
 }
 
+// buildWaveForm initializes and returns an array of waveform generation functions for the Voice instance.
 func (v *Voice) buildWaveForm() []func() uint16 {
 	waveForm := make([]func() uint16, 0xf+1)
 	defaultFn := func() uint16 {
@@ -338,8 +354,8 @@ func (v *Voice) buildWaveForm() []func() uint16 {
 		return uint16(v.count >> 8)
 	}
 	waveForm[WaveRect] = func() uint16 {
-		// La soglia pw è a 12 bit, l'accumulatore count è a 24 bit.
-		// Il confronto è (count_24bit > pw_12bit_shl_12)
+		// The pw threshold is 12 bit, the count accumulator is 24 bit.
+		// The comparison is (count_24bit > pw_12bit_shl_12)
 		if v.count > (uint32(v.pw) << 12) {
 			return 0xffff
 		}
@@ -352,27 +368,30 @@ func (v *Voice) buildWaveForm() []func() uint16 {
 		if v.count > (uint32(v.pw) << 12) {
 			return triRectTable(v.count)
 		} else {
-			return 0 // O _triRectTable_low[v.count>>16] se esistesse una parte bassa
+			// _triRectTable_low[v.count>>16] if a low part exists
+			return 0
 		}
 	}
 	waveForm[WaveSawRect] = func() uint16 {
 		if v.count > (uint32(v.pw) << 12) {
 			return sawRectTable(v.count)
 		}
-		return 0 // O _sawRectTable_low[v.count>>16]
+		// _sawRectTable_low[v.count>>16] if a low part exists
+		return 0
 	}
 	waveForm[WaveTriSawRect] = func() uint16 {
 		if v.count > (uint32(v.pw) << 12) {
 			return triSawRectTable(v.count)
 		}
-		return 0 // O _triSawRectTable_low[v.count>>16]
+		// _triSawRectTable_low[v.count>>16] if a low part exists
+		return 0
 	}
 	waveForm[WaveNoise] = func() uint16 {
-		// Avanza l'LFSR a 23 bit
+		// Advance the 23-bit LFSR
 		msb := (v.noiseLFSR >> 22) & 1
 		tapBit := (v.noiseLFSR >> 17) & 1
 		feedback := msb ^ tapBit
-		v.noiseLFSR = ((v.noiseLFSR << 1) | feedback) & 0x7FFFFF
+		v.noiseLFSR = ((v.noiseLFSR << 1) | feedback) & DefaultNoiseLFSR
 		return uint16(((v.noiseLFSR >> 15) & 0xFF) << 8)
 	}
 	return waveForm
