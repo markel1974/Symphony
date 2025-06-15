@@ -40,6 +40,7 @@ type VICSocket struct {
 	connections  IVICSocketConnection
 	db           references.IDisplayBuffer
 	ram          references.IRamC64
+	colorRam     references.IColorRamC64
 	rom          references.IRomsC64
 	ramRead      func(addr uint16) uint8
 	ramReadColor func(addr uint16) uint8
@@ -79,6 +80,10 @@ func (v *VICSocket) Mount() error {
 	if v.ram, err = references.ComponentToIRamC64(v.parent.GetChildByHardwareId(idRam)); err != nil {
 		return err
 	}
+	idColorRam := references.IdIColorRamC64(v.colorRam, v.label, 0)
+	if v.colorRam, err = references.ComponentToIColorRamC64(v.parent.GetChildByHardwareId(idColorRam)); err != nil {
+		return err
+	}
 	idRom := references.IdIRomsC64(v.rom, v.label, 0)
 	if v.rom, err = references.ComponentToIRomsC64(v.parent.GetChildByHardwareId(idRom)); err != nil {
 		return err
@@ -91,7 +96,7 @@ func (v *VICSocket) Mount() error {
 		return err
 	}
 	v.ramRead = v.ram.Read
-	v.ramReadColor = v.ram.ReadColor
+	v.ramReadColor = v.colorRam.Read
 	v.romCharRead = v.rom.CharRead
 	return nil
 }

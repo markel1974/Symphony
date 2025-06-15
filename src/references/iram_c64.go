@@ -31,10 +31,6 @@ type IRamC64 interface {
 	Write(addr uint16, data uint8)
 
 	Size() int
-
-	ReadColor(addr uint16) uint8
-
-	WriteColor(addr uint16, data uint8)
 }
 
 // IdIRamC64 generates a unique identifier string for an IRamC64 component using its label, instance ID, and a fixed identifier.

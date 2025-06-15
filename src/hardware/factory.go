@@ -17,6 +17,7 @@ import (
 	_ "github.com/markel1974/c64emu/src/hardware/cartridges_c64/ocean"
 	_ "github.com/markel1974/c64emu/src/hardware/cartridges_c64/reu"
 	_ "github.com/markel1974/c64emu/src/hardware/cia"
+	_ "github.com/markel1974/c64emu/src/hardware/color_ram_c64"
 	_ "github.com/markel1974/c64emu/src/hardware/dynamic_throttle"
 	_ "github.com/markel1974/c64emu/src/hardware/iec"
 	_ "github.com/markel1974/c64emu/src/hardware/joystick_c64"

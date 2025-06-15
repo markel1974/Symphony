@@ -28,7 +28,8 @@ type Board struct {
 	joySocket2      *JoystickSocket
 	quartzSocket    *QuartzSocket
 	ramSocket       *RamSocket
-	romSocket       *RomLoaderSocket
+	colorRamSocket  *ColorRamSocket
+	romSocket       *RomSocket
 	iecSocket       *IECSocket
 	picSocket       *PICSocket
 	cia1Socket      *CIA1Socket
@@ -64,7 +65,8 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	s.joySocket1 = NewJoystickSocket(s, s.label, 0)
 	s.joySocket2 = NewJoystickSocket(s, s.label, 1)
 	s.ramSocket = NewRamSocket(s, s.label)
-	s.romSocket = NewRomLoaderSocket(s, s.label)
+	s.colorRamSocket = NewColorRamSocket(s, s.label)
+	s.romSocket = NewRomSocket(s, s.label)
 	s.quartzSocket = NewQuartzSocket(s, s.label)
 	s.iecSocket = NewIECSocket(s, s.label, s)
 	s.cartridgeSocket = NewExpansionSocket(s, s.label, s)
@@ -79,6 +81,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 
 	s.sockets = append(s.sockets, s.romSocket)
 	s.sockets = append(s.sockets, s.ramSocket)
+	s.sockets = append(s.sockets, s.colorRamSocket)
 	s.sockets = append(s.sockets, s.quartzSocket)
 	s.sockets = append(s.sockets, s.keysSocket)
 	s.sockets = append(s.sockets, s.joySocket1)

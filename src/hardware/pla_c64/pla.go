@@ -94,7 +94,7 @@ func (b *PLA) Setup() error {
 }
 
 // Bind initializes and connects various components to the PLA, including VIC, SID, CIA1, CIA2, cartridge manager, and ROM loader.
-func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, ram references.IRamC64, roms references.IRomsC64) error {
+func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, ram references.IRamC64, colorRam references.IColorRamC64, roms references.IRomsC64) error {
 	b.vicLastByte = vic.GetLastByte
 
 	b.cartManWrite = cartMan.Write
@@ -106,8 +106,8 @@ func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid referenc
 	b.ramRead = ram.Read
 	b.ramWrite = ram.Write
 	b.triggerSize = ram.Size()
-	b.colorRead = ram.ReadColor
-	b.colorWrite = ram.WriteColor
+	b.colorRead = colorRam.Read
+	b.colorWrite = colorRam.Write
 
 	for idx := range b.bankWrite {
 		b.bankWrite[idx] = b.ramWrite

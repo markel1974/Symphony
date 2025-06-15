@@ -4,8 +4,10 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// RomLoaderSocket is a type embedding the IRomsC64 interface, designed for managing ROM loader functionalities.
-type RomLoaderSocket struct {
+// RomSocket represents a component that interfaces with IRomsC64 for managing and loading C64 ROM data.
+// It attaches to a parent IComponent and provides labeled identification for hierarchical navigation and management.
+// RomSocket includes methods for hardware identification and initialization by mounting and binding to IRomsC64.
+type RomSocket struct {
 	references.IRomsC64
 	label     string
 	parent    references.IComponent
@@ -13,9 +15,9 @@ type RomLoaderSocket struct {
 	hwId      string
 }
 
-// NewRomLoaderSocket initializes and returns a new instance of RomLoaderSocket structure.
-func NewRomLoaderSocket(parent references.IComponent, label string) *RomLoaderSocket {
-	s := &RomLoaderSocket{
+// NewRomSocket creates a new instance of RomSocket, initializes it with a parent component and label, and assigns a hardware ID.
+func NewRomSocket(parent references.IComponent, label string) *RomSocket {
+	s := &RomSocket{
 		IRomsC64: nil,
 		parent:   parent,
 		label:    label,
@@ -24,12 +26,13 @@ func NewRomLoaderSocket(parent references.IComponent, label string) *RomLoaderSo
 	return s
 }
 
-func (s *RomLoaderSocket) HardwareId() string {
+// HardwareId retrieves the hardware identifier of the RomSocket instance.
+func (s *RomSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes the RomLoaderSocket by setting up its IRomsC64 interface and applying the provided configuration.
-func (s *RomLoaderSocket) Mount() error {
+// Mount initializes and binds the RomSocket to the appropriate IRomsC64 component by its hardware ID and returns an error if binding fails.
+func (s *RomSocket) Mount() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IRomsC64, err = references.ComponentToIRomsC64(s.component); err != nil {

@@ -9,10 +9,8 @@ import (
 // Ram represents a memory component with associated data buffers and fillers for color and data management.
 type Ram struct {
 	*component.BaseComponent
-	ram         []byte
-	color       []byte //SRAM 2114 (1K x 4 bit)
-	filler      *filler.Filler
-	colorFiller *filler.Filler
+	ram    []byte
+	filler *filler.Filler
 }
 
 // NewRam creates and initializes a new Ram instance with a parent component, factory, label, and instance number.
@@ -20,9 +18,7 @@ func NewRam(parent references.IComponent, factory references.IComponentFactory, 
 	rl := &Ram{
 		BaseComponent: component.NewBaseComponent(),
 		ram:           make([]byte, 0x10000),
-		color:         make([]byte, 0x0400),
 		filler:        filler.New(255, 128, 0, 0, 0, 0, 0, 0),
-		colorFiller:   filler.New(255, 128, 0, 0, 0, 0, 0, filler.InitRandomChanceHalf),
 	}
 	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIRamC64(rl, label, instance))
 	return rl
@@ -31,7 +27,6 @@ func NewRam(parent references.IComponent, factory references.IComponentFactory, 
 // Setup initializes the RAM and color memory with specific patterns using the associated Filler objects.
 func (r *Ram) Setup() error {
 	r.filler.InitWithPattern(r.ram, uint(len(r.ram)))
-	r.colorFiller.InitWithPattern(r.color, uint(len(r.color)))
 	return nil
 }
 
@@ -71,16 +66,6 @@ func (r *Ram) Read(addr uint16) uint8 {
 // Write stores the provided data byte at the specified memory address in the RAM.
 func (r *Ram) Write(addr uint16, data uint8) {
 	r.ram[addr] = data
-}
-
-// ReadColor retrieves a byte from the color memory at the specified address.
-func (r *Ram) ReadColor(addr uint16) uint8 {
-	return r.color[addr&0x03ff]
-}
-
-// WriteColor writes an 8-bit value to the specified address in the color memory segment of the RAM.
-func (r *Ram) WriteColor(addr uint16, data uint8) {
-	r.color[addr&0x03ff] = data & 0x0f
 }
 
 // Size returns the length of the `ram` slice, representing the total size of the RAM in bytes.
