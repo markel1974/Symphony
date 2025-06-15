@@ -120,57 +120,57 @@ const (
 	CartridgeHYPERBASIC
 )
 
-// _registerHardware is a map that associates hardware names with factory functions to create ICartridgeC64 instances.
-var _registerHardware = make(map[string]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64)
+// _registerHardware is a map that associates hardware names with factory functions to create IC64Cartridge instances.
+var _registerHardware = make(map[string]func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge)
 
-// _registerType is a mapping that associates an integer type identifier with a factory function for creating ICartridgeC64 instances.
-var _registerType = make(map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64)
+// _registerType is a mapping that associates an integer type identifier with a factory function for creating IC64Cartridge instances.
+var _registerType = make(map[int]func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge)
 
-// _registerSize is a map associating sizes to factory functions that generate instances of ICartridgeC64 components.
-var _registerSize = make(map[int]func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64)
+// _registerSize is a map associating sizes to factory functions that generate instances of IC64Cartridge components.
+var _registerSize = make(map[int]func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge)
 
 // _registerSizeDefault is a variable that stores a function for registering a default C64-compatible cartridge size.
-var _registerSizeDefault func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64
+var _registerSizeDefault func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge
 
 // RegisterHardware registers a hardware component with a given name and factory function for creating C64 cartridges.
-func RegisterHardware(name string, factory func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64) {
+func RegisterHardware(name string, factory func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge) {
 	_registerHardware[name] = factory
 }
 
 // RegisterType registers a cartridge factory function to a specific type for later instantiation.
-func RegisterType(kind int, factory func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64) {
+func RegisterType(kind int, factory func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge) {
 	_registerType[kind] = factory
 }
 
-// RegisterSize registers a cartridge size with its corresponding factory for creating instances of ICartridgeC64.
+// RegisterSize registers a cartridge size with its corresponding factory for creating instances of IC64Cartridge.
 // The `size` parameter specifies the cartridge size to register.
-// The `factory` parameter is a function to create an ICartridgeC64 with component references and configuration details.
-func RegisterSize(size int, factory func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64) {
+// The `factory` parameter is a function to create an IC64Cartridge with component references and configuration details.
+func RegisterSize(size int, factory func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge) {
 	_registerSize[size] = factory
 }
 
-// RegisterSizeDefault sets the default factory function for creating ICartridgeC64 instances with specified parameters.
-func RegisterSizeDefault(factory func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64) {
+// RegisterSizeDefault sets the default factory function for creating IC64Cartridge instances with specified parameters.
+func RegisterSizeDefault(factory func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge) {
 	_registerSizeDefault = factory
 }
 
-// ByHardware returns a function that binds an IComponent, IComponentFactory, string, and int to produce an ICartridgeC64 instance.
+// ByHardware returns a function that binds an IComponent, IComponentFactory, string, and int to produce an IC64Cartridge instance.
 // The returned function is retrieved from the _registerHardware map using the provided name as the key.
-func ByHardware(name string) func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64 {
+func ByHardware(name string) func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge {
 	return _registerHardware[name]
 }
 
-// ByType returns a function to create an ICartridgeC64 instance based on the provided kind and parameters.
-func ByType(kind int) func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64 {
+// ByType returns a function to create an IC64Cartridge instance based on the provided kind and parameters.
+func ByType(kind int) func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge {
 	return _registerType[kind]
 }
 
-// BySize returns a function that generates an ICartridgeC64 implementation based on the provided size.
-func BySize(size int) func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64 {
+// BySize returns a function that generates an IC64Cartridge implementation based on the provided size.
+func BySize(size int) func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge {
 	return _registerSize[size]
 }
 
 // BySizeDefault provides a default function for registering a C64 cartridge with specific components and configurations.
-func BySizeDefault() func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64 {
+func BySizeDefault() func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge {
 	return _registerSizeDefault
 }

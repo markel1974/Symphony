@@ -13,7 +13,7 @@ var _c64DefaultHardware = []struct {
 	id       string
 	instance int
 }{
-	{"c64", "c64", 0},
+	{"c64", "c64_board", 0},
 	{"c64", "iec", 0},
 	{"c64", "mos6569", 0},
 	{"c64", "mos6526", 0},
@@ -24,7 +24,7 @@ var _c64DefaultHardware = []struct {
 	{"c64", "dynamic_throttle", 0},
 	{"c64", "mos6581", 0},
 	{"c64", "ram_c64", 0},
-	{"c64", "color_ram_c64", 0},
+	{"c64", "c64_color_ram", 0},
 	{"c64", "roms_c64", 0},
 	{"c64", "pla_c64", 0},
 	{"c64", "keyboard_c64", 0},
@@ -157,7 +157,7 @@ func (s *Symphony) Start() error {
 	if s.boardComponent == nil {
 		return fmt.Errorf("board component is nil")
 	}
-	board, ok := s.boardComponent.(references.IBoard)
+	board, ok := s.boardComponent.(references.IC64Board)
 	if !ok {
 		return fmt.Errorf("board component is not a board")
 	}

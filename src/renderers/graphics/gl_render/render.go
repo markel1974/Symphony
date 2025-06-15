@@ -7,7 +7,7 @@ import (
 )
 
 type Render struct {
-	board      references.IBoard
+	board      references.IC64Board
 	scale      float64
 	fullscreen bool
 	maxW       float64
@@ -45,7 +45,7 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 	return display, nil
 }
 
-func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
+func (g *Render) Setup(board references.IC64Board, cfg *config.Config) error {
 	g.board = board
 	if err := g.board.Mount(g); err != nil {
 		return err

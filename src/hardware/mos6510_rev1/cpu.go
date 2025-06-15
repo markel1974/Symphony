@@ -16,30 +16,30 @@ import (
 // CPU represents a simulated central processing unit with registers, flags, and associated helper components.
 type CPU struct {
 	*component.BaseComponent
-	banks          references.I6510Banks // banks represents the interface for accessing and managing memory banks within the CPU simulation.
-	pic            references.IPIC6510   // pic represents the programmable interrupt controller (PIC) interface used by the CPU for interrupt handling.
-	next           func(cpu *CPU)        // next is a function pointer that executes the next CPU instruction or operation during emulation.
-	overflowBranch func() bool           // overflowBranch determines if the CPU should branch based on the overflow condition.
-	nFlag          uint8                 // Negative flag - Only the highest bit of the nFlag variable is used
-	zFlag          uint8                 // Zero flag - The zFlag variable has the inverse meaning of the 6510 Z flag
-	vFlag          uint8                 // Overflow flag
-	dFlag          uint8                 // Decimal mode flag
-	iFlag          uint8                 // Interrupt disable flag
-	cFlag          uint8                 // Carry flag
-	a              uint8                 // Register
-	x              uint8                 // Register
-	y              uint8                 // Register
-	sp             uint8                 // Stack pointer
-	pc             uint16                // Program counter
-	op             uint8                 // Current opcode
-	ar             uint16                // Address register
-	ar2            uint16                // Address register 2
-	rmw            uint8                 // Data buffer for RMW instructions
-	stop           bool                  // stop indicates whether the CPU execution is currently paused.
-	rdyLow         bool                  // current RDY state
-	aecLow         bool                  // current AEC state
-	opFlags        uint8                 // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
-	irqBreaker     bool                  // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
+	banks          references.IMos6510Banks // banks represents the interface for accessing and managing memory banks within the CPU simulation.
+	pic            references.IMos6510Pic   // pic represents the programmable interrupt controller (PIC) interface used by the CPU for interrupt handling.
+	next           func(cpu *CPU)           // next is a function pointer that executes the next CPU instruction or operation during emulation.
+	overflowBranch func() bool              // overflowBranch determines if the CPU should branch based on the overflow condition.
+	nFlag          uint8                    // Negative flag - Only the highest bit of the nFlag variable is used
+	zFlag          uint8                    // Zero flag - The zFlag variable has the inverse meaning of the 6510 Z flag
+	vFlag          uint8                    // Overflow flag
+	dFlag          uint8                    // Decimal mode flag
+	iFlag          uint8                    // Interrupt disable flag
+	cFlag          uint8                    // Carry flag
+	a              uint8                    // Register
+	x              uint8                    // Register
+	y              uint8                    // Register
+	sp             uint8                    // Stack pointer
+	pc             uint16                   // Program counter
+	op             uint8                    // Current opcode
+	ar             uint16                   // Address register
+	ar2            uint16                   // Address register 2
+	rmw            uint8                    // Data buffer for RMW instructions
+	stop           bool                     // stop indicates whether the CPU execution is currently paused.
+	rdyLow         bool                     // current RDY state
+	aecLow         bool                     // current AEC state
+	opFlags        uint8                    // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
+	irqBreaker     bool                     // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
@@ -47,7 +47,7 @@ func NewCPU(parent references.IComponent, factory references.IComponentFactory, 
 	cpu := &CPU{
 		BaseComponent: component.NewBaseComponent(),
 	}
-	cpu.BaseComponent.Register(factory, parent, Identifier(), cpu, references.IdI6510(cpu, label, instance))
+	cpu.BaseComponent.Register(factory, parent, Identifier(), cpu, references.IdIMos6510(cpu, label, instance))
 	return cpu
 }
 
@@ -56,7 +56,7 @@ func (cpu *CPU) Setup() error {
 	return nil
 }
 
-func (cpu *CPU) Bind(_ references.I6510Socket, pic references.IPIC6510, banks references.I6510Banks) error {
+func (cpu *CPU) Bind(_ references.IMos6510Socket, pic references.IMos6510Pic, banks references.IMos6510Banks) error {
 	cpu.pic = pic
 	cpu.banks = banks
 	return nil

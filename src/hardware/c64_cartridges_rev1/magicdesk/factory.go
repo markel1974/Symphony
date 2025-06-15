@@ -30,10 +30,10 @@ func GetType() int {
 	return catalog.CartridgeMagicDesk
 }
 
-// Kind returns an instance implementing the ICartridgeC64 interface associated with the CartridgeMagicDesk type.
+// Kind returns an instance implementing the IC64Cartridge interface associated with the CartridgeMagicDesk type.
 func (t *Factory) Kind() interface{} {
 	z := (*CartridgeMagicDesk)(nil)
-	return references.ICartridgeC64(z)
+	return references.IC64Cartridge(z)
 }
 
 // Create initializes a new MagicDesk component with the specified parent, factory, label, and instance number.

@@ -48,7 +48,7 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 		player:        nil,
 		cfg:           nil,
 	}
-	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdISID(s, label, instance))
+	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIMos6581(s, label, instance))
 	s.reflect = NewSidReflect(s)
 	return s
 }
@@ -61,7 +61,7 @@ func (sid *SID) Setup() error {
 }
 
 // Bind initializes the SID instance with the given socket, fragment frequency, and raster count, returning an error if any.
-func (sid *SID) Bind(_ references.ISIDSocket, fragFreq int /* rasters */, _ int) error {
+func (sid *SID) Bind(_ references.IMos6581Socket, fragFreq int /* rasters */, _ int) error {
 	sid.player = sid.GetFactory().GetIAudioRender()
 	sid.sampleBuf = make([]uint8, SampleBufSize)
 	sid.voices = nil

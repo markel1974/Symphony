@@ -22,7 +22,7 @@ func NewRam(parent references.IComponent, factory references.IComponentFactory, 
 		ram:           make([]byte, c1541RamSize),
 		filler:        filler.New(255, 128, 0, 0, 0, 0, 0, 0),
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIRamC1541(rl, label, instance))
+	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIC1541Ram(rl, label, instance))
 	return rl
 }
 
@@ -32,8 +32,8 @@ func (r *Ram) Setup() error {
 	return nil
 }
 
-// Bind integrates the current RAM instance with the given IRamC64Socket interface and initializes memory with a pattern.
-func (r *Ram) Bind(_ references.IRamC1541Socket) error {
+// Bind integrates the current RAM instance with the given IC64RamSocket interface and initializes memory with a pattern.
+func (r *Ram) Bind(_ references.IC1541RamSocket) error {
 	return nil
 }
 

@@ -33,15 +33,15 @@ type IVICSocketConnection interface {
 // It integrates with display, quartz clocking, PLA memory, and programmable interrupt controller components.
 // Provides methods and triggers for managing display rendering and interaction with the C64 hardware components.
 type VICSocket struct {
-	references.IVIC
+	references.IMos6569
 	label        string
 	parent       references.IComponent
 	component    references.IComponent
 	connections  IVICSocketConnection
 	db           references.IDisplayBuffer
-	ram          references.IRamC64
-	colorRam     references.IColorRamC64
-	rom          references.IRomsC64
+	ram          references.IC64Ram
+	colorRam     references.IC64ColorRam
+	rom          references.IC64Roms
 	ramRead      func(addr uint16) uint8
 	ramReadColor func(addr uint16) uint8
 	romCharRead  func(addr uint16) uint8
@@ -53,7 +53,7 @@ type VICSocket struct {
 // NewVICSocket creates and initializes a new VICSocket instance, setting up necessary connections for video interface control.
 func NewVICSocket(parent references.IComponent, label string, connections IVICSocketConnection) *VICSocket {
 	v := &VICSocket{
-		IVIC:        nil,
+		IMos6569:    nil,
 		parent:      parent,
 		label:       label,
 		connections: connections,
@@ -61,7 +61,7 @@ func NewVICSocket(parent references.IComponent, label string, connections IVICSo
 		quartz:      nil,
 		intrId:      intrIrqVicBit,
 	}
-	v.hwId = references.IdIVIC(v, label, 0)
+	v.hwId = references.IdIMos6569(v, label, 0)
 	return v
 }
 
@@ -69,30 +69,30 @@ func (v *VICSocket) HardwareId() string {
 	return v.hwId
 }
 
-// Mount initializes the VICSocket by resolving its dependencies and calling Setup on the IVIC component.
+// Mount initializes the VICSocket by resolving its dependencies and calling Setup on the IMos6569 component.
 func (v *VICSocket) Mount() error {
 	var err error
 	v.component = v.parent.GetChildByHardwareId(v.HardwareId())
-	if v.IVIC, err = references.ComponentToIVIC(v.component); err != nil {
+	if v.IMos6569, err = references.ComponentToIMos6569(v.component); err != nil {
 		return err
 	}
-	idRam := references.IdIRamC64(v.ram, v.label, 0)
-	if v.ram, err = references.ComponentToIRamC64(v.parent.GetChildByHardwareId(idRam)); err != nil {
+	idRam := references.IdIC64Ram(v.ram, v.label, 0)
+	if v.ram, err = references.ComponentToIC64Ram(v.parent.GetChildByHardwareId(idRam)); err != nil {
 		return err
 	}
-	idColorRam := references.IdIColorRamC64(v.colorRam, v.label, 0)
-	if v.colorRam, err = references.ComponentToIColorRamC64(v.parent.GetChildByHardwareId(idColorRam)); err != nil {
+	idColorRam := references.IdIC64ColorRam(v.colorRam, v.label, 0)
+	if v.colorRam, err = references.ComponentToIC64ColorRam(v.parent.GetChildByHardwareId(idColorRam)); err != nil {
 		return err
 	}
-	idRom := references.IdIRomsC64(v.rom, v.label, 0)
-	if v.rom, err = references.ComponentToIRomsC64(v.parent.GetChildByHardwareId(idRom)); err != nil {
+	idRom := references.IdIC64Roms(v.rom, v.label, 0)
+	if v.rom, err = references.ComponentToIC64Roms(v.parent.GetChildByHardwareId(idRom)); err != nil {
 		return err
 	}
 	idQuartz := references.IdIQuartz(v.quartz, v.label, 0)
 	if v.quartz, err = references.ComponentToIQuartz(v.parent.GetChildByHardwareId(idQuartz)); err != nil {
 		return err
 	}
-	if err = v.IVIC.Bind(v); err != nil {
+	if err = v.IMos6569.Bind(v); err != nil {
 		return err
 	}
 	v.ramRead = v.ram.Read

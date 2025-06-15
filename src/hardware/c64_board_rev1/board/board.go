@@ -46,7 +46,7 @@ type Board struct {
 	emulation       []func()
 	sockets         []references.ISocket
 	label           string
-	connections     references.IBoardConnections
+	connections     references.IC64BoardConnections
 }
 
 // NewBoard initializes and returns a new Board instance configured with various hardware sockets and components.
@@ -59,7 +59,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		emulation:     []func(){},
 		label:         label,
 	}
-	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIBoardC64(s, label, instance))
+	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIC64Board(s, label, instance))
 
 	s.keysSocket = NewKeyboardSocket(s, s.label)
 	s.joySocket1 = NewJoystickSocket(s, s.label, 0)
@@ -115,7 +115,7 @@ func (s *Board) Connect() error {
 	return nil
 }
 
-func (s *Board) Mount(conn references.IBoardConnections) error {
+func (s *Board) Mount(conn references.IC64BoardConnections) error {
 	s.connections = conn
 	return nil
 }

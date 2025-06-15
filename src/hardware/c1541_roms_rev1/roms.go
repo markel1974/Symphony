@@ -20,7 +20,7 @@ func NewRoms(parent references.IComponent, factory references.IComponentFactory,
 		kernal:        nil,
 		cfg:           nil,
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIRomsC1541(rl, label, instance))
+	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIC1541Roms(rl, label, instance))
 	return rl
 }
 
@@ -35,9 +35,9 @@ func (r *Roms) Setup() error {
 	return nil
 }
 
-// Bind links the Roms instance to the provided IRomsC1541Socket interface to configure its dependencies.
+// Bind links the Roms instance to the provided IC1541RomsSocket interface to configure its dependencies.
 // Returns an error if binding fails or cannot be established.
-func (r *Roms) Bind(_ references.IRomsC1541Socket) error {
+func (r *Roms) Bind(_ references.IC1541RomsSocket) error {
 	return nil
 }
 

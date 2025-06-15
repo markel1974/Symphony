@@ -6,7 +6,7 @@ import (
 
 // RamSocket represents a memory socket for the C64 system, managing its connection, binding, and hardware ID functionality.
 type RamSocket struct {
-	references.IRamC64
+	references.IC64Ram
 	label     string
 	parent    references.IComponent
 	component references.IComponent
@@ -16,11 +16,11 @@ type RamSocket struct {
 // NewRamSocket initializes a new RamSocket instance with a parent component and label, generating its hardware ID.
 func NewRamSocket(parent references.IComponent, label string) *RamSocket {
 	s := &RamSocket{
-		IRamC64: nil,
+		IC64Ram: nil,
 		parent:  parent,
 		label:   label,
 	}
-	s.hwId = references.IdIRamC64(s.IRamC64, s.label, 0)
+	s.hwId = references.IdIC64Ram(s.IC64Ram, s.label, 0)
 	return s
 }
 
@@ -29,14 +29,14 @@ func (s *RamSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount associates the RamSocket with its parent component and binds it to an IRamC64 instance, returning an error if unsuccessful.
+// Mount associates the RamSocket with its parent component and binds it to an IC64Ram instance, returning an error if unsuccessful.
 func (s *RamSocket) Mount() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
-	if s.IRamC64, err = references.ComponentToIRamC64(s.component); err != nil {
+	if s.IC64Ram, err = references.ComponentToIC64Ram(s.component); err != nil {
 		return err
 	}
-	if err = s.IRamC64.Bind(s); err != nil {
+	if err = s.IC64Ram.Bind(s); err != nil {
 		return err
 	}
 	return nil

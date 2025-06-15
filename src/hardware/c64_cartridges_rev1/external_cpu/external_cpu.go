@@ -17,14 +17,14 @@ const Id = "SCPU"
 type CartridgeExternalCPU struct {
 	*component.BaseComponent
 	loaderId string
-	board    references.IExpansionC64
-	pic      references.IPIC6510
-	cpu      references.I6510
+	board    references.IC64Expansion
+	pic      references.IMos6510Pic
+	cpu      references.IMos6510
 	quartz   references.IQuartz
 	cfg      *config.Config
 }
 
-// NewExternalCPU returns a new instance of the CartridgeExternalCPU struct implementing the ICartridgeC64 interface.
+// NewExternalCPU returns a new instance of the CartridgeExternalCPU struct implementing the IC64Cartridge interface.
 func NewExternalCPU(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeExternalCPU {
 	r := &CartridgeExternalCPU{
 		BaseComponent: component.NewBaseComponent(),
@@ -34,11 +34,11 @@ func NewExternalCPU(parent references.IComponent, factory references.IComponentF
 		quartz:        nil,
 		cfg:           nil,
 	}
-	r.BaseComponent.Register(factory, parent, Identifier(), r, references.IdICartridgeC64(r, label, instance))
+	r.BaseComponent.Register(factory, parent, Identifier(), r, references.IdIC64Cartridge(r, label, instance))
 	return r
 }
 
-func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.ICartridgeC64 {
+func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IC64Cartridge {
 	return NewExternalCPU(parent, factory, label, instance)
 }
 
@@ -52,7 +52,7 @@ func (s *CartridgeExternalCPU) Setup() error {
 	return nil
 }
 
-func (s *CartridgeExternalCPU) Bind(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+func (s *CartridgeExternalCPU) Bind(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	//TODO REWRITE!!!
 	const instance = 1000
 	s.board = board
@@ -63,7 +63,7 @@ func (s *CartridgeExternalCPU) Bind(board references.IExpansionC64, ldr referenc
 	if err != nil {
 		return err
 	}
-	if s.cpu, err = references.ComponentToI6510(cpu); err != nil {
+	if s.cpu, err = references.ComponentToIMos6510(cpu); err != nil {
 		return err
 	}
 
@@ -71,7 +71,7 @@ func (s *CartridgeExternalCPU) Bind(board references.IExpansionC64, ldr referenc
 	if err != nil {
 		return err
 	}
-	if s.pic, err = references.ComponentToIPIC6510(p); err != nil {
+	if s.pic, err = references.ComponentToIMos6510Pic(p); err != nil {
 		return err
 	}
 	q, err := s.GetFactory().Create(s, Identifier(), quartz_rev1.Identifier(), instance)
@@ -170,12 +170,12 @@ func (s *CartridgeExternalCPU) HardwareButton(pressed bool, value uint8) {
 }
 
 // Write stores an 8-bit data value to a specified address within a given ROM interval and returns success status as a boolean.
-func (s *CartridgeExternalCPU) Write(i references.RomInterval, addr uint16, data uint8) bool {
+func (s *CartridgeExternalCPU) Write(i references.C64RomInterval, addr uint16, data uint8) bool {
 	return false
 }
 
 // Read fetches a byte and status from the specified address within the ROM interval.
-func (s *CartridgeExternalCPU) Read(i references.RomInterval, addr uint16) (uint8, bool) {
+func (s *CartridgeExternalCPU) Read(i references.C64RomInterval, addr uint16) (uint8, bool) {
 	return 0, false
 }
 

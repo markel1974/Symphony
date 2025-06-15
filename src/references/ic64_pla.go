@@ -4,11 +4,11 @@ import (
 	"fmt"
 )
 
-// IPlaC64Socket represents an interface for socket communication with the PLA, facilitating component interaction and integration.
-type IPlaC64Socket interface {
+// IC64PlaSocket represents an interface for socket communication with the PLA, facilitating component interaction and integration.
+type IC64PlaSocket interface {
 }
 
-// IPlaC64 defines the interface for the Programmable Logic Array (PLA) component of the C64 system.
+// IC64Pla defines the interface for the Programmable Logic Array (PLA) component of the C64 system.
 // Setup initializes the PLA component for operation.
 // Bind links the PLA to various system components, including socket, VIC, SID, CIAs, cartridge manager, RAM, and ROM loader.
 // Connect establishes the necessary connections for the PLA to interact with other components.
@@ -24,10 +24,10 @@ type IPlaC64Socket interface {
 // ReadColor retrieves an 8-bit color value from a specified 16-bit memory address.
 // SetWriteTrigger assigns a trigger function that executes when writing to a specific 16-bit memory address.
 // RemoveRamTrigger removes a previously set write trigger function for a specified 16-bit memory address identified by a trigger ID.
-type IPlaC64 interface {
+type IC64Pla interface {
 	Setup() error
 
-	Bind(socket IPlaC64Socket, vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, ram IRamC64, colorRam IColorRamC64, roms IRomsC64) error
+	Bind(socket IC64PlaSocket, vic IMos6569, sid IMos6581, cia1 IMos6526, cia2 IMos6526, cartMan IC64CartridgeManager, ram IC64Ram, colorRam IC64ColorRam, roms IC64Roms) error
 
 	Connect() error
 
@@ -50,19 +50,19 @@ type IPlaC64 interface {
 	RemoveRamTrigger(addr uint16, id int)
 }
 
-// IdIPlaC64 generates a unique identifier for an IPlaC64 interface instance using the specified label and instance index.
-func IdIPlaC64(v IPlaC64, label string, instance int) string {
+// IdIC64Pla generates a unique identifier for an IC64Pla interface instance using the specified label and instance index.
+func IdIC64Pla(v IC64Pla, label string, instance int) string {
 	return IdInternalComponent(label, instance, InterfaceName(&v))
 }
 
-// ComponentToIPLAc64 converts an IComponent to an IPlaC64 if possible, returning an error if the conversion fails.
-func ComponentToIPLAc64(component IComponent) (IPlaC64, error) {
+// ComponentToIC64Pla converts an IComponent to an IC64Pla if possible, returning an error if the conversion fails.
+func ComponentToIC64Pla(component IComponent) (IC64Pla, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component IPlaC64 is nil")
+		return nil, fmt.Errorf("component IC64Pla is nil")
 	}
-	v, ok := component.(IPlaC64)
+	v, ok := component.(IC64Pla)
 	if !ok {
-		return nil, fmt.Errorf("component is not a IPlaC64")
+		return nil, fmt.Errorf("component is not a IC64Pla")
 	}
 	return v, nil
 }

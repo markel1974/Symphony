@@ -148,8 +148,8 @@ func (cl *Loader) read() error {
 }
 
 // ReadChipHeader reads and initializes a chip header from the cartridge data at the current cursor position.
-// Returns the parsed ICartridgeChipHeaderC64 instance or an error if the operation fails.
-func (cl *Loader) ReadChipHeader() (references.ICartridgeChipHeaderC64, error) {
+// Returns the parsed IC64CartridgeChipHeader instance or an error if the operation fails.
+func (cl *Loader) ReadChipHeader() (references.IC64CartridgeChipHeader, error) {
 	if cl.kind == TypeBin {
 		return nil, nil
 	}

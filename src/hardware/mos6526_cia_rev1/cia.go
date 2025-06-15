@@ -41,7 +41,7 @@ type CIA struct {
 	sdrShiftRegister uint8 // Lo shift register interno
 	sdrShiftCounter  uint8 // Contatore per i bit (da 8 a 0)
 	todClockDivider  int
-	socket           references.ICIASocket
+	socket           references.IMos6526Socket
 	label            string
 }
 
@@ -54,7 +54,7 @@ func NewCIA(parent references.IComponent, factory references.IComponentFactory, 
 		timerB:        nil,
 		label:         label,
 	}
-	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdICIA(m, label, instance))
+	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdIMos6526(m, label, instance))
 	return m
 }
 
@@ -68,7 +68,7 @@ func (m *CIA) Setup() error {
 	return nil
 }
 
-func (m *CIA) Bind(socket references.ICIASocket) error {
+func (m *CIA) Bind(socket references.IMos6526Socket) error {
 	m.socket = socket
 	return nil
 }

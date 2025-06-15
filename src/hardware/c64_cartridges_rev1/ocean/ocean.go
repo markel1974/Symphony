@@ -11,33 +11,33 @@ import (
 type CartridgeOcean struct {
 	*component.BaseComponent
 	loaderId  string
-	intervals references.RomInterval
+	intervals references.C64RomInterval
 	lastData  uint8
 	banks     [][]byte
 	ioMask    uint8
 	currBank  uint8
 	game      uint8
 	exRom     uint8
-	board     references.IExpansionC64
+	board     references.IC64Expansion
 }
 
-// NewCartridgeOcean creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
+// NewCartridgeOcean creates and returns a new instance of the Ocean Cartridge conforming to the IC64Cartridge interface.
 func NewCartridgeOcean(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeOcean {
 	co := &CartridgeOcean{
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
 	}
-	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdICartridgeC64(co, label, instance))
+	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdIC64Cartridge(co, label, instance))
 	return co
 }
 
-// New creates and returns a new instance of the Ocean Cartridge conforming to the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.ICartridgeC64 {
+// New creates and returns a new instance of the Ocean Cartridge conforming to the IC64Cartridge interface.
+func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IC64Cartridge {
 	return NewCartridgeOcean(parent, factory, label, instance)
 }
 
 func (c *CartridgeOcean) reset(hard bool) {
-	c.game, c.exRom, c.intervals = references.GetCartridgeSpec(references.CartridgeMode16K).Data()
+	c.game, c.exRom, c.intervals = references.GetC64CartridgeSpec(references.C64CartridgeMode16K).Data()
 	c.lastData = 0
 	c.currBank = 0
 	if hard {
@@ -53,7 +53,7 @@ func (c *CartridgeOcean) Setup() error {
 }
 
 // Bind associates the CartridgeOcean instance with the provided expansion board and cartridge loader, initializing it accordingly.
-func (c *CartridgeOcean) Bind(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeOcean) Bind(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
 	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
@@ -86,7 +86,7 @@ func (c *CartridgeOcean) HardwareButton(pressed bool, value uint8) {
 }
 
 // Write attempts to write data to the cartridge at the specified address and interval. Returns true if the write is blocked.
-func (c *CartridgeOcean) Write(i references.RomInterval, addr uint16, data uint8) bool {
+func (c *CartridgeOcean) Write(i references.C64RomInterval, addr uint16, data uint8) bool {
 	if i&c.intervals != 0 {
 		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.currBank, addr, data)
 		return true
@@ -95,7 +95,7 @@ func (c *CartridgeOcean) Write(i references.RomInterval, addr uint16, data uint8
 }
 
 // Read reads a byte from the current bank, based on the specified ROM interval and address. Returns the byte and success status.
-func (c *CartridgeOcean) Read(i references.RomInterval, addr uint16) (uint8, bool) {
+func (c *CartridgeOcean) Read(i references.C64RomInterval, addr uint16) (uint8, bool) {
 	if i&c.intervals != 0 {
 		return c.banks[c.currBank][addr&0x1fff], true
 	}
@@ -157,7 +157,7 @@ func (c *CartridgeOcean) Emulate() {
 
 // initBin initializes the cartridge by parsing binary data, validating it and segmenting it into fixed-size memory banks.
 // It calculates the I/O mask and sets initial values for `lastData` and `currBank`. Returns an error if validation fails.
-func (c *CartridgeOcean) initBin(ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeOcean) initBin(ldr references.IC64CartridgeLoader) error {
 	data := ldr.GetData()
 	if err := catalog.ValidateCartridge(data); err != nil {
 		return err
@@ -181,7 +181,7 @@ func (c *CartridgeOcean) initBin(ldr references.ICartridgeLoaderC64) error {
 }
 
 // initCrt initializes the cartridge by reading chip headers from the provided CRTLoader and validates the chip data.
-func (c *CartridgeOcean) initCrt(ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeOcean) initCrt(ldr references.IC64CartridgeLoader) error {
 	c.banks = [][]byte{}
 	romSize := 0
 	for {

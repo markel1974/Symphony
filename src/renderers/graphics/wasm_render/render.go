@@ -13,9 +13,9 @@ import (
 //Fette Ragionevoli: Dividere il lavoro di un VBlank (19656 cicli) in 2-4 fette (quindi ogni fetta esegue 5000-10000 cicli C64 e dura circa 5-10ms di tempo reale) è spesso un buon compromesso. Questo crea 100-200 "slot liberi" al secondo per il loop dell'emulatore, il che è ampiamente sufficiente per far girare uno scheduler audio con un intervallo di 10ms in modo molto più affidabile.
 
 // Render manages the display rendering process and user interaction through inputs and a linked board implementation.
-// It integrates with a DisplayBuffer for screen updates and relies on IBoard for controlling board operations.
+// It integrates with a DisplayBuffer for screen updates and relies on IC64Board for controlling board operations.
 type Render struct {
-	board         references.IBoard
+	board         references.IC64Board
 	displayBuffer *DisplayBuffer
 	w             int
 	h             int
@@ -42,9 +42,9 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 	return g.displayBuffer, nil
 }
 
-// Setup initializes the Render object with the given IBoard and Config instances, setting up the necessary components.
+// Setup initializes the Render object with the given IC64Board and Config instances, setting up the necessary components.
 // Returns an error if the board or input setup fails.
-func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
+func (g *Render) Setup(board references.IC64Board, cfg *config.Config) error {
 	g.board = board
 	if err := g.board.Mount(g); err != nil {
 		return err

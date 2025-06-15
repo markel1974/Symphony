@@ -47,8 +47,8 @@ func TestInstOpINI(t *testing.T) {
 		expStop    bool
 		expNext    func(*CPU)
 		expBreaker bool
-		pic        references.IPIC6510
-		banks      references.I6510Banks
+		pic        references.IMos6510Pic
+		banks      references.IMos6510Banks
 	}{
 		{
 			name: "CPU_RDY_Low",

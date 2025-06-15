@@ -23,9 +23,9 @@ type CIA1SocketConnection interface {
 }
 
 // CIA1Socket represents a connector for CIA-1 chip emulation, managing keyboard, joystick, and external connections.
-// ICIA interface provides the core logic for the connected CIA chip functionality.
-// IKeyboard interface is used to handle input and state changes from a keyboard.
-// IJoystick interface specifies methods to interact with joystick devices (one or more).
+// IMos6526 interface provides the core logic for the connected CIA chip functionality.
+// IC64Keyboard interface is used to handle input and state changes from a keyboard.
+// IC64Joystick interface specifies methods to interact with joystick devices (one or more).
 // ICIA1SocketConnections interface provides external event interactions like IRQ and light pen triggers.
 // intrId is used to track the IRQ identification bit for events.
 // prevLPState represents the prior state of the light pen (LP) input signal.
@@ -33,15 +33,15 @@ type CIA1SocketConnection interface {
 // revMatrix is the reversed lookup table to assist with keyboard matrix computation.
 // joy1State and joy2State track the current states of two connected joysticks.
 type CIA1Socket struct {
-	references.ICIA
+	references.IMos6526
 	label       string
 	parent      references.IComponent
 	component   references.IComponent
 	connection  CIA1SocketConnection
-	vic         references.IVIC
-	keys        references.IKeyboard
-	joy1        references.IJoystick
-	joy2        references.IJoystick
+	vic         references.IMos6569
+	keys        references.IC64Keyboard
+	joy1        references.IC64Joystick
+	joy2        references.IC64Joystick
 	intrId      uint32  //
 	prevLPState uint8   // Previous state of LP line (bit 4)
 	keyMatrix   []uint8 // keyboard matrix [0: down, 1: up]
@@ -57,7 +57,7 @@ func NewCIA1Socket(parent references.IComponent, label string, connection CIA1So
 		parent:      parent,
 		label:       label,
 		connection:  connection,
-		ICIA:        nil,
+		IMos6526:    nil,
 		vic:         nil,
 		keys:        nil,
 		joy1:        nil,
@@ -69,7 +69,7 @@ func NewCIA1Socket(parent references.IComponent, label string, connection CIA1So
 		joy1State:   defaultJoyState,
 		joy2State:   defaultJoyState,
 	}
-	c.hwId = references.IdICIA(c.ICIA, c.label, 0)
+	c.hwId = references.IdIMos6526(c.IMos6526, c.label, 0)
 	return c
 }
 
@@ -82,26 +82,26 @@ func (w *CIA1Socket) HardwareId() string {
 func (w *CIA1Socket) Mount() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
-	if w.ICIA, err = references.ComponentToICIA(w.component); err != nil {
+	if w.IMos6526, err = references.ComponentToIMos6526(w.component); err != nil {
 		return err
 	}
-	idVIC := references.IdIVIC(w.vic, w.label, 0)
-	if w.vic, err = references.ComponentToIVIC(w.parent.GetChildByHardwareId(idVIC)); err != nil {
+	idVIC := references.IdIMos6569(w.vic, w.label, 0)
+	if w.vic, err = references.ComponentToIMos6569(w.parent.GetChildByHardwareId(idVIC)); err != nil {
 		return err
 	}
-	idKeys := references.IdIKeyboard(w.keys, w.label, 0)
-	if w.keys, err = references.ComponentToIKeyboard(w.parent.GetChildByHardwareId(idKeys)); err != nil {
+	idKeys := references.IdIC64Keyboard(w.keys, w.label, 0)
+	if w.keys, err = references.ComponentToIC64Keyboard(w.parent.GetChildByHardwareId(idKeys)); err != nil {
 		return err
 	}
-	idJoy1 := references.IdIJoystick(w.joy1, w.label, 0)
-	if w.joy1, err = references.ComponentToIJoystick(w.parent.GetChildByHardwareId(idJoy1)); err != nil {
+	idJoy1 := references.IdIC64Joystick(w.joy1, w.label, 0)
+	if w.joy1, err = references.ComponentToIC64Joystick(w.parent.GetChildByHardwareId(idJoy1)); err != nil {
 		return err
 	}
-	idJoy2 := references.IdIJoystick(w.joy1, w.label, 1)
-	if w.joy2, err = references.ComponentToIJoystick(w.parent.GetChildByHardwareId(idJoy2)); err != nil {
+	idJoy2 := references.IdIC64Joystick(w.joy1, w.label, 1)
+	if w.joy2, err = references.ComponentToIC64Joystick(w.parent.GetChildByHardwareId(idJoy2)); err != nil {
 		return err
 	}
-	if err = w.ICIA.Bind(w); err != nil {
+	if err = w.IMos6526.Bind(w); err != nil {
 		return err
 	}
 	return nil
@@ -112,7 +112,7 @@ func (w *CIA1Socket) Reset() {
 	w.keys.Reset()
 	w.joy1.Reset()
 	w.joy2.Reset()
-	w.ICIA.Reset()
+	w.IMos6526.Reset()
 	for idx := range w.keyMatrix {
 		w.keyMatrix[idx] = defaultKeyState
 	}
@@ -153,7 +153,7 @@ func (w *CIA1Socket) Update() {
 			w.revMatrix[revM] |= 1 << keyM
 		}
 	}
-	w.ICIA.Update()
+	w.IMos6526.Update()
 }
 
 // ReadPortA reads data from port A by combining the given parameters with internal joystick states and matrices.

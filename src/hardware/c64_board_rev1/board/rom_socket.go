@@ -4,11 +4,11 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// RomSocket represents a component that interfaces with IRomsC64 for managing and loading C64 ROM data.
+// RomSocket represents a component that interfaces with IC64Roms for managing and loading C64 ROM data.
 // It attaches to a parent IComponent and provides labeled identification for hierarchical navigation and management.
-// RomSocket includes methods for hardware identification and initialization by mounting and binding to IRomsC64.
+// RomSocket includes methods for hardware identification and initialization by mounting and binding to IC64Roms.
 type RomSocket struct {
-	references.IRomsC64
+	references.IC64Roms
 	label     string
 	parent    references.IComponent
 	component references.IComponent
@@ -18,11 +18,11 @@ type RomSocket struct {
 // NewRomSocket creates a new instance of RomSocket, initializes it with a parent component and label, and assigns a hardware ID.
 func NewRomSocket(parent references.IComponent, label string) *RomSocket {
 	s := &RomSocket{
-		IRomsC64: nil,
+		IC64Roms: nil,
 		parent:   parent,
 		label:    label,
 	}
-	s.hwId = references.IdIRomsC64(s.IRomsC64, s.label, 0)
+	s.hwId = references.IdIC64Roms(s.IC64Roms, s.label, 0)
 	return s
 }
 
@@ -31,14 +31,14 @@ func (s *RomSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes and binds the RomSocket to the appropriate IRomsC64 component by its hardware ID and returns an error if binding fails.
+// Mount initializes and binds the RomSocket to the appropriate IC64Roms component by its hardware ID and returns an error if binding fails.
 func (s *RomSocket) Mount() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
-	if s.IRomsC64, err = references.ComponentToIRomsC64(s.component); err != nil {
+	if s.IC64Roms, err = references.ComponentToIC64Roms(s.component); err != nil {
 		return err
 	}
-	if err = s.IRomsC64.Bind(s); err != nil {
+	if err = s.IC64Roms.Bind(s); err != nil {
 		return err
 	}
 	return nil

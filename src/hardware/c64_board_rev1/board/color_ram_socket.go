@@ -4,10 +4,10 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// ColorRamSocket represents a hardware socket for the Color RAM in the C64 system, capable of interfacing with IColorRamC64.
+// ColorRamSocket represents a hardware socket for the Color RAM in the C64 system, capable of interfacing with IC64ColorRam.
 // It serves as a bridge between components, managing hardware identification, hierarchy, and interactions.
 type ColorRamSocket struct {
-	references.IColorRamC64
+	references.IC64ColorRam
 	label     string
 	parent    references.IComponent
 	component references.IComponent
@@ -17,11 +17,11 @@ type ColorRamSocket struct {
 // NewColorRamSocket creates and initializes a new RamSocket instance with the provided parent component and label.
 func NewColorRamSocket(parent references.IComponent, label string) *ColorRamSocket {
 	s := &ColorRamSocket{
-		IColorRamC64: nil,
+		IC64ColorRam: nil,
 		parent:       parent,
 		label:        label,
 	}
-	s.hwId = references.IdIColorRamC64(s.IColorRamC64, s.label, 0)
+	s.hwId = references.IdIC64ColorRam(s.IC64ColorRam, s.label, 0)
 	return s
 }
 
@@ -34,10 +34,10 @@ func (s *ColorRamSocket) HardwareId() string {
 func (s *ColorRamSocket) Mount() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
-	if s.IColorRamC64, err = references.ComponentToIColorRamC64(s.component); err != nil {
+	if s.IC64ColorRam, err = references.ComponentToIC64ColorRam(s.component); err != nil {
 		return err
 	}
-	if err = s.IColorRamC64.Bind(s); err != nil {
+	if err = s.IC64ColorRam.Bind(s); err != nil {
 		return err
 	}
 	return nil

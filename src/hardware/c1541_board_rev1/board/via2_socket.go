@@ -43,7 +43,7 @@ type IVIA2SocketConnections interface {
 
 // VIA2Socket represents a data and signal interface between a VIA chip and a socket, utilizing a mechanic component for operations.
 type VIA2Socket struct {
-	references.IVIA
+	references.IMos6522
 	label       string
 	parent      references.IComponent
 	component   references.IComponent
@@ -57,7 +57,7 @@ type VIA2Socket struct {
 // NewVIA2Socket initializes a new VIA2Socket with the provided connections and mechanic, configuring IRQ and initial state.
 func NewVIA2Socket(parent references.IComponent, label string, connections IVIA2SocketConnections, mec mechanic.IMechanic) *VIA2Socket {
 	v := &VIA2Socket{
-		IVIA:        nil,
+		IMos6522:    nil,
 		parent:      parent,
 		label:       label,
 		mec:         mec,
@@ -65,7 +65,7 @@ func NewVIA2Socket(parent references.IComponent, label string, connections IVIA2
 		intrId:      intrIrqVIA2Bit,
 		prbPrev:     0,
 	}
-	v.hwId = references.IdIVIA(v.IVIA, v.label, 1)
+	v.hwId = references.IdIMos6522(v.IMos6522, v.label, 1)
 	return v
 }
 
@@ -73,23 +73,23 @@ func (v *VIA2Socket) HardwareId() string {
 	return v.hwId
 }
 
-// Mount initializes the VIA2Socket by configuring its IVIA component and applying its configuration settings.
+// Mount initializes the VIA2Socket by configuring its IMos6522 component and applying its configuration settings.
 func (v *VIA2Socket) Mount() error {
 	var err error
 	v.component = v.parent.GetChildByHardwareId(v.HardwareId())
-	if v.IVIA, err = references.ComponentToIVIA(v.component); err != nil {
+	if v.IMos6522, err = references.ComponentToIMos6522(v.component); err != nil {
 		return err
 	}
-	if err = v.IVIA.Bind(v); err != nil {
+	if err = v.IMos6522.Bind(v); err != nil {
 		return err
 	}
 	return nil
 }
 
-// Reset reinitializes the VIA2Socket's internal state by setting prbPrev to 0 and invoking the Reset method of IVIA.
+// Reset reinitializes the VIA2Socket's internal state by setting prbPrev to 0 and invoking the Reset method of IMos6522.
 func (v *VIA2Socket) Reset() {
 	v.prbPrev = 0
-	v.IVIA.Reset()
+	v.IMos6522.Reset()
 }
 
 // LedActivity triggers an LED indication based on the provided byte data, utilizing the established socket connections.
@@ -212,7 +212,7 @@ func (v *VIA2Socket) WriteCB2(bool) {
 // ByteReady returns true if the peripheral control register (pcr) is in a ready state for data handling.
 // Control SetOverflowBranch on 6502 cpu
 func (v *VIA2Socket) ByteReady() bool {
-	pcr := v.IVIA.ReadByte(0xc)
+	pcr := v.IMos6522.ReadByte(0xc)
 	if (pcr & 0x0e) == 0x0e {
 		return v.mec.ByteReady()
 	}

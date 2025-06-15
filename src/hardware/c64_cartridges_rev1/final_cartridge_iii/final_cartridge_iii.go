@@ -29,11 +29,11 @@ const (
 // lastData stores the last accessed data byte from the cartridge.
 type CartridgeFinalCartridgeIII struct {
 	*component.BaseComponent
-	board         references.IExpansionC64
+	board         references.IC64Expansion
 	loaderId      string
 	game          uint8
 	exRom         uint8
-	intervals     references.RomInterval
+	intervals     references.C64RomInterval
 	reg           uint8
 	regEnabled    bool
 	freezeCounter int
@@ -50,17 +50,17 @@ func NewCartridgeFinalCartridgeIII(parent references.IComponent, factory referen
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
 	}
-	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdICartridgeC64(co, label, instance))
+	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdIC64Cartridge(co, label, instance))
 	return co
 }
 
-// New creates a new instance of ICartridgeC64 using the provided parent component, factory, label, and instance identifier.
-func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.ICartridgeC64 {
+// New creates a new instance of IC64Cartridge using the provided parent component, factory, label, and instance identifier.
+func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IC64Cartridge {
 	return NewCartridgeFinalCartridgeIII(parent, factory, label, instance)
 }
 
 func (c *CartridgeFinalCartridgeIII) reset(hard bool) {
-	c.game, c.exRom, c.intervals = references.GetCartridgeSpec(references.CartridgeMode16K).Data()
+	c.game, c.exRom, c.intervals = references.GetC64CartridgeSpec(references.C64CartridgeMode16K).Data()
 	c.banksCurrent = 0
 	c.regEnabled = true
 	c.reg = 0
@@ -84,7 +84,7 @@ func (c *CartridgeFinalCartridgeIII) Reset() {
 }
 
 // Bind initializes the cartridge by associating it with the provided board and loader, loading ROM data in the process.
-func (c *CartridgeFinalCartridgeIII) Bind(board references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeFinalCartridgeIII) Bind(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	c.board = board
 	c.loaderId = ldr.GetId()
 	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
@@ -152,7 +152,7 @@ func (c *CartridgeFinalCartridgeIII) HardwareButton(pressed bool, value uint8) {
 
 // Write attempts to write data to the cartridge at the specified address within the given ROM interval.
 // Returns true if the operation is invalid for the cartridge, otherwise false.
-func (c *CartridgeFinalCartridgeIII) Write(i references.RomInterval, addr uint16, data uint8) bool {
+func (c *CartridgeFinalCartridgeIII) Write(i references.C64RomInterval, addr uint16, data uint8) bool {
 	if (i & c.intervals) != 0 {
 		fmt.Printf("Write: can't write [bank %d] %x => %d\n", c.banksCurrent, addr, data)
 		return true
@@ -162,7 +162,7 @@ func (c *CartridgeFinalCartridgeIII) Write(i references.RomInterval, addr uint16
 
 // Read recupera un byte dalla ROM della cartuccia.
 // MODIFICATA per gestire correttamente la modalità Ultimax/Freezer.
-func (c *CartridgeFinalCartridgeIII) Read(i references.RomInterval, addr uint16) (uint8, bool) {
+func (c *CartridgeFinalCartridgeIII) Read(i references.C64RomInterval, addr uint16) (uint8, bool) {
 	// IOWrite must have set `c.intervals` to cover the entire $8000-$FFFF area when entering Freezer mode.
 	if (i & c.intervals) == 0 {
 		fmt.Printf("Read: invalid interval %d != %d", c.intervals, i)
@@ -237,16 +237,16 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 	command := (data >> 4) & 0x03
 	switch command {
 	case 0b00:
-		c.game, c.exRom, c.intervals = references.GetCartridgeSpec(references.CartridgeMode16K).Data()
+		c.game, c.exRom, c.intervals = references.GetC64CartridgeSpec(references.C64CartridgeMode16K).Data()
 		c.board.GameExRomConfigChanged()
 	case 0b01:
 		c.doFreeze()
 		return true
 	case 0b10:
-		c.game, c.exRom, c.intervals = references.GetCartridgeSpec(references.CartridgeMode8K).Data()
+		c.game, c.exRom, c.intervals = references.GetC64CartridgeSpec(references.C64CartridgeMode8K).Data()
 		c.board.GameExRomConfigChanged()
 	case 0b11:
-		c.game, c.exRom, c.intervals = references.GetCartridgeSpec(references.CartridgeModeOff).Data()
+		c.game, c.exRom, c.intervals = references.GetC64CartridgeSpec(references.C64CartridgeModeOff).Data()
 		c.board.GameExRomConfigChanged()
 	}
 	return true
@@ -259,7 +259,7 @@ func (c *CartridgeFinalCartridgeIII) doFreeze() {
 		return
 	}
 	c.banksCurrent = uint8(c.banksTotal - 1)
-	spec := references.GetCartridgeSpec(references.CartridgeModeUltimax)
+	spec := references.GetC64CartridgeSpec(references.C64CartridgeModeUltimax)
 	c.game, c.exRom, c.intervals = spec.Data()
 	c.board.GameExRomConfigChanged()
 	c.board.NMITrigger()
@@ -271,7 +271,7 @@ func (c *CartridgeFinalCartridgeIII) doFreeze() {
 }
 
 // initCrt initializes the CRT by loading cartridge data via the provided loader and validates the chip structure and sizes.
-func (c *CartridgeFinalCartridgeIII) initCrt(ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeFinalCartridgeIII) initCrt(ldr references.IC64CartridgeLoader) error {
 	rawCart := make([]byte, 256*1024)
 	banksLoaded := 0
 	for {
@@ -328,7 +328,7 @@ func (c *CartridgeFinalCartridgeIII) loadData(data []byte) error {
 
 // initBin initializes the cartridge using binary file data from the provided loader.
 // Returns an error if the BIN file size is not 64KB or 256KB or if validation fails.
-func (c *CartridgeFinalCartridgeIII) initBin(ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeFinalCartridgeIII) initBin(ldr references.IC64CartridgeLoader) error {
 	data := ldr.GetData()
 	if err := catalog.ValidateCartridge(data); err != nil {
 		return err

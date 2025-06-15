@@ -4,10 +4,10 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// RamSocket provides a structure for managing a socket interface bound to a RAM module compliant with IRamC1541.
+// RamSocket provides a structure for managing a socket interface bound to a RAM module compliant with IC1541Ram.
 // It includes properties for identification, hierarchical parent/child relationships, and component association.
 type RamSocket struct {
-	references.IRamC1541
+	references.IC1541Ram
 	label     string
 	parent    references.IComponent
 	component references.IComponent
@@ -17,11 +17,11 @@ type RamSocket struct {
 // NewRamSocket creates and initializes a new RamSocket instance with a parent component and a label.
 func NewRamSocket(parent references.IComponent, label string) *RamSocket {
 	s := &RamSocket{
-		IRamC1541: nil,
+		IC1541Ram: nil,
 		parent:    parent,
 		label:     label,
 	}
-	s.hwId = references.IdIRamC1541(s.IRamC1541, s.label, 0)
+	s.hwId = references.IdIC1541Ram(s.IC1541Ram, s.label, 0)
 	return s
 }
 
@@ -34,10 +34,10 @@ func (s *RamSocket) HardwareId() string {
 func (s *RamSocket) Mount() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
-	if s.IRamC1541, err = references.ComponentToIRamC1541(s.component); err != nil {
+	if s.IC1541Ram, err = references.ComponentToIC1541Ram(s.component); err != nil {
 		return err
 	}
-	if err = s.IRamC1541.Bind(s); err != nil {
+	if err = s.IC1541Ram.Bind(s); err != nil {
 		return err
 	}
 	return nil

@@ -20,7 +20,7 @@ func NewRam(parent references.IComponent, factory references.IComponentFactory, 
 		ram:           make([]byte, 0x10000),
 		filler:        filler.New(255, 128, 0, 0, 0, 0, 0, 0),
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIRamC64(rl, label, instance))
+	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIC64Ram(rl, label, instance))
 	return rl
 }
 
@@ -30,8 +30,8 @@ func (r *Ram) Setup() error {
 	return nil
 }
 
-// Bind connects the Ram component to the provided IRamC64Socket instance and initializes any required references or states.
-func (r *Ram) Bind(_ references.IRamC64Socket) error {
+// Bind connects the Ram component to the provided IC64RamSocket instance and initializes any required references or states.
+func (r *Ram) Bind(_ references.IC64RamSocket) error {
 	return nil
 }
 

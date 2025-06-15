@@ -25,7 +25,7 @@ func NewRomLoader(parent references.IComponent, factory references.IComponentFac
 		basic:         nil,
 		char:          nil,
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIRomsC64(rl, label, instance))
+	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIC64Roms(rl, label, instance))
 	return rl
 }
 
@@ -51,8 +51,8 @@ func (r *Roms) Setup() error {
 	return nil
 }
 
-// Bind associates the Roms instance with the provided IRomsC64Socket interface and initializes necessary connections.
-func (r *Roms) Bind(_ references.IRomsC64Socket) error {
+// Bind associates the Roms instance with the provided IC64RomsSocket interface and initializes necessary connections.
+func (r *Roms) Bind(_ references.IC64RomsSocket) error {
 	return nil
 }
 

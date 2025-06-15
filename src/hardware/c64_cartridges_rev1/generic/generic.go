@@ -17,14 +17,14 @@ const cSize8K = 0x2000
 type CartridgeGeneric struct {
 	*component.BaseComponent
 	loaderId   string
-	b0Interval references.RomInterval
-	b1Interval references.RomInterval
+	b0Interval references.C64RomInterval
+	b1Interval references.C64RomInterval
 	bank0      []uint8
 	bank1      []uint8
-	intervals  references.RomInterval
+	intervals  references.C64RomInterval
 	game       uint8
 	exRom      uint8
-	expansion  references.IExpansionC64
+	expansion  references.IC64Expansion
 }
 
 // GetType returns the constant value representing the CARTRIDGE_CRT type.
@@ -32,7 +32,7 @@ func GetType() int {
 	return catalog.CartridgeCRT
 }
 
-// NewCartridgeGeneric creates and returns a new instance of the CartridgeGeneric cartridge implementing the ICartridgeC64 interface.
+// NewCartridgeGeneric creates and returns a new instance of the CartridgeGeneric cartridge implementing the IC64Cartridge interface.
 func NewCartridgeGeneric(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeGeneric {
 	g := &CartridgeGeneric{
 		BaseComponent: component.NewBaseComponent(),
@@ -43,12 +43,12 @@ func NewCartridgeGeneric(parent references.IComponent, factory references.ICompo
 		b1Interval:    0,
 		intervals:     0,
 	}
-	g.BaseComponent.Register(factory, parent, Identifier(), g, references.IdICartridgeC64(g, label, instance))
+	g.BaseComponent.Register(factory, parent, Identifier(), g, references.IdIC64Cartridge(g, label, instance))
 	return g
 }
 
-// New creates and returns a new instance of the CartridgeGeneric cartridge implementing the ICartridgeC64 interface.
-func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.ICartridgeC64 {
+// New creates and returns a new instance of the CartridgeGeneric cartridge implementing the IC64Cartridge interface.
+func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IC64Cartridge {
 	return NewCartridgeGeneric(parent, factory, label, instance)
 }
 
@@ -56,7 +56,7 @@ func (c *CartridgeGeneric) Setup() error {
 	return nil
 }
 
-func (c *CartridgeGeneric) Bind(expansion references.IExpansionC64, ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeGeneric) Bind(expansion references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	c.expansion = expansion
 	c.loaderId = ldr.GetId()
 	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
@@ -86,7 +86,7 @@ func (c *CartridgeGeneric) GetLoaderId() string {
 // initCrt initializes the cartridge configuration using the provided CRTLoader.
 // It sets up memory banks and mode based on the cartridge chip headers.
 // Returns an error if the cartridge format or configuration is unsupported.
-func (c *CartridgeGeneric) initCrt(ldr references.ICartridgeLoaderC64) error {
+func (c *CartridgeGeneric) initCrt(ldr references.IC64CartridgeLoader) error {
 	c.bank0 = make([]uint8, cSize8K)
 	c.bank1 = make([]uint8, cSize8K)
 	chip1, err := ldr.ReadChipHeader()
@@ -100,25 +100,25 @@ func (c *CartridgeGeneric) initCrt(ldr references.ICartridgeLoaderC64) error {
 		if chip1.Size() == cSize8K {
 			if chip2, _ := ldr.ReadChipHeader(); chip2 == nil {
 				copy(c.bank0, chip1.Data())
-				c.applyConfig(references.CartridgeMode8K)
+				c.applyConfig(references.C64CartridgeMode8K)
 				return nil
 			} else if chip2.Size() == cSize8K {
 				if chip2.Start() == 0x8000 {
 					copy(c.bank0, chip1.Data())
 					copy(c.bank1, chip2.Data())
-					c.applyConfig(references.CartridgeMode16K)
+					c.applyConfig(references.C64CartridgeMode16K)
 					return nil
 				} else if chip2.Start() == 0xe000 {
 					copy(c.bank0, chip1.Data())
 					copy(c.bank1, chip2.Data())
-					c.applyConfig(references.CartridgeModeUltimax)
+					c.applyConfig(references.C64CartridgeModeUltimax)
 					return nil
 				}
 			}
 		} else if chip1.Size() == cSize16K {
 			copy(c.bank0, chip1.Data()[:cSize8K])
 			copy(c.bank1, chip1.Data()[cSize8K:])
-			c.applyConfig(references.CartridgeMode16K)
+			c.applyConfig(references.C64CartridgeMode16K)
 			return nil
 		}
 	}
@@ -135,21 +135,21 @@ func (c *CartridgeGeneric) initRaw(data []byte) error {
 	}
 	if len(data) == cSize8K {
 		copy(c.bank0, data)
-		c.applyConfig(references.CartridgeMode8K)
+		c.applyConfig(references.C64CartridgeMode8K)
 		return nil
 	}
 	if len(data) == cSize16K {
 		copy(c.bank0, data[:cSize8K])
 		copy(c.bank1, data[cSize8K:])
-		c.applyConfig(references.CartridgeMode16K)
+		c.applyConfig(references.C64CartridgeMode16K)
 		return nil
 	}
 	return fmt.Errorf("invalid size")
 }
 
-// applyConfig configures the CartridgeGeneric cartridge by setting its memory intervals and control flags based on the provided CartridgeMode.
-func (c *CartridgeGeneric) applyConfig(ct references.CartridgeMode) {
-	v := references.GetCartridgeSpec(ct)
+// applyConfig configures the CartridgeGeneric cartridge by setting its memory intervals and control flags based on the provided C64CartridgeMode.
+func (c *CartridgeGeneric) applyConfig(ct references.C64CartridgeMode) {
+	v := references.GetC64CartridgeSpec(ct)
 	c.game = v.Game
 	c.exRom = v.ExRom
 	c.b0Interval = v.IntervalLow
@@ -162,7 +162,7 @@ func (c *CartridgeGeneric) HardwareButton(pressed bool, value uint8) {
 }
 
 // Write attempts to write data to the cartridge at the specified interval and address. Returns true if writing is not allowed.
-func (c *CartridgeGeneric) Write(i references.RomInterval, addr uint16, data uint8) bool {
+func (c *CartridgeGeneric) Write(i references.C64RomInterval, addr uint16, data uint8) bool {
 	if (i & c.intervals) != 0 {
 		fmt.Printf("CartridgeGeneric Cartridge can't be write %x => %d\n", addr, data)
 		return true
@@ -171,7 +171,7 @@ func (c *CartridgeGeneric) Write(i references.RomInterval, addr uint16, data uin
 }
 
 // Read retrieves a byte and a success flag from the cartridge based on the provided address and ROM interval.
-func (c *CartridgeGeneric) Read(i references.RomInterval, addr uint16) (uint8, bool) {
+func (c *CartridgeGeneric) Read(i references.C64RomInterval, addr uint16) (uint8, bool) {
 	if (i & c.intervals) != 0 {
 		if c.b0Interval == i {
 			return c.bank0[(addr & 0x1fff)], true

@@ -27,9 +27,9 @@ import (
 type Manager struct {
 	*component.BaseComponent
 	idx     int
-	board   references.IExpansionC64
+	board   references.IC64Expansion
 	cfg     *config.Config
-	carts   []references.ICartridgeC64
+	carts   []references.IC64Cartridge
 	emulate []func()
 	label   string
 }
@@ -44,7 +44,7 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 		carts:         nil,
 		label:         label,
 	}
-	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdICartridgeManagerC64(m, label, instance))
+	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdIC64CartridgeManager(m, label, instance))
 	return m
 }
 
@@ -55,7 +55,7 @@ func (f *Manager) Setup() error {
 }
 
 // Bind associates the Manager with an expansion board, enabling integration with the provided hardware references.
-func (f *Manager) Bind(_ references.ICartridgeManagerC64Socket, board references.IExpansionC64) error {
+func (f *Manager) Bind(_ references.IC64CartridgeManagerSocket, board references.IC64Expansion) error {
 	f.board = board
 	return nil
 }
@@ -153,7 +153,7 @@ func (f *Manager) HardwareButton(pressed bool, value uint8) {
 }
 
 // Read retrieves a value from the specified ROM interval and address. Returns the value and a boolean indicating success.
-func (f *Manager) Read(interval references.RomInterval, addr uint16) (uint8, bool) {
+func (f *Manager) Read(interval references.C64RomInterval, addr uint16) (uint8, bool) {
 	if f.carts == nil {
 		return 0, false
 	}
@@ -175,7 +175,7 @@ func (f *Manager) Read(interval references.RomInterval, addr uint16) (uint8, boo
 
 // Write attempts to write the given data to the specified address within the provided ROM interval for all managed cartridges.
 // Returns true if any cartridge successfully handles the write operation, otherwise returns false.
-func (f *Manager) Write(interval references.RomInterval, addr uint16, data uint8) bool {
+func (f *Manager) Write(interval references.C64RomInterval, addr uint16, data uint8) bool {
 	if f.carts == nil {
 		return false
 	}
@@ -263,7 +263,7 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if err := ldr.Setup(name, data); err != nil {
 		return "", err
 	}
-	var factory func(references.IComponent, references.IComponentFactory, string, int) references.ICartridgeC64 = nil
+	var factory func(references.IComponent, references.IComponentFactory, string, int) references.IC64Cartridge = nil
 	if len(hardware) > 0 {
 		hardware = strings.ToUpper(strings.TrimSpace(hardware))
 		factory = catalog.ByHardware(hardware)

@@ -33,12 +33,12 @@ type ICartridgeManagerConnections interface {
 // CartridgeManagerSocket represents a connection point integrating various components like connections, PIC, PLA, VIC, and Quartz.
 // It enables coordinated interaction and communication between connected emulation subsystems.
 type CartridgeManagerSocket struct {
-	references.ICartridgeManagerC64
+	references.IC64CartridgeManager
 	connections ICartridgeManagerConnections
 	label       string
 	parent      references.IComponent
 	component   references.IComponent
-	pla         references.IPlaC64
+	pla         references.IC64Pla
 	quartz      references.IQuartz
 	hwId        string
 }
@@ -52,7 +52,7 @@ func NewExpansionSocket(parent references.IComponent, label string, connections 
 		pla:         nil,
 		quartz:      nil,
 	}
-	e.hwId = references.IdICartridgeManagerC64(e.ICartridgeManagerC64, e.label, 0)
+	e.hwId = references.IdIC64CartridgeManager(e.IC64CartridgeManager, e.label, 0)
 	return e
 }
 
@@ -64,14 +64,14 @@ func (s *CartridgeManagerSocket) HardwareId() string {
 func (s *CartridgeManagerSocket) Mount() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
-	if s.ICartridgeManagerC64, err = references.ComponentToICartridgeManagerC64(s.component); err != nil {
+	if s.IC64CartridgeManager, err = references.ComponentToIC64CartridgeManager(s.component); err != nil {
 		return err
 	}
-	if err = s.ICartridgeManagerC64.Bind(s, s); err != nil {
+	if err = s.IC64CartridgeManager.Bind(s, s); err != nil {
 		return err
 	}
-	idIPLA := references.IdIPlaC64(s.pla, s.label, 0)
-	if s.pla, err = references.ComponentToIPLAc64(s.parent.GetChildByHardwareId(idIPLA)); err != nil {
+	idIPLA := references.IdIC64Pla(s.pla, s.label, 0)
+	if s.pla, err = references.ComponentToIC64Pla(s.parent.GetChildByHardwareId(idIPLA)); err != nil {
 		return err
 	}
 	idQuartz := references.IdIQuartz(s.quartz, s.label, 0)
@@ -110,7 +110,7 @@ func (s *CartridgeManagerSocket) SetDMALow(v bool) {
 	s.connections.DMALowTrigger(v)
 }
 
-// ResetTrigger invokes a reset trigger on the connected IPIC6510 instance to reinitialize its state.
+// ResetTrigger invokes a reset trigger on the connected IMos6510Pic instance to reinitialize its state.
 func (s *CartridgeManagerSocket) ResetTrigger() {
 	s.connections.RSTTrigger()
 }

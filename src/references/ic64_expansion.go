@@ -21,8 +21,8 @@ import (
 
 // https://www.c64-wiki.com/wiki/Expansion_Port
 
-// IExpansionC64 defines an interface for managing expansion hardware behavior and state in the C64 system.
-type IExpansionC64 interface {
+// IC64Expansion defines an interface for managing expansion hardware behavior and state in the C64 system.
+type IC64Expansion interface {
 	Cycle() uint64
 
 	CycleAlarm(string, QuartzAlarmCallback) IQuartzAlarm
@@ -56,15 +56,15 @@ type IExpansionC64 interface {
 	LedActivity(uint8, bool)
 }
 
-// ICartridgeManagerC64Socket represents an interface for managing socket interactions in a C64 cartridge system.
-type ICartridgeManagerC64Socket interface {
+// IC64CartridgeManagerSocket represents an interface for managing socket interactions in a C64 cartridge system.
+type IC64CartridgeManagerSocket interface {
 }
 
-// ICartridgeManagerC64 defines an interface for managing C64 cartridges and their interactions within an emulator system.
-type ICartridgeManagerC64 interface {
+// IC64CartridgeManager defines an interface for managing C64 cartridges and their interactions within an emulator system.
+type IC64CartridgeManager interface {
 	Setup() error
 
-	Bind(socket ICartridgeManagerC64Socket, expansion IExpansionC64) error
+	Bind(socket IC64CartridgeManagerSocket, expansion IC64Expansion) error
 
 	Config() (uint8, uint8, bool)
 
@@ -74,9 +74,9 @@ type ICartridgeManagerC64 interface {
 
 	HardwareButton(pressed bool, value uint8)
 
-	Read(interval RomInterval, addr uint16) (uint8, bool)
+	Read(interval C64RomInterval, addr uint16) (uint8, bool)
 
-	Write(interval RomInterval, addr uint16, data uint8) bool
+	Write(interval C64RomInterval, addr uint16, data uint8) bool
 
 	IORead(addr uint16) (uint8, bool)
 
@@ -93,19 +93,19 @@ type ICartridgeManagerC64 interface {
 	Add(kind string, name string, data []uint8) (string, error)
 }
 
-// IdICartridgeManagerC64 generates a unique identifier for an ICartridgeManagerC64 interface using the given label and instance.
-func IdICartridgeManagerC64(v ICartridgeManagerC64, label string, instance int) string {
+// IdIC64CartridgeManager generates a unique identifier for an IC64CartridgeManager interface using the given label and instance.
+func IdIC64CartridgeManager(v IC64CartridgeManager, label string, instance int) string {
 	return IdInternalComponent(label, instance, InterfaceName(&v))
 }
 
-// ComponentToICartridgeManagerC64 converts an IComponent to an ICartridgeManagerC64, returning an error if the cast fails.
-func ComponentToICartridgeManagerC64(component IComponent) (ICartridgeManagerC64, error) {
+// ComponentToIC64CartridgeManager converts an IComponent to an IC64CartridgeManager, returning an error if the cast fails.
+func ComponentToIC64CartridgeManager(component IComponent) (IC64CartridgeManager, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component ICartridgeManagerC64 is nil")
+		return nil, fmt.Errorf("component IC64CartridgeManager is nil")
 	}
-	v, ok := component.(ICartridgeManagerC64)
+	v, ok := component.(IC64CartridgeManager)
 	if !ok {
-		return nil, fmt.Errorf("component is not a ICartridgeManagerC64")
+		return nil, fmt.Errorf("component is not a IC64CartridgeManager")
 	}
 	return v, nil
 }

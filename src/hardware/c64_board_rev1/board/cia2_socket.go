@@ -12,17 +12,17 @@ type CIA2SocketConnection interface {
 	NMIClearTrigger()
 }
 
-// CIA2Socket represents a specialized implementation of ICIA, handling interactions with CIA2 and emulation components.
+// CIA2Socket represents a specialized implementation of IMos6526, handling interactions with CIA2 and emulation components.
 // The connections field manages CIA2-specific port and communication events.
 // The iec field facilitates communication over the IEC serial bus.
 // The intrId field defines the unique interrupt identifier for CIA2 within the system.
 type CIA2Socket struct {
-	references.ICIA
+	references.IMos6526
 	label       string
 	parent      references.IComponent
 	component   references.IComponent
 	connections CIA2SocketConnection
-	vic         references.IVIC
+	vic         references.IMos6569
 	iec         references.IIec
 	intrId      uint32
 	hwId        string
@@ -34,12 +34,12 @@ func NewCIA2Socket(parent references.IComponent, label string, connections CIA2S
 		parent:      parent,
 		label:       label,
 		connections: connections,
-		ICIA:        nil,
+		IMos6526:    nil,
 		vic:         nil,
 		iec:         nil,
 		intrId:      intrIrqCia2Bit,
 	}
-	c.hwId = references.IdICIA(c.ICIA, c.label, 1)
+	c.hwId = references.IdIMos6526(c.IMos6526, c.label, 1)
 	return c
 }
 
@@ -51,18 +51,18 @@ func (w *CIA2Socket) HardwareId() string {
 func (w *CIA2Socket) Mount() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
-	if w.ICIA, err = references.ComponentToICIA(w.component); err != nil {
+	if w.IMos6526, err = references.ComponentToIMos6526(w.component); err != nil {
 		return err
 	}
-	idVIC := references.IdIVIC(w.vic, w.label, 0)
-	if w.vic, err = references.ComponentToIVIC(w.parent.GetChildByHardwareId(idVIC)); err != nil {
+	idVIC := references.IdIMos6569(w.vic, w.label, 0)
+	if w.vic, err = references.ComponentToIMos6569(w.parent.GetChildByHardwareId(idVIC)); err != nil {
 		return err
 	}
 	idIEC := references.IdIIec(w.iec, w.label, 0)
 	if w.iec, err = references.ComponentToIEC(w.parent.GetChildByHardwareId(idIEC)); err != nil {
 		return err
 	}
-	if err = w.ICIA.Bind(w); err != nil {
+	if err = w.IMos6526.Bind(w); err != nil {
 		return err
 	}
 	return nil

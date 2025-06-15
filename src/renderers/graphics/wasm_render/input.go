@@ -9,7 +9,7 @@ import (
 
 // Inputs encapsulates input configurations, mappings, and state for joystick, keyboard, and clipboard interactions.
 type Inputs struct {
-	board        references.IBoard
+	board        references.IC64Board
 	cfg          *config.Config
 	keyMapper    map[string]func(bool)
 	joyKeys      bool
@@ -33,7 +33,7 @@ func NewInputs() *Inputs {
 
 // Setup initializes the input mappings for a given board and configuration.
 // It assigns key mappings to appropriate actions and handles setup logic for keyboard and joystick interactions.
-func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
+func (g *Inputs) Setup(b references.IC64Board, cfg *config.Config) error {
 	g.board = b
 	g.cfg = cfg
 	g.keyMapper["Escape"] = func(p bool) { b.KeyboardSetKey(p, component.VKEscape) }

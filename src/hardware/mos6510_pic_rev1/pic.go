@@ -39,7 +39,7 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 		irq:           bits.Bits(0),
 		nmiExec:       false,
 	}
-	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIPIC6510(p, label, instance))
+	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIMos6510Pic(p, label, instance))
 	return p
 }
 
@@ -48,7 +48,7 @@ func (i *Pic) Setup() error {
 	return nil
 }
 
-func (i *Pic) Bind(_ references.IPIC6510Socket, q references.IQuartz) error {
+func (i *Pic) Bind(_ references.IMos6510PicSocket, q references.IQuartz) error {
 	i.quartz = q
 	return nil
 }

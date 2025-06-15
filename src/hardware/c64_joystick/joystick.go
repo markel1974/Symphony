@@ -24,7 +24,7 @@ func NewJoystick(parent references.IComponent, factory references.IComponentFact
 		s1:            0,
 		s2:            0,
 	}
-	j.BaseComponent.Register(factory, parent, Identifier(), j, references.IdIJoystick(j, label, instance))
+	j.BaseComponent.Register(factory, parent, Identifier(), j, references.IdIC64Joystick(j, label, instance))
 	return j
 }
 
@@ -33,7 +33,7 @@ func (k *Joystick) Setup() error {
 	return nil
 }
 
-func (k *Joystick) Bind(_ references.IJoystickSocket) error {
+func (k *Joystick) Bind(_ references.IC64JoystickSocket) error {
 	return nil
 }
 

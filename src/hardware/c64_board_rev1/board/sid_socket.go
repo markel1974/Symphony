@@ -6,7 +6,7 @@ import (
 
 // SIDSocket represents a socket connected to a Board for managing or interacting with its state or functionality.
 type SIDSocket struct {
-	references.ISID
+	references.IMos6581
 	label     string
 	parent    references.IComponent
 	component references.IComponent
@@ -18,13 +18,13 @@ type SIDSocket struct {
 // NewSIDSocket creates and returns a new instance of SIDSocket with default initialization.
 func NewSIDSocket(parent references.IComponent, label string, fragFreq int, rasters int) *SIDSocket {
 	c := &SIDSocket{
-		ISID:     nil,
+		IMos6581: nil,
 		parent:   parent,
 		label:    label,
 		fragFreq: fragFreq,
 		rasters:  rasters,
 	}
-	c.hwId = references.IdISID(c.ISID, c.label, 0)
+	c.hwId = references.IdIMos6581(c.IMos6581, c.label, 0)
 	return c
 }
 
@@ -36,10 +36,10 @@ func (w *SIDSocket) HardwareId() string {
 func (w *SIDSocket) Mount() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
-	if w.ISID, err = references.ComponentToISID(w.component); err != nil {
+	if w.IMos6581, err = references.ComponentToIMos6581(w.component); err != nil {
 		return err
 	}
-	if err = w.ISID.Bind(w, w.fragFreq, w.rasters); err != nil {
+	if err = w.IMos6581.Bind(w, w.fragFreq, w.rasters); err != nil {
 		return err
 	}
 	return nil

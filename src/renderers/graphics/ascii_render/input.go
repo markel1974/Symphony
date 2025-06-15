@@ -9,7 +9,7 @@ import (
 )
 
 type Inputs struct {
-	board        references.IBoard
+	board        references.IC64Board
 	cfg          *config.Config
 	keyMapper    map[byte]func(bool)
 	joyKeys      bool
@@ -30,7 +30,7 @@ func NewInputs() *Inputs {
 	}
 }
 
-func (g *Inputs) Setup(b references.IBoard, cfg *config.Config) error {
+func (g *Inputs) Setup(b references.IC64Board, cfg *config.Config) error {
 	g.board = b
 	g.cfg = cfg
 

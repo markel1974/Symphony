@@ -21,8 +21,8 @@ type PLA struct {
 	ramRead  ReadFn
 	ramWrite WriteFn
 
-	cartManRead    func(references.RomInterval, uint16) (uint8, bool)
-	cartManWrite   func(references.RomInterval, uint16, uint8) bool
+	cartManRead    func(references.C64RomInterval, uint16) (uint8, bool)
+	cartManWrite   func(references.C64RomInterval, uint16, uint8) bool
 	cartManIORead  func(uint16) (uint8, bool)
 	cartManIOWrite func(uint16, uint8) bool
 	cartManConfig  func() (uint8, uint8, bool)
@@ -82,7 +82,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		wTriggers:       nil,
 		label:           label,
 	}
-	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIPlaC64(b, label, instance))
+	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIC64Pla(b, label, instance))
 	return b
 }
 
@@ -94,7 +94,7 @@ func (b *PLA) Setup() error {
 }
 
 // Bind initializes and connects various components to the PLA, including VIC, SID, CIA1, CIA2, cartridge manager, and ROM loader.
-func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, ram references.IRamC64, colorRam references.IColorRamC64, roms references.IRomsC64) error {
+func (b *PLA) Bind(_ references.IC64PlaSocket, vic references.IMos6569, sid references.IMos6581, cia1 references.IMos6526, cia2 references.IMos6526, cartMan references.IC64CartridgeManager, ram references.IC64Ram, colorRam references.IC64ColorRam, roms references.IC64Roms) error {
 	b.vicLastByte = vic.GetLastByte
 
 	b.cartManWrite = cartMan.Write

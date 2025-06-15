@@ -33,7 +33,7 @@ type VIA struct {
 	lastCB1      bool  // Stato precedente di CB1 per il rilevamento del fronte
 	lastCB2      bool  // Stato precedente di CB2 per la modalità Shift Register
 	shiftCounter uint8 // Contatore per gli 8 bit dello Shift Register
-	socket       references.IVIASocket
+	socket       references.IMos6522Socket
 }
 
 // NewVIA initializes and returns a new instance of the VIA type, associating it with a parent component and factory.
@@ -46,7 +46,7 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 		prb:           0,
 		ddrb:          0,
 	}
-	v.BaseComponent.Register(factory, parent, Identifier(), v, references.IdIVIA(v, label, instance))
+	v.BaseComponent.Register(factory, parent, Identifier(), v, references.IdIMos6522(v, label, instance))
 	return v
 }
 
@@ -54,7 +54,7 @@ func (v *VIA) Setup() error {
 	return nil
 }
 
-func (v *VIA) Bind(socket references.IVIASocket) error {
+func (v *VIA) Bind(socket references.IMos6522Socket) error {
 	v.socket = socket
 	return nil
 }
@@ -249,7 +249,7 @@ func (v *VIA) SignalPRA() {
 	v.socket.WritePRA(v.pra, v.ddra)
 }
 
-// SignalPRB sends the current contents of the PRB and DDRB registers to the connected IVIASocket.
+// SignalPRB sends the current contents of the PRB and DDRB registers to the connected IMos6522Socket.
 func (v *VIA) SignalPRB() {
 	v.socket.WritePRB(v.prb, v.ddrb)
 }

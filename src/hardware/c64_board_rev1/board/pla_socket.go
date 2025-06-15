@@ -4,32 +4,32 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// PLASocket represents an implementation of the IPlaC64 interface with connections to various C64 components.
+// PLASocket represents an implementation of the IC64Pla interface with connections to various C64 components.
 // It integrates major C64 subsystems including the VIC, SID, CIAs, cartridge manager, and ROM loader.
 type PLASocket struct {
-	references.IPlaC64
+	references.IC64Pla
 	label     string
 	parent    references.IComponent
 	component references.IComponent
-	vic       references.IVIC
-	sid       references.ISID
-	cia1      references.ICIA
-	cia2      references.ICIA
-	cartMan   references.ICartridgeManagerC64
-	ram       references.IRamC64
-	colorRam  references.IColorRamC64
-	roms      references.IRomsC64
+	vic       references.IMos6569
+	sid       references.IMos6581
+	cia1      references.IMos6526
+	cia2      references.IMos6526
+	cartMan   references.IC64CartridgeManager
+	ram       references.IC64Ram
+	colorRam  references.IC64ColorRam
+	roms      references.IC64Roms
 	hwId      string
 }
 
 // NewPLASocket initializes and returns a new instance of PLASocket with default nil values for its components.
 func NewPLASocket(parent references.IComponent, label string) *PLASocket {
 	c := &PLASocket{
-		IPlaC64: nil,
+		IC64Pla: nil,
 		parent:  parent,
 		label:   label,
 	}
-	c.hwId = references.IdIPlaC64(c.IPlaC64, c.label, 0)
+	c.hwId = references.IdIC64Pla(c.IC64Pla, c.label, 0)
 	return c
 }
 
@@ -41,42 +41,42 @@ func (w *PLASocket) HardwareId() string {
 func (w *PLASocket) Mount() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
-	if w.IPlaC64, err = references.ComponentToIPLAc64(w.component); err != nil {
+	if w.IC64Pla, err = references.ComponentToIC64Pla(w.component); err != nil {
 		return err
 	}
-	idVIC := references.IdIVIC(w.vic, w.label, 0)
-	if w.vic, err = references.ComponentToIVIC(w.parent.GetChildByHardwareId(idVIC)); err != nil {
+	idVIC := references.IdIMos6569(w.vic, w.label, 0)
+	if w.vic, err = references.ComponentToIMos6569(w.parent.GetChildByHardwareId(idVIC)); err != nil {
 		return err
 	}
-	idSID := references.IdISID(w.sid, w.label, 0)
-	if w.sid, err = references.ComponentToISID(w.parent.GetChildByHardwareId(idSID)); err != nil {
+	idSID := references.IdIMos6581(w.sid, w.label, 0)
+	if w.sid, err = references.ComponentToIMos6581(w.parent.GetChildByHardwareId(idSID)); err != nil {
 		return err
 	}
-	idCIA1 := references.IdICIA(w.cia1, w.label, 0)
-	if w.cia1, err = references.ComponentToICIA(w.parent.GetChildByHardwareId(idCIA1)); err != nil {
+	idCIA1 := references.IdIMos6526(w.cia1, w.label, 0)
+	if w.cia1, err = references.ComponentToIMos6526(w.parent.GetChildByHardwareId(idCIA1)); err != nil {
 		return err
 	}
-	idCIA2 := references.IdICIA(w.cia2, w.label, 1)
-	if w.cia2, err = references.ComponentToICIA(w.parent.GetChildByHardwareId(idCIA2)); err != nil {
+	idCIA2 := references.IdIMos6526(w.cia2, w.label, 1)
+	if w.cia2, err = references.ComponentToIMos6526(w.parent.GetChildByHardwareId(idCIA2)); err != nil {
 		return err
 	}
-	idCartridgeManager := references.IdICartridgeManagerC64(w.cartMan, w.label, 0)
-	if w.cartMan, err = references.ComponentToICartridgeManagerC64(w.parent.GetChildByHardwareId(idCartridgeManager)); err != nil {
+	idCartridgeManager := references.IdIC64CartridgeManager(w.cartMan, w.label, 0)
+	if w.cartMan, err = references.ComponentToIC64CartridgeManager(w.parent.GetChildByHardwareId(idCartridgeManager)); err != nil {
 		return err
 	}
-	idRam := references.IdIRamC64(w.ram, w.label, 0)
-	if w.ram, err = references.ComponentToIRamC64(w.parent.GetChildByHardwareId(idRam)); err != nil {
+	idRam := references.IdIC64Ram(w.ram, w.label, 0)
+	if w.ram, err = references.ComponentToIC64Ram(w.parent.GetChildByHardwareId(idRam)); err != nil {
 		return err
 	}
-	idColorRam := references.IdIColorRamC64(w.colorRam, w.label, 0)
-	if w.colorRam, err = references.ComponentToIColorRamC64(w.parent.GetChildByHardwareId(idColorRam)); err != nil {
+	idColorRam := references.IdIC64ColorRam(w.colorRam, w.label, 0)
+	if w.colorRam, err = references.ComponentToIC64ColorRam(w.parent.GetChildByHardwareId(idColorRam)); err != nil {
 		return err
 	}
-	idRoms := references.IdIRomsC64(w.roms, w.label, 0)
-	if w.roms, err = references.ComponentToIRomsC64(w.parent.GetChildByHardwareId(idRoms)); err != nil {
+	idRoms := references.IdIC64Roms(w.roms, w.label, 0)
+	if w.roms, err = references.ComponentToIC64Roms(w.parent.GetChildByHardwareId(idRoms)); err != nil {
 		return err
 	}
-	if err = w.IPlaC64.Bind(w, w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.ram, w.colorRam, w.roms); err != nil {
+	if err = w.IC64Pla.Bind(w, w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.ram, w.colorRam, w.roms); err != nil {
 		return err
 	}
 	return nil

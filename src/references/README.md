@@ -6,7 +6,7 @@ This package is the **architectural heart** of the Symphony framework. It contai
 
 The existence of this package is a deliberate design choice based on a core software engineering principle: **Dependency Inversion**. In Symphony, components do not depend on each other directly; they depend on the abstract contracts defined here.
 
-For example, the `CPU` component does not know what a `PLA` is. It only knows that it is connected to a component that fulfills the `IPlaC64` interface contract. This is the key to the framework's modularity and extensibility.
+For example, the `CPU` component does not know what a `PLA` is. It only knows that it is connected to a component that fulfills the `IC64Pla` interface contract. This is the key to the framework's modularity and extensibility.
 
 ## Key Benefits of This Approach
 
@@ -14,19 +14,19 @@ For example, the `CPU` component does not know what a `PLA` is. It only knows th
 
 2.  **Maximum Extensibility:** This architecture makes adding new or alternative hardware incredibly simple. For example, to add a new type of sound chip, one only needs to create a new component that implements the `ISID` interface. The rest of the system can use it without any changes, because it only ever communicates with the `ISID` contract, not the concrete implementation.
 
-3.  **Enhanced Testability:** It allows for the creation of "mock" components for unit testing. A component like the `CPU` can be tested in isolation by providing it with a mock `IPlaC64` that simulates memory access, without needing to initialize the entire C64 system.
+3.  **Enhanced Testability:** It allows for the creation of "mock" components for unit testing. A component like the `CPU` can be tested in isolation by providing it with a mock `IC64Pla` that simulates memory access, without needing to initialize the entire C64 system.
 
-4.  **Self-Documenting Architecture:** The interfaces in this package serve as the ultimate technical documentation. By reading an interface like `IExpansionC64`, a developer can understand exactly what capabilities a cartridge has and how it is allowed to interact with the rest of the system, because the interface mirrors the physical pins of the real hardware's expansion port.
+4.  **Self-Documenting Architecture:** The interfaces in this package serve as the ultimate technical documentation. By reading an interface like `IC64Expansion`, a developer can understand exactly what capabilities a cartridge has and how it is allowed to interact with the rest of the system, because the interface mirrors the physical pins of the real hardware's expansion port.
 
 ## Key Interfaces
 
 This package defines the contracts for all major subsystems, including but not limited to:
 
 * **`IComponent`:** The foundational interface that every single object in the component tree must implement. It provides core functionalities for identity, navigation, configuration, and state management.
-* **`IBoard`:** The contract for a "motherboard" component, which is responsible for orchestrating the lifecycle (setup, connection, emulation ticks) of all other components.
-* **`ICPU` (`i6510.go`):** Defines the contract for a CPU, including methods for executing cycles and handling interrupts.
-* **`IPlaC64` (`ipla_c64.go`):** Defines the contract for the C64's memory mapping unit, exposing methods for reading and writing to the bus.
-* **`IExpansionC64` (`iexpansion_c64.go`):** A masterclass in design, this interface acts as a virtual "expansion port connector," defining every valid hardware signal a cartridge can send or receive.
+* **`IC64Board`:** The contract for a "motherboard" component, which is responsible for orchestrating the lifecycle (setup, connection, emulation ticks) of all other components.
+* **`IMos6510` (`i6510.go`):** Defines the contract for a CPU, including methods for executing cycles and handling interrupts.
+* **`IC64Pla` (`ic64_pla.go`):** Defines the contract for the C64's memory mapping unit, exposing methods for reading and writing to the bus.
+* **`IExpansionC64` (`ic64_expansion.go`):** A masterclass in design, this interface acts as a virtual "expansion port connector," defining every valid hardware signal a cartridge can send or receive.
 * **`IFactory` (`ifactory.go`):** The contract for the component factories, ensuring the central registry can delegate the creation of any component in a uniform way.
 
 In summary, this package is the constitution of the Symphony universe. It enforces the rules, defines the relationships, and makes the entire framework robust, clean, and a pleasure to extend.

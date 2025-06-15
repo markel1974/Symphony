@@ -77,13 +77,13 @@ type Flash040 struct {
 	flashDirty     int
 	flashType      Kind
 	lastRead       uint8
-	board          references.IExpansionC64
+	board          references.IC64Expansion
 	eraseAlarm     references.IQuartzAlarm
 }
 
 // NewFlash040 initializes and returns a pointer to a Flash040 instance with the provided cartridge, type, and data.
 // It configures the flash memory state, sets up an erase alarm, and clears the erase mask.
-func NewFlash040(b references.IExpansionC64, kind Kind, data []byte) *Flash040 {
+func NewFlash040(b references.IC64Expansion, kind Kind, data []byte) *Flash040 {
 	f := &Flash040{
 		board:          b,
 		flashType:      kind,

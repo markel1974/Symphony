@@ -1,8 +1,17 @@
 package references
 
-// IBoard defines the interface for managing and interacting with a board component in the system.
+// IC64BoardConnections defines the interface for board connection interactions, such as VBlank execution and LED activity control.
+// VBlank handles vertical blanking operations during rendering.
+// LedActivity manages LED state for specified device numbers.
+type IC64BoardConnections interface {
+	VBlank()
+
+	LedActivity(deviceNumber uint8, led bool)
+}
+
+// IC64Board defines the interface for managing and interacting with a board component in the system.
 // Setup initializes the board component and returns an error if setup fails.
-// Mount connects IBoard with IBoardConnections and returns an error if the process fails.
+// Mount connects IC64Board with IC64BoardConnections and returns an error if the process fails.
 // Start begins the operation of the board and returns an error if starting fails.
 // Reset resets the state of the board to its initial configuration.
 // Emulate triggers the emulation process managed by the board.
@@ -18,10 +27,10 @@ package references
 // KeyboardCapitalToggle toggles the Caps Lock state on the board's keyboard.
 // KeyboardSetKey sets the state of a keyboard key, specifying if it is pressed and the virtual key.
 // SetMouse updates the mouse position with x, y coordinates.
-type IBoard interface {
+type IC64Board interface {
 	Setup() error
 
-	Mount(conn IBoardConnections) error
+	Mount(conn IC64BoardConnections) error
 
 	Start() error
 
@@ -32,39 +41,29 @@ type IBoard interface {
 	GetText() []byte
 
 	Joystick1Move(x uint, y uint, buttons uint)
+
 	Joystick2Move(x uint, y uint, buttons uint)
+
 	Joy1SetKey(pressed bool, vKey int)
+
 	Joy2SetKey(pressed bool, vKey int)
+
 	JoySwap()
 
 	HardwareButton(pressed bool, val uint8)
 
 	KeyboardSetCommand(cmd string)
+
 	KeyboardNumLockToggle()
+
 	KeyboardCapitalToggle()
+
 	KeyboardSetKey(pressed bool, vKey int)
 
 	SetMouse(x uint8, y uint8)
 }
 
-// IBoardConnections defines the interface for board connection interactions, such as VBlank execution and LED activity control.
-// VBlank handles vertical blanking operations during rendering.
-// LedActivity manages LED state for specified device numbers.
-type IBoardConnections interface {
-	VBlank()
-
-	LedActivity(deviceNumber uint8, led bool)
-}
-
-// IdIBoardC64 generates a unique identifier for an IBoard interface using its label, instance, and interface name.
-func IdIBoardC64(v IBoard, label string, instance int) string {
+// IdIC64Board generates a unique identifier for an IC64Board interface using its label, instance, and interface name.
+func IdIC64Board(v IC64Board, label string, instance int) string {
 	return IdInternalComponent(label, instance, InterfaceName(&v))
 }
-
-//func IdIBoardC1541(_ IIecDevice, label string, instance int) string {
-//	return IdInternalComponent(label, instance, "IBoardC1541")
-//}
-
-//func IdIBoardVIC20(_ IBoard, label string, instance int) string {
-//	return IdInternalComponent(label, instance, "IBoardVIC20")
-//}

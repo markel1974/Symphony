@@ -4,20 +4,20 @@ import (
 	"fmt"
 )
 
-// I6510Banks represents an interface for reading from and writing to memory banks in the 6510 CPU simulation.
+// IMos6510Banks represents an interface for reading from and writing to memory banks in the 6510 CPU simulation.
 // Read retrieves an 8-bit unsigned value from the specified 16-bit memory address.
 // Write stores an 8-bit unsigned value at the specified 16-bit memory address.
-type I6510Banks interface {
+type IMos6510Banks interface {
 	Read(uint16) uint8
 
 	Write(uint16, uint8)
 }
 
-// I6510Socket provides an interface for facilitating communication and interaction with the 6510 CPU.
-type I6510Socket interface {
+// IMos6510Socket provides an interface for facilitating communication and interaction with the 6510 CPU.
+type IMos6510Socket interface {
 }
 
-// I6510 defines the interface for a simulation of the 6510 CPU, including setup, binding, connection, and operation methods.
+// IMos6510 defines the interface for a simulation of the 6510 CPU, including setup, binding, connection, and operation methods.
 // Setup initializes the 6510 simulation, returning an error if setup fails.
 // Bind associates necessary components like socket, PIC, and memory banks to the CPU simulation, returning an error if binding fails.
 // Connect finalizes the connection process for the 6510, making it operational in the simulation.
@@ -26,10 +26,10 @@ type I6510Socket interface {
 // SetRDYLow alters the RDY line state, taking a boolean to indicate if it should be set low.
 // SetAECLow changes the AEC line state, taking a boolean to specify if it should be lowered.
 // SetOverflowBranch assigns an overflow branch function, which should return a boolean representing overflow status.
-type I6510 interface {
+type IMos6510 interface {
 	Setup() error
 
-	Bind(socket I6510Socket, pic IPIC6510, banks I6510Banks) error
+	Bind(socket IMos6510Socket, pic IMos6510Pic, banks IMos6510Banks) error
 
 	Connect() error
 
@@ -44,19 +44,19 @@ type I6510 interface {
 	SetOverflowBranch(sob func() bool)
 }
 
-// IdI6510 generates a unique identifier for an I6510 component using its label, instance index, and reference identity.
-func IdI6510(v I6510, label string, instance int) string {
+// IdIMos6510 generates a unique identifier for an IMos6510 component using its label, instance index, and reference identity.
+func IdIMos6510(v IMos6510, label string, instance int) string {
 	return IdInternalComponent(label, instance, InterfaceName(&v))
 }
 
-// ComponentToI6510 converts a given IComponent to an I6510 type, returning an error if the conversion is invalid or the component is nil.
-func ComponentToI6510(component IComponent) (I6510, error) {
+// ComponentToIMos6510 converts a given IComponent to an IMos6510 type, returning an error if the conversion is invalid or the component is nil.
+func ComponentToIMos6510(component IComponent) (IMos6510, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component I6510 is nil")
+		return nil, fmt.Errorf("component IMos6510 is nil")
 	}
-	v, ok := component.(I6510)
+	v, ok := component.(IMos6510)
 	if !ok {
-		return nil, fmt.Errorf("component is not a I6510")
+		return nil, fmt.Errorf("component is not a IMos6510")
 	}
 	return v, nil
 }

@@ -48,7 +48,7 @@ type VIC struct {
 	sprites          *Sprites
 	graphics         *Graphics
 	borders          *Borders
-	socket           references.IVICSocket
+	socket           references.IMos6569Socket
 	readRam          func(addr uint16) uint8
 	readColorRam     func(addr uint16) uint8
 	readCharRom      func(addr uint16) uint8
@@ -166,7 +166,7 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		ecm:              false,
 		columnSel:        false,
 	}
-	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIVIC(vic, label, instance))
+	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIMos6569(vic, label, instance))
 	return vic
 }
 
@@ -175,7 +175,7 @@ func (vic *VIC) Setup() error {
 	return nil
 }
 
-func (vic *VIC) Bind(socket references.IVICSocket) error {
+func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	displayBuffer := vic.GetFactory().GetIDisplayBuffer()
 
 	vic.socket = socket

@@ -18,7 +18,7 @@ type IVIA1SocketConnections interface {
 
 // VIA1Socket represents a VIA (Versatile Interface Adapter) socket implementation with specific connection and signaling logic.
 type VIA1Socket struct {
-	references.IVIA
+	references.IMos6522
 	label       string
 	parent      references.IComponent
 	component   references.IComponent
@@ -33,7 +33,7 @@ type VIA1Socket struct {
 // NewVIA1Socket initializes and returns a new instance of VIA1Socket with the provided IVIA1SocketConnections implementation.
 func NewVIA1Socket(parent references.IComponent, label string, connections IVIA1SocketConnections, iec references.IIec) *VIA1Socket {
 	v := &VIA1Socket{
-		IVIA:        nil,
+		IMos6522:    nil,
 		parent:      parent,
 		label:       label,
 		iec:         iec,
@@ -41,7 +41,7 @@ func NewVIA1Socket(parent references.IComponent, label string, connections IVIA1
 		intrId:      intrIrqVIA1Bit,
 		prbFilter:   0,
 	}
-	v.hwId = references.IdIVIA(v.IVIA, v.label, 0)
+	v.hwId = references.IdIMos6522(v.IMos6522, v.label, 0)
 	return v
 }
 
@@ -53,13 +53,13 @@ func (v *VIA1Socket) HardwareId() string {
 func (v *VIA1Socket) Mount() error {
 	var err error
 	v.component = v.parent.GetChildByHardwareId(v.HardwareId())
-	if v.IVIA, err = references.ComponentToIVIA(v.component); err != nil {
+	if v.IMos6522, err = references.ComponentToIMos6522(v.component); err != nil {
 		return err
 	}
 
 	v.prbFilter = v.createPRBFilter()
 	v.dipSwitch = v.createDipSwitch(v.connections.GetDeviceNumber())
-	if err = v.IVIA.Bind(v); err != nil {
+	if err = v.IMos6522.Bind(v); err != nil {
 		return err
 	}
 	return nil

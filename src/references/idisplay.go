@@ -19,7 +19,7 @@ type IDisplayBuffer interface {
 // Start begins the rendering process and returns an error if it fails.
 // CreateDisplayBuffer creates a new display buffer with the specified width and height.
 type IDisplayRender interface {
-	Setup(board IBoard, cfg *config.Config) error
+	Setup(board IC64Board, cfg *config.Config) error
 
 	Start() error
 

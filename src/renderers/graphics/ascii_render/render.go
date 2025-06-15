@@ -10,7 +10,7 @@ import (
 )
 
 type Render struct {
-	board      references.IBoard
+	board      references.IC64Board
 	player     references.IAudioRender
 	cfg        *config.Config
 	display    *DisplayBuffer
@@ -33,7 +33,7 @@ func New() *Render {
 	return g
 }
 
-func (g *Render) Setup(board references.IBoard, cfg *config.Config) error {
+func (g *Render) Setup(board references.IC64Board, cfg *config.Config) error {
 	g.board = board
 	if err := g.board.Mount(g); err != nil {
 		return err

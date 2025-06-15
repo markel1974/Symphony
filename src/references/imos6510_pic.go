@@ -13,11 +13,11 @@ const (
 	OpFlagIntDelayed  = 0x04
 )
 
-// IPIC6510Socket is an interface used to establish communication between a PIC and its corresponding socket.
-type IPIC6510Socket interface {
+// IMos6510PicSocket is an interface used to establish communication between a PIC and its corresponding socket.
+type IMos6510PicSocket interface {
 }
 
-// IPIC6510 defines an interface for managing a programmable interrupt controller (PIC) in a 6510 CPU simulation.
+// IMos6510Pic defines an interface for managing a programmable interrupt controller (PIC) in a 6510 CPU simulation.
 // Reset reinitializes the PIC to its default state.
 // Setup initializes the PIC, returning an error if setup fails.
 // Bind binds the PIC to a socket and quartz clock, returning an error if binding fails.
@@ -29,12 +29,12 @@ type IPIC6510Socket interface {
 // VerifyIrq verifies the specified IRQ vector states, returning the result.
 // ClearNMI clears the non-maskable interrupt (NMI) state.
 // HasNMI checks if a non-maskable interrupt (NMI) is currently active, returning a boolean.
-type IPIC6510 interface {
+type IMos6510Pic interface {
 	Reset()
 
 	Setup() error
 
-	Bind(socket IPIC6510Socket, quartz IQuartz) error
+	Bind(socket IMos6510PicSocket, quartz IQuartz) error
 
 	Connect() error
 
@@ -53,19 +53,19 @@ type IPIC6510 interface {
 	HasNMI() bool
 }
 
-// IdIPIC6510 generates a unique identifier for an IPIC6510 component using the provided label, instance, and interface name.
-func IdIPIC6510(v IPIC6510, label string, instance int) string {
+// IdIMos6510Pic generates a unique identifier for an IMos6510Pic component using the provided label, instance, and interface name.
+func IdIMos6510Pic(v IMos6510Pic, label string, instance int) string {
 	return IdInternalComponent(label, instance, InterfaceName(&v))
 }
 
-// ComponentToIPIC6510 attempts to cast an IComponent to an IPIC6510 interface and returns an error if the cast fails.
-func ComponentToIPIC6510(component IComponent) (IPIC6510, error) {
+// ComponentToIMos6510Pic attempts to cast an IComponent to an IMos6510Pic interface and returns an error if the cast fails.
+func ComponentToIMos6510Pic(component IComponent) (IMos6510Pic, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component IPIC6510 is nil")
+		return nil, fmt.Errorf("component IMos6510Pic is nil")
 	}
-	v, ok := component.(IPIC6510)
+	v, ok := component.(IMos6510Pic)
 	if !ok {
-		return nil, fmt.Errorf("component is not a IPIC6510")
+		return nil, fmt.Errorf("component is not a IMos6510Pic")
 	}
 	return v, nil
 }

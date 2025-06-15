@@ -7,7 +7,7 @@ import (
 
 // Identifier returns a constant string that serves as a unique identifier for specific components or factories.
 func Identifier() string {
-	return "c64"
+	return "c64_board"
 }
 
 // Factory represents a struct primarily responsible for creating and managing components in the system.

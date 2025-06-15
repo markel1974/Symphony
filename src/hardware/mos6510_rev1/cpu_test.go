@@ -21,31 +21,33 @@ func (m *mockBanks) Write(addr uint16, value uint8) {
 
 type mockPic struct{}
 
-func (m *mockPic) Setup() error                                                           { return nil }
-func (m *mockPic) Bind(socket references.IPIC6510Socket, quartz references.IQuartz) error { return nil }
-func (m *mockPic) Connect() error                                                         { return nil }
-func (m *mockPic) IRQTriggerBind(fn func(uint32))                                         {}
-func (m *mockPic) IRQClearBind(fn func(uint32))                                           {}
-func (m *mockPic) Reset()                                                                 {}
-func (m *mockPic) ClearNMI()                                                              {}
-func (m *mockPic) ClearIRQ(u uint32)                                                      {}
-func (m *mockPic) HasNMI() bool                                                           { return false }
-func (m *mockPic) HasIRQ() bool                                                           { return false }
-func (m *mockPic) VerifyIrq(iFlag uint8, opFlag uint8) uint8                              { return 0 }
-func (m *mockPic) TriggerIRQ(u uint32)                                                    {}
-func (m *mockPic) TriggerReset()                                                          {}
-func (m *mockPic) TriggerNMI()                                                            {}
+func (m *mockPic) Setup() error { return nil }
+func (m *mockPic) Bind(socket references.IMos6510PicSocket, quartz references.IQuartz) error {
+	return nil
+}
+func (m *mockPic) Connect() error                            { return nil }
+func (m *mockPic) IRQTriggerBind(fn func(uint32))            {}
+func (m *mockPic) IRQClearBind(fn func(uint32))              {}
+func (m *mockPic) Reset()                                    {}
+func (m *mockPic) ClearNMI()                                 {}
+func (m *mockPic) ClearIRQ(u uint32)                         {}
+func (m *mockPic) HasNMI() bool                              { return false }
+func (m *mockPic) HasIRQ() bool                              { return false }
+func (m *mockPic) VerifyIrq(iFlag uint8, opFlag uint8) uint8 { return 0 }
+func (m *mockPic) TriggerIRQ(u uint32)                       {}
+func (m *mockPic) TriggerReset()                             {}
+func (m *mockPic) TriggerNMI()                               {}
 
 type mockSocket struct {
-	banks references.I6510Banks
-	pic   references.IPIC6510
+	banks references.IMos6510Banks
+	pic   references.IMos6510Pic
 }
 
-func (m *mockSocket) GetBanks() references.I6510Banks {
+func (m *mockSocket) GetBanks() references.IMos6510Banks {
 	return m.banks
 }
 
-func (m *mockSocket) GetPic() references.IPIC6510 {
+func (m *mockSocket) GetPic() references.IMos6510Pic {
 	return m.pic
 }
 

@@ -8,7 +8,7 @@ import (
 type IColorRamC64Socket interface {
 }
 
-// IColorRamC64 defines an interface representing the color RAM component for the C64 with memory and control operations.
+// IC64ColorRam defines an interface representing the color RAM component for the C64 with memory and control operations.
 // Setup initializes the color RAM component, preparing it for use.
 // Bind associates the color RAM with a given RAM socket interface for communication.
 // Connect establishes any necessary internal connections for the color RAM.
@@ -16,7 +16,7 @@ type IColorRamC64Socket interface {
 // Size returns the size of the color RAM in bytes.
 // Read fetches the data at a given address in the color RAM.
 // Write stores data at a specified address in the color RAM.
-type IColorRamC64 interface {
+type IC64ColorRam interface {
 	Setup() error
 
 	Bind(socket IColorRamC64Socket) error
@@ -32,19 +32,19 @@ type IColorRamC64 interface {
 	Write(addr uint16, data uint8)
 }
 
-// IdIColorRamC64 generates an identifier string for a C64 RAM color component using its label, instance, and interface name.
-func IdIColorRamC64(v IColorRamC64, label string, instance int) string {
+// IdIC64ColorRam generates an identifier string for a C64 RAM color component using its label, instance, and interface name.
+func IdIC64ColorRam(v IC64ColorRam, label string, instance int) string {
 	return IdInternalComponent(label, instance, InterfaceName(&v))
 }
 
-// ComponentToIColorRamC64 converts the provided IComponent to an IColorRamC64 if possible, or returns an error if not.
-func ComponentToIColorRamC64(component IComponent) (IColorRamC64, error) {
+// ComponentToIC64ColorRam converts the provided IComponent to an IC64ColorRam if possible, or returns an error if not.
+func ComponentToIC64ColorRam(component IComponent) (IC64ColorRam, error) {
 	if component == nil {
-		return nil, fmt.Errorf("component IColorRamC64 is nil")
+		return nil, fmt.Errorf("component IC64ColorRam is nil")
 	}
-	v, ok := component.(IColorRamC64)
+	v, ok := component.(IC64ColorRam)
 	if !ok {
-		return nil, fmt.Errorf("component is not a IColorRamC64")
+		return nil, fmt.Errorf("component is not a IC64ColorRam")
 	}
 	return v, nil
 }

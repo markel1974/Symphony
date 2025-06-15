@@ -246,7 +246,7 @@ const treeStub = `{
    }
   },
   "details": {
-   "id": "c64"
+   "id": "c64_board"
   }
  }
 }

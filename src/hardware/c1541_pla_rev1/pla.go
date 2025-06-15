@@ -19,12 +19,12 @@ import (
 // It embeds BaseComponent and provides RAM, ROM, and connections to two VIA components.
 type PLA struct {
 	*component.BaseComponent
-	ram        references.IRamC1541
+	ram        references.IC1541Ram
 	bankRead   func(uint16) uint8
 	bankWrite  func(uint16, uint8)
 	kernalRead func(uint16) uint8
-	via1       references.IVIA
-	via2       references.IVIA
+	via1       references.IMos6522
+	via2       references.IMos6522
 }
 
 // NewPLA initializes and returns a new instance of the PLA structure with specified parent, factory, and instance ID.
@@ -33,7 +33,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	p := &PLA{
 		BaseComponent: component.NewBaseComponent(),
 	}
-	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIPLAc1541(p, label, instance))
+	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIC1541Pla(p, label, instance))
 	return p
 }
 
@@ -41,7 +41,7 @@ func (r *PLA) Setup() error {
 	return nil
 }
 
-func (r *PLA) Bind(_ references.IPLAc1541Socket, via1 references.IVIA, via2 references.IVIA, ram references.IRamC1541, roms references.IRomsC1541) error {
+func (r *PLA) Bind(_ references.IC1541PlaSocket, via1 references.IMos6522, via2 references.IMos6522, ram references.IC1541Ram, roms references.IC1541Roms) error {
 	r.via1 = via1
 	r.via2 = via2
 	r.ram = ram

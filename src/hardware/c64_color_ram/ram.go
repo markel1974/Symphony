@@ -19,7 +19,7 @@ func NewColorRam(parent references.IComponent, factory references.IComponentFact
 		color:         make([]byte, 0x0400),
 		colorFiller:   filler.New(255, 128, 0, 0, 0, 0, 0, filler.InitRandomChanceHalf),
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIColorRamC64(rl, label, instance))
+	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIC64ColorRam(rl, label, instance))
 	return rl
 }
 
@@ -29,7 +29,7 @@ func (r *ColorRam) Setup() error {
 	return nil
 }
 
-// Bind connects the Ram component to the provided IRamC64Socket instance and initializes any required references or states.
+// Bind connects the Ram component to the provided IC64RamSocket instance and initializes any required references or states.
 func (r *ColorRam) Bind(_ references.IColorRamC64Socket) error {
 	return nil
 }
