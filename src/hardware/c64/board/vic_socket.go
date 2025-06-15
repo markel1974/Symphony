@@ -4,6 +4,10 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+// The VIC data path never passes through the PLA
+// The VIC-II accesses video RAM, Color RAM, and Char ROM directly through its own address and data bus,
+// without data ever needing to transit through the PLA.
+
 // IVICSocketConnection represents an interface for managing triggers associated with a VIC chip in an emulation environment.
 // LastCycleTrigger signals operations to perform at the last cycle of an emulation frame.
 // VBlankTrigger triggers the start of a vertical blanking interval.
@@ -30,15 +34,19 @@ type IVICSocketConnection interface {
 // Provides methods and triggers for managing display rendering and interaction with the C64 hardware components.
 type VICSocket struct {
 	references.IVIC
-	label       string
-	parent      references.IComponent
-	component   references.IComponent
-	connections IVICSocketConnection
-	db          references.IDisplayBuffer
-	pla         references.IPlaC64
-	quartz      references.IQuartz
-	intrId      uint32
-	hwId        string
+	label        string
+	parent       references.IComponent
+	component    references.IComponent
+	connections  IVICSocketConnection
+	db           references.IDisplayBuffer
+	ram          references.IRamC64
+	rom          references.IRomsC64
+	ramRead      func(addr uint16) uint8
+	ramReadColor func(addr uint16) uint8
+	romCharRead  func(addr uint16) uint8
+	quartz       references.IQuartz
+	intrId       uint32
+	hwId         string
 }
 
 // NewVICSocket creates and initializes a new VICSocket instance, setting up necessary connections for video interface control.
@@ -49,7 +57,6 @@ func NewVICSocket(parent references.IComponent, label string, connections IVICSo
 		label:       label,
 		connections: connections,
 		db:          nil,
-		pla:         nil,
 		quartz:      nil,
 		intrId:      intrIrqVicBit,
 	}
@@ -68,8 +75,12 @@ func (v *VICSocket) Mount() error {
 	if v.IVIC, err = references.ComponentToIVIC(v.component); err != nil {
 		return err
 	}
-	idPla := references.IdIPlaC64(v.pla, v.label, 0)
-	if v.pla, err = references.ComponentToIPLAc64(v.parent.GetChildByHardwareId(idPla)); err != nil {
+	idRam := references.IdIRamC64(v.ram, v.label, 0)
+	if v.ram, err = references.ComponentToIRamC64(v.parent.GetChildByHardwareId(idRam)); err != nil {
+		return err
+	}
+	idRom := references.IdIRomsC64(v.rom, v.label, 0)
+	if v.rom, err = references.ComponentToIRomsC64(v.parent.GetChildByHardwareId(idRom)); err != nil {
 		return err
 	}
 	idQuartz := references.IdIQuartz(v.quartz, v.label, 0)
@@ -79,6 +90,9 @@ func (v *VICSocket) Mount() error {
 	if err = v.IVIC.Bind(v); err != nil {
 		return err
 	}
+	v.ramRead = v.ram.Read
+	v.ramReadColor = v.ram.ReadColor
+	v.romCharRead = v.rom.CharRead
 	return nil
 }
 
@@ -87,9 +101,16 @@ func (v *VICSocket) Cycle() uint64 {
 	return v.quartz.Cycle()
 }
 
-// GetBanks returns the IVICBanks interface, allowing access to methods for reading from VIC memory regions.
-func (v *VICSocket) GetBanks() references.IVICBanks {
-	return v.pla
+func (v *VICSocket) ReadRam(addr uint16) uint8 {
+	return v.ramRead(addr)
+}
+
+func (v *VICSocket) ReadColorRam(addr uint16) uint8 {
+	return v.ramReadColor(addr)
+}
+
+func (v *VICSocket) ReadCharRom(addr uint16) uint8 {
+	return v.romCharRead(addr)
 }
 
 // IRQTrigger triggers an interrupt request by invoking the PIC's TriggerIRQ method with the stored interrupt ID.

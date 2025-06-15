@@ -236,13 +236,8 @@ func (b *PLA) SetMemoryEntry(memConfig uint8) {
 	b.memoryConfig = b.memoryMap.Get(memConfig)
 }
 
-// ReadCharRom reads a byte from the character ROM at the specified address and returns it.
-func (b *PLA) ReadCharRom(addr uint16) uint8 {
-	return b.charRead(addr)
-}
-
 // ReadColor retrieves the color value from the specified memory address. Returns an 8-bit unsigned integer value.
-func (b *PLA) ReadColor(addr uint16) uint8 {
+func (b *PLA) readColor(addr uint16) uint8 {
 	return b.colorRead(addr)
 }
 
@@ -251,20 +246,6 @@ func (b *PLA) Read(addr uint16) uint8 {
 	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
 	bank := addr >> 12
 	return b.bankRead[bank](addr)
-}
-
-// ReadDirect accesses and returns the value stored at the specified memory address without any additional logic.
-func (b *PLA) ReadDirect(addr uint16) uint8 {
-	return b.ramRead(addr)
-}
-
-// WriteDirect writes the provided data to the specified address in RAM and executes any write triggers if set.
-func (b *PLA) WriteDirect(addr uint16, data uint8) {
-	b.ramWrite(addr, data)
-	if b.wTriggers == nil {
-		return
-	}
-	b.wTriggers.Exec(addr, data)
 }
 
 // Write writes a single byte of data to a specified memory address and triggers any assigned write handlers.

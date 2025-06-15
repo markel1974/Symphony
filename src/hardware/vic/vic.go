@@ -49,7 +49,9 @@ type VIC struct {
 	graphics         *Graphics
 	borders          *Borders
 	socket           references.IVICSocket
-	banks            references.IVICBanks
+	readRam          func(addr uint16) uint8
+	readColorRam     func(addr uint16) uint8
+	readCharRom      func(addr uint16) uint8
 	curr             *cycleData
 	lineStart        int
 	drawLine         bool
@@ -110,7 +112,9 @@ type VIC struct {
 func NewVIC(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *VIC {
 	vic := &VIC{
 		BaseComponent:    component.NewBaseComponent(),
-		banks:            nil,
+		readRam:          nil,
+		readColorRam:     nil,
+		readCharRom:      nil,
 		mXx:              make([]uint16, SpriteNumber),
 		mXy:              make([]uint8, SpriteNumber),
 		mXc:              make([]uint8, SpriteNumber),
@@ -175,7 +179,10 @@ func (vic *VIC) Bind(socket references.IVICSocket) error {
 	displayBuffer := vic.GetFactory().GetIDisplayBuffer()
 
 	vic.socket = socket
-	vic.banks = vic.socket.GetBanks()
+	vic.readRam = socket.ReadRam
+	vic.readColorRam = socket.ReadColorRam
+	vic.readCharRom = socket.ReadCharRom
+
 	vic.collisions = NewCollisions(vic)
 	vic.graphics = NewGraphics(vic, vic.collisions, displayBuffer)
 	vic.sprites = NewSprites(vic, vic.collisions, displayBuffer)
@@ -383,10 +390,11 @@ func (vic *VIC) AccessRefresh() {
 func (vic *VIC) ReadByte(addr uint16) uint8 {
 	va := addr | vic.ciaVaBase
 	if (va & 0x7000) == 0x1000 {
-		vic.lastByte = vic.banks.ReadCharRom(va)
+		//TODO ERRORE quando il vic legge dalla char rom non viene settato il last byte
+		vic.lastByte = vic.readCharRom(va)
 		return vic.lastByte
 	}
-	vic.lastByte = vic.banks.ReadDirect(va)
+	vic.lastByte = vic.readRam(va)
 	return vic.lastByte
 }
 

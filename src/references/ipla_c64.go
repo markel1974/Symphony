@@ -45,12 +45,6 @@ type IPlaC64 interface {
 
 	Read(addr uint16) uint8
 
-	ReadCharRom(addr uint16) uint8
-
-	ReadDirect(addr uint16) uint8
-
-	ReadColor(addr uint16) uint8
-
 	SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int
 
 	RemoveRamTrigger(addr uint16, id int)

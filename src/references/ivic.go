@@ -33,18 +33,6 @@ type IVIC interface {
 	GetLastByte() uint8
 }
 
-// IVICBanks provides methods to interact with various VIC memory regions, including character ROM and color memory.
-// ReadCharRom reads a byte from the character ROM at the specified address.
-// ReadDirect reads a byte from direct memory at the specified address.
-// ReadColor retrieves a color byte from VIC memory at the given address.
-type IVICBanks interface {
-	ReadCharRom(uint16) uint8
-
-	ReadDirect(uint16) uint8
-
-	ReadColor(uint16) uint8
-}
-
 // IVICSocket defines the interface for VIC's connection socket, providing methods for synchronization and signal control.
 // Cycle returns the current cycle count of the VIC socket.
 // GetBanks retrieves the associated IVICBanks for memory access operations.
@@ -57,8 +45,6 @@ type IVICBanks interface {
 type IVICSocket interface {
 	Cycle() uint64
 
-	GetBanks() IVICBanks
-
 	IRQTrigger()
 
 	IRQClearTrigger()
@@ -70,6 +56,12 @@ type IVICSocket interface {
 	VBlank()
 
 	LastCycle()
+
+	ReadRam(addr uint16) uint8
+
+	ReadColorRam(addr uint16) uint8
+
+	ReadCharRom(addr uint16) uint8
 }
 
 // IdIVIC generates a unique identifier for an IVIC interface based on the given label, instance, and interface name.
