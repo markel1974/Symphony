@@ -7,7 +7,7 @@ import (
 )
 
 func Identifier() string {
-	return "ocean"
+	return "final_cartridge_iii"
 }
 
 func GetType() int {

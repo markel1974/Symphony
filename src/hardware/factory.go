@@ -75,6 +75,7 @@ func (f *Factory) GetIDisplayBuffer() references.IDisplayBuffer {
 func (f *Factory) GetIAudioRender() references.IAudioRender {
 	return f.player
 }
+
 func (f *Factory) GetConfig() *config.Config {
 	return f.cfg
 }
