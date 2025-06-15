@@ -280,12 +280,12 @@ func (b *PLA) RemoveRamTrigger(addr uint16, id int) {
 func (b *PLA) ramWrite0x0000(addr uint16, data uint8) {
 	if addr == 0 {
 		b.ports.SetDir(data)
-		b.ramWrite(0, b.vicLastByte())
+		//b.ramWrite(0, b.vicLastByte())
 		b.update()
 		return
 	} else if addr == 1 {
 		b.ports.SetData(data)
-		b.ramWrite(1, b.vicLastByte())
+		//b.ramWrite(1, b.vicLastByte())
 		b.update()
 		return
 	}
@@ -421,7 +421,9 @@ func (b *PLA) portWriteColor(addr uint16, data uint8) {
 
 // portReadColor reads a color value from the specified address in the color memory, merging specific bits from VIC data.
 func (b *PLA) portReadColor(addr uint16) uint8 {
-	return (b.colorRead(addr) & 0x0f) | (b.vicLastByte() & 0xf0)
+	p1 := b.colorRead(addr) & 0x0f // enables the physical Color RAM chip. This chip receives the address and puts the 4 color bits it has stored on data bus lines D0-D3 (lower half).
+	p2 := b.vicLastByte() & 0xf0   // signals to VIC that Color RAM is being read. VIC responds by putting the last 4 bits of its internal latch (lastByte) on data bus lines D4-D7 (upper half)
+	return p1 | p2
 }
 
 // portReadIO reads a byte from a specified I/O port address using the provided memory and I/O mappings.
