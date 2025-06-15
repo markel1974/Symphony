@@ -232,9 +232,9 @@ func (gr *Graphics) TryPhi2Access() {
 		// Check if the Address Enable Control (AEC) signal is low.
 		if gr.core.aecLow {
 			// If both BA and AEC are low, the VIC-II has access to the address bus.
-			addr := (gr.videoCounter & 0x3ff) | gr.core.matrixBase             // Calculate address in video matrix.
-			gr.videoMatrix[gr.lineIndex] = gr.core.ReadByte(addr)              // Read character code from video matrix.
-			gr.colorLine[gr.lineIndex] = gr.core.banks.ReadColor(addr & 0x3ff) // Read color data from color RAM.
+			addr := (gr.videoCounter & 0x3ff) | gr.core.matrixBase     // Calculate address in video matrix.
+			gr.videoMatrix[gr.lineIndex] = gr.core.ReadByte(addr)      // Read character code from video matrix.
+			gr.colorLine[gr.lineIndex] = gr.core.banks.ReadColor(addr) // Read color data from color RAM.
 		} else {
 			// If AEC is high, the CPU has access to the address bus, so we fill with dummy data.
 			gr.colorLine[gr.lineIndex] = 0xff

@@ -6,68 +6,84 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// Ram represents a memory component containing raw byte storage and write triggers, extending BaseComponent.
+// Ram represents a memory component with associated data buffers and fillers for color and data management.
 type Ram struct {
 	*component.BaseComponent
-	ram    []byte
-	filler *filler.Filler
+	ram         []byte
+	color       []byte //SRAM 2114 (1K x 4 bit)
+	filler      *filler.Filler
+	colorFiller *filler.Filler
 }
 
-// NewRam initializes and returns a new Ram instance, registering it to the given parent component and factory setup.
+// NewRam creates and initializes a new Ram instance with a parent component, factory, label, and instance number.
 func NewRam(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Ram {
 	rl := &Ram{
 		BaseComponent: component.NewBaseComponent(),
 		ram:           make([]byte, 0x10000),
+		color:         make([]byte, 0x0400),
 		filler:        filler.New(255, 128, 0, 0, 0, 0, 0, 0),
+		colorFiller:   filler.New(255, 128, 0, 0, 0, 0, 0, filler.InitRandomChanceHalf),
 	}
 	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIRamC64(rl, label, instance))
 	return rl
 }
 
-// Setup initializes the necessary configurations for the Ram instance. It returns an error if the setup fails.
+// Setup initializes the RAM and color memory with specific patterns using the associated Filler objects.
 func (r *Ram) Setup() error {
 	r.filler.InitWithPattern(r.ram, uint(len(r.ram)))
+	r.colorFiller.InitWithPattern(r.color, uint(len(r.color)))
 	return nil
 }
 
-// Bind integrates the current RAM instance with the given IRamC64Socket interface and initializes memory with a pattern.
+// Bind connects the Ram component to the provided IRamC64Socket instance and initializes any required references or states.
 func (r *Ram) Bind(_ references.IRamC64Socket) error {
 	return nil
 }
 
-// Connect establishes necessary connections or bindings for the Ram component. Returns an error if the operation fails.
+// Connect establishes necessary connections for the Ram component to function properly. Returns an error if it fails.
 func (r *Ram) Connect() error {
 	return nil
 }
 
-// Reset clears or reinitializes the internal state of the RAM component to its default or initial configuration.
+// Reset clears and reinitializes the RAM to its default state as defined during setup.
 func (r *Ram) Reset() {
 }
 
-// EmulationRequired checks whether emulation is necessary for the RAM component and always returns false.
+// EmulationRequired checks whether emulation is necessary for the current RAM implementation. Always returns false.
 func (r *Ram) EmulationRequired() bool {
 	return false
 }
 
-// Emulate runs the emulation logic for the RAM component during each cycle of the emulator.
+// Emulate performs the main emulation logic for the Ram component during a simulation cycle.
 func (r *Ram) Emulate() {
 }
 
-// Internal determines whether the RAM component is configured as an internal component.
+// Internal determines whether the RAM component operates internally within the system. Always returns false.
 func (r *Ram) Internal() bool {
 	return false
 }
 
-// Read retrieves a byte from the specified address in the RAM.
+// Read retrieves a byte from the RAM at the specified memory address.
 func (r *Ram) Read(addr uint16) uint8 {
 	return r.ram[addr]
 }
 
-// Write writes the provided 8-bit data to the specified 16-bit memory address in RAM and triggers any associated actions.
+// Write stores the provided data byte at the specified memory address in the RAM.
 func (r *Ram) Write(addr uint16, data uint8) {
 	r.ram[addr] = data
 }
 
+// ReadColor retrieves a byte from the color memory at the specified address.
+func (r *Ram) ReadColor(addr uint16) uint8 {
+	return r.color[addr&0x03ff]
+}
+
+// WriteColor writes an 8-bit value to the specified address in the color memory segment of the RAM.
+func (r *Ram) WriteColor(addr uint16, data uint8) {
+	r.color[addr&0x03ff] = data & 0x0f
+}
+
+// Size returns the length of the `ram` slice, representing the total size of the RAM in bytes.
 func (r *Ram) Size() int {
 	return len(r.ram)
 }

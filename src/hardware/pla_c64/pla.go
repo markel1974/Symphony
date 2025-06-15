@@ -1,7 +1,6 @@
 package pla_c64
 
 import (
-	"github.com/markel1974/c64emu/src/common/filler"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
@@ -16,7 +15,6 @@ type WriteFn func(uint16, uint8)
 // PLA represents the Programmable Logic Array implementation associated with memory and I/O operations in the C64 emulator.
 type PLA struct {
 	*component.BaseComponent
-	roms references.IRomsC64
 
 	triggerSize int
 
@@ -43,7 +41,8 @@ type PLA struct {
 	basicRead       ReadFn
 	kernalRead      ReadFn
 	charRead        ReadFn
-	color           []byte
+	colorRead       ReadFn
+	colorWrite      WriteFn
 	cfg             *config.Config
 	wTriggers       *WriteTriggers
 	label           string
@@ -58,7 +57,6 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	b := &PLA{
 		BaseComponent:   component.NewBaseComponent(),
 		vicLastByte:     nil,
-		roms:            nil,
 		triggerSize:     0,
 		ramRead:         nil,
 		ramWrite:        nil,
@@ -77,7 +75,8 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		basicRead:       nil,
 		kernalRead:      nil,
 		charRead:        nil,
-		color:           make([]byte, 0x0400),
+		colorRead:       nil,
+		colorWrite:      nil,
 		cfg:             nil,
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
@@ -107,7 +106,8 @@ func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid referenc
 	b.ramRead = ram.Read
 	b.ramWrite = ram.Write
 	b.triggerSize = ram.Size()
-	b.roms = roms
+	b.colorRead = ram.ReadColor
+	b.colorWrite = ram.WriteColor
 
 	for idx := range b.bankWrite {
 		b.bankWrite[idx] = b.ramWrite
@@ -162,12 +162,9 @@ func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid referenc
 	b.portRead[0xd] = cia2.ReadRegister
 	b.portRead[0xe] = b.portReadIO
 	b.portRead[0xf] = b.portReadIO
-
-	rc := filler.New(255, 128, 0, 0, 0, 0, 0, filler.InitRandomChanceHalf)
-	rc.InitWithPattern(b.color, uint(len(b.color)))
-	b.kernalRead = b.roms.KernalRead
-	b.basicRead = b.roms.BasicRead
-	b.charRead = b.roms.CharRead
+	b.kernalRead = roms.KernalRead
+	b.basicRead = roms.BasicRead
+	b.charRead = roms.CharRead
 	return nil
 }
 
@@ -246,12 +243,7 @@ func (b *PLA) ReadCharRom(addr uint16) uint8 {
 
 // ReadColor retrieves the color value from the specified memory address. Returns an 8-bit unsigned integer value.
 func (b *PLA) ReadColor(addr uint16) uint8 {
-	return b.color[addr]
-}
-
-// WriteColor updates the color at the specified address in the PLA's color memory with the provided data value.
-func (b *PLA) WriteColor(addr uint16, data uint8) {
-	b.color[addr] = data
+	return b.colorRead(addr)
 }
 
 // Read retrieves the value at the specified memory address using the current memory bank configuration.
@@ -443,12 +435,12 @@ func (b *PLA) ramRead0xF000(addr uint16) uint8 {
 
 // portWriteColor writes a color value to the color buffer at the given address, using only the lower 4 bits of the data.
 func (b *PLA) portWriteColor(addr uint16, data uint8) {
-	b.color[addr&0x03ff] = data & 0x0f
+	b.colorWrite(addr, data)
 }
 
 // portReadColor reads a color value from the specified address in the color memory, merging specific bits from VIC data.
 func (b *PLA) portReadColor(addr uint16) uint8 {
-	return (b.color[addr&0x03ff] & 0x0f) | (b.vicLastByte() & 0xf0)
+	return (b.colorRead(addr) & 0x0f) | (b.vicLastByte() & 0xf0)
 }
 
 // portReadIO reads a byte from a specified I/O port address using the provided memory and I/O mappings.
