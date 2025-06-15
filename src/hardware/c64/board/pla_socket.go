@@ -17,7 +17,7 @@ type PLASocket struct {
 	cia2      references.ICIA
 	cartMan   references.ICartridgeManagerC64
 	ram       references.IRamC64
-	roms      references.IROMLoaderC64
+	roms      references.IRomsC64
 	hwId      string
 }
 
@@ -67,8 +67,8 @@ func (w *PLASocket) Mount() error {
 	if w.ram, err = references.ComponentToIRamC64(w.parent.GetChildByHardwareId(idRam)); err != nil {
 		return err
 	}
-	idRomLoader := references.IdIROMLoaderC64(w.roms, w.label, 0)
-	if w.roms, err = references.ComponentToIROMLoaderC64(w.parent.GetChildByHardwareId(idRomLoader)); err != nil {
+	idRomLoader := references.IdIRomsC64(w.roms, w.label, 0)
+	if w.roms, err = references.ComponentToIRomsC64(w.parent.GetChildByHardwareId(idRomLoader)); err != nil {
 		return err
 	}
 	if err = w.IPlaC64.Bind(w, w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.ram, w.roms); err != nil {

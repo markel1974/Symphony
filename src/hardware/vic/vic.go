@@ -383,7 +383,7 @@ func (vic *VIC) AccessRefresh() {
 func (vic *VIC) ReadByte(addr uint16) uint8 {
 	va := addr | vic.ciaVaBase
 	if (va & 0x7000) == 0x1000 {
-		vic.lastByte = vic.banks.ReadCharRom(va & 0x0fff)
+		vic.lastByte = vic.banks.ReadCharRom(va)
 		return vic.lastByte
 	}
 	vic.lastByte = vic.banks.ReadDirect(va)

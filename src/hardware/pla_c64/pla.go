@@ -16,7 +16,7 @@ type WriteFn func(uint16, uint8)
 // PLA represents the Programmable Logic Array implementation associated with memory and I/O operations in the C64 emulator.
 type PLA struct {
 	*component.BaseComponent
-	roms references.IROMLoaderC64
+	roms references.IRomsC64
 
 	triggerSize int
 
@@ -40,9 +40,9 @@ type PLA struct {
 	memoryConfig    []uint8
 	ports           *Ports
 	emulatorId      *EmulatorId
-	basic           []byte
-	kernal          []byte
-	char            []byte
+	basicRead       ReadFn
+	kernalRead      ReadFn
+	charRead        ReadFn
 	color           []byte
 	cfg             *config.Config
 	wTriggers       *WriteTriggers
@@ -74,9 +74,9 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		memoryConfig:    mm.Get(0),
 		ports:           nil,
 		emulatorId:      NewEmulatorId(),
-		basic:           []byte{},
-		kernal:          []byte{},
-		char:            []byte{},
+		basicRead:       nil,
+		kernalRead:      nil,
+		charRead:        nil,
 		color:           make([]byte, 0x0400),
 		cfg:             nil,
 		memoryConfigIdx: -1,
@@ -95,7 +95,7 @@ func (b *PLA) Setup() error {
 }
 
 // Bind initializes and connects various components to the PLA, including VIC, SID, CIA1, CIA2, cartridge manager, and ROM loader.
-func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, ram references.IRamC64, roms references.IROMLoaderC64) error {
+func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid references.ISID, cia1 references.ICIA, cia2 references.ICIA, cartMan references.ICartridgeManagerC64, ram references.IRamC64, roms references.IRomsC64) error {
 	b.vicLastByte = vic.GetLastByte
 
 	b.cartManWrite = cartMan.Write
@@ -165,7 +165,9 @@ func (b *PLA) Bind(_ references.IPlaC64Socket, vic references.IVIC, sid referenc
 
 	rc := filler.New(255, 128, 0, 0, 0, 0, 0, filler.InitRandomChanceHalf)
 	rc.InitWithPattern(b.color, uint(len(b.color)))
-	b.initRom()
+	b.kernalRead = b.roms.KernalRead
+	b.basicRead = b.roms.BasicRead
+	b.charRead = b.roms.CharRead
 	return nil
 }
 
@@ -193,17 +195,6 @@ func (b *PLA) Emulate() {
 // EmulationRequired checks if emulation is needed for the current PLA instance and returns false by default.
 func (b *PLA) EmulationRequired() bool {
 	return false
-}
-
-//func (b *PLA) AsyncReset() {
-//	b.initRom()
-//}
-
-// initRom initializes the ROMs by loading the Kernal, Basic, and Character ROMs into their respective fields.
-func (b *PLA) initRom() {
-	b.kernal = b.roms.LoadKernal()
-	b.basic = b.roms.LoadBasic()
-	b.char = b.roms.LoadChar()
 }
 
 // update adjusts the PLA's state by synchronizing port and memory configurations. It ensures the system's consistency.
@@ -248,19 +239,9 @@ func (b *PLA) SetMemoryEntry(memConfig uint8) {
 	b.memoryConfig = b.memoryMap.Get(memConfig)
 }
 
-// ReadBasicRom retrieves a byte from the BASIC ROM at the specified address.
-func (b *PLA) ReadBasicRom(addr uint16) uint8 {
-	return b.basic[addr]
-}
-
 // ReadCharRom reads a byte from the character ROM at the specified address and returns it.
 func (b *PLA) ReadCharRom(addr uint16) uint8 {
-	return b.char[addr]
-}
-
-// ReadKernalRom reads a byte of data from the kernal ROM at the specified 16-bit address.
-func (b *PLA) ReadKernalRom(addr uint16) uint8 {
-	return b.kernal[addr]
+	return b.charRead(addr)
 }
 
 // ReadColor retrieves the color value from the specified memory address. Returns an 8-bit unsigned integer value.
@@ -394,7 +375,7 @@ func (b *PLA) ramRead0xA000(addr uint16) uint8 {
 		}
 
 	} else if b.memoryConfig[bank] == BAS {
-		return b.basic[addr&0x1fff]
+		return b.basicRead(addr)
 	}
 	return b.ramRead(addr)
 }
@@ -410,7 +391,7 @@ func (b *PLA) ramRead0xB000(addr uint16) uint8 {
 			return v
 		}
 	} else if b.memoryConfig[bank] == BAS {
-		return b.basic[addr&0x1fff]
+		return b.basicRead(addr)
 	}
 	return b.ramRead(addr)
 }
@@ -426,7 +407,7 @@ func (b *PLA) ramRead0xD000(addr uint16) uint8 {
 		p := (addr >> 8) & 0x0f
 		return b.portRead[p](addr)
 	} else if b.memoryConfig[bank] == CHA {
-		return b.char[addr&0x0fff]
+		return b.charRead(addr)
 	}
 	return b.ramRead(addr)
 }
@@ -440,7 +421,7 @@ func (b *PLA) ramRead0xE000(addr uint16) uint8 {
 			return v
 		}
 	} else if b.memoryConfig[bank] == KER {
-		return b.kernal[addr&0x1fff]
+		return b.kernalRead(addr)
 	}
 	return b.ramRead(addr)
 }
@@ -455,7 +436,7 @@ func (b *PLA) ramRead0xF000(addr uint16) uint8 {
 			return v
 		}
 	} else if b.memoryConfig[bank] == KER {
-		return b.kernal[addr&0x1fff]
+		return b.kernalRead(addr)
 	}
 	return b.ramRead(addr)
 }

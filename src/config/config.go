@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
+	"os"
 )
 
 // Config represents a configuration structure for managing cartridges, drives, disks, and various related options.
@@ -89,28 +90,34 @@ func (p *Config) AddCartridge(crt *Cartridge) error {
 	return nil
 }
 
+func (p *Config) Asset(asset string) ([]byte, error) {
+	//default implementation
+	dat, err := os.ReadFile(asset)
+	return dat, err
+}
+
 // Cartridges returns the list of configured cartridges in the Config structure.
 func (p *Config) Cartridges() []*Cartridge {
 	return p.cartridges
 }
 
-// C1541RomPath returns the file path of the 1541 ROM as a string.
-func (p *Config) C1541RomPath() string {
+// C1541RomAsset returns the file path of the 1541 ROM as a string.
+func (p *Config) C1541RomAsset() string {
 	return ""
 }
 
-// C64RomKernalPath returns the file path of the Kernal ROM as a string.
-func (p *Config) C64RomKernalPath() string {
+// C64RomKernalAsset returns the file path of the Kernal ROM as a string.
+func (p *Config) C64RomKernalAsset() string {
 	return ""
 }
 
-// C64RomBasicPath returns the file path of the Kernal ROM as a string.
-func (p *Config) C64RomBasicPath() string {
+// C64RomBasicAsset returns the file path of the Kernal ROM as a string.
+func (p *Config) C64RomBasicAsset() string {
 	return ""
 }
 
-// C64RomCharPath returns the file path of the Kernal ROM as a string.
-func (p *Config) C64RomCharPath() string {
+// C64RomCharAsset returns the file path of the Kernal ROM as a string.
+func (p *Config) C64RomCharAsset() string {
 	return ""
 }
 

@@ -19,12 +19,12 @@ import (
 // It embeds BaseComponent and provides RAM, ROM, and connections to two VIA components.
 type PLA struct {
 	*component.BaseComponent
-	rom       []uint8
-	ram       references.IRamC1541
-	bankRead  func(uint16) uint8
-	bankWrite func(uint16, uint8)
-	via1      references.IVIA
-	via2      references.IVIA
+	ram        references.IRamC1541
+	bankRead   func(uint16) uint8
+	bankWrite  func(uint16, uint8)
+	kernalRead func(uint16) uint8
+	via1       references.IVIA
+	via2       references.IVIA
 }
 
 // NewPLA initializes and returns a new instance of the PLA structure with specified parent, factory, and instance ID.
@@ -41,13 +41,13 @@ func (r *PLA) Setup() error {
 	return nil
 }
 
-func (r *PLA) Bind(_ references.IPLAc1541Socket, via1 references.IVIA, via2 references.IVIA, ram references.IRamC1541, romLoader references.IROMLoaderC1541) error {
+func (r *PLA) Bind(_ references.IPLAc1541Socket, via1 references.IVIA, via2 references.IVIA, ram references.IRamC1541, roms references.IRomsC1541) error {
 	r.via1 = via1
 	r.via2 = via2
 	r.ram = ram
 	r.bankRead = r.ram.Read
 	r.bankWrite = r.ram.Write
-	r.rom = romLoader.Load()
+	r.kernalRead = roms.KernalRead
 	return nil
 }
 
@@ -76,7 +76,7 @@ func (r *PLA) EmulationRequired() bool {
 // Read retrieves a byte of data from the specified memory address, accessing either ROM, RAM, or I/O based on the address.
 func (r *PLA) Read(addr uint16) uint8 {
 	if addr >= 0xc000 {
-		return r.rom[addr&0x3fff]
+		return r.kernalRead(addr)
 	}
 	if addr < 0x1000 {
 		return r.bankRead(addr & 0x07ff)

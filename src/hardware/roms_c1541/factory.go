@@ -24,9 +24,9 @@ func (t *Factory) Identifier() string {
 	return Identifier()
 }
 
-// Create instantiates a new RomLoader component using the provided parent, factory, and label as parameters.
+// Create instantiates a new Roms component using the provided parent, factory, and label as parameters.
 func (t *Factory) Create(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IComponent {
-	return NewRomLoader(parent, factory, label, instance)
+	return NewRoms(parent, factory, label, instance)
 }
 
 func init() {

@@ -15,7 +15,7 @@ type PLASocket struct {
 	via1      references.IVIA
 	via2      references.IVIA
 	ram       references.IRamC1541
-	romLoader references.IROMLoaderC1541
+	romLoader references.IRomsC1541
 	cfg       *config.Config
 	hwId      string
 }
@@ -54,8 +54,8 @@ func (w *PLASocket) Mount() error {
 	if w.ram, err = references.ComponentToIRamC1541(w.parent.GetChildByHardwareId(idRam)); err != nil {
 		return err
 	}
-	idRomLoader := references.IdIROMLoaderC1541(w.romLoader, w.label, 0)
-	if w.romLoader, err = references.ComponentToIROMLoaderC1541(w.parent.GetChildByHardwareId(idRomLoader)); err != nil {
+	idRomLoader := references.IdIRomsC1541(w.romLoader, w.label, 0)
+	if w.romLoader, err = references.ComponentToIRomsC1541(w.parent.GetChildByHardwareId(idRomLoader)); err != nil {
 		return err
 	}
 	if err = w.IPLAc1541.Bind(w, w.via1, w.via2, w.ram, w.romLoader); err != nil {

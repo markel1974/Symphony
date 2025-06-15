@@ -27,7 +27,7 @@ type IPlaC64Socket interface {
 type IPlaC64 interface {
 	Setup() error
 
-	Bind(socket IPlaC64Socket, vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, ram IRamC64, roms IROMLoaderC64) error
+	Bind(socket IPlaC64Socket, vic IVIC, sid ISID, cia1 ICIA, cia2 ICIA, cartMan ICartridgeManagerC64, ram IRamC64, roms IRomsC64) error
 
 	Connect() error
 

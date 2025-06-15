@@ -17,7 +17,7 @@ type IPLAc1541Socket interface {
 type IPLAc1541 interface {
 	Setup() error
 
-	Bind(socket IPLAc1541Socket, via1 IVIA, via2 IVIA, ram IRamC1541, romLoader IROMLoaderC1541) error
+	Bind(socket IPLAc1541Socket, via1 IVIA, via2 IVIA, ram IRamC1541, romLoader IRomsC1541) error
 
 	Connect() error
 
