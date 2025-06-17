@@ -6,7 +6,7 @@ import (
 )
 
 func Identifier() string {
-	return "keyboard_c64"
+	return "c64_keyboard"
 }
 
 type Factory struct {

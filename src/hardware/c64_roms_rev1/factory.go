@@ -7,7 +7,7 @@ import (
 
 // Identifier returns a string identifier for the component, typically used for registration or reference purposes.
 func Identifier() string {
-	return "roms_c64"
+	return "c64_roms"
 }
 
 // Factory represents a construct used to create and initialize components within a system.

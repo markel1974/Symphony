@@ -5,9 +5,9 @@ import (
 	"github.com/markel1974/c64emu/src/registry"
 )
 
-// Identifier returns the unique identifier string "roms_c1541" for the associated component.
+// Identifier returns the unique identifier string "c1541_roms" for the associated component.
 func Identifier() string {
-	return "roms_c1541"
+	return "c1541_roms"
 }
 
 // Factory is a type responsible for creating and initializing components in the system.

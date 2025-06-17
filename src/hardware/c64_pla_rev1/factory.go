@@ -7,7 +7,7 @@ import (
 
 // Identifier returns a fixed string identifier to represent the component type or functionality in the system.
 func Identifier() string {
-	return "pla_c64"
+	return "c64_pla"
 }
 
 // Factory represents a component factory responsible for creating and managing hierarchical components.

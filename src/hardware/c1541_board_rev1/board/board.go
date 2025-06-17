@@ -20,11 +20,11 @@ var _c1541hardware = []struct {
 	id       string
 	instance int
 }{
-	{"roms_c1541", 0},
-	{"ram_c1541", 0},
+	{"c1541_roms", 0},
+	{"c1541_ram", 0},
 	{"quartz", 0},
-	{"pla_c1541", 0},
-	{"pic_6510", 0},
+	{"c1541_pla", 0},
+	{"mos6510_pic", 0},
 	{"mos6510", 0},
 	{"mos6522", 0},
 	{"mos6522", 1},

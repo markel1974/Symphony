@@ -19,7 +19,7 @@ This provides several key advantages:
 
 Symphony uses a powerful and idiomatic Go pattern to make its factory system dynamic and decentralized.
 
-1.  **Central Registry (`/registry`):** A global registry holds a map that associates a component type `string` (e.g., `"pla_c64"`) with a specific component factory object that knows how to build it.
+1.  **Central Registry (`/registry`):** A global registry holds a map that associates a component type `string` (e.g., `"c64_pla"`) with a specific component factory object that knows how to build it.
 
 2.  **Self-Registration:** Each hardware component package (e.g., `/hardware/vic`, `/hardware/sid`) is responsible for its own factory. Inside each package, a special Go `init()` function is used to automatically register its factory with the central registry when the application starts.
 

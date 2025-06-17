@@ -1,4 +1,4 @@
-package c64_joystick
+package c64_joystick_rev1
 
 import (
 	"github.com/markel1974/c64emu/src/references"
@@ -7,7 +7,7 @@ import (
 
 // Identifier returns the unique identifier string for the joystick component.
 func Identifier() string {
-	return "joystick_c64"
+	return "c64_joystick"
 }
 
 // Factory is a type that implements component creation and identification functionalities.

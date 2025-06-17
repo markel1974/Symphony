@@ -5,9 +5,9 @@ import (
 	"github.com/markel1974/c64emu/src/registry"
 )
 
-// Identifier returns a static string value representing the identifier "pic_6510".
+// Identifier returns a static string value representing the identifier "mos6510_pic".
 func Identifier() string {
-	return "pic_6510"
+	return "mos6510_pic"
 }
 
 // Factory represents an entity responsible for creating and managing components in the system.

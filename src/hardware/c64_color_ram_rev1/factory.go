@@ -1,4 +1,4 @@
-package ram_c64
+package c64_color_ram_rev1
 
 import (
 	"github.com/markel1974/c64emu/src/references"

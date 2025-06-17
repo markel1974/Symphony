@@ -3,7 +3,7 @@ package main
 const treeStub = `{
  "c64": {
   "children": {
-   "cartridges_c64": {
+   "c64_cartridges": {
     "children": {
      "easyFlash:0": {
       "details": {
@@ -12,7 +12,7 @@ const treeStub = `{
      }
     },
     "details": {
-     "id": "cartridges_c64"
+     "id": "c64_cartridges"
     }
    },
    "dynamic_throttle": {
@@ -39,19 +39,19 @@ const treeStub = `{
          "id": "mos6522:2"
         }
        },
-       "pic_6510": {
+       "mos6510_pic": {
         "details": {
-         "id": "pic_6510"
+         "id": "mos6510_pic"
         }
        },
-       "pla_c1541": {
+       "c1541_pla": {
         "details": {
-         "id": "pla_c1541"
+         "id": "c1541_pla"
         }
        },
-       "roms_c1541": {
+       "c1541_roms": {
         "details": {
-         "id": "roms_c1541"
+         "id": "c1541_roms"
         }
        }
       },
@@ -64,19 +64,19 @@ const treeStub = `{
      "id": "iec"
     }
    },
-   "joystick_c64:1": {
+   "c64_joystick:1": {
     "details": {
-     "id": "joystick_c64:1"
+     "id": "c64_joystick:1"
     }
    },
-   "joystick_c64:2": {
+   "c64_joystick:2": {
     "details": {
-     "id": "joystick_c64:2"
+     "id": "c64_joystick:2"
     }
    },
-   "keyboard_c64": {
+   "c64_keyboard": {
     "details": {
-     "id": "keyboard_c64"
+     "id": "c64_keyboard"
     }
    },
    "mos6510": {
@@ -217,12 +217,12 @@ const treeStub = `{
      "sr3": 0
     }
    },
-   "pic_6510": {
+   "mos6510_pic": {
     "details": {
-     "id": "pic_6510"
+     "id": "mos6510_pic"
     }
    },
-   "pla_c64": {
+   "c64_pla": {
     "children": {
      "ports": {
       "details": {
@@ -231,7 +231,7 @@ const treeStub = `{
      }
     },
     "details": {
-     "id": "pla_c64"
+     "id": "c64_pla"
     }
    },
    "quartz": {
@@ -239,9 +239,9 @@ const treeStub = `{
      "id": "quartz"
     }
    },
-   "roms_c64": {
+   "c64_roms": {
     "details": {
-     "id": "roms_c64"
+     "id": "c64_roms"
     }
    }
   },

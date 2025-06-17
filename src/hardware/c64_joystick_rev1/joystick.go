@@ -1,4 +1,4 @@
-package c64_joystick
+package c64_joystick_rev1
 
 import (
 	"github.com/markel1974/c64emu/src/common/fifo"

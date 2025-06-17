@@ -5,9 +5,9 @@ import (
 	"github.com/markel1974/c64emu/src/registry"
 )
 
-// Identifier returns a static string "pla_c1541", representing the unique identifier of the component.
+// Identifier returns a static string "c1541_pla", representing the unique identifier of the component.
 func Identifier() string {
-	return "pla_c1541"
+	return "c1541_pla"
 }
 
 // Factory represents a generic structure for creating and managing components.

@@ -7,7 +7,7 @@ import (
 
 // Identifier returns a string that serves as a unique identifier for a specific component or entity.
 func Identifier() string {
-	return "cartridges_c64"
+	return "c64_cartridges"
 }
 
 // Factory represents a construct responsible for creating and managing components in a hierarchical manner.
