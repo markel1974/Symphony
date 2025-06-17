@@ -61,7 +61,7 @@ type IMos6569 interface {
 
 	ChangedVA(newVA uint8)
 
-	GetLastByte() uint8
+	GetVASignal() uint8
 }
 
 // IdIMos6569 generates a unique identifier for an IMos6569 interface based on the given label, instance, and interface name.

@@ -175,8 +175,8 @@ func (sid *SID) SetPotY(pot uint8) {
 	sid.registers[potYRegisterIndex] = pot
 }
 
-// GetLastByte retrieves the last byte of the SID structure and returns it as an unsigned 8-bit integer.
-func (sid *SID) GetLastByte() uint8 {
+// GetVASignal retrieves the last byte of the SID structure and returns it as an unsigned 8-bit integer.
+func (sid *SID) GetVASignal() uint8 {
 	return 0
 }
 

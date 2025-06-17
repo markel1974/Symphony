@@ -30,6 +30,10 @@ type IC64ColorRam interface {
 	Read(addr uint16) uint8
 
 	Write(addr uint16, data uint8)
+
+	ReadRegister(addr uint16) uint8
+
+	WriteRegister(addr uint16, data uint8)
 }
 
 // IdIC64ColorRam generates an identifier string for a C64 RAM color component using its label, instance, and interface name.

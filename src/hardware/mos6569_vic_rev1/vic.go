@@ -215,8 +215,8 @@ func (vic *VIC) GetText() []byte {
 	return vic.graphics.GetText()
 }
 
-// GetLastByte returns the last byte stored in the VIC instance.
-func (vic *VIC) GetLastByte() uint8 {
+// GetVASignal returns the last byte stored in the VIC instance.
+func (vic *VIC) GetVASignal() uint8 {
 	return vic.lastByte
 }
 

@@ -316,8 +316,8 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
-// GetLastByte returns the last byte that was operated on or updated in the CIA component.
-func (m *CIA) GetLastByte() uint8 {
+// GetVASignal returns the last byte that was operated on or updated in the CIA component.
+func (m *CIA) GetVASignal() uint8 {
 	return 0
 }
 

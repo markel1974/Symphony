@@ -27,12 +27,12 @@ type PLA struct {
 	cartManIOWrite func(uint16, uint8) bool
 	cartManConfig  func() (uint8, uint8, bool)
 
-	vicLastByte func() uint8
+	vaSignals func() uint8
 
 	bankWrite       []WriteFn
 	bankRead        []ReadFn
-	portWrite       []WriteFn
-	portRead        []ReadFn
+	u15Write        []WriteFn // represent U15, 74LS138 (mux)
+	u15Read         []ReadFn  // represent U15, 74LS138 (mux)
 	memoryMap       *MemoryMap
 	memoryConfigIdx int
 	memoryConfig    []uint8
@@ -42,10 +42,10 @@ type PLA struct {
 	kernalRead      ReadFn
 	charRead        ReadFn
 	colorRead       ReadFn
-	colorWrite      WriteFn
-	cfg             *config.Config
-	wTriggers       *WriteTriggers
-	label           string
+	//colorWrite      WriteFn
+	cfg       *config.Config
+	wTriggers *WriteTriggers
+	label     string
 }
 
 const bankMask = 0x0f
@@ -56,7 +56,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	mm := NewMemoryMap()
 	b := &PLA{
 		BaseComponent:   component.NewBaseComponent(),
-		vicLastByte:     nil,
+		vaSignals:       nil,
 		triggerSize:     0,
 		ramRead:         nil,
 		ramWrite:        nil,
@@ -66,8 +66,8 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		cartManIOWrite:  nil,
 		bankWrite:       make([]WriteFn, bankSize),
 		bankRead:        make([]ReadFn, bankSize),
-		portWrite:       make([]WriteFn, bankSize),
-		portRead:        make([]ReadFn, bankSize),
+		u15Write:        make([]WriteFn, bankSize),
+		u15Read:         make([]ReadFn, bankSize),
 		memoryMap:       mm,
 		memoryConfig:    mm.Get(0),
 		ports:           nil,
@@ -76,7 +76,6 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		kernalRead:      nil,
 		charRead:        nil,
 		colorRead:       nil,
-		colorWrite:      nil,
 		cfg:             nil,
 		memoryConfigIdx: -1,
 		wTriggers:       nil,
@@ -93,21 +92,33 @@ func (b *PLA) Setup() error {
 	return nil
 }
 
+//U15 74LS138
+//Pin 12	VIC-II	$D000–$D3FF
+//Pin 4	SID	$D400–$D7FF
+//Pin 10	Color RAM	$D800–$DBFF
+//Pin 14	CIA1	$DC00–$DCFF
+//Pin 15	CIA2	$DD00–$DDFF
+//Pin 9	I/O2 (cartucce)	$DF00–$DFFF
+//Pin 11	I/O1 (cartucce)	$DE00–$DEFF
+
 // Bind initializes and connects various components to the PLA, including VIC, SID, CIA1, CIA2, cartridge manager, and ROM loader.
-func (b *PLA) Bind(_ references.IC64PlaSocket, vic references.IMos6569, sid references.IMos6581, cia1 references.IMos6526, cia2 references.IMos6526, cartMan references.IC64CartridgeManager, ram references.IC64Ram, colorRam references.IC64ColorRam, roms references.IC64Roms) error {
-	b.vicLastByte = vic.GetLastByte
+func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASignals, cartMan references.IC64CartridgeManager, ram references.IC64Ram, roms references.IC64Roms, cs12 references.IC64PlaChipSelect, cs4 references.IC64PlaChipSelect, cs14 references.IC64PlaChipSelect, cs15 references.IC64PlaChipSelect, cs10 references.IC64PlaChipSelect) error {
+	b.vaSignals = vaSignals.GetVASignal
+	b.triggerSize = ram.Size()
 
 	b.cartManWrite = cartMan.Write
 	b.cartManRead = cartMan.Read
+
+	//MUST BE cs9 - cs11
 	b.cartManIORead = cartMan.IORead
 	b.cartManIOWrite = cartMan.IOWrite
+
 	b.cartManConfig = cartMan.Config
 
 	b.ramRead = ram.Read
 	b.ramWrite = ram.Write
-	b.triggerSize = ram.Size()
-	b.colorRead = colorRam.Read
-	b.colorWrite = colorRam.Write
+
+	b.colorRead = cs10.ReadRegister
 
 	for idx := range b.bankWrite {
 		b.bankWrite[idx] = b.ramWrite
@@ -129,39 +140,40 @@ func (b *PLA) Bind(_ references.IC64PlaSocket, vic references.IMos6569, sid refe
 	b.bankRead[0xe] = b.ramRead0xE000
 	b.bankRead[0xf] = b.ramRead0xF000
 
-	b.portWrite[0x0] = vic.WriteRegister
-	b.portWrite[0x1] = vic.WriteRegister
-	b.portWrite[0x2] = vic.WriteRegister
-	b.portWrite[0x3] = vic.WriteRegister
-	b.portWrite[0x4] = sid.WriteRegister
-	b.portWrite[0x5] = sid.WriteRegister
-	b.portWrite[0x6] = sid.WriteRegister
-	b.portWrite[0x7] = sid.WriteRegister
-	b.portWrite[0x8] = b.portWriteColor
-	b.portWrite[0x9] = b.portWriteColor
-	b.portWrite[0xa] = b.portWriteColor
-	b.portWrite[0xb] = b.portWriteColor
-	b.portWrite[0xc] = cia1.WriteRegister
-	b.portWrite[0xd] = cia2.WriteRegister
-	b.portWrite[0xe] = b.portWriteIO
-	b.portWrite[0xf] = b.portWriteIO
+	b.u15Write[0x0] = cs12.WriteRegister
+	b.u15Write[0x1] = cs12.WriteRegister
+	b.u15Write[0x2] = cs12.WriteRegister
+	b.u15Write[0x3] = cs12.WriteRegister
+	b.u15Write[0x4] = cs4.WriteRegister
+	b.u15Write[0x5] = cs4.WriteRegister
+	b.u15Write[0x6] = cs4.WriteRegister
+	b.u15Write[0x7] = cs4.WriteRegister
+	b.u15Write[0x8] = cs10.WriteRegister //b.portWriteColor
+	b.u15Write[0x9] = cs10.WriteRegister //b.portWriteColor
+	b.u15Write[0xa] = cs10.WriteRegister //b.portWriteColor
+	b.u15Write[0xb] = cs10.WriteRegister //b.portWriteColor
+	b.u15Write[0xc] = cs14.WriteRegister
+	b.u15Write[0xd] = cs15.WriteRegister
+	b.u15Write[0xe] = b.portWriteIO
+	b.u15Write[0xf] = b.portWriteIO
 
-	b.portRead[0x0] = vic.ReadRegister
-	b.portRead[0x1] = vic.ReadRegister
-	b.portRead[0x2] = vic.ReadRegister
-	b.portRead[0x3] = vic.ReadRegister
-	b.portRead[0x4] = sid.ReadRegister
-	b.portRead[0x5] = sid.ReadRegister
-	b.portRead[0x6] = sid.ReadRegister
-	b.portRead[0x7] = sid.ReadRegister
-	b.portRead[0x8] = b.portReadColor
-	b.portRead[0x9] = b.portReadColor
-	b.portRead[0xa] = b.portReadColor
-	b.portRead[0xb] = b.portReadColor
-	b.portRead[0xc] = cia1.ReadRegister
-	b.portRead[0xd] = cia2.ReadRegister
-	b.portRead[0xe] = b.portReadIO
-	b.portRead[0xf] = b.portReadIO
+	b.u15Read[0x0] = cs12.ReadRegister
+	b.u15Read[0x1] = cs12.ReadRegister
+	b.u15Read[0x2] = cs12.ReadRegister
+	b.u15Read[0x3] = cs12.ReadRegister
+	b.u15Read[0x4] = cs4.ReadRegister
+	b.u15Read[0x5] = cs4.ReadRegister
+	b.u15Read[0x6] = cs4.ReadRegister
+	b.u15Read[0x7] = cs4.ReadRegister
+	b.u15Read[0x8] = b.portReadColor
+	b.u15Read[0x9] = b.portReadColor
+	b.u15Read[0xa] = b.portReadColor
+	b.u15Read[0xb] = b.portReadColor
+	b.u15Read[0xc] = cs14.ReadRegister
+	b.u15Read[0xd] = cs15.ReadRegister
+	b.u15Read[0xe] = b.portReadIO
+	b.u15Read[0xf] = b.portReadIO
+
 	b.kernalRead = roms.KernalRead
 	b.basicRead = roms.BasicRead
 	b.charRead = roms.CharRead
@@ -236,11 +248,6 @@ func (b *PLA) SetMemoryEntry(memConfig uint8) {
 	b.memoryConfig = b.memoryMap.Get(memConfig)
 }
 
-// ReadColor retrieves the color value from the specified memory address. Returns an 8-bit unsigned integer value.
-func (b *PLA) readColor(addr uint16) uint8 {
-	return b.colorRead(addr)
-}
-
 // Read retrieves the value at the specified memory address using the current memory bank configuration.
 func (b *PLA) Read(addr uint16) uint8 {
 	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
@@ -297,7 +304,7 @@ func (b *PLA) ramWrite0xD000(addr uint16, data uint8) {
 	const bank = 0xd
 	if b.memoryConfig[bank] == I_O {
 		p := (addr >> 8) & 0x0f
-		b.portWrite[p](addr, data)
+		b.u15Write[p](addr, data)
 		return
 	}
 	b.ramWrite(addr, data)
@@ -378,7 +385,7 @@ func (b *PLA) ramRead0xD000(addr uint16) uint8 {
 	const bank = 0xd
 	if b.memoryConfig[bank] == I_O {
 		p := (addr >> 8) & 0x0f
-		return b.portRead[p](addr)
+		return b.u15Read[p](addr)
 	} else if b.memoryConfig[bank] == CHA {
 		return b.charRead(addr)
 	}
@@ -414,15 +421,10 @@ func (b *PLA) ramRead0xF000(addr uint16) uint8 {
 	return b.ramRead(addr)
 }
 
-// portWriteColor writes a color value to the color buffer at the given address, using only the lower 4 bits of the data.
-func (b *PLA) portWriteColor(addr uint16, data uint8) {
-	b.colorWrite(addr, data)
-}
-
 // portReadColor reads a color value from the specified address in the color memory, merging specific bits from VIC data.
 func (b *PLA) portReadColor(addr uint16) uint8 {
 	p1 := b.colorRead(addr) & 0x0f // enables the physical Color RAM chip. This chip receives the address and puts the 4 color bits it has stored on data bus lines D0-D3 (lower half).
-	p2 := b.vicLastByte() & 0xf0   // signals to VIC that Color RAM is being read. VIC responds by putting the last 4 bits of its internal latch (lastByte) on data bus lines D4-D7 (upper half)
+	p2 := b.vaSignals() & 0xf0     // signals to VIC that Color RAM is being read. VIC responds by putting the last 4 bits of its internal latch (lastByte) on data bus lines D4-D7 (upper half)
 	return p1 | p2
 }
 
@@ -432,7 +434,7 @@ func (b *PLA) portReadIO(addr uint16) uint8 {
 		return v
 	}
 	if addr < 0xdfa0 {
-		return b.vicLastByte()
+		return b.vaSignals()
 	}
 	return b.emulatorId.Read(addr)
 }

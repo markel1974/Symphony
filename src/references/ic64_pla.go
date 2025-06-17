@@ -8,6 +8,16 @@ import (
 type IC64PlaSocket interface {
 }
 
+type IC64PlaVASignals interface {
+	GetVASignal() uint8
+}
+
+type IC64PlaChipSelect interface {
+	WriteRegister(uint16, uint8)
+
+	ReadRegister(uint16) uint8
+}
+
 // IC64Pla defines the interface for the Programmable Logic Array (PLA) component of the C64 system.
 // Setup initializes the PLA component for operation.
 // Bind links the PLA to various system components, including socket, VIC, SID, CIAs, cartridge manager, RAM, and ROM loader.
@@ -27,7 +37,7 @@ type IC64PlaSocket interface {
 type IC64Pla interface {
 	Setup() error
 
-	Bind(socket IC64PlaSocket, vic IMos6569, sid IMos6581, cia1 IMos6526, cia2 IMos6526, cartMan IC64CartridgeManager, ram IC64Ram, colorRam IC64ColorRam, roms IC64Roms) error
+	Bind(socket IC64PlaSocket, va IC64PlaVASignals, cartMan IC64CartridgeManager, ram IC64Ram, roms IC64Roms, cs0 IC64PlaChipSelect, cs1 IC64PlaChipSelect, cs2 IC64PlaChipSelect, cs3 IC64PlaChipSelect, cs4 IC64PlaChipSelect) error
 
 	Connect() error
 

@@ -76,7 +76,7 @@ func (w *PLASocket) Mount() error {
 	if w.roms, err = references.ComponentToIC64Roms(w.parent.GetChildByHardwareId(idRoms)); err != nil {
 		return err
 	}
-	if err = w.IC64Pla.Bind(w, w.vic, w.sid, w.cia1, w.cia2, w.cartMan, w.ram, w.colorRam, w.roms); err != nil {
+	if err = w.IC64Pla.Bind(w, w.vic, w.cartMan, w.ram, w.roms, w.vic, w.sid, w.cia1, w.cia2, w.colorRam); err != nil {
 		return err
 	}
 	return nil
