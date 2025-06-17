@@ -37,8 +37,8 @@ func (w *PLASocket) HardwareId() string {
 	return w.hwId
 }
 
-// Mount initializes the PLASocket by resolving dependencies and setting up its components. Returns an error if any failure occurs.
-func (w *PLASocket) Mount() error {
+// Wire initializes the PLASocket by resolving dependencies and setting up its components. Returns an error if any failure occurs.
+func (w *PLASocket) Wire() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
 	if w.IC64Pla, err = references.ComponentToIC64Pla(w.component); err != nil {

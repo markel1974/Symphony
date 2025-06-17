@@ -36,8 +36,8 @@ func (s *IECSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes the IECSocket instance, configuring components, quartz, and binding LED signals. Returns an error if any issue occurs.
-func (s *IECSocket) Mount() error {
+// Wire initializes the IECSocket instance, configuring components, quartz, and binding LED signals. Returns an error if any issue occurs.
+func (s *IECSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IIec, err = references.ComponentToIEC(s.component); err != nil {

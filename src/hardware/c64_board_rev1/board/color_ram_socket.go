@@ -30,8 +30,8 @@ func (s *ColorRamSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes and binds the component of the ColorRamSocket to a hardware-defined child component, returning any error.
-func (s *ColorRamSocket) Mount() error {
+// Wire initializes and binds the component of the ColorRamSocket to a hardware-defined child component, returning any error.
+func (s *ColorRamSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IC64ColorRam, err = references.ComponentToIC64ColorRam(s.component); err != nil {

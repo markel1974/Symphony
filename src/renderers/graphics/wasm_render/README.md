@@ -34,7 +34,7 @@ This is the main struct managing the WASM rendering lifecycle.
     * `input *Inputs`: The input handler instance.
 * **Key Methods:**
     * `NewRender() *Render`: Constructor.
-    * `Setup(board references.IBoard, cfg *config.Config) error`: Initializes the renderer, stores board/config references, and crucially calls `board.Mount(g)` allowing the `Board` to call back methods on this `Render` instance (like `VBlank`, `LedActivity`).
+    * `Setup(board references.IBoard, cfg *config.Config) error`: Initializes the renderer, stores board/config references, and crucially calls `board.Wire(g)` allowing the `Board` to call back methods on this `Render` instance (like `VBlank`, `LedActivity`).
     * `CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error)`: Creates and returns the specialized `DisplayBuffer`.
     * `Start() error`: The main Go entry point for the WASM module. It exports Go functions to JavaScript (`js.Global().Set(...)`) and then blocks using an unbuffered channel (`<-c`) to keep the WASM instance alive and responsive to JavaScript calls.
     * **Exported to JS:**

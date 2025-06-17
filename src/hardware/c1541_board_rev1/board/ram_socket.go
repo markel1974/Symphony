@@ -30,8 +30,8 @@ func (s *RamSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes and binds the RAM socket to its corresponding RAM module, returning an error if the process fails.
-func (s *RamSocket) Mount() error {
+// Wire initializes and binds the RAM socket to its corresponding RAM module, returning an error if the process fails.
+func (s *RamSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IC1541Ram, err = references.ComponentToIC1541Ram(s.component); err != nil {

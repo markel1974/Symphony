@@ -41,7 +41,7 @@ type VIA struct {
 
 * **`NewVIA(...) *VIA`:** Constructor. Initializes the VIA struct with default register values (mostly 0) and registers it within the Symphony component tree using `BaseComponent.Register`.
 * **`Setup() error`:** Part of the `IHardware` interface. Handles component-specific setup after all components exist but before connections.
-* **`Bind(socket references.IVIASocket) error`:** Called during the connection phase (likely by the socket's `Mount` method). Receives and stores the `IVIASocket` interface, providing the link for the VIA to interact with the external world (read/write ports, signal IRQs).
+* **`Bind(socket references.IVIASocket) error`:** Called during the connection phase (likely by the socket's `Wire` method). Receives and stores the `IVIASocket` interface, providing the link for the VIA to interact with the external world (read/write ports, signal IRQs).
 * **`Connect() error`:** Part of the `IHardware` interface. Handles final connection steps after `Bind`.
 * **`Reset()`:** Resets all internal VIA registers to 0.
 * **`ReadByte(addr uint16) uint8`:** Handles reads from the VIA's 16 memory-mapped registers (offset `addr & 0x0f`).

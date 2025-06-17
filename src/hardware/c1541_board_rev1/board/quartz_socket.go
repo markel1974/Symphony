@@ -28,8 +28,8 @@ func (s *QuartzSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes the QuartzSocket by associating it with IQuartz and applying configuration settings.
-func (s *QuartzSocket) Mount() error {
+// Wire initializes the QuartzSocket by associating it with IQuartz and applying configuration settings.
+func (s *QuartzSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IQuartz, err = references.ComponentToIQuartz(s.component); err != nil {

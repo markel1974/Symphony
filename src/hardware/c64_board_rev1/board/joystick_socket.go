@@ -30,8 +30,8 @@ func (w *JoystickSocket) HardwareId() string {
 	return w.hwId
 }
 
-// Mount initializes the JoystickSocket by resolving its IC64Joystick component and calling its Setup method with configuration.
-func (w *JoystickSocket) Mount() error {
+// Wire initializes the JoystickSocket by resolving its IC64Joystick component and calling its Setup method with configuration.
+func (w *JoystickSocket) Wire() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
 	if w.IC64Joystick, err = references.ComponentToIC64Joystick(w.component); err != nil {

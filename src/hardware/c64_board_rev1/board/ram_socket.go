@@ -29,8 +29,8 @@ func (s *RamSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount associates the RamSocket with its parent component and binds it to an IC64Ram instance, returning an error if unsuccessful.
-func (s *RamSocket) Mount() error {
+// Wire associates the RamSocket with its parent component and binds it to an IC64Ram instance, returning an error if unsuccessful.
+func (s *RamSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IC64Ram, err = references.ComponentToIC64Ram(s.component); err != nil {

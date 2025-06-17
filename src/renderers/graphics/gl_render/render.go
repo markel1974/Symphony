@@ -47,7 +47,7 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 
 func (g *Render) Setup(board references.IC64Board, cfg *config.Config) error {
 	g.board = board
-	if err := g.board.Mount(g); err != nil {
+	if err := g.board.Wire(g); err != nil {
 		return err
 	}
 	if err := g.inputs.Setup(g.board, cfg); err != nil {

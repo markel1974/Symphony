@@ -30,8 +30,8 @@ func (s *RomLoaderSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes the RomLoaderSocket by mapping components and configuring the associated IC1541Roms.
-func (s *RomLoaderSocket) Mount() error {
+// Wire initializes the RomLoaderSocket by mapping components and configuring the associated IC1541Roms.
+func (s *RomLoaderSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IC1541Roms, err = references.ComponentToIC1541Roms(s.component); err != nil {

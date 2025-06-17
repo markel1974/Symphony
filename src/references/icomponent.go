@@ -129,7 +129,7 @@ type IComponent interface {
 type ISocket interface {
 	HardwareId() string
 
-	Mount() error
+	Wire() error
 }
 
 // IComponentFactory defines methods for creating and managing various types of components in an emulation system.

@@ -11,7 +11,7 @@ type IC64BoardConnections interface {
 
 // IC64Board defines the interface for managing and interacting with a board component in the system.
 // Setup initializes the board component and returns an error if setup fails.
-// Mount connects IC64Board with IC64BoardConnections and returns an error if the process fails.
+// Wire connects IC64Board with IC64BoardConnections and returns an error if the process fails.
 // Start begins the operation of the board and returns an error if starting fails.
 // Reset resets the state of the board to its initial configuration.
 // Emulate triggers the emulation process managed by the board.
@@ -30,7 +30,7 @@ type IC64BoardConnections interface {
 type IC64Board interface {
 	Setup() error
 
-	Mount(conn IC64BoardConnections) error
+	Wire(conn IC64BoardConnections) error
 
 	Start() error
 

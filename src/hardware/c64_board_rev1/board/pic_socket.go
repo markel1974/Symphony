@@ -29,8 +29,8 @@ func (s *PICSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes the PICSocket by resolving and configuring referenced components. Returns error if setup fails.
-func (s *PICSocket) Mount() error {
+// Wire initializes the PICSocket by resolving and configuring referenced components. Returns error if setup fails.
+func (s *PICSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IMos6510Pic, err = references.ComponentToIMos6510Pic(s.component); err != nil {

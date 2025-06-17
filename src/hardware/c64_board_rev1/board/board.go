@@ -108,14 +108,16 @@ func (s *Board) Setup() error {
 // Connect establishes connections to all sockets on the board and returns an error if any socket fails to mount.
 func (s *Board) Connect() error {
 	for _, c := range s.sockets {
-		if err := c.Mount(); err != nil {
+		if err := c.Wire(); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (s *Board) Mount(conn references.IC64BoardConnections) error {
+// Wire establishes the provided IC64BoardConnections interface to the Board, enabling VBlank and LED activity management.
+// It returns an error if the operation fails.
+func (s *Board) Wire(conn references.IC64BoardConnections) error {
 	s.connections = conn
 	return nil
 }

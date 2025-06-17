@@ -32,8 +32,8 @@ func (w *SIDSocket) HardwareId() string {
 	return w.hwId
 }
 
-// Mount initializes the SIDSocket with the provided Board instance, assigning it to the internal board field.
-func (w *SIDSocket) Mount() error {
+// Wire initializes the SIDSocket with the provided Board instance, assigning it to the internal board field.
+func (w *SIDSocket) Wire() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
 	if w.IMos6581, err = references.ComponentToIMos6581(w.component); err != nil {

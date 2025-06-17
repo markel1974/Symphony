@@ -30,8 +30,8 @@ func (w *CPUSocket) HardwareId() string {
 	return w.hwId
 }
 
-// Mount initializes the CPUSocket with the provided CPU, PIC, and PLA, and sets up the CPU for interaction.
-func (w *CPUSocket) Mount() error {
+// Wire initializes the CPUSocket with the provided CPU, PIC, and PLA, and sets up the CPU for interaction.
+func (w *CPUSocket) Wire() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
 	if w.IMos6510, err = references.ComponentToIMos6510(w.component); err != nil {

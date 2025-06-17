@@ -141,7 +141,7 @@ func (m *Board) Connect() error {
 	//TODO REMOVE WHEN THREE IS READY... END
 
 	for _, c := range m.sockets {
-		if err = c.Mount(); err != nil {
+		if err = c.Wire(); err != nil {
 			return err
 		}
 	}

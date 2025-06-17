@@ -31,8 +31,8 @@ func (s *RomSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes and binds the RomSocket to the appropriate IC64Roms component by its hardware ID and returns an error if binding fails.
-func (s *RomSocket) Mount() error {
+// Wire initializes and binds the RomSocket to the appropriate IC64Roms component by its hardware ID and returns an error if binding fails.
+func (s *RomSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IC64Roms, err = references.ComponentToIC64Roms(s.component); err != nil {

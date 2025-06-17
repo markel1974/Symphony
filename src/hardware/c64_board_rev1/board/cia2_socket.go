@@ -47,8 +47,8 @@ func (w *CIA2Socket) HardwareId() string {
 	return w.hwId
 }
 
-// Mount initializes the CIA2Socket instance with the provided CIA, connections, and IEC interface, and sets up the CIA.
-func (w *CIA2Socket) Mount() error {
+// Wire initializes the CIA2Socket instance with the provided CIA, connections, and IEC interface, and sets up the CIA.
+func (w *CIA2Socket) Wire() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
 	if w.IMos6526, err = references.ComponentToIMos6526(w.component); err != nil {

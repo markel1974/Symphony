@@ -49,8 +49,8 @@ func (v *VIA1Socket) HardwareId() string {
 	return v.hwId
 }
 
-// Mount initializes the VIA1Socket by setting up dependencies and configurations provided in the input parameters.
-func (v *VIA1Socket) Mount() error {
+// Wire initializes the VIA1Socket by setting up dependencies and configurations provided in the input parameters.
+func (v *VIA1Socket) Wire() error {
 	var err error
 	v.component = v.parent.GetChildByHardwareId(v.HardwareId())
 	if v.IMos6522, err = references.ComponentToIMos6522(v.component); err != nil {

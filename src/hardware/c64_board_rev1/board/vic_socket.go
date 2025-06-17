@@ -69,8 +69,8 @@ func (v *VICSocket) HardwareId() string {
 	return v.hwId
 }
 
-// Mount initializes the VICSocket by resolving its dependencies and calling Setup on the IMos6569 component.
-func (v *VICSocket) Mount() error {
+// Wire initializes the VICSocket by resolving its dependencies and calling Setup on the IMos6569 component.
+func (v *VICSocket) Wire() error {
 	var err error
 	v.component = v.parent.GetChildByHardwareId(v.HardwareId())
 	if v.IMos6569, err = references.ComponentToIMos6569(v.component); err != nil {

@@ -60,8 +60,8 @@ func (s *CartridgeManagerSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes the CartridgeManagerSocket with its dependencies and sets up the required connections.
-func (s *CartridgeManagerSocket) Mount() error {
+// Wire initializes the CartridgeManagerSocket with its dependencies and sets up the required connections.
+func (s *CartridgeManagerSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IC64CartridgeManager, err = references.ComponentToIC64CartridgeManager(s.component); err != nil {

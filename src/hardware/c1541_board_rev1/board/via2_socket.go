@@ -73,8 +73,8 @@ func (v *VIA2Socket) HardwareId() string {
 	return v.hwId
 }
 
-// Mount initializes the VIA2Socket by configuring its IMos6522 component and applying its configuration settings.
-func (v *VIA2Socket) Mount() error {
+// Wire initializes the VIA2Socket by configuring its IMos6522 component and applying its configuration settings.
+func (v *VIA2Socket) Wire() error {
 	var err error
 	v.component = v.parent.GetChildByHardwareId(v.HardwareId())
 	if v.IMos6522, err = references.ComponentToIMos6522(v.component); err != nil {

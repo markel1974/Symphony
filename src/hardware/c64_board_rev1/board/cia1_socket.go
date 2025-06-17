@@ -77,9 +77,9 @@ func (w *CIA1Socket) HardwareId() string {
 	return w.hwId
 }
 
-// Mount initializes the CIA1Socket with the provided CIA instance, connections, keyboard, and joystick references.
+// Wire initializes the CIA1Socket with the provided CIA instance, connections, keyboard, and joystick references.
 // It sets up the CIA via the Setup method and returns any errors encountered during initialization.
-func (w *CIA1Socket) Mount() error {
+func (w *CIA1Socket) Wire() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
 	if w.IMos6526, err = references.ComponentToIMos6526(w.component); err != nil {

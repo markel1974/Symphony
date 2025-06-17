@@ -30,8 +30,8 @@ func (s *ThrottleSocket) HardwareId() string {
 	return s.hwId
 }
 
-// Mount initializes the ThrottleSocket by configuring its IThrottle implementation using the given components and configuration.
-func (s *ThrottleSocket) Mount() error {
+// Wire initializes the ThrottleSocket by configuring its IThrottle implementation using the given components and configuration.
+func (s *ThrottleSocket) Wire() error {
 	var err error
 	s.component = s.parent.GetChildByHardwareId(s.HardwareId())
 	if s.IThrottle, err = references.ComponentToIThrottle(s.component); err != nil {

@@ -39,9 +39,9 @@ func (w *CPUSocket) HardwareId() string {
 	return w.hwId
 }
 
-// Mount initializes the CPUSocket by linking required components and configuring dependencies using the provided map and config.
+// Wire initializes the CPUSocket by linking required components and configuring dependencies using the provided map and config.
 // Returns an error if any component setup or binding fails.
-func (w *CPUSocket) Mount() error {
+func (w *CPUSocket) Wire() error {
 	var err error
 	w.component = w.parent.GetChildByHardwareId(w.HardwareId())
 	if w.IMos6510, err = references.ComponentToIMos6510(w.component); err != nil {
