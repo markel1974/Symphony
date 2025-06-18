@@ -29,11 +29,11 @@ const (
 // lastData stores the last accessed data byte from the cartridge.
 type CartridgeFinalCartridgeIII struct {
 	*component.BaseComponent
-	board         references.IC64Expansion
-	loaderId      string
-	game          uint8
-	exRom         uint8
-	intervals     references.C64RomInterval
+	board    references.IC64Expansion
+	loaderId string
+	spec     *references.C64CartridgeSpec
+	//game          uint8
+	//exRom         uint8
 	reg           uint8
 	regEnabled    bool
 	freezeCounter int
@@ -49,6 +49,7 @@ func NewCartridgeFinalCartridgeIII(parent references.IComponent, factory referen
 	co := &CartridgeFinalCartridgeIII{
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
+		spec:          references.C64CartridgeSpec16K,
 	}
 	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdIC64Cartridge(co, label, instance))
 	return co
@@ -60,7 +61,8 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 }
 
 func (c *CartridgeFinalCartridgeIII) reset(hard bool) {
-	c.game, c.exRom, c.intervals = references.C64CartridgeSpec16K.Data()
+	//c.game, c.exRom, _ = references.C64CartridgeSpec16K.Data()
+	c.spec = references.C64CartridgeSpec16K
 	c.banksCurrent = 0
 	c.regEnabled = true
 	c.reg = 0
@@ -113,12 +115,12 @@ func (c *CartridgeFinalCartridgeIII) IRQCLear(_ uint32) {
 
 // GetExRom returns the current value of the ExRom signal.
 func (c *CartridgeFinalCartridgeIII) GetExRom() uint8 {
-	return c.exRom
+	return c.spec.ExRom
 }
 
 // GetGame retrieves the current `game` state of the cartridge as a uint8.
 func (c *CartridgeFinalCartridgeIII) GetGame() uint8 {
-	return c.game
+	return c.spec.Game
 }
 
 // EmulationRequired checks if emulation is required for the cartridge and returns false, indicating no emulation is needed.
@@ -150,28 +152,14 @@ func (c *CartridgeFinalCartridgeIII) HardwareButton(pressed bool, value uint8) {
 	}
 }
 
-// Write attempts to write data to the cartridge at the specified address within the given ROM interval.
-// Returns true if the operation is invalid for the cartridge, otherwise false.
-func (c *CartridgeFinalCartridgeIII) Write(i references.C64RomInterval, addr uint16, data uint8) bool {
-	if (i & c.intervals) != 0 {
-		fmt.Printf("Write: can't write [bank %d] %x => %d\n", c.banksCurrent, addr, data)
-		return true
-	}
-	return false
-}
-
 // Read recupera un byte dalla ROM della cartuccia.
 // MODIFICATA per gestire correttamente la modalità Ultimax/Freezer.
-func (c *CartridgeFinalCartridgeIII) Read(i references.C64RomInterval, addr uint16) (uint8, bool) {
+func (c *CartridgeFinalCartridgeIII) Read(addr uint16) uint8 {
 	// IOWrite must have set `c.intervals` to cover the entire $8000-$FFFF area when entering Freezer mode.
-	if (i & c.intervals) == 0 {
-		fmt.Printf("Read: invalid interval %d != %d", c.intervals, i)
-		return 0, false
-	}
 	bank := c.banksCurrent
 	if int(bank) >= c.banksTotal {
 		fmt.Printf("Read: invalid bank %d >= %d", bank, c.banksTotal)
-		return 0, false
+		return 0
 	}
 	//if addr >= 0xda00 {
 	//	fmt.Printf("[%d][Read] Ultimax mode read addr: 0x%x\n", c.board.Cycle(), addr)
@@ -183,11 +171,10 @@ func (c *CartridgeFinalCartridgeIII) Read(i references.C64RomInterval, addr uint
 	// A read at $BFFC becomes a read at offset $3FFC of the bank.
 	offset16k := addr & 0x3FFF
 	if offset16k < banksSize8k {
-		return c.banksL[bank][offset16k], true
-	} else {
-		offset8k := offset16k & 0x1FFF
-		return c.banksH[bank][offset8k], true
+		return c.banksL[bank][offset16k]
 	}
+	offset8k := offset16k & 0x1FFF
+	return c.banksH[bank][offset8k]
 }
 
 // IORead reads data from the cartridge memory at the specified address and returns the value with a success flag.
@@ -237,16 +224,19 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 	command := (data >> 4) & 0x03
 	switch command {
 	case 0b00:
-		c.game, c.exRom, c.intervals = references.C64CartridgeSpec16K.Data()
+		//c.game, c.exRom, _ = references.C64CartridgeSpec16K.Data()
+		c.spec = references.C64CartridgeSpec16K
 		c.board.GameExRomConfigChanged()
 	case 0b01:
 		c.doFreeze()
 		return true
 	case 0b10:
-		c.game, c.exRom, c.intervals = references.C64CartridgeSpec8K.Data()
+		c.spec = references.C64CartridgeSpec8K
+		//c.game, c.exRom, _ = references.C64CartridgeSpec8K.Data()
 		c.board.GameExRomConfigChanged()
 	case 0b11:
-		c.game, c.exRom, c.intervals = references.C64CartridgeSpecOff.Data()
+		c.spec = references.C64CartridgeSpecOff
+		//c.game, c.exRom, _ = references.C64CartridgeSpecOff.Data()
 		c.board.GameExRomConfigChanged()
 	}
 	return true
@@ -259,8 +249,8 @@ func (c *CartridgeFinalCartridgeIII) doFreeze() {
 		return
 	}
 	c.banksCurrent = uint8(c.banksTotal - 1)
-	spec := references.C64CartridgeSpecUltimax
-	c.game, c.exRom, c.intervals = spec.Data()
+	c.spec = references.C64CartridgeSpecUltimax
+	//c.game, c.exRom, _ = spec.Data()
 	c.board.GameExRomConfigChanged()
 	c.board.NMITrigger()
 

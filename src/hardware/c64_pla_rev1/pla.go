@@ -21,8 +21,7 @@ type PLA struct {
 	ramRead  ReadFn
 	ramWrite WriteFn
 
-	cartManRead      func(references.C64RomInterval, uint16) (uint8, bool)
-	cartManWrite     func(references.C64RomInterval, uint16, uint8) bool
+	cartManRead      ReadFn
 	cartManIORead    func(uint16) (uint8, bool)
 	cartManIOWrite   func(uint16, uint8) bool
 	cartManConfig    func() (uint8, uint8, bool)
@@ -62,7 +61,6 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		ramRead:          nil,
 		ramWrite:         nil,
 		cartManRead:      nil,
-		cartManWrite:     nil,
 		cartManIORead:    nil,
 		cartManIOWrite:   nil,
 		bankWrite:        make([]WriteFn, bankSize),
@@ -108,7 +106,6 @@ func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASig
 	b.vaSignals = vaSignals.GetVASignal
 	b.triggerSize = ram.Size()
 
-	b.cartManWrite = cartMan.Write
 	b.cartManRead = cartMan.Read
 
 	//MUST BE cs9 - cs11
@@ -324,10 +321,8 @@ func (b *PLA) ramRead0x0000(addr uint16) uint8 {
 // ramRead0x8000 reads a byte from RAM at the specified address or from a cartridge if configured in ROM_LO mode.
 func (b *PLA) ramRead0x8000(addr uint16) uint8 {
 	const bank = 0x8
-	if b.memoryConfig[bank] == ROL {
-		if v, ok := b.cartManRead(references.ROM_LO, addr); ok {
-			return v
-		}
+	if b.memoryConfig[bank] == ROL && b.cartManIntervals&references.ROM_LO == references.ROM_LO {
+		return b.cartManRead(addr)
 	}
 	return b.ramRead(addr)
 }
@@ -336,10 +331,8 @@ func (b *PLA) ramRead0x8000(addr uint16) uint8 {
 // It checks the memory configuration of the specified bank and accesses data accordingly.
 func (b *PLA) ramRead0x9000(addr uint16) uint8 {
 	const bank = 0x9
-	if b.memoryConfig[bank] == ROL {
-		if v, ok := b.cartManRead(references.ROM_LO, addr); ok {
-			return v
-		}
+	if b.memoryConfig[bank] == ROL && b.cartManIntervals&references.ROM_LO == references.ROM_LO {
+		return b.cartManRead(addr)
 	}
 	return b.ramRead(addr)
 }
@@ -350,11 +343,8 @@ func (b *PLA) ramRead0x9000(addr uint16) uint8 {
 // Defaults to reading from RAM if no other condition is met.
 func (b *PLA) ramRead0xA000(addr uint16) uint8 {
 	const bank = 0xa
-	if b.memoryConfig[bank] == ROH {
-		if v, ok := b.cartManRead(references.ROM_HI_1, addr); ok {
-			return v
-		}
-
+	if b.memoryConfig[bank] == ROH && b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1 {
+		return b.cartManRead(addr)
 	} else if b.memoryConfig[bank] == BAS {
 		return b.basicRead(addr)
 	}
@@ -367,10 +357,8 @@ func (b *PLA) ramRead0xA000(addr uint16) uint8 {
 // Returns the 8-bit value read from the specified memory address.
 func (b *PLA) ramRead0xB000(addr uint16) uint8 {
 	const bank = 0xb
-	if b.memoryConfig[bank] == ROH {
-		if v, ok := b.cartManRead(references.ROM_HI_1, addr); ok {
-			return v
-		}
+	if b.memoryConfig[bank] == ROH && b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1 {
+		return b.cartManRead(addr)
 	} else if b.memoryConfig[bank] == BAS {
 		return b.basicRead(addr)
 	}
@@ -397,10 +385,8 @@ func (b *PLA) ramRead0xD000(addr uint16) uint8 {
 // It prioritizes cartMan, kernal ROM, or RAM depending on the memory bank setup for the 0xE block.
 func (b *PLA) ramRead0xE000(addr uint16) uint8 {
 	const bank = 0xe
-	if b.memoryConfig[bank] == ROH {
-		if v, ok := b.cartManRead(references.ROM_HI_2, addr); ok {
-			return v
-		}
+	if b.memoryConfig[bank] == ROH && b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2 {
+		return b.cartManRead(addr)
 	} else if b.memoryConfig[bank] == KER {
 		return b.kernalRead(addr)
 	}
@@ -412,10 +398,8 @@ func (b *PLA) ramRead0xE000(addr uint16) uint8 {
 // The addr parameter specifies the address within the 0xF000 range to read.
 func (b *PLA) ramRead0xF000(addr uint16) uint8 {
 	const bank = 0xf
-	if b.memoryConfig[bank] == ROH {
-		if v, ok := b.cartManRead(references.ROM_HI_2, addr); ok {
-			return v
-		}
+	if b.memoryConfig[bank] == ROH && b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2 {
+		return b.cartManRead(addr)
 	} else if b.memoryConfig[bank] == KER {
 		return b.kernalRead(addr)
 	}

@@ -153,42 +153,18 @@ func (f *Manager) HardwareButton(pressed bool, value uint8) {
 }
 
 // Read retrieves a value from the specified ROM interval and address. Returns the value and a boolean indicating success.
-func (f *Manager) Read(interval references.C64RomInterval, addr uint16) (uint8, bool) {
+func (f *Manager) Read(addr uint16) uint8 {
 	if f.carts == nil {
-		return 0, false
+		return 0
 	}
 	if len(f.carts) == 1 {
-		return f.carts[0].Read(interval, addr)
+		return f.carts[0].Read(addr)
 	}
 	val := uint8(0)
-	ret := false
 	for _, cart := range f.carts {
-		if v, ok := cart.Read(interval, addr); ok {
-			if !ret {
-				val = v
-				ret = true
-			}
-		}
+		val = cart.Read(addr)
 	}
-	return val, ret
-}
-
-// Write attempts to write the given data to the specified address within the provided ROM interval for all managed cartridges.
-// Returns true if any cartridge successfully handles the write operation, otherwise returns false.
-func (f *Manager) Write(interval references.C64RomInterval, addr uint16, data uint8) bool {
-	if f.carts == nil {
-		return false
-	}
-	if len(f.carts) == 1 {
-		return f.carts[0].Write(interval, addr, data)
-	}
-	ret := false
-	for _, cart := range f.carts {
-		if ok := cart.Write(interval, addr, data); ok {
-			ret = true
-		}
-	}
-	return ret
+	return val
 }
 
 // IOWrite attempts to write the specified data to the given address using all attached cartridges.

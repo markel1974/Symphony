@@ -74,9 +74,7 @@ type IC64CartridgeManager interface {
 
 	HardwareButton(pressed bool, value uint8)
 
-	Read(interval C64RomInterval, addr uint16) (uint8, bool)
-
-	Write(interval C64RomInterval, addr uint16, data uint8) bool
+	Read(addr uint16) uint8
 
 	IORead(addr uint16) (uint8, bool)
 

@@ -75,26 +75,14 @@ func (c *CartridgeMagicDesk) HardwareButton(pressed bool, value uint8) {
 }
 
 // Write attempts to write data to the cartridge at the specified ROM interval and address, returning true if write-protected.
-func (c *CartridgeMagicDesk) Write(i references.C64RomInterval, addr uint16, data uint8) bool {
-	if (i & (c.spec.IntervalLow | c.spec.IntervalHigh)) != 0 {
-		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.slot, addr, data)
-		return true
-	}
-	return false
+func (c *CartridgeMagicDesk) Write(addr uint16, data uint8) bool {
+	fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.slot, addr, data)
+	return true
 }
 
 // Read retrieves the byte at the specified address if the interval matches the cartridge's configuration, else returns 0.
-func (c *CartridgeMagicDesk) Read(i references.C64RomInterval, addr uint16) (uint8, bool) {
-	if (i & (c.spec.IntervalLow | c.spec.IntervalHigh)) != 0 {
-		//if c.b0Interval == i {
-		//	return c.banks[c.currBank][addr&0x1fff], true
-		//}
-		//if c.b1Interval == i {
-		//	return c.banks[c.currBank][addr&0x1fff], true
-		//}
-		return c.banks[c.slot][addr&0x1fff], true
-	}
-	return 0, false
+func (c *CartridgeMagicDesk) Read(addr uint16) uint8 {
+	return c.banks[c.slot][addr&0x1fff]
 }
 
 // IORead checks if the given address matches the specific range (0xde00) and returns the register value and a success flag.

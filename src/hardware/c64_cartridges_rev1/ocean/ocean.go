@@ -10,15 +10,14 @@ import (
 // CartridgeOcean represents a cartridge model with bank switching and IO interaction mechanisms for ROM emulation.
 type CartridgeOcean struct {
 	*component.BaseComponent
-	loaderId  string
-	intervals references.C64RomInterval
-	lastData  uint8
-	banks     [][]byte
-	ioMask    uint8
-	currBank  uint8
-	game      uint8
-	exRom     uint8
-	board     references.IC64Expansion
+	loaderId string
+	lastData uint8
+	banks    [][]byte
+	ioMask   uint8
+	currBank uint8
+	game     uint8
+	exRom    uint8
+	board    references.IC64Expansion
 }
 
 // NewCartridgeOcean creates and returns a new instance of the Ocean Cartridge conforming to the IC64Cartridge interface.
@@ -37,7 +36,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 }
 
 func (c *CartridgeOcean) reset(hard bool) {
-	c.game, c.exRom, c.intervals = references.C64CartridgeSpec16K.Data()
+	c.game, c.exRom, _ = references.C64CartridgeSpec16K.Data()
 	c.lastData = 0
 	c.currBank = 0
 	if hard {
@@ -85,21 +84,9 @@ func (c *CartridgeOcean) GetLoaderId() string {
 func (c *CartridgeOcean) HardwareButton(pressed bool, value uint8) {
 }
 
-// Write attempts to write data to the cartridge at the specified address and interval. Returns true if the write is blocked.
-func (c *CartridgeOcean) Write(i references.C64RomInterval, addr uint16, data uint8) bool {
-	if i&c.intervals != 0 {
-		fmt.Printf("CartridgeOcean can't be write [bank %d] %x => %d\n", c.currBank, addr, data)
-		return true
-	}
-	return false
-}
-
 // Read reads a byte from the current bank, based on the specified ROM interval and address. Returns the byte and success status.
-func (c *CartridgeOcean) Read(i references.C64RomInterval, addr uint16) (uint8, bool) {
-	if i&c.intervals != 0 {
-		return c.banks[c.currBank][addr&0x1fff], true
-	}
-	return 0, false
+func (c *CartridgeOcean) Read(addr uint16) uint8 {
+	return c.banks[c.currBank][addr&0x1fff]
 }
 
 // IORead reads from a memory-mapped I/O address and returns the data and a success flag if the address is valid.

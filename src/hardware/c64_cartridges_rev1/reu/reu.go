@@ -264,14 +264,9 @@ func (reu *REU) triggerDMA(_ uint16, _ uint8) {
 func (reu *REU) HardwareButton(pressed bool, value uint8) {
 }
 
-// Write attempts to write to a given ROM interval, address, and value, returning false as operation is unsupported.
-func (reu *REU) Write(_ references.C64RomInterval, _ uint16, _ uint8) bool {
-	return false
-}
-
 // Read retrieves data from the specified ROM interval and memory address. Returns the data and a boolean indicating success.
-func (reu *REU) Read(_ references.C64RomInterval, _ uint16) (uint8, bool) {
-	return 0, false
+func (reu *REU) Read(_ uint16) uint8 {
+	return 0
 }
 
 // Detach releases resources or connections held by the REU instance and prepares it for a safe disconnection.

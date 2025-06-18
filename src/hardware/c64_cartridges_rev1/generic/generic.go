@@ -17,11 +17,10 @@ const cSize8K = 0x2000
 type CartridgeGeneric struct {
 	*component.BaseComponent
 	loaderId   string
-	b0Interval references.C64RomInterval
-	b1Interval references.C64RomInterval
+	b0Interval uint8
+	b1Interval uint8
 	bank0      []uint8
 	bank1      []uint8
-	intervals  references.C64RomInterval
 	game       uint8
 	exRom      uint8
 	expansion  references.IC64Expansion
@@ -41,7 +40,6 @@ func NewCartridgeGeneric(parent references.IComponent, factory references.ICompo
 		exRom:         0,
 		b0Interval:    0,
 		b1Interval:    0,
-		intervals:     0,
 	}
 	g.BaseComponent.Register(factory, parent, Identifier(), g, references.IdIC64Cartridge(g, label, instance))
 	return g
@@ -153,33 +151,23 @@ func (c *CartridgeGeneric) applyConfig(spec *references.C64CartridgeSpec) {
 	c.exRom = spec.ExRom
 	c.b0Interval = spec.IntervalLow
 	c.b1Interval = spec.IntervalHigh
-	c.intervals = spec.IntervalLow | spec.IntervalHigh
+	//c.intervals = spec.IntervalLow | spec.IntervalHigh
 }
 
 // HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.
 func (c *CartridgeGeneric) HardwareButton(pressed bool, value uint8) {
 }
 
-// Write attempts to write data to the cartridge at the specified interval and address. Returns true if writing is not allowed.
-func (c *CartridgeGeneric) Write(i references.C64RomInterval, addr uint16, data uint8) bool {
-	if (i & c.intervals) != 0 {
-		fmt.Printf("CartridgeGeneric Cartridge can't be write %x => %d\n", addr, data)
-		return true
-	}
-	return false
-}
-
 // Read retrieves a byte and a success flag from the cartridge based on the provided address and ROM interval.
-func (c *CartridgeGeneric) Read(i references.C64RomInterval, addr uint16) (uint8, bool) {
-	if (i & c.intervals) != 0 {
-		if c.b0Interval == i {
-			return c.bank0[(addr & 0x1fff)], true
-		}
-		if c.b1Interval == i {
-			return c.bank1[(addr & 0x1fff)], true
-		}
+func (c *CartridgeGeneric) Read(addr uint16) uint8 {
+	i := references.C64CartridgeBank(addr)
+	if c.b0Interval == i {
+		return c.bank0[(addr & 0x1fff)]
 	}
-	return 0, false
+	if c.b1Interval == i {
+		return c.bank1[(addr & 0x1fff)]
+	}
+	return 0
 }
 
 // IRQ handles the Interrupt Request (IRQ) signal for the CartridgeGeneric, enabling appropriate cartridge-specific behavior.

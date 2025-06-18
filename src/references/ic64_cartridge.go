@@ -6,15 +6,15 @@ import (
 )
 
 // C64RomInterval represents a type used to define distinct memory interval mappings in the ROM of a cartridge system.
-type C64RomInterval int
 
 // ROM_LO represents the low ROM interval value in the C64RomInterval type.
 // ROM_HI_1 represents the first high ROM interval value in the C64RomInterval type.
 // ROM_HI_2 represents the second high ROM interval value in the C64RomInterval type.
 const (
-	ROM_LO   = C64RomInterval(1)
-	ROM_HI_1 = C64RomInterval(2)
-	ROM_HI_2 = C64RomInterval(4)
+	ROM_UNK  = uint8(0)
+	ROM_LO   = uint8(1)
+	ROM_HI_1 = uint8(2)
+	ROM_HI_2 = uint8(4)
 )
 
 // C64CartridgeSpec defines the properties of a cartridge, including its Game/ExRom flags and ROM interval configuration.
@@ -22,16 +22,16 @@ type C64CartridgeSpec struct {
 	Game         uint8
 	ExRom        uint8
 	Intervals    uint8
-	IntervalLow  C64RomInterval
-	IntervalHigh C64RomInterval
+	IntervalLow  uint8
+	IntervalHigh uint8
 	Mode         uint8
 }
 
-func NewC64CartridgeSpec(game uint8, exRom uint8, intervalLow C64RomInterval, intervalHigh C64RomInterval) *C64CartridgeSpec {
+func NewC64CartridgeSpec(game uint8, exRom uint8, intervalLow uint8, intervalHigh uint8) *C64CartridgeSpec {
 	return &C64CartridgeSpec{
 		Game:         game,
 		ExRom:        exRom,
-		Intervals:    uint8(intervalLow) | uint8(intervalHigh),
+		Intervals:    intervalLow | intervalHigh,
 		IntervalLow:  intervalLow,
 		IntervalHigh: intervalHigh,
 		Mode:         c64CartridgeComputeMode(game, exRom),
@@ -39,7 +39,7 @@ func NewC64CartridgeSpec(game uint8, exRom uint8, intervalLow C64RomInterval, in
 }
 
 // Data returns the Game, ExRom flags, and merged interval configuration for the cartridge specification.
-func (c *C64CartridgeSpec) Data() (uint8, uint8, C64RomInterval) {
+func (c *C64CartridgeSpec) Data() (uint8, uint8, uint8) {
 	return c.Game, c.ExRom, c.IntervalLow | c.IntervalHigh
 }
 
@@ -51,12 +51,27 @@ var C64CartridgeSpecOff = NewC64CartridgeSpec(1, 1, 0, 0)
 // _c64CartridgesSpec is a slice of pointers to C64CartridgeSpec, providing configuration details for various cartridge modes.
 var _c64CrtSpec []*C64CartridgeSpec
 
+var _c64BanksType []uint8
+
 func init() {
-	_c64CrtSpec = make([]*C64CartridgeSpec, 4)
+	_c64BanksType = make([]uint8, 0xf+1)
+	for idx := range _c64BanksType {
+		_c64BanksType[idx] = ROM_UNK
+	}
+	_c64BanksType[0x8] = ROM_LO
+	_c64BanksType[0x9] = ROM_LO
+	_c64BanksType[0xa] = ROM_HI_1
+	_c64BanksType[0xb] = ROM_HI_1
+	_c64BanksType[0xe] = ROM_HI_2
+	_c64BanksType[0xf] = ROM_HI_2
+
+	_c64CrtSpec = make([]*C64CartridgeSpec, 0x3+1)
+	for idx := range _c64CrtSpec {
+		_c64CrtSpec[idx] = C64CartridgeSpecOff
+	}
 	_c64CrtSpec[C64CartridgeSpec16K.Mode] = C64CartridgeSpec16K
 	_c64CrtSpec[C64CartridgeSpec8K.Mode] = C64CartridgeSpec8K
 	_c64CrtSpec[C64CartridgeSpecUltimax.Mode] = C64CartridgeSpecUltimax
-	_c64CrtSpec[C64CartridgeSpecOff.Mode] = C64CartridgeSpecOff
 }
 
 func c64CartridgeComputeMode(game uint8, exRom uint8) uint8 {
@@ -67,6 +82,11 @@ func c64CartridgeComputeMode(game uint8, exRom uint8) uint8 {
 func GetCartridgeSpec(game uint8, exRom uint8) *C64CartridgeSpec {
 	m := c64CartridgeComputeMode(game, exRom)
 	return _c64CrtSpec[m]
+}
+
+func C64CartridgeBank(addr uint16) uint8 {
+	v := addr >> 12
+	return _c64BanksType[v]
 }
 
 // IC64Cartridge represents the interface for cartridges used in the Commodore 64 system, providing core operations and behavior.
@@ -81,9 +101,7 @@ type IC64Cartridge interface {
 
 	HardwareButton(pressed bool, value uint8)
 
-	Write(i C64RomInterval, addr uint16, data uint8) bool
-
-	Read(i C64RomInterval, addr uint16) (uint8, bool)
+	Read(addr uint16) uint8
 
 	IORead(addr uint16) (uint8, bool)
 

@@ -20,8 +20,8 @@ type CartridgeEasyFlash struct {
 	*component.BaseComponent
 	loaderId        string
 	expansion       references.IC64Expansion
-	intervalLo      references.C64RomInterval
-	intervalHi      references.C64RomInterval
+	intervalLo      uint8
+	intervalHi      uint8
 	memoryConfigIdx int
 	game            uint8
 	exRom           uint8
@@ -248,24 +248,15 @@ func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 func (c *CartridgeEasyFlash) HardwareButton(pressed bool, value uint8) {
 }
 
-// Write attempts to handle a write operation to the EasyFlash cartridge but currently does not implement writing logic.
-func (c *CartridgeEasyFlash) Write(i references.C64RomInterval, _ uint16, _ uint8) bool {
-	if c.intervalLo == i {
-		fmt.Printf("EASYFLASH Write LOW NOT DEFINED\n")
-	} else if c.intervalHi == i {
-		fmt.Printf("EASYFLASH Write HIGH NOT DEFINED\n")
-	}
-	return false
-}
-
 // Read retrieves a byte of data from the cartridge memory based on the provided ROM interval and address.
-func (c *CartridgeEasyFlash) Read(i references.C64RomInterval, addr uint16) (uint8, bool) {
+func (c *CartridgeEasyFlash) Read(addr uint16) uint8 {
+	i := references.C64CartridgeBank(addr)
 	if c.intervalLo == i {
-		return c.romLRead(addr), true
+		return c.romLRead(addr)
 	} else if c.intervalHi == i {
-		return c.romHRead(addr), true
+		return c.romHRead(addr)
 	}
-	return 0, false
+	return 0
 }
 
 // IORead reads a value from the specified address within the EasyFlash cartridge's I/O space.

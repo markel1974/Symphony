@@ -169,14 +169,9 @@ func (s *CartridgeExternalCPU) IRQCLear(d uint32) {
 func (s *CartridgeExternalCPU) HardwareButton(pressed bool, value uint8) {
 }
 
-// Write stores an 8-bit data value to a specified address within a given ROM interval and returns success status as a boolean.
-func (s *CartridgeExternalCPU) Write(i references.C64RomInterval, addr uint16, data uint8) bool {
-	return false
-}
-
 // Read fetches a byte and status from the specified address within the ROM interval.
-func (s *CartridgeExternalCPU) Read(i references.C64RomInterval, addr uint16) (uint8, bool) {
-	return 0, false
+func (s *CartridgeExternalCPU) Read(addr uint16) uint8 {
+	return 0
 }
 
 // Detach releases the resources and internal bindings associated with the CartridgeExternalCPU, ensuring proper cleanup.
