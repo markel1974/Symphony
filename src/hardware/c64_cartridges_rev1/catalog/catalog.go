@@ -44,15 +44,15 @@ const (
 	CartridgeFinalIII
 	CartridgeSimonsBasic
 	CartridgeOcean
-	CartridgeEXPERT
-	CartridgeFUNPLAY
-	CartridgeSUPER_GAMES
-	CartridgeATOMIC_POWER
-	CartridgeEPYX_FASTLOAD
-	CartridgeWESTERMANN
+	CartridgeExpert
+	CartridgeFunPlay
+	CartridgeSuperGames
+	CartridgeAtomicPower
+	CartridgeEpyxFastLoad
+	CartridgeWesterMann
 	CartridgeREX
-	CartridgeFINAL_I
-	CartridgeMAGIC_FORMEL
+	CartridgeFinalI
+	CartridgeMagicFormel
 	CartridgeGS
 	CartridgeWARPSPEED
 	CartridgeDINAMIC

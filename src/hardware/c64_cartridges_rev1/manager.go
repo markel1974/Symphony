@@ -243,15 +243,15 @@ func (f *Manager) Add(hardware string, name string, data []byte) (string, error)
 	if len(hardware) > 0 {
 		hardware = strings.ToUpper(strings.TrimSpace(hardware))
 		factory = catalog.ByHardware(hardware)
-	} else if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
-		factory = catalog.ByType(int(ldr.Kind))
-	} else if catalog.Type(ldr.GetType()) == catalog.TypeBin {
-		if factory = catalog.BySize(len(ldr.GetData())); factory == nil {
+	} else if catalog.Type(ldr.Type()) == catalog.TypeCrt {
+		factory = catalog.ByType(int(ldr.Model()))
+	} else if catalog.Type(ldr.Type()) == catalog.TypeBin {
+		if factory = catalog.BySize(len(ldr.Data())); factory == nil {
 			factory = catalog.BySizeDefault()
 		}
 	}
 	if factory == nil {
-		return "", fmt.Errorf("unsupported => %d", ldr.Kind)
+		return "", fmt.Errorf("unsupported => %d", ldr.Model())
 	}
 	cart := factory(f, f.GetFactory(), f.label, f.idx)
 	f.idx++

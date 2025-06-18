@@ -56,7 +56,7 @@ func (s *CartridgeExternalCPU) Bind(board references.IC64Expansion, ldr referenc
 	//TODO REWRITE!!!
 	const instance = 1000
 	s.board = board
-	s.loaderId = ldr.GetId()
+	s.loaderId = ldr.Id()
 	s.board.SetDMALow(true)
 
 	cpu, err := s.GetFactory().Create(s, Identifier(), mos6510_rev1.Identifier(), instance)

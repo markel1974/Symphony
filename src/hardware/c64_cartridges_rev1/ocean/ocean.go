@@ -54,8 +54,8 @@ func (c *CartridgeOcean) Setup() error {
 // Bind associates the CartridgeOcean instance with the provided expansion board and cartridge loader, initializing it accordingly.
 func (c *CartridgeOcean) Bind(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	c.board = board
-	c.loaderId = ldr.GetId()
-	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
+	c.loaderId = ldr.Id()
+	if catalog.Type(ldr.Type()) == catalog.TypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr)
@@ -145,7 +145,7 @@ func (c *CartridgeOcean) Emulate() {
 // initBin initializes the cartridge by parsing binary data, validating it and segmenting it into fixed-size memory banks.
 // It calculates the I/O mask and sets initial values for `lastData` and `currBank`. Returns an error if validation fails.
 func (c *CartridgeOcean) initBin(ldr references.IC64CartridgeLoader) error {
-	data := ldr.GetData()
+	data := ldr.Data()
 	if err := catalog.ValidateCartridge(data); err != nil {
 		return err
 	}

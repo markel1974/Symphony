@@ -76,7 +76,7 @@ func (c *CartridgeEasyFlash) Setup() error {
 func (c *CartridgeEasyFlash) Bind(expansion references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	var rawCart []byte
 	c.expansion = expansion
-	c.loaderId = ldr.GetId()
+	c.loaderId = ldr.Id()
 	c.game = uint8(ldr.Game())
 	c.exRom = uint8(ldr.ExRom())
 	rp := filler.New(255, 2, 1, 0x100, 255, 0, 0, 0)
@@ -84,7 +84,7 @@ func (c *CartridgeEasyFlash) Bind(expansion references.IC64Expansion, ldr refere
 	c.filename = ldr.Name()
 	c.filetype = 0
 	var err error
-	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
+	if catalog.Type(ldr.Type()) == catalog.TypeCrt {
 		c.filetype = catalog.TypeCrt
 		if rawCart, err = c.initCrt(ldr); err != nil {
 			return err
@@ -371,7 +371,7 @@ func (c *CartridgeEasyFlash) initRaw(ldr references.IC64CartridgeLoader) ([]byte
 	for idx := range rawCart {
 		rawCart[idx] = 0xff
 	}
-	copy(rawCart, ldr.GetData())
+	copy(rawCart, ldr.Data())
 	return rawCart, nil
 }
 

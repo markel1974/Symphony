@@ -7,83 +7,83 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// cSize16K defines the size of 16 kilobytes (0x4000), commonly used for memory allocation or data validation.
+// cSize16K defines the constant value for 16KB, equivalent to 0x4000 in hex.
 const cSize16K = 0x4000
 
-// cSize8K defines a constant representing 8 kilobytes (8192 bytes) in hexadecimal format (0x2000).
+// cSize8K defines the constant value for 8KB, equivalent to 0x2000 in hex.
 const cSize8K = 0x2000
 
-// CartridgeGeneric represents the structure and functionality of a cartridge, including memory banks, intervals, and configuration.
+// CartridgeGeneric represents a generic cartridge component used in the system.
+// It contains memory banks and associated cartridge specifications.
+// The type leverages base component functionality for shared behaviors.
 type CartridgeGeneric struct {
 	*component.BaseComponent
-	loaderId   string
-	b0Interval uint8
-	b1Interval uint8
-	bank0      []uint8
-	bank1      []uint8
-	game       uint8
-	exRom      uint8
-	expansion  references.IC64Expansion
+	loaderId  string
+	bank0     []uint8
+	bank1     []uint8
+	spec      *references.C64CartridgeSpec
+	expansion references.IC64Expansion
 }
 
-// GetType returns the constant value representing the CARTRIDGE_CRT type.
+// GetType returns the integer type identifier for a cartridge, specifically catalog.CartridgeCRT.
 func GetType() int {
 	return catalog.CartridgeCRT
 }
 
-// NewCartridgeGeneric creates and returns a new instance of the CartridgeGeneric cartridge implementing the IC64Cartridge interface.
+// NewCartridgeGeneric initializes and returns a new instance of CartridgeGeneric with the specified parent, factory, label, and instance.
 func NewCartridgeGeneric(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CartridgeGeneric {
 	g := &CartridgeGeneric{
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
-		game:          0,
-		exRom:         0,
-		b0Interval:    0,
-		b1Interval:    0,
+		spec:          references.C64CartridgeSpec8K,
 	}
 	g.BaseComponent.Register(factory, parent, Identifier(), g, references.IdIC64Cartridge(g, label, instance))
 	return g
 }
 
-// New creates and returns a new instance of the CartridgeGeneric cartridge implementing the IC64Cartridge interface.
+// New creates and initializes a new IC64Cartridge instance using the provided parent component, factory, label, and instance.
 func New(parent references.IComponent, factory references.IComponentFactory, label string, instance int) references.IC64Cartridge {
 	return NewCartridgeGeneric(parent, factory, label, instance)
 }
 
+// Setup initializes the CartridgeGeneric component. Returns an error if initialization fails.
 func (c *CartridgeGeneric) Setup() error {
 	return nil
 }
 
+// Bind initializes the cartridge by associating it with an expansion and a cartridge loader, configuring its type and data.
 func (c *CartridgeGeneric) Bind(expansion references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	c.expansion = expansion
-	c.loaderId = ldr.GetId()
-	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
+	c.loaderId = ldr.Id()
+	if catalog.Type(ldr.Type()) == catalog.TypeCrt {
 		return c.initCrt(ldr)
 	}
-	return c.initRaw(ldr.GetData())
+	return c.initRaw(ldr.Data())
 }
 
-// Reset reinitializes the CartridgeGeneric cartridge to its default state, clearing all settings and memory banks.
+// Reset restores the cartridge state to its default initialization, clearing any active configurations or states.
 func (c *CartridgeGeneric) Reset() {
 
 }
 
+// Connect establishes the connection of the cartridge to the expansion port, preparing it for operation.
 func (c *CartridgeGeneric) Connect() error {
 	return nil
 }
 
+// Internal indicates whether the cartridge operates in internal mode. Returns false as the default implementation.
 func (c *CartridgeGeneric) Internal() bool {
 	return false
 }
 
-// GetLoaderId retrieves the unique identifier of the CartridgeGeneric instance.
+// GetLoaderId returns the ID of the cartridge loader associated with the CartridgeGeneric instance.
 func (c *CartridgeGeneric) GetLoaderId() string {
 	return c.loaderId
 }
 
-// initCrt initializes the cartridge configuration using the provided CRTLoader.
-// It sets up memory banks and mode based on the cartridge chip headers.
-// Returns an error if the cartridge format or configuration is unsupported.
+// initCrt initializes the cartridge banks and specification based on the data and headers provided by the loader.
+// The method supports 8K, 16K, and Ultimax specifications and validates compatibility.
+// Returns an error if the chip configuration is unsupported or if the header data is invalid.
 func (c *CartridgeGeneric) initCrt(ldr references.IC64CartridgeLoader) error {
 	c.bank0 = make([]uint8, cSize8K)
 	c.bank1 = make([]uint8, cSize8K)
@@ -98,33 +98,33 @@ func (c *CartridgeGeneric) initCrt(ldr references.IC64CartridgeLoader) error {
 		if chip1.Size() == cSize8K {
 			if chip2, _ := ldr.ReadChipHeader(); chip2 == nil {
 				copy(c.bank0, chip1.Data())
-				c.applyConfig(references.C64CartridgeSpec8K)
+				c.spec = references.C64CartridgeSpec8K
 				return nil
 			} else if chip2.Size() == cSize8K {
 				if chip2.Start() == 0x8000 {
 					copy(c.bank0, chip1.Data())
 					copy(c.bank1, chip2.Data())
-					c.applyConfig(references.C64CartridgeSpec16K)
+					c.spec = references.C64CartridgeSpec16K
 					return nil
 				} else if chip2.Start() == 0xe000 {
 					copy(c.bank0, chip1.Data())
 					copy(c.bank1, chip2.Data())
-					c.applyConfig(references.C64CartridgeSpecUltimax)
+					c.spec = references.C64CartridgeSpecUltimax
 					return nil
 				}
 			}
 		} else if chip1.Size() == cSize16K {
 			copy(c.bank0, chip1.Data()[:cSize8K])
 			copy(c.bank1, chip1.Data()[cSize8K:])
-			c.applyConfig(references.C64CartridgeSpec16K)
+			c.spec = references.C64CartridgeSpec16K
 			return nil
 		}
 	}
 	return fmt.Errorf("unsupported crt")
 }
 
-// initRaw initializes the raw cartridge data, validates its size, and configures the banks and cartridge mode accordingly.
-// Returns an error if the cartridge size is invalid or validation fails.
+// initRaw initializes cartridge memory banks with the provided raw data, validating its size and content.
+// Returns an error if the data is invalid or the size is not supported (8KB or 16KB).
 func (c *CartridgeGeneric) initRaw(data []byte) error {
 	c.bank0 = make([]uint8, cSize8K)
 	c.bank1 = make([]uint8, cSize8K)
@@ -133,81 +133,73 @@ func (c *CartridgeGeneric) initRaw(data []byte) error {
 	}
 	if len(data) == cSize8K {
 		copy(c.bank0, data)
-		c.applyConfig(references.C64CartridgeSpec8K)
+		c.spec = references.C64CartridgeSpec8K
 		return nil
 	}
 	if len(data) == cSize16K {
 		copy(c.bank0, data[:cSize8K])
 		copy(c.bank1, data[cSize8K:])
-		c.applyConfig(references.C64CartridgeSpec16K)
+		c.spec = references.C64CartridgeSpec16K
 		return nil
 	}
 	return fmt.Errorf("invalid size")
 }
 
-// applyConfig configures the CartridgeGeneric cartridge by setting its memory intervals and control flags based on the provided C64CartridgeMode.
-func (c *CartridgeGeneric) applyConfig(spec *references.C64CartridgeSpec) {
-	c.game = spec.Game
-	c.exRom = spec.ExRom
-	c.b0Interval = spec.IntervalLow
-	c.b1Interval = spec.IntervalHigh
-	//c.intervals = spec.IntervalLow | spec.IntervalHigh
+// HardwareButton handles hardware button interactions, determining actions based on whether the button is pressed and its value.
+func (c *CartridgeGeneric) HardwareButton(_ bool, _ uint8) {
 }
 
-// HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.
-func (c *CartridgeGeneric) HardwareButton(pressed bool, value uint8) {
-}
-
-// Read retrieves a byte and a success flag from the cartridge based on the provided address and ROM interval.
+// Read retrieves a value from the cartridge memory based on the provided address and the cartridge bank mapping.
 func (c *CartridgeGeneric) Read(addr uint16) uint8 {
 	i := references.C64CartridgeBank(addr)
-	if c.b0Interval == i {
+	if c.spec.IntervalLow == i {
 		return c.bank0[(addr & 0x1fff)]
 	}
-	if c.b1Interval == i {
+	if c.spec.IntervalHigh == i {
 		return c.bank1[(addr & 0x1fff)]
 	}
 	return 0
 }
 
-// IRQ handles the Interrupt Request (IRQ) signal for the CartridgeGeneric, enabling appropriate cartridge-specific behavior.
+// IRQ triggers an interrupt request for the cartridge with the provided cycle count.
 func (c *CartridgeGeneric) IRQ(_ uint32) {
 }
 
-// IRQCLear clears the state of any active Interrupt Requests (IRQ) for the CartridgeGeneric.
+// IRQCLear clears or deactivates the IRQ signal for the cartridge.
 func (c *CartridgeGeneric) IRQCLear(_ uint32) {
 }
 
-// IORead performs an I/O read operation and always returns 0 and false, indicating no data is available for the requested address.
+// IORead reads data from the I/O address space
+// and returns the value along with a boolean indicating success or failure.
 func (c *CartridgeGeneric) IORead(_ uint16) (uint8, bool) {
 	return 0, false
 }
 
-// IOWrite handles IO write operations for the CartridgeGeneric cartridge, always returning false to indicate no action is performed.
+// IOWrite handles writing to the cartridge I/O space and returns a boolean indicating if the operation was successful.
 func (c *CartridgeGeneric) IOWrite(_ uint16, _ uint8) bool {
 	return false
 }
 
-// GetExRom retrieves the current state of the ExRom line associated with the CartridgeGeneric cartridge, returning its value as uint8.
+// GetExRom returns the ExROM line state of the cartridge as defined in the cartridge specification.
 func (c *CartridgeGeneric) GetExRom() uint8 {
-	return c.exRom
+	return c.spec.ExRom
 }
 
-// GetGame returns the game identifier associated with the CartridgeGeneric cartridge.
+// GetGame retrieves the Game line status for the cartridge, which corresponds to the game type or relevance.
 func (c *CartridgeGeneric) GetGame() uint8 {
-	return c.game
+	return c.spec.Game
 }
 
-// EmulationRequired checks if the cartridge requires emulation to function properly. Returns false for CartridgeGeneric cartridges.
+// EmulationRequired checks if the cartridge requires emulation and returns false to indicate no emulation is needed.
 func (c *CartridgeGeneric) EmulationRequired() bool {
 	return false
 }
 
-// Emulate performs the main emulation cycle logic for the CartridgeGeneric type, enabling behavior specific to the cartridge type.
+// Emulate handles the execution cycle logic of the cartridge emulation for the connected hardware or simulation framework.
 func (c *CartridgeGeneric) Emulate() {
 }
 
-// Detach gracefully detaches the cartridge from the associated expansion, releasing any allocated resources or states.
+// Detach disconnects the cartridge from the expansion system and performs necessary cleanup operations.
 func (c *CartridgeGeneric) Detach() error {
 	//TODO
 	return nil

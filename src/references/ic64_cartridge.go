@@ -158,11 +158,11 @@ type IC64Cartridge interface {
 type IC64CartridgeLoader interface {
 	Setup(id string, data []byte) error
 
-	GetId() string
+	Id() string
 
-	GetType() int
+	Type() int
 
-	GetData() []byte
+	Data() []byte
 
 	Game() int
 

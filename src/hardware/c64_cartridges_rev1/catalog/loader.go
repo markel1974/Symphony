@@ -7,8 +7,6 @@ import (
 	"strings"
 )
 
-// https://sourceforge.net/p/vice-emu/code/HEAD/tree/trunk/vice/src/c64/cart/ocean.c#l240
-
 // crtHeaderLen defines the fixed length in bytes of the CRT header used for identifying and parsing cartridge data.
 const (
 	crtHeaderLen = 0x40
@@ -30,9 +28,9 @@ type Loader struct {
 	rowCartridge []byte
 	cursor       int
 	mc           MachineType
-	Version      uint16 // version
-	Kind         uint16 // type of cartridge
-	SubType      uint8  // subtype/hardware revision of cartridge
+	version      uint16 // version
+	model        uint16 // model type
+	subType      uint8  // subtype/hardware revision of cartridge
 	exRom        int    // exRom line status
 	game         int    // game line status
 	name         string // name of cartridge
@@ -64,18 +62,18 @@ func (cl *Loader) Setup(id string, data []byte) error {
 	return nil
 }
 
-// GetId returns the unique identifier of the CRTLoader instance as a string.
-func (cl *Loader) GetId() string {
+// Id returns the unique identifier of the CRTLoader instance as a string.
+func (cl *Loader) Id() string {
 	return cl.id
 }
 
-// GetType returns the type of the cartridge as an integer by converting the internal kind field to an int.
-func (cl *Loader) GetType() int {
+// Type returns the type of the cartridge as an integer by converting the internal kind field to an int.
+func (cl *Loader) Type() int {
 	return int(cl.kind)
 }
 
-// GetData returns the raw cartridge data as a byte slice.
-func (cl *Loader) GetData() []byte {
+// Data returns the raw cartridge data as a byte slice.
+func (cl *Loader) Data() []byte {
 	return cl.rowCartridge
 }
 
@@ -92,6 +90,10 @@ func (cl *Loader) ExRom() int {
 // Name retrieves the name of the cartridge associated with the CRTLoader instance.
 func (cl *Loader) Name() string {
 	return cl.name
+}
+
+func (cl *Loader) Model() uint16 {
+	return cl.model
 }
 
 // read initializes the CRTLoader by parsing the CRT header and validating its format. Returns an error if validation fails.
@@ -117,13 +119,13 @@ func (cl *Loader) read() error {
 		return fmt.Errorf("crt header size is wrong (is 0x%02x, expected 0x%02x)", skip, len(crtHeader))
 	}
 	skip -= uint32(len(crtHeader))
-	if cl.Version, err = Buf2uint16(crtHeader[0x14:0x16]); err != nil {
+	if cl.version, err = Buf2uint16(crtHeader[0x14:0x16]); err != nil {
 		return err
 	}
-	if cl.Kind, err = Buf2uint16(crtHeader[0x16:0x18]); err != nil {
+	if cl.model, err = Buf2uint16(crtHeader[0x16:0x18]); err != nil {
 		return err
 	}
-	cl.SubType = crtHeader[0x1a]
+	cl.subType = crtHeader[0x1a]
 	if exRom := int(crtHeader[0x18]); exRom != 0 {
 		cl.exRom = 0
 	} else {

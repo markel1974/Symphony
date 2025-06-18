@@ -88,8 +88,8 @@ func (c *CartridgeFinalCartridgeIII) Reset() {
 // Bind initializes the cartridge by associating it with the provided board and loader, loading ROM data in the process.
 func (c *CartridgeFinalCartridgeIII) Bind(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	c.board = board
-	c.loaderId = ldr.GetId()
-	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
+	c.loaderId = ldr.Id()
+	if catalog.Type(ldr.Type()) == catalog.TypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr)
@@ -319,7 +319,7 @@ func (c *CartridgeFinalCartridgeIII) loadData(data []byte) error {
 // initBin initializes the cartridge using binary file data from the provided loader.
 // Returns an error if the BIN file size is not 64KB or 256KB or if validation fails.
 func (c *CartridgeFinalCartridgeIII) initBin(ldr references.IC64CartridgeLoader) error {
-	data := ldr.GetData()
+	data := ldr.Data()
 	if err := catalog.ValidateCartridge(data); err != nil {
 		return err
 	}

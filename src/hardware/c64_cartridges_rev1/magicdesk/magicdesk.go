@@ -45,8 +45,8 @@ func (c *CartridgeMagicDesk) Setup() error {
 
 func (c *CartridgeMagicDesk) Bind(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	c.expansion = board
-	c.loaderId = ldr.GetId()
-	if catalog.Type(ldr.GetType()) == catalog.TypeCrt {
+	c.loaderId = ldr.Id()
+	if catalog.Type(ldr.Type()) == catalog.TypeCrt {
 		return c.initCrt(ldr)
 	}
 	return c.initBin(ldr)
@@ -153,7 +153,7 @@ func (c *CartridgeMagicDesk) Emulate() {
 // initBin initializes the cartridge by dividing the given binary data into 8KB banks and setting the bank mask based on size.
 // Returns an error if the size of the data is unsupported.
 func (c *CartridgeMagicDesk) initBin(ldr references.IC64CartridgeLoader) error {
-	data := ldr.GetData()
+	data := ldr.Data()
 	c.banks = [][]byte{}
 	c.bankMask = 0x7f
 	c.regVal = 0

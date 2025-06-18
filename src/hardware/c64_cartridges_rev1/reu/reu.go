@@ -153,14 +153,14 @@ func (reu *REU) Setup() error {
 func (reu *REU) Bind(board references.IC64Expansion, ldr references.IC64CartridgeLoader) error {
 	//TODO from Setup
 	reu.expansion = board
-	reu.loaderId = ldr.GetId()
+	reu.loaderId = ldr.Id()
 	// Set kind bit in status register
 	if reu.size-1 > 0x20000 {
 		reu.regs[0] |= 0x10
 	} else {
 		reu.regs[0] &= 0xef
 	}
-	data := ldr.GetData()
+	data := ldr.Data()
 	if len(data) > 0 {
 		copy(reu.ram, data)
 	}
