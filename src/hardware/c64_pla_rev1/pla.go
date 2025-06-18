@@ -288,7 +288,8 @@ func (b *PLA) ramWrite0x0000(addr uint16, data uint8) {
 		//b.ramWrite(0, b.vicLastByte())
 		b.update()
 		return
-	} else if addr == 1 {
+	}
+	if addr == 1 {
 		b.ports.SetData(data)
 		//b.ramWrite(1, b.vicLastByte())
 		b.update()
@@ -312,7 +313,8 @@ func (b *PLA) ramWrite0xD000(addr uint16, data uint8) {
 func (b *PLA) ramRead0x0000(addr uint16) uint8 {
 	if addr == 0 {
 		return b.ports.GetDirection()
-	} else if addr == 1 {
+	}
+	if addr == 1 {
 		return b.ports.GetDataRead()
 	}
 	return b.ramRead(addr)
@@ -320,8 +322,8 @@ func (b *PLA) ramRead0x0000(addr uint16) uint8 {
 
 // ramRead0x8000 reads a byte from RAM at the specified address or from a cartridge if configured in ROM_LO mode.
 func (b *PLA) ramRead0x8000(addr uint16) uint8 {
-	const bank = 0x8
-	if b.memoryConfig[bank] == ROL && b.cartManIntervals&references.ROM_LO == references.ROM_LO {
+	mc := b.memoryConfig[0x8]
+	if mc == ROL && b.cartManIntervals&references.ROM_LO == references.ROM_LO {
 		return b.cartManRead(addr)
 	}
 	return b.ramRead(addr)
@@ -330,8 +332,8 @@ func (b *PLA) ramRead0x8000(addr uint16) uint8 {
 // ramRead0x9000 reads a byte of data from the RAM or cartridge memory at a given address within the 0x9000 bank range.
 // It checks the memory configuration of the specified bank and accesses data accordingly.
 func (b *PLA) ramRead0x9000(addr uint16) uint8 {
-	const bank = 0x9
-	if b.memoryConfig[bank] == ROL && b.cartManIntervals&references.ROM_LO == references.ROM_LO {
+	mc := b.memoryConfig[0x9]
+	if mc == ROL && b.cartManIntervals&references.ROM_LO == references.ROM_LO {
 		return b.cartManRead(addr)
 	}
 	return b.ramRead(addr)
@@ -342,11 +344,12 @@ func (b *PLA) ramRead0x9000(addr uint16) uint8 {
 // For BAS configuration, it returns data from the BASIC ROM bank.
 // Defaults to reading from RAM if no other condition is met.
 func (b *PLA) ramRead0xA000(addr uint16) uint8 {
-	const bank = 0xa
-	if b.memoryConfig[bank] == ROH && b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1 {
-		return b.cartManRead(addr)
-	} else if b.memoryConfig[bank] == BAS {
+	mc := b.memoryConfig[0xa]
+	if mc == BAS {
 		return b.basicRead(addr)
+	}
+	if mc == ROH && b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1 {
+		return b.cartManRead(addr)
 	}
 	return b.ramRead(addr)
 }
@@ -356,11 +359,12 @@ func (b *PLA) ramRead0xA000(addr uint16) uint8 {
 // addr represents the memory address to be read within the 0xB000 range.
 // Returns the 8-bit value read from the specified memory address.
 func (b *PLA) ramRead0xB000(addr uint16) uint8 {
-	const bank = 0xb
-	if b.memoryConfig[bank] == ROH && b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1 {
-		return b.cartManRead(addr)
-	} else if b.memoryConfig[bank] == BAS {
+	mc := b.memoryConfig[0xb]
+	if mc == BAS {
 		return b.basicRead(addr)
+	}
+	if mc == ROH && b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1 {
+		return b.cartManRead(addr)
 	}
 	return b.ramRead(addr)
 }
@@ -371,11 +375,12 @@ func (b *PLA) ramRead0xB000(addr uint16) uint8 {
 // For character memory configuration, it accesses the char array using the offset masked from the given address.
 // Defaults to reading directly from RAM if no special memory configuration is in place for the 0xD000 bank.
 func (b *PLA) ramRead0xD000(addr uint16) uint8 {
-	const bank = 0xd
-	if b.memoryConfig[bank] == I_O {
+	mc := b.memoryConfig[0xd]
+	if mc == I_O {
 		p := (addr >> 8) & 0x0f
 		return b.u15Read[p](addr)
-	} else if b.memoryConfig[bank] == CHA {
+	}
+	if mc == CHA {
 		return b.charRead(addr)
 	}
 	return b.ramRead(addr)
@@ -384,11 +389,12 @@ func (b *PLA) ramRead0xD000(addr uint16) uint8 {
 // ramRead0xE000 handles reading from the 0xE000-0xEFFF memory range based on the current memory configuration.
 // It prioritizes cartMan, kernal ROM, or RAM depending on the memory bank setup for the 0xE block.
 func (b *PLA) ramRead0xE000(addr uint16) uint8 {
-	const bank = 0xe
-	if b.memoryConfig[bank] == ROH && b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2 {
-		return b.cartManRead(addr)
-	} else if b.memoryConfig[bank] == KER {
+	mc := b.memoryConfig[0xe]
+	if mc == KER {
 		return b.kernalRead(addr)
+	}
+	if mc == ROH && b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2 {
+		return b.cartManRead(addr)
 	}
 	return b.ramRead(addr)
 }
@@ -397,11 +403,12 @@ func (b *PLA) ramRead0xE000(addr uint16) uint8 {
 // Depending on configuration, it accesses cartridge ROM, kernal ROM, or internal RAM to retrieve the value.
 // The addr parameter specifies the address within the 0xF000 range to read.
 func (b *PLA) ramRead0xF000(addr uint16) uint8 {
-	const bank = 0xf
-	if b.memoryConfig[bank] == ROH && b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2 {
-		return b.cartManRead(addr)
-	} else if b.memoryConfig[bank] == KER {
+	mc := b.memoryConfig[0xf]
+	if mc == KER {
 		return b.kernalRead(addr)
+	}
+	if mc == ROH && b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2 {
+		return b.cartManRead(addr)
 	}
 	return b.ramRead(addr)
 }
