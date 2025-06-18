@@ -127,17 +127,8 @@ func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASig
 	}
 	//pla write mapping
 	b.bankWrite[0x0] = b.ramWrite0x0000
-	b.bankWrite[0xd] = b.ramWrite0xD000
-
 	//pla read mapping
 	b.bankRead[0x0] = b.ramRead0x0000
-	b.bankRead[0x8] = b.ramRead0x8000
-	b.bankRead[0x9] = b.ramRead0x9000
-	b.bankRead[0xa] = b.ramRead0xA000
-	b.bankRead[0xb] = b.ramRead0xB000
-	b.bankRead[0xd] = b.ramRead0xD000
-	b.bankRead[0xe] = b.ramRead0xE000
-	b.bankRead[0xf] = b.ramRead0xF000
 
 	b.u15Write[0x0] = cs12.WriteRegister
 	b.u15Write[0x1] = cs12.WriteRegister
@@ -217,18 +208,6 @@ func (b *PLA) RebuildMemoryConfig() {
 	dir, data := b.ports.Config()
 	mcIdx := ((^dir | data) & 0x7) | (spec.ExRom << 3) | (spec.Game << 4)
 	b.applyMemoryConfig(int(mcIdx))
-}
-
-// applyMemoryConfig updates the current memory configuration if the provided index differs from the current configuration.
-// It modifies the memoryConfigIdx and memoryConfig fields and returns true if the configuration was updated, false otherwise.
-func (b *PLA) applyMemoryConfig(mcIdx int) bool {
-	if mcIdx == b.memoryConfigIdx {
-		return false
-	}
-	b.memoryConfigIdx = mcIdx
-	b.memoryConfig = b.memoryMap.Get(uint8(mcIdx))
-	//fmt.Printf("SYSTEM MEMORY CONFIG CHANGED [exRom: %d - game: %d] %d -> %v\n", exRom, game, mcIdx, b.memoryConfig)
-	return true
 }
 
 // update adjusts the PLA's state by synchronizing port and memory configurations. It ensures the system's consistency.
@@ -320,14 +299,15 @@ func (b *PLA) ramWrite0x0000(addr uint16, data uint8) {
 }
 
 // ramWrite0xD000 writes a byte of data to the specified address in the 0xD000 memory range based on the memory configuration.
-func (b *PLA) ramWrite0xD000(addr uint16, data uint8) {
-	const bank = 0xd
-	if b.memoryConfig[bank] == I_O {
-		p := (addr >> 8) & 0x0f
-		b.u15Write[p](addr, data)
-		return
-	}
-	b.ramWrite(addr, data)
+func (b *PLA) ramWrite0xD000_I_O(addr uint16, data uint8) {
+	p := (addr >> 8) & 0x0f
+	b.u15Write[p](addr, data)
+	return
+}
+
+func (b *PLA) ramRead0xD000_I_O(addr uint16) uint8 {
+	p := (addr >> 8) & 0x0f
+	return b.u15Read[p](addr)
 }
 
 // ramRead0x0000 reads a byte from RAM or retrieves data from port registers based on the provided address.
@@ -341,97 +321,74 @@ func (b *PLA) ramRead0x0000(addr uint16) uint8 {
 	return b.ramRead(addr)
 }
 
-// ramRead0x8000 reads a byte from RAM at the specified address or from a cartridge if configured in ROM_LO mode.
-func (b *PLA) ramRead0x8000(addr uint16) uint8 {
-	mc := b.memoryConfig[0x8]
-	if mc == ROL && b.cartManIntervals&references.ROM_LO == references.ROM_LO {
-		return b.cartManRead(addr)
+// applyMemoryConfig updates the current memory configuration if the provided index differs from the current configuration.
+// It modifies the memoryConfigIdx and memoryConfig fields and returns true if the configuration was updated, false otherwise.
+func (b *PLA) applyMemoryConfig(mcIdx int) bool {
+	if mcIdx == b.memoryConfigIdx {
+		return false
 	}
-	return b.ramRead(addr)
-}
+	b.memoryConfigIdx = mcIdx
+	b.memoryConfig = b.memoryMap.Get(uint8(mcIdx))
 
-// ramRead0x9000 reads a byte of data from the RAM or cartridge memory at a given address within the 0x9000 bank range.
-// It checks the memory configuration of the specified bank and accesses data accordingly.
-func (b *PLA) ramRead0x9000(addr uint16) uint8 {
-	mc := b.memoryConfig[0x9]
-	if mc == ROL && b.cartManIntervals&references.ROM_LO == references.ROM_LO {
-		return b.cartManRead(addr)
+	if b.memoryConfig[0xd] == I_O {
+		b.bankWrite[0xd] = b.ramWrite0xD000_I_O
+	} else {
+		b.bankWrite[0xd] = b.ramWrite
 	}
-	return b.ramRead(addr)
-}
 
-// ramRead0xA000 reads data from memory mapped to the 0xA000 address range based on the current memory configuration.
-// For ROH configuration, it attempts to read from cartridge memory.
-// For BAS configuration, it returns data from the BASIC ROM bank.
-// Defaults to reading from RAM if no other condition is met.
-func (b *PLA) ramRead0xA000(addr uint16) uint8 {
-	mc := b.memoryConfig[0xa]
-	if mc == BAS {
-		return b.basicRead(addr)
+	if mc := b.memoryConfig[0x8]; mc == ROL && b.cartManIntervals&references.ROM_LO == references.ROM_LO {
+		b.bankRead[0x8] = b.cartManRead
+	} else {
+		b.bankRead[0x8] = b.ramRead
 	}
-	if mc == ROH && b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1 {
-		return b.cartManRead(addr)
-	}
-	return b.ramRead(addr)
-}
 
-// ramRead0xB000 handles reading from the 0xB000 bank based on memory configuration and address.
-// It prioritizes cartridge ROM, BASIC ROM, or falls back to RAM as per the active memory configuration.
-// addr represents the memory address to be read within the 0xB000 range.
-// Returns the 8-bit value read from the specified memory address.
-func (b *PLA) ramRead0xB000(addr uint16) uint8 {
-	mc := b.memoryConfig[0xb]
-	if mc == BAS {
-		return b.basicRead(addr)
+	if mc := b.memoryConfig[0x9]; mc == ROL && b.cartManIntervals&references.ROM_LO == references.ROM_LO {
+		b.bankRead[0x9] = b.cartManRead
+	} else {
+		b.bankRead[0x9] = b.ramRead
 	}
-	if mc == ROH && b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1 {
-		return b.cartManRead(addr)
-	}
-	return b.ramRead(addr)
-}
 
-// ramRead0xD000 reads data from memory address 0xD000 and handles different configurations like I/O, character, or RAM access.
-// It uses the memory configuration to determine the appropriate data source and returns the byte at the specified address.
-// If the memory is set to I/O, it delegates the read operation to the appropriate port handler function.
-// For character memory configuration, it accesses the char array using the offset masked from the given address.
-// Defaults to reading directly from RAM if no special memory configuration is in place for the 0xD000 bank.
-func (b *PLA) ramRead0xD000(addr uint16) uint8 {
-	mc := b.memoryConfig[0xd]
-	if mc == I_O {
-		p := (addr >> 8) & 0x0f
-		return b.u15Read[p](addr)
+	if mc := b.memoryConfig[0xa]; mc == BAS {
+		b.bankRead[0xa] = b.basicRead
+	} else if mc == ROH && b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1 {
+		b.bankRead[0xa] = b.cartManRead
+	} else {
+		b.bankRead[0xa] = b.ramRead
 	}
-	if mc == CHA {
-		return b.charRead(addr)
-	}
-	return b.ramRead(addr)
-}
 
-// ramRead0xE000 handles reading from the 0xE000-0xEFFF memory range based on the current memory configuration.
-// It prioritizes cartMan, kernal ROM, or RAM depending on the memory bank setup for the 0xE block.
-func (b *PLA) ramRead0xE000(addr uint16) uint8 {
-	mc := b.memoryConfig[0xe]
-	if mc == KER {
-		return b.kernalRead(addr)
+	if mc := b.memoryConfig[0xb]; mc == BAS {
+		b.bankRead[0xb] = b.basicRead
+	} else if mc == ROH && b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1 {
+		b.bankRead[0xb] = b.cartManRead
+	} else {
+		b.bankRead[0xb] = b.ramRead
 	}
-	if mc == ROH && b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2 {
-		return b.cartManRead(addr)
-	}
-	return b.ramRead(addr)
-}
 
-// ramRead0xF000 reads a byte from the 0xF000 memory range based on the current memory configuration and provided address.
-// Depending on configuration, it accesses cartridge ROM, kernal ROM, or internal RAM to retrieve the value.
-// The addr parameter specifies the address within the 0xF000 range to read.
-func (b *PLA) ramRead0xF000(addr uint16) uint8 {
-	mc := b.memoryConfig[0xf]
-	if mc == KER {
-		return b.kernalRead(addr)
+	if mc := b.memoryConfig[0xd]; mc == I_O {
+		b.bankRead[0xd] = b.ramRead0xD000_I_O
+	} else if mc == CHA {
+		b.bankRead[0xd] = b.charRead
+	} else {
+		b.bankRead[0xd] = b.ramRead
 	}
-	if mc == ROH && b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2 {
-		return b.cartManRead(addr)
+
+	if mc := b.memoryConfig[0xe]; mc == KER {
+		b.bankRead[0xe] = b.kernalRead
+	} else if mc == ROH && b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2 {
+		b.bankRead[0xe] = b.cartManRead
+	} else {
+		b.bankRead[0xe] = b.ramRead
 	}
-	return b.ramRead(addr)
+
+	if mc := b.memoryConfig[0xf]; mc == KER {
+		b.bankRead[0xf] = b.kernalRead
+	} else if mc == ROH && b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2 {
+		b.bankRead[0xf] = b.cartManRead
+	} else {
+		b.bankRead[0xf] = b.ramRead
+	}
+	//fmt.Printf("SYSTEM MEMORY CONFIG CHANGED [exRom: %d - game: %d] %d -> %v\n", exRom, game, mcIdx, b.memoryConfig)
+	return true
 }
 
 // portReadColor reads a color value from the specified address in the color memory, merging specific bits from VIC data.
