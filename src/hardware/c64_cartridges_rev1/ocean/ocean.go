@@ -37,7 +37,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 }
 
 func (c *CartridgeOcean) reset(hard bool) {
-	c.game, c.exRom, c.intervals = references.GetC64CartridgeSpec(references.C64CartridgeMode16K).Data()
+	c.game, c.exRom, c.intervals = references.C64CartridgeSpec16K.Data()
 	c.lastData = 0
 	c.currBank = 0
 	if hard {

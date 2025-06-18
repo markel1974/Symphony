@@ -116,7 +116,7 @@ func (p *Ports) SetTape(tapeSense int, tapeWriteIn int, tapeMotorIn int) {
 }
 
 // GetMemoryConfig calculates the memory configuration index based on port direction, data values, and cartridge signals.
-func (p *Ports) GetMemoryConfig(exRom uint8, game uint8) uint8 {
+func (p *Ports) GetMemoryConfig(game uint8, exRom uint8) uint8 {
 	c := ((^p.dir | p.data) & 0x7) | (exRom << 3) | (game << 4)
 	return c
 }

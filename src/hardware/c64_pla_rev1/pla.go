@@ -21,11 +21,12 @@ type PLA struct {
 	ramRead  ReadFn
 	ramWrite WriteFn
 
-	cartManRead    func(references.C64RomInterval, uint16) (uint8, bool)
-	cartManWrite   func(references.C64RomInterval, uint16, uint8) bool
-	cartManIORead  func(uint16) (uint8, bool)
-	cartManIOWrite func(uint16, uint8) bool
-	cartManConfig  func() (uint8, uint8, bool)
+	cartManRead      func(references.C64RomInterval, uint16) (uint8, bool)
+	cartManWrite     func(references.C64RomInterval, uint16, uint8) bool
+	cartManIORead    func(uint16) (uint8, bool)
+	cartManIOWrite   func(uint16, uint8) bool
+	cartManConfig    func() (uint8, uint8, bool)
+	cartManIntervals uint8
 
 	vaSignals func() uint8
 
@@ -55,31 +56,32 @@ const bankSize = bankMask + 1
 func NewPLA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
-		BaseComponent:   component.NewBaseComponent(),
-		vaSignals:       nil,
-		triggerSize:     0,
-		ramRead:         nil,
-		ramWrite:        nil,
-		cartManRead:     nil,
-		cartManWrite:    nil,
-		cartManIORead:   nil,
-		cartManIOWrite:  nil,
-		bankWrite:       make([]WriteFn, bankSize),
-		bankRead:        make([]ReadFn, bankSize),
-		u15Write:        make([]WriteFn, bankSize),
-		u15Read:         make([]ReadFn, bankSize),
-		memoryMap:       mm,
-		memoryConfig:    mm.Get(0),
-		ports:           nil,
-		emulatorId:      NewEmulatorId(),
-		basicRead:       nil,
-		kernalRead:      nil,
-		charRead:        nil,
-		colorRead:       nil,
-		cfg:             nil,
-		memoryConfigIdx: -1,
-		wTriggers:       nil,
-		label:           label,
+		BaseComponent:    component.NewBaseComponent(),
+		vaSignals:        nil,
+		triggerSize:      0,
+		ramRead:          nil,
+		ramWrite:         nil,
+		cartManRead:      nil,
+		cartManWrite:     nil,
+		cartManIORead:    nil,
+		cartManIOWrite:   nil,
+		bankWrite:        make([]WriteFn, bankSize),
+		bankRead:         make([]ReadFn, bankSize),
+		u15Write:         make([]WriteFn, bankSize),
+		u15Read:          make([]ReadFn, bankSize),
+		memoryMap:        mm,
+		memoryConfig:     mm.Get(0),
+		ports:            nil,
+		emulatorId:       NewEmulatorId(),
+		basicRead:        nil,
+		kernalRead:       nil,
+		charRead:         nil,
+		colorRead:        nil,
+		cfg:              nil,
+		memoryConfigIdx:  -1,
+		wTriggers:        nil,
+		label:            label,
+		cartManIntervals: 0,
 	}
 	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIC64Pla(b, label, instance))
 	return b
@@ -94,11 +96,11 @@ func (b *PLA) Setup() error {
 
 //U15 74LS138
 //Pin 12	VIC-II	$D000–$D3FF
-//Pin 4	SID	$D400–$D7FF
+//Pin 04	SID	$D400–$D7FF
 //Pin 10	Color RAM	$D800–$DBFF
 //Pin 14	CIA1	$DC00–$DCFF
 //Pin 15	CIA2	$DD00–$DDFF
-//Pin 9	I/O2 (cartucce)	$DF00–$DFFF
+//Pin 09	I/O2 (cartucce)	$DF00–$DFFF
 //Pin 11	I/O1 (cartucce)	$DE00–$DEFF
 
 // Bind initializes and connects various components to the PLA, including VIC, SID, CIA1, CIA2, cartridge manager, and ROM loader.
@@ -219,13 +221,12 @@ func (b *PLA) update() {
 func (b *PLA) RebuildMemoryConfig() {
 	//https://sta.c64.org/cbm64mem.html
 	//https://codebase64.org/doku.php?id=base:memory_management
-	game := uint8(1)
-	exRom := uint8(1)
-	if g, x, ok := b.cartManConfig(); ok {
-		game = g
-		exRom = x
+	spec := references.C64CartridgeSpecOff
+	if game, exRom, ok := b.cartManConfig(); ok {
+		spec = references.GetCartridgeSpec(game, exRom)
 	}
-	mcIdx := b.ports.GetMemoryConfig(exRom, game)
+	b.cartManIntervals = spec.Intervals
+	mcIdx := b.ports.GetMemoryConfig(spec.Game, spec.ExRom)
 	if int(mcIdx) != b.memoryConfigIdx {
 		b.memoryConfigIdx = int(mcIdx)
 		b.memoryConfig = b.memoryMap.Get(mcIdx)

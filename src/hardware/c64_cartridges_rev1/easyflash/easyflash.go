@@ -194,46 +194,45 @@ func (c *CartridgeEasyFlash) initialize(rawCart []byte) {
 // Logs warnings for unsupported modes and invokes a expansion configuration change if required.
 func (c *CartridgeEasyFlash) controlUpdate(value uint8, update bool) {
 	c.register02 = value & 0x87 // led, mode, exrom, game [led 0x80, other 0x07]
-	mode := references.C64CartridgeModeOff
+	spec := references.C64CartridgeSpecOff
 	mxg := value & 0x07
 	switch mxg {
 	case 0:
 		//GAME from jumper, EXROM high (i.e., Ultimax or Off)
 		if !c.jumper {
-			mode = references.C64CartridgeModeUltimax
+			spec = references.C64CartridgeSpecUltimax
 		} else {
-			mode = references.C64CartridgeModeOff
+			spec = references.C64CartridgeSpecOff
 		}
 	case 1, 3:
 		//Reserved, don’t use these
-		log.Printf("CartridgeEasyFlash: unsupported mode %d", mode)
+		log.Printf("CartridgeEasyFlash: unsupported mode %d", mxg)
 	case 2:
 		//GAME from jumper, EXROM low (i.e. 16K or 8K)
 		if !c.jumper {
-			mode = references.C64CartridgeMode16K
+			spec = references.C64CartridgeSpec16K
 		} else {
-			mode = references.C64CartridgeMode8K
+			spec = references.C64CartridgeSpec8K
 		}
 	case 4:
 		//Cartridge ROM off (RAM at $DF00 still available)
-		mode = references.C64CartridgeModeOff
+		spec = references.C64CartridgeSpecOff
 	case 5:
 		//Ultimax (Low bank at $8000, high bank at $e000) GAME = 0, EXROM = 1
-		mode = references.C64CartridgeModeUltimax
+		spec = references.C64CartridgeSpecUltimax
 	case 6:
 		//8k Cartridge (Low bank at $8000) GAME = 1, EXROM = 0
-		mode = references.C64CartridgeMode8K
+		spec = references.C64CartridgeSpec8K
 	case 7:
 		//16k cartridge (Low bank at $8000, high bank at $a000)
-		mode = references.C64CartridgeMode16K
+		spec = references.C64CartridgeSpec16K
 	}
-	if int(mode) != c.memoryConfigIdx {
-		c.memoryConfigIdx = int(mode)
-		v := references.GetC64CartridgeSpec(mode)
-		c.game = v.Game
-		c.exRom = v.ExRom
-		c.intervalLo = v.IntervalLow
-		c.intervalHi = v.IntervalHigh
+	if int(spec.Mode) != c.memoryConfigIdx {
+		c.memoryConfigIdx = int(spec.Mode)
+		c.game = spec.Game
+		c.exRom = spec.ExRom
+		c.intervalLo = spec.IntervalLow
+		c.intervalHi = spec.IntervalHigh
 		//fmt.Println("EASYFLASH MEMORY CONFIG CHANGED:", mxg, "exrom:", c.exRom, "game:", c.game, "LO", c.intervalLo, "HIGH", c.intervalHi)
 		if update {
 			c.expansion.GameExRomConfigChanged()

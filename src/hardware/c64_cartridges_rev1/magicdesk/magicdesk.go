@@ -25,7 +25,7 @@ func NewMagicDesk(parent references.IComponent, factory references.IComponentFac
 	md := &CartridgeMagicDesk{
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
-		spec:          references.GetC64CartridgeSpec(references.C64CartridgeMode8K),
+		spec:          references.C64CartridgeSpec8K,
 		bankMask:      0x7f,
 		regVal:        0,
 		slot:          0,
@@ -115,9 +115,9 @@ func (c *CartridgeMagicDesk) IOWrite(addr uint16, data uint8) bool {
 		fmt.Println("magic desk slot", c.slot)
 		var spec *references.C64CartridgeSpec
 		if (data & 0x80) != 0 {
-			spec = references.GetC64CartridgeSpec(references.C64CartridgeModeOff)
+			spec = references.C64CartridgeSpecOff
 		} else {
-			spec = references.GetC64CartridgeSpec(references.C64CartridgeMode8K)
+			spec = references.C64CartridgeSpec8K
 		}
 		if spec != c.spec {
 			fmt.Println("magic desk changing config", c.spec)

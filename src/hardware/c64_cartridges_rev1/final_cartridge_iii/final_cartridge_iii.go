@@ -60,7 +60,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 }
 
 func (c *CartridgeFinalCartridgeIII) reset(hard bool) {
-	c.game, c.exRom, c.intervals = references.GetC64CartridgeSpec(references.C64CartridgeMode16K).Data()
+	c.game, c.exRom, c.intervals = references.C64CartridgeSpec16K.Data()
 	c.banksCurrent = 0
 	c.regEnabled = true
 	c.reg = 0
@@ -237,16 +237,16 @@ func (c *CartridgeFinalCartridgeIII) IOWrite(addr uint16, data uint8) bool {
 	command := (data >> 4) & 0x03
 	switch command {
 	case 0b00:
-		c.game, c.exRom, c.intervals = references.GetC64CartridgeSpec(references.C64CartridgeMode16K).Data()
+		c.game, c.exRom, c.intervals = references.C64CartridgeSpec16K.Data()
 		c.board.GameExRomConfigChanged()
 	case 0b01:
 		c.doFreeze()
 		return true
 	case 0b10:
-		c.game, c.exRom, c.intervals = references.GetC64CartridgeSpec(references.C64CartridgeMode8K).Data()
+		c.game, c.exRom, c.intervals = references.C64CartridgeSpec8K.Data()
 		c.board.GameExRomConfigChanged()
 	case 0b11:
-		c.game, c.exRom, c.intervals = references.GetC64CartridgeSpec(references.C64CartridgeModeOff).Data()
+		c.game, c.exRom, c.intervals = references.C64CartridgeSpecOff.Data()
 		c.board.GameExRomConfigChanged()
 	}
 	return true
@@ -259,7 +259,7 @@ func (c *CartridgeFinalCartridgeIII) doFreeze() {
 		return
 	}
 	c.banksCurrent = uint8(c.banksTotal - 1)
-	spec := references.GetC64CartridgeSpec(references.C64CartridgeModeUltimax)
+	spec := references.C64CartridgeSpecUltimax
 	c.game, c.exRom, c.intervals = spec.Data()
 	c.board.GameExRomConfigChanged()
 	c.board.NMITrigger()

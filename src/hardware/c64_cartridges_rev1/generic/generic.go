@@ -100,25 +100,25 @@ func (c *CartridgeGeneric) initCrt(ldr references.IC64CartridgeLoader) error {
 		if chip1.Size() == cSize8K {
 			if chip2, _ := ldr.ReadChipHeader(); chip2 == nil {
 				copy(c.bank0, chip1.Data())
-				c.applyConfig(references.C64CartridgeMode8K)
+				c.applyConfig(references.C64CartridgeSpec8K)
 				return nil
 			} else if chip2.Size() == cSize8K {
 				if chip2.Start() == 0x8000 {
 					copy(c.bank0, chip1.Data())
 					copy(c.bank1, chip2.Data())
-					c.applyConfig(references.C64CartridgeMode16K)
+					c.applyConfig(references.C64CartridgeSpec16K)
 					return nil
 				} else if chip2.Start() == 0xe000 {
 					copy(c.bank0, chip1.Data())
 					copy(c.bank1, chip2.Data())
-					c.applyConfig(references.C64CartridgeModeUltimax)
+					c.applyConfig(references.C64CartridgeSpecUltimax)
 					return nil
 				}
 			}
 		} else if chip1.Size() == cSize16K {
 			copy(c.bank0, chip1.Data()[:cSize8K])
 			copy(c.bank1, chip1.Data()[cSize8K:])
-			c.applyConfig(references.C64CartridgeMode16K)
+			c.applyConfig(references.C64CartridgeSpec16K)
 			return nil
 		}
 	}
@@ -135,26 +135,25 @@ func (c *CartridgeGeneric) initRaw(data []byte) error {
 	}
 	if len(data) == cSize8K {
 		copy(c.bank0, data)
-		c.applyConfig(references.C64CartridgeMode8K)
+		c.applyConfig(references.C64CartridgeSpec8K)
 		return nil
 	}
 	if len(data) == cSize16K {
 		copy(c.bank0, data[:cSize8K])
 		copy(c.bank1, data[cSize8K:])
-		c.applyConfig(references.C64CartridgeMode16K)
+		c.applyConfig(references.C64CartridgeSpec16K)
 		return nil
 	}
 	return fmt.Errorf("invalid size")
 }
 
 // applyConfig configures the CartridgeGeneric cartridge by setting its memory intervals and control flags based on the provided C64CartridgeMode.
-func (c *CartridgeGeneric) applyConfig(ct references.C64CartridgeMode) {
-	v := references.GetC64CartridgeSpec(ct)
-	c.game = v.Game
-	c.exRom = v.ExRom
-	c.b0Interval = v.IntervalLow
-	c.b1Interval = v.IntervalHigh
-	c.intervals = v.IntervalLow | v.IntervalHigh
+func (c *CartridgeGeneric) applyConfig(spec *references.C64CartridgeSpec) {
+	c.game = spec.Game
+	c.exRom = spec.ExRom
+	c.b0Interval = spec.IntervalLow
+	c.b1Interval = spec.IntervalHigh
+	c.intervals = spec.IntervalLow | spec.IntervalHigh
 }
 
 // HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.
