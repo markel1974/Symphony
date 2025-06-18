@@ -43,17 +43,21 @@ type IC64Pla interface {
 
 	Reset()
 
-	GetMemoryConfig() []uint8
+	//GetMemoryConfig() []uint8
 
-	SetMemoryEntry(m uint8)
+	//SetMemoryEntry(m uint8)
 
-	SetMemoryConfig(m []uint8)
+	//SetMemoryConfig(m []uint8)
 
 	RebuildMemoryConfig()
 
 	Write(addr uint16, data uint8)
 
 	Read(addr uint16) uint8
+
+	ExtWrite(memoryConfig int, addr uint16, data uint8)
+
+	ExtRead(memoryConfig int, addr uint16) uint8
 
 	SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int
 

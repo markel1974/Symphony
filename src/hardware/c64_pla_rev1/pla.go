@@ -205,15 +205,6 @@ func (b *PLA) EmulationRequired() bool {
 	return false
 }
 
-// update adjusts the PLA's state by synchronizing port and memory configurations. It ensures the system's consistency.
-func (b *PLA) update() {
-	//https://sta.c64.org/cbm64mem.html
-	//https://codebase64.org/doku.php?id=base:memory_management
-	//b.ports.SetTape(tape_sense, tape_write_in, tape_motor_in)
-	b.ports.Update()
-	b.RebuildMemoryConfig()
-}
-
 // RebuildMemoryConfig updates the PLA's current memory configuration based on the cartridge and port settings.
 func (b *PLA) RebuildMemoryConfig() {
 	//https://sta.c64.org/cbm64mem.html
@@ -223,27 +214,57 @@ func (b *PLA) RebuildMemoryConfig() {
 		spec = references.GetCartridgeSpec(game, exRom)
 	}
 	b.cartManIntervals = spec.Intervals
-	mcIdx := b.ports.GetMemoryConfig(spec.Game, spec.ExRom)
-	if int(mcIdx) != b.memoryConfigIdx {
-		b.memoryConfigIdx = int(mcIdx)
-		b.memoryConfig = b.memoryMap.Get(mcIdx)
-		//fmt.Printf("SYSTEM MEMORY CONFIG CHANGED [exRom: %d - game: %d] %d -> %v\n", exRom, game, mcIdx, b.memoryConfig)
+	dir, data := b.ports.Config()
+	mcIdx := ((^dir | data) & 0x7) | (spec.ExRom << 3) | (spec.Game << 4)
+	b.applyMemoryConfig(int(mcIdx))
+}
+
+// applyMemoryConfig updates the current memory configuration if the provided index differs from the current configuration.
+// It modifies the memoryConfigIdx and memoryConfig fields and returns true if the configuration was updated, false otherwise.
+func (b *PLA) applyMemoryConfig(mcIdx int) bool {
+	if mcIdx == b.memoryConfigIdx {
+		return false
+	}
+	b.memoryConfigIdx = mcIdx
+	b.memoryConfig = b.memoryMap.Get(uint8(mcIdx))
+	//fmt.Printf("SYSTEM MEMORY CONFIG CHANGED [exRom: %d - game: %d] %d -> %v\n", exRom, game, mcIdx, b.memoryConfig)
+	return true
+}
+
+// update adjusts the PLA's state by synchronizing port and memory configurations. It ensures the system's consistency.
+func (b *PLA) update() {
+	//https://sta.c64.org/cbm64mem.html
+	//https://codebase64.org/doku.php?id=base:memory_management
+	//b.ports.SetTape(tape_sense, tape_write_in, tape_motor_in)
+	b.ports.Update()
+	b.RebuildMemoryConfig()
+}
+
+// ExtWrite writes a byte to the specified address with an optional memory configuration adjustment.
+func (b *PLA) ExtWrite(memConfig int, addr uint16, data uint8) {
+	var prevMemConfig = -1
+	if memConfig >= 0 {
+		prevMemConfig = b.memoryConfigIdx
+		b.applyMemoryConfig(memConfig)
+	}
+	b.Write(addr, data)
+	if prevMemConfig >= 0 {
+		b.applyMemoryConfig(prevMemConfig)
 	}
 }
 
-// GetMemoryConfig returns the memory configuration of the PLA as a slice of uint8.
-func (b *PLA) GetMemoryConfig() []uint8 {
-	return b.memoryConfig
-}
-
-// SetMemoryConfig sets the memory configuration for the PLA instance using the provided configuration slice.
-func (b *PLA) SetMemoryConfig(cfg []uint8) {
-	b.memoryConfig = cfg
-}
-
-// SetMemoryEntry sets the memory configuration for the PLA using the provided configuration value.
-func (b *PLA) SetMemoryEntry(memConfig uint8) {
-	b.memoryConfig = b.memoryMap.Get(memConfig)
+// ExtRead reads a byte of data from the specified memory address with a temporary memory configuration applied.
+func (b *PLA) ExtRead(memConfig int, addr uint16) uint8 {
+	var prevMemConfig = -1
+	if memConfig >= 0 {
+		prevMemConfig = b.memoryConfigIdx
+		b.applyMemoryConfig(memConfig)
+	}
+	data := b.Read(addr)
+	if prevMemConfig >= 0 {
+		b.applyMemoryConfig(prevMemConfig)
+	}
+	return data
 }
 
 // Read retrieves the value at the specified memory address using the current memory bank configuration.

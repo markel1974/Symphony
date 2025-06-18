@@ -367,29 +367,12 @@ func (s *Board) JoySwap() {
 
 // ExtRamWrite writes a byte of data to an external RAM address based on the specified memory configuration.
 func (s *Board) ExtRamWrite(memConfig int, addr uint16, data uint8) {
-	var prev []uint8 = nil
-	if memConfig >= 0 {
-		prev = s.plaSocket.GetMemoryConfig()
-		s.plaSocket.SetMemoryEntry(uint8(memConfig))
-	}
-	s.plaSocket.Write(addr, data)
-	if prev != nil {
-		s.plaSocket.SetMemoryConfig(prev)
-	}
+	s.plaSocket.ExtWrite(memConfig, addr, data)
 }
 
 // ExtRamRead reads a byte from external RAM at the specified address using the given memory configuration.
 func (s *Board) ExtRamRead(memConfig int, addr uint16) uint8 {
-	var prev []uint8 = nil
-	if memConfig >= 0 {
-		prev = s.plaSocket.GetMemoryConfig()
-		s.plaSocket.SetMemoryEntry(uint8(memConfig))
-	}
-	rb := s.plaSocket.Read(addr)
-	if prev != nil {
-		s.plaSocket.SetMemoryConfig(prev)
-	}
-	return rb
+	return s.plaSocket.ExtRead(memConfig, addr)
 }
 
 // startPRG initializes and loads a PRG from the specified file path. It returns an error if loading the PRG fails.
