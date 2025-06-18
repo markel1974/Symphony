@@ -45,6 +45,16 @@ import (
 
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/2/Pinball Spectacular.crt"
 
+// -d "/Users/tinmr305/Downloads/c64carts/PINBSPEC.d64"
+
+// -d "/Users/tinmr305/Downloads/c64carts/Pinball_Spectacular_v3.d64"
+
+// -c "/Users/tinmr305/Downloads/c64carts/Pinball Spectacular.crt"
+
+// -c "/Users/tinmr305/Downloads/c64carts/pang.bin"
+// -c "/Users/tinmr305/Downloads/c64carts/pang.crt"
+// -d "/Users/tinmr305/Downloads/c64carts/PANG.d64"
+
 // -c "/Users/tinmr305/Downloads/c64carts/c64diag.bin"
 
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/Tool Collection.crt"

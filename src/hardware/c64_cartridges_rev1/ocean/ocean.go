@@ -104,6 +104,7 @@ func (c *CartridgeOcean) IOWrite(addr uint16, data uint8) bool {
 		c.currBank = currBank
 		c.lastData = data
 		//fmt.Printf("[OCEAN] Bank switching %x => %d, %d\n", addr, data, c.currBank)
+		return true
 	}
 	return false
 }

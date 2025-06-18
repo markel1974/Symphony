@@ -288,8 +288,7 @@ func (b *PLA) ramWrite0x0000(addr uint16, data uint8) {
 		//b.ramWrite(0, b.vicLastByte())
 		b.update()
 		return
-	}
-	if addr == 1 {
+	} else if addr == 1 {
 		b.ports.SetData(data)
 		//b.ramWrite(1, b.vicLastByte())
 		b.update()
@@ -314,8 +313,7 @@ func (b *PLA) ramRead0xD000_I_O(addr uint16) uint8 {
 func (b *PLA) ramRead0x0000(addr uint16) uint8 {
 	if addr == 0 {
 		return b.ports.GetDirection()
-	}
-	if addr == 1 {
+	} else if addr == 1 {
 		return b.ports.GetDataRead()
 	}
 	return b.ramRead(addr)
@@ -412,7 +410,5 @@ func (b *PLA) portReadIO(addr uint16) uint8 {
 // portWriteIO handles writing a byte of data to the specified IO port address.
 // If the write operation is handled by the cartMan, it exits early.
 func (b *PLA) portWriteIO(addr uint16, data uint8) {
-	if ok := b.cartManIOWrite(addr, data); ok {
-		return
-	}
+	_ = b.cartManIOWrite(addr, data)
 }
