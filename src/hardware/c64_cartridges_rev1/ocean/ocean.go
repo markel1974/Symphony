@@ -15,8 +15,7 @@ type CartridgeOcean struct {
 	banks    [][]byte
 	ioMask   uint8
 	currBank uint8
-	game     uint8
-	exRom    uint8
+	spec     *references.C64CartridgeSpec
 	board    references.IC64Expansion
 }
 
@@ -25,6 +24,7 @@ func NewCartridgeOcean(parent references.IComponent, factory references.ICompone
 	co := &CartridgeOcean{
 		BaseComponent: component.NewBaseComponent(),
 		loaderId:      Identifier(),
+		spec:          references.C64CartridgeSpec16K,
 	}
 	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdIC64Cartridge(co, label, instance))
 	return co
@@ -36,7 +36,7 @@ func New(parent references.IComponent, factory references.IComponentFactory, lab
 }
 
 func (c *CartridgeOcean) reset(hard bool) {
-	c.game, c.exRom, _ = references.C64CartridgeSpec16K.Data()
+	c.spec = references.C64CartridgeSpec16K
 	c.lastData = 0
 	c.currBank = 0
 	if hard {
@@ -118,12 +118,12 @@ func (c *CartridgeOcean) IRQCLear(_ uint32) {
 
 // GetExRom returns the value of the ExROM line, which indicates the configuration of the cartridge in the memory map.
 func (c *CartridgeOcean) GetExRom() uint8 {
-	return c.exRom
+	return c.spec.ExRom
 }
 
 // GetGame returns the current game state identifier as a uint8 value.
 func (c *CartridgeOcean) GetGame() uint8 {
-	return c.game
+	return c.spec.Game
 }
 
 // Detach removes the cartridge from the system, performing any necessary cleanup or state reset operations.
