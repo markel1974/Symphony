@@ -212,7 +212,6 @@ func (f *Filters) filterCalculatorNone() {
 
 // filterCalculatorLP computes and sets filter properties specifically for a low-pass (LP) filter using resonance parameters.
 func (f *Filters) filterCalculatorLP() {
-	//LP or BP filter using resonanceLP
 	arg := f.resonanceLP[f.FilterIndex()]
 	f.g1, f.g2 = f.computePoles(arg)
 	//NOT BP filter: not increment
@@ -226,7 +225,6 @@ func (f *Filters) filterCalculatorLP() {
 
 // filterCalculatorHP computes high-pass filter parameters using resonanceHP and updates filter coefficients.
 func (f *Filters) filterCalculatorHP() {
-	//HP filter using resonanceHP
 	arg := f.resonanceHP[f.FilterIndex()]
 	f.g1, f.g2 = f.computePoles(arg)
 	//NOT BP filter: not increment
@@ -240,7 +238,6 @@ func (f *Filters) filterCalculatorHP() {
 
 // filterCalculatorBP calculates band-pass filter parameters based on resonance and updates internal states accordingly.
 func (f *Filters) filterCalculatorBP() {
-	//LP or BP filter using resonanceLP
 	arg := f.resonanceLP[f.FilterIndex()]
 	f.g1, f.g2 = f.computePoles(arg)
 	//BP filter must increment
@@ -260,8 +257,7 @@ func (f *Filters) filterCalculatorBP() {
 
 // filterCalculatorLPHP adjusts the filter parameters for a high-pass filter using resonance values and pole computations.
 func (f *Filters) filterCalculatorLPHP() {
-	//LP or BP filter using resonanceLP
-	arg := f.resonanceLP[f.FilterIndex()]
+	arg := f.resonanceHP[f.FilterIndex()]
 	f.g1, f.g2 = f.computePoles(arg)
 	//NOT BP filter: not increment
 	if math.Abs(f.g1) >= (f.g2 + 1.0) {
@@ -281,7 +277,6 @@ func (f *Filters) filterCalculatorLPHP() {
 // It updates the filter's internal state variables for resonance and amplitude.
 // Ensures stability of the filter poles by checking and adjusting computed values.
 func (f *Filters) filterCalculatorLPBP() {
-	//LP or BP filter using resonanceLP
 	arg := f.resonanceLP[f.FilterIndex()]
 	f.g1, f.g2 = f.computePoles(arg)
 	//BP filter must increment
@@ -297,8 +292,7 @@ func (f *Filters) filterCalculatorLPBP() {
 // filterCalculatorHPBP calculates and updates high-pass and band-pass filter parameters for the filter object.
 // It utilizes resonanceHP and computes poles based on the filter index, updating internal filter attributes accordingly.
 func (f *Filters) filterCalculatorHPBP() {
-	//LP or BP filter using resonanceLP
-	arg := f.resonanceLP[f.FilterIndex()]
+	arg := f.resonanceHP[f.FilterIndex()]
 	f.g1, f.g2 = f.computePoles(arg)
 	//BP filter must increment
 	f.g2 += 0.1
@@ -312,8 +306,7 @@ func (f *Filters) filterCalculatorHPBP() {
 
 // filterCalculatorLPBPHP calculates filter coefficients and amplitude based on resonance and current filter configuration.
 func (f *Filters) filterCalculatorLPBPHP() {
-	//LP or BP filter using resonanceLP
-	arg := f.resonanceLP[f.FilterIndex()]
+	arg := f.resonanceHP[f.FilterIndex()]
 	f.g1, f.g2 = f.computePoles(arg)
 	//BP filter must increment
 	f.g2 += 0.1
