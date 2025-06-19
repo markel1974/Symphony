@@ -29,9 +29,7 @@ type PLA struct {
 	bankRead         []ReadFn
 	u15Write         []WriteFn // represent U15, 74LS138 (mux)
 	u15Read          []ReadFn  // represent U15, 74LS138 (mux)
-	memoryMap        *MemoryMap
-	memoryConfigIdx  int
-	memoryConfig     []uint8
+	bankSwitcher     *BankSwitcher
 	ports            *Ports
 	basicRead        ReadFn
 	kernalRead       ReadFn
@@ -53,7 +51,7 @@ const bankSize = bankMask + 1
 // It registers the component with the given parent and factory, assigns a label, and sets the instance number.
 // The function also sets up memory mapping, triggers, and other internal properties specific to the PLA.
 func NewPLA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *PLA {
-	mm := NewMemoryMap()
+	mm := NewBankSwitcher()
 	b := &PLA{
 		BaseComponent:    component.NewBaseComponent(),
 		vaSignals:        nil,
@@ -67,8 +65,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		bankRead:         make([]ReadFn, bankSize),
 		u15Write:         make([]WriteFn, bankSize),
 		u15Read:          make([]ReadFn, bankSize),
-		memoryMap:        mm,
-		memoryConfig:     mm.Get(0),
+		bankSwitcher:     mm,
 		ports:            nil,
 		emulatorId:       NewEmulatorId(),
 		basicRead:        nil,
@@ -76,7 +73,6 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		charRead:         nil,
 		colorRead:        nil,
 		cfg:              nil,
-		memoryConfigIdx:  -1,
 		wTriggers:        nil,
 		label:            label,
 		cartManIntervals: 0,
@@ -93,13 +89,13 @@ func (b *PLA) Setup() error {
 }
 
 //U15 74LS138
-//Pin 12	VIC-II	$D000–$D3FF
-//Pin 04	SID	$D400–$D7FF
-//Pin 10	Color RAM	$D800–$DBFF
-//Pin 14	CIA1	$DC00–$DCFF
-//Pin 15	CIA2	$DD00–$DDFF
-//Pin 09	I/O2 (cartucce)	$DF00–$DFFF
-//Pin 11	I/O1 (cartucce)	$DE00–$DEFF
+//Pin 12	[cs12 $D000–$D3FF] VIC-II
+//Pin 04	[ cs4 $D400–$D7FF] SID
+//Pin 10	[cs10 $D800–$DBFF] Color RAM
+//Pin 14	[cs14 $DC00–$DCFF] CIA1
+//Pin 15	[cs15 $DD00–$DDFF] CIA2
+//Pin 09	[ cs9 $DF00–$DFFF] I/O 2 (cartridge)
+//Pin 11	[cs11 $DE00–$DEFF] I/O 1 (cartridge)
 
 // Bind initializes and binds PLA components such as RAM, ROM, cartridge manager, chip-select elements, and signal handlers.
 func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASignals, cartMan references.IC64CartridgeManager, ram references.IC64Ram, roms references.IC64Roms, cs12 references.IC64PlaChipSelect, cs4 references.IC64PlaChipSelect, cs14 references.IC64PlaChipSelect, cs15 references.IC64PlaChipSelect, cs10 references.IC64PlaChipSelect) error {
@@ -125,9 +121,8 @@ func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASig
 	for idx := range b.bankRead {
 		b.bankRead[idx] = b.ramRead
 	}
-	//pla write mapping
+
 	b.bankWrite[0x0] = b.ramWrite0x0000
-	//pla read mapping
 	b.bankRead[0x0] = b.ramRead0x0000
 
 	b.u15Write[0x0] = cs12.WriteRegister
@@ -223,7 +218,7 @@ func (b *PLA) update() {
 func (b *PLA) ExtWrite(memConfig int, addr uint16, data uint8) {
 	var prevMemConfig = -1
 	if memConfig >= 0 {
-		prevMemConfig = b.memoryConfigIdx
+		prevMemConfig = b.bankSwitcher.GetIndex()
 		b.applyMemoryConfig(memConfig)
 	}
 	b.Write(addr, data)
@@ -240,7 +235,7 @@ func (b *PLA) ExtWrite(memConfig int, addr uint16, data uint8) {
 func (b *PLA) ExtRead(memConfig int, addr uint16) uint8 {
 	var prevMemConfig = -1
 	if memConfig >= 0 {
-		prevMemConfig = b.memoryConfigIdx
+		prevMemConfig = b.bankSwitcher.GetIndex()
 		b.applyMemoryConfig(memConfig)
 	}
 	data := b.Read(addr)
@@ -254,15 +249,12 @@ func (b *PLA) ExtRead(memConfig int, addr uint16) uint8 {
 // The address is used to determine the memory bank by shifting its bits.
 // The bank's read function is then invoked with the address.
 func (b *PLA) Read(addr uint16) uint8 {
-	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
 	bank := addr >> 12
 	return b.bankRead[bank](addr)
 }
 
 // Write writes a byte of data to a specific memory address based on the bank configuration and triggers write callbacks.
 func (b *PLA) Write(addr uint16, data uint8) {
-	//sta.c64.org/cbm64mem.html
-	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
 	bank := addr >> 12
 	b.bankWrite[bank](addr, data)
 	if b.wTriggers == nil {
@@ -365,14 +357,12 @@ func (b *PLA) readOpenBus(_ uint16) uint8 {
 }
 
 // applyMemoryConfig updates the current memory configuration based on the given index and returns true if a change occurred.
-func (b *PLA) applyMemoryConfig(mcIdx int) bool {
-	if mcIdx == b.memoryConfigIdx {
+func (b *PLA) applyMemoryConfig(bankIndex int) bool {
+	memoryConfig, ok := b.bankSwitcher.Apply(bankIndex)
+	if !ok {
 		return false
 	}
-	b.memoryConfigIdx = mcIdx
-	b.memoryConfig = b.memoryMap.Get(uint8(mcIdx))
-
-	for idx, v := range b.memoryConfig {
+	for idx, v := range memoryConfig {
 		if idx == 0 {
 			b.bankRead[0] = b.ramRead0x0000
 			b.bankWrite[0] = b.ramWrite0x0000
@@ -421,7 +411,7 @@ func (b *PLA) applyMemoryConfig(mcIdx int) bool {
 		return false
 	}
 	b.memoryConfigIdx = mcIdx
-	b.memoryConfig = b.memoryMap.Get(uint8(mcIdx))
+	b.memoryConfig = b.bankSwitcher.Get(uint8(mcIdx))
 
 	if b.memoryConfig[0xd] == I_O {
 		b.bankWrite[0xd] = b.ramWrite0xD000_I_O
