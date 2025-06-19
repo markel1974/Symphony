@@ -226,15 +226,15 @@ func (sid *SID) calcSoundBuffer() {
 				sumOutputNonFiltered += voiceContribution
 			}
 		}
-		sumOutputFiltered = sid.filters.Compute(sumOutputFiltered)
-		mixedSignal := sumOutputNonFiltered + sumOutputFiltered
+		computedFilter := float32(sid.filters.Compute(sumOutputFiltered))
+		mixedSignal := float32(sumOutputNonFiltered) + computedFilter
 
 		const sidVolumeMax = 15.0          // 0-15
 		const normalizedIntValue = 32767.0 // interval -1.0, 1.0
 		const scalingFactor = 1024.0       // scaling factor (eq: 1 >> 10)
 		const divisor = normalizedIntValue * scalingFactor
 		volumeFactor := float32(currentVolumeValue) / sidVolumeMax
-		val := float32(mixedSignal) * volumeFactor
+		val := mixedSignal * volumeFactor
 		sid.soundBuffer[idx] = val / divisor
 	}
 }

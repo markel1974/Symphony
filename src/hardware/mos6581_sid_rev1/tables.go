@@ -15,6 +15,7 @@ const (
 	RegisterCount     = 32
 
 	triTableSize = 8192 //1 << 13 //0x1fff
+	sawTableSize = 8192
 )
 
 // _triSawTable256 is a lookup table of 256 uint16 values used for generating triangular or sawtooth waveforms.
@@ -193,8 +194,33 @@ var _eGDRShiftTable256 = [256]uint8{
 	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 }
 
+// Function that calculates the non-linear value for a given 12-bit input
+func nonLinearSaw(i int) uint16 {
+	const valueMax = 8192
+	const valueHalf = valueMax / 2
+	const rangeMax = valueMax - 1
+	const divisor = 1048576
+	const outputMask = 0xffff
+	// Linear base scales a 13-bit value to a 16-bit range
+	output := i << 3
+	// Non-linear correction is adapted to the new range
+	if i < valueHalf {
+		// Divisor is increased to maintain the same "curvature"
+		output -= (i * i) / divisor
+	} else {
+		output += ((i-rangeMax)*(i-rangeMax))/divisor - 32
+	}
+	if output < 0 {
+		return 0
+	}
+	output &= outputMask
+	return uint16(output)
+}
+
 // _triTable8192 is an array that holds precomputed 12-bit triangle wave values for efficient lookup.
 var _triTable8192 [triTableSize]uint16
+
+var _sawTable [sawTableSize]uint16
 
 // egTable calculates a value from a lookup table using the lower 4 bits of the input parameter.
 func egTable(d uint8) uint32 {
@@ -239,6 +265,10 @@ func triTable(count uint32) uint16 {
 	return _triTable8192[idx]
 }
 
+func sawTable(count uint32) uint16 {
+	return _sawTable[count>>11]
+}
+
 // init initializes the triangular waveform lookup table `_triTable8192` with symmetric ascending and descending values.
 func init() {
 	l := uint16(len(_triTable8192) / 2)
@@ -246,5 +276,8 @@ func init() {
 		val := (i << 4) | (i >> 8)              // i rappresenta il contatore a 12 bit per la rampa
 		_triTable8192[i] = val                  // Rampa ascendente, indici 0..4095
 		_triTable8192[(triTableSize-1)-i] = val // Rampa discendente simmetrica
+	}
+	for i := 0; i < sawTableSize; i++ {
+		_sawTable[i] = nonLinearSaw(i)
 	}
 }

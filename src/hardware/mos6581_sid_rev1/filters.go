@@ -122,15 +122,14 @@ func (f *Filters) Reset() {
 }
 
 // Compute applies a filtering algorithm to the given input and updates internal state variables for subsequent calculations.
-func (f *Filters) Compute(outputFilter int32) int32 {
+func (f *Filters) Compute(outputFilter int32) float64 {
 	xn := float64(outputFilter) * f.filterAmpl
 	yn := xn + (f.d1 * f.xn1) + (f.d2 * f.xn2) - (f.g1 * f.yn1) - (f.g2 * f.yn2)
 	f.yn2 = f.yn1
 	f.yn1 = yn
 	f.xn2 = f.xn1
 	f.xn1 = xn
-	outputFilter = int32(yn)
-	return outputFilter
+	return yn
 }
 
 // UpdateFreqLow updates the low-frequency filter value if the new value differs from the current one and triggers recalculation.

@@ -329,7 +329,7 @@ func (v *Voice) buildWaveFormTest() []func() uint16 {
 	waveFormTest[WaveNoise] = func() uint16 {
 		// Deterministic output mode
 		lfsr := v.noiseLFSR | 0x400000
-		return uint16(((lfsr>>12)&0xFF)<<8 | (lfsr & 0xFF))
+		return uint16(((lfsr>>12)&0xff)<<8 | (lfsr & 0xff))
 	}
 	return waveFormTest
 }
@@ -351,19 +351,8 @@ func (v *Voice) buildWaveForm() []func() uint16 {
 		return triTable(v.count)
 	}
 	waveForm[WaveSaw] = func() uint16 {
-		const scaleFactorRegular = 17
-		const scaleFactorFaulty = 14
-		accum := v.count >> 12
-		// 6581 DAC's non-linearity:
-		// The idea is that not all bits have the same "weight".
-		// The contribution of the first 11 bits (the more "regular" part of the ramp).
-		output := (accum & 0x7FF) * scaleFactorRegular
-		// The most significant bit (MSB, value 0x800) is the "faulty" one
-		// and contributes differently. We apply its contribution separately.
-		if (accum & 0x800) != 0 {
-			output += 0x800 * scaleFactorFaulty
-		}
-		return uint16(output >> 4)
+		//return uint16(v.count>>12) << 4
+		return sawTable(v.count)
 	}
 	waveForm[WaveRect] = func() uint16 {
 		// The pw threshold is 12 bit, the count accumulator is 24 bit.
