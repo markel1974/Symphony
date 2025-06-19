@@ -233,9 +233,9 @@ func (sid *SID) calcSoundBuffer() {
 		const normalizedIntValue = 32767.0 // interval -1.0, 1.0
 		const scalingFactor = 1024.0       // scaling factor (eq: 1 >> 10)
 		const divisor = normalizedIntValue * scalingFactor
+		const inverseDivisor = 1.0 / divisor
 		volumeFactor := float32(currentVolumeValue) / sidVolumeMax
-		val := mixedSignal * volumeFactor
-		sid.soundBuffer[idx] = val / divisor
+		sid.soundBuffer[idx] = (mixedSignal * volumeFactor) * inverseDivisor
 	}
 }
 
