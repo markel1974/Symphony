@@ -4,54 +4,54 @@ import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
+	"log"
 )
 
-// ReadFn represents a function type that takes a 16-bit unsigned integer as input and returns an 8-bit unsigned integer.
+// ReadFn defines a function type that takes a 16-bit unsigned integer as input and returns an 8-bit unsigned integer.
 type ReadFn func(uint16) uint8
 
-// WriteFn represents a function that processes a 16-bit address and an 8-bit value.
+// WriteFn defines a function type that takes a 16-bit address and an 8-bit data value for write operations.
 type WriteFn func(uint16, uint8)
 
-// PLA represents the Programmable Logic Array implementation associated with memory and I/O operations in the C64 emulator.
+// PLA represents the Programmable Logic Array (PLA) component responsible for memory and I/O address mapping logic.
 type PLA struct {
 	*component.BaseComponent
-
-	triggerSize int
-
-	ramRead  ReadFn
-	ramWrite WriteFn
-
+	triggerSize      int
+	ramRead          ReadFn
+	ramWrite         WriteFn
 	cartManRead      ReadFn
 	cartManIORead    func(uint16) (uint8, bool)
 	cartManIOWrite   func(uint16, uint8) bool
 	cartManConfig    func() (uint8, uint8, bool)
 	cartManIntervals uint8
-
-	vaSignals func() uint8
-
-	bankWrite       []WriteFn
-	bankRead        []ReadFn
-	u15Write        []WriteFn // represent U15, 74LS138 (mux)
-	u15Read         []ReadFn  // represent U15, 74LS138 (mux)
-	memoryMap       *MemoryMap
-	memoryConfigIdx int
-	memoryConfig    []uint8
-	ports           *Ports
-	emulatorId      *EmulatorId
-	basicRead       ReadFn
-	kernalRead      ReadFn
-	charRead        ReadFn
-	colorRead       ReadFn
-	//colorWrite      WriteFn
-	cfg       *config.Config
-	wTriggers *WriteTriggers
-	label     string
+	vaSignals        func() uint8
+	bankWrite        []WriteFn
+	bankRead         []ReadFn
+	u15Write         []WriteFn // represent U15, 74LS138 (mux)
+	u15Read          []ReadFn  // represent U15, 74LS138 (mux)
+	memoryMap        *MemoryMap
+	memoryConfigIdx  int
+	memoryConfig     []uint8
+	ports            *Ports
+	basicRead        ReadFn
+	kernalRead       ReadFn
+	charRead         ReadFn
+	colorRead        ReadFn
+	cfg              *config.Config
+	wTriggers        *WriteTriggers
+	label            string
+	emulatorId       *EmulatorId
 }
 
+// bankMask is a constant used as a bitmask to extract or manipulate specific bits in a value, often for bank-related operations.
 const bankMask = 0x0f
+
+// bankSize represents the total size of the bank, calculated as bankMask + 1.
 const bankSize = bankMask + 1
 
-// NewPLA initializes and returns a new instance of the PLA component with its memory map and configurations set up.
+// NewPLA initializes and returns a new PLA (Programmable Logic Array) component with the specified configuration.
+// It registers the component with the given parent and factory, assigns a label, and sets the instance number.
+// The function also sets up memory mapping, triggers, and other internal properties specific to the PLA.
 func NewPLA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *PLA {
 	mm := NewMemoryMap()
 	b := &PLA{
@@ -85,7 +85,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	return b
 }
 
-// Setup initializes the PLA instance with the provided socket and configuration and returns an error if any issue occurs.
+// Setup initializes the PLA instance by configuring its settings and creating the port object.
 func (b *PLA) Setup() error {
 	b.cfg = b.GetFactory().GetConfig()
 	b.ports = NewPorts(b.GetFactory(), b, b.label, 0)
@@ -101,7 +101,7 @@ func (b *PLA) Setup() error {
 //Pin 09	I/O2 (cartucce)	$DF00–$DFFF
 //Pin 11	I/O1 (cartucce)	$DE00–$DEFF
 
-// Bind initializes and connects various components to the PLA, including VIC, SID, CIA1, CIA2, cartridge manager, and ROM loader.
+// Bind initializes and binds PLA components such as RAM, ROM, cartridge manager, chip-select elements, and signal handlers.
 func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASignals, cartMan references.IC64CartridgeManager, ram references.IC64Ram, roms references.IC64Roms, cs12 references.IC64PlaChipSelect, cs4 references.IC64PlaChipSelect, cs14 references.IC64PlaChipSelect, cs15 references.IC64PlaChipSelect, cs10 references.IC64PlaChipSelect) error {
 	b.vaSignals = vaSignals.GetVASignal
 	b.triggerSize = ram.Size()
@@ -170,33 +170,33 @@ func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASig
 	return nil
 }
 
-// Connect establishes a connection using the PLA object and returns an error if the connection fails.
+// Connect initializes and sets up the PLA component, enabling necessary configurations for proper operation.
 func (b *PLA) Connect() error {
 	return nil
 }
 
-// Internal checks internal state or behavior specific to the PLA instance and returns a boolean value.
+// Internal checks and returns whether the PLA's internal operation mode is enabled or active.
 func (b *PLA) Internal() bool {
 	return false
 }
 
-// Reset reinitializes the internal state of the PLA, including resetting its ports and updating related configurations.
+// Reset resets the internal state of the PLA, reinitializing ports, and triggering an update of the memory configuration.
 func (b *PLA) Reset() {
 	b.ports.Reset()
 	b.update()
 }
 
-// Emulate runs the emulation process for the PLA, executing its defined logic and behavior within the system's context.
+// Emulate performs the main emulation step for the PLA, updating its state and processing associated logic.
 func (b *PLA) Emulate() {
 	//
 }
 
-// EmulationRequired checks if emulation is needed for the current PLA instance and returns false by default.
+// EmulationRequired determines whether emulation is required for the PLA component. Returns false by default.
 func (b *PLA) EmulationRequired() bool {
 	return false
 }
 
-// RebuildMemoryConfig updates the PLA's current memory configuration based on the cartridge and port settings.
+// RebuildMemoryConfig recalculates and applies the current memory configuration based on cartridge and port settings.
 func (b *PLA) RebuildMemoryConfig() {
 	//https://sta.c64.org/cbm64mem.html
 	//https://codebase64.org/doku.php?id=base:memory_management
@@ -210,7 +210,7 @@ func (b *PLA) RebuildMemoryConfig() {
 	b.applyMemoryConfig(int(mcIdx))
 }
 
-// update adjusts the PLA's state by synchronizing port and memory configurations. It ensures the system's consistency.
+// update updates the state of the PLA by rebuilding the memory configuration and updating the port settings.
 func (b *PLA) update() {
 	//https://sta.c64.org/cbm64mem.html
 	//https://codebase64.org/doku.php?id=base:memory_management
@@ -219,7 +219,7 @@ func (b *PLA) update() {
 	b.RebuildMemoryConfig()
 }
 
-// ExtWrite writes a byte to the specified address with an optional memory configuration adjustment.
+// ExtWrite writes a byte to the specified address using the provided memory configuration, temporarily switching configurations.
 func (b *PLA) ExtWrite(memConfig int, addr uint16, data uint8) {
 	var prevMemConfig = -1
 	if memConfig >= 0 {
@@ -232,7 +232,11 @@ func (b *PLA) ExtWrite(memConfig int, addr uint16, data uint8) {
 	}
 }
 
-// ExtRead reads a byte of data from the specified memory address with a temporary memory configuration applied.
+// ExtRead allows reading a specific memory address using a temporary memory configuration.
+// The original memory configuration is restored after the read operation.
+// memConfig specifies the temporary memory configuration to apply.
+// addr is the address to read from.
+// Returns the data read from the given memory address.
 func (b *PLA) ExtRead(memConfig int, addr uint16) uint8 {
 	var prevMemConfig = -1
 	if memConfig >= 0 {
@@ -246,14 +250,16 @@ func (b *PLA) ExtRead(memConfig int, addr uint16) uint8 {
 	return data
 }
 
-// Read retrieves the value at the specified memory address using the current memory bank configuration.
+// Read retrieves the value from the memory mapped by the given address.
+// The address is used to determine the memory bank by shifting its bits.
+// The bank's read function is then invoked with the address.
 func (b *PLA) Read(addr uint16) uint8 {
 	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
 	bank := addr >> 12
 	return b.bankRead[bank](addr)
 }
 
-// Write writes a single byte of data to a specified memory address and triggers any assigned write handlers.
+// Write writes a byte of data to a specific memory address based on the bank configuration and triggers write callbacks.
 func (b *PLA) Write(addr uint16, data uint8) {
 	//sta.c64.org/cbm64mem.html
 	//https://www.c64-wiki.com/wiki/Memory_Map#Configurations
@@ -265,7 +271,7 @@ func (b *PLA) Write(addr uint16, data uint8) {
 	b.wTriggers.Exec(addr, data)
 }
 
-// SetWriteTrigger sets a write trigger function for the specified address and returns the trigger ID.
+// SetWriteTrigger registers a write-trigger at a specified address with a callback and returns the assigned trigger ID.
 func (b *PLA) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
 	if b.wTriggers == nil {
 		b.wTriggers = NewWriteTriggers(b.triggerSize)
@@ -273,7 +279,7 @@ func (b *PLA) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
 	return b.wTriggers.Add(addr, fn)
 }
 
-// RemoveRamTrigger removes a specified RAM trigger identified by the address and ID provided.
+// RemoveRamTrigger removes a write-trigger by its unique ID for the specified memory address in the WriteTriggers collection.
 func (b *PLA) RemoveRamTrigger(addr uint16, id int) {
 	if b.wTriggers == nil {
 		return
@@ -281,35 +287,39 @@ func (b *PLA) RemoveRamTrigger(addr uint16, id int) {
 	b.wTriggers.Remove(addr, id)
 }
 
-// ramWrite0x0000 writes a byte to the specified RAM address, handling special cases for addresses 0x0000 and 0x0001.
+// ramWrite0x0000 handles writing data to memory address 0x0000, updating port direction and data where applicable.
 func (b *PLA) ramWrite0x0000(addr uint16, data uint8) {
 	if addr == 0 {
 		b.ports.SetDir(data)
-		//b.ramWrite(0, b.vicLastByte())
+		//b.ramWrite(0, b.vaSignals)
 		b.update()
 		return
 	} else if addr == 1 {
 		b.ports.SetData(data)
-		//b.ramWrite(1, b.vicLastByte())
+		//b.ramWrite(1, b.vaSignals())
 		b.update()
 		return
 	}
 	b.ramWrite(addr, data)
 }
 
-// ramWrite0xD000 writes a byte of data to the specified address in the 0xD000 memory range based on the memory configuration.
-func (b *PLA) ramWrite0xD000_I_O(addr uint16, data uint8) {
+// ramWriteIO writes a byte of data to the specific address by determining the target U15 write function based on the address.
+func (b *PLA) ramWriteIO(addr uint16, data uint8) {
 	p := (addr >> 8) & 0x0f
 	b.u15Write[p](addr, data)
 	return
 }
 
-func (b *PLA) ramRead0xD000_I_O(addr uint16) uint8 {
+// ramReadIO returns the value of the RAM read at the specified address, using the appropriate U15 read function.
+func (b *PLA) ramReadIO(addr uint16) uint8 {
 	p := (addr >> 8) & 0x0f
 	return b.u15Read[p](addr)
 }
 
-// ramRead0x0000 reads a byte from RAM or retrieves data from port registers based on the provided address.
+// ramRead0x0000 reads data from address 0x0000 and processes special cases for addresses 0 and 1.
+// For address 0, it returns the direction register value from the ports.
+// For address 1, it returns the data register value from the ports.
+// For other addresses, it delegates to the generic RAM read function.
 func (b *PLA) ramRead0x0000(addr uint16) uint8 {
 	if addr == 0 {
 		return b.ports.GetDirection()
@@ -319,6 +329,91 @@ func (b *PLA) ramRead0x0000(addr uint16) uint8 {
 	return b.ramRead(addr)
 }
 
+// portReadColor reads color data from the Color RAM and combines it with data from the VIC latch for a full byte response.
+func (b *PLA) portReadColor(addr uint16) uint8 {
+	p1 := b.colorRead(addr) & 0x0f // enables the physical Color RAM chip. This chip receives the address and puts the 4 color bits it has stored on data bus lines D0-D3 (lower half).
+	p2 := b.vaSignals() & 0xf0     // signals to VIC that Color RAM is being read. VIC responds by putting the last 4 bits of its internal latch (lastByte) on data bus lines D4-D7 (upper half)
+	return p1 | p2
+}
+
+// portReadIO reads a byte from the specified IO port address.
+// It prioritizes cartridge IO reads, falls back to VA signal reads, or accesses the emulator ID if applicable.
+func (b *PLA) portReadIO(addr uint16) uint8 {
+	if v, ok := b.cartManIORead(addr); ok {
+		return v
+	}
+	if addr < 0xdfa0 {
+		return b.vaSignals()
+	}
+	return b.emulatorId.Read(addr)
+}
+
+// portWriteIO writes data to the specified IO port address using the cartridge manager's IO write functionality.
+func (b *PLA) portWriteIO(addr uint16, data uint8) {
+	_ = b.cartManIOWrite(addr, data)
+}
+
+// writeOpenBus writes to an "open bus" state where no specific memory or component is targeted.
+// Used for situations where writes do not directly influence system behavior or state.
+func (b *PLA) writeOpenBus(_ uint16, _ uint8) {
+	//
+}
+
+// readOpenBus reads the current value of the open bus at the specified address and returns its signals as uint8.
+func (b *PLA) readOpenBus(_ uint16) uint8 {
+	return b.vaSignals()
+}
+
+// applyMemoryConfig updates the current memory configuration based on the given index and returns true if a change occurred.
+func (b *PLA) applyMemoryConfig(mcIdx int) bool {
+	if mcIdx == b.memoryConfigIdx {
+		return false
+	}
+	b.memoryConfigIdx = mcIdx
+	b.memoryConfig = b.memoryMap.Get(uint8(mcIdx))
+
+	for idx, v := range b.memoryConfig {
+		if idx == 0 {
+			b.bankRead[0] = b.ramRead0x0000
+			b.bankWrite[0] = b.ramWrite0x0000
+		} else {
+			b.bankRead[idx] = b.ramRead
+			b.bankWrite[idx] = b.ramWrite
+		}
+		switch v {
+		case RAM:
+			// Default is RAM, no action needed.
+		case KER:
+			b.bankRead[idx] = b.kernalRead
+		case BAS:
+			b.bankRead[idx] = b.basicRead
+		case CHA:
+			b.bankRead[idx] = b.charRead
+		case I_O:
+			b.bankRead[idx] = b.ramReadIO
+			b.bankWrite[idx] = b.ramWriteIO
+		case ROL:
+			if b.cartManIntervals&references.ROM_LO == references.ROM_LO {
+				b.bankRead[idx] = b.cartManRead
+			}
+		case ROH:
+			if (idx == 0xa || idx == 0xb) && (b.cartManIntervals&references.ROM_HI_1 == references.ROM_HI_1) {
+				b.bankRead[idx] = b.cartManRead
+			} else if (idx == 0xe || idx == 0xf) && (b.cartManIntervals&references.ROM_HI_2 == references.ROM_HI_2) {
+				b.bankRead[idx] = b.cartManRead
+			}
+		case UND:
+			b.bankRead[idx] = b.readOpenBus
+			b.bankWrite[idx] = b.writeOpenBus
+		default:
+			log.Fatalf("wrong memory config for bank %X: %d", idx, v)
+		}
+	}
+	//fmt.Printf("SYSTEM MEMORY CONFIG CHANGED  %d -> %v\n", mcIdx, b.memoryConfig)
+	return true
+}
+
+/*
 // applyMemoryConfig updates the current memory configuration if the provided index differs from the current configuration.
 // It modifies the memoryConfigIdx and memoryConfig fields and returns true if the configuration was updated, false otherwise.
 func (b *PLA) applyMemoryConfig(mcIdx int) bool {
@@ -363,7 +458,7 @@ func (b *PLA) applyMemoryConfig(mcIdx int) bool {
 	}
 
 	if mc := b.memoryConfig[0xd]; mc == I_O {
-		b.bankRead[0xd] = b.ramRead0xD000_I_O
+		b.bankRead[0xd] = b.ramReadIO
 	} else if mc == CHA {
 		b.bankRead[0xd] = b.charRead
 	} else {
@@ -388,27 +483,4 @@ func (b *PLA) applyMemoryConfig(mcIdx int) bool {
 	//fmt.Printf("SYSTEM MEMORY CONFIG CHANGED [exRom: %d - game: %d] %d -> %v\n", exRom, game, mcIdx, b.memoryConfig)
 	return true
 }
-
-// portReadColor reads a color value from the specified address in the color memory, merging specific bits from VIC data.
-func (b *PLA) portReadColor(addr uint16) uint8 {
-	p1 := b.colorRead(addr) & 0x0f // enables the physical Color RAM chip. This chip receives the address and puts the 4 color bits it has stored on data bus lines D0-D3 (lower half).
-	p2 := b.vaSignals() & 0xf0     // signals to VIC that Color RAM is being read. VIC responds by putting the last 4 bits of its internal latch (lastByte) on data bus lines D4-D7 (upper half)
-	return p1 | p2
-}
-
-// portReadIO reads a byte from a specified I/O port address using the provided memory and I/O mappings.
-func (b *PLA) portReadIO(addr uint16) uint8 {
-	if v, ok := b.cartManIORead(addr); ok {
-		return v
-	}
-	if addr < 0xdfa0 {
-		return b.vaSignals()
-	}
-	return b.emulatorId.Read(addr)
-}
-
-// portWriteIO handles writing a byte of data to the specified IO port address.
-// If the write operation is handled by the cartMan, it exits early.
-func (b *PLA) portWriteIO(addr uint16, data uint8) {
-	_ = b.cartManIOWrite(addr, data)
-}
+*/

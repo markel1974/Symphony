@@ -98,25 +98,25 @@ func (c *CartridgeGeneric) initCrt(ldr references.IC64CartridgeLoader) error {
 		if chip1.Size() == cSize8K {
 			if chip2, _ := ldr.ReadChipHeader(); chip2 == nil {
 				copy(c.bank0, chip1.Data())
-				c.spec = references.C64CartridgeSpec8K
+				c.applySpec(references.C64CartridgeSpec8K)
 				return nil
 			} else if chip2.Size() == cSize8K {
 				if chip2.Start() == 0x8000 {
 					copy(c.bank0, chip1.Data())
 					copy(c.bank1, chip2.Data())
-					c.spec = references.C64CartridgeSpec16K
+					c.applySpec(references.C64CartridgeSpec16K)
 					return nil
 				} else if chip2.Start() == 0xe000 {
 					copy(c.bank0, chip1.Data())
 					copy(c.bank1, chip2.Data())
-					c.spec = references.C64CartridgeSpecUltimax
+					c.applySpec(references.C64CartridgeSpecUltimax)
 					return nil
 				}
 			}
 		} else if chip1.Size() == cSize16K {
 			copy(c.bank0, chip1.Data()[:cSize8K])
 			copy(c.bank1, chip1.Data()[cSize8K:])
-			c.spec = references.C64CartridgeSpec16K
+			c.applySpec(references.C64CartridgeSpec16K)
 			return nil
 		}
 	}
@@ -203,4 +203,9 @@ func (c *CartridgeGeneric) Emulate() {
 func (c *CartridgeGeneric) Detach() error {
 	//TODO
 	return nil
+}
+
+func (c *CartridgeGeneric) applySpec(spec *references.C64CartridgeSpec) {
+	c.spec = spec
+	c.expansion.GameExRomConfigChanged()
 }

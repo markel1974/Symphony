@@ -9,8 +9,9 @@ import (
 // chipHeaderDef defines the header string used for CHIP format identifiers.
 // chipHeaderSize specifies the size of the CHIP header in bytes.
 const (
-	chipHeaderDef  = "CHIP"
-	chipHeaderSize = 0x10
+	chipHeaderDef      = "CHIP"
+	chipHeaderSize     = 0x10
+	chipHeaderBoundary = 0x10000
 )
 
 // ChipHeader represents a structured header for a cartridge chip including metadata and associated data.
@@ -26,7 +27,14 @@ type ChipHeader struct {
 
 // NewChipHeader creates and returns a new instance of CrtChipHeader with its fields initialized to default zero values.
 func NewChipHeader() *ChipHeader {
-	ch := &ChipHeader{}
+	ch := &ChipHeader{
+		skip:  0,
+		kind:  0,
+		bank:  0,
+		start: 0,
+		size:  0,
+		data:  []byte{},
+	}
 	return ch
 }
 
@@ -64,19 +72,23 @@ func (h *ChipHeader) Setup(rowCartridge []byte, cursor int) (int, error) {
 	if h.start, err = Buf2uint16(chipHeader[12:16]); err != nil {
 		return 0, err
 	}
-	if int(h.start)+int(h.size) > 0x10000 {
+	boundary := int(h.start) + int(h.size)
+	if boundary > chipHeaderBoundary {
 		return 0, fmt.Errorf("rom crossing the 64k boundary")
 	}
-	if cursor+int(h.size) > len(rowCartridge) {
+	dataOffset := cursor + int(h.size)
+	if dataOffset > len(rowCartridge) {
 		return 0, fmt.Errorf("corrupted data")
 	}
-
+	dataSize := dataOffset - cursor
+	if uint16(dataSize) != h.size {
+		return 0, fmt.Errorf("invalid cartridge size")
+	}
 	h.data = make([]uint8, int(h.size))
-	copy(h.data, rowCartridge[cursor:cursor+int(h.size)])
-	cursor += int(h.size)
+	copy(h.data, rowCartridge[cursor:dataOffset])
 
+	cursor += int(h.size)
 	if h.skip > 0 {
-		//TODO verify
 		cursor += int(h.skip)
 	}
 	return cursor, nil

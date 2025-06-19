@@ -57,14 +57,23 @@ func ValidateMachine(m MachineType, id string) error {
 
 // ValidateCartridge checks if the provided cartridge data matches specific byte patterns and returns an error if invalid.
 func ValidateCartridge(data []byte) error {
+	const b0 = 0xc3 //C
+	const b1 = 0xc2 //B
+	const b2 = 0xcd //M
+	const b3 = 0x38 //8
+	const b4 = 0x30 //0
+	if len(data) < 5 {
+		return errors.New("invalid cartridge len")
+	}
 	i4 := data[0x4]
 	i5 := data[0x5]
 	i6 := data[0x6]
 	i7 := data[0x7]
 	i8 := data[0x8]
-	if i4 == 0xc3 && i5 == 0xc2 && i6 == 0xcd && i7 == 0x38 && i8 == 0x30 {
+	//fmt.Printf("Received header: %02x %02x %02x %02x %02x\n", i4, i5, i6, i7, i8)
+	//fmt.Printf("Expected header: %02x %02x %02x %02x %02x\n", b0, b1, b2, b3, b4)
+	if i4 == b0 && i5 == b1 && i6 == b2 && i7 == b3 && i8 == b4 {
 		return nil
-		//valid cartridge
 	}
 	return errors.New("invalid cartridge")
 }
