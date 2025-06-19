@@ -2,10 +2,11 @@ package mos6581
 
 // SampleFreq represents the standard audio sample frequency in Hz.
 // Frequency denotes the clock frequency used for audio processing.
-// Cycles calculates the number of clock cycles per audio sample.
+// Cycles calculate the number of clock cycles per audio sample.
 // SampleBufSize defines the size of the audio sample buffer in bytes.
 // RegisterCount specifies the number of registers available.
 // triTableSize indicates the size of the triangular waveform lookup table.
+// sawTableSize represents the size of the sawtooth waveform lookup table.
 const (
 	SampleFreq        = 44100
 	Frequency         = 985248
@@ -38,6 +39,7 @@ var _triTable8192 [triTableSize]uint16
 // _sawTable8192 is a precomputed lookup table holding non-linear sawtooth wave values for efficient waveform synthesis.
 var _sawTable8192 [sawTableSize]uint16
 
+// computeShift determines the shift value based on the input level, used for range-specific optimizations.
 func computeShift(level uint8) uint8 {
 	switch {
 	case level < 8:
@@ -55,34 +57,36 @@ func computeShift(level uint8) uint8 {
 	}
 }
 
-// computeSawtooth generates a sawtooth waveform by combining a triangle wave and a duty cycle-based square wave.
-// The function uses a lookup table accessed via triLutFn to compute the triangle wave component.
-func computeSawtooth(i int, triLutFn func(uint32) uint16) uint16 {
-	phaseAccumulator := uint32(i << 11)
-	triOutput := triLutFn(phaseAccumulator)
-	// Calculate the output of a 50% duty cycle square wave.
-	// It's 0xFFFF for the first half of the accumulator cycle, 0x0000 for the second.
-	rectOutput := uint16(0x0000)
-	if (phaseAccumulator >> 12) < 2048 {
-		// Threshold is half of the 12-bit range (4096 / 2)
-		rectOutput = 0xffff
-	}
-	// Combine the two signals with a logical AND to get the final sawtooth.
-	return triOutput & rectOutput
-}
-
 // computeTriangle calculates a 12-bit triangle waveform value based on the input integer and returns it as a uint16.
 // The function shifts the input, generates an ascending or descending ramp based on the most significant bit, and scales the result.
 func computeTriangle(i int) uint16 {
 	accumulator := uint16(i >> 1) // 12 bit
 	msb := accumulator >> 11
-	var triVal uint16
+	var triOutput uint16
 	if msb&1 == 1 {
-		triVal = ^accumulator //descending ramp
+		triOutput = ^accumulator //descending ramp
 	} else {
-		triVal = accumulator //ascending ramp
+		triOutput = accumulator //ascending ramp
 	}
-	return (triVal << 4) & 0xfff0
+	return (triOutput << 4) & 0xfff0
+}
+
+// computeSawtooth generates a sawtooth waveform by combining a triangle wave and a duty cycle-based square wave.
+// The function uses a lookup table accessed via triLutFn to compute the triangle wave component.
+func computeSawtooth(i int, triLutFn func(uint32) uint16) uint16 {
+	const bits = 12
+	const bitsUsed = bits - 1
+	const bitsValue = 1 << bits
+	const bitsValueHalf = uint32(bitsValue / 2)
+	phaseAccumulator := uint32(i << bitsUsed)
+	triOutput := triLutFn(phaseAccumulator)
+	// calculate the output of a 50% duty cycle square wave.
+	rectOutput := uint16(0x0000)
+	if (phaseAccumulator >> bits) < bitsValueHalf {
+		rectOutput = 0xffff
+	}
+	// combine the two signals with a logical AND to get the final sawtooth.
+	return triOutput & rectOutput
 }
 
 // egLut calculates a value from a lookup table using the lower 4 bits of the input parameter.
