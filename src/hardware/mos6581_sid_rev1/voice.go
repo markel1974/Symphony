@@ -354,7 +354,6 @@ func (v *Voice) waveSaw() uint16 {
 // waveRect generates a rectangular waveform by comparing a 24-bit counter with a 12-bit pulse width threshold.
 func (v *Voice) waveRect() uint16 {
 	// The pw threshold is 12 bit, the count accumulator is 24 bit.
-	// The comparison is (count_24bit > pw_12bit_shl_12)
 	if v.count > (uint32(v.pw) << 12) {
 		return 0xffff
 	}
@@ -385,11 +384,13 @@ func (v *Voice) waveTriSawRect() uint16 {
 // It updates the internal LFSR state of the Voice and calculates noise based on XOR feedback of specific bits.
 // Returns a 16-bit unsigned integer representing the generated noise level.
 func (v *Voice) waveNoise() uint16 {
-	// Advance the 23-bit LFSR
+	// defines the LFSR polynomial
 	msb := (v.noiseLFSR >> 22) & 1
 	tapBit := (v.noiseLFSR >> 17) & 1
 	feedback := msb ^ tapBit
+	// performs shift and inserts new bit
 	v.noiseLFSR = ((v.noiseLFSR << 1) | feedback) & DefaultNoiseLFSR
+	// maps the output
 	return uint16(((v.noiseLFSR >> 15) & 0xFF) << 8)
 }
 

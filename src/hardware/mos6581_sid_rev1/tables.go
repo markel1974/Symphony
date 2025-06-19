@@ -74,15 +74,15 @@ func computeSawtooth(i int, triLutFn func(uint32) uint16) uint16 {
 // computeTriangle calculates a 12-bit triangle waveform value based on the input integer and returns it as a uint16.
 // The function shifts the input, generates an ascending or descending ramp based on the most significant bit, and scales the result.
 func computeTriangle(i int) uint16 {
-	accumulator12bit := uint16(i >> 1)
-	msb := accumulator12bit >> 11
+	accumulator := uint16(i >> 1) // 12 bit
+	msb := accumulator >> 11
 	var triVal uint16
 	if msb&1 == 1 {
-		triVal = ^accumulator12bit //descending ramp
+		triVal = ^accumulator //descending ramp
 	} else {
-		triVal = accumulator12bit //ascending ramp
+		triVal = accumulator //ascending ramp
 	}
-	return (triVal << 4) & 0xFFF0
+	return (triVal << 4) & 0xfff0
 }
 
 // egLut calculates a value from a lookup table using the lower 4 bits of the input parameter.
@@ -106,7 +106,8 @@ func triLut(count uint32) uint16 {
 
 // sawLut retrieves a precomputed sawtooth wave value from the lookup table based on the provided count value.
 func sawLut(count uint32) uint16 {
-	return _sawTable8192[count>>11]
+	idx := (count >> 11) & 0x1fff
+	return _sawTable8192[idx]
 }
 
 // init initializes precomputed lookup tables used for waveform synthesis and efficient operations in the system.
@@ -114,23 +115,21 @@ func init() {
 	for idx := range _eGDRShiftTable256 {
 		_eGDRShiftTable256[idx] = computeShift(uint8(idx))
 	}
-
-	//triTableLen := uint16(len(_triTable8192))
-	//triTableHalLen := triTableLen / 2
-	//for i := uint16(0); i < triTableHalLen; i++ {
-	//val := computeTriangle(i)
-	//	_triTable8192[i] = val                 // Ascending ramp, indices 0..4095
-	//	_triTable8192[(triTableLen-1)-i] = val // Symmetric descending ramp
-	//}
-
 	for idx := range _triTable8192 {
 		_triTable8192[idx] = computeTriangle(idx)
 	}
 	for idx := range _sawTable8192 {
-		//computeNonLinearSaw(idx)
-		_sawTable8192[idx] = computeSawtooth(idx, triLut)
+		_sawTable8192[idx] = computeSawtooth(idx, triLut) //computeNonLinearSaw(idx)
 	}
 }
+
+//triTableLen := uint16(len(_triTable8192))
+//triTableHalLen := triTableLen / 2
+//for i := uint16(0); i < triTableHalLen; i++ {
+//val := computeTriangle(i)
+//	_triTable8192[i] = val                 // Ascending ramp, indices 0..4095
+//	_triTable8192[(triTableLen-1)-i] = val // Symmetric descending ramp
+//}
 
 /*
 // Function that calculates the non-linear value for a given 12-bit input
