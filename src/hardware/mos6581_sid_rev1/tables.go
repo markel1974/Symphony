@@ -55,32 +55,9 @@ func computeShift(level uint8) uint8 {
 	}
 }
 
-/*
-// Function that calculates the non-linear value for a given 12-bit input
-func computeNonLinearSaw(i int) uint16 {
-	const valueMax = 8192
-	const valueHalf = valueMax / 2
-	const rangeMax = valueMax - 1
-	const divisor = 1048576
-	const outputMask = 0xffff
-	// Linear base scales a 13-bit value to a 16-bit range
-	output := i << 3
-	// Non-linear correction is adapted to the new range
-	if i < valueHalf {
-		// Divisor is increased to maintain the same "curvature"
-		output -= (i * i) / divisor
-	} else {
-		output += ((i-rangeMax)*(i-rangeMax))/divisor - 32
-	}
-	if output < 0 {
-		return 0
-	}
-	output &= outputMask
-	return uint16(output)
-}
-*/
-
-func computeSawtoothFromPrimitives(i int, triLutFn func(uint32) uint16) uint16 {
+// computeSawtooth generates a sawtooth waveform by combining a triangle wave and a duty cycle-based square wave.
+// The function uses a lookup table accessed via triLutFn to compute the triangle wave component.
+func computeSawtooth(i int, triLutFn func(uint32) uint16) uint16 {
 	phaseAccumulator := uint32(i << 11)
 	triOutput := triLutFn(phaseAccumulator)
 	// Calculate the output of a 50% duty cycle square wave.
@@ -94,10 +71,18 @@ func computeSawtoothFromPrimitives(i int, triLutFn func(uint32) uint16) uint16 {
 	return triOutput & rectOutput
 }
 
-// computeTri applies bitwise operations to the input to compute and return a modified 16-bit value.
-func computeTri(i uint16) uint16 {
-	val := (i << 4) | (i >> 8)
-	return val
+// computeTriangle calculates a 12-bit triangle waveform value based on the input integer and returns it as a uint16.
+// The function shifts the input, generates an ascending or descending ramp based on the most significant bit, and scales the result.
+func computeTriangle(i int) uint16 {
+	accumulator12bit := uint16(i >> 1)
+	msb := accumulator12bit >> 11
+	var triVal uint16
+	if msb&1 == 1 {
+		triVal = ^accumulator12bit //descending ramp
+	} else {
+		triVal = accumulator12bit //ascending ramp
+	}
+	return (triVal << 4) & 0xFFF0
 }
 
 // egLut calculates a value from a lookup table using the lower 4 bits of the input parameter.
@@ -129,15 +114,53 @@ func init() {
 	for idx := range _eGDRShiftTable256 {
 		_eGDRShiftTable256[idx] = computeShift(uint8(idx))
 	}
-	triTableLen := uint16(len(_triTable8192))
-	triTableHalLen := triTableLen / 2
-	for i := uint16(0); i < triTableHalLen; i++ {
-		val := computeTri(i)
-		_triTable8192[i] = val                 // Ascending ramp, indices 0..4095
-		_triTable8192[(triTableLen-1)-i] = val // Symmetric descending ramp
+
+	//triTableLen := uint16(len(_triTable8192))
+	//triTableHalLen := triTableLen / 2
+	//for i := uint16(0); i < triTableHalLen; i++ {
+	//val := computeTriangle(i)
+	//	_triTable8192[i] = val                 // Ascending ramp, indices 0..4095
+	//	_triTable8192[(triTableLen-1)-i] = val // Symmetric descending ramp
+	//}
+
+	for idx := range _triTable8192 {
+		_triTable8192[idx] = computeTriangle(idx)
 	}
 	for idx := range _sawTable8192 {
 		//computeNonLinearSaw(idx)
-		_sawTable8192[idx] = computeSawtoothFromPrimitives(idx, triLut)
+		_sawTable8192[idx] = computeSawtooth(idx, triLut)
 	}
 }
+
+/*
+// Function that calculates the non-linear value for a given 12-bit input
+func computeNonLinearSaw(i int) uint16 {
+	const valueMax = 8192
+	const valueHalf = valueMax / 2
+	const rangeMax = valueMax - 1
+	const divisor = 1048576
+	const outputMask = 0xffff
+	// Linear base scales a 13-bit value to a 16-bit range
+	output := i << 3
+	// Non-linear correction is adapted to the new range
+	if i < valueHalf {
+		// Divisor is increased to maintain the same "curvature"
+		output -= (i * i) / divisor
+	} else {
+		output += ((i-rangeMax)*(i-rangeMax))/divisor - 32
+	}
+	if output < 0 {
+		return 0
+	}
+	output &= outputMask
+	return uint16(output)
+}
+*/
+
+/*
+// computeTri applies bitwise operations to the input to compute and return a modified 16-bit value.
+func computeTriangle(i uint16) uint16 {
+	val := (i << 4) | (i >> 8)
+	return val
+}
+*/
