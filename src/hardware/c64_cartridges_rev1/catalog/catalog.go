@@ -4,13 +4,12 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// Constants representing various cartridge types used in Commodore 64 systems.
+// Constants representing various cartridges without a rom image used in Commodore 64 systems.
 // The values include known cartridge types and those that match the CRT IDs.
 // Some cartridge types are specific to particular hardware or software implementations.
 // Negative values denote cartridges without a ROM image, while non-negative values align with CRT IDs.
 // Each cartridge type is mapped to its associated source file for reference.
 const (
-	// Without a rom image
 	CartridgeDIGIMAX            = -100
 	CartridgeDQBB               = -101
 	CartridgeGEORAM             = -102
