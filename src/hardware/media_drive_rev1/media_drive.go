@@ -44,11 +44,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	}
 	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, label, 0))
 	fs.protocol.SetDevice(fs)
-	adapter := fs.adapterFactory.Void()
-	for idx := range fs.channels {
-		fs.channels[idx] = NewChannel(idx, adapter)
-	}
-	fs.commands = NewCommands(adapter)
 	return fs
 }
 
@@ -79,9 +74,10 @@ func (v *MediaDrive) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceN
 		return err
 	}
 	for idx := range v.channels {
-		v.channels[idx].SetAdapter(adapter)
+		v.channels[idx] = NewChannel(idx, adapter)
 		v.channels[idx].Reset()
 	}
+	v.commands = NewCommands(adapter)
 	return nil
 }
 
@@ -141,7 +137,6 @@ func (v *MediaDrive) Listen(_ uint8) uint8 {
 // Unlisten handles the UNLISTEN command for a specified channel in the MediaDrive.
 // Returns a status code indicating the operation's success or failure.
 func (v *MediaDrive) Unlisten(d uint8) uint8 {
-	//TODO
 	//If this is an UNLISTEN that followed an OPEN (0x2_ 0xf_), then
 	//device.unlisten will try to open the file with the filename that
 	//was received in between the OPEN and now.
@@ -236,26 +231,31 @@ func (v *MediaDrive) Read(d uint8) (uint8, uint8) {
 	return data, adapters.StOk
 }
 
-// Write writes a byte of data to a specific channel and executes commands for channel 15, returning a status code.
+// Write sends a byte of data to a specific channel ID, appending it to the channel or setting a command for the error channel.
+// On success, it returns StOk. Returns StTimeout if the command buffer for the error channel is full.
 func (v *MediaDrive) Write(d uint8, data uint8) uint8 {
-	//TODO EOI
 	channelId := d & 0xf
 	channel := v.channels[channelId]
-	eoi := false
 	if channelId == errChannel {
 		if !v.commands.CommandSet(data) {
 			return adapters.StTimeout
 		}
-		if eoi {
-			if _, err := v.commands.CommandExecBuf(); err != nil {
-				v.channels[errChannel].SetError(err)
-			} else {
-				v.channels[errChannel].SetError(adapters.Error(adapters.ErrOk))
-			}
-		}
 		return adapters.StOk
 	}
 	channel.BufferAdd(data)
+	return adapters.StOk
+}
+
+// EOI processes the End-Of-Instruction signal for the specified channel and executes buffered commands if necessary.
+func (v *MediaDrive) EOI(d uint8) uint8 {
+	channelId := d & 0xf
+	if channelId == errChannel {
+		if _, err := v.commands.CommandExecBuf(); err != nil {
+			v.channels[errChannel].SetError(err)
+		} else {
+			v.channels[errChannel].SetError(adapters.Error(adapters.ErrOk))
+		}
+	}
 	return adapters.StOk
 }
 

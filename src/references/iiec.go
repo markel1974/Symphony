@@ -97,6 +97,7 @@ func IdIIecProtocolDevice(_ IIecProtocolDevice, label string, instance int) stri
 // IIecProtocolDevice defines an interface for handling IEC protocol device operations.
 // Write sends data to a device at a given secondary address and returns a status or result code.
 // Read retrieves data from a device at a given secondary address along with a status or reply code.
+// EOI signals the End-Of-Identify (EOI) condition for the specified channel and returns a result code.
 // Open initializes or prepares a device at the specified secondary address for communication.
 // Close terminates communication with a device at the specified secondary address.
 // Listen sets the device to listen mode at the specified secondary address.
@@ -107,6 +108,8 @@ type IIecProtocolDevice interface {
 	Write(sec uint8, b uint8) uint8
 
 	Read(sec uint8) (uint8, uint8)
+
+	EOI(channel uint8) uint8
 
 	Open(sec uint8) uint8
 

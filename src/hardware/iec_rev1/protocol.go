@@ -434,6 +434,7 @@ func (v *Protocol) doAtnOrListenReady(_ uint8, busReadAtn bool, busReadClk bool,
 		if v.debug {
 			log.Printf("device %d got EOI on channel %d", v.deviceNumber, v.ps.SecondaryGet()&0x0f)
 		}
+		v.device.EOI(v.ps.SecondaryGet())
 		v.peripheralWrite(busReadAtn, DeviceWriteClk)
 		v.ps.StateMachineSet(pEOI)
 		v.ps.TimeoutSet(v.quartz, 60)
