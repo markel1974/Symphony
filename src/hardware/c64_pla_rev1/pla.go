@@ -202,8 +202,6 @@ func (b *PLA) RebuildMemoryConfig() {
 }
 
 // Read retrieves the value from the memory mapped by the given address.
-// The address is used to determine the memory bank by shifting its bits.
-// The bank's read function is then invoked with the address.
 func (b *PLA) Read(addr uint16) uint8 {
 	bank := addr >> 12
 	return b.bankRead[bank](addr)
@@ -263,9 +261,7 @@ func (b *PLA) RemoveRamTrigger(addr uint16, id int) {
 
 // update updates the state of the PLA by rebuilding the memory configuration and updating the port settings.
 func (b *PLA) update() {
-	//https://sta.c64.org/cbm64mem.html
-	//https://codebase64.org/doku.php?id=base:memory_management
-	//b.ports.SetTape(tape_sense, tape_write_in, tape_motor_in)
+	//b.ports.SetTape(tapeSense, tapeWriteIn, tapeMotorIn)
 	b.ports.Update()
 	b.RebuildMemoryConfig()
 }
@@ -300,9 +296,6 @@ func (b *PLA) ramReadIO(addr uint16) uint8 {
 }
 
 // ramRead0x0000 reads data from address 0x0000 and processes special cases for addresses 0 and 1.
-// For address 0, it returns the direction register value from the ports.
-// For address 1, it returns the data register value from the ports.
-// For other addresses, it delegates to the generic RAM read function.
 func (b *PLA) ramRead0x0000(addr uint16) uint8 {
 	if addr == 0 {
 		return b.ports.GetDirection()
@@ -320,7 +313,6 @@ func (b *PLA) portReadColor(addr uint16) uint8 {
 }
 
 // portReadIO reads a byte from the specified IO port address.
-// It prioritizes cartridge IO reads, falls back to VA signal reads, or accesses the emulator ID if applicable.
 func (b *PLA) portReadIO(addr uint16) uint8 {
 	if v, ok := b.cartManIORead(addr); ok {
 		return v
@@ -337,9 +329,7 @@ func (b *PLA) portWriteIO(addr uint16, data uint8) {
 }
 
 // writeOpenBus writes to an "open bus" state where no specific memory or component is targeted.
-// Used for situations where writes do not directly influence system behavior or state.
 func (b *PLA) writeOpenBus(_ uint16, _ uint8) {
-	//
 }
 
 // readOpenBus reads the current value of the open bus at the specified address and returns its signals as uint8.
