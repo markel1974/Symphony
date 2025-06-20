@@ -37,7 +37,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		protocol:       protocol,
 		deviceId:       0,
 		deviceNumber:   0,
-		commands:       NewCommands(),
+		commands:       nil,
 		cfg:            nil,
 		adapterFactory: adapters.NewFactory(),
 		path:           "",
@@ -48,6 +48,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	for idx := range fs.channels {
 		fs.channels[idx] = NewChannel(idx, adapter)
 	}
+	fs.commands = NewCommands(adapter)
 	return fs
 }
 

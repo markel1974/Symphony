@@ -35,3 +35,28 @@ func (a *Void) ReadFile(_ string) ([]byte, error) {
 func (a *Void) WriteFile(name string, data []byte) error {
 	return fmt.Errorf("invalid void adapter")
 }
+
+// RenameFile renames a file from oldName to newName within the directory. Returns an error if the operation fails.
+func (a *Void) RenameFile(oldName string, newName string) error {
+	return fmt.Errorf("invalid void adapter")
+}
+
+// Format applies a specific format operation to the directory, based on the provided name and id, and returns an error if unimplemented.
+func (a *Void) Format(name string, id string) error {
+	return fmt.Errorf("invalid void adapter")
+}
+
+// Reset reinitializes the directory to a default or empty state, if supported. Returns an error if unimplemented.
+func (a *Void) Reset() error {
+	return fmt.Errorf("invalid void adapter")
+}
+
+// Validate checks the state of the Directory instance and ensures it meets required conditions or constraints.
+func (a *Void) Validate() error {
+	return fmt.Errorf("invalid void adapter")
+}
+
+// ScratchFile removes or marks a specified file for deletion within the directory, using the given command data.
+func (a *Void) ScratchFile(commandData string) error {
+	return fmt.Errorf("invalid void adapter")
+}

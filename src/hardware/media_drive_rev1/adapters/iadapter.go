@@ -18,4 +18,14 @@ type IAdapter interface {
 	ReadFile(name string) ([]byte, error)
 
 	WriteFile(name string, data []byte) error
+
+	RenameFile(oldName string, newName string) error
+
+	Format(name string, id string) error
+
+	Reset() error
+
+	Validate() error
+
+	ScratchFile(commandData string) error
 }

@@ -1,6 +1,7 @@
 package adapters
 
 import (
+	"fmt"
 	"os"
 )
 
@@ -49,4 +50,29 @@ func (a *File) WriteFile(_ string, data []byte) error {
 		return err
 	}
 	return nil
+}
+
+// RenameFile renames a file from oldName to newName within the directory. Returns an error if the operation fails.
+func (a *File) RenameFile(oldName string, newName string) error {
+	return fmt.Errorf("unimplemented")
+}
+
+// Format applies a specific format operation to the directory, based on the provided name and id, and returns an error if unimplemented.
+func (a *File) Format(name string, id string) error {
+	return fmt.Errorf("unimplemented")
+}
+
+// Reset reinitializes the directory to a default or empty state, if supported. Returns an error if unimplemented.
+func (a *File) Reset() error {
+	return fmt.Errorf("unimplemented")
+}
+
+// Validate checks the state of the Directory instance and ensures it meets required conditions or constraints.
+func (a *File) Validate() error {
+	return fmt.Errorf("unimplemented")
+}
+
+// ScratchFile removes or marks a specified file for deletion within the directory, using the given command data.
+func (a *File) ScratchFile(commandData string) error {
+	return fmt.Errorf("unimplemented")
 }
