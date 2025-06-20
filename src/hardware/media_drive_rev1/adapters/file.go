@@ -78,12 +78,12 @@ func (a *File) ScratchFile(commandData string) error {
 }
 
 // BlockRead attempts to read a block of data from a specified track and sector but always returns an error for a Void adapter.
-func (a *File) BlockRead(track int, sector int) error {
+func (a *File) BlockRead(ch IChannel, track int, sector int) error {
 	return fmt.Errorf("unimplemented")
 }
 
 // BlockWrite writes a block to the specified track and sector and always returns an error for the Void adapter.
-func (a *File) BlockWrite(track int, sector int) error {
+func (a *File) BlockWrite(ch IChannel, track int, sector int) error {
 	return fmt.Errorf("unimplemented")
 }
 
@@ -97,7 +97,12 @@ func (a *File) MemoryWrite(address uint16, data []byte) error {
 	return fmt.Errorf("unimplemented")
 }
 
+// MemoryExec executes a command at the specified memory address and always returns an error for the Void adapter.
+func (a *File) MemoryExec(address uint16) error {
+	return fmt.Errorf("unimplemented")
+}
+
 // Position sets the current position to the specified value, returning an error as the Void adapter is not functional.
-func (a *File) Position(position int) error {
+func (a *File) Position(ch IChannel, position int) error {
 	return fmt.Errorf("unimplemented")
 }

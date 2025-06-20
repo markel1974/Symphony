@@ -2,6 +2,9 @@ package adapters
 
 import "os"
 
+type IChannel interface {
+}
+
 // IAdapter defines an interface for file system and archival operations such as reading, writing, and directory listing.
 // Name returns the name of the adapter.
 // Extension retrieves the default file extension associated with the adapter.
@@ -29,13 +32,15 @@ type IAdapter interface {
 
 	ScratchFile(commandData string) error
 
-	BlockRead(track int, sector int) error
+	BlockRead(c IChannel, track int, sector int) error
 
-	BlockWrite(track int, sector int) error
+	BlockWrite(c IChannel, track int, sector int) error
 
 	MemoryRead(address uint16, length int) ([]byte, error)
 
 	MemoryWrite(address uint16, data []byte) error
 
-	Position(position int) error
+	MemoryExec(address uint16) error
+
+	Position(c IChannel, position int) error
 }

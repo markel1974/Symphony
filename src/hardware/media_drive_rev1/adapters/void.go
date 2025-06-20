@@ -63,12 +63,12 @@ func (a *Void) ScratchFile(commandData string) error {
 }
 
 // BlockRead attempts to read a block of data from a specified track and sector but always returns an error for a Void adapter.
-func (a *Void) BlockRead(track int, sector int) error {
+func (a *Void) BlockRead(ch IChannel, track int, sector int) error {
 	return fmt.Errorf("invalid void adapter")
 }
 
 // BlockWrite writes a block to the specified track and sector and always returns an error for the Void adapter.
-func (a *Void) BlockWrite(track int, sector int) error {
+func (a *Void) BlockWrite(ch IChannel, track int, sector int) error {
 	return fmt.Errorf("invalid void adapter")
 }
 
@@ -82,7 +82,12 @@ func (a *Void) MemoryWrite(address uint16, data []byte) error {
 	return fmt.Errorf("invalid void adapter")
 }
 
+// MemoryExec executes a command at the specified memory address and always returns an error for the Void adapter.
+func (a *Void) MemoryExec(address uint16) error {
+	return fmt.Errorf("invalid void adapter")
+}
+
 // Position sets the current position to the specified value, returning an error as the Void adapter is not functional.
-func (a *Void) Position(position int) error {
+func (a *Void) Position(ch IChannel, position int) error {
 	return fmt.Errorf("invalid void adapter")
 }

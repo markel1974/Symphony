@@ -19,12 +19,11 @@ type MediaDrive struct {
 	*component.BaseComponent
 	references.IIecDevice
 	protocol       *iec_rev1.Protocol
-	commands       *Commands
 	deviceId       uint8
 	deviceNumber   uint8
 	path           string
 	cfg            *config.Config
-	channels       [16]*Channel
+	channels       *Channels
 	adapterFactory *adapters.Factory
 }
 
@@ -37,7 +36,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		protocol:       protocol,
 		deviceId:       0,
 		deviceNumber:   0,
-		commands:       nil,
 		cfg:            nil,
 		adapterFactory: adapters.NewFactory(),
 		path:           "",
@@ -73,11 +71,7 @@ func (v *MediaDrive) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceN
 	if err != nil {
 		return err
 	}
-	for idx := range v.channels {
-		v.channels[idx] = NewChannel(idx, adapter)
-		v.channels[idx].Reset()
-	}
-	v.commands = NewCommands(adapter)
+	v.channels = NewChannels(adapter)
 	return nil
 }
 
@@ -92,11 +86,9 @@ func (v *MediaDrive) Connect() error {
 // Reset reinitializes the MediaDrive by closing all channels, clearing commands, setting the error index, and resetting the protocol.
 func (v *MediaDrive) Reset() {
 	v.LedActivity(false)
-	for i := uint8(0); i < uint8(len(v.channels)); i++ {
-		v.channels[i].Reset()
-	}
-	v.commands.CommandClear()
-	v.channels[errChannel].SetError(adapters.Error(adapters.ErrStartup))
+	v.channels.Reset()
+	//v.commands.CommandClear()
+	v.channels.SetError(errChannel, adapters.Error(adapters.ErrStartup))
 	v.protocol.Reset()
 }
 
@@ -142,47 +134,42 @@ func (v *MediaDrive) Unlisten(d uint8) uint8 {
 	//was received in between the OPEN and now.
 	//If the file cannot be opened, it will set st != 0.
 
-	channelId := d & 0xf
-	channel := v.channels[channelId]
-
+	channel := v.channels.Get(d)
 	if openMode := channel.OpenModeGet() & 0xf0; openMode != 0x20 && openMode != 0xf0 {
 		return adapters.StOk
 	}
 	v.LedActivity(true)
 	data := channel.Buffer()
-	if channelId == errChannel {
-		action, err := v.commands.CommandExec(data)
+	if d&0xf == errChannel {
+		action, err := v.channels.CommandExec(data)
 		if err != nil {
-			v.channels[errChannel].SetError(err)
+			v.channels.SetError(errChannel, err)
 			return adapters.StOk
 		}
 		if action == 1 {
-			for i := uint8(0); i < uint8(len(v.channels)); i++ {
-				v.channels[i].Reset()
-			}
-			v.commands.CommandClear()
+			v.channels.Reset()
 		}
 		return adapters.StOk
 	}
 
 	channel.Reset()
 	if len(data) == 0 {
-		v.channels[errChannel].SetError(adapters.Error(adapters.ErrNoChannel))
+		v.channels.SetError(errChannel, adapters.Error(adapters.ErrNoChannel))
 		return adapters.StOk
 	}
 	if data[0] == '#' {
-		v.channels[errChannel].SetError(adapters.Error(adapters.ErrNoChannel))
+		v.channels.SetError(errChannel, adapters.Error(adapters.ErrNoChannel))
 		return adapters.StOk
 	}
 	if data[0] == '$' {
 		if err := channel.OpenDirectory(string(data)); err != nil {
-			v.channels[errChannel].SetError(err)
+			v.channels.SetError(errChannel, err)
 			return adapters.StOk
 		}
 		return adapters.StOk
 	}
 	if err := channel.OpenFile(string(data)); err != nil {
-		v.channels[errChannel].SetError(err)
+		v.channels.SetError(errChannel, err)
 		return adapters.StOk
 	}
 	return adapters.StOk
@@ -190,8 +177,7 @@ func (v *MediaDrive) Unlisten(d uint8) uint8 {
 
 // Open initializes the specified channel in the MediaDrive, setting its mode and resetting its state.
 func (v *MediaDrive) Open(d uint8) uint8 {
-	channelId := d & 0xf
-	channel := v.channels[channelId]
+	channel := v.channels.Get(d)
 	channel.Reset()
 	channel.OpenModeSet(d)
 	return adapters.StOk
@@ -199,17 +185,15 @@ func (v *MediaDrive) Open(d uint8) uint8 {
 
 // Close shuts down the specified channel `d` and turns off the LED. If `d` equals 15, all channels are closed. Returns status.
 func (v *MediaDrive) Close(d uint8) uint8 {
-	channelId := d & 0xf
 	v.LedActivity(false)
-	if channelId == errChannel {
-		for i := uint8(0); i < uint8(len(v.channels)); i++ {
-			_ = v.channels[i].Close()
-		}
-		v.commands.CommandClear()
+	if d&0xf == errChannel {
+		v.channels.Close()
+		//v.commands.CommandClear()
 		return adapters.StOk
 	}
-	if err := v.channels[channelId].Close(); err != nil {
-		v.channels[errChannel].SetError(err)
+	channel := v.channels.Get(d)
+	if err := channel.Close(); err != nil {
+		v.channels.SetError(errChannel, err)
 	}
 	return adapters.StOk
 }
@@ -218,14 +202,13 @@ func (v *MediaDrive) Close(d uint8) uint8 {
 // If the channel is 15, an error is processed. When data is available, it is returned along with the status.
 // Returns StReadTimeout if no data is available or StEof if the channel is empty.
 func (v *MediaDrive) Read(d uint8) (uint8, uint8) {
-	channelId := d & 0xf
-	channel := v.channels[channelId]
+	channel := v.channels.Get(d)
 	data, ok := channel.Read()
 	if !ok {
 		return 0, adapters.StReadTimeout
 	}
 	if channel.ReadIsEmpty() {
-		v.channels[errChannel].SetError(adapters.Error(adapters.ErrOk))
+		v.channels.SetError(errChannel, adapters.Error(adapters.ErrOk))
 		return data, adapters.StEof
 	}
 	return data, adapters.StOk
@@ -234,10 +217,9 @@ func (v *MediaDrive) Read(d uint8) (uint8, uint8) {
 // Write sends a byte of data to a specific channel ID, appending it to the channel or setting a command for the error channel.
 // On success, it returns StOk. Returns StTimeout if the command buffer for the error channel is full.
 func (v *MediaDrive) Write(d uint8, data uint8) uint8 {
-	channelId := d & 0xf
-	channel := v.channels[channelId]
-	if channelId == errChannel {
-		if !v.commands.CommandSet(data) {
+	channel := v.channels.Get(d)
+	if d&0xf == errChannel {
+		if !v.channels.CommandSet(data) {
 			return adapters.StTimeout
 		}
 		return adapters.StOk
@@ -248,12 +230,11 @@ func (v *MediaDrive) Write(d uint8, data uint8) uint8 {
 
 // EOI processes the End-Of-Instruction signal for the specified channel and executes buffered commands if necessary.
 func (v *MediaDrive) EOI(d uint8) uint8 {
-	channelId := d & 0xf
-	if channelId == errChannel {
-		if _, err := v.commands.CommandExecBuf(); err != nil {
-			v.channels[errChannel].SetError(err)
+	if d&0xf == errChannel {
+		if _, err := v.channels.CommandExecBuf(); err != nil {
+			v.channels.SetError(errChannel, err)
 		} else {
-			v.channels[errChannel].SetError(adapters.Error(adapters.ErrOk))
+			v.channels.SetError(errChannel, adapters.Error(adapters.ErrOk))
 		}
 	}
 	return adapters.StOk
