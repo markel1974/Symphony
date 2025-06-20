@@ -8,9 +8,6 @@ import (
 	"log"
 )
 
-//serial-iec-device.c
-//static void serial_iec_device_exec_main(unsigned int devnr, CLOCK clk_value)
-
 // defaultDDRBMask defines the default Data Direction Register B bitmask enabling bits 1, 3, and 4.
 const defaultDDRBMask = uint8((1 << 1) | (1 << 3) | (1 << 4))
 
