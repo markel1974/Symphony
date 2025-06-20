@@ -188,3 +188,28 @@ func (a *Zip) Validate() error {
 func (a *Zip) ScratchFile(commandData string) error {
 	return fmt.Errorf("unimplemented")
 }
+
+// BlockRead attempts to read a block of data from a specified track and sector but always returns an error for a Void adapter.
+func (a *Zip) BlockRead(track int, sector int) error {
+	return fmt.Errorf("unimplemented")
+}
+
+// BlockWrite writes a block to the specified track and sector and always returns an error for the Void adapter.
+func (a *Zip) BlockWrite(track int, sector int) error {
+	return fmt.Errorf("unimplemented")
+}
+
+// MemoryRead reads a specified memory region defined by the address and length. Returns an error for unsupported adapters.
+func (a *Zip) MemoryRead(address uint16, length int) ([]byte, error) {
+	return nil, fmt.Errorf("unimplemented")
+}
+
+// MemoryWrite writes a slice of bytes to the specified memory address and returns an error for void adapters.
+func (a *Zip) MemoryWrite(address uint16, data []byte) error {
+	return fmt.Errorf("unimplemented")
+}
+
+// Position sets the current position to the specified value, returning an error as the Void adapter is not functional.
+func (a *Zip) Position(position int) error {
+	return fmt.Errorf("unimplemented")
+}

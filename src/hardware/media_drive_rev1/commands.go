@@ -2,6 +2,7 @@ package media_drive_rev1
 
 import (
 	"github.com/markel1974/c64emu/src/hardware/media_drive_rev1/adapters"
+	"strconv"
 	"strings"
 )
 
@@ -142,17 +143,76 @@ func (vd *Commands) CommandExec(cmd []uint8) (int, error) {
 			return 0, err
 		}
 		return 0, nil
-
 	// Note: Block and Memory commands (B-* and M-*) are for low-level access
 	// and are harder to map to a high-level adapter. They would typically
 	// work with a block-based adapter (like a D64 image).
 	// The current adapter is file-based.
 	case 'B': // Block/buffer
-		return 0, adapters.Error(adapters.ErrUnimplemented)
+		// 1. Esegui il parsing degli argomenti (canale, traccia, settore)
+		parts1 := strings.Split(commandData, ",")
+		if len(parts1) < 3 {
+			return 0, adapters.Error(adapters.ErrSyntax31)
+		}
+		channel, _ := strconv.Atoi(parts1[0])
+		track, _ := strconv.Atoi(parts1[1])
+		sector, _ := strconv.Atoi(parts1[2])
+		_ = channel
+		_ = track
+		_ = sector
+		subCmd := commandName[2:] // Assume formato B-R, B-W...
+		switch subCmd {
+		case "R":
+			//err := vd.adapter.BlockRead(channels[channel], track, sector)
+			//return 0, err
+			return 0, adapters.Error(adapters.ErrUnimplemented)
+		case "W":
+			//err := vd.adapter.BlockWrite(channels[channel], track, sector)
+			//return 0, err
+			return 0, adapters.Error(adapters.ErrUnimplemented)
+		default:
+			return 0, adapters.Error(adapters.ErrSyntax31)
+		}
+
 	case 'M': // Memory
-		return 0, adapters.Error(adapters.ErrUnimplemented)
+		// 1. Esegui il parsing (indirizzo, lunghezza)
+		subCmd := commandName[2:3]
+		addr, _ := strconv.ParseInt(commandData[0:4], 16, 16)
+		length, _ := strconv.Atoi(commandData[4:])
+		_ = addr
+		_ = length
+		switch subCmd {
+		case "R":
+			//data, err := vd.adapter.MemoryRead(uint16(addr), length)
+			//if err != nil {
+			//	return 0, err
+			//}
+			// M-R mette i dati letti nel canale di errore per essere letti dal C64
+			//channels[errChannel].dataSet(data)
+			//return 0, nil
+			return 0, adapters.Error(adapters.ErrUnimplemented)
+		case "W":
+			// Per M-W, i dati dovrebbero essere già nel buffer di un canale.
+			// La logica qui sarebbe più complessa, ma la delega è la stessa.
+			// return 0, vd.adapter.MemoryWrite(uint16(addr), dataFromChannel)
+			return 0, adapters.Error(adapters.ErrUnimplemented) // Lasciamo non implementato per ora
+		default:
+			return 0, adapters.Error(adapters.ErrSyntax31)
+		}
+
 	case 'P': // Position
+		// 1. Esegui il parsing (canale, posizione)
+		parts1 := strings.Split(commandData, ",")
+		if len(parts1) < 2 {
+			return 0, adapters.Error(adapters.ErrSyntax31)
+		}
+		channel, _ := strconv.Atoi(parts1[0])
+		position, _ := strconv.Atoi(parts1[1])
+		_ = channel
+		_ = position
+		//err := vd.adapter.Position(channels[channel], position)
+		//return 0, err
 		return 0, adapters.Error(adapters.ErrUnimplemented)
+
 	case 'U': // User Command
 		if len(commandName) > 1 {
 			switch commandName[1] {

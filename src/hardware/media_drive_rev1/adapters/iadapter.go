@@ -28,4 +28,14 @@ type IAdapter interface {
 	Validate() error
 
 	ScratchFile(commandData string) error
+
+	BlockRead(track int, sector int) error
+
+	BlockWrite(track int, sector int) error
+
+	MemoryRead(address uint16, length int) ([]byte, error)
+
+	MemoryWrite(address uint16, data []byte) error
+
+	Position(position int) error
 }
