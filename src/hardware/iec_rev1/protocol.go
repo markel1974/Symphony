@@ -21,14 +21,12 @@ const defaultDDRBMask = uint8((1 << 1) | (1 << 3) | (1 << 4))
 // DeviceWriteClk represents the output clock signal (CLK_OUT).
 // DeviceWriteAtn represents the output attention signal (ATN_A).
 const (
-	DeviceReadData = uint8(0x01) // DATA_IN
-	DeviceReadClk  = uint8(0x04) // CLK_IN
-	DeviceReadAtn  = uint8(0x80) // ATN_IN
-
+	DeviceReadData  = uint8(0x01) // DATA_IN
+	DeviceReadClk   = uint8(0x04) // CLK_IN
+	DeviceReadAtn   = uint8(0x80) // ATN_IN
 	DeviceWriteData = uint8(0x02) // DATA_OUT
 	DeviceWriteClk  = uint8(0x08) // CLK_OUT
-	DeviceWriteAtn  = uint8(0x10) // ATN_A
-
+	//DeviceWriteAtn  = uint8(0x10) // ATN_A
 	//DeviceWriteClk  = uint8(0x40)
 	//DeviceWriteData = uint8(0x80)
 )
@@ -147,7 +145,7 @@ func (v *Protocol) Setup() error {
 }
 
 // Bind associates a device socket with the protocol and initializes the device number and IEC communication interface.
-func (v *Protocol) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber uint8) error {
+func (v *Protocol) Bind(_ references.IIecDeviceSocket, _ uint8, deviceNumber uint8) error {
 	v.deviceNumber = deviceNumber
 	var err error
 	if err = v.quartz.Bind(v, references.IQuartz1Mhz); err != nil {
@@ -325,7 +323,7 @@ func (v *Protocol) doAtnRisingFlank(busReadAtn bool) {
 
 // doAtnOrListenPre0 handles the ATN signal during the initial state, ensuring proper timing by ignoring early events.
 // If the timeout has expired, it transitions the state machine to pPre1.
-func (v *Protocol) doAtnOrListenPre0(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doAtnOrListenPre0(_ uint8, _ bool, _ bool, _ bool) {
 	//Ignore anything that happens during the first 100 us after falling
 	//flank on ATN (other devices may have been sending and need some time to set CLK=1)
 	if v.ps.TimeoutExpired(v.quartz) {
@@ -336,7 +334,7 @@ func (v *Protocol) doAtnOrListenPre0(sm uint8, busReadAtn bool, busReadClk bool,
 }
 
 // doAtnOrListenPre1 advances the state machine to pPre2 if the bus clock (CLK) is low, detecting a rising edge condition.
-func (v *Protocol) doAtnOrListenPre1(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doAtnOrListenPre1(_ uint8, _ bool, busReadClk bool, _ bool) {
 	//Make sure CLK=0 so we actually detect a rising flank instate pPre2
 	if !busReadClk {
 		v.ps.StateMachineSet(pPre2)
@@ -344,7 +342,7 @@ func (v *Protocol) doAtnOrListenPre1(sm uint8, busReadAtn bool, busReadClk bool,
 }
 
 // doAtnOrListenPre2 reacts to changes in the CLK signal, setting DATA high and updating the state machine accordingly.
-func (v *Protocol) doAtnOrListenPre2(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doAtnOrListenPre2(_ uint8, busReadAtn bool, busReadClk bool, _ bool) {
 	// wait for rising flank on CLK ("ready-to-send")
 	if busReadClk {
 		//React by setting DATA=1 ("ready-for-data")
@@ -358,7 +356,7 @@ func (v *Protocol) doAtnOrListenPre2(sm uint8, busReadAtn bool, busReadClk bool,
 // sm indicates current state; busReadAtn, busReadClk, and busReadData represent bus signal states.
 // Sets state to pBit0 if CLK=0; handles EOI signal acknowledgment with timeout if ATN is not active.
 // Updates the state machine and logs debug info if enabled, addressing channel EOI handling.
-func (v *Protocol) doAtnOrListenReady(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doAtnOrListenReady(_ uint8, busReadAtn bool, busReadClk bool, _ bool) {
 	if !busReadClk {
 		//Sender set CLK=0, is about to send first bit
 		v.ps.StateMachineSet(pBit0)
@@ -376,7 +374,7 @@ func (v *Protocol) doAtnOrListenReady(sm uint8, busReadAtn bool, busReadClk bool
 
 // doAtnOrListenEOI manages the protocol state when attention or EOI (End-Or-Identify) conditions are encountered.
 // It sets the DATA line high and transitions the state machine when the timeout has expired.
-func (v *Protocol) doAtnOrListenEOI(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doAtnOrListenEOI(_ uint8, busReadAtn bool, _ bool, _ bool) {
 	if v.ps.TimeoutExpired(v.quartz) {
 		//Set DATA back to 1 and wait for sender to set CLK=0
 		v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
@@ -386,7 +384,7 @@ func (v *Protocol) doAtnOrListenEOI(sm uint8, busReadAtn bool, busReadClk bool, 
 
 // doAtnOrListenEOIw handles the state transition to pBit0 if the clock signal (busReadClk) is low.
 // This is used when the sender is preparing to send the first bit.
-func (v *Protocol) doAtnOrListenEOIw(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doAtnOrListenEOIw(_ uint8, _ bool, busReadClk bool, _ bool) {
 	if !busReadClk {
 		//Sender set CLK=0, is about to send first bit
 		v.ps.StateMachineSet(pBit0)
@@ -395,7 +393,7 @@ func (v *Protocol) doAtnOrListenEOIw(sm uint8, busReadAtn bool, busReadClk bool,
 
 // doAtnOrListenBit processes attention or listen bit state transitions based on clock (CLK) and data line signals.
 // If the CLK line is high, reads the DATA line to set or clear a specific bit and advances the state machine.
-func (v *Protocol) doAtnOrListenBit(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doAtnOrListenBit(sm uint8, _ bool, busReadClk bool, busReadData bool) {
 	if busReadClk {
 		//Sender set CLK=1, signaling that the DATA line represents a valid bit
 		bit := _pBits[sm]
@@ -410,7 +408,7 @@ func (v *Protocol) doAtnOrListenBit(sm uint8, busReadAtn bool, busReadClk bool, 
 }
 
 // doAtnOrListenBitW processes a single protocol state machine bit in ATN or Listen mode when the clock signal is low.
-func (v *Protocol) doAtnOrListenBitW(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doAtnOrListenBitW(_ uint8, _ bool, busReadClk bool, _ bool) {
 	if !busReadClk {
 		//Sender set CLK=0. go to P_BIT(n+1) state to receive the next bit
 		v.ps.StateMachineAdvance()
@@ -422,7 +420,7 @@ func (v *Protocol) doAtnOrListenBitW(sm uint8, busReadAtn bool, busReadClk bool,
 // If operating under ATN, it manages primary/secondary address detection and determines if the device should respond.
 // When listening for data, it passes received bytes to the upper level and evaluates error conditions during writes.
 // The state machine transitions are updated according to the bus operation context and acknowledgment needs.
-func (v *Protocol) doAtnOrListenBit7W(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doAtnOrListenBit7W(_ uint8, busReadAtn bool, busReadClk bool, _ bool) {
 	if !busReadClk {
 		//Sender set CLK=0 and this was the last bit
 		if v.debug {
@@ -465,7 +463,7 @@ func (v *Protocol) doAtnOrListenBit7W(sm uint8, busReadAtn bool, busReadClk bool
 }
 
 // doAtnOrListenDone is executed when the bus-master must set ATN back to 1. It finalizes the state machine's operation.
-func (v *Protocol) doAtnOrListenDone(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doAtnOrListenDone(_ uint8, _ bool, _ bool, _ bool) {
 	//We're just waiting for the bus-master to set ATN back to 1
 	//fmt.Println("We're just waiting for the bus-master to set ATN back to 1")
 }
@@ -507,7 +505,7 @@ func (v *Protocol) setupAtnOrListen() []func(uint8, bool, bool, bool) {
 }
 
 // doTalkPre0 handles the transition to pPre1 state during role reversal by setting CLK to 0 and DATA to 1 if CLK is high.
-func (v *Protocol) doTalkPre0(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkPre0(_ uint8, busReadAtn bool, busReadClk bool, _ bool) {
 	if busReadClk {
 		//Bus-master set CLK=1 (and before that should have set DATA=0)
 		//we are getting ready for role reversal.Set CLK=0,DATA=1
@@ -518,7 +516,7 @@ func (v *Protocol) doTalkPre0(sm uint8, busReadAtn bool, busReadClk bool, busRea
 }
 
 // doTalkPre1 performs a pre-phase talk check by verifying timeout expiration and signaling readiness if applicable.
-func (v *Protocol) doTalkPre1(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkPre1(_ uint8, busReadAtn bool, _ bool, _ bool) {
 	if v.ps.TimeoutExpired(v.quartz) {
 		//Signal "ready-to-send" (CLK=1)
 		v.peripheralWrite(busReadAtn, DeviceWriteClk|DeviceWriteData)
@@ -527,7 +525,7 @@ func (v *Protocol) doTalkPre1(sm uint8, busReadAtn bool, busReadClk bool, busRea
 }
 
 // doTalkReady processes the "ready-for-data" signal and advances or terminates the data transmission state machine.
-func (v *Protocol) doTalkReady(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkReady(_ uint8, _ bool, _ bool, busReadData bool) {
 	if busReadData {
 		//Receiver signaled "ready-for-data" (DATA=1)
 		b, state := v.device.Read(v.ps.SecondaryGet())
@@ -553,7 +551,7 @@ func (v *Protocol) doTalkReady(sm uint8, busReadAtn bool, busReadClk bool, busRe
 }
 
 // doTalkEOI handles the End-Or-Identify (EOI) operation in the protocol, transitioning to the pEOIw state if busReadData is low.
-func (v *Protocol) doTalkEOI(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkEOI(_ uint8, _ bool, _ bool, busReadData bool) {
 	if !busReadData {
 		//Receiver set DATA=0, first part of acknowledging the EOI
 		v.ps.StateMachineSet(pEOIw)
@@ -561,7 +559,7 @@ func (v *Protocol) doTalkEOI(sm uint8, busReadAtn bool, busReadClk bool, busRead
 }
 
 // doTalkEOIw transitions the protocol state machine based on busReadData, setting it to pBit0 and configuring timeout.
-func (v *Protocol) doTalkEOIw(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkEOIw(_ uint8, _ bool, _ bool, busReadData bool) {
 	if busReadData {
 		//Receiver set DATA=1, final part of acknowledging the EOI. Go on to send first bit
 		v.ps.StateMachineSet(pBit0)
@@ -571,7 +569,7 @@ func (v *Protocol) doTalkEOIw(sm uint8, busReadAtn bool, busReadClk bool, busRea
 }
 
 // doTalkBit manages the protocol timing and signals for data transmission by monitoring timeout and state transitions.
-func (v *Protocol) doTalkBit(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkBit(sm uint8, busReadAtn bool, _ bool, _ bool) {
 	if v.ps.TimeoutExpired(v.quartz) {
 		//60 us have passed since we set CLK=1 to signal "data valid" for the previous bit.
 		//Pull CLK=0 and put the next bit out of DATA.
@@ -592,7 +590,7 @@ func (v *Protocol) doTalkBit(sm uint8, busReadAtn bool, busReadClk bool, busRead
 // busReadAtn indicates the current attention signal status on the bus.
 // busReadClk represents the clock signal read status from the bus.
 // busReadData specifies the current data signal status on the bus.
-func (v *Protocol) doTalkBitW(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkBitW(_ uint8, busReadAtn bool, _ bool, busReadData bool) {
 	if v.ps.TimeoutExpired(v.quartz) {
 		//60 us have passed since we pulled CLK=0 and put the current bit on DATA.
 		//set CLK=1, keeping data as it is (this signals "data valid" to the receiver)
@@ -609,7 +607,7 @@ func (v *Protocol) doTalkBitW(sm uint8, busReadAtn bool, busReadClk bool, busRea
 }
 
 // doTalkDone0 manages the final steps of a communication cycle, preparing the bus and state for acknowledgement.
-func (v *Protocol) doTalkDone0(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkDone0(_ uint8, busReadAtn bool, _ bool, _ bool) {
 	if v.ps.TimeoutExpired(v.quartz) {
 		//60 us have passed since we set CLK=1 to signal "data valid" for the final bit.
 		//Pull CLK=0 and set DATA=1.This prepares for the receiver acknowledgement.
@@ -620,7 +618,7 @@ func (v *Protocol) doTalkDone0(sm uint8, busReadAtn bool, busReadClk bool, busRe
 }
 
 // doTalkDone1 manages the process of sending or receiving data, acknowledges frames, and handles timeouts or errors.
-func (v *Protocol) doTalkDone1(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkDone1(_ uint8, busReadAtn bool, _ bool, busReadData bool) {
 	if !busReadData {
 		//Receiver set DATA=0, acknowledging the frame
 		if v.debug {
@@ -649,7 +647,7 @@ func (v *Protocol) doTalkDone1(sm uint8, busReadAtn bool, busReadClk bool, busRe
 }
 
 // doTalkFrameError0 handles the 1-0-1 CLOCK signal sequence to acknowledge a frame error and transitions the state machine.
-func (v *Protocol) doTalkFrameError0(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkFrameError0(_ uint8, busReadAtn bool, _ bool, _ bool) {
 	if v.ps.TimeoutExpired(v.quartz) {
 		//Finished 1-0-1 sequence of CLOCK signal
 		//to acknowledge the frame-error.Now wait for sender to set DATA=0 so we can continue.
@@ -660,7 +658,7 @@ func (v *Protocol) doTalkFrameError0(sm uint8, busReadAtn bool, busReadClk bool,
 
 // doTalkFrameError1 handles error recovery when a communication issue occurs during a talk frame operation.
 // If busReadData is false, it resets the timeout and sets the state machine to pPre1 for retry.
-func (v *Protocol) doTalkFrameError1(sm uint8, busReadAtn bool, busReadClk bool, busReadData bool) {
+func (v *Protocol) doTalkFrameError1(_ uint8, _ bool, _ bool, busReadData bool) {
 	if !busReadData {
 		// sender set DATA=0, we can retry to send the byte
 		v.ps.TimeoutSet(v.quartz, 0)
