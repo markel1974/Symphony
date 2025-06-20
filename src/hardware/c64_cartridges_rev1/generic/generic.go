@@ -180,14 +180,9 @@ func (c *CartridgeGeneric) IOWrite(_ uint16, _ uint8) bool {
 	return false
 }
 
-// GetExRom returns the ExROM line state of the cartridge as defined in the cartridge specification.
-func (c *CartridgeGeneric) GetExRom() uint8 {
-	return c.spec.ExRom
-}
-
-// GetGame retrieves the Game line status for the cartridge, which corresponds to the game type or relevance.
-func (c *CartridgeGeneric) GetGame() uint8 {
-	return c.spec.Game
+// Config returns the Game line status, ExROM line state, and a boolean indicating successful configuration retrieval.
+func (c *CartridgeGeneric) Config() (uint8, uint8, bool) {
+	return c.spec.Game, c.spec.ExRom, true
 }
 
 // EmulationRequired checks if the cartridge requires emulation and returns false to indicate no emulation is needed.

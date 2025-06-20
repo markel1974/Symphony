@@ -39,6 +39,7 @@ type REU struct {
 	size      int
 	irqMask   uint8
 	expansion references.IC64Expansion
+	spec      *references.C64CartridgeSpec
 }
 
 // newReu initializes a new REU instance with a given size and returns an IC64Cartridge implementation.
@@ -53,6 +54,7 @@ func newReu(parent references.IComponent, factory references.IComponentFactory, 
 		mask:          uint32(size) - 1,
 		ram:           make([]uint8, size),
 		irqMask:       0,
+		spec:          references.C64CartridgeSpecOff,
 	}
 	r.BaseComponent.Register(factory, parent, id, r, references.IdIC64Cartridge(r, label, instance))
 	r.Reset()
@@ -168,14 +170,9 @@ func (reu *REU) Bind(board references.IC64Expansion, ldr references.IC64Cartridg
 	return nil
 }
 
-// GetExRom returns the value of the EXROM line, typically indicating cartridge configuration for memory mapping.
-func (reu *REU) GetExRom() uint8 {
-	return 1
-}
-
-// GetGame returns the game state as a uint8 value.
-func (reu *REU) GetGame() uint8 {
-	return 1
+// Config retrieves the cartridge configuration, including game state, EXROM value, and a boolean indicating success.
+func (reu *REU) Config() (uint8, uint8, bool) {
+	return reu.spec.Game, reu.spec.ExRom, true
 }
 
 // IORead reads data from the specified REU address. Returns the read value and a boolean indicating success or failure.

@@ -57,10 +57,12 @@ func (c *CartridgeMagicDesk) Reset() {
 
 }
 
+// Connect establishes the link between the cartridge and the expansion board, enabling the cartridge's functionality.
 func (c *CartridgeMagicDesk) Connect() error {
 	return nil
 }
 
+// Internal indicates whether the cartridge is an internal type. Always returns false for CartridgeMagicDesk.
 func (c *CartridgeMagicDesk) Internal() bool {
 	return false
 }
@@ -124,14 +126,9 @@ func (c *CartridgeMagicDesk) IRQ(_ uint32) {
 func (c *CartridgeMagicDesk) IRQCLear(_ uint32) {
 }
 
-// GetExRom retrieves the ExRom value from the cartridge specification.
-func (c *CartridgeMagicDesk) GetExRom() uint8 {
-	return c.spec.ExRom
-}
-
-// GetGame retrieves the value of the "Game" field from the cartridge specification associated with the instance.
-func (c *CartridgeMagicDesk) GetGame() uint8 {
-	return c.spec.Game
+// Config returns the Game line status, ExROM line state, and a boolean indicating successful configuration retrieval.
+func (c *CartridgeMagicDesk) Config() (uint8, uint8, bool) {
+	return c.spec.Game, c.spec.ExRom, true
 }
 
 // Detach disconnects the cartridge from the expansion board and releases associated resources. Returns an error if any issues occur.

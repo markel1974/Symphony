@@ -109,8 +109,6 @@ func C64CartridgeBank(addr uint16) uint8 {
 // IOWrite performs an I/O write operation to the specified address with given data, returning success.
 // IRQ triggers an interrupt request with the given delay.
 // IRQCLear clears interrupt requests after the given delay.
-// GetExRom retrieves the current ExRom value.
-// GetGame retrieves the current Game line value.
 // EmulationRequired checks if emulation is mandatory for the cartridge.
 // Emulate executes the emulation process if required.
 // Detach handles cartridge removal and clean-up operations.
@@ -135,9 +133,7 @@ type IC64Cartridge interface {
 
 	IRQCLear(d uint32)
 
-	GetExRom() uint8
-
-	GetGame() uint8
+	Config() (uint8, uint8, bool)
 
 	EmulationRequired() bool
 

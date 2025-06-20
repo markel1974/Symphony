@@ -119,14 +119,9 @@ func (c *CartridgeEasyFlash) GetLoaderId() string {
 	return c.loaderId
 }
 
-// GetExRom returns the current value of the exRom property for the CartridgeEasyFlash instance as an unsigned 8-bit integer.
-func (c *CartridgeEasyFlash) GetExRom() uint8 {
-	return c.exRom
-}
-
-// GetGame retrieves the currently selected game index from the EasyFlash cartridge.
-func (c *CartridgeEasyFlash) GetGame() uint8 {
-	return c.game
+// Config returns the Game line status, ExROM line state, and a boolean indicating successful configuration retrieval.
+func (c *CartridgeEasyFlash) Config() (uint8, uint8, bool) {
+	return c.game, c.exRom, true
 }
 
 // EmulationRequired determines whether emulation is required for the CartridgeEasyFlash. Always returns false.

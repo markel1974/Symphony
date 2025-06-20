@@ -22,6 +22,7 @@ type CartridgeExternalCPU struct {
 	cpu      references.IMos6510
 	quartz   references.IQuartz
 	cfg      *config.Config
+	spec     *references.C64CartridgeSpec
 }
 
 // NewExternalCPU returns a new instance of the CartridgeExternalCPU struct implementing the IC64Cartridge interface.
@@ -33,6 +34,7 @@ func NewExternalCPU(parent references.IComponent, factory references.IComponentF
 		cpu:           nil,
 		quartz:        nil,
 		cfg:           nil,
+		spec:          references.C64CartridgeSpecOff,
 	}
 	r.BaseComponent.Register(factory, parent, Identifier(), r, references.IdIC64Cartridge(r, label, instance))
 	return r
@@ -134,14 +136,9 @@ func (s *CartridgeExternalCPU) Emulate() {
 	}
 }
 
-// GetExRom returns the external ROM configuration signal as a uint8 value. It often indicates the cartridge's EXROM state.
-func (s *CartridgeExternalCPU) GetExRom() uint8 {
-	return 1
-}
-
-// GetGame retrieves the current game signal state for the CartridgeExternalCPU, returning a uint8 representation of its value.
-func (s *CartridgeExternalCPU) GetGame() uint8 {
-	return 1
+// Config returns the Game line status, ExROM line state, and a boolean indicating successful configuration retrieval.
+func (s *CartridgeExternalCPU) Config() (uint8, uint8, bool) {
+	return s.spec.Game, s.spec.ExRom, true
 }
 
 // IORead reads data from the specified memory address and returns the value along with a success status flag.

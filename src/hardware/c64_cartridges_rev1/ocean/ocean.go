@@ -117,14 +117,9 @@ func (c *CartridgeOcean) IRQ(_ uint32) {
 func (c *CartridgeOcean) IRQCLear(_ uint32) {
 }
 
-// GetExRom returns the value of the ExROM line, which indicates the configuration of the cartridge in the memory map.
-func (c *CartridgeOcean) GetExRom() uint8 {
-	return c.spec.ExRom
-}
-
-// GetGame returns the current game state identifier as a uint8 value.
-func (c *CartridgeOcean) GetGame() uint8 {
-	return c.spec.Game
+// Config returns the Game line status, ExROM line state, and a boolean indicating successful configuration retrieval.
+func (c *CartridgeOcean) Config() (uint8, uint8, bool) {
+	return c.spec.Game, c.spec.ExRom, true
 }
 
 // Detach removes the cartridge from the system, performing any necessary cleanup or state reset operations.

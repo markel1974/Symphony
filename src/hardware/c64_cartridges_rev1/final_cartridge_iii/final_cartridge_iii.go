@@ -113,14 +113,9 @@ func (c *CartridgeFinalCartridgeIII) IRQ(_ uint32) {
 func (c *CartridgeFinalCartridgeIII) IRQCLear(_ uint32) {
 }
 
-// GetExRom returns the current value of the ExRom signal.
-func (c *CartridgeFinalCartridgeIII) GetExRom() uint8 {
-	return c.spec.ExRom
-}
-
-// GetGame retrieves the current `game` state of the cartridge as a uint8.
-func (c *CartridgeFinalCartridgeIII) GetGame() uint8 {
-	return c.spec.Game
+// Config returns the Game line status, ExROM line state, and a boolean indicating successful configuration retrieval.
+func (c *CartridgeFinalCartridgeIII) Config() (uint8, uint8, bool) {
+	return c.spec.Game, c.spec.ExRom, true
 }
 
 // EmulationRequired checks if emulation is required for the cartridge and returns false, indicating no emulation is needed.
