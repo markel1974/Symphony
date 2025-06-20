@@ -1,7 +1,7 @@
 package adapters
 
 import (
-	"os"
+	"github.com/markel1974/c64emu/src/config"
 	"path"
 	"strconv"
 	"strings"
@@ -112,7 +112,7 @@ func CreateFileName(name string) []uint8 {
 	return vName
 }
 
-func CreateDir(realTitle string, entries []os.FileInfo, pattern string) []byte {
+func CreateDir(realTitle string, entries []config.IAssetInfo, pattern string) []byte {
 	const titleStart = "\001\004\001\001\000\000\022\""
 	const titleEnd = "\" 00 2A"
 	const blocksFreeStart = "\001\001\000\000"

@@ -3,8 +3,23 @@ package config
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
+	"io"
+	"io/fs"
 	"os"
 )
+
+type IAssetInfo interface {
+	fs.FileInfo
+}
+
+type IAssetReader interface {
+	io.ReadCloser
+	io.ReaderAt
+}
+
+type IAssetWriter interface {
+	io.WriteCloser
+}
 
 // Config represents a configuration structure for managing cartridges, drives, disks, and various related options.
 type Config struct {
@@ -90,10 +105,68 @@ func (p *Config) AddCartridge(crt *Cartridge) error {
 	return nil
 }
 
-func (p *Config) Asset(asset string) ([]byte, error) {
+func (p *Config) AssetInfo(asset string) (IAssetInfo, error) {
+	//default implementation
+	s, err := os.Stat(asset)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+func (p *Config) AssetWrite(asset string, data []byte) error {
+	//default implementation
+	if err := os.WriteFile(asset, data, 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *Config) AssetRead(asset string) ([]byte, error) {
 	//default implementation
 	dat, err := os.ReadFile(asset)
 	return dat, err
+}
+
+func (p *Config) AssetReader(asset string) (IAssetReader, int64, error) {
+	f, err := os.Open(asset)
+	if err != nil {
+		return nil, 0, err
+	}
+	fi, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return nil, 0, err
+	}
+	return f, fi.Size(), nil
+}
+
+func (p *Config) AssetDir(asset string) ([]IAssetInfo, error) {
+	items, e := os.ReadDir(asset)
+	if e != nil {
+		return nil, e
+	}
+	var out []IAssetInfo
+	for _, item := range items {
+		info, err := item.Info()
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, info)
+	}
+	return out, nil
+}
+
+func (p *Config) AssetPathSeparator() string {
+	return string(os.PathSeparator)
+}
+
+func (p *Config) AssetWriter(asset string) (IAssetWriter, error) {
+	f, err := os.OpenFile(asset, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
 }
 
 // Cartridges returns the list of configured cartridges in the Config structure.

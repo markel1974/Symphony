@@ -1,6 +1,8 @@
 package adapters
 
-import "os"
+import (
+	"github.com/markel1974/c64emu/src/config"
+)
 
 type IChannel interface {
 }
@@ -16,7 +18,7 @@ type IAdapter interface {
 
 	Extension() string
 
-	ReadDir() ([]os.FileInfo, error)
+	ReadDir() ([]config.IAssetInfo, error)
 
 	ReadFile(name string) ([]byte, error)
 

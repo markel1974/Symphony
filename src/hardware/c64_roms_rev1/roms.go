@@ -99,7 +99,7 @@ func (r *Roms) load(defaultRom []byte, asset string) ([]byte, error) {
 	if len(asset) == 0 {
 		return defaultRom, nil
 	}
-	if dat, err := r.cfg.Asset(asset); err == nil {
+	if dat, err := r.cfg.AssetRead(asset); err == nil {
 		return dat, err
 	}
 	return defaultRom, nil

@@ -2,7 +2,7 @@ package adapters
 
 import (
 	"fmt"
-	"os"
+	"github.com/markel1974/c64emu/src/config"
 	"strings"
 )
 
@@ -11,23 +11,20 @@ func DirectoryExtension() string { return "" }
 
 // Directory represents a filesystem directory and provides utility methods for file operations within it.
 type Directory struct {
-	path string
+	path   string
+	config *config.Config
 }
 
 // NewDirectory initializes and returns a Directory instance for the specified path if it is a valid directory.
 // Returns an error if the path does not exist or is not a directory.
-func NewDirectory(path string) (*Directory, error) {
-	if !strings.HasSuffix(path, string(os.PathSeparator)) {
-		path = path + string(os.PathSeparator)
+func NewDirectory(config *config.Config, path string) (*Directory, error) {
+	if !strings.HasSuffix(path, config.AssetPathSeparator()) {
+		path = path + config.AssetPathSeparator()
 	}
-	d, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-	if !d.IsDir() {
-		return nil, fmt.Errorf("not a directory: %s", path)
-	}
-	return &Directory{path: path}, nil
+	return &Directory{
+		config: config,
+		path:   path,
+	}, nil
 }
 
 // Extension retrieves the directory extension as a string.
@@ -38,22 +35,14 @@ func (a *Directory) Name() string {
 	return a.path
 }
 
-// ReadDir reads the contents of the directory and returns a slice of os.FileInfo representing the files and directories.
+// ReadDir reads the contents of the directory and returns a slice of fs.FileInfo representing the files and directories.
 // Returns an error if the directory cannot be read.
-func (a *Directory) ReadDir() ([]os.FileInfo, error) {
-	items, err := os.ReadDir(a.path)
+func (a *Directory) ReadDir() ([]config.IAssetInfo, error) {
+	item, err := a.config.AssetDir(a.path)
 	if err != nil {
 		return nil, err
 	}
-	var out []os.FileInfo
-	for _, item := range items {
-		info, err := item.Info()
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, info)
-	}
-	return out, nil
+	return item, nil
 }
 
 // ReadFile retrieves the content of a file with the given plain name in the directory, returning the data or an error.
@@ -72,7 +61,7 @@ func (a *Directory) ReadFile(plainName string) ([]byte, error) {
 	if len(name) == 0 {
 		return nil, fmt.Errorf("file not found %s", plainName)
 	}
-	data, err := os.ReadFile(a.path + name)
+	data, err := a.config.AssetRead(a.path + name)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +71,7 @@ func (a *Directory) ReadFile(plainName string) ([]byte, error) {
 // WriteFile writes the provided data to a file named plainName in the directory. Returns an error if the operation fails.
 func (a *Directory) WriteFile(plainName string, data []byte) error {
 	completeFileName := a.path + plainName
-	if err := os.WriteFile(completeFileName, data, 0644); err != nil {
+	if err := a.config.AssetWrite(completeFileName, data); err != nil {
 		return err
 	}
 	return nil

@@ -71,7 +71,7 @@ func (r *Roms) load() ([]byte, error) {
 		return _jiffyRom, nil
 	}
 	if name := r.cfg.C1541RomAsset(); len(name) > 0 {
-		if dat, err := r.cfg.Asset(name); err == nil {
+		if dat, err := r.cfg.AssetRead(name); err == nil {
 			return dat, nil
 		}
 	}

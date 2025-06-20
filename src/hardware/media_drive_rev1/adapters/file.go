@@ -2,19 +2,20 @@ package adapters
 
 import (
 	"fmt"
-	"os"
+	"github.com/markel1974/c64emu/src/config"
 )
 
 func FileExtension() string { return "*" }
 
 // File represents a file with an associated path.
 type File struct {
-	path string
+	path   string
+	config *config.Config
 }
 
 // NewFile initializes and returns a new File instance for the given path or an error if the operation fails.
-func NewFile(path string) (*File, error) {
-	return &File{path: path}, nil
+func NewFile(config *config.Config, path string) (*File, error) {
+	return &File{config: config, path: path}, nil
 }
 
 // Extension returns the file extension of the associated file path.
@@ -26,18 +27,18 @@ func (a *File) Name() string {
 }
 
 // ReadDir retrieves the file information of the file at the specified path and returns it in a slice.
-func (a *File) ReadDir() ([]os.FileInfo, error) {
-	s, err := os.Stat(a.path)
+func (a *File) ReadDir() ([]config.IAssetInfo, error) {
+	v, err := a.config.AssetInfo(a.path)
 	if err != nil {
 		return nil, err
 	}
-	out := []os.FileInfo{s}
+	out := []config.IAssetInfo{v}
 	return out, nil
 }
 
 // ReadFile reads the content of the file specified by its path and returns the data as a byte slice or an error.
 func (a *File) ReadFile(_ string) ([]byte, error) {
-	data, err := os.ReadFile(a.path)
+	data, err := a.config.AssetRead(a.path)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,7 @@ func (a *File) ReadFile(_ string) ([]byte, error) {
 
 // WriteFile writes the provided data to the file at the specified path. Returns an error if the write operation fails.
 func (a *File) WriteFile(_ string, data []byte) error {
-	if err := os.WriteFile(a.path, data, 0644); err != nil {
+	if err := a.config.AssetWrite(a.path, data); err != nil {
 		return err
 	}
 	return nil

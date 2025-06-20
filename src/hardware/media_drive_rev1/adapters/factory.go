@@ -1,40 +1,35 @@
 package adapters
 
 import (
-	"os"
+	"github.com/markel1974/c64emu/src/config"
 	"path"
 	"strings"
 )
 
 // Factory represents a factory for creating and managing IAdapter instances.
 type Factory struct {
-	void *Void
 }
 
 // NewFactory creates and initializes a new Factory instance with a Void adapter.
 func NewFactory() *Factory {
-	f := &Factory{
-		void: NewVoid(),
-	}
+	f := &Factory{}
 	return f
 }
 
-// Void retrieves the void adapter, a placeholder adapter that does not perform any operations and always returns errors.
-func (f *Factory) Void() IAdapter {
-	return f.void
-}
-
 // Create initializes and returns a new IAdapter instance for a specified path or an error if the operation fails.
-func (f *Factory) Create(p string) (IAdapter, error) {
-	if fs, err := os.Stat(p); err == nil {
-		if fs.IsDir() {
-			return NewDirectory(p)
-		}
-		ext := strings.TrimSpace(strings.ToLower(path.Ext(p)))
-		switch ext {
-		case ZipExtension():
-			return NewZip(p)
-		}
+func (f *Factory) Create(config *config.Config, asset string) (IAdapter, error) {
+	info, err := config.AssetInfo(asset)
+	if err != nil {
+		return nil, err
 	}
-	return NewFile(p)
+	if info.IsDir() {
+		return NewDirectory(config, asset)
+	}
+	ext := strings.TrimSpace(strings.ToLower(path.Ext(asset)))
+	switch ext {
+	case ZipExtension():
+		return NewZip(config, asset)
+	default:
+		return NewFile(config, asset)
+	}
 }

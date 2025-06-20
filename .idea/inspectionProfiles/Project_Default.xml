@@ -18,6 +18,8 @@
         <method importPath="archive/zip" receiver="*ReadCloser" name="Close" />
         <method importPath="archive/zip" receiver="*Writer" name="Close" />
         <method importPath="io" receiver="ReadCloser" name="Close" />
+        <method importPath="github.com/markel1974/c64emu/src/config" receiver="IAssetReader" name="Close" />
+        <method importPath="github.com/markel1974/c64emu/src/config" receiver="IAssetWriter" name="Close" />
       </methods>
     </inspection_tool>
   </profile>

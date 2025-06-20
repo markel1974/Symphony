@@ -67,7 +67,7 @@ func (v *MediaDrive) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceN
 	if err := v.protocol.Bind(v, deviceId, deviceNumber); err != nil {
 		return err
 	}
-	adapter, err := v.adapterFactory.Create(path)
+	adapter, err := v.adapterFactory.Create(v.cfg, path)
 	if err != nil {
 		return err
 	}

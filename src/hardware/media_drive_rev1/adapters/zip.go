@@ -4,10 +4,10 @@ import (
 	"archive/zip"
 	"bytes"
 	"fmt"
+	"github.com/markel1974/c64emu/src/config"
 	"hash/crc32"
 	"io"
 	"io/fs"
-	"os"
 	"path"
 	"strings"
 	"time"
@@ -69,12 +69,16 @@ func ZipExtension() string { return ".zip" }
 
 // Zip represents a ZIP archive file located at a specific path on the filesystem.
 type Zip struct {
-	path string
+	config *config.Config
+	path   string
 }
 
 // NewZip initializes and returns a new Directory instance with the specified path. Returns an error if initialization fails.
-func NewZip(path string) (*Zip, error) {
-	z := &Zip{path: path}
+func NewZip(config *config.Config, path string) (*Zip, error) {
+	z := &Zip{
+		config: config,
+		path:   path,
+	}
 	return z, nil
 }
 
@@ -86,13 +90,17 @@ func (a *Zip) Name() string {
 }
 
 // ReadDir extracts and returns a list of file information from the zip archive.
-func (a *Zip) ReadDir() ([]os.FileInfo, error) {
-	zf, err := zip.OpenReader(a.path)
+func (a *Zip) ReadDir() ([]config.IAssetInfo, error) {
+	reader, size, err := a.config.AssetReader(a.path)
 	if err != nil {
 		return nil, err
 	}
-	defer zf.Close()
-	var out []os.FileInfo
+	zf, err := zip.NewReader(reader, size)
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+	var out []config.IAssetInfo
 	for _, file := range zf.File {
 		v := file.FileInfo()
 		out = append(out, v)
@@ -102,11 +110,15 @@ func (a *Zip) ReadDir() ([]os.FileInfo, error) {
 
 // ReadFile extracts and reads the content of the specified file from the zip archive by its name.
 func (a *Zip) ReadFile(plainName string) ([]byte, error) {
-	zf, err := zip.OpenReader(a.path)
+	reader, size, err := a.config.AssetReader(a.path)
 	if err != nil {
 		return nil, err
 	}
-	defer zf.Close()
+	zf, err := zip.NewReader(reader, size)
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
 	var target *zip.File = nil
 	for _, file := range zf.File {
 		if string(CreateFileName(file.Name)) == plainName {
@@ -133,13 +145,7 @@ func (a *Zip) ReadFile(plainName string) ([]byte, error) {
 // It ensures that the provided data is compressed and added to the archive using the Deflate compression method.
 // Returns an error if the zip file cannot be opened, modified, or written to, or if there are issues creating the file header.
 func (a *Zip) WriteFile(plainName string, data []byte) error {
-	zipReader, err := zip.OpenReader(a.path)
-	if err != nil {
-		return err
-	}
-	defer zipReader.Close()
-
-	zipFile, err := os.OpenFile(a.path, os.O_APPEND|os.O_WRONLY, 0644)
+	zipFile, err := a.config.AssetWriter(a.path)
 	if err != nil {
 		return err
 	}
