@@ -16,7 +16,6 @@ type WriteFn func(uint16, uint8)
 // PLA represents the Programmable Logic Array (PLA) component responsible for memory and I/O address mapping logic.
 type PLA struct {
 	*component.BaseComponent
-	triggerSize      int
 	ramRead          ReadFn
 	ramWrite         WriteFn
 	cartManRead      ReadFn
@@ -25,6 +24,7 @@ type PLA struct {
 	cartManConfig    func() (uint8, uint8, bool)
 	cartManIntervals uint8
 	vaSignals        func() uint8
+	memoryConfig     []uint8
 	bankWrite        []WriteFn
 	bankRead         []ReadFn
 	u15Write         []WriteFn // represent U15, 74LS138 (mux)
@@ -55,7 +55,6 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	b := &PLA{
 		BaseComponent:    component.NewBaseComponent(),
 		vaSignals:        nil,
-		triggerSize:      0,
 		ramRead:          nil,
 		ramWrite:         nil,
 		cartManRead:      nil,
@@ -73,7 +72,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		charRead:         nil,
 		colorRead:        nil,
 		cfg:              nil,
-		wTriggers:        nil,
+		wTriggers:        nil, //
 		label:            label,
 		cartManIntervals: 0,
 	}
@@ -100,8 +99,8 @@ func (b *PLA) Setup() error {
 // Bind initializes and binds PLA components such as RAM, ROM, cartridge manager, chip-select elements, and signal handlers.
 func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASignals, cartMan references.IC64CartridgeManager, ram references.IC64Ram, roms references.IC64Roms, cs12 references.IC64PlaChipSelect, cs4 references.IC64PlaChipSelect, cs14 references.IC64PlaChipSelect, cs15 references.IC64PlaChipSelect, cs10 references.IC64PlaChipSelect) error {
 	b.vaSignals = vaSignals.GetVASignal
-	b.triggerSize = ram.Size()
 
+	b.wTriggers = NewWriteTriggers(ram.Size())
 	b.cartManRead = cartMan.Read
 
 	//MUST BE cs9 - cs11
@@ -183,7 +182,6 @@ func (b *PLA) Reset() {
 
 // Emulate performs the main emulation step for the PLA, updating its state and processing associated logic.
 func (b *PLA) Emulate() {
-	//
 }
 
 // EmulationRequired determines whether emulation is required for the PLA component. Returns false by default.
@@ -193,8 +191,6 @@ func (b *PLA) EmulationRequired() bool {
 
 // RebuildMemoryConfig recalculates and applies the current memory configuration based on cartridge and port settings.
 func (b *PLA) RebuildMemoryConfig() {
-	//https://sta.c64.org/cbm64mem.html
-	//https://codebase64.org/doku.php?id=base:memory_management
 	spec := references.C64CartridgeSpecOff
 	if game, exRom, ok := b.cartManConfig(); ok {
 		spec = references.GetCartridgeSpec(game, exRom)
@@ -202,47 +198,7 @@ func (b *PLA) RebuildMemoryConfig() {
 	b.cartManIntervals = spec.Intervals
 	dir, data := b.ports.Config()
 	mcIdx := ((^dir | data) & 0x7) | (spec.ExRom << 3) | (spec.Game << 4)
-	b.applyMemoryConfig(int(mcIdx))
-}
-
-// update updates the state of the PLA by rebuilding the memory configuration and updating the port settings.
-func (b *PLA) update() {
-	//https://sta.c64.org/cbm64mem.html
-	//https://codebase64.org/doku.php?id=base:memory_management
-	//b.ports.SetTape(tape_sense, tape_write_in, tape_motor_in)
-	b.ports.Update()
-	b.RebuildMemoryConfig()
-}
-
-// ExtWrite writes a byte to the specified address using the provided memory configuration, temporarily switching configurations.
-func (b *PLA) ExtWrite(memConfig int, addr uint16, data uint8) {
-	var prevMemConfig = -1
-	if memConfig >= 0 {
-		prevMemConfig = b.bankSwitcher.GetIndex()
-		b.applyMemoryConfig(memConfig)
-	}
-	b.Write(addr, data)
-	if prevMemConfig >= 0 {
-		b.applyMemoryConfig(prevMemConfig)
-	}
-}
-
-// ExtRead allows reading a specific memory address using a temporary memory configuration.
-// The original memory configuration is restored after the read operation.
-// memConfig specifies the temporary memory configuration to apply.
-// addr is the address to read from.
-// Returns the data read from the given memory address.
-func (b *PLA) ExtRead(memConfig int, addr uint16) uint8 {
-	var prevMemConfig = -1
-	if memConfig >= 0 {
-		prevMemConfig = b.bankSwitcher.GetIndex()
-		b.applyMemoryConfig(memConfig)
-	}
-	data := b.Read(addr)
-	if prevMemConfig >= 0 {
-		b.applyMemoryConfig(prevMemConfig)
-	}
-	return data
+	b.bankSwitch(int(mcIdx))
 }
 
 // Read retrieves the value from the memory mapped by the given address.
@@ -257,26 +213,61 @@ func (b *PLA) Read(addr uint16) uint8 {
 func (b *PLA) Write(addr uint16, data uint8) {
 	bank := addr >> 12
 	b.bankWrite[bank](addr, data)
-	if b.wTriggers == nil {
-		return
+}
+
+// ExtWrite writes a byte to the specified address using the provided memory configuration, temporarily switching configurations.
+func (b *PLA) ExtWrite(memConfig int, addr uint16, data uint8) {
+	var prevMemConfig = -1
+	if memConfig >= 0 {
+		prevMemConfig = b.bankSwitcher.GetIndex()
+		b.bankSwitch(memConfig)
 	}
-	b.wTriggers.Exec(addr, data)
+	b.Write(addr, data)
+	if prevMemConfig >= 0 {
+		b.bankSwitch(prevMemConfig)
+	}
+}
+
+// ExtRead allows reading a specific memory address using a temporary memory configuration.
+func (b *PLA) ExtRead(memConfig int, addr uint16) uint8 {
+	var prevMemConfig = -1
+	if memConfig >= 0 {
+		prevMemConfig = b.bankSwitcher.GetIndex()
+		b.bankSwitch(memConfig)
+	}
+	data := b.Read(addr)
+	if prevMemConfig >= 0 {
+		b.bankSwitch(prevMemConfig)
+	}
+	return data
 }
 
 // SetWriteTrigger registers a write-trigger at a specified address with a callback and returns the assigned trigger ID.
 func (b *PLA) SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int {
-	if b.wTriggers == nil {
-		b.wTriggers = NewWriteTriggers(b.triggerSize)
+	rebuild := b.wTriggers.Len() == 0
+	w := b.wTriggers.Add(addr, fn)
+	if rebuild {
+		b.applyMemoryConfig(b.memoryConfig)
 	}
-	return b.wTriggers.Add(addr, fn)
+	return w
 }
 
 // RemoveRamTrigger removes a write-trigger by its unique ID for the specified memory address in the WriteTriggers collection.
 func (b *PLA) RemoveRamTrigger(addr uint16, id int) {
-	if b.wTriggers == nil {
-		return
-	}
 	b.wTriggers.Remove(addr, id)
+	rebuild := b.wTriggers.Len() == 0
+	if rebuild {
+		b.applyMemoryConfig(b.memoryConfig)
+	}
+}
+
+// update updates the state of the PLA by rebuilding the memory configuration and updating the port settings.
+func (b *PLA) update() {
+	//https://sta.c64.org/cbm64mem.html
+	//https://codebase64.org/doku.php?id=base:memory_management
+	//b.ports.SetTape(tape_sense, tape_write_in, tape_motor_in)
+	b.ports.Update()
+	b.RebuildMemoryConfig()
 }
 
 // ramWrite0x0000 handles writing data to memory address 0x0000, updating port direction and data where applicable.
@@ -356,19 +347,41 @@ func (b *PLA) readOpenBus(_ uint16) uint8 {
 	return b.vaSignals()
 }
 
-// applyMemoryConfig updates the current memory configuration based on the given index and returns true if a change occurred.
-func (b *PLA) applyMemoryConfig(bankIndex int) bool {
+// bankSwitch switches the memory bank to the specified bankIndex and applies the corresponding memory configuration.
+// It returns true if the switch is successful, otherwise false.
+func (b *PLA) bankSwitch(bankIndex int) bool {
 	memoryConfig, ok := b.bankSwitcher.Apply(bankIndex)
 	if !ok {
 		return false
 	}
+	b.memoryConfig = memoryConfig
+	b.applyMemoryConfig(b.memoryConfig)
+	//fmt.Printf("SYSTEM MEMORY CONFIG CHANGED  %d -> %v\n", mcIdx, b.memoryConfig)
+	return true
+}
+
+// applyMemoryConfig configures memory banks based on the provided memory configuration, setting read/write functions accordingly.
+func (b *PLA) applyMemoryConfig(memoryConfig []uint8) {
+	ramWrite := b.ramWrite
+	ramWrite0x0000 := b.ramWrite0x0000
+	if b.wTriggers.Len() > 0 {
+		ramWrite = func(addr uint16, data uint8) {
+			b.ramWrite(addr, data)
+			b.wTriggers.Exec(addr, data)
+		}
+		ramWrite0x0000 = func(addr uint16, data uint8) {
+			b.ramWrite0x0000(addr, data)
+			b.wTriggers.Exec(addr, data)
+		}
+	}
+
 	for idx, v := range memoryConfig {
 		if idx == 0 {
 			b.bankRead[0] = b.ramRead0x0000
-			b.bankWrite[0] = b.ramWrite0x0000
+			b.bankWrite[0] = ramWrite0x0000
 		} else {
 			b.bankRead[idx] = b.ramRead
-			b.bankWrite[idx] = b.ramWrite
+			b.bankWrite[idx] = ramWrite
 		}
 		switch v {
 		case RAM:
@@ -399,6 +412,4 @@ func (b *PLA) applyMemoryConfig(bankIndex int) bool {
 			log.Fatalf("wrong memory config for bank %X: %d", idx, v)
 		}
 	}
-	//fmt.Printf("SYSTEM MEMORY CONFIG CHANGED  %d -> %v\n", mcIdx, b.memoryConfig)
-	return true
 }

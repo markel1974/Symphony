@@ -6,6 +6,7 @@ import "log"
 // https://www.c64-wiki.com/wiki/Bank_Switching
 // https://www.c64-wiki.com/wiki/Memory_Map#Configurations
 // https://sta.c64.org/cbm64mem.html
+// https://codebase64.org/doku.php?id=base:memory_management
 
 const (
 	// RAM represents the memory type or section with a hexadecimal identifier of 0x0.

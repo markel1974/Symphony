@@ -44,21 +44,22 @@ func NewTrigger(addr uint16) *Trigger {
 }
 
 // Add registers a WriteFn to the Trigger and returns a unique identifier for the registered function.
-func (wt *Trigger) Add(fn WriteFn) int {
+func (wt *Trigger) Add(fn WriteFn) (int, bool) {
 	id := wt.idx
 	wt.container = append(wt.container, NewTriggerData(id, wt.addr, fn))
 	wt.idx++
-	return id
+	return id, true
 }
 
 // Remove deletes a TriggerData object from the container by its unique ID, if it exists.
-func (wt *Trigger) Remove(id int) {
+func (wt *Trigger) Remove(id int) bool {
 	for idx, f := range wt.container {
 		if id == f.GetId() {
 			wt.container = append(wt.container[:idx], wt.container[idx+1:]...)
-			break
+			return true
 		}
 	}
+	return false
 }
 
 // Exec processes the provided data by invoking the Exec method on each TriggerData in the Trigger's container.
@@ -72,13 +73,19 @@ func (wt *Trigger) Exec(data uint8) {
 // Each trigger is associated with a specific address and executes a function when data is written to that address.
 type WriteTriggers struct {
 	triggers []*Trigger
+	counter  int
 }
 
 // NewWriteTriggers initializes a WriteTriggers instance with a specified capacity for triggers and returns a pointer to it.
 func NewWriteTriggers(r int) *WriteTriggers {
-	wt := &WriteTriggers{triggers: nil}
-	wt.triggers = make([]*Trigger, r)
+	wt := &WriteTriggers{
+		triggers: make([]*Trigger, r),
+	}
 	return wt
+}
+
+func (wt *WriteTriggers) Len() int {
+	return wt.counter
 }
 
 // Add registers a WriteFn for the specified address and returns a unique ID for the added trigger.
@@ -88,13 +95,20 @@ func (wt *WriteTriggers) Add(addr uint16, fn WriteFn) int {
 		t = NewTrigger(addr)
 		wt.triggers[addr] = t
 	}
-	return t.Add(fn)
+	wt.counter++
+	out, ok := t.Add(fn)
+	if ok {
+		wt.counter++
+	}
+	return out
 }
 
 // Remove removes a trigger identified by the given id for the specified address from the WriteTriggers collection.
 func (wt *WriteTriggers) Remove(addr uint16, id int) {
 	if t := wt.triggers[addr]; t != nil {
-		t.Remove(id)
+		if ok := t.Remove(id); ok {
+			wt.counter--
+		}
 	}
 }
 
