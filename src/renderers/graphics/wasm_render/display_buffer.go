@@ -15,8 +15,8 @@ const rgba8Len = rgbaLen * 8
 type DisplayBuffer struct {
 	w       int
 	h       int
-	colors  [][rgbaLen]uint8
-	colors8 [][rgba8Len]uint8
+	colors  []*[]uint8
+	colors8 []*[]uint8
 	surface []byte
 	maxLen  int
 }
@@ -30,16 +30,16 @@ func NewDisplayBuffer(w int, h int) *DisplayBuffer {
 	//paletteR := []byte{0x00, 0xfc, 0x80, 0x87, 0x82, 0x6e, 0x39, 0xdc, 0x8a, 0x52, 0xb7, 0x52, 0x7d, 0xbb, 0x79, 0xaf}
 	//paletteG := []byte{0x00, 0xfc, 0x41, 0xc3, 0x46, 0xa9, 0x2d, 0xe9, 0x5c, 0x40, 0x79, 0x52, 0x7d, 0xf9, 0x6c, 0xaf}
 	//paletteB := []byte{0x00, 0xfc, 0x32, 0xd2, 0xb4, 0x39, 0xa3, 0x6c, 0x22, 0x03, 0x6a, 0x52, 0x7d, 0x83, 0xea, 0xaf}
-	colors := make([][rgbaLen]uint8, 256)
-	colors8 := make([][rgba8Len]uint8, 256)
+	colors := make([]*[]uint8, 256)
+	colors8 := make([]*[]uint8, 256)
 	for j := 0; j < 16; j++ {
 		red := paletteR[j]
 		green := paletteG[j]
 		blue := paletteB[j]
 		alfa := uint8(255)
-		rgba := [rgbaLen]uint8{red, green, blue, alfa}
-		colors[j] = rgba
-		rgba8 := [rgba8Len]uint8{
+		rgba := []uint8{red, green, blue, alfa}
+		colors[j] = &rgba
+		rgba8 := []uint8{
 			red, green, blue, alfa,
 			red, green, blue, alfa,
 			red, green, blue, alfa,
@@ -49,7 +49,7 @@ func NewDisplayBuffer(w int, h int) *DisplayBuffer {
 			red, green, blue, alfa,
 			red, green, blue, alfa,
 		}
-		colors8[j] = rgba8
+		colors8[j] = &rgba8
 	}
 	for k := 16; k < 256; k++ {
 		colors[k] = colors[k&0x0f]
@@ -95,24 +95,24 @@ func (db *DisplayBuffer) Set(idx int, data uint8) {
 	if (target + rgbaLen) > db.maxLen {
 		return
 	}
-	copy(db.surface[target:], db.colors[data][:])
+	copy(db.surface[target:], *db.colors[data])
 }
 
 // Set8 updates a block of 8 sequential RGBA entries on the display buffer starting at the specified index.
 // It copies color data from the provided array to the internal surface buffer.
 // Index bounds and maximum buffer length are validated before performing the update.
-func (db *DisplayBuffer) Set8(idx int, data [8]uint8) {
-	if max := (idx * rgbaLen) + (8 * rgbaLen); max > db.maxLen {
+func (db *DisplayBuffer) Set8(idx int, data *[8]uint8) {
+	if maxLen := (idx * rgbaLen) + (8 * rgbaLen); maxLen > db.maxLen {
 		return
 	}
-	copy(db.surface[(idx+0)*rgbaLen:], db.colors[data[0]][:])
-	copy(db.surface[(idx+1)*rgbaLen:], db.colors[data[1]][:])
-	copy(db.surface[(idx+2)*rgbaLen:], db.colors[data[2]][:])
-	copy(db.surface[(idx+3)*rgbaLen:], db.colors[data[3]][:])
-	copy(db.surface[(idx+4)*rgbaLen:], db.colors[data[4]][:])
-	copy(db.surface[(idx+5)*rgbaLen:], db.colors[data[5]][:])
-	copy(db.surface[(idx+6)*rgbaLen:], db.colors[data[6]][:])
-	copy(db.surface[(idx+7)*rgbaLen:], db.colors[data[7]][:])
+	copy(db.surface[(idx+0)*rgbaLen:], *db.colors[data[0]])
+	copy(db.surface[(idx+1)*rgbaLen:], *db.colors[data[1]])
+	copy(db.surface[(idx+2)*rgbaLen:], *db.colors[data[2]])
+	copy(db.surface[(idx+3)*rgbaLen:], *db.colors[data[3]])
+	copy(db.surface[(idx+4)*rgbaLen:], *db.colors[data[4]])
+	copy(db.surface[(idx+5)*rgbaLen:], *db.colors[data[5]])
+	copy(db.surface[(idx+6)*rgbaLen:], *db.colors[data[6]])
+	copy(db.surface[(idx+7)*rgbaLen:], *db.colors[data[7]])
 }
 
 // SetMulti8 updates the DisplayBuffer's surface with the 8xRGBA color data at the specified index if within bounds.
@@ -121,5 +121,5 @@ func (db *DisplayBuffer) SetMulti8(idx int, data uint8) {
 	if (target + rgba8Len) > db.maxLen {
 		return
 	}
-	copy(db.surface[target:], db.colors8[data][:])
+	copy(db.surface[target:], *db.colors8[data])
 }

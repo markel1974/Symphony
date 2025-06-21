@@ -10,7 +10,8 @@ import (
 	"log"
 )
 
-//cp $GOROOT/misc/wasm/wasm_exec.js in static_content
+//GO <= 1.20 cp $GOROOT/misc/wasm/wasm_exec.js src/renderers/graphics/wasm_render/server/static_content/
+//GO  > 1.20 cp $GOROOT/lib/wasm/wasm_exec.js src/renderers/graphics/wasm_render/server/static_content/
 //cp index.html in static_content
 //GOOS=js GOARCH=wasm go build -o  ./src/renderers/graphics/wasm_render/server/static_content/symphony.wasm ./src/renderers/graphics/wasm_render/main
 
