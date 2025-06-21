@@ -170,12 +170,53 @@ var _scCodesAscii = []byte{
 }
 
 // _colors is a slice of 8-bit unsigned integers representing a precomputed mapping of color indices to color values.
-var _colors []uint8
+var _colors [256]uint8
+
+var _multicolorIndex [256][8]uint8
+
+var _standardIndex [256][8]uint8
 
 // init initializes the _colors slice with 256 elements, mapping each index to the lower 4 bits of its value.
 func init() {
-	_colors = make([]uint8, 256)
+	//_colors = make([]uint8, 256)
 	for i := range _colors {
 		_colors[i] = (uint8)(i & 0xf)
+	}
+	for i := range _multicolorIndex {
+		data := i
+		idx := uint8(data & 3)
+		_multicolorIndex[i][7] = idx
+		_multicolorIndex[i][6] = idx
+		data >>= 2
+		idx = uint8(data & 3)
+		_multicolorIndex[i][5] = idx
+		_multicolorIndex[i][4] = idx
+		data >>= 2
+		idx = uint8(data & 3)
+		_multicolorIndex[i][3] = idx
+		_multicolorIndex[i][2] = idx
+		data >>= 2
+		idx = uint8(data) // non serve &3, sono gli ultimi 2 bit
+		_multicolorIndex[i][1] = idx
+		_multicolorIndex[i][0] = idx
+	}
+
+	for i := range _standardIndex {
+		data := uint8(i)
+		_standardIndex[i][7] = data & 1
+		data >>= 1
+		_standardIndex[i][6] = data & 1
+		data >>= 1
+		_standardIndex[i][5] = data & 1
+		data >>= 1
+		_standardIndex[i][4] = data & 1
+		data >>= 1
+		_standardIndex[i][3] = data & 1
+		data >>= 1
+		_standardIndex[i][2] = data & 1
+		data >>= 1
+		_standardIndex[i][1] = data & 1
+		data >>= 1
+		_standardIndex[i][0] = data & 1
 	}
 }

@@ -25,7 +25,7 @@ const (
 // Borders represents the structure for handling visual border rendering in a VIC-based display system.
 type Borders struct {
 	core             *VIC
-	displayBuffer    references.IDisplayBuffer
+	setMulti8        func(int, uint8)
 	mainFlipFlop     bool
 	verticalFlipFlop bool
 	samples          []bool
@@ -36,7 +36,7 @@ type Borders struct {
 // NewBorder creates and initializes a new Borders instance with the provided VIC core and display buffer dependencies.
 func NewBorder(core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
 	gr := &Borders{
-		displayBuffer:    displayBuffer,
+		setMulti8:        displayBuffer.SetMulti8,
 		core:             core,
 		samples:          make([]bool, BorderTypeLast),
 		colors:           make([]uint8, 0xff),
@@ -120,7 +120,7 @@ func (b *Borders) Reset() {
 }
 
 // Draw renders the border regions based on current configuration, samples, and colors within the specified display buffer.
-func (b *Borders) Draw( /*lineStart int*/ ) {
+func (b *Borders) Draw() {
 	const bSize = 8
 	const border0Start = 0
 	const border1End = 4
@@ -137,23 +137,23 @@ func (b *Borders) Draw( /*lineStart int*/ ) {
 
 	if b.samples[BorderTypeLeft] {
 		for idx, offset := border0Start, border0StartSize; idx < border1End; idx, offset = idx+1, offset+bSize {
-			b.displayBuffer.SetMulti8(b.offset+offset, b.colors[idx])
+			b.setMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
 	if b.samples[BorderTypeMidLeft] {
-		b.displayBuffer.SetMulti8(b.offset+(border1Offset), b.colors[border1End])
+		b.setMulti8(b.offset+(border1Offset), b.colors[border1End])
 	}
 	if b.samples[BorderTypeCenter] {
 		for idx, offset := border2Start, border2StartSize; idx < border2End; idx, offset = idx+1, offset+bSize {
-			b.displayBuffer.SetMulti8(b.offset+offset, b.colors[idx])
+			b.setMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
 	if b.samples[BorderTypeMidRight] {
-		b.displayBuffer.SetMulti8(b.offset+(border3Offset), b.colors[border2End])
+		b.setMulti8(b.offset+(border3Offset), b.colors[border2End])
 	}
 	if b.samples[BorderTypeRight] {
 		for idx, offset := border4Start, border4StartSize; idx < border4End; idx, offset = idx+1, offset+bSize {
-			b.displayBuffer.SetMulti8(b.offset+offset, b.colors[idx])
+			b.setMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
 }

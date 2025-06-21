@@ -45,7 +45,8 @@ var _backgroundSequencer = []func(*Graphics){
 type Graphics struct {
 	core              *VIC
 	collisions        *Collisions
-	displayBuffer     references.IDisplayBuffer
+	set8              func(int, [8]uint8)
+	setMulti8         func(int, uint8)
 	gfxData           uint8
 	colorData         uint8
 	charData          uint8
@@ -66,7 +67,8 @@ func NewGraphics(core *VIC, collisions *Collisions, displayBuffer references.IDi
 	gr := &Graphics{
 		core:              core,
 		collisions:        collisions,
-		displayBuffer:     displayBuffer,
+		set8:              displayBuffer.Set8,
+		setMulti8:         displayBuffer.SetMulti8,
 		gfxData:           0,
 		colorData:         0,
 		charData:          0,
@@ -392,7 +394,7 @@ func drawForegroundBitmapMulticolorInvalid(gr *Graphics, offset int) {
 
 // _drawDefault sets a color value from the _colors array into the display buffer at the specified offset.
 func _drawDefault(gr *Graphics, offset int, a uint8) {
-	gr.displayBuffer.SetMulti8(offset, _colors[a])
+	gr.setMulti8(offset, _colors[a])
 }
 
 // _drawInvalidStandard updates graphics buffer based on x-scroll and sets color values in the display buffer.
@@ -400,8 +402,7 @@ func _drawInvalidStandard(gr *Graphics, offset int, a uint8) {
 	p1 := gr.gfxData >> gr.core.xScroll
 	p2 := gr.gfxData << (7 - gr.core.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
-
-	gr.displayBuffer.SetMulti8(offset, _colors[a])
+	gr.setMulti8(offset, _colors[a])
 }
 
 // _drawInvalidMulticolor processes invalid multicolor graphics and updates collision and display buffers accordingly.
@@ -410,8 +411,7 @@ func _drawInvalidMulticolor(gr *Graphics, offset int, a uint8) {
 	p1 := p >> gr.core.xScroll
 	p2 := p << (8 - gr.core.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
-
-	gr.displayBuffer.SetMulti8(offset, _colors[a])
+	gr.setMulti8(offset, _colors[a])
 }
 
 // _drawStandard renders 8 pixels in standard mode (1 bit per pixel).
@@ -422,22 +422,12 @@ func _drawStandard(gr *Graphics, offset int, a uint8, b uint8) {
 	gr.collisions.UpdateGraphics(p1, p2)
 
 	colorBuffer := [4]uint8{_colors[a], _colors[b], 0, 0}
-	data := gr.gfxData
-	gr.displayBuffer.Set(offset+7, colorBuffer[data&1])
-	data >>= 1
-	gr.displayBuffer.Set(offset+6, colorBuffer[data&1])
-	data >>= 1
-	gr.displayBuffer.Set(offset+5, colorBuffer[data&1])
-	data >>= 1
-	gr.displayBuffer.Set(offset+4, colorBuffer[data&1])
-	data >>= 1
-	gr.displayBuffer.Set(offset+3, colorBuffer[data&1])
-	data >>= 1
-	gr.displayBuffer.Set(offset+2, colorBuffer[data&1])
-	data >>= 1
-	gr.displayBuffer.Set(offset+1, colorBuffer[data&1])
-	data >>= 1
-	gr.displayBuffer.Set(offset, colorBuffer[data])
+	index := _standardIndex[gr.gfxData]
+	drawBuffer := [8]uint8{
+		colorBuffer[index[0]], colorBuffer[index[1]], colorBuffer[index[2]], colorBuffer[index[3]],
+		colorBuffer[index[4]], colorBuffer[index[5]], colorBuffer[index[6]], colorBuffer[index[7]],
+	}
+	gr.set8(offset, drawBuffer)
 }
 
 // _drawMulticolor renders 8 pixels in multicolor mode (2 bits per pixel).
@@ -449,20 +439,10 @@ func _drawMulticolor(gr *Graphics, offset int, a uint8, b uint8, c uint8, d uint
 	gr.collisions.UpdateGraphics(p1, p2)
 
 	colorBuffer := [4]uint8{_colors[a], _colors[b], _colors[c], _colors[d]}
-	data := gr.gfxData
-	color := colorBuffer[data&3]
-	gr.displayBuffer.Set(offset+7, color)
-	gr.displayBuffer.Set(offset+6, color)
-	data >>= 2
-	color = colorBuffer[data&3]
-	gr.displayBuffer.Set(offset+5, color)
-	gr.displayBuffer.Set(offset+4, color)
-	data >>= 2
-	color = colorBuffer[data&3]
-	gr.displayBuffer.Set(offset+3, color)
-	gr.displayBuffer.Set(offset+2, color)
-	data >>= 2
-	color = colorBuffer[data]
-	gr.displayBuffer.Set(offset+1, color)
-	gr.displayBuffer.Set(offset, color)
+	index := _multicolorIndex[gr.gfxData]
+	drawBuffer := [8]uint8{
+		colorBuffer[index[0]], colorBuffer[index[1]], colorBuffer[index[2]], colorBuffer[index[3]],
+		colorBuffer[index[4]], colorBuffer[index[5]], colorBuffer[index[6]], colorBuffer[index[7]],
+	}
+	gr.set8(offset, drawBuffer)
 }

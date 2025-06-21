@@ -10,17 +10,17 @@ import (
 // The type relies on various counters, flags, and pointers to handle sprite DMA and display activities effectively.
 // It interacts with the VIC core and an implemented display buffer interface for rendering and collision processing.
 type Sprites struct {
-	core            *VIC                      // Pointer to the main VIC-II core.
-	displayBuffer   references.IDisplayBuffer // Interface to the display buffer.
-	collisions      *Collisions               // Pointer to the collision detection system.
-	dataPtr         []uint16                  // Sprite data pointers (one per sprite).
-	data            [][]uint8                 // Sprite data (up to 64 bytes per sprite).
-	dmaFlags        uint8                     // Active DMA Sprite (bitmask: bit i = 1 means sprite is active).
-	displayFlags    uint8                     // Active Display Sprite (bitmask).
-	spriteFlags     uint8                     // Sprite in this line (bitmask).
-	dataCounter     []uint16                  // Sprite counter data (one per sprite).
-	dataCounterBase []uint16                  // Sprite base counter data (one per sprite).
-	offset          int                       // Offset from bitmap spritesBuffer
+	core            *VIC // Pointer to the main VIC-II core.
+	set             func(int, uint8)
+	collisions      *Collisions // Pointer to the collision detection system.
+	dataPtr         []uint16    // Sprite data pointers (one per sprite).
+	data            [][]uint8   // Sprite data (up to 64 bytes per sprite).
+	dmaFlags        uint8       // Active DMA Sprite (bitmask: bit i = 1 means sprite is active).
+	displayFlags    uint8       // Active Display Sprite (bitmask).
+	spriteFlags     uint8       // Sprite in this line (bitmask).
+	dataCounter     []uint16    // Sprite counter data (one per sprite).
+	dataCounterBase []uint16    // Sprite base counter data (one per sprite).
+	offset          int         // Offset from bitmap spritesBuffer
 }
 
 // NewSprites initializes and returns a new instance of the Sprites struct with default settings and allocations.
@@ -28,7 +28,7 @@ type Sprites struct {
 func NewSprites(core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer) *Sprites {
 	s := &Sprites{
 		core:            core,
-		displayBuffer:   displayBuffer,
+		set:             displayBuffer.Set,
 		collisions:      collisions,
 		dataPtr:         make([]uint16, SpriteNumber),
 		data:            make([][]uint8, SpriteNumber),
@@ -267,7 +267,7 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData ui
 		// Check for sprite-to-sprite collisions *before* drawing the pixel.
 		if !sp.collisions.SetSpriteCollision(sOffset+idx, sBit) {
 			// Draw the pixel to the display buffer.
-			sp.displayBuffer.Set(lineOffset+idx, selectedColor)
+			sp.set(lineOffset+idx, selectedColor)
 		}
 	}
 	// Draw the right half of the sprite (remaining 16 pixels).
@@ -289,7 +289,7 @@ func (sp *Sprites) drawExpandedMulticolor(lineOffset int, sColor uint8, sData ui
 		}
 		// Check for sprite-to-sprite collisions.
 		if !sp.collisions.SetSpriteCollision(sOffset+idx, sBit) {
-			sp.displayBuffer.Set(lineOffset+idx, selectedColor)
+			sp.set(lineOffset+idx, selectedColor)
 		}
 	}
 }
@@ -320,7 +320,7 @@ func (sp *Sprites) drawExpandedStandard(lineOffset int, sColor uint8, sData uint
 			// Check the most significant bit.
 			// Check for sprite-to-sprite collisions *before* drawing.
 			if !sp.collisions.SetSpriteCollision(sOffset+idx, sBit) {
-				sp.displayBuffer.Set(lineOffset+idx, sColor)
+				sp.set(lineOffset+idx, sColor)
 			}
 		}
 	}
@@ -330,7 +330,7 @@ func (sp *Sprites) drawExpandedStandard(lineOffset int, sColor uint8, sData uint
 			// Check the most significant bit.
 			// Check for sprite-to-sprite collisions.
 			if !sp.collisions.SetSpriteCollision(sOffset+idx, sBit) {
-				sp.displayBuffer.Set(lineOffset+idx, sColor)
+				sp.set(lineOffset+idx, sColor)
 			}
 		}
 	}
@@ -374,7 +374,7 @@ func (sp *Sprites) drawUnexpandedMulticolor(lineOffset int, sColor uint8, sData 
 		}
 		// Check for sprite-to-sprite collisions *before* drawing.
 		if !sp.collisions.SetSpriteCollision(sOffset+idx, sBit) {
-			sp.displayBuffer.Set(lineOffset+idx, selectedColor)
+			sp.set(lineOffset+idx, selectedColor)
 		}
 	}
 }
@@ -398,7 +398,7 @@ func (sp *Sprites) drawUnexpandedStandard(lineOffset int, sColor uint8, sData ui
 			// Check the most significant bit.
 			// Check for sprite-to-sprite collisions *before* drawing.
 			if !sp.collisions.SetSpriteCollision(sOffset+idx, sBit) {
-				sp.displayBuffer.Set(lineOffset+idx, sColor)
+				sp.set(lineOffset+idx, sColor)
 			}
 		}
 	}
