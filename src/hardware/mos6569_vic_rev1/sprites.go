@@ -165,16 +165,17 @@ func (sp *Sprites) UpdateDisplayYFlags() {
 // Collision detection for sprites is carried out during the rendering process.
 // Called in cycles 57-62.
 func (sp *Sprites) Draw() {
-	sprites := _spritesData[sp.spriteFlags]
-	if sprites == nil {
+	activeSprites := _spritesData[sp.spriteFlags]
+	if activeSprites == nil {
 		return
 	}
 	// Prepare the collision detection system for this scanline.
 	sp.collisions.Prepare()
 
-	for _, sprite := range sprites {
-		sNum := sprite.Num
-		sBit := sprite.Bits
+	for _, sNum := range activeSprites {
+		sBit := uint8(1) << sNum
+		//sNum := sprite.Num
+		//sBit := sprite.Bits
 		// If this sprite is active on this scanline...
 		// Get the sprite's color from the VIC-II registers.
 		sColor := _colors[sp.core.mXc[sNum]]

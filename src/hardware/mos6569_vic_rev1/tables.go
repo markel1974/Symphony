@@ -130,12 +130,6 @@ var _scCodesAscii = []byte{
 	/* 112 - 127 */ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?',
 }
 
-// SpriteData represents sprite information consisting of its number and corresponding bitmask.
-type SpriteData struct {
-	Num  uint8
-	Bits uint8
-}
-
 // _colors is an array that holds 256 color values, initialized with specific uint8 values for rendering purposes.
 var _colors [256]uint8
 
@@ -145,13 +139,11 @@ var _multicolorIndex [256][8]uint8
 // _standardIndex is a lookup table that maps an 8-bit value to an array of 8 single-bit values extracted from it.
 var _standardIndex [256][8]uint8
 
-// _spritesData is an array where each index corresponds to a combination of sprite flags.
-// Each entry contains a slice of pointers to SpriteData, describing the active sprites and their properties.
-var _spritesData [256][]*SpriteData
+// _spritesData is a lookup table mapping an 8-bit value to arrays of active sprite indices for rendering and processing.
+var _spritesData [256][]uint8
 
 // init initializes the _colors, _multicolorIndex, _standardIndex, and _spritesData variables for use in the program.
 func init() {
-	//_colors = make([]uint8, 256)
 	for i := range _colors {
 		_colors[i] = (uint8)(i & 0xf)
 	}
@@ -194,10 +186,14 @@ func init() {
 	}
 
 	for x := range _spritesData {
-		var sprite []*SpriteData = nil
+		var sprite []uint8 = nil
 		for sNum, sBit := uint8(0), uint8(1); sNum < SpriteNumber; sNum, sBit = sNum+1, sBit<<1 {
 			if uint8(x)&sBit != 0 {
-				sprite = append(sprite, &SpriteData{Num: sNum, Bits: sBit})
+				sprite = append(sprite, sNum)
+				//sBit2 := uint8(1) << sNum
+				//if sBit2 != sBit {
+				//	fmt.Println("wrong setup")
+				//}
 			}
 		}
 		_spritesData[x] = sprite
