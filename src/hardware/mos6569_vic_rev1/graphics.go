@@ -45,7 +45,7 @@ var _backgroundSequencer = []func(*Graphics){
 type Graphics struct {
 	core              *VIC
 	collisions        *Collisions
-	set8              func(int, [8]uint8)
+	set8              func(int, *[8]uint8)
 	setMulti8         func(int, uint8)
 	gfxData           uint8
 	colorData         uint8
@@ -427,7 +427,7 @@ func _drawStandard(gr *Graphics, offset int, a uint8, b uint8) {
 		colorBuffer[index[0]], colorBuffer[index[1]], colorBuffer[index[2]], colorBuffer[index[3]],
 		colorBuffer[index[4]], colorBuffer[index[5]], colorBuffer[index[6]], colorBuffer[index[7]],
 	}
-	gr.set8(offset, drawBuffer)
+	gr.set8(offset, &drawBuffer)
 }
 
 // _drawMulticolor renders 8 pixels in multicolor mode (2 bits per pixel).
@@ -444,5 +444,5 @@ func _drawMulticolor(gr *Graphics, offset int, a uint8, b uint8, c uint8, d uint
 		colorBuffer[index[0]], colorBuffer[index[1]], colorBuffer[index[2]], colorBuffer[index[3]],
 		colorBuffer[index[4]], colorBuffer[index[5]], colorBuffer[index[6]], colorBuffer[index[7]],
 	}
-	gr.set8(offset, drawBuffer)
+	gr.set8(offset, &drawBuffer)
 }

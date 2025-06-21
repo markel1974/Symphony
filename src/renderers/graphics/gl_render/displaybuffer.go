@@ -7,8 +7,8 @@ import (
 type DisplayBuffer struct {
 	p       *pixels.Picture
 	coords  []int
-	colors  [256][4]uint8
-	colors8 [256][32]uint8
+	colors  [256]*[4]uint8
+	colors8 [256]*[32]uint8
 	maxLen  int
 }
 
@@ -39,7 +39,7 @@ func NewDisplayBuffer(p *pixels.Picture) *DisplayBuffer {
 		blue := paletteB[j]
 		alfa := uint8(255)
 		rgba := [4]uint8{red, green, blue, alfa}
-		db.colors[j] = rgba
+		db.colors[j] = &rgba
 		rgba8 := [32]uint8{
 			red, green, blue, alfa,
 			red, green, blue, alfa,
@@ -50,7 +50,7 @@ func NewDisplayBuffer(p *pixels.Picture) *DisplayBuffer {
 			red, green, blue, alfa,
 			red, green, blue, alfa,
 		}
-		db.colors8[j] = rgba8
+		db.colors8[j] = &rgba8
 	}
 	for k := 16; k < 256; k++ {
 		db.colors[k] = db.colors[k&0x0f]
@@ -63,10 +63,10 @@ func (db *DisplayBuffer) Set(idx int, data uint8) {
 	if idx >= db.maxLen {
 		return
 	}
-	db.p.SetRGBA4DirectArray(db.coords[idx], db.colors[data])
+	db.p.SetRGBA4DirectArrayPtr(db.coords[idx], db.colors[data])
 }
 
-func (db *DisplayBuffer) Set8(idx int, data [8]uint8) {
+func (db *DisplayBuffer) Set8(idx int, data *[8]uint8) {
 	if idx+7 >= db.maxLen {
 		return
 	}
@@ -89,7 +89,7 @@ func (db *DisplayBuffer) Set8(idx int, data [8]uint8) {
 		colors[d6][0], colors[d6][1], colors[d6][2], colors[d6][3],
 		colors[d7][0], colors[d7][1], colors[d7][2], colors[d7][3],
 	}
-	db.p.SetRGBA32DirectArray(db.coords[idx], t)
+	db.p.SetRGBA32DirectArrayPtr(db.coords[idx], &t)
 	//for x := 0; x < 8; x++ {
 	//	db.p.SetRGBADirectArray(db.coords[idx+x], db.colors[data[x]])
 	//}
@@ -99,5 +99,5 @@ func (db *DisplayBuffer) SetMulti8(idx int, data uint8) {
 	if idx >= db.maxLen {
 		return
 	}
-	db.p.SetRGBA32DirectArray(db.coords[idx], db.colors8[data])
+	db.p.SetRGBA32DirectArrayPtr(db.coords[idx], db.colors8[data])
 }

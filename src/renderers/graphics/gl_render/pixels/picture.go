@@ -111,21 +111,21 @@ func (s *Picture) SetRGBAArray(x int, y int, rgba []uint8) {
 }
 
 // SetRGBADirectArray sets the RGBA color values starting at the given pixel index directly in the pixel data array.
-func (s *Picture) SetRGBADirectArray(i int, rgba []uint8) {
-	copy(s.pixels[i:], rgba)
-}
+//func (s *Picture) SetRGBADirectArray(i int, rgba []uint8) {
+//	copy(s.pixels[i:], rgba)
+//}
 
-// SetRGBA4DirectArray sets the RGBA color values starting at the given pixel index directly in the pixel data array.
-func (s *Picture) SetRGBA4DirectArray(i int, rgba [4]uint8) {
+// SetRGBA4DirectArrayPtr sets the RGBA color values starting at the given pixel index directly in the pixel data array.
+func (s *Picture) SetRGBA4DirectArrayPtr(i int, rgba *[4]uint8) {
 	copy(s.pixels[i:], rgba[:])
 }
 
-// SetRGBA8DirectArray sets the RGBA color values starting at the given pixel index directly in the pixel data array.
-func (s *Picture) SetRGBA8DirectArray(i int, rgba [8]uint8) {
+// SetRGBA8DirectArrayPtr sets the RGBA color values starting at the given pixel index directly in the pixel data array.
+func (s *Picture) SetRGBA8DirectArrayPtr(i int, rgba *[8]uint8) {
 	copy(s.pixels[i:], rgba[:])
 }
 
-func (s *Picture) SetRGBA32DirectArray(i int, rgba [32]uint8) {
+func (s *Picture) SetRGBA32DirectArrayPtr(i int, rgba *[32]uint8) {
 	copy(s.pixels[i:], rgba[:])
 }
 

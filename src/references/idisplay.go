@@ -11,7 +11,7 @@ type IDisplayBuffer interface {
 
 	SetMulti8(idx int, data uint8)
 
-	Set8(idx int, data [8]uint8)
+	Set8(idx int, data *[8]uint8)
 }
 
 // IDisplayRender provides methods for rendering displays and managing display buffers.

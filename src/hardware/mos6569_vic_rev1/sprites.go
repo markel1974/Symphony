@@ -165,49 +165,44 @@ func (sp *Sprites) UpdateDisplayYFlags() {
 // Collision detection for sprites is carried out during the rendering process.
 // Called in cycles 57-62.
 func (sp *Sprites) Draw() {
-	if sp.spriteFlags == 0 {
-		// If no sprites are active on this scanline, return early.
+	sprites := _spritesData[sp.spriteFlags]
+	if sprites == nil {
 		return
 	}
-
 	// Prepare the collision detection system for this scanline.
 	sp.collisions.Prepare()
 
-	for sNum, sBit := uint8(0), uint8(1); sNum < SpriteNumber; sNum, sBit = sNum+1, sBit<<1 {
-		if (sp.spriteFlags & sBit) != 0 {
-			// If this sprite is active on this scanline...
-			// Get the sprite's color from the VIC-II registers.
-			sColor := _colors[sp.core.mXc[sNum]]
-			// Combine the three bytes of sprite data into a single 32-bit word for easier processing.
-			sData := (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
-			// Calculate the sprite's X offset on the screen. Add 24 to account for the border.
-			sOffset := int(sp.core.mXx[sNum]) + SpriteNumber
-			// Calculate the final offset on the scanline, including the global offset.
-			lineOffset := sp.offset + sOffset // lineStart + sOffset
-			// Calculate the "major" X coordinate (used for collision detection).This is essentially the character column.
-			m := sOffset / SpriteNumber
-			// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column.
-			s := sOffset & 7
-			// Check if the sprite is in multicolor mode.
-			multiColor := (sp.core.mmc & sBit) != 0
-			if expanded := (sp.core.mxe & sBit) != 0; expanded {
-				// If the sprite is expanded horizontally...
-				if multiColor {
-					// ...and in multicolor mode.
-					sp.drawExpandedMulticolor(lineOffset, sColor, sData, sOffset, m, s, sBit)
-				} else {
-					// ...and in standard color mode.
-					sp.drawExpandedStandard(lineOffset, sColor, sData, sOffset, m, s, sBit)
-				}
+	for _, sprite := range sprites {
+		sNum := sprite.Num
+		sBit := sprite.Bits
+		// If this sprite is active on this scanline...
+		// Get the sprite's color from the VIC-II registers.
+		sColor := _colors[sp.core.mXc[sNum]]
+		// Combine the three bytes of sprite data into a single 32-bit word for easier processing.
+		sData := (uint32(sp.data[sNum][0]) << 24) | (uint32(sp.data[sNum][1]) << 16) | (uint32(sp.data[sNum][2]) << 8)
+		// Calculate the sprite's X offset on the screen. Add 24 to account for the border.
+		sOffset := int(sp.core.mXx[sNum]) + SpriteNumber
+		// Calculate the final offset on the scanline, including the global offset.
+		lineOffset := sp.offset + sOffset // lineStart + sOffset
+		// Calculate the "major" X coordinate (used for collision detection).This is essentially the character column.
+		majorX := sOffset / SpriteNumber
+		// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column.
+		minorX := sOffset & 7
+		// Check if the sprite is in multicolor mode.
+		multiColor := (sp.core.mmc & sBit) != 0
+		if expanded := (sp.core.mxe & sBit) != 0; expanded {
+			// If the sprite is expanded horizontally...
+			if multiColor {
+				sp.drawExpandedMulticolor(lineOffset, sColor, sData, sOffset, majorX, minorX, sBit)
 			} else {
-				// If the sprite is *not* expanded horizontally...
-				if multiColor {
-					// ...and in multicolor mode.
-					sp.drawUnexpandedMulticolor(lineOffset, sColor, sData, sOffset, m, s, sBit)
-				} else {
-					// ...and in standard color mode.
-					sp.drawUnexpandedStandard(lineOffset, sColor, sData, sOffset, m, s, sBit)
-				}
+				sp.drawExpandedStandard(lineOffset, sColor, sData, sOffset, majorX, minorX, sBit)
+			}
+		} else {
+			// If the sprite is *not* expanded horizontally...
+			if multiColor {
+				sp.drawUnexpandedMulticolor(lineOffset, sColor, sData, sOffset, majorX, minorX, sBit)
+			} else {
+				sp.drawUnexpandedStandard(lineOffset, sColor, sData, sOffset, majorX, minorX, sBit)
 			}
 		}
 	}

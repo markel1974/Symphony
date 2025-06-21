@@ -1,26 +1,26 @@
 package mos6569
 
-// ScreenFreq defines the screen refresh frequency in Hertz.
-// FrameInterval calculates the duration of a frame in milliseconds.
-// DisplayX specifies the horizontal display resolution.
-// DisplayY specifies the vertical display resolution.
-// DisplayXFill represents an extended horizontal resolution range.
-// TotalRasters denotes the total number of raster lines for PAL format.
+// ScreenFreq defines the screen refresh frequency in Hz.
+// FrameInterval calculates the frame duration in milliseconds based on ScreenFreq.
+// DisplayX defines the horizontal resolution of the display in pixels.
+// DisplayY defines the vertical resolution of the display in pixels.
+// DisplayXFill defines the filled horizontal resolution of the display in pixels.
+// TotalRasters represents the total number of raster lines (PAL standard).
 // DisplayXDiv8 is the horizontal resolution divided by 8.
 // DisplayXDiv4 is the horizontal resolution divided by 4.
-// FirstDisplayedLine specifies the first line displayed on the screen.
-// LastDisplayedLine specifies the last line displayed on the screen.
-// FirstDmaLine identifies the first raster line eligible for Bad Lines.
-// LastDmaLine identifies the last raster line eligible for Bad Lines.
-// Row25YStart specifies the Y start position for a 25-row display.
-// Row25YStop specifies the Y stop position for a 25-row display.
-// Row24YStart specifies the Y start position for a 24-row display.
-// Row24YStop specifies the Y stop position for a 24-row display.
-// RasterYMax represents the maximum value of the raster Y position.
-// DisplayXMax calculates the maximum horizontal resolution including padding.
-// DisplaySize defines the total display buffer size in pixels.
-// DisplayXFillMax calculates the extended horizontal resolution including padding.
-// SpriteNumber specifies the number of hardware-supported sprites.
+// FirstDisplayedLine specifies the first displayed raster line.
+// LastDisplayedLine specifies the last displayed raster line.
+// FirstDmaLine marks the first line eligible for "Bad Lines" DMA fetching.
+// LastDmaLine marks the last line eligible for "Bad Lines" DMA fetching.
+// Row25YStart represents the starting coordinate for a 25-row display.
+// Row25YStop represents the stopping coordinate for a 25-row display.
+// Row24YStart represents the starting coordinate for a 24-row display.
+// Row24YStop represents the stopping coordinate for a 24-row display.
+// RasterYMax defines the maximum raster line index.
+// DisplayXMax specifies the maximum horizontal resolution, including additional offsets.
+// DisplaySize represents the total display buffer size in pixels.
+// DisplayXFillMax specifies the maximum filled horizontal resolution, including additional offsets.
+// SpriteNumber defines the total number of sprites supported.
 const (
 	ScreenFreq         = 50
 	FrameInterval      = 1000 / ScreenFreq
@@ -45,22 +45,7 @@ const (
 	SpriteNumber       = 8
 )
 
-// _multiExpTable is a precomputed lookup table for expanding multicolor
-// sprite data for display. Each entry takes a byte of sprite data and
-// expands it into a 16-bit value representing the doubled pixels,
-// suitable for multicolor mode where each pair of bits determines a color.
-//
-// Example:
-// Input byte (8 bits):  10110100  (binary)
-//
-//	10 -> 11 00
-//	11 -> 11 11
-//	01 -> 00 11
-//	00 -> 00 00
-//
-// Output word (16 bits): 1100111100110000 (binary)
-// _multiExpTable index:   0xCB         (203 decimal)
-// _multiExpTable value:  0xCF30       (binary 1100111100110000)
+// _multiExpTable is a precomputed lookup table containing 16-bit unsigned integers for efficient multi-exponentiation.
 var _multiExpTable = []uint16{
 	0x0000, 0x0005, 0x000A, 0x000F, 0x0050, 0x0055, 0x005A, 0x005F,
 	0x00A0, 0x00A5, 0x00AA, 0x00AF, 0x00F0, 0x00F5, 0x00FA, 0x00FF,
@@ -96,31 +81,7 @@ var _multiExpTable = []uint16{
 	0xFFA0, 0xFFA5, 0xFFAA, 0xFFAF, 0xFFF0, 0xFFF5, 0xFFFA, 0xFFFF,
 }
 
-// _expTable is a lookup table for fast horizontal expansion of sprite data.
-//
-// Each byte in a standard (non-multicolor) sprite represents 8 pixels.
-// When a sprite is expanded horizontally (by setting the corresponding bit
-// in the VIC-II's sprite expansion register), each of those pixels becomes
-// *two* pixels wide.  This table pre-calculates the expanded bit pattern
-// for every possible byte value.
-//
-// The index into this table is the byte value from the sprite data.
-// The value at that index is a 16-bit integer representing the expanded
-// pixel data.  Each bit in the original byte becomes *two* bits in the
-// 16-bit word.
-//
-// Example:
-//
-//	Original sprite data byte:  0b10110100  (binary)
-//	                                10110100
-//	Expanded pixel data (16bit): 1100111100110000 (binary)
-//
-// _expTable index:           0xb4          (decimal 180)
-// _expTable value:       0xccf3   (binary 1100110011110011)
-//
-// This allows the VIC-II emulation to quickly expand sprite data
-// by simply looking up the pre-calculated value in this table, instead
-// of performing bitwise operations for each pixel.
+// _expTable is a precomputed lookup table storing 16-bit unsigned integer values used for efficient computations.
 var _expTable = []uint16{
 	0x0000, 0x0003, 0x000C, 0x000F, 0x0030, 0x0033, 0x003C, 0x003F,
 	0x00C0, 0x00C3, 0x00CC, 0x00CF, 0x00F0, 0x00F3, 0x00FC, 0x00FF,
@@ -156,7 +117,7 @@ var _expTable = []uint16{
 	0xFFC0, 0xFFC3, 0xFFCC, 0xFFCF, 0xFFF0, 0xFFF3, 0xFFFC, 0xFFFF,
 }
 
-// _scCodesAscii is a mapping of character codes to their corresponding ASCII byte representations.
+// _scCodesAscii maps screen codes to their corresponding ASCII character representations for text processing tasks.
 var _scCodesAscii = []byte{
 	/*   0 -  15 */ '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
 	/*  16 -  31 */ 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '£', ']', '^', '<',
@@ -169,14 +130,26 @@ var _scCodesAscii = []byte{
 	/* 112 - 127 */ '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?',
 }
 
-// _colors is a slice of 8-bit unsigned integers representing a precomputed mapping of color indices to color values.
+// SpriteData represents sprite information consisting of its number and corresponding bitmask.
+type SpriteData struct {
+	Num  uint8
+	Bits uint8
+}
+
+// _colors is an array that holds 256 color values, initialized with specific uint8 values for rendering purposes.
 var _colors [256]uint8
 
+// _multicolorIndex is a lookup table that maps each 8-bit value to an array of 8 corresponding 2-bit pixel indices.
 var _multicolorIndex [256][8]uint8
 
+// _standardIndex is a lookup table that maps an 8-bit value to an array of 8 single-bit values extracted from it.
 var _standardIndex [256][8]uint8
 
-// init initializes the _colors slice with 256 elements, mapping each index to the lower 4 bits of its value.
+// _spritesData is an array where each index corresponds to a combination of sprite flags.
+// Each entry contains a slice of pointers to SpriteData, describing the active sprites and their properties.
+var _spritesData [256][]*SpriteData
+
+// init initializes the _colors, _multicolorIndex, _standardIndex, and _spritesData variables for use in the program.
 func init() {
 	//_colors = make([]uint8, 256)
 	for i := range _colors {
@@ -218,5 +191,15 @@ func init() {
 		_standardIndex[i][1] = data & 1
 		data >>= 1
 		_standardIndex[i][0] = data & 1
+	}
+
+	for x := range _spritesData {
+		var sprite []*SpriteData = nil
+		for sNum, sBit := uint8(0), uint8(1); sNum < SpriteNumber; sNum, sBit = sNum+1, sBit<<1 {
+			if uint8(x)&sBit != 0 {
+				sprite = append(sprite, &SpriteData{Num: sNum, Bits: sBit})
+			}
+		}
+		_spritesData[x] = sprite
 	}
 }
