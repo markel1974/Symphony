@@ -22,10 +22,9 @@ func NewCollisions(core *VIC) *Collisions {
 		sprites:              0,
 		spritesBuffer:        make([]uint8, DisplayXFillMax), // Allocate the sprite buffer. Size is DisplayXFillMax (maximum X coordinate).
 		emptySpritesBuffer:   make([]uint8, DisplayXFillMax), // Allocate and initialize the empty sprite buffer (all zeros).
+		graphicsBuffer:       make([]uint8, DisplayXFill+1),  // Allocate the graphics buffer. Size is DisplayXFill+1. DisplayXFill seems to be 40
+		graphicsBufferEmpty:  make([]uint8, DisplayXDiv8),    // DisplayXDiv8 seems to be 52
 		graphicsBufferOffset: 0,
-		graphicsBuffer:       make([]uint8, DisplayXFill+1), // Allocate the graphics buffer. Size is DisplayXFill+1. DisplayXFill seems to be 40
-		graphicsBufferEmpty:  make([]uint8, DisplayXDiv8),   //DisplayXDiv8 seems to be 52
-		//graphicsBufferEmpty: make([]uint8, DisplayXFill+1),
 	}
 }
 
@@ -51,22 +50,21 @@ func (c *Collisions) SetGraphicsCollision(sBit uint8) {
 // If a collision occurs, it updates the sprite collision state;
 // otherwise, it updates the sprite buffer with the new bit.
 func (c *Collisions) SetSpriteCollision(collIdx int, sBit uint8) bool {
-	collision := false
-	if collIdx < DisplayXFillMax {
-		// Boundary check.
-		if c.spritesBuffer[collIdx] != 0 {
-			// If any sprite is already present at this pixel...
-			// Update the 'sprites' collision result with *both* the existing sprites *and* the new sprite.
-			c.sprites |= c.spritesBuffer[collIdx] | sBit
-			// Indicate that a collision occurred.
-			collision = true
-		} else {
-			// Otherwise, mark this sprite as present at this pixel.
-			c.spritesBuffer[collIdx] = sBit
-		}
+	if collIdx >= DisplayXFillMax {
+		return false
 	}
+	// Boundary check.
+	if c.spritesBuffer[collIdx] != 0 {
+		// If any sprite is already present at this pixel...
+		// Update the 'sprites' collision result with *both* the existing sprites *and* the new sprite.
+		c.sprites |= c.spritesBuffer[collIdx] | sBit
+		// Indicate that a collision occurred.
+		return true
+	}
+	// Otherwise, mark this sprite as present at this pixel.
+	c.spritesBuffer[collIdx] = sBit
 	// Return true if a collision occurred, false otherwise.
-	return collision
+	return false
 }
 
 // Detect triggers the collision application process using the stored sprite and graphics collision data.
