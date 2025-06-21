@@ -69,9 +69,7 @@ func (b *Borders) SetOffset(offset int) {
 
 // AcquireColor updates the color at the specified index in the border's color array using the core's current color configuration.
 func (b *Borders) AcquireColor(idx uint8) {
-	//if b.horizontalFlipFlop {
 	b.colors[idx] = _colors[b.core.ec]
-	//}
 }
 
 // UpdateVerticalFlipFlop updates the vertical border flip-flop based on the raster Y coordinate and border comparison values.
