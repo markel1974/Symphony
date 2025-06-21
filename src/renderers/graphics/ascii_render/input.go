@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 	"golang.design/x/clipboard"
 	"log"
+	"os"
 )
 
 type Inputs struct {
@@ -87,17 +88,18 @@ func (g *Inputs) Setup(b references.IC64Board, cfg *config.Config) error {
 
 	g.keyMapper[13] = func(p bool) { b.KeyboardSetKey(p, component.VKReturn) }
 	g.keyMapper[127] = func(p bool) { b.KeyboardSetKey(p, component.VKDelete) }
-	//g.keyMapper[pixels.KeyBackspace] = func(p bool) { b.KeyboardSetKey(p, component.VKBack) }
 	g.keyMapper[' '] = func(p bool) { b.KeyboardSetKey(p, component.VKSpace) }
-	g.keyMapper['.'] = func(p bool) { b.KeyboardSetKey(p, component.VKComma) }
-	//g.keyMapper[pixels.KeyPeriod] = func(p bool) { b.KeyboardSetKey(p, component.VKPeriod) }
-	g.keyMapper[':'] = func(p bool) { b.KeyboardSetKey(p, component.VKSemicolon) }
-	g.keyMapper[';'] = func(p bool) { b.KeyboardSetKey(p, component.VKQuote) }
-	g.keyMapper['*'] = func(p bool) { b.KeyboardSetKey(p, component.VKAsterisk) }
+	g.keyMapper['.'] = func(p bool) { b.KeyboardSetKey(p, component.VKPeriod) }
+	g.keyMapper[':'] = func(p bool) { b.KeyboardSetKey(p, component.VKColon) }
+	g.keyMapper[';'] = func(p bool) { b.KeyboardSetKey(p, component.VKSemiColon) }
 	g.keyMapper['*'] = func(p bool) { b.KeyboardSetKey(p, component.VKAsterisk) }
 	g.keyMapper['-'] = func(p bool) { b.KeyboardSetKey(p, component.VKMinus) }
 	g.keyMapper['='] = func(p bool) { b.KeyboardSetKey(p, component.VKEqual) }
 	g.keyMapper['+'] = func(p bool) { b.KeyboardSetKey(p, component.VKPlus) }
+	g.keyMapper[','] = func(p bool) { b.KeyboardSetKey(p, component.VKComma) }
+	g.keyMapper['"'] = func(p bool) { b.KeyboardSetKey(p, component.VKShift); b.KeyboardSetKey(p, '2') }
+	g.keyMapper['$'] = func(p bool) { b.KeyboardSetKey(p, component.VKShift); b.KeyboardSetKey(p, '4') }
+	g.keyMapper['^'] = func(p bool) { os.Exit(0) }
 
 	g.keyMapper['0'] = func(p bool) { b.KeyboardSetKey(p, '0') }
 	g.keyMapper['1'] = func(p bool) { b.KeyboardSetKey(p, '1') }

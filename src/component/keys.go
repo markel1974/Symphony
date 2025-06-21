@@ -77,7 +77,7 @@ const (
 	VKF6
 	VKF7
 	VKF8
-	VKSemicolon
+	VKColon
 	VKEqual
 	VKComma
 	VKPeriod
@@ -85,7 +85,7 @@ const (
 	VKSlash
 	VKBracketLeft
 	VKBackslash
-	VKQuote
+	VKSemiColon
 	VKAsterisk
 	VKGrave
 	VKPlus

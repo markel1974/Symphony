@@ -94,8 +94,8 @@ func (g *Inputs) Setup(b references.IC64Board, cfg *config.Config) error {
 	g.keyMapper[pixels.KeySpace] = func(p bool) { b.KeyboardSetKey(p, component.VKSpace) }
 	g.keyMapper[pixels.KeyComma] = func(p bool) { b.KeyboardSetKey(p, component.VKComma) }
 	g.keyMapper[pixels.KeyPeriod] = func(p bool) { b.KeyboardSetKey(p, component.VKPeriod) }
-	g.keyMapper[pixels.KeySemicolon] = func(p bool) { b.KeyboardSetKey(p, component.VKSemicolon) }
-	g.keyMapper[pixels.KeyApostrophe] = func(p bool) { b.KeyboardSetKey(p, component.VKQuote) }
+	g.keyMapper[pixels.KeySemicolon] = func(p bool) { b.KeyboardSetKey(p, component.VKColon) }
+	g.keyMapper[pixels.KeyApostrophe] = func(p bool) { b.KeyboardSetKey(p, component.VKSemiColon) }
 	g.keyMapper[pixels.KeyRightBracket] = func(p bool) { b.KeyboardSetKey(p, component.VKAsterisk) }
 	g.keyMapper[pixels.KeyLeftBracket] = func(p bool) { b.KeyboardSetKey(p, component.VKAsterisk) }
 

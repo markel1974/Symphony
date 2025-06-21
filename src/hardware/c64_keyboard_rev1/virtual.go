@@ -92,7 +92,7 @@ func (k *Virtual) FromVirtual(vKey int) int {
 		return matrix(6, 1)
 	case component.VKSlash:
 		return matrix(6, 7)
-	case component.VKSemicolon:
+	case component.VKColon:
 		return matrix(5, 5)
 	case component.VKGrave:
 		return matrix(7, 1)
@@ -106,7 +106,7 @@ func (k *Virtual) FromVirtual(vKey int) int {
 		return matrix(5, 7)
 	case component.VKPeriod:
 		return matrix(5, 4)
-	case component.VKQuote:
+	case component.VKSemiColon:
 		return matrix(6, 2)
 	case component.VKBackslash:
 		return matrix(6, 6)

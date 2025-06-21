@@ -7,6 +7,8 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
 type Render struct {
@@ -47,7 +49,17 @@ func (g *Render) Setup(board references.IC64Board, cfg *config.Config) error {
 	return nil
 }
 
+func (g *Render) signalHandler() {
+	go func() {
+		sig := make(chan os.Signal, 1)
+		signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM)
+		_ = <-sig
+		os.Exit(0)
+	}()
+}
+
 func (g *Render) Start() error {
+	//g.signalHandler()
 	go func() {
 		textData := make([]byte, 16)
 		for {
