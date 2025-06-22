@@ -9,7 +9,7 @@ type DisplayBuffer struct {
 	coords  []int
 	colors  [256]*[4]uint8
 	colors8 [256]*[32]uint8
-	maxLen  int
+	mask    uint32
 }
 
 func NewDisplayBuffer(p *pixels.Picture) *DisplayBuffer {
@@ -26,12 +26,14 @@ func NewDisplayBuffer(p *pixels.Picture) *DisplayBuffer {
 	}
 	h := p.Height()
 	w := p.Width()
+	db.mask = db.computeMask(uint32(h * w))
+	db.coords = make([]int, db.mask)
 	for y := 0; y < h; y++ {
 		for x := 0; x < w; x++ {
-			db.coords = append(db.coords, p.ComputeIndex(x, y))
+			index := (y * w) + x
+			db.coords[index] = p.ComputeIndex(x, y)
 		}
 	}
-	db.maxLen = len(db.coords)
 
 	for j := 0; j < 16; j++ {
 		red := paletteR[j]
@@ -60,16 +62,12 @@ func NewDisplayBuffer(p *pixels.Picture) *DisplayBuffer {
 }
 
 func (db *DisplayBuffer) Set(idx int, data uint8) {
-	if idx >= db.maxLen {
-		return
-	}
+	idx = idx & int(db.mask)
 	db.p.SetRGBA4DirectArrayPtr(db.coords[idx], db.colors[data])
 }
 
 func (db *DisplayBuffer) Set8(idx int, data *[8]uint8) {
-	if idx+7 >= db.maxLen {
-		return
-	}
+	idx = idx & int(db.mask)
 	colors := db.colors
 	d0 := data[0]
 	d1 := data[1]
@@ -79,6 +77,9 @@ func (db *DisplayBuffer) Set8(idx int, data *[8]uint8) {
 	d5 := data[5]
 	d6 := data[6]
 	d7 := data[7]
+
+	//z0 := colors[data[0]]
+	//z1 := colors[data[1]]
 	t := [32]uint8{
 		colors[d0][0], colors[d0][1], colors[d0][2], colors[d0][3],
 		colors[d1][0], colors[d1][1], colors[d1][2], colors[d1][3],
@@ -90,14 +91,20 @@ func (db *DisplayBuffer) Set8(idx int, data *[8]uint8) {
 		colors[d7][0], colors[d7][1], colors[d7][2], colors[d7][3],
 	}
 	db.p.SetRGBA32DirectArrayPtr(db.coords[idx], &t)
-	//for x := 0; x < 8; x++ {
-	//	db.p.SetRGBADirectArray(db.coords[idx+x], db.colors[data[x]])
-	//}
 }
 
 func (db *DisplayBuffer) SetMulti8(idx int, data uint8) {
-	if idx >= db.maxLen {
-		return
-	}
+	idx = idx & int(db.mask)
 	db.p.SetRGBA32DirectArrayPtr(db.coords[idx], db.colors8[data])
+}
+
+func (db *DisplayBuffer) computeMask(num uint32) uint32 {
+	if num == 0 {
+		return 0
+	}
+	power := uint32(1)
+	for power <= num {
+		power <<= 1
+	}
+	return power - 1
 }
