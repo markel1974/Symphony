@@ -79,7 +79,9 @@ func (g *Render) runner() {
 	g.surface = pixels.NewSprite()
 	g.surface.SetCachedMode(pixels.CacheModeUpdate)
 	g.surface.Set(g.picture, g.picture.Bounds())
-	g.surfaceM = pixels.IM.Moved(pos).Scaled(pos, g.scale)
+
+	//g.surfaceM = pixels.IM.Moved(pos).ScaledXY(pos, pixels.Vec{X: -g.scale, Y: g.scale})
+	g.surfaceM = pixels.IM.Moved(pos).ScaledXY(pos, pixels.Vec{X: g.scale, Y: g.scale})
 
 	g.ledSurface = pixels.NewSprite()
 	g.ledSurface.SetCachedMode(pixels.CacheModeUpdate)
