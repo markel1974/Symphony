@@ -9,6 +9,7 @@ import (
 	"log"
 )
 
+// Inputs represents a structure for managing user input configurations and state for a virtual environment.
 type Inputs struct {
 	board        references.IC64Board
 	cfg          *config.Config
@@ -20,6 +21,7 @@ type Inputs struct {
 	hasClipboard bool
 }
 
+// NewInputs initializes and returns a new Inputs struct with default values.
 func NewInputs() *Inputs {
 	return &Inputs{
 		board:        nil,
@@ -33,6 +35,7 @@ func NewInputs() *Inputs {
 	}
 }
 
+// Setup initializes the `Inputs` instance by binding keyboard keys to their respective actions on an IC64 board.
 func (g *Inputs) Setup(b references.IC64Board, cfg *config.Config) error {
 	const max = int(pixels.KeyLast + 1)
 	g.board = b
@@ -193,6 +196,7 @@ func (g *Inputs) Setup(b references.IC64Board, cfg *config.Config) error {
 	return nil
 }
 
+// Keys processes the current state of pressed keys, updates active keys, and triggers associated key mapping functions.
 func (g *Inputs) Keys(pressed map[pixels.Button]bool) {
 	if len(g.activeKeys) > 0 {
 		for v := range g.activeKeys {
@@ -213,6 +217,7 @@ func (g *Inputs) Keys(pressed map[pixels.Button]bool) {
 	}
 }
 
+// MouseMove updates the mouse position on the board if the new position differs from the last recorded position.
 func (g *Inputs) MouseMove(x float64, y float64) {
 	x1 := uint8(x)
 	y1 := uint8(y)

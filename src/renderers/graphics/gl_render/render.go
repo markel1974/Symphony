@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels"
 )
 
+// Render represents the main rendering structure responsible for managing display, input, and graphical interactions.
 type Render struct {
 	board      references.IC64Board
 	scale      float64
@@ -24,6 +25,7 @@ type Render struct {
 	led         bool
 }
 
+// New initializes and returns a new instance of the Render struct with default values.
 func New() *Render {
 	g := &Render{
 		board:      nil,
@@ -37,6 +39,7 @@ func New() *Render {
 	return g
 }
 
+// CreateDisplayBuffer initializes a display buffer with specified dimensions and returns it along with any potential error.
 func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, error) {
 	g.maxW = float64(w) * g.scale
 	g.maxH = float64(h) * g.scale
@@ -45,6 +48,7 @@ func (g *Render) CreateDisplayBuffer(w int, h int) (references.IDisplayBuffer, e
 	return display, nil
 }
 
+// Setup initializes the Render by wiring it to the given IC64Board and setting up inputs using the provided configuration.
 func (g *Render) Setup(board references.IC64Board, cfg *config.Config) error {
 	g.board = board
 	if err := g.board.Wire(g); err != nil {
@@ -56,10 +60,12 @@ func (g *Render) Setup(board references.IC64Board, cfg *config.Config) error {
 	return nil
 }
 
+// Start initializes and runs the main graphics loop using pixels.GLRun, ensuring proper rendering setup and execution.
 func (g *Render) Start() error {
 	return pixels.GLRun(g.runner)
 }
 
+// runner initializes the rendering loop, creates a window, sets up sprites and matrix transformations, and executes emulation.
 func (g *Render) runner() {
 	cfg := pixels.WindowConfig{
 		Bounds:      pixels.NewRect(0, 0, g.maxW, g.maxH),
@@ -92,6 +98,7 @@ func (g *Render) runner() {
 	}
 }
 
+// VBlank handles the vertical blanking interval by processing inputs, updating the display surface, and managing window events.
 func (g *Render) VBlank() {
 	if g.win.MouseInsideWindow() {
 		g.inputs.MouseMove(g.win.MousePositionXY())
@@ -105,6 +112,7 @@ func (g *Render) VBlank() {
 	g.run = !g.win.Closed()
 }
 
+// LedActivity updates the LED state for a specified device by setting the `led` field to the provided boolean value.
 func (g *Render) LedActivity(deviceNumber uint8, led bool) {
 	g.led = led
 	//fmt.Println("LED STATE", deviceNumber, led)
