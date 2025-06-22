@@ -51,8 +51,8 @@ func (g *Inputs) Setup(b references.IC64Board, cfg *config.Config) error {
 	g.keyMapper[" "] = func(p bool) { b.KeyboardSetKey(p, component.VKSpace) }
 	g.keyMapper["."] = func(p bool) { b.KeyboardSetKey(p, component.VKComma) }
 	//g.keyMapper["period"] = func(p bool) { b.KeyboardSetKey(p, component.VKPeriod) }
-	g.keyMapper[":"] = func(p bool) { b.KeyboardSetKey(p, component.VKSemicolon) }
-	g.keyMapper[";"] = func(p bool) { b.KeyboardSetKey(p, component.VKQuote) }
+	g.keyMapper[":"] = func(p bool) { b.KeyboardSetKey(p, component.VKColon) }
+	g.keyMapper[";"] = func(p bool) { b.KeyboardSetKey(p, component.VKSemiColon) }
 	g.keyMapper["*"] = func(p bool) { b.KeyboardSetKey(p, component.VKAsterisk) }
 	g.keyMapper["*"] = func(p bool) { b.KeyboardSetKey(p, component.VKAsterisk) }
 	g.keyMapper["-"] = func(p bool) { b.KeyboardSetKey(p, component.VKMinus) }

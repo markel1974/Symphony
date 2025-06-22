@@ -5,7 +5,8 @@ package z80
 // OFFSET -> inst.offset
 // IMM -> inst.immediate
 
-// computeADDFlags sets CPU flags based on the result of an ADD operation for 8-bit operands without carry.
+// computeADDFlags updates the CPU flags based on the result of an addition operation involving two operands.
+// It sets or resets the Sign, Zero, Half Carry, Overflow/Parity, Carry, and undocumented Y/X flags accordingly.
 func (cpu *Z80) computeADDFlags(result uint16, op1 uint16, op2 uint16) {
 	cpu.SetFlagValue(FLAG_S, result&0x80 != 0)
 	cpu.SetFlagValue(FLAG_Z, result&0xff == 0)
@@ -21,8 +22,9 @@ func (cpu *Z80) computeADDFlags(result uint16, op1 uint16, op2 uint16) {
 	cpu.SetFlagValue(FLAG_X, result&0x08 != 0)
 }
 
-// computeLdBlockFlags updates Z80 CPU flags based on a transferred byte during LD block instructions.
-// Resets FLAG_H and FLAG_N, sets FLAG_P if BC != 0, and updates undocumented flags FLAG_X and FLAG_Y.
+// computeLdBlockFlags updates specific Z80 CPU flags based on a transferred byte during a block transfer operation.
+// The method resets the H and N flags, updates the P flag based on the BC register, and sets undocumented flags X and Y.
+// The X and Y flags are determined by bits 1 and 3 of the sum of the accumulator and the transferred byte.
 func (cpu *Z80) computeLdBlockFlags(transferredByte uint8) {
 	// I flag H (Half Carry) e N (Subtract) vengono sempre resettati.
 	cpu.ResetFlag(FLAG_H)
@@ -35,8 +37,8 @@ func (cpu *Z80) computeLdBlockFlags(transferredByte uint8) {
 	cpu.SetFlagValue(FLAG_X, sum&0x08 != 0) // bit 3
 }
 
-// computeAdcFlags calculates and sets the appropriate CPU flags for the ADC instruction based on the operation result.
-// It processes operands, carry, and result to update flags like S, Z, H, P/V, N, C, Y, and X.
+// computeAdcFlags updates the CPU flags after an ADD with carry operation.
+// It sets or clears flags S, Z, H, P/V (overflow), C, Y, and X based on the given operands and result.
 func (cpu *Z80) computeAdcFlags(op1 uint16, op2 uint16, carry uint16, result uint16) {
 	// flag settings
 	cpu.SetFlagValue(FLAG_S, result&0x80 != 0)
@@ -53,65 +55,67 @@ func (cpu *Z80) computeAdcFlags(op1 uint16, op2 uint16, carry uint16, result uin
 	cpu.SetFlagValue(FLAG_X, result&0x08 != 0) // bit 3
 }
 
-// instLD_I_N loads an immediate value into memory at an address calculated from a word register and an offset.
+// instLD_I_N loads the immediate value into the memory address computed by adding a register's value and an offset.
 func (cpu *Z80) instLD_I_N(inst *Instruction) {
 	addr := cpu.GetWordReg(uint8(inst.IT.operand1)) + uint16(int16(inst.offset))
 	cpu.WriteMem(addr, uint8(inst.immediate), cpu)
 }
 
-// instLD_MRR_N loads an immediate 8-bit value into the memory location addressed by a 16-bit register pair.
+// instLD_MRR_N executes the LD (RR), N instruction, writing an immediate value to memory at the address stored in a word register.
+// It calculates the memory address using the operand1 register and writes the provided immediate value to that address.
 func (cpu *Z80) instLD_MRR_N(inst *Instruction) {
 	addr := cpu.GetWordReg(uint8(inst.IT.operand1)) // Deve puntare a HL
 	cpu.WriteMem(addr, uint8(inst.immediate), cpu)
 }
 
-// instLD_I_R writes the value from a CPU register to memory at an address derived from an instruction's operands and offset.
+// instLD_I_R writes the value from the specified register into memory at the address computed with offset and register.
 func (cpu *Z80) instLD_I_R(inst *Instruction) {
 	addr := cpu.GetWordReg(uint8(inst.IT.operand1)) + uint16(int16(inst.offset))
 	val := cpu.GetByteReg(uint8(inst.IT.operand2))
 	cpu.WriteMem(addr, val, cpu)
 }
 
-// instLD_MRR_R handles loading a value from a register into memory at an address specified by a word register (HL, BC, or DE).
+// instLD_MRR_R handles the LD (address pointed by a register pair) <- (value from a register) Z80 CPU instruction.
+// It writes the value from a specific CPU register to the memory address stored in a register pair (HL, BC, or DE).
 func (cpu *Z80) instLD_MRR_R(inst *Instruction) {
 	addr := cpu.GetWordReg(uint8(inst.IT.operand1)) // Deve puntare a HL, BC o DE
 	val := cpu.GetByteReg(uint8(inst.IT.operand2))
 	cpu.WriteMem(addr, val, cpu)
 }
 
-// instLD_MNN_R writes the value of a register to a memory location defined by an immediate value in the instruction.
+// instLD_MNN_R writes a value from a CPU register to the memory at the address specified by the instruction's immediate value.
 func (cpu *Z80) instLD_MNN_R(inst *Instruction) {
 	result := cpu.GetByteReg(uint8(inst.IT.operand2))
 	cpu.WriteMem(uint16(inst.immediate), result, cpu)
 }
 
-// instLD_R_I loads a value from memory into a CPU register based on a calculated address and instruction operands.
+// instLD_R_I executes the LD R, (I) operation, loading a value from memory at a calculated address into a register.
 func (cpu *Z80) instLD_R_I(inst *Instruction) {
 	addr := cpu.GetWordReg(uint8(inst.IT.operand2)) + uint16(int16(inst.offset))
 	val := cpu.ReadMem(addr, false, cpu)
 	cpu.SetByteReg(uint8(inst.IT.operand1), val)
 }
 
-// instLD_R_MRR loads a value from the memory address pointed to by a register pair (e.g., HL, BC, DE) into a single register.
+// instLD_R_MRR loads a byte from the memory address specified by register pair (HL, BC, or DE) into a target register.
 func (cpu *Z80) instLD_R_MRR(inst *Instruction) {
 	addr := cpu.GetWordReg(uint8(inst.IT.operand2)) // Deve puntare a HL, BC o DE
 	val := cpu.ReadMem(addr, false, cpu)
 	cpu.SetByteReg(uint8(inst.IT.operand1), val)
 }
 
-// instLD_R_MNN loads a byte from memory at the specified address (immediate value) into a specified register.
+// instLD_R_MNN loads a byte from memory at the address specified by the instruction's immediate value into a CPU register.
 func (cpu *Z80) instLD_R_MNN(inst *Instruction) {
 	result := cpu.ReadMem(uint16(inst.immediate), false, cpu)
 	cpu.SetByteReg(uint8(inst.IT.operand1), result)
 }
 
-// instLD_R_N loads an immediate value into the specified 8-bit register as defined by the instruction template.
+// instLD_R_N loads an immediate value into a target register specified by the instruction's first operand.
 func (cpu *Z80) instLD_R_N(inst *Instruction) {
 	cpu.SetByteReg(uint8(inst.IT.operand1), uint8(inst.immediate))
 }
 
-// instLD_R_R performs the LD r, r' instruction, copying data from one register to another in the Z80 CPU.
-// If the source register is I or R, it also updates flags (S, Z, H, P, N, Y, and X) based on the result.
+// instLD_R_R loads the value from a specified source register into a destination register in the CPU.
+// If the source register is REG_I or REG_R, flag values are updated based on the resulting value and CPU state.
 func (cpu *Z80) instLD_R_R(inst *Instruction) {
 	result := cpu.GetByteReg(uint8(inst.IT.operand2))
 	cpu.SetByteReg(uint8(inst.IT.operand1), result)
@@ -128,34 +132,33 @@ func (cpu *Z80) instLD_R_R(inst *Instruction) {
 	}
 }
 
-// instLD_RR_MNN loads a 16-bit value from memory at the given address into a register pair.
-// The address is specified using the immediate field of the instruction.
-// The method reads two consecutive bytes from memory, combines them into a 16-bit value, and stores it in the register.
-// The register pair is determined by the operand1 field of the instruction's template.
+// instLD_RR_MNN loads a 16-bit value from memory at the address specified by the instruction's immediate field.
+// The loaded value is then stored into the specified 16-bit register pair.
 func (cpu *Z80) instLD_RR_MNN(inst *Instruction) {
 	result := uint16(cpu.ReadMem(uint16(inst.immediate), false, cpu))
 	result |= uint16(cpu.ReadMem(uint16(inst.immediate+1), false, cpu)) << 8
 	cpu.SetWordReg(uint8(inst.IT.operand1), result)
 }
 
-// instLD_RR_NN loads a 16-bit immediate value into a specified register pair based on the instruction template operand.
+// instLD_RR_NN loads a 16-bit immediate value into a specified 16-bit register pair.
 func (cpu *Z80) instLD_RR_NN(inst *Instruction) {
 	cpu.SetWordReg(uint8(inst.IT.operand1), uint16(inst.immediate))
 }
 
-// instLD_RR_RR loads the value from a 16-bit source register to a 16-bit destination register as specified in the instruction.
+// instLD_RR_RR loads the value from the specified source register pair into the specified destination register pair.
 func (cpu *Z80) instLD_RR_RR(inst *Instruction) {
 	cpu.SetWordReg(uint8(inst.IT.operand1), cpu.GetWordReg(uint8(inst.IT.operand2)))
 }
 
-// instLD_MNN_RR stores a 16-bit value from a register into two consecutive memory locations specified by an immediate.
+// instLD_MNN_RR writes the value of a specified register pair to memory at an immediate 16-bit address.
+// The lower byte is written first, followed by the higher byte.
 func (cpu *Z80) instLD_MNN_RR(inst *Instruction) {
 	result := cpu.GetWordReg(uint8(inst.IT.operand2))
 	cpu.WriteMem(uint16(inst.immediate), uint8(result&0xff), cpu)
 	cpu.WriteMem(uint16(inst.immediate+1), uint8(result>>8), cpu)
 }
 
-// instPOP_RR executes the POP instruction, retrieving a 16-bit value from the stack into a register pair.
+// instPOP_RR pops a 16-bit value from the stack into the specified register pair in the Z80 CPU.
 func (cpu *Z80) instPOP_RR(inst *Instruction) {
 	result := uint16(cpu.ReadMem(cpu.GetSP(), false, cpu))
 	cpu.IncrementSP()
@@ -164,7 +167,7 @@ func (cpu *Z80) instPOP_RR(inst *Instruction) {
 	cpu.SetWordReg(uint8(inst.IT.operand1), result)
 }
 
-// instPUSH_RR stores the content of a 16-bit register pair onto the stack in high-byte-first order.
+// instPUSH_RR pushes the contents of a 16-bit register to the stack, decrementing the stack pointer appropriately.
 func (cpu *Z80) instPUSH_RR(inst *Instruction) {
 	result := cpu.GetWordReg(uint8(inst.IT.operand1))
 	cpu.DecrementSP()
@@ -173,7 +176,10 @@ func (cpu *Z80) instPUSH_RR(inst *Instruction) {
 	cpu.WriteMem(cpu.GetSP(), uint8(result&0xff), cpu)
 }
 
-// instCPI esegue la comparazione A-(HL), incrementa HL, decrementa BC e imposta i flag.
+// instCPI executes the CPI (Compare and Increment) instruction for the Z80 processor.
+// It compares the value in the accumulator (A) with the value at the memory address pointed to by HL.
+// The HL register pair is incremented, and the BC register pair is decremented as part of the operation.
+// This method sets or clears condition flags (S, Z, H, P/V, N, X, Y) based on comparison results.
 func (cpu *Z80) instCPI(_ *Instruction) {
 	// 1. Esegui la comparazione
 	op1 := cpu.GetA()
@@ -201,7 +207,7 @@ func (cpu *Z80) instCPI(_ *Instruction) {
 	cpu.SetFlagValue(FLAG_X, adjustedResult&0x08 != 0) // Flag X è il bit 3 del risultato corretto
 }
 
-// instCPD esegue la comparazione A-(HL), decrementa HL, decrementa BC e imposta i flag.
+// instCPD executes the "Compare and Decrement" operation for the Z80 CPU, modifying HL, BC, and relevant flags.
 func (cpu *Z80) instCPD(_ *Instruction) {
 	// 1. Esegui la comparazione
 	op1 := cpu.GetA()
@@ -228,9 +234,7 @@ func (cpu *Z80) instCPD(_ *Instruction) {
 	cpu.SetFlagValue(FLAG_X, adjustedResult&0x08 != 0) // Flag X è il bit 3 del risultato corretto
 }
 
-// instCPDR performs the CPDR instruction, comparing the accumulator with the memory value at HL and updating flags.
-// It decrements HL and BC, adjusts specific CPD flags, and repeats until BC is zero or zero flag is set.
-// Unique to this method, HL is decremented after each iteration instead of incremented.
+// instCPDR executes the CPDR instruction, comparing A with memory at HL and updating flags and registers accordingly.
 func (cpu *Z80) instCPDR(_ *Instruction) {
 	// Logica quasi identica a CPIR, cambia solo l'operazione su HL
 	// 1. Esegui la comparazione
@@ -262,7 +266,7 @@ func (cpu *Z80) instCPDR(_ *Instruction) {
 	}
 }
 
-// instCPIR executes the CPIR instruction, which compares A with the byte at HL, updates HL and BC, and repeats if needed.
+// instCPIR executes the CPIR instruction, comparing the accumulator with the value at HL and repeating if BC != 0 and Z is unset.
 func (cpu *Z80) instCPIR(_ *Instruction) {
 	// 1. Esegui la comparazione
 	op1 := cpu.GetA()
@@ -291,6 +295,7 @@ func (cpu *Z80) instCPIR(_ *Instruction) {
 	}
 }
 
+// instEX_MRR_RR handles the EX operation between a memory location (specified by a register pair) and a register pair.
 func (cpu *Z80) instEX_MRR_RR(inst *Instruction) {
 	result := cpu.GetWordReg(uint8(inst.IT.operand1))
 	op1 := uint16(cpu.ReadMem(result, false, cpu))
@@ -301,6 +306,7 @@ func (cpu *Z80) instEX_MRR_RR(inst *Instruction) {
 	cpu.SetWordReg(uint8(inst.IT.operand2), op1)
 }
 
+// instEX_RR_RR exchanges the contents of two 16-bit registers specified in the instruction's operands.
 func (cpu *Z80) instEX_RR_RR(inst *Instruction) {
 	result1 := cpu.GetWordReg(uint8(inst.IT.operand1))
 	result2 := cpu.GetWordReg(uint8(inst.IT.operand2))
@@ -308,6 +314,7 @@ func (cpu *Z80) instEX_RR_RR(inst *Instruction) {
 	cpu.SetWordReg(uint8(inst.IT.operand2), result1)
 }
 
+// instEXX exchanges the BC, DE, and HL register values with their alternate counterparts (BC', DE', HL').
 func (cpu *Z80) instEXX(_ *Instruction) {
 	bc := cpu.GetBC()
 	de := cpu.GetDE()
@@ -320,6 +327,7 @@ func (cpu *Z80) instEXX(_ *Instruction) {
 	cpu.SetWordReg(uint8(REG_HLP), hl)
 }
 
+// instLDD executes the LDD instruction, transferring a byte of data from HL to DE and updating relevant registers and flags.
 func (cpu *Z80) instLDD(_ *Instruction) {
 	transferredByte := cpu.ReadMem(cpu.GetHL(), false, cpu)
 	cpu.WriteMem(cpu.GetDE(), transferredByte, cpu)
@@ -330,6 +338,8 @@ func (cpu *Z80) instLDD(_ *Instruction) {
 	cpu.computeLdBlockFlags(transferredByte)
 }
 
+// instLDI implements the LDI instruction of the Z80 CPU, transferring a byte of data from one memory location to another.
+// The method increments the HL and DE registers, decrements the BC register, and updates flags accordingly.
 func (cpu *Z80) instLDI(_ *Instruction) {
 	transferredByte := cpu.ReadMem(cpu.GetHL(), false, cpu)
 	cpu.WriteMem(cpu.GetDE(), transferredByte, cpu)
@@ -339,6 +349,8 @@ func (cpu *Z80) instLDI(_ *Instruction) {
 	cpu.computeLdBlockFlags(transferredByte)
 }
 
+// instLDDR executes the LDDR instruction, transferring a byte from memory at HL to DE, decrementing HL, DE, and BC.
+// It loops until BC reaches zero and adjusts the program counter for repetition. Updates flags based on the transfer.
 func (cpu *Z80) instLDDR(_ *Instruction) {
 	transferredByte := cpu.ReadMem(cpu.GetHL(), false, cpu)
 	cpu.WriteMem(cpu.GetDE(), transferredByte, cpu)
@@ -351,15 +363,7 @@ func (cpu *Z80) instLDDR(_ *Instruction) {
 	cpu.computeLdBlockFlags(transferredByte)
 }
 
-// Z80: LDIR
-// T-States: 21T (se BC != 0 dopo il decremento) / 16T (se BC = 0)
-// M-Cycles (per iterazione): La sequenza di base è Lettura da (HL) e Scrittura in (DE).
-//
-//	Se BC != 0, vengono aggiunti cicli macchina per ricaricare il PC e ripetere.
-//
-// Desc: Copia un byte da (HL) a (DE), incrementa HL, incrementa DE e decrementa BC.
-//
-//	Se BC non è zero, ripete l'intera istruzione (decrementando il PC di 2).
+// instLDIR executes the LDIR instruction on the Z80 CPU, transferring a byte from HL to DE and updating flags.
 func (cpu *Z80) instLDIR(_ *Instruction) {
 	transferredByte := cpu.ReadMem(cpu.GetHL(), false, cpu)
 	cpu.WriteMem(cpu.GetDE(), transferredByte, cpu)
@@ -373,13 +377,11 @@ func (cpu *Z80) instLDIR(_ *Instruction) {
 	cpu.computeLdBlockFlags(transferredByte)
 }
 
-// Z80: ADC A, (HL)
-// T-States: 7T
-// M-Cycles: M1(4T) [Fetch] + M2(3T) [Lettura Memoria]
-// ---
-// Z80: ADC A, (IX+d)  /  ADC A, (IY+d)
-// T-States: 19T
-// M-Cycles: M1(4T)+M2(4T) [Fetch] + M3(3T) [Lettura offset d] + M4(5T) [Calcolo addr] + M5(3T) [Lettura Memoria]
+// instADC_R_MRR adds the value from memory (referenced via a register and possible offset) to a register with carry.
+// Reads the value from memory based on the register and offset specified in the instruction.
+// Retrieves the carry flag and adjusts the result accordingly.
+// Updates the target register with the result of the addition operation.
+// Computes and sets the CPU flags based on the result of the operation.
 func (cpu *Z80) instADC_R_MRR(inst *Instruction) {
 	op2 := uint16(cpu.ReadMem(cpu.GetWordReg(uint8(inst.IT.operand2))+uint16(inst.offset), false, cpu))
 	carry := uint16(0)
@@ -392,10 +394,8 @@ func (cpu *Z80) instADC_R_MRR(inst *Instruction) {
 	cpu.computeAdcFlags(op1, op2, carry, result)
 }
 
-// ADC_R_I (ADC R, n)
-// T-States: 7T
-// M-Cycles: M1(4T) [Fetch opcode] + M2(3T) [Lettura immediato n]
-// Desc: Somma il valore immediato 'n' e il flag Carry al registro A.
+// instADC_R_I performs an add with carry operation using the accumulator, an immediate value, and the carry flag.
+// Updates the accumulator with the result and sets flags based on the operation.
 func (cpu *Z80) instADC_R_I(inst *Instruction) {
 	op1 := uint16(cpu.GetA())
 	op2 := uint16(inst.immediate)
@@ -408,10 +408,8 @@ func (cpu *Z80) instADC_R_I(inst *Instruction) {
 	cpu.computeAdcFlags(op1, op2, carry, result)
 }
 
-// instADC_R_N (ADC r, n)
-// T-States: 7T
-// M-Cycles: M1(4T) [Fetch] + M2(3T) [Lettura immediato n]
-// Desc: Somma il valore immediato 'n' e il flag Carry al registro A.
+// instADC_R_N performs the ADC operation with an 8-bit register and an immediate value, including the carry flag.
+// The result is stored back into the specified register, and flags are updated accordingly.
 func (cpu *Z80) instADC_R_N(inst *Instruction) {
 	op2 := uint16(inst.immediate)
 	op1 := uint16(cpu.GetByteReg(uint8(inst.IT.operand1)))
@@ -424,10 +422,10 @@ func (cpu *Z80) instADC_R_N(inst *Instruction) {
 	cpu.computeAdcFlags(op1, op2, carry, result)
 }
 
-// Z80: ADC A, r   (dove r = B, C, D, E, H, L, A)
-// T-States: 4T
-// M-Cycles: M1(4T) [Fetch]
-// Desc: Somma il valore del registro 'r' e il flag Carry al registro A.
+// instADC_R_R performs the ADC (Add with Carry) operation between two registers and updates flags accordingly.
+// The destination register is always the accumulator (register A).
+// It adds the source register value, destination register value, and carry flag, storing the result in register A.
+// Flags affected include the carry, half-carry, zero, sign, overflow, and subtract flags based on the result.
 func (cpu *Z80) instADC_R_R(inst *Instruction) {
 	op2 := uint16(cpu.GetByteReg(uint8(inst.IT.operand2)))
 	op1 := uint16(cpu.GetByteReg(uint8(inst.IT.operand1))) // Destinazione è sempre A
@@ -440,13 +438,8 @@ func (cpu *Z80) instADC_R_R(inst *Instruction) {
 	cpu.computeAdcFlags(op1, op2, carry, result)
 }
 
-// Z80: ADD A, (HL)
-// T-States: 7T
-// M-Cycles: M1(4T) + M2(3T)
-// ---
-// Z80: ADD A, (IX+d) / ADD A, (IY+d)
-// T-States: 19T
-// M-Cycles: M1(4T)+M2(4T)+M3(3T)+M4(5T)+M5(3T)
+// instADD_R_I performs an addition between the contents of the A register and an immediate value provided by the instruction.
+// The result is stored back in the A register, and the operation flags are updated accordingly.
 func (cpu *Z80) instADD_R_I(inst *Instruction) {
 	op2 := uint16(inst.immediate)
 	op1 := uint16(cpu.GetA())
@@ -455,13 +448,8 @@ func (cpu *Z80) instADD_R_I(inst *Instruction) {
 	cpu.computeADDFlags(op1, op2, result)
 }
 
-// Z80: ADD A, (HL)
-// T-States: 7T
-// M-Cycles: M1(4T) [Fetch] + M2(3T) [Lettura Memoria]
-// ---
-// Z80: ADD A, (IX+d) / ADD A, (IY+d)
-// T-States: 19T
-// M-Cycles: M1(4T)+M2(4T) [Fetch] + M3(3T) [Lettura offset] + M4(5T) [Calcolo addr] + M5(3T) [Lettura Memoria]
+// instADD_R_MRR adds the value at a memory address to the A register and sets flags accordingly.
+// The memory address is calculated using a register plus an optional offset.
 func (cpu *Z80) instADD_R_MRR(inst *Instruction) {
 	// Calcola l'indirizzo di memoria da cui leggere il secondo operando.
 	// Gestisce sia (HL) con offset=0, sia (IX/IY+d).

@@ -371,8 +371,7 @@ func palCycle56(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.sprites.UpdateDMA()
 	if vic.sprites.GetDMAFlag(sprite0) != 0 {
-		//Wrong cycle 59
-		vic.SetBALow() //BALow for Sprite 0 [cycle 59 = 56 + 3]
+		vic.SetBALow()
 	}
 }
 

@@ -32,7 +32,7 @@ func instOpINI(cpu *CPU) {
 			}
 		}
 	} else {
-		cpu.stop = true
+		cpu.setModeHalt()
 		return
 	}
 	cpu.irqBreaker = false

@@ -530,84 +530,90 @@ func (cpu * Z80) Step(outPC uint16) (int, uint16) {
 }
 
 func (cpu * Z80) doInst(inst *Instruction) (int, uint16) {
-	op1 := uint32(0)
-	op2 := uint32(0)
-	carry := uint32(0)
-	result := uint32(0)
-	i := 0;
-	took_branch := true;
+	//op1 := uint32(0)
+	//op2 := uint32(0)
+	//carry := uint32(0)
+	//result := uint32(0)
+	//i := 0;
+	//took_branch := true;
 
 	switch inst.IT.kind {
-		/* 8-Bit Load Group */
-		case LD_I_N:
-			cpu.instLD_I_N(inst)
-		case LD_MRR_N:
-			cpu.instLD_MRR_N(inst)
-		case LD_I_R:
-			cpu.instLD_I_R(inst)
-		case LD_MRR_R:
-			cpu.instLD_MRR_R(inst)
-		case LD_MNN_R:
-			cpu.instLD_MNN_R(inst)
-		case LD_R_I:
-			cpu.instLD_R_I(inst)
-		case LD_R_MRR:
-			cpu.instLD_R_MRR(inst)
-		case LD_R_MNN:
-			cpu.instLD_R_MNN(inst)
-		case LD_R_N:
-			cpu.instLD_R_N(inst)
-		case LD_R_R:
-			cpu.instLD_R_R(inst)
-		/* 16-Bit Load Group */
-		case LD_RR_MNN:
-			cpu.instLD_RR_MNN(inst)
-		case LD_RR_NN:
-			cpu.instLD_RR_NN(inst)
-		case LD_RR_RR:
-			cpu.instLD_RR_RR(inst)
-		case LD_MNN_RR:
-			cpu.instLD_MNN_RR(inst)
-		case POP_RR:
-			cpu.instPOP_RR(inst)
-		case PUSH_RR:
-			cpu.instPUSH_RR(inst)
-		/* Exchange, Block Transfer, Search Group */
-		case CPD:
-			cpu.instCPD(inst)
-		case CPI:
-			cpu.instCPI(inst)
-		case CPDR:
-			cpu.instCPDR(inst)
-		case CPIR:
-			cpu.instCPIR(inst)
-		case EX_MRR_RR:
-			cpu.instEX_MRR_RR(inst)
-		case EX_RR_RR:
-			cpu.instEX_RR_RR(inst)
-		case EXX:
-			cpu.instEXX(inst)
-		case LDD:
-			cpu.instLDD(inst)
-		case LDI:
-			cpu.instLDI(inst)
-		case LDDR:
-			cpu.instLDDR(inst)
-		case LDIR:
-			cpu.instLDIR(inst)
-		/* 8-Bit Arithmetic and Logical Group */
-		case ADC_R_I:
-			cpu.instADC_R_I(inst)
-		case ADC_R_MRR:
-			cpu.instADC_R_MRR(inst)
-		case ADC_R_N:
-			cpu.instADC_R_N(inst)
-		case ADC_R_R:
-			cpu.instADC_R_R(inst)
-		case ADD_R_I:
-			cpu.instADD_R_I(inst)
-		case ADD_R_MRR:
-			cpu.instADD_R_MRR(inst)
+	/* 8-Bit Load Group */
+	case LD_I_N:
+		cpu.instLD_I_N(inst)
+	case LD_MRR_N:
+		cpu.instLD_MRR_N(inst)
+	case LD_I_R:
+		cpu.instLD_I_R(inst)
+	case LD_MRR_R:
+		cpu.instLD_MRR_R(inst)
+	case LD_MNN_R:
+		cpu.instLD_MNN_R(inst)
+	case LD_R_I:
+		cpu.instLD_R_I(inst)
+	case LD_R_MRR:
+		cpu.instLD_R_MRR(inst)
+	case LD_R_MNN:
+		cpu.instLD_R_MNN(inst)
+	case LD_R_N:
+		cpu.instLD_R_N(inst)
+	case LD_R_R:
+		cpu.instLD_R_R(inst)
+	/* 16-Bit Load Group */
+	case LD_RR_MNN:
+		cpu.instLD_RR_MNN(inst)
+	case LD_RR_NN:
+		cpu.instLD_RR_NN(inst)
+	case LD_RR_RR:
+		cpu.instLD_RR_RR(inst)
+	case LD_MNN_RR:
+		cpu.instLD_MNN_RR(inst)
+	case POP_RR:
+		cpu.instPOP_RR(inst)
+	case PUSH_RR:
+		cpu.instPUSH_RR(inst)
+	/* Exchange, Block Transfer, Search Group */
+	case CPD:
+		cpu.instCPD(inst)
+	case CPI:
+		cpu.instCPI(inst)
+	case CPDR:
+		cpu.instCPDR(inst)
+	case CPIR:
+		cpu.instCPIR(inst)
+	case EX_MRR_RR:
+		cpu.instEX_MRR_RR(inst)
+	case EX_RR_RR:
+		cpu.instEX_RR_RR(inst)
+	case EXX:
+		cpu.instEXX(inst)
+	case LDD:
+		cpu.instLDD(inst)
+	case LDI:
+		cpu.instLDI(inst)
+	case LDDR:
+		cpu.instLDDR(inst)
+	case LDIR:
+		cpu.instLDIR(inst)
+	/* 8-Bit Arithmetic and Logical Group */
+	case ADC_R_I:
+		cpu.instADC_R_I(inst)
+	case ADC_R_MRR:
+		cpu.instADC_R_MRR(inst)
+	case ADC_R_N:
+		cpu.instADC_R_N(inst)
+	case ADC_R_R:
+		cpu.instADC_R_R(inst)
+	case ADD_R_I:
+		cpu.instADD_R_I(inst)
+	case ADD_R_MRR:
+		cpu.instADD_R_MRR(inst)
+	}
+
+	return 0, 0
+}
+
+			/*
 		case ADD_R_N:
 		op2 = IMM;
 		goto add_r;
@@ -750,7 +756,7 @@ func (cpu * Z80) doInst(inst *Instruction) (int, uint16) {
 		case OR_MRR:
 		result = A | cpu.ReadMem( WORD_REG[OP1]+OFFSET, false, cpu);
 			cpu.ResetFlag( FLAG_H );
-		goto logical_flags; /* Same flags as and */
+		goto logical_flags; // Same flags as and
 		case OR_N:
 		result = A | IMM;
 			cpu.ResetFlag( FLAG_H );
@@ -784,7 +790,7 @@ func (cpu * Z80) doInst(inst *Instruction) (int, uint16) {
 		break;
 
 
-		/* General-Purpose Arithmetic and CPU Control Group */
+		// General-Purpose Arithmetic and CPU Control Group
 		case CCF:
 		result = cpu.FlagIsSet( FLAG_C );
 			cpu.SetFlagValue( FLAG_Y, A & 0x20 );
@@ -874,7 +880,7 @@ func (cpu * Z80) doInst(inst *Instruction) (int, uint16) {
 		break;
 
 
-		/* 16-Bit Arithmetic Group */
+		//16-Bit Arithmetic Group
 		case ADD_RR_RR:
 		op1 = WORD_REG[OP1];
 		op2 = WORD_REG[OP2];
@@ -923,9 +929,9 @@ func (cpu * Z80) doInst(inst *Instruction) (int, uint16) {
 		break;
 
 
-		/* Rotate and Shift Group
-		 * Almost all flags are set the same so jump to a common block
-		 * of flag setting. */
+		// Rotate and Shift Group
+		 //  Almost all flags are set the same so jump to a common block
+		//  of flag setting.
 		case RLCA:
 		result = A;
 		carry = result >> 7;
@@ -1094,9 +1100,9 @@ func (cpu * Z80) doInst(inst *Instruction) (int, uint16) {
 		break;
 
 
-		/* Bit Set, Reset, and Test Group
-		 * In this group, the first operand is the bit to
-		 * set/reset/test. */
+		//  Bit Set, Reset, and Test Group
+		//  In this group, the first operand is the bit to
+		//  set/reset/test.
 		case BIT_I, BIT_MRR:
 		op2 = cpu.ReadMem( WORD_REG[OP2]+OFFSET, false, cpu);
 		result = op2 & (0x1<<OP1);
@@ -1153,7 +1159,7 @@ func (cpu * Z80) doInst(inst *Instruction) (int, uint16) {
 			}
 		break;
 
-		/* Jump Group */
+		//  Jump Group
 		case DJNZ:
 			if --B  {
 				PC += OFFSET;
@@ -1186,7 +1192,7 @@ func (cpu * Z80) doInst(inst *Instruction) (int, uint16) {
 			PC += OFFSET;
 		break;
 
-		/* Call and Return Group */
+		//  Call and Return Group
 		case CALL_C_MNN:
 		if !cpu.CondIsMet(OP1)  {
 			took_branch = false;
@@ -1235,7 +1241,7 @@ func (cpu * Z80) doInst(inst *Instruction) (int, uint16) {
 			(cpu.ControlFlow)( oldPC, PC, CF_RESTART, cpu);
 		break;
 
-		/* Input and Output Group */
+		//  Input and Output Group
 		case IND:
 		carry = -1;
 		goto inx;
@@ -1406,4 +1412,6 @@ func (cpu * Z80) doInst(inst *Instruction) (int, uint16) {
 			*outPC = PC;
 		return ticks;
 	}
+
+			 */
 

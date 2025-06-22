@@ -35,11 +35,12 @@ type CPU struct {
 	ar             uint16                   // Address register
 	ar2            uint16                   // Address register 2
 	rmw            uint8                    // Data buffer for RMW instructions
-	stop           bool                     // stop indicates whether the CPU execution is currently paused.
-	rdyLow         bool                     // current RDY state
-	aecLow         bool                     // current AEC state
-	opFlags        uint8                    // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
-	irqBreaker     bool                     // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
+	//stop            bool                     // stop indicates whether the CPU execution is currently paused.
+	rdyLow     bool  // current RDY state
+	aecLow     bool  // current AEC state
+	opFlags    uint8 // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
+	irqBreaker bool  // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
+	savedNext  func(cpu *CPU)
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
@@ -89,7 +90,7 @@ func (cpu *CPU) SetOverflowBranch(sob func() bool) {
 func (cpu *CPU) SetAECLow(aecLow bool) {
 	cpu.aecLow = aecLow
 	if cpu.aecLow {
-		cpu.stop = true
+		cpu.setModeHalt()
 	}
 }
 
@@ -97,20 +98,38 @@ func (cpu *CPU) SetAECLow(aecLow bool) {
 func (cpu *CPU) SetRDYLow(rdyLow bool) {
 	cpu.rdyLow = rdyLow
 	if !cpu.rdyLow {
-		cpu.stop = false
+		cpu.setModeRun()
 	}
 }
 
 // Emulate processes one CPU cycle by invoking the next instruction handler unless the CPU is stopped.
 func (cpu *CPU) Emulate() {
-	if cpu.stop {
-		return
-	}
 	cpu.next(cpu)
 }
 
+// EmulationRequired determines if the CPU requires emulation for the current operation, returning true if necessary.
 func (cpu *CPU) EmulationRequired() bool {
 	return true
+}
+
+// halt pauses the CPU's operation by acting as a no-op function while the CPU remains in the halted state.
+func halt(_ *CPU) {
+}
+
+// setModeHalt halts the CPU by saving the current next instruction pointer and pointing next to the halt function.
+func (cpu *CPU) setModeHalt() {
+	if cpu.savedNext == nil {
+		cpu.savedNext = cpu.next
+		cpu.next = halt
+	}
+}
+
+// setModeRun restores the CPU's next instruction pointer from savedNext, allowing it to resume execution.
+func (cpu *CPU) setModeRun() {
+	if cpu.savedNext != nil {
+		cpu.next = cpu.savedNext
+		cpu.savedNext = nil
+	}
 }
 
 // Read retrieves a byte from the specified memory address.
@@ -127,7 +146,7 @@ func (cpu *CPU) EmulationRequired() bool {
 // using the cpu.banks.Read method and returns the byte and true.
 func (cpu *CPU) read(addr uint16) (uint8, bool) {
 	if cpu.rdyLow {
-		cpu.stop = true
+		cpu.setModeHalt()
 		return 0, false
 	}
 	return cpu.banks.Read(addr), true
