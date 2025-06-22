@@ -7,6 +7,7 @@ const (
 	spriteUnexpandedPixels   = 24
 	spriteExpandedHalfPixels = 32
 	spriteExpandedPixels     = 48
+	planesMSB                = 1 << 31 //0x80000000
 )
 
 // Sprite represents a hardware sprite object used for rendering graphical elements on a screen.
@@ -111,16 +112,16 @@ func (sp *Sprite) Draw(lineStart int, collisions *Collisions) {
 	if expanded := (sp.core.mxe & sp.mask) != 0; expanded {
 		// If the sprite is expanded horizontally...
 		if multiColor {
-			sp.drawExpandedMulticolor(lineOffset, collisions, sColor, sData, sOffset, majorX, minorX, sp.mask)
+			sp.drawExpandedMulticolor(lineOffset, collisions, sColor, sData, sOffset, majorX, minorX)
 		} else {
-			sp.drawExpandedStandard(lineOffset, collisions, sColor, sData, sOffset, majorX, minorX, sp.mask)
+			sp.drawExpandedStandard(lineOffset, collisions, sColor, sData, sOffset, majorX, minorX)
 		}
 	} else {
 		// If the sprite is *not* expanded horizontally...
 		if multiColor {
-			sp.drawUnexpandedMulticolor(lineOffset, collisions, sColor, sData, sOffset, majorX, minorX, sp.mask)
+			sp.drawUnexpandedMulticolor(lineOffset, collisions, sColor, sData, sOffset, majorX, minorX)
 		} else {
-			sp.drawUnexpandedStandard(lineOffset, collisions, sColor, sData, sOffset, majorX, minorX, sp.mask)
+			sp.drawUnexpandedStandard(lineOffset, collisions, sColor, sData, sOffset, majorX, minorX)
 		}
 	}
 }
@@ -128,7 +129,7 @@ func (sp *Sprite) Draw(lineStart int, collisions *Collisions) {
 // drawExpandedMulticolor is responsible for rendering an expanded multicolor sprite on the display buffer.
 // It handles sprite-to-graphics and sprite-to-sprite collision detection while processing each pixel's color.
 // The method also respects sprite-to-background priority by masking sprite pixels when a graphics collision occurs.
-func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8) {
+func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions, sColor uint8, sData uint32, sOffset int, m int, s int) {
 	// Get the foreground mask for the left half of the sprite's character column.
 	foreMaskL := collisions.GetGraphicsL(m, s)
 	// Get the foreground mask for the right half of the sprite's character column.
@@ -146,8 +147,8 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 	// Collision with graphics? Check if any bits in the sprite's bit-planes overlap with the foreground mask.
 	if ((foreMaskL & (plane0L | plane1L)) != 0) || ((foreMaskR & (plane0R | plane1R)) != 0) {
 		// Set the sprite-to-graphics collision flag for this sprite.
-		collisions.SetGraphicsCollision(sBit)
-		if (sp.core.mdp & sBit) != 0 {
+		collisions.SetGraphicsCollision(sp.mask)
+		if (sp.core.mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled (MDP register), mask out the sprite pixels where a collision occurred.
 			// This makes the background "show through" the sprite.
 			plane0L &= ^foreMaskL // Mask left half.
@@ -156,58 +157,27 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 			plane1R &= ^foreMaskR // Mask right half.
 		}
 	}
-	idx := 0
-	// Draw the left half of the sprite (first 32 pixels).  The sprite is expanded, so we draw 48 pixels total.
-	for ; idx < spriteExpandedHalfPixels; idx, plane0L, plane1L = idx+1, plane0L<<1, plane1L<<1 {
-		selectedColor := uint8(0)
-		// Determine the color of the current pixel based on the bit-planes.
-		if (plane1L & 0x80000000) != 0 {
-			// Check the most significant bit of plane 1.
-			if (plane0L & 0x80000000) != 0 {
-				// Check the most significant bit of plane 0.
-				selectedColor = _colors[sp.core.mm1] // 11: Use color from MM1 register.
-			} else {
-				selectedColor = sColor // 10: Use the sprite's individual color.
+
+	// Draw the left half of the sprite (first 32 pixels). The sprite is expanded, so we draw 48 pixels total.
+	for idx := 0; idx < spriteExpandedHalfPixels; idx, plane0L, plane1L = idx+1, plane0L<<1, plane1L<<1 {
+		if selectedColor := sp.planesColor(plane0L, plane1L, sColor); selectedColor >= 0 {
+			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
+				sp.set(lineOffset+idx, uint8(selectedColor))
 			}
-		} else {
-			if (plane0L & 0x80000000) != 0 {
-				selectedColor = _colors[sp.core.mm0] // 01: Use color from MM0 register.
-			} else {
-				continue // 00: Transparent - don't draw anything.
-			}
-		}
-		// Check for sprite-to-sprite collisions *before* drawing the pixel.
-		if !collisions.SetSpriteCollision(sOffset+idx, sBit) {
-			// Draw the pixel to the display buffer.
-			sp.set(lineOffset+idx, selectedColor)
 		}
 	}
 	// Draw the right half of the sprite (remaining 16 pixels).
-	for ; idx < spriteExpandedPixels; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
-		selectedColor := uint8(0)
-		// Determine the color of the current pixel (same logic as above).
-		if (plane1R & 0x80000000) != 0 {
-			if (plane0R & 0x80000000) != 0 {
-				selectedColor = _colors[sp.core.mm1]
-			} else {
-				selectedColor = sColor
+	for idx := spriteExpandedHalfPixels; idx < spriteExpandedPixels; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
+		if selectedColor := sp.planesColor(plane0R, plane1R, sColor); selectedColor >= 0 {
+			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
+				sp.set(lineOffset+idx, uint8(selectedColor))
 			}
-		} else {
-			if (plane0R & 0x80000000) != 0 {
-				selectedColor = _colors[sp.core.mm0]
-			} else {
-				continue // Transparent.
-			}
-		}
-		// Check for sprite-to-sprite collisions.
-		if !collisions.SetSpriteCollision(sOffset+idx, sBit) {
-			sp.set(lineOffset+idx, selectedColor)
 		}
 	}
 }
 
 // drawExpandedStandard renders a horizontally expanded sprite in standard mode with collision detection and masking.
-func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8) {
+func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, sColor uint8, sData uint32, sOffset int, m int, s int) {
 	// Get the foreground mask for the left half of the sprite's character column.
 	foreMaskL := collisions.GetGraphicsL(m, s)
 	// Get the foreground mask for the right half of the sprite's character column.
@@ -218,30 +188,26 @@ func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, s
 	// Check for collisions with the foreground.
 	if ((foreMaskL & sDataL) != 0) || ((foreMaskR & sDataR) != 0) {
 		// Set the sprite-to-graphics collision flag.
-		collisions.SetGraphicsCollision(sBit)
-		if (sp.core.mdp & sBit) != 0 {
+		collisions.SetGraphicsCollision(sp.mask)
+		if (sp.core.mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			sDataL &= ^foreMaskL // Mask left half.
 			sDataR &= ^foreMaskR // Mask right half.
 		}
 	}
-	var idx = 0
+
 	// Draw the left half of the sprite (first 32 pixels).
-	for ; idx < spriteExpandedHalfPixels; idx, sDataL = idx+1, sDataL<<1 {
-		if (sDataL & 0x80000000) != 0 {
-			// Check the most significant bit.
-			// Check for sprite-to-sprite collisions *before* drawing.
-			if !collisions.SetSpriteCollision(sOffset+idx, sBit) {
+	for idx := 0; idx < spriteExpandedHalfPixels; idx, sDataL = idx+1, sDataL<<1 {
+		if (sDataL & planesMSB) != 0 {
+			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, sColor)
 			}
 		}
 	}
 	// Draw the right half of the sprite (remaining 16 pixels).
-	for ; idx < spriteExpandedPixels; idx, sDataR = idx+1, sDataR<<1 {
-		if (sDataR & 0x80000000) != 0 {
-			// Check the most significant bit.
-			// Check for sprite-to-sprite collisions.
-			if !collisions.SetSpriteCollision(sOffset+idx, sBit) {
+	for idx := spriteExpandedHalfPixels; idx < spriteExpandedPixels; idx, sDataR = idx+1, sDataR<<1 {
+		if (sDataR & planesMSB) != 0 {
+			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, sColor)
 			}
 		}
@@ -249,7 +215,7 @@ func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, s
 }
 
 // drawUnexpandedMulticolor renders a non-expanded multicolor sprite, handling graphics collisions and color selection.
-func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collisions, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8) {
+func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collisions, sColor uint8, sData uint32, sOffset int, m int, s int) {
 	// Get the foreground mask for the sprite's character column.
 	foreMask := collisions.GetGraphicsL(m, s)
 	// Convert sprite data to bit-planes.  No expansion is needed here since the sprite is *not* expanded.
@@ -260,8 +226,8 @@ func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collision
 	// Check graphics collision
 	if (foreMask & (plane0 | plane1)) != 0 {
 		// Set the sprite-to-graphics collision flag.
-		collisions.SetGraphicsCollision(sBit)
-		if (sp.core.mdp & sBit) != 0 {
+		collisions.SetGraphicsCollision(sp.mask)
+		if (sp.core.mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			plane0 &= ^foreMask // Mask plane 0.
 			plane1 &= ^foreMask // Mask plane 1.
@@ -269,48 +235,51 @@ func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collision
 	}
 	// Draw the sprite (24 pixels).
 	for idx := 0; idx < spriteUnexpandedPixels; idx, plane0, plane1 = idx+1, plane0<<1, plane1<<1 {
-		var selectedColor uint8
-		// Determine the color of the current pixel based on the bit-planes.
-		if (plane1 & 0x80000000) == 0 {
-			if (plane0 & 0x80000000) == 0 {
-				continue // 00: Transparent - don't draw anything.
+		if selectedColor := sp.planesColor(plane0, plane1, sColor); selectedColor >= 0 {
+			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
+				sp.set(lineOffset+idx, uint8(selectedColor))
 			}
-			selectedColor = _colors[sp.core.mm0] // 01: Use color from MM0 register.
-		} else {
-			if (plane0 & 0x80000000) == 0 {
-				selectedColor = sColor // 10: Use the sprite's individual color.
-			} else {
-				selectedColor = _colors[sp.core.mm1] // 11: Use color from MM1 register.
-			}
-		}
-		// Check for sprite-to-sprite collisions *before* drawing.
-		if !collisions.SetSpriteCollision(sOffset+idx, sBit) {
-			sp.set(lineOffset+idx, selectedColor)
 		}
 	}
 }
 
 // drawUnexpandedStandard renders a 24-pixel wide unexpanded standard sprite, managing collisions and pixel masking.
-func (sp *Sprite) drawUnexpandedStandard(lineOffset int, collisions *Collisions, sColor uint8, sData uint32, sOffset int, m int, s int, sBit uint8) {
+func (sp *Sprite) drawUnexpandedStandard(lineOffset int, collisions *Collisions, sColor uint8, sData uint32, sOffset int, m int, s int) {
 	// Get the foreground mask for the sprite's character column.
 	foreMask := collisions.GetGraphicsL(m, s)
 	// Check for collisions with the foreground.
 	if (foreMask & sData) != 0 {
 		// Set the sprite-to-graphics collision flag.
-		collisions.SetGraphicsCollision(sBit)
-		if (sp.core.mdp & sBit) != 0 {
+		collisions.SetGraphicsCollision(sp.mask)
+		if (sp.core.mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			sData &= ^foreMask // Mask the sprite data.
 		}
 	}
 	// Draw the sprite (24 pixels).
 	for idx := 0; idx < spriteUnexpandedPixels; idx, sData = idx+1, sData<<1 {
-		if (sData & 0x80000000) != 0 {
-			// Check the most significant bit.
+		if (sData & planesMSB) != 0 {
 			// Check for sprite-to-sprite collisions *before* drawing.
-			if !collisions.SetSpriteCollision(sOffset+idx, sBit) {
+			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, sColor)
 			}
 		}
 	}
+}
+
+// planesColor evaluates the color of a sprite pixel based on the provided plane data and sprite color, returning a color value.
+func (sp *Sprite) planesColor(plane0 uint32, plane1 uint32, sColor uint8) int {
+	p1 := (plane1 & planesMSB) >> 0x1e //30
+	p0 := (plane0 & planesMSB) >> 0x1f //31
+	switch p1 | p0 {
+	case 0b00:
+		return -1 // transparent
+	case 0b01:
+		return int(_colors[sp.core.mm0]) //mm0
+	case 0b10:
+		return int(sColor) // color
+	case 0b11:
+		return int(_colors[sp.core.mm1]) //mm1
+	}
+	return -1
 }
