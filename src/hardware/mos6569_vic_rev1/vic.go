@@ -45,7 +45,7 @@ type VIC struct {
 	*component.BaseComponent
 	cfg              *config.Config
 	collisions       *Collisions
-	sprites          *Sprites
+	sprites          *SpriteHandler
 	graphics         *Graphics
 	borders          *Borders
 	socket           references.IMos6569Socket

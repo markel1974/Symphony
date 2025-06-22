@@ -37,7 +37,8 @@ The `vic` package is organized into the following files:
 
 *   `vic.go`:  The main file. Contains the `VIC` struct and the `Emulate` method (the main emulation loop).  Also includes functions for reading and writing VIC-II registers.
 *   `graphics.go`: Contains the functions for rendering the different graphics modes (character mode, bitmap modes, ECM).
-*   `sprites.go`:  Contains the logic for handling sprites.
+*   `sprite_handler.go`:  Contains the logic for handling sprites.
+*   `sprite.go`:  Contains the logic for handling a single sprite.
 *   `borders.go`: Contains the logic for rendering the borders.
 *   `raster.go`:  Contains the logic for managing the raster beam position and timing.
 *   `pal.go`:  Contains constants and functions related to the PAL video timing (functions for each cycle of a scanline).
