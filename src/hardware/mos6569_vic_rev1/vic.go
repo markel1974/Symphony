@@ -625,8 +625,10 @@ func (vic *VIC) WriteRegister(addr2 uint16, data uint8) {
 		vic.mdp = data
 	case 0x1c: // Sprite multicolor
 		vic.mmc = data
+		vic.sprites.ModeUpdate()
 	case 0x1d: // Sprite X expansion
 		vic.mxe = data
+		vic.sprites.ModeUpdate()
 	case 0x1e: // Sprite-sprite collision
 		vic.sprSprClx = data
 	case 0x1f: // Sprite-background collision

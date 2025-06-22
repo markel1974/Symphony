@@ -164,3 +164,9 @@ func (sp *SpriteHandler) Draw() {
 	// Perform the final collision detection checks.
 	sp.collisions.Detect()
 }
+
+func (sp *SpriteHandler) ModeUpdate() {
+	for _, sprite := range sp.sprites {
+		sprite.ModeUpdate()
+	}
+}
