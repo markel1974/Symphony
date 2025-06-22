@@ -2,40 +2,47 @@ package mos6569
 
 import "github.com/markel1974/c64emu/src/references"
 
+const (
+	dataCounterLastByte      = 0x3f
+	spriteUnexpandedPixels   = 24
+	spriteExpandedHalfPixels = 32
+	spriteExpandedPixels     = 48
+)
+
 // Sprite represents a hardware sprite object used for rendering graphical elements on a screen.
 // sNum is the sprite number, identifying the specific sprite.
 // sBit is the sprite bit, used for masking and collision flag operations.
 // core is a reference to the VIC, responsible for accessing hardware functionalities.
 // data is a buffer storing the sprite's graphical data.
 // dataPtr points to the memory address of the sprite data.
-// dataCounter is a counter used to track the fetching of sprite data.
+// counter is a counter used to track the fetching of sprite data.
 // dataCounterBase serves as a base value for resetting the sprite data counter.
 // set is a function for setting pixel data on the sprite's display buffer.
 type Sprite struct {
-	num             uint8
-	max             int
-	mask            uint8
-	core            *VIC
-	data            []uint8
-	dataPtr         uint16
-	dataCounter     uint16 // Sprite counter data
-	dataCounterBase uint16 // Sprite base counter data (one per sprite).
-	set             func(int, uint8)
+	num         uint8
+	max         int
+	mask        uint8
+	core        *VIC
+	data        []uint8
+	ptr         uint16
+	counter     uint16
+	counterBase uint16
+	set         func(int, uint8)
 }
 
 // NewSprite initializes and returns a new Sprite instance with the provided VIC core, display buffer, and sprite number.
 // It allocates memory for sprite data, sets initial values for counters, and configures the display function.
 func NewSprite(core *VIC, displayBuffer references.IDisplayBuffer, sNum uint8, sMax int) *Sprite {
 	sp := &Sprite{
-		core:            core,
-		set:             displayBuffer.Set,
-		num:             sNum,
-		mask:            uint8(1) << sNum,
-		data:            make([]uint8, 4), // Allocate space for sprite data (3 byte + extra).
-		dataCounterBase: 0,
-		dataCounter:     63, // Initialize sprite data counter to the last byte.
-		dataPtr:         0,
-		max:             sMax,
+		core:        core,
+		set:         displayBuffer.Set,
+		num:         sNum,
+		mask:        uint8(1) << sNum,
+		data:        make([]uint8, 4), // Allocate space for sprite data (3 byte + extra).
+		counterBase: 0,
+		counter:     dataCounterLastByte, // Initialize sprite data counter to the last byte.
+		ptr:         0,
+		max:         sMax,
 	}
 	return sp
 }
@@ -54,46 +61,36 @@ func (sp *Sprite) Mask() uint8 {
 func (sp *Sprite) FetchPtr() {
 	addr := sp.core.matrixBase | 0x03f8 | uint16(sp.num) // Calculate the address of the sprite pointer.
 	data := sp.core.ReadByte(addr)                       // Read the sprite pointer from memory.
-	sp.dataPtr = uint16(data) << 6                       // Set the sprite's data pointer.
+	sp.ptr = uint16(data) << 6                           // Set the sprite's data pointer.
 }
 
 // FetchData retrieves the sprite data for the specified byte index and stores it in the sprite's data array.
 // It calculates the memory address based on the sprite's data counter and pointer, reads the byte, and increments the counter.
 func (sp *Sprite) FetchData(bNum uint8) {
-	addr := (sp.dataCounter & 0x3f) | sp.dataPtr // Calculate the address of the current byte within the sprite data.
-	data := sp.core.ReadByte(addr)               // Read the byte from memory.
-	sp.data[bNum] = data                         // Store the byte in the sprite's data buffer.
-	sp.dataCounter++                             // Increment the data counter for the next byte.
+	addr := (sp.counter & dataCounterLastByte) | sp.ptr // Calculate the address of the current byte within the sprite data.
+	data := sp.core.ReadByte(addr)                      // Read the byte from memory.
+	sp.data[bNum] = data                                // Store the byte in the sprite's data buffer.
+	sp.counter++                                        // Increment the data counter for the next byte.
 }
 
-// DataCounterBase retrieves the base value of the sprite's data counter.
-func (sp *Sprite) DataCounterBase() uint16 {
-	return sp.dataCounterBase
+// CounterBase retrieves the base value of the sprite's data counter.
+func (sp *Sprite) CounterBase() uint16 {
+	return sp.counterBase
 }
 
-// ResetDataCounterBase resets the sprite's dataCounterBase to zero. It is typically used to reinitialize the base counter.
-func (sp *Sprite) ResetDataCounterBase() {
-	sp.dataCounterBase = 0
+// CounterBaseReset resets the sprite's counterBase to zero. It is typically used to reinitialize the base counter.
+func (sp *Sprite) CounterBaseReset() {
+	sp.counterBase = 0
 }
 
-// DataCounterBaseIncrement increases the `dataCounterBase` of the `Sprite` by the specified increment value.
-func (sp *Sprite) DataCounterBaseIncrement(increment uint16) {
-	sp.dataCounterBase += increment
+// CounterBaseIncrement increases the `counterBase` of the `Sprite` by the specified increment value.
+func (sp *Sprite) CounterBaseIncrement(increment uint16) {
+	sp.counterBase += increment
 }
 
-// ApplyDataCounterBase sets the sprite's data counter to its base value stored in dataCounterBase.
-func (sp *Sprite) ApplyDataCounterBase() {
-	sp.dataCounter = sp.dataCounterBase
-}
-
-// GetDataPtr returns the current base address pointer (dataPtr) for the sprite's data.
-func (sp *Sprite) GetDataPtr() uint16 {
-	return sp.dataPtr
-}
-
-// SetData sets the byte data for the sprite at the specified buffer index.
-func (sp *Sprite) SetData(bNum uint8, data uint8) {
-	sp.data[bNum] = data
+// CounterBaseApply sets the sprite's data counter to its base value stored in dataCounterBase.
+func (sp *Sprite) CounterBaseApply() {
+	sp.counter = sp.counterBase
 }
 
 // Draw renders the sprite on the screen at a specified starting scanline and manages collision detection.
@@ -161,7 +158,7 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 	}
 	idx := 0
 	// Draw the left half of the sprite (first 32 pixels).  The sprite is expanded, so we draw 48 pixels total.
-	for ; idx < 32; idx, plane0L, plane1L = idx+1, plane0L<<1, plane1L<<1 {
+	for ; idx < spriteExpandedHalfPixels; idx, plane0L, plane1L = idx+1, plane0L<<1, plane1L<<1 {
 		selectedColor := uint8(0)
 		// Determine the color of the current pixel based on the bit-planes.
 		if (plane1L & 0x80000000) != 0 {
@@ -186,7 +183,7 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 		}
 	}
 	// Draw the right half of the sprite (remaining 16 pixels).
-	for ; idx < 48; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
+	for ; idx < spriteExpandedPixels; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
 		selectedColor := uint8(0)
 		// Determine the color of the current pixel (same logic as above).
 		if (plane1R & 0x80000000) != 0 {
@@ -230,7 +227,7 @@ func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, s
 	}
 	var idx = 0
 	// Draw the left half of the sprite (first 32 pixels).
-	for ; idx < 32; idx, sDataL = idx+1, sDataL<<1 {
+	for ; idx < spriteExpandedHalfPixels; idx, sDataL = idx+1, sDataL<<1 {
 		if (sDataL & 0x80000000) != 0 {
 			// Check the most significant bit.
 			// Check for sprite-to-sprite collisions *before* drawing.
@@ -240,7 +237,7 @@ func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, s
 		}
 	}
 	// Draw the right half of the sprite (remaining 16 pixels).
-	for ; idx < 48; idx, sDataR = idx+1, sDataR<<1 {
+	for ; idx < spriteExpandedPixels; idx, sDataR = idx+1, sDataR<<1 {
 		if (sDataR & 0x80000000) != 0 {
 			// Check the most significant bit.
 			// Check for sprite-to-sprite collisions.
@@ -271,20 +268,19 @@ func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collision
 		}
 	}
 	// Draw the sprite (24 pixels).
-	for idx := 0; idx < 24; idx, plane0, plane1 = idx+1, plane0<<1, plane1<<1 {
+	for idx := 0; idx < spriteUnexpandedPixels; idx, plane0, plane1 = idx+1, plane0<<1, plane1<<1 {
 		var selectedColor uint8
 		// Determine the color of the current pixel based on the bit-planes.
-		if (plane1 & 0x80000000) != 0 {
-			if (plane0 & 0x80000000) != 0 {
-				selectedColor = _colors[sp.core.mm1] // 11: Use color from MM1 register.
-			} else {
-				selectedColor = sColor // 10: Use the sprite's individual color.
-			}
-		} else {
-			if (plane0 & 0x80000000) != 0 {
-				selectedColor = _colors[sp.core.mm0] // 01: Use color from MM0 register.
-			} else {
+		if (plane1 & 0x80000000) == 0 {
+			if (plane0 & 0x80000000) == 0 {
 				continue // 00: Transparent - don't draw anything.
+			}
+			selectedColor = _colors[sp.core.mm0] // 01: Use color from MM0 register.
+		} else {
+			if (plane0 & 0x80000000) == 0 {
+				selectedColor = sColor // 10: Use the sprite's individual color.
+			} else {
+				selectedColor = _colors[sp.core.mm1] // 11: Use color from MM1 register.
 			}
 		}
 		// Check for sprite-to-sprite collisions *before* drawing.
@@ -308,7 +304,7 @@ func (sp *Sprite) drawUnexpandedStandard(lineOffset int, collisions *Collisions,
 		}
 	}
 	// Draw the sprite (24 pixels).
-	for idx := 0; idx < 24; idx, sData = idx+1, sData<<1 {
+	for idx := 0; idx < spriteUnexpandedPixels; idx, sData = idx+1, sData<<1 {
 		if (sData & 0x80000000) != 0 {
 			// Check the most significant bit.
 			// Check for sprite-to-sprite collisions *before* drawing.

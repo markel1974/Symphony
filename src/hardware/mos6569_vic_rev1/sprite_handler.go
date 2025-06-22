@@ -48,6 +48,11 @@ func (sp *SpriteHandler) SetOffset(offset int) {
 	sp.offset = offset
 }
 
+// GetDMAFlag checks and returns the active DMA flag for the specified sprite(s) by performing a bitwise AND operation.
+func (sp *SpriteHandler) GetDMAFlag(b uint8) uint8 {
+	return sp.dmaFlags & b
+}
+
 // FetchPtr fetches the sprite pointer for the given sprite number if BA and AEC conditions are met,
 // and updates its data pointer. Logs a warning if conditions are not met.
 // This function is called during specific VIC-II cycles when sprite data pointers need to be fetched
@@ -90,15 +95,11 @@ func (sp *SpriteHandler) UpdateDisplayFlags() {
 // Handles y-expansion
 func (sp *SpriteHandler) UpdateCounterBase() {
 	for _, sprite := range sp.sprites {
-		if (sp.core.sprExpY & (1 << sprite.Number())) != 0 {
-			sprite.DataCounterBaseIncrement(2)
+		mask := sprite.Mask()
+		if (sp.core.sprExpY & mask) != 0 {
+			sprite.CounterBaseIncrement(2)
 		}
 	}
-}
-
-// GetDMAFlag checks and returns the active DMA flag for the specified sprite(s) by performing a bitwise AND operation.
-func (sp *SpriteHandler) GetDMAFlag(b uint8) uint8 {
-	return sp.dmaFlags & b
 }
 
 // UpdateDMA updates the DMA status of sprites based on their raster line and enabled flags.
@@ -110,7 +111,7 @@ func (sp *SpriteHandler) UpdateDMA() {
 		mask := sprite.Mask()
 		if ((sp.core.me & mask) != 0) && (rasterY == uint16(sp.core.mXy[num])) {
 			sp.dmaFlags |= mask
-			sprite.ResetDataCounterBase()
+			sprite.CounterBaseReset()
 			if (sp.core.mye & mask) != 0 {
 				sp.core.sprExpY &= ^mask
 			}
@@ -124,9 +125,9 @@ func (sp *SpriteHandler) UpdateCounterBaseDMA() {
 	for _, sprite := range sp.sprites {
 		mask := sprite.Mask()
 		if (sp.core.sprExpY & mask) != 0 {
-			sprite.DataCounterBaseIncrement(1)
+			sprite.CounterBaseIncrement(1)
 		}
-		if (sprite.DataCounterBase() & 0x3f) == 0x3f {
+		if (sprite.CounterBase() & 0x3f) == 0x3f {
 			sp.dmaFlags &= ^mask
 		}
 	}
@@ -139,7 +140,7 @@ func (sp *SpriteHandler) UpdateDisplayYFlags() {
 	for _, sprite := range sp.sprites {
 		num := sprite.Number()
 		mask := sprite.Mask()
-		sprite.ApplyDataCounterBase()
+		sprite.CounterBaseApply()
 		if ((sp.dmaFlags & mask) != 0) && (rasterY == uint16(sp.core.mXy[num])) {
 			sp.displayFlags |= mask
 		}
