@@ -5,18 +5,23 @@ import (
 )
 
 const (
-	borderSize       = 8
-	border0Start     = 0
-	border1End       = 4
-	border1Offset    = border1End * borderSize
-	border2Start     = border1End + 1
-	border2End       = 43
-	border3Offset    = border2End * borderSize
-	border4Start     = border2End + 1
-	border4End       = DisplayXDiv8
-	border0StartSize = border0Start * borderSize
-	border2StartSize = border2Start * borderSize
-	border4StartSize = border4Start * borderSize
+	borderSize = 8
+
+	borderLeftStart  = 0
+	borderLeftOffset = borderLeftStart * borderSize
+
+	borderMidLeftEnd    = 4
+	borderMidLeftOffset = borderMidLeftEnd * borderSize
+
+	borderCenterStart  = borderMidLeftEnd + 1
+	borderCenterEnd    = 43
+	borderCenterOffset = borderCenterStart * borderSize
+
+	borderMidRightOffset = borderCenterEnd * borderSize
+
+	borderRightStart  = borderCenterEnd + 1
+	borderRightEnd    = DisplayXDiv8
+	borderRightOffset = borderRightStart * borderSize
 )
 
 // BorderType represents the type of border used, defined as an integer-based enumeration.
@@ -133,23 +138,23 @@ func (b *Borders) GetVerticalFlipFlop() bool {
 // Draw renders the border regions based on current configuration, samples, and colors within the specified display buffer.
 func (b *Borders) Draw() {
 	if b.samples[BorderTypeLeft] {
-		for idx, offset := border0Start, border0StartSize; idx < border1End; idx, offset = idx+1, offset+borderSize {
+		for idx, offset := borderLeftStart, borderLeftOffset; idx < borderMidLeftEnd; idx, offset = idx+1, offset+borderSize {
 			b.setMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
 	if b.samples[BorderTypeMidLeft] {
-		b.setMulti8(b.offset+(border1Offset), b.colors[border1End])
+		b.setMulti8(b.offset+(borderMidLeftOffset), b.colors[borderMidLeftEnd])
 	}
 	if b.samples[BorderTypeCenter] {
-		for idx, offset := border2Start, border2StartSize; idx < border2End; idx, offset = idx+1, offset+borderSize {
+		for idx, offset := borderCenterStart, borderCenterOffset; idx < borderCenterEnd; idx, offset = idx+1, offset+borderSize {
 			b.setMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
 	if b.samples[BorderTypeMidRight] {
-		b.setMulti8(b.offset+(border3Offset), b.colors[border2End])
+		b.setMulti8(b.offset+(borderMidRightOffset), b.colors[borderCenterEnd])
 	}
 	if b.samples[BorderTypeRight] {
-		for idx, offset := border4Start, border4StartSize; idx < border4End; idx, offset = idx+1, offset+borderSize {
+		for idx, offset := borderRightStart, borderRightOffset; idx < borderRightEnd; idx, offset = idx+1, offset+borderSize {
 			b.setMulti8(b.offset+offset, b.colors[idx])
 		}
 	}
