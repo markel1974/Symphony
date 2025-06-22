@@ -160,7 +160,7 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 
 	// Draw the left half of the sprite (first 32 pixels). The sprite is expanded, so we draw 48 pixels total.
 	for idx := 0; idx < spriteExpandedHalfPixels; idx, plane0L, plane1L = idx+1, plane0L<<1, plane1L<<1 {
-		if selectedColor := sp.planesColor(plane0L, plane1L, sColor); selectedColor >= 0 {
+		if selectedColor := sp.planes2Color(plane0L, plane1L, sColor); selectedColor >= 0 {
 			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, uint8(selectedColor))
 			}
@@ -168,7 +168,7 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 	}
 	// Draw the right half of the sprite (remaining 16 pixels).
 	for idx := spriteExpandedHalfPixels; idx < spriteExpandedPixels; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
-		if selectedColor := sp.planesColor(plane0R, plane1R, sColor); selectedColor >= 0 {
+		if selectedColor := sp.planes2Color(plane0R, plane1R, sColor); selectedColor >= 0 {
 			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, uint8(selectedColor))
 			}
@@ -235,7 +235,7 @@ func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collision
 	}
 	// Draw the sprite (24 pixels).
 	for idx := 0; idx < spriteUnexpandedPixels; idx, plane0, plane1 = idx+1, plane0<<1, plane1<<1 {
-		if selectedColor := sp.planesColor(plane0, plane1, sColor); selectedColor >= 0 {
+		if selectedColor := sp.planes2Color(plane0, plane1, sColor); selectedColor >= 0 {
 			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, uint8(selectedColor))
 			}
@@ -268,9 +268,9 @@ func (sp *Sprite) drawUnexpandedStandard(lineOffset int, collisions *Collisions,
 }
 
 // planesColor evaluates the color of a sprite pixel based on the provided plane data and sprite color, returning a color value.
-func (sp *Sprite) planesColor(plane0 uint32, plane1 uint32, sColor uint8) int {
-	p1 := (plane1 & planesMSB) >> 0x1e //30
-	p0 := (plane0 & planesMSB) >> 0x1f //31
+func (sp *Sprite) planes2Color(plane0 uint32, plane1 uint32, sColor uint8) int {
+	p1 := (plane1 & planesMSB) >> 0x1e //bit 30
+	p0 := (plane0 & planesMSB) >> 0x1f //bit 31
 	switch p1 | p0 {
 	case 0b00:
 		return -1 // transparent
