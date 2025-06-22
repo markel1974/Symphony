@@ -5,23 +5,9 @@ import (
 )
 
 const (
-	borderSize = 8
-
-	borderLeftStart  = 0
-	borderLeftOffset = borderLeftStart * borderSize
-
-	borderMidLeftEnd    = 4
-	borderMidLeftOffset = borderMidLeftEnd * borderSize
-
-	borderCenterStart  = borderMidLeftEnd + 1
-	borderCenterEnd    = 43
-	borderCenterOffset = borderCenterStart * borderSize
-
-	borderMidRightOffset = borderCenterEnd * borderSize
-
-	borderRightStart  = borderCenterEnd + 1
-	borderRightEnd    = DisplayXDiv8
-	borderRightOffset = borderRightStart * borderSize
+	borderWidth    = 8
+	borderCountMax = DisplayX / borderWidth
+	borderCount    = 4
 )
 
 // BorderType represents the type of border used, defined as an integer-based enumeration.
@@ -51,6 +37,12 @@ type Borders struct {
 	samples            [BorderTypeLast]bool
 	colors             [0xff]uint8
 	offset             int
+
+	left     []int
+	midLeft  int
+	center   []int
+	midRight int
+	right    []int
 }
 
 // NewBorder creates and initializes a new Borders instance with the provided VIC core and display buffer dependencies.
@@ -61,6 +53,17 @@ func NewBorder(core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
 		horizontalFlipFlop: false,
 		verticalFlipFlop:   false,
 		offset:             0,
+	}
+	for x := 0; x < borderCount; x++ {
+		gr.left = append(gr.left, x)
+	}
+	for x := borderCount - 1; x >= 0; x-- {
+		gr.right = append(gr.right, (borderCountMax-1)-x)
+	}
+	gr.midLeft = gr.left[len(gr.left)-1] + 1
+	gr.midRight = gr.right[0] - 1
+	for x := gr.midLeft + 1; x < gr.midRight; x++ {
+		gr.center = append(gr.center, x)
 	}
 	return gr
 }
@@ -138,24 +141,29 @@ func (b *Borders) GetVerticalFlipFlop() bool {
 // Draw renders the border regions based on current configuration, samples, and colors within the specified display buffer.
 func (b *Borders) Draw() {
 	if b.samples[BorderTypeLeft] {
-		for idx, offset := borderLeftStart, borderLeftOffset; idx < borderMidLeftEnd; idx, offset = idx+1, offset+borderSize {
-			b.setMulti8(b.offset+offset, b.colors[idx])
+		for _, v := range b.left {
+			offset := v * borderWidth
+			b.setMulti8(b.offset+offset, b.colors[v])
 		}
 	}
 	if b.samples[BorderTypeMidLeft] {
-		b.setMulti8(b.offset+(borderMidLeftOffset), b.colors[borderMidLeftEnd])
+		offset := b.midLeft * borderWidth
+		b.setMulti8(b.offset+offset, b.colors[b.midLeft])
 	}
 	if b.samples[BorderTypeCenter] {
-		for idx, offset := borderCenterStart, borderCenterOffset; idx < borderCenterEnd; idx, offset = idx+1, offset+borderSize {
-			b.setMulti8(b.offset+offset, b.colors[idx])
+		for _, v := range b.center {
+			offset := v * borderWidth
+			b.setMulti8(b.offset+offset, b.colors[v])
 		}
 	}
 	if b.samples[BorderTypeMidRight] {
-		b.setMulti8(b.offset+(borderMidRightOffset), b.colors[borderCenterEnd])
+		offset := b.midRight * borderWidth
+		b.setMulti8(b.offset+offset, b.colors[b.midRight])
 	}
 	if b.samples[BorderTypeRight] {
-		for idx, offset := borderRightStart, borderRightOffset; idx < borderRightEnd; idx, offset = idx+1, offset+borderSize {
-			b.setMulti8(b.offset+offset, b.colors[idx])
+		for _, v := range b.right {
+			offset := v * borderWidth
+			b.setMulti8(b.offset+offset, b.colors[v])
 		}
 	}
 }
