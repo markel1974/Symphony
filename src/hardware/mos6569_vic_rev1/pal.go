@@ -75,7 +75,7 @@ func palCycle1(vic *VIC) {
 		vic.IncrementRasterY()
 		vic.drawLine = (rasterY >= FirstDisplayedLine) && (rasterY <= LastDisplayedLine)
 	}
-	vic.borders.Reset()
+	vic.borders.ColumnInitialize()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite3) != 0 {
 		vic.sprites.FetchPtr(3)
@@ -281,7 +281,7 @@ func palCycle16(vic *VIC) {
 
 // palCycle17 executes the PAL-based VIC-II emulation cycle 17 logic, updating borders, graphics, and access conditions.
 func palCycle17(vic *VIC) {
-	vic.borders.UpdateColumn40()
+	vic.borders.Column40Update()
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
@@ -300,7 +300,7 @@ func palCycle17(vic *VIC) {
 // It determines whether to draw background or foreground based on the vertical flip-flop state and current line settings.
 // The function manages access attempts to graphics and display while handling character data and bad line conditions.
 func palCycle18(vic *VIC) {
-	vic.borders.UpdateColumn38()
+	vic.borders.Column38Update()
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
@@ -358,7 +358,7 @@ func palCycle55(vic *VIC) {
 
 // palCycle56 handles cycle 56 operations on the VIC, including border drawing, DMA updates, and sprite BALow settings.
 func palCycle56(vic *VIC) {
-	vic.borders.EnableColumn38()
+	vic.borders.Column38Apply()
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		if vic.borders.GetVerticalFlipFlop() {
@@ -376,10 +376,10 @@ func palCycle56(vic *VIC) {
 	}
 }
 
-// palCycle57 performs a sequence of operations for VIC, enabling 40-column mode, updating sprites, and managing display.
+// palCycle57 performs a sequence of operations for VIC, applying 40-column mode, updating sprites, and managing display.
 // It handles tasks such as drawing the background, acquiring colors, and setting sprite-specific DMA flags.
 func palCycle57(vic *VIC) {
-	vic.borders.EnableColumn40()
+	vic.borders.Column40Apply()
 	vic.sprites.UpdateDisplayFlags()
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)

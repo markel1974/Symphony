@@ -77,7 +77,7 @@ import (
 
 // -f "/Users/tinmr305/Downloads/c64carts/SamsJourneySeasonsSpecialV1_1+5D-GP.d64"
 
-// -f "/Users/tinmr305/Downloads/c64carts/edge_of_disgrace-booze_design_0.d64"
+// -f "/Users/tinmr305/Downloads/c64carts/edge_of_disgrace-booze_design_0.d64;/Users/tinmr305/Downloads/c64carts/edge_of_disgrace-booze_design_1a.d64;/Users/tinmr305/Downloads/c64carts/edge_of_disgrace-booze_design_1b.d64"
 
 // -f "fs_drive:/Users/tinmr305/Downloads/c64carts/"
 
@@ -86,6 +86,12 @@ import (
 // -c "/Users/tinmr305/Downloads/c64carts/1541DiagnosticCart/1541diagcart.crt" -f "/Users/tinmr305/Downloads/c64carts/hessian-xth.d64"
 
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Tools/Final Cartridge III, The (1988-12).crt" -f "/Users/tinmr305/Downloads/c64carts/C64_disk/blast170.d64"
+
+// -c  "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/4/Zak McKracken + Maniac Mansion_+1D.ONS.crt"
+
+// -f  "/Users/tinmr305/Downloads/c64carts/megachase.d64"
+
+// -f "/Users/tinmr305/Downloads/c64carts/TURRI3-0.D64;/Users/tinmr305/Downloads/c64carts/TURRI3-1.D64;/Users/tinmr305/Downloads/c64carts/TURRI3-2.D64"
 
 /*
 func restoreTest(factory references.IComponentFactory) {

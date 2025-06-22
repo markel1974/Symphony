@@ -43,8 +43,8 @@ type Borders struct {
 	setMulti8          func(int, uint8)
 	horizontalFlipFlop bool
 	verticalFlipFlop   bool
-	samples            []bool
-	colors             []uint8
+	samples            [BorderTypeLast]bool
+	colors             [0xff]uint8
 	offset             int
 }
 
@@ -53,13 +53,54 @@ func NewBorder(core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
 	gr := &Borders{
 		setMulti8:          displayBuffer.SetMulti8,
 		core:               core,
-		samples:            make([]bool, BorderTypeLast),
-		colors:             make([]uint8, 0xff),
 		horizontalFlipFlop: false,
 		verticalFlipFlop:   false,
 		offset:             0,
 	}
 	return gr
+}
+
+// ColumnInitialize reinitializes the left border sample to its main flip-flop state.
+func (b *Borders) ColumnInitialize() {
+	b.samples[BorderTypeLeft] = b.horizontalFlipFlop
+}
+
+// Column38Update updates the BorderTypeCenter state based on column selection and vertical flip-flop conditions.
+func (b *Borders) Column38Update() {
+	if !b.core.columnSel {
+		b.UpdateVerticalFlipFlop()
+		if !b.verticalFlipFlop {
+			b.horizontalFlipFlop = false
+		}
+	}
+	b.samples[BorderTypeCenter] = b.horizontalFlipFlop
+}
+
+// Column40Update adjusts the state of the mid-left border based on the column selector and vertical flip-flop status.
+func (b *Borders) Column40Update() {
+	if b.core.columnSel {
+		b.UpdateVerticalFlipFlop()
+		if !b.verticalFlipFlop {
+			b.horizontalFlipFlop = false
+		}
+	}
+	b.samples[BorderTypeMidLeft] = b.horizontalFlipFlop
+}
+
+// Column38Apply sets the horizontalFlipFlop to true if columnSel is false and updates the BorderTypeMidRight sample accordingly.
+func (b *Borders) Column38Apply() {
+	if !b.core.columnSel {
+		b.horizontalFlipFlop = true
+	}
+	b.samples[BorderTypeMidRight] = b.horizontalFlipFlop
+}
+
+// Column40Apply sets the 40-column mode by updating the `horizontalFlipFlop` if `columnSel` is active and adjusts the right border sample.
+func (b *Borders) Column40Apply() {
+	if b.core.columnSel {
+		b.horizontalFlipFlop = true
+	}
+	b.samples[BorderTypeRight] = b.horizontalFlipFlop
 }
 
 // SetOffset updates the offset value for the Borders instance with the given parameter.
@@ -84,52 +125,9 @@ func (b *Borders) UpdateVerticalFlipFlop() {
 	}
 }
 
-// EnableColumn40 sets the 40-column mode by updating the `horizontalFlipFlop` if `columnSel` is active and adjusts the right border sample.
-func (b *Borders) EnableColumn40() {
-	if b.core.columnSel {
-		b.horizontalFlipFlop = true
-	}
-	b.samples[BorderTypeRight] = b.horizontalFlipFlop
-}
-
-// EnableColumn38 sets the horizontalFlipFlop to true if columnSel is false and updates the BorderTypeMidRight sample accordingly.
-func (b *Borders) EnableColumn38() {
-	if !b.core.columnSel {
-		b.horizontalFlipFlop = true
-	}
-	b.samples[BorderTypeMidRight] = b.horizontalFlipFlop
-}
-
-// UpdateColumn40 adjusts the state of the mid-left border based on the column selector and vertical flip-flop status.
-func (b *Borders) UpdateColumn40() {
-	if b.core.columnSel {
-		b.UpdateVerticalFlipFlop()
-		if !b.verticalFlipFlop {
-			b.horizontalFlipFlop = false
-		}
-	}
-	b.samples[BorderTypeMidLeft] = b.horizontalFlipFlop
-}
-
-// UpdateColumn38 updates the BorderTypeCenter state based on column selection and vertical flip-flop conditions.
-func (b *Borders) UpdateColumn38() {
-	if !b.core.columnSel {
-		b.UpdateVerticalFlipFlop()
-		if !b.verticalFlipFlop {
-			b.horizontalFlipFlop = false
-		}
-	}
-	b.samples[BorderTypeCenter] = b.horizontalFlipFlop
-}
-
 // GetVerticalFlipFlop returns the current state of the vertical border flip-flop, indicating its activation status.
 func (b *Borders) GetVerticalFlipFlop() bool {
 	return b.verticalFlipFlop
-}
-
-// Reset reinitializes the left border sample to its main flip-flop state.
-func (b *Borders) Reset() {
-	b.samples[BorderTypeLeft] = b.horizontalFlipFlop
 }
 
 // Draw renders the border regions based on current configuration, samples, and colors within the specified display buffer.
