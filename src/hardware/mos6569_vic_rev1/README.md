@@ -62,7 +62,6 @@ The `mos6569` package is not intended for direct use outside of the `symphony` e
 
 *   **NTSC Support:** This implementation currently only supports the PAL video standard. NTSC emulation would require significant changes to the timing constants and potentially to the rendering logic.
 *   **Light Pen:** The light pen functionality is only partially implemented (interrupt generation).  The actual position detection is not emulated.
-*   **Undocumented Features:** This emulator *may not* implement all undocumented VIC-II behaviors.
 
 ## TODO
 
