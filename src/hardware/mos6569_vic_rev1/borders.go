@@ -4,55 +4,56 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+// borderWidth defines the width of each border segment in pixels.
+// borderCountMax determines the maximum number of border segments that can fit horizontally on the display.
+// borderCount specifies the predefined number of border segments currently being used.
 const (
 	borderWidth    = 8
 	borderCountMax = DisplayX / borderWidth
 	borderCount    = 4
 )
 
-// BorderType represents the type of border used, defined as an integer-based enumeration.
-type BorderType int
-
-// BorderTypeLeft represents the left border type.
-// BorderTypeMidLeft represents the mid-left border type.
-// BorderTypeCenter represents the center border type.
-// BorderTypeMidRight represents the mid-right border type.
-// BorderTypeRight represents the right border type.
-// BorderTypeLast represents the last border type.
+// Border bit constants represent various positions within a layout or grid, using increasing iota values.
 const (
-	BorderTypeLeft     = BorderType(0)
-	BorderTypeMidLeft  = BorderType(1)
-	BorderTypeCenter   = BorderType(2)
-	BorderTypeMidRight = BorderType(3)
-	BorderTypeRight    = BorderType(4)
-	BorderTypeLast     = BorderType(5)
+	BorderBitLeft = iota
+	BorderBitMidLeft
+	BorderBitCenter
+	BorderBitMidRight
+	BorderBitRight
 )
 
-// Borders represents the structure for handling visual border rendering in a VIC-based display system.
+// sequencerLength defines the size of the sequencer array, calculated as 2^5, providing 32 possible states.
+const (
+	sequencerLength = 1 << 5
+)
+
+// Borders is a type responsible for managing and updating border data, configurations, and states for a display system.
 type Borders struct {
 	core               *VIC
 	setMulti8          func(int, uint8)
-	horizontalFlipFlop bool
-	verticalFlipFlop   bool
-	samples            [BorderTypeLast]bool
+	horizontalFlipFlop uint8
+	verticalFlipFlop   uint8
 	colors             [0xff]uint8
 	offset             int
-
-	left     []int
-	midLeft  int
-	center   []int
-	midRight int
-	right    []int
+	left               []int
+	midLeft            int
+	center             []int
+	midRight           int
+	right              []int
+	sequencer          [][]func()
+	sequencerState     uint8
 }
 
-// NewBorder creates and initializes a new Borders instance with the provided VIC core and display buffer dependencies.
+// NewBorder initializes and returns a new Borders object using the provided VIC core and display buffer interface.
+// It configures left, right, center, and sequencer states based on display buffer properties.
 func NewBorder(core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
 	gr := &Borders{
 		setMulti8:          displayBuffer.SetMulti8,
 		core:               core,
-		horizontalFlipFlop: false,
-		verticalFlipFlop:   false,
+		horizontalFlipFlop: 0,
+		verticalFlipFlop:   0,
 		offset:             0,
+		sequencerState:     0,
 	}
 	for x := 0; x < borderCount; x++ {
 		gr.left = append(gr.left, x)
@@ -65,105 +66,168 @@ func NewBorder(core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
 	for x := gr.midLeft + 1; x < gr.midRight; x++ {
 		gr.center = append(gr.center, x)
 	}
+
+	gr.sequencer = gr.createSequencer()
+
 	return gr
 }
 
-// ColumnInitialize reinitializes the left border sample to its main flip-flop state.
+// ColumnInitialize resets and updates the sequencerState based on the horizontalFlipFlop value for the left border bit.
 func (b *Borders) ColumnInitialize() {
-	b.samples[BorderTypeLeft] = b.horizontalFlipFlop
+	const bitNumber = BorderBitLeft
+	b.sequencerState &^= 1 << bitNumber
+	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
 
-// Column38Update updates the BorderTypeCenter state based on column selection and vertical flip-flop conditions.
+// Column38Update updates the sequencer state for column 38 based on the horizontal and vertical flip-flop states.
+// If column mode is not selected, it updates the vertical flip-flop value and adjusts the horizontal flip-flop accordingly.
 func (b *Borders) Column38Update() {
 	if !b.core.columnSel {
 		b.UpdateVerticalFlipFlop()
-		if !b.verticalFlipFlop {
-			b.horizontalFlipFlop = false
+		if b.verticalFlipFlop == 0 {
+			b.horizontalFlipFlop = 0
 		}
 	}
-	b.samples[BorderTypeCenter] = b.horizontalFlipFlop
+	const bitNumber = BorderBitCenter
+	b.sequencerState &^= 1 << bitNumber
+	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
 
-// Column40Update adjusts the state of the mid-left border based on the column selector and vertical flip-flop status.
+// Column40Update updates the state of the mid-left border column based on the flip-flop and column selection logic.
 func (b *Borders) Column40Update() {
 	if b.core.columnSel {
 		b.UpdateVerticalFlipFlop()
-		if !b.verticalFlipFlop {
-			b.horizontalFlipFlop = false
+		if b.verticalFlipFlop == 0 {
+			b.horizontalFlipFlop = 0
 		}
 	}
-	b.samples[BorderTypeMidLeft] = b.horizontalFlipFlop
+	const bitNumber = BorderBitMidLeft
+	b.sequencerState &^= 1 << bitNumber
+	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
 
-// Column38Apply sets the horizontalFlipFlop to true if columnSel is false and updates the BorderTypeMidRight sample accordingly.
+// Column38Apply updates the sequence state for the mid-right border bit, conditionally setting the horizontal flip-flop.
 func (b *Borders) Column38Apply() {
 	if !b.core.columnSel {
-		b.horizontalFlipFlop = true
+		b.horizontalFlipFlop = 1
 	}
-	b.samples[BorderTypeMidRight] = b.horizontalFlipFlop
+	const bitNumber = BorderBitMidRight
+	b.sequencerState &^= 1 << bitNumber
+	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
 
-// Column40Apply sets the 40-column mode by updating the `horizontalFlipFlop` if `columnSel` is active and adjusts the right border sample.
+// Column40Apply updates the sequencer state for the right border column, adjusting horizontal flip-flop if conditions are met.
 func (b *Borders) Column40Apply() {
 	if b.core.columnSel {
-		b.horizontalFlipFlop = true
+		b.horizontalFlipFlop = 1
 	}
-	b.samples[BorderTypeRight] = b.horizontalFlipFlop
+	const bitNumber = BorderBitRight
+	b.sequencerState &^= 1 << bitNumber
+	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
 
-// SetOffset updates the offset value for the Borders instance with the given parameter.
+// SetOffset sets the offset value for the Borders instance. It determines the starting point for border rendering.
 func (b *Borders) SetOffset(offset int) {
 	b.offset = offset
 }
 
-// AcquireColor updates the color at the specified index in the border's color array using the core's current color configuration.
+// AcquireColor assigns a color to the specified index in the borders color array using the current execution context.
 func (b *Borders) AcquireColor(idx uint8) {
 	b.colors[idx] = _colors[b.core.ec]
 }
 
-// UpdateVerticalFlipFlop updates the vertical border flip-flop based on the raster Y coordinate and border comparison values.
+// UpdateVerticalFlipFlop updates the vertical border flip-flop state based on the current raster Y coordinate and control flags.
 func (b *Borders) UpdateVerticalFlipFlop() {
 	//3.9. The border unit
 	if b.core.dyBottom == b.core.rasterY {
 		//2. If the Y coordinate reaches the bottom comparison value in cycle 63, the vertical border flip flop is set.
-		b.verticalFlipFlop = true
+		b.verticalFlipFlop = 1
 	} else if b.core.dyTop == b.core.rasterY && b.core.den {
 		//3. If the Y coordinate reaches the top comparison value in cycle 63 and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
-		b.verticalFlipFlop = false
+		b.verticalFlipFlop = 0
 	}
 }
 
-// GetVerticalFlipFlop returns the current state of the vertical border flip-flop, indicating its activation status.
+// GetVerticalFlipFlop returns true if the vertical border flip-flop is set; otherwise, it returns false.
 func (b *Borders) GetVerticalFlipFlop() bool {
-	return b.verticalFlipFlop
+	return b.verticalFlipFlop != 0
 }
 
-// Draw renders the border regions based on current configuration, samples, and colors within the specified display buffer.
+// Draw executes a sequence of rendering functions based on the current sequencer state of the Borders instance.
 func (b *Borders) Draw() {
-	if b.samples[BorderTypeLeft] {
-		for _, v := range b.left {
-			offset := v * borderWidth
-			b.setMulti8(b.offset+offset, b.colors[v])
+	sequence := b.sequencer[b.sequencerState]
+	if sequence == nil {
+		return
+	}
+	for _, drawFn := range sequence {
+		drawFn()
+	}
+}
+
+// drawLeft iterates over the left border indices, calculates offsets, and applies corresponding colors using setMulti8.
+func (b *Borders) drawLeft() {
+	for _, v := range b.left {
+		offset := v * borderWidth
+		b.setMulti8(b.offset+offset, b.colors[v])
+	}
+}
+
+// drawMidLeft updates the border area corresponding to midLeft by setting the appropriate color and offset values.
+func (b *Borders) drawMidLeft() {
+	offset := b.midLeft * borderWidth
+	b.setMulti8(b.offset+offset, b.colors[b.midLeft])
+}
+
+// drawCenter processes the center border segments by calculating their offsets and applying corresponding colors.
+func (b *Borders) drawCenter() {
+	for _, v := range b.center {
+		offset := v * borderWidth
+		b.setMulti8(b.offset+offset, b.colors[v])
+	}
+}
+
+// drawMidRight calculates the offset for the mid-right border and updates its color using the setMulti8 function.
+func (b *Borders) drawMidRight() {
+	offset := b.midRight * borderWidth
+	b.setMulti8(b.offset+offset, b.colors[b.midRight])
+}
+
+// drawRight renders the right-hand border by iterating over the `right` field and setting appropriate color values.
+func (b *Borders) drawRight() {
+	for _, v := range b.right {
+		offset := v * borderWidth
+		b.setMulti8(b.offset+offset, b.colors[v])
+	}
+}
+
+// createSequencer initializes and returns a 2D slice of function sequences for border rendering based on state bits.
+func (b *Borders) createSequencer() [][]func() {
+	const left = 1 << BorderBitLeft
+	const midLeft = 1 << BorderBitMidLeft
+	const center = 1 << BorderBitCenter
+	const midRight = 1 << BorderBitMidRight
+	const right = 1 << BorderBitRight
+
+	sequencer := make([][]func(), sequencerLength)
+	for idx := range sequencer {
+		x := uint8(idx)
+		var data []func() = nil
+		if (x & left) == left {
+			data = append(data, b.drawLeft)
 		}
-	}
-	if b.samples[BorderTypeMidLeft] {
-		offset := b.midLeft * borderWidth
-		b.setMulti8(b.offset+offset, b.colors[b.midLeft])
-	}
-	if b.samples[BorderTypeCenter] {
-		for _, v := range b.center {
-			offset := v * borderWidth
-			b.setMulti8(b.offset+offset, b.colors[v])
+		if (x & midLeft) == midLeft {
+			data = append(data, b.drawMidLeft)
 		}
-	}
-	if b.samples[BorderTypeMidRight] {
-		offset := b.midRight * borderWidth
-		b.setMulti8(b.offset+offset, b.colors[b.midRight])
-	}
-	if b.samples[BorderTypeRight] {
-		for _, v := range b.right {
-			offset := v * borderWidth
-			b.setMulti8(b.offset+offset, b.colors[v])
+		if (x & center) == center {
+			data = append(data, b.drawCenter)
 		}
+		if (x & midRight) == midRight {
+			data = append(data, b.drawMidRight)
+		}
+		if (x & right) == right {
+			data = append(data, b.drawRight)
+		}
+		sequencer[x] = data
 	}
+	return sequencer
 }
