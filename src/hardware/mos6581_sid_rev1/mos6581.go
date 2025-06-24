@@ -147,7 +147,7 @@ func (sid *SID) Prepare() {
 // Update processes the sound buffer and writes updated sound data to the audio player.
 func (sid *SID) Update() {
 	sid.calcSoundBuffer()
-	sid.player.Write(sid.soundBuffer, sid.fragSize)
+	sid.player.Write(&sid.soundBuffer, sid.fragSize)
 }
 
 // ReadRegister reads the value of a specified SID register identified by the provided address.
