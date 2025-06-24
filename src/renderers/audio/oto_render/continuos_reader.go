@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/hajimehoshi/oto/v2"
 	"math"
-	"sync"
+	"time"
 )
 
 // offset16 represents a constant offset value of 16 bits.
@@ -37,12 +37,12 @@ var _formats = map[string]Format{
 // It uses a mutex for thread-safe operations on audio chunks and handles data writing via a custom write function.
 // The type integrates with an audio player to support playback functionality.
 type ContinuousReader struct {
-	lock             sync.Mutex
-	lastChunk        []float32
-	lastChunkSamples int
-	player           oto.Player
-	bytes            int
-	writeFn          writeFn
+	player        oto.Player
+	bytes         int
+	writeFn       writeFn
+	ring          *CircularQueue
+	interpolator  *LinearInterpolation
+	maxCorrection float64
 }
 
 // NewContinuousReader initializes a new ContinuousReader for streaming audio based on the specified sample rate.
@@ -53,20 +53,35 @@ func NewContinuousReader() *ContinuousReader {
 }
 
 // Setup initializes the ContinuousReader with a given sample rate, channel count, and audio format. Returns an error if failed.
-func (r *ContinuousReader) Setup(sampleRate int, channelCount int, fo string) error {
+func (r *ContinuousReader) Setup(sampleRate int, chunkPerSecond int, channels int, fo string) error {
 	format, ok := _formats[fo]
 	if !ok {
 		return fmt.Errorf("audio format not found")
 	}
-	ctx, ready, err := oto.NewContext(sampleRate, channelCount, format.Format)
+	chunkSize := sampleRate / chunkPerSecond
+	options := &oto.NewContextOptions{
+		SampleRate:   sampleRate,
+		ChannelCount: channels,
+		Format:       format.Format,
+		BufferSize:   time.Second / time.Duration(chunkPerSecond),
+	}
+	ctx, ready, err := oto.NewContextWithOptions(options)
+
+	//ctx, ready, err := oto.NewContext(sampleRate, channels, format.Format)
 	if err != nil {
 		return fmt.Errorf("failed to create oto context: %w", err)
 	}
 	<-ready
+	readyTarget := (chunkPerSecond * 10) / 100
+	r.ring = NewCircularQueue(chunkPerSecond, chunkSize, readyTarget)
+	r.interpolator = NewLinearInterpolation(chunkSize + 1)
 	r.bytes = format.Bytes
 	r.writeFn = format.Func
 	r.player = ctx.NewPlayer(r)
 	r.player.SetVolume(1.0)
+	r.maxCorrection = (float64(chunkSize) * 10) / 100
+	//bufferSize := chunkLen * r.bytes
+	//r.player.(oto.BufferSizeSetter).SetBufferSize(bufferSize)
 	return nil
 }
 
@@ -81,36 +96,53 @@ func (r *ContinuousReader) Err() error {
 }
 
 // AddChunk appends a new chunk of audio data to the buffer and updates the sample count for playback synchronization.
-func (r *ContinuousReader) AddChunk(chunk []float32, samples int) {
-	chunkLen := len(chunk)
-	if chunkLen == 0 {
-		return
-	}
-	lastChunkSamples := samples
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	if chunkLen != len(r.lastChunk) {
-		r.player.(oto.BufferSizeSetter).SetBufferSize((chunkLen * r.bytes) + 1)
-		r.lastChunk = make([]float32, chunkLen)
-	}
-	copy(r.lastChunk, chunk)
-	r.lastChunkSamples = lastChunkSamples
+func (r *ContinuousReader) AddChunk(chunk *[]float32, samples int) {
+	r.ring.Push(chunk)
 }
 
-// Read reads data from the last available chunk into the provided buffer and returns the number of bytes written.
+// Read processes audio data from the CircularQueue, dynamically adjusts its size using interpolation, and writes to the buffer.
 func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	if r.lastChunk == nil || r.lastChunkSamples == 0 {
+	const targetRatio = 0.5 //50%
+	originalChunkPtr, ok := r.ring.Pop()
+	if !ok {
 		return 0, nil
 	}
-	written := 0
-	target := r.lastChunkSamples
-	if max := target * r.bytes; max >= len(buf) {
-		target = len(buf) / r.bytes
+	originalChunk := originalChunkPtr
+	originalChunkSize := len(*originalChunk)
+	finalChunk := originalChunk
+	finalChunkSize := originalChunkSize
+
+	fillRatio := r.ring.FillRatio()
+
+	// Calcoliamo l'errore: un valore positivo se il buffer è troppo pieno, negativo se troppo vuoto.
+	errorRatio := fillRatio - targetRatio
+
+	// Calcoliamo la correzione in modo proporzionale all'errore.
+	// L'errore massimo è 0.5 (100% - 50%), quindi moltiplichiamo per 2 per normalizzare.
+	correction := int(math.Round(errorRatio * 2 * r.maxCorrection))
+
+	targetSize := originalChunkSize - correction
+
+	// Assicuriamoci che la correzione non sia troppo estrema
+	if targetSize < originalChunkSize-int(r.maxCorrection) {
+		targetSize = originalChunkSize - int(r.maxCorrection)
 	}
-	for x := 0; x < target; x++ {
-		written += r.writeFn(buf, r.lastChunk[x], written)
+	if targetSize > originalChunkSize+int(r.maxCorrection) {
+		targetSize = originalChunkSize + int(r.maxCorrection)
+	}
+
+	if targetSize != originalChunkSize && targetSize > 0 {
+		resampledBufferPtr, validLen := r.interpolator.LinearInterpolationF32(originalChunk, targetSize)
+		finalChunk = resampledBufferPtr
+		finalChunkSize = validLen
+	}
+
+	written := 0
+	for x := 0; x < finalChunkSize; x++ {
+		if written+r.bytes > len(buf) {
+			break
+		}
+		written += r.writeFn(buf, (*finalChunk)[x], written)
 	}
 	return written, nil
 }
@@ -145,8 +177,13 @@ func writeFloat32LE(buf []byte, data float32, idx int) int {
 	//const divisor = float32(1 << 15)
 	//v := float32(int32(data)) / divisor
 	//t := math.Float32bits(v)
+	//if idx+offset32 >= len(buf)+4 {
+	//	return 0
+	//}
+
 	t := math.Float32bits(data)
 	slice := buf[idx : idx+offset32]
+
 	slice[0] = byte(t)
 	slice[1] = byte(t >> 8)
 	slice[2] = byte(t >> 16)

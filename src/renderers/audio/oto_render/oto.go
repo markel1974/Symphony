@@ -12,6 +12,7 @@ import (
 type Audio struct {
 	audioSampleRate    int
 	audioChannelCount  int
+	audioChunks        int
 	audioNextStartTime time.Time
 	audioReader        *ContinuousReader
 	cfg                *config.Config
@@ -20,11 +21,18 @@ type Audio struct {
 
 // NewAudio creates and returns a new instance of the Audio type with default configurations for sample rate and channel count.
 func NewAudio() *Audio {
-	return &Audio{
-		audioSampleRate:   44100,
-		audioChannelCount: 1,
+	//TODO DRIVER CONFIG!
+	const sampleRate = 44100
+	const channels = 1
+	const chunks = 50
+	a := &Audio{
+		audioSampleRate:   sampleRate,
+		audioChannelCount: channels,
+		audioChunks:       chunks,
 		debug:             false,
 	}
+
+	return a
 }
 
 // Setup initializes the Audio instance with the specified configuration and sets up continuous audio playback.
@@ -32,7 +40,7 @@ func (d *Audio) Setup(cfg *config.Config) error {
 	//StartStub()
 	d.cfg = cfg
 	reader := NewContinuousReader()
-	if err := reader.Setup(d.audioSampleRate, d.audioChannelCount, "FLOAT32LE"); err != nil {
+	if err := reader.Setup(d.audioSampleRate, d.audioChunks, d.audioChannelCount, "FLOAT32LE"); err != nil {
 		return err
 	}
 	d.audioReader = reader
@@ -51,13 +59,13 @@ func (d *Audio) Setup(cfg *config.Config) error {
 }
 
 // Write processes and buffers audio samples for playback, updating the current position and managing playback timing.
-func (d *Audio) Write(values []float32, samples int) {
+func (d *Audio) Write(values *[]float32, samples int) {
 	d.audioReader.AddChunk(values, samples)
 
 	if d.debug {
 		currentTime := time.Now()
 		// bufferDuration è già calcolato correttamente ora
-		durationMs := (float64(len(values)) / float64(d.audioSampleRate)) * 1000.0
+		durationMs := (float64(len(*values)) / float64(d.audioSampleRate)) * 1000.0
 		bufferDuration := time.Duration(durationMs) * time.Millisecond
 
 		if d.audioNextStartTime.IsZero() {
