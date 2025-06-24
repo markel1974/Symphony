@@ -105,7 +105,10 @@ func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
 	const targetRatio = 0.5 //50%
 	originalChunkPtr, ok := r.ring.Pop()
 	if !ok {
-		return 0, nil
+		for i := range buf {
+			buf[i] = 0
+		}
+		return len(buf), nil
 	}
 	originalChunk := originalChunkPtr
 	originalChunkSize := len(*originalChunk)
@@ -123,7 +126,6 @@ func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
 
 	targetSize := originalChunkSize - correction
 
-	// Assicuriamoci che la correzione non sia troppo estrema
 	if targetSize < originalChunkSize-int(r.maxCorrection) {
 		targetSize = originalChunkSize - int(r.maxCorrection)
 	}
@@ -138,11 +140,11 @@ func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
 	}
 
 	written := 0
-	for x := 0; x < finalChunkSize; x++ {
+	for idx := 0; idx < finalChunkSize; idx++ {
 		if written+r.bytes > len(buf) {
 			break
 		}
-		written += r.writeFn(buf, (*finalChunk)[x], written)
+		written += r.writeFn(buf, (*finalChunk)[idx], written)
 	}
 	return written, nil
 }

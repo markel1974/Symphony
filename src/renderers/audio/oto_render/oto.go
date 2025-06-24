@@ -45,14 +45,9 @@ func (d *Audio) Setup(cfg *config.Config) error {
 	}
 	d.audioReader = reader
 	go func() {
-		log.Println("Starting continuous audio player...")
-		for {
-			d.audioReader.Play()
-			if err := d.audioReader.Err(); err != nil {
-				log.Println("Error playing audio:", err)
-				break
-			}
-			time.Sleep(100 * time.Millisecond)
+		d.audioReader.Play()
+		if err := d.audioReader.Err(); err != nil {
+			log.Println("Error playing audio:", err)
 		}
 	}()
 	return nil
