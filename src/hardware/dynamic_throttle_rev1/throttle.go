@@ -10,19 +10,19 @@ import (
 type DynamicThrottle struct {
 	*component.BaseComponent
 	frameInterval int64
-	tuning        int64
-	prev          int64
-	counter       uint64
+	//tuning        int64
+	prev    int64
+	counter uint64
 }
 
 // NewDynamicThrottle creates a new instance of DynamicThrottling with the specified frameInterval in milliseconds.
 func NewDynamicThrottle(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *DynamicThrottle {
 	d := &DynamicThrottle{
 		BaseComponent: component.NewBaseComponent(),
-		prev:          time.Now().UnixMilli(),
+		prev:          time.Now().UnixNano(),
 		frameInterval: 0,
-		tuning:        0,
-		counter:       0,
+		//tuning:        0,
+		counter: 0,
 	}
 	d.BaseComponent.Register(factory, parent, Identifier(), d, references.IdIThrottle(d, label, instance))
 	return d
@@ -32,8 +32,8 @@ func (s *DynamicThrottle) Setup() error {
 	return nil
 }
 
-func (s *DynamicThrottle) Bind(_ references.IThrottleSocket, frameInterval int64) error {
-	s.frameInterval = frameInterval
+func (s *DynamicThrottle) Bind(_ references.IThrottleSocket, frameDistanceMs int64) error {
+	s.frameInterval = frameDistanceMs * 1_000_000
 	return nil
 }
 
@@ -65,22 +65,42 @@ func (s *DynamicThrottle) Reset() {
 // It calculates the time difference from the previous execution and sleeps if necessary to enforce the interval.
 // Adjusts a tuning parameter dynamically to compensate for deviations in interval accuracy.
 // Updates the internal state, including the previous execution timestamp and invocation counter.
+
+/*
 func (s *DynamicThrottle) Update() {
 	//https://codereview.stackexchange.com/questions/40473/portable-periodic-one-shot-timer-implementation?noredirect=1&lq=1
 	//https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-signalobjectandwait
-	now := time.Now().UnixMilli()
+	now := time.Now().UnixNano()
 	diff := now - s.prev
 	if interval := s.frameInterval - diff; interval < s.frameInterval {
 		duration := now + interval
 		if sleep := interval - s.tuning; sleep > 1 {
-			time.Sleep(time.Duration(sleep) * time.Millisecond)
-			now = time.Now().UnixMilli()
+			time.Sleep(time.Duration(sleep) * time.Nanosecond)
+			now = time.Now().UnixNano()
 		}
-		if s.tuning = now - duration; s.tuning < 0 {
-			s.tuning = 0
-		}
+		s.tuning = now - duration
+		//fmt.Println(s.tuning)
+		//if s.tuning < 0 {
+		//	s.tuning = 0
+		//}
 	}
 	s.prev = now
+	s.counter++
+}
+
+*/
+
+// Update regulates code execution to maintain a consistent time interval between consecutive invocations.
+// It calculates the time difference from the previous execution and sleeps if necessary to enforce the interval.
+// Adjusts a tuning parameter dynamically to compensate for deviations in interval accuracy.
+// Updates the internal state, including the previous execution timestamp and invocation counter.
+func (s *DynamicThrottle) Update() {
+	targetWakeupTime := s.prev + s.frameInterval
+	sleepDuration := targetWakeupTime - time.Now().UnixNano()
+	if sleepDuration > 0 {
+		time.Sleep(time.Duration(sleepDuration))
+	}
+	s.prev = targetWakeupTime
 	s.counter++
 }
 
