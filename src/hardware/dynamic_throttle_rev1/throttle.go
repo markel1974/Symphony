@@ -65,6 +65,20 @@ func (s *DynamicThrottle) Reset() {
 // It calculates the time difference from the previous execution and sleeps if necessary to enforce the interval.
 // Adjusts a tuning parameter dynamically to compensate for deviations in interval accuracy.
 // Updates the internal state, including the previous execution timestamp and invocation counter.
+func (s *DynamicThrottle) Update() {
+	targetWakeupTime := s.prev + s.frameInterval
+	sleepDuration := targetWakeupTime - time.Now().UnixNano()
+	if sleepDuration > 0 {
+		time.Sleep(time.Duration(sleepDuration))
+	}
+	s.prev = targetWakeupTime
+	s.counter++
+}
+
+// Counter returns the current value of the counter field, which represents the number of throttling operations performed.
+func (s *DynamicThrottle) Counter() uint64 {
+	return s.counter
+}
 
 /*
 func (s *DynamicThrottle) Update() {
@@ -87,24 +101,4 @@ func (s *DynamicThrottle) Update() {
 	s.prev = now
 	s.counter++
 }
-
 */
-
-// Update regulates code execution to maintain a consistent time interval between consecutive invocations.
-// It calculates the time difference from the previous execution and sleeps if necessary to enforce the interval.
-// Adjusts a tuning parameter dynamically to compensate for deviations in interval accuracy.
-// Updates the internal state, including the previous execution timestamp and invocation counter.
-func (s *DynamicThrottle) Update() {
-	targetWakeupTime := s.prev + s.frameInterval
-	sleepDuration := targetWakeupTime - time.Now().UnixNano()
-	if sleepDuration > 0 {
-		time.Sleep(time.Duration(sleepDuration))
-	}
-	s.prev = targetWakeupTime
-	s.counter++
-}
-
-// Counter returns the current value of the counter field, which represents the number of throttling operations performed.
-func (s *DynamicThrottle) Counter() uint64 {
-	return s.counter
-}
