@@ -3,7 +3,13 @@ package dynamic_throttle_rev1
 import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
+	"log"
 	"time"
+)
+
+const (
+	lagThreshold   = 2 * 1_000_000 // 2ms
+	adjustmentStep = 100_000       // 0.1ms
 )
 
 // DynamicThrottle dynamically regulates task execution intervals to maintain a desired frame rate or time spacing.
@@ -11,18 +17,26 @@ type DynamicThrottle struct {
 	*component.BaseComponent
 	frameInterval int64
 	//tuning        int64
-	prev    int64
-	counter uint64
+	prev                   int64
+	counter                uint64
+	lagAccumulator         int64
+	idealFrameInterval     int64
+	idealFrameIntervalHalf int64
+	currentBracket         int
 }
 
 // NewDynamicThrottle creates a new instance of DynamicThrottling with the specified frameInterval in milliseconds.
 func NewDynamicThrottle(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *DynamicThrottle {
 	d := &DynamicThrottle{
-		BaseComponent: component.NewBaseComponent(),
-		prev:          time.Now().UnixNano(),
-		frameInterval: 0,
+		BaseComponent:          component.NewBaseComponent(),
+		prev:                   time.Now().UnixNano(),
+		frameInterval:          0,
+		lagAccumulator:         0,
+		idealFrameInterval:     0,
+		counter:                0,
+		currentBracket:         0,
+		idealFrameIntervalHalf: 0,
 		//tuning:        0,
-		counter: 0,
 	}
 	d.BaseComponent.Register(factory, parent, Identifier(), d, references.IdIThrottle(d, label, instance))
 	return d
@@ -33,7 +47,9 @@ func (s *DynamicThrottle) Setup() error {
 }
 
 func (s *DynamicThrottle) Bind(_ references.IThrottleSocket, frameDistanceMs int64) error {
-	s.frameInterval = frameDistanceMs * 1_000_000
+	s.idealFrameInterval = frameDistanceMs * 1_000_000
+	s.idealFrameIntervalHalf = s.idealFrameInterval / 2
+	s.frameInterval = s.idealFrameInterval
 	return nil
 }
 
@@ -61,23 +77,47 @@ func (s *DynamicThrottle) EmulationRequired() bool {
 func (s *DynamicThrottle) Reset() {
 }
 
-// Update regulates code execution to maintain a consistent time interval between consecutive invocations.
-// It calculates the time difference from the previous execution and sleeps if necessary to enforce the interval.
-// Adjusts a tuning parameter dynamically to compensate for deviations in interval accuracy.
-// Updates the internal state, including the previous execution timestamp and invocation counter.
+// Counter returns the current value of the counter field, which represents the number of throttling operations performed.
+func (s *DynamicThrottle) Counter() uint64 {
+	return s.counter
+}
+
+// Update dynamically adjusts the frame interval to minimize timing lags and manages performance brackets for throttling.
 func (s *DynamicThrottle) Update() {
 	targetWakeupTime := s.prev + s.frameInterval
-	sleepDuration := targetWakeupTime - time.Now().UnixNano()
+	now := time.Now().UnixNano()
+	currentLag := now - targetWakeupTime
+	s.lagAccumulator += currentLag
+
+	if s.lagAccumulator > lagThreshold {
+		s.frameInterval += adjustmentStep
+		s.lagAccumulator = 0
+	} else if s.lagAccumulator < -lagThreshold {
+		if s.frameInterval > s.idealFrameInterval {
+			s.frameInterval -= adjustmentStep
+		}
+		s.lagAccumulator = 0
+	}
+
+	// Bracket Detection Ans Notification
+	// Calculate which "gear" we are in now.
+	// Adding idealFrameInterval/2 prevents oscillations at the boundary.
+	newBracket := int((s.frameInterval + s.idealFrameIntervalHalf) / s.idealFrameInterval)
+	if newBracket < 1 {
+		newBracket = 1
+	}
+	if newBracket != s.currentBracket {
+		s.currentBracket = newBracket
+		// OnPerformanceBracketChanged.Emit(s.currentBracket) // Notifica il moltiplicatore (1, 2, 3...)
+		log.Printf("PERFORMANCE BRACKET CHANGED to %dx (Target: %.2fms)", s.currentBracket, float64(s.frameInterval)/1e6)
+	}
+
+	sleepDuration := targetWakeupTime - now
 	if sleepDuration > 0 {
 		time.Sleep(time.Duration(sleepDuration))
 	}
 	s.prev = targetWakeupTime
 	s.counter++
-}
-
-// Counter returns the current value of the counter field, which represents the number of throttling operations performed.
-func (s *DynamicThrottle) Counter() uint64 {
-	return s.counter
 }
 
 /*
