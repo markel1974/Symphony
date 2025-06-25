@@ -6,6 +6,14 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+const (
+	sidVolumeMax       = 15.0    // 0-15
+	normalizedIntValue = 32767.0 // interval -1.0, 1.0
+	scalingFactor      = 1024.0  // scaling factor (eq: 1 >> 10)
+	divisor            = normalizedIntValue * scalingFactor
+	inverseDivisor     = 1.0 / divisor
+)
+
 // potXRegisterIndex represents the register index for the X-axis potentiometer.
 // potYRegisterIndex represents the register index for the Y-axis potentiometer.
 const (
@@ -26,12 +34,12 @@ type SID struct {
 	cfg                       *config.Config
 	reflect                   *SidReflect
 	player                    references.IAudioRender
-	fragSize                  int      // samples, not bytes
-	bufferFrags               int      // frags the in buffer
-	volume                    uint8    // Master volume
-	voices                    []*Voice // Data for 3 voices
-	sampleBuf                 []uint8  // Buffer for sampled voices
-	sampleBufIdx              int      // Index in sample_buf for writing
+	voices                    *Voices
+	fragSize                  int     // samples, not bytes
+	bufferFrags               int     // frags the in buffer
+	volume                    uint8   // Master volume
+	sampleBuf                 []uint8 // Buffer for sampled voices
+	sampleBufIdx              int     // Index in sample_buf for writing
 	soundBuffer               []float32
 	audioSamplesPerVolumeStep float64
 	filters                   *Filters
@@ -70,15 +78,7 @@ func (sid *SID) Bind(_ references.IMos6581Socket, fragFreq int /* rasters */, _ 
 	sid.filters = NewFilters()
 	sid.audioSamplesPerVolumeStep = float64(sid.fragSize) / float64(SampleBufHalfSize)
 	sid.soundBuffer = make([]float32, sid.fragSize)
-
-	voice0 := NewVoice(0)
-	voice1 := NewVoice(1)
-	voice2 := NewVoice(2)
-	voice0.Setup(voice2, voice1)
-	voice1.Setup(voice0, voice2)
-	voice2.Setup(voice1, voice0)
-	sid.voices = append(sid.voices, voice0, voice1, voice2)
-
+	sid.voices = NewVoices()
 	sid.writes = sid.createWriteRegister()
 	sid.reads = sid.createReadRegister()
 	sid.Reset()
@@ -120,9 +120,7 @@ func (sid *SID) Reset() {
 	sid.SetPotY(0xff)
 
 	sid.volume = 0
-	for _, voice := range sid.voices {
-		voice.Reset()
-	}
+	sid.voices.Reset()
 	sid.filters.Reset()
 	sid.sampleBufIdx = 0
 	for x := range sid.sampleBuf {
@@ -191,49 +189,25 @@ func (sid *SID) calcSoundBuffer() {
 	// move to the next volume value from sampleBuf
 	nextChangeAtAudioSampleIdx := sid.audioSamplesPerVolumeStep
 	// Count how many of the 312 volume values we've already used
-	volumeStepsTaken := 0
+	volumeSteps := 0
 	for idx := 0; idx < sid.fragSize; idx++ {
 		// Check if it's time to update currentVolumeValue by reading next value from sampleBuf.
 		// This happens when the current audio sample index (idx)
 		// exceeds or equals a calculated threshold (nextChangeAtAudioSampleIdx).
 		// Also ensure we don't exceed available volume updates.
-		if float64(idx) >= nextChangeAtAudioSampleIdx && volumeStepsTaken < SampleBufHalfSize-1 {
-			volumeStepsTaken++
+		if float64(idx) >= nextChangeAtAudioSampleIdx && volumeSteps < SampleBufHalfSize-1 {
+			volumeSteps++
 			// Advance to the next index in ring buffer sampleBuf
 			currentVolumeBufferReadIdx = (currentVolumeBufferReadIdx + 1) % SampleBufSize
 			currentVolumeValue = sid.sampleBuf[currentVolumeBufferReadIdx]
 			// Calculate a threshold for the next volume change
 			nextChangeAtAudioSampleIdx += sid.audioSamplesPerVolumeStep
 		}
-
 		// Voice Mixing
-		sumOutputNonFiltered := int32(0)
-		sumOutputFiltered := int32(0)
-
-		for _, voice := range sid.voices {
-			voice.ComputeEnvelopeGenerators()
-			effectiveEnvelope := voice.EgLevel() >> 16 // 8-bit envelope
-			if voice.IsMuted() {
-				continue
-			}
-			voice.UpdateCount()
-			waveOutput := voice.ComputeWaveForm()
-			signedWaveOutput := int32(int16(waveOutput ^ 0x8000))
-			voiceContribution := signedWaveOutput * int32(effectiveEnvelope)
-			if voice.Filter() != 0 {
-				sumOutputFiltered += voiceContribution
-			} else {
-				sumOutputNonFiltered += voiceContribution
-			}
-		}
+		sumOutputFiltered, sumOutputNonFiltered := sid.voices.Compute()
+		// Filters
 		computedFilter := float32(sid.filters.Compute(sumOutputFiltered))
 		mixedSignal := float32(sumOutputNonFiltered) + computedFilter
-
-		const sidVolumeMax = 15.0          // 0-15
-		const normalizedIntValue = 32767.0 // interval -1.0, 1.0
-		const scalingFactor = 1024.0       // scaling factor (eq: 1 >> 10)
-		const divisor = normalizedIntValue * scalingFactor
-		const inverseDivisor = 1.0 / divisor
 		volumeFactor := float32(currentVolumeValue) / sidVolumeMax
 		sid.soundBuffer[idx] = (mixedSignal * volumeFactor) * inverseDivisor
 	}
@@ -250,8 +224,8 @@ func (sid *SID) createReadRegister() [RegisterCount]ReadFn {
 	for idx := range reads {
 		reads[idx] = defaultFn
 	}
-	reads[27] = sid.readVoice2Waveform
-	reads[28] = sid.readVoice2EgLevel
+	reads[27] = sid.voices.ReadVoice2Waveform
+	reads[28] = sid.voices.ReadVoice2EgLevel
 	return reads
 }
 
@@ -262,172 +236,32 @@ func (sid *SID) createWriteRegister() [RegisterCount]WriteFn {
 	for idx := range writes {
 		writes[idx] = defaultFn
 	}
-	writes[0] = sid.writeVoice0UpdateFreqA
-	writes[1] = sid.writeVoice0UpdateFreqB
-	writes[2] = sid.writeVoice0UpdatePulseWidthA
-	writes[3] = sid.writeVoice0UpdatePulseWidthB
-	writes[4] = sid.writeVoice0UpdateWaveForm
-	writes[5] = sid.writeVoice0UpdateEnvelopeGenerators
-	writes[6] = sid.writeVoice0UpdateSustainLevel
-	writes[7] = sid.writeVoice1UpdateFreqA
-	writes[8] = sid.writeVoice1UpdateFreqB
-	writes[9] = sid.writeVoice1UpdatePulseWidthA
-	writes[10] = sid.writeVoice1UpdatePulseWidthB
-	writes[11] = sid.writeVoice1UpdateWaveForm
-	writes[12] = sid.writeVoice1UpdateEnvelopeGenerators
-	writes[13] = sid.writeVoice1UpdateSustainLevel
-	writes[14] = sid.writeVoice2UpdateFreqA
-	writes[15] = sid.writeVoice2UpdateFreqB
-	writes[16] = sid.writeVoice2UpdatePulseWidthA
-	writes[17] = sid.writeVoice2UpdatePulseWidthB
-	writes[18] = sid.writeVoice2UpdateWaveForm
-	writes[19] = sid.writeVoice2UpdateEnvelopeGenerators
-	writes[20] = sid.writeVoice2UpdateSustainLevel
-	writes[21] = sid.writeFiltersUpdateFreqLow
-	writes[22] = sid.writeFiltersUpdateFreqHigh
+	writes[0] = sid.voices.WriteVoice0UpdateFreqA
+	writes[1] = sid.voices.WriteVoice0UpdateFreqB
+	writes[2] = sid.voices.WriteVoice0UpdatePulseWidthA
+	writes[3] = sid.voices.WriteVoice0UpdatePulseWidthB
+	writes[4] = sid.voices.WriteVoice0UpdateWaveForm
+	writes[5] = sid.voices.writeVoice0UpdateEnvelopeGenerators
+	writes[6] = sid.voices.WriteVoice0UpdateSustainLevel
+	writes[7] = sid.voices.WriteVoice1UpdateFreqA
+	writes[8] = sid.voices.WriteVoice1UpdateFreqB
+	writes[9] = sid.voices.WriteVoice1UpdatePulseWidthA
+	writes[10] = sid.voices.WriteVoice1UpdatePulseWidthB
+	writes[11] = sid.voices.WriteVoice1UpdateWaveForm
+	writes[12] = sid.voices.WriteVoice1UpdateEnvelopeGenerators
+	writes[13] = sid.voices.WriteVoice1UpdateSustainLevel
+	writes[14] = sid.voices.WriteVoice2UpdateFreqA
+	writes[15] = sid.voices.WriteVoice2UpdateFreqB
+	writes[16] = sid.voices.WriteVoice2UpdatePulseWidthA
+	writes[17] = sid.voices.WriteVoice2UpdatePulseWidthB
+	writes[18] = sid.voices.WriteVoice2UpdateWaveForm
+	writes[19] = sid.voices.WriteVoice2UpdateEnvelopeGenerators
+	writes[20] = sid.voices.WriteVoice2UpdateSustainLevel
+	writes[21] = sid.filters.UpdateFreqLow
+	writes[22] = sid.filters.UpdateFreqHigh //(data & 0x07)
 	writes[23] = sid.writeFiltersRegister
 	writes[24] = sid.writeMasterVolumeAndFilterType
 	return writes
-}
-
-// readVoice2Waveform retrieves the most significant byte (MSB) of the current level of oscillator for voice 2.
-// It uses the ComputeWaveForm() function from voice.go, which returns an uint16 value.
-func (sid *SID) readVoice2Waveform(_ uint16) uint8 {
-	// OSC3 - Oscillator 3 Value ($D41B)
-	// Returns the most significant byte (MSB) of the current output
-	// of the oscillator (waveform) for voice 2.
-	// The ComputeWaveForm() function in voice.go returns an uint16.
-	return uint8(sid.voices[2].ComputeWaveForm() >> 8)
-}
-
-// readVoice2EgLevel retrieves the most significant byte (MSB) of the current envelope output for voice 2.
-func (sid *SID) readVoice2EgLevel(_ uint16) uint8 {
-	// ENV3 - Envelope 3 Value ($D41C)
-	// Returns the most significant byte (MSB) of the current level
-	// of the envelope (Envelope Generator) for voice 2.
-	// The EgLevel() function in voice.go returns an uint32 (24-bit value).
-	return uint8(sid.voices[2].EgLevel() >> 16)
-}
-
-// Voice 0
-
-// writeVoice0UpdateFreqA updates frequency parameter A for voice 0 with the specified data value.
-func (sid *SID) writeVoice0UpdateFreqA(data uint8) {
-	sid.voices[0].UpdateFreqA(data)
-}
-
-// writeVoice0UpdateFreqB writes the frequency update value to voice 0 using the provided data byte.
-func (sid *SID) writeVoice0UpdateFreqB(data uint8) {
-	sid.voices[0].UpdateFreqB(data)
-}
-
-// writeVoice0UpdatePulseWidthA updates the pulse width modulation of Voice 0 through the given data value.
-func (sid *SID) writeVoice0UpdatePulseWidthA(data uint8) {
-	sid.voices[0].UpdatePulseWidthA(data)
-}
-
-// writeVoice0UpdatePulseWidthB updates the pulse width value for voice 0 using the provided 8-bit data.
-func (sid *SID) writeVoice0UpdatePulseWidthB(data uint8) {
-	sid.voices[0].UpdatePulseWidthB(data)
-}
-
-// writeVoice0UpdateWaveForm updates the waveform for voice 0 using the provided data value.
-func (sid *SID) writeVoice0UpdateWaveForm(data uint8) {
-	sid.voices[0].UpdateWaveForm(data)
-}
-
-// writeVoice0UpdateEnvelopeGenerators updates the envelope generators for voice 0 with the specified data.
-func (sid *SID) writeVoice0UpdateEnvelopeGenerators(data uint8) {
-	sid.voices[0].UpdateEnvelopeGenerators(data)
-}
-
-// writeVoice0UpdateSustainLevel updates the sustain level of voice 0 using the provided data value.
-func (sid *SID) writeVoice0UpdateSustainLevel(data uint8) {
-	sid.voices[0].UpdateSustainLevel(data)
-}
-
-// Voice 1
-
-// writeVoice1UpdateFreqA writes the provided data to update the frequency parameter A for voice 1 of the SID.
-func (sid *SID) writeVoice1UpdateFreqA(data uint8) {
-	sid.voices[1].UpdateFreqA(data)
-}
-
-// writeVoice1UpdateFreqB updates the frequency B of voice 1 using the provided data value.
-func (sid *SID) writeVoice1UpdateFreqB(data uint8) {
-	sid.voices[1].UpdateFreqB(data)
-}
-
-// writeVoice1UpdatePulseWidthA updates the pulse width of Voice 1 using the provided 8-bit data.
-func (sid *SID) writeVoice1UpdatePulseWidthA(data uint8) {
-	sid.voices[1].UpdatePulseWidthA(data)
-}
-
-// writeVoice1UpdatePulseWidthB updates the pulse width modulation for voice 1 using the provided data value.
-func (sid *SID) writeVoice1UpdatePulseWidthB(data uint8) {
-	sid.voices[1].UpdatePulseWidthB(data)
-}
-
-// writeVoice1UpdateWaveForm updates the waveform of voice 1 in the SID chip using the provided data.
-func (sid *SID) writeVoice1UpdateWaveForm(data uint8) {
-	sid.voices[1].UpdateWaveForm(data)
-}
-
-// writeVoice1UpdateEnvelopeGenerators updates the envelope generators for voice 1 using the provided data.
-func (sid *SID) writeVoice1UpdateEnvelopeGenerators(data uint8) {
-	sid.voices[1].UpdateEnvelopeGenerators(data)
-}
-
-// writeVoice1UpdateSustainLevel updates the sustain level of voice 1 with the provided data value.
-func (sid *SID) writeVoice1UpdateSustainLevel(data uint8) {
-	sid.voices[1].UpdateSustainLevel(data)
-}
-
-// Voice 2
-
-// writeVoice2UpdateFreqA writes a frequency update value to voice 2's frequency register A using the provided data.
-func (sid *SID) writeVoice2UpdateFreqA(data uint8) {
-	sid.voices[2].UpdateFreqA(data)
-}
-
-// writeVoice2UpdateFreqB updates the frequency B register of voice 2 with the provided 8-bit data.
-func (sid *SID) writeVoice2UpdateFreqB(data uint8) {
-	sid.voices[2].UpdateFreqB(data)
-}
-
-// writeVoice2UpdatePulseWidthA updates the pulse width modulation for voice 2 with the provided data value.
-func (sid *SID) writeVoice2UpdatePulseWidthA(data uint8) {
-	sid.voices[2].UpdatePulseWidthA(data)
-}
-
-// writeVoice2UpdatePulseWidthB updates the pulse width modulation parameter B for voice 2 using the given data.
-func (sid *SID) writeVoice2UpdatePulseWidthB(data uint8) {
-	sid.voices[2].UpdatePulseWidthB(data)
-}
-
-// writeVoice2UpdateWaveForm updates the waveform data for the second voice of the SID chip using the provided data value.
-func (sid *SID) writeVoice2UpdateWaveForm(data uint8) {
-	sid.voices[2].UpdateWaveForm(data)
-}
-
-// writeVoice2UpdateEnvelopeGenerators updates the envelope generators for voice 2 using the provided data.
-func (sid *SID) writeVoice2UpdateEnvelopeGenerators(data uint8) {
-	sid.voices[2].UpdateEnvelopeGenerators(data)
-}
-
-// writeVoice2UpdateSustainLevel updates the sustain level for voice 2 using the provided data value.
-func (sid *SID) writeVoice2UpdateSustainLevel(data uint8) {
-	sid.voices[2].UpdateSustainLevel(data)
-}
-
-// writeFiltersUpdateFreqLow updates the low byte of the filter frequency using the provided data value.
-func (sid *SID) writeFiltersUpdateFreqLow(data uint8) {
-	sid.filters.UpdateFreqLow(data)
-}
-
-// writeFiltersUpdateFreqHigh updates the high-frequency filter settings with the provided data masked to 3 bits.
-func (sid *SID) writeFiltersUpdateFreqHigh(data uint8) {
-	sid.filters.UpdateFreqHigh(data & 0x07)
 }
 
 // writeFiltersRegister configures filter settings for the SID voices based on the provided data value.
@@ -442,9 +276,7 @@ func (sid *SID) writeFiltersRegister(data uint8) {
 	if (data & 4) != 0 {
 		f3 = 1
 	}
-	sid.voices[0].SetFilter(f1)
-	sid.voices[1].SetFilter(f2)
-	sid.voices[2].SetFilter(f3)
+	sid.voices.SetFilters(f1, f2, f3)
 	sid.filters.UpdateRes(data)
 }
 
@@ -455,6 +287,6 @@ func (sid *SID) writeMasterVolumeAndFilterType(data uint8) {
 		mute = true
 	}
 	sid.volume = data & 0xf
-	sid.voices[2].mute = mute
+	sid.voices.SetMuteVoice2(mute)
 	sid.filters.UpdateType(data)
 }

@@ -142,6 +142,7 @@ func (f *Filters) UpdateFreqLow(data uint8) {
 
 // UpdateFreqHigh updates the high-frequency filter value if it differs from the current value and recalculates the filter.
 func (f *Filters) UpdateFreqHigh(data uint8) {
+	data = data & 0x07
 	if data != f.filterFreqHigh {
 		f.filterFreqHigh = data
 		f.compute()
