@@ -7,38 +7,34 @@ import (
 	"time"
 )
 
-// Definiamo delle costanti per gli stati del buffer, per rendere il codice più leggibile.
 const (
 	bufferStateEmpty   = 0 // La coda è completamente vuota.
 	bufferStateTooFast = 1 // Il consumatore è troppo veloce, la coda si sta svuotando.
-	bufferStateGood    = 2 // Stato di equilibrio ideale.
-	bufferStateStable  = 3 // Stato ancora stabile, agisce come "dead zone" per evitare oscillazioni.
+	bufferStateNice    = 2 // Stato di equilibrio ideale.
+	bufferStateGood    = 3
+	bufferStateStable  = 4 // Stato ancora stabile, agisce come "dead zone" per evitare oscillazioni.
 )
 
-// ContinuousReader2 gestisce un flusso audio continuo verso un player 'oto'.
-// Utilizza una coda circolare bufferizzata e un algoritmo di resampling a stati
-// per sincronizzare dinamicamente un produttore di dati "free to run" con un
-// consumatore a tempo reale (la scheda audio), garantendo un flusso audio
-// stabile e di alta qualità.
+// ContinuousReader2 manages continuous audio streaming to an 'oto' player.
+// It uses a buffered circular queue and a stateful resampling algorithm
+// to dynamically synchronize a free-running producer with a real-time
+// consumer (the sound card), ensuring stable and high-quality audio flow.
 type ContinuousReader2 struct {
-	player oto.Player
-	//bytesPerSample int
+	player       oto.Player
 	writeFn      writeFn
-	ring         *CircularQueue2      // La nostra coda circolare di chunk audio.
-	interpolator *LinearInterpolation // Per il resampling (stretch/squish).
+	ring         *CircularQueue2
+	interpolator *LinearInterpolation
 	lock         sync.Mutex
-	chunkSize    int        // La dimensione standard di un chunk in campioni.
-	doubleBuffer *[]float32 // Un buffer di lavoro per unire due chunk.
+	chunkSize    int
+	doubleBuffer *[]float32
 }
 
-// NewContinuousReader2 crea una nuova istanza di ContinuousReader2.
+// NewContinuousReader2 creates and initializes a new instance of the ContinuousReader2 for managing continuous audio streams.
 func NewContinuousReader2() *ContinuousReader2 {
 	return &ContinuousReader2{}
 }
 
-// Setup inizializza il ContinuousReader con i parametri audio specificati.
-// Configura il contesto audio 'oto', la coda circolare, l'interpolatore
-// e tutti i buffer di lavoro necessari.
+// Setup initializes the ContinuousReader2 instance with the specified sample rate, chunks per second, channels, and format.
 func (r *ContinuousReader2) Setup(sampleRate int, chunkPerSecond int, channels int, fo string) error {
 	format, ok := _formats[fo]
 	if !ok {
@@ -60,39 +56,35 @@ func (r *ContinuousReader2) Setup(sampleRate int, chunkPerSecond int, channels i
 	<-ready
 
 	r.ring = NewCircularQueue2(chunkPerSecond, r.chunkSize)
-	// L'interpolatore e il doubleBuffer devono poter contenere due chunk per la logica "TOO SLOW".
 	r.interpolator = NewLinearInterpolation(r.chunkSize * 2)
 	doubleBuffer := make([]float32, r.chunkSize*2)
 	r.doubleBuffer = &doubleBuffer
-
-	//r.bytesPerSample = format.Bytes
 	r.writeFn = format.Func
 	r.player = ctx.NewPlayer(r)
 	r.player.SetVolume(1.0)
-
 	return nil
 }
 
-// Play avvia la riproduzione audio.
+// Play starts the playback of the audio stream using the underlying oto player.
 func (r *ContinuousReader2) Play() {
 	r.player.Play()
 }
 
-// Err restituisce l'ultimo errore incontrato dal player.
+// Err returns the current error state of the underlying oto player, if any.
 func (r *ContinuousReader2) Err() error {
 	return r.player.Err()
 }
 
-// AddChunk aggiunge un nuovo chunk di dati audio alla coda, in modo thread-safe.
+// AddChunk adds a chunk of audio data to the circular queue for processing and playback, locking the queue during the operation.
 func (r *ContinuousReader2) AddChunk(chunk *[]float32, samples int) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	r.ring.Push(chunk)
 }
 
-// Read è il cuore del renderer. Viene chiamato da 'oto' quando ha bisogno di dati.
-// Implementa una macchina a stati per decidere come processare i dati audio
-// in base al livello di riempimento del buffer.
+// Read is the core of the renderer. It is called by 'oto' when it needs data.
+// Implements a state machine to decide how to process audio data
+// based on the buffer fill level.
 func (r *ContinuousReader2) Read(buf []byte) (n int, err error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
@@ -101,15 +93,15 @@ func (r *ContinuousReader2) Read(buf []byte) (n int, err error) {
 		return r.handleEmpty(buf)
 	case bufferStateTooFast:
 		return r.handleTooFast(buf)
-	case bufferStateGood, bufferStateStable:
+	case bufferStateNice, bufferStateGood, bufferStateStable:
 		return r.handleGood(buf)
 	default:
 		return r.handleTooSlow(buf)
 	}
 }
 
-// handleEmpty viene chiamato quando il buffer è vuoto. Riempie il buffer di 'oto'
-// con silenzio per mantenere lo stream audio attivo e prevenire interruzioni.
+// handleEmpty is called when the buffer is empty. It fills the 'oto' buffer
+// with silence to keep the audio stream active and prevent interruptions.
 func (r *ContinuousReader2) handleEmpty(buf []byte) (int, error) {
 	for i := range buf {
 		buf[i] = 0
@@ -117,8 +109,8 @@ func (r *ContinuousReader2) handleEmpty(buf []byte) (int, error) {
 	return len(buf), nil
 }
 
-// handleGood viene chiamato quando il buffer è in uno stato di equilibrio (2 o 3 chunk).
-// Preleva un chunk e lo riproduce così com'è, senza resampling.
+// handleGood is called when the buffer is in a balanced state (2 or 3 chunks).
+// It takes a chunk and plays it as-is, without resampling.
 func (r *ContinuousReader2) handleGood(buf []byte) (int, error) {
 	chunkToPlay, _ := r.ring.Pop()
 	written := 0
@@ -128,14 +120,12 @@ func (r *ContinuousReader2) handleGood(buf []byte) (int, error) {
 	return written, nil
 }
 
-// handleTooFast viene chiamato quando il buffer si sta svuotando (1 chunk rimasto).
-// Significa che il consumatore (oto) è più veloce del produttore.
-// Per "creare tempo", prende un chunk, lo "stira" al doppio della sua lunghezza,
-// ne suona la prima metà e rimette la seconda metà in coda.
+// handleTooFast is called when the buffer is running low (1 chunk remaining).
+// This means the consumer (oto) is faster than the producer.
+// To "buy time", it takes a chunk, "stretches" it to double its length,
+// plays the first half and puts the second half back in the queue.
 func (r *ContinuousReader2) handleTooFast(buf []byte) (int, error) {
 	fmt.Printf("[%s] CONSUMER TOO FAST: Stretching...\n", time.Now().Format(time.RFC3339Nano))
-
-	fmt.Println(time.Now().Format(time.RFC3339Nano), "CONSUMER TOO FAST: Stretching...")
 	chunkToStretch, _ := r.ring.Pop()
 	stretchedChunk, _ := r.interpolator.LinearInterpolationF32(chunkToStretch, r.chunkSize*2)
 	firstHalf := (*stretchedChunk)[:r.chunkSize]
@@ -148,12 +138,12 @@ func (r *ContinuousReader2) handleTooFast(buf []byte) (int, error) {
 	return written, nil
 }
 
-// handleTooSlow viene chiamato quando il buffer si sta riempiendo (più di 3 chunk).
-// Significa che il produttore (emulatore) è più veloce del consumatore.
-// Per "recuperare il ritardo", preleva due chunk, li "comprime" in uno solo
-// e lo suona, consumando dati dal buffer al doppio della velocità.
+// handleTooSlow is called when the buffer is filling up (more than 3 chunks).
+// This means the producer (emulator) is faster than the consumer.
+// To "catch up", it takes two chunks, "compresses" them into one
+// and plays it, consuming data from the buffer at twice the speed.
 func (r *ContinuousReader2) handleTooSlow(buf []byte) (int, error) {
-	fmt.Printf("[%s] PRODUCER TOO SLOW (Lag > %d chunks): Squishing...\n", time.Now().Format(time.RFC3339Nano), r.ring.Counter())
+	fmt.Printf("[%s] CONSUMER TOO SLOW (Lag > %d chunks): Squishing...\n", time.Now().Format(time.RFC3339Nano), r.ring.Counter())
 	chunk1, _ := r.ring.Pop()
 	chunk2, _ := r.ring.Pop()
 	copy(*r.doubleBuffer, *chunk1)
