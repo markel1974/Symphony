@@ -34,7 +34,7 @@ func (a *Audio) Setup(cfg *config.Config) error {
 }
 
 // Audio.Write modificato per gestire l'output attuale di calcBuffer
-func (a *Audio) Write(bufferInput []float32, samples int) {
+func (a *Audio) Write(bufferInput *[]float32, samples int) {
 	if a.audioCtx.IsUndefined() {
 		fmt.Println("Go Audio.Write: Errore - AudioContext non inizializzato")
 		return
@@ -44,10 +44,10 @@ func (a *Audio) Write(bufferInput []float32, samples int) {
 		return
 	}
 
-	if len(a.goBuffer) != len(bufferInput) {
-		a.goBuffer = make([]float32, len(bufferInput))
+	if len(a.goBuffer) != len(*bufferInput) {
+		a.goBuffer = make([]float32, len(*bufferInput))
 	}
-	copy(a.goBuffer, bufferInput[:samples])
+	copy(a.goBuffer, (*bufferInput)[:samples])
 
 	header := (*[3]uintptr)(unsafe.Pointer(&a.goBuffer))
 	byteSlice := (*[1 << 30]byte)(unsafe.Pointer(header[0]))[: samples*4 : samples*4]
