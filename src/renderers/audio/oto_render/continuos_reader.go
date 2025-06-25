@@ -54,7 +54,7 @@ func (r *ContinuousReader) Setup(sampleRate int, chunkPerSecond int, channels in
 		return fmt.Errorf("failed to create oto context: %w", err)
 	}
 	<-ready
-	r.ring = NewCircularQueue(chunkPerSecond, r.chunkSize)
+	r.ring = NewCircularQueue(r.chunkSize)
 	r.interpolator = NewLinearInterpolation(r.chunkSize * 2)
 	doubleBuffer := make([]float32, r.chunkSize*2)
 	r.doubleBuffer = &doubleBuffer
