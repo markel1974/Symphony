@@ -14,7 +14,7 @@ type Audio struct {
 	audioChannelCount  int
 	audioChunks        int
 	audioNextStartTime time.Time
-	audioReader        *ContinuousReader
+	audioReader        *ContinuousReader2
 	cfg                *config.Config
 	debug              bool
 }
@@ -39,7 +39,7 @@ func NewAudio() *Audio {
 func (d *Audio) Setup(cfg *config.Config) error {
 	//StartStub()
 	d.cfg = cfg
-	reader := NewContinuousReader()
+	reader := NewContinuousReader2()
 	if err := reader.Setup(d.audioSampleRate, d.audioChunks, d.audioChannelCount, "FLOAT32LE"); err != nil {
 		return err
 	}
