@@ -89,10 +89,15 @@ import (
 
 // -c  "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/4/Zak McKracken + Maniac Mansion_+1D.ONS.crt"
 
-// -f  "/Users/tinmr305/Downloads/c64carts/megachase.d64"
+// -f "/Users/tinmr305/Downloads/c64carts/megachase.d64"
+
+// -f "/Users/tinmr305/Downloads/c64carts/PuzzleBobble_plus1.d64"
 
 // -f "/Users/tinmr305/Downloads/c64carts/TURRI3-0.D64;/Users/tinmr305/Downloads/c64carts/TURRI3-1.D64;/Users/tinmr305/Downloads/c64carts/TURRI3-2.D64"
 
+// -f "/Users/tinmr305/Downloads/c64carts/Buggy Boy.d64"
+
+// -c "/Users/tinmr305/Downloads/c64carts/ultima4remastered.crt"
 /*
 func restoreTest(factory references.IComponentFactory) {
 	//state, _ := s.DumpAll()
