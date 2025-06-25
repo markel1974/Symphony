@@ -3,7 +3,6 @@ package dynamic_throttle_rev1
 import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
-	"log"
 	"time"
 )
 
@@ -109,7 +108,7 @@ func (s *DynamicThrottle) Update() {
 	if newBracket != s.currentBracket {
 		s.currentBracket = newBracket
 		// OnPerformanceBracketChanged.Emit(s.currentBracket) // Notifica il moltiplicatore (1, 2, 3...)
-		log.Printf("PERFORMANCE BRACKET CHANGED to %dx (Target: %.2fms)", s.currentBracket, float64(s.frameInterval)/1e6)
+		//log.Printf("PERFORMANCE BRACKET CHANGED to %dx (Target: %.2fms)", s.currentBracket, float64(s.frameInterval)/1e6)
 	}
 
 	sleepDuration := targetWakeupTime - now

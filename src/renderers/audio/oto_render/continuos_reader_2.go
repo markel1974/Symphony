@@ -125,7 +125,7 @@ func (r *ContinuousReader2) handleGood(buf []byte) (int, error) {
 // To "buy time", it takes a chunk, "stretches" it to double its length,
 // plays the first half and puts the second half back in the queue.
 func (r *ContinuousReader2) handleTooFast(buf []byte) (int, error) {
-	fmt.Printf("[%s] CONSUMER TOO FAST: Stretching...\n", time.Now().Format(time.RFC3339Nano))
+	//fmt.Printf("[%s] CONSUMER TOO FAST: Stretching...\n", time.Now().Format(time.RFC3339Nano))
 	chunkToStretch, _ := r.ring.Pop()
 	stretchedChunk, _ := r.interpolator.LinearInterpolationF32(chunkToStretch, r.chunkSize*2)
 	firstHalf := (*stretchedChunk)[:r.chunkSize]
@@ -143,7 +143,7 @@ func (r *ContinuousReader2) handleTooFast(buf []byte) (int, error) {
 // To "catch up", it takes two chunks, "compresses" them into one
 // and plays it, consuming data from the buffer at twice the speed.
 func (r *ContinuousReader2) handleTooSlow(buf []byte) (int, error) {
-	fmt.Printf("[%s] CONSUMER TOO SLOW (Lag > %d chunks): Squishing...\n", time.Now().Format(time.RFC3339Nano), r.ring.Counter())
+	//fmt.Printf("[%s] CONSUMER TOO SLOW (Lag > %d chunks): Squishing...\n", time.Now().Format(time.RFC3339Nano), r.ring.Counter())
 	chunk1, _ := r.ring.Pop()
 	chunk2, _ := r.ring.Pop()
 	copy(*r.doubleBuffer, *chunk1)
