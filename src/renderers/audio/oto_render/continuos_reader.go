@@ -27,6 +27,7 @@ type ContinuousReader struct {
 	lock         sync.Mutex
 	chunkSize    int
 	doubleBuffer *[]float32
+	states       [0xf]func([]byte) (int, error)
 }
 
 // NewContinuousReader creates and initializes a new instance of the ContinuousReader for managing continuous audio streams.
@@ -61,6 +62,15 @@ func (r *ContinuousReader) Setup(sampleRate int, chunkPerSecond int, channels in
 	r.player = ctx.NewPlayer(r)
 	r.player.SetVolume(1.0)
 	r.player.(oto.BufferSizeSetter).SetBufferSize(bufferSize)
+
+	for x := range r.states {
+		r.states[x] = r.handleTooSlow
+	}
+	r.states[bufferStateEmpty] = r.handleEmpty
+	r.states[bufferStateTooFast] = r.handleTooFast
+	r.states[bufferStateNice] = r.handleGood
+	r.states[bufferStateGood] = r.handleGood
+	r.states[bufferStateStable] = r.handleGood
 	return nil
 }
 
@@ -87,16 +97,7 @@ func (r *ContinuousReader) AddChunk(chunk *[]float32, samples int) {
 func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	switch r.ring.Counter() {
-	case bufferStateEmpty:
-		return r.handleEmpty(buf)
-	case bufferStateTooFast:
-		return r.handleTooFast(buf)
-	case bufferStateNice, bufferStateGood, bufferStateStable:
-		return r.handleGood(buf)
-	default:
-		return r.handleTooSlow(buf)
-	}
+	return r.states[r.ring.counter&0xf](buf)
 }
 
 // handleEmpty is called when the buffer is empty. It fills the 'oto' buffer
