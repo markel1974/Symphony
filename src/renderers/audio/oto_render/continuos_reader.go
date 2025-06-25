@@ -41,6 +41,7 @@ func (r *ContinuousReader) Setup(sampleRate int, chunkPerSecond int, channels in
 		return fmt.Errorf("audio format not found")
 	}
 	r.chunkSize = sampleRate / chunkPerSecond
+	bufferSize := r.chunkSize * format.Bytes
 	options := &oto.NewContextOptions{
 		SampleRate:   sampleRate,
 		ChannelCount: channels,
@@ -59,7 +60,6 @@ func (r *ContinuousReader) Setup(sampleRate int, chunkPerSecond int, channels in
 	r.writeFn = format.Func
 	r.player = ctx.NewPlayer(r)
 	r.player.SetVolume(1.0)
-	bufferSize := r.chunkSize * format.Bytes
 	r.player.(oto.BufferSizeSetter).SetBufferSize(bufferSize)
 	return nil
 }
