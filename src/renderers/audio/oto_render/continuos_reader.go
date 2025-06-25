@@ -3,37 +3,44 @@ package oto_render
 import (
 	"fmt"
 	"github.com/hajimehoshi/oto/v2"
-	"math"
+	"sync"
 	"time"
 )
 
-// ContinuousReader is a struct for managing continuous audio playback using a circular buffer and linear interpolation.
+const (
+	bufferStateEmpty   = 0 // La coda è completamente vuota.
+	bufferStateTooFast = 1 // Il consumatore è troppo veloce, la coda si sta svuotando.
+	bufferStateNice    = 2 // Stato di equilibrio ideale.
+	bufferStateGood    = 3
+	bufferStateStable  = 4 // Stato ancora stabile, agisce come "dead zone" per evitare oscillazioni.
+)
+
+// ContinuousReader manages continuous audio streaming to an 'oto' player.
+// It uses a buffered circular queue and a stateful resampling algorithm
+// to dynamically synchronize a free-running producer with a real-time
+// consumer (the sound card), ensuring stable and high-quality audio flow.
 type ContinuousReader struct {
-	player        oto.Player
-	bytes         int
-	writeFn       writeFn
-	ring          *CircularQueue
-	interpolator  *LinearInterpolation
-	maxCorrection float64
-	remainder     *[]float32
-	remainderLen  int
+	player       oto.Player
+	writeFn      writeFn
+	ring         *CircularQueue
+	interpolator *LinearInterpolation
+	lock         sync.Mutex
+	chunkSize    int
+	doubleBuffer *[]float32
 }
 
-// NewContinuousReader creates and initializes a new instance of ContinuousReader for managing continuous audio playback.
+// NewContinuousReader creates and initializes a new instance of the ContinuousReader for managing continuous audio streams.
 func NewContinuousReader() *ContinuousReader {
-	r := &ContinuousReader{}
-	return r
+	return &ContinuousReader{}
 }
 
-// Setup initializes the ContinuousReader with the specified sample rate, chunk rate, channels, and audio format.
-// It configures audio playback via oto.Player, prepares internal buffers, and initializes interpolation and queue systems.
-// Returns an error if the audio format is invalid or the oto context setup fails.
+// Setup initializes the ContinuousReader instance with the specified sample rate, chunks per second, channels, and format.
 func (r *ContinuousReader) Setup(sampleRate int, chunkPerSecond int, channels int, fo string) error {
 	format, ok := _formats[fo]
 	if !ok {
 		return fmt.Errorf("audio format not found")
 	}
-	chunkSize := sampleRate / chunkPerSecond
+	r.chunkSize = sampleRate / chunkPerSecond
 	options := &oto.NewContextOptions{
 		SampleRate:   sampleRate,
 		ChannelCount: channels,
@@ -41,126 +48,109 @@ func (r *ContinuousReader) Setup(sampleRate int, chunkPerSecond int, channels in
 		BufferSize:   time.Second / time.Duration(chunkPerSecond),
 	}
 	ctx, ready, err := oto.NewContextWithOptions(options)
-
-	//ctx, ready, err := oto.NewContext(sampleRate, channels, format.Format)
 	if err != nil {
 		return fmt.Errorf("failed to create oto context: %w", err)
 	}
 	<-ready
-	readyTarget := (chunkPerSecond * 10) / 100
-	r.ring = NewCircularQueue(chunkPerSecond, chunkSize, readyTarget)
-	r.interpolator = NewLinearInterpolation(chunkSize + 1)
-	r.bytes = format.Bytes
+	r.ring = NewCircularQueue(chunkPerSecond, r.chunkSize)
+	r.interpolator = NewLinearInterpolation(r.chunkSize * 2)
+	doubleBuffer := make([]float32, r.chunkSize*2)
+	r.doubleBuffer = &doubleBuffer
 	r.writeFn = format.Func
 	r.player = ctx.NewPlayer(r)
 	r.player.SetVolume(1.0)
-	r.maxCorrection = (float64(chunkSize) * 10) / 100
-	r.remainderLen = 0
-	remainder := make([]float32, chunkPerSecond)
-	r.remainder = &remainder
-	//bufferSize := chunkLen * r.bytes
-	//r.player.(oto.BufferSizeSetter).SetBufferSize(bufferSize)
+	bufferSize := r.chunkSize * format.Bytes
+	r.player.(oto.BufferSizeSetter).SetBufferSize(bufferSize)
 	return nil
 }
 
-// Play starts audio playback using the underlying oto.Player associated with the ContinuousReader instance.
+// Play starts the playback of the audio stream using the underlying oto player.
 func (r *ContinuousReader) Play() {
 	r.player.Play()
 }
 
-// Err returns the last error encountered during the continuous audio playback. If no error occurred, it returns nil.
+// Err returns the current error state of the underlying oto player, if any.
 func (r *ContinuousReader) Err() error {
 	return r.player.Err()
 }
 
-// AddChunk enqueues a chunk of audio samples into the circular buffer for playback and processing.
+// AddChunk adds a chunk of audio data to the circular queue for processing and playback, locking the queue during the operation.
 func (r *ContinuousReader) AddChunk(chunk *[]float32, samples int) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.ring.Push(chunk)
 }
 
-// remainCreate updates the remainder buffer with leftover samples from finalChunk that were not written.
-func (r *ContinuousReader) remainCreate(finalChunk *[]float32, finalChunkSize int, samplesToWrite int) {
-	r.remainderLen = finalChunkSize - samplesToWrite
-	if r.remainderLen > len(*r.remainder) {
-		r.remainderLen = len(*r.remainder)
+// Read is the core of the renderer. It is called by 'oto' when it needs data.
+// Implements a state machine to decide how to process audio data
+// based on the buffer fill level.
+func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	switch r.ring.Counter() {
+	case bufferStateEmpty:
+		return r.handleEmpty(buf)
+	case bufferStateTooFast:
+		return r.handleTooFast(buf)
+	case bufferStateNice, bufferStateGood, bufferStateStable:
+		return r.handleGood(buf)
+	default:
+		return r.handleTooSlow(buf)
 	}
-	copy((*r.remainder)[:r.remainderLen], (*finalChunk)[samplesToWrite:])
 }
 
-// remainFlush transfers the remaining samples in the buffer using the remainder data and updates the remainder state.
-func (r *ContinuousReader) remainFlush(buf []uint8) int {
-	samplesThatFitInBuf := len(buf) / r.bytes
-	samplesToWrite := r.remainderLen
-	if samplesToWrite > samplesThatFitInBuf {
-		samplesToWrite = samplesThatFitInBuf
-	}
-	written := 0
-	for i := 0; i < samplesToWrite; i++ {
-		written += r.writeFn(buf, (*r.remainder)[i], written)
-	}
-	remaining := r.remainderLen - samplesToWrite
-	if remaining > 0 {
-		copy((*r.remainder)[:remaining], (*r.remainder)[samplesToWrite:r.remainderLen])
-	}
-	r.remainderLen = remaining
-	return written
-}
-
-// emptyFlush clears the provided buffer by setting all its elements to 0 and returns the number of bytes cleared.
-func (r *ContinuousReader) emptyFlush(buf []uint8) int {
+// handleEmpty is called when the buffer is empty. It fills the 'oto' buffer
+// with silence to keep the audio stream active and prevent interruptions.
+func (r *ContinuousReader) handleEmpty(buf []byte) (int, error) {
 	for i := range buf {
 		buf[i] = 0
 	}
-	return len(buf)
+	return len(buf), nil
 }
 
-// resampling adjusts the audio chunk size based on the buffer fill level, ensuring consistent audio playback.
-// Returns the adjusted audio chunk and its size.
-func (r *ContinuousReader) resampling(originalChunkPtr *[]float32) (*[]float32, int) {
-	const targetRatio = 0.5 //50%
-	originalChunk := originalChunkPtr
-	originalChunkSize := len(*originalChunk)
-	finalChunk := originalChunk
-	finalChunkSize := originalChunkSize
-	fillRatio := r.ring.FillRatio()
-	// Calcoliamo l'errore: un valore positivo se il buffer è troppo pieno, negativo se troppo vuoto.
-	errorRatio := fillRatio - targetRatio
-	// Calcoliamo la correzione in modo proporzionale all'errore.
-	// L'errore massimo è 0.5 (100% - 50%), quindi moltiplichiamo per 2 per normalizzare.
-	correction := int(math.Round(errorRatio * 2 * r.maxCorrection))
-	targetSize := originalChunkSize - correction
-	if targetSize < originalChunkSize-int(r.maxCorrection) {
-		targetSize = originalChunkSize - int(r.maxCorrection)
-	}
-	if targetSize > originalChunkSize+int(r.maxCorrection) {
-		targetSize = originalChunkSize + int(r.maxCorrection)
-	}
-	if targetSize != originalChunkSize && targetSize > 0 {
-		finalChunk, finalChunkSize = r.interpolator.LinearInterpolationF32(originalChunk, targetSize)
-	}
-	return finalChunk, finalChunkSize
-}
-
-// Read reads data into the provided buffer, processes audio chunks, and handles remainder audio samples for playback buffer.
-func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
-	if r.remainderLen > 0 {
-		return r.remainFlush(buf[:]), nil
-	}
-	samples, ok := r.ring.Pop()
-	if !ok {
-		return r.emptyFlush(buf[:]), nil
-	}
-	finalSamples, finalSampleSize := r.resampling(samples)
-	sampleSize := finalSampleSize
-	if requiredSampleLen := len(buf) / r.bytes; sampleSize > requiredSampleLen {
-		sampleSize = requiredSampleLen
-		if finalSampleSize > sampleSize {
-			r.remainCreate(finalSamples, finalSampleSize, sampleSize)
-		}
-	}
+// handleGood is called when the buffer is in a balanced state (2 or 3 chunks).
+// It takes a chunk and plays it as-is, without resampling.
+func (r *ContinuousReader) handleGood(buf []byte) (int, error) {
+	chunkToPlay, _ := r.ring.Pop()
 	written := 0
-	for i := 0; i < sampleSize; i++ {
-		written += r.writeFn(buf, (*finalSamples)[i], written)
+	for _, sample := range *chunkToPlay {
+		written += r.writeFn(buf, sample, written)
+	}
+	return written, nil
+}
+
+// handleTooFast is called when the buffer is running low (1 chunk remaining).
+// This means the consumer (oto) is faster than the producer.
+// To "buy time", it takes a chunk, "stretches" it to double its length,
+// plays the first half, and puts the second half back in the queue.
+func (r *ContinuousReader) handleTooFast(buf []byte) (int, error) {
+	//fmt.Printf("[%s] CONSUMER TOO FAST: Stretching...\n", time.Now().Format(time.RFC3339Nano))
+	chunkToStretch, _ := r.ring.Pop()
+	stretchedChunk, _ := r.interpolator.LinearInterpolationF32(chunkToStretch, r.chunkSize*2)
+	firstHalf := (*stretchedChunk)[:r.chunkSize]
+	secondHalf := (*stretchedChunk)[r.chunkSize:]
+	r.ring.Push(&secondHalf)
+	written := 0
+	for _, sample := range firstHalf {
+		written += r.writeFn(buf, sample, written)
+	}
+	return written, nil
+}
+
+// handleTooSlow is called when the buffer is filling up (more than 3 chunks).
+// This means the producer (emulator) is faster than the consumer.
+// To "catch up", it takes two chunks, "compresses" them into one
+// and plays it, consuming data from the buffer at twice the speed.
+func (r *ContinuousReader) handleTooSlow(buf []byte) (int, error) {
+	//fmt.Printf("[%s] CONSUMER TOO SLOW (Lag > %d chunks): Squishing...\n", time.Now().Format(time.RFC3339Nano), r.ring.Counter())
+	chunk1, _ := r.ring.Pop()
+	chunk2, _ := r.ring.Pop()
+	copy(*r.doubleBuffer, *chunk1)
+	copy((*r.doubleBuffer)[len(*chunk1):], *chunk2)
+	squishedChunk, squishedLen := r.interpolator.LinearInterpolationF32(r.doubleBuffer, r.chunkSize)
+	written := 0
+	for i := 0; i < squishedLen; i++ {
+		written += r.writeFn(buf, (*squishedChunk)[i], written)
 	}
 	return written, nil
 }
