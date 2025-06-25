@@ -93,8 +93,9 @@ func (g *Render) runner() {
 	g.ledSurface.SetCachedMode(pixels.CacheModeUpdate)
 	g.ledSurface.Set(g.picture, g.picture.Bounds())
 	g.ledSurfaceM = pixels.IM.Moved(pos).Scaled(pos, 0.1)
+	emulate := g.board.Emulate
 	for g.run {
-		g.board.Emulate()
+		emulate()
 	}
 }
 
