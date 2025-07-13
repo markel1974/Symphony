@@ -265,8 +265,8 @@ func InstOpBRK3(cpu *CPU) {
 	cpu.bankWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.iFlag = 1
-	if cpu.pic.HasNMI() {
-		cpu.pic.ClearNMI()    // Simulate an edge-triggered input
+	if cpu.picHasNMI() {
+		cpu.picClearNMI()     // Simulate an edge-triggered input
 		cpu.next = InstOpNMI5 // Jump to NMI sequence
 	} else {
 		cpu.next = InstOpBRK4
