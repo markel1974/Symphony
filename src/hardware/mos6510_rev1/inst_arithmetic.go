@@ -2,139 +2,139 @@ package mos6510_rev1
 
 // Arithmetic
 
-// instOpADC performs the ADC (Add with Carry) operation by reading data from memory and calling the ADC handler.
+// InstOpADC performs the ADC (Add with Carry) operation by reading data from memory and calling the ADC handler.
 //
 //go:nosplit
-func instOpADC(cpu *CPU) {
+func InstOpADC(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
 		return
 	}
 	cpu.doADC(data)
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOiADC executes the ADC instruction at the current program counter, updating the accumulator and advancing the PC.
+// InstOiADC executes the ADC instruction at the current program counter, updating the accumulator and advancing the PC.
 // Invokes the next instruction handler after performing the operation.
 //
 //go:nosplit
-func instOiADC(cpu *CPU) {
+func InstOiADC(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
 		return
 	}
 	cpu.pc++
 	cpu.doADC(data)
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpSBC executes the SBC (Subtract with Carry) operation using data from the address register and updates the next instruction.
+// InstOpSBC executes the SBC (Subtract with Carry) operation using data from the address register and updates the next instruction.
 //
 //go:nosplit
-func instOpSBC(cpu *CPU) {
+func InstOpSBC(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
 		return
 	}
 	cpu.doSBC(data)
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOiSBC handles the SBC (Subtract with Carry) instruction. It reads data at the program counter, increments the PC,
-// performs the SBC operation using the read data, and sets the next instruction to instOpINI.
+// InstOiSBC handles the SBC (Subtract with Carry) instruction. It reads data at the program counter, increments the PC,
+// performs the SBC operation using the read data, and sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func instOiSBC(cpu *CPU) {
+func InstOiSBC(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
 		return
 	}
 	cpu.pc++
 	cpu.doSBC(data)
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
 // Increment, decrement
 
-// instOpINX increments the X register, updates the negative and zero flags, and sets the next instruction to instOpINI.
+// InstOpINX increments the X register, updates the negative and zero flags, and sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func instOpINX(cpu *CPU) {
+func InstOpINX(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
 	cpu.x++
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpDEX decrements the X register, setting the negative and zero flags, and sets the next instruction to instOpINI.
+// InstOpDEX decrements the X register, setting the negative and zero flags, and sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func instOpDEX(cpu *CPU) {
+func InstOpDEX(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
 	cpu.x--
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpINY increments the Y register, updates the negative and zero flags, and sets the next instruction to instOpINI.
+// InstOpINY increments the Y register, updates the negative and zero flags, and sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func instOpINY(cpu *CPU) {
+func InstOpINY(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
 	cpu.y++
 	cpu.nFlag = cpu.y
 	cpu.zFlag = cpu.y
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpDEY decrements the Y register, updating the negative and zero flags based on the resulting value.
+// InstOpDEY decrements the Y register, updating the negative and zero flags based on the resulting value.
 //
 //go:nosplit
-func instOpDEY(cpu *CPU) {
+func InstOpDEY(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
 	cpu.y--
 	cpu.nFlag = cpu.y
 	cpu.zFlag = cpu.y
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpINC increments a value, updates the N and Z flags, writes the result to memory, and sets the next operation.
+// InstOpINC increments a value, updates the N and Z flags, writes the result to memory, and sets the next operation.
 //
 //go:nosplit
-func instOpINC(cpu *CPU) {
+func InstOpINC(cpu *CPU) {
 	v := cpu.rmw + 1
 	cpu.nFlag = v
 	cpu.zFlag = v
-	cpu.banks.Write(cpu.ar, v)
-	cpu.next = instOpINI
+	cpu.bankWrite(cpu.ar, v)
+	cpu.next = InstOpINI
 }
 
-// instOpDEC performs a decrement operation on the value in the RMW register, updating CPU flags and writing the result.
+// InstOpDEC performs a decrement operation on the value in the RMW register, updating CPU flags and writing the result.
 //
 //go:nosplit
-func instOpDEC(cpu *CPU) {
+func InstOpDEC(cpu *CPU) {
 	v := cpu.rmw - 1
 	cpu.nFlag = v
 	cpu.zFlag = v
-	cpu.banks.Write(cpu.ar, v)
-	cpu.next = instOpINI
+	cpu.bankWrite(cpu.ar, v)
+	cpu.next = InstOpINI
 }
 
-// instOpAND performs a bitwise AND operation between the accumulator and memory at the address in the address register.
+// InstOpAND performs a bitwise AND operation between the accumulator and memory at the address in the address register.
 // Updates the negative and zero flags based on the result. Sets the next instruction handler.
 //
 //go:nosplit
-func instOpAND(cpu *CPU) {
+func InstOpAND(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
 		return
@@ -142,13 +142,13 @@ func instOpAND(cpu *CPU) {
 	cpu.a &= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOiAND performs the AND operation between the accumulator and fetched data. Updates N and Z flags accordingly.
+// InstOiAND performs the AND operation between the accumulator and fetched data. Updates N and Z flags accordingly.
 //
 //go:nosplit
-func instOiAND(cpu *CPU) {
+func InstOiAND(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
 		return
@@ -157,13 +157,13 @@ func instOiAND(cpu *CPU) {
 	cpu.a &= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpORA performs the ORA (logical OR with accumulator) operation, updates the negative/zero flags, and sets the next instruction.
+// InstOpORA performs the ORA (logical OR with accumulator) operation, updates the negative/zero flags, and sets the next instruction.
 //
 //go:nosplit
-func instOpORA(cpu *CPU) {
+func InstOpORA(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
 		return
@@ -171,14 +171,14 @@ func instOpORA(cpu *CPU) {
 	cpu.a |= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOiOPA is an instruction that performs a bitwise OR operation between the accumulator and a fetched operand.
-// Updates negative and zero flags based on the result. Sets the next instruction to instOpINI.
+// InstOiOPA is an instruction that performs a bitwise OR operation between the accumulator and a fetched operand.
+// Updates negative and zero flags based on the result. Sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func instOiOPA(cpu *CPU) {
+func InstOiOPA(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
 		return
@@ -187,13 +187,13 @@ func instOiOPA(cpu *CPU) {
 	cpu.a |= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpEOR performs the EOR (Exclusive OR) operation on the accumulator with a value from memory and updates CPU flags.
+// InstOpEOR performs the EOR (Exclusive OR) operation on the accumulator with a value from memory and updates CPU flags.
 //
 //go:nosplit
-func instOpEOR(cpu *CPU) {
+func InstOpEOR(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
 		return
@@ -201,13 +201,13 @@ func instOpEOR(cpu *CPU) {
 	cpu.a ^= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOiEOR executes the Exclusive OR (EOR) operation on the accumulator with a fetched memory value and updates flags.
+// InstOiEOR executes the Exclusive OR (EOR) operation on the accumulator with a fetched memory value and updates flags.
 //
 //go:nosplit
-func instOiEOR(cpu *CPU) {
+func InstOiEOR(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
 		return
@@ -216,13 +216,13 @@ func instOiEOR(cpu *CPU) {
 	cpu.a ^= data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpCMP performs a comparison between the accumulator and a memory value, updating CPU flags based on the result.
+// InstOpCMP performs a comparison between the accumulator and a memory value, updating CPU flags based on the result.
 //
 //go:nosplit
-func instOpCMP(cpu *CPU) {
+func InstOpCMP(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
 		return
@@ -236,13 +236,13 @@ func instOpCMP(cpu *CPU) {
 	} else {
 		cpu.cFlag = 0
 	}
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOiCMP performs a comparison between the CPU's accumulator and the operand, updating CPU flags accordingly.
+// InstOiCMP performs a comparison between the CPU's accumulator and the operand, updating CPU flags accordingly.
 //
 //go:nosplit
-func instOiCMP(cpu *CPU) {
+func InstOiCMP(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
 		return
@@ -257,13 +257,13 @@ func instOiCMP(cpu *CPU) {
 	} else {
 		cpu.cFlag = 0
 	}
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpCPX executes the CPX (Compare with X Register) instruction, updating the CPU's flags based on the result.
+// InstOpCPX executes the CPX (Compare with X Register) instruction, updating the CPU's flags based on the result.
 //
 //go:nosplit
-func instOpCPX(cpu *CPU) {
+func InstOpCPX(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
 		return
@@ -277,15 +277,15 @@ func instOpCPX(cpu *CPU) {
 	} else {
 		cpu.cFlag = 0
 	}
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOiCPX executes the OiCPX instruction by reading a value from memory and performing a subtraction with register X.
+// InstOiCPX executes the OiCPX instruction by reading a value from memory and performing a subtraction with register X.
 // It updates the CPU's flags (negative, zero, carry) and the address register (AR) as per the operation's result.
-// Finally, it sets the next instruction handler to instOpINI.
+// Finally, it sets the next instruction handler to InstOpINI.
 //
 //go:nosplit
-func instOiCPX(cpu *CPU) {
+func InstOiCPX(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
 		return
@@ -300,13 +300,13 @@ func instOiCPX(cpu *CPU) {
 	} else {
 		cpu.cFlag = 0
 	}
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpCPY handles the CPY (Compare Y Register) instruction, updating flags based on comparison with memory data.
+// InstOpCPY handles the CPY (Compare Y Register) instruction, updating flags based on comparison with memory data.
 //
 //go:nosplit
-func instOpCPY(cpu *CPU) {
+func InstOpCPY(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
 		return
@@ -320,15 +320,15 @@ func instOpCPY(cpu *CPU) {
 	} else {
 		cpu.cFlag = 0
 	}
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOiCPY handles the CPY (Compare Y Register with Memory) instruction in immediate addressing mode.
+// InstOiCPY handles the CPY (Compare Y Register with Memory) instruction in immediate addressing mode.
 // It updates the negative, zero, and carry flags based on the comparison result.
-// The next instruction to execute is set to instOpINI.
+// The next instruction to execute is set to InstOpINI.
 //
 //go:nosplit
-func instOiCPY(cpu *CPU) {
+func InstOiCPY(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
 		return
@@ -343,15 +343,15 @@ func instOiCPY(cpu *CPU) {
 	} else {
 		cpu.cFlag = 0
 	}
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
 // Bit-test
 
-// instOpBIT performs the BIT instruction, updating the CPU flags based on a bitwise AND between the accumulator and memory data.
+// InstOpBIT performs the BIT instruction, updating the CPU flags based on a bitwise AND between the accumulator and memory data.
 //
 //go:nosplit
-func instOpBIT(cpu *CPU) {
+func InstOpBIT(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
 		return
@@ -359,28 +359,28 @@ func instOpBIT(cpu *CPU) {
 	cpu.zFlag = cpu.a & data
 	cpu.nFlag = data
 	cpu.vFlag = data & 0x40
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpASL performs the ASL (Arithmetic Shift Left) operation on the CPU's RMW buffer and updates relevant CPU flags.
+// InstOpASL performs the ASL (Arithmetic Shift Left) operation on the CPU's RMW buffer and updates relevant CPU flags.
 // It shifts the RMW buffer left by one bit, sets the carry flag to the original top bit, and updates zero/negative flags.
 // The result is written back to memory at the address pointed to by the address register (ar).
-// Finally, sets the next CPU instruction to instOpINI for subsequent execution.
+// Finally, sets the next CPU instruction to InstOpINI for subsequent execution.
 //
 //go:nosplit
-func instOpASL(cpu *CPU) {
+func InstOpASL(cpu *CPU) {
 	cpu.cFlag = cpu.rmw & 0x80
 	v := cpu.rmw << 1
 	cpu.nFlag = v
 	cpu.zFlag = v
-	cpu.banks.Write(cpu.ar, v)
-	cpu.next = instOpINI
+	cpu.bankWrite(cpu.ar, v)
+	cpu.next = InstOpINI
 }
 
-// instOaASL executes the ASL (Arithmetic Shift Left) operation on the accumulator, updating flags and the next instruction.
+// InstOaASL executes the ASL (Arithmetic Shift Left) operation on the accumulator, updating flags and the next instruction.
 //
 //go:nosplit
-func instOaASL(cpu *CPU) {
+func InstOaASL(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
@@ -388,25 +388,25 @@ func instOaASL(cpu *CPU) {
 	cpu.a <<= 1
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpLSR performs the Logical Shift Right (LSR) operation on the CPU's RMW register, updating flags and writing the result.
+// InstOpLSR performs the Logical Shift Right (LSR) operation on the CPU's RMW register, updating flags and writing the result.
 //
 //go:nosplit
-func instOpLSR(cpu *CPU) {
+func InstOpLSR(cpu *CPU) {
 	cpu.cFlag = cpu.rmw & 0x1
 	v := cpu.rmw >> 1
 	cpu.nFlag = v
 	cpu.zFlag = v
-	cpu.banks.Write(cpu.ar, v)
-	cpu.next = instOpINI
+	cpu.bankWrite(cpu.ar, v)
+	cpu.next = InstOpINI
 }
 
-// instOaLSR performs a logical shift right (LSR) on the A register, updating the carry, zero, and negative flags accordingly.
+// InstOaLSR performs a logical shift right (LSR) on the A register, updating the carry, zero, and negative flags accordingly.
 //
 //go:nosplit
-func instOaLSR(cpu *CPU) {
+func InstOaLSR(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
@@ -414,13 +414,13 @@ func instOaLSR(cpu *CPU) {
 	cpu.a >>= 1
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpROL performs the ROL (Rotate Left) operation on the `rmw` register, updating CPU flags and memory state.
+// InstOpROL performs the ROL (Rotate Left) operation on the `rmw` register, updating CPU flags and memory state.
 //
 //go:nosplit
-func instOpROL(cpu *CPU) {
+func InstOpROL(cpu *CPU) {
 	var t uint8
 	if cpu.cFlag != 0 {
 		t = (cpu.rmw << 1) | 0x1
@@ -429,15 +429,15 @@ func instOpROL(cpu *CPU) {
 	}
 	cpu.nFlag = t
 	cpu.zFlag = t
-	cpu.banks.Write(cpu.ar, t)
+	cpu.bankWrite(cpu.ar, t)
 	cpu.cFlag = cpu.rmw & 0x80
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOaROL performs a rotate left operation on the accumulator and updates the CPU flags accordingly.
+// InstOaROL performs a rotate left operation on the accumulator and updates the CPU flags accordingly.
 //
 //go:nosplit
-func instOaROL(cpu *CPU) {
+func InstOaROL(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
@@ -450,13 +450,13 @@ func instOaROL(cpu *CPU) {
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
 	cpu.cFlag = data
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpROR performs a Rotate Right operation on the CPU's RMW register, updates flags, and writes the result to memory.
+// InstOpROR performs a Rotate Right operation on the CPU's RMW register, updates flags, and writes the result to memory.
 //
 //go:nosplit
-func instOpROR(cpu *CPU) {
+func InstOpROR(cpu *CPU) {
 	var t uint8
 	if cpu.cFlag != 0 {
 		t = (cpu.rmw >> 1) | 0x80
@@ -465,16 +465,16 @@ func instOpROR(cpu *CPU) {
 	}
 	cpu.nFlag = t
 	cpu.zFlag = t
-	cpu.banks.Write(cpu.ar, t)
+	cpu.bankWrite(cpu.ar, t)
 	cpu.cFlag = cpu.rmw & 0x1
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOaROR performs the ROR (Rotate Right) operation on the accumulator,
+// InstOaROR performs the ROR (Rotate Right) operation on the accumulator,
 // updating the negative, zero, and carry flags and setting the next instruction.
 //
 //go:nosplit
-func instOaROR(cpu *CPU) {
+func InstOaROR(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
@@ -487,5 +487,5 @@ func instOaROR(cpu *CPU) {
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
 	cpu.cFlag = data
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }

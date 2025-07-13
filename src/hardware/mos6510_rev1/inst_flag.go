@@ -6,46 +6,46 @@ import (
 
 // Flag
 
-// instOpSEC sets the Carry flag (cFlag) to 1 and moves execution to the next instruction handler (instOpINI).
+// InstOpSEC sets the Carry flag (cFlag) to 1 and moves execution to the next instruction handler (InstOpINI).
 //
 //go:nosplit
-func instOpSEC(cpu *CPU) {
+func InstOpSEC(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
 	cpu.cFlag = 1
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpCLC clears the carry flag in the CPU and sets the next instruction to instOpINI. It halts if the current PC read fails.
-func instOpCLC(cpu *CPU) {
+// InstOpCLC clears the carry flag in the CPU and sets the next instruction to InstOpINI. It halts if the current PC read fails.
+func InstOpCLC(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
 	cpu.cFlag = 0
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpSED sets the decimal mode flag (dFlag) to 1 and assigns the next instruction handler to instOpINI.
-func instOpSED(cpu *CPU) {
+// InstOpSED sets the decimal mode flag (dFlag) to 1 and assigns the next instruction handler to InstOpINI.
+func InstOpSED(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
 	cpu.dFlag = 1
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpCLD clears the decimal mode flag (dFlag) and sets the next instruction handler to instOpINI.
-func instOpCLD(cpu *CPU) {
+// InstOpCLD clears the decimal mode flag (dFlag) and sets the next instruction handler to InstOpINI.
+func InstOpCLD(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
 	cpu.dFlag = 0
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpSEI sets the interrupt disable flag and updates CPU state to handle the next instruction cycle.
-func instOpSEI(cpu *CPU) {
+// InstOpSEI sets the interrupt disable flag and updates CPU state to handle the next instruction cycle.
+func InstOpSEI(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
@@ -53,11 +53,11 @@ func instOpSEI(cpu *CPU) {
 		cpu.opFlags |= references.OpFlagIrqDisabled
 	}
 	cpu.iFlag = 1
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpCLI clears the interrupt disable flag and sets the next instruction to instOpINI if the current opcode is valid.
-func instOpCLI(cpu *CPU) {
+// InstOpCLI clears the interrupt disable flag and sets the next instruction to InstOpINI if the current opcode is valid.
+func InstOpCLI(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
@@ -65,23 +65,23 @@ func instOpCLI(cpu *CPU) {
 		cpu.opFlags |= references.OpFlagIrqEnabled
 	}
 	cpu.iFlag = 0
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpCLV clears the overflow flag in the CPU and sets the next instruction handler to instOpINI.
+// InstOpCLV clears the overflow flag in the CPU and sets the next instruction handler to InstOpINI.
 // If the current PC address cannot be read, the operation is aborted.
-func instOpCLV(cpu *CPU) {
+func InstOpCLV(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
 	cpu.vFlag = 0
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpNOP is a no-operation function for the CPU that progresses the state to the next instruction without modifying registers.
-func instOpNOP(cpu *CPU) {
+// InstOpNOP is a no-operation function for the CPU that progresses the state to the next instruction without modifying registers.
+func InstOpNOP(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }

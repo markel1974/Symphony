@@ -1,16 +1,16 @@
 package mos6510_rev1
 
-// stackAddr defines the base address for the stack memory operations used in various CPU instructions.
+// stackAddr defines the base address for the stack memory operations used in various CPU Instructions.
 const (
 	stackAddr = 0x100
 )
 
-// instOpINI handles the initial opcode fetch and subsequent CPU instruction cycle logic based on the current CPU state.
+// InstOpINI handles the initial opcode fetch and subsequent CPU instruction cycle logic based on the current CPU state.
 // It considers interrupt conditions, updates the program counter, and sets the next instruction handler.
 // If the RDY line is low, the CPU execution is halted by setting the `stop` flag.
 //
 //go:nosplit
-func instOpINI(cpu *CPU) {
+func InstOpINI(cpu *CPU) {
 	// https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
 	// Interrupts are only recognized if the RDY line is high
 	if !cpu.rdyLow {
@@ -23,12 +23,12 @@ func instOpINI(cpu *CPU) {
 				return
 			case 2:
 				cpu.irqBreaker = true
-				cpu.next = instOpNMI
+				cpu.next = InstOpNMI
 				cpu.next(cpu)
 				return
 			case 3:
 				cpu.irqBreaker = true
-				cpu.next = instOpIRQ
+				cpu.next = InstOpIRQ
 				cpu.next(cpu)
 				return
 			}
@@ -38,7 +38,7 @@ func instOpINI(cpu *CPU) {
 		return
 	}
 	cpu.irqBreaker = false
-	cpu.op = cpu.banks.Read(cpu.pc)
+	cpu.op = cpu.bankRead(cpu.pc)
 	cpu.pc++
-	cpu.next = _modeTable[cpu.op]
+	cpu.next = cpu.modeTable[cpu.op]
 }

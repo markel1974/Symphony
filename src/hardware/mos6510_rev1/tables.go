@@ -1,11 +1,5 @@
 package mos6510_rev1
 
-// _modeTable is a slice of functions, each defining behavior or processing logic for specific CPU operational modes.
-var _modeTable []func(*CPU)
-
-// _opTable defines a slice of CPU instruction implementations, where each function specifies operation logic for an opcode.
-var _opTable []func(*CPU)
-
 //https://www.c64-wiki.com/wiki/Opcode
 
 //ORA (short for "Logical OR on Accumulator")
@@ -13,80 +7,85 @@ var _opTable []func(*CPU)
 
 // Ap -> Read effective address, no extra cycles
 // Ae -> Read effective address, extra cycle on page crossing
-// Mp -> Read operand and write it back (for RMW instructions), no extra cycles
+// Mp -> Read operand and write it back (for RMW Instructions), no extra cycles
 // Oi -> Operation Immediate/Indirect
 // Oa -> Operation Accumulator
 // Op -> Operation
 
-// init initializes the CPU operation and mode tables by assigning corresponding instruction functions to their positions.
-func init() {
-	_modeTable = []func(*CPU){
-		instOpBRK, instApINDx, instOpJAM, instMpINDx, instApZER, instApZER, instMpZER, instMpZER, // 00
-		instOpPHP, instOiOPA, instOaASL, instOiANC, instApABS, instApABS, instMpABS, instMpABS,
-		instOpBPL, instAeINDy, instOpJAM, instMpINDy, instApZERx, instApZERx, instMpZERx, instMpZERx, // 10
-		instOpCLC, instAeABSy, instOpNOP, instMpABSy, instAeABSx, instAeABSx, instMpABSx, instMpABSx,
-		instOpJSR, instApINDx, instOpJAM, instMpINDx, instApZER, instApZER, instMpZER, instMpZER, // 20
-		instOpPLP, instOiAND, instOaROL, instOiANC, instApABS, instApABS, instMpABS, instMpABS,
-		instOpBMI, instAeINDy, instOpJAM, instMpINDy, instApZERx, instApZERx, instMpZERx, instMpZERx, // 30
-		instOpSEC, instAeABSy, instOpNOP, instMpABSy, instAeABSx, instAeABSx, instMpABSx, instMpABSx,
-		instOpRTI, instApINDx, instOpJAM, instMpINDx, instApZER, instApZER, instMpZER, instMpZER, // 40
-		instOpPHA, instOiEOR, instOaLSR, instOiASR, instOpJMP, instApABS, instMpABS, instMpABS,
-		instOpBVC, instAeINDy, instOpJAM, instMpINDy, instApZERx, instApZERx, instMpZERx, instMpZERx, // 50
-		instOpCLI, instAeABSy, instOpNOP, instMpABSy, instAeABSx, instAeABSx, instMpABSx, instMpABSx,
-		instOpRTS, instApINDx, instOpJAM, instMpINDx, instApZER, instApZER, instMpZER, instMpZER, // 60
-		instOpPLA, instOiADC, instOaROR, instOiARR, instApABS, instApABS, instMpABS, instMpABS,
-		instOpBVS, instAeINDy, instOpJAM, instMpINDy, instApZERx, instApZERx, instMpZERx, instMpZERx, // 70
-		instOpSEI, instAeABSy, instOpNOP, instMpABSy, instAeABSx, instAeABSx, instMpABSx, instMpABSx,
-		instOiNOP, instApINDx, instOiNOP, instApINDx, instApZER, instApZER, instApZER, instApZER, // 80
-		instOpDEY, instOiNOP, instOpTXA, instOiANE, instApABS, instApABS, instApABS, instApABS,
-		instOpBCC, instApINDy, instOpJAM, instApINDy, instApZERx, instApZERx, instApZERy, instApZERy, // 90
-		instOpTYA, instApABSy, instOpTXS, instApABSy, instApABSx, instApABSx, instApABSy, instApABSy,
-		instOiLDY, instApINDx, instOiLDX, instApINDx, instApZER, instApZER, instApZER, instApZER, // a0
-		instOpTAY, instOiLDA, instOpTAX, instOiLXA, instApABS, instApABS, instApABS, instApABS,
-		instOpBCS, instAeINDy, instOpJAM, instAeINDy, instApZERx, instApZERx, instApZERy, instApZERy, // b0
-		instOpCLV, instAeABSy, instOpTSX, instAeABSy, instAeABSx, instAeABSx, instAeABSy, instAeABSy,
-		instOiCPY, instApINDx, instOiNOP, instMpINDx, instApZER, instApZER, instMpZER, instMpZER, // c0
-		instOpINY, instOiCMP, instOpDEX, instOiSBX, instApABS, instApABS, instMpABS, instMpABS,
-		instOpBNE, instAeINDy, instOpJAM, instMpINDy, instApZERx, instApZERx, instMpZERx, instMpZERx, // d0
-		instOpCLD, instAeABSy, instOpNOP, instMpABSy, instAeABSx, instAeABSx, instMpABSx, instMpABSx,
-		instOiCPX, instApINDx, instOiNOP, instMpINDx, instApZER, instApZER, instMpZER, instMpZER, // e0
-		instOpINX, instOiSBC, instOpNOP, instOiSBC, instApABS, instApABS, instMpABS, instMpABS,
-		instOpBEQ, instAeINDy, instOpJAM, instMpINDy, instApZERx, instApZERx, instMpZERx, instMpZERx, // f0
-		instOpSED, instAeABSy, instOpNOP, instMpABSy, instAeABSx, instAeABSx, instMpABSx, instMpABSx,
+// CreateModeTable initializes and returns a slice of instruction mode functions for a CPU.
+func CreateModeTable() []func(*CPU) {
+	modeTable := []func(*CPU){
+		InstOpBRK, InstApINDx, InstOpJAM, InstMpINDx, InstApZER, InstApZER, InstMpZER, InstMpZER, // 00
+		InstOpPHP, InstOiOPA, InstOaASL, InstOiANC, InstApABS, InstApABS, InstMpABS, InstMpABS,
+		InstOpBPL, InstAeINDy, InstOpJAM, InstMpINDy, InstApZERx, InstApZERx, InstMpZERx, InstMpZERx, // 10
+		InstOpCLC, InstAeABSy, InstOpNOP, InstMpABSy, InstAeABSx, InstAeABSx, InstMpABSx, InstMpABSx,
+		InstOpJSR, InstApINDx, InstOpJAM, InstMpINDx, InstApZER, InstApZER, InstMpZER, InstMpZER, // 20
+		InstOpPLP, InstOiAND, InstOaROL, InstOiANC, InstApABS, InstApABS, InstMpABS, InstMpABS,
+		InstOpBMI, InstAeINDy, InstOpJAM, InstMpINDy, InstApZERx, InstApZERx, InstMpZERx, InstMpZERx, // 30
+		InstOpSEC, InstAeABSy, InstOpNOP, InstMpABSy, InstAeABSx, InstAeABSx, InstMpABSx, InstMpABSx,
+		InstOpRTI, InstApINDx, InstOpJAM, InstMpINDx, InstApZER, InstApZER, InstMpZER, InstMpZER, // 40
+		InstOpPHA, InstOiEOR, InstOaLSR, InstOiASR, InstOpJMP, InstApABS, InstMpABS, InstMpABS,
+		InstOpBVC, InstAeINDy, InstOpJAM, InstMpINDy, InstApZERx, InstApZERx, InstMpZERx, InstMpZERx, // 50
+		InstOpCLI, InstAeABSy, InstOpNOP, InstMpABSy, InstAeABSx, InstAeABSx, InstMpABSx, InstMpABSx,
+		InstOpRTS, InstApINDx, InstOpJAM, InstMpINDx, InstApZER, InstApZER, InstMpZER, InstMpZER, // 60
+		InstOpPLA, InstOiADC, InstOaROR, InstOiARR, InstApABS, InstApABS, InstMpABS, InstMpABS,
+		InstOpBVS, InstAeINDy, InstOpJAM, InstMpINDy, InstApZERx, InstApZERx, InstMpZERx, InstMpZERx, // 70
+		InstOpSEI, InstAeABSy, InstOpNOP, InstMpABSy, InstAeABSx, InstAeABSx, InstMpABSx, InstMpABSx,
+		InstOiNOP, InstApINDx, InstOiNOP, InstApINDx, InstApZER, InstApZER, InstApZER, InstApZER, // 80
+		InstOpDEY, InstOiNOP, InstOpTXA, InstOiANE, InstApABS, InstApABS, InstApABS, InstApABS,
+		InstOpBCC, InstApINDy, InstOpJAM, InstApINDy, InstApZERx, InstApZERx, InstApZERy, InstApZERy, // 90
+		InstOpTYA, InstApABSy, InstOpTXS, InstApABSy, InstApABSx, InstApABSx, InstApABSy, InstApABSy,
+		InstOiLDY, InstApINDx, InstOiLDX, InstApINDx, InstApZER, InstApZER, InstApZER, InstApZER, // a0
+		InstOpTAY, InstOiLDA, InstOpTAX, InstOiLXA, InstApABS, InstApABS, InstApABS, InstApABS,
+		InstOpBCS, InstAeINDy, InstOpJAM, InstAeINDy, InstApZERx, InstApZERx, InstApZERy, InstApZERy, // b0
+		InstOpCLV, InstAeABSy, InstOpTSX, InstAeABSy, InstAeABSx, InstAeABSx, InstAeABSy, InstAeABSy,
+		InstOiCPY, InstApINDx, InstOiNOP, InstMpINDx, InstApZER, InstApZER, InstMpZER, InstMpZER, // c0
+		InstOpINY, InstOiCMP, InstOpDEX, InstOiSBX, InstApABS, InstApABS, InstMpABS, InstMpABS,
+		InstOpBNE, InstAeINDy, InstOpJAM, InstMpINDy, InstApZERx, InstApZERx, InstMpZERx, InstMpZERx, // d0
+		InstOpCLD, InstAeABSy, InstOpNOP, InstMpABSy, InstAeABSx, InstAeABSx, InstMpABSx, InstMpABSx,
+		InstOiCPX, InstApINDx, InstOiNOP, InstMpINDx, InstApZER, InstApZER, InstMpZER, InstMpZER, // e0
+		InstOpINX, InstOiSBC, InstOpNOP, InstOiSBC, InstApABS, InstApABS, InstMpABS, InstMpABS,
+		InstOpBEQ, InstAeINDy, InstOpJAM, InstMpINDy, InstApZERx, InstApZERx, InstMpZERx, InstMpZERx, // f0
+		InstOpSED, InstAeABSy, InstOpNOP, InstMpABSy, InstAeABSx, InstAeABSx, InstMpABSx, InstMpABSx,
 	}
+	return modeTable
+}
 
-	_opTable = []func(*CPU){
-		instOpJAM, instOpORA, instOpJAM, instOpSLO, instOaNOP, instOpORA, instOpASL, instOpSLO, // 00
-		instOpJAM, instOpJAM, instOpJAM, instOpJAM, instOaNOP, instOpORA, instOpASL, instOpSLO,
-		instOpJAM, instOpORA, instOpJAM, instOpSLO, instOaNOP, instOpORA, instOpASL, instOpSLO, // 10
-		instOpJAM, instOpORA, instOpJAM, instOpSLO, instOaNOP, instOpORA, instOpASL, instOpSLO,
-		instOpJAM, instOpAND, instOpJAM, instOpRLA, instOpBIT, instOpAND, instOpROL, instOpRLA, // 20
-		instOpJAM, instOpJAM, instOpJAM, instOpJAM, instOpBIT, instOpAND, instOpROL, instOpRLA,
-		instOpJAM, instOpAND, instOpJAM, instOpRLA, instOaNOP, instOpAND, instOpROL, instOpRLA, // 30
-		instOpJAM, instOpAND, instOpJAM, instOpRLA, instOaNOP, instOpAND, instOpROL, instOpRLA,
-		instOpJAM, instOpEOR, instOpJAM, instOpSRE, instOaNOP, instOpEOR, instOpLSR, instOpSRE, // 40
-		instOpJAM, instOpJAM, instOpJAM, instOpJAM, instOpJAM, instOpEOR, instOpLSR, instOpSRE,
-		instOpJAM, instOpEOR, instOpJAM, instOpSRE, instOaNOP, instOpEOR, instOpLSR, instOpSRE, // 50
-		instOpJAM, instOpEOR, instOpJAM, instOpSRE, instOaNOP, instOpEOR, instOpLSR, instOpSRE,
-		instOpJAM, instOpADC, instOpJAM, instOpRRA, instOaNOP, instOpADC, instOpROR, instOpRRA, // 60
-		instOpJAM, instOpJAM, instOpJAM, instOpJAM, instOiJMP, instOpADC, instOpROR, instOpRRA,
-		instOpJAM, instOpADC, instOpJAM, instOpRRA, instOaNOP, instOpADC, instOpROR, instOpRRA, // 70
-		instOpJAM, instOpADC, instOpJAM, instOpRRA, instOaNOP, instOpADC, instOpROR, instOpRRA,
-		instOpJAM, instOpSTA, instOpJAM, instOpSAX, instOpSTY, instOpSTA, instOpSTX, instOpSAX, // 80
-		instOpJAM, instOpJAM, instOpJAM, instOpJAM, instOpSTY, instOpSTA, instOpSTX, instOpSAX,
-		instOpJAM, instOpSTA, instOpJAM, instOpSHA, instOpSTY, instOpSTA, instOpSTX, instOpSAX, // 90
-		instOpJAM, instOpSTA, instOpJAM, instOpSHS, instOpSHY, instOpSTA, instOpSHX, instOpSHA,
-		instOpJAM, instOpLDA, instOpJAM, instOpLAX, instOpLDY, instOpLDA, instOpLDX, instOpLAX, // a0
-		instOpJAM, instOpJAM, instOpJAM, instOpJAM, instOpLDY, instOpLDA, instOpLDX, instOpLAX,
-		instOpJAM, instOpLDA, instOpJAM, instOpLAX, instOpLDY, instOpLDA, instOpLDX, instOpLAX, // b0
-		instOpJAM, instOpLDA, instOpJAM, instOpLAS, instOpLDY, instOpLDA, instOpLDX, instOpLAX,
-		instOpJAM, instOpCMP, instOpJAM, instOpDCP, instOpCPY, instOpCMP, instOpDEC, instOpDCP, // c0
-		instOpJAM, instOpJAM, instOpJAM, instOpJAM, instOpCPY, instOpCMP, instOpDEC, instOpDCP,
-		instOpJAM, instOpCMP, instOpJAM, instOpDCP, instOaNOP, instOpCMP, instOpDEC, instOpDCP, // d0
-		instOpJAM, instOpCMP, instOpJAM, instOpDCP, instOaNOP, instOpCMP, instOpDEC, instOpDCP,
-		instOpJAM, instOpSBC, instOpJAM, instOpISB, instOpCPX, instOpSBC, instOpINC, instOpISB, // e0
-		instOpJAM, instOpJAM, instOpJAM, instOpJAM, instOpCPX, instOpSBC, instOpINC, instOpISB,
-		instOpJAM, instOpSBC, instOpJAM, instOpISB, instOaNOP, instOpSBC, instOpINC, instOpISB, // f0
-		instOpJAM, instOpSBC, instOpJAM, instOpISB, instOaNOP, instOpSBC, instOpINC, instOpISB,
+// CreateOpTable initializes and returns an operation table containing a list of CPU instruction functions.
+func CreateOpTable() []func(cpu *CPU) {
+	opTable := []func(*CPU){
+		InstOpJAM, InstOpORA, InstOpJAM, InstOpSLO, InstOaNOP, InstOpORA, InstOpASL, InstOpSLO, // 00
+		InstOpJAM, InstOpJAM, InstOpJAM, InstOpJAM, InstOaNOP, InstOpORA, InstOpASL, InstOpSLO,
+		InstOpJAM, InstOpORA, InstOpJAM, InstOpSLO, InstOaNOP, InstOpORA, InstOpASL, InstOpSLO, // 10
+		InstOpJAM, InstOpORA, InstOpJAM, InstOpSLO, InstOaNOP, InstOpORA, InstOpASL, InstOpSLO,
+		InstOpJAM, InstOpAND, InstOpJAM, InstOpRLA, InstOpBIT, InstOpAND, InstOpROL, InstOpRLA, // 20
+		InstOpJAM, InstOpJAM, InstOpJAM, InstOpJAM, InstOpBIT, InstOpAND, InstOpROL, InstOpRLA,
+		InstOpJAM, InstOpAND, InstOpJAM, InstOpRLA, InstOaNOP, InstOpAND, InstOpROL, InstOpRLA, // 30
+		InstOpJAM, InstOpAND, InstOpJAM, InstOpRLA, InstOaNOP, InstOpAND, InstOpROL, InstOpRLA,
+		InstOpJAM, InstOpEOR, InstOpJAM, InstOpSRE, InstOaNOP, InstOpEOR, InstOpLSR, InstOpSRE, // 40
+		InstOpJAM, InstOpJAM, InstOpJAM, InstOpJAM, InstOpJAM, InstOpEOR, InstOpLSR, InstOpSRE,
+		InstOpJAM, InstOpEOR, InstOpJAM, InstOpSRE, InstOaNOP, InstOpEOR, InstOpLSR, InstOpSRE, // 50
+		InstOpJAM, InstOpEOR, InstOpJAM, InstOpSRE, InstOaNOP, InstOpEOR, InstOpLSR, InstOpSRE,
+		InstOpJAM, InstOpADC, InstOpJAM, InstOpRRA, InstOaNOP, InstOpADC, InstOpROR, InstOpRRA, // 60
+		InstOpJAM, InstOpJAM, InstOpJAM, InstOpJAM, InstOiJMP, InstOpADC, InstOpROR, InstOpRRA,
+		InstOpJAM, InstOpADC, InstOpJAM, InstOpRRA, InstOaNOP, InstOpADC, InstOpROR, InstOpRRA, // 70
+		InstOpJAM, InstOpADC, InstOpJAM, InstOpRRA, InstOaNOP, InstOpADC, InstOpROR, InstOpRRA,
+		InstOpJAM, InstOpSTA, InstOpJAM, InstOpSAX, InstOpSTY, InstOpSTA, InstOpSTX, InstOpSAX, // 80
+		InstOpJAM, InstOpJAM, InstOpJAM, InstOpJAM, InstOpSTY, InstOpSTA, InstOpSTX, InstOpSAX,
+		InstOpJAM, InstOpSTA, InstOpJAM, InstOpSHA, InstOpSTY, InstOpSTA, InstOpSTX, InstOpSAX, // 90
+		InstOpJAM, InstOpSTA, InstOpJAM, InstOpSHS, InstOpSHY, InstOpSTA, InstOpSHX, InstOpSHA,
+		InstOpJAM, InstOpLDA, InstOpJAM, InstOpLAX, InstOpLDY, InstOpLDA, InstOpLDX, InstOpLAX, // a0
+		InstOpJAM, InstOpJAM, InstOpJAM, InstOpJAM, InstOpLDY, InstOpLDA, InstOpLDX, InstOpLAX,
+		InstOpJAM, InstOpLDA, InstOpJAM, InstOpLAX, InstOpLDY, InstOpLDA, InstOpLDX, InstOpLAX, // b0
+		InstOpJAM, InstOpLDA, InstOpJAM, InstOpLAS, InstOpLDY, InstOpLDA, InstOpLDX, InstOpLAX,
+		InstOpJAM, InstOpCMP, InstOpJAM, InstOpDCP, InstOpCPY, InstOpCMP, InstOpDEC, InstOpDCP, // c0
+		InstOpJAM, InstOpJAM, InstOpJAM, InstOpJAM, InstOpCPY, InstOpCMP, InstOpDEC, InstOpDCP,
+		InstOpJAM, InstOpCMP, InstOpJAM, InstOpDCP, InstOaNOP, InstOpCMP, InstOpDEC, InstOpDCP, // d0
+		InstOpJAM, InstOpCMP, InstOpJAM, InstOpDCP, InstOaNOP, InstOpCMP, InstOpDEC, InstOpDCP,
+		InstOpJAM, InstOpSBC, InstOpJAM, InstOpISB, InstOpCPX, InstOpSBC, InstOpINC, InstOpISB, // e0
+		InstOpJAM, InstOpJAM, InstOpJAM, InstOpJAM, InstOpCPX, InstOpSBC, InstOpINC, InstOpISB,
+		InstOpJAM, InstOpSBC, InstOpJAM, InstOpISB, InstOaNOP, InstOpSBC, InstOpINC, InstOpISB, // f0
+		InstOpJAM, InstOpSBC, InstOpJAM, InstOpISB, InstOaNOP, InstOpSBC, InstOpINC, InstOpISB,
 	}
+	return opTable
 }

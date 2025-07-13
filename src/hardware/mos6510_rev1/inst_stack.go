@@ -6,50 +6,50 @@ import (
 
 // Stack
 
-// instOpPHA handles the PHA (Push Accumulator) operation, verifying CPU state and setting the next instruction step.
+// InstOpPHA handles the PHA (Push Accumulator) operation, verifying CPU state and setting the next instruction step.
 //
 //go:nosplit
-func instOpPHA(cpu *CPU) {
+func InstOpPHA(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.next = instOpPHA1
+	cpu.next = InstOpPHA1
 }
 
-// instOpPHA1 pushes the accumulator onto the stack, updates the stack pointer, and sets the next operation to instOpINI.
+// InstOpPHA1 pushes the accumulator onto the stack, updates the stack pointer, and sets the next operation to InstOpINI.
 //
 //go:nosplit
-func instOpPHA1(cpu *CPU) {
-	cpu.banks.Write(uint16(cpu.sp)|stackAddr, cpu.a)
+func InstOpPHA1(cpu *CPU) {
+	cpu.bankWrite(uint16(cpu.sp)|stackAddr, cpu.a)
 	cpu.sp--
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpPLA prepares the CPU for the PLA (Pull Accumulator) instruction by setting the next state for execution.
+// InstOpPLA prepares the CPU for the PLA (Pull Accumulator) instruction by setting the next state for execution.
 //
 //go:nosplit
-func instOpPLA(cpu *CPU) {
+func InstOpPLA(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.next = instOpPLA1
+	cpu.next = InstOpPLA1
 }
 
-// instOpPLA1 handles the PLA (Pull Accumulator) step 1 by reading the stack and preparing for the next operation.
+// InstOpPLA1 handles the PLA (Pull Accumulator) step 1 by reading the stack and preparing for the next operation.
 //
 //go:nosplit
-func instOpPLA1(cpu *CPU) {
+func InstOpPLA1(cpu *CPU) {
 	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
 	cpu.sp++
-	cpu.next = instOpPLA2
+	cpu.next = InstOpPLA2
 }
 
-// instOpPLA2 is an instruction handler that pulls a byte from the stack into the accumulator and updates flags.
+// InstOpPLA2 is an instruction handler that pulls a byte from the stack into the accumulator and updates flags.
 //
 //go:nosplit
-func instOpPLA2(cpu *CPU) {
+func InstOpPLA2(cpu *CPU) {
 	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
@@ -57,54 +57,54 @@ func instOpPLA2(cpu *CPU) {
 	cpu.a = data
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpPHP initiates the PHP (Push Processor Status) instruction by preparing to save the processor flags onto the stack.
+// InstOpPHP initiates the PHP (Push Processor Status) instruction by preparing to save the processor flags onto the stack.
 //
 //go:nosplit
-func instOpPHP(cpu *CPU) {
+func InstOpPHP(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.next = instOpPHP1
+	cpu.next = InstOpPHP1
 }
 
-// instOpPHP1 pushes the CPU status flags onto the stack, decrements the stack pointer, and sets the next instruction to instOpINI.
+// InstOpPHP1 pushes the CPU status flags onto the stack, decrements the stack pointer, and sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func instOpPHP1(cpu *CPU) {
+func InstOpPHP1(cpu *CPU) {
 	data := cpu.pushFlags(true)
-	cpu.banks.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
+	cpu.bankWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
 
-// instOpPLP processes the PLP (Pull Processor Status) instruction by advancing the CPU state to the next handler.
+// InstOpPLP processes the PLP (Pull Processor Status) instruction by advancing the CPU state to the next handler.
 //
 //go:nosplit
-func instOpPLP(cpu *CPU) {
+func InstOpPLP(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
 	}
-	cpu.next = instOpPLP1
+	cpu.next = InstOpPLP1
 }
 
-// instOpPLP1 reads a byte from the stack. If unsuccessful, exits; otherwise increments the stack pointer and sets instOpPLP2.
+// InstOpPLP1 reads a byte from the stack. If unsuccessful, exits; otherwise increments the stack pointer and sets InstOpPLP2.
 //
 //go:nosplit
-func instOpPLP1(cpu *CPU) {
+func InstOpPLP1(cpu *CPU) {
 	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
 	cpu.sp++
-	cpu.next = instOpPLP2
+	cpu.next = InstOpPLP2
 }
 
-// instOpPLP2 retrieves a byte from the stack, updates CPU flags, and manages IRQ enable/disable transitions.
+// InstOpPLP2 retrieves a byte from the stack, updates CPU flags, and manages IRQ enable/disable transitions.
 //
 //go:nosplit
-func instOpPLP2(cpu *CPU) {
+func InstOpPLP2(cpu *CPU) {
 	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
@@ -116,5 +116,5 @@ func instOpPLP2(cpu *CPU) {
 	} else if iFlagPrev != 0 && cpu.iFlag == 0 {
 		cpu.opFlags |= references.OpFlagIrqEnabled
 	}
-	cpu.next = instOpINI
+	cpu.next = InstOpINI
 }
