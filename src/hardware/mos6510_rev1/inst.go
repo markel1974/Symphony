@@ -38,7 +38,7 @@ func InstOpINI(cpu *CPU) {
 		return
 	}
 	cpu.irqBreaker = false
-	cpu.op = cpu.bankRead(cpu.pc)
+	cpu.op = cpu.busRead(cpu.pc)
 	cpu.pc++
 	cpu.next = cpu.modeTable[cpu.op]
 }

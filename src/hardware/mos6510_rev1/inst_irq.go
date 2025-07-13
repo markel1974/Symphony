@@ -27,7 +27,7 @@ func InstOpIRQ1(cpu *CPU) {
 //go:nosplit
 func InstOpIRQ2(cpu *CPU) {
 	//push return address high byte onto stack
-	cpu.bankWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
+	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = InstOpIRQ3
 }
@@ -38,7 +38,7 @@ func InstOpIRQ2(cpu *CPU) {
 //go:nosplit
 func InstOpIRQ3(cpu *CPU) {
 	//push return address low byte onto stack
-	cpu.bankWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
+	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = InstOpIRQ4
 }
@@ -49,7 +49,7 @@ func InstOpIRQ3(cpu *CPU) {
 func InstOpIRQ4(cpu *CPU) {
 	//push status register onto stack
 	data := cpu.pushFlags(false)
-	cpu.bankWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
+	cpu.busWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.iFlag = 1
 	cpu.next = InstOpIRQ5

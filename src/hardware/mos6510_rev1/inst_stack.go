@@ -20,7 +20,7 @@ func InstOpPHA(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPHA1(cpu *CPU) {
-	cpu.bankWrite(uint16(cpu.sp)|stackAddr, cpu.a)
+	cpu.busWrite(uint16(cpu.sp)|stackAddr, cpu.a)
 	cpu.sp--
 	cpu.next = InstOpINI
 }
@@ -75,7 +75,7 @@ func InstOpPHP(cpu *CPU) {
 //go:nosplit
 func InstOpPHP1(cpu *CPU) {
 	data := cpu.pushFlags(true)
-	cpu.bankWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
+	cpu.busWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.next = InstOpINI
 }

@@ -82,7 +82,7 @@ func InstOpJSR1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpJSR2(cpu *CPU) {
-	cpu.bankWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
+	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = InstOpJSR3
 }
@@ -91,7 +91,7 @@ func InstOpJSR2(cpu *CPU) {
 //
 //go:nosplit
 func InstOpJSR3(cpu *CPU) {
-	cpu.bankWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
+	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = InstOpJSR4
 }
@@ -242,7 +242,7 @@ func InstOpBRK(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBRK1(cpu *CPU) {
-	cpu.bankWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
+	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = InstOpBRK2
 }
@@ -252,7 +252,7 @@ func InstOpBRK1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBRK2(cpu *CPU) {
-	cpu.bankWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
+	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = InstOpBRK3
 }
@@ -262,7 +262,7 @@ func InstOpBRK2(cpu *CPU) {
 //go:nosplit
 func InstOpBRK3(cpu *CPU) {
 	data := cpu.pushFlags(true)
-	cpu.bankWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
+	cpu.busWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.iFlag = 1
 	if cpu.picHasNMI() {

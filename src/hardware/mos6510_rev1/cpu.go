@@ -16,8 +16,11 @@ import (
 // CPU represents a simulated central processing unit with registers, flags, and associated helper components.
 type CPU struct {
 	*component.BaseComponent
-	bankRead       func(uint16) uint8                     // bankRead is a function that reads a byte from a specified 16-bit memory address in the CPU's memory bank.
-	bankWrite      func(uint16, uint8)                    // bankWrite is a function that writes a byte to a specified 16-bit memory address in the CPU's memory bank.
+	lineRead  func(uint16) uint8
+	lineWrite func(uint16, uint8)
+	busRead   func(uint16) uint8  // busRead is a function that reads a byte from a specified 16-bit memory address in the CPU's memory bank.
+	busWrite  func(uint16, uint8) // busWrite is a function that writes a byte to a specified 16-bit memory address in the CPU's memory bank.
+
 	picReset       func()                                 // picReset is a function that resets or reinitializes the Programmable Interrupt Controller (PIC).
 	picHasNMI      func() bool                            // picHasNMI checks if the PIC (Programmable Interrupt Controller) has a Non-Maskable Interrupt (NMI) pending.
 	picClearNMI    func()                                 // picClearNMI clears the Non-Maskable Interrupt (NMI) signal in the system's Programmable Interrupt Controller (PIC).
@@ -69,8 +72,12 @@ func (cpu *CPU) Bind(_ references.IMos6510Socket, pic references.IMos6510Pic, ba
 	cpu.picVerifyIrq = pic.VerifyIrq
 	cpu.picHasNMI = pic.HasNMI
 	cpu.picClearNMI = pic.ClearNMI
-	cpu.bankRead = banks.Read
-	cpu.bankWrite = banks.Write
+
+	cpu.lineRead = banks.Read
+	cpu.lineWrite = banks.Write
+
+	cpu.busRead = cpu.lineRead
+	cpu.busWrite = cpu.lineWrite
 	return nil
 }
 
@@ -86,7 +93,7 @@ func (cpu *CPU) Internal() bool {
 // Reset initializes or restores the CPU to a default state by resetting internal flags, registers, and setting the program counter.
 func (cpu *CPU) Reset() {
 	cpu.picReset()
-	cpu.pc = uint16(cpu.bankRead(0xfffc)) | (uint16(cpu.bankRead(0xfffd)) << 8) // Read reset vector
+	cpu.pc = uint16(cpu.busRead(0xfffc)) | (uint16(cpu.busRead(0xfffd)) << 8) // Read reset vector
 	cpu.next = InstOpINI
 	cpu.opFlags = 0
 	cpu.irqBreaker = false
@@ -101,7 +108,7 @@ func (cpu *CPU) SetOverflowBranch(sob func() bool) {
 func (cpu *CPU) SetAECLow(aecLow bool) {
 	cpu.aecLow = aecLow
 	if cpu.aecLow {
-		cpu.setModeHalt()
+		cpu.disconnectBus()
 	}
 }
 
@@ -111,6 +118,35 @@ func (cpu *CPU) SetRDYLow(rdyLow bool) {
 	if !cpu.rdyLow {
 		cpu.setModeRun()
 	}
+}
+
+// setModeHalt transitions the CPU into halt mode by saving the current state and setting the next operation to halt.
+func (cpu *CPU) setModeHalt() {
+	if cpu.savedNext == nil {
+		cpu.savedNext = cpu.next
+		cpu.next = halt
+	}
+}
+
+// setModeRun transitions the CPU into run mode by connecting to the bus and restoring any previously saved state.
+func (cpu *CPU) setModeRun() {
+	cpu.connectBus()
+	if cpu.savedNext != nil {
+		cpu.next = cpu.savedNext
+		cpu.savedNext = nil
+	}
+}
+
+// disconnectBus disconnects the CPU from its current bus by setting read and write operations to their disconnected state.
+func (cpu *CPU) disconnectBus() {
+	cpu.busRead = cpu.busDisconnectedRead
+	cpu.busWrite = cpu.busDisconnectedWrite
+}
+
+// connectBus initializes the CPU's internal bus by linking busRead and busWrite to corresponding line signals.
+func (cpu *CPU) connectBus() {
+	cpu.busRead = cpu.lineRead
+	cpu.busWrite = cpu.lineWrite
 }
 
 // Emulate processes one CPU cycle by invoking the next instruction handler unless the CPU is stopped.
@@ -125,24 +161,17 @@ func (cpu *CPU) EmulationRequired() bool {
 	return true
 }
 
+// busDisconnectedRead performs a read operation while the CPU bus is disconnected, always returning a default value of 0.
+func (cpu *CPU) busDisconnectedRead(_ uint16) uint8 {
+	return 0
+}
+
+// busDisconnectedWrite is a placeholder method called when an illegal write operation is attempted on a disconnected bus.
+func (cpu *CPU) busDisconnectedWrite(_ uint16, _ uint8) {
+}
+
 // halt pauses the CPU's operation by acting as a no-op function while the CPU remains in the halted state.
 func halt(_ *CPU) {
-}
-
-// setModeHalt halts the CPU by saving the current next instruction pointer and pointing next to the halt function.
-func (cpu *CPU) setModeHalt() {
-	if cpu.savedNext == nil {
-		cpu.savedNext = cpu.next
-		cpu.next = halt
-	}
-}
-
-// setModeRun restores the CPU's next instruction pointer from savedNext, allowing it to resume execution.
-func (cpu *CPU) setModeRun() {
-	if cpu.savedNext != nil {
-		cpu.next = cpu.savedNext
-		cpu.savedNext = nil
-	}
 }
 
 // Read retrieves a byte from the specified memory address.
@@ -162,7 +191,7 @@ func (cpu *CPU) read(addr uint16) (uint8, bool) {
 		cpu.setModeHalt()
 		return 0, false
 	}
-	return cpu.bankRead(addr), true
+	return cpu.busRead(addr), true
 }
 
 // popFlags updates the CPU state flags based on the input data, setting various flags like nFlag, vFlag, dFlag, etc.

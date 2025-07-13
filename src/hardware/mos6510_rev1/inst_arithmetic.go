@@ -115,7 +115,7 @@ func InstOpINC(cpu *CPU) {
 	v := cpu.rmw + 1
 	cpu.nFlag = v
 	cpu.zFlag = v
-	cpu.bankWrite(cpu.ar, v)
+	cpu.busWrite(cpu.ar, v)
 	cpu.next = InstOpINI
 }
 
@@ -126,7 +126,7 @@ func InstOpDEC(cpu *CPU) {
 	v := cpu.rmw - 1
 	cpu.nFlag = v
 	cpu.zFlag = v
-	cpu.bankWrite(cpu.ar, v)
+	cpu.busWrite(cpu.ar, v)
 	cpu.next = InstOpINI
 }
 
@@ -367,7 +367,7 @@ func InstOpASL(cpu *CPU) {
 	v := cpu.rmw << 1
 	cpu.nFlag = v
 	cpu.zFlag = v
-	cpu.bankWrite(cpu.ar, v)
+	cpu.busWrite(cpu.ar, v)
 	cpu.next = InstOpINI
 }
 
@@ -393,7 +393,7 @@ func InstOpLSR(cpu *CPU) {
 	v := cpu.rmw >> 1
 	cpu.nFlag = v
 	cpu.zFlag = v
-	cpu.bankWrite(cpu.ar, v)
+	cpu.busWrite(cpu.ar, v)
 	cpu.next = InstOpINI
 }
 
@@ -423,7 +423,7 @@ func InstOpROL(cpu *CPU) {
 	}
 	cpu.nFlag = t
 	cpu.zFlag = t
-	cpu.bankWrite(cpu.ar, t)
+	cpu.busWrite(cpu.ar, t)
 	cpu.cFlag = cpu.rmw & 0x80
 	cpu.next = InstOpINI
 }
@@ -459,7 +459,7 @@ func InstOpROR(cpu *CPU) {
 	}
 	cpu.nFlag = t
 	cpu.zFlag = t
-	cpu.bankWrite(cpu.ar, t)
+	cpu.busWrite(cpu.ar, t)
 	cpu.cFlag = cpu.rmw & 0x1
 	cpu.next = InstOpINI
 }

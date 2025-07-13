@@ -55,7 +55,7 @@ func InstOpLAX(cpu *CPU) {
 //
 //go:nosplit
 func InstOpSAX(cpu *CPU) {
-	cpu.bankWrite(cpu.ar, cpu.a&cpu.x)
+	cpu.busWrite(cpu.ar, cpu.a&cpu.x)
 	cpu.next = InstOpINI
 }
 
@@ -67,7 +67,7 @@ func InstOpSAX(cpu *CPU) {
 func InstOpSLO(cpu *CPU) {
 	cpu.cFlag = cpu.rmw & 0x80
 	cpu.rmw <<= 1
-	cpu.bankWrite(cpu.ar, cpu.rmw)
+	cpu.busWrite(cpu.ar, cpu.rmw)
 	cpu.a |= cpu.rmw
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
@@ -87,7 +87,7 @@ func InstOpRLA(cpu *CPU) {
 		cpu.rmw = cpu.rmw << 1
 	}
 	cpu.cFlag = tmp
-	cpu.bankWrite(cpu.ar, cpu.rmw)
+	cpu.busWrite(cpu.ar, cpu.rmw)
 	cpu.a &= cpu.rmw
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
@@ -102,7 +102,7 @@ func InstOpRLA(cpu *CPU) {
 func InstOpSRE(cpu *CPU) {
 	cpu.cFlag = cpu.rmw & 0x1
 	cpu.rmw >>= 1
-	cpu.bankWrite(cpu.ar, cpu.rmw)
+	cpu.busWrite(cpu.ar, cpu.rmw)
 	cpu.a ^= cpu.rmw
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
@@ -122,7 +122,7 @@ func InstOpRRA(cpu *CPU) {
 		cpu.rmw = cpu.rmw >> 1
 	}
 	cpu.cFlag = tmp
-	cpu.bankWrite(cpu.ar, cpu.rmw)
+	cpu.busWrite(cpu.ar, cpu.rmw)
 	cpu.doADC(cpu.rmw)
 	cpu.next = InstOpINI
 }
@@ -134,7 +134,7 @@ func InstOpRRA(cpu *CPU) {
 //go:nosplit
 func InstOpDCP(cpu *CPU) {
 	cpu.rmw--
-	cpu.bankWrite(cpu.ar, cpu.rmw)
+	cpu.busWrite(cpu.ar, cpu.rmw)
 	cpu.ar = uint16(cpu.a) - uint16(cpu.rmw)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
@@ -152,7 +152,7 @@ func InstOpDCP(cpu *CPU) {
 //go:nosplit
 func InstOpISB(cpu *CPU) {
 	cpu.rmw++
-	cpu.bankWrite(cpu.ar, cpu.rmw)
+	cpu.busWrite(cpu.ar, cpu.rmw)
 	cpu.doSBC(cpu.rmw)
 	cpu.next = InstOpINI
 }
@@ -308,7 +308,7 @@ func InstOpLAS(cpu *CPU) {
 func InstOpSHS(cpu *CPU) {
 	cpu.sp = cpu.a & cpu.x
 	d := uint8((cpu.ar2 + 1) & uint16(cpu.sp))
-	cpu.bankWrite(cpu.ar, d)
+	cpu.busWrite(cpu.ar, d)
 	cpu.next = InstOpINI
 }
 
@@ -318,7 +318,7 @@ func InstOpSHS(cpu *CPU) {
 //go:nosplit
 func InstOpSHY(cpu *CPU) {
 	d := uint8(uint16(cpu.y) & (cpu.ar2 + 1))
-	cpu.bankWrite(cpu.ar, d)
+	cpu.busWrite(cpu.ar, d)
 	cpu.next = InstOpINI
 }
 
@@ -327,7 +327,7 @@ func InstOpSHY(cpu *CPU) {
 //go:nosplit
 func InstOpSHX(cpu *CPU) {
 	d := uint8(uint16(cpu.x) & (cpu.ar2 + 1))
-	cpu.bankWrite(cpu.ar, d)
+	cpu.busWrite(cpu.ar, d)
 	cpu.next = InstOpINI
 }
 
@@ -337,7 +337,7 @@ func InstOpSHX(cpu *CPU) {
 //go:nosplit
 func InstOpSHA(cpu *CPU) {
 	d := uint8(uint16(cpu.a) & uint16(cpu.x) & (cpu.ar2 + 1))
-	cpu.bankWrite(cpu.ar, d)
+	cpu.busWrite(cpu.ar, d)
 	cpu.next = InstOpINI
 }
 

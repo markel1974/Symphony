@@ -783,7 +783,7 @@ func InstOpRMW(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRMW1(cpu *CPU) {
-	cpu.bankWrite(cpu.ar, cpu.rmw)
+	cpu.busWrite(cpu.ar, cpu.rmw)
 	cpu.next = cpu.opTable[cpu.op]
 }
 
@@ -881,7 +881,7 @@ func InstOiLDY(cpu *CPU) {
 //
 //go:nosplit
 func InstOpSTA(cpu *CPU) {
-	cpu.bankWrite(cpu.ar, cpu.a)
+	cpu.busWrite(cpu.ar, cpu.a)
 	cpu.next = InstOpINI
 }
 
@@ -889,7 +889,7 @@ func InstOpSTA(cpu *CPU) {
 //
 //go:nosplit
 func InstOpSTX(cpu *CPU) {
-	cpu.bankWrite(cpu.ar, cpu.x)
+	cpu.busWrite(cpu.ar, cpu.x)
 	cpu.next = InstOpINI
 }
 
@@ -897,7 +897,7 @@ func InstOpSTX(cpu *CPU) {
 //
 //go:nosplit
 func InstOpSTY(cpu *CPU) {
-	cpu.bankWrite(cpu.ar, cpu.y)
+	cpu.busWrite(cpu.ar, cpu.y)
 	cpu.next = InstOpINI
 }
 
