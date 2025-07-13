@@ -6,6 +6,8 @@ const (
 )
 
 // InstOpHalt pauses the CPU's operation by acting as a no-op function while the CPU remains in the halted state.
+//
+//go:nosplit
 func InstOpHalt(_ *CPU) {
 }
 
