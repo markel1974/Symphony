@@ -309,7 +309,7 @@ func InstOpBCS(cpu *CPU) {
 	if cpu.cFlag == 0 {
 		cpu.next = InstOpINI
 	} else {
-		cpu.branch(data)
+		cpu.next = cpu.computeBranch(data)
 	}
 }
 
@@ -325,7 +325,7 @@ func InstOpBCC(cpu *CPU) {
 	if cpu.cFlag != 0 {
 		cpu.next = InstOpINI
 	} else {
-		cpu.branch(data)
+		cpu.next = cpu.computeBranch(data)
 	}
 }
 
@@ -341,7 +341,7 @@ func InstOpBEQ(cpu *CPU) {
 	if cpu.zFlag != 0 {
 		cpu.next = InstOpINI
 	} else {
-		cpu.branch(data)
+		cpu.next = cpu.computeBranch(data)
 	}
 }
 
@@ -357,7 +357,7 @@ func InstOpBNE(cpu *CPU) {
 	if cpu.zFlag == 0 {
 		cpu.next = InstOpINI
 	} else {
-		cpu.branch(data)
+		cpu.next = cpu.computeBranch(data)
 	}
 }
 
@@ -376,7 +376,7 @@ func InstOpBVS(cpu *CPU) {
 	if cpu.vFlag == 0 {
 		cpu.next = InstOpINI
 	} else {
-		cpu.branch(data)
+		cpu.next = cpu.computeBranch(data)
 	}
 }
 
@@ -395,7 +395,7 @@ func InstOpBVC(cpu *CPU) {
 	if cpu.vFlag != 0 {
 		cpu.next = InstOpINI
 	} else {
-		cpu.branch(data)
+		cpu.next = cpu.computeBranch(data)
 	}
 }
 
@@ -411,7 +411,7 @@ func InstOpBMI(cpu *CPU) {
 	if (cpu.nFlag & 0x80) == 0 {
 		cpu.next = InstOpINI
 	} else {
-		cpu.branch(data)
+		cpu.next = cpu.computeBranch(data)
 	}
 }
 
@@ -427,7 +427,7 @@ func InstOpBPL(cpu *CPU) {
 	if (cpu.nFlag & 0x80) != 0 {
 		cpu.next = InstOpINI
 	} else {
-		cpu.branch(data)
+		cpu.next = cpu.computeBranch(data)
 	}
 }
 

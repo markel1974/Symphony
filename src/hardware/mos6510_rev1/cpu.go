@@ -215,17 +215,15 @@ func (cpu *CPU) pushFlags(bFlags bool) uint8 {
 }
 
 // branch handles the logic for branching to a new program counter location based on offset and page crossing.
-func (cpu *CPU) branch(data uint8) {
+func (cpu *CPU) computeBranch(data uint8) func(*CPU) {
 	cpu.ar = cpu.pc + uint16(int8(data))
 	if (cpu.ar >> 8) != (cpu.pc >> 8) {
 		if (data & 0x80) != 0 {
-			cpu.next = InstOpBRAbp
-		} else {
-			cpu.next = InstOpBRAfp
+			return InstOpBRAbp
 		}
-	} else {
-		cpu.next = InstOpBRAnp
+		return InstOpBRAfp
 	}
+	return InstOpBRAnp
 }
 
 // doADC performs the Add with Carry (ADC) operation using the given operand and CPU state.
