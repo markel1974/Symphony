@@ -1,38 +1,5 @@
 package mos6581
 
-// Costanti per gli indici dei registri del SID (all'interno della slice 'registers').
-const (
-	freqLO1 = 0
-	freqHI1 = 1
-	pwLO1   = 2
-	pwHI1   = 3
-	cr1     = 4 // Control Register - Voice 1
-	ad1     = 5 // Attack/Decay - Voice 1
-	sr1     = 6 // Sustain/Release - Voice 1
-	freqLO2 = 7
-	freqHI2 = 8
-	pwLO2   = 9
-	pwHI2   = 10
-	cr2     = 11
-	ad2     = 12
-	sr2     = 13
-	freqLO3 = 14
-	freqHI3 = 15
-	pwLO3   = 16
-	pwHI3   = 17
-	cr3     = 18
-	ad3     = 19
-	sr3     = 20
-	fcLO    = 21 // Filter Cutoff Low
-	fcHI    = 22
-	resFilt = 23 // Resonance and Filter Control
-	modeVol = 24 // Mode and Volume
-	potX    = 25 // Potentiometer X (read-only)
-	potY    = 26 // Potentiometer Y (read-only)
-	osc3    = 27 // Oscillator 3 / Random Number (read-only)
-	env3    = 28 // Envelope 3 (read-only)
-)
-
 type SidReflect struct {
 	sid *SID
 }

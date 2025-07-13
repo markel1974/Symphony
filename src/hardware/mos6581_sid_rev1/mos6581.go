@@ -7,18 +7,43 @@ import (
 )
 
 const (
+	freqLO1 = 0
+	freqHI1 = 1
+	pwLO1   = 2
+	pwHI1   = 3
+	cr1     = 4 // Control Register - Voice 1
+	ad1     = 5 // Attack/Decay - Voice 1
+	sr1     = 6 // Sustain/Release - Voice 1
+	freqLO2 = 7
+	freqHI2 = 8
+	pwLO2   = 9
+	pwHI2   = 10
+	cr2     = 11
+	ad2     = 12
+	sr2     = 13
+	freqLO3 = 14
+	freqHI3 = 15
+	pwLO3   = 16
+	pwHI3   = 17
+	cr3     = 18
+	ad3     = 19
+	sr3     = 20
+	fcLO    = 21 // Filter Cutoff Low
+	fcHI    = 22
+	resFilt = 23 // Resonance and Filter Control
+	modeVol = 24 // Mode and Volume
+	potX    = 25 // Potentiometer X (read-only)
+	potY    = 26 // Potentiometer Y (read-only)
+	osc3    = 27 // Oscillator 3 / Random Number (read-only)
+	env3    = 28 // Envelope 3 (read-only)
+)
+
+const (
 	sidVolumeMax       = 15.0    // 0-15
 	normalizedIntValue = 32767.0 // interval -1.0, 1.0
 	scalingFactor      = 1024.0  // scaling factor (eq: 1 >> 10)
 	divisor            = normalizedIntValue * scalingFactor
 	inverseDivisor     = 1.0 / divisor
-)
-
-// potXRegisterIndex represents the register index for the X-axis potentiometer.
-// potYRegisterIndex represents the register index for the Y-axis potentiometer.
-const (
-	potXRegisterIndex = 25
-	potYRegisterIndex = 26
 )
 
 // WriteFn defines a function type that processes an 8-bit unsigned integer as input.
@@ -161,18 +186,13 @@ func (sid *SID) WriteRegister(addr uint16, data uint8) {
 // SetPotX sets the value of the POTX (paddle) register to control the position of the X-axis paddle input.
 func (sid *SID) SetPotX(pot uint8) {
 	// PX7 PX6 PX5 PX4 PX3 PX2 PX1 PX0
-	sid.registers[potXRegisterIndex] = pot
+	sid.registers[potX] = pot
 }
 
 // SetPotY sets the pot value for the Y-axis register of the SID. This value updates the corresponding SID register directly.
 func (sid *SID) SetPotY(pot uint8) {
 	//PY7 PY6 PY5 PY4 PY3 PY2 PY1 PY0
-	sid.registers[potYRegisterIndex] = pot
-}
-
-// GetVASignal retrieves the last byte of the SID structure and returns it as an unsigned 8-bit integer.
-func (sid *SID) GetVASignal() uint8 {
-	return 0
+	sid.registers[potY] = pot
 }
 
 // calcSoundBuffer generates audio samples for the current block, applying volume changes and filtering for each voice.
@@ -210,54 +230,59 @@ func (sid *SID) calcSoundBuffer() {
 	}
 }
 
+// readRegisterDefault reads the value from the specified SID register address, normalized within the valid register range.
+func (sid *SID) readDefault(addr uint16) uint8 {
+	reg := addr & 0x1f
+	return sid.registers[reg]
+}
+
 // createReadRegister initializes and returns an array of ReadFn functions mapped to SID register addresses.
 // It sets a default read function for most registers and customized functions for specific addresses like 27 and 28.
 func (sid *SID) createReadRegister() [RegisterCount]ReadFn {
 	var reads [RegisterCount]ReadFn
-	defaultFn := func(addr uint16) uint8 {
-		reg := addr & 0x1f
-		return sid.registers[reg]
-	}
 	for idx := range reads {
-		reads[idx] = defaultFn
+		reads[idx] = sid.readDefault
 	}
-	reads[27] = sid.voices.ReadVoice2Waveform
-	reads[28] = sid.voices.ReadVoice2EgLevel
+	reads[osc3] = sid.voices.ReadVoice2Waveform
+	reads[env3] = sid.voices.ReadVoice2EgLevel
 	return reads
+}
+
+// writeDefault is a default write handler for SID registers that performs no operation when invoked.
+func (sid *SID) writeDefault(_ uint8) {
 }
 
 // createWriteRegister initializes and returns an array of WriteFn mapped to SID register write operations.
 func (sid *SID) createWriteRegister() [RegisterCount]WriteFn {
 	var writes [RegisterCount]WriteFn
-	defaultFn := func(data uint8) {}
 	for idx := range writes {
-		writes[idx] = defaultFn
+		writes[idx] = sid.writeDefault
 	}
-	writes[0] = sid.voices.WriteVoice0UpdateFreqA
-	writes[1] = sid.voices.WriteVoice0UpdateFreqB
-	writes[2] = sid.voices.WriteVoice0UpdatePulseWidthA
-	writes[3] = sid.voices.WriteVoice0UpdatePulseWidthB
-	writes[4] = sid.voices.WriteVoice0UpdateWaveForm
-	writes[5] = sid.voices.writeVoice0UpdateEnvelopeGenerators
-	writes[6] = sid.voices.WriteVoice0UpdateSustainLevel
-	writes[7] = sid.voices.WriteVoice1UpdateFreqA
-	writes[8] = sid.voices.WriteVoice1UpdateFreqB
-	writes[9] = sid.voices.WriteVoice1UpdatePulseWidthA
-	writes[10] = sid.voices.WriteVoice1UpdatePulseWidthB
-	writes[11] = sid.voices.WriteVoice1UpdateWaveForm
-	writes[12] = sid.voices.WriteVoice1UpdateEnvelopeGenerators
-	writes[13] = sid.voices.WriteVoice1UpdateSustainLevel
-	writes[14] = sid.voices.WriteVoice2UpdateFreqA
-	writes[15] = sid.voices.WriteVoice2UpdateFreqB
-	writes[16] = sid.voices.WriteVoice2UpdatePulseWidthA
-	writes[17] = sid.voices.WriteVoice2UpdatePulseWidthB
-	writes[18] = sid.voices.WriteVoice2UpdateWaveForm
-	writes[19] = sid.voices.WriteVoice2UpdateEnvelopeGenerators
-	writes[20] = sid.voices.WriteVoice2UpdateSustainLevel
-	writes[21] = sid.filters.UpdateFreqLow
-	writes[22] = sid.filters.UpdateFreqHigh
-	writes[23] = sid.writeFiltersRegister
-	writes[24] = sid.writeMasterVolumeAndFilterType
+	writes[freqLO1] = sid.voices.WriteVoice0UpdateFreqA
+	writes[freqHI1] = sid.voices.WriteVoice0UpdateFreqB
+	writes[pwLO1] = sid.voices.WriteVoice0UpdatePulseWidthA
+	writes[pwHI1] = sid.voices.WriteVoice0UpdatePulseWidthB
+	writes[cr1] = sid.voices.WriteVoice0UpdateWaveForm
+	writes[ad1] = sid.voices.writeVoice0UpdateEnvelopeGenerators
+	writes[sr1] = sid.voices.WriteVoice0UpdateSustainLevel
+	writes[freqLO2] = sid.voices.WriteVoice1UpdateFreqA
+	writes[freqHI2] = sid.voices.WriteVoice1UpdateFreqB
+	writes[pwLO2] = sid.voices.WriteVoice1UpdatePulseWidthA
+	writes[pwHI2] = sid.voices.WriteVoice1UpdatePulseWidthB
+	writes[cr2] = sid.voices.WriteVoice1UpdateWaveForm
+	writes[ad2] = sid.voices.WriteVoice1UpdateEnvelopeGenerators
+	writes[sr2] = sid.voices.WriteVoice1UpdateSustainLevel
+	writes[freqLO3] = sid.voices.WriteVoice2UpdateFreqA
+	writes[freqHI3] = sid.voices.WriteVoice2UpdateFreqB
+	writes[pwLO3] = sid.voices.WriteVoice2UpdatePulseWidthA
+	writes[pwHI3] = sid.voices.WriteVoice2UpdatePulseWidthB
+	writes[cr3] = sid.voices.WriteVoice2UpdateWaveForm
+	writes[ad3] = sid.voices.WriteVoice2UpdateEnvelopeGenerators
+	writes[sr3] = sid.voices.WriteVoice2UpdateSustainLevel
+	writes[fcLO] = sid.filters.UpdateFreqLow
+	writes[fcHI] = sid.filters.UpdateFreqHigh
+	writes[resFilt] = sid.writeFiltersRegister
+	writes[modeVol] = sid.writeMasterVolumeAndFilterType
 	return writes
 }
 
