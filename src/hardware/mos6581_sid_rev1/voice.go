@@ -133,6 +133,10 @@ func (v *Voice) Reset() {
 	v.mute = false
 }
 
+func (v *Voice) SetMute(m bool) {
+	v.mute = m
+}
+
 // IsMuted checks if the voice is currently in a muted state and returns true if muted, otherwise false.
 func (v *Voice) IsMuted() bool {
 	return v.mute

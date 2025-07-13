@@ -35,16 +35,14 @@ type SID struct {
 	reflect                   *SidReflect
 	player                    references.IAudioRender
 	voices                    *Voices
-	fragSize                  int     // samples, not bytes
-	bufferFrags               int     // frags the in buffer
+	filters                   *Filters
+	writes                    [RegisterCount]WriteFn
+	reads                     [RegisterCount]ReadFn
 	volume                    uint8   // Master volume
 	sampleBuf                 []uint8 // Buffer for sampled voices
 	sampleBufIdx              int     // Index in sample_buf for writing
 	soundBuffer               []float32
 	audioSamplesPerVolumeStep float64
-	filters                   *Filters
-	writes                    [RegisterCount]WriteFn
-	reads                     [RegisterCount]ReadFn
 }
 
 // NewSID initializes and returns a new SID component instance with the given parent, factory, label, and instance number.
@@ -73,11 +71,10 @@ func (sid *SID) Bind(_ references.IMos6581Socket, fragFreq int /* rasters */, _ 
 	sid.player = sid.GetFactory().GetIAudioRender()
 	sid.sampleBuf = make([]uint8, SampleBufSize)
 	sid.voices = nil
-	sid.fragSize = SampleFreq / fragFreq // samples, not bytes
-	sid.bufferFrags = fragFreq
+	fragSize := SampleFreq / fragFreq // samples, not bytes
 	sid.filters = NewFilters()
-	sid.audioSamplesPerVolumeStep = float64(sid.fragSize) / float64(SampleBufHalfSize)
-	sid.soundBuffer = make([]float32, sid.fragSize)
+	sid.audioSamplesPerVolumeStep = float64(fragSize) / float64(SampleBufHalfSize)
+	sid.soundBuffer = make([]float32, fragSize)
 	sid.voices = NewVoices()
 	sid.writes = sid.createWriteRegister()
 	sid.reads = sid.createReadRegister()
@@ -145,7 +142,7 @@ func (sid *SID) Prepare() {
 // Update processes the sound buffer and writes updated sound data to the audio player.
 func (sid *SID) Update() {
 	sid.calcSoundBuffer()
-	sid.player.Write(&sid.soundBuffer, sid.fragSize)
+	sid.player.Write(&sid.soundBuffer, len(sid.soundBuffer))
 }
 
 // ReadRegister reads the value of a specified SID register identified by the provided address.
@@ -190,7 +187,7 @@ func (sid *SID) calcSoundBuffer() {
 	nextChangeAtAudioSampleIdx := sid.audioSamplesPerVolumeStep
 	// Count how many of the 312 volume values we've already used
 	volumeSteps := 0
-	for idx := 0; idx < sid.fragSize; idx++ {
+	for idx := range sid.soundBuffer {
 		// Check if it's time to update currentVolumeValue by reading next value from sampleBuf.
 		// This happens when the current audio sample index (idx)
 		// exceeds or equals a calculated threshold (nextChangeAtAudioSampleIdx).
@@ -258,7 +255,7 @@ func (sid *SID) createWriteRegister() [RegisterCount]WriteFn {
 	writes[19] = sid.voices.WriteVoice2UpdateEnvelopeGenerators
 	writes[20] = sid.voices.WriteVoice2UpdateSustainLevel
 	writes[21] = sid.filters.UpdateFreqLow
-	writes[22] = sid.filters.UpdateFreqHigh //(data & 0x07)
+	writes[22] = sid.filters.UpdateFreqHigh
 	writes[23] = sid.writeFiltersRegister
 	writes[24] = sid.writeMasterVolumeAndFilterType
 	return writes
@@ -266,27 +263,13 @@ func (sid *SID) createWriteRegister() [RegisterCount]WriteFn {
 
 // writeFiltersRegister configures filter settings for the SID voices based on the provided data value.
 func (sid *SID) writeFiltersRegister(data uint8) {
-	var f1, f2, f3 uint8 = 0, 0, 0
-	if (data & 1) != 0 {
-		f1 = 1
-	}
-	if (data & 2) != 0 {
-		f2 = 1
-	}
-	if (data & 4) != 0 {
-		f3 = 1
-	}
-	sid.voices.SetFilters(f1, f2, f3)
+	sid.voices.SetFilters(data)
 	sid.filters.UpdateRes(data)
 }
 
 // writeMasterVolumeAndFilterType updates master volume, filter type, and mute state based on the given input data.
 func (sid *SID) writeMasterVolumeAndFilterType(data uint8) {
-	mute := false //uint8(0)
-	if (data & 0x80) != 0 {
-		mute = true
-	}
 	sid.volume = data & 0xf
-	sid.voices.SetMuteVoice2(mute)
+	sid.voices.SetMuteVoice2(data)
 	sid.filters.UpdateType(data)
 }

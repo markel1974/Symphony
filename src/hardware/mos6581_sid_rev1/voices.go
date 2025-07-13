@@ -180,7 +180,17 @@ func (v *Voices) ReadVoice2EgLevel(_ uint16) uint8 {
 }
 
 // SetFilters sets the filter values for all three voices using the provided parameters f1, f2, and f3 respectively.
-func (v *Voices) SetFilters(f1 uint8, f2 uint8, f3 uint8) {
+func (v *Voices) SetFilters(data uint8) {
+	var f1, f2, f3 uint8 = 0, 0, 0
+	if (data & 1) != 0 {
+		f1 = 1
+	}
+	if (data & 2) != 0 {
+		f2 = 1
+	}
+	if (data & 4) != 0 {
+		f3 = 1
+	}
 	v.voices[0].SetFilter(f1)
 	v.voices[1].SetFilter(f2)
 	v.voices[2].SetFilter(f3)
@@ -201,17 +211,11 @@ func (v *Voices) SetFilterVoice2(f2 uint8) {
 	v.voices[2].SetFilter(f2)
 }
 
-// SetMuteVoice0 sets the mute state for voice 0 to the specified boolean value.
-func (v *Voices) SetMuteVoice0(m bool) {
-	v.voices[0].mute = m
-}
-
-// SetMuteVoice1 sets the mute state of voice 1 to the specified boolean value.
-func (v *Voices) SetMuteVoice1(m bool) {
-	v.voices[1].mute = m
-}
-
 // SetMuteVoice2 sets the mute state of voice 2 based on the boolean parameter m.
-func (v *Voices) SetMuteVoice2(m bool) {
-	v.voices[2].mute = m
+func (v *Voices) SetMuteVoice2(data uint8) {
+	mute := false
+	if (data & 0x80) != 0 {
+		mute = true
+	}
+	v.voices[2].SetMute(mute)
 }
