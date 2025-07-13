@@ -230,7 +230,6 @@ func InstOpCMP(cpu *CPU) {
 	cpu.ar = uint16(cpu.a) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	if cpu.ar < stackAddr {
 		cpu.cFlag = 1
 	} else {
@@ -251,7 +250,6 @@ func InstOiCMP(cpu *CPU) {
 	cpu.ar = uint16(cpu.a) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	if cpu.ar < stackAddr {
 		cpu.cFlag = 1
 	} else {
@@ -271,7 +269,6 @@ func InstOpCPX(cpu *CPU) {
 	cpu.ar = uint16(cpu.x) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	if cpu.ar < stackAddr {
 		cpu.cFlag = 1
 	} else {
@@ -294,7 +291,6 @@ func InstOiCPX(cpu *CPU) {
 	cpu.ar = uint16(cpu.x) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	if cpu.ar < stackAddr {
 		cpu.cFlag = 1
 	} else {
@@ -314,7 +310,6 @@ func InstOpCPY(cpu *CPU) {
 	cpu.ar = uint16(cpu.y) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	if cpu.ar < stackAddr {
 		cpu.cFlag = 1
 	} else {
@@ -337,7 +332,6 @@ func InstOiCPY(cpu *CPU) {
 	cpu.ar = uint16(cpu.y) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
-	//cpu.cFlag = conversion.BoolToUint8(cpu.ar < stackAddr)
 	if cpu.ar < stackAddr {
 		cpu.cFlag = 1
 	} else {
