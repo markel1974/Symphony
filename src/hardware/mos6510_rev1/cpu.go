@@ -67,15 +67,14 @@ func (cpu *CPU) Setup() error {
 	return nil
 }
 
+// Bind initializes the connections between the CPU and its socket, PIC, and memory banks, configuring necessary handlers.
 func (cpu *CPU) Bind(_ references.IMos6510Socket, pic references.IMos6510Pic, banks references.IMos6510Banks) error {
 	cpu.picReset = pic.Reset
 	cpu.picVerifyIrq = pic.VerifyIrq
 	cpu.picHasNMI = pic.HasNMI
 	cpu.picClearNMI = pic.ClearNMI
-
 	cpu.lineRead = banks.Read
 	cpu.lineWrite = banks.Write
-
 	cpu.busRead = cpu.lineRead
 	cpu.busWrite = cpu.lineWrite
 	return nil
@@ -92,11 +91,13 @@ func (cpu *CPU) Internal() bool {
 
 // Reset initializes or restores the CPU to a default state by resetting internal flags, registers, and setting the program counter.
 func (cpu *CPU) Reset() {
+	cpu.busRead = cpu.lineRead
+	cpu.busWrite = cpu.lineWrite
 	cpu.picReset()
 	cpu.pc = uint16(cpu.busRead(0xfffc)) | (uint16(cpu.busRead(0xfffd)) << 8) // Read reset vector
-	cpu.next = InstOpINI
 	cpu.opFlags = 0
 	cpu.irqBreaker = false
+	cpu.next = InstOpINI
 }
 
 // SetOverflowBranch sets the function used to handle conditional overflow branching for the CPU.
@@ -108,15 +109,23 @@ func (cpu *CPU) SetOverflowBranch(sob func() bool) {
 func (cpu *CPU) SetAECLow(aecLow bool) {
 	cpu.aecLow = aecLow
 	if cpu.aecLow {
-		cpu.disconnectBus()
+		// disconnecting the bus...
+		cpu.busRead = cpu.busDisconnectedRead
+		cpu.busWrite = cpu.busDisconnectedWrite
 	}
 }
 
-// SetRDYLow sets the RDY line to the provided state and resumes the CPU if RDY is not low.
+// SetRDYLow sets the RDY line state to low or high based on the provided boolean value and updates the CPU stop state accordingly.
 func (cpu *CPU) SetRDYLow(rdyLow bool) {
 	cpu.rdyLow = rdyLow
 	if !cpu.rdyLow {
-		cpu.setModeRun()
+		//run mode
+		cpu.busRead = cpu.lineRead
+		cpu.busWrite = cpu.lineWrite
+		if cpu.savedNext != nil {
+			cpu.next = cpu.savedNext
+			cpu.savedNext = nil
+		}
 	}
 }
 
@@ -124,29 +133,8 @@ func (cpu *CPU) SetRDYLow(rdyLow bool) {
 func (cpu *CPU) setModeHalt() {
 	if cpu.savedNext == nil {
 		cpu.savedNext = cpu.next
-		cpu.next = halt
+		cpu.next = InstOpHalt
 	}
-}
-
-// setModeRun transitions the CPU into run mode by connecting to the bus and restoring any previously saved state.
-func (cpu *CPU) setModeRun() {
-	cpu.connectBus()
-	if cpu.savedNext != nil {
-		cpu.next = cpu.savedNext
-		cpu.savedNext = nil
-	}
-}
-
-// disconnectBus disconnects the CPU from its current bus by setting read and write operations to their disconnected state.
-func (cpu *CPU) disconnectBus() {
-	cpu.busRead = cpu.busDisconnectedRead
-	cpu.busWrite = cpu.busDisconnectedWrite
-}
-
-// connectBus initializes the CPU's internal bus by linking busRead and busWrite to corresponding line signals.
-func (cpu *CPU) connectBus() {
-	cpu.busRead = cpu.lineRead
-	cpu.busWrite = cpu.lineWrite
 }
 
 // Emulate processes one CPU cycle by invoking the next instruction handler unless the CPU is stopped.
@@ -170,20 +158,13 @@ func (cpu *CPU) busDisconnectedRead(_ uint16) uint8 {
 func (cpu *CPU) busDisconnectedWrite(_ uint16, _ uint8) {
 }
 
-// halt pauses the CPU's operation by acting as a no-op function while the CPU remains in the halted state.
-func halt(_ *CPU) {
-}
-
-// Read retrieves a byte from the specified memory address.
-//
+// read retrieves a byte from the specified memory address.
 // Returns the byte read and a boolean indicating success.
-//
 // If the RDY line is low (rdyLow == true), indicating that the VIC-II is currently
 // accessing memory, the CPU pauses execution by setting the internal 'stop' flag,
 // and the function returns 0, false. This simulates the behavior of the 6510's RDY line,
 // which is used by the VIC-II during "bad-lines".  The 'stop' flag is specific
 // to this emulator and is NOT part of the real 6510 hardware.
-//
 // If the RDY line is high (rdyLow == false), the function reads a byte from memory
 // using the cpu.banks.Read method and returns the byte and true.
 func (cpu *CPU) read(addr uint16) (uint8, bool) {

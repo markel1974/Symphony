@@ -5,6 +5,10 @@ const (
 	stackAddr = 0x100
 )
 
+// InstOpHalt pauses the CPU's operation by acting as a no-op function while the CPU remains in the halted state.
+func InstOpHalt(_ *CPU) {
+}
+
 // InstOpINI handles the initial opcode fetch and subsequent CPU instruction cycle logic based on the current CPU state.
 // It considers interrupt conditions, updates the program counter, and sets the next instruction handler.
 // If the RDY line is low, the CPU execution is halted by setting the `stop` flag.
