@@ -93,10 +93,9 @@ func (sid *SID) Setup() error {
 
 // Bind initializes the SID instance with the given socket, fragment frequency, and raster count, returning an error if any.
 func (sid *SID) Bind(_ references.IMos6581Socket, fragFreq int /* rasters */, _ int) error {
+	fragSize := SampleFreq / fragFreq
 	sid.player = sid.GetFactory().GetIAudioRender()
 	sid.sampleBuf = make([]uint8, SampleBufSize)
-	sid.voices = nil
-	fragSize := SampleFreq / fragFreq // samples, not bytes
 	sid.filters = NewFilters()
 	sid.audioSamplesPerVolumeStep = float64(fragSize) / float64(SampleBufHalfSize)
 	sid.soundBuffer = make([]float32, fragSize)
@@ -104,7 +103,6 @@ func (sid *SID) Bind(_ references.IMos6581Socket, fragFreq int /* rasters */, _ 
 	sid.writes = sid.createWriteRegister()
 	sid.reads = sid.createReadRegister()
 	sid.Reset()
-
 	return nil
 }
 
@@ -236,6 +234,10 @@ func (sid *SID) readDefault(addr uint16) uint8 {
 	return sid.registers[reg]
 }
 
+// writeDefault is a default write handler for SID registers that performs no operation when invoked.
+func (sid *SID) writeDefault(_ uint8) {
+}
+
 // createReadRegister initializes and returns an array of ReadFn functions mapped to SID register addresses.
 // It sets a default read function for most registers and customized functions for specific addresses like 27 and 28.
 func (sid *SID) createReadRegister() [RegisterCount]ReadFn {
@@ -246,10 +248,6 @@ func (sid *SID) createReadRegister() [RegisterCount]ReadFn {
 	reads[osc3] = sid.voices.ReadVoice2Waveform
 	reads[env3] = sid.voices.ReadVoice2EgLevel
 	return reads
-}
-
-// writeDefault is a default write handler for SID registers that performs no operation when invoked.
-func (sid *SID) writeDefault(_ uint8) {
 }
 
 // createWriteRegister initializes and returns an array of WriteFn mapped to SID register write operations.
