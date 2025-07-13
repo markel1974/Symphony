@@ -20,7 +20,8 @@ const (
 // Pic represents a programmable interrupt controller managing IRQ and NMI signals within a system.
 type Pic struct {
 	*component.BaseComponent
-	quartz        references.IQuartz
+	//quartz        references.IQuartz
+	cycles        func() uint64
 	all           bits.Bits
 	irq           bits.Bits
 	firstIrqCycle uint64
@@ -32,7 +33,7 @@ type Pic struct {
 func NewPIC(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Pic {
 	p := &Pic{
 		BaseComponent: component.NewBaseComponent(),
-		quartz:        nil,
+		cycles:        nil,
 		firstIrqCycle: 0,
 		firstNMICycle: 0,
 		all:           bits.Bits(0),
@@ -49,7 +50,7 @@ func (i *Pic) Setup() error {
 }
 
 func (i *Pic) Bind(_ references.IMos6510PicSocket, q references.IQuartz) error {
-	i.quartz = q
+	i.cycles = q.Cycle
 	return nil
 }
 
@@ -93,7 +94,7 @@ func (i *Pic) ClearReset() {
 
 func (i *Pic) TriggerIRQ(intr uint32) {
 	if i.irq == 0 {
-		i.firstIrqCycle = i.quartz.Cycle()
+		i.firstIrqCycle = i.cycles()
 	}
 	i.irq.BitSet(intr)
 	i.all.BitSet(intrIrqBit)
@@ -111,7 +112,7 @@ func (i *Pic) ClearIRQ(intr uint32) {
 // TriggerNMI sets the NMI (Non-Maskable Interrupt) bit and captures the cycle when the NMI was triggered if not already set.
 func (i *Pic) TriggerNMI() {
 	if !i.all.BitCheck(intrNmiBit) {
-		i.firstNMICycle = i.quartz.Cycle()
+		i.firstNMICycle = i.cycles()
 		i.all.BitSet(intrNmiBit)
 	}
 }
@@ -165,7 +166,7 @@ func (i *Pic) computeDistance(base uint64, hasDelay bool, distance uint64) bool 
 	if hasDelay {
 		total += 1
 	}
-	cycle := i.quartz.Cycle()
+	cycle := i.cycles()
 	if cycle >= total {
 		return true
 	}
