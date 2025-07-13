@@ -226,6 +226,8 @@ func (vic *VIC) configChanged() {
 }
 
 // Emulate executes one cycle of the VIC, processing the current function and updating the raster position.
+//
+//go:nosplit
 func (vic *VIC) Emulate() {
 	vic.TryAcquireAEC()
 	vic.curr.fn(vic)

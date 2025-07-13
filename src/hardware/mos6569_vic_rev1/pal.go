@@ -68,6 +68,8 @@ func init() {
 }
 
 // palCycle1 handles the raster line processing logic for the VIC, including display updates and sprite DMA handling.
+//
+//go:nosplit
 func palCycle1(vic *VIC) {
 	if rasterY := vic.GetRasterY(); rasterY == RasterYMax {
 		vic.vBlankNextCycle = true
@@ -87,6 +89,8 @@ func palCycle1(vic *VIC) {
 }
 
 // palCycle2 handles the video interface chip's state transitions at the start of a PAL screen cycle.
+//
+//go:nosplit
 func palCycle2(vic *VIC) {
 	if vic.vBlankNextCycle {
 		vic.vBlankNextCycle = false
@@ -112,6 +116,8 @@ func palCycle2(vic *VIC) {
 }
 
 // palCycle3 handles sprite DMA access and display updates for the VIC, modifying display parameters accordingly.
+//
+//go:nosplit
 func palCycle3(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite4) != 0 {
@@ -126,6 +132,8 @@ func palCycle3(vic *VIC) {
 // palCycle4 handles sprite DMA operations for sprite 4 and modifies display access based on VIC state.
 // It checks if the DMA flag for sprite 4 is set, performs fetch operations if true, otherwise idles the VIC.
 // Additionally, it sets the BA low if the DMA flag for sprite 6 is set.
+//
+//go:nosplit
 func palCycle4(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite4) != 0 {
@@ -140,6 +148,8 @@ func palCycle4(vic *VIC) {
 }
 
 // palCycle5 handles sprite DMA logic specifically for sprite 5 and updates display or bus access accordingly.
+//
+//go:nosplit
 func palCycle5(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite5) != 0 {
@@ -152,6 +162,8 @@ func palCycle5(vic *VIC) {
 }
 
 // palCycle6 performs DMA and idle access handling for sprites and sets the BA low flag in VIC graphics operations.
+//
+//go:nosplit
 func palCycle6(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite5) != 0 {
@@ -167,6 +179,8 @@ func palCycle6(vic *VIC) {
 
 // palCycle7 manages sprite DMA operations and display access for sprites 6 and 7 within the VIC graphics system.
 // It acquires display access, checks DMA flags, fetches sprite data, and adjusts bus access levels accordingly.
+//
+//go:nosplit
 func palCycle7(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite6) != 0 {
@@ -179,6 +193,8 @@ func palCycle7(vic *VIC) {
 }
 
 // palCycle8 manages DMA access and fetch operations for sprite 6 in the VIC graphics system if the DMA flag is set.
+//
+//go:nosplit
 func palCycle8(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite6) != 0 {
@@ -190,6 +206,8 @@ func palCycle8(vic *VIC) {
 }
 
 // palCycle9 processes VIC sprite DMA flag and display access for sprite7, managing sprite fetching and BA signal control.
+//
+//go:nosplit
 func palCycle9(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite7) != 0 {
@@ -202,6 +220,8 @@ func palCycle9(vic *VIC) {
 }
 
 // palCycle10 manages display access and sprite data fetch operation for sprite 7 based on its DMA flag status.
+//
+//go:nosplit
 func palCycle10(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite7) != 0 {
@@ -213,6 +233,8 @@ func palCycle10(vic *VIC) {
 }
 
 // palCycle11 manipulates the VIC object to acquire display access, clear the BA low signal, and perform a refresh action.
+//
+//go:nosplit
 func palCycle11(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.ClearBALow()
@@ -221,6 +243,8 @@ func palCycle11(vic *VIC) {
 
 // palCycle12 handles the VIC's PAL refresh cycle by accessing refresh operations and managing graphics and display access.
 // It also triggers BA low if required during a bad line condition.
+//
+//go:nosplit
 func palCycle12(vic *VIC) {
 	vic.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
@@ -228,6 +252,8 @@ func palCycle12(vic *VIC) {
 }
 
 // palCycle13 processes a single PAL (Phase Alternating Line) cycle, managing VIC-II border colors, graphics, and raster refresh.
+//
+//go:nosplit
 func palCycle13(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
@@ -240,6 +266,8 @@ func palCycle13(vic *VIC) {
 }
 
 // palCycle14 executes a sequence of operations for handling VIC graphics, borders, and video counter updates for a PAL cycle 14.
+//
+//go:nosplit
 func palCycle14(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
@@ -253,6 +281,8 @@ func palCycle14(vic *VIC) {
 }
 
 // palCycle15 processes a single VIC-II cycle, updating visual elements, sprite counters, and handling display access logic.
+//
+//go:nosplit
 func palCycle15(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
@@ -267,6 +297,8 @@ func palCycle15(vic *VIC) {
 }
 
 // palCycle16 executes a set of operations per cycle for the VIC chip in PAL mode, handling graphics, borders, and sprite updates.
+//
+//go:nosplit
 func palCycle16(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
@@ -280,6 +312,8 @@ func palCycle16(vic *VIC) {
 }
 
 // palCycle17 executes the PAL-based VIC-II emulation cycle 17 logic, updating borders, graphics, and access conditions.
+//
+//go:nosplit
 func palCycle17(vic *VIC) {
 	vic.borders.Column40Update()
 	if vic.drawLine {
@@ -299,6 +333,8 @@ func palCycle17(vic *VIC) {
 // palCycle18 executes a sequence of operations for the VIC, updating borders, graphics, and access cycles efficiently.
 // It determines whether to draw background or foreground based on the vertical flip-flop state and current line settings.
 // The function manages access attempts to graphics and display while handling character data and bad line conditions.
+//
+//go:nosplit
 func palCycle18(vic *VIC) {
 	vic.borders.Column38Update()
 	if vic.drawLine {
@@ -319,6 +355,8 @@ func palCycle18(vic *VIC) {
 // palCycle19to54 handles VIC-II operations between cycle 19 to 54 for rendering, including border and graphics updates.
 // Uses state flags to determine whether to update background or foreground graphics during the specified cycle range.
 // Tries memory and display accesses required for graphical operations and updates character data accordingly.
+//
+//go:nosplit
 func palCycle19to54(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
@@ -336,6 +374,8 @@ func palCycle19to54(vic *VIC) {
 }
 
 // palCycle55 processes a line cycle for the VIC-II chip, handling border colors, graphics rendering, sprite updates, and DMA logic.
+//
+//go:nosplit
 func palCycle55(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
@@ -357,6 +397,8 @@ func palCycle55(vic *VIC) {
 }
 
 // palCycle56 handles cycle 56 operations on the VIC, including border drawing, DMA updates, and sprite BALow settings.
+//
+//go:nosplit
 func palCycle56(vic *VIC) {
 	vic.borders.Column38Apply()
 	if vic.drawLine {
@@ -377,6 +419,8 @@ func palCycle56(vic *VIC) {
 
 // palCycle57 performs a sequence of operations for VIC, applying 40-column mode, updating sprites, and managing display.
 // It handles tasks such as drawing the background, acquiring colors, and setting sprite-specific DMA flags.
+//
+//go:nosplit
 func palCycle57(vic *VIC) {
 	vic.borders.Column40Apply()
 	vic.sprites.UpdateDisplayFlags()
@@ -392,6 +436,8 @@ func palCycle57(vic *VIC) {
 }
 
 // palCycle58 executes the 58th PAL cycle operations for the VIC, processing borders, sprites, and graphics updates.
+//
+//go:nosplit
 func palCycle58(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
@@ -408,6 +454,8 @@ func palCycle58(vic *VIC) {
 // palCycle59 executes the 59th cycle of the PAL video timing, managing sprite DMA fetches and access states.
 // It handles background graphic drawing, border color acquisition, and memory access for sprites.
 // The function ensures proper DMA operations for sprites 0 and 2 and adjusts the BA (Bus Available) signal as needed.
+//
+//go:nosplit
 func palCycle59(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
@@ -426,6 +474,8 @@ func palCycle59(vic *VIC) {
 }
 
 // palCycle60 manages the rendering of VIC-II components for a single PAL clock cycle, ensuring proper sprite and border updates.
+//
+//go:nosplit
 func palCycle60(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
@@ -449,6 +499,8 @@ func palCycle60(vic *VIC) {
 // palCycle61 handles graphics display access and sprite DMA operations for VIC during the specific cycle 61 in PAL mode.
 // It performs sprite fetch operations or switches to idle access if no DMA flag is detected for certain sprites.
 // Additionally, it sets the BA low signal for sprite 3 based on its DMA flag status in the cycle.
+//
+//go:nosplit
 func palCycle61(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite1) != 0 {
@@ -465,6 +517,8 @@ func palCycle61(vic *VIC) {
 // palCycle62 handles the PAL (Phase Alternating Line) cycle 62 operations for sprite processing and display access in the VIC-II.
 // It attempts to acquire display access, fetches sprite pointers, and performs operations based on DMA flags for sprites 2 and 3.
 // The method clears certain flags (e.g., BALow) when specific DMA conditions are not met for the given sprites.
+//
+//go:nosplit
 func palCycle62(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(sprite2) != 0 {
@@ -478,6 +532,8 @@ func palCycle62(vic *VIC) {
 
 // palCycle63 handles the operations and state updates for cycle 63 in the VIC chip's PAL display timing.
 // It manages sprite DMA access, updates display flip-flop state, and interacts with video memory.
+//
+//go:nosplit
 func palCycle63(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.borders.UpdateVerticalFlipFlop()

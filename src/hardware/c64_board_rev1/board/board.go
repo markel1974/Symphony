@@ -183,6 +183,8 @@ func (s *Board) AsyncReset() {
 }
 
 // Emulate executes all functions stored in the emulation slice of the Board in sequence.
+//
+//go:nosplit
 func (s *Board) Emulate() {
 	for _, fn := range s.emulation {
 		fn()
