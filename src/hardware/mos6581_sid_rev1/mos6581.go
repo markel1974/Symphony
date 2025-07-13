@@ -47,10 +47,10 @@ const (
 )
 
 // WriteFn defines a function type that processes an 8-bit unsigned integer as input.
-type WriteFn func(data uint8)
+type WriteFn func(reg uint8, data uint8)
 
 // ReadFn defines a function type used to read an 8-bit value from a given 16-bit address.
-type ReadFn func(addr uint16) uint8
+type ReadFn func(reg uint8) uint8
 
 // SID represents a Sound Interface Device, a component used to generate and handle audio synthesis in the system.
 type SID struct {
@@ -170,15 +170,15 @@ func (sid *SID) Update() {
 
 // ReadRegister reads the value of a specified SID register identified by the provided address.
 func (sid *SID) ReadRegister(addr uint16) uint8 {
-	reg := addr & 0x1f
-	return sid.reads[reg](addr)
+	reg := uint8(addr & RegisterSize)
+	return sid.reads[reg](reg)
 }
 
 // WriteRegister writes a value to a specific register within the range of the SID's addressable space.
 func (sid *SID) WriteRegister(addr uint16, data uint8) {
-	reg := addr & 0x1f
+	reg := uint8(addr & RegisterSize)
 	sid.registers[reg] = data
-	sid.writes[reg](data)
+	sid.writes[reg](reg, data)
 }
 
 // SetPotX sets the value of the POTX (paddle) register to control the position of the X-axis paddle input.
@@ -229,13 +229,12 @@ func (sid *SID) calcSoundBuffer() {
 }
 
 // readRegisterDefault reads the value from the specified SID register address, normalized within the valid register range.
-func (sid *SID) readDefault(addr uint16) uint8 {
-	reg := addr & 0x1f
+func (sid *SID) readDefault(reg uint8) uint8 {
 	return sid.registers[reg]
 }
 
 // writeDefault is a default write handler for SID registers that performs no operation when invoked.
-func (sid *SID) writeDefault(_ uint8) {
+func (sid *SID) writeDefault(_ uint8, _ uint8) {
 }
 
 // createReadRegister initializes and returns an array of ReadFn functions mapped to SID register addresses.
@@ -285,13 +284,13 @@ func (sid *SID) createWriteRegister() [RegisterCount]WriteFn {
 }
 
 // writeFiltersRegister configures filter settings for the SID voices based on the provided data value.
-func (sid *SID) writeFiltersRegister(data uint8) {
+func (sid *SID) writeFiltersRegister(_ uint8, data uint8) {
 	sid.voices.SetFilters(data)
 	sid.filters.UpdateRes(data)
 }
 
 // writeMasterVolumeAndFilterType updates master volume, filter type, and mute state based on the given input data.
-func (sid *SID) writeMasterVolumeAndFilterType(data uint8) {
+func (sid *SID) writeMasterVolumeAndFilterType(_ uint8, data uint8) {
 	sid.volume = data & 0xf
 	sid.voices.SetMuteVoice2(data)
 	sid.filters.UpdateType(data)

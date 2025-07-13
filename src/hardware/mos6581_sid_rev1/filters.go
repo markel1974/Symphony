@@ -133,7 +133,7 @@ func (f *Filters) Compute(outputFilter int32) float64 {
 }
 
 // UpdateFreqLow updates the low-frequency filter value if the new value differs from the current one and triggers recalculation.
-func (f *Filters) UpdateFreqLow(data uint8) {
+func (f *Filters) UpdateFreqLow(_ uint8, data uint8) {
 	if data != f.filterFreqLow {
 		f.filterFreqLow = data
 		f.compute()
@@ -141,7 +141,7 @@ func (f *Filters) UpdateFreqLow(data uint8) {
 }
 
 // UpdateFreqHigh updates the high-frequency filter value if it differs from the current value and recalculates the filter.
-func (f *Filters) UpdateFreqHigh(data uint8) {
+func (f *Filters) UpdateFreqHigh(_ uint8, data uint8) {
 	data = data & 0x07
 	if data != f.filterFreqHigh {
 		f.filterFreqHigh = data

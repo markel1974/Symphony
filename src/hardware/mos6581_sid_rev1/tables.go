@@ -13,7 +13,8 @@ const (
 	Cycles            = Frequency / SampleFreq
 	SampleBufHalfSize = 0x138
 	SampleBufSize     = SampleBufHalfSize * 2
-	RegisterCount     = 32
+	RegisterSize      = 0x1f
+	RegisterCount     = RegisterSize + 1
 	triTableSize      = 8192 //1 << 13 //0x1fff
 	sawTableSize      = 8192
 )
