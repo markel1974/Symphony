@@ -51,8 +51,6 @@ type IC64Expansion interface {
 
 	GameExRomConfigChanged()
 
-	RmwFlags() uint8 //TODO NOT STANDARD
-
 	LedActivity(uint8, bool)
 }
 

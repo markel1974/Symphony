@@ -153,12 +153,14 @@ func (f *Flash040) ReadInterval(start uint, end uint) ([]byte, error) {
 
 // Store writes a byte of data to the specified address in the flash memory, with handling for read-modify-write scenarios.
 func (f *Flash040) Store(addr uint, data uint8) {
-	dist := uint64(0)
-	if rmwFlags := f.board.RmwFlags(); rmwFlags != 0 {
-		f.storeInternal(dist, addr, f.lastRead)
-		dist++
-	}
-	f.storeInternal(dist, addr, data)
+	/*
+		dist := uint64(0)
+		if rmwFlags := f.board.RmwFlags(); rmwFlags != 0 {
+			f.storeInternal(dist, addr, f.lastRead)
+			dist++
+		}
+		f.storeInternal(dist, addr, data)
+	*/
 }
 
 // Read accesses the flash memory at the specified address and returns the corresponding 8-bit data.

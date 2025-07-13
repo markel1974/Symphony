@@ -78,7 +78,7 @@ The `board` package uses socket interfaces to connect with individual components
     *   **Methods:** `NewCIA2Socket()`, `Setup()`, `Reset()`, `Update()`, `ReadPortA()`, `ReadPortB()`, `WritePortA()`, `WritePortB()`, `WriteDdrA()`, `WriteDdrB()`, `IRQTrigger()`.
 *   **`Expansion` (`expansion.go`):**
     * **Responsibility:** manages the expansion.
-    * **Methods:** `NewExpansion()`, `Reset()`, `Read()`, `Write()`, `GameExRomConfigChanged()`, `NMITrigger()`, `SetDMALow()`, `ResetTrigger()`, `IRQTrigger()`, `IRQClearTrigger()`, `IRQTriggerBind()`, `IRQClearBind()`, `BusAvailable()`, `AECAvailable()`, `Cycle()`, `CycleAlarm()`, `RamSetWriteTrigger()`, `RamRemoveWriteTrigger()`, `RmwFlags()`.
+    * **Methods:** `NewExpansion()`, `Reset()`, `Read()`, `Write()`, `GameExRomConfigChanged()`, `NMITrigger()`, `SetDMALow()`, `ResetTrigger()`, `IRQTrigger()`, `IRQClearTrigger()`, `IRQTriggerBind()`, `IRQClearBind()`, `BusAvailable()`, `AECAvailable()`, `Cycle()`, `CycleAlarm()`, `RamSetWriteTrigger()`, `RamRemoveWriteTrigger()`.
 
 ### PLA Package (`src/c64/pla`)
 

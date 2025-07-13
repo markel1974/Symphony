@@ -155,12 +155,6 @@ func (s *CartridgeManagerSocket) RamRemoveWriteTrigger(addr uint16, id int) {
 	s.pla.RemoveRamTrigger(addr, id)
 }
 
-// RmwFlags retrieves the Read-Modify-Write flags for CPU operations. Currently, this method is a placeholder for implementation.
-func (s *CartridgeManagerSocket) RmwFlags() uint8 {
-	//TODO IMPLEMENT cpu rmw flags
-	return 0
-}
-
 func (s *CartridgeManagerSocket) LedActivity(deviceNumber uint8, led bool) {
 	s.connections.LedActivityTrigger(deviceNumber, led)
 }
