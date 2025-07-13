@@ -7,6 +7,8 @@ import (
 // Jump - Branch
 
 // instOpJMP is the instruction handler for the JMP operation, updating the program counter and setting the next operation.
+//
+//go:nosplit
 func instOpJMP(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -18,6 +20,8 @@ func instOpJMP(cpu *CPU) {
 }
 
 // instOpJMP1 sets the program counter to a new address using a high byte from memory combined with the current address register.
+//
+//go:nosplit
 func instOpJMP1(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -28,6 +32,8 @@ func instOpJMP1(cpu *CPU) {
 }
 
 // instOiJMP handles the JMP (Jump) instruction by reading an address from memory and updating the program counter.
+//
+//go:nosplit
 func instOiJMP(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
@@ -38,6 +44,8 @@ func instOiJMP(cpu *CPU) {
 }
 
 // instOiJMP1 sets the program counter high byte using the data from memory and prepares the next instruction.
+//
+//go:nosplit
 func instOiJMP1(cpu *CPU) {
 	data, ok := cpu.read(((cpu.ar + 1) & 0xff) | (cpu.ar & 0xff00))
 	if !ok {
@@ -48,6 +56,8 @@ func instOiJMP1(cpu *CPU) {
 }
 
 // instOpJSR performs the Jump to Subroutine (JSR) operation by reading the target address and setting the next instruction.
+//
+//go:nosplit
 func instOpJSR(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -59,6 +69,8 @@ func instOpJSR(cpu *CPU) {
 }
 
 // instOpJSR1 processes the first step of the JSR (Jump to Subroutine) instruction, verifying the stack before proceeding.
+//
+//go:nosplit
 func instOpJSR1(cpu *CPU) {
 	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
@@ -67,6 +79,8 @@ func instOpJSR1(cpu *CPU) {
 }
 
 // instOpJSR2 handles the second stage of the JSR instruction by pushing the high byte of the program counter onto the stack.
+//
+//go:nosplit
 func instOpJSR2(cpu *CPU) {
 	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
@@ -74,6 +88,8 @@ func instOpJSR2(cpu *CPU) {
 }
 
 // instOpJSR3 handles the third step of the JSR (Jump to Subroutine) instruction, writing the low byte of the program counter to the stack.
+//
+//go:nosplit
 func instOpJSR3(cpu *CPU) {
 	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
@@ -81,6 +97,8 @@ func instOpJSR3(cpu *CPU) {
 }
 
 // instOpJSR4 executes the JSR4 (Jump Subroutine) operation, updating the program counter and setting the next instruction.
+//
+//go:nosplit
 func instOpJSR4(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -92,6 +110,8 @@ func instOpJSR4(cpu *CPU) {
 }
 
 // instOpRTS handles the RTS (Return from Subroutine) instruction, setting the next CPU operation to instOpRTS1 if successful.
+//
+//go:nosplit
 func instOpRTS(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -100,6 +120,8 @@ func instOpRTS(cpu *CPU) {
 }
 
 // instOpRTS1 increments the stack pointer and sets the next instruction handler to instOpRTS2 if stack read is successful.
+//
+//go:nosplit
 func instOpRTS1(cpu *CPU) {
 	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
@@ -109,6 +131,8 @@ func instOpRTS1(cpu *CPU) {
 }
 
 // instOpRTS2 handles the RTS operation by fetching the return address from the stack and updating the program counter.
+//
+//go:nosplit
 func instOpRTS2(cpu *CPU) {
 	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
 	if !ok {
@@ -121,6 +145,8 @@ func instOpRTS2(cpu *CPU) {
 
 // instOpRTS3 retrieves the high byte of the return address from the stack and updates the program counter.
 // Proceeds to the next step in the RTS operation by setting the instruction handler to instOpRTS4.
+//
+//go:nosplit
 func instOpRTS3(cpu *CPU) {
 	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
 	if !ok {
@@ -131,6 +157,8 @@ func instOpRTS3(cpu *CPU) {
 }
 
 // instOpRTS4 increments the program counter and sets the next instruction handler to instOpINI if the current PC is readable.
+//
+//go:nosplit
 func instOpRTS4(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -140,6 +168,8 @@ func instOpRTS4(cpu *CPU) {
 }
 
 // instOpRTI handles the RTI (Return from Interrupt) instruction by preparing the CPU for the next instruction in sequence.
+//
+//go:nosplit
 func instOpRTI(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -148,6 +178,8 @@ func instOpRTI(cpu *CPU) {
 }
 
 // instOpRTI1 handles the first phase of the RTI instruction by reading a byte from the stack and advancing the stack pointer.
+//
+//go:nosplit
 func instOpRTI1(cpu *CPU) {
 	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
@@ -157,6 +189,8 @@ func instOpRTI1(cpu *CPU) {
 }
 
 // instOpRTI2 handles the second stage of the RTI (Return from Interrupt) operation, restoring CPU flags and updating SP.
+//
+//go:nosplit
 func instOpRTI2(cpu *CPU) {
 	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
 	if !ok {
@@ -168,6 +202,8 @@ func instOpRTI2(cpu *CPU) {
 }
 
 // instOpRTI3 restores the program counter from the stack and advances the stack pointer, preparing the next CPU state.
+//
+//go:nosplit
 func instOpRTI3(cpu *CPU) {
 	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
 	if !ok {
@@ -179,6 +215,8 @@ func instOpRTI3(cpu *CPU) {
 }
 
 // instOpRTI4 restores the most significant byte of the program counter from the stack and updates the next instruction.
+//
+//go:nosplit
 func instOpRTI4(cpu *CPU) {
 	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
 	if !ok {
@@ -189,6 +227,8 @@ func instOpRTI4(cpu *CPU) {
 }
 
 // instOpBRK handles the BRK (Break) instruction by incrementing the program counter and setting the next execution step.
+//
+//go:nosplit
 func instOpBRK(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -199,6 +239,8 @@ func instOpBRK(cpu *CPU) {
 
 // instOpBRK1 handles the first phase of the BRK (Break) operation by pushing the high byte of the program counter onto the stack.
 // The stack pointer is decremented, and the next instruction phase is set to instOpBRK2.
+//
+//go:nosplit
 func instOpBRK1(cpu *CPU) {
 	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
@@ -207,6 +249,8 @@ func instOpBRK1(cpu *CPU) {
 
 // instOpBRK2 handles the second stage of the BRK instruction by storing the low byte of the program counter to the stack.
 // It then decrements the stack pointer and prepares the CPU for the next instruction phase by setting `next` to instOpBRK3.
+//
+//go:nosplit
 func instOpBRK2(cpu *CPU) {
 	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
@@ -214,6 +258,8 @@ func instOpBRK2(cpu *CPU) {
 }
 
 // instOpBRK3 handles the BRK (break) instruction sequence by pushing flags, managing stack writes, and setting the next operation.
+//
+//go:nosplit
 func instOpBRK3(cpu *CPU) {
 	data := cpu.pushFlags(true)
 	cpu.banks.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
@@ -228,6 +274,8 @@ func instOpBRK3(cpu *CPU) {
 }
 
 // instOpBRK4 handles the BRK instruction by reading the interrupt vector from memory and updating the program counter.
+//
+//go:nosplit
 func instOpBRK4(cpu *CPU) {
 	data, ok := cpu.read(0xfffe)
 	if !ok {
@@ -238,6 +286,8 @@ func instOpBRK4(cpu *CPU) {
 }
 
 // instOpBRK5 handles the BRK instruction for the CPU by updating the program counter and setting the next instruction handler.
+//
+//go:nosplit
 func instOpBRK5(cpu *CPU) {
 	data, ok := cpu.read(0xffff)
 	if !ok {
@@ -248,6 +298,8 @@ func instOpBRK5(cpu *CPU) {
 }
 
 // instOpBCS handles the Branch if Carry Set (BCS) instruction, branching if the carry flag is set and advancing the PC.
+//
+//go:nosplit
 func instOpBCS(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -262,6 +314,8 @@ func instOpBCS(cpu *CPU) {
 }
 
 // instOpBCC handles the branch if carry flag is clear, updating the program counter or setting the next operation accordingly.
+//
+//go:nosplit
 func instOpBCC(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -276,6 +330,8 @@ func instOpBCC(cpu *CPU) {
 }
 
 // instOpBEQ handles the BEQ (Branch if Equal) instruction, branching if the zero flag is set, or proceeding to the next operation.
+//
+//go:nosplit
 func instOpBEQ(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -290,6 +346,8 @@ func instOpBEQ(cpu *CPU) {
 }
 
 // instOpBNE handles the BNE (Branch if Not Equal) instruction, branching if the zero flag (zFlag) is not set.
+//
+//go:nosplit
 func instOpBNE(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -304,6 +362,8 @@ func instOpBNE(cpu *CPU) {
 }
 
 // instOpBVS handles the BVS (Branch if Overflow Set) instruction, branching if the overflow flag is set.
+//
+//go:nosplit
 func instOpBVS(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -321,6 +381,8 @@ func instOpBVS(cpu *CPU) {
 }
 
 // instOpBVC handles the BVC (Branch if Overflow Clear) instruction, branching if the overflow flag (vFlag) is 0.
+//
+//go:nosplit
 func instOpBVC(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -338,6 +400,8 @@ func instOpBVC(cpu *CPU) {
 }
 
 // instOpBMI executes the BMI (Branch if Minus) instruction, branching if the negative flag (nFlag) is set.
+//
+//go:nosplit
 func instOpBMI(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -352,6 +416,8 @@ func instOpBMI(cpu *CPU) {
 }
 
 // instOpBPL handles the BPL (Branch on Positive) operation by branching if the negative flag (N) is clear.
+//
+//go:nosplit
 func instOpBPL(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -366,6 +432,8 @@ func instOpBPL(cpu *CPU) {
 }
 
 // instOpBRAnp handles a branch operation without crossing a page boundary, updating the program counter and setting the next instruction.
+//
+//go:nosplit
 func instOpBRAnp(cpu *CPU) {
 	// No page crossed
 	cpu.opFlags |= references.OpFlagIntDelayed
@@ -377,6 +445,8 @@ func instOpBRAnp(cpu *CPU) {
 }
 
 // instOpBRAbp sets the program counter to the address register for backward branching after a page crossing.
+//
+//go:nosplit
 func instOpBRAbp(cpu *CPU) {
 	// Page crossed (branch backwards)
 	if _, ok := cpu.read(cpu.pc); !ok {
@@ -387,6 +457,8 @@ func instOpBRAbp(cpu *CPU) {
 }
 
 // instOpBRAbp1 handles branching logic when a specific overflow condition is met and sets the next instruction to execute.
+//
+//go:nosplit
 func instOpBRAbp1(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc + stackAddr); !ok {
 		return
@@ -396,6 +468,8 @@ func instOpBRAbp1(cpu *CPU) {
 
 // instOpBRAfp handles the forward branch operation by updating the program counter to the address register (ar).
 // If the branch crosses a page, it ensures the next instruction is set accordingly.
+//
+//go:nosplit
 func instOpBRAfp(cpu *CPU) {
 	// Page crossed (branch forwards)
 	if _, ok := cpu.read(cpu.pc); !ok {
@@ -406,6 +480,8 @@ func instOpBRAfp(cpu *CPU) {
 }
 
 // instOpBRAfp1 executes a branch operation if the required memory condition is met; sets the next instruction to instOpINI.
+//
+//go:nosplit
 func instOpBRAfp1(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc - stackAddr); !ok {
 		return

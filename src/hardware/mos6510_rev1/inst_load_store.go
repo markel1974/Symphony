@@ -1,6 +1,8 @@
 package mos6510_rev1
 
 // instApZER loads a zero-page address into the address register and sets the next instruction handler.
+//
+//go:nosplit
 func instApZER(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -13,6 +15,8 @@ func instApZER(cpu *CPU) {
 
 // instApZERx performs a zero-page addressing operation by reading a byte at the program counter and updating the address register.
 // It increments the program counter and sets the next instruction to instApZERx1.
+//
+//go:nosplit
 func instApZERx(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -26,6 +30,8 @@ func instApZERx(cpu *CPU) {
 // instApZERx1 performs a zero-page indexed addressing mode operation using the CPU's address register and X register.
 // It updates the address register by adding the X register value, ensuring the result wraps around at 8-bit boundaries.
 // The next instruction handler is set based on the current opcode. No operation occurs if the read fails.
+//
+//go:nosplit
 func instApZERx1(cpu *CPU) {
 	if _, ok := cpu.read(cpu.ar); !ok {
 		return
@@ -35,6 +41,8 @@ func instApZERx1(cpu *CPU) {
 }
 
 // instApZERy loads a byte from memory at the program counter into the address register and sets the next instruction.
+//
+//go:nosplit
 func instApZERy(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -47,6 +55,8 @@ func instApZERy(cpu *CPU) {
 
 // instApZERy1 adjusts the address register by adding the Y register value and wraps it within a byte boundary.
 // Proceeds to the next operation if the address read was successful.
+//
+//go:nosplit
 func instApZERy1(cpu *CPU) {
 	if _, ok := cpu.read(cpu.ar); !ok {
 		return
@@ -56,6 +66,8 @@ func instApZERy1(cpu *CPU) {
 }
 
 // instApABS loads the next byte from memory into the address register and advances the program counter.
+//
+//go:nosplit
 func instApABS(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -68,6 +80,8 @@ func instApABS(cpu *CPU) {
 
 // instApABS1 reads a byte from memory at the program counter, increments the PC, and updates the address register (AR).
 // Then, it fetches the next instruction from the operation table based on the current opcode.
+//
+//go:nosplit
 func instApABS1(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -80,6 +94,8 @@ func instApABS1(cpu *CPU) {
 
 // instApABSx fetches a byte from the program counter, increments the PC, and stores the value in the address register.
 // Sets the next instruction handler to instApABSx1.
+//
+//go:nosplit
 func instApABSx(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -91,6 +107,8 @@ func instApABSx(cpu *CPU) {
 }
 
 // instApABSx1 executes the first step of an absolute addressing mode with X offset, updating CPU registers and next instruction.
+//
+//go:nosplit
 func instApABSx1(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -108,6 +126,8 @@ func instApABSx1(cpu *CPU) {
 }
 
 // instApABSx2 retrieves data from the address specified by the address register and sets the next operation if successful.
+//
+//go:nosplit
 func instApABSx2(cpu *CPU) {
 	// No page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -118,6 +138,8 @@ func instApABSx2(cpu *CPU) {
 
 // instApABSx3 performs absolute addressing with an additional stack address adjustment and updates the next instruction.
 // If the page is crossed, the function ensures proper handling by checking the address read operation for success.
+//
+//go:nosplit
 func instApABSx3(cpu *CPU) {
 	// Page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -128,6 +150,8 @@ func instApABSx3(cpu *CPU) {
 }
 
 // instApABSy loads a byte from memory at the current program counter into the address register and advances the program counter.
+//
+//go:nosplit
 func instApABSy(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -139,6 +163,8 @@ func instApABSy(cpu *CPU) {
 }
 
 // instApABSy1 reads a byte from memory, updates address registers, and determines the next instruction to execute.
+//
+//go:nosplit
 func instApABSy1(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -158,6 +184,8 @@ func instApABSy1(cpu *CPU) {
 // instApABSy2 handles the execution flow for a specific CPU instruction without crossing a memory page.
 // If the memory read operation fails, it terminates further execution for this step.
 // Updates the CPU's next instruction handler based on the opcode.
+//
+//go:nosplit
 func instApABSy2(cpu *CPU) {
 	// No page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -167,6 +195,8 @@ func instApABSy2(cpu *CPU) {
 }
 
 // instApABSy3 handles the execution of an operation, performs a page cross check, and sets the next instruction to execute.
+//
+//go:nosplit
 func instApABSy3(cpu *CPU) {
 	// Page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -177,6 +207,8 @@ func instApABSy3(cpu *CPU) {
 }
 
 // instApINDx performs the indirect indexed addressing mode operation, updating CPU state and setting the next instruction.
+//
+//go:nosplit
 func instApINDx(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -191,6 +223,8 @@ func instApINDx(cpu *CPU) {
 // It reads the memory at the address in cpu.ar2 and checks its availability. If unavailable, the CPU halts.
 // Updates cpu.ar2 by adding the X register value, masking the result to fit within 8 bits.
 // Sets the next instruction handler to instApINDx2.
+//
+//go:nosplit
 func instApINDx1(cpu *CPU) {
 	if _, ok := cpu.read(cpu.ar2); !ok {
 		return
@@ -200,6 +234,8 @@ func instApINDx1(cpu *CPU) {
 }
 
 // instApINDx2 reads a value from the address in ar2, sets it to ar if successful, and updates the next handler to instApINDx3.
+//
+//go:nosplit
 func instApINDx2(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar2)
 	if !ok {
@@ -210,6 +246,8 @@ func instApINDx2(cpu *CPU) {
 }
 
 // instApINDx3 performs an indirect indexed addressing operation, updating the address register and setting the next instruction.
+//
+//go:nosplit
 func instApINDx3(cpu *CPU) {
 	data, ok := cpu.read((cpu.ar2 + 1) & 0xff)
 	if !ok {
@@ -222,6 +260,8 @@ func instApINDx3(cpu *CPU) {
 // instApINDy fetches a byte from memory at the program counter, increments the PC, and updates the AR2 register.
 // It sets the next CPU instruction to instApINDy1.
 // If memory reading fails, the function exits early.
+//
+//go:nosplit
 func instApINDy(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -233,6 +273,8 @@ func instApINDy(cpu *CPU) {
 }
 
 // instApINDy1 reads a value from the address in `ar2`, sets `ar` with the value, and transitions the CPU to `instApINDy2`.
+//
+//go:nosplit
 func instApINDy1(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar2)
 	if !ok {
@@ -244,6 +286,8 @@ func instApINDy1(cpu *CPU) {
 
 // instApINDy2 performs indirect indexed addressing by updating `ar` using `ar2` and `y`, and sets the next instruction.
 // The function reads a byte from memory, updates `ar2`, adjusts `ar`, and determines the next handler based on conditions.
+//
+//go:nosplit
 func instApINDy2(cpu *CPU) {
 	data, ok := cpu.read((cpu.ar2 + 1) & 0xff)
 	if !ok {
@@ -261,6 +305,8 @@ func instApINDy2(cpu *CPU) {
 
 // instApINDy3 handles indirect indexed addressing with Y-register offset without page crossing for the CPU.
 // It reads from the address stored in the AR register, updates the instruction handler, and checks RDY state.
+//
+//go:nosplit
 func instApINDy3(cpu *CPU) {
 	// No page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -271,6 +317,8 @@ func instApINDy3(cpu *CPU) {
 
 // instApINDy4 performs an indirect indexed addressing mode operation with Y register and updates the CPU state.
 // If a page boundary is crossed during execution, it ensures proper handling and advances to the next instruction.
+//
+//go:nosplit
 func instApINDy4(cpu *CPU) {
 	// Page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -281,6 +329,8 @@ func instApINDy4(cpu *CPU) {
 }
 
 // instAeABSx fetches an 8-bit immediate value, increments the program counter, and stores it in the address register (ar).
+//
+//go:nosplit
 func instAeABSx(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -294,6 +344,8 @@ func instAeABSx(cpu *CPU) {
 // instAeABSx1 handles the first step of the absolute-indexed addressing mode with the X register adjustment.
 // It combines the X register with the address register and determines the next instruction to execute.
 // Updates the address register (ar) and increments the program counter (pc).
+//
+//go:nosplit
 func instAeABSx1(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -310,6 +362,8 @@ func instAeABSx1(cpu *CPU) {
 }
 
 // instAeABSx2 handles the Absolute Indexed X addressing mode with page crossing, updating the address and next operation.
+//
+//go:nosplit
 func instAeABSx2(cpu *CPU) {
 	// Page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -320,6 +374,8 @@ func instAeABSx2(cpu *CPU) {
 }
 
 // instAeABSy initializes the address register with the value read from the program counter and sets the next instruction handler.
+//
+//go:nosplit
 func instAeABSy(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -331,6 +387,8 @@ func instAeABSy(cpu *CPU) {
 }
 
 // instAeABSy1 fetches data, updates the address register, and determines the next instruction based on the address range.
+//
+//go:nosplit
 func instAeABSy1(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -348,6 +406,8 @@ func instAeABSy1(cpu *CPU) {
 
 // instAeABSy2 adjusts the address register by adding a stack offset and sets the next instruction from the operation table.
 // It ensures instruction execution respects memory boundary crossing conditions.
+//
+//go:nosplit
 func instAeABSy2(cpu *CPU) {
 	// Page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -358,6 +418,8 @@ func instAeABSy2(cpu *CPU) {
 }
 
 // instAeINDy executes the AE INDY instruction, updating the program counter and secondary address register, then sets the next operation.
+//
+//go:nosplit
 func instAeINDy(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -369,6 +431,8 @@ func instAeINDy(cpu *CPU) {
 }
 
 // instAeINDy1 reads data from the memory address specified by `ar2` and stores it in `ar`. Sets the next instruction handler.
+//
+//go:nosplit
 func instAeINDy1(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar2)
 	if !ok {
@@ -380,6 +444,8 @@ func instAeINDy1(cpu *CPU) {
 
 // instAeINDy2 executes the second phase of the AE indirect Y-indexed addressing mode.
 // It reads a value from memory, combines it with the address register and Y register, and sets the next instruction.
+//
+//go:nosplit
 func instAeINDy2(cpu *CPU) {
 	data, ok := cpu.read((cpu.ar2 + 1) & 0xff)
 	if !ok {
@@ -395,6 +461,8 @@ func instAeINDy2(cpu *CPU) {
 }
 
 // instAeINDy3 handles the addressing mode operation for instructions that cross a page boundary and updates the CPU state.
+//
+//go:nosplit
 func instAeINDy3(cpu *CPU) {
 	// Page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -405,6 +473,8 @@ func instAeINDy3(cpu *CPU) {
 }
 
 // instMpZER is a memory operation instruction that reads data from memory into the address register (ar) and sets the next operation.
+//
+//go:nosplit
 func instMpZER(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -416,6 +486,8 @@ func instMpZER(cpu *CPU) {
 }
 
 // instMpZERx executes a zero-page read operation, increments the program counter, and sets the next instruction.
+//
+//go:nosplit
 func instMpZERx(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -429,6 +501,8 @@ func instMpZERx(cpu *CPU) {
 // instMpZERx1 performs a memory read operation at the address in `cpu.ar` and modifies the address by adding `cpu.x`.
 // If the memory read fails, the function returns immediately.
 // The adjusted address is constrained to an 8-bit boundary, and control proceeds to the `instOpRMW` handler.
+//
+//go:nosplit
 func instMpZERx1(cpu *CPU) {
 	if _, ok := cpu.read(cpu.ar); !ok {
 		return
@@ -437,26 +511,9 @@ func instMpZERx1(cpu *CPU) {
 	cpu.next = instOpRMW
 }
 
-//func instMpZERy(cpu *CPU) {
-//	data, ok := cpu.read(cpu.pc)
-//	if !ok {
-//		return
-//	}
-//	cpu.pc++
-//	cpu.ar = uint16(data)
-//	cpu.next = instMpZERy1
-//}
-
-//func instMpZERy1(cpu *CPU) {
-//	data, ok := cpu.read(cpu.ar)
-//	if !ok {
-//		return
-//	}
-//	cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
-//	cpu.next = instOpRMW
-//}
-
 // instMpABS loads a byte from memory at the program counter into the address register and updates the next instruction.
+//
+//go:nosplit
 func instMpABS(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -470,6 +527,8 @@ func instMpABS(cpu *CPU) {
 // instMpABS1 represents an instruction handler that modifies the address register (AR) with data fetched from memory.
 // It reads a byte from memory located at the program counter (PC), shifts it 8 bits left, and ORs it with the current AR.
 // The program counter is incremented, and the next instruction handler is set to a read-modify-write (RMW) operation.
+//
+//go:nosplit
 func instMpABS1(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -482,6 +541,8 @@ func instMpABS1(cpu *CPU) {
 
 // instMpABSx fetches the next byte from memory, increments the program counter, and sets it in the address register.
 // It updates the CPU's next state to instMpABSx1.
+//
+//go:nosplit
 func instMpABSx(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -495,6 +556,8 @@ func instMpABSx(cpu *CPU) {
 // instMpABSx1 is a CPU instruction handler for addressing mode manipulation.
 // It reads the next byte from memory and uses it as part of the absolute address computation.
 // Updates the address register (ar) with the computed address and determines the next instruction handler.
+//
+//go:nosplit
 func instMpABSx1(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -512,6 +575,8 @@ func instMpABSx1(cpu *CPU) {
 
 // instMpABSx2 performs an absolute memory read operation and checks for page crossing issues.
 // It sets the next instruction to a read-modify-write operation if the memory read is successful.
+//
+//go:nosplit
 func instMpABSx2(cpu *CPU) {
 	// No page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -521,6 +586,8 @@ func instMpABSx2(cpu *CPU) {
 }
 
 // instMpABSx3 performs an operation using absolute addressing with additional adjustments and transitions to the next instruction.
+//
+//go:nosplit
 func instMpABSx3(cpu *CPU) {
 	// Page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -531,6 +598,8 @@ func instMpABSx3(cpu *CPU) {
 }
 
 // instMpABSy sets the address register (ar) based on the byte at the program counter, then sets the next instruction handler.
+//
+//go:nosplit
 func instMpABSy(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -542,6 +611,8 @@ func instMpABSy(cpu *CPU) {
 }
 
 // instMpABSy1 performs memory page addressing mode with Y register offset, updating `ar` and determining the next instruction.
+//
+//go:nosplit
 func instMpABSy1(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -559,6 +630,8 @@ func instMpABSy1(cpu *CPU) {
 
 // instMpABSy2 handles the zero-page no-cross memory access and assigns the next instruction to a read-modify-write operation.
 // It reads from the address register; if unsuccessful, it stops. Otherwise, it sets the next handler to instOpRMW.
+//
+//go:nosplit
 func instMpABSy2(cpu *CPU) {
 	// No page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -568,6 +641,8 @@ func instMpABSy2(cpu *CPU) {
 }
 
 // instMpABSy3 adjusts the address register and sets up the next operation, handling page crossing scenarios.
+//
+//go:nosplit
 func instMpABSy3(cpu *CPU) {
 	// Page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -579,6 +654,8 @@ func instMpABSy3(cpu *CPU) {
 
 // instMpINDx loads an operand from the program counter into the ar2 register and advances the program counter.
 // Sets the next CPU instruction handler to instMpINDx1. Returns immediately if the read operation fails.
+//
+//go:nosplit
 func instMpINDx(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -590,6 +667,8 @@ func instMpINDx(cpu *CPU) {
 }
 
 // instMpINDx1 performs indexed indirect addressing mode update. Adjusts ar2 with x, wraps it, and sets the next operation.
+//
+//go:nosplit
 func instMpINDx1(cpu *CPU) {
 	if _, ok := cpu.read(cpu.ar2); !ok {
 		return
@@ -599,6 +678,8 @@ func instMpINDx1(cpu *CPU) {
 }
 
 // instMpINDx2 reads data from the memory address in ar2, updates ar with this value if successful, and sets the next instruction.
+//
+//go:nosplit
 func instMpINDx2(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar2)
 	if !ok {
@@ -609,6 +690,8 @@ func instMpINDx2(cpu *CPU) {
 }
 
 // instMpINDx3 performs an indexed memory read, updates the address register, and sets the next instruction handler.
+//
+//go:nosplit
 func instMpINDx3(cpu *CPU) {
 	data, ok := cpu.read((cpu.ar2 + 1) & 0xff)
 	if !ok {
@@ -619,6 +702,8 @@ func instMpINDx3(cpu *CPU) {
 }
 
 // instMpINDy reads a byte from memory at the program counter, increments the program counter, and updates ar2 and next state.
+//
+//go:nosplit
 func instMpINDy(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -630,6 +715,8 @@ func instMpINDy(cpu *CPU) {
 }
 
 // instMpINDy1 reads data using the CPU's ar2 register, updates the ar register, and sets the next operation to instMpINDy2.
+//
+//go:nosplit
 func instMpINDy1(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar2)
 	if !ok {
@@ -640,6 +727,8 @@ func instMpINDy1(cpu *CPU) {
 }
 
 // instMpINDy2 handles the indirect indexed addressing mode logic by adjusting the address register and setting the next instruction.
+//
+//go:nosplit
 func instMpINDy2(cpu *CPU) {
 	data, ok := cpu.read((cpu.ar2 + 1) & 0xff)
 	if !ok {
@@ -655,6 +744,8 @@ func instMpINDy2(cpu *CPU) {
 }
 
 // instMpINDy3 handles the memory instruction with indirect addressing, updating the CPU's next operation if successful.
+//
+//go:nosplit
 func instMpINDy3(cpu *CPU) {
 	// No page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -665,6 +756,8 @@ func instMpINDy3(cpu *CPU) {
 
 // instMpINDy4 handles indirect indexed addressing with Y register offset and handles potential page crossing.
 // If a page boundary is crossed, the function adjusts the address register and sets the next operation to instOpRMW.
+//
+//go:nosplit
 func instMpINDy4(cpu *CPU) {
 	// Page crossed
 	if _, ok := cpu.read(cpu.ar); !ok {
@@ -675,6 +768,8 @@ func instMpINDy4(cpu *CPU) {
 }
 
 // instOpRMW reads data from the address in the CPU's address register, stores it in the `rmw` buffer, and sets the next operation.
+//
+//go:nosplit
 func instOpRMW(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
@@ -685,6 +780,8 @@ func instOpRMW(cpu *CPU) {
 }
 
 // instOpRMW1 executes the second phase of a read-modify-write operation by writing the modified value and updating the next instruction.
+//
+//go:nosplit
 func instOpRMW1(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.rmw)
 	cpu.next = _opTable[cpu.op]
@@ -693,6 +790,8 @@ func instOpRMW1(cpu *CPU) {
 // instOpLDA loads a byte from memory at the address in the address register (AR) into the accumulator (A).
 // Updates the negative (N) and zero (Z) flags based on the loaded value.
 // Sets the next instruction to `instOpINI` if reading from memory is successful; does nothing otherwise.
+//
+//go:nosplit
 func instOpLDA(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
@@ -705,6 +804,8 @@ func instOpLDA(cpu *CPU) {
 }
 
 // instOiLDA loads a byte from memory into the accumulator, updates the negative and zero flags, and sets the next instruction.
+//
+//go:nosplit
 func instOiLDA(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -718,6 +819,8 @@ func instOiLDA(cpu *CPU) {
 }
 
 // instOpLDX loads a value from memory into the X register and updates the negative and zero flags.
+//
+//go:nosplit
 func instOpLDX(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
@@ -730,6 +833,8 @@ func instOpLDX(cpu *CPU) {
 }
 
 // instOiLDX loads a byte from memory into the X register, updating the negative and zero flags, and sets the next instruction.
+//
+//go:nosplit
 func instOiLDX(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -742,6 +847,7 @@ func instOiLDX(cpu *CPU) {
 	cpu.next = instOpINI
 }
 
+//go:nosplit
 func instOpLDY(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
@@ -754,6 +860,8 @@ func instOpLDY(cpu *CPU) {
 }
 
 // instOiLDY loads a value into the Y register, updates the negative and zero flags, and sets the next instruction handler.
+//
+//go:nosplit
 func instOiLDY(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -770,19 +878,48 @@ func instOiLDY(cpu *CPU) {
 
 // instOpSTA stores the value in the accumulator (A register) into memory at the address stored in the address register (AR).
 // It updates the next CPU instruction handler to instOpINI.
+//
+//go:nosplit
 func instOpSTA(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.a)
 	cpu.next = instOpINI
 }
 
 // instOpSTX stores the value of the X register into memory at the address specified by the AR register and sets the next instruction.
+//
+//go:nosplit
 func instOpSTX(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.x)
 	cpu.next = instOpINI
 }
 
 // instOpSTY stores the value of the Y register into memory at the address in the address register and sets the next instruction.
+//
+//go:nosplit
 func instOpSTY(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.y)
 	cpu.next = instOpINI
 }
+
+/*
+//go:nosplit
+func instMpZERy(cpu *CPU) {
+	data, ok := cpu.read(cpu.pc)
+	if !ok {
+		return
+	}
+	cpu.pc++
+	cpu.ar = uint16(data)
+	cpu.next = instMpZERy1
+}
+
+//go:nosplit
+func instMpZERy1(cpu *CPU) {
+	data, ok := cpu.read(cpu.ar)
+	if !ok {
+		return
+	}
+	cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
+	cpu.next = instOpRMW
+}
+*/

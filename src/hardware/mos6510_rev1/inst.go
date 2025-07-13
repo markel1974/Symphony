@@ -8,6 +8,8 @@ const (
 // instOpINI handles the initial opcode fetch and subsequent CPU instruction cycle logic based on the current CPU state.
 // It considers interrupt conditions, updates the program counter, and sets the next instruction handler.
 // If the RDY line is low, the CPU execution is halted by setting the `stop` flag.
+//
+//go:nosplit
 func instOpINI(cpu *CPU) {
 	// https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
 	// Interrupts are only recognized if the RDY line is high

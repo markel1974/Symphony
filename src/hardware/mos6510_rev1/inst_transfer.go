@@ -4,6 +4,8 @@ package mos6510_rev1
 
 // instOpTAX performs the TAX instruction, transferring the value of the accumulator (A) to the X register.
 // Updates the negative (nFlag) and zero (zFlag) flags based on the value of A. Sets the next instruction to instOpINI.
+//
+//go:nosplit
 func instOpTAX(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -15,6 +17,8 @@ func instOpTAX(cpu *CPU) {
 }
 
 // instOpTXA transfers the X register to the A register, updating the negative and zero flags based on the value of X.
+//
+//go:nosplit
 func instOpTXA(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -26,6 +30,8 @@ func instOpTXA(cpu *CPU) {
 }
 
 // instOpTAY transfers the value of the accumulator (A) to the Y register and updates the negative and zero flags.
+//
+//go:nosplit
 func instOpTAY(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -37,6 +43,8 @@ func instOpTAY(cpu *CPU) {
 }
 
 // instOpTYA transfers the value of the Y register to the A register and updates the negative and zero flags accordingly.
+//
+//go:nosplit
 func instOpTYA(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -48,6 +56,8 @@ func instOpTYA(cpu *CPU) {
 }
 
 // instOpTSX loads the stack pointer into the X register, updates the negative and zero flags, and sets the next instruction.
+//
+//go:nosplit
 func instOpTSX(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -59,6 +69,8 @@ func instOpTSX(cpu *CPU) {
 }
 
 // instOpTXS transfers the value from the X register to the stack pointer and sets the next instruction to instOpINI.
+//
+//go:nosplit
 func instOpTXS(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return

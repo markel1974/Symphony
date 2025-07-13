@@ -35,12 +35,11 @@ type CPU struct {
 	ar             uint16                   // Address register
 	ar2            uint16                   // Address register 2
 	rmw            uint8                    // Data buffer for RMW instructions
-	//stop            bool                     // stop indicates whether the CPU execution is currently paused.
-	rdyLow     bool  // current RDY state
-	aecLow     bool  // current AEC state
-	opFlags    uint8 // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
-	irqBreaker bool  // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
-	savedNext  func(cpu *CPU)
+	rdyLow         bool                     // current RDY state
+	aecLow         bool                     // current AEC state
+	opFlags        uint8                    // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
+	irqBreaker     bool                     // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
+	savedNext      func(cpu *CPU)
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
@@ -103,6 +102,8 @@ func (cpu *CPU) SetRDYLow(rdyLow bool) {
 }
 
 // Emulate processes one CPU cycle by invoking the next instruction handler unless the CPU is stopped.
+//
+//go:nosplit
 func (cpu *CPU) Emulate() {
 	cpu.next(cpu)
 }

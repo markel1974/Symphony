@@ -11,6 +11,8 @@ import (
 // NOP
 
 // instOiNOP increments the program counter and sets the next instruction to instOpINI if the current read is successful.
+//
+//go:nosplit
 func instOiNOP(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -20,6 +22,8 @@ func instOiNOP(cpu *CPU) {
 }
 
 // instOaNOP is a no-operation instruction handler that validates memory accessibility and sets the next instruction to instOpINI.
+//
+//go:nosplit
 func instOaNOP(cpu *CPU) {
 	if _, ok := cpu.read(cpu.ar); !ok {
 		return
@@ -30,6 +34,8 @@ func instOaNOP(cpu *CPU) {
 // Load A/X
 
 // instOpLAX handles the LAX instruction, which loads data into both the A and X registers and updates the N and Z flags.
+//
+//go:nosplit
 func instOpLAX(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
@@ -46,6 +52,8 @@ func instOpLAX(cpu *CPU) {
 
 // instOpSAX executes the SAX (Store AND X) operation, storing the logical AND of registers A and X into memory.
 // It writes the result to the address register (ar) and sets the next instruction to instOpINI.
+//
+//go:nosplit
 func instOpSAX(cpu *CPU) {
 	cpu.banks.Write(cpu.ar, cpu.a&cpu.x)
 	cpu.next = instOpINI
@@ -54,6 +62,8 @@ func instOpSAX(cpu *CPU) {
 // ASL/ORA
 
 // instOpSLO executes the SLO instruction, which shifts left the RMW value, updates flags, and performs OR with A register.
+//
+//go:nosplit
 func instOpSLO(cpu *CPU) {
 	cpu.cFlag = cpu.rmw & 0x80
 	cpu.rmw <<= 1
@@ -67,6 +77,8 @@ func instOpSLO(cpu *CPU) {
 // ROL/AND
 
 // instOpRLA performs a ROL (Rotate Left) operation on memory with accumulator AND logic and updates CPU flags.
+//
+//go:nosplit
 func instOpRLA(cpu *CPU) {
 	tmp := cpu.rmw & 0x80
 	if cpu.cFlag != 0 {
@@ -85,6 +97,8 @@ func instOpRLA(cpu *CPU) {
 // LSR/EOR
 
 // instOpSRE performs the SRE instruction: shifts memory right, XORs with accumulator, and updates flags and memory.
+//
+//go:nosplit
 func instOpSRE(cpu *CPU) {
 	cpu.cFlag = cpu.rmw & 0x1
 	cpu.rmw >>= 1
@@ -98,6 +112,8 @@ func instOpSRE(cpu *CPU) {
 // ROR/ADC
 
 // instOpRRA executes the RRA (Rotate Right and Add) operation, updating carry, performing ADC, and setting the next instruction.
+//
+//go:nosplit
 func instOpRRA(cpu *CPU) {
 	tmp := cpu.rmw & 0x1
 	if cpu.cFlag != 0 {
@@ -114,6 +130,8 @@ func instOpRRA(cpu *CPU) {
 // DEC/CMP
 
 // instOpDCP performs a decrement and compare operation, modifying flags and memory based on the CPU state.
+//
+//go:nosplit
 func instOpDCP(cpu *CPU) {
 	cpu.rmw--
 	cpu.banks.Write(cpu.ar, cpu.rmw)
@@ -130,6 +148,8 @@ func instOpDCP(cpu *CPU) {
 }
 
 // instOpISB executes the ISB instruction, writing data, updating the RMW buffer, performing SBC, and setting the next op.
+//
+//go:nosplit
 func instOpISB(cpu *CPU) {
 	cpu.rmw++
 	cpu.banks.Write(cpu.ar, cpu.rmw)
@@ -138,6 +158,8 @@ func instOpISB(cpu *CPU) {
 }
 
 // instOiANC performs a logical AND operation between the accumulator and a fetched value, updating CPU flags accordingly.
+//
+//go:nosplit
 func instOiANC(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -152,6 +174,8 @@ func instOiANC(cpu *CPU) {
 }
 
 // instOiASR performs an AND operation with a fetched byte and shifts the accumulator right by one bit, updating CPU flags.
+//
+//go:nosplit
 func instOiASR(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -168,6 +192,8 @@ func instOiASR(cpu *CPU) {
 
 // instOiARR performs a bitwise AND operation between the accumulator and a memory value, followed by a right shift.
 // Updates accumulator and various flags (N, Z, C, V) based on the CPU state and operation result.
+//
+//go:nosplit
 func instOiARR(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -206,6 +232,8 @@ func instOiARR(cpu *CPU) {
 }
 
 // instOiANE performs a bitwise operation on the accumulator with a constant and memory data, updates flags, and sets the next instruction.
+//
+//go:nosplit
 func instOiANE(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -221,6 +249,8 @@ func instOiANE(cpu *CPU) {
 // instOiLXA performs a bitwise OR operation between the accumulator and 0xee, then ANDs the result with a fetched byte.
 // Updates the X and A registers, and sets the negative and zero flags based on the new accumulator value.
 // Advances the program counter and assigns the next instruction handler.
+//
+//go:nosplit
 func instOiLXA(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -235,6 +265,8 @@ func instOiLXA(cpu *CPU) {
 }
 
 // instOiSBX executes the OiSBX instruction, performing a logical AND of A and X, subtraction with memory, and updates flags.
+//
+//go:nosplit
 func instOiSBX(cpu *CPU) {
 	data, ok := cpu.read(cpu.pc)
 	if !ok {
@@ -255,6 +287,8 @@ func instOiSBX(cpu *CPU) {
 }
 
 // instOpLAS performs a logical AND operation between the stack pointer and memory, updating the X and A registers and flags.
+//
+//go:nosplit
 func instOpLAS(cpu *CPU) {
 	data, ok := cpu.read(cpu.ar)
 	if !ok {
@@ -269,6 +303,8 @@ func instOpLAS(cpu *CPU) {
 }
 
 // instOpSHS performs the SHS (Store Stack Pointer and Memory) operation, combining the A and X registers to set SP and memory.
+//
+//go:nosplit
 func instOpSHS(cpu *CPU) {
 	cpu.sp = cpu.a & cpu.x
 	d := uint8((cpu.ar2 + 1) & uint16(cpu.sp))
@@ -278,6 +314,8 @@ func instOpSHS(cpu *CPU) {
 
 // instOpSHY computes a data value using the Y register and writes it to a memory address determined by CPU state.
 // It sets the next instruction to instOpINI.
+//
+//go:nosplit
 func instOpSHY(cpu *CPU) {
 	d := uint8(uint16(cpu.y) & (cpu.ar2 + 1))
 	cpu.banks.Write(cpu.ar, d)
@@ -285,6 +323,8 @@ func instOpSHY(cpu *CPU) {
 }
 
 // instOpSHX performs the SHX instruction, calculating a value from the X register and AR2, then writing it to memory.
+//
+//go:nosplit
 func instOpSHX(cpu *CPU) {
 	d := uint8(uint16(cpu.x) & (cpu.ar2 + 1))
 	cpu.banks.Write(cpu.ar, d)
@@ -293,6 +333,8 @@ func instOpSHX(cpu *CPU) {
 
 // instOpSHA stores the logical AND of registers A, X, and (ar2 + 1) into memory at address specified by ar.
 // It then sets the next CPU instruction to `instOpINI`.
+//
+//go:nosplit
 func instOpSHA(cpu *CPU) {
 	d := uint8(uint16(cpu.a) & uint16(cpu.x) & (cpu.ar2 + 1))
 	cpu.banks.Write(cpu.ar, d)
@@ -300,6 +342,8 @@ func instOpSHA(cpu *CPU) {
 }
 
 // instOpJAM logs an illegal opcode error with CPU context, resets the CPU, and exits the application.
+//
+//go:nosplit
 func instOpJAM(cpu *CPU) {
 	err := fmt.Errorf("[%s] unknown opcode %02x at %04x", cpu.GetId(), cpu.op, cpu.pc-1)
 	log.Println(err.Error())

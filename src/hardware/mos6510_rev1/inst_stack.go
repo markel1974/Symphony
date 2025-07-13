@@ -7,6 +7,8 @@ import (
 // Stack
 
 // instOpPHA handles the PHA (Push Accumulator) operation, verifying CPU state and setting the next instruction step.
+//
+//go:nosplit
 func instOpPHA(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -15,6 +17,8 @@ func instOpPHA(cpu *CPU) {
 }
 
 // instOpPHA1 pushes the accumulator onto the stack, updates the stack pointer, and sets the next operation to instOpINI.
+//
+//go:nosplit
 func instOpPHA1(cpu *CPU) {
 	cpu.banks.Write(uint16(cpu.sp)|stackAddr, cpu.a)
 	cpu.sp--
@@ -22,6 +26,8 @@ func instOpPHA1(cpu *CPU) {
 }
 
 // instOpPLA prepares the CPU for the PLA (Pull Accumulator) instruction by setting the next state for execution.
+//
+//go:nosplit
 func instOpPLA(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -30,6 +36,8 @@ func instOpPLA(cpu *CPU) {
 }
 
 // instOpPLA1 handles the PLA (Pull Accumulator) step 1 by reading the stack and preparing for the next operation.
+//
+//go:nosplit
 func instOpPLA1(cpu *CPU) {
 	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
@@ -39,6 +47,8 @@ func instOpPLA1(cpu *CPU) {
 }
 
 // instOpPLA2 is an instruction handler that pulls a byte from the stack into the accumulator and updates flags.
+//
+//go:nosplit
 func instOpPLA2(cpu *CPU) {
 	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
 	if !ok {
@@ -51,6 +61,8 @@ func instOpPLA2(cpu *CPU) {
 }
 
 // instOpPHP initiates the PHP (Push Processor Status) instruction by preparing to save the processor flags onto the stack.
+//
+//go:nosplit
 func instOpPHP(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -59,6 +71,8 @@ func instOpPHP(cpu *CPU) {
 }
 
 // instOpPHP1 pushes the CPU status flags onto the stack, decrements the stack pointer, and sets the next instruction to instOpINI.
+//
+//go:nosplit
 func instOpPHP1(cpu *CPU) {
 	data := cpu.pushFlags(true)
 	cpu.banks.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
@@ -67,6 +81,8 @@ func instOpPHP1(cpu *CPU) {
 }
 
 // instOpPLP processes the PLP (Pull Processor Status) instruction by advancing the CPU state to the next handler.
+//
+//go:nosplit
 func instOpPLP(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return
@@ -75,6 +91,8 @@ func instOpPLP(cpu *CPU) {
 }
 
 // instOpPLP1 reads a byte from the stack. If unsuccessful, exits; otherwise increments the stack pointer and sets instOpPLP2.
+//
+//go:nosplit
 func instOpPLP1(cpu *CPU) {
 	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
 		return
@@ -84,6 +102,8 @@ func instOpPLP1(cpu *CPU) {
 }
 
 // instOpPLP2 retrieves a byte from the stack, updates CPU flags, and manages IRQ enable/disable transitions.
+//
+//go:nosplit
 func instOpPLP2(cpu *CPU) {
 	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
 	if !ok {

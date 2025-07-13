@@ -7,6 +7,8 @@ import (
 // Flag
 
 // instOpSEC sets the Carry flag (cFlag) to 1 and moves execution to the next instruction handler (instOpINI).
+//
+//go:nosplit
 func instOpSEC(cpu *CPU) {
 	if _, ok := cpu.read(cpu.pc); !ok {
 		return

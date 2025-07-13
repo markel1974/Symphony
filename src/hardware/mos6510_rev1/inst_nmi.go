@@ -1,6 +1,8 @@
 package mos6510_rev1
 
 // instOpNMI handles the Non-Maskable Interrupt (NMI) by setting the next instruction to instOpNMI1 if read is successful.
+//
+//go:nosplit
 func instOpNMI(cpu *CPU) {
 	//internal operation
 	if _, ok := cpu.read(cpu.pc); !ok {
@@ -10,6 +12,8 @@ func instOpNMI(cpu *CPU) {
 }
 
 // instOpNMI1 executes the first step of the Non-Maskable Interrupt (NMI) sequence and sets the next operation.
+//
+//go:nosplit
 func instOpNMI1(cpu *CPU) {
 	//internal operation
 	if _, ok := cpu.read(cpu.pc); !ok {
@@ -19,6 +23,8 @@ func instOpNMI1(cpu *CPU) {
 }
 
 // instOpNMI2 handles the second stage of the NMI interrupt by pushing the high byte of the return address onto the stack.
+//
+//go:nosplit
 func instOpNMI2(cpu *CPU) {
 	//push return address high byte onto stack
 	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
@@ -27,6 +33,8 @@ func instOpNMI2(cpu *CPU) {
 }
 
 // instOpNMI3 pushes the low byte of the return address onto the stack and updates the next CPU instruction to instOpNMI4.
+//
+//go:nosplit
 func instOpNMI3(cpu *CPU) {
 	//push return address low byte onto stack
 	cpu.banks.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
@@ -36,6 +44,8 @@ func instOpNMI3(cpu *CPU) {
 
 // instOpNMI4 handles the fourth step of the Non-Maskable Interrupt (NMI) sequence in the CPU's instruction set.
 // It pushes the status register onto the stack, decrements the stack pointer, and disables further interrupts.
+//
+//go:nosplit
 func instOpNMI4(cpu *CPU) {
 	//push status register onto stack
 	data := cpu.pushFlags(false)
@@ -48,6 +58,8 @@ func instOpNMI4(cpu *CPU) {
 // instOpNMI5 handles the non-maskable interrupt by reading the interrupt vector from address 0xfffa and updating the program counter.
 // If reading fails, the function returns immediately without altering the CPU state.
 // On success, it sets the next instruction handler to instOpNMI6.
+//
+//go:nosplit
 func instOpNMI5(cpu *CPU) {
 	//get irq vector from 0xfffa
 	data, ok := cpu.read(0xfffa)
@@ -61,6 +73,8 @@ func instOpNMI5(cpu *CPU) {
 // instOpNMI6 handles the initialization of the Non-Maskable Interrupt (NMI) vector by reading the high byte from 0xfffb.
 // It updates the program counter (PC) and sets the next CPU operation to instOpINI.
 // The function halts execution if the memory read fails (e.g., invalid RDY state).
+//
+//go:nosplit
 func instOpNMI6(cpu *CPU) {
 	//get irq vector from 0xfffb
 	data, ok := cpu.read(0xfffb)
