@@ -3,7 +3,6 @@ package oto_render
 import (
 	"fmt"
 	"github.com/hajimehoshi/oto/v2"
-	"sync"
 	"time"
 )
 
@@ -24,7 +23,6 @@ type ContinuousReader struct {
 	writeFn      writeFn
 	ring         *CircularQueue
 	interpolator *LinearInterpolation
-	lock         sync.Mutex
 	chunkSize    int
 	doubleBuffer *[]float32
 	states       [0xf]func([]byte) (int, error)
@@ -86,8 +84,6 @@ func (r *ContinuousReader) Err() error {
 
 // AddChunk adds a chunk of audio data to the circular queue for processing and playback, locking the queue during the operation.
 func (r *ContinuousReader) AddChunk(chunk *[]float32, samples int) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
 	r.ring.Push(chunk)
 }
 
@@ -95,9 +91,7 @@ func (r *ContinuousReader) AddChunk(chunk *[]float32, samples int) {
 // Implements a state machine to decide how to process audio data
 // based on the buffer fill level.
 func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	return r.states[r.ring.counter&0xf](buf)
+	return r.states[r.ring.Counter()&0xf](buf)
 }
 
 // handleEmpty is called when the buffer is empty. It fills the 'oto' buffer
@@ -126,7 +120,10 @@ func (r *ContinuousReader) handleGood(buf []byte) (int, error) {
 // plays the first half, and puts the second half back in the queue.
 func (r *ContinuousReader) handleTooFast(buf []byte) (int, error) {
 	//fmt.Printf("[%s] CONSUMER TOO FAST: Stretching...\n", time.Now().Format(time.RFC3339Nano))
-	chunkToStretch, _ := r.ring.Pop()
+	chunkToStretch, ok := r.ring.Pop()
+	if !ok {
+		return r.handleEmpty(buf)
+	}
 	stretchedChunk, _ := r.interpolator.LinearInterpolationF32(chunkToStretch, r.chunkSize*2)
 	firstHalf := (*stretchedChunk)[:r.chunkSize]
 	secondHalf := (*stretchedChunk)[r.chunkSize:]
@@ -144,8 +141,10 @@ func (r *ContinuousReader) handleTooFast(buf []byte) (int, error) {
 // and plays it, consuming data from the buffer at twice the speed.
 func (r *ContinuousReader) handleTooSlow(buf []byte) (int, error) {
 	//fmt.Printf("[%s] CONSUMER TOO SLOW (Lag > %d chunks): Squishing...\n", time.Now().Format(time.RFC3339Nano), r.ring.Counter())
-	chunk1, _ := r.ring.Pop()
-	chunk2, _ := r.ring.Pop()
+	chunk1, chunk2, ok := r.ring.DoublePop()
+	if !ok {
+		return r.handleEmpty(buf)
+	}
 	copy(*r.doubleBuffer, *chunk1)
 	copy((*r.doubleBuffer)[len(*chunk1):], *chunk2)
 	squishedChunk, squishedLen := r.interpolator.LinearInterpolationF32(r.doubleBuffer, r.chunkSize)
