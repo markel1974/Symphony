@@ -6,7 +6,7 @@ package mos6510_rev1
 //
 //go:nosplit
 func InstOpADC(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}
@@ -19,7 +19,7 @@ func InstOpADC(cpu *CPU) {
 //
 //go:nosplit
 func InstOiADC(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -32,7 +32,7 @@ func InstOiADC(cpu *CPU) {
 //
 //go:nosplit
 func InstOpSBC(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}
@@ -45,7 +45,7 @@ func InstOpSBC(cpu *CPU) {
 //
 //go:nosplit
 func InstOiSBC(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -60,7 +60,7 @@ func InstOiSBC(cpu *CPU) {
 //
 //go:nosplit
 func InstOpINX(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.x++
@@ -73,7 +73,7 @@ func InstOpINX(cpu *CPU) {
 //
 //go:nosplit
 func InstOpDEX(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.x--
@@ -86,7 +86,7 @@ func InstOpDEX(cpu *CPU) {
 //
 //go:nosplit
 func InstOpINY(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.y++
@@ -99,7 +99,7 @@ func InstOpINY(cpu *CPU) {
 //
 //go:nosplit
 func InstOpDEY(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.y--
@@ -135,7 +135,7 @@ func InstOpDEC(cpu *CPU) {
 //
 //go:nosplit
 func InstOpAND(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}
@@ -149,7 +149,7 @@ func InstOpAND(cpu *CPU) {
 //
 //go:nosplit
 func InstOiAND(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -164,7 +164,7 @@ func InstOiAND(cpu *CPU) {
 //
 //go:nosplit
 func InstOpORA(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}
@@ -179,7 +179,7 @@ func InstOpORA(cpu *CPU) {
 //
 //go:nosplit
 func InstOiOPA(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -194,7 +194,7 @@ func InstOiOPA(cpu *CPU) {
 //
 //go:nosplit
 func InstOpEOR(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}
@@ -208,7 +208,7 @@ func InstOpEOR(cpu *CPU) {
 //
 //go:nosplit
 func InstOiEOR(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -223,7 +223,7 @@ func InstOiEOR(cpu *CPU) {
 //
 //go:nosplit
 func InstOpCMP(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}
@@ -242,7 +242,7 @@ func InstOpCMP(cpu *CPU) {
 //
 //go:nosplit
 func InstOiCMP(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -262,7 +262,7 @@ func InstOiCMP(cpu *CPU) {
 //
 //go:nosplit
 func InstOpCPX(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}
@@ -283,7 +283,7 @@ func InstOpCPX(cpu *CPU) {
 //
 //go:nosplit
 func InstOiCPX(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -303,7 +303,7 @@ func InstOiCPX(cpu *CPU) {
 //
 //go:nosplit
 func InstOpCPY(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}
@@ -324,7 +324,7 @@ func InstOpCPY(cpu *CPU) {
 //
 //go:nosplit
 func InstOiCPY(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -346,7 +346,7 @@ func InstOiCPY(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBIT(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}
@@ -375,7 +375,7 @@ func InstOpASL(cpu *CPU) {
 //
 //go:nosplit
 func InstOaASL(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.cFlag = cpu.a & 0x80
@@ -401,7 +401,7 @@ func InstOpLSR(cpu *CPU) {
 //
 //go:nosplit
 func InstOaLSR(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.cFlag = cpu.a & 0x1
@@ -432,7 +432,7 @@ func InstOpROL(cpu *CPU) {
 //
 //go:nosplit
 func InstOaROL(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	data := cpu.a & 0x80
@@ -469,7 +469,7 @@ func InstOpROR(cpu *CPU) {
 //
 //go:nosplit
 func InstOaROR(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	data := cpu.a & 0x1

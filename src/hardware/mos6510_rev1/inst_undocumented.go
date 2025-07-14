@@ -14,7 +14,7 @@ import (
 //
 //go:nosplit
 func InstOiNOP(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.pc++
@@ -25,7 +25,7 @@ func InstOiNOP(cpu *CPU) {
 //
 //go:nosplit
 func InstOaNOP(cpu *CPU) {
-	if _, ok := cpu.read(cpu.ar); !ok {
+	if _, ok := cpu.busRead(cpu.ar); !ok {
 		return
 	}
 	cpu.next = InstOpINI
@@ -37,7 +37,7 @@ func InstOaNOP(cpu *CPU) {
 //
 //go:nosplit
 func InstOpLAX(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}
@@ -161,7 +161,7 @@ func InstOpISB(cpu *CPU) {
 //
 //go:nosplit
 func InstOiANC(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -177,7 +177,7 @@ func InstOiANC(cpu *CPU) {
 //
 //go:nosplit
 func InstOiASR(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -195,7 +195,7 @@ func InstOiASR(cpu *CPU) {
 //
 //go:nosplit
 func InstOiARR(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -235,7 +235,7 @@ func InstOiARR(cpu *CPU) {
 //
 //go:nosplit
 func InstOiANE(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -252,7 +252,7 @@ func InstOiANE(cpu *CPU) {
 //
 //go:nosplit
 func InstOiLXA(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -268,7 +268,7 @@ func InstOiLXA(cpu *CPU) {
 //
 //go:nosplit
 func InstOiSBX(cpu *CPU) {
-	data, ok := cpu.read(cpu.pc)
+	data, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
 	}
@@ -290,7 +290,7 @@ func InstOiSBX(cpu *CPU) {
 //
 //go:nosplit
 func InstOpLAS(cpu *CPU) {
-	data, ok := cpu.read(cpu.ar)
+	data, ok := cpu.busRead(cpu.ar)
 	if !ok {
 		return
 	}

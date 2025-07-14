@@ -16,11 +16,10 @@ import (
 // CPU represents a simulated central processing unit with registers, flags, and associated helper components.
 type CPU struct {
 	*component.BaseComponent
-	lineRead  func(uint16) uint8
-	lineWrite func(uint16, uint8)
-	busRead   func(uint16) uint8  // busRead is a function that reads a byte from a specified 16-bit memory address in the CPU's memory bank.
-	busWrite  func(uint16, uint8) // busWrite is a function that writes a byte to a specified 16-bit memory address in the CPU's memory bank.
-
+	realRead       func(uint16) uint8
+	realWrite      func(uint16, uint8)
+	busRead        func(uint16) (uint8, bool)             // busRead is a function that reads a byte from a specified 16-bit memory address in the CPU's memory bank.
+	busWrite       func(uint16, uint8)                    // busWrite is a function that writes a byte to a specified 16-bit memory address in the CPU's memory bank.
 	picReset       func()                                 // picReset is a function that resets or reinitializes the Programmable Interrupt Controller (PIC).
 	picHasNMI      func() bool                            // picHasNMI checks if the PIC (Programmable Interrupt Controller) has a Non-Maskable Interrupt (NMI) pending.
 	picClearNMI    func()                                 // picClearNMI clears the Non-Maskable Interrupt (NMI) signal in the system's Programmable Interrupt Controller (PIC).
@@ -73,10 +72,10 @@ func (cpu *CPU) Bind(_ references.IMos6510Socket, pic references.IMos6510Pic, ba
 	cpu.picVerifyIrq = pic.VerifyIrq
 	cpu.picHasNMI = pic.HasNMI
 	cpu.picClearNMI = pic.ClearNMI
-	cpu.lineRead = banks.Read
-	cpu.lineWrite = banks.Write
-	cpu.busRead = cpu.lineRead
-	cpu.busWrite = cpu.lineWrite
+	cpu.realRead = banks.Read
+	cpu.realWrite = banks.Write
+	cpu.busRead = cpu.readNormal
+	cpu.busWrite = cpu.realWrite
 	return nil
 }
 
@@ -91,10 +90,10 @@ func (cpu *CPU) Internal() bool {
 
 // Reset initializes or restores the CPU to a default state by resetting internal flags, registers, and setting the program counter.
 func (cpu *CPU) Reset() {
-	cpu.busRead = cpu.lineRead
-	cpu.busWrite = cpu.lineWrite
+	cpu.busRead = cpu.readNormal
+	cpu.busWrite = cpu.realWrite
 	cpu.picReset()
-	cpu.pc = uint16(cpu.busRead(0xfffc)) | (uint16(cpu.busRead(0xfffd)) << 8) // Read reset vector
+	cpu.pc = uint16(cpu.realRead(0xfffc)) | (uint16(cpu.realRead(0xfffd)) << 8) // Read reset vector
 	cpu.opFlags = 0
 	cpu.irqBreaker = false
 	cpu.next = InstOpINI
@@ -110,18 +109,21 @@ func (cpu *CPU) SetAECLow(aecLow bool) {
 	cpu.aecLow = aecLow
 	if cpu.aecLow {
 		// disconnecting the bus...
-		cpu.busRead = cpu.busDisconnectedRead
-		cpu.busWrite = cpu.busDisconnectedWrite
+		cpu.busRead = cpu.readAECLow
+		cpu.busWrite = cpu.writeAECLow
 	}
 }
 
 // SetRDYLow sets the RDY line state to low or high based on the provided boolean value and updates the CPU stop state accordingly.
 func (cpu *CPU) SetRDYLow(rdyLow bool) {
 	cpu.rdyLow = rdyLow
-	if !cpu.rdyLow {
+	if cpu.rdyLow {
+		cpu.busRead = cpu.readBALow
+		cpu.busWrite = cpu.realWrite
+	} else {
 		//run mode
-		cpu.busRead = cpu.lineRead
-		cpu.busWrite = cpu.lineWrite
+		cpu.busRead = cpu.readNormal
+		cpu.busWrite = cpu.realWrite
 		if cpu.savedNext != nil {
 			cpu.next = cpu.savedNext
 			cpu.savedNext = nil
@@ -149,30 +151,33 @@ func (cpu *CPU) EmulationRequired() bool {
 	return true
 }
 
-// busDisconnectedRead performs a read operation while the CPU bus is disconnected, always returning a default value of 0.
-func (cpu *CPU) busDisconnectedRead(_ uint16) uint8 {
-	return 0
+// readNormal performs a normal read operation from the specified address and always returns a successful status.
+//
+//go:nosplit
+func (cpu *CPU) readNormal(addr uint16) (uint8, bool) {
+	data := cpu.realRead(addr)
+	return data, true
 }
 
-// busDisconnectedWrite is a placeholder method called when an illegal write operation is attempted on a disconnected bus.
-func (cpu *CPU) busDisconnectedWrite(_ uint16, _ uint8) {
+// readBALow halts the CPU by transitioning to halt mode and always returns 0 and false.
+//
+//go:nosplit
+func (cpu *CPU) readBALow(_ uint16) (uint8, bool) {
+	cpu.setModeHalt()
+	return 0, false
 }
 
-// read retrieves a byte from the specified memory address.
-// Returns the byte read and a boolean indicating success.
-// If the RDY line is low (rdyLow == true), indicating that the VIC-II is currently
-// accessing memory, the CPU pauses execution by setting the internal 'stop' flag,
-// and the function returns 0, false. This simulates the behavior of the 6510's RDY line,
-// which is used by the VIC-II during "bad-lines".  The 'stop' flag is specific
-// to this emulator and is NOT part of the real 6510 hardware.
-// If the RDY line is high (rdyLow == false), the function reads a byte from memory
-// using the cpu.banks.Read method and returns the byte and true.
-func (cpu *CPU) read(addr uint16) (uint8, bool) {
-	if cpu.rdyLow {
-		cpu.setModeHalt()
-		return 0, false
-	}
-	return cpu.busRead(addr), true
+// readAec performs a read operation while the CPU bus is disconnected, always returning a default value of 0.
+//
+//go:nosplit
+func (cpu *CPU) readAECLow(_ uint16) (uint8, bool) {
+	return 0, false
+}
+
+// writeAec is a placeholder method called when an illegal write operation is attempted on a disconnected bus.
+//
+//go:nosplit
+func (cpu *CPU) writeAECLow(_ uint16, _ uint8) {
 }
 
 // popFlags updates the CPU state flags based on the input data, setting various flags like nFlag, vFlag, dFlag, etc.
@@ -181,7 +186,6 @@ func (cpu *CPU) popFlags(data uint8) {
 	cpu.vFlag = data & 0x40
 	cpu.dFlag = data & 0x08
 	cpu.iFlag = data & 0x04
-	//cpu.zFlag = conversion.BoolToUint8((data & 0x02) == 0)
 	if (data & 0x02) == 0 {
 		cpu.zFlag = 1
 	} else {
@@ -241,10 +245,8 @@ func (cpu *CPU) doADC(data uint8) {
 		} else {
 			cpu.cFlag = 0
 		}
-		//cpu.cFlag = conversion.BoolToUint8(tmp > 0xff)
 		p1 := (uint16(cpu.a) ^ uint16(data)) & 0x80
 		p2 := (uint16(cpu.a) ^ tmp) & 0x80
-		//cpu.vFlag = conversion.BoolToUint8((p1 == 0) && (p2 != 0))
 		if (p1 == 0) && (p2 != 0) {
 			cpu.vFlag = 1
 		} else {
@@ -268,7 +270,6 @@ func (cpu *CPU) doADC(data uint8) {
 	cpu.nFlag = ah << 4 // Only the highest bit used
 	p1 := ((ah << 4) ^ cpu.a) & 0x80
 	p2 := (cpu.a ^ data) & 0x80
-	//cpu.vFlag = conversion.BoolToUint8((p1 != 0) && (p2 == 0))
 	if (p1 != 0) && (p2 == 0) {
 		cpu.vFlag = 1
 	} else {
@@ -278,7 +279,6 @@ func (cpu *CPU) doADC(data uint8) {
 		ah += 6
 	}
 	// BCD fixup for upper nybble
-	//cpu.cFlag = conversion.BoolToUint8(ah > 0x0f) // carry flag
 	if ah > 0x0f {
 		cpu.cFlag = 1
 	} else {
@@ -298,7 +298,6 @@ func (cpu *CPU) doSBC(data uint8) {
 	tmp := uint16(cpu.a) - uint16(data) - uint16(k)
 	if cpu.dFlag == 0 {
 		// Binary mode
-		//cpu.cFlag = conversion.BoolToUint8(tmp < 0x100)
 		if tmp < 0x100 {
 			cpu.cFlag = 1
 		} else {
@@ -306,7 +305,6 @@ func (cpu *CPU) doSBC(data uint8) {
 		}
 		p1 := (uint16(cpu.a) ^ tmp) & 0x80
 		p2 := (uint16(cpu.a) ^ uint16(data)) & 0x80
-		//cpu.vFlag = conversion.BoolToUint8((p1 != 0) && (p2 != 0))
 		if (p1 != 0) && (p2 != 0) {
 			cpu.vFlag = 1
 		} else {
@@ -327,7 +325,6 @@ func (cpu *CPU) doSBC(data uint8) {
 	if (ah & 0x10) != 0 {
 		ah -= 6 // BCD fixup
 	}
-	//cpu.cFlag = conversion.BoolToUint8(uint16(tmp) < 0x100)
 	if uint16(tmp) < 0x100 {
 		cpu.cFlag = 1
 	} else {
@@ -335,7 +332,6 @@ func (cpu *CPU) doSBC(data uint8) {
 	}
 	p1 := (uint16(cpu.a) ^ tmp) & 0x80
 	p2 := (uint16(cpu.a) ^ uint16(data)) & 0x80
-	//cpu.vFlag = conversion.BoolToUint8((p1 != 0) && (p2 != 0))
 	if (p1 != 0) && (p2 != 0) {
 		cpu.vFlag = 1
 	} else {

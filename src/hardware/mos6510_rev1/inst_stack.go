@@ -10,7 +10,7 @@ import (
 //
 //go:nosplit
 func InstOpPHA(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpPHA1
@@ -29,7 +29,7 @@ func InstOpPHA1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLA(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpPLA1
@@ -39,7 +39,7 @@ func InstOpPLA(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLA1(cpu *CPU) {
-	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
+	if _, ok := cpu.busRead(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
 	cpu.sp++
@@ -50,7 +50,7 @@ func InstOpPLA1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLA2(cpu *CPU) {
-	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
+	data, ok := cpu.busRead(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
 	}
@@ -64,7 +64,7 @@ func InstOpPLA2(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPHP(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpPHP1
@@ -84,7 +84,7 @@ func InstOpPHP1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLP(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpPLP1
@@ -94,7 +94,7 @@ func InstOpPLP(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLP1(cpu *CPU) {
-	if _, ok := cpu.read(uint16(cpu.sp) | stackAddr); !ok {
+	if _, ok := cpu.busRead(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
 	cpu.sp++
@@ -105,7 +105,7 @@ func InstOpPLP1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLP2(cpu *CPU) {
-	data, ok := cpu.read(uint16(cpu.sp) | stackAddr)
+	data, ok := cpu.busRead(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
 	}

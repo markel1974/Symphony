@@ -7,7 +7,7 @@ package mos6510_rev1
 //
 //go:nosplit
 func InstOpTAX(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.x = cpu.a
@@ -20,7 +20,7 @@ func InstOpTAX(cpu *CPU) {
 //
 //go:nosplit
 func InstOpTXA(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.a = cpu.x
@@ -33,7 +33,7 @@ func InstOpTXA(cpu *CPU) {
 //
 //go:nosplit
 func InstOpTAY(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.y = cpu.a
@@ -46,7 +46,7 @@ func InstOpTAY(cpu *CPU) {
 //
 //go:nosplit
 func InstOpTYA(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.a = cpu.y
@@ -59,7 +59,7 @@ func InstOpTYA(cpu *CPU) {
 //
 //go:nosplit
 func InstOpTSX(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.x = cpu.sp
@@ -72,7 +72,7 @@ func InstOpTSX(cpu *CPU) {
 //
 //go:nosplit
 func InstOpTXS(cpu *CPU) {
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.sp = cpu.x

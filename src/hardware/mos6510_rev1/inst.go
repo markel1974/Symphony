@@ -44,7 +44,11 @@ func InstOpINI(cpu *CPU) {
 		return
 	}
 	cpu.irqBreaker = false
-	cpu.op = cpu.busRead(cpu.pc)
+	v, ok := cpu.busRead(cpu.pc)
+	if !ok {
+		return
+	}
+	cpu.op = v
 	cpu.pc++
 	cpu.next = cpu.modeTable[cpu.op]
 }

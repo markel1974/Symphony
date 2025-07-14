@@ -5,7 +5,7 @@ package mos6510_rev1
 //go:nosplit
 func InstOpIRQ(cpu *CPU) {
 	//internal operation
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpIRQ1
@@ -16,7 +16,7 @@ func InstOpIRQ(cpu *CPU) {
 //go:nosplit
 func InstOpIRQ1(cpu *CPU) {
 	//internal operation
-	if _, ok := cpu.read(cpu.pc); !ok {
+	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpIRQ2
@@ -61,7 +61,7 @@ func InstOpIRQ4(cpu *CPU) {
 //go:nosplit
 func InstOpIRQ5(cpu *CPU) {
 	//get irq vector from 0xfffe
-	data, ok := cpu.read(0xfffe)
+	data, ok := cpu.busRead(0xfffe)
 	if !ok {
 		return
 	}
@@ -74,7 +74,7 @@ func InstOpIRQ5(cpu *CPU) {
 //go:nosplit
 func InstOpIRQ6(cpu *CPU) {
 	//get irq vector from 0xffff
-	data, ok := cpu.read(0xffff)
+	data, ok := cpu.busRead(0xffff)
 	if !ok {
 		return
 	}
