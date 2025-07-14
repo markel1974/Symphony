@@ -113,10 +113,7 @@ func (r *ContinuousReader) handleEmpty(buf []byte) (int, error) {
 // It takes a chunk and plays it as-is, without resampling.
 func (r *ContinuousReader) handleGood(buf []byte) (int, error) {
 	chunkToPlay, _ := r.ring.Pop()
-	written := 0
-	for _, sample := range *chunkToPlay {
-		written += r.writeFn(buf, sample, written)
-	}
+	written := r.writeFn(&buf, chunkToPlay, len(*chunkToPlay))
 	return written, nil
 }
 
@@ -134,10 +131,7 @@ func (r *ContinuousReader) handleTooFast(buf []byte) (int, error) {
 	firstHalf := (*stretchedChunk)[:r.chunkSize]
 	secondHalf := (*stretchedChunk)[r.chunkSize:]
 	r.ring.Push(&secondHalf)
-	written := 0
-	for _, sample := range firstHalf {
-		written += r.writeFn(buf, sample, written)
-	}
+	written := r.writeFn(&buf, &firstHalf, len(firstHalf))
 	return written, nil
 }
 
@@ -154,9 +148,6 @@ func (r *ContinuousReader) handleTooSlow(buf []byte) (int, error) {
 	copy(*r.doubleBuffer, *chunk1)
 	copy((*r.doubleBuffer)[len(*chunk1):], *chunk2)
 	squishedChunk, squishedLen := r.interpolator.LinearInterpolationF32(r.doubleBuffer, r.chunkSize)
-	written := 0
-	for i := 0; i < squishedLen; i++ {
-		written += r.writeFn(buf, (*squishedChunk)[i], written)
-	}
+	written := r.writeFn(&buf, squishedChunk, squishedLen)
 	return written, nil
 }
