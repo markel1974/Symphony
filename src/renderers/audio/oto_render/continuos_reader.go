@@ -3,6 +3,7 @@ package oto_render
 import (
 	"fmt"
 	"github.com/hajimehoshi/oto/v2"
+	"sync"
 	"time"
 )
 
@@ -26,6 +27,7 @@ type ContinuousReader struct {
 	chunkSize    int
 	doubleBuffer *[]float32
 	states       [0xf]func([]byte) (int, error)
+	lock         sync.RWMutex
 }
 
 // NewContinuousReader creates and initializes a new instance of the ContinuousReader for managing continuous audio streams.
@@ -84,6 +86,8 @@ func (r *ContinuousReader) Err() error {
 
 // AddChunk adds a chunk of audio data to the circular queue for processing and playback, locking the queue during the operation.
 func (r *ContinuousReader) AddChunk(chunk *[]float32, samples int) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	r.ring.Push(chunk)
 }
 
@@ -91,6 +95,8 @@ func (r *ContinuousReader) AddChunk(chunk *[]float32, samples int) {
 // Implements a state machine to decide how to process audio data
 // based on the buffer fill level.
 func (r *ContinuousReader) Read(buf []byte) (n int, err error) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
 	return r.states[r.ring.Counter()&0xf](buf)
 }
 

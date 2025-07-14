@@ -2,7 +2,6 @@ package oto_render
 
 import (
 	"math"
-	"sync"
 )
 
 // minimumSize defines the smallest allowable size required for the related operation or setting.
@@ -16,7 +15,7 @@ type CircularQueue struct {
 	start   uint8
 	end     uint8
 	counter int
-	mutex   sync.RWMutex
+	//mutex   sync.RWMutex
 }
 
 // NewCircularQueue creates and initializes a new CircularQueue with a specified entry size for each element.
@@ -37,8 +36,8 @@ func NewCircularQueue(entrySize int) *CircularQueue {
 // Push attempts to add the given element to the circular queue.
 // Returns true if the operation is successful, otherwise false if the queue is full.
 func (r *CircularQueue) Push(elem *[]float32) bool {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
+	//r.mutex.Lock()
+	//defer r.mutex.Unlock()
 	nextEnd := r.end + 1
 	if nextEnd == r.start {
 		//max reached
@@ -52,14 +51,14 @@ func (r *CircularQueue) Push(elem *[]float32) bool {
 
 // Pop removes and returns the chunk at the front of the queue and a success flag. It returns false if the queue is empty.
 func (r *CircularQueue) Pop() (*[]float32, bool) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
+	//r.mutex.Lock()
+	//defer r.mutex.Unlock()
 	return r._pop()
 }
 
 func (r *CircularQueue) DoublePop() (*[]float32, *[]float32, bool) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
+	//r.mutex.Lock()
+	//defer r.mutex.Unlock()
 	p1, ok1 := r._pop()
 	if !ok1 {
 		return nil, nil, false
@@ -83,7 +82,7 @@ func (r *CircularQueue) _pop() (*[]float32, bool) {
 
 // Counter returns the current count of elements in the CircularQueue.
 func (r *CircularQueue) Counter() int {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
+	//r.mutex.RLock()
+	//defer r.mutex.RUnlock()
 	return r.counter
 }
