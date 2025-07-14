@@ -12,9 +12,6 @@ const (
 	offset32 = 4
 )
 
-// writeFn is a function type that writes data of a float32 value into a byte buffer at a specific index and returns the number of bytes written.
-//type writeFn func(buf []byte, data float32, idx int) int
-
 // writeFn defines a function type used to write data from a float32 buffer to a byte buffer with a specified length.
 type writeFn func(buf *[]byte, data *[]float32, l int) int
 
@@ -32,7 +29,7 @@ var _formats = map[string]Format{
 	"FLOAT32LE": {Format: oto.FormatFloat32LE, Bytes: offset32, Func: writeFloat32LE},
 }
 
-// writeFloat32LE writes a slice of float32 values into the buffer as little-endian 32-bit floats and returns the written size.
+// writeFloat32LE converts a slice of float32 to float32 format and writes it to the provided byte buffer in little-endian order.
 func writeFloat32LE(buf *[]byte, data *[]float32, l int) int {
 	offset := 0
 	realen := l * offset32
