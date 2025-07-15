@@ -26,6 +26,7 @@ func NewCPUSocket(parent references.IComponent, label string) *CPUSocket {
 	return c
 }
 
+// HardwareId returns the unique hardware identifier associated with the CPUSocket instance.
 func (w *CPUSocket) HardwareId() string {
 	return w.hwId
 }
