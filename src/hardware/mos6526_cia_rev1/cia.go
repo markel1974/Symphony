@@ -316,11 +316,6 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	}
 }
 
-// GetVASignal returns the last byte that was operated on or updated in the CIA component.
-func (m *CIA) GetVASignal() uint8 {
-	return 0
-}
-
 // SetCNTLevel sets the CNT pin state for both Timer A and Timer B to the specified level.
 func (m *CIA) SetCNTLevel(level bool) {
 	m.timerA.SetCNTLevel(level)

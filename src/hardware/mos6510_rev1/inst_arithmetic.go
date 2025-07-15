@@ -230,6 +230,9 @@ func InstOpCMP(cpu *CPU) {
 	cpu.ar = uint16(cpu.a) - uint16(data)
 	cpu.nFlag = uint8(cpu.ar)
 	cpu.zFlag = uint8(cpu.ar)
+	// Set Carry flag if result is >= 0 (no borrow occurred).
+	// The result of (A - M) is stored in cpu.ar.
+	// If cpu.ar < 0x100, it means the high byte is 0, so no borrow.
 	if cpu.ar < stackAddr {
 		cpu.cFlag = 1
 	} else {
