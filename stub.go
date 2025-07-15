@@ -39,11 +39,6 @@ const treeStub = `{
          "id": "mos6522:2"
         }
        },
-       "mos6510_pic": {
-        "details": {
-         "id": "mos6510_pic"
-        }
-       },
        "c1541_pla": {
         "details": {
          "id": "c1541_pla"
@@ -215,11 +210,6 @@ const treeStub = `{
      "sr1": 0,
      "sr2": 0,
      "sr3": 0
-    }
-   },
-   "mos6510_pic": {
-    "details": {
-     "id": "mos6510_pic"
     }
    },
    "c64_pla": {

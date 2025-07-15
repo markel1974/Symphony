@@ -1,9 +1,5 @@
 package mos6510_rev1
 
-import (
-	"github.com/markel1974/c64emu/src/references"
-)
-
 // Flag
 
 // InstOpSEC sets the Carry flag (cFlag) to 1 and moves execution to the next instruction handler (InstOpINI).
@@ -50,7 +46,7 @@ func InstOpSEI(cpu *CPU) {
 		return
 	}
 	if cpu.iFlag == 0 {
-		cpu.opFlags |= references.OpFlagIrqDisabled
+		cpu.opFlags |= OpFlagIrqDisabled
 	}
 	cpu.iFlag = 1
 	cpu.next = InstOpINI
@@ -62,7 +58,7 @@ func InstOpCLI(cpu *CPU) {
 		return
 	}
 	if cpu.iFlag == 0 {
-		cpu.opFlags |= references.OpFlagIrqEnabled
+		cpu.opFlags |= OpFlagIrqEnabled
 	}
 	cpu.iFlag = 0
 	cpu.next = InstOpINI

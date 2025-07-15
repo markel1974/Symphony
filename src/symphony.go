@@ -20,7 +20,6 @@ var _c64DefaultHardware = []struct {
 	{"c64", "mos6526", 1},
 	{"c64", "c64_cartridges", 0},
 	{"c64", "mos6510", 0},
-	{"c64", "mos6510_pic", 0},
 	{"c64", "dynamic_throttle", 0},
 	{"c64", "mos6581", 0},
 	{"c64", "c64_ram", 0},

@@ -40,7 +40,7 @@ func (m *mockPic) TriggerNMI()                               {}
 
 type mockSocket struct {
 	banks references.IMos6510Banks
-	pic   references.IMos6510Pic
+	//interrupts   references.IMos6510Pic
 }
 
 func (m *mockSocket) GetBanks() references.IMos6510Banks {
@@ -61,7 +61,7 @@ func TestCPU_Setup(t *testing.T) {
 	_ = cpu.Setup()
 
 	assert.Equal(t, banks, cpu.banks)
-	assert.Equal(t, pic, cpu.pic)
+	assert.Equal(t, pic, cpu.interrupts)
 }
 
 func TestCPU_Reset(t *testing.T) {

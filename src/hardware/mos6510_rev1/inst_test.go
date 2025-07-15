@@ -48,7 +48,7 @@ func TestInstOpINI(t *testing.T) {
 		expStop    bool
 		expNext    func(*CPU)
 		expBreaker bool
-		pic        references.IMos6510Pic
+		interrupts        references.IMos6510Pic
 		banks      references.IMos6510Banks
 	}{
 		{
@@ -71,7 +71,7 @@ func TestInstOpINI(t *testing.T) {
 			expPC:      0,
 			expStop:    false,
 			expBreaker: false,
-			pic:        &MockPIC{verifyIrqResult: 1},
+			interrupts:        &MockPIC{verifyIrqResult: 1},
 			banks:      &MockBank{readResult: 0},
 		},
 		{
@@ -85,7 +85,7 @@ func TestInstOpINI(t *testing.T) {
 			expStop:    false,
 			expNext:    InstOpNMI,
 			expBreaker: false,
-			pic:        &MockPIC{verifyIrqResult: 2},
+			interrupts:        &MockPIC{verifyIrqResult: 2},
 			banks:      &MockBank{readResult: 0},
 		},
 		{
@@ -99,7 +99,7 @@ func TestInstOpINI(t *testing.T) {
 			expStop:    false,
 			expNext:    InstOpIRQ,
 			expBreaker: false,
-			pic:        &MockPIC{verifyIrqResult: 3},
+			interrupts:        &MockPIC{verifyIrqResult: 3},
 			banks:      &MockBank{readResult: 0},
 		},
 		{
@@ -114,14 +114,14 @@ func TestInstOpINI(t *testing.T) {
 			expStop:    false,
 			expNext:    _modeTable[0x20],
 			expBreaker: false,
-			pic:        &MockPIC{verifyIrqResult: 0},
+			interrupts:        &MockPIC{verifyIrqResult: 0},
 			banks:      &MockBank{readResult: 0x20},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_ = tt.cpu.Setup(&mockSocket{banks: tt.banks, pic: tt.pic})
+			_ = tt.cpu.Setup(&mockSocket{banks: tt.banks, interrupts: tt.interrupts})
 			// Call InstOpINI
 			InstOpINI(tt.cpu)
 			InstOpINI(tt.cpu)

@@ -1,9 +1,15 @@
-package mos6510_pic_rev1
+package mos6510_rev1
 
 import (
 	"github.com/markel1974/c64emu/src/common/bits"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
+)
+
+const (
+	OpFlagIrqDisabled = 0x01
+	OpFlagIrqEnabled  = 0x02
+	OpFlagIntDelayed  = 0x04
 )
 
 // intrRstBit represents the bit position for the reset interrupt.
@@ -17,8 +23,8 @@ const (
 
 // http://6502.org/tutorials/interrupts.html
 
-// Pic represents a programmable interrupt controller managing IRQ and NMI signals within a system.
-type Pic struct {
+// Interrupts represents a programmable interrupt controller managing IRQ and NMI signals within a system.
+type Interrupts struct {
 	*component.BaseComponent
 	//quartz        references.IQuartz
 	cycles        func() uint64
@@ -29,9 +35,9 @@ type Pic struct {
 	nmiExec       bool
 }
 
-// NewPIC creates and initializes a new instance of Pic with default values and registers it with the specified parent and factory.
-func NewPIC(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Pic {
-	p := &Pic{
+// NewInterrupts creates and initializes a new instance of Interrupts with default values and registers it with the specified parent and factory.
+func NewInterrupts(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Interrupts {
+	p := &Interrupts{
 		BaseComponent: component.NewBaseComponent(),
 		cycles:        nil,
 		firstIrqCycle: 0,
@@ -40,41 +46,41 @@ func NewPIC(parent references.IComponent, factory references.IComponentFactory, 
 		irq:           bits.Bits(0),
 		nmiExec:       false,
 	}
-	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIMos6510Pic(p, label, instance))
+	p.BaseComponent.Register(factory, parent, "interrupts", p, references.IdInternalComponent(label, instance, "INTERRUPTS"))
 	return p
 }
 
-// Setup initializes the Pic instance with the provided quartz reference and other dependencies. Returns an error on failure.
-func (i *Pic) Setup() error {
+// Setup initializes the Interrupts instance with the provided quartz reference and other dependencies. Returns an error on failure.
+func (i *Interrupts) Setup() error {
 	return nil
 }
 
-func (i *Pic) Bind(_ references.IMos6510PicSocket, q references.IQuartz) error {
+func (i *Interrupts) Bind(q references.IQuartz) error {
 	i.cycles = q.Cycle
 	return nil
 }
 
 // Connect establishes necessary bindings or configurations between the PIC and other components, returning an error if it fails.
-func (i *Pic) Connect() error {
+func (i *Interrupts) Connect() error {
 	return nil
 }
 
-// Internal indicates if the `Pic` is set as an internal device. Always returns false in this implementation.
-func (i *Pic) Internal() bool {
+// Internal indicates if the `Interrupts` is set as an internal device. Always returns false in this implementation.
+func (i *Interrupts) Internal() bool {
+	return true
+}
+
+// Emulate processes the internal state of the Interrupts instance during an emulation cycle.
+func (i *Interrupts) Emulate() {
+}
+
+// EmulationRequired determines if emulation is required for the current state of the Interrupts component. Always returns false.
+func (i *Interrupts) EmulationRequired() bool {
 	return false
 }
 
-// Emulate processes the internal state of the Pic instance during an emulation cycle.
-func (i *Pic) Emulate() {
-}
-
-// EmulationRequired determines if emulation is required for the current state of the Pic component. Always returns false.
-func (i *Pic) EmulationRequired() bool {
-	return false
-}
-
-// Reset reinitializes the Pic by clearing all internal state and resetting signals to their default values.
-func (i *Pic) Reset() {
+// Reset reinitializes the Interrupts by clearing all internal state and resetting signals to their default values.
+func (i *Interrupts) Reset() {
 	i.all = 0
 	i.irq = 0
 	i.firstIrqCycle = 0
@@ -83,16 +89,17 @@ func (i *Pic) Reset() {
 }
 
 // TriggerReset sets the reset interrupt flag in the internal bitfield to signal a reset condition.
-func (i *Pic) TriggerReset() {
+func (i *Interrupts) TriggerReset() {
 	i.all.BitSet(intrRstBit)
 }
 
 // ClearReset clears the reset interrupt bit by resetting the bit at the position defined by intrRstBit in i.all.
-func (i *Pic) ClearReset() {
+func (i *Interrupts) ClearReset() {
 	i.all.BitClear(intrRstBit)
 }
 
-func (i *Pic) TriggerIRQ(intr uint32) {
+// TriggerIRQ sets the specified IRQ bit and records the cycle if no IRQ has been set previously. It also updates interrupt flags.
+func (i *Interrupts) TriggerIRQ(intr uint32) {
 	if i.irq == 0 {
 		i.firstIrqCycle = i.cycles()
 	}
@@ -101,7 +108,7 @@ func (i *Pic) TriggerIRQ(intr uint32) {
 }
 
 // ClearIRQ clears the specified interrupt request (IRQ) bit and updates related signals if necessary.
-func (i *Pic) ClearIRQ(intr uint32) {
+func (i *Interrupts) ClearIRQ(intr uint32) {
 	//i.irqExec = false
 	i.irq.BitClear(intr)
 	if i.irq == 0 {
@@ -110,7 +117,7 @@ func (i *Pic) ClearIRQ(intr uint32) {
 }
 
 // TriggerNMI sets the NMI (Non-Maskable Interrupt) bit and captures the cycle when the NMI was triggered if not already set.
-func (i *Pic) TriggerNMI() {
+func (i *Interrupts) TriggerNMI() {
 	if !i.all.BitCheck(intrNmiBit) {
 		i.firstNMICycle = i.cycles()
 		i.all.BitSet(intrNmiBit)
@@ -118,18 +125,18 @@ func (i *Pic) TriggerNMI() {
 }
 
 // ClearNMI clears the NMI (Non-Maskable Interrupt) state, disabling its execution and clearing the associated bit.
-func (i *Pic) ClearNMI() {
+func (i *Interrupts) ClearNMI() {
 	i.nmiExec = false
 	i.all.BitClear(intrNmiBit)
 }
 
 // HasNMI checks if the Non-Maskable Interrupt (NMI) bit is set and returns true if active, otherwise false.
-func (i *Pic) HasNMI() bool {
+func (i *Interrupts) HasNMI() bool {
 	return i.all.BitCheck(intrNmiBit)
 }
 
 // VerifyIrq evaluates and handles interrupt requests (IRQ, NMI, RESET) based on internal state and input flags.
-func (i *Pic) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
+func (i *Interrupts) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
 	const minNMIDistance = 2
 	const minIrqDistance = 2
 	if i.all != 0 {
@@ -139,15 +146,15 @@ func (i *Pic) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
 			return 1
 		}
 		if i.all.BitCheck(intrNmiBit) && !i.nmiExec {
-			if i.computeDistance(i.firstNMICycle, (opFlags&references.OpFlagIntDelayed) != 0, minNMIDistance) {
+			if i.computeDistance(i.firstNMICycle, (opFlags&OpFlagIntDelayed) != 0, minNMIDistance) {
 				// Edge-triggered
 				i.nmiExec = true
 				return 2
 			}
 		}
 		if i.all.BitCheck(intrIrqBit) /* && !i.irqExec */ {
-			if ((iFlag == 0) || ((opFlags & references.OpFlagIrqDisabled) != 0)) && ((opFlags & references.OpFlagIrqEnabled) == 0) {
-				if i.computeDistance(i.firstIrqCycle, (opFlags&references.OpFlagIntDelayed) != 0, minIrqDistance) {
+			if ((iFlag == 0) || ((opFlags & OpFlagIrqDisabled) != 0)) && ((opFlags & OpFlagIrqEnabled) == 0) {
+				if i.computeDistance(i.firstIrqCycle, (opFlags&OpFlagIntDelayed) != 0, minIrqDistance) {
 					// Level-triggered
 					//i.irqExec = true
 					return 3
@@ -161,7 +168,7 @@ func (i *Pic) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
 // computeDistance calculates if the current cycle has met or exceeded the distance from a given base value.
 // It optionally accounts for a delay by adding 1 to the total distance if hasDelay is true.
 // Returns true if the current cycle is greater than or equal to the total distance, false otherwise.
-func (i *Pic) computeDistance(base uint64, hasDelay bool, distance uint64) bool {
+func (i *Interrupts) computeDistance(base uint64, hasDelay bool, distance uint64) bool {
 	total := base + distance
 	if hasDelay {
 		total += 1
@@ -173,6 +180,6 @@ func (i *Pic) computeDistance(base uint64, hasDelay bool, distance uint64) bool 
 	return false
 }
 
-//func (i *Pic) HasReset() bool {
+//func (i *Interrupts) HasReset() bool {
 //	return i.all.BitCheck(i.intRstBit)
 //}

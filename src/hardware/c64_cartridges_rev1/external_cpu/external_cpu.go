@@ -3,7 +3,6 @@ package external_cpu
 import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/hardware/mos6510_pic_rev1"
 	"github.com/markel1974/c64emu/src/hardware/mos6510_rev1"
 	"github.com/markel1974/c64emu/src/hardware/quartz_rev1"
 	"github.com/markel1974/c64emu/src/references"
@@ -18,11 +17,11 @@ type CartridgeExternalCPU struct {
 	*component.BaseComponent
 	loaderId string
 	board    references.IC64Expansion
-	pic      references.IMos6510Pic
-	cpu      references.IMos6510
-	quartz   references.IQuartz
-	cfg      *config.Config
-	spec     *references.C64CartridgeSpec
+	//pic      references.IMos6510Pic
+	cpu    references.IMos6510
+	quartz references.IQuartz
+	cfg    *config.Config
+	spec   *references.C64CartridgeSpec
 }
 
 // NewExternalCPU returns a new instance of the CartridgeExternalCPU struct implementing the IC64Cartridge interface.
@@ -30,11 +29,11 @@ func NewExternalCPU(parent references.IComponent, factory references.IComponentF
 	r := &CartridgeExternalCPU{
 		BaseComponent: component.NewBaseComponent(),
 		board:         nil,
-		pic:           nil,
-		cpu:           nil,
-		quartz:        nil,
-		cfg:           nil,
-		spec:          references.C64CartridgeSpecOff,
+		//pic:           nil,
+		cpu:    nil,
+		quartz: nil,
+		cfg:    nil,
+		spec:   references.C64CartridgeSpecOff,
 	}
 	r.BaseComponent.Register(factory, parent, Identifier(), r, references.IdIC64Cartridge(r, label, instance))
 	return r
@@ -68,14 +67,13 @@ func (s *CartridgeExternalCPU) Bind(board references.IC64Expansion, ldr referenc
 	if s.cpu, err = references.ComponentToIMos6510(cpu); err != nil {
 		return err
 	}
-
-	p, err := s.GetFactory().Create(s, Identifier(), mos6510_pic_rev1.Identifier(), instance)
-	if err != nil {
-		return err
-	}
-	if s.pic, err = references.ComponentToIMos6510Pic(p); err != nil {
-		return err
-	}
+	//p, err := s.GetFactory().Create(s, Identifier(), mos6510_pic_rev1.Identifier(), instance)
+	//if err != nil {
+	//	return err
+	//}
+	//if s.pic, err = references.ComponentToIMos6510Pic(p); err != nil {
+	//	return err
+	//}
 	q, err := s.GetFactory().Create(s, Identifier(), quartz_rev1.Identifier(), instance)
 	if err != nil {
 		return err
@@ -86,14 +84,14 @@ func (s *CartridgeExternalCPU) Bind(board references.IC64Expansion, ldr referenc
 
 	cc := make(map[string]references.IComponent)
 	cc[cpu.HardwareId()] = cpu
-	cc[p.HardwareId()] = p
+	//cc[p.HardwareId()] = p
 	cc[q.HardwareId()] = q
 	for _, v := range cc {
 		if err = v.Setup(); err != nil {
 			return err
 		}
 	}
-	if err = s.cpu.Bind(s, s.pic, s.board); err != nil {
+	if err = s.cpu.Bind(s, s.quartz, s.board); err != nil {
 		return err
 	}
 	for _, v := range cc {
@@ -154,12 +152,12 @@ func (s *CartridgeExternalCPU) IOWrite(addr uint16, data uint8) bool {
 
 // IRQ handles the Interrupt Request (IRQ) signal for the CartridgeGeneric, enabling appropriate cartridge-specific behavior.
 func (s *CartridgeExternalCPU) IRQ(d uint32) {
-	s.pic.TriggerIRQ(d)
+	s.cpu.TriggerIRQ(d)
 }
 
 // IRQCLear clears the state of any active Interrupt Requests (IRQ) for the CartridgeGeneric.
 func (s *CartridgeExternalCPU) IRQCLear(d uint32) {
-	s.pic.ClearIRQ(d)
+	s.cpu.ClearIRQ(d)
 }
 
 // HardwareButton handles the system response to a physical button press event, updating cartridge state as necessary.

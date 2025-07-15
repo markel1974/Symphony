@@ -1,9 +1,5 @@
 package mos6510_rev1
 
-import (
-	"github.com/markel1974/c64emu/src/references"
-)
-
 // Jump - Branch
 
 // InstOpJMP is the instruction handler for the JMP operation, updating the program counter and setting the next operation.
@@ -265,9 +261,9 @@ func InstOpBRK3(cpu *CPU) {
 	cpu.busWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.iFlag = 1
-	if cpu.picHasNMI() {
-		cpu.picClearNMI()     // Simulate an edge-triggered input
-		cpu.next = InstOpNMI5 // Jump to NMI sequence
+	if cpu.interrupts.HasNMI() {
+		cpu.interrupts.ClearNMI() // Simulate an edge-triggered input
+		cpu.next = InstOpNMI5     // Jump to NMI sequence
 	} else {
 		cpu.next = InstOpBRK4
 	}
@@ -436,7 +432,7 @@ func InstOpBPL(cpu *CPU) {
 //go:nosplit
 func InstOpBRAnp(cpu *CPU) {
 	// No page crossed
-	cpu.opFlags |= references.OpFlagIntDelayed
+	cpu.opFlags |= OpFlagIntDelayed
 	if _, ok := cpu.busRead(cpu.pc); !ok {
 		return
 	}

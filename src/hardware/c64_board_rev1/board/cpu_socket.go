@@ -10,7 +10,7 @@ type CPUSocket struct {
 	label     string
 	parent    references.IComponent
 	component references.IComponent
-	pic       references.IMos6510Pic
+	quartz    references.IQuartz
 	banks     references.IC64Pla
 	hwId      string
 }
@@ -37,15 +37,15 @@ func (w *CPUSocket) Wire() error {
 	if w.IMos6510, err = references.ComponentToIMos6510(w.component); err != nil {
 		return err
 	}
-	picId := references.IdIMos6510Pic(w.pic, w.label, 0)
-	if w.pic, err = references.ComponentToIMos6510Pic(w.parent.GetChildByHardwareId(picId)); err != nil {
+	idQuartz := references.IdIQuartz(w.quartz, w.label, 0)
+	if w.quartz, err = references.ComponentToIQuartz(w.parent.GetChildByHardwareId(idQuartz)); err != nil {
 		return err
 	}
 	plaId := references.IdIC64Pla(w.banks, w.label, 0)
 	if w.banks, err = references.ComponentToIC64Pla(w.parent.GetChildByHardwareId(plaId)); err != nil {
 		return err
 	}
-	if err = w.IMos6510.Bind(w, w.pic, w.banks); err != nil {
+	if err = w.IMos6510.Bind(w, w.quartz, w.banks); err != nil {
 		return err
 	}
 	return nil

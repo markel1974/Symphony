@@ -27,7 +27,6 @@ import (
 	_ "github.com/markel1974/c64emu/src/hardware/dynamic_throttle_rev1"
 	_ "github.com/markel1974/c64emu/src/hardware/iec_rev1"
 	_ "github.com/markel1974/c64emu/src/hardware/media_drive_rev1"
-	_ "github.com/markel1974/c64emu/src/hardware/mos6510_pic_rev1"
 	_ "github.com/markel1974/c64emu/src/hardware/mos6510_rev1"
 	_ "github.com/markel1974/c64emu/src/hardware/mos6522_via_rev1"
 	_ "github.com/markel1974/c64emu/src/hardware/mos6526_cia_rev1"

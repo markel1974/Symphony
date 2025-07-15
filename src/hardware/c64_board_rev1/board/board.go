@@ -23,15 +23,15 @@ const (
 // Board represents the main structure of a system board with various hardware component sockets and configurations.
 type Board struct {
 	*component.BaseComponent
-	keysSocket      *KeyboardSocket
-	joySocket1      *JoystickSocket
-	joySocket2      *JoystickSocket
-	quartzSocket    *QuartzSocket
-	ramSocket       *RamSocket
-	colorRamSocket  *ColorRamSocket
-	romSocket       *RomSocket
-	iecSocket       *IECSocket
-	picSocket       *PICSocket
+	keysSocket     *KeyboardSocket
+	joySocket1     *JoystickSocket
+	joySocket2     *JoystickSocket
+	quartzSocket   *QuartzSocket
+	ramSocket      *RamSocket
+	colorRamSocket *ColorRamSocket
+	romSocket      *RomSocket
+	iecSocket      *IECSocket
+	//picSocket       *PICSocket
 	cia1Socket      *CIA1Socket
 	cia2Socket      *CIA2Socket
 	vicSocket       *VICSocket
@@ -70,7 +70,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	s.quartzSocket = NewQuartzSocket(s, s.label)
 	s.iecSocket = NewIECSocket(s, s.label, s)
 	s.cartridgeSocket = NewExpansionSocket(s, s.label, s)
-	s.picSocket = NewPICSocket(s, s.label)
+	//s.picSocket = NewPICSocket(s, s.label)
 	s.cpuSocket = NewCPUSocket(s, s.label)
 	s.vicSocket = NewVICSocket(s, s.label, s)
 	s.sidSocket = NewSIDSocket(s, s.label, mos6569.ScreenFreq, mos6569.TotalRasters)
@@ -88,7 +88,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	s.sockets = append(s.sockets, s.joySocket2)
 	s.sockets = append(s.sockets, s.iecSocket)
 	s.sockets = append(s.sockets, s.cartridgeSocket)
-	s.sockets = append(s.sockets, s.picSocket)
+	//s.sockets = append(s.sockets, s.picSocket)
 	s.sockets = append(s.sockets, s.cpuSocket)
 	s.sockets = append(s.sockets, s.vicSocket)
 	s.sockets = append(s.sockets, s.sidSocket)
@@ -158,7 +158,7 @@ func (s *Board) Reset() {
 
 // reset reinitializes all sockets of the Board, setting them to their default states.
 func (s *Board) reset() {
-	s.picSocket.Reset()
+	//s.picSocket.Reset()
 	s.plaSocket.Reset()
 	s.cpuSocket.Reset()
 	s.cartridgeSocket.Reset()
@@ -171,7 +171,7 @@ func (s *Board) reset() {
 // AsyncReset performs an asynchronous reset on various components of the board, initializing them to their default state.
 func (s *Board) AsyncReset() {
 	s.plaSocket.Reset()
-	s.picSocket.TriggerReset()
+	s.cpuSocket.TriggerReset()
 	//s.cpuSocket.AsyncReset()
 	s.vicSocket.Reset()
 	s.sidSocket.Reset()
@@ -237,29 +237,29 @@ func (s *Board) AECLowTrigger(v bool) {
 
 // IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
 func (s *Board) IRQTrigger(d uint32) {
-	s.picSocket.TriggerIRQ(d)
+	s.cpuSocket.TriggerIRQ(d)
 	s.cartridgeSocket.IRQ(d)
 }
 
 // IRQClearTrigger clears the interrupt request (IRQ) trigger for the provided device identifier.
 func (s *Board) IRQClearTrigger(d uint32) {
-	s.picSocket.ClearIRQ(d)
+	s.cpuSocket.ClearIRQ(d)
 	s.cartridgeSocket.IRQClear(d)
 }
 
 // NMITrigger initiates a Non-Maskable Interrupt (NMI) on the board through the connected PIC socket.
 func (s *Board) NMITrigger() {
-	s.picSocket.TriggerNMI()
+	s.cpuSocket.TriggerNMI()
 }
 
 // NMIClearTrigger clears the NMI (Non-Maskable Interrupt) trigger by invoking the ClearNMI method on the PIC socket.
 func (s *Board) NMIClearTrigger() {
-	s.picSocket.ClearNMI()
+	s.cpuSocket.ClearNMI()
 }
 
 // RSTTrigger triggers a reset signal using the PIC socket implementation within the Board structure.
 func (s *Board) RSTTrigger() {
-	s.picSocket.TriggerReset()
+	s.cpuSocket.TriggerReset()
 }
 
 // LastCycleTrigger triggers the preparation of the socket in the last cycle of board operations.

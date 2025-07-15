@@ -23,7 +23,7 @@ func InstOpINI(cpu *CPU) {
 		if !cpu.irqBreaker {
 			opFlag := cpu.opFlags
 			cpu.opFlags = 0
-			switch cpu.picVerifyIrq(cpu.iFlag, opFlag) {
+			switch cpu.interrupts.VerifyIrq(cpu.iFlag, opFlag) {
 			case 1:
 				cpu.Reset()
 				return

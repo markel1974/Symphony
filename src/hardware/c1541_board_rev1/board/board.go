@@ -24,7 +24,6 @@ var _c1541hardware = []struct {
 	{"c1541_ram", 0},
 	{"quartz", 0},
 	{"c1541_pla", 0},
-	{"mos6510_pic", 0},
 	{"mos6510", 0},
 	{"mos6522", 0},
 	{"mos6522", 1},
@@ -40,11 +39,11 @@ const (
 // Board represents the main hardware abstraction, containing critical components like CPU, memory, and IO devices.
 type Board struct {
 	*component.BaseComponent
-	iec          references.IIec
-	cpuSocket    *CPUSocket
-	via1Socket   *VIA1Socket
-	via2Socket   *VIA2Socket
-	picSocket    *PICSocket
+	iec        references.IIec
+	cpuSocket  *CPUSocket
+	via1Socket *VIA1Socket
+	via2Socket *VIA2Socket
+	//picSocket    *PICSocket
 	plaSocket    *PLASocket
 	ram          *RamSocket
 	romSocket    *RomLoaderSocket
@@ -101,7 +100,7 @@ func (m *Board) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber
 	m.via1Socket = NewVIA1Socket(m, m.label, m, iec)
 	m.via2Socket = NewVIA2Socket(m, m.label, m, m.mec)
 	m.cpuSocket = NewCPUSocket(m, m.label, m.via2Socket)
-	m.picSocket = NewPICSocket(m, m.label)
+	//m.picSocket = NewPICSocket(m, m.label)
 	m.plaSocket = NewPLASocket(m, m.label)
 
 	m.sockets = append(m.sockets, m.romSocket)
@@ -110,7 +109,7 @@ func (m *Board) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber
 	m.sockets = append(m.sockets, m.cpuSocket)
 	m.sockets = append(m.sockets, m.via1Socket)
 	m.sockets = append(m.sockets, m.via2Socket)
-	m.sockets = append(m.sockets, m.picSocket)
+	//m.sockets = append(m.sockets, m.picSocket)
 	m.sockets = append(m.sockets, m.plaSocket)
 
 	return nil
@@ -166,7 +165,7 @@ func (m *Board) Shutdown() {
 
 // Reset reinitializes the Board's internal components to their default states by calling their respective Reset methods.
 func (m *Board) Reset() {
-	m.picSocket.Reset()
+	//m.picSocket.Reset()
 	m.cpuSocket.Reset()
 	m.via1Socket.Reset()
 	m.via2Socket.Reset()
@@ -214,12 +213,12 @@ func (m *Board) LedActivity(led bool) {
 
 // IRQClearTrigger clears the specified interrupt request (IRQ) in the programmable interrupt controller (PIC) associated with the board.
 func (m *Board) IRQClearTrigger(intr uint32) {
-	m.picSocket.ClearIRQ(intr)
+	m.cpuSocket.ClearIRQ(intr)
 }
 
 // IRQTrigger triggers an IRQ by setting the specified interrupt bit in the programmable interrupt controller (PIC).
 func (m *Board) IRQTrigger(intr uint32) {
-	m.picSocket.TriggerIRQ(intr)
+	m.cpuSocket.TriggerIRQ(intr)
 }
 
 // InsertDisk inserts a new disk into the board's disk drive using the provided image data and write protection status.

@@ -18,42 +18,41 @@ type CPU struct {
 	*component.BaseComponent
 	realRead       func(uint16) uint8
 	realWrite      func(uint16, uint8)
-	busRead        func(uint16) (uint8, bool)             // busRead is a function that reads a byte from a specified 16-bit memory address in the CPU's memory bank.
-	busWrite       func(uint16, uint8)                    // busWrite is a function that writes a byte to a specified 16-bit memory address in the CPU's memory bank.
-	picReset       func()                                 // picReset is a function that resets or reinitializes the Programmable Interrupt Controller (PIC).
-	picHasNMI      func() bool                            // picHasNMI checks if the PIC (Programmable Interrupt Controller) has a Non-Maskable Interrupt (NMI) pending.
-	picClearNMI    func()                                 // picClearNMI clears the Non-Maskable Interrupt (NMI) signal in the system's Programmable Interrupt Controller (PIC).
-	picVerifyIrq   func(iFlag uint8, opFlags uint8) uint8 // picVerifyIrq verifies interrupt conditions by comparing the iFlag and opFlags and returns the updated interrupt state.
-	next           func(cpu *CPU)                         // next is a function pointer that executes the next CPU instruction or operation during emulation.
-	overflowBranch func() bool                            // overflowBranch determines if the CPU should branch based on the overflow condition.
-	nFlag          uint8                                  // Negative flag - Only the highest bit of the nFlag variable is used
-	zFlag          uint8                                  // Zero flag - The zFlag variable has the inverse meaning of the 6510 Z flag
-	vFlag          uint8                                  // Overflow flag
-	dFlag          uint8                                  // Decimal mode flag
-	iFlag          uint8                                  // Interrupt disable flag
-	cFlag          uint8                                  // Carry flag
-	a              uint8                                  // Register
-	x              uint8                                  // Register
-	y              uint8                                  // Register
-	sp             uint8                                  // Stack pointer
-	pc             uint16                                 // Program counter
-	op             uint8                                  // Current opcode
-	ar             uint16                                 // Address register
-	ar2            uint16                                 // Address register 2
-	rmw            uint8                                  // Data buffer for RMW instructions
-	rdyLow         bool                                   // current RDY state
-	aecLow         bool                                   // current AEC state
-	opFlags        uint8                                  // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
-	irqBreaker     bool                                   // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
+	busRead        func(uint16) (uint8, bool) // busRead is a function that reads a byte from a specified 16-bit memory address in the CPU's memory bank.
+	busWrite       func(uint16, uint8)        // busWrite is a function that writes a byte to a specified 16-bit memory address in the CPU's memory bank.
+	next           func(cpu *CPU)             // next is a function pointer that executes the next CPU instruction or operation during emulation.
+	overflowBranch func() bool                // overflowBranch determines if the CPU should branch based on the overflow condition.
+	nFlag          uint8                      // Negative flag - Only the highest bit of the nFlag variable is used
+	zFlag          uint8                      // Zero flag - The zFlag variable has the inverse meaning of the 6510 Z flag
+	vFlag          uint8                      // Overflow flag
+	dFlag          uint8                      // Decimal mode flag
+	iFlag          uint8                      // Interrupt disable flag
+	cFlag          uint8                      // Carry flag
+	a              uint8                      // Register
+	x              uint8                      // Register
+	y              uint8                      // Register
+	sp             uint8                      // Stack pointer
+	pc             uint16                     // Program counter
+	op             uint8                      // Current opcode
+	ar             uint16                     // Address register
+	ar2            uint16                     // Address register 2
+	rmw            uint8                      // Data buffer for RMW instructions
+	rdyLow         bool                       // current RDY state
+	aecLow         bool                       // current AEC state
+	opFlags        uint8                      // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
+	irqBreaker     bool                       // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
 	savedNext      func(cpu *CPU)
 	modeTable      []func(*CPU)
 	opTable        []func(*CPU)
+	interrupts     *Interrupts
+	label          string
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
 func NewCPU(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *CPU {
 	cpu := &CPU{
 		BaseComponent: component.NewBaseComponent(),
+		label:         label,
 	}
 	cpu.BaseComponent.Register(factory, parent, Identifier(), cpu, references.IdIMos6510(cpu, label, instance))
 	return cpu
@@ -61,21 +60,22 @@ func NewCPU(parent references.IComponent, factory references.IComponentFactory, 
 
 // Setup initializes the CPU by configuring its PIC and banks from the given socket.
 func (cpu *CPU) Setup() error {
+	cpu.interrupts = NewInterrupts(cpu, cpu.GetFactory(), cpu.label, 0)
 	cpu.opTable = CreateOpTable()
 	cpu.modeTable = CreateModeTable()
 	return nil
 }
 
 // Bind initializes the connections between the CPU and its socket, PIC, and memory banks, configuring necessary handlers.
-func (cpu *CPU) Bind(_ references.IMos6510Socket, pic references.IMos6510Pic, banks references.IMos6510Banks) error {
-	cpu.picReset = pic.Reset
-	cpu.picVerifyIrq = pic.VerifyIrq
-	cpu.picHasNMI = pic.HasNMI
-	cpu.picClearNMI = pic.ClearNMI
+func (cpu *CPU) Bind(_ references.IMos6510Socket, q references.IQuartz, banks references.IMos6510Banks) error {
+	if err := cpu.interrupts.Bind(q); err != nil {
+		return err
+	}
 	cpu.realRead = banks.Read
 	cpu.realWrite = banks.Write
 	cpu.busRead = cpu.readNormal
 	cpu.busWrite = cpu.realWrite
+
 	return nil
 }
 
@@ -84,6 +84,7 @@ func (cpu *CPU) Connect() error {
 	return nil
 }
 
+// Internal determines whether the CPU is in an internal state, returning false as the default implementation.
 func (cpu *CPU) Internal() bool {
 	return false
 }
@@ -92,7 +93,7 @@ func (cpu *CPU) Internal() bool {
 func (cpu *CPU) Reset() {
 	cpu.busRead = cpu.readNormal
 	cpu.busWrite = cpu.realWrite
-	cpu.picReset()
+	cpu.interrupts.Reset()
 	cpu.pc = uint16(cpu.realRead(0xfffc)) | (uint16(cpu.realRead(0xfffd)) << 8) // Read reset vector
 	cpu.opFlags = 0
 	cpu.irqBreaker = false
@@ -102,6 +103,31 @@ func (cpu *CPU) Reset() {
 // SetOverflowBranch sets the function used to handle conditional overflow branching for the CPU.
 func (cpu *CPU) SetOverflowBranch(sob func() bool) {
 	cpu.overflowBranch = sob
+}
+
+// TriggerReset initiates a reset operation on the CPU by activating the corresponding reset mechanism in the PIC.
+func (cpu *CPU) TriggerReset() {
+	cpu.interrupts.TriggerReset()
+}
+
+// ClearIRQ clears the interrupt request (IRQ) for the given IRQ vector by invoking the associated PIC method.
+func (cpu *CPU) ClearIRQ(v uint32) {
+	cpu.interrupts.ClearIRQ(v)
+}
+
+// TriggerIRQ triggers an interrupt request (IRQ) by delegating the request to the programmable interrupt controller (PIC).
+func (cpu *CPU) TriggerIRQ(v uint32) {
+	cpu.interrupts.TriggerIRQ(v)
+}
+
+// TriggerNMI forces a Non-Maskable Interrupt (NMI) to occur on the CPU by signaling the programmable interrupt controller.
+func (cpu *CPU) TriggerNMI() {
+	cpu.interrupts.TriggerNMI()
+}
+
+// ClearNMI clears the Non-Maskable Interrupt (NMI) state by delegating the operation to the programmable interrupt controller.
+func (cpu *CPU) ClearNMI() {
+	cpu.interrupts.ClearNMI()
 }
 
 // SetAECLow sets the AEC line state to low or high based on the provided boolean value and updates the CPU stop state accordingly.

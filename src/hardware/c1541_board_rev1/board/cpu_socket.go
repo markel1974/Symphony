@@ -15,7 +15,7 @@ type CPUSocket struct {
 	connections ICPUSocketConnections
 	parent      references.IComponent
 	component   references.IComponent
-	pic         references.IMos6510Pic
+	quartz      references.IQuartz
 	pla         references.IC1541Pla
 	via2        references.IMos6522
 	hwId        string
@@ -28,7 +28,7 @@ func NewCPUSocket(parent references.IComponent, label string, connections ICPUSo
 		parent:      parent,
 		label:       label,
 		connections: connections,
-		pic:         nil,
+		quartz:      nil,
 		pla:         nil,
 	}
 	c.hwId = references.IdIMos6510(c.IMos6510, c.label, 0)
@@ -47,8 +47,8 @@ func (w *CPUSocket) Wire() error {
 	if w.IMos6510, err = references.ComponentToIMos6510(w.component); err != nil {
 		return err
 	}
-	idPIC := references.IdIMos6510Pic(w.pic, w.label, 0)
-	if w.pic, err = references.ComponentToIMos6510Pic(w.parent.GetChildByHardwareId(idPIC)); err != nil {
+	idQuartz := references.IdIQuartz(w.quartz, w.label, 0)
+	if w.quartz, err = references.ComponentToIQuartz(w.parent.GetChildByHardwareId(idQuartz)); err != nil {
 		return err
 	}
 	idPLA := references.IdIC1541Pla(w.pla, w.label, 0)
@@ -59,7 +59,7 @@ func (w *CPUSocket) Wire() error {
 	if w.via2, err = references.ComponentToIMos6522(w.parent.GetChildByHardwareId(idVIA2)); err != nil {
 		return err
 	}
-	if err = w.IMos6510.Bind(w, w.pic, w.pla); err != nil {
+	if err = w.IMos6510.Bind(w, w.quartz, w.pla); err != nil {
 		return err
 	}
 	//w.IMos6510.SetOverflowBranch(w.via2.ByteReady)

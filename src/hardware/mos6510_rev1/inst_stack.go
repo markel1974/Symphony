@@ -1,9 +1,5 @@
 package mos6510_rev1
 
-import (
-	"github.com/markel1974/c64emu/src/references"
-)
-
 // Stack
 
 // InstOpPHA handles the PHA (Push Accumulator) operation, verifying CPU state and setting the next instruction step.
@@ -112,9 +108,9 @@ func InstOpPLP2(cpu *CPU) {
 	iFlagPrev := cpu.iFlag
 	cpu.popFlags(data)
 	if iFlagPrev == 0 && cpu.iFlag != 0 {
-		cpu.opFlags |= references.OpFlagIrqDisabled
+		cpu.opFlags |= OpFlagIrqDisabled
 	} else if iFlagPrev != 0 && cpu.iFlag == 0 {
-		cpu.opFlags |= references.OpFlagIrqEnabled
+		cpu.opFlags |= OpFlagIrqEnabled
 	}
 	cpu.next = InstOpINI
 }

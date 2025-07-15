@@ -17,19 +17,11 @@ type IMos6510Banks interface {
 type IMos6510Socket interface {
 }
 
-// IMos6510 defines the interface for a simulation of the 6510 CPU, including setup, binding, connection, and operation methods.
-// Setup initializes the 6510 simulation, returning an error if setup fails.
-// Bind associates necessary components like socket, PIC, and memory banks to the CPU simulation, returning an error if binding fails.
-// Connect finalizes the connection process for the 6510, making it operational in the simulation.
-// Reset reinitializes the CPU simulation to its default state.
-// Emulate executes one emulation cycle of the 6510 logic, advancing its internal state.
-// SetRDYLow alters the RDY line state, taking a boolean to indicate if it should be set low.
-// SetAECLow changes the AEC line state, taking a boolean to specify if it should be lowered.
-// SetOverflowBranch assigns an overflow branch function, which should return a boolean representing overflow status.
+// IMos6510 defines an interface for emulating a MOS 6510 CPU and managing its operations and interactions.
 type IMos6510 interface {
 	Setup() error
 
-	Bind(socket IMos6510Socket, pic IMos6510Pic, banks IMos6510Banks) error
+	Bind(socket IMos6510Socket, quartz IQuartz, banks IMos6510Banks) error
 
 	Connect() error
 
@@ -42,6 +34,16 @@ type IMos6510 interface {
 	SetAECLow(aecLow bool)
 
 	SetOverflowBranch(sob func() bool)
+
+	TriggerReset()
+
+	TriggerIRQ(uint32)
+
+	ClearIRQ(uint32)
+
+	TriggerNMI()
+
+	ClearNMI()
 }
 
 // IdIMos6510 generates a unique identifier for an IMos6510 component using its label, instance index, and reference identity.
