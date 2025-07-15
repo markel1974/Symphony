@@ -40,7 +40,6 @@ type CPU struct {
 	rdyLow         bool                       // current RDY state
 	aecLow         bool                       // current AEC state
 	opFlags        uint8                      // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
-	irqBreaker     bool                       // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
 	savedNext      func(cpu *CPU)
 	modeTable      []func(*CPU)
 	opTable        []func(*CPU)
@@ -75,7 +74,6 @@ func (cpu *CPU) Bind(_ references.IMos6510Socket, q references.IQuartz, banks re
 	cpu.realWrite = banks.Write
 	cpu.busRead = cpu.readNormal
 	cpu.busWrite = cpu.realWrite
-
 	return nil
 }
 
@@ -96,7 +94,6 @@ func (cpu *CPU) Reset() {
 	cpu.interrupts.Reset()
 	cpu.pc = uint16(cpu.realRead(0xfffc)) | (uint16(cpu.realRead(0xfffd)) << 8) // Read reset vector
 	cpu.opFlags = 0
-	cpu.irqBreaker = false
 	cpu.next = InstOpINI
 }
 

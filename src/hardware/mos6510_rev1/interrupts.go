@@ -26,13 +26,13 @@ const (
 // Interrupts represents a programmable interrupt controller managing IRQ and NMI signals within a system.
 type Interrupts struct {
 	*component.BaseComponent
-	//quartz        references.IQuartz
 	cycles        func() uint64
 	all           bits.Bits
 	irq           bits.Bits
 	firstIrqCycle uint64
 	firstNMICycle uint64
 	nmiExec       bool
+	irqBreaker    bool // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
 }
 
 // NewInterrupts creates and initializes a new instance of Interrupts with default values and registers it with the specified parent and factory.
@@ -44,6 +44,7 @@ func NewInterrupts(parent references.IComponent, factory references.IComponentFa
 		firstNMICycle: 0,
 		all:           bits.Bits(0),
 		irq:           bits.Bits(0),
+		irqBreaker:    false,
 		nmiExec:       false,
 	}
 	p.BaseComponent.Register(factory, parent, "interrupts", p, references.IdInternalComponent(label, instance, "INTERRUPTS"))
@@ -86,6 +87,7 @@ func (i *Interrupts) Reset() {
 	i.firstIrqCycle = 0
 	i.firstNMICycle = 0
 	i.nmiExec = false
+	i.irqBreaker = false
 }
 
 // TriggerReset sets the reset interrupt flag in the internal bitfield to signal a reset condition.
@@ -163,6 +165,21 @@ func (i *Interrupts) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
 		}
 	}
 	return 0
+}
+
+// HasIrqBreaker checks if the interrupt breaker is currently enabled, returning true if active, otherwise false.
+func (i *Interrupts) HasIrqBreaker() bool {
+	return i.irqBreaker
+}
+
+// EnableIrqBreaker enables the IRQ breaker, preventing further IRQ processing until explicitly disabled.
+func (i *Interrupts) EnableIrqBreaker() {
+	i.irqBreaker = true
+}
+
+// DisableIrqBreaker disables the IRQ breaker, allowing further IRQ processing.
+func (i *Interrupts) DisableIrqBreaker() {
+	i.irqBreaker = false
 }
 
 // computeDistance calculates if the current cycle has met or exceeded the distance from a given base value.

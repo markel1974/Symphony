@@ -20,7 +20,7 @@ func InstOpINI(cpu *CPU) {
 	// https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
 	// Interrupts are only recognized if the RDY line is high
 	if !cpu.rdyLow {
-		if !cpu.irqBreaker {
+		if !cpu.interrupts.HasIrqBreaker() {
 			opFlag := cpu.opFlags
 			cpu.opFlags = 0
 			switch cpu.interrupts.VerifyIrq(cpu.iFlag, opFlag) {
@@ -28,12 +28,12 @@ func InstOpINI(cpu *CPU) {
 				cpu.Reset()
 				return
 			case 2:
-				cpu.irqBreaker = true
+				cpu.interrupts.EnableIrqBreaker()
 				cpu.next = InstOpNMI
 				cpu.next(cpu)
 				return
 			case 3:
-				cpu.irqBreaker = true
+				cpu.interrupts.EnableIrqBreaker()
 				cpu.next = InstOpIRQ
 				cpu.next(cpu)
 				return
@@ -43,7 +43,7 @@ func InstOpINI(cpu *CPU) {
 		cpu.setModeHalt()
 		return
 	}
-	cpu.irqBreaker = false
+	cpu.interrupts.DisableIrqBreaker()
 	v, ok := cpu.busRead(cpu.pc)
 	if !ok {
 		return
