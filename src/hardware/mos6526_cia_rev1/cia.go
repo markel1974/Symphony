@@ -91,6 +91,8 @@ func (m *CIA) Update() {
 }
 
 // Emulate performs one emulation cycle, updating internal state, timers, and their interactions without triggering IRQs.
+//
+//go:nosplit
 func (m *CIA) Emulate() {
 	if m.timerAIrqCycle {
 		m.timerAIrqCycle = false //next cycle trigger
