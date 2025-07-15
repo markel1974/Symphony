@@ -6,7 +6,7 @@ package mos6510_rev1
 //
 //go:nosplit
 func InstOpSEC(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.cFlag = 1
@@ -15,7 +15,7 @@ func InstOpSEC(cpu *CPU) {
 
 // InstOpCLC clears the carry flag in the CPU and sets the next instruction to InstOpINI. It halts if the current PC read fails.
 func InstOpCLC(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.cFlag = 0
@@ -24,7 +24,7 @@ func InstOpCLC(cpu *CPU) {
 
 // InstOpSED sets the decimal mode flag (dFlag) to 1 and assigns the next instruction handler to InstOpINI.
 func InstOpSED(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.dFlag = 1
@@ -33,7 +33,7 @@ func InstOpSED(cpu *CPU) {
 
 // InstOpCLD clears the decimal mode flag (dFlag) and sets the next instruction handler to InstOpINI.
 func InstOpCLD(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.dFlag = 0
@@ -42,7 +42,7 @@ func InstOpCLD(cpu *CPU) {
 
 // InstOpSEI sets the interrupt disable flag and updates CPU state to handle the next instruction cycle.
 func InstOpSEI(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	if cpu.iFlag == 0 {
@@ -54,7 +54,7 @@ func InstOpSEI(cpu *CPU) {
 
 // InstOpCLI clears the interrupt disable flag and sets the next instruction to InstOpINI if the current opcode is valid.
 func InstOpCLI(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	if cpu.iFlag == 0 {
@@ -67,7 +67,7 @@ func InstOpCLI(cpu *CPU) {
 // InstOpCLV clears the overflow flag in the CPU and sets the next instruction handler to InstOpINI.
 // If the current PC address cannot be read, the operation is aborted.
 func InstOpCLV(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.vFlag = 0
@@ -76,7 +76,7 @@ func InstOpCLV(cpu *CPU) {
 
 // InstOpNOP is a no-operation function for the CPU that progresses the state to the next instruction without modifying registers.
 func InstOpNOP(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpINI

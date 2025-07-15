@@ -6,7 +6,7 @@ package mos6510_rev1
 //
 //go:nosplit
 func InstOpPHA(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpPHA1
@@ -16,7 +16,7 @@ func InstOpPHA(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPHA1(cpu *CPU) {
-	cpu.busWrite(uint16(cpu.sp)|stackAddr, cpu.a)
+	cpu.bus.Write(uint16(cpu.sp)|stackAddr, cpu.a)
 	cpu.sp--
 	cpu.next = InstOpINI
 }
@@ -25,7 +25,7 @@ func InstOpPHA1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLA(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpPLA1
@@ -35,7 +35,7 @@ func InstOpPLA(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLA1(cpu *CPU) {
-	if _, ok := cpu.busRead(uint16(cpu.sp) | stackAddr); !ok {
+	if _, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
 	cpu.sp++
@@ -46,7 +46,7 @@ func InstOpPLA1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLA2(cpu *CPU) {
-	data, ok := cpu.busRead(uint16(cpu.sp) | stackAddr)
+	data, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
 	}
@@ -60,7 +60,7 @@ func InstOpPLA2(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPHP(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpPHP1
@@ -71,7 +71,7 @@ func InstOpPHP(cpu *CPU) {
 //go:nosplit
 func InstOpPHP1(cpu *CPU) {
 	data := cpu.pushFlags(true)
-	cpu.busWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
+	cpu.bus.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.next = InstOpINI
 }
@@ -80,7 +80,7 @@ func InstOpPHP1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLP(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpPLP1
@@ -90,7 +90,7 @@ func InstOpPLP(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLP1(cpu *CPU) {
-	if _, ok := cpu.busRead(uint16(cpu.sp) | stackAddr); !ok {
+	if _, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
 	cpu.sp++
@@ -101,7 +101,7 @@ func InstOpPLP1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpPLP2(cpu *CPU) {
-	data, ok := cpu.busRead(uint16(cpu.sp) | stackAddr)
+	data, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
 	}

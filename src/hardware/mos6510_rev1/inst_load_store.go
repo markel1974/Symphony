@@ -4,7 +4,7 @@ package mos6510_rev1
 //
 //go:nosplit
 func InstApZER(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -18,7 +18,7 @@ func InstApZER(cpu *CPU) {
 //
 //go:nosplit
 func InstApZERx(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -33,7 +33,7 @@ func InstApZERx(cpu *CPU) {
 //
 //go:nosplit
 func InstApZERx1(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar = (cpu.ar + uint16(cpu.x)) & 0xff
@@ -44,7 +44,7 @@ func InstApZERx1(cpu *CPU) {
 //
 //go:nosplit
 func InstApZERy(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -58,7 +58,7 @@ func InstApZERy(cpu *CPU) {
 //
 //go:nosplit
 func InstApZERy1(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar = (cpu.ar + uint16(cpu.y)) & 0xff
@@ -69,7 +69,7 @@ func InstApZERy1(cpu *CPU) {
 //
 //go:nosplit
 func InstApABS(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -83,7 +83,7 @@ func InstApABS(cpu *CPU) {
 //
 //go:nosplit
 func InstApABS1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -97,7 +97,7 @@ func InstApABS1(cpu *CPU) {
 //
 //go:nosplit
 func InstApABSx(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -110,7 +110,7 @@ func InstApABSx(cpu *CPU) {
 //
 //go:nosplit
 func InstApABSx1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -130,7 +130,7 @@ func InstApABSx1(cpu *CPU) {
 //go:nosplit
 func InstApABSx2(cpu *CPU) {
 	// No page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.next = cpu.opTable[cpu.op]
@@ -142,7 +142,7 @@ func InstApABSx2(cpu *CPU) {
 //go:nosplit
 func InstApABSx3(cpu *CPU) {
 	// Page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar += stackAddr
@@ -153,7 +153,7 @@ func InstApABSx3(cpu *CPU) {
 //
 //go:nosplit
 func InstApABSy(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -166,7 +166,7 @@ func InstApABSy(cpu *CPU) {
 //
 //go:nosplit
 func InstApABSy1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -188,7 +188,7 @@ func InstApABSy1(cpu *CPU) {
 //go:nosplit
 func InstApABSy2(cpu *CPU) {
 	// No page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.next = cpu.opTable[cpu.op]
@@ -199,7 +199,7 @@ func InstApABSy2(cpu *CPU) {
 //go:nosplit
 func InstApABSy3(cpu *CPU) {
 	// Page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar += stackAddr
@@ -210,7 +210,7 @@ func InstApABSy3(cpu *CPU) {
 //
 //go:nosplit
 func InstApINDx(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -226,7 +226,7 @@ func InstApINDx(cpu *CPU) {
 //
 //go:nosplit
 func InstApINDx1(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.ar2); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar2); !ok {
 		return
 	}
 	cpu.ar2 = (cpu.ar2 + uint16(cpu.x)) & 0xff
@@ -237,7 +237,7 @@ func InstApINDx1(cpu *CPU) {
 //
 //go:nosplit
 func InstApINDx2(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.ar2)
+	data, ok := cpu.bus.Read(cpu.ar2)
 	if !ok {
 		return
 	}
@@ -249,7 +249,7 @@ func InstApINDx2(cpu *CPU) {
 //
 //go:nosplit
 func InstApINDx3(cpu *CPU) {
-	data, ok := cpu.busRead((cpu.ar2 + 1) & 0xff)
+	data, ok := cpu.bus.Read((cpu.ar2 + 1) & 0xff)
 	if !ok {
 		return
 	}
@@ -263,7 +263,7 @@ func InstApINDx3(cpu *CPU) {
 //
 //go:nosplit
 func InstApINDy(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -276,7 +276,7 @@ func InstApINDy(cpu *CPU) {
 //
 //go:nosplit
 func InstApINDy1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.ar2)
+	data, ok := cpu.bus.Read(cpu.ar2)
 	if !ok {
 		return
 	}
@@ -289,7 +289,7 @@ func InstApINDy1(cpu *CPU) {
 //
 //go:nosplit
 func InstApINDy2(cpu *CPU) {
-	data, ok := cpu.busRead((cpu.ar2 + 1) & 0xff)
+	data, ok := cpu.bus.Read((cpu.ar2 + 1) & 0xff)
 	if !ok {
 		return
 	}
@@ -309,7 +309,7 @@ func InstApINDy2(cpu *CPU) {
 //go:nosplit
 func InstApINDy3(cpu *CPU) {
 	// No page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.next = cpu.opTable[cpu.op]
@@ -321,7 +321,7 @@ func InstApINDy3(cpu *CPU) {
 //go:nosplit
 func InstApINDy4(cpu *CPU) {
 	// Page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar += stackAddr
@@ -332,7 +332,7 @@ func InstApINDy4(cpu *CPU) {
 //
 //go:nosplit
 func InstAeABSx(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -347,7 +347,7 @@ func InstAeABSx(cpu *CPU) {
 //
 //go:nosplit
 func InstAeABSx1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -366,7 +366,7 @@ func InstAeABSx1(cpu *CPU) {
 //go:nosplit
 func InstAeABSx2(cpu *CPU) {
 	// Page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar += stackAddr
@@ -377,7 +377,7 @@ func InstAeABSx2(cpu *CPU) {
 //
 //go:nosplit
 func InstAeABSy(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -390,7 +390,7 @@ func InstAeABSy(cpu *CPU) {
 //
 //go:nosplit
 func InstAeABSy1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -410,7 +410,7 @@ func InstAeABSy1(cpu *CPU) {
 //go:nosplit
 func InstAeABSy2(cpu *CPU) {
 	// Page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar += stackAddr
@@ -421,7 +421,7 @@ func InstAeABSy2(cpu *CPU) {
 //
 //go:nosplit
 func InstAeINDy(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -434,7 +434,7 @@ func InstAeINDy(cpu *CPU) {
 //
 //go:nosplit
 func InstAeINDy1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.ar2)
+	data, ok := cpu.bus.Read(cpu.ar2)
 	if !ok {
 		return
 	}
@@ -447,7 +447,7 @@ func InstAeINDy1(cpu *CPU) {
 //
 //go:nosplit
 func InstAeINDy2(cpu *CPU) {
-	data, ok := cpu.busRead((cpu.ar2 + 1) & 0xff)
+	data, ok := cpu.bus.Read((cpu.ar2 + 1) & 0xff)
 	if !ok {
 		return
 	}
@@ -465,7 +465,7 @@ func InstAeINDy2(cpu *CPU) {
 //go:nosplit
 func InstAeINDy3(cpu *CPU) {
 	// Page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar += stackAddr
@@ -476,7 +476,7 @@ func InstAeINDy3(cpu *CPU) {
 //
 //go:nosplit
 func InstMpZER(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -489,7 +489,7 @@ func InstMpZER(cpu *CPU) {
 //
 //go:nosplit
 func InstMpZERx(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -504,7 +504,7 @@ func InstMpZERx(cpu *CPU) {
 //
 //go:nosplit
 func InstMpZERx1(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar = (cpu.ar + uint16(cpu.x)) & 0xff
@@ -515,7 +515,7 @@ func InstMpZERx1(cpu *CPU) {
 //
 //go:nosplit
 func InstMpABS(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -530,7 +530,7 @@ func InstMpABS(cpu *CPU) {
 //
 //go:nosplit
 func InstMpABS1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -544,7 +544,7 @@ func InstMpABS1(cpu *CPU) {
 //
 //go:nosplit
 func InstMpABSx(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -559,7 +559,7 @@ func InstMpABSx(cpu *CPU) {
 //
 //go:nosplit
 func InstMpABSx1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -579,7 +579,7 @@ func InstMpABSx1(cpu *CPU) {
 //go:nosplit
 func InstMpABSx2(cpu *CPU) {
 	// No page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.next = InstOpRMW
@@ -590,7 +590,7 @@ func InstMpABSx2(cpu *CPU) {
 //go:nosplit
 func InstMpABSx3(cpu *CPU) {
 	// Page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar += stackAddr
@@ -601,7 +601,7 @@ func InstMpABSx3(cpu *CPU) {
 //
 //go:nosplit
 func InstMpABSy(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -614,7 +614,7 @@ func InstMpABSy(cpu *CPU) {
 //
 //go:nosplit
 func InstMpABSy1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -634,7 +634,7 @@ func InstMpABSy1(cpu *CPU) {
 //go:nosplit
 func InstMpABSy2(cpu *CPU) {
 	// No page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.next = InstOpRMW
@@ -645,7 +645,7 @@ func InstMpABSy2(cpu *CPU) {
 //go:nosplit
 func InstMpABSy3(cpu *CPU) {
 	// Page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar += stackAddr
@@ -657,7 +657,7 @@ func InstMpABSy3(cpu *CPU) {
 //
 //go:nosplit
 func InstMpINDx(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -670,7 +670,7 @@ func InstMpINDx(cpu *CPU) {
 //
 //go:nosplit
 func InstMpINDx1(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.ar2); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar2); !ok {
 		return
 	}
 	cpu.ar2 = (cpu.ar2 + uint16(cpu.x)) & 0xff
@@ -681,7 +681,7 @@ func InstMpINDx1(cpu *CPU) {
 //
 //go:nosplit
 func InstMpINDx2(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.ar2)
+	data, ok := cpu.bus.Read(cpu.ar2)
 	if !ok {
 		return
 	}
@@ -693,7 +693,7 @@ func InstMpINDx2(cpu *CPU) {
 //
 //go:nosplit
 func InstMpINDx3(cpu *CPU) {
-	data, ok := cpu.busRead((cpu.ar2 + 1) & 0xff)
+	data, ok := cpu.bus.Read((cpu.ar2 + 1) & 0xff)
 	if !ok {
 		return
 	}
@@ -705,7 +705,7 @@ func InstMpINDx3(cpu *CPU) {
 //
 //go:nosplit
 func InstMpINDy(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -718,7 +718,7 @@ func InstMpINDy(cpu *CPU) {
 //
 //go:nosplit
 func InstMpINDy1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.ar2)
+	data, ok := cpu.bus.Read(cpu.ar2)
 	if !ok {
 		return
 	}
@@ -730,7 +730,7 @@ func InstMpINDy1(cpu *CPU) {
 //
 //go:nosplit
 func InstMpINDy2(cpu *CPU) {
-	data, ok := cpu.busRead((cpu.ar2 + 1) & 0xff)
+	data, ok := cpu.bus.Read((cpu.ar2 + 1) & 0xff)
 	if !ok {
 		return
 	}
@@ -748,7 +748,7 @@ func InstMpINDy2(cpu *CPU) {
 //go:nosplit
 func InstMpINDy3(cpu *CPU) {
 	// No page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.next = InstOpRMW
@@ -760,7 +760,7 @@ func InstMpINDy3(cpu *CPU) {
 //go:nosplit
 func InstMpINDy4(cpu *CPU) {
 	// Page crossed
-	if _, ok := cpu.busRead(cpu.ar); !ok {
+	if _, ok := cpu.bus.Read(cpu.ar); !ok {
 		return
 	}
 	cpu.ar += stackAddr
@@ -771,7 +771,7 @@ func InstMpINDy4(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRMW(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.ar)
+	data, ok := cpu.bus.Read(cpu.ar)
 	if !ok {
 		return
 	}
@@ -783,7 +783,7 @@ func InstOpRMW(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRMW1(cpu *CPU) {
-	cpu.busWrite(cpu.ar, cpu.rmw)
+	cpu.bus.Write(cpu.ar, cpu.rmw)
 	cpu.next = cpu.opTable[cpu.op]
 }
 
@@ -793,7 +793,7 @@ func InstOpRMW1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpLDA(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.ar)
+	data, ok := cpu.bus.Read(cpu.ar)
 	if !ok {
 		return
 	}
@@ -807,7 +807,7 @@ func InstOpLDA(cpu *CPU) {
 //
 //go:nosplit
 func InstOiLDA(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -822,7 +822,7 @@ func InstOiLDA(cpu *CPU) {
 //
 //go:nosplit
 func InstOpLDX(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.ar)
+	data, ok := cpu.bus.Read(cpu.ar)
 	if !ok {
 		return
 	}
@@ -836,7 +836,7 @@ func InstOpLDX(cpu *CPU) {
 //
 //go:nosplit
 func InstOiLDX(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -849,7 +849,7 @@ func InstOiLDX(cpu *CPU) {
 
 //go:nosplit
 func InstOpLDY(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.ar)
+	data, ok := cpu.bus.Read(cpu.ar)
 	if !ok {
 		return
 	}
@@ -863,7 +863,7 @@ func InstOpLDY(cpu *CPU) {
 //
 //go:nosplit
 func InstOiLDY(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -881,7 +881,7 @@ func InstOiLDY(cpu *CPU) {
 //
 //go:nosplit
 func InstOpSTA(cpu *CPU) {
-	cpu.busWrite(cpu.ar, cpu.a)
+	cpu.bus.Write(cpu.ar, cpu.a)
 	cpu.next = InstOpINI
 }
 
@@ -889,7 +889,7 @@ func InstOpSTA(cpu *CPU) {
 //
 //go:nosplit
 func InstOpSTX(cpu *CPU) {
-	cpu.busWrite(cpu.ar, cpu.x)
+	cpu.bus.Write(cpu.ar, cpu.x)
 	cpu.next = InstOpINI
 }
 
@@ -897,7 +897,7 @@ func InstOpSTX(cpu *CPU) {
 //
 //go:nosplit
 func InstOpSTY(cpu *CPU) {
-	cpu.busWrite(cpu.ar, cpu.y)
+	cpu.bus.Write(cpu.ar, cpu.y)
 	cpu.next = InstOpINI
 }
 

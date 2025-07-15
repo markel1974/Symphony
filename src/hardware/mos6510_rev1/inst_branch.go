@@ -6,7 +6,7 @@ package mos6510_rev1
 //
 //go:nosplit
 func InstOpJMP(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -19,7 +19,7 @@ func InstOpJMP(cpu *CPU) {
 //
 //go:nosplit
 func InstOpJMP1(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -31,7 +31,7 @@ func InstOpJMP1(cpu *CPU) {
 //
 //go:nosplit
 func InstOiJMP(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.ar)
+	data, ok := cpu.bus.Read(cpu.ar)
 	if !ok {
 		return
 	}
@@ -43,7 +43,7 @@ func InstOiJMP(cpu *CPU) {
 //
 //go:nosplit
 func InstOiJMP1(cpu *CPU) {
-	data, ok := cpu.busRead(((cpu.ar + 1) & 0xff) | (cpu.ar & 0xff00))
+	data, ok := cpu.bus.Read(((cpu.ar + 1) & 0xff) | (cpu.ar & 0xff00))
 	if !ok {
 		return
 	}
@@ -55,7 +55,7 @@ func InstOiJMP1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpJSR(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -68,7 +68,7 @@ func InstOpJSR(cpu *CPU) {
 //
 //go:nosplit
 func InstOpJSR1(cpu *CPU) {
-	if _, ok := cpu.busRead(uint16(cpu.sp) | stackAddr); !ok {
+	if _, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
 	cpu.next = InstOpJSR2
@@ -78,7 +78,7 @@ func InstOpJSR1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpJSR2(cpu *CPU) {
-	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
+	cpu.bus.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = InstOpJSR3
 }
@@ -87,7 +87,7 @@ func InstOpJSR2(cpu *CPU) {
 //
 //go:nosplit
 func InstOpJSR3(cpu *CPU) {
-	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
+	cpu.bus.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = InstOpJSR4
 }
@@ -96,7 +96,7 @@ func InstOpJSR3(cpu *CPU) {
 //
 //go:nosplit
 func InstOpJSR4(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -109,7 +109,7 @@ func InstOpJSR4(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRTS(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpRTS1
@@ -119,7 +119,7 @@ func InstOpRTS(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRTS1(cpu *CPU) {
-	if _, ok := cpu.busRead(uint16(cpu.sp) | stackAddr); !ok {
+	if _, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
 	cpu.sp++
@@ -130,7 +130,7 @@ func InstOpRTS1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRTS2(cpu *CPU) {
-	data, ok := cpu.busRead(uint16(cpu.sp) | stackAddr)
+	data, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
 	}
@@ -144,7 +144,7 @@ func InstOpRTS2(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRTS3(cpu *CPU) {
-	data, ok := cpu.busRead(uint16(cpu.sp) | stackAddr)
+	data, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
 	}
@@ -156,7 +156,7 @@ func InstOpRTS3(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRTS4(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.pc++
@@ -167,7 +167,7 @@ func InstOpRTS4(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRTI(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpRTI1
@@ -177,7 +177,7 @@ func InstOpRTI(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRTI1(cpu *CPU) {
-	if _, ok := cpu.busRead(uint16(cpu.sp) | stackAddr); !ok {
+	if _, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
 	cpu.sp++
@@ -188,7 +188,7 @@ func InstOpRTI1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRTI2(cpu *CPU) {
-	data, ok := cpu.busRead(uint16(cpu.sp) | stackAddr)
+	data, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
 	}
@@ -201,7 +201,7 @@ func InstOpRTI2(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRTI3(cpu *CPU) {
-	data, ok := cpu.busRead(uint16(cpu.sp) | stackAddr)
+	data, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
 	}
@@ -214,7 +214,7 @@ func InstOpRTI3(cpu *CPU) {
 //
 //go:nosplit
 func InstOpRTI4(cpu *CPU) {
-	data, ok := cpu.busRead(uint16(cpu.sp) | stackAddr)
+	data, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
 	}
@@ -226,7 +226,7 @@ func InstOpRTI4(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBRK(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.pc++
@@ -238,7 +238,7 @@ func InstOpBRK(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBRK1(cpu *CPU) {
-	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
+	cpu.bus.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = InstOpBRK2
 }
@@ -248,7 +248,7 @@ func InstOpBRK1(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBRK2(cpu *CPU) {
-	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
+	cpu.bus.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = InstOpBRK3
 }
@@ -258,7 +258,7 @@ func InstOpBRK2(cpu *CPU) {
 //go:nosplit
 func InstOpBRK3(cpu *CPU) {
 	data := cpu.pushFlags(true)
-	cpu.busWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
+	cpu.bus.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.iFlag = 1
 	if cpu.interrupts.HasNMI() {
@@ -273,7 +273,7 @@ func InstOpBRK3(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBRK4(cpu *CPU) {
-	data, ok := cpu.busRead(0xfffe)
+	data, ok := cpu.bus.Read(0xfffe)
 	if !ok {
 		return
 	}
@@ -285,7 +285,7 @@ func InstOpBRK4(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBRK5(cpu *CPU) {
-	data, ok := cpu.busRead(0xffff)
+	data, ok := cpu.bus.Read(0xffff)
 	if !ok {
 		return
 	}
@@ -297,7 +297,7 @@ func InstOpBRK5(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBCS(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -313,7 +313,7 @@ func InstOpBCS(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBCC(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -329,7 +329,7 @@ func InstOpBCC(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBEQ(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -345,7 +345,7 @@ func InstOpBEQ(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBNE(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -361,7 +361,7 @@ func InstOpBNE(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBVS(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -380,7 +380,7 @@ func InstOpBVS(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBVC(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -399,7 +399,7 @@ func InstOpBVC(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBMI(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -415,7 +415,7 @@ func InstOpBMI(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBPL(cpu *CPU) {
-	data, ok := cpu.busRead(cpu.pc)
+	data, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
@@ -433,7 +433,7 @@ func InstOpBPL(cpu *CPU) {
 func InstOpBRAnp(cpu *CPU) {
 	// No page crossed
 	cpu.opFlags |= OpFlagIntDelayed
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.pc = cpu.ar
@@ -445,7 +445,7 @@ func InstOpBRAnp(cpu *CPU) {
 //go:nosplit
 func InstOpBRAbp(cpu *CPU) {
 	// Page crossed (branch backwards)
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.pc = cpu.ar
@@ -456,7 +456,7 @@ func InstOpBRAbp(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBRAbp1(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc + stackAddr); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc + stackAddr); !ok {
 		return
 	}
 	cpu.next = InstOpINI
@@ -468,7 +468,7 @@ func InstOpBRAbp1(cpu *CPU) {
 //go:nosplit
 func InstOpBRAfp(cpu *CPU) {
 	// Page crossed (branch forwards)
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.pc = cpu.ar
@@ -479,7 +479,7 @@ func InstOpBRAfp(cpu *CPU) {
 //
 //go:nosplit
 func InstOpBRAfp1(cpu *CPU) {
-	if _, ok := cpu.busRead(cpu.pc - stackAddr); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc - stackAddr); !ok {
 		return
 	}
 	cpu.next = InstOpINI

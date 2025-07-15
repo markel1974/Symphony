@@ -5,7 +5,7 @@ package mos6510_rev1
 //go:nosplit
 func InstOpNMI(cpu *CPU) {
 	//internal operation
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpNMI1
@@ -16,7 +16,7 @@ func InstOpNMI(cpu *CPU) {
 //go:nosplit
 func InstOpNMI1(cpu *CPU) {
 	//internal operation
-	if _, ok := cpu.busRead(cpu.pc); !ok {
+	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.next = InstOpNMI2
@@ -27,7 +27,7 @@ func InstOpNMI1(cpu *CPU) {
 //go:nosplit
 func InstOpNMI2(cpu *CPU) {
 	//push return address high byte onto stack
-	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
+	cpu.bus.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc>>8))
 	cpu.sp--
 	cpu.next = InstOpNMI3
 }
@@ -37,7 +37,7 @@ func InstOpNMI2(cpu *CPU) {
 //go:nosplit
 func InstOpNMI3(cpu *CPU) {
 	//push return address low byte onto stack
-	cpu.busWrite(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
+	cpu.bus.Write(uint16(cpu.sp)|stackAddr, uint8(cpu.pc))
 	cpu.sp--
 	cpu.next = InstOpNMI4
 }
@@ -49,7 +49,7 @@ func InstOpNMI3(cpu *CPU) {
 func InstOpNMI4(cpu *CPU) {
 	//push status register onto stack
 	data := cpu.pushFlags(false)
-	cpu.busWrite((uint16(cpu.sp)&0xff)|stackAddr, data)
+	cpu.bus.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
 	cpu.iFlag = 1
 	cpu.next = InstOpNMI5
@@ -62,7 +62,7 @@ func InstOpNMI4(cpu *CPU) {
 //go:nosplit
 func InstOpNMI5(cpu *CPU) {
 	//get irq vector from 0xfffa
-	data, ok := cpu.busRead(0xfffa)
+	data, ok := cpu.bus.Read(0xfffa)
 	if !ok {
 		return
 	}
@@ -77,7 +77,7 @@ func InstOpNMI5(cpu *CPU) {
 //go:nosplit
 func InstOpNMI6(cpu *CPU) {
 	//get irq vector from 0xfffb
-	data, ok := cpu.busRead(0xfffb)
+	data, ok := cpu.bus.Read(0xfffb)
 	if !ok {
 		return
 	}

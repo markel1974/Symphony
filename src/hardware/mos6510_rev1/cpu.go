@@ -16,34 +16,31 @@ import (
 // CPU represents a simulated central processing unit with registers, flags, and associated helper components.
 type CPU struct {
 	*component.BaseComponent
-	realRead       func(uint16) uint8
-	realWrite      func(uint16, uint8)
-	busRead        func(uint16) (uint8, bool) // busRead is a function that reads a byte from a specified 16-bit memory address in the CPU's memory bank.
-	busWrite       func(uint16, uint8)        // busWrite is a function that writes a byte to a specified 16-bit memory address in the CPU's memory bank.
-	next           func(cpu *CPU)             // next is a function pointer that executes the next CPU instruction or operation during emulation.
-	overflowBranch func() bool                // overflowBranch determines if the CPU should branch based on the overflow condition.
-	nFlag          uint8                      // Negative flag - Only the highest bit of the nFlag variable is used
-	zFlag          uint8                      // Zero flag - The zFlag variable has the inverse meaning of the 6510 Z flag
-	vFlag          uint8                      // Overflow flag
-	dFlag          uint8                      // Decimal mode flag
-	iFlag          uint8                      // Interrupt disable flag
-	cFlag          uint8                      // Carry flag
-	a              uint8                      // Register
-	x              uint8                      // Register
-	y              uint8                      // Register
-	sp             uint8                      // Stack pointer
-	pc             uint16                     // Program counter
-	op             uint8                      // Current opcode
-	ar             uint16                     // Address register
-	ar2            uint16                     // Address register 2
-	rmw            uint8                      // Data buffer for RMW instructions
-	rdyLow         bool                       // current RDY state
-	aecLow         bool                       // current AEC state
-	opFlags        uint8                      // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
+	next           func(cpu *CPU) // next is a function pointer that executes the next CPU instruction or operation during emulation.
+	overflowBranch func() bool    // overflowBranch determines if the CPU should branch based on the overflow condition.
+	nFlag          uint8          // Negative flag - Only the highest bit of the nFlag variable is used
+	zFlag          uint8          // Zero flag - The zFlag variable has the inverse meaning of the 6510 Z flag
+	vFlag          uint8          // Overflow flag
+	dFlag          uint8          // Decimal mode flag
+	iFlag          uint8          // Interrupt disable flag
+	cFlag          uint8          // Carry flag
+	a              uint8          // Register
+	x              uint8          // Register
+	y              uint8          // Register
+	sp             uint8          // Stack pointer
+	pc             uint16         // Program counter
+	op             uint8          // Current opcode
+	ar             uint16         // Address register
+	ar2            uint16         // Address register 2
+	rmw            uint8          // Data buffer for RMW instructions
+	rdyLow         bool           // current RDY state
+	aecLow         bool           // current AEC state
+	opFlags        uint8          // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
 	savedNext      func(cpu *CPU)
 	modeTable      []func(*CPU)
 	opTable        []func(*CPU)
 	interrupts     *Interrupts
+	bus            *Bus
 	label          string
 }
 
@@ -60,6 +57,7 @@ func NewCPU(parent references.IComponent, factory references.IComponentFactory, 
 // Setup initializes the CPU by configuring its PIC and banks from the given socket.
 func (cpu *CPU) Setup() error {
 	cpu.interrupts = NewInterrupts(cpu, cpu.GetFactory(), cpu.label, 0)
+	cpu.bus = NewBus(cpu, cpu.GetFactory(), cpu.label, 0)
 	cpu.opTable = CreateOpTable()
 	cpu.modeTable = CreateModeTable()
 	return nil
@@ -70,10 +68,10 @@ func (cpu *CPU) Bind(_ references.IMos6510Socket, q references.IQuartz, banks re
 	if err := cpu.interrupts.Bind(q); err != nil {
 		return err
 	}
-	cpu.realRead = banks.Read
-	cpu.realWrite = banks.Write
-	cpu.busRead = cpu.readNormal
-	cpu.busWrite = cpu.realWrite
+	if err := cpu.bus.Bind(cpu, banks); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -89,10 +87,9 @@ func (cpu *CPU) Internal() bool {
 
 // Reset initializes or restores the CPU to a default state by resetting internal flags, registers, and setting the program counter.
 func (cpu *CPU) Reset() {
-	cpu.busRead = cpu.readNormal
-	cpu.busWrite = cpu.realWrite
 	cpu.interrupts.Reset()
-	cpu.pc = uint16(cpu.realRead(0xfffc)) | (uint16(cpu.realRead(0xfffd)) << 8) // Read reset vector
+	cpu.bus.Reset()
+	cpu.pc = uint16(cpu.bus.ReadDirect(0xfffc)) | (uint16(cpu.bus.ReadDirect(0xfffd)) << 8) // Read reset vector
 	cpu.opFlags = 0
 	cpu.next = InstOpINI
 }
@@ -131,9 +128,7 @@ func (cpu *CPU) ClearNMI() {
 func (cpu *CPU) SetAECLow(aecLow bool) {
 	cpu.aecLow = aecLow
 	if cpu.aecLow {
-		// disconnecting the bus...
-		cpu.busRead = cpu.readAECLow
-		cpu.busWrite = cpu.writeAECLow
+		cpu.bus.SetAECLowMode()
 	}
 }
 
@@ -141,12 +136,9 @@ func (cpu *CPU) SetAECLow(aecLow bool) {
 func (cpu *CPU) SetRDYLow(rdyLow bool) {
 	cpu.rdyLow = rdyLow
 	if cpu.rdyLow {
-		cpu.busRead = cpu.readBALow
-		cpu.busWrite = cpu.realWrite
+		cpu.bus.SetRDYLowMode()
 	} else {
-		//run mode
-		cpu.busRead = cpu.readNormal
-		cpu.busWrite = cpu.realWrite
+		cpu.bus.SetNormalMode()
 		if cpu.savedNext != nil {
 			cpu.next = cpu.savedNext
 			cpu.savedNext = nil
@@ -172,35 +164,6 @@ func (cpu *CPU) Emulate() {
 // EmulationRequired determines if the CPU requires emulation for the current operation, returning true if necessary.
 func (cpu *CPU) EmulationRequired() bool {
 	return true
-}
-
-// readNormal performs a normal read operation from the specified address and always returns a successful status.
-//
-//go:nosplit
-func (cpu *CPU) readNormal(addr uint16) (uint8, bool) {
-	data := cpu.realRead(addr)
-	return data, true
-}
-
-// readBALow halts the CPU by transitioning to halt mode and always returns 0 and false.
-//
-//go:nosplit
-func (cpu *CPU) readBALow(_ uint16) (uint8, bool) {
-	cpu.setModeHalt()
-	return 0, false
-}
-
-// readAec performs a read operation while the CPU bus is disconnected, always returning a default value of 0.
-//
-//go:nosplit
-func (cpu *CPU) readAECLow(_ uint16) (uint8, bool) {
-	return 0, false
-}
-
-// writeAec is a placeholder method called when an illegal write operation is attempted on a disconnected bus.
-//
-//go:nosplit
-func (cpu *CPU) writeAECLow(_ uint16, _ uint8) {
 }
 
 // popFlags updates the CPU state flags based on the input data, setting various flags like nFlag, vFlag, dFlag, etc.

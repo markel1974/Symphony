@@ -44,7 +44,7 @@ func InstOpINI(cpu *CPU) {
 		return
 	}
 	cpu.interrupts.DisableIrqBreaker()
-	v, ok := cpu.busRead(cpu.pc)
+	v, ok := cpu.bus.Read(cpu.pc)
 	if !ok {
 		return
 	}
