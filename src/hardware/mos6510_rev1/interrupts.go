@@ -33,6 +33,9 @@ type Interrupts struct {
 	firstNMICycle uint64
 	nmiExec       bool
 	irqBreaker    bool // irqBreaker indicates whether the CPU's interrupt request is currently blocked.
+	resetFn       func()
+	irqFn         func()
+	nmiFn         func()
 }
 
 // NewInterrupts creates and initializes a new instance of Interrupts with default values and registers it with the specified parent and factory.
@@ -56,8 +59,11 @@ func (i *Interrupts) Setup() error {
 	return nil
 }
 
-func (i *Interrupts) Bind(q references.IQuartz) error {
+func (i *Interrupts) Bind(q references.IQuartz, reset func(), nmi func(), irq func()) error {
 	i.cycles = q.Cycle
+	i.resetFn = reset
+	i.nmiFn = nmi
+	i.irqFn = irq
 	return nil
 }
 
@@ -137,49 +143,44 @@ func (i *Interrupts) HasNMI() bool {
 	return i.all.BitCheck(intrNmiBit)
 }
 
-// VerifyIrq evaluates and handles interrupt requests (IRQ, NMI, RESET) based on internal state and input flags.
-func (i *Interrupts) VerifyIrq(iFlag uint8, opFlags uint8) uint8 {
+// Compute evaluates and handles interrupt requests (IRQ, NMI, RESET) based on internal state and input flags.
+func (i *Interrupts) Compute(iFlag uint8, opFlags uint8) bool {
 	const minNMIDistance = 2
 	const minIrqDistance = 2
-	if i.all != 0 {
+	if i.all != 0 && !i.irqBreaker {
 		if i.all.BitCheck(intrRstBit) {
 			// Edge-triggered
 			i.ClearReset()
-			return 1
+			i.resetFn()
+			return true
 		}
 		if i.all.BitCheck(intrNmiBit) && !i.nmiExec {
 			if i.computeDistance(i.firstNMICycle, (opFlags&OpFlagIntDelayed) != 0, minNMIDistance) {
 				// Edge-triggered
 				i.nmiExec = true
-				return 2
+				i.irqBreaker = true
+				i.nmiFn()
+				return true
 			}
 		}
-		if i.all.BitCheck(intrIrqBit) /* && !i.irqExec */ {
+		if i.all.BitCheck(intrIrqBit) {
 			if ((iFlag == 0) || ((opFlags & OpFlagIrqDisabled) != 0)) && ((opFlags & OpFlagIrqEnabled) == 0) {
 				if i.computeDistance(i.firstIrqCycle, (opFlags&OpFlagIntDelayed) != 0, minIrqDistance) {
 					// Level-triggered
-					//i.irqExec = true
-					return 3
+					i.irqBreaker = true
+					i.irqFn()
+					return true
 				}
 			}
 		}
 	}
-	return 0
+	i.irqBreaker = false
+	return false
 }
 
 // HasIrqBreaker checks if the interrupt breaker is currently enabled, returning true if active, otherwise false.
 func (i *Interrupts) HasIrqBreaker() bool {
 	return i.irqBreaker
-}
-
-// EnableIrqBreaker enables the IRQ breaker, preventing further IRQ processing until explicitly disabled.
-func (i *Interrupts) EnableIrqBreaker() {
-	i.irqBreaker = true
-}
-
-// DisableIrqBreaker disables the IRQ breaker, allowing further IRQ processing.
-func (i *Interrupts) DisableIrqBreaker() {
-	i.irqBreaker = false
 }
 
 // computeDistance calculates if the current cycle has met or exceeded the distance from a given base value.

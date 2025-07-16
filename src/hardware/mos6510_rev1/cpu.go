@@ -65,13 +65,12 @@ func (cpu *CPU) Setup() error {
 
 // Bind initializes the connections between the CPU and its socket, PIC, and memory banks, configuring necessary handlers.
 func (cpu *CPU) Bind(_ references.IMos6510Socket, q references.IQuartz, banks references.IMos6510Banks) error {
-	if err := cpu.interrupts.Bind(q); err != nil {
+	if err := cpu.interrupts.Bind(q, cpu.Reset, cpu.NMI, cpu.IRQ); err != nil {
 		return err
 	}
 	if err := cpu.bus.Bind(cpu.setModeHalt, banks); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -164,6 +163,18 @@ func (cpu *CPU) Emulate() {
 // EmulationRequired determines if the CPU requires emulation for the current operation, returning true if necessary.
 func (cpu *CPU) EmulationRequired() bool {
 	return true
+}
+
+//go:nosplit
+func (cpu *CPU) NMI() {
+	cpu.next = InstOpNMI
+	cpu.next(cpu)
+}
+
+//go:nosplit
+func (cpu *CPU) IRQ() {
+	cpu.next = InstOpIRQ
+	cpu.next(cpu)
 }
 
 // popFlags updates the CPU state flags based on the input data, setting various flags like nFlag, vFlag, dFlag, etc.
