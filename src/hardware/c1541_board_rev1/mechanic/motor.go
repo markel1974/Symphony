@@ -1,24 +1,51 @@
 package mechanic
 
-import "github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
+import (
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
+	"github.com/markel1974/c64emu/src/references"
+)
 
 // Motor represents a structure for managing the state and operation of a motor in a disk drive system.
 // It tracks whether the motor is active, the time required for it to spin up, and the rotation cycles during operation.
 type Motor struct {
+	*component.BaseComponent
 	active         bool
 	spinUpTime     int
 	rotationCycles int
 }
 
 // NewMotor initializes and returns a new Motor instance with default values and resets its state.
-func NewMotor() *Motor {
+func NewMotor(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Motor {
 	v := &Motor{
+		BaseComponent:  component.NewBaseComponent(),
 		active:         false,
 		spinUpTime:     0,
 		rotationCycles: 0,
 	}
+	v.BaseComponent.Register(factory, parent, "motor", v, references.IdInternalComponent(label, instance, "Motor"))
+
 	v.Reset()
 	return v
+}
+
+func (m *Motor) Setup() error {
+	return nil
+}
+
+func (m *Motor) Connect() error {
+	return nil
+}
+
+func (m *Motor) EmulationRequired() bool {
+	return false
+}
+
+func (m *Motor) Emulate() {
+}
+
+func (m *Motor) Internal() bool {
+	return true
 }
 
 // Reset reinitializes the motor's state, setting it to inactive and clearing spin-up time and rotation cycles.

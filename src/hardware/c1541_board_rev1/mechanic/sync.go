@@ -2,11 +2,14 @@ package mechanic
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // Sync represents a drive mechanism that emulates disk operations and manages disk state, motor, and head movement.
 type Sync struct {
+	*component.BaseComponent
 	void        disk.IDisk
 	disk        disk.IDisk
 	diskChanged bool
@@ -16,17 +19,27 @@ type Sync struct {
 }
 
 // NewSync creates a new instance of Mechanic, initializing its state and factory dependencies.
-func NewSync() *Sync {
+func NewSync(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Sync {
 	void := NewVoidDisk()
 	j := &Sync{
-		void:        void,
-		disk:        void,
-		diskChanged: false,
-		motor:       false,
-		headPos:     2,
-		writing:     false,
+		BaseComponent: component.NewBaseComponent(),
+		void:          void,
+		disk:          void,
+		diskChanged:   false,
+		motor:         false,
+		headPos:       2,
+		writing:       false,
 	}
+	j.BaseComponent.Register(factory, parent, "sync", j, references.IdInternalComponent(label, instance, "Sync"))
 	return j
+}
+
+func (j *Sync) Connect() error {
+	return nil
+}
+
+func (j *Sync) Internal() bool {
+	return true
 }
 
 // Reset restores the Mechanic to its initial state, clearing all internal state and resetting properties to their defaults.

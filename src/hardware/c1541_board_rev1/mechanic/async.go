@@ -1,11 +1,14 @@
 package mechanic
 
 import (
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // Async represents the main handler for managing disk mechanics and operations including reading and writing data.
 type Async struct {
+	*component.BaseComponent
 	empty           disk.IDisk
 	disk            disk.IDisk
 	diskChanged     bool
@@ -15,17 +18,29 @@ type Async struct {
 }
 
 // NewAsync initializes and returns a new instance of Mechanic with default values and a void disk.
-func NewAsync() *Async {
+func NewAsync(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Async {
 	void := NewVoidDisk()
 	j := &Async{
-		empty:           void,
-		disk:            void,
-		diskChanged:     false,
-		motor:           NewMotor(),
-		head:            NewHead(headMinHalfStep),
-		headPosRequired: headMinHalfStep,
+		BaseComponent: component.NewBaseComponent(),
+		empty:         void,
+		disk:          void,
+		diskChanged:   false,
 	}
+	j.BaseComponent.Register(factory, parent, "async", j, references.IdInternalComponent(label, instance, "Async"))
+
+	j.motor = NewMotor(j, j.GetFactory(), label, 0)
+	j.head = NewHead(j, j.GetFactory(), label, 0)
+	j.headPosRequired = j.head.DefaultPos()
+
 	return j
+}
+
+func (j *Async) Connect() error {
+	return nil
+}
+
+func (j *Async) Internal() bool {
+	return true
 }
 
 // Reset reinitializes the Mechanic's state, clearing data, resetting counters, and updating the disk head position.

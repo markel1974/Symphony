@@ -1,6 +1,10 @@
 package mechanic
 
-import "github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
+import (
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
+	"github.com/markel1974/c64emu/src/references"
+)
 
 // directionNone represents no direction.
 const (
@@ -22,6 +26,7 @@ const (
 
 // Head represents the read/write head of a disk drive, managing position, state, and data operations.
 type Head struct {
+	*component.BaseComponent
 	defaultPos       uint8
 	currentPos       uint8
 	consecutiveSteps int
@@ -36,10 +41,11 @@ type Head struct {
 
 // NewHead initializes and returns a new instance of Head with the provided default position.
 // It sets up the Head struct with default values for its fields.
-func NewHead(defaultPos uint8) *Head {
+func NewHead(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Head {
 	h := &Head{
-		defaultPos:       defaultPos,
-		currentPos:       defaultPos,
+		BaseComponent:    component.NewBaseComponent(),
+		defaultPos:       headMinHalfStep,
+		currentPos:       headMinHalfStep,
 		consecutiveSteps: 0,
 		seekTime:         0,
 		direction:        directionNone,
@@ -49,7 +55,27 @@ func NewHead(defaultPos uint8) *Head {
 		dataRead:         notReady,
 		vibrationFactor:  1.0,
 	}
+	h.BaseComponent.Register(factory, parent, "head", h, references.IdInternalComponent(label, instance, "Head"))
 	return h
+}
+
+func (j *Head) Connect() error {
+	return nil
+}
+
+func (j *Head) Internal() bool {
+	return true
+}
+
+func (j *Head) Setup() error {
+	return nil
+}
+
+func (j *Head) EmulationRequired() bool {
+	return false
+}
+
+func (j *Head) Emulate() {
 }
 
 // Reset reinitializes the head's state, resetting position, counters, direction, data states, and vibration factor.
@@ -63,6 +89,10 @@ func (h *Head) Reset() {
 	h.dataWrite = notReady
 	h.dataRead = notReady
 	h.vibrationFactor = 1.0
+}
+
+func (h *Head) DefaultPos() uint8 {
+	return h.defaultPos
 }
 
 // SetWritingMode sets the writing mode of the Head to the specified boolean value.
