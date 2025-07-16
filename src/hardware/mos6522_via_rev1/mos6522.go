@@ -254,7 +254,9 @@ func (v *VIA) Emulate() {
 		v.lastPB6 = currentPB6
 	}
 
-	v.handleShiftRegister(t2Underflow)
+	if srMode := (v.acr >> 2) & 0x07; srMode != 0 {
+		v.handleShiftRegister(srMode, t2Underflow)
+	}
 }
 
 // EmulationRequired indicates whether emulation of the VIA functionality is required, always returning true.
@@ -280,15 +282,14 @@ func (v *VIA) handleHandshakeInput() {
 	currentCA1 := v.socket.ReadCA1()
 
 	// Detect the edge by comparing the current state with the previous cycle state.
-	ca1EdgeDetected := (ca1DetectsFallingEdge && !currentCA1 && v.lastCA1) || // Fronte di discesa (era alto, ora è basso)
-		(!ca1DetectsFallingEdge && currentCA1 && !v.lastCA1) // Fronte di salita (era basso, ora è alto)
+	ca1EdgeDetected := (ca1DetectsFallingEdge && !currentCA1 && v.lastCA1) ||
+		(!ca1DetectsFallingEdge && currentCA1 && !v.lastCA1)
 
 	if ca1EdgeDetected {
 		// Set the interrupt flag for CA1 (bit 1 of IFR).
 		v.ifr |= 0x02
 		// If latching on Port A is enabled (bit 0 of ACR = 0), "freeze" the port value.
 		if (v.acr & 0x01) == 0 {
-			// Note: the socket must provide the external pin state of the port.
 			v.pra = v.socket.ReadPRA(v.pra, v.ddra)
 		}
 		// If the CA1 interrupt is enabled (bit 1 of IER), trigger the IRQ.
@@ -323,11 +324,7 @@ func (v *VIA) handleHandshakeInput() {
 }
 
 // handleShiftRegister manages the shifting operation for the VIA shift register based on the current mode and clock source.
-func (v *VIA) handleShiftRegister(t2Clock bool) {
-	srMode := (v.acr >> 2) & 0x07
-	if srMode == 0 {
-		return
-	}
+func (v *VIA) handleShiftRegister(srMode uint8, t2Clock bool) {
 	shiftTrigger := false
 	switch srMode {
 	case 1, 4, 5: // Modalità con clock da Timer 2

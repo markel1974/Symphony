@@ -20,6 +20,14 @@ type IMos6522Socket interface {
 
 	ReadPRB(uint8, uint8) uint8
 
+	ReadCA1() bool
+
+	ReadCB1() bool
+
+	ReadCB2() bool
+
+	ReadPB6() bool
+
 	WritePRA(uint8, uint8)
 
 	WritePRB(uint8, uint8)

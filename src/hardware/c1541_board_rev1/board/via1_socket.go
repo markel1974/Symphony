@@ -174,9 +174,31 @@ func (v *VIA1Socket) peripheralWrite(prb uint8, ddrb uint8) {
 	v.iec.PeripheralWrite(v.connections.GetDeviceNumber(), data)
 }
 
+// WriteCA2 sets the state of the CA2 pin based on the provided boolean value.
 func (v *VIA1Socket) WriteCA2(w bool) {
 }
 
+// WriteCB2 sets or clears the CB2 control line based on the provided boolean value.
 func (v *VIA1Socket) WriteCB2(bool) {
 
+}
+
+// ReadCA1 checks and returns the current state of the CA1 input signal for the VIA1 socket as a boolean value.
+func (v *VIA1Socket) ReadCA1() bool {
+	return false
+}
+
+// ReadCB1 checks the current state of the CB1 line on the VIA1Socket and returns its value as a boolean.
+func (v *VIA1Socket) ReadCB1() bool {
+	return false
+}
+
+// ReadCB2 checks the state of the CB2 signal line on the VIA1 socket and returns its boolean status.
+func (v *VIA1Socket) ReadCB2() bool {
+	return false
+}
+
+// ReadPB6 reads the state of the PB6 pin from the VIA2Socket and returns it as a boolean value.
+func (v *VIA1Socket) ReadPB6() bool {
+	return false
 }

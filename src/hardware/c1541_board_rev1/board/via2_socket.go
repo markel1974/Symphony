@@ -218,3 +218,19 @@ func (v *VIA2Socket) ByteReady() bool {
 	}
 	return false
 }
+
+func (v *VIA2Socket) ReadCA1() bool {
+	return false
+}
+
+func (v *VIA2Socket) ReadCB1() bool {
+	return false
+}
+
+func (v *VIA2Socket) ReadCB2() bool {
+	return false
+}
+
+func (v *VIA2Socket) ReadPB6() bool {
+	return false
+}
