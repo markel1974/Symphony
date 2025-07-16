@@ -59,23 +59,28 @@ func NewHead(parent references.IComponent, factory references.IComponentFactory,
 	return h
 }
 
-func (j *Head) Connect() error {
+// Connect establishes the connection for the head, preparing it for operation. Returns an error if the connection fails.
+func (h *Head) Connect() error {
 	return nil
 }
 
-func (j *Head) Internal() bool {
+// Internal determines if the Head operates in internal mode, returning true for internal operation status.
+func (h *Head) Internal() bool {
 	return true
 }
 
-func (j *Head) Setup() error {
+// Setup prepares the Head instance for operation by initializing or configuring required state or resources.
+func (h *Head) Setup() error {
 	return nil
 }
 
-func (j *Head) EmulationRequired() bool {
+// EmulationRequired returns a boolean indicating whether emulation is required for the head's functionality.
+func (h *Head) EmulationRequired() bool {
 	return false
 }
 
-func (j *Head) Emulate() {
+// Emulate performs the emulation sequence for the head, updating its state and interactions with the disk system.
+func (h *Head) Emulate() {
 }
 
 // Reset reinitializes the head's state, resetting position, counters, direction, data states, and vibration factor.

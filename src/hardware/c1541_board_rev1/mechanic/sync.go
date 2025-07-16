@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
+	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk/void"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -20,11 +21,11 @@ type Sync struct {
 
 // NewSync creates a new instance of Mechanic, initializing its state and factory dependencies.
 func NewSync(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Sync {
-	void := NewVoidDisk()
+	voidDisk := void.NewVoidDisk()
 	j := &Sync{
 		BaseComponent: component.NewBaseComponent(),
-		void:          void,
-		disk:          void,
+		void:          voidDisk,
+		disk:          voidDisk,
 		diskChanged:   false,
 		motor:         false,
 		headPos:       2,
@@ -34,10 +35,12 @@ func NewSync(parent references.IComponent, factory references.IComponentFactory,
 	return j
 }
 
+// Connect establishes a connection to the drive mechanism and prepares it for operation. Returns an error if the operation fails.
 func (j *Sync) Connect() error {
 	return nil
 }
 
+// Internal returns true if the Sync mechanism is in an internal operational state.
 func (j *Sync) Internal() bool {
 	return true
 }

@@ -3,6 +3,7 @@ package mechanic
 import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
+	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk/void"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -17,13 +18,13 @@ type Async struct {
 	motor           *Motor
 }
 
-// NewAsync initializes and returns a new instance of Mechanic with default values and a void disk.
+// NewAsync creates and initializes a new Async instance with a parent component, factory, label, and instance number.
 func NewAsync(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Async {
-	void := NewVoidDisk()
+	voidDisk := void.NewVoidDisk()
 	j := &Async{
 		BaseComponent: component.NewBaseComponent(),
-		empty:         void,
-		disk:          void,
+		empty:         voidDisk,
+		disk:          voidDisk,
 		diskChanged:   false,
 	}
 	j.BaseComponent.Register(factory, parent, "async", j, references.IdInternalComponent(label, instance, "Async"))
@@ -35,10 +36,12 @@ func NewAsync(parent references.IComponent, factory references.IComponentFactory
 	return j
 }
 
+// Connect initializes a connection for the Async object, preparing it for operations. Returns an error if connection fails.
 func (j *Async) Connect() error {
 	return nil
 }
 
+// Internal indicates if the component operates in an internal state. Returns true when in internal mode.
 func (j *Async) Internal() bool {
 	return true
 }

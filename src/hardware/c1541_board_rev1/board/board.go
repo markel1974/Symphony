@@ -78,12 +78,14 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	return m
 }
 
+// Setup initializes the Board instance by configuring its internal settings and binding configuration change callbacks.
 func (m *Board) Setup() error {
 	m.cfg = m.GetFactory().GetConfig()
 	m.cfg.Bind(m.configChanged)
 	return nil
 }
 
+// Bind initializes the Board by setting up connections with the provided IEC device socket and configuring its components.
 func (m *Board) Bind(_ references.IIecDeviceSocket, deviceId uint8, deviceNumber uint8) error {
 	iec, err := references.ComponentToIEC(m.Parent())
 	if err != nil {

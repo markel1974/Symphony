@@ -15,7 +15,7 @@ type Motor struct {
 	rotationCycles int
 }
 
-// NewMotor initializes and returns a new Motor instance with default values and resets its state.
+// NewMotor creates a new instance of the Motor component and initializes its state within a parent component hierarchy.
 func NewMotor(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Motor {
 	v := &Motor{
 		BaseComponent:  component.NewBaseComponent(),
@@ -29,21 +29,26 @@ func NewMotor(parent references.IComponent, factory references.IComponentFactory
 	return v
 }
 
+// Setup initializes the motor's state and prepares it for operation. Returns an error if the setup cannot be completed.
 func (m *Motor) Setup() error {
 	return nil
 }
 
+// Connect establishes a connection for the motor, enabling interaction with its components and functionality.
 func (m *Motor) Connect() error {
 	return nil
 }
 
+// EmulationRequired determines if the motor requires emulation behavior, returning false if no emulation is needed.
 func (m *Motor) EmulationRequired() bool {
 	return false
 }
 
+// Emulate performs the motor emulation logic, simulating its behavior during the system's operation.
 func (m *Motor) Emulate() {
 }
 
+// Internal returns a boolean indicating whether the motor operation is implemented as an internal component.
 func (m *Motor) Internal() bool {
 	return true
 }
