@@ -68,7 +68,7 @@ func (cpu *CPU) Bind(_ references.IMos6510Socket, q references.IQuartz, banks re
 	if err := cpu.interrupts.Bind(q); err != nil {
 		return err
 	}
-	if err := cpu.bus.Bind(cpu, banks); err != nil {
+	if err := cpu.bus.Bind(cpu.setModeHalt, banks); err != nil {
 		return err
 	}
 

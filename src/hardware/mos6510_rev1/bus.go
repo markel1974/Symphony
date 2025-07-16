@@ -7,11 +7,11 @@ import (
 
 type Bus struct {
 	*component.BaseComponent
-	realRead  func(uint16) uint8
-	realWrite func(uint16, uint8)
-	Read      func(uint16) (uint8, bool) // busRead is a function that reads a byte from a specified 16-bit memory address in the CPU's memory bank.
-	Write     func(uint16, uint8)        // busWrite is a function that writes a byte to a specified 16-bit memory address in the CPU's memory bank.
-	cpu       *CPU
+	realRead    func(uint16) uint8
+	realWrite   func(uint16, uint8)
+	setModeHalt func()
+	Read        func(uint16) (uint8, bool) // Read is a function that reads a byte from a specified 16-bit memory address in the CPU's memory bank.
+	Write       func(uint16, uint8)        // Write is a function that writes a byte to a specified 16-bit memory address in the CPU's memory bank.
 }
 
 func NewBus(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Bus {
@@ -27,8 +27,8 @@ func (i *Bus) Setup() error {
 	return nil
 }
 
-func (i *Bus) Bind(cpu *CPU, banks references.IMos6510Banks) error {
-	i.cpu = cpu
+func (i *Bus) Bind(setModeHalt func(), banks references.IMos6510Banks) error {
+	i.setModeHalt = setModeHalt
 	i.realRead = banks.Read
 	i.realWrite = banks.Write
 	i.SetNormalMode()
@@ -92,7 +92,7 @@ func (i *Bus) readNormal(addr uint16) (uint8, bool) {
 //
 //go:nosplit
 func (i *Bus) readBALow(_ uint16) (uint8, bool) {
-	i.cpu.setModeHalt()
+	i.setModeHalt()
 	return 0, false
 }
 
