@@ -10,31 +10,25 @@ import (
 // 1541, 1541II, 1571 and 2031
 // see https://sta.c64.org/cbm1541mem.html
 
-// defaultViaTimeout is the maximum threshold value used for timer underflow checks during VIA emulation.
-const defaultViaTimeout = 0xffff
-
 // VIA represents a versatile interface adapter used for I/O, timing, and control in a system.
 type VIA struct {
 	*component.BaseComponent
-	pra          uint8
-	ddra         uint8
-	prb          uint8
-	ddrb         uint8
-	t1c          uint16
-	t1l          uint16
-	t2c          uint16
-	t2l          uint16
-	sr           uint8
-	acr          uint8
-	pcr          uint8
-	ifr          uint8
-	ier          uint8
-	lastCA1      bool
-	lastCB1      bool
-	lastCB2      bool
-	lastPB6      bool
-	shiftCounter uint8
-	socket       references.IMos6522Socket
+	pra           uint8
+	ddra          uint8
+	prb           uint8
+	ddrb          uint8
+	timer0        *Timer
+	timer1        *Timer
+	shiftRegister *ShiftRegister
+	acr           uint8
+	pcr           uint8
+	ifr           uint8
+	ier           uint8
+	lastCA1       bool
+	lastCB2       bool
+	lastPB6       bool
+	lastCB1       bool
+	socket        references.IMos6522Socket
 }
 
 // NewVIA initializes and returns a new instance of the VIA type, associating it with a parent component and factory.
@@ -48,6 +42,9 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 		ddrb:          0,
 	}
 	v.BaseComponent.Register(factory, parent, Identifier(), v, references.IdIMos6522(v, label, instance))
+	v.timer0 = NewTimer(v, v.GetFactory(), label, 0)
+	v.timer1 = NewTimer(v, v.GetFactory(), label, 1)
+	v.shiftRegister = NewShiftRegister(v, v.GetFactory(), label, 0)
 	return v
 }
 
@@ -57,6 +54,7 @@ func (v *VIA) Setup() error {
 
 func (v *VIA) Bind(socket references.IMos6522Socket) error {
 	v.socket = socket
+	v.shiftRegister.Initialize(v.socket.ReadCB2, v.socket.WriteCB2)
 	return nil
 }
 
@@ -75,11 +73,9 @@ func (v *VIA) Reset() {
 	v.ddra = 0
 	v.prb = 0
 	v.ddrb = 0
-	v.t1c = 0
-	v.t1l = 0
-	v.t2c = 0
-	v.t2l = 0
-	v.sr = 0
+	v.timer0.Reset()
+	v.timer1.Reset()
+	v.shiftRegister.Reset()
 	v.acr = 0
 	v.pcr = 0
 	v.ifr = 0
@@ -88,7 +84,6 @@ func (v *VIA) Reset() {
 	v.lastCB1 = false
 	v.lastCB2 = false
 	v.lastPB6 = false
-	v.shiftCounter = 0
 }
 
 // ReadByte reads a byte from the specified VIA register address and returns the corresponding value based on its state.
@@ -106,21 +101,20 @@ func (v *VIA) ReadByte(addr uint16) uint8 {
 	case 0x4: //0x1804 | 0x1c04
 		v.ifr &= 0xbf
 		v.socket.IRQClearTrigger()
-		//v.signalIRQClear.Emit(v.intrId) //intrVIA1Id)
-		return uint8(v.t1c)
+		return v.timer0.CounterLow()
 	case 0x5: // 0x1805 | 0x1c05
-		return uint8(v.t1c >> 8)
+		return v.timer0.CounterHigh() //uint8(v.timer0.counter >> 8)
 	case 0x6: // 0x1806 | 0x1c06
-		return uint8(v.t1l)
+		return v.timer0.LatchLow() //uint8(v.timer0.latch)
 	case 0x7: // 0x1807 | 0x1c07
-		return uint8(v.t1l >> 8)
+		return v.timer0.LatchHigh() //uint8(v.timer0.latch >> 8)
 	case 0x8: // 0x1808 | 0x1c08
 		v.ifr &= 0xdf
-		return uint8(v.t2c)
+		return v.timer1.CounterLow() //uint8(v.t2c)
 	case 0x9: // 0x1809 | 0x1c09
-		return uint8(v.t2c >> 8)
+		return v.timer1.CounterHigh() //uint8(v.t2c >> 8)
 	case 0xa: // 0x180a | 0x1c0a
-		return v.sr
+		return v.shiftRegister.Get()
 	case 0xb: // 0x180b | 0x1c0b
 		return v.acr
 	case 0xc: // 0x180c | 0x1c0c
@@ -158,23 +152,23 @@ func (v *VIA) WriteByte(addr uint16, data uint8) {
 		v.ddra = data
 		v.socket.WriteDDRA(v.pra, v.ddra)
 	case 0x4: //0x1804:
-		v.t1l = (v.t1l & 0xff00) | uint16(data)
+		v.timer0.SetLatchLow(data) //v.t1l = (v.t1l & 0xff00) | uint16(data)
 	case 0x5: //0x1805:
-		v.t1l = (v.t1l & 0xff) | (uint16(data) << 8)
+		v.timer0.SetLatchHigh(data) //v.t1l = (v.t1l & 0xff) | (uint16(data) << 8)
 		v.ifr &= 0xbf
-		v.t1c = v.t1l
+		v.timer0.Load() //v.t1c = v.t1l
 	case 0x6: //0x1806:
-		v.t1l = (v.t1l & 0xff00) | uint16(data)
+		v.timer0.SetLatchLow(data) //v.t1l = (v.t1l & 0xff00) | uint16(data)
 	case 0x7: //0x1807:
-		v.t1l = (v.t1l & 0xff) | (uint16(data) << 8)
+		v.timer0.SetLatchHigh(data) //v.t1l = (v.t1l & 0xff) | (uint16(data) << 8)
 	case 0x8: //0x1808:
-		v.t2l = (v.t2l & 0xff00) | uint16(data)
+		v.timer1.SetLatchLow(data) //v.t2l = (v.t2l & 0xff00) | uint16(data)
 	case 0x9: //0x1809:
-		v.t2l = (v.t2l & 0xff) | (uint16(data) << 8)
+		v.timer1.SetLatchHigh(data) // v.t2l = (v.t2l & 0xff) | (uint16(data) << 8)
 		v.ifr &= 0xdf
-		v.t2c = v.t2l
+		v.timer1.Load() //v.t2c = v.t2l
 	case 0xa: //0x180a:
-		v.sr = data
+		v.shiftRegister.Set(data)
 	case 0xb: //0x180b:
 		v.acr = data
 	case 0xc: //0x180c || 0x1c0c
@@ -211,51 +205,66 @@ func (v *VIA) WriteByte(addr uint16, data uint8) {
 }
 
 // Emulate executes a single emulation cycle for VIA, decrementing timers and handling interrupts based on current settings.
+//
+//go:nosplit
 func (v *VIA) Emulate() {
 	v.handleHandshakeInput()
-	// Timer 1
-	t1c := uint(v.t1c) - 1
-	v.t1c = uint16(t1c)
-	if t1c > defaultViaTimeout {
-		if (v.acr & 0x40) != 0 {
-			v.t1c = v.t1l
+
+	t2ClockPulse := false
+
+	if (v.acr & 0x20) == 0 {
+		t2ClockPulse = true
+	} else {
+		currentPB6 := v.socket.ReadPB6()
+		if v.lastPB6 && !currentPB6 {
+			t2ClockPulse = true
 		}
+		v.lastPB6 = currentPB6
+	}
+	v.timer1.SetClockPulse(t2ClockPulse)
+
+	v.timer0.Emulate()
+	v.timer1.Emulate()
+
+	if v.timer0.Underflow() {
 		v.ifr |= 0x40
+		if (v.acr & 0x40) != 0 {
+			v.timer0.Load()
+		}
 		if (v.ier & 0x40) != 0 {
 			v.socket.IRQTrigger()
 		}
 	}
-	// Timer 2
-	t2Underflow := false
-	if (v.acr & 0x20) == 0 {
-		t2c := uint(v.t2c) - 1
-		v.t2c = uint16(t2c)
-		if t2c > defaultViaTimeout {
-			v.ifr |= 0x20
-			t2Underflow = true
-			if (v.ier & 0x20) != 0 {
-				v.socket.IRQTrigger()
-			}
+	t2Underflow := v.timer1.Underflow()
+	if t2Underflow {
+		v.ifr |= 0x20
+		if (v.ier & 0x20) != 0 {
+			v.socket.IRQTrigger()
 		}
-	} else {
-		// --- Modalità 2: Timer 2 conta gli impulsi sul pin PB6 ---
-		currentPB6 := v.socket.ReadPB6()
-		if v.lastPB6 && !currentPB6 {
-			t2c := uint(v.t2c) - 1
-			v.t2c = uint16(t2c)
-			if t2c > defaultViaTimeout {
-				v.ifr |= 0x20
-				t2Underflow = true
-				if (v.ier & 0x20) != 0 {
+	}
+	if srMode := (v.acr >> 2) & 0x07; srMode != 0 {
+		shiftTrigger := false
+		switch srMode {
+		case 1, 4, 5: // Clock mode with Timer 2
+			shiftTrigger = t2Underflow
+		case 2, 6: // Clock mode with Phase 2
+			shiftTrigger = true
+		case 3, 7: // Clock mode with external clock from CB1
+			cb1 := v.socket.ReadCB1()
+			if cb1 && !v.lastCB1 {
+				shiftTrigger = true
+			}
+			v.lastCB1 = cb1
+		}
+		if shiftTrigger {
+			isShiftIn := (srMode & 0x04) == 0
+			if v.shiftRegister.Handle(isShiftIn) {
+				v.ifr |= 0x04
+				if (v.ier & 0x04) != 0 {
 					v.socket.IRQTrigger()
 				}
 			}
 		}
-		v.lastPB6 = currentPB6
-	}
-
-	if srMode := (v.acr >> 2) & 0x07; srMode != 0 {
-		v.handleShiftRegister(srMode, t2Underflow)
 	}
 }
 
@@ -321,46 +330,4 @@ func (v *VIA) handleHandshakeInput() {
 	}
 	// Update CB1 state for the next cycle.
 	v.lastCB1 = currentCB1
-}
-
-// handleShiftRegister manages the shifting operation for the VIA shift register based on the current mode and clock source.
-func (v *VIA) handleShiftRegister(srMode uint8, t2Clock bool) {
-	shiftTrigger := false
-	switch srMode {
-	case 1, 4, 5: // Modalità con clock da Timer 2
-		shiftTrigger = t2Clock
-	case 2, 6: // Modalità con clock da Phase 2
-		shiftTrigger = true
-	case 3, 7: // Modalità con clock esterno da CB1
-		cb1 := v.socket.ReadCB1()
-		if cb1 && !v.lastCB1 {
-			shiftTrigger = true
-		}
-		v.lastCB1 = cb1
-	}
-	if !shiftTrigger {
-		return
-	}
-	isShiftIn := (srMode & 0x04) == 0
-	if v.shiftCounter < 8 {
-		if isShiftIn {
-			inBit := uint8(0)
-			if v.socket.ReadCB2() {
-				inBit = 1
-			}
-			v.sr = (v.sr << 1) | inBit
-		} else {
-			outBit := (v.sr & 0x80) != 0
-			v.socket.WriteCB2(outBit)
-			v.sr <<= 1
-		}
-		v.shiftCounter++
-	}
-	if v.shiftCounter == 8 {
-		v.shiftCounter = 9
-		v.ifr |= 0x04
-		if (v.ier & 0x04) != 0 {
-			v.socket.IRQTrigger()
-		}
-	}
 }
