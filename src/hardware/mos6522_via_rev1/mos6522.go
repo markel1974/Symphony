@@ -29,10 +29,11 @@ type VIA struct {
 	pcr          uint8
 	ifr          uint8
 	ier          uint8
-	lastCA1      bool  // Stato precedente di CA1 per il rilevamento del fronte
-	lastCB1      bool  // Stato precedente di CB1 per il rilevamento del fronte
-	lastCB2      bool  // Stato precedente di CB2 per la modalità Shift Register
-	shiftCounter uint8 // Contatore per gli 8 bit dello Shift Register
+	lastCA1      bool
+	lastCB1      bool
+	lastCB2      bool
+	lastPB6      bool
+	shiftCounter uint8
 	socket       references.IMos6522Socket
 }
 
@@ -86,6 +87,7 @@ func (v *VIA) Reset() {
 	v.lastCA1 = false
 	v.lastCB1 = false
 	v.lastCB2 = false
+	v.lastPB6 = false
 	v.shiftCounter = 0
 }
 
@@ -210,7 +212,7 @@ func (v *VIA) WriteByte(addr uint16, data uint8) {
 
 // Emulate executes a single emulation cycle for VIA, decrementing timers and handling interrupts based on current settings.
 func (v *VIA) Emulate() {
-	//v.handleHandshakeInput()
+	v.handleHandshakeInput()
 	// Timer 1
 	t1c := uint(v.t1c) - 1
 	v.t1c = uint16(t1c)
@@ -224,19 +226,35 @@ func (v *VIA) Emulate() {
 		}
 	}
 	// Timer 2
-	//t2Underflow := false
+	t2Underflow := false
 	if (v.acr & 0x20) == 0 {
 		t2c := uint(v.t2c) - 1
 		v.t2c = uint16(t2c)
 		if t2c > defaultViaTimeout {
 			v.ifr |= 0x20
-			//t2Underflow = true
+			t2Underflow = true
 			if (v.ier & 0x20) != 0 {
 				v.socket.IRQTrigger()
 			}
 		}
+	} else {
+		// --- Modalità 2: Timer 2 conta gli impulsi sul pin PB6 ---
+		currentPB6 := v.socket.ReadPB6()
+		if v.lastPB6 && !currentPB6 {
+			t2c := uint(v.t2c) - 1
+			v.t2c = uint16(t2c)
+			if t2c > defaultViaTimeout {
+				v.ifr |= 0x20
+				t2Underflow = true
+				if (v.ier & 0x20) != 0 {
+					v.socket.IRQTrigger()
+				}
+			}
+		}
+		v.lastPB6 = currentPB6
 	}
-	//v.handleShiftRegister(t2Underflow)
+
+	v.handleShiftRegister(t2Underflow)
 }
 
 // EmulationRequired indicates whether emulation of the VIA functionality is required, always returning true.
@@ -254,8 +272,57 @@ func (v *VIA) SignalPRB() {
 	v.socket.WritePRB(v.prb, v.ddrb)
 }
 
-/*
-// handleShiftRegister gestisce la logica completa dello Shift Register.
+// handleHandshakeInput manages edge detection for control pins CA1 and CB1, updates interrupt flags, and handles port latching.
+func (v *VIA) handleHandshakeInput() {
+	// Port A
+	// Reads the configuration from PCR: true for falling edge (bit 0 = 0), false for rising edge (bit 0 = 1).
+	ca1DetectsFallingEdge := (v.pcr & 0x01) == 0
+	currentCA1 := v.socket.ReadCA1()
+
+	// Detect the edge by comparing the current state with the previous cycle state.
+	ca1EdgeDetected := (ca1DetectsFallingEdge && !currentCA1 && v.lastCA1) || // Fronte di discesa (era alto, ora è basso)
+		(!ca1DetectsFallingEdge && currentCA1 && !v.lastCA1) // Fronte di salita (era basso, ora è alto)
+
+	if ca1EdgeDetected {
+		// Set the interrupt flag for CA1 (bit 1 of IFR).
+		v.ifr |= 0x02
+		// If latching on Port A is enabled (bit 0 of ACR = 0), "freeze" the port value.
+		if (v.acr & 0x01) == 0 {
+			// Note: the socket must provide the external pin state of the port.
+			v.pra = v.socket.ReadPRA(v.pra, v.ddra)
+		}
+		// If the CA1 interrupt is enabled (bit 1 of IER), trigger the IRQ.
+		if (v.ier & 0x02) != 0 {
+			v.socket.IRQTrigger()
+		}
+	}
+	v.lastCA1 = currentCA1
+
+	// Port B
+	cb1DetectsFallingEdge := (v.pcr & 0x10) == 0
+	currentCB1 := v.socket.ReadCB1()
+
+	// Detect the edge by comparing the current state with the previous cycle state.
+	cb1EdgeDetected := (cb1DetectsFallingEdge && !currentCB1 && v.lastCB1) ||
+		(!cb1DetectsFallingEdge && currentCB1 && !v.lastCB1)
+
+	if cb1EdgeDetected {
+		// Sets the interrupt flag for CB1 (bit 4 of IFR).
+		v.ifr |= 0x10
+		// If Port B latching is enabled (bit 4 of ACR = 0), "freeze" the port value.
+		if (v.acr & 0x10) == 0 {
+			v.prb = v.socket.ReadPRB(v.prb, v.ddrb)
+		}
+		// If CB1 interrupt is enabled (bit 4 of IER), trigger the IRQ.
+		if (v.ier & 0x10) != 0 {
+			v.socket.IRQTrigger()
+		}
+	}
+	// Update CB1 state for the next cycle.
+	v.lastCB1 = currentCB1
+}
+
+// handleShiftRegister manages the shifting operation for the VIA shift register based on the current mode and clock source.
 func (v *VIA) handleShiftRegister(t2Clock bool) {
 	srMode := (v.acr >> 2) & 0x07
 	if srMode == 0 {
@@ -300,4 +367,3 @@ func (v *VIA) handleShiftRegister(t2Clock bool) {
 		}
 	}
 }
-*/
