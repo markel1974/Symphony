@@ -31,27 +31,24 @@ const (
 // CIA represents the Complex Interface Adapter, a chip used for I/O operations and timers.
 type CIA struct {
 	*component.BaseComponent
-	prA              uint8
-	prB              uint8
-	ddrA             uint8
-	ddrB             uint8
-	sdr              uint8
-	icr              uint8 // Pending interrupts
-	irqMask          uint8 // Enabled interrupts
-	timerAIrqCycle   bool  // Flag: Trigger Timer A IRQ in next cycle
-	timerBIrqCycle   bool  // Flag: Trigger Timer B IRQ in next cycle
-	tod              *TOD
-	timerA           *Timer
-	timerB           *Timer
-	sdrShiftRegister uint8
-	sdrShiftCounter  uint8 // Contatore per i bit (da 8 a 0)
-	todClockDivider  int
-	label            string
-	reads            [RegisterCount]func() uint8
-	writes           [RegisterCount]func(uint8)
+	prA             uint8
+	prB             uint8
+	ddrA            uint8
+	ddrB            uint8
+	sdr             uint8
+	icr             uint8 // Pending interrupts
+	irqMask         uint8 // Enabled interrupts
+	timerAIrqCycle  bool  // Flag: Trigger Timer A IRQ in next cycle
+	timerBIrqCycle  bool  // Flag: Trigger Timer B IRQ in next cycle
+	tod             *TOD
+	timerA          *Timer
+	timerB          *Timer
+	shiftRegister   *ShiftRegister
+	todClockDivider int
+	label           string
+	reads           [RegisterCount]func() uint8
+	writes          [RegisterCount]func(uint8)
 
-	socketSignalSP        func(bool)
-	socketReadSP          func() bool
 	socketReadPortA       func(uint8, uint8, uint8, uint8) uint8
 	socketReadPortB       func(uint8, uint8, uint8, uint8) uint8
 	socketSignalPRA       func(uint8)
@@ -82,12 +79,13 @@ func (m *CIA) Setup() error {
 	m.timerA.UnderflowSignal().Bind(m.timerAUnderflowSlot)
 	m.timerB = NewTimer(m, m.GetFactory(), m.label, 1)
 	m.timerB.UnderflowSignal().Bind(m.timerBUnderflowSlot)
+	m.shiftRegister = NewShiftRegister(m, m.GetFactory(), m.label, 0)
 	return nil
 }
 
 func (m *CIA) Bind(socket references.IMos6526Socket) error {
-	m.socketSignalSP = socket.SignalSP
-	m.socketReadSP = socket.ReadSP
+	//m.socketSignalSP = socket.SignalSP
+	//m.socketReadSP = socket.ReadSP
 	m.socketReadPortA = socket.ReadPortA
 	m.socketReadPortB = socket.ReadPortB
 	m.socketSignalPRA = socket.SignalPRA
@@ -97,6 +95,7 @@ func (m *CIA) Bind(socket references.IMos6526Socket) error {
 	m.socketIRQTrigger = socket.IRQTrigger
 	m.socketIRQClearTrigger = socket.IRQClearTrigger
 
+	m.shiftRegister.Initialize(socket.ReadSP, socket.SignalSP)
 	m.reads = m.createReadRegister()
 	m.writes = m.createWriteRegister()
 	return nil
@@ -153,32 +152,10 @@ func (m *CIA) EmulationRequired() bool {
 
 // timerAUnderflowSlot handles the underflow event of Timer A by setting the respective interrupt cycle flag and triggering IRQ.
 func (m *CIA) timerAUnderflowSlot() {
-	// If a serial bit shift is in progress...
-	if m.sdrShiftCounter > 0 {
-		// Check Timer A mode (input or output)
-		if (m.timerA.GetCR() & crBitSPMode) != 0 {
-			// Send the most significant bit (MSB) to SP pin
-			// (bit 7 of our shift register)
-			msbIsSet := (m.sdrShiftRegister & 0x80) != 0
-			m.socketSignalSP(msbIsSet)
-			// Shift bits left to prepare for next one
-			m.sdrShiftRegister <<= 1
-		} else {
-			// Read bit from SP pin
-			bit := m.socketReadSP()
-			// Shift bits left
-			m.sdrShiftRegister <<= 1
-			// Insert new bit at the end (at LSB, bit 0)
-			if bit {
-				m.sdrShiftRegister |= 1
-			}
-		}
-		m.sdrShiftCounter--
-		// If we have finished shifting all 8 bits...
-		if m.sdrShiftCounter == 0 {
-			// In INPUT mode, copy received byte to visible SDR register
+	if m.shiftRegister.Counter() > 0 {
+		if m.shiftRegister.Handle((m.timerA.GetCR() & crBitSPMode) != 0) {
 			if (m.timerA.GetCR() & crBitSPMode) == 0 {
-				m.sdr = m.sdrShiftRegister
+				m.sdr = m.shiftRegister.Get()
 			}
 			m.icr |= IRQSDRFullOrEmpty
 			m.irqTrigger()
@@ -206,8 +183,6 @@ func (m *CIA) Reset() {
 	m.timerAIrqCycle = false
 	m.timerBIrqCycle = false
 	m.todClockDivider = 0
-	m.sdrShiftRegister = 0
-	m.sdrShiftCounter = 0
 	m.timerA.Reset()
 	m.timerB.Reset()
 	m.tod.Reset()
@@ -391,8 +366,9 @@ func (m *CIA) createWriteRegister() [RegisterCount]func(uint8) {
 	writes[0x0c] = func(data uint8) {
 		m.sdr = data
 		if (m.timerA.GetCR() & crBitSPMode) != 0 {
-			m.sdrShiftRegister = data
-			m.sdrShiftCounter = 8
+			m.shiftRegister.Set(data)
+			//m.register = data
+			//m.counter = 8
 			//sdr interrupt at the end of the transmission
 		}
 	}
