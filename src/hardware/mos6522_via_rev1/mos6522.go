@@ -40,9 +40,8 @@ type VIA struct {
 	lastCB2       bool
 	lastPB6       bool
 	lastCB1       bool
-	//socket        references.IMos6522Socket
-	reads  [RegisterCount]func() uint8
-	writes [RegisterCount]func(uint8)
+	reads         [RegisterCount]func() uint8
+	writes        [RegisterCount]func(uint8)
 
 	socketReadPortA       func() uint8
 	socketReadPortB       func() uint8
@@ -221,6 +220,7 @@ func (v *VIA) ReadPCR() uint8 {
 	return v.pcr
 }
 
+// createWriteRegister initializes an array of functions to handle writing to specific VIA registers.
 func (v *VIA) createWriteRegister() [RegisterCount]func(uint8) {
 	var writes [RegisterCount]func(uint8)
 	writes[0x0] = func(data uint8) {
@@ -278,6 +278,7 @@ func (v *VIA) createWriteRegister() [RegisterCount]func(uint8) {
 	return writes
 }
 
+// createReadRegister initializes and returns an array of functions to handle register read operations for the VIA component.
 func (v *VIA) createReadRegister() [RegisterCount]func() uint8 {
 	var reads [RegisterCount]func() uint8
 	reads[0x0] = v.socketReadPortB
