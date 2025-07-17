@@ -10,6 +10,11 @@ const (
 	RegisterCount = RegisterSize + 1
 )
 
+const (
+	dividerPAL  = 20000 // 50 Hz (PAL) 1,000,000 / 50 = 20,000
+	dividerNTSC = 16667 // 60 Hz (NTSC) 1,000,000 / 60 = 16,667
+)
+
 // IRQUnderflowTimerA represents the IRQ flag for underflow on Timer A.
 // IRQUnderflowTimerB represents the IRQ flag for underflow on Timer B.
 // IRQTODAlarmEqual represents the IRQ flag for Time-of-Day alarm match.
@@ -133,9 +138,9 @@ func (m *CIA) Emulate() {
 	if m.todClockDivider <= 0 {
 		var freq int
 		if m.timerA.GetRTC() {
-			freq = 20000 // 50 Hz (PAL) 1,000,000 / 50 = 20,000
+			freq = dividerPAL
 		} else {
-			freq = 16667 // 60 Hz (NTSC) 1,000,000 / 60 = 16,667
+			freq = dividerNTSC
 		}
 		m.todClockDivider = freq
 		if m.tod.Update() {
@@ -367,8 +372,6 @@ func (m *CIA) createWriteRegister() [RegisterCount]func(uint8) {
 		m.sdr = data
 		if (m.timerA.GetCR() & crBitSPMode) != 0 {
 			m.shiftRegister.Set(data)
-			//m.register = data
-			//m.counter = 8
 			//sdr interrupt at the end of the transmission
 		}
 	}
