@@ -117,12 +117,12 @@ func (v *VIA1Socket) SignalDDRB(ddrb uint8) {
 	v.peripheralWrite(prb, ddrb)
 }
 
-// SignalCA2 sets the state of the CA2 pin based on the provided boolean value.
-func (v *VIA1Socket) SignalCA2(w bool) {
+// SignalPCR processes changes or updates to the Peripheral Control Register (PCR) based on the provided input value.
+func (v *VIA1Socket) SignalPCR(_ uint8) {
 }
 
-// SignalCB2 sets or clears the CB2 control line based on the provided boolean value.
-func (v *VIA1Socket) SignalCB2(bool) {
+// WriteCB2 sets or clears the CB2 control line based on the provided boolean value.
+func (v *VIA1Socket) WriteCB2(bool) {
 
 }
 

@@ -71,9 +71,9 @@ func (v *ShiftRegister) Set(data uint8) {
 
 // Handle processes a single shift operation in the shift register, either shifting in or out based on isShiftIn flag.
 // It increments the shift counter and returns true when a full 8-bit operation is completed.
-func (v *ShiftRegister) Handle(isShiftIn bool) bool {
+func (v *ShiftRegister) Handle(shiftIn bool) bool {
 	if v.shiftCounter < 8 {
-		if isShiftIn {
+		if shiftIn {
 			inBit := uint8(0)
 			if v.readCB2() {
 				inBit = 1

@@ -4,17 +4,20 @@ import (
 	"fmt"
 )
 
-// IMos6522Socket represents an interface for socket communication and control in a system with read/write and IRQ operations.
-// ReadPRA reads the value of port A register at the specified indexes.
-// ReadPRB reads the value of port B register at the specified indexes.
-// WritePRA writes a value to the port A register at the specified indexes.
-// WritePRB writes a value to the port B register at the specified indexes.
-// WriteDDRA writes a value to the data direction register A at the specified indexes.
-// WriteDDRB writes a value to the data direction register B at the specified indexes.
-// WriteCA2 writes a boolean control value for the CA2 pin.
-// WriteCB2 writes a boolean control value for the CB2 pin.
-// IRQClearTrigger clears the IRQ trigger state.
-// IRQTrigger triggers an IRQ signal.
+// IMos6522Socket defines the interface for interacting with a MOS 6522 VIA socket in a system.
+// ReadPortA reads the current state of port A.
+// ReadPortB reads the current state of port B.
+// ReadCA1 returns the logic state of control line CA1.
+// ReadCB1 returns the logic state of control line CB1.
+// ReadCB2 returns the logic state of control line CB2.
+// ReadPB6 returns the logic state of bit 6 of port B.
+// SignalPRA sends an updated value to the port A register.
+// SignalPRB sends an updated value to the port B register.
+// SignalDDRA sends an updated value to the data direction register A.
+// SignalDDRB sends an updated value to the data direction register B.
+// SignalPCR updates the peripheral control register with a new value.
+// IRQClearTrigger clears the current IRQ trigger state.
+// IRQTrigger asserts an IRQ trigger to signal an interrupt request.
 type IMos6522Socket interface {
 	ReadPortA() uint8
 
@@ -26,6 +29,8 @@ type IMos6522Socket interface {
 
 	ReadCB2() bool
 
+	WriteCB2(bool)
+
 	ReadPB6() bool
 
 	SignalPRA(uint8)
@@ -36,27 +41,27 @@ type IMos6522Socket interface {
 
 	SignalDDRB(uint8)
 
-	SignalCA2(bool)
-
-	SignalCB2(bool)
+	SignalPCR(uint8)
 
 	IRQClearTrigger()
 
 	IRQTrigger()
 }
 
-// IMos6522 represents the interface for a MOS 6522 Versatile Interface Adapter (VIA) implementation.
-// Setup initializes the VIA component and prepares it for operation.
-// Bind connects the VIA to a compatible IMos6522Socket for interaction.
-// Connect establishes runtime connections for the VIA to integrate into the system.
-// Reset reinitializes the VIA's internal state to its default configuration.
-// Emulate executes the next cycle or operation of the VIA for simulation purposes.
-// ReadByte reads an 8-bit value from the specified address in the VIA's memory map.
-// WriteByte writes an 8-bit value to the specified address in the VIA's memory map.
-// ReadDDRA returns the value of the data direction register A.
-// ReadDDRB returns the value of the data direction register B.
-// ReadPRA reads the data value of port A.
-// ReadPRB reads the data value of port B.
+// IMos6522 defines an interface for the MOS 6522 VIA (Versatile Interface Adapter) chip emulation.
+// Setup initializes the VIA for operation, preparing its components.
+// Bind associates the VIA with a given socket for external interactions and signal handling.
+// Connect establishes necessary connections for the VIA within the system.
+// Reset reinitializes the VIA, clearing registers and resetting its state.
+// Emulate performs a single step of VIA emulation logic, processing registers and signals.
+// ReadByte retrieves an 8-bit value from a specified register address in the VIA memory map.
+// WriteByte writes an 8-bit value to a specified register address in the VIA memory map.
+// ReadDDRA returns the current state of the Data Direction Register for Port A (DDRA).
+// ReadDDRB returns the current state of the Data Direction Register for Port B (DDRB).
+// ReadPRA retrieves the current value of the Port A register (PRA).
+// ReadPRB retrieves the current value of the Port B register (PRB).
+// ReadACR retrieves the current value of the Auxiliary Control Register (ACR).
+// ReadPCR retrieves the current value of the Peripheral Control Register (PCR).
 type IMos6522 interface {
 	Setup() error
 
@@ -79,6 +84,10 @@ type IMos6522 interface {
 	ReadPRA() uint8
 
 	ReadPRB() uint8
+
+	ReadACR() uint8
+
+	ReadPCR() uint8
 }
 
 // IdIMos6522 generates a unique identifier for a VIA component based on the provided label, instance, and interface name.
