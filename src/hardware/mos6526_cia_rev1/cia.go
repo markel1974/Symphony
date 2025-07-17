@@ -5,6 +5,11 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+const (
+	RegisterSize  = 0xf
+	RegisterCount = RegisterSize + 1
+)
+
 // IRQUnderflowTimerA represents the IRQ flag for underflow on Timer A.
 // IRQUnderflowTimerB represents the IRQ flag for underflow on Timer B.
 // IRQTODAlarmEqual represents the IRQ flag for Time-of-Day alarm match.
@@ -38,11 +43,12 @@ type CIA struct {
 	tod              *TOD
 	timerA           *Timer
 	timerB           *Timer
-	sdrShiftRegister uint8 // Lo shift register interno
+	sdrShiftRegister uint8
 	sdrShiftCounter  uint8 // Contatore per i bit (da 8 a 0)
 	todClockDivider  int
-	//socket           references.IMos6526Socket
-	label string
+	label            string
+	reads            [RegisterCount]func() uint8
+	writes           [RegisterCount]func(uint8)
 
 	socketSignalSP        func(bool)
 	socketReadSP          func() bool
@@ -90,6 +96,9 @@ func (m *CIA) Bind(socket references.IMos6526Socket) error {
 	m.socketSignalDDRB = socket.SignalDDRB
 	m.socketIRQTrigger = socket.IRQTrigger
 	m.socketIRQClearTrigger = socket.IRQClearTrigger
+
+	m.reads = m.createReadRegister()
+	m.writes = m.createWriteRegister()
 	return nil
 }
 
@@ -184,16 +193,12 @@ func (m *CIA) timerAUnderflowSlot() {
 	}
 	m.timerAIrqCycle = true
 	m.icr |= IRQUnderflowTimerA
-	//fmt.Println("EMITTING TIMER A", m.id, m.timerA.timerLatch)
-	//m.irqTrigger()
 }
 
 // timerBUnderflowSlot handles the underflow event for Timer B, sets the IRQ flag, and triggers an interrupt request.
 func (m *CIA) timerBUnderflowSlot() {
 	m.timerBIrqCycle = true
 	m.icr |= IRQUnderflowTimerB
-	//fmt.Println("EMITTING TIMER B", m.id, m.timerA.timerLatch)
-	//m.irqTrigger()
 }
 
 // Reset reinitializes the internal state of the CIA by resetting all registers, timers, and the time of day (TOD) clock.
@@ -234,123 +239,13 @@ func (m *CIA) ReadDDRB() uint8 {
 // ReadRegister reads the value of the specified register from the CIA based on the provided address.
 func (m *CIA) ReadRegister(addr uint16) uint8 {
 	reg := addr & 0x0f
-	switch reg {
-	case 0x00:
-		return m.socketReadPortA(m.prA, m.prB, m.ddrA, m.ddrB)
-	case 0x01:
-		ret := m.socketReadPortB(m.prA, m.prB, m.ddrA, m.ddrB)
-		// TA/TB output to PB enabled
-		if m.timerA.HasPBOn() {
-			if m.timerA.ToggleModeApply(m.timerAIrqCycle) {
-				ret |= 0x40
-			} else {
-				ret &= 0xbf
-			}
-		}
-		if m.timerB.HasPBOn() {
-			if m.timerB.ToggleModeApply(m.timerBIrqCycle) {
-				ret |= 0x80
-			} else {
-				ret &= 0x7f
-			}
-		}
-		return ret
-	case 0x02:
-		return m.ddrA
-	case 0x03:
-		return m.ddrB
-	case 0x04:
-		return m.timerA.GetTimerLow()
-	case 0x05:
-		return m.timerA.GetTimerHigh()
-	case 0x06:
-		return m.timerB.GetTimerLow()
-	case 0x07:
-		return m.timerB.GetTimerHigh()
-	case 0x08:
-		return m.tod.Get10ths()
-	case 0x09:
-		return m.tod.GetSec()
-	case 0x0a:
-		return m.tod.GetMin()
-	case 0x0b:
-		return m.tod.GetHour()
-	case 0x0c:
-		return m.sdr
-	case 0x0d:
-		icr := m.icr
-		m.icr = 0
-		if icr != 0 {
-			m.socketIRQClearTrigger()
-		}
-		return icr
-	case 0x0e:
-		return m.timerA.GetCR()
-	case 0x0f:
-		return m.timerB.GetCR()
-	}
-	return 0 // Impossible
+	return m.reads[reg]()
 }
 
 // WriteRegister writes data to the specified address within the CIA, updating registers or triggering system operations.
 func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	reg := addr & 0x0f
-	switch reg {
-	case 0x00:
-		m.prA = data
-		m.socketSignalPRA(m.prA)
-	case 0x01:
-		m.prB = data
-		m.socketSignalPRB(m.prB)
-	case 0x02:
-		m.ddrA = data
-		m.socketSignalDDRA(m.ddrA)
-	case 0x03:
-		m.ddrB = data
-		m.socketSignalDDRB(m.ddrB)
-	case 0x04:
-		m.timerA.SetTimerLow(data)
-	case 0x05:
-		m.timerA.SetTimerHigh(data)
-	case 0x06:
-		m.timerB.SetTimerLow(data)
-	case 0x07:
-		m.timerB.SetTimerHigh(data)
-	case 0x08:
-		m.tod.Set10ths(m.timerB.GetRTC(), data)
-	case 0x09:
-		m.tod.SetSec(m.timerB.GetRTC(), data)
-	case 0x0a:
-		m.tod.SetMin(m.timerB.GetRTC(), data)
-	case 0x0b:
-		m.tod.SetHour(m.timerB.GetRTC(), data)
-	case 0x0c:
-		m.sdr = data
-		if (m.timerA.GetCR() & crBitSPMode) != 0 {
-			m.sdrShiftRegister = data
-			m.sdrShiftCounter = 8
-			//sdr interrupt at the end of the transmission
-		}
-	case 0x0d:
-		m.irqUpdateMask(data)
-		m.irqTrigger()
-	case 0x0e:
-		//00 = Timer counts system cycles
-		//01 = Timer counts positive slope at CNT-pin
-		countMode := uint8(0)
-		if (data & crBitInMode) != 0 {
-			countMode = 1
-		}
-		m.timerA.SetControlRegister(data, countMode)
-	case 0x0f:
-		//00 = Timer counts System cycle
-		//01 = Timer counts positive slope on CNT-pin
-		//10 = Timer counts underflow of timer A
-		//11 = Timer counts underflow of timer A if the CNT-pin is high
-		//crBitInMode | crBitSPMode
-		countMode := (data >> 5) & 0x3
-		m.timerB.SetControlRegister(data, countMode)
-	}
+	m.writes[reg](data)
 }
 
 // SetCNTLevel sets the CNT pin state for both Timer A and Timer B to the specified level.
@@ -398,4 +293,133 @@ func (m *CIA) irqUpdateMask(data uint8) {
 			m.irqMask &= ^bits //^data
 		}
 	}
+}
+
+func (m *CIA) createReadRegister() [RegisterCount]func() uint8 {
+	var reads [RegisterCount]func() uint8
+
+	reads[0x00] = func() uint8 {
+		return m.socketReadPortA(m.prA, m.prB, m.ddrA, m.ddrB)
+	}
+	reads[0x01] = func() uint8 {
+		ret := m.socketReadPortB(m.prA, m.prB, m.ddrA, m.ddrB)
+		// TA/TB output to PB enabled
+		if m.timerA.HasPBOn() {
+			if m.timerA.ToggleModeApply(m.timerAIrqCycle) {
+				ret |= 0x40
+			} else {
+				ret &= 0xbf
+			}
+		}
+		if m.timerB.HasPBOn() {
+			if m.timerB.ToggleModeApply(m.timerBIrqCycle) {
+				ret |= 0x80
+			} else {
+				ret &= 0x7f
+			}
+		}
+		return ret
+	}
+	reads[0x02] = func() uint8 {
+		return m.ddrA
+	}
+	reads[0x03] = func() uint8 {
+		return m.ddrB
+	}
+	reads[0x04] = m.timerA.GetTimerLow
+	reads[0x05] = m.timerA.GetTimerHigh
+	reads[0x06] = m.timerB.GetTimerLow
+	reads[0x07] = m.timerB.GetTimerHigh
+	reads[0x08] = m.tod.Get10ths
+	reads[0x09] = m.tod.GetSec
+	reads[0x0a] = m.tod.GetMin
+	reads[0x0b] = m.tod.GetHour
+	reads[0x0c] = func() uint8 {
+		return m.sdr
+	}
+	reads[0x0d] = func() uint8 {
+		icr := m.icr
+		m.icr = 0
+		if icr != 0 {
+			m.socketIRQClearTrigger()
+		}
+		return icr
+	}
+	reads[0x0e] = func() uint8 {
+		return m.timerA.GetCR()
+	}
+	reads[0x0f] = func() uint8 {
+		return m.timerB.GetCR()
+	}
+
+	return reads
+}
+
+// createWriteRegister initializes an array of functions to handle writing to specific VIA registers.
+func (m *CIA) createWriteRegister() [RegisterCount]func(uint8) {
+	var writes [RegisterCount]func(uint8)
+
+	writes[0x00] = func(data uint8) {
+		m.prA = data
+		m.socketSignalPRA(m.prA)
+	}
+	writes[0x01] = func(data uint8) {
+		m.prB = data
+		m.socketSignalPRB(m.prB)
+	}
+	writes[0x02] = func(data uint8) {
+		m.ddrA = data
+		m.socketSignalDDRA(m.ddrA)
+	}
+	writes[0x03] = func(data uint8) {
+		m.ddrB = data
+		m.socketSignalDDRB(m.ddrB)
+	}
+	writes[0x04] = m.timerA.SetTimerLow
+	writes[0x05] = m.timerA.SetTimerHigh
+	writes[0x06] = m.timerB.SetTimerLow
+	writes[0x07] = m.timerB.SetTimerHigh
+	writes[0x08] = func(data uint8) {
+		m.tod.Set10ths(m.timerB.GetRTC(), data)
+	}
+	writes[0x09] = func(data uint8) {
+		m.tod.SetSec(m.timerB.GetRTC(), data)
+	}
+	writes[0x0a] = func(data uint8) {
+		m.tod.SetMin(m.timerB.GetRTC(), data)
+	}
+	writes[0x0b] = func(data uint8) {
+		m.tod.SetHour(m.timerB.GetRTC(), data)
+	}
+	writes[0x0c] = func(data uint8) {
+		m.sdr = data
+		if (m.timerA.GetCR() & crBitSPMode) != 0 {
+			m.sdrShiftRegister = data
+			m.sdrShiftCounter = 8
+			//sdr interrupt at the end of the transmission
+		}
+	}
+	writes[0x0d] = func(data uint8) {
+		m.irqUpdateMask(data)
+		m.irqTrigger()
+	}
+	writes[0x0e] = func(data uint8) {
+		//00 = Timer counts system cycles
+		//01 = Timer counts positive slope at CNT-pin
+		countMode := uint8(0)
+		if (data & crBitInMode) != 0 {
+			countMode = 1
+		}
+		m.timerA.SetControlRegister(data, countMode)
+	}
+	writes[0x0f] = func(data uint8) {
+		//00 = Timer counts System cycle
+		//01 = Timer counts positive slope on CNT-pin
+		//10 = Timer counts underflow of timer A
+		//11 = Timer counts underflow of timer A if the CNT-pin is high
+		//crBitInMode | crBitSPMode
+		countMode := (data >> 5) & 0x3
+		m.timerB.SetControlRegister(data, countMode)
+	}
+	return writes
 }
