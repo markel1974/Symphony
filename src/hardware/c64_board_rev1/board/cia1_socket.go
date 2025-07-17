@@ -37,11 +37,10 @@ type CIA1Socket struct {
 	label       string
 	parent      references.IComponent
 	component   references.IComponent
-	connection  CIA1SocketConnection
-	vic         references.IMos6569
-	keys        references.IC64Keyboard
-	joy1        references.IC64Joystick
-	joy2        references.IC64Joystick
+	vicRef      references.IMos6569
+	keysRef     references.IC64Keyboard
+	joy1Ref     references.IC64Joystick
+	joy2Ref     references.IC64Joystick
 	intrId      uint32  //
 	prevLPState uint8   // Previous state of LP line (bit 4)
 	keyMatrix   []uint8 // keyboard matrix [0: down, 1: up]
@@ -49,25 +48,36 @@ type CIA1Socket struct {
 	joy1State   uint8   // Joystick 1
 	joy2State   uint8   // Joystick 2
 	hwId        string
+
+	connectionIRQTrigger      func(uint32)
+	connectionIRQClearTrigger func(uint32)
+	keysReset                 func()
+	joy1Reset                 func()
+	joy2Reset                 func()
+	joy1Poll                  func() (uint8, bool)
+	joy2Poll                  func() (uint8, bool)
+	keysPoll                  func() (uint32, bool)
+	vicLightPenTrigger        func()
 }
 
 // NewCIA1Socket creates and initializes a new instance of CIA1Socket with default state and properties.
 func NewCIA1Socket(parent references.IComponent, label string, connection CIA1SocketConnection) *CIA1Socket {
 	c := &CIA1Socket{
-		parent:      parent,
-		label:       label,
-		connection:  connection,
-		IMos6526:    nil,
-		vic:         nil,
-		keys:        nil,
-		joy1:        nil,
-		joy2:        nil,
-		intrId:      intrIrqCia1Bit,
-		prevLPState: defaultLPState,
-		keyMatrix:   make([]uint8, 8),
-		revMatrix:   make([]uint8, 8),
-		joy1State:   defaultJoyState,
-		joy2State:   defaultJoyState,
+		parent:                    parent,
+		label:                     label,
+		connectionIRQTrigger:      connection.IRQTrigger,
+		connectionIRQClearTrigger: connection.IRQClearTrigger,
+		IMos6526:                  nil,
+		vicRef:                    nil,
+		keysRef:                   nil,
+		joy1Ref:                   nil,
+		joy2Ref:                   nil,
+		intrId:                    intrIrqCia1Bit,
+		prevLPState:               defaultLPState,
+		keyMatrix:                 make([]uint8, 8),
+		revMatrix:                 make([]uint8, 8),
+		joy1State:                 defaultJoyState,
+		joy2State:                 defaultJoyState,
 	}
 	c.hwId = references.IdIMos6526(c.IMos6526, c.label, 0)
 	return c
@@ -85,33 +95,40 @@ func (w *CIA1Socket) Wire() error {
 	if w.IMos6526, err = references.ComponentToIMos6526(w.component); err != nil {
 		return err
 	}
-	idVIC := references.IdIMos6569(w.vic, w.label, 0)
-	if w.vic, err = references.ComponentToIMos6569(w.parent.GetChildByHardwareId(idVIC)); err != nil {
+	idVIC := references.IdIMos6569(w.vicRef, w.label, 0)
+	if w.vicRef, err = references.ComponentToIMos6569(w.parent.GetChildByHardwareId(idVIC)); err != nil {
 		return err
 	}
-	idKeys := references.IdIC64Keyboard(w.keys, w.label, 0)
-	if w.keys, err = references.ComponentToIC64Keyboard(w.parent.GetChildByHardwareId(idKeys)); err != nil {
+	idKeys := references.IdIC64Keyboard(w.keysRef, w.label, 0)
+	if w.keysRef, err = references.ComponentToIC64Keyboard(w.parent.GetChildByHardwareId(idKeys)); err != nil {
 		return err
 	}
-	idJoy1 := references.IdIC64Joystick(w.joy1, w.label, 0)
-	if w.joy1, err = references.ComponentToIC64Joystick(w.parent.GetChildByHardwareId(idJoy1)); err != nil {
+	idJoy1 := references.IdIC64Joystick(w.joy1Ref, w.label, 0)
+	if w.joy1Ref, err = references.ComponentToIC64Joystick(w.parent.GetChildByHardwareId(idJoy1)); err != nil {
 		return err
 	}
-	idJoy2 := references.IdIC64Joystick(w.joy1, w.label, 1)
-	if w.joy2, err = references.ComponentToIC64Joystick(w.parent.GetChildByHardwareId(idJoy2)); err != nil {
+	idJoy2 := references.IdIC64Joystick(w.joy1Ref, w.label, 1)
+	if w.joy2Ref, err = references.ComponentToIC64Joystick(w.parent.GetChildByHardwareId(idJoy2)); err != nil {
 		return err
 	}
 	if err = w.IMos6526.Bind(w); err != nil {
 		return err
 	}
+	w.keysReset = w.keysRef.Reset
+	w.joy1Reset = w.joy1Ref.Reset
+	w.joy2Reset = w.joy2Ref.Reset
+	w.joy1Poll = w.joy1Ref.Poll
+	w.joy2Poll = w.joy2Ref.Poll
+	w.keysPoll = w.keysRef.Poll
+	w.vicLightPenTrigger = w.vicRef.LightPenTrigger
 	return nil
 }
 
 // Reset resets the internal state of the CIA1Socket and its connected components to their default values.
 func (w *CIA1Socket) Reset() {
-	w.keys.Reset()
-	w.joy1.Reset()
-	w.joy2.Reset()
+	w.keysReset()
+	w.joy1Reset()
+	w.joy2Reset()
 	w.IMos6526.Reset()
 	for idx := range w.keyMatrix {
 		w.keyMatrix[idx] = defaultKeyState
@@ -126,13 +143,13 @@ func (w *CIA1Socket) Reset() {
 
 // Update polls the state of connected joysticks and keyboard, and updates the key and reverse matrix based on input events.
 func (w *CIA1Socket) Update() {
-	if joy1State, ok := w.joy1.Poll(); ok {
+	if joy1State, ok := w.joy1Poll(); ok {
 		w.joy1State = joy1State
 	}
-	if joy2State, ok := w.joy2.Poll(); ok {
+	if joy2State, ok := w.joy2Poll(); ok {
 		w.joy2State = joy2State
 	}
-	if v, ok := w.keys.Poll(); ok {
+	if v, ok := w.keysPoll(); ok {
 		pressed := (v & 0x20000) != 0
 		shifted := (v & 0x10000) != 0
 		keyM := uint8(v & 0xff)
@@ -157,7 +174,7 @@ func (w *CIA1Socket) Update() {
 }
 
 // ReadPortA reads data from port A by combining the given parameters with internal joystick states and matrices.
-func (w *CIA1Socket) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
+func (w *CIA1Socket) ReadPortA(prA uint8, prB uint8, ddrA uint8, ddrB uint8) uint8 {
 	ret := prA | ^ddrA
 	tst := (prB | ^ddrB) & w.joy1State
 	for idx, bit := range bits.Uint8s {
@@ -169,7 +186,7 @@ func (w *CIA1Socket) ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uin
 }
 
 // ReadPortB reads the state of Port B by combining the active bits of DDRB and PRB with the joystick and key matrix states.
-func (w *CIA1Socket) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8 {
+func (w *CIA1Socket) ReadPortB(prA uint8, prB uint8, ddrA uint8, ddrB uint8) uint8 {
 	ret := ^ddrB
 	tst := (prA | ^ddrA) & w.joy2State
 	for idx, bit := range bits.Uint8s {
@@ -180,47 +197,49 @@ func (w *CIA1Socket) ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uin
 	return (ret | (prB & ddrB)) & w.joy1State
 }
 
-// WritePortA handles data writing to port A based on the current state and provided parameters.
-func (w *CIA1Socket) WritePortA(_ uint8, _ uint8, _ uint8, _ uint8) {
+// SignalPRA handles data writing to port A based on the current state and provided parameters.
+func (w *CIA1Socket) SignalPRA(_ uint8) {
 }
 
-// WriteDdrA updates the Data Direction Register A (DDRA) with the provided parameters without performing any operation.
-func (w *CIA1Socket) WriteDdrA(_ uint8, _ uint8, _ uint8, _ uint8) {
+// SignalDDRA updates the Data Direction Register A (DDRA) with the provided parameters without performing any operation.
+func (w *CIA1Socket) SignalDDRA(_ uint8) {
 }
 
-// WritePortB handles writing to port B by updating the light pen state based on the given port and data direction registers.
-func (w *CIA1Socket) WritePortB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
+// SignalPRB handles writing to port B by updating the light pen state based on the given port and data direction registers.
+func (w *CIA1Socket) SignalPRB(prB uint8) {
+	ddrB := w.ReadDDRB()
 	w.updateLightPen(prB, ddrB)
 }
 
-// WriteDdrB handles updates to the DDRB register and triggers updates to the light pen based on the PRB and DDRB values.
-func (w *CIA1Socket) WriteDdrB(_ uint8, _ uint8, prB uint8, ddrB uint8) {
+// SignalDDRB handles updates to the DDRB register and triggers updates to the light pen based on the PRB and DDRB values.
+func (w *CIA1Socket) SignalDDRB(ddrB uint8) {
+	prB := w.ReadPRB()
 	w.updateLightPen(prB, ddrB)
 }
 
+// ReadSP reads the state of the SP (Serial Port) line and returns its boolean value.
 func (w *CIA1Socket) ReadSP() bool {
-	//TODO ATTACH
 	return false
 }
 
-func (w *CIA1Socket) WriteSP(level bool) {
-	//TODO ATTACH
+// SignalSP sets the level of the SP (Serial Port) line, typically for signaling or data output purposes.
+func (w *CIA1Socket) SignalSP( /*level*/ _ bool) {
 }
 
 // IRQTrigger triggers an interrupt request (IRQ) using the associated interrupt ID managed by the connection interface.
 func (w *CIA1Socket) IRQTrigger() {
-	w.connection.IRQTrigger(w.intrId)
+	w.connectionIRQTrigger(w.intrId)
 }
 
 // IRQClearTrigger clears the interrupt request associated with the socket by invoking the IRQClearTrigger method on connections.
 func (w *CIA1Socket) IRQClearTrigger() {
-	w.connection.IRQClearTrigger(w.intrId)
+	w.connectionIRQClearTrigger(w.intrId)
 }
 
 // updateLightPen checks the state of the light pen line and triggers an action if the state has changed.
 func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
 	if ((prB | ^ddrB) & 0x10) != w.prevLPState {
-		w.vic.LightPenTrigger()
+		w.vicLightPenTrigger()
 	}
 	w.prevLPState = (prB | ^ddrB) & 0x10
 }

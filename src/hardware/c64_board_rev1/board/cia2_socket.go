@@ -18,26 +18,32 @@ type CIA2SocketConnection interface {
 // The intrId field defines the unique interrupt identifier for CIA2 within the system.
 type CIA2Socket struct {
 	references.IMos6526
-	label       string
-	parent      references.IComponent
-	component   references.IComponent
-	connections CIA2SocketConnection
-	vic         references.IMos6569
-	iec         references.IIec
-	intrId      uint32
-	hwId        string
+	label     string
+	parent    references.IComponent
+	component references.IComponent
+	vicRef    references.IMos6569
+	iecRef    references.IIec
+	intrId    uint32
+	hwId      string
+
+	connectionsNMITrigger      func()
+	connectionsNMIClearTrigger func()
+	vicChangedVA               func(uint8)
+	iecCpuRead                 func() uint8
+	iecCpuWrite                func(uint8)
 }
 
 // NewCIA2Socket creates and returns a pointer to a new instance of CIA2Socket with default uninitialized fields.
 func NewCIA2Socket(parent references.IComponent, label string, connections CIA2SocketConnection) *CIA2Socket {
 	c := &CIA2Socket{
-		parent:      parent,
-		label:       label,
-		connections: connections,
-		IMos6526:    nil,
-		vic:         nil,
-		iec:         nil,
-		intrId:      intrIrqCia2Bit,
+		parent:                     parent,
+		label:                      label,
+		connectionsNMITrigger:      connections.NMITrigger,
+		connectionsNMIClearTrigger: connections.NMIClearTrigger,
+		IMos6526:                   nil,
+		vicRef:                     nil,
+		iecRef:                     nil,
+		intrId:                     intrIrqCia2Bit,
 	}
 	c.hwId = references.IdIMos6526(c.IMos6526, c.label, 1)
 	return c
@@ -54,59 +60,65 @@ func (w *CIA2Socket) Wire() error {
 	if w.IMos6526, err = references.ComponentToIMos6526(w.component); err != nil {
 		return err
 	}
-	idVIC := references.IdIMos6569(w.vic, w.label, 0)
-	if w.vic, err = references.ComponentToIMos6569(w.parent.GetChildByHardwareId(idVIC)); err != nil {
+	idVIC := references.IdIMos6569(w.vicRef, w.label, 0)
+	if w.vicRef, err = references.ComponentToIMos6569(w.parent.GetChildByHardwareId(idVIC)); err != nil {
 		return err
 	}
-	idIEC := references.IdIIec(w.iec, w.label, 0)
-	if w.iec, err = references.ComponentToIEC(w.parent.GetChildByHardwareId(idIEC)); err != nil {
+	idIEC := references.IdIIec(w.iecRef, w.label, 0)
+	if w.iecRef, err = references.ComponentToIEC(w.parent.GetChildByHardwareId(idIEC)); err != nil {
 		return err
 	}
 	if err = w.IMos6526.Bind(w); err != nil {
 		return err
 	}
+	w.vicChangedVA = w.vicRef.ChangedVA
+	w.iecCpuRead = w.iecRef.CpuRead
+	w.iecCpuWrite = w.iecRef.CpuWrite
 	return nil
 }
 
 // ReadPortA reads the value of port A by combining peripheral data, data direction bits, and the IEC CpuRead result.
-func (w *CIA2Socket) ReadPortA(prA uint8, ddrA uint8, _ uint8, _ uint8) uint8 {
-	data := w.iec.CpuRead()
+func (w *CIA2Socket) ReadPortA(prA uint8 /* prb */, _ uint8, ddrA uint8 /*ddrB */, _ uint8) uint8 {
+	data := w.iecCpuRead()
 	ret := ((prA | (^ddrA)) & 0x3f) | data
 	return ret
 }
 
 // ReadPortB reads the current state of Port B by combining the peripheral register and inverted direction register.
-func (w *CIA2Socket) ReadPortB(_ uint8, _ uint8, prB uint8, ddrB uint8) uint8 {
+func (w *CIA2Socket) ReadPortB( /* prA */ _ uint8, prB uint8 /* ddrA */, _ uint8, ddrB uint8) uint8 {
 	ret := prB | (^ddrB)
 	return ret
 }
 
-// WritePortA writes the state of Port A using the given peripheral and direction register values.
-func (w *CIA2Socket) WritePortA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
+// SignalPRA writes the state of Port A using the given peripheral and direction register values.
+func (w *CIA2Socket) SignalPRA(prA uint8) {
+	ddrA := w.ReadDDRA()
 	w.updateVA(prA, ddrA)
-	w.iec.CpuWrite(prA)
+	w.iecCpuWrite(prA)
 }
 
-// WritePortB updates the state of port B using the provided peripheral and direction registers.
-func (w *CIA2Socket) WritePortB(_ uint8, _ uint8, _ uint8, _ uint8) {
+// SignalPRB updates the state of port B using the provided peripheral and direction registers.
+func (w *CIA2Socket) SignalPRB(_ uint8) {
 }
 
-// WriteDdrA updates the data direction register for port A and triggers actions based on the updated state.
-func (w *CIA2Socket) WriteDdrA(prA uint8, ddrA uint8, _ uint8, _ uint8) {
+// SignalDDRA updates the data direction register for port A and triggers actions based on the updated state.
+func (w *CIA2Socket) SignalDDRA(ddrA uint8) {
+	prA := w.ReadPRA()
 	w.updateVA(prA, ddrA)
 }
 
-// WriteDdrB updates the data direction register for port B with the provided parameters.
-func (w *CIA2Socket) WriteDdrB(_ uint8, _ uint8, _ uint8, _ uint8) {
+// SignalDDRB updates the data direction register for port B with the provided parameters.
+func (w *CIA2Socket) SignalDDRB(_ uint8) {
 }
 
+// ReadSP reads the state of the SP (Serial Port) line and returns its current boolean value.
 func (w *CIA2Socket) ReadSP() bool {
 	//TODO ATTACH
 	return false
 }
 
-func (w *CIA2Socket) WriteSP(level bool) {
-	//TODO ATTACH
+// SignalSP sets the state of the SP (Serial Port) line to the specified level, controlling serial communication output.
+func (w *CIA2Socket) SignalSP( /*level*/ _ bool) {
 }
 
 // updateVA updates the VIC-memory bank based on the current states of prA and ddrA and triggers a corresponding VA change event.
@@ -121,15 +133,15 @@ func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 	//%10, 2: Bank 1: $4000-$7FFF, 16384-32767
 	//%11, 3: Bank 0: $0000-$3FFF, 0-16383 (standard)
 	va := (^(prA | (^ddrA))) & 3
-	w.vic.ChangedVA(va)
+	w.vicChangedVA(va)
 }
 
 // IRQTrigger triggers a Non-Maskable Interrupt (NMI) by invoking the NMITrigger method on the connected socket.
 func (w *CIA2Socket) IRQTrigger() {
-	w.connections.NMITrigger()
+	w.connectionsNMITrigger()
 }
 
 // IRQClearTrigger clears the NMI (Non-Maskable Interrupt) request by invoking the NMIClear method on the connections object.
 func (w *CIA2Socket) IRQClearTrigger() {
-	w.connections.NMIClearTrigger()
+	w.connectionsNMIClearTrigger()
 }

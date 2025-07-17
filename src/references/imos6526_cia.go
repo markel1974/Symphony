@@ -4,48 +4,52 @@ import (
 	"fmt"
 )
 
-// IMos6526Socket represents an interface to manage input/output operations and IRQ handling for a CIA component.
-// ReadPortA reads and returns port A data based on port and data direction registers.
-// ReadPortB reads and returns port B data based on port and data direction registers.
-// WritePortA writes to port A using the provided port and data direction register values.
-// WritePortB writes to port B using the provided port and data direction register values.
-// WriteDdrA writes data to the data direction register for port A.
-// WriteDdrB writes data to the data direction register for port B.
-// ReadSP retrieves the current level of the SP line.
-// WriteSP sets the level of the SP line.
-// IRQTrigger triggers an interrupt request on the system.
-// IRQClearTrigger clears any active interrupt requests.
+// IMos6526Socket defines the interface for socket communication with the MOS 6526 CIA chip for emulation or integration.
+// ReadPortA reads and returns the current state of Port A (8-bit).
+// ReadPortB reads and returns the current state of Port B (8-bit).
+// ReadSP reads and returns the state of the Serial Port input line.
+// SignalSP sets the level of the Serial Port input line based on the provided boolean value.
+// SignalPRA sets the value of Port A (8-bit) to the specified value.
+// SignalPRB sets the value of Port B (8-bit) to the specified value.
+// SignalDDRA sets the Data Direction Register for Port A (8-bit).
+// SignalDDRB sets the Data Direction Register for Port B (8-bit).
+// IRQTrigger signals an Interrupt Request (IRQ) to be triggered.
+// IRQClearTrigger clears any triggered Interrupt Request (IRQ).
 type IMos6526Socket interface {
-	ReadPortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8
+	ReadPortA(prA uint8, prB uint8, ddrA uint8, ddrB uint8) uint8
 
-	ReadPortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8) uint8
-
-	WritePortA(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
-
-	WritePortB(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
-
-	WriteDdrA(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
-
-	WriteDdrB(prA uint8, ddrA uint8, prB uint8, ddrB uint8)
+	ReadPortB(prA uint8, prB uint8, ddrA uint8, ddrB uint8) uint8
 
 	ReadSP() bool
 
-	WriteSP(level bool)
+	SignalSP(level bool)
+
+	SignalPRA(prA uint8)
+
+	SignalPRB(prB uint8)
+
+	SignalDDRA(ddrA uint8)
+
+	SignalDDRB(ddrB uint8)
 
 	IRQTrigger()
 
 	IRQClearTrigger()
 }
 
-// IMos6526 defines the interface for a CIA (Complex Interface Adapter) component in an emulator or system.
-// Setup initializes the CIA for operation, returning an error if initialization fails.
-// Bind links the CIA to a socket interface implementing the IMos6526Socket interface.
-// Connect establishes the necessary connections for the CIA within the system.
-// Reset reinitializes the CIA to its default state.
-// Emulate allows the CIA to execute its required operations in synchronization with the overall system.
-// Update performs periodic updates or state adjustments for the CIA during emulation.
-// WriteRegister writes the specified 8-bit data value to a given 16-bit register address.
-// ReadRegister fetches and returns the 8-bit data value from a given 16-bit register address.
+// IMos6526 represents the interface for the MOS 6526 CIA (Complex Interface Adapter) chip used in emulation contexts.
+// Setup initializes the MOS 6526 instance for operation, returning an error if initialization fails.
+// Bind links the MOS 6526 instance to a socket connection, facilitating communication and data exchange.
+// Connect establishes the runtime connections necessary for the MOS 6526 to interact with other system components.
+// Reset reinitializes the MOS 6526, clearing its internal state and returning it to its default configuration.
+// Emulate performs the simulation or emulation of the chip's behavior based on its current state and inputs.
+// Update triggers an internal update of the chip's state and outputs in response to the latest inputs.
+// WriteRegister writes an 8-bit value to a specified 16-bit address in the chip's register space.
+// ReadRegister retrieves an 8-bit value from a specified 16-bit address in the chip's register space.
+// ReadPRA reads and returns the 8-bit value stored in Port A Data Register (PRA).
+// ReadPRB reads and returns the 8-bit value stored in Port B Data Register (PRB).
+// ReadDDRA retrieves the 8-bit value from the Data Direction Register for Port A (DDRA).
+// ReadDDRB retrieves the 8-bit value from the Data Direction Register for Port B (DDRB).
 type IMos6526 interface {
 	Setup() error
 
@@ -62,6 +66,14 @@ type IMos6526 interface {
 	WriteRegister(addr uint16, data uint8)
 
 	ReadRegister(addr uint16) uint8
+
+	ReadPRA() uint8
+
+	ReadPRB() uint8
+
+	ReadDDRA() uint8
+
+	ReadDDRB() uint8
 }
 
 // IdIMos6526 generates a unique identifier string for the given IMos6526 interface, label, and instance number.

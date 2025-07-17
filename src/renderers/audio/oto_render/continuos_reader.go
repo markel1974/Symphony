@@ -26,7 +26,7 @@ type ContinuousReader struct {
 	interpolator *LinearInterpolation
 	chunkSize    int
 	doubleBuffer *[]float32
-	states       [0xf]func([]byte) (int, error)
+	states       [0xf + 1]func([]byte) (int, error)
 	lock         sync.RWMutex
 }
 

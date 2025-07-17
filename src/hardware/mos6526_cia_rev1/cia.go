@@ -41,8 +41,19 @@ type CIA struct {
 	sdrShiftRegister uint8 // Lo shift register interno
 	sdrShiftCounter  uint8 // Contatore per i bit (da 8 a 0)
 	todClockDivider  int
-	socket           references.IMos6526Socket
-	label            string
+	//socket           references.IMos6526Socket
+	label string
+
+	socketSignalSP        func(bool)
+	socketReadSP          func() bool
+	socketReadPortA       func(uint8, uint8, uint8, uint8) uint8
+	socketReadPortB       func(uint8, uint8, uint8, uint8) uint8
+	socketSignalPRA       func(uint8)
+	socketSignalPRB       func(uint8)
+	socketSignalDDRA      func(uint8)
+	socketSignalDDRB      func(uint8)
+	socketIRQTrigger      func()
+	socketIRQClearTrigger func()
 }
 
 // NewCIA creates and initializes a new instance of CIA, registering it with the provided factory, parent, and instance ID.
@@ -69,7 +80,16 @@ func (m *CIA) Setup() error {
 }
 
 func (m *CIA) Bind(socket references.IMos6526Socket) error {
-	m.socket = socket
+	m.socketSignalSP = socket.SignalSP
+	m.socketReadSP = socket.ReadSP
+	m.socketReadPortA = socket.ReadPortA
+	m.socketReadPortB = socket.ReadPortB
+	m.socketSignalPRA = socket.SignalPRA
+	m.socketSignalPRB = socket.SignalPRB
+	m.socketSignalDDRA = socket.SignalDDRA
+	m.socketSignalDDRB = socket.SignalDDRB
+	m.socketIRQTrigger = socket.IRQTrigger
+	m.socketIRQClearTrigger = socket.IRQClearTrigger
 	return nil
 }
 
@@ -138,12 +158,12 @@ func (m *CIA) timerAUnderflowSlot() {
 			// Send the most significant bit (MSB) to SP pin
 			// (bit 7 of our shift register)
 			msbIsSet := (m.sdrShiftRegister & 0x80) != 0
-			m.socket.WriteSP(msbIsSet)
+			m.socketSignalSP(msbIsSet)
 			// Shift bits left to prepare for next one
 			m.sdrShiftRegister <<= 1
 		} else {
 			// Read bit from SP pin
-			bit := m.socket.ReadSP()
+			bit := m.socketReadSP()
 			// Shift bits left
 			m.sdrShiftRegister <<= 1
 			// Insert new bit at the end (at LSB, bit 0)
@@ -195,14 +215,30 @@ func (m *CIA) Reset() {
 	m.tod.Reset()
 }
 
+func (m *CIA) ReadPRA() uint8 {
+	return m.prA
+}
+
+func (m *CIA) ReadPRB() uint8 {
+	return m.prB
+}
+
+func (m *CIA) ReadDDRA() uint8 {
+	return m.ddrA
+}
+
+func (m *CIA) ReadDDRB() uint8 {
+	return m.ddrB
+}
+
 // ReadRegister reads the value of the specified register from the CIA based on the provided address.
 func (m *CIA) ReadRegister(addr uint16) uint8 {
 	reg := addr & 0x0f
 	switch reg {
 	case 0x00:
-		return m.socket.ReadPortA(m.prA, m.ddrA, m.prB, m.ddrB)
+		return m.socketReadPortA(m.prA, m.prB, m.ddrA, m.ddrB)
 	case 0x01:
-		ret := m.socket.ReadPortB(m.prA, m.ddrA, m.prB, m.ddrB)
+		ret := m.socketReadPortB(m.prA, m.prB, m.ddrA, m.ddrB)
 		// TA/TB output to PB enabled
 		if m.timerA.HasPBOn() {
 			if m.timerA.ToggleModeApply(m.timerAIrqCycle) {
@@ -245,8 +281,7 @@ func (m *CIA) ReadRegister(addr uint16) uint8 {
 		icr := m.icr
 		m.icr = 0
 		if icr != 0 {
-			m.socket.IRQClearTrigger()
-			//fmt.Println("CLEARING ", m.id)
+			m.socketIRQClearTrigger()
 		}
 		return icr
 	case 0x0e:
@@ -263,16 +298,16 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	switch reg {
 	case 0x00:
 		m.prA = data
-		m.socket.WritePortA(m.prA, m.ddrA, m.prB, m.ddrB)
+		m.socketSignalPRA(m.prA)
 	case 0x01:
 		m.prB = data
-		m.socket.WritePortB(m.prA, m.ddrA, m.prB, m.ddrB)
+		m.socketSignalPRB(m.prB)
 	case 0x02:
 		m.ddrA = data
-		m.socket.WriteDdrA(m.prA, m.ddrA, m.prB, m.ddrB)
+		m.socketSignalDDRA(m.ddrA)
 	case 0x03:
 		m.ddrB = data
-		m.socket.WriteDdrB(m.prA, m.ddrA, m.prB, m.ddrB)
+		m.socketSignalDDRB(m.ddrB)
 	case 0x04:
 		m.timerA.SetTimerLow(data)
 	case 0x05:
@@ -334,7 +369,7 @@ func (m *CIA) irqTrigger() {
 	mask := m.irqMask & 0x1f
 	if (m.icr & mask) != 0 {
 		m.icr |= IRQOccurred
-		m.socket.IRQTrigger()
+		m.socketIRQTrigger()
 	}
 }
 
