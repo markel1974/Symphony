@@ -61,8 +61,6 @@ type IMos6526 interface {
 
 	Emulate()
 
-	Update()
-
 	WriteRegister(addr uint16, data uint8)
 
 	ReadRegister(addr uint16) uint8

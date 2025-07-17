@@ -107,16 +107,9 @@ func (m *CIA) Connect() error {
 	return nil
 }
 
+// Internal returns a fixed boolean value, used as a placeholder or representation of internal state.
 func (m *CIA) Internal() bool {
 	return false
-}
-
-// Update checks the TOD alarm condition against the RTC, triggers an IRQ if conditions match, and sets the alarm flag.
-func (m *CIA) Update() {
-	//if m.tod.Update(m.timerA.GetRTC()) {
-	//	m.icr |= IRQTODAlarmEqual
-	//	m.irqTrigger()
-	//}
 }
 
 // Emulate performs one emulation cycle, updating internal state, timers, and their interactions without triggering IRQs.
@@ -220,18 +213,22 @@ func (m *CIA) Reset() {
 	m.tod.Reset()
 }
 
+// ReadPRA returns the current value of the port A register (PRA) of the CIA.
 func (m *CIA) ReadPRA() uint8 {
 	return m.prA
 }
 
+// ReadPRB returns the current value of the port B register (PRB) of the CIA.
 func (m *CIA) ReadPRB() uint8 {
 	return m.prB
 }
 
+// ReadDDRA reads the value of the Data Direction Register A (DDRA), which determines input/output configuration for port A.
 func (m *CIA) ReadDDRA() uint8 {
 	return m.ddrA
 }
 
+// ReadDDRB reads and returns the current value of the data direction register B (DDRB) in the CIA.
 func (m *CIA) ReadDDRB() uint8 {
 	return m.ddrB
 }

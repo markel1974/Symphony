@@ -170,7 +170,7 @@ func (w *CIA1Socket) Update() {
 			w.revMatrix[revM] |= 1 << keyM
 		}
 	}
-	w.IMos6526.Update()
+	//w.IMos6526.Update()
 }
 
 // ReadPortA reads data from port A by combining the given parameters with internal joystick states and matrices.
