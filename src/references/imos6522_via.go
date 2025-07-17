@@ -16,9 +16,9 @@ import (
 // IRQClearTrigger clears the IRQ trigger state.
 // IRQTrigger triggers an IRQ signal.
 type IMos6522Socket interface {
-	ReadPRA(uint8, uint8) uint8
+	ReadPortA() uint8
 
-	ReadPRB(uint8, uint8) uint8
+	ReadPortB() uint8
 
 	ReadCA1() bool
 
@@ -28,33 +28,35 @@ type IMos6522Socket interface {
 
 	ReadPB6() bool
 
-	WritePRA(uint8, uint8)
+	SignalPRA(uint8)
 
-	WritePRB(uint8, uint8)
+	SignalPRB(uint8)
 
-	WriteDDRA(uint8, uint8)
+	SignalDDRA(uint8)
 
-	WriteDDRB(uint8, uint8)
+	SignalDDRB(uint8)
 
-	WriteCA2(bool)
+	SignalCA2(bool)
 
-	WriteCB2(bool)
+	SignalCB2(bool)
 
 	IRQClearTrigger()
 
 	IRQTrigger()
 }
 
-// IMos6522 defines an interface for a Versatile Interface Adapter (VIA) with setup, binding, and signaling functionalities.
-// Setup initializes the VIA and prepares it for operation.
-// Bind connects the VIA to a given IMos6522Socket for external interactions.
-// Connect establishes any required connections after initialization.
-// Reset reinitializes the VIA to its default state.
-// Emulate processes emulation cycles for the VIA.
-// ReadByte reads an 8-bit value from the specified memory address.
-// WriteByte writes an 8-bit value to the specified memory address.
-// SignalPRA triggers a signal specific to Port A.
-// SignalPRB triggers a signal specific to Port B.
+// IMos6522 represents the interface for a MOS 6522 Versatile Interface Adapter (VIA) implementation.
+// Setup initializes the VIA component and prepares it for operation.
+// Bind connects the VIA to a compatible IMos6522Socket for interaction.
+// Connect establishes runtime connections for the VIA to integrate into the system.
+// Reset reinitializes the VIA's internal state to its default configuration.
+// Emulate executes the next cycle or operation of the VIA for simulation purposes.
+// ReadByte reads an 8-bit value from the specified address in the VIA's memory map.
+// WriteByte writes an 8-bit value to the specified address in the VIA's memory map.
+// ReadDDRA returns the value of the data direction register A.
+// ReadDDRB returns the value of the data direction register B.
+// ReadPRA reads the data value of port A.
+// ReadPRB reads the data value of port B.
 type IMos6522 interface {
 	Setup() error
 
@@ -70,11 +72,13 @@ type IMos6522 interface {
 
 	WriteByte(addr uint16, data uint8)
 
-	SignalPRA()
+	ReadDDRA() uint8
 
-	SignalPRB()
+	ReadDDRB() uint8
 
-	//ByteReady() bool
+	ReadPRA() uint8
+
+	ReadPRB() uint8
 }
 
 // IdIMos6522 generates a unique identifier for a VIA component based on the provided label, instance, and interface name.

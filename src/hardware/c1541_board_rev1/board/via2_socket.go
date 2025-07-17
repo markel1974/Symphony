@@ -18,7 +18,7 @@ const ledControl = uint8(0x8)
 const photocellControl = uint8(0x10)
 
 // densityControl represents a constant value of type uint8 used for defining density settings or controls.
-const densityControl = uint8(0x60)
+//const densityControl = uint8(0x60)
 
 // dataArrivedControl defines a bitmask used to indicate the arrival of data in specific operations or controls.
 const dataArrivedControl = uint8(0x80)
@@ -107,14 +107,15 @@ func (v *VIA2Socket) IRQTrigger() {
 	v.connections.IRQTrigger(v.intrId)
 }
 
-// ReadPRA reads a byte from the Mechanic through the VIA2Socket connection and returns the retrieved value.
-func (v *VIA2Socket) ReadPRA(_ uint8, _ uint8) uint8 {
+// ReadPortA reads an 8-bit value from Port A using the associated mechanic's ReadByte method and returns the result.
+func (v *VIA2Socket) ReadPortA() uint8 {
 	d := v.mec.ReadByte()
 	return d
 }
 
-// ReadPRB reads the PRB register, evaluates the sync state of the mechanic, and combines it with the photocell control state.
-func (v *VIA2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
+// ReadPortB reads the current state of Port B, applying control masks and the photocell state, and returns the result.
+func (v *VIA2Socket) ReadPortB() uint8 {
+	prb := v.ReadPRB()
 	p := prb & noPhotocellControl
 	photocellState := v.mec.WriteProtectionState()
 	if v.mec.SyncFound() {
@@ -124,19 +125,39 @@ func (v *VIA2Socket) ReadPRB(prb uint8, _ uint8) uint8 {
 	}
 }
 
-// WritePRA writes the provided value to the Peripheral Register A (PRA) using the mechanic's WriteByte function.
-func (v *VIA2Socket) WritePRA(pra uint8, _ uint8) {
+// ReadCA1 returns the state of the CA1 control line as a boolean value.
+func (v *VIA2Socket) ReadCA1() bool {
+	return false
+}
+
+// ReadCB1 returns the current state of the CB1 control line as a boolean value.
+func (v *VIA2Socket) ReadCB1() bool {
+	return false
+}
+
+// ReadCB2 checks and returns the state of the Control Register B2 signal line as a boolean value.
+func (v *VIA2Socket) ReadCB2() bool {
+	return false
+}
+
+// ReadPB6 reads the state of the PB6 pin from the VIA2Socket and returns a boolean value indicating its state.
+func (v *VIA2Socket) ReadPB6() bool {
+	return false
+}
+
+// SignalPRA writes the provided value to the Peripheral Register A (PRA) using the mechanic's WriteByte function.
+func (v *VIA2Socket) SignalPRA(pra uint8) {
 	v.mec.WriteByte(pra)
 }
 
-// WritePRB updates the PRB register and triggers actions based on the change in its bits compared to the previous value.
+// SignalPRB updates the PRB register and triggers actions based on the change in its bits compared to the previous value.
 // Bits [0,1]: Controls head step direction; increasing or decreasing the value moves the head up or down respectively.
 // Bit [2]: Controls motor state; 0 = Off, 1 = On.
 // Bit [3]: Controls LED state; 0 = Off, 1 = On.
 // Bit [4]: Indicates write protect status; 0 = Disk protected, 1 = Disk not protected (not fully implemented).
 // Bits [5-6]: Represents data density levels (not fully implemented).
 // Bit [7]: Indicates whether SYNC or data bytes are being read (not fully implemented).
-func (v *VIA2Socket) WritePRB(prb uint8, _ uint8) {
+func (v *VIA2Socket) SignalPRB(prb uint8) {
 	prevPrb := v.prbPrev
 	v.prbPrev = prb
 	m := prevPrb ^ prb
@@ -191,21 +212,23 @@ func (v *VIA2Socket) WritePRB(prb uint8, _ uint8) {
 	//}
 }
 
-// WriteDDRA updates the Data Direction Register A (DDRA) with specified values, affecting the VIA port configuration.
-func (v *VIA2Socket) WriteDDRA(_ uint8, _ uint8) {
+// SignalDDRA updates the Data Direction Register A (DDRA) with specified values, affecting the VIA port configuration.
+func (v *VIA2Socket) SignalDDRA(_ uint8) {
 
 }
 
-// WriteDDRB writes data to the Data Direction Register B (DDRB) of the VIA2Socket, configuring the I/O port direction.
-func (v *VIA2Socket) WriteDDRB(_ uint8, _ uint8) {
+// SignalDDRB writes data to the Data Direction Register B (DDRB) of the VIA2Socket, configuring the I/O port direction.
+func (v *VIA2Socket) SignalDDRB(_ uint8) {
 
 }
 
-func (v *VIA2Socket) WriteCA2(w bool) {
+// SignalCA2 sets the CA2 control line state by writing a boolean value to the mechanic's SetWrite method.
+func (v *VIA2Socket) SignalCA2(w bool) {
 	v.mec.SetWrite(w)
 }
 
-func (v *VIA2Socket) WriteCB2(bool) {
+// SignalCB2 updates or signals the CB2 control line with the provided boolean value for the VIA2Socket.
+func (v *VIA2Socket) SignalCB2(_ bool) {
 
 }
 
@@ -216,21 +239,5 @@ func (v *VIA2Socket) ByteReady() bool {
 	if (pcr & 0x0e) == 0x0e {
 		return v.mec.ByteReady()
 	}
-	return false
-}
-
-func (v *VIA2Socket) ReadCA1() bool {
-	return false
-}
-
-func (v *VIA2Socket) ReadCB1() bool {
-	return false
-}
-
-func (v *VIA2Socket) ReadCB2() bool {
-	return false
-}
-
-func (v *VIA2Socket) ReadPB6() bool {
 	return false
 }

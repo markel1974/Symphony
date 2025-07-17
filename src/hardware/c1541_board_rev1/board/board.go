@@ -200,7 +200,7 @@ func (m *Board) GetDeviceNumber() uint8 {
 // Parameters:
 // - newAtn: Indicates whether the ATN signal is active.
 func (m *Board) AtnStateChanged(newAtn bool) {
-	m.via1Socket.SignalPRB()
+	m.via1Socket.EmitPRB()
 	if !newAtn {
 		//Interrupt by negative edge of ATN on IEC bus
 		//https://sta.c64.org/cbm1541mem.html

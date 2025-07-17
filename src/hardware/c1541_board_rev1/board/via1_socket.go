@@ -80,6 +80,100 @@ func (v *VIA1Socket) IRQTrigger() {
 	v.connections.IRQTrigger(v.intrId)
 }
 
+// ReadPortA reads from Port A of the VIA1 socket and always returns the value 0xff, indicating response for track 0 sensor.
+func (v *VIA1Socket) ReadPortA() uint8 {
+	//We ha respond 0xff for track 0 sensor
+	return 0xff
+}
+
+// ReadPortB computes the value to return based on the current PRB state, dip switch configuration, and PRB filter rules.
+func (v *VIA1Socket) ReadPortB() uint8 {
+	prb := v.ReadPRB()
+	//bit 0 - 2 - 7 = 0x85
+	const bits = uint8((1 << 0) | (1 << 2) | (1 << 7))
+	data := v.iec.PeripheralRead()
+	p := (prb | v.dipSwitch) & v.prbFilter
+	ret := (p | data) ^ bits //0x85
+	return ret
+}
+
+// SignalPRA writes data to Peripheral Register A (PRA), performing any necessary updates or signaling based on input values.
+func (v *VIA1Socket) SignalPRA(_ uint8) {
+}
+
+// SignalPRB writes the given values to the peripheral using prb and ddrb parameters for data and direction configuration.
+func (v *VIA1Socket) SignalPRB(prb uint8) {
+	ddrb := v.ReadDDRB()
+	v.peripheralWrite(prb, ddrb)
+}
+
+// SignalDDRA updates the Data Direction Register A (DDRA) with the provided values.
+func (v *VIA1Socket) SignalDDRA(_ uint8) {
+}
+
+// SignalDDRB performs a write operation to the Data Direction Register B (DDRB) and invokes the peripheral write method.
+func (v *VIA1Socket) SignalDDRB(ddrb uint8) {
+	prb := v.ReadPRB()
+	v.peripheralWrite(prb, ddrb)
+}
+
+// SignalCA2 sets the state of the CA2 pin based on the provided boolean value.
+func (v *VIA1Socket) SignalCA2(w bool) {
+}
+
+// SignalCB2 sets or clears the CB2 control line based on the provided boolean value.
+func (v *VIA1Socket) SignalCB2(bool) {
+
+}
+
+// ReadCA1 checks and returns the current state of the CA1 input signal for the VIA1 socket as a boolean value.
+func (v *VIA1Socket) ReadCA1() bool {
+	return false
+}
+
+// ReadCB1 checks the current state of the CB1 line on the VIA1Socket and returns its value as a boolean.
+func (v *VIA1Socket) ReadCB1() bool {
+	return false
+}
+
+// ReadCB2 checks the state of the CB2 signal line on the VIA1 socket and returns its boolean status.
+func (v *VIA1Socket) ReadCB2() bool {
+	return false
+}
+
+// ReadPB6 reads the state of the PB6 pin from the VIA2Socket and returns it as a boolean value.
+func (v *VIA1Socket) ReadPB6() bool {
+	return false
+}
+
+// EmitPRB reads the current PRB value and signals it, ensuring proper communication with the connected peripheral.
+func (v *VIA1Socket) EmitPRB() {
+	prb := v.ReadPRB()
+	v.SignalPRB(prb)
+}
+
+// peripheralWrite computes the write data for the peripheral bus and sends it to the corresponding device via IIec.
+func (v *VIA1Socket) peripheralWrite(prb uint8, ddrb uint8) {
+	p := prb | v.dipSwitch
+	np := ^p
+	wd := np & ddrb
+
+	//const DeviceWriteData = 0x02 // DATA_OUT
+	//const DeviceWriteClk = 0x08
+	//const DeviceWriteAtn = 0x10
+	//d := DeviceWriteData & wd
+	//c := DeviceWriteClk & wd
+	//a := DeviceWriteAtn & wd
+	//fmt.Printf("c1541 transmitting 0x%x - atn: 0x%x, clock: 0x%x, data: 0x%x\n", wd, a, c, d)
+	//0x1 use sidecar | use external atn a | external atn a
+	const nAtnBit = ^(references.IECAtnABit)
+	sidecarData := references.IECSidecarEnabled | references.IECSidecarAtnAEnabled | (uint16(wd&references.IECAtnABit) << 8)
+	wd &= nAtnBit
+	data := sidecarData | uint16(wd)
+
+	v.iec.PeripheralWrite(v.connections.GetDeviceNumber(), data)
+}
+
 // createFilter configures the appropriate bit values for the `prbFilter` field based on specific hardware function requirements.
 func (v *VIA1Socket) createPRBFilter() uint8 {
 	prbFilter := uint8(0)
@@ -115,90 +209,4 @@ func (v *VIA1Socket) createDipSwitch(deviceNumber uint8) uint8 {
 		dipSwitch |= 0 << 6
 	}
 	return dipSwitch
-}
-
-// ReadPRA reads a value from Peripheral Register A (PRA) and always returns 0xff to maintain compatibility with 1541C ROMs.
-func (v *VIA1Socket) ReadPRA(_ uint8, _ uint8) uint8 {
-	//We ha respond 0xff for track 0 sensor
-	return 0xff
-}
-
-// ReadPRB reads the Peripheral Register B (PRB) value, applies filters and dipswitch adjustments, then modifies the result.
-func (v *VIA1Socket) ReadPRB(prb uint8, _ uint8) uint8 {
-	//bit 0 - 2 - 7 = 0x85
-	const bits = uint8((1 << 0) | (1 << 2) | (1 << 7))
-	data := v.iec.PeripheralRead()
-	p := (prb | v.dipSwitch) & v.prbFilter
-	ret := (p | data) ^ bits //0x85
-	return ret
-}
-
-// WritePRA writes data to Peripheral Register A (PRA), performing any necessary updates or signaling based on input values.
-func (v *VIA1Socket) WritePRA(_ uint8, _ uint8) {
-}
-
-// WritePRB writes the given values to the peripheral using prb and ddrb parameters for data and direction configuration.
-func (v *VIA1Socket) WritePRB(prb uint8, ddrb uint8) {
-	v.peripheralWrite(prb, ddrb)
-}
-
-// WriteDDRA updates the Data Direction Register A (DDRA) with the provided values.
-func (v *VIA1Socket) WriteDDRA(_ uint8, _ uint8) {
-
-}
-
-// WriteDDRB performs a write operation to the Data Direction Register B (DDRB) and invokes the peripheral write method.
-func (v *VIA1Socket) WriteDDRB(prb uint8, ddrb uint8) {
-	v.peripheralWrite(prb, ddrb)
-}
-
-// peripheralWrite computes the write data for the peripheral bus and sends it to the corresponding device via IIec.
-func (v *VIA1Socket) peripheralWrite(prb uint8, ddrb uint8) {
-	p := prb | v.dipSwitch
-	np := ^p
-	wd := np & ddrb
-
-	//const DeviceWriteData = 0x02 // DATA_OUT
-	//const DeviceWriteClk = 0x08
-	//const DeviceWriteAtn = 0x10
-	//d := DeviceWriteData & wd
-	//c := DeviceWriteClk & wd
-	//a := DeviceWriteAtn & wd
-	//fmt.Printf("c1541 transmitting 0x%x - atn: 0x%x, clock: 0x%x, data: 0x%x\n", wd, a, c, d)
-	//0x1 use sidecar | use external atn a | external atn a
-	const nAtnBit = ^(references.IECAtnABit)
-	sidecarData := references.IECSidecarEnabled | references.IECSidecarAtnAEnabled | (uint16(wd&references.IECAtnABit) << 8)
-	wd &= nAtnBit
-	data := sidecarData | uint16(wd)
-
-	v.iec.PeripheralWrite(v.connections.GetDeviceNumber(), data)
-}
-
-// WriteCA2 sets the state of the CA2 pin based on the provided boolean value.
-func (v *VIA1Socket) WriteCA2(w bool) {
-}
-
-// WriteCB2 sets or clears the CB2 control line based on the provided boolean value.
-func (v *VIA1Socket) WriteCB2(bool) {
-
-}
-
-// ReadCA1 checks and returns the current state of the CA1 input signal for the VIA1 socket as a boolean value.
-func (v *VIA1Socket) ReadCA1() bool {
-	return false
-}
-
-// ReadCB1 checks the current state of the CB1 line on the VIA1Socket and returns its value as a boolean.
-func (v *VIA1Socket) ReadCB1() bool {
-	return false
-}
-
-// ReadCB2 checks the state of the CB2 signal line on the VIA1 socket and returns its boolean status.
-func (v *VIA1Socket) ReadCB2() bool {
-	return false
-}
-
-// ReadPB6 reads the state of the PB6 pin from the VIA2Socket and returns it as a boolean value.
-func (v *VIA1Socket) ReadPB6() bool {
-	return false
 }

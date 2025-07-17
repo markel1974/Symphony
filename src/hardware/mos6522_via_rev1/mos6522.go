@@ -6,8 +6,6 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// see drive/iecieee/via2d.c [store_pra - store_prb]
-// 1541, 1541II, 1571 and 2031
 // see https://sta.c64.org/cbm1541mem.html
 
 // VIA represents a versatile interface adapter used for I/O, timing, and control in a system.
@@ -37,8 +35,8 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 	v := &VIA{
 		BaseComponent: component.NewBaseComponent(),
 		pra:           0,
-		ddra:          0,
 		prb:           0,
+		ddra:          0,
 		ddrb:          0,
 	}
 	v.BaseComponent.Register(factory, parent, Identifier(), v, references.IdIMos6522(v, label, instance))
@@ -48,13 +46,15 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 	return v
 }
 
+// Setup initializes the VIA component, preparing it for operation and ensuring all dependencies are properly configured.
 func (v *VIA) Setup() error {
 	return nil
 }
 
+// Bind assigns an IMos6522Socket to the VIA and initializes its shift register with the socket's CB2 read/write callbacks.
 func (v *VIA) Bind(socket references.IMos6522Socket) error {
 	v.socket = socket
-	v.shiftRegister.Initialize(v.socket.ReadCB2, v.socket.WriteCB2)
+	v.shiftRegister.Initialize(v.socket.ReadCB2, v.socket.SignalCB2)
 	return nil
 }
 
@@ -63,6 +63,7 @@ func (v *VIA) Connect() error {
 	return nil
 }
 
+// Internal determines if the VIA component should operate in internal mode, returning false in its current implementation.
 func (v *VIA) Internal() bool {
 	return false
 }
@@ -91,9 +92,9 @@ func (v *VIA) ReadByte(addr uint16) uint8 {
 	reg := addr & 0x0f
 	switch reg {
 	case 0x0: //0x1800 | 0x1c00
-		return v.socket.ReadPRB(v.prb, v.ddrb)
+		return v.socket.ReadPortB()
 	case 0x1: //0x1801 | 0x1c01
-		return v.socket.ReadPRA(v.pra, v.ddra)
+		return v.socket.ReadPortA()
 	case 0x2: //0x1802 | 0x1c02
 		return v.ddrb
 	case 0x3: //0x1803 | 0x1c03
@@ -128,7 +129,7 @@ func (v *VIA) ReadByte(addr uint16) uint8 {
 		return v.ier | 0x80
 	case 0xf: // 0x180f | 0x1c0f
 		//TODO Implement not ok!
-		return v.socket.ReadPRA(v.pra, v.ddra)
+		return v.socket.ReadPortA()
 	default:
 		fmt.Printf("%s READ UNKNOWN - %x\n", v.GetId(), addr)
 		return 0
@@ -141,32 +142,32 @@ func (v *VIA) WriteByte(addr uint16, data uint8) {
 	switch reg {
 	case 0x0: //0x1800:
 		v.prb = data
-		v.socket.WritePRB(v.prb, v.ddrb)
+		v.socket.SignalPRB(v.prb)
 	case 0x1: //0x1801:
 		v.pra = data
-		v.socket.WritePRA(v.pra, v.ddra)
+		v.socket.SignalPRA(v.pra)
 	case 0x2: //0x1802:
 		v.ddrb = data
-		v.socket.WriteDDRB(v.prb, v.ddrb)
+		v.socket.SignalDDRB(v.ddrb)
 	case 0x3: //0x1803:
 		v.ddra = data
-		v.socket.WriteDDRA(v.pra, v.ddra)
+		v.socket.SignalDDRA(v.ddra)
 	case 0x4: //0x1804:
-		v.timer0.SetLatchLow(data) //v.t1l = (v.t1l & 0xff00) | uint16(data)
+		v.timer0.SetLatchLow(data)
 	case 0x5: //0x1805:
-		v.timer0.SetLatchHigh(data) //v.t1l = (v.t1l & 0xff) | (uint16(data) << 8)
+		v.timer0.SetLatchHigh(data)
 		v.ifr &= 0xbf
-		v.timer0.Load() //v.t1c = v.t1l
+		v.timer0.Load()
 	case 0x6: //0x1806:
-		v.timer0.SetLatchLow(data) //v.t1l = (v.t1l & 0xff00) | uint16(data)
+		v.timer0.SetLatchLow(data)
 	case 0x7: //0x1807:
-		v.timer0.SetLatchHigh(data) //v.t1l = (v.t1l & 0xff) | (uint16(data) << 8)
+		v.timer0.SetLatchHigh(data)
 	case 0x8: //0x1808:
-		v.timer1.SetLatchLow(data) //v.t2l = (v.t2l & 0xff00) | uint16(data)
+		v.timer1.SetLatchLow(data)
 	case 0x9: //0x1809:
-		v.timer1.SetLatchHigh(data) // v.t2l = (v.t2l & 0xff) | (uint16(data) << 8)
+		v.timer1.SetLatchHigh(data)
 		v.ifr &= 0xdf
-		v.timer1.Load() //v.t2c = v.t2l
+		v.timer1.Load()
 	case 0xa: //0x180a:
 		v.shiftRegister.Set(data)
 	case 0xb: //0x180b:
@@ -178,9 +179,9 @@ func (v *VIA) WriteByte(addr uint16, data uint8) {
 		v.pcr = data
 		headControl := v.pcr & 0xE0
 		if headControl == 0xC0 {
-			v.socket.WriteCA2(true)
+			v.socket.SignalCA2(true)
 		} else {
-			v.socket.WriteCA2(false)
+			v.socket.SignalCA2(false)
 		}
 		//NOT CONNECTED
 		//if (v.pcr & 0x0E) == 0x0C {
@@ -198,7 +199,7 @@ func (v *VIA) WriteByte(addr uint16, data uint8) {
 		}
 	case 0xf: //0x180f:
 		v.pra = data
-		v.socket.WritePRA(v.pra, v.ddra)
+		v.socket.SignalPRA(v.pra) //, v.ddra)
 	default:
 		fmt.Printf("%s WRITE UNKNOWN - %x\n", v.GetId(), addr)
 	}
@@ -273,14 +274,24 @@ func (v *VIA) EmulationRequired() bool {
 	return true
 }
 
-// SignalPRA writes the current values of PRA and DDRA to the connected socket via the WritePRA method.
-func (v *VIA) SignalPRA() {
-	v.socket.WritePRA(v.pra, v.ddra)
+// ReadDDRA returns the current value of the Data Direction Register A (DDRA) of the VIA.
+func (v *VIA) ReadDDRA() uint8 {
+	return v.ddra
 }
 
-// SignalPRB sends the current contents of the PRB and DDRB registers to the connected IMos6522Socket.
-func (v *VIA) SignalPRB() {
-	v.socket.WritePRB(v.prb, v.ddrb)
+// ReadDDRB returns the current value of the Data Direction Register A (DDRB) of the VIA.
+func (v *VIA) ReadDDRB() uint8 {
+	return v.ddrb
+}
+
+// ReadPRA returns the current value of the Peripheral Register A (PRA) from the VIA.
+func (v *VIA) ReadPRA() uint8 {
+	return v.pra
+}
+
+// ReadPRB returns the current value of the Peripheral Register B (PRB) from the VIA.
+func (v *VIA) ReadPRB() uint8 {
+	return v.prb
 }
 
 // handleHandshakeInput manages edge detection for control pins CA1 and CB1, updates interrupt flags, and handles port latching.
@@ -299,7 +310,7 @@ func (v *VIA) handleHandshakeInput() {
 		v.ifr |= 0x02
 		// If latching on Port A is enabled (bit 0 of ACR = 0), "freeze" the port value.
 		if (v.acr & 0x01) == 0 {
-			v.pra = v.socket.ReadPRA(v.pra, v.ddra)
+			v.pra = v.socket.ReadPortA()
 		}
 		// If the CA1 interrupt is enabled (bit 1 of IER), trigger the IRQ.
 		if (v.ier & 0x02) != 0 {
@@ -321,7 +332,7 @@ func (v *VIA) handleHandshakeInput() {
 		v.ifr |= 0x10
 		// If Port B latching is enabled (bit 4 of ACR = 0), "freeze" the port value.
 		if (v.acr & 0x10) == 0 {
-			v.prb = v.socket.ReadPRB(v.prb, v.ddrb)
+			v.prb = v.socket.ReadPortB()
 		}
 		// If CB1 interrupt is enabled (bit 4 of IER), trigger the IRQ.
 		if (v.ier & 0x10) != 0 {

@@ -1,95 +1,63 @@
-# Package mos6522
+# Component: MOS 6522 Versatile Interface Adapter (VIA)
 
-This package (`src/hardware/mos6522`) provides an emulation of the **MOS Technology 6522 Versatile Interface Adapter (VIA)** chip. The VIA is a common peripheral IC used in many 8-bit systems, including the Commodore 1541 disk drive (where two VIAs are present, typically mapped at `$1800` or `$1C00`). It provides parallel I/O ports, timers, and a shift register.
+## 1. Design Philosophy: A Reusable Hardware Component
 
-## Overview
+This package provides a high-fidelity, component-based implementation of the **MOS Technology 6522 Versatile Interface Adapter (VIA)** chip. It is designed from the ground up to function as a modular, reusable "building block" within the Symphony emulation framework.
 
-The `mos6522` package implements the core functionalities of the VIA, including:
+The core principle of this implementation is the strict **separation of the generic chip logic from its specific hardware context**. The `VIA` component itself is "agnostic"—it perfectly emulates the internal registers, timers, and logic of a real 6522, but it has no knowledge of what it is connected to.
 
-* **Parallel I/O Ports:** Emulation of Port A (PRA) and Port B (PRB), including their corresponding Data Direction Registers (DDRA, DDRB). Interaction with external hardware connected to these ports is **delegated** to an `IVIASocket` interface provided during initialization.
-* **Timers:**
-  * **Timer 1 (T1):** 16-bit timer operating in one-shot or continuous (free-running) mode, capable of generating interrupts on underflow and potentially controlling output on PB7.
-  * **Timer 2 (T2):** 16-bit timer operating in one-shot mode (timed interval) or pulse counting mode (counting pulses on PB6). Capable of generating interrupts on underflow.
-* **Shift Register (SR):** Basic register implementation (full serial shifting logic might be simplified or depend on external clocking not shown in `Emulate`).
-* **Control Registers:** Emulation of the Auxiliary Control Register (ACR) and Peripheral Control Register (PCR) which configure timer modes, shift register operation, and handshake lines (CA1, CA2, CB1, CB2 - *Note: Handshake line logic might be simplified or delegated*).
-* **Interrupts:** Emulation of the Interrupt Flag Register (IFR) and Interrupt Enable Register (IER). Interrupt generation is triggered based on timer underflows (T1, T2) and potentially other sources (SR, handshake lines - *needs verification*), and the final IRQ signal is managed via the `IVIASocket`.
+Its purpose and function are only defined at runtime when it is "plugged into" a specific **Socket**. This architectural choice makes the `VIA` component a true virtual chip, ready to be integrated into any simulated hardware board that requires its functionality.
 
-## `VIA` Struct
+---
+## 2. The Virtual Assembly Process
 
-The core emulation logic is encapsulated in the `VIA` struct:
+The `VIA` component is designed to be part of a "virtual assembly" line, managed by the `Board` that hosts it.
 
-```go
-type VIA struct {
-    *component.BaseComponent // Embeds base component features
-    pra    uint8             // Port A Data Register (ORA/IRA)
-    ddra   uint8             // Port A Data Direction Register (DDRA)
-    prb    uint8             // Port B Data Register (ORB/IRB)
-    ddrb   uint8             // Port B Data Direction Register (DDRB)
-    t1c    uint16            // Timer 1 Counter (read)
-    t1l    uint16            // Timer 1 Latch (write)
-    t2c    uint16            // Timer 2 Counter (read)
-    t2l    uint16            // Timer 2 Latch (write)
-    sr     uint8             // Shift Register
-    acr    uint8             // Auxiliary Control Register
-    pcr    uint8             // Peripheral Control Register
-    ifr    uint8             // Interrupt Flag Register (pending IRQs)
-    ier    uint8             // Interrupt Enable Register (IRQ mask)
-    socket references.IVIASocket // Interface to the specific hardware connection/board
-}
-```
-## Key Methods
+1.  **Instantiation**: A generic `VIA` component is created by its factory. At this point, it is a standalone object.
+2.  **The Socket (`IMos6522Socket`)**: The `Board` creates a specific "socket" (e.g., a `VIA1Socket` or `VIA2Socket`). This socket implements the `IMos6522Socket` interface and contains all the logic that is specific to that VIA's role on the board—controlling the IEC bus, managing drive mechanics, etc.
+3.  **Binding (`Bind`)**: The assembly is completed when the `VIA` component's `Bind` method is called, passing in the socket. This "plugs" the generic chip into its specific role, connecting its internal logic to the outside world through the socket's implementation.
 
-* **`NewVIA(...) *VIA`:** Constructor. Initializes the VIA struct with default register values (mostly 0) and registers it within the Symphony component tree using `BaseComponent.Register`.
-* **`Setup() error`:** Part of the `IHardware` interface. Handles component-specific setup after all components exist but before connections.
-* **`Bind(socket references.IVIASocket) error`:** Called during the connection phase (likely by the socket's `Wire` method). Receives and stores the `IVIASocket` interface, providing the link for the VIA to interact with the external world (read/write ports, signal IRQs).
-* **`Connect() error`:** Part of the `IHardware` interface. Handles final connection steps after `Bind`.
-* **`Reset()`:** Resets all internal VIA registers to 0.
-* **`ReadByte(addr uint16) uint8`:** Handles reads from the VIA's 16 memory-mapped registers (offset `addr & 0x0f`).
-  * **Ports A/B (`$x0`, `$x1`, `$xF`):** Delegates reading the *effective* port state (considering input pins and DDR) to `socket.ReadPRA/B()`.
-  * **DDRs (`$x2`, `$x3`):** Returns the current value of `ddra` or `ddrb`.
-  * **Timers (`$x4`-`$x9`):** Returns the low/high bytes of timer counters or latches. Reading T1 counter low (`$x4`) or T2 counter (`$x8`) also clears their respective interrupt flags in the IFR.
-  * **SR (`$xA`):** Returns the Shift Register value.
-  * **ACR/PCR (`$xB`, `$xC`):** Returns the control register values.
-  * **IFR (`$xD`):** Returns the Interrupt Flag Register. If any enabled interrupt is pending, sets the top bit (`0x80`). Reading IFR *clears* all pending flags in `ifr` and signals `socket.IRQClearTrigger()`.
-  * **IER (`$xE`):** Returns the Interrupt Enable Register (with bit 7 always set).
-* **`WriteByte(addr uint16, data uint8)`:** Handles writes to the VIA's registers.
-  * **Ports A/B (`$x0`, `$x1`, `$xF`):** Updates the internal data register (`pra`/`prb`) and calls `socket.WritePRA/B()` to allow the socket to handle the actual output based on DDR.
-  * **DDRs (`$x2`, `$x3`):** Updates `ddra`/`ddrb` and calls `socket.WriteDDRA/B()`.
-  * **Timers (`$x4`-`$x9`):** Writes to the low/high bytes of the timer latches (`t1l`, `t2l`). Writing to the high byte of T1 (`$x5`) also transfers the latch to the counter (`t1c`) and clears the T1 interrupt flag. Writing to T2 high byte (`$x9`) does similarly for T2.
-  * **SR (`$xA`):** Writes to the Shift Register.
-  * **ACR/PCR (`$xB`, `$xC`):** Writes to the control registers.
-  * **IFR (`$xD`):** Writing clears bits in the IFR corresponding to the bits set in `data`.
-  * **IER (`$xE`):** Writing with bit 7 set *enables* interrupts specified by bits 0-6. Writing with bit 7 clear *disables* interrupts specified by bits 0-6. Calls `irqTrigger()` after update.
-* **`Emulate()`:** Simulates one clock cycle for the VIA.
-  * **Timer 1:** Decrements `t1c`. Handles underflow (sets IFR bit 6), optionally reloads from latch (if ACR bit 6 is set), and triggers IRQ check.
-  * **Timer 2:** Decrements `t2c` (if not in pulse counting mode - ACR bit 5 is 0). Handles underflow (sets IFR bit 5) and triggers IRQ check.
-* **`EmulationRequired()`:** Returns `true` because the timers need to be clocked.
-* **`SignalPRA()` / `SignalPRB()`:** Methods to allow the VIA to signal its socket about changes to Port A/B output state (likely called from `WriteByte` for registers `$x0`, `$x1`, `$xF`).
-* **`ByteReady()`:** Checks PCR bits to determine serial port readiness.
-* **`irqTrigger()`:** Checks IFR against IER and calls `socket.IRQTrigger()` if an enabled interrupt is pending.
-* **`irqUpdateMask(data uint8)`:** Implements the logic for updating the IER based on writes to register `$xE`.
+---
+## 3. Core Features
 
-## `IVIASocket` Interface
+The `VIA` component emulates the primary features of the 6522 chip:
 
-The VIA component relies heavily on an object implementing the `references.IVIASocket` interface, provided via the `Bind` method. This socket acts as the bridge between the generic VIA logic and the specific hardware context it's connected to (e.g., the C1541 board). The socket is responsible for:
+* **Parallel I/O Ports**: Full emulation of Port A (PRA) and Port B (PRB), including their Data Direction Registers (DDRA, DDRB). All reads from and writes to the physical "pins" are delegated to the bound socket.
+* **16-bit Timers**:
+  * **Timer 1**: A 16-bit counter supporting one-shot and continuous (free-running) modes. It can generate interrupts on underflow and is capable of toggling output on PB7 (delegated to the socket).
+  * **Timer 2**: A 16-bit counter that can operate in one-shot timed mode or in pulse-counting mode, decrementing on negative edges of the PB6 pin (read via the socket).
+* **Shift Register (SR)**: A basic 8-bit shift register with logic for handling serial I/O, clocked by Timer 2 or the system clock.
+* **Interrupt Control**: Complete emulation of the Interrupt Flag Register (IFR) and Interrupt Enable Register (IER). The `VIA` sets flags internally based on events (timer underflow, port edges) and relies on the socket's `IRQTrigger()` and `IRQClearTrigger()` methods to signal the system's CPU.
+* **Handshake Control**: Edge detection on the `CA1` and `CB1` control lines is fully implemented, allowing these signals to set interrupt flags and latch the input on their respective ports.
 
-* Reading the actual state of physical input pins connected to Port A and Port B (`ReadPRA`, `ReadPRB`).
-* Handling the output to physical pins connected to Port A and Port B based on the VIA's internal state (`WritePRA`, `WritePRB`, `WriteDDRA`, `WriteDDRB`). This includes platform-specific logic (like IEC line driving in the C1541).
-* Receiving interrupt requests from the VIA and forwarding them to the system's interrupt controller (`IRQTrigger`, `IRQClearTrigger`).
+---
+## 4. The `IMos6522Socket` Interface: The Contract
 
-## Dependencies
+The `VIA` component is entirely dependent on an external object that implements the `IMos6522Socket` interface. This interface is the "contract" that defines how the virtual chip connects to the main board.
 
-* `github.com/markel1974/c64emu/src/component`
-* `github.com/markel1974/c64emu/src/references`
+The socket is responsible for:
 
-## Integration
+* **Reading Pin State**: Providing the current state of the physical input pins (e.g., `ReadPortA()`, `ReadPortB()`, `ReadCA1()`).
+* **Writing to the "World"**: Handling the logic for when the `VIA` writes to a port (e.g., `SignalPRA()`, `SignalPRB()`). This is where generic register writes are translated into specific actions, like controlling a motor or changing a line on the serial bus.
+* **Managing Interrupts**: Forwarding interrupt requests from the `VIA` to the system's interrupt controller (`IRQTrigger()`, `IRQClearTrigger()`).
 
-The `VIA` component is typically created by the `ComponentFactory` (using `mos6522.NewFactory`). Its `Bind` method is called during the Symphony initialization sequence to link it with its corresponding socket implementation (`VIA1Socket` or `VIA2Socket` in the C1541 context). It participates in the main emulation loop via its `Emulate` method.
+---
+## 5. Key API
 
-## Limitations / TODOs
+### `NewVIA(...) *VIA`
+The component factory calls this constructor to create a new, generic `VIA` instance.
 
-* Full functionality of the Shift Register (SR), including different modes and external clocking, may require further implementation or verification.
-* Handshake line control (CA1, CA2, CB1, CB2) via the Peripheral Control Register (PCR) might be simplified or require specific socket implementation logic.
-* Precise cycle-level timing for register access and timer operations might need refinement for maximum accuracy.
-* Add comprehensive unit tests.
-* Enhance code comments, especially regarding specific register bits, timer modes, and ACR/PCR interactions.
+### `Bind(socket references.IMos6522Socket)`
+This is the crucial assembly method. It connects the generic `VIA` logic to a specific socket implementation, giving the chip its purpose.
+
+### `Reset()`
+Resets all internal registers (`PRA`, `PRB`, `DDRA`, `DDRB`, `ACR`, `PCR`, `IFR`, `IER`) to zero and resets its internal `Timer` and `ShiftRegister` components.
+
+### `ReadByte(addr uint16) uint8`
+Handles CPU read requests from the VIA's 16 memory-mapped registers. It returns internal register values or delegates to the socket for port reads. Reading from specific timer or flag registers automatically clears the relevant interrupt flags as per hardware behavior.
+
+### `WriteByte(addr uint16, data uint8)`
+Handles CPU write requests. It updates internal latches, control registers, and DDRs. Writes to output registers like `PRA` or `PRB` are immediately passed to the socket via methods like `SignalPRB()` to affect the external hardware.
+
+### `Emulate()`
+Called on every system clock cycle. This method decrements the timers, checks for underflow conditions, handles the shift register logic, and manages handshake line edge detection. It is the core of the chip's "live" behavior.
