@@ -43,69 +43,75 @@ type cycleData struct {
 // It encapsulates configurations, graphics components, collision detection, and rendering capabilities for the display.
 type VIC struct {
 	*component.BaseComponent
-	cfg              *config.Config
-	collisions       *Collisions
-	sprites          *SpriteHandler
-	graphics         *Graphics
-	borders          *Borders
-	socket           references.IMos6569Socket
-	readRam          func(addr uint16) uint8
-	readColorRam     func(addr uint16) uint8
-	readCharRom      func(addr uint16) uint8
-	curr             *cycleData
-	lineStart        int
-	drawLine         bool
-	vBlankNextCycle  bool
-	mXx              []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
-	mXy              []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
-	mXc              []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
-	mx8              uint8    // VIC register
-	cr1              uint8    // VIC register
-	cr2              uint8    // VIC register
-	lpx              uint8    // VIC register
-	lpy              uint8    // VIC register
-	me               uint8    // VIC register
-	mxe              uint8    // VIC register
-	mye              uint8    // VIC register
-	mdp              uint8    // VIC register
-	mmc              uint8    // VIC register
-	ec               uint8    // VIC register
-	b0c              uint8    // VIC register
-	b1c              uint8    // VIC register
-	b2c              uint8    // VIC register
-	b3c              uint8    // VIC register
-	mm0              uint8    // VIC register
-	mm1              uint8    // VIC register
-	vaBase           uint8    // vaBase
-	ciaVaBase        uint16   // CIA VA14/15 video base
-	matrixBase       uint16   // Video matrix base
-	charBase         uint16   // Character generator base
-	bitmapBase       uint16   // Bitmap base
-	xScroll          uint16   // X scroll value
-	yScroll          uint16   // Y scroll value
-	irqLatch         uint8    // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
-	irqMask          uint8    // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
-	irqRaster        uint16   // Interrupt raster line
-	sprExpY          uint8    // 8 sprite y expansion FlipFlops
-	sprBgrClx        uint8    // Sprite to background collision
-	sprSprClx        uint8    // Sprite to sprite collision
-	rasterX          uint16   // Current raster x position
-	rasterY          uint16   // Current raster line
-	dyTop            uint16   // Comparison values for borders logic
-	dyBottom         uint16   // Comparison values for borders logic
-	displayMode      int      // Index of current display mode
-	lpTriggered      bool     // LightPen was triggered in this frame
-	badLineEnabler   bool     // Bad Lines enabled for this frame
-	badLineCondition bool     // Current line is bad line
-	baLow            bool     // BA Line
-	aecLow           bool     // AEC Line
-	aecLowNextCycle  uint64   // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
-	lastByte         uint8    // Last byte read by VIC
-	refreshCounter   uint8    // refreshCounter tracks the number of times a refresh operation has been performed.
-	den              bool     // den indicates a boolean value typically used as a flag or condition.
-	bmm              bool     // bmm indicates a boolean value used for specific conditional checks or state representation.
-	ecm              bool     // ecm indicates whether the ECM is active or not.
-	columnSel        bool     // columnSel indicates whether column selection mode is enabled.
+	cfg                   *config.Config
+	collisions            *Collisions
+	sprites               *SpriteHandler
+	graphics              *Graphics
+	borders               *Borders
+	readRam               func(addr uint16) uint8
+	readColorRam          func(addr uint16) uint8
+	readCharRom           func(addr uint16) uint8
+	socketCycle           func() uint64
+	socketBALow           func(bool)
+	socketAECLow          func(bool)
+	socketIRQTrigger      func()
+	socketIRQClearTrigger func()
+	socketLastCycle       func()
+	socketVBlank          func()
+	curr                  *cycleData
+	lineStart             int
+	drawLine              bool
+	vBlankNextCycle       bool
+	mXx                   []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
+	mXy                   []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
+	mXc                   []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
+	mx8                   uint8    // VIC register
+	cr1                   uint8    // VIC register
+	cr2                   uint8    // VIC register
+	lpx                   uint8    // VIC register
+	lpy                   uint8    // VIC register
+	me                    uint8    // VIC register
+	mxe                   uint8    // VIC register
+	mye                   uint8    // VIC register
+	mdp                   uint8    // VIC register
+	mmc                   uint8    // VIC register
+	ec                    uint8    // VIC register
+	b0c                   uint8    // VIC register
+	b1c                   uint8    // VIC register
+	b2c                   uint8    // VIC register
+	b3c                   uint8    // VIC register
+	mm0                   uint8    // VIC register
+	mm1                   uint8    // VIC register
+	vaBase                uint8    // vaBase
+	ciaVaBase             uint16   // CIA VA14/15 video base
+	matrixBase            uint16   // Video matrix base
+	charBase              uint16   // Character generator base
+	bitmapBase            uint16   // Bitmap base
+	xScroll               uint16   // X scroll value
+	yScroll               uint16   // Y scroll value
+	irqLatch              uint8    // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
+	irqMask               uint8    // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
+	irqRaster             uint16   // Interrupt raster line
+	sprExpY               uint8    // 8 sprite y expansion FlipFlops
+	sprBgrClx             uint8    // Sprite to background collision
+	sprSprClx             uint8    // Sprite to sprite collision
+	rasterX               uint16   // Current raster x position
+	rasterY               uint16   // Current raster line
+	dyTop                 uint16   // Comparison values for borders logic
+	dyBottom              uint16   // Comparison values for borders logic
+	displayMode           int      // Index of current display mode
+	lpTriggered           bool     // LightPen was triggered in this frame
+	badLineEnabler        bool     // Bad Lines enabled for this frame
+	badLineCondition      bool     // Current line is bad line
+	baLow                 bool     // BA Line
+	aecLow                bool     // AEC Line
+	aecLowNextCycle       uint64   // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
+	lastByte              uint8    // Last byte read by VIC
+	refreshCounter        uint8    // refreshCounter tracks the number of times a refresh operation has been performed.
+	den                   bool     // den indicates a boolean value typically used as a flag or condition.
+	bmm                   bool     // bmm indicates a boolean value used for specific conditional checks or state representation.
+	ecm                   bool     // ecm indicates whether the ECM is active or not.
+	columnSel             bool     // columnSel indicates whether column selection mode is enabled.
 }
 
 // NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
@@ -178,7 +184,13 @@ func (vic *VIC) Setup() error {
 func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	displayBuffer := vic.GetFactory().GetIDisplayBuffer()
 
-	vic.socket = socket
+	vic.socketIRQTrigger = socket.IRQTrigger
+	vic.socketIRQClearTrigger = socket.IRQClearTrigger
+	vic.socketCycle = socket.Cycle
+	vic.socketLastCycle = socket.LastCycle
+	vic.socketBALow = socket.BALow
+	vic.socketAECLow = socket.AECLow
+	vic.socketVBlank = socket.VBlank
 	vic.readRam = socket.ReadRam
 	vic.readColorRam = socket.ReadColorRam
 	vic.readCharRom = socket.ReadCharRom
@@ -272,19 +284,19 @@ func (vic *VIC) SetBALow() {
 		return
 	}
 	vic.baLow = true
-	vic.aecLowNextCycle = vic.socket.Cycle() + 3
-	vic.socket.BALow(true)
+	vic.aecLowNextCycle = vic.socketCycle() + 3
+	vic.socketBALow(true)
 }
 
 // ClearBALow resets the BA low and AEC low flags in the VIC instance and updates the corresponding socket states.
 func (vic *VIC) ClearBALow() {
 	if vic.baLow {
 		vic.baLow = false
-		vic.socket.BALow(false)
+		vic.socketBALow(false)
 	}
 	if vic.aecLow {
 		vic.aecLow = false
-		vic.socket.AECLow(false)
+		vic.socketAECLow(false)
 	}
 }
 
@@ -298,9 +310,9 @@ func (vic *VIC) GetAECLow() bool {
 // This method controls the AEC line state by interacting with the VIC's socket mechanism.
 func (vic *VIC) TryAcquireAEC() {
 	if vic.baLow && !vic.aecLow {
-		if vic.socket.Cycle() >= vic.aecLowNextCycle {
+		if vic.socketCycle() >= vic.aecLowNextCycle {
 			vic.aecLow = true
-			vic.socket.AECLow(true)
+			vic.socketAECLow(true)
 		}
 	}
 }
@@ -694,7 +706,7 @@ func (vic *VIC) irqEmit(irq uint8) {
 	vic.irqLatch |= irq
 	if (vic.irqMask & irq) != 0 {
 		vic.irqLatch |= irqMasterBit
-		vic.socket.IRQTrigger()
+		vic.socketIRQTrigger()
 	}
 }
 
@@ -702,9 +714,9 @@ func (vic *VIC) irqEmit(irq uint8) {
 func (vic *VIC) irqVerify() {
 	if (vic.irqLatch & vic.irqMask) != 0 {
 		vic.irqLatch |= irqMasterBit
-		vic.socket.IRQTrigger() // Trigger interrupt if pending (now allowed)
+		vic.socketIRQTrigger() // Trigger interrupt if pending (now allowed)
 	} else {
 		vic.irqLatch &= irqUnsetMasterBit
-		vic.socket.IRQClearTrigger()
+		vic.socketIRQClearTrigger()
 	}
 }

@@ -37,6 +37,29 @@ import (
 
 // -c "/Users/tinmr305/Downloads/c64carts/SuperWonderboyInMonsterland_1989_Activision-EF.crt"
 
+// -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/Shadow of the Beast.crt"
+
+// TODO piccolo BUG negli sprite (alcune parti sono trasparenti)
+// -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/rick_dangerous.crt
+
+// -d "/Users/tinmr305/Downloads/c64carts/C64_disk/blast170.d64" -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/seuds2008.crt"
+
+// -d "/Users/tinmr305/Downloads/c64carts/C64_disk/blast170.d64" -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/whoframedrr.crt"
+
+// -d "/Users/tinmr305/Downloads/c64carts/C64_disk/blast170.d64" -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/realghostb.crt"
+
+// -d "/Users/tinmr305/Downloads/c64carts/C64_disk/blast170.d64" -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/shinobi.crt"
+
+// -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/2/Onefile Demos.crt"
+
+// -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/turbo_outrun_pal-ntsc[excess].crt"
+
+// -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/The Last Ninja all in one Fix V2.crt"
+
+// -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/Prince of Persia_+9.NO.crt"
+
+// -d "/Users/tinmr305/Downloads/c64carts/C64_disk/blast170.d64" -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/pitfighter.crt"
+
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/1/defender_of_the_crown.crt"
 
 // -c "/Users/tinmr305/Downloads/c64carts/GhostNGoblinsArcade_N0S_EF.crt"

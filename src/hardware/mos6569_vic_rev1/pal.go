@@ -97,7 +97,7 @@ func palCycle2(vic *VIC) {
 		vic.lineStart = 0
 		vic.graphics.ResetVideoCounterLatch()
 		vic.ResetRasterY()
-		vic.socket.VBlank()
+		vic.socketVBlank()
 	}
 	vic.collisions.ClearGraphics()
 	vic.graphics.SetOffset(vic.lineStart)
@@ -546,5 +546,5 @@ func palCycle63(vic *VIC) {
 	if vic.sprites.GetDMAFlag(sprite4) != 0 {
 		vic.SetBALow() //BALow for Sprite 4 [cycle 3 = 63 + 3]
 	}
-	vic.socket.LastCycle()
+	vic.socketLastCycle()
 }
