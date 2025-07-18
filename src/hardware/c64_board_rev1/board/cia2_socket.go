@@ -18,14 +18,15 @@ type CIA2SocketConnection interface {
 // The intrId field defines the unique interrupt identifier for CIA2 within the system.
 type CIA2Socket struct {
 	references.IMos6526
-	label     string
-	parent    references.IComponent
-	component references.IComponent
-	vicRef    references.IMos6569
-	iecRef    references.IIec
-	intrId    uint32
-	hwId      string
-
+	label                      string
+	parent                     references.IComponent
+	component                  references.IComponent
+	vicRef                     references.IMos6569
+	iecRef                     references.IIec
+	intrId                     uint32
+	hwId                       string
+	selfReadDDRA               func() uint8
+	selfReadPRA                func() uint8
 	connectionsNMITrigger      func()
 	connectionsNMIClearTrigger func()
 	vicChangedVA               func(uint8)
@@ -71,6 +72,8 @@ func (w *CIA2Socket) Wire() error {
 	if err = w.IMos6526.Bind(w); err != nil {
 		return err
 	}
+	w.selfReadDDRA = w.ReadDDRA
+	w.selfReadPRA = w.ReadPRA
 	w.vicChangedVA = w.vicRef.ChangedVA
 	w.iecCpuRead = w.iecRef.CpuRead
 	w.iecCpuWrite = w.iecRef.CpuWrite
@@ -92,7 +95,7 @@ func (w *CIA2Socket) ReadPortB( /* prA */ _ uint8, prB uint8 /* ddrA */, _ uint8
 
 // SignalPRA writes the state of Port A using the given peripheral and direction register values.
 func (w *CIA2Socket) SignalPRA(prA uint8) {
-	ddrA := w.ReadDDRA()
+	ddrA := w.selfReadDDRA()
 	w.updateVA(prA, ddrA)
 	w.iecCpuWrite(prA)
 }
@@ -103,7 +106,7 @@ func (w *CIA2Socket) SignalPRB(_ uint8) {
 
 // SignalDDRA updates the data direction register for port A and triggers actions based on the updated state.
 func (w *CIA2Socket) SignalDDRA(ddrA uint8) {
-	prA := w.ReadPRA()
+	prA := w.selfReadPRA()
 	w.updateVA(prA, ddrA)
 }
 

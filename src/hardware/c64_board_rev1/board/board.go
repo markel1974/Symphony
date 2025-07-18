@@ -272,7 +272,7 @@ func (s *Board) VBlankTrigger() {
 	s.connections.VBlank()
 
 	s.sidSocket.Update()
-	s.cia1Socket.PollInputs()
+	//s.cia1Socket.PollInputs()
 	//s.cia2Socket.Update()
 
 	if s.prg != nil {

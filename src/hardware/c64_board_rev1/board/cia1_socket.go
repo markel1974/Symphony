@@ -34,21 +34,22 @@ type CIA1SocketConnection interface {
 // joy1State and joy2State track the current states of two connected joysticks.
 type CIA1Socket struct {
 	references.IMos6526
-	label       string
-	parent      references.IComponent
-	component   references.IComponent
-	vicRef      references.IMos6569
-	keysRef     references.IC64Keyboard
-	joy1Ref     references.IC64Joystick
-	joy2Ref     references.IC64Joystick
-	intrId      uint32  //
-	prevLPState uint8   // Previous state of LP line (bit 4)
-	keyMatrix   []uint8 // keyboard matrix [0: down, 1: up]
-	revMatrix   []uint8 // Reversed keyboard matrix
-	joy1State   uint8   // Joystick 1
-	joy2State   uint8   // Joystick 2
-	hwId        string
-
+	label                     string
+	parent                    references.IComponent
+	component                 references.IComponent
+	vicRef                    references.IMos6569
+	keysRef                   references.IC64Keyboard
+	joy1Ref                   references.IC64Joystick
+	joy2Ref                   references.IC64Joystick
+	intrId                    uint32  //
+	prevLPState               uint8   // Previous state of LP line (bit 4)
+	keyMatrix                 []uint8 // keyboard matrix [0: down, 1: up]
+	revMatrix                 []uint8 // Reversed keyboard matrix
+	joy1State                 uint8   // Joystick 1
+	joy2State                 uint8   // Joystick 2
+	hwId                      string
+	selfReadDDRB              func() uint8
+	selfReadPRB               func() uint8
 	connectionIRQTrigger      func(uint32)
 	connectionIRQClearTrigger func(uint32)
 	keysReset                 func()
@@ -114,6 +115,8 @@ func (w *CIA1Socket) Wire() error {
 	if err = w.IMos6526.Bind(w); err != nil {
 		return err
 	}
+	w.selfReadDDRB = w.ReadDDRB
+	w.selfReadPRB = w.ReadPRB
 	w.keysReset = w.keysRef.Reset
 	w.joy1Reset = w.joy1Ref.Reset
 	w.joy2Reset = w.joy2Ref.Reset
@@ -141,40 +144,10 @@ func (w *CIA1Socket) Reset() {
 	w.prevLPState = defaultLPState
 }
 
-// PollInputs polls the state of connected joysticks and keyboard, and updates the key and reverse matrix based on input events.
-func (w *CIA1Socket) PollInputs() {
-	if joy1State, ok := w.joy1Poll(); ok {
-		w.joy1State = joy1State
-	}
-	if joy2State, ok := w.joy2Poll(); ok {
-		w.joy2State = joy2State
-	}
-	if v, ok := w.keysPoll(); ok {
-		pressed := (v & 0x20000) != 0
-		shifted := (v & 0x10000) != 0
-		keyM := uint8(v & 0xff)
-		revM := uint8((v >> 8) & 0xff)
-		if pressed {
-			if shifted {
-				w.keyMatrix[6] &= 0xef
-				w.revMatrix[4] &= 0xbf
-			}
-			w.keyMatrix[keyM] &= ^(1 << revM)
-			w.revMatrix[revM] &= ^(1 << keyM)
-		} else {
-			if shifted {
-				w.keyMatrix[6] |= 0x10
-				w.revMatrix[4] |= 0x40
-			}
-			w.keyMatrix[keyM] |= 1 << revM
-			w.revMatrix[revM] |= 1 << keyM
-		}
-	}
-	//w.IMos6526.Update()
-}
-
 // ReadPortA reads data from port A by combining the given parameters with internal joystick states and matrices.
 func (w *CIA1Socket) ReadPortA(prA uint8, prB uint8, ddrA uint8, ddrB uint8) uint8 {
+	w.pollJoy2()
+	w.pollKeyboard()
 	ret := prA | ^ddrA
 	tst := (prB | ^ddrB) & w.joy1State
 	for idx, bit := range bits.Uint8s {
@@ -187,6 +160,8 @@ func (w *CIA1Socket) ReadPortA(prA uint8, prB uint8, ddrA uint8, ddrB uint8) uin
 
 // ReadPortB reads the state of Port B by combining the active bits of DDRB and PRB with the joystick and key matrix states.
 func (w *CIA1Socket) ReadPortB(prA uint8, prB uint8, ddrA uint8, ddrB uint8) uint8 {
+	w.pollJoy1()
+	w.pollKeyboard()
 	ret := ^ddrB
 	tst := (prA | ^ddrA) & w.joy2State
 	for idx, bit := range bits.Uint8s {
@@ -207,13 +182,13 @@ func (w *CIA1Socket) SignalDDRA(_ uint8) {
 
 // SignalPRB handles writing to port B by updating the light pen state based on the given port and data direction registers.
 func (w *CIA1Socket) SignalPRB(prB uint8) {
-	ddrB := w.ReadDDRB()
+	ddrB := w.selfReadDDRB()
 	w.updateLightPen(prB, ddrB)
 }
 
 // SignalDDRB handles updates to the DDRB register and triggers updates to the light pen based on the PRB and DDRB values.
 func (w *CIA1Socket) SignalDDRB(ddrB uint8) {
-	prB := w.ReadPRB()
+	prB := w.selfReadPRB()
 	w.updateLightPen(prB, ddrB)
 }
 
@@ -242,4 +217,43 @@ func (w *CIA1Socket) updateLightPen(prB uint8, ddrB uint8) {
 		w.vicLightPenTrigger()
 	}
 	w.prevLPState = (prB | ^ddrB) & 0x10
+}
+
+// pollJoy1 polls the state of the first joystick and updates its internal state if a valid response is received.
+func (w *CIA1Socket) pollJoy1() {
+	if joy1State, ok := w.joy1Poll(); ok {
+		w.joy1State = joy1State
+	}
+}
+
+// pollJoy2 polls the state of the second joystick and updates its internal state if a valid response is received.
+func (w *CIA1Socket) pollJoy2() {
+	if joy2State, ok := w.joy2Poll(); ok {
+		w.joy2State = joy2State
+	}
+}
+
+// pollKeyboard updates the keyMatrix and revMatrix based on the state of the keyboard, handling key presses and releases.
+func (w *CIA1Socket) pollKeyboard() {
+	if v, ok := w.keysPoll(); ok {
+		pressed := (v & 0x20000) != 0
+		shifted := (v & 0x10000) != 0
+		keyM := uint8(v & 0xff)
+		revM := uint8((v >> 8) & 0xff)
+		if pressed {
+			if shifted {
+				w.keyMatrix[6] &= 0xef
+				w.revMatrix[4] &= 0xbf
+			}
+			w.keyMatrix[keyM] &= ^(1 << revM)
+			w.revMatrix[revM] &= ^(1 << keyM)
+		} else {
+			if shifted {
+				w.keyMatrix[6] |= 0x10
+				w.revMatrix[4] |= 0x40
+			}
+			w.keyMatrix[keyM] |= 1 << revM
+			w.revMatrix[revM] |= 1 << keyM
+		}
+	}
 }
