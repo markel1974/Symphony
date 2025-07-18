@@ -5,18 +5,15 @@ import (
 	"log"
 )
 
-// SpriteHandler represent the structure responsible for handling sprites, including their data, states, and configurations.
-// It contains properties for managing sprite visual data, collision detection, and display control buffers.
-// The type relies on various counters, flags, and pointers to handle sprite DMA and display activities effectively.
-// It interacts with the VIC core and an implemented display buffer interface for rendering and collision processing.
+// SpriteHandler manages sprite functionalities within the VIC-II system, including rendering, collisions, and DMA operations.
 type SpriteHandler struct {
-	core         *VIC        // Pointer to the main VIC-II core.
-	collisions   *Collisions // Pointer to the collision detection system.
-	sprites      []*Sprite   // Pointers to all Sprite objects managed by the SpriteHandler system.
-	dmaFlags     uint8       // Active DMA Sprite (bitmask: bit i = 1 means sprite is active).
-	displayFlags uint8       // Active Display Sprite (bitmask).
-	spriteFlags  uint8       // Sprite in this line (bitmask).
-	offset       int         // Offset from bitmap spritesBuffer
+	core         *VIC        // core represents the pointer to the VIC instance used by the SpriteHandler for rendering and system control.
+	collisions   *Collisions // collisions manages sprite collision detection within the SpriteHandler.
+	sprites      []*Sprite   // sprites stores pointers to all Sprite instances managed by the SpriteHandler.
+	dmaFlags     uint8       // dmaFlags represents the active Direct Memory Access (DMA) flags for sprite operations in the current cycle.
+	displayFlags uint8       // displayFlags represents the active display flags for sprites, updated based on their DMA state and counters.
+	spriteFlags  uint8       // spriteFlags represents the combined state of sprite display activity for the current line in the VIC-II system.
+	offset       int         // offset is the horizontal offset used during sprite rendering to determine the starting position on the scanline.
 }
 
 // NewSprites initializes and returns a new instance of the SpriteHandler struct with default settings and allocations.

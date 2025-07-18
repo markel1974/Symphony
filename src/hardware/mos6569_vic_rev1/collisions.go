@@ -6,10 +6,10 @@ package mos6569
 type Collisions struct {
 	core                 *VIC    // core references the VIC system used for handling collision detection and related graphics processing.
 	graphics             uint8   // graphics represents the current collision state with graphics as an 8-bit unsigned integer.
-	sprites              uint8   // sprites represent the state and collision mask of all active sprites in the current frame.
-	spritesBuffer        []uint8 // Buffer for sprite-sprite collisions and priorities
-	emptySpritesBuffer   []uint8 // emptySpritesBuffer is the initialized buffer used to reset sprite collision states for each frame.
-	graphicsBuffer       []uint8 // Foreground mask for sprite-graphics collisions and priorities
+	spritesCollision     uint8   // spritesCollision represent the state and collision mask of all active sprites in the current frame.
+	spritesPresence      []uint8 // spritesPresence stores the state of sprite presence at each pixel, used for collision detection within the frame.
+	spritesPresenceEmpty []uint8 // spritesPresenceEmpty is the initialized buffer used to reset sprite collision states for each frame.
+	graphicsBuffer       []uint8 // graphicsBuffer holds the collision state for background graphics as a buffer of unsigned 8-bit integers.
 	graphicsBufferEmpty  []uint8 // graphicsBufferEmpty holds an initialized empty buffer for resetting or clearing graphics collision data.
 	graphicsBufferOffset int     // graphicsBufferOffset tracks the current position in the graphics buffer for collision updates.
 }
@@ -19,9 +19,9 @@ func NewCollisions(core *VIC) *Collisions {
 	return &Collisions{
 		core:                 core,
 		graphics:             0,
-		sprites:              0,
-		spritesBuffer:        make([]uint8, DisplayXFillMax), // Allocate the sprite buffer. Size is DisplayXFillMax (maximum X coordinate).
-		emptySpritesBuffer:   make([]uint8, DisplayXFillMax), // Allocate and initialize the empty sprite buffer (all zeros).
+		spritesCollision:     0,
+		spritesPresence:      make([]uint8, DisplayXFillMax), // Allocate the sprite buffer. Size is DisplayXFillMax (maximum X coordinate).
+		spritesPresenceEmpty: make([]uint8, DisplayXFillMax), // Allocate and initialize the empty sprite buffer (all zeros).
 		graphicsBuffer:       make([]uint8, DisplayXFill+1),  // Allocate the graphics buffer. Size is DisplayXFill+1. DisplayXFill seems to be 40
 		graphicsBufferEmpty:  make([]uint8, DisplayXDiv8),    // DisplayXDiv8 seems to be 52
 		graphicsBufferOffset: 0,
@@ -32,11 +32,11 @@ func NewCollisions(core *VIC) *Collisions {
 // Called at the beginning of sprite drawing on each scanline.
 func (c *Collisions) Prepare() {
 	// Reset the sprite-to-sprite collision result.
-	c.sprites = uint8(0)
+	c.spritesCollision = uint8(0)
 	// Reset the sprite-to-background collision result.
 	c.graphics = uint8(0)
 	// Reset the sprite buffer by copying the empty buffer.  This is *much* faster than iterating.
-	copy(c.spritesBuffer, c.emptySpritesBuffer)
+	copy(c.spritesPresence, c.spritesPresenceEmpty)
 }
 
 // SetGraphicsCollision sets a collision bit for graphics by performing a bitwise OR operation with the given bit.
@@ -46,32 +46,33 @@ func (c *Collisions) SetGraphicsCollision(sBit uint8) {
 	c.graphics |= sBit
 }
 
-// SetSpriteCollision checks and sets sprite collision at a specific index with a sprite bit and returns collision status.
+// SetSpritePresence checks and sets sprite collision at a specific index with a sprite bit and returns collision status.
 // If a collision occurs, it updates the sprite collision state;
 // otherwise, it updates the sprite buffer with the new bit.
-func (c *Collisions) SetSpriteCollision(collIdx int, sBit uint8) bool {
+func (c *Collisions) SetSpritePresence(collIdx int, sBit uint8) bool {
+	// Boundary check.
 	if collIdx >= DisplayXFillMax {
 		return false
 	}
-	// Boundary check.
-	if c.spritesBuffer[collIdx] != 0 {
-		// If any sprite is already present at this pixel...
-		// Update the 'sprites' collision result with *both* the existing sprites *and* the new sprite.
-		c.sprites |= c.spritesBuffer[collIdx] | sBit
-		// Indicate that a collision occurred.
-		return true
+	sBitPresence := c.spritesPresence[collIdx]
+	if sBitPresence == 0 {
+		// mark this sprite as present at this pixel.
+		c.spritesPresence[collIdx] = sBit
+		return false
 	}
-	// Otherwise, mark this sprite as present at this pixel.
-	c.spritesBuffer[collIdx] = sBit
-	// Return true if a collision occurred, false otherwise.
-	return false
+
+	// If any sprite is already present at this pixel...
+	// Update the 'sprites' collision result with *both* the existing sprites *and* the new sprite.
+	c.spritesCollision |= sBitPresence | sBit
+	// Indicate that a collision occurred.
+	return true
 }
 
 // Detect triggers the collision application process using the stored sprite and graphics collision data.
 // This method *actually writes* the collision results to the VIC-II's registers.
 func (c *Collisions) Detect() {
 	// Call the CollisionApply method on the VIC core, passing the collision results.
-	c.core.CollisionApply(c.sprites, c.graphics)
+	c.core.CollisionApply(c.spritesCollision, c.graphics)
 }
 
 // IncrementGraphicsOffset increments the graphicsBufferOffset field

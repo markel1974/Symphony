@@ -27,6 +27,9 @@ import (
 
 // -c "/Users/tinmr305/Downloads/c64carts/mayhem.crt"
 
+// TODO piccolo BUG negli sprite (alcune parti sono trasparenti)
+// -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/rick_dangerous.crt
+
 // -c "/Users/tinmr305/Downloads/c64carts/batman.bin"
 
 // -c "/Users/tinmr305/Downloads/c64carts/thepit.bin"
@@ -38,9 +41,6 @@ import (
 // -c "/Users/tinmr305/Downloads/c64carts/SuperWonderboyInMonsterland_1989_Activision-EF.crt"
 
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/Shadow of the Beast.crt"
-
-// TODO piccolo BUG negli sprite (alcune parti sono trasparenti)
-// -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/rick_dangerous.crt
 
 // -d "/Users/tinmr305/Downloads/c64carts/C64_disk/blast170.d64" -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/seuds2008.crt"
 

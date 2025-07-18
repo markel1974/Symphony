@@ -25,10 +25,10 @@ type Graphics struct {
 	colorData         uint8
 	charData          uint8
 	charDataLast      uint8
-	offset            int     // Offset from bitmap spritesBuffer
+	offset            int     // Offset from bitmap spritesPresence
 	lineIndex         int     // Index in video matrix / color line
-	videoMatrix       []uint8 // Video matrix spritesBuffer
-	colorLine         []uint8 // Color line spritesBuffer
+	videoMatrix       []uint8 // Video matrix spritesPresence
+	colorLine         []uint8 // Color line spritesPresence
 	rowCounter        uint16  // Row counter
 	videoCounter      uint16  // Video counter
 	videoCounterLatch uint16  // Video counter base

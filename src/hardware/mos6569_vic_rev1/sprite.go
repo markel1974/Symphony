@@ -166,7 +166,7 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 	// Draw the left half of the sprite (first 32 pixels). The sprite is expanded, so we draw 48 pixels total.
 	for idx := 0; idx < spriteExpandedHalfPixels; idx, plane0L, plane1L = idx+1, plane0L<<1, plane1L<<1 {
 		if selectedColor := sp.planes2Color(plane0L, plane1L, sColor); selectedColor >= 0 {
-			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
+			if !collisions.SetSpritePresence(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, uint8(selectedColor))
 			}
 		}
@@ -174,7 +174,7 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 	// Draw the right half of the sprite (remaining 16 pixels).
 	for idx := spriteExpandedHalfPixels; idx < spriteExpandedPixels; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
 		if selectedColor := sp.planes2Color(plane0R, plane1R, sColor); selectedColor >= 0 {
-			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
+			if !collisions.SetSpritePresence(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, uint8(selectedColor))
 			}
 		}
@@ -204,7 +204,7 @@ func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, s
 	// Draw the left half of the sprite (first 32 pixels).
 	for idx := 0; idx < spriteExpandedHalfPixels; idx, sDataL = idx+1, sDataL<<1 {
 		if (sDataL & planesMSB) != 0 {
-			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
+			if !collisions.SetSpritePresence(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, sColor)
 			}
 		}
@@ -212,7 +212,7 @@ func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, s
 	// Draw the right half of the sprite (remaining 16 pixels).
 	for idx := spriteExpandedHalfPixels; idx < spriteExpandedPixels; idx, sDataR = idx+1, sDataR<<1 {
 		if (sDataR & planesMSB) != 0 {
-			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
+			if !collisions.SetSpritePresence(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, sColor)
 			}
 		}
@@ -243,7 +243,7 @@ func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collision
 	// Draw the sprite (24 pixels).
 	for idx := 0; idx < spriteUnexpandedPixels; idx, plane0, plane1 = idx+1, plane0<<1, plane1<<1 {
 		if selectedColor := sp.planes2Color(plane0, plane1, sColor); selectedColor >= 0 {
-			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
+			if !collisions.SetSpritePresence(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, uint8(selectedColor))
 			}
 		}
@@ -269,7 +269,7 @@ func (sp *Sprite) drawUnexpandedStandard(lineOffset int, collisions *Collisions,
 	for idx := 0; idx < spriteUnexpandedPixels; idx, sData = idx+1, sData<<1 {
 		if (sData & planesMSB) != 0 {
 			// Check for sprite-to-sprite collisions *before* drawing.
-			if !collisions.SetSpriteCollision(sOffset+idx, sp.mask) {
+			if !collisions.SetSpritePresence(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, sColor)
 			}
 		}
