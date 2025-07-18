@@ -162,6 +162,7 @@ func (sp *SpriteHandler) Draw() {
 	sp.collisions.Detect()
 }
 
+// ModeUpdate performs a mode-specific update for all sprites managed by the SpriteHandler by invoking their ModeUpdate method.
 func (sp *SpriteHandler) ModeUpdate() {
 	for _, sprite := range sp.sprites {
 		sprite.ModeUpdate()
