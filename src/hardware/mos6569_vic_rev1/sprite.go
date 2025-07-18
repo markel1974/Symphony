@@ -30,6 +30,7 @@ type Sprite struct {
 	counterBase uint16
 	set         func(int, uint8)
 	pipeline    func(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int)
+	//plane2ColorHelper [4]func(uint8) int
 }
 
 // NewSprite initializes and returns a new Sprite instance with the provided VIC core, display buffer, and sprite number.
@@ -46,6 +47,7 @@ func NewSprite(core *VIC, displayBuffer references.IDisplayBuffer, sNum uint8, s
 		ptr:         0,
 		max:         sMax,
 	}
+	//sp.plane2ColorHelper = sp.createPlane2ColorHelper()
 	sp.ModeUpdate()
 	return sp
 }
@@ -138,11 +140,9 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 	foreMaskR := collisions.GetGraphicsR(m, s)
 	// Expand sprite data horizontally using lookup tables.The _multiExpTable expands each byte (8 bits)
 	// into two bytes (16 bits), doubling the width.This is done for multicolor mode *before* bit-plane conversion.
-	mtL0 := uint32(_multiExpTable[sp.data[0]]) << 16
-	mtL1 := uint32(_multiExpTable[sp.data[1]])
-	mtR0 := uint32(_multiExpTable[sp.data[2]]) << 16
-	sDataL := mtL0 | mtL1
-	sDataR := mtR0
+	sDataL := uint32(_multiExpTable[sp.data[0]])<<16 | uint32(_multiExpTable[sp.data[1]])
+	sDataR := uint32(_multiExpTable[sp.data[2]]) << 16
+
 	// Convert sprite data to bit-planes for easier multicolor processing.In multicolor mode, each pixel is represented
 	// by *two* bits (hence two bit-planes).
 	plane0L := (sDataL & 0x55555555) | ((sDataL & 0x55555555) << 1) // Bit-plane 0 (left half).
@@ -188,11 +188,8 @@ func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, s
 	// Get the foreground mask for the right half of the sprite's character column.
 	foreMaskR := collisions.GetGraphicsR(m, s)
 	// Expand sprite data horizontally using lookup tables.The _expTable expands each byte (8 bits) into two bytes (16 bits).
-	etL0 := uint32(_expTable[sp.data[0]]) << 16
-	etL1 := uint32(_expTable[sp.data[1]])
-	etR0 := uint32(_expTable[sp.data[2]]) << 16
-	sDataL := etL0 | etL1
-	sDataR := etR0
+	sDataL := uint32(_expTable[sp.data[0]])<<16 | uint32(_expTable[sp.data[1]])
+	sDataR := uint32(_expTable[sp.data[2]]) << 16
 	// Check for collisions with the foreground.
 	if ((foreMaskL & sDataL) != 0) || ((foreMaskR & sDataR) != 0) {
 		// Set the sprite-to-graphics collision flag.
@@ -281,9 +278,11 @@ func (sp *Sprite) drawUnexpandedStandard(lineOffset int, collisions *Collisions,
 
 // planesColor evaluates the color of a sprite pixel based on the provided plane data and sprite color, returning a color value.
 func (sp *Sprite) planes2Color(plane0 uint32, plane1 uint32, sColor uint8) int {
-	p1 := (plane1 & planesMSB) >> 0x1e //bit 30
-	p0 := (plane0 & planesMSB) >> 0x1f //bit 31
-	switch p1 | p0 {
+	bit1 := (plane1 >> 31) & 1
+	bit0 := (plane0 >> 31) & 1
+	index := (bit1 << 1) | bit0
+	//return sp.plane2ColorHelper[index&4](sColor)
+	switch index {
 	case 0b00:
 		return -1 // transparent
 	case 0b01:
@@ -295,3 +294,22 @@ func (sp *Sprite) planes2Color(plane0 uint32, plane1 uint32, sColor uint8) int {
 	}
 	return -1
 }
+
+/*
+func (sp *Sprite) createPlane2ColorHelper() [4]func(uint8) int {
+	var p2c [4]func(uint8) int
+	p2c[0] = func(uint8) int {
+		return -1 // transparent
+	}
+	p2c[1] = func(uint8) int {
+		return int(_colors[sp.core.mm0]) //mm0
+	}
+	p2c[2] = func(sColor uint8) int {
+		return int(sColor) // color
+	}
+	p2c[3] = func(uint8) int {
+		return int(_colors[sp.core.mm1]) //mm1
+	}
+	return p2c
+}
+*/
