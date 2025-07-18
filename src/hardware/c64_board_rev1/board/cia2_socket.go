@@ -123,10 +123,6 @@ func (w *CIA2Socket) ReadSP() bool {
 func (w *CIA2Socket) SignalSP( /*level*/ _ bool) {
 }
 
-// Update triggers internal state updates and recalculations based on the latest system inputs or interactions.
-//func (w *CIA2Socket) Update() {
-//}
-
 // updateVA updates the VIC-memory bank based on the current states of prA and ddrA and triggers a corresponding VA change event.
 func (w *CIA2Socket) updateVA(prA uint8, ddrA uint8) {
 	//Bit 0..1: Select the position of the VIC-memory

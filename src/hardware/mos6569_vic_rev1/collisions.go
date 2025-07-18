@@ -97,10 +97,10 @@ func (c *Collisions) UpdateGraphics(a uint8, b uint8) {
 	c.graphicsBuffer[c.graphicsBufferOffset+1] |= b
 }
 
-// GetGraphicsL computes a 32-bit mask
-// by combining and shifting values from the graphicsBuffer at specified offsets and shifts.
-// m is the major coordinate
-// s is the shift
+// GetGraphicsL calculates a 32-bit graphics mask for collision detection.
+// It assembles data from 5 consecutive bytes of the graphics buffer (from m to m+4)
+// and shifts them by 's' bits to perfectly align with the sprite's sub-pixel position.
+// This creates a "window" of graphics data that can be compared with the sprite.
 func (c *Collisions) GetGraphicsL(m int, s int) uint32 {
 	f := (((uint32(c.graphicsBuffer[m]) << 24) | (uint32(c.graphicsBuffer[m+1]) << 16) | (uint32(c.graphicsBuffer[m+2]) << 8) | (uint32(c.graphicsBuffer[m+3]))) << s) | (uint32(c.graphicsBuffer[m+4]) >> (8 - s))
 	return f

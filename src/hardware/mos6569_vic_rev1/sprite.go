@@ -7,7 +7,7 @@ const (
 	spriteUnexpandedPixels   = 24
 	spriteExpandedHalfPixels = 32
 	spriteExpandedPixels     = 48
-	planesMSB                = 1 << 31 //0x80000000
+	planesMSB                = 1 << 31 // planesMSB is the MSB Used to check the leftmost pixel containing sprite data.
 )
 
 // Sprite represents a hardware sprite object used for rendering graphical elements on a screen.
@@ -29,7 +29,7 @@ type Sprite struct {
 	counter     uint16
 	counterBase uint16
 	set         func(int, uint8)
-	modeFn      func(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int)
+	pipeline    func(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int)
 }
 
 // NewSprite initializes and returns a new Sprite instance with the provided VIC core, display buffer, and sprite number.
@@ -101,15 +101,15 @@ func (sp *Sprite) ModeUpdate() {
 	expandedH := (sp.core.mxe & sp.mask) != 0
 	if expandedH {
 		if multiColor {
-			sp.modeFn = sp.drawExpandedMulticolor
+			sp.pipeline = sp.drawExpandedMulticolor
 		} else {
-			sp.modeFn = sp.drawExpandedStandard
+			sp.pipeline = sp.drawExpandedStandard
 		}
 	} else {
 		if multiColor {
-			sp.modeFn = sp.drawUnexpandedMulticolor
+			sp.pipeline = sp.drawUnexpandedMulticolor
 		} else {
-			sp.modeFn = sp.drawUnexpandedStandard
+			sp.pipeline = sp.drawUnexpandedStandard
 		}
 	}
 }
@@ -125,7 +125,7 @@ func (sp *Sprite) Draw(lineStart int, collisions *Collisions) {
 	majorX := sOffset / sp.max
 	// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column.
 	minorX := sOffset & 7
-	sp.modeFn(lineOffset, collisions, sColor, sOffset, majorX, minorX)
+	sp.pipeline(lineOffset, collisions, sColor, sOffset, majorX, minorX)
 }
 
 // drawExpandedMulticolor is responsible for rendering an expanded multicolor sprite on the display buffer.

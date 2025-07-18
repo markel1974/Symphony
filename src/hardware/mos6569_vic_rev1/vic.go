@@ -24,6 +24,11 @@ const (
 	irqMasterBit          = uint8(0x80)
 )
 
+const (
+	ioAndCharRomArea = 0x7000
+	charRomOffset    = 0x1000
+)
+
 // irqUnsetMasterBit is the bitwise negation of irqMasterBit, used to clear the master IRQ bit in irqLatch.
 const (
 	irqUnsetMasterBit = ^irqMasterBit
@@ -403,7 +408,7 @@ func (vic *VIC) AccessRefresh() {
 // ReadByte reads a byte from the given address after applying the VIC's address translation logic.
 func (vic *VIC) ReadByte(addr uint16) uint8 {
 	va := addr | vic.ciaVaBase
-	if (va & 0x7000) == 0x1000 {
+	if (va & ioAndCharRomArea) == charRomOffset {
 		//TODO ERRORE quando il vic legge dalla char rom non viene settato il last byte
 		vic.lastByte = vic.readCharRom(va)
 		return vic.lastByte
