@@ -1,6 +1,8 @@
 package mos6569
 
-import "github.com/markel1974/c64emu/src/references"
+import (
+	"github.com/markel1974/c64emu/src/references"
+)
 
 const (
 	dataCounterLastByte      = 0x3f
@@ -41,7 +43,7 @@ func NewSprite(core *VIC, displayBuffer references.IDisplayBuffer, sNum uint8, s
 		set:         displayBuffer.Set,
 		num:         sNum,
 		mask:        uint8(1) << sNum,
-		data:        make([]uint8, 4), // Allocate space for sprite data (3 byte + extra).
+		data:        make([]uint8, 3), // Allocate space for sprite data.
 		counterBase: 0,
 		counter:     dataCounterLastByte, // Initialize sprite data counter to the last byte.
 		ptr:         0,
@@ -65,16 +67,16 @@ func (sp *Sprite) Mask() uint8 {
 // FetchPtr calculates and fetches the memory address of the sprite pointer from the VIC core and updates the sprite's data pointer.
 func (sp *Sprite) FetchPtr() {
 	addr := sp.core.matrixBase | 0x03f8 | uint16(sp.num) // Calculate the address of the sprite pointer.
-	data := sp.core.ReadByte(addr)                       // Read the sprite pointer from memory.
-	sp.ptr = uint16(data) << 6                           // Set the sprite's data pointer.
+	b := sp.core.ReadByte(addr)                          // Read the sprite pointer from memory.
+	sp.ptr = uint16(b) << 6                              // Set the sprite's data pointer.
 }
 
 // FetchData retrieves the sprite data for the specified byte index and stores it in the sprite's data array.
 // It calculates the memory address based on the sprite's data counter and pointer, reads the byte, and increments the counter.
 func (sp *Sprite) FetchData(bNum uint8) {
 	addr := (sp.counter & dataCounterLastByte) | sp.ptr // Calculate the address of the current byte within the sprite data.
-	data := sp.core.ReadByte(addr)                      // Read the byte from memory.
-	sp.data[bNum] = data                                // Store the byte in the sprite's data buffer.
+	b := sp.core.ReadByte(addr)                         // Read the byte from memory.
+	sp.data[bNum] = b                                   // Store the byte in the sprite's data buffer.
 	sp.counter++                                        // Increment the data counter for the next byte.
 }
 
@@ -152,7 +154,7 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 	// Collision with graphics? Check if any bits in the sprite's bit-planes overlap with the foreground mask.
 	if ((foreMaskL & (plane0L | plane1L)) != 0) || ((foreMaskR & (plane0R | plane1R)) != 0) {
 		// Set the sprite-to-graphics collision flag for this sprite.
-		collisions.SetGraphicsCollision(sp.mask)
+		collisions.SetGraphicsPresence(sp.mask)
 		if (sp.core.mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled (MDP register), mask out the sprite pixels where a collision occurred.
 			// This makes the background "show through" the sprite.
@@ -193,7 +195,7 @@ func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, s
 	// Check for collisions with the foreground.
 	if ((foreMaskL & sDataL) != 0) || ((foreMaskR & sDataR) != 0) {
 		// Set the sprite-to-graphics collision flag.
-		collisions.SetGraphicsCollision(sp.mask)
+		collisions.SetGraphicsPresence(sp.mask)
 		if (sp.core.mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			sDataL &= ^foreMaskL // Mask left half.
@@ -233,7 +235,7 @@ func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collision
 	// Check graphics collision
 	if (foreMask & (plane0 | plane1)) != 0 {
 		// Set the sprite-to-graphics collision flag.
-		collisions.SetGraphicsCollision(sp.mask)
+		collisions.SetGraphicsPresence(sp.mask)
 		if (sp.core.mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			plane0 &= ^foreMask // Mask plane 0.
@@ -259,7 +261,7 @@ func (sp *Sprite) drawUnexpandedStandard(lineOffset int, collisions *Collisions,
 	// Check for collisions with the foreground.
 	if (foreMask & sData) != 0 {
 		// Set the sprite-to-graphics collision flag.
-		collisions.SetGraphicsCollision(sp.mask)
+		collisions.SetGraphicsPresence(sp.mask)
 		if (sp.core.mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			sData &= ^foreMask // Mask the sprite data.
@@ -268,7 +270,6 @@ func (sp *Sprite) drawUnexpandedStandard(lineOffset int, collisions *Collisions,
 	// Draw the sprite (24 pixels).
 	for idx := 0; idx < spriteUnexpandedPixels; idx, sData = idx+1, sData<<1 {
 		if (sData & planesMSB) != 0 {
-			// Check for sprite-to-sprite collisions *before* drawing.
 			if !collisions.SetSpritePresence(sOffset+idx, sp.mask) {
 				sp.set(lineOffset+idx, sColor)
 			}
@@ -284,6 +285,7 @@ func (sp *Sprite) planes2Color(plane0 uint32, plane1 uint32, sColor uint8) int {
 	//return sp.plane2ColorHelper[index&4](sColor)
 	switch index {
 	case 0b00:
+		//fmt.Println("TRANSPARENT")
 		return -1 // transparent
 	case 0b01:
 		return int(_colors[sp.core.mm0]) //mm0

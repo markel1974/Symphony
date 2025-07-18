@@ -39,9 +39,9 @@ func (c *Collisions) Prepare() {
 	copy(c.spritesPresence, c.spritesPresenceEmpty)
 }
 
-// SetGraphicsCollision sets a collision bit for graphics by performing a bitwise OR operation with the given bit.
+// SetGraphicsPresence sets a collision bit for graphics by performing a bitwise OR operation with the given bit.
 // 'sBit' is a bitmask representing the sprite that collided with the background (1, 2, 4, 8, 16, 32, 64, 128).
-func (c *Collisions) SetGraphicsCollision(sBit uint8) {
+func (c *Collisions) SetGraphicsPresence(sBit uint8) {
 	// Set the corresponding bit in the 'graphics' collision result.
 	c.graphics |= sBit
 }
@@ -49,15 +49,15 @@ func (c *Collisions) SetGraphicsCollision(sBit uint8) {
 // SetSpritePresence checks and sets sprite collision at a specific index with a sprite bit and returns collision status.
 // If a collision occurs, it updates the sprite collision state;
 // otherwise, it updates the sprite buffer with the new bit.
-func (c *Collisions) SetSpritePresence(collIdx int, sBit uint8) bool {
+func (c *Collisions) SetSpritePresence(index int, sBit uint8) bool {
 	// Boundary check.
-	if collIdx >= DisplayXFillMax {
+	if index >= DisplayXFillMax {
 		return false
 	}
-	sBitPresence := c.spritesPresence[collIdx]
+	sBitPresence := c.spritesPresence[index]
 	if sBitPresence == 0 {
 		// mark this sprite as present at this pixel.
-		c.spritesPresence[collIdx] = sBit
+		c.spritesPresence[index] = sBit
 		return false
 	}
 
