@@ -39,13 +39,14 @@ type VICSocket struct {
 	component    references.IComponent
 	connections  IVICSocketConnection
 	db           references.IDisplayBuffer
-	ram          references.IC64Ram
-	colorRam     references.IC64ColorRam
-	rom          references.IC64Roms
+	ramRef       references.IC64Ram
+	colorRamRef  references.IC64ColorRam
+	romRef       references.IC64Roms
+	quartzRef    references.IQuartz
 	ramRead      func(addr uint16) uint8
 	ramReadColor func(addr uint16) uint8
 	romCharRead  func(addr uint16) uint8
-	quartz       references.IQuartz
+	quartzCycle  func() uint64
 	intrId       uint32
 	hwId         string
 }
@@ -58,7 +59,7 @@ func NewVICSocket(parent references.IComponent, label string, connections IVICSo
 		label:       label,
 		connections: connections,
 		db:          nil,
-		quartz:      nil,
+		quartzRef:   nil,
 		intrId:      intrIrqVicBit,
 	}
 	v.hwId = references.IdIMos6569(v, label, 0)
@@ -76,34 +77,35 @@ func (v *VICSocket) Wire() error {
 	if v.IMos6569, err = references.ComponentToIMos6569(v.component); err != nil {
 		return err
 	}
-	idRam := references.IdIC64Ram(v.ram, v.label, 0)
-	if v.ram, err = references.ComponentToIC64Ram(v.parent.GetChildByHardwareId(idRam)); err != nil {
+	idRam := references.IdIC64Ram(v.ramRef, v.label, 0)
+	if v.ramRef, err = references.ComponentToIC64Ram(v.parent.GetChildByHardwareId(idRam)); err != nil {
 		return err
 	}
-	idColorRam := references.IdIC64ColorRam(v.colorRam, v.label, 0)
-	if v.colorRam, err = references.ComponentToIC64ColorRam(v.parent.GetChildByHardwareId(idColorRam)); err != nil {
+	idColorRam := references.IdIC64ColorRam(v.colorRamRef, v.label, 0)
+	if v.colorRamRef, err = references.ComponentToIC64ColorRam(v.parent.GetChildByHardwareId(idColorRam)); err != nil {
 		return err
 	}
-	idRom := references.IdIC64Roms(v.rom, v.label, 0)
-	if v.rom, err = references.ComponentToIC64Roms(v.parent.GetChildByHardwareId(idRom)); err != nil {
+	idRom := references.IdIC64Roms(v.romRef, v.label, 0)
+	if v.romRef, err = references.ComponentToIC64Roms(v.parent.GetChildByHardwareId(idRom)); err != nil {
 		return err
 	}
-	idQuartz := references.IdIQuartz(v.quartz, v.label, 0)
-	if v.quartz, err = references.ComponentToIQuartz(v.parent.GetChildByHardwareId(idQuartz)); err != nil {
+	idQuartz := references.IdIQuartz(v.quartzRef, v.label, 0)
+	if v.quartzRef, err = references.ComponentToIQuartz(v.parent.GetChildByHardwareId(idQuartz)); err != nil {
 		return err
 	}
 	if err = v.IMos6569.Bind(v); err != nil {
 		return err
 	}
-	v.ramRead = v.ram.Read
-	v.ramReadColor = v.colorRam.Read
-	v.romCharRead = v.rom.CharRead
+	v.ramRead = v.ramRef.Read
+	v.ramReadColor = v.colorRamRef.Read
+	v.romCharRead = v.romRef.CharRead
+	v.quartzCycle = v.quartzRef.Cycle
 	return nil
 }
 
 // Cycle retrieves the current clock cycle count from the associated quartz instance.
 func (v *VICSocket) Cycle() uint64 {
-	return v.quartz.Cycle()
+	return v.quartzCycle()
 }
 
 func (v *VICSocket) ReadRam(addr uint16) uint8 {

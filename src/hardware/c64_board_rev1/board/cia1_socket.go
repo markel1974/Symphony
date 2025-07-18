@@ -141,8 +141,8 @@ func (w *CIA1Socket) Reset() {
 	w.prevLPState = defaultLPState
 }
 
-// Update polls the state of connected joysticks and keyboard, and updates the key and reverse matrix based on input events.
-func (w *CIA1Socket) Update() {
+// PollInputs polls the state of connected joysticks and keyboard, and updates the key and reverse matrix based on input events.
+func (w *CIA1Socket) PollInputs() {
 	if joy1State, ok := w.joy1Poll(); ok {
 		w.joy1State = joy1State
 	}

@@ -26,6 +26,7 @@ func NewThrottleSocket(parent references.IComponent, label string, frameInterval
 	return s
 }
 
+// HardwareId returns the hardware identifier associated with the ThrottleSocket instance.
 func (s *ThrottleSocket) HardwareId() string {
 	return s.hwId
 }
