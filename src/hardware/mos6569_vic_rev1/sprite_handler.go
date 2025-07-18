@@ -88,19 +88,7 @@ func (sp *SpriteHandler) UpdateDisplayFlags() {
 	}
 }
 
-// UpdateCounterBase increments the base counters of sprites with vertical expansion enabled by 2 for each enabled sprite.
-// Handles y-expansion
-func (sp *SpriteHandler) UpdateCounterBase() {
-	for _, sprite := range sp.sprites {
-		mask := sprite.Mask()
-		if (sp.core.sprExpY & mask) != 0 {
-			sprite.CounterBaseIncrement(2)
-		}
-	}
-}
-
 // UpdateDMA updates the DMA status of sprites based on their raster line and enabled flags.
-// Called in cycle 12.
 func (sp *SpriteHandler) UpdateDMA() {
 	rasterY := sp.core.rasterY & 0xff
 	for _, sprite := range sp.sprites {
@@ -116,8 +104,18 @@ func (sp *SpriteHandler) UpdateDMA() {
 	}
 }
 
+// UpdateCounterBase increments the base counters of sprites with vertical expansion enabled by 2 for each enabled sprite.
+// Handles y-expansion
+func (sp *SpriteHandler) UpdateCounterBase() {
+	for _, sprite := range sp.sprites {
+		mask := sprite.Mask()
+		if (sp.core.sprExpY & mask) != 0 {
+			sprite.CounterBaseIncrement(2)
+		}
+	}
+}
+
 // UpdateCounterBaseDMA updates the base counters of sprites and manages DMA flags based on specific conditions.
-// Called in cycle 13.
 func (sp *SpriteHandler) UpdateCounterBaseDMA() {
 	for _, sprite := range sp.sprites {
 		mask := sprite.Mask()
@@ -155,6 +153,7 @@ func (sp *SpriteHandler) Draw() {
 	}
 	// Prepare the collision detection system for this scanline.
 	sp.collisions.Prepare()
+	// Draw active sprites
 	for _, sNum := range activeSprites {
 		sp.sprites[sNum].Draw(sp.offset, sp.collisions)
 	}
