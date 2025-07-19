@@ -68,9 +68,9 @@ func (c *Collisions) SetSpritePresence(index int, sBit uint8) bool {
 	return true
 }
 
-// Detect triggers the collision application process using the stored sprite and graphics collision data.
+// Commit triggers the collision application process using the stored sprite and graphics collision data.
 // This method *actually writes* the collision results to the VIC-II's registers.
-func (c *Collisions) Detect() {
+func (c *Collisions) Commit() {
 	// Call the CollisionApply method on the VIC core, passing the collision results.
 	c.core.CollisionApply(c.spritesCollision, c.graphics)
 }

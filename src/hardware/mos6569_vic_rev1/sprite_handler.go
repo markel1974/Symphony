@@ -19,25 +19,25 @@ const (
 
 // SpriteHandler manages sprite functionalities within the VIC-II system, including rendering, collisions, and DMA operations.
 type SpriteHandler struct {
-	core         *VIC        // core represents the pointer to the VIC instance used by the SpriteHandler for rendering and system control.
-	collisions   *Collisions // collisions manages sprite collision detection within the SpriteHandler.
-	sprites      []*Sprite   // sprites stores pointers to all Sprite instances managed by the SpriteHandler.
-	dmaFlags     uint8       // dmaFlags represents the active Direct Memory Access (DMA) flags for sprite operations in the current cycle.
-	displayFlags uint8       // displayFlags represents the active display flags for sprites, updated based on their DMA state and counters.
-	spriteFlags  uint8       // spriteFlags represents the combined state of sprite display activity for the current line in the VIC-II system.
-	offset       int         // offset is the horizontal offset used during sprite rendering to determine the starting position on the scanline.
+	core               *VIC        // core represents the pointer to the VIC instance used by the SpriteHandler for rendering and system control.
+	collisions         *Collisions // collisions manages sprite collision detection within the SpriteHandler.
+	sprites            []*Sprite   // sprites stores pointers to all Sprite instances managed by the SpriteHandler.
+	dmaFlags           uint8       // dmaFlags represents the active Direct Memory Access (DMA) flags for sprite operations in the current cycle.
+	spriteFlags        uint8       // spriteFlags represents the combined state of sprite display activity for the current line in the VIC-II system.
+	currentSpriteFlags uint8       // currentSpriteFlags represents the active display flags for sprites, updated based on their DMA state and counters.
+	offset             int         // offset is the horizontal offset used during sprite rendering to determine the starting position on the scanline.
 }
 
 // NewSprites initializes and returns a new instance of the SpriteHandler struct with default settings and allocations.
 // It sets up sprite data, counters, and dependencies using the provided VIC core, collisions, and display buffer.
 func NewSprites(core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer) *SpriteHandler {
 	s := &SpriteHandler{
-		core:         core,
-		collisions:   collisions,
-		displayFlags: 0,
-		dmaFlags:     0,
-		offset:       0,
-		sprites:      make([]*Sprite, SpriteNumber),
+		core:               core,
+		collisions:         collisions,
+		currentSpriteFlags: 0,
+		dmaFlags:           0,
+		offset:             0,
+		sprites:            make([]*Sprite, SpriteNumber),
 	}
 	for i := range s.sprites {
 		s.sprites[i] = NewSprite(core, displayBuffer, uint8(i), len(s.sprites))
@@ -87,20 +87,8 @@ func (sp *SpriteHandler) FetchData(num uint8, bNum uint8) {
 	}
 }
 
-// UpdateDisplayFlags updates the display flags for sprites by checking and clearing flags based on DMA activity status.
-// It determines which sprites are currently active for display based on DMA and counter-status.
-// Called at the *end* of each scanline (cycle 58).
-func (sp *SpriteHandler) UpdateDisplayFlags() {
-	sp.spriteFlags = sp.displayFlags
-	for _, sprite := range sp.sprites {
-		mask := sprite.Mask()
-		if ((sp.displayFlags & mask) != 0) && ((sp.dmaFlags & mask) == 0) {
-			sp.displayFlags &= ^mask
-		}
-	}
-}
-
-// UpdateDMA updates the DMA status of sprites based on their raster line and enabled flags.
+// UpdateDMA updates the Direct Memory Access (DMA) flags for sprites at the current raster line position.
+// It resets the counter-base for active sprites and handles vertical expansion mode and line-specific configurations.
 func (sp *SpriteHandler) UpdateDMA() {
 	rasterY := sp.core.rasterY & 0xff
 	for _, sprite := range sp.sprites {
@@ -115,20 +103,6 @@ func (sp *SpriteHandler) UpdateDMA() {
 		}
 	}
 }
-
-/*
-// IncrementCounterBase increments the base counter of each sprite by the provided value and updates DMA flags accordingly.
-func (sp *SpriteHandler) IncrementCounterBase(increment uint16) {
-	for _, sprite := range sp.sprites {
-		mask := sprite.Mask()
-		if (sp.core.sprExpY & mask) != 0 {
-			if sprite.CounterBaseIncrement(increment) {
-				sp.dmaFlags &= ^mask
-			}
-		}
-	}
-}
-*/
 
 // IncrementCounterBase advances the vertical position counter of each sprite by the specified increment, handling expansion logic.
 // If a sprite is in vertical expansion mode and on the second line of an expanded pair, the counter is not advanced.
@@ -145,23 +119,34 @@ func (sp *SpriteHandler) IncrementCounterBase(increment uint16) {
 		} else {
 			// Otherwise (standard sprite OR first line of an expanded pair),
 			// advance to the next row of sprite data.
-			if sprite.CounterBaseIncrement(increment) {
+			if sprite.IncrementCounterBase(increment) {
 				sp.dmaFlags &= ^mask
 			}
 		}
 	}
 }
 
-// UpdateDisplayYFlags updates the display flags for sprites based on raster line position and active DMA flags.
-// Called at the beginning of each scanline (cycle 14).
-func (sp *SpriteHandler) UpdateDisplayYFlags() {
-	rasterY := sp.core.rasterY & 0xff
+// PrepareSpriteFlags updates the current sprite display flags based on DMA activity and the current raster line position.
+func (sp *SpriteHandler) PrepareSpriteFlags() {
+	rasterY := uint8(sp.core.rasterY & 0xff)
 	for _, sprite := range sp.sprites {
 		num := sprite.Number()
 		mask := sprite.Mask()
-		sprite.CounterBaseApply()
-		if ((sp.dmaFlags & mask) != 0) && (rasterY == uint16(sp.core.mXy[num])) {
-			sp.displayFlags |= mask
+		sprite.CommitCounterBase()
+		if ((sp.dmaFlags & mask) != 0) && (rasterY == sp.core.mXy[num]) {
+			sp.currentSpriteFlags |= mask
+		}
+	}
+}
+
+// CommitSpriteFlags updates the display flags for sprites by checking and clearing flags based on DMA activity status.
+// It determines which sprites are currently active for display based on DMA and counter-status.
+func (sp *SpriteHandler) CommitSpriteFlags() {
+	sp.spriteFlags = sp.currentSpriteFlags
+	for _, sprite := range sp.sprites {
+		mask := sprite.Mask()
+		if ((sp.currentSpriteFlags & mask) != 0) && ((sp.dmaFlags & mask) == 0) {
+			sp.currentSpriteFlags &= ^mask
 		}
 	}
 }
@@ -169,7 +154,6 @@ func (sp *SpriteHandler) UpdateDisplayYFlags() {
 // Draw renders all active sprites for the current line based on their flags, properties, and configurations.
 // It handles both expanded and unexpanded sprites in standard and multicolor modes.
 // Collision detection for sprites is carried out during the rendering process.
-// Called in cycles 57-62.
 func (sp *SpriteHandler) Draw() {
 	activeSprites := _spritesData[sp.spriteFlags]
 	if activeSprites == nil {
@@ -182,7 +166,7 @@ func (sp *SpriteHandler) Draw() {
 		sp.sprites[sNum].Draw(sp.offset, sp.collisions)
 	}
 	// Perform the final collision detection checks.
-	sp.collisions.Detect()
+	sp.collisions.Commit()
 }
 
 // ModeUpdate performs a mode-specific update for all sprites managed by the SpriteHandler by invoking their ModeUpdate method.

@@ -411,7 +411,7 @@ func palCycle56(vic *VIC) {
 //go:nosplit
 func palCycle57(vic *VIC) {
 	vic.borders.Column40Apply()
-	vic.sprites.UpdateDisplayFlags()
+	vic.sprites.CommitSpriteFlags()
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
@@ -431,7 +431,7 @@ func palCycle58(vic *VIC) {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.sprites.UpdateDisplayYFlags()
+	vic.sprites.PrepareSpriteFlags()
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.sprites.FetchPtr(0)     //phi1
 		vic.sprites.FetchData(0, 0) //phi2
@@ -469,6 +469,7 @@ func palCycle59(vic *VIC) {
 func palCycle60(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.graphics.DrawBackground()
 	}
 	//if vic.drawLine {
 	//	vic.graphics.DrawBackground()
@@ -540,7 +541,6 @@ func palCycle63(vic *VIC) {
 	}
 
 	if vic.drawLine {
-		vic.graphics.DrawBackground()
 		vic.sprites.Draw()
 		vic.borders.Draw()
 		vic.lineStart += DisplayX

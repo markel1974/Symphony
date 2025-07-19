@@ -94,14 +94,14 @@ func (sp *Sprite) CounterBaseReset() {
 	sp.counterBase = 0
 }
 
-// CounterBaseIncrement increases the `counterBase` of the `Sprite` by the specified increment value.
-func (sp *Sprite) CounterBaseIncrement(increment uint16) bool {
+// IncrementCounterBase increases the `counterBase` of the `Sprite` by the specified increment value.
+func (sp *Sprite) IncrementCounterBase(increment uint16) bool {
 	sp.counterBase += increment
 	return (sp.counterBase & 0x3f) == 0x3f
 }
 
-// CounterBaseApply sets the sprite's data counter to its base value stored in dataCounterBase.
-func (sp *Sprite) CounterBaseApply() {
+// CommitCounterBase sets the sprite's data counter to its base value stored in dataCounterBase.
+func (sp *Sprite) CommitCounterBase() {
 	sp.counter = (sp.counterBase / dataAlignment) * dataAlignment
 }
 
