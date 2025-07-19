@@ -5,6 +5,18 @@ import (
 	"log"
 )
 
+// bitSprite0 to bitSprite7 represent bitmask values for individual sprite identifiers.
+const (
+	bitSprite0 = 0x1
+	bitSprite1 = 0x2
+	bitSprite2 = 0x4
+	bitSprite3 = 0x8
+	bitSprite4 = 0x10
+	bitSprite5 = 0x20
+	bitSprite6 = 0x40
+	bitSprite7 = 0x80
+)
+
 // SpriteHandler manages sprite functionalities within the VIC-II system, including rendering, collisions, and DMA operations.
 type SpriteHandler struct {
 	core         *VIC        // core represents the pointer to the VIC instance used by the SpriteHandler for rendering and system control.
