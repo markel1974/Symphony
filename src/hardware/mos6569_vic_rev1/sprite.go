@@ -100,6 +100,7 @@ func (sp *Sprite) CounterBaseApply() {
 	sp.counter = sp.counterBase
 }
 
+// ModeUpdate updates the sprite's rendering mode pipeline based on multicolor and horizontal expansion flags.
 func (sp *Sprite) ModeUpdate() {
 	multiColor := (sp.core.mmc & sp.mask) != 0
 	expandedH := (sp.core.mxe & sp.mask) != 0
