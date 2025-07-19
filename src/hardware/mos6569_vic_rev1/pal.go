@@ -461,17 +461,21 @@ func palCycle59(vic *VIC) {
 	}
 }
 
-// palCycle60 manages the rendering of VIC-II components for a single PAL clock cycle, ensuring proper sprite and border updates.
+// palCycle60 handles a single PAL clock cycle at cycle 60, managing border updates, graphics access, and sprite DMA operations.
+// It checks and acquires colors for borders if drawing is active, manages sprite data fetching, and controls idle access behavior.
+// Sprite DMA flags and `BA` signal are evaluated and cleared or updated according to the specified conditions for this cycle.
 //
 //go:nosplit
 func palCycle60(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
-		vic.graphics.DrawBackground()
-		vic.sprites.Draw()
-		vic.borders.Draw()
-		vic.lineStart += DisplayX
 	}
+	//if vic.drawLine {
+	//	vic.graphics.DrawBackground()
+	//	vic.sprites.Draw()
+	//	vic.borders.Draw()
+	//	vic.lineStart += DisplayX
+	//}
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite1) != 0 {
 		vic.sprites.FetchPtr(1)     //phi1
@@ -518,8 +522,8 @@ func palCycle62(vic *VIC) {
 	}
 }
 
-// palCycle63 handles the operations and state updates for cycle 63 in the VIC chip's PAL display timing.
-// It manages sprite DMA access, updates display flip-flop state, and interacts with video memory.
+// palCycle63 executes a specific raster operation sequence based on VIC-II's internal state for cycle 63 of the PAL frame.
+// It handles sprite DMA fetches, updates the vertical border flip-flop, sets the BA signal, and processes graphical output.
 //
 //go:nosplit
 func palCycle63(vic *VIC) {
@@ -534,5 +538,13 @@ func palCycle63(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite4) != 0 {
 		vic.SetBALow()
 	}
+
+	if vic.drawLine {
+		vic.graphics.DrawBackground()
+		vic.sprites.Draw()
+		vic.borders.Draw()
+		vic.lineStart += DisplayX
+	}
+
 	vic.socketLastCycle()
 }
