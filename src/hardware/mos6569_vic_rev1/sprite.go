@@ -1,6 +1,7 @@
 package mos6569
 
 import (
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -26,6 +27,7 @@ const (
 // dataCounterBase serves as a base value for resetting the sprite data counter.
 // set is a function for setting pixel data on the sprite's display buffer.
 type Sprite struct {
+	*component.BaseComponent
 	num         uint8
 	max         int
 	mask        uint8
@@ -41,21 +43,53 @@ type Sprite struct {
 
 // NewSprite initializes and returns a new Sprite instance with the provided VIC core, display buffer, and sprite number.
 // It allocates memory for sprite data, sets initial values for counters, and configures the display function.
-func NewSprite(core *VIC, displayBuffer references.IDisplayBuffer, sNum uint8, sMax int) *Sprite {
+func NewSprite(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, displayBuffer references.IDisplayBuffer, sNum uint8, sMax int) *Sprite {
 	sp := &Sprite{
-		core:        core,
-		set:         displayBuffer.Set,
-		num:         sNum,
-		mask:        uint8(1) << sNum,
-		data:        make([]uint8, dataAlignment), // Allocate space for sprite data.
-		counterBase: 0,
-		counter:     dataCounterLastByte, // Initialize sprite data counter to the last byte.
-		ptr:         0,
-		max:         sMax,
+		BaseComponent: component.NewBaseComponent(),
+		core:          core,
+		set:           displayBuffer.Set,
+		num:           sNum,
+		mask:          uint8(1) << sNum,
+		data:          make([]uint8, dataAlignment), // Allocate space for sprite data.
+		counterBase:   0,
+		counter:       dataCounterLastByte, // Initialize sprite data counter to the last byte.
+		ptr:           0,
+		max:           sMax,
 	}
 	//sp.plane2ColorHelper = sp.createPlane2ColorHelper()
 	sp.ModeUpdate()
+	sp.BaseComponent.Register(factory, parent, "sprite", sp, references.IdInternalComponent(label, instance, "Sprite"))
 	return sp
+}
+
+// Setup initializes the Sprite instance with necessary configurations prior to rendering or operation.
+func (sp *Sprite) Setup() error {
+	return nil
+}
+
+// Connect establishes a connection between the sprite and its core, enabling necessary hardware dependencies.
+// Returns an error if the connection fails.
+func (sp *Sprite) Connect() error {
+	return nil
+}
+
+// EmulationRequired determines if emulation logic is required for the sprite, always returning false.
+func (sp *Sprite) EmulationRequired() bool {
+	return false
+}
+
+// Emulate executes the main processing logic for the sprite during each emulation cycle, updating its state and behavior.
+func (sp *Sprite) Emulate() {
+
+}
+
+// Internal checks if the sprite operates in internal mode, typically for system-bound sprites or debug states.
+func (sp *Sprite) Internal() bool {
+	return true
+}
+
+// Reset reinitializes the sprite's internal state, counters, and data to their default configuration.
+func (sp *Sprite) Reset() {
 }
 
 // Number returns the unique identifier of the sprite as an 8-bit unsigned integer.

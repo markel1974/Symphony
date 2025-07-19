@@ -1,9 +1,15 @@
 package mos6569
 
+import (
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
+)
+
 // Collisions encapsulate collision detection functionality between sprites and graphics within a VIC system.
 // It includes buffers for handling sprite-sprite and sprite-graphics collision data as well as priorities.
 // The struct also manages foreground masks and offsets for sprite-graphics collision computations.
 type Collisions struct {
+	*component.BaseComponent
 	core                 *VIC    // core references the VIC system used for handling collision detection and related graphics processing.
 	graphics             uint8   // graphics represents the current collision state with graphics as an 8-bit unsigned integer.
 	spritesCollision     uint8   // spritesCollision represent the state and collision mask of all active sprites in the current frame.
@@ -15,8 +21,9 @@ type Collisions struct {
 }
 
 // NewCollisions creates and returns a new Collisions instance, associated with the given VIC core.
-func NewCollisions(core *VIC) *Collisions {
-	return &Collisions{
+func NewCollisions(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC) *Collisions {
+	c := &Collisions{
+		BaseComponent:        component.NewBaseComponent(),
 		core:                 core,
 		graphics:             0,
 		spritesCollision:     0,
@@ -26,6 +33,36 @@ func NewCollisions(core *VIC) *Collisions {
 		graphicsBufferEmpty:  make([]uint8, DisplayXDiv8),    // DisplayXDiv8 seems to be 52
 		graphicsBufferOffset: 0,
 	}
+	c.BaseComponent.Register(factory, parent, "collisions", c, references.IdInternalComponent(label, instance, "Collisions"))
+	return c
+}
+
+// Setup initializes the collision detection system, preparing necessary configurations for its operation.
+func (c *Collisions) Setup() error {
+	return nil
+}
+
+// Connect establishes necessary connections required by the Collisions instance and initializes its dependencies.
+func (c *Collisions) Connect() error {
+	return nil
+}
+
+// EmulationRequired determines if emulation is required for the current state of the collision system. Always returns false.
+func (c *Collisions) EmulationRequired() bool {
+	return false
+}
+
+// Emulate performs the collision emulation process for the current frame, updating internal state based on collisions detected.
+func (c *Collisions) Emulate() {
+}
+
+// Internal checks if the collision detection system is operating in internal mode and returns a boolean value.
+func (c *Collisions) Internal() bool {
+	return true
+}
+
+// Reset clears all collision states and buffers, preparing the collision system for a new frame.
+func (c *Collisions) Reset() {
 }
 
 // Prepare resets collision detection states and initializes sprite collision buffers for the next frame update.

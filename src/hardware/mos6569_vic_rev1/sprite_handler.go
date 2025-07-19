@@ -1,6 +1,7 @@
 package mos6569
 
 import (
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
 	"log"
 )
@@ -19,6 +20,7 @@ const (
 
 // SpriteHandler manages sprite functionalities within the VIC-II system, including rendering, collisions, and DMA operations.
 type SpriteHandler struct {
+	*component.BaseComponent
 	core               *VIC        // core represents the pointer to the VIC instance used by the SpriteHandler for rendering and system control.
 	collisions         *Collisions // collisions manages sprite collision detection within the SpriteHandler.
 	sprites            []*Sprite   // sprites stores pointers to all Sprite instances managed by the SpriteHandler.
@@ -30,8 +32,9 @@ type SpriteHandler struct {
 
 // NewSprites initializes and returns a new instance of the SpriteHandler struct with default settings and allocations.
 // It sets up sprite data, counters, and dependencies using the provided VIC core, collisions, and display buffer.
-func NewSprites(core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer) *SpriteHandler {
+func NewSprites(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer) *SpriteHandler {
 	s := &SpriteHandler{
+		BaseComponent:      component.NewBaseComponent(),
 		core:               core,
 		collisions:         collisions,
 		currentSpriteFlags: 0,
@@ -39,16 +42,41 @@ func NewSprites(core *VIC, collisions *Collisions, displayBuffer references.IDis
 		offset:             0,
 		sprites:            make([]*Sprite, SpriteNumber),
 	}
+	s.BaseComponent.Register(factory, parent, "spriteHandler", s, references.IdInternalComponent(label, instance, "SpriteHandler"))
 	for i := range s.sprites {
-		s.sprites[i] = NewSprite(core, displayBuffer, uint8(i), len(s.sprites))
+		s.sprites[i] = NewSprite(s, factory, "SpriteHandler", i, core, displayBuffer, uint8(i), len(s.sprites))
 	}
 	return s
 }
 
 // Setup initializes the SpriteHandler instance, preparing internal state and configurations needed for sprite operations.
-func (sp *SpriteHandler) Setup() {
+func (sp *SpriteHandler) Setup() error {
 	// Nothing to do here at the moment, as initialization is handled in NewSprites.
 	// This function is kept for consistency and potential future use.
+	return nil
+}
+
+// Connect establishes and initializes the necessary connections for the SpriteHandler. Returns an error if connection fails.
+func (sp *SpriteHandler) Connect() error {
+	return nil
+}
+
+// EmulationRequired determines if sprite emulation logic is required for the current system configuration.
+func (sp *SpriteHandler) EmulationRequired() bool {
+	return false
+}
+
+// Emulate executes a single emulation step for sprite processing, handling rendering, collisions, and DMA updates.
+func (sp *SpriteHandler) Emulate() {
+}
+
+// Internal determines whether the SpriteHandler operates in an internal, self-contained mode, returning a boolean value.
+func (sp *SpriteHandler) Internal() bool {
+	return true
+}
+
+// Reset reinitializes the SpriteHandler's internal state and configurations to its default settings.
+func (sp *SpriteHandler) Reset() {
 }
 
 // SetOffset updates the `offset` value of the SpriteHandler instance with the given value.

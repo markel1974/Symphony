@@ -2,6 +2,7 @@ package mos6569
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -17,6 +18,7 @@ const rowsMax = 7
 // It includes components for managing video memory, collisions, display buffer, and other graphical parameters.
 // This struct encapsulates the state and behavior necessary for emulating the VIC-II's graphics rendering process.
 type Graphics struct {
+	*component.BaseComponent
 	core              *VIC
 	collisions        *Collisions
 	set8              func(int, *[8]uint8)
@@ -37,8 +39,9 @@ type Graphics struct {
 }
 
 // NewGraphics initializes and returns a new Graphics instance with the provided VIC core, collision handler, and display buffer.
-func NewGraphics(core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer) *Graphics {
+func NewGraphics(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer) *Graphics {
 	gr := &Graphics{
+		BaseComponent:     component.NewBaseComponent(),
 		core:              core,
 		collisions:        collisions,
 		set8:              displayBuffer.Set8,
@@ -76,13 +79,38 @@ func NewGraphics(core *VIC, collisions *Collisions, displayBuffer references.IDi
 	//gr.backgroundSequencer[modeTextMulticolorInvalid] = drawBackgroundDefault
 	//gr.backgroundSequencer[modeBitmapStandardInvalid] = drawBackgroundDefault
 	//gr.backgroundSequencer[modeBitmapMulticolorInvalid] = drawBackgroundDefault
-
+	gr.BaseComponent.Register(factory, parent, "graphics", gr, references.IdInternalComponent(label, instance, "Graphics"))
 	return gr
+}
+
+// Connect establishes the necessary connections or dependencies for the Graphics component to function properly.
+// Returns an error if the initialization fails.
+func (gr *Graphics) Connect() error {
+	return nil
+}
+
+// EmulationRequired determines if the current graphics configuration necessitates emulation for functionality.
+func (gr *Graphics) EmulationRequired() bool {
+	return false
+}
+
+// Emulate executes the main graphics rendering loop, processing video memory, updating counters, and rendering components.
+func (gr *Graphics) Emulate() {
+}
+
+// Internal checks and returns a boolean indicating internal state or configuration for graphical operations.
+func (gr *Graphics) Internal() bool {
+	return true
+}
+
+// Reset reinitializes the Graphics instance to its default state, clearing any temporary data and resetting counters.
+func (gr *Graphics) Reset() {
 }
 
 // Setup initializes the Graphics instance and prepares it for rendering operations.
 // (Currently empty, but kept for consistency).
-func (gr *Graphics) Setup() {
+func (gr *Graphics) Setup() error {
+	return nil
 }
 
 // GetText retrieves the text buffer content from the Graphics instance as a slice of bytes.

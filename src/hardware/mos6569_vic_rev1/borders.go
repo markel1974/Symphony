@@ -1,6 +1,7 @@
 package mos6569
 
 import (
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 
@@ -30,6 +31,7 @@ const (
 
 // Borders is a type responsible for managing and updating border data, configurations, and states for a display system.
 type Borders struct {
+	*component.BaseComponent
 	core               *VIC
 	setMulti8          func(int, uint8)
 	horizontalFlipFlop uint8
@@ -47,8 +49,9 @@ type Borders struct {
 
 // NewBorder initializes and returns a new Borders object using the provided VIC core and display buffer interface.
 // It configures left, right, center, and sequencer states based on display buffer properties.
-func NewBorder(core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
+func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
 	gr := &Borders{
+		BaseComponent:      component.NewBaseComponent(),
 		setMulti8:          displayBuffer.SetMulti8,
 		core:               core,
 		horizontalFlipFlop: 0,
@@ -68,7 +71,36 @@ func NewBorder(core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
 		gr.center = append(gr.center, x)
 	}
 	gr.sequencer = gr.createSequencer()
+	gr.BaseComponent.Register(factory, parent, "border", gr, references.IdInternalComponent(label, instance, "Border"))
 	return gr
+}
+
+// Setup initializes the Borders instance and prepares it for operation. It returns an error if the setup fails.
+func (b *Borders) Setup() error {
+	return nil
+}
+
+// Connect establishes the necessary connections or associations for the Borders instance and returns an error if it fails.
+func (b *Borders) Connect() error {
+	return nil
+}
+
+// EmulationRequired checks if emulation is required for the Borders instance, always returning false.
+func (b *Borders) EmulationRequired() bool {
+	return false
+}
+
+// Emulate performs the main emulation logic for the Borders instance, processing updates and managing its internal state.
+func (b *Borders) Emulate() {
+}
+
+// Internal returns true if the internal border logic is currently active.
+func (b *Borders) Internal() bool {
+	return true
+}
+
+// Reset clears and reinitializes the internal state of the Borders instance, preparing it for subsequent operations.
+func (b *Borders) Reset() {
 }
 
 // ColumnInitialize resets and updates the sequencerState based on the horizontalFlipFlop value for the left border bit.

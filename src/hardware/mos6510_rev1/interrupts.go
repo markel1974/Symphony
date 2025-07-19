@@ -50,7 +50,7 @@ func NewInterrupts(parent references.IComponent, factory references.IComponentFa
 		irqBreaker:    false,
 		nmiExec:       false,
 	}
-	p.BaseComponent.Register(factory, parent, "interrupts", p, references.IdInternalComponent(label, instance, "INTERRUPTS"))
+	p.BaseComponent.Register(factory, parent, "interrupts", p, references.IdInternalComponent(label, instance, "Interrupts"))
 	return p
 }
 

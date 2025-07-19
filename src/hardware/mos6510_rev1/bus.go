@@ -18,7 +18,7 @@ func NewBus(parent references.IComponent, factory references.IComponentFactory, 
 	p := &Bus{
 		BaseComponent: component.NewBaseComponent(),
 	}
-	p.BaseComponent.Register(factory, parent, "bus", p, references.IdInternalComponent(label, instance, "BUS"))
+	p.BaseComponent.Register(factory, parent, "bus", p, references.IdInternalComponent(label, instance, "Bus"))
 	return p
 }
 

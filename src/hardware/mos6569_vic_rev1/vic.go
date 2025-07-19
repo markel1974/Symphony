@@ -117,6 +117,7 @@ type VIC struct {
 	bmm                   bool     // bmm indicates a boolean value used for specific conditional checks or state representation.
 	ecm                   bool     // ecm indicates whether the ECM is active or not.
 	columnSel             bool     // columnSel indicates whether column selection mode is enabled.
+	label                 string
 }
 
 // NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
@@ -176,6 +177,7 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		bmm:              false,
 		ecm:              false,
 		columnSel:        false,
+		label:            label,
 	}
 	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIMos6569(vic, label, instance))
 	return vic
@@ -200,15 +202,25 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.readColorRam = socket.ReadColorRam
 	vic.readCharRom = socket.ReadCharRom
 
-	vic.collisions = NewCollisions(vic)
-	vic.graphics = NewGraphics(vic, vic.collisions, displayBuffer)
-	vic.sprites = NewSprites(vic, vic.collisions, displayBuffer)
-	vic.borders = NewBorder(vic, displayBuffer)
+	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic)
+	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer)
+	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer)
+	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, vic, displayBuffer)
 	vic.vBlankNextCycle = false
 	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)
-	vic.graphics.Setup()
-	vic.sprites.Setup()
+	if err := vic.collisions.Setup(); err != nil {
+		return err
+	}
+	if err := vic.graphics.Setup(); err != nil {
+		return err
+	}
+	if err := vic.sprites.Setup(); err != nil {
+		return err
+	}
+	if err := vic.borders.Setup(); err != nil {
+		return err
+	}
 	vic.curr = _pal
 
 	return nil
