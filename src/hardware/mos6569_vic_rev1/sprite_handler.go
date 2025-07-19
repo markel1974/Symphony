@@ -118,11 +118,11 @@ func (sp *SpriteHandler) FetchData(num uint8, bNum uint8) {
 // UpdateDMA updates the Direct Memory Access (DMA) flags for sprites at the current raster line position.
 // It resets the counter-base for active sprites and handles vertical expansion mode and line-specific configurations.
 func (sp *SpriteHandler) UpdateDMA() {
-	rasterY := sp.core.rasterY & 0xff
+	rasterY := uint8(sp.core.rasterY & 0xff)
 	for _, sprite := range sp.sprites {
 		num := sprite.Number()
 		mask := sprite.Mask()
-		if ((sp.core.me & mask) != 0) && (rasterY == uint16(sp.core.mXy[num])) {
+		if ((sp.core.me & mask) != 0) && (rasterY == sp.core.mXy[num]) {
 			sp.dmaFlags |= mask
 			sprite.CounterBaseReset()
 			if (sp.core.mye & mask) != 0 {

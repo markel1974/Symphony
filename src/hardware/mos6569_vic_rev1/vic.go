@@ -251,7 +251,6 @@ func (vic *VIC) GetVASignal() uint8 {
 
 // configChanged handles updates to the VIC configuration and applies necessary changes to its state.
 func (vic *VIC) configChanged() {
-	//vic.skipFrames = vic.cfg.SkipFrames()
 }
 
 // Emulate executes one cycle of the VIC, processing the current function and updating the raster position.
@@ -421,7 +420,6 @@ func (vic *VIC) AccessRefresh() {
 func (vic *VIC) ReadByte(addr uint16) uint8 {
 	va := addr | vic.ciaVaBase
 	if (va & ioAndCharRomArea) == charRomOffset {
-		//TODO ERRORE quando il vic legge dalla char rom non viene settato il last byte
 		vic.lastByte = vic.readCharRom(va)
 		return vic.lastByte
 	}
@@ -639,7 +637,7 @@ func (vic *VIC) WriteRegister(addr2 uint16, data uint8) {
 		vic.vaBase = data
 		vic.memoryPointerUpdate()
 	case 0x19: // IRQ Latch
-		// TODO VERIFICA IMPLEMENTAZIONE
+		// Verify implementation
 		vic.irqLatch &= ^((data & 0xf) | irqMasterBit)
 		vic.irqVerify() //can emit irq
 		//old
