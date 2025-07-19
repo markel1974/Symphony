@@ -12,6 +12,10 @@ const (
 	planesMSB                = 1 << 31 // planesMSB is the MSB Used to check the leftmost pixel containing sprite data.
 )
 
+const (
+	dataAlignment = 3
+)
+
 // Sprite represents a hardware sprite object used for rendering graphical elements on a screen.
 // sNum is the sprite number, identifying the specific sprite.
 // sBit is the sprite bit, used for masking and collision flag operations.
@@ -43,7 +47,7 @@ func NewSprite(core *VIC, displayBuffer references.IDisplayBuffer, sNum uint8, s
 		set:         displayBuffer.Set,
 		num:         sNum,
 		mask:        uint8(1) << sNum,
-		data:        make([]uint8, 3), // Allocate space for sprite data.
+		data:        make([]uint8, dataAlignment), // Allocate space for sprite data.
 		counterBase: 0,
 		counter:     dataCounterLastByte, // Initialize sprite data counter to the last byte.
 		ptr:         0,
@@ -81,9 +85,9 @@ func (sp *Sprite) FetchData(bNum uint8) {
 }
 
 // CounterBase retrieves the base value of the sprite's data counter.
-func (sp *Sprite) CounterBase() uint16 {
-	return sp.counterBase
-}
+//func (sp *Sprite) CounterBase1() uint16 {
+//	return sp.counterBase
+//}
 
 // CounterBaseReset resets the sprite's counterBase to zero. It is typically used to reinitialize the base counter.
 func (sp *Sprite) CounterBaseReset() {
@@ -91,13 +95,14 @@ func (sp *Sprite) CounterBaseReset() {
 }
 
 // CounterBaseIncrement increases the `counterBase` of the `Sprite` by the specified increment value.
-func (sp *Sprite) CounterBaseIncrement(increment uint16) {
+func (sp *Sprite) CounterBaseIncrement(increment uint16) bool {
 	sp.counterBase += increment
+	return (sp.counterBase & 0x3f) == 0x3f
 }
 
 // CounterBaseApply sets the sprite's data counter to its base value stored in dataCounterBase.
 func (sp *Sprite) CounterBaseApply() {
-	sp.counter = sp.counterBase
+	sp.counter = (sp.counterBase / dataAlignment) * dataAlignment
 }
 
 // ModeUpdate updates the sprite's rendering mode pipeline based on multicolor and horizontal expansion flags.
@@ -286,7 +291,6 @@ func (sp *Sprite) planes2Color(plane0 uint32, plane1 uint32, sColor uint8) int {
 	//return sp.plane2ColorHelper[index&4](sColor)
 	switch index {
 	case 0b00:
-		//fmt.Println("TRANSPARENT")
 		return -1 // transparent
 	case 0b01:
 		return int(_colors[sp.core.mm0]) //mm0

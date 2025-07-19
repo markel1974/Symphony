@@ -116,26 +116,38 @@ func (sp *SpriteHandler) UpdateDMA() {
 	}
 }
 
-// UpdateCounterBase increments the base counters of sprites with vertical expansion enabled by 2 for each enabled sprite.
-// Handles y-expansion
-func (sp *SpriteHandler) UpdateCounterBase() {
+/*
+// IncrementCounterBase increments the base counter of each sprite by the provided value and updates DMA flags accordingly.
+func (sp *SpriteHandler) IncrementCounterBase(increment uint16) {
 	for _, sprite := range sp.sprites {
 		mask := sprite.Mask()
 		if (sp.core.sprExpY & mask) != 0 {
-			sprite.CounterBaseIncrement(2)
+			if sprite.CounterBaseIncrement(increment) {
+				sp.dmaFlags &= ^mask
+			}
 		}
 	}
 }
+*/
 
-// UpdateCounterBaseDMA updates the base counters of sprites and manages DMA flags based on specific conditions.
-func (sp *SpriteHandler) UpdateCounterBaseDMA() {
+// IncrementCounterBase advances the vertical position counter of each sprite by the specified increment, handling expansion logic.
+// If a sprite is in vertical expansion mode and on the second line of an expanded pair, the counter is not advanced.
+// Otherwise, the counter is incremented, and if the operation completes the sprite's row, its DMA flag is cleared.
+func (sp *SpriteHandler) IncrementCounterBase(increment uint16) {
 	for _, sprite := range sp.sprites {
 		mask := sprite.Mask()
-		if (sp.core.sprExpY & mask) != 0 {
-			sprite.CounterBaseIncrement(1)
-		}
-		if (sprite.CounterBase() & 0x3f) == 0x3f {
-			sp.dmaFlags &= ^mask
+		// Check if sprite is enabled for vertical expansion
+		isExpanded := (sp.core.mye & mask) != 0
+		// Check the flip-flop state for sprite expansion
+		isSecondLineOfPair := (sp.core.sprExpY & mask) == 0
+		if isExpanded && isSecondLineOfPair {
+			// do nothing
+		} else {
+			// Otherwise (standard sprite OR first line of an expanded pair),
+			// advance to the next row of sprite data.
+			if sprite.CounterBaseIncrement(increment) {
+				sp.dmaFlags &= ^mask
+			}
 		}
 	}
 }

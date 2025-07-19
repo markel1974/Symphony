@@ -278,7 +278,7 @@ func palCycle15(vic *VIC) {
 	}
 	vic.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.sprites.UpdateCounterBase()
+	vic.sprites.IncrementCounterBase(2)
 	vic.graphics.ResetLineIndex()
 	vic.TryBALowIfBadLine()
 	vic.graphics.TryPhi2Access()
@@ -294,7 +294,7 @@ func palCycle16(vic *VIC) {
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.sprites.UpdateCounterBaseDMA()
+	vic.sprites.IncrementCounterBase(1)
 	vic.TryBALowIfBadLine()
 	vic.graphics.TryPhi2Access()
 }

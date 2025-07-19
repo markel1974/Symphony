@@ -28,6 +28,8 @@ import (
 // -c "/Users/tinmr305/Downloads/c64carts/mayhem.crt"
 
 // TODO piccolo BUG negli sprite (alcune parti sono trasparenti)
+// differenza tra gli sprite 0/1 (Rick Dangerous) e 6/7 (Mayhem)
+// entrambi usano drawUnexpandedStandard per il contorno drawUnexpandedMulticolor per il contenuto
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/rick_dangerous.crt
 
 // -c "/Users/tinmr305/Downloads/c64carts/batman.bin"
