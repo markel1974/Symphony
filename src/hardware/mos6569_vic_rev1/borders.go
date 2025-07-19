@@ -15,16 +15,17 @@ const (
 
 // Border bit constants represent various positions within a layout or grid, using increasing iota values.
 const (
-	BorderBitLeft = iota
-	BorderBitMidLeft
-	BorderBitCenter
-	BorderBitMidRight
-	BorderBitRight
+	borderBitLeft = iota
+	borderBitMidLeft
+	borderBitCenter
+	borderBitMidRight
+	borderBitRight
 )
 
 // sequencerLength defines the size of the sequencer array, calculated as 2^5, providing 32 possible states.
 const (
-	sequencerLength = 1 << 5
+	borderSequencerSize  = 31
+	borderSequencerCount = borderSequencerSize + 1 //1 << 5
 )
 
 // Borders is a type responsible for managing and updating border data, configurations, and states for a display system.
@@ -40,7 +41,7 @@ type Borders struct {
 	center             []int
 	midRight           int
 	right              []int
-	sequencer          [][]func()
+	sequencer          [borderSequencerCount][]func()
 	sequencerState     uint8
 }
 
@@ -66,15 +67,13 @@ func NewBorder(core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
 	for x := gr.midLeft + 1; x < gr.midRight; x++ {
 		gr.center = append(gr.center, x)
 	}
-
 	gr.sequencer = gr.createSequencer()
-
 	return gr
 }
 
 // ColumnInitialize resets and updates the sequencerState based on the horizontalFlipFlop value for the left border bit.
 func (b *Borders) ColumnInitialize() {
-	const bitNumber = BorderBitLeft
+	const bitNumber = borderBitLeft
 	b.sequencerState &^= 1 << bitNumber
 	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
@@ -88,7 +87,7 @@ func (b *Borders) Column38Update() {
 			b.horizontalFlipFlop = 0
 		}
 	}
-	const bitNumber = BorderBitCenter
+	const bitNumber = borderBitCenter
 	b.sequencerState &^= 1 << bitNumber
 	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
@@ -101,7 +100,7 @@ func (b *Borders) Column40Update() {
 			b.horizontalFlipFlop = 0
 		}
 	}
-	const bitNumber = BorderBitMidLeft
+	const bitNumber = borderBitMidLeft
 	b.sequencerState &^= 1 << bitNumber
 	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
@@ -111,7 +110,7 @@ func (b *Borders) Column38Apply() {
 	if !b.core.columnSel {
 		b.horizontalFlipFlop = 1
 	}
-	const bitNumber = BorderBitMidRight
+	const bitNumber = borderBitMidRight
 	b.sequencerState &^= 1 << bitNumber
 	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
@@ -121,7 +120,7 @@ func (b *Borders) Column40Apply() {
 	if b.core.columnSel {
 		b.horizontalFlipFlop = 1
 	}
-	const bitNumber = BorderBitRight
+	const bitNumber = borderBitRight
 	b.sequencerState &^= 1 << bitNumber
 	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
@@ -148,17 +147,14 @@ func (b *Borders) UpdateVerticalFlipFlop() {
 	}
 }
 
-// GetVerticalFlipFlop returns true if the vertical border flip-flop is set; otherwise, it returns false.
-func (b *Borders) GetVerticalFlipFlop() bool {
+// VerticalFlipFlop returns true if the vertical border flip-flop is set; otherwise, it returns false.
+func (b *Borders) VerticalFlipFlop() bool {
 	return b.verticalFlipFlop != 0
 }
 
 // Draw executes a sequence of rendering functions based on the current sequencer state of the Borders instance.
 func (b *Borders) Draw() {
-	sequence := b.sequencer[b.sequencerState]
-	if sequence == nil {
-		return
-	}
+	sequence := b.sequencer[b.sequencerState&borderSequencerSize]
 	for _, drawFn := range sequence {
 		drawFn()
 	}
@@ -200,15 +196,20 @@ func (b *Borders) drawRight() {
 	}
 }
 
-// createSequencer initializes and returns a 2D slice of function sequences for border rendering based on state bits.
-func (b *Borders) createSequencer() [][]func() {
-	const left = 1 << BorderBitLeft
-	const midLeft = 1 << BorderBitMidLeft
-	const center = 1 << BorderBitCenter
-	const midRight = 1 << BorderBitMidRight
-	const right = 1 << BorderBitRight
+// drawEmpty clears or bypasses border drawing by executing no operations during the rendering process.
+func (b *Borders) drawEmpty() {
 
-	sequencer := make([][]func(), sequencerLength)
+}
+
+// createSequencer initializes and returns a 2D slice of function sequences for border rendering based on state bits.
+func (b *Borders) createSequencer() [borderSequencerCount][]func() {
+	const left = 1 << borderBitLeft
+	const midLeft = 1 << borderBitMidLeft
+	const center = 1 << borderBitCenter
+	const midRight = 1 << borderBitMidRight
+	const right = 1 << borderBitRight
+
+	var sequencer [borderSequencerCount][]func()
 	for idx := range sequencer {
 		x := uint8(idx)
 		var data []func() = nil
@@ -226,6 +227,9 @@ func (b *Borders) createSequencer() [][]func() {
 		}
 		if (x & right) == right {
 			data = append(data, b.drawRight)
+		}
+		if data == nil {
+			data = append(data, b.drawEmpty)
 		}
 		sequencer[x] = data
 	}

@@ -318,7 +318,7 @@ func palCycle17(vic *VIC) {
 	vic.borders.Column40Update()
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
-		if vic.borders.GetVerticalFlipFlop() {
+		if vic.borders.VerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
 			vic.graphics.DrawForeground()
@@ -339,7 +339,7 @@ func palCycle18(vic *VIC) {
 	vic.borders.Column38Update()
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
-		if vic.borders.GetVerticalFlipFlop() {
+		if vic.borders.VerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
 			vic.graphics.DrawForeground()
@@ -360,7 +360,7 @@ func palCycle18(vic *VIC) {
 func palCycle19to54(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
-		if vic.borders.GetVerticalFlipFlop() {
+		if vic.borders.VerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
 			vic.graphics.DrawForeground()
@@ -379,7 +379,7 @@ func palCycle19to54(vic *VIC) {
 func palCycle55(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
-		if vic.borders.GetVerticalFlipFlop() {
+		if vic.borders.VerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
 			vic.graphics.DrawForeground()
@@ -403,7 +403,7 @@ func palCycle56(vic *VIC) {
 	vic.borders.Column38Apply()
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
-		if vic.borders.GetVerticalFlipFlop() {
+		if vic.borders.VerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
 			vic.graphics.DrawForeground()
