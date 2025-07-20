@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	symphony "github.com/markel1974/c64emu/src"
+	"github.com/markel1974/c64emu/src"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
@@ -40,6 +40,8 @@ import (
 
 // -c "/Users/tinmr305/Downloads/c64carts/frogger.bin"
 
+//piccolo bug su sprite 3 (non segue sprite esterni 2 - 4)
+//	// Draw active sprites
 // -c "/Users/tinmr305/Downloads/c64carts/SuperWonderboyInMonsterland_1989_Activision-EF.crt"
 
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/Shadow of the Beast.crt"

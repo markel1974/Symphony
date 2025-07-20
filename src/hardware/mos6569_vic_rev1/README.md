@@ -60,9 +60,6 @@ The `mos6569` package is not intended for direct use outside of the `symphony` e
 
 ## Limitations
 
-*   **NTSC Support:** This implementation currently only supports the PAL video standard. NTSC emulation would require significant changes to the timing constants and potentially to the rendering logic.
-*   **Light Pen:** The light pen functionality is only partially implemented (interrupt generation).  The actual position detection is not emulated.
-
 ## TODO
 
 *   Add comprehensive unit tests.
@@ -87,7 +84,7 @@ This project is released under the [Apache 2.0 License](https://opensource.org/l
 *   **Package Structure:** Clearly describes the purpose of each file within the `vic` package.
 *   **Key Components:** Highlights important parts of the VIC-II and their implementation within the emulator.
 *   **Dependencies:** Lists the external dependencies.
-*   **Limitations:**  Explicitly states the limitations of the current implementation (NTSC, light pen).
+*   **Limitations:**  Explicitly states the limitations of the current implementation.
 *   **TODOs:**  Includes a TODO list for future improvements.
 * **Usage:**
 

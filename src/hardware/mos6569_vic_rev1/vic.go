@@ -40,14 +40,6 @@ const (
 
 //https://dustlayer.com/c64-architecture
 
-// cycleData represents a node in a cyclic linked list to manage cycles and associated operations.
-type cycleData struct {
-	fn          func(vic *VIC)
-	next        *cycleData
-	cycle       uint8
-	cycleBorder uint8
-}
-
 // VIC represents a versatile interface controller for managing video output and graphical resources in a system.
 // It encapsulates configurations, graphics components, collision detection, and rendering capabilities for the display.
 type VIC struct {
@@ -67,7 +59,7 @@ type VIC struct {
 	socketIRQClearTrigger func()
 	socketLastCycle       func()
 	socketVBlank          func()
-	curr                  *cycleData
+	curr                  *SequencerData
 	lineStart             int
 	drawLine              bool
 	vBlankNextCycle       bool
@@ -124,6 +116,7 @@ type VIC struct {
 	label                 string
 	reads                 [RegisterCount]func() uint8
 	writes                [RegisterCount]func(uint8)
+	sequencer             []*SequencerData
 }
 
 // NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
@@ -227,7 +220,8 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	if err := vic.borders.Setup(); err != nil {
 		return err
 	}
-	vic.curr = _pal
+	vic.sequencer = CreatePalSequencer()
+	vic.curr = vic.sequencer[0]
 	vic.reads = vic.createReadRegister()
 	vic.writes = vic.createWriteRegister()
 
