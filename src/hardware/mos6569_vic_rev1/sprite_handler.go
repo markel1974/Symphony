@@ -209,3 +209,14 @@ func (sp *SpriteHandler) ModeUpdate() {
 		sprite.ModeUpdate()
 	}
 }
+
+/*
+func (sp *SpriteHandler) TryIncrementCounterBaseOld() {
+	for _, sprite := range sp.sprites {
+		mask := sprite.Mask()
+		if (sp.core.sprExpY & mask) != 0 {
+			sprite.IncrementCounterBase()
+		}
+	}
+}
+*/
