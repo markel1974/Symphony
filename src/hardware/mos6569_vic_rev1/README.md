@@ -41,7 +41,7 @@ The `vic` package is organized into the following files:
 *   `sprite.go`:  Contains the logic for handling a single sprite.
 *   `borders.go`: Contains the logic for rendering the borders.
 *   `raster.go`:  Contains the logic for managing the raster beam position and timing.
-*   `pal.go`:  Contains constants and functions related to the PAL video timing (functions for each cycle of a scanline).
+*   `sequencer.go`:  Contains constants and functions related to the sequencer video timing (functions for each cycle of a scanline).
 *   `tables.go`:  Contains pre-calculated lookup tables used for optimization.
 *  `socket.go`: Implements the ISocket.
 *  `memory.go`: Implements memory.
