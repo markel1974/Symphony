@@ -167,7 +167,7 @@ func (sp *Sprite) Draw(lineStart int, collisions *Collisions) {
 	// Calculate the sprite's X offset on the screen. Add 24 to account for the border.
 	sOffset := int(sp.core.mXx[sp.num]) + sp.max //SpriteNumber
 	// Calculate the final offset on the scanline, including the global offset.
-	lineOffset := lineStart + sOffset // lineStart + sOffset
+	lineOffset := lineStart + sOffset
 	// Calculate the "major" X coordinate (used for collision detection).This is essentially the character column.
 	majorX := sOffset / sp.max
 	// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column.
