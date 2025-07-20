@@ -3,7 +3,9 @@ package mos6569
 // _pal is a pointer to the starting cycleData node, representing the first cycle in the PAL video cycle sequence.
 var _pal *cycleData
 
-// init initializes the palette cycle data, assigns cycle borders, and connects cycles to create a linked sequence.
+// init initializes the PAL video timing cycle data. It constructs a circular linked list of 63 cycleData nodes,
+// where each node represents one CPU clock cycle of a single PAL scanline. It pre-calculates border-related
+// values for each cycle and links them in sequence to form the complete 63-cycle timeline.
 func init() {
 	const palBorderFirstCycle uint8 = 13
 
@@ -55,7 +57,10 @@ func init() {
 	_pal = palCycles[0]
 }
 
-// palCycle1 handles the raster line processing logic for the VIC, including display updates and sprite DMA handling.
+// palCycle1: This cycle marks the beginning of the horizontal blanking period. The raster line counter (rasterY)
+// is checked against the maximum value. If it matches, a V-Blank is scheduled for the next cycle. Otherwise,
+// rasterY is incremented for the new scanline. Sprite 3 DMA for the upcoming line begins if enabled, fetching
+// the sprite pointer (phi1) and the first byte of sprite data (phi2).
 //
 //go:nosplit
 func palCycle1(vic *VIC) {
@@ -76,7 +81,10 @@ func palCycle1(vic *VIC) {
 	}
 }
 
-// palCycle2 handles the video interface chip's state transitions at the start of a PAL screen cycle.
+// palCycle2: The V-Blank is triggered if scheduled in the previous cycle, resetting raster counters and firing
+// the V-Blank interrupt. Internal pointers for graphics, sprites, and borders are reset. Sprite 3 DMA
+// continues, fetching the second and third bytes of sprite data. The BA (Bus-Available) signal is asserted
+// (pulled low) to prepare for sprite 5 DMA if it is enabled for the upcoming line.
 //
 //go:nosplit
 func palCycle2(vic *VIC) {
@@ -103,7 +111,8 @@ func palCycle2(vic *VIC) {
 	}
 }
 
-// palCycle3 handles sprite DMA access and display updates for the VIC, modifying display parameters accordingly.
+// palCycle3: Sprite 4 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// managed based on the DMA status of sprites 4 and 5.
 //
 //go:nosplit
 func palCycle3(vic *VIC) {
@@ -117,9 +126,8 @@ func palCycle3(vic *VIC) {
 	}
 }
 
-// palCycle4 handles sprite DMA operations for sprite 4 and modifies display access based on VIC state.
-// It checks if the DMA flag for sprite 4 is set, performs fetch operations if true, otherwise idles the VIC.
-// Additionally, it sets the BA low if the DMA flag for sprite 6 is set.
+// palCycle4: Sprite 4 DMA continues, fetching its second and third data bytes. The BA signal is asserted
+// to prepare for sprite 6 DMA if it is enabled.
 //
 //go:nosplit
 func palCycle4(vic *VIC) {
@@ -135,7 +143,8 @@ func palCycle4(vic *VIC) {
 	}
 }
 
-// palCycle5 handles sprite DMA logic specifically for sprite 5 and updates display or bus access accordingly.
+// palCycle5: Sprite 5 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// managed based on the DMA status of sprites 5 and 6.
 //
 //go:nosplit
 func palCycle5(vic *VIC) {
@@ -149,7 +158,8 @@ func palCycle5(vic *VIC) {
 	}
 }
 
-// palCycle6 performs DMA and idle access handling for sprites and sets the BA low flag in VIC graphics operations.
+// palCycle6: Sprite 5 DMA continues, fetching its second and third data bytes. The BA signal is asserted
+// to prepare for sprite 7 DMA if it is enabled.
 //
 //go:nosplit
 func palCycle6(vic *VIC) {
@@ -165,8 +175,8 @@ func palCycle6(vic *VIC) {
 	}
 }
 
-// palCycle7 manages sprite DMA operations and display access for sprites 6 and 7 within the VIC graphics system.
-// It acquires display access, checks DMA flags, fetches sprite data, and adjusts bus access levels accordingly.
+// palCycle7: Sprite 6 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// managed based on the DMA status of sprites 6 and 7.
 //
 //go:nosplit
 func palCycle7(vic *VIC) {
@@ -180,7 +190,7 @@ func palCycle7(vic *VIC) {
 	}
 }
 
-// palCycle8 manages DMA access and fetch operations for sprite 6 in the VIC graphics system if the DMA flag is set.
+// palCycle8: Sprite 6 DMA continues, fetching its second and third data bytes.
 //
 //go:nosplit
 func palCycle8(vic *VIC) {
@@ -193,7 +203,8 @@ func palCycle8(vic *VIC) {
 	}
 }
 
-// palCycle9 processes VIC sprite DMA flag and display access for bitSprite7, managing sprite fetching and BA signal control.
+// palCycle9: Sprite 7 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// managed based on the DMA status of sprite 7.
 //
 //go:nosplit
 func palCycle9(vic *VIC) {
@@ -207,7 +218,8 @@ func palCycle9(vic *VIC) {
 	}
 }
 
-// palCycle10 manages display access and sprite data fetch operation for sprite 7 based on its DMA flag status.
+// palCycle10: Sprite 7 DMA continues, fetching its second and third data bytes. This concludes the main
+// sprite DMA phase for the upcoming line.
 //
 //go:nosplit
 func palCycle10(vic *VIC) {
@@ -220,7 +232,8 @@ func palCycle10(vic *VIC) {
 	}
 }
 
-// palCycle11 manipulates the VIC object to acquire display access, clear the BA low signal, and perform a refresh action.
+// palCycle11: This is a refresh cycle. The VIC performs a DRAM refresh operation by accessing an address
+// in the range $3C00-$3FFF. The address bus is released for the CPU, and the BA signal is cleared.
 //
 //go:nosplit
 func palCycle11(vic *VIC) {
@@ -229,8 +242,9 @@ func palCycle11(vic *VIC) {
 	vic.AccessRefresh()
 }
 
-// palCycle12 handles the VIC's PAL refresh cycle by accessing refresh operations and managing graphics and display access.
-// It also triggers BA low if required during a bad line condition.
+// palCycle12: This is a refresh cycle. The VIC checks for a "bad line" condition, which occurs if the
+// DEN bit is set and the lower 3 bits of the raster counter match the lower 3 bits of the YSCROLL register.
+// If it is a bad line, the VIC prepares to halt the CPU by asserting the BA signal.
 //
 //go:nosplit
 func palCycle12(vic *VIC) {
@@ -239,7 +253,8 @@ func palCycle12(vic *VIC) {
 	vic.TryBALowIfBadLine()
 }
 
-// palCycle13 processes a single PAL (Phase Alternating Line) cycle, managing VIC-II border colors, graphics, and raster refresh.
+// palCycle13: This is a refresh cycle. The horizontal raster counter (rasterX) is reset to 0. The VIC is now
+// in the left border area. The BA signal is asserted if the bad line condition was met in the previous cycle.
 //
 //go:nosplit
 func palCycle13(vic *VIC) {
@@ -253,7 +268,9 @@ func palCycle13(vic *VIC) {
 	vic.ResetRasterX()
 }
 
-// palCycle14 executes a sequence of operations for handling VIC graphics, borders, and video counter updates for a PAL cycle 14.
+// palCycle14: This is a refresh cycle. The Video Counter (VC) is loaded from the Video Counter Base (VCBASE),
+// pointing to the current character row in screen memory. The Row Counter (RC) is reset to 0 if this is the
+// first scanline of a character row (i.e., rasterY & 7 == 0).
 //
 //go:nosplit
 func palCycle14(vic *VIC) {
@@ -268,7 +285,9 @@ func palCycle14(vic *VIC) {
 	vic.graphics.UpdateVideoCounter()
 }
 
-// palCycle15 processes a single VIC-II cycle, updating visual elements, sprite counters, and handling display access logic.
+// palCycle15: This is the critical "bad line" decision cycle. If it's a bad line, the VIC takes full control
+// of the bus for the next 40 cycles. The graphics pipeline begins its first access, fetching a character code
+// from screen RAM using the Video Counter (VC). Sprite Y-expansion counters for the *next* scanline are checked.
 //
 //go:nosplit
 func palCycle15(vic *VIC) {
@@ -284,7 +303,9 @@ func palCycle15(vic *VIC) {
 	vic.graphics.TryPhi2Access()
 }
 
-// palCycle16 executes a set of operations per cycle for the VIC chip in PAL mode, handling graphics, borders, and sprite updates.
+// palCycle16: First graphics data fetch cycle. The VIC fetches the character's bitmap data from Character
+// ROM or RAM, using the character code fetched in the previous cycle and the current Row Counter (RC).
+// Sprite Y-expansion counters are committed.
 //
 //go:nosplit
 func palCycle16(vic *VIC) {
@@ -300,7 +321,9 @@ func palCycle16(vic *VIC) {
 	vic.graphics.TryPhi2Access()
 }
 
-// palCycle17 executes the PAL cycle 17 operation for the VIC, handling updates to borders, graphics, and access control.
+// palCycle17: Second graphics data fetch cycle. The VIC fetches the next character code from screen RAM.
+// The first pixels of the 40-column window (or the side border in 38-column mode) are drawn. The side
+// border logic for 40-column mode is triggered.
 //
 //go:nosplit
 func palCycle17(vic *VIC) {
@@ -319,9 +342,9 @@ func palCycle17(vic *VIC) {
 	vic.graphics.TryPhi2Access()
 }
 
-// palCycle18 executes a sequence of operations for the VIC, updating borders, graphics, and access cycles efficiently.
-// It determines whether to draw background or foreground based on the vertical flip-flop state and current line settings.
-// The function manages access attempts to graphics and display while handling character data and bad line conditions.
+// palCycle18: The main display window begins. The VIC fetches the next character's bitmap data. The fetched
+// bitmap data is loaded into the graphics pipeline's internal shift register. The side border logic for
+// 38-column mode is triggered. Pixels are drawn.
 //
 //go:nosplit
 func palCycle18(vic *VIC) {
@@ -341,9 +364,10 @@ func palCycle18(vic *VIC) {
 	vic.graphics.UpdateCharDataLast()
 }
 
-// palCycle19to54 handles VIC-II operations between cycle 19 to 54 for rendering, including border and graphics updates.
-// Uses state flags to determine whether to update background or foreground graphics during the specified cycle range.
-// Tries memory and display accesses required for graphical operations and updates character data accordingly.
+// palCycle19to54: These 36 cycles form the core of the visible display area. In each pair of cycles, the VIC
+// fetches a character code from screen RAM and its corresponding bitmap data. The graphics pipeline
+// continuously shifts out 8 pixels per character, drawing either foreground or background pixels. On a "bad line",
+// the CPU is halted throughout this entire phase.
 //
 //go:nosplit
 func palCycle19to54(vic *VIC) {
@@ -362,7 +386,9 @@ func palCycle19to54(vic *VIC) {
 	vic.graphics.UpdateCharDataLast()
 }
 
-// palCycle55 processes a line cycle for the VIC-II chip, handling border colors, graphics rendering, sprite updates, and DMA logic.
+// palCycle55: This is the last graphics data fetch cycle for the line. The VIC finalizes the graphics pipeline
+// and prepares for the *next* scanline by updating sprite Y-expansion flags and calculating which sprites will
+// be active (setting up their DMA flags). The BA signal is asserted to prepare for sprite 0 DMA.
 //
 //go:nosplit
 func palCycle55(vic *VIC) {
@@ -385,7 +411,8 @@ func palCycle55(vic *VIC) {
 	}
 }
 
-// palCycle56 handles cycle 56 operations on the VIC, including border drawing, DMA updates, and sprite BALow settings.
+// palCycle56: Idle cycle. The main graphics fetch is complete. The VIC is now in the right border area.
+// The 38-column side border logic is applied. The BA signal is asserted for sprite 0 DMA if needed.
 //
 //go:nosplit
 func palCycle56(vic *VIC) {
@@ -406,8 +433,9 @@ func palCycle56(vic *VIC) {
 	}
 }
 
-// palCycle57 performs a sequence of operations for VIC, applying 40-column mode, updating sprites, and managing display.
-// It handles tasks such as drawing the background, acquiring colors, and setting sprite-specific DMA flags.
+// palCycle57: Idle cycle. The 40-column side border logic is applied. The sprite DMA flags calculated in
+// cycle 55 are now committed for use in the upcoming DMA phase. The BA signal is asserted to prepare for
+// sprite 1 DMA.
 //
 //go:nosplit
 func palCycle57(vic *VIC) {
@@ -424,7 +452,8 @@ func palCycle57(vic *VIC) {
 	}
 }
 
-// palCycle58 executes the 58th PAL cycle operations for the VIC, processing borders, sprites, and graphics updates.
+// palCycle58: Sprite 0 DMA for the upcoming line begins if enabled, fetching its pointer and first data byte.
+// Sprite flags are prepared for the line *after* the next one.
 //
 //go:nosplit
 func palCycle58(vic *VIC) {
@@ -440,9 +469,8 @@ func palCycle58(vic *VIC) {
 	vic.graphics.UpdateDisplayAccess()
 }
 
-// palCycle59 executes the 59th cycle of the PAL video timing, managing sprite DMA fetches and access states.
-// It handles background graphic drawing, border color acquisition, and memory access for sprites.
-// The function ensures proper DMA operations for sprites 0 and 2 and adjusts the BA (Bus Available) signal as needed.
+// palCycle59: Sprite 0 DMA continues, fetching its second and third data bytes. The BA signal is asserted
+// to prepare for sprite 2 DMA.
 //
 //go:nosplit
 func palCycle59(vic *VIC) {
@@ -462,9 +490,8 @@ func palCycle59(vic *VIC) {
 	}
 }
 
-// palCycle60 handles a single PAL clock cycle at cycle 60, managing border updates, graphics access, and sprite DMA operations.
-// It checks and acquires colors for borders if drawing is active, manages sprite data fetching, and controls idle access behavior.
-// Sprite DMA flags and `BA` signal are evaluated and cleared or updated according to the specified conditions for this cycle.
+// palCycle60: Sprite 1 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// managed based on the DMA status of sprites 1 and 2.
 //
 //go:nosplit
 func palCycle60(vic *VIC) {
@@ -490,9 +517,8 @@ func palCycle60(vic *VIC) {
 	}
 }
 
-// palCycle61 handles graphics display access and sprite DMA operations for VIC during the specific cycle 61 in PAL mode.
-// It performs sprite fetch operations or switches to idle access if no DMA flag is detected for certain sprites.
-// Additionally, it sets the BA low signal for sprite 3 based on its DMA flag status in the cycle.
+// palCycle61: Sprite 1 DMA continues, fetching its second and third data bytes. The BA signal is asserted
+// to prepare for sprite 3 DMA.
 //
 //go:nosplit
 func palCycle61(vic *VIC) {
@@ -508,9 +534,8 @@ func palCycle61(vic *VIC) {
 	}
 }
 
-// palCycle62 handles the PAL (Phase Alternating Line) cycle 62 operations for sprite processing and display access in the VIC-II.
-// It attempts to acquire display access, fetches sprite pointers, and performs operations based on DMA flags for sprites 2 and 3.
-// The method clears certain flags (e.g., BALow) when specific DMA conditions are not met for the given sprites.
+// palCycle62: Sprite 2 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// managed based on the DMA status of sprites 2 and 3.
 //
 //go:nosplit
 func palCycle62(vic *VIC) {
@@ -524,8 +549,8 @@ func palCycle62(vic *VIC) {
 	}
 }
 
-// palCycle63 executes a specific raster operation sequence based on VIC-II's internal state for cycle 63 of the PAL frame.
-// It handles sprite DMA fetches, updates the vertical border flip-flop, sets the BA signal, and processes graphical output.
+// palCycle61: Sprite 2 DMA continues, fetching its second and third data bytes. The BA signal is asserted
+// to prepare for sprite 4 DMA.
 //
 //go:nosplit
 func palCycle63(vic *VIC) {
