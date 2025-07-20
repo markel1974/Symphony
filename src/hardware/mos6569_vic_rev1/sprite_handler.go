@@ -124,7 +124,7 @@ func (sp *SpriteHandler) UpdateDMA() {
 		mask := sprite.Mask()
 		if ((sp.core.me & mask) != 0) && (rasterY == sp.core.mXy[num]) {
 			sp.dmaFlags |= mask
-			sprite.CounterBaseReset()
+			sprite.ResetCounterBase()
 			if (sp.core.mye & mask) != 0 {
 				sp.core.sprExpY &= ^mask
 			}
@@ -132,10 +132,8 @@ func (sp *SpriteHandler) UpdateDMA() {
 	}
 }
 
-// IncrementCounterBase advances the vertical position counter of each sprite by the specified increment, handling expansion logic.
-// If a sprite is in vertical expansion mode and on the second line of an expanded pair, the counter is not advanced.
-// Otherwise, the counter is incremented, and if the operation completes the sprite's row, its DMA flag is cleared.
-func (sp *SpriteHandler) IncrementCounterBase(increment uint16) {
+// TryIncrementCounterBase checks sprite vertical expansion state and conditionally increments the sprite's internal row counter.
+func (sp *SpriteHandler) TryIncrementCounterBase() {
 	for _, sprite := range sp.sprites {
 		mask := sprite.Mask()
 		// Check if sprite is enabled for vertical expansion
@@ -147,9 +145,17 @@ func (sp *SpriteHandler) IncrementCounterBase(increment uint16) {
 		} else {
 			// Otherwise (standard sprite OR first line of an expanded pair),
 			// advance to the next row of sprite data.
-			if sprite.IncrementCounterBase(increment) {
-				sp.dmaFlags &= ^mask
-			}
+			sprite.IncrementCounterBase()
+		}
+	}
+}
+
+// CommitIncrementCounterBase ensures sprite row counters are updated, and disables DMA flags for sprites reaching their row end.
+func (sp *SpriteHandler) CommitIncrementCounterBase() {
+	for _, sprite := range sp.sprites {
+		if sprite.CommitIncrementCounterBase() {
+			mask := sprite.Mask()
+			sp.dmaFlags &= ^mask
 		}
 	}
 }

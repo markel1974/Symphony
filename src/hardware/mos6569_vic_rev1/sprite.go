@@ -28,16 +28,17 @@ const (
 // set is a function for setting pixel data on the sprite's display buffer.
 type Sprite struct {
 	*component.BaseComponent
-	num         uint8
-	max         int
-	mask        uint8
-	core        *VIC
-	data        []uint8
-	ptr         uint16
-	counter     uint16
-	counterBase uint16
-	set         func(int, uint8)
-	pipeline    func(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int)
+	num              uint8
+	max              int
+	mask             uint8
+	core             *VIC
+	data             []uint8
+	ptr              uint16
+	counter          uint16
+	counterBase      uint16
+	counterIncrement uint16
+	set              func(int, uint8)
+	pipeline         func(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int)
 	//plane2ColorHelper [4]func(uint8) int
 }
 
@@ -45,16 +46,17 @@ type Sprite struct {
 // It allocates memory for sprite data, sets initial values for counters, and configures the display function.
 func NewSprite(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, displayBuffer references.IDisplayBuffer, sNum uint8, sMax int) *Sprite {
 	sp := &Sprite{
-		BaseComponent: component.NewBaseComponent(),
-		core:          core,
-		set:           displayBuffer.Set,
-		num:           sNum,
-		mask:          uint8(1) << sNum,
-		data:          make([]uint8, dataAlignment), // Allocate space for sprite data.
-		counterBase:   0,
-		counter:       dataCounterLastByte, // Initialize sprite data counter to the last byte.
-		ptr:           0,
-		max:           sMax,
+		BaseComponent:    component.NewBaseComponent(),
+		core:             core,
+		set:              displayBuffer.Set,
+		num:              sNum,
+		mask:             uint8(1) << sNum,
+		data:             make([]uint8, dataAlignment), // Allocate space for sprite data.
+		counterBase:      0,
+		counterIncrement: 0,
+		counter:          dataCounterLastByte, // Initialize sprite data counter to the last byte.
+		ptr:              0,
+		max:              sMax,
 	}
 	//sp.plane2ColorHelper = sp.createPlane2ColorHelper()
 	sp.ModeUpdate()
@@ -118,25 +120,26 @@ func (sp *Sprite) FetchData(bNum uint8) {
 	sp.counter++                                        // Increment the data counter for the next byte.
 }
 
-// CounterBase retrieves the base value of the sprite's data counter.
-//func (sp *Sprite) CounterBase1() uint16 {
-//	return sp.counterBase
-//}
-
-// CounterBaseReset resets the sprite's counterBase to zero. It is typically used to reinitialize the base counter.
-func (sp *Sprite) CounterBaseReset() {
-	sp.counterBase = 0
+// IncrementCounterBase updates the counterIncrement field of the sprite to align with the current data alignment value.
+func (sp *Sprite) IncrementCounterBase() {
+	sp.counterIncrement = dataAlignment
 }
 
-// IncrementCounterBase increases the `counterBase` of the `Sprite` by the specified increment value.
-func (sp *Sprite) IncrementCounterBase(increment uint16) bool {
-	sp.counterBase += increment
+// CommitIncrementCounterBase updates the counter-base by adding the counter-increment, resets the increment, and checks a condition.
+func (sp *Sprite) CommitIncrementCounterBase() bool {
+	sp.counterBase += sp.counterIncrement
+	sp.counterIncrement = 0
 	return (sp.counterBase & 0x3f) == 0x3f
+}
+
+// ResetCounterBase resets the sprite's counterBase to zero. It is typically used to reinitialize the base counter.
+func (sp *Sprite) ResetCounterBase() {
+	sp.counterBase = 0
 }
 
 // CommitCounterBase sets the sprite's data counter to its base value stored in dataCounterBase.
 func (sp *Sprite) CommitCounterBase() {
-	sp.counter = (sp.counterBase / dataAlignment) * dataAlignment
+	sp.counter = sp.counterBase
 }
 
 // ModeUpdate updates the sprite's rendering mode pipeline based on multicolor and horizontal expansion flags.

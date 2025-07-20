@@ -278,7 +278,7 @@ func palCycle15(vic *VIC) {
 	}
 	vic.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.sprites.IncrementCounterBase(2)
+	vic.sprites.TryIncrementCounterBase()
 	vic.graphics.ResetLineIndex()
 	vic.TryBALowIfBadLine()
 	vic.graphics.TryPhi2Access()
@@ -294,12 +294,13 @@ func palCycle16(vic *VIC) {
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.sprites.IncrementCounterBase(1)
+	vic.sprites.TryIncrementCounterBase()
+	vic.sprites.CommitIncrementCounterBase()
 	vic.TryBALowIfBadLine()
 	vic.graphics.TryPhi2Access()
 }
 
-// palCycle17 executes the PAL-based VIC-II emulation cycle 17 logic, updating borders, graphics, and access conditions.
+// palCycle17 executes the PAL cycle 17 operation for the VIC, handling updates to borders, graphics, and access control.
 //
 //go:nosplit
 func palCycle17(vic *VIC) {
