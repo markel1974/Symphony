@@ -730,7 +730,7 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	}
 	writes[0x10] = func(data uint8) { //MSBs of X coordinates
 		vic.mx8 = data
-		for i := 0; i < spriteNumber; i++ {
+		for i := range vic.mXx {
 			if (data & bits.Uint8s[i]) != 0 {
 				vic.mXx[i] |= 0x100
 			} else {
