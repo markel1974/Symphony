@@ -99,36 +99,33 @@ type VIC struct {
 	vBlankNextCycle  bool   // vBlankNextCycle indicates whether the next cycle will trigger a vertical blanking interval (vBlank) in the display.
 	lineStart        int
 	drawLine         bool
-
-	den bool // den indicates a boolean value typically used as a flag or condition.
-
+	denBit           bool
 }
 
 // NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
 func NewVIC(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *VIC {
 	vic := &VIC{
-		BaseComponent: component.NewBaseComponent(),
-		mXx:           make([]uint16, spriteNumber),
-		mXy:           make([]uint8, spriteNumber),
-		mXc:           make([]uint8, spriteNumber),
-		mx8:           0,
-		cr1:           0,
-		cr2:           0,
-		lpx:           0,
-		lpy:           0,
-		me:            0,
-		mxe:           0,
-		mye:           0,
-		mdp:           0,
-		mmc:           0,
-		ec:            0,
-		b0c:           0,
-		b1c:           0,
-		b2c:           0,
-		b3c:           0,
-		mm0:           0,
-		mm1:           0,
-
+		BaseComponent:    component.NewBaseComponent(),
+		mXx:              make([]uint16, spriteNumber),
+		mXy:              make([]uint8, spriteNumber),
+		mXc:              make([]uint8, spriteNumber),
+		mx8:              0,
+		cr1:              0,
+		cr2:              0,
+		lpx:              0,
+		lpy:              0,
+		me:               0,
+		mxe:              0,
+		mye:              0,
+		mdp:              0,
+		mmc:              0,
+		ec:               0,
+		b0c:              0,
+		b1c:              0,
+		b2c:              0,
+		b3c:              0,
+		mm0:              0,
+		mm1:              0,
 		irqRaster:        0,
 		irqLatch:         0,
 		irqMask:          0,
@@ -140,9 +137,8 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		baLow:            false,
 		aecLowNextCycle:  0,
 		aecLow:           false,
-
-		den:   false,
-		label: label,
+		denBit:           false,
+		label:            label,
 	}
 	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIMos6569(vic, label, instance))
 	return vic
@@ -324,7 +320,7 @@ func (vic *VIC) badLineUpdate() {
 	// So clearing the DEN bit will normally prevent Bad Lines
 
 	if (vic.rasterY >= vic.sequencer.firstDmaLine) && (vic.rasterY <= vic.sequencer.lastDmaLine) {
-		if vic.rasterY == vic.sequencer.firstDmaLine && vic.den {
+		if vic.rasterY == vic.sequencer.firstDmaLine && vic.denBit {
 			//If YSCROLL=0, a Bad Line Condition occurs in raster line $30 as soon as the DEN bit
 			vic.badLineEnabler = true
 			if vic.graphics.GetYScroll() == 0 {
@@ -661,7 +657,7 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 			vic.borders.SetDYTop(vic.sequencer.row24YStart)
 			vic.borders.SetDYBottom(vic.sequencer.row24YStop)
 		}
-		vic.den = (vic.cr1 & 0x10) != 0
+		vic.denBit = (vic.cr1 & 0x10) != 0
 		vic.graphics.SetBmm((vic.cr1 & 0x20) != 0)
 		vic.graphics.SetEcm((vic.cr1 & 0x40) != 0)
 		//rst8 := (vic.cr1 & 0x80) != 0
@@ -694,7 +690,7 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	}
 	writes[0x17] = func(data uint8) { // Sprite Y expansion
 		vic.mye = data
-		vic.sprites.SetYExpansion(data)
+		vic.sprites.SetYExpansion(vic.mye)
 	}
 	writes[0x18] = func(data uint8) { // Memory pointers
 		vic.memory.SetVABase(data)
@@ -720,11 +716,11 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	}
 	writes[0x1c] = func(data uint8) { // Sprite multicolor
 		vic.mmc = data
-		vic.sprites.ModeUpdate()
+		vic.sprites.ModeUpdate(vic.mmc, vic.mxe)
 	}
 	writes[0x1d] = func(data uint8) { // Sprite X expansion
 		vic.mxe = data
-		vic.sprites.ModeUpdate()
+		vic.sprites.ModeUpdate(vic.mmc, vic.mxe)
 	}
 	writes[0x1e] = func(data uint8) { // Sprite-sprite collision
 		vic.collisions.SetSprite(data)

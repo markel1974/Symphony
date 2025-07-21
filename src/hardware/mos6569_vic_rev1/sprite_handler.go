@@ -217,16 +217,24 @@ func (sp *SpriteHandler) Draw() {
 	sp.collisions.Prepare()
 	// Draw active sprites
 	for _, sNum := range activeSprites {
-		sp.sprites[sNum].Draw(sp.offset, sp.collisions)
+		sColor := _colors[sp.core.mXc[sNum]]
+		sOffset := int(sp.core.mXx[sNum]) + len(sp.sprites) //SpriteNumber
+		// Calculate the final offset on the scanline, including the global offset.
+		lineOffset := sp.offset + sOffset
+		// Calculate the "major" X coordinate (used for collision detection).This is essentially the character column.
+		majorX := sOffset / len(sp.sprites)
+		// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column.
+		minorX := sOffset & 7
+		sp.sprites[sNum].Draw(lineOffset, sp.collisions, sColor, sOffset, majorX, minorX)
 	}
 	// Perform the final collision detection checks.
 	sp.collisions.Commit()
 }
 
 // ModeUpdate performs a mode-specific update for all sprites managed by the SpriteHandler by invoking their ModeUpdate method.
-func (sp *SpriteHandler) ModeUpdate() {
+func (sp *SpriteHandler) ModeUpdate(mmc uint8, mxe uint8) {
 	for _, sprite := range sp.sprites {
-		sprite.ModeUpdate()
+		sprite.ModeUpdate(mmc, mxe)
 	}
 }
 

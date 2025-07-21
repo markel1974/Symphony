@@ -192,10 +192,10 @@ func (b *Borders) AcquireColor(idx uint8) {
 func (b *Borders) UpdateVerticalFlipFlop() {
 	//3.9. The border unit
 	if b.dyBottom == b.core.rasterY {
-		//2. If the Y coordinate reaches the bottom comparison value in cycle 63, the vertical border flip flop is set.
+		//2. If the Y coordinate reaches the bottom comparison value in cycle 63 (pal), the vertical border flip flop is set.
 		b.verticalFlipFlop = 1
-	} else if b.dyTop == b.core.rasterY && b.core.den {
-		//3. If the Y coordinate reaches the top comparison value in cycle 63 and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
+	} else if b.dyTop == b.core.rasterY && b.core.denBit {
+		//3. If the Y coordinate reaches the top comparison value in cycle 63 (pal) and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
 		b.verticalFlipFlop = 0
 	}
 }

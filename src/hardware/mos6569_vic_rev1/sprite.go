@@ -38,7 +38,7 @@ type Sprite struct {
 	counterBase      uint16
 	counterIncrement uint16
 	set              func(int, uint8)
-	pipeline         func(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int)
+	Draw             func(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int)
 	//plane2ColorHelper [4]func(uint8) int
 }
 
@@ -59,7 +59,7 @@ func NewSprite(parent references.IComponent, factory references.IComponentFactor
 		max:              sMax,
 	}
 	//sp.plane2ColorHelper = sp.createPlane2ColorHelper()
-	sp.ModeUpdate()
+	sp.Draw = sp.drawUnexpandedStandard
 	sp.BaseComponent.Register(factory, parent, "sprite", sp, references.IdInternalComponent(label, instance, "Sprite"))
 	return sp
 }
@@ -143,29 +143,30 @@ func (sp *Sprite) CommitCounterBase() {
 }
 
 // ModeUpdate updates the sprite's rendering mode pipeline based on multicolor and horizontal expansion flags.
-func (sp *Sprite) ModeUpdate() {
-	multiColor := (sp.core.mmc & sp.mask) != 0
-	expandedH := (sp.core.mxe & sp.mask) != 0
+func (sp *Sprite) ModeUpdate(mmc uint8, mxe uint8) {
+	multiColor := (mmc & sp.mask) != 0
+	expandedH := (mxe & sp.mask) != 0
 	if expandedH {
 		if multiColor {
-			sp.pipeline = sp.drawExpandedMulticolor
+			sp.Draw = sp.drawExpandedMulticolor
 		} else {
-			sp.pipeline = sp.drawExpandedStandard
+			sp.Draw = sp.drawExpandedStandard
 		}
 	} else {
 		if multiColor {
-			sp.pipeline = sp.drawUnexpandedMulticolor
+			sp.Draw = sp.drawUnexpandedMulticolor
 		} else {
-			sp.pipeline = sp.drawUnexpandedStandard
+			sp.Draw = sp.drawUnexpandedStandard
 		}
 	}
 }
 
+/*
 // Draw renders the sprite on the screen at a specified starting scanline and manages collision detection.
-func (sp *Sprite) Draw(lineStart int, collisions *Collisions) {
-	sColor := _colors[sp.core.mXc[sp.num]]
+func (sp *Sprite) Draw(lineStart int, sColor uint8, mxx uint16, collisions *Collisions) {
 	// Calculate the sprite's X offset on the screen. Add 24 to account for the border.
-	sOffset := int(sp.core.mXx[sp.num]) + sp.max //SpriteNumber
+	//sOffset := int(sp.core.mXx[sp.num]) + sp.max //SpriteNumber
+	sOffset := int(mxx) + sp.max //SpriteNumber
 	// Calculate the final offset on the scanline, including the global offset.
 	lineOffset := lineStart + sOffset
 	// Calculate the "major" X coordinate (used for collision detection).This is essentially the character column.
@@ -174,6 +175,7 @@ func (sp *Sprite) Draw(lineStart int, collisions *Collisions) {
 	minorX := sOffset & 7
 	sp.pipeline(lineOffset, collisions, sColor, sOffset, majorX, minorX)
 }
+*/
 
 // drawExpandedMulticolor is responsible for rendering an expanded multicolor sprite on the display buffer.
 // It handles sprite-to-graphics and sprite-to-sprite collision detection while processing each pixel's color.
