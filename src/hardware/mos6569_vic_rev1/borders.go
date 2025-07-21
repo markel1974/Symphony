@@ -47,6 +47,7 @@ type Borders struct {
 	columnSel          bool   // columnSel indicates whether column selection mode is enabled.
 	dyTop              uint16 // Comparison values for borders logic
 	dyBottom           uint16 // Comparison values for borders logic
+	ec                 uint8  // VIC register - border
 }
 
 // NewBorder initializes and returns a new Borders object using the provided VIC core and display buffer interface.
@@ -57,6 +58,7 @@ func NewBorder(parent references.IComponent, factory references.IComponentFactor
 		BaseComponent:      component.NewBaseComponent(),
 		setMulti8:          displayBuffer.SetMulti8,
 		core:               core,
+		ec:                 0,
 		horizontalFlipFlop: 0,
 		verticalFlipFlop:   0,
 		offset:             0,
@@ -107,6 +109,16 @@ func (b *Borders) Internal() bool {
 
 // Reset clears and reinitializes the internal state of the Borders instance, preparing it for subsequent operations.
 func (b *Borders) Reset() {
+}
+
+// ReadEc returns the `ec` field of the Borders structure combined with the binary OR operation to add a `0xf0` bitmask.
+func (b *Borders) ReadEc() uint8 {
+	return b.ec | 0xf0
+}
+
+// WriteEc sets the value of the ec field in the Borders object using the provided uint8 data.
+func (b *Borders) WriteEc(data uint8) {
+	b.ec = data
 }
 
 // SetColumnSel sets the column selection mode to the specified state, enabling or disabling related behaviors.
@@ -185,7 +197,7 @@ func (b *Borders) SetOffset(offset int) {
 
 // AcquireColor assigns a color to the specified index in the borders color array using the current execution context.
 func (b *Borders) AcquireColor(idx uint8) {
-	b.colors[idx] = _colors[b.core.ec]
+	b.colors[idx] = _colors[b.ec]
 }
 
 // UpdateVerticalFlipFlop updates the vertical border flip-flop state based on the current raster Y coordinate and control flags.

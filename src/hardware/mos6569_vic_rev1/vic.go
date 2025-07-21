@@ -1,7 +1,6 @@
 package mos6569
 
 import (
-	"github.com/markel1974/c64emu/src/common/bits"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/references"
@@ -64,26 +63,15 @@ type VIC struct {
 	socketLastCycle       func()
 	socketVBlank          func()
 
-	mXx []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
-	mXy []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
-	mXc []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
-	mx8 uint8    // VIC register
-	cr1 uint8    // VIC register
-	cr2 uint8    // VIC register
-	lpx uint8    // VIC register
-	lpy uint8    // VIC register
-	me  uint8    // VIC register
-	mxe uint8    // VIC register
-	mye uint8    // VIC register
-	mdp uint8    // VIC register
-	mmc uint8    // VIC register
-	ec  uint8    // VIC register
-	b0c uint8    // VIC register
-	b1c uint8    // VIC register
-	b2c uint8    // VIC register
-	b3c uint8    // VIC register
-	mm0 uint8    // VIC register
-	mm1 uint8    // VIC register
+	cr1 uint8 // VIC register
+	cr2 uint8 // VIC register
+	lpx uint8 // VIC register
+	lpy uint8 // VIC register
+
+	mm0 uint8 // VIC register - sprite
+	mm1 uint8 // VIC register - sprite
+
+	denBit bool
 
 	irqLatch         uint8  // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
 	irqMask          uint8  // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
@@ -99,31 +87,16 @@ type VIC struct {
 	vBlankNextCycle  bool   // vBlankNextCycle indicates whether the next cycle will trigger a vertical blanking interval (vBlank) in the display.
 	lineStart        int
 	drawLine         bool
-	denBit           bool
 }
 
 // NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
 func NewVIC(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *VIC {
 	vic := &VIC{
 		BaseComponent:    component.NewBaseComponent(),
-		mXx:              make([]uint16, spriteNumber),
-		mXy:              make([]uint8, spriteNumber),
-		mXc:              make([]uint8, spriteNumber),
-		mx8:              0,
 		cr1:              0,
 		cr2:              0,
 		lpx:              0,
 		lpy:              0,
-		me:               0,
-		mxe:              0,
-		mye:              0,
-		mdp:              0,
-		mmc:              0,
-		ec:               0,
-		b0c:              0,
-		b1c:              0,
-		b2c:              0,
-		b3c:              0,
 		mm0:              0,
 		mm1:              0,
 		irqRaster:        0,
@@ -167,9 +140,6 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.sequencer = NewSequencerPal()
 	vic.rasterY = vic.sequencer.rasterYMax
 
-	vic.reads = vic.createReadRegister()
-	vic.writes = vic.createWriteRegister()
-
 	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic, vic.sequencer.width)
 	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer, vic.sequencer.rasterYMax)
 	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer)
@@ -197,6 +167,9 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	if err := vic.memory.Setup(); err != nil {
 		return err
 	}
+
+	vic.reads = vic.createReadRegister()
+	vic.writes = vic.createWriteRegister()
 
 	return nil
 }
@@ -423,230 +396,80 @@ func (vic *VIC) createReadRegister() [RegisterCount]func() uint8 {
 	for idx := range reads {
 		reads[idx] = unconnected
 	}
-	reads[0x00] = func() uint8 {
-		return uint8(vic.mXx[0])
-	}
-	reads[0x01] = func() uint8 {
-		return vic.mXy[0]
-	}
-	reads[0x02] = func() uint8 {
-		return uint8(vic.mXx[1])
-	}
-	reads[0x03] = func() uint8 {
-		return vic.mXy[1]
-	}
-	reads[0x04] = func() uint8 {
-		return uint8(vic.mXx[2])
-	}
-	reads[0x05] = func() uint8 {
-		return vic.mXy[2]
-	}
-	reads[0x06] = func() uint8 {
-		return uint8(vic.mXx[3])
-	}
-	reads[0x07] = func() uint8 {
-		return vic.mXy[3]
-	}
-	reads[0x08] = func() uint8 {
-		return uint8(vic.mXx[4])
-	}
-	reads[0x09] = func() uint8 {
-		return vic.mXy[4]
-	}
-	reads[0x0a] = func() uint8 {
-		return uint8(vic.mXx[5])
-	}
-	reads[0x0b] = func() uint8 {
-		return vic.mXy[5]
-	}
-	reads[0x0c] = func() uint8 {
-		return uint8(vic.mXx[6])
-	}
-	reads[0x0d] = func() uint8 {
-		return vic.mXy[6]
-	}
-	reads[0x0e] = func() uint8 {
-		return uint8(vic.mXx[7])
-	}
-	reads[0x0f] = func() uint8 {
-		return vic.mXy[7]
-	}
-	reads[0x10] = func() uint8 {
-		// Sprite X position MSB
-		return vic.mx8
-	}
-	reads[0x11] = func() uint8 {
-		// Control register 1
-		return uint8((uint16(vic.cr1) & 0x7f) | ((vic.rasterY & 0x100) >> 1))
-	}
-	reads[0x12] = func() uint8 {
-		// Raster counter
-		return uint8(vic.rasterY)
-	}
-	reads[0x13] = func() uint8 {
-		// Light pen X
-		return vic.lpx
-	}
-	reads[0x14] = func() uint8 {
-		// Light pen Y
-		return vic.lpy
-	}
-	reads[0x15] = func() uint8 {
-		// Sprite enable
-		return vic.me
-	}
-	reads[0x16] = func() uint8 {
-		// Control register 2
-		return vic.cr2 | 0xc0
-	}
-	reads[0x17] = func() uint8 {
-		// Sprite Y expansion
-		return vic.mye
-	}
-	reads[0x18] = func() uint8 {
-		// Memory pointers
-		return vic.memory.GetVABase()
-	}
-	reads[0x19] = func() uint8 {
-		// IRQ latch
-		return vic.irqLatch | 0x70
-	}
-	reads[0x1a] = func() uint8 {
-		// IRQ mask
-		return vic.irqMask | 0xf0
-	}
-	reads[0x1b] = func() uint8 {
-		// Sprite data priority
-		return vic.mdp
-	}
-	reads[0x1c] = func() uint8 {
-		// Sprite multicolor
-		return vic.mmc
-	}
-	reads[0x1d] = func() uint8 {
-		// Sprite X expansion
-		return vic.mxe
-	}
-	reads[0x1e] = func() uint8 {
-		return vic.collisions.RetrieveSprite2Sprite()
-	}
-	reads[0x1f] = func() uint8 {
-		return vic.collisions.RetrieveSprite2Background()
-	}
-	reads[0x20] = func() uint8 {
-		return vic.ec | 0xf0
-	}
-	reads[0x21] = func() uint8 {
-		return vic.b0c | 0xf0
-	}
-	reads[0x22] = func() uint8 {
-		return vic.b1c | 0xf0
-	}
-	reads[0x23] = func() uint8 {
-		return vic.b2c | 0xf0
-	}
-	reads[0x24] = func() uint8 {
-		return vic.b3c | 0xf0
-	}
-	reads[0x25] = func() uint8 {
-		return vic.mm0 | 0xf0
-	}
-	reads[0x26] = func() uint8 {
-		return vic.mm1 | 0xf0
-	}
-	reads[0x27] = func() uint8 {
-		return vic.mXc[0] | 0xf0
-	}
-	reads[0x28] = func() uint8 {
-		return vic.mXc[1] | 0xf0
-	}
-	reads[0x29] = func() uint8 {
-		return vic.mXc[2] | 0xf0
-	}
-	reads[0x2a] = func() uint8 {
-		return vic.mXc[3] | 0xf0
-	}
-	reads[0x2b] = func() uint8 {
-		return vic.mXc[4] | 0xf0
-	}
-	reads[0x2c] = func() uint8 {
-		return vic.mXc[5] | 0xf0
-	}
-	reads[0x2d] = func() uint8 {
-		return vic.mXc[6] | 0xf0
-	}
-	reads[0x2e] = func() uint8 {
-		return vic.mXc[7] | 0xf0
-	}
+	reads[0x00] = vic.sprites.ReadMXx0
+	reads[0x01] = vic.sprites.ReadMXy0
+	reads[0x02] = vic.sprites.ReadMXx1
+	reads[0x03] = vic.sprites.ReadMXy1
+	reads[0x04] = vic.sprites.ReadMXx2
+	reads[0x05] = vic.sprites.ReadMXy2
+	reads[0x06] = vic.sprites.ReadMXx3
+	reads[0x07] = vic.sprites.ReadMXy3
+	reads[0x08] = vic.sprites.ReadMXx4
+	reads[0x09] = vic.sprites.ReadMXy4
+	reads[0x0a] = vic.sprites.ReadMXx5
+	reads[0x0b] = vic.sprites.ReadMXy5
+	reads[0x0c] = vic.sprites.ReadMXx6
+	reads[0x0d] = vic.sprites.ReadMXy6
+	reads[0x0e] = vic.sprites.ReadMXx7
+	reads[0x0f] = vic.sprites.ReadMXy7
+	reads[0x10] = vic.sprites.ReadMX8
+	reads[0x11] = func() uint8 { return uint8((uint16(vic.cr1) & 0x7f) | ((vic.rasterY & 0x100) >> 1)) } // Control register 1
+	reads[0x12] = func() uint8 { return uint8(vic.rasterY) }                                             // Raster counter
+	reads[0x13] = func() uint8 { return vic.lpx }                                                        // Light pen X
+	reads[0x14] = func() uint8 { return vic.lpy }                                                        // Light pen Y
+	reads[0x15] = vic.sprites.ReadMe                                                                     // Sprite enabled
+	reads[0x16] = func() uint8 { return vic.cr2 | 0xc0 }                                                 // Control register 2
+	reads[0x17] = vic.sprites.ReadMYe                                                                    // Sprite Y expansion
+	reads[0x18] = vic.memory.GetVABase                                                                   // Memory pointers
+	reads[0x19] = func() uint8 { return vic.irqLatch | 0x70 }                                            // IRQ latch
+	reads[0x1a] = func() uint8 { return vic.irqMask | 0xf0 }                                             // IRQ mask
+	reads[0x1b] = vic.sprites.ReadMDp                                                                    // Sprite data priority
+	reads[0x1c] = vic.sprites.ReadMMc                                                                    // Sprite multicolor
+	reads[0x1d] = vic.sprites.ReadMXe                                                                    // Sprite X expansion
+	reads[0x1e] = vic.collisions.RetrieveSprite2Sprite
+	reads[0x1f] = vic.collisions.RetrieveSprite2Background
+	reads[0x20] = vic.borders.ReadEc
+	reads[0x21] = vic.graphics.ReadB0c
+	reads[0x22] = vic.graphics.ReadB1c
+	reads[0x23] = vic.graphics.ReadB2c
+	reads[0x24] = vic.graphics.ReadB3c
+	reads[0x25] = func() uint8 { return vic.mm0 | 0xf0 }
+	reads[0x26] = func() uint8 { return vic.mm1 | 0xf0 }
+	reads[0x27] = vic.sprites.ReadMXc0
+	reads[0x28] = vic.sprites.ReadMXc1
+	reads[0x29] = vic.sprites.ReadMXc2
+	reads[0x2a] = vic.sprites.ReadMXc3
+	reads[0x2b] = vic.sprites.ReadMXc4
+	reads[0x2c] = vic.sprites.ReadMXc5
+	reads[0x2d] = vic.sprites.ReadMXc6
+	reads[0x2e] = vic.sprites.ReadMXc7
 	return reads
 }
 
 // createWriteRegister initializes an array of functions for writing data to various VIC-II registers.
 func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	var writes [RegisterCount]func(uint8)
-	var unconnected = func(uint8) {
-	}
+	var unconnected = func(uint8) {}
 	for idx := range writes {
 		writes[idx] = unconnected
 	}
-	writes[0x00] = func(data uint8) {
-		vic.mXx[0] = (vic.mXx[0] & 0xff00) | uint16(data)
-	}
-	writes[0x01] = func(data uint8) {
-		vic.mXy[0] = data
-	}
-	writes[0x02] = func(data uint8) {
-		vic.mXx[1] = (vic.mXx[1] & 0xff00) | uint16(data)
-	}
-	writes[0x03] = func(data uint8) {
-		vic.mXy[1] = data
-	}
-	writes[0x04] = func(data uint8) {
-		vic.mXx[2] = (vic.mXx[2] & 0xff00) | uint16(data)
-	}
-	writes[0x05] = func(data uint8) {
-		vic.mXy[2] = data
-	}
-	writes[0x06] = func(data uint8) {
-		vic.mXx[3] = (vic.mXx[3] & 0xff00) | uint16(data)
-	}
-	writes[0x07] = func(data uint8) {
-		vic.mXy[3] = data
-	}
-	writes[0x08] = func(data uint8) {
-		vic.mXx[4] = (vic.mXx[4] & 0xff00) | uint16(data)
-	}
-	writes[0x09] = func(data uint8) {
-		vic.mXy[4] = data
-	}
-	writes[0x0a] = func(data uint8) {
-		vic.mXx[5] = (vic.mXx[5] & 0xff00) | uint16(data)
-	}
-	writes[0x0b] = func(data uint8) {
-		vic.mXy[5] = data
-	}
-	writes[0x0c] = func(data uint8) {
-		vic.mXx[6] = (vic.mXx[6] & 0xff00) | uint16(data)
-	}
-	writes[0x0d] = func(data uint8) {
-		vic.mXy[6] = data
-	}
-	writes[0x0e] = func(data uint8) {
-		vic.mXx[7] = (vic.mXx[7] & 0xff00) | uint16(data)
-	}
-	writes[0x0f] = func(data uint8) {
-		vic.mXy[7] = data
-	}
-	writes[0x10] = func(data uint8) { //MSBs of X coordinates
-		vic.mx8 = data
-		for i := range vic.mXx {
-			if (data & bits.Uint8s[i]) != 0 {
-				vic.mXx[i] |= 0x100
-			} else {
-				vic.mXx[i] &= 0xff
-			}
-		}
-	}
+	writes[0x00] = vic.sprites.WriteMXx0
+	writes[0x01] = vic.sprites.WriteMXy0
+	writes[0x02] = vic.sprites.WriteMXx1
+	writes[0x03] = vic.sprites.WriteMXy1
+	writes[0x04] = vic.sprites.WriteMXx2
+	writes[0x05] = vic.sprites.WriteMXy2
+	writes[0x06] = vic.sprites.WriteMXx3
+	writes[0x07] = vic.sprites.WriteMXy3
+	writes[0x08] = vic.sprites.WriteMXx4
+	writes[0x09] = vic.sprites.WriteMXy4
+	writes[0x0a] = vic.sprites.WriteMXx5
+	writes[0x0b] = vic.sprites.WriteMXy5
+	writes[0x0c] = vic.sprites.WriteMXx6
+	writes[0x0d] = vic.sprites.WriteMXy6
+	writes[0x0e] = vic.sprites.WriteMXx7
+	writes[0x0f] = vic.sprites.WriteMXy7
+	writes[0x10] = vic.sprites.WriteMX8
 	writes[0x11] = func(data uint8) { // Control register 1
 		vic.cr1 = data
 		vic.graphics.SetYScroll(uint16(vic.cr1) & 7)
@@ -663,7 +486,6 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 		//rst8 := (vic.cr1 & 0x80) != 0
 		displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
 		vic.graphics.SetDisplayMode(displayMode)
-
 		irqRaster := (vic.irqRaster & 0xff) | ((uint16(vic.cr1) & 0x80) << 1)
 		vic.rasterUpdate(irqRaster) //can emit irq
 		vic.badLineUpdate()
@@ -672,30 +494,19 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 		irqRaster := (vic.irqRaster & 0xff00) | uint16(data)
 		vic.rasterUpdate(irqRaster) //can emit irq
 	}
-	writes[0x13] = func(data uint8) { // Light pen X
-		vic.lpx = data
-	}
-	writes[0x14] = func(data uint8) { // Light pen Y
-		vic.lpy = data
-	}
-	writes[0x15] = func(data uint8) { // Sprite enable
-		vic.me = data
-	}
-	writes[0x16] = func(data uint8) { // Control register 2
+	writes[0x13] = func(data uint8) { vic.lpx = data } // Light pen X
+	writes[0x14] = func(data uint8) { vic.lpy = data } // Light pen Y
+	writes[0x15] = vic.sprites.WriteMe                 // Sprite enabled
+	writes[0x16] = func(data uint8) {                  // Control register 2
 		vic.cr2 = data
 		vic.graphics.SetXScroll(uint16(vic.cr2) & 7)
 		vic.borders.SetColumnSel((vic.cr2 & 0x8) != 0)
 		displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
 		vic.graphics.SetDisplayMode(displayMode)
 	}
-	writes[0x17] = func(data uint8) { // Sprite Y expansion
-		vic.mye = data
-		vic.sprites.SetYExpansion(vic.mye)
-	}
-	writes[0x18] = func(data uint8) { // Memory pointers
-		vic.memory.SetVABase(data)
-	}
-	writes[0x19] = func(data uint8) { // IRQ Latch
+	writes[0x17] = vic.sprites.WriteMYe // Sprite Y expansion
+	writes[0x18] = vic.memory.SetVABase // Memory pointers
+	writes[0x19] = func(data uint8) {   // IRQ Latch
 		// Verify implementation
 		vic.irqLatch &= ^((data & 0xf) | irqMasterBit)
 		vic.irqVerify() //can emit irq
@@ -711,67 +522,25 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 		vic.irqMask = data & 0xf
 		vic.irqVerify() //can emit irq
 	}
-	writes[0x1b] = func(data uint8) { // Sprite data priority
-		vic.mdp = data
-	}
-	writes[0x1c] = func(data uint8) { // Sprite multicolor
-		vic.mmc = data
-		vic.sprites.ModeUpdate(vic.mmc, vic.mxe)
-	}
-	writes[0x1d] = func(data uint8) { // Sprite X expansion
-		vic.mxe = data
-		vic.sprites.ModeUpdate(vic.mmc, vic.mxe)
-	}
-	writes[0x1e] = func(data uint8) { // Sprite-sprite collision
-		vic.collisions.SetSprite(data)
-	}
-	writes[0x1f] = func(data uint8) { // Sprite-background collision
-		vic.collisions.SetBackground(data)
-	}
-	writes[0x20] = func(data uint8) {
-		vic.ec = data
-	}
-	writes[0x21] = func(data uint8) {
-		vic.b0c = data
-	}
-	writes[0x22] = func(data uint8) {
-		vic.b1c = data
-	}
-	writes[0x23] = func(data uint8) {
-		vic.b2c = data
-	}
-	writes[0x24] = func(data uint8) {
-		vic.b3c = data
-	}
-	writes[0x25] = func(data uint8) {
-		vic.mm0 = data
-	}
-	writes[0x26] = func(data uint8) {
-		vic.mm1 = data
-	}
-	writes[0x27] = func(data uint8) {
-		vic.mXc[0] = data
-	}
-	writes[0x28] = func(data uint8) {
-		vic.mXc[1] = data
-	}
-	writes[0x29] = func(data uint8) {
-		vic.mXc[2] = data
-	}
-	writes[0x2a] = func(data uint8) {
-		vic.mXc[3] = data
-	}
-	writes[0x2b] = func(data uint8) {
-		vic.mXc[4] = data
-	}
-	writes[0x2c] = func(data uint8) {
-		vic.mXc[5] = data
-	}
-	writes[0x2d] = func(data uint8) {
-		vic.mXc[6] = data
-	}
-	writes[0x2e] = func(data uint8) {
-		vic.mXc[7] = data
-	}
+	writes[0x1b] = vic.sprites.WriteMDp         // Sprite data priority
+	writes[0x1c] = vic.sprites.WriteMMc         // Sprite Color
+	writes[0x1d] = vic.sprites.WriteMXe         // Sprite X expansion
+	writes[0x1e] = vic.collisions.SetSprite     // Sprite-sprite collision
+	writes[0x1f] = vic.collisions.SetBackground // Sprite-background collision
+	writes[0x20] = vic.borders.WriteEc
+	writes[0x21] = vic.graphics.WriteB0c
+	writes[0x22] = vic.graphics.WriteB1c
+	writes[0x23] = vic.graphics.WriteB2c
+	writes[0x24] = vic.graphics.WriteB3c
+	writes[0x25] = func(data uint8) { vic.mm0 = data }
+	writes[0x26] = func(data uint8) { vic.mm1 = data }
+	writes[0x27] = vic.sprites.WriteMXc0
+	writes[0x28] = vic.sprites.WriteMXc1
+	writes[0x29] = vic.sprites.WriteMXc2
+	writes[0x2a] = vic.sprites.WriteMXc3
+	writes[0x2b] = vic.sprites.WriteMXc4
+	writes[0x2c] = vic.sprites.WriteMXc5
+	writes[0x2d] = vic.sprites.WriteMXc6
+	writes[0x2e] = vic.sprites.WriteMXc7
 	return writes
 }

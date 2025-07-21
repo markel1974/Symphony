@@ -41,6 +41,10 @@ type Graphics struct {
 	displayMode         int    // Index of current display mode
 	bmm                 bool
 	ecm                 bool
+	b0c                 uint8 // VIC register - graphics
+	b1c                 uint8 // VIC register - graphics
+	b2c                 uint8 // VIC register - graphics
+	b3c                 uint8 // VIC register - graphics
 	foregroundSequencer []func(int)
 	backgroundSequencer []func()
 }
@@ -62,6 +66,10 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		xScroll:           0,
 		yScroll:           0,
 		displayMode:       0,
+		b0c:               0,
+		b1c:               0,
+		b2c:               0,
+		b3c:               0,
 		videoMatrix:       make([]uint8, columnsMax),
 		colorLine:         make([]uint8, columnsMax),
 		textBuffer:        make([]uint8, (rasterYMax/8)*columnsMax),
@@ -128,6 +136,46 @@ func (gr *Graphics) Reset() {
 // (Currently empty, but kept for consistency).
 func (gr *Graphics) Setup() error {
 	return nil
+}
+
+// ReadB0c returns the value of b0c with the high nibble set to 1 (binary 1111), effectively OR-ing the value with 0xf0.
+func (gr *Graphics) ReadB0c() uint8 {
+	return gr.b0c | 0xf0
+}
+
+// ReadB1c retrieves the `b1c` value from the Graphics struct, applies a bitwise OR with 0xf0, and returns the result.
+func (gr *Graphics) ReadB1c() uint8 {
+	return gr.b1c | 0xf0
+}
+
+// ReadB2c retrieves the value of the b2c property with a bitwise OR operation applied, returning a uint8 result.
+func (gr *Graphics) ReadB2c() uint8 {
+	return gr.b2c | 0xf0
+}
+
+// ReadB3c reads the b3c property of the Graphics receiver and applies a bitwise OR operation with the value 0xf0.
+func (gr *Graphics) ReadB3c() uint8 {
+	return gr.b3c | 0xf0
+}
+
+// WriteB0c sets the value of the b0c field in the Graphics instance to the specified data value.
+func (gr *Graphics) WriteB0c(data uint8) {
+	gr.b0c = data
+}
+
+// WriteB1c sets the value of the b1c field in the Graphics struct to the provided uint8 data.
+func (gr *Graphics) WriteB1c(data uint8) {
+	gr.b1c = data
+}
+
+// WriteB2c sets the value of the b2c field with the provided data parameter.
+func (gr *Graphics) WriteB2c(data uint8) {
+	gr.b2c = data
+}
+
+// WriteB3c sets the b3c property of the Graphics object to the given data value.
+func (gr *Graphics) WriteB3c(data uint8) {
+	gr.b3c = data
 }
 
 // SetXScroll sets the horizontal scroll offset for the graphics rendering system to the specified value.
@@ -329,7 +377,7 @@ func (gr *Graphics) DrawForeground() {
 // It uses the offset and core attributes of the Graphics instance to determine the drawing configuration.
 // Used in Standard Character Mode.
 func (gr *Graphics) drawBackgroundTextStandard() {
-	gr.drawDefault(gr.offset, gr.core.b0c)
+	gr.drawDefault(gr.offset, gr.b0c)
 }
 
 // drawBackgroundTextMulticolor renders a multicolor text background for the given Graphics object.
@@ -337,14 +385,14 @@ func (gr *Graphics) drawBackgroundTextStandard() {
 // The Graphics parameter contains all the necessary data like offset, core state, and color information.
 // Used in Multicolor Mode.
 func (gr *Graphics) drawBackgroundTextMulticolor() {
-	gr.drawDefault(gr.offset, gr.core.b0c)
+	gr.drawDefault(gr.offset, gr.b0c)
 }
 
 // drawBackgroundBitmapMulticolor draws a multicolor bitmap background using the provided Graphics object.
 // Updates the display buffer with colors based on the provided Graphics state and configuration.
 // Used in Multicolor Bitmap Mode.
 func (gr *Graphics) drawBackgroundBitmapMulticolor() {
-	gr.drawDefault(gr.offset, gr.core.b0c)
+	gr.drawDefault(gr.offset, gr.b0c)
 }
 
 // drawBackgroundBitmapStandard renders a standard bitmap background using the provided Graphics instance.
@@ -363,18 +411,18 @@ func (gr *Graphics) drawBackgroundTextECM() {
 	if (gr.charDataLast & 0x80) != 0 {
 		if (gr.charDataLast & 0x40) != 0 {
 			// Background color 3.
-			gr.drawDefault(gr.offset, gr.core.b3c)
+			gr.drawDefault(gr.offset, gr.b3c)
 		} else {
 			// Background color 2.
-			gr.drawDefault(gr.offset, gr.core.b2c)
+			gr.drawDefault(gr.offset, gr.b2c)
 		}
 	} else {
 		if (gr.charDataLast & 0x40) != 0 {
 			// Background color 1.
-			gr.drawDefault(gr.offset, gr.core.b1c)
+			gr.drawDefault(gr.offset, gr.b1c)
 		} else {
 			// Background color 0.
-			gr.drawDefault(gr.offset, gr.core.b0c)
+			gr.drawDefault(gr.offset, gr.b0c)
 		}
 	}
 }
@@ -389,7 +437,7 @@ func (gr *Graphics) drawBackgroundDefault() {
 // drawForegroundTextStandard renders foreground text using the standard graphics mode at the specified offset.
 // Used in Standard Character Mode.
 func (gr *Graphics) drawForegroundTextStandard(offset int) {
-	gr.drawStandard(offset, gr.core.b0c, gr.colorData)
+	gr.drawStandard(offset, gr.b0c, gr.colorData)
 }
 
 // drawForegroundTextMulticolor renders multicolor text for the foreground depending on the color mode and provided offset.
@@ -397,9 +445,9 @@ func (gr *Graphics) drawForegroundTextStandard(offset int) {
 // Used in Multicolor Mode.
 func (gr *Graphics) drawForegroundTextMulticolor(offset int) {
 	if (gr.colorData & 8) != 0 {
-		gr.drawMulticolor(offset, gr.core.b0c, gr.core.b1c, gr.core.b2c, gr.colorData&7)
+		gr.drawMulticolor(offset, gr.b0c, gr.b1c, gr.b2c, gr.colorData&7)
 	} else {
-		gr.drawStandard(offset, gr.core.b0c, gr.colorData)
+		gr.drawStandard(offset, gr.b0c, gr.colorData)
 	}
 }
 
@@ -410,21 +458,21 @@ func (gr *Graphics) drawForegroundBitmapStandard(offset int) {
 
 // drawForegroundBitmapMulticolor renders a foreground bitmap in multicolor mode using the specified graphics and offset.
 func (gr *Graphics) drawForegroundBitmapMulticolor(offset int) {
-	gr.drawMulticolor(offset, gr.core.b0c, gr.charData>>4, gr.charData, gr.colorData)
+	gr.drawMulticolor(offset, gr.b0c, gr.charData>>4, gr.charData, gr.colorData)
 }
 
 // drawForegroundTextECM handles rendering of foreground text in Extended Color Mode (ECM) by selecting the correct color mapping.
 func (gr *Graphics) drawForegroundTextECM(offset int) {
 	if (gr.charData & 0x80) != 0 {
 		if (gr.charData & 0x40) != 0 {
-			gr.drawStandard(offset, gr.core.b3c, gr.colorData)
+			gr.drawStandard(offset, gr.b3c, gr.colorData)
 		} else {
-			gr.drawStandard(offset, gr.core.b2c, gr.colorData)
+			gr.drawStandard(offset, gr.b2c, gr.colorData)
 		}
 	} else if (gr.charData & 0x40) != 0 {
-		gr.drawStandard(offset, gr.core.b1c, gr.colorData)
+		gr.drawStandard(offset, gr.b1c, gr.colorData)
 	} else {
-		gr.drawStandard(offset, gr.core.b0c, gr.colorData)
+		gr.drawStandard(offset, gr.b0c, gr.colorData)
 	}
 }
 

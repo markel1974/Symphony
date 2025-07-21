@@ -38,7 +38,7 @@ type Sprite struct {
 	counterBase      uint16
 	counterIncrement uint16
 	set              func(int, uint8)
-	Draw             func(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int)
+	Draw             func(lineOffset int, mdp uint8, collisions *Collisions, sColor uint8, sOffset int, m int, s int)
 	//plane2ColorHelper [4]func(uint8) int
 }
 
@@ -161,26 +161,10 @@ func (sp *Sprite) ModeUpdate(mmc uint8, mxe uint8) {
 	}
 }
 
-/*
-// Draw renders the sprite on the screen at a specified starting scanline and manages collision detection.
-func (sp *Sprite) Draw(lineStart int, sColor uint8, mxx uint16, collisions *Collisions) {
-	// Calculate the sprite's X offset on the screen. Add 24 to account for the border.
-	//sOffset := int(sp.core.mXx[sp.num]) + sp.max //SpriteNumber
-	sOffset := int(mxx) + sp.max //SpriteNumber
-	// Calculate the final offset on the scanline, including the global offset.
-	lineOffset := lineStart + sOffset
-	// Calculate the "major" X coordinate (used for collision detection).This is essentially the character column.
-	majorX := sOffset / sp.max
-	// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column.
-	minorX := sOffset & 7
-	sp.pipeline(lineOffset, collisions, sColor, sOffset, majorX, minorX)
-}
-*/
-
 // drawExpandedMulticolor is responsible for rendering an expanded multicolor sprite on the display buffer.
 // It handles sprite-to-graphics and sprite-to-sprite collision detection while processing each pixel's color.
 // The method also respects sprite-to-background priority by masking sprite pixels when a graphics collision occurs.
-func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int) {
+func (sp *Sprite) drawExpandedMulticolor(lineOffset int, mdp uint8, collisions *Collisions, sColor uint8, sOffset int, m int, s int) {
 	// Get the foreground mask for the left half of the sprite's character column.
 	foreMaskL := collisions.GetGraphicsL(m, s)
 	// Get the foreground mask for the right half of the sprite's character column.
@@ -200,7 +184,7 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 	if ((foreMaskL & (plane0L | plane1L)) != 0) || ((foreMaskR & (plane0R | plane1R)) != 0) {
 		// Set the sprite-to-graphics collision flag for this sprite.
 		collisions.SetGraphicsPresence(sp.mask)
-		if (sp.core.mdp & sp.mask) != 0 {
+		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled (MDP register), mask out the sprite pixels where a collision occurred.
 			// This makes the background "show through" the sprite.
 			plane0L &= ^foreMaskL // Mask left half.
@@ -229,7 +213,7 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, collisions *Collisions,
 }
 
 // drawExpandedStandard renders a horizontally expanded sprite in standard mode with collision detection and masking.
-func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int) {
+func (sp *Sprite) drawExpandedStandard(lineOffset int, mdp uint8, collisions *Collisions, sColor uint8, sOffset int, m int, s int) {
 	// Get the foreground mask for the left half of the sprite's character column.
 	foreMaskL := collisions.GetGraphicsL(m, s)
 	// Get the foreground mask for the right half of the sprite's character column.
@@ -241,7 +225,7 @@ func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, s
 	if ((foreMaskL & sDataL) != 0) || ((foreMaskR & sDataR) != 0) {
 		// Set the sprite-to-graphics collision flag.
 		collisions.SetGraphicsPresence(sp.mask)
-		if (sp.core.mdp & sp.mask) != 0 {
+		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			sDataL &= ^foreMaskL // Mask left half.
 			sDataR &= ^foreMaskR // Mask right half.
@@ -267,7 +251,7 @@ func (sp *Sprite) drawExpandedStandard(lineOffset int, collisions *Collisions, s
 }
 
 // drawUnexpandedMulticolor renders a non-expanded multicolor sprite, handling graphics collisions and color selection.
-func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int) {
+func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, mdp uint8, collisions *Collisions, sColor uint8, sOffset int, m int, s int) {
 	// Get the foreground mask for the sprite's character column.
 	foreMask := collisions.GetGraphicsL(m, s)
 	// Combine the three bytes of sprite data into a single 32-bit word for easier processing.
@@ -281,7 +265,7 @@ func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collision
 	if (foreMask & (plane0 | plane1)) != 0 {
 		// Set the sprite-to-graphics collision flag.
 		collisions.SetGraphicsPresence(sp.mask)
-		if (sp.core.mdp & sp.mask) != 0 {
+		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			plane0 &= ^foreMask // Mask plane 0.
 			plane1 &= ^foreMask // Mask plane 1.
@@ -298,7 +282,7 @@ func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, collisions *Collision
 }
 
 // drawUnexpandedStandard renders a 24-pixel wide unexpanded standard sprite, managing collisions and pixel masking.
-func (sp *Sprite) drawUnexpandedStandard(lineOffset int, collisions *Collisions, sColor uint8, sOffset int, m int, s int) {
+func (sp *Sprite) drawUnexpandedStandard(lineOffset int, mdp uint8, collisions *Collisions, sColor uint8, sOffset int, m int, s int) {
 	// Get the foreground mask for the sprite's character column.
 	foreMask := collisions.GetGraphicsL(m, s)
 	// Combine the three bytes of sprite data into a single 32-bit word for easier processing.
@@ -307,7 +291,7 @@ func (sp *Sprite) drawUnexpandedStandard(lineOffset int, collisions *Collisions,
 	if (foreMask & sData) != 0 {
 		// Set the sprite-to-graphics collision flag.
 		collisions.SetGraphicsPresence(sp.mask)
-		if (sp.core.mdp & sp.mask) != 0 {
+		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			sData &= ^foreMask // Mask the sprite data.
 		}
