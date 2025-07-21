@@ -39,7 +39,7 @@ type Graphics struct {
 }
 
 // NewGraphics initializes and returns a new Graphics instance with the provided VIC core, collision handler, and display buffer.
-func NewGraphics(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer) *Graphics {
+func NewGraphics(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer, rasterYMax uint16) *Graphics {
 	gr := &Graphics{
 		BaseComponent:     component.NewBaseComponent(),
 		core:              core,
@@ -54,7 +54,7 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		lineIndex:         0,
 		videoMatrix:       make([]uint8, columnsMax),
 		colorLine:         make([]uint8, columnsMax),
-		textBuffer:        make([]uint8, (RasterYMax/8)*columnsMax),
+		textBuffer:        make([]uint8, (rasterYMax/8)*columnsMax),
 		rowCounter:        rowsMax,
 		videoCounter:      0,
 		videoCounterLatch: 0,

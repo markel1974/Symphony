@@ -9,9 +9,8 @@ import (
 // borderCountMax determines the maximum number of border segments that can fit horizontally on the display.
 // borderCount specifies the predefined number of border segments currently being used.
 const (
-	borderWidth    = 8
-	borderCountMax = DisplayX / borderWidth
-	borderCount    = 4
+	borderWidth = 8
+	borderCount = 4
 )
 
 // Border bit constants represent various positions within a layout or grid, using increasing iota values.
@@ -49,7 +48,8 @@ type Borders struct {
 
 // NewBorder initializes and returns a new Borders object using the provided VIC core and display buffer interface.
 // It configures left, right, center, and sequencer states based on display buffer properties.
-func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, displayBuffer references.IDisplayBuffer) *Borders {
+func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, displayBuffer references.IDisplayBuffer, displayX int) *Borders {
+	borderCountMax := displayX / borderWidth
 	gr := &Borders{
 		BaseComponent:      component.NewBaseComponent(),
 		setMulti8:          displayBuffer.SetMulti8,

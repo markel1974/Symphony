@@ -6,6 +6,10 @@ import (
 	"log"
 )
 
+const (
+	spriteNumber = 8
+)
+
 // bitSprite0 to bitSprite7 represent bitmask values for individual sprite identifiers.
 const (
 	bitSprite0 = 0x1
@@ -40,7 +44,7 @@ func NewSprites(parent references.IComponent, factory references.IComponentFacto
 		currentSpriteFlags: 0,
 		dmaFlags:           0,
 		offset:             0,
-		sprites:            make([]*Sprite, SpriteNumber),
+		sprites:            make([]*Sprite, spriteNumber),
 	}
 	s.BaseComponent.Register(factory, parent, "spriteHandler", s, references.IdInternalComponent(label, instance, "SpriteHandler"))
 	for i := range s.sprites {

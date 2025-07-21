@@ -5,6 +5,11 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+const (
+	borderDisplayXFill    = 0x1ff
+	borderDisplayXFillMax = borderDisplayXFill + 64 //DisplayXFill + 1
+)
+
 // Collisions encapsulate collision detection functionality between sprites and graphics within a VIC system.
 // It includes buffers for handling sprite-sprite and sprite-graphics collision data as well as priorities.
 // The struct also manages foreground masks and offsets for sprite-graphics collision computations.
@@ -21,16 +26,16 @@ type Collisions struct {
 }
 
 // NewCollisions creates and returns a new Collisions instance, associated with the given VIC core.
-func NewCollisions(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC) *Collisions {
+func NewCollisions(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, displayX int) *Collisions {
 	c := &Collisions{
 		BaseComponent:        component.NewBaseComponent(),
 		core:                 core,
 		graphics:             0,
 		spritesCollision:     0,
-		spritesPresence:      make([]uint8, DisplayXFillMax), // Allocate the sprite buffer. Size is DisplayXFillMax (maximum X coordinate).
-		spritesPresenceEmpty: make([]uint8, DisplayXFillMax), // Allocate and initialize the empty sprite buffer (all zeros).
-		graphicsBuffer:       make([]uint8, DisplayXFill+1),  // Allocate the graphics buffer. Size is DisplayXFill+1. DisplayXFill seems to be 40
-		graphicsBufferEmpty:  make([]uint8, DisplayXDiv8),    // DisplayXDiv8 seems to be 52
+		spritesPresence:      make([]uint8, borderDisplayXFillMax), // Allocate the sprite buffer. Size is DisplayXFillMax (maximum X coordinate).
+		spritesPresenceEmpty: make([]uint8, borderDisplayXFillMax), // Allocate and initialize the empty sprite buffer (all zeros).
+		graphicsBuffer:       make([]uint8, borderDisplayXFill+1),  // Allocate the graphics buffer. Size is DisplayXFill+1. DisplayXFill seems to be 40
+		graphicsBufferEmpty:  make([]uint8, displayX/8),
 		graphicsBufferOffset: 0,
 	}
 	c.BaseComponent.Register(factory, parent, "collisions", c, references.IdInternalComponent(label, instance, "Collisions"))
@@ -88,7 +93,7 @@ func (c *Collisions) SetGraphicsPresence(sBit uint8) {
 // otherwise, it updates the sprite buffer with the new bit.
 func (c *Collisions) SetSpritePresence(index int, sBit uint8) bool {
 	// Boundary check.
-	if index >= DisplayXFillMax {
+	if index >= borderDisplayXFillMax {
 		return false
 	}
 	sBitPresence := c.spritesPresence[index]

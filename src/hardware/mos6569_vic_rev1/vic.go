@@ -53,7 +53,7 @@ type VIC struct {
 	label     string
 	reads     [RegisterCount]func() uint8
 	writes    [RegisterCount]func(uint8)
-	sequencer []*SequencerData
+	sequencer *Sequencer
 	curr      *SequencerData
 
 	readRam               func(addr uint16) uint8
@@ -129,9 +129,9 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		readRam:          nil,
 		readColorRam:     nil,
 		readCharRom:      nil,
-		mXx:              make([]uint16, SpriteNumber),
-		mXy:              make([]uint8, SpriteNumber),
-		mXc:              make([]uint8, SpriteNumber),
+		mXx:              make([]uint16, spriteNumber),
+		mXy:              make([]uint8, spriteNumber),
+		mXc:              make([]uint8, spriteNumber),
 		mx8:              0,
 		cr1:              0,
 		cr2:              0,
@@ -163,9 +163,9 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		sprSprClx:        0,
 		sprBgrClx:        0,
 		rasterX:          0,
-		rasterY:          TotalRasters - 1,
-		dyTop:            Row24YStart,
-		dyBottom:         Row24YStop,
+		rasterY:          0, //TotalRasters - 1,
+		dyTop:            0, //Row24YStart,
+		dyBottom:         0, //Row24YStop,
 		displayMode:      0,
 		lpTriggered:      false,
 		badLineCondition: false,
@@ -204,10 +204,18 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.readColorRam = socket.ReadColorRam
 	vic.readCharRom = socket.ReadCharRom
 
-	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic)
-	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer)
+	vic.sequencer = CreatePalSequencer()
+	vic.rasterY = vic.sequencer.rasterYMax //vic.sequencer.totalRasters - 1
+	vic.dyTop = vic.sequencer.row24YStart
+	vic.dyBottom = vic.sequencer.row24YStop
+	vic.curr = vic.sequencer.data[0]
+	vic.reads = vic.createReadRegister()
+	vic.writes = vic.createWriteRegister()
+
+	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic, vic.sequencer.width)
+	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer, vic.sequencer.rasterYMax)
 	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer)
-	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, vic, displayBuffer)
+	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, vic, displayBuffer, vic.sequencer.width)
 	vic.vBlankNextCycle = false
 	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)
@@ -223,10 +231,6 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	if err := vic.borders.Setup(); err != nil {
 		return err
 	}
-	vic.sequencer = CreatePalSequencer()
-	vic.curr = vic.sequencer[0]
-	vic.reads = vic.createReadRegister()
-	vic.writes = vic.createWriteRegister()
 
 	return nil
 }
@@ -341,7 +345,7 @@ func (vic *VIC) TryAcquireAEC() {
 // UpdateSpriteExpY adjusts the sprite's vertical expansion state based on the MYE register using an inversion technique.
 func (vic *VIC) UpdateSpriteExpY() {
 	// Invert y expansion FlipFlop (if MYE bit is set)
-	for idx, mask := 0, uint8(1); idx < SpriteNumber; idx, mask = idx+1, mask<<1 {
+	for idx, mask := 0, uint8(1); idx < spriteNumber; idx, mask = idx+1, mask<<1 {
 		if (vic.mye & mask) != 0 {
 			vic.sprExpY ^= mask
 		}
@@ -357,8 +361,8 @@ func (vic *VIC) badLineUpdate() {
 	// and if the DEN bit has been set for at least one cycle somewhere in raster line $30
 	// So clearing the DEN bit will normally prevent Bad Lines
 
-	if (vic.rasterY >= FirstDmaLine) && (vic.rasterY <= LastDmaLine) {
-		if vic.rasterY == FirstDmaLine && vic.den {
+	if (vic.rasterY >= vic.sequencer.firstDmaLine) && (vic.rasterY <= vic.sequencer.lastDmaLine) {
+		if vic.rasterY == vic.sequencer.firstDmaLine && vic.den {
 			//If YSCROLL=0, a Bad Line Condition occurs in raster line $30 as soon as the DEN bit
 			vic.badLineEnabler = true
 			if vic.yScroll == 0 {
@@ -730,7 +734,7 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	}
 	writes[0x10] = func(data uint8) { //MSBs of X coordinates
 		vic.mx8 = data
-		for i := 0; i < SpriteNumber; i++ {
+		for i := 0; i < spriteNumber; i++ {
 			if (data & bits.Uint8s[i]) != 0 {
 				vic.mXx[i] |= 0x100
 			} else {
@@ -742,11 +746,11 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 		vic.cr1 = data
 		vic.yScroll = uint16(vic.cr1) & 7
 		if rowSel := (vic.cr1 & 0x8) != 0; rowSel {
-			vic.dyTop = Row25YStart
-			vic.dyBottom = Row25YStop
+			vic.dyTop = vic.sequencer.row25YStart
+			vic.dyBottom = vic.sequencer.row25YStop
 		} else {
-			vic.dyTop = Row24YStart
-			vic.dyBottom = Row24YStop
+			vic.dyTop = vic.sequencer.row24YStart
+			vic.dyBottom = vic.sequencer.row24YStop
 		}
 		vic.den = (vic.cr1 & 0x10) != 0
 		vic.bmm = (vic.cr1 & 0x20) != 0

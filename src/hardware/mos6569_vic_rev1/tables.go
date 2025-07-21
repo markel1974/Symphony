@@ -1,48 +1,10 @@
 package mos6569
 
-// ScreenFreq defines the screen refresh frequency in Hz.
-// FrameInterval calculates the frame duration in milliseconds based on ScreenFreq.
-// DisplayX defines the horizontal resolution of the display in pixels.
-// DisplayY defines the vertical resolution of the display in pixels.
-// DisplayXFill defines the filled horizontal resolution of the display in pixels.
-// TotalRasters represents the total number of raster lines (PAL standard).
-// DisplayXDiv8 is the horizontal resolution divided by 8.
-// DisplayXDiv4 is the horizontal resolution divided by 4.
-// FirstDisplayedLine specifies the first displayed raster line.
-// LastDisplayedLine specifies the last displayed raster line.
-// FirstDmaLine marks the first line eligible for "Bad Lines" DMA fetching.
-// LastDmaLine marks the last line eligible for "Bad Lines" DMA fetching.
-// Row25YStart represents the starting coordinate for a 25-row display.
-// Row25YStop represents the stopping coordinate for a 25-row display.
-// Row24YStart represents the starting coordinate for a 24-row display.
-// Row24YStop represents the stopping coordinate for a 24-row display.
-// RasterYMax defines the maximum raster line index.
-// DisplayXMax specifies the maximum horizontal resolution, including additional offsets.
-// DisplaySize represents the total display buffer size in pixels.
-// DisplayXFillMax specifies the maximum filled horizontal resolution, including additional offsets.
-// SpriteNumber defines the total number of sprites supported.
+// ScreenFreq defines the screen refresh frequency in Hz (PAL standard) //TODO Move in sequencer
+// TotalRasters represents the total number of raster lines (PAL standard) //TODO Move in sequencer
 const (
-	ScreenFreq         = 50
-	FrameInterval      = 1000 / ScreenFreq
-	DisplayX           = 0x180
-	DisplayY           = 0x110
-	DisplayXFill       = 0x1ff
-	TotalRasters       = 0x138 // Total number of raster lines (PAL)
-	DisplayXDiv8       = DisplayX / 8
-	DisplayXDiv4       = DisplayX / 4
-	FirstDisplayedLine = 0x10  // First displayed line
-	LastDisplayedLine  = 0x11f // Last displayed line
-	FirstDmaLine       = 0x30  // First possible line for Bad Lines
-	LastDmaLine        = 0xf7  // Last possible line for Bad Lines
-	Row25YStart        = 0x33  // Display window coordinates
-	Row25YStop         = 0xfb
-	Row24YStart        = 0x37
-	Row24YStop         = 0xf7
-	RasterYMax         = TotalRasters - 1
-	DisplayXMax        = DisplayX + 64
-	DisplaySize        = DisplayXMax * DisplayY
-	DisplayXFillMax    = DisplayXFill + 64 //DisplayXFill + 1
-	SpriteNumber       = 8
+	ScreenFreq   = 50
+	TotalRasters = 0x138
 )
 
 // _multiExpTable is a precomputed lookup table containing 16-bit unsigned integers for efficient multi-exponentiation.
@@ -187,7 +149,7 @@ func init() {
 
 	for x := range _spritesData {
 		var sprite []uint8 = nil
-		for sNum, sBit := uint8(0), uint8(1); sNum < SpriteNumber; sNum, sBit = sNum+1, sBit<<1 {
+		for sNum, sBit := uint8(0), uint8(1); sNum < spriteNumber; sNum, sBit = sNum+1, sBit<<1 {
 			if uint8(x)&sBit != 0 {
 				sprite = append(sprite, sNum)
 				//sBit2 := uint8(1) << sNum

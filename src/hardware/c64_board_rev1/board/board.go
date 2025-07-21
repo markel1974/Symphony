@@ -77,7 +77,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	s.cia1Socket = NewCIA1Socket(s, s.label, s)
 	s.cia2Socket = NewCIA2Socket(s, s.label, s)
 	s.plaSocket = NewPLASocket(s, s.label)
-	s.throttleSocket = NewThrottleSocket(s, s.label, mos6569.FrameInterval)
+	s.throttleSocket = NewThrottleSocket(s, s.label, 1000/mos6569.ScreenFreq)
 
 	s.sockets = append(s.sockets, s.romSocket)
 	s.sockets = append(s.sockets, s.ramSocket)
