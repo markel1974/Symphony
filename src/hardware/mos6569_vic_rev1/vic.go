@@ -98,9 +98,6 @@ type VIC struct {
 	irqLatch         uint8    // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
 	irqMask          uint8    // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
 	irqRaster        uint16   // Interrupt raster line
-	sprExpY          uint8    // 8 sprite y expansion FlipFlops
-	sprBgrClx        uint8    // Sprite to background collision
-	sprSprClx        uint8    // Sprite to sprite collision
 	rasterX          uint16   // Current raster x position
 	rasterY          uint16   // Current raster line
 	dyTop            uint16   // Comparison values for borders logic
@@ -157,9 +154,6 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		irqRaster:        0,
 		irqLatch:         0,
 		irqMask:          0,
-		sprExpY:          0,
-		sprSprClx:        0,
-		sprBgrClx:        0,
 		rasterX:          0,
 		rasterY:          0, //TotalRasters - 1,
 		dyTop:            0, //Row24YStart,
@@ -338,16 +332,6 @@ func (vic *VIC) TryAcquireAEC() {
 	}
 }
 
-// UpdateSpriteExpY adjusts the sprite's vertical expansion state based on the MYE register using an inversion technique.
-func (vic *VIC) UpdateSpriteExpY() {
-	// Invert y expansion FlipFlop (if MYE bit is set)
-	for idx, mask := 0, uint8(1); idx < spriteNumber; idx, mask = idx+1, mask<<1 {
-		if (vic.mye & mask) != 0 {
-			vic.sprExpY ^= mask
-		}
-	}
-}
-
 // badLineUpdate updates the bad line condition based on the current raster position, DEN bit, and YSCROLL value.
 // The bad line condition occurs when specific raster and scroll conditions are met, enabling certain VIC behavior.
 func (vic *VIC) badLineUpdate() {
@@ -430,22 +414,6 @@ func (vic *VIC) ReadByte(addr uint16) uint8 {
 	}
 	vic.lastByte = vic.readRam(va)
 	return vic.lastByte
-}
-
-// CollisionApply processes sprite-to-sprite and sprite-to-background collisions and emits appropriate IRQ signals.
-func (vic *VIC) CollisionApply(sprites uint8, graphics uint8) {
-	if vic.sprSprClx != 0 {
-		vic.sprSprClx |= sprites
-	} else {
-		vic.sprSprClx |= sprites
-		vic.irqEmit(irqSpriteToSpriteBit)
-	}
-	if vic.sprBgrClx != 0 {
-		vic.sprBgrClx |= graphics
-	} else {
-		vic.sprBgrClx |= graphics
-		vic.irqEmit(irqSpriteToGraphicBit)
-	}
 }
 
 // ReadRegister reads a register at the given address and returns the corresponding 8-bit value.
@@ -613,16 +581,10 @@ func (vic *VIC) createReadRegister() [RegisterCount]func() uint8 {
 		return vic.mxe
 	}
 	reads[0x1e] = func() uint8 {
-		// Sprite-sprite collision
-		ret := vic.sprSprClx
-		vic.sprSprClx = 0 // Read and clear
-		return ret
+		return vic.collisions.RetrieveSprite2Sprite()
 	}
 	reads[0x1f] = func() uint8 {
-		// Sprite-background collision
-		ret := vic.sprBgrClx
-		vic.sprBgrClx = 0 // Read and clear
-		return ret
+		return vic.collisions.RetrieveSprite2Background()
 	}
 	reads[0x20] = func() uint8 {
 		return vic.ec | 0xf0
@@ -778,7 +740,7 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	}
 	writes[0x17] = func(data uint8) { // Sprite Y expansion
 		vic.mye = data
-		vic.sprExpY |= ^data
+		vic.sprites.SetYExpansion(data)
 	}
 	writes[0x18] = func(data uint8) { // Memory pointers
 		vic.vaBase = data
@@ -812,10 +774,10 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 		vic.sprites.ModeUpdate()
 	}
 	writes[0x1e] = func(data uint8) { // Sprite-sprite collision
-		vic.sprSprClx = data
+		vic.collisions.SetSprite(data)
 	}
 	writes[0x1f] = func(data uint8) { // Sprite-background collision
-		vic.sprBgrClx = data
+		vic.collisions.SetBackground(data)
 	}
 	writes[0x20] = func(data uint8) {
 		vic.ec = data

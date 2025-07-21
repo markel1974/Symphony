@@ -62,10 +62,7 @@ The `mos6569` package is not intended for direct use outside of the `symphony` e
 
 ## TODO
 
-*   Add comprehensive unit tests.
-*   Complete the documentation (especially inline comments explaining the complex logic within `graphics.go`, `sprites.go`, and `Emulate`).
 *   Investigate and implement any missing undocumented VIC-II behaviors.
-*   Consider adding support for NTSC emulation.
 
 ## Contributing
 

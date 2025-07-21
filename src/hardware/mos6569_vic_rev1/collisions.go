@@ -23,6 +23,8 @@ type Collisions struct {
 	graphicsBuffer       []uint8 // graphicsBuffer holds the collision state for background graphics as a buffer of unsigned 8-bit integers.
 	graphicsBufferEmpty  []uint8 // graphicsBufferEmpty holds an initialized empty buffer for resetting or clearing graphics collision data.
 	graphicsBufferOffset int     // graphicsBufferOffset tracks the current position in the graphics buffer for collision updates.
+	sprBgrClx            uint8   // Sprite to background collision
+	sprSprClx            uint8   // Sprite to sprite collision
 }
 
 // NewCollisions creates and returns a new Collisions instance, associated with the given VIC core.
@@ -37,6 +39,8 @@ func NewCollisions(parent references.IComponent, factory references.IComponentFa
 		graphicsBuffer:       make([]uint8, borderDisplayXFill+1),  // Allocate the graphics buffer. Size is DisplayXFill+1. DisplayXFill seems to be 40
 		graphicsBufferEmpty:  make([]uint8, displayX/8),
 		graphicsBufferOffset: 0,
+		sprSprClx:            0,
+		sprBgrClx:            0,
 	}
 	c.BaseComponent.Register(factory, parent, "collisions", c, references.IdInternalComponent(label, instance, "Collisions"))
 	return c
@@ -68,6 +72,31 @@ func (c *Collisions) Internal() bool {
 
 // Reset clears all collision states and buffers, preparing the collision system for a new frame.
 func (c *Collisions) Reset() {
+}
+
+// RetrieveSprite2Sprite reads and clears the sprite-to-sprite collision state, returning its value as an 8-bit unsigned integer.
+func (c *Collisions) RetrieveSprite2Sprite() uint8 {
+	ret := c.sprSprClx
+	c.sprSprClx = 0 // Read and clear
+	return ret
+}
+
+// RetrieveSprite2Background reads and resets the sprite-to-background collision state, returning its value as an 8-bit unsigned integer.
+func (c *Collisions) RetrieveSprite2Background() uint8 {
+	// Sprite-background collision
+	ret := c.sprBgrClx
+	c.sprBgrClx = 0 // Read and clear
+	return ret
+}
+
+// SetSprite updates the sprite-to-sprite collision state with the specified value.
+func (c *Collisions) SetSprite(data uint8) {
+	c.sprSprClx = data
+}
+
+// SetBackground sets the sprite-to-background collision state with the given value.
+func (c *Collisions) SetBackground(data uint8) {
+	c.sprBgrClx = data
 }
 
 // Prepare resets collision detection states and initializes sprite collision buffers for the next frame update.
@@ -114,7 +143,24 @@ func (c *Collisions) SetSpritePresence(index int, sBit uint8) bool {
 // This method *actually writes* the collision results to the VIC-II's registers.
 func (c *Collisions) Commit() {
 	// Call the CollisionApply method on the VIC core, passing the collision results.
-	c.core.CollisionApply(c.spritesCollision, c.graphics)
+	//c.core.CollisionApply(c.spritesCollision, c.graphics)
+
+	// CollisionApply processes sprite-to-sprite and sprite-to-background collisions and emits appropriate IRQ signals.
+	//func (vic *VIC) CollisionApply(sprites uint8, graphics uint8) {
+	if c.sprSprClx != 0 {
+		c.sprSprClx |= c.spritesCollision
+	} else {
+		c.sprSprClx |= c.spritesCollision
+		c.core.irqEmit(irqSpriteToSpriteBit)
+	}
+	if c.sprBgrClx != 0 {
+		c.sprBgrClx |= c.graphics
+	} else {
+		c.sprBgrClx |= c.graphics
+		c.core.irqEmit(irqSpriteToGraphicBit)
+	}
+	//}
+
 }
 
 // IncrementGraphicsOffset increments the graphicsBufferOffset field

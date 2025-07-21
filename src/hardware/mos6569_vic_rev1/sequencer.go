@@ -540,7 +540,7 @@ func (seq *Sequencer) phaseTeardownLastFetchAndDMASetup(vic *VIC) {
 	}
 	vic.graphics.TryGraphicsAccess()
 	vic.graphics.TryAcquireDisplayAccess()
-	vic.UpdateSpriteExpY()
+	vic.sprites.UpdateYExpansion()
 	vic.sprites.UpdateDMA()
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.SetBALow()

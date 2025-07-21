@@ -32,6 +32,7 @@ type SpriteHandler struct {
 	spriteFlags        uint8       // spriteFlags represents the combined state of sprite display activity for the current line in the VIC-II system.
 	currentSpriteFlags uint8       // currentSpriteFlags represents the active display flags for sprites, updated based on their DMA state and counters.
 	offset             int         // offset is the horizontal offset used during sprite rendering to determine the starting position on the scanline.
+	yExpansion         uint8       // 8 sprite y expansion FlipFlops
 }
 
 // NewSprites initializes and returns a new instance of the SpriteHandler struct with default settings and allocations.
@@ -89,6 +90,21 @@ func (sp *SpriteHandler) SetOffset(offset int) {
 	sp.offset = offset
 }
 
+// SetYExpansion updates the vertical expansion state of sprites by inverting specific bits in the expansion FlipFlops.
+func (sp *SpriteHandler) SetYExpansion(data uint8) {
+	sp.yExpansion |= ^data
+}
+
+// UpdateYExpansion adjusts the sprite's vertical expansion state based on the MYE register using an inversion technique.
+func (sp *SpriteHandler) UpdateYExpansion() {
+	// Invert y expansion FlipFlop (if MYE bit is set)
+	for idx, mask := 0, uint8(1); idx < spriteNumber; idx, mask = idx+1, mask<<1 {
+		if (sp.core.mye & mask) != 0 {
+			sp.yExpansion ^= mask
+		}
+	}
+}
+
 // GetDMAFlag checks and returns the active DMA flag for the specified sprite(s) by performing a bitwise AND operation.
 func (sp *SpriteHandler) GetDMAFlag(b uint8) uint8 {
 	return sp.dmaFlags & b
@@ -130,7 +146,7 @@ func (sp *SpriteHandler) UpdateDMA() {
 			sp.dmaFlags |= mask
 			sprite.ResetCounterBase()
 			if (sp.core.mye & mask) != 0 {
-				sp.core.sprExpY &= ^mask
+				sp.yExpansion &= ^mask
 			}
 		}
 	}
@@ -143,7 +159,7 @@ func (sp *SpriteHandler) TryIncrementCounterBase() {
 		// Check if sprite is enabled for vertical expansion
 		isExpanded := (sp.core.mye & mask) != 0
 		// Check the flip-flop state for sprite expansion
-		isSecondLineOfPair := (sp.core.sprExpY & mask) == 0
+		isSecondLineOfPair := (sp.yExpansion & mask) == 0
 		if isExpanded && isSecondLineOfPair {
 			// do nothing
 		} else {
