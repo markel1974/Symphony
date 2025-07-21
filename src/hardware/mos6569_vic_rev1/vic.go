@@ -63,14 +63,10 @@ type VIC struct {
 	socketLastCycle       func()
 	socketVBlank          func()
 
-	cr1 uint8 // VIC register
-	cr2 uint8 // VIC register
-	lpx uint8 // VIC register
-	lpy uint8 // VIC register
-
-	mm0 uint8 // VIC register - sprite
-	mm1 uint8 // VIC register - sprite
-
+	cr1    uint8 // VIC register
+	cr2    uint8 // VIC register
+	lpx    uint8 // VIC register
+	lpy    uint8 // VIC register
 	denBit bool
 
 	irqLatch         uint8  // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
@@ -97,8 +93,6 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		cr2:              0,
 		lpx:              0,
 		lpy:              0,
-		mm0:              0,
-		mm1:              0,
 		irqRaster:        0,
 		irqLatch:         0,
 		irqMask:          0,
@@ -433,8 +427,8 @@ func (vic *VIC) createReadRegister() [RegisterCount]func() uint8 {
 	reads[0x22] = vic.graphics.ReadB1c
 	reads[0x23] = vic.graphics.ReadB2c
 	reads[0x24] = vic.graphics.ReadB3c
-	reads[0x25] = func() uint8 { return vic.mm0 | 0xf0 }
-	reads[0x26] = func() uint8 { return vic.mm1 | 0xf0 }
+	reads[0x25] = vic.sprites.ReadMM0
+	reads[0x26] = vic.sprites.ReadMM1
 	reads[0x27] = vic.sprites.ReadMXc0
 	reads[0x28] = vic.sprites.ReadMXc1
 	reads[0x29] = vic.sprites.ReadMXc2
@@ -532,8 +526,8 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	writes[0x22] = vic.graphics.WriteB1c
 	writes[0x23] = vic.graphics.WriteB2c
 	writes[0x24] = vic.graphics.WriteB3c
-	writes[0x25] = func(data uint8) { vic.mm0 = data }
-	writes[0x26] = func(data uint8) { vic.mm1 = data }
+	writes[0x25] = vic.sprites.WriteMM0
+	writes[0x26] = vic.sprites.WriteMM1
 	writes[0x27] = vic.sprites.WriteMXc0
 	writes[0x28] = vic.sprites.WriteMXc1
 	writes[0x29] = vic.sprites.WriteMXc2

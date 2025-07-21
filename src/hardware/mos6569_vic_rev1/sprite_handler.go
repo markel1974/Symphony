@@ -43,6 +43,8 @@ type SpriteHandler struct {
 	me                 uint8       // Sprite Enabled
 	mye                uint8       // VIC register
 	mdp                uint8       // Sprite data priority
+	mm0                uint8
+	mm1                uint8
 }
 
 // NewSprites initializes and returns a new instance of the SpriteHandler struct with default settings and allocations.
@@ -65,6 +67,8 @@ func NewSprites(parent references.IComponent, factory references.IComponentFacto
 		me:                 0,
 		mye:                0,
 		mdp:                0,
+		mm0:                0,
+		mm1:                0,
 	}
 	s.BaseComponent.Register(factory, parent, "spriteHandler", s, references.IdInternalComponent(label, instance, "SpriteHandler"))
 	for i := range s.sprites {
@@ -107,6 +111,16 @@ func (sp *SpriteHandler) Reset() {
 // This offset is used to calculate the starting position for sprite rendering on the current scanline.
 func (sp *SpriteHandler) SetOffset(offset int) {
 	sp.offset = offset
+}
+
+// ReadMM0 returns the mm0 value of the sprite with the upper nibble set to 0xf.
+func (sp *SpriteHandler) ReadMM0() uint8 {
+	return sp.mm0 | 0xf0
+}
+
+// ReadMM1 returns the result of the bitwise OR operation between the mm1 field and the constant 0xf0.
+func (sp *SpriteHandler) ReadMM1() uint8 {
+	return sp.mm1 | 0xf0
 }
 
 // ReadMe returns the current value of the sprite enable flag stored in the 'me' field.
@@ -262,6 +276,16 @@ func (sp *SpriteHandler) ReadMX8() uint8 {
 	return sp.mx8
 }
 
+// WriteMM0 assigns the provided 8-bit unsigned integer value to the mm0 field of the SpriteHandler instance.
+func (sp *SpriteHandler) WriteMM0(data uint8) {
+	sp.mm0 = data
+}
+
+// WriteMM1 sets the value of the mm1 property in the SpriteHandler instance using the provided 8-bit unsigned integer.
+func (sp *SpriteHandler) WriteMM1(data uint8) {
+	sp.mm1 = data
+}
+
 // WriteMe sets the sprite enable register to the provided data value.
 func (sp *SpriteHandler) WriteMe(data uint8) {
 	sp.me = data // Sprite enable
@@ -272,7 +296,6 @@ func (sp *SpriteHandler) WriteMe(data uint8) {
 func (sp *SpriteHandler) WriteMYe(data uint8) {
 	sp.mye = data // Sprite Y expansion
 	sp.yExpansion |= ^data
-	//sp.SetYExpansion(vic.mye)
 }
 
 // WriteMDp sets the sprite data priority (mdp) to the provided uint8 value.
@@ -428,11 +451,6 @@ func (sp *SpriteHandler) WriteMXc7(data uint8) {
 	sp.mXc[7] = data
 }
 
-// SetYExpansion updates the vertical expansion state of sprites by inverting specific bits in the expansion FlipFlops.
-//func (sp *SpriteHandler) SetYExpansion(data uint8) {
-//	sp.yExpansion |= ^data
-//}
-
 // UpdateYExpansion adjusts the sprite's vertical expansion state based on the MYE register using an inversion technique.
 func (sp *SpriteHandler) UpdateYExpansion() {
 	// Invert y expansion FlipFlop (if MYE bit is set)
@@ -553,6 +571,9 @@ func (sp *SpriteHandler) Draw() {
 	}
 	// Prepare the collision detection system for this scanline.
 	sp.collisions.Prepare()
+
+	mm0 := _colors[sp.mm0]
+	mm1 := _colors[sp.mm1]
 	// Draw active sprites
 	for _, sNum := range activeSprites {
 		sColor := _colors[sp.mXc[sNum]]
@@ -563,8 +584,9 @@ func (sp *SpriteHandler) Draw() {
 		majorX := sOffset / len(sp.sprites)
 		// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column.
 		minorX := sOffset & 7
-		sp.sprites[sNum].Draw(lineOffset, sp.mdp, sp.collisions, sColor, sOffset, majorX, minorX)
+		sp.sprites[sNum].Draw(lineOffset, sp.mdp, mm0, mm1, sp.collisions, sColor, sOffset, majorX, minorX)
 	}
+
 	// Perform the final collision detection checks.
 	sp.collisions.Commit()
 }
