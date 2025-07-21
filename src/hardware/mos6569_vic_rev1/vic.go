@@ -101,8 +101,7 @@ type VIC struct {
 	drawLine         bool
 
 	den bool // den indicates a boolean value typically used as a flag or condition.
-	bmm bool // bmm indicates a boolean value used for specific conditional checks or state representation.
-	ecm bool // ecm indicates whether the ECM is active or not.
+
 }
 
 // NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
@@ -134,7 +133,7 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		irqLatch:         0,
 		irqMask:          0,
 		rasterX:          0,
-		rasterY:          0, //TotalRasters - 1,
+		rasterY:          0,
 		lpTriggered:      false,
 		badLineCondition: false,
 		badLineEnabler:   false,
@@ -143,19 +142,21 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		aecLow:           false,
 
 		den:   false,
-		bmm:   false,
-		ecm:   false,
 		label: label,
 	}
 	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIMos6569(vic, label, instance))
 	return vic
 }
 
+// Setup initializes the VIC instance by retrieving and assigning its configuration from the factory.
 func (vic *VIC) Setup() error {
 	vic.cfg = vic.GetFactory().GetConfig()
 	return nil
 }
 
+// Bind initializes the VIC chip by connecting it to the provided MOS 6569 socket and setting up its components.
+// It configures internal structures like sequencers, memory, collisions, graphics, sprites, and borders.
+// Returns an error if any component setup fails during initialization.
 func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	displayBuffer := vic.GetFactory().GetIDisplayBuffer()
 
@@ -204,10 +205,12 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	return nil
 }
 
+// Connect establishes a connection using the VIC instance and returns an error if the connection fails.
 func (vic *VIC) Connect() error {
 	return nil
 }
 
+// Internal determines internal functionality status and returns a boolean indicating its state.
 func (vic *VIC) Internal() bool {
 	return false
 }
@@ -272,7 +275,7 @@ func (vic *VIC) GetBALow() bool {
 	return vic.baLow
 }
 
-// SetBALow sets the BA (bus available) signal to low and schedules the AEC signal to be low after 3 cycles if not already set.
+// SetBALow sets the BA (bus-available) signal to low and schedules the AEC signal to be low after 3 cycles if not already set.
 func (vic *VIC) SetBALow() {
 	if vic.baLow {
 		return
@@ -659,8 +662,8 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 			vic.borders.SetDYBottom(vic.sequencer.row24YStop)
 		}
 		vic.den = (vic.cr1 & 0x10) != 0
-		vic.bmm = (vic.cr1 & 0x20) != 0
-		vic.ecm = (vic.cr1 & 0x40) != 0
+		vic.graphics.SetBmm((vic.cr1 & 0x20) != 0)
+		vic.graphics.SetEcm((vic.cr1 & 0x40) != 0)
 		//rst8 := (vic.cr1 & 0x80) != 0
 		displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
 		vic.graphics.SetDisplayMode(displayMode)

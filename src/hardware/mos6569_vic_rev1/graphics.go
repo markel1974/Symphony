@@ -39,6 +39,8 @@ type Graphics struct {
 	xScroll             uint16 // X scroll value
 	yScroll             uint16 // Y scroll value
 	displayMode         int    // Index of current display mode
+	bmm                 bool
+	ecm                 bool
 	foregroundSequencer []func(int)
 	backgroundSequencer []func()
 }
@@ -67,10 +69,11 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		videoCounter:      0,
 		videoCounterLatch: 0,
 		displayAccess:     false,
+		bmm:               false,
+		ecm:               false,
 	}
 
 	// foregroundSequencer provides a sequence of rendering functions for various foreground drawing modes in the Graphics system.
-	// Each function in this slice corresponds to a different VIC-II display mode.
 	gr.foregroundSequencer = []func(int){
 		gr.drawForegroundTextStandard,
 		gr.drawForegroundTextMulticolor,
@@ -83,7 +86,6 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 	}
 
 	// backgroundSequencer is a sequence of functions for rendering backgrounds based on the current display mode of Graphics.
-	// Each function in this slice corresponds to a different VIC-II display mode.
 	gr.backgroundSequencer = []func(){
 		gr.drawBackgroundTextStandard,
 		gr.drawBackgroundTextMulticolor,
@@ -94,26 +96,6 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		gr.drawBackgroundDefault,
 		gr.drawBackgroundDefault,
 	}
-
-	//gr.foregroundSequencer = make([]func(*Graphics, int), 8)
-	//gr.foregroundSequencer[modeTextStandard] = drawForegroundTextStandard
-	//gr.foregroundSequencer[modeTextMulticolor] = drawForegroundTextMulticolor
-	//gr.foregroundSequencer[modeBitmapStandard] = drawForegroundBitmapStandard
-	//gr.foregroundSequencer[modeBitmapMulticolor] = drawForegroundBitmapMulticolor
-	//gr.foregroundSequencer[modeTextECM] = drawForegroundTextECM
-	//gr.foregroundSequencer[modeTextMulticolorInvalid] = drawForegroundTextMulticolorInvalid
-	//gr.foregroundSequencer[modeBitmapStandardInvalid] = drawForegroundBitmapStandardInvalid
-	//gr.foregroundSequencer[modeBitmapMulticolorInvalid] = drawForegroundBitmapMulticolorInvalid
-
-	//gr.backgroundSequencer = make([]func(*Graphics), 8)
-	//gr.backgroundSequencer[modeTextStandard] = drawBackgroundTextStandard
-	//gr.backgroundSequencer[modeTextMulticolor] = drawBackgroundTextMulticolor
-	//gr.backgroundSequencer[modeBitmapStandard] = drawBackgroundBitmapStandard
-	//gr.backgroundSequencer[modeBitmapMulticolor] = drawBackgroundBitmapMulticolor
-	//gr.backgroundSequencer[modeTextECM] = drawBackgroundTextECM
-	//gr.backgroundSequencer[modeTextMulticolorInvalid] = drawBackgroundDefault
-	//gr.backgroundSequencer[modeBitmapStandardInvalid] = drawBackgroundDefault
-	//gr.backgroundSequencer[modeBitmapMulticolorInvalid] = drawBackgroundDefault
 	gr.BaseComponent.Register(factory, parent, "graphics", gr, references.IdInternalComponent(label, instance, "Graphics"))
 	return gr
 }
@@ -175,6 +157,16 @@ func (gr *Graphics) SetDisplayMode(displayMode int) {
 	gr.displayMode = displayMode
 }
 
+// SetBmm sets the bmm property of the Graphics object to the specified boolean value.
+func (gr *Graphics) SetBmm(bmm bool) {
+	gr.bmm = bmm
+}
+
+// SetEcm sets the ECM (Error Correction Mode) state for the Graphics instance.
+func (gr *Graphics) SetEcm(ecm bool) {
+	gr.ecm = ecm
+}
+
 // GetText retrieves the text buffer content from the Graphics instance as a slice of bytes.
 func (gr *Graphics) GetText() []byte {
 	return gr.textBuffer
@@ -197,12 +189,12 @@ func (gr *Graphics) ResetVideoCounterLatch() {
 	gr.videoCounterLatch = 0
 }
 
-// UpdateVideoCounter updates the video counter to match the current video counter latch value (cycle 14).
+// UpdateVideoCounter updates the video counter to match the current video counter latch value.
 func (gr *Graphics) UpdateVideoCounter() {
 	gr.videoCounter = gr.videoCounterLatch
 }
 
-// ResetLineIndex resets the line index to zero. This happens at the beginning of each scanline (cycle 15).
+// ResetLineIndex resets the line index to zero. This happens at the beginning of each scanline.
 func (gr *Graphics) ResetLineIndex() {
 	gr.lineIndex = 0
 }
@@ -255,14 +247,14 @@ func (gr *Graphics) UpdateDisplayAccess() {
 func (gr *Graphics) TryGraphicsAccess() {
 	if gr.displayAccess {
 		var addr uint16
-		if gr.core.bmm {
+		if gr.bmm {
 			// Bitmap Mode: Calculate the address based on the video counter, bitmap base address, and row counter.
 			addr = ((gr.videoCounter & 0x03ff) << 3) | gr.core.memory.GetBitmapBase() | gr.rowCounter // Bitmap
 		} else {
 			// Text Mode: Calculate the address based on the character code from the video matrix, character base address, and row counter.
 			addr = (uint16(gr.videoMatrix[gr.lineIndex]) << 3) | gr.core.memory.GetCharBase() | gr.rowCounter // Text
 		}
-		if gr.core.ecm {
+		if gr.ecm {
 			// Extended Color Mode (ECM): Mask the address to use only the lower 13 bits of the character ROM address.
 			addr &= 0xf9ff
 		}
@@ -280,7 +272,7 @@ func (gr *Graphics) TryGraphicsAccess() {
 		gr.videoCounter++ // Increment the video counter.
 	} else {
 		// If display access is *not* granted, read from a "dummy" address.  The values read are not used.
-		if gr.core.ecm {
+		if gr.ecm {
 			gr.gfxData = gr.core.memory.ReadByte(0x39ff) // Dummy read (ECM).
 		} else {
 			gr.gfxData = gr.core.memory.ReadByte(0x3fff) // Dummy read (non-ECM).
