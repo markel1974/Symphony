@@ -50,12 +50,10 @@ type VIC struct {
 	graphics   *Graphics
 	borders    *Borders
 
-	label     string
-	reads     [RegisterCount]func() uint8
-	writes    [RegisterCount]func(uint8)
-	sequencer *Sequencer
-	curr      *SequencerData
-
+	label                 string
+	reads                 [RegisterCount]func() uint8
+	writes                [RegisterCount]func(uint8)
+	sequencer             *Sequencer
 	readRam               func(addr uint16) uint8
 	readColorRam          func(addr uint16) uint8
 	readCharRom           func(addr uint16) uint8
@@ -204,11 +202,10 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.readColorRam = socket.ReadColorRam
 	vic.readCharRom = socket.ReadCharRom
 
-	vic.sequencer = CreatePalSequencer()
-	vic.rasterY = vic.sequencer.rasterYMax //vic.sequencer.totalRasters - 1
+	vic.sequencer = NewSequencerPal()
+	vic.rasterY = vic.sequencer.rasterYMax
 	vic.dyTop = vic.sequencer.row24YStart
 	vic.dyBottom = vic.sequencer.row24YStop
-	vic.curr = vic.sequencer.data[0]
 	vic.reads = vic.createReadRegister()
 	vic.writes = vic.createWriteRegister()
 
@@ -267,8 +264,7 @@ func (vic *VIC) configChanged() {
 //go:nosplit
 func (vic *VIC) Emulate() {
 	vic.TryAcquireAEC()
-	vic.curr.fn(vic)
-	vic.curr = vic.curr.next
+	vic.sequencer.Sequence(vic)
 	vic.UpdateRasterX()
 }
 

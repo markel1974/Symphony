@@ -8,6 +8,10 @@ type SequencerData struct {
 	cycleBorder uint8
 }
 
+func NewSequencerData(fn func(vic *VIC)) *SequencerData {
+	return &SequencerData{fn: fn}
+}
+
 type Sequencer struct {
 	width              int
 	height             int
@@ -23,12 +27,13 @@ type Sequencer struct {
 	rasterYMax         uint16
 	displaySize        int
 	data               []*SequencerData
+	curr               *SequencerData
 }
 
-// CreatePalSequencer initializes the PAL video timing cycle data. It constructs a circular linked list of 63 cycleData nodes,
+// NewSequencerPal initializes the PAL video timing cycle data. It constructs a circular linked list of 63 cycleData nodes,
 // where each node represents one CPU clock cycle of a single PAL scanline. It pre-calculates border-related
 // values for each cycle and links them in sequence to form the complete 63-cycle sequencer.
-func CreatePalSequencer() *Sequencer {
+func NewSequencerPal() *Sequencer {
 	const palWidth = 384
 	const palHeight = 272
 	const palBorderFirstCycle uint8 = 13
@@ -49,36 +54,36 @@ func CreatePalSequencer() *Sequencer {
 		displaySize:        (palWidth + 64) * palHeight,
 	}
 
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseInitAndSprite3DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseVBlankAndSprite3DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite4DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite4DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite5DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite5DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite6DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite6DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite7DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite7DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseRefresh})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSetupBadLineCheck})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSetupRasterXReset})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSetupVCounterLoad})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSetupRCounterCheckAndSpritePipe1})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseDisplayFirstFetchAndSpritePipe2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseDisplayMainFetchC40})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseDisplayMainFetchC38})
+	seq.data = append(seq.data, NewSequencerData(seq.phaseInitAndSprite3DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseVBlankAndSprite3DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite4DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite4DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite5DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite5DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite6DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite6DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite7DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite7DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseRefresh))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupBadLineCheck))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupRasterXReset))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupVCounterLoad))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupRCounterCheckAndSpritePipe1))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayFirstFetchAndSpritePipe2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetchC40))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetchC38))
 	for x := 19; x <= 54; x++ {
-		seq.data = append(seq.data, &SequencerData{fn: seq.phaseDisplayMainFetch})
+		seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetch))
 	}
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseTeardownLastFetchAndDMASetup})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseTeardownIdle})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseTeardownCommitSpriteFlags})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite0DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite0DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite1DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite1DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite2DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseTeardownFinalSprite2DMA})
+	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownLastFetchAndDMASetup))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownIdle))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownCommitSpriteFlags))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite0DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite0DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite1DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite1DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite2DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownFinalSprite2DMA))
 
 	last := len(seq.data) - 1
 	for idx := 0; idx < len(seq.data); idx++ {
@@ -93,14 +98,14 @@ func CreatePalSequencer() *Sequencer {
 			seq.data[idx].next = seq.data[idx+1]
 		}
 	}
-
+	seq.curr = seq.data[0]
 	return seq
 }
 
-// CreateNtscSequencer constructs a sequencer of cycles for NTSC display operation, including phases and DMA management.
+// NewSequencerNtsc constructs a sequencer of cycles for NTSC display operation, including phases and DMA management.
 // It defines the NTSC-specific scanline timing logic based on internal cycles and boundary conditions.
 // Returns a slice of SequencerData nodes configured in a cyclic linked list structure.
-func CreateNtscSequencer() *Sequencer {
+func NewSequencerNtsc() *Sequencer {
 	const ntscWidth = 384
 	const ntscHeight = 272
 	const ntscBorderFirstCycle uint8 = 15 // The border logic in NTSC starts slightly later
@@ -124,46 +129,46 @@ func CreateNtscSequencer() *Sequencer {
 	// Initial Phases (H-Blank and Sprite DMA 3-7)
 	// This sequence is identical to PAL. The hardware performs the same operations
 	// at the start of a scan line.
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseInitAndSprite3DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseVBlankAndSprite3DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite4DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite4DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite5DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite5DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite6DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite6DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite7DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite7DMAData1Data2})
+	seq.data = append(seq.data, NewSequencerData(seq.phaseInitAndSprite3DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseVBlankAndSprite3DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite4DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite4DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite5DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite5DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite6DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite6DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite7DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite7DMAData1Data2))
 
 	// Setup Drawing Window (identical to PAL)
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseRefresh})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSetupBadLineCheck})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSetupRasterXReset})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSetupVCounterLoad})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSetupRCounterCheckAndSpritePipe1})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseDisplayFirstFetchAndSpritePipe2})
+	seq.data = append(seq.data, NewSequencerData(seq.phaseRefresh))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupBadLineCheck))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupRasterXReset))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupVCounterLoad))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupRCounterCheckAndSpritePipe1))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayFirstFetchAndSpritePipe2))
 
 	// Main Drawing Window (Extended for NTSC)
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseDisplayMainFetchC40})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseDisplayMainFetchC38})
+	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetchC40))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetchC38))
 
 	// Here the difference: The loop lasts 2 cycles more (up to 56 instead of 54)
 	for x := 19; x <= 56; x++ {
-		seq.data = append(seq.data, &SequencerData{fn: seq.phaseDisplayMainFetch})
+		seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetch))
 	}
 
 	// DMA Cleanup and Preparation (identical to PAL, but shifted)
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseTeardownLastFetchAndDMASetup})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseTeardownIdle})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseTeardownCommitSpriteFlags})
+	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownLastFetchAndDMASetup))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownIdle))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownCommitSpriteFlags))
 
 	// DMA Sprite 0-2 and Final Cycle (identical to PAL, but shifted)
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite0DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite0DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite1DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite1DMAData1Data2})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseSprite2DMAPtrData0})
-	seq.data = append(seq.data, &SequencerData{fn: seq.phaseTeardownFinalSprite2DMA})
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite0DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite0DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite1DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite1DMAData1Data2))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite2DMAPtrData0))
+	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownFinalSprite2DMA))
 
 	last := len(seq.data) - 1
 	for idx := 0; idx < len(seq.data); idx++ {
@@ -178,8 +183,16 @@ func CreateNtscSequencer() *Sequencer {
 			seq.data[idx].next = seq.data[idx+1]
 		}
 	}
-
+	seq.curr = seq.data[0]
 	return seq
+}
+
+// Sequence processes the current function in the sequence and advances to the next step in the sequence chain.
+//
+//go:nosplit
+func (seq *Sequencer) Sequence(vic *VIC) {
+	seq.curr.fn(vic)
+	seq.curr = seq.curr.next
 }
 
 // phaseInitAndSprite3DMAPtrData0: This cycle marks the beginning of the horizontal blanking period. The raster line counter (rasterY)
@@ -384,7 +397,7 @@ func (seq *Sequencer) phaseSetupBadLineCheck(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseSetupRasterXReset(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.AccessRefresh()
@@ -400,7 +413,7 @@ func (seq *Sequencer) phaseSetupRasterXReset(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseSetupVCounterLoad(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.AccessRefresh()
@@ -417,7 +430,7 @@ func (seq *Sequencer) phaseSetupVCounterLoad(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseSetupRCounterCheckAndSpritePipe1(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.AccessRefresh()
@@ -435,7 +448,7 @@ func (seq *Sequencer) phaseSetupRCounterCheckAndSpritePipe1(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseDisplayFirstFetchAndSpritePipe2(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.graphics.TryGraphicsAccess()
@@ -454,7 +467,7 @@ func (seq *Sequencer) phaseDisplayFirstFetchAndSpritePipe2(vic *VIC) {
 func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
 	vic.borders.Column40Update()
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -475,7 +488,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
 func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
 	vic.borders.Column38Update()
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -497,7 +510,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseDisplayMainFetch(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -518,7 +531,7 @@ func (seq *Sequencer) phaseDisplayMainFetch(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseTeardownLastFetchAndDMASetup(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -543,7 +556,7 @@ func (seq *Sequencer) phaseTeardownLastFetchAndDMASetup(vic *VIC) {
 func (seq *Sequencer) phaseTeardownIdle(vic *VIC) {
 	vic.borders.Column38Apply()
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
 			vic.graphics.DrawBackground()
 		} else {
@@ -567,7 +580,7 @@ func (seq *Sequencer) phaseTeardownCommitSpriteFlags(vic *VIC) {
 	vic.borders.Column40Apply()
 	vic.sprites.CommitSpriteFlags()
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.AccessIdle()
@@ -583,7 +596,7 @@ func (seq *Sequencer) phaseTeardownCommitSpriteFlags(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseSprite0DMAPtrData0(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.sprites.PrepareSpriteFlags()
@@ -600,7 +613,7 @@ func (seq *Sequencer) phaseSprite0DMAPtrData0(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseSprite0DMAData1Data2(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.graphics.TryAcquireDisplayAccess()
@@ -621,7 +634,7 @@ func (seq *Sequencer) phaseSprite0DMAData1Data2(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseSprite1DMAPtrData0(vic *VIC) {
 	if vic.drawLine {
-		vic.borders.AcquireColor(vic.curr.cycleBorder)
+		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	//if vic.drawLine {
