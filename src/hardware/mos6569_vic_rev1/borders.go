@@ -44,6 +44,9 @@ type Borders struct {
 	right              []int
 	sequencer          [borderSequencerCount][]func()
 	sequencerState     uint8
+	columnSel          bool   // columnSel indicates whether column selection mode is enabled.
+	dyTop              uint16 // Comparison values for borders logic
+	dyBottom           uint16 // Comparison values for borders logic
 }
 
 // NewBorder initializes and returns a new Borders object using the provided VIC core and display buffer interface.
@@ -58,6 +61,9 @@ func NewBorder(parent references.IComponent, factory references.IComponentFactor
 		verticalFlipFlop:   0,
 		offset:             0,
 		sequencerState:     0,
+		dyTop:              0, //Row24YStart,
+		dyBottom:           0, //Row24YStop,
+		columnSel:          false,
 	}
 	for x := 0; x < borderCount; x++ {
 		gr.left = append(gr.left, x)
@@ -103,6 +109,21 @@ func (b *Borders) Internal() bool {
 func (b *Borders) Reset() {
 }
 
+// SetColumnSel sets the column selection mode to the specified state, enabling or disabling related behaviors.
+func (b *Borders) SetColumnSel(columnSel bool) {
+	b.columnSel = columnSel
+}
+
+// SetDYTop sets the top comparison value for the vertical border logic, used in determining vertical flip-flop behavior.
+func (b *Borders) SetDYTop(top uint16) {
+	b.dyTop = top
+}
+
+// SetDYBottom sets the bottom comparison value for the vertical border logic to the provided value.
+func (b *Borders) SetDYBottom(bottom uint16) {
+	b.dyBottom = bottom
+}
+
 // ColumnInitialize resets and updates the sequencerState based on the horizontalFlipFlop value for the left border bit.
 func (b *Borders) ColumnInitialize() {
 	const bitNumber = borderBitLeft
@@ -113,7 +134,7 @@ func (b *Borders) ColumnInitialize() {
 // Column38Update updates the sequencer state for column 38 based on the horizontal and vertical flip-flop states.
 // If column mode is not selected, it updates the vertical flip-flop value and adjusts the horizontal flip-flop accordingly.
 func (b *Borders) Column38Update() {
-	if !b.core.columnSel {
+	if !b.columnSel {
 		b.UpdateVerticalFlipFlop()
 		if b.verticalFlipFlop == 0 {
 			b.horizontalFlipFlop = 0
@@ -126,7 +147,7 @@ func (b *Borders) Column38Update() {
 
 // Column40Update updates the state of the mid-left border column based on the flip-flop and column selection logic.
 func (b *Borders) Column40Update() {
-	if b.core.columnSel {
+	if b.columnSel {
 		b.UpdateVerticalFlipFlop()
 		if b.verticalFlipFlop == 0 {
 			b.horizontalFlipFlop = 0
@@ -139,7 +160,7 @@ func (b *Borders) Column40Update() {
 
 // Column38Apply updates the sequence state for the mid-right border bit, conditionally setting the horizontal flip-flop.
 func (b *Borders) Column38Apply() {
-	if !b.core.columnSel {
+	if !b.columnSel {
 		b.horizontalFlipFlop = 1
 	}
 	const bitNumber = borderBitMidRight
@@ -149,7 +170,7 @@ func (b *Borders) Column38Apply() {
 
 // Column40Apply updates the sequencer state for the right border column, adjusting horizontal flip-flop if conditions are met.
 func (b *Borders) Column40Apply() {
-	if b.core.columnSel {
+	if b.columnSel {
 		b.horizontalFlipFlop = 1
 	}
 	const bitNumber = borderBitRight
@@ -170,10 +191,10 @@ func (b *Borders) AcquireColor(idx uint8) {
 // UpdateVerticalFlipFlop updates the vertical border flip-flop state based on the current raster Y coordinate and control flags.
 func (b *Borders) UpdateVerticalFlipFlop() {
 	//3.9. The border unit
-	if b.core.dyBottom == b.core.rasterY {
+	if b.dyBottom == b.core.rasterY {
 		//2. If the Y coordinate reaches the bottom comparison value in cycle 63, the vertical border flip flop is set.
 		b.verticalFlipFlop = 1
-	} else if b.core.dyTop == b.core.rasterY && b.core.den {
+	} else if b.dyTop == b.core.rasterY && b.core.den {
 		//3. If the Y coordinate reaches the top comparison value in cycle 63 and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
 		b.verticalFlipFlop = 0
 	}

@@ -156,8 +156,8 @@ func _drawDefault(gr *Graphics, offset int, a uint8) {
 
 // _drawInvalidStandard updates graphics buffer based on x-scroll and sets color values in the display buffer.
 func _drawInvalidStandard(gr *Graphics, offset int, a uint8) {
-	p1 := gr.gfxData >> gr.core.xScroll
-	p2 := gr.gfxData << (7 - gr.core.xScroll)
+	p1 := gr.gfxData >> gr.xScroll
+	p2 := gr.gfxData << (7 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
 	gr.setMulti8(offset, _colors[a])
 }
@@ -165,8 +165,8 @@ func _drawInvalidStandard(gr *Graphics, offset int, a uint8) {
 // _drawInvalidMulticolor processes invalid multicolor graphics and updates collision and display buffers accordingly.
 func _drawInvalidMulticolor(gr *Graphics, offset int, a uint8) {
 	p := (gr.gfxData & 0xaa) | ((gr.gfxData & 0xaa) >> 1)
-	p1 := p >> gr.core.xScroll
-	p2 := p << (8 - gr.core.xScroll)
+	p1 := p >> gr.xScroll
+	p2 := p << (8 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
 	gr.setMulti8(offset, _colors[a])
 }
@@ -174,8 +174,8 @@ func _drawInvalidMulticolor(gr *Graphics, offset int, a uint8) {
 // _drawStandard renders 8 pixels in standard mode (1 bit per pixel).
 // Uses colors 'a' (for 0 bits) and 'b' (for 1 bit).
 func _drawStandard(gr *Graphics, offset int, a uint8, b uint8) {
-	p1 := gr.gfxData >> gr.core.xScroll
-	p2 := gr.gfxData << (7 - gr.core.xScroll)
+	p1 := gr.gfxData >> gr.xScroll
+	p2 := gr.gfxData << (7 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
 
 	colorBuffer := [4]uint8{_colors[a], _colors[b], 0, 0}
@@ -191,8 +191,8 @@ func _drawStandard(gr *Graphics, offset int, a uint8, b uint8) {
 // Uses colors 'a', 'b', 'c', and 'd'.
 func _drawMulticolor(gr *Graphics, offset int, a uint8, b uint8, c uint8, d uint8) {
 	p := (gr.gfxData & 0xaa) | ((gr.gfxData & 0xaa) >> 1)
-	p1 := p >> gr.core.xScroll
-	p2 := p << (8 - gr.core.xScroll)
+	p1 := p >> gr.xScroll
+	p2 := p << (8 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
 
 	colorBuffer := [4]uint8{_colors[a], _colors[b], _colors[c], _colors[d]}

@@ -36,6 +36,9 @@ type Graphics struct {
 	videoCounterLatch uint16  // Video counter base
 	displayAccess     bool    // Display state
 	textBuffer        []byte
+	xScroll           uint16 // X scroll value
+	yScroll           uint16 // Y scroll value
+	displayMode       int    // Index of current display mode
 }
 
 // NewGraphics initializes and returns a new Graphics instance with the provided VIC core, collision handler, and display buffer.
@@ -52,6 +55,9 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		charDataLast:      0,
 		offset:            0,
 		lineIndex:         0,
+		xScroll:           0,
+		yScroll:           0,
+		displayMode:       0,
 		videoMatrix:       make([]uint8, columnsMax),
 		colorLine:         make([]uint8, columnsMax),
 		textBuffer:        make([]uint8, (rasterYMax/8)*columnsMax),
@@ -111,6 +117,33 @@ func (gr *Graphics) Reset() {
 // (Currently empty, but kept for consistency).
 func (gr *Graphics) Setup() error {
 	return nil
+}
+
+// SetXScroll sets the horizontal scroll offset for the graphics rendering system to the specified value.
+func (gr *Graphics) SetXScroll(xScroll uint16) {
+	gr.xScroll = xScroll
+}
+
+// GetXScroll retrieves the horizontal scroll offset of the graphics rendering system.
+// Returns the current value of `xScroll`.
+func (gr *Graphics) GetXScroll() uint16 {
+	return gr.xScroll
+}
+
+// SetYScroll sets the vertical scroll offset for the graphics rendering system to the specified value.
+func (gr *Graphics) SetYScroll(yScroll uint16) {
+	gr.yScroll = yScroll
+}
+
+// GetYScroll retrieves the vertical scroll offset of the graphics rendering system.
+// Returns the current value of `yScroll`.
+func (gr *Graphics) GetYScroll() uint16 {
+	return gr.yScroll
+}
+
+// SetDisplayMode sets the current graphical display mode for the Graphics instance to the specified integer value.
+func (gr *Graphics) SetDisplayMode(displayMode int) {
+	gr.displayMode = displayMode
 }
 
 // GetText retrieves the text buffer content from the Graphics instance as a slice of bytes.
@@ -251,7 +284,7 @@ func (gr *Graphics) TryPhi2Access() {
 // and updates the graphics offset and collision state (cycles 13-18 and 55-57).
 func (gr *Graphics) DrawBackground() {
 	// Call the appropriate background drawing function based on the current display mode.
-	_backgroundSequencer[gr.core.displayMode](gr)
+	_backgroundSequencer[gr.displayMode](gr)
 	// Increment the pixel offset by 8 (one character width).
 	gr.offset += 8
 	// Update the collision detection system's offset.
@@ -262,9 +295,9 @@ func (gr *Graphics) DrawBackground() {
 // It also increments the offset and updates the collisions.
 func (gr *Graphics) DrawForeground() {
 	// Calculate the final offset, including x-scrolling.
-	offset := gr.offset + int(gr.core.xScroll)
+	offset := gr.offset + int(gr.xScroll)
 	// Call the appropriate foreground drawing function.
-	_foregroundSequencer[gr.core.displayMode](gr, offset)
+	_foregroundSequencer[gr.displayMode](gr, offset)
 	// Increment the pixel offset by 8.
 	gr.offset += 8
 	// Update the collision detection system's offset.

@@ -65,56 +65,52 @@ type VIC struct {
 	socketLastCycle       func()
 	socketVBlank          func()
 
-	lineStart        int
-	drawLine         bool
-	vBlankNextCycle  bool
-	mXx              []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
-	mXy              []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
-	mXc              []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
-	mx8              uint8    // VIC register
-	cr1              uint8    // VIC register
-	cr2              uint8    // VIC register
-	lpx              uint8    // VIC register
-	lpy              uint8    // VIC register
-	me               uint8    // VIC register
-	mxe              uint8    // VIC register
-	mye              uint8    // VIC register
-	mdp              uint8    // VIC register
-	mmc              uint8    // VIC register
-	ec               uint8    // VIC register
-	b0c              uint8    // VIC register
-	b1c              uint8    // VIC register
-	b2c              uint8    // VIC register
-	b3c              uint8    // VIC register
-	mm0              uint8    // VIC register
-	mm1              uint8    // VIC register
-	vaBase           uint8    // vaBase
-	ciaVaBase        uint16   // CIA VA14/15 video base
-	matrixBase       uint16   // Video matrix base
-	charBase         uint16   // Character generator base
-	bitmapBase       uint16   // Bitmap base
-	xScroll          uint16   // X scroll value
-	yScroll          uint16   // Y scroll value
-	irqLatch         uint8    // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
-	irqMask          uint8    // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
-	irqRaster        uint16   // Interrupt raster line
-	rasterX          uint16   // Current raster x position
-	rasterY          uint16   // Current raster line
-	dyTop            uint16   // Comparison values for borders logic
-	dyBottom         uint16   // Comparison values for borders logic
-	displayMode      int      // Index of current display mode
-	lpTriggered      bool     // LightPen was triggered in this frame
-	badLineEnabler   bool     // Bad Lines enabled for this frame
-	badLineCondition bool     // Current line is bad line
-	baLow            bool     // BA Line
-	aecLow           bool     // AEC Line
-	aecLowNextCycle  uint64   // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
-	lastByte         uint8    // Last byte read by VIC
-	refreshCounter   uint8    // refreshCounter tracks the number of times a refresh operation has been performed.
-	den              bool     // den indicates a boolean value typically used as a flag or condition.
-	bmm              bool     // bmm indicates a boolean value used for specific conditional checks or state representation.
-	ecm              bool     // ecm indicates whether the ECM is active or not.
-	columnSel        bool     // columnSel indicates whether column selection mode is enabled.
+	lineStart       int
+	drawLine        bool
+	vBlankNextCycle bool
+	mXx             []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
+	mXy             []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
+	mXc             []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
+	mx8             uint8    // VIC register
+	cr1             uint8    // VIC register
+	cr2             uint8    // VIC register
+	lpx             uint8    // VIC register
+	lpy             uint8    // VIC register
+	me              uint8    // VIC register
+	mxe             uint8    // VIC register
+	mye             uint8    // VIC register
+	mdp             uint8    // VIC register
+	mmc             uint8    // VIC register
+	ec              uint8    // VIC register
+	b0c             uint8    // VIC register
+	b1c             uint8    // VIC register
+	b2c             uint8    // VIC register
+	b3c             uint8    // VIC register
+	mm0             uint8    // VIC register
+	mm1             uint8    // VIC register
+
+	vaBase     uint8  // vaBase
+	ciaVaBase  uint16 // CIA VA14/15 video base
+	matrixBase uint16 // Video matrix base
+	charBase   uint16 // Character generator base
+	bitmapBase uint16 // Bitmap base
+
+	irqLatch         uint8  // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
+	irqMask          uint8  // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
+	irqRaster        uint16 // Interrupt raster line
+	rasterX          uint16 // Current raster x position
+	rasterY          uint16 // Current raster line
+	lpTriggered      bool   // LightPen was triggered in this frame
+	badLineEnabler   bool   // Bad Lines enabled for this frame
+	badLineCondition bool   // Current line is bad line
+	baLow            bool   // BA Line
+	aecLow           bool   // AEC Line
+	aecLowNextCycle  uint64 // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
+	lastByte         uint8  // Last byte read by VIC
+	refreshCounter   uint8  // refreshCounter tracks the number of times a refresh operation has been performed.
+	den              bool   // den indicates a boolean value typically used as a flag or condition.
+	bmm              bool   // bmm indicates a boolean value used for specific conditional checks or state representation.
+	ecm              bool   // ecm indicates whether the ECM is active or not.
 }
 
 // NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
@@ -149,16 +145,11 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		bitmapBase:       0,
 		vaBase:           0,
 		ciaVaBase:        0,
-		xScroll:          0,
-		yScroll:          0,
 		irqRaster:        0,
 		irqLatch:         0,
 		irqMask:          0,
 		rasterX:          0,
 		rasterY:          0, //TotalRasters - 1,
-		dyTop:            0, //Row24YStart,
-		dyBottom:         0, //Row24YStop,
-		displayMode:      0,
 		lpTriggered:      false,
 		badLineCondition: false,
 		badLineEnabler:   false,
@@ -170,7 +161,6 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		den:              false,
 		bmm:              false,
 		ecm:              false,
-		columnSel:        false,
 		label:            label,
 	}
 	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIMos6569(vic, label, instance))
@@ -198,8 +188,7 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 
 	vic.sequencer = NewSequencerPal()
 	vic.rasterY = vic.sequencer.rasterYMax
-	vic.dyTop = vic.sequencer.row24YStart
-	vic.dyBottom = vic.sequencer.row24YStop
+
 	vic.reads = vic.createReadRegister()
 	vic.writes = vic.createWriteRegister()
 
@@ -207,6 +196,9 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer, vic.sequencer.rasterYMax)
 	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer)
 	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, vic, displayBuffer, vic.sequencer.width)
+
+	vic.borders.SetDYTop(vic.sequencer.row24YStart)
+	vic.borders.SetDYBottom(vic.sequencer.row24YStop)
 	vic.vBlankNextCycle = false
 	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)
@@ -262,6 +254,7 @@ func (vic *VIC) Emulate() {
 	vic.UpdateRasterX()
 }
 
+// EmulationRequired returns true if emulation is required for the current VIC (Video Interface Controller) state.
 func (vic *VIC) EmulationRequired() bool {
 	return true
 }
@@ -345,13 +338,13 @@ func (vic *VIC) badLineUpdate() {
 		if vic.rasterY == vic.sequencer.firstDmaLine && vic.den {
 			//If YSCROLL=0, a Bad Line Condition occurs in raster line $30 as soon as the DEN bit
 			vic.badLineEnabler = true
-			if vic.yScroll == 0 {
+			if vic.graphics.GetYScroll() == 0 {
 				vic.badLineCondition = true
 				return
 			}
 		}
 		if vic.badLineEnabler {
-			vic.badLineCondition = vic.yScroll == (vic.rasterY & 7)
+			vic.badLineCondition = vic.graphics.GetYScroll() == (vic.rasterY & 7)
 		}
 	} else {
 		vic.badLineEnabler = false
@@ -702,19 +695,21 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	}
 	writes[0x11] = func(data uint8) { // Control register 1
 		vic.cr1 = data
-		vic.yScroll = uint16(vic.cr1) & 7
+		vic.graphics.SetYScroll(uint16(vic.cr1) & 7)
 		if rowSel := (vic.cr1 & 0x8) != 0; rowSel {
-			vic.dyTop = vic.sequencer.row25YStart
-			vic.dyBottom = vic.sequencer.row25YStop
+			vic.borders.SetDYTop(vic.sequencer.row25YStart)
+			vic.borders.SetDYBottom(vic.sequencer.row25YStop)
 		} else {
-			vic.dyTop = vic.sequencer.row24YStart
-			vic.dyBottom = vic.sequencer.row24YStop
+			vic.borders.SetDYTop(vic.sequencer.row24YStart)
+			vic.borders.SetDYBottom(vic.sequencer.row24YStop)
 		}
 		vic.den = (vic.cr1 & 0x10) != 0
 		vic.bmm = (vic.cr1 & 0x20) != 0
 		vic.ecm = (vic.cr1 & 0x40) != 0
 		//rst8 := (vic.cr1 & 0x80) != 0
-		vic.displayMode = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
+		displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
+		vic.graphics.SetDisplayMode(displayMode)
+
 		irqRaster := (vic.irqRaster & 0xff) | ((uint16(vic.cr1) & 0x80) << 1)
 		vic.rasterUpdate(irqRaster) //can emit irq
 		vic.badLineUpdate()
@@ -734,9 +729,10 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	}
 	writes[0x16] = func(data uint8) { // Control register 2
 		vic.cr2 = data
-		vic.xScroll = uint16(vic.cr2) & 7
-		vic.columnSel = (vic.cr2 & 0x8) != 0
-		vic.displayMode = ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
+		vic.graphics.SetXScroll(uint16(vic.cr2) & 7)
+		vic.borders.SetColumnSel((vic.cr2 & 0x8) != 0)
+		displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
+		vic.graphics.SetDisplayMode(displayMode)
 	}
 	writes[0x17] = func(data uint8) { // Sprite Y expansion
 		vic.mye = data
