@@ -228,16 +228,16 @@ func (gr *Graphics) TryGraphicsAccess() {
 		var addr uint16
 		if gr.core.bmm {
 			// Bitmap Mode: Calculate the address based on the video counter, bitmap base address, and row counter.
-			addr = ((gr.videoCounter & 0x03ff) << 3) | gr.core.bitmapBase | gr.rowCounter // Bitmap
+			addr = ((gr.videoCounter & 0x03ff) << 3) | gr.core.memory.GetBitmapBase() | gr.rowCounter // Bitmap
 		} else {
 			// Text Mode: Calculate the address based on the character code from the video matrix, character base address, and row counter.
-			addr = (uint16(gr.videoMatrix[gr.lineIndex]) << 3) | gr.core.charBase | gr.rowCounter // Text
+			addr = (uint16(gr.videoMatrix[gr.lineIndex]) << 3) | gr.core.memory.GetCharBase() | gr.rowCounter // Text
 		}
 		if gr.core.ecm {
 			// Extended Color Mode (ECM): Mask the address to use only the lower 13 bits of the character ROM address.
 			addr &= 0xf9ff
 		}
-		gr.gfxData = gr.core.ReadByte(addr)        // Read the graphics data (pixel data or character pattern).
+		gr.gfxData = gr.core.memory.ReadByte(addr) // Read the graphics data (pixel data or character pattern).
 		gr.charData = gr.videoMatrix[gr.lineIndex] // Get the character code from the video matrix.
 		gr.colorData = gr.colorLine[gr.lineIndex]  // Get the color data from the color RAM.
 		if gr.rowCounter == 0 {
@@ -252,9 +252,9 @@ func (gr *Graphics) TryGraphicsAccess() {
 	} else {
 		// If display access is *not* granted, read from a "dummy" address.  The values read are not used.
 		if gr.core.ecm {
-			gr.gfxData = gr.core.ReadByte(0x39ff) // Dummy read (ECM).
+			gr.gfxData = gr.core.memory.ReadByte(0x39ff) // Dummy read (ECM).
 		} else {
-			gr.gfxData = gr.core.ReadByte(0x3fff) // Dummy read (non-ECM).
+			gr.gfxData = gr.core.memory.ReadByte(0x3fff) // Dummy read (non-ECM).
 		}
 		gr.colorData = 0 // Dummy values.
 		gr.charData = 0  // Dummy values.
@@ -269,9 +269,9 @@ func (gr *Graphics) TryPhi2Access() {
 		// Check if the Address Enable Control (AEC) signal is low.
 		if gr.core.aecLow {
 			// If both BA and AEC are low, the VIC-II has access to the address bus.
-			addr := (gr.videoCounter & 0x3ff) | gr.core.matrixBase  // Calculate address in video matrix.
-			gr.videoMatrix[gr.lineIndex] = gr.core.ReadByte(addr)   // Read character code from video matrix.
-			gr.colorLine[gr.lineIndex] = gr.core.readColorRam(addr) // Read color data from color RAM.
+			addr := (gr.videoCounter & 0x3ff) | gr.core.memory.GetMatrixBase() // Calculate address in video matrix.
+			gr.videoMatrix[gr.lineIndex] = gr.core.memory.ReadByte(addr)       // Read character code from video matrix.
+			gr.colorLine[gr.lineIndex] = gr.core.memory.readColorRam(addr)     // Read color data from color RAM.
 		} else {
 			// If AEC is high, the CPU has access to the address bus, so we fill with dummy data.
 			gr.colorLine[gr.lineIndex] = 0xff

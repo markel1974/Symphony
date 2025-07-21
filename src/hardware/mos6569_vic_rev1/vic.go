@@ -49,14 +49,13 @@ type VIC struct {
 	sprites    *SpriteHandler
 	graphics   *Graphics
 	borders    *Borders
+	memory     *Memory
 
-	label                 string
-	reads                 [RegisterCount]func() uint8
-	writes                [RegisterCount]func(uint8)
-	sequencer             *Sequencer
-	readRam               func(addr uint16) uint8
-	readColorRam          func(addr uint16) uint8
-	readCharRom           func(addr uint16) uint8
+	label     string
+	reads     [RegisterCount]func() uint8
+	writes    [RegisterCount]func(uint8)
+	sequencer *Sequencer
+
 	socketCycle           func() uint64
 	socketBALow           func(bool)
 	socketAECLow          func(bool)
@@ -65,35 +64,26 @@ type VIC struct {
 	socketLastCycle       func()
 	socketVBlank          func()
 
-	lineStart       int
-	drawLine        bool
-	vBlankNextCycle bool
-	mXx             []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
-	mXy             []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
-	mXc             []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
-	mx8             uint8    // VIC register
-	cr1             uint8    // VIC register
-	cr2             uint8    // VIC register
-	lpx             uint8    // VIC register
-	lpy             uint8    // VIC register
-	me              uint8    // VIC register
-	mxe             uint8    // VIC register
-	mye             uint8    // VIC register
-	mdp             uint8    // VIC register
-	mmc             uint8    // VIC register
-	ec              uint8    // VIC register
-	b0c             uint8    // VIC register
-	b1c             uint8    // VIC register
-	b2c             uint8    // VIC register
-	b3c             uint8    // VIC register
-	mm0             uint8    // VIC register
-	mm1             uint8    // VIC register
-
-	vaBase     uint8  // vaBase
-	ciaVaBase  uint16 // CIA VA14/15 video base
-	matrixBase uint16 // Video matrix base
-	charBase   uint16 // Character generator base
-	bitmapBase uint16 // Bitmap base
+	mXx []uint16 // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
+	mXy []uint8  // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
+	mXc []uint8  // VIC registers [m0c - m1c - m2c - m3c - m4c - m5c - m6c - m7c]
+	mx8 uint8    // VIC register
+	cr1 uint8    // VIC register
+	cr2 uint8    // VIC register
+	lpx uint8    // VIC register
+	lpy uint8    // VIC register
+	me  uint8    // VIC register
+	mxe uint8    // VIC register
+	mye uint8    // VIC register
+	mdp uint8    // VIC register
+	mmc uint8    // VIC register
+	ec  uint8    // VIC register
+	b0c uint8    // VIC register
+	b1c uint8    // VIC register
+	b2c uint8    // VIC register
+	b3c uint8    // VIC register
+	mm0 uint8    // VIC register
+	mm1 uint8    // VIC register
 
 	irqLatch         uint8  // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
 	irqMask          uint8  // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
@@ -106,45 +96,40 @@ type VIC struct {
 	baLow            bool   // BA Line
 	aecLow           bool   // AEC Line
 	aecLowNextCycle  uint64 // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
-	lastByte         uint8  // Last byte read by VIC
-	refreshCounter   uint8  // refreshCounter tracks the number of times a refresh operation has been performed.
-	den              bool   // den indicates a boolean value typically used as a flag or condition.
-	bmm              bool   // bmm indicates a boolean value used for specific conditional checks or state representation.
-	ecm              bool   // ecm indicates whether the ECM is active or not.
+	lineStart        int
+	drawLine         bool
+	vBlankNextCycle  bool
+
+	den bool // den indicates a boolean value typically used as a flag or condition.
+	bmm bool // bmm indicates a boolean value used for specific conditional checks or state representation.
+	ecm bool // ecm indicates whether the ECM is active or not.
 }
 
 // NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
 func NewVIC(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *VIC {
 	vic := &VIC{
-		BaseComponent:    component.NewBaseComponent(),
-		readRam:          nil,
-		readColorRam:     nil,
-		readCharRom:      nil,
-		mXx:              make([]uint16, spriteNumber),
-		mXy:              make([]uint8, spriteNumber),
-		mXc:              make([]uint8, spriteNumber),
-		mx8:              0,
-		cr1:              0,
-		cr2:              0,
-		lpx:              0,
-		lpy:              0,
-		me:               0,
-		mxe:              0,
-		mye:              0,
-		mdp:              0,
-		mmc:              0,
-		ec:               0,
-		b0c:              0,
-		b1c:              0,
-		b2c:              0,
-		b3c:              0,
-		mm0:              0,
-		mm1:              0,
-		matrixBase:       0,
-		charBase:         0,
-		bitmapBase:       0,
-		vaBase:           0,
-		ciaVaBase:        0,
+		BaseComponent: component.NewBaseComponent(),
+		mXx:           make([]uint16, spriteNumber),
+		mXy:           make([]uint8, spriteNumber),
+		mXc:           make([]uint8, spriteNumber),
+		mx8:           0,
+		cr1:           0,
+		cr2:           0,
+		lpx:           0,
+		lpy:           0,
+		me:            0,
+		mxe:           0,
+		mye:           0,
+		mdp:           0,
+		mmc:           0,
+		ec:            0,
+		b0c:           0,
+		b1c:           0,
+		b2c:           0,
+		b3c:           0,
+		mm0:           0,
+		mm1:           0,
+
 		irqRaster:        0,
 		irqLatch:         0,
 		irqMask:          0,
@@ -156,12 +141,11 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		baLow:            false,
 		aecLowNextCycle:  0,
 		aecLow:           false,
-		lastByte:         0,
-		refreshCounter:   0,
-		den:              false,
-		bmm:              false,
-		ecm:              false,
-		label:            label,
+
+		den:   false,
+		bmm:   false,
+		ecm:   false,
+		label: label,
 	}
 	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIMos6569(vic, label, instance))
 	return vic
@@ -182,9 +166,6 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.socketBALow = socket.BALow
 	vic.socketAECLow = socket.AECLow
 	vic.socketVBlank = socket.VBlank
-	vic.readRam = socket.ReadRam
-	vic.readColorRam = socket.ReadColorRam
-	vic.readCharRom = socket.ReadCharRom
 
 	vic.sequencer = NewSequencerPal()
 	vic.rasterY = vic.sequencer.rasterYMax
@@ -196,12 +177,14 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer, vic.sequencer.rasterYMax)
 	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer)
 	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, vic, displayBuffer, vic.sequencer.width)
+	vic.memory = NewMemory(vic, vic.GetFactory(), vic.label, 0, socket.ReadRam, socket.ReadColorRam, socket.ReadCharRom)
 
 	vic.borders.SetDYTop(vic.sequencer.row24YStart)
 	vic.borders.SetDYBottom(vic.sequencer.row24YStop)
 	vic.vBlankNextCycle = false
 	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)
+
 	if err := vic.collisions.Setup(); err != nil {
 		return err
 	}
@@ -212,6 +195,9 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 		return err
 	}
 	if err := vic.borders.Setup(); err != nil {
+		return err
+	}
+	if err := vic.memory.Setup(); err != nil {
 		return err
 	}
 
@@ -238,7 +224,7 @@ func (vic *VIC) GetText() []byte {
 
 // GetVASignal returns the last byte stored in the VIC instance.
 func (vic *VIC) GetVASignal() uint8 {
-	return vic.lastByte
+	return vic.memory.GetLastByte()
 }
 
 // configChanged handles updates to the VIC configuration and applies necessary changes to its state.
@@ -354,8 +340,7 @@ func (vic *VIC) badLineUpdate() {
 
 // ChangedVA updates the VIC's virtual address base and triggers the memory pointer update process.
 func (vic *VIC) ChangedVA(newVA uint8) {
-	vic.ciaVaBase = uint16(newVA) << 14
-	vic.memoryPointerUpdate()
+	vic.memory.SetCIAVABase(newVA)
 }
 
 // LightPenTrigger triggers the light pen interrupt and updates the light pen coordinates if not already triggered.
@@ -371,7 +356,7 @@ func (vic *VIC) LightPenTrigger() {
 // ResetRasterY resets the VIC's raster Y position and refresh counter, and handles IRQ emission for raster line 0.
 func (vic *VIC) ResetRasterY() {
 	vic.rasterY = 0
-	vic.refreshCounter = 0xff
+	vic.memory.ResetRefreshCounter()
 	vic.lpTriggered = false
 	if vic.irqRaster == 0 {
 		vic.irqEmit(irqRasterBit)
@@ -387,28 +372,6 @@ func (vic *VIC) IncrementRasterY() {
 	vic.badLineUpdate()
 }
 
-// AccessIdle triggers a read operation on address 0x3fff to access the idle state of the VIC component.
-func (vic *VIC) AccessIdle() {
-	_ = vic.ReadByte(0x3fff)
-}
-
-// AccessRefresh performs a memory read using the refresh counter and decrements the counter afterward.
-func (vic *VIC) AccessRefresh() {
-	_ = vic.ReadByte(0x3f00 | uint16(vic.refreshCounter))
-	vic.refreshCounter--
-}
-
-// ReadByte reads a byte from the given address after applying the VIC's address translation logic.
-func (vic *VIC) ReadByte(addr uint16) uint8 {
-	va := addr | vic.ciaVaBase
-	if (va & ioAndCharRomArea) == charRomOffset {
-		vic.lastByte = vic.readCharRom(va)
-		return vic.lastByte
-	}
-	vic.lastByte = vic.readRam(va)
-	return vic.lastByte
-}
-
 // ReadRegister reads a register at the given address and returns the corresponding 8-bit value.
 func (vic *VIC) ReadRegister(addr uint16) uint8 {
 	reg := addr & RegisterSize
@@ -419,14 +382,6 @@ func (vic *VIC) ReadRegister(addr uint16) uint8 {
 func (vic *VIC) WriteRegister(addr uint16, data uint8) {
 	reg := addr & RegisterSize
 	vic.writes[reg](data)
-}
-
-// memoryPointerUpdate updates the memory pointers for various VIC-II display components based on the current vaBase value.
-// It recalculates matrixBase, charBase, and bitmapBase by applying bitwise operations on the vaBase property.
-func (vic *VIC) memoryPointerUpdate() {
-	vic.matrixBase = (uint16(vic.vaBase) & 0xf0) << 6
-	vic.charBase = (uint16(vic.vaBase) & 0x0e) << 10
-	vic.bitmapBase = (uint16(vic.vaBase) & 0x08) << 10
 }
 
 // rasterUpdate updates the VIC raster interrupt value and triggers an interrupt if the raster line matches the new value.
@@ -551,7 +506,7 @@ func (vic *VIC) createReadRegister() [RegisterCount]func() uint8 {
 	}
 	reads[0x18] = func() uint8 {
 		// Memory pointers
-		return vic.vaBase | 0x01
+		return vic.memory.GetVABase()
 	}
 	reads[0x19] = func() uint8 {
 		// IRQ latch
@@ -739,8 +694,7 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 		vic.sprites.SetYExpansion(data)
 	}
 	writes[0x18] = func(data uint8) { // Memory pointers
-		vic.vaBase = data
-		vic.memoryPointerUpdate()
+		vic.memory.SetVABase(data)
 	}
 	writes[0x19] = func(data uint8) { // IRQ Latch
 		// Verify implementation

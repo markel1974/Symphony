@@ -106,16 +106,16 @@ func (sp *Sprite) Mask() uint8 {
 
 // FetchPtr calculates and fetches the memory address of the sprite pointer from the VIC core and updates the sprite's data pointer.
 func (sp *Sprite) FetchPtr() {
-	addr := sp.core.matrixBase | 0x03f8 | uint16(sp.num) // Calculate the address of the sprite pointer.
-	b := sp.core.ReadByte(addr)                          // Read the sprite pointer from memory.
-	sp.ptr = uint16(b) << 6                              // Set the sprite's data pointer.
+	addr := sp.core.memory.GetMatrixBase() | 0x03f8 | uint16(sp.num) // Calculate the address of the sprite pointer.
+	b := sp.core.memory.ReadByte(addr)                               // Read the sprite pointer from memory.
+	sp.ptr = uint16(b) << 6                                          // Set the sprite's data pointer.
 }
 
 // FetchData retrieves the sprite data for the specified byte index and stores it in the sprite's data array.
 // It calculates the memory address based on the sprite's data counter and pointer, reads the byte, and increments the counter.
 func (sp *Sprite) FetchData(bNum uint8) {
 	addr := (sp.counter & dataCounterLastByte) | sp.ptr // Calculate the address of the current byte within the sprite data.
-	b := sp.core.ReadByte(addr)                         // Read the byte from memory.
+	b := sp.core.memory.ReadByte(addr)                  // Read the byte from memory.
 	sp.data[bNum] = b                                   // Store the byte in the sprite's data buffer.
 	sp.counter++                                        // Increment the data counter for the next byte.
 }
