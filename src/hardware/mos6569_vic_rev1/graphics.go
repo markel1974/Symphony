@@ -19,26 +19,28 @@ const rowsMax = 7
 // This struct encapsulates the state and behavior necessary for emulating the VIC-II's graphics rendering process.
 type Graphics struct {
 	*component.BaseComponent
-	core              *VIC
-	collisions        *Collisions
-	set8              func(int, *[8]uint8)
-	setMulti8         func(int, uint8)
-	gfxData           uint8
-	colorData         uint8
-	charData          uint8
-	charDataLast      uint8
-	offset            int     // Offset from bitmap spritesPresence
-	lineIndex         int     // Index in video matrix / color line
-	videoMatrix       []uint8 // Video matrix spritesPresence
-	colorLine         []uint8 // Color line spritesPresence
-	rowCounter        uint16  // Row counter
-	videoCounter      uint16  // Video counter
-	videoCounterLatch uint16  // Video counter base
-	displayAccess     bool    // Display state
-	textBuffer        []byte
-	xScroll           uint16 // X scroll value
-	yScroll           uint16 // Y scroll value
-	displayMode       int    // Index of current display mode
+	core                *VIC
+	collisions          *Collisions
+	set8                func(int, *[8]uint8)
+	setMulti8           func(int, uint8)
+	gfxData             uint8
+	colorData           uint8
+	charData            uint8
+	charDataLast        uint8
+	offset              int     // Offset from bitmap spritesPresence
+	lineIndex           int     // Index in video matrix / color line
+	videoMatrix         []uint8 // Video matrix spritesPresence
+	colorLine           []uint8 // Color line spritesPresence
+	rowCounter          uint16  // Row counter
+	videoCounter        uint16  // Video counter
+	videoCounterLatch   uint16  // Video counter base
+	displayAccess       bool    // Display state
+	textBuffer          []byte
+	xScroll             uint16 // X scroll value
+	yScroll             uint16 // Y scroll value
+	displayMode         int    // Index of current display mode
+	foregroundSequencer []func(int)
+	backgroundSequencer []func()
 }
 
 // NewGraphics initializes and returns a new Graphics instance with the provided VIC core, collision handler, and display buffer.
@@ -66,6 +68,33 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		videoCounterLatch: 0,
 		displayAccess:     false,
 	}
+
+	// foregroundSequencer provides a sequence of rendering functions for various foreground drawing modes in the Graphics system.
+	// Each function in this slice corresponds to a different VIC-II display mode.
+	gr.foregroundSequencer = []func(int){
+		gr.drawForegroundTextStandard,
+		gr.drawForegroundTextMulticolor,
+		gr.drawForegroundBitmapStandard,
+		gr.drawForegroundBitmapMulticolor,
+		gr.drawForegroundTextECM,
+		gr.drawForegroundTextMulticolorInvalid,
+		gr.drawForegroundBitmapStandardInvalid,
+		gr.drawForegroundBitmapMulticolorInvalid,
+	}
+
+	// backgroundSequencer is a sequence of functions for rendering backgrounds based on the current display mode of Graphics.
+	// Each function in this slice corresponds to a different VIC-II display mode.
+	gr.backgroundSequencer = []func(){
+		gr.drawBackgroundTextStandard,
+		gr.drawBackgroundTextMulticolor,
+		gr.drawBackgroundBitmapStandard,
+		gr.drawBackgroundBitmapMulticolor,
+		gr.drawBackgroundTextECM,
+		gr.drawBackgroundDefault,
+		gr.drawBackgroundDefault,
+		gr.drawBackgroundDefault,
+	}
+
 	//gr.foregroundSequencer = make([]func(*Graphics, int), 8)
 	//gr.foregroundSequencer[modeTextStandard] = drawForegroundTextStandard
 	//gr.foregroundSequencer[modeTextMulticolor] = drawForegroundTextMulticolor
@@ -284,7 +313,7 @@ func (gr *Graphics) TryPhi2Access() {
 // and updates the graphics offset and collision state (cycles 13-18 and 55-57).
 func (gr *Graphics) DrawBackground() {
 	// Call the appropriate background drawing function based on the current display mode.
-	_backgroundSequencer[gr.displayMode](gr)
+	gr.backgroundSequencer[gr.displayMode]()
 	// Increment the pixel offset by 8 (one character width).
 	gr.offset += 8
 	// Update the collision detection system's offset.
@@ -297,9 +326,187 @@ func (gr *Graphics) DrawForeground() {
 	// Calculate the final offset, including x-scrolling.
 	offset := gr.offset + int(gr.xScroll)
 	// Call the appropriate foreground drawing function.
-	_foregroundSequencer[gr.displayMode](gr, offset)
+	gr.foregroundSequencer[gr.displayMode](offset)
 	// Increment the pixel offset by 8.
 	gr.offset += 8
 	// Update the collision detection system's offset.
 	gr.collisions.IncrementGraphicsOffset()
+}
+
+// drawBackgroundTextStandard renders the background text using the standard text mode based on the current Graphics settings.
+// It uses the offset and core attributes of the Graphics instance to determine the drawing configuration.
+// Used in Standard Character Mode.
+func (gr *Graphics) drawBackgroundTextStandard() {
+	gr.drawDefault(gr.offset, gr.core.b0c)
+}
+
+// drawBackgroundTextMulticolor renders a multicolor text background for the given Graphics object.
+// Internally, it uses the _drawDefault function to set multi-color data based on the specified parameters.
+// The Graphics parameter contains all the necessary data like offset, core state, and color information.
+// Used in Multicolor Mode.
+func (gr *Graphics) drawBackgroundTextMulticolor() {
+	gr.drawDefault(gr.offset, gr.core.b0c)
+}
+
+// drawBackgroundBitmapMulticolor draws a multicolor bitmap background using the provided Graphics object.
+// Updates the display buffer with colors based on the provided Graphics state and configuration.
+// Used in Multicolor Bitmap Mode.
+func (gr *Graphics) drawBackgroundBitmapMulticolor() {
+	gr.drawDefault(gr.offset, gr.core.b0c)
+}
+
+// drawBackgroundBitmapStandard renders a standard bitmap background using the provided Graphics instance.
+// It uses the _drawDefault function to handle the drawing process based on the current Graphics state.
+// Used in Standard Bitmap Mode.
+func (gr *Graphics) drawBackgroundBitmapStandard() {
+	// In standard bitmap mode, the background color for each 8x8 block is taken from the *previous* character's data.
+	gr.drawDefault(gr.offset, gr.charDataLast)
+}
+
+// drawBackgroundTextECM renders the background text in ECM (Extended Color Mode) based on character data and bitmask checks.
+// It selects the appropriate color source from the Graphics core and applies it using the _drawDefault helper function.
+// Used in Extended Background Color Mode (ECM).
+func (gr *Graphics) drawBackgroundTextECM() {
+	// In ECM, the background color is determined by bits 7 and 6 of the *previous* character code.
+	if (gr.charDataLast & 0x80) != 0 {
+		if (gr.charDataLast & 0x40) != 0 {
+			// Background color 3.
+			gr.drawDefault(gr.offset, gr.core.b3c)
+		} else {
+			// Background color 2.
+			gr.drawDefault(gr.offset, gr.core.b2c)
+		}
+	} else {
+		if (gr.charDataLast & 0x40) != 0 {
+			// Background color 1.
+			gr.drawDefault(gr.offset, gr.core.b1c)
+		} else {
+			// Background color 0.
+			gr.drawDefault(gr.offset, gr.core.b0c)
+		}
+	}
+}
+
+// drawBackgroundDefault draws the default background by delegating to the _drawDefault function with the current offset.
+// This is used for invalid modes.
+func (gr *Graphics) drawBackgroundDefault() {
+	// Draw 8 pixels with color 0 (usually black).
+	gr.drawDefault(gr.offset, 0)
+}
+
+// drawForegroundTextStandard renders foreground text using the standard graphics mode at the specified offset.
+// Used in Standard Character Mode.
+func (gr *Graphics) drawForegroundTextStandard(offset int) {
+	gr.drawStandard(offset, gr.core.b0c, gr.colorData)
+}
+
+// drawForegroundTextMulticolor renders multicolor text for the foreground depending on the color mode and provided offset.
+// If the color mode indicates multicolor, it invokes `_drawMulticolor`; otherwise, `_drawStandard` is used.
+// Used in Multicolor Mode.
+func (gr *Graphics) drawForegroundTextMulticolor(offset int) {
+	if (gr.colorData & 8) != 0 {
+		gr.drawMulticolor(offset, gr.core.b0c, gr.core.b1c, gr.core.b2c, gr.colorData&7)
+	} else {
+		gr.drawStandard(offset, gr.core.b0c, gr.colorData)
+	}
+}
+
+// drawForegroundBitmapStandard renders a standard foreground bitmap using character and offset data for pixel mapping.
+func (gr *Graphics) drawForegroundBitmapStandard(offset int) {
+	gr.drawStandard(offset, gr.charData, gr.charData>>4)
+}
+
+// drawForegroundBitmapMulticolor renders a foreground bitmap in multicolor mode using the specified graphics and offset.
+func (gr *Graphics) drawForegroundBitmapMulticolor(offset int) {
+	gr.drawMulticolor(offset, gr.core.b0c, gr.charData>>4, gr.charData, gr.colorData)
+}
+
+// drawForegroundTextECM handles rendering of foreground text in Extended Color Mode (ECM) by selecting the correct color mapping.
+func (gr *Graphics) drawForegroundTextECM(offset int) {
+	if (gr.charData & 0x80) != 0 {
+		if (gr.charData & 0x40) != 0 {
+			gr.drawStandard(offset, gr.core.b3c, gr.colorData)
+		} else {
+			gr.drawStandard(offset, gr.core.b2c, gr.colorData)
+		}
+	} else if (gr.charData & 0x40) != 0 {
+		gr.drawStandard(offset, gr.core.b1c, gr.colorData)
+	} else {
+		gr.drawStandard(offset, gr.core.b0c, gr.colorData)
+	}
+}
+
+// drawForegroundTextMulticolorInvalid draws invalid multicolor or standard text foreground based on colorData.
+func (gr *Graphics) drawForegroundTextMulticolorInvalid(offset int) {
+	if (gr.colorData & 8) != 0 {
+		gr.drawInvalidMulticolor(offset, 0)
+	} else {
+		gr.drawInvalidStandard(offset, 0)
+	}
+}
+
+// drawForegroundBitmapStandardInvalid renders an invalid-standard-mode bitmap to the specified offset in the graphics buffer.
+// It calls the internal _drawInvalidStandard function to handle rendering logic with the provided Graphics object.
+func (gr *Graphics) drawForegroundBitmapStandardInvalid(offset int) {
+	gr.drawInvalidStandard(offset, 0)
+}
+
+// drawForegroundBitmapMulticolorInvalid renders an invalid multicolor bitmap at the specified offset using Graphics object.
+func (gr *Graphics) drawForegroundBitmapMulticolorInvalid(offset int) {
+	gr.drawInvalidMulticolor(offset, 0)
+}
+
+// _drawDefault sets a color value from the _colors array into the display buffer at the specified offset.
+func (gr *Graphics) drawDefault(offset int, a uint8) {
+	gr.setMulti8(offset, _colors[a])
+}
+
+// _drawInvalidStandard updates graphics buffer based on x-scroll and sets color values in the display buffer.
+func (gr *Graphics) drawInvalidStandard(offset int, a uint8) {
+	p1 := gr.gfxData >> gr.xScroll
+	p2 := gr.gfxData << (7 - gr.xScroll)
+	gr.collisions.UpdateGraphics(p1, p2)
+	gr.setMulti8(offset, _colors[a])
+}
+
+// _drawInvalidMulticolor processes invalid multicolor graphics and updates collision and display buffers accordingly.
+func (gr *Graphics) drawInvalidMulticolor(offset int, a uint8) {
+	p := (gr.gfxData & 0xaa) | ((gr.gfxData & 0xaa) >> 1)
+	p1 := p >> gr.xScroll
+	p2 := p << (8 - gr.xScroll)
+	gr.collisions.UpdateGraphics(p1, p2)
+	gr.setMulti8(offset, _colors[a])
+}
+
+// _drawStandard renders 8 pixels in standard mode (1 bit per pixel).
+// Uses colors 'a' (for 0 bits) and 'b' (for 1 bit).
+func (gr *Graphics) drawStandard(offset int, a uint8, b uint8) {
+	p1 := gr.gfxData >> gr.xScroll
+	p2 := gr.gfxData << (7 - gr.xScroll)
+	gr.collisions.UpdateGraphics(p1, p2)
+
+	colorBuffer := [4]uint8{_colors[a], _colors[b], 0, 0}
+	index := _standardIndex[gr.gfxData]
+	drawBuffer := [8]uint8{
+		colorBuffer[index[0]], colorBuffer[index[1]], colorBuffer[index[2]], colorBuffer[index[3]],
+		colorBuffer[index[4]], colorBuffer[index[5]], colorBuffer[index[6]], colorBuffer[index[7]],
+	}
+	gr.set8(offset, &drawBuffer)
+}
+
+// _drawMulticolor renders 8 pixels in multicolor mode (2 bits per pixel).
+// Uses colors 'a', 'b', 'c', and 'd'.
+func (gr *Graphics) drawMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
+	p := (gr.gfxData & 0xaa) | ((gr.gfxData & 0xaa) >> 1)
+	p1 := p >> gr.xScroll
+	p2 := p << (8 - gr.xScroll)
+	gr.collisions.UpdateGraphics(p1, p2)
+
+	colorBuffer := [4]uint8{_colors[a], _colors[b], _colors[c], _colors[d]}
+	index := _multicolorIndex[gr.gfxData]
+	drawBuffer := [8]uint8{
+		colorBuffer[index[0]], colorBuffer[index[1]], colorBuffer[index[2]], colorBuffer[index[3]],
+		colorBuffer[index[4]], colorBuffer[index[5]], colorBuffer[index[6]], colorBuffer[index[7]],
+	}
+	gr.set8(offset, &drawBuffer)
 }

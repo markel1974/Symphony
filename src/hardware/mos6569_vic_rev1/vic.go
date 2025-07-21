@@ -96,9 +96,9 @@ type VIC struct {
 	baLow            bool   // BA Line
 	aecLow           bool   // AEC Line
 	aecLowNextCycle  uint64 // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
+	vBlankNextCycle  bool   // vBlankNextCycle indicates whether the next cycle will trigger a vertical blanking interval (vBlank) in the display.
 	lineStart        int
 	drawLine         bool
-	vBlankNextCycle  bool
 
 	den bool // den indicates a boolean value typically used as a flag or condition.
 	bmm bool // bmm indicates a boolean value used for specific conditional checks or state representation.
