@@ -31,7 +31,6 @@ const (
 // Borders is a type responsible for managing and updating border data, configurations, and states for a display system.
 type Borders struct {
 	*component.BaseComponent
-	core               *VIC
 	setMulti8          func(int, uint8)
 	horizontalFlipFlop uint8
 	verticalFlipFlop   uint8
@@ -52,12 +51,11 @@ type Borders struct {
 
 // NewBorder initializes and returns a new Borders object using the provided VIC core and display buffer interface.
 // It configures left, right, center, and sequencer states based on display buffer properties.
-func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, displayBuffer references.IDisplayBuffer, displayX int) *Borders {
+func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, displayBuffer references.IDisplayBuffer, displayX int) *Borders {
 	borderCountMax := displayX / borderWidth
 	gr := &Borders{
 		BaseComponent:      component.NewBaseComponent(),
 		setMulti8:          displayBuffer.SetMulti8,
-		core:               core,
 		ec:                 0,
 		horizontalFlipFlop: 0,
 		verticalFlipFlop:   0,
@@ -145,9 +143,9 @@ func (b *Borders) ColumnInitialize() {
 
 // Column38Update updates the sequencer state for column 38 based on the horizontal and vertical flip-flop states.
 // If column mode is not selected, it updates the vertical flip-flop value and adjusts the horizontal flip-flop accordingly.
-func (b *Borders) Column38Update() {
+func (b *Borders) Column38Update(rasterY uint16, denBit bool) {
 	if !b.columnSel {
-		b.UpdateVerticalFlipFlop()
+		b.UpdateVerticalFlipFlop(rasterY, denBit)
 		if b.verticalFlipFlop == 0 {
 			b.horizontalFlipFlop = 0
 		}
@@ -158,9 +156,9 @@ func (b *Borders) Column38Update() {
 }
 
 // Column40Update updates the state of the mid-left border column based on the flip-flop and column selection logic.
-func (b *Borders) Column40Update() {
+func (b *Borders) Column40Update(rasterY uint16, denBit bool) {
 	if b.columnSel {
-		b.UpdateVerticalFlipFlop()
+		b.UpdateVerticalFlipFlop(rasterY, denBit)
 		if b.verticalFlipFlop == 0 {
 			b.horizontalFlipFlop = 0
 		}
@@ -201,12 +199,12 @@ func (b *Borders) AcquireColor(idx uint8) {
 }
 
 // UpdateVerticalFlipFlop updates the vertical border flip-flop state based on the current raster Y coordinate and control flags.
-func (b *Borders) UpdateVerticalFlipFlop() {
+func (b *Borders) UpdateVerticalFlipFlop(rasterY uint16, denBit bool) {
 	//3.9. The border unit
-	if b.dyBottom == b.core.rasterY {
+	if b.dyBottom == rasterY {
 		//2. If the Y coordinate reaches the bottom comparison value in cycle 63 (pal), the vertical border flip flop is set.
 		b.verticalFlipFlop = 1
-	} else if b.dyTop == b.core.rasterY && b.core.denBit {
+	} else if b.dyTop == rasterY && denBit {
 		//3. If the Y coordinate reaches the top comparison value in cycle 63 (pal) and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
 		b.verticalFlipFlop = 0
 	}

@@ -15,7 +15,6 @@ const (
 // The struct also manages foreground masks and offsets for sprite-graphics collision computations.
 type Collisions struct {
 	*component.BaseComponent
-	core                 *VIC    // core references the VIC system used for handling collision detection and related graphics processing.
 	graphics             uint8   // graphics represents the current collision state with graphics as an 8-bit unsigned integer.
 	spritesCollision     uint8   // spritesCollision represent the state and collision mask of all active sprites in the current frame.
 	spritesPresence      []uint8 // spritesPresence stores the state of sprite presence at each pixel, used for collision detection within the frame.
@@ -25,13 +24,14 @@ type Collisions struct {
 	graphicsBufferOffset int     // graphicsBufferOffset tracks the current position in the graphics buffer for collision updates.
 	sprBgrClx            uint8   // Sprite to background collision
 	sprSprClx            uint8   // Sprite to sprite collision
+	irqEmit              func(irq uint8)
 }
 
 // NewCollisions creates and returns a new Collisions instance, associated with the given VIC core.
-func NewCollisions(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, displayX int) *Collisions {
+func NewCollisions(parent references.IComponent, factory references.IComponentFactory, label string, instance int, irqEmit func(irq uint8), displayX int) *Collisions {
 	c := &Collisions{
 		BaseComponent:        component.NewBaseComponent(),
-		core:                 core,
+		irqEmit:              irqEmit,
 		graphics:             0,
 		spritesCollision:     0,
 		spritesPresence:      make([]uint8, borderDisplayXFillMax), // Allocate the sprite buffer. Size is DisplayXFillMax (maximum X coordinate).
@@ -151,13 +151,13 @@ func (c *Collisions) Commit() {
 		c.sprSprClx |= c.spritesCollision
 	} else {
 		c.sprSprClx |= c.spritesCollision
-		c.core.irqEmit(irqSpriteToSpriteBit)
+		c.irqEmit(irqSpriteToSpriteBit)
 	}
 	if c.sprBgrClx != 0 {
 		c.sprBgrClx |= c.graphics
 	} else {
 		c.sprBgrClx |= c.graphics
-		c.core.irqEmit(irqSpriteToGraphicBit)
+		c.irqEmit(irqSpriteToGraphicBit)
 	}
 	//}
 

@@ -134,11 +134,11 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.sequencer = NewSequencerPal()
 	vic.rasterY = vic.sequencer.rasterYMax
 
-	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic, vic.sequencer.width)
-	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer, vic.sequencer.rasterYMax)
-	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic, vic.collisions, displayBuffer)
-	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, vic, displayBuffer, vic.sequencer.width)
 	vic.memory = NewMemory(vic, vic.GetFactory(), vic.label, 0, socket.ReadRam, socket.ReadColorRam, socket.ReadCharRom)
+	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic.irqEmit, vic.sequencer.width)
+	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer, vic.sequencer.rasterYMax)
+	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer)
+	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, displayBuffer, vic.sequencer.width)
 
 	vic.borders.SetDYTop(vic.sequencer.row24YStart)
 	vic.borders.SetDYBottom(vic.sequencer.row24YStop)

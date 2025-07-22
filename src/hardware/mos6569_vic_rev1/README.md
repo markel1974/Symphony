@@ -34,6 +34,8 @@ Each software object in the code is a 1:1 translation of a functional block from
 * **`Memory`**: The **memory bus interface**, handling VIC's access to RAM and ROM.
 * **`Graphics`**, **`SpriteHandler`**, **`Borders`**: The discrete logic blocks for graphics, sprites, and borders, each with its own precise structural responsibility.
 
+**Perfect Architectural Isolation**: Each component maintains complete encapsulation with no direct access to internal fields of other components. Communication occurs exclusively through well-defined public methods, function pointers, and dependency injection, mirroring the physical pin-based connections of the original hardware blocks.
+
 ### 2. Function as an Emergent Behavior
 
 Only after defining this rigid architecture is the function implemented:

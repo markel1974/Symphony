@@ -4,7 +4,6 @@ import (
 	"github.com/markel1974/c64emu/src/common/bits"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
-	"log"
 )
 
 const (
@@ -26,7 +25,7 @@ const (
 // SpriteHandler manages sprite functionalities within the VIC-II system, including rendering, collisions, and DMA operations.
 type SpriteHandler struct {
 	*component.BaseComponent
-	core               *VIC        // core represents the pointer to the VIC instance used by the SpriteHandler for rendering and system control.
+	//core               *VIC        // core represents the pointer to the VIC instance used by the SpriteHandler for rendering and system control.
 	collisions         *Collisions // collisions manages sprite collision detection within the SpriteHandler.
 	sprites            []*Sprite   // sprites stores pointers to all Sprite instances managed by the SpriteHandler.
 	dmaFlags           uint8       // dmaFlags represents the active Direct Memory Access (DMA) flags for sprite operations in the current cycle.
@@ -49,10 +48,9 @@ type SpriteHandler struct {
 
 // NewSprites initializes and returns a new instance of the SpriteHandler struct with default settings and allocations.
 // It sets up sprite data, counters, and dependencies using the provided VIC core, collisions, and display buffer.
-func NewSprites(parent references.IComponent, factory references.IComponentFactory, label string, instance int, core *VIC, collisions *Collisions, displayBuffer references.IDisplayBuffer) *SpriteHandler {
+func NewSprites(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *Memory, collisions *Collisions, displayBuffer references.IDisplayBuffer) *SpriteHandler {
 	s := &SpriteHandler{
 		BaseComponent:      component.NewBaseComponent(),
-		core:               core,
 		collisions:         collisions,
 		currentSpriteFlags: 0,
 		dmaFlags:           0,
@@ -72,7 +70,7 @@ func NewSprites(parent references.IComponent, factory references.IComponentFacto
 	}
 	s.BaseComponent.Register(factory, parent, "spriteHandler", s, references.IdInternalComponent(label, instance, "SpriteHandler"))
 	for i := range s.sprites {
-		s.sprites[i] = NewSprite(s, factory, "SpriteHandler", i, core, displayBuffer, uint8(i), len(s.sprites))
+		s.sprites[i] = NewSprite(s, factory, "SpriteHandler", i, displayBuffer, memory, collisions, uint8(i), len(s.sprites))
 	}
 	return s
 }
@@ -472,11 +470,11 @@ func (sp *SpriteHandler) GetDMAFlag(b uint8) uint8 {
 // from memory.  The actual memory address is calculated based on the sprite pointer value
 // and the VIC-II's memory mapping.
 func (sp *SpriteHandler) FetchPtr(num uint8) {
-	if sp.core.baLow && sp.core.aecLow {
-		sp.sprites[num].FetchPtr()
-	} else {
-		log.Printf("sprites: can't fetch sprite ptr %d", num) // Should not normally happen, as the VIC-II controls BA/AEC.
-	}
+	//if sp.core.baLow && sp.core.aecLow {
+	sp.sprites[num].FetchPtr()
+	//} else {
+	//	log.Printf("sprites: can't fetch sprite ptr %d", num) // Should not normally happen, as the VIC-II controls BA/AEC.
+	//}
 }
 
 // FetchData loads sprite data for the given sprite number and byte index from memory if BA and AEC lines are low.
@@ -484,21 +482,21 @@ func (sp *SpriteHandler) FetchPtr(num uint8) {
 // This function is called during specific VIC-II cycles (typically cycles 49-55, three times per sprite) to fetch
 // the actual sprite data (3 bytes per sprite per cycle).
 func (sp *SpriteHandler) FetchData(num uint8, bNum uint8) {
-	if sp.core.baLow && sp.core.aecLow {
-		sp.sprites[num].FetchData(bNum)
-	} else {
-		log.Printf("sprites: can't fetch sprite %d - %d", num, bNum) // Should not normally happen.
-	}
+	//if sp.core.baLow && sp.core.aecLow {
+	sp.sprites[num].FetchData(bNum)
+	//} else {
+	//	log.Printf("sprites: can't fetch sprite %d - %d", num, bNum) // Should not normally happen.
+	//}
 }
 
 // UpdateDMA updates the Direct Memory Access (DMA) flags for sprites at the current raster line position.
 // It resets the counter-base for active sprites and handles vertical expansion mode and line-specific configurations.
-func (sp *SpriteHandler) UpdateDMA() {
-	rasterY := uint8(sp.core.rasterY & 0xff)
+func (sp *SpriteHandler) UpdateDMA(rasterY uint16) {
+	rasterYLow := uint8(rasterY & 0xff)
 	for _, sprite := range sp.sprites {
 		num := sprite.Number()
 		mask := sprite.Mask()
-		if ((sp.me & mask) != 0) && (rasterY == sp.mXy[num]) {
+		if ((sp.me & mask) != 0) && (rasterYLow == sp.mXy[num]) {
 			sp.dmaFlags |= mask
 			sprite.ResetCounterBase()
 			if (sp.mye & mask) != 0 {
@@ -537,13 +535,13 @@ func (sp *SpriteHandler) CommitIncrementCounterBase() {
 }
 
 // PrepareSpriteFlags updates the current sprite display flags based on DMA activity and the current raster line position.
-func (sp *SpriteHandler) PrepareSpriteFlags() {
-	rasterY := uint8(sp.core.rasterY & 0xff)
+func (sp *SpriteHandler) PrepareSpriteFlags(rasterY uint16) {
+	rasterYLow := uint8(rasterY & 0xff)
 	for _, sprite := range sp.sprites {
 		num := sprite.Number()
 		mask := sprite.Mask()
 		sprite.CommitCounterBase()
-		if ((sp.dmaFlags & mask) != 0) && (rasterY == sp.mXy[num]) {
+		if ((sp.dmaFlags & mask) != 0) && (rasterYLow == sp.mXy[num]) {
 			sp.currentSpriteFlags |= mask
 		}
 	}
@@ -565,6 +563,7 @@ func (sp *SpriteHandler) CommitSpriteFlags() {
 // It handles both expanded and unexpanded sprites in standard and multicolor modes.
 // Collision detection for sprites is carried out during the rendering process.
 func (sp *SpriteHandler) Draw() {
+	const spriteIndex = spriteNumber - 1
 	activeSprites := _spritesData[sp.spriteFlags]
 	if activeSprites == nil {
 		return
@@ -574,17 +573,18 @@ func (sp *SpriteHandler) Draw() {
 
 	mm0 := _colors[sp.mm0]
 	mm1 := _colors[sp.mm1]
+	//sLen := len(sp.sprites)
 	// Draw active sprites
 	for _, sNum := range activeSprites {
 		sColor := _colors[sp.mXc[sNum]]
-		sOffset := int(sp.mXx[sNum]) + len(sp.sprites) //SpriteNumber
+		sOffset := int(sp.mXx[sNum]) + spriteNumber //SpriteNumber
 		// Calculate the final offset on the scanline, including the global offset.
 		lineOffset := sp.offset + sOffset
 		// Calculate the "major" X coordinate (used for collision detection).This is essentially the character column.
-		majorX := sOffset / len(sp.sprites)
+		majorX := sOffset / spriteNumber
 		// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column.
-		minorX := sOffset & 7
-		sp.sprites[sNum].Draw(lineOffset, sp.mdp, mm0, mm1, sp.collisions, sColor, sOffset, majorX, minorX)
+		minorX := sOffset & spriteIndex
+		sp.sprites[sNum].Draw(lineOffset, sp.mdp, mm0, mm1, sColor, sOffset, majorX, minorX)
 	}
 
 	// Perform the final collision detection checks.
