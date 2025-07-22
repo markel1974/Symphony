@@ -30,27 +30,35 @@ type Sequencer struct {
 	curr               *SequencerData
 }
 
-// NewSequencerPal initializes the PAL video timing cycle data. It constructs a circular linked list of 63 cycleData nodes,
+func NewSequencer(screenFreq int, totalRaster int) *Sequencer {
+	if totalRaster == 312 {
+		return newSequencerPal()
+	}
+	return newSequencerNtsc()
+}
+
+// newSequencerPal initializes the PAL video timing cycle data. It constructs a circular linked list of 63 cycleData nodes,
 // where each node represents one CPU clock cycle of a single PAL scanline. It pre-calculates border-related
 // values for each cycle and links them in sequence to form the complete 63-cycle sequencer.
-func NewSequencerPal() *Sequencer {
+func newSequencerPal() *Sequencer {
 	const palWidth = 384
 	const palHeight = 272
 	const palBorderFirstCycle uint8 = 13
+	const palTotalRasters = 312
 
 	seq := &Sequencer{
 		width:              palWidth,
 		height:             palHeight,
-		totalRasters:       TotalRasters, // Total number of raster lines (PAL)
-		firstDisplayedLine: 0x10,         // First displayed line
-		lastDisplayedLine:  0x11f,        // Last displayed line
-		firstDmaLine:       0x30,         // First possible line for Bad Lines
-		lastDmaLine:        0xf7,         // Last possible line for Bad Lines
+		totalRasters:       palTotalRasters, // Total number of raster lines (PAL)
+		firstDisplayedLine: 0x10,            // First displayed line
+		lastDisplayedLine:  0x11f,           // Last displayed line
+		firstDmaLine:       0x30,            // First possible line for Bad Lines
+		lastDmaLine:        0xf7,            // Last possible line for Bad Lines
 		row25YStart:        0x33,
 		row25YStop:         0xfb,
 		row24YStart:        0x37,
 		row24YStop:         0xf7,
-		rasterYMax:         TotalRasters - 1,
+		rasterYMax:         palTotalRasters - 1,
 		displaySize:        (palWidth + 64) * palHeight,
 	}
 
@@ -102,27 +110,27 @@ func NewSequencerPal() *Sequencer {
 	return seq
 }
 
-// NewSequencerNtsc constructs a sequencer of cycles for NTSC display operation, including phases and DMA management.
+// newSequencerNtsc constructs a sequencer of cycles for NTSC display operation, including phases and DMA management.
 // It defines the NTSC-specific scanline timing logic based on internal cycles and boundary conditions.
 // Returns a slice of SequencerData nodes configured in a cyclic linked list structure.
-func NewSequencerNtsc() *Sequencer {
+func newSequencerNtsc() *Sequencer {
 	const ntscWidth = 384
-	const ntscHeight = 272
-	const ntscBorderFirstCycle uint8 = 15 // The border logic in NTSC starts slightly later
-
+	const ntscHeight = 240
+	const ntscBorderFirstCycle uint8 = 15
+	const ntscTotalRasters = 263
 	seq := &Sequencer{
 		width:              ntscWidth,
 		height:             ntscHeight,
-		totalRasters:       TotalRasters, // Total number of raster lines (PAL)
-		firstDisplayedLine: 0x10,         // First displayed line
-		lastDisplayedLine:  0x11f,        // Last displayed line
-		firstDmaLine:       0x30,         // First possible line for Bad Lines
-		lastDmaLine:        0xf7,         // Last possible line for Bad Lines
-		row25YStart:        0x33,         // Display window coordinates
+		totalRasters:       ntscTotalRasters, // Total number of raster lines (NTSC)
+		firstDisplayedLine: 0x10,             // First displayed line
+		lastDisplayedLine:  0x11f,            // Last displayed line
+		firstDmaLine:       0x30,             // First possible line for Bad Lines
+		lastDmaLine:        0xf7,             // Last possible line for Bad Lines
+		row25YStart:        0x33,             // Display window coordinates
 		row25YStop:         0xfb,
 		row24YStart:        0x37,
 		row24YStop:         0xf7,
-		rasterYMax:         TotalRasters - 1,
+		rasterYMax:         ntscTotalRasters - 1,
 		displaySize:        (ntscWidth + 64) * ntscHeight,
 	}
 

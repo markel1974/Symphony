@@ -28,6 +28,10 @@ type IMos6569Socket interface {
 
 	LastCycle()
 
+	ScreenFreq() int
+
+	TotalRaster() int
+
 	ReadRam(addr uint16) uint8
 
 	ReadColorRam(addr uint16) uint8

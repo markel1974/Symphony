@@ -42,6 +42,8 @@ type VICSocket struct {
 	colorRamRef                 references.IC64ColorRam
 	romRef                      references.IC64Roms
 	quartzRef                   references.IQuartz
+	screenFreq                  int
+	totalRaster                 int
 	ramRead                     func(addr uint16) uint8
 	ramReadColor                func(addr uint16) uint8
 	romCharRead                 func(addr uint16) uint8
@@ -57,11 +59,13 @@ type VICSocket struct {
 }
 
 // NewVICSocket creates and initializes a new VICSocket instance, setting up necessary connections for video interface control.
-func NewVICSocket(parent references.IComponent, label string, connections IVICSocketConnection) *VICSocket {
+func NewVICSocket(parent references.IComponent, label string, connections IVICSocketConnection, screenFreq int, totalRaster int) *VICSocket {
 	v := &VICSocket{
 		IMos6569:                    nil,
 		parent:                      parent,
 		label:                       label,
+		screenFreq:                  screenFreq,
+		totalRaster:                 totalRaster,
 		connectionsIRQTrigger:       connections.IRQTrigger,
 		connectionsIRQClearTrigger:  connections.IRQClearTrigger,
 		connectionsRDYLowTrigger:    connections.RDYLowTrigger,
@@ -116,6 +120,14 @@ func (v *VICSocket) Wire() error {
 // Cycle retrieves the current clock cycle count from the associated quartz instance.
 func (v *VICSocket) Cycle() uint64 {
 	return v.quartzCycle()
+}
+
+func (v *VICSocket) ScreenFreq() int {
+	return v.screenFreq
+}
+
+func (v *VICSocket) TotalRaster() int {
+	return v.totalRaster
 }
 
 func (v *VICSocket) ReadRam(addr uint16) uint8 {

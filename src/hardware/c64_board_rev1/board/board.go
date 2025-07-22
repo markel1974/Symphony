@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/hardware/c64_board_rev1/prg"
-	"github.com/markel1974/c64emu/src/hardware/mos6569_vic_rev1"
 	"github.com/markel1974/c64emu/src/references"
 	"os"
 )
@@ -61,6 +60,9 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	}
 	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIC64Board(s, label, instance))
 
+	const screenFreq = 50   //50 pal - 60 ntsc
+	const totalRaster = 312 //321 pal - 263 ntsc
+	const frameInterval = 1000 / screenFreq
 	s.keysSocket = NewKeyboardSocket(s, s.label)
 	s.joySocket1 = NewJoystickSocket(s, s.label, 0)
 	s.joySocket2 = NewJoystickSocket(s, s.label, 1)
@@ -70,14 +72,13 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	s.quartzSocket = NewQuartzSocket(s, s.label)
 	s.iecSocket = NewIECSocket(s, s.label, s)
 	s.cartridgeSocket = NewExpansionSocket(s, s.label, s)
-	//s.picSocket = NewPICSocket(s, s.label)
 	s.cpuSocket = NewCPUSocket(s, s.label)
-	s.vicSocket = NewVICSocket(s, s.label, s)
-	s.sidSocket = NewSIDSocket(s, s.label, mos6569.ScreenFreq, mos6569.TotalRasters)
+	s.vicSocket = NewVICSocket(s, s.label, s, screenFreq, totalRaster)
+	s.sidSocket = NewSIDSocket(s, s.label, screenFreq, totalRaster)
 	s.cia1Socket = NewCIA1Socket(s, s.label, s)
 	s.cia2Socket = NewCIA2Socket(s, s.label, s)
 	s.plaSocket = NewPLASocket(s, s.label)
-	s.throttleSocket = NewThrottleSocket(s, s.label, 1000/mos6569.ScreenFreq)
+	s.throttleSocket = NewThrottleSocket(s, s.label, frameInterval)
 
 	s.sockets = append(s.sockets, s.romSocket)
 	s.sockets = append(s.sockets, s.ramSocket)

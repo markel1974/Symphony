@@ -1,12 +1,5 @@
 package mos6569
 
-// ScreenFreq defines the screen refresh frequency in Hz (PAL standard) //TODO Move in sequencer
-// TotalRasters represents the total number of raster lines (PAL standard) //TODO Move in sequencer
-const (
-	ScreenFreq   = 50
-	TotalRasters = 0x138
-)
-
 // _multiExpTable is a pre-calculated lookup table that expands each byte (8 bits) into 16 bits
 // For multicolor expanded sprites: each original pixel becomes 4 final pixels
 // The expansion happens before the bit-plane conversion for efficiency
