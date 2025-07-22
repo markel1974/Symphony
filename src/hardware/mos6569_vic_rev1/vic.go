@@ -69,9 +69,10 @@ type VIC struct {
 	lpy    uint8 // VIC register
 	denBit bool
 
-	irqLatch         uint8  // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
-	irqMask          uint8  // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
-	irqRaster        uint16 // Interrupt raster line
+	irqLatch  uint8  // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
+	irqMask   uint8  // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
+	irqRaster uint16 // Interrupt raster line
+
 	rasterX          uint16 // Current raster x position
 	rasterY          uint16 // Current raster line
 	lpTriggered      bool   // LightPen was triggered in this frame
@@ -366,11 +367,23 @@ func (vic *VIC) irqSetLatch(data uint8) {
 // irqSetMask updates the IRQ mask register and triggers verification, potentially emitting an interrupt.
 func (vic *VIC) irqSetMask(data uint8) {
 	vic.irqMask = data & 0xf
-	vic.irqVerify() //can emit irq
+	vic.irqVerify()
+}
+
+// irqSetRasterHigh sets the high byte of the raster interrupt compare value and updates the internal raster counter.
+func (vic *VIC) irqSetRasterHigh(data uint8) {
+	irqRaster := (vic.irqRaster & 0xff00) | uint16(data)
+	vic.irqRasterSet(irqRaster)
+}
+
+// irqSetRasterLow sets the lower byte of the IRQ raster value and updates the raster, potentially triggering an IRQ.
+func (vic *VIC) irqSetRasterLow(data uint16) {
+	irqRaster := (vic.irqRaster & 0xff) | data
+	vic.irqRasterSet(irqRaster)
 }
 
 // rasterUpdate updates the VIC raster interrupt value and triggers an interrupt if the raster line matches the new value.
-func (vic *VIC) irqRasterUpdate(irqRaster uint16) {
+func (vic *VIC) irqRasterSet(irqRaster uint16) {
 	if irqRaster != vic.irqRaster {
 		if vic.rasterY == irqRaster {
 			vic.irqEmit(irqRasterBit)
@@ -379,25 +392,23 @@ func (vic *VIC) irqRasterUpdate(irqRaster uint16) {
 	}
 }
 
-// irqSetRasterHigh sets the high byte of the raster interrupt compare value and updates the internal raster counter.
-func (vic *VIC) irqSetRasterHigh(data uint8) {
-	// Raster counter
-	irqRaster := (vic.irqRaster & 0xff00) | uint16(data)
-	vic.irqRasterUpdate(irqRaster)
-}
-
-// irqSetRasterLow sets the lower byte of the IRQ raster value and updates the raster, potentially triggering an IRQ.
-func (vic *VIC) irqSetRasterLow(data uint16) {
-	irqRaster := (vic.irqRaster & 0xff) | data
-	vic.irqRasterUpdate(irqRaster)
-}
-
 // irqEmit sets the given IRQ bit in irqLatch and triggers IRQ if it matches the irqMask.
 func (vic *VIC) irqEmit(irq uint8) {
 	vic.irqLatch |= irq
 	if (vic.irqMask & irq) != 0 {
 		vic.irqLatch |= irqMasterBit
 		vic.socketIRQTrigger()
+	}
+}
+
+// irqVerify checks the IRQ latch and mask, sets or clears the master IRQ bit, and triggers or clears the IRQ signal.
+func (vic *VIC) irqVerify() {
+	if (vic.irqLatch & vic.irqMask) != 0 {
+		vic.irqLatch |= irqMasterBit
+		vic.socketIRQTrigger() // Trigger interrupt if pending (now allowed)
+	} else {
+		vic.irqLatch &= irqUnsetMasterBit
+		vic.socketIRQClearTrigger()
 	}
 }
 
@@ -429,17 +440,6 @@ func (vic *VIC) setCR2(data uint8) {
 	vic.borders.SetColumnSel((vic.cr2 & 0x8) != 0)
 	displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
 	vic.graphics.SetDisplayMode(displayMode)
-}
-
-// irqVerify checks the IRQ latch and mask, sets or clears the master IRQ bit, and triggers or clears the IRQ signal.
-func (vic *VIC) irqVerify() {
-	if (vic.irqLatch & vic.irqMask) != 0 {
-		vic.irqLatch |= irqMasterBit
-		vic.socketIRQTrigger() // Trigger interrupt if pending (now allowed)
-	} else {
-		vic.irqLatch &= irqUnsetMasterBit
-		vic.socketIRQClearTrigger()
-	}
 }
 
 // createReadRegister initializes an array of functions for reading VIC-II registers based on their respective indices.
