@@ -1,6 +1,6 @@
 # Package mos6569
 
-This package (`src/components/vic`) provides an emulation of the MOS Technology 6569 (PAL) / 8565 (PAL-B) Video Interface Chip II (VIC-II), the graphics controller chip used in the Commodore 64 home computer. This emulator aims for cycle-accurate emulation of the VIC-II's behavior.
+This package (`src/components/vic`) provides an emulation of the MOS Technology 6569/8565/8566(PAL)—6567/8562/8564(NTSC) Video Interface Chip II (VIC-II), the graphics controller chip used in the Commodore 64 home computer. This emulator aims for cycle-accurate emulation of the VIC-II's behavior.
 
 ## Overview
 
