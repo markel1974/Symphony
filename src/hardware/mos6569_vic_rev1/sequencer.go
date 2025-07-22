@@ -1,5 +1,7 @@
 package mos6569
 
+const drawLoopCycles = 36
+
 // SequencerData represents a node in a cyclic linked list to manage cycles and associated operations.
 type SequencerData struct {
 	fn          func(vic *VIC)
@@ -26,6 +28,7 @@ type Sequencer struct {
 	row24YStop         uint16
 	rasterYMax         uint16
 	displaySize        int
+	borderFirstCycle   uint8
 	data               []*SequencerData
 	curr               *SequencerData
 }
@@ -60,52 +63,44 @@ func newSequencerPal() *Sequencer {
 		row25YStop:         251,             //0xfb,
 		rasterYMax:         palTotalRasters - 1,
 		displaySize:        (palWidth + 64) * palHeight,
+		borderFirstCycle:   palBorderFirstCycle,
 	}
 
-	seq.data = append(seq.data, NewSequencerData(seq.phaseInitAndSprite3DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseVBlankAndSprite3DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite4DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite4DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite5DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite5DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite6DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite6DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite7DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite7DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseRefresh))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupBadLineCheck))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupRasterXReset))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupVCounterLoad))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupRCounterCheckAndSpritePipe1))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayFirstFetchAndSpritePipe2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetchC40))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetchC38))
-	for x := 19; x <= 54; x++ {
-		seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetch))
-	}
-	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownLastFetchAndDMASetup))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownIdle))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownCommitSpriteFlags))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite0DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite0DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite1DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite1DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite2DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownFinalSprite2DMA))
+	seq.prepare()
 
-	last := len(seq.data) - 1
-	for idx := 0; idx < len(seq.data); idx++ {
-		seq.data[idx].cycleBorder = 0xff
-		seq.data[idx].cycle = uint8(idx) + 1
-		if seq.data[idx].cycle >= palBorderFirstCycle {
-			seq.data[idx].cycleBorder = seq.data[idx].cycle - palBorderFirstCycle
-		}
-		if idx == last {
-			seq.data[idx].next = seq.data[0]
-		} else {
-			seq.data[idx].next = seq.data[idx+1]
-		}
+	seq.add(seq.phaseInitAndSprite3DMAPtrData0)
+	seq.add(seq.phaseVBlankAndSprite3DMAData1Data2)
+	seq.add(seq.phaseSprite4DMAPtrData0)
+	seq.add(seq.phaseSprite4DMAData1Data2)
+	seq.add(seq.phaseSprite5DMAPtrData0)
+	seq.add(seq.phaseSprite5DMAData1Data2)
+	seq.add(seq.phaseSprite6DMAPtrData0)
+	seq.add(seq.phaseSprite6DMAData1Data2)
+	seq.add(seq.phaseSprite7DMAPtrData0)
+	seq.add(seq.phaseSprite7DMAData1Data2)
+	seq.add(seq.phaseRefresh)
+	seq.add(seq.phaseSetupBadLineCheck)
+	seq.add(seq.phaseSetupRasterXReset)
+	seq.add(seq.phaseSetupVCounterLoad)
+	seq.add(seq.phaseSetupRCounterCheckAndSpritePipe1)
+	seq.add(seq.phaseDisplayFirstFetchAndSpritePipe2)
+	seq.add(seq.phaseDisplayMainFetchC40)
+	seq.add(seq.phaseDisplayMainFetchC38)
+	for i := 0; i < drawLoopCycles; i++ {
+		seq.add(seq.phaseDisplayMainFetch)
 	}
+	seq.add(seq.phaseTeardownLastFetchAndDMASetup)
+	seq.add(seq.phaseTeardownIdle)
+	seq.add(seq.phaseTeardownCommitSpriteFlags)
+	seq.add(seq.phaseSprite0DMAPtrData0)
+	seq.add(seq.phaseSprite0DMAData1Data2)
+	seq.add(seq.phaseSprite1DMAPtrData0)
+	seq.add(seq.phaseSprite1DMAData1Data2)
+	seq.add(seq.phaseSprite2DMAPtrData0)
+	seq.add(seq.phaseTeardownFinalSprite2DMA)
+
+	seq.finalize()
+
 	seq.curr = seq.data[0]
 	return seq
 }
@@ -118,72 +113,85 @@ func newSequencerNtsc() *Sequencer {
 	const ntscHeight = 240
 	const ntscBorderFirstCycle uint8 = 15
 	const ntscTotalRasters = 263
+	const drawLoopCycles = 36 // Il VIC-II disegna sempre 40 colonne (4+36 cicli)
+
 	seq := &Sequencer{
 		width:              ntscWidth,
 		height:             ntscHeight,
-		totalRasters:       ntscTotalRasters, // Total number of raster lines (NTSC)
-		firstDisplayedLine: 16,               //0x10,            // First displayed line
-		lastDisplayedLine:  287,              //0x11f,           // Last displayed line
-		firstDmaLine:       48,               //0x30,            // First possible line for Bad Lines
-		lastDmaLine:        247,              //0xf7,            // Last possible line for Bad Lines
-		row24YStart:        55,               //0x37,
-		row24YStop:         247,              //0xf7,
-		row25YStart:        51,               //0x33,
-		row25YStop:         251,              //0xfb,
+		totalRasters:       ntscTotalRasters,
+		firstDisplayedLine: 0x33,
+		lastDisplayedLine:  0xFA,
+		firstDmaLine:       0x30,
+		lastDmaLine:        0xF7,
+		row25YStart:        0x33,
+		row25YStop:         0xFA,
+		row24YStart:        0x37,
+		row24YStop:         0xF6,
 		rasterYMax:         ntscTotalRasters - 1,
 		displaySize:        (ntscWidth + 64) * ntscHeight,
+		borderFirstCycle:   ntscBorderFirstCycle,
 	}
 
-	// Initial Phases (H-Blank and Sprite DMA 3-7)
-	// This sequence is identical to PAL. The hardware performs the same operations
-	// at the start of a scan line.
-	seq.data = append(seq.data, NewSequencerData(seq.phaseInitAndSprite3DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseVBlankAndSprite3DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite4DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite4DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite5DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite5DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite6DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite6DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite7DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite7DMAData1Data2))
-
-	// Setup Drawing Window (identical to PAL)
-	seq.data = append(seq.data, NewSequencerData(seq.phaseRefresh))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupBadLineCheck))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupRasterXReset))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupVCounterLoad))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSetupRCounterCheckAndSpritePipe1))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayFirstFetchAndSpritePipe2))
-
-	// Main Drawing Window (Extended for NTSC)
-	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetchC40))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetchC38))
-
-	// Here the difference: The loop lasts 2 cycles more (up to 56 instead of 54)
-	for x := 19; x <= 56; x++ {
-		seq.data = append(seq.data, NewSequencerData(seq.phaseDisplayMainFetch))
+	seq.prepare()
+	// Costruzione della timeline
+	seq.add(seq.phaseInitAndSprite3DMAPtrData0)
+	seq.add(seq.phaseVBlankAndSprite3DMAData1Data2)
+	seq.add(seq.phaseSprite4DMAPtrData0)
+	seq.add(seq.phaseSprite4DMAData1Data2)
+	seq.add(seq.phaseSprite5DMAPtrData0)
+	seq.add(seq.phaseSprite5DMAData1Data2)
+	seq.add(seq.phaseSprite6DMAPtrData0)
+	seq.add(seq.phaseSprite6DMAData1Data2)
+	seq.add(seq.phaseSprite7DMAPtrData0)
+	seq.add(seq.phaseSprite7DMAData1Data2)
+	seq.add(seq.phaseRefresh)
+	seq.add(seq.phaseSetupBadLineCheck)
+	seq.add(seq.phaseSetupRasterXReset)
+	seq.add(seq.phaseSetupVCounterLoad)
+	seq.add(seq.phaseSetupRCounterCheckAndSpritePipe1)
+	seq.add(seq.phaseDisplayFirstFetchAndSpritePipe2)
+	seq.add(seq.phaseDisplayMainFetchC40)
+	seq.add(seq.phaseDisplayMainFetchC38)
+	for i := 0; i < drawLoopCycles; i++ {
+		seq.add(seq.phaseDisplayMainFetch)
 	}
+	seq.add(seq.phaseTeardownLastFetchAndDMASetup)
+	// I due cicli extra di NTSC sono cicli di refresh.
+	seq.add(seq.phaseRefresh)
+	seq.add(seq.phaseRefresh)
+	seq.add(seq.phaseTeardownIdle)
+	seq.add(seq.phaseTeardownCommitSpriteFlags)
+	seq.add(seq.phaseSprite0DMAPtrData0)
+	seq.add(seq.phaseSprite0DMAData1Data2)
+	seq.add(seq.phaseSprite1DMAPtrData0)
+	seq.add(seq.phaseSprite1DMAData1Data2)
+	seq.add(seq.phaseSprite2DMAPtrData0)
+	seq.add(seq.phaseTeardownFinalSprite2DMA)
 
-	// DMA Cleanup and Preparation (identical to PAL, but shifted)
-	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownLastFetchAndDMASetup))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownIdle))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownCommitSpriteFlags))
+	seq.finalize()
 
-	// DMA Sprite 0-2 and Final Cycle (identical to PAL, but shifted)
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite0DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite0DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite1DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite1DMAData1Data2))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseSprite2DMAPtrData0))
-	seq.data = append(seq.data, NewSequencerData(seq.phaseTeardownFinalSprite2DMA))
+	seq.curr = seq.data[0]
+	return seq
+}
 
+// prepare initializes the Sequencer by creating an empty slice of SequencerData pointers to be used for cycle management.
+func (seq *Sequencer) prepare() {
+	seq.data = make([]*SequencerData, 0)
+}
+
+// add appends a new SequencerData instance created with the provided function to the Sequencer's data slice.
+func (seq *Sequencer) add(fn func(vic *VIC)) {
+	seq.data = append(seq.data, NewSequencerData(fn))
+}
+
+// finalize constructs a circular linked list from the sequence data and calculates cycle-specific border values.
+func (seq *Sequencer) finalize() {
 	last := len(seq.data) - 1
 	for idx := 0; idx < len(seq.data); idx++ {
 		seq.data[idx].cycleBorder = 0xff
 		seq.data[idx].cycle = uint8(idx) + 1
-		if seq.data[idx].cycle >= ntscBorderFirstCycle {
-			seq.data[idx].cycleBorder = seq.data[idx].cycle - ntscBorderFirstCycle
+		if seq.data[idx].cycle >= seq.borderFirstCycle {
+			seq.data[idx].cycleBorder = seq.data[idx].cycle - seq.borderFirstCycle
 		}
 		if idx == last {
 			seq.data[idx].next = seq.data[0]
@@ -191,8 +199,6 @@ func newSequencerNtsc() *Sequencer {
 			seq.data[idx].next = seq.data[idx+1]
 		}
 	}
-	seq.curr = seq.data[0]
-	return seq
 }
 
 // Sequence processes the current function in the sequence and advances to the next step in the sequence chain.

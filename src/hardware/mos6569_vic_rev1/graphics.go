@@ -6,13 +6,14 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
-// columnsMax defines the maximum number of columns used for graphical or text-based data buffers in the graphics rendering.
-// This constant represents the horizontal resolution in character units (40 columns).
-const columnsMax = 40
-
-// rowsMax is the maximum number of rows used for video display handling and row counter operations in the graphics logic.
-// This constant represents the vertical resolution in character units (usually 8 pixel rows per character).
-const rowsMax = 7
+const (
+	// columnsMax defines the maximum number of columns used for graphical or text-based data buffers in the graphics rendering.
+	// This constant represents the horizontal resolution in character units (40 columns).
+	columnsMax = 40
+	// rowsMax is the maximum number of rows used for video display handling and row counter operations in the graphics logic.
+	// This constant represents the vertical resolution in character units (usually 8 pixel rows per character).
+	rowsMax = 7
+)
 
 // Graphics represents the core structure handling graphical rendering and related operations in the system.
 // It includes components for managing video memory, collisions, display buffer, and other graphical parameters.
@@ -358,6 +359,7 @@ func (gr *Graphics) TryGraphicsAccess(rasterY uint16) {
 			index := columnsMax * (rasterY / 8)
 			gr.textBuffer[index+uint16(gr.lineIndex)] = _scCodesAscii[charData&0x7f] // Convert screen code to ASCII
 		}
+
 		gr.lineIndex++    // Increment the line index to point to the next character/color data.
 		gr.videoCounter++ // Increment the video counter.
 	} else {

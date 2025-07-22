@@ -37,7 +37,7 @@ func NewReflect(c *CPU) *Reflect {
 	r.props.Add(component.NewPropertyInfo(yId, "Y Register", false, r.getY, r.setY))
 	r.props.Add(component.NewPropertyInfo(pcId, "Program Counter", false, r.getPC, r.setPC))
 	r.props.Add(component.NewPropertyInfo(spId, "Stack Pointer", false, r.getSP, r.setSP))
-	//r.props.Add(board.NewPropertyInfo(srId, "Status Register", false, r.getSR, r.setSR))
+	//r.props.add(board.NewPropertyInfo(srId, "Status Register", false, r.getSR, r.setSR))
 	// ... registra le altre proprietà (flag, ecc.) ...
 	return r
 }

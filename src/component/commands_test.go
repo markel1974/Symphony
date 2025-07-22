@@ -78,7 +78,7 @@ func TestCommands_Add(t *testing.T) {
 	}
 	cmds := NewCommands()
 	//Caso di successo
-	err := cmds.Add("sum", "Add two numbers", mockAdd)
+	err := cmds.Add("sum", "add two numbers", mockAdd)
 	assert.NoError(t, err)
 	assert.True(t, cmds.Exists("sum"))
 }
@@ -88,7 +88,7 @@ func TestCommands_Remove(t *testing.T) {
 		return a + b
 	}
 	cmds := NewCommands()
-	err := cmds.Add("sum", "Add two numbers", mockAdd)
+	err := cmds.Add("sum", "add two numbers", mockAdd)
 	assert.NoError(t, err)
 	assert.True(t, cmds.Exists("sum"))
 	cmds.Remove("sum")

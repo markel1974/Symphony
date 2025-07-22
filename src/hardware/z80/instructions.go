@@ -2,7 +2,7 @@ package z80
 
 const (
 	FLAG_C = iota //!< Carry flag.
-	FLAG_N        //!< Add/subtract flag.
+	FLAG_N        //!< add/subtract flag.
 	FLAG_P        //!< Parity/overflow flag (P/V).
 	FLAG_X        //!< Flag 3.
 	FLAG_H        //!< Half-carry flag.

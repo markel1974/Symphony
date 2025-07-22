@@ -14,7 +14,7 @@ import (
 //
 // Use various methods to manipulate them:
 //
-//	  w := u.Add(v)
+//	  w := u.add(v)
 //	  fmt.Println(w)        // Vec(9, -1)
 //	  fmt.Println(u.Sub(v)) // Vec(-7, 5)
 //	  u = pixel.V(2, 3)

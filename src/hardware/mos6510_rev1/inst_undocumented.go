@@ -111,7 +111,7 @@ func InstOpSRE(cpu *CPU) {
 
 // ROR/ADC
 
-// InstOpRRA executes the RRA (Rotate Right and Add) operation, updating carry, performing ADC, and setting the next instruction.
+// InstOpRRA executes the RRA (Rotate Right and add) operation, updating carry, performing ADC, and setting the next instruction.
 //
 //go:nosplit
 func InstOpRRA(cpu *CPU) {

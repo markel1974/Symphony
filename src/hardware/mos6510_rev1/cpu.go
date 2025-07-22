@@ -227,7 +227,7 @@ func (cpu *CPU) computeBranch(data uint8) func(*CPU) {
 	return InstOpBRAnp
 }
 
-// doADC performs the Add with Carry (ADC) operation using the given operand and CPU state.
+// doADC performs the add with Carry (ADC) operation using the given operand and CPU state.
 // Supports both binary and decimal modes. Updates processor flags: carry, zero, negative, and overflow.
 func (cpu *CPU) doADC(data uint8) {
 	k := uint8(0)

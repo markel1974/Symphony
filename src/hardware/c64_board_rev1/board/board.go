@@ -22,15 +22,14 @@ const (
 // Board represents the main structure of a system board with various hardware component sockets and configurations.
 type Board struct {
 	*component.BaseComponent
-	keysSocket     *KeyboardSocket
-	joySocket1     *JoystickSocket
-	joySocket2     *JoystickSocket
-	quartzSocket   *QuartzSocket
-	ramSocket      *RamSocket
-	colorRamSocket *ColorRamSocket
-	romSocket      *RomSocket
-	iecSocket      *IECSocket
-	//picSocket       *PICSocket
+	keysSocket      *KeyboardSocket
+	joySocket1      *JoystickSocket
+	joySocket2      *JoystickSocket
+	quartzSocket    *QuartzSocket
+	ramSocket       *RamSocket
+	colorRamSocket  *ColorRamSocket
+	romSocket       *RomSocket
+	iecSocket       *IECSocket
 	cia1Socket      *CIA1Socket
 	cia2Socket      *CIA2Socket
 	vicSocket       *VICSocket

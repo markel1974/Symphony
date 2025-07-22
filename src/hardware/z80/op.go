@@ -422,7 +422,7 @@ func (cpu *Z80) instADC_R_N(inst *Instruction) {
 	cpu.computeAdcFlags(op1, op2, carry, result)
 }
 
-// instADC_R_R performs the ADC (Add with Carry) operation between two registers and updates flags accordingly.
+// instADC_R_R performs the ADC (add with Carry) operation between two registers and updates flags accordingly.
 // The destination register is always the accumulator (register A).
 // It adds the source register value, destination register value, and carry flag, storing the result in register A.
 // Flags affected include the carry, half-carry, zero, sign, overflow, and subtract flags based on the result.

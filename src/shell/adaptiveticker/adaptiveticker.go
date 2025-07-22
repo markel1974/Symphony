@@ -511,7 +511,7 @@ func (a* AdaptiveTicker) doAdd(event * TimerHandler) {
 	event.Prepare(a.session.Now())
 
 	if group, ok := a.index[event.deadline]; ok {
-		group.Add(event)
+		group.add(event)
 		//fmt.Println("ADDING", event.id, event.interval, event.deadline, "- ITERATION", 0)
 		return
 	}

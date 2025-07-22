@@ -2,7 +2,7 @@ package mos6510_rev1
 
 // Arithmetic
 
-// InstOpADC performs the ADC (Add with Carry) operation by reading data from memory and calling the ADC handler.
+// InstOpADC performs the ADC (add with Carry) operation by reading data from memory and calling the ADC handler.
 //
 //go:nosplit
 func InstOpADC(cpu *CPU) {
