@@ -50,14 +50,14 @@ func newSequencerPal() *Sequencer {
 		width:              palWidth,
 		height:             palHeight,
 		totalRasters:       palTotalRasters, // Total number of raster lines (PAL)
-		firstDisplayedLine: 0x10,            // First displayed line
-		lastDisplayedLine:  0x11f,           // Last displayed line
-		firstDmaLine:       0x30,            // First possible line for Bad Lines
-		lastDmaLine:        0xf7,            // Last possible line for Bad Lines
-		row25YStart:        0x33,
-		row25YStop:         0xfb,
-		row24YStart:        0x37,
-		row24YStop:         0xf7,
+		firstDisplayedLine: 16,              //0x10,            // First displayed line
+		lastDisplayedLine:  287,             //0x11f,           // Last displayed line
+		firstDmaLine:       48,              //0x30,            // First possible line for Bad Lines
+		lastDmaLine:        247,             //0xf7,            // Last possible line for Bad Lines
+		row24YStart:        55,              //0x37,
+		row24YStop:         247,             //0xf7,
+		row25YStart:        51,              //0x33,
+		row25YStop:         251,             //0xfb,
 		rasterYMax:         palTotalRasters - 1,
 		displaySize:        (palWidth + 64) * palHeight,
 	}
@@ -122,14 +122,14 @@ func newSequencerNtsc() *Sequencer {
 		width:              ntscWidth,
 		height:             ntscHeight,
 		totalRasters:       ntscTotalRasters, // Total number of raster lines (NTSC)
-		firstDisplayedLine: 0x10,             // First displayed line
-		lastDisplayedLine:  0x11f,            // Last displayed line
-		firstDmaLine:       0x30,             // First possible line for Bad Lines
-		lastDmaLine:        0xf7,             // Last possible line for Bad Lines
-		row25YStart:        0x33,             // Display window coordinates
-		row25YStop:         0xfb,
-		row24YStart:        0x37,
-		row24YStop:         0xf7,
+		firstDisplayedLine: 16,               //0x10,            // First displayed line
+		lastDisplayedLine:  287,              //0x11f,           // Last displayed line
+		firstDmaLine:       48,               //0x30,            // First possible line for Bad Lines
+		lastDmaLine:        247,              //0xf7,            // Last possible line for Bad Lines
+		row24YStart:        55,               //0x37,
+		row24YStop:         247,              //0xf7,
+		row25YStart:        51,               //0x33,
+		row25YStop:         251,              //0xfb,
 		rasterYMax:         ntscTotalRasters - 1,
 		displaySize:        (ntscWidth + 64) * ntscHeight,
 	}

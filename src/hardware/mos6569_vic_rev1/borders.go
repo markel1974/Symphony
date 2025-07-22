@@ -34,7 +34,7 @@ type Borders struct {
 	setMulti8          func(int, uint8)
 	horizontalFlipFlop uint8
 	verticalFlipFlop   uint8
-	colors             [0xff]uint8
+	colors             [0xff + 1]uint8
 	offset             int
 	left               []int
 	midLeft            int
@@ -61,8 +61,8 @@ func NewBorder(parent references.IComponent, factory references.IComponentFactor
 		verticalFlipFlop:   0,
 		offset:             0,
 		sequencerState:     0,
-		dyTop:              0, //Row24YStart,
-		dyBottom:           0, //Row24YStop,
+		dyTop:              0,
+		dyBottom:           0,
 		columnSel:          false,
 	}
 	for x := 0; x < borderCount; x++ {

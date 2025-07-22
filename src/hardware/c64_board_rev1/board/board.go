@@ -61,7 +61,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIC64Board(s, label, instance))
 
 	const screenFreq = 50   //50 pal - 60 ntsc
-	const totalRaster = 312 //321 pal - 263 ntsc
+	const totalRaster = 312 //312 pal - 263 ntsc
 	const frameInterval = 1000 / screenFreq
 	s.keysSocket = NewKeyboardSocket(s, s.label)
 	s.joySocket1 = NewJoystickSocket(s, s.label, 0)
