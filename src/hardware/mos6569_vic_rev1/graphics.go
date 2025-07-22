@@ -48,7 +48,7 @@ type Graphics struct {
 	b2c                 uint8 // VIC register - graphics
 	b3c                 uint8 // VIC register - graphics
 	foregroundSequencer []func(int)
-	backgroundSequencer []func()
+	backgroundSequencer []func(int)
 }
 
 // NewGraphics initializes and returns a new Graphics instance with the provided VIC core, collision handler, and display buffer.
@@ -98,7 +98,7 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 	}
 
 	// backgroundSequencer is a sequence of functions for rendering backgrounds based on the current display mode of Graphics.
-	gr.backgroundSequencer = []func(){
+	gr.backgroundSequencer = []func(int){
 		gr.drawBackgroundTextStandard,
 		gr.drawBackgroundTextMulticolor,
 		gr.drawBackgroundBitmapStandard,
@@ -299,7 +299,7 @@ func (gr *Graphics) setColorData(data uint8) {
 	gr.colorData = data
 }
 
-// TryResetRowCounter resets the row counter (RC) to 0 if the badLineCondition in the core is true (cycle 14).
+// TryResetRowCounter resets the row counter (RC) to 0 if the badLineCondition in the core is true.
 func (gr *Graphics) TryResetRowCounter(badLineCondition bool) {
 	if badLineCondition {
 		gr.rowCounter = 0
@@ -307,7 +307,7 @@ func (gr *Graphics) TryResetRowCounter(badLineCondition bool) {
 }
 
 // TryAcquireDisplayAccess sets the displayAccess flag to true if the badLineCondition flag in the core is active.
-// This gives the CPU access to video memory during "bad lines" (cycles 1-10 and 55-63).
+// This gives the CPU access to video memory during "bad lines".
 func (gr *Graphics) TryAcquireDisplayAccess(badLineCondition bool) {
 	if badLineCondition {
 		gr.displayAccess = true
@@ -331,7 +331,7 @@ func (gr *Graphics) UpdateDisplayAccess(badLineCondition bool) {
 }
 
 // TryGraphicsAccess fetches and processes graphics data from memory based on the current raster and display state.
-// This function is the core of the VIC-II's graphics data fetching logic.  It's called in cycles 15-54, *if* displayAccess is true.
+// This function is the core of the VIC-II's graphics data fetching logic.
 func (gr *Graphics) TryGraphicsAccess(rasterY uint16) {
 	if gr.displayAccess {
 		var addr uint16
@@ -373,7 +373,7 @@ func (gr *Graphics) TryGraphicsAccess(rasterY uint16) {
 }
 
 // TryPhi2Access handles Phi2 clock phase access, updating videoMatrix and colorLine based on core conditions and memory.
-// This function handles the memory access during the PHI2 phase of the CPU clock cycle. (cycles 15-54).
+// This function handles the memory access during the PHI2 phase of the CPU clock cycle.
 func (gr *Graphics) TryPhi2Access(baLow bool, aecLow bool) {
 	// Check if the Bus-Available (BA) signal is low.
 	if baLow {
@@ -392,10 +392,10 @@ func (gr *Graphics) TryPhi2Access(baLow bool, aecLow bool) {
 }
 
 // DrawBackground renders the background using the current display mode
-// and updates the graphics offset and collision state (cycles 13-18 and 55-57).
+// and updates the graphics offset and collision state.
 func (gr *Graphics) DrawBackground() {
 	// Call the appropriate background drawing function based on the current display mode.
-	gr.backgroundSequencer[gr.displayMode]()
+	gr.backgroundSequencer[gr.displayMode](gr.offset)
 	// Increment the pixel offset by 8 (one character width).
 	gr.offset += 8
 	// Update the collision detection system's offset.
@@ -418,45 +418,45 @@ func (gr *Graphics) DrawForeground() {
 // drawBackgroundTextStandard renders the background text using the standard text mode based on the current Graphics settings.
 // It uses the offset and core attributes of the Graphics instance to determine the drawing configuration.
 // Used in Standard Character Mode.
-func (gr *Graphics) drawBackgroundTextStandard() {
-	gr.drawDefault(gr.offset, gr.b0c)
+func (gr *Graphics) drawBackgroundTextStandard(offset int) {
+	gr.drawDefault(offset, gr.b0c)
 }
 
 // drawBackgroundTextMulticolor renders a multicolor text background for the given Graphics object.
 // Internally, it uses the _drawDefault function to set multi-color data based on the specified parameters.
 // The Graphics parameter contains all the necessary data like offset, core state, and color information.
 // Used in Multicolor Mode.
-func (gr *Graphics) drawBackgroundTextMulticolor() {
-	gr.drawDefault(gr.offset, gr.b0c)
+func (gr *Graphics) drawBackgroundTextMulticolor(offset int) {
+	gr.drawDefault(offset, gr.b0c)
 }
 
 // drawBackgroundBitmapMulticolor draws a multicolor bitmap background using the provided Graphics object.
 // Updates the display buffer with colors based on the provided Graphics state and configuration.
 // Used in Multicolor Bitmap Mode.
-func (gr *Graphics) drawBackgroundBitmapMulticolor() {
-	gr.drawDefault(gr.offset, gr.b0c)
+func (gr *Graphics) drawBackgroundBitmapMulticolor(offset int) {
+	gr.drawDefault(offset, gr.b0c)
 }
 
 // drawBackgroundBitmapStandard renders a standard bitmap background using the provided Graphics instance.
 // It uses the _drawDefault function to handle the drawing process based on the current Graphics state.
 // Used in Standard Bitmap Mode.
-func (gr *Graphics) drawBackgroundBitmapStandard() {
+func (gr *Graphics) drawBackgroundBitmapStandard(offset int) {
 	// In standard bitmap mode, the background color for each 8x8 block is taken from the *previous* character's data.
-	gr.drawDefault(gr.offset, gr.charDataLast)
+	gr.drawDefault(offset, gr.charDataLast)
 }
 
 // drawBackgroundTextECM renders the background text in ECM (Extended Color Mode) based on character data and bitmask checks.
 // It selects the appropriate color source from the Graphics core and applies it using the _drawDefault helper function.
 // Used in Extended Background Color Mode (ECM).
-func (gr *Graphics) drawBackgroundTextECM() {
-	gr.drawDefault(gr.offset, gr.ecmBackgroundColor)
+func (gr *Graphics) drawBackgroundTextECM(offset int) {
+	gr.drawDefault(offset, gr.ecmBackgroundColor)
 }
 
 // drawBackgroundDefault draws the default background by delegating to the _drawDefault function with the current offset.
 // This is used for invalid modes.
-func (gr *Graphics) drawBackgroundDefault() {
+func (gr *Graphics) drawBackgroundDefault(offset int) {
 	// Draw 8 pixels with color 0 (usually black).
-	gr.drawDefault(gr.offset, 0)
+	gr.drawDefault(offset, 0)
 }
 
 // drawForegroundTextStandard renders foreground text using the standard graphics mode at the specified offset.

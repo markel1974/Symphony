@@ -7,7 +7,9 @@ const (
 	TotalRasters = 0x138
 )
 
-// _multiExpTable is a precomputed lookup table containing 16-bit unsigned integers for efficient multi-exponentiation.
+// _multiExpTable is a pre-calculated lookup table that expands each byte (8 bits) into 16 bits
+// For multicolor expanded sprites: each original pixel becomes 4 final pixels
+// The expansion happens before the bit-plane conversion for efficiency
 var _multiExpTable = []uint16{
 	0x0000, 0x0005, 0x000A, 0x000F, 0x0050, 0x0055, 0x005A, 0x005F,
 	0x00A0, 0x00A5, 0x00AA, 0x00AF, 0x00F0, 0x00F5, 0x00FA, 0x00FF,

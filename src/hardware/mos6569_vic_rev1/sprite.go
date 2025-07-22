@@ -174,7 +174,6 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, mdp uint8, mm0 uint8, m
 	// into two bytes (16 bits), doubling the width.This is done for multicolor mode *before* bit-plane conversion.
 	sDataL := uint32(_multiExpTable[sp.data[0]])<<16 | uint32(_multiExpTable[sp.data[1]])
 	sDataR := uint32(_multiExpTable[sp.data[2]]) << 16
-
 	// Convert sprite data to bit-planes for easier multicolor processing.In multicolor mode, each pixel is represented
 	// by *two* bits (hence two bit-planes).
 	plane0L := (sDataL & 0x55555555) | ((sDataL & 0x55555555) << 1) // Bit-plane 0 (left half).
@@ -182,6 +181,9 @@ func (sp *Sprite) drawExpandedMulticolor(lineOffset int, mdp uint8, mm0 uint8, m
 	plane0R := (sDataR & 0x55555555) | ((sDataR & 0x55555555) << 1) // Bit-plane 0 (right half).
 	plane1R := (sDataR & 0xaaaaaaaa) | ((sDataR & 0xaaaaaaaa) >> 1) // Bit-plane 1 (right half).
 	// Collision with graphics? Check if any bits in the sprite's bit-planes overlap with the foreground mask.
+	// Combine both bit-planes with logical OR
+	// test collision with a single bitwise AND operation
+	// handles all 48 pixels of the expanded sprite simultaneously
 	if ((foreMaskL & (plane0L | plane1L)) != 0) || ((foreMaskR & (plane0R | plane1R)) != 0) {
 		// Set the sprite-to-graphics collision flag for this sprite.
 		sp.collisions.SetGraphicsPresence(sp.mask)
@@ -260,6 +262,9 @@ func (sp *Sprite) drawUnexpandedMulticolor(lineOffset int, mdp uint8, mm0 uint8,
 	// Convert sprite data to bit-planes.  No expansion is needed here since the sprite is *not* expanded.
 	p0 := sData & 0x55555555 // sprite to bit-planes 0.
 	p1 := sData & 0xaaaaaaaa // sprite to bit-Planes 1.
+	//bit-plane 0: Extracts odd bits (0x55555555 = 01010101...)
+	//bit-plane 1: Extracts even bits (0xaaaaaaaa = 10101010...)
+	//bit duplication (<< 1 and >> 1) is needed for multicolor mode where each logical pixel uses 2 physical bits
 	plane0 := p0 | (p0 << 1) // Combine bits for plane 0.
 	plane1 := p1 | (p1 >> 1) // Combine bits for plane 1.
 	// Check graphics collision

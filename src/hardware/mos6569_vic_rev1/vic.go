@@ -350,14 +350,46 @@ func (vic *VIC) WriteRegister(addr uint16, data uint8) {
 	vic.writes[reg](data)
 }
 
+func (vic *VIC) irqSetLatch(data uint8) {
+	// Verify implementation
+	vic.irqLatch &= ^((data & 0xf) | irqMasterBit)
+	vic.irqVerify() //can emit irq
+	//old
+	//vic.irqLatch &= ^(data & 0xf)
+	//if (vic.irqLatch & vic.irqMask) != 0 {
+	//	vic.irqLatch |= irqMasterBit // Set master bit if allowed interrupt still pending
+	//} else {
+	//	vic.socket.IRQClearTrigger()
+	//}
+}
+
+// irqSetMask updates the IRQ mask register and triggers verification, potentially emitting an interrupt.
+func (vic *VIC) irqSetMask(data uint8) {
+	vic.irqMask = data & 0xf
+	vic.irqVerify() //can emit irq
+}
+
 // rasterUpdate updates the VIC raster interrupt value and triggers an interrupt if the raster line matches the new value.
-func (vic *VIC) rasterUpdate(irqRaster uint16) {
+func (vic *VIC) irqRasterUpdate(irqRaster uint16) {
 	if irqRaster != vic.irqRaster {
 		if vic.rasterY == irqRaster {
 			vic.irqEmit(irqRasterBit)
 		}
 		vic.irqRaster = irqRaster
 	}
+}
+
+// irqSetRasterHigh sets the high byte of the raster interrupt compare value and updates the internal raster counter.
+func (vic *VIC) irqSetRasterHigh(data uint8) {
+	// Raster counter
+	irqRaster := (vic.irqRaster & 0xff00) | uint16(data)
+	vic.irqRasterUpdate(irqRaster)
+}
+
+// irqSetRasterLow sets the lower byte of the IRQ raster value and updates the raster, potentially triggering an IRQ.
+func (vic *VIC) irqSetRasterLow(data uint16) {
+	irqRaster := (vic.irqRaster & 0xff) | data
+	vic.irqRasterUpdate(irqRaster)
 }
 
 // irqEmit sets the given IRQ bit in irqLatch and triggers IRQ if it matches the irqMask.
@@ -367,6 +399,36 @@ func (vic *VIC) irqEmit(irq uint8) {
 		vic.irqLatch |= irqMasterBit
 		vic.socketIRQTrigger()
 	}
+}
+
+// setCR1 updates the control register CR1 and adjusts various graphical and border settings based on the given data.
+func (vic *VIC) setCR1(data uint8) {
+	vic.cr1 = data
+	vic.graphics.SetYScroll(uint16(vic.cr1) & 7)
+	if rowSel := (vic.cr1 & 0x8) != 0; rowSel {
+		vic.borders.SetDYTop(vic.sequencer.row25YStart)
+		vic.borders.SetDYBottom(vic.sequencer.row25YStop)
+	} else {
+		vic.borders.SetDYTop(vic.sequencer.row24YStart)
+		vic.borders.SetDYBottom(vic.sequencer.row24YStop)
+	}
+	vic.denBit = (vic.cr1 & 0x10) != 0
+	vic.graphics.SetBmm((vic.cr1 & 0x20) != 0)
+	vic.graphics.SetEcm((vic.cr1 & 0x40) != 0)
+	//rst8 := (vic.cr1 & 0x80) != 0
+	displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
+	vic.graphics.SetDisplayMode(displayMode)
+	vic.irqSetRasterLow((uint16(vic.cr1) & 0x80) << 1)
+	vic.badLineUpdate()
+}
+
+// setCR2 updates the CR2 register and adjusts associated graphics settings like XScroll, column selection, and display mode.
+func (vic *VIC) setCR2(data uint8) {
+	vic.cr2 = data
+	vic.graphics.SetXScroll(uint16(vic.cr2) & 7)
+	vic.borders.SetColumnSel((vic.cr2 & 0x8) != 0)
+	displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
+	vic.graphics.SetDisplayMode(displayMode)
 }
 
 // irqVerify checks the IRQ latch and mask, sets or clears the master IRQ bit, and triggers or clears the IRQ signal.
@@ -464,63 +526,21 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	writes[0x0e] = vic.sprites.WriteMXx7
 	writes[0x0f] = vic.sprites.WriteMXy7
 	writes[0x10] = vic.sprites.WriteMX8
-	writes[0x11] = func(data uint8) { // Control register 1
-		vic.cr1 = data
-		vic.graphics.SetYScroll(uint16(vic.cr1) & 7)
-		if rowSel := (vic.cr1 & 0x8) != 0; rowSel {
-			vic.borders.SetDYTop(vic.sequencer.row25YStart)
-			vic.borders.SetDYBottom(vic.sequencer.row25YStop)
-		} else {
-			vic.borders.SetDYTop(vic.sequencer.row24YStart)
-			vic.borders.SetDYBottom(vic.sequencer.row24YStop)
-		}
-		vic.denBit = (vic.cr1 & 0x10) != 0
-		vic.graphics.SetBmm((vic.cr1 & 0x20) != 0)
-		vic.graphics.SetEcm((vic.cr1 & 0x40) != 0)
-		//rst8 := (vic.cr1 & 0x80) != 0
-		displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
-		vic.graphics.SetDisplayMode(displayMode)
-		irqRaster := (vic.irqRaster & 0xff) | ((uint16(vic.cr1) & 0x80) << 1)
-		vic.rasterUpdate(irqRaster) //can emit irq
-		vic.badLineUpdate()
-	}
-	writes[0x12] = func(data uint8) { // Raster counter
-		irqRaster := (vic.irqRaster & 0xff00) | uint16(data)
-		vic.rasterUpdate(irqRaster) //can emit irq
-	}
+	writes[0x11] = vic.setCR1                          // Control register 1
+	writes[0x12] = vic.irqSetRasterHigh                // Raster counter
 	writes[0x13] = func(data uint8) { vic.lpx = data } // Light pen X
 	writes[0x14] = func(data uint8) { vic.lpy = data } // Light pen Y
 	writes[0x15] = vic.sprites.WriteMe                 // Sprite enabled
-	writes[0x16] = func(data uint8) {                  // Control register 2
-		vic.cr2 = data
-		vic.graphics.SetXScroll(uint16(vic.cr2) & 7)
-		vic.borders.SetColumnSel((vic.cr2 & 0x8) != 0)
-		displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
-		vic.graphics.SetDisplayMode(displayMode)
-	}
-	writes[0x17] = vic.sprites.WriteMYe // Sprite Y expansion
-	writes[0x18] = vic.memory.SetVABase // Memory pointers
-	writes[0x19] = func(data uint8) {   // IRQ Latch
-		// Verify implementation
-		vic.irqLatch &= ^((data & 0xf) | irqMasterBit)
-		vic.irqVerify() //can emit irq
-		//old
-		//vic.irqLatch &= ^(data & 0xf)
-		//if (vic.irqLatch & vic.irqMask) != 0 {
-		//	vic.irqLatch |= irqMasterBit // Set master bit if allowed interrupt still pending
-		//} else {
-		//	vic.socket.IRQClearTrigger()
-		//}
-	}
-	writes[0x1a] = func(data uint8) { // IRQ mask
-		vic.irqMask = data & 0xf
-		vic.irqVerify() //can emit irq
-	}
-	writes[0x1b] = vic.sprites.WriteMDp         // Sprite data priority
-	writes[0x1c] = vic.sprites.WriteMMc         // Sprite Color
-	writes[0x1d] = vic.sprites.WriteMXe         // Sprite X expansion
-	writes[0x1e] = vic.collisions.SetSprite     // Sprite-sprite collision
-	writes[0x1f] = vic.collisions.SetBackground // Sprite-background collision
+	writes[0x16] = vic.setCR2                          // Control register 2
+	writes[0x17] = vic.sprites.WriteMYe                // Sprite Y expansion
+	writes[0x18] = vic.memory.SetVABase                // Memory pointers
+	writes[0x19] = vic.irqSetLatch                     // IRQ Latch
+	writes[0x1a] = vic.irqSetMask                      // IRQ mask
+	writes[0x1b] = vic.sprites.WriteMDp                // Sprite data priority
+	writes[0x1c] = vic.sprites.WriteMMc                // Sprite Color
+	writes[0x1d] = vic.sprites.WriteMXe                // Sprite X expansion
+	writes[0x1e] = vic.collisions.SetSprite            // Sprite-sprite collision
+	writes[0x1f] = vic.collisions.SetBackground        // Sprite-background collision
 	writes[0x20] = vic.borders.WriteEc
 	writes[0x21] = vic.graphics.WriteB0c
 	writes[0x22] = vic.graphics.WriteB1c

@@ -573,16 +573,14 @@ func (sp *SpriteHandler) Draw() {
 
 	mm0 := _colors[sp.mm0]
 	mm1 := _colors[sp.mm1]
-	//sLen := len(sp.sprites)
-	// Draw active sprites
 	for _, sNum := range activeSprites {
 		sColor := _colors[sp.mXc[sNum]]
-		sOffset := int(sp.mXx[sNum]) + spriteNumber //SpriteNumber
+		sOffset := int(sp.mXx[sNum]) + spriteNumber
 		// Calculate the final offset on the scanline, including the global offset.
 		lineOffset := sp.offset + sOffset
-		// Calculate the "major" X coordinate (used for collision detection).This is essentially the character column.
+		// Calculate the "major" X coordinate (used for collision detection).This is essentially the character column (column char, 0-39).
 		majorX := sOffset / spriteNumber
-		// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column.
+		// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column (offset pixel inside column, 0-7).
 		minorX := sOffset & spriteIndex
 		sp.sprites[sNum].Draw(lineOffset, sp.mdp, mm0, mm1, sColor, sOffset, majorX, minorX)
 	}
