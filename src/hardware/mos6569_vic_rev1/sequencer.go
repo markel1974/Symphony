@@ -1,8 +1,8 @@
 package mos6569
 
-const drawLoopCycles = 36
+const drawLoopCycles = 36 // drawLoopCycles defines the number of iterations for the main display loop in video cycle data processing.
 
-// SequencerData represents a node in a cyclic linked list to manage cycles and associated operations.
+// SequencerData represents a chainable unit in a sequencer containing a function, a next node, and cycle information.
 type SequencerData struct {
 	fn          func(vic *VIC)
 	next        *SequencerData
@@ -10,10 +10,12 @@ type SequencerData struct {
 	cycleBorder uint8
 }
 
+// NewSequencerData creates and returns a new instance of SequencerData with the provided function initialized.
 func NewSequencerData(fn func(vic *VIC)) *SequencerData {
 	return &SequencerData{fn: fn}
 }
 
+// Sequencer represents a structure to manage video cycle sequencing and raster timing for display rendering.
 type Sequencer struct {
 	width              int
 	height             int
@@ -33,8 +35,9 @@ type Sequencer struct {
 	curr               *SequencerData
 }
 
+// NewSequencer creates a Sequencer based on the total number of raster lines, selecting PAL or NTSC timing accordingly.
 func NewSequencer(screenFreq int, totalRaster int) *Sequencer {
-	if totalRaster == 312 {
+	if totalRaster >= 300 {
 		return newSequencerPal()
 	}
 	return newSequencerNtsc()
@@ -46,24 +49,21 @@ func NewSequencer(screenFreq int, totalRaster int) *Sequencer {
 func newSequencerPal() *Sequencer {
 	const palWidth = 384
 	const palHeight = 272
-	const palBorderFirstCycle uint8 = 13
 	const palTotalRasters = 312
 
 	seq := &Sequencer{
 		width:              palWidth,
 		height:             palHeight,
-		totalRasters:       palTotalRasters, // Total number of raster lines (PAL)
-		firstDisplayedLine: 16,              //0x10,            // First displayed line
-		lastDisplayedLine:  287,             //0x11f,           // Last displayed line
-		firstDmaLine:       48,              //0x30,            // First possible line for Bad Lines
-		lastDmaLine:        247,             //0xf7,            // Last possible line for Bad Lines
-		row24YStart:        55,              //0x37,
-		row24YStop:         247,             //0xf7,
-		row25YStart:        51,              //0x33,
-		row25YStop:         251,             //0xfb,
+		totalRasters:       palTotalRasters, // Total number of raster lines
+		firstDisplayedLine: 16,              // First displayed line
+		lastDisplayedLine:  287,             // Last displayed line
+		firstDmaLine:       48,              // First possible line for Bad Lines
+		lastDmaLine:        247,             // Last possible line for Bad Lines
+		row25YStart:        51,              //
+		row25YStop:         251,             //
 		rasterYMax:         palTotalRasters - 1,
 		displaySize:        (palWidth + 64) * palHeight,
-		borderFirstCycle:   palBorderFirstCycle,
+		borderFirstCycle:   13,
 	}
 
 	seq.prepare()
@@ -105,35 +105,31 @@ func newSequencerPal() *Sequencer {
 	return seq
 }
 
-// newSequencerNtsc constructs a sequencer of cycles for NTSC display operation, including phases and DMA management.
-// It defines the NTSC-specific scanline timing logic based on internal cycles and boundary conditions.
-// Returns a slice of SequencerData nodes configured in a cyclic linked list structure.
+// newSequencerNtsc initializes the NTSC video timing cycle data with 63 cycleData nodes for a single scanline.
+// Constructs a sequencer containing pre-calculated raster and border values for 263 total raster lines.
+// Links the nodes sequentially to form a complete NTSC video frame.
 func newSequencerNtsc() *Sequencer {
 	const ntscWidth = 384
 	const ntscHeight = 240
-	const ntscBorderFirstCycle uint8 = 15
 	const ntscTotalRasters = 263
-	const drawLoopCycles = 36 // Il VIC-II disegna sempre 40 colonne (4+36 cicli)
 
 	seq := &Sequencer{
 		width:              ntscWidth,
 		height:             ntscHeight,
 		totalRasters:       ntscTotalRasters,
-		firstDisplayedLine: 0x33,
-		lastDisplayedLine:  0xFA,
-		firstDmaLine:       0x30,
-		lastDmaLine:        0xF7,
-		row25YStart:        0x33,
-		row25YStop:         0xFA,
-		row24YStart:        0x37,
-		row24YStop:         0xF6,
+		firstDisplayedLine: 13,  // Lowest value to include top border
+		lastDisplayedLine:  261, // Highest value to include bottom border
+		firstDmaLine:       48,  //
+		lastDmaLine:        247, //
+		row25YStart:        51,  //
+		row25YStop:         251, //
 		rasterYMax:         ntscTotalRasters - 1,
 		displaySize:        (ntscWidth + 64) * ntscHeight,
-		borderFirstCycle:   ntscBorderFirstCycle,
+		borderFirstCycle:   15,
 	}
 
 	seq.prepare()
-	// Costruzione della timeline
+
 	seq.add(seq.phaseInitAndSprite3DMAPtrData0)
 	seq.add(seq.phaseVBlankAndSprite3DMAData1Data2)
 	seq.add(seq.phaseSprite4DMAPtrData0)
@@ -156,7 +152,7 @@ func newSequencerNtsc() *Sequencer {
 		seq.add(seq.phaseDisplayMainFetch)
 	}
 	seq.add(seq.phaseTeardownLastFetchAndDMASetup)
-	// I due cicli extra di NTSC sono cicli di refresh.
+	// The two extra NTSC cycles are refresh cycles.
 	seq.add(seq.phaseRefresh)
 	seq.add(seq.phaseRefresh)
 	seq.add(seq.phaseTeardownIdle)
@@ -176,6 +172,8 @@ func newSequencerNtsc() *Sequencer {
 
 // prepare initializes the Sequencer by creating an empty slice of SequencerData pointers to be used for cycle management.
 func (seq *Sequencer) prepare() {
+	seq.row24YStart = seq.row25YStart + 4
+	seq.row24YStop = seq.row25YStop - 4
 	seq.data = make([]*SequencerData, 0)
 }
 

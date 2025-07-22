@@ -88,7 +88,6 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 	s.sockets = append(s.sockets, s.joySocket2)
 	s.sockets = append(s.sockets, s.iecSocket)
 	s.sockets = append(s.sockets, s.cartridgeSocket)
-	//s.sockets = append(s.sockets, s.picSocket)
 	s.sockets = append(s.sockets, s.cpuSocket)
 	s.sockets = append(s.sockets, s.vicSocket)
 	s.sockets = append(s.sockets, s.sidSocket)
