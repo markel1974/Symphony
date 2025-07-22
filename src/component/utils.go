@@ -6,6 +6,8 @@ import (
 	"strings"
 )
 
+// GetSegmentKeys retrieves all the keys from a map if the provided interface is a map[string]interface{}.
+// Returns an error if the input is nil or not a valid map.
 func GetSegmentKeys(s interface{}) ([]string, error) {
 	if s == nil {
 		return nil, fmt.Errorf("error getting segment keys: %s", "nil interface")
@@ -21,6 +23,8 @@ func GetSegmentKeys(s interface{}) ([]string, error) {
 	return out, nil
 }
 
+// GetSegment retrieves a map segment identified by the given id from the provided interface.
+// Returns an error if the interface is nil, invalid, or the segment does not exist.
 func GetSegment(id string, s interface{}) (map[string]interface{}, error) {
 	if s == nil {
 		return nil, fmt.Errorf("error getting segment %s: %s", id, "nil interface")
@@ -40,6 +44,7 @@ func GetSegment(id string, s interface{}) (map[string]interface{}, error) {
 	return segment, nil
 }
 
+// ComponentData parses a colon-separated string into label, id, instance, and validates the input format.
 func ComponentData(data string) (string, string, int, error) {
 	p := strings.Split(data, ":")
 	if len(p) < 3 {
