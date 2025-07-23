@@ -110,8 +110,8 @@ func (sp *Sprite) Mask() uint8 {
 	return sp.mask
 }
 
-// SetData updates the sprite's color data, multicolor flags, and offset using the provided parameters.
-func (sp *Sprite) SetData(mdp uint8, mm0 uint8, mm1 uint8, mXc uint8, mXx uint16) {
+// LatchAttributes updates the sprite's color data, multicolor flags, and offset using the provided parameters.
+func (sp *Sprite) LatchAttributes(mdp uint8, mm0 uint8, mm1 uint8, mXc uint8, mXx uint16) {
 	sp.mdp = mdp
 	sp.mm0 = _colors[mm0]
 	sp.mm1 = _colors[mm1]

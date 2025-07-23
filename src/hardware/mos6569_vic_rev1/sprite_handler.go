@@ -470,8 +470,9 @@ func (sp *SpriteHandler) GetDMAFlag(b uint8) uint8 {
 // This function is called during specific VIC-II cycles when sprite data pointers need to be fetched
 // from memory.  The actual memory address is calculated based on the sprite pointer value
 // and the VIC-II's memory mapping.
-func (sp *SpriteHandler) FetchPtr(num uint8) {
-	sp.sprites[num].FetchPtr()
+func (sp *SpriteHandler) FetchPtr(sNum uint8) {
+	sp.sprites[sNum].LatchAttributes(sp.mdp, sp.mm0, sp.mm1, sp.mXc[sNum], sp.mXx[sNum])
+	sp.sprites[sNum].FetchPtr()
 }
 
 // FetchData0 fetches the first byte of data for the sprite identified by sNum and stores it in the sprite's data buffer.
@@ -487,8 +488,7 @@ func (sp *SpriteHandler) FetchData1(sNum uint8) {
 // FetchData2 retrieves the 'byte 2' data for the specified sprite and computes additional data configuration for rendering.
 func (sp *SpriteHandler) FetchData2(sNum uint8) {
 	sp.sprites[sNum].FetchData(2)
-
-	sp.sprites[sNum].SetData(sp.mdp, sp.mm0, sp.mm1, sp.mXc[sNum], sp.mXx[sNum])
+	//sp.sprites[sNum].LatchAttributes(sp.mdp, sp.mm0, sp.mm1, sp.mXc[sNum], sp.mXx[sNum])
 }
 
 // UpdateDMA updates the Direct Memory Access (DMA) flags for sprites at the current raster line position.
