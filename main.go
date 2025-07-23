@@ -44,6 +44,8 @@ import (
 //	// Draw active sprites
 // -c "/Users/tinmr305/Downloads/c64carts/SuperWonderboyInMonsterland_1989_Activision-EF.crt"
 
+// -f "/Users/tinmr305/Downloads/c64carts/Wonderboy In Monsterland/Wonderboy In Monsterland D1.D64;/Users/tinmr305/Downloads/c64carts/Wonderboy In Monsterland/Wonderboy In Monsterland D2.D64;/Users/tinmr305/Downloads/c64carts/Wonderboy In Monsterland/Wonderboy In Monsterland D3.D64;/Users/tinmr305/Downloads/c64carts/Wonderboy In Monsterland/Wonderboy In Monsterland D4.D64"
+
 // -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/Shadow of the Beast.crt"
 
 // -d "/Users/tinmr305/Downloads/c64carts/C64_disk/blast170.d64" -c "/Users/tinmr305/Downloads/c64carts/Ultimate/Games/3/seuds2008.crt"

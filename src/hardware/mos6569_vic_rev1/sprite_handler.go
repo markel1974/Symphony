@@ -8,6 +8,7 @@ import (
 
 const (
 	spriteNumber = 8
+	spriteIndex  = spriteNumber - 1
 )
 
 // bitSprite0 to bitSprite7 represent bitmask values for individual sprite identifiers.
@@ -470,23 +471,24 @@ func (sp *SpriteHandler) GetDMAFlag(b uint8) uint8 {
 // from memory.  The actual memory address is calculated based on the sprite pointer value
 // and the VIC-II's memory mapping.
 func (sp *SpriteHandler) FetchPtr(num uint8) {
-	//if sp.core.baLow && sp.core.aecLow {
 	sp.sprites[num].FetchPtr()
-	//} else {
-	//	log.Printf("sprites: can't fetch sprite ptr %d", num) // Should not normally happen, as the VIC-II controls BA/AEC.
-	//}
 }
 
-// FetchData loads sprite data for the given sprite number and byte index from memory if BA and AEC lines are low.
-// It updates the sprite's data array and increments its data counter.Logs an error if BA or AEC lines are high.
-// This function is called during specific VIC-II cycles (typically cycles 49-55, three times per sprite) to fetch
-// the actual sprite data (3 bytes per sprite per cycle).
-func (sp *SpriteHandler) FetchData(num uint8, bNum uint8) {
-	//if sp.core.baLow && sp.core.aecLow {
-	sp.sprites[num].FetchData(bNum)
-	//} else {
-	//	log.Printf("sprites: can't fetch sprite %d - %d", num, bNum) // Should not normally happen.
-	//}
+// FetchData0 fetches the first byte of data for the sprite identified by sNum and stores it in the sprite's data buffer.
+func (sp *SpriteHandler) FetchData0(sNum uint8) {
+	sp.sprites[sNum].FetchData(0)
+}
+
+// FetchData1 fetches the second byte of data for the sprite identified by sNum and stores it in the sprite's data buffer.
+func (sp *SpriteHandler) FetchData1(sNum uint8) {
+	sp.sprites[sNum].FetchData(1)
+}
+
+// FetchData2 retrieves the 'byte 2' data for the specified sprite and computes additional data configuration for rendering.
+func (sp *SpriteHandler) FetchData2(sNum uint8) {
+	sp.sprites[sNum].FetchData(2)
+
+	sp.sprites[sNum].SetData(sp.mdp, sp.mm0, sp.mm1, sp.mXc[sNum], sp.mXx[sNum])
 }
 
 // UpdateDMA updates the Direct Memory Access (DMA) flags for sprites at the current raster line position.
@@ -570,21 +572,9 @@ func (sp *SpriteHandler) Draw() {
 	}
 	// Prepare the collision detection system for this scanline.
 	sp.collisions.Prepare()
-
-	mm0 := _colors[sp.mm0]
-	mm1 := _colors[sp.mm1]
 	for _, sNum := range activeSprites {
-		sColor := _colors[sp.mXc[sNum]]
-		sOffset := int(sp.mXx[sNum]) + spriteNumber
-		// Calculate the final offset on the scanline, including the global offset.
-		lineOffset := sp.offset + sOffset
-		// Calculate the "major" X coordinate (used for collision detection).This is essentially the character column (column char, 0-39).
-		majorX := sOffset / spriteNumber
-		// Calculate the "minor" X coordinate (used for collision detection).This is the pixel offset within the character column (offset pixel inside column, 0-7).
-		minorX := sOffset & spriteIndex
-		sp.sprites[sNum].Draw(lineOffset, sp.mdp, mm0, mm1, sColor, sOffset, majorX, minorX)
+		sp.sprites[sNum].Draw(sp.offset)
 	}
-
 	// Perform the final collision detection checks.
 	sp.collisions.Commit()
 }
