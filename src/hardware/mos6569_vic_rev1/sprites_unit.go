@@ -45,7 +45,8 @@ type SpritesUnit struct {
 	mdp                uint8           // Sprite data priority
 	mm0                uint8
 	mm1                uint8
-	//spriteToggle       bool
+	latchToggle        bool
+	latchIndex         int
 }
 
 // NewSprites initializes and returns a new instance of the SpritesUnit struct with default settings and allocations.
@@ -108,23 +109,26 @@ func (sp *SpritesUnit) Internal() bool {
 func (sp *SpritesUnit) Reset() {
 }
 
-/*
-func (sp *SpritesUnit) Prepare2() {
-	sp.spriteToggle = !sp.spriteToggle
-	straight := sp.spriteToggle
-	reverse := !sp.spriteToggle
+func (sp *SpritesUnit) Prepare() {
+	var reverse int
+	sp.latchToggle = !sp.latchToggle
+	if !sp.latchToggle {
+		sp.latchIndex = LatchIndex0
+		reverse = LatchIndex1
+	} else {
+		sp.latchIndex = LatchIndex1
+		reverse = LatchIndex0
+	}
+	sp.sprites[3].SetLatchIndex(sp.latchIndex)
+	sp.sprites[4].SetLatchIndex(sp.latchIndex)
+	sp.sprites[5].SetLatchIndex(sp.latchIndex)
+	sp.sprites[6].SetLatchIndex(sp.latchIndex)
+	sp.sprites[7].SetLatchIndex(sp.latchIndex)
 
-	sp.sprites[3].SetOdd(straight)
-	sp.sprites[4].SetOdd(straight)
-	sp.sprites[5].SetOdd(straight)
-	sp.sprites[6].SetOdd(straight)
-	sp.sprites[7].SetOdd(straight)
-
-	sp.sprites[0].SetOdd(reverse)
-	sp.sprites[1].SetOdd(reverse)
-	sp.sprites[2].SetOdd(reverse)
+	sp.sprites[0].SetLatchIndex(reverse)
+	sp.sprites[1].SetLatchIndex(reverse)
+	sp.sprites[2].SetLatchIndex(reverse)
 }
-*/
 
 // SetOffset updates the `offset` value of the SpritesUnit instance with the given value.
 // This offset is used to calculate the starting position for sprite rendering on the current scanline.
@@ -485,11 +489,30 @@ func (sp *SpritesUnit) GetDMAFlag(b uint8) uint8 {
 	return sp.dmaFlags & b
 }
 
-func (sp *SpritesUnit) FetchPhase1(odd bool, sNum uint8) {
+// FetchPhase1 executes the first phase of the Direct Memory Access (DMA) for a given sprite.
+// This operation corresponds to a single CPU clock cycle and is divided into two sub-phases (phi1 and phi2).
+// During this phase, the VIC-II fetches the sprite's data pointer and the first of its three data bytes for the current scanline.
+//
+// - sNum: The number of the sprite (0-7) to fetch data for.
+//
+// Actions in phi1:
+//  1. Latches sprite attributes: The sprite's color (mXc), multicolor registers (mm0, mm1),
+//     X-coordinate (mXx), and data priority (mdp) are latched for the upcoming render.
+//  2. Fetches sprite pointer: It reads the byte from Screen RAM that points to the sprite's bitmap data.
+//     The address is calculated as `VideoMatrixBase + 1016 + sprite_number`.
+//  3. Sets internal pointer: The fetched pointer is stored internally in the sprite object, shifted left by 6
+//     to form the 64-byte aligned base address of the sprite's bitmap data.
+//
+// Actions in phi2:
+//  1. Calculates data address: The address for the first byte of bitmap data is calculated by combining
+//     the sprite's base address with its internal row counter.
+//  2. Fetches data byte: The VIC-II reads the first byte of the sprite's graphical data from the calculated address.
+//  3. Latches data byte: The fetched byte is stored in the first position of the sprite's internal data latch.
+func (sp *SpritesUnit) FetchPhase1(sNum uint8) {
 	sprite := sp.sprites[sNum]
 
 	//phi1
-	sprite.LatchAttributes(odd, sp.mdp, sp.mm0, sp.mm1, sp.mXc[sNum], sp.mXx[sNum])
+	sprite.SetLatchAttributes(sp.mdp, sp.mm0, sp.mm1, sp.mXc[sNum], sp.mXx[sNum])
 
 	addrPtr := sp.memory.GetMatrixBase() | 0x03f8 | uint16(sNum)
 	ptr := sp.memory.ReadByte(addrPtr)
@@ -498,20 +521,50 @@ func (sp *SpritesUnit) FetchPhase1(odd bool, sNum uint8) {
 	//phi2
 	addrData0 := (sprite.Counter() & dataCounterLastByte) | sprite.Ptr() //.ptr
 	data := sp.memory.ReadByte(addrData0)
-	sprite.LatchData(odd, 0, data)
+	sprite.SetLatchData(0, data)
 }
 
-func (sp *SpritesUnit) FetchPhase2(odd bool, sNum uint8) {
+// FetchPhase2 executes the second phase of the Direct Memory Access (DMA) for a given sprite.
+// This operation corresponds to a single CPU clock cycle and is divided into two sub-phases:
+// phi0 and phi1. During this phase, the VIC-II fetches the remaining two data bytes (data1 and data2)
+// of the sprite's three-byte data block for the current scanline. This method is typically called
+// immediately after FetchPhase1, which handles the sprite pointer and the first data byte (data0).
+//
+// - sNum: The number of the sprite (0-7) for which to fetch data.
+//
+// Actions in phi0:
+//  1. Calculates data address for data1: The memory address for the second byte of bitmap data (data1)
+//     is calculated. This involves combining the sprite's 64-byte aligned base address (obtained from
+//     the sprite pointer) with the current value of the sprite's internal data counter. The data counter
+//     would have been incremented after fetching data0 in FetchPhase1.
+//  2. Fetches data byte (data1): The VIC-II reads the second byte of the sprite's graphical data from
+//     the calculated memory address.
+//  3. Latches data byte (data1): The fetched byte is stored in the second position (index 1) of the
+//     sprite's internal data latch. The sprite's internal data counter is then incremented, preparing
+//     for the next data fetch.
+//
+// Actions in phi1:
+//  1. Calculates data address for data2: The memory address for the third byte of bitmap data (data2)
+//     is calculated using the same logic as for data1, but with the now-incremented sprite data counter.
+//  2. Fetches data byte (data2): The VIC-II reads the third byte of the sprite's graphical data from
+//     this newly calculated address.
+//  3. Latches data byte (data2): The fetched byte is stored in the third position (index 2) of the
+//     sprite's internal data latch. The sprite's internal data counter is incremented one last time
+//     for this three-byte block.
+//
+// Upon completion of FetchPhase2, all three bytes of the sprite's data for the current scanline
+// (data0, data1, data2) are available in the sprite's internal latch, ready for rendering.
+func (sp *SpritesUnit) FetchPhase2(sNum uint8) {
 	sprite := sp.sprites[sNum]
 	//phi0
 	addrData1 := (sprite.Counter() & dataCounterLastByte) | sprite.Ptr()
 	data1 := sp.memory.ReadByte(addrData1)
-	sprite.LatchData(odd, 1, data1)
+	sprite.SetLatchData(1, data1)
 
 	//phi1
 	addrData2 := (sprite.Counter() & dataCounterLastByte) | sprite.Ptr()
 	data2 := sp.memory.ReadByte(addrData2)
-	sprite.LatchData(odd, 2, data2)
+	sprite.SetLatchData(2, data2)
 }
 
 // UpdateDMA updates the Direct MemoryUnit Access (DMA) flags for sprites at the current raster line position.
@@ -587,7 +640,7 @@ func (sp *SpritesUnit) CommitSpriteFlags() {
 // Draw renders all active sprites for the current line based on their flags, properties, and configurations.
 // It handles both expanded and unexpanded sprites in standard and multicolor modes.
 // Collision detection for sprites is carried out during the rendering process.
-func (sp *SpritesUnit) Draw(odd bool) {
+func (sp *SpritesUnit) Draw() {
 	activeSprites := _spritesData[sp.spriteFlags]
 	if activeSprites == nil {
 		return
@@ -595,7 +648,7 @@ func (sp *SpritesUnit) Draw(odd bool) {
 	// Prepare the collision detection system for this scanline.
 	sp.collisions.Prepare()
 	for _, sNum := range activeSprites {
-		sp.sprites[sNum].Draw(odd, sp.offset)
+		sp.sprites[sNum].Draw(sp.latchIndex, sp.offset)
 	}
 	// Perform the final collision detection checks.
 	sp.collisions.Commit()
