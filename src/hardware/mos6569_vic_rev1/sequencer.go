@@ -1,5 +1,10 @@
 package mos6569
 
+import (
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
+)
+
 const drawLoopCycles = 36 // drawLoopCycles defines the number of iterations for the main display loop in video cycle data processing.
 
 // SequencerData represents a chainable unit in a sequencer containing a function, a next node, and cycle information.
@@ -17,6 +22,7 @@ func NewSequencerData(fn func(vic *VIC)) *SequencerData {
 
 // Sequencer represents a structure to manage video cycle sequencing and raster timing for display rendering.
 type Sequencer struct {
+	*component.BaseComponent
 	width              int
 	height             int
 	totalRasters       uint16 // Total number of raster lines (PAL)
@@ -36,22 +42,23 @@ type Sequencer struct {
 }
 
 // NewSequencer creates a Sequencer based on the total number of raster lines, selecting PAL or NTSC timing accordingly.
-func NewSequencer(screenFreq int, totalRaster int) *Sequencer {
+func NewSequencer(parent references.IComponent, factory references.IComponentFactory, label string, instance int, screenFreq int, totalRaster int) *Sequencer {
 	if totalRaster >= 300 {
-		return newSequencerPal()
+		return newSequencerPal(parent, factory, label, instance)
 	}
-	return newSequencerNtsc()
+	return newSequencerNtsc(parent, factory, label, instance)
 }
 
 // newSequencerPal initializes the PAL video timing cycle data. It constructs a circular linked list of 63 cycleData nodes,
 // where each node represents one CPU clock cycle of a single PAL scanline. It pre-calculates border-related
 // values for each cycle and links them in sequence to form the complete 63-cycle sequencer.
-func newSequencerPal() *Sequencer {
+func newSequencerPal(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Sequencer {
 	const palWidth = 384
 	const palHeight = 272
 	const palTotalRasters = 312
 
 	seq := &Sequencer{
+		BaseComponent:      component.NewBaseComponent(),
 		width:              palWidth,
 		height:             palHeight,
 		totalRasters:       palTotalRasters, // Total number of raster lines
@@ -101,19 +108,21 @@ func newSequencerPal() *Sequencer {
 
 	seq.finalize()
 
-	seq.curr = seq.data[0]
+	seq.BaseComponent.Register(factory, parent, "sequencerPal", seq, references.IdInternalComponent(label, instance, "SequencerPal"))
+
 	return seq
 }
 
 // newSequencerNtsc initializes the NTSC video timing cycle data with 63 cycleData nodes for a single scanline.
 // Constructs a sequencer containing pre-calculated raster and border values for 263 total raster lines.
 // Links the nodes sequentially to form a complete NTSC video frame.
-func newSequencerNtsc() *Sequencer {
+func newSequencerNtsc(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Sequencer {
 	const ntscWidth = 384
 	const ntscHeight = 240
 	const ntscTotalRasters = 263
 
 	seq := &Sequencer{
+		BaseComponent:      component.NewBaseComponent(),
 		width:              ntscWidth,
 		height:             ntscHeight,
 		totalRasters:       ntscTotalRasters,
@@ -166,8 +175,33 @@ func newSequencerNtsc() *Sequencer {
 
 	seq.finalize()
 
-	seq.curr = seq.data[0]
+	seq.BaseComponent.Register(factory, parent, "sequencerPal", seq, references.IdInternalComponent(label, instance, "SequencerPal"))
+
 	return seq
+}
+
+func (seq *Sequencer) Setup() error {
+	return nil
+}
+
+func (seq *Sequencer) Connect() error {
+	return nil
+}
+
+func (seq *Sequencer) EmulationRequired() bool {
+	return false
+}
+
+func (seq *Sequencer) Emulate() {
+}
+
+func (seq *Sequencer) Internal() bool {
+	return true
+}
+
+func (seq *Sequencer) Reset() {
+	//TODO implement me
+	panic("implement me")
 }
 
 // prepare initializes the Sequencer by creating an empty slice of SequencerData pointers to be used for cycle management.
@@ -197,6 +231,7 @@ func (seq *Sequencer) finalize() {
 			seq.data[idx].next = seq.data[idx+1]
 		}
 	}
+	seq.curr = seq.data[0]
 }
 
 // Sequence processes the current function in the sequence and advances to the next step in the sequence chain.

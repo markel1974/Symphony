@@ -132,7 +132,7 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.socketAECLow = socket.AECLow
 	vic.socketVBlank = socket.VBlank
 
-	vic.sequencer = NewSequencer(socket.ScreenFreq(), socket.TotalRaster())
+	vic.sequencer = NewSequencer(vic, vic.GetFactory(), vic.label, 0, socket.ScreenFreq(), socket.TotalRaster())
 	vic.rasterY = vic.sequencer.rasterYMax
 
 	vic.memory = NewMemory(vic, vic.GetFactory(), vic.label, 0, socket.ReadRam, socket.ReadColorRam, socket.ReadCharRom)
@@ -147,6 +147,9 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)
 
+	if err := vic.sequencer.Setup(); err != nil {
+		return err
+	}
 	if err := vic.collisions.Setup(); err != nil {
 		return err
 	}
