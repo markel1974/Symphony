@@ -6,7 +6,7 @@ package mos6510_rev1
 // Updates the negative (nFlag) and zero (zFlag) flags based on the value of A. Sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func (er *Executor) InstOpTAX(cpu *CPU) {
+func (er *ControlUnit) InstOpTAX(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -19,7 +19,7 @@ func (er *Executor) InstOpTAX(cpu *CPU) {
 // InstOpTXA transfers the X register to the A register, updating the negative and zero flags based on the value of X.
 //
 //go:nosplit
-func (er *Executor) InstOpTXA(cpu *CPU) {
+func (er *ControlUnit) InstOpTXA(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -32,7 +32,7 @@ func (er *Executor) InstOpTXA(cpu *CPU) {
 // InstOpTAY transfers the value of the accumulator (A) to the Y register and updates the negative and zero flags.
 //
 //go:nosplit
-func (er *Executor) InstOpTAY(cpu *CPU) {
+func (er *ControlUnit) InstOpTAY(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -45,7 +45,7 @@ func (er *Executor) InstOpTAY(cpu *CPU) {
 // InstOpTYA transfers the value of the Y register to the A register and updates the negative and zero flags accordingly.
 //
 //go:nosplit
-func (er *Executor) InstOpTYA(cpu *CPU) {
+func (er *ControlUnit) InstOpTYA(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -58,7 +58,7 @@ func (er *Executor) InstOpTYA(cpu *CPU) {
 // InstOpTSX loads the stack pointer into the X register, updates the negative and zero flags, and sets the next instruction.
 //
 //go:nosplit
-func (er *Executor) InstOpTSX(cpu *CPU) {
+func (er *ControlUnit) InstOpTSX(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -71,7 +71,7 @@ func (er *Executor) InstOpTSX(cpu *CPU) {
 // InstOpTXS transfers the value from the X register to the stack pointer and sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func (er *Executor) InstOpTXS(cpu *CPU) {
+func (er *ControlUnit) InstOpTXS(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}

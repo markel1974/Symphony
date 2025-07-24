@@ -8,7 +8,7 @@ const (
 // InstOpHalt pauses the CPU's operation by acting as a no-op function while the CPU remains in the halted state.
 //
 //go:nosplit
-func (er *Executor) InstOpHalt(_ *CPU) {
+func (er *ControlUnit) InstOpHalt(_ *CPU) {
 }
 
 // InstOpINI handles the initial opcode fetch and subsequent CPU instruction cycle logic based on the current CPU state.
@@ -16,7 +16,7 @@ func (er *Executor) InstOpHalt(_ *CPU) {
 // If the RDY line is low, the CPU execution is halted by setting the `stop` flag.
 //
 //go:nosplit
-func (er *Executor) InstOpINI(cpu *CPU) {
+func (er *ControlUnit) InstOpINI(cpu *CPU) {
 	// https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
 	// Interrupts are only recognized if the RDY line is high
 	if cpu.rdyLow {

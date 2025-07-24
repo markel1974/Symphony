@@ -5,7 +5,7 @@ package mos6510_rev1
 // InstOpPHA handles the PHA (Push Accumulator) operation, verifying CPU state and setting the next instruction step.
 //
 //go:nosplit
-func (er *Executor) InstOpPHA(cpu *CPU) {
+func (er *ControlUnit) InstOpPHA(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -15,7 +15,7 @@ func (er *Executor) InstOpPHA(cpu *CPU) {
 // InstOpPHA1 pushes the accumulator onto the stack, updates the stack pointer, and sets the next operation to InstOpINI.
 //
 //go:nosplit
-func (er *Executor) InstOpPHA1(cpu *CPU) {
+func (er *ControlUnit) InstOpPHA1(cpu *CPU) {
 	cpu.bus.Write(uint16(cpu.sp)|stackAddr, cpu.a)
 	cpu.sp--
 	cpu.next = er.InstOpINI
@@ -24,7 +24,7 @@ func (er *Executor) InstOpPHA1(cpu *CPU) {
 // InstOpPLA prepares the CPU for the PLA (Pull Accumulator) instruction by setting the next state for execution.
 //
 //go:nosplit
-func (er *Executor) InstOpPLA(cpu *CPU) {
+func (er *ControlUnit) InstOpPLA(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -34,7 +34,7 @@ func (er *Executor) InstOpPLA(cpu *CPU) {
 // InstOpPLA1 handles the PLA (Pull Accumulator) step 1 by reading the stack and preparing for the next operation.
 //
 //go:nosplit
-func (er *Executor) InstOpPLA1(cpu *CPU) {
+func (er *ControlUnit) InstOpPLA1(cpu *CPU) {
 	if _, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
@@ -45,7 +45,7 @@ func (er *Executor) InstOpPLA1(cpu *CPU) {
 // InstOpPLA2 is an instruction handler that pulls a byte from the stack into the accumulator and updates flags.
 //
 //go:nosplit
-func (er *Executor) InstOpPLA2(cpu *CPU) {
+func (er *ControlUnit) InstOpPLA2(cpu *CPU) {
 	data, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return
@@ -59,7 +59,7 @@ func (er *Executor) InstOpPLA2(cpu *CPU) {
 // InstOpPHP initiates the PHP (Push Processor Status) instruction by preparing to save the processor flags onto the stack.
 //
 //go:nosplit
-func (er *Executor) InstOpPHP(cpu *CPU) {
+func (er *ControlUnit) InstOpPHP(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -69,7 +69,7 @@ func (er *Executor) InstOpPHP(cpu *CPU) {
 // InstOpPHP1 pushes the CPU status flags onto the stack, decrements the stack pointer, and sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func (er *Executor) InstOpPHP1(cpu *CPU) {
+func (er *ControlUnit) InstOpPHP1(cpu *CPU) {
 	data := cpu.pushFlags(true)
 	cpu.bus.Write((uint16(cpu.sp)&0xff)|stackAddr, data)
 	cpu.sp--
@@ -79,7 +79,7 @@ func (er *Executor) InstOpPHP1(cpu *CPU) {
 // InstOpPLP processes the PLP (Pull Processor Status) instruction by advancing the CPU state to the next handler.
 //
 //go:nosplit
-func (er *Executor) InstOpPLP(cpu *CPU) {
+func (er *ControlUnit) InstOpPLP(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -89,7 +89,7 @@ func (er *Executor) InstOpPLP(cpu *CPU) {
 // InstOpPLP1 reads a byte from the stack. If unsuccessful, exits; otherwise increments the stack pointer and sets InstOpPLP2.
 //
 //go:nosplit
-func (er *Executor) InstOpPLP1(cpu *CPU) {
+func (er *ControlUnit) InstOpPLP1(cpu *CPU) {
 	if _, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr); !ok {
 		return
 	}
@@ -100,7 +100,7 @@ func (er *Executor) InstOpPLP1(cpu *CPU) {
 // InstOpPLP2 retrieves a byte from the stack, updates CPU flags, and manages IRQ enable/disable transitions.
 //
 //go:nosplit
-func (er *Executor) InstOpPLP2(cpu *CPU) {
+func (er *ControlUnit) InstOpPLP2(cpu *CPU) {
 	data, ok := cpu.bus.Read(uint16(cpu.sp) | stackAddr)
 	if !ok {
 		return

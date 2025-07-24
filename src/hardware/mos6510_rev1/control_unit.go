@@ -6,14 +6,14 @@ import (
 	"reflect"
 )
 
-type Executor struct {
+type ControlUnit struct {
 	*component.BaseComponent
 	opContainer        map[reflect.Value]string
 	opReverseContainer map[string]reflect.Value
 }
 
-func NewExecutor(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Executor {
-	er := &Executor{
+func NewExecutor(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *ControlUnit {
+	er := &ControlUnit{
 		BaseComponent:      component.NewBaseComponent(),
 		opContainer:        make(map[reflect.Value]string),
 		opReverseContainer: make(map[string]reflect.Value),
@@ -216,35 +216,35 @@ func NewExecutor(parent references.IComponent, factory references.IComponentFact
 	er.addOpId(er.InstOpBRAfp, "instOpBRAfp")
 	er.addOpId(er.InstOpBRAfp1, "instOpBRAfp1")
 
-	er.BaseComponent.Register(factory, parent, "executor", er, references.IdInternalComponent(label, instance, "Executor"))
+	er.BaseComponent.Register(factory, parent, "executor", er, references.IdInternalComponent(label, instance, "ControlUnit"))
 
 	return er
 }
 
-func (er *Executor) Setup() error {
+func (er *ControlUnit) Setup() error {
 	return nil
 }
 
-func (er *Executor) Connect() error {
+func (er *ControlUnit) Connect() error {
 	return nil
 }
 
-func (er *Executor) EmulationRequired() bool {
+func (er *ControlUnit) EmulationRequired() bool {
 	return false
 }
 
-func (er *Executor) Emulate() {
+func (er *ControlUnit) Emulate() {
 }
 
-func (er *Executor) Internal() bool {
+func (er *ControlUnit) Internal() bool {
 	return true
 }
 
-func (er *Executor) Reset() {
+func (er *ControlUnit) Reset() {
 }
 
 // CreateModeTable initializes and returns a slice of instruction mode functions for a CPU.
-func (er *Executor) CreateModeTable() []func(*CPU) {
+func (er *ControlUnit) CreateModeTable() []func(*CPU) {
 	modeTable := []func(*CPU){
 		er.InstOpBRK, er.InstApINDx, er.InstOpJAM, er.InstMpINDx, er.InstApZER, er.InstApZER, er.InstMpZER, er.InstMpZER, // 00
 		er.InstOpPHP, er.InstOiOPA, er.InstOaASL, er.InstOiANC, er.InstApABS, er.InstApABS, er.InstMpABS, er.InstMpABS,
@@ -283,7 +283,7 @@ func (er *Executor) CreateModeTable() []func(*CPU) {
 }
 
 // CreateOpTable initializes and returns an operation table containing a list of CPU instruction functions.
-func (er *Executor) CreateOpTable() []func(cpu *CPU) {
+func (er *ControlUnit) CreateOpTable() []func(cpu *CPU) {
 	opTable := []func(*CPU){
 		er.InstOpJAM, er.InstOpORA, er.InstOpJAM, er.InstOpSLO, er.InstOaNOP, er.InstOpORA, er.InstOpASL, er.InstOpSLO, // 00
 		er.InstOpJAM, er.InstOpJAM, er.InstOpJAM, er.InstOpJAM, er.InstOaNOP, er.InstOpORA, er.InstOpASL, er.InstOpSLO,
@@ -321,13 +321,13 @@ func (er *Executor) CreateOpTable() []func(cpu *CPU) {
 	return opTable
 }
 
-func (er *Executor) addOpId(v func(cpu *CPU), id string) {
+func (er *ControlUnit) addOpId(v func(cpu *CPU), id string) {
 	r := reflect.ValueOf(v)
 	er.opContainer[r] = id
 	er.opReverseContainer[id] = r
 }
 
-func (er *Executor) GetOpId(v func(cpu *CPU)) (string, bool) {
+func (er *ControlUnit) GetOpId(v func(cpu *CPU)) (string, bool) {
 	if v == nil {
 		return "", false
 	}
@@ -339,7 +339,7 @@ func (er *Executor) GetOpId(v func(cpu *CPU)) (string, bool) {
 	return ret, true
 }
 
-func (er *Executor) GetOpFn(v string) (func(cpu *CPU), bool) {
+func (er *ControlUnit) GetOpFn(v string) (func(cpu *CPU), bool) {
 	r, ok := er.opReverseContainer[v]
 	if !ok {
 		return nil, false

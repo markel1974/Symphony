@@ -5,7 +5,7 @@ package mos6510_rev1
 // InstOpSEC sets the Carry flag (cFlag) to 1 and moves execution to the next instruction handler (InstOpINI).
 //
 //go:nosplit
-func (er *Executor) InstOpSEC(cpu *CPU) {
+func (er *ControlUnit) InstOpSEC(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -14,7 +14,7 @@ func (er *Executor) InstOpSEC(cpu *CPU) {
 }
 
 // InstOpCLC clears the carry flag in the CPU and sets the next instruction to InstOpINI. It halts if the current PC read fails.
-func (er *Executor) InstOpCLC(cpu *CPU) {
+func (er *ControlUnit) InstOpCLC(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -23,7 +23,7 @@ func (er *Executor) InstOpCLC(cpu *CPU) {
 }
 
 // InstOpSED sets the decimal mode flag (dFlag) to 1 and assigns the next instruction handler to InstOpINI.
-func (er *Executor) InstOpSED(cpu *CPU) {
+func (er *ControlUnit) InstOpSED(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -32,7 +32,7 @@ func (er *Executor) InstOpSED(cpu *CPU) {
 }
 
 // InstOpCLD clears the decimal mode flag (dFlag) and sets the next instruction handler to InstOpINI.
-func (er *Executor) InstOpCLD(cpu *CPU) {
+func (er *ControlUnit) InstOpCLD(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -41,7 +41,7 @@ func (er *Executor) InstOpCLD(cpu *CPU) {
 }
 
 // InstOpSEI sets the interrupt disable flag and updates CPU state to handle the next instruction cycle.
-func (er *Executor) InstOpSEI(cpu *CPU) {
+func (er *ControlUnit) InstOpSEI(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -53,7 +53,7 @@ func (er *Executor) InstOpSEI(cpu *CPU) {
 }
 
 // InstOpCLI clears the interrupt disable flag and sets the next instruction to InstOpINI if the current opcode is valid.
-func (er *Executor) InstOpCLI(cpu *CPU) {
+func (er *ControlUnit) InstOpCLI(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -66,7 +66,7 @@ func (er *Executor) InstOpCLI(cpu *CPU) {
 
 // InstOpCLV clears the overflow flag in the CPU and sets the next instruction handler to InstOpINI.
 // If the current PC address cannot be read, the operation is aborted.
-func (er *Executor) InstOpCLV(cpu *CPU) {
+func (er *ControlUnit) InstOpCLV(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
@@ -75,7 +75,7 @@ func (er *Executor) InstOpCLV(cpu *CPU) {
 }
 
 // InstOpNOP is a no-operation function for the CPU that progresses the state to the next instruction without modifying registers.
-func (er *Executor) InstOpNOP(cpu *CPU) {
+func (er *ControlUnit) InstOpNOP(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}

@@ -41,7 +41,7 @@ type CPU struct {
 	opTable        []func(*CPU)
 	interrupts     *Interrupts
 	bus            *Bus
-	executor       *Executor
+	executor       *ControlUnit
 	label          string
 }
 
