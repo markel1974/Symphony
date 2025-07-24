@@ -6,75 +6,75 @@ package mos6510_rev1
 // Updates the negative (nFlag) and zero (zFlag) flags based on the value of A. Sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func InstOpTAX(cpu *CPU) {
+func (er *Executor) InstOpTAX(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.x = cpu.a
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = InstOpINI
+	cpu.next = er.InstOpINI
 }
 
 // InstOpTXA transfers the X register to the A register, updating the negative and zero flags based on the value of X.
 //
 //go:nosplit
-func InstOpTXA(cpu *CPU) {
+func (er *Executor) InstOpTXA(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.a = cpu.x
 	cpu.nFlag = cpu.x
 	cpu.zFlag = cpu.x
-	cpu.next = InstOpINI
+	cpu.next = er.InstOpINI
 }
 
 // InstOpTAY transfers the value of the accumulator (A) to the Y register and updates the negative and zero flags.
 //
 //go:nosplit
-func InstOpTAY(cpu *CPU) {
+func (er *Executor) InstOpTAY(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.y = cpu.a
 	cpu.nFlag = cpu.a
 	cpu.zFlag = cpu.a
-	cpu.next = InstOpINI
+	cpu.next = er.InstOpINI
 }
 
 // InstOpTYA transfers the value of the Y register to the A register and updates the negative and zero flags accordingly.
 //
 //go:nosplit
-func InstOpTYA(cpu *CPU) {
+func (er *Executor) InstOpTYA(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.a = cpu.y
 	cpu.nFlag = cpu.y
 	cpu.zFlag = cpu.y
-	cpu.next = InstOpINI
+	cpu.next = er.InstOpINI
 }
 
 // InstOpTSX loads the stack pointer into the X register, updates the negative and zero flags, and sets the next instruction.
 //
 //go:nosplit
-func InstOpTSX(cpu *CPU) {
+func (er *Executor) InstOpTSX(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.x = cpu.sp
 	cpu.nFlag = cpu.sp
 	cpu.zFlag = cpu.sp
-	cpu.next = InstOpINI
+	cpu.next = er.InstOpINI
 }
 
 // InstOpTXS transfers the value from the X register to the stack pointer and sets the next instruction to InstOpINI.
 //
 //go:nosplit
-func InstOpTXS(cpu *CPU) {
+func (er *Executor) InstOpTXS(cpu *CPU) {
 	if _, ok := cpu.bus.Read(cpu.pc); !ok {
 		return
 	}
 	cpu.sp = cpu.x
-	cpu.next = InstOpINI
+	cpu.next = er.InstOpINI
 }

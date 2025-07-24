@@ -41,6 +41,7 @@ type CPU struct {
 	opTable        []func(*CPU)
 	interrupts     *Interrupts
 	bus            *Bus
+	executor       *Executor
 	label          string
 }
 
@@ -58,8 +59,18 @@ func NewCPU(parent references.IComponent, factory references.IComponentFactory, 
 func (cpu *CPU) Setup() error {
 	cpu.interrupts = NewInterrupts(cpu, cpu.GetFactory(), cpu.label, 0)
 	cpu.bus = NewBus(cpu, cpu.GetFactory(), cpu.label, 0)
-	cpu.opTable = CreateOpTable()
-	cpu.modeTable = CreateModeTable()
+	cpu.executor = NewExecutor(cpu, cpu.GetFactory(), cpu.label, 0)
+	if err := cpu.interrupts.Setup(); err != nil {
+		return err
+	}
+	if err := cpu.bus.Setup(); err != nil {
+		return err
+	}
+	if err := cpu.executor.Setup(); err != nil {
+		return err
+	}
+	cpu.opTable = cpu.executor.CreateOpTable()
+	cpu.modeTable = cpu.executor.CreateModeTable()
 	return nil
 }
 
@@ -90,7 +101,7 @@ func (cpu *CPU) Reset() {
 	cpu.bus.Reset()
 	cpu.pc = uint16(cpu.bus.ReadDirect(0xfffc)) | (uint16(cpu.bus.ReadDirect(0xfffd)) << 8) // Read reset vector
 	cpu.opFlags = 0
-	cpu.next = InstOpINI
+	cpu.next = cpu.executor.InstOpINI
 }
 
 // SetOverflowBranch sets the function used to handle conditional overflow branching for the CPU.
@@ -149,7 +160,7 @@ func (cpu *CPU) SetRDYLow(rdyLow bool) {
 func (cpu *CPU) setModeHalt() {
 	if cpu.savedNext == nil {
 		cpu.savedNext = cpu.next
-		cpu.next = InstOpHalt
+		cpu.next = cpu.executor.InstOpHalt
 	}
 }
 
@@ -167,13 +178,13 @@ func (cpu *CPU) EmulationRequired() bool {
 
 //go:nosplit
 func (cpu *CPU) NMI() {
-	cpu.next = InstOpNMI
+	cpu.next = cpu.executor.InstOpNMI
 	cpu.next(cpu)
 }
 
 //go:nosplit
 func (cpu *CPU) IRQ() {
-	cpu.next = InstOpIRQ
+	cpu.next = cpu.executor.InstOpIRQ
 	cpu.next(cpu)
 }
 
@@ -220,11 +231,11 @@ func (cpu *CPU) computeBranch(data uint8) func(*CPU) {
 	cpu.ar = cpu.pc + uint16(int8(data))
 	if (cpu.ar >> 8) != (cpu.pc >> 8) {
 		if (data & 0x80) != 0 {
-			return InstOpBRAbp
+			return cpu.executor.InstOpBRAbp
 		}
-		return InstOpBRAfp
+		return cpu.executor.InstOpBRAfp
 	}
-	return InstOpBRAnp
+	return cpu.executor.InstOpBRAnp
 }
 
 // doADC performs the add with Carry (ADC) operation using the given operand and CPU state.

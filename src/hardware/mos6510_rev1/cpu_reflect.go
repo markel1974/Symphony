@@ -90,7 +90,7 @@ func (r *Reflect) getNext() string {
 	if r.cpu.next == nil {
 		return ""
 	}
-	name, ok := _opContainer[reflect.ValueOf(r.cpu.next)]
+	name, ok := r.cpu.executor.opContainer[reflect.ValueOf(r.cpu.next)]
 	if !ok {
 		return ""
 	}
@@ -98,7 +98,7 @@ func (r *Reflect) getNext() string {
 }
 
 func (r *Reflect) setNext(name string) {
-	f, ok := _opReverseContainer[name]
+	f, ok := r.cpu.executor.opReverseContainer[name]
 	if !ok {
 		return
 	}
