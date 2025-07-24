@@ -180,28 +180,72 @@ func newSequencerNtsc(parent references.IComponent, factory references.IComponen
 	return seq
 }
 
+// Setup initializes the Sequencer, preparing it for execution and ensuring all required dependencies are in place.
 func (seq *Sequencer) Setup() error {
 	return nil
 }
 
+// Connect establishes a connection for the Sequencer, returning an error if the connection process fails.
 func (seq *Sequencer) Connect() error {
 	return nil
 }
 
+// EmulationRequired determines if emulation is needed based on the Sequencer's state, returning a boolean value.
 func (seq *Sequencer) EmulationRequired() bool {
 	return false
 }
 
+// Emulate runs the sequencer emulation process, executing its predefined operations and behaviors in sequence.
 func (seq *Sequencer) Emulate() {
 }
 
+// Internal checks the internal state or logic of the Sequencer and returns a boolean indicating the result.
 func (seq *Sequencer) Internal() bool {
 	return true
 }
 
+// Reset reinitializes the internal state of the Sequencer to its default starting condition.
 func (seq *Sequencer) Reset() {
-	//TODO implement me
-	panic("implement me")
+}
+
+// GetRasterYMax returns the maximum Y-coordinate value of the raster as a uint16.
+func (seq *Sequencer) GetRasterYMax() uint16 {
+	return seq.rasterYMax
+}
+
+// GetWidth returns the width of the Sequencer instance.
+func (seq *Sequencer) GetWidth() int {
+	return seq.width
+}
+
+// GetFirstDmaLine retrieves the first DMA line of the Sequencer.
+func (seq *Sequencer) GetFirstDmaLine() uint16 {
+	return seq.firstDmaLine
+}
+
+// GetLastDmaLine retrieves the last DMA line value stored in the Sequencer instance.
+func (seq *Sequencer) GetLastDmaLine() uint16 {
+	return seq.lastDmaLine
+}
+
+// GetRow24YStart returns the starting Y-coordinate value for row 24.
+func (seq *Sequencer) GetRow24YStart() uint16 {
+	return seq.row24YStart
+}
+
+// GetRow24YStop retrieves the value of the row24YStop property from the Sequencer.
+func (seq *Sequencer) GetRow24YStop() uint16 {
+	return seq.row24YStop
+}
+
+// GetRow25YStart returns the Y-axis starting position for row 25 within the sequencer.
+func (seq *Sequencer) GetRow25YStart() uint16 {
+	return seq.row25YStart
+}
+
+// GetRow25YStop retrieves the value of row25YStop from the Sequencer instance.
+func (seq *Sequencer) GetRow25YStop() uint16 {
+	return seq.row25YStop
 }
 
 // prepare initializes the Sequencer by creating an empty slice of SequencerData pointers to be used for cycle management.
@@ -242,9 +286,9 @@ func (seq *Sequencer) Sequence(vic *VIC) {
 	seq.curr = seq.curr.next
 }
 
-// phaseSprite3DMAPhase1AndInit: This cycle marks the beginning of the horizontal blanking period. The raster line counter (rasterY)
+// phaseSprite3DMAPhase1AndInit: This cycle marks the beginning of the horizontal blanking period. The raster line counter (sequencerRasterY)
 // is checked against the maximum value. If it matches, a V-Blank is scheduled for the next cycle. Otherwise,
-// rasterY is incremented for the new scanline. Sprite 3 DMA for the upcoming line begins if enabled, fetching
+// sequencerRasterY is incremented for the new scanline. Sprite 3 DMA for the upcoming line begins if enabled, fetching
 // the sprite pointer (phi1) and the first byte of sprite data (phi2).
 //
 //go:nosplit
@@ -449,7 +493,7 @@ func (seq *Sequencer) phaseSetupRasterXReset(vic *VIC) {
 
 // phaseSetupVCounterLoad: This is a refresh cycle. The Video Counter (VC) is loaded from the Video Counter Base (VCBASE),
 // pointing to the current character row in screen memory. The Row Counter (RC) is reset to 0 if this is the
-// first scanline of a character row (i.e., rasterY & 7 == 0).
+// first scanline of a character row (i.e., sequencerRasterY & 7 == 0).
 //
 //go:nosplit
 func (seq *Sequencer) phaseSetupVCounterLoad(vic *VIC) {
@@ -492,7 +536,7 @@ func (seq *Sequencer) phaseDisplayFirstFetchAndSpritePipe2(vic *VIC) {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.graphics.TryGraphicsAccess(vic.rasterY)
+	vic.graphics.TryGraphicsAccess(vic.sequencerRasterY)
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.sprites.TryIncrementCounterBase()
 	vic.sprites.CommitIncrementCounterBase()
@@ -506,7 +550,7 @@ func (seq *Sequencer) phaseDisplayFirstFetchAndSpritePipe2(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
-	vic.borders.Column40Update(vic.rasterY, vic.denBit)
+	vic.borders.Column40Update(vic.sequencerRasterY, vic.denBit)
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
@@ -515,7 +559,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.rasterY)
+	vic.graphics.TryGraphicsAccess(vic.sequencerRasterY)
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.TryBALowIfBadLine()
 	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
@@ -527,7 +571,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
-	vic.borders.Column38Update(vic.rasterY, vic.denBit)
+	vic.borders.Column38Update(vic.sequencerRasterY, vic.denBit)
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
@@ -536,7 +580,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.rasterY)
+	vic.graphics.TryGraphicsAccess(vic.sequencerRasterY)
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.TryBALowIfBadLine()
 	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
@@ -558,7 +602,7 @@ func (seq *Sequencer) phaseDisplayMainFetch(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.rasterY)
+	vic.graphics.TryGraphicsAccess(vic.sequencerRasterY)
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.TryBALowIfBadLine()
 	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
@@ -579,10 +623,10 @@ func (seq *Sequencer) phaseDMASetupAndTeardownLastFetch(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.rasterY)
+	vic.graphics.TryGraphicsAccess(vic.sequencerRasterY)
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.sprites.UpdateYExpansion()
-	vic.sprites.UpdateDMA(vic.rasterY)
+	vic.sprites.UpdateDMA(vic.sequencerRasterY)
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.SetBALow()
 	} else {
@@ -606,7 +650,7 @@ func (seq *Sequencer) phaseTeardownIdle(vic *VIC) {
 	}
 	vic.memory.AccessIdle()
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
-	vic.sprites.UpdateDMA(vic.rasterY)
+	vic.sprites.UpdateDMA(vic.sequencerRasterY)
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.SetBALow()
 	}
@@ -640,7 +684,7 @@ func (seq *Sequencer) phaseSprite0DMAPhase1(vic *VIC) {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.sprites.PrepareSpriteFlags(vic.rasterY)
+	vic.sprites.PrepareSpriteFlags(vic.sequencerRasterY)
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.sprites.FetchPhase1(0)
 	}
@@ -729,7 +773,7 @@ func (seq *Sequencer) phaseSprite2DMAPhase1(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseSprite2DMAPhase2AndTeardownFinal(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
-	vic.borders.UpdateVerticalFlipFlop(vic.rasterY, vic.denBit)
+	vic.borders.UpdateVerticalFlipFlop(vic.sequencerRasterY, vic.denBit)
 	if vic.sprites.GetDMAFlag(bitSprite2) != 0 {
 		vic.sprites.FetchPhase2(2)
 	} else {

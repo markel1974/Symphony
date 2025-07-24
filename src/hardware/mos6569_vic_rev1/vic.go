@@ -39,6 +39,28 @@ const (
 
 //https://dustlayer.com/c64-architecture
 
+type ISequencer interface {
+	Setup() error
+
+	Sequence(vic *VIC)
+
+	GetRasterYMax() uint16
+
+	GetWidth() int
+
+	GetRow24YStart() uint16
+
+	GetRow24YStop() uint16
+
+	GetRow25YStart() uint16
+
+	GetRow25YStop() uint16
+
+	GetFirstDmaLine() uint16
+
+	GetLastDmaLine() uint16
+}
+
 // VIC represents a versatile interface controller for managing video output and graphical resources in a system.
 // It encapsulates configurations, graphics components, collision detection, and rendering capabilities for the display.
 type VIC struct {
@@ -49,11 +71,12 @@ type VIC struct {
 	graphics   *GraphicsUnit
 	borders    *BordersUnit
 	memory     *MemoryUnit
+	sequencer  ISequencer
+	label      string
+	reads      [RegisterCount]func() uint8
+	writes     [RegisterCount]func(uint8)
 
-	label     string
-	reads     [RegisterCount]func() uint8
-	writes    [RegisterCount]func(uint8)
-	sequencer *Sequencer
+	sequencerSequence func(vic *VIC)
 
 	socketCycle           func() uint64
 	socketBALow           func(bool)
@@ -62,6 +85,14 @@ type VIC struct {
 	socketIRQClearTrigger func()
 	socketLastCycle       func()
 	socketVBlank          func()
+
+	sequencerRasterY      uint16
+	sequencerRow25YStart  uint16
+	sequencerRow25YStop   uint16
+	sequencerRow24YStart  uint16
+	sequencerRow24YStop   uint16
+	sequencerFirstDmaLine uint16
+	sequencerLastDmaLine  uint16
 
 	cr1    uint8 // VIC register
 	cr2    uint8 // VIC register
@@ -73,8 +104,8 @@ type VIC struct {
 	irqMask   uint8  // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
 	irqRaster uint16 // Interrupt raster line
 
-	rasterX          uint16 // Current raster x position
-	rasterY          uint16 // Current raster line
+	rasterX uint16 // Current raster x position
+
 	lpTriggered      bool   // LightPen was triggered in this frame
 	badLineEnabler   bool   // Bad Lines enabled for this frame
 	badLineCondition bool   // Current line is bad line
@@ -98,7 +129,7 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		irqLatch:         0,
 		irqMask:          0,
 		rasterX:          0,
-		rasterY:          0,
+		sequencerRasterY: 0,
 		lpTriggered:      false,
 		badLineCondition: false,
 		badLineEnabler:   false,
@@ -133,16 +164,23 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.socketVBlank = socket.VBlank
 
 	vic.sequencer = NewSequencer(vic, vic.GetFactory(), vic.label, 0, socket.ScreenFreq(), socket.TotalRaster())
-	vic.rasterY = vic.sequencer.rasterYMax
+	vic.sequencerSequence = vic.sequencer.Sequence
+	vic.sequencerRasterY = vic.sequencer.GetRasterYMax()
+	vic.sequencerRow25YStart = vic.sequencer.GetRow25YStart()
+	vic.sequencerRow25YStop = vic.sequencer.GetRow25YStop()
+	vic.sequencerRow24YStart = vic.sequencer.GetRow24YStart()
+	vic.sequencerRow24YStop = vic.sequencer.GetRow24YStop()
+	vic.sequencerFirstDmaLine = vic.sequencer.GetFirstDmaLine()
+	vic.sequencerLastDmaLine = vic.sequencer.GetLastDmaLine()
 
 	vic.memory = NewMemory(vic, vic.GetFactory(), vic.label, 0, socket.ReadRam, socket.ReadColorRam, socket.ReadCharRom)
-	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic.irqEmit, vic.sequencer.width)
-	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer, vic.sequencer.rasterYMax)
+	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic.irqEmit, vic.sequencer.GetWidth())
+	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer, vic.sequencer.GetRasterYMax())
 	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer)
-	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, displayBuffer, vic.sequencer.width)
+	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, displayBuffer, vic.sequencer.GetWidth())
 
-	vic.borders.SetDYTop(vic.sequencer.row24YStart)
-	vic.borders.SetDYBottom(vic.sequencer.row24YStop)
+	vic.borders.SetDYTop(vic.sequencer.GetRow24YStart())
+	vic.borders.SetDYBottom(vic.sequencer.GetRow24YStop())
 	vic.vBlankNextCycle = false
 	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)
@@ -206,7 +244,7 @@ func (vic *VIC) configChanged() {
 //go:nosplit
 func (vic *VIC) Emulate() {
 	vic.TryAcquireAEC()
-	vic.sequencer.Sequence(vic)
+	vic.sequencerSequence(vic)
 	vic.UpdateRasterX()
 }
 
@@ -217,7 +255,7 @@ func (vic *VIC) EmulationRequired() bool {
 
 // GetRasterY returns the current vertical raster position as a uint16.
 func (vic *VIC) GetRasterY() uint16 {
-	return vic.rasterY
+	return vic.sequencerRasterY
 }
 
 // ResetRasterX sets the rasterX field to its default initial value, typically used to reset position or state.
@@ -290,8 +328,8 @@ func (vic *VIC) badLineUpdate() {
 	// and if the DEN bit has been set for at least one cycle somewhere in raster line $30
 	// So clearing the DEN bit will normally prevent Bad Lines
 
-	if (vic.rasterY >= vic.sequencer.firstDmaLine) && (vic.rasterY <= vic.sequencer.lastDmaLine) {
-		if vic.rasterY == vic.sequencer.firstDmaLine && vic.denBit {
+	if (vic.sequencerRasterY >= vic.sequencerFirstDmaLine) && (vic.sequencerRasterY <= vic.sequencerLastDmaLine) {
+		if vic.sequencerRasterY == vic.sequencerFirstDmaLine && vic.denBit {
 			//If YSCROLL=0, a Bad Line Condition occurs in raster line $30 as soon as the DEN bit
 			vic.badLineEnabler = true
 			if vic.graphics.GetYScroll() == 0 {
@@ -300,7 +338,7 @@ func (vic *VIC) badLineUpdate() {
 			}
 		}
 		if vic.badLineEnabler {
-			vic.badLineCondition = vic.graphics.GetYScroll() == (vic.rasterY & 7)
+			vic.badLineCondition = vic.graphics.GetYScroll() == (vic.sequencerRasterY & 7)
 		}
 	} else {
 		vic.badLineEnabler = false
@@ -318,14 +356,14 @@ func (vic *VIC) LightPenTrigger() {
 	if !vic.lpTriggered {
 		vic.lpTriggered = true
 		vic.lpx = uint8(vic.rasterX >> 1)
-		vic.lpy = uint8(vic.rasterY)
+		vic.lpy = uint8(vic.sequencerRasterY)
 		vic.irqEmit(irqLightPenBit)
 	}
 }
 
 // ResetRasterY resets the VIC's raster Y position and refresh counter, and handles IRQ emission for raster line 0.
 func (vic *VIC) ResetRasterY() {
-	vic.rasterY = 0
+	vic.sequencerRasterY = 0
 	vic.memory.ResetRefreshCounter()
 	vic.lpTriggered = false
 	if vic.irqRaster == 0 {
@@ -333,10 +371,10 @@ func (vic *VIC) ResetRasterY() {
 	}
 }
 
-// IncrementRasterY increments the rasterY field, triggers an IRQ if it matches irqRaster, and updates bad lines.
+// IncrementRasterY increments the sequencerRasterY field, triggers an IRQ if it matches irqRaster, and updates bad lines.
 func (vic *VIC) IncrementRasterY() {
-	vic.rasterY++
-	if vic.rasterY == vic.irqRaster {
+	vic.sequencerRasterY++
+	if vic.sequencerRasterY == vic.irqRaster {
 		vic.irqEmit(irqRasterBit)
 	}
 	vic.badLineUpdate()
@@ -388,7 +426,7 @@ func (vic *VIC) irqSetRasterLow(data uint16) {
 // rasterUpdate updates the VIC raster interrupt value and triggers an interrupt if the raster line matches the new value.
 func (vic *VIC) irqRasterSet(irqRaster uint16) {
 	if irqRaster != vic.irqRaster {
-		if vic.rasterY == irqRaster {
+		if vic.sequencerRasterY == irqRaster {
 			vic.irqEmit(irqRasterBit)
 		}
 		vic.irqRaster = irqRaster
@@ -420,11 +458,11 @@ func (vic *VIC) setCR1(data uint8) {
 	vic.cr1 = data
 	vic.graphics.SetYScroll(uint16(vic.cr1) & 7)
 	if rowSel := (vic.cr1 & 0x8) != 0; rowSel {
-		vic.borders.SetDYTop(vic.sequencer.row25YStart)
-		vic.borders.SetDYBottom(vic.sequencer.row25YStop)
+		vic.borders.SetDYTop(vic.sequencerRow25YStart)
+		vic.borders.SetDYBottom(vic.sequencerRow25YStop)
 	} else {
-		vic.borders.SetDYTop(vic.sequencer.row24YStart)
-		vic.borders.SetDYBottom(vic.sequencer.row24YStop)
+		vic.borders.SetDYTop(vic.sequencerRow24YStart)
+		vic.borders.SetDYBottom(vic.sequencerRow24YStop)
 	}
 	vic.denBit = (vic.cr1 & 0x10) != 0
 	vic.graphics.SetBmm((vic.cr1 & 0x20) != 0)
@@ -472,19 +510,19 @@ func (vic *VIC) createReadRegister() [RegisterCount]func() uint8 {
 	reads[0x0e] = vic.sprites.ReadMXx7
 	reads[0x0f] = vic.sprites.ReadMXy7
 	reads[0x10] = vic.sprites.ReadMX8
-	reads[0x11] = func() uint8 { return uint8((uint16(vic.cr1) & 0x7f) | ((vic.rasterY & 0x100) >> 1)) } // Control register 1
-	reads[0x12] = func() uint8 { return uint8(vic.rasterY) }                                             // Raster counter
-	reads[0x13] = func() uint8 { return vic.lpx }                                                        // Light pen X
-	reads[0x14] = func() uint8 { return vic.lpy }                                                        // Light pen Y
-	reads[0x15] = vic.sprites.ReadMe                                                                     // Sprite enabled
-	reads[0x16] = func() uint8 { return vic.cr2 | 0xc0 }                                                 // Control register 2
-	reads[0x17] = vic.sprites.ReadMYe                                                                    // Sprite Y expansion
-	reads[0x18] = vic.memory.GetVABase                                                                   // MemoryUnit pointers
-	reads[0x19] = func() uint8 { return vic.irqLatch | 0x70 }                                            // IRQ latch
-	reads[0x1a] = func() uint8 { return vic.irqMask | 0xf0 }                                             // IRQ mask
-	reads[0x1b] = vic.sprites.ReadMDp                                                                    // Sprite data priority
-	reads[0x1c] = vic.sprites.ReadMMc                                                                    // Sprite multicolor
-	reads[0x1d] = vic.sprites.ReadMXe                                                                    // Sprite X expansion
+	reads[0x11] = func() uint8 { return uint8((uint16(vic.cr1) & 0x7f) | ((vic.sequencerRasterY & 0x100) >> 1)) } // Control register 1
+	reads[0x12] = func() uint8 { return uint8(vic.sequencerRasterY) }                                             // Raster counter
+	reads[0x13] = func() uint8 { return vic.lpx }                                                                 // Light pen X
+	reads[0x14] = func() uint8 { return vic.lpy }                                                                 // Light pen Y
+	reads[0x15] = vic.sprites.ReadMe                                                                              // Sprite enabled
+	reads[0x16] = func() uint8 { return vic.cr2 | 0xc0 }                                                          // Control register 2
+	reads[0x17] = vic.sprites.ReadMYe                                                                             // Sprite Y expansion
+	reads[0x18] = vic.memory.GetVABase                                                                            // MemoryUnit pointers
+	reads[0x19] = func() uint8 { return vic.irqLatch | 0x70 }                                                     // IRQ latch
+	reads[0x1a] = func() uint8 { return vic.irqMask | 0xf0 }                                                      // IRQ mask
+	reads[0x1b] = vic.sprites.ReadMDp                                                                             // Sprite data priority
+	reads[0x1c] = vic.sprites.ReadMMc                                                                             // Sprite multicolor
+	reads[0x1d] = vic.sprites.ReadMXe                                                                             // Sprite X expansion
 	reads[0x1e] = vic.collisions.RetrieveSprite2Sprite
 	reads[0x1f] = vic.collisions.RetrieveSprite2Background
 	reads[0x20] = vic.borders.ReadEc
