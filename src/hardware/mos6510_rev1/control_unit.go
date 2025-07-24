@@ -12,7 +12,7 @@ type ControlUnit struct {
 	opReverseContainer map[string]reflect.Value
 }
 
-func NewExecutor(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *ControlUnit {
+func NewControlUnit(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *ControlUnit {
 	er := &ControlUnit{
 		BaseComponent:      component.NewBaseComponent(),
 		opContainer:        make(map[reflect.Value]string),

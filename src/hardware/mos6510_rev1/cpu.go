@@ -59,7 +59,7 @@ func NewCPU(parent references.IComponent, factory references.IComponentFactory, 
 func (cpu *CPU) Setup() error {
 	cpu.interrupts = NewInterrupts(cpu, cpu.GetFactory(), cpu.label, 0)
 	cpu.bus = NewBus(cpu, cpu.GetFactory(), cpu.label, 0)
-	cpu.executor = NewExecutor(cpu, cpu.GetFactory(), cpu.label, 0)
+	cpu.executor = NewControlUnit(cpu, cpu.GetFactory(), cpu.label, 0)
 	if err := cpu.interrupts.Setup(); err != nil {
 		return err
 	}
