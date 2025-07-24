@@ -1,130 +1,65 @@
 # Package mos6510
 
-This package (`src/components/mos6510`) provides an emulation of the MOS 6510 microprocessor, a variant of the 6502, used in the Commodore 64 home computer.  The emulator is designed for accuracy, aiming for cycle-accurate emulation where feasible. It's used as the CPU component within the `symphony` Commodore 64 emulator.
+This package (`src/components/mos6510`) provides an emulation of the **MOS 6510** microprocessor, a variant of the 6502 used in the Commodore 64. The emulator is designed for high fidelity, aiming for cycle-accurate emulation.
 
-**Note:** This emulator is part of a larger project (`symphony`) and is not intended for standalone use. It relies on other components of `symphony` (specifically the `memory.Memory` interface and `IBanks`, `IPic` interfaces) for its operation.
+**Note:** This emulator is part of a larger project and is not intended for standalone use. It relies on other interfaces from the project (such as `IMos6510Banks` and `IQuartz`) for its operation.
 
-## Architecture
+---
 
-The 6510 emulation is based on a micro-operation approach.  Each 6502/6510 instruction is broken down into a sequence of smaller operations, each corresponding (roughly) to a CPU clock cycle. This allows for a high degree of timing accuracy, which is essential for accurate emulation of the VIC-II and SID chips.
+## Architecture and Advanced Design
 
-**Key Components:**
+The emulator is distinguished by two key architectural choices that ensure high performance and strong modularity.
 
-*   **`cpu.go`:** Contains the core `CPU` struct and its methods. This includes:
-    *   `CPU` struct: Represents the state of the 6510 CPU (registers, flags, program counter, stack pointer, etc.).
-    *   `Emulate()`: The main execution loop. This function repeatedly fetches and executes instructions until `c.stop` is true.
-    *   `read()`: Reads a byte from the memory.
-    *   `Reset()`: Resets the cpu to initial state.
-    *   `popFlags()`: Reads the status register from memory.
-    *   `pushFlags()`: Create the status register to write to the memory.
-    * `branch()`: Handles the logic for branching.
-    * `doADC()`: Implement the ADC instruction.
-    * `doSBC()`: Implement the SBC instruction.
-    *   Helper functions for flag manipulation (e.g., `SetFlagNZ`).
-    *   Helper functions for address calculation, different addressing mode.
+### 1. Near-Zero Branch Execution via a State Machine
 
-*   **`instructions.go`:** Contains *declarations* of all the functions that implement the individual 6510 instructions.  These functions are grouped by category in separate files (see below).
+Unlike a traditional approach based on a large `switch` statement for opcode decoding, this implementation uses a **finite state machine** based on function pointers.
 
-*   **`inst_*.go`:**  These files contain the *implementations* of the 6502/6510 instructions, grouped by category:
-    *   `inst_load_store.go`:  Load/Store instructions (LDA, STA, LDX, STX, LDY, STY, etc.).
-    *   `inst_arithmetic.go`: Arithmetic instructions (ADC, SBC, INC, DEC, etc.).
-    *   `inst_logic.go`: Logical instructions (AND, ORA, EOR, BIT, ecc.).
-    *   `inst_shift_rotate.go`: Shift and rotate instructions (ASL, LSR, ROL, ROR, ecc.).
-    *   `inst_branch.go`: Branch instructions (BCC, BCS, BEQ, BNE, JMP, JSR, RTS, etc.).
-    *   `inst_flag.go`: Flag manipulation instructions (CLC, SEC, CLI, SEI, CLD, SED, CLV).
-    *   `inst_stack.go`: Stack instructions (PHA, PLA, PHP, PLP, TSX, TXS).
-    *    `inst_interrupt.go`: Interrupt instructions
-    *   `inst_transfer.go`: Register transfer instructions (TAX, TXA, TAY, TYA, etc.).
-    *  `inst_control.go`: Other instructions.
-    *   `inst_undocumented.go`: Undocumented (illegal) opcodes.
+The core of the emulation loop is a single function pointer, `cpu.next`, which points directly to the next micro-operation to be executed. Each 6510 instruction is broken down into a sequence of these micro-operations, each roughly corresponding to a single CPU clock cycle.
 
-*   **`tables.go`:** Contains the dispatch tables (`opcodeTable` and `addressingModeTable`) that map opcodes to the corresponding addressing mode and instruction execution functions.
+This approach, sometimes called *threaded code*, offers significant advantages:
+* **High Performance**: It nearly eliminates branching in the emulator's critical *hot-path*, drastically reducing `branch misprediction` on the host CPU and improving instruction cache usage.
+* **Cycle Accuracy**: It allows for very fine-grained control over timing, which is essential for correctly emulating synchronization with complex chips like the VIC-II and SID.
 
-*   **`stack.go`:**  Provides functions for managing the 6510 stack.
+### 2. Component-Based Architecture with a Pluggable `ControlUnit`
 
-*   **`utils.go`:** Contains utility functions.
+The design is strongly decoupled and based on components with well-defined responsibilities:
+* **`CPU`**: The main orchestrator that maintains register state but delegates complex operations.
+* **`Bus`**: Manages all memory access logic, abstracting away the complexities of the underlying hardware.
+* **`Interrupts`**: Encapsulates the logic for handling IRQ, NMI, and RESET signals.
+* **`ControlUnit`**: Acts as the "catalog" for all micro-operations and addressing modes.
 
-**Execution Flow:**
+The `CPU` does not depend on a concrete implementation of the `ControlUnit` but interacts with it solely through the `IControlUnit` interface. This makes the **`ControlUnit` completely pluggable**, allowing one to:
+* Swap out the entire instruction set to emulate different chip revisions.
+* Inject a debug `ControlUnit` for tracing.
+* Mock the component during unit tests to isolate CPU behavior.
 
-The `Emulate` method in `cpu.go` is the main execution loop.  It repeatedly:
+---
 
-1.  Executes the function `next`.
-2. The function read the `opcodeTable` for the next instruction.
-3. The function read the `addressingModeTable` for the next addressing mode.
-4. Execute the instruction.
-5. Handles interrupts.
+## Execution Flow
 
-**Addressing Modes:**
+The `Emulate()` method in `cpu.go` is the entry point for the execution cycle. On each call, it simply executes the function pointed to by `cpu.next`.
 
-The 6510 supports various addressing modes.  The functions to handle address calculation are mostly located within `cpu.go`.
+The flow is as follows:
+1.  The current micro-operation is executed (e.g., `InstOpINI`).
+2.  This function reads the opcode, determines the correct sequence of micro-operations for the addressing mode and the instruction itself, and sets `cpu.next` to the next function in the chain.
+3.  The cycle repeats.
+4.  Interrupts are handled cleanly within this flow, checked only at the beginning of a new instruction cycle (`InstOpINI`).
 
-**Interrupts:**
+---
 
-The 6510 supports three types of interrupts:
+## Supported Instructions
 
-*   **NMI (Non-Maskable Interrupt):**  A high-priority interrupt that cannot be ignored by the CPU.
-*   **IRQ (Maskable Interrupt):**  A lower-priority interrupt that can be enabled or disabled by the CPU.
-*   **Reset:**  Resets the CPU to its initial state.
+All instructions are implemented, both **documented** and **undocumented** (illegal), including: NOP, LAX, SAX, SLO, RLA, SRE, RRA, DCP, ISB, ANC, ASR, ARR, ANE, LXA, SBX, LAS, SHS, SHY, SHX, SHA, and JAM.
 
-The `pic.go` and the methods in `cpu.go` handle interrupt generation and processing. The `IPic` interface is used to communicate with a separate interrupt controller.
+The organization of `inst_*.go` files by category (arithmetic, logic, branch, etc.) keeps the code organized and maintainable.
 
-**Status Register (Flags):**
+---
 
-The 6510 has a status register (SR) that contains several flags that reflect the state of the CPU and the result of the last operation.
+## Limitations and Future Development
+* **Lack of Unit Tests:** The package needs a comprehensive test suite to ensure the correctness of every instruction and addressing mode.
+* **Incomplete Documentation:** The code documentation can be further improved.
 
-*   **N (Negative):** Set if the result of the last operation was negative (bit 7 set).
-*   **V (Overflow):** Set if the last operation resulted in a signed overflow.
-*   **- (Unused):** This bit is always 1.
-* **B (Break):**
-*   **D (Decimal Mode):**  Used for BCD arithmetic (not fully supported in the original 6502, and often has different, or no, behavior on the 6510).
-*   **I (Interrupt Disable):**  Set to disable IRQ interrupts.
-*   **Z (Zero):** Set if the result of the last operation was zero.
-*   **C (Carry):** Set if the last operation resulted in a carry (addition) or borrow (subtraction).
-
-**Supported Instructions:**
-
-All the instructions are implemented, the documentated and the not documentated instructions.
-
-**Undocumented Instructions:**
-
-The instructions are implemented: NOP, LAX, SAX, SLO, RLA, SRE, RRA, DCP, ISB, ANC, ASR, ARR, ANE, LXA, SBX, LAS, SHS, SHY, SHX, SHA and JAM.
-
-## Usage
-
-[**TODO:** Provide examples of how to use the `mos6510` package.  This should include:]
-
-*   **Creating a `CPU` instance:**
-
-    ```go
-    // Assuming you have an implementation of memory.Memory called `myMemory`
-    cpu := mos6510.NewCPU(myMemory)
-    ```
-
-*   **Loading code into memory:**  (using the `memory.Memory` interface).
-
-*   **Setting the program counter (PC):** (using the `SetPC` method).
-
-*   **Running the emulator:**  (using the `Run` method).
-
-*   **Accessing registers:**  (using the `GetA`, `GetX`, `GetY`, `GetPC`, `GetSP` methods).
-
-*   **Reading and writing memory:** (using the `Read` and `Write` methods).
-* **Handling interrupts:**
-
-## Dependencies
-* `github.com/markel1974/c64emu/src/memory`
-* `github.com/markel1974/c64emu/src/components/quartz`
-* `github.com/markel1974/c64emu/src/bits`
-* `github.com/markel1974/c64emu/src/c64/banks`
-
-## Limitations
-
-*   **No Unit Tests:** This package currently lacks unit tests. This means that the correctness of the emulation cannot be guaranteed.
-*   **Incomplete Documentation:**  The documentation is incomplete.
-
-## Contributing
-
-[**TODO:** If you accept contributions, explain how to do it.]
+---
 
 ## License
 

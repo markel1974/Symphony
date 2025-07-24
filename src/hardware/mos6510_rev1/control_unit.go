@@ -6,12 +6,15 @@ import (
 	"reflect"
 )
 
+// ControlUnit represents a central unit for managing operations and their mappings within a system or application.
 type ControlUnit struct {
 	*component.BaseComponent
 	opContainer        map[reflect.Value]string
 	opReverseContainer map[string]reflect.Value
 }
 
+// NewControlUnit creates and initializes a new instance of ControlUnit with the specified parent, factory, label, and instance number.
+// It sets up internal operation mappings for the ControlUnit and prepares it for handling instructions.
 func NewControlUnit(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *ControlUnit {
 	er := &ControlUnit{
 		BaseComponent:      component.NewBaseComponent(),
@@ -19,6 +22,8 @@ func NewControlUnit(parent references.IComponent, factory references.IComponentF
 		opReverseContainer: make(map[string]reflect.Value),
 	}
 
+	er.addOpId(er.InstOpINI, "instOpINI")
+	er.addOpId(er.InstOpHalt, "instOpHalt")
 	er.addOpId(er.InstOpPHA, "instOpPHA")
 	er.addOpId(er.InstOpPHA1, "instOpPHA1")
 	er.addOpId(er.InstOpPLA, "instOpPLA")
@@ -221,29 +226,70 @@ func NewControlUnit(parent references.IComponent, factory references.IComponentF
 	return er
 }
 
+// Setup initializes the ControlUnit, preparing it for operation and ensuring all necessary configurations are applied.
 func (er *ControlUnit) Setup() error {
 	return nil
 }
 
+// Connect establishes a connection to the control unit and returns an error if the operation fails.
 func (er *ControlUnit) Connect() error {
 	return nil
 }
 
+// EmulationRequired checks if the control unit requires emulation, returning true if emulation is needed, otherwise false.
 func (er *ControlUnit) EmulationRequired() bool {
 	return false
 }
 
+// Emulate performs the core emulation process for the ControlUnit, simulating its behavior based on defined parameters.
 func (er *ControlUnit) Emulate() {
 }
 
+// Internal returns a boolean indicating an internal state or status within the ControlUnit.
 func (er *ControlUnit) Internal() bool {
 	return true
 }
 
+// Reset reinitializes the ControlUnit, clearing its state and preparing it for a new operation cycle.
 func (er *ControlUnit) Reset() {
 }
 
-// CreateModeTable initializes and returns a slice of instruction mode functions for a CPU.
+// GetInstOpINI returns a function that represents the InstOpINI operation associated with the ControlUnit instance.
+func (er *ControlUnit) GetInstOpINI() func(cpu *CPU) {
+	return er.InstOpINI
+}
+
+// GetInstOpHalt returns a function that represents the halt operation for the CPU, as defined in the control unit.
+func (er *ControlUnit) GetInstOpHalt() func(cpu *CPU) {
+	return er.InstOpHalt
+}
+
+// GetInstOpNMI returns a function that represents the InstOpNMI operation handler for the CPU.
+func (er *ControlUnit) GetInstOpNMI() func(cpu *CPU) {
+	return er.InstOpNMI
+}
+
+// GetInstOpIRQ returns a function that handles the IRQ operation of the Instruction Unit for the given CPU.
+func (er *ControlUnit) GetInstOpIRQ() func(cpu *CPU) {
+	return er.InstOpIRQ
+}
+
+// GetInstOpBRAbp returns a function pointer to the InstOpBRAbp method of the ControlUnit instance.
+func (er *ControlUnit) GetInstOpBRAbp() func(cpu *CPU) {
+	return er.InstOpBRAbp
+}
+
+// GetInstOpBRAfp returns a function that represents the branch operation for floating-point instructions.
+func (er *ControlUnit) GetInstOpBRAfp() func(cpu *CPU) {
+	return er.InstOpBRAfp
+}
+
+// GetInstOpBRAnp returns a function that handles the instruction operation for BRAnp in the CPU.
+func (er *ControlUnit) GetInstOpBRAnp() func(cpu *CPU) {
+	return er.InstOpBRAnp
+}
+
+// CreateModeTable initializes and returns a lookup table of functions mapped to CPU instructions.
 func (er *ControlUnit) CreateModeTable() []func(*CPU) {
 	modeTable := []func(*CPU){
 		er.InstOpBRK, er.InstApINDx, er.InstOpJAM, er.InstMpINDx, er.InstApZER, er.InstApZER, er.InstMpZER, er.InstMpZER, // 00
@@ -282,7 +328,7 @@ func (er *ControlUnit) CreateModeTable() []func(*CPU) {
 	return modeTable
 }
 
-// CreateOpTable initializes and returns an operation table containing a list of CPU instruction functions.
+// CreateOpTable initializes and returns an operation table as a slice of functions for CPU instruction execution.
 func (er *ControlUnit) CreateOpTable() []func(cpu *CPU) {
 	opTable := []func(*CPU){
 		er.InstOpJAM, er.InstOpORA, er.InstOpJAM, er.InstOpSLO, er.InstOaNOP, er.InstOpORA, er.InstOpASL, er.InstOpSLO, // 00
@@ -321,12 +367,14 @@ func (er *ControlUnit) CreateOpTable() []func(cpu *CPU) {
 	return opTable
 }
 
+// addOpId associates a function of type func(cpu *CPU) with a string identifier for reverse mapping.
 func (er *ControlUnit) addOpId(v func(cpu *CPU), id string) {
 	r := reflect.ValueOf(v)
 	er.opContainer[r] = id
 	er.opReverseContainer[id] = r
 }
 
+// GetOpId retrieves the operation ID and a boolean indicating its existence for a given CPU operation function.
 func (er *ControlUnit) GetOpId(v func(cpu *CPU)) (string, bool) {
 	if v == nil {
 		return "", false
@@ -339,6 +387,7 @@ func (er *ControlUnit) GetOpId(v func(cpu *CPU)) (string, bool) {
 	return ret, true
 }
 
+// GetOpFn retrieves an operation function associated with the given string key and returns it along with a success flag.
 func (er *ControlUnit) GetOpFn(v string) (func(cpu *CPU), bool) {
 	r, ok := er.opReverseContainer[v]
 	if !ok {

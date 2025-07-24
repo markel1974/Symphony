@@ -6,6 +6,45 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+// IControlUnit defines the interface for managing and configuring operations and modes within a CPU control unit.
+// Setup initializes the control unit and prepares it for operation.
+// CreateOpTable generates the operational function table for the control unit.
+// CreateModeTable generates the mode-handling function table for the control unit.
+// GetOpFn retrieves the operation function associated with a given string identifier.
+// GetOpId returns the string identifier associated with a given operation function.
+// GetInstOpINI provides the operation function for the "INI" instruction.
+// GetInstOpHalt provides the operation function for the "Halt" instruction.
+// GetInstOpNMI provides the operation function for the "NMI" (Non-Maskable Interrupt) instruction.
+// GetInstOpIRQ provides the operation function for the "IRQ" (Interrupt Request) instruction.
+// GetInstOpBRAbp provides the operation function for a branch instruction on breakpoint.
+// GetInstOpBRAfp provides the operation function for a branch instruction on function pointer.
+// GetInstOpBRAnp provides the operation function for a branch instruction on no pointer.
+type IControlUnit interface {
+	Setup() error
+
+	CreateOpTable() []func(cpu *CPU)
+
+	CreateModeTable() []func(cpu *CPU)
+
+	GetOpFn(v string) (func(cpu *CPU), bool)
+
+	GetOpId(func(cpu *CPU)) (string, bool)
+
+	GetInstOpINI() func(cpu *CPU)
+
+	GetInstOpHalt() func(cpu *CPU)
+
+	GetInstOpNMI() func(cpu *CPU)
+
+	GetInstOpIRQ() func(cpu *CPU)
+
+	GetInstOpBRAbp() func(cpu *CPU)
+
+	GetInstOpBRAfp() func(cpu *CPU)
+
+	GetInstOpBRAnp() func(cpu *CPU)
+}
+
 //https://web.archive.org/web/20221112220344if_/http://archive.6502.org/datasheets/synertek_programming_manual.pdf
 //https://dustlayer.com/c64-architecture
 //https://www.zimmers.net/cbmpics/cbm/c64/vic-ii.txt
@@ -41,8 +80,16 @@ type CPU struct {
 	opTable        []func(*CPU)
 	interrupts     *Interrupts
 	bus            *Bus
-	control        *ControlUnit
+	control        IControlUnit
 	label          string
+
+	instOpINI   func(cpu *CPU)
+	instOpHalt  func(cpu *CPU)
+	instOpNMI   func(cpu *CPU)
+	instOpIRQ   func(cpu *CPU)
+	instOpBRAbp func(cpu *CPU)
+	instOpBRAfp func(cpu *CPU)
+	instOpBRAnp func(cpu *CPU)
 }
 
 // NewCPU initializes and returns a new CPU instance with the provided id.
@@ -71,6 +118,14 @@ func (cpu *CPU) Setup() error {
 	}
 	cpu.opTable = cpu.control.CreateOpTable()
 	cpu.modeTable = cpu.control.CreateModeTable()
+
+	cpu.instOpINI = cpu.control.GetInstOpINI()
+	cpu.instOpHalt = cpu.control.GetInstOpHalt()
+	cpu.instOpNMI = cpu.control.GetInstOpNMI()
+	cpu.instOpIRQ = cpu.control.GetInstOpIRQ()
+	cpu.instOpBRAbp = cpu.control.GetInstOpBRAbp()
+	cpu.instOpBRAfp = cpu.control.GetInstOpBRAfp()
+	cpu.instOpBRAnp = cpu.control.GetInstOpBRAnp()
 	return nil
 }
 
@@ -101,7 +156,7 @@ func (cpu *CPU) Reset() {
 	cpu.bus.Reset()
 	cpu.pc = uint16(cpu.bus.ReadDirect(0xfffc)) | (uint16(cpu.bus.ReadDirect(0xfffd)) << 8) // Read reset vector
 	cpu.opFlags = 0
-	cpu.next = cpu.control.InstOpINI
+	cpu.next = cpu.instOpINI
 }
 
 // SetOverflowBranch sets the function used to handle conditional overflow branching for the CPU.
@@ -160,7 +215,7 @@ func (cpu *CPU) SetRDYLow(rdyLow bool) {
 func (cpu *CPU) setModeHalt() {
 	if cpu.savedNext == nil {
 		cpu.savedNext = cpu.next
-		cpu.next = cpu.control.InstOpHalt
+		cpu.next = cpu.instOpHalt
 	}
 }
 
@@ -178,13 +233,13 @@ func (cpu *CPU) EmulationRequired() bool {
 
 //go:nosplit
 func (cpu *CPU) NMI() {
-	cpu.next = cpu.control.InstOpNMI
+	cpu.next = cpu.instOpNMI
 	cpu.next(cpu)
 }
 
 //go:nosplit
 func (cpu *CPU) IRQ() {
-	cpu.next = cpu.control.InstOpIRQ
+	cpu.next = cpu.instOpIRQ
 	cpu.next(cpu)
 }
 
@@ -231,11 +286,11 @@ func (cpu *CPU) computeBranch(data uint8) func(*CPU) {
 	cpu.ar = cpu.pc + uint16(int8(data))
 	if (cpu.ar >> 8) != (cpu.pc >> 8) {
 		if (data & 0x80) != 0 {
-			return cpu.control.InstOpBRAbp
+			return cpu.instOpBRAbp
 		}
-		return cpu.control.InstOpBRAfp
+		return cpu.instOpBRAfp
 	}
-	return cpu.control.InstOpBRAnp
+	return cpu.instOpBRAnp
 }
 
 // doADC performs the add with Carry (ADC) operation using the given operand and CPU state.
