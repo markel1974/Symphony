@@ -33,6 +33,7 @@ type Sequencer struct {
 	borderFirstCycle   uint8
 	data               []*SequencerData
 	curr               *SequencerData
+	spriteToggle       bool
 }
 
 // NewSequencer creates a Sequencer based on the total number of raster lines, selecting PAL or NTSC timing accordingly.
@@ -68,16 +69,16 @@ func newSequencerPal() *Sequencer {
 
 	seq.prepare()
 
-	seq.add(seq.phaseInitAndSprite3DMAPtrData0)
-	seq.add(seq.phaseVBlankAndSprite3DMAData1Data2)
-	seq.add(seq.phaseSprite4DMAPtrData0)
-	seq.add(seq.phaseSprite4DMAData1Data2)
-	seq.add(seq.phaseSprite5DMAPtrData0)
-	seq.add(seq.phaseSprite5DMAData1Data2)
-	seq.add(seq.phaseSprite6DMAPtrData0)
-	seq.add(seq.phaseSprite6DMAData1Data2)
-	seq.add(seq.phaseSprite7DMAPtrData0)
-	seq.add(seq.phaseSprite7DMAData1Data2)
+	seq.add(seq.phaseSprite3DMAPhase1AndInit)
+	seq.add(seq.phaseSprite3DMAPhase2AndVBlank)
+	seq.add(seq.phaseSprite4DMAPhase1)
+	seq.add(seq.phaseSprite4DMAPhase2)
+	seq.add(seq.phaseSprite5DMAPhase1)
+	seq.add(seq.phaseSprite5DMAPhase2)
+	seq.add(seq.phaseSprite6DMAPhase1)
+	seq.add(seq.phaseSprite6DMAPhase2)
+	seq.add(seq.phaseSprite7DMAPhase1)
+	seq.add(seq.phaseSprite7DMAPhase2)
 	seq.add(seq.phaseRefresh)
 	seq.add(seq.phaseSetupBadLineCheck)
 	seq.add(seq.phaseSetupRasterXReset)
@@ -89,15 +90,15 @@ func newSequencerPal() *Sequencer {
 	for i := 0; i < drawLoopCycles; i++ {
 		seq.add(seq.phaseDisplayMainFetch)
 	}
-	seq.add(seq.phaseTeardownLastFetchAndDMASetup)
+	seq.add(seq.phaseDMASetupAndTeardownLastFetch)
 	seq.add(seq.phaseTeardownIdle)
 	seq.add(seq.phaseTeardownCommitSpriteFlags)
-	seq.add(seq.phaseSprite0DMAPtrData0)
-	seq.add(seq.phaseSprite0DMAData1Data2)
-	seq.add(seq.phaseSprite1DMAPtrData0)
-	seq.add(seq.phaseSprite1DMAData1Data2)
-	seq.add(seq.phaseSprite2DMAPtrData0)
-	seq.add(seq.phaseTeardownFinalSprite2DMA)
+	seq.add(seq.phaseSprite0DMAPhase1)
+	seq.add(seq.phaseSprite0DMAPhase2)
+	seq.add(seq.phaseSprite1DMAPhase1)
+	seq.add(seq.phaseSprite1DMAPhase2)
+	seq.add(seq.phaseSprite2DMAPhase1)
+	seq.add(seq.phaseSprite2DMAPhase2AndTeardownFinal)
 
 	seq.finalize()
 
@@ -130,16 +131,16 @@ func newSequencerNtsc() *Sequencer {
 
 	seq.prepare()
 
-	seq.add(seq.phaseInitAndSprite3DMAPtrData0)
-	seq.add(seq.phaseVBlankAndSprite3DMAData1Data2)
-	seq.add(seq.phaseSprite4DMAPtrData0)
-	seq.add(seq.phaseSprite4DMAData1Data2)
-	seq.add(seq.phaseSprite5DMAPtrData0)
-	seq.add(seq.phaseSprite5DMAData1Data2)
-	seq.add(seq.phaseSprite6DMAPtrData0)
-	seq.add(seq.phaseSprite6DMAData1Data2)
-	seq.add(seq.phaseSprite7DMAPtrData0)
-	seq.add(seq.phaseSprite7DMAData1Data2)
+	seq.add(seq.phaseSprite3DMAPhase1AndInit)
+	seq.add(seq.phaseSprite3DMAPhase2AndVBlank)
+	seq.add(seq.phaseSprite4DMAPhase1)
+	seq.add(seq.phaseSprite4DMAPhase2)
+	seq.add(seq.phaseSprite5DMAPhase1)
+	seq.add(seq.phaseSprite5DMAPhase2)
+	seq.add(seq.phaseSprite6DMAPhase1)
+	seq.add(seq.phaseSprite6DMAPhase2)
+	seq.add(seq.phaseSprite7DMAPhase1)
+	seq.add(seq.phaseSprite7DMAPhase2)
 	seq.add(seq.phaseRefresh)
 	seq.add(seq.phaseSetupBadLineCheck)
 	seq.add(seq.phaseSetupRasterXReset)
@@ -151,18 +152,18 @@ func newSequencerNtsc() *Sequencer {
 	for i := 0; i < drawLoopCycles; i++ {
 		seq.add(seq.phaseDisplayMainFetch)
 	}
-	seq.add(seq.phaseTeardownLastFetchAndDMASetup)
+	seq.add(seq.phaseDMASetupAndTeardownLastFetch)
 	// The two extra NTSC cycles are refresh cycles.
 	seq.add(seq.phaseRefresh)
 	seq.add(seq.phaseRefresh)
 	seq.add(seq.phaseTeardownIdle)
 	seq.add(seq.phaseTeardownCommitSpriteFlags)
-	seq.add(seq.phaseSprite0DMAPtrData0)
-	seq.add(seq.phaseSprite0DMAData1Data2)
-	seq.add(seq.phaseSprite1DMAPtrData0)
-	seq.add(seq.phaseSprite1DMAData1Data2)
-	seq.add(seq.phaseSprite2DMAPtrData0)
-	seq.add(seq.phaseTeardownFinalSprite2DMA)
+	seq.add(seq.phaseSprite0DMAPhase1)
+	seq.add(seq.phaseSprite0DMAPhase2)
+	seq.add(seq.phaseSprite1DMAPhase1)
+	seq.add(seq.phaseSprite1DMAPhase2)
+	seq.add(seq.phaseSprite2DMAPhase1)
+	seq.add(seq.phaseSprite2DMAPhase2AndTeardownFinal)
 
 	seq.finalize()
 
@@ -207,13 +208,16 @@ func (seq *Sequencer) Sequence(vic *VIC) {
 	seq.curr = seq.curr.next
 }
 
-// phaseInitAndSprite3DMAPtrData0: This cycle marks the beginning of the horizontal blanking period. The raster line counter (rasterY)
+// phaseSprite3DMAPhase1AndInit: This cycle marks the beginning of the horizontal blanking period. The raster line counter (rasterY)
 // is checked against the maximum value. If it matches, a V-Blank is scheduled for the next cycle. Otherwise,
 // rasterY is incremented for the new scanline. Sprite 3 DMA for the upcoming line begins if enabled, fetching
 // the sprite pointer (phi1) and the first byte of sprite data (phi2).
 //
 //go:nosplit
-func (seq *Sequencer) phaseInitAndSprite3DMAPtrData0(vic *VIC) {
+func (seq *Sequencer) phaseSprite3DMAPhase1AndInit(vic *VIC) {
+	//vic.sprites.Prepare2()
+	seq.spriteToggle = !seq.spriteToggle
+
 	if rasterY := vic.GetRasterY(); rasterY == seq.rasterYMax {
 		vic.vBlankNextCycle = true
 	} else {
@@ -223,21 +227,20 @@ func (seq *Sequencer) phaseInitAndSprite3DMAPtrData0(vic *VIC) {
 	vic.borders.ColumnInitialize()
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite3) != 0 {
-		vic.sprites.FetchPtr(3)   //phi1
-		vic.sprites.FetchData0(3) //phi2
+		vic.sprites.FetchPhase1(seq.spriteToggle, 3)
 	}
 	if vic.sprites.GetDMAFlag(bitSprite3|bitSprite4) == 0 {
 		vic.ClearBALow()
 	}
 }
 
-// phaseVBlankAndSprite3DMAData1Data2: The V-Blank is triggered if scheduled in the previous cycle, resetting raster counters and firing
+// phaseSprite3DMAPhase2AndVBlank: The V-Blank is triggered if scheduled in the previous cycle, resetting raster counters and firing
 // the V-Blank interrupt. Internal pointers for graphics, sprites, and borders are reset. Sprite 3 DMA
 // continues, fetching the second and third bytes of sprite data. The BA (Bus-Available) signal is asserted
 // (pulled low) to prepare for sprite 5 DMA if it is enabled for the upcoming line.
 //
 //go:nosplit
-func (seq *Sequencer) phaseVBlankAndSprite3DMAData1Data2(vic *VIC) {
+func (seq *Sequencer) phaseSprite3DMAPhase2AndVBlank(vic *VIC) {
 	if vic.vBlankNextCycle {
 		vic.vBlankNextCycle = false
 		vic.lineStart = 0
@@ -251,8 +254,9 @@ func (seq *Sequencer) phaseVBlankAndSprite3DMAData1Data2(vic *VIC) {
 	vic.borders.SetOffset(vic.lineStart)
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite3) != 0 {
-		vic.sprites.FetchData1(3) //phi1
-		vic.sprites.FetchData2(3) //phi2
+		vic.sprites.FetchPhase2(seq.spriteToggle, 3)
+		//vic.sprites.FetchData1(seq.spriteOdd, 3) //phi1
+		//vic.sprites.FetchData2(seq.spriteOdd, 3) //phi2
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -261,30 +265,30 @@ func (seq *Sequencer) phaseVBlankAndSprite3DMAData1Data2(vic *VIC) {
 	}
 }
 
-// phaseSprite4DMAPtrData0: Sprite 4 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// phaseSprite4DMAPhase1: Sprite 4 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
 // managed based on the DMA status of sprites 4 and 5.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite4DMAPtrData0(vic *VIC) {
+func (seq *Sequencer) phaseSprite4DMAPhase1(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite4) != 0 {
-		vic.sprites.FetchPtr(4)   //phi1
-		vic.sprites.FetchData0(4) //phi2
+		vic.sprites.FetchPhase1(seq.spriteToggle, 4)
 	}
 	if vic.sprites.GetDMAFlag(bitSprite4|bitSprite5) == 0 {
 		vic.ClearBALow()
 	}
 }
 
-// phaseSprite4DMAData1Data2: Sprite 4 DMA continues, fetching its second and third data bytes. The BA signal is asserted
+// phaseSprite4DMAPhase2: Sprite 4 DMA continues, fetching its second and third data bytes. The BA signal is asserted
 // to prepare for sprite 6 DMA if it is enabled.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite4DMAData1Data2(vic *VIC) {
+func (seq *Sequencer) phaseSprite4DMAPhase2(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite4) != 0 {
-		vic.sprites.FetchData1(4) //phi1
-		vic.sprites.FetchData2(4) //phi2
+		vic.sprites.FetchPhase2(seq.spriteToggle, 4)
+		//vic.sprites.FetchData1(seq.spriteOdd, 4) //phi1
+		//vic.sprites.FetchData2(seq.spriteOdd, 4) //phi2
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -293,30 +297,28 @@ func (seq *Sequencer) phaseSprite4DMAData1Data2(vic *VIC) {
 	}
 }
 
-// phaseSprite5DMAPtrData0: Sprite 5 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// phaseSprite5DMAPhase1: Sprite 5 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
 // managed based on the DMA status of sprites 5 and 6.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite5DMAPtrData0(vic *VIC) {
+func (seq *Sequencer) phaseSprite5DMAPhase1(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite5) != 0 {
-		vic.sprites.FetchPtr(5)   //phi1
-		vic.sprites.FetchData0(5) //phi2
+		vic.sprites.FetchPhase1(seq.spriteToggle, 5)
 	}
 	if vic.sprites.GetDMAFlag(bitSprite5|bitSprite6) == 0 {
 		vic.ClearBALow()
 	}
 }
 
-// phaseSprite5DMAData1Data2: Sprite 5 DMA continues, fetching its second and third data bytes. The BA signal is asserted
+// phaseSprite5DMAPhase2: Sprite 5 DMA continues, fetching its second and third data bytes. The BA signal is asserted
 // to prepare for sprite 7 DMA if it is enabled.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite5DMAData1Data2(vic *VIC) {
+func (seq *Sequencer) phaseSprite5DMAPhase2(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite5) != 0 {
-		vic.sprites.FetchData1(5) //phi1
-		vic.sprites.FetchData2(5) //phi2
+		vic.sprites.FetchPhase2(seq.spriteToggle, 5)
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -325,15 +327,14 @@ func (seq *Sequencer) phaseSprite5DMAData1Data2(vic *VIC) {
 	}
 }
 
-// phaseSprite6DMAPtrData0: Sprite 6 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// phaseSprite6DMAPhase1: Sprite 6 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
 // managed based on the DMA status of sprites 6 and 7.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite6DMAPtrData0(vic *VIC) {
+func (seq *Sequencer) phaseSprite6DMAPhase1(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite6) != 0 {
-		vic.sprites.FetchPtr(6)   //phi1
-		vic.sprites.FetchData0(6) //phi12
+		vic.sprites.FetchPhase1(seq.spriteToggle, 6)
 	}
 	if vic.sprites.GetDMAFlag(bitSprite6|bitSprite7) == 0 {
 		vic.ClearBALow()
@@ -343,40 +344,37 @@ func (seq *Sequencer) phaseSprite6DMAPtrData0(vic *VIC) {
 // phaseSprite6DMAData1Data2: Sprite 6 DMA continues, fetching its second and third data bytes.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite6DMAData1Data2(vic *VIC) {
+func (seq *Sequencer) phaseSprite6DMAPhase2(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite6) != 0 {
-		vic.sprites.FetchData1(6) //phi1
-		vic.sprites.FetchData2(6) //phi2
+		vic.sprites.FetchPhase2(seq.spriteToggle, 6)
 	} else {
 		vic.memory.AccessIdle()
 	}
 }
 
-// phaseSprite7DMAPtrData0: Sprite 7 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// phaseSprite7DMAPhase1: Sprite 7 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
 // managed based on the DMA status of sprite 7.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite7DMAPtrData0(vic *VIC) {
+func (seq *Sequencer) phaseSprite7DMAPhase1(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite7) != 0 {
-		vic.sprites.FetchPtr(7)   //phi1
-		vic.sprites.FetchData0(7) //phi2
+		vic.sprites.FetchPhase1(seq.spriteToggle, 7)
 	}
 	if vic.sprites.GetDMAFlag(bitSprite7) == 0 {
 		vic.ClearBALow()
 	}
 }
 
-// phaseSprite7DMAData1Data2: Sprite 7 DMA continues, fetching its second and third data bytes. This concludes the main
+// phaseSprite7DMAPhase2: Sprite 7 DMA continues, fetching its second and third data bytes. This concludes the main
 // sprite DMA phase for the upcoming line.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite7DMAData1Data2(vic *VIC) {
+func (seq *Sequencer) phaseSprite7DMAPhase2(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite7) != 0 {
-		vic.sprites.FetchData1(7) //phi1
-		vic.sprites.FetchData2(7) //phi2
+		vic.sprites.FetchPhase2(seq.spriteToggle, 7)
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -536,12 +534,12 @@ func (seq *Sequencer) phaseDisplayMainFetch(vic *VIC) {
 	vic.graphics.UpdateCharDataLast()
 }
 
-// phaseTeardownLastFetchAndDMASetup: This is the last graphics data fetch cycle for the line. The VIC finalizes the graphics pipeline
+// phaseDMASetupAndTeardownLastFetch: This is the last graphics data fetch cycle for the line. The VIC finalizes the graphics pipeline
 // and prepares for the *next* scanline by updating sprite Y-expansion flags and calculating which sprites will
 // be active (setting up their DMA flags). The BA signal is asserted to prepare for sprite 0 DMA.
 //
 //go:nosplit
-func (seq *Sequencer) phaseTeardownLastFetchAndDMASetup(vic *VIC) {
+func (seq *Sequencer) phaseDMASetupAndTeardownLastFetch(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
@@ -598,67 +596,64 @@ func (seq *Sequencer) phaseTeardownCommitSpriteFlags(vic *VIC) {
 	vic.memory.AccessIdle()
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite1) != 0 {
-		vic.SetBALow() //BALow for Sprite 1 [cycle 60 = 57 + 3]
+		vic.SetBALow()
 	}
 }
 
-// phaseSprite0DMAPtrData0: Sprite 0 DMA for the upcoming line begins if enabled, fetching its pointer and first data byte.
+// phaseSprite0DMAPhase1: Sprite 0 DMA for the upcoming line begins if enabled, fetching its pointer and first data byte.
 // Sprite flags are prepared for the line *after* the next one.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite0DMAPtrData0(vic *VIC) {
+func (seq *Sequencer) phaseSprite0DMAPhase1(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.sprites.PrepareSpriteFlags(vic.rasterY)
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
-		vic.sprites.FetchPtr(0)   //phi1
-		vic.sprites.FetchData0(0) //phi2
+		vic.sprites.FetchPhase1(!seq.spriteToggle, 0)
 	}
 	vic.graphics.UpdateDisplayAccess(vic.badLineCondition)
 }
 
-// phaseSprite0DMAData1Data2: Sprite 0 DMA continues, fetching its second and third data bytes. The BA signal is asserted
+// phaseSprite0DMAPhase2: Sprite 0 DMA continues, fetching its second and third data bytes. The BA signal is asserted
 // to prepare for sprite 2 DMA.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite0DMAData1Data2(vic *VIC) {
+func (seq *Sequencer) phaseSprite0DMAPhase2(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
-		vic.sprites.FetchData1(0) //phi1
-		vic.sprites.FetchData2(0) //phi2
+		vic.sprites.FetchPhase2(!seq.spriteToggle, 0)
 	} else {
 		vic.memory.AccessIdle()
 	}
 	if vic.sprites.GetDMAFlag(bitSprite2) != 0 {
-		vic.SetBALow() //BALow for Sprite 2 [cycle 62 = 59 + 3]
+		vic.SetBALow()
 	}
 }
 
-// phaseSprite1DMAPtrData0: Sprite 1 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// phaseSprite1DMAPhase1: Sprite 1 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
 // managed based on the DMA status of sprites 1 and 2.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite1DMAPtrData0(vic *VIC) {
+func (seq *Sequencer) phaseSprite1DMAPhase1(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
 	//if vic.drawLine {
 	//	vic.graphics.DrawBackground()
-	//	vic.sprites.Draw()
+	//	vic.sprites.Draw(seq.spriteOdd)
 	//	vic.borders.Draw()
-	//	vic.lineStart += DisplayX
+	//	vic.lineStart += seq.width
 	//}
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite1) != 0 {
-		vic.sprites.FetchPtr(1)   //phi1
-		vic.sprites.FetchData0(1) //phi2
+		vic.sprites.FetchPhase1(!seq.spriteToggle, 1)
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -667,15 +662,14 @@ func (seq *Sequencer) phaseSprite1DMAPtrData0(vic *VIC) {
 	}
 }
 
-// phaseSprite1DMAData1Data2: Sprite 1 DMA continues, fetching its second and third data bytes. The BA signal is asserted
+// phaseSprite1DMAPhase2: Sprite 1 DMA continues, fetching its second and third data bytes. The BA signal is asserted
 // to prepare for sprite 3 DMA.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite1DMAData1Data2(vic *VIC) {
+func (seq *Sequencer) phaseSprite1DMAPhase2(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite1) != 0 {
-		vic.sprites.FetchData1(1) //phi1
-		vic.sprites.FetchData2(1) //phi2
+		vic.sprites.FetchPhase2(!seq.spriteToggle, 1)
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -684,31 +678,29 @@ func (seq *Sequencer) phaseSprite1DMAData1Data2(vic *VIC) {
 	}
 }
 
-// phaseSprite2DMAPtrData0: Sprite 2 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
+// phaseSprite2DMAPhase1: Sprite 2 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
 // managed based on the DMA status of sprites 2 and 3.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite2DMAPtrData0(vic *VIC) {
+func (seq *Sequencer) phaseSprite2DMAPhase1(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite2) != 0 {
-		vic.sprites.FetchPtr(2)   //phi1
-		vic.sprites.FetchData0(2) //phi2
+		vic.sprites.FetchPhase1(!seq.spriteToggle, 2)
 	}
 	if vic.sprites.GetDMAFlag(bitSprite2|bitSprite3) == 0 {
 		vic.ClearBALow()
 	}
 }
 
-// phaseSprite1DMAData1Data2: Sprite 2 DMA continues, fetching its second and third data bytes. The BA signal is asserted
+// phaseSprite1DMAPhase2: Sprite 2 DMA continues, fetching its second and third data bytes. The BA signal is asserted
 // to prepare for sprite 4 DMA.
 //
 //go:nosplit
-func (seq *Sequencer) phaseTeardownFinalSprite2DMA(vic *VIC) {
+func (seq *Sequencer) phaseSprite2DMAPhase2AndTeardownFinal(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.borders.UpdateVerticalFlipFlop(vic.rasterY, vic.denBit)
 	if vic.sprites.GetDMAFlag(bitSprite2) != 0 {
-		vic.sprites.FetchData1(2) //phi1
-		vic.sprites.FetchData2(2) //phi2
+		vic.sprites.FetchPhase2(!seq.spriteToggle, 2)
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -717,7 +709,7 @@ func (seq *Sequencer) phaseTeardownFinalSprite2DMA(vic *VIC) {
 	}
 
 	if vic.drawLine {
-		vic.sprites.Draw()
+		vic.sprites.Draw(seq.spriteToggle)
 		vic.borders.Draw()
 		vic.lineStart += seq.width
 	}

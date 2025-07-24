@@ -28,8 +28,8 @@ const (
 	borderSequencerCount = borderSequencerSize + 1 //1 << 5
 )
 
-// Borders is a type responsible for managing and updating border data, configurations, and states for a display system.
-type Borders struct {
+// BordersUnit is a type responsible for managing and updating border data, configurations, and states for a display system.
+type BordersUnit struct {
 	*component.BaseComponent
 	setMulti8          func(int, uint8)
 	horizontalFlipFlop uint8
@@ -49,11 +49,11 @@ type Borders struct {
 	ec                 uint8  // VIC register - border
 }
 
-// NewBorder initializes and returns a new Borders object using the provided VIC core and display buffer interface.
+// NewBorder initializes and returns a new BordersUnit object using the provided VIC core and display buffer interface.
 // It configures left, right, center, and sequencer states based on display buffer properties.
-func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, displayBuffer references.IDisplayBuffer, displayX int) *Borders {
+func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, displayBuffer references.IDisplayBuffer, displayX int) *BordersUnit {
 	borderCountMax := displayX / borderWidth
-	gr := &Borders{
+	gr := &BordersUnit{
 		BaseComponent:      component.NewBaseComponent(),
 		setMulti8:          displayBuffer.SetMulti8,
 		ec:                 0,
@@ -81,61 +81,61 @@ func NewBorder(parent references.IComponent, factory references.IComponentFactor
 	return gr
 }
 
-// Setup initializes the Borders instance and prepares it for operation. It returns an error if the setup fails.
-func (b *Borders) Setup() error {
+// Setup initializes the BordersUnit instance and prepares it for operation. It returns an error if the setup fails.
+func (b *BordersUnit) Setup() error {
 	return nil
 }
 
-// Connect establishes the necessary connections or associations for the Borders instance and returns an error if it fails.
-func (b *Borders) Connect() error {
+// Connect establishes the necessary connections or associations for the BordersUnit instance and returns an error if it fails.
+func (b *BordersUnit) Connect() error {
 	return nil
 }
 
-// EmulationRequired checks if emulation is required for the Borders instance, always returning false.
-func (b *Borders) EmulationRequired() bool {
+// EmulationRequired checks if emulation is required for the BordersUnit instance, always returning false.
+func (b *BordersUnit) EmulationRequired() bool {
 	return false
 }
 
-// Emulate performs the main emulation logic for the Borders instance, processing updates and managing its internal state.
-func (b *Borders) Emulate() {
+// Emulate performs the main emulation logic for the BordersUnit instance, processing updates and managing its internal state.
+func (b *BordersUnit) Emulate() {
 }
 
 // Internal returns true if the internal border logic is currently active.
-func (b *Borders) Internal() bool {
+func (b *BordersUnit) Internal() bool {
 	return true
 }
 
-// Reset clears and reinitializes the internal state of the Borders instance, preparing it for subsequent operations.
-func (b *Borders) Reset() {
+// Reset clears and reinitializes the internal state of the BordersUnit instance, preparing it for subsequent operations.
+func (b *BordersUnit) Reset() {
 }
 
-// ReadEc returns the `ec` field of the Borders structure combined with the binary OR operation to add a `0xf0` bitmask.
-func (b *Borders) ReadEc() uint8 {
+// ReadEc returns the `ec` field of the BordersUnit structure combined with the binary OR operation to add a `0xf0` bitmask.
+func (b *BordersUnit) ReadEc() uint8 {
 	return b.ec | 0xf0
 }
 
-// WriteEc sets the value of the ec field in the Borders object using the provided uint8 data.
-func (b *Borders) WriteEc(data uint8) {
+// WriteEc sets the value of the ec field in the BordersUnit object using the provided uint8 data.
+func (b *BordersUnit) WriteEc(data uint8) {
 	b.ec = data
 }
 
 // SetColumnSel sets the column selection mode to the specified state, enabling or disabling related behaviors.
-func (b *Borders) SetColumnSel(columnSel bool) {
+func (b *BordersUnit) SetColumnSel(columnSel bool) {
 	b.columnSel = columnSel
 }
 
 // SetDYTop sets the top comparison value for the vertical border logic, used in determining vertical flip-flop behavior.
-func (b *Borders) SetDYTop(top uint16) {
+func (b *BordersUnit) SetDYTop(top uint16) {
 	b.dyTop = top
 }
 
 // SetDYBottom sets the bottom comparison value for the vertical border logic to the provided value.
-func (b *Borders) SetDYBottom(bottom uint16) {
+func (b *BordersUnit) SetDYBottom(bottom uint16) {
 	b.dyBottom = bottom
 }
 
 // ColumnInitialize resets and updates the sequencerState based on the horizontalFlipFlop value for the left border bit.
-func (b *Borders) ColumnInitialize() {
+func (b *BordersUnit) ColumnInitialize() {
 	const bitNumber = borderBitLeft
 	b.sequencerState &^= 1 << bitNumber
 	b.sequencerState |= b.horizontalFlipFlop << bitNumber
@@ -143,7 +143,7 @@ func (b *Borders) ColumnInitialize() {
 
 // Column38Update updates the sequencer state for column 38 based on the horizontal and vertical flip-flop states.
 // If column mode is not selected, it updates the vertical flip-flop value and adjusts the horizontal flip-flop accordingly.
-func (b *Borders) Column38Update(rasterY uint16, denBit bool) {
+func (b *BordersUnit) Column38Update(rasterY uint16, denBit bool) {
 	if !b.columnSel {
 		b.UpdateVerticalFlipFlop(rasterY, denBit)
 		if b.verticalFlipFlop == 0 {
@@ -156,7 +156,7 @@ func (b *Borders) Column38Update(rasterY uint16, denBit bool) {
 }
 
 // Column40Update updates the state of the mid-left border column based on the flip-flop and column selection logic.
-func (b *Borders) Column40Update(rasterY uint16, denBit bool) {
+func (b *BordersUnit) Column40Update(rasterY uint16, denBit bool) {
 	if b.columnSel {
 		b.UpdateVerticalFlipFlop(rasterY, denBit)
 		if b.verticalFlipFlop == 0 {
@@ -169,7 +169,7 @@ func (b *Borders) Column40Update(rasterY uint16, denBit bool) {
 }
 
 // Column38Apply updates the sequence state for the mid-right border bit, conditionally setting the horizontal flip-flop.
-func (b *Borders) Column38Apply() {
+func (b *BordersUnit) Column38Apply() {
 	if !b.columnSel {
 		b.horizontalFlipFlop = 1
 	}
@@ -179,7 +179,7 @@ func (b *Borders) Column38Apply() {
 }
 
 // Column40Apply updates the sequencer state for the right border column, adjusting horizontal flip-flop if conditions are met.
-func (b *Borders) Column40Apply() {
+func (b *BordersUnit) Column40Apply() {
 	if b.columnSel {
 		b.horizontalFlipFlop = 1
 	}
@@ -188,18 +188,18 @@ func (b *Borders) Column40Apply() {
 	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
 
-// SetOffset sets the offset value for the Borders instance. It determines the starting point for border rendering.
-func (b *Borders) SetOffset(offset int) {
+// SetOffset sets the offset value for the BordersUnit instance. It determines the starting point for border rendering.
+func (b *BordersUnit) SetOffset(offset int) {
 	b.offset = offset
 }
 
 // AcquireColor assigns a color to the specified index in the borders color array using the current execution context.
-func (b *Borders) AcquireColor(idx uint8) {
+func (b *BordersUnit) AcquireColor(idx uint8) {
 	b.colors[idx] = _colors[b.ec]
 }
 
 // UpdateVerticalFlipFlop updates the vertical border flip-flop state based on the current raster Y coordinate and control flags.
-func (b *Borders) UpdateVerticalFlipFlop(rasterY uint16, denBit bool) {
+func (b *BordersUnit) UpdateVerticalFlipFlop(rasterY uint16, denBit bool) {
 	//3.9. The border unit
 	if b.dyBottom == rasterY {
 		//2. If the Y coordinate reaches the bottom comparison value in cycle 63 (pal), the vertical border flip flop is set.
@@ -211,12 +211,12 @@ func (b *Borders) UpdateVerticalFlipFlop(rasterY uint16, denBit bool) {
 }
 
 // VerticalFlipFlop returns true if the vertical border flip-flop is set; otherwise, it returns false.
-func (b *Borders) VerticalFlipFlop() bool {
+func (b *BordersUnit) VerticalFlipFlop() bool {
 	return b.verticalFlipFlop != 0
 }
 
-// Draw executes a sequence of rendering functions based on the current sequencer state of the Borders instance.
-func (b *Borders) Draw() {
+// Draw executes a sequence of rendering functions based on the current sequencer state of the BordersUnit instance.
+func (b *BordersUnit) Draw() {
 	sequence := b.sequencer[b.sequencerState&borderSequencerSize]
 	for _, drawFn := range sequence {
 		drawFn()
@@ -224,7 +224,7 @@ func (b *Borders) Draw() {
 }
 
 // drawLeft iterates over the left border indices, calculates offsets, and applies corresponding colors using setMulti8.
-func (b *Borders) drawLeft() {
+func (b *BordersUnit) drawLeft() {
 	for _, v := range b.left {
 		offset := v * borderWidth
 		b.setMulti8(b.offset+offset, b.colors[v])
@@ -232,13 +232,13 @@ func (b *Borders) drawLeft() {
 }
 
 // drawMidLeft updates the border area corresponding to midLeft by setting the appropriate color and offset values.
-func (b *Borders) drawMidLeft() {
+func (b *BordersUnit) drawMidLeft() {
 	offset := b.midLeft * borderWidth
 	b.setMulti8(b.offset+offset, b.colors[b.midLeft])
 }
 
 // drawCenter processes the center border segments by calculating their offsets and applying corresponding colors.
-func (b *Borders) drawCenter() {
+func (b *BordersUnit) drawCenter() {
 	for _, v := range b.center {
 		offset := v * borderWidth
 		b.setMulti8(b.offset+offset, b.colors[v])
@@ -246,13 +246,13 @@ func (b *Borders) drawCenter() {
 }
 
 // drawMidRight calculates the offset for the mid-right border and updates its color using the setMulti8 function.
-func (b *Borders) drawMidRight() {
+func (b *BordersUnit) drawMidRight() {
 	offset := b.midRight * borderWidth
 	b.setMulti8(b.offset+offset, b.colors[b.midRight])
 }
 
 // drawRight renders the right-hand border by iterating over the `right` field and setting appropriate color values.
-func (b *Borders) drawRight() {
+func (b *BordersUnit) drawRight() {
 	for _, v := range b.right {
 		offset := v * borderWidth
 		b.setMulti8(b.offset+offset, b.colors[v])
@@ -260,12 +260,12 @@ func (b *Borders) drawRight() {
 }
 
 // drawEmpty clears or bypasses border drawing by executing no operations during the rendering process.
-func (b *Borders) drawEmpty() {
+func (b *BordersUnit) drawEmpty() {
 
 }
 
 // createSequencer initializes and returns a 2D slice of function sequences for border rendering based on state bits.
-func (b *Borders) createSequencer() [borderSequencerCount][]func() {
+func (b *BordersUnit) createSequencer() [borderSequencerCount][]func() {
 	const left = 1 << borderBitLeft
 	const midLeft = 1 << borderBitMidLeft
 	const center = 1 << borderBitCenter

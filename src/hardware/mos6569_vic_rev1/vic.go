@@ -44,11 +44,11 @@ const (
 type VIC struct {
 	*component.BaseComponent
 	cfg        *config.Config
-	collisions *Collisions
-	sprites    *SpriteHandler
-	graphics   *Graphics
-	borders    *Borders
-	memory     *Memory
+	collisions *CollisionsUnit
+	sprites    *SpritesUnit
+	graphics   *GraphicsUnit
+	borders    *BordersUnit
+	memory     *MemoryUnit
 
 	label     string
 	reads     [RegisterCount]func() uint8
@@ -476,7 +476,7 @@ func (vic *VIC) createReadRegister() [RegisterCount]func() uint8 {
 	reads[0x15] = vic.sprites.ReadMe                                                                     // Sprite enabled
 	reads[0x16] = func() uint8 { return vic.cr2 | 0xc0 }                                                 // Control register 2
 	reads[0x17] = vic.sprites.ReadMYe                                                                    // Sprite Y expansion
-	reads[0x18] = vic.memory.GetVABase                                                                   // Memory pointers
+	reads[0x18] = vic.memory.GetVABase                                                                   // MemoryUnit pointers
 	reads[0x19] = func() uint8 { return vic.irqLatch | 0x70 }                                            // IRQ latch
 	reads[0x1a] = func() uint8 { return vic.irqMask | 0xf0 }                                             // IRQ mask
 	reads[0x1b] = vic.sprites.ReadMDp                                                                    // Sprite data priority
@@ -533,7 +533,7 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	writes[0x15] = vic.sprites.WriteMe                 // Sprite enabled
 	writes[0x16] = vic.setCR2                          // Control register 2
 	writes[0x17] = vic.sprites.WriteMYe                // Sprite Y expansion
-	writes[0x18] = vic.memory.SetVABase                // Memory pointers
+	writes[0x18] = vic.memory.SetVABase                // MemoryUnit pointers
 	writes[0x19] = vic.irqSetLatch                     // IRQ Latch
 	writes[0x1a] = vic.irqSetMask                      // IRQ mask
 	writes[0x1b] = vic.sprites.WriteMDp                // Sprite data priority

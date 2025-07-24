@@ -30,9 +30,9 @@ The pillars of this philosophy are:
 
 Each software object in the code is a 1:1 translation of a functional block from the MOS 6569 chip:
 * **`VIC`**: The entire integrated circuit, connecting all other blocks.
-* **`Sequencer`**: The **clock signal** and control logic that orchestrates every cycle.
-* **`Memory`**: The **memory bus interface**, handling VIC's access to RAM and ROM.
-* **`Graphics`**, **`SpriteHandler`**, **`Borders`**: The discrete logic blocks for graphics, sprites, and borders, each with its own precise structural responsibility.
+* **`SequencerUnit`**: The **clock signal** and control logic that orchestrates every cycle.
+* **`MemoryUnit`**: The **memory bus interface**, handling VIC's access to RAM and ROM.
+* **`GraphicsUnit`**, **`SpriteHandlerUnit`**, **`BordersUnit`**: The discrete logic blocks for graphics, sprites, and borders, each with its own precise structural responsibility.
 
 **Perfect Architectural Isolation**: Each component maintains complete encapsulation with no direct access to internal fields of other components. Communication occurs exclusively through well-defined public methods, function pointers, and dependency injection, mirroring the physical pin-based connections of the original hardware blocks.
 
@@ -54,12 +54,12 @@ The `vic` package is organized into the following files:
 
 * `vic.go`: The main file. Contains the `VIC` struct and the `Emulate` method. Also includes functions for reading and writing VIC registers.
 * `sequencer.go`: Contains constants and functions related to the video timing, one for each cycle of a scanline.
-* `graphics.go`: Contains the functions for rendering the different graphics modes.
-* `sprite_handler.go`: Contains the high-level logic for handling sprites.
+* `graphics_unit.go`: Contains the functions for rendering the different graphics modes.
+* `sprite_unit.go`: Contains the high-level logic for handling sprites.
 * `sprite.go`: Contains the logic for handling a single sprite.
-* `borders.go`: Contains the logic for rendering the borders.
-* `collisions.go`: Implements the collision detection logic.
-* `memory.go`: Implements memory access.
+* `borders_unit.go`: Contains the logic for rendering the borders.
+* `collisions_unit.go`: Implements the collision detection logic.
+* `memory_unit.go`: Implements memory access.
 * `tables.go`: Contains pre-calculated lookup tables used for optimization.
 * `factory.go`: Implements the factory pattern for integration into the system.
 
