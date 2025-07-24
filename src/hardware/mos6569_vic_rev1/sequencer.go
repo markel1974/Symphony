@@ -255,8 +255,6 @@ func (seq *Sequencer) phaseSprite3DMAPhase2AndVBlank(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	if vic.sprites.GetDMAFlag(bitSprite3) != 0 {
 		vic.sprites.FetchPhase2(seq.spriteToggle, 3)
-		//vic.sprites.FetchData1(seq.spriteOdd, 3) //phi1
-		//vic.sprites.FetchData2(seq.spriteOdd, 3) //phi2
 	} else {
 		vic.memory.AccessIdle()
 	}

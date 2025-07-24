@@ -142,11 +142,6 @@ func (c *CollisionsUnit) SetSpritePresence(index int, sBit uint8) bool {
 // Commit triggers the collision application process using the stored sprite and graphics collision data.
 // This method *actually writes* the collision results to the VIC-II's registers.
 func (c *CollisionsUnit) Commit() {
-	// Call the CollisionApply method on the VIC core, passing the collision results.
-	//c.core.CollisionApply(c.spritesCollision, c.graphics)
-
-	// CollisionApply processes sprite-to-sprite and sprite-to-background collisions and emits appropriate IRQ signals.
-	//func (vic *VIC) CollisionApply(sprites uint8, graphics uint8) {
 	if c.sprSprClx != 0 {
 		c.sprSprClx |= c.spritesCollision
 	} else {
@@ -159,8 +154,6 @@ func (c *CollisionsUnit) Commit() {
 		c.sprBgrClx |= c.graphics
 		c.irqEmit(irqSpriteToGraphicBit)
 	}
-	//}
-
 }
 
 // IncrementGraphicsOffset increments the graphicsBufferOffset field
