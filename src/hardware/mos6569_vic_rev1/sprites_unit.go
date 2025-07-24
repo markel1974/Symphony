@@ -23,6 +23,8 @@ const (
 	bitSprite7 = 0x80
 )
 
+var _latchStates = []int{LatchIndex0, LatchIndex1}
+
 // SpritesUnit manages sprite functionalities within the VIC-II system, including rendering, collisions, and DMA operations.
 type SpritesUnit struct {
 	*component.BaseComponent
@@ -45,8 +47,7 @@ type SpritesUnit struct {
 	mdp                uint8           // Sprite data priority
 	mm0                uint8
 	mm1                uint8
-	latchToggle        bool
-	latchIndex         int
+	bufferIndex        int
 }
 
 // NewSprites initializes and returns a new instance of the SpritesUnit struct with default settings and allocations.
@@ -71,10 +72,11 @@ func NewSprites(parent references.IComponent, factory references.IComponentFacto
 		mdp:                0,
 		mm0:                0,
 		mm1:                0,
+		bufferIndex:        0,
 	}
-	s.BaseComponent.Register(factory, parent, "spriteHandler", s, references.IdInternalComponent(label, instance, "SpritesUnit"))
+	s.BaseComponent.Register(factory, parent, "spritesUnit", s, references.IdInternalComponent(label, instance, "SpritesUnit"))
 	for i := range s.sprites {
-		s.sprites[i] = NewSprite(s, factory, "SpritesUnit", i, displayBuffer, collisions, uint8(i), len(s.sprites))
+		s.sprites[i] = NewSprite(s, factory, "Sprite", i, displayBuffer, collisions, uint8(i), len(s.sprites))
 	}
 	return s
 }
@@ -110,30 +112,33 @@ func (sp *SpritesUnit) Reset() {
 }
 
 func (sp *SpritesUnit) Prepare() {
-	var reverse int
-	sp.latchToggle = !sp.latchToggle
-	if !sp.latchToggle {
-		sp.latchIndex = LatchIndex0
-		reverse = LatchIndex1
-	} else {
-		sp.latchIndex = LatchIndex1
-		reverse = LatchIndex0
-	}
-	sp.sprites[3].SetLatchIndex(sp.latchIndex)
-	sp.sprites[4].SetLatchIndex(sp.latchIndex)
-	sp.sprites[5].SetLatchIndex(sp.latchIndex)
-	sp.sprites[6].SetLatchIndex(sp.latchIndex)
-	sp.sprites[7].SetLatchIndex(sp.latchIndex)
+	latchIndexPrev := _latchStates[sp.bufferIndex]
+	sp.bufferIndex = (sp.bufferIndex + 1) & 1
+	latchIndex := _latchStates[sp.bufferIndex]
 
-	sp.sprites[0].SetLatchIndex(reverse)
-	sp.sprites[1].SetLatchIndex(reverse)
-	sp.sprites[2].SetLatchIndex(reverse)
+	sp.sprites[3].SetLatchIndex(latchIndex)
+	sp.sprites[4].SetLatchIndex(latchIndex)
+	sp.sprites[5].SetLatchIndex(latchIndex)
+	sp.sprites[6].SetLatchIndex(latchIndex)
+	sp.sprites[7].SetLatchIndex(latchIndex)
+
+	sp.sprites[0].SetLatchIndex(latchIndexPrev)
+	sp.sprites[1].SetLatchIndex(latchIndexPrev)
+	sp.sprites[2].SetLatchIndex(latchIndexPrev)
 }
 
 // SetOffset updates the `offset` value of the SpritesUnit instance with the given value.
 // This offset is used to calculate the starting position for sprite rendering on the current scanline.
 func (sp *SpritesUnit) SetOffset(offset int) {
 	sp.offset = offset
+}
+
+func (sp *SpritesUnit) ReadBufferIndex() int {
+	return sp.bufferIndex
+}
+
+func (sp *SpritesUnit) WriteBufferIndex(index int) {
+	sp.bufferIndex = index
 }
 
 // ReadMM0 returns the mm0 value of the sprite with the upper nibble set to 0xf.
@@ -645,10 +650,11 @@ func (sp *SpritesUnit) Draw() {
 	if activeSprites == nil {
 		return
 	}
+	latchIndex := _latchStates[sp.bufferIndex]
 	// Prepare the collision detection system for this scanline.
 	sp.collisions.Prepare()
 	for _, sNum := range activeSprites {
-		sp.sprites[sNum].Draw(sp.latchIndex, sp.offset)
+		sp.sprites[sNum].Draw(latchIndex, sp.offset)
 	}
 	// Perform the final collision detection checks.
 	sp.collisions.Commit()

@@ -35,7 +35,7 @@ func NewMemory(parent references.IComponent, factory references.IComponentFactor
 		lastByte:       0,
 		refreshCounter: 0,
 	}
-	m.BaseComponent.Register(factory, parent, "memory", m, references.IdInternalComponent(label, instance, "MemoryUnit"))
+	m.BaseComponent.Register(factory, parent, "memoryUnit", m, references.IdInternalComponent(label, instance, "MemoryUnit"))
 	return m
 }
 

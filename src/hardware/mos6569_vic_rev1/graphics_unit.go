@@ -109,7 +109,7 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		gr.drawBackgroundDefault,
 		gr.drawBackgroundDefault,
 	}
-	gr.BaseComponent.Register(factory, parent, "graphics", gr, references.IdInternalComponent(label, instance, "GraphicsUnit"))
+	gr.BaseComponent.Register(factory, parent, "graphicsUnit", gr, references.IdInternalComponent(label, instance, "GraphicsUnit"))
 	return gr
 }
 

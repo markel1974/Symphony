@@ -42,7 +42,7 @@ func NewCollisions(parent references.IComponent, factory references.IComponentFa
 		sprSprClx:            0,
 		sprBgrClx:            0,
 	}
-	c.BaseComponent.Register(factory, parent, "collisions", c, references.IdInternalComponent(label, instance, "CollisionsUnit"))
+	c.BaseComponent.Register(factory, parent, "collisionsUnit", c, references.IdInternalComponent(label, instance, "CollisionsUnit"))
 	return c
 }
 
