@@ -41,7 +41,7 @@ type CPU struct {
 	opTable        []func(*CPU)
 	interrupts     *Interrupts
 	bus            *Bus
-	executor       *ControlUnit
+	control        *ControlUnit
 	label          string
 }
 
@@ -59,18 +59,18 @@ func NewCPU(parent references.IComponent, factory references.IComponentFactory, 
 func (cpu *CPU) Setup() error {
 	cpu.interrupts = NewInterrupts(cpu, cpu.GetFactory(), cpu.label, 0)
 	cpu.bus = NewBus(cpu, cpu.GetFactory(), cpu.label, 0)
-	cpu.executor = NewControlUnit(cpu, cpu.GetFactory(), cpu.label, 0)
+	cpu.control = NewControlUnit(cpu, cpu.GetFactory(), cpu.label, 0)
 	if err := cpu.interrupts.Setup(); err != nil {
 		return err
 	}
 	if err := cpu.bus.Setup(); err != nil {
 		return err
 	}
-	if err := cpu.executor.Setup(); err != nil {
+	if err := cpu.control.Setup(); err != nil {
 		return err
 	}
-	cpu.opTable = cpu.executor.CreateOpTable()
-	cpu.modeTable = cpu.executor.CreateModeTable()
+	cpu.opTable = cpu.control.CreateOpTable()
+	cpu.modeTable = cpu.control.CreateModeTable()
 	return nil
 }
 
@@ -101,7 +101,7 @@ func (cpu *CPU) Reset() {
 	cpu.bus.Reset()
 	cpu.pc = uint16(cpu.bus.ReadDirect(0xfffc)) | (uint16(cpu.bus.ReadDirect(0xfffd)) << 8) // Read reset vector
 	cpu.opFlags = 0
-	cpu.next = cpu.executor.InstOpINI
+	cpu.next = cpu.control.InstOpINI
 }
 
 // SetOverflowBranch sets the function used to handle conditional overflow branching for the CPU.
@@ -160,7 +160,7 @@ func (cpu *CPU) SetRDYLow(rdyLow bool) {
 func (cpu *CPU) setModeHalt() {
 	if cpu.savedNext == nil {
 		cpu.savedNext = cpu.next
-		cpu.next = cpu.executor.InstOpHalt
+		cpu.next = cpu.control.InstOpHalt
 	}
 }
 
@@ -178,13 +178,13 @@ func (cpu *CPU) EmulationRequired() bool {
 
 //go:nosplit
 func (cpu *CPU) NMI() {
-	cpu.next = cpu.executor.InstOpNMI
+	cpu.next = cpu.control.InstOpNMI
 	cpu.next(cpu)
 }
 
 //go:nosplit
 func (cpu *CPU) IRQ() {
-	cpu.next = cpu.executor.InstOpIRQ
+	cpu.next = cpu.control.InstOpIRQ
 	cpu.next(cpu)
 }
 
@@ -231,11 +231,11 @@ func (cpu *CPU) computeBranch(data uint8) func(*CPU) {
 	cpu.ar = cpu.pc + uint16(int8(data))
 	if (cpu.ar >> 8) != (cpu.pc >> 8) {
 		if (data & 0x80) != 0 {
-			return cpu.executor.InstOpBRAbp
+			return cpu.control.InstOpBRAbp
 		}
-		return cpu.executor.InstOpBRAfp
+		return cpu.control.InstOpBRAfp
 	}
-	return cpu.executor.InstOpBRAnp
+	return cpu.control.InstOpBRAnp
 }
 
 // doADC performs the add with Carry (ADC) operation using the given operand and CPU state.
