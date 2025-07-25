@@ -288,11 +288,11 @@ func (seq *Sequencer) Sequence(vic *VIC) {
 func (seq *Sequencer) phaseSprite3DMAPhase1AndInit(vic *VIC) {
 	vic.sprites.Prepare()
 	rasterY := vic.interrupts.RasterY()
-	if rasterY == seq.rasterYMax {
+	if rasterY >= seq.rasterYMax {
 		vic.vBlankNextCycle = true
 	} else {
 		vic.interrupts.RasterYIncrement()
-		vic.graphics.BadLineUpdate(vic.interrupts.RasterY(), vic.borders.GetDen())
+		vic.graphics.BadLineVerify(vic.interrupts.RasterY(), vic.borders.GetDen())
 		vic.drawLine = (rasterY >= seq.firstDisplayedLine) && (rasterY <= seq.lastDisplayedLine)
 	}
 	vic.borders.ColumnInitialize()
@@ -358,8 +358,6 @@ func (seq *Sequencer) phaseSprite4DMAPhase2(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite4) != 0 {
 		vic.sprites.FetchPhase2(4)
-		//vic.sprites.FetchData1(seq.spriteOdd, 4) //phi1
-		//vic.sprites.FetchData2(seq.spriteOdd, 4) //phi2
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -558,6 +556,7 @@ func (seq *Sequencer) phaseDisplayFirstFetchAndSpritePipe2(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
 	vic.borders.Column40Update(vic.interrupts.RasterY())
+
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
@@ -581,6 +580,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
 	vic.borders.Column38Update(vic.interrupts.RasterY())
+
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
@@ -595,6 +595,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
 		vic.SetBALow()
 	}
 	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
+
 	vic.graphics.CommitCharData()
 }
 
@@ -620,6 +621,7 @@ func (seq *Sequencer) phaseDisplayMainFetch(vic *VIC) {
 		vic.SetBALow()
 	}
 	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
+
 	vic.graphics.CommitCharData()
 }
 

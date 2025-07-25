@@ -122,9 +122,9 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		gr.drawBackgroundBitmapStandard,
 		gr.drawBackgroundBitmapMulticolor,
 		gr.drawBackgroundTextECM,
-		gr.drawBackgroundDefault,
-		gr.drawBackgroundDefault,
-		gr.drawBackgroundDefault,
+		gr.drawBackgroundInvalid,
+		gr.drawBackgroundInvalid,
+		gr.drawBackgroundInvalid,
 	}
 	gr.BaseComponent.Register(factory, parent, "graphicsUnit", gr, references.IdInternalComponent(label, instance, "GraphicsUnit"))
 	return gr
@@ -164,14 +164,14 @@ func (gr *GraphicsUnit) BadLineCondition() bool {
 	return gr.badLineCondition
 }
 
-// BadLineUpdate updates the bad line condition based on the current raster position, DEN bit, and YSCROLL value.
+// BadLineVerify updates the bad line condition based on the current raster position, DEN bit, and YSCROLL value.
 // The bad line condition occurs when specific raster and scroll conditions are met, enabling certain VIC behavior.
 // Bad Line Condition is given at any arbitrary clock cycle, if at the
 // negative edge of ø0 at the beginning of the cycle RASTER >= $30 and RASTER <= $f7
 // and the lower three bits of RASTER are equal to YSCROLL,
 // and if the DEN bit has been set for at least one cycle somewhere in raster line $30
 // So clearing the DEN bit will normally prevent Bad Lines
-func (gr *GraphicsUnit) BadLineUpdate(rasterY uint16, denBit bool) {
+func (gr *GraphicsUnit) BadLineVerify(rasterY uint16, denBit bool) {
 	if (rasterY >= gr.sequencerFirstDmaLine) && (rasterY <= gr.sequencerLastDmaLine) {
 		if rasterY == gr.sequencerFirstDmaLine && denBit {
 			//If YSCROLL=0, a Bad Line Condition occurs in raster line $30 as soon as the DEN bit
@@ -308,18 +308,16 @@ func (gr *GraphicsUnit) SetOffset(offset int) {
 // CommitCharData processes the character data latch and updates the ECM background color based on bits 7 and 6 of the latch.
 func (gr *GraphicsUnit) CommitCharData() {
 	gr.charDataLatch = gr.charData
-	if (gr.charDataLatch & 0x80) != 0 {
-		if (gr.charDataLatch & 0x40) != 0 {
-			gr.ecmBackgroundColor = gr.b3c // Background color 3.
-		} else {
-			gr.ecmBackgroundColor = gr.b2c // Background color 2.
-		}
-	} else {
-		if (gr.charDataLatch & 0x40) != 0 {
-			gr.ecmBackgroundColor = gr.b1c // Background color 1.
-		} else {
-			gr.ecmBackgroundColor = gr.b0c // Background color 0.
-		}
+	ecmBackgroundMode := gr.charDataLatch >> 6 //bit 7 and 6
+	switch ecmBackgroundMode {
+	case 0b11:
+		gr.ecmBackgroundColor = gr.b3c // Background color 3.
+	case 0b10:
+		gr.ecmBackgroundColor = gr.b2c // Background color 2.
+	case 0b01:
+		gr.ecmBackgroundColor = gr.b1c // Background color 1.
+	case 0b00:
+		gr.ecmBackgroundColor = gr.b0c // Background color 0.
 	}
 }
 
@@ -396,20 +394,19 @@ func (gr *GraphicsUnit) DrawForeground() {
 	gr.collisions.IncrementGraphicsOffset()
 }
 
-// setCharData sets the character data and determines the foreground color in Extended Color Mode based on character code bits.
+// setCharData sets the character data and determines the foreground color in Extended Color Mode based on character code bits 7 and 6.
 func (gr *GraphicsUnit) setCharData(data uint8) {
 	gr.charData = data
-	// In ECM, the foreground color is determined by bits 7 and 6 of the character code.
-	if (gr.charData & 0x80) != 0 {
-		if (gr.charData & 0x40) != 0 {
-			gr.ecmForegroundColor = gr.b3c
-		} else {
-			gr.ecmForegroundColor = gr.b2c
-		}
-	} else if (gr.charData & 0x40) != 0 {
-		gr.ecmForegroundColor = gr.b1c
-	} else {
-		gr.ecmForegroundColor = gr.b0c
+	ecmForegroundMode := gr.charData >> 6 //bit 7 and 6
+	switch ecmForegroundMode {
+	case 0b11:
+		gr.ecmForegroundColor = gr.b3c // Foreground color 3.
+	case 0b10:
+		gr.ecmForegroundColor = gr.b2c // Foreground color 2.
+	case 0b01:
+		gr.ecmForegroundColor = gr.b1c // Foreground color 1.
+	case 0b00:
+		gr.ecmForegroundColor = gr.b0c // Foreground color 0.
 	}
 }
 
@@ -461,7 +458,6 @@ func (gr *GraphicsUnit) readGraphicsFake( /*rasterY*/ _ uint16) {
 
 // drawBackgroundTextStandard renders the background text using the standard text mode based on the current GraphicsUnit settings.
 // It uses the offset and core attributes of the GraphicsUnit instance to determine the drawing configuration.
-// Used in Standard Character Mode.
 func (gr *GraphicsUnit) drawBackgroundTextStandard(offset int) {
 	gr.drawDefault(offset, gr.b0c)
 }
@@ -469,21 +465,18 @@ func (gr *GraphicsUnit) drawBackgroundTextStandard(offset int) {
 // drawBackgroundTextMulticolor renders a multicolor text background for the given GraphicsUnit object.
 // Internally, it uses the _drawDefault function to set multicolor data based on the specified parameters.
 // The GraphicsUnit parameter contains all the necessary data like offset, core state, and color information.
-// Used in Multicolor Mode.
 func (gr *GraphicsUnit) drawBackgroundTextMulticolor(offset int) {
 	gr.drawDefault(offset, gr.b0c)
 }
 
 // drawBackgroundBitmapMulticolor draws a multicolor bitmap background using the provided GraphicsUnit object.
 // Updates the display buffer with colors based on the provided GraphicsUnit state and configuration.
-// Used in Multicolor Bitmap Mode.
 func (gr *GraphicsUnit) drawBackgroundBitmapMulticolor(offset int) {
 	gr.drawDefault(offset, gr.b0c)
 }
 
 // drawBackgroundBitmapStandard renders a standard bitmap background using the provided GraphicsUnit instance.
 // It uses the _drawDefault function to handle the drawing process based on the current GraphicsUnit state.
-// Used in Standard Bitmap Mode.
 // In standard bitmap mode, the background color for each 8x8 block is taken from the *previous* character's data.
 func (gr *GraphicsUnit) drawBackgroundBitmapStandard(offset int) {
 	gr.drawDefault(offset, gr.charDataLatch)
@@ -491,27 +484,23 @@ func (gr *GraphicsUnit) drawBackgroundBitmapStandard(offset int) {
 
 // drawBackgroundTextECM renders the background text in ECM (Extended Color Mode) based on character data and bitmask checks.
 // It selects the appropriate color source from the GraphicsUnit core and applies it using the _drawDefault helper function.
-// Used in Extended Background Color Mode (ECM).
 func (gr *GraphicsUnit) drawBackgroundTextECM(offset int) {
 	gr.drawDefault(offset, gr.ecmBackgroundColor)
 }
 
 // drawBackgroundDefault draws the default background by delegating to the _drawDefault function with the current offset.
-// This is used for invalid modes.
 // Draw 8 pixels with color 0 (usually black).
-func (gr *GraphicsUnit) drawBackgroundDefault(offset int) {
+func (gr *GraphicsUnit) drawBackgroundInvalid(offset int) {
 	gr.drawDefault(offset, 0)
 }
 
 // drawForegroundTextStandard renders foreground text using the standard graphics mode at the specified offset.
-// Used in Standard Character Mode.
 func (gr *GraphicsUnit) drawForegroundTextStandard(offset int) {
 	gr.drawStandard(offset, gr.b0c, gr.colorData)
 }
 
 // drawForegroundTextMulticolor renders multicolor text for the foreground depending on the color mode and provided offset.
 // If the color mode indicates multicolor, it invokes `drawMulticolor`; otherwise, `drawStandard` is used.
-// Used in Multicolor Mode.
 func (gr *GraphicsUnit) drawForegroundTextMulticolor(offset int) {
 	if (gr.colorData & 8) != 0 {
 		gr.drawMulticolor(offset, gr.b0c, gr.b1c, gr.b2c, gr.colorData&7)
