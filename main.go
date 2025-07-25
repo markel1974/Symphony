@@ -244,6 +244,7 @@ func main() {
 	var noJiffy bool
 	var playerId string
 	var renderId string
+	var noShell bool
 
 	flag.BoolVar(&showHelp, "h", false, "show this help")
 	flag.BoolVar(&showVersion, "v", false, "show version")
@@ -254,6 +255,7 @@ func main() {
 	flag.StringVar(&playerId, "a", "default", "audio: default")
 	flag.StringVar(&prg, "p", "", "prg path")
 	flag.BoolVar(&noJiffy, "j", false, "disable jiffy")
+	flag.BoolVar(&noShell, "k", false, "disable shell")
 	flag.Parse()
 
 	if showHelp {
@@ -296,8 +298,10 @@ func main() {
 		log.Fatal(err)
 	}
 	board := emulator.GetBoard()
-	if err = createShell(board.GetCommand()); err != nil {
-		log.Fatal(err)
+	if noShell {
+		if err = createShell(board.GetCommand()); err != nil {
+			log.Fatal(err)
+		}
 	}
 	if err = emulator.Start(); err != nil {
 		log.Fatal(err)
