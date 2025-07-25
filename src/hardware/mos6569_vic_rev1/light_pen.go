@@ -27,7 +27,7 @@ func NewLightPen(parent references.IComponent, factory references.IComponentFact
 		y:              0,
 		triggered:      false,
 	}
-	lp.BaseComponent.Register(factory, parent, "interrupts", lp, references.IdInternalComponent(label, instance, "Interrupts"))
+	lp.BaseComponent.Register(factory, parent, "lightPen", lp, references.IdInternalComponent(label, instance, "LightPen"))
 	return lp
 }
 

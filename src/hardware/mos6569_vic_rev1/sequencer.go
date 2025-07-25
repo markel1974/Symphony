@@ -92,7 +92,7 @@ func NewSequencerPal(parent references.IComponent, factory references.IComponent
 	seq.add(seq.phaseDMASetupAndTeardownLastFetch)
 	seq.add(seq.phaseTeardownIdle)
 	seq.add(seq.phaseTeardownCommitSpriteFlags)
-	seq.add(seq.phaseSprite0DMAPhase1)
+	seq.add(seq.phaseSprite0DMAPhase1AndScanLineEnd)
 	seq.add(seq.phaseSprite0DMAPhase2)
 	seq.add(seq.phaseSprite1DMAPhase1)
 	seq.add(seq.phaseSprite1DMAPhase2)
@@ -159,7 +159,7 @@ func NewSequencerNtsc(parent references.IComponent, factory references.IComponen
 	seq.add(seq.phaseRefresh)
 	seq.add(seq.phaseTeardownIdle)
 	seq.add(seq.phaseTeardownCommitSpriteFlags)
-	seq.add(seq.phaseSprite0DMAPhase1)
+	seq.add(seq.phaseSprite0DMAPhase1AndScanLineEnd)
 	seq.add(seq.phaseSprite0DMAPhase2)
 	seq.add(seq.phaseSprite1DMAPhase1)
 	seq.add(seq.phaseSprite1DMAPhase2)
@@ -292,11 +292,11 @@ func (seq *Sequencer) phaseSprite3DMAPhase1AndInit(vic *VIC) {
 		vic.vBlankNextCycle = true
 	} else {
 		vic.interrupts.RasterYIncrement()
-		vic.BadLineUpdate()
+		vic.graphics.BadLineUpdate(vic.interrupts.RasterY(), vic.borders.GetDen())
 		vic.drawLine = (rasterY >= seq.firstDisplayedLine) && (rasterY <= seq.lastDisplayedLine)
 	}
 	vic.borders.ColumnInitialize()
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite3) != 0 {
 		vic.sprites.FetchPhase1(3)
 	}
@@ -325,7 +325,7 @@ func (seq *Sequencer) phaseSprite3DMAPhase2AndVBlank(vic *VIC) {
 	vic.graphics.SetOffset(vic.lineStart)
 	vic.sprites.SetOffset(vic.lineStart)
 	vic.borders.SetOffset(vic.lineStart)
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite3) != 0 {
 		vic.sprites.FetchPhase2(3)
 	} else {
@@ -341,7 +341,7 @@ func (seq *Sequencer) phaseSprite3DMAPhase2AndVBlank(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite4DMAPhase1(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite4) != 0 {
 		vic.sprites.FetchPhase1(4)
 	}
@@ -355,7 +355,7 @@ func (seq *Sequencer) phaseSprite4DMAPhase1(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite4DMAPhase2(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite4) != 0 {
 		vic.sprites.FetchPhase2(4)
 		//vic.sprites.FetchData1(seq.spriteOdd, 4) //phi1
@@ -373,7 +373,7 @@ func (seq *Sequencer) phaseSprite4DMAPhase2(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite5DMAPhase1(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite5) != 0 {
 		vic.sprites.FetchPhase1(5)
 	}
@@ -387,7 +387,7 @@ func (seq *Sequencer) phaseSprite5DMAPhase1(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite5DMAPhase2(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite5) != 0 {
 		vic.sprites.FetchPhase2(5)
 	} else {
@@ -403,7 +403,7 @@ func (seq *Sequencer) phaseSprite5DMAPhase2(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite6DMAPhase1(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite6) != 0 {
 		vic.sprites.FetchPhase1(6)
 	}
@@ -416,7 +416,7 @@ func (seq *Sequencer) phaseSprite6DMAPhase1(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite6DMAPhase2(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite6) != 0 {
 		vic.sprites.FetchPhase2(6)
 	} else {
@@ -429,7 +429,7 @@ func (seq *Sequencer) phaseSprite6DMAPhase2(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite7DMAPhase1(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite7) != 0 {
 		vic.sprites.FetchPhase1(7)
 	}
@@ -443,7 +443,7 @@ func (seq *Sequencer) phaseSprite7DMAPhase1(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite7DMAPhase2(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite7) != 0 {
 		vic.sprites.FetchPhase2(7)
 	} else {
@@ -456,7 +456,7 @@ func (seq *Sequencer) phaseSprite7DMAPhase2(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseRefresh(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	vic.ClearBALow()
 	vic.memory.AccessRefresh()
 }
@@ -468,8 +468,10 @@ func (seq *Sequencer) phaseRefresh(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseSetupBadLineCheck(vic *VIC) {
 	vic.memory.AccessRefresh()
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
-	vic.TryBALowIfBadLine()
+	vic.graphics.TryAcquireDisplayAccess()
+	if vic.graphics.BadLineCondition() {
+		vic.SetBALow()
+	}
 }
 
 // phaseSetupRasterXReset: This is a refresh cycle. The horizontal raster counter (rasterX) is reset to 0. The VIC is now
@@ -482,8 +484,10 @@ func (seq *Sequencer) phaseSetupRasterXReset(vic *VIC) {
 		vic.graphics.DrawBackground()
 	}
 	vic.memory.AccessRefresh()
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
-	vic.TryBALowIfBadLine()
+	vic.graphics.TryAcquireDisplayAccess()
+	if vic.graphics.BadLineCondition() {
+		vic.SetBALow()
+	}
 
 	vic.interrupts.RasterXReset()
 }
@@ -499,9 +503,11 @@ func (seq *Sequencer) phaseSetupVCounterLoad(vic *VIC) {
 		vic.graphics.DrawBackground()
 	}
 	vic.memory.AccessRefresh()
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
-	vic.graphics.TryResetRowCounter(vic.badLineCondition)
-	vic.TryBALowIfBadLine()
+	vic.graphics.TryAcquireDisplayAccess()
+	vic.graphics.TryResetRowCounter()
+	if vic.graphics.BadLineCondition() {
+		vic.SetBALow()
+	}
 	vic.graphics.UpdateVideoCounter()
 }
 
@@ -516,11 +522,13 @@ func (seq *Sequencer) phaseSetupRCounterCheckAndSpritePipe1(vic *VIC) {
 		vic.graphics.DrawBackground()
 	}
 	vic.memory.AccessRefresh()
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	vic.sprites.TryIncrementCounterBase()
 	vic.graphics.ResetLineIndex()
-	vic.TryBALowIfBadLine()
-	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
+	if vic.graphics.BadLineCondition() {
+		vic.SetBALow()
+	}
+	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
 }
 
 // phaseDisplayFirstFetchAndSpritePipe2: First graphics data fetch cycle. The VIC fetches the character's bitmap data from Character
@@ -533,12 +541,14 @@ func (seq *Sequencer) phaseDisplayFirstFetchAndSpritePipe2(vic *VIC) {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.graphics.TryGraphicsAccess(vic.interrupts.RasterY())
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.Phi1Fetch(vic.interrupts.RasterY())
+	vic.graphics.TryAcquireDisplayAccess()
 	vic.sprites.TryIncrementCounterBase()
 	vic.sprites.CommitIncrementCounterBase()
-	vic.TryBALowIfBadLine()
-	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
+	if vic.graphics.BadLineCondition() {
+		vic.SetBALow()
+	}
+	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
 }
 
 // phaseDisplayMainFetchC40: Second graphics data fetch cycle. The VIC fetches the next character code from screen RAM.
@@ -556,10 +566,12 @@ func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.interrupts.RasterY())
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
-	vic.TryBALowIfBadLine()
-	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
+	vic.graphics.Phi1Fetch(vic.interrupts.RasterY())
+	vic.graphics.TryAcquireDisplayAccess()
+	if vic.graphics.BadLineCondition() {
+		vic.SetBALow()
+	}
+	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
 }
 
 // phaseDisplayMainFetchC38: The main display window begins. The VIC fetches the next character's bitmap data. The fetched
@@ -577,10 +589,12 @@ func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.interrupts.RasterY())
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
-	vic.TryBALowIfBadLine()
-	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
+	vic.graphics.Phi1Fetch(vic.interrupts.RasterY())
+	vic.graphics.TryAcquireDisplayAccess()
+	if vic.graphics.BadLineCondition() {
+		vic.SetBALow()
+	}
+	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
 	vic.graphics.UpdateCharDataLast()
 }
 
@@ -599,10 +613,12 @@ func (seq *Sequencer) phaseDisplayMainFetch(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.interrupts.RasterY())
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
-	vic.TryBALowIfBadLine()
-	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
+	vic.graphics.Phi1Fetch(vic.interrupts.RasterY())
+	vic.graphics.TryAcquireDisplayAccess()
+	if vic.graphics.BadLineCondition() {
+		vic.SetBALow()
+	}
+	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
 	vic.graphics.UpdateCharDataLast()
 }
 
@@ -620,8 +636,8 @@ func (seq *Sequencer) phaseDMASetupAndTeardownLastFetch(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.interrupts.RasterY())
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.Phi1Fetch(vic.interrupts.RasterY())
+	vic.graphics.TryAcquireDisplayAccess()
 	vic.sprites.UpdateYExpansion()
 	vic.sprites.UpdateDMA(vic.interrupts.RasterY())
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
@@ -646,7 +662,7 @@ func (seq *Sequencer) phaseTeardownIdle(vic *VIC) {
 		}
 	}
 	vic.memory.AccessIdle()
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	vic.sprites.UpdateDMA(vic.interrupts.RasterY())
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.SetBALow()
@@ -666,7 +682,7 @@ func (seq *Sequencer) phaseTeardownCommitSpriteFlags(vic *VIC) {
 		vic.graphics.DrawBackground()
 	}
 	vic.memory.AccessIdle()
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite1) != 0 {
 		vic.SetBALow()
 	}
@@ -676,7 +692,7 @@ func (seq *Sequencer) phaseTeardownCommitSpriteFlags(vic *VIC) {
 // Sprite flags are prepared for the line *after* the next one.
 //
 //go:nosplit
-func (seq *Sequencer) phaseSprite0DMAPhase1(vic *VIC) {
+func (seq *Sequencer) phaseSprite0DMAPhase1AndScanLineEnd(vic *VIC) {
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
@@ -685,7 +701,7 @@ func (seq *Sequencer) phaseSprite0DMAPhase1(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.sprites.FetchPhase1(0)
 	}
-	vic.graphics.UpdateDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccessOnScanlineEnd()
 }
 
 // phaseSprite0DMAPhase2: Sprite 0 DMA continues, fetching its second and third data bytes. The BA signal is asserted
@@ -697,7 +713,7 @@ func (seq *Sequencer) phaseSprite0DMAPhase2(vic *VIC) {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.sprites.FetchPhase2(0)
 	} else {
@@ -723,7 +739,7 @@ func (seq *Sequencer) phaseSprite1DMAPhase1(vic *VIC) {
 	//	vic.borders.Draw()
 	//	vic.lineStart += seq.width
 	//}
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite1) != 0 {
 		vic.sprites.FetchPhase1(1)
 	} else {
@@ -739,7 +755,7 @@ func (seq *Sequencer) phaseSprite1DMAPhase1(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite1DMAPhase2(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite1) != 0 {
 		vic.sprites.FetchPhase2(1)
 	} else {
@@ -755,7 +771,7 @@ func (seq *Sequencer) phaseSprite1DMAPhase2(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite2DMAPhase1(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite2) != 0 {
 		vic.sprites.FetchPhase1(2)
 	}
@@ -769,7 +785,7 @@ func (seq *Sequencer) phaseSprite2DMAPhase1(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseSprite2DMAPhase2AndTeardownFinal(vic *VIC) {
-	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
+	vic.graphics.TryAcquireDisplayAccess()
 	vic.borders.UpdateVerticalFlipFlop(vic.interrupts.RasterY())
 	if vic.sprites.GetDMAFlag(bitSprite2) != 0 {
 		vic.sprites.FetchPhase2(2)

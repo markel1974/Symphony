@@ -64,38 +64,32 @@ type VIC struct {
 	socketLastCycle func()
 	socketVBlank    func()
 
-	sequencerRow25YStart  uint16
-	sequencerRow25YStop   uint16
-	sequencerRow24YStart  uint16
-	sequencerRow24YStop   uint16
-	sequencerFirstDmaLine uint16
-	sequencerLastDmaLine  uint16
+	sequencerRow25YStart uint16
+	sequencerRow25YStop  uint16
+	sequencerRow24YStart uint16
+	sequencerRow24YStop  uint16
 
 	cr1 uint8 // VIC register
 	cr2 uint8 // VIC register
 
-	badLineEnabler   bool   // Bad Lines enabled for this frame
-	badLineCondition bool   // Current line is bad line
-	baLow            bool   // BA Line
-	aecLow           bool   // AEC Line
-	aecLowNextCycle  uint64 // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
-	vBlankNextCycle  bool   // vBlankNextCycle indicates whether the next cycle will trigger a vertical blanking interval (vBlank) in the display.
-	lineStart        int
-	drawLine         bool
+	baLow           bool   // BA Line
+	aecLow          bool   // AEC Line
+	aecLowNextCycle uint64 // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
+	vBlankNextCycle bool   // vBlankNextCycle indicates whether the next cycle will trigger a vertical blanking interval (vBlank) in the display.
+	lineStart       int
+	drawLine        bool
 }
 
 // NewVIC creates and initializes a new VIC instance with default configuration and registers it with the parent component.
 func NewVIC(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *VIC {
 	vic := &VIC{
-		BaseComponent:    component.NewBaseComponent(),
-		cr1:              0,
-		cr2:              0,
-		badLineCondition: false,
-		badLineEnabler:   false,
-		baLow:            false,
-		aecLowNextCycle:  0,
-		aecLow:           false,
-		label:            label,
+		BaseComponent:   component.NewBaseComponent(),
+		cr1:             0,
+		cr2:             0,
+		baLow:           false,
+		aecLowNextCycle: 0,
+		aecLow:          false,
+		label:           label,
 	}
 	vic.BaseComponent.Register(factory, parent, Identifier(), vic, references.IdIMos6569(vic, label, instance))
 	return vic
@@ -129,13 +123,11 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.sequencerRow25YStop = vic.sequencer.GetRow25YStop()
 	vic.sequencerRow24YStart = vic.sequencer.GetRow24YStart()
 	vic.sequencerRow24YStop = vic.sequencer.GetRow24YStop()
-	vic.sequencerFirstDmaLine = vic.sequencer.GetFirstDmaLine()
-	vic.sequencerLastDmaLine = vic.sequencer.GetLastDmaLine()
 
 	vic.memory = NewMemory(vic, vic.GetFactory(), vic.label, 0, socket.ReadRam, socket.ReadColorRam, socket.ReadCharRom)
 	vic.interrupts = NewInterrupts(vic, vic.GetFactory(), vic.label, 0, socket.IRQTrigger, socket.IRQClearTrigger, vic.sequencer.GetRasterYMax())
 	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic.interrupts.Emit, vic.sequencer.GetWidth())
-	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer, vic.sequencer.GetRasterYMax())
+	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer, vic.sequencer.GetRasterYMax(), vic.sequencer.GetFirstDmaLine(), vic.sequencer.GetLastDmaLine())
 	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer)
 	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, displayBuffer, vic.sequencer.GetWidth())
 	vic.lightPen = NewLightPen(vic, vic.GetFactory(), vic.label, 0, vic.interrupts.Emit)
@@ -219,11 +211,11 @@ func (vic *VIC) EmulationRequired() bool {
 }
 
 // TryBALowIfBadLine checks if the bad line condition is met and sets the BA line to low if true.
-func (vic *VIC) TryBALowIfBadLine() {
-	if vic.badLineCondition {
-		vic.SetBALow()
-	}
-}
+//func (vic *VIC) TryBALowIfBadLine(badLineCondition bool) {
+//	if badLineCondition {
+//		vic.SetBALow()
+//	}
+//}
 
 // GetBALow returns the state of the baLow variable, indicating whether the BA low condition is active.
 func (vic *VIC) GetBALow() bool {
@@ -271,34 +263,6 @@ func (vic *VIC) TryAcquireAEC() {
 	}
 }
 
-// BadLineUpdate updates the bad line condition based on the current raster position, DEN bit, and YSCROLL value.
-// The bad line condition occurs when specific raster and scroll conditions are met, enabling certain VIC behavior.
-func (vic *VIC) BadLineUpdate() {
-	// Bad Line Condition is given at any arbitrary clock cycle, if at the
-	// negative edge of ø0 at the beginning of the cycle RASTER >= $30 and RASTER <= $f7
-	// and the lower three bits of RASTER are equal to YSCROLL
-	// and if the DEN bit has been set for at least one cycle somewhere in raster line $30
-	// So clearing the DEN bit will normally prevent Bad Lines
-	rasterY := vic.interrupts.RasterY()
-
-	if (rasterY >= vic.sequencerFirstDmaLine) && (rasterY <= vic.sequencerLastDmaLine) {
-		if rasterY == vic.sequencerFirstDmaLine && vic.borders.GetDen() {
-			//If YSCROLL=0, a Bad Line Condition occurs in raster line $30 as soon as the DEN bit
-			vic.badLineEnabler = true
-			if vic.graphics.GetYScroll() == 0 {
-				vic.badLineCondition = true
-				return
-			}
-		}
-		if vic.badLineEnabler {
-			vic.badLineCondition = vic.graphics.GetYScroll() == (rasterY & 7)
-		}
-	} else {
-		vic.badLineEnabler = false
-		vic.badLineCondition = false
-	}
-}
-
 // ChangedVA updates the VIC's virtual address base and triggers the memory pointer update process.
 func (vic *VIC) ChangedVA(newVA uint8) {
 	vic.memory.SetCIAVABase(newVA)
@@ -328,7 +292,7 @@ func (vic *VIC) WriteCR1(data uint8) {
 	vic.graphics.SetDisplayMode(displayMode)
 	vic.interrupts.WriteRasterLow((uint16(vic.cr1) & 0x80) << 1)
 
-	vic.BadLineUpdate()
+	vic.graphics.BadLineUpdate(vic.interrupts.RasterY(), vic.borders.GetDen())
 }
 
 // ReadCR1 reads the CR1 register, combining specific raster and control bits, and returns the resulting 8-bit value.

@@ -24,71 +24,84 @@ const (
 // This struct encapsulates the state and behavior necessary for emulating the VIC-II's graphics rendering process.
 type GraphicsUnit struct {
 	*component.BaseComponent
-	memory              *MemoryUnit
-	collisions          *CollisionsUnit
-	set8                func(int, *[8]uint8)
-	setMulti8           func(int, uint8)
-	gfxData             uint8
-	colorData           uint8
-	charData            uint8
-	charDataLast        uint8
-	ecmBackgroundColor  uint8
-	ecmForegroundColor  uint8
-	offset              int     // Offset from bitmap spritesPresence
-	lineIndex           int     // Index in video matrix / color line
-	videoMatrix         []uint8 // Video matrix spritesPresence
-	colorLine           []uint8 // Color line spritesPresence
-	rowCounter          uint16  // Row counter
-	videoCounter        uint16  // Video counter
-	videoCounterLatch   uint16  // Video counter base
-	displayAccess       bool    // Display state
-	textBuffer          []byte
-	xScroll             uint16 // X scroll value
-	yScroll             uint16 // Y scroll value
-	displayMode         int    // Index of current display mode
-	bmm                 bool
-	ecm                 bool
-	b0c                 uint8 // VIC register - graphics
-	b1c                 uint8 // VIC register - graphics
-	b2c                 uint8 // VIC register - graphics
-	b3c                 uint8 // VIC register - graphics
-	foregroundSequencer []func(int)
-	backgroundSequencer []func(int)
+	memory                *MemoryUnit
+	collisions            *CollisionsUnit
+	set8                  func(int, *[8]uint8)
+	setMulti8             func(int, uint8)
+	gfxData               uint8
+	colorData             uint8
+	charData              uint8
+	charDataLast          uint8
+	ecmBackgroundColor    uint8
+	ecmForegroundColor    uint8
+	offset                int     // Offset from bitmap spritesPresence
+	lineIndex             int     // Index in video matrix / color line
+	videoMatrix           []uint8 // Video matrix spritesPresence
+	colorLine             []uint8 // Color line spritesPresence
+	rowCounter            uint16  // Row counter
+	videoCounter          uint16  // Video counter
+	videoCounterLatch     uint16  // Video counter base
+	displayAccess         uint8   // Display state
+	textBuffer            []byte
+	xScroll               uint16 // X scroll value
+	yScroll               uint16 // Y scroll value
+	displayMode           int    // Index of current display mode
+	bmm                   bool
+	ecm                   bool
+	b0c                   uint8 // VIC register - graphics
+	b1c                   uint8 // VIC register - graphics
+	b2c                   uint8 // VIC register - graphics
+	b3c                   uint8 // VIC register - graphics
+	badLineEnabler        bool  // Bad Lines enabled for this frame
+	badLineCondition      bool  // Current line is bad line
+	sequencerFirstDmaLine uint16
+	sequencerLastDmaLine  uint16
+	foregroundSequencer   []func(int)
+	backgroundSequencer   []func(int)
+	memoryRead            [0xff + 1]func(uint16)
 }
 
 // NewGraphics initializes and returns a new GraphicsUnit instance with the provided VIC core, collision handler, and display buffer.
-func NewGraphics(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *MemoryUnit, collisions *CollisionsUnit, displayBuffer references.IDisplayBuffer, rasterYMax uint16) *GraphicsUnit {
+func NewGraphics(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *MemoryUnit, collisions *CollisionsUnit, displayBuffer references.IDisplayBuffer, rasterYMax uint16, sequencerFirstDmaLine uint16, sequencerLastDmaLine uint16) *GraphicsUnit {
 	gr := &GraphicsUnit{
-		BaseComponent:      component.NewBaseComponent(),
-		memory:             memory,
-		collisions:         collisions,
-		set8:               displayBuffer.Set8,
-		setMulti8:          displayBuffer.SetMulti8,
-		gfxData:            0,
-		colorData:          0,
-		charData:           0,
-		charDataLast:       0,
-		ecmBackgroundColor: 0,
-		ecmForegroundColor: 0,
-		offset:             0,
-		lineIndex:          0,
-		xScroll:            0,
-		yScroll:            0,
-		displayMode:        0,
-		b0c:                0,
-		b1c:                0,
-		b2c:                0,
-		b3c:                0,
-		videoMatrix:        make([]uint8, columnsMax),
-		colorLine:          make([]uint8, columnsMax),
-		textBuffer:         make([]uint8, (rasterYMax/8)*columnsMax),
-		rowCounter:         rowsMax,
-		videoCounter:       0,
-		videoCounterLatch:  0,
-		displayAccess:      false,
-		bmm:                false,
-		ecm:                false,
+		BaseComponent:         component.NewBaseComponent(),
+		memory:                memory,
+		collisions:            collisions,
+		set8:                  displayBuffer.Set8,
+		setMulti8:             displayBuffer.SetMulti8,
+		sequencerFirstDmaLine: sequencerFirstDmaLine,
+		sequencerLastDmaLine:  sequencerLastDmaLine,
+		gfxData:               0,
+		colorData:             0,
+		charData:              0,
+		charDataLast:          0,
+		ecmBackgroundColor:    0,
+		ecmForegroundColor:    0,
+		offset:                0,
+		lineIndex:             0,
+		xScroll:               0,
+		yScroll:               0,
+		displayMode:           0,
+		b0c:                   0,
+		b1c:                   0,
+		b2c:                   0,
+		b3c:                   0,
+		videoMatrix:           make([]uint8, columnsMax),
+		colorLine:             make([]uint8, columnsMax),
+		textBuffer:            make([]uint8, (rasterYMax/8)*columnsMax),
+		rowCounter:            rowsMax,
+		videoCounter:          0,
+		videoCounterLatch:     0,
+		displayAccess:         0,
+		bmm:                   false,
+		ecm:                   false,
+		badLineCondition:      false,
+		badLineEnabler:        false,
 	}
+	for x := range gr.memoryRead {
+		gr.memoryRead[x] = gr.readGraphics
+	}
+	gr.memoryRead[0] = gr.readGraphicsFake
 
 	// foregroundSequencer provides a sequence of rendering functions for various foreground drawing modes in the GraphicsUnit system.
 	gr.foregroundSequencer = []func(int){
@@ -145,6 +158,36 @@ func (gr *GraphicsUnit) Reset() {
 // (Currently empty, but kept for consistency).
 func (gr *GraphicsUnit) Setup() error {
 	return nil
+}
+
+func (gr *GraphicsUnit) BadLineCondition() bool {
+	return gr.badLineCondition
+}
+
+// BadLineUpdate updates the bad line condition based on the current raster position, DEN bit, and YSCROLL value.
+// The bad line condition occurs when specific raster and scroll conditions are met, enabling certain VIC behavior.
+// Bad Line Condition is given at any arbitrary clock cycle, if at the
+// negative edge of ø0 at the beginning of the cycle RASTER >= $30 and RASTER <= $f7
+// and the lower three bits of RASTER are equal to YSCROLL
+// and if the DEN bit has been set for at least one cycle somewhere in raster line $30
+// So clearing the DEN bit will normally prevent Bad Lines
+func (gr *GraphicsUnit) BadLineUpdate(rasterY uint16, denBit bool) {
+	if (rasterY >= gr.sequencerFirstDmaLine) && (rasterY <= gr.sequencerLastDmaLine) {
+		if rasterY == gr.sequencerFirstDmaLine && denBit {
+			//If YSCROLL=0, a Bad Line Condition occurs in raster line $30 as soon as the DEN bit
+			gr.badLineEnabler = true
+			if gr.yScroll == 0 {
+				gr.badLineCondition = true
+				return
+			}
+		}
+		if gr.badLineEnabler {
+			gr.badLineCondition = gr.yScroll == (rasterY & 7)
+		}
+	} else {
+		gr.badLineEnabler = false
+		gr.badLineCondition = false
+	}
 }
 
 // ReadB0c returns the value of b0c with the high nibble set to 1 (binary 1111), effectively OR-ing the value with 0xf0.
@@ -282,105 +325,46 @@ func (gr *GraphicsUnit) UpdateCharDataLast() {
 	}
 }
 
-// setCharData sets the character data and determines the foreground color in Extended Color Mode based on character code bits.
-func (gr *GraphicsUnit) setCharData(data uint8) {
-	gr.charData = data
-	// In ECM, the foreground color is determined by bits 7 and 6 of the character code.
-	if (gr.charData & 0x80) != 0 {
-		if (gr.charData & 0x40) != 0 {
-			gr.ecmForegroundColor = gr.b3c
-		} else {
-			gr.ecmForegroundColor = gr.b2c
-		}
-	} else if (gr.charData & 0x40) != 0 {
-		gr.ecmForegroundColor = gr.b1c
-	} else {
-		gr.ecmForegroundColor = gr.b0c
-	}
-}
-
-// setColorData sets the color data for the GraphicsUnit object using the provided 8-bit unsigned integer value.
-func (gr *GraphicsUnit) setColorData(data uint8) {
-	gr.colorData = data
-}
-
 // TryResetRowCounter resets the row counter (RC) to 0 if the badLineCondition in the core is true.
-func (gr *GraphicsUnit) TryResetRowCounter(badLineCondition bool) {
-	if badLineCondition {
+func (gr *GraphicsUnit) TryResetRowCounter() {
+	if gr.badLineCondition {
 		gr.rowCounter = 0
 	}
 }
 
 // TryAcquireDisplayAccess sets the displayAccess flag to true if the badLineCondition flag in the core is active.
 // This gives the CPU access to video memory during "bad lines".
-func (gr *GraphicsUnit) TryAcquireDisplayAccess(badLineCondition bool) {
-	if badLineCondition {
-		gr.displayAccess = true
+func (gr *GraphicsUnit) TryAcquireDisplayAccess() {
+	if gr.badLineCondition {
+		gr.displayAccess = 1
 	}
 }
 
-// UpdateDisplayAccess updates the display access state and row counter based on the current conditions and row limit.
+// TryAcquireDisplayAccessOnScanlineEnd updates the display access state and row counter based on the current conditions and row limit.
 // This function manages the timing of when the display access is granted to the CPU and when the row counter is incremented.
-// It's called at the *end* of each scanline (cycle 58).
-func (gr *GraphicsUnit) UpdateDisplayAccess(badLineCondition bool) {
-	if gr.rowCounter == rowsMax {
+// It's called at the *end* of each scanline.
+func (gr *GraphicsUnit) TryAcquireDisplayAccessOnScanlineEnd() {
+	if gr.rowCounter >= rowsMax {
 		// If we've reached the end of a character row (8 pixel rows), latch the video counter.
 		gr.videoCounterLatch = gr.videoCounter
-		gr.displayAccess = false
+		gr.displayAccess = 0
 	}
-	if badLineCondition || gr.displayAccess {
+	if gr.badLineCondition || gr.displayAccess != 0 {
 		// The & operator has precedence
 		gr.rowCounter = (gr.rowCounter + 1) & rowsMax
-		gr.displayAccess = true
+		gr.displayAccess = 1
 	}
 }
 
-// TryGraphicsAccess fetches and processes graphics data from memory based on the current raster and display state.
+// Phi1Fetch handles Phi1 clock phase fetch and processes graphics data from memory based on the current raster and display state.
 // This function is the core of the VIC-II's graphics data fetching logic.
-func (gr *GraphicsUnit) TryGraphicsAccess(rasterY uint16) {
-	if gr.displayAccess {
-		var addr uint16
-		if gr.bmm {
-			// Bitmap Mode: Calculate the address based on the video counter, bitmap base address, and row counter.
-			addr = ((gr.videoCounter & 0x03ff) << 3) | gr.memory.GetBitmapBase() | gr.rowCounter
-		} else {
-			// Text Mode: Calculate the address based on the character code from the video matrix, character base address, and row counter.
-			addr = (uint16(gr.videoMatrix[gr.lineIndex]) << 3) | gr.memory.GetCharBase() | gr.rowCounter
-		}
-		if gr.ecm {
-			// Extended Color Mode (ECM): Mask the address to use only the lower 13 bits of the character ROM address.
-			addr &= 0xf9ff
-		}
-		gr.gfxData = gr.memory.ReadByte(addr)    // Read the graphics data (pixel data or character pattern).
-		charData := gr.videoMatrix[gr.lineIndex] // Get the character code from the video matrix.
-		colorData := gr.colorLine[gr.lineIndex]  // Get the color data from the color RAM.
-		gr.setCharData(charData)
-		gr.setColorData(colorData)
-		if gr.rowCounter == 0 {
-			// At the beginning of a new character row (rowCounter == 0),
-			// store the character code in the text buffer for debugging/display purposes.
-			// https://sta.c64.org/cbm64scr.html
-			index := columnsMax * (rasterY / 8)
-			gr.textBuffer[index+uint16(gr.lineIndex)] = _scCodesAscii[charData&0x7f] // Convert screen code to ASCII
-		}
-
-		gr.lineIndex++    // Increment the line index to point to the next character/color data.
-		gr.videoCounter++ // Increment the video counter.
-	} else {
-		// If display access is *not* granted, read from a "dummy" address.  The values read are not used.
-		if gr.ecm {
-			gr.gfxData = gr.memory.ReadByte(0x39ff) // Fake read (ECM).
-		} else {
-			gr.gfxData = gr.memory.ReadByte(0x3fff) // Fake read (non-ECM).
-		}
-		gr.setColorData(0) // Dummy values.
-		gr.setCharData(0)  // Dummy values.
-	}
+func (gr *GraphicsUnit) Phi1Fetch(rasterY uint16) {
+	gr.memoryRead[gr.displayAccess](rasterY)
 }
 
-// TryPhi2Access handles Phi2 clock phase access, updating videoMatrix and colorLine based on core conditions and memory.
+// TryPhi2Fetch handles Phi2 clock phase fetch, updating videoMatrix and colorLine based on core conditions and memory.
 // This function handles the memory access during the PHI2 phase of the CPU clock cycle.
-func (gr *GraphicsUnit) TryPhi2Access(baLow bool, aecLow bool) {
+func (gr *GraphicsUnit) TryPhi2Fetch(baLow bool, aecLow bool) {
 	// Check if the Bus-Available (BA) signal is low.
 	if baLow {
 		// Check if the Address Enable Control (AEC) signal is low.
@@ -412,6 +396,69 @@ func (gr *GraphicsUnit) DrawForeground() {
 	gr.foregroundSequencer[gr.displayMode](offset)
 	gr.offset += characterPixelWidth
 	gr.collisions.IncrementGraphicsOffset()
+}
+
+// setCharData sets the character data and determines the foreground color in Extended Color Mode based on character code bits.
+func (gr *GraphicsUnit) setCharData(data uint8) {
+	gr.charData = data
+	// In ECM, the foreground color is determined by bits 7 and 6 of the character code.
+	if (gr.charData & 0x80) != 0 {
+		if (gr.charData & 0x40) != 0 {
+			gr.ecmForegroundColor = gr.b3c
+		} else {
+			gr.ecmForegroundColor = gr.b2c
+		}
+	} else if (gr.charData & 0x40) != 0 {
+		gr.ecmForegroundColor = gr.b1c
+	} else {
+		gr.ecmForegroundColor = gr.b0c
+	}
+}
+
+// setColorData sets the color data for the GraphicsUnit object using the provided 8-bit unsigned integer value.
+func (gr *GraphicsUnit) setColorData(data uint8) {
+	gr.colorData = data
+}
+
+// readGraphics reads graphics data from memory based on the current rendering mode and updates internal graphics states.
+func (gr *GraphicsUnit) readGraphics(rasterY uint16) {
+	var addr uint16
+	if gr.bmm {
+		// Bitmap Mode: Calculate the address based on the video counter, bitmap base address, and row counter.
+		addr = ((gr.videoCounter & 0x03ff) << 3) | gr.memory.GetBitmapBase() | gr.rowCounter
+	} else {
+		// Text Mode: Calculate the address based on the character code from the video matrix, character base address, and row counter.
+		addr = (uint16(gr.videoMatrix[gr.lineIndex]) << 3) | gr.memory.GetCharBase() | gr.rowCounter
+	}
+	if gr.ecm {
+		// Extended Color Mode (ECM): Mask the address to use only the lower 13 bits of the character ROM address.
+		addr &= 0xf9ff
+	}
+	gr.gfxData = gr.memory.ReadByte(addr)    // Read the graphics data (pixel data or character pattern).
+	charData := gr.videoMatrix[gr.lineIndex] // Get the character code from the video matrix.
+	colorData := gr.colorLine[gr.lineIndex]  // Get the color data from the color RAM.
+	gr.setCharData(charData)
+	gr.setColorData(colorData)
+	if gr.rowCounter == 0 {
+		// At the beginning of a new character row (rowCounter == 0),
+		// store the character code in the text buffer for debugging/display purposes.
+		// https://sta.c64.org/cbm64scr.html
+		index := columnsMax * (rasterY / 8)
+		gr.textBuffer[index+uint16(gr.lineIndex)] = _scCodesAscii[charData&0x7f] // Convert screen code to ASCII
+	}
+	gr.lineIndex++    // Increment the line index to point to the next character/color data.
+	gr.videoCounter++ // Increment the video counter.
+}
+
+// readGraphicsFake performs a fake read operation on memory, emulating data fetch based on ECM mode and resetting graphics data.
+func (gr *GraphicsUnit) readGraphicsFake( /*rasterY*/ _ uint16) {
+	if gr.ecm {
+		gr.gfxData = gr.memory.ReadByte(0x39ff) // Fake read (ECM).
+	} else {
+		gr.gfxData = gr.memory.ReadByte(0x3fff) // Fake read (non-ECM).
+	}
+	gr.setColorData(0) // Fake values.
+	gr.setCharData(0)  // Fake values.
 }
 
 // drawBackgroundTextStandard renders the background text using the standard text mode based on the current GraphicsUnit settings.
@@ -532,8 +579,7 @@ func (gr *GraphicsUnit) drawInvalidMulticolor(offset int, a uint8) {
 	gr.setMulti8(offset, _colors[a])
 }
 
-// drawStandard renders 8 pixels in standard mode (1 bit per pixel).
-// Uses colors 'a' (for 0 bits) and 'b' (for 1 bit).
+// drawStandard renders 8 pixels in standard mode (1 bit per pixel). Uses colors 'a' (for 0 bits) and 'b' (for 1 bit).
 func (gr *GraphicsUnit) drawStandard(offset int, a uint8, b uint8) {
 	p1 := gr.gfxData >> gr.xScroll
 	p2 := gr.gfxData << (7 - gr.xScroll)
@@ -548,8 +594,7 @@ func (gr *GraphicsUnit) drawStandard(offset int, a uint8, b uint8) {
 	gr.set8(offset, &drawBuffer)
 }
 
-// drawMulticolor renders 8 pixels in multicolor mode (2 bits per pixel).
-// Uses colors 'a', 'b', 'c', and 'd'.
+// drawMulticolor renders 8 pixels in multicolor mode (2 bits per pixel). Uses colors 'a', 'b', 'c', and 'd'.
 func (gr *GraphicsUnit) drawMulticolor(offset int, a uint8, b uint8, c uint8, d uint8) {
 	p := (gr.gfxData & 0xaa) | ((gr.gfxData & 0xaa) >> 1)
 	p1 := p >> gr.xScroll
