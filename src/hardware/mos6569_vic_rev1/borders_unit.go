@@ -47,6 +47,7 @@ type BordersUnit struct {
 	dyTop              uint16 // Comparison values for borders logic
 	dyBottom           uint16 // Comparison values for borders logic
 	ec                 uint8  // VIC register - border
+	den                bool   // den bit
 }
 
 // NewBorder initializes and returns a new BordersUnit object using the provided VIC core and display buffer interface.
@@ -64,6 +65,7 @@ func NewBorder(parent references.IComponent, factory references.IComponentFactor
 		dyTop:              0,
 		dyBottom:           0,
 		columnSel:          false,
+		den:                false,
 	}
 	for x := 0; x < borderCount; x++ {
 		gr.left = append(gr.left, x)
@@ -143,9 +145,9 @@ func (b *BordersUnit) ColumnInitialize() {
 
 // Column38Update updates the sequencer state for column 38 based on the horizontal and vertical flip-flop states.
 // If column mode is not selected, it updates the vertical flip-flop value and adjusts the horizontal flip-flop accordingly.
-func (b *BordersUnit) Column38Update(rasterY uint16, denBit bool) {
+func (b *BordersUnit) Column38Update(rasterY uint16) {
 	if !b.columnSel {
-		b.UpdateVerticalFlipFlop(rasterY, denBit)
+		b.UpdateVerticalFlipFlop(rasterY)
 		if b.verticalFlipFlop == 0 {
 			b.horizontalFlipFlop = 0
 		}
@@ -156,9 +158,9 @@ func (b *BordersUnit) Column38Update(rasterY uint16, denBit bool) {
 }
 
 // Column40Update updates the state of the mid-left border column based on the flip-flop and column selection logic.
-func (b *BordersUnit) Column40Update(rasterY uint16, denBit bool) {
+func (b *BordersUnit) Column40Update(rasterY uint16) {
 	if b.columnSel {
-		b.UpdateVerticalFlipFlop(rasterY, denBit)
+		b.UpdateVerticalFlipFlop(rasterY)
 		if b.verticalFlipFlop == 0 {
 			b.horizontalFlipFlop = 0
 		}
@@ -193,18 +195,28 @@ func (b *BordersUnit) SetOffset(offset int) {
 	b.offset = offset
 }
 
+// SetDen sets the value of the den property in the BordersUnit instance.
+func (b *BordersUnit) SetDen(den bool) {
+	b.den = den
+}
+
+// GetDen returns the value of the den property from the BordersUnit receiver.
+func (b *BordersUnit) GetDen() bool {
+	return b.den
+}
+
 // AcquireColor assigns a color to the specified index in the borders color array using the current execution context.
 func (b *BordersUnit) AcquireColor(idx uint8) {
 	b.colors[idx] = _colors[b.ec]
 }
 
 // UpdateVerticalFlipFlop updates the vertical border flip-flop state based on the current raster Y coordinate and control flags.
-func (b *BordersUnit) UpdateVerticalFlipFlop(rasterY uint16, denBit bool) {
+func (b *BordersUnit) UpdateVerticalFlipFlop(rasterY uint16) {
 	//3.9. The border unit
 	if b.dyBottom == rasterY {
 		//2. If the Y coordinate reaches the bottom comparison value in cycle 63 (pal), the vertical border flip flop is set.
 		b.verticalFlipFlop = 1
-	} else if b.dyTop == rasterY && denBit {
+	} else if b.dyTop == rasterY && b.den {
 		//3. If the Y coordinate reaches the top comparison value in cycle 63 (pal) and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
 		b.verticalFlipFlop = 0
 	}

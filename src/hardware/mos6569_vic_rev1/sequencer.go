@@ -41,18 +41,11 @@ type Sequencer struct {
 	curr               *SequencerData
 }
 
-// NewSequencer creates a Sequencer based on the total number of raster lines, selecting PAL or NTSC timing accordingly.
-func NewSequencer(parent references.IComponent, factory references.IComponentFactory, label string, instance int /* screenFreq */, _ int, totalRaster int) *Sequencer {
-	if totalRaster >= 300 {
-		return newSequencerPal(parent, factory, label, instance)
-	}
-	return newSequencerNtsc(parent, factory, label, instance)
-}
-
-// newSequencerPal initializes the PAL video timing cycle data. It constructs a circular linked list of 63 cycleData nodes,
+// NewSequencerPal initializes the PAL video timing cycle data.
+// It constructs a circular linked list of 63 cycleData nodes,
 // where each node represents one CPU clock cycle of a single PAL scanline. It pre-calculates border-related
 // values for each cycle and links them in sequence to form the complete 63-cycle sequencer.
-func newSequencerPal(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Sequencer {
+func NewSequencerPal(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Sequencer {
 	const palWidth = 384
 	const palHeight = 272
 	const palTotalRasters = 312
@@ -113,10 +106,10 @@ func newSequencerPal(parent references.IComponent, factory references.IComponent
 	return seq
 }
 
-// newSequencerNtsc initializes the NTSC video timing cycle data with 63 cycleData nodes for a single scanline.
+// NewSequencerNtsc initializes the NTSC video timing cycle data with 63 cycleData nodes for a single scanline.
 // Constructs a sequencer containing pre-calculated raster and border values for 263 total raster lines.
 // Links the nodes sequentially to form a complete NTSC video frame.
-func newSequencerNtsc(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Sequencer {
+func NewSequencerNtsc(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Sequencer {
 	const ntscWidth = 384
 	const ntscHeight = 240
 	const ntscTotalRasters = 263
@@ -294,11 +287,12 @@ func (seq *Sequencer) Sequence(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseSprite3DMAPhase1AndInit(vic *VIC) {
 	vic.sprites.Prepare()
-
-	if rasterY := vic.GetRasterY(); rasterY == seq.rasterYMax {
+	rasterY := vic.interrupts.RasterY()
+	if rasterY == seq.rasterYMax {
 		vic.vBlankNextCycle = true
 	} else {
-		vic.IncrementRasterY()
+		vic.interrupts.RasterYIncrement()
+		vic.BadLineUpdate()
 		vic.drawLine = (rasterY >= seq.firstDisplayedLine) && (rasterY <= seq.lastDisplayedLine)
 	}
 	vic.borders.ColumnInitialize()
@@ -322,7 +316,9 @@ func (seq *Sequencer) phaseSprite3DMAPhase2AndVBlank(vic *VIC) {
 		vic.vBlankNextCycle = false
 		vic.lineStart = 0
 		vic.graphics.ResetVideoCounterLatch()
-		vic.ResetRasterY()
+		vic.memory.ResetRefreshCounter()
+		vic.interrupts.RasterYReset()
+		vic.lightPen.TriggerClear()
 		vic.socketVBlank()
 	}
 	vic.collisions.ClearGraphics()
@@ -488,7 +484,8 @@ func (seq *Sequencer) phaseSetupRasterXReset(vic *VIC) {
 	vic.memory.AccessRefresh()
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.TryBALowIfBadLine()
-	vic.ResetRasterX()
+
+	vic.interrupts.RasterXReset()
 }
 
 // phaseSetupVCounterLoad: This is a refresh cycle. The Video Counter (VC) is loaded from the Video Counter Base (VCBASE),
@@ -536,7 +533,7 @@ func (seq *Sequencer) phaseDisplayFirstFetchAndSpritePipe2(vic *VIC) {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.graphics.TryGraphicsAccess(vic.sequencerRasterY)
+	vic.graphics.TryGraphicsAccess(vic.interrupts.RasterY())
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.sprites.TryIncrementCounterBase()
 	vic.sprites.CommitIncrementCounterBase()
@@ -550,7 +547,7 @@ func (seq *Sequencer) phaseDisplayFirstFetchAndSpritePipe2(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
-	vic.borders.Column40Update(vic.sequencerRasterY, vic.denBit)
+	vic.borders.Column40Update(vic.interrupts.RasterY())
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
@@ -559,7 +556,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.sequencerRasterY)
+	vic.graphics.TryGraphicsAccess(vic.interrupts.RasterY())
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.TryBALowIfBadLine()
 	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
@@ -571,7 +568,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
 //
 //go:nosplit
 func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
-	vic.borders.Column38Update(vic.sequencerRasterY, vic.denBit)
+	vic.borders.Column38Update(vic.interrupts.RasterY())
 	if vic.drawLine {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
@@ -580,7 +577,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.sequencerRasterY)
+	vic.graphics.TryGraphicsAccess(vic.interrupts.RasterY())
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.TryBALowIfBadLine()
 	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
@@ -602,7 +599,7 @@ func (seq *Sequencer) phaseDisplayMainFetch(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.sequencerRasterY)
+	vic.graphics.TryGraphicsAccess(vic.interrupts.RasterY())
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.TryBALowIfBadLine()
 	vic.graphics.TryPhi2Access(vic.baLow, vic.aecLow)
@@ -623,10 +620,10 @@ func (seq *Sequencer) phaseDMASetupAndTeardownLastFetch(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
-	vic.graphics.TryGraphicsAccess(vic.sequencerRasterY)
+	vic.graphics.TryGraphicsAccess(vic.interrupts.RasterY())
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
 	vic.sprites.UpdateYExpansion()
-	vic.sprites.UpdateDMA(vic.sequencerRasterY)
+	vic.sprites.UpdateDMA(vic.interrupts.RasterY())
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.SetBALow()
 	} else {
@@ -650,7 +647,7 @@ func (seq *Sequencer) phaseTeardownIdle(vic *VIC) {
 	}
 	vic.memory.AccessIdle()
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
-	vic.sprites.UpdateDMA(vic.sequencerRasterY)
+	vic.sprites.UpdateDMA(vic.interrupts.RasterY())
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.SetBALow()
 	}
@@ -684,7 +681,7 @@ func (seq *Sequencer) phaseSprite0DMAPhase1(vic *VIC) {
 		vic.borders.AcquireColor(seq.curr.cycleBorder)
 		vic.graphics.DrawBackground()
 	}
-	vic.sprites.PrepareSpriteFlags(vic.sequencerRasterY)
+	vic.sprites.PrepareSpriteFlags(vic.interrupts.RasterY())
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.sprites.FetchPhase1(0)
 	}
@@ -773,7 +770,7 @@ func (seq *Sequencer) phaseSprite2DMAPhase1(vic *VIC) {
 //go:nosplit
 func (seq *Sequencer) phaseSprite2DMAPhase2AndTeardownFinal(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess(vic.badLineCondition)
-	vic.borders.UpdateVerticalFlipFlop(vic.sequencerRasterY, vic.denBit)
+	vic.borders.UpdateVerticalFlipFlop(vic.interrupts.RasterY())
 	if vic.sprites.GetDMAFlag(bitSprite2) != 0 {
 		vic.sprites.FetchPhase2(2)
 	} else {

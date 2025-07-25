@@ -5,6 +5,11 @@ import (
 	"github.com/markel1974/c64emu/src/references"
 )
 
+const (
+	ioAndCharRomArea = 0x7000
+	charRomOffset    = 0x1000
+)
+
 // MemoryUnit represents a structure for managing video memory and related base addresses and operations in a system.
 type MemoryUnit struct {
 	*component.BaseComponent
@@ -120,7 +125,7 @@ func (m *MemoryUnit) ReadByte(addr uint16) uint8 {
 	return m.lastByte
 }
 
-// AccessIdle performs an idle access by reading from the memory address 0x3FFF using the ReadByte method.
+// AccessIdle performs idle access by reading from the memory address 0x3FFF using the ReadByte method.
 func (m *MemoryUnit) AccessIdle() {
 	_ = m.ReadByte(0x3fff)
 }

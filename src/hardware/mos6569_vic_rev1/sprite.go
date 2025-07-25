@@ -37,13 +37,13 @@ const (
 
 // Sprite represents a hardware sprite object used for rendering graphical elements on a screen.
 // sNum is the sprite number, identifying the specific sprite.
-// sBit is the sprite bit, used for masking and collision flag operations.
-// core is a reference to the VIC, responsible for accessing hardware functionalities.
-// data is a buffer storing the sprite's graphical data.
-// dataPtr points to the memory address of the sprite data.
-// counter is a counter used to track the fetching of sprite data.
-// dataCounterBase serves as a base value for resetting the sprite data counter.
-// set is a function for setting pixel data on the sprite's display buffer.
+// sBit is the sprite bit, used for masking and collision flag operations
+// core is a reference to the VIC, responsible for accessing hardware functionalities
+// data is a buffer storing the sprite's graphical data
+// dataPtr points to the memory address of the sprite data
+// counter is a counter used to track the fetching of sprite data
+// dataCounterBase serves as a base value for resetting the sprite data counter
+// set is a function for setting pixel data on the sprite's display buffer
 type Sprite struct {
 	*component.BaseComponent
 	collisions       *CollisionsUnit
@@ -204,8 +204,8 @@ func (sp *Sprite) Draw(latchIndex int, baseOffset int) {
 	mm1 := uint8(sp.latch[latchIndex+latchMM1])
 	mxc := uint8(sp.latch[latchIndex+latchMXC])
 	lineOffset := baseOffset + sOffset
-	majorX := sOffset / spriteNumber // Used for collision detection).This is the character column (column char, 0-39)
-	minorX := sOffset & spriteIndex  // Used for collision detection).This is the pixel offset within the character column (offset pixel inside column, 0-7).
+	majorX := sOffset / spriteNumber // This is the character column (column char, 0-39)
+	minorX := sOffset & spriteIndex  // This is the pixel offset within the character column (offset pixel inside column, 0-7).
 	sp.draw(mdp, mm0, mm1, mxc, lineOffset, sOffset, majorX, minorX, data0, data1, data2)
 }
 
@@ -263,7 +263,7 @@ func (sp *Sprite) drawExpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc ui
 }
 
 // drawExpandedStandard renders a horizontally expanded sprite in standard mode with collision detection and masking.
-func (sp *Sprite) drawExpandedStandard(mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, lineOffset int, sOffset int, majorX int, minorX int, data0 uint8, data1 uint8, data2 uint8) {
+func (sp *Sprite) drawExpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _ uint8, mxc uint8, lineOffset int, sOffset int, majorX int, minorX int, data0 uint8, data1 uint8, data2 uint8) {
 	// Get the foreground mask for the left half of the sprite's character column.
 	foreMaskL := sp.collisions.GetGraphicsL(majorX, minorX)
 	// Get the foreground mask for the right half of the sprite's character column.
@@ -335,7 +335,7 @@ func (sp *Sprite) drawUnexpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc 
 }
 
 // drawUnexpandedStandard renders a 24-pixel wide unexpanded standard sprite, managing collisions and pixel masking.
-func (sp *Sprite) drawUnexpandedStandard(mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, lineOffset int, sOffset int, majorX int, minorX int, data0 uint8, data1 uint8, data2 uint8) {
+func (sp *Sprite) drawUnexpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _ uint8, mxc uint8, lineOffset int, sOffset int, majorX int, minorX int, data0 uint8, data1 uint8, data2 uint8) {
 	//mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, sOffset int, m int, s int
 	// Get the foreground mask for the sprite's character column.
 	foreMask := sp.collisions.GetGraphicsL(majorX, minorX)

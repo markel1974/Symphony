@@ -15,6 +15,10 @@ const (
 	rowsMax = 7
 )
 
+const (
+	characterPixelWidth = 8
+)
+
 // GraphicsUnit represents the core structure handling graphical rendering and related operations in the system.
 // It includes components for managing video memory, collisions, display buffer, and other graphical parameters.
 // This struct encapsulates the state and behavior necessary for emulating the VIC-II's graphics rendering process.
@@ -338,10 +342,10 @@ func (gr *GraphicsUnit) TryGraphicsAccess(rasterY uint16) {
 		var addr uint16
 		if gr.bmm {
 			// Bitmap Mode: Calculate the address based on the video counter, bitmap base address, and row counter.
-			addr = ((gr.videoCounter & 0x03ff) << 3) | gr.memory.GetBitmapBase() | gr.rowCounter // Bitmap
+			addr = ((gr.videoCounter & 0x03ff) << 3) | gr.memory.GetBitmapBase() | gr.rowCounter
 		} else {
 			// Text Mode: Calculate the address based on the character code from the video matrix, character base address, and row counter.
-			addr = (uint16(gr.videoMatrix[gr.lineIndex]) << 3) | gr.memory.GetCharBase() | gr.rowCounter // Text
+			addr = (uint16(gr.videoMatrix[gr.lineIndex]) << 3) | gr.memory.GetCharBase() | gr.rowCounter
 		}
 		if gr.ecm {
 			// Extended Color Mode (ECM): Mask the address to use only the lower 13 bits of the character ROM address.
@@ -396,24 +400,17 @@ func (gr *GraphicsUnit) TryPhi2Access(baLow bool, aecLow bool) {
 // DrawBackground renders the background using the current display mode
 // and updates the graphics offset and collision state.
 func (gr *GraphicsUnit) DrawBackground() {
-	// Call the appropriate background drawing function based on the current display mode.
 	gr.backgroundSequencer[gr.displayMode](gr.offset)
-	// Increment the pixel offset by 8 (one character width).
-	gr.offset += 8
-	// Update the collision detection system's offset.
+	gr.offset += characterPixelWidth
 	gr.collisions.IncrementGraphicsOffset()
 }
 
 // DrawForeground renders the foreground graphics based on the current display mode and x-scroll offset.
 // It also increments the offset and updates the collisions.
 func (gr *GraphicsUnit) DrawForeground() {
-	// Calculate the final offset, including x-scrolling.
 	offset := gr.offset + int(gr.xScroll)
-	// Call the appropriate foreground drawing function.
 	gr.foregroundSequencer[gr.displayMode](offset)
-	// Increment the pixel offset by 8.
-	gr.offset += 8
-	// Update the collision detection system's offset.
+	gr.offset += characterPixelWidth
 	gr.collisions.IncrementGraphicsOffset()
 }
 
@@ -442,8 +439,8 @@ func (gr *GraphicsUnit) drawBackgroundBitmapMulticolor(offset int) {
 // drawBackgroundBitmapStandard renders a standard bitmap background using the provided GraphicsUnit instance.
 // It uses the _drawDefault function to handle the drawing process based on the current GraphicsUnit state.
 // Used in Standard Bitmap Mode.
+// In standard bitmap mode, the background color for each 8x8 block is taken from the *previous* character's data.
 func (gr *GraphicsUnit) drawBackgroundBitmapStandard(offset int) {
-	// In standard bitmap mode, the background color for each 8x8 block is taken from the *previous* character's data.
 	gr.drawDefault(offset, gr.charDataLast)
 }
 
@@ -456,8 +453,8 @@ func (gr *GraphicsUnit) drawBackgroundTextECM(offset int) {
 
 // drawBackgroundDefault draws the default background by delegating to the _drawDefault function with the current offset.
 // This is used for invalid modes.
+// Draw 8 pixels with color 0 (usually black).
 func (gr *GraphicsUnit) drawBackgroundDefault(offset int) {
-	// Draw 8 pixels with color 0 (usually black).
 	gr.drawDefault(offset, 0)
 }
 
