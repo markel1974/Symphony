@@ -42,7 +42,7 @@ type Sequencer struct {
 }
 
 // NewSequencer creates a Sequencer based on the total number of raster lines, selecting PAL or NTSC timing accordingly.
-func NewSequencer(parent references.IComponent, factory references.IComponentFactory, label string, instance int, screenFreq int, totalRaster int) *Sequencer {
+func NewSequencer(parent references.IComponent, factory references.IComponentFactory, label string, instance int /* screenFreq */, _ int, totalRaster int) *Sequencer {
 	if totalRaster >= 300 {
 		return newSequencerPal(parent, factory, label, instance)
 	}
@@ -208,7 +208,7 @@ func (seq *Sequencer) Internal() bool {
 func (seq *Sequencer) Reset() {
 }
 
-// GetRasterYMax returns the maximum Y-coordinate value of the raster as a uint16.
+// GetRasterYMax returns the maximum Y-coordinate value of the raster as uint16.
 func (seq *Sequencer) GetRasterYMax() uint16 {
 	return seq.rasterYMax
 }
