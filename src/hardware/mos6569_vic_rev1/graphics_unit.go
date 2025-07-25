@@ -31,7 +31,7 @@ type GraphicsUnit struct {
 	gfxData               uint8
 	colorData             uint8
 	charData              uint8
-	charDataLast          uint8
+	charDataLatch         uint8
 	ecmBackgroundColor    uint8
 	ecmForegroundColor    uint8
 	offset                int     // Offset from bitmap spritesPresence
@@ -74,7 +74,7 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		gfxData:               0,
 		colorData:             0,
 		charData:              0,
-		charDataLast:          0,
+		charDataLatch:         0,
 		ecmBackgroundColor:    0,
 		ecmForegroundColor:    0,
 		offset:                0,
@@ -136,7 +136,7 @@ func (gr *GraphicsUnit) Connect() error {
 	return nil
 }
 
-// EmulationRequired determines if the current graphics configuration necessitates emulation for functionality.
+// EmulationRequired determines if the current graphics configuration requires emulation for functionality.
 func (gr *GraphicsUnit) EmulationRequired() bool {
 	return false
 }
@@ -168,7 +168,7 @@ func (gr *GraphicsUnit) BadLineCondition() bool {
 // The bad line condition occurs when specific raster and scroll conditions are met, enabling certain VIC behavior.
 // Bad Line Condition is given at any arbitrary clock cycle, if at the
 // negative edge of ø0 at the beginning of the cycle RASTER >= $30 and RASTER <= $f7
-// and the lower three bits of RASTER are equal to YSCROLL
+// and the lower three bits of RASTER are equal to YSCROLL,
 // and if the DEN bit has been set for at least one cycle somewhere in raster line $30
 // So clearing the DEN bit will normally prevent Bad Lines
 func (gr *GraphicsUnit) BadLineUpdate(rasterY uint16, denBit bool) {
@@ -200,7 +200,7 @@ func (gr *GraphicsUnit) ReadB1c() uint8 {
 	return gr.b1c | 0xf0
 }
 
-// ReadB2c retrieves the value of the b2c property with a bitwise OR operation applied, returning a uint8 result.
+// ReadB2c retrieves the value of the b2c property with a bitwise OR operation applied, returning uint8 result.
 func (gr *GraphicsUnit) ReadB2c() uint8 {
 	return gr.b2c | 0xf0
 }
@@ -305,19 +305,17 @@ func (gr *GraphicsUnit) SetOffset(offset int) {
 	gr.offset = offset
 }
 
-// UpdateCharDataLast updates the `charDataLast` field with the current value of `charData`.
-// This is needed for Extended Color Mode (ECM) where the background color is determined by the *previous* character.
-func (gr *GraphicsUnit) UpdateCharDataLast() {
-	gr.charDataLast = gr.charData
-	// In ECM, the background color is determined by bits 7 and 6 of the *previous* character code.
-	if (gr.charDataLast & 0x80) != 0 {
-		if (gr.charDataLast & 0x40) != 0 {
+// CommitCharData processes the character data latch and updates the ECM background color based on bits 7 and 6 of the latch.
+func (gr *GraphicsUnit) CommitCharData() {
+	gr.charDataLatch = gr.charData
+	if (gr.charDataLatch & 0x80) != 0 {
+		if (gr.charDataLatch & 0x40) != 0 {
 			gr.ecmBackgroundColor = gr.b3c // Background color 3.
 		} else {
 			gr.ecmBackgroundColor = gr.b2c // Background color 2.
 		}
 	} else {
-		if (gr.charDataLast & 0x40) != 0 {
+		if (gr.charDataLatch & 0x40) != 0 {
 			gr.ecmBackgroundColor = gr.b1c // Background color 1.
 		} else {
 			gr.ecmBackgroundColor = gr.b0c // Background color 0.
@@ -374,7 +372,7 @@ func (gr *GraphicsUnit) TryPhi2Fetch(baLow bool, aecLow bool) {
 			gr.videoMatrix[gr.lineIndex] = gr.memory.ReadByte(addr)       // Read character code from video matrix.
 			gr.colorLine[gr.lineIndex] = gr.memory.readColorRam(addr)     // Read color data from color RAM.
 		} else {
-			// If AEC is high, the CPU has access to the address bus, so we fill with dummy data.
+			// If AEC is high, the CPU has access to the address bus, so we fill with fake data.
 			gr.colorLine[gr.lineIndex] = 0xff
 			gr.videoMatrix[gr.lineIndex] = 0xff
 		}
@@ -469,7 +467,7 @@ func (gr *GraphicsUnit) drawBackgroundTextStandard(offset int) {
 }
 
 // drawBackgroundTextMulticolor renders a multicolor text background for the given GraphicsUnit object.
-// Internally, it uses the _drawDefault function to set multi-color data based on the specified parameters.
+// Internally, it uses the _drawDefault function to set multicolor data based on the specified parameters.
 // The GraphicsUnit parameter contains all the necessary data like offset, core state, and color information.
 // Used in Multicolor Mode.
 func (gr *GraphicsUnit) drawBackgroundTextMulticolor(offset int) {
@@ -488,7 +486,7 @@ func (gr *GraphicsUnit) drawBackgroundBitmapMulticolor(offset int) {
 // Used in Standard Bitmap Mode.
 // In standard bitmap mode, the background color for each 8x8 block is taken from the *previous* character's data.
 func (gr *GraphicsUnit) drawBackgroundBitmapStandard(offset int) {
-	gr.drawDefault(offset, gr.charDataLast)
+	gr.drawDefault(offset, gr.charDataLatch)
 }
 
 // drawBackgroundTextECM renders the background text in ECM (Extended Color Mode) based on character data and bitmask checks.
@@ -541,7 +539,7 @@ func (gr *GraphicsUnit) drawForegroundBitmapMulticolor(offset int) {
 	gr.drawMulticolor(offset, gr.b0c, gr.charData>>4, gr.charData, gr.colorData)
 }
 
-// drawForegroundTextECM handles rendering of foreground text in Extended Color Mode (ECM) by selecting the correct color mapping.
+// drawForegroundTextECM handles rendering foreground text in Extended Color Mode (ECM) by selecting the correct color mapping.
 func (gr *GraphicsUnit) drawForegroundTextECM(offset int) {
 	gr.drawStandard(offset, gr.ecmForegroundColor, gr.colorData)
 }

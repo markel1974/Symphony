@@ -595,7 +595,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
 		vic.SetBALow()
 	}
 	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
-	vic.graphics.UpdateCharDataLast()
+	vic.graphics.CommitCharData()
 }
 
 // phaseDisplayMainFetch: These 36 cycles form the core of the visible display area. In each pair of cycles, the VIC
@@ -613,13 +613,14 @@ func (seq *Sequencer) phaseDisplayMainFetch(vic *VIC) {
 			vic.graphics.DrawForeground()
 		}
 	}
+	// Pipelining
 	vic.graphics.Phi1Fetch(vic.interrupts.RasterY())
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.graphics.BadLineCondition() {
 		vic.SetBALow()
 	}
 	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
-	vic.graphics.UpdateCharDataLast()
+	vic.graphics.CommitCharData()
 }
 
 // phaseDMASetupAndTeardownLastFetch: This is the last graphics data fetch cycle for the line. The VIC finalizes the graphics pipeline

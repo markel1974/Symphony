@@ -10,11 +10,8 @@ import (
 // https://www.oxyron.de/html/registers_vic2.html
 
 const (
-	RegisterSize  = 0x3f
-	RegisterCount = RegisterSize + 1
+	RegisterCount = 1 << 8 // uint8 max + 1
 )
-
-//https://dustlayer.com/c64-architecture
 
 type ISequencer interface {
 	Setup() error
@@ -210,13 +207,6 @@ func (vic *VIC) EmulationRequired() bool {
 	return true
 }
 
-// TryBALowIfBadLine checks if the bad line condition is met and sets the BA line to low if true.
-//func (vic *VIC) TryBALowIfBadLine(badLineCondition bool) {
-//	if badLineCondition {
-//		vic.SetBALow()
-//	}
-//}
-
 // GetBALow returns the state of the baLow variable, indicating whether the BA low condition is active.
 func (vic *VIC) GetBALow() bool {
 	return vic.baLow
@@ -318,14 +308,14 @@ func (vic *VIC) ReadCR2() uint8 {
 //
 //go:nosplit
 func (vic *VIC) ReadRegister(addr uint16) uint8 {
-	return vic.reads[addr&RegisterSize]()
+	return vic.reads[uint8(addr)]()
 }
 
 // WriteRegister writes data to a register at the specified address, handling various control and memory settings.
 //
 //go:nosplit
 func (vic *VIC) WriteRegister(addr uint16, data uint8) {
-	vic.writes[addr&RegisterSize](data)
+	vic.writes[uint8(addr)](data)
 }
 
 // createReadRegister initializes an array of functions for reading VIC-II registers based on their respective indices.
