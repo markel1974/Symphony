@@ -195,7 +195,7 @@ func main() {
 		log.Fatal(err)
 	}
 	board := emulator.GetBoard()
-	if noShell {
+	if !noShell {
 		if err = createShell(board.GetCommand()); err != nil {
 			log.Fatal(err)
 		}
