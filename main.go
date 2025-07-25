@@ -128,6 +128,10 @@ func main() {
 	//https://sergetoro.com/posts/golang-round-robin-queue-from-scratch/
 	//fifoBlockTest()
 	//TestCommand()
+
+	//benchmarkCreate()
+	//benchmarkTickerWithDistributedSleep()
+
 	var showHelp bool
 	var showVersion bool
 	var cartridges string
