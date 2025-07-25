@@ -282,7 +282,7 @@ func (vic *VIC) WriteCR1(data uint8) {
 	vic.graphics.SetDisplayMode(displayMode)
 	vic.interrupts.WriteRasterLow((uint16(vic.cr1) & 0x80) << 1)
 
-	vic.graphics.BadLineUpdate(vic.interrupts.RasterY(), vic.borders.GetDen())
+	vic.graphics.BadLineVerify(vic.interrupts.RasterY(), vic.borders.GetDen())
 }
 
 // ReadCR1 reads the CR1 register, combining specific raster and control bits, and returns the resulting 8-bit value.
