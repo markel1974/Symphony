@@ -24,8 +24,8 @@ const (
 
 // sequencerLength defines the size of the sequencer array, calculated as 2^5, providing 32 possible states.
 const (
-	borderSequencerSize  = 31
-	borderSequencerCount = borderSequencerSize + 1 //1 << 5
+	borderSequencerMax   = 31
+	borderSequencerCount = 1 << 8
 )
 
 // BordersUnit is a type responsible for managing and updating border data, configurations, and states for a display system.
@@ -229,7 +229,7 @@ func (b *BordersUnit) VerticalFlipFlop() bool {
 
 // Draw executes a sequence of rendering functions based on the current sequencer state of the BordersUnit instance.
 func (b *BordersUnit) Draw() {
-	sequence := b.sequencer[b.sequencerState&borderSequencerSize]
+	sequence := b.sequencer[b.sequencerState]
 	for _, drawFn := range sequence {
 		drawFn()
 	}
@@ -288,23 +288,27 @@ func (b *BordersUnit) createSequencer() [borderSequencerCount][]func() {
 	for idx := range sequencer {
 		x := uint8(idx)
 		var data []func() = nil
-		if (x & left) == left {
-			data = append(data, b.drawLeft)
-		}
-		if (x & midLeft) == midLeft {
-			data = append(data, b.drawMidLeft)
-		}
-		if (x & center) == center {
-			data = append(data, b.drawCenter)
-		}
-		if (x & midRight) == midRight {
-			data = append(data, b.drawMidRight)
-		}
-		if (x & right) == right {
-			data = append(data, b.drawRight)
-		}
-		if data == nil {
+		if x > borderSequencerMax {
 			data = append(data, b.drawEmpty)
+		} else {
+			if (x & left) == left {
+				data = append(data, b.drawLeft)
+			}
+			if (x & midLeft) == midLeft {
+				data = append(data, b.drawMidLeft)
+			}
+			if (x & center) == center {
+				data = append(data, b.drawCenter)
+			}
+			if (x & midRight) == midRight {
+				data = append(data, b.drawMidRight)
+			}
+			if (x & right) == right {
+				data = append(data, b.drawRight)
+			}
+			if data == nil {
+				data = append(data, b.drawEmpty)
+			}
 		}
 		sequencer[x] = data
 	}
