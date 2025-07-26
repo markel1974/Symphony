@@ -125,12 +125,7 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 }
 
 func main() {
-	//https://sergetoro.com/posts/golang-round-robin-queue-from-scratch/
-	//fifoBlockTest()
-	//TestCommand()
-
-	//benchmarkCreate()
-	//benchmarkTickerWithDistributedSleep()
+	//benchmark.VIC(1000000, 20, 10, 1)
 
 	var showHelp bool
 	var showVersion bool

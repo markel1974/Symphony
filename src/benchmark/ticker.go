@@ -15,21 +15,21 @@ import (
 )
 
 type Ticker struct {
-	queue    chan int
-	lock     sync.Mutex
-	emulate  func()
-	interval time.Duration
-	blocks   int
-	cycles   int
+	queue     chan int
+	lock      sync.Mutex
+	emulateFn func()
+	interval  time.Duration
+	blocks    int
+	cycles    int
 }
 
 func NewTicker(hz int, intervalMs int, blocks int, emulate func()) *Ticker {
 	t := &Ticker{
-		emulate:  emulate,
-		interval: time.Duration(intervalMs) * time.Millisecond,
-		blocks:   blocks,
-		queue:    make(chan int, 4096),
-		cycles:   (hz / intervalMs) / blocks, //runtime.NumCPU(),
+		emulateFn: emulate,
+		interval:  time.Duration(intervalMs) * time.Millisecond,
+		blocks:    blocks,
+		queue:     make(chan int, 4096),
+		cycles:    (hz / intervalMs) / blocks, //runtime.NumCPU(),
 	}
 	return t
 }
@@ -39,17 +39,35 @@ func (t *Ticker) loop() {
 		select {
 		case cycles := <-t.queue:
 			for step := 0; step < cycles; step++ {
-				t.emulate()
+				t.emulateFn()
 			}
 		}
 	}
 }
 
+//go:noinline
+//go:nosplit
+func (t *Ticker) Emulate2() {
+
+}
+
+//go:noinline
+//go:nosplit
+func Emulate() {
+	//t.emulate()
+}
+
 func (t *Ticker) Start() {
+	//debug.SetGCPercent(-1)
+	//emulate := Emulate //t.emulate
+	//emulate := t.Emulate
+	//emulate := Emulate
+	//emulate := (*Ticker).Emulate2
 	for {
 		for block := 0; block < t.blocks; block++ {
 			for cycle := 0; cycle < t.cycles; cycle++ {
-				t.emulate()
+				//emulate(t)
+				t.emulateFn()
 			}
 			//runtime.Gosched()
 		}
