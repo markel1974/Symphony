@@ -848,6 +848,8 @@ func (seq *Sequencer) phaseSprite2DMAPhase2AndTeardownFinal(vic *VIC) {
 		vic.borders.Draw()
 		vic.lineStart += seq.width
 	}
+
+	vic.beam.Commit()
 	vic.socketLastCycle()
 	vic.RasterXIncrement()
 }

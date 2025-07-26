@@ -15,6 +15,8 @@ const (
 	colorSize           = 1 << 8
 	standardIndexSize   = 1 << 8
 	multicolorIndexSize = 1 << 8
+	scanlineSize        = 1 << 11 // 2048 Based on sequencer and border logic, a size of 576 is safe.
+	scanlineMask        = scanlineSize - 1
 )
 
 type Beam struct {
@@ -22,6 +24,8 @@ type Beam struct {
 	displayBufferSet       func(int, uint8)
 	displayBufferSet8      func(int, *[8]uint8)
 	displayBufferSetMulti8 func(int, uint8)
+	// scanline holds the pixel data for an entire scanline before committing it to the final display.
+	scanline [scanlineSize]uint8
 	// colors is an array that holds 256 color values, initialized with specific uint8 values for rendering purposes.
 	colors [colorSize]uint8
 	// standardIndex is a lookup table that maps an 8-bit value to an array of 8 single-bit values extracted from it.
@@ -81,41 +85,62 @@ func NewBeam(displayBuffer references.IDisplayBuffer) *Beam {
 	return s
 }
 
+// Commit transfers the completed scanline from the internal buffer to the final display buffer.
+// This should be called once at the very end of a scanline's rendering cycle.
+func (s *Beam) Commit() {
+	// In a real implementation, this would ideally be a single, highly optimized call
+	// to the display buffer interface, e.g., displayBuffer.SetScanline(s.lineOffset, s.scanline[:]).
+	// For now, we simulate it by iterating, which is less performant but functionally correct.
+	const visibleWidth = 576
+	for i := 0; i < visibleWidth; i++ {
+		s.displayBufferSet(s.lineOffset+i, s.scanline[i])
+	}
+}
+
 // SetOffset sets the line offset for the Beam to the specified value.
 func (s *Beam) SetOffset(offset int) {
 	s.lineOffset = offset
 }
 
-// Draw updates the display buffer at the computed location with the specified color value.
+// Draw updates the internal scanline buffer at the computed location with the specified color value.
 func (s *Beam) Draw(index int, color uint8) {
-	s.displayBufferSet(s.lineOffset+index, s.colors[color])
+	s.scanline[index&scanlineMask] = s.colors[color]
 }
 
-// DrawMulti8 writes an 8-pixel multicolor value to the display buffer at the specified offset using the given color.
+// DrawMulti8 writes an 8-pixel multicolor value to the internal scanline buffer at the specified offset using the given color.
 func (s *Beam) DrawMulti8(offset int, color uint8) {
-	s.displayBufferSetMulti8(s.lineOffset+offset, s.colors[color])
-}
-
-// Draw8Standard renders 8 pixels in standard mode using two colors based on the bit values in the provided data byte.
-func (s *Beam) Draw8Standard(offset int, a uint8, b uint8, data uint8) {
-	colorBuffer := [4]uint8{s.colors[a], s.colors[b], 0, 0}
-	colorIndex := s.standardIndex[data]
-	drawBuffer := [8]uint8{
-		colorBuffer[colorIndex[0]], colorBuffer[colorIndex[1]], colorBuffer[colorIndex[2]], colorBuffer[colorIndex[3]],
-		colorBuffer[colorIndex[4]], colorBuffer[colorIndex[5]], colorBuffer[colorIndex[6]], colorBuffer[colorIndex[7]],
+	finalColor := s.colors[color]
+	for i := 0; i < 8; i++ {
+		s.scanline[(offset+i)&scanlineMask] = finalColor
 	}
-	s.displayBufferSet8(s.lineOffset+offset, &drawBuffer)
 }
 
-// Draw8Multi renders 8 pixels using a multicolor mode where each pixel is selected from four input colors (a, b, c, d).
-// It maps an 8-bit data value to 2-bit pixel indices using a multicolorIndex lookup and writes the resulting color values.
-// The rendering output is written to the display buffer starting from the calculated offset position.
+// Draw8Standard renders 8 pixels in standard mode into the internal scanline buffer.
+// Draw8Standard renderizza 8 pixel in modalità standard nel buffer interno.
+func (s *Beam) Draw8Standard(offset int, a uint8, b uint8, data uint8) {
+	colorBuffer := [2]uint8{s.colors[a], s.colors[b]}
+	colorIndex := s.standardIndex[data]
+	s.scanline[(offset+0)&scanlineMask] = colorBuffer[colorIndex[0]]
+	s.scanline[(offset+1)&scanlineMask] = colorBuffer[colorIndex[1]]
+	s.scanline[(offset+2)&scanlineMask] = colorBuffer[colorIndex[2]]
+	s.scanline[(offset+3)&scanlineMask] = colorBuffer[colorIndex[3]]
+	s.scanline[(offset+4)&scanlineMask] = colorBuffer[colorIndex[4]]
+	s.scanline[(offset+5)&scanlineMask] = colorBuffer[colorIndex[5]]
+	s.scanline[(offset+6)&scanlineMask] = colorBuffer[colorIndex[6]]
+	s.scanline[(offset+7)&scanlineMask] = colorBuffer[colorIndex[7]]
+}
+
+// Draw8Multi renders 8 pixels using a multicolor mode into the internal scanline buffer.
+// Draw8Multi renderizza 8 pixel in modalità multicolor nel buffer interno.
 func (s *Beam) Draw8Multi(offset int, a uint8, b uint8, c uint8, d uint8, data uint8) {
 	colorBuffer := [4]uint8{s.colors[a], s.colors[b], s.colors[c], s.colors[d]}
 	index := s.multicolorIndex[data]
-	drawBuffer := [8]uint8{
-		colorBuffer[index[0]], colorBuffer[index[1]], colorBuffer[index[2]], colorBuffer[index[3]],
-		colorBuffer[index[4]], colorBuffer[index[5]], colorBuffer[index[6]], colorBuffer[index[7]],
-	}
-	s.displayBufferSet8(s.lineOffset+offset, &drawBuffer)
+	s.scanline[(offset+0)&scanlineMask] = colorBuffer[index[0]]
+	s.scanline[(offset+1)&scanlineMask] = colorBuffer[index[1]]
+	s.scanline[(offset+2)&scanlineMask] = colorBuffer[index[2]]
+	s.scanline[(offset+3)&scanlineMask] = colorBuffer[index[3]]
+	s.scanline[(offset+4)&scanlineMask] = colorBuffer[index[4]]
+	s.scanline[(offset+5)&scanlineMask] = colorBuffer[index[5]]
+	s.scanline[(offset+6)&scanlineMask] = colorBuffer[index[6]]
+	s.scanline[(offset+7)&scanlineMask] = colorBuffer[index[7]]
 }
