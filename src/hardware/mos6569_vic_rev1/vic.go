@@ -260,7 +260,7 @@ func (vic *VIC) ChangedVA(newVA uint8) {
 
 // LightPenTrigger handles triggering the light pen functionality based on the current raster position.
 func (vic *VIC) LightPenTrigger() {
-	vic.lightPen.Trigger(vic.interrupts.RasterY(), vic.interrupts.RasterY())
+	vic.lightPen.Trigger(vic.interrupts.RasterX(), vic.interrupts.RasterY())
 }
 
 // WriteCR1 updates the control register CR1 and adjusts various graphical and border settings based on the given data.
