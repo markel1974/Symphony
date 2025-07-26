@@ -24,8 +24,9 @@ const (
 
 // sequencerLength defines the size of the sequencer array, calculated as 2^5, providing 32 possible states.
 const (
-	borderSequencerMax   = 31
+	borderSequencerMax   = 1 << 5
 	borderSequencerCount = 1 << 8
+	borderColorCount     = 1 << 8
 )
 
 // BordersUnit is a type responsible for managing and updating border data, configurations, and states for a display system.
@@ -34,7 +35,7 @@ type BordersUnit struct {
 	setMulti8          func(int, uint8)
 	horizontalFlipFlop uint8
 	verticalFlipFlop   uint8
-	colors             [0xff + 1]uint8
+	colors             [borderColorCount]uint8
 	offset             int
 	left               []int
 	midLeft            int
@@ -288,7 +289,7 @@ func (b *BordersUnit) createSequencer() [borderSequencerCount][]func() {
 	for idx := range sequencer {
 		x := uint8(idx)
 		var data []func() = nil
-		if x > borderSequencerMax {
+		if x >= borderSequencerMax {
 			data = append(data, b.drawEmpty)
 		} else {
 			if (x & left) == left {

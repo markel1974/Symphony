@@ -157,14 +157,14 @@ func (i *Interrupts) ReadLatch() uint8 {
 	return i.irqLatch | 0x70
 }
 
-// WriteRasterHigh updates the low byte of the IRQ raster line with the given 8-bit data and triggers raster settings.
-func (i *Interrupts) WriteRasterHigh(data uint8) {
+// WriteRasterLow updates the low byte of the IRQ raster line with the given 8-bit data and triggers raster settings.
+func (i *Interrupts) WriteRasterLow(data uint8) {
 	irqRaster := (i.irqRaster & 0xff00) | uint16(data)
 	i.irqRasterSet(irqRaster)
 }
 
-// WriteRasterLow sets the lower 8 bits of the IRQ raster line by combining the current high bits with the input data.
-func (i *Interrupts) WriteRasterLow(data uint16) {
+// WriteRasterHigh sets the high 8 bits of the IRQ raster line by combining the current high bits with the input data.
+func (i *Interrupts) WriteRasterHigh(data uint16) {
 	irqRaster := (i.irqRaster & 0xff) | data
 	i.irqRasterSet(irqRaster)
 }

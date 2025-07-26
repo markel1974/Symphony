@@ -45,7 +45,7 @@ type GraphicsUnit struct {
 	textBuffer            []byte
 	xScroll               uint16 // X scroll value
 	yScroll               uint16 // Y scroll value
-	displayMode           int    // Index of current display mode
+	displayMode           uint8  // Index of current display mode
 	bmm                   bool
 	ecm                   bool
 	b0c                   uint8 // VIC register - graphics
@@ -253,7 +253,7 @@ func (gr *GraphicsUnit) GetYScroll() uint16 {
 }
 
 // SetDisplayMode sets the current graphical display mode for the GraphicsUnit instance to the specified integer value.
-func (gr *GraphicsUnit) SetDisplayMode(displayMode int) {
+func (gr *GraphicsUnit) SetDisplayMode(displayMode uint8) {
 	gr.displayMode = displayMode
 }
 

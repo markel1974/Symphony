@@ -103,9 +103,9 @@ func (c *CollisionsUnit) SetBackground(data uint8) {
 // Called at the beginning of sprite drawing on each scanline.
 func (c *CollisionsUnit) Prepare() {
 	// Reset the sprite-to-sprite collision result.
-	c.spritesCollision = uint8(0)
+	c.spritesCollision = 0
 	// Reset the sprite-to-background collision result.
-	c.graphics = uint8(0)
+	c.graphics = 0
 	// Reset the sprite buffer by copying the empty buffer.  This is *much* faster than iterating.
 	copy(c.spritesPresence, c.spritesPresenceEmpty)
 }
@@ -120,7 +120,7 @@ func (c *CollisionsUnit) SetGraphicsPresence(sBit uint8) {
 // SetSpritePresence checks and sets sprite collision at a specific index with a sprite bit and returns collision status.
 // If a collision occurs, it updates the sprite collision state;
 // otherwise, it updates the sprite buffer with the new bit.
-func (c *CollisionsUnit) SetSpritePresence(index int, sBit uint8) bool {
+func (c *CollisionsUnit) SetSpritePresence(index int, spiteBit uint8) bool {
 	// Boundary check.
 	if index >= borderDisplayXFillMax {
 		return false
@@ -128,14 +128,12 @@ func (c *CollisionsUnit) SetSpritePresence(index int, sBit uint8) bool {
 	sBitPresence := c.spritesPresence[index]
 	if sBitPresence == 0 {
 		// mark this sprite as present at this pixel.
-		c.spritesPresence[index] = sBit
+		c.spritesPresence[index] = spiteBit
 		return false
 	}
-
 	// If any sprite is already present at this pixel...
 	// Update the 'sprites' collision result with *both* the existing sprites *and* the new sprite.
-	c.spritesCollision |= sBitPresence | sBit
-	// Indicate that a collision occurred.
+	c.spritesCollision |= sBitPresence | spiteBit
 	return true
 }
 
@@ -173,25 +171,21 @@ func (c *CollisionsUnit) ClearGraphics() {
 // UpdateGraphics updates the graphics collision buffer with provided foreground mask values a and b at the current offset.
 // Called during *background* rendering.  'a' and 'b' represent the pixel data for two *consecutive* pixels.
 func (c *CollisionsUnit) UpdateGraphics(a uint8, b uint8) {
-	// Reset the graphics buffer by copying the empty buffer.
-	c.graphicsBuffer[c.graphicsBufferOffset] |= a
-	// Reset the offset.
-	c.graphicsBuffer[c.graphicsBufferOffset+1] |= b
+	c.graphicsBuffer[c.graphicsBufferOffset] |= a   // Reset the graphics buffer by copying the empty buffer.
+	c.graphicsBuffer[c.graphicsBufferOffset+1] |= b // Reset the offset.
 }
 
-// GetGraphicsL calculates a 32-bit graphics mask for collision detection.
-// It assembles data from 5 consecutive bytes of the graphics buffer (from m to m+4)
-// and shifts them by 's' bits to perfectly align with the sprite's sub-pixel position.
-// This creates a "window" of graphics data that can be compared with the sprite.
-func (c *CollisionsUnit) GetGraphicsL(m int, s int) uint32 {
-	f := (((uint32(c.graphicsBuffer[m]) << 24) | (uint32(c.graphicsBuffer[m+1]) << 16) | (uint32(c.graphicsBuffer[m+2]) << 8) | (uint32(c.graphicsBuffer[m+3]))) << s) | (uint32(c.graphicsBuffer[m+4]) >> (8 - s))
+// GetGraphicsL computes a 32-bit graphics mask from the graphics buffer starting at 'charColumn' with a 'pixelOffset' adjustment.
+// The result is shifted and combined to align with the intended sub-pixel graphics position, returning a 32-bit uint representation.
+func (c *CollisionsUnit) GetGraphicsL(charColumn int, pixelOffset int) uint32 {
+	f := (((uint32(c.graphicsBuffer[charColumn]) << 24) | (uint32(c.graphicsBuffer[charColumn+1]) << 16) | (uint32(c.graphicsBuffer[charColumn+2]) << 8) | (uint32(c.graphicsBuffer[charColumn+3]))) << pixelOffset) | (uint32(c.graphicsBuffer[charColumn+4]) >> (8 - pixelOffset))
 	return f
 }
 
-// GetGraphicsR calculates a 32-bit graphics mask from the graphics buffer using the specified offset and left shift.
-// m is the major coordinate
-// s is the shift
-func (c *CollisionsUnit) GetGraphicsR(m int, s int) uint32 {
-	f := (((uint32(c.graphicsBuffer[m+4]) << 24) | (uint32(c.graphicsBuffer[m+5]) << 16) | (uint32(c.graphicsBuffer[m+6]) << 8) | (uint32(c.graphicsBuffer[m+7]))) << s) | (uint32(c.graphicsBuffer[m+8]) >> (8 - s))
+// GetGraphicsR calculates a 32-bit graphics mask from the graphics buffer starting at 'charColumn+4'.
+// It shifts the mask by 'pixelOffset' bits to align with the intended sub-pixel graphics position.
+// Returns a composite 32-bit unsigned integer representing the derived graphics mask.
+func (c *CollisionsUnit) GetGraphicsR(charColumn int, pixelOffset int) uint32 {
+	f := (((uint32(c.graphicsBuffer[charColumn+4]) << 24) | (uint32(c.graphicsBuffer[charColumn+5]) << 16) | (uint32(c.graphicsBuffer[charColumn+6]) << 8) | (uint32(c.graphicsBuffer[charColumn+7]))) << pixelOffset) | (uint32(c.graphicsBuffer[charColumn+8]) >> (8 - pixelOffset))
 	return f
 }

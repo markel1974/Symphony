@@ -653,6 +653,7 @@ func (sp *SpritesUnit) Draw() {
 	latchIndex := _latchStates[sp.bufferIndex]
 	// Prepare the collision detection system for this scanline.
 	sp.collisions.Prepare()
+	// Draw sprites
 	for _, sNum := range activeSprites {
 		sp.sprites[sNum].Draw(latchIndex, sp.offset)
 	}

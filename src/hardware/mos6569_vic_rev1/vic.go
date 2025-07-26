@@ -278,9 +278,9 @@ func (vic *VIC) WriteCR1(data uint8) {
 	vic.graphics.SetBmm((vic.cr1 & 0x20) != 0)
 	vic.graphics.SetEcm((vic.cr1 & 0x40) != 0)
 	//rst8 := (vic.cr1 & 0x80) != 0
-	displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
+	displayMode := ((vic.cr1 & 0x60) | (vic.cr2 & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
 	vic.graphics.SetDisplayMode(displayMode)
-	vic.interrupts.WriteRasterLow((uint16(vic.cr1) & 0x80) << 1)
+	vic.interrupts.WriteRasterHigh((uint16(vic.cr1) & 0x80) << 1)
 
 	vic.graphics.BadLineVerify(vic.interrupts.RasterY(), vic.borders.GetDen())
 }
@@ -295,7 +295,7 @@ func (vic *VIC) WriteCR2(data uint8) {
 	vic.cr2 = data
 	vic.graphics.SetXScroll(uint16(vic.cr2) & 7)
 	vic.borders.SetColumnSel((vic.cr2 & 0x8) != 0)
-	displayMode := ((int(vic.cr1) & 0x60) | (int(vic.cr2) & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
+	displayMode := ((vic.cr1 & 0x60) | (vic.cr2 & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
 	vic.graphics.SetDisplayMode(displayMode)
 }
 
@@ -402,21 +402,21 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	writes[0x0e] = vic.sprites.WriteMXx7
 	writes[0x0f] = vic.sprites.WriteMXy7
 	writes[0x10] = vic.sprites.WriteMX8
-	writes[0x11] = vic.WriteCR1                   // Control register 1
-	writes[0x12] = vic.interrupts.WriteRasterHigh // Raster counter
-	writes[0x13] = vic.lightPen.WriteX            // Light pen X
-	writes[0x14] = vic.lightPen.WriteY            // Light pen Y
-	writes[0x15] = vic.sprites.WriteMe            // Sprite enabled
-	writes[0x16] = vic.WriteCR2                   // Control register 2
-	writes[0x17] = vic.sprites.WriteMYe           // Sprite Y expansion
-	writes[0x18] = vic.memory.SetVABase           // MemoryUnit pointers
-	writes[0x19] = vic.interrupts.WriteLatch      // IRQ Latch
-	writes[0x1a] = vic.interrupts.WriteMask       // IRQ mask
-	writes[0x1b] = vic.sprites.WriteMDp           // Sprite data priority
-	writes[0x1c] = vic.sprites.WriteMMc           // Sprite Color
-	writes[0x1d] = vic.sprites.WriteMXe           // Sprite X expansion
-	writes[0x1e] = vic.collisions.SetSprite       // Sprite-sprite collision
-	writes[0x1f] = vic.collisions.SetBackground   // Sprite-background collision
+	writes[0x11] = vic.WriteCR1                  // Control register 1
+	writes[0x12] = vic.interrupts.WriteRasterLow // Raster counter low
+	writes[0x13] = vic.lightPen.WriteX           // Light pen X
+	writes[0x14] = vic.lightPen.WriteY           // Light pen Y
+	writes[0x15] = vic.sprites.WriteMe           // Sprite enabled
+	writes[0x16] = vic.WriteCR2                  // Control register 2
+	writes[0x17] = vic.sprites.WriteMYe          // Sprite Y expansion
+	writes[0x18] = vic.memory.SetVABase          // MemoryUnit pointers
+	writes[0x19] = vic.interrupts.WriteLatch     // IRQ Latch
+	writes[0x1a] = vic.interrupts.WriteMask      // IRQ mask
+	writes[0x1b] = vic.sprites.WriteMDp          // Sprite data priority
+	writes[0x1c] = vic.sprites.WriteMMc          // Sprite Color
+	writes[0x1d] = vic.sprites.WriteMXe          // Sprite X expansion
+	writes[0x1e] = vic.collisions.SetSprite      // Sprite-sprite collision
+	writes[0x1f] = vic.collisions.SetBackground  // Sprite-background collision
 	writes[0x20] = vic.borders.WriteEc
 	writes[0x21] = vic.graphics.WriteB0c
 	writes[0x22] = vic.graphics.WriteB1c
