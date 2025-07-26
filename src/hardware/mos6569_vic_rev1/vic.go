@@ -273,18 +273,6 @@ func (vic *VIC) LightPenTrigger() {
 	vic.lightPen.Trigger(vic.rasterX, vic.rasterY)
 }
 
-// RasterXReset resets the horizontal raster counter (rasterX) to its initial pre-start value (0xfffc).
-func (vic *VIC) RasterXReset() {
-	vic.rasterX = 0xfffc
-}
-
-// RasterXIncrement increments the current raster X position by 8.
-//
-//go:nosplit
-func (vic *VIC) RasterXIncrement() {
-	vic.rasterX += 8
-}
-
 // ReadRasterY returns the current raster Y position as an 8-bit unsigned integer.
 func (vic *VIC) ReadRasterY() uint8 {
 	return uint8(vic.rasterY)
