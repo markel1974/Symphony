@@ -304,7 +304,7 @@ func (seq *Sequencer) phaseSprite3DMAPhase1AndInit(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite3|bitSprite4) == 0 {
 		vic.ClearBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite3DMAPhase2AndVBlank: The V-Blank is triggered if scheduled in the previous cycle, resetting raster counters and firing
@@ -337,7 +337,7 @@ func (seq *Sequencer) phaseSprite3DMAPhase2AndVBlank(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite5) != 0 {
 		vic.SetBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite4DMAPhase1: Sprite 4 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
@@ -353,7 +353,7 @@ func (seq *Sequencer) phaseSprite4DMAPhase1(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite4|bitSprite5) == 0 {
 		vic.ClearBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite4DMAPhase2: Sprite 4 DMA continues, fetching its second and third data bytes. The BA signal is asserted
@@ -371,7 +371,7 @@ func (seq *Sequencer) phaseSprite4DMAPhase2(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite6) != 0 {
 		vic.SetBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite5DMAPhase1: Sprite 5 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
@@ -387,7 +387,7 @@ func (seq *Sequencer) phaseSprite5DMAPhase1(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite5|bitSprite6) == 0 {
 		vic.ClearBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite5DMAPhase2: Sprite 5 DMA continues, fetching its second and third data bytes. The BA signal is asserted
@@ -405,7 +405,7 @@ func (seq *Sequencer) phaseSprite5DMAPhase2(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite7) != 0 {
 		vic.SetBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite6DMAPhase1: Sprite 6 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
@@ -421,7 +421,7 @@ func (seq *Sequencer) phaseSprite6DMAPhase1(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite6|bitSprite7) == 0 {
 		vic.ClearBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite6DMAData1Data2: Sprite 6 DMA continues, fetching its second and third data bytes.
@@ -435,7 +435,7 @@ func (seq *Sequencer) phaseSprite6DMAPhase2(vic *VIC) {
 	} else {
 		vic.memory.AccessIdle()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite7DMAPhase1: Sprite 7 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
@@ -451,7 +451,7 @@ func (seq *Sequencer) phaseSprite7DMAPhase1(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite7) == 0 {
 		vic.ClearBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite7DMAPhase2: Sprite 7 DMA continues, fetching its second and third data bytes. This concludes the main
@@ -466,7 +466,7 @@ func (seq *Sequencer) phaseSprite7DMAPhase2(vic *VIC) {
 	} else {
 		vic.memory.AccessIdle()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseRefresh: This is a refresh cycle. The VIC performs a DRAM refresh operation by accessing an address
@@ -478,7 +478,7 @@ func (seq *Sequencer) phaseRefresh(vic *VIC) {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.ClearBALow()
 	vic.memory.AccessRefresh()
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSetupBadLineCheck: This is a refresh cycle. The VIC checks for a "bad line" condition, which occurs if the
@@ -492,7 +492,7 @@ func (seq *Sequencer) phaseSetupBadLineCheck(vic *VIC) {
 	if vic.graphics.BadLineCondition() {
 		vic.SetBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSetupRasterXReset: This is a refresh cycle. The horizontal raster counter (rasterX) is reset to 0. The VIC is now
@@ -510,8 +510,8 @@ func (seq *Sequencer) phaseSetupRasterXReset(vic *VIC) {
 	if vic.graphics.BadLineCondition() {
 		vic.SetBALow()
 	}
-	vic.RasterXReset()
-	vic.RasterXIncrement()
+	vic.rasterX = 0xfffc
+	vic.rasterX += 8
 }
 
 // phaseSetupVCounterLoad: This is a refresh cycle. The Video Counter (VC) is loaded from the Video Counter Base (VCBASE),
@@ -532,7 +532,7 @@ func (seq *Sequencer) phaseSetupVCounterLoad(vic *VIC) {
 		vic.SetBALow()
 	}
 	vic.graphics.UpdateVideoCounter()
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSetupRCounterCheckAndSpritePipe1: This is the critical "bad line" decision cycle. If it's a bad line, the VIC takes full control
@@ -554,7 +554,7 @@ func (seq *Sequencer) phaseSetupRCounterCheckAndSpritePipe1(vic *VIC) {
 		vic.SetBALow()
 	}
 	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseDisplayFirstFetchAndSpritePipe2: First graphics data fetch cycle. The VIC fetches the character's bitmap data from Character
@@ -576,7 +576,7 @@ func (seq *Sequencer) phaseDisplayFirstFetchAndSpritePipe2(vic *VIC) {
 		vic.SetBALow()
 	}
 	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseDisplayMainFetchC40: Second graphics data fetch cycle. The VIC fetches the next character code from screen RAM.
@@ -602,7 +602,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC40(vic *VIC) {
 		vic.SetBALow()
 	}
 	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseDisplayMainFetchC38: The main display window begins. The VIC fetches the next character's bitmap data. The fetched
@@ -629,7 +629,7 @@ func (seq *Sequencer) phaseDisplayMainFetchC38(vic *VIC) {
 	}
 	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
 	vic.graphics.CommitCharData()
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseDisplayMainFetch: These 36 cycles form the core of the visible display area. In each pair of cycles, the VIC
@@ -656,7 +656,7 @@ func (seq *Sequencer) phaseDisplayMainFetch(vic *VIC) {
 	}
 	vic.graphics.TryPhi2Fetch(vic.baLow, vic.aecLow)
 	vic.graphics.CommitCharData()
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseDMASetupAndTeardownLastFetch: This is the last graphics data fetch cycle for the line. The VIC finalizes the graphics pipeline
@@ -683,7 +683,7 @@ func (seq *Sequencer) phaseDMASetupAndTeardownLastFetch(vic *VIC) {
 	} else {
 		vic.ClearBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseTeardownIdle: Idle cycle. The main graphics fetch is complete. The VIC is now in the right border area.
@@ -707,7 +707,7 @@ func (seq *Sequencer) phaseTeardownIdle(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
 		vic.SetBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseTeardownCommitSpriteFlags: Idle cycle. The 40-column side border logic is applied. The sprite DMA flags calculated in
@@ -728,7 +728,7 @@ func (seq *Sequencer) phaseTeardownCommitSpriteFlags(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite1) != 0 {
 		vic.SetBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite0DMAPhase1: Sprite 0 DMA for the upcoming line begins if enabled, fetching its pointer and first data byte.
@@ -746,7 +746,7 @@ func (seq *Sequencer) phaseSprite0DMAPhase1AndScanLineEnd(vic *VIC) {
 		vic.sprites.FetchPhase1(0)
 	}
 	vic.graphics.TryAcquireDisplayAccessOnScanlineEnd()
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite0DMAPhase2: Sprite 0 DMA continues, fetching its second and third data bytes. The BA signal is asserted
@@ -768,7 +768,7 @@ func (seq *Sequencer) phaseSprite0DMAPhase2(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite2) != 0 {
 		vic.SetBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite1DMAPhase1: Sprite 1 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
@@ -790,7 +790,7 @@ func (seq *Sequencer) phaseSprite1DMAPhase1(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite1|bitSprite2) == 0 {
 		vic.ClearBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite1DMAPhase2: Sprite 1 DMA continues, fetching its second and third data bytes. The BA signal is asserted
@@ -808,7 +808,7 @@ func (seq *Sequencer) phaseSprite1DMAPhase2(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite3) != 0 {
 		vic.SetBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite2DMAPhase1: Sprite 2 DMA begins if enabled, fetching its pointer and first data byte. The BA signal is
@@ -824,7 +824,7 @@ func (seq *Sequencer) phaseSprite2DMAPhase1(vic *VIC) {
 	if vic.sprites.GetDMAFlag(bitSprite2|bitSprite3) == 0 {
 		vic.ClearBALow()
 	}
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
 
 // phaseSprite1DMAPhase2: Sprite 2 DMA continues, fetching its second and third data bytes. The BA signal is asserted
@@ -851,5 +851,5 @@ func (seq *Sequencer) phaseSprite2DMAPhase2AndTeardownFinal(vic *VIC) {
 
 	vic.beam.Commit()
 	vic.socketLastCycle()
-	vic.RasterXIncrement()
+	vic.rasterX += 8
 }
