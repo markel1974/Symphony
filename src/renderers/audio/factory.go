@@ -2,7 +2,7 @@ package audio
 
 import (
 	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/renderers/audio/null_render"
+	"github.com/markel1974/c64emu/src/renderers/audio/null_audio_render"
 	"github.com/markel1974/c64emu/src/renderers/audio/oto_render"
 	"strings"
 )
@@ -23,7 +23,7 @@ func (f *Factory) Create(id string) references.IAudioRender {
 	case "oto":
 		return oto_render.NewAudio()
 	case "null", "void":
-		return null_render.NewAudio()
+		return null_audio_render.NewAudio()
 	default:
 		return oto_render.NewAudio()
 	}
