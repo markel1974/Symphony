@@ -230,9 +230,8 @@ func (b *BordersUnit) VerticalFlipFlop() bool {
 
 // Draw executes a sequence of rendering functions based on the current sequencer state of the BordersUnit instance.
 func (b *BordersUnit) Draw() {
-	sequence := b.sequencer[b.sequencerState]
-	for _, drawFn := range sequence {
-		drawFn()
+	for idx := 0; idx < len(b.sequencer[b.sequencerState]); idx++ {
+		b.sequencer[b.sequencerState][idx]()
 	}
 }
 
