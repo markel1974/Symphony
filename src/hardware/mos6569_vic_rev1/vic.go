@@ -69,6 +69,9 @@ type VIC struct {
 	cr1 uint8 // VIC register
 	cr2 uint8 // VIC register
 
+	rasterX uint16 // Current raster x position
+	rasterY uint16 // Current raster y position
+
 	baLow           bool   // BA Line
 	aecLow          bool   // AEC Line
 	aecLowNextCycle uint64 // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
@@ -83,6 +86,8 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		BaseComponent:   component.NewBaseComponent(),
 		cr1:             0,
 		cr2:             0,
+		rasterX:         0,
+		rasterY:         0,
 		baLow:           false,
 		aecLowNextCycle: 0,
 		aecLow:          false,
@@ -121,8 +126,10 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.sequencerRow24YStart = vic.sequencer.GetRow24YStart()
 	vic.sequencerRow24YStop = vic.sequencer.GetRow24YStop()
 
+	vic.rasterY = vic.sequencer.GetRasterYMax()
+
 	vic.memory = NewMemory(vic, vic.GetFactory(), vic.label, 0, socket.ReadRam, socket.ReadColorRam, socket.ReadCharRom)
-	vic.interrupts = NewInterrupts(vic, vic.GetFactory(), vic.label, 0, socket.IRQTrigger, socket.IRQClearTrigger, vic.sequencer.GetRasterYMax())
+	vic.interrupts = NewInterrupts(vic, vic.GetFactory(), vic.label, 0, socket.IRQTrigger, socket.IRQClearTrigger)
 	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic.interrupts.Emit, vic.sequencer.GetWidth())
 	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer, vic.sequencer.GetRasterYMax(), vic.sequencer.GetFirstDmaLine(), vic.sequencer.GetLastDmaLine())
 	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer)
@@ -197,9 +204,7 @@ func (vic *VIC) configChanged() {
 //
 //go:nosplit
 func (vic *VIC) Emulate() {
-	vic.TryAcquireAEC()
 	vic.sequencerSequence(vic)
-	vic.interrupts.RasterXIncrement()
 }
 
 // EmulationRequired returns true if emulation is required for the current VIC (Video Interface Controller) state.
@@ -260,7 +265,50 @@ func (vic *VIC) ChangedVA(newVA uint8) {
 
 // LightPenTrigger handles triggering the light pen functionality based on the current raster position.
 func (vic *VIC) LightPenTrigger() {
-	vic.lightPen.Trigger(vic.interrupts.RasterX(), vic.interrupts.RasterY())
+	vic.lightPen.Trigger(vic.rasterX, vic.rasterY)
+}
+
+// RasterY returns the current raster Y position held by the Interrupts component.
+//func (vic *VIC) RasterY() uint16 {
+//	return vic.rasterY
+//}
+
+// RasterYReset resets the vertical raster position (rasterY) to 0 and triggers an IRQ if irqRaster is 0.
+func (vic *VIC) RasterYReset() {
+	vic.rasterY = 0
+	if vic.interrupts.irqRaster == 0 {
+		vic.interrupts.Emit(irqRasterBit)
+	}
+}
+
+// RasterYIncrement increments the rasterY position and triggers an IRQ if rasterY matches the configured irqRaster value.
+func (vic *VIC) RasterYIncrement() {
+	vic.rasterY++
+	if vic.rasterY == vic.interrupts.irqRaster {
+		vic.interrupts.Emit(irqRasterBit)
+	}
+}
+
+// RasterX returns the current raster x position as a 16-bit unsigned integer.
+//func (vic *VIC) RasterX() uint16 {
+//	return vic.rasterX
+//}
+
+// RasterXReset resets the horizontal raster counter (rasterX) to its initial pre-start value (0xfffc).
+func (vic *VIC) RasterXReset() {
+	vic.rasterX = 0xfffc
+}
+
+// RasterXIncrement increments the current raster X position by 8.
+//
+//go:nosplit
+func (vic *VIC) RasterXIncrement() {
+	vic.rasterX += 8
+}
+
+// ReadRasterY returns the current raster Y position as an 8-bit unsigned integer.
+func (vic *VIC) ReadRasterY() uint8 {
+	return uint8(vic.rasterY)
 }
 
 // WriteCR1 updates the control register CR1 and adjusts various graphical and border settings based on the given data.
@@ -280,14 +328,14 @@ func (vic *VIC) WriteCR1(data uint8) {
 	//rst8 := (vic.cr1 & 0x80) != 0
 	displayMode := ((vic.cr1 & 0x60) | (vic.cr2 & 0x10)) >> 4 //cr1 bit 5-6 (BMM|ECM)| cr2 bit 4 (MCM)
 	vic.graphics.SetDisplayMode(displayMode)
-	vic.interrupts.WriteRasterHigh((uint16(vic.cr1) & 0x80) << 1)
+	vic.interrupts.WriteRasterHigh(vic.rasterY, (uint16(vic.cr1)&0x80)<<1)
 
-	vic.graphics.BadLineVerify(vic.interrupts.RasterY(), vic.borders.GetDen())
+	vic.graphics.BadLineVerify(vic.rasterY, vic.borders.GetDen())
 }
 
 // ReadCR1 reads the CR1 register, combining specific raster and control bits, and returns the resulting 8-bit value.
 func (vic *VIC) ReadCR1() uint8 {
-	return uint8((uint16(vic.cr1) & 0x7f) | ((vic.interrupts.RasterY() & 0x100) >> 1))
+	return uint8((uint16(vic.cr1) & 0x7f) | ((vic.rasterY & 0x100) >> 1))
 }
 
 // WriteCR2 updates the CR2 register and adjusts associated graphics settings like XScroll, column selection, and display mode.
@@ -345,19 +393,19 @@ func (vic *VIC) createReadRegister() [RegisterCount]func() uint8 {
 	reads[0x0e] = vic.sprites.ReadMXx7
 	reads[0x0f] = vic.sprites.ReadMXy7
 	reads[0x10] = vic.sprites.ReadMX8
-	reads[0x11] = vic.ReadCR1                // Control register 1
-	reads[0x12] = vic.interrupts.ReadRasterY // Raster counter
-	reads[0x13] = vic.lightPen.ReadX         // Light pen X
-	reads[0x14] = vic.lightPen.ReadY         // Light pen Y
-	reads[0x15] = vic.sprites.ReadMe         // Sprite enabled
-	reads[0x16] = vic.ReadCR2                // Control register 2
-	reads[0x17] = vic.sprites.ReadMYe        // Sprite Y expansion
-	reads[0x18] = vic.memory.GetVABase       // MemoryUnit pointers
-	reads[0x19] = vic.interrupts.ReadLatch   // IRQ latch
-	reads[0x1a] = vic.interrupts.ReadMask    // IRQ mask
-	reads[0x1b] = vic.sprites.ReadMDp        // Sprite data priority
-	reads[0x1c] = vic.sprites.ReadMMc        // Sprite multicolor
-	reads[0x1d] = vic.sprites.ReadMXe        // Sprite X expansion
+	reads[0x11] = vic.ReadCR1              // Control register 1
+	reads[0x12] = vic.ReadRasterY          // Raster counter
+	reads[0x13] = vic.lightPen.ReadX       // Light pen X
+	reads[0x14] = vic.lightPen.ReadY       // Light pen Y
+	reads[0x15] = vic.sprites.ReadMe       // Sprite enabled
+	reads[0x16] = vic.ReadCR2              // Control register 2
+	reads[0x17] = vic.sprites.ReadMYe      // Sprite Y expansion
+	reads[0x18] = vic.memory.GetVABase     // MemoryUnit pointers
+	reads[0x19] = vic.interrupts.ReadLatch // IRQ latch
+	reads[0x1a] = vic.interrupts.ReadMask  // IRQ mask
+	reads[0x1b] = vic.sprites.ReadMDp      // Sprite data priority
+	reads[0x1c] = vic.sprites.ReadMMc      // Sprite multicolor
+	reads[0x1d] = vic.sprites.ReadMXe      // Sprite X expansion
 	reads[0x1e] = vic.collisions.RetrieveSprite2Sprite
 	reads[0x1f] = vic.collisions.RetrieveSprite2Background
 	reads[0x20] = vic.borders.ReadEc
@@ -402,21 +450,21 @@ func (vic *VIC) createWriteRegister() [RegisterCount]func(uint8) {
 	writes[0x0e] = vic.sprites.WriteMXx7
 	writes[0x0f] = vic.sprites.WriteMXy7
 	writes[0x10] = vic.sprites.WriteMX8
-	writes[0x11] = vic.WriteCR1                  // Control register 1
-	writes[0x12] = vic.interrupts.WriteRasterLow // Raster counter low
-	writes[0x13] = vic.lightPen.WriteX           // Light pen X
-	writes[0x14] = vic.lightPen.WriteY           // Light pen Y
-	writes[0x15] = vic.sprites.WriteMe           // Sprite enabled
-	writes[0x16] = vic.WriteCR2                  // Control register 2
-	writes[0x17] = vic.sprites.WriteMYe          // Sprite Y expansion
-	writes[0x18] = vic.memory.SetVABase          // MemoryUnit pointers
-	writes[0x19] = vic.interrupts.WriteLatch     // IRQ Latch
-	writes[0x1a] = vic.interrupts.WriteMask      // IRQ mask
-	writes[0x1b] = vic.sprites.WriteMDp          // Sprite data priority
-	writes[0x1c] = vic.sprites.WriteMMc          // Sprite Color
-	writes[0x1d] = vic.sprites.WriteMXe          // Sprite X expansion
-	writes[0x1e] = vic.collisions.SetSprite      // Sprite-sprite collision
-	writes[0x1f] = vic.collisions.SetBackground  // Sprite-background collision
+	writes[0x11] = vic.WriteCR1                                                          // Control register 1
+	writes[0x12] = func(data uint8) { vic.interrupts.WriteRasterLow(vic.rasterY, data) } // Raster counter low
+	writes[0x13] = vic.lightPen.WriteX                                                   // Light pen X
+	writes[0x14] = vic.lightPen.WriteY                                                   // Light pen Y
+	writes[0x15] = vic.sprites.WriteMe                                                   // Sprite enabled
+	writes[0x16] = vic.WriteCR2                                                          // Control register 2
+	writes[0x17] = vic.sprites.WriteMYe                                                  // Sprite Y expansion
+	writes[0x18] = vic.memory.SetVABase                                                  // MemoryUnit pointers
+	writes[0x19] = vic.interrupts.WriteLatch                                             // IRQ Latch
+	writes[0x1a] = vic.interrupts.WriteMask                                              // IRQ mask
+	writes[0x1b] = vic.sprites.WriteMDp                                                  // Sprite data priority
+	writes[0x1c] = vic.sprites.WriteMMc                                                  // Sprite Color
+	writes[0x1d] = vic.sprites.WriteMXe                                                  // Sprite X expansion
+	writes[0x1e] = vic.collisions.SetSprite                                              // Sprite-sprite collision
+	writes[0x1f] = vic.collisions.SetBackground                                          // Sprite-background collision
 	writes[0x20] = vic.borders.WriteEc
 	writes[0x21] = vic.graphics.WriteB0c
 	writes[0x22] = vic.graphics.WriteB1c

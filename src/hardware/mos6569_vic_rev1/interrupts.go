@@ -29,21 +29,17 @@ type Interrupts struct {
 	irqLatch              uint8  // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
 	irqMask               uint8  // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
 	irqRaster             uint16 // Interrupt raster line
-	rasterY               uint16 // Current raster y position
-	rasterX               uint16 // Current raster x position
 	socketIRQTrigger      func()
 	socketIRQClearTrigger func()
 }
 
 // NewInterrupts creates and initializes a new Interrupts instance with the specified parameters and configuration.
-func NewInterrupts(parent references.IComponent, factory references.IComponentFactory, label string, instance int, socketIRQTrigger func(), socketIRQClearTrigger func(), rasterY uint16) *Interrupts {
+func NewInterrupts(parent references.IComponent, factory references.IComponentFactory, label string, instance int, socketIRQTrigger func(), socketIRQClearTrigger func()) *Interrupts {
 	i := &Interrupts{
 		BaseComponent:         component.NewBaseComponent(),
 		irqRaster:             0,
 		irqLatch:              0,
 		irqMask:               0,
-		rasterY:               rasterY,
-		rasterX:               0,
 		socketIRQTrigger:      socketIRQTrigger,
 		socketIRQClearTrigger: socketIRQClearTrigger,
 	}
@@ -77,44 +73,6 @@ func (i *Interrupts) Internal() bool {
 
 // Reset clears the internal state, ensuring all interrupt-related settings are reset to their default values.
 func (i *Interrupts) Reset() {
-}
-
-// RasterY returns the current raster Y position held by the Interrupts component.
-func (i *Interrupts) RasterY() uint16 {
-	return i.rasterY
-}
-
-// RasterX returns the current raster x position as a 16-bit unsigned integer.
-func (i *Interrupts) RasterX() uint16 {
-	return i.rasterX
-}
-
-// RasterYReset resets the vertical raster position (rasterY) to 0 and triggers an IRQ if irqRaster is 0.
-func (i *Interrupts) RasterYReset() {
-	i.rasterY = 0
-	if i.irqRaster == 0 {
-		i.Emit(irqRasterBit)
-	}
-}
-
-// RasterYIncrement increments the rasterY position and triggers an IRQ if rasterY matches the configured irqRaster value.
-func (i *Interrupts) RasterYIncrement() {
-	i.rasterY++
-	if i.rasterY == i.irqRaster {
-		i.Emit(irqRasterBit)
-	}
-}
-
-// RasterXReset resets the horizontal raster counter (rasterX) to its initial pre-start value (0xfffc).
-func (i *Interrupts) RasterXReset() {
-	i.rasterX = 0xfffc
-}
-
-// RasterXIncrement increments the current raster X position by 8.
-//
-//go:nosplit
-func (i *Interrupts) RasterXIncrement() {
-	i.rasterX += 8
 }
 
 // Emit handles triggering of an interrupt by setting the IRQ latch and activating the IRQ if it matches the mask.
@@ -158,26 +116,21 @@ func (i *Interrupts) ReadLatch() uint8 {
 }
 
 // WriteRasterLow updates the low byte of the IRQ raster line with the given 8-bit data and triggers raster settings.
-func (i *Interrupts) WriteRasterLow(data uint8) {
+func (i *Interrupts) WriteRasterLow(rasterY uint16, data uint8) {
 	irqRaster := (i.irqRaster & 0xff00) | uint16(data)
-	i.irqRasterSet(irqRaster)
+	i.irqRasterSet(rasterY, irqRaster)
 }
 
 // WriteRasterHigh sets the high 8 bits of the IRQ raster line by combining the current high bits with the input data.
-func (i *Interrupts) WriteRasterHigh(data uint16) {
+func (i *Interrupts) WriteRasterHigh(rasterY uint16, data uint16) {
 	irqRaster := (i.irqRaster & 0xff) | data
-	i.irqRasterSet(irqRaster)
-}
-
-// ReadRasterY returns the current raster Y position as an 8-bit unsigned integer.
-func (i *Interrupts) ReadRasterY() uint8 {
-	return uint8(i.rasterY)
+	i.irqRasterSet(rasterY, irqRaster)
 }
 
 // irqRasterSet updates the IRQ raster line if it differs from the current value and triggers the interrupt if necessary.
-func (i *Interrupts) irqRasterSet(irqRaster uint16) {
+func (i *Interrupts) irqRasterSet(rasterY uint16, irqRaster uint16) {
 	if irqRaster != i.irqRaster {
-		if i.rasterY == irqRaster {
+		if rasterY == irqRaster {
 			i.Emit(irqRasterBit)
 		}
 		i.irqRaster = irqRaster
