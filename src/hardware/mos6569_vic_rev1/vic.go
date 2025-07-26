@@ -9,6 +9,8 @@ import (
 // https://www.cebix.net/VIC-Article.txt
 // https://www.oxyron.de/html/registers_vic2.html
 
+// go build -gcflags="-m" .
+
 const (
 	RegisterCount = 1 << 8 // uint8 max + 1
 )
