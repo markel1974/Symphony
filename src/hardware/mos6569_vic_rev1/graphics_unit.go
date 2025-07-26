@@ -26,15 +26,14 @@ type GraphicsUnit struct {
 	*component.BaseComponent
 	memory                *MemoryUnit
 	collisions            *CollisionsUnit
-	set8                  func(int, *[8]uint8)
-	setMulti8             func(int, uint8)
+	beam                  *Beam
 	gfxData               uint8
 	colorData             uint8
 	charData              uint8
 	charDataLatch         uint8
 	ecmBackgroundColor    uint8
 	ecmForegroundColor    uint8
-	offset                int     // Offset from bitmap spritesPresence
+	baseOffset            int     // Offset from bitmap spritesPresence
 	lineIndex             int     // Index in video matrix / color line
 	videoMatrix           []uint8 // Video matrix spritesPresence
 	colorLine             []uint8 // Color line spritesPresence
@@ -62,13 +61,12 @@ type GraphicsUnit struct {
 }
 
 // NewGraphics initializes and returns a new GraphicsUnit instance with the provided VIC core, collision handler, and display buffer.
-func NewGraphics(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *MemoryUnit, collisions *CollisionsUnit, displayBuffer references.IDisplayBuffer, rasterYMax uint16, sequencerFirstDmaLine uint16, sequencerLastDmaLine uint16) *GraphicsUnit {
+func NewGraphics(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *MemoryUnit, collisions *CollisionsUnit, beam *Beam, rasterYMax uint16, sequencerFirstDmaLine uint16, sequencerLastDmaLine uint16) *GraphicsUnit {
 	gr := &GraphicsUnit{
 		BaseComponent:         component.NewBaseComponent(),
 		memory:                memory,
 		collisions:            collisions,
-		set8:                  displayBuffer.Set8,
-		setMulti8:             displayBuffer.SetMulti8,
+		beam:                  beam,
 		sequencerFirstDmaLine: sequencerFirstDmaLine,
 		sequencerLastDmaLine:  sequencerLastDmaLine,
 		gfxData:               0,
@@ -77,7 +75,7 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		charDataLatch:         0,
 		ecmBackgroundColor:    0,
 		ecmForegroundColor:    0,
-		offset:                0,
+		baseOffset:            0,
 		lineIndex:             0,
 		xScroll:               0,
 		yScroll:               0,
@@ -299,10 +297,9 @@ func (gr *GraphicsUnit) ResetLineIndex() {
 	gr.lineIndex = 0
 }
 
-// SetOffset sets the offset value for the GraphicsUnit instance to the given parameter.
-// The offset represents the horizontal starting position (in pixels) for rendering.
-func (gr *GraphicsUnit) SetOffset(offset int) {
-	gr.offset = offset
+// ResetOffset resets the base offset of the GraphicsUnit to its default value of 0.
+func (gr *GraphicsUnit) ResetOffset() {
+	gr.baseOffset = 0
 }
 
 // CommitCharData processes the character data latch and updates the ECM background color based on bits 7 and 6 of the latch.
@@ -380,17 +377,17 @@ func (gr *GraphicsUnit) TryPhi2Fetch(baLow bool, aecLow bool) {
 // DrawBackground renders the background using the current display mode
 // and updates the graphics offset and collision state.
 func (gr *GraphicsUnit) DrawBackground() {
-	gr.backgroundSequencer[gr.displayMode](gr.offset)
-	gr.offset += characterPixelWidth
+	gr.backgroundSequencer[gr.displayMode](gr.baseOffset)
+	gr.baseOffset += characterPixelWidth
 	gr.collisions.IncrementGraphicsOffset()
 }
 
 // DrawForeground renders the foreground graphics based on the current display mode and x-scroll offset.
 // It also increments the offset and updates the collisions.
 func (gr *GraphicsUnit) DrawForeground() {
-	offset := gr.offset + int(gr.xScroll)
+	offset := gr.baseOffset + int(gr.xScroll)
 	gr.foregroundSequencer[gr.displayMode](offset)
-	gr.offset += characterPixelWidth
+	gr.baseOffset += characterPixelWidth
 	gr.collisions.IncrementGraphicsOffset()
 }
 
@@ -546,7 +543,7 @@ func (gr *GraphicsUnit) drawForegroundBitmapMulticolorInvalid(offset int) {
 
 // drawDefault sets a color value from the _colors array into the display buffer at the specified offset.
 func (gr *GraphicsUnit) drawDefault(offset int, a uint8) {
-	gr.setMulti8(offset, _colors[a])
+	gr.beam.DrawMulti8(offset, a)
 }
 
 // drawInvalidStandard updates graphics buffer based on x-scroll and sets color values in the display buffer.
@@ -554,7 +551,7 @@ func (gr *GraphicsUnit) drawInvalidStandard(offset int, a uint8) {
 	p1 := gr.gfxData >> gr.xScroll
 	p2 := gr.gfxData << (7 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
-	gr.setMulti8(offset, _colors[a])
+	gr.beam.DrawMulti8(offset, a)
 }
 
 // drawInvalidMulticolor processes invalid multicolor graphics and updates collision and display buffers accordingly.
@@ -563,7 +560,7 @@ func (gr *GraphicsUnit) drawInvalidMulticolor(offset int, a uint8) {
 	p1 := p >> gr.xScroll
 	p2 := p << (8 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
-	gr.setMulti8(offset, _colors[a])
+	gr.beam.DrawMulti8(offset, a)
 }
 
 // drawStandard renders 8 pixels in standard mode (1 bit per pixel). Uses colors 'a' (for 0 bits) and 'b' (for 1 bit).
@@ -571,14 +568,7 @@ func (gr *GraphicsUnit) drawStandard(offset int, a uint8, b uint8) {
 	p1 := gr.gfxData >> gr.xScroll
 	p2 := gr.gfxData << (7 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
-
-	colorBuffer := [4]uint8{_colors[a], _colors[b], 0, 0}
-	index := _standardIndex[gr.gfxData]
-	drawBuffer := [8]uint8{
-		colorBuffer[index[0]], colorBuffer[index[1]], colorBuffer[index[2]], colorBuffer[index[3]],
-		colorBuffer[index[4]], colorBuffer[index[5]], colorBuffer[index[6]], colorBuffer[index[7]],
-	}
-	gr.set8(offset, &drawBuffer)
+	gr.beam.Draw8Standard(offset, a, b, gr.gfxData)
 }
 
 // drawMulticolor renders 8 pixels in multicolor mode (2 bits per pixel). Uses colors 'a', 'b', 'c', and 'd'.
@@ -587,12 +577,5 @@ func (gr *GraphicsUnit) drawMulticolor(offset int, a uint8, b uint8, c uint8, d 
 	p1 := p >> gr.xScroll
 	p2 := p << (8 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
-
-	colorBuffer := [4]uint8{_colors[a], _colors[b], _colors[c], _colors[d]}
-	index := _multicolorIndex[gr.gfxData]
-	drawBuffer := [8]uint8{
-		colorBuffer[index[0]], colorBuffer[index[1]], colorBuffer[index[2]], colorBuffer[index[3]],
-		colorBuffer[index[4]], colorBuffer[index[5]], colorBuffer[index[6]], colorBuffer[index[7]],
-	}
-	gr.set8(offset, &drawBuffer)
+	gr.beam.Draw8Multi(offset, a, b, c, d, gr.gfxData)
 }

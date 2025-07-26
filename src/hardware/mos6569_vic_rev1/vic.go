@@ -49,6 +49,7 @@ type VIC struct {
 	graphics   *GraphicsUnit
 	borders    *BordersUnit
 	lightPen   *LightPen
+	beam       *Beam
 
 	sequencer ISequencer
 	label     string
@@ -130,12 +131,14 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 
 	vic.rasterY = vic.sequencer.GetRasterYMax()
 
+	vic.beam = NewBeam(displayBuffer)
+
 	vic.memory = NewMemory(vic, vic.GetFactory(), vic.label, 0, socket.ReadRam, socket.ReadColorRam, socket.ReadCharRom)
 	vic.interrupts = NewInterrupts(vic, vic.GetFactory(), vic.label, 0, socket.IRQTrigger, socket.IRQClearTrigger)
 	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic.interrupts.Emit, vic.sequencer.GetWidth())
-	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer, vic.sequencer.GetRasterYMax(), vic.sequencer.GetFirstDmaLine(), vic.sequencer.GetLastDmaLine())
-	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, displayBuffer)
-	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, displayBuffer, vic.sequencer.GetWidth())
+	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, vic.beam, vic.sequencer.GetRasterYMax(), vic.sequencer.GetFirstDmaLine(), vic.sequencer.GetLastDmaLine())
+	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, vic.beam)
+	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, vic.beam, vic.sequencer.GetWidth())
 	vic.lightPen = NewLightPen(vic, vic.GetFactory(), vic.label, 0, vic.interrupts.Emit)
 	vic.borders.SetDYTop(vic.sequencer.GetRow24YStart())
 	vic.borders.SetDYBottom(vic.sequencer.GetRow24YStop())

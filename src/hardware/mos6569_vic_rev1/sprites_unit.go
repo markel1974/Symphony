@@ -34,7 +34,6 @@ type SpritesUnit struct {
 	dmaFlags           uint8           // dmaFlags represents the active Direct MemoryUnit Access (DMA) flags for sprite operations in the current cycle.
 	spriteFlags        uint8           // spriteFlags represents the combined state of sprite display activity for the current line in the VIC-II system.
 	currentSpriteFlags uint8           // currentSpriteFlags represents the active display flags for sprites, updated based on their DMA state and counters.
-	offset             int             // offset is the horizontal offset used during sprite rendering to determine the starting position on the scanline.
 	yExpansion         uint8           // 8 sprite y expansion FlipFlops
 	mXx                []uint16        // VIC registers [m0x - m1x - m2x - m3x - m4x - m5x - m6x - m7x]
 	mXy                []uint8         // VIC registers [m0y - m1y - m2y - m3y - m4y - m5y - m6y - m7y]
@@ -48,18 +47,20 @@ type SpritesUnit struct {
 	mm0                uint8
 	mm1                uint8
 	bufferIndex        int
+	//offset             int
+	// spritesData is a lookup table mapping an 8-bit value to arrays of active sprite indices for rendering and processing.
+	spritesData [256][]uint8
 }
 
 // NewSprites initializes and returns a new instance of the SpritesUnit struct with default settings and allocations.
 // It sets up sprite data, counters, and dependencies using the provided VIC core, collisions, and display buffer.
-func NewSprites(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *MemoryUnit, collisions *CollisionsUnit, displayBuffer references.IDisplayBuffer) *SpritesUnit {
+func NewSprites(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *MemoryUnit, collisions *CollisionsUnit, surface *Beam) *SpritesUnit {
 	s := &SpritesUnit{
 		BaseComponent:      component.NewBaseComponent(),
 		memory:             memory,
 		collisions:         collisions,
 		currentSpriteFlags: 0,
 		dmaFlags:           0,
-		offset:             0,
 		sprites:            make([]*Sprite, spriteNumber),
 		mXx:                make([]uint16, spriteNumber),
 		mXy:                make([]uint8, spriteNumber),
@@ -76,7 +77,20 @@ func NewSprites(parent references.IComponent, factory references.IComponentFacto
 	}
 	s.BaseComponent.Register(factory, parent, "spritesUnit", s, references.IdInternalComponent(label, instance, "SpritesUnit"))
 	for i := range s.sprites {
-		s.sprites[i] = NewSprite(s, factory, "Sprite", i, displayBuffer, collisions, uint8(i), len(s.sprites))
+		s.sprites[i] = NewSprite(s, factory, "Sprite", i, surface, collisions, uint8(i), len(s.sprites))
+	}
+	for x := range s.spritesData {
+		var sprite []uint8 = nil
+		for sNum, sBit := uint8(0), uint8(1); sNum < spriteNumber; sNum, sBit = sNum+1, sBit<<1 {
+			if uint8(x)&sBit != 0 {
+				sprite = append(sprite, sNum)
+				//sBit2 := uint8(1) << sNum
+				//if sBit2 != sBit {
+				//	fmt.Println("wrong setup")
+				//}
+			}
+		}
+		s.spritesData[x] = sprite
 	}
 	return s
 }
@@ -125,12 +139,6 @@ func (sp *SpritesUnit) Prepare() {
 	sp.sprites[0].SetLatchIndex(latchIndexPrev)
 	sp.sprites[1].SetLatchIndex(latchIndexPrev)
 	sp.sprites[2].SetLatchIndex(latchIndexPrev)
-}
-
-// SetOffset updates the `offset` value of the SpritesUnit instance with the given value.
-// This offset is used to calculate the starting position for sprite rendering on the current scanline.
-func (sp *SpritesUnit) SetOffset(offset int) {
-	sp.offset = offset
 }
 
 func (sp *SpritesUnit) ReadBufferIndex() int {
@@ -646,7 +654,7 @@ func (sp *SpritesUnit) CommitSpriteFlags() {
 // It handles both expanded and unexpanded sprites in standard and multicolor modes.
 // Collision detection for sprites is carried out during the rendering process.
 func (sp *SpritesUnit) Draw() {
-	activeSprites := _spritesData[sp.spriteFlags]
+	activeSprites := sp.spritesData[sp.spriteFlags]
 	if activeSprites == nil {
 		return
 	}
@@ -655,7 +663,7 @@ func (sp *SpritesUnit) Draw() {
 	sp.collisions.Prepare()
 	// Draw sprites
 	for _, sNum := range activeSprites {
-		sp.sprites[sNum].Draw(latchIndex, sp.offset)
+		sp.sprites[sNum].Draw(latchIndex)
 	}
 	// Perform the final collision detection checks.
 	sp.collisions.Commit()

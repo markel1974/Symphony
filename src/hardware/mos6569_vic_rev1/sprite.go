@@ -47,6 +47,7 @@ const (
 type Sprite struct {
 	*component.BaseComponent
 	collisions       *CollisionsUnit
+	beam             *Beam
 	num              uint8
 	max              int
 	mask             uint8
@@ -55,19 +56,18 @@ type Sprite struct {
 	counter          uint16
 	counterBase      uint16
 	counterIncrement uint16
-	displayBufferSet func(int, uint8)
 	latchIndex       int
-	draw             func(mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, lineOffset int, sOffset int, majorX int, minorX int, data0 uint8, data1 uint8, data2 uint8)
+	draw             func(mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, sOffset int, majorX int, minorX int, data0 uint8, data1 uint8, data2 uint8)
 	//plane2ColorHelper [4]func(uint8) int
 }
 
 // NewSprite initializes and returns a new Sprite instance with the provided VIC core, display buffer, and sprite number.
 // It allocates memory for sprite data, sets initial values for counters, and configures the display function.
-func NewSprite(parent references.IComponent, factory references.IComponentFactory, label string, instance int, displayBuffer references.IDisplayBuffer, collisions *CollisionsUnit, sNum uint8, sMax int) *Sprite {
+func NewSprite(parent references.IComponent, factory references.IComponentFactory, label string, instance int, beam *Beam, collisions *CollisionsUnit, sNum uint8, sMax int) *Sprite {
 	sp := &Sprite{
 		BaseComponent:    component.NewBaseComponent(),
 		collisions:       collisions,
-		displayBufferSet: displayBuffer.Set,
+		beam:             beam,
 		num:              sNum,
 		mask:             uint8(1) << sNum,
 		latch:            make([]int, (LatchCount*LatchOffset)+1),
@@ -147,9 +147,9 @@ func (sp *Sprite) SetLatchData(bNum int, data uint8) {
 // SetLatchAttributes updates the sprite's color data, multicolor flags, and offset using the provided parameters.
 func (sp *Sprite) SetLatchAttributes(mdp uint8, mm0 uint8, mm1 uint8, mXc uint8, mXx uint16) {
 	sp.latch[sp.latchIndex+latchMDP] = int(mdp)
-	sp.latch[sp.latchIndex+latchMM0] = int(_colors[mm0])
-	sp.latch[sp.latchIndex+latchMM1] = int(_colors[mm1])
-	sp.latch[sp.latchIndex+latchMXC] = int(_colors[mXc])
+	sp.latch[sp.latchIndex+latchMM0] = int(mm0)
+	sp.latch[sp.latchIndex+latchMM1] = int(mm1)
+	sp.latch[sp.latchIndex+latchMXC] = int(mXc)
 	sp.latch[sp.latchIndex+latchOffset] = int(mXx) + spriteNumber
 }
 
@@ -194,7 +194,7 @@ func (sp *Sprite) ModeUpdate(mmc uint8, mxe uint8) {
 	}
 }
 
-func (sp *Sprite) Draw(latchIndex int, baseOffset int) {
+func (sp *Sprite) Draw(latchIndex int) {
 	sOffset := sp.latch[latchIndex+latchOffset]
 	data0 := uint8(sp.latch[latchIndex+latchData0])
 	data1 := uint8(sp.latch[latchIndex+latchData1])
@@ -203,16 +203,15 @@ func (sp *Sprite) Draw(latchIndex int, baseOffset int) {
 	mm0 := uint8(sp.latch[latchIndex+latchMM0])
 	mm1 := uint8(sp.latch[latchIndex+latchMM1])
 	mxc := uint8(sp.latch[latchIndex+latchMXC])
-	lineOffset := baseOffset + sOffset
 	charColumn := sOffset / spriteNumber // This is the character column (column char, 0-39)
 	pixelOffset := sOffset & spriteIndex // This is the pixel offset within the character column (offset pixel inside column, 0-7).
-	sp.draw(mdp, mm0, mm1, mxc, lineOffset, sOffset, charColumn, pixelOffset, data0, data1, data2)
+	sp.draw(mdp, mm0, mm1, mxc, sOffset, charColumn, pixelOffset, data0, data1, data2)
 }
 
 // drawExpandedMulticolor is responsible for rendering an expanded multicolor sprite on the display buffer.
 // It handles sprite-to-graphics and sprite-to-sprite collision detection while processing each pixel's color.
 // The method also respects sprite-to-background priority by masking sprite pixels when a graphics collision occurs.
-func (sp *Sprite) drawExpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, lineOffset int, sOffset int, charColumn int, pixelOffset int, data0 uint8, data1 uint8, data2 uint8) {
+func (sp *Sprite) drawExpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, sOffset int, charColumn int, pixelOffset int, data0 uint8, data1 uint8, data2 uint8) {
 	// Get the foreground mask for the left half of the sprite's character column.
 	foreMaskL := sp.collisions.GetGraphicsL(charColumn, pixelOffset)
 	// Get the foreground mask for the right half of the sprite's character column.
@@ -248,7 +247,7 @@ func (sp *Sprite) drawExpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc ui
 	for idx := 0; idx < spriteExpandedHalfPixels; idx, plane0L, plane1L = idx+1, plane0L<<1, plane1L<<1 {
 		if selectedColor := sp.planes2Color(plane0L, plane1L, mxc, mm0, mm1); selectedColor >= 0 {
 			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
-				sp.displayBufferSet(lineOffset+idx, uint8(selectedColor))
+				sp.beam.Draw(sOffset+idx, uint8(selectedColor))
 			}
 		}
 	}
@@ -256,14 +255,14 @@ func (sp *Sprite) drawExpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc ui
 	for idx := spriteExpandedHalfPixels; idx < spriteExpandedPixels; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
 		if selectedColor := sp.planes2Color(plane0R, plane1R, mxc, mm0, mm1); selectedColor >= 0 {
 			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
-				sp.displayBufferSet(lineOffset+idx, uint8(selectedColor))
+				sp.beam.Draw(sOffset+idx, uint8(selectedColor))
 			}
 		}
 	}
 }
 
 // drawExpandedStandard renders a horizontally expanded sprite in standard mode with collision detection and masking.
-func (sp *Sprite) drawExpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _ uint8, mxc uint8, lineOffset int, sOffset int, charColumn int, pixelOffset int, data0 uint8, data1 uint8, data2 uint8) {
+func (sp *Sprite) drawExpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _ uint8, mxc uint8, sOffset int, charColumn int, pixelOffset int, data0 uint8, data1 uint8, data2 uint8) {
 	// Get the foreground mask for the left half of the sprite's character column.
 	foreMaskL := sp.collisions.GetGraphicsL(charColumn, pixelOffset)
 	// Get the foreground mask for the right half of the sprite's character column.
@@ -286,7 +285,7 @@ func (sp *Sprite) drawExpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _
 	for idx := 0; idx < spriteExpandedHalfPixels; idx, sDataL = idx+1, sDataL<<1 {
 		if (sDataL & planesMSB) != 0 {
 			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
-				sp.displayBufferSet(lineOffset+idx, mxc)
+				sp.beam.Draw(sOffset+idx, mxc)
 			}
 		}
 	}
@@ -294,14 +293,14 @@ func (sp *Sprite) drawExpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _
 	for idx := spriteExpandedHalfPixels; idx < spriteExpandedPixels; idx, sDataR = idx+1, sDataR<<1 {
 		if (sDataR & planesMSB) != 0 {
 			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
-				sp.displayBufferSet(lineOffset+idx, mxc)
+				sp.beam.Draw(sOffset+idx, mxc)
 			}
 		}
 	}
 }
 
 // drawUnexpandedMulticolor renders a non-expanded multicolor sprite, handling graphics collisions and color selection.
-func (sp *Sprite) drawUnexpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, lineOffset int, sOffset int, charColumn int, pixelOffset int, data0 uint8, data1 uint8, data2 uint8) {
+func (sp *Sprite) drawUnexpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, sOffset int, charColumn int, pixelOffset int, data0 uint8, data1 uint8, data2 uint8) {
 	// Get the foreground mask for the sprite's character column.
 	foreMask := sp.collisions.GetGraphicsL(charColumn, pixelOffset)
 	// Combine the three bytes of sprite data into a single 32-bit word for easier processing.
@@ -326,14 +325,14 @@ func (sp *Sprite) drawUnexpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc 
 	for idx := 0; idx < spriteUnexpandedPixels; idx, plane0, plane1 = idx+1, plane0<<1, plane1<<1 {
 		if selectedColor := sp.planes2Color(plane0, plane1, mxc, mm0, mm1); selectedColor >= 0 {
 			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
-				sp.displayBufferSet(lineOffset+idx, uint8(selectedColor))
+				sp.beam.Draw(sOffset+idx, uint8(selectedColor))
 			}
 		}
 	}
 }
 
 // drawUnexpandedStandard renders a 24-pixel wide unexpanded standard sprite, managing collisions and pixel masking.
-func (sp *Sprite) drawUnexpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _ uint8, mxc uint8, lineOffset int, sOffset int, charColumn int, pixelOffset int, data0 uint8, data1 uint8, data2 uint8) {
+func (sp *Sprite) drawUnexpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _ uint8, mxc uint8, sOffset int, charColumn int, pixelOffset int, data0 uint8, data1 uint8, data2 uint8) {
 	// Get the foreground mask for the sprite's character column.
 	foreMask := sp.collisions.GetGraphicsL(charColumn, pixelOffset)
 	// Combine the three bytes of sprite data into a single 32-bit word for easier processing.
@@ -351,7 +350,7 @@ func (sp *Sprite) drawUnexpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */,
 	for idx := 0; idx < spriteUnexpandedPixels; idx, sData = idx+1, sData<<1 {
 		if (sData & planesMSB) != 0 {
 			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
-				sp.displayBufferSet(lineOffset+idx, mxc)
+				sp.beam.Draw(sOffset+idx, mxc)
 			}
 		}
 	}

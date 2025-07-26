@@ -32,11 +32,10 @@ const (
 // BordersUnit is a type responsible for managing and updating border data, configurations, and states for a display system.
 type BordersUnit struct {
 	*component.BaseComponent
-	setMulti8          func(int, uint8)
+	beam               *Beam
 	horizontalFlipFlop uint8
 	verticalFlipFlop   uint8
 	colors             [borderColorCount]uint8
-	offset             int
 	left               []int
 	midLeft            int
 	center             []int
@@ -53,15 +52,14 @@ type BordersUnit struct {
 
 // NewBorder initializes and returns a new BordersUnit object using the provided VIC core and display buffer interface.
 // It configures left, right, center, and sequencer states based on display buffer properties.
-func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, displayBuffer references.IDisplayBuffer, displayX int) *BordersUnit {
+func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, beam *Beam, displayX int) *BordersUnit {
 	borderCountMax := displayX / borderWidth
 	gr := &BordersUnit{
 		BaseComponent:      component.NewBaseComponent(),
-		setMulti8:          displayBuffer.SetMulti8,
+		beam:               beam,
 		ec:                 0,
 		horizontalFlipFlop: 0,
 		verticalFlipFlop:   0,
-		offset:             0,
 		sequencerState:     0,
 		dyTop:              0,
 		dyBottom:           0,
@@ -191,11 +189,6 @@ func (b *BordersUnit) Column40Apply() {
 	b.sequencerState |= b.horizontalFlipFlop << bitNumber
 }
 
-// SetOffset sets the offset value for the BordersUnit instance. It determines the starting point for border rendering.
-func (b *BordersUnit) SetOffset(offset int) {
-	b.offset = offset
-}
-
 // SetDen sets the value of the den property in the BordersUnit instance.
 func (b *BordersUnit) SetDen(den bool) {
 	b.den = den
@@ -208,7 +201,7 @@ func (b *BordersUnit) GetDen() bool {
 
 // AcquireColor assigns a color to the specified index in the borders color array using the current execution context.
 func (b *BordersUnit) AcquireColor(idx uint8) {
-	b.colors[idx] = _colors[b.ec]
+	b.colors[idx] = b.ec
 }
 
 // UpdateVerticalFlipFlop updates the vertical border flip-flop state based on the current raster Y coordinate and control flags.
@@ -239,35 +232,35 @@ func (b *BordersUnit) Draw() {
 func (b *BordersUnit) drawLeft() {
 	for _, v := range b.left {
 		offset := v * borderWidth
-		b.setMulti8(b.offset+offset, b.colors[v])
+		b.beam.DrawMulti8(offset, b.colors[v])
 	}
 }
 
 // drawMidLeft updates the border area corresponding to midLeft by setting the appropriate color and offset values.
 func (b *BordersUnit) drawMidLeft() {
 	offset := b.midLeft * borderWidth
-	b.setMulti8(b.offset+offset, b.colors[b.midLeft])
+	b.beam.DrawMulti8(offset, b.colors[b.midLeft])
 }
 
 // drawCenter processes the center border segments by calculating their offsets and applying corresponding colors.
 func (b *BordersUnit) drawCenter() {
 	for _, v := range b.center {
 		offset := v * borderWidth
-		b.setMulti8(b.offset+offset, b.colors[v])
+		b.beam.DrawMulti8(offset, b.colors[v])
 	}
 }
 
 // drawMidRight calculates the offset for the mid-right border and updates its color using the setMulti8 function.
 func (b *BordersUnit) drawMidRight() {
 	offset := b.midRight * borderWidth
-	b.setMulti8(b.offset+offset, b.colors[b.midRight])
+	b.beam.DrawMulti8(offset, b.colors[b.midRight])
 }
 
 // drawRight renders the right-hand border by iterating over the `right` field and setting appropriate color values.
 func (b *BordersUnit) drawRight() {
 	for _, v := range b.right {
 		offset := v * borderWidth
-		b.setMulti8(b.offset+offset, b.colors[v])
+		b.beam.DrawMulti8(offset, b.colors[v])
 	}
 }
 

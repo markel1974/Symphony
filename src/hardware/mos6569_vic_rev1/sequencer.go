@@ -326,9 +326,8 @@ func (seq *Sequencer) phaseSprite3DMAPhase2AndVBlank(vic *VIC) {
 		vic.socketVBlank()
 	}
 	vic.collisions.ClearGraphics()
-	vic.graphics.SetOffset(vic.lineStart)
-	vic.sprites.SetOffset(vic.lineStart)
-	vic.borders.SetOffset(vic.lineStart)
+	vic.beam.SetOffset(vic.lineStart)
+	vic.graphics.ResetOffset()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite3) != 0 {
 		vic.sprites.FetchPhase2(3)
