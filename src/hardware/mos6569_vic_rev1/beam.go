@@ -20,6 +20,7 @@ const (
 )
 
 type Beam struct {
+	lineWidth              int
 	lineOffset             int
 	displayBufferSet       func(int, uint8)
 	displayBufferSet8      func(int, *[8]uint8)
@@ -35,8 +36,9 @@ type Beam struct {
 }
 
 // NewBeam creates and initializes a new Beam instance using the provided display buffer for rendering operations.
-func NewBeam(displayBuffer references.IDisplayBuffer) *Beam {
+func NewBeam(displayBuffer references.IDisplayBuffer, lineWidth int) *Beam {
 	s := &Beam{
+		lineWidth:              lineWidth,
 		lineOffset:             0,
 		displayBufferSet:       displayBuffer.Set,
 		displayBufferSet8:      displayBuffer.Set8,
@@ -88,18 +90,19 @@ func NewBeam(displayBuffer references.IDisplayBuffer) *Beam {
 // Commit transfers the completed scanline from the internal buffer to the final display buffer.
 // This should be called once at the very end of a scanline's rendering cycle.
 func (s *Beam) Commit() {
-	// In a real implementation, this would ideally be a single, highly optimized call
+	// TODO single, highly optimized call
 	// to the display buffer interface, e.g., displayBuffer.SetScanline(s.lineOffset, s.scanline[:]).
 	// For now, we simulate it by iterating, which is less performant but functionally correct.
 	const visibleWidth = 576
 	for i := 0; i < visibleWidth; i++ {
 		s.displayBufferSet(s.lineOffset+i, s.scanline[i])
 	}
+	s.lineOffset += s.lineWidth
 }
 
-// SetOffset sets the line offset for the Beam to the specified value.
-func (s *Beam) SetOffset(offset int) {
-	s.lineOffset = offset
+// ResetLineOffset resets the line offset to 0, typically used to prepare for a new rendering cycle or frame.
+func (s *Beam) ResetLineOffset() {
+	s.lineOffset = 0
 }
 
 // Draw updates the internal scanline buffer at the computed location with the specified color value.

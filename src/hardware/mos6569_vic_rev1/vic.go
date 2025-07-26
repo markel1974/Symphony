@@ -15,28 +15,6 @@ const (
 	RegisterCount = 1 << 8 // uint8 max + 1
 )
 
-type ISequencer interface {
-	Setup() error
-
-	Sequence(vic *VIC)
-
-	GetRasterYMax() uint16
-
-	GetWidth() int
-
-	GetRow24YStart() uint16
-
-	GetRow24YStop() uint16
-
-	GetRow25YStart() uint16
-
-	GetRow25YStop() uint16
-
-	GetFirstDmaLine() uint16
-
-	GetLastDmaLine() uint16
-}
-
 // VIC represents a versatile interface controller for managing video output and graphical resources in a system.
 // It encapsulates configurations, graphics components, collision detection, and rendering capabilities for the display.
 type VIC struct {
@@ -51,12 +29,10 @@ type VIC struct {
 	lightPen   *LightPen
 	beam       *Beam
 
-	sequencer ISequencer
-	label     string
-	reads     [RegisterCount]func() uint8
-	writes    [RegisterCount]func(uint8)
-
-	sequencerSequence func(vic *VIC)
+	curr   *SequencerData
+	label  string
+	reads  [RegisterCount]func() uint8
+	writes [RegisterCount]func(uint8)
 
 	socketCycle     func() uint64
 	socketBALow     func(bool)
@@ -64,22 +40,23 @@ type VIC struct {
 	socketLastCycle func()
 	socketVBlank    func()
 
-	sequencerRow25YStart uint16
-	sequencerRow25YStop  uint16
-	sequencerRow24YStart uint16
-	sequencerRow24YStop  uint16
+	row25YStart        uint16
+	row25YStop         uint16
+	row24YStart        uint16
+	row24YStop         uint16
+	firstDisplayedLine uint16
+	lastDisplayedLine  uint16
 
 	cr1 uint8 // VIC register
 	cr2 uint8 // VIC register
 
-	rasterX uint16 // Current raster x position
-	rasterY uint16 // Current raster y position
-
+	rasterX         uint16 // Current raster x position
+	rasterY         uint16 // Current raster y position
+	rasterYMax      uint16
 	baLow           bool   // BA Line
 	aecLow          bool   // AEC Line
 	aecLowNextCycle uint64 // aecLowNextCycle represents the counter for the next cycle in the AEC low-level operation.
 	vBlankNextCycle bool   // vBlankNextCycle indicates whether the next cycle will trigger a vertical blanking interval (vBlank) in the display.
-	lineStart       int
 	drawLine        bool
 }
 
@@ -118,37 +95,37 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.socketAECLow = socket.AECLow
 	vic.socketVBlank = socket.VBlank
 
+	var sequencer *Sequencer
 	if socket.TotalRaster() > 300 {
-		vic.sequencer = NewSequencerPal(vic, vic.GetFactory(), vic.label, 0)
+		sequencer = NewSequencerPal(vic)
 	} else {
-		vic.sequencer = NewSequencerNtsc(vic, vic.GetFactory(), vic.label, 0)
+		sequencer = NewSequencerNtsc(vic)
 	}
-	vic.sequencerSequence = vic.sequencer.Sequence
-	vic.sequencerRow25YStart = vic.sequencer.GetRow25YStart()
-	vic.sequencerRow25YStop = vic.sequencer.GetRow25YStop()
-	vic.sequencerRow24YStart = vic.sequencer.GetRow24YStart()
-	vic.sequencerRow24YStop = vic.sequencer.GetRow24YStop()
+	vic.curr = sequencer.Start()
+	vic.rasterYMax = sequencer.GetRasterYMax()
+	vic.rasterY = vic.rasterYMax
+	vic.row25YStart = sequencer.GetRow25YStart()
+	vic.row25YStop = sequencer.GetRow25YStop()
+	vic.row24YStart = sequencer.GetRow24YStart()
+	vic.row24YStop = sequencer.GetRow24YStop()
+	vic.firstDisplayedLine = sequencer.GetFirstDisplayedLine()
+	vic.lastDisplayedLine = sequencer.GetLastDisplayedLine()
 
-	vic.rasterY = vic.sequencer.GetRasterYMax()
-
-	vic.beam = NewBeam(displayBuffer)
+	vic.beam = NewBeam(displayBuffer, sequencer.GetLineWidth())
 
 	vic.memory = NewMemory(vic, vic.GetFactory(), vic.label, 0, socket.ReadRam, socket.ReadColorRam, socket.ReadCharRom)
 	vic.interrupts = NewInterrupts(vic, vic.GetFactory(), vic.label, 0, socket.IRQTrigger, socket.IRQClearTrigger)
-	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic.interrupts.Emit, vic.sequencer.GetWidth())
-	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, vic.beam, vic.sequencer.GetRasterYMax(), vic.sequencer.GetFirstDmaLine(), vic.sequencer.GetLastDmaLine())
+	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic.interrupts.Emit, sequencer.GetLineWidth())
+	vic.graphics = NewGraphics(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, vic.beam, vic.rasterYMax, sequencer.GetFirstDmaLine(), sequencer.GetLastDmaLine())
 	vic.sprites = NewSprites(vic, vic.GetFactory(), vic.label, 0, vic.memory, vic.collisions, vic.beam)
-	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, vic.beam, vic.sequencer.GetWidth())
+	vic.borders = NewBorder(vic, vic.GetFactory(), vic.label, 0, vic.beam, sequencer.GetLineWidth())
 	vic.lightPen = NewLightPen(vic, vic.GetFactory(), vic.label, 0, vic.interrupts.Emit)
-	vic.borders.SetDYTop(vic.sequencer.GetRow24YStart())
-	vic.borders.SetDYBottom(vic.sequencer.GetRow24YStop())
+	vic.borders.SetDYTop(sequencer.GetRow24YStart())
+	vic.borders.SetDYBottom(sequencer.GetRow24YStop())
 	vic.vBlankNextCycle = false
 	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)
 
-	if err := vic.sequencer.Setup(); err != nil {
-		return err
-	}
 	if err := vic.memory.Setup(); err != nil {
 		return err
 	}
@@ -205,11 +182,12 @@ func (vic *VIC) GetVASignal() uint8 {
 func (vic *VIC) configChanged() {
 }
 
-// Emulate executes one cycle of the VIC, processing the current function and updating the raster position.
+// Emulate executes the current function assigned to the VIC and transitions to the next function in the sequence.
 //
 //go:nosplit
 func (vic *VIC) Emulate() {
-	vic.sequencerSequence(vic)
+	vic.curr.fn()
+	vic.curr = vic.curr.next
 }
 
 // EmulationRequired returns true if emulation is required for the current VIC (Video Interface Controller) state.
@@ -283,11 +261,11 @@ func (vic *VIC) WriteCR1(data uint8) {
 	vic.cr1 = data
 	vic.graphics.SetYScroll(uint16(vic.cr1) & 7)
 	if rowSel := (vic.cr1 & 0x8) != 0; rowSel {
-		vic.borders.SetDYTop(vic.sequencerRow25YStart)
-		vic.borders.SetDYBottom(vic.sequencerRow25YStop)
+		vic.borders.SetDYTop(vic.row25YStart)
+		vic.borders.SetDYBottom(vic.row25YStop)
 	} else {
-		vic.borders.SetDYTop(vic.sequencerRow24YStart)
-		vic.borders.SetDYBottom(vic.sequencerRow24YStop)
+		vic.borders.SetDYTop(vic.row24YStart)
+		vic.borders.SetDYBottom(vic.row24YStop)
 	}
 	vic.borders.SetDen((vic.cr1 & 0x10) != 0)
 	vic.graphics.SetBmm((vic.cr1 & 0x20) != 0)
