@@ -115,6 +115,13 @@ func (i *Interrupts) ReadLatch() uint8 {
 	return i.irqLatch | 0x70
 }
 
+// VerifyRasterY checks if the given rasterY line matches the configured irqRaster line and triggers an IRQ if they match.
+func (i *Interrupts) VerifyRasterY(rasterY uint16) {
+	if i.irqRaster == rasterY {
+		i.Emit(irqRasterBit)
+	}
+}
+
 // WriteRasterLow updates the low byte of the IRQ raster line with the given 8-bit data and triggers raster settings.
 func (i *Interrupts) WriteRasterLow(rasterY uint16, data uint8) {
 	irqRaster := (i.irqRaster & 0xff00) | uint16(data)

@@ -268,32 +268,6 @@ func (vic *VIC) LightPenTrigger() {
 	vic.lightPen.Trigger(vic.rasterX, vic.rasterY)
 }
 
-// RasterY returns the current raster Y position held by the Interrupts component.
-//func (vic *VIC) RasterY() uint16 {
-//	return vic.rasterY
-//}
-
-// RasterYReset resets the vertical raster position (rasterY) to 0 and triggers an IRQ if irqRaster is 0.
-func (vic *VIC) RasterYReset() {
-	vic.rasterY = 0
-	if vic.interrupts.irqRaster == 0 {
-		vic.interrupts.Emit(irqRasterBit)
-	}
-}
-
-// RasterYIncrement increments the rasterY position and triggers an IRQ if rasterY matches the configured irqRaster value.
-func (vic *VIC) RasterYIncrement() {
-	vic.rasterY++
-	if vic.rasterY == vic.interrupts.irqRaster {
-		vic.interrupts.Emit(irqRasterBit)
-	}
-}
-
-// RasterX returns the current raster x position as a 16-bit unsigned integer.
-//func (vic *VIC) RasterX() uint16 {
-//	return vic.rasterX
-//}
-
 // RasterXReset resets the horizontal raster counter (rasterX) to its initial pre-start value (0xfffc).
 func (vic *VIC) RasterXReset() {
 	vic.rasterX = 0xfffc

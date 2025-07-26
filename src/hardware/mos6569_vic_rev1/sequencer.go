@@ -291,7 +291,8 @@ func (seq *Sequencer) phaseSprite3DMAPhase1AndInit(vic *VIC) {
 	if vic.rasterY >= seq.rasterYMax {
 		vic.vBlankNextCycle = true
 	} else {
-		vic.RasterYIncrement()
+		vic.rasterY++
+		vic.interrupts.VerifyRasterY(vic.rasterY)
 		vic.graphics.BadLineVerify(vic.rasterY, vic.borders.GetDen())
 		vic.drawLine = (vic.rasterY >= seq.firstDisplayedLine) && (vic.rasterY <= seq.lastDisplayedLine)
 	}
@@ -319,7 +320,8 @@ func (seq *Sequencer) phaseSprite3DMAPhase2AndVBlank(vic *VIC) {
 		vic.lineStart = 0
 		vic.graphics.ResetVideoCounterLatch()
 		vic.memory.ResetRefreshCounter()
-		vic.RasterYReset()
+		vic.rasterY = 0
+		vic.interrupts.VerifyRasterY(vic.rasterY)
 		vic.lightPen.TriggerClear()
 		vic.socketVBlank()
 	}
