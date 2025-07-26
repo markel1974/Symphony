@@ -1,4 +1,4 @@
-package null_render
+package null_audio_render
 
 import "github.com/markel1974/c64emu/src/config"
 
