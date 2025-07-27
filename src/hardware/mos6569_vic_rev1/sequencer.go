@@ -286,8 +286,12 @@ func (vic *VIC) phaseSprite3DMAPhase2AndVBlank() {
 		vic.beam.ResetLineOffset()
 		vic.graphics.ResetVideoCounterLatch()
 		vic.memory.ResetRefreshCounter()
+
 		vic.rasterY = 0
 		vic.interrupts.VerifyRasterY(vic.rasterY)
+		vic.graphics.BadLineVerify(vic.rasterY, vic.borders.GetDen())
+		vic.drawLine = (vic.rasterY >= vic.firstDisplayedLine) && (vic.rasterY <= vic.lastDisplayedLine)
+
 		vic.lightPen.TriggerClear()
 		vic.socketVBlank()
 	}
@@ -576,7 +580,6 @@ func (vic *VIC) phaseDisplayFirstFetchAndSpritePipe2() {
 //go:nosplit
 func (vic *VIC) phaseDisplayMainFetchC40() {
 	vic.borders.Column40Update(vic.rasterY)
-
 	if vic.drawLine {
 		vic.borders.AcquireColor(vic.curr.cycleBorder)
 		if vic.borders.VerticalFlipFlop() {
