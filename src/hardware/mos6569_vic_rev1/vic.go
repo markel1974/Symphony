@@ -186,6 +186,12 @@ func (vic *VIC) configChanged() {
 //
 //go:nosplit
 func (vic *VIC) Emulate() {
+	if vic.baLow && !vic.aecLow {
+		if vic.socketCycle() >= vic.aecLowNextCycle {
+			vic.aecLow = true
+			vic.socketAECLow(true)
+		}
+	}
 	vic.curr.fn()
 	vic.curr = vic.curr.next
 }
@@ -225,20 +231,6 @@ func (vic *VIC) ClearBALow() {
 // GetAECLow retrieves the current state of the AEC low flag for the VIC instance. Returns true if enabled, false otherwise.
 func (vic *VIC) GetAECLow() bool {
 	return vic.aecLow
-}
-
-// TryAcquireAEC attempts to acquire the AEC (Address Enable Control) signal if BA is low and AEC is not already low.
-// It ensures the AEC signal is acquired only when the current cycle meets the required condition.
-// This method controls the AEC line state by interacting with the VIC's socket mechanism.
-//
-//go:nosplit
-func (vic *VIC) TryAcquireAEC() {
-	if vic.baLow && !vic.aecLow {
-		if vic.socketCycle() >= vic.aecLowNextCycle {
-			vic.aecLow = true
-			vic.socketAECLow(true)
-		}
-	}
 }
 
 // ChangedVA updates the VIC's virtual address base and triggers the memory pointer update process.

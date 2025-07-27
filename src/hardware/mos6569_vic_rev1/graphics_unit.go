@@ -52,7 +52,7 @@ type GraphicsUnit struct {
 	b2c                   uint8 // VIC register - graphics
 	b3c                   uint8 // VIC register - graphics
 	badLineEnabler        bool  // Bad Lines enabled for this frame
-	badLineCondition      bool  // Current line is bad line
+	badLine               bool  // Current line is bad line
 	sequencerFirstDmaLine uint16
 	sequencerLastDmaLine  uint16
 	foregroundSequencer   []func(int)
@@ -93,7 +93,7 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		displayAccess:         0,
 		bmm:                   false,
 		ecm:                   false,
-		badLineCondition:      false,
+		badLine:               false,
 		badLineEnabler:        false,
 	}
 	for x := range gr.memoryRead {
@@ -158,8 +158,9 @@ func (gr *GraphicsUnit) Setup() error {
 	return nil
 }
 
-func (gr *GraphicsUnit) BadLineCondition() bool {
-	return gr.badLineCondition
+// BadLine checks if the graphics unit is in a bad line state and returns true if it is, otherwise false.
+func (gr *GraphicsUnit) BadLine() bool {
+	return gr.badLine
 }
 
 // BadLineVerify updates the bad line condition based on the current raster position, DEN bit, and YSCROLL value.
@@ -175,16 +176,16 @@ func (gr *GraphicsUnit) BadLineVerify(rasterY uint16, denBit bool) {
 			//If YSCROLL=0, a Bad Line Condition occurs in raster line $30 as soon as the DEN bit
 			gr.badLineEnabler = true
 			if gr.yScroll == 0 {
-				gr.badLineCondition = true
+				gr.badLine = true
 				return
 			}
 		}
 		if gr.badLineEnabler {
-			gr.badLineCondition = gr.yScroll == (rasterY & 7)
+			gr.badLine = gr.yScroll == (rasterY & 7)
 		}
 	} else {
 		gr.badLineEnabler = false
-		gr.badLineCondition = false
+		gr.badLine = false
 	}
 }
 
@@ -318,18 +319,18 @@ func (gr *GraphicsUnit) CommitCharData() {
 	}
 }
 
-// TryResetRowCounter resets the row counter (RC) to 0 if the badLineCondition in the core is true.
-func (gr *GraphicsUnit) TryResetRowCounter() {
-	if gr.badLineCondition {
-		gr.rowCounter = 0
+// AcquireDisplayAccessIfBadLine sets the displayAccess flag to true if the badLine flag in the core is active.
+// This gives the CPU access to video memory during "bad lines".
+func (gr *GraphicsUnit) AcquireDisplayAccessIfBadLine() {
+	if gr.badLine {
+		gr.displayAccess = 1
 	}
 }
 
-// TryAcquireDisplayAccess sets the displayAccess flag to true if the badLineCondition flag in the core is active.
-// This gives the CPU access to video memory during "bad lines".
-func (gr *GraphicsUnit) TryAcquireDisplayAccess() {
-	if gr.badLineCondition {
-		gr.displayAccess = 1
+// ResetRowCounterIfBadLine resets the row counter (RC) to 0 if the badLine in the core is true.
+func (gr *GraphicsUnit) ResetRowCounterIfBadLine() {
+	if gr.badLine {
+		gr.rowCounter = 0
 	}
 }
 
@@ -342,36 +343,36 @@ func (gr *GraphicsUnit) TryAcquireDisplayAccessOnScanlineEnd() {
 		gr.videoCounterLatch = gr.videoCounter
 		gr.displayAccess = 0
 	}
-	if gr.badLineCondition || gr.displayAccess != 0 {
+	if gr.badLine || gr.displayAccess != 0 {
 		// The & operator has precedence
 		gr.rowCounter = (gr.rowCounter + 1) & rowsMax
 		gr.displayAccess = 1
 	}
 }
 
-// Phi1Fetch handles Phi1 clock phase fetch and processes graphics data from memory based on the current raster and display state.
-// This function is the core of the VIC-II's graphics data fetching logic.
-func (gr *GraphicsUnit) Phi1Fetch(rasterY uint16) {
+// FetchMemory retrieves memory for a given raster line (rasterY) using the display access method.
+func (gr *GraphicsUnit) FetchMemory(rasterY uint16) {
 	gr.memoryRead[gr.displayAccess](rasterY)
 }
 
-// TryPhi2Fetch handles Phi2 clock phase fetch, updating videoMatrix and colorLine based on core conditions and memory.
-// This function handles the memory access during the PHI2 phase of the CPU clock cycle.
-func (gr *GraphicsUnit) TryPhi2Fetch(baLow bool, aecLow bool) {
-	// Check if the Bus-Available (BA) signal is low.
-	if baLow {
-		// Check if the Address Enable Control (AEC) signal is low.
-		if aecLow {
-			// If both BA and AEC are low, the VIC-II has access to the address bus.
-			addr := (gr.videoCounter & 0x3ff) | gr.memory.GetMatrixBase() // Calculate address in video matrix.
-			gr.videoMatrix[gr.lineIndex] = gr.memory.ReadByte(addr)       // Read character code from video matrix.
-			gr.colorLine[gr.lineIndex] = gr.memory.readColorRam(addr)     // Read color data from color RAM.
-		} else {
-			// If AEC is high, the CPU has access to the address bus, so we fill with fake data.
-			gr.colorLine[gr.lineIndex] = 0xff
-			gr.videoMatrix[gr.lineIndex] = 0xff
-		}
-	}
+// FetchData reads a character code from the video matrix at a calculated address based on videoCounter and base offset.
+func (gr *GraphicsUnit) FetchData(base uint16) {
+	gr.videoMatrix[gr.lineIndex] = gr.memory.ReadByte((gr.videoCounter & 0x3ff) | base)
+}
+
+// FetchDataFake fills the video matrix with fake data when AEC is high, simulating CPU access to the address bus.
+func (gr *GraphicsUnit) FetchDataFake() {
+	gr.videoMatrix[gr.lineIndex] = 0xff
+}
+
+// FetchColor reads color data from color RAM for the current video address and stores it in the active color line buffer.
+func (gr *GraphicsUnit) FetchColor(base uint16) {
+	gr.colorLine[gr.lineIndex] = gr.memory.readColorRam((gr.videoCounter & 0x3ff) | base)
+}
+
+// FetchColorFake fills the color line buffer with a fake data value when AEC is high and CPU has address bus access.
+func (gr *GraphicsUnit) FetchColorFake() {
+	gr.colorLine[gr.lineIndex] = 0xff
 }
 
 // DrawBackground renders the background using the current display mode
