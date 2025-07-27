@@ -264,7 +264,10 @@ func (vic *VIC) phaseSprite3DMAPhase1AndInit() {
 	vic.borders.ColumnInitialize()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite3) != 0 {
-		vic.sprites.FetchPhase1(3)
+		vic.sprites.ActivateSprite(3)
+		vic.sprites.LatchAttributes()
+		vic.sprites.ReadPtr(vic.memory.GetMatrixBase()) //ph1
+		vic.sprites.ReadData(0)                         //ph2
 	}
 	if vic.sprites.GetDMAFlag(bitSprite3|bitSprite4) == 0 {
 		vic.ClearBALow()
@@ -294,7 +297,9 @@ func (vic *VIC) phaseSprite3DMAPhase2AndVBlank() {
 	vic.graphics.ResetOffset()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite3) != 0 {
-		vic.sprites.FetchPhase2(3)
+		vic.sprites.ActivateSprite(3)
+		vic.sprites.ReadData(1) //ph1
+		vic.sprites.ReadData(2) //ph1
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -312,7 +317,10 @@ func (vic *VIC) phaseSprite4DMAPhase1() {
 	vic.TryAcquireAEC()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite4) != 0 {
-		vic.sprites.FetchPhase1(4)
+		vic.sprites.ActivateSprite(4)
+		vic.sprites.LatchAttributes()
+		vic.sprites.ReadPtr(vic.memory.GetMatrixBase()) //ph1
+		vic.sprites.ReadData(0)                         //ph2
 	}
 	if vic.sprites.GetDMAFlag(bitSprite4|bitSprite5) == 0 {
 		vic.ClearBALow()
@@ -328,7 +336,9 @@ func (vic *VIC) phaseSprite4DMAPhase2() {
 	vic.TryAcquireAEC()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite4) != 0 {
-		vic.sprites.FetchPhase2(4)
+		vic.sprites.ActivateSprite(4)
+		vic.sprites.ReadData(1) //ph1
+		vic.sprites.ReadData(2) //ph1
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -346,7 +356,10 @@ func (vic *VIC) phaseSprite5DMAPhase1() {
 	vic.TryAcquireAEC()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite5) != 0 {
-		vic.sprites.FetchPhase1(5)
+		vic.sprites.ActivateSprite(5)
+		vic.sprites.LatchAttributes()
+		vic.sprites.ReadPtr(vic.memory.GetMatrixBase()) //ph1
+		vic.sprites.ReadData(0)                         //ph2
 	}
 	if vic.sprites.GetDMAFlag(bitSprite5|bitSprite6) == 0 {
 		vic.ClearBALow()
@@ -362,7 +375,9 @@ func (vic *VIC) phaseSprite5DMAPhase2() {
 	vic.TryAcquireAEC()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite5) != 0 {
-		vic.sprites.FetchPhase2(5)
+		vic.sprites.ActivateSprite(5)
+		vic.sprites.ReadData(1) //ph1
+		vic.sprites.ReadData(2) //ph1
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -380,7 +395,10 @@ func (vic *VIC) phaseSprite6DMAPhase1() {
 	vic.TryAcquireAEC()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite6) != 0 {
-		vic.sprites.FetchPhase1(6)
+		vic.sprites.ActivateSprite(6)
+		vic.sprites.LatchAttributes()
+		vic.sprites.ReadPtr(vic.memory.GetMatrixBase()) //ph1
+		vic.sprites.ReadData(0)                         //ph2
 	}
 	if vic.sprites.GetDMAFlag(bitSprite6|bitSprite7) == 0 {
 		vic.ClearBALow()
@@ -395,7 +413,9 @@ func (vic *VIC) phaseSprite6DMAPhase2() {
 	vic.TryAcquireAEC()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite6) != 0 {
-		vic.sprites.FetchPhase2(6)
+		vic.sprites.ActivateSprite(6)
+		vic.sprites.ReadData(1) //ph1
+		vic.sprites.ReadData(2) //ph1
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -410,7 +430,10 @@ func (vic *VIC) phaseSprite7DMAPhase1() {
 	vic.TryAcquireAEC()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite7) != 0 {
-		vic.sprites.FetchPhase1(7)
+		vic.sprites.ActivateSprite(7)
+		vic.sprites.LatchAttributes()
+		vic.sprites.ReadPtr(vic.memory.GetMatrixBase()) //ph1
+		vic.sprites.ReadData(0)                         //ph2
 	}
 	if vic.sprites.GetDMAFlag(bitSprite7) == 0 {
 		vic.ClearBALow()
@@ -426,7 +449,9 @@ func (vic *VIC) phaseSprite7DMAPhase2() {
 	vic.TryAcquireAEC()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite7) != 0 {
-		vic.sprites.FetchPhase2(7)
+		vic.sprites.ActivateSprite(7)
+		vic.sprites.ReadData(1) //ph1
+		vic.sprites.ReadData(2) //ph1
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -707,7 +732,10 @@ func (vic *VIC) phaseSprite0DMAPhase1AndScanLineEnd() {
 	}
 	vic.sprites.PrepareSpriteFlags(vic.rasterY)
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
-		vic.sprites.FetchPhase1(0)
+		vic.sprites.ActivateSprite(0)
+		vic.sprites.LatchAttributes()
+		vic.sprites.ReadPtr(vic.memory.GetMatrixBase()) //ph1
+		vic.sprites.ReadData(0)                         //ph2
 	}
 	vic.graphics.TryAcquireDisplayAccessOnScanlineEnd()
 	vic.rasterX += 8
@@ -725,7 +753,9 @@ func (vic *VIC) phaseSprite0DMAPhase2() {
 	}
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite0) != 0 {
-		vic.sprites.FetchPhase2(0)
+		vic.sprites.ActivateSprite(0)
+		vic.sprites.ReadData(1) //ph1
+		vic.sprites.ReadData(2) //ph1
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -747,7 +777,10 @@ func (vic *VIC) phaseSprite1DMAPhase1() {
 	}
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite1) != 0 {
-		vic.sprites.FetchPhase1(1)
+		vic.sprites.ActivateSprite(1)
+		vic.sprites.LatchAttributes()
+		vic.sprites.ReadPtr(vic.memory.GetMatrixBase()) //ph1
+		vic.sprites.ReadData(0)                         //ph2
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -765,7 +798,9 @@ func (vic *VIC) phaseSprite1DMAPhase2() {
 	vic.TryAcquireAEC()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite1) != 0 {
-		vic.sprites.FetchPhase2(1)
+		vic.sprites.ActivateSprite(1)
+		vic.sprites.ReadData(1) //ph1
+		vic.sprites.ReadData(2) //ph1
 	} else {
 		vic.memory.AccessIdle()
 	}
@@ -783,7 +818,10 @@ func (vic *VIC) phaseSprite2DMAPhase1() {
 	vic.TryAcquireAEC()
 	vic.graphics.TryAcquireDisplayAccess()
 	if vic.sprites.GetDMAFlag(bitSprite2) != 0 {
-		vic.sprites.FetchPhase1(2)
+		vic.sprites.ActivateSprite(2)
+		vic.sprites.LatchAttributes()
+		vic.sprites.ReadPtr(vic.memory.GetMatrixBase()) //ph1
+		vic.sprites.ReadData(0)                         //ph2
 	}
 	if vic.sprites.GetDMAFlag(bitSprite2|bitSprite3) == 0 {
 		vic.ClearBALow()
@@ -800,7 +838,9 @@ func (vic *VIC) phaseSprite2DMAPhase2AndTeardownFinal() {
 	vic.graphics.TryAcquireDisplayAccess()
 	vic.borders.UpdateVerticalFlipFlop(vic.rasterY)
 	if vic.sprites.GetDMAFlag(bitSprite2) != 0 {
-		vic.sprites.FetchPhase2(2)
+		vic.sprites.ActivateSprite(2)
+		vic.sprites.ReadData(1) //ph1
+		vic.sprites.ReadData(2) //ph1
 	} else {
 		vic.memory.AccessIdle()
 	}

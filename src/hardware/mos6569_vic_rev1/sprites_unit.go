@@ -50,6 +50,7 @@ type SpritesUnit struct {
 	//offset             int
 	// spritesData is a lookup table mapping an 8-bit value to arrays of active sprite indices for rendering and processing.
 	spritesData [256][]uint8
+	active      *Sprite
 }
 
 // NewSprites initializes and returns a new instance of the SpritesUnit struct with default settings and allocations.
@@ -74,6 +75,7 @@ func NewSprites(parent references.IComponent, factory references.IComponentFacto
 		mm0:                0,
 		mm1:                0,
 		bufferIndex:        0,
+		active:             nil,
 	}
 	s.BaseComponent.Register(factory, parent, "spritesUnit", s, references.IdInternalComponent(label, instance, "SpritesUnit"))
 	for i := range s.sprites {
@@ -502,82 +504,28 @@ func (sp *SpritesUnit) GetDMAFlag(b uint8) uint8 {
 	return sp.dmaFlags & b
 }
 
-// FetchPhase1 executes the first phase of the Direct Memory Access (DMA) for a given sprite.
-// This operation corresponds to a single CPU clock cycle and is divided into two sub-phases (phi1 and phi2).
-// During this phase, the VIC-II fetches the sprite's data pointer and the first of its three data bytes for the current scanline.
-//
-// - sNum: The number of the sprite (0-7) to fetch data for.
-//
-// Actions in phi1:
-//  1. Latches sprite attributes: The sprite's color (mXc), multicolor registers (mm0, mm1),
-//     X-coordinate (mXx), and data priority (mdp) are latched for the upcoming render.
-//  2. Fetches sprite pointer: It reads the byte from Screen RAM that points to the sprite's bitmap data.
-//     The address is calculated as `VideoMatrixBase + 1016 + sprite_number`.
-//  3. Sets internal pointer: The fetched pointer is stored internally in the sprite object, shifted left by 6
-//     to form the 64-byte aligned base address of the sprite's bitmap data.
-//
-// Actions in phi2:
-//  1. Calculates data address: The address for the first byte of bitmap data is calculated by combining
-//     the sprite's base address with its internal row counter.
-//  2. Fetches data byte: The VIC-II reads the first byte of the sprite's graphical data from the calculated address.
-//  3. Latches data byte: The fetched byte is stored in the first position of the sprite's internal data latch.
-func (sp *SpritesUnit) FetchPhase1(sNum uint8) {
-	sprite := sp.sprites[sNum]
-
-	//phi1
-	sprite.SetLatchAttributes(sp.mdp, sp.mm0, sp.mm1, sp.mXc[sNum], sp.mXx[sNum])
-
-	addrPtr := sp.memory.GetMatrixBase() | 0x03f8 | uint16(sNum)
-	ptr := sp.memory.ReadByte(addrPtr)
-	sprite.SetPtr(uint16(ptr) << 6)
-
-	//phi2
-	addrData0 := (sprite.Counter() & dataCounterLastByte) | sprite.Ptr() //.ptr
-	data := sp.memory.ReadByte(addrData0)
-	sprite.SetLatchData(0, data)
+// ActivateSprite sets the active sprite to the one specified by the index sNum.
+func (sp *SpritesUnit) ActivateSprite(sNum uint8) {
+	sp.active = sp.sprites[sNum]
 }
 
-// FetchPhase2 executes the second phase of the Direct Memory Access (DMA) for a given sprite.
-// This operation corresponds to a single CPU clock cycle and is divided into two sub-phases:
-// phi0 and phi1. During this phase, the VIC-II fetches the remaining two data bytes (data1 and data2)
-// of the sprite's three-byte data block for the current scanline. This method is typically called
-// immediately after FetchPhase1, which handles the sprite pointer and the first data byte (data0).
-//
-// - sNum: The number of the sprite (0-7) for which to fetch data.
-//
-// Actions in phi0:
-//  1. Calculates data address for data1: The memory address for the second byte of bitmap data (data1)
-//     is calculated. This involves combining the sprite's 64-byte aligned base address (obtained from
-//     the sprite pointer) with the current value of the sprite's internal data counter. The data counter
-//     would have been incremented after fetching data0 in FetchPhase1.
-//  2. Fetches data byte (data1): The VIC-II reads the second byte of the sprite's graphical data from
-//     the calculated memory address.
-//  3. Latches data byte (data1): The fetched byte is stored in the second position (index 1) of the
-//     sprite's internal data latch. The sprite's internal data counter is then incremented, preparing
-//     for the next data fetch.
-//
-// Actions in phi1:
-//  1. Calculates data address for data2: The memory address for the third byte of bitmap data (data2)
-//     is calculated using the same logic as for data1, but with the now-incremented sprite data counter.
-//  2. Fetches data byte (data2): The VIC-II reads the third byte of the sprite's graphical data from
-//     this newly calculated address.
-//  3. Latches data byte (data2): The fetched byte is stored in the third position (index 2) of the
-//     sprite's internal data latch. The sprite's internal data counter is incremented one last time
-//     for this three-byte block.
-//
-// Upon completion of FetchPhase2, all three bytes of the sprite's data for the current scanline
-// (data0, data1, data2) are available in the sprite's internal latch, ready for rendering.
-func (sp *SpritesUnit) FetchPhase2(sNum uint8) {
-	sprite := sp.sprites[sNum]
-	//phi0
-	addrData1 := (sprite.Counter() & dataCounterLastByte) | sprite.Ptr()
-	data1 := sp.memory.ReadByte(addrData1)
-	sprite.SetLatchData(1, data1)
+// LatchAttributes updates the sprite's attributes by calling SetLatchAttributes with its current configuration values.
+func (sp *SpritesUnit) LatchAttributes() {
+	sp.active.LatchAttributes(sp.mdp, sp.mm0, sp.mm1, sp.mXc[sp.active.num], sp.mXx[sp.active.num])
+}
 
-	//phi1
-	addrData2 := (sprite.Counter() & dataCounterLastByte) | sprite.Ptr()
-	data2 := sp.memory.ReadByte(addrData2)
-	sprite.SetLatchData(2, data2)
+// ReadPtr reads a sprite pointer from memory and sets the active sprite's pointer to the calculated address.
+func (sp *SpritesUnit) ReadPtr(base uint16) {
+	addrPtr := base | 0x03f8 | uint16(sp.active.num)
+	ptr := sp.memory.ReadByte(addrPtr)
+	sp.active.SetPtr(uint16(ptr) << 6)
+}
+
+// ReadData reads a byte of data from memory using the calculated address and sets it within the active SpriteUnit state.
+func (sp *SpritesUnit) ReadData(bNum int) {
+	addrData := (sp.active.counter & dataCounterLastByte) | sp.active.ptr
+	data := sp.memory.ReadByte(addrData)
+	sp.active.SetData(bNum, data)
 }
 
 // UpdateDMA updates the Direct MemoryUnit Access (DMA) flags for sprites at the current raster line position.

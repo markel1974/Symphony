@@ -139,13 +139,14 @@ func (sp *Sprite) Mask() uint8 {
 	return sp.mask
 }
 
-func (sp *Sprite) SetLatchData(bNum int, data uint8) {
+func (sp *Sprite) SetData(bNum int, data uint8) {
+	//latch
 	sp.latch[sp.latchIndex+bNum] = int(data)
-	sp.counter++ // Increment the data counter for the next byte.
+	sp.counter++
 }
 
-// SetLatchAttributes updates the sprite's color data, multicolor flags, and offset using the provided parameters.
-func (sp *Sprite) SetLatchAttributes(mdp uint8, mm0 uint8, mm1 uint8, mXc uint8, mXx uint16) {
+// LatchAttributes updates the sprite's color data, multicolor flags, and offset using the provided parameters.
+func (sp *Sprite) LatchAttributes(mdp uint8, mm0 uint8, mm1 uint8, mXc uint8, mXx uint16) {
 	sp.latch[sp.latchIndex+latchMDP] = int(mdp)
 	sp.latch[sp.latchIndex+latchMM0] = int(mm0)
 	sp.latch[sp.latchIndex+latchMM1] = int(mm1)
