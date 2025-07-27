@@ -385,8 +385,7 @@ func (gr *GraphicsUnit) DrawBackground() {
 // DrawForeground renders the foreground graphics based on the current display mode and x-scroll offset.
 // It also increments the offset and updates the collisions.
 func (gr *GraphicsUnit) DrawForeground() {
-	offset := gr.baseOffset + int(gr.xScroll)
-	gr.foregroundSequencer[gr.displayMode](offset)
+	gr.foregroundSequencer[gr.displayMode](gr.baseOffset + int(gr.xScroll))
 	gr.baseOffset += characterPixelWidth
 	gr.collisions.IncrementGraphicsOffset()
 }
