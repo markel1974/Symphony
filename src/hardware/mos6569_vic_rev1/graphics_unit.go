@@ -346,7 +346,6 @@ func (gr *GraphicsUnit) TryAcquireDisplayAccessOnScanlineEnd() {
 		gr.displayAccess = 0
 	}
 	if gr.badLine || gr.displayAccess != 0 {
-		// The & operator has precedence
 		gr.rowCounter = (gr.rowCounter + 1) & rowsMax
 		gr.displayAccess = 1
 	}
