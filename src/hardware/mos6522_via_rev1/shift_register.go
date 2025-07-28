@@ -8,8 +8,9 @@ import (
 // ShiftRegister represents a shift register utilizing CB2 (Control Bus 2) for read and write operations.
 type ShiftRegister struct {
 	*component.BaseComponent
-	shiftCounter uint8
-	sr           uint8
+	shiftCounter uint8 // symphony:export shiftCounter tracks the number of shifts performed, resetting after completing an 8-bit operation.
+	sr           uint8 // symphony:export sr represents the internal 8-bit storage for the shift register operations.
+	reflect      *ShiftRegisterReflect
 	readCB2      func() bool
 	writeCB2     func(bool)
 }
@@ -20,6 +21,7 @@ func NewShiftRegister(parent references.IComponent, factory references.IComponen
 		BaseComponent: component.NewBaseComponent(),
 	}
 	s.BaseComponent.Register(factory, parent, "shiftRegister", s, references.IdInternalComponent(label, instance, "ShiftRegister"))
+	s.reflect = NewShiftRegisterReflect(s)
 	return s
 }
 

@@ -11,11 +11,12 @@ const defaultViaTimeout = 0xffff
 // Timer represents a 16-bit timer component used for counting cycles and managing underflow behavior.
 type Timer struct {
 	*component.BaseComponent
-	counter    uint16
-	latch      uint16
-	clockPulse bool
-	loadSignal bool
-	underflow  bool
+	counter    uint16 // symphony:export counter is a 16-bit register used for counting cycles or steps in the Timer's operation.
+	latch      uint16 // symphony:export latch is a 16-bit register used to store a predefined value for reloading the counter during Timer operations.
+	clockPulse bool   // symphony:export clockPulse indicates whether the timer's clock signal is active during the current emulation cycle.
+	loadSignal bool   // symphony:export loadSignal indicates a flag to signal reloading the counter from the latch value in the Timer.
+	underflow  bool   // symphony:export underflow indicates whether the timer has reached zero and triggered an underflow condition during operation.
+	reflect    *TimerReflect
 }
 
 // NewTimer initializes a new Timer instance, registers it with the specified factory, and sets default counter values.
@@ -27,7 +28,7 @@ func NewTimer(parent references.IComponent, factory references.IComponentFactory
 		clockPulse:    true,
 	}
 	t.BaseComponent.Register(factory, parent, "timer", t, references.IdInternalComponent(label, instance, "Timer"))
-
+	t.reflect = NewTimerReflect(t)
 	return t
 }
 
@@ -96,6 +97,7 @@ func (t *Timer) SetLatchHigh(data uint8) {
 }
 
 // SetLatchLow sets the low byte of the latch register without altering the high byte.
+// symphony:export
 func (t *Timer) SetLatchLow(data uint8) {
 	t.latch = (t.latch & 0xFF00) | uint16(data)
 }

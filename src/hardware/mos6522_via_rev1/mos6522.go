@@ -25,24 +25,10 @@ const (
 // VIA represents a versatile interface adapter used for I/O, timing, and control in a system.
 type VIA struct {
 	*component.BaseComponent
-	pra           uint8
-	ddra          uint8
-	prb           uint8
-	ddrb          uint8
-	timer0        *Timer
-	timer1        *Timer
-	shiftRegister *ShiftRegister
-	acr           uint8
-	pcr           uint8
-	ifr           uint8
-	ier           uint8
-	lastCA1       bool
-	lastCB2       bool
-	lastPB6       bool
-	lastCB1       bool
-	reads         [RegisterCount]func() uint8
-	writes        [RegisterCount]func(uint8)
-
+	timer0                *Timer
+	timer1                *Timer
+	shiftRegister         *ShiftRegister
+	reflect               *VIAReflect
 	socketReadPortA       func() uint8
 	socketReadPortB       func() uint8
 	socketReadPB6         func() bool
@@ -55,6 +41,20 @@ type VIA struct {
 	socketSignalPCR       func(uint8)
 	socketIRQTrigger      func()
 	socketIRQClearTrigger func()
+	reads                 [RegisterCount]func() uint8
+	writes                [RegisterCount]func(uint8)
+	pra                   uint8 // symphony:export pra represents the Peripheral Register A (PRA) used to store or output data for port A in the VIA.
+	ddra                  uint8 // symphony:export ddra represents the Data Direction Register A in the VIA, used to configure the direction of port A pins as input or output.
+	prb                   uint8 // symphony:export prb represents the Peripheral Register B (PRB) used to store or output data for port B in the VIA.
+	ddrb                  uint8 // symphony:export ddrb represents the Data Direction Register B, controlling the input/output configuration of the VIA Port B pins.
+	acr                   uint8 // symphony:export acr represents the Auxiliary Control Register used for configuring VIA operating modes and functionalities.
+	pcr                   uint8 // symphony:export pcr represents the Peripheral Control Register for managing control pin configurations and interrupt settings.
+	ifr                   uint8 // symphony:export ifr represents the interrupt flag register, which indicates pending interrupts for the VIA component.
+	ier                   uint8 // symphony:export ier represents the Interrupt Enable Register, used to enable or disable specific interrupt sources in the VIA.
+	lastCA1               bool  // symphony:export lastCA1 indicates the last observed state of the CA1 control pin for edge detection or handshake operations.
+	lastCB2               bool  // symphony:export lastCB2 tracks the last state of the CB2 pin for edge detection or state comparison purposes.
+	lastPB6               bool  // symphony:export lastPB6 tracks the previous state of the PB6 control line for edge detection and timer operations.
+	lastCB1               bool  // symphony:export lastCB1 indicates the previous state of the CB1 control line for edge detection or handshake operations.
 }
 
 // NewVIA initializes and returns a new instance of the VIA type, associating it with a parent component and factory.
@@ -68,6 +68,7 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 		ddrb:          0,
 	}
 	v.BaseComponent.Register(factory, parent, Identifier(), v, references.IdIMos6522(v, label, instance))
+	v.reflect = NewVIAReflect(v)
 	v.timer0 = NewTimer(v, v.GetFactory(), label, 0)
 	v.timer1 = NewTimer(v, v.GetFactory(), label, 1)
 	v.shiftRegister = NewShiftRegister(v, v.GetFactory(), label, 0)
