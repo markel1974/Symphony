@@ -6,12 +6,12 @@ import (
 	"github.com/markel1974/c64emu/src"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/servers"
+	"github.com/markel1974/c64emu/src/kernel/servers/authenticator"
+	"github.com/markel1974/c64emu/src/kernel/shell"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
-	"github.com/markel1974/c64emu/src/shell/cli"
-	"github.com/markel1974/c64emu/src/shell/interfaces"
-	"github.com/markel1974/c64emu/src/shell/servers"
-	"github.com/markel1974/c64emu/src/shell/servers/authenticator"
 	"github.com/markel1974/c64emu/src/version"
 	"log"
 	"os"
@@ -44,7 +44,7 @@ func restoreTest(factory references.IComponentFactory) {
 }
 */
 
-func createShell(target *cli.Command) error {
+func createShell(target *shell.Command) error {
 	const prompt = "symphony" + " " + "1.4.3" + "> "
 	const port = 1234
 	const user = "u"
@@ -54,7 +54,7 @@ func createShell(target *cli.Command) error {
 	run := func(task interfaces.ITask, args []string) error {
 		return nil
 	}
-	t := cli.NewCommand("bin", interfaces.CommandTypeDirectory, nil, false, run)
+	t := shell.NewCommand("bin", interfaces.CommandTypeDirectory, nil, false, run)
 	t.SetHelp("Bin", "Bin")
 	_ = t.AddCommand(target)
 	auth := authenticator.NewSimpleAuthenticator()

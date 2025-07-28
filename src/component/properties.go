@@ -125,6 +125,15 @@ func (p *Properties) Get(id string) *PropertyInfo {
 	return p.properties[id]
 }
 
+// List returns a slice of string identifiers for all properties in the Properties instance.
+func (p *Properties) List() map[string]string {
+	out := make(map[string]string)
+	for _, v := range p.properties {
+		out[v.id] = v.description
+	}
+	return out
+}
+
 // GetProperty retrieves the value of a property by its id from the Properties instance. Returns the value or an error if not found.
 func (p *Properties) GetProperty(id string) (interface{}, error) {
 	prop, ok := p.properties[id]

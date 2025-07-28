@@ -2,9 +2,9 @@ package component
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/shell"
 	"github.com/markel1974/c64emu/src/references"
-	"github.com/markel1974/c64emu/src/shell/cli"
-	"github.com/markel1974/c64emu/src/shell/interfaces"
 	"io"
 )
 
@@ -19,7 +19,7 @@ const detailsId = "details"
 
 // BaseComponent provides a base implementation for composed components with properties, commands, and hierarchical structure.
 type BaseComponent struct {
-	cmd        *cli.Command
+	cmd        *shell.Command
 	id         string
 	name       string
 	hardwareId string
@@ -57,8 +57,9 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 		return nil
 	}
 
-	bc.cmd = cli.NewCommand(bc.name, interfaces.CommandTypeDirectory, nil, false, run)
-
+	bc.cmd = shell.NewCommand(bc.name, interfaces.CommandTypeDirectory, nil, false, run)
+	bc.cmd.SetProperties(bc.properties)
+	bc.cmd.SetExecutables(bc.commands)
 	bc.cmd.SetHelp("Command "+bc.name, "This is a command")
 	if parent != nil && parent.GetNode() != nil {
 		pNode := parent.GetNode()
@@ -229,7 +230,7 @@ func (bc *BaseComponent) RestoreAll(state map[string]interface{}) error {
 	return nil
 }
 
-func (bc *BaseComponent) GetCommand() *cli.Command {
+func (bc *BaseComponent) GetCommand() *shell.Command {
 	return bc.cmd
 }
 

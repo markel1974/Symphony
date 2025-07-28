@@ -2,7 +2,7 @@ package references
 
 import (
 	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/shell/cli"
+	"github.com/markel1974/c64emu/src/kernel/shell"
 	"io"
 	"log"
 	"reflect"
@@ -57,7 +57,7 @@ type IHardware interface {
 // CommandExecPath executes a command at a specific path with the given arguments.
 // CommandDocumentation provides documentation for commands using a given map.
 type ICommand interface {
-	GetCommand() *cli.Command
+	GetCommand() *shell.Command
 
 	CommandAdd(id string, desc string, command interface{}) error
 

@@ -148,3 +148,12 @@ func (c *Commands) Documentation() []string {
 	sort.Strings(out)
 	return out
 }
+
+// List returns a sorted list of command signatures present in the Commands collection.
+func (c *Commands) List() map[string]string {
+	out := make(map[string]string)
+	for _, v := range c.commands {
+		out[v.signature] = v.description
+	}
+	return out
+}

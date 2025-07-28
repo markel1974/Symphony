@@ -1,0 +1,51 @@
+/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *  http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package system
+
+import (
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/shell"
+	"strings"
+)
+
+func CreateTasks() *shell.Command {
+	run := func(task interfaces.ITask, args []string) error {
+		if len(args) <= 0 {
+			return nil
+		}
+		kind := strings.TrimSpace(strings.ToLower(args[0]))
+		args = args[1:]
+		switch kind {
+		case "list":
+			task.WriteLn("")
+			for _, l := range task.ListTasks() {
+				task.WriteLn(l)
+			}
+		case "restore":
+			if len(args) > 0 {
+				task.RestoreTasks(args[0])
+			}
+		case "save":
+			if len(args) > 0 {
+				task.SaveTasks(args[0])
+			}
+		}
+		return nil
+	}
+	root := shell.NewCommand("task", interfaces.CommandTypeFile, nil, false, run)
+	root.SetHelp("Task", "Task")
+
+	return root
+}
