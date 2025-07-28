@@ -16,7 +16,7 @@ import (
 
 const (
 	// ExporterPrefix is a constant used to identify export-related comments in the code during parsing and generation.
-	exporterPrefix     = "//symphony:export"
+	exporterPrefix     = "symphony:export"
 	exporterFileSuffix = "_reflect_gen"
 )
 
@@ -127,17 +127,36 @@ func (g *Generator) ParseAndGenerate() error {
 		}
 		structData := g.structs[structName]
 
-		for _, comment := range funcDecl.Doc.List {
-			if strings.HasPrefix(comment.Text, exporterPrefix) {
-				propertyName := strings.TrimSpace(strings.TrimPrefix(comment.Text, exporterPrefix))
-				funcName := funcDecl.Name.Name
-				if strings.HasPrefix(funcName, "get") {
-					id := g.deriveID(funcName, "get")
-					structData.TempGetters[id] = FuncInfo{Name: funcName, PropertyName: propertyName}
-				} else if strings.HasPrefix(funcName, "set") {
-					id := g.deriveID(funcName, "set")
-					structData.TempSetters[id] = FuncInfo{Name: funcName, PropertyName: propertyName}
-				}
+		var docs string
+		found := false
+		for _, doc := range funcDecl.Doc.List {
+			line := strings.TrimPrefix(doc.Text, "//")
+			if strings.Contains(line, exporterPrefix) {
+				line = strings.Replace(line, exporterPrefix, "", -1)
+				found = true
+			}
+			line = strings.Trim(line, " \n\r")
+			if docs != "" && line != "" {
+				docs += " "
+			}
+			docs += line
+		}
+		if found {
+			funcName := funcDecl.Name.Name
+			params := 0
+			result := 0
+			if funcDecl.Type.Params != nil {
+				params = len(funcDecl.Type.Params.List)
+			}
+			if funcDecl.Type.Results != nil {
+				result = len(funcDecl.Type.Results.List)
+			}
+			if params == 1 && result == 0 {
+				id := g.deriveID(funcName, "set")
+				structData.TempSetters[id] = FuncInfo{Name: funcName, PropertyName: docs}
+			} else if params == 0 && result == 1 {
+				id := g.deriveID(funcName, "get")
+				structData.TempGetters[id] = FuncInfo{Name: funcName, PropertyName: docs}
 			}
 		}
 		return true
@@ -171,17 +190,25 @@ func (g *Generator) deriveID(funcName, prefix string) string {
 // Logs a warning if a getter function does not have a corresponding setter.
 func (g *Generator) matchFunctions(data *StructData) {
 	data.ExportedFuncs = []ExportedFunc{}
+	for id, setterInfo := range data.TempSetters {
+		data.ExportedFuncs = append(data.ExportedFuncs, ExportedFunc{
+			ID:           id,
+			PropertyName: setterInfo.PropertyName,
+			//GetterName:   getterInfo.Name,
+			SetterName: setterInfo.Name,
+		})
+	}
 	for id, getterInfo := range data.TempGetters {
-		setterInfo, ok := data.TempSetters[id]
-		if !ok {
-			log.Printf("warning: Getter '%s' has no corresponding Setter for ID '%s'", getterInfo.Name, id)
-			continue
-		}
+		//setterInfo, ok := data.TempSetters[id]
+		//if !ok {
+		//	log.Printf("warning: Getter '%s' has no corresponding Setter for ID '%s'", getterInfo.Name, id)
+		//	continue
+		//}
 		data.ExportedFuncs = append(data.ExportedFuncs, ExportedFunc{
 			ID:           id,
 			PropertyName: getterInfo.PropertyName,
 			GetterName:   getterInfo.Name,
-			SetterName:   setterInfo.Name,
+			//SetterName:   setterInfo.Name,
 		})
 	}
 }
