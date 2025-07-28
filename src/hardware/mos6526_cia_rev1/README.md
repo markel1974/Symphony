@@ -12,7 +12,7 @@ The `mos6526` package delivers a robust software representation of the CIA chip,
 
 * **Time-of-Day (TOD) Clock**: A 24-hour clock that maintains time in Binary-Coded Decimal (BCD) format. It features a programmable alarm, hardware-accurate register latching upon read, and a cycle-accurate internal clocking mechanism.
 
-* **Serial Data Register (SDR)**: A complete 8-bit shift register for serial I/O. The implementation is accurately clocked by Timer A underflows, correctly handling the bit-by-bit shifting mechanism for both data transmission and reception.
+* **Serial Data Register (SDR)**: A complete 8-bit shift register for serial I/O. The implementation handles bit-by-bit transfer for both input and output, with the clocking mechanism accurately driven by Timer A underflows. An interrupt is generated upon the completion of an 8-bit transfer.
 
 * **Parallel I/O Ports**: Two 8-bit bidirectional I/O ports (Port A and Port B) with their corresponding Data Direction Registers (DDRs), managed via a decoupled interface for easy integration with keyboard, joystick, and other peripheral logic.
 
@@ -49,13 +49,9 @@ The code is organized into modules with clear responsibilities:
 -   `cia.go`: Contains the main `CIA` struct, which orchestrates all sub-components and handles interaction with the system bus and interrupts.
 -   `timer.go`: Implements the internal logic and complex state machine for the two programmable timers.
 -   `tod.go`: Manages the state and BCD logic for the Time-of-Day clock and its alarm.
+-   `shift_register.go`: Implements the 8-bit serial port (SDR), handling the bit-shifting logic for both input and output modes.
 -   `factory.go`: Provides the factory pattern for registering and instantiating the `mos6526` component within a larger system.
--   `timer_reflect.go`, `tod_reflect.go`: Support files that expose the internal state of components for debugging and introspection purposes.
-
-## TODO / Future Work
-
--   Complete the implementation of the `tod_reflect.go` file for full introspection capabilities.
--   Expand the unit test suite to cover more edge cases, particularly for complex interactions.
+-   `cia_reflect.go`, `timer_reflect.go`, `tod_reflect.go`, `shift_register_reflect.go`: Support files that expose the internal state of components for debugging and introspection purposes.
 
 ## License
 
