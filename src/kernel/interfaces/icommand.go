@@ -40,7 +40,7 @@ type ICommand interface {
 
 	Childs() []ICommand
 
-	DirectorListing() []string
+	DirectoryListing() []string
 
 	Help() string
 

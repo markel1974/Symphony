@@ -69,7 +69,9 @@ func (c *Command) Type() interfaces.CommandType {
 	return c.kind
 }
 
-func (c *Command) DirectorListing() []string {
+// DirectoryListing returns a list of all child command names, property names, and executable names associated with the command.
+func (c *Command) DirectoryListing() []string {
+	//TODO return an array of object <name, type....>
 	var out []string
 	for _, cmd := range c.Childs() {
 		out = append(out, cmd.Name())
