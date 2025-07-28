@@ -16,8 +16,8 @@ package invaders
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/shell/context/render/matrix"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/render/matrix"
 	"math/rand"
 	"strconv"
 	"time"

@@ -16,7 +16,7 @@ package terminal
 
 import (
 	"github.com/markel1974/c64emu/src/shell/interfaces"
-	"github.com/markel1974/c64emu/src/shell/terminal/vt100"
+	"github.com/markel1974/c64emu/src/shell/servers/terminal/vt100"
 )
 
 // EquipmentFactory is responsible for creating terminal equipment instances by leveraging provided input-output interfaces.

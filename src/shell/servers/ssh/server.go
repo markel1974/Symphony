@@ -23,9 +23,9 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
 	"github.com/markel1974/c64emu/src/shell/cli"
-	"github.com/markel1974/c64emu/src/shell/context"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
-	"github.com/markel1974/c64emu/src/shell/terminal"
+	"github.com/markel1974/c64emu/src/shell/kernel"
+	"github.com/markel1974/c64emu/src/shell/servers/terminal"
 	"golang.org/x/crypto/ssh"
 	"log"
 	"net"
@@ -195,7 +195,7 @@ func (r *Server) handleConnection(nConn net.Conn) {
 
 		r.auth.IsAuthenticated()
 
-		ctx := context.NewContext(r.ticker, channel, channel, r.auth, r.template, r.prompt, r.autosave)
+		ctx := kernel.NewContext(r.ticker, channel, channel, r.auth, r.template, r.prompt, r.autosave)
 		ioAdapter := interfaces.IInputOutput(ctx)
 		term := r.factory.Create("VT100", ioAdapter, -1)
 		ctx.Setup(term)

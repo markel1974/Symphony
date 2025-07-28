@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package context
+package kernel
 
 import (
 	"encoding/json"

@@ -1,4 +1,4 @@
-package context
+package kernel
 
 import (
 	"github.com/markel1974/c64emu/src/shell/interfaces"

@@ -12,15 +12,15 @@
  * limitations under the License.
  */
 
-package context
+package kernel
 
 import (
 	"github.com/markel1974/c64emu/src/shell/adaptiveticker"
 	"github.com/markel1974/c64emu/src/shell/apps"
 	"github.com/markel1974/c64emu/src/shell/cli"
-	"github.com/markel1974/c64emu/src/shell/context/file_system"
-	"github.com/markel1974/c64emu/src/shell/context/render"
+	"github.com/markel1974/c64emu/src/shell/file_system"
 	"github.com/markel1974/c64emu/src/shell/interfaces"
+	"github.com/markel1974/c64emu/src/shell/render"
 	"github.com/markel1974/c64emu/src/shell/shell"
 	"io"
 )

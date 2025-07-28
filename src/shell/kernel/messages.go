@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package context
+package kernel
 
 // MessageType represents an enumerated type used to classify different types of messages in the system.
 type MessageType int
