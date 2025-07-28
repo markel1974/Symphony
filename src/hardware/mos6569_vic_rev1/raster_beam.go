@@ -1,15 +1,9 @@
 package mos6569
 
-import "github.com/markel1974/c64emu/src/references"
-
-// Beam is a data structure for graphical rendering operations using line-based pixel manipulation.
-// lineOffset specifies the current offset used for line rendering calculations.
-// displayBufferSet is a function reference for setting pixel data in the display buffer at a specified position.
-// displayBufferSet8 is a function for writing 8 consecutive pixel values into the display buffer.
-// displayBufferSetMulti8 is used for writing multicolor pixel values to the display buffer.
-// colors is an array of uint8 values used to store indexed color mappings for rendering.
-// standardColorIndex is a lookup table mapping 8-bit values to arrays of 8 single-bit representations for standard modes.
-// multiColorIndex maps 8-bit values to 2-bit pixel indices for multicolor rendering operations.
+import (
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
+)
 
 const (
 	paletteSize         = 1 << 8
@@ -18,9 +12,9 @@ const (
 	rgbSize             = 4
 )
 
-// Beam represents a rendering component for managing and storing scanline data during graphical operations.
-// It handles rendering tasks including multicolor and standard pixel drawing operations into a buffer.
-type Beam struct {
+// RasterBeam is a structure used to manage raster-based rendering with support for color palettes and scanline operations.
+type RasterBeam struct {
+	*component.BaseComponent
 	lineWidthRGBA      int
 	lineOffsetRGBA     int
 	displayBufferArray func(int, []uint8)
@@ -31,8 +25,8 @@ type Beam struct {
 	multiColorIndex    [multicolorIndexSize][8]uint8
 }
 
-// NewBeam creates and initializes a new Beam instance using the provided display buffer for rendering operations.
-func NewBeam(displayBuffer references.IDisplayBuffer, width int) *Beam {
+// NewBeam creates and initializes a new RasterBeam instance using the provided display buffer for rendering operations.
+func NewBeam(parent references.IComponent, factory references.IComponentFactory, label string, instance int, displayBuffer references.IDisplayBuffer, width int) *RasterBeam {
 	const colorMax = 0xf
 	//Bright
 	//paletteR := []byte{0x00, 0xff, 0x99, 0x00, 0xcc, 0x44, 0x11, 0xff, 0xaa, 0x66, 0xff, 0x40, 0x80, 0x66, 0x77, 0xc0}
@@ -51,7 +45,8 @@ func NewBeam(displayBuffer references.IDisplayBuffer, width int) *Beam {
 		scanlineSize <<= 1
 	}
 	//scanlineMask := int(scanlineSize - 1)
-	s := &Beam{
+	s := &RasterBeam{
+		BaseComponent:      component.NewBaseComponent(),
 		lineWidthRGBA:      lineWidthRGBA,
 		lineOffsetRGBA:     0,
 		displayBufferArray: displayBuffer.SetArray,
@@ -103,28 +98,51 @@ func NewBeam(displayBuffer references.IDisplayBuffer, width int) *Beam {
 		data >>= 1
 		s.standardColorIndex[i][0] = data & 1
 	}
+	s.BaseComponent.Register(factory, parent, "rasterBeam", s, references.IdInternalComponent(label, instance, "RasterBeam"))
 	return s
 }
 
+func (s *RasterBeam) Setup() error {
+	return nil
+}
+
+func (s *RasterBeam) Connect() error {
+	return nil
+}
+
+func (s *RasterBeam) EmulationRequired() bool {
+	return false
+}
+
+func (s *RasterBeam) Emulate() {
+}
+
+func (s *RasterBeam) Internal() bool {
+	return true
+}
+
+func (s *RasterBeam) Reset() {
+}
+
 // ResetLineOffset resets the line offset to 0, typically used to prepare for a new rendering cycle or frame.
-func (s *Beam) ResetLineOffset() {
+func (s *RasterBeam) ResetLineOffset() {
 	s.lineOffsetRGBA = 0
 }
 
 // Draw updates the internal scanline buffer at the computed location with the specified color value.
-func (s *Beam) Draw(offset int, color uint8) {
+func (s *RasterBeam) Draw(offset int, color uint8) {
 	copy(s.scanline[offset*rgbSize:], s.colorsRGBA[color][:])
 }
 
-// DrawMulti8 writes an 8-pixel multicolor value to the internal scanline buffer at the specified offset using the given color.
-func (s *Beam) DrawMulti8(offset int, color uint8) {
+// Draw8 writes an 8-pixel multicolor value to the internal scanline buffer at the specified offset using the given color.
+func (s *RasterBeam) Draw8(offset int, color uint8) {
 	for i := 0; i < 8; i++ {
 		copy(s.scanline[(offset+i)*rgbSize:], s.colorsRGBA[color][:])
 	}
 }
 
-// Draw8Standard renders 8 pixels in standard mode into the internal scanline buffer.
-func (s *Beam) Draw8Standard(offset int, a uint8, b uint8, data uint8) {
+// DrawStandard renders 8 pixels in standard mode into the internal scanline buffer.
+func (s *RasterBeam) DrawStandard(offset int, a uint8, b uint8, data uint8) {
 	cb := [2]uint8{s.palette[a], s.palette[b]}
 	si := s.standardColorIndex[data]
 	for i := 0; i < 8; i++ {
@@ -132,8 +150,8 @@ func (s *Beam) Draw8Standard(offset int, a uint8, b uint8, data uint8) {
 	}
 }
 
-// Draw8Multi renders 8 pixels using a multicolor mode into the internal scanline buffer.
-func (s *Beam) Draw8Multi(offset int, a uint8, b uint8, c uint8, d uint8, data uint8) {
+// DrawMultiColor renders 8 pixels using a multicolor mode into the internal scanline buffer.
+func (s *RasterBeam) DrawMultiColor(offset int, a uint8, b uint8, c uint8, d uint8, data uint8) {
 	cb := [4]uint8{s.palette[a], s.palette[b], s.palette[c], s.palette[d]}
 	mi := s.multiColorIndex[data]
 	for i := 0; i < 8; i++ {
@@ -143,7 +161,7 @@ func (s *Beam) Draw8Multi(offset int, a uint8, b uint8, c uint8, d uint8, data u
 
 // Commit transfers the completed scanline from the internal buffer to the final display buffer.
 // This should be called once at the very end of a scanline's rendering cycle.
-func (s *Beam) Commit() {
+func (s *RasterBeam) Commit() {
 	s.displayBufferArray(s.lineOffsetRGBA, s.scanline[:s.lineWidthRGBA])
 	s.lineOffsetRGBA += s.lineWidthRGBA
 }

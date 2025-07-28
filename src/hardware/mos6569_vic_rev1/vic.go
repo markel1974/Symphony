@@ -27,7 +27,7 @@ type VIC struct {
 	graphics   *GraphicsUnit
 	borders    *BordersUnit
 	lightPen   *LightPen
-	beam       *Beam
+	beam       *RasterBeam
 
 	curr   *SequencerData
 	label  string
@@ -111,8 +111,7 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.firstDisplayedLine = sequencer.GetFirstDisplayedLine()
 	vic.lastDisplayedLine = sequencer.GetLastDisplayedLine()
 
-	vic.beam = NewBeam(displayBuffer, sequencer.GetLineWidth())
-
+	vic.beam = NewBeam(vic, vic.GetFactory(), vic.label, 0, displayBuffer, sequencer.GetLineWidth())
 	vic.memory = NewMemory(vic, vic.GetFactory(), vic.label, 0, socket.ReadRam, socket.ReadColorRam, socket.ReadCharRom)
 	vic.interrupts = NewInterrupts(vic, vic.GetFactory(), vic.label, 0, socket.IRQTrigger, socket.IRQClearTrigger)
 	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic.interrupts.Emit, sequencer.GetLineWidth())
@@ -126,6 +125,9 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.drawLine = false
 	vic.cfg.Bind(vic.configChanged)
 
+	if err := vic.beam.Setup(); err != nil {
+		return err
+	}
 	if err := vic.memory.Setup(); err != nil {
 		return err
 	}

@@ -55,7 +55,7 @@ type SpritesUnit struct {
 
 // NewSprites initializes and returns a new instance of the SpritesUnit struct with default settings and allocations.
 // It sets up sprite data, counters, and dependencies using the provided VIC core, collisions, and display buffer.
-func NewSprites(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *MemoryUnit, collisions *CollisionsUnit, surface *Beam) *SpritesUnit {
+func NewSprites(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *MemoryUnit, collisions *CollisionsUnit, surface *RasterBeam) *SpritesUnit {
 	s := &SpritesUnit{
 		BaseComponent:      component.NewBaseComponent(),
 		memory:             memory,

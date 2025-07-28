@@ -13,6 +13,8 @@ const (
 	// rowsMax is the maximum number of rows used for video display handling and row counter operations in the graphics logic.
 	// This constant represents the vertical resolution in character units (usually 8 pixel rows per character).
 	rowsMax = 7
+
+	memoryUnitSize = 1 << 8
 )
 
 const (
@@ -26,7 +28,7 @@ type GraphicsUnit struct {
 	*component.BaseComponent
 	memory                *MemoryUnit
 	collisions            *CollisionsUnit
-	beam                  *Beam
+	beam                  *RasterBeam
 	gfxData               uint8
 	colorData             uint8
 	charData              uint8
@@ -57,11 +59,11 @@ type GraphicsUnit struct {
 	sequencerLastDmaLine  uint16
 	foregroundSequencer   []func(int)
 	backgroundSequencer   []func(int)
-	memoryRead            [0xff + 1]func(uint16)
+	memoryRead            [memoryUnitSize]func(uint16)
 }
 
 // NewGraphics initializes and returns a new GraphicsUnit instance with the provided VIC core, collision handler, and display buffer.
-func NewGraphics(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *MemoryUnit, collisions *CollisionsUnit, beam *Beam, rasterYMax uint16, sequencerFirstDmaLine uint16, sequencerLastDmaLine uint16) *GraphicsUnit {
+func NewGraphics(parent references.IComponent, factory references.IComponentFactory, label string, instance int, memory *MemoryUnit, collisions *CollisionsUnit, beam *RasterBeam, rasterYMax uint16, sequencerFirstDmaLine uint16, sequencerLastDmaLine uint16) *GraphicsUnit {
 	gr := &GraphicsUnit{
 		BaseComponent:         component.NewBaseComponent(),
 		memory:                memory,
@@ -543,7 +545,7 @@ func (gr *GraphicsUnit) drawForegroundBitmapMulticolorInvalid(offset int) {
 
 // drawDefault sets a color value from the _colors array into the display buffer at the specified offset.
 func (gr *GraphicsUnit) drawDefault(offset int, a uint8) {
-	gr.beam.DrawMulti8(offset, a)
+	gr.beam.Draw8(offset, a)
 }
 
 // drawInvalidStandard updates graphics buffer based on x-scroll and sets color values in the display buffer.
@@ -551,7 +553,7 @@ func (gr *GraphicsUnit) drawInvalidStandard(offset int, a uint8) {
 	p1 := gr.gfxData >> gr.xScroll
 	p2 := gr.gfxData << (7 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
-	gr.beam.DrawMulti8(offset, a)
+	gr.beam.Draw8(offset, a)
 }
 
 // drawInvalidMulticolor processes invalid multicolor graphics and updates collision and display buffers accordingly.
@@ -560,7 +562,7 @@ func (gr *GraphicsUnit) drawInvalidMulticolor(offset int, a uint8) {
 	p1 := p >> gr.xScroll
 	p2 := p << (8 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
-	gr.beam.DrawMulti8(offset, a)
+	gr.beam.Draw8(offset, a)
 }
 
 // drawStandard renders 8 pixels in standard mode (1 bit per pixel). Uses colors 'a' (for 0 bits) and 'b' (for 1 bit).
@@ -568,7 +570,7 @@ func (gr *GraphicsUnit) drawStandard(offset int, a uint8, b uint8) {
 	p1 := gr.gfxData >> gr.xScroll
 	p2 := gr.gfxData << (7 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
-	gr.beam.Draw8Standard(offset, a, b, gr.gfxData)
+	gr.beam.DrawStandard(offset, a, b, gr.gfxData)
 }
 
 // drawMulticolor renders 8 pixels in multicolor mode (2 bits per pixel). Uses colors 'a', 'b', 'c', and 'd'.
@@ -577,5 +579,5 @@ func (gr *GraphicsUnit) drawMulticolor(offset int, a uint8, b uint8, c uint8, d 
 	p1 := p >> gr.xScroll
 	p2 := p << (8 - gr.xScroll)
 	gr.collisions.UpdateGraphics(p1, p2)
-	gr.beam.Draw8Multi(offset, a, b, c, d, gr.gfxData)
+	gr.beam.DrawMultiColor(offset, a, b, c, d, gr.gfxData)
 }

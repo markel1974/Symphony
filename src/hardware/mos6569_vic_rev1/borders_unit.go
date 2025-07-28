@@ -32,7 +32,7 @@ const (
 // BordersUnit is a type responsible for managing and updating border data, configurations, and states for a display system.
 type BordersUnit struct {
 	*component.BaseComponent
-	beam               *Beam
+	beam               *RasterBeam
 	horizontalFlipFlop uint8
 	verticalFlipFlop   uint8
 	colors             [borderColorCount]uint8
@@ -52,7 +52,7 @@ type BordersUnit struct {
 
 // NewBorder initializes and returns a new BordersUnit object using the provided VIC core and display buffer interface.
 // It configures left, right, center, and sequencer states based on display buffer properties.
-func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, beam *Beam, displayX int) *BordersUnit {
+func NewBorder(parent references.IComponent, factory references.IComponentFactory, label string, instance int, beam *RasterBeam, displayX int) *BordersUnit {
 	borderCountMax := displayX / borderWidth
 	gr := &BordersUnit{
 		BaseComponent:      component.NewBaseComponent(),
@@ -106,7 +106,7 @@ func (b *BordersUnit) Internal() bool {
 	return true
 }
 
-// Reset clears and reinitializes the internal state of the BordersUnit instance, preparing it for subsequent operations.
+// Reset clears and reinitializes the internal state of the BordersUnit instance, preparing it for further operations.
 func (b *BordersUnit) Reset() {
 }
 
@@ -208,10 +208,10 @@ func (b *BordersUnit) AcquireColor(idx uint8) {
 func (b *BordersUnit) UpdateVerticalFlipFlop(rasterY uint16) {
 	//3.9. The border unit
 	if b.dyBottom == rasterY {
-		//2. If the Y coordinate reaches the bottom comparison value in cycle 63 (pal), the vertical border flip flop is set.
+		//2. If the Y coordinate reaches the bottom comparison value in cycle 63 (pal), the vertical border flip-flop is set.
 		b.verticalFlipFlop = 1
 	} else if b.dyTop == rasterY && b.den {
-		//3. If the Y coordinate reaches the top comparison value in cycle 63 (pal) and the DEN bit in register $d011 is set, the vertical border flip flop is reset.
+		//3. If the Y coordinate reaches the top comparison value in cycle 63 (pal) and the DEN bit in register $d011 is set, the vertical border flip-flop is reset.
 		b.verticalFlipFlop = 0
 	}
 }
@@ -232,35 +232,35 @@ func (b *BordersUnit) Draw() {
 func (b *BordersUnit) drawLeft() {
 	for _, v := range b.left {
 		offset := v * borderWidth
-		b.beam.DrawMulti8(offset, b.colors[v])
+		b.beam.Draw8(offset, b.colors[v])
 	}
 }
 
 // drawMidLeft updates the border area corresponding to midLeft by setting the appropriate color and offset values.
 func (b *BordersUnit) drawMidLeft() {
 	offset := b.midLeft * borderWidth
-	b.beam.DrawMulti8(offset, b.colors[b.midLeft])
+	b.beam.Draw8(offset, b.colors[b.midLeft])
 }
 
 // drawCenter processes the center border segments by calculating their offsets and applying corresponding colors.
 func (b *BordersUnit) drawCenter() {
 	for _, v := range b.center {
 		offset := v * borderWidth
-		b.beam.DrawMulti8(offset, b.colors[v])
+		b.beam.Draw8(offset, b.colors[v])
 	}
 }
 
 // drawMidRight calculates the offset for the mid-right border and updates its color using the setMulti8 function.
 func (b *BordersUnit) drawMidRight() {
 	offset := b.midRight * borderWidth
-	b.beam.DrawMulti8(offset, b.colors[b.midRight])
+	b.beam.Draw8(offset, b.colors[b.midRight])
 }
 
 // drawRight renders the right-hand border by iterating over the `right` field and setting appropriate color values.
 func (b *BordersUnit) drawRight() {
 	for _, v := range b.right {
 		offset := v * borderWidth
-		b.beam.DrawMulti8(offset, b.colors[v])
+		b.beam.Draw8(offset, b.colors[v])
 	}
 }
 

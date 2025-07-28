@@ -47,7 +47,7 @@ const (
 type Sprite struct {
 	*component.BaseComponent
 	collisions       *CollisionsUnit
-	beam             *Beam
+	beam             *RasterBeam
 	num              uint8
 	max              int
 	mask             uint8
@@ -63,7 +63,7 @@ type Sprite struct {
 
 // NewSprite initializes and returns a new Sprite instance with the provided VIC core, display buffer, and sprite number.
 // It allocates memory for sprite data, sets initial values for counters, and configures the display function.
-func NewSprite(parent references.IComponent, factory references.IComponentFactory, label string, instance int, beam *Beam, collisions *CollisionsUnit, sNum uint8, sMax int) *Sprite {
+func NewSprite(parent references.IComponent, factory references.IComponentFactory, label string, instance int, beam *RasterBeam, collisions *CollisionsUnit, sNum uint8, sMax int) *Sprite {
 	sp := &Sprite{
 		BaseComponent:    component.NewBaseComponent(),
 		collisions:       collisions,
