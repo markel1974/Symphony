@@ -113,14 +113,12 @@ func (s *Beam) ResetLineOffset() {
 
 // Draw updates the internal scanline buffer at the computed location with the specified color value.
 func (s *Beam) Draw(offset int, color uint8) {
-	//copy(s.scanline[offset*rgbSize:], s.colorsRGBA[s.palette[color]][:])
 	copy(s.scanline[offset*rgbSize:], s.colorsRGBA[color][:])
 }
 
 // DrawMulti8 writes an 8-pixel multicolor value to the internal scanline buffer at the specified offset using the given color.
 func (s *Beam) DrawMulti8(offset int, color uint8) {
 	for i := 0; i < 8; i++ {
-		//copy(s.scanline[(offset+i)*rgbSize:], s.colorsRGBA[s.palette[color]][:])
 		copy(s.scanline[(offset+i)*rgbSize:], s.colorsRGBA[color][:])
 	}
 }
