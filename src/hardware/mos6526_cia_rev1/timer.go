@@ -8,9 +8,6 @@ import (
 	"log"
 )
 
-// TimerState represents the state of a timer, typically used to indicate different phases or statuses of a timing mechanism.
-type TimerState uint8
-
 // timerStop represents a state where the timer is stopped.
 // timerWaitThenCount represents a state where the timer waits before starting to count.
 // timerLoadThenStop represents a state where the timer loads and then stops.
@@ -19,7 +16,7 @@ type TimerState uint8
 // timerCount represents a state where the timer is actively counting.
 // timerCountThenStop represents a state where the timer counts and then stops.
 const (
-	timerStop = TimerState(iota)
+	timerStop = iota
 	timerWaitThenCount
 	timerLoadThenStop
 	timerLoadThenCount
@@ -37,22 +34,14 @@ const (
 // crBitSPMode configures serial port mode: 1 = SERIAL PORT output (CNT sources shift clock), 0 = SERIAL PORT input (external shift clock).
 // crBitTODIn specifies TOD pin time accuracy clock: 1 = 50Hz clock required, 0 = 60Hz clock required.
 const (
-	//1 = START TIMER A - 0 = STOP TIMER A s (This bit is automatically reset when underflow occurs during one-shot mode).
-	crBitStart = uint8(0x1) //bit 0
-	//1 = TIMER A/B output appears on PB6/PB7 - 0 = PB6/PB7 normal operation.
-	crBitPBOn = uint8(0x2) //bit 1
-	//1 = TOGGLE - 0 = PULSE
-	crBitOutMode = uint8(0x4) //bit 2
-	//1 = ONE-SHOT - 0 = CONTINUOUS
-	crBitRunMode = uint8(0x8) //bit 3
-	//1 = FORCE LOAD (this is a STROBE input, there is no data storage, bit 4 will always read back a zero and writing a zero has no effect).
+	crBitStart     = uint8(0x1)  //bit 0
+	crBitPBOn      = uint8(0x2)  //bit 1
+	crBitOutMode   = uint8(0x4)  //bit 2
+	crBitRunMode   = uint8(0x8)  //bit 3
 	crBitForceLoad = uint8(0x10) //bit 4
-	//1 = TIMER A counts positive CNT transitions. - 0 = TIMER A counts phi2 pulses.
-	crBitInMode = uint8(0x20) //bit 5
-	//1 = SERIAL PORT output (CNT sources shift clock) - 0 = SERIAL PORT input (external shift clock required)
-	crBitSPMode = uint8(0x40) //bit 6
-	//1 = 50Hz clock required on TOD pin for accurate time - 0 = 60Hz clock required on TOD pin for accurate time
-	crBitTODIn = uint8(0x80) //bit 7
+	crBitInMode    = uint8(0x20) //bit 5
+	crBitSPMode    = uint8(0x40) //bit 6
+	crBitTODIn     = uint8(0x80) //bit 7
 )
 
 // crBitStartUnset defines the inverted value for stopping Timer A operation in one-shot mode when `crBitStart` is unset.
@@ -67,19 +56,14 @@ const (
 // countModeTimerUnderflow represents the counting mode that increments on timer underflow.
 // countModeTimerUnderflowCNT represents the counting mode that increments on both timer underflow and CNT signal.
 const (
-	countModeTick              = 0
-	countModeCNT               = 1
-	countModeTimerUnderflow    = 2
-	countModeTimerUnderflowCNT = 3
+	countModeTick              = 0 // clock
+	countModeCNT               = 1 // positive CNT (Serial Port) transition
+	countModeTimerUnderflow    = 2 // timerA underflow
+	countModeTimerUnderflowCNT = 3 // timerA underflow while CNT (Serial Port) is high
 )
 
 // defaultTimerInit is the initial value assigned to a timer, typically representing a fully loaded state (0xffff).
 const defaultTimerInit = 0xffff
-
-//The timer latch is loaded into the timer on any timer underflow.
-//The timer latch is loaded into the timer on a force load.
-//The timer latch is loaded into the timer after a write to the high byte of the prescaler while the timer is stopped.
-//If the timer is running, a write to the high byte will load the timer latch, but not reload the counter
 
 // Timer represents a configurable timer with settings for counting modes, latches, and state management.
 // It includes mechanisms for updating and handling pending configurations.
@@ -87,23 +71,22 @@ const defaultTimerInit = 0xffff
 // It supports various operational states applicable for different use cases.
 type Timer struct {
 	*component.BaseComponent
-	cr           uint8
-	crNew        uint8      // New values for cr
-	crNewPending bool       // New value for crNew pending
-	timer        uint16     // Timer
-	timerLatch   uint16     // Timer latch
-	timerState   TimerState // Timer states
-	// 0 = clock; 1 = positive CNT (Serial Port) transition; 2 = timerA underflow; 3 = timerA underflow while CNT (Serial Port) is high
-	countMode          uint8
-	countFn            func(bool) bool
-	toggleMode         bool
-	timerLatchLow      uint16
-	cntPulse           bool
-	cntLevel           bool
 	reflect            *TimerReflect
-	underflowIn        bool
-	underflowOut       bool
 	underflowOutSignal *signals.Signal
+	countFn            func(bool) bool
+	cr                 uint8  // symphony:export cr represents a configuration register or a control register as an unsigned 8-bit integer.
+	crNew              uint8  // symphony:export crNew represents a new configuration register with an 8-bit unsigned integer value.
+	crNewPending       bool   // symphony:export crNewPending indicates whether a new change request is in a pending state.
+	timer              uint16 // symphony:export timer represents a 16-bit unsigned integer used for timing or count-related operations.
+	timerLatch         uint16 // symphony:export timerLatch is a 16-bit value used to store the latch for a timer mechanism.
+	timerState         uint8  // symphony:export timerState represents the current state of a timer, encoded as an unsigned 8-bit integer.
+	countMode          uint8  // symphony:export countMode represents the mode or operation type for counting, defined as an unsigned 8-bit integer.
+	toggleMode         bool   // symphony:export toggleMode indicates whether the current mode is toggled on or off.
+	timerLatchLow      uint16 // symphony:export timerLatchLow stores the lower 16 bits of the timer latch value used for timing or counting operations.
+	cntPulse           bool   // symphony:export cntPulse indicates whether the pulse counter is enabled or active.
+	cntLevel           bool   // symphony:export cntLevel indicates whether the current level is active or enabled as a boolean value.
+	underflowIn        bool   // symphony:export underflowIn indicates whether the timer underflow input signal is active or not.
+	underflowOut       bool   // symphony:export underflowOut indicates the current state of the underflow output signal for the Timer instance.
 }
 
 // NewTimer initializes and returns a new Timer instance with the given parentId and suffix.
@@ -230,12 +213,12 @@ func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
 	}
 	m.crNewPending = true
 	m.crNew = data
-	m.updateCountMode(countMode)
+	m.setCountMode(countMode)
 }
 
 // updateCountMode updates the counting mode for the timer based on the provided countMode parameter.
 // It sets the appropriate counting function (m.count) and logs unsupported or partially supported modes.
-func (m *Timer) updateCountMode(countMode uint8) {
+func (m *Timer) setCountMode(countMode uint8) {
 	m.countMode = countMode
 	switch m.countMode {
 	case countModeTick:

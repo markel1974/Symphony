@@ -36,24 +36,24 @@ const (
 // CIA represents the Complex Interface Adapter, a chip used for I/O operations and timers.
 type CIA struct {
 	*component.BaseComponent
-	prA             uint8
-	prB             uint8
-	ddrA            uint8
-	ddrB            uint8
-	sdr             uint8
-	icr             uint8 // Pending interrupts
-	irqMask         uint8 // Enabled interrupts
-	timerAIrqCycle  bool  // Flag: Trigger Timer A IRQ in next cycle
-	timerBIrqCycle  bool  // Flag: Trigger Timer B IRQ in next cycle
-	tod             *TOD
-	timerA          *Timer
-	timerB          *Timer
-	shiftRegister   *ShiftRegister
-	todClockDivider int
-	label           string
-	reads           [RegisterCount]func() uint8
-	writes          [RegisterCount]func(uint8)
-
+	reflect               *CIAReflect
+	tod                   *TOD
+	timerA                *Timer
+	timerB                *Timer
+	shiftRegister         *ShiftRegister
+	reads                 [RegisterCount]func() uint8
+	writes                [RegisterCount]func(uint8)
+	prA                   uint8 // symphony:export prA represents the current state of the port A register for the CIA component.
+	prB                   uint8 // symphony:export prB represents the current state of the port B register for the CIA component.
+	ddrA                  uint8 // symphony:export ddrA represents the Data Direction Register for port A, used to configure input/output direction of each bit.
+	ddrB                  uint8 // symphony:export ddrB represents the Data Direction Register for Port B, used to configure input/output for the CIA port B pins.
+	sdr                   uint8 // symphony:export sdr holds the contents of the Serial Data Register (SDR), used for serial communication operations in the CIA chip.
+	icr                   uint8 // symphony:export icr holds the Interrupt Control Register value, managing interrupt flags and statuses for the CIA component.
+	irqMask               uint8 // symphony:export irqMask defines the interrupt control mask used to enable or disable specific interrupt sources within the CIA.
+	timerAIrqCycle        bool  // symphony:export timerAIrqCycle indicates whether an interrupt request should be triggered in the next cycle for Timer A.
+	timerBIrqCycle        bool  // symphony:export timerBIrqCycle indicates if Timer B's interrupt request will be triggered in the next emulation cycle.
+	todClockDivider       int   // symphony:export todClockDivider determines the number of cycles before updating the internal Time of Day (TOD) clock.
+	label                 string
 	socketReadPortA       func(uint8, uint8, uint8, uint8) uint8
 	socketReadPortB       func(uint8, uint8, uint8, uint8) uint8
 	socketSignalPRA       func(uint8)
@@ -74,6 +74,7 @@ func NewCIA(parent references.IComponent, factory references.IComponentFactory, 
 		label:         label,
 	}
 	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdIMos6526(m, label, instance))
+	m.reflect = NewCIAReflect(m)
 	return m
 }
 

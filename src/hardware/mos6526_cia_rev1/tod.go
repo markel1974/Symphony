@@ -8,19 +8,19 @@ import (
 // TOD represents a Time of Day (TOD) and Alarm functionality with tracking for hours, minutes, seconds, and tenths.
 type TOD struct {
 	*component.BaseComponent
-	tod10ths uint8 // TOD 10ths
-	todSec   uint8 // TOD sec
-	todMin   uint8 // TOD min
-	todHr    uint8 // TOD hr
-	todHalt  bool  // TOD halted
-	//todDivider     int   // TOD frequency divider
-	todShadow10ths int
-	todShadowSec   int
-	todShadowMin   int
-	alm10ths       uint8 // Alarm time
-	almSec         uint8 // Alarm time
-	almMin         uint8 // Alarm time
-	almHr          uint8 // Alarm time
+	reflect        *TODReflect
+	tod10ths       uint8 // symphony:export tod10ths represents the tenths of a second value for the Time-of-Day (TOD) clock.
+	todSec         uint8 // symphony:export todSec represents the seconds value for the Time-of-Day (TOD) clock.
+	todMin         uint8 // symphony:export todMin represents the minutes value for the Time-of-Day (TOD) clock.
+	todHr          uint8 // symphony:export todHr represents the hour value for the Time-of-Day (TOD) clock.
+	todHalt        bool  // symphony:export todHalt indicates whether the Time-of-Day (TOD) clock is halted or running.
+	todShadow10ths int   // symphony:export todShadow10ths holds the shadowed value of the tenth-of-a-second register used during freeze operations.
+	todShadowSec   int   // symphony:export todShadowSec holds the shadowed value of the seconds register used during freeze operations of the TOD clock.
+	todShadowMin   int   // symphony:export todShadowMin holds the shadowed value of the minutes register used during freeze operations of the TOD clock.
+	alm10ths       uint8 // symphony:export alm10ths represents the tenths of a second value for the alarm time.
+	almSec         uint8 // symphony:export almSec represents the seconds value for the alarm time.
+	almMin         uint8 // symphony:export almMin represents the minutes value for the alarm time.
+	almHr          uint8 // symphony:export almHr represents the hour value for the alarm time.
 }
 
 // NewTOD creates and returns a new instance of the TOD struct with the specified ID initialized.
@@ -29,6 +29,7 @@ func NewTOD(parent references.IComponent, factory references.IComponentFactory, 
 		BaseComponent: component.NewBaseComponent(),
 	}
 	t.BaseComponent.Register(factory, parent, "tod", t, references.IdInternalComponent(label, instance, "TOD"))
+	t.reflect = NewTODReflect(t)
 	return t
 }
 
