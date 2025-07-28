@@ -21,8 +21,8 @@ func NewDisplayBuffer(p *pixels.Picture) *DisplayBuffer {
 	return db
 }
 
-func (db *DisplayBuffer) SetArray(idx int, data []uint8) {
-	db.p.SetRGBADirectArrayPtr(idx, &data)
+func (db *DisplayBuffer) SetArray(idx int, data *[]uint8, width int) {
+	db.p.SetRGBADirectArrayPtr(idx, data, width)
 }
 
 // computeMask calculates and returns the bitmask for a given number, which is the largest power of two minus one.

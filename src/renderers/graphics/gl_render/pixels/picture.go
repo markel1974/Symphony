@@ -130,8 +130,8 @@ func (s *Picture) SetRGBA32DirectArrayPtr(i int, rgba *[32]uint8) {
 }
 
 // SetRGBADirectArrayPtr sets the RGBA color values starting at the given pixel index directly in the pixel data array.
-func (s *Picture) SetRGBADirectArrayPtr(i int, rgba *[]uint8) {
-	copy(s.pixels[i:], *rgba)
+func (s *Picture) SetRGBADirectArrayPtr(i int, rgba *[]uint8, width int) {
+	copy(s.pixels[i:], (*rgba)[:width])
 }
 
 // SetRGBA sets the RGBA color value for the pixel at the specified x, y coordinates within the image bounds.

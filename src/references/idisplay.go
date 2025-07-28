@@ -2,12 +2,10 @@ package references
 
 import "github.com/markel1974/c64emu/src/config"
 
-// IDisplayBuffer defines methods for interacting with a display buffer, allowing data manipulation at specified indices.
-// Set sets a single byte of data at the given index.
-// SetMulti8 sets a single byte of data and applies it across multiple relevant sections.
-// Set8 sets an array of 8 bytes of data starting at the given index.
+// IDisplayBuffer defines an interface for managing and setting data in a display buffer.
+// SetArray sets a section of the buffer at a specified index with provided data and properties like width.
 type IDisplayBuffer interface {
-	SetArray(idx int, data []uint8)
+	SetArray(idx int, data *[]uint8, width int)
 }
 
 // IDisplayRender provides methods for rendering displays and managing display buffers.

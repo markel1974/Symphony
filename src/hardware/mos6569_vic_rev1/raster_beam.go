@@ -17,8 +17,8 @@ type RasterBeam struct {
 	*component.BaseComponent
 	lineWidthRGBA      int
 	lineOffsetRGBA     int
-	displayBufferArray func(int, []uint8)
-	scanline           []uint8
+	displayBufferArray func(idx int, data *[]uint8, width int)
+	scanline           *[]uint8
 	palette            [paletteSize]uint8
 	colorsRGBA         [paletteSize][rgbSize]uint8
 	standardColorIndex [standardIndexSize][8]uint8
@@ -44,13 +44,15 @@ func NewBeam(parent references.IComponent, factory references.IComponentFactory,
 	for scanlineSize <= uint32(lineWidthRGBA*2) {
 		scanlineSize <<= 1
 	}
+
 	//scanlineMask := int(scanlineSize - 1)
+	scanline := make([]uint8, scanlineSize)
 	s := &RasterBeam{
 		BaseComponent:      component.NewBaseComponent(),
 		lineWidthRGBA:      lineWidthRGBA,
 		lineOffsetRGBA:     0,
 		displayBufferArray: displayBuffer.SetArray,
-		scanline:           make([]uint8, scanlineSize),
+		scanline:           &scanline,
 	}
 	for idx := range s.palette {
 		s.palette[idx] = (uint8)(idx & colorMax)
@@ -131,13 +133,13 @@ func (s *RasterBeam) ResetLineOffset() {
 
 // Draw updates the internal scanline buffer at the computed location with the specified color value.
 func (s *RasterBeam) Draw(offset int, color uint8) {
-	copy(s.scanline[offset*rgbSize:], s.colorsRGBA[color][:])
+	copy((*s.scanline)[offset*rgbSize:], s.colorsRGBA[color][:])
 }
 
 // Draw8 writes an 8-pixel multicolor value to the internal scanline buffer at the specified offset using the given color.
 func (s *RasterBeam) Draw8(offset int, color uint8) {
 	for i := 0; i < 8; i++ {
-		copy(s.scanline[(offset+i)*rgbSize:], s.colorsRGBA[color][:])
+		copy((*s.scanline)[(offset+i)*rgbSize:], s.colorsRGBA[color][:])
 	}
 }
 
@@ -146,7 +148,7 @@ func (s *RasterBeam) DrawStandard(offset int, a uint8, b uint8, data uint8) {
 	cb := [2]uint8{s.palette[a], s.palette[b]}
 	si := s.standardColorIndex[data]
 	for i := 0; i < 8; i++ {
-		copy(s.scanline[(offset+i)*rgbSize:], (s.colorsRGBA[cb[si[i]]])[:])
+		copy((*s.scanline)[(offset+i)*rgbSize:], (s.colorsRGBA[cb[si[i]]])[:])
 	}
 }
 
@@ -155,13 +157,13 @@ func (s *RasterBeam) DrawMultiColor(offset int, a uint8, b uint8, c uint8, d uin
 	cb := [4]uint8{s.palette[a], s.palette[b], s.palette[c], s.palette[d]}
 	mi := s.multiColorIndex[data]
 	for i := 0; i < 8; i++ {
-		copy(s.scanline[(offset+i)*rgbSize:], (s.colorsRGBA[cb[mi[i]]])[:])
+		copy((*s.scanline)[(offset+i)*rgbSize:], (s.colorsRGBA[cb[mi[i]]])[:])
 	}
 }
 
 // Commit transfers the completed scanline from the internal buffer to the final display buffer.
 // This should be called once at the very end of a scanline's rendering cycle.
 func (s *RasterBeam) Commit() {
-	s.displayBufferArray(s.lineOffsetRGBA, s.scanline[:s.lineWidthRGBA])
+	s.displayBufferArray(s.lineOffsetRGBA, s.scanline, s.lineWidthRGBA)
 	s.lineOffsetRGBA += s.lineWidthRGBA
 }
