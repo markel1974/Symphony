@@ -3,14 +3,39 @@ package mos6569
 import (
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
+	"strings"
 )
 
 const (
+	RGBAIndexRed      = 0
+	RGBAIndexGreen    = 1
+	RGBAIndexBlue     = 2
+	RGBAIndexAlpha    = 3
+	RGBABytesPerPixel = 4
+)
+
+const (
+	colorMax            = 0xf
 	paletteSize         = 1 << 8
 	standardIndexSize   = 1 << 8
 	multicolorIndexSize = 1 << 8
-	rgbSize             = 4
 )
+
+type Palette [RGBABytesPerPixel][16]uint8
+
+var PaletteBright = Palette{
+	{0x00, 0xff, 0x99, 0x00, 0xcc, 0x44, 0x11, 0xff, 0xaa, 0x66, 0xff, 0x40, 0x80, 0x66, 0x77, 0xc0},
+	{0x00, 0xff, 0x00, 0xff, 0x00, 0xcc, 0x00, 0xff, 0x55, 0x33, 0x66, 0x40, 0x80, 0xff, 0x77, 0xc0},
+	{0x00, 0xff, 0x00, 0xcc, 0xcc, 0x44, 0x99, 0x00, 0x00, 0x00, 0x66, 0x40, 0x80, 0x66, 0xff, 0xc0},
+	{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+}
+
+var PaletteOriginal = Palette{
+	{0x00, 0xfc, 0x80, 0x87, 0x82, 0x6e, 0x39, 0xdc, 0x8a, 0x52, 0xb7, 0x52, 0x7d, 0xbb, 0x79, 0xaf},
+	{0x00, 0xfc, 0x41, 0xc3, 0x46, 0xa9, 0x2d, 0xe9, 0x5c, 0x40, 0x79, 0x52, 0x7d, 0xf9, 0x6c, 0xaf},
+	{0x00, 0xfc, 0x32, 0xd2, 0xb4, 0x39, 0xa3, 0x6c, 0x22, 0x03, 0x6a, 0x52, 0x7d, 0x83, 0xea, 0xaf},
+	{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff},
+}
 
 // RasterBeam is a structure used to manage raster-based rendering with support for color palettes and scanline operations.
 type RasterBeam struct {
@@ -19,27 +44,20 @@ type RasterBeam struct {
 	lineOffsetRGBA     int
 	displayBufferArray func(idx int, data *[]uint8, width int)
 	scanline           *[]uint8
-	palette            [paletteSize]uint8
-	colorsRGBA         [paletteSize][rgbSize]uint8
+	colorsRGBA         [paletteSize][RGBABytesPerPixel]uint8
 	standardColorIndex [standardIndexSize][8]uint8
 	multiColorIndex    [multicolorIndexSize][8]uint8
 }
 
 // NewBeam creates and initializes a new RasterBeam instance using the provided display buffer for rendering operations.
-func NewBeam(parent references.IComponent, factory references.IComponentFactory, label string, instance int, displayBuffer references.IDisplayBuffer, width int) *RasterBeam {
-	const colorMax = 0xf
-	//Bright
-	//paletteR := []byte{0x00, 0xff, 0x99, 0x00, 0xcc, 0x44, 0x11, 0xff, 0xaa, 0x66, 0xff, 0x40, 0x80, 0x66, 0x77, 0xc0}
-	//paletteG := []byte{0x00, 0xff, 0x00, 0xff, 0x00, 0xcc, 0x00, 0xff, 0x55, 0x33, 0x66, 0x40, 0x80, 0xff, 0x77, 0xc0}
-	//paletteB := []byte{0x00, 0xff, 0x00, 0xcc, 0xcc, 0x44, 0x99, 0x00, 0x00, 0x00, 0x66, 0x40, 0x80, 0x66, 0xff, 0xc0}
-	//paletteA := []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
-	//Original
-	paletteR := []byte{0x00, 0xfc, 0x80, 0x87, 0x82, 0x6e, 0x39, 0xdc, 0x8a, 0x52, 0xb7, 0x52, 0x7d, 0xbb, 0x79, 0xaf}
-	paletteG := []byte{0x00, 0xfc, 0x41, 0xc3, 0x46, 0xa9, 0x2d, 0xe9, 0x5c, 0x40, 0x79, 0x52, 0x7d, 0xf9, 0x6c, 0xaf}
-	paletteB := []byte{0x00, 0xfc, 0x32, 0xd2, 0xb4, 0x39, 0xa3, 0x6c, 0x22, 0x03, 0x6a, 0x52, 0x7d, 0x83, 0xea, 0xaf}
-	paletteA := []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+func NewBeam(parent references.IComponent, factory references.IComponentFactory, label string, instance int, displayBuffer references.IDisplayBuffer, width int, paletteId string) *RasterBeam {
+	palette := PaletteOriginal
+	switch strings.ToLower(paletteId) {
+	case "bright":
+		palette = PaletteBright
+	}
 
-	lineWidthRGBA := width * rgbSize
+	lineWidthRGBA := width * RGBABytesPerPixel
 	scanlineSize := uint32(1)
 	for scanlineSize <= uint32(lineWidthRGBA*2) {
 		scanlineSize <<= 1
@@ -54,12 +72,14 @@ func NewBeam(parent references.IComponent, factory references.IComponentFactory,
 		displayBufferArray: displayBuffer.SetArray,
 		scanline:           &scanline,
 	}
-	for idx := range s.palette {
-		s.palette[idx] = (uint8)(idx & colorMax)
-	}
 	for idx := range s.colorsRGBA {
 		if idx <= colorMax {
-			s.colorsRGBA[idx] = [rgbSize]uint8{paletteR[idx], paletteG[idx], paletteB[idx], paletteA[idx]}
+			s.colorsRGBA[idx] = [RGBABytesPerPixel]uint8{
+				palette[RGBAIndexRed][idx],
+				palette[RGBAIndexGreen][idx],
+				palette[RGBAIndexBlue][idx],
+				palette[RGBAIndexAlpha][idx],
+			}
 		} else {
 			s.colorsRGBA[idx] = s.colorsRGBA[idx&colorMax]
 		}
@@ -133,31 +153,31 @@ func (s *RasterBeam) ResetLineOffset() {
 
 // Draw updates the internal scanline buffer at the computed location with the specified color value.
 func (s *RasterBeam) Draw(offset int, color uint8) {
-	copy((*s.scanline)[offset*rgbSize:], s.colorsRGBA[color][:])
+	copy((*s.scanline)[offset*RGBABytesPerPixel:], s.colorsRGBA[color][:])
 }
 
 // Draw8 writes an 8-pixel multicolor value to the internal scanline buffer at the specified offset using the given color.
 func (s *RasterBeam) Draw8(offset int, color uint8) {
 	for i := 0; i < 8; i++ {
-		copy((*s.scanline)[(offset+i)*rgbSize:], s.colorsRGBA[color][:])
+		copy((*s.scanline)[(offset+i)*RGBABytesPerPixel:], s.colorsRGBA[color][:])
 	}
 }
 
 // DrawStandard renders 8 pixels in standard mode into the internal scanline buffer.
 func (s *RasterBeam) DrawStandard(offset int, a uint8, b uint8, data uint8) {
-	cb := [2]uint8{s.palette[a], s.palette[b]}
+	cb := [2][RGBABytesPerPixel]uint8{s.colorsRGBA[a], s.colorsRGBA[b]}
 	si := s.standardColorIndex[data]
 	for i := 0; i < 8; i++ {
-		copy((*s.scanline)[(offset+i)*rgbSize:], (s.colorsRGBA[cb[si[i]]])[:])
+		copy((*s.scanline)[(offset+i)*RGBABytesPerPixel:], (cb[si[i]])[:])
 	}
 }
 
 // DrawMultiColor renders 8 pixels using a multicolor mode into the internal scanline buffer.
 func (s *RasterBeam) DrawMultiColor(offset int, a uint8, b uint8, c uint8, d uint8, data uint8) {
-	cb := [4]uint8{s.palette[a], s.palette[b], s.palette[c], s.palette[d]}
+	cb := [4][RGBABytesPerPixel]uint8{s.colorsRGBA[a], s.colorsRGBA[b], s.colorsRGBA[c], s.colorsRGBA[d]}
 	mi := s.multiColorIndex[data]
 	for i := 0; i < 8; i++ {
-		copy((*s.scanline)[(offset+i)*rgbSize:], (s.colorsRGBA[cb[mi[i]]])[:])
+		copy((*s.scanline)[(offset+i)*RGBABytesPerPixel:], (cb[mi[i]])[:])
 	}
 }
 

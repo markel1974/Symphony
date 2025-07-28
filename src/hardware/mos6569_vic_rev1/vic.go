@@ -111,7 +111,7 @@ func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	vic.firstDisplayedLine = sequencer.GetFirstDisplayedLine()
 	vic.lastDisplayedLine = sequencer.GetLastDisplayedLine()
 
-	vic.beam = NewBeam(vic, vic.GetFactory(), vic.label, 0, displayBuffer, sequencer.GetLineWidth())
+	vic.beam = NewBeam(vic, vic.GetFactory(), vic.label, 0, displayBuffer, sequencer.GetLineWidth(), "")
 	vic.memory = NewMemory(vic, vic.GetFactory(), vic.label, 0, socket.ReadRam, socket.ReadColorRam, socket.ReadCharRom)
 	vic.interrupts = NewInterrupts(vic, vic.GetFactory(), vic.label, 0, socket.IRQTrigger, socket.IRQClearTrigger)
 	vic.collisions = NewCollisions(vic, vic.GetFactory(), vic.label, 0, vic.interrupts.Emit, sequencer.GetLineWidth())

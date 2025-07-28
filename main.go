@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/markel1974/c64emu/src"
+	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
@@ -15,6 +16,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"strings"
 )
 
 /*
@@ -137,6 +139,7 @@ func main() {
 	var playerId string
 	var renderId string
 	var noShell bool
+	var reflector string
 
 	flag.BoolVar(&showHelp, "h", false, "show this help")
 	flag.BoolVar(&showVersion, "v", false, "show version")
@@ -148,6 +151,7 @@ func main() {
 	flag.StringVar(&prg, "p", "", "prg path")
 	flag.BoolVar(&noJiffy, "j", false, "disable jiffy")
 	flag.BoolVar(&noShell, "k", false, "disable shell")
+	flag.StringVar(&reflector, "g", "", "generate reflect file")
 	flag.Parse()
 
 	if showHelp {
@@ -157,6 +161,16 @@ func main() {
 
 	if showVersion {
 		fmt.Println(version.AppName, version.AppVersion)
+		return
+	}
+
+	if len(reflector) > 0 {
+		for _, v := range strings.Split(reflector, ",") {
+			gen := component.NewGenerator(v, false)
+			if err := gen.ParseAndGenerate(); err != nil {
+				log.Fatal(err)
+			}
+		}
 		return
 	}
 
