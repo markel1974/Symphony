@@ -8,142 +8,144 @@ import "github.com/markel1974/c64emu/src/references"
 // displayBufferSet8 is a function for writing 8 consecutive pixel values into the display buffer.
 // displayBufferSetMulti8 is used for writing multicolor pixel values to the display buffer.
 // colors is an array of uint8 values used to store indexed color mappings for rendering.
-// standardIndex is a lookup table mapping 8-bit values to arrays of 8 single-bit representations for standard modes.
-// multicolorIndex maps 8-bit values to 2-bit pixel indices for multicolor rendering operations.
+// standardColorIndex is a lookup table mapping 8-bit values to arrays of 8 single-bit representations for standard modes.
+// multiColorIndex maps 8-bit values to 2-bit pixel indices for multicolor rendering operations.
 
 const (
-	colorSize           = 1 << 8
+	paletteSize         = 1 << 8
 	standardIndexSize   = 1 << 8
 	multicolorIndexSize = 1 << 8
-	scanlineSize        = 1 << 11 // 2048 Based on sequencer and border logic, a size of 576 is safe.
-	scanlineMask        = scanlineSize - 1
+	rgbSize             = 4
 )
 
+// Beam represents a rendering component for managing and storing scanline data during graphical operations.
+// It handles rendering tasks including multicolor and standard pixel drawing operations into a buffer.
 type Beam struct {
-	lineWidth              int
-	lineOffset             int
-	displayBufferSet       func(int, uint8)
-	displayBufferSet8      func(int, *[8]uint8)
-	displayBufferSetMulti8 func(int, uint8)
-	// scanline holds the pixel data for an entire scanline before committing it to the final display.
-	scanline [scanlineSize]uint8
-	// colors is an array that holds 256 color values, initialized with specific uint8 values for rendering purposes.
-	colors [colorSize]uint8
-	// standardIndex is a lookup table that maps an 8-bit value to an array of 8 single-bit values extracted from it.
-	standardIndex [standardIndexSize][8]uint8
-	// multicolorIndex is a lookup table that maps each 8-bit value to an array of 8 corresponding 2-bit pixel indices.
-	multicolorIndex [multicolorIndexSize][8]uint8
+	lineWidthRGBA      int
+	lineOffsetRGBA     int
+	displayBufferArray func(int, []uint8)
+	scanline           []uint8
+	palette            [paletteSize]uint8
+	colorsRGBA         [paletteSize][rgbSize]uint8
+	standardColorIndex [standardIndexSize][8]uint8
+	multiColorIndex    [multicolorIndexSize][8]uint8
 }
 
 // NewBeam creates and initializes a new Beam instance using the provided display buffer for rendering operations.
-func NewBeam(displayBuffer references.IDisplayBuffer, lineWidth int) *Beam {
+func NewBeam(displayBuffer references.IDisplayBuffer, width int) *Beam {
+	const colorMax = 0xf
+	//Bright
+	//paletteR := []byte{0x00, 0xff, 0x99, 0x00, 0xcc, 0x44, 0x11, 0xff, 0xaa, 0x66, 0xff, 0x40, 0x80, 0x66, 0x77, 0xc0}
+	//paletteG := []byte{0x00, 0xff, 0x00, 0xff, 0x00, 0xcc, 0x00, 0xff, 0x55, 0x33, 0x66, 0x40, 0x80, 0xff, 0x77, 0xc0}
+	//paletteB := []byte{0x00, 0xff, 0x00, 0xcc, 0xcc, 0x44, 0x99, 0x00, 0x00, 0x00, 0x66, 0x40, 0x80, 0x66, 0xff, 0xc0}
+	//paletteA := []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+	//Original
+	paletteR := []byte{0x00, 0xfc, 0x80, 0x87, 0x82, 0x6e, 0x39, 0xdc, 0x8a, 0x52, 0xb7, 0x52, 0x7d, 0xbb, 0x79, 0xaf}
+	paletteG := []byte{0x00, 0xfc, 0x41, 0xc3, 0x46, 0xa9, 0x2d, 0xe9, 0x5c, 0x40, 0x79, 0x52, 0x7d, 0xf9, 0x6c, 0xaf}
+	paletteB := []byte{0x00, 0xfc, 0x32, 0xd2, 0xb4, 0x39, 0xa3, 0x6c, 0x22, 0x03, 0x6a, 0x52, 0x7d, 0x83, 0xea, 0xaf}
+	paletteA := []byte{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}
+
+	lineWidthRGBA := width * rgbSize
+	scanlineSize := uint32(1)
+	for scanlineSize <= uint32(lineWidthRGBA*2) {
+		scanlineSize <<= 1
+	}
+	//scanlineMask := int(scanlineSize - 1)
 	s := &Beam{
-		lineWidth:              lineWidth,
-		lineOffset:             0,
-		displayBufferSet:       displayBuffer.Set,
-		displayBufferSet8:      displayBuffer.Set8,
-		displayBufferSetMulti8: displayBuffer.SetMulti8,
+		lineWidthRGBA:      lineWidthRGBA,
+		lineOffsetRGBA:     0,
+		displayBufferArray: displayBuffer.SetArray,
+		scanline:           make([]uint8, scanlineSize),
 	}
-	for i := range s.colors {
-		s.colors[i] = (uint8)(i & 0xf)
+	for idx := range s.palette {
+		s.palette[idx] = (uint8)(idx & colorMax)
 	}
-	for i := range s.multicolorIndex {
+	for idx := range s.colorsRGBA {
+		if idx <= colorMax {
+			s.colorsRGBA[idx] = [rgbSize]uint8{paletteR[idx], paletteG[idx], paletteB[idx], paletteA[idx]}
+		} else {
+			s.colorsRGBA[idx] = s.colorsRGBA[idx&colorMax]
+		}
+	}
+	for i := range s.multiColorIndex {
 		data := i
 		idx := uint8(data & 3)
-		s.multicolorIndex[i][7] = idx
-		s.multicolorIndex[i][6] = idx
+		s.multiColorIndex[i][7] = idx
+		s.multiColorIndex[i][6] = idx
 		data >>= 2
 		idx = uint8(data & 3)
-		s.multicolorIndex[i][5] = idx
-		s.multicolorIndex[i][4] = idx
+		s.multiColorIndex[i][5] = idx
+		s.multiColorIndex[i][4] = idx
 		data >>= 2
 		idx = uint8(data & 3)
-		s.multicolorIndex[i][3] = idx
-		s.multicolorIndex[i][2] = idx
+		s.multiColorIndex[i][3] = idx
+		s.multiColorIndex[i][2] = idx
 		data >>= 2
-		idx = uint8(data) // non serve &3, sono gli ultimi 2 bit
-		s.multicolorIndex[i][1] = idx
-		s.multicolorIndex[i][0] = idx
+		idx = uint8(data)
+		s.multiColorIndex[i][1] = idx
+		s.multiColorIndex[i][0] = idx
 	}
-
-	for i := range s.standardIndex {
+	for i := range s.standardColorIndex {
 		data := uint8(i)
-		s.standardIndex[i][7] = data & 1
+		s.standardColorIndex[i][7] = data & 1
 		data >>= 1
-		s.standardIndex[i][6] = data & 1
+		s.standardColorIndex[i][6] = data & 1
 		data >>= 1
-		s.standardIndex[i][5] = data & 1
+		s.standardColorIndex[i][5] = data & 1
 		data >>= 1
-		s.standardIndex[i][4] = data & 1
+		s.standardColorIndex[i][4] = data & 1
 		data >>= 1
-		s.standardIndex[i][3] = data & 1
+		s.standardColorIndex[i][3] = data & 1
 		data >>= 1
-		s.standardIndex[i][2] = data & 1
+		s.standardColorIndex[i][2] = data & 1
 		data >>= 1
-		s.standardIndex[i][1] = data & 1
+		s.standardColorIndex[i][1] = data & 1
 		data >>= 1
-		s.standardIndex[i][0] = data & 1
+		s.standardColorIndex[i][0] = data & 1
 	}
 	return s
+}
+
+// ResetLineOffset resets the line offset to 0, typically used to prepare for a new rendering cycle or frame.
+func (s *Beam) ResetLineOffset() {
+	s.lineOffsetRGBA = 0
+}
+
+// Draw updates the internal scanline buffer at the computed location with the specified color value.
+func (s *Beam) Draw(offset int, color uint8) {
+	//copy(s.scanline[offset*rgbSize:], s.colorsRGBA[s.palette[color]][:])
+	copy(s.scanline[offset*rgbSize:], s.colorsRGBA[color][:])
+}
+
+// DrawMulti8 writes an 8-pixel multicolor value to the internal scanline buffer at the specified offset using the given color.
+func (s *Beam) DrawMulti8(offset int, color uint8) {
+	for i := 0; i < 8; i++ {
+		//copy(s.scanline[(offset+i)*rgbSize:], s.colorsRGBA[s.palette[color]][:])
+		copy(s.scanline[(offset+i)*rgbSize:], s.colorsRGBA[color][:])
+	}
+}
+
+// Draw8Standard renders 8 pixels in standard mode into the internal scanline buffer.
+func (s *Beam) Draw8Standard(offset int, a uint8, b uint8, data uint8) {
+	cb := [2]uint8{s.palette[a], s.palette[b]}
+	si := s.standardColorIndex[data]
+	for i := 0; i < 8; i++ {
+		copy(s.scanline[(offset+i)*rgbSize:], (s.colorsRGBA[cb[si[i]]])[:])
+	}
+}
+
+// Draw8Multi renders 8 pixels using a multicolor mode into the internal scanline buffer.
+func (s *Beam) Draw8Multi(offset int, a uint8, b uint8, c uint8, d uint8, data uint8) {
+	cb := [4]uint8{s.palette[a], s.palette[b], s.palette[c], s.palette[d]}
+	mi := s.multiColorIndex[data]
+	for i := 0; i < 8; i++ {
+		copy(s.scanline[(offset+i)*rgbSize:], (s.colorsRGBA[cb[mi[i]]])[:])
+	}
 }
 
 // Commit transfers the completed scanline from the internal buffer to the final display buffer.
 // This should be called once at the very end of a scanline's rendering cycle.
 func (s *Beam) Commit() {
-	// TODO single, highly optimized call
-	// to the display buffer interface, e.g., displayBuffer.SetScanline(s.lineOffset, s.scanline[:]).
-	// For now, we simulate it by iterating, which is less performant but functionally correct.
-	const visibleWidth = 576
-	for i := 0; i < visibleWidth; i++ {
-		s.displayBufferSet(s.lineOffset+i, s.scanline[i])
-	}
-	s.lineOffset += s.lineWidth
-}
-
-// ResetLineOffset resets the line offset to 0, typically used to prepare for a new rendering cycle or frame.
-func (s *Beam) ResetLineOffset() {
-	s.lineOffset = 0
-}
-
-// Draw updates the internal scanline buffer at the computed location with the specified color value.
-func (s *Beam) Draw(index int, color uint8) {
-	s.scanline[index&scanlineMask] = s.colors[color]
-}
-
-// DrawMulti8 writes an 8-pixel multicolor value to the internal scanline buffer at the specified offset using the given color.
-func (s *Beam) DrawMulti8(offset int, color uint8) {
-	finalColor := s.colors[color]
-	for i := 0; i < 8; i++ {
-		s.scanline[(offset+i)&scanlineMask] = finalColor
-	}
-}
-
-// Draw8Standard renders 8 pixels in standard mode into the internal scanline buffer.
-// Draw8Standard renderizza 8 pixel in modalità standard nel buffer interno.
-func (s *Beam) Draw8Standard(offset int, a uint8, b uint8, data uint8) {
-	colorBuffer := [2]uint8{s.colors[a], s.colors[b]}
-	colorIndex := s.standardIndex[data]
-	s.scanline[(offset+0)&scanlineMask] = colorBuffer[colorIndex[0]]
-	s.scanline[(offset+1)&scanlineMask] = colorBuffer[colorIndex[1]]
-	s.scanline[(offset+2)&scanlineMask] = colorBuffer[colorIndex[2]]
-	s.scanline[(offset+3)&scanlineMask] = colorBuffer[colorIndex[3]]
-	s.scanline[(offset+4)&scanlineMask] = colorBuffer[colorIndex[4]]
-	s.scanline[(offset+5)&scanlineMask] = colorBuffer[colorIndex[5]]
-	s.scanline[(offset+6)&scanlineMask] = colorBuffer[colorIndex[6]]
-	s.scanline[(offset+7)&scanlineMask] = colorBuffer[colorIndex[7]]
-}
-
-// Draw8Multi renders 8 pixels using a multicolor mode into the internal scanline buffer.
-// Draw8Multi renderizza 8 pixel in modalità multicolor nel buffer interno.
-func (s *Beam) Draw8Multi(offset int, a uint8, b uint8, c uint8, d uint8, data uint8) {
-	colorBuffer := [4]uint8{s.colors[a], s.colors[b], s.colors[c], s.colors[d]}
-	index := s.multicolorIndex[data]
-	s.scanline[(offset+0)&scanlineMask] = colorBuffer[index[0]]
-	s.scanline[(offset+1)&scanlineMask] = colorBuffer[index[1]]
-	s.scanline[(offset+2)&scanlineMask] = colorBuffer[index[2]]
-	s.scanline[(offset+3)&scanlineMask] = colorBuffer[index[3]]
-	s.scanline[(offset+4)&scanlineMask] = colorBuffer[index[4]]
-	s.scanline[(offset+5)&scanlineMask] = colorBuffer[index[5]]
-	s.scanline[(offset+6)&scanlineMask] = colorBuffer[index[6]]
-	s.scanline[(offset+7)&scanlineMask] = colorBuffer[index[7]]
+	s.displayBufferArray(s.lineOffsetRGBA, s.scanline[:s.lineWidthRGBA])
+	s.lineOffsetRGBA += s.lineWidthRGBA
 }

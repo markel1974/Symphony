@@ -8,17 +8,16 @@ import (
 
 // Render represents the main rendering structure responsible for managing display, input, and graphical interactions.
 type Render struct {
-	board      references.IC64Board
-	scale      float64
-	fullscreen bool
-	maxW       float64
-	maxH       float64
-	picture    *pixels.Picture
-	inputs     *Inputs
-	win        *pixels.GLWindow
-	surfaceM   pixels.Matrix
-	surface    *pixels.Sprite
-
+	board       references.IC64Board
+	scale       float64
+	fullscreen  bool
+	maxW        float64
+	maxH        float64
+	picture     *pixels.Picture
+	inputs      *Inputs
+	win         *pixels.GLWindow
+	surfaceM    pixels.Matrix
+	surface     *pixels.Sprite
 	ledSurface  *pixels.Sprite
 	ledSurfaceM pixels.Matrix
 	run         bool
@@ -86,8 +85,8 @@ func (g *Render) runner() {
 	g.surface.SetCachedMode(pixels.CacheModeUpdate)
 	g.surface.Set(g.picture, g.picture.Bounds())
 
-	//g.surfaceM = pixels.IM.Moved(pos).ScaledXY(pos, pixels.Vec{X: -g.scale, Y: g.scale})
-	g.surfaceM = pixels.IM.Moved(pos).ScaledXY(pos, pixels.Vec{X: g.scale, Y: g.scale})
+	g.surfaceM = pixels.IM.Moved(pos).ScaledXY(pos, pixels.Vec{X: g.scale, Y: -g.scale})
+	//g.surfaceM = pixels.IM.Moved(pos).ScaledXY(pos, pixels.Vec{X: g.scale, Y: g.scale})
 
 	g.ledSurface = pixels.NewSprite()
 	g.ledSurface.SetCachedMode(pixels.CacheModeUpdate)

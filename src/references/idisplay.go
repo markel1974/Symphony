@@ -7,11 +7,7 @@ import "github.com/markel1974/c64emu/src/config"
 // SetMulti8 sets a single byte of data and applies it across multiple relevant sections.
 // Set8 sets an array of 8 bytes of data starting at the given index.
 type IDisplayBuffer interface {
-	Set(idx int, data uint8)
-
-	SetMulti8(idx int, data uint8)
-
-	Set8(idx int, data *[8]uint8)
+	SetArray(idx int, data []uint8)
 }
 
 // IDisplayRender provides methods for rendering displays and managing display buffers.
