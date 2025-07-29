@@ -2,7 +2,10 @@ package component
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/shell"
 	"reflect"
+	"unicode"
 )
 
 // PropertyInfo represents metadata and behavior for a property, including its ID, type details, description, and functionality.
@@ -60,6 +63,11 @@ func (prop *PropertyInfo) Id() string {
 	return prop.id
 }
 
+// Description returns the description of the property as a string.
+func (prop *PropertyInfo) Description() string {
+	return prop.description
+}
+
 // Set assigns a new value to the property if it is not read-only and the input type matches the expected kind.
 func (prop *PropertyInfo) Set(arg interface{}) error {
 	if prop.readOnly {
@@ -99,6 +107,33 @@ func (prop *PropertyInfo) Get() (interface{}, error) {
 	return result, nil
 }
 
+// CreateShellCommand generates two shell commands for setting and getting the property's value.
+func (prop *PropertyInfo) CreateShellCommand() (*shell.Command, *shell.Command) {
+	setProp := func(task interfaces.ITask, args []string) error {
+		task.WriteLn("")
+		if len(args) == 0 {
+			task.WriteLn("no argument provided")
+			return nil
+		}
+		return prop.Set(args[0])
+	}
+	getProp := func(task interfaces.ITask, args []string) error {
+		v, err := prop.Get()
+		task.WriteLn("")
+		task.WriteLn(fmt.Sprint(v))
+		return err
+	}
+	id := []rune(prop.Id())
+	if len(id) > 0 {
+		id[0] = unicode.ToUpper(id[0])
+	}
+	childSet := shell.NewCommand("set"+string(id), interfaces.CommandTypeFile, nil, false, setProp)
+	childSet.SetHelp(prop.Description(), prop.Description())
+	childGet := shell.NewCommand("get"+string(id), interfaces.CommandTypeFile, nil, false, getProp)
+	childGet.SetHelp(prop.Description(), prop.Description())
+	return childSet, childGet
+}
+
 // Properties represent a collection of property definitions mapped by identifiers and a function to execute commands.
 type Properties struct {
 	properties map[string]*PropertyInfo
@@ -120,8 +155,8 @@ func (p *Properties) Add(prop *PropertyInfo) {
 	p.properties[prop.Id()] = prop
 }
 
-// Get retrieves the PropertyInfo associated with the given id from the property map. Returns nil if not found.
-func (p *Properties) Get(id string) *PropertyInfo {
+// Retrieve retrieves the PropertyInfo associated with the given id from the property map. Returns nil if not found.
+func (p *Properties) Retrieve(id string) *PropertyInfo {
 	return p.properties[id]
 }
 
@@ -184,4 +219,15 @@ func (p *Properties) Restore(d map[string]interface{}) error {
 		}
 	}
 	return nil
+}
+
+// CreateShellCommands generates a slice of shell commands to get and set property values in the Properties instance.
+func (p *Properties) CreateShellCommands() []*shell.Command {
+	var out []*shell.Command
+	for _, prop := range p.properties {
+		set, get := prop.CreateShellCommand()
+		out = append(out, set)
+		out = append(out, get)
+	}
+	return out
 }

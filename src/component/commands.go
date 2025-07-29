@@ -2,6 +2,8 @@ package component
 
 import (
 	"fmt"
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/shell"
 	"reflect"
 	"sort"
 	"strings"
@@ -63,6 +65,17 @@ func NewCommand(id string, desc string, command interface{}) *Command {
 	return cmd
 }
 
+// Id returns the unique identifier of the Command instance.
+func (cmd *Command) Id() string {
+	return cmd.id
+}
+
+// Description returns the description of the Command instance.
+func (cmd *Command) Description() string {
+	return cmd.description
+
+}
+
 // Exec invokes the encapsulated command with the provided arguments and returns the result or an error on failure.
 func (cmd *Command) Exec(args []interface{}) (interface{}, error) {
 	if len(args) != len(cmd.args) {
@@ -92,6 +105,24 @@ func (cmd *Command) Exec(args []interface{}) (interface{}, error) {
 	}
 }
 
+// CreateShellCommand converts the Command instance into a shell-compatible command with execution and help functionality.
+func (cmd *Command) CreateShellCommand() *shell.Command {
+	cmdExec := func(task interfaces.ITask, args []string) error {
+		var iArgs []interface{}
+		for _, a := range args {
+			iArgs = append(iArgs, a)
+		}
+		task.WriteLn("")
+		v, err := cmd.Exec(iArgs)
+		task.WriteLn("")
+		task.WriteLn(fmt.Sprint(v))
+		return err
+	}
+	childCmd := shell.NewCommand(cmd.Id(), interfaces.CommandTypeFile, nil, false, cmdExec)
+	childCmd.SetHelp(cmd.Description(), cmd.Description())
+	return childCmd
+}
+
 // Commands is a collection that manages a set of Command instances identified by unique string IDs.
 type Commands struct {
 	commands map[string]*Command
@@ -106,11 +137,11 @@ func NewCommands() *Commands {
 
 // Add adds a new command to the Commands collection with a unique id, description, and function reference.
 // Returns an error if a command with the same id already exists.
-func (c *Commands) Add(id string, desc string, command interface{}) error {
-	if _, ok := c.commands[id]; ok {
-		return fmt.Errorf("command '%s' already exists", id)
+func (c *Commands) Add(command *Command) error {
+	if _, ok := c.commands[command.Id()]; ok {
+		return fmt.Errorf("command '%s' already exists", command.Id())
 	}
-	c.commands[id] = NewCommand(id, desc, command)
+	c.commands[command.Id()] = command
 	return nil
 }
 
@@ -123,6 +154,11 @@ func (c *Commands) Exists(id string) bool {
 // Remove deletes a command from the commands map by its specified id.
 func (c *Commands) Remove(id string) {
 	delete(c.commands, id)
+}
+
+// Retrieve returns the Command associated with the specified id from the Commands collection. Returns nil if not found.
+func (c *Commands) Retrieve(id string) *Command {
+	return c.commands[id]
 }
 
 // Exec executes the command identified by the given id with the provided arguments and returns the result or an error.
@@ -154,6 +190,16 @@ func (c *Commands) List() map[string]string {
 	out := make(map[string]string)
 	for _, v := range c.commands {
 		out[v.signature] = v.description
+	}
+	return out
+}
+
+// CreateShellCommands generates and returns a list of shell-compatible commands based on the commands in the collection.
+func (c *Commands) CreateShellCommands() []*shell.Command {
+	var out []*shell.Command
+	for _, cmd := range c.commands {
+		childCmd := cmd.CreateShellCommand()
+		out = append(out, childCmd)
 	}
 	return out
 }

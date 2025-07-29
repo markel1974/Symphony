@@ -51,16 +51,16 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 	bc.hardwareId = hardwareId
 	bc.id = bc.hardwareId
 
-	run := func(task interfaces.ITask, args []string) error {
-		task.WriteLn("")
-		task.WriteLn(bc.name)
-		return nil
-	}
+	//run := func(task interfaces.ITask, args []string) error {
+	//	task.WriteLn("")
+	//	task.WriteLn(bc.name)
+	//	return nil
+	//}
 
-	bc.cmd = shell.NewCommand(bc.name, interfaces.CommandTypeDirectory, nil, false, run)
-	bc.cmd.SetProperties(bc.properties)
-	bc.cmd.SetExecutables(bc.commands)
-	bc.cmd.SetHelp("Command "+bc.name, "This is a command")
+	commandName := bc.name
+
+	bc.cmd = shell.NewCommand(commandName, interfaces.CommandTypeDirectory, nil, false, nil)
+	bc.cmd.SetHelp("Directory "+commandName, "Directory "+commandName)
 	if parent != nil && parent.GetNode() != nil {
 		pNode := parent.GetNode()
 		bc.node = newNode(pNode, component)
@@ -128,6 +128,7 @@ func (bc *BaseComponent) GetComponentPath(path string) references.IComponent {
 // AddProperty registers a new property to the BaseComponent with the specified ID, description, read-only flag, getter, and setter.
 func (bc *BaseComponent) AddProperty(id string, desc string, ro bool, get interface{}, set interface{}) {
 	p := NewPropertyInfo(id, desc, ro, get, set)
+	_ = bc.cmd.AddCommand(p.CreateShellCommand())
 	bc.properties.Add(p)
 }
 
@@ -236,7 +237,14 @@ func (bc *BaseComponent) GetCommand() *shell.Command {
 
 // CommandAdd registers a new command with an identifier, description, and implementation; returns an error if the id exists.
 func (bc *BaseComponent) CommandAdd(id string, desc string, cmd interface{}) error {
-	return bc.commands.Add(id, desc, cmd)
+	c := NewCommand(id, desc, cmd)
+	if err := bc.commands.Add(c); err != nil {
+		return err
+	}
+	if err := bc.cmd.AddCommand(c.CreateShellCommand()); err != nil {
+		return err
+	}
+	return nil
 }
 
 // CommandExec executes the specified command with the given arguments and returns the result or an error if execution fails.

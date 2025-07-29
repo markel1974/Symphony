@@ -8,20 +8,6 @@ import (
 	"strings"
 )
 
-// IProperties defines an interface for managing a collection of properties, allowing access, modification, and listing.
-type IProperties interface {
-	GetProperty(id string) (interface{}, error)
-	SetProperty(id string, arg interface{}) error
-	List() map[string]string
-}
-
-// IExecutables defines an interface for managing and executing commands and retrieving associated documentation.
-type IExecutables interface {
-	Exec(id string, args []interface{}) (interface{}, error)
-	Documentation() []string
-	List() map[string]string
-}
-
 // Command represents a structured command with metadata, associated functions, and subcommands in a CLI application.
 type Command struct {
 	name                       string
@@ -41,8 +27,6 @@ type Command struct {
 	commandsMaxUseLen          int
 	commandsMaxCommandPathLen  int
 	commandsMaxNameLen         int
-	properties                 IProperties
-	executables                IExecutables
 }
 
 // NewCommand creates a new Command instance with the specified name, type, aliases, daemon status, and execution function.
@@ -76,25 +60,7 @@ func (c *Command) DirectoryListing() []string {
 	for _, cmd := range c.Childs() {
 		out = append(out, cmd.Name())
 	}
-	if c.properties != nil {
-		for p := range c.properties.List() {
-			out = append(out, p)
-		}
-	}
-	if c.executables != nil {
-		for e := range c.executables.List() {
-			out = append(out, e)
-		}
-	}
 	return out
-}
-
-func (c *Command) SetExecutables(executables IExecutables) {
-	c.executables = executables
-}
-
-func (c *Command) SetProperties(properties IProperties) {
-	c.properties = properties
 }
 
 // PaintEvent returns the PaintFn associated with the command, which handles rendering or drawing operations.
@@ -440,16 +406,16 @@ func (c *Command) SuggestionsFor(prefix string) []string {
 	for _, cmd := range c.commands {
 		items = append(items, cmd.Name())
 	}
-	if c.properties != nil {
-		for prop := range c.properties.List() {
-			items = append(items, prop)
-		}
-	}
-	if c.executables != nil {
-		for command := range c.executables.List() {
-			items = append(items, command)
-		}
-	}
+	//if c.properties != nil {
+	//	for prop := range c.properties.List() {
+	//		items = append(items, prop)
+	//	}
+	//}
+	//if c.executables != nil {
+	//	for command := range c.executables.List() {
+	//		items = append(items, command)
+	//	}
+	//}
 	for _, item := range items {
 		if strings.HasPrefix(strings.ToLower(item), itemToCompleteLower) {
 			suggestionsMap[item] = true
