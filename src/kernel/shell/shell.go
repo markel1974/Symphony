@@ -49,6 +49,7 @@ type IExecutor interface {
 
 // Shell defines a command-line interface entity with support for input management, authentication, rendering, and history.
 type Shell struct {
+	interfaces.IRender
 	current         []rune
 	pos             int
 	echo            bool
@@ -56,7 +57,6 @@ type Shell struct {
 	tabData         string
 	tabFound        bool
 	tabCount        int
-	render          interfaces.IRender
 	executor        IExecutor
 	defaultPrompt   string
 	prompt          string
@@ -69,9 +69,9 @@ type Shell struct {
 // NewShell initializes and returns a new instance of *Shell configured with dependencies and initial settings.
 func NewShell(auth interfaces.IAuthenticator, render interfaces.IRender, executor IExecutor, prompt string, autosave bool) *Shell {
 	c := &Shell{
+		IRender:       render,
 		history:       NewHistoryHandler(128, autosave),
 		echo:          true,
-		render:        render,
 		executor:      executor,
 		auth:          auth,
 		defaultPrompt: prompt,
@@ -140,18 +140,18 @@ func (c *Shell) SetHistoryDefault(data string) {
 func (c *Shell) NextLine(eol bool) {
 	c.resetBuffer()
 	if eol {
-		c.render.WriteColor(c.render.EOL(), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+		c.WriteColor(c.EOL(), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 	}
-	c.render.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
 // Redraw refreshes the current shell display with the given line, updates internal state, and re-renders the prompt and line.
 func (c *Shell) Redraw(line string) {
 	c.current = []rune(line)
 	c.pos = len(c.current)
-	c.render.ClearLine(line)
-	c.render.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-	c.render.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.ClearLine(line)
+	c.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
 // cursorPressed handles cursor navigation events based on the given CursorCodeDef.
@@ -169,12 +169,12 @@ func (c *Shell) cursorPressed(code interfaces.CursorCodeDef) {
 	case interfaces.CursorLeftDef:
 		if c.pos > 0 {
 			c.pos--
-			c.render.MoveCursorLeft()
+			c.MoveCursorLeft()
 		}
 	case interfaces.CursorRightDef:
 		if c.pos >= 0 && c.pos < len(c.current) {
 			c.pos++
-			c.render.MoveCursorRight()
+			c.MoveCursorRight()
 		}
 	}
 }
@@ -199,12 +199,12 @@ func (c *Shell) enterPressed() bool {
 			c.setAuthenticatedState()
 		} else {
 			c.passwordRetry++
-			eol := c.render.EOL()
+			eol := c.EOL()
 			if c.passwordRetry >= maxPasswordRetry {
-				c.render.WriteColor(eol+"Unauthorized"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.WriteColor(eol+"Unauthorized"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 				quit = true
 			} else {
-				c.render.WriteColor(eol+"Login incorrect"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.WriteColor(eol+"Login incorrect"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 			}
 		}
 
@@ -252,17 +252,17 @@ func (c *Shell) keyPressed(key rune) {
 			log.Println("doTextInsert: negative pos", c.pos)
 		} else if c.pos == len(c.current) {
 			if c.echo {
-				c.render.WriteColor(string(key), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.WriteColor(string(key), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 			}
 			c.current = append(c.current, key)
 			c.pos++
 		} else if c.pos < len(c.current) {
 			if c.echo {
-				c.render.WriteColor(string(key), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-				c.render.SaveCursor()
-				c.render.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.WriteColor(string(key), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.SaveCursor()
+				c.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 			}
-			c.render.RestoreCursor()
+			c.RestoreCursor()
 
 			c.current = insertAtPos(c.current, key, c.pos)
 			c.pos++
@@ -301,17 +301,22 @@ func (c *Shell) setAuthenticatedState() {
 	c.state = stateAuthenticated
 }
 
+// SetPromptPrefix sets a custom prefix for the prompt by prepending the given prefix to the default prompt value.
+func (c *Shell) SetPromptPrefix(prefix string) {
+	c.prompt = prefix + c.defaultPrompt
+}
+
 // textBackspace removes the character at the current cursor position and updates the Shell state accordingly.
 func (c *Shell) textBackspace() {
 	if c.pos > 0 {
 		c.pos--
 		c.current = removeAtPos(c.current, c.pos)
 		if c.echo {
-			c.render.MoveCursorLeft()
-			c.render.SaveCursor()
-			c.render.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			c.render.WriteColor(string(' '), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			c.render.RestoreCursor()
+			c.MoveCursorLeft()
+			c.SaveCursor()
+			c.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+			c.WriteColor(string(' '), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+			c.RestoreCursor()
 		}
 	}
 }
@@ -322,10 +327,10 @@ func (c *Shell) textCancel() {
 		c.current = removeAtPos(c.current, c.pos)
 
 		if c.echo {
-			c.render.SaveCursor()
-			c.render.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			c.render.WriteColor(string(' '), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			c.render.RestoreCursor()
+			c.SaveCursor()
+			c.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+			c.WriteColor(string(' '), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+			c.RestoreCursor()
 		}
 	}
 }
