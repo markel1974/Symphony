@@ -44,7 +44,7 @@ const (
 // IExecutor defines an interface for executing commands and handling autocomplete suggestions in a shell environment.
 type IExecutor interface {
 	//ExecCommand(line string) (bool, error)
-	ExecSuggestion(in string, cursor int, count int) (int, bool)
+	//ExecSuggestion(in string, cursor int, count int) (int, bool)
 }
 
 // Shell defines a command-line interface entity with support for input management, authentication, rendering, and history.
@@ -85,13 +85,11 @@ func NewShell(auth interfaces.IAuthenticator, render interfaces.IRender, executo
 }
 
 // KeyEvent handles keyboard inputs based on the provided key type and key value, executing corresponding actions.
-func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) (string, bool) {
-	quit := false
-	var command string
+func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) {
 	switch kind {
 	case interfaces.KeyTypeEnter:
+		c.enterPressed()
 		c.tabCount = 0
-		command, quit = c.enterPressed()
 	case interfaces.KeyTypeTab:
 		c.tabPressed()
 	case interfaces.KeyTypeCancel:
@@ -109,18 +107,12 @@ func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) (string, bool) {
 	default:
 		log.Println("KeyEvent: Unknown key type")
 	}
-	return command, quit
 }
 
 // ClearHistory clears the shell's command history by invoking the Clear method on the history handler.
-func (c *Shell) ClearHistory() {
-	c.history.Clear()
-}
-
-// GetHistoryAtPos retrieves the history entry at the specified index. Returns the entry and a boolean indicating success.
-func (c *Shell) GetHistoryAtPos(idx int) (string, bool) {
-	return c.history.GetHistoryAtPos(idx)
-}
+//func (c *Shell) ClearHistory() {
+//	c.history.Clear()
+//}
 
 // GetHistory retrieves the current history of commands executed in the shell as a formatted string.
 func (c *Shell) GetHistory() string {
@@ -135,6 +127,21 @@ func (c *Shell) GetHistory() string {
 // SetHistoryDefault sets the default history entry to the specified string value, replacing any existing default entry.
 func (c *Shell) SetHistoryDefault(data string) {
 	c.history.SetDefault(data)
+}
+
+// HistoryApply performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
+func (c *Shell) HistoryApply(verb interfaces.HistoryAction, idx int) string {
+	switch verb {
+	case interfaces.HistoryActionClear:
+		c.history.Clear()
+	case interfaces.HistoryActionExec:
+		if arg, found := c.history.GetHistoryAtPos(idx); found {
+			return arg
+		}
+	case interfaces.HistoryActionList:
+		c.Write(c.GetHistory())
+	}
+	return ""
 }
 
 // NextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
@@ -166,7 +173,6 @@ func (c *Shell) cursorPressed(code interfaces.CursorCodeDef) {
 		if data, valid := c.history.GetHistoryNext(); valid {
 			c.Redraw(data)
 		}
-
 	case interfaces.CursorLeftDef:
 		if c.pos > 0 {
 			c.pos--
@@ -180,15 +186,11 @@ func (c *Shell) cursorPressed(code interfaces.CursorCodeDef) {
 	}
 }
 
-// enterPressed handles the Enter key press event, processes the input based on the current shell state, and updates the state accordingly.
-func (c *Shell) enterPressed() (string, bool) {
+// EnterPressed handles the Enter key press event, processes the input based on the current shell state, and updates the state accordingly.
+func (c *Shell) enterPressed() bool {
 	buffer := string(c.current)
 	quit := false
-	var command string
 
-	if len(buffer) == 0 {
-		return "", false
-	}
 	switch c.state {
 	case stateUsernameRequired:
 		c.passwordRetry = 0
@@ -210,16 +212,27 @@ func (c *Shell) enterPressed() (string, bool) {
 		}
 
 	case stateAuthenticated:
-		c.history.AddToHistory(buffer)
-		c.history.SetDefault("")
-		command = buffer
+		if len(buffer) > 0 {
+			c.history.AddToHistory(buffer)
+			c.history.SetDefault("")
+		}
 	default:
 		quit = true
 	}
-	return command, quit
+	return quit
 }
 
-// tabPressed handles tab key events, providing intelligent autocompletion based on current input and command context.
+// Authenticated checks if the Shell instance is in an authenticated state and returns true if authenticated, otherwise false.
+func (c *Shell) Authenticated() bool {
+	return c.state == stateAuthenticated
+}
+
+// InputBuffer retrieves the current input buffer as a string.
+func (c *Shell) InputBuffer() string {
+	return string(c.current)
+}
+
+// TabPressed handles tab key events, providing intelligent autocompletion based on current input and command context.
 func (c *Shell) tabPressed() {
 	if c.state != stateAuthenticated {
 		return
@@ -233,12 +246,21 @@ func (c *Shell) tabPressed() {
 		}
 	}
 	c.tabCount++
-	if c.tabFound {
-		if l, ok := c.executor.ExecSuggestion(c.tabData, c.pos, c.tabCount); l == 1 && ok {
-			c.tabCount = 0
-			c.history.SetDefault(string(c.current))
-		}
-	}
+}
+
+// TabFound returns true if a tab was found during the shell operation, otherwise false.
+func (c *Shell) TabFound() bool {
+	return c.tabFound
+}
+
+// TabData retrieves the tab-related data including a string representation, position, and tab count from the Shell instance.
+func (c *Shell) TabData() (string, int, int) {
+	return c.tabData, c.pos, c.tabCount
+}
+
+func (c *Shell) TabReset() {
+	c.tabCount = 0
+	c.history.SetDefault(string(c.current))
 }
 
 // keyPressed processes a printable key input and updates the current input buffer, cursor position, and visual rendering.

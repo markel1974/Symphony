@@ -59,43 +59,34 @@ func (c *Kernel) NextLine(eol bool) {
 
 // KeyEvent processes a keyboard event of a given type and key and returns true if the event was handled successfully.
 func (c *Kernel) KeyEvent(kind interfaces.KeyType, key rune) bool {
-	command, quit := c.sh.KeyEvent(kind, key)
-	if !quit {
-		if kind == interfaces.KeyTypeEnter {
-			if len(command) > 0 {
-				c.sh.WriteLn("")
-				_, _ = c.ExecCommand(command, nil)
-				c.sh.NextLine(false)
-			} else {
-				c.sh.NextLine(true)
+	c.sh.KeyEvent(kind, key)
+	if !c.sh.Authenticated() {
+		return true
+	}
+	if kind == interfaces.KeyTypeEnter {
+		if buffer := c.sh.InputBuffer(); len(buffer) > 0 {
+			c.sh.WriteLn("")
+			_, _ = c.ExecCommand(buffer, nil)
+			c.sh.NextLine(false)
+		} else {
+			c.sh.NextLine(true)
+		}
+	} else if kind == interfaces.KeyTypeTab {
+		if c.sh.TabFound() {
+			tabData, pos, tabCount := c.sh.TabData()
+			if l, ok := c.ExecSuggestion(tabData, pos, tabCount); l == 1 && ok {
+				c.sh.TabReset()
 			}
 		}
 	}
-	return quit
-}
-
-// Redraw refreshes the current state based on the provided input string, invoking the underlying shell's Redraw function.
-func (c *Kernel) Redraw(l string) {
-	c.sh.Redraw(l)
+	return false
 }
 
 // HistoryApply performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
 func (c *Kernel) HistoryApply(verb interfaces.HistoryAction, idx int) {
-	switch verb {
-	case interfaces.HistoryActionClear:
-		c.sh.ClearHistory()
-	case interfaces.HistoryActionExec:
-		if arg, found := c.sh.GetHistoryAtPos(idx); found {
-			_, _ = c.ExecCommand(arg, nil)
-		}
-	case interfaces.HistoryActionList:
-		c.sh.Write(c.sh.GetHistory())
+	if arg := c.sh.HistoryApply(verb, idx); len(arg) > 0 {
+		_, _ = c.ExecCommand(arg, nil)
 	}
-}
-
-// SetHistoryDefault sets the default history data in the kernel's state handler using the provided string input.
-func (c *Kernel) SetHistoryDefault(data string) {
-	c.sh.SetHistoryDefault(data)
 }
 
 // SetScreenSize sets the display dimensions of the screen to the specified width (w) and height (h).
@@ -320,12 +311,6 @@ func (c *Kernel) SetFg(pid int) bool {
 	return true
 }
 
-// GetSuggestion provides auto-complete suggestions based on the given input and cursor position, returning a prefix, suggestions, and a success flag.
-func (c *Kernel) GetSuggestion(in string, cursor int) (string, []string, bool) {
-	prefix, suggestions, found := c.fs.Suggestion(in, cursor)
-	return prefix, suggestions, found
-}
-
 // CreateTimer initializes a timer for a process based on its ID with specified delay, interval, and count settings.
 // Returns true if the timer was created successfully, false otherwise.
 func (c *Kernel) CreateTimer(pid int, first int, interval int, count int) bool {
@@ -471,6 +456,25 @@ func (c *Kernel) ExecTimer(pid int, tid int, interval int) bool {
 		}
 	}
 	return ret
+}
+
+// ExecSuggestion executes a suggestion mechanism based on input, cursor position, and count, returning total suggestions and success status.
+func (c *Kernel) ExecSuggestion(in string, cursor int, count int) (int, bool) {
+	ret := false
+	sLen := 0
+	data, suggestions, found := c.fs.Suggestion(in, cursor)
+	if found && len(suggestions) > 0 {
+		sLen = len(suggestions)
+		if idx := count % sLen; idx < sLen {
+			if complete := suggestions[idx]; len(complete) > len(data) {
+				tabLine := complete
+				c.sh.Redraw(tabLine)
+				c.sh.SetHistoryDefault(tabLine)
+				ret = true
+			}
+		}
+	}
+	return sLen, ret
 }
 
 // ExecRead invokes the ReadEvent function for a task identified by pid. Returns true if execution is successful.

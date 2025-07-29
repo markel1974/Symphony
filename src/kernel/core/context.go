@@ -97,25 +97,6 @@ func (c *Context) Write(data []byte) (int, error) {
 func (c *Context) Close() {
 }
 
-// ExecSuggestion executes a suggestion mechanism based on input, cursor position, and count, returning total suggestions and success status.
-func (c *Context) ExecSuggestion(in string, cursor int, count int) (int, bool) {
-	ret := false
-	data, suggestions, found := c.kernel.GetSuggestion(in, cursor)
-	sLen := 0
-	if found && len(suggestions) > 0 {
-		sLen = len(suggestions)
-		if idx := count % sLen; idx < sLen {
-			if complete := suggestions[idx]; len(complete) > len(data) {
-				tabLine := complete
-				c.kernel.Redraw(tabLine)
-				c.kernel.SetHistoryDefault(tabLine)
-				ret = true
-			}
-		}
-	}
-	return sLen, ret
-}
-
 // SetScreenSize adjusts the terminal's display dimensions to the specified width (w) and height (h).
 func (c *Context) SetScreenSize(w int, h int) {
 	c.kernel.SetScreenSize(w, h)
