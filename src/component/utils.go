@@ -60,6 +60,24 @@ func ComponentData(data string) (string, string, int, error) {
 	return label, id, instance, nil
 }
 
+func ConvertArgument(arg interface{}, targetType reflect.Type) (reflect.Value, bool) {
+	argValue := reflect.ValueOf(arg)
+	if argValue.Type().AssignableTo(targetType) {
+		return argValue, true
+	}
+	if argValue.Type().ConvertibleTo(targetType) {
+		return argValue.Convert(targetType), true
+	}
+	switch argValue.Kind() {
+	case reflect.String:
+		if v, err := ConvertStringArgument(argValue.Interface().(string), targetType); err == nil {
+			return v, true
+		}
+	default:
+	}
+	return reflect.Value{}, false
+}
+
 // ConvertStringArgument converts a string argument to a reflect.Value of the specified targetType or returns an error.
 func ConvertStringArgument(arg string, targetType reflect.Type) (reflect.Value, error) {
 	switch targetType.Kind() {

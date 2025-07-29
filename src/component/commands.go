@@ -83,10 +83,9 @@ func (cmd *Command) Exec(args []string) (interface{}, error) {
 	}
 	var rArgs []reflect.Value
 	for x := 0; x < len(cmd.argsType); x++ {
-		targetType := cmd.argsType[x]
-		val, err := ConvertStringArgument(args[x], targetType)
-		if err != nil {
-			return nil, fmt.Errorf("argument %d ('%s'): %w", x, args[x], err)
+		val, ok := ConvertArgument(args[x], cmd.argsType[x])
+		if !ok {
+			return nil, fmt.Errorf("can't convert argument %d ('%s'): %v", x, args[x], cmd.argsType[x])
 		}
 		rArgs = append(rArgs, val)
 	}

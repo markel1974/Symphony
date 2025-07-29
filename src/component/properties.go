@@ -6,7 +6,6 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/shell"
 	"reflect"
 	"sort"
-	"strconv"
 	"unicode"
 )
 
@@ -72,51 +71,25 @@ func (prop *PropertyInfo) Description() string {
 
 // Set assigns a new value to the property if it is not read-only and the input type matches the expected kind.
 func (prop *PropertyInfo) Set(arg interface{}) error {
-	exec := func(argValue reflect.Value) error {
-		if !argValue.Type().ConvertibleTo(prop.set0Type) {
-			return fmt.Errorf("property '%s' expected type '%v', got '%T'", prop.id, prop.set0Type, arg)
-		}
-		convertedArg := argValue.Convert(prop.set0Type)
-		results := prop.setValue.Call([]reflect.Value{convertedArg})
-		if len(results) != 1 {
-			return fmt.Errorf("property '%s' set failed", prop.id)
-		}
-		if res := results[0].Interface(); res == nil {
-			return nil
-		}
-		err, ok := results[0].Interface().(error)
-		if !ok {
-			return fmt.Errorf("property '%s' set failed", prop.id)
-		}
-		return err
-	}
-
 	if prop.readOnly {
 		return fmt.Errorf("property '%s' is read-only", prop.id)
 	}
-	argValue := reflect.ValueOf(arg)
-	if argValue.Type().AssignableTo(prop.set0Type) {
-		prop.setValue.Call([]reflect.Value{argValue})
+	argValue, ok := ConvertArgument(arg, prop.set0Type)
+	if !ok {
+		return fmt.Errorf("property '%s' expected type '%v', got '%T'", prop.id, prop.set0Type, arg)
+	}
+	results := prop.setValue.Call([]reflect.Value{argValue})
+	if len(results) != 1 {
+		return fmt.Errorf("property '%s' set failed", prop.id)
+	}
+	if res := results[0].Interface(); res == nil {
 		return nil
 	}
-	if err := exec(argValue); err == nil {
-		return nil
+	err, ok := results[0].Interface().(error)
+	if !ok {
+		return fmt.Errorf("property '%s' set failed", prop.id)
 	}
-	//try explicit conversion
-	switch argValue.Kind() {
-	case reflect.String:
-		if f, err := strconv.ParseFloat(argValue.Interface().(string), 64); err == nil {
-			argValue = reflect.ValueOf(f)
-			if err = exec(argValue); err != nil {
-				return err
-			}
-			return nil
-		}
-	default:
-		//nothing to do
-	}
-
-	return fmt.Errorf("property '%s' expected type '%v', got '%T'", prop.id, prop.set0Type, arg)
+	return err
 }
 
 // Get retrieves the value of the property by calling its getter function and returns the result or an error if any occurs.
