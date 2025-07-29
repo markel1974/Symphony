@@ -32,7 +32,7 @@ func (t *Root) Build(bin *shell.Command) (*shell.Command, *shell.Command) {
 	rootRun := func(task interfaces.ITask, args []string) error {
 		return nil
 	}
-	root := shell.NewCommand("", interfaces.CommandTypeDirectory, nil, false, rootRun)
+	root := shell.NewCommand("/", interfaces.CommandTypeDirectory, nil, false, rootRun)
 	_ = root.AddCommand(sbin)
 	_ = root.AddCommand(bin)
 	_ = root.AddCommand(games.Create())
@@ -40,7 +40,7 @@ func (t *Root) Build(bin *shell.Command) (*shell.Command, *shell.Command) {
 	coreCRun := func(task interfaces.ITask, args []string) error {
 		return nil
 	}
-	coreC := shell.NewCommand("/", interfaces.CommandTypeDirectory, nil, false, coreCRun)
+	coreC := shell.NewCommand("", interfaces.CommandTypeDirectory, nil, false, coreCRun)
 	coreC.SetHelp("Core", "Core")
 	_ = coreC.AddCommand(system.CreateExit())
 	_ = coreC.AddCommand(system.CreateCD())
