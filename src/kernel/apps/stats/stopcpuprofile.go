@@ -22,7 +22,6 @@ import (
 
 func CreateProfileCPUStop() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
-		task.WriteLn("")
 		pprof.StopCPUProfile()
 		task.WriteLn("Cpu Profiling stopped")
 		return nil

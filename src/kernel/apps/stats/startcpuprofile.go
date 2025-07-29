@@ -23,7 +23,6 @@ import (
 
 func CreateProfileCPUStart() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
-		task.WriteLn("")
 		if len(args) <= 0 {
 			task.WriteLn("could not create cpu profile: " + "missing filename")
 			return nil

@@ -22,7 +22,6 @@ import (
 
 func CreateKill() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
-		task.WriteLn("")
 		if len(args) <= 0 {
 			task.WriteLn("Empty argument")
 			return nil

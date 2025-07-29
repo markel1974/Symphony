@@ -23,7 +23,6 @@ import (
 
 func CreateCPUStatus() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
-		task.WriteLn("")
 		task.WriteLn(fmt.Sprintf("Number of logical CPUs: %d", runtime.NumCPU()))
 		task.WriteLn(fmt.Sprintf("Maximum number of CPUs that can be executing simultaneously: %d", runtime.GOMAXPROCS(0)))
 		task.WriteLn(fmt.Sprintf("Number of goroutines that currently exist: %d", runtime.NumGoroutine()))

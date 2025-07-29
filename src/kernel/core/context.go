@@ -60,7 +60,7 @@ func (c *Context) Setup(terminal interfaces.ITerminal) {
 // Exec initializes the admin console display, advances the shell line, and starts the kernel.
 func (c *Context) Exec() {
 	c.render.WriteColor("Admin Console Ready", interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
-	c.sh.NextLine()
+	c.sh.NextLine(true)
 	c.kernel.Start()
 }
 
@@ -71,7 +71,7 @@ func (c *Context) Type(kind interfaces.KeyType, key rune) {
 		case 3:
 			c.kernel.SetSelectionDisabled()
 			c.kernel.KillForeground()
-			c.sh.NextLine()
+			c.sh.NextLine(true)
 		case 4:
 			c.kernel.ExecActivate()
 		}

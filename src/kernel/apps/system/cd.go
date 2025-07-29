@@ -22,12 +22,10 @@ import (
 func CreateCD() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
 		if len(args) <= 0 {
-			task.WriteLn("")
 			task.WriteLn("cd: empty directory")
 			return nil
 		}
 		if !task.CWDSet(args[0]) {
-			task.WriteLn("")
 			task.WriteLn("cd: no such directory: " + args[0])
 		}
 		return nil

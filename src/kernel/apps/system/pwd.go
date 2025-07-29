@@ -21,7 +21,6 @@ import (
 
 func CreatePWD() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
-		task.WriteLn("")
 		task.WriteLn(task.CWDGet())
 		return nil
 	}

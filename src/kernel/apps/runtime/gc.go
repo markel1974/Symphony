@@ -23,7 +23,6 @@ import (
 func CreateGC() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
 		//r := cmd.GetRootContext()
-		task.WriteLn("")
 		runtime.GC()
 		task.WriteLn("GC Done")
 		return nil

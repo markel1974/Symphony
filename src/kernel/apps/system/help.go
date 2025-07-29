@@ -22,7 +22,6 @@ import (
 
 func CreateHelp() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
-		task.WriteLn("")
 		if len(args) == 0 {
 			task.WriteLn("usage help [command]")
 			return nil

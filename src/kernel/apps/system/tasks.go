@@ -29,7 +29,6 @@ func CreateTasks() *shell.Command {
 		args = args[1:]
 		switch kind {
 		case "list":
-			task.WriteLn("")
 			for _, l := range task.ListTasks() {
 				task.WriteLn(l)
 			}

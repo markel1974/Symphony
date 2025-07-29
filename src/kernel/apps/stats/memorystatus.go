@@ -25,7 +25,6 @@ func CreateMemoryStatus() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
-		task.WriteLn("")
 		task.WriteLn(fmt.Sprintf("Allocated memory in heap objects: %.3f MB", bToMb(m.Alloc)))
 		task.WriteLn(fmt.Sprintf("Total memory allocated for heap objects: %.3f MB", bToMb(m.TotalAlloc)))
 		task.WriteLn(fmt.Sprintf("Total memory obtained from the OS: %.3f MB", bToMb(m.Sys)))

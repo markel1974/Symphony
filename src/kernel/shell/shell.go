@@ -137,9 +137,11 @@ func (c *Shell) SetHistoryDefault(data string) {
 }
 
 // NextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
-func (c *Shell) NextLine() {
+func (c *Shell) NextLine(eol bool) {
 	c.resetBuffer()
-	c.render.WriteColor(c.render.EOL(), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	if eol {
+		c.render.WriteColor(c.render.EOL(), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	}
 	c.render.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
@@ -182,39 +184,41 @@ func (c *Shell) enterPressed() bool {
 	buffer := string(c.current)
 	quit := false
 
-	if len(buffer) > 0 {
-		switch c.state {
-		case stateUsernameRequired:
-			c.passwordRetry = 0
-			c.currentUsername = buffer
-			c.setPasswordRequiredState()
+	if len(buffer) == 0 {
+		c.NextLine(true)
+		return false
+	}
+	switch c.state {
+	case stateUsernameRequired:
+		c.passwordRetry = 0
+		c.currentUsername = buffer
+		c.setPasswordRequiredState()
 
-		case statePasswordRequired:
-			if c.auth.Authenticate(c.currentUsername, buffer) {
-				c.setAuthenticatedState()
+	case statePasswordRequired:
+		if c.auth.Authenticate(c.currentUsername, buffer) {
+			c.setAuthenticatedState()
+		} else {
+			c.passwordRetry++
+			eol := c.render.EOL()
+			if c.passwordRetry >= maxPasswordRetry {
+				c.render.WriteColor(eol+"Unauthorized"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				quit = true
 			} else {
-				c.passwordRetry++
-				eol := c.render.EOL()
-				if c.passwordRetry >= maxPasswordRetry {
-					c.render.WriteColor(eol+"Unauthorized"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-					quit = true
-				} else {
-					c.render.WriteColor(eol+"Login incorrect"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-				}
+				c.render.WriteColor(eol+"Login incorrect"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 			}
-
-		case stateAuthenticated:
-			c.history.AddToHistory(buffer)
-			c.history.SetDefault("")
-			_, _ = c.executor.ExecCommand(buffer)
-
-			//c.quit = c.execCommand(buffer)
-		default:
-			quit = true
 		}
+
+	case stateAuthenticated:
+		c.history.AddToHistory(buffer)
+		c.history.SetDefault("")
+		_, _ = c.executor.ExecCommand(buffer)
+
+		//c.quit = c.execCommand(buffer)
+	default:
+		quit = true
 	}
 
-	c.NextLine()
+	c.NextLine(false)
 
 	return quit
 }

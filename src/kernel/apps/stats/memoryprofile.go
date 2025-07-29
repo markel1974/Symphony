@@ -25,7 +25,6 @@ import (
 func CreateProfileMemory() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
 		//r := cmd.GetRootContext()
-		task.WriteLn("")
 		if len(args) <= 0 {
 			task.WriteLn("could not create mem profile: " + "missing filename")
 			return nil

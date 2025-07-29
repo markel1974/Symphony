@@ -112,9 +112,7 @@ func (cmd *Command) CreateShellCommand() *shell.Command {
 		for _, a := range args {
 			iArgs = append(iArgs, a)
 		}
-		task.WriteLn("")
 		v, err := cmd.Exec(iArgs)
-		task.WriteLn("")
 		task.WriteLn(fmt.Sprint(v))
 		return err
 	}

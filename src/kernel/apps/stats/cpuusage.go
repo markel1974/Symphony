@@ -23,7 +23,6 @@ import (
 
 func CreateCPUUsage() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
-		task.WriteLn("")
 		task.WriteLn("Computing cpu usage")
 		idle0, total0 := getCPUSample()
 		time.Sleep(3 * time.Second)
