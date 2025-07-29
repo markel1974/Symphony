@@ -307,7 +307,13 @@ func (c *Kernel) CWDPath() []string {
 
 // CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
 func (c *Kernel) CWDSet(arg string) bool {
-	return c.fs.CWDSet(arg)
+	b := c.fs.CWDSet(arg)
+	if b {
+		cwd := c.fs.CWD()
+		cwd.Name()
+		c.sh.SetPromptPrefix(cwd.Name())
+	}
+	return b
 }
 
 // Help retrieves the help documentation associated with the provided argument from the kernel's filesystem.
@@ -643,6 +649,7 @@ func (c *Kernel) shutdown() {
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
 	c.render.WriteHighlight("Admin Console Ready")
+	c.sh.SetPromptPrefix(c.fs.CWD().Name())
 	c.sh.NextLine(true)
 
 	d := make(chan bool)

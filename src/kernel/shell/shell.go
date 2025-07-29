@@ -101,11 +101,6 @@ func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) {
 	}
 }
 
-// ClearHistory clears the shell's command history by invoking the Clear method on the history handler.
-//func (c *Shell) ClearHistory() {
-//	c.history.Clear()
-//}
-
 // GetHistory retrieves the current history of commands executed in the shell as a formatted string.
 func (c *Shell) GetHistory() string {
 	out := ""
