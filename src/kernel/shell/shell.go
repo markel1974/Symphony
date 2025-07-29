@@ -41,15 +41,9 @@ const (
 	maxPasswordRetry = 3
 )
 
-// IExecutor defines an interface for executing commands and handling autocomplete suggestions in a shell environment.
-type IExecutor interface {
-	//ExecCommand(line string) (bool, error)
-	//ExecSuggestion(in string, cursor int, count int) (int, bool)
-}
-
 // Shell defines a command-line interface entity with support for input management, authentication, rendering, and history.
 type Shell struct {
-	interfaces.IRender
+	render          interfaces.IRender
 	current         []rune
 	pos             int
 	echo            bool
@@ -57,7 +51,6 @@ type Shell struct {
 	tabData         string
 	tabFound        bool
 	tabCount        int
-	executor        IExecutor
 	defaultPrompt   string
 	prompt          string
 	currentUsername string
@@ -67,12 +60,11 @@ type Shell struct {
 }
 
 // NewShell initializes and returns a new instance of *Shell configured with dependencies and initial settings.
-func NewShell(auth interfaces.IAuthenticator, render interfaces.IRender, executor IExecutor, prompt string, autosave bool) *Shell {
+func NewShell(auth interfaces.IAuthenticator, render interfaces.IRender, prompt string, autosave bool) *Shell {
 	c := &Shell{
-		IRender:       render,
+		render:        render,
 		history:       NewHistoryHandler(128, autosave),
 		echo:          true,
-		executor:      executor,
 		auth:          auth,
 		defaultPrompt: prompt,
 		passwordRetry: 0,
@@ -139,7 +131,7 @@ func (c *Shell) HistoryApply(verb interfaces.HistoryAction, idx int) string {
 			return arg
 		}
 	case interfaces.HistoryActionList:
-		c.Write(c.GetHistory())
+		c.render.Write(c.GetHistory())
 	}
 	return ""
 }
@@ -147,19 +139,14 @@ func (c *Shell) HistoryApply(verb interfaces.HistoryAction, idx int) string {
 // NextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
 func (c *Shell) NextLine(eol bool) {
 	c.resetBuffer()
-	if eol {
-		c.WriteColor(c.EOL(), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-	}
-	c.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.render.WriteEOL(c.prompt, eol)
 }
 
 // Redraw refreshes the current shell display with the given line, updates internal state, and re-renders the prompt and line.
 func (c *Shell) Redraw(line string) {
 	c.current = []rune(line)
 	c.pos = len(c.current)
-	c.ClearLine(line)
-	c.WriteColor(c.prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-	c.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.render.WriteLine(c.prompt, line)
 }
 
 // cursorPressed handles cursor navigation events based on the given CursorCodeDef.
@@ -176,12 +163,12 @@ func (c *Shell) cursorPressed(code interfaces.CursorCodeDef) {
 	case interfaces.CursorLeftDef:
 		if c.pos > 0 {
 			c.pos--
-			c.MoveCursorLeft()
+			c.render.MoveCursorLeft()
 		}
 	case interfaces.CursorRightDef:
 		if c.pos >= 0 && c.pos < len(c.current) {
 			c.pos++
-			c.MoveCursorRight()
+			c.render.MoveCursorRight()
 		}
 	}
 }
@@ -202,12 +189,12 @@ func (c *Shell) enterPressed() bool {
 			c.setAuthenticatedState()
 		} else {
 			c.passwordRetry++
-			eol := c.EOL()
+			eol := c.render.EOL()
 			if c.passwordRetry >= maxPasswordRetry {
-				c.WriteColor(eol+"Unauthorized"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.render.WriteCritical(eol + "Unauthorized" + eol)
 				quit = true
 			} else {
-				c.WriteColor(eol+"Login incorrect"+eol, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.render.WriteCritical(eol + "Login incorrect" + eol)
 			}
 		}
 
@@ -270,17 +257,17 @@ func (c *Shell) keyPressed(key rune) {
 			log.Println("doTextInsert: negative pos", c.pos)
 		} else if c.pos == len(c.current) {
 			if c.echo {
-				c.WriteColor(string(key), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.render.WriteNormal(string(key))
 			}
 			c.current = append(c.current, key)
 			c.pos++
 		} else if c.pos < len(c.current) {
 			if c.echo {
-				c.WriteColor(string(key), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-				c.SaveCursor()
-				c.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+				c.render.WriteNormal(string(key))
+				c.render.SaveCursor()
+				c.render.WriteNormal(string(c.current[c.pos:]))
 			}
-			c.RestoreCursor()
+			c.render.RestoreCursor()
 
 			c.current = insertAtPos(c.current, key, c.pos)
 			c.pos++
@@ -330,11 +317,11 @@ func (c *Shell) textBackspace() {
 		c.pos--
 		c.current = removeAtPos(c.current, c.pos)
 		if c.echo {
-			c.MoveCursorLeft()
-			c.SaveCursor()
-			c.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			c.WriteColor(string(' '), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			c.RestoreCursor()
+			c.render.MoveCursorLeft()
+			c.render.SaveCursor()
+			c.render.WriteNormal(string(c.current[c.pos:]))
+			c.render.WriteNormal(string(' '))
+			c.render.RestoreCursor()
 		}
 	}
 }
@@ -345,10 +332,10 @@ func (c *Shell) textCancel() {
 		c.current = removeAtPos(c.current, c.pos)
 
 		if c.echo {
-			c.SaveCursor()
-			c.WriteColor(string(c.current[c.pos:]), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			c.WriteColor(string(' '), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-			c.RestoreCursor()
+			c.render.SaveCursor()
+			c.render.WriteNormal(string(c.current[c.pos:]))
+			c.render.WriteNormal(string(' '))
+			c.render.RestoreCursor()
 		}
 	}
 }

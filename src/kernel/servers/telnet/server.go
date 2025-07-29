@@ -62,8 +62,7 @@ func (r *Server) handleConnection(c net.Conn) {
 	telnetSession := session2.NewTelnet(c)
 
 	ctx := core.NewContext(r.ticker, telnetSession, telnetSession, r.auth, r.template, r.prompt, r.autosave)
-	ioAdapter := interfaces.IInputOutput(ctx)
-	term := r.factory.Create("VT100", ioAdapter, -1)
+	term := r.factory.Create("VT100", -1)
 	ctx.Setup(term)
 
 	telnetSession.SetListenFunc(func(code session2.IOCode, data []byte) {

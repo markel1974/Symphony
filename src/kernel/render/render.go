@@ -28,6 +28,10 @@ func NewRender(terminal interfaces.ITerminal) *Render {
 	}
 }
 
+func (c *Render) Read(data []byte) (int, error) {
+	return c.terminal.Read(data)
+}
+
 // GetScreenSize returns the current screen width and height of the Render instance.
 func (c *Render) GetScreenSize() (int, int) {
 	return c.width, c.height
@@ -143,4 +147,29 @@ func (c *Render) RestoreCursor() {
 // EOL returns the end-of-line marker used by the terminal.
 func (c *Render) EOL() string {
 	return eol
+}
+
+func (c *Render) WriteLine(prompt string, line string) {
+	c.ClearLine(line)
+	c.WriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+}
+
+func (c *Render) WriteEOL(prompt string, eol bool) {
+	if eol {
+		c.WriteColor(c.EOL(), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	}
+	c.WriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+}
+
+func (c *Render) WriteCritical(line string) {
+	c.WriteColor(line, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+}
+
+func (c *Render) WriteNormal(line string) {
+	c.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+}
+
+func (c *Render) WriteHighlight(line string) {
+	c.WriteColor(line, interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
 }

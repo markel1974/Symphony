@@ -48,9 +48,13 @@ const (
 type KeyFunc func(event *KeyData)
 
 type ITerminal interface {
+	SetIO(io IInputOutput)
+
 	Colorize(text string, fg int, bg int, mode ColorMode) string
 
 	WriteColor(text string, fg ColorDef, bg ColorDef, mode ColorMode) (int, error)
+
+	Read(data []byte) (int, error)
 
 	Write(text string) (int, error)
 

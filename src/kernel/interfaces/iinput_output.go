@@ -1,9 +1,9 @@
 package interfaces
 
 type IInputOutput interface {
-	Write(data []byte) (int, error)
+	IOWrite(data []byte) (int, error)
 
-	Read(p []byte) (int, error)
+	IORead(p []byte) (int, error)
 
-	Type(kind KeyType, key rune)
+	IOType(kind KeyType, key rune)
 }

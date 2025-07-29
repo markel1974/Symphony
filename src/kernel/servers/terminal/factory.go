@@ -29,6 +29,6 @@ func NewEquipmentFactory() *EquipmentFactory {
 }
 
 // Create initializes a new VT100 terminal instance using the provided input/output and enter key.
-func (f *EquipmentFactory) Create(_ string, io interfaces.IInputOutput, enterKey rune) interfaces.ITerminal {
-	return vt100.NewVt100(io, enterKey)
+func (f *EquipmentFactory) Create(_ string, enterKey rune) interfaces.ITerminal {
+	return vt100.NewVt100(enterKey)
 }

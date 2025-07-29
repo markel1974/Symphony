@@ -37,24 +37,31 @@ type VT100 struct {
 	enterKey rune
 }
 
-func NewVt100(io interfaces.IInputOutput, enterKey rune) *VT100 {
+func NewVt100(enterKey rune) *VT100 {
 	if enterKey < 0 {
 		enterKey = 13
 	}
 	t := &VT100{
-		io:       io,
 		debug:    false,
 		enterKey: enterKey,
 	}
 	return t
 }
 
+func (l *VT100) SetIO(io interfaces.IInputOutput) {
+	l.io = io
+}
+
+func (l *VT100) Read(data []byte) (int, error) {
+	return l.io.IORead(data)
+}
+
 func (l *VT100) Write(text string) (int, error) {
-	return l.io.Write([]byte(text))
+	return l.io.IOWrite([]byte(text))
 }
 
 func (l *VT100) WriteColor(text string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) (int, error) {
-	return l.io.Write([]byte(l.Colorize(text, int(fg), int(bg), mode)))
+	return l.io.IOWrite([]byte(l.Colorize(text, int(fg), int(bg), mode)))
 }
 
 func (l *VT100) Colorize(text string, f int, b int, mode interfaces.ColorMode) string {
@@ -87,23 +94,23 @@ func (l *VT100) Colorize(text string, f int, b int, mode interfaces.ColorMode) s
 }
 
 func (l *VT100) SaveCursor() (int, error) {
-	return l.io.Write(escSaveCursorDef)
+	return l.io.IOWrite(escSaveCursorDef)
 }
 
 func (l *VT100) RestoreCursor() (int, error) {
-	return l.io.Write(escRestoreCursorDef)
+	return l.io.IOWrite(escRestoreCursorDef)
 }
 
 func (l *VT100) MoveCursorLeft() (int, error) {
-	return l.io.Write(escMoveCursorLeftDef)
+	return l.io.IOWrite(escMoveCursorLeftDef)
 }
 
 func (l *VT100) MoveCursorRight() (int, error) {
-	return l.io.Write(escMoveCursorRightDef)
+	return l.io.IOWrite(escMoveCursorRightDef)
 }
 
 func (l *VT100) MoveCursorTopLeft() (int, error) {
-	return l.io.Write(escMoveCursorTopLeftDef)
+	return l.io.IOWrite(escMoveCursorTopLeftDef)
 }
 
 func (l *VT100) ClearLine(_ string) (int, error) {
@@ -114,12 +121,12 @@ func (l *VT100) ClearLine(_ string) (int, error) {
 	// ClearLine sends the VT100 code for erasing the line followed by a carriage return
 	// to move the cursor back to the beginning of the line
 	clearLine := "\x1B[2K" + "\r"
-	return l.io.Write([]byte(clearLine))
+	return l.io.IOWrite([]byte(clearLine))
 }
 
 func (l *VT100) ClearScreen() (int, error) {
 	clearScreen := "\x1B[2J" + "\r"
-	return l.io.Write([]byte(clearScreen))
+	return l.io.IOWrite([]byte(clearScreen))
 }
 
 func (l *VT100) SetSize(w int, h int) {
@@ -296,17 +303,17 @@ func (l *VT100) Scan(data []byte) {
 			}
 
 			if key == 9 {
-				l.io.Type(interfaces.KeyTypeTab, '\t')
+				l.io.IOType(interfaces.KeyTypeTab, '\t')
 			} else {
 				switch key {
 				case l.enterKey:
-					l.io.Type(interfaces.KeyTypeEnter, '\n')
+					l.io.IOType(interfaces.KeyTypeEnter, '\n')
 				case 3:
 					l.doCtrl(key)
 				case 4:
 					l.doCtrl(key)
 				case 8:
-					l.io.Type(interfaces.KeyTypeBackspace, 8)
+					l.io.IOType(interfaces.KeyTypeBackspace, 8)
 
 				case 27:
 					escape = true
@@ -315,9 +322,9 @@ func (l *VT100) Scan(data []byte) {
 					escapeParameter = 0
 					escapeSequence = append(escapeSequence, byte(key))
 				case 127:
-					l.io.Type(interfaces.KeyTypeBackspace, 8)
+					l.io.IOType(interfaces.KeyTypeBackspace, 8)
 				default:
-					l.io.Type(interfaces.KeyTypeKey, key)
+					l.io.IOType(interfaces.KeyTypeKey, key)
 				}
 			}
 		}
@@ -340,7 +347,7 @@ func (l *VT100) doEscape(parameter byte, intermediate byte, final byte) bool {
 		l.doMoveCursorLeft()
 	case 126:
 		if parameter == 51 {
-			l.io.Type(interfaces.KeyTypeCancel, 127)
+			l.io.IOType(interfaces.KeyTypeCancel, 127)
 		}
 	}
 
@@ -348,21 +355,21 @@ func (l *VT100) doEscape(parameter byte, intermediate byte, final byte) bool {
 }
 
 func (l *VT100) doCtrl(key rune) {
-	l.io.Type(interfaces.KeyTypeCtrl, key)
+	l.io.IOType(interfaces.KeyTypeCtrl, key)
 }
 
 func (l *VT100) doMoveCursorRight() {
-	l.io.Type(interfaces.KeyTypeCursor, rune(interfaces.CursorRightDef))
+	l.io.IOType(interfaces.KeyTypeCursor, rune(interfaces.CursorRightDef))
 }
 
 func (l *VT100) doMoveCursorLeft() {
-	l.io.Type(interfaces.KeyTypeCursor, rune(interfaces.CursorLeftDef))
+	l.io.IOType(interfaces.KeyTypeCursor, rune(interfaces.CursorLeftDef))
 }
 
 func (l *VT100) doMoveCursorUp() {
-	l.io.Type(interfaces.KeyTypeCursor, rune(interfaces.CursorUpDef))
+	l.io.IOType(interfaces.KeyTypeCursor, rune(interfaces.CursorUpDef))
 }
 
 func (l *VT100) doMoveCursorDown() {
-	l.io.Type(interfaces.KeyTypeCursor, rune(interfaces.CursorDownDef))
+	l.io.IOType(interfaces.KeyTypeCursor, rune(interfaces.CursorDownDef))
 }

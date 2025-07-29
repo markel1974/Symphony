@@ -46,51 +46,19 @@ func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer 
 
 // Setup initializes the context with the terminal, rendering, system commands, file system, kernel, and shell instances.
 func (c *Context) Setup(terminal interfaces.ITerminal) {
-	terminalRender := render.NewRender(terminal)
 	system := apps.NewRoot()
 	systemCommands, commands := system.Build(c.commands)
+	terminalRender := render.NewRender(terminal)
 	fs := file_system.NewCommandInteractor(commands, []interfaces.ICommand{systemCommands})
-	ioAdapter := interfaces.IInputOutput(c)
-	sh := shell.NewShell(c.auth, terminalRender, c, c.prompt, c.autosave)
-	c.kernel = NewKernel(c.ticker, ioAdapter, fs, sh)
+	sh := shell.NewShell(c.auth, terminalRender, c.prompt, c.autosave)
+	c.kernel = NewKernel(c.ticker, c.reader, c.writer, terminalRender, fs, sh)
+
+	terminal.SetIO(c.kernel)
 }
 
 // Exec initializes the admin console display, advances the shell line, and starts the kernel.
 func (c *Context) Exec() {
 	c.kernel.Start()
-}
-
-// Type processes a key event based on its type and value, influencing execution, interaction, or system state.
-func (c *Context) Type(kind interfaces.KeyType, key rune) {
-	if kind == interfaces.KeyTypeCtrl {
-		switch key {
-		case 3:
-			c.kernel.SetSelectionDisabled()
-			c.kernel.KillForeground()
-			c.kernel.NextLine(true)
-		case 4:
-			c.kernel.ExecActivate()
-		}
-		return
-	}
-	if fgPid := c.kernel.GetForegroundPid(); fgPid != adaptiveticker.UnknownId {
-		c.kernel.ExecRead(fgPid, int(kind), key)
-		return
-	}
-	if quit := c.kernel.KeyEvent(kind, key); quit {
-		c.kernel.ExitRequested()
-	}
-}
-
-// Read reads data into the provided byte slice from the underlying reader and returns the number of bytes read and any error.
-func (c *Context) Read(p []byte) (int, error) {
-	return c.reader.Read(p)
-}
-
-// Write writes the provided byte slice to the underlying writer in the context.
-// Returns the number of bytes written and any write error encountered.
-func (c *Context) Write(data []byte) (int, error) {
-	return c.writer.Write(data)
 }
 
 // Close releases any resources held by the Context and ensures a clean termination of its operations.

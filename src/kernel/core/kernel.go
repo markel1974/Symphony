@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/shell"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -24,7 +25,9 @@ const (
 // Kernel represents the core component responsible for managing rendering, input/output, task execution, and timers.
 type Kernel struct {
 	ticker      *adaptiveticker.AdaptiveTicker
-	io          interfaces.IInputOutput
+	reader      io.Reader
+	writer      io.Writer
+	render      interfaces.IRender
 	foreground  interfaces.ITask
 	selector    *TaskSelector
 	timersChan  chan *adaptiveticker.TimerHandler
@@ -36,10 +39,12 @@ type Kernel struct {
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(ticker *adaptiveticker.AdaptiveTicker, io interfaces.IInputOutput, fs interfaces.IFileSystem, sh *shell.Shell) *Kernel {
+func NewKernel(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer io.Writer, render interfaces.IRender, fs interfaces.IFileSystem, sh *shell.Shell) *Kernel {
 	t := &Kernel{
 		ticker:      ticker,
-		io:          io,
+		reader:      reader,
+		writer:      writer,
+		render:      render,
 		fs:          fs,
 		sh:          sh,
 		foreground:  nil,
@@ -50,6 +55,38 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, io interfaces.IInputOutput
 		exit:        false,
 	}
 	return t
+}
+
+// IOWrite (driver) writes the provided byte slice to the underlying reader and returns the number of bytes written or an error.
+func (c *Kernel) IOWrite(data []byte) (int, error) {
+	return c.writer.Write(data)
+}
+
+// IORead (driver) writes the content of the provided byte slice to the writer and returns the number of bytes written and an error, if any.
+func (c *Kernel) IORead(p []byte) (int, error) {
+	return c.reader.Read(p)
+}
+
+// IOType (driver) processes a key event based on its type and value, influencing execution, interaction, or system state.
+func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
+	if kind == interfaces.KeyTypeCtrl {
+		switch key {
+		case 3:
+			c.SetSelectionDisabled()
+			c.KillForeground()
+			c.NextLine(true)
+		case 4:
+			c.ExecActivate()
+		}
+		return
+	}
+	if fgPid := c.GetForegroundPid(); fgPid != adaptiveticker.UnknownId {
+		c.ExecRead(fgPid, int(kind), key)
+		return
+	}
+	if quit := c.KeyEvent(kind, key); quit {
+		c.ExitRequested()
+	}
 }
 
 // NextLine advances to the next line in the shell output, optionally determining if an end-of-line character is added.
@@ -65,7 +102,7 @@ func (c *Kernel) KeyEvent(kind interfaces.KeyType, key rune) bool {
 	}
 	if kind == interfaces.KeyTypeEnter {
 		if buffer := c.sh.InputBuffer(); len(buffer) > 0 {
-			c.sh.WriteLn("")
+			c.render.WriteLn("")
 			_, _ = c.ExecCommand(buffer, nil)
 			c.sh.NextLine(false)
 		} else {
@@ -91,37 +128,37 @@ func (c *Kernel) HistoryApply(verb interfaces.HistoryAction, idx int) {
 
 // SetScreenSize sets the display dimensions of the screen to the specified width (w) and height (h).
 func (c *Kernel) SetScreenSize(w int, h int) {
-	c.sh.SetScreenSize(w, h)
+	c.render.SetScreenSize(w, h)
 }
 
 // GetScreenSize returns the width and height of the screen in pixels as two integer values.
 func (c *Kernel) GetScreenSize() (int, int) {
-	return c.sh.GetScreenSize()
+	return c.render.GetScreenSize()
 }
 
-// Write sends the specified string data to the kernel's renderer for processing or output.
+// Write writes the provided string to the output stream.
 func (c *Kernel) Write(data string) {
-	c.sh.Write(data)
+	c.render.Write(data)
 }
 
 // WriteLn writes the provided string followed by a newline to the output stream.
 func (c *Kernel) WriteLn(data string) {
-	c.sh.WriteLn(data)
+	c.render.WriteLn(data)
 }
 
 // WriteColor writes text with specified foreground and background colors using the provided color rendering mode.
 func (c *Kernel) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.sh.WriteColor(data, fg, bg, mode)
+	c.render.WriteColor(data, fg, bg, mode)
 }
 
 // WriteColorLn writes a line of text with specified foreground color, background color, and color mode.
 func (c *Kernel) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.sh.WriteColorLn(data, fg, bg, mode)
+	c.render.WriteColorLn(data, fg, bg, mode)
 }
 
 // ClearScreen clears the screen by invoking the render system's ClearScreen operation.
 func (c *Kernel) ClearScreen() {
-	c.sh.ClearScreen()
+	c.render.ClearScreen()
 }
 
 // ExecActivate attempts to activate a foreground process by executing the associated command and returns its success status.
@@ -208,7 +245,7 @@ func (c *Kernel) PaintRequest() bool {
 // Returns true if a paint event was successfully scheduled, otherwise returns false.
 // The full parameter specifies whether the entire view should be repainted.
 func (c *Kernel) doPaintRequest(full bool) bool {
-	if c.sh.PaintRequest(full) {
+	if c.render.PaintRequest(full) {
 		c.ticker.Create(c.timersChan, newMessagePaint(), -1, -1, 1)
 		return true
 	}
@@ -493,7 +530,7 @@ func (c *Kernel) ExecRead(pid int, code int, buffer rune) bool {
 // ExecPaint executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
 // Returns true if the rendering process is executed, false otherwise.
 func (c *Kernel) ExecPaint() bool {
-	if !c.sh.IsDirty() {
+	if !c.render.IsDirty() {
 		return false
 	}
 	var selectedTask interfaces.ITask = nil
@@ -509,7 +546,7 @@ func (c *Kernel) ExecPaint() bool {
 		}
 		return true
 	})
-	return c.sh.ExecPaint(selectedTask, tasks)
+	return c.render.ExecPaint(selectedTask, tasks)
 }
 
 // ListTasks retrieves a list of task names by scanning files in the current directory with a specific extension.
@@ -605,7 +642,7 @@ func (c *Kernel) shutdown() {
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
-	c.sh.WriteColor("Admin Console Ready", interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
+	c.render.WriteHighlight("Admin Console Ready")
 	c.sh.NextLine(true)
 
 	d := make(chan bool)
@@ -613,7 +650,7 @@ func (c *Kernel) Start() {
 		d <- true
 		readBuffer := make([]byte, 1024)
 		for {
-			n, err := c.io.Read(readBuffer)
+			n, err := c.reader.Read(readBuffer)
 			if err == nil {
 				if n > 0 {
 					re := newMessageRead(readBuffer, n)
@@ -653,7 +690,7 @@ func (c *Kernel) messageEventHandler(m iMessage) {
 		switch m.getType() {
 		case MessageTypeRead:
 			if mm, ok := m.(*MessageRead); ok {
-				c.sh.Scan(mm.data)
+				c.render.Scan(mm.data)
 			}
 
 		case MessageTypeTimer:
