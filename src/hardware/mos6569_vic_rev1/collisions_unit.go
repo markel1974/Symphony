@@ -10,37 +10,37 @@ const (
 	borderDisplayXFillMax = borderDisplayXFill + 64 //DisplayXFill + 1
 )
 
-// CollisionsUnit encapsulate collision detection functionality between sprites and graphics within a VIC system.
-// It includes buffers for handling sprite-sprite and sprite-graphics collision data as well as priorities.
-// The struct also manages foreground masks and offsets for sprite-graphics collision computations.
+// CollisionsUnit encapsulate collision detection functionality between sprites and bgrState within a VIC system.
+// It includes buffers for handling sprite-sprite and sprite-bgrState collision data as well as priorities.
+// The struct also manages foreground masks and offsets for sprite-bgrState collision computations.
 type CollisionsUnit struct {
 	*component.BaseComponent
-	graphics             uint8   // graphics represents the current collision state with graphics as an 8-bit unsigned integer.
-	spritesCollision     uint8   // spritesCollision represent the state and collision mask of all active sprites in the current frame.
-	spritesPresence      []uint8 // spritesPresence stores the state of sprite presence at each pixel, used for collision detection within the frame.
-	spritesPresenceEmpty []uint8 // spritesPresenceEmpty is the initialized buffer used to reset sprite collision states for each frame.
-	graphicsBuffer       []uint8 // graphicsBuffer holds the collision state for background graphics as a buffer of unsigned 8-bit integers.
-	graphicsBufferEmpty  []uint8 // graphicsBufferEmpty holds an initialized empty buffer for resetting or clearing graphics collision data.
-	graphicsBufferOffset int     // graphicsBufferOffset tracks the current position in the graphics buffer for collision updates.
-	sprBgrClx            uint8   // Sprite to background collision
-	sprSprClx            uint8   // Sprite to sprite collision
-	irqEmit              func(irq uint8)
+	irqEmit          func(irq uint8)
+	bgrState         uint8   // bgrState represents the collision state of all graphics in the current line.
+	sprState         uint8   // sprState represent the state and collision mask of all active sprites in the current line.
+	sprPresence      []uint8 // sprPresence stores the state of sprite presence at each pixel, used for collision detection within the line.
+	bgrBuffer        []uint8 // bgrBuffer holds the collision state for background bgrState.
+	bgrBufferOffset  int     // bgrBufferOffset tracks the current position in the bgrState buffer for collision updates.
+	spr2BgrClx       uint8   // spr2BgrClx sprite to background collision
+	spr2SprClx       uint8   // spr2SprClx sprite to sprite collision
+	sprPresenceEmpty []uint8 // sprPresenceEmpty is the initialized buffer used to reset sprite collision states for each line.
+	bgrBufferEmpty   []uint8 // bgrBufferEmpty holds an initialized empty buffer for resetting or clearing bgrState collision data.
 }
 
 // NewCollisions creates and returns a new CollisionsUnit instance, associated with the given VIC core.
 func NewCollisions(parent references.IComponent, factory references.IComponentFactory, label string, instance int, irqEmit func(irq uint8), displayX int) *CollisionsUnit {
 	c := &CollisionsUnit{
-		BaseComponent:        component.NewBaseComponent(),
-		irqEmit:              irqEmit,
-		graphics:             0,
-		spritesCollision:     0,
-		spritesPresence:      make([]uint8, borderDisplayXFillMax), // Allocate the sprite buffer. Size is DisplayXFillMax (maximum X coordinate).
-		spritesPresenceEmpty: make([]uint8, borderDisplayXFillMax), // Allocate and initialize the empty sprite buffer (all zeros).
-		graphicsBuffer:       make([]uint8, borderDisplayXFill+1),  // Allocate the graphics buffer. Size is DisplayXFill+1. DisplayXFill seems to be 40
-		graphicsBufferEmpty:  make([]uint8, displayX/8),
-		graphicsBufferOffset: 0,
-		sprSprClx:            0,
-		sprBgrClx:            0,
+		BaseComponent:    component.NewBaseComponent(),
+		irqEmit:          irqEmit,
+		sprState:         0,
+		sprPresence:      make([]uint8, borderDisplayXFillMax),
+		sprPresenceEmpty: make([]uint8, borderDisplayXFillMax),
+		spr2SprClx:       0,
+		spr2BgrClx:       0,
+		bgrState:         0,
+		bgrBuffer:        make([]uint8, borderDisplayXFill+1),
+		bgrBufferEmpty:   make([]uint8, displayX/8),
+		bgrBufferOffset:  0,
 	}
 	c.BaseComponent.Register(factory, parent, "collisionsUnit", instance, c, references.IdInternalComponent(label, instance, "CollisionsUnit"))
 	return c
@@ -76,45 +76,45 @@ func (c *CollisionsUnit) Reset() {
 
 // RetrieveSprite2Sprite reads and clears the sprite-to-sprite collision state, returning its value as an 8-bit unsigned integer.
 func (c *CollisionsUnit) RetrieveSprite2Sprite() uint8 {
-	ret := c.sprSprClx
-	c.sprSprClx = 0 // Read and clear
+	ret := c.spr2SprClx
+	c.spr2SprClx = 0 // Read and clear
 	return ret
 }
 
 // RetrieveSprite2Background reads and resets the sprite-to-background collision state, returning its value as an 8-bit unsigned integer.
 func (c *CollisionsUnit) RetrieveSprite2Background() uint8 {
 	// Sprite-background collision
-	ret := c.sprBgrClx
-	c.sprBgrClx = 0 // Read and clear
+	ret := c.spr2BgrClx
+	c.spr2BgrClx = 0 // Read and clear
 	return ret
 }
 
 // SetSprite updates the sprite-to-sprite collision state with the specified value.
 func (c *CollisionsUnit) SetSprite(data uint8) {
-	c.sprSprClx = data
+	c.spr2SprClx = data
 }
 
 // SetBackground sets the sprite-to-background collision state with the given value.
 func (c *CollisionsUnit) SetBackground(data uint8) {
-	c.sprBgrClx = data
+	c.spr2BgrClx = data
 }
 
 // Prepare resets collision detection states and initializes sprite collision buffers for the next frame update.
 // Called at the beginning of sprite drawing on each scanline.
 func (c *CollisionsUnit) Prepare() {
 	// Reset the sprite-to-sprite collision result.
-	c.spritesCollision = 0
+	c.sprState = 0
 	// Reset the sprite-to-background collision result.
-	c.graphics = 0
+	c.bgrState = 0
 	// Reset the sprite buffer by copying the empty buffer.  This is *much* faster than iterating.
-	copy(c.spritesPresence, c.spritesPresenceEmpty)
+	copy(c.sprPresence, c.sprPresenceEmpty)
 }
 
-// SetGraphicsPresence sets a collision bit for graphics by performing a bitwise OR operation with the given bit.
+// SetGraphicsPresence sets a collision bit for bgrState by performing a bitwise OR operation with the given bit.
 // 'sBit' is a bitmask representing the sprite that collided with the background (1, 2, 4, 8, 16, 32, 64, 128).
 func (c *CollisionsUnit) SetGraphicsPresence(sBit uint8) {
-	// Set the corresponding bit in the 'graphics' collision result.
-	c.graphics |= sBit
+	// Set the corresponding bit in the 'bgrState' collision result.
+	c.bgrState |= sBit
 }
 
 // SetSpritePresence checks and sets sprite collision at a specific index with a sprite bit and returns collision status.
@@ -125,67 +125,67 @@ func (c *CollisionsUnit) SetSpritePresence(index int, spiteBit uint8) bool {
 	if index >= borderDisplayXFillMax {
 		return false
 	}
-	sBitPresence := c.spritesPresence[index]
+	sBitPresence := c.sprPresence[index]
 	if sBitPresence == 0 {
 		// mark this sprite as present at this pixel.
-		c.spritesPresence[index] = spiteBit
+		c.sprPresence[index] = spiteBit
 		return false
 	}
 	// If any sprite is already present at this pixel...
 	// Update the 'sprites' collision result with *both* the existing sprites *and* the new sprite.
-	c.spritesCollision |= sBitPresence | spiteBit
+	c.sprState |= sBitPresence | spiteBit
 	return true
 }
 
-// Commit triggers the collision application process using the stored sprite and graphics collision data.
+// Commit triggers the collision application process using the stored sprite and bgrState collision data.
 // This method *actually writes* the collision results to the VIC-II's registers.
 func (c *CollisionsUnit) Commit() {
-	if c.sprSprClx != 0 {
-		c.sprSprClx |= c.spritesCollision
+	if c.spr2SprClx != 0 {
+		c.spr2SprClx |= c.sprState
 	} else {
-		c.sprSprClx |= c.spritesCollision
+		c.spr2SprClx |= c.sprState
 		c.irqEmit(irqSpriteToSpriteBit)
 	}
-	if c.sprBgrClx != 0 {
-		c.sprBgrClx |= c.graphics
+	if c.spr2BgrClx != 0 {
+		c.spr2BgrClx |= c.bgrState
 	} else {
-		c.sprBgrClx |= c.graphics
+		c.spr2BgrClx |= c.bgrState
 		c.irqEmit(irqSpriteToGraphicBit)
 	}
 }
 
-// IncrementGraphicsOffset increments the graphicsBufferOffset field
-// to track the graphics buffer position during updates.
+// IncrementGraphicsOffset increments the bgrBufferOffset field
+// to track the bgrState buffer position during updates.
 func (c *CollisionsUnit) IncrementGraphicsOffset() {
 	// Increment the offset (in bytes).
-	c.graphicsBufferOffset++
+	c.bgrBufferOffset++
 }
 
-// ClearGraphics resets the graphics collision buffer and its offset to their initial empty states.
+// ClearGraphics resets the bgrState collision buffer and its offset to their initial empty states.
 // Called at the *beginning* of each frame.
 func (c *CollisionsUnit) ClearGraphics() {
-	copy(c.graphicsBuffer, c.graphicsBufferEmpty)
-	c.graphicsBufferOffset = 0
+	copy(c.bgrBuffer, c.bgrBufferEmpty)
+	c.bgrBufferOffset = 0
 }
 
-// UpdateGraphics updates the graphics collision buffer with provided foreground mask values a and b at the current offset.
+// UpdateGraphics updates the bgrState collision buffer with provided foreground mask values a and b at the current offset.
 // Called during *background* rendering.  'a' and 'b' represent the pixel data for two *consecutive* pixels.
 func (c *CollisionsUnit) UpdateGraphics(a uint8, b uint8) {
-	c.graphicsBuffer[c.graphicsBufferOffset] |= a   // Reset the graphics buffer by copying the empty buffer.
-	c.graphicsBuffer[c.graphicsBufferOffset+1] |= b // Reset the offset.
+	c.bgrBuffer[c.bgrBufferOffset] |= a   // Reset the bgrState buffer by copying the empty buffer.
+	c.bgrBuffer[c.bgrBufferOffset+1] |= b // Reset the offset.
 }
 
-// GetGraphicsL computes a 32-bit graphics mask from the graphics buffer starting at 'charColumn' with a 'pixelOffset' adjustment.
-// The result is shifted and combined to align with the intended sub-pixel graphics position, returning a 32-bit uint representation.
+// GetGraphicsL computes a 32-bit bgrState mask from the bgrState buffer starting at 'charColumn' with a 'pixelOffset' adjustment.
+// The result is shifted and combined to align with the intended sub-pixel bgrState position, returning a 32-bit uint representation.
 func (c *CollisionsUnit) GetGraphicsL(charColumn int, pixelOffset int) uint32 {
-	f := (((uint32(c.graphicsBuffer[charColumn]) << 24) | (uint32(c.graphicsBuffer[charColumn+1]) << 16) | (uint32(c.graphicsBuffer[charColumn+2]) << 8) | (uint32(c.graphicsBuffer[charColumn+3]))) << pixelOffset) | (uint32(c.graphicsBuffer[charColumn+4]) >> (8 - pixelOffset))
+	f := (((uint32(c.bgrBuffer[charColumn]) << 24) | (uint32(c.bgrBuffer[charColumn+1]) << 16) | (uint32(c.bgrBuffer[charColumn+2]) << 8) | (uint32(c.bgrBuffer[charColumn+3]))) << pixelOffset) | (uint32(c.bgrBuffer[charColumn+4]) >> (8 - pixelOffset))
 	return f
 }
 
-// GetGraphicsR calculates a 32-bit graphics mask from the graphics buffer starting at 'charColumn+4'.
-// It shifts the mask by 'pixelOffset' bits to align with the intended sub-pixel graphics position.
-// Returns a composite 32-bit unsigned integer representing the derived graphics mask.
+// GetGraphicsR calculates a 32-bit bgrState mask from the bgrState buffer starting at 'charColumn+4'.
+// It shifts the mask by 'pixelOffset' bits to align with the intended sub-pixel bgrState position.
+// Returns a composite 32-bit unsigned integer representing the derived bgrState mask.
 func (c *CollisionsUnit) GetGraphicsR(charColumn int, pixelOffset int) uint32 {
-	f := (((uint32(c.graphicsBuffer[charColumn+4]) << 24) | (uint32(c.graphicsBuffer[charColumn+5]) << 16) | (uint32(c.graphicsBuffer[charColumn+6]) << 8) | (uint32(c.graphicsBuffer[charColumn+7]))) << pixelOffset) | (uint32(c.graphicsBuffer[charColumn+8]) >> (8 - pixelOffset))
+	f := (((uint32(c.bgrBuffer[charColumn+4]) << 24) | (uint32(c.bgrBuffer[charColumn+5]) << 16) | (uint32(c.bgrBuffer[charColumn+6]) << 8) | (uint32(c.bgrBuffer[charColumn+7]))) << pixelOffset) | (uint32(c.bgrBuffer[charColumn+8]) >> (8 - pixelOffset))
 	return f
 }

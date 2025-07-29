@@ -210,8 +210,8 @@ func (sp *Sprite) Draw(latchIndex int) {
 }
 
 // drawExpandedMulticolor is responsible for rendering an expanded multicolor sprite on the display buffer.
-// It handles sprite-to-graphics and sprite-to-sprite collision detection while processing each pixel's color.
-// The method also respects sprite-to-background priority by masking sprite pixels when a graphics collision occurs.
+// It handles sprite-to-bgrState and sprite-to-sprite collision detection while processing each pixel's color.
+// The method also respects sprite-to-background priority by masking sprite pixels when a bgrState collision occurs.
 func (sp *Sprite) drawExpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, sOffset int, charColumn int, pixelOffset int, data0 uint8, data1 uint8, data2 uint8) {
 	// Get the foreground mask for the left half of the sprite's character column.
 	foreMaskL := sp.collisions.GetGraphicsL(charColumn, pixelOffset)
@@ -227,12 +227,12 @@ func (sp *Sprite) drawExpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc ui
 	plane1L := (sDataL & 0xaaaaaaaa) | ((sDataL & 0xaaaaaaaa) >> 1) // Bit-plane 1 (left half).
 	plane0R := (sDataR & 0x55555555) | ((sDataR & 0x55555555) << 1) // Bit-plane 0 (right half).
 	plane1R := (sDataR & 0xaaaaaaaa) | ((sDataR & 0xaaaaaaaa) >> 1) // Bit-plane 1 (right half).
-	// Collision with graphics? Check if any bits in the sprite's bit-planes overlap with the foreground mask.
+	// Collision with bgrState? Check if any bits in the sprite's bit-planes overlap with the foreground mask.
 	// Combine both bit-planes with logical OR
 	// test collision with a single bitwise AND operation
 	// handles all 48 pixels of the expanded sprite simultaneously
 	if ((foreMaskL & (plane0L | plane1L)) != 0) || ((foreMaskR & (plane0R | plane1R)) != 0) {
-		// Set the sprite-to-graphics collision flag for this sprite.
+		// Set the sprite-to-bgrState collision flag for this sprite.
 		sp.collisions.SetGraphicsPresence(sp.mask)
 		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled (MDP register), mask out the sprite pixels where a collision occurred.
@@ -273,7 +273,7 @@ func (sp *Sprite) drawExpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _
 	sDataR := uint32(_expTable[data2]) << 16
 	// Check for collisions with the foreground.
 	if ((foreMaskL & sDataL) != 0) || ((foreMaskR & sDataR) != 0) {
-		// Set the sprite-to-graphics collision flag.
+		// Set the sprite-to-bgrState collision flag.
 		sp.collisions.SetGraphicsPresence(sp.mask)
 		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
@@ -300,7 +300,7 @@ func (sp *Sprite) drawExpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _
 	}
 }
 
-// drawUnexpandedMulticolor renders a non-expanded multicolor sprite, handling graphics collisions and color selection.
+// drawUnexpandedMulticolor renders a non-expanded multicolor sprite, handling bgrState collisions and color selection.
 func (sp *Sprite) drawUnexpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc uint8, sOffset int, charColumn int, pixelOffset int, data0 uint8, data1 uint8, data2 uint8) {
 	// Get the foreground mask for the sprite's character column.
 	foreMask := sp.collisions.GetGraphicsL(charColumn, pixelOffset)
@@ -312,9 +312,9 @@ func (sp *Sprite) drawUnexpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc 
 	//bit duplication (<< 1 and >> 1) is needed for multicolor mode where each logical pixel uses 2 physical bits
 	plane0 := p0 | (p0 << 1) // Combine bits for plane 0.
 	plane1 := p1 | (p1 >> 1) // Combine bits for plane 1.
-	// Check graphics collision
+	// Check bgrState collision
 	if (foreMask & (plane0 | plane1)) != 0 {
-		// Set the sprite-to-graphics collision flag.
+		// Set the sprite-to-bgrState collision flag.
 		sp.collisions.SetGraphicsPresence(sp.mask)
 		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
@@ -340,7 +340,7 @@ func (sp *Sprite) drawUnexpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */,
 	sData := (uint32(data0) << 24) | (uint32(data1) << 16) | (uint32(data2) << 8)
 	// Check for collisions with the foreground.
 	if (foreMask & sData) != 0 {
-		// Set the sprite-to-graphics collision flag.
+		// Set the sprite-to-bgrState collision flag.
 		sp.collisions.SetGraphicsPresence(sp.mask)
 		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.

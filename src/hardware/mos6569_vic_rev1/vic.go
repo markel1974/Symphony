@@ -16,7 +16,7 @@ const (
 )
 
 // VIC represents a versatile interface controller for managing video output and graphical resources in a system.
-// It encapsulates configurations, graphics components, collision detection, and rendering capabilities for the display.
+// It encapsulates configurations, bgrState components, collision detection, and rendering capabilities for the display.
 type VIC struct {
 	*component.BaseComponent
 	cfg        *config.Config
@@ -84,7 +84,7 @@ func (vic *VIC) Setup() error {
 }
 
 // Bind initializes the VIC chip by connecting it to the provided MOS 6569 socket and setting up its components.
-// It configures internal structures like sequencers, memory, collisions, graphics, sprites, and borders.
+// It configures internal structures like sequencers, memory, collisions, bgrState, sprites, and borders.
 // Returns an error if any component setup fails during initialization.
 func (vic *VIC) Bind(socket references.IMos6569Socket) error {
 	displayBuffer := vic.GetFactory().GetIDisplayBuffer()
@@ -170,7 +170,7 @@ func (vic *VIC) Reset() {
 	//vic.core.ready = false
 }
 
-// GetText retrieves the current text data as a byte slice from the VIC's graphics system.
+// GetText retrieves the current text data as a byte slice from the VIC's bgrState system.
 func (vic *VIC) GetText() []byte {
 	return vic.graphics.GetText()
 }
@@ -277,7 +277,7 @@ func (vic *VIC) ReadCR1() uint8 {
 	return uint8((uint16(vic.cr1) & 0x7f) | ((vic.rasterY & 0x100) >> 1))
 }
 
-// WriteCR2 updates the CR2 register and adjusts associated graphics settings like XScroll, column selection, and display mode.
+// WriteCR2 updates the CR2 register and adjusts associated bgrState settings like XScroll, column selection, and display mode.
 func (vic *VIC) WriteCR2(data uint8) {
 	vic.cr2 = data
 	vic.graphics.SetXScroll(uint16(vic.cr2) & 7)

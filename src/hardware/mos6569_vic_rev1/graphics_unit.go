@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	// columnsMax defines the maximum number of columns used for graphical or text-based data buffers in the graphics rendering.
+	// columnsMax defines the maximum number of columns used for graphical or text-based data buffers in the bgrState rendering.
 	// This constant represents the horizontal resolution in character units (40 columns).
 	columnsMax = 40
-	// rowsMax is the maximum number of rows used for video display handling and row counter operations in the graphics logic.
+	// rowsMax is the maximum number of rows used for video display handling and row counter operations in the bgrState logic.
 	// This constant represents the vertical resolution in character units (usually 8 pixel rows per character).
 	rowsMax = 7
 
@@ -23,7 +23,7 @@ const (
 
 // GraphicsUnit represents the core structure handling graphical rendering and related operations in the system.
 // It includes components for managing video memory, collisions, display buffer, and other graphical parameters.
-// This struct encapsulates the state and behavior necessary for emulating the VIC-II's graphics rendering process.
+// This struct encapsulates the state and behavior necessary for emulating the VIC-II's bgrState rendering process.
 type GraphicsUnit struct {
 	*component.BaseComponent
 	memory                *MemoryUnit
@@ -35,10 +35,10 @@ type GraphicsUnit struct {
 	charDataLatch         uint8
 	ecmBackgroundColor    uint8
 	ecmForegroundColor    uint8
-	baseOffset            int     // Offset from bitmap spritesPresence
+	baseOffset            int     // Offset from bitmap sprPresence
 	lineIndex             int     // Index in video matrix / color line
-	videoMatrix           []uint8 // Video matrix spritesPresence
-	colorLine             []uint8 // Color line spritesPresence
+	videoMatrix           []uint8 // Video matrix sprPresence
+	colorLine             []uint8 // Color line sprPresence
 	rowCounter            uint16  // Row counter
 	videoCounter          uint16  // Video counter
 	videoCounterLatch     uint16  // Video counter base
@@ -49,10 +49,10 @@ type GraphicsUnit struct {
 	displayMode           uint8  // Index of current display mode
 	bmm                   bool
 	ecm                   bool
-	b0c                   uint8 // VIC register - graphics
-	b1c                   uint8 // VIC register - graphics
-	b2c                   uint8 // VIC register - graphics
-	b3c                   uint8 // VIC register - graphics
+	b0c                   uint8 // VIC register - bgrState
+	b1c                   uint8 // VIC register - bgrState
+	b2c                   uint8 // VIC register - bgrState
+	b3c                   uint8 // VIC register - bgrState
 	badLineEnabler        bool  // Bad Lines enabled for this frame
 	badLine               bool  // Current line is bad line
 	sequencerFirstDmaLine uint16
@@ -136,12 +136,12 @@ func (gr *GraphicsUnit) Connect() error {
 	return nil
 }
 
-// EmulationRequired determines if the current graphics configuration requires emulation for functionality.
+// EmulationRequired determines if the current bgrState configuration requires emulation for functionality.
 func (gr *GraphicsUnit) EmulationRequired() bool {
 	return false
 }
 
-// Emulate executes the main graphics rendering loop, processing video memory, updating counters, and rendering components.
+// Emulate executes the main bgrState rendering loop, processing video memory, updating counters, and rendering components.
 func (gr *GraphicsUnit) Emulate() {
 }
 
@@ -160,7 +160,7 @@ func (gr *GraphicsUnit) Setup() error {
 	return nil
 }
 
-// BadLine checks if the graphics unit is in a bad line state and returns true if it is, otherwise false.
+// BadLine checks if the bgrState unit is in a bad line state and returns true if it is, otherwise false.
 func (gr *GraphicsUnit) BadLine() bool {
 	return gr.badLine
 }
@@ -231,23 +231,23 @@ func (gr *GraphicsUnit) WriteB3c(data uint8) {
 	gr.b3c = data
 }
 
-// SetXScroll sets the horizontal scroll offset for the graphics rendering system to the specified value.
+// SetXScroll sets the horizontal scroll offset for the bgrState rendering system to the specified value.
 func (gr *GraphicsUnit) SetXScroll(xScroll uint16) {
 	gr.xScroll = xScroll
 }
 
-// GetXScroll retrieves the horizontal scroll offset of the graphics rendering system.
+// GetXScroll retrieves the horizontal scroll offset of the bgrState rendering system.
 // Returns the current value of `xScroll`.
 func (gr *GraphicsUnit) GetXScroll() uint16 {
 	return gr.xScroll
 }
 
-// SetYScroll sets the vertical scroll offset for the graphics rendering system to the specified value.
+// SetYScroll sets the vertical scroll offset for the bgrState rendering system to the specified value.
 func (gr *GraphicsUnit) SetYScroll(yScroll uint16) {
 	gr.yScroll = yScroll
 }
 
-// GetYScroll retrieves the vertical scroll offset of the graphics rendering system.
+// GetYScroll retrieves the vertical scroll offset of the bgrState rendering system.
 // Returns the current value of `yScroll`.
 func (gr *GraphicsUnit) GetYScroll() uint16 {
 	return gr.yScroll
@@ -377,14 +377,14 @@ func (gr *GraphicsUnit) FetchColorFake() {
 }
 
 // DrawBackground renders the background using the current display mode
-// and updates the graphics offset and collision state.
+// and updates the bgrState offset and collision state.
 func (gr *GraphicsUnit) DrawBackground() {
 	gr.backgroundSequencer[gr.displayMode](gr.baseOffset)
 	gr.baseOffset += characterPixelWidth
 	gr.collisions.IncrementGraphicsOffset()
 }
 
-// DrawForeground renders the foreground graphics based on the current display mode and x-scroll offset.
+// DrawForeground renders the foreground bgrState based on the current display mode and x-scroll offset.
 // It also increments the offset and updates the collisions.
 func (gr *GraphicsUnit) DrawForeground() {
 	gr.foregroundSequencer[gr.displayMode](gr.baseOffset + int(gr.xScroll))
@@ -413,7 +413,7 @@ func (gr *GraphicsUnit) setColorData(data uint8) {
 	gr.colorData = data
 }
 
-// readGraphics reads graphics data from memory based on the current rendering mode and updates internal graphics states.
+// readGraphics reads bgrState data from memory based on the current rendering mode and updates internal bgrState states.
 func (gr *GraphicsUnit) readGraphics(rasterY uint16) {
 	var addr uint16
 	if gr.bmm {
@@ -427,7 +427,7 @@ func (gr *GraphicsUnit) readGraphics(rasterY uint16) {
 		// Extended Color Mode (ECM): Mask the address to use only the lower 13 bits of the character ROM address.
 		addr &= 0xf9ff
 	}
-	gr.gfxData = gr.memory.ReadByte(addr)    // Read the graphics data (pixel data or character pattern).
+	gr.gfxData = gr.memory.ReadByte(addr)    // Read the bgrState data (pixel data or character pattern).
 	charData := gr.videoMatrix[gr.lineIndex] // Get the character code from the video matrix.
 	colorData := gr.colorLine[gr.lineIndex]  // Get the color data from the color RAM.
 	gr.setCharData(charData)
@@ -443,7 +443,7 @@ func (gr *GraphicsUnit) readGraphics(rasterY uint16) {
 	gr.videoCounter++ // Increment the video counter.
 }
 
-// readGraphicsFake performs a fake read operation on memory, emulating data fetch based on ECM mode and resetting graphics data.
+// readGraphicsFake performs a fake read operation on memory, emulating data fetch based on ECM mode and resetting bgrState data.
 func (gr *GraphicsUnit) readGraphicsFake( /*rasterY*/ _ uint16) {
 	if gr.ecm {
 		gr.gfxData = gr.memory.ReadByte(0x39ff) // Fake read (ECM).
@@ -492,7 +492,7 @@ func (gr *GraphicsUnit) drawBackgroundInvalid(offset int) {
 	gr.drawDefault(offset, 0)
 }
 
-// drawForegroundTextStandard renders foreground text using the standard graphics mode at the specified offset.
+// drawForegroundTextStandard renders foreground text using the standard bgrState mode at the specified offset.
 func (gr *GraphicsUnit) drawForegroundTextStandard(offset int) {
 	gr.drawStandard(offset, gr.b0c, gr.colorData)
 }
@@ -521,7 +521,7 @@ func (gr *GraphicsUnit) drawForegroundBitmapStandard(offset int) {
 	gr.drawStandard(offset, gr.charData, gr.charData>>4)
 }
 
-// drawForegroundBitmapMulticolor renders a foreground bitmap in multicolor mode using the specified graphics and offset.
+// drawForegroundBitmapMulticolor renders a foreground bitmap in multicolor mode using the specified bgrState and offset.
 func (gr *GraphicsUnit) drawForegroundBitmapMulticolor(offset int) {
 	gr.drawMulticolor(offset, gr.b0c, gr.charData>>4, gr.charData, gr.colorData)
 }
@@ -531,7 +531,7 @@ func (gr *GraphicsUnit) drawForegroundTextECM(offset int) {
 	gr.drawStandard(offset, gr.ecmForegroundColor, gr.colorData)
 }
 
-// drawForegroundBitmapStandardInvalid renders an invalid-standard-mode bitmap to the specified offset in the graphics buffer.
+// drawForegroundBitmapStandardInvalid renders an invalid-standard-mode bitmap to the specified offset in the bgrState buffer.
 // It calls the internal _drawInvalidStandard function to handle rendering logic with the provided GraphicsUnit object.
 func (gr *GraphicsUnit) drawForegroundBitmapStandardInvalid(offset int) {
 	gr.drawInvalidStandard(offset, 0)
@@ -547,7 +547,7 @@ func (gr *GraphicsUnit) drawDefault(offset int, a uint8) {
 	gr.beam.Draw8(offset, a)
 }
 
-// drawInvalidStandard updates graphics buffer based on x-scroll and sets color values in the display buffer.
+// drawInvalidStandard updates bgrState buffer based on x-scroll and sets color values in the display buffer.
 func (gr *GraphicsUnit) drawInvalidStandard(offset int, a uint8) {
 	p1 := gr.gfxData >> gr.xScroll
 	p2 := gr.gfxData << (7 - gr.xScroll)
@@ -555,7 +555,7 @@ func (gr *GraphicsUnit) drawInvalidStandard(offset int, a uint8) {
 	gr.beam.Draw8(offset, a)
 }
 
-// drawInvalidMulticolor processes invalid multicolor graphics and updates collision and display buffers accordingly.
+// drawInvalidMulticolor processes invalid multicolor bgrState and updates collision and display buffers accordingly.
 func (gr *GraphicsUnit) drawInvalidMulticolor(offset int, a uint8) {
 	p := (gr.gfxData & 0xaa) | ((gr.gfxData & 0xaa) >> 1)
 	p1 := p >> gr.xScroll
