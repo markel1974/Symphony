@@ -53,14 +53,25 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, io interfaces.IInputOutput
 }
 
 // NextLine advances to the next line in the shell output, optionally determining if an end-of-line character is added.
-// TODO REMOVE
 func (c *Kernel) NextLine(eol bool) {
 	c.sh.NextLine(eol)
 }
 
 // KeyEvent processes a keyboard event of a given type and key and returns true if the event was handled successfully.
 func (c *Kernel) KeyEvent(kind interfaces.KeyType, key rune) bool {
-	return c.sh.KeyEvent(kind, key)
+	command, quit := c.sh.KeyEvent(kind, key)
+	if !quit {
+		if kind == interfaces.KeyTypeEnter {
+			if len(command) > 0 {
+				c.sh.WriteLn("")
+				_, _ = c.ExecCommand(command, nil)
+				c.sh.NextLine(false)
+			} else {
+				c.sh.NextLine(true)
+			}
+		}
+	}
+	return quit
 }
 
 // Redraw refreshes the current state based on the provided input string, invoking the underlying shell's Redraw function.

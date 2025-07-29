@@ -97,11 +97,6 @@ func (c *Context) Write(data []byte) (int, error) {
 func (c *Context) Close() {
 }
 
-// ExecCommand executes a provided command line within the current kernel context and returns the success status and an error.
-func (c *Context) ExecCommand(line string) (bool, error) {
-	return c.kernel.ExecCommand(line, nil)
-}
-
 // ExecSuggestion executes a suggestion mechanism based on input, cursor position, and count, returning total suggestions and success status.
 func (c *Context) ExecSuggestion(in string, cursor int, count int) (int, bool) {
 	ret := false
@@ -124,9 +119,4 @@ func (c *Context) ExecSuggestion(in string, cursor int, count int) (int, bool) {
 // SetScreenSize adjusts the terminal's display dimensions to the specified width (w) and height (h).
 func (c *Context) SetScreenSize(w int, h int) {
 	c.kernel.SetScreenSize(w, h)
-}
-
-// History performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
-func (c *Context) History(verb interfaces.HistoryAction, idx int) {
-	c.kernel.HistoryApply(verb, idx)
 }

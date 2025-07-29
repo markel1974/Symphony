@@ -224,7 +224,6 @@ func (c *Command) Traverse(path []string) interfaces.ICommand {
 
 // Execute runs the command using the provided task and arguments, returning an error if execution fails.
 func (c *Command) Execute(task interfaces.ITask, arg []string) error {
-	task.WriteLn("")
 	if err := c.run(task, arg); err != nil {
 		return err
 	}

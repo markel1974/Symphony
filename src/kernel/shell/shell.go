@@ -43,7 +43,7 @@ const (
 
 // IExecutor defines an interface for executing commands and handling autocomplete suggestions in a shell environment.
 type IExecutor interface {
-	ExecCommand(line string) (bool, error)
+	//ExecCommand(line string) (bool, error)
 	ExecSuggestion(in string, cursor int, count int) (int, bool)
 }
 
@@ -85,12 +85,13 @@ func NewShell(auth interfaces.IAuthenticator, render interfaces.IRender, executo
 }
 
 // KeyEvent handles keyboard inputs based on the provided key type and key value, executing corresponding actions.
-func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) bool {
-	ret := false
+func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) (string, bool) {
+	quit := false
+	var command string
 	switch kind {
 	case interfaces.KeyTypeEnter:
 		c.tabCount = 0
-		ret = c.enterPressed()
+		command, quit = c.enterPressed()
 	case interfaces.KeyTypeTab:
 		c.tabPressed()
 	case interfaces.KeyTypeCancel:
@@ -108,7 +109,7 @@ func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) bool {
 	default:
 		log.Println("KeyEvent: Unknown key type")
 	}
-	return ret
+	return command, quit
 }
 
 // ClearHistory clears the shell's command history by invoking the Clear method on the history handler.
@@ -180,13 +181,13 @@ func (c *Shell) cursorPressed(code interfaces.CursorCodeDef) {
 }
 
 // enterPressed handles the Enter key press event, processes the input based on the current shell state, and updates the state accordingly.
-func (c *Shell) enterPressed() bool {
+func (c *Shell) enterPressed() (string, bool) {
 	buffer := string(c.current)
 	quit := false
+	var command string
 
 	if len(buffer) == 0 {
-		c.NextLine(true)
-		return false
+		return "", false
 	}
 	switch c.state {
 	case stateUsernameRequired:
@@ -211,16 +212,11 @@ func (c *Shell) enterPressed() bool {
 	case stateAuthenticated:
 		c.history.AddToHistory(buffer)
 		c.history.SetDefault("")
-		_, _ = c.executor.ExecCommand(buffer)
-
-		//c.quit = c.execCommand(buffer)
+		command = buffer
 	default:
 		quit = true
 	}
-
-	c.NextLine(false)
-
-	return quit
+	return command, quit
 }
 
 // tabPressed handles tab key events, providing intelligent autocompletion based on current input and command context.
