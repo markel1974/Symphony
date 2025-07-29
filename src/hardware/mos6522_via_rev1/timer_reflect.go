@@ -16,11 +16,11 @@ type TimerReflect struct {
 
 func NewTimerReflect(r *Timer) *TimerReflect {
 	reflector := &TimerReflect{ref: r}
-	r.AddProperty(counterId, "counter is a 16-bit register used for counting cycles or steps in the Timer's operation.", false, reflector.getCounter, reflector.setCounter)
-	r.AddProperty(latchId, "latch is a 16-bit register used to store a predefined value for reloading the counter during Timer operations.", false, reflector.getLatch, reflector.setLatch)
-	r.AddProperty(clockPulseId, "clockPulse indicates whether the timer's clock signal is active during the current emulation cycle.", false, reflector.getClockPulse, reflector.setClockPulse)
-	r.AddProperty(loadSignalId, "loadSignal indicates a flag to signal reloading the counter from the latch value in the Timer.", false, reflector.getLoadSignal, reflector.setLoadSignal)
-	r.AddProperty(underflowId, "underflow indicates whether the timer has reached zero and triggered an underflow condition during operation.", false, reflector.getUnderflow, reflector.setUnderflow)
+	r.PropertyAdd(counterId, "counter is a 16-bit register used for counting cycles or steps in the Timer's operation.", false, reflector.getCounter, reflector.setCounter)
+	r.PropertyAdd(latchId, "latch is a 16-bit register used to store a predefined value for reloading the counter during Timer operations.", false, reflector.getLatch, reflector.setLatch)
+	r.PropertyAdd(clockPulseId, "clockPulse indicates whether the timer's clock signal is active during the current emulation cycle.", false, reflector.getClockPulse, reflector.setClockPulse)
+	r.PropertyAdd(loadSignalId, "loadSignal indicates a flag to signal reloading the counter from the latch value in the Timer.", false, reflector.getLoadSignal, reflector.setLoadSignal)
+	r.PropertyAdd(underflowId, "underflow indicates whether the timer has reached zero and triggered an underflow condition during operation.", false, reflector.getUnderflow, reflector.setUnderflow)
 	return reflector
 }
 

@@ -13,8 +13,8 @@ type ShiftRegisterReflect struct {
 
 func NewShiftRegisterReflect(r *ShiftRegister) *ShiftRegisterReflect {
 	reflector := &ShiftRegisterReflect{ref: r}
-	r.AddProperty(registerId, "register represents the 8-bit storage of the shift register, used for data shifting and processing.", false, reflector.getRegister, reflector.setRegister)
-	r.AddProperty(counterId, "counter represents the remaining bits to be shifted in the 8-bit shift register during operation.", false, reflector.getCounter, reflector.setCounter)
+	r.PropertyAdd(registerId, "register represents the 8-bit storage of the shift register, used for data shifting and processing.", false, reflector.getRegister, reflector.setRegister)
+	r.PropertyAdd(counterId, "counter represents the remaining bits to be shifted in the 8-bit shift register during operation.", false, reflector.getCounter, reflector.setCounter)
 	return reflector
 }
 

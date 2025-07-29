@@ -94,13 +94,13 @@ type INavigate interface {
 
 	GetComponentPath(string) IComponent
 
-	GetProperty(string) (interface{}, error)
+	PropertyGet(string) (interface{}, error)
 
-	GetPropertyPath(string, string) (interface{}, error)
+	PropertyPath(string, string) (interface{}, error)
 
-	SetProperty(string, interface{}) error
+	PropertySet(string, interface{}) error
 
-	SetPropertyPath(string, string, interface{}) error
+	PropertySetPath(string, string, interface{}) error
 
 	Dump() (map[string]interface{}, error)
 

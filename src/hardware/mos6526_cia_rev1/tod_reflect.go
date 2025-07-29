@@ -23,18 +23,18 @@ type TODReflect struct {
 
 func NewTODReflect(r *TOD) *TODReflect {
 	reflector := &TODReflect{ref: r}
-	r.AddProperty(tod10thsId, "tod10ths represents the tenths of a second value for the Time-of-Day (TOD) clock.", false, reflector.getTod10ths, reflector.setTod10ths)
-	r.AddProperty(todSecId, "todSec represents the seconds value for the Time-of-Day (TOD) clock.", false, reflector.getTodSec, reflector.setTodSec)
-	r.AddProperty(todMinId, "todMin represents the minutes value for the Time-of-Day (TOD) clock.", false, reflector.getTodMin, reflector.setTodMin)
-	r.AddProperty(todHrId, "todHr represents the hour value for the Time-of-Day (TOD) clock.", false, reflector.getTodHr, reflector.setTodHr)
-	r.AddProperty(todHaltId, "todHalt indicates whether the Time-of-Day (TOD) clock is halted or running.", false, reflector.getTodHalt, reflector.setTodHalt)
-	r.AddProperty(todShadow10thsId, "todShadow10ths holds the shadowed value of the tenth-of-a-second register used during freeze operations.", false, reflector.getTodShadow10ths, reflector.setTodShadow10ths)
-	r.AddProperty(todShadowSecId, "todShadowSec holds the shadowed value of the seconds register used during freeze operations of the TOD clock.", false, reflector.getTodShadowSec, reflector.setTodShadowSec)
-	r.AddProperty(todShadowMinId, "todShadowMin holds the shadowed value of the minutes register used during freeze operations of the TOD clock.", false, reflector.getTodShadowMin, reflector.setTodShadowMin)
-	r.AddProperty(alm10thsId, "alm10ths represents the tenths of a second value for the alarm time.", false, reflector.getAlm10ths, reflector.setAlm10ths)
-	r.AddProperty(almSecId, "almSec represents the seconds value for the alarm time.", false, reflector.getAlmSec, reflector.setAlmSec)
-	r.AddProperty(almMinId, "almMin represents the minutes value for the alarm time.", false, reflector.getAlmMin, reflector.setAlmMin)
-	r.AddProperty(almHrId, "almHr represents the hour value for the alarm time.", false, reflector.getAlmHr, reflector.setAlmHr)
+	r.PropertyAdd(tod10thsId, "tod10ths represents the tenths of a second value for the Time-of-Day (TOD) clock.", false, reflector.getTod10ths, reflector.setTod10ths)
+	r.PropertyAdd(todSecId, "todSec represents the seconds value for the Time-of-Day (TOD) clock.", false, reflector.getTodSec, reflector.setTodSec)
+	r.PropertyAdd(todMinId, "todMin represents the minutes value for the Time-of-Day (TOD) clock.", false, reflector.getTodMin, reflector.setTodMin)
+	r.PropertyAdd(todHrId, "todHr represents the hour value for the Time-of-Day (TOD) clock.", false, reflector.getTodHr, reflector.setTodHr)
+	r.PropertyAdd(todHaltId, "todHalt indicates whether the Time-of-Day (TOD) clock is halted or running.", false, reflector.getTodHalt, reflector.setTodHalt)
+	r.PropertyAdd(todShadow10thsId, "todShadow10ths holds the shadowed value of the tenth-of-a-second register used during freeze operations.", false, reflector.getTodShadow10ths, reflector.setTodShadow10ths)
+	r.PropertyAdd(todShadowSecId, "todShadowSec holds the shadowed value of the seconds register used during freeze operations of the TOD clock.", false, reflector.getTodShadowSec, reflector.setTodShadowSec)
+	r.PropertyAdd(todShadowMinId, "todShadowMin holds the shadowed value of the minutes register used during freeze operations of the TOD clock.", false, reflector.getTodShadowMin, reflector.setTodShadowMin)
+	r.PropertyAdd(alm10thsId, "alm10ths represents the tenths of a second value for the alarm time.", false, reflector.getAlm10ths, reflector.setAlm10ths)
+	r.PropertyAdd(almSecId, "almSec represents the seconds value for the alarm time.", false, reflector.getAlmSec, reflector.setAlmSec)
+	r.PropertyAdd(almMinId, "almMin represents the minutes value for the alarm time.", false, reflector.getAlmMin, reflector.setAlmMin)
+	r.PropertyAdd(almHrId, "almHr represents the hour value for the alarm time.", false, reflector.getAlmHr, reflector.setAlmHr)
 	return reflector
 }
 

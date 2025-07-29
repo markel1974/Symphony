@@ -23,18 +23,18 @@ type VIAReflect struct {
 
 func NewVIAReflect(r *VIA) *VIAReflect {
 	reflector := &VIAReflect{ref: r}
-	r.AddProperty(praId, "pra represents the Peripheral Register A (PRA) used to store or output data for port A in the VIA.", false, reflector.getPra, reflector.setPra)
-	r.AddProperty(ddraId, "ddra represents the Data Direction Register A in the VIA, used to configure the direction of port A pins as input or output.", false, reflector.getDdra, reflector.setDdra)
-	r.AddProperty(prbId, "prb represents the Peripheral Register B (PRB) used to store or output data for port B in the VIA.", false, reflector.getPrb, reflector.setPrb)
-	r.AddProperty(ddrbId, "ddrb represents the Data Direction Register B, controlling the input/output configuration of the VIA Port B pins.", false, reflector.getDdrb, reflector.setDdrb)
-	r.AddProperty(acrId, "acr represents the Auxiliary Control Register used for configuring VIA operating modes and functionalities.", false, reflector.getAcr, reflector.setAcr)
-	r.AddProperty(pcrId, "pcr represents the Peripheral Control Register for managing control pin configurations and interrupt settings.", false, reflector.getPcr, reflector.setPcr)
-	r.AddProperty(ifrId, "ifr represents the interrupt flag register, which indicates pending interrupts for the VIA component.", false, reflector.getIfr, reflector.setIfr)
-	r.AddProperty(ierId, "ier represents the Interrupt Enable Register, used to enable or disable specific interrupt sources in the VIA.", false, reflector.getIer, reflector.setIer)
-	r.AddProperty(lastCA1Id, "lastCA1 indicates the last observed state of the CA1 control pin for edge detection or handshake operations.", false, reflector.getLastCA1, reflector.setLastCA1)
-	r.AddProperty(lastCB2Id, "lastCB2 tracks the last state of the CB2 pin for edge detection or state comparison purposes.", false, reflector.getLastCB2, reflector.setLastCB2)
-	r.AddProperty(lastPB6Id, "lastPB6 tracks the previous state of the PB6 control line for edge detection and timer operations.", false, reflector.getLastPB6, reflector.setLastPB6)
-	r.AddProperty(lastCB1Id, "lastCB1 indicates the previous state of the CB1 control line for edge detection or handshake operations.", false, reflector.getLastCB1, reflector.setLastCB1)
+	r.PropertyAdd(praId, "pra represents the Peripheral Register A (PRA) used to store or output data for port A in the VIA.", false, reflector.getPra, reflector.setPra)
+	r.PropertyAdd(ddraId, "ddra represents the Data Direction Register A in the VIA, used to configure the direction of port A pins as input or output.", false, reflector.getDdra, reflector.setDdra)
+	r.PropertyAdd(prbId, "prb represents the Peripheral Register B (PRB) used to store or output data for port B in the VIA.", false, reflector.getPrb, reflector.setPrb)
+	r.PropertyAdd(ddrbId, "ddrb represents the Data Direction Register B, controlling the input/output configuration of the VIA Port B pins.", false, reflector.getDdrb, reflector.setDdrb)
+	r.PropertyAdd(acrId, "acr represents the Auxiliary Control Register used for configuring VIA operating modes and functionalities.", false, reflector.getAcr, reflector.setAcr)
+	r.PropertyAdd(pcrId, "pcr represents the Peripheral Control Register for managing control pin configurations and interrupt settings.", false, reflector.getPcr, reflector.setPcr)
+	r.PropertyAdd(ifrId, "ifr represents the interrupt flag register, which indicates pending interrupts for the VIA component.", false, reflector.getIfr, reflector.setIfr)
+	r.PropertyAdd(ierId, "ier represents the Interrupt Enable Register, used to enable or disable specific interrupt sources in the VIA.", false, reflector.getIer, reflector.setIer)
+	r.PropertyAdd(lastCA1Id, "lastCA1 indicates the last observed state of the CA1 control pin for edge detection or handshake operations.", false, reflector.getLastCA1, reflector.setLastCA1)
+	r.PropertyAdd(lastCB2Id, "lastCB2 tracks the last state of the CB2 pin for edge detection or state comparison purposes.", false, reflector.getLastCB2, reflector.setLastCB2)
+	r.PropertyAdd(lastPB6Id, "lastPB6 tracks the previous state of the PB6 control line for edge detection and timer operations.", false, reflector.getLastPB6, reflector.setLastPB6)
+	r.PropertyAdd(lastCB1Id, "lastCB1 indicates the previous state of the CB1 control line for edge detection or handshake operations.", false, reflector.getLastCB1, reflector.setLastCB1)
 	return reflector
 }
 

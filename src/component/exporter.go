@@ -54,7 +54,7 @@ type {{.StructName}}Reflect struct {
 func New{{.StructName}}Reflect(r *{{.StructName}}) *{{.StructName}}Reflect {
 	reflector := &{{.StructName}}Reflect{ref: r}
 	{{- range .Properties}}
-	r.AddProperty({{.IDVarName}}, "{{.Documentation}}", {{.ReadOnly}}, reflector.{{.GetterName}}, reflector.{{.SetterName}})
+	r.PropertyAdd({{.IDVarName}}, "{{.Documentation}}", {{.ReadOnly}}, reflector.{{.GetterName}}, reflector.{{.SetterName}})
 	{{- end}}
 	return reflector
 }

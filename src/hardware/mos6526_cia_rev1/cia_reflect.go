@@ -21,16 +21,16 @@ type CIAReflect struct {
 
 func NewCIAReflect(r *CIA) *CIAReflect {
 	reflector := &CIAReflect{ref: r}
-	r.AddProperty(prAId, "prA represents the current state of the port A register for the CIA component.", false, reflector.getPrA, reflector.setPrA)
-	r.AddProperty(prBId, "prB represents the current state of the port B register for the CIA component.", false, reflector.getPrB, reflector.setPrB)
-	r.AddProperty(ddrAId, "ddrA represents the Data Direction Register for port A, used to configure input/output direction of each bit.", false, reflector.getDdrA, reflector.setDdrA)
-	r.AddProperty(ddrBId, "ddrB represents the Data Direction Register for Port B, used to configure input/output for the CIA port B pins.", false, reflector.getDdrB, reflector.setDdrB)
-	r.AddProperty(sdrId, "sdr holds the contents of the Serial Data Register (SDR), used for serial communication operations in the CIA chip.", false, reflector.getSdr, reflector.setSdr)
-	r.AddProperty(icrId, "icr holds the Interrupt Control Register value, managing interrupt flags and statuses for the CIA component.", false, reflector.getIcr, reflector.setIcr)
-	r.AddProperty(irqMaskId, "irqMask defines the interrupt control mask used to enable or disable specific interrupt sources within the CIA.", false, reflector.getIrqMask, reflector.setIrqMask)
-	r.AddProperty(timerAIrqCycleId, "timerAIrqCycle indicates whether an interrupt request should be triggered in the next cycle for Timer A.", false, reflector.getTimerAIrqCycle, reflector.setTimerAIrqCycle)
-	r.AddProperty(timerBIrqCycleId, "timerBIrqCycle indicates if Timer B's interrupt request will be triggered in the next emulation cycle.", false, reflector.getTimerBIrqCycle, reflector.setTimerBIrqCycle)
-	r.AddProperty(todClockDividerId, "todClockDivider determines the number of cycles before updating the internal Time of Day (TOD) clock.", false, reflector.getTodClockDivider, reflector.setTodClockDivider)
+	r.PropertyAdd(prAId, "prA represents the current state of the port A register for the CIA component.", false, reflector.getPrA, reflector.setPrA)
+	r.PropertyAdd(prBId, "prB represents the current state of the port B register for the CIA component.", false, reflector.getPrB, reflector.setPrB)
+	r.PropertyAdd(ddrAId, "ddrA represents the Data Direction Register for port A, used to configure input/output direction of each bit.", false, reflector.getDdrA, reflector.setDdrA)
+	r.PropertyAdd(ddrBId, "ddrB represents the Data Direction Register for Port B, used to configure input/output for the CIA port B pins.", false, reflector.getDdrB, reflector.setDdrB)
+	r.PropertyAdd(sdrId, "sdr holds the contents of the Serial Data Register (SDR), used for serial communication operations in the CIA chip.", false, reflector.getSdr, reflector.setSdr)
+	r.PropertyAdd(icrId, "icr holds the Interrupt Control Register value, managing interrupt flags and statuses for the CIA component.", false, reflector.getIcr, reflector.setIcr)
+	r.PropertyAdd(irqMaskId, "irqMask defines the interrupt control mask used to enable or disable specific interrupt sources within the CIA.", false, reflector.getIrqMask, reflector.setIrqMask)
+	r.PropertyAdd(timerAIrqCycleId, "timerAIrqCycle indicates whether an interrupt request should be triggered in the next cycle for Timer A.", false, reflector.getTimerAIrqCycle, reflector.setTimerAIrqCycle)
+	r.PropertyAdd(timerBIrqCycleId, "timerBIrqCycle indicates if Timer B's interrupt request will be triggered in the next emulation cycle.", false, reflector.getTimerBIrqCycle, reflector.setTimerBIrqCycle)
+	r.PropertyAdd(todClockDividerId, "todClockDivider determines the number of cycles before updating the internal Time of Day (TOD) clock.", false, reflector.getTodClockDivider, reflector.setTodClockDivider)
 	return reflector
 }
 

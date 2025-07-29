@@ -13,8 +13,8 @@ type ShiftRegisterReflect struct {
 
 func NewShiftRegisterReflect(r *ShiftRegister) *ShiftRegisterReflect {
 	reflector := &ShiftRegisterReflect{ref: r}
-	r.AddProperty(shiftCounterId, "shiftCounter tracks the number of shifts performed, resetting after completing an 8-bit operation.", false, reflector.getShiftCounter, reflector.setShiftCounter)
-	r.AddProperty(srId, "sr represents the internal 8-bit storage for the shift register operations.", false, reflector.getSr, reflector.setSr)
+	r.PropertyAdd(shiftCounterId, "shiftCounter tracks the number of shifts performed, resetting after completing an 8-bit operation.", false, reflector.getShiftCounter, reflector.setShiftCounter)
+	r.PropertyAdd(srId, "sr represents the internal 8-bit storage for the shift register operations.", false, reflector.getSr, reflector.setSr)
 	return reflector
 }
 

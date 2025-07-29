@@ -128,15 +128,15 @@ func (bc *BaseComponent) GetComponentPath(path string) references.IComponent {
 	return component
 }
 
-// AddProperty registers a new property to the BaseComponent with the specified ID, description, read-only flag, getter, and setter.
-func (bc *BaseComponent) AddProperty(id string, desc string, ro bool, get interface{}, set interface{}) {
+// PropertyAdd registers a new property to the BaseComponent with the specified ID, description, read-only flag, getter, and setter.
+func (bc *BaseComponent) PropertyAdd(id string, desc string, ro bool, get interface{}, set interface{}) {
 	p := NewPropertyInfo(id, desc, ro, get, set)
 	_ = bc.cmd.AddCommand(p.CreateShellCommand()...)
 	bc.properties.Add(p)
 }
 
-// GetProperty retrieves the value of the specified property by its name. It returns the value and an error, if any occur.
-func (bc *BaseComponent) GetProperty(prop string) (interface{}, error) {
+// PropertyGet retrieves the value of the specified property by its name. It returns the value and an error, if any occur.
+func (bc *BaseComponent) PropertyGet(prop string) (interface{}, error) {
 	v, err := bc.properties.GetProperty(prop)
 	if err != nil {
 		return nil, err
@@ -144,35 +144,35 @@ func (bc *BaseComponent) GetProperty(prop string) (interface{}, error) {
 	return v, nil
 }
 
-// GetPropertyPath retrieves the value of a specified property from a component located at a given path in the node hierarchy.
+// PropertyPath retrieves the value of a specified property from a component located at a given path in the node hierarchy.
 // Returns the property value and an error if the path or property is invalid.
-func (bc *BaseComponent) GetPropertyPath(path string, prop string) (interface{}, error) {
+func (bc *BaseComponent) PropertyPath(path string, prop string) (interface{}, error) {
 	component := bc.node.Traverse(path)
 	if component == nil {
 		return nil, fmt.Errorf("component %s not found", path)
 	}
-	v, err := component.GetProperty(prop)
+	v, err := component.PropertyGet(prop)
 	if err != nil {
 		return nil, err
 	}
 	return v, nil
 }
 
-// SetProperty updates the value of a specified property if it exists. Returns an error if the update fails.
-func (bc *BaseComponent) SetProperty(prop string, value interface{}) error {
+// PropertySet updates the value of a specified property if it exists. Returns an error if the update fails.
+func (bc *BaseComponent) PropertySet(prop string, value interface{}) error {
 	if err := bc.properties.SetProperty(prop, value); err != nil {
 		return err
 	}
 	return nil
 }
 
-// SetPropertyPath sets a specific property value of a component identified by its path. Returns an error if the component is not found or setting the property fails.
-func (bc *BaseComponent) SetPropertyPath(path string, prop string, val interface{}) error {
+// PropertySetPath sets a specific property value of a component identified by its path. Returns an error if the component is not found or setting the property fails.
+func (bc *BaseComponent) PropertySetPath(path string, prop string, val interface{}) error {
 	component := bc.node.Traverse(path)
 	if component == nil {
 		return fmt.Errorf("component %s not found", path)
 	}
-	err := component.SetProperty(prop, val)
+	err := component.PropertySet(prop, val)
 	return err
 }
 

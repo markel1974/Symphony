@@ -24,19 +24,19 @@ type TimerReflect struct {
 
 func NewTimerReflect(r *Timer) *TimerReflect {
 	reflector := &TimerReflect{ref: r}
-	r.AddProperty(crId, "cr represents a configuration register or a control register as an unsigned 8-bit integer.", false, reflector.getCr, reflector.setCr)
-	r.AddProperty(crNewId, "crNew represents a new configuration register with an 8-bit unsigned integer value.", false, reflector.getCrNew, reflector.setCrNew)
-	r.AddProperty(crNewPendingId, "crNewPending indicates whether a new change request is in a pending state.", false, reflector.getCrNewPending, reflector.setCrNewPending)
-	r.AddProperty(timerId, "timer represents a 16-bit unsigned integer used for timing or count-related operations.", false, reflector.getTimer, reflector.setTimer)
-	r.AddProperty(timerLatchId, "timerLatch is a 16-bit value used to store the latch for a timer mechanism.", false, reflector.getTimerLatch, reflector.setTimerLatch)
-	r.AddProperty(timerStateId, "timerState represents the current state of a timer, encoded as an unsigned 8-bit integer.", false, reflector.getTimerState, reflector.setTimerState)
-	r.AddProperty(countModeId, "countMode represents the mode or operation type for counting, defined as an unsigned 8-bit integer.", false, reflector.getCountMode, reflector.setCountMode)
-	r.AddProperty(toggleModeId, "toggleMode indicates whether the current mode is toggled on or off.", false, reflector.getToggleMode, reflector.setToggleMode)
-	r.AddProperty(timerLatchLowId, "timerLatchLow stores the lower 16 bits of the timer latch value used for timing or counting operations.", false, reflector.getTimerLatchLow, reflector.setTimerLatchLow)
-	r.AddProperty(cntPulseId, "cntPulse indicates whether the pulse counter is enabled or active.", false, reflector.getCntPulse, reflector.setCntPulse)
-	r.AddProperty(cntLevelId, "cntLevel indicates whether the current level is active or enabled as a boolean value.", false, reflector.getCntLevel, reflector.setCntLevel)
-	r.AddProperty(underflowInId, "underflowIn indicates whether the timer underflow input signal is active or not.", false, reflector.getUnderflowIn, reflector.setUnderflowIn)
-	r.AddProperty(underflowOutId, "underflowOut indicates the current state of the underflow output signal for the Timer instance.", false, reflector.getUnderflowOut, reflector.setUnderflowOut)
+	r.PropertyAdd(crId, "cr represents a configuration register or a control register as an unsigned 8-bit integer.", false, reflector.getCr, reflector.setCr)
+	r.PropertyAdd(crNewId, "crNew represents a new configuration register with an 8-bit unsigned integer value.", false, reflector.getCrNew, reflector.setCrNew)
+	r.PropertyAdd(crNewPendingId, "crNewPending indicates whether a new change request is in a pending state.", false, reflector.getCrNewPending, reflector.setCrNewPending)
+	r.PropertyAdd(timerId, "timer represents a 16-bit unsigned integer used for timing or count-related operations.", false, reflector.getTimer, reflector.setTimer)
+	r.PropertyAdd(timerLatchId, "timerLatch is a 16-bit value used to store the latch for a timer mechanism.", false, reflector.getTimerLatch, reflector.setTimerLatch)
+	r.PropertyAdd(timerStateId, "timerState represents the current state of a timer, encoded as an unsigned 8-bit integer.", false, reflector.getTimerState, reflector.setTimerState)
+	r.PropertyAdd(countModeId, "countMode represents the mode or operation type for counting, defined as an unsigned 8-bit integer.", false, reflector.getCountMode, reflector.setCountMode)
+	r.PropertyAdd(toggleModeId, "toggleMode indicates whether the current mode is toggled on or off.", false, reflector.getToggleMode, reflector.setToggleMode)
+	r.PropertyAdd(timerLatchLowId, "timerLatchLow stores the lower 16 bits of the timer latch value used for timing or counting operations.", false, reflector.getTimerLatchLow, reflector.setTimerLatchLow)
+	r.PropertyAdd(cntPulseId, "cntPulse indicates whether the pulse counter is enabled or active.", false, reflector.getCntPulse, reflector.setCntPulse)
+	r.PropertyAdd(cntLevelId, "cntLevel indicates whether the current level is active or enabled as a boolean value.", false, reflector.getCntLevel, reflector.setCntLevel)
+	r.PropertyAdd(underflowInId, "underflowIn indicates whether the timer underflow input signal is active or not.", false, reflector.getUnderflowIn, reflector.setUnderflowIn)
+	r.PropertyAdd(underflowOutId, "underflowOut indicates the current state of the underflow output signal for the Timer instance.", false, reflector.getUnderflowOut, reflector.setUnderflowOut)
 	return reflector
 }
 
