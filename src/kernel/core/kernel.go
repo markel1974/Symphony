@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/shell"
 	"log"
 	"os"
 	"strings"
@@ -23,24 +24,24 @@ const (
 // Kernel represents the core component responsible for managing rendering, input/output, task execution, and timers.
 type Kernel struct {
 	ticker      *adaptiveticker.AdaptiveTicker
-	render      interfaces.IRender
 	io          interfaces.IInputOutput
 	foreground  interfaces.ITask
 	selector    *TaskSelector
 	timersChan  chan *adaptiveticker.TimerHandler
 	ids         *adaptiveticker.Ids
 	fs          interfaces.IFileSystem
+	sh          *shell.Shell
 	messageChan chan iMessage
 	exit        bool
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(ticker *adaptiveticker.AdaptiveTicker, render interfaces.IRender, io interfaces.IInputOutput, fs interfaces.IFileSystem) *Kernel {
+func NewKernel(ticker *adaptiveticker.AdaptiveTicker, io interfaces.IInputOutput, fs interfaces.IFileSystem, sh *shell.Shell) *Kernel {
 	t := &Kernel{
 		ticker:      ticker,
-		render:      render,
 		io:          io,
 		fs:          fs,
+		sh:          sh,
 		foreground:  nil,
 		selector:    NewTaskSelector(),
 		ids:         adaptiveticker.NewIds(1024),
@@ -51,39 +52,74 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, render interfaces.IRender,
 	return t
 }
 
+// NextLine advances to the next line in the shell output, optionally determining if an end-of-line character is added.
+// TODO REMOVE
+func (c *Kernel) NextLine(eol bool) {
+	c.sh.NextLine(eol)
+}
+
+// KeyEvent processes a keyboard event of a given type and key and returns true if the event was handled successfully.
+func (c *Kernel) KeyEvent(kind interfaces.KeyType, key rune) bool {
+	return c.sh.KeyEvent(kind, key)
+}
+
+// Redraw refreshes the current state based on the provided input string, invoking the underlying shell's Redraw function.
+func (c *Kernel) Redraw(l string) {
+	c.sh.Redraw(l)
+}
+
+// HistoryApply performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
+func (c *Kernel) HistoryApply(verb interfaces.HistoryAction, idx int) {
+	switch verb {
+	case interfaces.HistoryActionClear:
+		c.sh.ClearHistory()
+	case interfaces.HistoryActionExec:
+		if arg, found := c.sh.GetHistoryAtPos(idx); found {
+			_, _ = c.ExecCommand(arg, nil)
+		}
+	case interfaces.HistoryActionList:
+		c.sh.Write(c.sh.GetHistory())
+	}
+}
+
+// SetHistoryDefault sets the default history data in the kernel's state handler using the provided string input.
+func (c *Kernel) SetHistoryDefault(data string) {
+	c.sh.SetHistoryDefault(data)
+}
+
 // SetScreenSize sets the display dimensions of the screen to the specified width (w) and height (h).
 func (c *Kernel) SetScreenSize(w int, h int) {
-	c.render.SetScreenSize(w, h)
+	c.sh.SetScreenSize(w, h)
 }
 
 // GetScreenSize returns the width and height of the screen in pixels as two integer values.
 func (c *Kernel) GetScreenSize() (int, int) {
-	return c.render.GetScreenSize()
+	return c.sh.GetScreenSize()
 }
 
 // Write sends the specified string data to the kernel's renderer for processing or output.
 func (c *Kernel) Write(data string) {
-	c.render.Write(data)
+	c.sh.Write(data)
 }
 
 // WriteLn writes the provided string followed by a newline to the output stream.
 func (c *Kernel) WriteLn(data string) {
-	c.render.WriteLn(data)
+	c.sh.WriteLn(data)
 }
 
 // WriteColor writes text with specified foreground and background colors using the provided color rendering mode.
 func (c *Kernel) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.render.WriteColor(data, fg, bg, mode)
+	c.sh.WriteColor(data, fg, bg, mode)
 }
 
 // WriteColorLn writes a line of text with specified foreground color, background color, and color mode.
 func (c *Kernel) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.render.WriteColorLn(data, fg, bg, mode)
+	c.sh.WriteColorLn(data, fg, bg, mode)
 }
 
 // ClearScreen clears the screen by invoking the render system's ClearScreen operation.
 func (c *Kernel) ClearScreen() {
-	c.render.ClearScreen()
+	c.sh.ClearScreen()
 }
 
 // ExecActivate attempts to activate a foreground process by executing the associated command and returns its success status.
@@ -170,7 +206,7 @@ func (c *Kernel) PaintRequest() bool {
 // Returns true if a paint event was successfully scheduled, otherwise returns false.
 // The full parameter specifies whether the entire view should be repainted.
 func (c *Kernel) doPaintRequest(full bool) bool {
-	if c.render.PaintRequest(full) {
+	if c.sh.PaintRequest(full) {
 		c.ticker.Create(c.timersChan, newMessagePaint(), -1, -1, 1)
 		return true
 	}
@@ -442,7 +478,7 @@ func (c *Kernel) ExecRead(pid int, code int, buffer rune) bool {
 // ExecPaint executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
 // Returns true if the rendering process is executed, false otherwise.
 func (c *Kernel) ExecPaint() bool {
-	if !c.render.IsDirty() {
+	if !c.sh.IsDirty() {
 		return false
 	}
 	var selectedTask interfaces.ITask = nil
@@ -458,7 +494,7 @@ func (c *Kernel) ExecPaint() bool {
 		}
 		return true
 	})
-	return c.render.ExecPaint(selectedTask, tasks)
+	return c.sh.ExecPaint(selectedTask, tasks)
 }
 
 // ListTasks retrieves a list of task names by scanning files in the current directory with a specific extension.
@@ -533,12 +569,6 @@ func (c *Kernel) RestoreTasks(name string) bool {
 	return true
 }
 
-// History performs a kernel-level operation on the command history based on the specified action and history index.
-func (c *Kernel) History(verb interfaces.HistoryAction, idx int) {
-	//TODO IMPLEMENT
-	c.io.History(verb, idx)
-}
-
 // closeTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
 func (c *Kernel) closeTimer(task *Task, tid int) bool {
 	ret := false
@@ -560,6 +590,9 @@ func (c *Kernel) shutdown() {
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
+	c.sh.WriteColor("Admin Console Ready", interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
+	c.sh.NextLine(true)
+
 	d := make(chan bool)
 	go func() {
 		d <- true
@@ -605,7 +638,7 @@ func (c *Kernel) messageEventHandler(m iMessage) {
 		switch m.getType() {
 		case MessageTypeRead:
 			if mm, ok := m.(*MessageRead); ok {
-				c.render.Scan(mm.data)
+				c.sh.Scan(mm.data)
 			}
 
 		case MessageTypeTimer:

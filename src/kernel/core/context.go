@@ -22,9 +22,7 @@ type Context struct {
 	reader   io.Reader
 	writer   io.Writer
 	commands *shell.Command
-	render   interfaces.IRender
 	auth     interfaces.IAuthenticator
-	sh       *shell.Shell
 	enterKey rune
 	kernel   *Kernel
 	prompt   string
@@ -48,19 +46,17 @@ func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer 
 
 // Setup initializes the context with the terminal, rendering, system commands, file system, kernel, and shell instances.
 func (c *Context) Setup(terminal interfaces.ITerminal) {
-	c.render = render.NewRender(terminal)
+	terminalRender := render.NewRender(terminal)
 	system := apps.NewRoot()
 	systemCommands, commands := system.Build(c.commands)
 	fs := file_system.NewCommandInteractor(commands, []interfaces.ICommand{systemCommands})
 	ioAdapter := interfaces.IInputOutput(c)
-	c.kernel = NewKernel(c.ticker, c.render, ioAdapter, fs)
-	c.sh = shell.NewShell(c.auth, c.render, c, c.prompt, c.autosave)
+	sh := shell.NewShell(c.auth, terminalRender, c, c.prompt, c.autosave)
+	c.kernel = NewKernel(c.ticker, ioAdapter, fs, sh)
 }
 
 // Exec initializes the admin console display, advances the shell line, and starts the kernel.
 func (c *Context) Exec() {
-	c.render.WriteColor("Admin Console Ready", interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
-	c.sh.NextLine(true)
 	c.kernel.Start()
 }
 
@@ -71,7 +67,7 @@ func (c *Context) Type(kind interfaces.KeyType, key rune) {
 		case 3:
 			c.kernel.SetSelectionDisabled()
 			c.kernel.KillForeground()
-			c.sh.NextLine(true)
+			c.kernel.NextLine(true)
 		case 4:
 			c.kernel.ExecActivate()
 		}
@@ -81,7 +77,7 @@ func (c *Context) Type(kind interfaces.KeyType, key rune) {
 		c.kernel.ExecRead(fgPid, int(kind), key)
 		return
 	}
-	if quit := c.sh.KeyEvent(kind, key); quit {
+	if quit := c.kernel.KeyEvent(kind, key); quit {
 		c.kernel.ExitRequested()
 	}
 }
@@ -116,8 +112,8 @@ func (c *Context) ExecSuggestion(in string, cursor int, count int) (int, bool) {
 		if idx := count % sLen; idx < sLen {
 			if complete := suggestions[idx]; len(complete) > len(data) {
 				tabLine := complete
-				c.sh.Redraw(tabLine)
-				c.sh.SetHistoryDefault(tabLine)
+				c.kernel.Redraw(tabLine)
+				c.kernel.SetHistoryDefault(tabLine)
 				ret = true
 			}
 		}
@@ -132,14 +128,5 @@ func (c *Context) SetScreenSize(w int, h int) {
 
 // History performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
 func (c *Context) History(verb interfaces.HistoryAction, idx int) {
-	switch verb {
-	case interfaces.HistoryActionClear:
-		c.sh.ClearHistory()
-	case interfaces.HistoryActionExec:
-		if arg, found := c.sh.GetHistoryAtPos(idx); found {
-			_, _ = c.ExecCommand(arg)
-		}
-	case interfaces.HistoryActionList:
-		c.render.Write(c.sh.GetHistory())
-	}
+	c.kernel.HistoryApply(verb, idx)
 }

@@ -198,7 +198,8 @@ func (t *Task) CWD() interfaces.ICommand {
 
 // CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
 func (t *Task) CWDSet(arg string) bool {
-	return t.kernel.CWDSet(arg)
+	b := t.kernel.CWDSet(arg)
+	return b
 }
 
 // CWDGet retrieves the current working directory as a string from the associated kernel instance.
@@ -307,5 +308,5 @@ func (t *Task) SetExit() {
 
 // History triggers a historical operation on the task using the specified action and index.
 func (t *Task) History(verb interfaces.HistoryAction, idx int) {
-	t.kernel.History(verb, idx)
+	t.kernel.HistoryApply(verb, idx)
 }
