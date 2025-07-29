@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	borderDisplayXFill    = 0x1ff
-	borderDisplayXFillMax = borderDisplayXFill + 64 //DisplayXFill + 1
+	collisionsSize = 1 << 9
+	collisionsMask = collisionsSize - 1
 )
 
 // CollisionsUnit encapsulate collision detection functionality between sprites and bgrState within a VIC system.
@@ -28,18 +28,18 @@ type CollisionsUnit struct {
 }
 
 // NewCollisions creates and returns a new CollisionsUnit instance, associated with the given VIC core.
-func NewCollisions(parent references.IComponent, factory references.IComponentFactory, label string, instance int, irqEmit func(irq uint8), displayX int) *CollisionsUnit {
+func NewCollisions(parent references.IComponent, factory references.IComponentFactory, label string, instance int, irqEmit func(irq uint8)) *CollisionsUnit {
 	c := &CollisionsUnit{
 		BaseComponent:    component.NewBaseComponent(),
 		irqEmit:          irqEmit,
 		sprState:         0,
-		sprPresence:      make([]uint8, borderDisplayXFillMax),
-		sprPresenceEmpty: make([]uint8, borderDisplayXFillMax),
+		sprPresence:      make([]uint8, collisionsSize),
+		sprPresenceEmpty: make([]uint8, collisionsSize),
 		spr2SprClx:       0,
 		spr2BgrClx:       0,
 		bgrState:         0,
-		bgrBuffer:        make([]uint8, borderDisplayXFill+1),
-		bgrBufferEmpty:   make([]uint8, displayX/8),
+		bgrBuffer:        make([]uint8, collisionsSize),
+		bgrBufferEmpty:   make([]uint8, collisionsSize),
 		bgrBufferOffset:  0,
 	}
 	c.BaseComponent.Register(factory, parent, "collisionsUnit", instance, c, references.IdInternalComponent(label, instance, "CollisionsUnit"))
@@ -110,42 +110,41 @@ func (c *CollisionsUnit) Prepare() {
 	copy(c.sprPresence, c.sprPresenceEmpty)
 }
 
-// SetGraphicsPresence sets a collision bit for bgrState by performing a bitwise OR operation with the given bit.
+// SetSprite2BackgroundPresence sets a collision bit for bgrState by performing a bitwise OR operation with the given bit.
 // 'sBit' is a bitmask representing the sprite that collided with the background (1, 2, 4, 8, 16, 32, 64, 128).
-func (c *CollisionsUnit) SetGraphicsPresence(sBit uint8) {
+func (c *CollisionsUnit) SetSprite2BackgroundPresence(sBit uint8) {
 	// Set the corresponding bit in the 'bgrState' collision result.
 	c.bgrState |= sBit
 }
 
-// SetSpritePresence checks and sets sprite collision at a specific index with a sprite bit and returns collision status.
+// SetSprite2SpritePresence checks and sets sprite collision at a specific index with a sprite bit and returns collision status.
 // If a collision occurs, it updates the sprite collision state;
 // otherwise, it updates the sprite buffer with the new bit.
-func (c *CollisionsUnit) SetSpritePresence(index int, spiteBit uint8) bool {
-	// Boundary check.
-	if index >= borderDisplayXFillMax {
-		return false
-	}
-	sBitPresence := c.sprPresence[index]
+func (c *CollisionsUnit) SetSprite2SpritePresence(index int, spriteBit uint8) bool {
+	sBitPresence := c.sprPresence[index&collisionsMask]
 	if sBitPresence == 0 {
 		// mark this sprite as present at this pixel.
-		c.sprPresence[index] = spiteBit
+		c.sprPresence[index&collisionsMask] = spriteBit
 		return false
 	}
 	// If any sprite is already present at this pixel...
 	// Update the 'sprites' collision result with *both* the existing sprites *and* the new sprite.
-	c.sprState |= sBitPresence | spiteBit
+	c.sprState |= sBitPresence | spriteBit
 	return true
 }
 
-// Commit triggers the collision application process using the stored sprite and bgrState collision data.
-// This method *actually writes* the collision results to the VIC-II's registers.
-func (c *CollisionsUnit) Commit() {
+// CommitSprite updates the sprite-to-sprite collision state and triggers an interrupt if a collision occurred.
+func (c *CollisionsUnit) CommitSprite() {
 	if c.spr2SprClx != 0 {
 		c.spr2SprClx |= c.sprState
 	} else {
 		c.spr2SprClx |= c.sprState
 		c.irqEmit(irqSpriteToSpriteBit)
 	}
+}
+
+// CommitBackground updates the sprite-to-background collision state and triggers an interrupt if a collision is detected.
+func (c *CollisionsUnit) CommitBackground() {
 	if c.spr2BgrClx != 0 {
 		c.spr2BgrClx |= c.bgrState
 	} else {
@@ -154,23 +153,23 @@ func (c *CollisionsUnit) Commit() {
 	}
 }
 
-// IncrementGraphicsOffset increments the bgrBufferOffset field
+// IncrementBackgroundOffset increments the bgrBufferOffset field
 // to track the bgrState buffer position during updates.
-func (c *CollisionsUnit) IncrementGraphicsOffset() {
+func (c *CollisionsUnit) IncrementBackgroundOffset() {
 	// Increment the offset (in bytes).
 	c.bgrBufferOffset++
 }
 
-// ClearGraphics resets the bgrState collision buffer and its offset to their initial empty states.
+// ClearBackground resets the bgrState collision buffer and its offset to their initial empty states.
 // Called at the *beginning* of each frame.
-func (c *CollisionsUnit) ClearGraphics() {
-	copy(c.bgrBuffer, c.bgrBufferEmpty)
+func (c *CollisionsUnit) ClearBackground() {
 	c.bgrBufferOffset = 0
+	copy(c.bgrBuffer, c.bgrBufferEmpty)
 }
 
-// UpdateGraphics updates the bgrState collision buffer with provided foreground mask values a and b at the current offset.
+// UpdateBackground updates the bgrState collision buffer with provided foreground mask values a and b at the current offset.
 // Called during *background* rendering.  'a' and 'b' represent the pixel data for two *consecutive* pixels.
-func (c *CollisionsUnit) UpdateGraphics(a uint8, b uint8) {
+func (c *CollisionsUnit) UpdateBackground(a uint8, b uint8) {
 	c.bgrBuffer[c.bgrBufferOffset] |= a   // Reset the bgrState buffer by copying the empty buffer.
 	c.bgrBuffer[c.bgrBufferOffset+1] |= b // Reset the offset.
 }

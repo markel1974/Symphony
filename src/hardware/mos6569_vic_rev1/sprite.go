@@ -233,7 +233,7 @@ func (sp *Sprite) drawExpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc ui
 	// handles all 48 pixels of the expanded sprite simultaneously
 	if ((foreMaskL & (plane0L | plane1L)) != 0) || ((foreMaskR & (plane0R | plane1R)) != 0) {
 		// Set the sprite-to-bgrState collision flag for this sprite.
-		sp.collisions.SetGraphicsPresence(sp.mask)
+		sp.collisions.SetSprite2BackgroundPresence(sp.mask)
 		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled (MDP register), mask out the sprite pixels where a collision occurred.
 			// This makes the background "show through" the sprite.
@@ -247,7 +247,7 @@ func (sp *Sprite) drawExpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc ui
 	// Draw the left half of the sprite (first 32 pixels). The sprite is expanded, so we draw 48 pixels total.
 	for idx := 0; idx < spriteExpandedHalfPixels; idx, plane0L, plane1L = idx+1, plane0L<<1, plane1L<<1 {
 		if selectedColor := sp.planes2Color(plane0L, plane1L, mxc, mm0, mm1); selectedColor >= 0 {
-			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
+			if !sp.collisions.SetSprite2SpritePresence(sOffset+idx, sp.mask) {
 				sp.beam.Draw(sOffset+idx, uint8(selectedColor))
 			}
 		}
@@ -255,7 +255,7 @@ func (sp *Sprite) drawExpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc ui
 	// Draw the right half of the sprite (remaining 16 pixels).
 	for idx := spriteExpandedHalfPixels; idx < spriteExpandedPixels; idx, plane0R, plane1R = idx+1, plane0R<<1, plane1R<<1 {
 		if selectedColor := sp.planes2Color(plane0R, plane1R, mxc, mm0, mm1); selectedColor >= 0 {
-			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
+			if !sp.collisions.SetSprite2SpritePresence(sOffset+idx, sp.mask) {
 				sp.beam.Draw(sOffset+idx, uint8(selectedColor))
 			}
 		}
@@ -274,7 +274,7 @@ func (sp *Sprite) drawExpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _
 	// Check for collisions with the foreground.
 	if ((foreMaskL & sDataL) != 0) || ((foreMaskR & sDataR) != 0) {
 		// Set the sprite-to-bgrState collision flag.
-		sp.collisions.SetGraphicsPresence(sp.mask)
+		sp.collisions.SetSprite2BackgroundPresence(sp.mask)
 		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			sDataL &= ^foreMaskL // Mask left half.
@@ -285,7 +285,7 @@ func (sp *Sprite) drawExpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _
 	// Draw the left half of the sprite (first 32 pixels).
 	for idx := 0; idx < spriteExpandedHalfPixels; idx, sDataL = idx+1, sDataL<<1 {
 		if (sDataL & planesMSB) != 0 {
-			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
+			if !sp.collisions.SetSprite2SpritePresence(sOffset+idx, sp.mask) {
 				sp.beam.Draw(sOffset+idx, mxc)
 			}
 		}
@@ -293,7 +293,7 @@ func (sp *Sprite) drawExpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */, _
 	// Draw the right half of the sprite (remaining 16 pixels).
 	for idx := spriteExpandedHalfPixels; idx < spriteExpandedPixels; idx, sDataR = idx+1, sDataR<<1 {
 		if (sDataR & planesMSB) != 0 {
-			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
+			if !sp.collisions.SetSprite2SpritePresence(sOffset+idx, sp.mask) {
 				sp.beam.Draw(sOffset+idx, mxc)
 			}
 		}
@@ -315,7 +315,7 @@ func (sp *Sprite) drawUnexpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc 
 	// Check bgrState collision
 	if (foreMask & (plane0 | plane1)) != 0 {
 		// Set the sprite-to-bgrState collision flag.
-		sp.collisions.SetGraphicsPresence(sp.mask)
+		sp.collisions.SetSprite2BackgroundPresence(sp.mask)
 		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			plane0 &= ^foreMask
@@ -325,7 +325,7 @@ func (sp *Sprite) drawUnexpandedMulticolor(mdp uint8, mm0 uint8, mm1 uint8, mxc 
 	// Draw the sprite (24 pixels).
 	for idx := 0; idx < spriteUnexpandedPixels; idx, plane0, plane1 = idx+1, plane0<<1, plane1<<1 {
 		if selectedColor := sp.planes2Color(plane0, plane1, mxc, mm0, mm1); selectedColor >= 0 {
-			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
+			if !sp.collisions.SetSprite2SpritePresence(sOffset+idx, sp.mask) {
 				sp.beam.Draw(sOffset+idx, uint8(selectedColor))
 			}
 		}
@@ -341,7 +341,7 @@ func (sp *Sprite) drawUnexpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */,
 	// Check for collisions with the foreground.
 	if (foreMask & sData) != 0 {
 		// Set the sprite-to-bgrState collision flag.
-		sp.collisions.SetGraphicsPresence(sp.mask)
+		sp.collisions.SetSprite2BackgroundPresence(sp.mask)
 		if (mdp & sp.mask) != 0 {
 			// If sprite-to-background priority is enabled, mask the sprite data.
 			sData &= ^foreMask
@@ -350,7 +350,7 @@ func (sp *Sprite) drawUnexpandedStandard(mdp uint8 /* mm0 */, _ uint8 /* mm1 */,
 	// Draw the sprite (24 pixels).
 	for idx := 0; idx < spriteUnexpandedPixels; idx, sData = idx+1, sData<<1 {
 		if (sData & planesMSB) != 0 {
-			if !sp.collisions.SetSpritePresence(sOffset+idx, sp.mask) {
+			if !sp.collisions.SetSprite2SpritePresence(sOffset+idx, sp.mask) {
 				sp.beam.Draw(sOffset+idx, mxc)
 			}
 		}

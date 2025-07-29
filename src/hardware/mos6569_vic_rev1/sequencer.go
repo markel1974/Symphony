@@ -295,7 +295,7 @@ func (vic *VIC) phaseSprite3DMAPhase2AndVBlank() {
 		vic.lightPen.TriggerClear()
 		vic.socketVBlank()
 	}
-	vic.collisions.ClearGraphics()
+	vic.collisions.ClearBackground()
 	vic.graphics.ResetOffset()
 	vic.graphics.AcquireDisplayAccessIfBadLine()
 	if vic.sprites.GetDMAFlag(bitSprite3) != 0 {

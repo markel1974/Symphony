@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	spriteNumber = 8
-	spriteIndex  = spriteNumber - 1
+	spriteNumber    = 8
+	spriteIndex     = spriteNumber - 1
+	spritesDataSize = 1 << 8
 )
 
 // bitSprite0 to bitSprite7 represent bitmask values for individual sprite identifiers.
@@ -47,10 +48,8 @@ type SpritesUnit struct {
 	mm0                uint8
 	mm1                uint8
 	bufferIndex        int
-	//offset             int
-	// spritesData is a lookup table mapping an 8-bit value to arrays of active sprite indices for rendering and processing.
-	spritesData [256][]uint8
-	active      *Sprite
+	spritesData        [spritesDataSize][]uint8
+	active             *Sprite
 }
 
 // NewSprites initializes and returns a new instance of the SpritesUnit struct with default settings and allocations.
@@ -602,19 +601,17 @@ func (sp *SpritesUnit) CommitSpriteFlags() {
 // It handles both expanded and unexpanded sprites in standard and multicolor modes.
 // Collision detection for sprites is carried out during the rendering process.
 func (sp *SpritesUnit) Draw() {
-	activeSprites := sp.spritesData[sp.spriteFlags]
-	if activeSprites == nil {
-		return
+	if len(sp.spritesData[sp.spriteFlags]) > 0 {
+		latchIndex := _latchStates[sp.bufferIndex]
+		// Prepare the collision detection system for this scanline.
+		sp.collisions.Prepare()
+		for _, sNum := range sp.spritesData[sp.spriteFlags] {
+			sp.sprites[sNum].Draw(latchIndex)
+		}
+		// Perform the final collision detection checks.
+		sp.collisions.CommitSprite()
+		sp.collisions.CommitBackground()
 	}
-	latchIndex := _latchStates[sp.bufferIndex]
-	// Prepare the collision detection system for this scanline.
-	sp.collisions.Prepare()
-	// Draw sprites
-	for _, sNum := range activeSprites {
-		sp.sprites[sNum].Draw(latchIndex)
-	}
-	// Perform the final collision detection checks.
-	sp.collisions.Commit()
 }
 
 //func (sp *SpritesUnit) TryIncrementCounterBaseOld() {

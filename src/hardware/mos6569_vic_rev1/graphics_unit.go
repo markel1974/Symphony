@@ -381,7 +381,7 @@ func (gr *GraphicsUnit) FetchColorFake() {
 func (gr *GraphicsUnit) DrawBackground() {
 	gr.backgroundSequencer[gr.displayMode](gr.baseOffset)
 	gr.baseOffset += characterPixelWidth
-	gr.collisions.IncrementGraphicsOffset()
+	gr.collisions.IncrementBackgroundOffset()
 }
 
 // DrawForeground renders the foreground bgrState based on the current display mode and x-scroll offset.
@@ -389,7 +389,7 @@ func (gr *GraphicsUnit) DrawBackground() {
 func (gr *GraphicsUnit) DrawForeground() {
 	gr.foregroundSequencer[gr.displayMode](gr.baseOffset + int(gr.xScroll))
 	gr.baseOffset += characterPixelWidth
-	gr.collisions.IncrementGraphicsOffset()
+	gr.collisions.IncrementBackgroundOffset()
 }
 
 // setCharData sets the character data and determines the foreground color in Extended Color Mode based on character code bits 7 and 6.
@@ -551,7 +551,7 @@ func (gr *GraphicsUnit) drawDefault(offset int, a uint8) {
 func (gr *GraphicsUnit) drawInvalidStandard(offset int, a uint8) {
 	p1 := gr.gfxData >> gr.xScroll
 	p2 := gr.gfxData << (7 - gr.xScroll)
-	gr.collisions.UpdateGraphics(p1, p2)
+	gr.collisions.UpdateBackground(p1, p2)
 	gr.beam.Draw8(offset, a)
 }
 
@@ -560,7 +560,7 @@ func (gr *GraphicsUnit) drawInvalidMulticolor(offset int, a uint8) {
 	p := (gr.gfxData & 0xaa) | ((gr.gfxData & 0xaa) >> 1)
 	p1 := p >> gr.xScroll
 	p2 := p << (8 - gr.xScroll)
-	gr.collisions.UpdateGraphics(p1, p2)
+	gr.collisions.UpdateBackground(p1, p2)
 	gr.beam.Draw8(offset, a)
 }
 
@@ -568,7 +568,7 @@ func (gr *GraphicsUnit) drawInvalidMulticolor(offset int, a uint8) {
 func (gr *GraphicsUnit) drawStandard(offset int, a uint8, b uint8) {
 	p1 := gr.gfxData >> gr.xScroll
 	p2 := gr.gfxData << (7 - gr.xScroll)
-	gr.collisions.UpdateGraphics(p1, p2)
+	gr.collisions.UpdateBackground(p1, p2)
 	gr.beam.DrawStandard(offset, a, b, gr.gfxData)
 }
 
@@ -577,6 +577,6 @@ func (gr *GraphicsUnit) drawMulticolor(offset int, a uint8, b uint8, c uint8, d 
 	p := (gr.gfxData & 0xaa) | ((gr.gfxData & 0xaa) >> 1)
 	p1 := p >> gr.xScroll
 	p2 := p << (8 - gr.xScroll)
-	gr.collisions.UpdateGraphics(p1, p2)
+	gr.collisions.UpdateBackground(p1, p2)
 	gr.beam.DrawMultiColor(offset, a, b, c, d, gr.gfxData)
 }
