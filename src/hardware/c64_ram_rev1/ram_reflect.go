@@ -15,8 +15,10 @@ type RamReflect struct {
 func NewRamReflect(r *Ram) *RamReflect {
 	reflector := &RamReflect{ref: r}
 	r.PropertyAdd(ramId, "ram is a byte slice representing the memory storage of the RAM component.", false, reflector.getRam, reflector.setRam)
-	_ = r.CommandAdd("setRamEntry", "ram is a byte slice representing the memory storage of the RAM component.", reflector.setRamEntry)
+
 	_ = r.CommandAdd("getRamEntry", "ram is a byte slice representing the memory storage of the RAM component.", reflector.getRamEntry)
+	_ = r.CommandAdd("setRamEntry", "ram is a byte slice representing the memory storage of the RAM component.", reflector.setRamEntry)
+
 	return reflector
 }
 
