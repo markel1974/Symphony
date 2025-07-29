@@ -76,7 +76,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		label:            label,
 		cartManIntervals: 0,
 	}
-	b.BaseComponent.Register(factory, parent, Identifier(), b, references.IdIC64Pla(b, label, instance))
+	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIC64Pla(b, label, instance))
 	return b
 }
 

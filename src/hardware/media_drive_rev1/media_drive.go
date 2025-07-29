@@ -40,7 +40,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		adapterFactory: adapters.NewFactory(),
 		path:           "",
 	}
-	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), fs, references.IdIIecProtocolDevice(fs, label, 0))
+	fs.BaseComponent.Register(factory, fs.protocol, Identifier(), instance, fs, references.IdIIecProtocolDevice(fs, label, 0))
 	fs.protocol.SetDevice(fs)
 	return fs
 }

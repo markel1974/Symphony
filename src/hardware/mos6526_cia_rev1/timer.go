@@ -111,7 +111,7 @@ func NewTimer(parent references.IComponent, factory references.IComponentFactory
 		underflowIn:        false,
 		underflowOut:       false,
 	}
-	m.BaseComponent.Register(factory, parent, "timer", m, references.IdInternalComponent(label, instance, "Timer"))
+	m.BaseComponent.Register(factory, parent, "timer", instance, m, references.IdInternalComponent(label, instance, "Timer"))
 	m.reflect = NewTimerReflect(m)
 	m.Reset()
 	return m

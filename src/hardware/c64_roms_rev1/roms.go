@@ -25,7 +25,7 @@ func NewRomLoader(parent references.IComponent, factory references.IComponentFac
 		basic:         nil,
 		char:          nil,
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIC64Roms(rl, label, instance))
+	rl.BaseComponent.Register(factory, parent, Identifier(), instance, rl, references.IdIC64Roms(rl, label, instance))
 	return rl
 }
 

@@ -30,7 +30,7 @@ func NewMagicDesk(parent references.IComponent, factory references.IComponentFac
 		regVal:        0,
 		slot:          0,
 	}
-	md.BaseComponent.Register(factory, parent, Identifier(), md, references.IdIC64Cartridge(md, label, instance))
+	md.BaseComponent.Register(factory, parent, Identifier(), instance, md, references.IdIC64Cartridge(md, label, instance))
 	return md
 }
 

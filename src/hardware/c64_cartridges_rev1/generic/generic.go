@@ -37,7 +37,7 @@ func NewCartridgeGeneric(parent references.IComponent, factory references.ICompo
 		loaderId:      Identifier(),
 		spec:          references.C64CartridgeSpec8K,
 	}
-	g.BaseComponent.Register(factory, parent, Identifier(), g, references.IdIC64Cartridge(g, label, instance))
+	g.BaseComponent.Register(factory, parent, Identifier(), instance, g, references.IdIC64Cartridge(g, label, instance))
 	return g
 }
 

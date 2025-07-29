@@ -20,7 +20,7 @@ func NewRoms(parent references.IComponent, factory references.IComponentFactory,
 		kernal:        nil,
 		cfg:           nil,
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIC1541Roms(rl, label, instance))
+	rl.BaseComponent.Register(factory, parent, Identifier(), instance, rl, references.IdIC1541Roms(rl, label, instance))
 	return rl
 }
 

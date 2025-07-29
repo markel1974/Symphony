@@ -56,7 +56,7 @@ func newReu(parent references.IComponent, factory references.IComponentFactory, 
 		irqMask:       0,
 		spec:          references.C64CartridgeSpecOff,
 	}
-	r.BaseComponent.Register(factory, parent, id, r, references.IdIC64Cartridge(r, label, instance))
+	r.BaseComponent.Register(factory, parent, id, instance, r, references.IdIC64Cartridge(r, label, instance))
 	r.Reset()
 	return r
 }

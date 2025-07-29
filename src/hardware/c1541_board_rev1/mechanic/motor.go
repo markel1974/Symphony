@@ -23,7 +23,7 @@ func NewMotor(parent references.IComponent, factory references.IComponentFactory
 		spinUpTime:     0,
 		rotationCycles: 0,
 	}
-	v.BaseComponent.Register(factory, parent, "motor", v, references.IdInternalComponent(label, instance, "Motor"))
+	v.BaseComponent.Register(factory, parent, "motor", instance, v, references.IdInternalComponent(label, instance, "Motor"))
 
 	v.Reset()
 	return v

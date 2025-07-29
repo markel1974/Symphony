@@ -73,7 +73,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		label:         label,
 	}
 
-	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdIIecDevice(m, label, instance))
+	m.BaseComponent.Register(factory, parent, Identifier(), instance, m, references.IdIIecDevice(m, label, instance))
 
 	return m
 }

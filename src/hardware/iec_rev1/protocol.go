@@ -124,7 +124,7 @@ func NewProtocol(factory references.IComponentFactory, parent references.ICompon
 		quartz:        nil,
 		debug:         false,
 	}
-	p.BaseComponent.Register(factory, parent, "iec_device_protocol", p, references.IdIIecDevice(p, label, instance))
+	p.BaseComponent.Register(factory, parent, "iec_device_protocol", instance, p, references.IdIIecDevice(p, label, instance))
 	p.quartz = quartz_rev1.NewQuartz(p, factory, label, 0)
 	return p
 }

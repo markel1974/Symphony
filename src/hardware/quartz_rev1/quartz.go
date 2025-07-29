@@ -27,7 +27,7 @@ func NewQuartz(parent references.IComponent, factory references.IComponentFactor
 		hz:              0,
 		factor:          0,
 	}
-	q.BaseComponent.Register(factory, parent, Identifier(), q, references.IdIQuartz(q, label, instance))
+	q.BaseComponent.Register(factory, parent, Identifier(), instance, q, references.IdIQuartz(q, label, instance))
 	return q
 }
 

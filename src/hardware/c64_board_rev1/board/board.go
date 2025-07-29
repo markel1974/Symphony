@@ -57,7 +57,7 @@ func NewBoard(parent references.IComponent, factory references.IComponentFactory
 		emulation:     []func(){},
 		label:         label,
 	}
-	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIC64Board(s, label, instance))
+	s.BaseComponent.Register(factory, parent, Identifier(), instance, s, references.IdIC64Board(s, label, instance))
 
 	const screenFreq = 50   //50 pal - 60 ntsc
 	const totalRaster = 312 //312 pal - 263 ntsc

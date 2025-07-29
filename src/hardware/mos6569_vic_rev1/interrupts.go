@@ -43,7 +43,7 @@ func NewInterrupts(parent references.IComponent, factory references.IComponentFa
 		socketIRQTrigger:      socketIRQTrigger,
 		socketIRQClearTrigger: socketIRQClearTrigger,
 	}
-	i.BaseComponent.Register(factory, parent, "interrupts", i, references.IdInternalComponent(label, instance, "Interrupts"))
+	i.BaseComponent.Register(factory, parent, "interrupts", instance, i, references.IdInternalComponent(label, instance, "Interrupts"))
 	return i
 }
 

@@ -221,7 +221,7 @@ func NewControlUnit(parent references.IComponent, factory references.IComponentF
 	er.addOpId(er.InstOpBRAfp, "instOpBRAfp")
 	er.addOpId(er.InstOpBRAfp1, "instOpBRAfp1")
 
-	er.BaseComponent.Register(factory, parent, "control", er, references.IdInternalComponent(label, instance, "ControlUnit"))
+	er.BaseComponent.Register(factory, parent, "control", instance, er, references.IdInternalComponent(label, instance, "ControlUnit"))
 
 	return er
 }

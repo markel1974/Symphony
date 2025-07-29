@@ -27,7 +27,7 @@ func NewKeyboard(parent references.IComponent, factory references.IComponentFact
 		virtual:       NewVirtual(),
 		ascii:         NewAscii(),
 	}
-	k.BaseComponent.Register(factory, parent, Identifier(), k, references.IdIC64Keyboard(k, label, instance))
+	k.BaseComponent.Register(factory, parent, Identifier(), instance, k, references.IdIC64Keyboard(k, label, instance))
 	return k
 }
 

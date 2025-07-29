@@ -55,7 +55,7 @@ func NewManager(parent references.IComponent, factory references.IComponentFacto
 		carts:         nil,
 		label:         label,
 	}
-	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdIC64CartridgeManager(m, label, instance))
+	m.BaseComponent.Register(factory, parent, Identifier(), instance, m, references.IdIC64CartridgeManager(m, label, instance))
 	return m
 }
 

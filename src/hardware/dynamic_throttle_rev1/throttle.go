@@ -37,7 +37,7 @@ func NewDynamicThrottle(parent references.IComponent, factory references.ICompon
 		idealFrameIntervalHalf: 0,
 		//tuning:        0,
 	}
-	d.BaseComponent.Register(factory, parent, Identifier(), d, references.IdIThrottle(d, label, instance))
+	d.BaseComponent.Register(factory, parent, Identifier(), instance, d, references.IdIThrottle(d, label, instance))
 	return d
 }
 

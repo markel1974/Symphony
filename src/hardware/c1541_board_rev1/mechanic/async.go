@@ -27,7 +27,7 @@ func NewAsync(parent references.IComponent, factory references.IComponentFactory
 		disk:          voidDisk,
 		diskChanged:   false,
 	}
-	j.BaseComponent.Register(factory, parent, "async", j, references.IdInternalComponent(label, instance, "Async"))
+	j.BaseComponent.Register(factory, parent, "async", instance, j, references.IdInternalComponent(label, instance, "Async"))
 
 	j.motor = NewMotor(j, j.GetFactory(), label, 0)
 	j.head = NewHead(j, j.GetFactory(), label, 0)

@@ -55,7 +55,7 @@ func NewHead(parent references.IComponent, factory references.IComponentFactory,
 		dataRead:         notReady,
 		vibrationFactor:  1.0,
 	}
-	h.BaseComponent.Register(factory, parent, "head", h, references.IdInternalComponent(label, instance, "Head"))
+	h.BaseComponent.Register(factory, parent, "head", instance, h, references.IdInternalComponent(label, instance, "Head"))
 	return h
 }
 

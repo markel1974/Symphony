@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/shell"
 	"github.com/markel1974/c64emu/src/references"
 	"io"
+	"strconv"
 )
 
 // propertiesId is a constant string used as a key to reference component properties in state maps.
@@ -22,6 +23,7 @@ type BaseComponent struct {
 	cmd        *shell.Command
 	id         string
 	name       string
+	instance   int
 	hardwareId string
 	factory    references.IComponentFactory
 	parent     references.IComponent
@@ -37,6 +39,7 @@ func NewBaseComponent() *BaseComponent {
 		hardwareId: "",
 		factory:    nil,
 		name:       "",
+		instance:   0,
 		properties: NewProperties(),
 		commands:   NewCommands(),
 		cmd:        nil,
@@ -44,23 +47,23 @@ func NewBaseComponent() *BaseComponent {
 	return bc
 }
 
-func (bc *BaseComponent) Register(f references.IComponentFactory, parent references.IComponent, name string, component references.IComponent, hardwareId string) {
+func (bc *BaseComponent) Register(f references.IComponentFactory, parent references.IComponent, name string, instance int, component references.IComponent, hardwareId string) {
 	bc.factory = f
 	bc.parent = parent
 	bc.name = name
+	bc.instance = instance
 	bc.hardwareId = hardwareId
 	bc.id = bc.hardwareId
 
-	//run := func(task interfaces.ITask, args []string) error {
-	//	task.WriteLn("")
-	//	task.WriteLn(bc.name)
-	//	return nil
-	//}
-
 	commandName := bc.name
-
+	if instance > 0 {
+		commandName += "." + strconv.Itoa(instance)
+	}
 	bc.cmd = shell.NewCommand(commandName, interfaces.CommandTypeDirectory, nil, false, nil)
 	bc.cmd.SetHelp("Directory "+commandName, "Directory "+commandName)
+	if bc.properties != nil {
+		_ = bc.cmd.AddCommand(bc.properties.CreateShellDump("dump"))
+	}
 	if parent != nil && parent.GetNode() != nil {
 		pNode := parent.GetNode()
 		bc.node = newNode(pNode, component)
@@ -128,7 +131,7 @@ func (bc *BaseComponent) GetComponentPath(path string) references.IComponent {
 // AddProperty registers a new property to the BaseComponent with the specified ID, description, read-only flag, getter, and setter.
 func (bc *BaseComponent) AddProperty(id string, desc string, ro bool, get interface{}, set interface{}) {
 	p := NewPropertyInfo(id, desc, ro, get, set)
-	_ = bc.cmd.AddCommand(p.CreateShellCommand())
+	_ = bc.cmd.AddCommand(p.CreateShellCommand()...)
 	bc.properties.Add(p)
 }
 
@@ -231,6 +234,7 @@ func (bc *BaseComponent) RestoreAll(state map[string]interface{}) error {
 	return nil
 }
 
+// GetCommand returns the shell.Command instance associated with the current BaseComponent.
 func (bc *BaseComponent) GetCommand() *shell.Command {
 	return bc.cmd
 }

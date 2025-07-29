@@ -35,7 +35,7 @@ func NewExternalCPU(parent references.IComponent, factory references.IComponentF
 		cfg:    nil,
 		spec:   references.C64CartridgeSpecOff,
 	}
-	r.BaseComponent.Register(factory, parent, Identifier(), r, references.IdIC64Cartridge(r, label, instance))
+	r.BaseComponent.Register(factory, parent, Identifier(), instance, r, references.IdIC64Cartridge(r, label, instance))
 	return r
 }
 

@@ -22,7 +22,7 @@ func NewRam(parent references.IComponent, factory references.IComponentFactory, 
 		ram:           make([]byte, c1541RamSize),
 		filler:        filler.New(255, 128, 0, 0, 0, 0, 0, 0),
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIC1541Ram(rl, label, instance))
+	rl.BaseComponent.Register(factory, parent, Identifier(), instance, rl, references.IdIC1541Ram(rl, label, instance))
 	return rl
 }
 

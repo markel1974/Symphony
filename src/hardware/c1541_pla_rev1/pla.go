@@ -33,7 +33,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 	p := &PLA{
 		BaseComponent: component.NewBaseComponent(),
 	}
-	p.BaseComponent.Register(factory, parent, Identifier(), p, references.IdIC1541Pla(p, label, instance))
+	p.BaseComponent.Register(factory, parent, Identifier(), instance, p, references.IdIC1541Pla(p, label, instance))
 	return p
 }
 

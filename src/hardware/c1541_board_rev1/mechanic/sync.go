@@ -31,7 +31,7 @@ func NewSync(parent references.IComponent, factory references.IComponentFactory,
 		headPos:       2,
 		writing:       false,
 	}
-	j.BaseComponent.Register(factory, parent, "sync", j, references.IdInternalComponent(label, instance, "Sync"))
+	j.BaseComponent.Register(factory, parent, "sync", instance, j, references.IdInternalComponent(label, instance, "Sync"))
 	return j
 }
 

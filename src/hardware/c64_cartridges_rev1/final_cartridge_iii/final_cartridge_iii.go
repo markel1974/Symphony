@@ -51,7 +51,7 @@ func NewCartridgeFinalCartridgeIII(parent references.IComponent, factory referen
 		loaderId:      Identifier(),
 		spec:          references.C64CartridgeSpec16K,
 	}
-	co.BaseComponent.Register(factory, parent, Identifier(), co, references.IdIC64Cartridge(co, label, instance))
+	co.BaseComponent.Register(factory, parent, Identifier(), instance, co, references.IdIC64Cartridge(co, label, instance))
 	return co
 }
 

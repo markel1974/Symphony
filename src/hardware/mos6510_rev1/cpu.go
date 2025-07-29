@@ -98,7 +98,7 @@ func NewCPU(parent references.IComponent, factory references.IComponentFactory, 
 		BaseComponent: component.NewBaseComponent(),
 		label:         label,
 	}
-	cpu.BaseComponent.Register(factory, parent, Identifier(), cpu, references.IdIMos6510(cpu, label, instance))
+	cpu.BaseComponent.Register(factory, parent, Identifier(), instance, cpu, references.IdIMos6510(cpu, label, instance))
 	return cpu
 }
 

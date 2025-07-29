@@ -28,7 +28,7 @@ func NewTOD(parent references.IComponent, factory references.IComponentFactory, 
 	t := &TOD{
 		BaseComponent: component.NewBaseComponent(),
 	}
-	t.BaseComponent.Register(factory, parent, "tod", t, references.IdInternalComponent(label, instance, "TOD"))
+	t.BaseComponent.Register(factory, parent, "tod", instance, t, references.IdInternalComponent(label, instance, "TOD"))
 	t.reflect = NewTODReflect(t)
 	return t
 }

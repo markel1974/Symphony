@@ -50,7 +50,7 @@ func NewDispatcher(parent references.IComponent, factory references.IComponentFa
 		peripheralsData: make([]uint16, BusNum),
 		virtualDrives:   nil,
 	}
-	c.BaseComponent.Register(factory, parent, Identifier(), c, references.IdIIec(c, label, instance))
+	c.BaseComponent.Register(factory, parent, Identifier(), instance, c, references.IdIIec(c, label, instance))
 	return c
 }
 

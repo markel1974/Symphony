@@ -80,7 +80,7 @@ func NewSprite(parent references.IComponent, factory references.IComponentFactor
 	}
 	//sp.plane2ColorHelper = sp.createPlane2ColorHelper()
 	sp.draw = sp.drawUnexpandedStandard
-	sp.BaseComponent.Register(factory, parent, "sprite", sp, references.IdInternalComponent(label, instance, "Sprite"))
+	sp.BaseComponent.Register(factory, parent, "sprite", instance, sp, references.IdInternalComponent(label, instance, "Sprite"))
 	return sp
 }
 

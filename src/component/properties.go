@@ -5,6 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/shell"
 	"reflect"
+	"sort"
+	"strconv"
 	"unicode"
 )
 
@@ -70,22 +72,16 @@ func (prop *PropertyInfo) Description() string {
 
 // Set assigns a new value to the property if it is not read-only and the input type matches the expected kind.
 func (prop *PropertyInfo) Set(arg interface{}) error {
-	if prop.readOnly {
-		return fmt.Errorf("property '%s' is read-only", prop.id)
-	}
-	argValue := reflect.ValueOf(arg)
-	if argValue.Type().AssignableTo(prop.set0Type) {
-		prop.setValue.Call([]reflect.Value{argValue})
-		return nil
-	}
-	if argValue.Type().ConvertibleTo(prop.set0Type) {
+	exec := func(argValue reflect.Value) error {
+		if !argValue.Type().ConvertibleTo(prop.set0Type) {
+			return fmt.Errorf("property '%s' expected type '%v', got '%T'", prop.id, prop.set0Type, arg)
+		}
 		convertedArg := argValue.Convert(prop.set0Type)
 		results := prop.setValue.Call([]reflect.Value{convertedArg})
 		if len(results) != 1 {
 			return fmt.Errorf("property '%s' set failed", prop.id)
 		}
-		res := results[0].Interface()
-		if res == nil {
+		if res := results[0].Interface(); res == nil {
 			return nil
 		}
 		err, ok := results[0].Interface().(error)
@@ -94,6 +90,32 @@ func (prop *PropertyInfo) Set(arg interface{}) error {
 		}
 		return err
 	}
+
+	if prop.readOnly {
+		return fmt.Errorf("property '%s' is read-only", prop.id)
+	}
+	argValue := reflect.ValueOf(arg)
+	if argValue.Type().AssignableTo(prop.set0Type) {
+		prop.setValue.Call([]reflect.Value{argValue})
+		return nil
+	}
+	if err := exec(argValue); err == nil {
+		return nil
+	}
+	//try explicit conversion
+	switch argValue.Kind() {
+	case reflect.String:
+		if f, err := strconv.ParseFloat(argValue.Interface().(string), 64); err == nil {
+			argValue = reflect.ValueOf(f)
+			if err = exec(argValue); err != nil {
+				return err
+			}
+			return nil
+		}
+	default:
+		//nothing to do
+	}
+
 	return fmt.Errorf("property '%s' expected type '%v', got '%T'", prop.id, prop.set0Type, arg)
 }
 
@@ -107,15 +129,33 @@ func (prop *PropertyInfo) Get() (interface{}, error) {
 	return result, nil
 }
 
-// CreateShellCommand generates two shell commands for setting and getting the property's value.
-func (prop *PropertyInfo) CreateShellCommand() (*shell.Command, *shell.Command) {
+// CreateShellSetCommand generates two shell commands for setting and getting the property's value.
+func (prop *PropertyInfo) CreateShellSetCommand() *shell.Command {
+	id := []rune(prop.Id())
+	if len(id) > 0 {
+		id[0] = unicode.ToUpper(id[0])
+	}
 	setProp := func(task interfaces.ITask, args []string) error {
 		task.WriteLn("")
 		if len(args) == 0 {
 			task.WriteLn("no argument provided")
 			return nil
 		}
-		return prop.Set(args[0])
+		if err := prop.Set(args[0]); err != nil {
+			task.WriteLn(err.Error())
+		}
+		return nil
+	}
+	childSet := shell.NewCommand("set"+string(id), interfaces.CommandTypeFile, nil, false, setProp)
+	childSet.SetHelp(prop.Description(), prop.Description())
+	return childSet
+}
+
+// CreateShellGetCommand generates two shell commands for setting and getting the property's value.
+func (prop *PropertyInfo) CreateShellGetCommand() *shell.Command {
+	id := []rune(prop.Id())
+	if len(id) > 0 {
+		id[0] = unicode.ToUpper(id[0])
 	}
 	getProp := func(task interfaces.ITask, args []string) error {
 		v, err := prop.Get()
@@ -123,15 +163,17 @@ func (prop *PropertyInfo) CreateShellCommand() (*shell.Command, *shell.Command) 
 		task.WriteLn(fmt.Sprint(v))
 		return err
 	}
-	id := []rune(prop.Id())
-	if len(id) > 0 {
-		id[0] = unicode.ToUpper(id[0])
-	}
-	childSet := shell.NewCommand("set"+string(id), interfaces.CommandTypeFile, nil, false, setProp)
-	childSet.SetHelp(prop.Description(), prop.Description())
 	childGet := shell.NewCommand("get"+string(id), interfaces.CommandTypeFile, nil, false, getProp)
 	childGet.SetHelp(prop.Description(), prop.Description())
-	return childSet, childGet
+	return childGet
+}
+
+// CreateShellCommand generates two shell commands for setting and getting the property's value.
+func (prop *PropertyInfo) CreateShellCommand() []*shell.Command {
+	var out []*shell.Command
+	out = append(out, prop.CreateShellGetCommand())
+	out = append(out, prop.CreateShellSetCommand())
+	return out
 }
 
 // Properties represent a collection of property definitions mapped by identifiers and a function to execute commands.
@@ -221,13 +263,30 @@ func (p *Properties) Restore(d map[string]interface{}) error {
 	return nil
 }
 
-// CreateShellCommands generates a slice of shell commands to get and set property values in the Properties instance.
-func (p *Properties) CreateShellCommands() []*shell.Command {
-	var out []*shell.Command
-	for _, prop := range p.properties {
-		set, get := prop.CreateShellCommand()
-		out = append(out, set)
-		out = append(out, get)
+// CreateShellDump generates a slice of shell commands to get and set property values in the Properties instance.
+func (p *Properties) CreateShellDump(name string) *shell.Command {
+	dumpFn := func(task interfaces.ITask, args []string) error {
+		task.WriteLn("")
+		for _, prop := range p.sort() {
+			if v, err := prop.Get(); err == nil {
+				task.WriteLn(prop.Id() + ": " + fmt.Sprint(v))
+			}
+		}
+		return nil
 	}
-	return out
+	c := shell.NewCommand(name, interfaces.CommandTypeFile, nil, false, dumpFn)
+	c.SetHelp("dump available properties", "dump available properties")
+	return c
+}
+
+// sort orders the properties by their identifier and returns a slice of PropertyInfo sorted in ascending order.
+func (p *Properties) sort() []*PropertyInfo {
+	var props []*PropertyInfo
+	for _, prop := range p.properties {
+		props = append(props, prop)
+	}
+	sort.Slice(props, func(i, j int) bool {
+		return props[i].Id() < props[j].Id()
+	})
+	return props
 }

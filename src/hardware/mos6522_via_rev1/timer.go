@@ -27,7 +27,7 @@ func NewTimer(parent references.IComponent, factory references.IComponentFactory
 		latch:         defaultViaTimeout,
 		clockPulse:    true,
 	}
-	t.BaseComponent.Register(factory, parent, "timer", t, references.IdInternalComponent(label, instance, "Timer"))
+	t.BaseComponent.Register(factory, parent, "timer", instance, t, references.IdInternalComponent(label, instance, "Timer"))
 	t.reflect = NewTimerReflect(t)
 	return t
 }

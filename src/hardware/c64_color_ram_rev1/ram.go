@@ -20,7 +20,7 @@ func NewColorRam(parent references.IComponent, factory references.IComponentFact
 		color:         make([]byte, 0x0400),
 		colorFiller:   filler.New(255, 128, 0, 0, 0, 0, 0, filler.InitRandomChanceHalf),
 	}
-	rl.BaseComponent.Register(factory, parent, Identifier(), rl, references.IdIC64ColorRam(rl, label, instance))
+	rl.BaseComponent.Register(factory, parent, Identifier(), instance, rl, references.IdIC64ColorRam(rl, label, instance))
 	return rl
 }
 

@@ -73,7 +73,7 @@ func NewCIA(parent references.IComponent, factory references.IComponentFactory, 
 		timerB:        nil,
 		label:         label,
 	}
-	m.BaseComponent.Register(factory, parent, Identifier(), m, references.IdIMos6526(m, label, instance))
+	m.BaseComponent.Register(factory, parent, Identifier(), instance, m, references.IdIMos6526(m, label, instance))
 	m.reflect = NewCIAReflect(m)
 	return m
 }

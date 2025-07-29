@@ -79,7 +79,7 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 		player:        nil,
 		cfg:           nil,
 	}
-	s.BaseComponent.Register(factory, parent, Identifier(), s, references.IdIMos6581(s, label, instance))
+	s.BaseComponent.Register(factory, parent, Identifier(), instance, s, references.IdIMos6581(s, label, instance))
 	s.reflect = NewSidReflect(s)
 	return s
 }
