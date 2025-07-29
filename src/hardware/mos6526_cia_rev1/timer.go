@@ -400,17 +400,3 @@ func (m *Timer) countTimerUnderflowCNT(underflowX bool) bool {
 	}
 	return false
 }
-
-// printTimerControlData displays detailed control register bit states for a Timer using the provided data byte.
-func (m *Timer) printTimerControlData(data uint8) {
-	fmt.Printf("\n")
-	fmt.Printf("%s Timer Control -> crBitStart: %v\n", m.GetId(), data&crBitStart != 0)
-	fmt.Printf("%s Timer Control -> crBitSignalNoUnderflow: %v\n", m.GetId(), data&crBitPBOn != 0)
-	fmt.Printf("%s Timer Control -> crBitSignalUnderflowInverted: %v\n", m.GetId(), data&crBitOutMode != 0)
-	fmt.Printf("%s Timer Control -> crBitRunMode: %v\n", m.GetId(), data&crBitRunMode != 0)
-	fmt.Printf("%s Timer Control -> crBitForceLoad: %v\n", m.GetId(), data&crBitForceLoad != 0)
-	fmt.Printf("%s Timer Control -> crBitInMode: %v\n", m.GetId(), data&crBitInMode != 0)
-	fmt.Printf("%s Timer Control -> crBitSPMode: %v\n", m.GetId(), data&crBitSPMode != 0)
-	fmt.Printf("%s Timer Control -> crBitTODIn: %v\n", m.GetId(), data&crBitTODIn != 0)
-	fmt.Printf("\n")
-}
