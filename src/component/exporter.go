@@ -120,7 +120,7 @@ type TemplateData struct {
 	Properties  []Property
 }
 
-// StructData represents metadata for a struct including its name and associated properties.
+// StructData represents metadata for a struct, including its name and associated properties.
 type StructData struct {
 	StructName string
 	Properties []Property
@@ -303,7 +303,7 @@ func (g *Generator) ParseAndGenerate() error {
 	return nil
 }
 
-// getMethod searches for a method name in a methods map using the base name and a list of possible prefixes.
+// getMethod searches for a method name in a method map using the base name and a list of possible prefixes.
 // It returns the full method name and a boolean indicating whether the method was found.
 func (g *Generator) getMethod(methods map[string]*ast.FuncDecl, baseName string, prefixes []string) (string, bool) {
 	for _, p := range prefixes {
@@ -379,7 +379,7 @@ func createPropertySetFuncReturnNil(fieldName string) string {
 	return nil`, fieldName)
 }
 
-// createCommandSet generates a template for setting a value at a specific index of a slice, ensuring safety with bounds checking.
+// createCommandSet generates a template for setting a value at a specific index of a slice, ensuring safety with bound checking.
 func createCommandSet(fieldName string) string {
 	return fmt.Sprintf(`if idx >= 0 && idx < len(s.ref.%s) {
         s.ref.%s[idx] = v
@@ -389,7 +389,7 @@ func createCommandSet(fieldName string) string {
 }
 
 // createCommandGet generates a string representing a Go function to retrieve an element from a slice by index.
-// It ensures bounds checking and returns a zero value of the slice element type if the index is out of range.
+// It ensures bound checking and returns a zero value of the slice element type if the index is out of range.
 func createCommandGet(fieldName string, elementType string) string {
 	return fmt.Sprintf(`if idx >= 0 && idx < len(s.ref.%s) {
         return s.ref.%s[idx]
