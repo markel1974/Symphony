@@ -8,6 +8,7 @@ import (
 // ShiftRegister represents an 8-bit shift register component with bit counter and custom socket signaling logic.
 type ShiftRegister struct {
 	*component.BaseComponent
+	reflect        *ShiftRegisterReflect
 	register       uint8 // symphony:export register represents the 8-bit storage of the shift register, used for data shifting and processing.
 	counter        uint8 // symphony:export counter represents the remaining bits to be shifted in the 8-bit shift register during operation.
 	socketReadSP   func() bool
@@ -20,6 +21,7 @@ func NewShiftRegister(parent references.IComponent, factory references.IComponen
 		BaseComponent: component.NewBaseComponent(),
 	}
 	s.BaseComponent.Register(factory, parent, "shiftRegister", instance, s, references.IdInternalComponent(label, instance, "ShiftRegister"))
+	s.reflect = NewShiftRegisterReflect(s)
 	return s
 }
 
