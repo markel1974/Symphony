@@ -9,18 +9,20 @@ import (
 // Ram represents a memory component with associated data buffers and fillers for color and data management.
 type Ram struct {
 	*component.BaseComponent
-	ram    []byte
-	filler *filler.Filler
+	reflect *RamReflect
+	ram     []uint8 // symphony:export ram is a byte slice representing the memory storage of the RAM component.
+	filler  *filler.Filler
 }
 
 // NewRam creates and initializes a new Ram instance with a parent component, factory, label, and instance number.
 func NewRam(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Ram {
 	rl := &Ram{
 		BaseComponent: component.NewBaseComponent(),
-		ram:           make([]byte, 0x10000),
+		ram:           make([]uint8, 0x10000),
 		filler:        filler.New(255, 128, 0, 0, 0, 0, 0, 0),
 	}
 	rl.BaseComponent.Register(factory, parent, Identifier(), instance, rl, references.IdIC64Ram(rl, label, instance))
+	rl.reflect = NewRamReflect(rl)
 	return rl
 }
 

@@ -2,6 +2,7 @@ package component
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 	"strings"
 )
@@ -57,4 +58,38 @@ func ComponentData(data string) (string, string, int, error) {
 		return "", "", 0, fmt.Errorf("error restoring component %s: %s", id, err.Error())
 	}
 	return label, id, instance, nil
+}
+
+// ConvertStringArgument converts a string argument to a reflect.Value of the specified targetType or returns an error.
+func ConvertStringArgument(arg string, targetType reflect.Type) (reflect.Value, error) {
+	switch targetType.Kind() {
+	case reflect.String:
+		return reflect.ValueOf(arg).Convert(targetType), nil
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		i, err := strconv.ParseInt(arg, 10, 64)
+		if err != nil {
+			return reflect.Value{}, fmt.Errorf("not a valid integer")
+		}
+		return reflect.ValueOf(i).Convert(targetType), nil
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		u, err := strconv.ParseUint(arg, 10, 64)
+		if err != nil {
+			return reflect.Value{}, fmt.Errorf("not a valid unsigned integer")
+		}
+		return reflect.ValueOf(u).Convert(targetType), nil
+	case reflect.Float32, reflect.Float64:
+		f, err := strconv.ParseFloat(arg, 64)
+		if err != nil {
+			return reflect.Value{}, fmt.Errorf("not a valid float")
+		}
+		return reflect.ValueOf(f).Convert(targetType), nil
+	case reflect.Bool:
+		b, err := strconv.ParseBool(arg)
+		if err != nil {
+			return reflect.Value{}, fmt.Errorf("not a valid boolean")
+		}
+		return reflect.ValueOf(b).Convert(targetType), nil
+	default:
+		return reflect.Value{}, fmt.Errorf("unsupported argument type: %s", targetType.Kind())
+	}
 }

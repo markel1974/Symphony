@@ -61,9 +61,9 @@ type ICommand interface {
 
 	CommandAdd(id string, desc string, command interface{}) error
 
-	CommandExec(string, ...interface{}) (interface{}, error)
+	CommandExec(string, ...string) (interface{}, error)
 
-	CommandExecPath(string, string, ...interface{}) (interface{}, error)
+	CommandExecPath(string, string, ...string) (interface{}, error)
 
 	CommandDocumentation(map[string]interface{})
 }

@@ -14,7 +14,7 @@ type Command struct {
 	id          string
 	description string
 	command     interface{}
-	args        []reflect.Kind
+	argsType    []reflect.Type
 	ret         []reflect.Kind
 	exec        reflect.Value
 	signature   string
@@ -49,9 +49,9 @@ func NewCommand(id string, desc string, command interface{}) *Command {
 	}
 	var argsHelp []string
 	for x := 0; x < commandType.NumIn(); x++ {
-		cIn := commandType.In(x).Kind()
-		cmd.args = append(cmd.args, cIn)
-		argsHelp = append(argsHelp, cIn.String())
+		cInType := commandType.In(x)
+		cmd.argsType = append(cmd.argsType, cInType)
+		argsHelp = append(argsHelp, cInType.String())
 	}
 	const sep = ", "
 	cmd.signature = cmd.id + "(" + strings.Join(argsHelp, sep) + ")"
@@ -77,16 +77,18 @@ func (cmd *Command) Description() string {
 }
 
 // Exec invokes the encapsulated command with the provided arguments and returns the result or an error on failure.
-func (cmd *Command) Exec(args []interface{}) (interface{}, error) {
-	if len(args) != len(cmd.args) {
+func (cmd *Command) Exec(args []string) (interface{}, error) {
+	if len(args) != len(cmd.argsType) {
 		return nil, fmt.Errorf("wrong number of arguments")
 	}
 	var rArgs []reflect.Value
-	for x := 0; x < len(cmd.args); x++ {
-		if t := reflect.TypeOf(args[x]); t.Kind() != cmd.args[x] {
-			return nil, fmt.Errorf("wrong argument type")
+	for x := 0; x < len(cmd.argsType); x++ {
+		targetType := cmd.argsType[x]
+		val, err := ConvertStringArgument(args[x], targetType)
+		if err != nil {
+			return nil, fmt.Errorf("argument %d ('%s'): %w", x, args[x], err)
 		}
-		rArgs = append(rArgs, reflect.ValueOf(args[x]))
+		rArgs = append(rArgs, val)
 	}
 	results := cmd.exec.Call(rArgs)
 	if len(results) != len(cmd.ret) {
@@ -108,12 +110,10 @@ func (cmd *Command) Exec(args []interface{}) (interface{}, error) {
 // CreateShellCommand converts the Command instance into a shell-compatible command with execution and help functionality.
 func (cmd *Command) CreateShellCommand() *shell.Command {
 	cmdExec := func(task interfaces.ITask, args []string) error {
-		var iArgs []interface{}
-		for _, a := range args {
-			iArgs = append(iArgs, a)
+		v, err := cmd.Exec(args)
+		if v != nil {
+			task.WriteLn(fmt.Sprint(v))
 		}
-		v, err := cmd.Exec(iArgs)
-		task.WriteLn(fmt.Sprint(v))
 		return err
 	}
 	childCmd := shell.NewCommand(cmd.Id(), interfaces.CommandTypeFile, nil, false, cmdExec)
@@ -160,7 +160,7 @@ func (c *Commands) Retrieve(id string) *Command {
 }
 
 // Exec executes the command identified by the given id with the provided arguments and returns the result or an error.
-func (c *Commands) Exec(id string, args []interface{}) (interface{}, error) {
+func (c *Commands) Exec(id string, args []string) (interface{}, error) {
 	cmd, ok := c.commands[id]
 	if !ok {
 		return nil, fmt.Errorf("command '%s' not found", id)

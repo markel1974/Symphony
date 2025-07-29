@@ -252,7 +252,7 @@ func (bc *BaseComponent) CommandAdd(id string, desc string, cmd interface{}) err
 }
 
 // CommandExec executes the specified command with the given arguments and returns the result or an error if execution fails.
-func (bc *BaseComponent) CommandExec(cmd string, args ...interface{}) (interface{}, error) {
+func (bc *BaseComponent) CommandExec(cmd string, args ...string) (interface{}, error) {
 	d, err := bc.commands.Exec(cmd, args)
 	if err != nil {
 		return nil, err
@@ -261,7 +261,7 @@ func (bc *BaseComponent) CommandExec(cmd string, args ...interface{}) (interface
 }
 
 // CommandExecPath executes a command on a component located at the specified path, passing optional arguments to it.
-func (bc *BaseComponent) CommandExecPath(path string, cmd string, args ...interface{}) (interface{}, error) {
+func (bc *BaseComponent) CommandExecPath(path string, cmd string, args ...string) (interface{}, error) {
 	component := bc.node.Traverse(path)
 	if component == nil {
 		return nil, fmt.Errorf("component %s not found", path)
