@@ -10,6 +10,7 @@ const (
 
 type RamReflect struct {
 	ref *Ram
+	err error
 }
 
 func NewRamReflect(r *Ram) *RamReflect {
@@ -18,6 +19,12 @@ func NewRamReflect(r *Ram) *RamReflect {
 
 	_ = r.CommandAdd("getRamEntry", "ram is a byte slice representing the memory storage of the RAM component.", reflector.getRamEntry)
 	_ = r.CommandAdd("setRamEntry", "ram is a byte slice representing the memory storage of the RAM component.", reflector.setRamEntry)
+
+	_ = r.CommandAdd("Emulate", "Emulate() Emulate performs the main emulation logic for the Ram component during a simulation cycle.", r.Emulate)
+	_ = r.CommandAdd("Read", "Read(addr) Read retrieves a byte from the RAM at the specified memory address.", r.Read)
+	_ = r.CommandAdd("Size", "Size() Size returns the length of the `ram` slice, representing the total size of the RAM in bytes.", r.Size)
+	_ = r.CommandAdd("Reset", "Reset() Reset clears and reinitializes the RAM to its default state as defined during setup.", r.Reset)
+	_ = r.CommandAdd("Write", "Write(addr, data) Write stores the provided data byte at the specified memory address in the RAM.", r.Write)
 
 	return reflector
 }
@@ -34,11 +41,11 @@ func (s *RamReflect) setRam(v []uint8) error {
 }
 
 // getRamEntry is the generated indexed getter for the ram.
-func (s *RamReflect) getRamEntry(idx int) uint8 {
+func (s *RamReflect) getRamEntry(idx int) (uint8, error) {
 	if idx >= 0 && idx < len(s.ref.ram) {
-		return s.ref.ram[idx]
+		return s.ref.ram[idx], nil
 	}
-	return *new(uint8)
+	return *new(uint8), errors.New("index out of bounds")
 }
 
 // setRamEntry is the generated indexed setter for the ram.

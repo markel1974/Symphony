@@ -44,6 +44,7 @@ func (r *Ram) Connect() error {
 
 // Reset clears and reinitializes the RAM to its default state as defined during setup.
 func (r *Ram) Reset() {
+	//r.filler.InitWithPattern(r.ram, uint(len(r.ram)))
 }
 
 // EmulationRequired checks whether emulation is necessary for the current RAM implementation. Always returns false.
