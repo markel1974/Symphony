@@ -29,6 +29,7 @@ var _latchStates = []int{LatchIndex0, LatchIndex1}
 // SpritesUnit manages sprite functionalities within the VIC-II system, including rendering, collisions, and DMA operations.
 type SpritesUnit struct {
 	*component.BaseComponent
+	reflect            *SpritesUnitReflect
 	memory             *MemoryUnit
 	collisions         *CollisionsUnit // collisions manages sprite collision detection within the SpritesUnit.
 	sprites            []*Sprite       // sprites stores pointers to all Sprite instances managed by the SpritesUnit.
@@ -77,6 +78,7 @@ func NewSprites(parent references.IComponent, factory references.IComponentFacto
 		active:             nil,
 	}
 	s.BaseComponent.Register(factory, parent, "spritesUnit", instance, s, references.IdInternalComponent(label, instance, "SpritesUnit"))
+	s.reflect = NewSpritesUnitReflect(s)
 	for i := range s.sprites {
 		s.sprites[i] = NewSprite(s, factory, "Sprite", i, surface, collisions, uint8(i), len(s.sprites))
 	}

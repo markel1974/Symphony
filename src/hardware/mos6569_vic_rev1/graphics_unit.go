@@ -26,6 +26,7 @@ const (
 // This struct encapsulates the state and behavior necessary for emulating the VIC-II's bgrState rendering process.
 type GraphicsUnit struct {
 	*component.BaseComponent
+	reflect               *GraphicsUnitReflect
 	memory                *MemoryUnit
 	collisions            *CollisionsUnit
 	beam                  *RasterBeam
@@ -127,6 +128,7 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		gr.drawBackgroundInvalid,
 	}
 	gr.BaseComponent.Register(factory, parent, "graphicsUnit", instance, gr, references.IdInternalComponent(label, instance, "GraphicsUnit"))
+	gr.reflect = NewGraphicsUnitReflect(gr)
 	return gr
 }
 

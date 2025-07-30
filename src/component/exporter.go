@@ -55,10 +55,16 @@ const (
 
 type {{.StructName}}Reflect struct {
     ref *{{.StructName}}
+	{{.OutOfBoundsVar}} error
+	{{.ReadOnlyVar}} error
 }
 
 func New{{.StructName}}Reflect(r *{{.StructName}}) *{{.StructName}}Reflect {
-    reflector := &{{.StructName}}Reflect{ref: r}
+    reflector := &{{.StructName}}Reflect{
+		ref: r, 
+		{{.OutOfBoundsVar}}: errors.New("index out of bounds"),
+		{{.ReadOnlyVar}}: errors.New("property is read-only"),
+	}
     {{- range .Properties}}
     r.PropertyAdd({{.IDVarName}}, "{{.Documentation}}", {{.ReadOnly}}, reflector.{{.GetterName}}, reflector.{{.SetterName}})
     {{if eq .Kind 2}}
@@ -85,7 +91,7 @@ func (s *{{$.StructName}}Reflect) {{.SetterName}}(v {{.FieldType}}) error {
 }{{else}}
 func (s *{{$.StructName}}Reflect) {{.SetterName}}(v {{.FieldType}}) error {
     // property {{.FieldName}} is read-only.
-    return errors.New("property {{.FieldName}} is read-only")
+    return s.{{.ReadOnlyVar}}
 }
 {{end}}
 {{if eq .Kind 2}}
@@ -129,25 +135,118 @@ type Method struct {
 // TemplateData represents the template context used during code generation.
 // It contains the package name, the struct name, and the list of properties for the struct.
 type TemplateData struct {
-	PackageName string
-	StructName  string
-	Properties  []Property
-	Methods     []Method
+	PackageName    string
+	StructName     string
+	ErrOutOfBound  string
+	Properties     []Property
+	Methods        []Method
+	OutOfBoundsVar string
+	ReadOnlyVar    string
+}
+
+type OptionsData struct {
+	OutOfBoundsVar string
+	ReadOnlyVar    string
 }
 
 // StructData represents metadata for a struct, including its name and associated properties.
 type StructData struct {
 	Name       string
-	Input      string
 	Type       *ast.StructType
 	FuncDecl   map[string]*ast.FuncDecl
 	Properties []Property
 	Methods    []Method
+	Input      string
+	options    *OptionsData
+	Component  string
 }
 
 // NewStructData creates and initializes a new StructData instance with the provided name.
-func NewStructData(input string, name string) *StructData {
-	return &StructData{Input: input, Name: name, Properties: []Property{}, FuncDecl: make(map[string]*ast.FuncDecl)}
+func NewStructData(input string, options *OptionsData, name string) *StructData {
+	return &StructData{
+		options:    options,
+		Input:      input,
+		Name:       name,
+		Component:  "",
+		Properties: []Property{},
+		FuncDecl:   make(map[string]*ast.FuncDecl),
+	}
+}
+
+// createPropertyGet generates a getter body that accesses a specific field of a struct via a provided field name.
+func (sd *StructData) createPropertyGet(fieldName string) string {
+	return fmt.Sprintf(`return s.ref.%s`, fieldName)
+}
+
+func (sd *StructData) createPropertyGetFunc(fieldName string) string {
+	return fmt.Sprintf(`return s.ref.%s()`, fieldName)
+}
+
+// createPropertySetReadOnly generates a default error message indicating that a property is read-only.
+func (sd *StructData) createPropertySetReadOnly(readOnlyVar string) string {
+	return fmt.Sprintf(`return s.%s`, readOnlyVar)
+}
+
+// createPropertySetPrimitive generates a function body string to set a struct field value and return nil.
+func (sd *StructData) createPropertySetPrimitive(fieldName string) string {
+	return fmt.Sprintf(`s.ref.%s = v
+	return nil`, fieldName)
+}
+
+// createPropertySetSlice generates code for setting a slice property on a struct and returns the formatted string.
+func (sd *StructData) createPropertySetSlice(fieldName string) string {
+	return fmt.Sprintf(`copy(s.ref.%s, v)
+	return nil`, fieldName)
+}
+
+// createPropertySetFunc generates the body of a setter method that assigns a value via a referenced method in the struct.
+func (sd *StructData) createPropertySetFunc(setterFunc string) string {
+	return fmt.Sprintf(`return s.ref.%s(v)`, setterFunc)
+}
+
+// createPropertySetFuncReturnNil generates a setter function body for a field that sets its value and always returns nil.
+func (sd *StructData) createPropertySetFuncReturnNil(fieldName string) string {
+	return fmt.Sprintf(`s.ref.%s(v)
+	return nil`, fieldName)
+}
+
+// createCommandSet generates a template for setting a value at a specific index of a slice, ensuring safety with bound checking.
+func (sd *StructData) createCommandSet(fieldName string) string {
+	return fmt.Sprintf(`if idx >= 0 && idx < len(s.ref.%s) {
+        s.ref.%s[idx] = v
+        return nil
+    }
+    return errors.New("index out of bounds")`, fieldName, fieldName)
+}
+
+// createCommandGet generates a string representing a Go function to retrieve an element from a slice by index.
+// It ensures bound checking and returns a zero value of the slice element type if the index is out of range.
+func (sd *StructData) createCommandGet(fieldName string, elementType string, outOfBoundsVar string) string {
+	return fmt.Sprintf(`if idx >= 0 && idx < len(s.ref.%s) {
+        return s.ref.%s[idx], nil
+    }
+    return *new(%s), s.%s`, fieldName, fieldName, elementType, outOfBoundsVar)
+}
+
+func (sd *StructData) getEmbedded(field *ast.Field) string {
+	switch t := field.Type.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.SelectorExpr:
+		if pkg, ok := t.X.(*ast.Ident); ok {
+			return pkg.Name + "." + t.Sel.Name
+		}
+	case *ast.StarExpr:
+		switch sx := t.X.(type) {
+		case *ast.Ident:
+			return sx.Name
+		case *ast.SelectorExpr:
+			if pkg, ok := sx.X.(*ast.Ident); ok {
+				return pkg.Name + "." + sx.Sel.Name
+			}
+		}
+	}
+	return ""
 }
 
 // CompileMethods processes the exported methods of the struct, validates their parameters, and appends valid methods to Methods.
@@ -199,7 +298,7 @@ func (sd *StructData) CompileMethods(fileSet *token.FileSet) {
 		if valid {
 			var comments string
 			if method.Doc != nil {
-				comments = getDoc(method.Doc.List, method.Name.Name)
+				comments = sd.getDoc(method.Doc.List, method.Name.Name)
 			}
 			arguments := "(" + strings.Join(args, ", ") + ")"
 			result := strings.Join(returnValues, ",")
@@ -223,12 +322,14 @@ func (sd *StructData) CompileProperties(fileSet *token.FileSet) {
 		return
 	}
 	for _, field := range structType.Fields.List {
-		if field.Comment == nil || len(field.Names) == 0 {
+		if len(field.Names) == 0 {
+			sd.Component = sd.getEmbedded(field)
 			continue
 		}
 		//if !strings.Contains(commentText, exporterPrefix) {
 		//	continue
 		//}
+
 		fieldName := field.Names[0].Name
 		fieldType, err := toType(fileSet, field.Type)
 		if err != nil {
@@ -241,7 +342,10 @@ func (sd *StructData) CompileProperties(fileSet *token.FileSet) {
 			continue
 		}
 		goName := strings.ToUpper(fieldName[:1]) + fieldName[1:]
-		doc := getDoc(field.Comment.List, goName)
+		doc := goName
+		if field.Comment != nil {
+			doc = sd.getDoc(field.Comment.List, goName)
+		}
 		prop := Property{
 			FieldName:     fieldName,
 			IDVarName:     "reflect" + capitalize(fieldName) + "Id",
@@ -250,14 +354,14 @@ func (sd *StructData) CompileProperties(fileSet *token.FileSet) {
 			FieldType:     fieldType,
 			Documentation: doc,
 			ReadOnly:      strings.Contains(doc, readonlyKeyword),
-			GetterBody:    createPropertyGet(fieldName),
+			GetterBody:    sd.createPropertyGet(fieldName),
 			Kind:          kind,
 		}
 		if getterFunc, found := getMethod(sd.FuncDecl, goName, []string{"Get", "get"}); found {
-			prop.GetterBody = createPropertyGet(getterFunc)
+			prop.GetterBody = sd.createPropertyGetFunc(getterFunc)
 		}
 		if prop.ReadOnly {
-			prop.SetterBody = createPropertySetReadOnly()
+			prop.SetterBody = sd.createPropertySetReadOnly(sd.options.ReadOnlyVar)
 		} else {
 			//has method
 			if setterFunc, found := getMethod(sd.FuncDecl, goName, []string{"Set", "set"}); found {
@@ -269,20 +373,20 @@ func (sd *StructData) CompileProperties(fileSet *token.FileSet) {
 					}
 				}
 				if returnsError {
-					prop.SetterBody = createPropertySetFunc(setterFunc)
+					prop.SetterBody = sd.createPropertySetFunc(setterFunc)
 				} else {
-					prop.SetterBody = createPropertySetFuncReturnNil(setterFunc)
+					prop.SetterBody = sd.createPropertySetFuncReturnNil(setterFunc)
 				}
 			} else {
 				if kind == 2 { // Slice
 					prop.SliceElementType = strings.TrimPrefix(fieldType, "[]")
-					prop.SetterBody = createPropertySetSlice(fieldName)
+					prop.SetterBody = sd.createPropertySetSlice(fieldName)
 					prop.CommandGetterName = "get" + goName + "Entry"
 					prop.CommandSetterName = "set" + goName + "Entry"
-					prop.CommandGetterBody = createCommandGet(fieldName, prop.SliceElementType)
-					prop.CommandSetterBody = createCommandSet(fieldName)
+					prop.CommandGetterBody = sd.createCommandGet(fieldName, prop.SliceElementType, sd.options.OutOfBoundsVar)
+					prop.CommandSetterBody = sd.createCommandSet(fieldName)
 				} else { // Base type
-					prop.SetterBody = createPropertySetPrimitive(fieldName)
+					prop.SetterBody = sd.createPropertySetPrimitive(fieldName)
 				}
 			}
 		}
@@ -290,36 +394,14 @@ func (sd *StructData) CompileProperties(fileSet *token.FileSet) {
 	}
 }
 
-// Generator is responsible for parsing Go files to extract struct definitions and generate output based on their metadata.
-type Generator struct {
-	//fileSet   *token.FileSet
-	inputFile string
-	output    io.Writer
-	useFile   bool
-}
-
-// NewGenerator creates and initializes a new Generator instance with the given input file and file usage flag.
-func NewGenerator(inputFile string, useFile bool) *Generator {
-	return &Generator{
-		//fileSet:   token.NewFileSet(),
-		inputFile: inputFile,
-		useFile:   useFile,
-		output:    os.Stdout,
-	}
-}
-
-// SetOutput sets the output destination for the generated content, replacing the default writer with the provided io.Writer.
-func (g *Generator) SetOutput(w io.Writer) {
-	g.output = w
-}
-
 // getDoc processes a list of comments, removes specific prefixes/keywords, and returns a formatted string or default value.
-func getDoc(comments []*ast.Comment, def string) string {
+func (sd *StructData) getDoc(comments []*ast.Comment, def string) string {
 	var doc string
 	for _, c := range comments {
 		doc += c.Text + " "
 	}
 	doc = strings.Replace(doc, "//", "", -1)
+	doc = strings.Replace(doc, "\"", "'", -1)
 	doc = strings.Replace(doc, "\t", " ", -1)
 	doc = strings.Replace(doc, "\n", " ", -1)
 	doc = strings.Replace(doc, "\r", " ", -1)
@@ -333,8 +415,35 @@ func getDoc(comments []*ast.Comment, def string) string {
 	return doc
 }
 
+// Generator is responsible for parsing Go files to extract struct definitions and generate output based on their metadata.
+type Generator struct {
+	sourceFile string
+	output     io.Writer
+	useFile    bool
+	options    *OptionsData
+}
+
+// NewGenerator creates and initializes a new Generator instance with the given input file and file usage flag.
+func NewGenerator(sourceFile string, useFile bool) *Generator {
+	options := &OptionsData{
+		OutOfBoundsVar: "outOfBoundsError",
+		ReadOnlyVar:    "readOnlyError",
+	}
+	return &Generator{
+		sourceFile: sourceFile,
+		useFile:    useFile,
+		output:     os.Stdout,
+		options:    options,
+	}
+}
+
+// SetOutput sets the output destination for the generated content, replacing the default writer with the provided io.Writer.
+func (g *Generator) SetOutput(w io.Writer) {
+	g.output = w
+}
+
 // prepareStruct analyzes an AST file, extracts struct type definitions, and returns them mapped by their names as StructData.
-func (g *Generator) prepareStruct(input string, node *ast.File) map[string]*StructData {
+func (g *Generator) prepareStruct(input string, options *OptionsData, node *ast.File) map[string]*StructData {
 	structs := make(map[string]*StructData)
 	ast.Inspect(node, func(n ast.Node) bool {
 		if funcDecl, ok := n.(*ast.FuncDecl); ok {
@@ -350,7 +459,7 @@ func (g *Generator) prepareStruct(input string, node *ast.File) map[string]*Stru
 					if len(name) > 0 {
 						elem := structs[name]
 						if elem == nil {
-							elem = NewStructData(input, name)
+							elem = NewStructData(input, options, name)
 							structs[name] = elem
 						}
 						elem.FuncDecl[funcDecl.Name.Name] = funcDecl
@@ -364,7 +473,7 @@ func (g *Generator) prepareStruct(input string, node *ast.File) map[string]*Stru
 				if structType, ok := typeSpec.Type.(*ast.StructType); ok {
 					elem := structs[name]
 					if elem == nil {
-						elem = NewStructData(input, name)
+						elem = NewStructData(input, options, name)
 						structs[name] = elem
 					}
 					elem.Type = structType
@@ -378,16 +487,16 @@ func (g *Generator) prepareStruct(input string, node *ast.File) map[string]*Stru
 
 // ParseAndGenerate parses the input Go source file, extracts struct definitions and their properties, and generates code based on them.
 func (g *Generator) ParseAndGenerate() error {
-	st, err := os.Stat(g.inputFile)
+	st, err := os.Stat(g.sourceFile)
 	if err != nil {
 		return err
 	}
 
 	var files []string
 	if !st.IsDir() {
-		files = append(files, g.inputFile)
+		files = append(files, g.sourceFile)
 	} else {
-		err = filepath.Walk(g.inputFile, func(path string, info os.FileInfo, err error) error {
+		err = filepath.Walk(g.sourceFile, func(path string, info os.FileInfo, err error) error {
 			if !info.IsDir() && filepath.Ext(path) == ".go" {
 				files = append(files, path)
 			}
@@ -407,7 +516,7 @@ func (g *Generator) ParseAndGenerate() error {
 			continue
 		}
 
-		structs := g.prepareStruct(input, node)
+		structs := g.prepareStruct(input, g.options, node)
 		if len(structs) == 0 {
 			log.Printf("[%s] error preparing file: empty structs\n", input)
 			continue
@@ -419,8 +528,10 @@ func (g *Generator) ParseAndGenerate() error {
 		}
 
 		for _, data := range structs {
-			if err = g.generateFile(input, node.Name.Name, data); err != nil {
-				log.Printf("error generating file for struct %s: %v", data.Name, err)
+			if strings.Contains(data.Component, "BaseComponent") {
+				if err = g.generateFile(input, node.Name.Name, data); err != nil {
+					log.Printf("error generating file for struct %s: %v", data.Name, err)
+				}
 			}
 		}
 	}
@@ -452,63 +563,14 @@ func (g *Generator) generateFile(inputFile string, packageName string, data *Str
 		writer = f
 	}
 	templateData := TemplateData{
-		PackageName: packageName,
-		StructName:  data.Name,
-		Properties:  data.Properties,
-		Methods:     data.Methods,
+		PackageName:    packageName,
+		StructName:     data.Name,
+		Properties:     data.Properties,
+		Methods:        data.Methods,
+		OutOfBoundsVar: g.options.OutOfBoundsVar,
+		ReadOnlyVar:    g.options.ReadOnlyVar,
 	}
 	return tmpl.Execute(writer, &templateData)
-}
-
-// createPropertyGet generates a getter body that accesses a specific field of a struct via a provided field name.
-func createPropertyGet(fieldName string) string {
-	return fmt.Sprintf(`return s.ref.%s`, fieldName)
-}
-
-// createPropertySetReadOnly generates a default error message indicating that a property is read-only.
-func createPropertySetReadOnly() string {
-	return `return errors.New("property is read-only")`
-}
-
-// createPropertySetPrimitive generates a function body string to set a struct field value and return nil.
-func createPropertySetPrimitive(fieldName string) string {
-	return fmt.Sprintf(`s.ref.%s = v
-	return nil`, fieldName)
-}
-
-// createPropertySetSlice generates code for setting a slice property on a struct and returns the formatted string.
-func createPropertySetSlice(fieldName string) string {
-	return fmt.Sprintf(`copy(s.ref.%s, v)
-	return nil`, fieldName)
-}
-
-// createPropertySetFunc generates the body of a setter method that assigns a value via a referenced method in the struct.
-func createPropertySetFunc(setterFunc string) string {
-	return fmt.Sprintf(`return s.ref.%s(v)`, setterFunc)
-}
-
-// createPropertySetFuncReturnNil generates a setter function body for a field that sets its value and always returns nil.
-func createPropertySetFuncReturnNil(fieldName string) string {
-	return fmt.Sprintf(`s.ref.%s(v)
-	return nil`, fieldName)
-}
-
-// createCommandSet generates a template for setting a value at a specific index of a slice, ensuring safety with bound checking.
-func createCommandSet(fieldName string) string {
-	return fmt.Sprintf(`if idx >= 0 && idx < len(s.ref.%s) {
-        s.ref.%s[idx] = v
-        return nil
-    }
-    return errors.New("index out of bounds")`, fieldName, fieldName)
-}
-
-// createCommandGet generates a string representing a Go function to retrieve an element from a slice by index.
-// It ensures bound checking and returns a zero value of the slice element type if the index is out of range.
-func createCommandGet(fieldName string, elementType string) string {
-	return fmt.Sprintf(`if idx >= 0 && idx < len(s.ref.%s) {
-        return s.ref.%s[idx], nil
-    }
-    return *new(%s), errors.New("index out of bounds")`, fieldName, fieldName, elementType)
 }
 
 // typeAllowed determines if a given field type is supported as a base type or slice type.

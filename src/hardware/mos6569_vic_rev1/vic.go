@@ -19,6 +19,7 @@ const (
 // It encapsulates configurations, bgrState components, collision detection, and rendering capabilities for the display.
 type VIC struct {
 	*component.BaseComponent
+	reflect    *VICReflect
 	cfg        *config.Config
 	memory     *MemoryUnit
 	interrupts *Interrupts
@@ -74,6 +75,7 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		label:           label,
 	}
 	vic.BaseComponent.Register(factory, parent, Identifier(), instance, vic, references.IdIMos6569(vic, label, instance))
+	vic.reflect = NewVICReflect(vic)
 	return vic
 }
 

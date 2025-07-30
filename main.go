@@ -126,6 +126,13 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 	return drives, nil
 }
 
+type NilWriter struct {
+}
+
+func (nw *NilWriter) Write(p []byte) (int, error) {
+	return len(p), nil
+}
+
 func main() {
 	//benchmark.VIC(1000000, 20, 10, 1)
 
@@ -166,7 +173,8 @@ func main() {
 
 	if len(reflector) > 0 {
 		for _, v := range strings.Split(reflector, ",") {
-			gen := component.NewGenerator(v, false)
+			gen := component.NewGenerator(v, true)
+			//gen.SetOutput(os.Stdout)
 			if err := gen.ParseAndGenerate(); err != nil {
 				log.Fatal(err)
 			}

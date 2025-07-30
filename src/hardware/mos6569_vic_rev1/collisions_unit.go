@@ -15,6 +15,7 @@ const (
 // The struct also manages foreground masks and offsets for sprite-bgrState collision computations.
 type CollisionsUnit struct {
 	*component.BaseComponent
+	reflect          *CollisionsUnitReflect
 	irqEmit          func(irq uint8)
 	bgrState         uint8   // bgrState represents the collision state of all graphics in the current line.
 	sprState         uint8   // sprState represent the state and collision mask of all active sprites in the current line.
@@ -43,6 +44,7 @@ func NewCollisions(parent references.IComponent, factory references.IComponentFa
 		bgrBufferOffset:  0,
 	}
 	c.BaseComponent.Register(factory, parent, "collisionsUnit", instance, c, references.IdInternalComponent(label, instance, "CollisionsUnit"))
+	c.reflect = NewCollisionsUnitReflect(c)
 	return c
 }
 

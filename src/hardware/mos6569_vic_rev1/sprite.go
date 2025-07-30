@@ -46,6 +46,7 @@ const (
 // set is a function for setting pixel data on the sprite's display buffer
 type Sprite struct {
 	*component.BaseComponent
+	reflect          *SpriteReflect
 	collisions       *CollisionsUnit
 	beam             *RasterBeam
 	num              uint8
@@ -81,6 +82,7 @@ func NewSprite(parent references.IComponent, factory references.IComponentFactor
 	//sp.plane2ColorHelper = sp.createPlane2ColorHelper()
 	sp.draw = sp.drawUnexpandedStandard
 	sp.BaseComponent.Register(factory, parent, "sprite", instance, sp, references.IdInternalComponent(label, instance, "Sprite"))
+	sp.reflect = NewSpriteReflect(sp)
 	return sp
 }
 

@@ -26,6 +26,7 @@ const (
 // Interrupts represent the structure for managing interrupt requests (IRQs) with raster and IRQ-related properties.
 type Interrupts struct {
 	*component.BaseComponent
+	reflect               *InterruptsReflect
 	irqLatch              uint8  // irqLatch holds an 8-bit value that latches the IRQ (Interrupt Request) configuration.
 	irqMask               uint8  // irqMask represents an 8-bit mask used for interrupt request (IRQ) management.
 	irqRaster             uint16 // Interrupt raster line
@@ -44,6 +45,7 @@ func NewInterrupts(parent references.IComponent, factory references.IComponentFa
 		socketIRQClearTrigger: socketIRQClearTrigger,
 	}
 	i.BaseComponent.Register(factory, parent, "interrupts", instance, i, references.IdInternalComponent(label, instance, "Interrupts"))
+	i.reflect = NewInterruptsReflect(i)
 	return i
 }
 

@@ -5,26 +5,31 @@ package c64_ram_rev1
 import "errors"
 
 const (
-	ramId = "ram"
+	reflectRamId = "ram"
 )
 
 type RamReflect struct {
-	ref *Ram
-	err error
+	ref              *Ram
+	outOfBoundsError error
+	readOnlyError    error
 }
 
 func NewRamReflect(r *Ram) *RamReflect {
-	reflector := &RamReflect{ref: r}
-	r.PropertyAdd(ramId, "ram is a byte slice representing the memory storage of the RAM component.", false, reflector.getRam, reflector.setRam)
+	reflector := &RamReflect{
+		ref:              r,
+		outOfBoundsError: errors.New("index out of bounds"),
+		readOnlyError:    errors.New("property is read-only"),
+	}
+	r.PropertyAdd(reflectRamId, "ram is a byte slice representing the memory storage of the RAM component.", false, reflector.getRam, reflector.setRam)
 
 	_ = r.CommandAdd("getRamEntry", "ram is a byte slice representing the memory storage of the RAM component.", reflector.getRamEntry)
 	_ = r.CommandAdd("setRamEntry", "ram is a byte slice representing the memory storage of the RAM component.", reflector.setRamEntry)
 
-	_ = r.CommandAdd("Emulate", "Emulate() Emulate performs the main emulation logic for the Ram component during a simulation cycle.", r.Emulate)
-	_ = r.CommandAdd("Read", "Read(addr) Read retrieves a byte from the RAM at the specified memory address.", r.Read)
-	_ = r.CommandAdd("Size", "Size() Size returns the length of the `ram` slice, representing the total size of the RAM in bytes.", r.Size)
-	_ = r.CommandAdd("Reset", "Reset() Reset clears and reinitializes the RAM to its default state as defined during setup.", r.Reset)
-	_ = r.CommandAdd("Write", "Write(addr, data) Write stores the provided data byte at the specified memory address in the RAM.", r.Write)
+	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the main emulation logic for the Ram component during a simulation cycle.", r.Emulate)
+	_ = r.CommandAdd("Read", "Read(addr) uint8 - Read retrieves a byte from the RAM at the specified memory address.", r.Read)
+	_ = r.CommandAdd("Write", "Write(addr, data) - Write stores the provided data byte at the specified memory address in the RAM.", r.Write)
+	_ = r.CommandAdd("Size", "Size() int - Size returns the length of the `ram` slice, representing the total size of the RAM in bytes.", r.Size)
+	_ = r.CommandAdd("Reset", "Reset() - Reset clears and reinitializes the RAM to its default state as defined during setup.", r.Reset)
 
 	return reflector
 }
@@ -45,7 +50,7 @@ func (s *RamReflect) getRamEntry(idx int) (uint8, error) {
 	if idx >= 0 && idx < len(s.ref.ram) {
 		return s.ref.ram[idx], nil
 	}
-	return *new(uint8), errors.New("index out of bounds")
+	return *new(uint8), s.outOfBoundsError
 }
 
 // setRamEntry is the generated indexed setter for the ram.

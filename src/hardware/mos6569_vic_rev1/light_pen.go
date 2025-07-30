@@ -12,6 +12,7 @@ import (
 // interruptsEmit is a function used to emit interrupts when the light pen is triggered.
 type LightPen struct {
 	*component.BaseComponent
+	reflect        *LightPenReflect
 	x              uint8
 	y              uint8
 	triggered      bool
@@ -28,6 +29,7 @@ func NewLightPen(parent references.IComponent, factory references.IComponentFact
 		triggered:      false,
 	}
 	lp.BaseComponent.Register(factory, parent, "lightPen", instance, lp, references.IdInternalComponent(label, instance, "LightPen"))
+	lp.reflect = NewLightPenReflect(lp)
 	return lp
 }
 

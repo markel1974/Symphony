@@ -40,6 +40,7 @@ var PaletteOriginal = Palette{
 // RasterBeam is a structure used to manage raster-based rendering with support for color palettes and scanline operations.
 type RasterBeam struct {
 	*component.BaseComponent
+	reflect            *RasterBeamReflect
 	lineWidthRGBA      int
 	lineOffsetRGBA     int
 	displayBufferArray func(idx int, data *[]uint8, width int)
@@ -121,6 +122,7 @@ func NewBeam(parent references.IComponent, factory references.IComponentFactory,
 		s.standardColorIndex[i][0] = data & 1
 	}
 	s.BaseComponent.Register(factory, parent, "rasterBeam", instance, s, references.IdInternalComponent(label, instance, "RasterBeam"))
+	s.reflect = NewRasterBeamReflect(s)
 	return s
 }
 

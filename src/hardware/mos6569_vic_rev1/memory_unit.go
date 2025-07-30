@@ -13,6 +13,7 @@ const (
 // MemoryUnit represents a structure for managing video memory and related base addresses and operations in a system.
 type MemoryUnit struct {
 	*component.BaseComponent
+	reflect        *MemoryUnitReflect
 	vaBase         uint8  // vaBase
 	ciaVaBase      uint16 // CIA VA14/15 video base
 	matrixBase     uint16 // Video matrix base
@@ -41,6 +42,7 @@ func NewMemory(parent references.IComponent, factory references.IComponentFactor
 		refreshCounter: 0,
 	}
 	m.BaseComponent.Register(factory, parent, "memoryUnit", instance, m, references.IdInternalComponent(label, instance, "MemoryUnit"))
+	m.reflect = NewMemoryUnitReflect(m)
 	return m
 }
 

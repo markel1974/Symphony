@@ -32,6 +32,7 @@ const (
 // BordersUnit is a type responsible for managing and updating border data, configurations, and states for a display system.
 type BordersUnit struct {
 	*component.BaseComponent
+	reflect            *BordersUnitReflect
 	beam               *RasterBeam
 	horizontalFlipFlop uint8
 	verticalFlipFlop   uint8
@@ -79,6 +80,7 @@ func NewBorder(parent references.IComponent, factory references.IComponentFactor
 	}
 	gr.sequencer = gr.createSequencer()
 	gr.BaseComponent.Register(factory, parent, "borderUnit", instance, gr, references.IdInternalComponent(label, instance, "BorderUnit"))
+	gr.reflect = NewBordersUnitReflect(gr)
 	return gr
 }
 
