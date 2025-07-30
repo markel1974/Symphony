@@ -55,7 +55,6 @@ const (
 
 type {{.StructName}}Reflect struct {
     ref *{{.StructName}}
-    err error
 }
 
 func New{{.StructName}}Reflect(r *{{.StructName}}) *{{.StructName}}Reflect {
@@ -245,7 +244,7 @@ func (sd *StructData) CompileProperties(fileSet *token.FileSet) {
 		doc := getDoc(field.Comment.List, goName)
 		prop := Property{
 			FieldName:     fieldName,
-			IDVarName:     "reflect" + fieldName + "Id",
+			IDVarName:     "reflect" + capitalize(fieldName) + "Id",
 			GetterName:    "get" + goName,
 			SetterName:    "set" + goName,
 			FieldType:     fieldType,
@@ -550,4 +549,11 @@ func getMethod(methods map[string]*ast.FuncDecl, baseName string, prefixes []str
 		}
 	}
 	return "", false
+}
+
+func capitalize(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }
