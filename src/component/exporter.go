@@ -36,7 +36,7 @@ var _allowedSliceElementTypes = map[string]bool{
 // readonlyKeyword indicates the readonly access keyword for operations.
 const (
 	exporterPrefix     = "symphony:export"
-	exporterFileSuffix = "_reflect_gen"
+	exporterFilePrefix = "reflect_"
 	readonlyKeyword    = "readonly"
 )
 
@@ -139,6 +139,7 @@ type TemplateData struct {
 // StructData represents metadata for a struct, including its name and associated properties.
 type StructData struct {
 	Name       string
+	Input      string
 	Type       *ast.StructType
 	FuncDecl   map[string]*ast.FuncDecl
 	Properties []Property
@@ -146,8 +147,8 @@ type StructData struct {
 }
 
 // NewStructData creates and initializes a new StructData instance with the provided name.
-func NewStructData(name string) *StructData {
-	return &StructData{Name: name, Properties: []Property{}, FuncDecl: make(map[string]*ast.FuncDecl)}
+func NewStructData(input string, name string) *StructData {
+	return &StructData{Input: input, Name: name, Properties: []Property{}, FuncDecl: make(map[string]*ast.FuncDecl)}
 }
 
 // CompileMethods processes the exported methods of the struct, validates their parameters, and appends valid methods to Methods.
@@ -161,20 +162,53 @@ func (sd *StructData) CompileMethods(fileSet *token.FileSet) {
 		}
 		valid := true
 		var args []string
-		for _, param := range method.Type.Params.List {
-			fieldType, err := toType(fileSet, param.Type)
-			if err != nil {
-				valid = false
-				break
+		if method.Type.Params != nil {
+			for _, param := range method.Type.Params.List {
+				fieldType, err := toType(fileSet, param.Type)
+				if err != nil {
+					valid = false
+					break
+				}
+				if kind := typeAllowed(fieldType); kind == 0 {
+					valid = false
+					break
+				}
+				if len(param.Names) > 0 {
+					args = append(args, param.Names[0].Name) //+" "+fieldType)
+				}
 			}
-			if kind := typeAllowed(fieldType); kind == 0 {
-				valid = false
-				break
+		}
+		var returnValues []string
+		if method.Type.Results != nil {
+			for _, result := range method.Type.Results.List {
+				resultType, err := toType(fileSet, result.Type)
+				if err != nil {
+					valid = false
+					break
+				}
+				if resultType != "error" {
+					if kind := typeAllowed(resultType); kind == 0 {
+						valid = false
+						break
+					}
+				}
+				if valid {
+					returnValues = append(returnValues, resultType) //result.Names[0].Name) //+" "+fieldType)
+				}
 			}
-			args = append(args, param.Names[0].Name) //+" "+fieldType)
 		}
 		if valid {
-			doc := method.Name.Name + "(" + strings.Join(args, ", ") + ") " + getDoc(method.Doc.List, method.Name.Name)
+			var comments string
+			if method.Doc != nil {
+				comments = getDoc(method.Doc.List, method.Name.Name)
+			}
+			arguments := "(" + strings.Join(args, ", ") + ")"
+			result := strings.Join(returnValues, ",")
+			signature := arguments
+			if len(result) > 0 {
+				signature += " " + result
+			}
+			doc := method.Name.Name + signature + " - " + comments
 			sd.Methods = append(sd.Methods, Method{Name: method.Name.Name, Documentation: doc})
 		}
 	}
@@ -183,6 +217,12 @@ func (sd *StructData) CompileMethods(fileSet *token.FileSet) {
 // CompileProperties processes the fields of a struct, generating metadata for supported properties with getters and setters.
 func (sd *StructData) CompileProperties(fileSet *token.FileSet) {
 	structType := sd.Type
+	if structType == nil {
+		return
+	}
+	if structType.Fields == nil {
+		return
+	}
 	for _, field := range structType.Fields.List {
 		if field.Comment == nil || len(field.Names) == 0 {
 			continue
@@ -193,19 +233,19 @@ func (sd *StructData) CompileProperties(fileSet *token.FileSet) {
 		fieldName := field.Names[0].Name
 		fieldType, err := toType(fileSet, field.Type)
 		if err != nil {
-			log.Printf("error determining type for field %s: %v", fieldName, err)
+			log.Printf("[%s] error determining type for field %s: %v", sd.Input, fieldName, err)
 			continue
 		}
 		kind := typeAllowed(fieldType)
 		if kind == 0 {
-			log.Printf("warning: Skipping field '%s' with unsupported type '%s'", fieldName, fieldType)
+			log.Printf("[%s] warning: Skipping field '%s' with unsupported type '%s'", sd.Input, fieldName, fieldType)
 			continue
 		}
 		goName := strings.ToUpper(fieldName[:1]) + fieldName[1:]
 		doc := getDoc(field.Comment.List, goName)
 		prop := Property{
 			FieldName:     fieldName,
-			IDVarName:     fieldName + "Id",
+			IDVarName:     "reflect" + fieldName + "Id",
 			GetterName:    "get" + goName,
 			SetterName:    "set" + goName,
 			FieldType:     fieldType,
@@ -253,7 +293,7 @@ func (sd *StructData) CompileProperties(fileSet *token.FileSet) {
 
 // Generator is responsible for parsing Go files to extract struct definitions and generate output based on their metadata.
 type Generator struct {
-	fileSet   *token.FileSet
+	//fileSet   *token.FileSet
 	inputFile string
 	output    io.Writer
 	useFile   bool
@@ -262,7 +302,7 @@ type Generator struct {
 // NewGenerator creates and initializes a new Generator instance with the given input file and file usage flag.
 func NewGenerator(inputFile string, useFile bool) *Generator {
 	return &Generator{
-		fileSet:   token.NewFileSet(),
+		//fileSet:   token.NewFileSet(),
 		inputFile: inputFile,
 		useFile:   useFile,
 		output:    os.Stdout,
@@ -295,7 +335,7 @@ func getDoc(comments []*ast.Comment, def string) string {
 }
 
 // prepareStruct analyzes an AST file, extracts struct type definitions, and returns them mapped by their names as StructData.
-func (g *Generator) prepareStruct(node *ast.File) map[string]*StructData {
+func (g *Generator) prepareStruct(input string, node *ast.File) map[string]*StructData {
 	structs := make(map[string]*StructData)
 	ast.Inspect(node, func(n ast.Node) bool {
 		if funcDecl, ok := n.(*ast.FuncDecl); ok {
@@ -311,7 +351,7 @@ func (g *Generator) prepareStruct(node *ast.File) map[string]*StructData {
 					if len(name) > 0 {
 						elem := structs[name]
 						if elem == nil {
-							elem = NewStructData(name)
+							elem = NewStructData(input, name)
 							structs[name] = elem
 						}
 						elem.FuncDecl[funcDecl.Name.Name] = funcDecl
@@ -325,7 +365,7 @@ func (g *Generator) prepareStruct(node *ast.File) map[string]*StructData {
 				if structType, ok := typeSpec.Type.(*ast.StructType); ok {
 					elem := structs[name]
 					if elem == nil {
-						elem = NewStructData(name)
+						elem = NewStructData(input, name)
 						structs[name] = elem
 					}
 					elem.Type = structType
@@ -348,27 +388,39 @@ func (g *Generator) ParseAndGenerate() error {
 	if !st.IsDir() {
 		files = append(files, g.inputFile)
 	} else {
-		files, err = filepath.Glob(filepath.Join(g.inputFile, "*.go"))
+		err = filepath.Walk(g.inputFile, func(path string, info os.FileInfo, err error) error {
+			if !info.IsDir() && filepath.Ext(path) == ".go" {
+				files = append(files, path)
+			}
+			return nil
+		})
+		//files, err = filepath.Glob(filepath.Join(g.inputFile, "*.go"))
 		if err != nil {
 			return err
 		}
 	}
 
 	for _, input := range files {
-		node, err := parser.ParseFile(g.fileSet, input, nil, parser.ParseComments)
+		fileSet := token.NewFileSet()
+		node, err := parser.ParseFile(fileSet, input, nil, parser.ParseComments)
 		if err != nil {
-			return fmt.Errorf("error parsing file %s: %w", g.inputFile, err)
+			log.Printf("[%s] error parsing file: %s", input, err.Error())
+			continue
 		}
 
-		structs := g.prepareStruct(node)
+		structs := g.prepareStruct(input, node)
+		if len(structs) == 0 {
+			log.Printf("[%s] error preparing file: empty structs\n", input)
+			continue
+		}
 
 		for _, elem := range structs {
-			elem.CompileMethods(g.fileSet)
-			elem.CompileProperties(g.fileSet)
+			elem.CompileMethods(fileSet)
+			elem.CompileProperties(fileSet)
 		}
 
 		for _, data := range structs {
-			if err = g.generateFile(node.Name.Name, data); err != nil {
+			if err = g.generateFile(input, node.Name.Name, data); err != nil {
 				log.Printf("error generating file for struct %s: %v", data.Name, err)
 			}
 		}
@@ -380,7 +432,7 @@ func (g *Generator) ParseAndGenerate() error {
 // generateFile generates a Go file based on the provided `StructData` and a predefined template.
 // It writes the resulting code to the specified output or creates a new file when `useFile` is true.
 // Returns an error if template parsing or file operations fail.
-func (g *Generator) generateFile(packageName string, data *StructData) error {
+func (g *Generator) generateFile(inputFile string, packageName string, data *StructData) error {
 	if len(data.Properties) == 0 {
 		return nil
 	}
@@ -391,8 +443,8 @@ func (g *Generator) generateFile(packageName string, data *StructData) error {
 	writer := g.output
 	if g.useFile {
 		baseName := strings.ToLower(data.Name)
-		outputFilename := fmt.Sprintf("%s%s.go", baseName, exporterFileSuffix)
-		outputFilepath := filepath.Join(filepath.Dir(g.inputFile), outputFilename)
+		outputFilename := fmt.Sprintf("%s%s.go", exporterFilePrefix, baseName)
+		outputFilepath := filepath.Join(filepath.Dir(inputFile), outputFilename)
 		f, fErr := os.Create(outputFilepath)
 		if fErr != nil {
 			return fmt.Errorf("error while creating output file: %w", fErr)
