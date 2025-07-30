@@ -57,23 +57,23 @@ type CPU struct {
 	*component.BaseComponent
 	next           func(cpu *CPU) // next is a function pointer that executes the next CPU instruction or operation during emulation.
 	overflowBranch func() bool    // overflowBranch determines if the CPU should branch based on the overflow condition.
-	nFlag          uint8          // Negative flag - Only the highest bit of the nFlag variable is used
-	zFlag          uint8          // Zero flag - The zFlag variable has the inverse meaning of the 6510 Z flag
-	vFlag          uint8          // Overflow flag
-	dFlag          uint8          // Decimal mode flag
-	iFlag          uint8          // Interrupt disable flag
-	cFlag          uint8          // Carry flag
-	a              uint8          // Register
-	x              uint8          // Register
-	y              uint8          // Register
-	sp             uint8          // Stack pointer
-	pc             uint16         // Program counter
-	op             uint8          // Current opcode
-	ar             uint16         // Address register
-	ar2            uint16         // Address register 2
-	rmw            uint8          // Data buffer for RMW instructions
-	rdyLow         bool           // current RDY state
-	aecLow         bool           // current AEC state
+	nFlag          uint8          // nFlag Negative flag - Only the highest bit of the nFlag variable is used
+	zFlag          uint8          // zFlag Zero flag - The zFlag variable has the inverse meaning of the 6510 Z flag
+	vFlag          uint8          // vFlag Overflow flag
+	dFlag          uint8          // dFlag Decimal mode flag
+	iFlag          uint8          // iFlag Interrupt disable flag
+	cFlag          uint8          // cFlag Carry flag
+	a              uint8          // a Register
+	x              uint8          // x Register
+	y              uint8          // y Register
+	sp             uint8          // sp Stack pointer
+	pc             uint16         // pc Program counter
+	op             uint8          // op Current opcode
+	ar             uint16         // ar Address register
+	ar2            uint16         // ar2 Address register 2
+	rmw            uint8          // rmw Data buffer for RMW instructions
+	rdyLow         bool           // rdyLow current RDY state
+	aecLow         bool           // aecLow current AEC state
 	opFlags        uint8          // opFlags is a uint8 value used to store operational flags for the CPU's current instruction state.
 	savedNext      func(cpu *CPU)
 	modeTable      []func(*CPU)
