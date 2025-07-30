@@ -214,9 +214,9 @@ func (g *Generator) ParseAndGenerate() error {
 				continue
 			}
 			commentText := field.Comment.List[0].Text
-			if !strings.Contains(commentText, exporterPrefix) {
-				continue
-			}
+			//if !strings.Contains(commentText, exporterPrefix) {
+			//	continue
+			//}
 			fieldName := field.Names[0].Name
 			var typeNameBuf bytes.Buffer
 			if err = printer.Fprint(&typeNameBuf, g.fileSet, field.Type); err != nil {
@@ -232,33 +232,27 @@ func (g *Generator) ParseAndGenerate() error {
 			goName := strings.ToUpper(fieldName[:1]) + fieldName[1:]
 			doc := strings.TrimSpace(strings.Replace(commentText, exporterPrefix, "", -1))
 			doc = strings.TrimPrefix(doc, "//")
-			isReadOnly := strings.Contains(doc, readonlyKeyword)
 			doc = strings.TrimSpace(strings.Replace(doc, readonlyKeyword, "", -1))
 			if doc == "" {
 				doc = goName
 			}
-			getterName := "get" + goName
-			getterBody := createPropertyGet(fieldName)
-			if getterFunc, found := g.getMethod(methods, goName, []string{"Get", "get"}); found {
-				getterBody = createPropertyGet(getterFunc)
-			}
-			setterName := "set" + goName
-			var setterBody string
-
 			prop := Property{
 				FieldName:     fieldName,
 				IDVarName:     fieldName + "Id",
-				GetterName:    getterName,
-				SetterName:    setterName,
+				GetterName:    "get" + goName,
+				SetterName:    "set" + goName,
 				FieldType:     fieldType,
 				Documentation: doc,
-				ReadOnly:      isReadOnly,
-				GetterBody:    getterBody,
+				ReadOnly:      strings.Contains(doc, readonlyKeyword),
+				GetterBody:    createPropertyGet(fieldName),
 				Kind:          kind,
 			}
+			if getterFunc, found := g.getMethod(methods, goName, []string{"Get", "get"}); found {
+				prop.GetterBody = createPropertyGet(getterFunc)
+			}
 
-			if isReadOnly {
-				setterBody = createPropertySetReadOnly()
+			if prop.ReadOnly {
+				prop.SetterBody = createPropertySetReadOnly()
 			} else {
 				//has method
 				if setterFunc, found := g.getMethod(methods, goName, []string{"Set", "set"}); found {
@@ -270,25 +264,23 @@ func (g *Generator) ParseAndGenerate() error {
 						}
 					}
 					if returnsError {
-						setterBody = createPropertySetFunc(setterFunc)
+						prop.SetterBody = createPropertySetFunc(setterFunc)
 					} else {
-						setterBody = createPropertySetFuncReturnNil(setterFunc)
+						prop.SetterBody = createPropertySetFuncReturnNil(setterFunc)
 					}
 				} else {
 					if kind == 2 { // Slice
-						setterBody = createPropertySetSlice(fieldName)
-						elementType := strings.TrimPrefix(fieldType, "[]")
-						prop.SliceElementType = elementType
+						prop.SliceElementType = strings.TrimPrefix(fieldType, "[]")
+						prop.SetterBody = createPropertySetSlice(fieldName)
 						prop.CommandGetterName = "get" + goName + "Entry"
 						prop.CommandSetterName = "set" + goName + "Entry"
-						prop.CommandGetterBody = createCommandGet(fieldName, elementType)
+						prop.CommandGetterBody = createCommandGet(fieldName, prop.SliceElementType)
 						prop.CommandSetterBody = createCommandSet(fieldName)
 					} else { // Base type
-						setterBody = createPropertySetPrimitive(fieldName)
+						prop.SetterBody = createPropertySetPrimitive(fieldName)
 					}
 				}
 			}
-			prop.SetterBody = setterBody
 			structData.Properties = append(structData.Properties, prop)
 		}
 		return true
