@@ -22,19 +22,40 @@ type CIAReflect struct {
 func NewCIAReflect(r *CIA) *CIAReflect {
 	reflector := &CIAReflect{ref: r}
 	r.PropertyAdd(prAId, "prA represents the current state of the port A register for the CIA component.", false, reflector.getPrA, reflector.setPrA)
+
 	r.PropertyAdd(prBId, "prB represents the current state of the port B register for the CIA component.", false, reflector.getPrB, reflector.setPrB)
+
 	r.PropertyAdd(ddrAId, "ddrA represents the Data Direction Register for port A, used to configure input/output direction of each bit.", false, reflector.getDdrA, reflector.setDdrA)
+
 	r.PropertyAdd(ddrBId, "ddrB represents the Data Direction Register for Port B, used to configure input/output for the CIA port B pins.", false, reflector.getDdrB, reflector.setDdrB)
+
 	r.PropertyAdd(sdrId, "sdr holds the contents of the Serial Data Register (SDR), used for serial communication operations in the CIA chip.", false, reflector.getSdr, reflector.setSdr)
+
 	r.PropertyAdd(icrId, "icr holds the Interrupt Control Register value, managing interrupt flags and statuses for the CIA component.", false, reflector.getIcr, reflector.setIcr)
+
 	r.PropertyAdd(irqMaskId, "irqMask defines the interrupt control mask used to enable or disable specific interrupt sources within the CIA.", false, reflector.getIrqMask, reflector.setIrqMask)
+
 	r.PropertyAdd(timerAIrqCycleId, "timerAIrqCycle indicates whether an interrupt request should be triggered in the next cycle for Timer A.", false, reflector.getTimerAIrqCycle, reflector.setTimerAIrqCycle)
+
 	r.PropertyAdd(timerBIrqCycleId, "timerBIrqCycle indicates if Timer B's interrupt request will be triggered in the next emulation cycle.", false, reflector.getTimerBIrqCycle, reflector.setTimerBIrqCycle)
+
 	r.PropertyAdd(todClockDividerId, "todClockDivider determines the number of cycles before updating the internal Time of Day (TOD) clock.", false, reflector.getTodClockDivider, reflector.setTodClockDivider)
+
+	_ = r.CommandAdd("Reset", "Reset reinitializes the internal state of the CIA by resetting all registers, timers, and the time of day (TOD) clock.", r.Reset)
+	_ = r.CommandAdd("ReadDDRA", "ReadDDRA reads the value of the Data Direction Register A (DDRA), which determines input/output configuration for port A.", r.ReadDDRA)
+	_ = r.CommandAdd("ReadRegister", "ReadRegister reads the value of the specified register from the CIA based on the provided address.", r.ReadRegister)
+	_ = r.CommandAdd("WriteRegister", "WriteRegister writes data to the specified address within the CIA, updating registers or triggering system operations.", r.WriteRegister)
+	_ = r.CommandAdd("SetCNTLevel", "SetCNTLevel sets the CNT pin state for both Timer A and Timer B to the specified level.", r.SetCNTLevel)
+	_ = r.CommandAdd("ReadPRA", "ReadPRA returns the current value of the port A register (PRA) of the CIA.", r.ReadPRA)
+	_ = r.CommandAdd("Emulate", "Emulate performs one emulation cycle, updating internal state, timers, and their interactions without triggering IRQs.  go:nosplit", r.Emulate)
+	_ = r.CommandAdd("ReadPRB", "ReadPRB returns the current value of the port B register (PRB) of the CIA.", r.ReadPRB)
+	_ = r.CommandAdd("ReadDDRB", "ReadDDRB reads and returns the current value of the data direction register B (DDRB) in the CIA.", r.ReadDDRB)
+	_ = r.CommandAdd("SetCNTPulse", "SetCNTPulse sends a pulse signal to Timer A's CNT line, triggering it to perform a defined operation.", r.SetCNTPulse)
+
 	return reflector
 }
 
-// getPrA is the generated getter for the  prA.
+// getPrA is the generated getter for the prA.
 func (s *CIAReflect) getPrA() uint8 {
 	return s.ref.prA
 }
@@ -45,7 +66,7 @@ func (s *CIAReflect) setPrA(v uint8) error {
 	return nil
 }
 
-// getPrB is the generated getter for the  prB.
+// getPrB is the generated getter for the prB.
 func (s *CIAReflect) getPrB() uint8 {
 	return s.ref.prB
 }
@@ -56,7 +77,7 @@ func (s *CIAReflect) setPrB(v uint8) error {
 	return nil
 }
 
-// getDdrA is the generated getter for the  ddrA.
+// getDdrA is the generated getter for the ddrA.
 func (s *CIAReflect) getDdrA() uint8 {
 	return s.ref.ddrA
 }
@@ -67,7 +88,7 @@ func (s *CIAReflect) setDdrA(v uint8) error {
 	return nil
 }
 
-// getDdrB is the generated getter for the  ddrB.
+// getDdrB is the generated getter for the ddrB.
 func (s *CIAReflect) getDdrB() uint8 {
 	return s.ref.ddrB
 }
@@ -78,7 +99,7 @@ func (s *CIAReflect) setDdrB(v uint8) error {
 	return nil
 }
 
-// getSdr is the generated getter for the  sdr.
+// getSdr is the generated getter for the sdr.
 func (s *CIAReflect) getSdr() uint8 {
 	return s.ref.sdr
 }
@@ -89,7 +110,7 @@ func (s *CIAReflect) setSdr(v uint8) error {
 	return nil
 }
 
-// getIcr is the generated getter for the  icr.
+// getIcr is the generated getter for the icr.
 func (s *CIAReflect) getIcr() uint8 {
 	return s.ref.icr
 }
@@ -100,7 +121,7 @@ func (s *CIAReflect) setIcr(v uint8) error {
 	return nil
 }
 
-// getIrqMask is the generated getter for the  irqMask.
+// getIrqMask is the generated getter for the irqMask.
 func (s *CIAReflect) getIrqMask() uint8 {
 	return s.ref.irqMask
 }
@@ -111,7 +132,7 @@ func (s *CIAReflect) setIrqMask(v uint8) error {
 	return nil
 }
 
-// getTimerAIrqCycle is the generated getter for the  timerAIrqCycle.
+// getTimerAIrqCycle is the generated getter for the timerAIrqCycle.
 func (s *CIAReflect) getTimerAIrqCycle() bool {
 	return s.ref.timerAIrqCycle
 }
@@ -122,7 +143,7 @@ func (s *CIAReflect) setTimerAIrqCycle(v bool) error {
 	return nil
 }
 
-// getTimerBIrqCycle is the generated getter for the  timerBIrqCycle.
+// getTimerBIrqCycle is the generated getter for the timerBIrqCycle.
 func (s *CIAReflect) getTimerBIrqCycle() bool {
 	return s.ref.timerBIrqCycle
 }
@@ -133,7 +154,7 @@ func (s *CIAReflect) setTimerBIrqCycle(v bool) error {
 	return nil
 }
 
-// getTodClockDivider is the generated getter for the  todClockDivider.
+// getTodClockDivider is the generated getter for the todClockDivider.
 func (s *CIAReflect) getTodClockDivider() int {
 	return s.ref.todClockDivider
 }

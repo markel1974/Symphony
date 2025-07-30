@@ -37,9 +37,9 @@ func NewCommand(id string, desc string, command interface{}) *Command {
 	if commandType.Kind() != reflect.Func {
 		panic(fmt.Errorf("%s: %s", id, "command isn't a function"))
 	}
-	if commandType.NumOut() != 1 {
-		panic(fmt.Errorf("%s: %s", id, "command must return a single value"))
-	}
+	//if commandType.NumOut() != 1 {
+	//	panic(fmt.Errorf("%s: %s", id, "command must return a single value"))
+	//}
 
 	var retHelp []string
 	for x := 0; x < commandType.NumOut(); x++ {

@@ -35,6 +35,18 @@ func NewVIAReflect(r *VIA) *VIAReflect {
 	r.PropertyAdd(lastCB2Id, "lastCB2 tracks the last state of the CB2 pin for edge detection or state comparison purposes.", false, reflector.getLastCB2, reflector.setLastCB2)
 	r.PropertyAdd(lastPB6Id, "lastPB6 tracks the previous state of the PB6 control line for edge detection and timer operations.", false, reflector.getLastPB6, reflector.setLastPB6)
 	r.PropertyAdd(lastCB1Id, "lastCB1 indicates the previous state of the CB1 control line for edge detection or handshake operations.", false, reflector.getLastCB1, reflector.setLastCB1)
+
+	_ = r.CommandAdd("ReadACR", "ReadACR returns the current value of the Auxiliary Control Register (ACR) from the VIA.", r.ReadACR)
+	_ = r.CommandAdd("ReadPRA", "ReadPRA returns the current value of the Peripheral Register A (PRA) from the VIA.", r.ReadPRA)
+	_ = r.CommandAdd("Reset", "Reset initializes all VIA internal registers to their default state of zero.", r.Reset)
+	_ = r.CommandAdd("ReadDDRA", "ReadDDRA returns the current value of the Data Direction Register A (DDRA) of the VIA.", r.ReadDDRA)
+	_ = r.CommandAdd("ReadPCR", "ReadPCR retrieves the current value of the Peripheral Control Register (PCR) from the VIA.", r.ReadPCR)
+	_ = r.CommandAdd("ReadPRB", "ReadPRB returns the current value of the Peripheral Register B (PRB) from the VIA.", r.ReadPRB)
+	_ = r.CommandAdd("ReadByte", "ReadByte reads a byte from the specified VIA register address and returns the corresponding value based on its state.", r.ReadByte)
+	_ = r.CommandAdd("Emulate", "Emulate executes a single emulation cycle for VIA, decrementing timers and handling interrupts based on current settings.  go:nosplit", r.Emulate)
+	_ = r.CommandAdd("ReadDDRB", "ReadDDRB returns the current value of the Data Direction Register A (DDRB) of the VIA.", r.ReadDDRB)
+	_ = r.CommandAdd("WriteByte", "WriteByte writes a byte of data to the specified register address in the VIA and updates the internal state accordingly.", r.WriteByte)
+
 	return reflector
 }
 
