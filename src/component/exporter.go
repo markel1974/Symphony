@@ -35,9 +35,12 @@ var _allowedSliceElementTypes = map[string]bool{
 // exporterFileSuffix specifies the suffix for generated reflection files.
 // readonlyKeyword indicates the readonly access keyword for operations.
 const (
-	exporterPrefix     = "symphony:export"
-	exporterFilePrefix = "reflect_"
-	readonlyKeyword    = "readonly"
+	baseComponentPackage = "component"
+	baseComponent        = "BaseComponent"
+	baseComponentFull    = baseComponentPackage + "." + baseComponent
+	exporterPrefix       = "symphony:export"
+	exporterFilePrefix   = "reflect_"
+	readonlyKeyword      = "readonly"
 )
 
 // reflectTemplate is a constant template string used to generate Go code for struct reflection and property manipulation.
@@ -502,7 +505,6 @@ func (g *Generator) ParseAndGenerate() error {
 			}
 			return nil
 		})
-		//files, err = filepath.Glob(filepath.Join(g.inputFile, "*.go"))
 		if err != nil {
 			return err
 		}
@@ -528,14 +530,15 @@ func (g *Generator) ParseAndGenerate() error {
 		}
 
 		for _, data := range structs {
-			if strings.Contains(data.Component, "BaseComponent") {
+			if data.Component == baseComponent || data.Component == baseComponentFull {
 				if err = g.generateFile(input, node.Name.Name, data); err != nil {
-					log.Printf("error generating file for struct %s: %v", data.Name, err)
+					log.Printf("[%s] error generating file for struct %s: %v", input, data.Name, err)
 				}
+			} else {
+				log.Printf("[%s] warning: Skipping file, missing component %s", baseComponent)
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -613,6 +616,7 @@ func getMethod(methods map[string]*ast.FuncDecl, baseName string, prefixes []str
 	return "", false
 }
 
+// capitalize returns a copy of the input string with its first character converted to uppercase. If the string is empty, it is returned unchanged.
 func capitalize(s string) string {
 	if len(s) == 0 {
 		return s
