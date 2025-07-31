@@ -1,12 +1,12 @@
 package core
 
-// MessageType represents an enumerated type used to classify different types of messages in the system.
+// MessageType represents the type of a message in the system, typically defined by constant values.
 type MessageType int
 
 // MessageTypeRead represents a message type for read operations.
-// MessageTypeTimer represents a message type for timer events.
-// MessageTypePaint represents a message type for paint or render events.
-// MessageTypeQuit represents a message type for quit or shutdown events.
+// MessageTypeTimer represents a message type for timer operations.
+// MessageTypePaint represents a message type for paint operations.
+// MessageTypeQuit represents a message type for quit operations.
 const (
 	MessageTypeRead  MessageType = iota
 	MessageTypeTimer MessageType = iota
@@ -14,96 +14,82 @@ const (
 	MessageTypeQuit  MessageType = iota
 )
 
-// iMessage is an interface representing a message with a type and the ability to post itself to a channel.
-// getType retrieves the MessageType of the implementing message.
-// postEvent posts the message to the provided channel of type iMessage.
-type iMessage interface {
-	getType() MessageType
-	postEvent(chan iMessage)
+// IMessage defines the interface for messages used within the system, requiring a method to retrieve the message type.
+type IMessage interface {
+	GetType() MessageType
 }
 
-// MessageRead represents a message containing a slice of byte data, typically used in read operations.
-// Implements the iMessage interface to provide message type identification and event posting functionality.
+// Message represents a basic unit containing a MessageType to define its specific behavior or category.
+type Message struct {
+	kind MessageType
+}
+
+// GetType returns the MessageType of the current Message instance.
+func (m *Message) GetType() MessageType {
+	return m.kind
+}
+
+// PostEvent sends the Message instance to the specified channel asynchronously using a goroutine.
+//func (m *Message) PostEvent(ch chan IMessage) {
+//	go func() { ch <- m }()
+//}
+
+// MessageRead represents a specific type of Message containing read operation data. It embeds Message and includes a data field.
 type MessageRead struct {
+	Message
 	data []byte
 }
 
-// newMessageRead creates and returns a new MessageRead instance with a specified slice of data up to n bytes.
-func newMessageRead(data []byte, n int) iMessage {
+// NewMessageRead creates a new MessageRead instance with provided data and limits its length to n if necessary.
+func NewMessageRead(data []byte, n int) *MessageRead {
 	if n > len(data) {
 		n = len(data) - 1
 	}
 	x := data[:n]
-	return &MessageRead{data: x}
+	return &MessageRead{
+		Message: Message{MessageTypeRead},
+		data:    x,
+	}
 }
 
-// getType returns the message type associated with the MessageRead instance, which is MessageTypeRead.
-func (m *MessageRead) getType() MessageType {
-	return MessageTypeRead
-}
-
-// postEvent sends the MessageRead instance to the provided channel asynchronously using a goroutine.
-func (m *MessageRead) postEvent(ch chan iMessage) {
-	go func() { ch <- m }()
-}
-
-// MessageTimer represents a timer-based message with associated process ID, timer ID, and interval duration.
+// MessageTimer represents a timed message with an associated process ID, timer ID, and interval.
 type MessageTimer struct {
+	Message
 	pid      int
 	tid      int
 	interval int
 }
 
-// newMessageTimer creates and initializes a new MessageTimer with the specified process ID and interval.
-func newMessageTimer(pid int, interval int) *MessageTimer {
-	return &MessageTimer{pid: pid, interval: interval}
+// NewMessageTimer creates a new MessageTimer instance with the specified process ID and interval.
+func NewMessageTimer(pid int, interval int) *MessageTimer {
+	return &MessageTimer{
+		Message:  Message{MessageTypeTimer},
+		pid:      pid,
+		interval: interval,
+	}
 }
 
-// getType returns the type of the message, specifically MessageTypeTimer, for MessageTimer instances.
-func (m *MessageTimer) getType() MessageType {
-	return MessageTypeTimer
-}
-
-// postEvent sends the current MessageTimer instance to the provided channel implementing the iMessage interface asynchronously.
-func (m *MessageTimer) postEvent(ch chan iMessage) {
-	go func() { ch <- m }()
-}
-
-// MessageQuit represents a message used to signal the termination of an event loop or process.
-// It implements the iMessage interface to support message handling and processing.
+// MessageQuit represents a message signaling a quit operation or system termination.
+// It embeds the base Message type and sets its kind to MessageTypeQuit.
 type MessageQuit struct {
+	Message
 }
 
-// newMessageQuit creates and returns a pointer to a new instance of MessageQuit.
-func newMessageQuit() *MessageQuit {
-	return &MessageQuit{}
+// NewMessageQuit creates and returns a new MessageQuit instance with the MessageType set to MessageTypeQuit.
+func NewMessageQuit() *MessageQuit {
+	return &MessageQuit{
+		Message: Message{MessageTypeQuit},
+	}
 }
 
-// getType returns the MessageType associated with the MessageQuit struct, which is MessageTypeQuit.
-func (m *MessageQuit) getType() MessageType {
-	return MessageTypeQuit
-}
-
-// postEvent sends the MessageQuit instance to the provided iMessage channel asynchronously.
-func (m *MessageQuit) postEvent(ch chan iMessage) {
-	go func() { ch <- m }()
-}
-
-// MessagePaint represents a message triggering a paint event, commonly used for rendering or visual updates in a system.
+// MessagePaint represents a message used to trigger a paint operation. It embeds the Message struct.
 type MessagePaint struct {
+	Message
 }
 
-// newMessagePaint creates and returns a new instance of MessagePaint.
-func newMessagePaint() *MessagePaint {
-	return &MessagePaint{}
-}
-
-// getType returns the type of the message, which is MessageTypePaint.
-func (m *MessagePaint) getType() MessageType {
-	return MessageTypePaint
-}
-
-// postEvent sends the current MessagePaint instance to the provided channel using a goroutine.
-func (m *MessagePaint) postEvent(ch chan iMessage) {
-	go func() { ch <- m }()
+// NewMessagePaint creates a new instance of MessagePaint with the MessageType set to MessageTypePaint.
+func NewMessagePaint() *MessagePaint {
+	return &MessagePaint{
+		Message: Message{MessageTypePaint},
+	}
 }

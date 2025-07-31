@@ -29,7 +29,7 @@ type Context struct {
 	autosave bool
 }
 
-// NewContext creates and initializes a new Context with the provided parameters, including ticker, reader, writer, and others.
+// NewContext creates and initializes a new Context with the provided parameters, including ticker, inputDriver, outputDriver, and others.
 func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer io.Writer, auth interfaces.IAuthenticator, commands *shell.Command, prompt string, autosave bool) *Context {
 	ctx := &Context{
 		ticker:   ticker,

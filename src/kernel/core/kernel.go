@@ -24,50 +24,47 @@ const (
 
 // Kernel represents the core component responsible for managing rendering, input/output, task execution, and timers.
 type Kernel struct {
-	ticker      *adaptiveticker.AdaptiveTicker
-	reader      io.Reader
-	writer      io.Writer
-	render      interfaces.IRender
-	foreground  interfaces.ITask
-	selector    *TaskSelector
-	timersChan  chan *adaptiveticker.TimerHandler
-	ids         *adaptiveticker.Ids
-	fs          interfaces.IFileSystem
-	sh          *shell.Shell
-	messageChan chan iMessage
-	exit        bool
+	ticker       *adaptiveticker.AdaptiveTicker
+	inputDriver  io.Reader
+	outputDriver io.Writer
+	render       interfaces.IRender
+	foreground   interfaces.ITask
+	selector     *TaskSelector
+	timersChan   chan *adaptiveticker.TimerHandler
+	ids          *adaptiveticker.Ids
+	fs           interfaces.IFileSystem
+	sh           *shell.Shell
+	messageChan  chan IMessage
+	exit         bool
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer io.Writer, render interfaces.IRender, fs interfaces.IFileSystem, sh *shell.Shell) *Kernel {
+func NewKernel(ticker *adaptiveticker.AdaptiveTicker, inputDriver io.Reader, outputDriver io.Writer, render interfaces.IRender, fs interfaces.IFileSystem, sh *shell.Shell) *Kernel {
 	t := &Kernel{
-		ticker:      ticker,
-		reader:      reader,
-		writer:      writer,
-		render:      render,
-		fs:          fs,
-		sh:          sh,
-		foreground:  nil,
-		selector:    NewTaskSelector(),
-		ids:         adaptiveticker.NewIds(1024),
-		messageChan: make(chan iMessage, contextMaQueueLen),
-		timersChan:  make(chan *adaptiveticker.TimerHandler, contextMaQueueLen),
-		exit:        false,
+		ticker:       ticker,
+		inputDriver:  inputDriver,
+		outputDriver: outputDriver,
+		render:       render,
+		fs:           fs,
+		sh:           sh,
+		foreground:   nil,
+		selector:     NewTaskSelector(),
+		ids:          adaptiveticker.NewIds(1024),
+		messageChan:  make(chan IMessage, contextMaQueueLen),
+		timersChan:   make(chan *adaptiveticker.TimerHandler, contextMaQueueLen),
+		exit:         false,
 	}
 	return t
 }
 
-// IOWrite (driver) writes the provided byte slice to the underlying reader and returns the number of bytes written or an error.
 func (c *Kernel) IOWrite(data []byte) (int, error) {
-	return c.writer.Write(data)
+	return c.outputDriver.Write(data)
 }
 
-// IORead (driver) writes the content of the provided byte slice to the writer and returns the number of bytes written and an error, if any.
 func (c *Kernel) IORead(p []byte) (int, error) {
-	return c.reader.Read(p)
+	return c.inputDriver.Read(p)
 }
 
-// IOType (driver) processes a key event based on its type and value, influencing execution, interaction, or system state.
 func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 	if kind == interfaces.KeyTypeCtrl {
 		switch key {
@@ -246,7 +243,7 @@ func (c *Kernel) PaintRequest() bool {
 // The full parameter specifies whether the entire view should be repainted.
 func (c *Kernel) doPaintRequest(full bool) bool {
 	if c.render.PaintRequest(full) {
-		c.ticker.Create(c.timersChan, newMessagePaint(), -1, -1, 1)
+		c.ticker.Create(c.timersChan, NewMessagePaint(), -1, -1, 1)
 		return true
 	}
 	return false
@@ -365,7 +362,7 @@ func (c *Kernel) CreateTimer(pid int, first int, interval int, count int) bool {
 	if task.cmd.TimerEvent == nil {
 		return false
 	}
-	m := newMessageTimer(pid, interval)
+	m := NewMessageTimer(pid, interval)
 	m.tid = c.ticker.Create(c.timersChan, m, int64(first), int64(interval), int64(count))
 	if m.tid > -1 {
 		task.timers = append(task.timers, m.tid)
@@ -655,17 +652,17 @@ func (c *Kernel) Start() {
 	d := make(chan bool)
 	go func() {
 		d <- true
-		readBuffer := make([]byte, 1024)
+		readBuffer := make([]byte, 4096)
 		for {
-			n, err := c.reader.Read(readBuffer)
+			n, err := c.inputDriver.Read(readBuffer)
 			if err == nil {
 				if n > 0 {
-					re := newMessageRead(readBuffer, n)
-					re.postEvent(c.messageChan)
+					re := NewMessageRead(readBuffer, n)
+					c.messageChan <- re
 				}
 			} else {
-				qe := newMessageQuit()
-				qe.postEvent(c.messageChan)
+				qe := NewMessageQuit()
+				c.messageChan <- qe
 				return
 			}
 		}
@@ -681,7 +678,7 @@ func (c *Kernel) eventLoop() {
 		case m := <-c.messageChan:
 			c.messageEventHandler(m)
 		case t := <-c.timersChan:
-			c.messageEventHandler(t.Event.(iMessage))
+			c.messageEventHandler(t.Event.(IMessage))
 		}
 		if c.exit {
 			c.shutdown()
@@ -692,9 +689,9 @@ func (c *Kernel) eventLoop() {
 
 // messageEventHandler processes incoming messages based on their type and performs associated actions within the kernel.
 // Handles MessageTypeRead, MessageTypeTimer, MessageTypePaint, and MessageTypeQuit to execute corresponding logic.
-func (c *Kernel) messageEventHandler(m iMessage) {
+func (c *Kernel) messageEventHandler(m IMessage) {
 	if m != nil {
-		switch m.getType() {
+		switch m.GetType() {
 		case MessageTypeRead:
 			if mm, ok := m.(*MessageRead); ok {
 				c.render.Scan(mm.data)
