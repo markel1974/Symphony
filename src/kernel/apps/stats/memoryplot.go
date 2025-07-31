@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package stats
 
 import (
@@ -21,6 +7,8 @@ import (
 	"runtime"
 )
 
+// rtPlotData represents runtime plot data and configuration for rendering a dynamic graph.
+// It includes data points, plot type, min/max values, and auto-scaling behavior.
 type rtPlotData struct {
 	rtPlotData   []float64
 	rtPlotType   int
@@ -29,6 +17,8 @@ type rtPlotData struct {
 	rtPlotAuto   bool
 }
 
+// CreateMemoryPlot creates a shell command for plotting real-time memory statistics including alloc, total, os, and GC data.
+// It supports dynamic updates and allows controlling plot scaling or enabling auto-scaling via interactive inputs.
 func CreateMemoryPlot() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
 		plt := &rtPlotData{

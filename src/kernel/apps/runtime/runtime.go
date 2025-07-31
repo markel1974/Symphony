@@ -19,6 +19,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 )
 
+// Create initializes and returns the root command for runtime operations.
 func Create() *shell.Command {
 	run := func(task interfaces.ITask, args []string) error {
 		return nil
