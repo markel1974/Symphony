@@ -71,15 +71,15 @@ func NewPortsReflect(r *Ports, factory references.IComponentFactory, parent refe
 
 	r.PropertyAdd(reflectPullUpId, "PullUp", false, reflector.getPullUp, reflector.setPullUp)
 
-	_ = r.CommandAdd("Reset", "Reset() - Reset resets all port-related variables in the Ports struct to their default state.", r.Reset)
-	_ = r.CommandAdd("Emulate", "Emulate() - ", r.Emulate)
-	_ = r.CommandAdd("SetData", "SetData(data) - SetData sets the data property of the Ports instance to the specified value.", r.SetData)
-	_ = r.CommandAdd("SetTape", "SetTape(tapeSense, tapeWriteIn, tapeMotorIn) - SetTape sets the tape sense, tape write input, and tape motor input values for the Ports instance.", r.SetTape)
-	_ = r.CommandAdd("SetDir", "SetDir(data) - SetDir sets the direction register of the Ports to the specified value.", r.SetDir)
-	_ = r.CommandAdd("GetDirection", "GetDirection() uint8 - GetDirection returns the current direction configuration of the port as an 8-bit unsigned integer.", r.GetDirection)
-	_ = r.CommandAdd("GetDataRead", "GetDataRead() uint8 - GetDataRead retrieves the current value of the `dataRead` field from the Ports structure.", r.GetDataRead)
+	_ = r.CommandAdd("WriteDir", "WriteDir(data) - WriteDir sets the direction register of the Ports to the specified value.", r.WriteDir)
+	_ = r.CommandAdd("WriteData", "WriteData(data) - WriteData sets the data property of the Ports instance to the specified value.", r.WriteData)
 	_ = r.CommandAdd("Config", "Config() uint8,uint8 - Config calculates the memory configuration index based on port direction and data values.", r.Config)
+	_ = r.CommandAdd("Reset", "Reset() - Reset resets all port-related variables in the Ports struct to their default state.", r.Reset)
+	_ = r.CommandAdd("ReadDirection", "ReadDirection() uint8 - ReadDirection returns the current direction configuration of the port as an 8-bit unsigned integer.", r.ReadDirection)
+	_ = r.CommandAdd("ReadDataRead", "ReadDataRead() uint8 - ReadDataRead retrieves the current value of the `dataRead` field from the Ports structure.", r.ReadDataRead)
+	_ = r.CommandAdd("WriteTape", "WriteTape(tapeSense, tapeWriteIn, tapeMotorIn) - WriteTape sets the tape sense, tape write input, and tape motor input values for the Ports instance.", r.WriteTape)
 	_ = r.CommandAdd("Update", "Update() - Update recalculates the state of the Ports structure based on current register values, adjusting outputs and data logic.", r.Update)
+	_ = r.CommandAdd("Emulate", "Emulate() - ", r.Emulate)
 
 	return reflector
 }
@@ -102,7 +102,7 @@ func (s *PortsReflect) getDir() uint8 {
 
 // setDir is the generated setter for the dir field.
 func (s *PortsReflect) setDir(v uint8) error {
-	s.ref.SetDir(v)
+	s.ref.dir = v
 	return nil
 }
 
@@ -113,13 +113,13 @@ func (s *PortsReflect) getData() uint8 {
 
 // setData is the generated setter for the data field.
 func (s *PortsReflect) setData(v uint8) error {
-	s.ref.SetData(v)
+	s.ref.data = v
 	return nil
 }
 
 // getDataRead is the generated getter for the dataRead.
 func (s *PortsReflect) getDataRead() uint8 {
-	return s.ref.GetDataRead()
+	return s.ref.dataRead
 }
 
 // setDataRead is the generated setter for the dataRead field.

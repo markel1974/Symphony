@@ -29,10 +29,10 @@ func NewBankSwitcherReflect(r *BankSwitcher, factory references.IComponentFactor
 
 	r.PropertyAdd(reflectIndexId, "Index", false, reflector.getIndex, reflector.setIndex)
 
-	_ = r.CommandAdd("Apply", "Apply(memConfig) []byte,bool - Apply updates the memory configuration index and returns the mode table entry and true if the index has changed.", r.Apply)
 	_ = r.CommandAdd("Reset", "Reset() - Reset restores the BankSwitcher instance to its initial state, clearing any previous configurations or settings.", r.Reset)
 	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the emulation logic associated with the BankSwitcher component during a processing cycle.", r.Emulate)
-	_ = r.CommandAdd("GetIndex", "GetIndex() int - GetIndex returns the current memory configuration index managed by the BankSwitcher instance.", r.GetIndex)
+	_ = r.CommandAdd("ReadConfig", "ReadConfig() int - ReadConfig returns the current memory configuration index managed by the BankSwitcher instance.", r.ReadConfig)
+	_ = r.CommandAdd("WriteConfig", "WriteConfig(memConfig) []byte,bool - WriteConfig updates the memory configuration index and returns the mode table entry and true if the index has changed.", r.WriteConfig)
 
 	return reflector
 }
@@ -50,7 +50,7 @@ func (s *BankSwitcherReflect) setMask(v uint8) error {
 
 // getIndex is the generated getter for the index.
 func (s *BankSwitcherReflect) getIndex() int {
-	return s.ref.GetIndex()
+	return s.ref.index
 }
 
 // setIndex is the generated setter for the index field.

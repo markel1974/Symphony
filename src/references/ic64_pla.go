@@ -55,9 +55,9 @@ type IC64Pla interface {
 
 	Read(addr uint16) uint8
 
-	ExtWrite(memoryConfig int, addr uint16, data uint8)
+	WriteExt(memoryConfig int, addr uint16, data uint8)
 
-	ExtRead(memoryConfig int, addr uint16) uint8
+	ReadExt(memoryConfig int, addr uint16) uint8
 
 	SetWriteTrigger(addr uint16, fn func(uint16, uint8)) int
 

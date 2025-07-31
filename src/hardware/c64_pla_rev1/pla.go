@@ -124,8 +124,8 @@ func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASig
 		b.bankRead[idx] = b.ramRead
 	}
 
-	b.bankWrite[0x0] = b.ramWrite0x0000
-	b.bankRead[0x0] = b.ramRead0x0000
+	b.bankWrite[0x0] = b.WriteRam0x0000
+	b.bankRead[0x0] = b.ReadRam0x0000
 
 	b.u15Write[0x0] = cs12.WriteRegister
 	b.u15Write[0x1] = cs12.WriteRegister
@@ -141,8 +141,8 @@ func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASig
 	b.u15Write[0xb] = cs10.WriteRegister //b.portWriteColor
 	b.u15Write[0xc] = cs14.WriteRegister
 	b.u15Write[0xd] = cs15.WriteRegister
-	b.u15Write[0xe] = b.portWriteIO
-	b.u15Write[0xf] = b.portWriteIO
+	b.u15Write[0xe] = b.WritePortIO
+	b.u15Write[0xf] = b.WritePortIO
 
 	b.u15Read[0x0] = cs12.ReadRegister
 	b.u15Read[0x1] = cs12.ReadRegister
@@ -152,14 +152,14 @@ func (b *PLA) Bind(_ references.IC64PlaSocket, vaSignals references.IC64PlaVASig
 	b.u15Read[0x5] = cs4.ReadRegister
 	b.u15Read[0x6] = cs4.ReadRegister
 	b.u15Read[0x7] = cs4.ReadRegister
-	b.u15Read[0x8] = b.portReadColor
-	b.u15Read[0x9] = b.portReadColor
-	b.u15Read[0xa] = b.portReadColor
-	b.u15Read[0xb] = b.portReadColor
+	b.u15Read[0x8] = b.ReadPortColor
+	b.u15Read[0x9] = b.ReadPortColor
+	b.u15Read[0xa] = b.ReadPortColor
+	b.u15Read[0xb] = b.ReadPortColor
 	b.u15Read[0xc] = cs14.ReadRegister
 	b.u15Read[0xd] = cs15.ReadRegister
-	b.u15Read[0xe] = b.portReadIO
-	b.u15Read[0xf] = b.portReadIO
+	b.u15Read[0xe] = b.ReadPortIO
+	b.u15Read[0xf] = b.ReadPortIO
 
 	b.kernalRead = roms.KernalRead
 	b.basicRead = roms.BasicRead
@@ -177,10 +177,10 @@ func (b *PLA) Internal() bool {
 	return false
 }
 
-// Reset resets the internal state of the PLA, reinitializing ports, and triggering an update of the memory configuration.
+// Reset resets the internal state of the PLA, reinitializing ports, and triggering an Update of the memory configuration.
 func (b *PLA) Reset() {
 	b.ports.Reset()
-	b.update()
+	b.Update()
 }
 
 // Emulate performs the main emulation step for the PLA, updating its state and processing associated logic.
@@ -201,7 +201,7 @@ func (b *PLA) RebuildMemoryConfig() {
 	b.cartManIntervals = spec.Intervals
 	dir, data := b.ports.Config()
 	mcIdx := ((^dir | data) & 0x7) | (spec.ExRom << 3) | (spec.Game << 4)
-	b.bankSwitch(int(mcIdx))
+	b.BankSwitch(int(mcIdx))
 }
 
 // Read retrieves the value from the memory mapped by the given address.
@@ -216,29 +216,29 @@ func (b *PLA) Write(addr uint16, data uint8) {
 	b.bankWrite[bank](addr, data)
 }
 
-// ExtWrite writes a byte to the specified address using the provided memory configuration, temporarily switching configurations.
-func (b *PLA) ExtWrite(memConfig int, addr uint16, data uint8) {
+// WriteExt writes a byte to the specified address using the provided memory configuration, temporarily switching configurations.
+func (b *PLA) WriteExt(memConfig int, addr uint16, data uint8) {
 	var prevMemConfig = -1
 	if memConfig >= 0 {
-		prevMemConfig = b.bankSwitcher.GetIndex()
-		b.bankSwitch(memConfig)
+		prevMemConfig = b.bankSwitcher.ReadConfig()
+		b.BankSwitch(memConfig)
 	}
 	b.Write(addr, data)
 	if prevMemConfig >= 0 {
-		b.bankSwitch(prevMemConfig)
+		b.BankSwitch(prevMemConfig)
 	}
 }
 
-// ExtRead allows reading a specific memory address using a temporary memory configuration.
-func (b *PLA) ExtRead(memConfig int, addr uint16) uint8 {
+// ReadExt allows reading a specific memory address using a temporary memory configuration.
+func (b *PLA) ReadExt(memConfig int, addr uint16) uint8 {
 	var prevMemConfig = -1
 	if memConfig >= 0 {
-		prevMemConfig = b.bankSwitcher.GetIndex()
-		b.bankSwitch(memConfig)
+		prevMemConfig = b.bankSwitcher.ReadConfig()
+		b.BankSwitch(memConfig)
 	}
 	data := b.Read(addr)
 	if prevMemConfig >= 0 {
-		b.bankSwitch(prevMemConfig)
+		b.BankSwitch(prevMemConfig)
 	}
 	return data
 }
@@ -262,61 +262,61 @@ func (b *PLA) RemoveRamTrigger(addr uint16, id int) {
 	}
 }
 
-// update updates the state of the PLA by rebuilding the memory configuration and updating the port settings.
-func (b *PLA) update() {
-	//b.ports.SetTape(tapeSense, tapeWriteIn, tapeMotorIn)
+// Update updates the state of the PLA by rebuilding the memory configuration and updating the port settings.
+func (b *PLA) Update() {
+	//b.ports.WriteTape(tapeSense, tapeWriteIn, tapeMotorIn)
 	b.ports.Update()
 	b.RebuildMemoryConfig()
 }
 
-// ramWrite0x0000 handles writing data to memory address 0x0000, updating port direction and data where applicable.
-func (b *PLA) ramWrite0x0000(addr uint16, data uint8) {
+// WriteRam0x0000 handles writing data to memory address 0x0000, updating port direction and data where applicable.
+func (b *PLA) WriteRam0x0000(addr uint16, data uint8) {
 	if addr == 0 {
-		b.ports.SetDir(data)
+		b.ports.WriteDir(data)
 		//b.ramWrite(0, b.vaSignals)
-		b.update()
+		b.Update()
 		return
 	} else if addr == 1 {
-		b.ports.SetData(data)
+		b.ports.WriteData(data)
 		//b.ramWrite(1, b.vaSignals())
-		b.update()
+		b.Update()
 		return
 	}
 	b.ramWrite(addr, data)
 }
 
-// ramWriteIO writes a byte of data to the specific address by determining the target U15 write function based on the address.
-func (b *PLA) ramWriteIO(addr uint16, data uint8) {
+// WriteRamIO writes a byte of data to the specific address by determining the target U15 write function based on the address.
+func (b *PLA) WriteRamIO(addr uint16, data uint8) {
 	p := (addr >> 8) & 0x0f
 	b.u15Write[p](addr, data)
 	return
 }
 
-// ramReadIO returns the value of the RAM read at the specified address, using the appropriate U15 read function.
-func (b *PLA) ramReadIO(addr uint16) uint8 {
+// ReadRamIO returns the value of the RAM read at the specified address, using the appropriate U15 read function.
+func (b *PLA) ReadRamIO(addr uint16) uint8 {
 	p := (addr >> 8) & 0x0f
 	return b.u15Read[p](addr)
 }
 
-// ramRead0x0000 reads data from address 0x0000 and processes special cases for addresses 0 and 1.
-func (b *PLA) ramRead0x0000(addr uint16) uint8 {
+// ReadRam0x0000 reads data from address 0x0000 and processes special cases for addresses 0 and 1.
+func (b *PLA) ReadRam0x0000(addr uint16) uint8 {
 	if addr == 0 {
-		return b.ports.GetDirection()
+		return b.ports.ReadDirection()
 	} else if addr == 1 {
-		return b.ports.GetDataRead()
+		return b.ports.ReadDataRead()
 	}
 	return b.ramRead(addr)
 }
 
-// portReadColor reads color data from the Color RAM and combines it with data from the VIC latch for a full byte response.
-func (b *PLA) portReadColor(addr uint16) uint8 {
+// ReadPortColor reads color data from the Color RAM and combines it with data from the VIC latch for a full byte response.
+func (b *PLA) ReadPortColor(addr uint16) uint8 {
 	p1 := b.colorRead(addr) & 0x0f // enables the physical Color RAM chip. This chip receives the address and puts the 4 color bits it has stored on data bus lines D0-D3 (lower half).
 	p2 := b.vaSignals() & 0xf0     // signals to VIC that Color RAM is being read. VIC responds by putting the last 4 bits of its internal latch (lastByte) on data bus lines D4-D7 (upper half)
 	return p1 | p2
 }
 
-// portReadIO reads a byte from the specified IO port address.
-func (b *PLA) portReadIO(addr uint16) uint8 {
+// ReadPortIO reads a byte from the specified IO port address.
+func (b *PLA) ReadPortIO(addr uint16) uint8 {
 	if v, ok := b.cartManIORead(addr); ok {
 		return v
 	}
@@ -326,24 +326,24 @@ func (b *PLA) portReadIO(addr uint16) uint8 {
 	return b.emulatorId.Read(addr)
 }
 
-// portWriteIO writes data to the specified IO port address using the cartridge manager's IO write functionality.
-func (b *PLA) portWriteIO(addr uint16, data uint8) {
+// WritePortIO writes data to the specified IO port address using the cartridge manager's IO write functionality.
+func (b *PLA) WritePortIO(addr uint16, data uint8) {
 	_ = b.cartManIOWrite(addr, data)
 }
 
-// writeOpenBus writes to an "open bus" state where no specific memory or component is targeted.
-func (b *PLA) writeOpenBus(_ uint16, _ uint8) {
+// WriteOpenBus writes to an "open bus" state where no specific memory or component is targeted.
+func (b *PLA) WriteOpenBus(_ uint16, _ uint8) {
 }
 
-// readOpenBus reads the current value of the open bus at the specified address and returns its signals as uint8.
-func (b *PLA) readOpenBus(_ uint16) uint8 {
+// ReadOpenBus reads the current value of the open bus at the specified address and returns its signals as uint8.
+func (b *PLA) ReadOpenBus(_ uint16) uint8 {
 	return b.vaSignals()
 }
 
-// bankSwitch switches the memory bank to the specified bankIndex and applies the corresponding memory configuration.
+// BankSwitch switches the memory bank to the specified bankIndex and applies the corresponding memory configuration.
 // It returns true if the switch is successful, otherwise false.
-func (b *PLA) bankSwitch(bankIndex int) bool {
-	memoryConfig, ok := b.bankSwitcher.Apply(bankIndex)
+func (b *PLA) BankSwitch(bankIndex int) bool {
+	memoryConfig, ok := b.bankSwitcher.WriteConfig(bankIndex)
 	if !ok {
 		return false
 	}
@@ -356,21 +356,21 @@ func (b *PLA) bankSwitch(bankIndex int) bool {
 // applyMemoryConfig configures memory banks based on the provided memory configuration, setting read/write functions accordingly.
 func (b *PLA) applyMemoryConfig(memoryConfig []uint8) {
 	ramWrite := b.ramWrite
-	ramWrite0x0000 := b.ramWrite0x0000
+	ramWrite0x0000 := b.WriteRam0x0000
 	if b.wTriggers.Len() > 0 {
 		ramWrite = func(addr uint16, data uint8) {
 			b.ramWrite(addr, data)
 			b.wTriggers.Exec(addr, data)
 		}
 		ramWrite0x0000 = func(addr uint16, data uint8) {
-			b.ramWrite0x0000(addr, data)
+			b.WriteRam0x0000(addr, data)
 			b.wTriggers.Exec(addr, data)
 		}
 	}
 
 	for idx, v := range memoryConfig {
 		if idx == 0 {
-			b.bankRead[0] = b.ramRead0x0000
+			b.bankRead[0] = b.ReadRam0x0000
 			b.bankWrite[0] = ramWrite0x0000
 		} else {
 			b.bankRead[idx] = b.ramRead
@@ -386,8 +386,8 @@ func (b *PLA) applyMemoryConfig(memoryConfig []uint8) {
 		case CHA:
 			b.bankRead[idx] = b.charRead
 		case I_O:
-			b.bankRead[idx] = b.ramReadIO
-			b.bankWrite[idx] = b.ramWriteIO
+			b.bankRead[idx] = b.ReadRamIO
+			b.bankWrite[idx] = b.WriteRamIO
 		case ROL:
 			if b.cartManIntervals&references.ROM_LO == references.ROM_LO {
 				b.bankRead[idx] = b.cartManRead
@@ -399,8 +399,8 @@ func (b *PLA) applyMemoryConfig(memoryConfig []uint8) {
 				b.bankRead[idx] = b.cartManRead
 			}
 		case UND:
-			b.bankRead[idx] = b.readOpenBus
-			b.bankWrite[idx] = b.writeOpenBus
+			b.bankRead[idx] = b.ReadOpenBus
+			b.bankWrite[idx] = b.WriteOpenBus
 		default:
 			log.Fatalf("wrong memory config for bank %X: %d", idx, v)
 		}

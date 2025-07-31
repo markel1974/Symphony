@@ -124,13 +124,13 @@ func (m *BankSwitcher) EmulationRequired() bool {
 	return false
 }
 
-// GetIndex returns the current memory configuration index managed by the BankSwitcher instance.
-func (m *BankSwitcher) GetIndex() int {
+// ReadConfig returns the current memory configuration index managed by the BankSwitcher instance.
+func (m *BankSwitcher) ReadConfig() int {
 	return m.index
 }
 
-// Apply updates the memory configuration index and returns the mode table entry and true if the index has changed.
-func (m *BankSwitcher) Apply(memConfig int) ([]byte, bool) {
+// WriteConfig updates the memory configuration index and returns the mode table entry and true if the index has changed.
+func (m *BankSwitcher) WriteConfig(memConfig int) ([]byte, bool) {
 	idx := uint8(memConfig) & m.mask
 	if m.index == int(idx) {
 		return nil, false

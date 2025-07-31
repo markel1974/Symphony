@@ -7,7 +7,7 @@ import (
 
 //from c64pla.c
 
-// Ports represents the state and management of hardware I/O ports used for device communication and control.
+// Ports represent the state and management of hardware I/O ports used for device communication and control.
 type Ports struct {
 	*component.BaseComponent
 	reflect         *PortsReflect
@@ -86,32 +86,32 @@ func (p *Ports) EmulationRequired() bool {
 	return false
 }
 
-// SetDir sets the direction register of the Ports to the specified value.
-func (p *Ports) SetDir(data uint8) {
+// WriteDir sets the direction register of the Ports to the specified value.
+func (p *Ports) WriteDir(data uint8) {
 	p.dir = data
 }
 
-// SetData sets the data property of the Ports instance to the specified value.
-func (p *Ports) SetData(data uint8) {
+// WriteData sets the data property of the Ports instance to the specified value.
+func (p *Ports) WriteData(data uint8) {
 	p.data = data
 }
 
-// GetDirection returns the current direction configuration of the port as an 8-bit unsigned integer.
-func (p *Ports) GetDirection() uint8 {
+// ReadDirection returns the current direction configuration of the port as an 8-bit unsigned integer.
+func (p *Ports) ReadDirection() uint8 {
 	return p.dir
 }
 
-// GetDataRead retrieves the current value of the `dataRead` field from the Ports structure.
-func (p *Ports) GetDataRead() uint8 {
+// ReadDataRead retrieves the current value of the `dataRead` field from the Ports structure.
+func (p *Ports) ReadDataRead() uint8 {
 	return p.dataRead
 }
 
-//func (p *Ports) GetDataOut() uint8 {
+//func (p *Ports) ReadDataOut() uint8 {
 //	return p.dataOut
 //}
 
-// SetTape sets the tape sense, tape write input, and tape motor input values for the Ports instance.
-func (p *Ports) SetTape(tapeSense int, tapeWriteIn int, tapeMotorIn int) {
+// WriteTape sets the tape sense, tape write input, and tape motor input values for the Ports instance.
+func (p *Ports) WriteTape(tapeSense int, tapeWriteIn int, tapeMotorIn int) {
 	p.tapeSense = tapeSense
 	p.tapeWriteIn = tapeWriteIn
 	p.tapeMotorIn = tapeMotorIn

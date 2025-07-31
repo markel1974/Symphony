@@ -35,14 +35,25 @@ func NewPLAReflect(r *PLA, factory references.IComponentFactory, parent referenc
 
 	r.PropertyAdd(reflectLabelId, "Label", false, reflector.getLabel, reflector.setLabel)
 
-	_ = r.CommandAdd("Reset", "Reset() - Reset resets the internal state of the PLA, reinitializing ports, and triggering an update of the memory configuration.", r.Reset)
-	_ = r.CommandAdd("Read", "Read(addr) uint8 - Read retrieves the value from the memory mapped by the given address.", r.Read)
-	_ = r.CommandAdd("ExtWrite", "ExtWrite(memConfig, addr, data) - ExtWrite writes a byte to the specified address using the provided memory configuration, temporarily switching configurations.", r.ExtWrite)
+	_ = r.CommandAdd("ReadExt", "ReadExt(memConfig, addr) uint8 - ReadExt allows reading a specific memory address using a temporary memory configuration.", r.ReadExt)
 	_ = r.CommandAdd("RemoveRamTrigger", "RemoveRamTrigger(addr, id) - RemoveRamTrigger removes a write-trigger by its unique ID for the specified memory address in the WriteTriggers collection.", r.RemoveRamTrigger)
-	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the main emulation step for the PLA, updating its state and processing associated logic.", r.Emulate)
+	_ = r.CommandAdd("Update", "Update() - Update updates the state of the PLA by rebuilding the memory configuration and updating the port settings.", r.Update)
+	_ = r.CommandAdd("ReadRam0x0000", "ReadRam0x0000(addr) uint8 - ReadRam0x0000 reads data from address 0x0000 and processes special cases for addresses 0 and 1.", r.ReadRam0x0000)
+	_ = r.CommandAdd("ReadPortColor", "ReadPortColor(addr) uint8 - ReadPortColor reads color data from the Color RAM and combines it with data from the VIC latch for a full byte response.", r.ReadPortColor)
+	_ = r.CommandAdd("ReadOpenBus", "ReadOpenBus(_) uint8 - ReadOpenBus reads the current value of the open bus at the specified address and returns its signals as uint8.", r.ReadOpenBus)
+	_ = r.CommandAdd("Reset", "Reset() - Reset resets the internal state of the PLA, reinitializing ports, and triggering an Update of the memory configuration.", r.Reset)
 	_ = r.CommandAdd("Write", "Write(addr, data) - Write writes a byte of data to a specific memory address based on the bank configuration and triggers write callbacks.", r.Write)
-	_ = r.CommandAdd("ExtRead", "ExtRead(memConfig, addr) uint8 - ExtRead allows reading a specific memory address using a temporary memory configuration.", r.ExtRead)
+	_ = r.CommandAdd("WriteRam0x0000", "WriteRam0x0000(addr, data) - WriteRam0x0000 handles writing data to memory address 0x0000, updating port direction and data where applicable.", r.WriteRam0x0000)
+	_ = r.CommandAdd("BankSwitch", "BankSwitch(bankIndex) bool - BankSwitch switches the memory bank to the specified bankIndex and applies the corresponding memory configuration.  It returns true if the switch is successful, otherwise false.", r.BankSwitch)
 	_ = r.CommandAdd("RebuildMemoryConfig", "RebuildMemoryConfig() - RebuildMemoryConfig recalculates and applies the current memory configuration based on cartridge and port settings.", r.RebuildMemoryConfig)
+	_ = r.CommandAdd("Read", "Read(addr) uint8 - Read retrieves the value from the memory mapped by the given address.", r.Read)
+	_ = r.CommandAdd("WriteExt", "WriteExt(memConfig, addr, data) - WriteExt writes a byte to the specified address using the provided memory configuration, temporarily switching configurations.", r.WriteExt)
+	_ = r.CommandAdd("WriteOpenBus", "WriteOpenBus(_, _) - WriteOpenBus writes to an 'open bus' state where no specific memory or component is targeted.", r.WriteOpenBus)
+	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the main emulation step for the PLA, updating its state and processing associated logic.", r.Emulate)
+	_ = r.CommandAdd("WriteRamIO", "WriteRamIO(addr, data) - WriteRamIO writes a byte of data to the specific address by determining the target U15 write function based on the address.", r.WriteRamIO)
+	_ = r.CommandAdd("ReadRamIO", "ReadRamIO(addr) uint8 - ReadRamIO returns the value of the RAM read at the specified address, using the appropriate U15 read function.", r.ReadRamIO)
+	_ = r.CommandAdd("ReadPortIO", "ReadPortIO(addr) uint8 - ReadPortIO reads a byte from the specified IO port address.", r.ReadPortIO)
+	_ = r.CommandAdd("WritePortIO", "WritePortIO(addr, data) - WritePortIO writes data to the specified IO port address using the cartridge manager's IO write functionality.", r.WritePortIO)
 
 	return reflector
 }

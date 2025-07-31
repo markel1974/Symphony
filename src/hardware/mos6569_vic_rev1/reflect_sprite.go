@@ -62,7 +62,7 @@ func NewSpriteReflect(r *Sprite, factory references.IComponentFactory, parent re
 	_ = r.CommandAdd("LatchAttributes", "LatchAttributes(mdp, mm0, mm1, mXc, mXx) - LatchAttributes updates the sprite's color data, multicolor flags, and offset using the provided parameters.", r.LatchAttributes)
 	_ = r.CommandAdd("IncrementCounterBase", "IncrementCounterBase() - IncrementCounterBase updates the counterIncrement field of the sprite to align with the current data alignment value.", r.IncrementCounterBase)
 	_ = r.CommandAdd("Draw", "Draw(latchIndex) - ", r.Draw)
-	_ = r.CommandAdd("SetData", "SetData(bNum, data) - ", r.SetData)
+	_ = r.CommandAdd("WriteData", "WriteData(bNum, data) - ", r.SetData)
 	_ = r.CommandAdd("CommitIncrementCounterBase", "CommitIncrementCounterBase() bool - CommitIncrementCounterBase updates the counter-base by adding the counter-increment, resets the increment, and checks a condition.", r.CommitIncrementCounterBase)
 	_ = r.CommandAdd("ResetCounterBase", "ResetCounterBase() - ResetCounterBase resets the sprite's counterBase to zero. It is typically used to reinitialize the base counter.", r.ResetCounterBase)
 	_ = r.CommandAdd("CommitCounterBase", "CommitCounterBase() - CommitCounterBase sets the sprite's data counter to its base value stored in dataCounterBase.", r.CommitCounterBase)
