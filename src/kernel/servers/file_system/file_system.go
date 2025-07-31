@@ -18,8 +18,8 @@ type FileSystem struct {
 	parser      *Parser
 }
 
-// NewCommandInteractor initializes and returns a new FileSystem instance with the given root command and an empty search path list.
-func NewCommandInteractor(root interfaces.ICommand, sp []interfaces.ICommand) *FileSystem {
+// NewFileSystem initializes and returns a new FileSystem instance with the given root command and an empty search path list.
+func NewFileSystem(root interfaces.ICommand, sp []interfaces.ICommand) *FileSystem {
 	var searchPath []interfaces.ICommand
 	for _, k := range sp {
 		if k != nil {
