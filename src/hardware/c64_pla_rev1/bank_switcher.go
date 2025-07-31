@@ -1,6 +1,10 @@
 package c64_pla_rev1
 
-import "log"
+import (
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
+	"log"
+)
 
 // see C64 Bank Switching
 // https://www.c64-wiki.com/wiki/Bank_Switching
@@ -66,13 +70,15 @@ var _bankSwitching = [][]uint8{
 
 // BankSwitcher represents a structure for managing memory configurations with a maximum index for memory mapping.
 type BankSwitcher struct {
-	mask  uint8
-	index int
+	*component.BaseComponent
+	reflect *BankSwitcherReflect
+	mask    uint8
+	index   int
 }
 
 // NewBankSwitcher creates and initializes a new BankSwitcher instance based on the `_bankSwitching` configuration.
 // It panics if `_bankSwitching` is empty or its length is not a multiple of 2.
-func NewBankSwitcher() *BankSwitcher {
+func NewBankSwitcher(factory references.IComponentFactory, parent references.IComponent, label string, instance int) *BankSwitcher {
 	bsLen := len(_bankSwitching)
 	if bsLen == 0 {
 		log.Fatal("wrong memory map (len == 0)")
@@ -80,10 +86,42 @@ func NewBankSwitcher() *BankSwitcher {
 	if bsLen%2 != 0 {
 		log.Fatal("wrong memory map (len isn't multiple of 2)")
 	}
-	return &BankSwitcher{
-		mask:  uint8(bsLen - 1),
-		index: -1,
+	bs := &BankSwitcher{
+		BaseComponent: component.NewBaseComponent(),
+		mask:          uint8(bsLen - 1),
+		index:         -1,
 	}
+	bs.reflect = NewBankSwitcherReflect(bs, factory, parent, "bankSwitcher", instance, references.IdInternalComponent(label, instance, "BankSwitcher"))
+	return bs
+}
+
+// Setup initializes the BankSwitcher instance, preparing it for operation. Returns an error if initialization fails.
+func (m *BankSwitcher) Setup() error {
+	return nil
+}
+
+// Connect establishes the necessary connections for the BankSwitcher to enable memory management and configuration.
+func (m *BankSwitcher) Connect() error {
+	return nil
+}
+
+// Internal determines if the BankSwitcher operates within its internal configuration mode.
+func (m *BankSwitcher) Internal() bool {
+	return true
+}
+
+// Reset restores the BankSwitcher instance to its initial state, clearing any previous configurations or settings.
+func (m *BankSwitcher) Reset() {
+}
+
+// Emulate performs the emulation logic associated with the BankSwitcher component during a processing cycle.
+func (m *BankSwitcher) Emulate() {
+	//
+}
+
+// EmulationRequired checks if emulation is necessary for the BankSwitcher instance and returns false by default.
+func (m *BankSwitcher) EmulationRequired() bool {
+	return false
 }
 
 // GetIndex returns the current memory configuration index managed by the BankSwitcher instance.

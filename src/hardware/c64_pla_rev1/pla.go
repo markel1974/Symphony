@@ -52,7 +52,7 @@ const bankSize = bankMask + 1
 // It registers the component with the given parent and factory, assigns a label, and sets the instance number.
 // The function also sets up memory mapping, triggers, and other internal properties specific to the PLA.
 func NewPLA(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *PLA {
-	mm := NewBankSwitcher()
+	//mm := NewBankSwitcher()
 	b := &PLA{
 		BaseComponent:    component.NewBaseComponent(),
 		vaSignals:        nil,
@@ -65,7 +65,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		bankRead:         make([]ReadFn, bankSize),
 		u15Write:         make([]WriteFn, bankSize),
 		u15Read:          make([]ReadFn, bankSize),
-		bankSwitcher:     mm,
+		bankSwitcher:     nil,
 		ports:            nil,
 		emulatorId:       NewEmulatorId(),
 		basicRead:        nil,
@@ -85,6 +85,7 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 // Setup initializes the PLA instance by configuring its settings and creating the port object.
 func (b *PLA) Setup() error {
 	b.cfg = b.GetFactory().GetConfig()
+	b.bankSwitcher = NewBankSwitcher(b.GetFactory(), b, b.label, 0)
 	b.ports = NewPorts(b.GetFactory(), b, b.label, 0)
 	return nil
 }
