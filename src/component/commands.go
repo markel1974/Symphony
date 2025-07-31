@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/shell"
+	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 	"reflect"
 	"sort"
 	"strings"

@@ -16,7 +16,7 @@ package invaders
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/render/matrix"
+	matrix2 "github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
 	"math/rand"
 )
 
@@ -31,17 +31,17 @@ const (
 )
 
 type Fragment struct {
-	matrix.Point
+	matrix2.Point
 	life     int
-	sprites  []*matrix.Entity
+	sprites  []*matrix2.Entity
 	fragment string
 }
 
 func NewFragment(x int, y int, life int, fragments int) Fragment {
 	f := Fragment{
-		Point:   matrix.NewPointFloat(float64(x), float64(y)),
+		Point:   matrix2.NewPointFloat(float64(x), float64(y)),
 		life:    life,
-		sprites: make([]*matrix.Entity, fragments),
+		sprites: make([]*matrix2.Entity, fragments),
 	}
 	return f
 }
@@ -73,7 +73,7 @@ func (f *Fragments) Update() {
 			for j := 0; j < fragmentNum; j++ {
 				x := rand.Intn(fragmentMaxX) + int(f.data[i].GetX()) + fragmentOffsetX
 				y := rand.Intn(fragmentMaxY) + int(f.data[i].GetY()) + fragmentOffsetY
-				f.data[i].sprites[j] = matrix.NewEntity('+', x, y, 0.2, 0.5, 0.5, []string{f.randSprite()}, 0)
+				f.data[i].sprites[j] = matrix2.NewEntity('+', x, y, 0.2, 0.5, 0.5, []string{f.randSprite()}, 0)
 			}
 		}
 

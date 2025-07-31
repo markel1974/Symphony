@@ -18,10 +18,10 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/core"
+	"github.com/markel1974/c64emu/src/kernel/frontend/telnet/session"
+	"github.com/markel1974/c64emu/src/kernel/frontend/terminal"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	session2 "github.com/markel1974/c64emu/src/kernel/servers/telnet/session"
-	"github.com/markel1974/c64emu/src/kernel/servers/terminal"
-	"github.com/markel1974/c64emu/src/kernel/shell"
+	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 	"log"
 	"net"
 )
@@ -59,15 +59,15 @@ func (r *Server) handleConnection(c net.Conn) {
 		}
 	}()
 
-	telnetSession := session2.NewTelnet(c)
+	telnetSession := session.NewTelnet(c)
 
 	ctx := core.NewContext(r.ticker, telnetSession, telnetSession, r.auth, r.template, r.prompt, r.autosave)
 	term := r.factory.Create("VT100", -1)
 	ctx.Setup(term)
 
-	telnetSession.SetListenFunc(func(code session2.IOCode, data []byte) {
+	telnetSession.SetListenFunc(func(code session.IOCode, data []byte) {
 		switch code {
-		case session2.WS:
+		case session.WS:
 			if len(data) != 4 {
 				log.Println("Malformed window size data:", data)
 				return
@@ -77,7 +77,7 @@ func (r *Server) handleConnection(c net.Conn) {
 			height := int(255*data[2]) + int(data[3])
 			ctx.SetScreenSize(width, height)
 
-		case session2.TT:
+		case session.TT:
 			//c.terminal.SetTerminalType(string(data))
 
 		default:

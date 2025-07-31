@@ -1,7 +1,9 @@
 package render
 
 import (
+	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/messages"
 )
 
 // eol represents the end-of-line marker used for denoting line breaks in the output, set to "\r\n".
@@ -14,12 +16,16 @@ type Render struct {
 	width     int
 	height    int
 	fullPaint bool
+	ticker    *adaptiveticker.AdaptiveTicker
+	timerChan chan *adaptiveticker.TimerHandler
 }
 
 // NewRender creates and initializes a new Render instance with the provided terminal implementation.
 // Returns a pointer to the newly created Render object.
-func NewRender(terminal interfaces.ITerminal) *Render {
+func NewRender(ticker *adaptiveticker.AdaptiveTicker, timerChan chan *adaptiveticker.TimerHandler, terminal interfaces.ITerminal) *Render {
 	return &Render{
+		ticker:    ticker,
+		timerChan: timerChan,
 		terminal:  terminal,
 		dirty:     false,
 		width:     80,
@@ -82,6 +88,7 @@ func (c *Render) PaintRequest(full bool) bool {
 	ret := false
 	if !c.dirty {
 		c.dirty = true
+		c.ticker.Create(c.timerChan, messages.NewMessagePaint(), -1, -1, 1)
 		ret = true
 	}
 	return ret

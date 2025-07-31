@@ -245,6 +245,25 @@ func (c *Shell) TabReset() {
 	c.history.SetDefault(string(c.current))
 }
 
+/*
+func (c *Shell) ApplySuggestion(suggestions []string, found bool, tabCount int) {
+	if found && len(suggestions) > 0 {
+		sLen := len(suggestions)
+		if idx := tabCount % sLen; idx < sLen {
+			if complete := suggestions[idx]; len(complete) > len(data) {
+				tabLine := complete
+				c.Redraw(tabLine)
+				c.SetHistoryDefault(tabLine)
+				if sLen == 1 {
+					c.TabReset()
+				}
+			}
+		}
+	}
+}
+
+*/
+
 // keyPressed processes a printable key input and updates the current input buffer, cursor position, and visual rendering.
 func (c *Shell) keyPressed(key rune) {
 	if unicode.IsPrint(key) {

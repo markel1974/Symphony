@@ -16,7 +16,7 @@ package system
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/shell"
+	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 )
 
 func CreatePWD() *shell.Command {

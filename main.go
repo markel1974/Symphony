@@ -6,10 +6,10 @@ import (
 	"github.com/markel1974/c64emu/src"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/kernel/frontend"
+	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers"
-	"github.com/markel1974/c64emu/src/kernel/servers/authenticator"
-	"github.com/markel1974/c64emu/src/kernel/shell"
+	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"github.com/markel1974/c64emu/src/version"
@@ -65,7 +65,7 @@ func createShell(target *shell.Command) error {
 	fmt.Println("port", port)
 	fmt.Println("secure", secure)
 	fmt.Println("user", user)
-	k := servers.NewServer(secure, auth, port, false)
+	k := frontend.NewFrontend(secure, auth, port, false)
 	k.SetPrompt(" % ")
 	k.SetTemplate(t)
 	go func() {

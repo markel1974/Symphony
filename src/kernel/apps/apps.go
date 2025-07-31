@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/apps/stats"
 	"github.com/markel1974/c64emu/src/kernel/apps/system"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/shell"
+	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 )
 
 // Root represents the top-level structure used to build and organize CLI command hierarchies.

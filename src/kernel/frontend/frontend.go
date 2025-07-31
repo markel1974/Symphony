@@ -12,15 +12,15 @@
  * limitations under the License.
  */
 
-package servers
+package frontend
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
+	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
+	"github.com/markel1974/c64emu/src/kernel/frontend/ssh"
+	"github.com/markel1974/c64emu/src/kernel/frontend/telnet"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/authenticator"
-	"github.com/markel1974/c64emu/src/kernel/servers/ssh"
-	"github.com/markel1974/c64emu/src/kernel/servers/telnet"
-	"github.com/markel1974/c64emu/src/kernel/shell"
+	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 )
 
 // IShellServer defines the behavior of a customizable command-line shell interface.
@@ -35,10 +35,10 @@ type IShellServer interface {
 	AsyncStart()
 }
 
-// NewServer creates a new shell server instance, either SSH or Telnet, based on the secure parameter.
+// NewFrontend creates a new shell server instance, either SSH or Telnet, based on the secure parameter.
 // It uses the provided authenticator, port, and autosave settings.
 // A default simple authenticator is used if none is provided.
-func NewServer(secure bool, auth interfaces.IAuthenticator, port int, autosave bool) IShellServer {
+func NewFrontend(secure bool, auth interfaces.IAuthenticator, port int, autosave bool) IShellServer {
 	var ticker = adaptiveticker.NewAdaptiveTicker()
 	if auth == nil {
 		auth = authenticator.NewSimpleAuthenticator()

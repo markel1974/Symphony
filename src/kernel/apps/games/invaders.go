@@ -17,7 +17,7 @@ package games
 import (
 	"github.com/markel1974/c64emu/src/kernel/apps/games/invaders"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/shell"
+	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 )
 
 func CreateInvaders() *shell.Command {

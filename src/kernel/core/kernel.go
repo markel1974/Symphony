@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/shell"
+	"github.com/markel1974/c64emu/src/kernel/messages"
+	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 	"io"
 	"log"
 	"os"
@@ -30,16 +31,16 @@ type Kernel struct {
 	render       interfaces.IRender
 	foreground   interfaces.ITask
 	selector     *TaskSelector
-	timersChan   chan *adaptiveticker.TimerHandler
 	ids          *adaptiveticker.Ids
 	fs           interfaces.IFileSystem
 	sh           *shell.Shell
-	messageChan  chan IMessage
+	messageChan  chan messages.IMessage
+	timersChan   chan *adaptiveticker.TimerHandler
 	exit         bool
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(ticker *adaptiveticker.AdaptiveTicker, inputDriver io.Reader, outputDriver io.Writer, render interfaces.IRender, fs interfaces.IFileSystem, sh *shell.Shell) *Kernel {
+func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver io.Reader, outputDriver io.Writer, render interfaces.IRender, fs interfaces.IFileSystem, sh *shell.Shell) *Kernel {
 	t := &Kernel{
 		ticker:       ticker,
 		inputDriver:  inputDriver,
@@ -50,11 +51,39 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, inputDriver io.Reader, out
 		foreground:   nil,
 		selector:     NewTaskSelector(),
 		ids:          adaptiveticker.NewIds(1024),
-		messageChan:  make(chan IMessage, contextMaQueueLen),
-		timersChan:   make(chan *adaptiveticker.TimerHandler, contextMaQueueLen),
+		messageChan:  make(chan messages.IMessage, contextMaQueueLen),
+		timersChan:   timersChan,
 		exit:         false,
 	}
 	return t
+}
+
+// Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
+func (c *Kernel) Start() {
+	c.render.WriteHighlight("Admin Console Ready")
+	c.sh.SetPromptPrefix(c.fs.CWD().Name())
+	c.sh.NextLine(true)
+
+	d := make(chan bool)
+	go func() {
+		d <- true
+		readBuffer := make([]byte, 4096)
+		for {
+			n, err := c.inputDriver.Read(readBuffer)
+			if err == nil {
+				if n > 0 {
+					re := messages.NewMessageRead(readBuffer, n)
+					c.messageChan <- re
+				}
+			} else {
+				qe := messages.NewMessageQuit()
+				c.messageChan <- qe
+				return
+			}
+		}
+	}()
+	_ = <-d
+	c.eventLoop()
 }
 
 // IOWrite writes the provided byte slice to the output driver and returns the number of bytes written and any error encountered.
@@ -72,11 +101,11 @@ func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 	if kind == interfaces.KeyTypeCtrl {
 		switch key {
 		case 3:
-			c.setSelectionDisabled()
+			c.selector.Clear()
 			c.killForeground()
 			c.sh.NextLine(true)
 		case 4:
-			c.execActivate()
+			c.handleExecActivate()
 		}
 		return
 	}
@@ -89,125 +118,9 @@ func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 	}
 }
 
-// ExecRead invokes the ReadEvent function for a task identified by pid. Returns true if execution is successful.
-func (c *Kernel) handleTaskKeyEvent(pid int, code int, buffer rune) bool {
-	ret := false
-	if t, ok := c.ids.Get(pid); ok {
-		task := t.(*Task)
-		if fn := task.cmd.ReadEvent(); fn != nil {
-			fn(task, code, buffer)
-			ret = true
-		}
-	}
-	return ret
-}
-
-// handleKeyEvent processes a keyboard event of a given type and key and returns true if the event was handled successfully.
-func (c *Kernel) handleKeyEvent(kind interfaces.KeyType, key rune) bool {
-	c.sh.KeyHandler(kind, key)
-	if !c.sh.Authenticated() {
-		return true
-	}
-	if kind == interfaces.KeyTypeEnter {
-		if buffer := c.sh.InputBuffer(); len(buffer) > 0 {
-			c.render.WriteLn("")
-			_, _ = c.execCommand(buffer, nil)
-			c.sh.NextLine(false)
-		} else {
-			c.sh.NextLine(true)
-		}
-	} else if kind == interfaces.KeyTypeTab {
-		if c.sh.TabFound() {
-			tabData, pos, tabCount := c.sh.TabData()
-			if l, ok := c.ExecSuggestion(tabData, pos, tabCount); l == 1 && ok {
-				c.sh.TabReset()
-			}
-		}
-	}
-	return false
-}
-
-// HistoryApply performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
-func (c *Kernel) HistoryApply(verb interfaces.HistoryAction, idx int) {
-	if arg := c.sh.HistoryApply(verb, idx); len(arg) > 0 {
-		_, _ = c.execCommand(arg, nil)
-	}
-}
-
 // SetScreenSize sets the display dimensions of the screen to the specified width (w) and height (h).
 func (c *Kernel) SetScreenSize(w int, h int) {
 	c.render.SetScreenSize(w, h)
-}
-
-// GetScreenSize returns the width and height of the screen in pixels as two integer values.
-func (c *Kernel) GetScreenSize() (int, int) {
-	return c.render.GetScreenSize()
-}
-
-// Write writes the provided string to the output stream.
-func (c *Kernel) Write(data string) {
-	c.render.Write(data)
-}
-
-// WriteLn writes the provided string followed by a newline to the output stream.
-func (c *Kernel) WriteLn(data string) {
-	c.render.WriteLn(data)
-}
-
-// WriteColor writes text with specified foreground and background colors using the provided color rendering mode.
-func (c *Kernel) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.render.WriteColor(data, fg, bg, mode)
-}
-
-// WriteColorLn writes a line of text with specified foreground color, background color, and color mode.
-func (c *Kernel) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.render.WriteColorLn(data, fg, bg, mode)
-}
-
-// ClearScreen clears the screen by invoking the render system's ClearScreen operation.
-func (c *Kernel) ClearScreen() {
-	c.render.ClearScreen()
-}
-
-// execActivate attempts to activate a foreground process by executing the associated command and returns its success status.
-func (c *Kernel) execActivate() bool {
-	pid, name := c.GetForegroundName()
-	if pid == adaptiveticker.UnknownId {
-		return false
-	}
-	if name == commandActivate {
-		return false
-	}
-	c.SetBackground()
-	_, _ = c.execCommand(fmt.Sprint(commandActivate, " ", pid), nil)
-	return false
-}
-
-// execCommand executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
-// Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
-func (c *Kernel) execCommand(line string, options *TaskOptions) (bool, error) {
-	cmd, args, err := c.fs.Find(line)
-	if err != nil {
-		return false, fmt.Errorf("error creating task: invalid command '%s'", line)
-	}
-	task := NewTask(c, cmd, line)
-	if !c.ids.Set(task) {
-		return false, fmt.Errorf("error creating task: can't set pid")
-	}
-	task.SetOptions(options)
-	if err = cmd.Execute(task, args); err != nil {
-		c.Kill(task.pid)
-		return true, err
-	}
-	if !cmd.Daemon() {
-		c.Kill(task.pid)
-		return true, nil
-	}
-	task.state = TaskStateRunning
-	if !cmd.Background() {
-		c.foreground = task
-	}
-	return true, nil
 }
 
 // SetSelectionMode sets the current selection mode for tasks based on a requested process ID. Defaults to the first task if the requested ID is unavailable.
@@ -241,45 +154,16 @@ func (c *Kernel) SetSelectionMode(requestedPid int) {
 		}
 		c.selector.Set(firstPid, firstIdx)
 	}
-	c.doPaintRequest(false)
 }
 
-// PaintRequest determines if a paint operation is required by invoking an underlying kernel method.
-func (c *Kernel) PaintRequest() bool {
-	return c.doPaintRequest(false)
+// SetSelectionTaskNext advances to the next available task in the selection and triggers a repaint request if successful.
+func (c *Kernel) SetSelectionTaskNext() bool {
+	return c.selector.Next()
 }
 
-// doPaintRequest handles paint requests by invoking the render's PaintRequest method and potentially scheduling a paint event.
-// Returns true if a paint event was successfully scheduled, otherwise returns false.
-// The full parameter specifies whether the entire view should be repainted.
-func (c *Kernel) doPaintRequest(full bool) bool {
-	if c.render.PaintRequest(full) {
-		c.ticker.Create(c.timersChan, NewMessagePaint(), -1, -1, 1)
-		return true
-	}
-	return false
-}
-
-// SetSelectionModeNext advances to the next available task in the selection and triggers a repaint request if successful.
-func (c *Kernel) SetSelectionModeNext() {
-	if !c.selector.Next() {
-		return
-	}
-	c.doPaintRequest(false)
-}
-
-// SetSelectionModePrevious updates selection to the previous item using the internal selector and requests a repaint if successful.
-func (c *Kernel) SetSelectionModePrevious() {
-	if !c.selector.Prev() {
-		return
-	}
-	c.doPaintRequest(false)
-}
-
-// setSelectionDisabled disables task selection by clearing the selector's state and cancels any pending paint requests.
-func (c *Kernel) setSelectionDisabled() {
-	c.selector.Clear()
-	c.doPaintRequest(false)
+// SetSelectionTaskPrevious updates selection to the previous item using the internal selector and requests a repaint if successful.
+func (c *Kernel) SetSelectionTaskPrevious() bool {
+	return c.selector.Prev()
 }
 
 // ExitRequested signals that the kernel should terminate its execution and exit.
@@ -287,66 +171,15 @@ func (c *Kernel) ExitRequested() {
 	c.exit = true
 }
 
-// CWDDirectoryListing retrieves the names of the child elements in the current working directory.
-func (c *Kernel) CWDDirectoryListing() []string {
-	var out []string
-	cwd := c.fs.CWD()
-	for _, z := range cwd.DirectoryListing() {
-		out = append(out, z) // z.Name())
-	}
-	return out
-}
-
-// CWD returns the current working directory command from the kernel's file system interface.
-func (c *Kernel) CWD() interfaces.ICommand {
-	return c.fs.CWD()
-}
-
-// CWDGet returns the command path of the current working directory from the kernel's file system.
-func (c *Kernel) CWDGet() string {
-	return c.fs.CWD().CommandPath()
-}
-
-// CWDPath returns the current working directory path as a slice of strings.
-func (c *Kernel) CWDPath() []string {
-	return c.fs.CWD().Path()
-}
-
-// CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
-func (c *Kernel) CWDSet(arg string) bool {
-	b := c.fs.CWDSet(arg)
-	if b {
-		cwd := c.fs.CWD()
-		cwd.Name()
-		c.sh.SetPromptPrefix(cwd.Name())
-	}
-	return b
-}
-
-// Help retrieves the help documentation associated with the provided argument from the kernel's filesystem.
-func (c *Kernel) Help(arg string) (string, error) {
-	return c.fs.Help(arg)
-}
-
-// SetSelectionOptions modifies selection parameters like offsets or scale based on the provided option and value.
+// SendSelectionTaskOptions modifies selection parameters like offsets or scale based on the provided option and value.
 // Returns true if the operation is applied successfully; otherwise, returns false.
-func (c *Kernel) SetSelectionOptions(option rune, value float64) bool {
+func (c *Kernel) SendSelectionTaskOptions(option rune, value float64) bool {
 	t, ok := c.ids.Get(c.selector.PID())
 	if !ok {
 		return false
 	}
 	task := t.(*Task)
-	switch option {
-	case 'y':
-		task.SetOffsetY(task.OffsetY() + int(value))
-	case 'x':
-		task.SetOffsetX(task.OffsetX() + int(value))
-	case 'z':
-		if scale := task.Scale() + value; scale >= 0.2 && scale <= 1 {
-			task.SetScale(scale)
-		}
-	}
-	c.doPaintRequest(true)
+	task.SetOption(option, value)
 	return true
 }
 
@@ -372,10 +205,10 @@ func (c *Kernel) CreateTimer(pid int, first int, interval int, count int) bool {
 	if task.cmd.TimerEvent == nil {
 		return false
 	}
-	m := NewMessageTimer(pid, interval)
-	m.tid = c.ticker.Create(c.timersChan, m, int64(first), int64(interval), int64(count))
-	if m.tid > -1 {
-		task.timers = append(task.timers, m.tid)
+	m := messages.NewMessageTimer(pid, interval)
+	m.SetTID(c.ticker.Create(c.timersChan, m, int64(first), int64(interval), int64(count)))
+	if m.TID() > -1 {
+		task.timers = append(task.timers, m.TID())
 	}
 	return true
 }
@@ -428,6 +261,33 @@ func (c *Kernel) killForeground() {
 		return
 	}
 	c.Kill(c.foreground.PID())
+}
+
+// ExecCommand executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
+// Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
+func (c *Kernel) ExecCommand(line string, options *TaskOptions) (bool, error) {
+	cmd, args, err := c.fs.Find(line)
+	if err != nil {
+		return false, fmt.Errorf("error creating task: invalid command '%s'", line)
+	}
+	task := NewTask(c, c.fs, c.render, c.sh, cmd, line)
+	if !c.ids.Set(task) {
+		return false, fmt.Errorf("error creating task: can't set pid")
+	}
+	task.SetOptions(options)
+	if err = cmd.Execute(task, args); err != nil {
+		c.Kill(task.pid)
+		return true, err
+	}
+	if !cmd.Daemon() {
+		c.Kill(task.pid)
+		return true, nil
+	}
+	task.state = TaskStateRunning
+	if !cmd.Background() {
+		c.foreground = task
+	}
+	return true, nil
 }
 
 // Kill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
@@ -492,61 +352,6 @@ func (c *Kernel) List() string {
 		return true
 	})
 	return out
-}
-
-// ExecTimer triggers a timer event for a task identified by the given pid and tid, with the specified interval.
-// Returns true if the event was successfully triggered, otherwise false.
-func (c *Kernel) ExecTimer(pid int, tid int, interval int) bool {
-	ret := false
-	if t, ok := c.ids.Get(pid); ok {
-		task := t.(*Task)
-		if fn := task.cmd.TimerEvent(); fn != nil {
-			fn(task, tid, interval)
-			ret = true
-		}
-	}
-	return ret
-}
-
-// ExecSuggestion executes a suggestion mechanism based on input, cursor position, and count, returning total suggestions and success status.
-func (c *Kernel) ExecSuggestion(in string, cursor int, count int) (int, bool) {
-	ret := false
-	sLen := 0
-	data, suggestions, found := c.fs.Suggestion(in, cursor)
-	if found && len(suggestions) > 0 {
-		sLen = len(suggestions)
-		if idx := count % sLen; idx < sLen {
-			if complete := suggestions[idx]; len(complete) > len(data) {
-				tabLine := complete
-				c.sh.Redraw(tabLine)
-				c.sh.SetHistoryDefault(tabLine)
-				ret = true
-			}
-		}
-	}
-	return sLen, ret
-}
-
-// ExecPaint executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
-// Returns true if the rendering process is executed, false otherwise.
-func (c *Kernel) ExecPaint() bool {
-	if !c.render.IsDirty() {
-		return false
-	}
-	var selectedTask interfaces.ITask = nil
-	var tasks []interfaces.ITask
-	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		task, ok := item.(*Task)
-		if ok && task != nil {
-			if task.PID() == c.selector.PID() {
-				selectedTask = task
-			} else {
-				tasks = append(tasks, task)
-			}
-		}
-		return true
-	})
-	return c.render.ExecPaint(selectedTask, tasks)
 }
 
 // ListTasks retrieves a list of task names by scanning files in the current directory with a specific extension.
@@ -615,10 +420,24 @@ func (c *Kernel) RestoreTasks(name string) bool {
 		if strings.HasPrefix(task.Line, commandTask) {
 			continue
 		}
-		_, _ = c.execCommand(task.Line, task)
+		_, _ = c.ExecCommand(task.Line, task)
 	}
-	_, _ = c.execCommand(commandActivate, nil)
+	_, _ = c.ExecCommand(commandActivate, nil)
 	return true
+}
+
+// handleExecActivate attempts to activate a foreground process by executing the associated command and returns its success status.
+func (c *Kernel) handleExecActivate() bool {
+	pid, name := c.GetForegroundName()
+	if pid == adaptiveticker.UnknownId {
+		return false
+	}
+	if name == commandActivate {
+		return false
+	}
+	c.SetBackground()
+	_, _ = c.ExecCommand(fmt.Sprint(commandActivate, " ", pid), nil)
+	return false
 }
 
 // closeTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
@@ -640,42 +459,14 @@ func (c *Kernel) shutdown() {
 	c.KillAll("")
 }
 
-// Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
-func (c *Kernel) Start() {
-	c.render.WriteHighlight("Admin Console Ready")
-	c.sh.SetPromptPrefix(c.fs.CWD().Name())
-	c.sh.NextLine(true)
-
-	d := make(chan bool)
-	go func() {
-		d <- true
-		readBuffer := make([]byte, 4096)
-		for {
-			n, err := c.inputDriver.Read(readBuffer)
-			if err == nil {
-				if n > 0 {
-					re := NewMessageRead(readBuffer, n)
-					c.messageChan <- re
-				}
-			} else {
-				qe := NewMessageQuit()
-				c.messageChan <- qe
-				return
-			}
-		}
-	}()
-	_ = <-d
-	c.eventLoop()
-}
-
 // eventLoop is the main execution loop handling incoming messages and timers, and initiates shutdown when needed.
 func (c *Kernel) eventLoop() {
 	for {
 		select {
 		case m := <-c.messageChan:
-			c.messageEventHandler(m)
+			c.handleMessageEvent(m)
 		case t := <-c.timersChan:
-			c.messageEventHandler(t.Event.(IMessage))
+			c.handleMessageEvent(t.Event.(messages.IMessage))
 		}
 		if c.exit {
 			c.shutdown()
@@ -684,30 +475,112 @@ func (c *Kernel) eventLoop() {
 	}
 }
 
-// messageEventHandler processes incoming messages based on their type and performs associated actions within the kernel.
+// handleMessageEvent processes incoming messages based on their type and performs associated actions within the kernel.
 // Handles MessageTypeRead, MessageTypeTimer, MessageTypePaint, and MessageTypeQuit to execute corresponding logic.
-func (c *Kernel) messageEventHandler(m IMessage) {
+func (c *Kernel) handleMessageEvent(m messages.IMessage) {
 	if m != nil {
 		switch m.GetType() {
-		case MessageTypeRead:
-			if mm, ok := m.(*MessageRead); ok {
-				c.render.Scan(mm.data)
+		case messages.MessageTypeRead:
+			if mm, ok := m.(*messages.MessageRead); ok {
+				c.render.Scan(mm.Data())
 			}
-
-		case MessageTypeTimer:
-			if mt, ok := m.(*MessageTimer); ok {
-				c.ExecTimer(mt.pid, mt.tid, mt.interval)
+		case messages.MessageTypeTimer:
+			if mt, ok := m.(*messages.MessageTimer); ok {
+				c.handleTimerEvent(mt.PID(), mt.TID(), mt.Interval())
 			}
-
-		case MessageTypePaint:
-			if _, ok := m.(*MessagePaint); ok {
-				c.ExecPaint()
+		case messages.MessageTypePaint:
+			if _, ok := m.(*messages.MessagePaint); ok {
+				c.handlePaintEvent()
 			}
-
-		case MessageTypeQuit:
-			if _, ok := m.(*MessageQuit); ok {
+		case messages.MessageTypeQuit:
+			if _, ok := m.(*messages.MessageQuit); ok {
 				c.exit = true
 			}
 		}
 	}
+}
+
+// ExecRead invokes the ReadEvent function for a task identified by pid. Returns true if execution is successful.
+func (c *Kernel) handleTaskKeyEvent(pid int, code int, buffer rune) bool {
+	ret := false
+	if t, ok := c.ids.Get(pid); ok {
+		task := t.(*Task)
+		if fn := task.cmd.ReadEvent(); fn != nil {
+			fn(task, code, buffer)
+			ret = true
+		}
+	}
+	return ret
+}
+
+// handleKeyEvent processes a keyboard event of a given type and key and returns true if the event was handled successfully.
+func (c *Kernel) handleKeyEvent(kind interfaces.KeyType, key rune) bool {
+	c.sh.KeyHandler(kind, key)
+	if !c.sh.Authenticated() {
+		return true
+	}
+	if kind == interfaces.KeyTypeEnter {
+		if buffer := c.sh.InputBuffer(); len(buffer) > 0 {
+			c.render.WriteLn("")
+			_, _ = c.ExecCommand(buffer, nil)
+			c.sh.NextLine(false)
+		} else {
+			c.sh.NextLine(true)
+		}
+	} else if kind == interfaces.KeyTypeTab {
+		if c.sh.TabFound() {
+			tabData, cursor, tabCount := c.sh.TabData()
+			data, suggestions, found := c.fs.Suggestion(tabData, cursor)
+			if found && len(suggestions) > 0 {
+				sLen := len(suggestions)
+				if idx := tabCount % sLen; idx < sLen {
+					if complete := suggestions[idx]; len(complete) > len(data) {
+						tabLine := complete
+						c.sh.Redraw(tabLine)
+						c.sh.SetHistoryDefault(tabLine)
+						if sLen == 1 {
+							c.sh.TabReset()
+						}
+					}
+				}
+			}
+		}
+	}
+	return false
+}
+
+// ExecPaint executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
+// Returns true if the rendering process is executed, false otherwise.
+func (c *Kernel) handlePaintEvent() bool {
+	if !c.render.IsDirty() {
+		return false
+	}
+	var selectedTask interfaces.ITask = nil
+	var tasks []interfaces.ITask
+	c.ids.Range(func(item adaptiveticker.IIds) bool {
+		task, ok := item.(*Task)
+		if ok && task != nil {
+			if task.PID() == c.selector.PID() {
+				selectedTask = task
+			} else {
+				tasks = append(tasks, task)
+			}
+		}
+		return true
+	})
+	return c.render.ExecPaint(selectedTask, tasks)
+}
+
+// ExecTimer triggers a timer event for a task identified by the given pid and tid, with the specified interval.
+// Returns true if the event was successfully triggered, otherwise false.
+func (c *Kernel) handleTimerEvent(pid int, tid int, interval int) bool {
+	ret := false
+	if t, ok := c.ids.Get(pid); ok {
+		task := t.(*Task)
+		if fn := task.cmd.TimerEvent(); fn != nil {
+			fn(task, tid, interval)
+			ret = true
+		}
+	}
+	return ret
 }

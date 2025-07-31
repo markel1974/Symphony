@@ -3,10 +3,10 @@ package core
 import (
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/apps"
-	"github.com/markel1974/c64emu/src/kernel/file_system"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/render"
-	"github.com/markel1974/c64emu/src/kernel/shell"
+	"github.com/markel1974/c64emu/src/kernel/servers/file_system"
+	"github.com/markel1974/c64emu/src/kernel/servers/render"
+	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 	"io"
 )
 
@@ -48,10 +48,12 @@ func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer 
 func (c *Context) Setup(terminal interfaces.ITerminal) {
 	system := apps.NewRoot()
 	systemCommands, commands := system.Build(c.commands)
-	terminalRender := render.NewRender(terminal)
+	// TODO OGNI SERVER DEVE AVERE IL PROPRIO EVENT LOOP es L'unicp autorizzato a disegnare è il render
+	timerChan := make(chan *adaptiveticker.TimerHandler, contextMaQueueLen)
+	terminalRender := render.NewRender(c.ticker, timerChan, terminal)
 	fs := file_system.NewCommandInteractor(commands, []interfaces.ICommand{systemCommands})
 	sh := shell.NewShell(c.auth, terminalRender, c.prompt, c.autosave)
-	c.kernel = NewKernel(c.ticker, c.reader, c.writer, terminalRender, fs, sh)
+	c.kernel = NewKernel(c.ticker, timerChan, c.reader, c.writer, terminalRender, fs, sh)
 
 	terminal.SetIO(c.kernel)
 }

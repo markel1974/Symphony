@@ -17,7 +17,7 @@ package render
 import (
 	"bytes"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/render/plotter"
+	"github.com/markel1974/c64emu/src/kernel/servers/render/plotter"
 	"math"
 )
 

@@ -16,7 +16,7 @@ package invaders
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/render/matrix"
+	matrix2 "github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
 	"math/rand"
 )
 
@@ -25,20 +25,20 @@ const (
 	numStars   = 50
 )
 
-func NewStar(x int, y int, symbol rune, color string, speed float64) *matrix.Entity {
-	s := matrix.NewEntity(symbol, x, y, 0.5, speed, speed, []string{color}, -1)
+func NewStar(x int, y int, symbol rune, color string, speed float64) *matrix2.Entity {
+	s := matrix2.NewEntity(symbol, x, y, 0.5, speed, speed, []string{color}, -1)
 	return s
 }
 
 type Stars struct {
-	data []*matrix.Entity
-	tree *matrix.AABBTree
+	data []*matrix2.Entity
+	tree *matrix2.AABBTree
 }
 
 func NewStars() *Stars {
 	s := &Stars{
-		tree: matrix.NewAABBTree(numStars),
-		data: make([]*matrix.Entity, 0, numStars),
+		tree: matrix2.NewAABBTree(numStars),
+		data: make([]*matrix2.Entity, 0, numStars),
 	}
 	return s
 }
@@ -70,7 +70,7 @@ func (s *Stars) Update(w int, h int, fc uint8) {
 		if len(k) > 0 {
 			obj1.DoPhysics(obj1)
 			for _, z := range k {
-				obj1.DoPhysics(z.(*matrix.Entity))
+				obj1.DoPhysics(z.(*matrix2.Entity))
 			}
 		}
 	}

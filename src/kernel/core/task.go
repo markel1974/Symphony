@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 	"strconv"
 )
 
@@ -27,6 +28,9 @@ type TaskOptions struct {
 type Task struct {
 	*TaskOptions
 	kernel  *Kernel
+	fs      interfaces.IFileSystem
+	render  interfaces.IRender
+	sh      *shell.Shell
 	cmd     interfaces.ICommand
 	context interface{}
 	timers  []int
@@ -41,9 +45,12 @@ type Task struct {
 }
 
 // NewTask creates a new Task instance, initializes it with the provided Kernel, ICommand, and input line, and returns it.
-func NewTask(kernel *Kernel, cmd interfaces.ICommand, line string) *Task {
+func NewTask(kernel *Kernel, fs interfaces.IFileSystem, render interfaces.IRender, sh *shell.Shell, cmd interfaces.ICommand, line string) *Task {
 	t := &Task{
 		kernel:  kernel,
+		fs:      fs,
+		render:  render,
+		sh:      sh,
 		cmd:     cmd,
 		context: nil,
 		state:   TaskStateSetup,
@@ -171,6 +178,20 @@ func (t *Task) ListTasks() []string {
 	return t.kernel.ListTasks()
 }
 
+// SetOption updates the task's X, Y offsets or Scale based on the given option ('x', 'y', or 'z') and value.
+func (t *Task) SetOption(option rune, value float64) {
+	switch option {
+	case 'y':
+		t.SetOffsetY(t.OffsetY() + int(value))
+	case 'x':
+		t.SetOffsetX(t.OffsetX() + int(value))
+	case 'z':
+		if scale := t.Scale() + value; scale >= 0.2 && scale <= 1 {
+			t.SetScale(scale)
+		}
+	}
+}
+
 // SetCaption updates the task's caption using a provided string and task ID, returning true to indicate successful update.
 func (t *Task) SetCaption(caption string) bool {
 	t.label = caption
@@ -183,63 +204,88 @@ func (t *Task) SetCaption(caption string) bool {
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.
 func (t *Task) PaintRequest() bool {
-	return t.kernel.PaintRequest()
+	return t.render.PaintRequest(false)
 }
 
 // GetScreenSize returns the width and height of the screen as integers.
 func (t *Task) GetScreenSize() (int, int) {
-	return t.kernel.GetScreenSize()
+	return t.render.GetScreenSize()
 }
 
 // CWD returns the current working directory command associated with the task.
 func (t *Task) CWD() interfaces.ICommand {
-	return t.kernel.CWD()
+	return t.fs.CWD()
 }
 
 // CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
 func (t *Task) CWDSet(arg string) bool {
-	b := t.kernel.CWDSet(arg)
+	b := t.fs.CWDSet(arg)
+	if b {
+		cwd := t.fs.CWD()
+		cwd.Name()
+		t.sh.SetPromptPrefix(cwd.Name())
+	}
 	return b
 }
 
 // CWDGet retrieves the current working directory as a string from the associated kernel instance.
 func (t *Task) CWDGet() string {
-	return t.kernel.CWDGet()
+	return t.fs.CWD().CommandPath()
 }
 
 // CWDPath retrieves the current working directory path as a slice of strings from the kernel.
 func (t *Task) CWDPath() []string {
-	return t.kernel.CWDPath()
+	return t.fs.CWD().Path()
 }
 
 // CWDDirectoryListing retrieves a slice of strings representing the child nodes of the current working directory (CWD).
 func (t *Task) CWDDirectoryListing() []string {
-	return t.kernel.CWDDirectoryListing()
+	var out []string
+	cwd := t.fs.CWD()
+	for _, z := range cwd.DirectoryListing() {
+		out = append(out, z) // z.Name())
+	}
+	return out
 }
 
 // Help calls the kernel's Help method with the provided argument and returns the result or an error.
 func (t *Task) Help(arg string) (string, error) {
-	return t.kernel.Help(arg)
+	return t.fs.Help(arg)
 }
 
 // SetSelectionMode changes the task's selection mode to the specified process ID by interacting with the kernel.
 func (t *Task) SetSelectionMode(pid int) {
 	t.kernel.SetSelectionMode(pid)
+	t.render.PaintRequest(false)
 }
 
 // SetSelectionModeNext switches the selection mode to the next option using the kernel's selection handling functionality.
 func (t *Task) SetSelectionModeNext() {
-	t.kernel.SetSelectionModePrevious()
+	if t.kernel.SetSelectionTaskPrevious() {
+		t.render.PaintRequest(false)
+	}
 }
 
 // SetSelectionModePrevious sets the selection mode to the previous item using the underlying kernel functionality.
 func (t *Task) SetSelectionModePrevious() {
-	t.kernel.SetSelectionModePrevious()
+	t.kernel.SetSelectionTaskPrevious()
+	t.render.PaintRequest(false)
+}
+
+// SetSelectionTaskNext advances to the next available task in the selection and triggers a repaint request if successful.
+func (t *Task) SetSelectionTaskNext() {
+	if t.kernel.SetSelectionTaskNext() {
+		t.render.PaintRequest(false)
+	}
 }
 
 // SetSelectionOptions configures selection behavior for the task based on the provided option and value.
 func (t *Task) SetSelectionOptions(option rune, value float64) bool {
-	return t.kernel.SetSelectionOptions(option, value)
+	if t.kernel.SendSelectionTaskOptions(option, value) {
+		t.render.PaintRequest(true)
+		return true
+	}
+	return false
 }
 
 // SetId sets the task's process ID, updates the caption, and appends the label if it exists.
@@ -278,27 +324,27 @@ func (t *Task) TaskList() string {
 
 // Write sends the provided string data to the kernel's write mechanism associated with the task.
 func (t *Task) Write(data string) {
-	t.kernel.Write(data)
+	t.render.Write(data)
 }
 
 // WriteLn writes the specified data followed by a new line to the task's output stream via the kernel.
 func (t *Task) WriteLn(data string) {
-	t.kernel.WriteLn(data)
+	t.render.WriteLn(data)
 }
 
 // WriteColor writes a string to the output with specified foreground, background colors, and a color mode.
 func (t *Task) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	t.kernel.WriteColor(data, fg, bg, mode)
+	t.render.WriteColor(data, fg, bg, mode)
 }
 
 // WriteColorLn writes the provided data as a line with specified foreground and background colors and color mode.
 func (t *Task) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	t.kernel.WriteColorLn(data, fg, bg, mode)
+	t.render.WriteColorLn(data, fg, bg, mode)
 }
 
 // ClearScreen clears the task's screen by delegating the request to the associated kernel.
 func (t *Task) ClearScreen() {
-	t.kernel.ClearScreen()
+	t.render.ClearScreen()
 }
 
 // SetExit signals the kernel that an exit is requested for the task.
@@ -308,5 +354,7 @@ func (t *Task) SetExit() {
 
 // History triggers a historical operation on the task using the specified action and index.
 func (t *Task) History(verb interfaces.HistoryAction, idx int) {
-	t.kernel.HistoryApply(verb, idx)
+	if arg := t.sh.HistoryApply(verb, idx); len(arg) > 0 {
+		_, _ = t.kernel.ExecCommand(arg, nil)
+	}
 }
