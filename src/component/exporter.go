@@ -341,12 +341,12 @@ func (sd *StructData) CompileProperties(fileSet *token.FileSet) {
 		fieldName := field.Names[0].Name
 		fieldType, err := toType(fileSet, field.Type)
 		if err != nil {
-			log.Printf("[%s] error determining type for field %s: %v", sd.Input, fieldName, err)
+			log.Printf("[error][%s] can't determining type for field %s: %v", sd.Input, fieldName, err)
 			continue
 		}
 		kind := typeAllowed(fieldType)
 		if kind == 0 {
-			log.Printf("[%s] warning: Skipping field '%s' with unsupported type '%s'", sd.Input, fieldName, fieldType)
+			log.Printf("[warning][%s] skipping field '%s' with unsupported type '%s'", sd.Input, fieldName, fieldType)
 			continue
 		}
 		goName := strings.ToUpper(fieldName[:1]) + fieldName[1:]
@@ -519,7 +519,7 @@ func (g *Generator) ParseAndGenerate() error {
 		fileSet := token.NewFileSet()
 		node, err := parser.ParseFile(fileSet, input, nil, parser.ParseComments)
 		if err != nil {
-			log.Printf("[%s] error parsing file: %s", input, err.Error())
+			log.Printf("[error][%s] can't parse file: %s", input, err.Error())
 			continue
 		}
 		packageName := node.Name.Name
@@ -531,12 +531,12 @@ func (g *Generator) ParseAndGenerate() error {
 			}
 		}
 		if len(importName) == 0 {
-			log.Printf("[%s] error missing references import\n", input)
+			log.Printf("[warning][%s] skipping file: missing references import", input)
 		}
 
 		structs := g.prepareStruct(input, g.options, node)
 		if len(structs) == 0 {
-			log.Printf("[%s] error preparing file: empty structs\n", input)
+			log.Printf("[warning][%s] skipping file: empty structs", input)
 			continue
 		}
 
@@ -548,10 +548,10 @@ func (g *Generator) ParseAndGenerate() error {
 		for _, data := range structs {
 			if data.Component == baseComponent || data.Component == baseComponentFull {
 				if err = g.generateFile(input, packageName, importName, data); err != nil {
-					log.Printf("[%s] error generating file for struct %s: %v", input, data.Name, err)
+					log.Printf("[error][%s] skipping file: %s: %v", input, data.Name, err)
 				}
 			} else {
-				log.Printf("[%s] warning: Skipping file, missing component %s", baseComponent)
+				log.Printf("[warning][%s] skipping file: missing component %s", input, baseComponent)
 			}
 		}
 	}

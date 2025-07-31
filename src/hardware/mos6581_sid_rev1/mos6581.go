@@ -55,9 +55,10 @@ type ReadFn func(reg uint8) uint8
 // SID represents a Sound Interface Device, a component used to generate and handle audio synthesis in the system.
 type SID struct {
 	*component.BaseComponent
+	label                     string
 	registers                 []uint8
 	cfg                       *config.Config
-	reflect                   *SidReflect
+	reflect                   *SIDReflect
 	player                    references.IAudioRender
 	voices                    *Voices
 	filters                   *Filters
@@ -78,9 +79,9 @@ func NewSID(parent references.IComponent, factory references.IComponentFactory, 
 		registers:     make([]uint8, RegisterCount),
 		player:        nil,
 		cfg:           nil,
+		label:         label,
 	}
-	s.BaseComponent.Register(factory, parent, Identifier(), instance, s, references.IdIMos6581(s, label, instance))
-	s.reflect = NewSidReflect(s)
+	s.reflect = NewSIDReflect(s, factory, parent, Identifier(), instance, references.IdIMos6581(s, label, instance))
 	return s
 }
 
@@ -99,7 +100,7 @@ func (sid *SID) Bind(_ references.IMos6581Socket, fragFreq int /* rasters */, _ 
 	sid.filters = NewFilters()
 	sid.audioSamplesPerVolumeStep = float64(fragSize) / float64(SampleBufHalfSize)
 	sid.soundBuffer = make([]float32, fragSize)
-	sid.voices = NewVoices()
+	sid.voices = NewVoices(sid, sid.GetFactory(), sid.label, 0)
 	sid.writes = sid.createWriteRegister()
 	sid.reads = sid.createReadRegister()
 	sid.Reset()

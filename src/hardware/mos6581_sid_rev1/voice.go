@@ -1,5 +1,10 @@
 package mos6581
 
+import (
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
+)
+
 // WaveFormType represents the type of waveform used in a synthesizer voice.
 type WaveFormType int
 
@@ -47,6 +52,8 @@ const (
 
 // Voice represents a synthesizer voice with properties for waveform, modulation, frequency, and envelope generation.
 type Voice struct {
+	*component.BaseComponent
+	reflect      *VoiceReflect
 	number       uint8        // number represents the numerical identifier of the voice in the synthesizer.
 	wave         WaveFormType // Selected waveform
 	egState      EGState      // Current state of EG
@@ -75,40 +82,60 @@ type Voice struct {
 
 // NewVoice creates and initializes a new Voice instance with the specified number and default parameters.
 // It sets up envelope generation, waveform generation, and test waveforms for the voice.
-func NewVoice(number uint8) *Voice {
+func NewVoice(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Voice {
 	v := &Voice{
-		number:    number,
-		wave:      0,
-		egState:   0,
-		modBy:     nil,
-		modTo:     nil,
-		count:     0,
-		add:       0,
-		freq:      0,
-		pw:        0,
-		aAdd:      0,
-		dSub:      0,
-		sLevel:    0,
-		rSub:      0,
-		egLevel:   0,
-		gate:      0,
-		ring:      0,
-		test:      0,
-		filter:    0,
-		sync:      0,
-		noiseLFSR: DefaultNoiseLFSR,
-		mute:      false,
+		BaseComponent: component.NewBaseComponent(),
+		number:        uint8(instance),
+		wave:          0,
+		egState:       0,
+		modBy:         nil,
+		modTo:         nil,
+		count:         0,
+		add:           0,
+		freq:          0,
+		pw:            0,
+		aAdd:          0,
+		dSub:          0,
+		sLevel:        0,
+		rSub:          0,
+		egLevel:       0,
+		gate:          0,
+		ring:          0,
+		test:          0,
+		filter:        0,
+		sync:          0,
+		noiseLFSR:     DefaultNoiseLFSR,
+		mute:          false,
 	}
+	v.reflect = NewVoiceReflect(v, factory, parent, "voice", instance, references.IdInternalComponent(label, instance, "Voice"))
 	v.eg = v.buildEnvelopeGenerator()
 	v.waveForm = v.buildWaveForm()
 	v.waveFormTest = v.buildWaveFormTest()
 	return v
 }
 
-// Setup initializes the Voice instance by linking it with modulating Voices modBy and modTo.
-func (v *Voice) Setup(modBy *Voice, modTo *Voice) {
-	v.modBy = modBy
-	v.modTo = modTo
+// Setup initializes the Voice instance and prepares it for operation, returning an error if the setup fails.
+func (v *Voice) Setup() error {
+	return nil
+}
+
+// Connect establishes a connection to the voice service and returns an error if the connection fails.
+func (v *Voice) Connect() error {
+	return nil
+}
+
+// EmulationRequired determines if emulation is required for the voice instance and returns a boolean value.
+func (v *Voice) EmulationRequired() bool {
+	return false
+}
+
+// Emulate triggers the simulated behavior or action specific to the Voice instance.
+func (v *Voice) Emulate() {
+}
+
+// Internal checks if the voice instance is configured for internal usage and returns a boolean result.
+func (v *Voice) Internal() bool {
+	return true
 }
 
 // Reset reinitializes all properties of the Voice object to their default states.
@@ -131,6 +158,12 @@ func (v *Voice) Reset() {
 	v.filter = 0
 	v.noiseLFSR = DefaultNoiseLFSR
 	v.mute = false
+}
+
+// JoinVoice links the current Voice instance to another Voice instance by assigning modBy and modTo properties.
+func (v *Voice) JoinVoice(modBy *Voice, modTo *Voice) {
+	v.modBy = modBy
+	v.modTo = modTo
 }
 
 func (v *Voice) SetMute(m bool) {

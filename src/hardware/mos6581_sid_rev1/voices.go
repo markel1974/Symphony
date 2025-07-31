@@ -1,22 +1,73 @@
 package mos6581
 
+import (
+	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/references"
+)
+
+const (
+	voiceNumber = 3
+)
+
 // Voices represents a collection of multiple Voice instances.
 type Voices struct {
-	voices []*Voice // Data for 3 voices
+	*component.BaseComponent
+	reflect     *VoicesReflect
+	voiceNumber int
+	voices      []*Voice // Data for 3 voices
+}
+
+var _voicesJoin = [][]uint8{
+	{2, 1},
+	{0, 2},
+	{1, 0},
 }
 
 // NewVoices creates and initializes a Voices instance containing three interconnected Voice objects.
-func NewVoices() *Voices {
-	voice0 := NewVoice(0)
-	voice1 := NewVoice(1)
-	voice2 := NewVoice(2)
-	voice0.Setup(voice2, voice1)
-	voice1.Setup(voice0, voice2)
-	voice2.Setup(voice1, voice0)
-	return &Voices{
-		voices: []*Voice{voice0, voice1, voice2},
+func NewVoices(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Voices {
+	vs := &Voices{
+		BaseComponent: component.NewBaseComponent(),
+		voiceNumber:   voiceNumber,
 	}
-	//sid.voices = append(sid.voices, voice0, voice1, voice2)
+	vs.reflect = NewVoicesReflect(vs, factory, parent, "voices", instance, references.IdInternalComponent(label, instance, "Voices"))
+	vs.voices = make([]*Voice, voiceNumber)
+	for idx := range vs.voices {
+		v := NewVoice(vs, factory, label, idx)
+		vs.voices[idx] = v
+	}
+	for idx, v := range vs.voices {
+		if idx < len(_voicesJoin) {
+			join := _voicesJoin[idx]
+			modBy := vs.voices[join[0]]
+			modTo := vs.voices[join[1]]
+			v.JoinVoice(modBy, modTo)
+		}
+	}
+	return vs
+}
+
+// Setup initializes the Voices instance, preparing it for use, and returns an error if the initialization fails.
+func (v *Voices) Setup() error {
+	return nil
+}
+
+// Connect establishes a connection to the specified voices service and returns an error if the connection fails.
+func (v *Voices) Connect() error {
+	return nil
+}
+
+// EmulationRequired checks if voice emulation is necessary, returning false if not required.
+func (v *Voices) EmulationRequired() bool {
+	return false
+}
+
+// Emulate generates a simulated behavior or operation based on the current state of the Voices instance.
+func (v *Voices) Emulate() {
+}
+
+// Internal checks and returns whether the Voices instance operates in an internal mode.
+func (v *Voices) Internal() bool {
+	return true
 }
 
 // Reset resets the state of all voices in the collection by calling their individual Reset methods.
