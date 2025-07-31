@@ -118,31 +118,31 @@ func (m *TOD) SetHour(alarm bool, data uint8) {
 	}
 }
 
-// GetHour retrieves the current hour value from the TOD device and freezes the shadow registers state.
-func (m *TOD) GetHour() uint8 {
+// ReadHour retrieves the current hour value from the TOD device and freezes the shadow registers state.
+func (m *TOD) ReadHour() uint8 {
 	v := m.todHr
 	m.freeze()
 	return v
 }
 
-// GetMin retrieves the current minute value from the TOD. If a shadow minute is available, it returns the shadow value.
-func (m *TOD) GetMin() uint8 {
+// ReadMin retrieves the current minute value from the TOD. If a shadow minute is available, it returns the shadow value.
+func (m *TOD) ReadMin() uint8 {
 	if m.todShadowMin >= 0 {
 		return uint8(m.todShadowMin)
 	}
 	return m.todMin
 }
 
-// GetSec returns the current seconds value from the TOD, checking the shadow register if applicable.
-func (m *TOD) GetSec() uint8 {
+// ReadSec returns the current seconds value from the TOD, checking the shadow register if applicable.
+func (m *TOD) ReadSec() uint8 {
 	if m.todShadowSec >= 0 {
 		return uint8(m.todShadowSec)
 	}
 	return m.todSec
 }
 
-// Get10ths retrieves the current 10ths value from the TOD (Time-of-Day) clock, using the shadow value if available.
-func (m *TOD) Get10ths() uint8 {
+// Read10ths retrieves the current 10ths value from the TOD (Time-of-Day) clock, using the shadow value if available.
+func (m *TOD) Read10ths() uint8 {
 	var v uint8
 	if m.todShadow10ths >= 0 {
 		v = uint8(m.todShadow10ths)

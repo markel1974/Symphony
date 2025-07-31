@@ -1,7 +1,6 @@
 package mos6526
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/common/signals"
 	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/references"
@@ -177,28 +176,28 @@ func (m *Timer) GetRTC() bool {
 	return (m.cr & crBitTODIn) != 0
 }
 
-// GetCR retrieves the current value of the control register (CR) for the Timer instance.
-func (m *Timer) GetCR() uint8 {
+// ReadCR retrieves the current value of the control register (CR) for the Timer instance.
+func (m *Timer) ReadCR() uint8 {
 	return m.cr
 }
 
-// GetTimerLow retrieves the lower 8 bits of the timer's current value and returns it as an unsigned 8-bit integer.
-func (m *Timer) GetTimerLow() uint8 {
+// ReadTimerLow retrieves the lower 8 bits of the timer's current value and returns it as an unsigned 8-bit integer.
+func (m *Timer) ReadTimerLow() uint8 {
 	return uint8(m.timer)
 }
 
-// GetTimerHigh returns the high byte (upper 8 bits) of the timer value by shifting the timer's value 8 bits to the right.
-func (m *Timer) GetTimerHigh() uint8 {
+// ReadTimerHigh returns the high byte (upper 8 bits) of the timer value by shifting the timer's value 8 bits to the right.
+func (m *Timer) ReadTimerHigh() uint8 {
 	return uint8(m.timer >> 8)
 }
 
-// SetTimerLow sets the lower 8 bits of the timer latch value by converting the given prescaler to a uint16.
-func (m *Timer) SetTimerLow(prescaler uint8) {
+// WriteTimerLow sets the lower 8 bits of the timer latch value by converting the given prescaler to a uint16.
+func (m *Timer) WriteTimerLow(prescaler uint8) {
 	m.timerLatchLow = uint16(prescaler)
 }
 
-// SetTimerHigh configures the high byte of the timer latch using the given prescaler and updates the timer if not started.
-func (m *Timer) SetTimerHigh(prescaler uint8) {
+// WriteTimerHigh configures the high byte of the timer latch using the given prescaler and updates the timer if not started.
+func (m *Timer) WriteTimerHigh(prescaler uint8) {
 	timerLatchHigh := uint16(prescaler) << 8
 	m.timerLatch = m.timerLatchLow | timerLatchHigh
 	if (m.cr & crBitStart) == 0 {
@@ -208,9 +207,9 @@ func (m *Timer) SetTimerHigh(prescaler uint8) {
 
 // SetControlRegister updates the control register with new data and sets the count mode for the timer.
 func (m *Timer) SetControlRegister(data uint8, countMode uint8) {
-	if m.crNewPending {
-		fmt.Printf("TIMER %s has cr pending\n", m.GetId())
-	}
+	//if m.crNewPending {
+	//	fmt.Printf("TIMER %s has cr pending\n", m.GetId())
+	//}
 	m.crNewPending = true
 	m.crNew = data
 	m.setCountMode(countMode)

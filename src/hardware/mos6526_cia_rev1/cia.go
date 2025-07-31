@@ -159,8 +159,8 @@ func (m *CIA) EmulationRequired() bool {
 // timerAUnderflowSlot handles the underflow event of Timer A by setting the respective interrupt cycle flag and triggering IRQ.
 func (m *CIA) timerAUnderflowSlot() {
 	if m.shiftRegister.Counter() > 0 {
-		if m.shiftRegister.Handle((m.timerA.GetCR() & crBitSPMode) != 0) {
-			if (m.timerA.GetCR() & crBitSPMode) == 0 {
+		if m.shiftRegister.Handle((m.timerA.ReadCR() & crBitSPMode) != 0) {
+			if (m.timerA.ReadCR() & crBitSPMode) == 0 {
 				m.sdr = m.shiftRegister.Get()
 			}
 			m.icr |= IRQSDRFullOrEmpty
@@ -214,6 +214,11 @@ func (m *CIA) ReadDDRB() uint8 {
 	return m.ddrB
 }
 
+// ReadSDR retrieves and returns the current value of the sdr field from the CIA instance.
+func (m *CIA) ReadSDR() uint8 {
+	return m.sdr
+}
+
 // ReadRegister reads the value of the specified register from the CIA based on the provided address.
 func (m *CIA) ReadRegister(addr uint16) uint8 {
 	reg := addr & 0x0f
@@ -226,14 +231,14 @@ func (m *CIA) WriteRegister(addr uint16, data uint8) {
 	m.writes[reg](data)
 }
 
-// SetCNTLevel sets the CNT pin state for both Timer A and Timer B to the specified level.
-func (m *CIA) SetCNTLevel(level bool) {
+// WriteCNTLevel sets the CNT pin state for both Timer A and Timer B to the specified level.
+func (m *CIA) WriteCNTLevel(level bool) {
 	m.timerA.SetCNTLevel(level)
 	m.timerB.SetCNTLevel(level)
 }
 
-// SetCNTPulse sends a pulse signal to Timer A's CNT line, triggering it to perform a defined operation.
-func (m *CIA) SetCNTPulse() {
+// WriteCNTPulse sends a pulse signal to Timer A's CNT line, triggering it to perform a defined operation.
+func (m *CIA) WriteCNTPulse() {
 	m.timerA.SetCNTPulse()
 }
 
@@ -273,130 +278,163 @@ func (m *CIA) irqUpdateMask(data uint8) {
 	}
 }
 
+// ReadPortA reads the current state of port A by considering its data direction and peripheral registers.
+func (m *CIA) ReadPortA() uint8 {
+	return m.socketReadPortA(m.prA, m.prB, m.ddrA, m.ddrB)
+}
+
+// ReadPortB reads and returns the current value of Port B, including modifications based on timers with PB output enabled.
+func (m *CIA) ReadPortB() uint8 {
+	ret := m.socketReadPortB(m.prA, m.prB, m.ddrA, m.ddrB)
+	// TA/TB output to PB enabled
+	if m.timerA.HasPBOn() {
+		if m.timerA.ToggleModeApply(m.timerAIrqCycle) {
+			ret |= 0x40
+		} else {
+			ret &= 0xbf
+		}
+	}
+	if m.timerB.HasPBOn() {
+		if m.timerB.ToggleModeApply(m.timerBIrqCycle) {
+			ret |= 0x80
+		} else {
+			ret &= 0x7f
+		}
+	}
+	return ret
+}
+
+// ReadICR reads the current ICR value, resets it, and clears the IRQ trigger if ICR is non-zero. Returns the ICR value.
+func (m *CIA) ReadICR() uint8 {
+	icr := m.icr
+	m.icr = 0
+	if icr != 0 {
+		m.socketIRQClearTrigger()
+	}
+	return icr
+}
+
+// WritePRA writes the given data to the prA register and triggers the socketSignalPRA with the updated value.
+func (m *CIA) WritePRA(data uint8) {
+	m.prA = data
+	m.socketSignalPRA(m.prA)
+}
+
+// WritePRB sets the prB field to the provided data value and triggers socketSignalPRB with the updated prB value.
+func (m *CIA) WritePRB(data uint8) {
+	m.prB = data
+	m.socketSignalPRB(m.prB)
+}
+
+// WriteDDRA updates the data direction register A and triggers the associated socket signal with the new value.
+func (m *CIA) WriteDDRA(data uint8) {
+	m.ddrA = data
+	m.socketSignalDDRA(m.ddrA)
+}
+
+// WriteDDRB writes an 8-bit data value to the DDRB register and triggers the socketSignalDDRB function with the updated value.
+func (m *CIA) WriteDDRB(data uint8) {
+	m.ddrB = data
+	m.socketSignalDDRB(m.ddrB)
+}
+
+// WriteSDR writes an 8-bit value to the SDR (Serial Data Register) and updates the shift register if serial mode is active.
+func (m *CIA) WriteSDR(data uint8) {
+	m.sdr = data
+	if (m.timerA.ReadCR() & crBitSPMode) != 0 {
+		//sdr interrupt at the end of the transmission
+		m.shiftRegister.Set(data)
+	}
+}
+
+// WriteICR writes the given data to the Interrupt Control Register (ICR) and updates the IRQ state accordingly.
+func (m *CIA) WriteICR(data uint8) {
+	m.irqUpdateMask(data)
+	m.irqTrigger()
+}
+
+// WriteControlRegisterTimerA sets the control register for Timer A with the given data and determines the counting mode.
+func (m *CIA) WriteControlRegisterTimerA(data uint8) {
+	//00 = Timer counts system cycles
+	//01 = Timer counts positive slope at CNT-pin
+	countMode := uint8(0)
+	if (data & crBitInMode) != 0 {
+		countMode = 1
+	}
+	m.timerA.SetControlRegister(data, countMode)
+}
+
+// WriteControlRegisterTimerB sets the control register for timer B based on the provided data and count mode settings.
+func (m *CIA) WriteControlRegisterTimerB(data uint8) {
+	//00 = Timer counts System cycle
+	//01 = Timer counts positive slope on CNT-pin
+	//10 = Timer counts underflow of timer A
+	//11 = Timer counts underflow of timer A if the CNT-pin is high
+	//crBitInMode | crBitSPMode
+	countMode := (data >> 5) & 0x3
+	m.timerB.SetControlRegister(data, countMode)
+}
+
+// WriteTOD10ths writes the 10ths component of the Time-of-Day (TOD) clock using the provided data.
+func (m *CIA) WriteTOD10ths(data uint8) {
+	m.tod.Set10ths(m.timerB.GetRTC(), data)
+}
+
+// WriteTODSec sets the seconds value of the Time of Day (TOD) clock using the provided data parameter.
+func (m *CIA) WriteTODSec(data uint8) {
+	m.tod.SetSec(m.timerB.GetRTC(), data)
+}
+
+// WriteTODMin updates the minute value of the TOD clock using the provided data and RTC configuration.
+func (m *CIA) WriteTODMin(data uint8) {
+	m.tod.SetMin(m.timerB.GetRTC(), data)
+}
+
+// WriteTODHour updates the TOD hour value using the provided data and the RTC configuration from Timer B.
+func (m *CIA) WriteTODHour(data uint8) {
+	m.tod.SetHour(m.timerB.GetRTC(), data)
+}
+
+// createReadRegister initializes and returns an array of functions to read various registers of the CIA chip.
 func (m *CIA) createReadRegister() [RegisterCount]func() uint8 {
 	var reads [RegisterCount]func() uint8
-
-	reads[0x00] = func() uint8 {
-		return m.socketReadPortA(m.prA, m.prB, m.ddrA, m.ddrB)
-	}
-	reads[0x01] = func() uint8 {
-		ret := m.socketReadPortB(m.prA, m.prB, m.ddrA, m.ddrB)
-		// TA/TB output to PB enabled
-		if m.timerA.HasPBOn() {
-			if m.timerA.ToggleModeApply(m.timerAIrqCycle) {
-				ret |= 0x40
-			} else {
-				ret &= 0xbf
-			}
-		}
-		if m.timerB.HasPBOn() {
-			if m.timerB.ToggleModeApply(m.timerBIrqCycle) {
-				ret |= 0x80
-			} else {
-				ret &= 0x7f
-			}
-		}
-		return ret
-	}
-	reads[0x02] = func() uint8 {
-		return m.ddrA
-	}
-	reads[0x03] = func() uint8 {
-		return m.ddrB
-	}
-	reads[0x04] = m.timerA.GetTimerLow
-	reads[0x05] = m.timerA.GetTimerHigh
-	reads[0x06] = m.timerB.GetTimerLow
-	reads[0x07] = m.timerB.GetTimerHigh
-	reads[0x08] = m.tod.Get10ths
-	reads[0x09] = m.tod.GetSec
-	reads[0x0a] = m.tod.GetMin
-	reads[0x0b] = m.tod.GetHour
-	reads[0x0c] = func() uint8 {
-		return m.sdr
-	}
-	reads[0x0d] = func() uint8 {
-		icr := m.icr
-		m.icr = 0
-		if icr != 0 {
-			m.socketIRQClearTrigger()
-		}
-		return icr
-	}
-	reads[0x0e] = func() uint8 {
-		return m.timerA.GetCR()
-	}
-	reads[0x0f] = func() uint8 {
-		return m.timerB.GetCR()
-	}
-
+	reads[0x00] = m.ReadPortA
+	reads[0x01] = m.ReadPortB
+	reads[0x02] = m.ReadDDRA
+	reads[0x03] = m.ReadDDRB
+	reads[0x04] = m.timerA.ReadTimerLow
+	reads[0x05] = m.timerA.ReadTimerHigh
+	reads[0x06] = m.timerB.ReadTimerLow
+	reads[0x07] = m.timerB.ReadTimerHigh
+	reads[0x08] = m.tod.Read10ths
+	reads[0x09] = m.tod.ReadSec
+	reads[0x0a] = m.tod.ReadMin
+	reads[0x0b] = m.tod.ReadHour
+	reads[0x0c] = m.ReadSDR
+	reads[0x0d] = m.ReadICR
+	reads[0x0e] = m.timerA.ReadCR
+	reads[0x0f] = m.timerB.ReadCR
 	return reads
 }
 
 // createWriteRegister initializes an array of functions to handle writing to specific VIA registers.
 func (m *CIA) createWriteRegister() [RegisterCount]func(uint8) {
 	var writes [RegisterCount]func(uint8)
-
-	writes[0x00] = func(data uint8) {
-		m.prA = data
-		m.socketSignalPRA(m.prA)
-	}
-	writes[0x01] = func(data uint8) {
-		m.prB = data
-		m.socketSignalPRB(m.prB)
-	}
-	writes[0x02] = func(data uint8) {
-		m.ddrA = data
-		m.socketSignalDDRA(m.ddrA)
-	}
-	writes[0x03] = func(data uint8) {
-		m.ddrB = data
-		m.socketSignalDDRB(m.ddrB)
-	}
-	writes[0x04] = m.timerA.SetTimerLow
-	writes[0x05] = m.timerA.SetTimerHigh
-	writes[0x06] = m.timerB.SetTimerLow
-	writes[0x07] = m.timerB.SetTimerHigh
-	writes[0x08] = func(data uint8) {
-		m.tod.Set10ths(m.timerB.GetRTC(), data)
-	}
-	writes[0x09] = func(data uint8) {
-		m.tod.SetSec(m.timerB.GetRTC(), data)
-	}
-	writes[0x0a] = func(data uint8) {
-		m.tod.SetMin(m.timerB.GetRTC(), data)
-	}
-	writes[0x0b] = func(data uint8) {
-		m.tod.SetHour(m.timerB.GetRTC(), data)
-	}
-	writes[0x0c] = func(data uint8) {
-		m.sdr = data
-		if (m.timerA.GetCR() & crBitSPMode) != 0 {
-			m.shiftRegister.Set(data)
-			//sdr interrupt at the end of the transmission
-		}
-	}
-	writes[0x0d] = func(data uint8) {
-		m.irqUpdateMask(data)
-		m.irqTrigger()
-	}
-	writes[0x0e] = func(data uint8) {
-		//00 = Timer counts system cycles
-		//01 = Timer counts positive slope at CNT-pin
-		countMode := uint8(0)
-		if (data & crBitInMode) != 0 {
-			countMode = 1
-		}
-		m.timerA.SetControlRegister(data, countMode)
-	}
-	writes[0x0f] = func(data uint8) {
-		//00 = Timer counts System cycle
-		//01 = Timer counts positive slope on CNT-pin
-		//10 = Timer counts underflow of timer A
-		//11 = Timer counts underflow of timer A if the CNT-pin is high
-		//crBitInMode | crBitSPMode
-		countMode := (data >> 5) & 0x3
-		m.timerB.SetControlRegister(data, countMode)
-	}
+	writes[0x00] = m.WritePRA
+	writes[0x01] = m.WritePRB
+	writes[0x02] = m.WriteDDRA
+	writes[0x03] = m.WriteDDRB
+	writes[0x04] = m.timerA.WriteTimerLow
+	writes[0x05] = m.timerA.WriteTimerHigh
+	writes[0x06] = m.timerB.WriteTimerLow
+	writes[0x07] = m.timerB.WriteTimerHigh
+	writes[0x08] = m.WriteTOD10ths
+	writes[0x09] = m.WriteTODSec
+	writes[0x0a] = m.WriteTODMin
+	writes[0x0b] = m.WriteTODHour
+	writes[0x0c] = m.WriteSDR
+	writes[0x0d] = m.WriteICR
+	writes[0x0e] = m.WriteControlRegisterTimerA
+	writes[0x0f] = m.WriteControlRegisterTimerB
 	return writes
 }
