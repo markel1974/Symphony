@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package invaders
 
 import (
@@ -19,6 +5,13 @@ import (
 	"strings"
 )
 
+// menuPad defines the padding value for the menu layout.
+// fgMenu represents the foreground color for the menu, set to red.
+// bgMenu represents the background color for the menu, set to black.
+// fgMenuHighlight represents the foreground color for highlighted menu items, set to white.
+// bgMenuHighlight represents the background color for highlighted menu items, set to cyan.
+// logoY defines the vertical positioning of the logo in the UI.
+// logo provides an ASCII art logo for the application or interface.
 const (
 	menuPad         = 10
 	fgMenu          = interfaces.ColorRedDef
@@ -38,16 +31,25 @@ const (
 `
 )
 
+// FirstMenuItem represents the initial menu item index.
+// Play represents the play menu option, assigned a value of -1.
+// HighScores represent the high-scores menu option, sequentially incremented from Play.
+// Howto represent the how-to menu option, sequentially incremented from HighScores.
+// NumMenuItems represents the total number of menu items, calculated as the next value in the sequence.
 const (
 	FirstMenuItem     = 0
 	Play          int = iota - 1
-	Highscores
+	HighScores
 	Howto
 	NumMenuItems
 )
 
+// menuItems defines a map of menu item IDs to their corresponding display strings, currently only including "PLAY".
+// logoLines represent the individual lines of the logo, split by newline characters.
+// logoLineLength stores the length of the first line of the logo.
+// logoHeight stores the total number of lines in the logo.
 var (
-	//menuItems      = map[int]string{Play: "PLAY", Highscores: "HIGHSCORES", Howto: "HOWTO"}
+	//menuItems = map[int]string{Play: "PLAY", HighScores: "HIGHSCORES", Howto: "HOWTO"}
 	menuItems      = map[int]string{Play: "PLAY"}
 	logoLines      = strings.Split(logo, "\n")
 	logoLineLength = len(logoLines[0])

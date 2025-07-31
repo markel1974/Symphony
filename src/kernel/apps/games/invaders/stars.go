@@ -1,22 +1,8 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package invaders
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	matrix2 "github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
+	"github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
 	"math/rand"
 )
 
@@ -25,20 +11,20 @@ const (
 	numStars   = 50
 )
 
-func NewStar(x int, y int, symbol rune, color string, speed float64) *matrix2.Entity {
-	s := matrix2.NewEntity(symbol, x, y, 0.5, speed, speed, []string{color}, -1)
+func NewStar(x int, y int, symbol rune, color string, speed float64) *matrix.Entity {
+	s := matrix.NewEntity(symbol, x, y, 0.5, speed, speed, []string{color}, -1)
 	return s
 }
 
 type Stars struct {
-	data []*matrix2.Entity
-	tree *matrix2.AABBTree
+	data []*matrix.Entity
+	tree *matrix.AABBTree
 }
 
 func NewStars() *Stars {
 	s := &Stars{
-		tree: matrix2.NewAABBTree(numStars),
-		data: make([]*matrix2.Entity, 0, numStars),
+		tree: matrix.NewAABBTree(numStars),
+		data: make([]*matrix.Entity, 0, numStars),
 	}
 	return s
 }
@@ -70,7 +56,7 @@ func (s *Stars) Update(w int, h int, fc uint8) {
 		if len(k) > 0 {
 			obj1.DoPhysics(obj1)
 			for _, z := range k {
-				obj1.DoPhysics(z.(*matrix2.Entity))
+				obj1.DoPhysics(z.(*matrix.Entity))
 			}
 		}
 	}

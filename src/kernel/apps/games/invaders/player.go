@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package invaders
 
 import (
@@ -20,6 +6,10 @@ import (
 	"strings"
 )
 
+// initLives represents the initial number of lives a player starts with in the game.
+// livesSprite defines the string representation of a single life in the UI.
+// playerMoveSpeed determines the speed at which the player can move.
+// playerBulletSpeed sets the speed of bullets fired by the player.
 const (
 	initLives         = 5
 	livesSprite       = `| `
@@ -27,6 +17,7 @@ const (
 	playerBulletSpeed = -1
 )
 
+// playerSprite defines the visual representation of the player as a collection of string-based sprites.
 var playerSprite = []string{
 	`
   YY
@@ -35,6 +26,7 @@ GGGGGG
 `,
 }
 
+// Player represents a game character with a visual entity, a bullet, score, lives, and a string representation of lives.
 type Player struct {
 	sprite   *matrix.Entity
 	bullet   *Bullet
@@ -43,6 +35,7 @@ type Player struct {
 	livesStr string
 }
 
+// NewPlayer creates and returns a new Player instance initialized at the specified position (x, y).
 func NewPlayer(x int, y int) *Player {
 	player := &Player{
 		sprite: matrix.NewEntity(-1, x, y, 1, 1.0, 1.0, playerSprite, 0),
@@ -54,10 +47,12 @@ func NewPlayer(x int, y int) *Player {
 	return player
 }
 
+// HasCollision checks if the player's sprite collides with the specified entity based on their rectangular bounds.
 func (player *Player) HasCollision(e *matrix.Entity) bool {
 	return player.sprite.HasCollision(e)
 }
 
+// Draw renders the player's sprite and optionally their bullet on the given surface, advancing their frames if present.
 func (player *Player) Draw(surface interfaces.ISurface) {
 	player.sprite.Draw(surface)
 	player.sprite.Next()
@@ -67,16 +62,19 @@ func (player *Player) Draw(surface interfaces.ISurface) {
 	}
 }
 
+// NewBullet creates a new bullet for the player if one does not already exist, positioned at the player's sprite midpoint.
 func (player *Player) NewBullet() {
 	if player.bullet == nil {
 		player.bullet = NewBullet(int(player.sprite.GetX()+player.sprite.GetWidth()/2), int(player.sprite.GetY()), playerBulletSpeed)
 	}
 }
 
+// WipeBullet clears the player's currently assigned bullet by setting it to nil.
 func (player *Player) WipeBullet() {
 	player.bullet = nil
 }
 
+// MoveLeft moves the player's sprite to the left by decreasing its x-coordinate, bounded by the specified minimum width.
 func (player *Player) MoveLeft(minW int) {
 	player.sprite.AddToX(-playerMoveSpeed)
 	if int(player.sprite.GetX()) < minW {
@@ -84,6 +82,7 @@ func (player *Player) MoveLeft(minW int) {
 	}
 }
 
+// MoveRight moves the player to the right by a predefined speed and ensures the movement stays within the specified maximum width.
 func (player *Player) MoveRight(maxW int) {
 	player.sprite.AddToX(playerMoveSpeed)
 	if int(player.sprite.GetX()+player.sprite.GetWidth()) > maxW {
@@ -91,6 +90,7 @@ func (player *Player) MoveRight(maxW int) {
 	}
 }
 
+// DecLives decreases the player's life count by 1 and updates the lives string representation. Returns false if lives are 0 or less.
 func (player *Player) DecLives() bool {
 	player.lives -= 1
 	player.syncLives()
@@ -100,10 +100,12 @@ func (player *Player) DecLives() bool {
 	return true
 }
 
+// GetLivesStr returns the string representation of the player's remaining lives.
 func (player *Player) GetLivesStr() string {
 	return player.livesStr
 }
 
+// syncLives updates the player's lives visual representation by repeating the livesSprite string based on the current lives count.
 func (player *Player) syncLives() {
 	player.livesStr = strings.Repeat(livesSprite, player.lives)
 }

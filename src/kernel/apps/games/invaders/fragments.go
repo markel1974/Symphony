@@ -1,22 +1,8 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package invaders
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	matrix2 "github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
+	"github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
 	"math/rand"
 )
 
@@ -31,17 +17,17 @@ const (
 )
 
 type Fragment struct {
-	matrix2.Point
+	matrix.Point
 	life     int
-	sprites  []*matrix2.Entity
+	sprites  []*matrix.Entity
 	fragment string
 }
 
 func NewFragment(x int, y int, life int, fragments int) Fragment {
 	f := Fragment{
-		Point:   matrix2.NewPointFloat(float64(x), float64(y)),
+		Point:   matrix.NewPointFloat(float64(x), float64(y)),
 		life:    life,
-		sprites: make([]*matrix2.Entity, fragments),
+		sprites: make([]*matrix.Entity, fragments),
 	}
 	return f
 }
@@ -73,7 +59,7 @@ func (f *Fragments) Update() {
 			for j := 0; j < fragmentNum; j++ {
 				x := rand.Intn(fragmentMaxX) + int(f.data[i].GetX()) + fragmentOffsetX
 				y := rand.Intn(fragmentMaxY) + int(f.data[i].GetY()) + fragmentOffsetY
-				f.data[i].sprites[j] = matrix2.NewEntity('+', x, y, 0.2, 0.5, 0.5, []string{f.randSprite()}, 0)
+				f.data[i].sprites[j] = matrix.NewEntity('+', x, y, 0.2, 0.5, 0.5, []string{f.randSprite()}, 0)
 			}
 		}
 

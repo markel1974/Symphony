@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package tetris
 
 import (
@@ -21,11 +7,16 @@ import (
 	"time"
 )
 
+// levelMax defines the maximum level a player can achieve.
+// scoreMax represents the maximum score a player can attain.
 const (
 	levelMax = 20
 	scoreMax = 999999
 )
 
+// Tetris represents the core game logic and state management for a Tetris game.
+// It maintains the game board, active and upcoming tetrominos, score, level, and game state.
+// The type controls animations, game-over detection, and line deletion operations.
 type Tetris struct {
 	board           *Board
 	currentMino     *Tetromino
@@ -42,12 +33,14 @@ type Tetris struct {
 	animationDelete        []int
 }
 
+// New creates and initializes a new Tetris instance with the specified width and height, and returns a pointer to it.
 func New(w int, h int) *Tetris {
 	t := &Tetris{}
 	t.Init(w, h)
 	return t
 }
 
+// Init initializes the Tetris game state, including board dimensions and game variables for a fresh start.
 func (t *Tetris) Init(w int, h int) {
 	rand.Seed(time.Now().UnixNano())
 	t.board = NewBoard(w, h)
@@ -65,10 +58,12 @@ func (t *Tetris) Init(w int, h int) {
 	t.initMino()
 }
 
+// GetSize returns the width and height of the Tetris board as integers.
 func (t *Tetris) GetSize() (int, int) {
 	return t.board.w, t.board.h
 }
 
+// initMino initializes the current and next Tetriminos by clearing them and generating new ones.
 func (t *Tetris) initMino() {
 	t.currentMino = nil
 	t.nextMino = nil
@@ -76,6 +71,7 @@ func (t *Tetris) initMino() {
 	t.pushMino()
 }
 
+// deleteCheck checks for full lines on the game board, deletes them, updates score, and manages level progression.
 func (t *Tetris) deleteCheck() {
 	if !t.board.hasFullLine() {
 		return
@@ -103,6 +99,7 @@ func (t *Tetris) deleteCheck() {
 	t.levelUpdate()
 }
 
+// levelUpdate updates the game's level based on the total number of lines deleted, up to a predefined maximum level.
 func (t *Tetris) levelUpdate() {
 	if t.level == levelMax {
 		return
@@ -114,6 +111,7 @@ func (t *Tetris) levelUpdate() {
 	}
 }
 
+// addScore increments the current score by the provided value, ensuring it does not exceed the maximum score limit.
 func (t *Tetris) addScore(add int) {
 	t.score += add
 	if t.score > scoreMax {
@@ -121,6 +119,7 @@ func (t *Tetris) addScore(add int) {
 	}
 }
 
+// pushMino updates the current tetromino with the next one and initializes its position; checks for conflicts to handle game over.
 func (t *Tetris) pushMino() {
 	t.deleteCheck()
 
@@ -138,6 +137,7 @@ func (t *Tetris) pushMino() {
 	t.nextMino = NewMino()
 }
 
+// ApplyGravity moves the current Tetrimino down by one unit if the game is not over.
 func (t *Tetris) ApplyGravity() {
 	if t.gameOver {
 		return
@@ -145,6 +145,7 @@ func (t *Tetris) ApplyGravity() {
 	t.MoveDown()
 }
 
+// Drop moves the current tetromino directly to the bottom, updates the score, and prepares the next tetromino.
 func (t *Tetris) Drop() {
 	if t.gameOver {
 		return
@@ -154,6 +155,9 @@ func (t *Tetris) Drop() {
 	t.pushMino()
 }
 
+// MoveDown handles the logic for moving the current Tetris piece one step down on the board.
+// If the piece cannot move further down, it locks the piece in place and spawns a new one.
+// Does nothing if the game is over.
 func (t *Tetris) MoveDown() {
 	if t.gameOver {
 		return
@@ -169,6 +173,7 @@ func (t *Tetris) MoveDown() {
 	}
 }
 
+// MoveLeft moves the current Tetris piece one step to the left if it does not cause a collision with the board or boundaries.
 func (t *Tetris) MoveLeft() {
 	if t.gameOver {
 		return
@@ -180,6 +185,7 @@ func (t *Tetris) MoveLeft() {
 	}
 }
 
+// MoveRight shifts the current Tetris piece one position to the right if no conflicts occur on the game board.
 func (t *Tetris) MoveRight() {
 	if t.gameOver {
 		return
@@ -191,6 +197,7 @@ func (t *Tetris) MoveRight() {
 	}
 }
 
+// RotateRight rotates the current Tetris piece clockwise if no conflict occurs with the game board.
 func (t *Tetris) RotateRight() {
 	if t.gameOver {
 		return
@@ -202,6 +209,7 @@ func (t *Tetris) RotateRight() {
 	}
 }
 
+// RotateLeft rotates the current tetromino counterclockwise if the game is not over and no collision occurs.
 func (t *Tetris) RotateLeft() {
 	if t.gameOver {
 		return
@@ -213,6 +221,7 @@ func (t *Tetris) RotateLeft() {
 	}
 }
 
+// Draw renders all visual elements of the Tetris game on the provided surface.
 func (t *Tetris) Draw(surface interfaces.ISurface) {
 	t.drawBackGround(surface, 0, 0)
 	t.drawBoard(surface, boardXOffset, boardYOffset)
@@ -224,6 +233,7 @@ func (t *Tetris) Draw(surface interfaces.ISurface) {
 	t.drawGameOver(surface)
 }
 
+// drawTexts renders game status information (score, level, lines) on the provided surface with specified text properties.
 func (t *Tetris) drawTexts(surface interfaces.ISurface) {
 	surface.DrawTextColor(9, 32, "SCORE", interfaces.ColorWhiteDef, interfaces.ColorBlueDef, interfaces.ModeNormal)
 	surface.DrawTextColor(10, 32, fmt.Sprintf("%7d", t.score), interfaces.ColorBlackDef, interfaces.ColorWhiteDef, interfaces.ModeNormal)
@@ -233,6 +243,7 @@ func (t *Tetris) drawTexts(surface interfaces.ISurface) {
 	surface.DrawTextColor(17, 32, fmt.Sprintf("%5d", t.deleteLines), interfaces.ColorBlackDef, interfaces.ColorWhiteDef, interfaces.ModeNormal)
 }
 
+// drawDropMarker renders a ghost piece to indicate where the current tetromino will land on the board when dropped.
 func (t *Tetris) drawDropMarker(surface interfaces.ISurface) {
 	marker := *t.currentMino
 	marker.putBottom(t.board)
@@ -247,6 +258,7 @@ func (t *Tetris) drawDropMarker(surface interfaces.ISurface) {
 	}
 }
 
+// drawMino renders a Tetromino onto the given ISurface at the specified offsets, considering its coordinates and board bounds.
 func (t *Tetris) drawMino(surface interfaces.ISurface, mino *Tetromino, xOffset, yOffset int) {
 	for y, line := range mino.lines() {
 		for x, char := range line {
@@ -258,6 +270,7 @@ func (t *Tetris) drawMino(surface interfaces.ISurface, mino *Tetromino, xOffset,
 	}
 }
 
+// drawBoard renders the Tetris game board onto the provided surface starting at the specified top-left position.
 func (t *Tetris) drawBoard(surface interfaces.ISurface, left int, top int) {
 	for j := 0; j < t.board.h; j++ {
 		for i := 0; i < t.board.w; i++ {
@@ -266,6 +279,7 @@ func (t *Tetris) drawBoard(surface interfaces.ISurface, left int, top int) {
 	}
 }
 
+// drawCell renders a single Tetris cell on the provided surface at specified coordinates with the given color.
 func (t *Tetris) drawCell(surface interfaces.ISurface, x, y int, color interfaces.ColorDef) {
 	if color != interfaces.ColorNoneDef && color != blankColor {
 		if color == colorByChar('K') {
@@ -297,6 +311,7 @@ func (t *Tetris) drawCell(surface interfaces.ISurface, x, y int, color interface
 	}
 }
 
+// drawBackGround draws the background of the Tetris game on the provided surface at the specified top-left coordinates.
 func (t *Tetris) drawBackGround(surface interfaces.ISurface, left int, top int) {
 	for y, line := range t.backgroundLines {
 		for x, char := range line {
@@ -305,11 +320,13 @@ func (t *Tetris) drawBackGround(surface interfaces.ISurface, left int, top int) 
 	}
 }
 
+// drawBack renders a background color for a Tetris block at the specified (x, y) position on the given surface.
 func (t *Tetris) drawBack(surface interfaces.ISurface, x, y int, color interfaces.ColorDef) {
 	surface.DrawColor(y, 2*x-1, ' ', interfaces.ColorNoneDef, color, interfaces.ModeNormal)
 	surface.DrawColor(y, 2*x, ' ', interfaces.ColorNoneDef, color, interfaces.ModeNormal)
 }
 
+// drawAnimationDelete animates the deletion of lines in the Tetris game by alternating colors on the specified surface.
 func (t *Tetris) drawAnimationDelete(surface interfaces.ISurface) {
 	if t.animationDeleteCount > 0 {
 		for _, line := range t.animationDelete {
@@ -323,6 +340,7 @@ func (t *Tetris) drawAnimationDelete(surface interfaces.ISurface) {
 	}
 }
 
+// drawGameOver handles the rendering of the "Game Over" screen, including animations, text, and rankings display.
 func (t *Tetris) drawGameOver(surface interfaces.ISurface) {
 	if t.gameOver {
 		if t.animationGameOverCount < t.board.h {
@@ -346,6 +364,8 @@ func (t *Tetris) drawGameOver(surface interfaces.ISurface) {
 	}
 }
 
+// colorizeLine applies a specified color to a horizontal line on the game board using the given surface.
+// It modifies the appearance of the line based on the provided color definition.
 func (t *Tetris) colorizeLine(surface interfaces.ISurface, line int, color interfaces.ColorDef) {
 	for i := 0; i < t.board.w; i++ {
 		t.drawBack(surface, i+boardXOffset, line+boardYOffset, color)

@@ -21,18 +21,15 @@ import (
 )
 
 func CreateSnake() *shell.Command {
-	run := func(task interfaces.ITask, args []string) error {
+	onCreate := func(task interfaces.ITask, args []string) error {
 		w, h := task.GetScreenSize()
 		s := snake.New()
 		s.SetSize(h, w)
-		//pid := task.PID()
-		//r.SetContext(pid, s)
 		task.SetContext(s)
 		task.CreateTimer(0, 200, -1)
-		//r.CreateTimer(pid, 0, 200, -1)
 		return nil
 	}
-	readFn := func(task interfaces.ITask, code int, key rune) {
+	onRead := func(task interfaces.ITask, code int, key rune) {
 		ctx := task.GetContext()
 		s := ctx.(*snake.Snake)
 		switch key {
@@ -56,7 +53,7 @@ func CreateSnake() *shell.Command {
 			s.Start()
 		}
 	}
-	TimerFn := func(task interfaces.ITask, tid int, interval int) {
+	onTimer := func(task interfaces.ITask, tid int, interval int) {
 		ctx := task.GetContext()
 		s, ok := ctx.(*snake.Snake)
 		if !ok {
@@ -65,7 +62,7 @@ func CreateSnake() *shell.Command {
 		s.Advance()
 		task.PaintRequest()
 	}
-	paintFn := func(task interfaces.ITask, surface interfaces.ISurface) {
+	onPaint := func(task interfaces.ITask, surface interfaces.ISurface) {
 		ctx := task.GetContext()
 		s, ok := ctx.(*snake.Snake)
 		if !ok {
@@ -77,11 +74,11 @@ func CreateSnake() *shell.Command {
 		}
 		s.Draw(surface)
 	}
-	root := shell.NewCommand("snake", interfaces.CommandTypeFile, nil, true, run)
+	root := shell.NewCommand("snake", interfaces.CommandTypeFile, nil, true, onCreate)
 	root.SetHelp("Snake", "Snake")
-	root.SetTimerFn(TimerFn)
-	root.SetReadFn(readFn)
-	root.SetPaintFn(paintFn)
+	root.SetTimerFn(onTimer)
+	root.SetReadFn(onRead)
+	root.SetPaintFn(onPaint)
 
 	return root
 }

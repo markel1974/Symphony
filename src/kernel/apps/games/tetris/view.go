@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package tetris
 
 import (
@@ -19,6 +5,12 @@ import (
 	"strings"
 )
 
+// srcBackground defines the initial visual layout of the board in string format.
+// boardXOffset specifies the horizontal offset for the game board.
+// boardYOffset specifies the vertical offset for the game board.
+// nextMinoXOffset specifies the horizontal offset for displaying the next piece.
+// nextMinoYOffset specifies the vertical offset for displaying the next piece.
+// blankColor defines the color to represent blank areas on the board.
 const (
 	srcBackground = `
 		WWWWWWWWWWWW WWWWWW
@@ -50,6 +42,9 @@ const (
 	blankColor      = interfaces.ColorBlackDef
 )
 
+// background holds a slice of strings split by newline from the srcBackground constant.
+//
+// colorMapping maps rune values to their corresponding ColorDef values from the interfaces package.
 var (
 	background = strings.Split(srcBackground, "\n")
 
@@ -73,6 +68,7 @@ var (
 	}
 )
 
+// availableColors defines a list of predefined color definitions used in the application.
 var (
 	availableColors = []interfaces.ColorDef{
 		interfaces.ColorRedDef,
@@ -93,11 +89,13 @@ var (
 	}
 )
 
+// colorByChar maps a given rune to a corresponding color definition from the predefined colorMapping.
+// Returns the matching interfaces.ColorDef value based on the input rune.
 func colorByChar(ch rune) interfaces.ColorDef {
 	return colorMapping[ch]
 }
 
-// charByColor
+// _ returns the rune corresponding to the provided ColorDef from the colorMapping. If no match is found, it returns '.'.
 func _(color interfaces.ColorDef) rune {
 	for ch, currentColor := range colorMapping {
 		if currentColor == color {

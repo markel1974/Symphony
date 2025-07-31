@@ -1,29 +1,19 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package tetris
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
+// Board represents a grid-based game board with a specific width and height.
+// Each cell in the grid contains a color defined by interfaces.ColorDef.
+// The dimensions of the board are specified by the fields w (width) and h (height).
 type Board struct {
 	colors [][]interfaces.ColorDef
 	w      int
 	h      int
 }
 
+// NewBoard creates a new Board with the specified width and height, initializing all cells to the default blank color.
 func NewBoard(w int, h int) *Board {
 	b := &Board{
 		w: w,
@@ -39,6 +29,7 @@ func NewBoard(w int, h int) *Board {
 	return b
 }
 
+// deleteLine removes a specific horizontal line at the given `y` index and shifts all lines above it down by one.
 func (b *Board) deleteLine(y int) {
 	for i := 0; i < b.w; i++ {
 		b.colors[i][y] = blankColor
@@ -53,6 +44,7 @@ func (b *Board) deleteLine(y int) {
 	}
 }
 
+// fullLines returns a slice of integers representing the indices of fully filled lines on the board.
 func (b *Board) fullLines() []int {
 	var fullLines []int
 	for j := 0; j < b.h; j++ {
@@ -63,6 +55,7 @@ func (b *Board) fullLines() []int {
 	return fullLines
 }
 
+// isFullLine checks if the row at the given y-coordinate is completely filled with non-blank colors.
 func (b *Board) isFullLine(y int) bool {
 	hasBlank := false
 	for i := 0; i < b.w; i++ {
@@ -74,6 +67,8 @@ func (b *Board) isFullLine(y int) bool {
 	return !hasBlank
 }
 
+// hasFullLine checks if the board contains at least one full line of cells.
+// Returns true if a full line is found; otherwise, returns false.
 func (b *Board) hasFullLine() bool {
 	for j := 0; j < b.h; j++ {
 		if b.isFullLine(j) {
@@ -96,16 +91,19 @@ func (b *Board) text() string {
 }
 */
 
+// setCell sets the color of the specified cell on the board using its x and y coordinates.
 func (b *Board) setCell(cell *Cell) {
 	b.colors[cell.x][cell.y] = cell.color
 }
 
+// setCells sets the colors of the specified cells on the board by updating their positions with the provided values.
 func (b *Board) setCells(cells []*Cell) {
 	for _, cell := range cells {
 		b.setCell(cell)
 	}
 }
 
+// isOnBoard checks if the given coordinates (x, y) are within the boundaries of the board.
 func (b *Board) isOnBoard(x, y int) bool {
 	return (0 <= x && x < b.w) && (0 <= y && y < b.h)
 }

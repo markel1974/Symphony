@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package invaders
 
 import (
@@ -23,23 +9,35 @@ import (
 	"strings"
 )
 
+// highScoreFilename defines the filename used to store high scores.
+// highScoreSeparator is the delimiter used between high scores in the file.
+// maxHighScores specifies the maximum number of high scores to keep.
 const (
 	highScoreFilename  = "hs"
 	highScoreSeparator = ":"
 	maxHighScores      = 5
 )
 
+// HighScore represents a player's score and associated name in the high scores list.
 type HighScore struct {
 	score int
 	name  string
 }
 
+// ByScore is a slice of pointers to HighScore used for sorting based on the HighScore values.
 type ByScore []*HighScore
 
-func (a ByScore) Len() int           { return len(a) }
-func (a ByScore) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+// Len returns the number of elements in the ByScore slice.
+func (a ByScore) Len() int { return len(a) }
+
+// Swap exchanges the elements at indexes i and j in the ByScore slice.
+func (a ByScore) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+
+// Less reports whether the element with index i should sort before the element with index j based on their scores.
 func (a ByScore) Less(i, j int) bool { return a[i].score < a[j].score }
 
+// loadHighScores reads and parses the high scores file, then loads the scores into memory, maintaining a sorted top 5 list.
+// Any data corruption issues in the file are logged, and invalid entries are ignored to ensure data integrity.
 func (g *Invaders) loadHighScores() {
 	data, err := os.ReadFile(highScoreFilename)
 	if err != nil {
@@ -63,31 +61,32 @@ func (g *Invaders) loadHighScores() {
 				log.Println("negative high score found - data corrupted - please correct/delete the hs file")
 				continue
 			}
-			g.highscores = append(g.highscores, &HighScore{i, parts[0]})
+			g.highScores = append(g.highScores, &HighScore{i, parts[0]})
 		} else {
 			log.Fatalln(err)
 		}
 	}
 
-	sort.Sort(sort.Reverse(ByScore(g.highscores)))
-	if len(g.highscores) > 5 {
-		g.highscores = g.highscores[:5]
+	sort.Sort(sort.Reverse(ByScore(g.highScores)))
+	if len(g.highScores) > 5 {
+		g.highScores = g.highScores[:5]
 	}
 }
 
+// checkHighScores checks if the player's score qualifies for the high scores and updates the high scores list accordingly.
 func (g *Invaders) checkHighScores() {
-	if len(g.highscores) < maxHighScores || g.player.score > g.highscores[len(g.highscores)-1].score {
+	if len(g.highScores) < maxHighScores || g.player.score > g.highScores[len(g.highScores)-1].score {
 		name := "TODO NAME!!!"
-		g.highscores = append(g.highscores, &HighScore{g.player.score, name})
-		sort.Sort(sort.Reverse(ByScore(g.highscores)))
-		if len(g.highscores) > maxHighScores {
-			g.highscores = append([]*HighScore(nil), g.highscores[:maxHighScores]...)
+		g.highScores = append(g.highScores, &HighScore{g.player.score, name})
+		sort.Sort(sort.Reverse(ByScore(g.highScores)))
+		if len(g.highScores) > maxHighScores {
+			g.highScores = append([]*HighScore(nil), g.highScores[:maxHighScores]...)
 		}
 
 		data := ""
-		for i, score := range g.highscores {
+		for i, score := range g.highScores {
 			data += fmt.Sprintf("%s%s%d", score.name, highScoreSeparator, score.score)
-			if i != len(g.highscores)-1 {
+			if i != len(g.highScores)-1 {
 				data += "\n"
 			}
 		}
@@ -95,7 +94,7 @@ func (g *Invaders) checkHighScores() {
 	}
 }
 
-// loadHighScoresData
+// _ parses high score data from a byte slice, validates the format, sorts the scores, and limits the list to the top 5.
 func _(data []byte) error {
 	highScores := make([]*HighScore, 0)
 	lines := strings.Split(string(data), "\n")

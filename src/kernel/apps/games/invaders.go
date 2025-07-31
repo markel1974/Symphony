@@ -21,7 +21,7 @@ import (
 )
 
 func CreateInvaders() *shell.Command {
-	run := func(task interfaces.ITask, args []string) error {
+	onCreate := func(task interfaces.ITask, args []string) error {
 		w, h := task.GetScreenSize()
 		g := invaders.NewGame(w, h)
 		g.SetMenuState()
@@ -29,7 +29,7 @@ func CreateInvaders() *shell.Command {
 		task.CreateTimer(0, 100, -1)
 		return nil
 	}
-	readFn := func(task interfaces.ITask, code int, key rune) {
+	onRead := func(task interfaces.ITask, code int, key rune) {
 		ctx := task.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
@@ -37,7 +37,7 @@ func CreateInvaders() *shell.Command {
 		}
 		g.HandleKey(key)
 	}
-	timerFn := func(task interfaces.ITask, tid int, interval int) {
+	onTimer := func(task interfaces.ITask, tid int, interval int) {
 		ctx := task.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
@@ -46,7 +46,7 @@ func CreateInvaders() *shell.Command {
 		g.Update()
 		task.PaintRequest()
 	}
-	paintFn := func(task interfaces.ITask, surface interfaces.ISurface) {
+	onPaint := func(task interfaces.ITask, surface interfaces.ISurface) {
 		ctx := task.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
@@ -58,15 +58,12 @@ func CreateInvaders() *shell.Command {
 			g.SetSize(columns, rows)
 			g.SetMenuState()
 		}
-
 		g.Draw(surface)
 	}
-
-	root := shell.NewCommand("invaders", interfaces.CommandTypeFile, nil, true, run)
+	root := shell.NewCommand("invaders", interfaces.CommandTypeFile, nil, true, onCreate)
+	root.SetReadFn(onRead)
+	root.SetTimerFn(onTimer)
+	root.SetPaintFn(onPaint)
 	root.SetHelp("Invaders", "Invaders")
-	root.SetTimerFn(timerFn)
-	root.SetPaintFn(paintFn)
-	root.SetReadFn(readFn)
-
 	return root
 }

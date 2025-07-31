@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package invaders
 
 import (
@@ -19,6 +5,13 @@ import (
 	"strings"
 )
 
+// barricadeSymbol defines the character used to represent a barricade.
+// numBarricades specifies the total number of barricades.
+// fgBarricade sets the foreground color of barricades.
+// bgBarricade sets the background color of barricades.
+// barricadeSpriteWidth defines the width of the barricade sprite.
+// barricadeSpriteHeight defines the height of the barricade sprite.
+// barricadeSprite specifies the visual representation of the barricade.
 const (
 	barricadeSymbol       = '▓'
 	numBarricades         = 4
@@ -33,23 +26,28 @@ xxx     xxx
 xxx     xxx`
 )
 
+// barricadeYPos calculates the vertical position for placing barricades based on screen height and sprite dimensions.
 func barricadeYPos(h int) int {
 	//TODO pass playerSpriteHeight
 	var playerSpriteHeight = 3
 	return (h - playerSpriteBottomOffset - playerSpriteHeight) - barricadeSpriteHeight - 2
 }
 
+// Barricade represents a defensive structure in the game, used for shielding and interacting with game entities.
+// It maintains width, height, and a data grid to hold the state of individual barricade positions.
 type Barricade struct {
 	w    int
 	h    int
 	data [][]int
 }
 
+// NewBarricade creates and initializes a new Barricade instance and returns its pointer.
 func NewBarricade() *Barricade {
 	b := &Barricade{}
 	return b
 }
 
+// Setup initializes the barricade structure with specified dimensions and creates barricade sprites on the playfield.
 func (b *Barricade) Setup(w int, h int) *Barricade {
 	b.w = w
 	b.h = h
@@ -85,6 +83,7 @@ func (b *Barricade) Setup(w int, h int) *Barricade {
 	return b
 }
 
+// Unset clears the data at the specified (x, y) coordinates, setting it to nonIndex. Returns true if data was altered.
 func (b *Barricade) Unset(x int, y int) bool {
 	var ret = false
 	if b.Get(x, y) != nonIndex {
@@ -95,6 +94,7 @@ func (b *Barricade) Unset(x int, y int) bool {
 	return ret
 }
 
+// Draw renders the barricade on the provided surface using specified colors and symbols for non-empty cells.
 func (b *Barricade) Draw(surface interfaces.ISurface) {
 	for i := range b.data {
 		for j := range b.data[i] {
@@ -105,6 +105,7 @@ func (b *Barricade) Draw(surface interfaces.ISurface) {
 	}
 }
 
+// Set updates the value at the specified (x, y) position with the given data if the position is within bounds.
 func (b *Barricade) Set(x int, y int, data int) {
 	if len(b.data) > 0 {
 		if x >= 0 && y >= 0 && x < b.w && y < b.h {
@@ -113,6 +114,7 @@ func (b *Barricade) Set(x int, y int, data int) {
 	}
 }
 
+// Get retrieves the value at the specified x and y coordinates within the barricade data grid. Returns nonIndex if out of bounds.
 func (b *Barricade) Get(x int, y int) int {
 	data := nonIndex
 	if len(b.data) > 0 {
