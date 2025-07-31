@@ -9,6 +9,8 @@ import (
 
 const (
 	reflectNumberId    = "number"
+	reflectWaveId      = "wave"
+	reflectEgStateId   = "egState"
 	reflectCountId     = "count"
 	reflectAddId       = "add"
 	reflectFreqId      = "freq"
@@ -42,6 +44,10 @@ func NewVoiceReflect(r *Voice, factory references.IComponentFactory, parent refe
 	r.BaseComponent.Register(factory, parent, identifier, instance, r, hardwareId)
 	r.PropertyAdd(reflectNumberId, "number represents the numerical identifier of the voice in the synthesizer.", false, reflector.getNumber, reflector.setNumber)
 
+	r.PropertyAdd(reflectWaveId, "Selected waveform", false, reflector.getWave, reflector.setWave)
+
+	r.PropertyAdd(reflectEgStateId, "Current state of EG", false, reflector.getEgState, reflector.setEgState)
+
 	r.PropertyAdd(reflectCountId, "Counter for waveform generator, 8.16 fixed", false, reflector.getCount, reflector.setCount)
 
 	r.PropertyAdd(reflectAddId, "Added to the counter in every frame", false, reflector.getAdd, reflector.setAdd)
@@ -74,23 +80,23 @@ func NewVoiceReflect(r *Voice, factory references.IComponentFactory, parent refe
 
 	r.PropertyAdd(reflectMuteId, "Mute", false, reflector.getMute, reflector.setMute)
 
+	_ = r.CommandAdd("ReadFilter", "ReadFilter() uint8 - ReadFilter returns the filter value associated with the Voice instance as an unsigned 8-bit integer.", r.ReadFilter)
+	_ = r.CommandAdd("WriteMute", "WriteMute(m) - ", r.WriteMute)
+	_ = r.CommandAdd("WriteEnvelopeGenerators", "WriteEnvelopeGenerators(data) - WriteEnvelopeGenerators updates the envelope generator parameters based on the provided data.  The method computes attack and decay values using the egLut function and updates the relevant fields.", r.WriteEnvelopeGenerators)
+	_ = r.CommandAdd("ReadEgLevel", "ReadEgLevel() uint32 - ReadEgLevel returns the current envelope generator level of the Voice as uint32.", r.ReadEgLevel)
+	_ = r.CommandAdd("WriteFreqB", "WriteFreqB(data) - WriteFreqB updates the high byte of the frequency value and recalculates the added value based on the updated frequency.", r.WriteFreqB)
+	_ = r.CommandAdd("WriteSustainLevel", "WriteSustainLevel(data) - WriteSustainLevel adjusts the sustain level and release sublevel of the voice based on the provided data value.", r.WriteSustainLevel)
 	_ = r.CommandAdd("Reset", "Reset() - Reset reinitializes all properties of the Voice object to their default states.", r.Reset)
-	_ = r.CommandAdd("Emulate", "Emulate() - Emulate triggers the simulated behavior or action specific to the Voice instance.", r.Emulate)
-	_ = r.CommandAdd("UpdateEnvelopeGenerators", "UpdateEnvelopeGenerators(data) - UpdateEnvelopeGenerators updates the envelope generator parameters based on the provided data.  The method computes attack and decay values using the egLut function and updates the relevant fields.", r.UpdateEnvelopeGenerators)
-	_ = r.CommandAdd("IsMuted", "IsMuted() bool - IsMuted checks if the voice is currently in a muted state and returns true if muted, otherwise false.", r.IsMuted)
-	_ = r.CommandAdd("EgLevel", "EgLevel() uint32 - EgLevel returns the current envelope generator level of the Voice as a uint32.", r.EgLevel)
-	_ = r.CommandAdd("Filter", "Filter() uint8 - Filter returns the filter value associated with the Voice instance as an unsigned 8-bit integer.", r.Filter)
-	_ = r.CommandAdd("UpdateFreqA", "UpdateFreqA(data) - UpdateFreqA updates the lower 8 bits of the frequency value and recalculates the additive frequency increment.", r.UpdateFreqA)
-	_ = r.CommandAdd("UpdatePulseWidthB", "UpdatePulseWidthB(data) - UpdatePulseWidthB updates the high nibble of the pulse width value using the provided 8-bit data.", r.UpdatePulseWidthB)
-	_ = r.CommandAdd("SetMute", "SetMute(m) - ", r.SetMute)
-	_ = r.CommandAdd("SetFilter", "SetFilter(f) - SetFilter sets the filter value for the Voice instance.", r.SetFilter)
-	_ = r.CommandAdd("UpdateSustainLevel", "UpdateSustainLevel(data) - UpdateSustainLevel adjusts the sustain level and release sublevel of the voice based on the provided data value.", r.UpdateSustainLevel)
-	_ = r.CommandAdd("ComputeEnvelopeGenerators", "ComputeEnvelopeGenerators() - ComputeEnvelopeGenerators evaluates and progresses the envelope generators based on the current state or freezes them if TEST is active.", r.ComputeEnvelopeGenerators)
-	_ = r.CommandAdd("UpdateFreqB", "UpdateFreqB(data) - UpdateFreqB updates the high byte of the frequency value and recalculates the add value based on updated frequency.", r.UpdateFreqB)
-	_ = r.CommandAdd("UpdatePulseWidthA", "UpdatePulseWidthA(data) - UpdatePulseWidthA updates the lower 8 bits of the pulse width (pw) with the provided 8-bit data value.", r.UpdatePulseWidthA)
-	_ = r.CommandAdd("UpdateWaveForm", "UpdateWaveForm(data) - UpdateWaveForm updates the waveform type and state flags based on the provided data byte.  It adjusts gate, sync, ring, and test flags and manages the envelope generator's state accordingly.", r.UpdateWaveForm)
-	_ = r.CommandAdd("UpdateCount", "UpdateCount() - UpdateCount updates the count value for a Voice instance based on specific conditions related to test, sync, and max value.", r.UpdateCount)
 	_ = r.CommandAdd("ComputeWaveForm", "ComputeWaveForm() uint16 - ComputeWaveForm generates and returns a waveform value based on the current wave index and test mode of the voice.", r.ComputeWaveForm)
+	_ = r.CommandAdd("WriteFilter", "WriteFilter(f) - WriteFilter sets the filter value for the Voice instance.", r.WriteFilter)
+	_ = r.CommandAdd("WriteWaveForm", "WriteWaveForm(data) - WriteWaveForm updates the waveform type and state flags based on the provided data byte.  It adjusts gate, sync, ring, and test flags and manages the envelope generator's state accordingly.", r.WriteWaveForm)
+	_ = r.CommandAdd("Emulate", "Emulate() - Emulate triggers the simulated behavior or action specific to the Voice instance.", r.Emulate)
+	_ = r.CommandAdd("WriteFreqA", "WriteFreqA(data) - WriteFreqA updates the lower 8 bits of the frequency value and recalculates the additive frequency increment.", r.WriteFreqA)
+	_ = r.CommandAdd("WritePulseWidthB", "WritePulseWidthB(data) - WritePulseWidthB updates the high nibble of the pulse width value using the provided 8-bit data.", r.WritePulseWidthB)
+	_ = r.CommandAdd("ComputeCount", "ComputeCount() - ComputeCount updates the count value for a Voice instance based on specific conditions related to test, sync, and max value.", r.ComputeCount)
+	_ = r.CommandAdd("ComputeEnvelopeGenerators", "ComputeEnvelopeGenerators() - ComputeEnvelopeGenerators evaluates and progresses the envelope generators based on the current state or freezes them if TEST is active.", r.ComputeEnvelopeGenerators)
+	_ = r.CommandAdd("ReadIsMuted", "ReadIsMuted() bool - ReadIsMuted checks if the voice is currently in a muted state and returns true if muted, otherwise false.", r.ReadIsMuted)
+	_ = r.CommandAdd("WritePulseWidthA", "WritePulseWidthA(data) - WritePulseWidthA updates the lower 8 bits of the pulse width (pw) with the provided 8-bit data value.", r.WritePulseWidthA)
 
 	return reflector
 }
@@ -103,6 +109,28 @@ func (s *VoiceReflect) getNumber() uint8 {
 // setNumber is the generated setter for the number field.
 func (s *VoiceReflect) setNumber(v uint8) error {
 	s.ref.number = v
+	return nil
+}
+
+// getWave is the generated getter for the wave.
+func (s *VoiceReflect) getWave() int {
+	return s.ref.wave
+}
+
+// setWave is the generated setter for the wave field.
+func (s *VoiceReflect) setWave(v int) error {
+	s.ref.wave = v
+	return nil
+}
+
+// getEgState is the generated getter for the egState.
+func (s *VoiceReflect) getEgState() int {
+	return s.ref.egState
+}
+
+// setEgState is the generated setter for the egState field.
+func (s *VoiceReflect) setEgState(v int) error {
+	s.ref.egState = v
 	return nil
 }
 
@@ -245,7 +273,7 @@ func (s *VoiceReflect) getFilter() uint8 {
 
 // setFilter is the generated setter for the filter field.
 func (s *VoiceReflect) setFilter(v uint8) error {
-	s.ref.SetFilter(v)
+	s.ref.filter = v
 	return nil
 }
 
@@ -278,6 +306,6 @@ func (s *VoiceReflect) getMute() bool {
 
 // setMute is the generated setter for the mute field.
 func (s *VoiceReflect) setMute(v bool) error {
-	s.ref.SetMute(v)
+	s.ref.mute = v
 	return nil
 }

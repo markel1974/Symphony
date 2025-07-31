@@ -7,35 +7,35 @@ import (
 )
 
 const (
-	freqLO1 = 0
-	freqHI1 = 1
-	pwLO1   = 2
-	pwHI1   = 3
-	cr1     = 4 // Control Register - Voice 1
-	ad1     = 5 // Attack/Decay - Voice 1
-	sr1     = 6 // Sustain/Release - Voice 1
-	freqLO2 = 7
-	freqHI2 = 8
-	pwLO2   = 9
-	pwHI2   = 10
-	cr2     = 11
-	ad2     = 12
-	sr2     = 13
-	freqLO3 = 14
-	freqHI3 = 15
-	pwLO3   = 16
-	pwHI3   = 17
-	cr3     = 18
-	ad3     = 19
-	sr3     = 20
-	fcLO    = 21 // Filter Cutoff Low
-	fcHI    = 22
-	resFilt = 23 // Resonance and Filter Control
-	modeVol = 24 // Mode and Volume
-	potX    = 25 // Potentiometer X (read-only)
-	potY    = 26 // Potentiometer Y (read-only)
-	osc3    = 27 // Oscillator 3 / Random Number (read-only)
-	env3    = 28 // Envelope 3 (read-only)
+	freqLO1   = 0
+	freqHI1   = 1
+	pwLO1     = 2
+	pwHI1     = 3
+	cr1       = 4 // Control Register - Voice 1
+	ad1       = 5 // Attack/Decay - Voice 1
+	sr1       = 6 // Sustain/Release - Voice 1
+	freqLO2   = 7
+	freqHI2   = 8
+	pwLO2     = 9
+	pwHI2     = 10
+	cr2       = 11
+	ad2       = 12
+	sr2       = 13
+	freqLO3   = 14
+	freqHI3   = 15
+	pwLO3     = 16
+	pwHI3     = 17
+	cr3       = 18
+	ad3       = 19
+	sr3       = 20
+	fcLO      = 21 // ReadFilter Cutoff Low
+	fcHI      = 22
+	resFilter = 23 // Resonance and ReadFilter Control
+	modeVol   = 24 // Mode and Volume
+	potX      = 25 // Potentiometer X (read-only)
+	potY      = 26 // Potentiometer Y (read-only)
+	osc3      = 27 // Oscillator 3 / Random Number (read-only)
+	env3      = 28 // Envelope 3 (read-only)
 )
 
 const (
@@ -229,13 +229,26 @@ func (sid *SID) calcSoundBuffer() {
 	}
 }
 
-// readRegisterDefault reads the value from the specified SID register address, normalized within the valid register range.
-func (sid *SID) readDefault(reg uint8) uint8 {
+// ReadDefault reads the value from the specified SID register address, normalized within the valid register range.
+func (sid *SID) ReadDefault(reg uint8) uint8 {
 	return sid.registers[reg]
 }
 
-// writeDefault is a default write handler for SID registers that performs no operation when invoked.
-func (sid *SID) writeDefault(_ uint8, _ uint8) {
+// WriteDefault is a default writing handler for SID registers that performs no operation when invoked.
+func (sid *SID) WriteDefault(_ uint8, _ uint8) {
+}
+
+// WriteFiltersRegister configures filter settings for the SID voices based on the provided data value.
+func (sid *SID) WriteFiltersRegister(_ uint8, data uint8) {
+	sid.voices.WriteFilters(data)
+	sid.filters.UpdateRes(data)
+}
+
+// WriteMasterVolumeAndFilterType updates "master" volume, filter type, and mute state based on the given input data.
+func (sid *SID) WriteMasterVolumeAndFilterType(_ uint8, data uint8) {
+	sid.volume = data & 0xf
+	sid.voices.WriteMuteVoice2(data)
+	sid.filters.UpdateType(data)
 }
 
 // createReadRegister initializes and returns an array of ReadFn functions mapped to SID register addresses.
@@ -243,7 +256,7 @@ func (sid *SID) writeDefault(_ uint8, _ uint8) {
 func (sid *SID) createReadRegister() [RegisterCount]ReadFn {
 	var reads [RegisterCount]ReadFn
 	for idx := range reads {
-		reads[idx] = sid.readDefault
+		reads[idx] = sid.ReadDefault
 	}
 	reads[osc3] = sid.voices.ReadVoice2Waveform
 	reads[env3] = sid.voices.ReadVoice2EgLevel
@@ -254,7 +267,7 @@ func (sid *SID) createReadRegister() [RegisterCount]ReadFn {
 func (sid *SID) createWriteRegister() [RegisterCount]WriteFn {
 	var writes [RegisterCount]WriteFn
 	for idx := range writes {
-		writes[idx] = sid.writeDefault
+		writes[idx] = sid.WriteDefault
 	}
 	writes[freqLO1] = sid.voices.WriteVoice0UpdateFreqA
 	writes[freqHI1] = sid.voices.WriteVoice0UpdateFreqB
@@ -279,20 +292,7 @@ func (sid *SID) createWriteRegister() [RegisterCount]WriteFn {
 	writes[sr3] = sid.voices.WriteVoice2UpdateSustainLevel
 	writes[fcLO] = sid.filters.UpdateFreqLow
 	writes[fcHI] = sid.filters.UpdateFreqHigh
-	writes[resFilt] = sid.writeFiltersRegister
-	writes[modeVol] = sid.writeMasterVolumeAndFilterType
+	writes[resFilter] = sid.WriteFiltersRegister
+	writes[modeVol] = sid.WriteMasterVolumeAndFilterType
 	return writes
-}
-
-// writeFiltersRegister configures filter settings for the SID voices based on the provided data value.
-func (sid *SID) writeFiltersRegister(_ uint8, data uint8) {
-	sid.voices.SetFilters(data)
-	sid.filters.UpdateRes(data)
-}
-
-// writeMasterVolumeAndFilterType updates master volume, filter type, and mute state based on the given input data.
-func (sid *SID) writeMasterVolumeAndFilterType(_ uint8, data uint8) {
-	sid.volume = data & 0xf
-	sid.voices.SetMuteVoice2(data)
-	sid.filters.UpdateType(data)
 }

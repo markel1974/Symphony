@@ -59,17 +59,17 @@ func NewTODReflect(r *TOD, factory references.IComponentFactory, parent referenc
 
 	r.PropertyAdd(reflectAlmHrId, "almHr represents the hour value for the alarm time.", false, reflector.getAlmHr, reflector.setAlmHr)
 
-	_ = r.CommandAdd("ReadMin", "ReadMin() uint8 - ReadMin retrieves the current minute value from the TOD. If a shadow minute is available, it returns the shadow value.", r.ReadMin)
-	_ = r.CommandAdd("Read10ths", "Read10ths() uint8 - Read10ths retrieves the current 10ths value from the TOD (Time-of-Day) clock, using the shadow value if available.", r.Read10ths)
-	_ = r.CommandAdd("Update", "Update() bool - Update processes the TOD counter, increments time fields, and checks if the alarm matches the current TOD time.  Returns true if an alarm match occurs, otherwise false.  The rtc parameter determines the TOD frequency divider (50Hz or 60Hz).  Automatically handles AM/PM and 24-hour format transitions.  Resets the divider when time fields are updated.", r.Update)
-	_ = r.CommandAdd("Reset", "Reset() - Reset reinitializes the TOD registers, alarm registers, and control flags to their default states.", r.Reset)
 	_ = r.CommandAdd("Emulate", "Emulate() - Emulate handles the emulation process for the TOD, managing operations based on the current TOD state.", r.Emulate)
+	_ = r.CommandAdd("Set10ths", "Set10ths(alarm, data) - Set10ths updates the 10ths component of the time or alarm based on the `alarm` flag and provided `data`.  If updating the time and TOD is halted, it resets the divider and unhalts TOD.", r.Set10ths)
 	_ = r.CommandAdd("SetSec", "SetSec(alarm, data) - SetSec sets the seconds value for either the TOD clock or the alarm based on the alarm flag.", r.SetSec)
-	_ = r.CommandAdd("SetMin", "SetMin(alarm, data) - SetMin sets the minute value for either the TOD clock or the alarm based on the alarm flag.", r.SetMin)
 	_ = r.CommandAdd("SetHour", "SetHour(alarm, data) - SetHour sets the hour for either the alarm or the time of day based on the `alarm` flag and provided `data` input.", r.SetHour)
 	_ = r.CommandAdd("ReadHour", "ReadHour() uint8 - ReadHour retrieves the current hour value from the TOD device and freezes the shadow registers state.", r.ReadHour)
+	_ = r.CommandAdd("Read10ths", "Read10ths() uint8 - Read10ths retrieves the current 10ths value from the TOD (Time-of-Day) clock, using the shadow value if available.", r.Read10ths)
+	_ = r.CommandAdd("ReadMin", "ReadMin() uint8 - ReadMin retrieves the current minute value from the TOD. If a shadow minute is available, it returns the shadow value.", r.ReadMin)
+	_ = r.CommandAdd("Reset", "Reset() - Reset reinitializes the TOD registers, alarm registers, and control flags to their default states.", r.Reset)
+	_ = r.CommandAdd("SetMin", "SetMin(alarm, data) - SetMin sets the minute value for either the TOD clock or the alarm based on the alarm flag.", r.SetMin)
 	_ = r.CommandAdd("ReadSec", "ReadSec() uint8 - ReadSec returns the current seconds value from the TOD, checking the shadow register if applicable.", r.ReadSec)
-	_ = r.CommandAdd("Set10ths", "Set10ths(alarm, data) - Set10ths updates the 10ths component of the time or alarm based on the `alarm` flag and provided `data`.  If updating the time and TOD is halted, it resets the divider and unhalts TOD.", r.Set10ths)
+	_ = r.CommandAdd("Update", "Update() bool - Update processes the TOD counter, increments time fields, and checks if the alarm matches the current TOD time.  Returns true if an alarm match occurs, otherwise false.  The rtc parameter determines the TOD frequency divider (50Hz or 60Hz).  Automatically handles AM/PM and 24-hour format transitions.  Resets the divider when time fields are updated.", r.Update)
 
 	return reflector
 }

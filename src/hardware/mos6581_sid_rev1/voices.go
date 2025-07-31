@@ -9,7 +9,7 @@ const (
 	voiceNumber = 3
 )
 
-// Voices represents a collection of multiple Voice instances.
+// Voices represent a collection of multiple Voice instances.
 type Voices struct {
 	*component.BaseComponent
 	reflect     *VoicesReflect
@@ -46,7 +46,7 @@ func NewVoices(parent references.IComponent, factory references.IComponentFactor
 	return vs
 }
 
-// Setup initializes the Voices instance, preparing it for use, and returns an error if the initialization fails.
+// Setup initializes the Voices instance, preparing it for use and returns an error if the initialization fails.
 func (v *Voices) Setup() error {
 	return nil
 }
@@ -84,15 +84,15 @@ func (v *Voices) Compute() (int32, int32) {
 
 	for _, voice := range v.voices {
 		voice.ComputeEnvelopeGenerators()
-		effectiveEnvelope := voice.EgLevel() >> 16 // 8-bit envelope
-		if voice.IsMuted() {
+		effectiveEnvelope := voice.ReadEgLevel() >> 16 // 8-bit envelope
+		if voice.ReadIsMuted() {
 			continue
 		}
-		voice.UpdateCount()
+		voice.ComputeCount()
 		waveOutput := voice.ComputeWaveForm()
 		signedWaveOutput := int32(int16(waveOutput ^ 0x8000))
 		voiceContribution := signedWaveOutput * int32(effectiveEnvelope)
-		if voice.Filter() != 0 {
+		if voice.ReadFilter() != 0 {
 			sumOutputFiltered += voiceContribution
 		} else {
 			sumOutputNonFiltered += voiceContribution
@@ -105,111 +105,111 @@ func (v *Voices) Compute() (int32, int32) {
 
 // WriteVoice0UpdateFreqA updates the frequency parameter A for voice 0 using the provided 8-bit data value.
 func (v *Voices) WriteVoice0UpdateFreqA(_ uint8, data uint8) {
-	v.voices[0].UpdateFreqA(data)
+	v.voices[0].WriteFreqA(data)
 }
 
 // WriteVoice0UpdateFreqB updates the frequency parameter B for voice 0 using the provided data value.
 func (v *Voices) WriteVoice0UpdateFreqB(_ uint8, data uint8) {
-	v.voices[0].UpdateFreqB(data)
+	v.voices[0].WriteFreqB(data)
 }
 
 // WriteVoice0UpdatePulseWidthA updates the pulse width A parameter for voice 0 using the provided 8-bit data.
 func (v *Voices) WriteVoice0UpdatePulseWidthA(_ uint8, data uint8) {
-	v.voices[0].UpdatePulseWidthA(data)
+	v.voices[0].WritePulseWidthA(data)
 }
 
 // WriteVoice0UpdatePulseWidthB updates the pulse width B parameter for voice 0 with the provided data.
 func (v *Voices) WriteVoice0UpdatePulseWidthB(_ uint8, data uint8) {
-	v.voices[0].UpdatePulseWidthB(data)
+	v.voices[0].WritePulseWidthB(data)
 }
 
-// WriteVoice0UpdateWaveForm updates the waveform data for voice 0 by delegating the operation to its UpdateWaveForm method.
+// WriteVoice0UpdateWaveForm updates the waveform data for voice 0 by delegating the operation to its WriteWaveForm method.
 func (v *Voices) WriteVoice0UpdateWaveForm(_ uint8, data uint8) {
-	v.voices[0].UpdateWaveForm(data)
+	v.voices[0].WriteWaveForm(data)
 }
 
 // writeVoice0UpdateEnvelopeGenerators updates the envelope generators for voice 0 using the provided data.
 func (v *Voices) writeVoice0UpdateEnvelopeGenerators(_ uint8, data uint8) {
-	v.voices[0].UpdateEnvelopeGenerators(data)
+	v.voices[0].WriteEnvelopeGenerators(data)
 }
 
 // WriteVoice0UpdateSustainLevel updates the sustain level of the first voice (voice 0) with the given data value.
 func (v *Voices) WriteVoice0UpdateSustainLevel(_ uint8, data uint8) {
-	v.voices[0].UpdateSustainLevel(data)
+	v.voices[0].WriteSustainLevel(data)
 }
 
 // Voice 1
 
 // WriteVoice1UpdateFreqA updates the frequency A of voice 1 using the provided 8-bit data value.
 func (v *Voices) WriteVoice1UpdateFreqA(_ uint8, data uint8) {
-	v.voices[1].UpdateFreqA(data)
+	v.voices[1].WriteFreqA(data)
 }
 
 // WriteVoice1UpdateFreqB updates the frequency parameter B for voice 1 using the provided data value.
 func (v *Voices) WriteVoice1UpdateFreqB(_ uint8, data uint8) {
-	v.voices[1].UpdateFreqB(data)
+	v.voices[1].WriteFreqB(data)
 }
 
 // WriteVoice1UpdatePulseWidthA updates the pulse width parameter A for voice 1 with the provided data.
 func (v *Voices) WriteVoice1UpdatePulseWidthA(_ uint8, data uint8) {
-	v.voices[1].UpdatePulseWidthA(data)
+	v.voices[1].WritePulseWidthA(data)
 }
 
 // WriteVoice1UpdatePulseWidthB updates the pulse width parameter B of voice 1 with the specified data value.
 func (v *Voices) WriteVoice1UpdatePulseWidthB(_ uint8, data uint8) {
-	v.voices[1].UpdatePulseWidthB(data)
+	v.voices[1].WritePulseWidthB(data)
 }
 
 // WriteVoice1UpdateWaveForm updates the waveform configuration for voice 1 using the provided data value.
 func (v *Voices) WriteVoice1UpdateWaveForm(_ uint8, data uint8) {
-	v.voices[1].UpdateWaveForm(data)
+	v.voices[1].WriteWaveForm(data)
 }
 
 // WriteVoice1UpdateEnvelopeGenerators updates the envelope generators for voice 1 using the provided data.
 func (v *Voices) WriteVoice1UpdateEnvelopeGenerators(_ uint8, data uint8) {
-	v.voices[1].UpdateEnvelopeGenerators(data)
+	v.voices[1].WriteEnvelopeGenerators(data)
 }
 
 // WriteVoice1UpdateSustainLevel updates the sustain level of voice 1 using the provided data.
 func (v *Voices) WriteVoice1UpdateSustainLevel(_ uint8, data uint8) {
-	v.voices[1].UpdateSustainLevel(data)
+	v.voices[1].WriteSustainLevel(data)
 }
 
 // Voice 2
 
 // WriteVoice2UpdateFreqA updates the frequency parameter A for voice 2 with the provided data.
 func (v *Voices) WriteVoice2UpdateFreqA(_ uint8, data uint8) {
-	v.voices[2].UpdateFreqA(data)
+	v.voices[2].WriteFreqA(data)
 }
 
 // WriteVoice2UpdateFreqB updates the frequency parameter B for the third voice using the provided data byte.
 func (v *Voices) WriteVoice2UpdateFreqB(_ uint8, data uint8) {
-	v.voices[2].UpdateFreqB(data)
+	v.voices[2].WriteFreqB(data)
 }
 
 // WriteVoice2UpdatePulseWidthA updates the pulse width A register of voice 2 with the specified data.
 func (v *Voices) WriteVoice2UpdatePulseWidthA(_ uint8, data uint8) {
-	v.voices[2].UpdatePulseWidthA(data)
+	v.voices[2].WritePulseWidthA(data)
 }
 
 // WriteVoice2UpdatePulseWidthB updates the pulse width parameter B for voice 2 with the provided data.
 func (v *Voices) WriteVoice2UpdatePulseWidthB(_ uint8, data uint8) {
-	v.voices[2].UpdatePulseWidthB(data)
+	v.voices[2].WritePulseWidthB(data)
 }
 
 // WriteVoice2UpdateWaveForm updates the waveform of the second voice using the provided data value.
 func (v *Voices) WriteVoice2UpdateWaveForm(_ uint8, data uint8) {
-	v.voices[2].UpdateWaveForm(data)
+	v.voices[2].WriteWaveForm(data)
 }
 
 // WriteVoice2UpdateEnvelopeGenerators updates the envelope generator state for the third voice with the provided data.
 func (v *Voices) WriteVoice2UpdateEnvelopeGenerators(_ uint8, data uint8) {
-	v.voices[2].UpdateEnvelopeGenerators(data)
+	v.voices[2].WriteEnvelopeGenerators(data)
 }
 
 // WriteVoice2UpdateSustainLevel updates the sustain level parameter for voice 2 using the provided data.
 func (v *Voices) WriteVoice2UpdateSustainLevel(_ uint8, data uint8) {
-	v.voices[2].UpdateSustainLevel(data)
+	v.voices[2].WriteSustainLevel(data)
 }
 
 // ReadVoice2Waveform retrieves the MSB of the current oscillator output (waveform) for voice 2, derived from ComputeWaveForm.
@@ -226,12 +226,12 @@ func (v *Voices) ReadVoice2EgLevel(_ uint8) uint8 {
 	// ENV3 - Envelope 3 Value ($D41C)
 	// Returns the most significant byte (MSB) of the current level
 	// of the envelope (Envelope Generator) for voice 2.
-	// The EgLevel() function in voice.go returns an uint32 (24-bit value).
-	return uint8(v.voices[2].EgLevel() >> 16)
+	// The ReadEgLevel() function in voice.go returns an uint32 (24-bit value).
+	return uint8(v.voices[2].ReadEgLevel() >> 16)
 }
 
-// SetFilters sets the filter values for all three voices using the provided parameters f1, f2, and f3 respectively.
-func (v *Voices) SetFilters(data uint8) {
+// WriteFilters sets the filter values for all three voices using the provided parameters f1, f2, and f3 respectively.
+func (v *Voices) WriteFilters(data uint8) {
 	var f1, f2, f3 uint8 = 0, 0, 0
 	if (data & 1) != 0 {
 		f1 = 1
@@ -242,31 +242,31 @@ func (v *Voices) SetFilters(data uint8) {
 	if (data & 4) != 0 {
 		f3 = 1
 	}
-	v.voices[0].SetFilter(f1)
-	v.voices[1].SetFilter(f2)
-	v.voices[2].SetFilter(f3)
+	v.voices[0].WriteFilter(f1)
+	v.voices[1].WriteFilter(f2)
+	v.voices[2].WriteFilter(f3)
 }
 
-// SetFilterVoice0 modifies the filter setting for voice 0 using the specified filter value f0.
-func (v *Voices) SetFilterVoice0(f0 uint8) {
-	v.voices[0].SetFilter(f0)
+// WriteFilterVoice0 modifies the filter setting for voice 0 using the specified filter value f0.
+func (v *Voices) WriteFilterVoice0(f0 uint8) {
+	v.voices[0].WriteFilter(f0)
 }
 
-// SetFilterVoice1 configures the filter state for voice 1 using the provided filter value f1.
-func (v *Voices) SetFilterVoice1(f1 uint8) {
-	v.voices[1].SetFilter(f1)
+// WriteFilterVoice1 configures the filter state for voice 1 using the provided filter value f1.
+func (v *Voices) WriteFilterVoice1(f1 uint8) {
+	v.voices[1].WriteFilter(f1)
 }
 
-// SetFilterVoice2 sets the filter state for voice 2 using the specified filter value.
-func (v *Voices) SetFilterVoice2(f2 uint8) {
-	v.voices[2].SetFilter(f2)
+// WriteFilterVoice2 sets the filter state for voice 2 using the specified filter value.
+func (v *Voices) WriteFilterVoice2(f2 uint8) {
+	v.voices[2].WriteFilter(f2)
 }
 
-// SetMuteVoice2 sets the mute state of voice 2 based on the boolean parameter m.
-func (v *Voices) SetMuteVoice2(data uint8) {
+// WriteMuteVoice2 sets the mute state of voice 2 based on the boolean parameter m.
+func (v *Voices) WriteMuteVoice2(data uint8) {
 	mute := false
 	if (data & 0x80) != 0 {
 		mute = true
 	}
-	v.voices[2].SetMute(mute)
+	v.voices[2].WriteMute(mute)
 }

@@ -29,12 +29,12 @@ func NewShiftRegisterReflect(r *ShiftRegister, factory references.IComponentFact
 
 	r.PropertyAdd(reflectCounterId, "counter represents the remaining bits to be shifted in the 8-bit shift register during operation.", false, reflector.getCounter, reflector.setCounter)
 
-	_ = r.CommandAdd("Counter", "Counter() uint8 - Counter returns the current value of the shift counter (counter).", r.Counter)
-	_ = r.CommandAdd("Handle", "Handle(spMode) bool - Handle processes a single bit in the shift register based on the SP mode and decrements the shift counter.  It returns true if all bits have been processed; otherwise, it returns false.", r.Handle)
-	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the core emulation logic for the shift register, managing bit shifts and invoking communication sockets.", r.Emulate)
 	_ = r.CommandAdd("Get", "Get() uint8 - Get returns the current value of the shift register stored in register.", r.Get)
-	_ = r.CommandAdd("Set", "Set(data) - Set updates the shift register with the provided data and resets the shift counter to 8 bits.", r.Set)
+	_ = r.CommandAdd("Counter", "Counter() uint8 - Counter returns the current value of the shift counter (counter).", r.Counter)
 	_ = r.CommandAdd("Reset", "Reset() - Reset resets the shift register and its counter to their initial state (zero).", r.Reset)
+	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the core emulation logic for the shift register, managing bit shifts and invoking communication sockets.", r.Emulate)
+	_ = r.CommandAdd("Set", "Set(data) - Set updates the shift register with the provided data and resets the shift counter to 8 bits.", r.Set)
+	_ = r.CommandAdd("Handle", "Handle(spMode) bool - Handle processes a single bit in the shift register based on the SP mode and decrements the shift counter.  It returns true if all bits have been processed; otherwise, it returns false.", r.Handle)
 
 	return reflector
 }

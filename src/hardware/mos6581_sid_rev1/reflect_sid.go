@@ -47,14 +47,18 @@ func NewSIDReflect(r *SID, factory references.IComponentFactory, parent referenc
 
 	r.PropertyAdd(reflectAudioSamplesPerVolumeStepId, "AudioSamplesPerVolumeStep", false, reflector.getAudioSamplesPerVolumeStep, reflector.setAudioSamplesPerVolumeStep)
 
-	_ = r.CommandAdd("Update", "Update() - Update processes the sound buffer and writes updated sound data to the audio player.", r.Update)
-	_ = r.CommandAdd("WriteRegister", "WriteRegister(addr, data) - WriteRegister writes a value to a specific register within the range of the SID's addressable space.", r.WriteRegister)
-	_ = r.CommandAdd("Emulate", "Emulate() - Emulate executes the emulation process for the SID object, simulating its behavior according to the defined parameters.", r.Emulate)
+	_ = r.CommandAdd("Reset", "Reset() - Reset reinitializes the SID object by clearing its registers, buffers, and resetting all internal components to defaults.", r.Reset)
 	_ = r.CommandAdd("Prepare", "Prepare() - Prepare updates the sample buffer with the current volume and increments the buffer index circularly.", r.Prepare)
 	_ = r.CommandAdd("SetPotY", "SetPotY(pot) - SetPotY sets the pot value for the Y-axis register of the SID. This value updates the corresponding SID register directly.", r.SetPotY)
-	_ = r.CommandAdd("Reset", "Reset() - Reset reinitializes the SID object by clearing its registers, buffers, and resetting all internal components to defaults.", r.Reset)
-	_ = r.CommandAdd("ReadRegister", "ReadRegister(addr) uint8 - ReadRegister reads the value of a specified SID register identified by the provided address.", r.ReadRegister)
+	_ = r.CommandAdd("Update", "Update() - Update processes the sound buffer and writes updated sound data to the audio player.", r.Update)
 	_ = r.CommandAdd("SetPotX", "SetPotX(pot) - SetPotX sets the value of the POTX (paddle) register to control the position of the X-axis paddle input.", r.SetPotX)
+	_ = r.CommandAdd("WriteMasterVolumeAndFilterType", "WriteMasterVolumeAndFilterType(_, data) - WriteMasterVolumeAndFilterType updates 'master' volume, filter type, and mute state based on the given input data.", r.WriteMasterVolumeAndFilterType)
+	_ = r.CommandAdd("Emulate", "Emulate() - Emulate executes the emulation process for the SID object, simulating its behavior according to the defined parameters.", r.Emulate)
+	_ = r.CommandAdd("ReadDefault", "ReadDefault(reg) uint8 - ReadDefault reads the value from the specified SID register address, normalized within the valid register range.", r.ReadDefault)
+	_ = r.CommandAdd("WriteDefault", "WriteDefault(_, _) - WriteDefault is a default writing handler for SID registers that performs no operation when invoked.", r.WriteDefault)
+	_ = r.CommandAdd("WriteFiltersRegister", "WriteFiltersRegister(_, data) - WriteFiltersRegister configures filter settings for the SID voices based on the provided data value.", r.WriteFiltersRegister)
+	_ = r.CommandAdd("ReadRegister", "ReadRegister(addr) uint8 - ReadRegister reads the value of a specified SID register identified by the provided address.", r.ReadRegister)
+	_ = r.CommandAdd("WriteRegister", "WriteRegister(addr, data) - WriteRegister writes a value to a specific register within the range of the SID's addressable space.", r.WriteRegister)
 
 	return reflector
 }

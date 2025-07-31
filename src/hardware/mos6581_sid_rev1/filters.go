@@ -53,10 +53,10 @@ const filterCalculatorMask = 0x7
 
 // Filters represents a configurable structure for various filter types and associated parameters in signal processing.
 type Filters struct {
-	filterType         FilterType // Filter type
+	filterType         FilterType // ReadFilter type
 	filterFreqHigh     uint8      // SID filter frequency (upper 8 bits)
 	filterFreqLow      uint8
-	filterRes          uint8   // Filter resonance (0..15)
+	filterRes          uint8   // ReadFilter resonance (0..15)
 	filterAmpl         float64 // IIR filter input attenuation;
 	d1, d2, g1, g2     float64 // IIR filter coefficients
 	xn1, xn2, yn1, yn2 float64 // IIR filter previous input/output signal

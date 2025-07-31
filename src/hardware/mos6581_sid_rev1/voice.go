@@ -6,7 +6,6 @@ import (
 )
 
 // WaveFormType represents the type of waveform used in a synthesizer voice.
-type WaveFormType int
 
 // WaveNone represents no waveform.
 // WaveTri represents a triangle waveform.
@@ -18,7 +17,7 @@ type WaveFormType int
 // WaveTriSawRect represents a combination of triangle, sawtooth, and rectangular waveforms.
 // WaveNoise represents a noise waveform.
 const (
-	WaveNone = WaveFormType(iota)
+	WaveNone = iota
 	WaveTri
 	WaveSaw
 	WaveTriSaw
@@ -37,14 +36,13 @@ const (
 )
 
 // EGState represents the state of an envelope generator in a synthesized voice module.
-type EGState int
 
 // EgIdle represents the idle state in the envelope generator.
 // EgAttack represents the attack state in the envelope generator.
 // EgDecay represents the decay state in the envelope generator.
 // EgRelease represents the release state in the envelope generator.
 const (
-	EgIdle = EGState(iota)
+	EgIdle = iota
 	EgAttack
 	EgDecay
 	EgRelease
@@ -54,25 +52,25 @@ const (
 type Voice struct {
 	*component.BaseComponent
 	reflect      *VoiceReflect
-	number       uint8        // number represents the numerical identifier of the voice in the synthesizer.
-	wave         WaveFormType // Selected waveform
-	egState      EGState      // Current state of EG
-	modBy        *Voice       // Voice that modulates this one
-	modTo        *Voice       // Voice that is modulated by this one
-	count        uint32       // Counter for waveform generator, 8.16 fixed
-	add          uint32       // Added to the counter in every frame
-	freq         uint16       // SID frequency value
-	pw           uint16       // SID pulse-width value
-	aAdd         uint32       // EG parameters
-	dSub         uint32       // dSub is the decrement value for the decay phase of the envelope generator.
-	sLevel       uint32       // sLevel represents the sustain level of the envelope generator.
-	rSub         uint32       // rSub is the decrement value for the release phase of the envelope generator.
-	egLevel      uint32       // Current EG level, 8.16 fixed
-	gate         uint8        // EG gate bit
-	ring         uint8        // Ring modulation bit
-	test         uint8        // Test bit
-	filter       uint8        // Flag: Voice filtered
-	sync         uint8        // The following bit is set for the modulating voices, not for the modulated one (as the SID bits)
+	number       uint8  // number represents the numerical identifier of the voice in the synthesizer.
+	wave         int    // Selected waveform
+	egState      int    // Current state of EG
+	modBy        *Voice // Voice that modulates this one
+	modTo        *Voice // Voice that is modulated by this one
+	count        uint32 // Counter for waveform generator, 8.16 fixed
+	add          uint32 // Added to the counter in every frame
+	freq         uint16 // SID frequency value
+	pw           uint16 // SID pulse-width value
+	aAdd         uint32 // EG parameters
+	dSub         uint32 // dSub is the decrement value for the decay phase of the envelope generator.
+	sLevel       uint32 // sLevel represents the sustain level of the envelope generator.
+	rSub         uint32 // rSub is the decrement value for the release phase of the envelope generator.
+	egLevel      uint32 // Current EG level, 8.16 fixed
+	gate         uint8  // EG gate bit
+	ring         uint8  // Ring modulation bit
+	test         uint8  // Test bit
+	filter       uint8  // Flag: Voice filtered
+	sync         uint8  // The following bit is set for the modulating voices, not for the modulated one (as the SID bits)
 	noiseLFSR    uint32
 	mute         bool
 	waveForm     []func() uint16
@@ -166,56 +164,56 @@ func (v *Voice) JoinVoice(modBy *Voice, modTo *Voice) {
 	v.modTo = modTo
 }
 
-func (v *Voice) SetMute(m bool) {
-	v.mute = m
-}
-
-// IsMuted checks if the voice is currently in a muted state and returns true if muted, otherwise false.
-func (v *Voice) IsMuted() bool {
+// ReadIsMuted checks if the voice is currently in a muted state and returns true if muted, otherwise false.
+func (v *Voice) ReadIsMuted() bool {
 	return v.mute
 }
 
-// EgLevel returns the current envelope generator level of the Voice as a uint32.
-func (v *Voice) EgLevel() uint32 {
+// ReadEgLevel returns the current envelope generator level of the Voice as uint32.
+func (v *Voice) ReadEgLevel() uint32 {
 	return v.egLevel
 }
 
-// SetFilter sets the filter value for the Voice instance.
-func (v *Voice) SetFilter(f uint8) {
-	v.filter = f
-}
-
-// Filter returns the filter value associated with the Voice instance as an unsigned 8-bit integer.
-func (v *Voice) Filter() uint8 {
+// ReadFilter returns the filter value associated with the Voice instance as an unsigned 8-bit integer.
+func (v *Voice) ReadFilter() uint8 {
 	return v.filter
 }
 
-// UpdateFreqA updates the lower 8 bits of the frequency value and recalculates the additive frequency increment.
-func (v *Voice) UpdateFreqA(data uint8) {
+func (v *Voice) WriteMute(m bool) {
+	v.mute = m
+}
+
+// WriteFilter sets the filter value for the Voice instance.
+func (v *Voice) WriteFilter(f uint8) {
+	v.filter = f
+}
+
+// WriteFreqA updates the lower 8 bits of the frequency value and recalculates the additive frequency increment.
+func (v *Voice) WriteFreqA(data uint8) {
 	v.freq = (v.freq & 0xff00) | uint16(data)
 	v.add = uint32(float64(v.freq) * Frequency / SampleFreq)
 }
 
-// UpdateFreqB updates the high byte of the frequency value and recalculates the add value based on updated frequency.
-func (v *Voice) UpdateFreqB(data uint8) {
+// WriteFreqB updates the high byte of the frequency value and recalculates the added value based on the updated frequency.
+func (v *Voice) WriteFreqB(data uint8) {
 	v.freq = (v.freq & 0xff) | (uint16(data) << 8)
 	v.add = uint32(float64(v.freq) * Frequency / SampleFreq)
 }
 
-// UpdatePulseWidthA updates the lower 8 bits of the pulse width (pw) with the provided 8-bit data value.
-func (v *Voice) UpdatePulseWidthA(data uint8) {
+// WritePulseWidthA updates the lower 8 bits of the pulse width (pw) with the provided 8-bit data value.
+func (v *Voice) WritePulseWidthA(data uint8) {
 	v.pw = (v.pw & 0x0f00) | uint16(data)
 }
 
-// UpdatePulseWidthB updates the high nibble of the pulse width value using the provided 8-bit data.
-func (v *Voice) UpdatePulseWidthB(data uint8) {
+// WritePulseWidthB updates the high nibble of the pulse width value using the provided 8-bit data.
+func (v *Voice) WritePulseWidthB(data uint8) {
 	v.pw = (v.pw & 0xff) | ((uint16(data) & 0xf) << 8)
 }
 
-// UpdateWaveForm updates the waveform type and state flags based on the provided data byte.
+// WriteWaveForm updates the waveform type and state flags based on the provided data byte.
 // It adjusts gate, sync, ring, and test flags and manages the envelope generator's state accordingly.
-func (v *Voice) UpdateWaveForm(data uint8) {
-	v.wave = WaveFormType(data>>4) & 0xf
+func (v *Voice) WriteWaveForm(data uint8) {
+	v.wave = int(data>>4) & 0xf
 	gate := uint8(0)
 	ring := uint8(0)
 	test := uint8(0)
@@ -253,21 +251,21 @@ func (v *Voice) UpdateWaveForm(data uint8) {
 	}
 }
 
-// UpdateEnvelopeGenerators updates the envelope generator parameters based on the provided data.
+// WriteEnvelopeGenerators updates the envelope generator parameters based on the provided data.
 // The method computes attack and decay values using the egLut function and updates the relevant fields.
-func (v *Voice) UpdateEnvelopeGenerators(data uint8) {
+func (v *Voice) WriteEnvelopeGenerators(data uint8) {
 	v.aAdd = egLut(data >> 4)
 	v.dSub = egLut(data)
 }
 
-// UpdateSustainLevel adjusts the sustain level and release sublevel of the voice based on the provided data value.
-func (v *Voice) UpdateSustainLevel(data uint8) {
+// WriteSustainLevel adjusts the sustain level and release sublevel of the voice based on the provided data value.
+func (v *Voice) WriteSustainLevel(data uint8) {
 	v.sLevel = (uint32(data) >> 4) * 0x111111
 	v.rSub = egLut(data)
 }
 
-// UpdateCount updates the count value for a Voice instance based on specific conditions related to test, sync, and max value.
-func (v *Voice) UpdateCount() {
+// ComputeCount updates the count value for a Voice instance based on specific conditions related to test, sync, and max value.
+func (v *Voice) ComputeCount() {
 	if v.test == 0 {
 		v.count += v.add
 	}
@@ -407,7 +405,7 @@ func (v *Voice) waveTriRect() uint16 {
 	return v.waveTri() & v.waveRect()
 }
 
-// waveSawRect combines waveSaw and waveRect results with a bitwise AND operation and returns the resulting value.
+// waveSawRect combines waveSaw and waveRect result with a bitwise AND operation and return the resulting value.
 func (v *Voice) waveSawRect() uint16 {
 	return v.waveSaw() & v.waveRect()
 }
@@ -425,7 +423,7 @@ func (v *Voice) waveNoise() uint16 {
 	msb := (v.noiseLFSR >> 22) & 1
 	tapBit := (v.noiseLFSR >> 17) & 1
 	feedback := msb ^ tapBit
-	// performs shift and inserts new bit
+	// performs shift and inserts a new bit
 	v.noiseLFSR = ((v.noiseLFSR << 1) | feedback) & DefaultNoiseLFSR
 	// maps the output
 	return uint16(((v.noiseLFSR >> 15) & 0xFF) << 8)

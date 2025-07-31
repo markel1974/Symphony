@@ -1528,7 +1528,7 @@ fprintf(_fout, " Waveform   : ");
 dump_sid_waveform(ss._ctrl_1);
 fprintf(_fout, " Gate       : %s  Ring mod.: %s\n", ss._ctrl_1 & 0x01 ? "On " : "Off", ss._ctrl_1 & 0x04 ? "On" : "Off");
 fprintf(_fout, " Test bit   : %s  Synchron.: %s\n", ss._ctrl_1 & 0x08 ? "On " : "Off", ss._ctrl_1 & 0x02 ? "On" : "Off");
-fprintf(_fout, " Filter     : %s\n", ss._res_filt & 0x01 ? "On" : "Off");
+fprintf(_fout, " ReadFilter     : %s\n", ss._res_filt & 0x01 ? "On" : "Off");
 
 fprintf(_fout, "\nVoice 2\n");
 fprintf(_fout, " Frequency  : %04lx\n", (ss._freq_hi_2 << 8) | ss._freq_lo_2);
@@ -1538,7 +1538,7 @@ fprintf(_fout, " Waveform   : ");
 dump_sid_waveform(ss._ctrl_2);
 fprintf(_fout, " Gate       : %s  Ring mod.: %s\n", ss._ctrl_2 & 0x01 ? "On " : "Off", ss._ctrl_2 & 0x04 ? "On" : "Off");
 fprintf(_fout, " Test bit   : %s  Synchron.: %s\n", ss._ctrl_2 & 0x08 ? "On " : "Off", ss._ctrl_2 & 0x02 ? "On" : "Off");
-fprintf(_fout, " Filter     : %s\n", ss._res_filt & 0x02 ? "On" : "Off");
+fprintf(_fout, " ReadFilter     : %s\n", ss._res_filt & 0x02 ? "On" : "Off");
 
 fprintf(_fout, "\nVoice 3\n");
 fprintf(_fout, " Frequency  : %04lx\n", (ss._freq_hi_3 << 8) | ss._freq_lo_3);
@@ -1548,7 +1548,7 @@ fprintf(_fout, " Waveform   : ");
 dump_sid_waveform(ss._ctrl_3);
 fprintf(_fout, " Gate       : %s  Ring mod.: %s\n", ss._ctrl_3 & 0x01 ? "On " : "Off", ss._ctrl_3 & 0x04 ? "On" : "Off");
 fprintf(_fout, " Test bit   : %s  Synchron.: %s\n", ss._ctrl_3 & 0x08 ? "On " : "Off", ss._ctrl_3 & 0x02 ? "On" : "Off");
-fprintf(_fout, " Filter     : %s  Mute     : %s\n", ss._res_filt & 0x04 ? "On" : "Off", ss._mode_vol & 0x80 ? "Yes" : "No");
+fprintf(_fout, " ReadFilter     : %s  Mute     : %s\n", ss._res_filt & 0x04 ? "On" : "Off", ss._mode_vol & 0x80 ? "Yes" : "No");
 
 fprintf(_fout, "\nFilters/Volume\n");
 fprintf(_fout, " Frequency: %04lx\n", (ss._fc_hi << 3) | (ss._fc_lo & 0x07));

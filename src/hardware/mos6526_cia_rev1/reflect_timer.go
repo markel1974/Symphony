@@ -62,21 +62,21 @@ func NewTimerReflect(r *Timer, factory references.IComponentFactory, parent refe
 
 	r.PropertyAdd(reflectUnderflowOutId, "underflowOut indicates the current state of the underflow output signal for the Timer instance.", false, reflector.getUnderflowOut, reflector.setUnderflowOut)
 
-	_ = r.CommandAdd("SetUnderflowIn", "SetUnderflowIn(u) - SetUnderflowIn sets the underflow input signal state for the timer instance to the specified boolean value.", r.SetUnderflowIn)
+	_ = r.CommandAdd("ReadCR", "ReadCR() uint8 - ReadCR retrieves the current value of the control register (CR) for the Timer instance.", r.ReadCR)
+	_ = r.CommandAdd("Emulate", "Emulate() - Emulate processes the current timer state and performs actions such as counting or toggling based on the timer configuration.", r.Emulate)
+	_ = r.CommandAdd("GetUnderflowOut", "GetUnderflowOut() bool - GetUnderflowOut retrieves the current state of the underflow output signal from the timer instance.", r.GetUnderflowOut)
 	_ = r.CommandAdd("HasPBOn", "HasPBOn() bool - HasPBOn checks whether bit `crBitPBOn` is set in the control register `cr`. Returns true if set, otherwise false.", r.HasPBOn)
 	_ = r.CommandAdd("GetRTC", "GetRTC() bool - GetRTC checks if the RTC (Real-Time Clock) bit is set in the control register and returns true if it is.", r.GetRTC)
-	_ = r.CommandAdd("ReadTimerLow", "ReadTimerLow() uint8 - ReadTimerLow retrieves the lower 8 bits of the timer's current value and returns it as an unsigned 8-bit integer.", r.ReadTimerLow)
 	_ = r.CommandAdd("WriteTimerLow", "WriteTimerLow(prescaler) - WriteTimerLow sets the lower 8 bits of the timer latch value by converting the given prescaler to a uint16.", r.WriteTimerLow)
-	_ = r.CommandAdd("SetCNTPulse", "SetCNTPulse() - SetCNTPulse enables the CNT pulse by setting the cntPulse field to true.", r.SetCNTPulse)
-	_ = r.CommandAdd("GetUnderflowOut", "GetUnderflowOut() bool - GetUnderflowOut retrieves the current state of the underflow output signal from the timer instance.", r.GetUnderflowOut)
 	_ = r.CommandAdd("WriteTimerHigh", "WriteTimerHigh(prescaler) - WriteTimerHigh configures the high byte of the timer latch using the given prescaler and updates the timer if not started.", r.WriteTimerHigh)
-	_ = r.CommandAdd("Reset", "Reset() - Reset reinitializes the Timer's internal state to its default values and clears any pending or current configurations.", r.Reset)
-	_ = r.CommandAdd("ReadCR", "ReadCR() uint8 - ReadCR retrieves the current value of the control register (CR) for the Timer instance.", r.ReadCR)
-	_ = r.CommandAdd("ReadTimerHigh", "ReadTimerHigh() uint8 - ReadTimerHigh returns the high byte (upper 8 bits) of the timer value by shifting the timer's value 8 bits to the right.", r.ReadTimerHigh)
 	_ = r.CommandAdd("SetControlRegister", "SetControlRegister(data, countMode) - SetControlRegister updates the control register with new data and sets the count mode for the timer.", r.SetControlRegister)
-	_ = r.CommandAdd("Emulate", "Emulate() - Emulate processes the current timer state and performs actions such as counting or toggling based on the timer configuration.", r.Emulate)
-	_ = r.CommandAdd("ToggleModeApply", "ToggleModeApply(d) bool - ToggleModeApply applies the toggle mode state based on the control register flags and returns the updated boolean value.", r.ToggleModeApply)
+	_ = r.CommandAdd("SetUnderflowIn", "SetUnderflowIn(u) - SetUnderflowIn sets the underflow input signal state for the timer instance to the specified boolean value.", r.SetUnderflowIn)
+	_ = r.CommandAdd("ReadTimerLow", "ReadTimerLow() uint8 - ReadTimerLow retrieves the lower 8 bits of the timer's current value and returns it as an unsigned 8-bit integer.", r.ReadTimerLow)
+	_ = r.CommandAdd("ReadTimerHigh", "ReadTimerHigh() uint8 - ReadTimerHigh returns the high byte (upper 8 bits) of the timer value by shifting the timer's value 8 bits to the right.", r.ReadTimerHigh)
 	_ = r.CommandAdd("SetCNTLevel", "SetCNTLevel(level) - SetCNTLevel sets the CNT (counter) level for the Timer instance based on the provided boolean value.", r.SetCNTLevel)
+	_ = r.CommandAdd("Reset", "Reset() - Reset reinitializes the Timer's internal state to its default values and clears any pending or current configurations.", r.Reset)
+	_ = r.CommandAdd("ToggleModeApply", "ToggleModeApply(d) bool - ToggleModeApply applies the toggle mode state based on the control register flags and returns the updated boolean value.", r.ToggleModeApply)
+	_ = r.CommandAdd("SetCNTPulse", "SetCNTPulse() - SetCNTPulse enables the CNT pulse by setting the cntPulse field to true.", r.SetCNTPulse)
 
 	return reflector
 }
