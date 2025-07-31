@@ -32,16 +32,16 @@ func NewInterruptsReflect(r *Interrupts, factory references.IComponentFactory, p
 
 	r.PropertyAdd(reflectIrqRasterId, "Interrupt raster line", false, reflector.getIrqRaster, reflector.setIrqRaster)
 
-	_ = r.CommandAdd("WriteLatch", "WriteLatch(data) - WriteLatch updates the IRQ latch by clearing specific bits based on the provided data and verifies IRQ conditions.", r.WriteLatch)
-	_ = r.CommandAdd("ReadMask", "ReadMask() uint8 - ReadMask returns the current interrupt mask with the upper 4 bits set to 1 (0xf0).", r.ReadMask)
-	_ = r.CommandAdd("WriteRasterHigh", "WriteRasterHigh(rasterY, data) - WriteRasterHigh sets the high 8 bits of the IRQ raster line by combining the current high bits with the input data.", r.WriteRasterHigh)
-	_ = r.CommandAdd("Reset", "Reset() - Reset clears the internal state, ensuring all interrupt-related settings are reset to their default values.", r.Reset)
-	_ = r.CommandAdd("Emulate", "Emulate() - Emulate processes a single step in the emulation cycle for the interrupt system, managing raster operations and IRQ states.", r.Emulate)
-	_ = r.CommandAdd("WriteMask", "WriteMask(data) - WriteMask updates the IRQ mask by applying a bitwise AND operation with the given data and 0xF.  It also invokes irqVerify to manage the interrupt state.", r.WriteMask)
-	_ = r.CommandAdd("VerifyRasterY", "VerifyRasterY(rasterY) - VerifyRasterY checks if the given rasterY line matches the configured irqRaster line and triggers an IRQ if they match.", r.VerifyRasterY)
-	_ = r.CommandAdd("ReadLatch", "ReadLatch() uint8 - ReadLatch returns the current IRQ latch value combined with a constant offset of 0x70 for additional bits' configuration.", r.ReadLatch)
-	_ = r.CommandAdd("WriteRasterLow", "WriteRasterLow(rasterY, data) - WriteRasterLow updates the low byte of the IRQ raster line with the given 8-bit data and triggers raster settings.", r.WriteRasterLow)
 	_ = r.CommandAdd("Emit", "Emit(irq) - Emit handles triggering of an interrupt by setting the IRQ latch and activating the IRQ if it matches the mask.", r.Emit)
+	_ = r.CommandAdd("WriteLatch", "WriteLatch(data) - WriteLatch updates the IRQ latch by clearing specific bits based on the provided data and verifies IRQ conditions.", r.WriteLatch)
+	_ = r.CommandAdd("WriteRasterLow", "WriteRasterLow(rasterY, data) - WriteRasterLow updates the low byte of the IRQ raster line with the given 8-bit data and triggers raster settings.", r.WriteRasterLow)
+	_ = r.CommandAdd("Reset", "Reset() - Reset clears the internal state, ensuring all interrupt-related settings are reset to their default values.", r.Reset)
+	_ = r.CommandAdd("WriteMask", "WriteMask(data) - WriteMask updates the IRQ mask by applying a bitwise AND operation with the given data and 0xF.  It also invokes irqVerify to manage the interrupt state.", r.WriteMask)
+	_ = r.CommandAdd("WriteRasterHigh", "WriteRasterHigh(rasterY, data) - WriteRasterHigh sets the high 8 bits of the IRQ raster line by combining the current high bits with the input data.", r.WriteRasterHigh)
+	_ = r.CommandAdd("Emulate", "Emulate() - Emulate processes a single step in the emulation cycle for the interrupt system, managing raster operations and IRQ states.", r.Emulate)
+	_ = r.CommandAdd("ReadLatch", "ReadLatch() uint8 - ReadLatch returns the current IRQ latch value combined with a constant offset of 0x70 for additional bits' configuration.", r.ReadLatch)
+	_ = r.CommandAdd("VerifyRasterY", "VerifyRasterY(rasterY) - VerifyRasterY checks if the given rasterY line matches the configured irqRaster line and triggers an IRQ if they match.", r.VerifyRasterY)
+	_ = r.CommandAdd("ReadMask", "ReadMask() uint8 - ReadMask returns the current interrupt mask with the upper 4 bits set to 1 (0xf0).", r.ReadMask)
 
 	return reflector
 }

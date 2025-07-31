@@ -29,14 +29,14 @@ func NewRasterBeamReflect(r *RasterBeam, factory references.IComponentFactory, p
 
 	r.PropertyAdd(reflectLineOffsetRGBAId, "LineOffsetRGBA", false, reflector.getLineOffsetRGBA, reflector.setLineOffsetRGBA)
 
+	_ = r.CommandAdd("Draw", "Draw(offset, color) - Draw updates the internal scanline buffer at the computed location with the specified color value.", r.Draw)
+	_ = r.CommandAdd("Draw8", "Draw8(offset, color) - Draw8 writes an 8-pixel multicolor value to the internal scanline buffer at the specified offset using the given color.", r.Draw8)
+	_ = r.CommandAdd("Commit", "Commit() - Commit transfers the completed scanline from the internal buffer to the final display buffer.  This should be called once at the very end of a scanline's rendering cycle.", r.Commit)
 	_ = r.CommandAdd("Emulate", "Emulate() - ", r.Emulate)
 	_ = r.CommandAdd("Reset", "Reset() - ", r.Reset)
 	_ = r.CommandAdd("ResetLineOffset", "ResetLineOffset() - ResetLineOffset resets the line offset to 0, typically used to prepare for a new rendering cycle or frame.", r.ResetLineOffset)
-	_ = r.CommandAdd("Draw", "Draw(offset, color) - Draw updates the internal scanline buffer at the computed location with the specified color value.", r.Draw)
-	_ = r.CommandAdd("Draw8", "Draw8(offset, color) - Draw8 writes an 8-pixel multicolor value to the internal scanline buffer at the specified offset using the given color.", r.Draw8)
 	_ = r.CommandAdd("DrawStandard", "DrawStandard(offset, a, b, data) - DrawStandard renders 8 pixels in standard mode into the internal scanline buffer.", r.DrawStandard)
 	_ = r.CommandAdd("DrawMultiColor", "DrawMultiColor(offset, a, b, c, d, data) - DrawMultiColor renders 8 pixels using a multicolor mode into the internal scanline buffer.", r.DrawMultiColor)
-	_ = r.CommandAdd("Commit", "Commit() - Commit transfers the completed scanline from the internal buffer to the final display buffer.  This should be called once at the very end of a scanline's rendering cycle.", r.Commit)
 
 	return reflector
 }

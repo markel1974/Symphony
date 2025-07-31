@@ -32,14 +32,14 @@ func NewLightPenReflect(r *LightPen, factory references.IComponentFactory, paren
 
 	r.PropertyAdd(reflectTriggeredId, "Triggered", false, reflector.getTriggered, reflector.setTriggered)
 
+	_ = r.CommandAdd("Emulate", "Emulate() - Emulate processes the light pen's behavior for the current emulation frame, checking its state and coordinating updates.", r.Emulate)
 	_ = r.CommandAdd("Reset", "Reset() - Reset reinitializes the LightPen's state, clearing its coordinates and triggered status to defaults.", r.Reset)
 	_ = r.CommandAdd("Trigger", "Trigger(rasterX, rasterY) - Trigger sets the light pen as triggered and records the given raster coordinates (rasterX, rasterY).  It also emits an interrupt using the specified light pen interrupt bit.  If the light pen is already triggered, this method does nothing.", r.Trigger)
+	_ = r.CommandAdd("TriggerClear", "TriggerClear() - TriggerClear resets the light pen's triggered state to false, indicating it has not been activated.", r.TriggerClear)
 	_ = r.CommandAdd("ReadX", "ReadX() uint8 - ReadX retrieves the current X-coordinate value of the light pen.", r.ReadX)
 	_ = r.CommandAdd("ReadY", "ReadY() uint8 - ReadY returns the Y-coordinate stored by the LightPen, representing the last triggered position on the raster.", r.ReadY)
 	_ = r.CommandAdd("WriteX", "WriteX(data) - WriteX sets the X-coordinate of the LightPen by updating the internal lpx register with the provided data.", r.WriteX)
 	_ = r.CommandAdd("WriteY", "WriteY(data) - WriteY sets the LightPen's internal lpx register to the specified data value.", r.WriteY)
-	_ = r.CommandAdd("Emulate", "Emulate() - Emulate processes the light pen's behavior for the current emulation frame, checking its state and coordinating updates.", r.Emulate)
-	_ = r.CommandAdd("TriggerClear", "TriggerClear() - TriggerClear resets the light pen's triggered state to false, indicating it has not been activated.", r.TriggerClear)
 
 	return reflector
 }

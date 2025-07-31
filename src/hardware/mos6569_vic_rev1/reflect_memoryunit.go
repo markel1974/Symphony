@@ -44,19 +44,19 @@ func NewMemoryUnitReflect(r *MemoryUnit, factory references.IComponentFactory, p
 
 	r.PropertyAdd(reflectRefreshCounterId, "refreshCounter tracks the number of times a refresh operation has been performed.", false, reflector.getRefreshCounter, reflector.setRefreshCounter)
 
-	_ = r.CommandAdd("Reset", "Reset() - Reset restores the MemoryUnit object to its initial state, resetting all memory-related configurations and properties.", r.Reset)
-	_ = r.CommandAdd("GetBitmapBase", "GetBitmapBase() uint16 - GetBitmapBase retrieves the base address of the bitmap within the memory structure.", r.GetBitmapBase)
 	_ = r.CommandAdd("Emulate", "Emulate() - Emulate performs the core video memory emulation logic associated with the MemoryUnit structure and its components.", r.Emulate)
-	_ = r.CommandAdd("GetLastByte", "GetLastByte() uint8 - GetLastByte retrieves the value of the last byte read by the VIC from memory within the current instance.", r.GetLastByte)
+	_ = r.CommandAdd("SetCIAVABase", "SetCIAVABase(newVA) - SetCIAVABase updates the CIA VA14/15 video base based on the given newVA value and performs a memory pointer update.", r.SetCIAVABase)
 	_ = r.CommandAdd("GetVABase", "GetVABase() uint8 - GetVABase retrieves the value of vaBase with the least significant bit forced to 1.", r.GetVABase)
-	_ = r.CommandAdd("ResetRefreshCounter", "ResetRefreshCounter() - ResetRefreshCounter resets the refresh counter to its default value of 0xff.", r.ResetRefreshCounter)
-	_ = r.CommandAdd("AccessIdle", "AccessIdle() - AccessIdle performs idle access by reading from the memory address 0x3FFF using the ReadByte method.", r.AccessIdle)
+	_ = r.CommandAdd("GetBitmapBase", "GetBitmapBase() uint16 - GetBitmapBase retrieves the base address of the bitmap within the memory structure.", r.GetBitmapBase)
+	_ = r.CommandAdd("ReadByte", "ReadByte(addr) uint8 - ReadByte reads a byte of data from the specified memory address and updates the last byte read.", r.ReadByte)
 	_ = r.CommandAdd("GetCharBase", "GetCharBase() uint16 - GetCharBase retrieves the base address of the character generator from the memory structure.", r.GetCharBase)
 	_ = r.CommandAdd("SetVABase", "SetVABase(data) - SetVABase sets the video address base value and updates memory pointer configurations.", r.SetVABase)
-	_ = r.CommandAdd("AccessRefresh", "AccessRefresh() - AccessRefresh performs a DRAM refresh operation by reading from an address constructed from the refresh counter.  Decrements the refresh counter after each operation.", r.AccessRefresh)
-	_ = r.CommandAdd("SetCIAVABase", "SetCIAVABase(newVA) - SetCIAVABase updates the CIA VA14/15 video base based on the given newVA value and performs a memory pointer update.", r.SetCIAVABase)
+	_ = r.CommandAdd("AccessIdle", "AccessIdle() - AccessIdle performs idle access by reading from the memory address 0x3FFF using the ReadByte method.", r.AccessIdle)
+	_ = r.CommandAdd("Reset", "Reset() - Reset restores the MemoryUnit object to its initial state, resetting all memory-related configurations and properties.", r.Reset)
 	_ = r.CommandAdd("GetMatrixBase", "GetMatrixBase() uint16 - GetMatrixBase retrieves the base address of the video matrix from the memory structure.", r.GetMatrixBase)
-	_ = r.CommandAdd("ReadByte", "ReadByte(addr) uint8 - ReadByte reads a byte of data from the specified memory address and updates the last byte read.", r.ReadByte)
+	_ = r.CommandAdd("AccessRefresh", "AccessRefresh() - AccessRefresh performs a DRAM refresh operation by reading from an address constructed from the refresh counter.  Decrements the refresh counter after each operation.", r.AccessRefresh)
+	_ = r.CommandAdd("GetLastByte", "GetLastByte() uint8 - GetLastByte retrieves the value of the last byte read by the VIC from memory within the current instance.", r.GetLastByte)
+	_ = r.CommandAdd("ResetRefreshCounter", "ResetRefreshCounter() - ResetRefreshCounter resets the refresh counter to its default value of 0xff.", r.ResetRefreshCounter)
 
 	return reflector
 }

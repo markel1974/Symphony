@@ -14,9 +14,11 @@ func matrix(a int, b int) int {
 // Keyboard represents an abstraction for handling virtual and ASCII keyboard states and input storage.
 type Keyboard struct {
 	*component.BaseComponent
+	reflect *KeyboardReflect
 	storage *fifo.CircularQueue
 	virtual *Virtual
 	ascii   *Ascii
+	enabled int
 }
 
 // NewKeyboard initializes and returns a new Keyboard instance with default settings and a reset state.
@@ -27,7 +29,7 @@ func NewKeyboard(parent references.IComponent, factory references.IComponentFact
 		virtual:       NewVirtual(),
 		ascii:         NewAscii(),
 	}
-	k.BaseComponent.Register(factory, parent, Identifier(), instance, k, references.IdIC64Keyboard(k, label, instance))
+	k.reflect = NewKeyboardReflect(k, factory, parent, Identifier(), instance, references.IdIC64Keyboard(k, label, instance))
 	return k
 }
 
@@ -79,6 +81,16 @@ func (k *Keyboard) SetKey(pressed bool, vKey int) {
 		v := keyCodeToC64(uint8(kc), -1, pressed)
 		k.storage.Push(int(v))
 	}
+}
+
+// SetKeyPressed triggers a virtual key press for the specified virtual key code by internally calling SetKey.
+func (k *Keyboard) SetKeyPressed(vKey int) {
+	k.SetKey(true, vKey)
+}
+
+// SetKeyReleased triggers a virtual key release for the specified virtual key code by internally calling SetKey.
+func (k *Keyboard) SetKeyReleased(vKey int) {
+	k.SetKey(false, vKey)
 }
 
 // Poll retrieves the next key from the keyboard storage as a uint32 and indicates if a key was available.

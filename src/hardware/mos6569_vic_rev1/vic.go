@@ -176,6 +176,11 @@ func (vic *VIC) GetText() []byte {
 	return vic.graphics.GetText()
 }
 
+// GetTextString returns the textual content of the VIC object as a string. It is a wrapper around the GetText method.
+func (vic *VIC) GetTextString() string {
+	return string(vic.GetText())
+}
+
 // GetVASignal returns the last byte stored in the VIC instance.
 func (vic *VIC) GetVASignal() uint8 {
 	return vic.memory.GetLastByte()
