@@ -121,8 +121,7 @@ func NewBeam(parent references.IComponent, factory references.IComponentFactory,
 		data >>= 1
 		s.standardColorIndex[i][0] = data & 1
 	}
-	s.BaseComponent.Register(factory, parent, "rasterBeam", instance, s, references.IdInternalComponent(label, instance, "RasterBeam"))
-	s.reflect = NewRasterBeamReflect(s)
+	s.reflect = NewRasterBeamReflect(s, factory, parent, "rasterBeam", instance, references.IdInternalComponent(label, instance, "RasterBeam"))
 	return s
 }
 

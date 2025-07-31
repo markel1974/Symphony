@@ -67,8 +67,7 @@ func NewVIA(parent references.IComponent, factory references.IComponentFactory, 
 		ddra:          0,
 		ddrb:          0,
 	}
-	v.BaseComponent.Register(factory, parent, Identifier(), instance, v, references.IdIMos6522(v, label, instance))
-	v.reflect = NewVIAReflect(v)
+	v.reflect = NewVIAReflect(v, factory, parent, Identifier(), instance, references.IdIMos6522(v, label, instance))
 	v.timer0 = NewTimer(v, v.GetFactory(), label, 0)
 	v.timer1 = NewTimer(v, v.GetFactory(), label, 1)
 	v.shiftRegister = NewShiftRegister(v, v.GetFactory(), label, 0)

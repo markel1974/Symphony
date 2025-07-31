@@ -77,8 +77,7 @@ func NewSprites(parent references.IComponent, factory references.IComponentFacto
 		bufferIndex:        0,
 		active:             nil,
 	}
-	s.BaseComponent.Register(factory, parent, "spritesUnit", instance, s, references.IdInternalComponent(label, instance, "SpritesUnit"))
-	s.reflect = NewSpritesUnitReflect(s)
+	s.reflect = NewSpritesUnitReflect(s, factory, parent, "spritesUnit", instance, references.IdInternalComponent(label, instance, "SpritesUnit"))
 	for i := range s.sprites {
 		s.sprites[i] = NewSprite(s, factory, "Sprite", i, surface, collisions, uint8(i), len(s.sprites))
 	}

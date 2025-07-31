@@ -74,6 +74,11 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 	}
 }
 
+// GetName retrieves the name of the BaseComponent instance.
+func (bc *BaseComponent) GetName() string {
+	return bc.name
+}
+
 // GetId returns the unique identifier of the BaseComponent instance.
 func (bc *BaseComponent) GetId() string {
 	return bc.id

@@ -43,8 +43,8 @@ func NewCollisions(parent references.IComponent, factory references.IComponentFa
 		bgrBufferEmpty:   make([]uint8, collisionsSize),
 		bgrBufferOffset:  0,
 	}
-	c.BaseComponent.Register(factory, parent, "collisionsUnit", instance, c, references.IdInternalComponent(label, instance, "CollisionsUnit"))
-	c.reflect = NewCollisionsUnitReflect(c)
+	//c.BaseComponent.Register(factory, parent, "collisionsUnit", instance, c, references.IdInternalComponent(label, instance, "CollisionsUnit"))
+	c.reflect = NewCollisionsUnitReflect(c, factory, parent, "collisionsUnit", instance, references.IdInternalComponent(label, instance, "CollisionsUnit"))
 	return c
 }
 

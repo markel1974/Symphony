@@ -127,8 +127,8 @@ func NewGraphics(parent references.IComponent, factory references.IComponentFact
 		gr.drawBackgroundInvalid,
 		gr.drawBackgroundInvalid,
 	}
-	gr.BaseComponent.Register(factory, parent, "graphicsUnit", instance, gr, references.IdInternalComponent(label, instance, "GraphicsUnit"))
-	gr.reflect = NewGraphicsUnitReflect(gr)
+	//gr.BaseComponent.Register(factory, parent, "graphicsUnit", instance, gr, references.IdInternalComponent(label, instance, "GraphicsUnit"))
+	gr.reflect = NewGraphicsUnitReflect(gr, factory, parent, "graphicsUnit", instance, references.IdInternalComponent(label, instance, "GraphicsUnit"))
 	return gr
 }
 

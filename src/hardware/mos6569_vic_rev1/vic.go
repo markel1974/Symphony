@@ -74,8 +74,7 @@ func NewVIC(parent references.IComponent, factory references.IComponentFactory, 
 		aecLow:          false,
 		label:           label,
 	}
-	vic.BaseComponent.Register(factory, parent, Identifier(), instance, vic, references.IdIMos6569(vic, label, instance))
-	vic.reflect = NewVICReflect(vic)
+	vic.reflect = NewVICReflect(vic, factory, parent, Identifier(), instance, references.IdIMos6569(vic, label, instance))
 	return vic
 }
 

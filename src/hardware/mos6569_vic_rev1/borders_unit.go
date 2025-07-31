@@ -79,8 +79,8 @@ func NewBorder(parent references.IComponent, factory references.IComponentFactor
 		gr.center = append(gr.center, x)
 	}
 	gr.sequencer = gr.createSequencer()
-	gr.BaseComponent.Register(factory, parent, "borderUnit", instance, gr, references.IdInternalComponent(label, instance, "BorderUnit"))
-	gr.reflect = NewBordersUnitReflect(gr)
+	//gr.BaseComponent.Register(factory, parent, "borderUnit", instance, gr, references.IdInternalComponent(label, instance, "BorderUnit"))
+	gr.reflect = NewBordersUnitReflect(gr, factory, parent, "borderUnit", instance, references.IdInternalComponent(label, instance, "BorderUnit"))
 	return gr
 }
 

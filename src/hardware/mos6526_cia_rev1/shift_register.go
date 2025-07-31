@@ -20,8 +20,8 @@ func NewShiftRegister(parent references.IComponent, factory references.IComponen
 	s := &ShiftRegister{
 		BaseComponent: component.NewBaseComponent(),
 	}
-	s.BaseComponent.Register(factory, parent, "shiftRegister", instance, s, references.IdInternalComponent(label, instance, "ShiftRegister"))
-	s.reflect = NewShiftRegisterReflect(s)
+	//s.BaseComponent.Register(factory, parent, "shiftRegister", instance, s, references.IdInternalComponent(label, instance, "ShiftRegister"))
+	//s.reflect = NewShiftRegisterReflect(factory, parent, label, instance, s)
 	return s
 }
 

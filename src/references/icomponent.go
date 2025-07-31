@@ -35,6 +35,8 @@ type INode interface {
 type IHardware interface {
 	GetId() string
 
+	GetName() string
+
 	HardwareId() string
 
 	Setup() error
