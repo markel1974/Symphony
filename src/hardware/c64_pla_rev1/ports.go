@@ -10,6 +10,7 @@ import (
 // Ports represents the state and management of hardware I/O ports used for device communication and control.
 type Ports struct {
 	*component.BaseComponent
+	reflect         *PortsReflect
 	dataOut         uint8
 	dir             uint8
 	data            uint8
@@ -47,7 +48,8 @@ func NewPorts(factory references.IComponentFactory, parent references.IComponent
 		tapeMotorIn:   0,
 		//dirRead:     0,
 	}
-	p.BaseComponent.Register(factory, parent, "ports", instance, p, references.IdInternalComponent(label, instance, "Ports"))
+	//p.BaseComponent.Register(factory, parent, "ports", instance, p, references.IdInternalComponent(label, instance, "Ports"))
+	p.reflect = NewPortsReflect(p, factory, parent, "ports", instance, references.IdInternalComponent(label, instance, "Ports"))
 	return p
 }
 

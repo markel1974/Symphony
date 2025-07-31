@@ -16,6 +16,7 @@ type WriteFn func(uint16, uint8)
 // PLA represents the Programmable Logic Array (PLA) component responsible for memory and I/O address mapping logic.
 type PLA struct {
 	*component.BaseComponent
+	reflect          *PLAReflect
 	ramRead          ReadFn
 	ramWrite         WriteFn
 	cartManRead      ReadFn
@@ -76,7 +77,8 @@ func NewPLA(parent references.IComponent, factory references.IComponentFactory, 
 		label:            label,
 		cartManIntervals: 0,
 	}
-	b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIC64Pla(b, label, instance))
+	//b.BaseComponent.Register(factory, parent, Identifier(), instance, b, references.IdIC64Pla(b, label, instance))
+	b.reflect = NewPLAReflect(b, factory, parent, Identifier(), instance, references.IdIC64Pla(b, label, instance))
 	return b
 }
 
