@@ -55,6 +55,7 @@ type IControlUnit interface {
 // CPU represents a simulated central processing unit with registers, flags, and associated helper components.
 type CPU struct {
 	*component.BaseComponent
+	reflect        *CPUReflect
 	next           func(cpu *CPU) // next is a function pointer that executes the next CPU instruction or operation during emulation.
 	overflowBranch func() bool    // overflowBranch determines if the CPU should branch based on the overflow condition.
 	nFlag          uint8          // nFlag Negative flag - Only the highest bit of the nFlag variable is used
@@ -98,7 +99,7 @@ func NewCPU(parent references.IComponent, factory references.IComponentFactory, 
 		BaseComponent: component.NewBaseComponent(),
 		label:         label,
 	}
-	cpu.BaseComponent.Register(factory, parent, Identifier(), instance, cpu, references.IdIMos6510(cpu, label, instance))
+	cpu.reflect = NewCPUReflect(cpu, factory, parent, Identifier(), instance, references.IdIMos6510(cpu, label, instance))
 	return cpu
 }
 

@@ -7,6 +7,8 @@ import (
 
 type Bus struct {
 	*component.BaseComponent
+	reflect     *BusReflect
+	status      uint8
 	realRead    func(uint16) uint8
 	realWrite   func(uint16, uint8)
 	setModeHalt func()
@@ -16,9 +18,10 @@ type Bus struct {
 
 func NewBus(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Bus {
 	p := &Bus{
+		status:        0,
 		BaseComponent: component.NewBaseComponent(),
 	}
-	p.BaseComponent.Register(factory, parent, "bus", instance, p, references.IdInternalComponent(label, instance, "Bus"))
+	p.reflect = NewBusReflect(p, factory, parent, "bus", instance, references.IdInternalComponent(label, instance, "Bus"))
 	return p
 }
 

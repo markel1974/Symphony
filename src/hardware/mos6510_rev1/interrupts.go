@@ -26,6 +26,7 @@ const (
 // Interrupts represents a programmable interrupt controller managing IRQ and NMI signals within a system.
 type Interrupts struct {
 	*component.BaseComponent
+	reflect       *InterruptsReflect
 	cycles        func() uint64
 	all           bits.Bits
 	irq           bits.Bits
@@ -50,7 +51,7 @@ func NewInterrupts(parent references.IComponent, factory references.IComponentFa
 		irqBreaker:    false,
 		nmiExec:       false,
 	}
-	p.BaseComponent.Register(factory, parent, "interrupts", instance, p, references.IdInternalComponent(label, instance, "Interrupts"))
+	p.reflect = NewInterruptsReflect(p, factory, parent, "interrupts", instance, references.IdInternalComponent(label, instance, "Interrupts"))
 	return p
 }
 
