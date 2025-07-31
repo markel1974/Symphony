@@ -57,50 +57,61 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, inputDriver io.Reader, out
 	return t
 }
 
+// IOWrite writes the provided byte slice to the output driver and returns the number of bytes written and any error encountered.
 func (c *Kernel) IOWrite(data []byte) (int, error) {
 	return c.outputDriver.Write(data)
 }
 
+// IORead reads data from the input driver into the provided byte slice and returns the number of bytes read and any error encountered.
 func (c *Kernel) IORead(p []byte) (int, error) {
 	return c.inputDriver.Read(p)
 }
 
+// IOType processes input events based on their type and key value to handle control, foreground tasks, and system state.
 func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 	if kind == interfaces.KeyTypeCtrl {
 		switch key {
 		case 3:
-			c.SetSelectionDisabled()
-			c.KillForeground()
-			c.NextLine(true)
+			c.setSelectionDisabled()
+			c.killForeground()
+			c.sh.NextLine(true)
 		case 4:
-			c.ExecActivate()
+			c.execActivate()
 		}
 		return
 	}
-	if fgPid := c.GetForegroundPid(); fgPid != adaptiveticker.UnknownId {
-		c.ExecRead(fgPid, int(kind), key)
+	if fgPid := c.getForegroundPid(); fgPid != adaptiveticker.UnknownId {
+		c.handleTaskKeyEvent(fgPid, int(kind), key)
 		return
 	}
-	if quit := c.KeyEvent(kind, key); quit {
+	if quit := c.handleKeyEvent(kind, key); quit {
 		c.ExitRequested()
 	}
 }
 
-// NextLine advances to the next line in the shell output, optionally determining if an end-of-line character is added.
-func (c *Kernel) NextLine(eol bool) {
-	c.sh.NextLine(eol)
+// ExecRead invokes the ReadEvent function for a task identified by pid. Returns true if execution is successful.
+func (c *Kernel) handleTaskKeyEvent(pid int, code int, buffer rune) bool {
+	ret := false
+	if t, ok := c.ids.Get(pid); ok {
+		task := t.(*Task)
+		if fn := task.cmd.ReadEvent(); fn != nil {
+			fn(task, code, buffer)
+			ret = true
+		}
+	}
+	return ret
 }
 
-// KeyEvent processes a keyboard event of a given type and key and returns true if the event was handled successfully.
-func (c *Kernel) KeyEvent(kind interfaces.KeyType, key rune) bool {
-	c.sh.KeyEvent(kind, key)
+// handleKeyEvent processes a keyboard event of a given type and key and returns true if the event was handled successfully.
+func (c *Kernel) handleKeyEvent(kind interfaces.KeyType, key rune) bool {
+	c.sh.KeyHandler(kind, key)
 	if !c.sh.Authenticated() {
 		return true
 	}
 	if kind == interfaces.KeyTypeEnter {
 		if buffer := c.sh.InputBuffer(); len(buffer) > 0 {
 			c.render.WriteLn("")
-			_, _ = c.ExecCommand(buffer, nil)
+			_, _ = c.execCommand(buffer, nil)
 			c.sh.NextLine(false)
 		} else {
 			c.sh.NextLine(true)
@@ -119,7 +130,7 @@ func (c *Kernel) KeyEvent(kind interfaces.KeyType, key rune) bool {
 // HistoryApply performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
 func (c *Kernel) HistoryApply(verb interfaces.HistoryAction, idx int) {
 	if arg := c.sh.HistoryApply(verb, idx); len(arg) > 0 {
-		_, _ = c.ExecCommand(arg, nil)
+		_, _ = c.execCommand(arg, nil)
 	}
 }
 
@@ -158,8 +169,8 @@ func (c *Kernel) ClearScreen() {
 	c.render.ClearScreen()
 }
 
-// ExecActivate attempts to activate a foreground process by executing the associated command and returns its success status.
-func (c *Kernel) ExecActivate() bool {
+// execActivate attempts to activate a foreground process by executing the associated command and returns its success status.
+func (c *Kernel) execActivate() bool {
 	pid, name := c.GetForegroundName()
 	if pid == adaptiveticker.UnknownId {
 		return false
@@ -168,13 +179,13 @@ func (c *Kernel) ExecActivate() bool {
 		return false
 	}
 	c.SetBackground()
-	_, _ = c.ExecCommand(fmt.Sprint(commandActivate, " ", pid), nil)
+	_, _ = c.execCommand(fmt.Sprint(commandActivate, " ", pid), nil)
 	return false
 }
 
-// ExecCommand executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
+// execCommand executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
 // Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
-func (c *Kernel) ExecCommand(line string, options *TaskOptions) (bool, error) {
+func (c *Kernel) execCommand(line string, options *TaskOptions) (bool, error) {
 	cmd, args, err := c.fs.Find(line)
 	if err != nil {
 		return false, fmt.Errorf("error creating task: invalid command '%s'", line)
@@ -265,8 +276,8 @@ func (c *Kernel) SetSelectionModePrevious() {
 	c.doPaintRequest(false)
 }
 
-// SetSelectionDisabled disables task selection by clearing the selector's state and cancels any pending paint requests.
-func (c *Kernel) SetSelectionDisabled() {
+// setSelectionDisabled disables task selection by clearing the selector's state and cancels any pending paint requests.
+func (c *Kernel) setSelectionDisabled() {
 	c.selector.Clear()
 	c.doPaintRequest(false)
 }
@@ -279,7 +290,6 @@ func (c *Kernel) ExitRequested() {
 // CWDDirectoryListing retrieves the names of the child elements in the current working directory.
 func (c *Kernel) CWDDirectoryListing() []string {
 	var out []string
-
 	cwd := c.fs.CWD()
 	for _, z := range cwd.DirectoryListing() {
 		out = append(out, z) // z.Name())
@@ -386,8 +396,8 @@ func (c *Kernel) IsActive(pid int) bool {
 	return ret
 }
 
-// GetForegroundPid retrieves the process ID of the currently active foreground process, or UnknownId if none is active.
-func (c *Kernel) GetForegroundPid() int {
+// getForegroundPid retrieves the process ID of the currently active foreground process, or UnknownId if none is active.
+func (c *Kernel) getForegroundPid() int {
 	if c.foreground == nil {
 		return adaptiveticker.UnknownId
 	}
@@ -412,8 +422,8 @@ func (c *Kernel) SetBackground() bool {
 	return true
 }
 
-// KillForeground terminates the process currently set as the foreground process in the kernel, if one exists.
-func (c *Kernel) KillForeground() {
+// killForeground terminates the process currently set as the foreground process in the kernel, if one exists.
+func (c *Kernel) killForeground() {
 	if c.foreground == nil {
 		return
 	}
@@ -517,19 +527,6 @@ func (c *Kernel) ExecSuggestion(in string, cursor int, count int) (int, bool) {
 	return sLen, ret
 }
 
-// ExecRead invokes the ReadEvent function for a task identified by pid. Returns true if execution is successful.
-func (c *Kernel) ExecRead(pid int, code int, buffer rune) bool {
-	ret := false
-	if t, ok := c.ids.Get(pid); ok {
-		task := t.(*Task)
-		if fn := task.cmd.ReadEvent(); fn != nil {
-			fn(task, code, buffer)
-			ret = true
-		}
-	}
-	return ret
-}
-
 // ExecPaint executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
 // Returns true if the rendering process is executed, false otherwise.
 func (c *Kernel) ExecPaint() bool {
@@ -618,9 +615,9 @@ func (c *Kernel) RestoreTasks(name string) bool {
 		if strings.HasPrefix(task.Line, commandTask) {
 			continue
 		}
-		_, _ = c.ExecCommand(task.Line, task)
+		_, _ = c.execCommand(task.Line, task)
 	}
-	_, _ = c.ExecCommand(commandActivate, nil)
+	_, _ = c.execCommand(commandActivate, nil)
 	return true
 }
 

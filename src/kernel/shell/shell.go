@@ -76,8 +76,8 @@ func NewShell(auth interfaces.IAuthenticator, render interfaces.IRender, prompt 
 	return c
 }
 
-// KeyEvent handles keyboard inputs based on the provided key type and key value, executing corresponding actions.
-func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) {
+// KeyHandler handles keyboard inputs based on the provided key type and key value, executing corresponding actions.
+func (c *Shell) KeyHandler(kind interfaces.KeyType, key rune) {
 	switch kind {
 	case interfaces.KeyTypeEnter:
 		c.enterPressed()
@@ -97,7 +97,7 @@ func (c *Shell) KeyEvent(kind interfaces.KeyType, key rune) {
 		c.tabCount = 0
 		c.cursorPressed(interfaces.CursorCodeDef(key))
 	default:
-		log.Println("KeyEvent: Unknown key type")
+		log.Println("handlerKeyEvent: Unknown key type")
 	}
 }
 
