@@ -1,64 +1,87 @@
-# Symphony Shell Module
+# Symphony MicroKernel Module
 
-## Overview
+## 1. Overview
 
-This module implements an advanced interactive shell, written entirely in Go. It is designed to be highly modular, extensible, and decoupled, primarily serving as the **control, introspection, and live debugging interface** for the [Symphony](link-to-symphony-project-if-exists) emulation framework (or other complex Go systems).
+**Symphony MicroKernel Module** is an advanced, Go-based framework for creating powerful interactive shells. It is architected as a modular **microkernel**, designed to serve as a real-time control, introspection, and live debugging interface for complex systems, such as the Symphony emulator.
 
-The shell allows interaction with the host application as if navigating a filesystem, executing commands, managing internal processes (tasks), and inspecting/modifying the application's state in real-time.
+The framework simulates a complete **multitasking, windowed TUI environment** directly within the terminal. This allows users to manage concurrent processes, interact with a hierarchical command system, and dynamically inspect and modify the host application's state.
 
-## Key Features
+---
 
-* **Remote Access:** Integrated servers for **SSH** and **Telnet** connections.
-* **Hierarchical Command System:** Defines and manages commands organized in a tree structure (`cli`, `interfaces.ICommand`).
-* **Filesystem Navigation:** Simulates filesystem navigation for the command structure, supporting `cd`, absolute/relative paths (`interfaces.IFileSystem`).
-* **Task/Process Management:** An internal "kernel" (`context/kernel`) manages the lifecycle of concurrent tasks (`interfaces.ITask`) with PIDs, foreground/background states, and basic inter-task communication.
-* **Live Introspection:** Allows commands to inspect (and potentially modify) the internal state of other tasks/components of the host application.
-* **Advanced Rendering:** Terminal rendering system (`render`, `interfaces.ISurface`) supporting colors, basic TUI (Text User Interface), plotting (`render/plotter`), and textual graphics with sprites/matrices (`render/matrix`).
-* **Task Timers:** Timing mechanism (`adaptiveticker`) to execute code at regular intervals within tasks.
-* **Command History:** Manages command history with navigation (up/down arrows) and optional persistence (`shell/history.go`).
-* **Command Completion:** Supports suggestion generation and completion via Tab key.
-* **Authentication:** Module for user authentication (`interfaces.IAuthenticator`, `authenticator/simple.go`).
-* **Extensibility:** Easily extensible by adding new commands (`cli.Command`) or entire "applications" (`apps/`).
+## 2. Microkernel Architecture
 
-## Architecture
+The project fully embraces a **microkernel design philosophy**: a minimal, robust core provides essential services, while all other functionalities are delegated to isolated, user-space processes called "Tasks".
 
-The module is designed following modern software development principles:
+* **Central Kernel (`kernel/core/kernel.go`):** The heart of the system. It manages the entire lifecycle of tasks, schedules events through a high-precision `AdaptiveTicker`, handles terminal I/O, and orchestrates communication between all components.
+* **Task Management (`kernel/core/task.go`):** Every command or application runs as a concurrent `Task`, complete with its own PID, isolated context, and state. The kernel manages these tasks, allowing for preemptive multitasking within the shell environment.
+* **Interface-Driven Design (`kernel/interfaces/`):** The entire system is built upon a foundation of interfaces (`ITask`, `ICommand`, `IRender`, `IFileSystem`). This ensures a clean separation of concerns, promotes low coupling, and makes the system highly extensible and testable.
 
-* **Interface-Driven:** The core design relies on the `interfaces/` package, defining contracts between components, ensuring low coupling and high testability.
-* **Separation of Concerns (SoC):** Each package has a well-defined purpose (see below).
-* **Modularity:** Components are largely independent and interact via defined interfaces.
-* **Idiomatic Go:** Leverages Go features like interfaces, goroutines, and channels (e.g., in the `kernel` and `adaptiveticker`).
+---
 
-## Core Components (Packages)
+## 3. Key Features
 
-* `interfaces/`: Definitions of key APIs/interfaces (ICommand, ITask, IRender, ITerminal, IFileSystem, IAuthenticator, etc.).
-* `context/`: Contains the `Kernel` (main orchestrator, event and task manager), `IFileSystem` implementation, and the `Render` manager.
-* `cli/`: System for defining, hierarchically organizing, and parsing commands.
-* `render/`: Rendering engine onto `ISurface`, includes the `plotter` and `matrix` utilities (for TUI/games).
-* `shell/`: Main logic for the interactive shell loop, user input handling, and history management.
-* `terminal/`: Abstraction for interaction with the physical/virtual terminal (VT100 implementation included).
-* `ssh/`, `telnet/`: Server implementations for remote access.
-* `adaptiveticker/`: Custom handler for periodic timers associated with tasks.
-* `authenticator/`: Logic for authentication (simple implementation included).
-* `apps/`: Collections of example commands/applications using the framework:
-    * `apps/core`: Basic shell commands (cd, ls, ps, kill, help, history, etc.).
-    * `apps/stats`: Commands for displaying runtime statistics (memory, CPU, GC).
-    * `apps/games`: Examples of text-based games (Snake, Tetris, Invaders) demonstrating rendering and event handling capabilities.
+### a. Multitasking & TUI Window Manager
 
-## Typical Integration
+The shell is a fully-featured multitasking environment with a graphical TUI.
 
-An application using this module typically:
-1.  Creates a root command structure using the `cli` package.
-2.  Instantiates an `IAuthenticator`.
-3.  Instantiates a server (`shell.NewServer`) choosing between SSH or Telnet, passing the authenticator, port, and root command structure.
-4.  Configures the desired prompt (`server.SetPrompt`).
-5.  Starts the server (`server.Start` or `server.AsyncStart`).
+* **Concurrent Tasks:** Launch and run multiple applications (e.g., games, system monitors) simultaneously. The kernel manages their concurrent execution.
+* **Windowed Interface:** Every task is rendered within its own distinct "window" on the terminal, complete with borders and a title caption.
+* **Dynamic Window Management:** An `activate` command enables a special mode where the user can:
+  * **Cycle through windows** using `Tab` and `q`.
+  * **Move selected windows** around the screen using `w,a,s,d` or arrow keys.
+  * **Resize selected windows** using `+` and `-` to scale their content.
+* **Process Management:** Standard OS-like commands are provided to manage tasks: `ps` to list active processes, `kill` to terminate a specific PID, `killall` to terminate by name, and `fg` to bring a task to the foreground.
 
-## Dependencies
+### b. Real-time Introspection & Profiling
+
+The `stats` module transforms the shell into a powerful, live diagnostics tool for the Go runtime.
+
+* **Live Runtime Stats:** Get instant snapshots of memory usage (`rt`), CPU status, and goroutine counts (`cpu`).
+* **Integrated `pprof` Profiling:**
+  * **CPU Profiling:** Start and stop CPU profiling on the fly (`startcpuprofile`, `stopcpuprofile`) and save the output for analysis with `go tool pprof`.
+  * **Memory Profiling:** Generate heap profiles (`memprofile`) to debug memory leaks and allocation patterns.
+* **Graphical Real-time Monitoring:** The `rtplot` command launches an interactive, scrolling graph in its own window to monitor memory metrics (like heap allocation or GC cycles) over time.
+
+### c. Advanced Rendering Engine
+
+* **Surface-Based Rendering:** An `ISurface` abstraction provides a drawable area for each task, handling scaling, offsets, and window decorations automatically.
+* **Data Plotting:** A built-in `plotter` can render data series as text-based line charts, as seen in `rtplot`.
+* **2D Sprite & Matrix Engine:** A powerful engine (`matrix`) for complex TUI graphics, featuring:
+  * `Entity` objects with physics properties (mass, velocity).
+  * Multi-frame, colored `Sprite` rendering.
+  * An `AABBTree` for highly efficient 2D collision detection.
+
+### d. Filesystem-like Command Hierarchy
+
+* **Hierarchical Structure:** Commands are organized in a virtual filesystem, allowing for intuitive navigation with `cd`, `ls`, and `pwd`.
+* **Tab Completion:** Rich auto-completion for commands and paths, using Levenshtein distance for fuzzy suggestions.
+* **Persistent History:** Command history is managed and can be configured to be saved across sessions.
+
+### e. Remote & Secure Access
+
+* **SSH Server:** Full-featured SSH server supporting both password and public-key authentication for secure remote access.
+* **Telnet Server:** A Telnet server is included for simpler, unencrypted connections.
+
+---
+
+## 4. Built-in Applications Showcase
+
+The framework's power is demonstrated through a suite of built-in applications:
+
+* **`system/`:** Essential shell utilities that interact with the kernel's core services (`ps`, `kill`, `cd`, `ls`, `history`, `activate`).
+* **`stats/`:** The live profiling and introspection toolkit (`rt`, `cpu`, `rtplot`, `memprofile`).
+* **`games/`:** Fully implemented, interactive games that showcase the rendering engine, multitasking, and event handling capabilities:
+  * **`invaders`**: A feature-rich clone with animated sprites, destructible barricades, and particle explosions.
+  * **`tetris`**: A complete Tetris game with scoring, levels, and a next-piece preview.
+  * **`snake`**: The classic Snake game.
+
+---
+
+## 5. Dependencies
 
 * Go Standard Library
 * `golang.org/x/crypto/ssh` (for the SSH server)
 
 ---
 *Module Author: Marcello (born 1974)*
-*Primary Context: [Symphony](link-to-symphony-project-if-exists)*
+*Primary Context: Symphony Emulator*
