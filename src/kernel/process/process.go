@@ -205,11 +205,6 @@ func (t *Process) GetScreenSize() (int, int) {
 	return t.kernel.CallScreenSize()
 }
 
-// CWD returns the current working directory command associated with the task.
-func (t *Process) CWD() interfaces.ICommand {
-	return t.kernel.CallCWD()
-}
-
 // CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
 func (t *Process) CWDSet(arg string) bool {
 	return t.kernel.CallCWDSet(arg)

@@ -45,9 +45,9 @@ func (c *FileSystem) AddSearchPath(sp interfaces.ICommand) {
 	c.searchPaths = append(c.searchPaths, sp)
 }
 
-// CWD retrieves the current working directory command interface.
-func (c *FileSystem) CWD() interfaces.ICommand {
-	return c.cwd
+// CWDName returns the name of the current working directory command.
+func (c *FileSystem) CWDName() string {
+	return c.cwd.Name()
 }
 
 // CWDSet updates the current working directory to the specified path and returns true if the operation is successful.
@@ -66,6 +66,25 @@ func (c *FileSystem) CWDSet(arg string) bool {
 		return true
 	}
 	return false
+}
+
+// CWDCommandPath returns the command path of the current working directory command.
+func (c *FileSystem) CWDCommandPath() string {
+	return c.cwd.CommandPath()
+}
+
+// CWDPath returns the path of the current working directory as a slice of strings.
+func (c *FileSystem) CWDPath() []string {
+	return c.cwd.Path()
+}
+
+// CWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
+func (c *FileSystem) CWDDirectoryListing() []string {
+	var out []string
+	for _, z := range c.cwd.DirectoryListing() {
+		out = append(out, z) // z.Name())
+	}
+	return out
 }
 
 // Find parses and executes a given command line string, associating it with a task, and manages its lifecycle.

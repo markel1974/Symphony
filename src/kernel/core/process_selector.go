@@ -2,42 +2,42 @@ package core
 
 import "github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 
-// TaskSelector is a type that manages available task identifiers and tracks the current one for selection and navigation.
-type TaskSelector struct {
+// ProcessSelector is a type that manages available task identifiers and tracks the current one for selection and navigation.
+type ProcessSelector struct {
 	pid       int
 	available []int
 	idx       int
 }
 
-// NewTaskSelector creates and returns a new TaskSelector initialized with default values.
-func NewTaskSelector() *TaskSelector {
-	return &TaskSelector{
+// NewProcessSelector creates and returns a new ProcessSelector initialized with default values.
+func NewProcessSelector() *ProcessSelector {
+	return &ProcessSelector{
 		pid:       adaptiveticker.UnknownId,
 		available: nil,
 		idx:       0,
 	}
 }
 
-// Clear resets the TaskSelector's state by clearing the index, setting the process ID to UnknownId, and nullifying the available list.
-func (ts *TaskSelector) Clear() {
+// Clear resets the ProcessSelector's state by clearing the index, setting the process ID to UnknownId, and nullifying the available list.
+func (ts *ProcessSelector) Clear() {
 	ts.idx = 0
 	ts.pid = adaptiveticker.UnknownId
 	ts.available = nil
 }
 
 // AddAvailable adds the given process ID to the available pool for selection.
-func (ts *TaskSelector) AddAvailable(pid int) {
+func (ts *ProcessSelector) AddAvailable(pid int) {
 	ts.available = append(ts.available, pid)
 }
 
-// Set updates the current process ID and index in the TaskSelector.
-func (ts *TaskSelector) Set(pid int, idx int) {
+// Set updates the current process ID and index in the ProcessSelector.
+func (ts *ProcessSelector) Set(pid int, idx int) {
 	ts.pid = pid
 	ts.idx = idx
 }
 
 // Next advances the selection index to the next available task in the list and updates the current task ID. Returns false if the list is empty.
-func (ts *TaskSelector) Next() bool {
+func (ts *ProcessSelector) Next() bool {
 	if len(ts.available) == 0 {
 		return false
 	}
@@ -51,7 +51,7 @@ func (ts *TaskSelector) Next() bool {
 }
 
 // Prev moves the selection to the previous item in the available list, wrapping around if at the beginning. Returns true if successful.
-func (ts *TaskSelector) Prev() bool {
+func (ts *ProcessSelector) Prev() bool {
 	if len(ts.available) == 0 {
 		return false
 	}
@@ -64,7 +64,7 @@ func (ts *TaskSelector) Prev() bool {
 	return true
 }
 
-// PID returns the currently selected process ID (pid) stored in the TaskSelector instance.
-func (ts *TaskSelector) PID() int {
+// PID returns the currently selected process ID (pid) stored in the ProcessSelector instance.
+func (ts *ProcessSelector) PID() int {
 	return ts.pid
 }

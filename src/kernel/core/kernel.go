@@ -32,7 +32,7 @@ type Kernel struct {
 	outputDriver io.Writer
 	render       interfaces.IRender
 	foreground   interfaces.IProcess
-	selector     *TaskSelector
+	selector     *ProcessSelector
 	ids          *adaptiveticker.Ids
 	fs           interfaces.IFileSystem
 	sh           *shell.Shell
@@ -52,7 +52,7 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 		fs:           fs,
 		sh:           sh,
 		foreground:   nil,
-		selector:     NewTaskSelector(),
+		selector:     NewProcessSelector(),
 		ids:          adaptiveticker.NewIds(1024),
 		messageChan:  make(chan messages.IMessage, contextMaQueueLen),
 		timersChan:   timersChan,
@@ -321,40 +321,28 @@ func (c *Kernel) CallScreenSize() (int, int) {
 	return c.render.GetScreenSize()
 }
 
-// CallCWD retrieves and returns the current working directory command of the filesystem.
-func (c *Kernel) CallCWD() interfaces.ICommand {
-	return c.fs.CWD()
-}
-
 // CallCWDSet sets the current working directory to the specified path and updates the shell prompt accordingly.
 func (c *Kernel) CallCWDSet(arg string) bool {
-	b := c.fs.CWDSet(arg)
-	if b {
-		cwd := c.fs.CWD()
-		cwd.Name()
-		c.sh.SetPromptPrefix(cwd.Name())
+	if ok := c.fs.CWDSet(arg); ok {
+		c.sh.SetPromptPrefix(c.fs.CWDName())
+		return true
 	}
-	return b
+	return false
 }
 
 // CallCWDGet returns the command path of the current working directory from the file system.
 func (c *Kernel) CallCWDGet() string {
-	return c.fs.CWD().CommandPath()
+	return c.fs.CWDCommandPath()
 }
 
 // CallCWDPath retrieves the current working directory's path as a slice of strings from the filesystem instance.
 func (c *Kernel) CallCWDPath() []string {
-	return c.fs.CWD().Path()
+	return c.fs.CWDPath()
 }
 
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
 func (c *Kernel) CallCWDDirectoryListing() []string {
-	var out []string
-	cwd := c.fs.CWD()
-	for _, z := range cwd.DirectoryListing() {
-		out = append(out, z) // z.Name())
-	}
-	return out
+	return c.fs.CWDDirectoryListing()
 }
 
 // CallHistory applies a history action to the shell and invokes task execution if arguments are produced.
@@ -470,7 +458,7 @@ func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
 	c.render.WriteHighlight("Admin Console Ready")
-	c.sh.SetPromptPrefix(c.fs.CWD().Name())
+	c.sh.SetPromptPrefix(c.fs.CWDName())
 	c.sh.NextLine(true)
 
 	d := make(chan bool)
@@ -639,22 +627,9 @@ func (c *Kernel) handleKeyEvent(kind interfaces.KeyType, key rune) bool {
 			c.sh.NextLine(true)
 		}
 	} else if kind == interfaces.KeyTypeTab {
-		if c.sh.TabFound() {
-			tabData, cursor, tabCount := c.sh.TabData()
+		if tabData, cursor, ok := c.sh.TabData(); ok {
 			data, suggestions, found := c.fs.Suggestion(tabData, cursor)
-			if found && len(suggestions) > 0 {
-				sLen := len(suggestions)
-				if idx := tabCount % sLen; idx < sLen {
-					if complete := suggestions[idx]; len(complete) > len(data) {
-						tabLine := complete
-						c.sh.Redraw(tabLine)
-						c.sh.SetHistoryDefault(tabLine)
-						if sLen == 1 {
-							c.sh.TabReset()
-						}
-					}
-				}
-			}
+			c.sh.HistorySuggest(data, suggestions, found)
 		}
 	}
 	return false

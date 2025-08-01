@@ -101,19 +101,22 @@ func (c *Shell) KeyHandler(kind interfaces.KeyType, key rune) {
 	}
 }
 
-// GetHistory retrieves the current history of commands executed in the shell as a formatted string.
-func (c *Shell) GetHistory() string {
-	out := ""
-	for n, x := range c.history.GetHistory() {
-		out += "\r\n"
-		out += fmt.Sprintf("%d: %s", n, x)
-	}
-	return out
+// NextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
+func (c *Shell) NextLine(eol bool) {
+	c.resetBuffer()
+	c.render.WriteEOL(c.prompt, eol)
 }
 
-// SetHistoryDefault sets the default history entry to the specified string value, replacing any existing default entry.
-func (c *Shell) SetHistoryDefault(data string) {
-	c.history.SetDefault(data)
+// Redraw refreshes the current shell display with the given line, updates internal state, and re-renders the prompt and line.
+func (c *Shell) Redraw(line string) {
+	c.current = []rune(line)
+	c.pos = len(c.current)
+	c.render.WriteLine(c.prompt, line)
+}
+
+// SetPromptPrefix sets a custom prefix for the prompt by prepending the given prefix to the default prompt value.
+func (c *Shell) SetPromptPrefix(prefix string) {
+	c.prompt = prefix + c.defaultPrompt
 }
 
 // HistoryApply performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
@@ -126,22 +129,109 @@ func (c *Shell) HistoryApply(verb interfaces.HistoryAction, idx int) string {
 			return arg
 		}
 	case interfaces.HistoryActionList:
-		c.render.Write(c.GetHistory())
+		out := ""
+		for n, x := range c.history.GetHistory() {
+			out += "\r\n"
+			out += fmt.Sprintf("%d: %s", n, x)
+		}
+		c.render.Write(out)
 	}
 	return ""
 }
 
-// NextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
-func (c *Shell) NextLine(eol bool) {
-	c.resetBuffer()
-	c.render.WriteEOL(c.prompt, eol)
+// HistorySuggest suggests autocompletion options based on input and handles cycling through suggestions on repeated calls.
+func (c *Shell) HistorySuggest(data string, suggestions []string, found bool) {
+	if found && len(suggestions) > 0 {
+		sLen := len(suggestions)
+		if idx := c.tabCount % sLen; idx < sLen {
+			if complete := suggestions[idx]; len(complete) > len(data) {
+				tabLine := complete
+				c.Redraw(tabLine)
+				c.history.SetDefault(tabLine)
+				if sLen == 1 {
+					c.TabReset()
+				}
+			}
+		}
+	}
 }
 
-// Redraw refreshes the current shell display with the given line, updates internal state, and re-renders the prompt and line.
-func (c *Shell) Redraw(line string) {
-	c.current = []rune(line)
-	c.pos = len(c.current)
-	c.render.WriteLine(c.prompt, line)
+// Authenticated checks if the Shell instance is in an authenticated state and returns true if authenticated, otherwise false.
+func (c *Shell) Authenticated() bool {
+	return c.state == stateAuthenticated
+}
+
+// InputBuffer retrieves the current input buffer as a string.
+func (c *Shell) InputBuffer() string {
+	return string(c.current)
+}
+
+// TabData retrieves the tab-related data including a string representation, position, and tab count from the Shell instance.
+func (c *Shell) TabData() (string, int, bool) {
+	return c.tabData, c.pos, c.tabFound
+}
+
+func (c *Shell) TabReset() {
+	c.tabCount = 0
+	c.history.SetDefault(string(c.current))
+}
+
+// setUsernameRequiredState transitions the Shell into a state where the username is required and disables history.
+func (c *Shell) setUsernameRequiredState() {
+	c.echo = true
+	c.prompt = usernamePrompt
+	c.history.SetEnabled(false)
+	c.state = stateUsernameRequired
+}
+
+// setPasswordRequiredState sets the shell state to require a password, disables history, hides input echo, and sets the prompt to "Password:".
+func (c *Shell) setPasswordRequiredState() {
+	c.echo = false
+	c.prompt = passwordPrompt
+	c.history.SetEnabled(false)
+	c.state = statePasswordRequired
+}
+
+// setAuthenticatedState updates the shell to an authenticated state, enabling command history and setting the default prompt.
+func (c *Shell) setAuthenticatedState() {
+	c.echo = true
+	c.prompt = c.defaultPrompt
+	c.history.SetEnabled(true)
+	c.state = stateAuthenticated
+}
+
+// textBackspace removes the character at the current cursor position and updates the Shell state accordingly.
+func (c *Shell) textBackspace() {
+	if c.pos > 0 {
+		c.pos--
+		c.current = removeAtPos(c.current, c.pos)
+		if c.echo {
+			c.render.MoveCursorLeft()
+			c.render.SaveCursor()
+			c.render.WriteNormal(string(c.current[c.pos:]))
+			c.render.WriteNormal(string(' '))
+			c.render.RestoreCursor()
+		}
+	}
+}
+
+// textCancel removes the character at the current cursor position and updates the display if echo mode is enabled.
+func (c *Shell) textCancel() {
+	if c.pos >= 0 {
+		c.current = removeAtPos(c.current, c.pos)
+		if c.echo {
+			c.render.SaveCursor()
+			c.render.WriteNormal(string(c.current[c.pos:]))
+			c.render.WriteNormal(string(' '))
+			c.render.RestoreCursor()
+		}
+	}
+}
+
+// resetBuffer clears the current input buffer by resetting it to nil and setting the buffer position to zero.
+func (c *Shell) resetBuffer() {
+	c.current = nil
+	c.pos = 0
 }
 
 // cursorPressed handles cursor navigation events based on the given CursorCodeDef.
@@ -204,16 +294,6 @@ func (c *Shell) enterPressed() bool {
 	return quit
 }
 
-// Authenticated checks if the Shell instance is in an authenticated state and returns true if authenticated, otherwise false.
-func (c *Shell) Authenticated() bool {
-	return c.state == stateAuthenticated
-}
-
-// InputBuffer retrieves the current input buffer as a string.
-func (c *Shell) InputBuffer() string {
-	return string(c.current)
-}
-
 // TabPressed handles tab key events, providing intelligent autocompletion based on current input and command context.
 func (c *Shell) tabPressed() {
 	if c.state != stateAuthenticated {
@@ -229,40 +309,6 @@ func (c *Shell) tabPressed() {
 	}
 	c.tabCount++
 }
-
-// TabFound returns true if a tab was found during the shell operation, otherwise false.
-func (c *Shell) TabFound() bool {
-	return c.tabFound
-}
-
-// TabData retrieves the tab-related data including a string representation, position, and tab count from the Shell instance.
-func (c *Shell) TabData() (string, int, int) {
-	return c.tabData, c.pos, c.tabCount
-}
-
-func (c *Shell) TabReset() {
-	c.tabCount = 0
-	c.history.SetDefault(string(c.current))
-}
-
-/*
-func (c *Shell) ApplySuggestion(suggestions []string, found bool, tabCount int) {
-	if found && len(suggestions) > 0 {
-		sLen := len(suggestions)
-		if idx := tabCount % sLen; idx < sLen {
-			if complete := suggestions[idx]; len(complete) > len(data) {
-				tabLine := complete
-				c.Redraw(tabLine)
-				c.SetHistoryDefault(tabLine)
-				if sLen == 1 {
-					c.TabReset()
-				}
-			}
-		}
-	}
-}
-
-*/
 
 // keyPressed processes a printable key input and updates the current input buffer, cursor position, and visual rendering.
 func (c *Shell) keyPressed(key rune) {
@@ -294,68 +340,4 @@ func (c *Shell) keyPressed(key rune) {
 		c.history.SetDefault(string(c.current))
 		//c.tabCount = 0
 	}
-}
-
-// setUsernameRequiredState transitions the Shell into a state where the username is required and disables history.
-func (c *Shell) setUsernameRequiredState() {
-	c.echo = true
-	c.prompt = usernamePrompt
-	c.history.SetEnabled(false)
-	c.state = stateUsernameRequired
-}
-
-// setPasswordRequiredState sets the shell state to require a password, disables history, hides input echo, and sets the prompt to "Password:".
-func (c *Shell) setPasswordRequiredState() {
-	c.echo = false
-	c.prompt = passwordPrompt
-	c.history.SetEnabled(false)
-	c.state = statePasswordRequired
-}
-
-// setAuthenticatedState updates the shell to an authenticated state, enabling command history and setting the default prompt.
-func (c *Shell) setAuthenticatedState() {
-	c.echo = true
-	c.prompt = c.defaultPrompt
-	c.history.SetEnabled(true)
-	c.state = stateAuthenticated
-}
-
-// SetPromptPrefix sets a custom prefix for the prompt by prepending the given prefix to the default prompt value.
-func (c *Shell) SetPromptPrefix(prefix string) {
-	c.prompt = prefix + c.defaultPrompt
-}
-
-// textBackspace removes the character at the current cursor position and updates the Shell state accordingly.
-func (c *Shell) textBackspace() {
-	if c.pos > 0 {
-		c.pos--
-		c.current = removeAtPos(c.current, c.pos)
-		if c.echo {
-			c.render.MoveCursorLeft()
-			c.render.SaveCursor()
-			c.render.WriteNormal(string(c.current[c.pos:]))
-			c.render.WriteNormal(string(' '))
-			c.render.RestoreCursor()
-		}
-	}
-}
-
-// textCancel removes the character at the current cursor position and updates the display if echo mode is enabled.
-func (c *Shell) textCancel() {
-	if c.pos >= 0 {
-		c.current = removeAtPos(c.current, c.pos)
-
-		if c.echo {
-			c.render.SaveCursor()
-			c.render.WriteNormal(string(c.current[c.pos:]))
-			c.render.WriteNormal(string(' '))
-			c.render.RestoreCursor()
-		}
-	}
-}
-
-// resetBuffer clears the current input buffer by resetting it to nil and setting the buffer position to zero.
-func (c *Shell) resetBuffer() {
-	c.current = nil
-	c.pos = 0
 }

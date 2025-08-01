@@ -44,8 +44,6 @@ type IKernel interface {
 
 	CallScreenSize() (int, int)
 
-	CallCWD() ICommand
-
 	CallCWDSet(arg string) bool
 
 	CallCWDGet() string
