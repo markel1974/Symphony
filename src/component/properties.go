@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"reflect"
 	"sort"
 	"unicode"
@@ -103,7 +103,7 @@ func (prop *PropertyInfo) Get() (interface{}, error) {
 }
 
 // CreateShellSetCommand generates two shell commands for setting and getting the property's value.
-func (prop *PropertyInfo) CreateShellSetCommand() *shell.Command {
+func (prop *PropertyInfo) CreateShellSetCommand() *process.Command {
 	id := []rune(prop.Id())
 	if len(id) > 0 {
 		id[0] = unicode.ToUpper(id[0])
@@ -118,13 +118,13 @@ func (prop *PropertyInfo) CreateShellSetCommand() *shell.Command {
 		}
 		return nil
 	}
-	childSet := shell.NewCommand("set"+string(id), interfaces.CommandTypeFile, nil, false, setProp)
+	childSet := process.NewCommand("set"+string(id), interfaces.CommandTypeFile, nil, false, setProp)
 	childSet.SetHelp(prop.Description(), prop.Description())
 	return childSet
 }
 
 // CreateShellGetCommand generates two shell commands for setting and getting the property's value.
-func (prop *PropertyInfo) CreateShellGetCommand() *shell.Command {
+func (prop *PropertyInfo) CreateShellGetCommand() *process.Command {
 	id := []rune(prop.Id())
 	if len(id) > 0 {
 		id[0] = unicode.ToUpper(id[0])
@@ -134,14 +134,14 @@ func (prop *PropertyInfo) CreateShellGetCommand() *shell.Command {
 		task.WriteLn(fmt.Sprint(v))
 		return err
 	}
-	childGet := shell.NewCommand("get"+string(id), interfaces.CommandTypeFile, nil, false, getProp)
+	childGet := process.NewCommand("get"+string(id), interfaces.CommandTypeFile, nil, false, getProp)
 	childGet.SetHelp(prop.Description(), prop.Description())
 	return childGet
 }
 
 // CreateShellCommand generates two shell commands for setting and getting the property's value.
-func (prop *PropertyInfo) CreateShellCommand() []*shell.Command {
-	var out []*shell.Command
+func (prop *PropertyInfo) CreateShellCommand() []*process.Command {
+	var out []*process.Command
 	out = append(out, prop.CreateShellGetCommand())
 	out = append(out, prop.CreateShellSetCommand())
 	return out
@@ -235,7 +235,7 @@ func (p *Properties) Restore(d map[string]interface{}) error {
 }
 
 // CreateShellDump generates a slice of shell commands to get and set property values in the Properties instance.
-func (p *Properties) CreateShellDump(name string) *shell.Command {
+func (p *Properties) CreateShellDump(name string) *process.Command {
 	dumpFn := func(task interfaces.IProcess, args []string) error {
 		for _, prop := range p.sort() {
 			if v, err := prop.Get(); err == nil {
@@ -244,7 +244,7 @@ func (p *Properties) CreateShellDump(name string) *shell.Command {
 		}
 		return nil
 	}
-	c := shell.NewCommand(name, interfaces.CommandTypeFile, nil, false, dumpFn)
+	c := process.NewCommand(name, interfaces.CommandTypeFile, nil, false, dumpFn)
 	c.SetHelp("dump available properties", "dump available properties")
 	return c
 }

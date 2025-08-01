@@ -9,7 +9,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/frontend"
 	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"github.com/markel1974/c64emu/src/version"
@@ -44,7 +44,7 @@ func restoreTest(factory references.IComponentFactory) {
 }
 */
 
-func createShell(target *shell.Command) error {
+func createShell(target *process.Command) error {
 	const prompt = "symphony" + " " + "1.4.3" + "> "
 	const port = 1234
 	const user = "u"
@@ -54,7 +54,7 @@ func createShell(target *shell.Command) error {
 	run := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
-	t := shell.NewCommand("bin", interfaces.CommandTypeDirectory, nil, false, run)
+	t := process.NewCommand("bin", interfaces.CommandTypeDirectory, nil, false, run)
 	t.SetHelp("Bin", "Bin")
 	_ = t.AddCommand(target)
 	auth := authenticator.NewSimpleAuthenticator()
