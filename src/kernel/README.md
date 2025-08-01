@@ -13,8 +13,9 @@ The framework simulates a complete **multitasking, windowed TUI environment** di
 The project fully embraces a **microkernel design philosophy**: a minimal, robust core provides essential services, while all other functionalities are delegated to isolated, user-space processes called "Tasks".
 
 * **Central Kernel (`kernel/core/kernel.go`):** The heart of the system. It manages the entire lifecycle of tasks, schedules events through a high-precision `AdaptiveTicker`, handles terminal I/O, and orchestrates communication between all components.
-* **Task Management (`kernel/core/task.go`):** Every command or application runs as a concurrent `Task`, complete with its own PID, isolated context, and state. The kernel manages these tasks, allowing for preemptive multitasking within the shell environment.
-* **Interface-Driven Design (`kernel/interfaces/`):** The entire system is built upon a foundation of interfaces (`ITask`, `ICommand`, `IRender`, `IFileSystem`). This ensures a clean separation of concerns, promotes low coupling, and makes the system highly extensible and testable.
+* **Task Management (`kernel/process/process.go`):** Every command or application runs as a concurrent `Task`, complete with its own PID, isolated context, and state. The kernel manages these tasks, allowing for preemptive multitasking within the shell environment.
+* **The Shell as a User Process (`xsh`):** As a testament to the purity of the design, the main shell (`xsh`) is not part of the kernel but is itself an application that runs as a regular "Task". On boot, the kernel simply launches the `xsh` process to provide the user interface. This approach ensures maximum modularity and proves that the kernel's APIs are powerful enough to build the system's main interface.
+* **Interface-Driven Design (`kernel/interfaces/`):** The entire system is built upon a foundation of interfaces (`IProcess`, `ICommand`, `IRender`, `IFileSystem`). This ensures a clean separation of concerns, promotes low coupling, and makes the system highly extensible and testable.
 
 ---
 
@@ -74,6 +75,7 @@ The framework's power is demonstrated through a suite of built-in applications:
   * **`invaders`**: A feature-rich clone with animated sprites, destructible barricades, and particle explosions.
   * **`tetris`**: A complete Tetris game with scoring, levels, and a next-piece preview.
   * **`snake`**: The classic Snake game.
+  * **The Shell as a User Process (`xsh`):** As a testament to the purity of the design, the main shell (`xsh`) is not part of the kernel but is itself an application that runs as a regular "Task". On boot, the kernel simply launches the `xsh` process to provide the user interface. This approach ensures maximum modularity and proves that the kernel's APIs are powerful enough to build the system's main interface.
 
 ---
 

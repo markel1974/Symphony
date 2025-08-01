@@ -81,8 +81,8 @@ func (c *XShell) KeyHandler(process interfaces.IProcess, code int, key rune) {
 			c.NextLine(process, true)
 		}
 	} else if kind == interfaces.KeyTypeTab {
-		if tabData, cursor, ok := c.TabData(); ok {
-			data, suggestions, found := process.Suggestion(tabData, cursor)
+		if c.tabFound {
+			data, suggestions, found := process.Suggestion(c.tabData, c.pos)
 			c.historySuggest(process, data, suggestions, found)
 		}
 	}
@@ -95,7 +95,7 @@ func (c *XShell) NextLine(process interfaces.IProcess, eol bool) {
 }
 
 // Redraw refreshes the current shell display with the given line, updates internal state, and re-renders the prompt and line.
-func (c *XShell) Redraw(process interfaces.IProcess, line string) {
+func (c *XShell) redraw(process interfaces.IProcess, line string) {
 	c.current = []rune(line)
 	c.pos = len(c.current)
 	process.WritePromptLine(c.prompt, line)
@@ -133,7 +133,7 @@ func (c *XShell) historySuggest(process interfaces.IProcess, data string, sugges
 		if idx := c.tabCount % sLen; idx < sLen {
 			if complete := suggestions[idx]; len(complete) > len(data) {
 				tabLine := complete
-				c.Redraw(process, tabLine)
+				c.redraw(process, tabLine)
 				c.history.SetDefault(tabLine)
 				if sLen == 1 {
 					c.TabReset()
@@ -149,9 +149,9 @@ func (c *XShell) InputBuffer() string {
 }
 
 // TabData retrieves the tab-related data including a string representation, position, and tab count from the Shell instance.
-func (c *XShell) TabData() (string, int, bool) {
-	return c.tabData, c.pos, c.tabFound
-}
+//func (c *XShell) TabData() (string, int, bool) {
+//	return c.tabData, c.pos, c.tabFound
+//}
 
 func (c *XShell) TabReset() {
 	c.tabCount = 0
@@ -197,11 +197,11 @@ func (c *XShell) cursorPressed(process interfaces.IProcess, code interfaces.Curs
 	switch code {
 	case interfaces.CursorUpDef:
 		if data, valid := c.history.GetHistoryPrev(); valid {
-			c.Redraw(process, data)
+			c.redraw(process, data)
 		}
 	case interfaces.CursorDownDef:
 		if data, valid := c.history.GetHistoryNext(); valid {
-			c.Redraw(process, data)
+			c.redraw(process, data)
 		}
 	case interfaces.CursorLeftDef:
 		if c.pos > 0 {
