@@ -519,17 +519,10 @@ func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 		c.handleTaskKeyEvent(fgPid, int(kind), key)
 		return
 	}
-	//if quit := c.handleKeyEvent(kind, key); quit {
-	//	c.CallExitRequested()
-	//}
 }
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
-	//c.render.WriteHighlight("Admin Console Ready")
-	//c.sh.SetPromptPrefix(c.fs.CWDName())
-	//c.sh.nextLine(true)
-
 	c.shell, _ = c.processExec(c.shellPath, nil)
 
 	d := make(chan bool)
@@ -681,32 +674,6 @@ func (c *Kernel) handleTaskKeyEvent(pid int, code int, buffer rune) bool {
 		}
 	}
 	return ret
-}
-
-// handleKeyEvent processes a keyboard event of a given type and key and returns true if the event was handled successfully.
-func (c *Kernel) handleKeyEvent(kind interfaces.KeyType, key rune) bool {
-	//c.sh.KeyHandler(kind, key)
-	//if !c.shOld.Authenticated() {
-	//	return true
-	//}
-	/*
-		if kind == interfaces.KeyTypeEnter {
-			if buffer := c.sh.InputBuffer(); len(buffer) > 0 {
-				c.render.WriteLn("")
-				_, _ = c.CallTaskExec(buffer, nil)
-				c.sh.nextLine(false)
-			} else {
-				c.sh.nextLine(true)
-			}
-		} else if kind == interfaces.KeyTypeTab {
-			if tabData, cursor, ok := c.sh.TabData(); ok {
-				data, suggestions, found := c.fs.Suggestion(tabData, cursor)
-				c.sh.HistorySuggest(data, suggestions, found)
-			}
-		}
-
-	*/
-	return false
 }
 
 // ExecPaint executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
