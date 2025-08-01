@@ -106,8 +106,7 @@ func (c *FileSystem) Find(line string) (interfaces.ICommand, []string, error) {
 	sel := cmd.Traverse(dirPath)
 	if sel == nil {
 		for _, n := range c.searchPaths {
-			sel = n.Traverse(dirPath)
-			if sel != nil {
+			if sel = n.Traverse(dirPath); sel != nil {
 				break
 			}
 		}
