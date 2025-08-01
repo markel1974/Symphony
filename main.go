@@ -51,7 +51,7 @@ func createShell(target *shell.Command) error {
 	const secure = true
 	const pass = "p"
 
-	run := func(task interfaces.ITask, args []string) error {
+	run := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
 	t := shell.NewCommand("bin", interfaces.CommandTypeDirectory, nil, false, run)
