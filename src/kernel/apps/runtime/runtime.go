@@ -20,14 +20,16 @@ import (
 )
 
 // Create initializes and returns the root command for runtime operations.
-func Create() *shell.Command {
+func Create() (*shell.Command, []*shell.Command) {
 	run := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
 	root := shell.NewCommand("runtime", interfaces.CommandTypeDirectory, nil, false, run)
 	root.SetHelp("Runtime", "Runtime")
-
-	gc := CreateGC()
-	_ = root.AddCommand(gc)
-	return root
+	var apps []*shell.Command
+	apps = append(apps, CreateGC())
+	for _, app := range apps {
+		_ = root.AddCommand(app)
+	}
+	return root, apps
 }

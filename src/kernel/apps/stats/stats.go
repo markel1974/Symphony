@@ -6,20 +6,23 @@ import (
 )
 
 // Create initializes and returns the root command for system statistics operations with multiple subcommands attached.
-func Create() *shell.Command {
+func Create() (*shell.Command, []*shell.Command) {
 	run := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
 	root := shell.NewCommand("stats", interfaces.CommandTypeDirectory, nil, false, run)
 	root.SetHelp("System Stats", "System Stats")
 
-	_ = root.AddCommand(CreateProfileCPUStart())
-	_ = root.AddCommand(CreateProfileCPUStop())
-	_ = root.AddCommand(CreateProfileMemory())
-	_ = root.AddCommand(CreateMemoryStatus())
-	_ = root.AddCommand(CreateMemoryPlot())
-	_ = root.AddCommand(CreateCPUStatus())
-	_ = root.AddCommand(CreateCPUUsage())
-
-	return root
+	var apps []*shell.Command
+	apps = append(apps, CreateProfileCPUStart())
+	apps = append(apps, CreateProfileCPUStop())
+	apps = append(apps, CreateProfileMemory())
+	apps = append(apps, CreateMemoryStatus())
+	apps = append(apps, CreateMemoryPlot())
+	apps = append(apps, CreateCPUStatus())
+	apps = append(apps, CreateCPUUsage())
+	for _, app := range apps {
+		_ = root.AddCommand(app)
+	}
+	return root, apps
 }

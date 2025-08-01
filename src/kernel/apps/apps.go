@@ -20,41 +20,57 @@ func NewRoot() *Root {
 
 // Build constructs and returns two command trees, coreC and root, initialized with their respective subcommands and functionality.
 func (t *Root) Build(bin *shell.Command) (*shell.Command, *shell.Command) {
-	sbinRun := func(task interfaces.IProcess, args []string) error {
+	var aliases []*shell.Command
+	sbin := shell.NewCommand("sbin", interfaces.CommandTypeDirectory, nil, false, func(task interfaces.IProcess, args []string) error {
 		return nil
-	}
-	sbin := shell.NewCommand("sbin", interfaces.CommandTypeDirectory, nil, false, sbinRun)
+	})
 	sbin.SetHelp("SBin", "SBin")
 
-	_ = sbin.AddCommand(stats.Create())
-	_ = sbin.AddCommand(runtime.Create())
+	var sbinCommands []*shell.Command
+	sbinCommands = append(sbinCommands, system.CreateExit())
+	sbinCommands = append(sbinCommands, system.CreateCD())
+	sbinCommands = append(sbinCommands, system.CreatePWD())
+	sbinCommands = append(sbinCommands, system.CreateActivate())
+	sbinCommands = append(sbinCommands, system.CreateKill())
+	sbinCommands = append(sbinCommands, system.CreateKillAll())
+	sbinCommands = append(sbinCommands, system.CreatePs())
+	sbinCommands = append(sbinCommands, system.CreateClear())
+	sbinCommands = append(sbinCommands, system.CreateFg())
+	sbinCommands = append(sbinCommands, system.CreateHistory())
+	sbinCommands = append(sbinCommands, system.CreateTasks())
+	sbinCommands = append(sbinCommands, system.CreateLs())
+	sbinCommands = append(sbinCommands, system.CreateHelp())
 
-	rootRun := func(task interfaces.IProcess, args []string) error {
-		return nil
+	for _, app := range sbinCommands {
+		_ = sbin.AddCommand(app)
 	}
-	root := shell.NewCommand("/", interfaces.CommandTypeDirectory, nil, false, rootRun)
+
+	aliases = append(aliases, sbinCommands...)
+
+	if statsRoot, statsApp := stats.Create(); statsRoot != nil {
+		_ = sbin.AddCommand(statsRoot)
+		aliases = append(aliases, statsApp...)
+	}
+
+	if runtimeRoot, runtimeApp := runtime.Create(); runtimeRoot != nil {
+		_ = sbin.AddCommand(runtimeRoot)
+		aliases = append(aliases, runtimeApp...)
+	}
+
+	root := shell.NewCommand("/", interfaces.CommandTypeDirectory, nil, false, func(task interfaces.IProcess, args []string) error {
+		return nil
+	})
 	_ = root.AddCommand(sbin)
 	_ = root.AddCommand(bin)
 	_ = root.AddCommand(games.Create())
 
-	coreCRun := func(task interfaces.IProcess, args []string) error {
+	aliasesCommand := shell.NewCommand("", interfaces.CommandTypeDirectory, nil, false, func(task interfaces.IProcess, args []string) error {
 		return nil
+	})
+	aliasesCommand.SetHelp("Aliases", "Aliases")
+	//aliases
+	for _, app := range aliases {
+		_ = aliasesCommand.AddCommand(app)
 	}
-	coreC := shell.NewCommand("", interfaces.CommandTypeDirectory, nil, false, coreCRun)
-	coreC.SetHelp("Core", "Core")
-	_ = coreC.AddCommand(system.CreateExit())
-	_ = coreC.AddCommand(system.CreateCD())
-	_ = coreC.AddCommand(system.CreatePWD())
-	_ = coreC.AddCommand(system.CreateActivate())
-	_ = coreC.AddCommand(system.CreateKill())
-	_ = coreC.AddCommand(system.CreateKillAll())
-	_ = coreC.AddCommand(system.CreatePs())
-	_ = coreC.AddCommand(system.CreateClear())
-	_ = coreC.AddCommand(system.CreateFg())
-	_ = coreC.AddCommand(system.CreateHistory())
-	_ = coreC.AddCommand(system.CreateTasks())
-	_ = coreC.AddCommand(system.CreateLs())
-	_ = coreC.AddCommand(system.CreateHelp())
-
-	return coreC, root
+	return aliasesCommand, root
 }
