@@ -97,6 +97,8 @@ type IProcess interface {
 
 	DeactivateAll(name string) int
 
+	CWDName() string
+
 	CWDSet(arg string) bool
 
 	CWDGet() string
@@ -114,6 +116,8 @@ type IProcess interface {
 	SetState(state ProcessState)
 
 	SetCaption(caption string) bool
+
+	TaskExec(line string) (bool, error)
 
 	SetTaskSelection(int)
 
@@ -135,17 +139,37 @@ type IProcess interface {
 
 	Write(data string)
 
+	WritePromptEOL(prompt string, eol bool)
+
+	WritePromptLine(prompt string, line string)
+
 	WriteLn(data string)
 
 	WriteColor(data string, fg ColorDef, bg ColorDef, mode ColorMode)
 
 	WriteColorLn(data string, fg ColorDef, bg ColorDef, mode ColorMode)
 
+	WriteNormal(data string)
+
+	WriteHighlights(data string)
+
+	WriteCritical(data string)
+
+	MoveCursorLeft()
+
+	MoveCursorRight()
+
+	SaveCursor()
+
+	RestoreCursor()
+
 	History(verb HistoryAction, idx int)
 
 	ClearScreen()
 
 	SetExit()
+
+	Suggestion(in string, cursor int) (string, []string, bool)
 
 	Help(arg string) (string, error)
 }

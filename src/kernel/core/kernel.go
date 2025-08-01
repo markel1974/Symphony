@@ -291,9 +291,34 @@ func (c *Kernel) CallPaintRequest() bool {
 	return c.render.PaintRequest(false)
 }
 
+// CallWritePromptEOL writes the specified prompt followed by an end-of-line based on the eol flag using the render instance.
+func (c *Kernel) CallWritePromptEOL(prompt string, eol bool) {
+	c.render.WritePromptEOL(prompt, eol)
+}
+
+// CallWritePromptLine sends a formatted prompt and line to the renderer for output using the WritePromptLine method.
+func (c *Kernel) CallWritePromptLine(prompt string, line string) {
+	c.render.WritePromptLine(prompt, line)
+}
+
 // CallWrite sends the provided string data to the kernel's rendering writer for output.
 func (c *Kernel) CallWrite(data string) {
 	c.render.Write(data)
+}
+
+// CallWriteNormal writes the provided string data to the render instance using the WriteNormal method.
+func (c *Kernel) CallWriteNormal(data string) {
+	c.render.WriteNormal(data)
+}
+
+// CallWriteHighlights writes syntax-highlighted content to the render component using the provided data string.
+func (c *Kernel) CallWriteHighlights(data string) {
+	c.render.WriteHighlight(data)
+}
+
+// CallWriteCritical writes critical data to the render component of the Kernel instance.
+func (c *Kernel) CallWriteCritical(data string) {
+	c.render.WriteCritical(data)
 }
 
 // CallWriteLn writes the provided string followed by a new line to the kernel's output stream.
@@ -321,6 +346,26 @@ func (c *Kernel) CallScreenSize() (int, int) {
 	return c.render.GetScreenSize()
 }
 
+// CallMoveCursorLeft moves the cursor one position to the left within the render context.
+func (c *Kernel) CallMoveCursorLeft() {
+	c.render.MoveCursorLeft()
+}
+
+// CallMoveCursorRight moves the cursor one position to the right by invoking the render's MoveCursorRight method.
+func (c *Kernel) CallMoveCursorRight() {
+	c.render.MoveCursorRight()
+}
+
+// CallSaveCursor saves the current cursor state by invoking the SaveCursor method on the associated renderer.
+func (c *Kernel) CallSaveCursor() {
+	c.render.SaveCursor()
+}
+
+// CallRestoreCursor restores the cursor to its previous position using the render instance of the Kernel.
+func (c *Kernel) CallRestoreCursor() {
+	c.render.RestoreCursor()
+}
+
 // CallCWDSet sets the current working directory to the specified path and updates the shell prompt accordingly.
 func (c *Kernel) CallCWDSet(arg string) bool {
 	if ok := c.fs.CWDSet(arg); ok {
@@ -340,6 +385,11 @@ func (c *Kernel) CallCWDPath() []string {
 	return c.fs.CWDPath()
 }
 
+// CallCWDName returns the name of the current working directory as a string.
+func (c *Kernel) CallCWDName() string {
+	return c.fs.CWDName()
+}
+
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
 func (c *Kernel) CallCWDDirectoryListing() []string {
 	return c.fs.CWDDirectoryListing()
@@ -350,6 +400,11 @@ func (c *Kernel) CallHistory(verb interfaces.HistoryAction, idx int) {
 	if arg := c.sh.HistoryApply(verb, idx); len(arg) > 0 {
 		_, _ = c.CallTaskExec(arg, nil)
 	}
+}
+
+// CallSuggestion provides autocomplete suggestions and context for a given input string at a specified cursor position.
+func (c *Kernel) CallSuggestion(in string, cursor int) (string, []string, bool) {
+	return c.fs.Suggestion(in, cursor)
 }
 
 // CallHelp retrieves the help information associated with the given argument and returns it as a string.

@@ -104,14 +104,14 @@ func (c *Shell) KeyHandler(kind interfaces.KeyType, key rune) {
 // NextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
 func (c *Shell) NextLine(eol bool) {
 	c.resetBuffer()
-	c.render.WriteEOL(c.prompt, eol)
+	c.render.WritePromptEOL(c.prompt, eol)
 }
 
 // Redraw refreshes the current shell display with the given line, updates internal state, and re-renders the prompt and line.
 func (c *Shell) Redraw(line string) {
 	c.current = []rune(line)
 	c.pos = len(c.current)
-	c.render.WriteLine(c.prompt, line)
+	c.render.WritePromptLine(c.prompt, line)
 }
 
 // SetPromptPrefix sets a custom prefix for the prompt by prepending the given prefix to the default prompt value.

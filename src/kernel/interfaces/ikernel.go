@@ -32,6 +32,10 @@ type IKernel interface {
 
 	CallPaintRequest() bool
 
+	CallWritePromptEOL(prompt string, eol bool)
+
+	CallWritePromptLine(prompt string, line string)
+
 	CallWrite(data string)
 
 	CallWriteLn(data string)
@@ -40,15 +44,33 @@ type IKernel interface {
 
 	CallWriteColorLn(data string, fg ColorDef, bg ColorDef, mode ColorMode)
 
+	CallWriteNormal(data string)
+
+	CallWriteHighlights(data string)
+
+	CallWriteCritical(data string)
+
+	CallMoveCursorLeft()
+
+	CallMoveCursorRight()
+
+	CallSaveCursor()
+
+	CallRestoreCursor()
+
 	CallClearScreen()
 
 	CallScreenSize() (int, int)
+
+	CallSuggestion(in string, cursor int) (string, []string, bool)
 
 	CallCWDSet(arg string) bool
 
 	CallCWDGet() string
 
 	CallCWDPath() []string
+
+	CallCWDName() string
 
 	CallCWDDirectoryListing() []string
 

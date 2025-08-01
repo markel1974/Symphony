@@ -37,9 +37,9 @@ type IRender interface {
 
 	EOL() string
 
-	WriteLine(prompt string, line string)
+	WritePromptLine(prompt string, line string)
 
-	WriteEOL(prompt string, eol bool)
+	WritePromptEOL(prompt string, eol bool)
 
 	WriteNormal(line string)
 

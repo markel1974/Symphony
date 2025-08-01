@@ -156,13 +156,13 @@ func (c *Render) EOL() string {
 	return eol
 }
 
-func (c *Render) WriteLine(prompt string, line string) {
+func (c *Render) WritePromptLine(prompt string, line string) {
 	c.ClearLine(line)
 	c.WriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 	c.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
-func (c *Render) WriteEOL(prompt string, eol bool) {
+func (c *Render) WritePromptEOL(prompt string, eol bool) {
 	if eol {
 		c.WriteColor(c.EOL(), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 	}

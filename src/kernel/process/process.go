@@ -210,6 +210,11 @@ func (t *Process) CWDSet(arg string) bool {
 	return t.kernel.CallCWDSet(arg)
 }
 
+// CWDName returns the current working directory name by invoking a kernel-level method.
+func (t *Process) CWDName() string {
+	return t.kernel.CallCWDName()
+}
+
 // CWDGet retrieves the current working directory as a string from the associated kernel instance.
 func (t *Process) CWDGet() string {
 	return t.kernel.CallCWDGet()
@@ -225,19 +230,32 @@ func (t *Process) CWDDirectoryListing() []string {
 	return t.kernel.CallCWDDirectoryListing()
 }
 
+// Suggestion provides auto-completion suggestions based on the input string and cursor position. Returns prefix, suggestions, and a success flag.
+func (t *Process) Suggestion(in string, cursor int) (string, []string, bool) {
+	return t.kernel.CallSuggestion(in, cursor)
+}
+
 // Help calls the kernel's Help method with the provided argument and returns the result or an error.
 func (t *Process) Help(arg string) (string, error) {
 	return t.kernel.CallHelp(arg)
 }
 
+// TaskExec executes a task based on the provided command line input and returns a success status and any execution error.
+func (t *Process) TaskExec(line string) (bool, error) {
+	return t.kernel.CallTaskExec(line, nil)
+}
+
+// SetTaskSelection updates the task selection for the given process ID by invoking the kernel's task selection method.
 func (t *Process) SetTaskSelection(pid int) {
 	t.kernel.CallTaskSelection(pid)
 }
 
+// SetTaskSelectionPrevious moves the task selection pointer to the previous task in the list within the Process.
 func (t *Process) SetTaskSelectionPrevious() {
 	t.kernel.CallTaskSelectionPrevious()
 }
 
+// SetTaskSelectionNext moves the task selection to the next task in the sequence by invoking the kernel method.
 func (t *Process) SetTaskSelectionNext() {
 	t.kernel.CallTaskSelectionNext()
 }
@@ -281,6 +299,16 @@ func (t *Process) TaskList() string {
 	return t.kernel.CallTaskList()
 }
 
+// WritePromptEOL writes the provided prompt followed by an end-of-line character if the eol parameter is true.
+func (t *Process) WritePromptEOL(prompt string, eol bool) {
+	t.kernel.CallWritePromptEOL(prompt, eol)
+}
+
+// WritePromptLine sends a specified prompt and line string to the kernel for handling the output display.
+func (t *Process) WritePromptLine(prompt string, line string) {
+	t.kernel.CallWritePromptLine(prompt, line)
+}
+
 // Write sends the provided string data to the kernel's write mechanism associated with the task.
 func (t *Process) Write(data string) {
 	t.kernel.CallWrite(data)
@@ -299,6 +327,41 @@ func (t *Process) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.
 // WriteColorLn writes the provided data as a line with specified foreground and background colors and color mode.
 func (t *Process) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
 	t.kernel.CallWriteColorLn(data, fg, bg, mode)
+}
+
+// WriteNormal sends the provided data string to the kernel's CallWriteNormal method for processing.
+func (t *Process) WriteNormal(data string) {
+	t.kernel.CallWriteNormal(data)
+}
+
+// WriteHighlights writes the provided highlight information to the underlying kernel for further processing.
+func (t *Process) WriteHighlights(data string) {
+	t.kernel.CallWriteHighlights(data)
+}
+
+// WriteCritical sends critical data to the kernel for logging or processing in a thread-safe manner.
+func (t *Process) WriteCritical(data string) {
+	t.kernel.CallWriteCritical(data)
+}
+
+// MoveCursorLeft moves the cursor one position to the left within the render context.
+func (t *Process) MoveCursorLeft() {
+	t.kernel.CallMoveCursorLeft()
+}
+
+// MoveCursorRight moves the cursor one position to the right by invoking the render's MoveCursorRight method.
+func (t *Process) MoveCursorRight() {
+	t.kernel.CallMoveCursorRight()
+}
+
+// SaveCursor saves the current cursor state by invoking the SaveCursor method on the associated renderer.
+func (t *Process) SaveCursor() {
+	t.kernel.CallSaveCursor()
+}
+
+// RestoreCursor restores the cursor to its previous position using the render instance of the Kernel.
+func (t *Process) RestoreCursor() {
+	t.kernel.CallRestoreCursor()
 }
 
 // ClearScreen clears the task's screen by delegating the request to the associated kernel.
