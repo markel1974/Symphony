@@ -21,12 +21,12 @@ import (
 )
 
 func CreateTetris() *shell.Command {
-	onCreate := func(task interfaces.ITask, args []string) error {
+	onCreate := func(task interfaces.IProcess, args []string) error {
 		task.SetContext(tetris.New(10, 18))
 		task.CreateTimer(0, 300, -1)
 		return nil
 	}
-	onRead := func(task interfaces.ITask, code int, key rune) {
+	onRead := func(task interfaces.IProcess, code int, key rune) {
 		ctx := task.GetContext()
 		tx, ok := ctx.(*tetris.Tetris)
 		if !ok {
@@ -49,7 +49,7 @@ func CreateTetris() *shell.Command {
 			tx.Init(10, 18)
 		}
 	}
-	onTimer := func(task interfaces.ITask, tid int, interval int) {
+	onTimer := func(task interfaces.IProcess, tid int, interval int) {
 		ctx := task.GetContext()
 		tx, ok := ctx.(*tetris.Tetris)
 		if !ok {
@@ -58,7 +58,7 @@ func CreateTetris() *shell.Command {
 		tx.ApplyGravity()
 		task.PaintRequest()
 	}
-	onPaint := func(task interfaces.ITask, surface interfaces.ISurface) {
+	onPaint := func(task interfaces.IProcess, surface interfaces.ISurface) {
 		ctx := task.GetContext()
 		tx, ok := ctx.(*tetris.Tetris)
 		if !ok {

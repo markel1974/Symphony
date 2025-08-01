@@ -20,7 +20,7 @@ func NewRoot() *Root {
 
 // Build constructs and returns two command trees, coreC and root, initialized with their respective subcommands and functionality.
 func (t *Root) Build(bin *shell.Command) (*shell.Command, *shell.Command) {
-	sbinRun := func(task interfaces.ITask, args []string) error {
+	sbinRun := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
 	sbin := shell.NewCommand("sbin", interfaces.CommandTypeDirectory, nil, false, sbinRun)
@@ -29,7 +29,7 @@ func (t *Root) Build(bin *shell.Command) (*shell.Command, *shell.Command) {
 	_ = sbin.AddCommand(stats.Create())
 	_ = sbin.AddCommand(runtime.Create())
 
-	rootRun := func(task interfaces.ITask, args []string) error {
+	rootRun := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
 	root := shell.NewCommand("/", interfaces.CommandTypeDirectory, nil, false, rootRun)
@@ -37,7 +37,7 @@ func (t *Root) Build(bin *shell.Command) (*shell.Command, *shell.Command) {
 	_ = root.AddCommand(bin)
 	_ = root.AddCommand(games.Create())
 
-	coreCRun := func(task interfaces.ITask, args []string) error {
+	coreCRun := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
 	coreC := shell.NewCommand("", interfaces.CommandTypeDirectory, nil, false, coreCRun)

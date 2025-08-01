@@ -57,7 +57,7 @@ func (c *Render) IsDirty() bool {
 }
 
 // ExecPaint performs the rendering process by painting background tasks and a foreground task onto the terminal surface.
-func (c *Render) ExecPaint(fgTask interfaces.ITask, tasks []interfaces.ITask) bool {
+func (c *Render) ExecPaint(fgTask interfaces.IProcess, tasks []interfaces.IProcess) bool {
 	w, h := c.GetScreenSize()
 	surface := newSurface(c.terminal, h, w)
 	if c.fullPaint {

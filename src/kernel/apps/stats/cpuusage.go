@@ -9,7 +9,7 @@ import (
 
 // CreateCPUUsage generates a shell command to compute and display CPU usage over a 3-second interval.
 func CreateCPUUsage() *shell.Command {
-	run := func(task interfaces.ITask, args []string) error {
+	run := func(task interfaces.IProcess, args []string) error {
 		task.WriteLn("Computing cpu usage")
 		idle0, total0 := getCPUSample()
 		time.Sleep(3 * time.Second)

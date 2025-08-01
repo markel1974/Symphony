@@ -7,7 +7,7 @@ type IRender interface {
 
 	IsDirty() bool
 
-	ExecPaint(fgTask ITask, tasks []ITask) bool
+	ExecPaint(fgTask IProcess, tasks []IProcess) bool
 
 	PaintRequest(full bool) bool
 

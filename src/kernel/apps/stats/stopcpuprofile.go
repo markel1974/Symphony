@@ -8,7 +8,7 @@ import (
 
 // CreateProfileCPUStop creates and returns a shell command to stop CPU profiling.
 func CreateProfileCPUStop() *shell.Command {
-	run := func(task interfaces.ITask, args []string) error {
+	run := func(task interfaces.IProcess, args []string) error {
 		pprof.StopCPUProfile()
 		task.WriteLn("Cpu Profiling stopped")
 		return nil

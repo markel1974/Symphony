@@ -20,7 +20,7 @@ import (
 )
 
 func CreateExit() *shell.Command {
-	run := func(task interfaces.ITask, args []string) error {
+	run := func(task interfaces.IProcess, args []string) error {
 		task.SetExit()
 		return nil
 	}

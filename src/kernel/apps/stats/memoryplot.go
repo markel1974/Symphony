@@ -20,7 +20,7 @@ type rtPlotData struct {
 // CreateMemoryPlot creates a shell command for plotting real-time memory statistics including alloc, total, os, and GC data.
 // It supports dynamic updates and allows controlling plot scaling or enabling auto-scaling via interactive inputs.
 func CreateMemoryPlot() *shell.Command {
-	run := func(task interfaces.ITask, args []string) error {
+	run := func(task interfaces.IProcess, args []string) error {
 		plt := &rtPlotData{
 			rtPlotType:   0,
 			rtPlotAuto:   true,
@@ -44,7 +44,7 @@ func CreateMemoryPlot() *shell.Command {
 		task.CreateTimer(0, 300, -1)
 		return nil
 	}
-	readFn := func(task interfaces.ITask, code int, key rune) {
+	readFn := func(task interfaces.IProcess, code int, key rune) {
 		ctx := task.GetContext()
 		plt := ctx.(*rtPlotData)
 
@@ -65,7 +65,7 @@ func CreateMemoryPlot() *shell.Command {
 		}
 
 	}
-	timerFn := func(task interfaces.ITask, tid int, interval int) {
+	timerFn := func(task interfaces.IProcess, tid int, interval int) {
 		var m runtime.MemStats
 		ctx := task.GetContext()
 		plt := ctx.(*rtPlotData)
@@ -99,7 +99,7 @@ func CreateMemoryPlot() *shell.Command {
 
 		task.PaintRequest()
 	}
-	paintFn := func(task interfaces.ITask, surface interfaces.ISurface) {
+	paintFn := func(task interfaces.IProcess, surface interfaces.ISurface) {
 		var minPlot float64 = 0
 		var maxPlot float64 = 0
 		ctx := task.GetContext()

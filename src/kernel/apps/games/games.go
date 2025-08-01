@@ -20,7 +20,7 @@ import (
 )
 
 func Create() *shell.Command {
-	run := func(task interfaces.ITask, args []string) error {
+	run := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
 	root := shell.NewCommand("games", interfaces.CommandTypeDirectory, nil, false, run)

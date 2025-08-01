@@ -8,7 +8,7 @@ import (
 
 // CreateGC initializes and returns a command that triggers garbage collection when executed.
 func CreateGC() *shell.Command {
-	run := func(task interfaces.ITask, args []string) error {
+	run := func(task interfaces.IProcess, args []string) error {
 		//r := cmd.GetRootContext()
 		runtime.GC()
 		task.WriteLn("GC Done")

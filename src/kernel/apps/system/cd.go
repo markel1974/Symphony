@@ -20,7 +20,7 @@ import (
 )
 
 func CreateCD() *shell.Command {
-	run := func(task interfaces.ITask, args []string) error {
+	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
 			task.WriteLn("cd: empty directory")
 			return nil

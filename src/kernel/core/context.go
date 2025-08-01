@@ -69,5 +69,5 @@ func (c *Context) Close() {
 
 // SetScreenSize adjusts the terminal's display dimensions to the specified width (w) and height (h).
 func (c *Context) SetScreenSize(w int, h int) {
-	c.kernel.SetScreenSize(w, h)
+	c.kernel.CallSetScreenSize(w, h)
 }

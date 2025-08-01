@@ -54,7 +54,7 @@ type ICommand interface {
 
 	SuggestionsFor(typedName string) []string
 
-	Execute(task ITask, arg []string) error
+	Execute(task IProcess, arg []string) error
 
 	Commands() []ICommand
 

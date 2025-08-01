@@ -77,18 +77,17 @@ func (a *AdaptiveTicker) Create(target chan *TimerHandler, event interface{}, fi
 	if current.id != UnknownId {
 		//fmt.Println("create - trying go send message ....", current.id, len(a.messages))
 		//debug.PrintStack()
-		var event = newCreateEvent(current)
-		event.PostEvent(a.messages)
+		e := newCreateEvent(current)
+		e.PostEvent(a.messages)
 		//fmt.Println("create - message sent", current.id, len(a.messages))
 	}
 
 	return current.id
 }
 
-// Remove deletes the specified IDs from the AdaptiveTicker. Returns true if all IDs were successfully removed, false otherwise.
-func (a *AdaptiveTicker) Remove(tids []int) bool {
+// RemoveEntries deletes the specified IDs from the AdaptiveTicker. Returns true if all IDs were successfully removed, false otherwise.
+func (a *AdaptiveTicker) RemoveEntries(tids []int) bool {
 	var removed []int
-
 	a.lock.Lock()
 	if !a.quit {
 		for _, tid := range tids {
@@ -98,12 +97,10 @@ func (a *AdaptiveTicker) Remove(tids []int) bool {
 		}
 	}
 	a.lock.Unlock()
-
 	if len(removed) > 0 {
 		var event = newRemoveEvent(removed)
 		event.PostEvent(a.messages)
 	}
-
 	return len(tids) == len(removed)
 }
 

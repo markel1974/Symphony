@@ -22,21 +22,58 @@ func IsPathAbsolute(path string) bool {
 	return isAbsolute
 }
 
+// State represents the state of a task, defined as an integer-based enumerated type.
+type ProcessState int
+
+// TaskStateSetup represents the initial setup state of a task.
+// TaskStateRunning represents the state where a task is currently running.
+const (
+	ProcessStateSetup   ProcessState = iota
+	ProcessStateRunning ProcessState = iota
+)
+
+// ProcessOptions represents configurable parameters for a task, including offsets, scaling, and associated command line.
+type ProcessOptions struct {
+	OffsetY int
+	OffsetX int
+	Scale   float64
+	Line    string
+}
+
+func NewProcessOptions(offsetX int, offsetY int, scale float64, line string) *ProcessOptions {
+	return &ProcessOptions{
+		OffsetY: offsetY,
+		OffsetX: offsetX,
+		Scale:   scale,
+		Line:    line,
+	}
+}
+
 // RunFn defines a function type that performs a task execution with given arguments and returns an error if any occurs.
-type RunFn func(task ITask, args []string) error
+type RunFn func(task IProcess, args []string) error
 
 // TimerFn defines a function type for tasks invoked at regular intervals, receiving the task, timer id, and interval.
-type TimerFn func(task ITask, tid int, interval int)
+type TimerFn func(task IProcess, tid int, interval int)
 
 // ReadFn defines a function type invoked for processing input events with a task, an event code, and a key character.
-type ReadFn func(task ITask, code int, key rune)
+type ReadFn func(task IProcess, code int, key rune)
 
 // PaintFn defines a function type used to handle painting tasks on a specified surface in the context of a task.
-type PaintFn func(task ITask, surface ISurface)
+type PaintFn func(task IProcess, surface ISurface)
 
-// ITask defines a task interface providing functions for process handling, context management, and terminal interactions.
-type ITask interface {
+// IProcess defines an interface for process management, task handling, interaction, and rendering within a system.
+type IProcess interface {
 	PID() int
+
+	Line() string
+
+	Options() *ProcessOptions
+
+	SetOption(option rune, value float64)
+
+	SetOptions(options *ProcessOptions)
+
+	SetId(i int)
 
 	GetCommand() ICommand
 
@@ -47,6 +84,12 @@ type ITask interface {
 	CreateTimer(first int, interval int, count int) bool
 
 	StopTimer(tid int) bool
+
+	Timers() []int
+
+	TimersIterator(callback func(tid int) bool)
+
+	AddTimer(tid int)
 
 	IsActive(pid int) bool
 
@@ -68,15 +111,17 @@ type ITask interface {
 
 	PaintRequest() bool
 
+	SetState(state ProcessState)
+
 	SetCaption(caption string) bool
 
-	SetSelectionMode(int)
+	SetTaskSelection(int)
 
-	SetSelectionOptions(option rune, value float64) bool
+	SetTaskSelectionOptions(option rune, value float64) bool
 
-	SetSelectionModeNext()
+	SetTaskSelectionNext()
 
-	SetSelectionModePrevious()
+	SetTaskSelectionPrevious()
 
 	TaskList() string
 

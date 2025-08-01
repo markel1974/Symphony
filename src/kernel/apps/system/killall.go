@@ -21,7 +21,7 @@ import (
 )
 
 func CreateKillAll() *shell.Command {
-	run := func(task interfaces.ITask, args []string) error {
+	run := func(task interfaces.IProcess, args []string) error {
 		var arg string
 		if len(args) > 0 {
 			arg = args[0]

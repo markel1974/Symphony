@@ -21,7 +21,7 @@ import (
 )
 
 func CreateInvaders() *shell.Command {
-	onCreate := func(task interfaces.ITask, args []string) error {
+	onCreate := func(task interfaces.IProcess, args []string) error {
 		w, h := task.GetScreenSize()
 		g := invaders.NewGame(w, h)
 		g.SetMenuState()
@@ -29,7 +29,7 @@ func CreateInvaders() *shell.Command {
 		task.CreateTimer(0, 100, -1)
 		return nil
 	}
-	onRead := func(task interfaces.ITask, code int, key rune) {
+	onRead := func(task interfaces.IProcess, code int, key rune) {
 		ctx := task.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
@@ -37,7 +37,7 @@ func CreateInvaders() *shell.Command {
 		}
 		g.HandleKey(key)
 	}
-	onTimer := func(task interfaces.ITask, tid int, interval int) {
+	onTimer := func(task interfaces.IProcess, tid int, interval int) {
 		ctx := task.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
@@ -46,7 +46,7 @@ func CreateInvaders() *shell.Command {
 		g.Update()
 		task.PaintRequest()
 	}
-	onPaint := func(task interfaces.ITask, surface interfaces.ISurface) {
+	onPaint := func(task interfaces.IProcess, surface interfaces.ISurface) {
 		ctx := task.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
