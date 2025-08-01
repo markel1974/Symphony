@@ -9,9 +9,7 @@ func CreateXShell() *process.Command {
 	onCreate := func(process interfaces.IProcess, args []string) error {
 		s := NewXShell("% ", true)
 		process.SetContext(s)
-		process.WriteHighlights("Admin Console Ready")
-		s.SetPromptPrefix(process.CWDName())
-		s.NextLine(process, true)
+		s.Start(process)
 		return nil
 	}
 	onRead := func(process interfaces.IProcess, code int, key rune) {

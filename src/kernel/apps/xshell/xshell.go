@@ -35,15 +35,19 @@ func NewXShell(prompt string, autosave bool) *XShell {
 	return c
 }
 
+// Start initializes the console session, sets the prompt prefix, and prepares for user interaction.
+func (c *XShell) Start(process interfaces.IProcess) {
+	process.WriteHighlights("Admin Console Ready")
+	c.nextLine(process, true)
+}
+
 // KeyHandler handles keyboard inputs based on the provided key type and key value, executing corresponding actions.
 func (c *XShell) KeyHandler(process interfaces.IProcess, code int, key rune) {
 	kind := interfaces.KeyType(code)
 	if kind == interfaces.KeyTypeCtrl {
 		switch key {
 		case 3:
-			//c.selector.Clear()
-			//c.CallTaskKillForeground()
-			c.NextLine(process, true)
+			c.nextLine(process, true)
 		case 4:
 			//c.handleExecActivate()
 		}
@@ -52,10 +56,10 @@ func (c *XShell) KeyHandler(process interfaces.IProcess, code int, key rune) {
 
 	switch kind {
 	case interfaces.KeyTypeEnter:
-		c.enterPressed()
+		c.enterPressed(process)
 		c.tabCount = 0
 	case interfaces.KeyTypeTab:
-		c.tabPressed()
+		c.tabPressed(process)
 	case interfaces.KeyTypeCancel:
 		c.tabCount = 0
 		c.textCancel(process)
@@ -71,26 +75,13 @@ func (c *XShell) KeyHandler(process interfaces.IProcess, code int, key rune) {
 	default:
 		log.Println("handlerKeyEvent: Unknown key type")
 	}
-
-	if kind == interfaces.KeyTypeEnter {
-		if buffer := c.InputBuffer(); len(buffer) > 0 {
-			process.WriteLn("")
-			_, _ = process.TaskExec(buffer)
-			c.NextLine(process, false)
-		} else {
-			c.NextLine(process, true)
-		}
-	} else if kind == interfaces.KeyTypeTab {
-		if c.tabFound {
-			data, suggestions, found := process.Suggestion(c.tabData, c.pos)
-			c.historySuggest(process, data, suggestions, found)
-		}
-	}
 }
 
-// NextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
-func (c *XShell) NextLine(process interfaces.IProcess, eol bool) {
-	c.resetBuffer()
+// nextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
+func (c *XShell) nextLine(process interfaces.IProcess, eol bool) {
+	c.current = nil
+	c.pos = 0
+	c.prompt = process.CWDName() + c.defaultPrompt
 	process.WritePromptEOL(c.prompt, eol)
 }
 
@@ -98,16 +89,12 @@ func (c *XShell) NextLine(process interfaces.IProcess, eol bool) {
 func (c *XShell) redraw(process interfaces.IProcess, line string) {
 	c.current = []rune(line)
 	c.pos = len(c.current)
+	c.prompt = process.CWDName() + c.defaultPrompt
 	process.WritePromptLine(c.prompt, line)
 }
 
-// SetPromptPrefix sets a custom prefix for the prompt by prepending the given prefix to the default prompt value.
-func (c *XShell) SetPromptPrefix(prefix string) {
-	c.prompt = prefix + c.defaultPrompt
-}
-
 // HistoryApply performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
-func (c *XShell) HistoryApply(task interfaces.IProcess, verb interfaces.HistoryAction, idx int) string {
+func (c *XShell) historyApply(task interfaces.IProcess, verb interfaces.HistoryAction, idx int) string {
 	switch verb {
 	case interfaces.HistoryActionClear:
 		c.history.Clear()
@@ -136,26 +123,12 @@ func (c *XShell) historySuggest(process interfaces.IProcess, data string, sugges
 				c.redraw(process, tabLine)
 				c.history.SetDefault(tabLine)
 				if sLen == 1 {
-					c.TabReset()
+					c.tabCount = 0
+					c.history.SetDefault(string(c.current))
 				}
 			}
 		}
 	}
-}
-
-// InputBuffer retrieves the current input buffer as a string.
-func (c *XShell) InputBuffer() string {
-	return string(c.current)
-}
-
-// TabData retrieves the tab-related data including a string representation, position, and tab count from the Shell instance.
-//func (c *XShell) TabData() (string, int, bool) {
-//	return c.tabData, c.pos, c.tabFound
-//}
-
-func (c *XShell) TabReset() {
-	c.tabCount = 0
-	c.history.SetDefault(string(c.current))
 }
 
 // textBackspace removes the character at the current cursor position and updates the Shell state accordingly.
@@ -186,12 +159,6 @@ func (c *XShell) textCancel(process interfaces.IProcess) {
 	}
 }
 
-// resetBuffer clears the current input buffer by resetting it to nil and setting the buffer position to zero.
-func (c *XShell) resetBuffer() {
-	c.current = nil
-	c.pos = 0
-}
-
 // cursorPressed handles cursor navigation events based on the given CursorCodeDef.
 func (c *XShell) cursorPressed(process interfaces.IProcess, code interfaces.CursorCodeDef) {
 	switch code {
@@ -217,17 +184,23 @@ func (c *XShell) cursorPressed(process interfaces.IProcess, code interfaces.Curs
 }
 
 // EnterPressed handles the Enter key press event, processes the input based on the current shell state, and updates the state accordingly.
-func (c *XShell) enterPressed() bool {
+func (c *XShell) enterPressed(process interfaces.IProcess) {
 	buffer := string(c.current)
 	if len(buffer) > 0 {
 		c.history.AddToHistory(buffer)
 		c.history.SetDefault("")
+
+		process.WriteLn("")
+		_, _ = process.TaskExec(buffer)
+		c.nextLine(process, false)
+	} else {
+		c.nextLine(process, true)
 	}
-	return false
+
 }
 
 // TabPressed handles tab key events, providing intelligent autocompletion based on current input and command context.
-func (c *XShell) tabPressed() {
+func (c *XShell) tabPressed(process interfaces.IProcess) {
 	if c.tabCount == 0 {
 		c.tabFound = false
 		c.tabData = ""
@@ -237,6 +210,11 @@ func (c *XShell) tabPressed() {
 		}
 	}
 	c.tabCount++
+
+	if c.tabFound {
+		data, suggestions, found := process.Suggestion(c.tabData, c.pos)
+		c.historySuggest(process, data, suggestions, found)
+	}
 }
 
 // keyPressed processes a printable key input and updates the current input buffer, cursor position, and visual rendering.

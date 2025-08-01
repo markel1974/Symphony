@@ -383,8 +383,6 @@ func (c *Kernel) CallRestoreCursor() {
 // CallCWDSet sets the current working directory to the specified path and updates the shell prompt accordingly.
 func (c *Kernel) CallCWDSet(arg string) bool {
 	if ok := c.fs.CWDSet(arg); ok {
-		//TODO IMPORTAN EVENT.... FOR THE SHELL
-		//c.sh.SetPromptPrefix(c.fs.CWDName())
 		return true
 	}
 	return false
@@ -511,7 +509,7 @@ func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 		case 3:
 			c.selector.Clear()
 			c.CallTaskKillForeground()
-			//c.sh.NextLine(true)
+			//c.sh.nextLine(true)
 		case 4:
 			c.handleExecActivate()
 		}
@@ -530,7 +528,7 @@ func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 func (c *Kernel) Start() {
 	//c.render.WriteHighlight("Admin Console Ready")
 	//c.sh.SetPromptPrefix(c.fs.CWDName())
-	//c.sh.NextLine(true)
+	//c.sh.nextLine(true)
 
 	c.shell, _ = c.processExec(c.shellPath, nil)
 
@@ -696,9 +694,9 @@ func (c *Kernel) handleKeyEvent(kind interfaces.KeyType, key rune) bool {
 			if buffer := c.sh.InputBuffer(); len(buffer) > 0 {
 				c.render.WriteLn("")
 				_, _ = c.CallTaskExec(buffer, nil)
-				c.sh.NextLine(false)
+				c.sh.nextLine(false)
 			} else {
-				c.sh.NextLine(true)
+				c.sh.nextLine(true)
 			}
 		} else if kind == interfaces.KeyTypeTab {
 			if tabData, cursor, ok := c.sh.TabData(); ok {
