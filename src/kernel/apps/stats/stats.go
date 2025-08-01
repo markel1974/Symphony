@@ -2,18 +2,18 @@ package stats
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
 // Create initializes and returns the root command for system statistics operations with multiple subcommands attached.
-func Create() (*shell.Command, []*shell.Command) {
+func Create() (*process.Command, []*process.Command) {
 	run := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
-	root := shell.NewCommand("stats", interfaces.CommandTypeDirectory, nil, false, run)
+	root := process.NewCommand("stats", interfaces.CommandTypeDirectory, nil, false, run)
 	root.SetHelp("System Stats", "System Stats")
 
-	var apps []*shell.Command
+	var apps []*process.Command
 	apps = append(apps, CreateProfileCPUStart())
 	apps = append(apps, CreateProfileCPUStop())
 	apps = append(apps, CreateProfileMemory())

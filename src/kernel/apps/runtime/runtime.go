@@ -16,17 +16,17 @@ package runtime
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
 // Create initializes and returns the root command for runtime operations.
-func Create() (*shell.Command, []*shell.Command) {
+func Create() (*process.Command, []*process.Command) {
 	run := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
-	root := shell.NewCommand("runtime", interfaces.CommandTypeDirectory, nil, false, run)
+	root := process.NewCommand("runtime", interfaces.CommandTypeDirectory, nil, false, run)
 	root.SetHelp("Runtime", "Runtime")
-	var apps []*shell.Command
+	var apps []*process.Command
 	apps = append(apps, CreateGC())
 	for _, app := range apps {
 		_ = root.AddCommand(app)

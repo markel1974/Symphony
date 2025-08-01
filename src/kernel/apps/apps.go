@@ -5,8 +5,9 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/apps/runtime"
 	"github.com/markel1974/c64emu/src/kernel/apps/stats"
 	"github.com/markel1974/c64emu/src/kernel/apps/system"
+	"github.com/markel1974/c64emu/src/kernel/apps/xshell"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
 // Root represents the top-level structure used to build and organize CLI command hierarchies.
@@ -19,14 +20,17 @@ func NewRoot() *Root {
 }
 
 // Build constructs and returns two command trees, coreC and root, initialized with their respective subcommands and functionality.
-func (t *Root) Build(bin *shell.Command) (*shell.Command, *shell.Command) {
-	var aliases []*shell.Command
-	sbin := shell.NewCommand("sbin", interfaces.CommandTypeDirectory, nil, false, func(task interfaces.IProcess, args []string) error {
+func (t *Root) Build(bin *process.Command) (string, *process.Command, *process.Command) {
+	var aliases []*process.Command
+	sbin := process.NewCommand("sbin", interfaces.CommandTypeDirectory, nil, false, func(task interfaces.IProcess, args []string) error {
 		return nil
 	})
 	sbin.SetHelp("SBin", "SBin")
 
-	var sbinCommands []*shell.Command
+	var sbinCommands []*process.Command
+
+	xsh := xshell.CreateXShell()
+	sbinCommands = append(sbinCommands, xsh)
 	sbinCommands = append(sbinCommands, system.CreateExit())
 	sbinCommands = append(sbinCommands, system.CreateCD())
 	sbinCommands = append(sbinCommands, system.CreatePWD())
@@ -57,14 +61,14 @@ func (t *Root) Build(bin *shell.Command) (*shell.Command, *shell.Command) {
 		aliases = append(aliases, runtimeApp...)
 	}
 
-	root := shell.NewCommand("/", interfaces.CommandTypeDirectory, nil, false, func(task interfaces.IProcess, args []string) error {
+	root := process.NewCommand("/", interfaces.CommandTypeDirectory, nil, false, func(task interfaces.IProcess, args []string) error {
 		return nil
 	})
 	_ = root.AddCommand(sbin)
 	_ = root.AddCommand(bin)
 	_ = root.AddCommand(games.Create())
 
-	aliasesCommand := shell.NewCommand("", interfaces.CommandTypeDirectory, nil, false, func(task interfaces.IProcess, args []string) error {
+	aliasesCommand := process.NewCommand("", interfaces.CommandTypeDirectory, nil, false, func(task interfaces.IProcess, args []string) error {
 		return nil
 	})
 	aliasesCommand.SetHelp("Aliases", "Aliases")
@@ -72,5 +76,5 @@ func (t *Root) Build(bin *shell.Command) (*shell.Command, *shell.Command) {
 	for _, app := range aliases {
 		_ = aliasesCommand.AddCommand(app)
 	}
-	return aliasesCommand, root
+	return xsh.Name(), aliasesCommand, root
 }

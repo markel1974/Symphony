@@ -21,14 +21,14 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/frontend/telnet/session"
 	"github.com/markel1974/c64emu/src/kernel/frontend/terminal"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"log"
 	"net"
 )
 
 type Server struct {
 	ticker   *adaptiveticker.AdaptiveTicker
-	template *shell.Command
+	template *process.Command
 	prompt   string
 	addr     string
 	factory  *terminal.EquipmentFactory
@@ -95,7 +95,7 @@ func (r *Server) handleConnection(c net.Conn) {
 	_ = c.Close()
 }
 
-func (r *Server) SetTemplate(template *shell.Command) {
+func (r *Server) SetTemplate(template *process.Command) {
 	r.template = template
 }
 

@@ -3,12 +3,12 @@ package stats
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"runtime"
 )
 
 // CreateMemoryStatus initializes a shell command for monitoring runtime memory statistics and garbage collection cycles.
-func CreateMemoryStatus() *shell.Command {
+func CreateMemoryStatus() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
@@ -18,7 +18,7 @@ func CreateMemoryStatus() *shell.Command {
 		task.WriteLn(fmt.Sprintf("Number of completed GC cycles: %d", m.NumGC))
 		return nil
 	}
-	root := shell.NewCommand("rt", interfaces.CommandTypeFile, nil, false, run)
+	root := process.NewCommand("rt", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Runtime Status", "Runtime Status")
 
 	return root

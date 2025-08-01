@@ -4,9 +4,9 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/apps"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"github.com/markel1974/c64emu/src/kernel/servers/file_system"
 	"github.com/markel1974/c64emu/src/kernel/servers/render"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
 	"io"
 )
 
@@ -21,7 +21,7 @@ type Context struct {
 	ticker   *adaptiveticker.AdaptiveTicker
 	reader   io.Reader
 	writer   io.Writer
-	commands *shell.Command
+	commands *process.Command
 	auth     interfaces.IAuthenticator
 	enterKey rune
 	kernel   *Kernel
@@ -30,7 +30,7 @@ type Context struct {
 }
 
 // NewContext creates and initializes a new Context with the provided parameters, including ticker, inputDriver, outputDriver, and others.
-func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer io.Writer, auth interfaces.IAuthenticator, commands *shell.Command, prompt string, autosave bool) *Context {
+func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer io.Writer, auth interfaces.IAuthenticator, commands *process.Command, prompt string, autosave bool) *Context {
 	ctx := &Context{
 		ticker:   ticker,
 		reader:   reader,
@@ -47,13 +47,13 @@ func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer 
 // Setup initializes the context with the terminal, rendering, system commands, file system, kernel, and shell instances.
 func (c *Context) Setup(terminal interfaces.ITerminal) {
 	system := apps.NewRoot()
-	systemCommands, commands := system.Build(c.commands)
+	xsh, systemCommands, commands := system.Build(c.commands)
 	// TODO OGNI SERVER DEVE AVERE IL PROPRIO EVENT LOOP es L'unicp autorizzato a disegnare è il render
 	timerChan := make(chan *adaptiveticker.TimerHandler, contextMaQueueLen)
 	terminalRender := render.NewRender(c.ticker, timerChan, terminal)
 	fs := file_system.NewFileSystem(commands, []interfaces.ICommand{systemCommands})
-	sh := shell.NewShell(c.auth, terminalRender, c.prompt, c.autosave)
-	c.kernel = NewKernel(c.ticker, timerChan, c.reader, c.writer, terminalRender, fs, sh)
+	//sh := shell.NewShell(c.auth, terminalRender, c.prompt, c.autosave)
+	c.kernel = NewKernel(c.ticker, timerChan, c.reader, c.writer, terminalRender, fs, xsh)
 
 	terminal.SetIO(c.kernel)
 }

@@ -3,12 +3,12 @@ package stats
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"time"
 )
 
 // CreateCPUUsage generates a shell command to compute and display CPU usage over a 3-second interval.
-func CreateCPUUsage() *shell.Command {
+func CreateCPUUsage() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		task.WriteLn("Computing cpu usage")
 		idle0, total0 := getCPUSample()
@@ -20,7 +20,7 @@ func CreateCPUUsage() *shell.Command {
 		task.WriteLn(fmt.Sprintf("CPU Usage: %f", cpuUsage))
 		return nil
 	}
-	root := shell.NewCommand("usage", interfaces.CommandTypeFile, nil, false, run)
+	root := process.NewCommand("usage", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("CPU usage", "CPU usage")
 
 	return root

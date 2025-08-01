@@ -2,7 +2,7 @@ package stats
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -10,7 +10,7 @@ import (
 
 // CreateProfileMemory creates a shell command for generating memory usage profiles.
 // It triggers garbage collection and writes the heap profile to a specified file.
-func CreateProfileMemory() *shell.Command {
+func CreateProfileMemory() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		//r := cmd.GetRootContext()
 		if len(args) <= 0 {
@@ -34,7 +34,7 @@ func CreateProfileMemory() *shell.Command {
 
 		return nil
 	}
-	root := shell.NewCommand("memprofile", interfaces.CommandTypeFile, nil, false, run)
+	root := process.NewCommand("memprofile", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Memory profiling", "Memory profiling")
 
 	return root

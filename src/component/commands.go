@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"reflect"
 	"sort"
 	"strings"
@@ -107,7 +107,7 @@ func (cmd *Command) Exec(args []string) (interface{}, error) {
 }
 
 // CreateShellCommand converts the Command instance into a shell-compatible command with execution and help functionality.
-func (cmd *Command) CreateShellCommand() *shell.Command {
+func (cmd *Command) CreateShellCommand() *process.Command {
 	cmdExec := func(task interfaces.IProcess, args []string) error {
 		v, err := cmd.Exec(args)
 		if v != nil {
@@ -115,7 +115,7 @@ func (cmd *Command) CreateShellCommand() *shell.Command {
 		}
 		return err
 	}
-	childCmd := shell.NewCommand(cmd.Id(), interfaces.CommandTypeFile, nil, false, cmdExec)
+	childCmd := process.NewCommand(cmd.Id(), interfaces.CommandTypeFile, nil, false, cmdExec)
 	childCmd.SetHelp(cmd.Description(), cmd.Description())
 	return childCmd
 }
@@ -192,8 +192,8 @@ func (c *Commands) List() map[string]string {
 }
 
 // CreateShellCommands generates and returns a list of shell-compatible commands based on the commands in the collection.
-func (c *Commands) CreateShellCommands() []*shell.Command {
-	var out []*shell.Command
+func (c *Commands) CreateShellCommands() []*process.Command {
+	var out []*process.Command
 	for _, cmd := range c.commands {
 		childCmd := cmd.CreateShellCommand()
 		out = append(out, childCmd)

@@ -16,14 +16,14 @@ package games
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func Create() *shell.Command {
+func Create() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		return nil
 	}
-	root := shell.NewCommand("games", interfaces.CommandTypeDirectory, nil, false, run)
+	root := process.NewCommand("games", interfaces.CommandTypeDirectory, nil, false, run)
 	root.SetHelp("Games", "Games")
 
 	_ = root.AddCommand(CreateSnake())

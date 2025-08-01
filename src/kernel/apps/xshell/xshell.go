@@ -1,4 +1,4 @@
-package shell
+package xshell
 
 import (
 	"fmt"
@@ -36,7 +36,20 @@ func NewXShell(prompt string, autosave bool) *XShell {
 }
 
 // KeyHandler handles keyboard inputs based on the provided key type and key value, executing corresponding actions.
-func (c *XShell) KeyHandler(process interfaces.IProcess, kind interfaces.KeyType, key rune) {
+func (c *XShell) KeyHandler(process interfaces.IProcess, code int, key rune) {
+	kind := interfaces.KeyType(code)
+	if kind == interfaces.KeyTypeCtrl {
+		switch key {
+		case 3:
+			//c.selector.Clear()
+			//c.CallTaskKillForeground()
+			c.NextLine(process, true)
+		case 4:
+			//c.handleExecActivate()
+		}
+		return
+	}
+
 	switch kind {
 	case interfaces.KeyTypeEnter:
 		c.enterPressed()

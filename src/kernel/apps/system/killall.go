@@ -16,11 +16,11 @@ package system
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"strconv"
 )
 
-func CreateKillAll() *shell.Command {
+func CreateKillAll() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		var arg string
 		if len(args) > 0 {
@@ -30,7 +30,7 @@ func CreateKillAll() *shell.Command {
 		task.WriteLn("Task deactivated: " + strconv.Itoa(count))
 		return nil
 	}
-	root := shell.NewCommand("killall", interfaces.CommandTypeFile, nil, false, run)
+	root := process.NewCommand("killall", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Kill All", "Kill All")
 
 	return root

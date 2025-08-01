@@ -1,13 +1,13 @@
-package shell
+package xshell
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreateXShell() *shell.Command {
+func CreateXShell() *process.Command {
 	onCreate := func(process interfaces.IProcess, args []string) error {
-		s := NewXShell("%", true)
+		s := NewXShell("% ", true)
 		process.SetContext(s)
 		process.WriteHighlights("Admin Console Ready")
 		s.SetPromptPrefix(process.CWDName())
@@ -20,11 +20,11 @@ func CreateXShell() *shell.Command {
 		if !ok {
 			return
 		}
-		s.KeyHandler(process, interfaces.KeyTypeKey, key)
+		s.KeyHandler(process, code, key)
 	}
 	onTimer := func(process interfaces.IProcess, tid int, interval int) {
 	}
-	root := shell.NewCommand("xshell", interfaces.CommandTypeFile, nil, true, onCreate)
+	root := process.NewCommand("xsh", interfaces.CommandTypeFile, nil, true, onCreate)
 	root.SetHelp("XShell", "XShell")
 	root.SetTimerFn(onTimer)
 	root.SetReadFn(onRead)

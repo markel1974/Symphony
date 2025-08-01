@@ -2,13 +2,13 @@ package stats
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"os"
 	"runtime/pprof"
 )
 
 // CreateProfileCPUStart initializes and returns a shell command to start CPU profiling and save it to a specified file.
-func CreateProfileCPUStart() *shell.Command {
+func CreateProfileCPUStart() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
 			task.WriteLn("could not create cpu profile: " + "missing filename")
@@ -27,7 +27,7 @@ func CreateProfileCPUStart() *shell.Command {
 		task.WriteLn("Cpu Profiling started")
 		return nil
 	}
-	root := shell.NewCommand("startcpuprofile", interfaces.CommandTypeFile, nil, false, run)
+	root := process.NewCommand("startcpuprofile", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Start cpu profiling", "Start cpu profiling")
 	return root
 }

@@ -16,11 +16,11 @@ package system
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"strings"
 )
 
-func CreateTasks() *shell.Command {
+func CreateTasks() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
 			return nil
@@ -43,7 +43,7 @@ func CreateTasks() *shell.Command {
 		}
 		return nil
 	}
-	root := shell.NewCommand("task", interfaces.CommandTypeFile, nil, false, run)
+	root := process.NewCommand("task", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Task", "Task")
 
 	return root

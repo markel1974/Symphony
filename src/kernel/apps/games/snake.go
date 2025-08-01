@@ -17,10 +17,10 @@ package games
 import (
 	"github.com/markel1974/c64emu/src/kernel/apps/games/snake"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreateSnake() *shell.Command {
+func CreateSnake() *process.Command {
 	onCreate := func(task interfaces.IProcess, args []string) error {
 		w, h := task.GetScreenSize()
 		s := snake.New()
@@ -74,7 +74,7 @@ func CreateSnake() *shell.Command {
 		}
 		s.Draw(surface)
 	}
-	root := shell.NewCommand("snake", interfaces.CommandTypeFile, nil, true, onCreate)
+	root := process.NewCommand("snake", interfaces.CommandTypeFile, nil, true, onCreate)
 	root.SetHelp("Snake", "Snake")
 	root.SetTimerFn(onTimer)
 	root.SetReadFn(onRead)

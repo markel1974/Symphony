@@ -16,15 +16,15 @@ package system
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreateClear() *shell.Command {
+func CreateClear() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		task.ClearScreen()
 		return nil
 	}
-	root := shell.NewCommand("clear", interfaces.CommandTypeFile, nil, false, run)
+	root := process.NewCommand("clear", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Clear", "Clear")
 
 	return root

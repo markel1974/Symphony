@@ -16,11 +16,11 @@ package system
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"strconv"
 )
 
-func CreateKill() *shell.Command {
+func CreateKill() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
 			task.WriteLn("Empty argument")
@@ -42,7 +42,7 @@ func CreateKill() *shell.Command {
 		}
 		return nil
 	}
-	root := shell.NewCommand("kill", interfaces.CommandTypeFile, nil, false, run)
+	root := process.NewCommand("kill", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Kill", "Kill")
 
 	return root

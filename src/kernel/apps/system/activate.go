@@ -16,11 +16,11 @@ package system
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"strconv"
 )
 
-func CreateActivate() *shell.Command {
+func CreateActivate() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		targetPid := -1
 		if len(args) > 0 {
@@ -63,7 +63,7 @@ func CreateActivate() *shell.Command {
 		}
 	}
 
-	root := shell.NewCommand("activate", interfaces.CommandTypeFile, nil, true, run)
+	root := process.NewCommand("activate", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Activate", "Activate")
 	root.SetReadFn(readFn)
 

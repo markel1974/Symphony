@@ -16,15 +16,15 @@ package system
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreatePWD() *shell.Command {
+func CreatePWD() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		task.WriteLn(task.CWDGet())
 		return nil
 	}
-	root := shell.NewCommand("pwd", interfaces.CommandTypeFile, nil, false, run)
+	root := process.NewCommand("pwd", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("pwd", "pwd")
 
 	return root

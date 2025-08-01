@@ -16,11 +16,11 @@ package system
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"strconv"
 )
 
-func CreateFg() *shell.Command {
+func CreateFg() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
 			task.WriteLn("Empty argument")
@@ -37,7 +37,7 @@ func CreateFg() *shell.Command {
 		return nil
 	}
 
-	root := shell.NewCommand("fg", interfaces.CommandTypeFile, nil, false, run)
+	root := process.NewCommand("fg", interfaces.CommandTypeFile, nil, false, run)
 	root.SetHelp("Foreground", "Foreground")
 
 	return root

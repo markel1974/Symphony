@@ -2,7 +2,7 @@ package stats
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"math"
 	"runtime"
 )
@@ -19,7 +19,7 @@ type rtPlotData struct {
 
 // CreateMemoryPlot creates a shell command for plotting real-time memory statistics including alloc, total, os, and GC data.
 // It supports dynamic updates and allows controlling plot scaling or enabling auto-scaling via interactive inputs.
-func CreateMemoryPlot() *shell.Command {
+func CreateMemoryPlot() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		plt := &rtPlotData{
 			rtPlotType:   0,
@@ -110,7 +110,7 @@ func CreateMemoryPlot() *shell.Command {
 		}
 		surface.DrawSeries(plt.rtPlotData, -1, -1, minPlot, maxPlot)
 	}
-	root := shell.NewCommand("rtplot", interfaces.CommandTypeFile, nil, true, run)
+	root := process.NewCommand("rtplot", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Runtime Plot", "Runtime Plot")
 	root.SetTimerFn(timerFn)
 	root.SetPaintFn(paintFn)

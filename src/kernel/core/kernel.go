@@ -7,8 +7,6 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
 	"github.com/markel1974/c64emu/src/kernel/process_factory"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
-
 	"io"
 	"log"
 	"os"
@@ -35,28 +33,31 @@ type Kernel struct {
 	selector     *ProcessSelector
 	ids          *adaptiveticker.Ids
 	fs           interfaces.IFileSystem
-	sh           *shell.Shell
-	messageChan  chan messages.IMessage
-	pf           *process_factory.ProcessFactory
-	timersChan   chan *adaptiveticker.TimerHandler
-	exit         bool
+	//shOld        *shell.Shell
+	shellPath   string
+	shell       interfaces.IProcess
+	messageChan chan messages.IMessage
+	pf          *process_factory.ProcessFactory
+	timersChan  chan *adaptiveticker.TimerHandler
+	exit        bool
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver io.Reader, outputDriver io.Writer, render interfaces.IRender, fs interfaces.IFileSystem, sh *shell.Shell) *Kernel {
+func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver io.Reader, outputDriver io.Writer, render interfaces.IRender, fs interfaces.IFileSystem, shellPath string) *Kernel {
 	t := &Kernel{
 		ticker:       ticker,
 		inputDriver:  inputDriver,
 		outputDriver: outputDriver,
 		render:       render,
 		fs:           fs,
-		sh:           sh,
-		foreground:   nil,
-		selector:     NewProcessSelector(),
-		ids:          adaptiveticker.NewIds(1024),
-		messageChan:  make(chan messages.IMessage, contextMaQueueLen),
-		timersChan:   timersChan,
-		exit:         false,
+		//shOld:        sh,
+		foreground:  nil,
+		selector:    NewProcessSelector(),
+		ids:         adaptiveticker.NewIds(1024),
+		messageChan: make(chan messages.IMessage, contextMaQueueLen),
+		timersChan:  timersChan,
+		exit:        false,
+		shellPath:   shellPath,
 	}
 	t.pf = process_factory.NewProcessFactory(t)
 	return t
@@ -65,27 +66,37 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 // CallTaskExec executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
 // Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
 func (c *Kernel) CallTaskExec(line string, options *interfaces.ProcessOptions) (bool, error) {
-	cmd, args, err := c.fs.Find(line)
+	_, err := c.processExec(line, options)
 	if err != nil {
-		return false, fmt.Errorf("error creating task: invalid command '%s'", line)
-	}
-	task := c.pf.Create(cmd, line, options)
-	if !c.ids.Set(task) {
-		return false, fmt.Errorf("error creating task: can't set pid")
-	}
-	if err = cmd.Execute(task, args); err != nil {
-		c.CallTaskKill(task.PID())
-		return true, err
-	}
-	if !cmd.Daemon() {
-		c.CallTaskKill(task.PID())
-		return true, nil
-	}
-	task.SetState(interfaces.ProcessStateRunning)
-	if !cmd.Background() {
-		c.foreground = task
+		return false, err
 	}
 	return true, nil
+}
+
+// taskExecutor executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
+// Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
+func (c *Kernel) processExec(line string, options *interfaces.ProcessOptions) (interfaces.IProcess, error) {
+	cmd, args, err := c.fs.Find(line)
+	if err != nil {
+		return nil, fmt.Errorf("error creating task: invalid command '%s'", line)
+	}
+	process := c.pf.Create(cmd, line, options)
+	if !c.ids.Set(process) {
+		return nil, fmt.Errorf("error creating task: can't set pid")
+	}
+	if err = cmd.Execute(process, args); err != nil {
+		c.CallTaskKill(process.PID())
+		return nil, err
+	}
+	if !cmd.Daemon() {
+		c.CallTaskKill(process.PID())
+		return nil, nil
+	}
+	process.SetState(interfaces.ProcessStateRunning)
+	if !cmd.Background() {
+		c.foreground = process
+	}
+	return process, nil
 }
 
 // CallTaskKill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
@@ -98,12 +109,15 @@ func (c *Kernel) CallTaskKill(pid int) bool {
 	if !ok {
 		return false
 	}
+	if task == c.shell {
+		return false
+	}
 	if len(task.Timers()) > 0 {
 		c.ticker.RemoveEntries(task.Timers())
 	}
 	if c.foreground != nil {
 		if c.foreground.PID() == pid {
-			c.foreground = nil
+			c.foreground = c.shell //nil
 		}
 	}
 	c.ids.Unset(pid)
@@ -153,7 +167,7 @@ func (c *Kernel) CallTaskSetBackground() bool {
 	if c.foreground == nil {
 		return false
 	}
-	c.foreground = nil
+	c.foreground = c.shell //nil
 	return true
 }
 
@@ -369,7 +383,8 @@ func (c *Kernel) CallRestoreCursor() {
 // CallCWDSet sets the current working directory to the specified path and updates the shell prompt accordingly.
 func (c *Kernel) CallCWDSet(arg string) bool {
 	if ok := c.fs.CWDSet(arg); ok {
-		c.sh.SetPromptPrefix(c.fs.CWDName())
+		//TODO IMPORTAN EVENT.... FOR THE SHELL
+		//c.sh.SetPromptPrefix(c.fs.CWDName())
 		return true
 	}
 	return false
@@ -397,9 +412,10 @@ func (c *Kernel) CallCWDDirectoryListing() []string {
 
 // CallHistory applies a history action to the shell and invokes task execution if arguments are produced.
 func (c *Kernel) CallHistory(verb interfaces.HistoryAction, idx int) {
-	if arg := c.sh.HistoryApply(verb, idx); len(arg) > 0 {
-		_, _ = c.CallTaskExec(arg, nil)
-	}
+	//TOD IMPLEMENT HISTORY!!!!
+	//if arg := c.shOld.HistoryApply(verb, idx); len(arg) > 0 {
+	//	_, _ = c.CallTaskExec(arg, nil)
+	//}
 }
 
 // CallSuggestion provides autocomplete suggestions and context for a given input string at a specified cursor position.
@@ -495,7 +511,7 @@ func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 		case 3:
 			c.selector.Clear()
 			c.CallTaskKillForeground()
-			c.sh.NextLine(true)
+			//c.sh.NextLine(true)
 		case 4:
 			c.handleExecActivate()
 		}
@@ -505,16 +521,18 @@ func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 		c.handleTaskKeyEvent(fgPid, int(kind), key)
 		return
 	}
-	if quit := c.handleKeyEvent(kind, key); quit {
-		c.CallExitRequested()
-	}
+	//if quit := c.handleKeyEvent(kind, key); quit {
+	//	c.CallExitRequested()
+	//}
 }
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
-	c.render.WriteHighlight("Admin Console Ready")
-	c.sh.SetPromptPrefix(c.fs.CWDName())
-	c.sh.NextLine(true)
+	//c.render.WriteHighlight("Admin Console Ready")
+	//c.sh.SetPromptPrefix(c.fs.CWDName())
+	//c.sh.NextLine(true)
+
+	c.shell, _ = c.processExec(c.shellPath, nil)
 
 	d := make(chan bool)
 	go func() {
@@ -669,24 +687,27 @@ func (c *Kernel) handleTaskKeyEvent(pid int, code int, buffer rune) bool {
 
 // handleKeyEvent processes a keyboard event of a given type and key and returns true if the event was handled successfully.
 func (c *Kernel) handleKeyEvent(kind interfaces.KeyType, key rune) bool {
-	c.sh.KeyHandler(kind, key)
-	if !c.sh.Authenticated() {
-		return true
-	}
-	if kind == interfaces.KeyTypeEnter {
-		if buffer := c.sh.InputBuffer(); len(buffer) > 0 {
-			c.render.WriteLn("")
-			_, _ = c.CallTaskExec(buffer, nil)
-			c.sh.NextLine(false)
-		} else {
-			c.sh.NextLine(true)
+	//c.sh.KeyHandler(kind, key)
+	//if !c.shOld.Authenticated() {
+	//	return true
+	//}
+	/*
+		if kind == interfaces.KeyTypeEnter {
+			if buffer := c.sh.InputBuffer(); len(buffer) > 0 {
+				c.render.WriteLn("")
+				_, _ = c.CallTaskExec(buffer, nil)
+				c.sh.NextLine(false)
+			} else {
+				c.sh.NextLine(true)
+			}
+		} else if kind == interfaces.KeyTypeTab {
+			if tabData, cursor, ok := c.sh.TabData(); ok {
+				data, suggestions, found := c.fs.Suggestion(tabData, cursor)
+				c.sh.HistorySuggest(data, suggestions, found)
+			}
 		}
-	} else if kind == interfaces.KeyTypeTab {
-		if tabData, cursor, ok := c.sh.TabData(); ok {
-			data, suggestions, found := c.fs.Suggestion(tabData, cursor)
-			c.sh.HistorySuggest(data, suggestions, found)
-		}
-	}
+
+	*/
 	return false
 }
 

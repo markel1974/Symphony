@@ -25,7 +25,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/core"
 	"github.com/markel1974/c64emu/src/kernel/frontend/terminal"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"golang.org/x/crypto/ssh"
 	"log"
 	"net"
@@ -34,7 +34,7 @@ import (
 
 type Server struct {
 	ticker             *adaptiveticker.AdaptiveTicker
-	template           *shell.Command
+	template           *process.Command
 	prompt             string
 	addr               string
 	factory            *terminal.EquipmentFactory
@@ -137,7 +137,7 @@ func (r *Server) SetPrompt(prompt string) {
 	r.prompt = prompt
 }
 
-func (r *Server) SetTemplate(template *shell.Command) {
+func (r *Server) SetTemplate(template *process.Command) {
 	r.template = template
 }
 

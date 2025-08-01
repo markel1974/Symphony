@@ -20,7 +20,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/frontend/ssh"
 	"github.com/markel1974/c64emu/src/kernel/frontend/telnet"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
 // IShellServer defines the behavior of a customizable command-line shell interface.
@@ -30,7 +30,7 @@ import (
 // AsyncStart starts the shell execution asynchronously without blocking.
 type IShellServer interface {
 	SetPrompt(prompt string)
-	SetTemplate(template *shell.Command)
+	SetTemplate(template *process.Command)
 	Start()
 	AsyncStart()
 }

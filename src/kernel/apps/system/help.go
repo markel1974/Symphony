@@ -16,11 +16,11 @@ package system
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"strings"
 )
 
-func CreateHelp() *shell.Command {
+func CreateHelp() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) == 0 {
 			task.WriteLn("usage help [command]")
@@ -34,7 +34,7 @@ func CreateHelp() *shell.Command {
 		task.WriteLn(help)
 		return nil
 	}
-	help := shell.NewCommand("help", interfaces.CommandTypeFile, nil, false, run)
+	help := process.NewCommand("help", interfaces.CommandTypeFile, nil, false, run)
 	help.SetHelp("Help about any command", `Help provides help for any command`)
 	return help
 }

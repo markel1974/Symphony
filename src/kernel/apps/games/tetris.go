@@ -17,10 +17,10 @@ package games
 import (
 	"github.com/markel1974/c64emu/src/kernel/apps/games/tetris"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreateTetris() *shell.Command {
+func CreateTetris() *process.Command {
 	onCreate := func(task interfaces.IProcess, args []string) error {
 		task.SetContext(tetris.New(10, 18))
 		task.CreateTimer(0, 300, -1)
@@ -66,7 +66,7 @@ func CreateTetris() *shell.Command {
 		}
 		tx.Draw(surface)
 	}
-	root := shell.NewCommand("tetris", interfaces.CommandTypeFile, nil, true, onCreate)
+	root := process.NewCommand("tetris", interfaces.CommandTypeFile, nil, true, onCreate)
 	root.SetHelp("Tetris", "Tetris")
 	root.SetReadFn(onRead)
 	root.SetTimerFn(onTimer)

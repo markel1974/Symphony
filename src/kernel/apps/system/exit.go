@@ -16,15 +16,15 @@ package system
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreateExit() *shell.Command {
+func CreateExit() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
 		task.SetExit()
 		return nil
 	}
-	root := shell.NewCommand("exit", interfaces.CommandTypeFile, []string{"quit"}, false, run)
+	root := process.NewCommand("exit", interfaces.CommandTypeFile, []string{"quit"}, false, run)
 	root.SetHelp("Exit", "Exit")
 
 	return root

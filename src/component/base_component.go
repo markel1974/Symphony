@@ -3,7 +3,7 @@ package component
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/servers/shell"
+	"github.com/markel1974/c64emu/src/kernel/process"
 	"github.com/markel1974/c64emu/src/references"
 	"io"
 	"strconv"
@@ -20,7 +20,7 @@ const detailsId = "details"
 
 // BaseComponent provides a base implementation for composed components with properties, commands, and hierarchical structure.
 type BaseComponent struct {
-	cmd        *shell.Command
+	cmd        *process.Command
 	id         string
 	name       string
 	instance   int
@@ -59,7 +59,7 @@ func (bc *BaseComponent) Register(f references.IComponentFactory, parent referen
 	if instance > 0 {
 		commandName += "." + strconv.Itoa(instance)
 	}
-	bc.cmd = shell.NewCommand(commandName, interfaces.CommandTypeDirectory, nil, false, nil)
+	bc.cmd = process.NewCommand(commandName, interfaces.CommandTypeDirectory, nil, false, nil)
 	bc.cmd.SetHelp("Directory "+commandName, "Directory "+commandName)
 	if bc.properties != nil {
 		_ = bc.cmd.AddCommand(bc.properties.CreateShellDump("dump"))
@@ -240,7 +240,7 @@ func (bc *BaseComponent) RestoreAll(state map[string]interface{}) error {
 }
 
 // GetCommand returns the shell.Command instance associated with the current BaseComponent.
-func (bc *BaseComponent) GetCommand() *shell.Command {
+func (bc *BaseComponent) GetCommand() *process.Command {
 	return bc.cmd
 }
 

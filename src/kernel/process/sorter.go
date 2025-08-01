@@ -1,4 +1,4 @@
-package shell
+package process
 
 type commandSorterByName []*Command
 
