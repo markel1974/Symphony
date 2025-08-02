@@ -22,7 +22,7 @@ func IsPathAbsolute(path string) bool {
 	return isAbsolute
 }
 
-// State represents the state of a task, defined as an integer-based enumerated type.
+// ProcessState represents the state of a task, defined as an integer-based enumerated type.
 type ProcessState int
 
 // TaskStateSetup represents the initial setup state of a task.
@@ -31,6 +31,13 @@ const (
 	ProcessStateSetup   ProcessState = iota
 	ProcessStateRunning ProcessState = iota
 )
+
+// ProcessDescription represents the details of a system process, including its name and process ID.
+type ProcessDescription struct {
+	Name string
+	Pid  int
+	Line string
+}
 
 // ProcessOptions represents configurable parameters for a task, including offsets, scaling, and associated command line.
 type ProcessOptions struct {
@@ -66,6 +73,8 @@ type IProcess interface {
 	PID() int
 
 	Line() string
+
+	Description() *ProcessDescription
 
 	Options() *ProcessOptions
 
@@ -127,7 +136,7 @@ type IProcess interface {
 
 	ProcessSelectionPrevious()
 
-	ProcessList() string
+	ProcessList() []*ProcessDescription
 
 	ProcessSetFg(pid int) bool
 

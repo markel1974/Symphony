@@ -48,17 +48,8 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 }
 
 // CallProcessList returns a formatted string containing process IDs and their respective command names managed by the Kernel.
-func (c *Kernel) CallProcessList() string {
-	//TODO RETURN interface.....
-	out := "\r\nPid: Process"
-	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		process, ok := item.(interfaces.IProcess)
-		if ok && process != nil {
-			out += fmt.Sprintf("\r\n%d: %s", process.PID(), process.GetCommand().Name())
-		}
-		return true
-	})
-	return out
+func (c *Kernel) CallProcessList() []*interfaces.ProcessDescription {
+	return c.doProcessList()
 }
 
 // CallProcessExec executes a command by parsing the input line, creating a process, and managing its lifecycle and state.
@@ -79,15 +70,6 @@ func (c *Kernel) CallProcessKill(pid int) bool {
 // CallProcessKillAll terminates all tasks matching the specified name. Returns the number of tasks successfully terminated.
 func (c *Kernel) CallProcessKillAll(name string) int {
 	return c.doProcessKillAll(name)
-}
-
-// CallProcessGetForegroundName retrieves the process ID and command name of the current foreground process.
-// Returns a known invalid ID and empty string if no foreground process is set.
-func (c *Kernel) CallProcessGetForegroundName() (int, string) {
-	if c.foreground == nil {
-		return adaptiveticker.UnknownId, ""
-	}
-	return c.foreground.PID(), c.foreground.GetCommand().Name()
 }
 
 // CallProcessSetBackground sets the foreground object to nil, effectively resetting it, and returns true if it was not already nil.
@@ -334,7 +316,11 @@ func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
 	}
 
 	if c.foreground != nil {
-		c.handleTaskKeyEvent(c.foreground.PID(), int(kind), key)
+		if process := c.pid2Process(c.foreground.PID()); process != nil {
+			if readEvent := process.GetCommand().ReadEvent(); readEvent != nil {
+				readEvent(process, int(kind), key)
+			}
+		}
 		return
 	}
 }
@@ -524,6 +510,29 @@ func (c *Kernel) doProcessGetForegroundName() (int, string) {
 	return c.foreground.PID(), c.foreground.GetCommand().Name()
 }
 
+// doProcessList retrieves a list of process descriptions by iterating through all stored processes in the Kernel.
+func (c *Kernel) doProcessList() []*interfaces.ProcessDescription {
+	var out []*interfaces.ProcessDescription
+	c.ids.Range(func(item adaptiveticker.IIds) bool {
+		process, ok := item.(interfaces.IProcess)
+		if ok && process != nil {
+			out = append(out, process.Description())
+		}
+		return true
+	})
+	return out
+}
+
+// pid2Process retrieves a process implementing the interfaces.IProcess interface by its PID. Returns nil if not found.
+func (c *Kernel) pid2Process(pid int) interfaces.IProcess {
+	p, ok := c.ids.Get(pid)
+	if !ok {
+		return nil
+	}
+	process, _ := p.(interfaces.IProcess)
+	return process
+}
+
 // closeTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
 func (c *Kernel) closeTimer(task interfaces.IProcess, tid int) bool {
 	ret := false
@@ -585,55 +594,38 @@ func (c *Kernel) handleMessageEvent(m messages.IMessage) {
 	}
 }
 
-// ExecRead invokes the ReadEvent function for a task identified by pid. Returns true if execution is successful.
-func (c *Kernel) handleTaskKeyEvent(pid int, code int, buffer rune) bool {
-	ret := false
-	if t, ok := c.ids.Get(pid); ok {
-		task := t.(interfaces.IProcess)
-		if fn := task.GetCommand().ReadEvent(); fn != nil {
-			fn(task, code, buffer)
-			ret = true
+// handleTimerEvent triggers a timer event for a task identified by the given pid and tid, with the specified interval.
+// Returns true if the event was successfully triggered, otherwise false.
+func (c *Kernel) handleTimerEvent(pid int, tid int, interval int) bool {
+	if process := c.pid2Process(pid); process != nil {
+		if timerEvent := process.GetCommand().TimerEvent(); timerEvent != nil {
+			timerEvent(process, tid, interval)
+			return true
 		}
 	}
-	return ret
+	return false
 }
 
-// ExecPaint executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
+// handlePaintEvent executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
 // Returns true if the rendering process is executed, false otherwise.
 func (c *Kernel) handlePaintEvent() bool {
 	if !c.render.IsDirty() {
 		return false
 	}
-	var selectedTask interfaces.IProcess = nil
+	var selectedProcess interfaces.IProcess = nil
 	var tasks []interfaces.IProcess
 	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		task, ok := item.(interfaces.IProcess)
-		if ok && task != nil {
-			if task.PID() == c.selector.PID() {
-				selectedTask = task
+		process, ok := item.(interfaces.IProcess)
+		if ok {
+			if process.PID() == c.selector.PID() {
+				selectedProcess = process
 			} else {
-				tasks = append(tasks, task)
+				tasks = append(tasks, process)
 			}
 		}
 		return true
 	})
-	return c.render.ExecPaint(selectedTask, tasks)
-}
-
-// ExecTimer triggers a timer event for a task identified by the given pid and tid, with the specified interval.
-// Returns true if the event was successfully triggered, otherwise false.
-func (c *Kernel) handleTimerEvent(pid int, tid int, interval int) bool {
-	ret := false
-	if t, ok := c.ids.Get(pid); ok {
-		task, ok := t.(interfaces.IProcess)
-		if ok && task != nil {
-			if fn := task.GetCommand().TimerEvent(); fn != nil {
-				fn(task, tid, interval)
-				ret = true
-			}
-		}
-	}
-	return ret
+	return c.render.ExecPaint(selectedProcess, tasks)
 }
 
 /*

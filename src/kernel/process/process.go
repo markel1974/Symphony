@@ -71,6 +71,15 @@ func (t *Process) SetOptions(options *interfaces.ProcessOptions) {
 	t.offsetX = options.OffsetX
 }
 
+// Description provides a brief summary of the process including its name, PID, and line information.
+func (t *Process) Description() *interfaces.ProcessDescription {
+	return &interfaces.ProcessDescription{
+		Name: t.cmd.Name(),
+		Pid:  t.pid,
+		Line: t.line,
+	}
+}
+
 // Options return the current task options, including offset, scale, and line settings.
 func (t *Process) Options() *interfaces.ProcessOptions {
 	return interfaces.NewProcessOptions(t.offsetY, t.offsetX, t.scale, t.line)
@@ -295,7 +304,7 @@ func (t *Process) ProcessSetFg(pid int) bool {
 }
 
 // ProcessList returns a string representation of the task list from the kernel.
-func (t *Process) ProcessList() string {
+func (t *Process) ProcessList() []*interfaces.ProcessDescription {
 	return t.kernel.CallProcessList()
 }
 

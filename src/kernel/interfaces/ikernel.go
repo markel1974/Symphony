@@ -8,11 +8,9 @@ type IKernel interface {
 
 	CallProcessKillAll(name string) int
 
-	CallProcessGetForegroundName() (int, string)
-
 	CallProcessSetBackground() bool
 
-	CallProcessList() string
+	CallProcessList() []*ProcessDescription
 
 	CallProcessSelection(pid int)
 

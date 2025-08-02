@@ -15,13 +15,19 @@
 package system
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
 func CreatePs() *process.Command {
-	run := func(task interfaces.IProcess, args []string) error {
-		task.WriteLn(task.ProcessList())
+	run := func(process interfaces.IProcess, args []string) error {
+		out := "\r\nPid: Process"
+		pl := process.ProcessList()
+		for _, v := range pl {
+			out += fmt.Sprintf("\r\n%d: %s", v.Pid, v.Name)
+		}
+		process.WriteLn(out)
 		return nil
 	}
 
