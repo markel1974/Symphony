@@ -1,26 +1,12 @@
 package core
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
 	"github.com/markel1974/c64emu/src/kernel/process_factory"
 	"io"
-	"log"
-	"os"
-	"strings"
-)
-
-// tasksFileExtension specifies the file extension used for task-related data files.
-const tasksFileExtension = ".task"
-
-// commandActivate represents the command string for activation operations.
-// commandTask represents the command string for task-related operations.
-const (
-	commandActivate = "activate"
-	commandTask     = "task"
 )
 
 // Kernel represents the core component responsible for managing rendering, input/output, task execution, and timers.
@@ -33,13 +19,12 @@ type Kernel struct {
 	selector     *ProcessSelector
 	ids          *adaptiveticker.Ids
 	fs           interfaces.IFileSystem
-	//shOld        *shell.Shell
-	shellPath   string
-	shell       interfaces.IProcess
-	messageChan chan messages.IMessage
-	pf          *process_factory.ProcessFactory
-	timersChan  chan *adaptiveticker.TimerHandler
-	exit        bool
+	shellPath    string
+	shell        interfaces.IProcess
+	messageChan  chan messages.IMessage
+	pf           *process_factory.ProcessFactory
+	timersChan   chan *adaptiveticker.TimerHandler
+	exit         bool
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
@@ -50,254 +35,90 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 		outputDriver: outputDriver,
 		render:       render,
 		fs:           fs,
-		//shOld:        sh,
-		foreground:  nil,
-		selector:    NewProcessSelector(),
-		ids:         adaptiveticker.NewIds(1024),
-		messageChan: make(chan messages.IMessage, contextMaQueueLen),
-		timersChan:  timersChan,
-		exit:        false,
-		shellPath:   shellPath,
+		foreground:   nil,
+		selector:     NewProcessSelector(),
+		ids:          adaptiveticker.NewIds(1024),
+		messageChan:  make(chan messages.IMessage, contextMaQueueLen),
+		timersChan:   timersChan,
+		exit:         false,
+		shellPath:    shellPath,
 	}
 	t.pf = process_factory.NewProcessFactory(t)
 	return t
 }
 
-// CallTaskExec executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
-// Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
-func (c *Kernel) CallTaskExec(line string, options *interfaces.ProcessOptions) (bool, error) {
-	_, err := c.processExec(line, options)
+// CallProcessList returns a formatted string containing process IDs and their respective command names managed by the Kernel.
+func (c *Kernel) CallProcessList() string {
+	//TODO RETURN interface.....
+	out := "\r\nPid: Process"
+	c.ids.Range(func(item adaptiveticker.IIds) bool {
+		process, ok := item.(interfaces.IProcess)
+		if ok && process != nil {
+			out += fmt.Sprintf("\r\n%d: %s", process.PID(), process.GetCommand().Name())
+		}
+		return true
+	})
+	return out
+}
+
+// CallProcessExec executes a command by parsing the input line, creating a process, and managing its lifecycle and state.
+// Returns true and error if the process was created but execution failed, or true and nil if execution succeeded.
+func (c *Kernel) CallProcessExec(line string, options *interfaces.ProcessOptions) (bool, error) {
+	_, err := c.doProcessExec(line, options)
 	if err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-// taskExecutor executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
-// Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
-func (c *Kernel) processExec(line string, options *interfaces.ProcessOptions) (interfaces.IProcess, error) {
-	cmd, args, err := c.fs.Find(line)
-	if err != nil {
-		return nil, fmt.Errorf("error creating task: invalid command '%s'", line)
-	}
-	process := c.pf.Create(cmd, line, options)
-	if !c.ids.Set(process) {
-		return nil, fmt.Errorf("error creating task: can't set pid")
-	}
-	if err = cmd.Execute(process, args); err != nil {
-		c.CallTaskKill(process.PID())
-		return nil, err
-	}
-	if !cmd.Daemon() {
-		c.CallTaskKill(process.PID())
-		return nil, nil
-	}
-	process.SetState(interfaces.ProcessStateRunning)
-	if !cmd.Background() {
-		c.foreground = process
-	}
-	return process, nil
+// CallProcessKill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
+func (c *Kernel) CallProcessKill(pid int) bool {
+	return c.doProcessKill(pid)
 }
 
-// CallTaskKill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
-func (c *Kernel) CallTaskKill(pid int) bool {
-	t, ok := c.ids.Get(pid)
-	if !ok {
-		return false
-	}
-	task, ok := t.(interfaces.IProcess)
-	if !ok {
-		return false
-	}
-	if task == c.shell {
-		return false
-	}
-	if len(task.Timers()) > 0 {
-		c.ticker.RemoveEntries(task.Timers())
-	}
-	if c.foreground != nil {
-		if c.foreground.PID() == pid {
-			c.foreground = c.shell //nil
-		}
-	}
-	c.ids.Unset(pid)
-	return true
+// CallProcessKillAll terminates all tasks matching the specified name. Returns the number of tasks successfully terminated.
+func (c *Kernel) CallProcessKillAll(name string) int {
+	return c.doProcessKillAll(name)
 }
 
-// CallTaskKillAll terminates all tasks matching the specified name. Returns the number of tasks successfully terminated.
-func (c *Kernel) CallTaskKillAll(name string) int {
-	count := 0
-	var tasks []interfaces.IProcess
-	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		task, ok := item.(interfaces.IProcess)
-		if ok && task != nil {
-			tasks = append(tasks, task)
-		}
-		return true
-	})
-	for _, task := range tasks {
-		deactivate := false
-		if len(name) == 0 {
-			deactivate = true
-		} else {
-			if task.GetCommand().Name() == name {
-				deactivate = true
-			}
-		}
-		if deactivate {
-			if ok := c.CallTaskKill(task.PID()); ok {
-				count++
-			}
-		}
-	}
-	return count
-}
-
-// CallTaskGetForegroundName retrieves the process ID and command name of the current foreground process.
+// CallProcessGetForegroundName retrieves the process ID and command name of the current foreground process.
 // Returns a known invalid ID and empty string if no foreground process is set.
-func (c *Kernel) CallTaskGetForegroundName() (int, string) {
+func (c *Kernel) CallProcessGetForegroundName() (int, string) {
 	if c.foreground == nil {
 		return adaptiveticker.UnknownId, ""
 	}
 	return c.foreground.PID(), c.foreground.GetCommand().Name()
 }
 
-// CallTaskSetBackground sets the foreground object to nil, effectively resetting it, and returns true if it was not already nil.
-func (c *Kernel) CallTaskSetBackground() bool {
-	if c.foreground == nil {
-		return false
-	}
-	c.foreground = c.shell //nil
-	return true
+// CallProcessSetBackground sets the foreground object to nil, effectively resetting it, and returns true if it was not already nil.
+func (c *Kernel) CallProcessSetBackground() bool {
+	return c.doProcessSetBackground()
 }
 
-// CallTaskKillForeground terminates the process currently set as the foreground process in the kernel, if one exists.
-func (c *Kernel) CallTaskKillForeground() {
-	if c.foreground == nil {
-		return
-	}
-	c.CallTaskKill(c.foreground.PID())
-}
-
-// CallTaskSaveAll saves task configurations to a JSON file, returning true if successful, otherwise false.
-func (c *Kernel) CallTaskSaveAll(name string) bool {
-	options := make(map[int]*interfaces.ProcessOptions)
-	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		task, ok := item.(interfaces.IProcess)
-		if ok && task != nil {
-			if !strings.HasPrefix(task.Line(), commandTask) {
-				options[task.PID()] = task.Options()
-			}
-		}
-		return true
-	})
-	data, err := json.Marshal(options)
-	if err != nil {
-		log.Println("Error marshalling task file ", name, ": ", err.Error())
-		return false
-	}
-	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
-		name = name[pos+1:]
-	}
-	name += tasksFileExtension
-	if err = os.WriteFile(name, data, 0644); err != nil {
-		log.Println("Error writing task file ", name, ": ", err.Error())
-		return false
-	}
-	return true
-}
-
-// CallTaskRestoreAll attempts to restore tasks from a file by name, executing commands and reactivating the task environment.
-func (c *Kernel) CallTaskRestoreAll(name string) bool {
-	var tasks map[int]*interfaces.ProcessOptions
-	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
-		name = name[pos+1:]
-	}
-	name += tasksFileExtension
-	data, err := os.ReadFile(name)
-	if err != nil {
-		return false
-	}
-	if err = json.Unmarshal(data, &tasks); err != nil {
-		return false
-	}
-	for _, task := range tasks {
-		if strings.HasPrefix(task.Line, commandTask) {
-			continue
-		}
-		_, _ = c.CallTaskExec(task.Line, task)
-	}
-	_, _ = c.CallTaskExec(commandActivate, nil)
-	return true
-}
-
-// CallTaskList returns a formatted string containing task process IDs and their respective command names managed by the Kernel.
-func (c *Kernel) CallTaskList() string {
-	out := "\r\nPid: Process"
-	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		task, ok := item.(interfaces.IProcess)
-		if ok && task != nil {
-			out += fmt.Sprintf("\r\n%d: %s", task.PID(), task.GetCommand().Name())
-		}
-		return true
-	})
-	return out
-}
-
-// CallTaskSavedList retrieves a list of task names by scanning files in the current directory with a specific extension.
-func (c *Kernel) CallTaskSavedList() []string {
-	var out []string
-	dir := "./"
-	if files, err := os.ReadDir(dir); err == nil {
-		for _, f := range files {
-			if f.IsDir() {
-				continue
-			}
-			file := f.Name()
-			pos := strings.LastIndex(file, tasksFileExtension)
-			if pos < 0 {
-				continue
-			}
-			out = append(out, file[:pos])
-		}
-	}
-	return out
-}
-
-// CallTaskSelection updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
-func (c *Kernel) CallTaskSelection(pid int) {
-	c.setSelectionMode(pid)
+// CallProcessSelection updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
+func (c *Kernel) CallProcessSelection(pid int) {
+	c.doProcessSetSelectionMode(pid)
 	c.render.PaintRequest(false)
 }
 
-// CallTaskSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
-func (c *Kernel) CallTaskSelectionPrevious() {
+// CallProcessSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
+func (c *Kernel) CallProcessSelectionPrevious() {
 	if c.selector.Prev() {
 		c.render.PaintRequest(false)
 	}
 }
 
-// CallTaskSelectionNext advances the task selector to the next task and triggers a repaint if the task selection changes.
-func (c *Kernel) CallTaskSelectionNext() {
+// CallProcessSelectionNext advances the task selector to the next task and triggers a repaint if the task selection changes.
+func (c *Kernel) CallProcessSelectionNext() {
 	if c.selector.Next() {
 		c.render.PaintRequest(false)
 	}
 }
 
-// CallTaskSelectionOptions updates the selected task's option with the given rune and value, then triggers a repaint request.
+// CallProcessSelectionOptions updates the selected task's option with the given rune and value, then triggers a repaint request.
 // Returns true on successful task retrieval and option update, otherwise returns false.
-func (c *Kernel) CallTaskSelectionOptions(option rune, value float64) bool {
-	t, ok := c.ids.Get(c.selector.PID())
-	if !ok {
-		return false
-	}
-	task, ok := t.(interfaces.IProcess)
-	if !ok {
-		return false
-	}
-	task.SetOption(option, value)
-	c.render.PaintRequest(true)
-	return true
+func (c *Kernel) CallProcessSelectionOptions(option rune, value float64) bool {
+	return c.doProcessSelectionOptions(option, value)
 }
 
 // CallPaintRequest triggers a paint request via the render component and returns true if successful.
@@ -382,10 +203,7 @@ func (c *Kernel) CallRestoreCursor() {
 
 // CallCWDSet sets the current working directory to the specified path and updates the shell prompt accordingly.
 func (c *Kernel) CallCWDSet(arg string) bool {
-	if ok := c.fs.CWDSet(arg); ok {
-		return true
-	}
-	return false
+	return c.fs.CWDSet(arg)
 }
 
 // CallCWDGet returns the command path of the current working directory from the file system.
@@ -409,7 +227,7 @@ func (c *Kernel) CallCWDDirectoryListing() []string {
 }
 
 // CallHistory applies a history action to the shell and invokes task execution if arguments are produced.
-func (c *Kernel) CallHistory(verb interfaces.HistoryAction, idx int) {
+func (c *Kernel) CallHistory(_ interfaces.HistoryAction, _ int) {
 	//TOD IMPLEMENT HISTORY!!!!
 	//if arg := c.shOld.HistoryApply(verb, idx); len(arg) > 0 {
 	//	_, _ = c.CallTaskExec(arg, nil)
@@ -439,16 +257,7 @@ func (c *Kernel) CallExitRequested() {
 
 // CallSetFg sets the foreground task to the one associated with the given PID. Returns true if successful, false otherwise.
 func (c *Kernel) CallSetFg(pid int) bool {
-	t, ok := c.ids.Get(pid)
-	if !ok {
-		return false
-	}
-	task, ok := t.(interfaces.IProcess)
-	if !ok {
-		return false
-	}
-	c.foreground = task
-	return true
+	return c.doProcessSetFg(pid)
 }
 
 // CallCreateTimer creates a timer for the specified process ID with given start time, interval, and execution count.
@@ -504,27 +313,35 @@ func (c *Kernel) IORead(p []byte) (int, error) {
 
 // IOType processes input events based on their type and key value to handle control, foreground tasks, and system state.
 func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
+	//TODO REIMPLEMENT!!!!
+	const commandActivate = "activate"
+
 	if kind == interfaces.KeyTypeCtrl {
 		switch key {
 		case 3:
 			c.selector.Clear()
-			c.CallTaskKillForeground()
-			//c.sh.nextLine(true)
+			if c.foreground != nil {
+				c.doProcessKill(c.foreground.PID())
+			}
 		case 4:
-			c.handleExecActivate()
+			pid, name := c.doProcessGetForegroundName()
+			if pid != adaptiveticker.UnknownId && name != commandActivate {
+				c.doProcessSetBackground()
+				_, _ = c.doProcessExec(fmt.Sprint(commandActivate, " ", pid), nil)
+			}
 		}
 		return
 	}
-	if fgPid := c.getForegroundPid(); fgPid != adaptiveticker.UnknownId {
-		c.handleTaskKeyEvent(fgPid, int(kind), key)
+
+	if c.foreground != nil {
+		c.handleTaskKeyEvent(c.foreground.PID(), int(kind), key)
 		return
 	}
 }
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
-	c.shell, _ = c.processExec(c.shellPath, nil)
-
+	c.shell, _ = c.doProcessExec(c.shellPath, nil)
 	d := make(chan bool)
 	go func() {
 		d <- true
@@ -547,8 +364,112 @@ func (c *Kernel) Start() {
 	c.eventLoop()
 }
 
-// SetSelectionMode sets the current selection mode for tasks based on a requested process ID. Defaults to the first task if the requested ID is unavailable.
-func (c *Kernel) setSelectionMode(requestedPid int) {
+// taskExecutor executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
+// Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
+func (c *Kernel) doProcessExec(line string, options *interfaces.ProcessOptions) (interfaces.IProcess, error) {
+	cmd, args, err := c.fs.Find(line)
+	if err != nil {
+		return nil, fmt.Errorf("error creating task: invalid command '%s'", line)
+	}
+	process := c.pf.Create(cmd, line, options)
+	if !c.ids.Set(process) {
+		return nil, fmt.Errorf("error creating task: can't set pid")
+	}
+	if err = cmd.Execute(process, args); err != nil {
+		c.doProcessKill(process.PID())
+		return nil, err
+	}
+	if !cmd.Daemon() {
+		c.doProcessKill(process.PID())
+		return nil, nil
+	}
+	process.SetState(interfaces.ProcessStateRunning)
+	if !cmd.Background() {
+		c.foreground = process
+	}
+	return process, nil
+}
+
+// doProcessKill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
+func (c *Kernel) doProcessKill(pid int) bool {
+	t, ok := c.ids.Get(pid)
+	if !ok {
+		return false
+	}
+	task, ok := t.(interfaces.IProcess)
+	if !ok {
+		return false
+	}
+	if task == c.shell {
+		return false
+	}
+	if len(task.Timers()) > 0 {
+		c.ticker.RemoveEntries(task.Timers())
+	}
+	if c.foreground != nil {
+		if c.foreground.PID() == pid {
+			c.foreground = c.shell //nil
+		}
+	}
+	c.ids.Unset(pid)
+	return true
+}
+
+// CallTaskKillAll terminates all tasks matching the specified name. Returns the number of tasks successfully terminated.
+func (c *Kernel) doProcessKillAll(name string) int {
+	count := 0
+	var tasks []interfaces.IProcess
+	c.ids.Range(func(item adaptiveticker.IIds) bool {
+		task, ok := item.(interfaces.IProcess)
+		if ok && task != nil {
+			tasks = append(tasks, task)
+		}
+		return true
+	})
+	for _, task := range tasks {
+		deactivate := false
+		if len(name) == 0 {
+			deactivate = true
+		} else {
+			if task.GetCommand().Name() == name {
+				deactivate = true
+			}
+		}
+		if deactivate {
+			if ok := c.doProcessKill(task.PID()); ok {
+				count++
+			}
+		}
+	}
+	return count
+}
+
+// doProcessSelectionOptions updates the current process's option and triggers a repaint request. Returns false if process not found.
+func (c *Kernel) doProcessSelectionOptions(option rune, value float64) bool {
+	t, ok := c.ids.Get(c.selector.PID())
+	if !ok {
+		return false
+	}
+	process, ok := t.(interfaces.IProcess)
+	if !ok {
+		return false
+	}
+	process.SetOption(option, value)
+	c.render.PaintRequest(true)
+	return true
+}
+
+// doProcessSetBackground sets the current foreground task to the shell and returns true, or returns false if none exists.
+func (c *Kernel) doProcessSetBackground() bool {
+	if c.foreground == nil {
+		return false
+	}
+	c.foreground = c.shell //nil
+	return true
+}
+
+// doProcessSetSelectionMode sets the current selection mode for tasks based on a requested process ID. Defaults to the first task if the requested ID is unavailable.
+func (c *Kernel) doProcessSetSelectionMode(requestedPid int) {
 	var idx = 0
 	var firstPid = adaptiveticker.UnknownId
 	var firstIdx = 0
@@ -580,26 +501,27 @@ func (c *Kernel) setSelectionMode(requestedPid int) {
 	}
 }
 
-// getForegroundPid retrieves the process ID of the currently active foreground process, or UnknownId if none is active.
-func (c *Kernel) getForegroundPid() int {
-	if c.foreground == nil {
-		return adaptiveticker.UnknownId
+// doProcessSetFg sets the foreground task to the one associated with the given PID. Returns true if successful, false otherwise.
+func (c *Kernel) doProcessSetFg(pid int) bool {
+	t, ok := c.ids.Get(pid)
+	if !ok {
+		return false
 	}
-	return c.foreground.PID()
+	task, ok := t.(interfaces.IProcess)
+	if !ok {
+		return false
+	}
+	c.foreground = task
+	return true
 }
 
-// handleExecActivate attempts to activate a foreground process by executing the associated command and returns its success status.
-func (c *Kernel) handleExecActivate() bool {
-	pid, name := c.CallTaskGetForegroundName()
-	if pid == adaptiveticker.UnknownId {
-		return false
+// doProcessGetForegroundName retrieves the PID and command name of the currently foregrounded process.
+// If no foreground process exists, it returns UnknownId and an empty string.
+func (c *Kernel) doProcessGetForegroundName() (int, string) {
+	if c.foreground == nil {
+		return adaptiveticker.UnknownId, ""
 	}
-	if name == commandActivate {
-		return false
-	}
-	c.CallTaskSetBackground()
-	_, _ = c.CallTaskExec(fmt.Sprint(commandActivate, " ", pid), nil)
-	return false
+	return c.foreground.PID(), c.foreground.GetCommand().Name()
 }
 
 // closeTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
@@ -619,7 +541,7 @@ func (c *Kernel) closeTimer(task interfaces.IProcess, tid int) bool {
 
 // shutdown stops all processes and cleans up resources managed by the Kernel instance.
 func (c *Kernel) shutdown() {
-	c.CallTaskKillAll("")
+	c.doProcessKillAll("")
 }
 
 // eventLoop is the main execution loop handling incoming messages and timers, and initiates shutdown when needed.
@@ -713,3 +635,95 @@ func (c *Kernel) handleTimerEvent(pid int, tid int, interval int) bool {
 	}
 	return ret
 }
+
+/*
+
+// tasksFileExtension specifies the file extension used for task-related data files.
+const tasksFileExtension = ".task"
+
+// commandActivate represents the command string for activation operations.
+// commandTask represents the command string for task-related operations.
+const (
+	commandActivate = "activate"
+	commandTask     = "task"
+)
+
+
+// CallTaskSaveAll saves task configurations to a JSON file, returning true if successful, otherwise false.
+func (c *Kernel) CallTaskSaveAll(name string) bool {
+	options := make(map[int]*interfaces.ProcessOptions)
+	c.ids.Range(func(item adaptiveticker.IIds) bool {
+		task, ok := item.(interfaces.IProcess)
+		if ok && task != nil {
+			if !strings.HasPrefix(task.Line(), commandTask) {
+				options[task.PID()] = task.Options()
+			}
+		}
+		return true
+	})
+	data, err := json.Marshal(options)
+	if err != nil {
+		log.Println("Error marshalling task file ", name, ": ", err.Error())
+		return false
+	}
+	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
+		name = name[pos+1:]
+	}
+	name += tasksFileExtension
+	if err = os.WriteFile(name, data, 0644); err != nil {
+		log.Println("Error writing task file ", name, ": ", err.Error())
+		return false
+	}
+	return true
+}
+
+
+
+
+// CallTaskRestoreAll attempts to restore tasks from a file by name, executing commands and reactivating the task environment.
+func (c *Kernel) CallTaskRestoreAll(name string) bool {
+	var tasks map[int]*interfaces.ProcessOptions
+	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
+		name = name[pos+1:]
+	}
+	name += tasksFileExtension
+	data, err := os.ReadFile(name)
+	if err != nil {
+		return false
+	}
+	if err = json.Unmarshal(data, &tasks); err != nil {
+		return false
+	}
+	for _, task := range tasks {
+		if strings.HasPrefix(task.Line, commandTask) {
+			continue
+		}
+		_, _ = c.CallTaskExec(task.Line, task)
+	}
+	_, _ = c.CallTaskExec(commandActivate, nil)
+	return true
+}
+
+
+
+// CallTaskSavedList retrieves a list of task names by scanning files in the current directory with a specific extension.
+func (c *Kernel) CallTaskSavedList() []string {
+	var out []string
+	dir := "./"
+	if files, err := os.ReadDir(dir); err == nil {
+		for _, f := range files {
+			if f.IsDir() {
+				continue
+			}
+			file := f.Name()
+			pos := strings.LastIndex(file, tasksFileExtension)
+			if pos < 0 {
+				continue
+			}
+			out = append(out, file[:pos])
+		}
+	}
+	return out
+}
+
+*/

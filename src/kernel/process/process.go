@@ -148,28 +148,28 @@ func (t *Process) IsActive(pid int) bool {
 
 // Deactivate attempts to terminate the task associated with the specified pid and returns true if successful.
 func (t *Process) Deactivate(pid int) bool {
-	return t.kernel.CallTaskKill(pid)
+	return t.kernel.CallProcessKill(pid)
 }
 
 // DeactivateAll terminates all tasks matching the provided name and returns the count of deactivated tasks.
 func (t *Process) DeactivateAll(name string) int {
-	return t.kernel.CallTaskKillAll(name)
+	return t.kernel.CallProcessKillAll(name)
 }
 
 // SaveTasks saves the current state of tasks with the provided name and returns true if successful, false otherwise.
-func (t *Process) SaveTasks(name string) bool {
-	return t.kernel.CallTaskSaveAll(name)
-}
+//func (t *Process) SaveTasks(name string) bool {
+//	return t.kernel.CallProcessSaveAll(name)
+//}
 
 // RestoreTasks restores the state of tasks from the given name and returns true if successful, false otherwise.
-func (t *Process) RestoreTasks(name string) bool {
-	return t.kernel.CallTaskRestoreAll(name)
-}
+//func (t *Process) RestoreTasks(name string) bool {
+//	return t.kernel.CallTaskRestoreAll(name)
+//}
 
 // ListTasks retrieves a list of all currently active task names managed by the kernel.
-func (t *Process) ListTasks() []string {
-	return t.kernel.CallTaskSavedList()
-}
+//func (t *Process) ListTasks() []string {
+//	return t.kernel.CallTaskSavedList()
+//}
 
 // SetOption updates the task's X, Y offsets or Scale based on the given option ('x', 'y', or 'z') and value.
 func (t *Process) SetOption(option rune, value float64) {
@@ -240,29 +240,29 @@ func (t *Process) Help(arg string) (string, error) {
 	return t.kernel.CallHelp(arg)
 }
 
-// TaskExec executes a task based on the provided command line input and returns a success status and any execution error.
-func (t *Process) TaskExec(line string) (bool, error) {
-	return t.kernel.CallTaskExec(line, nil)
+// ProcessExec executes a task based on the provided command line input and returns a success status and any execution error.
+func (t *Process) ProcessExec(line string) (bool, error) {
+	return t.kernel.CallProcessExec(line, nil)
 }
 
-// SetTaskSelection updates the task selection for the given process ID by invoking the kernel's task selection method.
-func (t *Process) SetTaskSelection(pid int) {
-	t.kernel.CallTaskSelection(pid)
+// ProcessSelection updates the task selection for the given process ID by invoking the kernel's task selection method.
+func (t *Process) ProcessSelection(pid int) {
+	t.kernel.CallProcessSelection(pid)
 }
 
-// SetTaskSelectionPrevious moves the task selection pointer to the previous task in the list within the Process.
-func (t *Process) SetTaskSelectionPrevious() {
-	t.kernel.CallTaskSelectionPrevious()
+// ProcessSelectionPrevious moves the task selection pointer to the previous task in the list within the Process.
+func (t *Process) ProcessSelectionPrevious() {
+	t.kernel.CallProcessSelectionPrevious()
 }
 
-// SetTaskSelectionNext moves the task selection to the next task in the sequence by invoking the kernel method.
-func (t *Process) SetTaskSelectionNext() {
-	t.kernel.CallTaskSelectionNext()
+// ProcessSelectionNext moves the task selection to the next task in the sequence by invoking the kernel method.
+func (t *Process) ProcessSelectionNext() {
+	t.kernel.CallProcessSelectionNext()
 }
 
-// SetTaskSelectionOptions configures selection behavior for the task based on the provided option and value.
-func (t *Process) SetTaskSelectionOptions(option rune, value float64) bool {
-	return t.kernel.CallTaskSelectionOptions(option, value)
+// ProcessSelectionOptions configures selection behavior for the task based on the provided option and value.
+func (t *Process) ProcessSelectionOptions(option rune, value float64) bool {
+	return t.kernel.CallProcessSelectionOptions(option, value)
 }
 
 // SetId sets the task's process ID, updates the caption, and appends the label if it exists.
@@ -289,14 +289,14 @@ func (t *Process) Paint(surface interfaces.ISurface) {
 	surface.End()
 }
 
-// SetFg sets the foreground task by specifying its PID and returns true if successfully set.
-func (t *Process) SetFg(pid int) bool {
+// ProcessSetFg sets the foreground task by specifying its PID and returns true if successfully set.
+func (t *Process) ProcessSetFg(pid int) bool {
 	return t.kernel.CallSetFg(pid)
 }
 
-// TaskList returns a string representation of the task list from the kernel.
-func (t *Process) TaskList() string {
-	return t.kernel.CallTaskList()
+// ProcessList returns a string representation of the task list from the kernel.
+func (t *Process) ProcessList() string {
+	return t.kernel.CallProcessList()
 }
 
 // WritePromptEOL writes the provided prompt followed by an end-of-line character if the eol parameter is true.

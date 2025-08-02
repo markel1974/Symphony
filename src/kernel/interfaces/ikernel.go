@@ -2,33 +2,25 @@ package interfaces
 
 // IKernel defines the core interface for managing tasks, input, system commands, and rendering operations in a system.
 type IKernel interface {
-	CallTaskExec(line string, options *ProcessOptions) (bool, error)
+	CallProcessExec(line string, options *ProcessOptions) (bool, error)
 
-	CallTaskKill(pid int) bool
+	CallProcessKill(pid int) bool
 
-	CallTaskKillAll(name string) int
+	CallProcessKillAll(name string) int
 
-	CallTaskGetForegroundName() (int, string)
+	CallProcessGetForegroundName() (int, string)
 
-	CallTaskSetBackground() bool
+	CallProcessSetBackground() bool
 
-	CallTaskKillForeground()
+	CallProcessList() string
 
-	CallTaskSaveAll(name string) bool
+	CallProcessSelection(pid int)
 
-	CallTaskRestoreAll(name string) bool
+	CallProcessSelectionPrevious()
 
-	CallTaskList() string
+	CallProcessSelectionNext()
 
-	CallTaskSavedList() []string
-
-	CallTaskSelection(pid int)
-
-	CallTaskSelectionPrevious()
-
-	CallTaskSelectionNext()
-
-	CallTaskSelectionOptions(option rune, value float64) bool
+	CallProcessSelectionOptions(option rune, value float64) bool
 
 	CallPaintRequest() bool
 

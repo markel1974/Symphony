@@ -14,6 +14,8 @@
 
 package system
 
+/*
+
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
@@ -48,3 +50,6 @@ func CreateTasks() *process.Command {
 
 	return root
 }
+
+
+*/

@@ -117,25 +117,19 @@ type IProcess interface {
 
 	SetCaption(caption string) bool
 
-	TaskExec(line string) (bool, error)
+	ProcessExec(line string) (bool, error)
 
-	SetTaskSelection(int)
+	ProcessSelection(int)
 
-	SetTaskSelectionOptions(option rune, value float64) bool
+	ProcessSelectionOptions(option rune, value float64) bool
 
-	SetTaskSelectionNext()
+	ProcessSelectionNext()
 
-	SetTaskSelectionPrevious()
+	ProcessSelectionPrevious()
 
-	TaskList() string
+	ProcessList() string
 
-	SaveTasks(name string) bool
-
-	RestoreTasks(name string) bool
-
-	ListTasks() []string
-
-	SetFg(pid int) bool
+	ProcessSetFg(pid int) bool
 
 	Write(data string)
 

@@ -191,7 +191,7 @@ func (c *XShell) enterPressed(process interfaces.IProcess) {
 		c.history.SetDefault("")
 
 		process.WriteLn("")
-		_, _ = process.TaskExec(buffer)
+		_, _ = process.ProcessExec(buffer)
 		c.nextLine(process, false)
 	} else {
 		c.nextLine(process, true)

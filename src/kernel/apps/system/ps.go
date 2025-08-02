@@ -21,7 +21,7 @@ import (
 
 func CreatePs() *process.Command {
 	run := func(task interfaces.IProcess, args []string) error {
-		task.WriteLn(task.TaskList())
+		task.WriteLn(task.ProcessList())
 		return nil
 	}
 
