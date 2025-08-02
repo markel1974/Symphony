@@ -157,17 +157,17 @@ func (t *Process) GetContext() interface{} {
 
 // CreateTimer initializes a timer with a specified start delay, repeat interval, and count for the current task.
 func (t *Process) CreateTimer(first int, interval int, count int) bool {
-	return t.kernel.CallCreateTimer(t.pid, first, interval, count)
+	return t.kernel.CallTimerCreate(t.pid, first, interval, count)
 }
 
 // StopTimer stops a timer identified by the given timer ID (tid) for the current task and returns true if successful.
 func (t *Process) StopTimer(tid int) bool {
-	return t.kernel.CallStopTimer(t.pid, tid)
+	return t.kernel.CallTimerStop(t.pid, tid)
 }
 
 // IsActive checks if the process with the specified PID is currently active in the kernel.
 func (t *Process) IsActive(pid int) bool {
-	return t.kernel.CallIsActive(pid)
+	return t.kernel.CallProcessIsActive(pid)
 }
 
 // DeactivateForeground removes the process from the foreground state and returns true if the operation succeeds.
@@ -311,7 +311,7 @@ func (t *Process) Paint(surface interfaces.ISurface) {
 
 // ProcessSetFg sets the foreground task by specifying its PID and returns true if successfully set.
 func (t *Process) ProcessSetFg(pid int) bool {
-	return t.kernel.CallSetFg(pid)
+	return t.kernel.CallProcessSetFg(pid)
 }
 
 // ProcessList returns a string representation of the task list from the kernel.

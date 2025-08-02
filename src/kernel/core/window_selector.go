@@ -2,42 +2,42 @@ package core
 
 import "github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 
-// ProcessSelector is a type that manages available task identifiers and tracks the current one for selection and navigation.
-type ProcessSelector struct {
+// WindowSelector is a type that manages available task identifiers and tracks the current one for selection and navigation.
+type WindowSelector struct {
 	pid       int
 	available []int
 	idx       int
 }
 
-// NewProcessSelector creates and returns a new ProcessSelector initialized with default values.
-func NewProcessSelector() *ProcessSelector {
-	return &ProcessSelector{
+// NewWindowSelector creates and returns a new WindowSelector initialized with default values.
+func NewWindowSelector() *WindowSelector {
+	return &WindowSelector{
 		pid:       adaptiveticker.UnknownId,
 		available: nil,
 		idx:       0,
 	}
 }
 
-// Clear resets the ProcessSelector's state by clearing the index, setting the process ID to UnknownId, and nullifying the available list.
-func (ts *ProcessSelector) Clear() {
+// Clear resets the WindowSelector's state by clearing the index, setting the process ID to UnknownId, and nullifying the available list.
+func (ts *WindowSelector) Clear() {
 	ts.idx = 0
 	ts.pid = adaptiveticker.UnknownId
 	ts.available = nil
 }
 
 // AddAvailable adds the given process ID to the available pool for selection.
-func (ts *ProcessSelector) AddAvailable(pid int) {
+func (ts *WindowSelector) AddAvailable(pid int) {
 	ts.available = append(ts.available, pid)
 }
 
-// Set updates the current process ID and index in the ProcessSelector.
-func (ts *ProcessSelector) Set(pid int, idx int) {
+// Set updates the current process ID and index in the WindowSelector.
+func (ts *WindowSelector) Set(pid int, idx int) {
 	ts.pid = pid
 	ts.idx = idx
 }
 
 // Next advances the selection index to the next available task in the list and updates the current task ID. Returns false if the list is empty.
-func (ts *ProcessSelector) Next() bool {
+func (ts *WindowSelector) Next() bool {
 	if len(ts.available) == 0 {
 		return false
 	}
@@ -51,7 +51,7 @@ func (ts *ProcessSelector) Next() bool {
 }
 
 // Prev moves the selection to the previous item in the available list, wrapping around if at the beginning. Returns true if successful.
-func (ts *ProcessSelector) Prev() bool {
+func (ts *WindowSelector) Prev() bool {
 	if len(ts.available) == 0 {
 		return false
 	}
@@ -64,7 +64,7 @@ func (ts *ProcessSelector) Prev() bool {
 	return true
 }
 
-// PID returns the currently selected process ID (pid) stored in the ProcessSelector instance.
-func (ts *ProcessSelector) PID() int {
+// PID returns the currently selected process ID (pid) stored in the WindowSelector instance.
+func (ts *WindowSelector) PID() int {
 	return ts.pid
 }

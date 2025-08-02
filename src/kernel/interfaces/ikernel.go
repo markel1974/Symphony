@@ -74,11 +74,11 @@ type IKernel interface {
 
 	CallExitRequested()
 
-	CallSetFg(pid int) bool
+	CallProcessSetFg(pid int) bool
 
-	CallCreateTimer(pid int, first int, interval int, count int) bool
+	CallTimerCreate(pid int, first int, interval int, count int) bool
 
-	CallStopTimer(pid int, tid int) bool
+	CallTimerStop(pid int, tid int) bool
 
-	CallIsActive(pid int) bool
+	CallProcessIsActive(pid int) bool
 }

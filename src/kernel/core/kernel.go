@@ -16,9 +16,9 @@ type Kernel struct {
 	outputDriver   io.Writer
 	render         interfaces.IRender
 	foreground     interfaces.IProcess
-	windowSelector *ProcessSelector
-	ids            *adaptiveticker.Ids
-	activeProcess  map[int]interfaces.IProcess
+	windowSelector *WindowSelector
+	pidGenerator   *adaptiveticker.Ids
+	running        map[int]interfaces.IProcess
 	fs             interfaces.IFileSystem
 	shellPath      string
 	shell          interfaces.IProcess
@@ -37,13 +37,13 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 		render:         render,
 		fs:             fs,
 		foreground:     nil,
-		windowSelector: NewProcessSelector(),
-		ids:            adaptiveticker.NewIds(1024),
+		windowSelector: NewWindowSelector(),
+		pidGenerator:   adaptiveticker.NewIds(1024),
 		messageChan:    make(chan messages.IMessage, contextMaQueueLen),
 		timersChan:     timersChan,
 		exit:           false,
 		shellPath:      shellPath,
-		activeProcess:  make(map[int]interfaces.IProcess),
+		running:        make(map[int]interfaces.IProcess),
 	}
 	t.pf = process_factory.NewProcessFactory(t)
 	return t
@@ -84,6 +84,17 @@ func (c *Kernel) CallProcessSetBackground() bool {
 	return c.doProcessSetBackground()
 }
 
+// CallProcessIsActive checks if a process with the given PID is currently active in the Kernel's activeProcess map.
+func (c *Kernel) CallProcessIsActive(pid int) bool {
+	process, _ := c.running[pid]
+	return process != nil
+}
+
+// CallProcessSetFg sets the foreground task to the one associated with the given PID. Returns true if successful, false otherwise.
+func (c *Kernel) CallProcessSetFg(pid int) bool {
+	return c.doProcessSetFg(pid)
+}
+
 // CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
 func (c *Kernel) CallWindowsSelectionBegin() {
 	if c.foreground != nil {
@@ -92,7 +103,7 @@ func (c *Kernel) CallWindowsSelectionBegin() {
 	}
 }
 
-// CallWindowsSelectionEnd clears the state of the associated ProcessSelector instance by resetting its index and available list.
+// CallWindowsSelectionEnd clears the state of the associated WindowSelector instance by resetting its index and available list.
 func (c *Kernel) CallWindowsSelectionEnd() {
 	c.windowSelector.Clear()
 }
@@ -243,50 +254,33 @@ func (c *Kernel) CallExitRequested() {
 	c.exit = true
 }
 
-// CallSetFg sets the foreground task to the one associated with the given PID. Returns true if successful, false otherwise.
-func (c *Kernel) CallSetFg(pid int) bool {
-	return c.doProcessSetFg(pid)
-}
-
-// CallCreateTimer creates a timer for the specified process ID with given start time, interval, and execution count.
+// CallTimerCreate creates a timer for the specified process ID with given start time, interval, and execution count.
 // Returns true if the timer is successfully created, otherwise false.
 // It requires the process to have a valid TimerEvent handler.
 // Adds the timer ID to the process's list of active timers.
-func (c *Kernel) CallCreateTimer(pid int, first int, interval int, count int) bool {
-	t, ok := c.ids.Get(pid)
-	if !ok {
+func (c *Kernel) CallTimerCreate(pid int, first int, interval int, count int) bool {
+	process, _ := c.running[pid]
+	if process == nil {
 		return false
 	}
-	task, ok := t.(interfaces.IProcess)
-	if !ok {
-		return false
-	}
-	if task.GetCommand().TimerEvent == nil {
+	if process.GetCommand().TimerEvent == nil {
 		return false
 	}
 	m := messages.NewMessageTimer(pid, interval)
 	m.SetTID(c.ticker.Create(c.timersChan, m, int64(first), int64(interval), int64(count)))
 	if m.TID() > -1 {
-		task.AddTimer(m.TID())
+		process.AddTimer(m.TID())
 	}
 	return true
 }
 
-func (c *Kernel) CallStopTimer(pid int, tid int) bool {
-	t, ok := c.ids.Get(pid)
-	if !ok {
+// CallTimerStop stops a timer associated with a specific process and thread id, returning true if successful or false otherwise.
+func (c *Kernel) CallTimerStop(pid int, tid int) bool {
+	process, _ := c.running[pid]
+	if process == nil {
 		return false
 	}
-	task, ok := t.(interfaces.IProcess)
-	if !ok {
-		return false
-	}
-	return c.closeTimer(task, tid)
-}
-
-func (c *Kernel) CallIsActive(pid int) bool {
-	_, ret := c.ids.Get(pid)
-	return ret
+	return c.closeTimer(process, tid)
 }
 
 // IOWrite writes the provided byte slice to the output driver and returns the number of bytes written and any error encountered.
@@ -301,7 +295,7 @@ func (c *Kernel) IORead(p []byte) (int, error) {
 
 // IOType processes input events based on their type and key value to handle control, foreground tasks, and system state.
 func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
-	for _, process := range c.activeProcess {
+	for _, process := range c.running {
 		if readBroadcastEvent := process.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
 			readBroadcastEvent(process, int(kind), key)
 		}
@@ -348,9 +342,10 @@ func (c *Kernel) doProcessExec(line string, options *interfaces.WindowOptions) (
 		return nil, fmt.Errorf("error creating task: invalid command '%s'", line)
 	}
 	process := c.pf.Create(cmd, line, options)
-	if !c.ids.Set(process) {
+	if !c.pidGenerator.Set(process) {
 		return nil, fmt.Errorf("error creating task: can't set pid")
 	}
+	c.running[process.PID()] = process
 	if err = cmd.Execute(process, args); err != nil {
 		c.doProcessKill(process.PID())
 		return nil, err
@@ -359,7 +354,6 @@ func (c *Kernel) doProcessExec(line string, options *interfaces.WindowOptions) (
 		c.doProcessKill(process.PID())
 		return nil, nil
 	}
-	c.activeProcess[process.PID()] = process
 	process.SetState(interfaces.ProcessStateRunning)
 	if !cmd.Background() {
 		c.foreground = process
@@ -369,29 +363,24 @@ func (c *Kernel) doProcessExec(line string, options *interfaces.WindowOptions) (
 
 // doProcessKill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
 func (c *Kernel) doProcessKill(pid int) bool {
-	t, ok := c.ids.Get(pid)
-	if !ok {
+	process, _ := c.running[pid]
+	if process == nil {
 		return false
 	}
-	task, ok := t.(interfaces.IProcess)
-	if !ok {
+	if process == c.shell {
 		return false
 	}
-	if task == c.shell {
-		return false
+	if len(process.Timers()) > 0 {
+		c.ticker.RemoveEntries(process.Timers())
 	}
-	if len(task.Timers()) > 0 {
-		c.ticker.RemoveEntries(task.Timers())
-	}
-
 	if c.foreground != nil {
 		if c.foreground.PID() == pid {
 			c.foreground = c.shell //nil
 		}
 	}
 	c.windowSelector.Clear()
-	c.ids.Unset(pid)
-	delete(c.activeProcess, pid)
+	c.pidGenerator.Unset(pid)
+	delete(c.running, pid)
 	return true
 }
 
@@ -399,13 +388,9 @@ func (c *Kernel) doProcessKill(pid int) bool {
 func (c *Kernel) doProcessKillAll(name string) int {
 	count := 0
 	var tasks []interfaces.IProcess
-	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		task, ok := item.(interfaces.IProcess)
-		if ok && task != nil {
-			tasks = append(tasks, task)
-		}
-		return true
-	})
+	for _, process := range c.running {
+		tasks = append(tasks, process)
+	}
 	for _, task := range tasks {
 		deactivate := false
 		if len(name) == 0 {
@@ -426,12 +411,8 @@ func (c *Kernel) doProcessKillAll(name string) int {
 
 // doProcessSelectionOptions updates the current process's option and triggers a repaint request. Returns false if process not found.
 func (c *Kernel) doProcessSelectionOptions(option rune, value float64) bool {
-	t, ok := c.ids.Get(c.windowSelector.PID())
-	if !ok {
-		return false
-	}
-	process, ok := t.(interfaces.IProcess)
-	if !ok {
+	process, _ := c.running[c.windowSelector.PID()]
+	if process == nil {
 		return false
 	}
 	process.SetWindowOption(option, value)
@@ -456,23 +437,19 @@ func (c *Kernel) doCreateWindowsSelection(requestedPid int) {
 
 	c.windowSelector.Clear()
 
-	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		task, _ := item.(interfaces.IProcess)
-		if task != nil {
-			if task.GetCommand().PaintEvent() != nil {
-				c.windowSelector.AddAvailable(task.PID())
-				if firstPid == adaptiveticker.UnknownId {
-					firstPid = task.PID()
-					firstIdx = idx
-				}
-				if task.PID() == requestedPid {
-					c.windowSelector.Set(requestedPid, idx)
-				}
-				idx++
+	for _, process := range c.running {
+		if process.GetCommand().PaintEvent() != nil {
+			c.windowSelector.AddAvailable(process.PID())
+			if firstPid == adaptiveticker.UnknownId {
+				firstPid = process.PID()
+				firstIdx = idx
 			}
+			if process.PID() == requestedPid {
+				c.windowSelector.Set(requestedPid, idx)
+			}
+			idx++
 		}
-		return true
-	})
+	}
 	if c.windowSelector.PID() == adaptiveticker.UnknownId {
 		if firstPid == adaptiveticker.UnknownId {
 			return
@@ -483,39 +460,21 @@ func (c *Kernel) doCreateWindowsSelection(requestedPid int) {
 
 // doProcessSetFg sets the foreground task to the one associated with the given PID. Returns true if successful, false otherwise.
 func (c *Kernel) doProcessSetFg(pid int) bool {
-	t, ok := c.ids.Get(pid)
-	if !ok {
+	process, _ := c.running[pid]
+	if process == nil {
 		return false
 	}
-	task, ok := t.(interfaces.IProcess)
-	if !ok {
-		return false
-	}
-	c.foreground = task
+	c.foreground = process
 	return true
 }
 
 // doProcessList retrieves a list of process descriptions by iterating through all stored processes in the Kernel.
 func (c *Kernel) doProcessList() []*interfaces.ProcessDescription {
 	var out []*interfaces.ProcessDescription
-	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		process, ok := item.(interfaces.IProcess)
-		if ok && process != nil {
-			out = append(out, process.Description())
-		}
-		return true
-	})
-	return out
-}
-
-// pid2Process retrieves a process implementing the interfaces.IProcess interface by its PID. Returns nil if not found.
-func (c *Kernel) pid2Process(pid int) interfaces.IProcess {
-	p, ok := c.ids.Get(pid)
-	if !ok {
-		return nil
+	for _, process := range c.running {
+		out = append(out, process.Description())
 	}
-	process, _ := p.(interfaces.IProcess)
-	return process
+	return out
 }
 
 // closeTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
@@ -582,7 +541,7 @@ func (c *Kernel) handleMessageEvent(m messages.IMessage) {
 // handleTimerEvent triggers a timer event for a task identified by the given pid and tid, with the specified interval.
 // Returns true if the event was successfully triggered, otherwise false.
 func (c *Kernel) handleTimerEvent(pid int, tid int, interval int) bool {
-	if process := c.pid2Process(pid); process != nil {
+	if process := c.running[pid]; process != nil {
 		if timerEvent := process.GetCommand().TimerEvent(); timerEvent != nil {
 			timerEvent(process, tid, interval)
 			return true
@@ -599,16 +558,12 @@ func (c *Kernel) handlePaintEvent() bool {
 	}
 	var selectedProcess interfaces.IProcess = nil
 	var tasks []interfaces.IProcess
-	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		process, ok := item.(interfaces.IProcess)
-		if ok {
-			if process.PID() == c.windowSelector.PID() {
-				selectedProcess = process
-			} else {
-				tasks = append(tasks, process)
-			}
+	for _, process := range c.running {
+		if process.PID() == c.windowSelector.PID() {
+			selectedProcess = process
+		} else {
+			tasks = append(tasks, process)
 		}
-		return true
-	})
+	}
 	return c.render.ExecPaint(selectedProcess, tasks)
 }
