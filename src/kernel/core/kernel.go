@@ -18,7 +18,7 @@ type Kernel struct {
 	foreground     interfaces.IProcess
 	windowSelector *ProcessSelector
 	ids            *adaptiveticker.Ids
-	activeProcess2 map[int]interfaces.IProcess
+	activeProcess  map[int]interfaces.IProcess
 	fs             interfaces.IFileSystem
 	shellPath      string
 	shell          interfaces.IProcess
@@ -43,7 +43,7 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 		timersChan:     timersChan,
 		exit:           false,
 		shellPath:      shellPath,
-		activeProcess2: make(map[int]interfaces.IProcess),
+		activeProcess:  make(map[int]interfaces.IProcess),
 	}
 	t.pf = process_factory.NewProcessFactory(t)
 	return t
@@ -301,7 +301,7 @@ func (c *Kernel) IORead(p []byte) (int, error) {
 
 // IOType processes input events based on their type and key value to handle control, foreground tasks, and system state.
 func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
-	for _, process := range c.activeProcess2 {
+	for _, process := range c.activeProcess {
 		if readBroadcastEvent := process.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
 			readBroadcastEvent(process, int(kind), key)
 		}
@@ -359,7 +359,7 @@ func (c *Kernel) doProcessExec(line string, options *interfaces.WindowOptions) (
 		c.doProcessKill(process.PID())
 		return nil, nil
 	}
-	c.activeProcess2[process.PID()] = process
+	c.activeProcess[process.PID()] = process
 	process.SetState(interfaces.ProcessStateRunning)
 	if !cmd.Background() {
 		c.foreground = process
@@ -391,7 +391,7 @@ func (c *Kernel) doProcessKill(pid int) bool {
 	}
 	c.windowSelector.Clear()
 	c.ids.Unset(pid)
-	delete(c.activeProcess2, pid)
+	delete(c.activeProcess, pid)
 	return true
 }
 
@@ -493,15 +493,6 @@ func (c *Kernel) doProcessSetFg(pid int) bool {
 	}
 	c.foreground = task
 	return true
-}
-
-// doProcessGetForegroundName retrieves the PID and command name of the currently foregrounded process.
-// If no foreground process exists, it returns UnknownId and an empty string.
-func (c *Kernel) doProcessGetForegroundName() (int, string) {
-	if c.foreground == nil {
-		return adaptiveticker.UnknownId, ""
-	}
-	return c.foreground.PID(), c.foreground.GetCommand().Name()
 }
 
 // doProcessList retrieves a list of process descriptions by iterating through all stored processes in the Kernel.
