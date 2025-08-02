@@ -4,10 +4,17 @@ package interfaces
 type CommandType int
 
 const (
-	CommandTypeUnknown   CommandType = iota // Tipo non specificato o di default
-	CommandTypeDirectory                    // Nodo contenitore (CLI o Componente)
-	CommandTypeFile                         // Nodo "foglia" (Comando CLI, Proprietà, Comando Custom)
-	CommandTypeLink                         // Link simbolico (futuro)
+	// CommandTypeUnknown represents an undefined or unrecognized command type in the ICommand hierarchy.
+	CommandTypeUnknown CommandType = iota
+
+	// CommandTypeDirectory represents a command type corresponding to a directory node, allowing the addition of subcommands.
+	CommandTypeDirectory
+
+	// CommandTypeFile represents a command type corresponding to a file node.
+	CommandTypeFile
+
+	// CommandTypeLink represents a command type corresponding to a symbolic link node.
+	CommandTypeLink
 )
 
 // ICommand defines an interface for handling hierarchical commands with support for events, execution, and navigation.
