@@ -146,13 +146,6 @@ func (c *XShell) keyHandlerSelection(process interfaces.IProcess, code int, key 
 	case 'q':
 		process.WindowsSelectionPrevious()
 	}
-
-	//pid, name := c.doProcessGetForegroundName()
-	//if pid != adaptiveticker.UnknownId && name != commandActivate {
-	//	c.doProcessSetBackground()
-	//	_, _ = c.doProcessExec(fmt.Sprint(commandActivate, " ", pid), nil)
-	//}
-
 }
 
 // nextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
@@ -319,7 +312,5 @@ func (c *XShell) keyPressed(process interfaces.IProcess, key rune) {
 			log.Println("terminalKeyPressed: invalid pos", c.pos)
 		}
 	}
-
 	c.history.SetDefault(string(c.current))
-	//c.tabCount = 0
 }

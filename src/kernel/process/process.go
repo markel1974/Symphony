@@ -393,8 +393,3 @@ func (t *Process) ClearScreen() {
 func (t *Process) SetExit() {
 	t.kernel.CallExitRequested()
 }
-
-// History triggers a historical operation on the task using the specified action and index.
-func (t *Process) History(verb interfaces.HistoryAction, idx int) {
-	t.kernel.CallHistory(verb, idx)
-}

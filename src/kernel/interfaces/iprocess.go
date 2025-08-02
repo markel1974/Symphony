@@ -170,8 +170,6 @@ type IProcess interface {
 
 	RestoreCursor()
 
-	History(verb HistoryAction, idx int)
-
 	ClearScreen()
 
 	SetExit()

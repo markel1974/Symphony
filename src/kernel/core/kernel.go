@@ -222,14 +222,6 @@ func (c *Kernel) CallCWDDirectoryListing() []string {
 	return c.fs.CWDDirectoryListing()
 }
 
-// CallHistory applies a history action to the shell and invokes task execution if arguments are produced.
-func (c *Kernel) CallHistory(_ interfaces.HistoryAction, _ int) {
-	//TOD IMPLEMENT HISTORY!!!!
-	//if arg := c.shOld.HistoryApply(verb, idx); len(arg) > 0 {
-	//	_, _ = c.CallTaskExec(arg, nil)
-	//}
-}
-
 // CallSuggestion provides autocomplete suggestions and context for a given input string at a specified cursor position.
 func (c *Kernel) CallSuggestion(in string, cursor int) (string, []string, bool) {
 	return c.fs.Suggestion(in, cursor)
@@ -397,7 +389,6 @@ func (c *Kernel) doProcessKill(pid int) bool {
 			c.foreground = c.shell //nil
 		}
 	}
-
 	c.windowSelector.Clear()
 	c.ids.Unset(pid)
 	delete(c.activeProcess2, pid)
@@ -630,95 +621,3 @@ func (c *Kernel) handlePaintEvent() bool {
 	})
 	return c.render.ExecPaint(selectedProcess, tasks)
 }
-
-/*
-
-// tasksFileExtension specifies the file extension used for task-related data files.
-const tasksFileExtension = ".task"
-
-// commandActivate represents the command string for activation operations.
-// commandTask represents the command string for task-related operations.
-const (
-	commandActivate = "activate"
-	commandTask     = "task"
-)
-
-
-// CallTaskSaveAll saves task configurations to a JSON file, returning true if successful, otherwise false.
-func (c *Kernel) CallTaskSaveAll(name string) bool {
-	options := make(map[int]*interfaces.WindowOptions)
-	c.ids.Range(func(item adaptiveticker.IIds) bool {
-		task, ok := item.(interfaces.IProcess)
-		if ok && task != nil {
-			if !strings.HasPrefix(task.Line(), commandTask) {
-				options[task.PID()] = task.Options()
-			}
-		}
-		return true
-	})
-	data, err := json.Marshal(options)
-	if err != nil {
-		log.Println("Error marshalling task file ", name, ": ", err.Error())
-		return false
-	}
-	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
-		name = name[pos+1:]
-	}
-	name += tasksFileExtension
-	if err = os.WriteFile(name, data, 0644); err != nil {
-		log.Println("Error writing task file ", name, ": ", err.Error())
-		return false
-	}
-	return true
-}
-
-
-
-
-// CallTaskRestoreAll attempts to restore tasks from a file by name, executing commands and reactivating the task environment.
-func (c *Kernel) CallTaskRestoreAll(name string) bool {
-	var tasks map[int]*interfaces.WindowOptions
-	if pos := strings.LastIndex(name, string(os.PathSeparator)); pos > -1 {
-		name = name[pos+1:]
-	}
-	name += tasksFileExtension
-	data, err := os.ReadFile(name)
-	if err != nil {
-		return false
-	}
-	if err = json.Unmarshal(data, &tasks); err != nil {
-		return false
-	}
-	for _, task := range tasks {
-		if strings.HasPrefix(task.Line, commandTask) {
-			continue
-		}
-		_, _ = c.CallTaskExec(task.Line, task)
-	}
-	_, _ = c.CallTaskExec(commandActivate, nil)
-	return true
-}
-
-
-
-// CallTaskSavedList retrieves a list of task names by scanning files in the current directory with a specific extension.
-func (c *Kernel) CallTaskSavedList() []string {
-	var out []string
-	dir := "./"
-	if files, err := os.ReadDir(dir); err == nil {
-		for _, f := range files {
-			if f.IsDir() {
-				continue
-			}
-			file := f.Name()
-			pos := strings.LastIndex(file, tasksFileExtension)
-			if pos < 0 {
-				continue
-			}
-			out = append(out, file[:pos])
-		}
-	}
-	return out
-}
-
-*/

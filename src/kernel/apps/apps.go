@@ -40,7 +40,7 @@ func (t *Root) Build(bin *process.Command) (string, *process.Command, *process.C
 	sbinCommands = append(sbinCommands, system.CreatePs())
 	sbinCommands = append(sbinCommands, system.CreateClear())
 	sbinCommands = append(sbinCommands, system.CreateFg())
-	sbinCommands = append(sbinCommands, system.CreateHistory())
+	//sbinCommands = append(sbinCommands, system.CreateHistory())
 	//sbinCommands = append(sbinCommands, system.CreateTasks())
 	sbinCommands = append(sbinCommands, system.CreateLs())
 	sbinCommands = append(sbinCommands, system.CreateHelp())

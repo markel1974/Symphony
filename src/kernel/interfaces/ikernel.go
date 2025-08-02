@@ -68,8 +68,6 @@ type IKernel interface {
 
 	CallCWDDirectoryListing() []string
 
-	CallHistory(verb HistoryAction, idx int)
-
 	CallHelp(arg string) (string, error)
 
 	CallSetScreenSize(w int, h int)
