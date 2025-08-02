@@ -21,6 +21,7 @@ type Command struct {
 	run                        interfaces.RunFn
 	timerEvent                 interfaces.TimerFn
 	readEvent                  interfaces.ReadFn
+	readBroadcastEvent         interfaces.ReadFn
 	paintEvent                 interfaces.PaintFn
 	commands                   []*Command
 	parent                     *Command
@@ -73,6 +74,11 @@ func (c *Command) ReadEvent() interfaces.ReadFn {
 	return c.readEvent
 }
 
+// ReadBroadcastEvent returns a function for handling broadcast event messages within the command context.
+func (c *Command) ReadBroadcastEvent() interfaces.ReadFn {
+	return c.readBroadcastEvent
+}
+
 // TimerEvent returns the TimerFn associated with the Command, used to define the timer-based behavior for the command.
 func (c *Command) TimerEvent() interfaces.TimerFn {
 	return c.timerEvent
@@ -81,6 +87,10 @@ func (c *Command) TimerEvent() interfaces.TimerFn {
 // SetReadFn sets the function to handle read-related events for the command.
 func (c *Command) SetReadFn(fn interfaces.ReadFn) {
 	c.readEvent = fn
+}
+
+func (c *Command) SetReadBroadcastFn(fn interfaces.ReadFn) {
+	c.readBroadcastEvent = fn
 }
 
 // SetTimerFn sets the TimerFn callback function for the command's timer event.

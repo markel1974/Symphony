@@ -14,6 +14,14 @@
 
 package system
 
+/*
+import (
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/process"
+	"strconv"
+)
+
+
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
@@ -26,7 +34,7 @@ func CreateActivate() *process.Command {
 		if len(args) > 0 {
 			targetPid, _ = strconv.Atoi(args[0])
 		}
-		task.ProcessSelection(targetPid)
+		task.WindowsSelectionb(targetPid)
 		return nil
 	}
 	readFn := func(task interfaces.IProcess, code int, key rune) {
@@ -69,3 +77,6 @@ func CreateActivate() *process.Command {
 
 	return root
 }
+
+
+*/

@@ -7,7 +7,7 @@ import (
 
 // Process represents a task or job in the system, including its context, state, associated options, and execution details.
 type Process struct {
-	*interfaces.ProcessOptions
+	*interfaces.WindowOptions
 	kernel  interfaces.IKernel
 	cmd     interfaces.ICommand
 	context interface{}
@@ -57,18 +57,33 @@ func (t *Process) TimersIterator(callback func(tid int) bool) {
 	}
 }
 
+// AddTimer adds a timer identifier to the list of timers for the process.
 func (t *Process) AddTimer(tid int) {
 	t.timers = append(t.timers, tid)
 }
 
-// SetOptions updates the Process's properties using the provided TaskOptions. It returns immediately if options is nil.
-func (t *Process) SetOptions(options *interfaces.ProcessOptions) {
+// SetWindowOptions updates the Process's properties using the provided TaskOptions. It returns immediately if options is nil.
+func (t *Process) SetWindowOptions(options *interfaces.WindowOptions) {
 	if options == nil {
 		return
 	}
 	t.scale = options.Scale
 	t.offsetY = options.OffsetY
 	t.offsetX = options.OffsetX
+}
+
+// SetWindowOption updates the task's X, Y offsets or Scale based on the given option ('x', 'y', or 'z') and value.
+func (t *Process) SetWindowOption(option rune, value float64) {
+	switch option {
+	case 'y':
+		t.SetOffsetY(t.OffsetY() + int(value))
+	case 'x':
+		t.SetOffsetX(t.OffsetX() + int(value))
+	case 'z':
+		if scale := t.Scale() + value; scale >= 0.2 && scale <= 1 {
+			t.SetScale(scale)
+		}
+	}
 }
 
 // Description provides a brief summary of the process including its name, PID, and line information.
@@ -81,8 +96,8 @@ func (t *Process) Description() *interfaces.ProcessDescription {
 }
 
 // Options return the current task options, including offset, scale, and line settings.
-func (t *Process) Options() *interfaces.ProcessOptions {
-	return interfaces.NewProcessOptions(t.offsetY, t.offsetX, t.scale, t.line)
+func (t *Process) Options() *interfaces.WindowOptions {
+	return interfaces.NewWindowOptions(t.offsetY, t.offsetX, t.scale, t.line)
 }
 
 // OffsetX returns the X-axis offset value for the Process.
@@ -155,6 +170,11 @@ func (t *Process) IsActive(pid int) bool {
 	return t.kernel.CallIsActive(pid)
 }
 
+// DeactivateForeground removes the process from the foreground state and returns true if the operation succeeds.
+func (t *Process) DeactivateForeground() bool {
+	return t.kernel.CallProcessKillForeground()
+}
+
 // Deactivate attempts to terminate the task associated with the specified pid and returns true if successful.
 func (t *Process) Deactivate(pid int) bool {
 	return t.kernel.CallProcessKill(pid)
@@ -179,20 +199,6 @@ func (t *Process) DeactivateAll(name string) int {
 //func (t *Process) ListTasks() []string {
 //	return t.kernel.CallTaskSavedList()
 //}
-
-// SetOption updates the task's X, Y offsets or Scale based on the given option ('x', 'y', or 'z') and value.
-func (t *Process) SetOption(option rune, value float64) {
-	switch option {
-	case 'y':
-		t.SetOffsetY(t.OffsetY() + int(value))
-	case 'x':
-		t.SetOffsetX(t.OffsetX() + int(value))
-	case 'z':
-		if scale := t.Scale() + value; scale >= 0.2 && scale <= 1 {
-			t.SetScale(scale)
-		}
-	}
-}
 
 // SetCaption updates the task's caption using a provided string and task ID, returning true to indicate successful update.
 func (t *Process) SetCaption(caption string) bool {
@@ -254,24 +260,29 @@ func (t *Process) ProcessExec(line string) (bool, error) {
 	return t.kernel.CallProcessExec(line, nil)
 }
 
-// ProcessSelection updates the task selection for the given process ID by invoking the kernel's task selection method.
-func (t *Process) ProcessSelection(pid int) {
-	t.kernel.CallProcessSelection(pid)
+// WindowsSelectionBegin updates the task selection for the given process ID by invoking the kernel's task selection method.
+func (t *Process) WindowsSelectionBegin() {
+	t.kernel.CallWindowsSelectionBegin()
 }
 
-// ProcessSelectionPrevious moves the task selection pointer to the previous task in the list within the Process.
-func (t *Process) ProcessSelectionPrevious() {
-	t.kernel.CallProcessSelectionPrevious()
+// WindowsSelectionEnd finalizes the current text selection process within the Windows environment for the associated process.
+func (t *Process) WindowsSelectionEnd() {
+	t.kernel.CallWindowsSelectionEnd()
 }
 
-// ProcessSelectionNext moves the task selection to the next task in the sequence by invoking the kernel method.
-func (t *Process) ProcessSelectionNext() {
-	t.kernel.CallProcessSelectionNext()
+// WindowsSelectionPrevious moves the task selection pointer to the previous task in the list within the Process.
+func (t *Process) WindowsSelectionPrevious() {
+	t.kernel.CallWindowsSelectionPrevious()
 }
 
-// ProcessSelectionOptions configures selection behavior for the task based on the provided option and value.
-func (t *Process) ProcessSelectionOptions(option rune, value float64) bool {
-	return t.kernel.CallProcessSelectionOptions(option, value)
+// WindowsSelectionNext moves the task selection to the next task in the sequence by invoking the kernel method.
+func (t *Process) WindowsSelectionNext() {
+	t.kernel.CallWindowsSelectionNext()
+}
+
+// WindowsSelectionOptions configures selection behavior for the task based on the provided option and value.
+func (t *Process) WindowsSelectionOptions(option rune, value float64) bool {
+	return t.kernel.CallWindowsSelectionOptions(option, value)
 }
 
 // SetId sets the task's process ID, updates the caption, and appends the label if it exists.

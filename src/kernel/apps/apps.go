@@ -34,7 +34,7 @@ func (t *Root) Build(bin *process.Command) (string, *process.Command, *process.C
 	sbinCommands = append(sbinCommands, system.CreateExit())
 	sbinCommands = append(sbinCommands, system.CreateCD())
 	sbinCommands = append(sbinCommands, system.CreatePWD())
-	sbinCommands = append(sbinCommands, system.CreateActivate())
+	//sbinCommands = append(sbinCommands, system.CreateActivate())
 	sbinCommands = append(sbinCommands, system.CreateKill())
 	sbinCommands = append(sbinCommands, system.CreateKillAll())
 	sbinCommands = append(sbinCommands, system.CreatePs())

@@ -20,12 +20,22 @@ func CreateXShell() *process.Command {
 		}
 		s.KeyHandler(process, code, key)
 	}
+
+	orReadBroast := func(process interfaces.IProcess, code int, key rune) {
+		ctx := process.GetContext()
+		s, _ := ctx.(*XShell)
+		if s == nil {
+			return
+		}
+		s.BroadcastKeyHandler(process, code, key)
+	}
 	onTimer := func(process interfaces.IProcess, tid int, interval int) {
 	}
 	root := process.NewCommand("xsh", interfaces.CommandTypeFile, nil, true, onCreate)
 	root.SetHelp("XShell", "XShell")
 	root.SetTimerFn(onTimer)
 	root.SetReadFn(onRead)
+	root.SetReadBroadcastFn(orReadBroast)
 
 	return root
 }

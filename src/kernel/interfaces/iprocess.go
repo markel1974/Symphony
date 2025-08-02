@@ -39,16 +39,16 @@ type ProcessDescription struct {
 	Line string
 }
 
-// ProcessOptions represents configurable parameters for a task, including offsets, scaling, and associated command line.
-type ProcessOptions struct {
+// WindowOptions represents configurable parameters for a task, including offsets, scaling, and associated command line.
+type WindowOptions struct {
 	OffsetY int
 	OffsetX int
 	Scale   float64
 	Line    string
 }
 
-func NewProcessOptions(offsetX int, offsetY int, scale float64, line string) *ProcessOptions {
-	return &ProcessOptions{
+func NewWindowOptions(offsetX int, offsetY int, scale float64, line string) *WindowOptions {
+	return &WindowOptions{
 		OffsetY: offsetY,
 		OffsetX: offsetX,
 		Scale:   scale,
@@ -72,17 +72,17 @@ type PaintFn func(task IProcess, surface ISurface)
 type IProcess interface {
 	PID() int
 
+	SetId(i int)
+
 	Line() string
 
 	Description() *ProcessDescription
 
-	Options() *ProcessOptions
+	Options() *WindowOptions
 
-	SetOption(option rune, value float64)
+	SetWindowOption(option rune, value float64)
 
-	SetOptions(options *ProcessOptions)
-
-	SetId(i int)
+	SetWindowOptions(options *WindowOptions)
 
 	GetCommand() ICommand
 
@@ -103,6 +103,8 @@ type IProcess interface {
 	IsActive(pid int) bool
 
 	Deactivate(pid int) bool
+
+	DeactivateForeground() bool
 
 	DeactivateAll(name string) int
 
@@ -128,13 +130,15 @@ type IProcess interface {
 
 	ProcessExec(line string) (bool, error)
 
-	ProcessSelection(int)
+	WindowsSelectionBegin()
 
-	ProcessSelectionOptions(option rune, value float64) bool
+	WindowsSelectionEnd()
 
-	ProcessSelectionNext()
+	WindowsSelectionOptions(option rune, value float64) bool
 
-	ProcessSelectionPrevious()
+	WindowsSelectionNext()
+
+	WindowsSelectionPrevious()
 
 	ProcessList() []*ProcessDescription
 

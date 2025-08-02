@@ -25,7 +25,11 @@ type ICommand interface {
 
 	ReadEvent() ReadFn
 
+	ReadBroadcastEvent() ReadFn
+
 	TimerEvent() TimerFn
+
+	SetReadBroadcastFn(fn ReadFn)
 
 	SetReadFn(fn ReadFn)
 

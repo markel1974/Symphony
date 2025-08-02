@@ -15,10 +15,10 @@ func NewProcessFactory(kernel interfaces.IKernel) *ProcessFactory {
 	}
 }
 
-func (fp *ProcessFactory) Create(cmd interfaces.ICommand, line string, options *interfaces.ProcessOptions) interfaces.IProcess {
+func (fp *ProcessFactory) Create(cmd interfaces.ICommand, line string, options *interfaces.WindowOptions) interfaces.IProcess {
 	task := process.NewProcess(fp.kernel, cmd, line)
 	if options != nil {
-		task.SetOptions(options)
+		task.SetWindowOptions(options)
 	}
 	return task
 }

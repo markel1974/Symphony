@@ -20,6 +20,7 @@ type XShell struct {
 	prompt          string
 	currentUsername string
 	passwordRetry   int
+	selectionMode   bool
 }
 
 // NewXShell initializes and returns a new instance of *Shell configured with dependencies and initial settings.
@@ -31,6 +32,7 @@ func NewXShell(prompt string, autosave bool) *XShell {
 		defaultPrompt: prompt,
 		prompt:        prompt,
 		history:       history,
+		selectionMode: false,
 	}
 	return c
 }
@@ -41,8 +43,41 @@ func (c *XShell) Start(process interfaces.IProcess) {
 	c.nextLine(process, true)
 }
 
-// KeyHandler handles keyboard inputs based on the provided key type and key value, executing corresponding actions.
+func (c *XShell) BroadcastKeyHandler(process interfaces.IProcess, code int, key rune) {
+	kind := interfaces.KeyType(code)
+	if kind == interfaces.KeyTypeCtrl {
+		if key == 3 {
+			//ctrl-c
+			c.selectionMode = false
+			process.DeactivateForeground()
+			c.nextLine(process, true)
+		} else if key == 4 {
+			//ctrl-d
+			c.selectionMode = !c.selectionMode
+			if c.selectionMode {
+				process.WindowsSelectionBegin()
+			} else {
+				process.WindowsSelectionEnd()
+				process.ProcessSetFg(process.PID())
+				c.nextLine(process, true)
+			}
+		}
+		return
+	}
+
+	if c.selectionMode {
+		c.keyHandlerSelection(process, code, key)
+	}
+}
+
 func (c *XShell) KeyHandler(process interfaces.IProcess, code int, key rune) {
+	if !c.selectionMode {
+		c.keyHandlerNormal(process, code, key)
+	}
+}
+
+// KeyHandler handles keyboard inputs based on the provided key type and key value, executing corresponding actions.
+func (c *XShell) keyHandlerNormal(process interfaces.IProcess, code int, key rune) {
 	kind := interfaces.KeyType(code)
 	if kind == interfaces.KeyTypeCtrl {
 		switch key {
@@ -75,6 +110,49 @@ func (c *XShell) KeyHandler(process interfaces.IProcess, code int, key rune) {
 	default:
 		log.Println("handlerKeyEvent: Unknown key type")
 	}
+}
+
+func (c *XShell) keyHandlerSelection(process interfaces.IProcess, code int, key rune) {
+	kind := interfaces.KeyType(code)
+	if kind == interfaces.KeyTypeCursor {
+		switch interfaces.CursorCodeDef(key) {
+		case interfaces.CursorUpDef:
+			process.WindowsSelectionOptions('y', -1)
+		case interfaces.CursorDownDef:
+			process.WindowsSelectionOptions('y', 1)
+		case interfaces.CursorLeftDef:
+			process.WindowsSelectionOptions('x', -1)
+		case interfaces.CursorRightDef:
+			process.WindowsSelectionOptions('x', 1)
+		}
+		return
+	}
+
+	switch key {
+	case 'w':
+		process.WindowsSelectionOptions('y', -1)
+	case 's':
+		process.WindowsSelectionOptions('y', 1)
+	case 'a':
+		process.WindowsSelectionOptions('x', -1)
+	case 'd':
+		process.WindowsSelectionOptions('x', 1)
+	case '+':
+		process.WindowsSelectionOptions('z', 0.1)
+	case '-':
+		process.WindowsSelectionOptions('z', -0.1)
+	case '\t':
+		process.WindowsSelectionNext()
+	case 'q':
+		process.WindowsSelectionPrevious()
+	}
+
+	//pid, name := c.doProcessGetForegroundName()
+	//if pid != adaptiveticker.UnknownId && name != commandActivate {
+	//	c.doProcessSetBackground()
+	//	_, _ = c.doProcessExec(fmt.Sprint(commandActivate, " ", pid), nil)
+	//}
+
 }
 
 // nextLine resets the input buffer and renders the prompt and EOL markers with specified colors and styles.
