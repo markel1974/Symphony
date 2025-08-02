@@ -56,7 +56,7 @@ type IKernel interface {
 
 	CallScreenSize() (int, int)
 
-	CallSuggestion(in string, cursor int) (string, []string, bool)
+	CallFileSystemSuggestion(in string, cursor int) (string, []string, bool)
 
 	CallCWDSet(arg string) bool
 
@@ -68,7 +68,7 @@ type IKernel interface {
 
 	CallCWDDirectoryListing() []string
 
-	CallHelp(arg string) (string, error)
+	CallFileSystemHelp(arg string) (string, error)
 
 	CallSetScreenSize(w int, h int)
 

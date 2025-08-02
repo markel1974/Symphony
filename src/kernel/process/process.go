@@ -247,12 +247,12 @@ func (t *Process) CWDDirectoryListing() []string {
 
 // Suggestion provides auto-completion suggestions based on the input string and cursor position. Returns prefix, suggestions, and a success flag.
 func (t *Process) Suggestion(in string, cursor int) (string, []string, bool) {
-	return t.kernel.CallSuggestion(in, cursor)
+	return t.kernel.CallFileSystemSuggestion(in, cursor)
 }
 
 // Help calls the kernel's Help method with the provided argument and returns the result or an error.
 func (t *Process) Help(arg string) (string, error) {
-	return t.kernel.CallHelp(arg)
+	return t.kernel.CallFileSystemHelp(arg)
 }
 
 // ProcessExec executes a task based on the provided command line input and returns a success status and any execution error.

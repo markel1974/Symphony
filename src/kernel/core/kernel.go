@@ -233,14 +233,14 @@ func (c *Kernel) CallCWDDirectoryListing() []string {
 	return c.fs.CWDDirectoryListing()
 }
 
-// CallSuggestion provides autocomplete suggestions and context for a given input string at a specified cursor position.
-func (c *Kernel) CallSuggestion(in string, cursor int) (string, []string, bool) {
+// CallFileSystemSuggestion provides autocomplete suggestions and context for a given input string at a specified cursor position.
+func (c *Kernel) CallFileSystemSuggestion(in string, cursor int) (string, []string, bool) {
 	return c.fs.Suggestion(in, cursor)
 }
 
-// CallHelp retrieves the help information associated with the given argument and returns it as a string.
+// CallFileSystemHelp retrieves the help information associated with the given argument and returns it as a string.
 // Returns an error if the help information cannot be fetched.
-func (c *Kernel) CallHelp(arg string) (string, error) {
+func (c *Kernel) CallFileSystemHelp(arg string) (string, error) {
 	return c.fs.Help(arg)
 }
 
