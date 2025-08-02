@@ -8,10 +8,11 @@ type MessageType int
 // MessageTypePaint represents a message type for paint operations.
 // MessageTypeQuit represents a message type for quit operations.
 const (
-	MessageTypeRead  MessageType = iota
-	MessageTypeTimer MessageType = iota
-	MessageTypePaint MessageType = iota
-	MessageTypeQuit  MessageType = iota
+	MessageTypeIORead MessageType = iota
+	MessageTypeRead
+	MessageTypeTimer
+	MessageTypePaint
+	MessageTypeQuit
 )
 
 // IMessage defines the interface for messages used within the system, requiring a method to retrieve the message type.

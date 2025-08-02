@@ -293,20 +293,8 @@ func (c *Kernel) IORead(p []byte) (int, error) {
 	return c.inputDriver.Read(p)
 }
 
-// IOType processes input events based on their type and key value to handle control, foreground tasks, and system state.
 func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
-	for _, process := range c.running {
-		if readBroadcastEvent := process.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
-			readBroadcastEvent(process, int(kind), key)
-		}
-	}
-
-	if c.foreground != nil {
-		if readEvent := c.foreground.GetCommand().ReadEvent(); readEvent != nil {
-			readEvent(c.foreground, int(kind), key)
-		}
-		return
-	}
+	c.messageChan <- messages.NewMessageIORead(kind, key)
 }
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
@@ -477,6 +465,22 @@ func (c *Kernel) doProcessList() []*interfaces.ProcessDescription {
 	return out
 }
 
+// doIOType processes input events based on their type and key value to handle control, foreground tasks, and system state.
+func (c *Kernel) doIOType(kind interfaces.KeyType, key rune) {
+	for _, process := range c.running {
+		if readBroadcastEvent := process.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
+			readBroadcastEvent(process, int(kind), key)
+		}
+	}
+
+	if c.foreground != nil {
+		if readEvent := c.foreground.GetCommand().ReadEvent(); readEvent != nil {
+			readEvent(c.foreground, int(kind), key)
+		}
+		return
+	}
+}
+
 // closeTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
 func (c *Kernel) closeTimer(task interfaces.IProcess, tid int) bool {
 	ret := false
@@ -518,6 +522,10 @@ func (c *Kernel) eventLoop() {
 func (c *Kernel) handleMessageEvent(m messages.IMessage) {
 	if m != nil {
 		switch m.GetType() {
+		case messages.MessageTypeIORead:
+			if mm, ok := m.(*messages.MessageIORead); ok {
+				c.doIOType(mm.Kind(), mm.Key())
+			}
 		case messages.MessageTypeRead:
 			if mm, ok := m.(*messages.MessageRead); ok {
 				c.render.Scan(mm.Data())
