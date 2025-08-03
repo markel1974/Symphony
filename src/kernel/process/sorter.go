@@ -1,6 +1,8 @@
 package process
 
-type commandSorterByName []*Command
+import "github.com/markel1974/c64emu/src/kernel/interfaces"
+
+type commandSorterByName []interfaces.ICommand
 
 // Len returns the number of elements in the commandSorterByName collection.
 func (c commandSorterByName) Len() int { return len(c) }

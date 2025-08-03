@@ -23,11 +23,8 @@ type Command struct {
 	readEvent                  interfaces.ReadFn
 	readBroadcastEvent         interfaces.ReadFn
 	paintEvent                 interfaces.PaintFn
-	commands                   []*Command
-	parent                     *Command
-	maxUsageLen                int
-	maxPathLen                 int
-	maxNameLen                 int
+	commands                   []interfaces.ICommand
+	parent                     interfaces.ICommand
 }
 
 // NewCommand creates a new Command instance with the specified name, type, aliases, daemon status, and execution function.
@@ -47,6 +44,10 @@ func NewCommand(name string, kind interfaces.CommandType, aliases []string, daem
 		daemon:  daemon,
 		run:     run,
 	}
+}
+
+func (c *Command) SetParent(parent interfaces.ICommand) {
+	c.parent = parent
 }
 
 // Type returns the structural nature of the command represented as interfaces.CommandType.
@@ -89,6 +90,7 @@ func (c *Command) SetReadFn(fn interfaces.ReadFn) {
 	c.readEvent = fn
 }
 
+// SetReadBroadcastFn sets the function to handle read broadcast events for the command.
 func (c *Command) SetReadBroadcastFn(fn interfaces.ReadFn) {
 	c.readBroadcastEvent = fn
 }
@@ -181,25 +183,25 @@ func (c *Command) FindChildrenPrefix(prefix string) interfaces.ICommand {
 // Find locates a subcommand and its remaining arguments by traversing the command's hierarchy recursively.
 // It returns the matched command, remaining arguments, and an error if something goes wrong.
 func (c *Command) Find(args []string) (interfaces.ICommand, []string, error) {
-	var innerFind func(*Command, []string) (*Command, []string)
-	innerFind = func(c *Command, innerArgs []string) (*Command, []string) {
+	var innerFind func(interfaces.ICommand, []string) (interfaces.ICommand, []string)
+	innerFind = func(zc interfaces.ICommand, innerArgs []string) (interfaces.ICommand, []string) {
 		var argsWOFlags = innerArgs
 		if len(argsWOFlags) == 0 {
-			return c, innerArgs
+			return zc, innerArgs
 		}
 		nextSubCmd := argsWOFlags[0]
-		var cmd = c.findNext(nextSubCmd)
+		var cmd = zc.FindNext(nextSubCmd)
 		if cmd != nil {
 			return innerFind(cmd, argsMinusFirstX(innerArgs, nextSubCmd))
 		}
-		return c, innerArgs
+		return zc, innerArgs
 	}
 	commandFound, a := innerFind(c, args)
 	return commandFound, a, nil
 }
 
-// findNext searches for the next command by name or alias and returns it, returning the parent command if next is "..".
-func (c *Command) findNext(next string) *Command {
+// FindNext searches for the next command by name or alias and returns it, returning the parent command if next is "..".
+func (c *Command) FindNext(next string) interfaces.ICommand {
 	if next == ".." {
 		return c.parent
 	}
@@ -218,7 +220,7 @@ func (c *Command) findNext(next string) *Command {
 // Traverse navigates through a command hierarchy based on the provided path and returns the matching ICommand or nil if not found.
 func (c *Command) Traverse(path []string) interfaces.ICommand {
 	for i, arg := range path {
-		cmd := c.findNext(arg)
+		cmd := c.FindNext(arg)
 		if cmd == nil {
 			return nil
 		}
@@ -257,27 +259,11 @@ func (c *Command) AddCommand(cx interfaces.ICommand) error {
 	if c.kind != interfaces.CommandTypeDirectory {
 		return fmt.Errorf("can't add subcommands to a non-directory command: %s", c.Name())
 	}
-	cy, ok := cx.(*Command)
-	if !ok {
-		return fmt.Errorf("invalid command type command: %s", cx.Name())
-	}
-	if cy == c {
+	if cx == c {
 		return errors.New("command can't be a child of itself")
 	}
-	cy.parent = c
-	usageLen := len(cy.Name())
-	if usageLen > c.maxUsageLen {
-		c.maxUsageLen = usageLen
-	}
-	pathLen := len(cy.CommandPath())
-	if pathLen > c.maxPathLen {
-		c.maxPathLen = pathLen
-	}
-	nameLen := len(cy.Name())
-	if nameLen > c.maxNameLen {
-		c.maxNameLen = nameLen
-	}
-	c.commands = append(c.commands, cy)
+	cx.SetParent(c)
+	c.commands = append(c.commands, cx)
 	return nil
 }
 
@@ -286,38 +272,15 @@ func (c *Command) RemoveCommand(cx interfaces.ICommand) error {
 	if cx == nil {
 		return fmt.Errorf("nil command")
 	}
-	cy, ok := cx.(*Command)
-	if !ok {
-		return fmt.Errorf("invalid command type command: %s", cx.Name())
-	}
-	var commands []*Command
+	var commands []interfaces.ICommand
 	for _, command := range c.commands {
-		if cy == command {
-			command.parent = nil
+		if cx == command {
+			command.SetParent(nil)
 			break
 		}
 		commands = append(commands, command)
 	}
 	c.commands = commands
-
-	//compute length
-	c.maxUsageLen = 0
-	c.maxPathLen = 0
-	c.maxNameLen = 0
-	for _, command := range c.commands {
-		usageLen := len(command.Name())
-		if usageLen > c.maxUsageLen {
-			c.maxUsageLen = usageLen
-		}
-		pathLen := len(command.CommandPath())
-		if pathLen > c.maxPathLen {
-			c.maxPathLen = pathLen
-		}
-		nameLen := len(command.Name())
-		if nameLen > c.maxNameLen {
-			c.maxNameLen = nameLen
-		}
-	}
 	return nil
 }
 

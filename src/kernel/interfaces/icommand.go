@@ -19,6 +19,8 @@ const (
 
 // ICommand defines an interface for handling hierarchical commands with support for events, execution, and navigation.
 type ICommand interface {
+	SetParent(parent ICommand)
+
 	Type() CommandType
 
 	PaintEvent() PaintFn
@@ -61,6 +63,8 @@ type ICommand interface {
 
 	Find(args []string) (ICommand, []string, error)
 
+	FindNext(next string) ICommand
+
 	Traverse(args []string) ICommand
 
 	SuggestionsFor(typedName string) []string
@@ -69,9 +73,9 @@ type ICommand interface {
 
 	Commands() []ICommand
 
-	//AddCommand(cx ...ICommand) error
+	AddCommand(cx ICommand) error
 
-	//RemoveCommand(cx ...ICommand)
+	RemoveCommand(cx ICommand) error
 
 	CommandPath() string
 
