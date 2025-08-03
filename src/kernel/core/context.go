@@ -50,12 +50,9 @@ func (c *Context) Setup(terminal interfaces.ITerminal) {
 	xsh, systemCommands, commands := system.Build(c.commands)
 	// TODO OGNI SERVER DEVE AVERE IL PROPRIO EVENT LOOP es L'unicp autorizzato a disegnare è il render
 	timerChan := make(chan *adaptiveticker.TimerHandler, contextMaQueueLen)
-	terminalRender := render.NewRender(c.ticker, timerChan, terminal)
+	terminalRender := render.NewRender(c.ticker, timerChan, terminal, c.writer)
 	fs := file_system.NewFileSystem(commands, []interfaces.ICommand{systemCommands})
-	//sh := shell.NewShell(c.auth, terminalRender, c.prompt, c.autosave)
 	c.kernel = NewKernel(c.ticker, timerChan, c.reader, c.writer, terminalRender, fs, xsh)
-
-	terminal.SetIO(c.kernel)
 }
 
 // Exec initializes the admin console display, advances the shell line, and starts the kernel.

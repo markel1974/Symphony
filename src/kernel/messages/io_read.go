@@ -1,7 +1,6 @@
 package messages
 
-import "github.com/markel1974/c64emu/src/kernel/interfaces"
-
+/*
 // MessageIORead represents a specific type of Message for IO read operations and includes a key of type rune.
 type MessageIORead struct {
 	Message
@@ -27,3 +26,6 @@ func (m *MessageIORead) Kind() interfaces.KeyType {
 func (m *MessageIORead) Key() rune {
 	return m.key
 }
+
+
+*/

@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package vt100
 
 import (
@@ -21,22 +7,36 @@ import (
 
 //var controlSequenceIntroducer = []byte{ 27, 91 }
 
+// _escMoveCursorLeftDef defines the escape sequence for moving the cursor one position to the left.
+// _escMoveCursorRightDef defines the escape sequence for moving the cursor one position to the right.
+// _escMoveCursorTopLeftDef defines the escape sequence for moving the cursor to the top-left corner of the screen.
+// _escSaveCursorDef defines the escape sequence for saving the current cursor position.
+// _escRestoreCursorDef defines the escape sequence for restoring the saved cursor position.
+// _clearLine defines the escape sequence to clear the current line and move the cursor to the beginning.
+// _clearScreen defines the escape sequence to clear the entire screen and move the cursor to the beginning.
+// escClearLineDef is commented out and would define the escape sequence to clear the current line if uncommented.
 var (
-	escMoveCursorLeftDef    = []byte{27, 91, 68}
-	escMoveCursorRightDef   = []byte{27, 91, 67}
-	escMoveCursorTopLeftDef = []byte{27, 91, 'H'}
-	escSaveCursorDef        = []byte{27, '7'}
-	escRestoreCursorDef     = []byte{27, '8'}
-
+	_escMoveCursorLeftDef    = []byte{27, 91, 68}
+	_escMoveCursorRightDef   = []byte{27, 91, 67}
+	_escMoveCursorTopLeftDef = []byte{27, 91, 'H'}
+	_escSaveCursorDef        = []byte{27, '7'}
+	_escRestoreCursorDef     = []byte{27, '8'}
+	_clearLine               = "\x1B[2K" + "\r"
+	_clearScreen             = "\x1B[2J" + "\r"
 	//	escClearLineDef =   	  []byte{ 27, 91, '2', 'K' }
 )
 
+// VT100 represents a structure for handling VT100 terminal operations and settings.
+// It encapsulates functionality like cursor movement, screen clearing, and colorizing text.
+// The debug field enables or disables debug logs for terminal actions.
+// The enterKey field specifies the character used as the enter key.
 type VT100 struct {
-	io       interfaces.IInputOutput
+	//io       interfaces.IInputOutput
 	debug    bool
 	enterKey rune
 }
 
+// NewVt100 initializes and returns a new VT100 instance with the specified enter key. If enterKey is invalid, it defaults to 13.
 func NewVt100(enterKey rune) *VT100 {
 	if enterKey < 0 {
 		enterKey = 13
@@ -48,22 +48,21 @@ func NewVt100(enterKey rune) *VT100 {
 	return t
 }
 
-func (l *VT100) SetIO(io interfaces.IInputOutput) {
-	l.io = io
+//func (l *VT100) SetIO(io interfaces.IInputOutput) {
+//	l.io = io
+//}
+
+//func (l *VT100) Write(text string) (int, error) {
+//	return l.io.IOWrite([]byte(text))
+//}
+
+// WriteColor applies colors and mode to the given text and returns it as a byte slice.
+func (l *VT100) WriteColor(text string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) []byte {
+	return []byte(l.Colorize(text, int(fg), int(bg), mode))
+	//return l.io.IOWrite([]byte(l.Colorize(text, int(fg), int(bg), mode)))
 }
 
-func (l *VT100) Read(data []byte) (int, error) {
-	return l.io.IORead(data)
-}
-
-func (l *VT100) Write(text string) (int, error) {
-	return l.io.IOWrite([]byte(text))
-}
-
-func (l *VT100) WriteColor(text string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) (int, error) {
-	return l.io.IOWrite([]byte(l.Colorize(text, int(fg), int(bg), mode)))
-}
-
+// Colorize applies foreground and background colors to a given text string based on the specified color mode.
 func (l *VT100) Colorize(text string, f int, b int, mode interfaces.ColorMode) string {
 	switch mode {
 	case interfaces.ModeNormal:
@@ -93,52 +92,61 @@ func (l *VT100) Colorize(text string, f int, b int, mode interfaces.ColorMode) s
 	}
 }
 
-func (l *VT100) SaveCursor() (int, error) {
-	return l.io.IOWrite(escSaveCursorDef)
+// SaveCursor returns the VT100 escape sequence to save the current cursor position.
+func (l *VT100) SaveCursor() []byte {
+	return _escSaveCursorDef
+	//return l.io.IOWrite(_escSaveCursorDef)
 }
 
-func (l *VT100) RestoreCursor() (int, error) {
-	return l.io.IOWrite(escRestoreCursorDef)
+// RestoreCursor returns the VT100 escape sequence for restoring the cursor to the last saved position.
+func (l *VT100) RestoreCursor() []byte {
+	return _escRestoreCursorDef
 }
 
-func (l *VT100) MoveCursorLeft() (int, error) {
-	return l.io.IOWrite(escMoveCursorLeftDef)
+// MoveCursorLeft generates the VT100 escape sequence for moving the cursor one position to the left.
+func (l *VT100) MoveCursorLeft() []byte {
+	return _escMoveCursorLeftDef
 }
 
-func (l *VT100) MoveCursorRight() (int, error) {
-	return l.io.IOWrite(escMoveCursorRightDef)
+// MoveCursorRight returns a byte sequence to move the cursor one position to the right according to VT100 specifications.
+func (l *VT100) MoveCursorRight() []byte {
+	return _escMoveCursorRightDef
 }
 
-func (l *VT100) MoveCursorTopLeft() (int, error) {
-	return l.io.IOWrite(escMoveCursorTopLeftDef)
+// MoveCursorTopLeft generates a byte sequence to move the cursor to the top-left position of the terminal.
+func (l *VT100) MoveCursorTopLeft() []byte {
+	return _escMoveCursorTopLeftDef
 }
 
-func (l *VT100) ClearLine(_ string) (int, error) {
+// ClearLine sends the VT100 escape code to erase the current line and resets the cursor to the start of the line.
+func (l *VT100) ClearLine(_ string) []byte {
 	//l.ResetBuffer()
 	//l.current = []rune(line)
 	//l.pos = len(l.current)
 
 	// ClearLine sends the VT100 code for erasing the line followed by a carriage return
 	// to move the cursor back to the beginning of the line
-	clearLine := "\x1B[2K" + "\r"
-	return l.io.IOWrite([]byte(clearLine))
+	return []byte(_clearLine)
 }
 
-func (l *VT100) ClearScreen() (int, error) {
-	clearScreen := "\x1B[2J" + "\r"
-	return l.io.IOWrite([]byte(clearScreen))
+// ClearScreen returns the VT100 escape sequence for clearing the screen and moving the cursor to the top-left position.
+func (l *VT100) ClearScreen() []byte {
+	return []byte(_clearScreen)
 }
 
+// SetSize updates the terminal size with the specified width (w) and height (h) values. Logging occurs in debug mode.
 func (l *VT100) SetSize(w int, h int) {
 	if l.debug {
 		log.Println("Screen size", w, h)
 	}
 }
 
+// SetEnterKey updates the rune value to be used as the Enter (Return) key input handler in the VT100 terminal.
 func (l *VT100) SetEnterKey(key rune) {
 	l.enterKey = key
 }
 
+// colorFgAdapter maps a ColorDef to its corresponding foreground colorCode for VT100 terminal coloring.
 func (l *VT100) colorFgAdapter(c interfaces.ColorDef) colorCode {
 	var color colorCode
 
@@ -188,6 +196,7 @@ func (l *VT100) colorFgAdapter(c interfaces.ColorDef) colorCode {
 	return color
 }
 
+// colorBgAdapter maps a color definition to its corresponding background color code for VT100 terminal escape sequences.
 func (l *VT100) colorBgAdapter(c interfaces.ColorDef) colorCode {
 	var color colorCode
 
@@ -255,14 +264,15 @@ func (l * VT100) RetrieveTab() (string, bool) {
 }
 */
 
-func (l *VT100) Scan(data []byte) {
+// Scan processes the input data byte slice and returns a KeyType and the corresponding rune based on the input sequence.
+func (l *VT100) Scan(data []byte) (interfaces.KeyType, rune) {
 	escape := false
 	var escapeSequence []byte
 	var escapeParameter byte
-	var escapeIntermediate byte
+	//var escapeIntermediate byte
 
 	if len(data) <= 0 {
-		return
+		return interfaces.KeyTypeNode, 0
 	}
 
 	//UTF8
@@ -285,11 +295,25 @@ func (l *VT100) Scan(data []byte) {
 					escapeParameter = byte(key)
 					escapeSequence = append(escapeSequence, byte(key))
 				} else if key >= 0x20 && key <= 0x2F {
-					escapeIntermediate = byte(key)
+					//escapeIntermediate = byte(key)
 					escapeSequence = append(escapeSequence, byte(key))
 				} else if key >= 0x40 && key <= 0x7E {
 					escapeSequence = append(escapeSequence, byte(key))
-					l.doEscape(escapeParameter, escapeIntermediate, byte(key))
+					switch byte(key) {
+					case 65:
+						return interfaces.KeyTypeCursor, rune(interfaces.CursorUpDef)
+					case 66:
+						return interfaces.KeyTypeCursor, rune(interfaces.CursorDownDef)
+					case 67:
+						return interfaces.KeyTypeCursor, rune(interfaces.CursorRightDef)
+					case 68:
+						return interfaces.KeyTypeCursor, rune(interfaces.CursorLeftDef)
+					case 126:
+						if escapeParameter == 51 {
+							return interfaces.KeyTypeCancel, 127
+						}
+					}
+					//l.doEscape(escapeParameter, escapeIntermediate, byte(key))
 					escape = false
 				} else {
 					escape = false
@@ -303,73 +327,39 @@ func (l *VT100) Scan(data []byte) {
 			}
 
 			if key == 9 {
-				l.io.IOType(interfaces.KeyTypeTab, '\t')
+				return interfaces.KeyTypeTab, '\t'
+				//l.io.IOType(interfaces.KeyTypeTab, '\t')
 			} else {
 				switch key {
 				case l.enterKey:
-					l.io.IOType(interfaces.KeyTypeEnter, '\n')
+					return interfaces.KeyTypeEnter, '\n'
+					//l.io.IOType(interfaces.KeyTypeEnter, '\n')
 				case 3:
-					l.doCtrl(key)
+					return interfaces.KeyTypeCtrl, key
+					//l.doCtrl(key)
 				case 4:
-					l.doCtrl(key)
+					return interfaces.KeyTypeCtrl, key
+					//l.doCtrl(key)
 				case 8:
-					l.io.IOType(interfaces.KeyTypeBackspace, 8)
+					return interfaces.KeyTypeBackspace, 8
+					//l.io.IOType(interfaces.KeyTypeBackspace, 8)
 
 				case 27:
 					escape = true
 					escapeSequence = nil
-					escapeIntermediate = 0
+					//escapeIntermediate = 0
 					escapeParameter = 0
 					escapeSequence = append(escapeSequence, byte(key))
 				case 127:
-					l.io.IOType(interfaces.KeyTypeBackspace, 8)
+					return interfaces.KeyTypeBackspace, 8
+					//l.io.IOType(interfaces.KeyTypeBackspace, 8)
 				default:
-					l.io.IOType(interfaces.KeyTypeKey, key)
+					return interfaces.KeyTypeKey, key
+					//l.io.IOType(interfaces.KeyTypeKey, key)
 				}
 			}
 		}
 	}
-}
 
-func (l *VT100) doEscape(parameter byte, intermediate byte, final byte) bool {
-	if l.debug {
-		log.Println("Escape sequence", parameter, intermediate, final)
-	}
-
-	switch final {
-	case 65:
-		l.doMoveCursorUp()
-	case 66:
-		l.doMoveCursorDown()
-	case 67:
-		l.doMoveCursorRight()
-	case 68:
-		l.doMoveCursorLeft()
-	case 126:
-		if parameter == 51 {
-			l.io.IOType(interfaces.KeyTypeCancel, 127)
-		}
-	}
-
-	return false
-}
-
-func (l *VT100) doCtrl(key rune) {
-	l.io.IOType(interfaces.KeyTypeCtrl, key)
-}
-
-func (l *VT100) doMoveCursorRight() {
-	l.io.IOType(interfaces.KeyTypeCursor, rune(interfaces.CursorRightDef))
-}
-
-func (l *VT100) doMoveCursorLeft() {
-	l.io.IOType(interfaces.KeyTypeCursor, rune(interfaces.CursorLeftDef))
-}
-
-func (l *VT100) doMoveCursorUp() {
-	l.io.IOType(interfaces.KeyTypeCursor, rune(interfaces.CursorUpDef))
-}
-
-func (l *VT100) doMoveCursorDown() {
-	l.io.IOType(interfaces.KeyTypeCursor, rune(interfaces.CursorDownDef))
+	return interfaces.KeyTypeNode, 0
 }

@@ -289,13 +289,13 @@ func (c *Kernel) IOWrite(data []byte) (int, error) {
 }
 
 // IORead reads data from the input driver into the provided byte slice and returns the number of bytes read and any error encountered.
-func (c *Kernel) IORead(p []byte) (int, error) {
-	return c.inputDriver.Read(p)
-}
+//func (c *Kernel) IORead(p []byte) (int, error) {
+//	return c.inputDriver.Read(p)
+//}
 
-func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
-	c.messageChan <- messages.NewMessageIORead(kind, key)
-}
+//func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
+//	c.messageChan <- messages.NewMessageIORead(kind, key)
+//}
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
@@ -522,13 +522,10 @@ func (c *Kernel) eventLoop() {
 func (c *Kernel) handleMessageEvent(m messages.IMessage) {
 	if m != nil {
 		switch m.GetType() {
-		case messages.MessageTypeIORead:
-			if mm, ok := m.(*messages.MessageIORead); ok {
-				c.doIOType(mm.Kind(), mm.Key())
-			}
 		case messages.MessageTypeRead:
 			if mm, ok := m.(*messages.MessageRead); ok {
-				c.render.Scan(mm.Data())
+				kind, key := c.render.Scan(mm.Data())
+				c.doIOType(kind, key)
 			}
 		case messages.MessageTypeTimer:
 			if mt, ok := m.(*messages.MessageTimer); ok {

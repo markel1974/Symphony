@@ -11,7 +11,7 @@ type IRender interface {
 
 	PaintRequest(full bool) bool
 
-	Read(data []byte) (int, error)
+	Colorize(text string, fg int, bg int, mode ColorMode) string
 
 	Write(data string)
 
@@ -23,13 +23,15 @@ type IRender interface {
 
 	ClearScreen()
 
-	Scan(data []byte)
+	Scan(data []byte) (KeyType, rune)
 
 	ClearLine(line string)
 
 	MoveCursorLeft()
 
 	MoveCursorRight()
+
+	MoveCursorTopLeft()
 
 	SaveCursor()
 

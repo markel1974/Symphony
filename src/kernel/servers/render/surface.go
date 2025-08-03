@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package render
 
 import (
@@ -23,7 +9,7 @@ import (
 
 // Surface represents a two-dimensional grid-based rendering surface for text-based terminal output.
 type Surface struct {
-	terminal  interfaces.ITerminal
+	render    interfaces.IRender
 	rows      int
 	columns   int
 	surface   [][]string
@@ -41,17 +27,17 @@ type Surface struct {
 }
 
 // newSurface initializes a new Surface object with the provided terminal, row, and column dimensions.
-func newSurface(terminal interfaces.ITerminal, rows int, columns int) *Surface {
+func newSurface(render interfaces.IRender, rows int, columns int) *Surface {
 	s := &Surface{
-		terminal: terminal,
-		rows:     rows,
-		columns:  columns,
-		scale:    1.0,
-		offsetX:  0,
-		offsetY:  0,
-		rMax:     0,
-		border:   1,
-		full:     false,
+		render:  render,
+		rows:    rows,
+		columns: columns,
+		scale:   1.0,
+		offsetX: 0,
+		offsetY: 0,
+		rMax:    0,
+		border:  1,
+		full:    false,
 	}
 
 	s.surface = make([][]string, s.rows)
@@ -168,7 +154,7 @@ func (s *Surface) DrawColor(rs int, cs int, text rune, fg interfaces.ColorDef, b
 
 	if len(s.surface) > rows {
 		if len(s.surface[rows]) > columns {
-			colorized := s.terminal.Colorize(string(text), int(fg), int(bg), mode)
+			colorized := s.render.Colorize(string(text), int(fg), int(bg), mode)
 			s.surface[rows][columns] = colorized
 			if rows > s.rMax {
 				s.rMax = rows
@@ -260,10 +246,10 @@ func (s *Surface) GetBuffer() []byte {
 // Render updates the terminal by rendering the current buffer to the screen and restoring the cursor position.
 func (s *Surface) Render() {
 	var buffer = string(s.GetBuffer())
-	_, _ = s.terminal.SaveCursor()
-	_, _ = s.terminal.MoveCursorTopLeft()
-	_, _ = s.terminal.Write(buffer)
-	_, _ = s.terminal.RestoreCursor()
+	s.render.SaveCursor()
+	s.render.MoveCursorTopLeft()
+	s.render.Write(buffer)
+	s.render.RestoreCursor()
 }
 
 // drawWindow draws a bordered window on the surface with optional caption and selection mode colors.
