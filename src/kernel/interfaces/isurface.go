@@ -34,13 +34,7 @@ type ISurface interface {
 
 	DrawSeries(data []float64, w int, h int, min float64, max float64)
 
-	SetOffsetX(offsetX int)
-
-	SetOffsetY(offsetY int)
-
-	SetScale(scale float64)
-
-	SetCaption(caption string)
+	SetWindowOptions(options *WindowOptions)
 
 	Begin()
 

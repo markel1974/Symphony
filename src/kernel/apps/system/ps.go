@@ -25,7 +25,7 @@ func CreatePs() *process.Command {
 		out := "\r\nPid: Process"
 		pl := process.ProcessList()
 		for _, v := range pl {
-			out += fmt.Sprintf("\r\n%d: %s", v.Pid, v.Name)
+			out += fmt.Sprintf("\r\n%d: %s (%s)", v.PID(), v.Name(), v.Line())
 		}
 		process.WriteLn(out)
 		return nil

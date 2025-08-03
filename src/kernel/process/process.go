@@ -14,27 +14,18 @@ type Process struct {
 	timers  []int
 	pid     int
 	state   interfaces.ProcessState
-	label   string
 	line    string
-	//window
-	caption string
-	offsetY int
-	offsetX int
-	scale   float64
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
 func NewProcess(kernel interfaces.IKernel, cmd interfaces.ICommand, line string) *Process {
 	t := &Process{
-		kernel:  kernel,
-		cmd:     cmd,
-		context: nil,
-		state:   interfaces.ProcessStateSetup,
-		label:   cmd.Name(),
-		line:    line,
-		offsetX: 0,
-		offsetY: 0,
-		scale:   1.0,
+		kernel:        kernel,
+		cmd:           cmd,
+		context:       nil,
+		state:         interfaces.ProcessStateSetup,
+		line:          line,
+		WindowOptions: interfaces.NewWindowOptions(0, 0, 1.0),
 	}
 	return t
 }
@@ -63,72 +54,9 @@ func (t *Process) AddTimer(tid int) {
 	t.timers = append(t.timers, tid)
 }
 
-// SetWindowOptions updates the Process's properties using the provided TaskOptions. It returns immediately if options is nil.
-func (t *Process) SetWindowOptions(options *interfaces.WindowOptions) {
-	if options == nil {
-		return
-	}
-	t.scale = options.Scale
-	t.offsetY = options.OffsetY
-	t.offsetX = options.OffsetX
-}
-
-// SetWindowOption updates the task's X, Y offsets or Scale based on the given option ('x', 'y', or 'z') and value.
-func (t *Process) SetWindowOption(option rune, value float64) {
-	switch option {
-	case 'y':
-		t.SetOffsetY(t.OffsetY() + int(value))
-	case 'x':
-		t.SetOffsetX(t.OffsetX() + int(value))
-	case 'z':
-		if scale := t.Scale() + value; scale >= 0.2 && scale <= 1 {
-			t.SetScale(scale)
-		}
-	}
-}
-
 // Description provides a brief summary of the process including its name, PID, and line information.
 func (t *Process) Description() *interfaces.ProcessDescription {
-	return &interfaces.ProcessDescription{
-		Name: t.cmd.Name(),
-		Pid:  t.pid,
-		Line: t.line,
-	}
-}
-
-// Options return the current task options, including offset, scale, and line settings.
-func (t *Process) Options() *interfaces.WindowOptions {
-	return interfaces.NewWindowOptions(t.offsetY, t.offsetX, t.scale, t.line)
-}
-
-// OffsetX returns the X-axis offset value for the Process.
-func (t *Process) OffsetX() int {
-	return t.offsetX
-}
-
-// SetOffsetX sets the horizontal offset (offsetX) of the task to the specified value x.
-func (t *Process) SetOffsetX(x int) {
-	t.offsetX = x
-}
-
-// OffsetY returns the current vertical offset value for the task.
-func (t *Process) OffsetY() int {
-	return t.offsetY
-}
-
-// SetOffsetY sets the vertical offset value for the task.
-func (t *Process) SetOffsetY(y int) {
-	t.offsetY = y
-}
-
-// Scale returns the current scale factor of the task. It determines the zoom level or relative size adjustment.
-func (t *Process) Scale() float64 {
-	return t.scale
-}
-
-// SetScale sets the scale factor for the Process object to the specified value.
-func (t *Process) SetScale(scale float64) {
-	t.scale = scale
+	return interfaces.NewProcessDescription(t.cmd.Name(), t.pid, t.line)
 }
 
 // Line returns the line configuration of the Process as a string.
@@ -184,31 +112,6 @@ func (t *Process) Deactivate(pid int) bool {
 // DeactivateAll terminates all tasks matching the provided name and returns the count of deactivated tasks.
 func (t *Process) DeactivateAll(name string) int {
 	return t.kernel.CallProcessKillAll(name)
-}
-
-// SaveTasks saves the current state of tasks with the provided name and returns true if successful, false otherwise.
-//func (t *Process) SaveTasks(name string) bool {
-//	return t.kernel.CallProcessSaveAll(name)
-//}
-
-// RestoreTasks restores the state of tasks from the given name and returns true if successful, false otherwise.
-//func (t *Process) RestoreTasks(name string) bool {
-//	return t.kernel.CallTaskRestoreAll(name)
-//}
-
-// ListTasks retrieves a list of all currently active task names managed by the kernel.
-//func (t *Process) ListTasks() []string {
-//	return t.kernel.CallTaskSavedList()
-//}
-
-// SetCaption updates the task's caption using a provided string and task ID, returning true to indicate successful update.
-func (t *Process) SetCaption(caption string) bool {
-	t.label = caption
-	t.caption = strconv.Itoa(t.pid)
-	if len(t.label) > 0 {
-		t.caption += " - " + t.label
-	}
-	return true
 }
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.
@@ -289,9 +192,10 @@ func (t *Process) WindowsSelectionOptions(option rune, value float64) bool {
 // SetId sets the task's process ID, updates the caption, and appends the label if it exists.
 func (t *Process) SetId(id int) {
 	t.pid = id
-	t.caption = strconv.Itoa(t.pid)
-	if len(t.label) > 0 {
-		t.caption += " - " + t.label
+	caption := strconv.Itoa(t.pid)
+	if len(t.cmd.Name()) > 0 {
+		caption += " - " + t.cmd.Name()
+		t.WindowOptions.SetCaption(caption)
 	}
 }
 
@@ -301,10 +205,7 @@ func (t *Process) Paint(surface interfaces.ISurface) {
 	if fn == nil {
 		return
 	}
-	surface.SetOffsetX(t.offsetX)
-	surface.SetOffsetY(t.offsetY)
-	surface.SetScale(t.scale)
-	surface.SetCaption(t.caption)
+	surface.SetWindowOptions(t.WindowOptions)
 	surface.Begin()
 	fn(t, surface)
 	surface.End()

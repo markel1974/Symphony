@@ -87,24 +87,11 @@ func (s *Surface) SetSelectionMode(selection bool) {
 	s.selection = selection
 }
 
-// SetCaption sets the caption text for the Surface. It updates the internal caption field with the provided string.
-func (s *Surface) SetCaption(caption string) {
-	s.caption = caption
-}
-
-// SetOffsetX updates the horizontal offset (offsetX) for the Surface, affecting the horizontal position of drawn elements.
-func (s *Surface) SetOffsetX(offsetX int) {
-	s.offsetX = offsetX
-}
-
-// SetOffsetY sets the vertical offset of the surface to the specified value.
-func (s *Surface) SetOffsetY(offsetY int) {
-	s.offsetY = offsetY
-}
-
-// SetScale updates the scaling factor for the Surface, affecting the computed size during rendering and operations.
-func (s *Surface) SetScale(scale float64) {
-	s.scale = scale
+func (s *Surface) SetWindowOptions(options *interfaces.WindowOptions) {
+	s.caption = options.Caption()
+	s.offsetX = options.OffsetX()
+	s.offsetY = options.OffsetY()
+	s.scale = options.Scale()
 }
 
 // Draw places a rune at the specified row and column on the surface, considering offsets and boundaries.
