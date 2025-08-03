@@ -13,7 +13,7 @@ type Command struct {
 	name                       string
 	kind                       interfaces.CommandType
 	aliases                    []string
-	shortHelp                  string
+	help                       string
 	longHelp                   string
 	suggestionsMinimumDistance int
 	daemon                     bool
@@ -25,9 +25,9 @@ type Command struct {
 	paintEvent                 interfaces.PaintFn
 	commands                   []*Command
 	parent                     *Command
-	commandsMaxUseLen          int
-	commandsMaxCommandPathLen  int
-	commandsMaxNameLen         int
+	maxUsageLen                int
+	maxPathLen                 int
+	maxNameLen                 int
 }
 
 // NewCommand creates a new Command instance with the specified name, type, aliases, daemon status, and execution function.
@@ -115,7 +115,7 @@ func (c *Command) Background() bool {
 
 // SetHelp sets the short and long help text for the command. Short help is used for summaries, long help for details.
 func (c *Command) SetHelp(short string, long string) {
-	c.shortHelp = short
+	c.help = short
 	c.longHelp = long
 }
 
@@ -151,8 +151,8 @@ func (c *Command) Help() string {
 	if len(c.longHelp) > 0 {
 		return c.longHelp
 	}
-	if len(c.shortHelp) > 0 {
-		return c.shortHelp
+	if len(c.help) > 0 {
+		return c.help
 	}
 	return ""
 }
@@ -203,7 +203,6 @@ func (c *Command) findNext(next string) *Command {
 	if next == ".." {
 		return c.parent
 	}
-
 	matches := make([]*Command, 0)
 	for _, cmd := range c.commands {
 		if cmd.Name() == next || cmd.HasAlias(next) {
@@ -213,7 +212,6 @@ func (c *Command) findNext(next string) *Command {
 	if len(matches) == 1 {
 		return matches[0]
 	}
-
 	return nil
 }
 
@@ -252,63 +250,58 @@ func (c *Command) Commands() []interfaces.ICommand {
 
 // AddCommand adds one or more subcommands to the current command if it is of type CommandTypeDirectory.
 // It returns an error if attempting to add subcommands to a non-directory command or if a command is its own child.
-func (c *Command) AddCommand(cx ...*Command) error {
+func (c *Command) AddCommand(cy *Command) error {
 	if c.kind != interfaces.CommandTypeDirectory {
 		return fmt.Errorf("can't add subcommands to a non-directory command: %s", c.name)
 	}
-
-	for i, x := range cx {
-		if cx[i] == c {
-			return errors.New("command can't be a child of itself")
-		}
-		cx[i].parent = c
-		usageLen := len(x.name)
-		if usageLen > c.commandsMaxUseLen {
-			c.commandsMaxUseLen = usageLen
-		}
-		commandPathLen := len(x.CommandPath())
-		if commandPathLen > c.commandsMaxCommandPathLen {
-			c.commandsMaxCommandPathLen = commandPathLen
-		}
-		nameLen := len(x.Name())
-		if nameLen > c.commandsMaxNameLen {
-			c.commandsMaxNameLen = nameLen
-		}
-		c.commands = append(c.commands, x)
+	if cy == c {
+		return errors.New("command can't be a child of itself")
 	}
+	cy.parent = c
+	usageLen := len(cy.Name())
+	if usageLen > c.maxUsageLen {
+		c.maxUsageLen = usageLen
+	}
+	pathLen := len(cy.CommandPath())
+	if pathLen > c.maxPathLen {
+		c.maxPathLen = pathLen
+	}
+	nameLen := len(cy.Name())
+	if nameLen > c.maxNameLen {
+		c.maxNameLen = nameLen
+	}
+	c.commands = append(c.commands, cy)
 	return nil
 }
 
 // RemoveCommand removes one or more subcommands from the parent command and updates parent-related references.
-func (c *Command) RemoveCommand(cx ...*Command) {
+func (c *Command) RemoveCommand(cy *Command) {
 	var commands []*Command
-main:
 	for _, command := range c.commands {
-		for _, cmd := range cx {
-			if command == cmd {
-				command.parent = nil
-				continue main
-			}
+		if cy == command {
+			command.parent = nil
+			break
 		}
 		commands = append(commands, command)
 	}
 	c.commands = commands
-	// recompute all lengths
-	c.commandsMaxUseLen = 0
-	c.commandsMaxCommandPathLen = 0
-	c.commandsMaxNameLen = 0
+
+	//compute length
+	c.maxUsageLen = 0
+	c.maxPathLen = 0
+	c.maxNameLen = 0
 	for _, command := range c.commands {
-		usageLen := len(command.name)
-		if usageLen > c.commandsMaxUseLen {
-			c.commandsMaxUseLen = usageLen
+		usageLen := len(command.Name())
+		if usageLen > c.maxUsageLen {
+			c.maxUsageLen = usageLen
 		}
-		commandPathLen := len(command.CommandPath())
-		if commandPathLen > c.commandsMaxCommandPathLen {
-			c.commandsMaxCommandPathLen = commandPathLen
+		pathLen := len(command.CommandPath())
+		if pathLen > c.maxPathLen {
+			c.maxPathLen = pathLen
 		}
 		nameLen := len(command.Name())
-		if nameLen > c.commandsMaxNameLen {
-			c.commandsMaxNameLen = nameLen
+		if nameLen > c.maxNameLen {
+			c.maxNameLen = nameLen
 		}
 	}
 }

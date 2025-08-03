@@ -136,7 +136,9 @@ func (bc *BaseComponent) GetComponentPath(path string) references.IComponent {
 // PropertyAdd registers a new property to the BaseComponent with the specified ID, description, read-only flag, getter, and setter.
 func (bc *BaseComponent) PropertyAdd(id string, desc string, ro bool, get interface{}, set interface{}) {
 	p := NewPropertyInfo(id, desc, ro, get, set)
-	_ = bc.cmd.AddCommand(p.CreateShellCommand()...)
+	for _, c := range p.CreateShellCommand() {
+		_ = bc.cmd.AddCommand(c)
+	}
 	bc.properties.Add(p)
 }
 
