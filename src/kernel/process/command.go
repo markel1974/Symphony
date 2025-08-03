@@ -250,9 +250,16 @@ func (c *Command) Commands() []interfaces.ICommand {
 
 // AddCommand adds one or more subcommands to the current command if it is of type CommandTypeDirectory.
 // It returns an error if attempting to add subcommands to a non-directory command or if a command is its own child.
-func (c *Command) AddCommand(cy *Command) error {
+func (c *Command) AddCommand(cx interfaces.ICommand) error {
+	if cx == nil {
+		return fmt.Errorf("nil command")
+	}
 	if c.kind != interfaces.CommandTypeDirectory {
-		return fmt.Errorf("can't add subcommands to a non-directory command: %s", c.name)
+		return fmt.Errorf("can't add subcommands to a non-directory command: %s", c.Name())
+	}
+	cy, ok := cx.(*Command)
+	if !ok {
+		return fmt.Errorf("invalid command type command: %s", cx.Name())
 	}
 	if cy == c {
 		return errors.New("command can't be a child of itself")
@@ -275,7 +282,14 @@ func (c *Command) AddCommand(cy *Command) error {
 }
 
 // RemoveCommand removes one or more subcommands from the parent command and updates parent-related references.
-func (c *Command) RemoveCommand(cy *Command) {
+func (c *Command) RemoveCommand(cx interfaces.ICommand) error {
+	if cx == nil {
+		return fmt.Errorf("nil command")
+	}
+	cy, ok := cx.(*Command)
+	if !ok {
+		return fmt.Errorf("invalid command type command: %s", cx.Name())
+	}
 	var commands []*Command
 	for _, command := range c.commands {
 		if cy == command {
@@ -304,6 +318,7 @@ func (c *Command) RemoveCommand(cy *Command) {
 			c.maxNameLen = nameLen
 		}
 	}
+	return nil
 }
 
 // CommandPath returns the full path to the command including parent commands, separated by the defined path separator.
