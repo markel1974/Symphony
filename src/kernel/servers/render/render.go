@@ -86,17 +86,17 @@ func (c *Render) ExecPaint(fgTask interfaces.IProcess, tasks []interfaces.IProce
 
 // PaintRequest marks the rendering system as requiring a paint and optionally marks it for a full repaint.
 // Returns true if the state was not already marked as dirty.
-func (c *Render) PaintRequest(full bool) bool {
+func (c *Render) PaintRequest(full bool) {
 	if full {
 		c.fullPaint = true
 	}
-	ret := false
+	//ret := false
 	if !c.dirty {
 		c.dirty = true
 		c.ticker.Create(c.timerChan, messages.NewMessagePaint(), -1, -1, 1)
-		ret = true
+		//ret = true
 	}
-	return ret
+	//return ret
 }
 
 // Write sends the given string data to the terminal's output stream.

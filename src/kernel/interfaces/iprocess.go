@@ -32,9 +32,9 @@ type IProcess interface {
 
 	GetContext() interface{}
 
-	CreateTimer(first int, interval int, count int) bool
+	CreateTimer(first int, interval int, count int)
 
-	StopTimer(tid int) bool
+	StopTimer(tid int)
 
 	Timers() []int
 
@@ -64,7 +64,7 @@ type IProcess interface {
 
 	Paint(surface ISurface)
 
-	PaintRequest() bool
+	PaintRequest()
 
 	SetState(state ProcessState)
 
@@ -76,7 +76,7 @@ type IProcess interface {
 
 	WindowsSelectionEnd()
 
-	WindowsSelectionOptions(option rune, value float64) bool
+	WindowsSelectionOptions(option rune, value float64)
 
 	WindowsSelectionNext()
 

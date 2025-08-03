@@ -85,13 +85,13 @@ func (t *Process) GetContext() interface{} {
 }
 
 // CreateTimer initializes a timer with a specified start delay, repeat interval, and count for the current task.
-func (t *Process) CreateTimer(first int, interval int, count int) bool {
-	return t.kernel.CallTimerCreate(t.pid, first, interval, count)
+func (t *Process) CreateTimer(first int, interval int, count int) {
+	t.kernel.CallTimerCreate(t.pid, first, interval, count)
 }
 
 // StopTimer stops a timer identified by the given timer ID (tid) for the current task and returns true if successful.
-func (t *Process) StopTimer(tid int) bool {
-	return t.kernel.CallTimerStop(t.pid, tid)
+func (t *Process) StopTimer(tid int) {
+	t.kernel.CallTimerStop(t.pid, tid)
 }
 
 // IsActive checks if the process with the specified PID is currently active in the kernel.
@@ -115,8 +115,8 @@ func (t *Process) DeactivateAll(name string) int {
 }
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.
-func (t *Process) PaintRequest() bool {
-	return t.kernel.CallPaintRequest()
+func (t *Process) PaintRequest() {
+	t.kernel.CallPaintRequest()
 }
 
 // GetScreenSize returns the width and height of the screen as integers.
@@ -185,8 +185,8 @@ func (t *Process) WindowsSelectionNext() {
 }
 
 // WindowsSelectionOptions configures selection behavior for the task based on the provided option and value.
-func (t *Process) WindowsSelectionOptions(option rune, value float64) bool {
-	return t.kernel.CallWindowsSelectionOptions(option, value)
+func (t *Process) WindowsSelectionOptions(option rune, value float64) {
+	t.kernel.CallWindowsSelectionOptions(option, value)
 }
 
 // SetId sets the task's process ID, updates the caption, and appends the label if it exists.

@@ -9,7 +9,7 @@ type IRender interface {
 
 	ExecPaint(fgTask IProcess, tasks []IProcess) bool
 
-	PaintRequest(full bool) bool
+	PaintRequest(full bool)
 
 	Colorize(text string, fg int, bg int, mode ColorMode) string
 

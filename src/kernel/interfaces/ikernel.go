@@ -20,9 +20,9 @@ type IKernel interface {
 
 	CallWindowsSelectionNext()
 
-	CallWindowsSelectionOptions(option rune, value float64) bool
+	CallWindowsSelectionOptions(option rune, value float64)
 
-	CallPaintRequest() bool
+	CallPaintRequest()
 
 	CallWritePromptEOL(prompt string, eol bool)
 
@@ -74,9 +74,9 @@ type IKernel interface {
 
 	CallProcessSetForeground(pid int) bool
 
-	CallTimerCreate(pid int, first int, interval int, count int) bool
+	CallTimerCreate(pid int, first int, interval int, count int)
 
-	CallTimerStop(pid int, tid int) bool
+	CallTimerStop(pid int, tid int)
 
 	CallProcessIsActive(pid int) bool
 }

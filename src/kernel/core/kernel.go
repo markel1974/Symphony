@@ -97,8 +97,8 @@ func (c *Kernel) CallWindowsSelectionBegin() {
 
 // CallWindowsSelectionOptions updates the selected task's option with the given rune and value, then triggers a repaint request.
 // Returns true on successful task retrieval and option update, otherwise returns false.
-func (c *Kernel) CallWindowsSelectionOptions(option rune, value float64) bool {
-	return c.doProcessSelectionOptions(option, value)
+func (c *Kernel) CallWindowsSelectionOptions(option rune, value float64) {
+	c.doProcessSelectionOptions(option, value)
 }
 
 // CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
@@ -121,8 +121,8 @@ func (c *Kernel) CallWindowsSelectionEnd() {
 }
 
 // CallPaintRequest triggers a paint request via the render component and returns true if successful.
-func (c *Kernel) CallPaintRequest() bool {
-	return c.render.PaintRequest(false)
+func (c *Kernel) CallPaintRequest() {
+	c.render.PaintRequest(false)
 }
 
 // CallWritePromptEOL writes the specified prompt followed by an end-of-line based on the eol flag using the render instance.
@@ -246,33 +246,31 @@ func (c *Kernel) CallExitRequested() {
 	c.exit = true
 }
 
-// CallTimerCreate creates a timer for the specified process ID with given start time, interval, and execution count.
-// Returns true if the timer is successfully created, otherwise false.
-// It requires the process to have a valid TimerEvent handler.
-// Adds the timer ID to the process's list of active timers.
-func (c *Kernel) CallTimerCreate(pid int, first int, interval int, count int) bool {
+// CallTimerCreate initializes a timer for a process with specified timing parameters if the process and its timer event exist.
+// It creates a new message timer, assigns a timer ID, and associates the timer with the process if successful.
+func (c *Kernel) CallTimerCreate(pid int, first int, interval int, count int) {
 	process, _ := c.running[pid]
 	if process == nil {
-		return false
+		return
 	}
 	if process.GetCommand().TimerEvent == nil {
-		return false
+		return
 	}
 	m := messages.NewMessageTimer(pid, interval)
 	m.SetTID(c.ticker.Create(c.timersChan, m, int64(first), int64(interval), int64(count)))
 	if m.TID() > -1 {
 		process.AddTimer(m.TID())
 	}
-	return true
+	return
 }
 
 // CallTimerStop stops a timer associated with a specific process and thread id, returning true if successful or false otherwise.
-func (c *Kernel) CallTimerStop(pid int, tid int) bool {
+func (c *Kernel) CallTimerStop(pid int, tid int) {
 	process, _ := c.running[pid]
 	if process == nil {
-		return false
+		return
 	}
-	return c.closeTimer(process, tid)
+	c.closeTimer(process, tid)
 }
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
