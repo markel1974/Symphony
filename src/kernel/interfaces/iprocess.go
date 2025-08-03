@@ -142,7 +142,7 @@ type IProcess interface {
 
 	ProcessList() []*ProcessDescription
 
-	ProcessSetFg(pid int) bool
+	ProcessSetForeground(pid int) bool
 
 	Write(data string)
 

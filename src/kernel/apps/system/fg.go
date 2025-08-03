@@ -31,7 +31,7 @@ func CreateFg() *process.Command {
 			task.WriteLn("Invalid argument: " + args[0])
 			return nil
 		}
-		if !task.ProcessSetFg(pid) {
+		if !task.ProcessSetForeground(pid) {
 			task.WriteLn("Unknown task: " + args[0])
 		}
 		return nil

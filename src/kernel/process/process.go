@@ -15,11 +15,12 @@ type Process struct {
 	pid     int
 	state   interfaces.ProcessState
 	label   string
+	line    string
+	//window
 	caption string
 	offsetY int
 	offsetX int
 	scale   float64
-	line    string
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
@@ -309,9 +310,9 @@ func (t *Process) Paint(surface interfaces.ISurface) {
 	surface.End()
 }
 
-// ProcessSetFg sets the foreground task by specifying its PID and returns true if successfully set.
-func (t *Process) ProcessSetFg(pid int) bool {
-	return t.kernel.CallProcessSetFg(pid)
+// ProcessSetForeground sets the foreground task by specifying its PID and returns true if successfully set.
+func (t *Process) ProcessSetForeground(pid int) bool {
+	return t.kernel.CallProcessSetForeground(pid)
 }
 
 // ProcessList returns a string representation of the task list from the kernel.

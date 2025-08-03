@@ -10,8 +10,6 @@ type IKernel interface {
 
 	CallProcessKillAll(name string) int
 
-	CallProcessSetBackground() bool
-
 	CallProcessList() []*ProcessDescription
 
 	CallWindowsSelectionBegin()
@@ -74,7 +72,7 @@ type IKernel interface {
 
 	CallExitRequested()
 
-	CallProcessSetFg(pid int) bool
+	CallProcessSetForeground(pid int) bool
 
 	CallTimerCreate(pid int, first int, interval int, count int) bool
 

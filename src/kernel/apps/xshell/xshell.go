@@ -58,7 +58,7 @@ func (c *XShell) BroadcastKeyHandler(process interfaces.IProcess, code int, key 
 				process.WindowsSelectionBegin()
 			} else {
 				process.WindowsSelectionEnd()
-				process.ProcessSetFg(process.PID())
+				process.ProcessSetForeground(process.PID())
 				c.nextLine(process, true)
 			}
 		}

@@ -82,7 +82,7 @@ func (s *Surface) SetCompletePaint() {
 	s.full = true
 }
 
-// SetSelectionMode sets the selection state of the Surface. When true, enables selection mode; when false, disables it.
+// SetSelectionMode sets the selection mode for the Surface. If true, the surface will render in selection mode.
 func (s *Surface) SetSelectionMode(selection bool) {
 	s.selection = selection
 }
@@ -134,7 +134,7 @@ func (s *Surface) Draw(rs int, cs int, text rune) {
 	}
 }
 
-// DrawColor draws a colored character at the specified row and column with given foreground, background, and color mode.
+// DrawColor renders a colored character at the specified row and column on the surface using the given foreground color, background color, and color mode.
 func (s *Surface) DrawColor(rs int, cs int, text rune, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
 	rows, columns := s.compute(rs, cs)
 	if rows < 0 {
@@ -211,12 +211,12 @@ func (s *Surface) compute(r int, c int) (int, int) {
 // GetBuffer generates a byte slice representing the surface content, limited by the render boundary.
 func (s *Surface) GetBuffer() []byte {
 	var lines bytes.Buffer
-	var max int
+	var maximum int
 
 	if s.full {
-		max = s.rows * s.columns
+		maximum = s.rows * s.columns
 	} else {
-		max = (s.rMax + 1) * s.columns
+		maximum = (s.rMax + 1) * s.columns
 	}
 
 	var counter = 0
@@ -227,7 +227,7 @@ func (s *Surface) GetBuffer() []byte {
 			lines.WriteString("\r\n")
 		}
 		for _, v := range horizontal {
-			if counter < max {
+			if counter < maximum {
 				lines.WriteString(v)
 				counter++
 			} else {

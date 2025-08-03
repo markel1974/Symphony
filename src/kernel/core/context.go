@@ -52,7 +52,7 @@ func (c *Context) Setup(terminal interfaces.ITerminal) {
 	timerChan := make(chan *adaptiveticker.TimerHandler, contextMaQueueLen)
 	terminalRender := render.NewRender(c.ticker, timerChan, terminal, c.writer)
 	fs := file_system.NewFileSystem(commands, []interfaces.ICommand{systemCommands})
-	c.kernel = NewKernel(c.ticker, timerChan, c.reader, c.writer, terminalRender, fs, xsh)
+	c.kernel = NewKernel(c.ticker, timerChan, c.reader, terminalRender, fs, xsh)
 }
 
 // Exec initializes the admin console display, advances the shell line, and starts the kernel.

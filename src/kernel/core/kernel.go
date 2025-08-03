@@ -13,7 +13,6 @@ import (
 type Kernel struct {
 	ticker         *adaptiveticker.AdaptiveTicker
 	inputDriver    io.Reader
-	outputDriver   io.Writer
 	render         interfaces.IRender
 	foreground     interfaces.IProcess
 	windowSelector *WindowSelector
@@ -29,11 +28,10 @@ type Kernel struct {
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver io.Reader, outputDriver io.Writer, render interfaces.IRender, fs interfaces.IFileSystem, shellPath string) *Kernel {
+func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver io.Reader, render interfaces.IRender, fs interfaces.IFileSystem, shellPath string) *Kernel {
 	t := &Kernel{
 		ticker:         ticker,
 		inputDriver:    inputDriver,
-		outputDriver:   outputDriver,
 		render:         render,
 		fs:             fs,
 		foreground:     nil,
@@ -79,20 +77,15 @@ func (c *Kernel) CallProcessKillAll(name string) int {
 	return c.doProcessKillAll(name)
 }
 
-// CallProcessSetBackground sets the foreground object to nil, effectively resetting it, and returns true if it was not already nil.
-func (c *Kernel) CallProcessSetBackground() bool {
-	return c.doProcessSetBackground()
+// CallProcessSetForeground sets the foreground task to the one associated with the given PID. Returns true if successful, false otherwise.
+func (c *Kernel) CallProcessSetForeground(pid int) bool {
+	return c.doProcessSetForeground(pid)
 }
 
 // CallProcessIsActive checks if a process with the given PID is currently active in the Kernel's activeProcess map.
 func (c *Kernel) CallProcessIsActive(pid int) bool {
 	process, _ := c.running[pid]
 	return process != nil
-}
-
-// CallProcessSetFg sets the foreground task to the one associated with the given PID. Returns true if successful, false otherwise.
-func (c *Kernel) CallProcessSetFg(pid int) bool {
-	return c.doProcessSetFg(pid)
 }
 
 // CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
@@ -103,9 +96,10 @@ func (c *Kernel) CallWindowsSelectionBegin() {
 	}
 }
 
-// CallWindowsSelectionEnd clears the state of the associated WindowSelector instance by resetting its index and available list.
-func (c *Kernel) CallWindowsSelectionEnd() {
-	c.windowSelector.Clear()
+// CallWindowsSelectionOptions updates the selected task's option with the given rune and value, then triggers a repaint request.
+// Returns true on successful task retrieval and option update, otherwise returns false.
+func (c *Kernel) CallWindowsSelectionOptions(option rune, value float64) bool {
+	return c.doProcessSelectionOptions(option, value)
 }
 
 // CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
@@ -122,10 +116,9 @@ func (c *Kernel) CallWindowsSelectionNext() {
 	}
 }
 
-// CallWindowsSelectionOptions updates the selected task's option with the given rune and value, then triggers a repaint request.
-// Returns true on successful task retrieval and option update, otherwise returns false.
-func (c *Kernel) CallWindowsSelectionOptions(option rune, value float64) bool {
-	return c.doProcessSelectionOptions(option, value)
+// CallWindowsSelectionEnd clears the state of the associated WindowSelector instance by resetting its index and available list.
+func (c *Kernel) CallWindowsSelectionEnd() {
+	c.windowSelector.Clear()
 }
 
 // CallPaintRequest triggers a paint request via the render component and returns true if successful.
@@ -283,20 +276,6 @@ func (c *Kernel) CallTimerStop(pid int, tid int) bool {
 	return c.closeTimer(process, tid)
 }
 
-// IOWrite writes the provided byte slice to the output driver and returns the number of bytes written and any error encountered.
-func (c *Kernel) IOWrite(data []byte) (int, error) {
-	return c.outputDriver.Write(data)
-}
-
-// IORead reads data from the input driver into the provided byte slice and returns the number of bytes read and any error encountered.
-//func (c *Kernel) IORead(p []byte) (int, error) {
-//	return c.inputDriver.Read(p)
-//}
-
-//func (c *Kernel) IOType(kind interfaces.KeyType, key rune) {
-//	c.messageChan <- messages.NewMessageIORead(kind, key)
-//}
-
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
 	c.shell, _ = c.doProcessExec(c.shellPath, nil)
@@ -408,15 +387,6 @@ func (c *Kernel) doProcessSelectionOptions(option rune, value float64) bool {
 	return true
 }
 
-// doProcessSetBackground sets the current foreground task to the shell and returns true, or returns false if none exists.
-func (c *Kernel) doProcessSetBackground() bool {
-	if c.foreground == nil {
-		return false
-	}
-	c.foreground = c.shell //nil
-	return true
-}
-
 // doCreateWindowsSelection sets the current selection mode for tasks based on a requested process ID. Defaults to the first task if the requested ID is unavailable.
 func (c *Kernel) doCreateWindowsSelection(requestedPid int) {
 	var idx = 0
@@ -446,8 +416,8 @@ func (c *Kernel) doCreateWindowsSelection(requestedPid int) {
 	}
 }
 
-// doProcessSetFg sets the foreground task to the one associated with the given PID. Returns true if successful, false otherwise.
-func (c *Kernel) doProcessSetFg(pid int) bool {
+// doProcessSetForeground sets the foreground task to the one associated with the given PID. Returns true if successful, false otherwise.
+func (c *Kernel) doProcessSetForeground(pid int) bool {
 	process, _ := c.running[pid]
 	if process == nil {
 		return false

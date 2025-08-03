@@ -37,10 +37,6 @@ func NewRender(ticker *adaptiveticker.AdaptiveTicker, timerChan chan *adaptiveti
 	}
 }
 
-//func (c *Render) Read(data []byte) (int, error) {
-//	return c.terminal.Read(data)
-//}
-
 // GetScreenSize returns the current screen width and height of the Render instance.
 func (c *Render) GetScreenSize() (int, int) {
 	return c.width, c.height
