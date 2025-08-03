@@ -6,13 +6,12 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
 	"github.com/markel1974/c64emu/src/kernel/process_factory"
-	"io"
 )
 
 // Kernel represents the core component responsible for managing rendering, input/output, task execution, and timers.
 type Kernel struct {
 	ticker         *adaptiveticker.AdaptiveTicker
-	inputDriver    io.Reader
+	inputDriver    interfaces.IKeyboardDriver
 	render         interfaces.IRender
 	foreground     interfaces.IProcess
 	windowSelector *WindowSelector
@@ -28,7 +27,7 @@ type Kernel struct {
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver io.Reader, render interfaces.IRender, fs interfaces.IFileSystem, shellPath string) *Kernel {
+func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver interfaces.IKeyboardDriver, render interfaces.IRender, fs interfaces.IFileSystem, shellPath string) *Kernel {
 	t := &Kernel{
 		ticker:         ticker,
 		inputDriver:    inputDriver,
@@ -171,7 +170,7 @@ func (c *Kernel) CallWriteColorLn(data string, fg interfaces.ColorDef, bg interf
 	c.render.WriteColorLn(data, fg, bg, mode)
 }
 
-// CallClearScreen clears the screen by invoking the associated renderer's ClearScreen method.
+// CallClearScreen clears the screen by invoking the associated renderer's CreateClearScreen method.
 func (c *Kernel) CallClearScreen() {
 	c.render.ClearScreen()
 }
@@ -186,12 +185,12 @@ func (c *Kernel) CallMoveCursorLeft() {
 	c.render.MoveCursorLeft()
 }
 
-// CallMoveCursorRight moves the cursor one position to the right by invoking the render's MoveCursorRight method.
+// CallMoveCursorRight moves the cursor one position to the right by invoking the render's CreateMoveCursorRight method.
 func (c *Kernel) CallMoveCursorRight() {
 	c.render.MoveCursorRight()
 }
 
-// CallSaveCursor saves the current cursor state by invoking the SaveCursor method on the associated renderer.
+// CallSaveCursor saves the current cursor state by invoking the CreateSaveCursor method on the associated renderer.
 func (c *Kernel) CallSaveCursor() {
 	c.render.SaveCursor()
 }
@@ -284,10 +283,10 @@ func (c *Kernel) Start() {
 		d <- true
 		readBuffer := make([]byte, 4096)
 		for {
-			n, err := c.inputDriver.Read(readBuffer)
+			k, v, err := c.inputDriver.ScanKey(readBuffer)
 			if err == nil {
-				if n > 0 {
-					re := messages.NewMessageRead(readBuffer, n)
+				if k != interfaces.KeyTypeNone {
+					re := messages.NewMessageRead(k, v)
 					c.messageChan <- re
 				}
 			} else {
@@ -435,22 +434,6 @@ func (c *Kernel) doProcessList() []*interfaces.ProcessDescription {
 	return out
 }
 
-// doIOType processes input events based on their type and key value to handle control, foreground tasks, and system state.
-func (c *Kernel) doIOType(kind interfaces.KeyType, key rune) {
-	for _, process := range c.running {
-		if readBroadcastEvent := process.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
-			readBroadcastEvent(process, int(kind), key)
-		}
-	}
-
-	if c.foreground != nil {
-		if readEvent := c.foreground.GetCommand().ReadEvent(); readEvent != nil {
-			readEvent(c.foreground, int(kind), key)
-		}
-		return
-	}
-}
-
 // closeTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
 func (c *Kernel) closeTimer(task interfaces.IProcess, tid int) bool {
 	ret := false
@@ -494,8 +477,7 @@ func (c *Kernel) handleMessageEvent(m messages.IMessage) {
 		switch m.GetType() {
 		case messages.MessageTypeRead:
 			if mm, ok := m.(*messages.MessageRead); ok {
-				kind, key := c.render.Scan(mm.Data())
-				c.doIOType(kind, key)
+				c.handleReadEvent(mm.Kind(), mm.Data())
 			}
 		case messages.MessageTypeTimer:
 			if mt, ok := m.(*messages.MessageTimer); ok {
@@ -510,6 +492,22 @@ func (c *Kernel) handleMessageEvent(m messages.IMessage) {
 				c.exit = true
 			}
 		}
+	}
+}
+
+// handleReadEvent processes input events based on their type and key value to handle control, foreground tasks, and system state.
+func (c *Kernel) handleReadEvent(kind interfaces.KeyType, key rune) {
+	for _, process := range c.running {
+		if readBroadcastEvent := process.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
+			readBroadcastEvent(process, int(kind), key)
+		}
+	}
+
+	if c.foreground != nil {
+		if readEvent := c.foreground.GetCommand().ReadEvent(); readEvent != nil {
+			readEvent(c.foreground, int(kind), key)
+		}
+		return
 	}
 }
 

@@ -3,6 +3,7 @@ package core
 import (
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/apps"
+	"github.com/markel1974/c64emu/src/kernel/drivers"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
 	"github.com/markel1974/c64emu/src/kernel/servers/file_system"
@@ -49,10 +50,14 @@ func (c *Context) Setup(terminal interfaces.ITerminal) {
 	system := apps.NewRoot()
 	xsh, systemCommands, commands := system.Build(c.commands)
 	// TODO OGNI SERVER DEVE AVERE IL PROPRIO EVENT LOOP es L'unicp autorizzato a disegnare è il render
+	keyboardDriver := drivers.NewKeyboardTerminal(c.reader, terminal)
+	videoDriver := drivers.NewDisplayTerminal(c.writer, terminal)
+
 	timerChan := make(chan *adaptiveticker.TimerHandler, contextMaQueueLen)
-	terminalRender := render.NewRender(c.ticker, timerChan, terminal, c.writer)
+	terminalRender := render.NewRender(c.ticker, timerChan, videoDriver)
 	fs := file_system.NewFileSystem(commands, []interfaces.ICommand{systemCommands})
-	c.kernel = NewKernel(c.ticker, timerChan, c.reader, terminalRender, fs, xsh)
+
+	c.kernel = NewKernel(c.ticker, timerChan, keyboardDriver, terminalRender, fs, xsh)
 }
 
 // Exec initializes the admin console display, advances the shell line, and starts the kernel.

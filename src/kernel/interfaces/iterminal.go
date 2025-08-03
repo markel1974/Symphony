@@ -48,31 +48,21 @@ const (
 type KeyFunc func(event *KeyData)
 
 type ITerminal interface {
-	//SetIO(io IInputOutput)
-
-	//Read(data []byte) (int, error)
-
-	//Write(text string) (int, error)
-
 	Colorize(text string, fg int, bg int, mode ColorMode) string
 
-	WriteColor(text string, fg ColorDef, bg ColorDef, mode ColorMode) []byte
+	CreateSaveCursor() []byte
 
-	SaveCursor() []byte
+	CreateRestoreCursor() []byte
 
-	RestoreCursor() []byte
+	CreateMoveCursorLeft() []byte
 
-	MoveCursorLeft() []byte
+	CreateMoveCursorRight() []byte
 
-	MoveCursorRight() []byte
+	CreateMoveCursorTopLeft() []byte
 
-	MoveCursorTopLeft() []byte
+	CreateClearLine(line string) []byte
 
-	ClearLine(line string) []byte
+	CreateClearScreen() []byte
 
-	ClearScreen() []byte
-
-	SetSize(w int, h int)
-
-	Scan(data []byte) (KeyType, rune)
+	CreateScanKey(data []byte) (KeyType, rune)
 }

@@ -23,8 +23,6 @@ type IRender interface {
 
 	ClearScreen()
 
-	Scan(data []byte) (KeyType, rune)
-
 	ClearLine(line string)
 
 	MoveCursorLeft()

@@ -17,7 +17,7 @@ package interfaces
 type KeyType int
 
 const (
-	KeyTypeNode KeyType = iota
+	KeyTypeNone KeyType = iota
 	KeyTypeKey
 	KeyTypeCursor
 	KeyTypeCtrl

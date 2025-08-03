@@ -9,7 +9,7 @@ import (
 
 // Surface represents a two-dimensional grid-based rendering surface for text-based terminal output.
 type Surface struct {
-	terminal       interfaces.ITerminal
+	driver         interfaces.IDisplayDriver
 	rows           int
 	columns        int
 	surface        [][]string
@@ -28,17 +28,17 @@ type Surface struct {
 }
 
 // NewSurface initializes a new Surface object with the provided terminal, row, and column dimensions.
-func NewSurface(terminal interfaces.ITerminal, rows int, columns int) *Surface {
+func NewSurface(driver interfaces.IDisplayDriver, rows int, columns int) *Surface {
 	s := &Surface{
-		terminal: terminal,
-		rows:     -1,
-		columns:  -1,
-		scale:    1.0,
-		offsetX:  0,
-		offsetY:  0,
-		rMax:     0,
-		border:   1,
-		full:     false,
+		driver:  driver,
+		rows:    -1,
+		columns: -1,
+		scale:   1.0,
+		offsetX: 0,
+		offsetY: 0,
+		rMax:    0,
+		border:  1,
+		full:    false,
 	}
 	s.Resize(rows, columns)
 	return s
@@ -157,7 +157,7 @@ func (s *Surface) DrawColor(rs int, cs int, text rune, fg interfaces.ColorDef, b
 
 	if len(s.surface) > rows {
 		if len(s.surface[rows]) > columns {
-			colorized := s.terminal.Colorize(string(text), int(fg), int(bg), mode)
+			colorized := s.driver.Colorize(string(text), int(fg), int(bg), mode)
 			s.surface[rows][columns] = colorized
 			if rows > s.rMax {
 				s.rMax = rows

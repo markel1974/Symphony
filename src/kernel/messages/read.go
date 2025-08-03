@@ -1,24 +1,29 @@
 package messages
 
+import "github.com/markel1974/c64emu/src/kernel/interfaces"
+
 // MessageRead represents a specific type of Message containing read operation data. It embeds Message and includes a data field.
 type MessageRead struct {
 	Message
-	data []byte
+	kind interfaces.KeyType
+	data rune
 }
 
 // NewMessageRead creates a new MessageRead instance with provided data and limits its length to n if necessary.
-func NewMessageRead(data []byte, n int) *MessageRead {
-	if n > len(data) {
-		n = len(data) - 1
-	}
-	x := data[:n]
+func NewMessageRead(kind interfaces.KeyType, data rune) *MessageRead {
 	return &MessageRead{
 		Message: Message{MessageTypeRead},
-		data:    x,
+		kind:    kind,
+		data:    data,
 	}
 }
 
+// Kind returns the key type associated with the MessageRead instance.
+func (m *MessageRead) Kind() interfaces.KeyType {
+	return m.kind
+}
+
 // Data returns the data payload contained within the MessageRead instance.
-func (m *MessageRead) Data() []byte {
+func (m *MessageRead) Data() rune {
 	return m.data
 }
