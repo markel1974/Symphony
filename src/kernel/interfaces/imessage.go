@@ -1,4 +1,4 @@
-package messages
+package interfaces
 
 // MessageType represents the type of a message in the system, typically defined by constant values.
 type MessageType int
@@ -22,6 +22,12 @@ type IMessage interface {
 // Message represents a basic unit containing a MessageType to define its specific behavior or category.
 type Message struct {
 	kind MessageType
+}
+
+func NewMessage(kind MessageType) *Message {
+	return &Message{
+		kind: kind,
+	}
 }
 
 // GetType returns the MessageType of the current Message instance.

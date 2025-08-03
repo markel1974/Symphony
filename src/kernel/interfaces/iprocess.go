@@ -66,7 +66,7 @@ type IProcess interface {
 
 	PaintRequest()
 
-	SetState(state ProcessState)
+	Start()
 
 	SetCaption(caption string) bool
 
@@ -119,4 +119,6 @@ type IProcess interface {
 	Suggestion(in string, cursor int) (string, []string, bool)
 
 	Help(arg string) (string, error)
+
+	PostMessage(msg IMessage)
 }

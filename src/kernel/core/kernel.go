@@ -20,7 +20,7 @@ type Kernel struct {
 	fs             interfaces.IFileSystem
 	shellPath      string
 	shell          interfaces.IProcess
-	messageChan    chan messages.IMessage
+	messageChan    chan interfaces.IMessage
 	pf             *process_factory.ProcessFactory
 	timersChan     chan *adaptiveticker.TimerHandler
 	exit           bool
@@ -36,7 +36,7 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 		foreground:     nil,
 		windowSelector: NewWindowSelector(),
 		pidGenerator:   adaptiveticker.NewIds(1024),
-		messageChan:    make(chan messages.IMessage, contextMaQueueLen),
+		messageChan:    make(chan interfaces.IMessage, contextMaQueueLen),
 		timersChan:     timersChan,
 		exit:           false,
 		shellPath:      shellPath,
@@ -44,6 +44,10 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 	}
 	t.pf = process_factory.NewProcessFactory(t)
 	return t
+}
+
+func (c *Kernel) PostEvent(msg interfaces.IMessage) {
+	c.messageChan <- msg
 }
 
 // CallProcessList returns a formatted string containing process IDs and their respective command names managed by the Kernel.
@@ -310,6 +314,7 @@ func (c *Kernel) doProcessExec(line string, options *interfaces.WindowOptions) (
 		return nil, fmt.Errorf("error creating task: can't set pid")
 	}
 	c.running[process.PID()] = process
+	process.Start()
 	if err = cmd.Execute(process, args); err != nil {
 		c.doProcessKill(process.PID())
 		return nil, err
@@ -318,7 +323,6 @@ func (c *Kernel) doProcessExec(line string, options *interfaces.WindowOptions) (
 		c.doProcessKill(process.PID())
 		return nil, nil
 	}
-	process.SetState(interfaces.ProcessStateRunning)
 	if !cmd.Background() {
 		c.foreground = process
 	}
@@ -337,6 +341,7 @@ func (c *Kernel) doProcessKill(pid int) bool {
 	if len(process.Timers()) > 0 {
 		c.ticker.RemoveEntries(process.Timers())
 	}
+	process.PostMessage(messages.NewMessageQuit())
 	if c.foreground != nil {
 		if c.foreground.PID() == pid {
 			c.foreground = c.shell //nil
@@ -459,7 +464,7 @@ func (c *Kernel) eventLoop() {
 		case m := <-c.messageChan:
 			c.handleMessageEvent(m)
 		case t := <-c.timersChan:
-			c.handleMessageEvent(t.Event.(messages.IMessage))
+			c.handleMessageEvent(t.Event.(interfaces.IMessage))
 		}
 		if c.exit {
 			c.shutdown()
@@ -470,22 +475,22 @@ func (c *Kernel) eventLoop() {
 
 // handleMessageEvent processes incoming messages based on their type and performs associated actions within the kernel.
 // Handles MessageTypeRead, MessageTypeTimer, MessageTypePaint, and MessageTypeQuit to execute corresponding logic.
-func (c *Kernel) handleMessageEvent(m messages.IMessage) {
+func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 	if m != nil {
 		switch m.GetType() {
-		case messages.MessageTypeRead:
+		case interfaces.MessageTypeRead:
 			if mm, ok := m.(*messages.MessageRead); ok {
 				c.handleReadEvent(mm.Kind(), mm.Data())
 			}
-		case messages.MessageTypeTimer:
+		case interfaces.MessageTypeTimer:
 			if mt, ok := m.(*messages.MessageTimer); ok {
 				c.handleTimerEvent(mt.PID(), mt.TID(), mt.Interval())
 			}
-		case messages.MessageTypePaint:
+		case interfaces.MessageTypePaint:
 			if _, ok := m.(*messages.MessagePaint); ok {
 				c.handlePaintEvent()
 			}
-		case messages.MessageTypeQuit:
+		case interfaces.MessageTypeQuit:
 			if _, ok := m.(*messages.MessageQuit); ok {
 				c.exit = true
 			}

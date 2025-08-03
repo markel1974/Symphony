@@ -1,8 +1,10 @@
 package messages
 
+import "github.com/markel1974/c64emu/src/kernel/interfaces"
+
 // MessageTimer represents a timed message with an associated process ID, timer ID, and interval.
 type MessageTimer struct {
-	Message
+	interfaces.Message
 	pid      int
 	tid      int
 	interval int
@@ -11,7 +13,7 @@ type MessageTimer struct {
 // NewMessageTimer creates a new MessageTimer instance with the specified process ID and interval.
 func NewMessageTimer(pid int, interval int) *MessageTimer {
 	return &MessageTimer{
-		Message:  Message{MessageTypeTimer},
+		Message:  *interfaces.NewMessage(interfaces.MessageTypeTimer),
 		pid:      pid,
 		interval: interval,
 	}

@@ -4,7 +4,7 @@ import "github.com/markel1974/c64emu/src/kernel/interfaces"
 
 // MessageRead represents a specific type of Message containing read operation data. It embeds Message and includes a data field.
 type MessageRead struct {
-	Message
+	interfaces.Message
 	kind interfaces.KeyType
 	data rune
 }
@@ -12,7 +12,7 @@ type MessageRead struct {
 // NewMessageRead creates a new MessageRead instance with provided data and limits its length to n if necessary.
 func NewMessageRead(kind interfaces.KeyType, data rune) *MessageRead {
 	return &MessageRead{
-		Message: Message{MessageTypeRead},
+		Message: *interfaces.NewMessage(interfaces.MessageTypeRead),
 		kind:    kind,
 		data:    data,
 	}

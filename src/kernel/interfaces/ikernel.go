@@ -2,6 +2,8 @@ package interfaces
 
 // IKernel defines the core interface for managing tasks, input, system commands, and rendering operations in a system.
 type IKernel interface {
+	PostEvent(msg IMessage)
+
 	CallProcessExec(line string, options *WindowOptions) (bool, error)
 
 	CallProcessKill(pid int) bool

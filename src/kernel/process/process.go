@@ -8,13 +8,14 @@ import (
 // Process represents a task or job in the system, including its context, state, associated options, and execution details.
 type Process struct {
 	*interfaces.WindowOptions
-	kernel  interfaces.IKernel
-	cmd     interfaces.ICommand
-	context interface{}
-	timers  []int
-	pid     int
-	state   interfaces.ProcessState
-	line    string
+	kernel      interfaces.IKernel
+	cmd         interfaces.ICommand
+	context     interface{}
+	timers      []int
+	pid         int
+	state       interfaces.ProcessState
+	line        string
+	messageChan chan interfaces.IMessage
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
@@ -25,14 +26,18 @@ func NewProcess(kernel interfaces.IKernel, cmd interfaces.ICommand, line string)
 		context:       nil,
 		state:         interfaces.ProcessStateSetup,
 		line:          line,
+		messageChan:   make(chan interfaces.IMessage, 128),
 		WindowOptions: interfaces.NewWindowOptions(0, 0, 1.0),
 	}
 	return t
 }
 
-// SetState updates the current state of the Process to the provided State.
-func (t *Process) SetState(state interfaces.ProcessState) {
-	t.state = state
+// Start begins the process by setting its state to running and initiating its event loop asynchronously.
+func (t *Process) Start() {
+	c := make(chan bool)
+	t.evenLoop(c)
+	_ = <-c
+	t.state = interfaces.ProcessStateRunning
 }
 
 // Timers returns a slice of integers representing the current timers associated with the Process instance.
@@ -294,4 +299,28 @@ func (t *Process) ClearScreen() {
 // SetExit signals the kernel that an exit is requested for the task.
 func (t *Process) SetExit() {
 	t.kernel.CallExitRequested()
+}
+
+// PostMessage sends the provided message to the message channel for processing.
+func (t *Process) PostMessage(msg interfaces.IMessage) {
+	t.messageChan <- msg
+}
+
+// evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
+func (t *Process) evenLoop(r chan bool) {
+	go func() {
+		r <- true
+		for {
+			select {
+			case m, ok := <-t.messageChan:
+				if !ok {
+					return
+				}
+				if m.GetType() == interfaces.MessageTypeQuit {
+					close(t.messageChan)
+					return
+				}
+			}
+		}
+	}()
 }
