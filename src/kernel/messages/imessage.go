@@ -8,7 +8,6 @@ type MessageType int
 // MessageTypePaint represents a message type for paint operations.
 // MessageTypeQuit represents a message type for quit operations.
 const (
-	//MessageTypeIORead MessageType = iota
 	MessageTypeRead MessageType = iota
 	MessageTypeTimer
 	MessageTypePaint

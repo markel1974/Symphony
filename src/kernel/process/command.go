@@ -410,22 +410,10 @@ func (c *Command) SuggestionsFor(prefix string) []string {
 	suggestionsMap := make(map[string]bool)
 	itemToComplete := prefix
 	itemToCompleteLower := strings.ToLower(itemToComplete)
-	//props := map[string]string{"prop1": "desc1", "prop2": "desc2"}
-	//commands := map[string]string{"cmd1": "desc1", "cmd2": "desc2"}
 	var items []string
 	for _, cmd := range c.commands {
 		items = append(items, cmd.Name())
 	}
-	//if c.properties != nil {
-	//	for prop := range c.properties.List() {
-	//		items = append(items, prop)
-	//	}
-	//}
-	//if c.executables != nil {
-	//	for command := range c.executables.List() {
-	//		items = append(items, command)
-	//	}
-	//}
 	for _, item := range items {
 		if strings.HasPrefix(strings.ToLower(item), itemToCompleteLower) {
 			suggestionsMap[item] = true

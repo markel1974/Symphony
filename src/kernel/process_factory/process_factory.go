@@ -5,20 +5,24 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
+// ProcessFactory is responsible for creating and managing process instances within the system.
+// It encapsulates interactions with the provided IKernel for process-related operations.
 type ProcessFactory struct {
 	kernel interfaces.IKernel
 }
 
+// NewProcessFactory creates and returns a new ProcessFactory instance using the provided kernel for process management.
 func NewProcessFactory(kernel interfaces.IKernel) *ProcessFactory {
 	return &ProcessFactory{
 		kernel: kernel,
 	}
 }
 
+// Create initializes a new process using the provided command, line, and optional window settings.
 func (fp *ProcessFactory) Create(cmd interfaces.ICommand, line string, options *interfaces.WindowOptions) interfaces.IProcess {
-	task := process.NewProcess(fp.kernel, cmd, line)
+	p := process.NewProcess(fp.kernel, cmd, line)
 	if options != nil {
-		task.SetWindowOptions(options)
+		p.SetWindowOptions(options)
 	}
-	return task
+	return p
 }
