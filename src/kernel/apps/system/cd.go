@@ -19,7 +19,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreateCD() *process.Command {
+func CreateCD() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
 			task.WriteLn("cd: empty directory")

@@ -19,7 +19,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreateExit() *process.Command {
+func CreateExit() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		task.SetExit()
 		return nil

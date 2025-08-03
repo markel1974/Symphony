@@ -20,7 +20,7 @@ import (
 	"strings"
 )
 
-func CreateHelp() *process.Command {
+func CreateHelp() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) == 0 {
 			task.WriteLn("usage help [command]")

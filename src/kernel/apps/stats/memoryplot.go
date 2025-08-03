@@ -19,7 +19,7 @@ type rtPlotData struct {
 
 // CreateMemoryPlot creates a shell command for plotting real-time memory statistics including alloc, total, os, and GC data.
 // It supports dynamic updates and allows controlling plot scaling or enabling auto-scaling via interactive inputs.
-func CreateMemoryPlot() *process.Command {
+func CreateMemoryPlot() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		plt := &rtPlotData{
 			rtPlotType:   0,

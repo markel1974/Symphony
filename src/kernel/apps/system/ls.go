@@ -5,7 +5,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreateLs() *process.Command {
+func CreateLs() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		for _, c := range task.CWDDirectoryListing() {
 			task.WriteLn(c)

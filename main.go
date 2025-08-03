@@ -44,7 +44,7 @@ func restoreTest(factory references.IComponentFactory) {
 }
 */
 
-func createShell(target *process.Command) error {
+func createShell(target interfaces.ICommand) error {
 	const prompt = "symphony" + " " + "1.4.3" + "> "
 	const port = 1234
 	const user = "u"

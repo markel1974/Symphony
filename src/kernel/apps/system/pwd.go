@@ -19,7 +19,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreatePWD() *process.Command {
+func CreatePWD() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		task.WriteLn(task.CWDGet())
 		return nil

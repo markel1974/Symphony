@@ -20,7 +20,7 @@ import (
 	"strconv"
 )
 
-func CreateFg() *process.Command {
+func CreateFg() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
 			task.WriteLn("Empty argument")

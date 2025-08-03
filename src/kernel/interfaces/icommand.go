@@ -69,7 +69,7 @@ type ICommand interface {
 
 	SuggestionsFor(typedName string) []string
 
-	Execute(task IProcess, arg []string) error
+	Execute(process IProcess, arg []string) error
 
 	Commands() []ICommand
 

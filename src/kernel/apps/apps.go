@@ -20,14 +20,14 @@ func NewRoot() *Root {
 }
 
 // Build constructs and returns two command trees, coreC and root, initialized with their respective subcommands and functionality.
-func (t *Root) Build(bin *process.Command) (string, *process.Command, *process.Command) {
-	var aliases []*process.Command
+func (t *Root) Build(bin interfaces.ICommand) (string, interfaces.ICommand, interfaces.ICommand) {
+	var aliases []interfaces.ICommand
 	sbin := process.NewCommand("sbin", interfaces.CommandTypeDirectory, nil, false, func(task interfaces.IProcess, args []string) error {
 		return nil
 	})
 	sbin.SetHelp("SBin", "SBin")
 
-	var sbinCommands []*process.Command
+	var sbinCommands []interfaces.ICommand
 
 	xsh := xshell.CreateXShell()
 	sbinCommands = append(sbinCommands, xsh)

@@ -20,7 +20,7 @@ const detailsId = "details"
 
 // BaseComponent provides a base implementation for composed components with properties, commands, and hierarchical structure.
 type BaseComponent struct {
-	cmd        *process.Command
+	cmd        interfaces.ICommand
 	id         string
 	name       string
 	instance   int
@@ -242,7 +242,7 @@ func (bc *BaseComponent) RestoreAll(state map[string]interface{}) error {
 }
 
 // GetCommand returns the shell.Command instance associated with the current BaseComponent.
-func (bc *BaseComponent) GetCommand() *process.Command {
+func (bc *BaseComponent) GetCommand() interfaces.ICommand {
 	return bc.cmd
 }
 
@@ -299,7 +299,7 @@ func (bc *BaseComponent) Print(w io.Writer, indent string, showComponents bool) 
 }
 
 // dump recursively extracts and organizes the state of a component and its children into a hierarchical map structure.
-// It handles component properties and children relationships, and returns an error if a component state fails to dump.
+// It handles component properties and child relationships and returns an error if a component state fails to dump.
 func (bc *BaseComponent) dump(component references.IComponent, state map[string]interface{}) error {
 	if component == nil {
 		return nil

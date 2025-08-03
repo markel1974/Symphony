@@ -20,7 +20,7 @@ import (
 	"strconv"
 )
 
-func CreateKillAll() *process.Command {
+func CreateKillAll() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		var arg string
 		if len(args) > 0 {

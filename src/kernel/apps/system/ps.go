@@ -20,7 +20,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
-func CreatePs() *process.Command {
+func CreatePs() interfaces.ICommand {
 	run := func(process interfaces.IProcess, args []string) error {
 		out := "\r\nPid: Process"
 		pl := process.ProcessList()

@@ -8,7 +8,7 @@ import (
 )
 
 // CreateCPUStatus returns a shell command that outputs various CPU-related metrics such as logical CPU count and goroutine count.
-func CreateCPUStatus() *process.Command {
+func CreateCPUStatus() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		task.WriteLn(fmt.Sprintf("Number of logical CPUs: %d", runtime.NumCPU()))
 		task.WriteLn(fmt.Sprintf("Maximum number of CPUs that can be executing simultaneously: %d", runtime.GOMAXPROCS(0)))

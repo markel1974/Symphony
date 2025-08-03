@@ -8,7 +8,7 @@ import (
 )
 
 // CreateMemoryStatus initializes a shell command for monitoring runtime memory statistics and garbage collection cycles.
-func CreateMemoryStatus() *process.Command {
+func CreateMemoryStatus() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
