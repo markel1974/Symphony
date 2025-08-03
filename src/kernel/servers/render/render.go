@@ -13,6 +13,7 @@ const eol = "\r\n"
 // Render represents a rendering engine responsible for managing terminal dimensions, repainting logic, and paint tasks.
 type Render struct {
 	terminal  interfaces.ITerminal
+	surface   *Surface
 	dirty     bool
 	width     int
 	height    int
@@ -25,7 +26,7 @@ type Render struct {
 // NewRender creates and initializes a new Render instance with the provided terminal implementation.
 // Returns a pointer to the newly created Render object.
 func NewRender(ticker *adaptiveticker.AdaptiveTicker, timerChan chan *adaptiveticker.TimerHandler, terminal interfaces.ITerminal, driver io.Writer) *Render {
-	return &Render{
+	r := &Render{
 		ticker:    ticker,
 		timerChan: timerChan,
 		terminal:  terminal,
@@ -35,6 +36,8 @@ func NewRender(ticker *adaptiveticker.AdaptiveTicker, timerChan chan *adaptiveti
 		height:    24,
 		fullPaint: true,
 	}
+	r.surface = NewSurface(terminal, r.height, r.width)
+	return r
 }
 
 // GetScreenSize returns the current screen width and height of the Render instance.
@@ -58,22 +61,27 @@ func (c *Render) IsDirty() bool {
 // ExecPaint performs the rendering process by painting background tasks and a foreground task onto the terminal surface.
 func (c *Render) ExecPaint(fgTask interfaces.IProcess, tasks []interfaces.IProcess) bool {
 	w, h := c.GetScreenSize()
-	surface := newSurface(c, h, w)
+	c.surface.Resize(h, w)
 	if c.fullPaint {
-		surface.SetCompletePaint()
+		c.surface.SetCompletePaint()
 		c.fullPaint = false
 	}
 	//zOrder
 	for _, task := range tasks {
-		surface.SetSelectionMode(false)
-		task.Paint(surface)
+		c.surface.SetSelectionMode(false)
+		task.Paint(c.surface)
 	}
 	//zOrder
 	if fgTask != nil {
-		surface.SetSelectionMode(true)
-		fgTask.Paint(surface)
+		c.surface.SetSelectionMode(true)
+		fgTask.Paint(c.surface)
 	}
-	surface.Render()
+	//c.surface.Render()
+	c.SaveCursor()
+	c.MoveCursorTopLeft()
+	c.Write(string(c.surface.GetBuffer()))
+	c.RestoreCursor()
+
 	c.dirty = false
 	return true
 }

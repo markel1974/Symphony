@@ -9,45 +9,61 @@ import (
 
 // Surface represents a two-dimensional grid-based rendering surface for text-based terminal output.
 type Surface struct {
-	render    interfaces.IRender
-	rows      int
-	columns   int
-	surface   [][]string
-	rMax      int
-	scale     float64
-	offsetX   int
-	offsetY   int
-	border    int
-	user      bool
-	caption   string
-	selection bool
-	full      bool
-	iRows     int
-	iColumns  int
+	terminal       interfaces.ITerminal
+	rows           int
+	columns        int
+	surface        [][]string
+	columnsCleaner []string
+	rMax           int
+	scale          float64
+	offsetX        int
+	offsetY        int
+	border         int
+	user           bool
+	caption        string
+	selection      bool
+	full           bool
+	iRows          int
+	iColumns       int
 }
 
-// newSurface initializes a new Surface object with the provided terminal, row, and column dimensions.
-func newSurface(render interfaces.IRender, rows int, columns int) *Surface {
+// NewSurface initializes a new Surface object with the provided terminal, row, and column dimensions.
+func NewSurface(terminal interfaces.ITerminal, rows int, columns int) *Surface {
 	s := &Surface{
-		render:  render,
-		rows:    rows,
-		columns: columns,
-		scale:   1.0,
-		offsetX: 0,
-		offsetY: 0,
-		rMax:    0,
-		border:  1,
-		full:    false,
+		terminal: terminal,
+		rows:     -1,
+		columns:  -1,
+		scale:    1.0,
+		offsetX:  0,
+		offsetY:  0,
+		rMax:     0,
+		border:   1,
+		full:     false,
 	}
-
-	s.surface = make([][]string, s.rows)
-	for r := range s.surface {
-		s.surface[r] = make([]string, s.columns)
-		for c := range s.surface[r] {
-			s.surface[r][c] = " "
-		}
-	}
+	s.Resize(rows, columns)
 	return s
+}
+
+// Resize adjusts the dimensions of the Surface to the specified rows and columns, resetting or reallocating data as needed.
+func (s *Surface) Resize(rows int, columns int) {
+	if rows == s.rows && columns == s.columns {
+		for r := range s.surface {
+			copy(s.surface[r], s.columnsCleaner)
+		}
+		return
+	}
+	s.columnsCleaner = make([]string, columns)
+	for c := range s.columnsCleaner {
+		s.columnsCleaner[c] = " "
+	}
+	s.surface = make([][]string, rows)
+	for r := range s.surface {
+		s.surface[r] = make([]string, columns)
+		copy(s.surface[r], s.columnsCleaner)
+	}
+	s.rows = rows
+	s.columns = columns
+	return
 }
 
 // Begin initializes the Surface for user-defined modifications and updates its internal dimensions.
@@ -141,7 +157,7 @@ func (s *Surface) DrawColor(rs int, cs int, text rune, fg interfaces.ColorDef, b
 
 	if len(s.surface) > rows {
 		if len(s.surface[rows]) > columns {
-			colorized := s.render.Colorize(string(text), int(fg), int(bg), mode)
+			colorized := s.terminal.Colorize(string(text), int(fg), int(bg), mode)
 			s.surface[rows][columns] = colorized
 			if rows > s.rMax {
 				s.rMax = rows
@@ -228,15 +244,6 @@ func (s *Surface) GetBuffer() []byte {
 	}
 
 	return lines.Bytes()
-}
-
-// Render updates the terminal by rendering the current buffer to the screen and restoring the cursor position.
-func (s *Surface) Render() {
-	var buffer = string(s.GetBuffer())
-	s.render.SaveCursor()
-	s.render.MoveCursorTopLeft()
-	s.render.Write(buffer)
-	s.render.RestoreCursor()
 }
 
 // drawWindow draws a bordered window on the surface with optional caption and selection mode colors.
