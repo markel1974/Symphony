@@ -500,6 +500,7 @@ func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 	}
 }
 
+// handleQuitEvent handles a quit message by verifying its type and setting the kernel's exit flag to true.
 func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
 	_, ok := m.(*messages.MessageQuit)
 	if !ok {
