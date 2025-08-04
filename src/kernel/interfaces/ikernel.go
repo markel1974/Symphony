@@ -4,7 +4,7 @@ package interfaces
 type IKernel interface {
 	PostEvent(msg IMessage)
 
-	CallProcessExec(line string, options *WindowOptions) (bool, error)
+	CallProcessExec(line string) (bool, error)
 
 	CallProcessKill(pid int) bool
 

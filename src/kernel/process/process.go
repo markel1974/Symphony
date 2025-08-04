@@ -2,12 +2,10 @@ package process
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"strconv"
 )
 
 // Process represents a task or job in the system, including its context, state, associated options, and execution details.
 type Process struct {
-	*interfaces.WindowOptions
 	kernel      interfaces.IKernel
 	cmd         interfaces.ICommand
 	user        string
@@ -22,14 +20,13 @@ type Process struct {
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
 func NewProcess(kernel interfaces.IKernel, user string, cmd interfaces.ICommand, line string) *Process {
 	t := &Process{
-		kernel:        kernel,
-		user:          user,
-		cmd:           cmd,
-		context:       nil,
-		state:         interfaces.ProcessStateSetup,
-		line:          line,
-		messageChan:   make(chan interfaces.IMessage, 128),
-		WindowOptions: interfaces.NewWindowOptions(0, 0, 1.0),
+		kernel:      kernel,
+		user:        user,
+		cmd:         cmd,
+		context:     nil,
+		state:       interfaces.ProcessStateSetup,
+		line:        line,
+		messageChan: make(chan interfaces.IMessage, 128),
 	}
 	return t
 }
@@ -63,7 +60,7 @@ func (t *Process) AddTimer(tid int) {
 
 // Description provides a brief summary of the process including its name, PID, and line information.
 func (t *Process) Description() *interfaces.ProcessDescription {
-	return interfaces.NewProcessDescription(t.cmd.Name(), t.pid, t.line, t.cmd.PaintEvent != nil)
+	return interfaces.NewProcessDescription(t.cmd.Name(), t.pid, t.line, t)
 }
 
 // Line returns the line configuration of the Process as a string.
@@ -168,7 +165,7 @@ func (t *Process) Help(arg string) (string, error) {
 
 // ProcessExec executes a task based on the provided command line input and returns a success status and any execution error.
 func (t *Process) ProcessExec(line string) (bool, error) {
-	return t.kernel.CallProcessExec(line, nil)
+	return t.kernel.CallProcessExec(line)
 }
 
 // WindowsSelectionBegin updates the task selection for the given process ID by invoking the kernel's task selection method.
@@ -199,11 +196,6 @@ func (t *Process) WindowsSelectionOptions(option rune, value float64) {
 // SetId sets the task's process ID, updates the caption, and appends the label if it exists.
 func (t *Process) SetId(id int) {
 	t.pid = id
-	caption := strconv.Itoa(t.pid)
-	if len(t.cmd.Name()) > 0 {
-		caption += " - " + t.cmd.Name()
-		t.WindowOptions.SetCaption(caption)
-	}
 }
 
 // Paint executes the rendering logic for the task on the provided surface by invoking a paint function if defined.
@@ -212,10 +204,7 @@ func (t *Process) Paint(surface interfaces.ISurface) {
 	if fn == nil {
 		return
 	}
-	surface.SetWindowOptions(t.WindowOptions)
-	surface.Begin()
 	fn(t, surface)
-	surface.End()
 }
 
 // ProcessSetForeground sets the foreground task by specifying its PID and returns true if successfully set.

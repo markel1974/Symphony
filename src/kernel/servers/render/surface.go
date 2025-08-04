@@ -40,12 +40,14 @@ func NewSurface(driver interfaces.IDisplayDriver, rows int, columns int) *Surfac
 		border:  1,
 		full:    false,
 	}
-	s.Resize(rows, columns)
+	s.Prepare(rows, columns, true)
 	return s
 }
 
-// Resize adjusts the dimensions of the Surface to the specified rows and columns, resetting or reallocating data as needed.
-func (s *Surface) Resize(rows int, columns int) {
+// Prepare adjusts the dimensions of the Surface to the specified rows and columns, resetting or reallocating data as needed.
+func (s *Surface) Prepare(rows int, columns int, full bool) {
+	s.rMax = 0
+	s.full = full
 	if rows == s.rows && columns == s.columns {
 		for r := range s.surface {
 			copy(s.surface[r], s.columnsCleaner)
@@ -94,8 +96,8 @@ func (s *Surface) GetSize() (int, int) {
 }
 
 // SetCompletePaint enables full rendering mode, marking the entire surface as requiring a complete repaint.
-func (s *Surface) SetCompletePaint() {
-	s.full = true
+func (s *Surface) SetCompletePaint(f bool) {
+	s.full = f
 }
 
 // SetSelectionMode sets the selection mode for the Surface. If true, the surface will render in selection mode.
@@ -103,7 +105,7 @@ func (s *Surface) SetSelectionMode(selection bool) {
 	s.selection = selection
 }
 
-func (s *Surface) SetWindowOptions(options *interfaces.WindowOptions) {
+func (s *Surface) SetWindowOptions(options *WindowOptions) {
 	s.caption = options.Caption()
 	s.offsetX = options.OffsetX()
 	s.offsetY = options.OffsetY()
@@ -119,14 +121,12 @@ func (s *Surface) Draw(rs int, cs int, text rune) {
 	if columns < 0 {
 		return
 	}
-
 	if rs >= s.iRows {
 		return
 	}
 	if cs >= s.iColumns {
 		return
 	}
-
 	if len(s.surface) > rows {
 		if len(s.surface[rows]) > columns {
 			s.surface[rows][columns] = string(text)
@@ -215,7 +215,6 @@ func (s *Surface) compute(r int, c int) (int, int) {
 func (s *Surface) GetBuffer() []byte {
 	var lines bytes.Buffer
 	var maximum int
-
 	if s.full {
 		maximum = s.rows * s.columns
 	} else {

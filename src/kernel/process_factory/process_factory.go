@@ -19,10 +19,7 @@ func NewProcessFactory(kernel interfaces.IKernel) *ProcessFactory {
 }
 
 // Create initializes a new process using the provided command, line, and optional window settings.
-func (fp *ProcessFactory) Create(user string, cmd interfaces.ICommand, line string, options *interfaces.WindowOptions) interfaces.IProcess {
+func (fp *ProcessFactory) Create(user string, cmd interfaces.ICommand, line string) interfaces.IProcess {
 	p := process.NewProcess(fp.kernel, user, cmd, line)
-	if options != nil {
-		p.SetWindowOptions(options)
-	}
 	return p
 }

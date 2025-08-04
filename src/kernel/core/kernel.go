@@ -10,38 +10,36 @@ import (
 
 // Kernel represents the core component responsible for managing rendering, input/output, task execution, and timers.
 type Kernel struct {
-	ticker         *adaptiveticker.AdaptiveTicker
-	inputDriver    interfaces.IKeyboardDriver
-	renderServer   interfaces.IRender
-	foreground     interfaces.IProcess
-	windowSelector *WindowSelector
-	pidGenerator   *adaptiveticker.Ids
-	running        map[int]interfaces.IProcess
-	fsServer       interfaces.IFileSystem
-	shellPath      string
-	shell          interfaces.IProcess
-	messageChan    chan interfaces.IMessage
-	pf             *process_factory.ProcessFactory
-	timersChan     chan *adaptiveticker.TimerHandler
-	servers        []interfaces.IServer
-	exit           bool
+	ticker       *adaptiveticker.AdaptiveTicker
+	inputDriver  interfaces.IKeyboardDriver
+	renderServer interfaces.IRender
+	foreground   interfaces.IProcess
+	pidGenerator *adaptiveticker.Ids
+	running      map[int]interfaces.IProcess
+	fsServer     interfaces.IFileSystem
+	shellPath    string
+	shell        interfaces.IProcess
+	messageChan  chan interfaces.IMessage
+	pf           *process_factory.ProcessFactory
+	timersChan   chan *adaptiveticker.TimerHandler
+	servers      []interfaces.IServer
+	exit         bool
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
 func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver interfaces.IKeyboardDriver, renderServer interfaces.IRender, fsServer interfaces.IFileSystem, shellPath string) *Kernel {
 	t := &Kernel{
-		ticker:         ticker,
-		inputDriver:    inputDriver,
-		renderServer:   renderServer,
-		fsServer:       fsServer,
-		foreground:     nil,
-		windowSelector: NewWindowSelector(),
-		pidGenerator:   adaptiveticker.NewIds(1024),
-		messageChan:    make(chan interfaces.IMessage, contextMaQueueLen),
-		timersChan:     timersChan,
-		exit:           false,
-		shellPath:      shellPath,
-		running:        make(map[int]interfaces.IProcess),
+		ticker:       ticker,
+		inputDriver:  inputDriver,
+		renderServer: renderServer,
+		fsServer:     fsServer,
+		foreground:   nil,
+		pidGenerator: adaptiveticker.NewIds(1024),
+		messageChan:  make(chan interfaces.IMessage, contextMaQueueLen),
+		timersChan:   timersChan,
+		exit:         false,
+		shellPath:    shellPath,
+		running:      make(map[int]interfaces.IProcess),
 	}
 	t.pf = process_factory.NewProcessFactory(t)
 	t.servers = append(t.servers, t.renderServer, t.fsServer)
@@ -59,8 +57,8 @@ func (c *Kernel) CallProcessList() []*interfaces.ProcessDescription {
 
 // CallProcessExec executes a command by parsing the input line, creating a process, and managing its lifecycle and state.
 // Returns true and error if the process was created but execution failed, or true and nil if execution succeeded.
-func (c *Kernel) CallProcessExec(line string, options *interfaces.WindowOptions) (bool, error) {
-	_, err := c.doProcessExec(line, options)
+func (c *Kernel) CallProcessExec(line string) (bool, error) {
+	_, err := c.doProcessExec(line)
 	if err != nil {
 		return false, err
 	}
@@ -95,40 +93,33 @@ func (c *Kernel) CallProcessIsActive(pid int) bool {
 
 // CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
 func (c *Kernel) CallWindowsSelectionBegin() {
-	if c.foreground != nil {
-		c.doCreateWindowsSelection(c.foreground.PID())
-		c.renderServer.PaintRequest(false)
-	}
+	c.renderServer.WindowsSelectionBegin()
 }
 
 // CallWindowsSelectionOptions updates the selected task's option with the given rune and value, then triggers a repaint request.
 // Returns true on successful task retrieval and option update, otherwise returns false.
 func (c *Kernel) CallWindowsSelectionOptions(option rune, value float64) {
-	c.doProcessSelectionOptions(option, value)
+	c.renderServer.WindowsSelectionOptions(option, value)
 }
 
 // CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
 func (c *Kernel) CallWindowsSelectionPrevious() {
-	if c.windowSelector.Prev() {
-		c.renderServer.PaintRequest(false)
-	}
+	c.renderServer.WindowsSelectionPrevious()
 }
 
 // CallWindowsSelectionNext advances the task windowSelector to the next task and triggers a repaint if the task selection changes.
 func (c *Kernel) CallWindowsSelectionNext() {
-	if c.windowSelector.Next() {
-		c.renderServer.PaintRequest(false)
-	}
+	c.renderServer.WindowsSelectionNext()
 }
 
 // CallWindowsSelectionEnd clears the state of the associated WindowSelector instance by resetting its index and available list.
 func (c *Kernel) CallWindowsSelectionEnd() {
-	c.windowSelector.Clear()
+	c.renderServer.WindowsSelectionEnd()
 }
 
 // CallPaintRequest triggers a paint request via the render component and returns true if successful.
 func (c *Kernel) CallPaintRequest() {
-	c.renderServer.PaintRequest(false)
+	c.renderServer.CallPaintRequest(false)
 }
 
 // CallWritePromptEOL writes the specified prompt followed by an end-of-line based on the eol flag using the render instance.
@@ -281,7 +272,7 @@ func (c *Kernel) CallTimerStop(pid int, tid int) {
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
-	c.shell, _ = c.doProcessExec(c.shellPath, nil)
+	c.shell, _ = c.doProcessExec(c.shellPath)
 	d := make(chan bool)
 	go func() {
 		d <- true
@@ -306,12 +297,12 @@ func (c *Kernel) Start() {
 
 // taskExecutor executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
 // Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
-func (c *Kernel) doProcessExec(line string, options *interfaces.WindowOptions) (interfaces.IProcess, error) {
+func (c *Kernel) doProcessExec(line string) (interfaces.IProcess, error) {
 	cmd, args, err := c.fsServer.Find(line)
 	if err != nil {
 		return nil, fmt.Errorf("error creating task: invalid command '%s'", line)
 	}
-	process := c.pf.Create("stub", cmd, line, options)
+	process := c.pf.Create("stub", cmd, line)
 	if !c.pidGenerator.Set(process) {
 		return nil, fmt.Errorf("error creating task: can't set pid")
 	}
@@ -331,9 +322,21 @@ func (c *Kernel) doProcessExec(line string, options *interfaces.WindowOptions) (
 		return nil, nil
 	}
 	if !cmd.Background() {
-		c.foreground = process
+		c.doProcessSetForeground(process.PID())
 	}
 	return process, nil
+}
+
+func (c *Kernel) doProcessSetForeground(pid int) bool {
+	process, _ := c.running[pid]
+	if process == nil {
+		return false
+	}
+	for _, s := range c.servers {
+		s.NotifyProcessForeground(process.Description())
+	}
+	c.foreground = process
+	return true
 }
 
 // doProcessKill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
@@ -354,10 +357,9 @@ func (c *Kernel) doProcessKill(pid int) bool {
 	}
 	if c.foreground != nil {
 		if c.foreground.PID() == pid {
-			c.foreground = c.shell //nil
+			c.doProcessSetForeground(c.shell.PID())
 		}
 	}
-	c.windowSelector.Clear()
 	c.pidGenerator.Unset(pid)
 	delete(c.running, pid)
 	return true
@@ -386,56 +388,6 @@ func (c *Kernel) doProcessKillAll(name string) int {
 		}
 	}
 	return count
-}
-
-// doProcessSelectionOptions updates the current process's option and triggers a repaint request. Returns false if process not found.
-func (c *Kernel) doProcessSelectionOptions(option rune, value float64) bool {
-	process, _ := c.running[c.windowSelector.PID()]
-	if process == nil {
-		return false
-	}
-	process.SetWindowOption(option, value)
-	c.renderServer.PaintRequest(true)
-	return true
-}
-
-// doCreateWindowsSelection sets the current selection mode for tasks based on a requested process ID. Defaults to the first task if the requested ID is unavailable.
-func (c *Kernel) doCreateWindowsSelection(requestedPid int) {
-	var idx = 0
-	var firstPid = adaptiveticker.UnknownId
-	var firstIdx = 0
-
-	c.windowSelector.Clear()
-
-	for _, process := range c.running {
-		if process.GetCommand().PaintEvent() != nil {
-			c.windowSelector.AddAvailable(process.PID())
-			if firstPid == adaptiveticker.UnknownId {
-				firstPid = process.PID()
-				firstIdx = idx
-			}
-			if process.PID() == requestedPid {
-				c.windowSelector.Set(requestedPid, idx)
-			}
-			idx++
-		}
-	}
-	if c.windowSelector.PID() == adaptiveticker.UnknownId {
-		if firstPid == adaptiveticker.UnknownId {
-			return
-		}
-		c.windowSelector.Set(firstPid, firstIdx)
-	}
-}
-
-// doProcessSetForeground sets the foreground task to the one associated with the given PID. Returns true if successful, false otherwise.
-func (c *Kernel) doProcessSetForeground(pid int) bool {
-	process, _ := c.running[pid]
-	if process == nil {
-		return false
-	}
-	c.foreground = process
-	return true
 }
 
 // doProcessList retrieves a list of process descriptions by iterating through all stored processes in the Kernel.
@@ -497,8 +449,9 @@ func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 				c.handleTimerEvent(mt.PID(), mt.TID(), mt.Interval())
 			}
 		case interfaces.MessageTypePaint:
+			//TODO MOVE TO RENDER SERVER
 			if _, ok := m.(*messages.MessagePaint); ok {
-				c.handlePaintEvent()
+				c.renderServer.CallPaintExec()
 			}
 		case interfaces.MessageTypeQuit:
 			if _, ok := m.(*messages.MessageQuit); ok {
@@ -534,22 +487,4 @@ func (c *Kernel) handleTimerEvent(pid int, tid int, interval int) bool {
 		}
 	}
 	return false
-}
-
-// handlePaintEvent executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
-// Returns true if the rendering process is executed, false otherwise.
-func (c *Kernel) handlePaintEvent() bool {
-	if !c.renderServer.IsDirty() {
-		return false
-	}
-	var selectedProcess interfaces.IProcess = nil
-	var tasks []interfaces.IProcess
-	for _, process := range c.running {
-		if process.PID() == c.windowSelector.PID() {
-			selectedProcess = process
-		} else {
-			tasks = append(tasks, process)
-		}
-	}
-	return c.renderServer.ExecPaint(selectedProcess, tasks)
 }

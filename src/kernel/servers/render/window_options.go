@@ -1,4 +1,4 @@
-package interfaces
+package render
 
 // WindowOptions represents configurable parameters for a task, including offsets, scaling, and associated command line.
 type WindowOptions struct {
@@ -8,12 +8,12 @@ type WindowOptions struct {
 	caption string
 }
 
-func NewWindowOptions(offsetX int, offsetY int, scale float64) *WindowOptions {
+func NewWindowOptions(caption string, offsetX int, offsetY int, scale float64) *WindowOptions {
 	return &WindowOptions{
 		offsetY: offsetY,
 		offsetX: offsetX,
 		scale:   scale,
-		caption: "",
+		caption: caption,
 	}
 }
 

@@ -4,4 +4,6 @@ type IServer interface {
 	NotifyProcessCreation(desc *ProcessDescription)
 
 	NotifyProcessTermination(desc *ProcessDescription)
+
+	NotifyProcessForeground(desc *ProcessDescription)
 }

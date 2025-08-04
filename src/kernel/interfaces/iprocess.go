@@ -22,10 +22,6 @@ type IProcess interface {
 
 	Description() *ProcessDescription
 
-	SetWindowOption(option rune, value float64)
-
-	SetWindowOptions(options *WindowOptions)
-
 	GetCommand() ICommand
 
 	SetContext(ctx interface{})
@@ -67,8 +63,6 @@ type IProcess interface {
 	PaintRequest()
 
 	Start()
-
-	SetCaption(caption string) bool
 
 	ProcessExec(line string) (bool, error)
 

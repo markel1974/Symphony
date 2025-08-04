@@ -7,11 +7,19 @@ type IRender interface {
 
 	SetScreenSize(width int, height int)
 
-	IsDirty() bool
+	CallPaintRequest(full bool)
 
-	ExecPaint(fgTask IProcess, tasks []IProcess) bool
+	CallPaintExec()
 
-	PaintRequest(full bool)
+	WindowsSelectionBegin()
+
+	WindowsSelectionPrevious()
+
+	WindowsSelectionNext()
+
+	WindowsSelectionEnd()
+
+	WindowsSelectionOptions(option rune, value float64)
 
 	Colorize(text string, fg int, bg int, mode ColorMode) string
 

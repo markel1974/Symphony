@@ -34,8 +34,6 @@ type ISurface interface {
 
 	DrawSeries(data []float64, w int, h int, min float64, max float64)
 
-	SetWindowOptions(options *WindowOptions)
-
 	Begin()
 
 	End()

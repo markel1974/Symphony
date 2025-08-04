@@ -362,3 +362,6 @@ func (c *FileSystem) NotifyProcessCreation(desc *interfaces.ProcessDescription) 
 // NotifyProcessTermination handles notifications related to the termination of a process within the file system context.
 func (c *FileSystem) NotifyProcessTermination(desc *interfaces.ProcessDescription) {
 }
+
+func (c *FileSystem) NotifyProcessForeground(desc *interfaces.ProcessDescription) {
+}

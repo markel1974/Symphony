@@ -2,18 +2,18 @@ package interfaces
 
 // ProcessDescription represents the details of a system process, including its name and process ID.
 type ProcessDescription struct {
-	name     string
-	pid      int
-	line     string
-	hasPaint bool
+	name    string
+	pid     int
+	line    string
+	process IProcess
 }
 
-func NewProcessDescription(name string, pid int, line string, hasPaint bool) *ProcessDescription {
+func NewProcessDescription(name string, pid int, line string, process IProcess) *ProcessDescription {
 	return &ProcessDescription{
-		name:     name,
-		pid:      pid,
-		line:     line,
-		hasPaint: hasPaint,
+		name:    name,
+		pid:     pid,
+		line:    line,
+		process: process,
 	}
 }
 
@@ -32,7 +32,13 @@ func (p *ProcessDescription) Line() string {
 	return p.line
 }
 
-// HasPaint checks if the process description includes paint-related functionality and returns true if present.
+// HasPaint returns true if the ProcessDescription has a valid PaintFn assigned; otherwise, false.
 func (p *ProcessDescription) HasPaint() bool {
-	return p.hasPaint
+	return p.process.GetCommand().PaintEvent() != nil
+}
+
+// Paint executes the assigned PaintFn to render a task on the provided surface.
+// TODO MOVE
+func (p *ProcessDescription) Paint(surface ISurface) {
+	p.process.Paint(surface)
 }

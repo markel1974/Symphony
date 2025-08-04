@@ -4,35 +4,56 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
+	"strconv"
 )
+
+type Component struct {
+	*interfaces.ProcessDescription
+	*WindowOptions
+}
+
+func NewComponent(desc *interfaces.ProcessDescription) *Component {
+	caption := strconv.Itoa(desc.PID())
+	if len(desc.Name()) > 0 {
+		caption += " - " + desc.Name()
+	}
+	return &Component{
+		ProcessDescription: desc,
+		WindowOptions:      NewWindowOptions(caption, 0, 0, 1.0),
+	}
+}
 
 // eol represents the end-of-line marker used for denoting line breaks in the output, set to "\r\n".
 const eol = "\r\n"
 
 // Render represents a rendering engine responsible for managing terminal dimensions, repainting logic, and paint tasks.
 type Render struct {
-	driver    interfaces.IDisplayDriver
-	surface   *Surface
-	dirty     bool
-	width     int
-	height    int
-	fullPaint bool
-	ticker    *adaptiveticker.AdaptiveTicker
-	timerChan chan *adaptiveticker.TimerHandler
-	//driver    io.Writer
+	driver         interfaces.IDisplayDriver
+	surface        *Surface
+	dirty          bool
+	width          int
+	height         int
+	fullPaint      bool
+	ticker         *adaptiveticker.AdaptiveTicker
+	timerChan      chan *adaptiveticker.TimerHandler
+	windowSelector *WindowSelector
+	running        map[int]*Component
+	foreground     *Component
 }
 
 // NewRender creates and initializes a new Render instance with the provided terminal implementation.
 // Returns a pointer to the newly created Render object.
 func NewRender(ticker *adaptiveticker.AdaptiveTicker, timerChan chan *adaptiveticker.TimerHandler, driver interfaces.IDisplayDriver) *Render {
 	r := &Render{
-		ticker:    ticker,
-		timerChan: timerChan,
-		driver:    driver,
-		dirty:     false,
-		width:     80,
-		height:    24,
-		fullPaint: true,
+		ticker:         ticker,
+		timerChan:      timerChan,
+		driver:         driver,
+		windowSelector: NewWindowSelector(),
+		dirty:          false,
+		width:          80,
+		height:         24,
+		fullPaint:      true,
+		running:        make(map[int]*Component),
 	}
 	r.surface = NewSurface(driver, r.height, r.width)
 	return r
@@ -48,31 +69,106 @@ func (c *Render) SetScreenSize(width int, height int) {
 	c.width = width
 	c.height = height
 	c.fullPaint = true
-	//c.driver.SetSize(width, height)
 }
 
-// IsDirty checks if the render state is marked as dirty, indicating that a repaint is needed. It returns true if dirty.
-func (c *Render) IsDirty() bool {
-	return c.dirty
+// CallPaintRequest marks the rendering system as requiring a paint and optionally marks it for a full repaint.
+// Returns true if the state was not already marked as dirty.
+func (c *Render) CallPaintRequest(full bool) {
+	if full {
+		c.fullPaint = true
+	}
+	if !c.dirty {
+		c.dirty = true
+		c.ticker.Create(c.timerChan, messages.NewMessagePaint(), -1, -1, 1)
+	}
+}
+
+// CallPaintExec executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
+// Returns true if the rendering process is executed, false otherwise.
+func (c *Render) CallPaintExec() {
+	if !c.dirty {
+		return
+	}
+	var selectedProcess *Component = nil
+	var tasks []*Component
+	for _, process := range c.running {
+		if process.PID() == c.windowSelector.PID() {
+			selectedProcess = process
+		} else {
+			tasks = append(tasks, process)
+		}
+	}
+	c.execPaint(selectedProcess, tasks)
+}
+
+// WindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
+func (c *Render) WindowsSelectionBegin() {
+	c.windowSelector.Clear()
+	for idx, process := range c.running {
+		c.windowSelector.AddAvailable(process.PID())
+		if c.windowSelector.PID() == adaptiveticker.UnknownId {
+			if c.foreground != nil {
+				if c.foreground.PID() == process.PID() {
+					c.windowSelector.Set(c.foreground.PID(), idx)
+				}
+			} else {
+				c.windowSelector.Set(process.PID(), idx)
+			}
+		}
+	}
+	c.CallPaintRequest(false)
+}
+
+func (c *Render) WindowsSelectionOptions(option rune, value float64) {
+	process, _ := c.running[c.windowSelector.PID()]
+	if process == nil {
+		return
+	}
+	process.SetWindowOption(option, value)
+	c.CallPaintRequest(true)
+}
+
+// WindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
+func (c *Render) WindowsSelectionPrevious() {
+	if c.windowSelector.Prev() {
+		c.CallPaintRequest(false)
+	}
+}
+
+// WindowsSelectionNext moves the task selection to the next task and triggers a render update if successful.
+func (c *Render) WindowsSelectionNext() {
+	if c.windowSelector.Next() {
+		c.CallPaintRequest(false)
+	}
+}
+
+// WindowsSelectionEnd clears the current selection in the windowSelector instance of the Render object.
+func (c *Render) WindowsSelectionEnd() {
+	c.windowSelector.Clear()
 }
 
 // ExecPaint performs the rendering process by painting background tasks and a foreground task onto the terminal surface.
-func (c *Render) ExecPaint(fgTask interfaces.IProcess, tasks []interfaces.IProcess) bool {
+func (c *Render) execPaint(fgTask *Component, tasks []*Component) bool {
 	w, h := c.GetScreenSize()
-	c.surface.Resize(h, w)
-	if c.fullPaint {
-		c.surface.SetCompletePaint()
-		c.fullPaint = false
-	}
+	fullPaint := c.fullPaint
+	c.fullPaint = false
+	c.surface.Prepare(h, w, fullPaint)
+
 	//zOrder
 	for _, task := range tasks {
 		c.surface.SetSelectionMode(false)
+		c.surface.SetWindowOptions(task.WindowOptions)
+		c.surface.Begin()
 		task.Paint(c.surface)
+		c.surface.End()
 	}
 	//zOrder
 	if fgTask != nil {
 		c.surface.SetSelectionMode(true)
+		c.surface.SetWindowOptions(fgTask.WindowOptions)
+		c.surface.Begin()
 		fgTask.Paint(c.surface)
+		c.surface.End()
 	}
 	//c.surface.Render()
 	c.SaveCursor()
@@ -82,21 +178,6 @@ func (c *Render) ExecPaint(fgTask interfaces.IProcess, tasks []interfaces.IProce
 
 	c.dirty = false
 	return true
-}
-
-// PaintRequest marks the rendering system as requiring a paint and optionally marks it for a full repaint.
-// Returns true if the state was not already marked as dirty.
-func (c *Render) PaintRequest(full bool) {
-	if full {
-		c.fullPaint = true
-	}
-	//ret := false
-	if !c.dirty {
-		c.dirty = true
-		c.ticker.Create(c.timerChan, messages.NewMessagePaint(), -1, -1, 1)
-		//ret = true
-	}
-	//return ret
 }
 
 // Write sends the given string data to the terminal's output stream.
@@ -202,8 +283,24 @@ func (c *Render) WriteHighlight(line string) {
 
 // NotifyProcessCreation notifies the Render instance about the creation of a new process and updates internal state if necessary.
 func (c *Render) NotifyProcessCreation(desc *interfaces.ProcessDescription) {
+	if !desc.HasPaint() {
+		return
+	}
+	c.running[desc.PID()] = NewComponent(desc)
 }
 
-// NotifyProcessTermination handles the necessary clean-up and state updates when a process associated with the Render terminates.
+// NotifyProcessTermination handles the necessary cleanup and state updates when a process associated with the Render terminates.
 func (c *Render) NotifyProcessTermination(desc *interfaces.ProcessDescription) {
+	c.windowSelector.Clear()
+	delete(c.running, desc.PID())
+}
+
+// NotifyProcessForeground updates the Render object with the process description currently in the foreground.
+func (c *Render) NotifyProcessForeground(desc *interfaces.ProcessDescription) {
+	p, _ := c.running[desc.PID()]
+	if p == nil {
+		c.foreground = nil
+		return
+	}
+	c.foreground = p
 }
