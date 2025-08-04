@@ -52,6 +52,10 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 	return t
 }
 
+func (c *Kernel) PID() int {
+	return 0
+}
+
 func (c *Kernel) AddServer(server interfaces.IServer) {
 	c.servers = append(c.servers, server)
 	for _, r := range server.Register() {

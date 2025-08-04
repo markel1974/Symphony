@@ -60,6 +60,8 @@ const (
 // IMessage defines the interface for messages used within the system, requiring a method to retrieve the message type.
 type IMessage interface {
 	GetType() MessageType
+
+	Ack()
 }
 
 // Message represents a basic unit containing a MessageType to define its specific behavior or category.
@@ -76,4 +78,9 @@ func NewMessage(kind MessageType) *Message {
 // GetType returns the MessageType of the current Message instance.
 func (m *Message) GetType() MessageType {
 	return m.kind
+}
+
+// Ack acknowledges the processing of the message, preventing further handling or retries by the system.
+func (m *Message) Ack() {
+
 }

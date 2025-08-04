@@ -1,6 +1,8 @@
 package messages
 
-import "github.com/markel1974/c64emu/src/kernel/interfaces"
+import (
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+)
 
 // MessageQuit represents a message signaling a quit operation or system termination.
 // It embeds the base Message type and sets its kind to MessageTypeQuit.
@@ -92,7 +94,8 @@ type MessageProcessSetForeground struct {
 	PID int
 }
 
-// NewMessageProcessSetForeground creates a new MessageProcessSetForeground instance with the given process ID.
+// NewMessageProcessSetForeground creates and returns a new MessageProcessSetForeground with the specified process ID.
+// It initializes the embedded Message with the MessageTypeProcessSetForeground constant.
 func NewMessageProcessSetForeground(pid int) *MessageProcessSetForeground {
 	return &MessageProcessSetForeground{
 		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessSetForeground),
@@ -100,31 +103,37 @@ func NewMessageProcessSetForeground(pid int) *MessageProcessSetForeground {
 	}
 }
 
-// MessageProcessListRequest represents a request to retrieve a list of processes in the system.
-// It embeds the Message type and uses MessageTypeProcessListRequest as its kind.
+// MessageProcessListRequest represents a request message to retrieve a list of processes from the system.
+// It embeds Message for base message functionality and uses ReplyTo to specify the recipient for the response.
 type MessageProcessListRequest struct {
 	interfaces.Message
+	replyTo   interfaces.IReceiver
+	processes []*interfaces.ProcessDescription
+	ackChan   chan bool
 }
 
-// NewMessageProcessListRequest creates and returns a new instance of MessageProcessListRequest with its type set to MessageTypeProcessListRequest.
-func NewMessageProcessListRequest() *MessageProcessListRequest {
+// NewMessageProcessList creates a new MessageProcessListRequest with specified replyTo as an IReceiver.
+func NewMessageProcessList(replyTo interfaces.IReceiver, ackChan chan bool) *MessageProcessListRequest {
 	return &MessageProcessListRequest{
 		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessListRequest),
+		replyTo: replyTo,
+		ackChan: ackChan,
 	}
 }
 
-// --- Messaggi di Risposta ---
-
-// MessageProcessListResponse represents a response message containing a list of process descriptions.
-type MessageProcessListResponse struct {
-	interfaces.Message
-	Processes []*interfaces.ProcessDescription
+// Respond sets the list of processes and sends the message to the specified recipient via ReplyTo.
+func (m *MessageProcessListRequest) Respond(processes []*interfaces.ProcessDescription) {
+	m.processes = processes
+	m.replyTo.PostMessage(m)
 }
 
-// NewMessageProcessListResponse creates a new MessageProcessListResponse with the provided process descriptions.
-func NewMessageProcessListResponse(processes []*interfaces.ProcessDescription) *MessageProcessListResponse {
-	return &MessageProcessListResponse{
-		Message:   *interfaces.NewMessage(interfaces.MessageTypeProcessListResponse),
-		Processes: processes,
-	}
+// Processes returns the list of ProcessDescription objects associated with the MessageProcessListResponse instance.
+func (m *MessageProcessListRequest) Processes() []*interfaces.ProcessDescription {
+	return m.processes
+}
+
+// Ack signals the acknowledgment channel and closes it to indicate task completion or unblock synchronous calls.
+func (m *MessageProcessListRequest) Ack() {
+	m.ackChan <- true
+	close(m.ackChan)
 }

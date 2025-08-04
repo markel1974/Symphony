@@ -14,7 +14,7 @@ type PaintFn func(task IProcess, surface ISurface)
 
 // IProcess defines an interface for process management, task handling, interaction, and rendering within a system.
 type IProcess interface {
-	PostMessage(m IMessage)
+	IReceiver
 
 	PID() int
 

@@ -41,6 +41,11 @@ func NewFileSystem(root interfaces.ICommand, sp []interfaces.ICommand) *FileSyst
 	}
 }
 
+// PID returns an identifier for the file system process. It always returns a fixed value of -2.
+func (c *FileSystem) PID() int {
+	return -2
+}
+
 // SetRouter sets the IRouter instance for the FileSystem, allowing it to handle message routing.
 func (c *FileSystem) SetRouter(router interfaces.IRouter) {
 	c.router = router

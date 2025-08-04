@@ -1,11 +1,11 @@
 package interfaces
 
 type IServer interface {
+	IReceiver
+
 	Start()
 
 	SetRouter(router IRouter)
-
-	PostMessage(msg IMessage)
 
 	Register() []MessageType
 

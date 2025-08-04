@@ -288,6 +288,14 @@ func (t *Process) ClearScreen() {
 	t.kernel.CallClearScreen()
 }
 
+func (t *Process) RequestProcessList() []*interfaces.ProcessDescription {
+	ackChan := make(chan bool, 1)
+	request := messages.NewMessageProcessListRequest(t)
+	t.kernel.PostMessage(request)
+	<-ackChan
+	return nil
+}
+
 // SetExit signals the kernel that an exit is requested for the task.
 func (t *Process) SetExit() {
 	t.kernel.CallExitRequested()
@@ -308,6 +316,7 @@ func (t *Process) eventLoop(r chan bool) {
 				if !ok {
 					return
 				}
+				m.Ack()
 				if m.GetType() == interfaces.MessageTypeQuit {
 					close(t.messageChan)
 					return

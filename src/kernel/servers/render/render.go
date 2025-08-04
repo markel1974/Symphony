@@ -42,6 +42,11 @@ func NewRender(driver interfaces.IDisplayDriver) *Render {
 	return r
 }
 
+// PID returns a hardcoded integer value representing a Process ID.
+func (c *Render) PID() int {
+	return -1
+}
+
 // SetRouter sets the instance of IRouter to be used by the Render for routing purposes.
 func (c *Render) SetRouter(router interfaces.IRouter) {
 	c.router = router
