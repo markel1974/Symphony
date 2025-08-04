@@ -58,6 +58,11 @@ func (c *Render) PostMessage(m interfaces.IMessage) {
 	c.messageChan <- m
 }
 
+// Register returns a slice of message types that the Render object is set to handle, including MessageTypePaint.
+func (c *Render) Register() []interfaces.MessageType {
+	return []interfaces.MessageType{interfaces.MessageTypePaint}
+}
+
 // CallGetScreenSize returns the current screen width and height of the Render instance.
 func (c *Render) CallGetScreenSize() (int, int) {
 	return c.width, c.height
@@ -74,18 +79,6 @@ func (c *Render) CallSetScreenSize(width int, height int) {
 // Returns true if the state was not already marked as dirty.
 func (c *Render) CallPaintRequest() {
 	c.paintRequest(false)
-}
-
-// doPaintRequest triggers a paint request by marking the object as dirty and setting up the necessary ticker for repainting.
-func (c *Render) paintRequest(full bool) {
-	if full {
-		c.fullPaint = true
-	}
-	if !c.dirty {
-		c.dirty = true
-		c.router.PostTimedMessage(messages.NewMessagePaint(), -1, -1, 1)
-		//c.ticker.Create(c.timerChan, messages.NewMessagePaint(), -1, -1, 1)
-	}
 }
 
 // CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
@@ -288,9 +281,15 @@ func (c *Render) NotifyProcessForeground(desc *interfaces.ProcessDescription) {
 	c.foreground = p
 }
 
-// Register returns a slice of message types that the Render object is set to handle, including MessageTypePaint.
-func (c *Render) Register() []interfaces.MessageType {
-	return []interfaces.MessageType{interfaces.MessageTypePaint}
+// paintRequest triggers a paint request by marking the object as dirty and setting up the necessary ticker for repainting.
+func (c *Render) paintRequest(full bool) {
+	if full {
+		c.fullPaint = true
+	}
+	if !c.dirty {
+		c.dirty = true
+		c.router.PostTimedMessage(messages.NewMessagePaint(), -1, -1, 1)
+	}
 }
 
 // evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
