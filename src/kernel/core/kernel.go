@@ -12,27 +12,28 @@ import (
 type Kernel struct {
 	ticker         *adaptiveticker.AdaptiveTicker
 	inputDriver    interfaces.IKeyboardDriver
-	render         interfaces.IRender
+	renderServer   interfaces.IRender
 	foreground     interfaces.IProcess
 	windowSelector *WindowSelector
 	pidGenerator   *adaptiveticker.Ids
 	running        map[int]interfaces.IProcess
-	fs             interfaces.IFileSystem
+	fsServer       interfaces.IFileSystem
 	shellPath      string
 	shell          interfaces.IProcess
 	messageChan    chan interfaces.IMessage
 	pf             *process_factory.ProcessFactory
 	timersChan     chan *adaptiveticker.TimerHandler
+	servers        []interfaces.IServer
 	exit           bool
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver interfaces.IKeyboardDriver, render interfaces.IRender, fs interfaces.IFileSystem, shellPath string) *Kernel {
+func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver interfaces.IKeyboardDriver, renderServer interfaces.IRender, fsServer interfaces.IFileSystem, shellPath string) *Kernel {
 	t := &Kernel{
 		ticker:         ticker,
 		inputDriver:    inputDriver,
-		render:         render,
-		fs:             fs,
+		renderServer:   renderServer,
+		fsServer:       fsServer,
 		foreground:     nil,
 		windowSelector: NewWindowSelector(),
 		pidGenerator:   adaptiveticker.NewIds(1024),
@@ -43,6 +44,7 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 		running:        make(map[int]interfaces.IProcess),
 	}
 	t.pf = process_factory.NewProcessFactory(t)
+	t.servers = append(t.servers, t.renderServer, t.fsServer)
 	return t
 }
 
@@ -95,7 +97,7 @@ func (c *Kernel) CallProcessIsActive(pid int) bool {
 func (c *Kernel) CallWindowsSelectionBegin() {
 	if c.foreground != nil {
 		c.doCreateWindowsSelection(c.foreground.PID())
-		c.render.PaintRequest(false)
+		c.renderServer.PaintRequest(false)
 	}
 }
 
@@ -108,14 +110,14 @@ func (c *Kernel) CallWindowsSelectionOptions(option rune, value float64) {
 // CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
 func (c *Kernel) CallWindowsSelectionPrevious() {
 	if c.windowSelector.Prev() {
-		c.render.PaintRequest(false)
+		c.renderServer.PaintRequest(false)
 	}
 }
 
 // CallWindowsSelectionNext advances the task windowSelector to the next task and triggers a repaint if the task selection changes.
 func (c *Kernel) CallWindowsSelectionNext() {
 	if c.windowSelector.Next() {
-		c.render.PaintRequest(false)
+		c.renderServer.PaintRequest(false)
 	}
 }
 
@@ -126,123 +128,123 @@ func (c *Kernel) CallWindowsSelectionEnd() {
 
 // CallPaintRequest triggers a paint request via the render component and returns true if successful.
 func (c *Kernel) CallPaintRequest() {
-	c.render.PaintRequest(false)
+	c.renderServer.PaintRequest(false)
 }
 
 // CallWritePromptEOL writes the specified prompt followed by an end-of-line based on the eol flag using the render instance.
 func (c *Kernel) CallWritePromptEOL(prompt string, eol bool) {
-	c.render.WritePromptEOL(prompt, eol)
+	c.renderServer.WritePromptEOL(prompt, eol)
 }
 
 // CallWritePromptLine sends a formatted prompt and line to the renderer for output using the WritePromptLine method.
 func (c *Kernel) CallWritePromptLine(prompt string, line string) {
-	c.render.WritePromptLine(prompt, line)
+	c.renderServer.WritePromptLine(prompt, line)
 }
 
 // CallWrite sends the provided string data to the kernel's rendering writer for output.
 func (c *Kernel) CallWrite(data string) {
-	c.render.Write(data)
+	c.renderServer.Write(data)
 }
 
 // CallWriteNormal writes the provided string data to the render instance using the WriteNormal method.
 func (c *Kernel) CallWriteNormal(data string) {
-	c.render.WriteNormal(data)
+	c.renderServer.WriteNormal(data)
 }
 
 // CallWriteHighlights writes syntax-highlighted content to the render component using the provided data string.
 func (c *Kernel) CallWriteHighlights(data string) {
-	c.render.WriteHighlight(data)
+	c.renderServer.WriteHighlight(data)
 }
 
 // CallWriteCritical writes critical data to the render component of the Kernel instance.
 func (c *Kernel) CallWriteCritical(data string) {
-	c.render.WriteCritical(data)
+	c.renderServer.WriteCritical(data)
 }
 
 // CallWriteLn writes the provided string followed by a new line to the kernel's output stream.
 func (c *Kernel) CallWriteLn(data string) {
-	c.render.WriteLn(data)
+	c.renderServer.WriteLn(data)
 }
 
 // CallWriteColor writes a string to the output with specified foreground color, background color, and color mode.
 func (c *Kernel) CallWriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.render.WriteColor(data, fg, bg, mode)
+	c.renderServer.WriteColor(data, fg, bg, mode)
 }
 
 // CallWriteColorLn writes a line of text with specified foreground and background colors and a given color mode.
 func (c *Kernel) CallWriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.render.WriteColorLn(data, fg, bg, mode)
+	c.renderServer.WriteColorLn(data, fg, bg, mode)
 }
 
 // CallClearScreen clears the screen by invoking the associated renderer's CreateClearScreen method.
 func (c *Kernel) CallClearScreen() {
-	c.render.ClearScreen()
+	c.renderServer.ClearScreen()
 }
 
 // CallScreenSize retrieves the screen's width and height as integers from the render instance.
 func (c *Kernel) CallScreenSize() (int, int) {
-	return c.render.GetScreenSize()
+	return c.renderServer.GetScreenSize()
 }
 
 // CallMoveCursorLeft moves the cursor one position to the left within the render context.
 func (c *Kernel) CallMoveCursorLeft() {
-	c.render.MoveCursorLeft()
+	c.renderServer.MoveCursorLeft()
 }
 
 // CallMoveCursorRight moves the cursor one position to the right by invoking the render's CreateMoveCursorRight method.
 func (c *Kernel) CallMoveCursorRight() {
-	c.render.MoveCursorRight()
+	c.renderServer.MoveCursorRight()
 }
 
 // CallSaveCursor saves the current cursor state by invoking the CreateSaveCursor method on the associated renderer.
 func (c *Kernel) CallSaveCursor() {
-	c.render.SaveCursor()
+	c.renderServer.SaveCursor()
 }
 
 // CallRestoreCursor restores the cursor to its previous position using the render instance of the Kernel.
 func (c *Kernel) CallRestoreCursor() {
-	c.render.RestoreCursor()
+	c.renderServer.RestoreCursor()
 }
 
 // CallCWDSet sets the current working directory to the specified path and updates the shell prompt accordingly.
 func (c *Kernel) CallCWDSet(arg string) bool {
-	return c.fs.CWDSet(arg)
+	return c.fsServer.CWDSet(arg)
 }
 
 // CallCWDGet returns the command path of the current working directory from the file system.
 func (c *Kernel) CallCWDGet() string {
-	return c.fs.CWDCommandPath()
+	return c.fsServer.CWDCommandPath()
 }
 
 // CallCWDPath retrieves the current working directory's path as a slice of strings from the filesystem instance.
 func (c *Kernel) CallCWDPath() []string {
-	return c.fs.CWDPath()
+	return c.fsServer.CWDPath()
 }
 
 // CallCWDName returns the name of the current working directory as a string.
 func (c *Kernel) CallCWDName() string {
-	return c.fs.CWDName()
+	return c.fsServer.CWDName()
 }
 
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
 func (c *Kernel) CallCWDDirectoryListing() []string {
-	return c.fs.CWDDirectoryListing()
+	return c.fsServer.CWDDirectoryListing()
 }
 
 // CallFileSystemSuggestion provides autocomplete suggestions and context for a given input string at a specified cursor position.
 func (c *Kernel) CallFileSystemSuggestion(in string, cursor int) (string, []string, bool) {
-	return c.fs.Suggestion(in, cursor)
+	return c.fsServer.Suggestion(in, cursor)
 }
 
 // CallFileSystemHelp retrieves the help information associated with the given argument and returns it as a string.
 // Returns an error if the help information cannot be fetched.
 func (c *Kernel) CallFileSystemHelp(arg string) (string, error) {
-	return c.fs.Help(arg)
+	return c.fsServer.Help(arg)
 }
 
 // CallSetScreenSize adjusts the screen dimensions to the specified width and height values.
 func (c *Kernel) CallSetScreenSize(w int, h int) {
-	c.render.SetScreenSize(w, h)
+	c.renderServer.SetScreenSize(w, h)
 }
 
 // CallExitRequested sets the `exit` flag to true, signaling that an exit has been requested for the kernel.
@@ -305,16 +307,21 @@ func (c *Kernel) Start() {
 // taskExecutor executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
 // Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
 func (c *Kernel) doProcessExec(line string, options *interfaces.WindowOptions) (interfaces.IProcess, error) {
-	cmd, args, err := c.fs.Find(line)
+	cmd, args, err := c.fsServer.Find(line)
 	if err != nil {
 		return nil, fmt.Errorf("error creating task: invalid command '%s'", line)
 	}
-	process := c.pf.Create(cmd, line, options)
+	process := c.pf.Create("stub", cmd, line, options)
 	if !c.pidGenerator.Set(process) {
 		return nil, fmt.Errorf("error creating task: can't set pid")
 	}
 	c.running[process.PID()] = process
 	process.Start()
+
+	for _, server := range c.servers {
+		server.NotifyProcessCreation(process.Description())
+	}
+
 	if err = cmd.Execute(process, args); err != nil {
 		c.doProcessKill(process.PID())
 		return nil, err
@@ -342,6 +349,9 @@ func (c *Kernel) doProcessKill(pid int) bool {
 		c.ticker.RemoveEntries(process.Timers())
 	}
 	process.PostMessage(messages.NewMessageQuit())
+	for _, server := range c.servers {
+		server.NotifyProcessTermination(process.Description())
+	}
 	if c.foreground != nil {
 		if c.foreground.PID() == pid {
 			c.foreground = c.shell //nil
@@ -385,7 +395,7 @@ func (c *Kernel) doProcessSelectionOptions(option rune, value float64) bool {
 		return false
 	}
 	process.SetWindowOption(option, value)
-	c.render.PaintRequest(true)
+	c.renderServer.PaintRequest(true)
 	return true
 }
 
@@ -529,7 +539,7 @@ func (c *Kernel) handleTimerEvent(pid int, tid int, interval int) bool {
 // handlePaintEvent executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
 // Returns true if the rendering process is executed, false otherwise.
 func (c *Kernel) handlePaintEvent() bool {
-	if !c.render.IsDirty() {
+	if !c.renderServer.IsDirty() {
 		return false
 	}
 	var selectedProcess interfaces.IProcess = nil
@@ -541,5 +551,5 @@ func (c *Kernel) handlePaintEvent() bool {
 			tasks = append(tasks, process)
 		}
 	}
-	return c.render.ExecPaint(selectedProcess, tasks)
+	return c.renderServer.ExecPaint(selectedProcess, tasks)
 }

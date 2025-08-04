@@ -10,6 +10,7 @@ type Process struct {
 	*interfaces.WindowOptions
 	kernel      interfaces.IKernel
 	cmd         interfaces.ICommand
+	user        string
 	context     interface{}
 	timers      []int
 	pid         int
@@ -19,9 +20,10 @@ type Process struct {
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
-func NewProcess(kernel interfaces.IKernel, cmd interfaces.ICommand, line string) *Process {
+func NewProcess(kernel interfaces.IKernel, user string, cmd interfaces.ICommand, line string) *Process {
 	t := &Process{
 		kernel:        kernel,
+		user:          user,
 		cmd:           cmd,
 		context:       nil,
 		state:         interfaces.ProcessStateSetup,
@@ -61,7 +63,7 @@ func (t *Process) AddTimer(tid int) {
 
 // Description provides a brief summary of the process including its name, PID, and line information.
 func (t *Process) Description() *interfaces.ProcessDescription {
-	return interfaces.NewProcessDescription(t.cmd.Name(), t.pid, t.line)
+	return interfaces.NewProcessDescription(t.cmd.Name(), t.pid, t.line, t.cmd.PaintEvent != nil)
 }
 
 // Line returns the line configuration of the Process as a string.

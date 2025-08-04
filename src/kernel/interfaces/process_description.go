@@ -2,16 +2,18 @@ package interfaces
 
 // ProcessDescription represents the details of a system process, including its name and process ID.
 type ProcessDescription struct {
-	name string
-	pid  int
-	line string
+	name     string
+	pid      int
+	line     string
+	hasPaint bool
 }
 
-func NewProcessDescription(name string, pid int, line string) *ProcessDescription {
+func NewProcessDescription(name string, pid int, line string, hasPaint bool) *ProcessDescription {
 	return &ProcessDescription{
-		name: name,
-		pid:  pid,
-		line: line,
+		name:     name,
+		pid:      pid,
+		line:     line,
+		hasPaint: hasPaint,
 	}
 }
 
@@ -28,4 +30,9 @@ func (p *ProcessDescription) PID() int {
 // Line returns the command line string
 func (p *ProcessDescription) Line() string {
 	return p.line
+}
+
+// HasPaint checks if the process description includes paint-related functionality and returns true if present.
+func (p *ProcessDescription) HasPaint() bool {
+	return p.hasPaint
 }

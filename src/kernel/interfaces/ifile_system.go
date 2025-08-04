@@ -1,6 +1,8 @@
 package interfaces
 
 type IFileSystem interface {
+	IServer
+
 	AddSearchPath(sp ICommand)
 
 	CWDName() string

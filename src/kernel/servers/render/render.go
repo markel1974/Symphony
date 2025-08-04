@@ -199,3 +199,11 @@ func (c *Render) WriteNormal(line string) {
 func (c *Render) WriteHighlight(line string) {
 	c.WriteColor(line, interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
 }
+
+// NotifyProcessCreation notifies the Render instance about the creation of a new process and updates internal state if necessary.
+func (c *Render) NotifyProcessCreation(desc *interfaces.ProcessDescription) {
+}
+
+// NotifyProcessTermination handles the necessary clean-up and state updates when a process associated with the Render terminates.
+func (c *Render) NotifyProcessTermination(desc *interfaces.ProcessDescription) {
+}

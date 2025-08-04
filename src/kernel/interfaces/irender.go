@@ -1,6 +1,8 @@
 package interfaces
 
 type IRender interface {
+	IServer
+
 	GetScreenSize() (int, int)
 
 	SetScreenSize(width int, height int)
