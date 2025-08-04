@@ -24,7 +24,7 @@ func NewComponent(desc *interfaces.ProcessDescription) *Component {
 }
 
 // eol represents the end-of-line marker used for denoting line breaks in the output, set to "\r\n".
-const eol = "\r\n"
+const eolDef = "\r\n"
 
 // Render represents a rendering engine responsible for managing terminal dimensions, repainting logic, and paint tasks.
 type Render struct {
@@ -59,13 +59,13 @@ func NewRender(ticker *adaptiveticker.AdaptiveTicker, timerChan chan *adaptiveti
 	return r
 }
 
-// GetScreenSize returns the current screen width and height of the Render instance.
-func (c *Render) GetScreenSize() (int, int) {
+// CallGetScreenSize returns the current screen width and height of the Render instance.
+func (c *Render) CallGetScreenSize() (int, int) {
 	return c.width, c.height
 }
 
-// SetScreenSize updates the screen's width and height, marks the screen for a full repaint, and sets the terminal size.
-func (c *Render) SetScreenSize(width int, height int) {
+// CallSetScreenSize updates the screen's width and height, marks the screen for a full repaint, and sets the terminal size.
+func (c *Render) CallSetScreenSize(width int, height int) {
 	c.width = width
 	c.height = height
 	c.fullPaint = true
@@ -101,8 +101,8 @@ func (c *Render) CallPaintExec() {
 	c.execPaint(selectedProcess, tasks)
 }
 
-// WindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
-func (c *Render) WindowsSelectionBegin() {
+// CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
+func (c *Render) CallWindowsSelectionBegin() {
 	c.windowSelector.Clear()
 	for idx, process := range c.running {
 		c.windowSelector.AddAvailable(process.PID())
@@ -119,7 +119,8 @@ func (c *Render) WindowsSelectionBegin() {
 	c.CallPaintRequest(false)
 }
 
-func (c *Render) WindowsSelectionOptions(option rune, value float64) {
+// CallWindowsSelectionOptions modifies window selection options for a process and triggers a paint request if necessary.
+func (c *Render) CallWindowsSelectionOptions(option rune, value float64) {
 	process, _ := c.running[c.windowSelector.PID()]
 	if process == nil {
 		return
@@ -128,28 +129,28 @@ func (c *Render) WindowsSelectionOptions(option rune, value float64) {
 	c.CallPaintRequest(true)
 }
 
-// WindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
-func (c *Render) WindowsSelectionPrevious() {
+// CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
+func (c *Render) CallWindowsSelectionPrevious() {
 	if c.windowSelector.Prev() {
 		c.CallPaintRequest(false)
 	}
 }
 
-// WindowsSelectionNext moves the task selection to the next task and triggers a render update if successful.
-func (c *Render) WindowsSelectionNext() {
+// CallWindowsSelectionNext moves the task selection to the next task and triggers a render update if successful.
+func (c *Render) CallWindowsSelectionNext() {
 	if c.windowSelector.Next() {
 		c.CallPaintRequest(false)
 	}
 }
 
-// WindowsSelectionEnd clears the current selection in the windowSelector instance of the Render object.
-func (c *Render) WindowsSelectionEnd() {
+// CallWindowsSelectionEnd clears the current selection in the windowSelector instance of the Render object.
+func (c *Render) CallWindowsSelectionEnd() {
 	c.windowSelector.Clear()
 }
 
 // ExecPaint performs the rendering process by painting background tasks and a foreground task onto the terminal surface.
 func (c *Render) execPaint(fgTask *Component, tasks []*Component) bool {
-	w, h := c.GetScreenSize()
+	w, h := c.CallGetScreenSize()
 	fullPaint := c.fullPaint
 	c.fullPaint = false
 	c.surface.Prepare(h, w, fullPaint)
@@ -171,114 +172,109 @@ func (c *Render) execPaint(fgTask *Component, tasks []*Component) bool {
 		c.surface.End()
 	}
 	//c.surface.Render()
-	c.SaveCursor()
-	c.MoveCursorTopLeft()
-	c.Write(string(c.surface.GetBuffer()))
-	c.RestoreCursor()
+	c.CallSaveCursor()
+	c.moveCursorTopLeft()
+	c.CallWrite(string(c.surface.GetBuffer()))
+	c.CallRestoreCursor()
 
 	c.dirty = false
 	return true
 }
 
-// Write sends the given string data to the terminal's output stream.
-func (c *Render) Write(data string) {
+// CallWrite sends the given string data to the terminal's output stream.
+func (c *Render) CallWrite(data string) {
 	_, _ = c.driver.Write([]byte(data))
 }
 
-// WriteLn writes the provided string to the terminal followed by an end-of-line character.
-func (c *Render) WriteLn(data string) {
+// CallWriteLn writes the provided string to the terminal followed by an end-of-line character.
+func (c *Render) CallWriteLn(data string) {
 	_, _ = c.driver.Write([]byte(data))
-	_, _ = c.driver.Write([]byte(eol))
+	_, _ = c.driver.Write([]byte(eolDef))
 }
 
-// WriteColor writes the given data string to the terminal with specified foreground and background colors, and color mode.
-func (c *Render) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
+// CallWriteColor writes the given data string to the terminal with specified foreground and background colors, and color mode.
+func (c *Render) CallWriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
 	p := c.driver.Colorize(data, int(fg), int(bg), mode)
 	_, _ = c.driver.Write([]byte(p))
 }
 
-// WriteColorLn writes the given text with specified foreground and background colors and mode, followed by a line break.
-func (c *Render) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
+// CallWriteColorLn writes the given text with specified foreground and background colors and mode, followed by a line break.
+func (c *Render) CallWriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
 	p := c.driver.Colorize(data, int(fg), int(bg), mode)
 	_, _ = c.driver.Write([]byte(p))
-	_, _ = c.driver.Write([]byte(eol))
+	_, _ = c.driver.Write([]byte(eolDef))
 }
 
-// ClearScreen clears the terminal screen using the underlying ITerminal implementation.
-func (c *Render) ClearScreen() {
+// CallClearScreen clears the terminal screen using the underlying ITerminal implementation.
+func (c *Render) CallClearScreen() {
 	p := c.driver.CreateClearScreen()
 	_, _ = c.driver.Write(p)
 }
 
-// ClearLine clears the specified line from the terminal screen using the terminal implementation of the associated Render object.
-func (c *Render) ClearLine(line string) {
-	p := c.driver.CreateClearLine(line)
-	_, _ = c.driver.Write(p)
-}
-
-// MoveCursorTopLeft moves the terminal cursor to the top-left position using the underlying terminal implementation.
-func (c *Render) MoveCursorTopLeft() {
-	p := c.driver.CreateMoveCursorTopLeft()
-	_, _ = c.driver.Write(p)
-}
-
-// MoveCursorLeft moves the terminal cursor one position to the left using the underlying terminal implementation.
-func (c *Render) MoveCursorLeft() {
-	p := c.driver.CreateMoveCursorLeft()
-	_, _ = c.driver.Write(p)
-}
-
-// MoveCursorRight moves the cursor one position to the right in the terminal.
-func (c *Render) MoveCursorRight() {
-	p := c.driver.CreateMoveCursorRight()
-	_, _ = c.driver.Write(p)
-}
-
-// SaveCursor saves the current cursor position in the terminal for future restoration.
-func (c *Render) SaveCursor() {
+// CallSaveCursor saves the current cursor position in the terminal for future restoration.
+func (c *Render) CallSaveCursor() {
 	p := c.driver.CreateSaveCursor()
 	_, _ = c.driver.Write(p)
 }
 
-// RestoreCursor restores the saved cursor position in the terminal using the associated ITerminal implementation.
-func (c *Render) RestoreCursor() {
+// CallRestoreCursor restores the saved cursor position in the terminal using the associated ITerminal implementation.
+func (c *Render) CallRestoreCursor() {
 	p := c.driver.CreateRestoreCursor()
 	_, _ = c.driver.Write(p)
 }
 
-// Colorize applies specified foreground and background colors, with a given color mode, to the provided text.
-func (c *Render) Colorize(text string, fg int, bg int, mode interfaces.ColorMode) string {
-	return c.driver.Colorize(text, fg, bg, mode)
+// CallMoveCursorLeft moves the terminal cursor one position to the left using the underlying terminal implementation.
+func (c *Render) CallMoveCursorLeft() {
+	p := c.driver.CreateMoveCursorLeft()
+	_, _ = c.driver.Write(p)
 }
 
-// EOL returns the end-of-line marker used by the terminal.
-func (c *Render) EOL() string {
-	return eol
+// CallMoveCursorRight moves the cursor one position to the right in the terminal.
+func (c *Render) CallMoveCursorRight() {
+	p := c.driver.CreateMoveCursorRight()
+	_, _ = c.driver.Write(p)
 }
 
-func (c *Render) WritePromptLine(prompt string, line string) {
-	c.ClearLine(line)
-	c.WriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-	c.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+// CallWritePromptLine clears the given line and writes the prompt and line with specified color and mode configurations.
+func (c *Render) CallWritePromptLine(prompt string, line string) {
+	c.clearLine(line)
+	c.CallWriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.CallWriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
-func (c *Render) WritePromptEOL(prompt string, eol bool) {
+// CallWritePromptEOL writes the provided prompt with green color and optionally appends an end-of-line marker if enabled.
+func (c *Render) CallWritePromptEOL(prompt string, eol bool) {
 	if eol {
-		c.WriteColor(c.EOL(), interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+		c.CallWriteColor(eolDef, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 	}
-	c.WriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.CallWriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
-func (c *Render) WriteCritical(line string) {
-	c.WriteColor(line, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+// CallWriteCritical writes a critical log line with predefined red color and normal mode formatting.
+func (c *Render) CallWriteCritical(line string) {
+	c.CallWriteColor(line, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
-func (c *Render) WriteNormal(line string) {
-	c.WriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+// CallWriteNormal writes a line with default colors and normal mode configuration using the CallWriteColor method.
+func (c *Render) CallWriteNormal(line string) {
+	c.CallWriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
-func (c *Render) WriteHighlight(line string) {
-	c.WriteColor(line, interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
+// CallWriteHighlight writes the given line with default blue foreground, red background, and normal display mode.
+func (c *Render) CallWriteHighlight(line string) {
+	c.CallWriteColor(line, interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
+}
+
+// clearLine clears the specified line from the terminal screen using the terminal implementation of the associated Render object.
+func (c *Render) clearLine(line string) {
+	p := c.driver.CreateClearLine(line)
+	_, _ = c.driver.Write(p)
+}
+
+// moveCursorTopLeft moves the terminal cursor to the top-left position using the underlying terminal implementation.
+func (c *Render) moveCursorTopLeft() {
+	p := c.driver.CreateMoveCursorTopLeft()
+	_, _ = c.driver.Write(p)
 }
 
 // NotifyProcessCreation notifies the Render instance about the creation of a new process and updates internal state if necessary.

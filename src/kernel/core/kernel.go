@@ -93,28 +93,28 @@ func (c *Kernel) CallProcessIsActive(pid int) bool {
 
 // CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
 func (c *Kernel) CallWindowsSelectionBegin() {
-	c.renderServer.WindowsSelectionBegin()
+	c.renderServer.CallWindowsSelectionBegin()
 }
 
 // CallWindowsSelectionOptions updates the selected task's option with the given rune and value, then triggers a repaint request.
 // Returns true on successful task retrieval and option update, otherwise returns false.
 func (c *Kernel) CallWindowsSelectionOptions(option rune, value float64) {
-	c.renderServer.WindowsSelectionOptions(option, value)
+	c.renderServer.CallWindowsSelectionOptions(option, value)
 }
 
 // CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
 func (c *Kernel) CallWindowsSelectionPrevious() {
-	c.renderServer.WindowsSelectionPrevious()
+	c.renderServer.CallWindowsSelectionPrevious()
 }
 
 // CallWindowsSelectionNext advances the task windowSelector to the next task and triggers a repaint if the task selection changes.
 func (c *Kernel) CallWindowsSelectionNext() {
-	c.renderServer.WindowsSelectionNext()
+	c.renderServer.CallWindowsSelectionNext()
 }
 
 // CallWindowsSelectionEnd clears the state of the associated WindowSelector instance by resetting its index and available list.
 func (c *Kernel) CallWindowsSelectionEnd() {
-	c.renderServer.WindowsSelectionEnd()
+	c.renderServer.CallWindowsSelectionEnd()
 }
 
 // CallPaintRequest triggers a paint request via the render component and returns true if successful.
@@ -124,77 +124,77 @@ func (c *Kernel) CallPaintRequest() {
 
 // CallWritePromptEOL writes the specified prompt followed by an end-of-line based on the eol flag using the render instance.
 func (c *Kernel) CallWritePromptEOL(prompt string, eol bool) {
-	c.renderServer.WritePromptEOL(prompt, eol)
+	c.renderServer.CallWritePromptEOL(prompt, eol)
 }
 
 // CallWritePromptLine sends a formatted prompt and line to the renderer for output using the WritePromptLine method.
 func (c *Kernel) CallWritePromptLine(prompt string, line string) {
-	c.renderServer.WritePromptLine(prompt, line)
+	c.renderServer.CallWritePromptLine(prompt, line)
 }
 
 // CallWrite sends the provided string data to the kernel's rendering writer for output.
 func (c *Kernel) CallWrite(data string) {
-	c.renderServer.Write(data)
+	c.renderServer.CallWrite(data)
 }
 
 // CallWriteNormal writes the provided string data to the render instance using the WriteNormal method.
 func (c *Kernel) CallWriteNormal(data string) {
-	c.renderServer.WriteNormal(data)
+	c.renderServer.CallWriteNormal(data)
 }
 
 // CallWriteHighlights writes syntax-highlighted content to the render component using the provided data string.
 func (c *Kernel) CallWriteHighlights(data string) {
-	c.renderServer.WriteHighlight(data)
+	c.renderServer.CallWriteHighlight(data)
 }
 
 // CallWriteCritical writes critical data to the render component of the Kernel instance.
 func (c *Kernel) CallWriteCritical(data string) {
-	c.renderServer.WriteCritical(data)
+	c.renderServer.CallWriteCritical(data)
 }
 
 // CallWriteLn writes the provided string followed by a new line to the kernel's output stream.
 func (c *Kernel) CallWriteLn(data string) {
-	c.renderServer.WriteLn(data)
+	c.renderServer.CallWriteLn(data)
 }
 
 // CallWriteColor writes a string to the output with specified foreground color, background color, and color mode.
 func (c *Kernel) CallWriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.renderServer.WriteColor(data, fg, bg, mode)
+	c.renderServer.CallWriteColor(data, fg, bg, mode)
 }
 
 // CallWriteColorLn writes a line of text with specified foreground and background colors and a given color mode.
 func (c *Kernel) CallWriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.renderServer.WriteColorLn(data, fg, bg, mode)
+	c.renderServer.CallWriteColorLn(data, fg, bg, mode)
 }
 
 // CallClearScreen clears the screen by invoking the associated renderer's CreateClearScreen method.
 func (c *Kernel) CallClearScreen() {
-	c.renderServer.ClearScreen()
+	c.renderServer.CallClearScreen()
 }
 
 // CallScreenSize retrieves the screen's width and height as integers from the render instance.
 func (c *Kernel) CallScreenSize() (int, int) {
-	return c.renderServer.GetScreenSize()
+	return c.renderServer.CallGetScreenSize()
 }
 
 // CallMoveCursorLeft moves the cursor one position to the left within the render context.
 func (c *Kernel) CallMoveCursorLeft() {
-	c.renderServer.MoveCursorLeft()
+	c.renderServer.CallMoveCursorLeft()
 }
 
 // CallMoveCursorRight moves the cursor one position to the right by invoking the render's CreateMoveCursorRight method.
 func (c *Kernel) CallMoveCursorRight() {
-	c.renderServer.MoveCursorRight()
+	c.renderServer.CallMoveCursorRight()
 }
 
 // CallSaveCursor saves the current cursor state by invoking the CreateSaveCursor method on the associated renderer.
 func (c *Kernel) CallSaveCursor() {
-	c.renderServer.SaveCursor()
+	c.renderServer.CallSaveCursor()
 }
 
 // CallRestoreCursor restores the cursor to its previous position using the render instance of the Kernel.
 func (c *Kernel) CallRestoreCursor() {
-	c.renderServer.RestoreCursor()
+	c.renderServer.CallRestoreCursor()
 }
 
 // CallCWDSet sets the current working directory to the specified path and updates the shell prompt accordingly.
@@ -235,7 +235,7 @@ func (c *Kernel) CallFileSystemHelp(arg string) (string, error) {
 
 // CallSetScreenSize adjusts the screen dimensions to the specified width and height values.
 func (c *Kernel) CallSetScreenSize(w int, h int) {
-	c.renderServer.SetScreenSize(w, h)
+	c.renderServer.CallSetScreenSize(w, h)
 }
 
 // CallExitRequested sets the `exit` flag to true, signaling that an exit has been requested for the kernel.

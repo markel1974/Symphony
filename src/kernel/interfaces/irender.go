@@ -3,57 +3,49 @@ package interfaces
 type IRender interface {
 	IServer
 
-	GetScreenSize() (int, int)
+	CallGetScreenSize() (int, int)
 
-	SetScreenSize(width int, height int)
+	CallSetScreenSize(width int, height int)
 
 	CallPaintRequest(full bool)
 
 	CallPaintExec()
 
-	WindowsSelectionBegin()
+	CallWindowsSelectionBegin()
 
-	WindowsSelectionPrevious()
+	CallWindowsSelectionPrevious()
 
-	WindowsSelectionNext()
+	CallWindowsSelectionNext()
 
-	WindowsSelectionEnd()
+	CallWindowsSelectionEnd()
 
-	WindowsSelectionOptions(option rune, value float64)
+	CallWritePromptLine(prompt string, line string)
 
-	Colorize(text string, fg int, bg int, mode ColorMode) string
+	CallWritePromptEOL(prompt string, eol bool)
 
-	Write(data string)
+	CallWindowsSelectionOptions(option rune, value float64)
 
-	WriteLn(data string)
+	CallWriteNormal(line string)
 
-	WriteColor(data string, fg ColorDef, bg ColorDef, mode ColorMode)
+	CallWriteHighlight(line string)
 
-	WriteColorLn(data string, fg ColorDef, bg ColorDef, mode ColorMode)
+	CallWriteCritical(line string)
 
-	ClearScreen()
+	CallWrite(data string)
 
-	ClearLine(line string)
+	CallWriteLn(data string)
 
-	MoveCursorLeft()
+	CallWriteColor(data string, fg ColorDef, bg ColorDef, mode ColorMode)
 
-	MoveCursorRight()
+	CallWriteColorLn(data string, fg ColorDef, bg ColorDef, mode ColorMode)
 
-	MoveCursorTopLeft()
+	CallClearScreen()
 
-	SaveCursor()
+	CallSaveCursor()
 
-	RestoreCursor()
+	CallRestoreCursor()
 
-	EOL() string
+	CallMoveCursorLeft()
 
-	WritePromptLine(prompt string, line string)
-
-	WritePromptEOL(prompt string, eol bool)
-
-	WriteNormal(line string)
-
-	WriteHighlight(line string)
-
-	WriteCritical(line string)
+	CallMoveCursorRight()
 }
