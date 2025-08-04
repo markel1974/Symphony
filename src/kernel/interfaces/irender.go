@@ -7,9 +7,7 @@ type IRender interface {
 
 	CallSetScreenSize(width int, height int)
 
-	CallPaintRequest(full bool)
-
-	CallPaintExec()
+	CallPaintRequest()
 
 	CallWindowsSelectionBegin()
 

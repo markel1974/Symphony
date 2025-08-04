@@ -45,24 +45,30 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 		handlers:     make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
 	t.pf = process_factory.NewProcessFactory(t)
-	t.servers = append(t.servers, t.renderServer, t.fsServer)
-	for _, s := range t.servers {
-		for _, r := range s.Register() {
-			t.handlers[r] = s.PostMessage
-		}
-	}
+
 	t.handlers[interfaces.MessageTypeRead] = t.handleReadEvent
 	t.handlers[interfaces.MessageTypeTimer] = t.handleTimerEvent
-	t.handlers[interfaces.MessageTypePaint] = t.handlePaintEvent
 	t.handlers[interfaces.MessageTypeQuit] = t.handleQuitEvent
-	for _, s := range t.servers {
-		s.Start()
-	}
 	return t
 }
 
-func (c *Kernel) PostEvent(msg interfaces.IMessage) {
+func (c *Kernel) AddServer(server interfaces.IServer) {
+	c.servers = append(c.servers, server)
+	for _, r := range server.Register() {
+		c.handlers[r] = server.PostMessage
+	}
+	server.SetRouter(c)
+	server.Start()
+}
+
+// PostMessage sends the provided IMessage to the Kernel's internal message channel for further processing.
+func (c *Kernel) PostMessage(msg interfaces.IMessage) {
 	c.messageChan <- msg
+}
+
+// PostTimedMessage schedules a message for execution based on specified timing parameters and count.
+func (c *Kernel) PostTimedMessage(msg interfaces.IMessage, first int64, interval int64, count int64) {
+	c.ticker.Create(c.timersChan, msg, first, interval, count)
 }
 
 // CallProcessList returns a formatted string containing process IDs and their respective command names managed by the Kernel.
@@ -134,7 +140,7 @@ func (c *Kernel) CallWindowsSelectionEnd() {
 
 // CallPaintRequest triggers a paint request via the render component and returns true if successful.
 func (c *Kernel) CallPaintRequest() {
-	c.renderServer.CallPaintRequest(false)
+	c.renderServer.CallPaintRequest()
 }
 
 // CallWritePromptEOL writes the specified prompt followed by an end-of-line based on the eol flag using the render instance.
@@ -453,6 +459,9 @@ func (c *Kernel) eventLoop() {
 // handleMessageEvent processes an incoming IMessage by dispatching it to the appropriate handlers based on its type.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 	if handler, ok := c.handlers[m.GetType()]; ok {
+		if m.GetType() == interfaces.MessageTypePaint {
+			fmt.Println("paint")
+		}
 		handler(m)
 	} else {
 		log.Printf("unknown message type: %d", m.GetType())
@@ -489,15 +498,6 @@ func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 			timerEvent(process, mt.TID(), mt.Interval())
 		}
 	}
-}
-
-func (c *Kernel) handlePaintEvent(m interfaces.IMessage) {
-	//TODO MOVE TO RENDER SERVER
-	_, ok := m.(*messages.MessagePaint)
-	if !ok {
-		return
-	}
-	c.renderServer.CallPaintExec()
 }
 
 func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {

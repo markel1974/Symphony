@@ -49,15 +49,17 @@ func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer 
 func (c *Context) Setup(terminal interfaces.ITerminal) {
 	system := apps.NewRoot()
 	xsh, systemCommands, commands := system.Build(c.commands)
-	// TODO OGNI SERVER DEVE AVERE IL PROPRIO EVENT LOOP es L'unicp autorizzato a disegnare è il render
+
 	keyboardDriver := drivers.NewKeyboardTerminal(c.reader, terminal)
 	videoDriver := drivers.NewDisplayTerminal(c.writer, terminal)
 
 	timerChan := make(chan *adaptiveticker.TimerHandler, contextMaQueueLen)
-	terminalRender := render.NewRender(c.ticker, timerChan, videoDriver)
+	terminalRender := render.NewRender(videoDriver)
 	fs := file_system.NewFileSystem(commands, []interfaces.ICommand{systemCommands})
 
 	c.kernel = NewKernel(c.ticker, timerChan, keyboardDriver, terminalRender, fs, xsh)
+	c.kernel.AddServer(terminalRender)
+	c.kernel.AddServer(fs)
 }
 
 // Exec initializes the admin console display, advances the shell line, and starts the kernel.

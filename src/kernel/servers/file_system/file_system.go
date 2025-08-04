@@ -3,6 +3,7 @@ package file_system
 import (
 	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"log"
 	"sort"
 	"strings"
 )
@@ -12,11 +13,12 @@ const pathSeparator = "/"
 
 // FileSystem provides utilities for command hierarchy traversal and completion suggestions.
 type FileSystem struct {
-	interfaces.Server
 	root        interfaces.ICommand
 	searchPaths []interfaces.ICommand
 	cwd         interfaces.ICommand
 	parser      *Parser
+	messageChan chan interfaces.IMessage
+	router      interfaces.IRouter
 }
 
 // NewFileSystem initializes and returns a new FileSystem instance with the given root command and an empty search path list.
@@ -35,7 +37,25 @@ func NewFileSystem(root interfaces.ICommand, sp []interfaces.ICommand) *FileSyst
 		cwd:         root,
 		searchPaths: searchPath,
 		parser:      NewParser(false, false, ""),
+		messageChan: make(chan interfaces.IMessage, 128),
 	}
+}
+
+// SetRouter sets the IRouter instance for the FileSystem, allowing it to handle message routing.
+func (c *FileSystem) SetRouter(router interfaces.IRouter) {
+	c.router = router
+}
+
+// Start begins the process by setting its state to running and initiating its event loop asynchronously.
+func (c *FileSystem) Start() {
+	b := make(chan bool)
+	c.eventLoop(b)
+	_ = <-b
+}
+
+// PostMessage sends a message of type IMessage to the file system's message channel for further processing.
+func (c *FileSystem) PostMessage(m interfaces.IMessage) {
+	c.messageChan <- m
 }
 
 // AddSearchPath adds a new ICommand instance to the searchPaths slice for fs resolution.
@@ -371,6 +391,22 @@ func (c *FileSystem) Register() []interfaces.MessageType {
 	return []interfaces.MessageType{}
 }
 
-func (c *FileSystem) HandleMessage(msg interfaces.IMessage) {
-	fmt.Println("MESSAGE RECEIVED", msg)
+// evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
+func (c *FileSystem) eventLoop(r chan bool) {
+	go func() {
+		r <- true
+		for {
+			select {
+			case m, ok := <-c.messageChan:
+				if !ok {
+					return
+				}
+				if m.GetType() == interfaces.MessageTypeQuit {
+					close(c.messageChan)
+					return
+				}
+				log.Println("FileSystem: unknownMessage type", m.GetType())
+			}
+		}
+	}()
 }

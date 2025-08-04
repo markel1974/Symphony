@@ -1,7 +1,6 @@
 package render
 
 import (
-	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
@@ -12,26 +11,23 @@ const eolDef = "\r\n"
 
 // Render represents a rendering engine responsible for managing terminal dimensions, repainting logic, and paint tasks.
 type Render struct {
-	interfaces.Server
 	driver         interfaces.IDisplayDriver
 	surface        *Surface
 	dirty          bool
 	width          int
 	height         int
 	fullPaint      bool
-	ticker         *adaptiveticker.AdaptiveTicker
-	timerChan      chan *adaptiveticker.TimerHandler
 	windowSelector *WindowSelector
 	running        map[int]*Component
 	foreground     *Component
+	messageChan    chan interfaces.IMessage
+	router         interfaces.IRouter
 }
 
 // NewRender creates and initializes a new Render instance with the provided terminal implementation.
 // Returns a pointer to the newly created Render object.
-func NewRender(ticker *adaptiveticker.AdaptiveTicker, timerChan chan *adaptiveticker.TimerHandler, driver interfaces.IDisplayDriver) *Render {
+func NewRender(driver interfaces.IDisplayDriver) *Render {
 	r := &Render{
-		ticker:         ticker,
-		timerChan:      timerChan,
 		driver:         driver,
 		windowSelector: NewWindowSelector(),
 		dirty:          false,
@@ -39,9 +35,27 @@ func NewRender(ticker *adaptiveticker.AdaptiveTicker, timerChan chan *adaptiveti
 		height:         24,
 		fullPaint:      true,
 		running:        make(map[int]*Component),
+		messageChan:    make(chan interfaces.IMessage, 128),
 	}
 	r.surface = NewSurface(driver, r.height, r.width)
 	return r
+}
+
+// SetRouter sets the instance of IRouter to be used by the Render for routing purposes.
+func (c *Render) SetRouter(router interfaces.IRouter) {
+	c.router = router
+}
+
+// Start begins the process by setting its state to running and initiating its event loop asynchronously.
+func (c *Render) Start() {
+	b := make(chan bool)
+	c.eventLoop(b)
+	_ = <-b
+}
+
+// PostMessage sends a message of type IMessage to the file system's message channel for further processing.
+func (c *Render) PostMessage(m interfaces.IMessage) {
+	c.messageChan <- m
 }
 
 // CallGetScreenSize returns the current screen width and height of the Render instance.
@@ -58,32 +72,20 @@ func (c *Render) CallSetScreenSize(width int, height int) {
 
 // CallPaintRequest marks the rendering system as requiring a paint and optionally marks it for a full repaint.
 // Returns true if the state was not already marked as dirty.
-func (c *Render) CallPaintRequest(full bool) {
+func (c *Render) CallPaintRequest() {
+	c.paintRequest(false)
+}
+
+// doPaintRequest triggers a paint request by marking the object as dirty and setting up the necessary ticker for repainting.
+func (c *Render) paintRequest(full bool) {
 	if full {
 		c.fullPaint = true
 	}
 	if !c.dirty {
 		c.dirty = true
-		c.ticker.Create(c.timerChan, messages.NewMessagePaint(), -1, -1, 1)
+		c.router.PostTimedMessage(messages.NewMessagePaint(), -1, -1, 1)
+		//c.ticker.Create(c.timerChan, messages.NewMessagePaint(), -1, -1, 1)
 	}
-}
-
-// CallPaintExec executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
-// Returns true if the rendering process is executed, false otherwise.
-func (c *Render) CallPaintExec() {
-	if !c.dirty {
-		return
-	}
-	var selectedProcess *Component = nil
-	var tasks []*Component
-	for _, process := range c.running {
-		if process.PID() == c.windowSelector.PID() {
-			selectedProcess = process
-		} else {
-			tasks = append(tasks, process)
-		}
-	}
-	c.execPaint(selectedProcess, tasks)
 }
 
 // CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
@@ -101,7 +103,7 @@ func (c *Render) CallWindowsSelectionBegin() {
 			}
 		}
 	}
-	c.CallPaintRequest(false)
+	c.paintRequest(false)
 }
 
 // CallWindowsSelectionOptions modifies window selection options for a process and triggers a paint request if necessary.
@@ -111,20 +113,20 @@ func (c *Render) CallWindowsSelectionOptions(option rune, value float64) {
 		return
 	}
 	process.SetWindowOption(option, value)
-	c.CallPaintRequest(true)
+	c.paintRequest(true)
 }
 
 // CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
 func (c *Render) CallWindowsSelectionPrevious() {
 	if c.windowSelector.Prev() {
-		c.CallPaintRequest(false)
+		c.paintRequest(false)
 	}
 }
 
 // CallWindowsSelectionNext moves the task selection to the next task and triggers a render update if successful.
 func (c *Render) CallWindowsSelectionNext() {
 	if c.windowSelector.Next() {
-		c.CallPaintRequest(false)
+		c.paintRequest(false)
 	}
 }
 
@@ -288,10 +290,45 @@ func (c *Render) NotifyProcessForeground(desc *interfaces.ProcessDescription) {
 
 // Register returns a slice of message types that the Render object is set to handle, including MessageTypePaint.
 func (c *Render) Register() []interfaces.MessageType {
-	return []interfaces.MessageType{}
+	return []interfaces.MessageType{interfaces.MessageTypePaint}
 }
 
-// HandleMessage processes the incoming IMessage and performs necessary actions such as logging or rendering updates.
-func (c *Render) HandleMessage(msg interfaces.IMessage) {
-	fmt.Println("MESSAGE RECEIVED", msg)
+// evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
+func (c *Render) eventLoop(r chan bool) {
+	go func() {
+		r <- true
+		for {
+			select {
+			case m, ok := <-c.messageChan:
+				if !ok {
+					return
+				}
+				if m.GetType() == interfaces.MessageTypeQuit {
+					close(c.messageChan)
+					return
+				}
+				if m.GetType() == interfaces.MessageTypePaint {
+					c.handlePaintExec()
+				}
+			}
+		}
+	}()
+}
+
+// CallPaintExec executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
+// Returns true if the rendering process is executed, false otherwise.
+func (c *Render) handlePaintExec() {
+	if !c.dirty {
+		return
+	}
+	var selectedProcess *Component = nil
+	var tasks []*Component
+	for _, process := range c.running {
+		if process.PID() == c.windowSelector.PID() {
+			selectedProcess = process
+		} else {
+			tasks = append(tasks, process)
+		}
+	}
+	c.execPaint(selectedProcess, tasks)
 }
