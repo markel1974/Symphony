@@ -11,6 +11,7 @@ const (
 	MessageTypeRead MessageType = iota
 	MessageTypeTimer
 	MessageTypePaint
+	MessageTypePaintRequest
 	MessageTypeQuit
 )
 

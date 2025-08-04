@@ -2,6 +2,7 @@ package process
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/messages"
 )
 
 // Process represents a task or job in the system, including its context, state, associated options, and execution details.
@@ -120,7 +121,7 @@ func (t *Process) DeactivateAll(name string) int {
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.
 func (t *Process) PaintRequest() {
-	t.kernel.CallPaintRequest()
+	t.kernel.PostMessage(messages.NewMessagePaintRequest())
 }
 
 // GetScreenSize returns the width and height of the screen as integers.

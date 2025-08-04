@@ -139,9 +139,9 @@ func (c *Kernel) CallWindowsSelectionEnd() {
 }
 
 // CallPaintRequest triggers a paint request via the render component and returns true if successful.
-func (c *Kernel) CallPaintRequest() {
-	c.renderServer.CallPaintRequest()
-}
+//func (c *Kernel) CallPaintRequest() {
+//	c.renderServer.CallPaintRequest()
+//}
 
 // CallWritePromptEOL writes the specified prompt followed by an end-of-line based on the eol flag using the render instance.
 func (c *Kernel) CallWritePromptEOL(prompt string, eol bool) {

@@ -26,8 +26,6 @@ type IKernel interface {
 
 	CallWindowsSelectionOptions(option rune, value float64)
 
-	CallPaintRequest()
-
 	CallWritePromptEOL(prompt string, eol bool)
 
 	CallWritePromptLine(prompt string, line string)

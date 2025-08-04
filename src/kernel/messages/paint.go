@@ -13,3 +13,15 @@ func NewMessagePaint() *MessagePaint {
 		Message: *interfaces.NewMessage(interfaces.MessageTypePaint),
 	}
 }
+
+// MessagePaintRequest represents a message used to trigger a paint operation. It embeds the Message struct.
+type MessagePaintRequest struct {
+	interfaces.Message
+}
+
+// NewMessagePaintRequest creates a new instance of MessagePaint with the MessageType set to MessageTypePaint.
+func NewMessagePaintRequest() *MessagePaintRequest {
+	return &MessagePaintRequest{
+		Message: *interfaces.NewMessage(interfaces.MessageTypePaintRequest),
+	}
+}

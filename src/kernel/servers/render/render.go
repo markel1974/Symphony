@@ -4,6 +4,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
+	"log"
 )
 
 // eol represents the end-of-line marker used for denoting line breaks in the output, set to "\r\n".
@@ -60,7 +61,7 @@ func (c *Render) PostMessage(m interfaces.IMessage) {
 
 // Register returns a slice of message types that the Render object is set to handle, including MessageTypePaint.
 func (c *Render) Register() []interfaces.MessageType {
-	return []interfaces.MessageType{interfaces.MessageTypePaint}
+	return []interfaces.MessageType{interfaces.MessageTypePaint, interfaces.MessageTypePaintRequest}
 }
 
 // CallGetScreenSize returns the current screen width and height of the Render instance.
@@ -77,9 +78,9 @@ func (c *Render) CallSetScreenSize(width int, height int) {
 
 // CallPaintRequest marks the rendering system as requiring a paint and optionally marks it for a full repaint.
 // Returns true if the state was not already marked as dirty.
-func (c *Render) CallPaintRequest() {
-	c.paintRequest(false)
-}
+//func (c *Render) CallPaintRequest() {
+//	c.paintRequest(false)
+//}
 
 // CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
 func (c *Render) CallWindowsSelectionBegin() {
@@ -96,7 +97,7 @@ func (c *Render) CallWindowsSelectionBegin() {
 			}
 		}
 	}
-	c.paintRequest(false)
+	c.handlePaintRequest(false)
 }
 
 // CallWindowsSelectionOptions modifies window selection options for a process and triggers a paint request if necessary.
@@ -106,20 +107,20 @@ func (c *Render) CallWindowsSelectionOptions(option rune, value float64) {
 		return
 	}
 	process.SetWindowOption(option, value)
-	c.paintRequest(true)
+	c.handlePaintRequest(true)
 }
 
 // CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
 func (c *Render) CallWindowsSelectionPrevious() {
 	if c.windowSelector.Prev() {
-		c.paintRequest(false)
+		c.handlePaintRequest(false)
 	}
 }
 
 // CallWindowsSelectionNext moves the task selection to the next task and triggers a render update if successful.
 func (c *Render) CallWindowsSelectionNext() {
 	if c.windowSelector.Next() {
-		c.paintRequest(false)
+		c.handlePaintRequest(false)
 	}
 }
 
@@ -281,17 +282,6 @@ func (c *Render) NotifyProcessForeground(desc *interfaces.ProcessDescription) {
 	c.foreground = p
 }
 
-// paintRequest triggers a paint request by marking the object as dirty and setting up the necessary ticker for repainting.
-func (c *Render) paintRequest(full bool) {
-	if full {
-		c.fullPaint = true
-	}
-	if !c.dirty {
-		c.dirty = true
-		c.router.PostTimedMessage(messages.NewMessagePaint(), -1, -1, 1)
-	}
-}
-
 // evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
 func (c *Render) eventLoop(r chan bool) {
 	go func() {
@@ -306,8 +296,14 @@ func (c *Render) eventLoop(r chan bool) {
 					close(c.messageChan)
 					return
 				}
-				if m.GetType() == interfaces.MessageTypePaint {
+				switch m.GetType() {
+				case interfaces.MessageTypePaint:
 					c.handlePaintExec()
+				case interfaces.MessageTypePaintRequest:
+					c.handlePaintRequest(false)
+					//
+				default:
+					log.Printf("Unknown message type: %v\n", m.GetType())
 				}
 			}
 		}
@@ -330,4 +326,15 @@ func (c *Render) handlePaintExec() {
 		}
 	}
 	c.execPaint(selectedProcess, tasks)
+}
+
+// handlePaintRequest triggers a paint request by marking the object as dirty and setting up the necessary ticker for repainting.
+func (c *Render) handlePaintRequest(full bool) {
+	if full {
+		c.fullPaint = true
+	}
+	if !c.dirty {
+		c.dirty = true
+		c.router.PostTimedMessage(messages.NewMessagePaint(), -1, -1, 1)
+	}
 }
