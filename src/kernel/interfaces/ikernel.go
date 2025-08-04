@@ -18,13 +18,13 @@ type IKernel interface {
 
 	CallWindowsSelectionBegin()
 
-	CallWindowsSelectionEnd()
+	CallWindowsSelectionOptions(option rune, value float64)
 
 	CallWindowsSelectionPrevious()
 
 	CallWindowsSelectionNext()
 
-	CallWindowsSelectionOptions(option rune, value float64)
+	CallWindowsSelectionEnd()
 
 	CallWritePromptEOL(prompt string, eol bool)
 

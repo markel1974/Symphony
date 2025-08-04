@@ -76,12 +76,6 @@ func (c *Render) CallSetScreenSize(width int, height int) {
 	c.fullPaint = true
 }
 
-// CallPaintRequest marks the rendering system as requiring a paint and optionally marks it for a full repaint.
-// Returns true if the state was not already marked as dirty.
-//func (c *Render) CallPaintRequest() {
-//	c.paintRequest(false)
-//}
-
 // CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
 func (c *Render) CallWindowsSelectionBegin() {
 	c.windowSelector.Clear()

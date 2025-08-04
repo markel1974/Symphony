@@ -459,9 +459,6 @@ func (c *Kernel) eventLoop() {
 // handleMessageEvent processes an incoming IMessage by dispatching it to the appropriate handlers based on its type.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 	if handler, ok := c.handlers[m.GetType()]; ok {
-		if m.GetType() == interfaces.MessageTypePaint {
-			fmt.Println("paint")
-		}
 		handler(m)
 	} else {
 		log.Printf("unknown message type: %d", m.GetType())

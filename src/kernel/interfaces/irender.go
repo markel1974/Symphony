@@ -9,6 +9,8 @@ type IRender interface {
 
 	CallWindowsSelectionBegin()
 
+	CallWindowsSelectionOptions(option rune, value float64)
+
 	CallWindowsSelectionPrevious()
 
 	CallWindowsSelectionNext()
@@ -18,8 +20,6 @@ type IRender interface {
 	CallWritePromptLine(prompt string, line string)
 
 	CallWritePromptEOL(prompt string, eol bool)
-
-	CallWindowsSelectionOptions(option rune, value float64)
 
 	CallWriteNormal(line string)
 
