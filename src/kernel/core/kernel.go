@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
 	"github.com/markel1974/c64emu/src/kernel/process_factory"
+	"log"
 )
 
 // Kernel represents the core component responsible for managing rendering, input/output, task execution, and timers.
@@ -24,6 +25,7 @@ type Kernel struct {
 	timersChan   chan *adaptiveticker.TimerHandler
 	servers      []interfaces.IServer
 	exit         bool
+	handlers     map[interfaces.MessageType]func(interfaces.IMessage)
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
@@ -40,9 +42,22 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 		exit:         false,
 		shellPath:    shellPath,
 		running:      make(map[int]interfaces.IProcess),
+		handlers:     make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
 	t.pf = process_factory.NewProcessFactory(t)
 	t.servers = append(t.servers, t.renderServer, t.fsServer)
+	for _, s := range t.servers {
+		for _, r := range s.Register() {
+			t.handlers[r] = s.PostMessage
+		}
+	}
+	t.handlers[interfaces.MessageTypeRead] = t.handleReadEvent
+	t.handlers[interfaces.MessageTypeTimer] = t.handleTimerEvent
+	t.handlers[interfaces.MessageTypePaint] = t.handlePaintEvent
+	t.handlers[interfaces.MessageTypeQuit] = t.handleQuitEvent
+	for _, s := range t.servers {
+		s.Start()
+	}
 	return t
 }
 
@@ -435,56 +450,60 @@ func (c *Kernel) eventLoop() {
 	}
 }
 
-// handleMessageEvent processes incoming messages based on their type and performs associated actions within the kernel.
-// Handles MessageTypeRead, MessageTypeTimer, MessageTypePaint, and MessageTypeQuit to execute corresponding logic.
+// handleMessageEvent processes an incoming IMessage by dispatching it to the appropriate handlers based on its type.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
-	if m != nil {
-		switch m.GetType() {
-		case interfaces.MessageTypeRead:
-			if mm, ok := m.(*messages.MessageRead); ok {
-				c.handleReadEvent(mm.Kind(), mm.Data())
-			}
-		case interfaces.MessageTypeTimer:
-			if mt, ok := m.(*messages.MessageTimer); ok {
-				c.handleTimerEvent(mt.PID(), mt.TID(), mt.Interval())
-			}
-		case interfaces.MessageTypePaint:
-			//TODO MOVE TO RENDER SERVER
-			if _, ok := m.(*messages.MessagePaint); ok {
-				c.renderServer.CallPaintExec()
-			}
-		case interfaces.MessageTypeQuit:
-			if _, ok := m.(*messages.MessageQuit); ok {
-				c.exit = true
-			}
-		}
+	if handler, ok := c.handlers[m.GetType()]; ok {
+		handler(m)
+	} else {
+		log.Printf("unknown message type: %d", m.GetType())
 	}
 }
 
 // handleReadEvent processes input events based on their type and key value to handle control, foreground tasks, and system state.
-func (c *Kernel) handleReadEvent(kind interfaces.KeyType, key rune) {
+func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
+	mm, ok := m.(*messages.MessageRead)
+	if !ok {
+		return
+	}
 	for _, process := range c.running {
 		if readBroadcastEvent := process.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
-			readBroadcastEvent(process, int(kind), key)
+			readBroadcastEvent(process, int(mm.Kind()), mm.Data())
 		}
 	}
-
 	if c.foreground != nil {
 		if readEvent := c.foreground.GetCommand().ReadEvent(); readEvent != nil {
-			readEvent(c.foreground, int(kind), key)
+			readEvent(c.foreground, int(mm.Kind()), mm.Data())
 		}
-		return
 	}
 }
 
 // handleTimerEvent triggers a timer event for a task identified by the given pid and tid, with the specified interval.
 // Returns true if the event was successfully triggered, otherwise false.
-func (c *Kernel) handleTimerEvent(pid int, tid int, interval int) bool {
-	if process := c.running[pid]; process != nil {
+func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
+	mt, ok := m.(*messages.MessageTimer)
+	if !ok {
+		return
+	}
+	if process := c.running[mt.PID()]; process != nil {
 		if timerEvent := process.GetCommand().TimerEvent(); timerEvent != nil {
-			timerEvent(process, tid, interval)
-			return true
+			timerEvent(process, mt.TID(), mt.Interval())
 		}
 	}
-	return false
+}
+
+func (c *Kernel) handlePaintEvent(m interfaces.IMessage) {
+	//TODO MOVE TO RENDER SERVER
+	_, ok := m.(*messages.MessagePaint)
+	if !ok {
+		return
+	}
+	c.renderServer.CallPaintExec()
+}
+
+func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
+	_, ok := m.(*messages.MessageQuit)
+	if !ok {
+		return
+	}
+	c.exit = true
 }

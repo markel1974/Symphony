@@ -12,6 +12,7 @@ const pathSeparator = "/"
 
 // FileSystem provides utilities for command hierarchy traversal and completion suggestions.
 type FileSystem struct {
+	interfaces.Server
 	root        interfaces.ICommand
 	searchPaths []interfaces.ICommand
 	cwd         interfaces.ICommand
@@ -364,4 +365,12 @@ func (c *FileSystem) NotifyProcessTermination(desc *interfaces.ProcessDescriptio
 }
 
 func (c *FileSystem) NotifyProcessForeground(desc *interfaces.ProcessDescription) {
+}
+
+func (c *FileSystem) Register() []interfaces.MessageType {
+	return []interfaces.MessageType{}
+}
+
+func (c *FileSystem) HandleMessage(msg interfaces.IMessage) {
+	fmt.Println("MESSAGE RECEIVED", msg)
 }

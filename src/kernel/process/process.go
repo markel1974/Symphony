@@ -34,7 +34,7 @@ func NewProcess(kernel interfaces.IKernel, user string, cmd interfaces.ICommand,
 // Start begins the process by setting its state to running and initiating its event loop asynchronously.
 func (t *Process) Start() {
 	c := make(chan bool)
-	t.evenLoop(c)
+	t.eventLoop(c)
 	_ = <-c
 	t.state = interfaces.ProcessStateRunning
 }
@@ -298,7 +298,7 @@ func (t *Process) PostMessage(msg interfaces.IMessage) {
 }
 
 // evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
-func (t *Process) evenLoop(r chan bool) {
+func (t *Process) eventLoop(r chan bool) {
 	go func() {
 		r <- true
 		for {

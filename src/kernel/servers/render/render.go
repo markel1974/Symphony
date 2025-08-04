@@ -1,33 +1,18 @@
 package render
 
 import (
+	"fmt"
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
-	"strconv"
 )
-
-type Component struct {
-	*interfaces.ProcessDescription
-	*WindowOptions
-}
-
-func NewComponent(desc *interfaces.ProcessDescription) *Component {
-	caption := strconv.Itoa(desc.PID())
-	if len(desc.Name()) > 0 {
-		caption += " - " + desc.Name()
-	}
-	return &Component{
-		ProcessDescription: desc,
-		WindowOptions:      NewWindowOptions(caption, 0, 0, 1.0),
-	}
-}
 
 // eol represents the end-of-line marker used for denoting line breaks in the output, set to "\r\n".
 const eolDef = "\r\n"
 
 // Render represents a rendering engine responsible for managing terminal dimensions, repainting logic, and paint tasks.
 type Render struct {
+	interfaces.Server
 	driver         interfaces.IDisplayDriver
 	surface        *Surface
 	dirty          bool
@@ -299,4 +284,14 @@ func (c *Render) NotifyProcessForeground(desc *interfaces.ProcessDescription) {
 		return
 	}
 	c.foreground = p
+}
+
+// Register returns a slice of message types that the Render object is set to handle, including MessageTypePaint.
+func (c *Render) Register() []interfaces.MessageType {
+	return []interfaces.MessageType{}
+}
+
+// HandleMessage processes the incoming IMessage and performs necessary actions such as logging or rendering updates.
+func (c *Render) HandleMessage(msg interfaces.IMessage) {
+	fmt.Println("MESSAGE RECEIVED", msg)
 }
