@@ -290,7 +290,7 @@ func (t *Process) ClearScreen() {
 
 func (t *Process) RequestProcessList() []*interfaces.ProcessDescription {
 	ackChan := make(chan bool, 1)
-	request := messages.NewMessageProcessListRequest(t)
+	request := messages.NewMessageProcessList(t, ackChan)
 	t.kernel.PostMessage(request)
 	<-ackChan
 	return nil
