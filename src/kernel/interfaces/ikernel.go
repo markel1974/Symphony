@@ -6,7 +6,7 @@ type IKernel interface {
 
 	AddServer(server IServer)
 
-	CallProcessExec(line string) (bool, error)
+	CallProcessExec(user string, line string) (bool, error)
 
 	CallProcessKill(pid int) bool
 

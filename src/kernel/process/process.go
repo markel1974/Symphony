@@ -171,7 +171,7 @@ func (t *Process) Help(arg string) (string, error) {
 
 // ProcessExec executes a task based on the provided command line input and returns a success status and any execution error.
 func (t *Process) ProcessExec(line string) (bool, error) {
-	return t.kernel.CallProcessExec(line)
+	return t.kernel.CallProcessExec(t.user, line)
 }
 
 // WindowsSelectionBegin updates the task selection for the given process ID by invoking the kernel's task selection method.
@@ -357,6 +357,13 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 				readEvent(t, int(mt.Kind()), mt.Data())
 			}
 		}
+	case interfaces.MessageTypeProcessStart:
+		mt, ok := msg.(*messages.MessageProcessStart)
+		if !ok {
+			return
+		}
+		t.kernel.CallWriteLn("")
+		_ = t.GetCommand().Execute(t, mt.Args())
 	default:
 		log.Printf("unknown message type: %d", msg.GetType())
 	}

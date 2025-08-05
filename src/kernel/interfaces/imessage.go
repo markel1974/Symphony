@@ -11,6 +11,7 @@ const (
 	MessageTypePaintRequest
 	MessageTypeQuit
 	MessageTypeProcessExec
+	MessageTypeProcessStart
 	MessageTypeProcessKill
 	MessageTypeProcessKillAll
 	MessageTypeProcessSetForeground

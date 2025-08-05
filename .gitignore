@@ -1,4 +1,6 @@
 /vendor/
 /build/
 
+.DS_Store
+
 games_list.txt

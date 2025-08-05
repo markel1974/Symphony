@@ -64,6 +64,25 @@ func NewMessageProcessExec(line string) *MessageProcessExec {
 	}
 }
 
+// MessageProcessStart represents a message type designed to execute a process with a given command line.
+type MessageProcessStart struct {
+	interfaces.Message
+	args []string
+}
+
+// NewMessageProcessStart creates a new MessageProcessExec instance with a provided line and MessageTypeProcessExec type.
+func NewMessageProcessStart(args []string) *MessageProcessStart {
+	return &MessageProcessStart{
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessStart),
+		args:    args,
+	}
+}
+
+// Args returns the slice of arguments associated with the MessageProcessStart instance.
+func (m *MessageProcessStart) Args() []string {
+	return m.args
+}
+
 // MessageProcessKill represents a message used to signal the termination of a process identified by its PID.
 // It embeds the base Message type and includes a PID field for specifying the process to be killed.
 type MessageProcessKill struct {

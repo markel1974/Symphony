@@ -267,7 +267,6 @@ func (c *XShell) enterPressed(process interfaces.IProcess) {
 	} else {
 		c.nextLine(process, true)
 	}
-
 }
 
 // TabPressed handles tab key events, providing intelligent autocompletion based on current input and command context.

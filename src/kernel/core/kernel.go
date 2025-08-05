@@ -89,8 +89,8 @@ func (c *Kernel) CallProcessList() []*interfaces.ProcessDescription {
 
 // CallProcessExec executes a command by parsing the input line, creating a process, and managing its lifecycle and state.
 // Returns true and error if the process was created but execution failed, or true and nil if execution succeeded.
-func (c *Kernel) CallProcessExec(line string) (bool, error) {
-	_, err := c.doProcessExec(line)
+func (c *Kernel) CallProcessExec(user string, line string) (bool, error) {
+	_, err := c.doProcessExec(user, line)
 	if err != nil {
 		return false, err
 	}
@@ -304,7 +304,7 @@ func (c *Kernel) CallTimerStop(pid int, tid int) {
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
-	c.shell, _ = c.doProcessExec(c.shellPath)
+	c.shell, _ = c.doProcessExec(c.user, c.shellPath)
 	d := make(chan bool)
 	go func() {
 		d <- true
@@ -329,22 +329,24 @@ func (c *Kernel) Start() {
 
 // taskExecutor executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
 // Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
-func (c *Kernel) doProcessExec(line string) (interfaces.IProcess, error) {
+func (c *Kernel) doProcessExec(user string, line string) (interfaces.IProcess, error) {
 	cmd, args, err := c.fsServer.Find(line)
 	if err != nil {
 		return nil, fmt.Errorf("error creating task: invalid command '%s'", line)
 	}
-	process := c.pf.Create("stub", cmd, line)
+	process := c.pf.Create(user, cmd, line)
 	if !c.pidGenerator.Set(process) {
 		return nil, fmt.Errorf("error creating task: can't set pid")
 	}
 	c.running[process.PID()] = process
 	process.Start()
-
 	for _, server := range c.servers {
 		server.NotifyProcessCreation(process.Description())
 	}
-
+	if !cmd.Background() {
+		c.doProcessSetForeground(process.PID())
+	}
+	//process.PostMessage(messages.NewMessageProcessStart(args))
 	if err = cmd.Execute(process, args); err != nil {
 		c.doProcessKill(process.PID())
 		return nil, err
@@ -352,9 +354,6 @@ func (c *Kernel) doProcessExec(line string) (interfaces.IProcess, error) {
 	if !cmd.Daemon() {
 		c.doProcessKill(process.PID())
 		return nil, nil
-	}
-	if !cmd.Background() {
-		c.doProcessSetForeground(process.PID())
 	}
 	return process, nil
 }
@@ -367,7 +366,10 @@ func (c *Kernel) doProcessSetForeground(pid int) bool {
 	for _, s := range c.servers {
 		s.NotifyProcessForeground(process.Description())
 	}
-	c.foreground = process
+	if c.foreground != process {
+		//fmt.Println("HAS FOREGROUND", c.foreground.GetCommand().Name())
+		c.foreground = process
+	}
 	return true
 }
 
