@@ -9,7 +9,7 @@ import (
 
 // Surface represents a two-dimensional grid-based rendering surface for text-based terminal output.
 type Surface struct {
-	driver         interfaces.IDisplayDriver
+	terminal       interfaces.ITerminal
 	rows           int
 	columns        int
 	surface        [][]string
@@ -28,17 +28,17 @@ type Surface struct {
 }
 
 // NewSurface initializes a new Surface object with the provided terminal, row, and column dimensions.
-func NewSurface(driver interfaces.IDisplayDriver, rows int, columns int) *Surface {
+func NewSurface(terminal interfaces.ITerminal, rows int, columns int) *Surface {
 	s := &Surface{
-		driver:  driver,
-		rows:    -1,
-		columns: -1,
-		scale:   1.0,
-		offsetX: 0,
-		offsetY: 0,
-		rMax:    0,
-		border:  1,
-		full:    false,
+		terminal: terminal,
+		rows:     -1,
+		columns:  -1,
+		scale:    1.0,
+		offsetX:  0,
+		offsetY:  0,
+		rMax:     0,
+		border:   1,
+		full:     false,
 	}
 	s.Prepare(rows, columns, true)
 	return s
@@ -54,9 +54,10 @@ func (s *Surface) Prepare(rows int, columns int, full bool) {
 		}
 		return
 	}
+	empty := s.terminal.CreateEmpty()
 	s.columnsCleaner = make([]string, columns)
 	for c := range s.columnsCleaner {
-		s.columnsCleaner[c] = " "
+		s.columnsCleaner[c] = empty
 	}
 	s.surface = make([][]string, rows)
 	for r := range s.surface {
@@ -66,6 +67,24 @@ func (s *Surface) Prepare(rows int, columns int, full bool) {
 	s.rows = rows
 	s.columns = columns
 	return
+}
+
+// Merge merges the given Surface with the current one, overriding non-empty cells in the target Surface.
+func (s *Surface) Merge(surface *Surface) {
+	empty := s.terminal.CreateEmpty()
+	for i, row := range surface.surface {
+		if i >= len(s.surface) {
+			continue
+		}
+		for j, val := range row {
+			if j >= len(s.surface[i]) {
+				continue
+			}
+			if val != empty {
+				s.surface[i][j] = val
+			}
+		}
+	}
 }
 
 // Begin initializes the Surface for user-defined modifications and updates its internal dimensions.
@@ -157,7 +176,7 @@ func (s *Surface) DrawColor(rs int, cs int, text rune, fg interfaces.ColorDef, b
 
 	if len(s.surface) > rows {
 		if len(s.surface[rows]) > columns {
-			colorized := s.driver.Colorize(string(text), int(fg), int(bg), mode)
+			colorized := s.terminal.CreateColorize(string(text), int(fg), int(bg), mode)
 			s.surface[rows][columns] = colorized
 			if rows > s.rMax {
 				s.rMax = rows
@@ -212,18 +231,15 @@ func (s *Surface) compute(r int, c int) (int, int) {
 }
 
 // GetBuffer generates a byte slice representing the surface content, limited by the render boundary.
-func (s *Surface) GetBuffer() []byte {
-	var lines bytes.Buffer
+func (s *Surface) GetBuffer(lines *bytes.Buffer) {
+	//var lines bytes.Buffer
 	var maximum int
 	if s.full {
 		maximum = s.rows * s.columns
 	} else {
 		maximum = (s.rMax + 1) * s.columns
 	}
-
 	var counter = 0
-	var halt = false
-
 	for h, horizontal := range s.surface {
 		if h != 0 {
 			lines.WriteString("\r\n")
@@ -233,16 +249,11 @@ func (s *Surface) GetBuffer() []byte {
 				lines.WriteString(v)
 				counter++
 			} else {
-				halt = true
-				break
+				return
 			}
 		}
-		if halt {
-			break
-		}
 	}
-
-	return lines.Bytes()
+	//return lines.Bytes()
 }
 
 // drawWindow draws a bordered window on the surface with optional caption and selection mode colors.

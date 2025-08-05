@@ -1,6 +1,7 @@
 package render
 
 import (
+	"bytes"
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
@@ -29,18 +30,21 @@ type Render struct {
 // NewRender creates and initializes a new Render instance with the provided terminal implementation.
 // Returns a pointer to the newly created Render object.
 func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
+	const width = 80
+	const height = 24
 	r := &Render{
 		driver:         driver,
 		user:           user,
 		windowSelector: NewWindowSelector(),
 		dirty:          false,
-		width:          80,
-		height:         24,
+		width:          width,
+		height:         height,
 		fullPaint:      true,
 		running:        make(map[int]*Component),
 		messageChan:    make(chan interfaces.IMessage, 128),
+		surface:        NewSurface(driver, height, width),
 	}
-	r.surface = NewSurface(driver, r.height, r.width)
+
 	return r
 }
 
@@ -112,7 +116,9 @@ func (c *Render) CallWindowsSelectionOptions(option rune, value float64) {
 	if process == nil {
 		return
 	}
+
 	process.SetWindowOption(option, value)
+	process.surface.SetWindowOptions(process.WindowOptions)
 	c.handlePaintRequest(true)
 }
 
@@ -135,39 +141,6 @@ func (c *Render) CallWindowsSelectionEnd() {
 	c.windowSelector.Clear()
 }
 
-// ExecPaint performs the rendering process by painting background tasks and a foreground task onto the terminal surface.
-func (c *Render) execPaint(fgTask *Component, tasks []*Component) bool {
-	w, h := c.CallGetScreenSize()
-	fullPaint := c.fullPaint
-	c.fullPaint = false
-	c.surface.Prepare(h, w, fullPaint)
-
-	//zOrder
-	for _, task := range tasks {
-		c.surface.SetSelectionMode(false)
-		c.surface.SetWindowOptions(task.WindowOptions)
-		c.surface.Begin()
-		task.Paint(c.surface)
-		c.surface.End()
-	}
-	//zOrder
-	if fgTask != nil {
-		c.surface.SetSelectionMode(true)
-		c.surface.SetWindowOptions(fgTask.WindowOptions)
-		c.surface.Begin()
-		fgTask.Paint(c.surface)
-		c.surface.End()
-	}
-	//c.surface.Render()
-	c.CallSaveCursor()
-	c.moveCursorTopLeft()
-	c.CallWrite(string(c.surface.GetBuffer()))
-	c.CallRestoreCursor()
-
-	c.dirty = false
-	return true
-}
-
 // CallWrite sends the given string data to the terminal's output stream.
 func (c *Render) CallWrite(data string) {
 	_, _ = c.driver.Write([]byte(data))
@@ -181,13 +154,13 @@ func (c *Render) CallWriteLn(data string) {
 
 // CallWriteColor writes the given data string to the terminal with specified foreground and background colors, and color mode.
 func (c *Render) CallWriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	p := c.driver.Colorize(data, int(fg), int(bg), mode)
+	p := c.driver.CreateColorize(data, int(fg), int(bg), mode)
 	_, _ = c.driver.Write([]byte(p))
 }
 
 // CallWriteColorLn writes the given text with specified foreground and background colors and mode, followed by a line break.
 func (c *Render) CallWriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	p := c.driver.Colorize(data, int(fg), int(bg), mode)
+	p := c.driver.CreateColorize(data, int(fg), int(bg), mode)
 	_, _ = c.driver.Write([]byte(p))
 	_, _ = c.driver.Write([]byte(eolDef))
 }
@@ -269,7 +242,7 @@ func (c *Render) NotifyProcessCreation(desc *interfaces.ProcessDescription) {
 	if !desc.HasPaint() {
 		return
 	}
-	c.running[desc.PID()] = NewComponent(desc)
+	c.running[desc.PID()] = NewComponent(desc, c.driver)
 }
 
 // NotifyProcessTermination handles the necessary cleanup and state updates when a process associated with the Render terminates.
@@ -327,11 +300,46 @@ func (c *Render) handlePaintExec() {
 	for _, process := range c.running {
 		if process.PID() == c.windowSelector.PID() {
 			selectedProcess = process
+			selectedProcess.surface.SetSelectionMode(true)
 		} else {
+			process.surface.SetSelectionMode(false)
 			tasks = append(tasks, process)
 		}
 	}
-	c.execPaint(selectedProcess, tasks)
+	if selectedProcess != nil {
+		//zOrder
+		tasks = append(tasks, selectedProcess)
+	}
+
+	w, h := c.CallGetScreenSize()
+	fullPaint := c.fullPaint
+	c.fullPaint = false
+	rMax := 0
+	//zOrder
+	for _, task := range tasks {
+		task.surface.Prepare(h, w, fullPaint)
+		task.surface.Begin()
+		task.Paint(task.surface)
+		task.surface.End()
+		if task.surface.rMax > rMax {
+			rMax = task.surface.rMax
+		}
+	}
+
+	var lines bytes.Buffer
+	c.surface.Prepare(h, w, fullPaint)
+	c.surface.rMax = rMax
+	for _, s := range tasks {
+		c.surface.Merge(s.surface)
+	}
+	c.surface.GetBuffer(&lines)
+
+	c.CallSaveCursor()
+	c.moveCursorTopLeft()
+	c.CallWrite(string(lines.Bytes()))
+	c.CallRestoreCursor()
+
+	c.dirty = false
 }
 
 // handlePaintRequest triggers a paint request by marking the object as dirty and setting up the necessary ticker for repainting.
@@ -346,3 +354,39 @@ func (c *Render) handlePaintRequest(full bool) {
 		//c.router.PostTimedMessage(messages.NewMessagePaint(), -1, -1, 1)
 	}
 }
+
+/*
+func (c *Render) MergeDisplays(tasks []*Component) [][]string {
+	// 1. Calcola dimensioni massime
+	maxRows := 0
+	maxCols := 0
+	for _, disp := range tasks {
+		if len(disp.surface.surface) > maxRows {
+			maxRows = len(disp.surface.surface)
+		}
+		if len(disp.surface.surface) > 0 && len(disp.surface.surface[0]) > maxCols {
+			maxCols = len(disp.surface.surface[0])
+		}
+	}
+	merged := make([][]string, maxRows)
+	for i := range merged {
+		merged[i] = make([]string, maxCols)
+		for j := range merged[i] {
+			merged[i][j] = " "
+		}
+	}
+	for _, disp := range tasks {
+		for i, row := range disp.surface.surface {
+			for j, val := range row {
+				if val != "$" {
+					merged[i][j] = val
+				}
+			}
+		}
+	}
+	return merged
+}
+
+
+
+*/

@@ -44,8 +44,13 @@ func NewVt100(enterKey rune) *VT100 {
 	return t
 }
 
-// Colorize applies foreground and background colors to a given text string based on the specified color mode.
-func (l *VT100) Colorize(text string, f int, b int, mode interfaces.ColorMode) string {
+// CreateEmpty returns a single space character as a string, representing an empty value for the VT100 terminal.
+func (l *VT100) CreateEmpty() string {
+	return " "
+}
+
+// CreateColorize applies foreground and background colors to a given text string based on the specified color mode.
+func (l *VT100) CreateColorize(text string, f int, b int, mode interfaces.ColorMode) string {
 	switch mode {
 	case interfaces.ModeNormal:
 		fg := interfaces.ColorDef(f)
