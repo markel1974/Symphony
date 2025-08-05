@@ -3,6 +3,7 @@ package process
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
+	"log"
 )
 
 // Process represents a task or job in the system, including its context, state, associated options, and execution details.
@@ -325,7 +326,38 @@ func (t *Process) eventLoop(r chan bool) {
 					close(t.messageChan)
 					return
 				}
+				t.handleMessage(m)
 			}
 		}
 	}()
+}
+
+// handleMessage processes incoming messages based on their type and executes corresponding logic or logs an error.
+func (t *Process) handleMessage(msg interfaces.IMessage) {
+	switch msg.GetType() {
+	case interfaces.MessageTypeTimer:
+		mt, ok := msg.(*messages.MessageTimer)
+		if !ok {
+			return
+		}
+		if timerEvent := t.GetCommand().TimerEvent(); timerEvent != nil {
+			timerEvent(t, mt.TID(), mt.Interval())
+		}
+	case interfaces.MessageTypeRead:
+		mt, ok := msg.(*messages.MessageRead)
+		if !ok {
+			return
+		}
+		if mt.Broadcast() {
+			if readBroadcastEvent := t.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
+				readBroadcastEvent(t, int(mt.Kind()), mt.Data())
+			}
+		} else {
+			if readEvent := t.GetCommand().ReadEvent(); readEvent != nil {
+				readEvent(t, int(mt.Kind()), mt.Data())
+			}
+		}
+	default:
+		log.Printf("unknown message type: %d", msg.GetType())
+	}
 }

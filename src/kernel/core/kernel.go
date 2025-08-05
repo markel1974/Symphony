@@ -313,7 +313,7 @@ func (c *Kernel) Start() {
 			k, v, err := c.inputDriver.ScanKey(readBuffer)
 			if err == nil {
 				if k != interfaces.KeyTypeNone {
-					re := messages.NewMessageRead(k, v)
+					re := messages.NewMessageRead(k, v, false)
 					c.messageChan <- re
 				}
 			} else {
@@ -484,12 +484,12 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	}
 	for _, process := range c.running {
 		if readBroadcastEvent := process.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
-			readBroadcastEvent(process, int(mm.Kind()), mm.Data())
+			process.PostMessage(messages.NewMessageRead(mm.Kind(), mm.Data(), true))
 		}
 	}
 	if c.foreground != nil {
-		if readEvent := c.foreground.GetCommand().ReadEvent(); readEvent != nil {
-			readEvent(c.foreground, int(mm.Kind()), mm.Data())
+		if readBroadcastEvent := c.foreground.GetCommand().ReadEvent(); readBroadcastEvent != nil {
+			c.foreground.PostMessage(mm)
 		}
 	}
 }
@@ -502,9 +502,7 @@ func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 		return
 	}
 	if process := c.running[mt.PID()]; process != nil {
-		if timerEvent := process.GetCommand().TimerEvent(); timerEvent != nil {
-			timerEvent(process, mt.TID(), mt.Interval())
-		}
+		process.PostMessage(mt)
 	}
 }
 

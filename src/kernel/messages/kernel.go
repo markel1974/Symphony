@@ -20,16 +20,18 @@ func NewMessageQuit() *MessageQuit {
 // MessageRead represents a specific type of Message containing read operation data. It embeds Message and includes a data field.
 type MessageRead struct {
 	interfaces.Message
-	kind interfaces.KeyType
-	data rune
+	kind      interfaces.KeyType
+	data      rune
+	broadcast bool
 }
 
 // NewMessageRead creates a new MessageRead instance with provided data and limits its length to n if necessary.
-func NewMessageRead(kind interfaces.KeyType, data rune) *MessageRead {
+func NewMessageRead(kind interfaces.KeyType, data rune, broadcast bool) *MessageRead {
 	return &MessageRead{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeRead),
-		kind:    kind,
-		data:    data,
+		Message:   *interfaces.NewMessage(interfaces.MessageTypeRead),
+		kind:      kind,
+		data:      data,
+		broadcast: broadcast,
 	}
 }
 
@@ -41,6 +43,11 @@ func (m *MessageRead) Kind() interfaces.KeyType {
 // Data returns the data payload contained within the MessageRead instance.
 func (m *MessageRead) Data() rune {
 	return m.data
+}
+
+// Broadcast returns a boolean indicating whether the message should be broadcasted.
+func (m *MessageRead) Broadcast() bool {
+	return m.broadcast
 }
 
 // MessageProcessExec represents a message type designed to execute a process with a given command line.
