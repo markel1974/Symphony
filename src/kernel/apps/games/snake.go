@@ -76,9 +76,9 @@ func CreateSnake() *process.Command {
 	}
 	root := process.NewCommand("snake", interfaces.CommandTypeFile, nil, true, onCreate)
 	root.SetHelp("Snake", "Snake")
-	root.SetTimerFn(onTimer)
-	root.SetReadFn(onRead)
-	root.SetPaintFn(onPaint)
+	root.SetOnTimer(onTimer)
+	root.SetOnRead(onRead)
+	root.SetOnPaint(onPaint)
 
 	return root
 }

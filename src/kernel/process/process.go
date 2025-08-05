@@ -206,7 +206,7 @@ func (t *Process) SetId(id int) {
 
 // Paint executes the rendering logic for the task on the provided surface by invoking a paint function if defined.
 func (t *Process) Paint(surface interfaces.ISurface) {
-	fn := t.cmd.PaintEvent()
+	fn := t.cmd.OnPaint()
 	if fn == nil {
 		return
 	}
@@ -340,7 +340,7 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 		if !ok {
 			return
 		}
-		if timerEvent := t.GetCommand().TimerEvent(); timerEvent != nil {
+		if timerEvent := t.GetCommand().OnTimer(); timerEvent != nil {
 			timerEvent(t, mt.TID(), mt.Interval())
 		}
 	case interfaces.MessageTypeRead:
@@ -349,11 +349,11 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 			return
 		}
 		if mt.Broadcast() {
-			if readBroadcastEvent := t.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
+			if readBroadcastEvent := t.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
 				readBroadcastEvent(t, int(mt.Kind()), mt.Data())
 			}
 		} else {
-			if readEvent := t.GetCommand().ReadEvent(); readEvent != nil {
+			if readEvent := t.GetCommand().OnRead(); readEvent != nil {
 				readEvent(t, int(mt.Kind()), mt.Data())
 			}
 		}

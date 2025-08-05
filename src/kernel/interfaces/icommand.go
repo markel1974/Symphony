@@ -23,21 +23,21 @@ type ICommand interface {
 
 	Type() CommandType
 
-	PaintEvent() PaintFn
+	OnPaint() OnPaint
 
-	ReadEvent() ReadFn
+	OnRead() OnRead
 
-	ReadBroadcastEvent() ReadFn
+	OnReadBroadcast() OnRead
 
-	TimerEvent() TimerFn
+	OnTimer() OnTimer
 
-	SetReadBroadcastFn(fn ReadFn)
+	SetOnReadBroadcast(fn OnRead)
 
-	SetReadFn(fn ReadFn)
+	SetOnRead(fn OnRead)
 
-	SetTimerFn(fn TimerFn)
+	SetOnTimer(fn OnTimer)
 
-	SetPaintFn(fn PaintFn)
+	SetOnPaint(fn OnPaint)
 
 	Daemon() bool
 

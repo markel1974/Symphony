@@ -68,8 +68,8 @@ func CreateTetris() *process.Command {
 	}
 	root := process.NewCommand("tetris", interfaces.CommandTypeFile, nil, true, onCreate)
 	root.SetHelp("Tetris", "Tetris")
-	root.SetReadFn(onRead)
-	root.SetTimerFn(onTimer)
-	root.SetPaintFn(onPaint)
+	root.SetOnRead(onRead)
+	root.SetOnTimer(onTimer)
+	root.SetOnPaint(onPaint)
 	return root
 }

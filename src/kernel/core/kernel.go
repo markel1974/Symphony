@@ -282,7 +282,7 @@ func (c *Kernel) CallTimerCreate(pid int, first int, interval int, count int) {
 	if process == nil {
 		return
 	}
-	if process.GetCommand().TimerEvent == nil {
+	if process.GetCommand().OnTimer == nil {
 		return
 	}
 	m := messages.NewMessageTimer(pid, interval)
@@ -368,6 +368,7 @@ func (c *Kernel) doProcessSetForeground(pid int) bool {
 	}
 	if c.foreground != process {
 		c.foreground = process
+		//TODO ACTIVATE
 		fmt.Println("TODO FOREGROUND MESSAGE!", c.foreground.GetCommand().Name())
 	}
 	return true
@@ -485,12 +486,12 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 		return
 	}
 	for _, process := range c.running {
-		if readBroadcastEvent := process.GetCommand().ReadBroadcastEvent(); readBroadcastEvent != nil {
+		if readBroadcastEvent := process.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
 			process.PostMessage(messages.NewMessageRead(mm.Kind(), mm.Data(), true))
 		}
 	}
 	if c.foreground != nil {
-		if readBroadcastEvent := c.foreground.GetCommand().ReadEvent(); readBroadcastEvent != nil {
+		if readBroadcastEvent := c.foreground.GetCommand().OnRead(); readBroadcastEvent != nil {
 			c.foreground.PostMessage(mm)
 		}
 	}

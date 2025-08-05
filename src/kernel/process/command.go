@@ -18,17 +18,18 @@ type Command struct {
 	suggestionsMinimumDistance int
 	daemon                     bool
 	background                 bool
-	run                        interfaces.RunFn
-	timerEvent                 interfaces.TimerFn
-	readEvent                  interfaces.ReadFn
-	readBroadcastEvent         interfaces.ReadFn
-	paintEvent                 interfaces.PaintFn
+	run                        interfaces.OnRun
+	timerEvent                 interfaces.OnTimer
+	readEvent                  interfaces.OnRead
+	readBroadcastEvent         interfaces.OnRead
+	paintEvent                 interfaces.OnPaint
+	activateEvent              interfaces.OnActivate
 	commands                   []interfaces.ICommand
 	parent                     interfaces.ICommand
 }
 
 // NewCommand creates a new Command instance with the specified name, type, aliases, daemon status, and execution function.
-func NewCommand(name string, kind interfaces.CommandType, aliases []string, daemon bool, run interfaces.RunFn) *Command {
+func NewCommand(name string, kind interfaces.CommandType, aliases []string, daemon bool, run interfaces.OnRun) *Command {
 	if run == nil {
 		run = func(task interfaces.IProcess, args []string) error {
 			return nil
@@ -65,44 +66,54 @@ func (c *Command) DirectoryListing() []string {
 	return out
 }
 
-// PaintEvent returns the PaintFn associated with the command, which handles rendering or drawing operations.
-func (c *Command) PaintEvent() interfaces.PaintFn {
+// OnPaint returns the OnPaint associated with the command, which handles rendering or drawing operations.
+func (c *Command) OnPaint() interfaces.OnPaint {
 	return c.paintEvent
 }
 
-// ReadEvent retrieves the function assigned to handle read events for the command.
-func (c *Command) ReadEvent() interfaces.ReadFn {
+// OnRead retrieves the function assigned to handle read events for the command.
+func (c *Command) OnRead() interfaces.OnRead {
 	return c.readEvent
 }
 
-// ReadBroadcastEvent returns a function for handling broadcast event messages within the command context.
-func (c *Command) ReadBroadcastEvent() interfaces.ReadFn {
+// OnReadBroadcast returns a function for handling broadcast event messages within the command context.
+func (c *Command) OnReadBroadcast() interfaces.OnRead {
 	return c.readBroadcastEvent
 }
 
-// TimerEvent returns the TimerFn associated with the Command, used to define the timer-based behavior for the command.
-func (c *Command) TimerEvent() interfaces.TimerFn {
+// OnTimer returns the OnTimer associated with the Command, used to define the timer-based behavior for the command.
+func (c *Command) OnTimer() interfaces.OnTimer {
 	return c.timerEvent
 }
 
-// SetReadFn sets the function to handle read-related events for the command.
-func (c *Command) SetReadFn(fn interfaces.ReadFn) {
+// OnActivate returns the OnTimer associated with the Command, used to define the timer-based behavior for the command.
+func (c *Command) OnActivate() interfaces.OnActivate {
+	return c.activateEvent
+}
+
+// SetOnRead sets the function to handle read-related events for the command.
+func (c *Command) SetOnRead(fn interfaces.OnRead) {
 	c.readEvent = fn
 }
 
-// SetReadBroadcastFn sets the function to handle read broadcast events for the command.
-func (c *Command) SetReadBroadcastFn(fn interfaces.ReadFn) {
+// SetOnReadBroadcast sets the function to handle read broadcast events for the command.
+func (c *Command) SetOnReadBroadcast(fn interfaces.OnRead) {
 	c.readBroadcastEvent = fn
 }
 
-// SetTimerFn sets the TimerFn callback function for the command's timer event.
-func (c *Command) SetTimerFn(fn interfaces.TimerFn) {
+// SetOnTimer sets the OnTimer callback function for the command's timer event.
+func (c *Command) SetOnTimer(fn interfaces.OnTimer) {
 	c.timerEvent = fn
 }
 
-// SetPaintFn configures a custom function to handle paint events for the command.
-func (c *Command) SetPaintFn(fn interfaces.PaintFn) {
+// SetOnPaint configures a custom function to handle paint events for the command.
+func (c *Command) SetOnPaint(fn interfaces.OnPaint) {
 	c.paintEvent = fn
+}
+
+// SetOnActivate assigns a callback function to be executed when the command is activated.
+func (c *Command) SetOnActivate(fn interfaces.OnActivate) {
+	c.activateEvent = fn
 }
 
 // Daemon returns whether the command is configured to run in daemon mode.

@@ -112,9 +112,9 @@ func CreateMemoryPlot() interfaces.ICommand {
 	}
 	root := process.NewCommand("rtplot", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Runtime Plot", "Runtime Plot")
-	root.SetTimerFn(timerFn)
-	root.SetPaintFn(paintFn)
-	root.SetReadFn(readFn)
+	root.SetOnTimer(timerFn)
+	root.SetOnPaint(paintFn)
+	root.SetOnRead(readFn)
 
 	return root
 }

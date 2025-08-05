@@ -61,9 +61,9 @@ func CreateInvaders() *process.Command {
 		g.Draw(surface)
 	}
 	root := process.NewCommand("invaders", interfaces.CommandTypeFile, nil, true, onCreate)
-	root.SetReadFn(onRead)
-	root.SetTimerFn(onTimer)
-	root.SetPaintFn(onPaint)
+	root.SetOnRead(onRead)
+	root.SetOnTimer(onTimer)
+	root.SetOnPaint(onPaint)
 	root.SetHelp("Invaders", "Invaders")
 	return root
 }

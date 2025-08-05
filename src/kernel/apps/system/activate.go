@@ -73,7 +73,7 @@ func CreateActivate() *process.Command {
 
 	root := process.NewCommand("activate", interfaces.CommandTypeFile, nil, true, run)
 	root.SetHelp("Activate", "Activate")
-	root.SetReadFn(readFn)
+	root.SetOnRead(readFn)
 
 	return root
 }
