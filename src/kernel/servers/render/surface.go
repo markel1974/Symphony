@@ -25,12 +25,14 @@ type Surface struct {
 	full           bool
 	iRows          int
 	iColumns       int
+	zIndex         int
 }
 
 // NewSurface initializes a new Surface object with the provided terminal, row, and column dimensions.
-func NewSurface(terminal interfaces.ITerminal, rows int, columns int) *Surface {
+func NewSurface(terminal interfaces.ITerminal, rows int, columns int, caption string) *Surface {
 	s := &Surface{
 		terminal: terminal,
+		caption:  caption,
 		rows:     -1,
 		columns:  -1,
 		scale:    1.0,
@@ -39,9 +41,24 @@ func NewSurface(terminal interfaces.ITerminal, rows int, columns int) *Surface {
 		rMax:     0,
 		border:   1,
 		full:     false,
+		zIndex:   0,
 	}
 	s.Prepare(rows, columns, true)
 	return s
+}
+
+// SetOption updates the task's X, Y offsets or Scale based on the given option ('x', 'y', or 'z') and value.
+func (s *Surface) SetOption(option rune, value float64) {
+	switch option {
+	case 'y':
+		s.offsetY = s.offsetY + int(value)
+	case 'x':
+		s.offsetX = s.offsetX + int(value)
+	case 'z':
+		if scale := s.scale + value; scale >= 0.2 && scale <= 1 {
+			s.scale = scale
+		}
+	}
 }
 
 // Prepare adjusts the dimensions of the Surface to the specified rows and columns, resetting or reallocating data as needed.
@@ -122,13 +139,6 @@ func (s *Surface) SetCompletePaint(f bool) {
 // SetSelectionMode sets the selection mode for the Surface. If true, the surface will render in selection mode.
 func (s *Surface) SetSelectionMode(selection bool) {
 	s.selection = selection
-}
-
-func (s *Surface) SetWindowOptions(options *WindowOptions) {
-	s.caption = options.Caption()
-	s.offsetX = options.OffsetX()
-	s.offsetY = options.OffsetY()
-	s.scale = options.Scale()
 }
 
 // Draw places a rune at the specified row and column on the surface, considering offsets and boundaries.
@@ -232,7 +242,6 @@ func (s *Surface) compute(r int, c int) (int, int) {
 
 // GetBuffer generates a byte slice representing the surface content, limited by the render boundary.
 func (s *Surface) GetBuffer(lines *bytes.Buffer) {
-	//var lines bytes.Buffer
 	var maximum int
 	if s.full {
 		maximum = s.rows * s.columns

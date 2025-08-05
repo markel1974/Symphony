@@ -7,7 +7,6 @@ import (
 
 type Component struct {
 	*interfaces.ProcessDescription
-	*WindowOptions
 	surface *Surface
 }
 
@@ -16,9 +15,9 @@ func NewComponent(desc *interfaces.ProcessDescription, terminal interfaces.ITerm
 	if len(desc.Name()) > 0 {
 		caption += " - " + desc.Name()
 	}
-	return &Component{
+	c := &Component{
 		ProcessDescription: desc,
-		WindowOptions:      NewWindowOptions(caption, 0, 0, 1.0),
-		surface:            NewSurface(terminal, 24, 80),
+		surface:            NewSurface(terminal, 24, 80, caption),
 	}
+	return c
 }

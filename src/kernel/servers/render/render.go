@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
 	"log"
+	"sort"
 )
 
 // eol represents the end-of-line marker used for denoting line breaks in the output, set to "\r\n".
@@ -42,9 +43,8 @@ func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
 		fullPaint:      true,
 		running:        make(map[int]*Component),
 		messageChan:    make(chan interfaces.IMessage, 128),
-		surface:        NewSurface(driver, height, width),
+		surface:        NewSurface(driver, height, width, ""),
 	}
-
 	return r
 }
 
@@ -116,9 +116,7 @@ func (c *Render) CallWindowsSelectionOptions(option rune, value float64) {
 	if process == nil {
 		return
 	}
-
-	process.SetWindowOption(option, value)
-	process.surface.SetWindowOptions(process.WindowOptions)
+	process.surface.SetOption(option, value)
 	c.handlePaintRequest(true)
 }
 
@@ -295,36 +293,32 @@ func (c *Render) handlePaintExec() {
 	if !c.dirty {
 		return
 	}
-	var selectedProcess *Component = nil
-	var tasks []*Component
-	for _, process := range c.running {
-		if process.PID() == c.windowSelector.PID() {
-			selectedProcess = process
-			selectedProcess.surface.SetSelectionMode(true)
-		} else {
-			process.surface.SetSelectionMode(false)
-			tasks = append(tasks, process)
-		}
-	}
-	if selectedProcess != nil {
-		//zOrder
-		tasks = append(tasks, selectedProcess)
-	}
-
 	w, h := c.CallGetScreenSize()
 	fullPaint := c.fullPaint
 	c.fullPaint = false
 	rMax := 0
-	//zOrder
-	for _, task := range tasks {
-		task.surface.Prepare(h, w, fullPaint)
-		task.surface.Begin()
-		task.Paint(task.surface)
-		task.surface.End()
-		if task.surface.rMax > rMax {
-			rMax = task.surface.rMax
+	var tasks []*Component
+	for _, process := range c.running {
+		if process.PID() == c.windowSelector.PID() {
+			process.surface.zIndex = 255
+			process.surface.SetSelectionMode(true)
+		} else {
+			process.surface.zIndex = 0
+			process.surface.SetSelectionMode(false)
+		}
+		tasks = append(tasks, process)
+		process.surface.Prepare(h, w, fullPaint)
+		process.surface.Begin()
+		process.Paint(process.surface)
+		process.surface.End()
+		if process.surface.rMax > rMax {
+			rMax = process.surface.rMax
 		}
 	}
+
+	sort.SliceStable(tasks, func(i, j int) bool {
+		return tasks[i].surface.zIndex < tasks[j].surface.zIndex
+	})
 
 	var lines bytes.Buffer
 	c.surface.Prepare(h, w, fullPaint)
@@ -351,42 +345,5 @@ func (c *Render) handlePaintRequest(full bool) {
 		c.dirty = true
 		msg := messages.NewMessageTimedMessage(messages.NewMessagePaint(), -1, -1, -1)
 		c.router.PostMessage(msg)
-		//c.router.PostTimedMessage(messages.NewMessagePaint(), -1, -1, 1)
 	}
 }
-
-/*
-func (c *Render) MergeDisplays(tasks []*Component) [][]string {
-	// 1. Calcola dimensioni massime
-	maxRows := 0
-	maxCols := 0
-	for _, disp := range tasks {
-		if len(disp.surface.surface) > maxRows {
-			maxRows = len(disp.surface.surface)
-		}
-		if len(disp.surface.surface) > 0 && len(disp.surface.surface[0]) > maxCols {
-			maxCols = len(disp.surface.surface[0])
-		}
-	}
-	merged := make([][]string, maxRows)
-	for i := range merged {
-		merged[i] = make([]string, maxCols)
-		for j := range merged[i] {
-			merged[i][j] = " "
-		}
-	}
-	for _, disp := range tasks {
-		for i, row := range disp.surface.surface {
-			for j, val := range row {
-				if val != "$" {
-					merged[i][j] = val
-				}
-			}
-		}
-	}
-	return merged
-}
-
-
-
-*/
