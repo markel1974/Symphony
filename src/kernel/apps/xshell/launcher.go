@@ -28,13 +28,19 @@ func CreateXShell() *process.Command {
 		}
 		s.BroadcastKeyHandler(process, code, key)
 	}
-	onTimer := func(process interfaces.IProcess, tid int, interval int) {
+	onActivate := func(process interfaces.IProcess) {
+		ctx := process.GetContext()
+		s, _ := ctx.(*XShell)
+		if s == nil {
+			return
+		}
+		s.ActivateHandler(process)
 	}
 	root := process.NewCommand("xsh", interfaces.CommandTypeFile, nil, true, onCreate)
 	root.SetHelp("XShell", "XShell")
-	root.SetOnTimer(onTimer)
 	root.SetOnRead(onRead)
 	root.SetOnReadBroadcast(onReadBroast)
+	root.SetOnActivate(onActivate)
 
 	return root
 }

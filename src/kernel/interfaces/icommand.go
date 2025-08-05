@@ -29,7 +29,11 @@ type ICommand interface {
 
 	OnReadBroadcast() OnRead
 
+	OnActivate() OnActivate
+
 	OnTimer() OnTimer
+
+	SetOnActivate(fn OnActivate)
 
 	SetOnReadBroadcast(fn OnRead)
 

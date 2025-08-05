@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/messages"
 	"log"
 	"sort"
 )
@@ -77,7 +76,7 @@ func (c *Render) PostMessage(m interfaces.IMessage) {
 
 // Register returns a slice of message types that the Render object is set to handle, including MessageTypePaint.
 func (c *Render) Register() []interfaces.MessageType {
-	return []interfaces.MessageType{interfaces.MessageTypePaint, interfaces.MessageTypePaintRequest}
+	return []interfaces.MessageType{interfaces.MessageTypePaintRequest}
 }
 
 // CallGetScreenSize returns the current screen width and height of the Render instance.
@@ -274,11 +273,8 @@ func (c *Render) eventLoop(r chan bool) {
 					return
 				}
 				switch m.GetType() {
-				case interfaces.MessageTypePaint:
-					c.handlePaintExec()
 				case interfaces.MessageTypePaintRequest:
 					c.handlePaintRequest(false)
-					//
 				default:
 					log.Printf("Unknown message type: %v\n", m.GetType())
 				}
@@ -343,7 +339,6 @@ func (c *Render) handlePaintRequest(full bool) {
 	}
 	if !c.dirty {
 		c.dirty = true
-		msg := messages.NewMessageTimedMessage(messages.NewMessagePaint(), -1, -1, -1)
-		c.router.PostMessage(msg)
+		c.handlePaintExec()
 	}
 }

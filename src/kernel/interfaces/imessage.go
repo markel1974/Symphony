@@ -7,11 +7,12 @@ const (
 	MessageTypeRead MessageType = iota
 	MessageTypeTimer
 	MessageTypeTimedMessage
-	MessageTypePaint
+	//MessageTypePaint
 	MessageTypePaintRequest
 	MessageTypeQuit
 	MessageTypeProcessExec
 	MessageTypeProcessStart
+	MessageTypeProcessActivate
 	MessageTypeProcessKill
 	MessageTypeProcessKillAll
 	MessageTypeProcessSetForeground

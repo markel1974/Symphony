@@ -343,18 +343,19 @@ func (c *Kernel) doProcessExec(user string, line string) (interfaces.IProcess, e
 	for _, server := range c.servers {
 		server.NotifyProcessCreation(process.Description())
 	}
-	if !cmd.Background() {
-		c.doProcessSetForeground(process.PID())
-	}
-	//process.PostMessage(messages.NewMessageProcessStart(args))
-	if err = cmd.Execute(process, args); err != nil {
-		c.doProcessKill(process.PID())
-		return nil, err
-	}
-	if !cmd.Daemon() {
-		c.doProcessKill(process.PID())
-		return nil, nil
-	}
+	c.doProcessSetForeground(process.PID())
+	process.PostMessage(messages.NewMessageProcessStart(args))
+	//if !cmd.Background() {
+	//	c.doProcessSetForeground(process.PID())
+	//}
+	//if err = cmd.Execute(process, args); err != nil {
+	//	c.doProcessKill(process.PID())
+	//	return nil, err
+	//}
+	//if !cmd.Daemon() {
+	//	c.doProcessKill(process.PID())
+	//	return nil, nil
+	//}
 	return process, nil
 }
 
@@ -368,8 +369,7 @@ func (c *Kernel) doProcessSetForeground(pid int) bool {
 	}
 	if c.foreground != process {
 		c.foreground = process
-		//TODO ACTIVATE
-		fmt.Println("TODO FOREGROUND MESSAGE!", c.foreground.GetCommand().Name())
+		c.foreground.PostMessage(messages.NewMessageProcessActivate())
 	}
 	return true
 }

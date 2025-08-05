@@ -362,8 +362,25 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 		if !ok {
 			return
 		}
-		t.kernel.CallWriteLn("")
 		_ = t.GetCommand().Execute(t, mt.Args())
+		if !t.cmd.Daemon() {
+			t.kernel.CallProcessKill(t.pid)
+			return
+		}
+		if t.GetCommand().Background() {
+			t.kernel.CallProcessSetForeground(t.pid)
+		}
+
+	case interfaces.MessageTypeProcessActivate:
+		_, ok := msg.(*messages.MessageProcessActivate)
+		if !ok {
+			return
+		}
+		if activate := t.GetCommand().OnActivate(); activate != nil {
+			activate(t)
+		}
+		//t.kernel.CallWriteLn("")
+		//_ = t.GetCommand().Execute(t, mt.Args())
 	default:
 		log.Printf("unknown message type: %d", msg.GetType())
 	}

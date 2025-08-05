@@ -43,6 +43,11 @@ func (c *XShell) Start(process interfaces.IProcess) {
 	c.nextLine(process, true)
 }
 
+// ActivateHandler triggers the processing loop for the specified process, ensuring the next line is handled without a delay.
+func (c *XShell) ActivateHandler(process interfaces.IProcess) {
+	c.nextLine(process, false)
+}
+
 func (c *XShell) BroadcastKeyHandler(process interfaces.IProcess, code int, key rune) {
 	kind := interfaces.KeyType(code)
 	if kind == interfaces.KeyTypeCtrl {
@@ -70,6 +75,7 @@ func (c *XShell) BroadcastKeyHandler(process interfaces.IProcess, code int, key 
 	}
 }
 
+// KeyHandler handles keyboard input events for the XShell context, adjusting behavior based on selection mode status.
 func (c *XShell) KeyHandler(process interfaces.IProcess, code int, key rune) {
 	if !c.selectionMode {
 		c.keyHandlerNormal(process, code, key)
@@ -257,16 +263,15 @@ func (c *XShell) cursorPressed(process interfaces.IProcess, code interfaces.Curs
 // EnterPressed handles the Enter key press event, processes the input based on the current shell state, and updates the state accordingly.
 func (c *XShell) enterPressed(process interfaces.IProcess) {
 	buffer := string(c.current)
-	if len(buffer) > 0 {
-		c.history.AddToHistory(buffer)
-		c.history.SetDefault("")
-
-		process.WriteLn("")
-		_, _ = process.ProcessExec(buffer)
-		c.nextLine(process, false)
-	} else {
+	if len(buffer) == 0 {
 		c.nextLine(process, true)
+		return
 	}
+	c.history.AddToHistory(buffer)
+	c.history.SetDefault("")
+	process.WriteLn("")
+	_, _ = process.ProcessExec(buffer)
+	//c.nextLine(process, false)
 }
 
 // TabPressed handles tab key events, providing intelligent autocompletion based on current input and command context.

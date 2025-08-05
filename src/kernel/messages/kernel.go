@@ -78,6 +78,18 @@ func NewMessageProcessStart(args []string) *MessageProcessStart {
 	}
 }
 
+// MessageProcessActivate represents a message type designed to execute a process with a given command line.
+type MessageProcessActivate struct {
+	interfaces.Message
+}
+
+// NewMessageProcessActivate creates and returns a new instance of MessageProcessActivate initialized with MessageTypeProcessActivate.
+func NewMessageProcessActivate() *MessageProcessActivate {
+	return &MessageProcessActivate{
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessActivate),
+	}
+}
+
 // Args returns the slice of arguments associated with the MessageProcessStart instance.
 func (m *MessageProcessStart) Args() []string {
 	return m.args
