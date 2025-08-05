@@ -367,8 +367,8 @@ func (c *Kernel) doProcessSetForeground(pid int) bool {
 		s.NotifyProcessForeground(process.Description())
 	}
 	if c.foreground != process {
-		//fmt.Println("HAS FOREGROUND", c.foreground.GetCommand().Name())
 		c.foreground = process
+		fmt.Println("HAS FOREGROUND", c.foreground.GetCommand().Name())
 	}
 	return true
 }
