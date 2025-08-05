@@ -107,13 +107,13 @@ func NewMessageProcessSetForeground(pid int) *MessageProcessSetForeground {
 // It embeds Message for base message functionality and uses ReplyTo to specify the recipient for the response.
 type MessageProcessListRequest struct {
 	interfaces.Message
-	replyTo   interfaces.IReceiver
+	replyTo   interfaces.IRouter
 	processes []*interfaces.ProcessDescription
 	ackChan   chan bool
 }
 
-// NewMessageProcessList creates a new MessageProcessListRequest with specified replyTo as an IReceiver.
-func NewMessageProcessList(replyTo interfaces.IReceiver, ackChan chan bool) *MessageProcessListRequest {
+// NewMessageProcessList creates a new MessageProcessListRequest with specified replyTo as an IRouter.
+func NewMessageProcessList(replyTo interfaces.IRouter, ackChan chan bool) *MessageProcessListRequest {
 	return &MessageProcessListRequest{
 		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessListRequest),
 		replyTo: replyTo,

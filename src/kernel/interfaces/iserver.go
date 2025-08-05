@@ -1,7 +1,7 @@
 package interfaces
 
 type IServer interface {
-	IReceiver
+	IRouter
 
 	Start()
 

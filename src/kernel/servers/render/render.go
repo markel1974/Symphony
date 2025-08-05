@@ -341,6 +341,8 @@ func (c *Render) handlePaintRequest(full bool) {
 	}
 	if !c.dirty {
 		c.dirty = true
-		c.router.PostTimedMessage(messages.NewMessagePaint(), -1, -1, 1)
+		msg := messages.NewMessageTimedMessage(messages.NewMessagePaint(), -1, -1, -1)
+		c.router.PostMessage(msg)
+		//c.router.PostTimedMessage(messages.NewMessagePaint(), -1, -1, 1)
 	}
 }

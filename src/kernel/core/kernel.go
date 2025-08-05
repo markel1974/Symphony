@@ -51,6 +51,7 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, timersChan ch
 	t.handlers[interfaces.MessageTypeRead] = t.handleReadEvent
 	t.handlers[interfaces.MessageTypeTimer] = t.handleTimerEvent
 	t.handlers[interfaces.MessageTypeQuit] = t.handleQuitEvent
+	t.handlers[interfaces.MessageTypeTimedMessage] = t.handleTimedMessage
 	return t
 }
 
@@ -77,9 +78,9 @@ func (c *Kernel) PostMessage(msg interfaces.IMessage) {
 }
 
 // PostTimedMessage schedules a message for execution based on specified timing parameters and count.
-func (c *Kernel) PostTimedMessage(msg interfaces.IMessage, first int64, interval int64, count int64) {
-	c.ticker.Create(c.timersChan, msg, first, interval, count)
-}
+//func (c *Kernel) PostTimedMessage(msg interfaces.IMessage, first int64, interval int64, count int64) {
+//	_ = c.ticker.Create(c.timersChan, msg, first, interval, count)
+//}
 
 // CallProcessList returns a formatted string containing process IDs and their respective command names managed by the Kernel.
 func (c *Kernel) CallProcessList() []*interfaces.ProcessDescription {
@@ -505,6 +506,14 @@ func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 			timerEvent(process, mt.TID(), mt.Interval())
 		}
 	}
+}
+
+func (c *Kernel) handleTimedMessage(m interfaces.IMessage) {
+	mt, ok := m.(*messages.MessageTimedMessage)
+	if !ok {
+		return
+	}
+	_ = c.ticker.Create(c.timersChan, mt.Message(), mt.First(), mt.Interval(), mt.Count())
 }
 
 // handleQuitEvent handles a quit message by verifying its type and setting the kernel's exit flag to true.

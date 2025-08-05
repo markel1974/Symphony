@@ -6,6 +6,7 @@ type MessageType int
 const (
 	MessageTypeRead MessageType = iota
 	MessageTypeTimer
+	MessageTypeTimedMessage
 	MessageTypePaint
 	MessageTypePaintRequest
 	MessageTypeQuit

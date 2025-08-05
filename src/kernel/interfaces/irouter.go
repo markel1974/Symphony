@@ -1,7 +1,9 @@
 package interfaces
 
 type IRouter interface {
-	IReceiver
+	PostMessage(msg IMessage)
 
-	PostTimedMessage(msg IMessage, first int64, interval int64, count int64)
+	PID() int
+
+	User() string
 }
