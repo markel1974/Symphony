@@ -13,6 +13,7 @@ const eolDef = "\r\n"
 // Render represents a rendering engine responsible for managing terminal dimensions, repainting logic, and paint tasks.
 type Render struct {
 	driver         interfaces.IDisplayDriver
+	user           string
 	surface        *Surface
 	dirty          bool
 	width          int
@@ -27,9 +28,10 @@ type Render struct {
 
 // NewRender creates and initializes a new Render instance with the provided terminal implementation.
 // Returns a pointer to the newly created Render object.
-func NewRender(driver interfaces.IDisplayDriver) *Render {
+func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
 	r := &Render{
 		driver:         driver,
+		user:           user,
 		windowSelector: NewWindowSelector(),
 		dirty:          false,
 		width:          80,
@@ -45,6 +47,11 @@ func NewRender(driver interfaces.IDisplayDriver) *Render {
 // PID returns a hardcoded integer value representing a Process ID.
 func (c *Render) PID() int {
 	return -1
+}
+
+// User returns the default username as a string, typically "root".
+func (c *Render) User() string {
+	return c.user
 }
 
 // SetRouter sets the instance of IRouter to be used by the Render for routing purposes.

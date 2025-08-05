@@ -11,6 +11,7 @@ import (
 
 // Kernel represents the core component responsible for managing rendering, input/output, task execution, and timers.
 type Kernel struct {
+	user         string
 	ticker       *adaptiveticker.AdaptiveTicker
 	inputDriver  interfaces.IKeyboardDriver
 	renderServer interfaces.IRender
@@ -29,8 +30,9 @@ type Kernel struct {
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver interfaces.IKeyboardDriver, renderServer interfaces.IRender, fsServer interfaces.IFileSystem, shellPath string) *Kernel {
+func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver interfaces.IKeyboardDriver, renderServer interfaces.IRender, fsServer interfaces.IFileSystem, shellPath string) *Kernel {
 	t := &Kernel{
+		user:         user,
 		ticker:       ticker,
 		inputDriver:  inputDriver,
 		renderServer: renderServer,
@@ -54,6 +56,10 @@ func NewKernel(ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptivet
 
 func (c *Kernel) PID() int {
 	return 0
+}
+
+func (c *Kernel) User() string {
+	return c.user
 }
 
 func (c *Kernel) AddServer(server interfaces.IServer) {

@@ -74,6 +74,10 @@ func (t *Process) PID() int {
 	return t.pid
 }
 
+func (t *Process) User() string {
+	return t.user
+}
+
 // GetCommand returns the ICommand instance associated with the Process.
 func (t *Process) GetCommand() interfaces.ICommand {
 	return t.cmd

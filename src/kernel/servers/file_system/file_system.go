@@ -13,6 +13,7 @@ const pathSeparator = "/"
 
 // FileSystem provides utilities for command hierarchy traversal and completion suggestions.
 type FileSystem struct {
+	user        string
 	root        interfaces.ICommand
 	searchPaths []interfaces.ICommand
 	cwd         interfaces.ICommand
@@ -22,7 +23,7 @@ type FileSystem struct {
 }
 
 // NewFileSystem initializes and returns a new FileSystem instance with the given root command and an empty search path list.
-func NewFileSystem(root interfaces.ICommand, sp []interfaces.ICommand) *FileSystem {
+func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.ICommand) *FileSystem {
 	var searchPath []interfaces.ICommand
 	for _, k := range sp {
 		if k != nil {
@@ -33,6 +34,7 @@ func NewFileSystem(root interfaces.ICommand, sp []interfaces.ICommand) *FileSyst
 		searchPath = []interfaces.ICommand{}
 	}
 	return &FileSystem{
+		user:        user,
 		root:        root,
 		cwd:         root,
 		searchPaths: searchPath,
@@ -44,6 +46,10 @@ func NewFileSystem(root interfaces.ICommand, sp []interfaces.ICommand) *FileSyst
 // PID returns an identifier for the file system process. It always returns a fixed value of -2.
 func (c *FileSystem) PID() int {
 	return -2
+}
+
+func (c *FileSystem) User() string {
+	return c.user
 }
 
 // SetRouter sets the IRouter instance for the FileSystem, allowing it to handle message routing.

@@ -53,11 +53,12 @@ func (c *Context) Setup(terminal interfaces.ITerminal) {
 	keyboardDriver := drivers.NewKeyboardTerminal(c.reader, terminal)
 	videoDriver := drivers.NewDisplayTerminal(c.writer, terminal)
 
-	timerChan := make(chan *adaptiveticker.TimerHandler, contextMaQueueLen)
-	terminalRender := render.NewRender(videoDriver)
-	fs := file_system.NewFileSystem(commands, []interfaces.ICommand{systemCommands})
+	admin := "root"
 
-	c.kernel = NewKernel(c.ticker, timerChan, keyboardDriver, terminalRender, fs, xsh)
+	timerChan := make(chan *adaptiveticker.TimerHandler, contextMaQueueLen)
+	terminalRender := render.NewRender(admin, videoDriver)
+	fs := file_system.NewFileSystem(admin, commands, []interfaces.ICommand{systemCommands})
+	c.kernel = NewKernel(admin, c.ticker, timerChan, keyboardDriver, terminalRender, fs, xsh)
 	c.kernel.AddServer(terminalRender)
 	c.kernel.AddServer(fs)
 }
