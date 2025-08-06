@@ -23,6 +23,8 @@ type IProcess interface {
 
 	SetId(i int)
 
+	Parent() IProcess
+
 	Line() string
 
 	Description() *ProcessDescription
@@ -45,11 +47,11 @@ type IProcess interface {
 
 	IsActive(pid int) bool
 
-	Deactivate(pid int) bool
+	Deactivate(pid int)
 
-	DeactivateForeground() bool
+	DeactivateForeground()
 
-	DeactivateAll(name string) int
+	DeactivateAll(name string)
 
 	CWDName() string
 
@@ -69,7 +71,7 @@ type IProcess interface {
 
 	Start()
 
-	ProcessExec(line string) (bool, error)
+	ProcessExec(line string)
 
 	WindowsSelectionBegin()
 
@@ -83,7 +85,7 @@ type IProcess interface {
 
 	ProcessList() []*ProcessDescription
 
-	ProcessSetForeground(pid int) bool
+	ProcessSetForeground(pid int)
 
 	Write(data string)
 

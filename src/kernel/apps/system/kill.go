@@ -15,9 +15,10 @@
 package system
 
 import (
+	"strconv"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
-	"strconv"
 )
 
 func CreateKill() interfaces.ICommand {
@@ -35,11 +36,7 @@ func CreateKill() interfaces.ICommand {
 			task.WriteLn("Unknown Task: " + args[0])
 			return nil
 		}
-		if task.Deactivate(pid) {
-			task.WriteLn("Task deactivated: " + args[0])
-		} else {
-			task.WriteLn("Task can't be deactivated: " + args[0])
-		}
+		task.Deactivate(pid)
 		return nil
 	}
 	root := process.NewCommand("kill", interfaces.CommandTypeFile, nil, false, run)

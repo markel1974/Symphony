@@ -15,9 +15,10 @@
 package system
 
 import (
+	"strconv"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
-	"strconv"
 )
 
 func CreateFg() interfaces.ICommand {
@@ -31,9 +32,7 @@ func CreateFg() interfaces.ICommand {
 			task.WriteLn("Invalid argument: " + args[0])
 			return nil
 		}
-		if !task.ProcessSetForeground(pid) {
-			task.WriteLn("Unknown task: " + args[0])
-		}
+		task.ProcessSetForeground(pid)
 		return nil
 	}
 

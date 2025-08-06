@@ -11,9 +11,9 @@ type MessageWrite struct {
 // NewMessageWrite creates a new MessageWrite instance with the provided data and MessageTypeWrite.
 // It initializes the embedded Message field using interfaces.NewMessage.
 // Returns a pointer to the new MessageWrite instance.
-func NewMessageWrite(data string) *MessageWrite {
+func NewMessageWrite(router interfaces.IRouter, data string) *MessageWrite {
 	return &MessageWrite{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeWrite),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWrite),
 		Data:    data,
 	}
 }
@@ -27,9 +27,9 @@ type MessageWriteLn struct {
 
 // NewMessageWriteLn initializes and returns a pointer to a MessageWriteLn with the provided data.
 // It sets the Message type to MessageTypeWriteLn.
-func NewMessageWriteLn(data string) *MessageWriteLn {
+func NewMessageWriteLn(router interfaces.IRouter, data string) *MessageWriteLn {
 	return &MessageWriteLn{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeWriteLn),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWriteLn),
 		Data:    data,
 	}
 }
@@ -44,9 +44,9 @@ type MessageWriteColor struct {
 }
 
 // NewMessageWriteColor creates a new MessageWriteColor instance with specified data, foreground and background colors, and mode.
-func NewMessageWriteColor(data string, fg, bg interfaces.ColorDef, mode interfaces.ColorMode) *MessageWriteColor {
+func NewMessageWriteColor(router interfaces.IRouter, data string, fg, bg interfaces.ColorDef, mode interfaces.ColorMode) *MessageWriteColor {
 	return &MessageWriteColor{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeWriteColor),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWriteColor),
 		Data:    data,
 		Fg:      fg,
 		Bg:      bg,
@@ -62,9 +62,9 @@ type MessageWritePromptLine struct {
 }
 
 // NewMessageWritePromptLine creates a new MessageWritePromptLine with the specified prompt and line content.
-func NewMessageWritePromptLine(prompt, line string) *MessageWritePromptLine {
+func NewMessageWritePromptLine(router interfaces.IRouter, prompt, line string) *MessageWritePromptLine {
 	return &MessageWritePromptLine{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeWritePromptLine),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWritePromptLine),
 		Prompt:  prompt,
 		Line:    line,
 	}
@@ -79,9 +79,9 @@ type MessageWritePromptEOL struct {
 }
 
 // NewMessageWritePromptEOL creates a new MessageWritePromptEOL with the specified prompt string and EOL flag.
-func NewMessageWritePromptEOL(prompt string, eol bool) *MessageWritePromptEOL {
+func NewMessageWritePromptEOL(router interfaces.IRouter, prompt string, eol bool) *MessageWritePromptEOL {
 	return &MessageWritePromptEOL{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeWritePromptEOL),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWritePromptEOL),
 		Prompt:  prompt,
 		Eol:     eol,
 	}
@@ -94,8 +94,8 @@ type MessageClearScreen struct {
 }
 
 // NewMessageClearScreen creates a new instance of MessageClearScreen with the MessageType set to ClearScreen.
-func NewMessageClearScreen() *MessageClearScreen {
+func NewMessageClearScreen(router interfaces.IRouter) *MessageClearScreen {
 	return &MessageClearScreen{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeClearScreen),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeClearScreen),
 	}
 }

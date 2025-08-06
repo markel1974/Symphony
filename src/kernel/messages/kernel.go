@@ -11,9 +11,9 @@ type MessageQuit struct {
 }
 
 // NewMessageQuit creates and returns a new MessageQuit instance with the MessageType set to MessageTypeQuit.
-func NewMessageQuit() *MessageQuit {
+func NewMessageQuit(router interfaces.IRouter) *MessageQuit {
 	return &MessageQuit{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeQuit),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeQuit),
 	}
 }
 
@@ -26,9 +26,9 @@ type MessageRead struct {
 }
 
 // NewMessageRead creates a new MessageRead instance with provided data and limits its length to n if necessary.
-func NewMessageRead(kind interfaces.KeyType, data rune, broadcast bool) *MessageRead {
+func NewMessageRead(router interfaces.IRouter, kind interfaces.KeyType, data rune, broadcast bool) *MessageRead {
 	return &MessageRead{
-		Message:   *interfaces.NewMessage(interfaces.MessageTypeRead),
+		Message:   *interfaces.NewMessage(router, interfaces.MessageTypeRead),
 		kind:      kind,
 		data:      data,
 		broadcast: broadcast,
@@ -53,15 +53,19 @@ func (m *MessageRead) Broadcast() bool {
 // MessageProcessExec represents a message type designed to execute a process with a given command line.
 type MessageProcessExec struct {
 	interfaces.Message
-	Line string
+	line string
 }
 
 // NewMessageProcessExec creates a new MessageProcessExec instance with a provided line and MessageTypeProcessExec type.
-func NewMessageProcessExec(line string) *MessageProcessExec {
+func NewMessageProcessExec(router interfaces.IRouter, line string) *MessageProcessExec {
 	return &MessageProcessExec{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessExec),
-		Line:    line,
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessExec),
+		line:    line,
 	}
+}
+
+func (m *MessageProcessExec) Line() string {
+	return m.line
 }
 
 // MessageProcessStart represents a message type designed to execute a process with a given command line.
@@ -71,9 +75,9 @@ type MessageProcessStart struct {
 }
 
 // NewMessageProcessStart creates a new MessageProcessExec instance with a provided line and MessageTypeProcessExec type.
-func NewMessageProcessStart(args []string) *MessageProcessStart {
+func NewMessageProcessStart(router interfaces.IRouter, args []string) *MessageProcessStart {
 	return &MessageProcessStart{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessStart),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessStart),
 		args:    args,
 	}
 }
@@ -84,9 +88,9 @@ type MessageProcessActivate struct {
 }
 
 // NewMessageProcessActivate creates and returns a new instance of MessageProcessActivate initialized with MessageTypeProcessActivate.
-func NewMessageProcessActivate() *MessageProcessActivate {
+func NewMessageProcessActivate(router interfaces.IRouter) *MessageProcessActivate {
 	return &MessageProcessActivate{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessActivate),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessActivate),
 	}
 }
 
@@ -103,9 +107,9 @@ type MessageProcessKill struct {
 }
 
 // NewMessageProcessKill creates a new MessageProcessKill object with the specified PID and a ProcessKill message type.
-func NewMessageProcessKill(pid int) *MessageProcessKill {
+func NewMessageProcessKill(router interfaces.IRouter, pid int) *MessageProcessKill {
 	return &MessageProcessKill{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessKill),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessKill),
 		PID:     pid,
 	}
 }
@@ -118,10 +122,24 @@ type MessageProcessKillAll struct {
 }
 
 // NewMessageProcessKillAll creates a new MessageProcessKillAll instance with the specified name and appropriate message type.
-func NewMessageProcessKillAll(name string) *MessageProcessKillAll {
+func NewMessageProcessKillAll(router interfaces.IRouter, name string) *MessageProcessKillAll {
 	return &MessageProcessKillAll{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessKillAll),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessKillAll),
 		Name:    name,
+	}
+}
+
+// MessageProcessExit represents a message to set a specific process to the foreground.
+// It embeds interfaces.Message and includes a PID field for the target process identifier.
+type MessageProcessExit struct {
+	interfaces.Message
+	pid int
+}
+
+// NewMessageMessageProcessExit creates and returns a new MessageProcessExit instance with the ProcessExit message type.
+func NewMessageMessageProcessExit(router interfaces.IRouter) *MessageProcessExit {
+	return &MessageProcessExit{
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessExit),
 	}
 }
 
@@ -129,32 +147,34 @@ func NewMessageProcessKillAll(name string) *MessageProcessKillAll {
 // It embeds interfaces.Message and includes a PID field for the target process identifier.
 type MessageProcessSetForeground struct {
 	interfaces.Message
-	PID int
+	pid int
 }
 
 // NewMessageProcessSetForeground creates and returns a new MessageProcessSetForeground with the specified process ID.
 // It initializes the embedded Message with the MessageTypeProcessSetForeground constant.
-func NewMessageProcessSetForeground(pid int) *MessageProcessSetForeground {
+func NewMessageProcessSetForeground(router interfaces.IRouter, pid int) *MessageProcessSetForeground {
 	return &MessageProcessSetForeground{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessSetForeground),
-		PID:     pid,
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessSetForeground),
+		pid:     pid,
 	}
+}
+
+func (m *MessageProcessSetForeground) PID() int {
+	return m.pid
 }
 
 // MessageProcessListRequest represents a request message to retrieve a list of processes from the system.
 // It embeds Message for base message functionality and uses ReplyTo to specify the recipient for the response.
 type MessageProcessListRequest struct {
 	interfaces.Message
-	replyTo   interfaces.IRouter
 	processes []*interfaces.ProcessDescription
 	ackChan   chan bool
 }
 
 // NewMessageProcessList creates a new MessageProcessListRequest with specified replyTo as an IRouter.
-func NewMessageProcessList(replyTo interfaces.IRouter, ackChan chan bool) *MessageProcessListRequest {
+func NewMessageProcessList(router interfaces.IRouter, ackChan chan bool) *MessageProcessListRequest {
 	return &MessageProcessListRequest{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessListRequest),
-		replyTo: replyTo,
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessListRequest),
 		ackChan: ackChan,
 	}
 }
@@ -162,7 +182,7 @@ func NewMessageProcessList(replyTo interfaces.IRouter, ackChan chan bool) *Messa
 // Respond sets the list of processes and sends the message to the specified recipient via ReplyTo.
 func (m *MessageProcessListRequest) Respond(processes []*interfaces.ProcessDescription) {
 	m.processes = processes
-	m.replyTo.PostMessage(m)
+	m.Router().PostMessage(m)
 }
 
 // Processes returns the list of ProcessDescription objects associated with the MessageProcessListResponse instance.

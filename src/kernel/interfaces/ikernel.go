@@ -4,81 +4,77 @@ package interfaces
 type IKernel interface {
 	IRouter
 
+	SetScreenSize(w int, h int)
+
 	AddServer(server IServer)
 
-	CallProcessExec(user string, line string) (bool, error)
+	CallProcessKill(process IRouter, pid int)
 
-	CallProcessKill(pid int) bool
+	CallProcessKillForeground(process IRouter)
 
-	CallProcessKillForeground() bool
+	CallProcessKillAll(process IRouter, name string)
 
-	CallProcessKillAll(name string) int
+	CallProcessList(process IRouter) []*ProcessDescription
 
-	CallProcessList() []*ProcessDescription
+	CallWindowsSelectionBegin(process IRouter)
 
-	CallWindowsSelectionBegin()
+	CallWindowsSelectionOptions(process IRouter, option rune, value float64)
 
-	CallWindowsSelectionOptions(option rune, value float64)
+	CallWindowsSelectionPrevious(process IRouter)
 
-	CallWindowsSelectionPrevious()
+	CallWindowsSelectionNext(process IRouter)
 
-	CallWindowsSelectionNext()
+	CallWindowsSelectionEnd(process IRouter)
 
-	CallWindowsSelectionEnd()
+	CallWritePromptEOL(process IRouter, prompt string, eol bool)
 
-	CallWritePromptEOL(prompt string, eol bool)
+	CallWritePromptLine(process IRouter, prompt string, line string)
 
-	CallWritePromptLine(prompt string, line string)
+	CallWrite(process IRouter, data string)
 
-	CallWrite(data string)
+	CallWriteLn(process IRouter, data string)
 
-	CallWriteLn(data string)
+	CallWriteColor(process IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode)
 
-	CallWriteColor(data string, fg ColorDef, bg ColorDef, mode ColorMode)
+	CallWriteColorLn(process IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode)
 
-	CallWriteColorLn(data string, fg ColorDef, bg ColorDef, mode ColorMode)
+	CallWriteNormal(process IRouter, data string)
 
-	CallWriteNormal(data string)
+	CallWriteHighlights(process IRouter, data string)
 
-	CallWriteHighlights(data string)
+	CallWriteCritical(process IRouter, data string)
 
-	CallWriteCritical(data string)
+	CallMoveCursorLeft(process IRouter)
 
-	CallMoveCursorLeft()
+	CallMoveCursorRight(process IRouter)
 
-	CallMoveCursorRight()
+	CallSaveCursor(process IRouter)
 
-	CallSaveCursor()
+	CallRestoreCursor(process IRouter)
 
-	CallRestoreCursor()
+	CallClearScreen(process IRouter)
 
-	CallClearScreen()
+	CallScreenSize(process IRouter) (int, int)
 
-	CallScreenSize() (int, int)
+	CallFileSystemSuggestion(process IRouter, in string, cursor int) (string, []string, bool)
 
-	CallFileSystemSuggestion(in string, cursor int) (string, []string, bool)
+	CallCWDSet(process IRouter, arg string) bool
 
-	CallCWDSet(arg string) bool
+	CallCWDGet(process IRouter) string
 
-	CallCWDGet() string
+	CallCWDPath(process IRouter) []string
 
-	CallCWDPath() []string
+	CallCWDName(process IRouter) string
 
-	CallCWDName() string
+	CallCWDDirectoryListing(process IRouter) []string
 
-	CallCWDDirectoryListing() []string
+	CallFileSystemHelp(process IRouter, arg string) (string, error)
 
-	CallFileSystemHelp(arg string) (string, error)
+	CallExitRequested(process IRouter)
 
-	CallSetScreenSize(w int, h int)
+	CallTimerCreate(process IRouter, pid int, first int, interval int, count int)
 
-	CallExitRequested()
+	CallTimerStop(process IRouter, pid int, tid int)
 
-	CallProcessSetForeground(pid int) bool
-
-	CallTimerCreate(pid int, first int, interval int, count int)
-
-	CallTimerStop(pid int, tid int)
-
-	CallProcessIsActive(pid int) bool
+	CallProcessIsActive(process IRouter, pid int) bool
 }

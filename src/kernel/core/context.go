@@ -1,6 +1,8 @@
 package core
 
 import (
+	"io"
+
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/apps"
 	"github.com/markel1974/c64emu/src/kernel/drivers"
@@ -8,7 +10,6 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 	"github.com/markel1974/c64emu/src/kernel/servers/file_system"
 	"github.com/markel1974/c64emu/src/kernel/servers/render"
-	"io"
 )
 
 // contextMaQueueLen defines the default length for message and timer channels used within the context's queue system.
@@ -74,5 +75,5 @@ func (c *Context) Close() {
 
 // SetScreenSize adjusts the terminal's display dimensions to the specified width (w) and height (h).
 func (c *Context) SetScreenSize(w int, h int) {
-	c.kernel.CallSetScreenSize(w, h)
+	c.kernel.SetScreenSize(w, h)
 }

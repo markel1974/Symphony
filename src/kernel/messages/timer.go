@@ -11,9 +11,9 @@ type MessageTimer struct {
 }
 
 // NewMessageTimer creates a new MessageTimer instance with the specified process ID and interval.
-func NewMessageTimer(pid int, interval int) *MessageTimer {
+func NewMessageTimer(router interfaces.IRouter, pid int, interval int) *MessageTimer {
 	return &MessageTimer{
-		Message:  *interfaces.NewMessage(interfaces.MessageTypeTimer),
+		Message:  *interfaces.NewMessage(router, interfaces.MessageTypeTimer),
 		pid:      pid,
 		interval: interval,
 	}
@@ -49,9 +49,9 @@ type MessageTimedMessage struct {
 }
 
 // NewMessageTimedMessage creates and returns a new instance of MessageTimedMessage with the specified timing settings.
-func NewMessageTimedMessage(msg interfaces.IMessage, first int64, interval int64, count int64) *MessageTimedMessage {
+func NewMessageTimedMessage(router interfaces.IRouter, msg interfaces.IMessage, first int64, interval int64, count int64) *MessageTimedMessage {
 	return &MessageTimedMessage{
-		IMessage: interfaces.NewMessage(interfaces.MessageTypeTimedMessage),
+		IMessage: interfaces.NewMessage(router, interfaces.MessageTypeTimedMessage),
 		msg:      msg,
 		first:    first,
 		interval: interval,

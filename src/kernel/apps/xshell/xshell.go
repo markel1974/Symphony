@@ -2,9 +2,10 @@ package xshell
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"log"
 	"unicode"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 // XShell defines a command-line interface entity with support for input management, authentication, rendering, and history.
@@ -270,7 +271,7 @@ func (c *XShell) enterPressed(process interfaces.IProcess) {
 	c.history.AddToHistory(buffer)
 	c.history.SetDefault("")
 	process.WriteLn("")
-	_, _ = process.ProcessExec(buffer)
+	process.ProcessExec(buffer)
 	//c.nextLine(process, false)
 }
 

@@ -20,9 +20,9 @@ type MessagePaintRequest struct {
 }
 
 // NewMessagePaintRequest creates a new instance of MessagePaint with the MessageType set to MessageTypePaint.
-func NewMessagePaintRequest() *MessagePaintRequest {
+func NewMessagePaintRequest(router interfaces.IRouter) *MessagePaintRequest {
 	return &MessagePaintRequest{
-		Message: *interfaces.NewMessage(interfaces.MessageTypePaintRequest),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypePaintRequest),
 	}
 }
 
@@ -32,9 +32,9 @@ type MessageWindowsSelectionBegin struct {
 }
 
 // NewMessageWindowsSelectionBegin creates and returns a new instance of MessageWindowsSelectionBegin with the proper message type.
-func NewMessageWindowsSelectionBegin() *MessageWindowsSelectionBegin {
+func NewMessageWindowsSelectionBegin(router interfaces.IRouter) *MessageWindowsSelectionBegin {
 	return &MessageWindowsSelectionBegin{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeWindowsSelectionBegin),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionBegin),
 	}
 }
 
@@ -44,9 +44,9 @@ type MessageWindowsSelectionEnd struct {
 }
 
 // NewMessageWindowsSelectionEnd creates and returns a pointer to a new MessageWindowsSelectionEnd instance with the appropriate type.
-func NewMessageWindowsSelectionEnd() *MessageWindowsSelectionEnd {
+func NewMessageWindowsSelectionEnd(router interfaces.IRouter) *MessageWindowsSelectionEnd {
 	return &MessageWindowsSelectionEnd{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeWindowsSelectionEnd),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionEnd),
 	}
 }
 
@@ -56,9 +56,9 @@ type MessageWindowsSelectionNext struct {
 }
 
 // NewMessageWindowsSelectionNext creates and initializes a new MessageWindowsSelectionNext instance with the appropriate message type.
-func NewMessageWindowsSelectionNext() *MessageWindowsSelectionNext {
+func NewMessageWindowsSelectionNext(router interfaces.IRouter) *MessageWindowsSelectionNext {
 	return &MessageWindowsSelectionNext{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeWindowsSelectionNext),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionNext),
 	}
 }
 
@@ -68,9 +68,9 @@ type MessageWindowsSelectionPrevious struct {
 }
 
 // NewMessageWindowsSelectionPrevious creates a new instance of MessageWindowsSelectionPrevious with predefined message type.
-func NewMessageWindowsSelectionPrevious() *MessageWindowsSelectionPrevious {
+func NewMessageWindowsSelectionPrevious(router interfaces.IRouter) *MessageWindowsSelectionPrevious {
 	return &MessageWindowsSelectionPrevious{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeWindowsSelectionPrevious),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionPrevious),
 	}
 }
 
@@ -82,9 +82,9 @@ type MessageWindowsSelectionOptions struct {
 }
 
 // NewMessageWindowsSelectionOptions initializes a MessageWindowsSelectionOptions with the given option and value.
-func NewMessageWindowsSelectionOptions(option rune, value float64) *MessageWindowsSelectionOptions {
+func NewMessageWindowsSelectionOptions(router interfaces.IRouter, option rune, value float64) *MessageWindowsSelectionOptions {
 	return &MessageWindowsSelectionOptions{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeWindowsSelectionOptions),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionOptions),
 		Option:  option,
 		Value:   value,
 	}

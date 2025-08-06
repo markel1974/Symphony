@@ -3,45 +3,45 @@ package interfaces
 type IRender interface {
 	IServer
 
-	CallGetScreenSize() (int, int)
+	CallGetScreenSize(process IRouter) (int, int)
 
-	CallSetScreenSize(width int, height int)
+	CallSetScreenSize(router IRouter, width int, height int)
 
-	CallWindowsSelectionBegin()
+	CallWindowsSelectionBegin(router IRouter)
 
-	CallWindowsSelectionOptions(option rune, value float64)
+	CallWindowsSelectionOptions(router IRouter, option rune, value float64)
 
-	CallWindowsSelectionPrevious()
+	CallWindowsSelectionPrevious(router IRouter)
 
-	CallWindowsSelectionNext()
+	CallWindowsSelectionNext(router IRouter)
 
-	CallWindowsSelectionEnd()
+	CallWindowsSelectionEnd(router IRouter)
 
-	CallWritePromptLine(prompt string, line string)
+	CallWritePromptLine(router IRouter, prompt string, line string)
 
-	CallWritePromptEOL(prompt string, eol bool)
+	CallWritePromptEOL(router IRouter, prompt string, eol bool)
 
-	CallWriteNormal(line string)
+	CallWriteNormal(router IRouter, line string)
 
-	CallWriteHighlight(line string)
+	CallWriteHighlight(router IRouter, line string)
 
-	CallWriteCritical(line string)
+	CallWriteCritical(router IRouter, line string)
 
-	CallWrite(data string)
+	CallWrite(router IRouter, data string)
 
-	CallWriteLn(data string)
+	CallWriteLn(router IRouter, data string)
 
-	CallWriteColor(data string, fg ColorDef, bg ColorDef, mode ColorMode)
+	CallWriteColor(router IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode)
 
-	CallWriteColorLn(data string, fg ColorDef, bg ColorDef, mode ColorMode)
+	CallWriteColorLn(router IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode)
 
-	CallClearScreen()
+	CallClearScreen(router IRouter)
 
-	CallSaveCursor()
+	CallSaveCursor(router IRouter)
 
-	CallRestoreCursor()
+	CallRestoreCursor(router IRouter)
 
-	CallMoveCursorLeft()
+	CallMoveCursorLeft(router IRouter)
 
-	CallMoveCursorRight()
+	CallMoveCursorRight(router IRouter)
 }

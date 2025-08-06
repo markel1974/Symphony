@@ -13,6 +13,7 @@ const (
 	MessageTypeProcessExec
 	MessageTypeProcessStart
 	MessageTypeProcessActivate
+	MessageTypeProcessExit
 	MessageTypeProcessKill
 	MessageTypeProcessKillAll
 	MessageTypeProcessSetForeground
@@ -64,23 +65,33 @@ const (
 type IMessage interface {
 	GetType() MessageType
 
+	Router() IRouter
+
 	Ack()
 }
 
 // Message represents a basic unit containing a MessageType to define its specific behavior or category.
 type Message struct {
-	kind MessageType
+	router IRouter
+	kind   MessageType
 }
 
-func NewMessage(kind MessageType) *Message {
+// NewMessage creates a new Message instance with the specified MessageType.
+func NewMessage(router IRouter, kind MessageType) *Message {
 	return &Message{
-		kind: kind,
+		router: router,
+		kind:   kind,
 	}
 }
 
 // GetType returns the MessageType of the current Message instance.
 func (m *Message) GetType() MessageType {
 	return m.kind
+}
+
+// Router returns the IRouter instance associated with the current Message instance.
+func (m *Message) Router() IRouter {
+	return m.router
 }
 
 // Ack acknowledges the processing of the message, preventing further handling or retries by the system.

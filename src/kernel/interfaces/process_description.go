@@ -2,9 +2,10 @@ package interfaces
 
 // ProcessDescription represents the details of a system process, including its name and process ID.
 type ProcessDescription struct {
-	name    string
-	pid     int
-	line    string
+	name string
+	pid  int
+	line string
+	//TODO REMOVE PROCESS!!!!!
 	process IProcess
 }
 

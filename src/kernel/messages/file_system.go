@@ -9,9 +9,9 @@ type MessageCWDSet struct {
 	Path string
 }
 
-func NewMessageCWDSet(path string) *MessageCWDSet {
+func NewMessageCWDSet(router interfaces.IRouter, path string) *MessageCWDSet {
 	return &MessageCWDSet{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeCWDSet),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDSet),
 		Path:    path,
 	}
 }
@@ -20,9 +20,9 @@ type MessageCWDGetRequest struct {
 	interfaces.Message
 }
 
-func NewMessageCWDGetRequest(originatorPID int) *MessageCWDGetRequest {
+func NewMessageCWDGetRequest(router interfaces.IRouter) *MessageCWDGetRequest {
 	return &MessageCWDGetRequest{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeCWDGetRequest),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDGetRequest),
 	}
 }
 
@@ -30,9 +30,9 @@ type MessageCWDNameRequest struct {
 	interfaces.Message
 }
 
-func NewMessageCWDNameRequest(originatorPID int) *MessageCWDNameRequest {
+func NewMessageCWDNameRequest(router interfaces.IRouter) *MessageCWDNameRequest {
 	return &MessageCWDNameRequest{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeCWDNameRequest),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDNameRequest),
 	}
 }
 
@@ -40,9 +40,9 @@ type MessageCWDDirectoryListingRequest struct {
 	interfaces.Message
 }
 
-func NewMessageCWDDirectoryListingRequest() *MessageCWDDirectoryListingRequest {
+func NewMessageCWDDirectoryListingRequest(router interfaces.IRouter) *MessageCWDDirectoryListingRequest {
 	return &MessageCWDDirectoryListingRequest{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeCWDDirectoryListingRequest),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDDirectoryListingRequest),
 	}
 }
 
@@ -52,9 +52,9 @@ type MessageFileSystemSuggestionRequest struct {
 	Cursor int
 }
 
-func NewMessageFileSystemSuggestionRequest(in string, cursor int) *MessageFileSystemSuggestionRequest {
+func NewMessageFileSystemSuggestionRequest(router interfaces.IRouter, in string, cursor int) *MessageFileSystemSuggestionRequest {
 	return &MessageFileSystemSuggestionRequest{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeFileSystemSuggestionRequest),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemSuggestionRequest),
 		In:      in,
 		Cursor:  cursor,
 	}
@@ -65,9 +65,9 @@ type MessageFileSystemHelpRequest struct {
 	Arg string
 }
 
-func NewMessageFileSystemHelpRequest(arg string) *MessageFileSystemHelpRequest {
+func NewMessageFileSystemHelpRequest(router interfaces.IRouter, arg string) *MessageFileSystemHelpRequest {
 	return &MessageFileSystemHelpRequest{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeFileSystemHelpRequest),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemHelpRequest),
 		Arg:     arg,
 	}
 }
@@ -77,9 +77,9 @@ type MessageCWDGetResponse struct {
 	Path string
 }
 
-func NewMessageCWDGetResponse(path string) *MessageCWDGetResponse {
+func NewMessageCWDGetResponse(router interfaces.IRouter, path string) *MessageCWDGetResponse {
 	return &MessageCWDGetResponse{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeCWDGetResponse),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDGetResponse),
 		Path:    path,
 	}
 }
@@ -89,9 +89,9 @@ type MessageCWDNameResponse struct {
 	Name string
 }
 
-func NewMessageCWDNameResponse(name string) *MessageCWDNameResponse {
+func NewMessageCWDNameResponse(router interfaces.IRouter, name string) *MessageCWDNameResponse {
 	return &MessageCWDNameResponse{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeCWDNameResponse),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDNameResponse),
 		Name:    name,
 	}
 }
@@ -101,9 +101,9 @@ type MessageCWDDirectoryListingResponse struct {
 	Listing []string
 }
 
-func NewMessageCWDDirectoryListingResponse(listing []string) *MessageCWDDirectoryListingResponse {
+func NewMessageCWDDirectoryListingResponse(router interfaces.IRouter, listing []string) *MessageCWDDirectoryListingResponse {
 	return &MessageCWDDirectoryListingResponse{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeCWDDirectoryListingResponse),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDDirectoryListingResponse),
 		Listing: listing,
 	}
 }
@@ -115,9 +115,9 @@ type MessageFileSystemSuggestionResponse struct {
 	Found       bool
 }
 
-func NewMessageFileSystemSuggestionResponse(prefix string, suggestions []string, found bool) *MessageFileSystemSuggestionResponse {
+func NewMessageFileSystemSuggestionResponse(router interfaces.IRouter, prefix string, suggestions []string, found bool) *MessageFileSystemSuggestionResponse {
 	return &MessageFileSystemSuggestionResponse{
-		Message:     *interfaces.NewMessage(interfaces.MessageTypeFileSystemSuggestionResponse),
+		Message:     *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemSuggestionResponse),
 		Prefix:      prefix,
 		Suggestions: suggestions,
 		Found:       found,

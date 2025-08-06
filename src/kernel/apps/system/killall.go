@@ -17,7 +17,6 @@ package system
 import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
-	"strconv"
 )
 
 func CreateKillAll() interfaces.ICommand {
@@ -26,8 +25,8 @@ func CreateKillAll() interfaces.ICommand {
 		if len(args) > 0 {
 			arg = args[0]
 		}
-		count := task.DeactivateAll(arg)
-		task.WriteLn("Task deactivated: " + strconv.Itoa(count))
+		task.DeactivateAll(arg)
+		task.WriteLn("Task deactivated")
 		return nil
 	}
 	root := process.NewCommand("killall", interfaces.CommandTypeFile, nil, false, run)

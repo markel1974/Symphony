@@ -2,10 +2,11 @@ package file_system
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"log"
 	"sort"
 	"strings"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 // pathSeparator is a constant string representing the character used to separate components in a path, typically "/".
@@ -43,6 +44,11 @@ func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.IComma
 	}
 }
 
+// Process returns nil, as the file system does not have a process.
+func (c *FileSystem) Process() interfaces.IProcess {
+	return nil
+}
+
 // PID returns an identifier for the file system process. It always returns a fixed value of -2.
 func (c *FileSystem) PID() int {
 	return -2
@@ -69,21 +75,21 @@ func (c *FileSystem) PostMessage(m interfaces.IMessage) {
 	c.messageChan <- m
 }
 
-// AddSearchPath adds a new ICommand instance to the searchPaths slice for fs resolution.
-func (c *FileSystem) AddSearchPath(sp interfaces.ICommand) {
+// CallAddSearchPath adds a new ICommand instance to the searchPaths slice for fs resolution.
+func (c *FileSystem) CallAddSearchPath(router interfaces.IRouter, sp interfaces.ICommand) {
 	if sp == nil {
 		return
 	}
 	c.searchPaths = append(c.searchPaths, sp)
 }
 
-// CWDName returns the name of the current working directory command.
-func (c *FileSystem) CWDName() string {
+// CallCWDName returns the name of the current working directory command.
+func (c *FileSystem) CallCWDName(router interfaces.IRouter) string {
 	return c.cwd.Name()
 }
 
-// CWDSet updates the current working directory to the specified path and returns true if the operation is successful.
-func (c *FileSystem) CWDSet(arg string) bool {
+// CallCWDSet updates the current working directory to the specified path and returns true if the operation is successful.
+func (c *FileSystem) CallCWDSet(router interfaces.IRouter, arg string) bool {
 	var path []string
 	for _, part := range strings.Split(arg, interfaces.PathSeparator) {
 		if len(part) > 0 {
@@ -100,18 +106,18 @@ func (c *FileSystem) CWDSet(arg string) bool {
 	return false
 }
 
-// CWDCommandPath returns the command path of the current working directory command.
-func (c *FileSystem) CWDCommandPath() string {
+// CallCWDCommandPath returns the command path of the current working directory command.
+func (c *FileSystem) CallCWDCommandPath(router interfaces.IRouter) string {
 	return c.cwd.CommandPath()
 }
 
-// CWDPath returns the path of the current working directory as a slice of strings.
-func (c *FileSystem) CWDPath() []string {
+// CallCWDPath returns the path of the current working directory as a slice of strings.
+func (c *FileSystem) CallCWDPath(router interfaces.IRouter) []string {
 	return c.cwd.Path()
 }
 
-// CWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
-func (c *FileSystem) CWDDirectoryListing() []string {
+// CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
+func (c *FileSystem) CallCWDDirectoryListing(router interfaces.IRouter) []string {
 	var out []string
 	for _, z := range c.cwd.DirectoryListing() {
 		out = append(out, z) // z.Name())
@@ -119,8 +125,8 @@ func (c *FileSystem) CWDDirectoryListing() []string {
 	return out
 }
 
-// Find parses and executes a given command line string, associating it with a task, and manages its lifecycle.
-func (c *FileSystem) Find(line string) (interfaces.ICommand, []string, error) {
+// CallFind parses and executes a given command line string, associating it with a task, and manages its lifecycle.
+func (c *FileSystem) CallFind(router interfaces.IRouter, line string) (interfaces.ICommand, []string, error) {
 	el, err := c.parser.Parse(line)
 	if err != nil {
 		return nil, nil, err
@@ -154,9 +160,9 @@ func (c *FileSystem) Find(line string) (interfaces.ICommand, []string, error) {
 	return sel, args, nil
 }
 
-// Help retrieves help information for a given command line string,
+// CallHelp retrieves help information for a given command line string,
 // resolving it within the current context and search paths.
-func (c *FileSystem) Help(path string) (string, error) {
+func (c *FileSystem) CallHelp(router interfaces.IRouter, path string) (string, error) {
 	var pathSegments []string
 	absolute := interfaces.IsPathAbsolute(path)
 	if !absolute {
@@ -181,9 +187,9 @@ func (c *FileSystem) Help(path string) (string, error) {
 	return sel.Help(), nil
 }
 
-// Suggestion generates command suggestions based on the provided input and current directory context.
+// CallSuggestion generates command suggestions based on the provided input and current directory context.
 // It returns the input prefix, a list of suggestions, and a boolean indicating if suggestions exist.
-func (c *FileSystem) Suggestion(in string, cursor int) (string, []string, bool) {
+func (c *FileSystem) CallSuggestion(router interfaces.IRouter, in string, cursor int) (string, []string, bool) {
 	textBeforeSegment, nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInput(c.cwd, in, cursor)
 	if err != nil || nodeToQuery == nil {
 		return "", nil, false

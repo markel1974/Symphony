@@ -1,9 +1,10 @@
 package process
 
 import (
+	"log"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
-	"log"
 )
 
 // Process represents a task or job in the system, including its context, state, associated options, and execution details.
@@ -17,12 +18,14 @@ type Process struct {
 	state       interfaces.ProcessState
 	line        string
 	messageChan chan interfaces.IMessage
+	parent      interfaces.IProcess
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
-func NewProcess(kernel interfaces.IKernel, user string, cmd interfaces.ICommand, line string) *Process {
+func NewProcess(kernel interfaces.IKernel, parent interfaces.IProcess, user string, cmd interfaces.ICommand, line string) *Process {
 	t := &Process{
 		kernel:      kernel,
+		parent:      parent,
 		user:        user,
 		cmd:         cmd,
 		context:     nil,
@@ -31,6 +34,15 @@ func NewProcess(kernel interfaces.IKernel, user string, cmd interfaces.ICommand,
 		messageChan: make(chan interfaces.IMessage, 128),
 	}
 	return t
+}
+
+func (t *Process) Process() interfaces.IProcess {
+	return t
+}
+
+// Parent retrieves the parent process of the current process instance.
+func (t *Process) Parent() interfaces.IProcess {
+	return t.parent
 }
 
 // Start begins the process by setting its state to running and initiating its event loop asynchronously.
@@ -96,107 +108,107 @@ func (t *Process) GetContext() interface{} {
 
 // CreateTimer initializes a timer with a specified start delay, repeat interval, and count for the current task.
 func (t *Process) CreateTimer(first int, interval int, count int) {
-	t.kernel.CallTimerCreate(t.pid, first, interval, count)
+	t.kernel.CallTimerCreate(t, t.pid, first, interval, count)
 }
 
 // StopTimer stops a timer identified by the given timer ID (tid) for the current task and returns true if successful.
 func (t *Process) StopTimer(tid int) {
-	t.kernel.CallTimerStop(t.pid, tid)
+	t.kernel.CallTimerStop(t, t.pid, tid)
 }
 
 // IsActive checks if the process with the specified PID is currently active in the kernel.
 func (t *Process) IsActive(pid int) bool {
-	return t.kernel.CallProcessIsActive(pid)
+	return t.kernel.CallProcessIsActive(t, pid)
 }
 
 // DeactivateForeground removes the process from the foreground state and returns true if the operation succeeds.
-func (t *Process) DeactivateForeground() bool {
-	return t.kernel.CallProcessKillForeground()
+func (t *Process) DeactivateForeground() {
+	t.kernel.CallProcessKillForeground(t)
 }
 
 // Deactivate attempts to terminate the task associated with the specified pid and returns true if successful.
-func (t *Process) Deactivate(pid int) bool {
-	return t.kernel.CallProcessKill(pid)
+func (t *Process) Deactivate(pid int) {
+	t.kernel.CallProcessKill(t, pid)
 }
 
 // DeactivateAll terminates all tasks matching the provided name and returns the count of deactivated tasks.
-func (t *Process) DeactivateAll(name string) int {
-	return t.kernel.CallProcessKillAll(name)
+func (t *Process) DeactivateAll(name string) {
+	t.kernel.CallProcessKillAll(t, name)
 }
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.
 func (t *Process) PaintRequest() {
-	t.kernel.PostMessage(messages.NewMessagePaintRequest())
+	t.kernel.PostMessage(messages.NewMessagePaintRequest(t))
 }
 
 // GetScreenSize returns the width and height of the screen as integers.
 func (t *Process) GetScreenSize() (int, int) {
-	return t.kernel.CallScreenSize()
+	return t.kernel.CallScreenSize(t)
 }
 
 // CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
 func (t *Process) CWDSet(arg string) bool {
-	return t.kernel.CallCWDSet(arg)
+	return t.kernel.CallCWDSet(t, arg)
 }
 
 // CWDName returns the current working directory name by invoking a kernel-level method.
 func (t *Process) CWDName() string {
-	return t.kernel.CallCWDName()
+	return t.kernel.CallCWDName(t)
 }
 
 // CWDGet retrieves the current working directory as a string from the associated kernel instance.
 func (t *Process) CWDGet() string {
-	return t.kernel.CallCWDGet()
+	return t.kernel.CallCWDGet(t)
 }
 
 // CWDPath retrieves the current working directory path as a slice of strings from the kernel.
 func (t *Process) CWDPath() []string {
-	return t.kernel.CallCWDPath()
+	return t.kernel.CallCWDPath(t)
 }
 
 // CWDDirectoryListing retrieves a slice of strings representing the child nodes of the current working directory (CWD).
 func (t *Process) CWDDirectoryListing() []string {
-	return t.kernel.CallCWDDirectoryListing()
+	return t.kernel.CallCWDDirectoryListing(t)
 }
 
 // Suggestion provides auto-completion suggestions based on the input string and cursor position. Returns prefix, suggestions, and a success flag.
 func (t *Process) Suggestion(in string, cursor int) (string, []string, bool) {
-	return t.kernel.CallFileSystemSuggestion(in, cursor)
+	return t.kernel.CallFileSystemSuggestion(t, in, cursor)
 }
 
 // Help calls the kernel's Help method with the provided argument and returns the result or an error.
 func (t *Process) Help(arg string) (string, error) {
-	return t.kernel.CallFileSystemHelp(arg)
+	return t.kernel.CallFileSystemHelp(t, arg)
 }
 
 // ProcessExec executes a task based on the provided command line input and returns a success status and any execution error.
-func (t *Process) ProcessExec(line string) (bool, error) {
-	return t.kernel.CallProcessExec(t.user, line)
+func (t *Process) ProcessExec(line string) {
+	t.kernel.PostMessage(messages.NewMessageProcessExec(t, line))
 }
 
 // WindowsSelectionBegin updates the task selection for the given process ID by invoking the kernel's task selection method.
 func (t *Process) WindowsSelectionBegin() {
-	t.kernel.CallWindowsSelectionBegin()
+	t.kernel.CallWindowsSelectionBegin(t)
 }
 
 // WindowsSelectionEnd finalizes the current text selection process within the Windows environment for the associated process.
 func (t *Process) WindowsSelectionEnd() {
-	t.kernel.CallWindowsSelectionEnd()
+	t.kernel.CallWindowsSelectionEnd(t)
 }
 
 // WindowsSelectionPrevious moves the task selection pointer to the previous task in the list within the Process.
 func (t *Process) WindowsSelectionPrevious() {
-	t.kernel.CallWindowsSelectionPrevious()
+	t.kernel.CallWindowsSelectionPrevious(t)
 }
 
 // WindowsSelectionNext moves the task selection to the next task in the sequence by invoking the kernel method.
 func (t *Process) WindowsSelectionNext() {
-	t.kernel.CallWindowsSelectionNext()
+	t.kernel.CallWindowsSelectionNext(t)
 }
 
 // WindowsSelectionOptions configures selection behavior for the task based on the provided option and value.
 func (t *Process) WindowsSelectionOptions(option rune, value float64) {
-	t.kernel.CallWindowsSelectionOptions(option, value)
+	t.kernel.CallWindowsSelectionOptions(t, option, value)
 }
 
 // SetId sets the task's process ID, updates the caption, and appends the label if it exists.
@@ -214,83 +226,83 @@ func (t *Process) Paint(surface interfaces.ISurface) {
 }
 
 // ProcessSetForeground sets the foreground task by specifying its PID and returns true if successfully set.
-func (t *Process) ProcessSetForeground(pid int) bool {
-	return t.kernel.CallProcessSetForeground(pid)
+func (t *Process) ProcessSetForeground(pid int) {
+	t.kernel.PostMessage(messages.NewMessageProcessSetForeground(t, pid))
 }
 
 // ProcessList returns a string representation of the task list from the kernel.
 func (t *Process) ProcessList() []*interfaces.ProcessDescription {
-	return t.kernel.CallProcessList()
+	return t.kernel.CallProcessList(t)
 }
 
 // WritePromptEOL writes the provided prompt followed by an end-of-line character if the eol parameter is true.
 func (t *Process) WritePromptEOL(prompt string, eol bool) {
-	t.kernel.CallWritePromptEOL(prompt, eol)
+	t.kernel.CallWritePromptEOL(t, prompt, eol)
 }
 
 // WritePromptLine sends a specified prompt and line string to the kernel for handling the output display.
 func (t *Process) WritePromptLine(prompt string, line string) {
-	t.kernel.CallWritePromptLine(prompt, line)
+	t.kernel.CallWritePromptLine(t, prompt, line)
 }
 
 // Write sends the provided string data to the kernel's write mechanism associated with the task.
 func (t *Process) Write(data string) {
-	t.kernel.CallWrite(data)
+	t.kernel.CallWrite(t, data)
 }
 
 // WriteLn writes the specified data followed by a new line to the task's output stream via the kernel.
 func (t *Process) WriteLn(data string) {
-	t.kernel.CallWriteLn(data)
+	t.kernel.CallWriteLn(t, data)
 }
 
 // WriteColor writes a string to the output with specified foreground, background colors, and a color mode.
 func (t *Process) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	t.kernel.CallWriteColor(data, fg, bg, mode)
+	t.kernel.CallWriteColor(t, data, fg, bg, mode)
 }
 
 // WriteColorLn writes the provided data as a line with specified foreground and background colors and color mode.
 func (t *Process) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	t.kernel.CallWriteColorLn(data, fg, bg, mode)
+	t.kernel.CallWriteColorLn(t, data, fg, bg, mode)
 }
 
 // WriteNormal sends the provided data string to the kernel's CallWriteNormal method for processing.
 func (t *Process) WriteNormal(data string) {
-	t.kernel.CallWriteNormal(data)
+	t.kernel.CallWriteNormal(t, data)
 }
 
 // WriteHighlights writes the provided highlight information to the underlying kernel for further processing.
 func (t *Process) WriteHighlights(data string) {
-	t.kernel.CallWriteHighlights(data)
+	t.kernel.CallWriteHighlights(t, data)
 }
 
 // WriteCritical sends critical data to the kernel for logging or processing in a thread-safe manner.
 func (t *Process) WriteCritical(data string) {
-	t.kernel.CallWriteCritical(data)
+	t.kernel.CallWriteCritical(t, data)
 }
 
 // MoveCursorLeft moves the cursor one position to the left within the render context.
 func (t *Process) MoveCursorLeft() {
-	t.kernel.CallMoveCursorLeft()
+	t.kernel.CallMoveCursorLeft(t)
 }
 
 // MoveCursorRight moves the cursor one position to the right by invoking the render's MoveCursorRight method.
 func (t *Process) MoveCursorRight() {
-	t.kernel.CallMoveCursorRight()
+	t.kernel.CallMoveCursorRight(t)
 }
 
 // SaveCursor saves the current cursor state by invoking the SaveCursor method on the associated renderer.
 func (t *Process) SaveCursor() {
-	t.kernel.CallSaveCursor()
+	t.kernel.CallSaveCursor(t)
 }
 
 // RestoreCursor restores the cursor to its previous position using the render instance of the Kernel.
 func (t *Process) RestoreCursor() {
-	t.kernel.CallRestoreCursor()
+	t.kernel.CallRestoreCursor(t)
 }
 
 // ClearScreen clears the task's screen by delegating the request to the associated kernel.
 func (t *Process) ClearScreen() {
-	t.kernel.CallClearScreen()
+	t.kernel.CallClearScreen(t)
 }
 
 func (t *Process) RequestProcessList() []*interfaces.ProcessDescription {
@@ -303,7 +315,7 @@ func (t *Process) RequestProcessList() []*interfaces.ProcessDescription {
 
 // SetExit signals the kernel that an exit is requested for the task.
 func (t *Process) SetExit() {
-	t.kernel.CallExitRequested()
+	t.kernel.CallExitRequested(t)
 }
 
 // PostMessage sends the provided message to the message channel for processing.
@@ -362,15 +374,14 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 		if !ok {
 			return
 		}
+		if !t.GetCommand().Background() {
+			t.kernel.PostMessage(messages.NewMessageProcessSetForeground(t, t.PID()))
+		}
 		_ = t.GetCommand().Execute(t, mt.Args())
 		if !t.cmd.Daemon() {
-			t.kernel.CallProcessKill(t.pid)
+			t.kernel.PostMessage(messages.NewMessageMessageProcessExit(t))
 			return
 		}
-		if t.GetCommand().Background() {
-			t.kernel.CallProcessSetForeground(t.pid)
-		}
-
 	case interfaces.MessageTypeProcessActivate:
 		_, ok := msg.(*messages.MessageProcessActivate)
 		if !ok {
@@ -379,8 +390,6 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 		if activate := t.GetCommand().OnActivate(); activate != nil {
 			activate(t)
 		}
-		//t.kernel.CallWriteLn("")
-		//_ = t.GetCommand().Execute(t, mt.Args())
 	default:
 		log.Printf("unknown message type: %d", msg.GetType())
 	}

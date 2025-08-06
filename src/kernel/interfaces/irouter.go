@@ -6,4 +6,6 @@ type IRouter interface {
 	PID() int
 
 	User() string
+
+	Process() IProcess
 }

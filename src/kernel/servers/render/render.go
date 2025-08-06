@@ -2,10 +2,11 @@ package render
 
 import (
 	"bytes"
-	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"log"
 	"sort"
+
+	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 // eol represents the end-of-line marker used for denoting line breaks in the output, set to "\r\n".
@@ -47,6 +48,11 @@ func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
 	return r
 }
 
+// Process returns a nil pointer to the Render object.
+func (c *Render) Process() interfaces.IProcess {
+	return nil
+}
+
 // PID returns a hardcoded integer value representing a Process ID.
 func (c *Render) PID() int {
 	return -1
@@ -80,19 +86,19 @@ func (c *Render) Register() []interfaces.MessageType {
 }
 
 // CallGetScreenSize returns the current screen width and height of the Render instance.
-func (c *Render) CallGetScreenSize() (int, int) {
+func (c *Render) CallGetScreenSize(router interfaces.IRouter) (int, int) {
 	return c.width, c.height
 }
 
 // CallSetScreenSize updates the screen's width and height, marks the screen for a full repaint, and sets the terminal size.
-func (c *Render) CallSetScreenSize(width int, height int) {
+func (c *Render) CallSetScreenSize(router interfaces.IRouter, width int, height int) {
 	c.width = width
 	c.height = height
 	c.fullPaint = true
 }
 
 // CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
-func (c *Render) CallWindowsSelectionBegin() {
+func (c *Render) CallWindowsSelectionBegin(router interfaces.IRouter) {
 	c.windowSelector.Clear()
 	for idx, process := range c.running {
 		c.windowSelector.AddAvailable(process.PID())
@@ -106,120 +112,120 @@ func (c *Render) CallWindowsSelectionBegin() {
 			}
 		}
 	}
-	c.handlePaintRequest(false)
+	c.handlePaintRequest(router, false)
 }
 
 // CallWindowsSelectionOptions modifies window selection options for a process and triggers a paint request if necessary.
-func (c *Render) CallWindowsSelectionOptions(option rune, value float64) {
+func (c *Render) CallWindowsSelectionOptions(router interfaces.IRouter, option rune, value float64) {
 	process, _ := c.running[c.windowSelector.PID()]
 	if process == nil {
 		return
 	}
 	process.surface.SetOption(option, value)
-	c.handlePaintRequest(true)
+	c.handlePaintRequest(router, true)
 }
 
 // CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
-func (c *Render) CallWindowsSelectionPrevious() {
+func (c *Render) CallWindowsSelectionPrevious(router interfaces.IRouter) {
 	if c.windowSelector.Prev() {
-		c.handlePaintRequest(false)
+		c.handlePaintRequest(router, false)
 	}
 }
 
 // CallWindowsSelectionNext moves the task selection to the next task and triggers a render update if successful.
-func (c *Render) CallWindowsSelectionNext() {
+func (c *Render) CallWindowsSelectionNext(router interfaces.IRouter) {
 	if c.windowSelector.Next() {
-		c.handlePaintRequest(false)
+		c.handlePaintRequest(router, false)
 	}
 }
 
 // CallWindowsSelectionEnd clears the current selection in the windowSelector instance of the Render object.
-func (c *Render) CallWindowsSelectionEnd() {
+func (c *Render) CallWindowsSelectionEnd(router interfaces.IRouter) {
 	c.windowSelector.Clear()
 }
 
 // CallWrite sends the given string data to the terminal's output stream.
-func (c *Render) CallWrite(data string) {
+func (c *Render) CallWrite(router interfaces.IRouter, data string) {
 	_, _ = c.driver.Write([]byte(data))
 }
 
 // CallWriteLn writes the provided string to the terminal followed by an end-of-line character.
-func (c *Render) CallWriteLn(data string) {
+func (c *Render) CallWriteLn(router interfaces.IRouter, data string) {
 	_, _ = c.driver.Write([]byte(data))
 	_, _ = c.driver.Write([]byte(eolDef))
 }
 
 // CallWriteColor writes the given data string to the terminal with specified foreground and background colors, and color mode.
-func (c *Render) CallWriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
+func (c *Render) CallWriteColor(router interfaces.IRouter, data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
 	p := c.driver.CreateColorize(data, int(fg), int(bg), mode)
 	_, _ = c.driver.Write([]byte(p))
 }
 
 // CallWriteColorLn writes the given text with specified foreground and background colors and mode, followed by a line break.
-func (c *Render) CallWriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
+func (c *Render) CallWriteColorLn(router interfaces.IRouter, data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
 	p := c.driver.CreateColorize(data, int(fg), int(bg), mode)
 	_, _ = c.driver.Write([]byte(p))
 	_, _ = c.driver.Write([]byte(eolDef))
 }
 
 // CallClearScreen clears the terminal screen using the underlying ITerminal implementation.
-func (c *Render) CallClearScreen() {
+func (c *Render) CallClearScreen(router interfaces.IRouter) {
 	p := c.driver.CreateClearScreen()
 	_, _ = c.driver.Write(p)
 }
 
 // CallSaveCursor saves the current cursor position in the terminal for future restoration.
-func (c *Render) CallSaveCursor() {
+func (c *Render) CallSaveCursor(router interfaces.IRouter) {
 	p := c.driver.CreateSaveCursor()
 	_, _ = c.driver.Write(p)
 }
 
 // CallRestoreCursor restores the saved cursor position in the terminal using the associated ITerminal implementation.
-func (c *Render) CallRestoreCursor() {
+func (c *Render) CallRestoreCursor(router interfaces.IRouter) {
 	p := c.driver.CreateRestoreCursor()
 	_, _ = c.driver.Write(p)
 }
 
 // CallMoveCursorLeft moves the terminal cursor one position to the left using the underlying terminal implementation.
-func (c *Render) CallMoveCursorLeft() {
+func (c *Render) CallMoveCursorLeft(router interfaces.IRouter) {
 	p := c.driver.CreateMoveCursorLeft()
 	_, _ = c.driver.Write(p)
 }
 
 // CallMoveCursorRight moves the cursor one position to the right in the terminal.
-func (c *Render) CallMoveCursorRight() {
+func (c *Render) CallMoveCursorRight(router interfaces.IRouter) {
 	p := c.driver.CreateMoveCursorRight()
 	_, _ = c.driver.Write(p)
 }
 
 // CallWritePromptLine clears the given line and writes the prompt and line with specified color and mode configurations.
-func (c *Render) CallWritePromptLine(prompt string, line string) {
+func (c *Render) CallWritePromptLine(router interfaces.IRouter, prompt string, line string) {
 	c.clearLine(line)
-	c.CallWriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-	c.CallWriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.CallWriteColor(router, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.CallWriteColor(router, line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
 // CallWritePromptEOL writes the provided prompt with green color and optionally appends an end-of-line marker if enabled.
-func (c *Render) CallWritePromptEOL(prompt string, eol bool) {
+func (c *Render) CallWritePromptEOL(router interfaces.IRouter, prompt string, eol bool) {
 	if eol {
-		c.CallWriteColor(eolDef, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+		c.CallWriteColor(router, eolDef, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 	}
-	c.CallWriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.CallWriteColor(router, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
 // CallWriteCritical writes a critical log line with predefined red color and normal mode formatting.
-func (c *Render) CallWriteCritical(line string) {
-	c.CallWriteColor(line, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+func (c *Render) CallWriteCritical(router interfaces.IRouter, line string) {
+	c.CallWriteColor(router, line, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
 // CallWriteNormal writes a line with default colors and normal mode configuration using the CallWriteColor method.
-func (c *Render) CallWriteNormal(line string) {
-	c.CallWriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+func (c *Render) CallWriteNormal(router interfaces.IRouter, line string) {
+	c.CallWriteColor(router, line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
 }
 
 // CallWriteHighlight writes the given line with default blue foreground, red background, and normal display mode.
-func (c *Render) CallWriteHighlight(line string) {
-	c.CallWriteColor(line, interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
+func (c *Render) CallWriteHighlight(router interfaces.IRouter, line string) {
+	c.CallWriteColor(router, line, interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
 }
 
 // clearLine clears the specified line from the terminal screen using the terminal implementation of the associated Render object.
@@ -274,7 +280,7 @@ func (c *Render) eventLoop(r chan bool) {
 				}
 				switch m.GetType() {
 				case interfaces.MessageTypePaintRequest:
-					c.handlePaintRequest(false)
+					c.handlePaintRequest(m.Router(), false)
 				default:
 					log.Printf("Unknown message type: %v\n", m.GetType())
 				}
@@ -285,11 +291,11 @@ func (c *Render) eventLoop(r chan bool) {
 
 // CallPaintExec executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
 // Returns true if the rendering process is executed, false otherwise.
-func (c *Render) handlePaintExec() {
+func (c *Render) handlePaintExec(router interfaces.IRouter) {
 	if !c.dirty {
 		return
 	}
-	w, h := c.CallGetScreenSize()
+	w, h := c.CallGetScreenSize(router)
 	fullPaint := c.fullPaint
 	c.fullPaint = false
 	rMax := 0
@@ -324,21 +330,21 @@ func (c *Render) handlePaintExec() {
 	}
 	c.surface.GetBuffer(&lines)
 
-	c.CallSaveCursor()
+	c.CallSaveCursor(router)
 	c.moveCursorTopLeft()
-	c.CallWrite(string(lines.Bytes()))
-	c.CallRestoreCursor()
+	c.CallWrite(router, string(lines.Bytes()))
+	c.CallRestoreCursor(router)
 
 	c.dirty = false
 }
 
 // handlePaintRequest triggers a paint request by marking the object as dirty and setting up the necessary ticker for repainting.
-func (c *Render) handlePaintRequest(full bool) {
+func (c *Render) handlePaintRequest(router interfaces.IRouter, full bool) {
 	if full {
 		c.fullPaint = true
 	}
 	if !c.dirty {
 		c.dirty = true
-		c.handlePaintExec()
+		c.handlePaintExec(router)
 	}
 }

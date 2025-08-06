@@ -6,8 +6,8 @@ type MessageExitRequested struct {
 	interfaces.Message
 }
 
-func NewMessageExitRequested() *MessageExitRequested {
+func NewMessageExitRequested(router interfaces.IRouter) *MessageExitRequested {
 	return &MessageExitRequested{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeExitRequested),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeExitRequested),
 	}
 }

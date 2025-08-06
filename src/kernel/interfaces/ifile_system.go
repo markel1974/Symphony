@@ -3,21 +3,21 @@ package interfaces
 type IFileSystem interface {
 	IServer
 
-	AddSearchPath(sp ICommand)
+	CallAddSearchPath(router IRouter, sp ICommand)
 
-	CWDName() string
+	CallCWDName(router IRouter) string
 
-	CWDSet(arg string) bool
+	CallCWDSet(router IRouter, arg string) bool
 
-	CWDCommandPath() string
+	CallCWDCommandPath(router IRouter) string
 
-	CWDPath() []string
+	CallCWDPath(router IRouter) []string
 
-	CWDDirectoryListing() []string
+	CallCWDDirectoryListing(router IRouter) []string
 
-	Find(line string) (ICommand, []string, error)
+	CallFind(router IRouter, line string) (ICommand, []string, error)
 
-	Help(path string) (string, error)
+	CallHelp(router IRouter, path string) (string, error)
 
-	Suggestion(in string, cursor int) (string, []string, bool)
+	CallSuggestion(router IRouter, in string, cursor int) (string, []string, bool)
 }
