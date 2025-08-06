@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package games
 
 import (
@@ -20,6 +6,8 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
+// CreateInvaders initializes and returns a new process.Command for the "Invaders" game.
+// It sets up handlers for creation, input, timers, and rendering.
 func CreateInvaders() *process.Command {
 	onCreate := func(task interfaces.IProcess, args []string) error {
 		w, h := task.GetScreenSize()

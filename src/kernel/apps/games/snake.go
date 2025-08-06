@@ -1,17 +1,3 @@
-/*
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package games
 
 import (
@@ -20,6 +6,8 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
+// CreateSnake initializes a new command for the Snake game and sets up event handlers for input, painting, timers, and creation.
+// It returns a pointer to a configured process.Command ready to run the Snake game.
 func CreateSnake() *process.Command {
 	onCreate := func(task interfaces.IProcess, args []string) error {
 		w, h := task.GetScreenSize()
