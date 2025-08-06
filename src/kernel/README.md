@@ -6,7 +6,7 @@ The **Symphony MicroKernel Module** is an advanced, Go-based framework for creat
 
 The framework simulates a complete **multitasking, windowed TUI environment** directly within the terminal. This allows users to manage concurrent processes, interact with a hierarchical command system, and dynamically inspect and modify the host application's state.
 
-More than just a shell toolkit, Symphony is a framework for building **resilient, transparent, and debuggable-by-design systems**. Its core philosophy is that a complex application must be fully introspectable and controllable at runtime. This turns the shell into a powerful live diagnostics, debugging, and recovery console, allowing developers to investigate and even resolve issues in live systems where traditional logging and debugging may fall short.
+More than just a shell toolkit, Symphony is a framework for building **resilient, transparent, and debuggable-by-design systems**. Its core philosophy is that a complex application must be fully introspectable and controllable at runtime. This turns the shell into a powerful live diagnostics and recovery console, empowering developers to move beyond post-mortem log analysis and perform interactive 'software surgery'. Using this approach, complex issues that are invisible to traditional logging and telemetry can be **diagnosed, confirmed, and even temporarily patched on a live system in minutes.**
 
 ---
 
@@ -19,6 +19,14 @@ The project fully embraces a **microkernel design philosophy**: a minimal, robus
 * **Task Management (`kernel/process/process.go`)**: Every command or application runs as a concurrent `Task` (implementing `IProcess`), complete with its own PID, isolated context, and state.
 * **The Shell as a User Process (`xsh`)**: As a testament to the purity of the design, the main shell (`xsh`) is not part of the kernel but is itself an application that runs as a regular "Task". On boot, the kernel simply launches the `xsh` process to provide the user interface.
 * **Interface-Driven Design (`kernel/interfaces/`)**: The entire system is built upon a foundation of interfaces (`IProcess`, `ICommand`, `IRender`, `IFileSystem`), ensuring a clean separation of concerns and promoting high cohesion and low coupling.
+
+### True Asynchronous IPC via Message Queues
+
+True to the microkernel philosophy, the system avoids direct function calls between the kernel and its processes. Instead, it relies on a robust, asynchronous message-passing mechanism that ensures true process isolation:
+
+* **Dedicated Event Queues**: Every running process (`IProcess`) is equipped with its own dedicated Go channel (`messageChan`), which serves as a private, buffered event queue.
+* **Kernel as a Dispatcher**: The Kernel acts purely as a central message dispatcher. When an event occurs (e.g., user input, a timer tick), the Kernel forwards an `IMessage` to the target process's specific message queue. It does not directly access the process's internal state or methods.
+* **Concurrent and Isolated Execution**: Each process runs its own event loop in a separate goroutine, continuously reading from its message queue. This design ensures that processes are fully isolated and truly concurrent. A slow, busy, or blocked process will not affect the Kernel or any other process in the system, leading to a highly resilient and stable multitasking environment.
 
 ---
 
