@@ -4,10 +4,10 @@ package interfaces
 type MessageType int
 
 const (
-	MessageTypeRead MessageType = iota
+	MessageTypeError MessageType = iota
+	MessageTypeRead
 	MessageTypeTimer
 	MessageTypeTimedMessage
-	//MessageTypePaint
 	MessageTypePaintRequest
 	MessageTypeQuit
 	MessageTypeProcessExec

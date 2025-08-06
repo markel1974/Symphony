@@ -6,11 +6,20 @@ import (
 )
 
 func CreateXShell() *process.Command {
+
 	onCreate := func(process interfaces.IProcess, args []string) error {
 		s := NewXShell("% ", true)
 		process.SetContext(s)
 		s.Start(process)
 		return nil
+	}
+	onError := func(process interfaces.IProcess, err error) {
+		ctx := process.GetContext()
+		s, ok := ctx.(*XShell)
+		if !ok {
+			return
+		}
+		s.ErrorHandler(process, err)
 	}
 	onRead := func(process interfaces.IProcess, code int, key rune) {
 		ctx := process.GetContext()
@@ -38,6 +47,7 @@ func CreateXShell() *process.Command {
 	}
 	root := process.NewCommand("xsh", interfaces.CommandTypeFile, nil, true, onCreate)
 	root.SetHelp("XShell", "XShell")
+	root.SetOnError(onError)
 	root.SetOnRead(onRead)
 	root.SetOnReadBroadcast(onReadBroast)
 	root.SetOnActivate(onActivate)

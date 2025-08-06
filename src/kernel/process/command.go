@@ -3,9 +3,10 @@ package process
 import (
 	"errors"
 	"fmt"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"sort"
 	"strings"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 // Command represents a structured command with metadata, associated functions, and subcommands in a CLI application.
@@ -18,7 +19,8 @@ type Command struct {
 	suggestionsMinimumDistance int
 	daemon                     bool
 	background                 bool
-	run                        interfaces.OnRun
+	errorEvent                 interfaces.OnError
+	runEvent                   interfaces.OnRun
 	timerEvent                 interfaces.OnTimer
 	readEvent                  interfaces.OnRead
 	readBroadcastEvent         interfaces.OnRead
@@ -29,9 +31,9 @@ type Command struct {
 }
 
 // NewCommand creates a new Command instance with the specified name, type, aliases, daemon status, and execution function.
-func NewCommand(name string, kind interfaces.CommandType, aliases []string, daemon bool, run interfaces.OnRun) *Command {
-	if run == nil {
-		run = func(task interfaces.IProcess, args []string) error {
+func NewCommand(name string, kind interfaces.CommandType, aliases []string, daemon bool, runEvent interfaces.OnRun) *Command {
+	if runEvent == nil {
+		runEvent = func(task interfaces.IProcess, args []string) error {
 			return nil
 		}
 	}
@@ -39,11 +41,11 @@ func NewCommand(name string, kind interfaces.CommandType, aliases []string, daem
 		name = name[:i]
 	}
 	return &Command{
-		name:    name,
-		kind:    kind,
-		aliases: aliases,
-		daemon:  daemon,
-		run:     run,
+		name:     name,
+		kind:     kind,
+		aliases:  aliases,
+		daemon:   daemon,
+		runEvent: runEvent,
 	}
 }
 
@@ -64,6 +66,11 @@ func (c *Command) DirectoryListing() []string {
 		out = append(out, cmd.Name())
 	}
 	return out
+}
+
+// OnError returns the error event handler associated with the Command instance.
+func (c *Command) OnError() interfaces.OnError {
+	return c.errorEvent
 }
 
 // OnPaint returns the OnPaint associated with the command, which handles rendering or drawing operations.
@@ -91,6 +98,11 @@ func (c *Command) OnActivate() interfaces.OnActivate {
 	return c.activateEvent
 }
 
+// SetOnError sets a callback function to handle errors that occur during the execution of the command.
+func (c *Command) SetOnError(fn interfaces.OnError) {
+	c.errorEvent = fn
+}
+
 // SetOnRead sets the function to handle read-related events for the command.
 func (c *Command) SetOnRead(fn interfaces.OnRead) {
 	c.readEvent = fn
@@ -116,12 +128,12 @@ func (c *Command) SetOnActivate(fn interfaces.OnActivate) {
 	c.activateEvent = fn
 }
 
-// Daemon returns whether the command is configured to run in daemon mode.
+// Daemon returns whether the command is configured to runEvent in daemon mode.
 func (c *Command) Daemon() bool {
 	return c.daemon
 }
 
-// Background returns true if the command is marked to run in the background.
+// Background returns true if the command is marked to runEvent in the background.
 func (c *Command) Background() bool {
 	return c.background
 }
@@ -245,7 +257,7 @@ func (c *Command) Traverse(path []string) interfaces.ICommand {
 
 // Execute runs the command using the provided task and arguments, returning an error if execution fails.
 func (c *Command) Execute(task interfaces.IProcess, arg []string) error {
-	if err := c.run(task, arg); err != nil {
+	if err := c.runEvent(task, arg); err != nil {
 		return err
 	}
 	return nil

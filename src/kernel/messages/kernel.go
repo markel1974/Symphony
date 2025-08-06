@@ -4,6 +4,24 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
+type MessageError struct {
+	interfaces.Message
+	err error
+}
+
+// NewMessageError creates and returns a new MessageQuit instance with the MessageType set to MessageTypeQuit.
+func NewMessageError(router interfaces.IRouter, err error) *MessageError {
+	return &MessageError{
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeError),
+		err:     err,
+	}
+}
+
+// Error returns the error associated with the MessageError instance.
+func (m *MessageError) Error() error {
+	return m.err
+}
+
 // MessageQuit represents a message signaling a quit operation or system termination.
 // It embeds the base Message type and sets its kind to MessageTypeQuit.
 type MessageQuit struct {

@@ -347,6 +347,14 @@ func (t *Process) eventLoop(r chan bool) {
 // handleMessage processes incoming messages based on their type and executes corresponding logic or logs an error.
 func (t *Process) handleMessage(msg interfaces.IMessage) {
 	switch msg.GetType() {
+	case interfaces.MessageTypeError:
+		mt, ok := msg.(*messages.MessageError)
+		if !ok {
+			return
+		}
+		if onError := t.GetCommand().OnError(); onError != nil {
+			onError(t, mt.Error())
+		}
 	case interfaces.MessageTypeTimer:
 		mt, ok := msg.(*messages.MessageTimer)
 		if !ok {

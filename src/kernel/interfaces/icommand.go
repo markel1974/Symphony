@@ -31,6 +31,8 @@ type ICommand interface {
 
 	OnActivate() OnActivate
 
+	OnError() OnError
+
 	OnTimer() OnTimer
 
 	SetOnActivate(fn OnActivate)

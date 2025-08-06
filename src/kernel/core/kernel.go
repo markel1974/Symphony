@@ -316,7 +316,7 @@ func (c *Kernel) CallTimerStop(router interfaces.IRouter, pid int, tid int) {
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
-	_ = c.doProcessExec(c, c.user, c.shellPath)
+	c.doProcessExec(c, c.user, c.shellPath)
 	d := make(chan bool)
 	go func() {
 		d <- true
@@ -421,7 +421,7 @@ func (c *Kernel) handleProcessExec(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	_ = c.doProcessExec(mt.Router(), mt.Router().User(), mt.Line())
+	c.doProcessExec(mt.Router(), mt.Router().User(), mt.Line())
 }
 
 // handleProcessSetForeground handles a process set foreground message by setting the foreground process to the specified process.
@@ -446,15 +446,17 @@ func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
 
 // doProcessExec executes a process by creating it, assigning a pid, and starting it with the given user and input line.
 // Configures the command arguments, initializes the process, and notifies servers about its creation.
-func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line string) error {
+func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line string) {
 	cmd, args, err := c.fsServer.CallFind(router, line)
 	if err != nil {
-		return fmt.Errorf("error creating task: invalid command '%s'", line)
+		router.PostMessage(messages.NewMessageError(router, fmt.Errorf("error creating task: invalid command '%s'", line)))
+		return
 	}
 	parent, _ := c.running[router.PID()]
 	process := c.pf.Create(parent, user, cmd, line)
 	if !c.pidGenerator.Set(process) {
-		return fmt.Errorf("error creating task: can't set pid")
+		router.PostMessage(messages.NewMessageError(router, fmt.Errorf("error creating task: can't set pid")))
+		return
 	}
 	c.running[process.PID()] = process
 	process.Setup()
@@ -462,7 +464,6 @@ func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line stri
 		server.NotifyProcessCreation(process.Description())
 	}
 	process.PostMessage(messages.NewMessageProcessStart(router, args))
-	return nil
 }
 
 // doProcessSetForeground sets the specified process as the foreground process and sends activation messages if needed.

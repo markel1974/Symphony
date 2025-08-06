@@ -1,5 +1,8 @@
 package interfaces
 
+// OnError defines a function type that handles errors that occur during task execution.
+type OnError func(task IProcess, err error)
+
 // OnRun defines a function type that performs a task execution with given arguments and returns an error if any occurs.
 type OnRun func(task IProcess, args []string) error
 

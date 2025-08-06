@@ -41,7 +41,13 @@ func NewXShell(prompt string, autosave bool) *XShell {
 // Start initializes the console session, sets the prompt prefix, and prepares for user interaction.
 func (c *XShell) Start(process interfaces.IProcess) {
 	process.WriteHighlights("Admin Console Ready")
-	c.nextLine(process, true)
+	process.WriteLn("")
+}
+
+// ErrorHandler handles errors by writing the error message to the process output and proceeding to the next line.
+func (c *XShell) ErrorHandler(process interfaces.IProcess, err error) {
+	process.WriteLn(err.Error())
+	c.nextLine(process, false)
 }
 
 // ActivateHandler triggers the processing loop for the specified process, ensuring the next line is handled without a delay.
