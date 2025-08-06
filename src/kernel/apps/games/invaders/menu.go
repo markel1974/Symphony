@@ -1,8 +1,9 @@
 package invaders
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"strings"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 // menuPad defines the padding value for the menu layout.

@@ -1,26 +1,32 @@
 package invaders
 
 import (
+	"math/rand"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
-	"math/rand"
 )
 
+// starSymbol represents the character used as a symbol for a star.
+// numStars defines the total number of stars.
 const (
 	starSymbol = '.'
 	numStars   = 50
 )
 
+// NewStar creates a new star entity with specified position, symbol, color, and speed properties.
 func NewStar(x int, y int, symbol rune, color string, speed float64) *matrix.Entity {
 	s := matrix.NewEntity(symbol, x, y, 0.5, speed, speed, []string{color}, -1)
 	return s
 }
 
+// Stars represents a collection of entities and their spatial hierarchy within an AABB tree for efficient operations.
 type Stars struct {
 	data []*matrix.Entity
 	tree *matrix.AABBTree
 }
 
+// NewStars creates and initializes a new Stars instance with a pre-allocated AABBTree and an entity slice.
 func NewStars() *Stars {
 	s := &Stars{
 		tree: matrix.NewAABBTree(numStars),
@@ -29,6 +35,7 @@ func NewStars() *Stars {
 	return s
 }
 
+// Update adds, updates, or replaces stars in the collection, ensuring they remain within boundaries and handle collisions.
 func (s *Stars) Update(w int, h int, fc uint8) {
 	if len(s.data) != cap(s.data) && fc%3 == 0 {
 		n := len(s.data)
@@ -62,6 +69,7 @@ func (s *Stars) Update(w int, h int, fc uint8) {
 	}
 }
 
+// Draw iterates over all entities in the Stars data and renders them onto the provided ISurface instance.
 func (s *Stars) Draw(surface interfaces.ISurface) {
 	for _, s := range s.data {
 		s.Draw(surface)
@@ -69,6 +77,7 @@ func (s *Stars) Draw(surface interfaces.ISurface) {
 	}
 }
 
+// randColor generates a random color by selecting one of six predefined color constants from the ColorDef type.
 func (s *Stars) randColor() interfaces.ColorDef {
 	z := rand.Intn(6)
 	color := interfaces.ColorWhiteDef
@@ -91,6 +100,8 @@ func (s *Stars) randColor() interfaces.ColorDef {
 	return color
 }
 
+// randSymbol generates a random symbol, velocity, and color combination for a star object.
+// Returns a rune representing the symbol, a float64 velocity value, and a string for the color.
 func (s *Stars) randSymbol() (rune, float64, string) {
 	var z = rand.Intn(9)
 	var symbol = starSymbol

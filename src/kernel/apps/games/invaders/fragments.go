@@ -1,11 +1,13 @@
 package invaders
 
 import (
+	"math/rand"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
-	"math/rand"
 )
 
+// fragmentLifetime defines the lifespan of a fragment in an arbitrary unit of time.
 const (
 	fragmentLifetime       = 15
 	fragmentNum            = 10
@@ -16,6 +18,7 @@ const (
 	fragmentLifetimeUpdate = 2
 )
 
+// Fragment represents a movable 2D object composed of a point, life duration, and associated visual sprites.
 type Fragment struct {
 	matrix.Point
 	life     int
@@ -23,6 +26,7 @@ type Fragment struct {
 	fragment string
 }
 
+// NewFragment creates and initializes a new Fragment at the given coordinates with specified life and number of sprites.
 func NewFragment(x int, y int, life int, fragments int) Fragment {
 	f := Fragment{
 		Point:   matrix.NewPointFloat(float64(x), float64(y)),
@@ -32,23 +36,28 @@ func NewFragment(x int, y int, life int, fragments int) Fragment {
 	return f
 }
 
+// Fragments is a collection of Fragment instances used to manage and organize multiple fragments in the game.
 type Fragments struct {
 	data []*Fragment
 }
 
+// NewFragments creates and returns an initialized instance of Fragments.
 func NewFragments() *Fragments {
 	return &Fragments{}
 }
 
+// Setup initializes the Fragments instance by creating an empty slice for storing Fragment pointers.
 func (f *Fragments) Setup() {
 	f.data = make([]*Fragment, 0)
 }
 
+// AddFragment creates a new fragment at the specified (x, y) coordinates and appends it to the fragments list.
 func (f *Fragments) AddFragment(x int, y int) {
 	fg := NewFragment(x, y, 0, fragmentNum)
 	f.data = append(f.data, &fg)
 }
 
+// Update updates the state of fragments by removing expired ones, updating their properties, and regenerating sprites.
 func (f *Fragments) Update() {
 	var fragmentsCopy = make([]*Fragment, 0)
 	for i := range f.data {
@@ -72,6 +81,7 @@ func (f *Fragments) Update() {
 	}
 }
 
+// Draw renders all sprites from each fragment in the Fragments object onto the given ISurface and advances their frames.
 func (f *Fragments) Draw(surface interfaces.ISurface) {
 	for i := range f.data {
 		for _, sprite := range f.data[i].sprites {
@@ -81,6 +91,7 @@ func (f *Fragments) Draw(surface interfaces.ISurface) {
 	}
 }
 
+// randSprite generates a random sprite color code as a string from predefined options based on a random integer.
 func (f *Fragments) randSprite() string {
 	var z = rand.Intn(10)
 	var color string

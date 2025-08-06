@@ -12,42 +12,8 @@ func NewRanking() *Ranking {
 	for _, i := range ranking.scores {
 		ranking.scores[i] = 0
 	}
-	/*
-		if fileExists(configFilePath()) {
-			buf, err := ioutil.ReadFile(configFilePath())
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			scoreTexts := strings.Split(string(buf), ",")
-			for idx, text := range scoreTexts {
-				num, err := strconv.Atoi(text)
-				if err != nil {
-					log.Fatal(err)
-				}
-				ranking.scores[idx] = num
-			}
-		} else {
-			for i := 0; i < 10; i++ {
-				ranking.scores[i] = 0
-			}
-		}
-
-	*/
 	return ranking
 }
-
-/*
-// save writes the current scores of the Ranking to a configuration file as a comma-separated string.
-func (r *Ranking) save() {
-	var texts []string
-	for _, sc := range r.scores {
-		texts = append(texts, strconv.Itoa(sc))
-	}
-	config := strings.Join(texts, ",")
-	_ = ioutil.WriteFile(configFilePath(), []byte(config), 0644)
-}
-*/
 
 // insertScore inserts a score into the ranking's score list while maintaining a sorted order.
 // If the new score surpasses an existing one, it shifts scores and inserts it into the correct position.
@@ -67,20 +33,3 @@ func (r *Ranking) slideScores(index int) {
 		r.scores[i] = r.scores[i-1]
 	}
 }
-
-/*
-// fileExists checks if a file exists at the given filename path. Returns true if the file exists, otherwise false.
-func fileExists(filename string) bool {
-	_, err := os.Stat(filename)
-	return !os.IsNotExist(err)
-}
-
-// configFilePath returns the file path to the user's configuration file located in their home directory.
-func configFilePath() string {
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return filepath.Join(usr.HomeDir, ".tetris")
-}
-*/

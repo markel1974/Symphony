@@ -1,9 +1,10 @@
 package invaders
 
 import (
+	"strings"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
-	"strings"
 )
 
 // initLives represents the initial number of lives a player starts with in the game.

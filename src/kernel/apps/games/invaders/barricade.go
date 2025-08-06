@@ -1,8 +1,9 @@
 package invaders
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"strings"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 // barricadeSymbol defines the character used to represent a barricade.

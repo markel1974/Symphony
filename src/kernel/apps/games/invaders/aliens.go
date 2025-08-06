@@ -1,9 +1,10 @@
 package invaders
 
 import (
+	"math/rand"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/servers/render/matrix"
-	"math/rand"
 )
 
 // alienStartX defines the starting X coordinate for the alien.
