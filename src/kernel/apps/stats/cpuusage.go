@@ -1,10 +1,12 @@
 package stats
 
+/*
 import (
 	"fmt"
+	"time"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
-	"time"
 )
 
 // CreateCPUUsage generates a shell command to compute and display CPU usage over a 3-second interval.
@@ -25,3 +27,4 @@ func CreateCPUUsage() interfaces.ICommand {
 
 	return root
 }
+*/

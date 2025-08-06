@@ -323,7 +323,7 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 		if !ok {
 			return
 		}
-		if onError := t.GetCommand().OnError(); onError != nil {
+		if onError := t.cmd.OnError(); onError != nil {
 			onError(t, mt.Error())
 		}
 	case interfaces.MessageTypeTimer:
@@ -331,7 +331,7 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 		if !ok {
 			return
 		}
-		if timerEvent := t.GetCommand().OnTimer(); timerEvent != nil {
+		if timerEvent := t.cmd.OnTimer(); timerEvent != nil {
 			timerEvent(t, mt.TID(), mt.Interval())
 		}
 	case interfaces.MessageTypeRead:
@@ -340,11 +340,11 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 			return
 		}
 		if mt.Broadcast() {
-			if readBroadcastEvent := t.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
+			if readBroadcastEvent := t.cmd.OnReadBroadcast(); readBroadcastEvent != nil {
 				readBroadcastEvent(t, int(mt.Kind()), mt.Data())
 			}
 		} else {
-			if readEvent := t.GetCommand().OnRead(); readEvent != nil {
+			if readEvent := t.cmd.OnRead(); readEvent != nil {
 				readEvent(t, int(mt.Kind()), mt.Data())
 			}
 		}
@@ -353,10 +353,10 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 		if !ok {
 			return
 		}
-		if !t.GetCommand().Background() {
+		if !t.cmd.Background() {
 			t.kernel.PostMessage(messages.NewMessageProcessSetForeground(t, t.PID()))
 		}
-		_ = t.GetCommand().Execute(t, mt.Args())
+		_ = t.cmd.Execute(t, mt.Args())
 		if !t.cmd.Daemon() {
 			t.kernel.PostMessage(messages.NewMessageMessageProcessExit(t))
 			return
@@ -366,7 +366,7 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 		if !ok {
 			return
 		}
-		if activate := t.GetCommand().OnActivate(); activate != nil {
+		if activate := t.cmd.OnActivate(); activate != nil {
 			activate(t)
 		}
 	case interfaces.MessageTypeTimerCreated:

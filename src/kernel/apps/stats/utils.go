@@ -1,16 +1,11 @@
 package stats
 
-import (
-	"io/ioutil"
-	"strconv"
-	"strings"
-)
-
 // bToMb converts bytes to megabytes by dividing the input value in bytes by 1024 twice.
 func bToMb(b uint64) float64 {
 	return float64(b) / 1024 / 1024
 }
 
+/*
 // getCPUSample reads CPU statistics from /proc/stat and returns the idle ticks and total ticks as uint64 values.
 func getCPUSample() (uint64, uint64) {
 	var idle uint64 = 0  //(rand.Intn(max - min) + min)
@@ -39,3 +34,4 @@ func getCPUSample() (uint64, uint64) {
 	}
 	return total, total
 }
+*/

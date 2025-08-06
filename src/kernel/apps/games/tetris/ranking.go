@@ -1,15 +1,5 @@
 package tetris
 
-import (
-	"io/ioutil"
-	"log"
-	"os"
-	"os/user"
-	"path/filepath"
-	"strconv"
-	"strings"
-)
-
 // Ranking represents a structure to manage a score leaderboard with a fixed-size slice of scores.
 type Ranking struct {
 	scores []int
@@ -19,29 +9,35 @@ type Ranking struct {
 func NewRanking() *Ranking {
 	ranking := new(Ranking)
 	ranking.scores = make([]int, 10)
-
-	if fileExists(configFilePath()) {
-		buf, err := ioutil.ReadFile(configFilePath())
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		scoreTexts := strings.Split(string(buf), ",")
-		for idx, text := range scoreTexts {
-			num, err := strconv.Atoi(text)
+	for _, i := range ranking.scores {
+		ranking.scores[i] = 0
+	}
+	/*
+		if fileExists(configFilePath()) {
+			buf, err := ioutil.ReadFile(configFilePath())
 			if err != nil {
 				log.Fatal(err)
 			}
-			ranking.scores[idx] = num
+
+			scoreTexts := strings.Split(string(buf), ",")
+			for idx, text := range scoreTexts {
+				num, err := strconv.Atoi(text)
+				if err != nil {
+					log.Fatal(err)
+				}
+				ranking.scores[idx] = num
+			}
+		} else {
+			for i := 0; i < 10; i++ {
+				ranking.scores[i] = 0
+			}
 		}
-	} else {
-		for i := 0; i < 10; i++ {
-			ranking.scores[i] = 0
-		}
-	}
+
+	*/
 	return ranking
 }
 
+/*
 // save writes the current scores of the Ranking to a configuration file as a comma-separated string.
 func (r *Ranking) save() {
 	var texts []string
@@ -51,6 +47,7 @@ func (r *Ranking) save() {
 	config := strings.Join(texts, ",")
 	_ = ioutil.WriteFile(configFilePath(), []byte(config), 0644)
 }
+*/
 
 // insertScore inserts a score into the ranking's score list while maintaining a sorted order.
 // If the new score surpasses an existing one, it shifts scores and inserts it into the correct position.
@@ -71,6 +68,7 @@ func (r *Ranking) slideScores(index int) {
 	}
 }
 
+/*
 // fileExists checks if a file exists at the given filename path. Returns true if the file exists, otherwise false.
 func fileExists(filename string) bool {
 	_, err := os.Stat(filename)
@@ -85,3 +83,4 @@ func configFilePath() string {
 	}
 	return filepath.Join(usr.HomeDir, ".tetris")
 }
+*/

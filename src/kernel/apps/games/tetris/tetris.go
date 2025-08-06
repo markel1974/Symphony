@@ -2,9 +2,10 @@ package tetris
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"math/rand"
 	"time"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 // levelMax defines the maximum level a player can achieve.
@@ -129,7 +130,7 @@ func (t *Tetris) pushMino() {
 		if t.currentMino.conflicts(t.board) {
 			ranking := NewRanking()
 			ranking.insertScore(t.score)
-			ranking.save()
+			//ranking.save()
 			t.gameOver = true
 			return
 		}

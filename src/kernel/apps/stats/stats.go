@@ -20,7 +20,7 @@ func Create() (*process.Command, []interfaces.ICommand) {
 	apps = append(apps, CreateMemoryStatus())
 	apps = append(apps, CreateMemoryPlot())
 	apps = append(apps, CreateCPUStatus())
-	apps = append(apps, CreateCPUUsage())
+	//apps = append(apps, CreateCPUUsage())
 	for _, app := range apps {
 		_ = root.AddCommand(app)
 	}
