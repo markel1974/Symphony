@@ -44,9 +44,5 @@ type IKernel interface {
 
 	CallExitRequested(process IRouter)
 
-	//CallTimerCreate(process IRouter, pid int, first int, interval int, count int)
-
-	//CallTimerStop(process IRouter, pid int, tid int)
-
 	CallProcessIsActive(process IRouter, pid int) bool
 }
