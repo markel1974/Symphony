@@ -1,9 +1,10 @@
 package snake
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"math/rand"
 	"strconv"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 // direction represents a type used to specify movement or orientation in a discrete set of directions.
@@ -198,7 +199,9 @@ func (snake *Snake) update() {
 				snake.rebuildSnake(nHead)
 				snake.moveFood()
 			} else {
-				snake.Body = snake.Body[1:]
+				if len(snake.Body) > 0 {
+					snake.Body = snake.Body[1:]
+				}
 				snake.rebuildSnake(nHead)
 			}
 
@@ -210,9 +213,13 @@ func (snake *Snake) update() {
 
 // rebuildSnake updates the snake's tail, appends the new head, and sets the appropriate attributes for body parts.
 func (snake *Snake) rebuildSnake(nHead Point) {
-	snake.Body[len(snake.Body)-1].Attributes = snake.SpriteBody
+	if len(snake.Body) > 0 {
+		snake.Body[len(snake.Body)-1].Attributes = snake.SpriteBody
+	}
 	snake.Body = append(snake.Body, Data{Point: nHead, Attributes: snake.SpriteHead})
-	snake.Body[0].Attributes = snake.SpriteTail
+	if len(snake.Body) > 1 {
+		snake.Body[0].Attributes = snake.SpriteTail
+	}
 }
 
 // Draw renders the snake, food, borders, and the score on the provided surface. Displays "Game Over" if the game ends.

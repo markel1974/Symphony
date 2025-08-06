@@ -16,8 +16,9 @@ package plotter
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"math"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 // Plotter is responsible for rendering graph-like plots based on given series and configuration parameters.
@@ -97,7 +98,10 @@ func (p *Plotter) linearInterpolate(before, after, atPoint float64) float64 {
 // interpolateArray performs linear interpolation on the input data to generate a new array with the specified width.
 func (p *Plotter) interpolateArray(data []float64, width int) []float64 {
 	var interpolatedData []float64
-	springFactor := float64(len(data)-1) / float64(width-1)
+	springFactor := 0.0
+	if t := width - 1; t != 0 {
+		springFactor = float64(len(data)-1) / float64(t)
+	}
 	interpolation := data[0]
 
 	interpolatedData = append(interpolatedData, interpolation)

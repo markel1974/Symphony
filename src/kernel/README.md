@@ -16,16 +16,24 @@ Its core philosophy is that a complex application must be **transparent and debu
 
 ## 2. Microkernel Architecture
 
-The project fully embraces a **microkernel design philosophy**: a minimal, robust core provides essential services, while all other functionalities are delegated to isolated, user-space processes called "Tasks".
+The project fully embraces a **microkernel design philosophy**: a minimal, robust core provides essential services, while all other functionalities are delegated to isolated processes called "Tasks".
 
 * **Central Kernel (`kernel/core/kernel.go`):** The heart of the system. It manages the entire lifecycle of tasks, orchestrates I/O, and runs a central, asynchronous `eventLoop`. Its primary role is to act as a **message router**, decoupling the system's components.
-* **Dynamic Message Handling:** The kernel uses a dynamic, self-populating `handlers` map. Each peripheral `Server` (e.g., for rendering, filesystem) registers the message types it can handle. This eliminates hardcoded dependencies and allows for a truly modular system.
-* **Task Management (`kernel/process/process.go`):** Every application component runs as a concurrent `Task`, complete with its own PID and isolated context. This isolation ensures that a fault in one component doesn't bring down the entire system.
+* **Dynamic Message Handling:** The kernel uses a dynamic `handlers` map. Each peripheral `Server` (e.g., for rendering, filesystem) registers the message types it can handle. This eliminates hardcoded dependencies and allows for a truly modular system.
 * **The Shell as a User Process (`xsh`):** As a testament to the purity of the design, the main shell (`xsh`) is not a privileged part of the kernel but is itself an application that runs as a regular "Task".
+
+### Kernel-Space / User-Space Process Separation
+
+A fundamental aspect of the architecture is the strict separation of concerns, mirroring a traditional operating system's design. Every process is composed of two distinct parts:
+
+1.  **Kernel-Space Representation (`KernelProcess`):** This is the "Process Control Block" that the Kernel sees and manages. It is a lightweight wrapper containing only the metadata essential for the kernel's operation: PID, parent-child relationships, security flags (like `protected`), and a list of kernel-managed resources (like timers). The Kernel interacts exclusively with this representation, ensuring it cannot access or corrupt the application's internal state.
+2.  **User-Space Implementation (`Process`):** This is where the application logic resides. It contains the command to be executed, the private message queue for its event loop, and the application-specific context (e.g., the state of a game). This space is completely isolated from the kernel.
+
+This separation provides strong security and stability boundaries, preventing a bug in an application from destabilizing the kernel.
 
 ### True Asynchronous IPC via Message Queues
 
-True to the microkernel philosophy, the system avoids direct function calls between components. Instead, it relies on a robust, asynchronous message-passing mechanism that ensures true process isolation:
+True to the microkernel philosophy, the system avoids direct function calls between components. Instead, it relies on a robust, asynchronous message-passing mechanism:
 
 * **Dedicated Event Queues:** Every running process (`IProcess`) has its own dedicated Go channel (`messageChan`), serving as a private, buffered event queue.
 * **Kernel as a Dispatcher:** The Kernel acts purely as a central message dispatcher. It forwards an `IMessage` to the target process's queue without directly accessing its internal state, ensuring components are truly decoupled.
@@ -41,7 +49,6 @@ The kernel provides a fully-featured multitasking environment with a graphical T
 
 * **Concurrent Tasks**: Launch and run multiple applications (e.g., system monitors, control scripts) simultaneously.
 * **Windowed Interface**: Every graphical task is rendered within its own distinct "window" on the terminal, complete with borders and a title caption.
-* **Dynamic Window Management**: A `WindowSelector` enables a special mode to cycle through, move, and resize windows using keyboard commands.
 * **Process Management**: Standard OS-like commands are provided: `ps`, `kill`, `killall`, and `fg`.
 
 ### b. Real-time Introspection & Go Runtime Profiling
