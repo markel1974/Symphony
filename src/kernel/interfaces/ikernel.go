@@ -8,12 +8,6 @@ type IKernel interface {
 
 	AddServer(server IServer)
 
-	CallProcessKill(process IRouter, pid int)
-
-	CallProcessKillForeground(process IRouter)
-
-	CallProcessKillAll(process IRouter, name string)
-
 	CallProcessList(process IRouter) []*ProcessDescription
 
 	CallWindowsSelectionBegin(process IRouter)

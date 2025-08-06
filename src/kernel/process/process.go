@@ -19,10 +19,11 @@ type Process struct {
 	line        string
 	messageChan chan interfaces.IMessage
 	parent      interfaces.IProcess
+	protected   bool
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
-func NewProcess(kernel interfaces.IKernel, parent interfaces.IProcess, user string, cmd interfaces.ICommand, line string) *Process {
+func NewProcess(kernel interfaces.IKernel, parent interfaces.IProcess, user string, cmd interfaces.ICommand, line string, protected bool) *Process {
 	t := &Process{
 		kernel:      kernel,
 		parent:      parent,
@@ -31,6 +32,7 @@ func NewProcess(kernel interfaces.IKernel, parent interfaces.IProcess, user stri
 		context:     nil,
 		state:       interfaces.ProcessStateSetup,
 		line:        line,
+		protected:   protected,
 		messageChan: make(chan interfaces.IMessage, 128),
 	}
 	return t
@@ -43,6 +45,11 @@ func (t *Process) Process() interfaces.IProcess {
 // Parent retrieves the parent process of the current process instance.
 func (t *Process) Parent() interfaces.IProcess {
 	return t.parent
+}
+
+// Protected returns a boolean indicating whether the process is marked as protected.
+func (t *Process) Protected() bool {
+	return t.protected
 }
 
 // Setup begins the process by setting its state to running and initiating its event loop asynchronously.
@@ -121,19 +128,19 @@ func (t *Process) IsActive(pid int) bool {
 	return t.kernel.CallProcessIsActive(t, pid)
 }
 
-// DeactivateForeground removes the process from the foreground state and returns true if the operation succeeds.
-func (t *Process) DeactivateForeground() {
-	t.kernel.CallProcessKillForeground(t)
+// Kill attempts to terminate the task associated with the specified pid and returns true if successful.
+func (t *Process) Kill(pid int) {
+	t.kernel.PostMessage(messages.NewMessageProcessKill(t, pid))
 }
 
-// Deactivate attempts to terminate the task associated with the specified pid and returns true if successful.
-func (t *Process) Deactivate(pid int) {
-	t.kernel.CallProcessKill(t, pid)
+// KillForeground removes the process from the foreground state and returns true if the operation succeeds.
+func (t *Process) KillForeground() {
+	t.kernel.PostMessage(messages.NewMessageProcessKillForeground(t))
 }
 
-// DeactivateAll terminates all tasks matching the provided name and returns the count of deactivated tasks.
-func (t *Process) DeactivateAll(name string) {
-	t.kernel.CallProcessKillAll(t, name)
+// KillAll terminates all tasks matching the provided name and returns the count of deactivated tasks.
+func (t *Process) KillAll(name string) {
+	t.kernel.PostMessage(messages.NewMessageProcessKillAll(t, name))
 }
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.

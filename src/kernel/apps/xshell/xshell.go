@@ -61,7 +61,7 @@ func (c *XShell) BroadcastKeyHandler(process interfaces.IProcess, code int, key 
 		if key == 3 {
 			//ctrl-c
 			c.selectionMode = false
-			process.DeactivateForeground()
+			process.KillForeground()
 			c.nextLine(process, true)
 		} else if key == 4 {
 			//ctrl-d

@@ -36,7 +36,7 @@ func CreateKill() interfaces.ICommand {
 			task.WriteLn("Unknown Task: " + args[0])
 			return nil
 		}
-		task.Deactivate(pid)
+		task.Kill(pid)
 		return nil
 	}
 	root := process.NewCommand("kill", interfaces.CommandTypeFile, nil, false, run)

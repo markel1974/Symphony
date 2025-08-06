@@ -136,14 +136,32 @@ func NewMessageProcessKill(router interfaces.IRouter, pid int) *MessageProcessKi
 // It embeds the Message struct and includes a Name field to specify the associated process group or identifier.
 type MessageProcessKillAll struct {
 	interfaces.Message
-	Name string
+	name string
 }
 
 // NewMessageProcessKillAll creates a new MessageProcessKillAll instance with the specified name and appropriate message type.
 func NewMessageProcessKillAll(router interfaces.IRouter, name string) *MessageProcessKillAll {
 	return &MessageProcessKillAll{
 		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessKillAll),
-		Name:    name,
+		name:    name,
+	}
+}
+
+// Name returns the value of the name field associated with the MessageProcessKillAll instance.
+func (m *MessageProcessKillAll) Name() string {
+	return m.name
+}
+
+// MessageProcessKillForeground represents a message that signals the system to terminate all foreground processes.
+// It extends the base Message type to specialize for foreground process kill behavior.
+type MessageProcessKillForeground struct {
+	interfaces.Message
+}
+
+// NewMessageProcessKillForeground creates a new MessageProcessKillForeground instance with a router and MessageTypeProcessKillForeground.
+func NewMessageProcessKillForeground(router interfaces.IRouter) *MessageProcessKillForeground {
+	return &MessageProcessKillForeground{
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessKillForeground),
 	}
 }
 

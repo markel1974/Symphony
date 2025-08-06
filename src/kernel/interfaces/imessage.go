@@ -16,6 +16,7 @@ const (
 	MessageTypeProcessExit
 	MessageTypeProcessKill
 	MessageTypeProcessKillAll
+	MessageTypeProcessKillForeground
 	MessageTypeProcessSetForeground
 	MessageTypeProcessIsActiveRequest
 	MessageTypeProcessIsActiveResponse

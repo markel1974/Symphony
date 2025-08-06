@@ -25,7 +25,7 @@ func CreateKillAll() interfaces.ICommand {
 		if len(args) > 0 {
 			arg = args[0]
 		}
-		task.DeactivateAll(arg)
+		task.KillAll(arg)
 		task.WriteLn("Task deactivated")
 		return nil
 	}

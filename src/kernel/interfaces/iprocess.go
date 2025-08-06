@@ -28,6 +28,8 @@ type IProcess interface {
 
 	Parent() IProcess
 
+	Protected() bool
+
 	Line() string
 
 	Description() *ProcessDescription
@@ -50,11 +52,11 @@ type IProcess interface {
 
 	IsActive(pid int) bool
 
-	Deactivate(pid int)
+	Kill(pid int)
 
-	DeactivateForeground()
+	KillForeground()
 
-	DeactivateAll(name string)
+	KillAll(name string)
 
 	CWDName() string
 

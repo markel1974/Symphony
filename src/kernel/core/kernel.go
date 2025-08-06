@@ -55,6 +55,9 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, timersChan ch
 	t.handlers[interfaces.MessageTypeProcessExit] = t.handleProcessExit
 	t.handlers[interfaces.MessageTypeProcessExec] = t.handleProcessExec
 	t.handlers[interfaces.MessageTypeProcessSetForeground] = t.handleProcessSetForeground
+	t.handlers[interfaces.MessageTypeProcessKill] = t.handleProcessKill
+	t.handlers[interfaces.MessageTypeProcessKillAll] = t.handleProcessKillAll
+	t.handlers[interfaces.MessageTypeProcessKillForeground] = t.handleProcessKillForeground
 	return t
 }
 
@@ -91,49 +94,6 @@ func (c *Kernel) AddServer(server interfaces.IServer) {
 // PostMessage sends the provided IMessage to the Kernel's internal message channel for further processing.
 func (c *Kernel) PostMessage(msg interfaces.IMessage) {
 	c.messageChan <- msg
-}
-
-// CallProcessKill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
-func (c *Kernel) CallProcessKill(router interfaces.IRouter, pid int) {
-	process, _ := c.running[pid]
-	if process == nil {
-		return
-	}
-	if router.PID() == pid {
-		return
-	}
-	c.doProcessExit(process)
-}
-
-// CallProcessKillForeground terminates the current foreground process and returns true if successful.
-func (c *Kernel) CallProcessKillForeground(router interfaces.IRouter) {
-	process, _ := c.running[c.foreground.PID()]
-	if process == nil {
-		return
-	}
-	if router.PID() == process.PID() {
-		return
-	}
-	c.doProcessExit(process)
-}
-
-// CallProcessKillAll terminates all tasks matching the specified name. Returns the number of tasks successfully terminated.
-func (c *Kernel) CallProcessKillAll(router interfaces.IRouter, name string) {
-	var tasks []interfaces.IProcess
-	for _, process := range c.running {
-		if process.PID() == router.PID() {
-			continue
-		}
-		if len(name) != 0 {
-			if process.GetCommand().Name() != name {
-				continue
-			}
-		}
-		tasks = append(tasks, process)
-	}
-	for _, task := range tasks {
-		c.doProcessExit(task)
-	}
 }
 
 // CallProcessList returns a formatted string containing process IDs and their respective command names managed by the Kernel.
@@ -316,7 +276,7 @@ func (c *Kernel) CallTimerStop(router interfaces.IRouter, pid int, tid int) {
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
-	c.doProcessExec(c, c.user, c.shellPath)
+	c.doProcessExec(c, c.user, c.shellPath, true)
 	d := make(chan bool)
 	go func() {
 		d <- true
@@ -421,7 +381,7 @@ func (c *Kernel) handleProcessExec(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	c.doProcessExec(mt.Router(), mt.Router().User(), mt.Line())
+	c.doProcessExec(mt.Router(), mt.Router().User(), mt.Line(), false)
 }
 
 // handleProcessSetForeground handles a process set foreground message by setting the foreground process to the specified process.
@@ -435,6 +395,52 @@ func (c *Kernel) handleProcessSetForeground(m interfaces.IMessage) {
 	}
 }
 
+// handleProcessKill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
+func (c *Kernel) handleProcessKill(m interfaces.IMessage) {
+	mt, ok := m.(*messages.MessageProcessKill)
+	if !ok {
+		return
+	}
+	process, _ := c.running[mt.PID]
+	if process == nil {
+		return
+	}
+	c.doProcessExit(process)
+}
+
+// handleProcessKillAll handles the termination of all processes except the sender's and optionally filters by process name.
+func (c *Kernel) handleProcessKillAll(m interfaces.IMessage) {
+	mt, ok := m.(*messages.MessageProcessKillAll)
+	if !ok {
+		return
+	}
+	var tasks []interfaces.IProcess
+	for _, process := range c.running {
+		if len(mt.Name()) != 0 {
+			if process.GetCommand().Name() != mt.Name() {
+				continue
+			}
+		}
+		tasks = append(tasks, process)
+	}
+	for _, task := range tasks {
+		c.doProcessExit(task)
+	}
+}
+
+// handleProcessKillForeground handles the termination of the foreground process.
+func (c *Kernel) handleProcessKillForeground(m interfaces.IMessage) {
+	_, ok := m.(*messages.MessageProcessKillAll)
+	if !ok {
+		return
+	}
+	process, _ := c.running[c.foreground.PID()]
+	if process == nil {
+		return
+	}
+	c.doProcessExit(process)
+}
+
 // handleQuitEvent handles a quit message by verifying its type and setting the kernel's exit flag to true.
 func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
 	_, ok := m.(*messages.MessageQuit)
@@ -446,14 +452,14 @@ func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
 
 // doProcessExec executes a process by creating it, assigning a pid, and starting it with the given user and input line.
 // Configures the command arguments, initializes the process, and notifies servers about its creation.
-func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line string) {
+func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line string, protected bool) {
 	cmd, args, err := c.fsServer.CallFind(router, line)
 	if err != nil {
 		router.PostMessage(messages.NewMessageError(router, fmt.Errorf("error creating task: invalid command '%s'", line)))
 		return
 	}
 	parent, _ := c.running[router.PID()]
-	process := c.pf.Create(parent, user, cmd, line)
+	process := c.pf.Create(parent, user, cmd, line, protected)
 	if !c.pidGenerator.Set(process) {
 		router.PostMessage(messages.NewMessageError(router, fmt.Errorf("error creating task: can't set pid")))
 		return
@@ -479,6 +485,9 @@ func (c *Kernel) doProcessSetForeground(router interfaces.IRouter, process inter
 
 // doProcessExit handles the termination process of a given IProcess, ensuring cleanup of resources and notifying observers.
 func (c *Kernel) doProcessExit(process interfaces.IProcess) {
+	if process.Protected() {
+		return
+	}
 	delete(c.running, process.PID())
 	c.pidGenerator.Unset(process.PID(), false)
 	if len(process.Timers()) > 0 {
