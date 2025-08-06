@@ -18,21 +18,18 @@ type Process struct {
 	state       interfaces.ProcessState
 	line        string
 	messageChan chan interfaces.IMessage
-	parent      interfaces.IProcess
-	protected   bool
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
-func NewProcess(kernel interfaces.IKernel, parent interfaces.IProcess, user string, cmd interfaces.ICommand, line string, protected bool) *Process {
+func NewProcess(kernel interfaces.IKernel, pid int, user string, cmd interfaces.ICommand, line string) *Process {
 	t := &Process{
 		kernel:      kernel,
-		parent:      parent,
+		pid:         pid,
 		user:        user,
 		cmd:         cmd,
 		context:     nil,
 		state:       interfaces.ProcessStateSetup,
 		line:        line,
-		protected:   protected,
 		messageChan: make(chan interfaces.IMessage, 128),
 	}
 	return t
@@ -43,41 +40,12 @@ func (t *Process) Process() interfaces.IProcess {
 	return t
 }
 
-// AddTimer adds a timer identified by the provided tid to the process's timers list.
-func (t *Process) AddTimer(tid int) {
-	t.timers = append(t.timers, tid)
-}
-
-// Parent retrieves the parent process of the current process instance.
-func (t *Process) Parent() interfaces.IProcess {
-	return t.parent
-}
-
-// Protected returns a boolean indicating whether the process is marked as protected.
-func (t *Process) Protected() bool {
-	return t.protected
-}
-
 // Setup begins the process by setting its state to running and initiating its event loop asynchronously.
 func (t *Process) Setup() {
 	c := make(chan bool)
 	t.eventLoop(c)
 	_ = <-c
 	t.state = interfaces.ProcessStateRunning
-}
-
-// Timers returns a slice of integers representing the current timers associated with the Process instance.
-func (t *Process) Timers() []int {
-	return t.timers
-}
-
-// TimersIterator iterates over all active timer IDs in the Process and executes the callback function for each one.
-func (t *Process) TimersIterator(callback func(tid int) bool) {
-	for _, tid := range t.timers {
-		if callback(tid) {
-			break
-		}
-	}
 }
 
 // Description provides a brief summary of the process including its name, PID, and line information.
@@ -227,11 +195,6 @@ func (t *Process) WindowsSelectionNext() {
 // WindowsSelectionOptions configures selection behavior for the task based on the provided option and value.
 func (t *Process) WindowsSelectionOptions(option rune, value float64) {
 	t.kernel.PostMessage(messages.NewMessageWindowsSelectionOptions(t, option, value))
-}
-
-// SetId sets the task's process ID, updates the caption, and appends the label if it exists.
-func (t *Process) SetId(id int) {
-	t.pid = id
 }
 
 // Paint executes the rendering logic for the task on the provided surface by invoking a paint function if defined.
@@ -407,12 +370,11 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 			activate(t)
 		}
 	case interfaces.MessageTypeTimerCreated:
-		_, ok := msg.(*messages.MessageTimerCreated)
+		mt, ok := msg.(*messages.MessageTimerCreated)
 		if !ok {
 			return
 		}
-		//TODO add timer to list
-		//t.timers = append(t.timers, mt.TID())
+		t.timers = append(t.timers, mt.TID())
 	default:
 		log.Printf("unknown message type: %d", msg.GetType())
 	}

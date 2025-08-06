@@ -18,7 +18,7 @@ type Kernel struct {
 	renderServer interfaces.IRender
 	foreground   interfaces.IProcess
 	pidGenerator *adaptiveticker.Ids
-	running      map[int]interfaces.IProcess
+	running      map[int]*KernelProcess
 	fsServer     interfaces.IFileSystem
 	shellPath    string
 	messageChan  chan interfaces.IMessage
@@ -30,7 +30,7 @@ type Kernel struct {
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, timersChan chan *adaptiveticker.TimerHandler, inputDriver interfaces.IKeyboardDriver, renderServer interfaces.IRender, fsServer interfaces.IFileSystem, shellPath string) *Kernel {
+func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver interfaces.IKeyboardDriver, renderServer interfaces.IRender, fsServer interfaces.IFileSystem, shellPath string) *Kernel {
 	t := &Kernel{
 		user:         user,
 		ticker:       ticker,
@@ -40,10 +40,10 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, timersChan ch
 		foreground:   nil,
 		pidGenerator: adaptiveticker.NewIds(1024),
 		messageChan:  make(chan interfaces.IMessage, contextMaQueueLen),
-		timersChan:   timersChan,
+		timersChan:   make(chan *adaptiveticker.TimerHandler, contextMaQueueLen),
 		exit:         false,
 		shellPath:    shellPath,
-		running:      make(map[int]interfaces.IProcess),
+		running:      make(map[int]*KernelProcess),
 		handlers:     make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
 	t.pf = process_factory.NewProcessFactory(t)
@@ -108,35 +108,6 @@ func (c *Kernel) CallProcessIsActive(router interfaces.IRouter, pid int) bool {
 	active, _ := c.running[pid]
 	return active != nil
 }
-
-/*
-// CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
-func (c *Kernel) CallWindowsSelectionBegin(router interfaces.IRouter) {
-	c.renderServer.CallWindowsSelectionBegin(router)
-}
-
-// CallWindowsSelectionOptions updates the selected task's option with the given rune and value, then triggers a repaint request.
-// Returns true on successful task retrieval and option update, otherwise returns false.
-func (c *Kernel) CallWindowsSelectionOptions(router interfaces.IRouter, option rune, value float64) {
-	c.renderServer.CallWindowsSelectionOptions(router, option, value)
-}
-
-// CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
-func (c *Kernel) CallWindowsSelectionPrevious(router interfaces.IRouter) {
-	c.renderServer.CallWindowsSelectionPrevious(router)
-}
-
-// CallWindowsSelectionNext advances the task windowSelector to the next task and triggers a repaint if the task selection changes.
-func (c *Kernel) CallWindowsSelectionNext(router interfaces.IRouter) {
-	c.renderServer.CallWindowsSelectionNext(router)
-}
-
-// CallWindowsSelectionEnd clears the state of the associated WindowSelector instance by resetting its index and available list.
-func (c *Kernel) CallWindowsSelectionEnd(router interfaces.IRouter) {
-	c.renderServer.CallWindowsSelectionEnd(router)
-}
-
-*/
 
 // CallWritePromptEOL writes the specified prompt followed by an end-of-line based on the eol flag using the render instance.
 func (c *Kernel) CallWritePromptEOL(router interfaces.IRouter, prompt string, eol bool) {
@@ -396,17 +367,17 @@ func (c *Kernel) handleProcessKillAll(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	var tasks []interfaces.IProcess
+	var processes []*KernelProcess
 	for _, process := range c.running {
 		if len(mt.Name()) != 0 {
 			if process.GetCommand().Name() != mt.Name() {
 				continue
 			}
 		}
-		tasks = append(tasks, process)
+		processes = append(processes, process)
 	}
-	for _, task := range tasks {
-		c.doProcessExit(task)
+	for _, process := range processes {
+		c.doProcessExit(process)
 	}
 }
 
@@ -423,6 +394,7 @@ func (c *Kernel) handleProcessKillForeground(m interfaces.IMessage) {
 	c.doProcessExit(process)
 }
 
+// handleTimerCreate processes a timer creation request, initializes the timer, and sends a response or error message.
 func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageTimerCreate)
 	if !ok {
@@ -432,14 +404,14 @@ func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
 	if process == nil {
 		return
 	}
-	z := messages.NewMessageTimer(mt.Router(), mt.Router().PID(), mt.Interval())
-	z.SetTID(c.ticker.Create(c.timersChan, z, int64(mt.First()), int64(mt.Interval()), int64(mt.Count())))
-	if z.TID() < 0 {
+	msgTimer := messages.NewMessageTimer(mt.Router(), mt.Router().PID(), mt.Interval())
+	msgTimer.SetTID(c.ticker.Create(c.timersChan, msgTimer, int64(mt.First()), int64(mt.Interval()), int64(mt.Count())))
+	if msgTimer.TID() < 0 {
 		m.Router().PostMessage(messages.NewMessageError(m.Router(), fmt.Errorf("error creating timer")))
 		return
 	}
-	process.AddTimer(z.TID())
-	m.Router().PostMessage(messages.NewMessageTimerCreated(m.Router(), z.TID()))
+	process.AddTimer(msgTimer.TID())
+	m.Router().PostMessage(messages.NewMessageTimerCreated(m.Router(), msgTimer.TID()))
 }
 
 func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
@@ -472,18 +444,21 @@ func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line stri
 		router.PostMessage(messages.NewMessageError(router, fmt.Errorf("error creating task: invalid command '%s'", line)))
 		return
 	}
-	parent, _ := c.running[router.PID()]
-	process := c.pf.Create(parent, user, cmd, line, protected)
-	if !c.pidGenerator.Set(process) {
+
+	pid := NewPID()
+	_, ok := c.pidGenerator.Set(pid)
+	if !ok {
 		router.PostMessage(messages.NewMessageError(router, fmt.Errorf("error creating task: can't set pid")))
 		return
 	}
-	c.running[process.PID()] = process
-	process.Setup()
+	parent, _ := c.running[router.PID()]
+	kernelProcess := NewKernelProcess(parent, pid, protected, c.pf.Create(pid.GetId(), user, cmd, line))
+	c.running[kernelProcess.PID()] = kernelProcess
+	kernelProcess.Setup()
 	for _, server := range c.servers {
-		server.NotifyProcessCreation(process.Description())
+		server.NotifyProcessCreation(kernelProcess.Description())
 	}
-	process.PostMessage(messages.NewMessageProcessStart(router, args))
+	kernelProcess.PostMessage(messages.NewMessageProcessStart(router, args))
 }
 
 // doProcessSetForeground sets the specified process as the foreground process and sends activation messages if needed.
@@ -498,12 +473,12 @@ func (c *Kernel) doProcessSetForeground(router interfaces.IRouter, process inter
 }
 
 // doProcessExit handles the termination process of a given IProcess, ensuring cleanup of resources and notifying observers.
-func (c *Kernel) doProcessExit(process interfaces.IProcess) {
+func (c *Kernel) doProcessExit(process *KernelProcess) {
 	if process.Protected() {
 		return
 	}
 	delete(c.running, process.PID())
-	c.pidGenerator.Unset(process.PID(), false)
+	c.pidGenerator.Unset(process.PID())
 	if len(process.Timers()) > 0 {
 		c.ticker.RemoveEntries(process.Timers())
 	}
@@ -532,10 +507,10 @@ func (c *Kernel) doProcessList() []*interfaces.ProcessDescription {
 }
 
 // doCloseTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
-func (c *Kernel) doCloseTimer(task interfaces.IProcess, tid int) bool {
+func (c *Kernel) doCloseTimer(process *KernelProcess, tid int) bool {
 	ret := false
-	if task != nil {
-		task.TimersIterator(func(timerId int) bool {
+	if process != nil {
+		process.TimersIterator(func(timerId int) bool {
 			if timerId == tid {
 				ret = c.ticker.RemoveEntries([]int{timerId})
 				return true
@@ -548,11 +523,11 @@ func (c *Kernel) doCloseTimer(task interfaces.IProcess, tid int) bool {
 
 // shutdown stops all processes and cleans up resources managed by the Kernel instance.
 func (c *Kernel) doShutdown() {
-	var tasks []interfaces.IProcess
+	var processes []*KernelProcess
 	for _, process := range c.running {
-		tasks = append(tasks, process)
+		processes = append(processes, process)
 	}
-	for _, task := range tasks {
-		c.doProcessExit(task)
+	for _, process := range processes {
+		c.doProcessExit(process)
 	}
 }

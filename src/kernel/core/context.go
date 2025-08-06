@@ -56,10 +56,9 @@ func (c *Context) Setup(terminal interfaces.ITerminal) {
 
 	admin := "root"
 
-	timerChan := make(chan *adaptiveticker.TimerHandler, contextMaQueueLen)
 	terminalRender := render.NewRender(admin, videoDriver)
 	fs := file_system.NewFileSystem(admin, commands, []interfaces.ICommand{systemCommands})
-	c.kernel = NewKernel(admin, c.ticker, timerChan, keyboardDriver, terminalRender, fs, xsh)
+	c.kernel = NewKernel(admin, c.ticker, keyboardDriver, terminalRender, fs, xsh)
 	c.kernel.AddServer(terminalRender)
 	c.kernel.AddServer(fs)
 }

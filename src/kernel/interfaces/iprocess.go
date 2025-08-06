@@ -22,29 +22,9 @@ type OnActivate func(task IProcess)
 type IProcess interface {
 	IRouter
 
-	// Kernel SIDE only
-
 	Setup()
 
-	AddTimer(tid int)
-
-	StopTimer(tid int)
-
-	Timers() []int
-
-	TimersIterator(callback func(tid int) bool)
-
-	SetId(i int)
-
-	Protected() bool
-
-	Parent() IProcess
-
-	// User SIDE
-
 	GetCommand() ICommand
-
-	PID() int
 
 	Line() string
 
@@ -53,8 +33,6 @@ type IProcess interface {
 	SetContext(ctx interface{})
 
 	GetContext() interface{}
-
-	// User API
 
 	CreateTimer(first int, interval int, count int)
 

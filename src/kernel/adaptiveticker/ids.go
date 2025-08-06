@@ -40,12 +40,15 @@ func NewIds(max int) *Ids {
 }
 
 // Set assigns a free ID to the provided object and stores it in the internal structures, returning true on success.
-func (a *Ids) Set(obj IIds) bool {
+func (a *Ids) Set(obj IIds) (int, bool) {
+	if obj == nil {
+		return UnknownId, false
+	}
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	if len(a.freeIds) == 0 {
 		obj.SetId(UnknownId)
-		return false
+		return UnknownId, false
 	}
 	lastIndex := len(a.freeIds) - 1
 	id := a.freeIds[lastIndex]
@@ -53,6 +56,30 @@ func (a *Ids) Set(obj IIds) bool {
 	obj.SetId(id)
 	element := a.ll.PushBack(obj)
 	a.kv[id] = element
+	return id, true
+}
+
+// Unset removes an ID and its associated object, marking the ID as free and resetting the object's ID. Returns true on success.
+func (a *Ids) Unset(id int) bool {
+	a.lock.Lock()
+	defer a.lock.Unlock()
+	if id < 0 || id >= a.max {
+		return false
+	}
+	element, ok := a.kv[id]
+	if !ok {
+		return false
+	}
+	var obj IIds = nil
+	if element != nil {
+		obj, _ = element.Value.(IIds)
+		a.ll.Remove(element)
+	}
+	delete(a.kv, id)
+	a.freeIds = append(a.freeIds, id)
+	if obj != nil {
+		obj.SetId(UnknownId)
+	}
 	return true
 }
 
@@ -65,27 +92,6 @@ func (a *Ids) Get(id int) (IIds, bool) {
 		return nil, false
 	}
 	return element.Value.(IIds), true
-}
-
-// Unset removes an ID and its associated object, marking the ID as free and resetting the object's ID. Returns true on success.
-func (a *Ids) Unset(id int, clear bool) bool {
-	a.lock.Lock()
-	defer a.lock.Unlock()
-	if id < 0 || id >= a.max {
-		return false
-	}
-	element, ok := a.kv[id]
-	if !ok {
-		return false
-	}
-	obj := element.Value.(IIds)
-	a.ll.Remove(element)
-	delete(a.kv, id)
-	a.freeIds = append(a.freeIds, id)
-	if clear {
-		obj.SetId(UnknownId)
-	}
-	return true
 }
 
 // Len returns the number of elements currently stored in the Ids instance. It is safe for concurrent use.
