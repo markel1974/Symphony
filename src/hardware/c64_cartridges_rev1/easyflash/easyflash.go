@@ -5,13 +5,14 @@ package easyflash
 import (
 	"bytes"
 	"fmt"
-	"github.com/markel1974/c64emu/src/common/filler"
-	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/catalog"
-	"github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/easyflash/flash"
-	"github.com/markel1974/c64emu/src/references"
 	"io"
 	"log"
+
+	"github.com/markel1974/c64emu/src/common/filler"
+	"github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/catalog"
+	"github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/easyflash/flash"
+	"github.com/markel1974/c64emu/src/kernel/component"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // CartridgeEasyFlash represents the implementation of an EasyFlash cartridge for execution on supported hardware.

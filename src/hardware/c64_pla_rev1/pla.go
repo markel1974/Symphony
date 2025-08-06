@@ -1,10 +1,11 @@
 package c64_pla_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/config"
-	"github.com/markel1974/c64emu/src/references"
 	"log"
+
+	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/kernel/component"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // ReadFn defines a function type that takes a 16-bit unsigned integer as input and returns an 8-bit unsigned integer.

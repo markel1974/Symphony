@@ -2,8 +2,9 @@ package component
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/references"
 	"strings"
+
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // createPathFromKey splits a dot-separated string key into a slice of strings representing the path components.

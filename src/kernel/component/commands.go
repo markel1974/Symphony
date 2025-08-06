@@ -2,11 +2,12 @@ package component
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
 	"reflect"
 	"sort"
 	"strings"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
 // Command represents a structure that encapsulates an executable command, its metadata, and its expected inputs and outputs.

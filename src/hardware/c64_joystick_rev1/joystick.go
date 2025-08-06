@@ -2,13 +2,13 @@ package c64_joystick_rev1
 
 import (
 	"github.com/markel1974/c64emu/src/common/fifo"
-	"github.com/markel1974/c64emu/src/component"
+	component2 "github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 
 // Joystick represents an input device for handling directional and button presses with customizable sensitivity settings.
 type Joystick struct {
-	*component.BaseComponent
+	*component2.BaseComponent
 	storage *fifo.CircularQueue
 	joy     int
 	s1      uint
@@ -18,7 +18,7 @@ type Joystick struct {
 // NewJoystick initializes and returns a new instance of Joystick with default settings and sensitivity for controls.
 func NewJoystick(parent references.IComponent, factory references.IComponentFactory, label string, instance int) *Joystick {
 	j := &Joystick{
-		BaseComponent: component.NewBaseComponent(),
+		BaseComponent: component2.NewBaseComponent(),
 		storage:       nil,
 		joy:           0xff,
 		s1:            0,
@@ -114,34 +114,34 @@ func (k *Joystick) Poll() (uint8, bool) {
 // joyKeyUp processes a key code to update the joystick state, turning off specific bits based on provided key codes.
 func joyKeyUp(j int, kc int) int {
 	switch kc {
-	case component.KeyJFire:
+	case component2.KeyJFire:
 		j |= 0x10
 		return j
-	case component.KeyJUp:
+	case component2.KeyJUp:
 		j |= 0x01
 		return j
-	case component.KeyJDown:
+	case component2.KeyJDown:
 		j |= 0x02
 		return j
-	case component.KeyJLeft:
+	case component2.KeyJLeft:
 		j |= 0x04
 		return j
-	case component.KeyJRight:
+	case component2.KeyJRight:
 		j |= 0x08
 		return j
-	case component.KeyJUpLeft:
+	case component2.KeyJUpLeft:
 		j |= 0x05
 		return j
-	case component.KeyJUpRight:
+	case component2.KeyJUpRight:
 		j |= 0x09
 		return j
-	case component.KeyJDownLeft:
+	case component2.KeyJDownLeft:
 		j |= 0x06
 		return j
-	case component.KeyJDownRight:
+	case component2.KeyJDownRight:
 		j |= 0x0a
 		return j
-	case component.KeyJCenter:
+	case component2.KeyJCenter:
 		return 0xff
 	}
 	return 0xff
@@ -150,42 +150,42 @@ func joyKeyUp(j int, kc int) int {
 // joyKeyDown adjusts the joystick state by setting the specified key as pressed and updating directional bits accordingly.
 func joyKeyDown(j int, kc int) int {
 	switch kc {
-	case component.KeyJFire:
+	case component2.KeyJFire:
 		j &= ^0x10
 		return j
-	case component.KeyJUp:
+	case component2.KeyJUp:
 		j |= 0x02
 		j &= ^0x01
 		return j
-	case component.KeyJDown:
+	case component2.KeyJDown:
 		j |= 0x01
 		j &= ^0x02
 		return j
-	case component.KeyJLeft:
+	case component2.KeyJLeft:
 		j |= 0x08
 		j &= ^0x04
 		return j
-	case component.KeyJRight:
+	case component2.KeyJRight:
 		j |= 0x04
 		j &= ^0x08
 		return j
-	case component.KeyJUpLeft:
+	case component2.KeyJUpLeft:
 		j |= 0x0a
 		j &= ^0x05
 		return j
-	case component.KeyJUpRight:
+	case component2.KeyJUpRight:
 		j |= 0x06
 		j &= ^0x09
 		return j
-	case component.KeyJDownLeft:
+	case component2.KeyJDownLeft:
 		j |= 0x09
 		j &= ^0x06
 		return j
-	case component.KeyJDownRight:
+	case component2.KeyJDownRight:
 		j |= 0x05
 		j &= ^0x0a
 		return j
-	case component.KeyJCenter:
+	case component2.KeyJCenter:
 		j |= 0x0f
 		return j
 	}

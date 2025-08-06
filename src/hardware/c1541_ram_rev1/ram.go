@@ -2,7 +2,7 @@ package c1541_ram_rev1
 
 import (
 	"github.com/markel1974/c64emu/src/common/filler"
-	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 

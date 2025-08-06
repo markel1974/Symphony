@@ -1,12 +1,13 @@
 package gl_render
 
 import (
-	"github.com/markel1974/c64emu/src/component"
+	"log"
+
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
 	"github.com/markel1974/c64emu/src/renderers/graphics/gl_render/pixels"
 	"golang.design/x/clipboard"
-	"log"
 )
 
 // Inputs represents a structure for managing user input configurations and state for a virtual environment.

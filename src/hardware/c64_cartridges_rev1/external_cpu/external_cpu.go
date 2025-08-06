@@ -1,10 +1,10 @@
 package external_cpu
 
 import (
-	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/mos6510_rev1"
 	"github.com/markel1974/c64emu/src/hardware/quartz_rev1"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 

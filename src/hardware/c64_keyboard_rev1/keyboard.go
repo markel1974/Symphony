@@ -2,7 +2,7 @@ package c64_keyboard_rev1
 
 import (
 	"github.com/markel1974/c64emu/src/common/fifo"
-	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 

@@ -1,7 +1,7 @@
 package c1541_pla_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 

@@ -2,11 +2,12 @@ package component
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
 	"reflect"
 	"sort"
 	"unicode"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
 // PropertyInfo represents metadata and behavior for a property, including its ID, type details, description, and functionality.

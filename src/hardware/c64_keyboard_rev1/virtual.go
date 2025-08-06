@@ -1,7 +1,7 @@
 package c64_keyboard_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/kernel/component"
 )
 
 // Virtual represents a virtual keyboard with states for num-lock and capital-lock toggles.

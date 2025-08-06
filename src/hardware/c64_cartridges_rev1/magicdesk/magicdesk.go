@@ -2,8 +2,9 @@ package magicdesk
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/component"
+
 	"github.com/markel1974/c64emu/src/hardware/c64_cartridges_rev1/catalog"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 

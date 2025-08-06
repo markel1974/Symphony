@@ -2,9 +2,10 @@ package mechanic
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/component"
+
 	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
 	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk/void"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 

@@ -3,9 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"os"
+	"path"
+	"strings"
+
 	"github.com/markel1974/c64emu/src"
-	"github.com/markel1974/c64emu/src/component"
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/kernel/frontend"
 	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
@@ -13,10 +18,6 @@ import (
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"github.com/markel1974/c64emu/src/version"
-	"log"
-	"os"
-	"path"
-	"strings"
 )
 
 /*

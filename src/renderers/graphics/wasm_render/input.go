@@ -2,8 +2,9 @@ package wasm_render
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/component"
+
 	"github.com/markel1974/c64emu/src/config"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 

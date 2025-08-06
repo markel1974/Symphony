@@ -1,11 +1,12 @@
 package iec_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/component"
+	"log"
+
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/quartz_rev1"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
-	"log"
 )
 
 // defaultDDRBMask is a bitmask defining active bits for DDRB configuration, enabling bits 1, 3, and 4 in an 8-bit register.

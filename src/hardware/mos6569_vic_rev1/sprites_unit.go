@@ -2,7 +2,7 @@ package mos6569
 
 import (
 	"github.com/markel1974/c64emu/src/common/bits"
-	"github.com/markel1974/c64emu/src/component"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
 )
 

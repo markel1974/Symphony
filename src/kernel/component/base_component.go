@@ -2,11 +2,12 @@ package component
 
 import (
 	"fmt"
+	"io"
+	"strconv"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
 	"github.com/markel1974/c64emu/src/references"
-	"io"
-	"strconv"
 )
 
 // propertiesId is a constant string used as a key to reference component properties in state maps.

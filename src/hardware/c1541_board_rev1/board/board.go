@@ -8,12 +8,13 @@ package board
 
 import (
 	"fmt"
-	"github.com/markel1974/c64emu/src/component"
+	"log"
+
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/disk"
 	"github.com/markel1974/c64emu/src/hardware/c1541_board_rev1/mechanic"
+	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/references"
-	"log"
 )
 
 var _c1541hardware = []struct {

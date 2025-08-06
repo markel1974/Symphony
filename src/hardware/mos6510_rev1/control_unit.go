@@ -1,9 +1,10 @@
 package mos6510_rev1
 
 import (
-	"github.com/markel1974/c64emu/src/component"
-	"github.com/markel1974/c64emu/src/references"
 	"reflect"
+
+	"github.com/markel1974/c64emu/src/kernel/component"
+	"github.com/markel1974/c64emu/src/references"
 )
 
 // ControlUnit represents a central unit for managing operations and their mappings within a system or application.
