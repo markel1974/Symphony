@@ -11,19 +11,9 @@ type IRender interface {
 
 	CallWritePromptEOL(router IRouter, prompt string, eol bool)
 
-	CallWriteNormal(router IRouter, line string)
+	CallWrite(router IRouter, data string, eol bool)
 
-	CallWriteHighlight(router IRouter, line string)
-
-	CallWriteCritical(router IRouter, line string)
-
-	CallWrite(router IRouter, data string)
-
-	CallWriteLn(router IRouter, data string)
-
-	CallWriteColor(router IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode)
-
-	CallWriteColorLn(router IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode)
+	CallWriteColor(router IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode, eol bool)
 
 	CallClearScreen(router IRouter)
 

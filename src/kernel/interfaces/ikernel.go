@@ -14,19 +14,9 @@ type IKernel interface {
 
 	CallWritePromptLine(process IRouter, prompt string, line string)
 
-	CallWrite(process IRouter, data string)
+	CallWrite(process IRouter, data string, eol bool)
 
-	CallWriteLn(process IRouter, data string)
-
-	CallWriteColor(process IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode)
-
-	CallWriteColorLn(process IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode)
-
-	CallWriteNormal(process IRouter, data string)
-
-	CallWriteHighlights(process IRouter, data string)
-
-	CallWriteCritical(process IRouter, data string)
+	CallWriteColor(process IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode, eol bool)
 
 	CallMoveCursorLeft(process IRouter)
 

@@ -26,7 +26,7 @@ func CreateKillAll() interfaces.ICommand {
 			arg = args[0]
 		}
 		task.KillAll(arg)
-		task.WriteLn("Task deactivated")
+		task.Write("Task deactivated", true)
 		return nil
 	}
 	root := process.NewCommand("killall", interfaces.CommandTypeFile, nil, false, run)

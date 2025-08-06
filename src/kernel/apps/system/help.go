@@ -15,23 +15,24 @@
 package system
 
 import (
+	"strings"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
-	"strings"
 )
 
 func CreateHelp() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) == 0 {
-			task.WriteLn("usage help [command]")
+			task.Write("usage help [command]", true)
 			return nil
 		}
 		help, err := task.Help(args[0])
 		if err != nil || len(help) == 0 {
-			task.WriteLn("unknown help topic: " + strings.Join(args, " "))
+			task.Write("unknown help topic: "+strings.Join(args, " "), true)
 			return nil
 		}
-		task.WriteLn(help)
+		task.Write(help, true)
 		return nil
 	}
 	help := process.NewCommand("help", interfaces.CommandTypeFile, nil, false, run)

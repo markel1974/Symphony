@@ -112,7 +112,7 @@ func (cmd *Command) CreateShellCommand() *process.Command {
 	cmdExec := func(task interfaces.IProcess, args []string) error {
 		v, err := cmd.Exec(args)
 		if v != nil {
-			task.WriteLn(fmt.Sprint(v))
+			task.Write(fmt.Sprint(v), true)
 		}
 		return err
 	}

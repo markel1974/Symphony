@@ -15,10 +15,9 @@ const eolDef = "\r\n"
 
 // Render represents a rendering engine responsible for managing terminal dimensions, repainting logic, and paint tasks.
 type Render struct {
-	driver  interfaces.IDisplayDriver
-	user    string
-	surface *Surface
-	//dirty          bool
+	driver         interfaces.IDisplayDriver
+	user           string
+	surface        *Surface
 	width          int
 	height         int
 	fullPaint      bool
@@ -27,6 +26,7 @@ type Render struct {
 	foreground     *Component
 	messageChan    chan interfaces.IMessage
 	router         interfaces.IRouter
+	//dirty          bool
 }
 
 // NewRender creates and initializes a new Render instance with the provided terminal implementation.
@@ -38,13 +38,13 @@ func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
 		driver:         driver,
 		user:           user,
 		windowSelector: NewWindowSelector(),
+		width:          width,
+		height:         height,
+		fullPaint:      true,
+		running:        make(map[int]*Component),
+		messageChan:    make(chan interfaces.IMessage, 128),
+		surface:        NewSurface(driver, height, width, ""),
 		//dirty:          false,
-		width:       width,
-		height:      height,
-		fullPaint:   true,
-		running:     make(map[int]*Component),
-		messageChan: make(chan interfaces.IMessage, 128),
-		surface:     NewSurface(driver, height, width, ""),
 	}
 	return r
 }
@@ -105,30 +105,6 @@ func (c *Render) CallSetScreenSize(router interfaces.IRouter, width int, height 
 	c.fullPaint = true
 }
 
-// CallWrite sends the given string data to the terminal's output stream.
-func (c *Render) CallWrite(router interfaces.IRouter, data string) {
-	_, _ = c.driver.Write([]byte(data))
-}
-
-// CallWriteLn writes the provided string to the terminal followed by an end-of-line character.
-func (c *Render) CallWriteLn(router interfaces.IRouter, data string) {
-	_, _ = c.driver.Write([]byte(data))
-	_, _ = c.driver.Write([]byte(eolDef))
-}
-
-// CallWriteColor writes the given data string to the terminal with specified foreground and background colors, and color mode.
-func (c *Render) CallWriteColor(router interfaces.IRouter, data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	p := c.driver.CreateColorize(data, int(fg), int(bg), mode)
-	_, _ = c.driver.Write([]byte(p))
-}
-
-// CallWriteColorLn writes the given text with specified foreground and background colors and mode, followed by a line break.
-func (c *Render) CallWriteColorLn(router interfaces.IRouter, data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	p := c.driver.CreateColorize(data, int(fg), int(bg), mode)
-	_, _ = c.driver.Write([]byte(p))
-	_, _ = c.driver.Write([]byte(eolDef))
-}
-
 // CallClearScreen clears the terminal screen using the underlying ITerminal implementation.
 func (c *Render) CallClearScreen(router interfaces.IRouter) {
 	p := c.driver.CreateClearScreen()
@@ -159,46 +135,41 @@ func (c *Render) CallMoveCursorRight(router interfaces.IRouter) {
 	_, _ = c.driver.Write(p)
 }
 
+// CallWrite writes the provided string to the terminal followed by an end-of-line character.
+func (c *Render) CallWrite(router interfaces.IRouter, data string, eol bool) {
+	_, _ = c.driver.Write([]byte(data))
+	if eol {
+		_, _ = c.driver.Write([]byte(eolDef))
+	}
+}
+
+// CallWriteForeground writes a line of text with specific tint settings based on the severity level provided.
+func (c *Render) CallWriteForeground(router interfaces.IRouter, line string, tint interfaces.ColorDef) {
+	c.CallWriteColor(router, line, tint, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
+}
+
+// CallWriteColor writes the given text with specified foreground and background colors and mode, followed by a line break.
+func (c *Render) CallWriteColor(router interfaces.IRouter, data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) {
+	p := c.driver.CreateColorize(data, int(fg), int(bg), mode)
+	_, _ = c.driver.Write([]byte(p))
+	if eol {
+		_, _ = c.driver.Write([]byte(eolDef))
+	}
+}
+
 // CallWritePromptLine clears the given line and writes the prompt and line with specified color and mode configurations.
 func (c *Render) CallWritePromptLine(router interfaces.IRouter, prompt string, line string) {
-	c.clearLine(line)
-	c.CallWriteColor(router, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-	c.CallWriteColor(router, line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+	c.doClearLine(line)
+	c.CallWriteColor(router, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
+	c.CallWriteColor(router, line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
 }
 
 // CallWritePromptEOL writes the provided prompt with green color and optionally appends an end-of-line marker if enabled.
 func (c *Render) CallWritePromptEOL(router interfaces.IRouter, prompt string, eol bool) {
 	if eol {
-		c.CallWriteColor(router, eolDef, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
+		c.CallWriteColor(router, eolDef, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
 	}
-	c.CallWriteColor(router, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-}
-
-// CallWriteCritical writes a critical log line with predefined red color and normal mode formatting.
-func (c *Render) CallWriteCritical(router interfaces.IRouter, line string) {
-	c.CallWriteColor(router, line, interfaces.ColorRedDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-}
-
-// CallWriteNormal writes a line with default colors and normal mode configuration using the CallWriteColor method.
-func (c *Render) CallWriteNormal(router interfaces.IRouter, line string) {
-	c.CallWriteColor(router, line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal)
-}
-
-// CallWriteHighlight writes the given line with default blue foreground, red background, and normal display mode.
-func (c *Render) CallWriteHighlight(router interfaces.IRouter, line string) {
-	c.CallWriteColor(router, line, interfaces.ColorBlueDef, interfaces.ColorRedDef, interfaces.ModeNormal)
-}
-
-// clearLine clears the specified line from the terminal screen using the terminal implementation of the associated Render object.
-func (c *Render) clearLine(line string) {
-	p := c.driver.CreateClearLine(line)
-	_, _ = c.driver.Write(p)
-}
-
-// moveCursorTopLeft moves the terminal cursor to the top-left position using the underlying terminal implementation.
-func (c *Render) moveCursorTopLeft() {
-	p := c.driver.CreateMoveCursorTopLeft()
-	_, _ = c.driver.Write(p)
+	c.CallWriteColor(router, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
 }
 
 // NotifyProcessCreation notifies the Render instance about the creation of a new process and updates internal state if necessary.
@@ -310,8 +281,8 @@ func (c *Render) handlePaintRequest(router interfaces.IRouter, full bool) {
 	c.surface.GetBuffer(&lines)
 
 	c.CallSaveCursor(router)
-	c.moveCursorTopLeft()
-	c.CallWrite(router, string(lines.Bytes()))
+	c.doMoveCursorTopLeft()
+	c.CallWrite(router, string(lines.Bytes()), false)
 	c.CallRestoreCursor(router)
 	//c.dirty = false
 }
@@ -365,4 +336,16 @@ func (c *Render) handleWindowsSelectionNext(msg interfaces.IMessage) {
 // handleWindowsSelectionEnd handles the completion of the window selection process by clearing the window selector state.
 func (c *Render) handleWindowsSelectionEnd(msg interfaces.IMessage) {
 	c.windowSelector.Clear()
+}
+
+// clearLine clears the specified line from the terminal screen using the terminal implementation of the associated Render object.
+func (c *Render) doClearLine(line string) {
+	p := c.driver.CreateClearLine(line)
+	_, _ = c.driver.Write(p)
+}
+
+// moveCursorTopLeft moves the terminal cursor to the top-left position using the underlying terminal implementation.
+func (c *Render) doMoveCursorTopLeft() {
+	p := c.driver.CreateMoveCursorTopLeft()
+	_, _ = c.driver.Write(p)
 }

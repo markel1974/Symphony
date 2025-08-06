@@ -120,38 +120,13 @@ func (c *Kernel) CallWritePromptLine(router interfaces.IRouter, prompt string, l
 }
 
 // CallWrite sends the provided string data to the kernel's rendering writer for output.
-func (c *Kernel) CallWrite(router interfaces.IRouter, data string) {
-	c.renderServer.CallWrite(router, data)
-}
-
-// CallWriteNormal writes the provided string data to the render instance using the WriteNormal method.
-func (c *Kernel) CallWriteNormal(router interfaces.IRouter, data string) {
-	c.renderServer.CallWriteNormal(router, data)
-}
-
-// CallWriteHighlights writes syntax-highlighted content to the render component using the provided data string.
-func (c *Kernel) CallWriteHighlights(router interfaces.IRouter, data string) {
-	c.renderServer.CallWriteHighlight(router, data)
-}
-
-// CallWriteCritical writes critical data to the render component of the Kernel instance.
-func (c *Kernel) CallWriteCritical(router interfaces.IRouter, data string) {
-	c.renderServer.CallWriteCritical(router, data)
-}
-
-// CallWriteLn writes the provided string followed by a new line to the kernel's output stream.
-func (c *Kernel) CallWriteLn(router interfaces.IRouter, data string) {
-	c.renderServer.CallWriteLn(router, data)
+func (c *Kernel) CallWrite(router interfaces.IRouter, data string, eol bool) {
+	c.renderServer.CallWrite(router, data, eol)
 }
 
 // CallWriteColor writes a string to the output with specified foreground color, background color, and color mode.
-func (c *Kernel) CallWriteColor(router interfaces.IRouter, data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.renderServer.CallWriteColor(router, data, fg, bg, mode)
-}
-
-// CallWriteColorLn writes a line of text with specified foreground and background colors and a given color mode.
-func (c *Kernel) CallWriteColorLn(router interfaces.IRouter, data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	c.renderServer.CallWriteColorLn(router, data, fg, bg, mode)
+func (c *Kernel) CallWriteColor(router interfaces.IRouter, data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) {
+	c.renderServer.CallWriteColor(router, data, fg, bg, mode, eol)
 }
 
 // CallClearScreen clears the screen by invoking the associated renderer's CreateClearScreen method.

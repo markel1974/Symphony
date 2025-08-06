@@ -24,16 +24,16 @@ import (
 func CreateKill() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
-			task.WriteLn("Empty argument")
+			task.Write("Empty argument", true)
 			return nil
 		}
 		pid, err := strconv.Atoi(args[0])
 		if err != nil {
-			task.WriteLn("Invalid argument: " + args[0])
+			task.Write("Invalid argument: "+args[0], true)
 			return nil
 		}
 		if !task.IsActive(pid) {
-			task.WriteLn("Unknown Task: " + args[0])
+			task.Write("Unknown Task: "+args[0], true)
 			return nil
 		}
 		task.Kill(pid)

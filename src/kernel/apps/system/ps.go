@@ -16,6 +16,7 @@ package system
 
 import (
 	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
 )
@@ -27,7 +28,7 @@ func CreatePs() interfaces.ICommand {
 		for _, v := range pl {
 			out += fmt.Sprintf("\r\n%d: %s (%s)", v.PID(), v.Name(), v.Line())
 		}
-		process.WriteLn(out)
+		process.Write(out, true)
 		return nil
 	}
 

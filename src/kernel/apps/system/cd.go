@@ -22,11 +22,11 @@ import (
 func CreateCD() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
-			task.WriteLn("cd: empty directory")
+			task.Write("cd: empty directory", true)
 			return nil
 		}
 		if !task.CWDSet(args[0]) {
-			task.WriteLn("cd: no such directory: " + args[0])
+			task.Write("cd: no such directory: "+args[0], true)
 		}
 		return nil
 	}

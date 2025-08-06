@@ -40,13 +40,13 @@ func NewXShell(prompt string, autosave bool) *XShell {
 
 // Start initializes the console session, sets the prompt prefix, and prepares for user interaction.
 func (c *XShell) Start(process interfaces.IProcess) {
-	process.WriteHighlights("Admin Console Ready")
-	process.WriteLn("")
+	process.WriteForeground("Admin Console Ready", interfaces.ColorBlueDef, true)
+	//process.Write("", true)
 }
 
 // ErrorHandler handles errors by writing the error message to the process output and proceeding to the next line.
 func (c *XShell) ErrorHandler(process interfaces.IProcess, err error) {
-	process.WriteLn(err.Error())
+	process.Write(err.Error(), true)
 	c.nextLine(process, false)
 }
 
@@ -190,7 +190,7 @@ func (c *XShell) historyApply(task interfaces.IProcess, verb interfaces.HistoryA
 			out += "\r\n"
 			out += fmt.Sprintf("%d: %s", n, x)
 		}
-		task.Write(out)
+		task.Write(out, false)
 	}
 	return ""
 }
@@ -221,8 +221,8 @@ func (c *XShell) textBackspace(task interfaces.IProcess) {
 		if c.echo {
 			task.MoveCursorLeft()
 			task.SaveCursor()
-			task.WriteNormal(string(c.current[c.pos:]))
-			task.WriteNormal(string(' '))
+			task.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
+			task.WriteForeground(string(' '), interfaces.ColorNoneDef, false)
 			task.RestoreCursor()
 		}
 	}
@@ -234,8 +234,8 @@ func (c *XShell) textCancel(process interfaces.IProcess) {
 		c.current = removeAtPos(c.current, c.pos)
 		if c.echo {
 			process.SaveCursor()
-			process.WriteNormal(string(c.current[c.pos:]))
-			process.WriteNormal(string(' '))
+			process.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
+			process.WriteForeground(string(' '), interfaces.ColorNoneDef, false)
 			process.RestoreCursor()
 		}
 	}
@@ -274,7 +274,7 @@ func (c *XShell) enterPressed(process interfaces.IProcess) {
 	}
 	c.history.AddToHistory(buffer)
 	c.history.SetDefault("")
-	process.WriteLn("")
+	process.Write("", true)
 	process.ProcessExec(buffer)
 }
 
@@ -303,15 +303,15 @@ func (c *XShell) keyPressed(process interfaces.IProcess, key rune) {
 			log.Println("doTextInsert: negative pos", c.pos)
 		} else if c.pos == len(c.current) {
 			if c.echo {
-				process.WriteNormal(string(key))
+				process.WriteForeground(string(key), interfaces.ColorNoneDef, false)
 			}
 			c.current = append(c.current, key)
 			c.pos++
 		} else if c.pos < len(c.current) {
 			if c.echo {
-				process.WriteNormal(string(key))
+				process.WriteForeground(string(key), interfaces.ColorNoneDef, false)
 				process.SaveCursor()
-				process.WriteNormal(string(c.current[c.pos:]))
+				process.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
 			}
 			process.RestoreCursor()
 			c.current = insertAtPos(c.current, key, c.pos)

@@ -76,23 +76,15 @@ type IProcess interface {
 
 	ProcessSetForeground(pid int)
 
-	Write(data string)
+	Write(data string, eol bool)
 
 	WritePromptEOL(prompt string, eol bool)
 
 	WritePromptLine(prompt string, line string)
 
-	WriteLn(data string)
+	WriteColor(data string, fg ColorDef, bg ColorDef, mode ColorMode, eol bool)
 
-	WriteColor(data string, fg ColorDef, bg ColorDef, mode ColorMode)
-
-	WriteColorLn(data string, fg ColorDef, bg ColorDef, mode ColorMode)
-
-	WriteNormal(data string)
-
-	WriteHighlights(data string)
-
-	WriteCritical(data string)
+	WriteForeground(data string, color ColorDef, eol bool)
 
 	MoveCursorLeft()
 

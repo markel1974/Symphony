@@ -15,23 +15,23 @@ import (
 func CreateProfileMemory() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
-			task.WriteLn("could not create mem profile: " + "missing filename")
+			task.Write("could not create mem profile: "+"missing filename", true)
 			return nil
 		}
 		saneFilename := filepath.Base(args[0])
 		f, err := os.Create(saneFilename)
 		if err != nil {
-			task.WriteLn("could not create mem profile: " + err.Error())
+			task.Write("could not create mem profile: "+err.Error(), true)
 			return nil
 		}
 		defer f.Close()
 
 		runtime.GC()
 		if err = pprof.WriteHeapProfile(f); err != nil {
-			task.WriteLn("could not write mem profile: " + err.Error())
+			task.Write("could not write mem profile: "+err.Error(), true)
 		}
 
-		task.WriteLn("Cpu Profiling started")
+		task.Write("Cpu Profiling started", true)
 
 		return nil
 	}

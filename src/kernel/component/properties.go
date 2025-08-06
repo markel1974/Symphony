@@ -111,11 +111,11 @@ func (prop *PropertyInfo) CreateShellSetCommand() *process.Command {
 	}
 	setProp := func(task interfaces.IProcess, args []string) error {
 		if len(args) == 0 {
-			task.WriteLn("no argument provided")
+			task.Write("no argument provided", true)
 			return nil
 		}
 		if err := prop.Set(args[0]); err != nil {
-			task.WriteLn(err.Error())
+			task.Write(err.Error(), true)
 		}
 		return nil
 	}
@@ -132,7 +132,7 @@ func (prop *PropertyInfo) CreateShellGetCommand() *process.Command {
 	}
 	getProp := func(task interfaces.IProcess, args []string) error {
 		v, err := prop.Get()
-		task.WriteLn(fmt.Sprint(v))
+		task.Write(fmt.Sprint(v), true)
 		return err
 	}
 	childGet := process.NewCommand("get"+string(id), interfaces.CommandTypeFile, nil, false, getProp)
@@ -240,7 +240,7 @@ func (p *Properties) CreateShellDump(name string) *process.Command {
 	dumpFn := func(task interfaces.IProcess, args []string) error {
 		for _, prop := range p.sort() {
 			if v, err := prop.Get(); err == nil {
-				task.WriteLn(prop.Id() + ": " + fmt.Sprint(v))
+				task.Write(prop.Id()+": "+fmt.Sprint(v), true)
 			}
 		}
 		return nil

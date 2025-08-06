@@ -217,38 +217,18 @@ func (t *Process) WritePromptLine(prompt string, line string) {
 }
 
 // Write sends the provided string data to the kernel's write mechanism associated with the task.
-func (t *Process) Write(data string) {
-	t.kernel.CallWrite(t, data)
-}
-
-// WriteLn writes the specified data followed by a new line to the task's output stream via the kernel.
-func (t *Process) WriteLn(data string) {
-	t.kernel.CallWriteLn(t, data)
+func (t *Process) Write(data string, eol bool) {
+	t.kernel.CallWrite(t, data, eol)
 }
 
 // WriteColor writes a string to the output with specified foreground, background colors, and a color mode.
-func (t *Process) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	t.kernel.CallWriteColor(t, data, fg, bg, mode)
+func (t *Process) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) {
+	t.kernel.CallWriteColor(t, data, fg, bg, mode, eol)
 }
 
-// WriteColorLn writes the provided data as a line with specified foreground and background colors and color mode.
-func (t *Process) WriteColorLn(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
-	t.kernel.CallWriteColorLn(t, data, fg, bg, mode)
-}
-
-// WriteNormal sends the provided data string to the kernel's CallWriteNormal method for processing.
-func (t *Process) WriteNormal(data string) {
-	t.kernel.CallWriteNormal(t, data)
-}
-
-// WriteHighlights writes the provided highlight information to the underlying kernel for further processing.
-func (t *Process) WriteHighlights(data string) {
-	t.kernel.CallWriteHighlights(t, data)
-}
-
-// WriteCritical sends critical data to the kernel for logging or processing in a thread-safe manner.
-func (t *Process) WriteCritical(data string) {
-	t.kernel.CallWriteCritical(t, data)
+// WriteForeground writes the given data to the foreground with the specified color using the kernel's functionality.
+func (t *Process) WriteForeground(data string, color interfaces.ColorDef, eol bool) {
+	t.kernel.CallWriteColor(t, data, color, interfaces.ColorNoneDef, interfaces.ModeNormal, eol)
 }
 
 // MoveCursorLeft moves the cursor one position to the left within the render context.
