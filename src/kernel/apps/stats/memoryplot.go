@@ -1,10 +1,11 @@
 package stats
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
-	"github.com/markel1974/c64emu/src/kernel/process"
 	"math"
 	"runtime"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/process"
 )
 
 // rtPlotData represents runtime plot data and configuration for rendering a dynamic graph.

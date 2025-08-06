@@ -1,6 +1,8 @@
 package frontend
 
 import (
+	"log"
+
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
 	"github.com/markel1974/c64emu/src/kernel/frontend/ssh"
@@ -32,6 +34,7 @@ func NewFrontend(secure bool, auth interfaces.IAuthenticator, port int, autosave
 	if secure {
 		return ssh.NewServer(ticker, auth, port, autosave)
 	} else {
+		log.Println("[WARNING] Telnet server has been started. This protocol is not secure and transmits credentials in clear text. Use only in trusted networks.")
 		return telnet.NewServer(ticker, auth, port, autosave)
 	}
 }
