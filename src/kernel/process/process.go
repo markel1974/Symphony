@@ -208,12 +208,15 @@ func (t *Process) Paint(surface interfaces.ISurface) {
 
 // WritePromptEOL writes the provided prompt followed by an end-of-line character if the eol parameter is true.
 func (t *Process) WritePromptEOL(prompt string, eol bool) {
-	t.kernel.CallWritePromptEOL(t, prompt, eol)
+	t.kernel.CallWriteColor(t, "", interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, eol)
+	t.kernel.CallWriteColor(t, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
 }
 
 // WritePromptLine sends a specified prompt and line string to the kernel for handling the output display.
 func (t *Process) WritePromptLine(prompt string, line string) {
-	t.kernel.CallWritePromptLine(t, prompt, line)
+	t.kernel.CallClearLine(t, line)
+	t.kernel.CallWriteColor(t, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
+	t.kernel.CallWriteColor(t, line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
 }
 
 // Write sends the provided string data to the kernel's write mechanism associated with the task.

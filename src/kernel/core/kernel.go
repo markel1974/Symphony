@@ -109,16 +109,6 @@ func (c *Kernel) CallProcessIsActive(router interfaces.IRouter, pid int) bool {
 	return active != nil
 }
 
-// CallWritePromptEOL writes the specified prompt followed by an end-of-line based on the eol flag using the render instance.
-func (c *Kernel) CallWritePromptEOL(router interfaces.IRouter, prompt string, eol bool) {
-	c.renderServer.CallWritePromptEOL(router, prompt, eol)
-}
-
-// CallWritePromptLine sends a formatted prompt and line to the renderer for output using the WritePromptLine method.
-func (c *Kernel) CallWritePromptLine(router interfaces.IRouter, prompt string, line string) {
-	c.renderServer.CallWritePromptLine(router, prompt, line)
-}
-
 // CallWrite sends the provided string data to the kernel's rendering writer for output.
 func (c *Kernel) CallWrite(router interfaces.IRouter, data string, eol bool) {
 	c.renderServer.CallWrite(router, data, eol)
@@ -132,6 +122,11 @@ func (c *Kernel) CallWriteColor(router interfaces.IRouter, data string, fg inter
 // CallClearScreen clears the screen by invoking the associated renderer's CreateClearScreen method.
 func (c *Kernel) CallClearScreen(router interfaces.IRouter) {
 	c.renderServer.CallClearScreen(router)
+}
+
+// CallClearLine clears the line at the current cursor position by invoking the associated renderer's CreateClearLine method.'
+func (c *Kernel) CallClearLine(router interfaces.IRouter, line string) {
+	c.renderServer.CallClearLine(router, line)
 }
 
 // CallScreenSize retrieves the screen's width and height as integers from the render instance.

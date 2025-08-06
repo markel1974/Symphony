@@ -7,13 +7,11 @@ type IRender interface {
 
 	CallSetScreenSize(router IRouter, width int, height int)
 
-	CallWritePromptLine(router IRouter, prompt string, line string)
-
-	CallWritePromptEOL(router IRouter, prompt string, eol bool)
-
 	CallWrite(router IRouter, data string, eol bool)
 
 	CallWriteColor(router IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode, eol bool)
+
+	CallClearLine(router IRouter, line string)
 
 	CallClearScreen(router IRouter)
 

@@ -10,10 +10,6 @@ type IKernel interface {
 
 	CallProcessList(process IRouter) []*ProcessDescription
 
-	CallWritePromptEOL(process IRouter, prompt string, eol bool)
-
-	CallWritePromptLine(process IRouter, prompt string, line string)
-
 	CallWrite(process IRouter, data string, eol bool)
 
 	CallWriteColor(process IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode, eol bool)
@@ -25,6 +21,8 @@ type IKernel interface {
 	CallSaveCursor(process IRouter)
 
 	CallRestoreCursor(process IRouter)
+
+	CallClearLine(router IRouter, line string)
 
 	CallClearScreen(process IRouter)
 
