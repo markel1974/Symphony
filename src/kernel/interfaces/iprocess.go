@@ -22,31 +22,41 @@ type OnActivate func(task IProcess)
 type IProcess interface {
 	IRouter
 
-	PID() int
+	// Kernel SIDE only
 
-	SetId(i int)
+	Setup()
 
-	Parent() IProcess
-
-	Protected() bool
-
-	Line() string
-
-	Description() *ProcessDescription
-
-	GetCommand() ICommand
-
-	SetContext(ctx interface{})
-
-	GetContext() interface{}
-
-	CreateTimer(first int, interval int, count int)
+	AddTimer(tid int)
 
 	StopTimer(tid int)
 
 	Timers() []int
 
 	TimersIterator(callback func(tid int) bool)
+
+	SetId(i int)
+
+	Protected() bool
+
+	Parent() IProcess
+
+	// User SIDE
+
+	GetCommand() ICommand
+
+	PID() int
+
+	Line() string
+
+	Description() *ProcessDescription
+
+	SetContext(ctx interface{})
+
+	GetContext() interface{}
+
+	// User API
+
+	CreateTimer(first int, interval int, count int)
 
 	IsActive(pid int) bool
 
@@ -71,8 +81,6 @@ type IProcess interface {
 	Paint(surface ISurface)
 
 	PaintRequest()
-
-	Setup()
 
 	ProcessExec(line string)
 

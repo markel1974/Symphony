@@ -109,6 +109,7 @@ func (c *Kernel) CallProcessIsActive(router interfaces.IRouter, pid int) bool {
 	return active != nil
 }
 
+/*
 // CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
 func (c *Kernel) CallWindowsSelectionBegin(router interfaces.IRouter) {
 	c.renderServer.CallWindowsSelectionBegin(router)
@@ -134,6 +135,8 @@ func (c *Kernel) CallWindowsSelectionNext(router interfaces.IRouter) {
 func (c *Kernel) CallWindowsSelectionEnd(router interfaces.IRouter) {
 	c.renderServer.CallWindowsSelectionEnd(router)
 }
+
+*/
 
 // CallWritePromptEOL writes the specified prompt followed by an end-of-line based on the eol flag using the render instance.
 func (c *Kernel) CallWritePromptEOL(router interfaces.IRouter, prompt string, eol bool) {
@@ -328,7 +331,6 @@ func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 	}
 	process, _ := c.running[mt.PID()]
 	if process == nil {
-		mt.Router().PostMessage(messages.NewMessageError(m.Router(), fmt.Errorf("error creating timer: process not found")))
 		return
 	}
 	process.PostMessage(mt)
@@ -383,7 +385,6 @@ func (c *Kernel) handleProcessKill(m interfaces.IMessage) {
 	}
 	process, _ := c.running[mt.PID]
 	if process == nil {
-		mt.Router().PostMessage(messages.NewMessageError(m.Router(), fmt.Errorf("error creating timer: process not found")))
 		return
 	}
 	c.doProcessExit(process)
@@ -411,13 +412,12 @@ func (c *Kernel) handleProcessKillAll(m interfaces.IMessage) {
 
 // handleProcessKillForeground handles the termination of the foreground process.
 func (c *Kernel) handleProcessKillForeground(m interfaces.IMessage) {
-	mt, ok := m.(*messages.MessageProcessKillAll)
+	_, ok := m.(*messages.MessageProcessKillAll)
 	if !ok {
 		return
 	}
 	process, _ := c.running[c.foreground.PID()]
 	if process == nil {
-		mt.Router().PostMessage(messages.NewMessageError(mt.Router(), fmt.Errorf("error creating timer: process not found")))
 		return
 	}
 	c.doProcessExit(process)
@@ -430,7 +430,6 @@ func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
 	}
 	process, _ := c.running[m.Router().PID()]
 	if process == nil {
-		mt.Router().PostMessage(messages.NewMessageError(mt.Router(), fmt.Errorf("error creating timer: process not found")))
 		return
 	}
 	z := messages.NewMessageTimer(mt.Router(), mt.Router().PID(), mt.Interval())
@@ -439,6 +438,7 @@ func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
 		m.Router().PostMessage(messages.NewMessageError(m.Router(), fmt.Errorf("error creating timer")))
 		return
 	}
+	process.AddTimer(z.TID())
 	m.Router().PostMessage(messages.NewMessageTimerCreated(m.Router(), z.TID()))
 }
 

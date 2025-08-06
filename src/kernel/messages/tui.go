@@ -77,15 +77,25 @@ func NewMessageWindowsSelectionPrevious(router interfaces.IRouter) *MessageWindo
 // MessageWindowsSelectionOptions represents a message detailing options for Windows selection with additional parameters.
 type MessageWindowsSelectionOptions struct {
 	interfaces.Message
-	Option rune
-	Value  float64
+	option rune
+	value  float64
 }
 
 // NewMessageWindowsSelectionOptions initializes a MessageWindowsSelectionOptions with the given option and value.
 func NewMessageWindowsSelectionOptions(router interfaces.IRouter, option rune, value float64) *MessageWindowsSelectionOptions {
 	return &MessageWindowsSelectionOptions{
 		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionOptions),
-		Option:  option,
-		Value:   value,
+		option:  option,
+		value:   value,
 	}
+}
+
+// Option returns the rune representing the selected option in MessageWindowsSelectionOptions.
+func (m *MessageWindowsSelectionOptions) Option() rune {
+	return m.option
+}
+
+// Value returns the float64 value associated with the MessageWindowsSelectionOptions instance.
+func (m *MessageWindowsSelectionOptions) Value() float64 {
+	return m.value
 }

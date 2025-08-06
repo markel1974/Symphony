@@ -7,6 +7,7 @@ import (
 
 	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/messages"
 )
 
 // eol represents the end-of-line marker used for denoting line breaks in the output, set to "\r\n".
@@ -14,10 +15,10 @@ const eolDef = "\r\n"
 
 // Render represents a rendering engine responsible for managing terminal dimensions, repainting logic, and paint tasks.
 type Render struct {
-	driver         interfaces.IDisplayDriver
-	user           string
-	surface        *Surface
-	dirty          bool
+	driver  interfaces.IDisplayDriver
+	user    string
+	surface *Surface
+	//dirty          bool
 	width          int
 	height         int
 	fullPaint      bool
@@ -37,13 +38,13 @@ func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
 		driver:         driver,
 		user:           user,
 		windowSelector: NewWindowSelector(),
-		dirty:          false,
-		width:          width,
-		height:         height,
-		fullPaint:      true,
-		running:        make(map[int]*Component),
-		messageChan:    make(chan interfaces.IMessage, 128),
-		surface:        NewSurface(driver, height, width, ""),
+		//dirty:          false,
+		width:       width,
+		height:      height,
+		fullPaint:   true,
+		running:     make(map[int]*Component),
+		messageChan: make(chan interfaces.IMessage, 128),
+		surface:     NewSurface(driver, height, width, ""),
 	}
 	return r
 }
@@ -80,9 +81,16 @@ func (c *Render) PostMessage(m interfaces.IMessage) {
 	c.messageChan <- m
 }
 
-// Register returns a slice of message types that the Render object is set to handle, including MessageTypePaint.
+// Register returns a slice of message types that the Render object is set to handle.
 func (c *Render) Register() []interfaces.MessageType {
-	return []interfaces.MessageType{interfaces.MessageTypePaintRequest}
+	return []interfaces.MessageType{
+		interfaces.MessageTypePaintRequest,
+		interfaces.MessageTypeWindowsSelectionBegin,
+		interfaces.MessageTypeWindowsSelectionOptions,
+		interfaces.MessageTypeWindowsSelectionPrevious,
+		interfaces.MessageTypeWindowsSelectionNext,
+		interfaces.MessageTypeWindowsSelectionEnd,
+	}
 }
 
 // CallGetScreenSize returns the current screen width and height of the Render instance.
@@ -95,53 +103,6 @@ func (c *Render) CallSetScreenSize(router interfaces.IRouter, width int, height 
 	c.width = width
 	c.height = height
 	c.fullPaint = true
-}
-
-// CallWindowsSelectionBegin updates the selection mode for a specific process and triggers a repaint without requesting a redraw.
-func (c *Render) CallWindowsSelectionBegin(router interfaces.IRouter) {
-	c.windowSelector.Clear()
-	for idx, process := range c.running {
-		c.windowSelector.AddAvailable(process.PID())
-		if c.windowSelector.PID() == adaptiveticker.UnknownId {
-			if c.foreground != nil {
-				if c.foreground.PID() == process.PID() {
-					c.windowSelector.Set(c.foreground.PID(), idx)
-				}
-			} else {
-				c.windowSelector.Set(process.PID(), idx)
-			}
-		}
-	}
-	c.handlePaintRequest(router, false)
-}
-
-// CallWindowsSelectionOptions modifies window selection options for a process and triggers a paint request if necessary.
-func (c *Render) CallWindowsSelectionOptions(router interfaces.IRouter, option rune, value float64) {
-	process, _ := c.running[c.windowSelector.PID()]
-	if process == nil {
-		return
-	}
-	process.surface.SetOption(option, value)
-	c.handlePaintRequest(router, true)
-}
-
-// CallWindowsSelectionPrevious moves the task selection to the previous task and triggers a render update if successful.
-func (c *Render) CallWindowsSelectionPrevious(router interfaces.IRouter) {
-	if c.windowSelector.Prev() {
-		c.handlePaintRequest(router, false)
-	}
-}
-
-// CallWindowsSelectionNext moves the task selection to the next task and triggers a render update if successful.
-func (c *Render) CallWindowsSelectionNext(router interfaces.IRouter) {
-	if c.windowSelector.Next() {
-		c.handlePaintRequest(router, false)
-	}
-}
-
-// CallWindowsSelectionEnd clears the current selection in the windowSelector instance of the Render object.
-func (c *Render) CallWindowsSelectionEnd(router interfaces.IRouter) {
-	c.windowSelector.Clear()
 }
 
 // CallWrite sends the given string data to the terminal's output stream.
@@ -278,23 +239,41 @@ func (c *Render) eventLoop(r chan bool) {
 					close(c.messageChan)
 					return
 				}
-				switch m.GetType() {
-				case interfaces.MessageTypePaintRequest:
-					c.handlePaintRequest(m.Router(), false)
-				default:
-					log.Printf("Unknown message type: %v\n", m.GetType())
-				}
+				c.handleMessage(m)
 			}
 		}
 	}()
 }
 
-// CallPaintExec executes a rendering operation if the surface is marked as dirty, processing selected and other tasks.
-// Returns true if the rendering process is executed, false otherwise.
-func (c *Render) handlePaintExec(router interfaces.IRouter) {
-	if !c.dirty {
-		return
+// handleMessage handles incoming messages by routing them to the appropriate handler function based on the message type.
+func (c *Render) handleMessage(msg interfaces.IMessage) {
+	switch msg.GetType() {
+	case interfaces.MessageTypePaintRequest:
+		c.handlePaintRequest(msg.Router(), false)
+	case interfaces.MessageTypeWindowsSelectionBegin:
+		c.handleWindowsSelectionBegin(msg)
+	case interfaces.MessageTypeWindowsSelectionOptions:
+		c.handleWindowsSelectionOptions(msg)
+	case interfaces.MessageTypeWindowsSelectionPrevious:
+		c.handleWindowsSelectionPrevious(msg)
+	case interfaces.MessageTypeWindowsSelectionNext:
+		c.handleWindowsSelectionNext(msg)
+	case interfaces.MessageTypeWindowsSelectionEnd:
+		c.handleWindowsSelectionEnd(msg)
+	default:
+		log.Printf("Unknown message type: %v\n", msg.GetType())
 	}
+}
+
+// handlePaintRequest triggers a paint request by marking the object as dirty and setting up the necessary ticker for repainting.
+func (c *Render) handlePaintRequest(router interfaces.IRouter, full bool) {
+	if full {
+		c.fullPaint = true
+	}
+	//if c.dirty {
+	//	return
+	//}
+	//c.dirty = true
 	w, h := c.CallGetScreenSize(router)
 	fullPaint := c.fullPaint
 	c.fullPaint = false
@@ -334,17 +313,56 @@ func (c *Render) handlePaintExec(router interfaces.IRouter) {
 	c.moveCursorTopLeft()
 	c.CallWrite(router, string(lines.Bytes()))
 	c.CallRestoreCursor(router)
-
-	c.dirty = false
+	//c.dirty = false
 }
 
-// handlePaintRequest triggers a paint request by marking the object as dirty and setting up the necessary ticker for repainting.
-func (c *Render) handlePaintRequest(router interfaces.IRouter, full bool) {
-	if full {
-		c.fullPaint = true
+// handleWindowsSelectionBegin handles the selection of a process to be displayed in the terminal.
+func (c *Render) handleWindowsSelectionBegin(msg interfaces.IMessage) {
+	c.windowSelector.Clear()
+	for idx, process := range c.running {
+		c.windowSelector.AddAvailable(process.PID())
+		if c.windowSelector.PID() == adaptiveticker.UnknownId {
+			if c.foreground != nil {
+				if c.foreground.PID() == process.PID() {
+					c.windowSelector.Set(c.foreground.PID(), idx)
+				}
+			} else {
+				c.windowSelector.Set(process.PID(), idx)
+			}
+		}
 	}
-	if !c.dirty {
-		c.dirty = true
-		c.handlePaintExec(router)
+	c.handlePaintRequest(msg.Router(), false)
+}
+
+// handleWindowsSelectionOptions processes a windows selection options message and updates the corresponding surface options.
+func (c *Render) handleWindowsSelectionOptions(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageWindowsSelectionOptions)
+	if !ok {
+		return
 	}
+	process, _ := c.running[c.windowSelector.PID()]
+	if process == nil {
+		return
+	}
+	process.surface.SetOption(mt.Option(), mt.Value())
+	c.handlePaintRequest(mt.Router(), true)
+}
+
+// handleWindowsSelectionPrevious navigates to the previous window in the selection if possible and triggers a paint request.
+func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
+	if c.windowSelector.Prev() {
+		c.handlePaintRequest(msg.Router(), false)
+	}
+}
+
+// handleWindowsSelectionNext moves the window selector to the next window and triggers a repaint if the selection changes.
+func (c *Render) handleWindowsSelectionNext(msg interfaces.IMessage) {
+	if c.windowSelector.Next() {
+		c.handlePaintRequest(msg.Router(), false)
+	}
+}
+
+// handleWindowsSelectionEnd handles the completion of the window selection process by clearing the window selector state.
+func (c *Render) handleWindowsSelectionEnd(msg interfaces.IMessage) {
+	c.windowSelector.Clear()
 }

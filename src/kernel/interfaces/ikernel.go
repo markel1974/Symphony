@@ -10,16 +10,6 @@ type IKernel interface {
 
 	CallProcessList(process IRouter) []*ProcessDescription
 
-	CallWindowsSelectionBegin(process IRouter)
-
-	CallWindowsSelectionOptions(process IRouter, option rune, value float64)
-
-	CallWindowsSelectionPrevious(process IRouter)
-
-	CallWindowsSelectionNext(process IRouter)
-
-	CallWindowsSelectionEnd(process IRouter)
-
 	CallWritePromptEOL(process IRouter, prompt string, eol bool)
 
 	CallWritePromptLine(process IRouter, prompt string, line string)

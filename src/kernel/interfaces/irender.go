@@ -7,16 +7,6 @@ type IRender interface {
 
 	CallSetScreenSize(router IRouter, width int, height int)
 
-	CallWindowsSelectionBegin(router IRouter)
-
-	CallWindowsSelectionOptions(router IRouter, option rune, value float64)
-
-	CallWindowsSelectionPrevious(router IRouter)
-
-	CallWindowsSelectionNext(router IRouter)
-
-	CallWindowsSelectionEnd(router IRouter)
-
 	CallWritePromptLine(router IRouter, prompt string, line string)
 
 	CallWritePromptEOL(router IRouter, prompt string, eol bool)

@@ -38,8 +38,14 @@ func NewProcess(kernel interfaces.IKernel, parent interfaces.IProcess, user stri
 	return t
 }
 
+// Process returns the Process instance, implementing the IProcess interface.
 func (t *Process) Process() interfaces.IProcess {
 	return t
+}
+
+// AddTimer adds a timer identified by the provided tid to the process's timers list.
+func (t *Process) AddTimer(tid int) {
+	t.timers = append(t.timers, tid)
 }
 
 // Parent retrieves the parent process of the current process instance.
@@ -200,27 +206,27 @@ func (t *Process) ProcessExec(line string) {
 
 // WindowsSelectionBegin updates the task selection for the given process ID by invoking the kernel's task selection method.
 func (t *Process) WindowsSelectionBegin() {
-	t.kernel.CallWindowsSelectionBegin(t)
+	t.kernel.PostMessage(messages.NewMessageWindowsSelectionBegin(t))
 }
 
 // WindowsSelectionEnd finalizes the current text selection process within the Windows environment for the associated process.
 func (t *Process) WindowsSelectionEnd() {
-	t.kernel.CallWindowsSelectionEnd(t)
+	t.kernel.PostMessage(messages.NewMessageWindowsSelectionEnd(t))
 }
 
 // WindowsSelectionPrevious moves the task selection pointer to the previous task in the list within the Process.
 func (t *Process) WindowsSelectionPrevious() {
-	t.kernel.CallWindowsSelectionPrevious(t)
+	t.kernel.PostMessage(messages.NewMessageWindowsSelectionPrevious(t))
 }
 
 // WindowsSelectionNext moves the task selection to the next task in the sequence by invoking the kernel method.
 func (t *Process) WindowsSelectionNext() {
-	t.kernel.CallWindowsSelectionNext(t)
+	t.kernel.PostMessage(messages.NewMessageWindowsSelectionNext(t))
 }
 
 // WindowsSelectionOptions configures selection behavior for the task based on the provided option and value.
 func (t *Process) WindowsSelectionOptions(option rune, value float64) {
-	t.kernel.CallWindowsSelectionOptions(t, option, value)
+	t.kernel.PostMessage(messages.NewMessageWindowsSelectionOptions(t, option, value))
 }
 
 // SetId sets the task's process ID, updates the caption, and appends the label if it exists.
@@ -401,11 +407,12 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 			activate(t)
 		}
 	case interfaces.MessageTypeTimerCreated:
-		mt, ok := msg.(*messages.MessageTimerCreated)
+		_, ok := msg.(*messages.MessageTimerCreated)
 		if !ok {
 			return
 		}
-		t.timers = append(t.timers, mt.TID())
+		//TODO add timer to list
+		//t.timers = append(t.timers, mt.TID())
 	default:
 		log.Printf("unknown message type: %d", msg.GetType())
 	}
