@@ -62,7 +62,6 @@ func (c *XShell) BroadcastKeyHandler(process interfaces.IProcess, code int, key 
 			//ctrl-c
 			c.selectionMode = false
 			process.KillForeground()
-			c.nextLine(process, true)
 		} else if key == 4 {
 			//ctrl-d
 			c.selectionMode = !c.selectionMode
@@ -71,7 +70,6 @@ func (c *XShell) BroadcastKeyHandler(process interfaces.IProcess, code int, key 
 			} else {
 				process.WindowsSelectionEnd()
 				process.ProcessSetForeground(process.PID())
-				c.nextLine(process, true)
 			}
 		}
 		return
@@ -278,7 +276,6 @@ func (c *XShell) enterPressed(process interfaces.IProcess) {
 	c.history.SetDefault("")
 	process.WriteLn("")
 	process.ProcessExec(buffer)
-	//c.nextLine(process, false)
 }
 
 // TabPressed handles tab key events, providing intelligent autocompletion based on current input and command context.

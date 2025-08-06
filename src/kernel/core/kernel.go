@@ -383,7 +383,7 @@ func (c *Kernel) handleProcessKillAll(m interfaces.IMessage) {
 
 // handleProcessKillForeground handles the termination of the foreground process.
 func (c *Kernel) handleProcessKillForeground(m interfaces.IMessage) {
-	_, ok := m.(*messages.MessageProcessKillAll)
+	_, ok := m.(*messages.MessageProcessKillForeground)
 	if !ok {
 		return
 	}
