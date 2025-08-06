@@ -58,6 +58,7 @@ const (
 	MessageTypeScreenSizeResponse
 	MessageTypeSetScreenSize
 	MessageTypeTimerCreate
+	MessageTypeTimerCreated
 	MessageTypeTimerStop
 	MessageTypeExitRequested
 )

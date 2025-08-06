@@ -58,6 +58,8 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, timersChan ch
 	t.handlers[interfaces.MessageTypeProcessKill] = t.handleProcessKill
 	t.handlers[interfaces.MessageTypeProcessKillAll] = t.handleProcessKillAll
 	t.handlers[interfaces.MessageTypeProcessKillForeground] = t.handleProcessKillForeground
+	t.handlers[interfaces.MessageTypeTimerCreate] = t.handleTimerCreate
+	t.handlers[interfaces.MessageTypeTimerStop] = t.handleTimerStop
 	return t
 }
 
@@ -249,31 +251,6 @@ func (c *Kernel) CallExitRequested(router interfaces.IRouter) {
 	c.exit = true
 }
 
-// CallTimerCreate initializes a timer for a process with specified timing parameters if the process and its timer event exist.
-// It creates a new message timer, assigns a timer ID, and associates the timer with the process if successful.
-func (c *Kernel) CallTimerCreate(router interfaces.IRouter, pid int, first int, interval int, count int) {
-	process, _ := c.running[pid]
-	if process == nil {
-		return
-	}
-	if process.GetCommand().OnTimer == nil {
-		return
-	}
-	m := messages.NewMessageTimer(router, pid, interval)
-	m.SetTID(c.ticker.Create(c.timersChan, m, int64(first), int64(interval), int64(count)))
-	if m.TID() > -1 {
-		process.AddTimer(m.TID())
-	}
-	return
-}
-
-// CallTimerStop stops a timer associated with a specific process and thread id, returning true if successful or false otherwise.
-func (c *Kernel) CallTimerStop(router interfaces.IRouter, pid int, tid int) {
-	if process, _ := c.running[pid]; process != nil {
-		c.doCloseTimer(process, tid)
-	}
-}
-
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
 	c.doProcessExec(c, c.user, c.shellPath, true)
@@ -349,9 +326,12 @@ func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	if process := c.running[mt.PID()]; process != nil {
-		process.PostMessage(mt)
+	process, _ := c.running[mt.PID()]
+	if process == nil {
+		mt.Router().PostMessage(messages.NewMessageError(m.Router(), fmt.Errorf("error creating timer: process not found")))
+		return
 	}
+	process.PostMessage(mt)
 }
 
 // handleTimedMessage processes a timed message by extracting its properties and scheduling it via the ticker.
@@ -403,6 +383,7 @@ func (c *Kernel) handleProcessKill(m interfaces.IMessage) {
 	}
 	process, _ := c.running[mt.PID]
 	if process == nil {
+		mt.Router().PostMessage(messages.NewMessageError(m.Router(), fmt.Errorf("error creating timer: process not found")))
 		return
 	}
 	c.doProcessExit(process)
@@ -430,15 +411,48 @@ func (c *Kernel) handleProcessKillAll(m interfaces.IMessage) {
 
 // handleProcessKillForeground handles the termination of the foreground process.
 func (c *Kernel) handleProcessKillForeground(m interfaces.IMessage) {
-	_, ok := m.(*messages.MessageProcessKillAll)
+	mt, ok := m.(*messages.MessageProcessKillAll)
 	if !ok {
 		return
 	}
 	process, _ := c.running[c.foreground.PID()]
 	if process == nil {
+		mt.Router().PostMessage(messages.NewMessageError(mt.Router(), fmt.Errorf("error creating timer: process not found")))
 		return
 	}
 	c.doProcessExit(process)
+}
+
+func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
+	mt, ok := m.(*messages.MessageTimerCreate)
+	if !ok {
+		return
+	}
+	process, _ := c.running[m.Router().PID()]
+	if process == nil {
+		mt.Router().PostMessage(messages.NewMessageError(mt.Router(), fmt.Errorf("error creating timer: process not found")))
+		return
+	}
+	z := messages.NewMessageTimer(mt.Router(), mt.Router().PID(), mt.Interval())
+	z.SetTID(c.ticker.Create(c.timersChan, z, int64(mt.First()), int64(mt.Interval()), int64(mt.Count())))
+	if z.TID() < 0 {
+		m.Router().PostMessage(messages.NewMessageError(m.Router(), fmt.Errorf("error creating timer")))
+		return
+	}
+	m.Router().PostMessage(messages.NewMessageTimerCreated(m.Router(), z.TID()))
+}
+
+func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
+	mt, ok := m.(*messages.MessageTimerStop)
+	if !ok {
+		return
+	}
+	process, _ := c.running[m.Router().PID()]
+	if process == nil {
+		m.Router().PostMessage(messages.NewMessageError(m.Router(), fmt.Errorf("error creating timer")))
+		return
+	}
+	c.doCloseTimer(process, mt.TID())
 }
 
 // handleQuitEvent handles a quit message by verifying its type and setting the kernel's exit flag to true.

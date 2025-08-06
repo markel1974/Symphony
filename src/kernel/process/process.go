@@ -74,11 +74,6 @@ func (t *Process) TimersIterator(callback func(tid int) bool) {
 	}
 }
 
-// AddTimer adds a timer identifier to the list of timers for the process.
-func (t *Process) AddTimer(tid int) {
-	t.timers = append(t.timers, tid)
-}
-
 // Description provides a brief summary of the process including its name, PID, and line information.
 func (t *Process) Description() *interfaces.ProcessDescription {
 	return interfaces.NewProcessDescription(t.cmd.Name(), t.pid, t.line, t)
@@ -115,12 +110,12 @@ func (t *Process) GetContext() interface{} {
 
 // CreateTimer initializes a timer with a specified start delay, repeat interval, and count for the current task.
 func (t *Process) CreateTimer(first int, interval int, count int) {
-	t.kernel.CallTimerCreate(t, t.pid, first, interval, count)
+	t.kernel.PostMessage(messages.NewMessageTimerCreate(t, first, interval, count))
 }
 
 // StopTimer stops a timer identified by the given timer ID (tid) for the current task and returns true if successful.
 func (t *Process) StopTimer(tid int) {
-	t.kernel.CallTimerStop(t, t.pid, tid)
+	t.kernel.PostMessage(messages.NewMessageTimerStop(t, tid))
 }
 
 // IsActive checks if the process with the specified PID is currently active in the kernel.
@@ -141,6 +136,16 @@ func (t *Process) KillForeground() {
 // KillAll terminates all tasks matching the provided name and returns the count of deactivated tasks.
 func (t *Process) KillAll(name string) {
 	t.kernel.PostMessage(messages.NewMessageProcessKillAll(t, name))
+}
+
+// ProcessSetForeground sets the foreground task by specifying its PID and returns true if successfully set.
+func (t *Process) ProcessSetForeground(pid int) {
+	t.kernel.PostMessage(messages.NewMessageProcessSetForeground(t, pid))
+}
+
+// ProcessList returns a string representation of the task list from the kernel.
+func (t *Process) ProcessList() []*interfaces.ProcessDescription {
+	return t.kernel.CallProcessList(t)
 }
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.
@@ -230,16 +235,6 @@ func (t *Process) Paint(surface interfaces.ISurface) {
 		return
 	}
 	fn(t, surface)
-}
-
-// ProcessSetForeground sets the foreground task by specifying its PID and returns true if successfully set.
-func (t *Process) ProcessSetForeground(pid int) {
-	t.kernel.PostMessage(messages.NewMessageProcessSetForeground(t, pid))
-}
-
-// ProcessList returns a string representation of the task list from the kernel.
-func (t *Process) ProcessList() []*interfaces.ProcessDescription {
-	return t.kernel.CallProcessList(t)
 }
 
 // WritePromptEOL writes the provided prompt followed by an end-of-line character if the eol parameter is true.
@@ -405,6 +400,12 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 		if activate := t.GetCommand().OnActivate(); activate != nil {
 			activate(t)
 		}
+	case interfaces.MessageTypeTimerCreated:
+		mt, ok := msg.(*messages.MessageTimerCreated)
+		if !ok {
+			return
+		}
+		t.timers = append(t.timers, mt.TID())
 	default:
 		log.Printf("unknown message type: %d", msg.GetType())
 	}

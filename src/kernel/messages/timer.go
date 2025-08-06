@@ -78,3 +78,74 @@ func (m *MessageTimedMessage) Interval() int64 {
 func (m *MessageTimedMessage) Count() int64 {
 	return m.count
 }
+
+type MessageTimerCreate struct {
+	interfaces.IMessage
+	first    int
+	interval int
+	count    int
+}
+
+// NewMessageTimerCreate initializes a new MessageTimerCreate instance with the given router, first, interval, and count values.
+// It sets the MessageType to MessageTypeTimerCreate.
+func NewMessageTimerCreate(router interfaces.IRouter, first int, interval int, count int) *MessageTimerCreate {
+	return &MessageTimerCreate{
+		IMessage: interfaces.NewMessage(router, interfaces.MessageTypeTimerCreate),
+		first:    first,
+		interval: interval,
+		count:    count,
+	}
+}
+
+// First returns the initial delay value in milliseconds for the MessageTimerCreate instance.
+func (m *MessageTimerCreate) First() int {
+	return m.first
+}
+
+// Interval retrieves the interval value associated with the MessageTimerCreate instance.
+func (m *MessageTimerCreate) Interval() int {
+	return m.interval
+}
+
+// Count returns the count value associated with the MessageTimerCreate instance.
+func (m *MessageTimerCreate) Count() int {
+	return m.count
+}
+
+// MessageTimerStop represents a message to stop a specific timer identified by its TID in the system.
+type MessageTimerStop struct {
+	interfaces.IMessage
+	tid int
+}
+
+// NewMessageTimerStop creates a new MessageTimerStop instance with the specified router and timer ID (tid).
+func NewMessageTimerStop(router interfaces.IRouter, tid int) *MessageTimerStop {
+	return &MessageTimerStop{
+		IMessage: interfaces.NewMessage(router, interfaces.MessageTypeTimerStop),
+		tid:      tid,
+	}
+}
+
+// TID returns the timer ID associated with the MessageTimerStop instance.
+func (m *MessageTimerStop) TID() int {
+	return m.tid
+}
+
+// MessageTimerCreated represents a message indicating that a timer has been successfully created within the system.
+type MessageTimerCreated struct {
+	interfaces.IMessage
+	tid int
+}
+
+// NewMessageTimerCreated creates a new instance of MessageTimerCreated with the specified router and timer ID.
+func NewMessageTimerCreated(router interfaces.IRouter, tid int) *MessageTimerCreated {
+	return &MessageTimerCreated{
+		IMessage: interfaces.NewMessage(router, interfaces.MessageTypeTimerCreated),
+		tid:      tid,
+	}
+}
+
+// TID retrieves the timer identifier associated with the MessageTimerCreated instance.
+func (m *MessageTimerCreated) TID() int {
+	return m.tid
+}

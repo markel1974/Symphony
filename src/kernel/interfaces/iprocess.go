@@ -48,8 +48,6 @@ type IProcess interface {
 
 	TimersIterator(callback func(tid int) bool)
 
-	AddTimer(tid int)
-
 	IsActive(pid int) bool
 
 	Kill(pid int)
