@@ -69,7 +69,7 @@ type IProcess interface {
 
 	PaintRequest()
 
-	Start()
+	Setup()
 
 	ProcessExec(line string)
 

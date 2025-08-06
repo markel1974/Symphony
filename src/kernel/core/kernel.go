@@ -93,11 +93,6 @@ func (c *Kernel) PostMessage(msg interfaces.IMessage) {
 	c.messageChan <- msg
 }
 
-// CallProcessList returns a formatted string containing process IDs and their respective command names managed by the Kernel.
-func (c *Kernel) CallProcessList(router interfaces.IRouter) []*interfaces.ProcessDescription {
-	return c.doProcessList()
-}
-
 // CallProcessKill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
 func (c *Kernel) CallProcessKill(router interfaces.IRouter, pid int) {
 	process, _ := c.running[pid]
@@ -139,6 +134,11 @@ func (c *Kernel) CallProcessKillAll(router interfaces.IRouter, name string) {
 	for _, task := range tasks {
 		c.doProcessExit(task)
 	}
+}
+
+// CallProcessList returns a formatted string containing process IDs and their respective command names managed by the Kernel.
+func (c *Kernel) CallProcessList(router interfaces.IRouter) []*interfaces.ProcessDescription {
+	return c.doProcessList()
 }
 
 // CallProcessIsActive checks if a process with the given PID is currently active in the Kernel's activeProcess map.
@@ -444,8 +444,8 @@ func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
 	c.exit = true
 }
 
-// taskExecutor executes a command by parsing the input line, creating a task, and managing its lifecycle and state.
-// Returns true and error if the task was created but execution failed, or true and nil if execution succeeded.
+// doProcessExec executes a process by creating it, assigning a pid, and starting it with the given user and input line.
+// Configures the command arguments, initializes the process, and notifies servers about its creation.
 func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line string) error {
 	cmd, args, err := c.fsServer.CallFind(router, line)
 	if err != nil {
@@ -457,7 +457,7 @@ func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line stri
 		return fmt.Errorf("error creating task: can't set pid")
 	}
 	c.running[process.PID()] = process
-	process.Start()
+	process.Setup()
 	for _, server := range c.servers {
 		server.NotifyProcessCreation(process.Description())
 	}
@@ -507,7 +507,7 @@ func (c *Kernel) doProcessList() []*interfaces.ProcessDescription {
 	return out
 }
 
-// closeTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
+// doCloseTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
 func (c *Kernel) doCloseTimer(task interfaces.IProcess, tid int) bool {
 	ret := false
 	if task != nil {

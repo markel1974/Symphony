@@ -45,8 +45,8 @@ func (t *Process) Parent() interfaces.IProcess {
 	return t.parent
 }
 
-// Start begins the process by setting its state to running and initiating its event loop asynchronously.
-func (t *Process) Start() {
+// Setup begins the process by setting its state to running and initiating its event loop asynchronously.
+func (t *Process) Setup() {
 	c := make(chan bool)
 	t.eventLoop(c)
 	_ = <-c
