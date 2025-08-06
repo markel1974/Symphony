@@ -1,8 +1,9 @@
 package drivers
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"io"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
 type KeyboardTerminal struct {
