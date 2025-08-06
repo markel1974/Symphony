@@ -91,7 +91,7 @@ func (a *AdaptiveTicker) RemoveEntries(tids []int) bool {
 	a.lock.Lock()
 	if !a.quit {
 		for _, tid := range tids {
-			if a.ids.Unset(tid) {
+			if a.ids.Unset(tid, true) {
 				removed = append(removed, tid)
 			}
 		}
@@ -149,7 +149,7 @@ func (a *AdaptiveTicker) doExpire(now int64) []*TimerHandler {
 			a.doAdd(now, current)
 		} else {
 			a.lock.Lock()
-			a.ids.Unset(current.id)
+			a.ids.Unset(current.id, true)
 			a.lock.Unlock()
 		}
 	}

@@ -68,7 +68,7 @@ func (a *Ids) Get(id int) (IIds, bool) {
 }
 
 // Unset removes an ID and its associated object, marking the ID as free and resetting the object's ID. Returns true on success.
-func (a *Ids) Unset(id int) bool {
+func (a *Ids) Unset(id int, clear bool) bool {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	if id < 0 || id >= a.max {
@@ -82,7 +82,9 @@ func (a *Ids) Unset(id int) bool {
 	a.ll.Remove(element)
 	delete(a.kv, id)
 	a.freeIds = append(a.freeIds, id)
-	obj.SetId(UnknownId)
+	if clear {
+		obj.SetId(UnknownId)
+	}
 	return true
 }
 

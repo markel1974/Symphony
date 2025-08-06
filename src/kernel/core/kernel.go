@@ -68,14 +68,17 @@ func (c *Kernel) Process() interfaces.IProcess {
 	return nil
 }
 
+// PID retrieves the process identifier (PID) of the kernel instance.
 func (c *Kernel) PID() int {
 	return 0
 }
 
+// User returns the name of the user associated with the Kernel instance.
 func (c *Kernel) User() string {
 	return c.user
 }
 
+// AddServer adds a new server to the kernel, registers its handlers, sets the router, and starts the server.
 func (c *Kernel) AddServer(server interfaces.IServer) {
 	c.servers = append(c.servers, server)
 	for _, r := range server.Register() {
@@ -391,6 +394,7 @@ func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 	}
 }
 
+// handleTimedMessage processes a timed message by extracting its properties and scheduling it via the ticker.
 func (c *Kernel) handleTimedMessage(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageTimedMessage)
 	if !ok {
@@ -474,10 +478,11 @@ func (c *Kernel) doProcessSetForeground(router interfaces.IRouter, process inter
 
 // doProcessExit handles the termination process of a given IProcess, ensuring cleanup of resources and notifying observers.
 func (c *Kernel) doProcessExit(process interfaces.IProcess) {
+	delete(c.running, process.PID())
+	c.pidGenerator.Unset(process.PID(), false)
 	if len(process.Timers()) > 0 {
 		c.ticker.RemoveEntries(process.Timers())
 	}
-	process.PostMessage(messages.NewMessageQuit(process))
 	for _, server := range c.servers {
 		server.NotifyProcessTermination(process.Description())
 	}
@@ -490,8 +495,7 @@ func (c *Kernel) doProcessExit(process interfaces.IProcess) {
 			}
 		}
 	}
-	c.pidGenerator.Unset(process.PID())
-	delete(c.running, process.PID())
+	process.PostMessage(messages.NewMessageQuit(process))
 }
 
 // doProcessList retrieves a list of process descriptions by iterating through all stored processes in the Kernel.
