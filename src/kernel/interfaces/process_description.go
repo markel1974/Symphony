@@ -5,16 +5,13 @@ type ProcessDescription struct {
 	name string
 	pid  int
 	line string
-	//TODO REMOVE PROCESS!!!!!
-	process IProcess
 }
 
-func NewProcessDescription(name string, pid int, line string, process IProcess) *ProcessDescription {
+func NewProcessDescription(name string, pid int, line string) *ProcessDescription {
 	return &ProcessDescription{
-		name:    name,
-		pid:     pid,
-		line:    line,
-		process: process,
+		name: name,
+		pid:  pid,
+		line: line,
 	}
 }
 
@@ -33,6 +30,7 @@ func (p *ProcessDescription) Line() string {
 	return p.line
 }
 
+/*
 // HasPaint returns true if the ProcessDescription has a valid OnPaint assigned; otherwise, false.
 func (p *ProcessDescription) HasPaint() bool {
 	return p.process.GetCommand().OnPaint() != nil
@@ -43,3 +41,6 @@ func (p *ProcessDescription) HasPaint() bool {
 func (p *ProcessDescription) Paint(surface ISurface) {
 	p.process.Paint(surface)
 }
+
+
+*/

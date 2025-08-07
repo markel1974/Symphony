@@ -50,7 +50,7 @@ func (t *Process) Setup() {
 
 // Description provides a brief summary of the process including its name, PID, and line information.
 func (t *Process) Description() *interfaces.ProcessDescription {
-	return interfaces.NewProcessDescription(t.cmd.Name(), t.pid, t.line, t)
+	return interfaces.NewProcessDescription(t.cmd.Name(), t.pid, t.line)
 }
 
 // Line returns the line configuration of the Process as a string.
@@ -358,6 +358,20 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 			return
 		}
 		t.timers = append(t.timers, mt.TID())
+	case interfaces.MessageTypePaintPrepare:
+		mt, ok := msg.(*messages.MessagePaintPrepare)
+		if !ok {
+			return
+		}
+		if paintEvent := t.cmd.OnPaint(); paintEvent != nil {
+			mt.Surface().Begin()
+			paintEvent(t, mt.Surface())
+			//mt.Surface().Paint(surface)
+			mt.Surface().End()
+
+			ma := messages.NewMessagePaintApply(t, mt.Surface())
+			t.kernel.PostMessage(ma)
+		}
 	default:
 		log.Printf("unknown message type: %d", msg.GetType())
 	}

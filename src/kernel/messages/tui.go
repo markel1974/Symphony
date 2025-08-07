@@ -1,18 +1,8 @@
 package messages
 
-import "github.com/markel1974/c64emu/src/kernel/interfaces"
-
-// MessagePaint represents a message used to trigger a paint operation. It embeds the Message struct.
-//type MessagePaint struct {
-//	interfaces.Message
-//}
-
-// NewMessagePaint creates a new instance of MessagePaint with the MessageType set to MessageTypePaint.
-//func NewMessagePaint() *MessagePaint {
-//	return &MessagePaint{
-//		Message: *interfaces.NewMessage(interfaces.MessageTypePaint),
-//	}
-//}
+import (
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+)
 
 // MessagePaintRequest represents a message used to trigger a paint operation. It embeds the Message struct.
 type MessagePaintRequest struct {
@@ -24,6 +14,49 @@ func NewMessagePaintRequest(router interfaces.IRouter) *MessagePaintRequest {
 	return &MessagePaintRequest{
 		Message: *interfaces.NewMessage(router, interfaces.MessageTypePaintRequest),
 	}
+}
+
+// MessagePaintPrepare represents a message used to trigger a paint operation. It embeds the Message struct.
+type MessagePaintPrepare struct {
+	interfaces.Message
+	surface interfaces.ISurface
+}
+
+// NewMessagePaintPrepare creates a new instance of MessagePaint with the MessageType set to MessageTypePaint.
+func NewMessagePaintPrepare(router interfaces.IRouter, surface interfaces.ISurface) *MessagePaintPrepare {
+	mp := &MessagePaintPrepare{
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypePaintPrepare),
+		surface: surface,
+	}
+	mp.SetReply()
+	return mp
+}
+
+// Surface returns the ISurface associated with the MessagePaint instance.
+func (m *MessagePaintPrepare) Surface() interfaces.ISurface {
+	return m.surface
+}
+
+// MessagePaintApply represents a message used to apply painting or rendering operations on an ISurface.
+// It embeds the generic Message type and associates an ISurface for graphical or textual manipulations.
+// Surface provides access to the ISurface instance associated with this message for drawing and rendering tasks.
+type MessagePaintApply struct {
+	interfaces.Message
+	surface interfaces.ISurface
+}
+
+// NewMessagePaintApply creates a new MessagePaintApply instance with the specified router and surface for rendering tasks.
+func NewMessagePaintApply(router interfaces.IRouter, surface interfaces.ISurface) *MessagePaintApply {
+	mp := &MessagePaintApply{
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypePaintApply),
+		surface: surface,
+	}
+	return mp
+}
+
+// Surface returns the ISurface associated with the MessagePaint instance.
+func (m *MessagePaintApply) Surface() interfaces.ISurface {
+	return m.surface
 }
 
 // MessageWindowsSelectionBegin represents a message signaling the start of a Windows selection operation.

@@ -9,6 +9,8 @@ const (
 	MessageTypeTimer
 	MessageTypeTimedMessage
 	MessageTypePaintRequest
+	MessageTypePaintPrepare
+	MessageTypePaintApply
 	MessageTypeQuit
 	MessageTypeProcessExec
 	MessageTypeProcessStart
@@ -69,6 +71,8 @@ type IMessage interface {
 
 	Router() IRouter
 
+	Reply() bool
+
 	Ack()
 }
 
@@ -76,6 +80,7 @@ type IMessage interface {
 type Message struct {
 	router IRouter
 	kind   MessageType
+	reply  bool
 }
 
 // NewMessage creates a new Message instance with the specified MessageType.
@@ -83,6 +88,7 @@ func NewMessage(router IRouter, kind MessageType) *Message {
 	return &Message{
 		router: router,
 		kind:   kind,
+		reply:  false,
 	}
 }
 
@@ -94,6 +100,15 @@ func (m *Message) GetType() MessageType {
 // Router returns the IRouter instance associated with the current Message instance.
 func (m *Message) Router() IRouter {
 	return m.router
+}
+
+// Reply returns a boolean indicating whether the message should be responded to.
+func (m *Message) Reply() bool {
+	return m.reply
+}
+
+func (m *Message) SetReply() {
+	m.reply = true
 }
 
 // Ack acknowledges the processing of the message, preventing further handling or retries by the system.

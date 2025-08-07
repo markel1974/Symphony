@@ -238,6 +238,10 @@ func (c *Kernel) eventLoop() {
 
 // handleMessageEvent processes an incoming IMessage by dispatching it to the appropriate handlers based on its type.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
+	if m.Reply() {
+		m.Router().PostMessage(m)
+		return
+	}
 	id := m.GetType()
 	if handler, _ := c.handlers[id]; handler != nil {
 		handler(m)

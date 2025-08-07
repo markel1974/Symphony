@@ -2,9 +2,10 @@ package render
 
 import (
 	"bytes"
+	"math"
+
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/servers/render/plotter"
-	"math"
 )
 
 // Surface represents a two-dimensional grid-based rendering surface for text-based terminal output.
@@ -22,7 +23,6 @@ type Surface struct {
 	user           bool
 	caption        string
 	selection      bool
-	full           bool
 	iRows          int
 	iColumns       int
 	zIndex         int
@@ -40,11 +40,22 @@ func NewSurface(terminal interfaces.ITerminal, rows int, columns int, caption st
 		offsetY:  0,
 		rMax:     0,
 		border:   1,
-		full:     false,
 		zIndex:   0,
 	}
-	s.Prepare(rows, columns, true)
+	s.Prepare(rows, columns)
 	return s
+}
+
+// Clone returns a copy of the Surface.
+func (s *Surface) Clone() *Surface {
+	t := NewSurface(s.terminal, s.rows, s.columns, s.caption)
+	t.scale = s.scale
+	t.offsetX = s.offsetX
+	t.offsetY = s.offsetY
+	t.rMax = s.rMax
+	t.border = s.border
+	t.zIndex = s.zIndex
+	return t
 }
 
 // SetOption updates the task's X, Y offsets or Scale based on the given option ('x', 'y', or 'z') and value.
@@ -62,9 +73,8 @@ func (s *Surface) SetOption(option rune, value float64) {
 }
 
 // Prepare adjusts the dimensions of the Surface to the specified rows and columns, resetting or reallocating data as needed.
-func (s *Surface) Prepare(rows int, columns int, full bool) {
+func (s *Surface) Prepare(rows int, columns int) {
 	s.rMax = 0
-	s.full = full
 	if rows == s.rows && columns == s.columns {
 		for r := range s.surface {
 			copy(s.surface[r], s.columnsCleaner)
@@ -129,11 +139,6 @@ func (s *Surface) GetSize() (int, int) {
 		columns -= s.border * 2
 	}
 	return rows, columns
-}
-
-// SetCompletePaint enables full rendering mode, marking the entire surface as requiring a complete repaint.
-func (s *Surface) SetCompletePaint(f bool) {
-	s.full = f
 }
 
 // SetSelectionMode sets the selection mode for the Surface. If true, the surface will render in selection mode.
@@ -241,9 +246,9 @@ func (s *Surface) compute(r int, c int) (int, int) {
 }
 
 // GetBuffer generates a byte slice representing the surface content, limited by the render boundary.
-func (s *Surface) GetBuffer(lines *bytes.Buffer) {
+func (s *Surface) GetBuffer(lines *bytes.Buffer, full bool) {
 	var maximum int
-	if s.full {
+	if full {
 		maximum = s.rows * s.columns
 	} else {
 		maximum = (s.rMax + 1) * s.columns
