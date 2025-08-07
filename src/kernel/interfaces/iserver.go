@@ -5,9 +5,7 @@ type IServer interface {
 
 	Start()
 
-	SetRouter(router IRouter)
-
-	Register() []MessageType
+	Register(router IRouter) []MessageType
 
 	NotifyProcessCreation(desc *ProcessDescription)
 

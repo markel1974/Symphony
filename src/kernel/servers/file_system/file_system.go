@@ -21,6 +21,7 @@ type FileSystem struct {
 	parser      *Parser
 	messageChan chan interfaces.IMessage
 	router      interfaces.IRouter
+	handlers    map[interfaces.MessageType]func(interfaces.IMessage)
 }
 
 // NewFileSystem initializes and returns a new FileSystem instance with the given root command and an empty search path list.
@@ -34,14 +35,16 @@ func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.IComma
 	if searchPath == nil {
 		searchPath = []interfaces.ICommand{}
 	}
-	return &FileSystem{
+	fs := &FileSystem{
 		user:        user,
 		root:        root,
 		cwd:         root,
 		searchPaths: searchPath,
 		parser:      NewParser(false, false, ""),
 		messageChan: make(chan interfaces.IMessage, 128),
+		handlers:    make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
+	return fs
 }
 
 // Process returns nil, as the file system does not have a process.
@@ -58,9 +61,13 @@ func (c *FileSystem) User() string {
 	return c.user
 }
 
-// SetRouter sets the IRouter instance for the FileSystem, allowing it to handle message routing.
-func (c *FileSystem) SetRouter(router interfaces.IRouter) {
+func (c *FileSystem) Register(router interfaces.IRouter) []interfaces.MessageType {
 	c.router = router
+	var out []interfaces.MessageType
+	for id := range c.handlers {
+		out = append(out, id)
+	}
+	return out
 }
 
 // Start begins the process by setting its state to running and initiating its event loop asynchronously.
@@ -74,14 +81,6 @@ func (c *FileSystem) Start() {
 func (c *FileSystem) PostMessage(m interfaces.IMessage) {
 	c.messageChan <- m
 }
-
-// CallAddSearchPath adds a new ICommand instance to the searchPaths slice for fs resolution.
-//func (c *FileSystem) CallAddSearchPath(router interfaces.IRouter, sp interfaces.ICommand) {
-//	if sp == nil {
-//		return
-//	}
-//	c.searchPaths = append(c.searchPaths, sp)
-//}
 
 // CallCWDSet updates the current working directory to the specified path and returns true if the operation is successful.
 func (c *FileSystem) CallCWDSet(router interfaces.IRouter, arg string) bool {
@@ -100,6 +99,14 @@ func (c *FileSystem) CallCWDSet(router interfaces.IRouter, arg string) bool {
 	}
 	return false
 }
+
+// CallAddSearchPath adds a new ICommand instance to the searchPaths slice for fs resolution.
+//func (c *FileSystem) CallAddSearchPath(router interfaces.IRouter, sp interfaces.ICommand) {
+//	if sp == nil {
+//		return
+//	}
+//	c.searchPaths = append(c.searchPaths, sp)
+//}
 
 // CallCWDName returns the name of the current working directory command.
 func (c *FileSystem) CallCWDName(router interfaces.IRouter) string {
@@ -395,6 +402,7 @@ func (c *FileSystem) deduplicateSuggestions(s []string) []string {
 
 // NotifyProcessCreation handles notifications related to the creation of a process within the file system context.
 func (c *FileSystem) NotifyProcessCreation(desc *interfaces.ProcessDescription) {
+	//todo notify cwd (cwd non è del filesystem, ma è del processo stesso!)
 }
 
 // NotifyProcessTermination handles notifications related to the termination of a process within the file system context.
@@ -402,10 +410,6 @@ func (c *FileSystem) NotifyProcessTermination(desc *interfaces.ProcessDescriptio
 }
 
 func (c *FileSystem) NotifyProcessForeground(desc *interfaces.ProcessDescription) {
-}
-
-func (c *FileSystem) Register() []interfaces.MessageType {
-	return []interfaces.MessageType{}
 }
 
 // evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
@@ -418,11 +422,16 @@ func (c *FileSystem) eventLoop(r chan bool) {
 				if !ok {
 					return
 				}
-				if m.GetType() == interfaces.MessageTypeQuit {
+				id := m.GetType()
+				if id == interfaces.MessageTypeQuit {
 					close(c.messageChan)
 					return
 				}
-				log.Println("FileSystem: unknownMessage type", m.GetType())
+				if handler, _ := c.handlers[id]; handler != nil {
+					handler(m)
+				} else {
+					log.Printf("FileSystem: unknown message type: %d", id)
+				}
 			}
 		}
 	}()

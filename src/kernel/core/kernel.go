@@ -86,10 +86,10 @@ func (c *Kernel) User() string {
 // AddServer adds a new server to the kernel, registers its handlers, sets the router, and starts the server.
 func (c *Kernel) AddServer(server interfaces.IServer) {
 	c.servers = append(c.servers, server)
-	for _, r := range server.Register() {
-		c.handlers[r] = server.PostMessage
+	handlers := server.Register(c)
+	for _, h := range handlers {
+		c.handlers[h] = server.PostMessage
 	}
-	server.SetRouter(c)
 	server.Start()
 }
 
@@ -238,10 +238,11 @@ func (c *Kernel) eventLoop() {
 
 // handleMessageEvent processes an incoming IMessage by dispatching it to the appropriate handlers based on its type.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
-	if handler, ok := c.handlers[m.GetType()]; ok {
+	id := m.GetType()
+	if handler, _ := c.handlers[id]; handler != nil {
 		handler(m)
 	} else {
-		log.Printf("unknown message type: %d", m.GetType())
+		log.Printf("Kernel: unknown message type: %d", id)
 	}
 }
 
