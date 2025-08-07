@@ -10,18 +10,19 @@ import (
 
 // Surface represents a two-dimensional grid-based rendering surface for text-based terminal output.
 type Surface struct {
+	interpreted    *InterpretedSurface
 	terminal       interfaces.ITerminal
-	rows           int
-	columns        int
 	surface        [][]string
 	columnsCleaner []string
+	caption        string
+	rows           int
+	columns        int
 	rowMax         int
 	scale          float64
 	offsetX        int
 	offsetY        int
 	border         int
 	user           bool
-	caption        string
 	selection      bool
 	iRows          int
 	iColumns       int
@@ -31,19 +32,41 @@ type Surface struct {
 // NewSurface initializes a new Surface object with the provided terminal, row, and column dimensions.
 func NewSurface(terminal interfaces.ITerminal, rows int, columns int, caption string) *Surface {
 	s := &Surface{
-		terminal: terminal,
-		caption:  caption,
-		rows:     -1,
-		columns:  -1,
-		scale:    1.0,
-		offsetX:  0,
-		offsetY:  0,
-		rowMax:   0,
-		border:   1,
-		zIndex:   0,
+		terminal:    terminal,
+		caption:     caption,
+		rows:        -1,
+		columns:     -1,
+		scale:       1.0,
+		offsetX:     0,
+		offsetY:     0,
+		rowMax:      0,
+		border:      1,
+		zIndex:      0,
+		interpreted: nil,
 	}
 	s.Prepare(rows, columns)
 	return s
+}
+
+// Assign copies the properties of the given Surface to the current one.
+func (s *Surface) Assign(surface *Surface) {
+	s.caption = surface.caption
+	s.scale = surface.scale
+	s.offsetX = surface.offsetX
+	s.offsetY = surface.offsetY
+	s.border = surface.border
+	s.selection = surface.selection
+	s.zIndex = surface.zIndex
+}
+
+// SetInterpretedSurface sets the descriptive surface for the Surface.
+func (s *Surface) SetInterpretedSurface(surface *InterpretedSurface) {
+	s.interpreted = surface
+}
+
+// GetInterpretedSurface retrieves the descriptive surface for the Surface.
+func (s *Surface) GetInterpretedSurface() *InterpretedSurface {
+	return s.interpreted
 }
 
 // SetOption updates the task's X, Y offsets or Scale based on the given option ('x', 'y', or 'z') and value.

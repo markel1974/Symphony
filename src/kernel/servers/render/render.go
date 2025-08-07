@@ -205,22 +205,59 @@ func (c *Render) eventLoop(r chan bool) {
 
 // handlePaintRequest handles paint requests by triggering a repaint.
 func (c *Render) handlePaintRequest(msg interfaces.IMessage) {
-	mp := messages.NewMessagePaintPrepare(msg.Router(), NewDescriptiveSurface(c.height, c.width))
+	mp := messages.NewMessagePaintPrepare(msg.Router(), NewInterpretedSurface(c.height, c.width))
 	c.router.PostMessage(mp)
 }
 
+// handlePaintApply handles paint apply messages by applying the surface to the terminal and triggering a repaint.
 func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessagePaintApply)
 	if !ok {
 		return
 	}
-	pid := msg.Router().PID()
-	process, _ := c.running[pid]
-	if process == nil {
+	component, _ := c.running[msg.Router().PID()]
+	if component == nil {
 		return
 	}
-	process.SetDescriptiveSurface(mt.Surface())
-	c.doPaint(mt.Router(), false)
+	component.SetInterpretedSurface(mt.Surface())
+
+	fullPaint := c.fullPaint
+	c.fullPaint = false
+
+	var surfaces []*Surface
+	for _, process := range c.running {
+		surface := process.Surface()
+		if process.PID() == c.windowSelector.PID() {
+			surface.SetZIndex(255)
+			surface.SetSelectionMode(true)
+		} else {
+			surface.SetZIndex(0)
+			surface.SetSelectionMode(false)
+		}
+		surfaces = append(surfaces, surface)
+	}
+
+	sort.SliceStable(surfaces, func(i, j int) bool {
+		return surfaces[i].ZIndex() < surfaces[j].ZIndex()
+	})
+
+	var lines bytes.Buffer
+	c.surface.Prepare(c.height, c.width)
+
+	for _, surface := range surfaces {
+		if surface.interpreted != nil {
+			c.surface.Assign(surface)
+			c.surface.Begin()
+			surface.GetInterpretedSurface().Appy(c.surface)
+			c.surface.End()
+		}
+	}
+	c.surface.GetBuffer(&lines, fullPaint)
+
+	c.CallSaveCursor(mt.Router())
+	c.doMoveCursorTopLeft()
+	c.CallWrite(mt.Router(), string(lines.Bytes()), false)
+	c.CallRestoreCursor(mt.Router())
 }
 
 // handleWindowsSelectionBegin handles the selection of a process to be displayed in the terminal.
@@ -238,7 +275,7 @@ func (c *Render) handleWindowsSelectionBegin(msg interfaces.IMessage) {
 			}
 		}
 	}
-	mp := messages.NewMessagePaintPrepare(msg.Router(), NewDescriptiveSurface(c.height, c.width))
+	mp := messages.NewMessagePaintPrepare(msg.Router(), NewInterpretedSurface(c.height, c.width))
 	c.router.PostMessage(mp)
 }
 
@@ -255,14 +292,14 @@ func (c *Render) handleWindowsSelectionOptions(msg interfaces.IMessage) {
 	}
 	process.Surface().SetOption(mt.Option(), mt.Value())
 	c.fullPaint = true
-	mp := messages.NewMessagePaintPrepare(msg.Router(), NewDescriptiveSurface(c.height, c.width))
+	mp := messages.NewMessagePaintPrepare(msg.Router(), NewInterpretedSurface(c.height, c.width))
 	c.router.PostMessage(mp)
 }
 
 // handleWindowsSelectionPrevious navigates to the previous window in the selection if possible and triggers a paint request.
 func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
 	if c.windowSelector.Prev() {
-		mp := messages.NewMessagePaintPrepare(msg.Router(), NewDescriptiveSurface(c.height, c.width))
+		mp := messages.NewMessagePaintPrepare(msg.Router(), NewInterpretedSurface(c.height, c.width))
 		c.router.PostMessage(mp)
 	}
 }
@@ -270,7 +307,7 @@ func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
 // handleWindowsSelectionNext moves the window selector to the next window and triggers a repaint if the selection changes.
 func (c *Render) handleWindowsSelectionNext(msg interfaces.IMessage) {
 	if c.windowSelector.Next() {
-		mp := messages.NewMessagePaintPrepare(msg.Router(), NewDescriptiveSurface(c.height, c.width))
+		mp := messages.NewMessagePaintPrepare(msg.Router(), NewInterpretedSurface(c.height, c.width))
 		c.router.PostMessage(mp)
 	}
 }
@@ -290,41 +327,4 @@ func (c *Render) doClearLine(line string) {
 func (c *Render) doMoveCursorTopLeft() {
 	p := c.driver.CreateMoveCursorTopLeft()
 	_, _ = c.driver.Write(p)
-}
-
-// doPaint renders and updates the UI by processing components and their surfaces based on the given router and paint mode.
-// Components are sorted by their zIndex for proper rendering order, and final output is sent to the router interface.
-func (c *Render) doPaint(router interfaces.IRouter, full bool) {
-	if full {
-		c.fullPaint = true
-	}
-	fullPaint := c.fullPaint
-	c.fullPaint = false
-	rowMax := 0
-	var tasks []*Component
-	for _, process := range c.running {
-		process.Compile(c.height, c.width, c.windowSelector.PID())
-		if process.RowMax() > rowMax {
-			rowMax = process.RowMax()
-		}
-		tasks = append(tasks, process)
-	}
-
-	sort.SliceStable(tasks, func(i, j int) bool {
-		return tasks[i].Surface().ZIndex() < tasks[j].Surface().ZIndex()
-	})
-
-	var lines bytes.Buffer
-	w, h := c.CallGetScreenSize(router)
-	c.surface.Prepare(h, w)
-	c.surface.SetRowMax(rowMax)
-	for _, s := range tasks {
-		c.surface.Merge(s.Surface())
-	}
-	c.surface.GetBuffer(&lines, fullPaint)
-
-	c.CallSaveCursor(router)
-	c.doMoveCursorTopLeft()
-	c.CallWrite(router, string(lines.Bytes()), false)
-	c.CallRestoreCursor(router)
 }

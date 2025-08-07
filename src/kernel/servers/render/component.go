@@ -8,9 +8,8 @@ import (
 
 // Component represents a UI or system entity combining process details with associated rendering surfaces.
 type Component struct {
-	descriptiveSurface *DescriptiveSurface
-	surface            *Surface
-	pid                int
+	surface *Surface
+	pid     int
 }
 
 // NewComponent initializes and returns a new Component instance using the provided process description and terminal interface.
@@ -20,9 +19,8 @@ func NewComponent(pid int, description string, terminal interfaces.ITerminal, ro
 		caption += " - " + description
 	}
 	c := &Component{
-		pid:                pid,
-		descriptiveSurface: nil,
-		surface:            NewSurface(terminal, rows, columns, caption),
+		pid:     pid,
+		surface: NewSurface(terminal, rows, columns, caption),
 	}
 	return c
 }
@@ -47,21 +45,21 @@ func (c *Component) Compile(height int, width int, activePid int) {
 	c.surface.Prepare(height, width)
 	c.surface.SetZIndex(0)
 	c.surface.SetSelectionMode(false)
-	if c.descriptiveSurface != nil {
+	if c.surface.interpreted != nil {
 		if c.PID() == activePid {
 			c.surface.SetZIndex(255)
 			c.surface.SetSelectionMode(true)
 		}
 		c.surface.Begin()
-		c.descriptiveSurface.Appy(c.surface)
+		c.surface.interpreted.Appy(c.surface)
 		c.surface.End()
 	}
 }
 
-// SetDescriptiveSurface sets the descriptive surface for the Component.
-func (c *Component) SetDescriptiveSurface(surface interfaces.ISurface) {
-	s, _ := surface.(*DescriptiveSurface)
+// SetInterpretedSurface sets the descriptive surface for the Component.
+func (c *Component) SetInterpretedSurface(surface interfaces.ISurface) {
+	s, _ := surface.(*InterpretedSurface)
 	if s != nil {
-		c.descriptiveSurface = s
+		c.surface.SetInterpretedSurface(s)
 	}
 }
