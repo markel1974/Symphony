@@ -14,7 +14,7 @@ type IKernel interface {
 
 	CallScreenSize(process IRouter) (int, int)
 
-	CallCWDSet(process IRouter, arg string) bool
+	//CallCWDSet(process IRouter, arg string) bool
 
 	CallCWDPath(process IRouter) string
 

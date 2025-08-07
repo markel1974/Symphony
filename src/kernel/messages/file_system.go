@@ -4,14 +4,35 @@ import "github.com/markel1974/c64emu/src/kernel/interfaces"
 
 type MessageCWDSet struct {
 	interfaces.Message
-	Path string
+	path   string
+	ack    chan bool
+	result bool
 }
 
-func NewMessageCWDSet(router interfaces.IRouter, path string) *MessageCWDSet {
+func NewMessageCWDSet(router interfaces.IRouter, path string, ack chan bool) *MessageCWDSet {
 	return &MessageCWDSet{
 		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDSet),
-		Path:    path,
+		path:    path,
+		ack:     ack,
 	}
+}
+
+func (m *MessageCWDSet) Ack() bool {
+	m.ack <- true
+	return true
+}
+
+func (m *MessageCWDSet) Path() string {
+	return m.path
+}
+
+func (m *MessageCWDSet) SetResult(result bool) {
+	m.MakeResponse()
+	m.result = result
+}
+
+func (m *MessageCWDSet) GetResult() bool {
+	return m.result
 }
 
 type MessageCWDGetRequest struct {
@@ -32,7 +53,7 @@ func (m *MessageCWDGetRequest) SetResult(result string) {
 	m.result = result
 }
 
-func (m *MessageCWDGetRequest) Result() string {
+func (m *MessageCWDGetRequest) GetResult() string {
 	return m.result
 }
 

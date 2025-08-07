@@ -48,6 +48,7 @@ func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.IComma
 
 	fs.handlers[interfaces.MessageTypeCWDGetRequest] = fs.handleCWDGetRequest
 	fs.handlers[interfaces.MessageTypeFileSystemSuggestion] = fs.handleSuggestion
+	fs.handlers[interfaces.MessageTypeCWDSet] = fs.handleCWDSet
 	return fs
 }
 
@@ -87,21 +88,30 @@ func (c *FileSystem) PostMessage(m interfaces.IMessage) {
 }
 
 // CallCWDSet updates the current working directory to the specified path and returns true if the operation is successful.
-func (c *FileSystem) CallCWDSet(router interfaces.IRouter, arg string) bool {
+func (c *FileSystem) handleCWDSet(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageCWDSet)
+	if !ok {
+		return
+	}
 	var path []string
-	for _, part := range strings.Split(arg, interfaces.PathSeparator) {
+	for _, part := range strings.Split(mt.Path(), interfaces.PathSeparator) {
 		if len(part) > 0 {
 			path = append(path, part)
 		}
 	}
 	if cmd := c.cwd.Traverse(path); cmd != nil {
 		if cmd.Type() != interfaces.CommandTypeDirectory {
-			return false
+			mt.SetResult(false)
+			msg.Router().PostMessage(mt)
+			return
 		}
 		c.cwd = cmd
-		return true
+		mt.SetResult(true)
+		msg.Router().PostMessage(mt)
+		return
 	}
-	return false
+	mt.SetResult(false)
+	msg.Router().PostMessage(mt)
 }
 
 // CallAddSearchPath adds a new ICommand instance to the searchPaths slice for fs resolution.

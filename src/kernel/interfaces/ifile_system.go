@@ -3,7 +3,7 @@ package interfaces
 type IFileSystem interface {
 	IServer
 
-	CallCWDSet(router IRouter, arg string) bool
+	//CallCWDSet(router IRouter, arg string) bool
 
 	//CallCWDName(router IRouter) string
 

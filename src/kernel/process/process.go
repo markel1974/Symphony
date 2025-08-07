@@ -132,7 +132,10 @@ func (t *Process) GetScreenSize() (int, int) {
 
 // CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
 func (t *Process) CWDSet(arg string) bool {
-	return t.kernel.CallCWDSet(t, arg)
+	msg := messages.NewMessageCWDSet(t, arg, t.executorWaitChan)
+	t.kernel.PostMessage(msg)
+	<-t.executorWaitChan
+	return msg.GetResult()
 }
 
 // CWDName returns the current working directory name by invoking a kernel-level method.
@@ -140,7 +143,7 @@ func (t *Process) CWDName() string {
 	msg := messages.NewMessageCWDGet(t, t.executorWaitChan)
 	t.kernel.PostMessage(msg)
 	<-t.executorWaitChan
-	return msg.Result()
+	return msg.GetResult()
 }
 
 // CWDPath retrieves the current working directory as a string from the associated kernel instance.
