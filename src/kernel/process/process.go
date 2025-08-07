@@ -137,7 +137,7 @@ func (t *Process) CWDSet(arg string) bool {
 
 // CWDName returns the current working directory name by invoking a kernel-level method.
 func (t *Process) CWDName() string {
-	msg := messages.NewMessageCWDGetRequest(t, t.executorWaitChan)
+	msg := messages.NewMessageCWDGet(t, t.executorWaitChan)
 	t.kernel.PostMessage(msg)
 	<-t.executorWaitChan
 	return msg.Result()
@@ -155,7 +155,10 @@ func (t *Process) CWDDirectoryListing() []string {
 
 // Suggestion provides auto-completion suggestions based on the input string and cursor position. Returns prefix, suggestions, and a success flag.
 func (t *Process) Suggestion(in string, cursor int) (string, []string, bool) {
-	return t.kernel.CallFileSystemSuggestion(t, in, cursor)
+	msg := messages.NewMessageFileSystemSuggestion(t, in, cursor, t.executorWaitChan)
+	t.kernel.PostMessage(msg)
+	<-t.executorWaitChan
+	return msg.GetResponse()
 }
 
 // Help calls the kernel's Help method with the provided argument and returns the result or an error.

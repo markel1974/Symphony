@@ -20,7 +20,7 @@ type MessageCWDGetRequest struct {
 	ack    chan bool
 }
 
-func NewMessageCWDGetRequest(router interfaces.IRouter, ack chan bool) *MessageCWDGetRequest {
+func NewMessageCWDGet(router interfaces.IRouter, ack chan bool) *MessageCWDGetRequest {
 	return &MessageCWDGetRequest{
 		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDGetRequest),
 		ack:     ack,
@@ -57,22 +57,60 @@ type MessageCWDDirectoryListingRequest struct {
 
 func NewMessageCWDDirectoryListingRequest(router interfaces.IRouter) *MessageCWDDirectoryListingRequest {
 	return &MessageCWDDirectoryListingRequest{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDDirectoryListingRequest),
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDDirectoryListing),
 	}
 }
 
+// MessageFileSystemSuggestionRequest represents a message for requesting filesystem suggestions based on user input.
+// It captures the input string, cursor position, and provides an acknowledgment channel for processing confirmation.
+// The structure enables setting and retrieving responses containing prefix, suggestions, and their validity.
 type MessageFileSystemSuggestionRequest struct {
 	interfaces.Message
-	In     string
-	Cursor int
+	in         string
+	cursor     int
+	ack        chan bool
+	prefix     string
+	suggestion []string
+	valid      bool
 }
 
-func NewMessageFileSystemSuggestionRequest(router interfaces.IRouter, in string, cursor int) *MessageFileSystemSuggestionRequest {
+// NewMessageFileSystemSuggestion creates a new MessageFileSystemSuggestionRequest with provided router, input text, cursor position, and acknowledgment channel.
+func NewMessageFileSystemSuggestion(router interfaces.IRouter, in string, cursor int, ack chan bool) *MessageFileSystemSuggestionRequest {
 	return &MessageFileSystemSuggestionRequest{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemSuggestionRequest),
-		In:      in,
-		Cursor:  cursor,
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemSuggestion),
+		in:      in,
+		cursor:  cursor,
+		ack:     ack,
 	}
+}
+
+// Ack acknowledges the message by signaling through the ack channel and returns true to confirm the acknowledgment.
+func (m *MessageFileSystemSuggestionRequest) Ack() bool {
+	m.ack <- true
+	return true
+}
+
+// In returns the `in` field of the MessageFileSystemSuggestionRequest instance as a string.
+func (m *MessageFileSystemSuggestionRequest) In() string {
+	return m.in
+}
+
+// Cursor returns the current cursor position as an integer.
+func (m *MessageFileSystemSuggestionRequest) Cursor() int {
+	return m.cursor
+}
+
+// SetResponse sets the response data with the given prefix, suggestions, and validation state.
+func (m *MessageFileSystemSuggestionRequest) SetResponse(prefix string, suggestion []string, valid bool) {
+	m.MakeResponse()
+	m.prefix = prefix
+	m.suggestion = suggestion
+	m.valid = valid
+}
+
+// GetResponse retrieves the suggestion result, including the prefix, suggestions list, and validity flag.
+func (m *MessageFileSystemSuggestionRequest) GetResponse() (prefix string, suggestion []string, valid bool) {
+	return m.prefix, m.suggestion, m.valid
 }
 
 type MessageFileSystemHelpRequest struct {
@@ -84,33 +122,5 @@ func NewMessageFileSystemHelpRequest(router interfaces.IRouter, arg string) *Mes
 	return &MessageFileSystemHelpRequest{
 		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemHelpRequest),
 		Arg:     arg,
-	}
-}
-
-type MessageCWDDirectoryListingResponse struct {
-	interfaces.Message
-	Listing []string
-}
-
-func NewMessageCWDDirectoryListingResponse(router interfaces.IRouter, listing []string) *MessageCWDDirectoryListingResponse {
-	return &MessageCWDDirectoryListingResponse{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDDirectoryListingResponse),
-		Listing: listing,
-	}
-}
-
-type MessageFileSystemSuggestionResponse struct {
-	interfaces.Message
-	Prefix      string
-	Suggestions []string
-	Found       bool
-}
-
-func NewMessageFileSystemSuggestionResponse(router interfaces.IRouter, prefix string, suggestions []string, found bool) *MessageFileSystemSuggestionResponse {
-	return &MessageFileSystemSuggestionResponse{
-		Message:     *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemSuggestionResponse),
-		Prefix:      prefix,
-		Suggestions: suggestions,
-		Found:       found,
 	}
 }

@@ -22,5 +22,5 @@ type IKernel interface {
 
 	CallFileSystemHelp(process IRouter, arg string) (string, error)
 
-	CallFileSystemSuggestion(process IRouter, in string, cursor int) (string, []string, bool)
+	//CallFileSystemSuggestion(process IRouter, in string, cursor int) (string, []string, bool)
 }

@@ -15,5 +15,5 @@ type IFileSystem interface {
 
 	CallHelp(router IRouter, path string) (string, error)
 
-	CallSuggestion(router IRouter, in string, cursor int) (string, []string, bool)
+	//CallSuggestion(router IRouter, in string, cursor int) (string, []string, bool)
 }

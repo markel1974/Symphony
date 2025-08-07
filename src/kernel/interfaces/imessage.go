@@ -30,10 +30,8 @@ const (
 	MessageTypeCWDPathResponse
 	MessageTypeCWDNameRequest
 	MessageTypeCWDNameResponse
-	MessageTypeCWDDirectoryListingRequest
-	MessageTypeCWDDirectoryListingResponse
-	MessageTypeFileSystemSuggestionRequest
-	MessageTypeFileSystemSuggestionResponse
+	MessageTypeCWDDirectoryListing
+	MessageTypeFileSystemSuggestion
 	MessageTypeFileSystemHelpRequest
 	MessageTypeFileSystemHelpResponse
 	MessageTypeWrite

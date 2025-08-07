@@ -47,7 +47,7 @@ func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.IComma
 	}
 
 	fs.handlers[interfaces.MessageTypeCWDGetRequest] = fs.handleCWDGetRequest
-
+	fs.handlers[interfaces.MessageTypeFileSystemSuggestion] = fs.handleSuggestion
 	return fs
 }
 
@@ -195,10 +195,16 @@ func (c *FileSystem) CallHelp(router interfaces.IRouter, path string) (string, e
 
 // CallSuggestion generates command suggestions based on the provided input and current directory context.
 // It returns the input prefix, a list of suggestions, and a boolean indicating if suggestions exist.
-func (c *FileSystem) CallSuggestion(router interfaces.IRouter, in string, cursor int) (string, []string, bool) {
-	textBeforeSegment, nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInput(c.cwd, in, cursor)
+func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageFileSystemSuggestionRequest)
+	if !ok {
+		return
+	}
+	textBeforeSegment, nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInput(c.cwd, mt.In(), mt.Cursor())
 	if err != nil || nodeToQuery == nil {
-		return "", nil, false
+		mt.SetResponse("", nil, false)
+		msg.Router().PostMessage(mt)
+		return
 	}
 	prefix := prefixToComplete
 
@@ -216,7 +222,9 @@ func (c *FileSystem) CallSuggestion(router interfaces.IRouter, in string, cursor
 	}
 
 	if len(rawSuggestions) == 0 {
-		return prefix, nil, false
+		mt.SetResponse(prefix, nil, false)
+		msg.Router().PostMessage(mt)
+		return
 	}
 
 	suggestions := make([]string, 0, len(rawSuggestions))
@@ -244,18 +252,17 @@ func (c *FileSystem) CallSuggestion(router interfaces.IRouter, in string, cursor
 		}
 		suggestions = append(suggestions, fullSuggestion)
 	}
-
 	if len(suggestions) > 1 {
 		sort.Strings(suggestions)
 		suggestions = c.deduplicateSuggestions(suggestions)
 	}
-
 	if len(textBeforeSegment) > 0 {
 		for i, suggestion := range suggestions {
 			suggestions[i] = textBeforeSegment + " " + suggestion
 		}
 	}
-	return prefix, suggestions, len(suggestions) > 0
+	mt.SetResponse(prefix, suggestions, len(suggestions) > 0)
+	msg.Router().PostMessage(mt)
 }
 
 // parseInput parses the input string to determine the relevant command context, path, and completion prefix details.

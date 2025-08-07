@@ -99,11 +99,6 @@ func (c *Kernel) PostMessage(msg interfaces.IMessage) {
 	c.messageChan <- msg
 }
 
-// CallProcessList returns a formatted string containing process IDs and their respective command names managed by the Kernel.
-//func (c *Kernel) CallProcessList(router interfaces.IRouter) []*interfaces.ProcessDescription {
-//	return c.doProcessList()
-//}
-
 // CallProcessIsActive checks if a process with the given PID is currently active in the Kernel's activeProcess map.
 func (c *Kernel) CallProcessIsActive(router interfaces.IRouter, pid int) bool {
 	active, _ := c.running[pid]
@@ -125,19 +120,9 @@ func (c *Kernel) CallCWDPath(router interfaces.IRouter) string {
 	return c.fsServer.CallCWDPath(router)
 }
 
-// CallCWDName returns the name of the current working directory as a string.
-//func (c *Kernel) CallCWDName(router interfaces.IRouter) string {
-//	return c.fsServer.CallCWDName(router)
-//}
-
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
 func (c *Kernel) CallCWDDirectoryListing(router interfaces.IRouter) []string {
 	return c.fsServer.CallCWDDirectoryListing(router)
-}
-
-// CallFileSystemSuggestion provides autocomplete suggestions and context for a given input string at a specified cursor position.
-func (c *Kernel) CallFileSystemSuggestion(router interfaces.IRouter, in string, cursor int) (string, []string, bool) {
-	return c.fsServer.CallSuggestion(router, in, cursor)
 }
 
 // CallFileSystemHelp retrieves the help information associated with the given argument and returns it as a string.
@@ -358,6 +343,20 @@ func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
 	c.doCloseTimer(process, mt.TID())
 }
 
+// handleProcessList processes a message requesting a list of running processes and sends the response with process details.
+func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageProcessListRequest)
+	if !ok {
+		return
+	}
+	var out []*interfaces.ProcessDescription
+	for _, process := range c.running {
+		out = append(out, process.Description())
+	}
+	mt.SetProcesses(out)
+	mt.Router().PostMessage(mt)
+}
+
 // handleQuitEvent handles a quit message by verifying its type and setting the kernel's exit flag to true.
 func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
 	_, ok := m.(*messages.MessageQuit)
@@ -426,20 +425,6 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 		}
 	}
 	process.PostMessage(messages.NewMessageQuit(process))
-}
-
-// doProcessList retrieves a list of process descriptions by iterating through all stored processes in the Kernel.
-func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
-	mt, ok := msg.(*messages.MessageProcessListRequest)
-	if !ok {
-		return
-	}
-	var out []*interfaces.ProcessDescription
-	for _, process := range c.running {
-		out = append(out, process.Description())
-	}
-	mt.SetProcesses(out)
-	mt.Router().PostMessage(mt)
 }
 
 // doCloseTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
