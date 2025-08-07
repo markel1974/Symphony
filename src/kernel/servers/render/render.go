@@ -46,6 +46,7 @@ func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
 		surface:        NewSurface(driver, height, width, ""),
 		handlers:       make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
+	r.handlers[interfaces.MessageTypeSetScreenSize] = r.handleSetScreenSize
 	r.handlers[interfaces.MessageTypePaintRequest] = r.handlePaintRequest
 	r.handlers[interfaces.MessageTypePaintApply] = r.handlePaintApply
 	r.handlers[interfaces.MessageTypeWindowsSelectionBegin] = r.handleWindowsSelectionBegin
@@ -53,6 +54,14 @@ func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
 	r.handlers[interfaces.MessageTypeWindowsSelectionPrevious] = r.handleWindowsSelectionPrevious
 	r.handlers[interfaces.MessageTypeWindowsSelectionNext] = r.handleWindowsSelectionNext
 	r.handlers[interfaces.MessageTypeWindowsSelectionEnd] = r.handleWindowsSelectionEnd
+	r.handlers[interfaces.MessageTypeClearLine] = r.handleClearLine
+	r.handlers[interfaces.MessageTypeClearScreen] = r.handleClearScreen
+	r.handlers[interfaces.MessageTypeSaveCursor] = r.handleSaveCursor
+	r.handlers[interfaces.MessageTypeRestoreCursor] = r.handleRestoreCursor
+	r.handlers[interfaces.MessageTypeMoveCursorLeft] = r.handleMoveCursorLeft
+	r.handlers[interfaces.MessageTypeMoveCursorRight] = r.handleMoveCursorRight
+	r.handlers[interfaces.MessageTypeWrite] = r.handleWrite
+	r.handlers[interfaces.MessageTypeWriteColor] = r.handleWriteColor
 	return r
 }
 
@@ -93,70 +102,6 @@ func (c *Render) PostMessage(m interfaces.IMessage) {
 	c.messageChan <- m
 }
 
-// CallGetScreenSize returns the current screen width and height of the Render instance.
-func (c *Render) CallGetScreenSize(router interfaces.IRouter) (int, int) {
-	return c.width, c.height
-}
-
-// CallClearLine clears the specified line from the terminal screen using the underlying ITerminal implementation.
-func (c *Render) CallClearLine(router interfaces.IRouter, line string) {
-	c.doClearLine(line)
-}
-
-// CallSetScreenSize updates the screen's width and height, marks the screen for a full repaint, and sets the terminal size.
-func (c *Render) CallSetScreenSize(router interfaces.IRouter, width int, height int) {
-	c.width = width
-	c.height = height
-	c.fullPaint = true
-}
-
-// CallClearScreen clears the terminal screen using the underlying ITerminal implementation.
-func (c *Render) CallClearScreen(router interfaces.IRouter) {
-	p := c.driver.CreateClearScreen()
-	_, _ = c.driver.Write(p)
-}
-
-// CallSaveCursor saves the current cursor position in the terminal for future restoration.
-func (c *Render) CallSaveCursor(router interfaces.IRouter) {
-	p := c.driver.CreateSaveCursor()
-	_, _ = c.driver.Write(p)
-}
-
-// CallRestoreCursor restores the saved cursor position in the terminal using the associated ITerminal implementation.
-func (c *Render) CallRestoreCursor(router interfaces.IRouter) {
-	p := c.driver.CreateRestoreCursor()
-	_, _ = c.driver.Write(p)
-}
-
-// CallMoveCursorLeft moves the terminal cursor one position to the left using the underlying terminal implementation.
-func (c *Render) CallMoveCursorLeft(router interfaces.IRouter) {
-	p := c.driver.CreateMoveCursorLeft()
-	_, _ = c.driver.Write(p)
-}
-
-// CallMoveCursorRight moves the cursor one position to the right in the terminal.
-func (c *Render) CallMoveCursorRight(router interfaces.IRouter) {
-	p := c.driver.CreateMoveCursorRight()
-	_, _ = c.driver.Write(p)
-}
-
-// CallWrite writes the provided string to the terminal followed by an end-of-line character.
-func (c *Render) CallWrite(router interfaces.IRouter, data string, eol bool) {
-	_, _ = c.driver.Write([]byte(data))
-	if eol {
-		_, _ = c.driver.Write([]byte(eolDef))
-	}
-}
-
-// CallWriteColor writes the given text with specified foreground and background colors and mode, followed by a line break.
-func (c *Render) CallWriteColor(router interfaces.IRouter, data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) {
-	p := c.driver.CreateColorize(data, int(fg), int(bg), mode)
-	_, _ = c.driver.Write([]byte(p))
-	if eol {
-		_, _ = c.driver.Write([]byte(eolDef))
-	}
-}
-
 // NotifyProcessCreation notifies the Render instance about the creation of a new process and updates internal state if necessary.
 func (c *Render) NotifyProcessCreation(pid int, name string) {
 	c.running[pid] = NewComponent(pid, name, c.driver, c.height, c.width)
@@ -176,6 +121,22 @@ func (c *Render) NotifyProcessForeground(pid int) {
 		return
 	}
 	c.foreground = p
+}
+
+// CallGetScreenSize returns the current screen width and height of the Render instance.
+func (c *Render) CallGetScreenSize(router interfaces.IRouter) (int, int) {
+	return c.width, c.height
+}
+
+// CallSetScreenSize updates the screen's width and height, marks the screen for a full repaint, and sets the terminal size.
+func (c *Render) handleSetScreenSize(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageSetScreenSize)
+	if !ok {
+		return
+	}
+	c.width = mt.Width()
+	c.height = mt.Height()
+	c.fullPaint = true
 }
 
 // evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
@@ -254,10 +215,10 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 	}
 	c.surface.GetBuffer(&lines, fullPaint)
 
-	c.CallSaveCursor(mt.Router())
+	c.doSaveCursor()
 	c.doMoveCursorTopLeft()
-	c.CallWrite(mt.Router(), string(lines.Bytes()), false)
-	c.CallRestoreCursor(mt.Router())
+	c.doWrite(string(lines.Bytes()), false)
+	c.doRestoreCursor()
 }
 
 // handleWindowsSelectionBegin handles the selection of a process to be displayed in the terminal.
@@ -317,6 +278,76 @@ func (c *Render) handleWindowsSelectionEnd(msg interfaces.IMessage) {
 	c.windowSelector.Clear()
 }
 
+func (c *Render) handleClearLine(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageClearLine)
+	if !ok {
+		return
+	}
+	c.doClearLine(mt.Line())
+}
+
+func (c *Render) handleClearScreen(msg interfaces.IMessage) {
+	_, ok := msg.(*messages.MessageClearScreen)
+	if !ok {
+		return
+	}
+	c.doClearScreen()
+}
+
+func (c *Render) handleSaveCursor(msg interfaces.IMessage) {
+	_, ok := msg.(*messages.MessageSaveCursor)
+	if !ok {
+		return
+	}
+	c.doSaveCursor()
+}
+
+func (c *Render) handleRestoreCursor(msg interfaces.IMessage) {
+	_, ok := msg.(*messages.MessageRestoreCursor)
+	if !ok {
+		return
+	}
+	c.doRestoreCursor()
+}
+
+func (c *Render) handleMoveCursorLeft(msg interfaces.IMessage) {
+	_, ok := msg.(*messages.MessageMoveCursorLeft)
+	if !ok {
+		return
+	}
+	c.doMoveCursorLeft()
+}
+
+func (c *Render) handleMoveCursorRight(msg interfaces.IMessage) {
+	_, ok := msg.(*messages.MessageMoveCursorRight)
+	if !ok {
+		return
+	}
+	c.doMoveCursorRight()
+}
+
+// CallWrite writes the provided string to the terminal followed by an end-of-line character.
+func (c *Render) handleWrite(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageWrite)
+	if !ok {
+		return
+	}
+	c.doWrite(mt.Data(), mt.Eol())
+}
+
+// CallWriteColor writes the given text with specified foreground and background colors and mode, followed by a line break.
+func (c *Render) handleWriteColor(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageWriteColor)
+	if !ok {
+		return
+	}
+	p := c.driver.CreateColorize(mt.Data(), int(mt.Fg()), int(mt.Bg()), mt.Mode())
+	_, _ = c.driver.Write([]byte(p))
+	if mt.Eol() {
+		_, _ = c.driver.Write([]byte(eolDef))
+	}
+}
+
 // clearLine clears the specified line from the terminal screen using the terminal implementation of the associated Render object.
 func (c *Render) doClearLine(line string) {
 	p := c.driver.CreateClearLine(line)
@@ -327,4 +358,42 @@ func (c *Render) doClearLine(line string) {
 func (c *Render) doMoveCursorTopLeft() {
 	p := c.driver.CreateMoveCursorTopLeft()
 	_, _ = c.driver.Write(p)
+}
+
+// doClearScreen clears the terminal screen by generating and writing a clear screen sequence via the driver.
+func (c *Render) doClearScreen() {
+	p := c.driver.CreateClearScreen()
+	_, _ = c.driver.Write(p)
+}
+
+// doSaveCursor saves the current cursor position using the driver's CreateSaveCursor method and writes it to the output.
+func (c *Render) doSaveCursor() {
+	p := c.driver.CreateSaveCursor()
+	_, _ = c.driver.Write(p)
+}
+
+// doRestoreCursor restores the cursor to its last saved position using the underlying driver's capabilities.
+func (c *Render) doRestoreCursor() {
+	p := c.driver.CreateRestoreCursor()
+	_, _ = c.driver.Write(p)
+}
+
+// doMoveCursorLeft moves the cursor one position to the left using the associated driver commands.
+func (c *Render) doMoveCursorLeft() {
+	p := c.driver.CreateMoveCursorLeft()
+	_, _ = c.driver.Write(p)
+}
+
+// doMoveCursorRight moves the cursor one step to the right on the rendering interface using the associated driver.
+func (c *Render) doMoveCursorRight() {
+	p := c.driver.CreateMoveCursorRight()
+	_, _ = c.driver.Write(p)
+}
+
+// doWrite writes the provided data string to the driver and optionally appends an end-of-line delimiter if eol is true.
+func (c *Render) doWrite(data string, eol bool) {
+	_, _ = c.driver.Write([]byte(data))
+	if eol {
+		_, _ = c.driver.Write([]byte(eolDef))
+	}
 }

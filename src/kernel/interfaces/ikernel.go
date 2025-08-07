@@ -14,21 +14,21 @@ type IKernel interface {
 
 	CallProcessList(process IRouter) []*ProcessDescription
 
-	CallWrite(process IRouter, data string, eol bool)
+	//CallWrite(process IRouter, data string, eol bool)
 
-	CallWriteColor(process IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode, eol bool)
+	//CallWriteColor(process IRouter, data string, fg ColorDef, bg ColorDef, mode ColorMode, eol bool)
 
-	CallMoveCursorLeft(process IRouter)
+	//CallMoveCursorLeft(process IRouter)
 
-	CallMoveCursorRight(process IRouter)
+	//CallMoveCursorRight(process IRouter)
 
-	CallSaveCursor(process IRouter)
+	//CallSaveCursor(process IRouter)
 
-	CallRestoreCursor(process IRouter)
+	//CallRestoreCursor(process IRouter)
 
-	CallClearLine(router IRouter, line string)
+	//CallClearLine(router IRouter, line string)
 
-	CallClearScreen(process IRouter)
+	//CallClearScreen(process IRouter)
 
 	CallScreenSize(process IRouter) (int, int)
 

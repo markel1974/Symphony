@@ -65,7 +65,7 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver i
 
 // SetScreenSize adjusts the screen dimensions to the specified width and height values.
 func (c *Kernel) SetScreenSize(w int, h int) {
-	c.renderServer.CallSetScreenSize(c, w, h)
+	c.messageChan <- messages.NewMessageSetScreenSize(c, w, h)
 }
 
 // Process returns the current foreground process.
@@ -109,49 +109,9 @@ func (c *Kernel) CallProcessIsActive(router interfaces.IRouter, pid int) bool {
 	return active != nil
 }
 
-// CallWrite sends the provided string data to the kernel's rendering writer for output.
-func (c *Kernel) CallWrite(router interfaces.IRouter, data string, eol bool) {
-	c.renderServer.CallWrite(router, data, eol)
-}
-
-// CallWriteColor writes a string to the output with specified foreground color, background color, and color mode.
-func (c *Kernel) CallWriteColor(router interfaces.IRouter, data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) {
-	c.renderServer.CallWriteColor(router, data, fg, bg, mode, eol)
-}
-
-// CallClearScreen clears the screen by invoking the associated renderer's CreateClearScreen method.
-func (c *Kernel) CallClearScreen(router interfaces.IRouter) {
-	c.renderServer.CallClearScreen(router)
-}
-
-// CallClearLine clears the line at the current cursor position by invoking the associated renderer's CreateClearLine method.'
-func (c *Kernel) CallClearLine(router interfaces.IRouter, line string) {
-	c.renderServer.CallClearLine(router, line)
-}
-
 // CallScreenSize retrieves the screen's width and height as integers from the render instance.
 func (c *Kernel) CallScreenSize(router interfaces.IRouter) (int, int) {
 	return c.renderServer.CallGetScreenSize(router)
-}
-
-// CallMoveCursorLeft moves the cursor one position to the left within the render context.
-func (c *Kernel) CallMoveCursorLeft(router interfaces.IRouter) {
-	c.renderServer.CallMoveCursorLeft(router)
-}
-
-// CallMoveCursorRight moves the cursor one position to the right by invoking the render's CreateMoveCursorRight method.
-func (c *Kernel) CallMoveCursorRight(router interfaces.IRouter) {
-	c.renderServer.CallMoveCursorRight(router)
-}
-
-// CallSaveCursor saves the current cursor state by invoking the CreateSaveCursor method on the associated renderer.
-func (c *Kernel) CallSaveCursor(router interfaces.IRouter) {
-	c.renderServer.CallSaveCursor(router)
-}
-
-// CallRestoreCursor restores the cursor to its previous position using the render instance of the Kernel.
-func (c *Kernel) CallRestoreCursor(router interfaces.IRouter) {
-	c.renderServer.CallRestoreCursor(router)
 }
 
 // CallCWDSet sets the current working directory to the specified path and updates the shell prompt accordingly.
@@ -168,11 +128,6 @@ func (c *Kernel) CallCWDPath(router interfaces.IRouter) string {
 func (c *Kernel) CallCWDName(router interfaces.IRouter) string {
 	return c.fsServer.CallCWDName(router)
 }
-
-// CallCWDPathEntries retrieves the current working directory's path as a slice of strings from the filesystem instance.
-//func (c *Kernel) CallCWDPathEntries(router interfaces.IRouter) []string {
-//	return c.fsServer.CallCWDPathEntries(router)
-//}
 
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
 func (c *Kernel) CallCWDDirectoryListing(router interfaces.IRouter) []string {

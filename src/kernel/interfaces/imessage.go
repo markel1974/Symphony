@@ -40,13 +40,8 @@ const (
 	MessageTypeWrite
 	MessageTypeWriteLn
 	MessageTypeWriteColor
-	MessageTypeWriteColorLn
-	MessageTypeWriteNormal
-	MessageTypeWriteHighlights
-	MessageTypeWriteCritical
-	MessageTypeWritePromptEOL
-	MessageTypeWritePromptLine
 	MessageTypeClearScreen
+	MessageTypeClearLine
 	MessageTypeMoveCursorLeft
 	MessageTypeMoveCursorRight
 	MessageTypeSaveCursor
@@ -73,7 +68,7 @@ type IMessage interface {
 
 	Reply() bool
 
-	Ack()
+	//Ack()
 }
 
 // Message represents a basic unit containing a MessageType to define its specific behavior or category.

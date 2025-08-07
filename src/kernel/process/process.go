@@ -137,11 +137,6 @@ func (t *Process) CWDSet(arg string) bool {
 	return t.kernel.CallCWDSet(t, arg)
 }
 
-// CWDPathEntries retrieves the current working directory path as a slice of strings from the kernel.
-//func (t *Process) CWDPathEntries() []string {
-//	return t.kernel.CallCWDPathEntries(t)
-//}
-
 // CWDName returns the current working directory name by invoking a kernel-level method.
 func (t *Process) CWDName() string {
 	return t.kernel.CallCWDName(t)
@@ -199,55 +194,55 @@ func (t *Process) WindowsSelectionOptions(option rune, value float64) {
 
 // WritePromptEOL writes the provided prompt followed by an end-of-line character if the eol parameter is true.
 func (t *Process) WritePromptEOL(prompt string, eol bool) {
-	t.kernel.CallWriteColor(t, "", interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, eol)
-	t.kernel.CallWriteColor(t, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
+	t.kernel.PostMessage(messages.NewMessageWriteColor(t, "", interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, eol))
+	t.kernel.PostMessage(messages.NewMessageWriteColor(t, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false))
 }
 
 // WritePromptLine sends a specified prompt and line string to the kernel for handling the output display.
 func (t *Process) WritePromptLine(prompt string, line string) {
-	t.kernel.CallClearLine(t, line)
-	t.kernel.CallWriteColor(t, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
-	t.kernel.CallWriteColor(t, line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
+	t.kernel.PostMessage(messages.NewMessageClearLine(t, line))
+	t.kernel.PostMessage(messages.NewMessageWriteColor(t, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false))
+	t.kernel.PostMessage(messages.NewMessageWriteColor(t, line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false))
 }
 
 // Write sends the provided string data to the kernel's write mechanism associated with the task.
 func (t *Process) Write(data string, eol bool) {
-	t.kernel.CallWrite(t, data, eol)
+	t.kernel.PostMessage(messages.NewMessageWrite(t, data, eol))
 }
 
 // WriteColor writes a string to the output with specified foreground, background colors, and a color mode.
 func (t *Process) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) {
-	t.kernel.CallWriteColor(t, data, fg, bg, mode, eol)
+	t.kernel.PostMessage(messages.NewMessageWriteColor(t, data, fg, bg, mode, eol))
 }
 
 // WriteForeground writes the given data to the foreground with the specified color using the kernel's functionality.
 func (t *Process) WriteForeground(data string, color interfaces.ColorDef, eol bool) {
-	t.kernel.CallWriteColor(t, data, color, interfaces.ColorNoneDef, interfaces.ModeNormal, eol)
+	t.kernel.PostMessage(messages.NewMessageWriteColor(t, data, color, interfaces.ColorNoneDef, interfaces.ModeNormal, eol))
 }
 
 // MoveCursorLeft moves the cursor one position to the left within the render context.
 func (t *Process) MoveCursorLeft() {
-	t.kernel.CallMoveCursorLeft(t)
+	t.kernel.PostMessage(messages.NewMessageMoveCursorLeft(t))
 }
 
 // MoveCursorRight moves the cursor one position to the right by invoking the render's MoveCursorRight method.
 func (t *Process) MoveCursorRight() {
-	t.kernel.CallMoveCursorRight(t)
+	t.kernel.PostMessage(messages.NewMessageMoveCursorRight(t))
 }
 
 // SaveCursor saves the current cursor state by invoking the SaveCursor method on the associated renderer.
 func (t *Process) SaveCursor() {
-	t.kernel.CallSaveCursor(t)
+	t.kernel.PostMessage(messages.NewMessageSaveCursor(t))
 }
 
 // RestoreCursor restores the cursor to its previous position using the render instance of the Kernel.
 func (t *Process) RestoreCursor() {
-	t.kernel.CallRestoreCursor(t)
+	t.kernel.PostMessage(messages.NewMessageRestoreCursor(t))
 }
 
 // ClearScreen clears the task's screen by delegating the request to the associated kernel.
 func (t *Process) ClearScreen() {
-	t.kernel.CallClearScreen(t)
+	t.kernel.PostMessage(messages.NewMessageClearScreen(t))
 }
 
 func (t *Process) RequestProcessList() []*interfaces.ProcessDescription {
@@ -278,7 +273,7 @@ func (t *Process) eventLoop(r chan bool) {
 				if !ok {
 					return
 				}
-				m.Ack()
+				//m.Ack()
 				if m.GetType() == interfaces.MessageTypeQuit {
 					close(t.messageChan)
 					return
@@ -357,7 +352,6 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 		if paintEvent := t.cmd.OnPaint(); paintEvent != nil {
 			mt.Surface().Begin()
 			paintEvent(t, mt.Surface())
-			//mt.Surface().Paint(surface)
 			mt.Surface().End()
 
 			ma := messages.NewMessagePaintApply(t, mt.Surface())
