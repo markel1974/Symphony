@@ -128,18 +128,7 @@ func (c *Render) CallGetScreenSize(router interfaces.IRouter) (int, int) {
 	return c.width, c.height
 }
 
-// CallSetScreenSize updates the screen's width and height, marks the screen for a full repaint, and sets the terminal size.
-func (c *Render) handleSetScreenSize(msg interfaces.IMessage) {
-	mt, ok := msg.(*messages.MessageSetScreenSize)
-	if !ok {
-		return
-	}
-	c.width = mt.Width()
-	c.height = mt.Height()
-	c.fullPaint = true
-}
-
-// evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
+// eventLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
 func (c *Render) eventLoop(r chan bool) {
 	go func() {
 		r <- true
@@ -162,6 +151,17 @@ func (c *Render) eventLoop(r chan bool) {
 			}
 		}
 	}()
+}
+
+// handleSetScreenSize handles setting the screen size by updating width, height, and triggering a full repaint.
+func (c *Render) handleSetScreenSize(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageSetScreenSize)
+	if !ok {
+		return
+	}
+	c.width = mt.Width()
+	c.height = mt.Height()
+	c.fullPaint = true
 }
 
 // handlePaintRequest handles paint requests by triggering a repaint.
@@ -278,6 +278,7 @@ func (c *Render) handleWindowsSelectionEnd(msg interfaces.IMessage) {
 	c.windowSelector.Clear()
 }
 
+// handleClearLine processes a clear line message by invoking the doClearLine method if the message is of correct type.
 func (c *Render) handleClearLine(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageClearLine)
 	if !ok {
@@ -286,6 +287,7 @@ func (c *Render) handleClearLine(msg interfaces.IMessage) {
 	c.doClearLine(mt.Line())
 }
 
+// handleClearScreen processes a clear screen message and invokes the method to clear the screen if the message is valid.
 func (c *Render) handleClearScreen(msg interfaces.IMessage) {
 	_, ok := msg.(*messages.MessageClearScreen)
 	if !ok {
@@ -294,6 +296,7 @@ func (c *Render) handleClearScreen(msg interfaces.IMessage) {
 	c.doClearScreen()
 }
 
+// handleSaveCursor processes a save cursor message and triggers the logic to save the current cursor state if valid.
 func (c *Render) handleSaveCursor(msg interfaces.IMessage) {
 	_, ok := msg.(*messages.MessageSaveCursor)
 	if !ok {
@@ -302,6 +305,7 @@ func (c *Render) handleSaveCursor(msg interfaces.IMessage) {
 	c.doSaveCursor()
 }
 
+// handleRestoreCursor processes a restore cursor message and updates the rendering state if the message is valid.
 func (c *Render) handleRestoreCursor(msg interfaces.IMessage) {
 	_, ok := msg.(*messages.MessageRestoreCursor)
 	if !ok {
@@ -310,6 +314,7 @@ func (c *Render) handleRestoreCursor(msg interfaces.IMessage) {
 	c.doRestoreCursor()
 }
 
+// handleMoveCursorLeft moves the cursor one position to the left using the associated driver commands.
 func (c *Render) handleMoveCursorLeft(msg interfaces.IMessage) {
 	_, ok := msg.(*messages.MessageMoveCursorLeft)
 	if !ok {
@@ -318,6 +323,7 @@ func (c *Render) handleMoveCursorLeft(msg interfaces.IMessage) {
 	c.doMoveCursorLeft()
 }
 
+// handleMoveCursorRight moves the cursor one step to the right on the rendering interface using the associated driver.
 func (c *Render) handleMoveCursorRight(msg interfaces.IMessage) {
 	_, ok := msg.(*messages.MessageMoveCursorRight)
 	if !ok {
@@ -326,7 +332,7 @@ func (c *Render) handleMoveCursorRight(msg interfaces.IMessage) {
 	c.doMoveCursorRight()
 }
 
-// CallWrite writes the provided string to the terminal followed by an end-of-line character.
+// handleWrite writes the provided string to the terminal followed by an end-of-line character.
 func (c *Render) handleWrite(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageWrite)
 	if !ok {
@@ -335,7 +341,7 @@ func (c *Render) handleWrite(msg interfaces.IMessage) {
 	c.doWrite(mt.Data(), mt.Eol())
 }
 
-// CallWriteColor writes the given text with specified foreground and background colors and mode, followed by a line break.
+// handleWriteColor writes the provided string to the terminal using the provided foreground and background colors.
 func (c *Render) handleWriteColor(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageWriteColor)
 	if !ok {
@@ -348,13 +354,13 @@ func (c *Render) handleWriteColor(msg interfaces.IMessage) {
 	}
 }
 
-// clearLine clears the specified line from the terminal screen using the terminal implementation of the associated Render object.
+// doClearLine clears the specified line by generating a clear line sequence and writing it through the driver.
 func (c *Render) doClearLine(line string) {
 	p := c.driver.CreateClearLine(line)
 	_, _ = c.driver.Write(p)
 }
 
-// moveCursorTopLeft moves the terminal cursor to the top-left position using the underlying terminal implementation.
+// doMoveCursorTopLeft moves the cursor to the top-left position of the rendering surface using the underlying driver.
 func (c *Render) doMoveCursorTopLeft() {
 	p := c.driver.CreateMoveCursorTopLeft()
 	_, _ = c.driver.Write(p)
