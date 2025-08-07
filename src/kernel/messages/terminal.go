@@ -2,6 +2,35 @@ package messages
 
 import "github.com/markel1974/c64emu/src/kernel/interfaces"
 
+type MessageGetScreenSize struct {
+	interfaces.Message
+	width  int
+	height int
+	ack    chan bool
+}
+
+func NewMessageGetScreenSize(router interfaces.IRouter, ack chan bool) *MessageGetScreenSize {
+	return &MessageGetScreenSize{
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeGetScreenSize),
+		ack:     ack,
+	}
+}
+
+func (m *MessageGetScreenSize) Ack() bool {
+	m.ack <- true
+	return true
+}
+
+func (m *MessageGetScreenSize) SetResult(width int, height int) {
+	m.MakeResponse()
+	m.width = width
+	m.height = height
+}
+
+func (m *MessageGetScreenSize) GetResult() (int, int) {
+	return m.width, m.height
+}
+
 // MessageSetScreenSize represents a message to set the screen's width and height in the rendering system.
 // It embeds the base Message type and includes width and height properties to define the screen dimensions.
 type MessageSetScreenSize struct {

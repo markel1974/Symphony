@@ -58,7 +58,7 @@ func (c *Context) Setup(terminal interfaces.ITerminal) {
 
 	terminalRender := render.NewRender(admin, videoDriver)
 	fs := file_system.NewFileSystem(admin, commands, []interfaces.ICommand{systemCommands})
-	c.kernel = NewKernel(admin, c.ticker, keyboardDriver, terminalRender, xsh)
+	c.kernel = NewKernel(admin, c.ticker, keyboardDriver, xsh)
 	c.kernel.AddServer(terminalRender)
 	c.kernel.AddServer(fs)
 }

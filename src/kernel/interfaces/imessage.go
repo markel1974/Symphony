@@ -8,6 +8,7 @@ const (
 	MessageTypeQuit
 	MessageTypeRead
 	MessageTypeTimer
+	MessageTypeGetScreenSize
 	MessageTypeSetScreenSize
 	MessageTypeTimerCreate
 	MessageTypeTimerCreated

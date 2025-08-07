@@ -127,7 +127,10 @@ func (t *Process) PaintRequest() {
 
 // GetScreenSize returns the width and height of the screen as integers.
 func (t *Process) GetScreenSize() (int, int) {
-	return t.kernel.CallScreenSize(t)
+	msg := messages.NewMessageGetScreenSize(t, t.executorWaitChan)
+	t.kernel.PostMessage(msg)
+	<-t.executorWaitChan
+	return msg.GetResult()
 }
 
 // CWDSet sets the current working directory to the specified path and returns true if the operation is successful.

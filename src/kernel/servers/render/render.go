@@ -62,6 +62,7 @@ func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
 	r.handlers[interfaces.MessageTypeMoveCursorRight] = r.handleMoveCursorRight
 	r.handlers[interfaces.MessageTypeWrite] = r.handleWrite
 	r.handlers[interfaces.MessageTypeWriteColor] = r.handleWriteColor
+	r.handlers[interfaces.MessageTypeGetScreenSize] = r.handleGetScreenSize
 	return r
 }
 
@@ -121,11 +122,6 @@ func (c *Render) NotifyProcessForeground(pid int) {
 		return
 	}
 	c.foreground = p
-}
-
-// CallGetScreenSize returns the current screen width and height of the Render instance.
-func (c *Render) CallGetScreenSize(router interfaces.IRouter) (int, int) {
-	return c.width, c.height
 }
 
 // eventLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
@@ -339,6 +335,16 @@ func (c *Render) handleWrite(msg interfaces.IMessage) {
 		return
 	}
 	c.doWrite(mt.Data(), mt.Eol())
+}
+
+// CallGetScreenSize returns the current screen width and height of the Render instance.
+func (c *Render) handleGetScreenSize(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageGetScreenSize)
+	if !ok {
+		return
+	}
+	mt.SetResult(c.width, c.height)
+	c.router.PostMessage(mt)
 }
 
 // handleWriteColor writes the provided string to the terminal using the provided foreground and background colors.

@@ -15,7 +15,6 @@ type Kernel struct {
 	user         string
 	ticker       *adaptiveticker.AdaptiveTicker
 	inputDriver  interfaces.IKeyboardDriver
-	renderServer interfaces.IRender
 	foreground   interfaces.IProcess
 	pidGenerator *adaptiveticker.Ids
 	running      map[int]*KernelProcess
@@ -29,12 +28,11 @@ type Kernel struct {
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver interfaces.IKeyboardDriver, renderServer interfaces.IRender, shellPath string) *Kernel {
+func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver interfaces.IKeyboardDriver, shellPath string) *Kernel {
 	t := &Kernel{
 		user:         user,
 		ticker:       ticker,
 		inputDriver:  inputDriver,
-		renderServer: renderServer,
 		foreground:   nil,
 		pidGenerator: adaptiveticker.NewIds(1024),
 		messageChan:  make(chan interfaces.IMessage, contextMaQueueLen),
@@ -104,27 +102,6 @@ func (c *Kernel) CallProcessIsActive(router interfaces.IRouter, pid int) bool {
 	return active != nil
 }
 
-// CallScreenSize retrieves the screen's width and height as integers from the render instance.
-func (c *Kernel) CallScreenSize(router interfaces.IRouter) (int, int) {
-	return c.renderServer.CallGetScreenSize(router)
-}
-
-// CallCWDPath returns the command path of the current working directory from the file system.
-//func (c *Kernel) CallCWDPath(router interfaces.IRouter) string {
-//	return c.fsServer.CallCWDPath(router)
-//}
-
-// CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
-//func (c *Kernel) CallCWDDirectoryListing(router interfaces.IRouter) []string {
-//	return c.fsServer.CallCWDDirectoryListing(router)
-//}
-
-// CallFileSystemHelp retrieves the help information associated with the given argument and returns it as a string.
-// Returns an error if the help information cannot be fetched.
-//func (c *Kernel) CallFileSystemHelp(router interfaces.IRouter, arg string) (string, error) {
-//	return c.fsServer.CallHelp(router, arg)
-//}
-
 // CallExitRequested sets the `exit` flag to true, signaling that an exit has been requested for the kernel.
 func (c *Kernel) CallExitRequested(router interfaces.IRouter) {
 	c.exit = true
@@ -173,6 +150,7 @@ func (c *Kernel) eventLoop() {
 
 // handleMessageEvent processes an incoming IMessage by dispatching it to the appropriate handlers based on its type.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
+	//fmt.Println("Kernel: dispatching", m.GetType(), "")
 	if m.Response() {
 		m.Router().PostMessage(m)
 		return
@@ -180,9 +158,9 @@ func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 	id := m.GetType()
 	if handler, _ := c.handlers[id]; handler != nil {
 		handler(m)
-	} else {
-		log.Printf("Kernel: unknown message type: %d", id)
+		return
 	}
+	log.Printf("Kernel: unknown message type: %d", id)
 }
 
 // handleReadEvent processes input events based on their type and key value to handle control, foreground processes, and system state.

@@ -11,6 +11,4 @@ type IKernel interface {
 	CallExitRequested(process IRouter)
 
 	CallProcessIsActive(process IRouter, pid int) bool
-
-	CallScreenSize(process IRouter) (int, int)
 }

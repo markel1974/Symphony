@@ -106,16 +106,16 @@ func (c *FileSystem) handleCWDSet(msg interfaces.IMessage) {
 	if cmd := c.cwd.Traverse(path); cmd != nil {
 		if cmd.Type() != interfaces.CommandTypeDirectory {
 			mt.SetResult(false)
-			msg.Router().PostMessage(mt)
+			c.router.PostMessage(mt)
 			return
 		}
 		c.cwd = cmd
 		mt.SetResult(true)
-		msg.Router().PostMessage(mt)
+		c.router.PostMessage(mt)
 		return
 	}
 	mt.SetResult(false)
-	msg.Router().PostMessage(mt)
+	c.router.PostMessage(mt)
 }
 
 // CallAddSearchPath adds a new ICommand instance to the searchPaths slice for fs resolution.
@@ -133,7 +133,7 @@ func (c *FileSystem) handleCWDPath(msg interfaces.IMessage) {
 		return
 	}
 	mt.SetResult(c.cwd.Path())
-	mt.Router().PostMessage(mt)
+	c.router.PostMessage(mt)
 }
 
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
@@ -147,7 +147,7 @@ func (c *FileSystem) handleCWDDirectoryListing(msg interfaces.IMessage) {
 		out = append(out, z) // z.Name())
 	}
 	mt.SetResult(out)
-	mt.Router().PostMessage(mt)
+	c.router.PostMessage(mt)
 }
 
 // CallFind parses and executes a given command line string, associating it with a process, and manages its lifecycle.
@@ -158,12 +158,12 @@ func (c *FileSystem) handleFindRequest(msg interfaces.IMessage) {
 	}
 	el, err := c.parser.Parse(mt.Line())
 	if err != nil {
-		mt.Router().PostMessage(mt.CreateResponse(nil, nil, err))
+		c.router.PostMessage(mt.CreateResponse(nil, nil, err))
 		return
 	}
 	if len(el) == 0 {
 		err = fmt.Errorf("invalid command: '%s'", mt.Line())
-		mt.Router().PostMessage(mt.CreateResponse(nil, nil, err))
+		c.router.PostMessage(mt.CreateResponse(nil, nil, err))
 		return
 	}
 	name := el[0]
@@ -183,7 +183,7 @@ func (c *FileSystem) handleFindRequest(msg interfaces.IMessage) {
 	}
 	if sel == nil {
 		err = fmt.Errorf("unknown command: '%s'", name)
-		mt.Router().PostMessage(mt.CreateResponse(nil, nil, err))
+		c.router.PostMessage(mt.CreateResponse(nil, nil, err))
 		return
 	}
 	//if len(args) > 0 {
@@ -191,7 +191,7 @@ func (c *FileSystem) handleFindRequest(msg interfaces.IMessage) {
 	//		return false, fmt.Errorf("invalid command: '%s %s'", name, strings.Join(args, " "))
 	//	}
 	//}
-	mt.Router().PostMessage(mt.CreateResponse(sel, args, nil))
+	c.router.PostMessage(mt.CreateResponse(sel, args, nil))
 }
 
 // CallHelp retrieves help information for a given command line string,
@@ -242,7 +242,7 @@ func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
 	textBeforeSegment, nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInput(c.cwd, mt.In(), mt.Cursor())
 	if err != nil || nodeToQuery == nil {
 		mt.SetResponse("", nil, false)
-		msg.Router().PostMessage(mt)
+		c.router.PostMessage(mt)
 		return
 	}
 	prefix := prefixToComplete
@@ -262,7 +262,7 @@ func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
 
 	if len(rawSuggestions) == 0 {
 		mt.SetResponse(prefix, nil, false)
-		msg.Router().PostMessage(mt)
+		c.router.PostMessage(mt)
 		return
 	}
 
@@ -301,7 +301,7 @@ func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
 		}
 	}
 	mt.SetResponse(prefix, suggestions, len(suggestions) > 0)
-	msg.Router().PostMessage(mt)
+	c.router.PostMessage(mt)
 }
 
 // parseInput parses the input string to determine the relevant command context, path, and completion prefix details.
@@ -472,6 +472,7 @@ func (c *FileSystem) eventLoop(r chan bool) {
 					close(c.messageChan)
 					return
 				}
+				//fmt.Println("Executing id", id)
 				if handler, _ := c.handlers[id]; handler != nil {
 					handler(m)
 				} else {
@@ -489,5 +490,5 @@ func (c *FileSystem) handleCWDGetRequest(msg interfaces.IMessage) {
 		return
 	}
 	mt.SetResult(c.cwd.Name())
-	msg.Router().PostMessage(mt)
+	c.router.PostMessage(mt)
 }
