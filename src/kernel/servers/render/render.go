@@ -158,21 +158,6 @@ func (c *Render) CallWriteColor(router interfaces.IRouter, data string, fg inter
 	}
 }
 
-// CallWritePromptLine clears the given line and writes the prompt and line with specified color and mode configurations.
-//func (c *Render) CallWritePromptLine(router interfaces.IRouter, prompt string, line string) {
-//	c.doClearLine(line)
-//	c.CallWriteColor(router, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
-//	c.CallWriteColor(router, line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
-//}
-
-// CallWritePromptEOL writes the provided prompt with green color and optionally appends an end-of-line marker if enabled.
-//func (c *Render) CallWritePromptEOL(router interfaces.IRouter, prompt string, eol bool) {
-//	if eol {
-//		c.CallWriteColor(router, eolDef, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
-//	}
-//	c.CallWriteColor(router, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false)
-//}
-
 // NotifyProcessCreation notifies the Render instance about the creation of a new process and updates internal state if necessary.
 func (c *Render) NotifyProcessCreation(desc *interfaces.ProcessDescription) {
 	if !desc.HasPaint() {
