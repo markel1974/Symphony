@@ -159,10 +159,7 @@ func (c *Render) CallWriteColor(router interfaces.IRouter, data string, fg inter
 
 // NotifyProcessCreation notifies the Render instance about the creation of a new process and updates internal state if necessary.
 func (c *Render) NotifyProcessCreation(desc *interfaces.ProcessDescription) {
-	//if !desc.HasPaint() {
-	//	return
-	//}
-	c.running[desc.PID()] = NewComponent(desc, c.driver)
+	c.running[desc.PID()] = NewComponent(desc, c.driver, c.height, c.width)
 }
 
 // NotifyProcessTermination handles the necessary cleanup and state updates when a process associated with the Render terminates.
@@ -208,12 +205,7 @@ func (c *Render) eventLoop(r chan bool) {
 
 // handlePaintRequest handles paint requests by triggering a repaint.
 func (c *Render) handlePaintRequest(msg interfaces.IMessage) {
-	pid := msg.Router().PID()
-	_, surface := c.doCreateSurface(pid)
-	if surface == nil {
-		return
-	}
-	mp := messages.NewMessagePaintPrepare(msg.Router(), surface)
+	mp := messages.NewMessagePaintPrepare(msg.Router(), NewDescriptiveSurface(c.height, c.width))
 	c.router.PostMessage(mp)
 }
 
@@ -227,7 +219,7 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 	if process == nil {
 		return
 	}
-	process.SetSurface(mt.Surface())
+	process.SetDescriptiveSurface(mt.Surface())
 	c.doPaint(mt.Router(), false)
 }
 
@@ -246,11 +238,7 @@ func (c *Render) handleWindowsSelectionBegin(msg interfaces.IMessage) {
 			}
 		}
 	}
-	_, surface := c.doCreateSurface(c.windowSelector.PID())
-	if surface == nil {
-		return
-	}
-	mp := messages.NewMessagePaintPrepare(msg.Router(), surface)
+	mp := messages.NewMessagePaintPrepare(msg.Router(), NewDescriptiveSurface(c.height, c.width))
 	c.router.PostMessage(mp)
 }
 
@@ -266,25 +254,15 @@ func (c *Render) handleWindowsSelectionOptions(msg interfaces.IMessage) {
 		return
 	}
 	process.Surface().SetOption(mt.Option(), mt.Value())
-	_, surface := c.doCreateSurface(pid)
-	if surface == nil {
-		return
-	}
-
 	c.fullPaint = true
-	//surface.SetOption(mt.Option(), mt.Value())
-	mp := messages.NewMessagePaintPrepare(msg.Router(), surface)
+	mp := messages.NewMessagePaintPrepare(msg.Router(), NewDescriptiveSurface(c.height, c.width))
 	c.router.PostMessage(mp)
 }
 
 // handleWindowsSelectionPrevious navigates to the previous window in the selection if possible and triggers a paint request.
 func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
 	if c.windowSelector.Prev() {
-		_, surface := c.doCreateSurface(c.windowSelector.PID())
-		if surface == nil {
-			return
-		}
-		mp := messages.NewMessagePaintPrepare(msg.Router(), surface)
+		mp := messages.NewMessagePaintPrepare(msg.Router(), NewDescriptiveSurface(c.height, c.width))
 		c.router.PostMessage(mp)
 	}
 }
@@ -292,11 +270,7 @@ func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
 // handleWindowsSelectionNext moves the window selector to the next window and triggers a repaint if the selection changes.
 func (c *Render) handleWindowsSelectionNext(msg interfaces.IMessage) {
 	if c.windowSelector.Next() {
-		_, surface := c.doCreateSurface(c.windowSelector.PID())
-		if surface == nil {
-			return
-		}
-		mp := messages.NewMessagePaintPrepare(msg.Router(), surface)
+		mp := messages.NewMessagePaintPrepare(msg.Router(), NewDescriptiveSurface(c.height, c.width))
 		c.router.PostMessage(mp)
 	}
 }
@@ -329,10 +303,21 @@ func (c *Render) doPaint(router interfaces.IRouter, full bool) {
 	rMax := 0
 	var tasks []*Component
 	for _, process := range c.running {
-		surface := process.Surface()
+		process.surface.Prepare(c.height, c.width)
+		process.surface.zIndex = 0
+		process.surface.SetSelectionMode(false)
+		if process.descriptiveSurface != nil {
+			if process.PID() == c.windowSelector.PID() {
+				process.surface.zIndex = 255
+				process.surface.SetSelectionMode(true)
+			}
+			process.surface.Begin()
+			process.descriptiveSurface.Appy(process.surface)
+			process.surface.End()
+		}
 		tasks = append(tasks, process)
-		if surface.rMax > rMax {
-			rMax = surface.rMax
+		if process.surface.rMax > rMax {
+			rMax = process.surface.rMax
 		}
 	}
 
@@ -353,22 +338,4 @@ func (c *Render) doPaint(router interfaces.IRouter, full bool) {
 	c.doMoveCursorTopLeft()
 	c.CallWrite(router, string(lines.Bytes()), false)
 	c.CallRestoreCursor(router)
-}
-
-// doCreateSurface creates a new surface for the given process and returns a pointer to the process and surface.
-func (c *Render) doCreateSurface(pid int) (*Component, *Surface) {
-	process, _ := c.running[pid]
-	if process == nil {
-		return nil, nil
-	}
-	surface := process.CloneSurface()
-	surface.Prepare(c.height, c.width)
-	if process.PID() == c.windowSelector.PID() {
-		surface.zIndex = 255
-		surface.SetSelectionMode(true)
-	} else {
-		surface.zIndex = 0
-		surface.SetSelectionMode(false)
-	}
-	return process, surface
 }

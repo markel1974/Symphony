@@ -51,19 +51,48 @@ The kernel provides a fully-featured multitasking environment with a graphical T
 * **Windowed Interface**: Every graphical task is rendered within its own distinct "window" on the terminal, complete with borders and a title caption.
 * **Process Management**: Standard OS-like commands are provided: `ps`, `kill`, `killall`, and `fg`.
 
-### b. Real-time Introspection & Go Runtime Profiling
+### b. Advanced Rendering Architecture: A Retained-Mode TUI Engine
+
+The framework implements a sophisticated graphics architecture known as **"retained mode"** or display list rendering. This approach decouples an application's logical state from its physical representation, leading to significant performance and responsiveness gains, especially for dynamic TUIs.
+
+**How It Works:**
+
+1.  **Abstract Scene Description**: When a process receives a `paint` event, it does not draw pixels to a framebuffer. Instead, it builds a `DescriptiveSurface`, which is a lightweight **list of drawing commands** (e.g., "draw this text at x,y," "trace this line with these colors"). This list is a resolution-independent, abstract description of *what* the process wants to display.
+
+2.  **The Render Server as an Interpreter**: The `Render Server` receives and **retains** this command list in memory. Its job is to interpret these commands and execute them to render the final bitmap into its own internal cache.
+
+**The Key Advantage: Zero-Cost Windowing Operations**
+
+The true power of this design becomes evident during UI operations like **resizing or moving a window**:
+
+> **A new `paint` event is not required from the application.**
+
+When a window is resized, the application process is not interrupted and does not need to re-run its rendering logic. The `Render Server` autonomously handles the entire operation by:
+
+1.  Creating a new destination bitmap of the correct size.
+2.  **Re-executing the exact same command list it has already stored** onto the new, resized surface.
+
+This turns complex UI operations into simple, high-speed re-executions of a display list, providing enormous benefits:
+
+* **Maximum Efficiency**: Avoids expensive re-computation of application logic (`OnPaint`) just for a layout change.
+* **Instant Responsiveness**: Window resizing and moving feel fluid and instantaneous, as they are handled entirely by the server optimized for this task.
+* **Clean Architecture**: Reinforces the separation of concerns. The process handles the **"what,"** while the Render Server handles the **"how."**
+
+In essence, the framework provides the TUI equivalent of a **vector graphics engine**. The scene is described abstractly and can be re-rendered at any size without information loss and without needing to involve the application's core logic again.
+
+### c. Real-time Introspection & Go Runtime Profiling
 
 The included `stats` module transforms the shell into a powerful, live diagnostics tool for the Go runtime.
 
 * **Live Runtime Stats**: Get instant snapshots of memory usage (`rt`), CPU status, and goroutine counts (`cpu`).
 * **Integrated `pprof` Profiling**: Start and stop CPU profiling (`startcpuprofile`, `stopcpuprofile`) and generate heap profiles (`memprofile`) on the fly for any application built on the framework.
 
-### c. Filesystem-like Command Hierarchy
+### d. Filesystem-like Command Hierarchy
 
 * **Hierarchical Structure**: Commands are organized in a virtual filesystem, allowing for intuitive navigation with `cd`, `ls`, and `pwd`.
 * **Tab Completion**: Rich auto-completion for commands and paths.
 
-### d. Remote & Secure Access
+### e. Remote & Secure Access
 
 * **SSH Server**: A built-in, full-featured SSH server supports both password and public-key authentication for secure remote access.
 * **Telnet Server**: A Telnet server is included for simpler, unencrypted connections in trusted networks.

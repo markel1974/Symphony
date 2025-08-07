@@ -37,7 +37,16 @@ const (
 // It enables creation and manipulation of visual elements through DrawCommand instances.
 // Commands can be executed on a target surface to reflect the desired graphical output.
 type DescriptiveSurface struct {
+	rows     int
+	columns  int
 	commands []DescriptiveCommand
+}
+
+func NewDescriptiveSurface(rows int, columns int) *DescriptiveSurface {
+	return &DescriptiveSurface{
+		rows:    rows,
+		columns: columns,
+	}
 }
 
 // DrawColor adds a drawing command to the surface, specifying position, rune, foreground, background colors, and color mode.
@@ -51,6 +60,16 @@ func (s *DescriptiveSurface) DrawColor(rows int, columns int, text rune, fg inte
 		Bg:     bg,
 		Mode:   mode,
 	})
+}
+
+func (s *DescriptiveSurface) GetSize() (int, int) {
+	return s.rows, s.columns
+}
+
+func (s *DescriptiveSurface) Begin() {
+}
+
+func (s *DescriptiveSurface) End() {
 }
 
 // DrawTextColor queues a command to render a string of text at the specified row and column with foreground and background colors.
@@ -94,8 +113,8 @@ func (s *DescriptiveSurface) Merge(other *DescriptiveSurface) {
 }
 
 // Appy applies a series of drawing commands to a target surface based on their type and provided parameters.
-func (c *DescriptiveSurface) Appy(target *Surface, commands []DescriptiveCommand) {
-	for _, cmd := range commands {
+func (s *DescriptiveSurface) Appy(target interfaces.ISurface) {
+	for _, cmd := range s.commands {
 		switch cmd.Type {
 		case CommandDrawColor:
 			target.DrawColor(cmd.Rows, cmd.Column, []rune(cmd.Text)[0], cmd.Fg, cmd.Bg, cmd.Mode)
