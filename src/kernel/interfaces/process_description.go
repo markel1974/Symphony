@@ -29,18 +29,3 @@ func (p *ProcessDescription) PID() int {
 func (p *ProcessDescription) Line() string {
 	return p.line
 }
-
-/*
-// HasPaint returns true if the ProcessDescription has a valid OnPaint assigned; otherwise, false.
-func (p *ProcessDescription) HasPaint() bool {
-	return p.process.GetCommand().OnPaint() != nil
-}
-
-// Paint executes the assigned OnPaint to render a task on the provided surface.
-// TODO MOVE
-func (p *ProcessDescription) Paint(surface ISurface) {
-	p.process.Paint(surface)
-}
-
-
-*/

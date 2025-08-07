@@ -197,15 +197,6 @@ func (t *Process) WindowsSelectionOptions(option rune, value float64) {
 	t.kernel.PostMessage(messages.NewMessageWindowsSelectionOptions(t, option, value))
 }
 
-// Paint executes the rendering logic for the task on the provided surface by invoking a paint function if defined.
-func (t *Process) Paint(surface interfaces.ISurface) {
-	fn := t.cmd.OnPaint()
-	if fn == nil {
-		return
-	}
-	fn(t, surface)
-}
-
 // WritePromptEOL writes the provided prompt followed by an end-of-line character if the eol parameter is true.
 func (t *Process) WritePromptEOL(prompt string, eol bool) {
 	t.kernel.CallWriteColor(t, "", interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, eol)

@@ -8,27 +8,54 @@ import (
 
 // Component represents a UI or system entity combining process details with associated rendering surfaces.
 type Component struct {
-	*interfaces.ProcessDescription
 	descriptiveSurface *DescriptiveSurface
 	surface            *Surface
+	pid                int
 }
 
 // NewComponent initializes and returns a new Component instance using the provided process description and terminal interface.
-func NewComponent(desc *interfaces.ProcessDescription, terminal interfaces.ITerminal, rows int, columns int) *Component {
-	caption := strconv.Itoa(desc.PID())
-	if len(desc.Name()) > 0 {
-		caption += " - " + desc.Name()
+func NewComponent(pid int, description string, terminal interfaces.ITerminal, rows int, columns int) *Component {
+	caption := strconv.Itoa(pid)
+	if len(description) > 0 {
+		caption += " - " + description
 	}
 	c := &Component{
-		ProcessDescription: desc,
+		pid:                pid,
+		descriptiveSurface: nil,
 		surface:            NewSurface(terminal, rows, columns, caption),
 	}
 	return c
 }
 
+// PID returns the process ID associated with the Component.
+func (c *Component) PID() int {
+	return c.pid
+}
+
 // Surface returns the Surface instance associated with the Component.
 func (c *Component) Surface() *Surface {
 	return c.surface
+}
+
+// RowMax returns the maximum row index for the Component's surface.'
+func (c *Component) RowMax() int {
+	return c.surface.RowMax()
+}
+
+// Compile renders the Component's descriptive surface and applies it to the Component's surface.
+func (c *Component) Compile(height int, width int, activePid int) {
+	c.surface.Prepare(height, width)
+	c.surface.SetZIndex(0)
+	c.surface.SetSelectionMode(false)
+	if c.descriptiveSurface != nil {
+		if c.PID() == activePid {
+			c.surface.SetZIndex(255)
+			c.surface.SetSelectionMode(true)
+		}
+		c.surface.Begin()
+		c.descriptiveSurface.Appy(c.surface)
+		c.surface.End()
+	}
 }
 
 // SetDescriptiveSurface sets the descriptive surface for the Component.

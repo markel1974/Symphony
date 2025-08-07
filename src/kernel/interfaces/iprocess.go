@@ -56,8 +56,6 @@ type IProcess interface {
 
 	GetScreenSize() (int, int)
 
-	Paint(surface ISurface)
-
 	PaintRequest()
 
 	ProcessExec(line string)

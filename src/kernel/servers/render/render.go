@@ -159,7 +159,7 @@ func (c *Render) CallWriteColor(router interfaces.IRouter, data string, fg inter
 
 // NotifyProcessCreation notifies the Render instance about the creation of a new process and updates internal state if necessary.
 func (c *Render) NotifyProcessCreation(desc *interfaces.ProcessDescription) {
-	c.running[desc.PID()] = NewComponent(desc, c.driver, c.height, c.width)
+	c.running[desc.PID()] = NewComponent(desc.PID(), desc.Name(), c.driver, c.height, c.width)
 }
 
 // NotifyProcessTermination handles the necessary cleanup and state updates when a process associated with the Render terminates.
@@ -300,35 +300,24 @@ func (c *Render) doPaint(router interfaces.IRouter, full bool) {
 	}
 	fullPaint := c.fullPaint
 	c.fullPaint = false
-	rMax := 0
+	rowMax := 0
 	var tasks []*Component
 	for _, process := range c.running {
-		process.surface.Prepare(c.height, c.width)
-		process.surface.zIndex = 0
-		process.surface.SetSelectionMode(false)
-		if process.descriptiveSurface != nil {
-			if process.PID() == c.windowSelector.PID() {
-				process.surface.zIndex = 255
-				process.surface.SetSelectionMode(true)
-			}
-			process.surface.Begin()
-			process.descriptiveSurface.Appy(process.surface)
-			process.surface.End()
+		process.Compile(c.height, c.width, c.windowSelector.PID())
+		if process.RowMax() > rowMax {
+			rowMax = process.RowMax()
 		}
 		tasks = append(tasks, process)
-		if process.surface.rMax > rMax {
-			rMax = process.surface.rMax
-		}
 	}
 
 	sort.SliceStable(tasks, func(i, j int) bool {
-		return tasks[i].Surface().zIndex < tasks[j].Surface().zIndex
+		return tasks[i].Surface().ZIndex() < tasks[j].Surface().ZIndex()
 	})
 
 	var lines bytes.Buffer
 	w, h := c.CallGetScreenSize(router)
 	c.surface.Prepare(h, w)
-	c.surface.rMax = rMax
+	c.surface.SetRowMax(rowMax)
 	for _, s := range tasks {
 		c.surface.Merge(s.Surface())
 	}

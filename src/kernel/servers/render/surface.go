@@ -15,7 +15,7 @@ type Surface struct {
 	columns        int
 	surface        [][]string
 	columnsCleaner []string
-	rMax           int
+	rowMax         int
 	scale          float64
 	offsetX        int
 	offsetY        int
@@ -38,24 +38,12 @@ func NewSurface(terminal interfaces.ITerminal, rows int, columns int, caption st
 		scale:    1.0,
 		offsetX:  0,
 		offsetY:  0,
-		rMax:     0,
+		rowMax:   0,
 		border:   1,
 		zIndex:   0,
 	}
 	s.Prepare(rows, columns)
 	return s
-}
-
-// Clone returns a copy of the Surface.
-func (s *Surface) Clone() *Surface {
-	t := NewSurface(s.terminal, s.rows, s.columns, s.caption)
-	t.scale = s.scale
-	t.offsetX = s.offsetX
-	t.offsetY = s.offsetY
-	t.rMax = s.rMax
-	t.border = s.border
-	t.zIndex = s.zIndex
-	return t
 }
 
 // SetOption updates the task's X, Y offsets or Scale based on the given option ('x', 'y', or 'z') and value.
@@ -72,9 +60,29 @@ func (s *Surface) SetOption(option rune, value float64) {
 	}
 }
 
+// SetZIndex updates the z-index of the Surface, which determines its stacking order relative to other surfaces.
+func (s *Surface) SetZIndex(z int) {
+	s.zIndex = z
+}
+
+// ZIndex retrieves the current z-index value of the Surface, representing its stacking order.
+func (s *Surface) ZIndex() int {
+	return s.zIndex
+}
+
+// SetRowMax sets the maximum allowed rows for the Surface instance to the specified value.
+func (s *Surface) SetRowMax(rowMax int) {
+	s.rowMax = rowMax
+}
+
+// RowMax retrieves the maximum row index of the Surface.
+func (s *Surface) RowMax() int {
+	return s.rowMax
+}
+
 // Prepare adjusts the dimensions of the Surface to the specified rows and columns, resetting or reallocating data as needed.
 func (s *Surface) Prepare(rows int, columns int) {
-	s.rMax = 0
+	s.rowMax = 0
 	if rows == s.rows && columns == s.columns {
 		for r := range s.surface {
 			copy(s.surface[r], s.columnsCleaner)
@@ -164,8 +172,8 @@ func (s *Surface) Draw(rs int, cs int, text rune) {
 	if len(s.surface) > rows {
 		if len(s.surface[rows]) > columns {
 			s.surface[rows][columns] = string(text)
-			if rows > s.rMax {
-				s.rMax = rows
+			if rows > s.rowMax {
+				s.rowMax = rows
 			}
 		}
 	}
@@ -193,8 +201,8 @@ func (s *Surface) DrawColor(rs int, cs int, text rune, fg interfaces.ColorDef, b
 		if len(s.surface[rows]) > columns {
 			colorized := s.terminal.CreateColorize(string(text), int(fg), int(bg), mode)
 			s.surface[rows][columns] = colorized
-			if rows > s.rMax {
-				s.rMax = rows
+			if rows > s.rowMax {
+				s.rowMax = rows
 			}
 		}
 	}
@@ -251,7 +259,7 @@ func (s *Surface) GetBuffer(lines *bytes.Buffer, full bool) {
 	if full {
 		maximum = s.rows * s.columns
 	} else {
-		maximum = (s.rMax + 1) * s.columns
+		maximum = (s.rowMax + 1) * s.columns
 	}
 	var counter = 0
 	for h, horizontal := range s.surface {
