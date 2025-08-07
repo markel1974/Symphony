@@ -9,16 +9,16 @@ import (
 // CreateSnake initializes a new command for the Snake game and sets up event handlers for input, painting, timers, and creation.
 // It returns a pointer to a configured process.Command ready to run the Snake game.
 func CreateSnake() *process.Command {
-	onCreate := func(task interfaces.IProcess, args []string) error {
-		w, h := task.GetScreenSize()
+	onCreate := func(process interfaces.IProcess, args []string) error {
+		w, h := process.GetScreenSize()
 		s := snake.New()
 		s.SetSize(h, w)
-		task.SetContext(s)
-		task.CreateTimer(0, 200, -1)
+		process.SetContext(s)
+		process.CreateTimer(0, 200, -1)
 		return nil
 	}
-	onRead := func(task interfaces.IProcess, code int, key rune) {
-		ctx := task.GetContext()
+	onRead := func(process interfaces.IProcess, code int, key rune) {
+		ctx := process.GetContext()
 		s := ctx.(*snake.Snake)
 		switch key {
 		case 'a':
@@ -41,17 +41,17 @@ func CreateSnake() *process.Command {
 			s.Start()
 		}
 	}
-	onTimer := func(task interfaces.IProcess, tid int, interval int) {
-		ctx := task.GetContext()
+	onTimer := func(process interfaces.IProcess, tid int, interval int) {
+		ctx := process.GetContext()
 		s, ok := ctx.(*snake.Snake)
 		if !ok {
 			return
 		}
 		s.Advance()
-		task.PaintRequest()
+		process.PaintRequest()
 	}
-	onPaint := func(task interfaces.IProcess, surface interfaces.ISurface) {
-		ctx := task.GetContext()
+	onPaint := func(process interfaces.IProcess, surface interfaces.ISurface) {
+		ctx := process.GetContext()
 		s, ok := ctx.(*snake.Snake)
 		if !ok {
 			return

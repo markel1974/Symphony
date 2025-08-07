@@ -28,7 +28,7 @@ func NewMessagePaintPrepare(router interfaces.IRouter, surface interfaces.ISurfa
 		Message: *interfaces.NewMessage(router, interfaces.MessageTypePaintPrepare),
 		surface: surface,
 	}
-	mp.SetReply()
+	mp.MakeResponse()
 	return mp
 }
 
@@ -39,13 +39,13 @@ func (m *MessagePaintPrepare) Surface() interfaces.ISurface {
 
 // MessagePaintApply represents a message used to apply painting or rendering operations on an ISurface.
 // It embeds the generic Message type and associates an ISurface for graphical or textual manipulations.
-// Surface provides access to the ISurface instance associated with this message for drawing and rendering tasks.
+// Surface provides access to the ISurface instance associated with this message for drawing and rendering processes.
 type MessagePaintApply struct {
 	interfaces.Message
 	surface interfaces.ISurface
 }
 
-// NewMessagePaintApply creates a new MessagePaintApply instance with the specified router and surface for rendering tasks.
+// NewMessagePaintApply creates a new MessagePaintApply instance with the specified router and surface for rendering processes.
 func NewMessagePaintApply(router interfaces.IRouter, surface interfaces.ISurface) *MessagePaintApply {
 	mp := &MessagePaintApply{
 		Message: *interfaces.NewMessage(router, interfaces.MessageTypePaintApply),

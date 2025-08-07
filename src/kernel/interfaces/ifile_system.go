@@ -5,7 +5,7 @@ type IFileSystem interface {
 
 	CallCWDSet(router IRouter, arg string) bool
 
-	CallCWDName(router IRouter) string
+	//CallCWDName(router IRouter) string
 
 	CallCWDPath(router IRouter) string
 

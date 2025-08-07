@@ -33,7 +33,7 @@ type Command struct {
 // NewCommand creates a new Command instance with the specified name, type, aliases, daemon status, and execution function.
 func NewCommand(name string, kind interfaces.CommandType, aliases []string, daemon bool, runEvent interfaces.OnRun) *Command {
 	if runEvent == nil {
-		runEvent = func(task interfaces.IProcess, args []string) error {
+		runEvent = func(process interfaces.IProcess, args []string) error {
 			return nil
 		}
 	}
@@ -255,7 +255,7 @@ func (c *Command) Traverse(path []string) interfaces.ICommand {
 	return nil
 }
 
-// Execute runs the command using the provided task and arguments, returning an error if execution fails.
+// Execute runs the command using the provided process and arguments, returning an error if execution fails.
 func (c *Command) Execute(task interfaces.IProcess, arg []string) error {
 	if err := c.runEvent(task, arg); err != nil {
 		return err

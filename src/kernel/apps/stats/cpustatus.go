@@ -10,11 +10,11 @@ import (
 
 // CreateCPUStatus returns a shell command that outputs various CPU-related metrics such as logical CPU count and goroutine count.
 func CreateCPUStatus() interfaces.ICommand {
-	run := func(task interfaces.IProcess, args []string) error {
-		task.Write(fmt.Sprintf("Number of logical CPUs: %d", runtime.NumCPU()), true)
-		task.Write(fmt.Sprintf("Maximum number of CPUs that can be executing simultaneously: %d", runtime.GOMAXPROCS(0)), true)
-		task.Write(fmt.Sprintf("Number of goroutines that currently exist: %d", runtime.NumGoroutine()), true)
-		task.Write(fmt.Sprintf("Number of cgo calls made by the current process: %d", runtime.NumCgoCall()), true)
+	run := func(process interfaces.IProcess, args []string) error {
+		process.Write(fmt.Sprintf("Number of logical CPUs: %d", runtime.NumCPU()), true)
+		process.Write(fmt.Sprintf("Maximum number of CPUs that can be executing simultaneously: %d", runtime.GOMAXPROCS(0)), true)
+		process.Write(fmt.Sprintf("Number of goroutines that currently exist: %d", runtime.NumGoroutine()), true)
+		process.Write(fmt.Sprintf("Number of cgo calls made by the current process: %d", runtime.NumCgoCall()), true)
 		return nil
 	}
 	root := process.NewCommand("cpu", interfaces.CommandTypeFile, nil, false, run)

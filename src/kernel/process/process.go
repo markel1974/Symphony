@@ -7,28 +7,32 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/messages"
 )
 
-// Process represents a task or job in the system, including its context, state, associated options, and execution details.
+// Process represents a process or job in the system, including its context, state, associated options, and execution details.
 type Process struct {
-	kernel      interfaces.IKernel
-	cmd         interfaces.ICommand
-	user        string
-	context     interface{}
-	timers      []int
-	pid         int
-	state       interfaces.ProcessState
-	messageChan chan interfaces.IMessage
+	kernel           interfaces.IKernel
+	cmd              interfaces.ICommand
+	user             string
+	context          interface{}
+	timers           []int
+	pid              int
+	state            interfaces.ProcessState
+	gatekeeperChan   chan interfaces.IMessage
+	executorChan     chan interfaces.IMessage
+	executorWaitChan chan bool
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
 func NewProcess(kernel interfaces.IKernel, pid int, user string, cmd interfaces.ICommand) *Process {
 	t := &Process{
-		kernel:      kernel,
-		pid:         pid,
-		user:        user,
-		cmd:         cmd,
-		context:     nil,
-		state:       interfaces.ProcessStateSetup,
-		messageChan: make(chan interfaces.IMessage, 128),
+		kernel:           kernel,
+		pid:              pid,
+		user:             user,
+		cmd:              cmd,
+		context:          nil,
+		state:            interfaces.ProcessStateSetup,
+		gatekeeperChan:   make(chan interfaces.IMessage, 128),
+		executorChan:     make(chan interfaces.IMessage, 128),
+		executorWaitChan: make(chan bool, 1),
 	}
 	return t
 }
@@ -40,18 +44,16 @@ func (t *Process) Process() interfaces.IProcess {
 
 // Setup begins the process by setting its state to running and initiating its event loop asynchronously.
 func (t *Process) Setup() {
-	c := make(chan bool)
-	t.eventLoop(c)
-	_ = <-c
+	a := make(chan bool)
+	b := make(chan bool)
+	t.gatekeeperLoop(a)
+	_ = <-a
+	t.executorLoop(b)
+	_ = <-b
 	t.state = interfaces.ProcessStateRunning
 }
 
-// Line returns the line configuration of the Process as a string.
-//func (t *Process) Line() string {
-//	return t.line
-//}
-
-// PID returns the process ID (PID) associated with the task.
+// PID returns the process ID (PID) associated with the process.
 func (t *Process) PID() int {
 	return t.pid
 }
@@ -65,7 +67,7 @@ func (t *Process) GetCommand() interfaces.ICommand {
 	return t.cmd
 }
 
-// SetContext sets the context for the task, storing the provided context object in the task's internal context field.
+// SetContext sets the context for the process, storing the provided context object in the process internal context field.
 func (t *Process) SetContext(ctx interface{}) {
 	t.context = ctx
 }
@@ -75,12 +77,12 @@ func (t *Process) GetContext() interface{} {
 	return t.context
 }
 
-// CreateTimer initializes a timer with a specified start delay, repeat interval, and count for the current task.
+// CreateTimer initializes a timer with a specified start delay, repeat interval, and count for the current process.
 func (t *Process) CreateTimer(first int, interval int, count int) {
 	t.kernel.PostMessage(messages.NewMessageTimerCreate(t, first, interval, count))
 }
 
-// StopTimer stops a timer identified by the given timer ID (tid) for the current task and returns true if successful.
+// StopTimer stops a timer identified by the given timer ID (tid) for the current process and returns true if successful.
 func (t *Process) StopTimer(tid int) {
 	t.kernel.PostMessage(messages.NewMessageTimerStop(t, tid))
 }
@@ -90,7 +92,7 @@ func (t *Process) IsActive(pid int) bool {
 	return t.kernel.CallProcessIsActive(t, pid)
 }
 
-// Kill attempts to terminate the task associated with the specified pid and returns true if successful.
+// Kill attempts to terminate the process associated with the specified pid and returns true if successful.
 func (t *Process) Kill(pid int) {
 	t.kernel.PostMessage(messages.NewMessageProcessKill(t, pid))
 }
@@ -100,19 +102,22 @@ func (t *Process) KillForeground() {
 	t.kernel.PostMessage(messages.NewMessageProcessKillForeground(t))
 }
 
-// KillAll terminates all tasks matching the provided name and returns the count of deactivated tasks.
+// KillAll terminates all processes matching the provided name and returns the count of deactivated processes.
 func (t *Process) KillAll(name string) {
 	t.kernel.PostMessage(messages.NewMessageProcessKillAll(t, name))
 }
 
-// ProcessSetForeground sets the foreground task by specifying its PID and returns true if successfully set.
+// ProcessSetForeground sets the foreground process by specifying its PID and returns true if successfully set.
 func (t *Process) ProcessSetForeground(pid int) {
 	t.kernel.PostMessage(messages.NewMessageProcessSetForeground(t, pid))
 }
 
-// ProcessList returns a string representation of the task list from the kernel.
+// ProcessList returns a string representation of the process list from the kernel.
 func (t *Process) ProcessList() []*interfaces.ProcessDescription {
-	return t.kernel.CallProcessList(t)
+	request := messages.NewMessageProcessList(t, t.executorWaitChan)
+	t.kernel.PostMessage(request)
+	<-t.executorWaitChan
+	return request.Processes()
 }
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.
@@ -132,7 +137,10 @@ func (t *Process) CWDSet(arg string) bool {
 
 // CWDName returns the current working directory name by invoking a kernel-level method.
 func (t *Process) CWDName() string {
-	return t.kernel.CallCWDName(t)
+	msg := messages.NewMessageCWDGetRequest(t, t.executorWaitChan)
+	t.kernel.PostMessage(msg)
+	<-t.executorWaitChan
+	return msg.Result()
 }
 
 // CWDPath retrieves the current working directory as a string from the associated kernel instance.
@@ -238,14 +246,6 @@ func (t *Process) ClearScreen() {
 	t.kernel.PostMessage(messages.NewMessageClearScreen(t))
 }
 
-func (t *Process) RequestProcessList() []*interfaces.ProcessDescription {
-	ackChan := make(chan bool, 1)
-	request := messages.NewMessageProcessList(t, ackChan)
-	t.kernel.PostMessage(request)
-	<-ackChan
-	return nil
-}
-
 // SetExit signals the kernel that an exit is requested for the task.
 func (t *Process) SetExit() {
 	t.kernel.CallExitRequested(t)
@@ -253,25 +253,44 @@ func (t *Process) SetExit() {
 
 // PostMessage sends the provided message to the message channel for processing.
 func (t *Process) PostMessage(msg interfaces.IMessage) {
-	t.messageChan <- msg
+	t.gatekeeperChan <- msg
 }
 
-// evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
-func (t *Process) eventLoop(r chan bool) {
+// executorLoop initializes a loop to process messages from the executorChan and forwards a signal when ready.
+func (t *Process) executorLoop(r chan bool) {
 	go func() {
 		r <- true
 		for {
 			select {
-			case m, ok := <-t.messageChan:
+			case m, ok := <-t.executorChan:
 				if !ok {
 					return
 				}
-				//m.Ack()
-				if m.GetType() == interfaces.MessageTypeQuit {
-					close(t.messageChan)
+				t.handleMessage(m)
+			}
+		}
+	}()
+}
+
+// evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.
+func (t *Process) gatekeeperLoop(r chan bool) {
+	go func() {
+		r <- true
+		for {
+			select {
+			case m, ok := <-t.gatekeeperChan:
+				if !ok {
 					return
 				}
-				t.handleMessage(m)
+				if m.GetType() == interfaces.MessageTypeQuit {
+					close(t.executorWaitChan)
+					close(t.executorChan)
+					close(t.gatekeeperChan)
+					return
+				}
+				if !m.Ack() {
+					t.executorChan <- m
+				}
 			}
 		}
 	}()
@@ -281,76 +300,112 @@ func (t *Process) eventLoop(r chan bool) {
 func (t *Process) handleMessage(msg interfaces.IMessage) {
 	switch msg.GetType() {
 	case interfaces.MessageTypeError:
-		mt, ok := msg.(*messages.MessageError)
-		if !ok {
-			return
-		}
-		if onError := t.cmd.OnError(); onError != nil {
-			onError(t, mt.Error())
-		}
+		t.handleMessageError(msg)
 	case interfaces.MessageTypeTimer:
-		mt, ok := msg.(*messages.MessageTimer)
-		if !ok {
-			return
-		}
-		if timerEvent := t.cmd.OnTimer(); timerEvent != nil {
-			timerEvent(t, mt.TID(), mt.Interval())
-		}
+		t.handleMessageTimer(msg)
 	case interfaces.MessageTypeRead:
-		mt, ok := msg.(*messages.MessageRead)
-		if !ok {
-			return
-		}
-		if mt.Broadcast() {
-			if readBroadcastEvent := t.cmd.OnReadBroadcast(); readBroadcastEvent != nil {
-				readBroadcastEvent(t, int(mt.Kind()), mt.Data())
-			}
-		} else {
-			if readEvent := t.cmd.OnRead(); readEvent != nil {
-				readEvent(t, int(mt.Kind()), mt.Data())
-			}
-		}
+		t.handleMessageRead(msg)
 	case interfaces.MessageTypeProcessStart:
-		mt, ok := msg.(*messages.MessageProcessStart)
-		if !ok {
-			return
-		}
-		if !t.cmd.Background() {
-			t.kernel.PostMessage(messages.NewMessageProcessSetForeground(t, t.PID()))
-		}
-		_ = t.cmd.Execute(t, mt.Args())
-		if !t.cmd.Daemon() {
-			t.kernel.PostMessage(messages.NewMessageMessageProcessExit(t))
-			return
-		}
+		t.handleMessageProcessStart(msg)
 	case interfaces.MessageTypeProcessActivate:
-		_, ok := msg.(*messages.MessageProcessActivate)
-		if !ok {
-			return
-		}
-		if activate := t.cmd.OnActivate(); activate != nil {
-			activate(t)
-		}
+		t.handleMessageProcessActivate(msg)
 	case interfaces.MessageTypeTimerCreated:
-		mt, ok := msg.(*messages.MessageTimerCreated)
-		if !ok {
-			return
-		}
-		t.timers = append(t.timers, mt.TID())
+		t.handleMessageTimerCreated(msg)
 	case interfaces.MessageTypePaintPrepare:
-		mt, ok := msg.(*messages.MessagePaintPrepare)
-		if !ok {
-			return
-		}
-		if paintEvent := t.cmd.OnPaint(); paintEvent != nil {
-			mt.Surface().Begin()
-			paintEvent(t, mt.Surface())
-			mt.Surface().End()
-
-			ma := messages.NewMessagePaintApply(t, mt.Surface())
-			t.kernel.PostMessage(ma)
-		}
+		t.handleMessagePaintPrepare(msg)
 	default:
 		log.Printf("unknown message type: %d", msg.GetType())
+	}
+}
+
+// handleMessageError processes a message of type MessageError and invokes the OnError callback if defined.
+func (t *Process) handleMessageError(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageError)
+	if !ok {
+		return
+	}
+	if onError := t.cmd.OnError(); onError != nil {
+		onError(t, mt.Error())
+	}
+}
+
+// handleMessageTimer processes a timer message and triggers the corresponding timer event if available.
+func (t *Process) handleMessageTimer(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageTimer)
+	if !ok {
+		return
+	}
+	if timerEvent := t.cmd.OnTimer(); timerEvent != nil {
+		timerEvent(t, mt.TID(), mt.Interval())
+	}
+}
+
+// handleMessageRead processes a message read event and triggers the appropriate read or broadcast event handler.
+func (t *Process) handleMessageRead(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageRead)
+	if !ok {
+		return
+	}
+	if mt.Broadcast() {
+		if readBroadcastEvent := t.cmd.OnReadBroadcast(); readBroadcastEvent != nil {
+			readBroadcastEvent(t, int(mt.Kind()), mt.Data())
+		}
+	} else {
+		if readEvent := t.cmd.OnRead(); readEvent != nil {
+			readEvent(t, int(mt.Kind()), mt.Data())
+		}
+	}
+}
+
+// handleMessageProcessStart handles the initialization of a process start message and triggers the necessary commands.
+// It ensures the process is set to foreground, executes the process, and checks if it needs to run as a daemon or exit.
+func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageProcessStart)
+	if !ok {
+		return
+	}
+	if !t.cmd.Background() {
+		t.kernel.PostMessage(messages.NewMessageProcessSetForeground(t, t.PID()))
+	}
+	_ = t.cmd.Execute(t, mt.Args())
+	if !t.cmd.Daemon() {
+		t.kernel.PostMessage(messages.NewMessageMessageProcessExit(t))
+		return
+	}
+}
+
+// handleMessageProcessActivate handles the activation message for the process and executes the defined activation callback.
+func (t *Process) handleMessageProcessActivate(msg interfaces.IMessage) {
+	_, ok := msg.(*messages.MessageProcessActivate)
+	if !ok {
+		return
+	}
+	if activate := t.cmd.OnActivate(); activate != nil {
+		activate(t)
+	}
+}
+
+// handleMessageTimerCreated processes a MessageTimerCreated message and appends the timer ID to the Process's timer list.
+func (t *Process) handleMessageTimerCreated(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageTimerCreated)
+	if !ok {
+		return
+	}
+	t.timers = append(t.timers, mt.TID())
+}
+
+// handleMessagePaintPrepare processes a paint preparation message, triggering a paint event and posting a paint apply message.
+func (t *Process) handleMessagePaintPrepare(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessagePaintPrepare)
+	if !ok {
+		return
+	}
+	if paintEvent := t.cmd.OnPaint(); paintEvent != nil {
+		mt.Surface().Begin()
+		paintEvent(t, mt.Surface())
+		mt.Surface().End()
+
+		ma := messages.NewMessagePaintApply(t, mt.Surface())
+		t.kernel.PostMessage(ma)
 	}
 }

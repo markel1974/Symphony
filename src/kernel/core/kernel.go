@@ -10,7 +10,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process_factory"
 )
 
-// Kernel represents the core component responsible for managing rendering, input/output, task execution, and timers.
+// Kernel represents the core component responsible for managing rendering, input/output, process execution, and timers.
 type Kernel struct {
 	user         string
 	ticker       *adaptiveticker.AdaptiveTicker
@@ -60,6 +60,7 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver i
 	t.handlers[interfaces.MessageTypeProcessKillForeground] = t.handleProcessKillForeground
 	t.handlers[interfaces.MessageTypeTimerCreate] = t.handleTimerCreate
 	t.handlers[interfaces.MessageTypeTimerStop] = t.handleTimerStop
+	t.handlers[interfaces.MessageTypeProcessListRequest] = t.handleProcessList
 	return t
 }
 
@@ -99,9 +100,9 @@ func (c *Kernel) PostMessage(msg interfaces.IMessage) {
 }
 
 // CallProcessList returns a formatted string containing process IDs and their respective command names managed by the Kernel.
-func (c *Kernel) CallProcessList(router interfaces.IRouter) []*interfaces.ProcessDescription {
-	return c.doProcessList()
-}
+//func (c *Kernel) CallProcessList(router interfaces.IRouter) []*interfaces.ProcessDescription {
+//	return c.doProcessList()
+//}
 
 // CallProcessIsActive checks if a process with the given PID is currently active in the Kernel's activeProcess map.
 func (c *Kernel) CallProcessIsActive(router interfaces.IRouter, pid int) bool {
@@ -125,9 +126,9 @@ func (c *Kernel) CallCWDPath(router interfaces.IRouter) string {
 }
 
 // CallCWDName returns the name of the current working directory as a string.
-func (c *Kernel) CallCWDName(router interfaces.IRouter) string {
-	return c.fsServer.CallCWDName(router)
-}
+//func (c *Kernel) CallCWDName(router interfaces.IRouter) string {
+//	return c.fsServer.CallCWDName(router)
+//}
 
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
 func (c *Kernel) CallCWDDirectoryListing(router interfaces.IRouter) []string {
@@ -193,7 +194,7 @@ func (c *Kernel) eventLoop() {
 
 // handleMessageEvent processes an incoming IMessage by dispatching it to the appropriate handlers based on its type.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
-	if m.Reply() {
+	if m.Response() {
 		m.Router().PostMessage(m)
 		return
 	}
@@ -205,7 +206,7 @@ func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 	}
 }
 
-// handleReadEvent processes input events based on their type and key value to handle control, foreground tasks, and system state.
+// handleReadEvent processes input events based on their type and key value to handle control, foreground processes, and system state.
 func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	mm, ok := m.(*messages.MessageRead)
 	if !ok {
@@ -223,7 +224,7 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	}
 }
 
-// handleTimerEvent triggers a timer event for a task identified by the given pid and tid, with the specified interval.
+// handleTimerEvent triggers a timer event for a process identified by the given pid and tid, with the specified interval.
 // Returns true if the event was successfully triggered, otherwise false.
 func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageTimer)
@@ -278,7 +279,7 @@ func (c *Kernel) handleProcessSetForeground(m interfaces.IMessage) {
 	}
 }
 
-// handleProcessKill terminates and removes a task by its process ID (pid). Returns true if successful, false if the pid is not found.
+// handleProcessKill terminates and removes a process by its process ID (pid). Returns true if successful, false if the pid is not found.
 func (c *Kernel) handleProcessKill(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageProcessKill)
 	if !ok {
@@ -428,12 +429,17 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 }
 
 // doProcessList retrieves a list of process descriptions by iterating through all stored processes in the Kernel.
-func (c *Kernel) doProcessList() []*interfaces.ProcessDescription {
+func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageProcessListRequest)
+	if !ok {
+		return
+	}
 	var out []*interfaces.ProcessDescription
 	for _, process := range c.running {
 		out = append(out, process.Description())
 	}
-	return out
+	mt.SetProcesses(out)
+	mt.Router().PostMessage(mt)
 }
 
 // doCloseTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.

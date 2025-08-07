@@ -20,13 +20,13 @@ import (
 )
 
 func CreateCD() interfaces.ICommand {
-	run := func(task interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IProcess, args []string) error {
 		if len(args) <= 0 {
-			task.Write("cd: empty directory", true)
+			process.Write("cd: empty directory", true)
 			return nil
 		}
-		if !task.CWDSet(args[0]) {
-			task.Write("cd: no such directory: "+args[0], true)
+		if !process.CWDSet(args[0]) {
+			process.Write("cd: no such directory: "+args[0], true)
 		}
 		return nil
 	}

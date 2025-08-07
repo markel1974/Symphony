@@ -9,33 +9,33 @@ import (
 // CreateInvaders initializes and returns a new process.Command for the "Invaders" game.
 // It sets up handlers for creation, input, timers, and rendering.
 func CreateInvaders() *process.Command {
-	onCreate := func(task interfaces.IProcess, args []string) error {
-		w, h := task.GetScreenSize()
+	onCreate := func(process interfaces.IProcess, args []string) error {
+		w, h := process.GetScreenSize()
 		g := invaders.NewGame(w, h)
 		g.SetMenuState()
-		task.SetContext(g)
-		task.CreateTimer(0, 100, -1)
+		process.SetContext(g)
+		process.CreateTimer(0, 100, -1)
 		return nil
 	}
-	onRead := func(task interfaces.IProcess, code int, key rune) {
-		ctx := task.GetContext()
+	onRead := func(process interfaces.IProcess, code int, key rune) {
+		ctx := process.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
 			return
 		}
 		g.HandleKey(key)
 	}
-	onTimer := func(task interfaces.IProcess, tid int, interval int) {
-		ctx := task.GetContext()
+	onTimer := func(process interfaces.IProcess, tid int, interval int) {
+		ctx := process.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
 			return
 		}
 		g.Update()
-		task.PaintRequest()
+		process.PaintRequest()
 	}
-	onPaint := func(task interfaces.IProcess, surface interfaces.ISurface) {
-		ctx := task.GetContext()
+	onPaint := func(process interfaces.IProcess, surface interfaces.ISurface) {
+		ctx := process.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
 			return

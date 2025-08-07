@@ -2,8 +2,6 @@ package messages
 
 import "github.com/markel1974/c64emu/src/kernel/interfaces"
 
-// --- Messaggi di Richiesta ---
-
 type MessageCWDSet struct {
 	interfaces.Message
 	Path string
@@ -18,12 +16,29 @@ func NewMessageCWDSet(router interfaces.IRouter, path string) *MessageCWDSet {
 
 type MessageCWDGetRequest struct {
 	interfaces.Message
+	result string
+	ack    chan bool
 }
 
-func NewMessageCWDGetRequest(router interfaces.IRouter) *MessageCWDGetRequest {
+func NewMessageCWDGetRequest(router interfaces.IRouter, ack chan bool) *MessageCWDGetRequest {
 	return &MessageCWDGetRequest{
 		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDGetRequest),
+		ack:     ack,
 	}
+}
+
+func (m *MessageCWDGetRequest) SetResult(result string) {
+	m.MakeResponse()
+	m.result = result
+}
+
+func (m *MessageCWDGetRequest) Result() string {
+	return m.result
+}
+
+func (m *MessageCWDGetRequest) Ack() bool {
+	m.ack <- true
+	return true
 }
 
 type MessageCWDNameRequest struct {
@@ -69,30 +84,6 @@ func NewMessageFileSystemHelpRequest(router interfaces.IRouter, arg string) *Mes
 	return &MessageFileSystemHelpRequest{
 		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemHelpRequest),
 		Arg:     arg,
-	}
-}
-
-type MessageCWDGetResponse struct {
-	interfaces.Message
-	Path string
-}
-
-func NewMessageCWDGetResponse(router interfaces.IRouter, path string) *MessageCWDGetResponse {
-	return &MessageCWDGetResponse{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDGetResponse),
-		Path:    path,
-	}
-}
-
-type MessageCWDNameResponse struct {
-	interfaces.Message
-	Name string
-}
-
-func NewMessageCWDNameResponse(router interfaces.IRouter, name string) *MessageCWDNameResponse {
-	return &MessageCWDNameResponse{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeCWDNameResponse),
-		Name:    name,
 	}
 }
 

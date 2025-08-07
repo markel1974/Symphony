@@ -16,11 +16,11 @@ Its core philosophy is that a complex application must be **transparent and debu
 
 ## 2. Microkernel Architecture
 
-The project fully embraces a **microkernel design philosophy**: a minimal, robust core provides essential services, while all other functionalities are delegated to isolated processes called "Tasks".
+The project fully embraces a **microkernel design philosophy**: a minimal, robust core provides essential services, while all other functionalities are delegated to isolated processes.
 
-* **Central Kernel (`kernel/core/kernel.go`):** The heart of the system. It manages the entire lifecycle of tasks, orchestrates I/O, and runs a central, asynchronous `eventLoop`. Its primary role is to act as a **message router**, decoupling the system's components.
+* **Central Kernel (`kernel/core/kernel.go`):** The heart of the system. It manages the entire lifecycle of processes, orchestrates I/O, and runs a central, asynchronous `eventLoop`. Its primary role is to act as a **message router**, decoupling the system's components.
 * **Dynamic Message Handling:** The kernel uses a dynamic `handlers` map. Each peripheral `Server` (e.g., for rendering, filesystem) registers the message types it can handle. This eliminates hardcoded dependencies and allows for a truly modular system.
-* **The Shell as a User Process (`xsh`):** As a testament to the purity of the design, the main shell (`xsh`) is not a privileged part of the kernel but is itself an application that runs as a regular "Task".
+* **The Shell as a User Process (`xsh`):** As a testament to the purity of the design, the main shell (`xsh`) is not a privileged part of the kernel but is itself an application that runs as a regular "Process".
 
 ### Kernel-Space / User-Space Process Separation
 

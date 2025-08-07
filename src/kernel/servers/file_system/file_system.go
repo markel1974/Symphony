@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
+	"github.com/markel1974/c64emu/src/kernel/messages"
 )
 
 // pathSeparator is a constant string representing the character used to separate components in a path, typically "/".
@@ -44,6 +45,9 @@ func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.IComma
 		messageChan: make(chan interfaces.IMessage, 128),
 		handlers:    make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
+
+	fs.handlers[interfaces.MessageTypeCWDGetRequest] = fs.handleCWDGetRequest
+
 	return fs
 }
 
@@ -108,11 +112,6 @@ func (c *FileSystem) CallCWDSet(router interfaces.IRouter, arg string) bool {
 //	c.searchPaths = append(c.searchPaths, sp)
 //}
 
-// CallCWDName returns the name of the current working directory command.
-func (c *FileSystem) CallCWDName(router interfaces.IRouter) string {
-	return c.cwd.Name()
-}
-
 // CallCWDPath returns the command path of the current working directory command.
 func (c *FileSystem) CallCWDPath(router interfaces.IRouter) string {
 	return c.cwd.Path()
@@ -132,7 +131,7 @@ func (c *FileSystem) CallCWDDirectoryListing(router interfaces.IRouter) []string
 	return out
 }
 
-// CallFind parses and executes a given command line string, associating it with a task, and manages its lifecycle.
+// CallFind parses and executes a given command line string, associating it with a process, and manages its lifecycle.
 func (c *FileSystem) CallFind(router interfaces.IRouter, line string) (interfaces.ICommand, []string, error) {
 	el, err := c.parser.Parse(line)
 	if err != nil {
@@ -435,4 +434,14 @@ func (c *FileSystem) eventLoop(r chan bool) {
 			}
 		}
 	}()
+}
+
+// handleCWDName returns the name of the current working directory command.
+func (c *FileSystem) handleCWDGetRequest(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageCWDGetRequest)
+	if !ok {
+		return
+	}
+	mt.SetResult(c.cwd.Name())
+	msg.Router().PostMessage(mt)
 }

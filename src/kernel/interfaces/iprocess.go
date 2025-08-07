@@ -1,24 +1,24 @@
 package interfaces
 
-// OnError defines a function type that handles errors that occur during task execution.
-type OnError func(task IProcess, err error)
+// OnError defines a function type that handles errors that occur during process execution.
+type OnError func(process IProcess, err error)
 
-// OnRun defines a function type that performs a task execution with given arguments and returns an error if any occurs.
-type OnRun func(task IProcess, args []string) error
+// OnRun defines a function type that performs a process execution with given arguments and returns an error if any occurs.
+type OnRun func(process IProcess, args []string) error
 
-// OnTimer defines a function type for tasks invoked at regular intervals, receiving the task, timer id, and interval.
-type OnTimer func(task IProcess, tid int, interval int)
+// OnTimer defines a function type for processes invoked at regular intervals, receiving the process, timer id, and interval.
+type OnTimer func(process IProcess, tid int, interval int)
 
-// OnRead defines a function type invoked for processing input events with a task, an event code, and a key character.
-type OnRead func(task IProcess, code int, key rune)
+// OnRead defines a function type invoked for processing input events with a process, an event code, and a key character.
+type OnRead func(process IProcess, code int, key rune)
 
-// OnPaint defines a function type used to handle painting tasks on a specified surface in the context of a task.
-type OnPaint func(task IProcess, surface ISurface)
+// OnPaint defines a function type used to handle painting processes on a specified surface in the context of a process.
+type OnPaint func(process IProcess, surface ISurface)
 
-// OnActivate defines a function type executed when a process is activated, receiving the task as a parameter.
-type OnActivate func(task IProcess)
+// OnActivate defines a function type executed when a process is activated, receiving the process as a parameter.
+type OnActivate func(process IProcess)
 
-// IProcess defines an interface for process management, task handling, interaction, and rendering within a system.
+// IProcess defines an interface for process management, process handling, interaction, and rendering within a system.
 type IProcess interface {
 	IRouter
 

@@ -10,13 +10,13 @@ import (
 
 // CreateMemoryStatus initializes a shell command for monitoring runtime memory statistics and garbage collection cycles.
 func CreateMemoryStatus() interfaces.ICommand {
-	run := func(task interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IProcess, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
-		task.Write(fmt.Sprintf("Allocated memory in heap objects: %.3f MB", bToMb(m.Alloc)), true)
-		task.Write(fmt.Sprintf("Total memory allocated for heap objects: %.3f MB", bToMb(m.TotalAlloc)), true)
-		task.Write(fmt.Sprintf("Total memory obtained from the OS: %.3f MB", bToMb(m.Sys)), true)
-		task.Write(fmt.Sprintf("Number of completed GC cycles: %d", m.NumGC), true)
+		process.Write(fmt.Sprintf("Allocated memory in heap objects: %.3f MB", bToMb(m.Alloc)), true)
+		process.Write(fmt.Sprintf("Total memory allocated for heap objects: %.3f MB", bToMb(m.TotalAlloc)), true)
+		process.Write(fmt.Sprintf("Total memory obtained from the OS: %.3f MB", bToMb(m.Sys)), true)
+		process.Write(fmt.Sprintf("Number of completed GC cycles: %d", m.NumGC), true)
 		return nil
 	}
 	root := process.NewCommand("rt", interfaces.CommandTypeFile, nil, false, run)

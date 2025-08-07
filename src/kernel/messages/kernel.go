@@ -215,10 +215,10 @@ func NewMessageProcessList(router interfaces.IRouter, ackChan chan bool) *Messag
 	}
 }
 
-// Respond sets the list of processes and sends the message to the specified recipient via ReplyTo.
-func (m *MessageProcessListRequest) Respond(processes []*interfaces.ProcessDescription) {
+// SetProcesses sets the list of processes and sends the message to the specified recipient via ReplyTo.
+func (m *MessageProcessListRequest) SetProcesses(processes []*interfaces.ProcessDescription) {
+	m.MakeResponse()
 	m.processes = processes
-	m.Router().PostMessage(m)
 }
 
 // Processes returns the list of ProcessDescription objects associated with the MessageProcessListResponse instance.
@@ -226,8 +226,8 @@ func (m *MessageProcessListRequest) Processes() []*interfaces.ProcessDescription
 	return m.processes
 }
 
-// Ack signals the acknowledgment channel and closes it to indicate task completion or unblock synchronous calls.
-func (m *MessageProcessListRequest) Ack() {
+// Ack signals the acknowledgment channel and closes it to indicate process completion or unblock synchronous calls.
+func (m *MessageProcessListRequest) Ack() bool {
 	m.ackChan <- true
-	close(m.ackChan)
+	return true
 }

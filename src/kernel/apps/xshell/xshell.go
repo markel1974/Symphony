@@ -176,7 +176,7 @@ func (c *XShell) redraw(process interfaces.IProcess, line string) {
 }
 
 // HistoryApply performs actions on the command history based on the specified verb (list, clear, or execute at the given index).
-func (c *XShell) historyApply(task interfaces.IProcess, verb interfaces.HistoryAction, idx int) string {
+func (c *XShell) historyApply(process interfaces.IProcess, verb interfaces.HistoryAction, idx int) string {
 	switch verb {
 	case interfaces.HistoryActionClear:
 		c.history.Clear()
@@ -190,7 +190,7 @@ func (c *XShell) historyApply(task interfaces.IProcess, verb interfaces.HistoryA
 			out += "\r\n"
 			out += fmt.Sprintf("%d: %s", n, x)
 		}
-		task.Write(out, false)
+		process.Write(out, false)
 	}
 	return ""
 }
@@ -214,16 +214,16 @@ func (c *XShell) historySuggest(process interfaces.IProcess, data string, sugges
 }
 
 // textBackspace removes the character at the current cursor position and updates the Shell state accordingly.
-func (c *XShell) textBackspace(task interfaces.IProcess) {
+func (c *XShell) textBackspace(process interfaces.IProcess) {
 	if c.pos > 0 {
 		c.pos--
 		c.current = removeAtPos(c.current, c.pos)
 		if c.echo {
-			task.MoveCursorLeft()
-			task.SaveCursor()
-			task.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
-			task.WriteForeground(string(' '), interfaces.ColorNoneDef, false)
-			task.RestoreCursor()
+			process.MoveCursorLeft()
+			process.SaveCursor()
+			process.WriteForeground(string(c.current[c.pos:]), interfaces.ColorNoneDef, false)
+			process.WriteForeground(string(' '), interfaces.ColorNoneDef, false)
+			process.RestoreCursor()
 		}
 	}
 }

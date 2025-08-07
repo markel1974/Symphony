@@ -29,44 +29,44 @@ import (
 )
 
 func CreateActivate() *process.Command {
-	run := func(task interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IProcess, args []string) error {
 		targetPid := -1
 		if len(args) > 0 {
 			targetPid, _ = strconv.Atoi(args[0])
 		}
-		task.WindowsSelectionb(targetPid)
+		process.WindowsSelectionb(targetPid)
 		return nil
 	}
 	readFn := func(task interfaces.IProcess, code int, key rune) {
 		if code == 1 {
 			switch interfaces.CursorCodeDef(key) {
 			case interfaces.CursorUpDef:
-				task.ProcessSelectionOptions('y', -1)
+				process.ProcessSelectionOptions('y', -1)
 			case interfaces.CursorDownDef:
-				task.ProcessSelectionOptions('y', 1)
+				process.ProcessSelectionOptions('y', 1)
 			case interfaces.CursorLeftDef:
-				task.ProcessSelectionOptions('x', -1)
+				process.ProcessSelectionOptions('x', -1)
 			case interfaces.CursorRightDef:
-				task.ProcessSelectionOptions('x', 1)
+				process.ProcessSelectionOptions('x', 1)
 			}
 		} else {
 			switch key {
 			case 'w':
-				task.ProcessSelectionOptions('y', -1)
+				process.ProcessSelectionOptions('y', -1)
 			case 's':
-				task.ProcessSelectionOptions('y', 1)
+				process.ProcessSelectionOptions('y', 1)
 			case 'a':
-				task.ProcessSelectionOptions('x', -1)
+				process.ProcessSelectionOptions('x', -1)
 			case 'd':
-				task.ProcessSelectionOptions('x', 1)
+				process.ProcessSelectionOptions('x', 1)
 			case '+':
-				task.ProcessSelectionOptions('z', 0.1)
+				process.ProcessSelectionOptions('z', 0.1)
 			case '-':
-				task.ProcessSelectionOptions('z', -0.1)
+				process.ProcessSelectionOptions('z', -0.1)
 			case '\t':
-				task.ProcessSelectionNext()
+				process.ProcessSelectionNext()
 			case 'q':
-				task.ProcessSelectionPrevious()
+				process.ProcessSelectionPrevious()
 			}
 		}
 	}

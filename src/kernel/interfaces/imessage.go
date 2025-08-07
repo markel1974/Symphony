@@ -26,7 +26,6 @@ const (
 	MessageTypeProcessListResponse
 	MessageTypeCWDSet
 	MessageTypeCWDGetRequest
-	MessageTypeCWDGetResponse
 	MessageTypeCWDPathRequest
 	MessageTypeCWDPathResponse
 	MessageTypeCWDNameRequest
@@ -66,24 +65,24 @@ type IMessage interface {
 
 	Router() IRouter
 
-	Reply() bool
+	Response() bool
 
-	//Ack()
+	Ack() bool
 }
 
 // Message represents a basic unit containing a MessageType to define its specific behavior or category.
 type Message struct {
-	router IRouter
-	kind   MessageType
-	reply  bool
+	router   IRouter
+	kind     MessageType
+	response bool
 }
 
 // NewMessage creates a new Message instance with the specified MessageType.
 func NewMessage(router IRouter, kind MessageType) *Message {
 	return &Message{
-		router: router,
-		kind:   kind,
-		reply:  false,
+		router:   router,
+		kind:     kind,
+		response: false,
 	}
 }
 
@@ -97,16 +96,17 @@ func (m *Message) Router() IRouter {
 	return m.router
 }
 
-// Reply returns a boolean indicating whether the message should be responded to.
-func (m *Message) Reply() bool {
-	return m.reply
+// Response returns a boolean indicating whether the message should be responded to.
+func (m *Message) Response() bool {
+	return m.response
 }
 
-func (m *Message) SetReply() {
-	m.reply = true
+// MakeResponse marks the message as a response to be sent back to the sender.
+func (m *Message) MakeResponse() {
+	m.response = true
 }
 
 // Ack acknowledges the processing of the message, preventing further handling or retries by the system.
-func (m *Message) Ack() {
-
+func (m *Message) Ack() bool {
+	return false
 }

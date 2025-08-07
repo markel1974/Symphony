@@ -20,7 +20,7 @@ While it currently boasts a highly accurate Commodore 64 and 1541 disk drive imp
 * **Snapshot = Configuration = State:** A single snapshot defines the **entire hardware configuration** *and* runtime state. Build, save, load, and share complex machine setups easily.
 * **Truly Modular Architecture:** Built entirely around the `IComponent` interface. Components communicate *only* through well-defined interfaces. Easily add new hardware, swap implementations (e.g., different SID versions), or even build entirely new systems.
 * **Advanced Integrated Console:** Access via **SSH**, featuring **multiple windows**, **concurrent processes**, custom commands per component, and even basic **text-mode graphing**. It's a complete debugging and experimentation environment.
-* **Fully Headless Operation:** The core Symphony emulation engine runs **completely headless**, without requiring any graphical or audio output. Ideal for automated testing, server-side emulation tasks, or integration with custom frontends.
+* **Fully Headless Operation:** The core Symphony emulation engine runs **completely headless**, without requiring any graphical or audio output. Ideal for automated testing, server-side emulation processes, or integration with custom frontends.
 * **Accuracy-Focused:** Where implemented (like the C64 VIC-II), aims for **cycle-level accuracy**.
 * **Pure Go Core:** Ensures **portability** and **memory safety** with **no CGo dependencies** for the core logic.
 * **Extensibility First:** Designed as a framework from the ground up.

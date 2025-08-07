@@ -9,10 +9,10 @@ import (
 
 // CreateGC initializes and returns a command that triggers garbage collection when executed.
 func CreateGC() *process.Command {
-	run := func(task interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IProcess, args []string) error {
 		//r := cmd.GetRootContext()
 		runtime.GC()
-		task.Write("GC Done", true)
+		process.Write("GC Done", true)
 		return nil
 	}
 	root := process.NewCommand("gc", interfaces.CommandTypeFile, nil, false, run)

@@ -7,7 +7,7 @@ import (
 
 // Create initializes and returns the root command for the games directory with its subcommands.
 func Create() *process.Command {
-	run := func(task interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IProcess, args []string) error {
 		return nil
 	}
 	root := process.NewCommand("games", interfaces.CommandTypeDirectory, nil, false, run)
