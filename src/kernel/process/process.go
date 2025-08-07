@@ -16,12 +16,11 @@ type Process struct {
 	timers      []int
 	pid         int
 	state       interfaces.ProcessState
-	line        string
 	messageChan chan interfaces.IMessage
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
-func NewProcess(kernel interfaces.IKernel, pid int, user string, cmd interfaces.ICommand, line string) *Process {
+func NewProcess(kernel interfaces.IKernel, pid int, user string, cmd interfaces.ICommand) *Process {
 	t := &Process{
 		kernel:      kernel,
 		pid:         pid,
@@ -29,7 +28,6 @@ func NewProcess(kernel interfaces.IKernel, pid int, user string, cmd interfaces.
 		cmd:         cmd,
 		context:     nil,
 		state:       interfaces.ProcessStateSetup,
-		line:        line,
 		messageChan: make(chan interfaces.IMessage, 128),
 	}
 	return t
@@ -48,15 +46,10 @@ func (t *Process) Setup() {
 	t.state = interfaces.ProcessStateRunning
 }
 
-// Description provides a brief summary of the process including its name, PID, and line information.
-func (t *Process) Description() *interfaces.ProcessDescription {
-	return interfaces.NewProcessDescription(t.cmd.Name(), t.pid, t.line)
-}
-
 // Line returns the line configuration of the Process as a string.
-func (t *Process) Line() string {
-	return t.line
-}
+//func (t *Process) Line() string {
+//	return t.line
+//}
 
 // PID returns the process ID (PID) associated with the task.
 func (t *Process) PID() int {

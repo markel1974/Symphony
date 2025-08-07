@@ -25,6 +25,9 @@ func (p *PID) GetId() int {
 // KernelProcess represents a kernel-level process with parent linkage, protection status, and associated timer IDs.
 type KernelProcess struct {
 	interfaces.IProcess
+	user      string
+	line      string
+	name      string
 	pid       *PID
 	parent    interfaces.IProcess
 	protected bool
@@ -32,13 +35,21 @@ type KernelProcess struct {
 }
 
 // NewKernelProcess creates a new KernelProcess instance with a parent process, protection flag, and assigned process.
-func NewKernelProcess(parent interfaces.IProcess, pid *PID, protected bool, process interfaces.IProcess) *KernelProcess {
+func NewKernelProcess(user string, line, name string, parent interfaces.IProcess, pid *PID, protected bool, process interfaces.IProcess) *KernelProcess {
 	return &KernelProcess{
+		user:      user,
+		line:      line,
+		name:      name,
 		parent:    parent,
 		protected: protected,
 		IProcess:  process,
 		pid:       pid,
 	}
+}
+
+// Description provides a brief summary of the process including its name, PID, and line information.
+func (kp *KernelProcess) Description() *interfaces.ProcessDescription {
+	return interfaces.NewProcessDescription(kp.name, kp.pid.GetId(), kp.line)
 }
 
 // AddTimer adds a timer ID to the KernelProcess's list of timers.

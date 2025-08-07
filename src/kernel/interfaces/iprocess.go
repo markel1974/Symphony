@@ -26,10 +26,6 @@ type IProcess interface {
 
 	GetCommand() ICommand
 
-	Line() string
-
-	Description() *ProcessDescription
-
 	SetContext(ctx interface{})
 
 	GetContext() interface{}

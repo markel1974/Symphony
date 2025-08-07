@@ -382,7 +382,7 @@ func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line stri
 		return
 	}
 	parent, _ := c.running[router.PID()]
-	kernelProcess := NewKernelProcess(parent, pid, protected, c.pf.Create(pid.GetId(), user, cmd, line))
+	kernelProcess := NewKernelProcess(user, line, cmd.Name(), parent, pid, protected, c.pf.Create(pid.GetId(), user, cmd))
 	c.running[kernelProcess.PID()] = kernelProcess
 	kernelProcess.Setup()
 	for _, server := range c.servers {
