@@ -13,14 +13,4 @@ type IKernel interface {
 	CallProcessIsActive(process IRouter, pid int) bool
 
 	CallScreenSize(process IRouter) (int, int)
-
-	//CallCWDSet(process IRouter, arg string) bool
-
-	CallCWDPath(process IRouter) string
-
-	CallCWDDirectoryListing(process IRouter) []string
-
-	CallFileSystemHelp(process IRouter, arg string) (string, error)
-
-	//CallFileSystemSuggestion(process IRouter, in string, cursor int) (string, []string, bool)
 }

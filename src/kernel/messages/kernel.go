@@ -199,35 +199,35 @@ func (m *MessageProcessSetForeground) PID() int {
 	return m.pid
 }
 
-// MessageProcessListRequest represents a request message to retrieve a list of processes from the system.
+// MessageProcessList represents a request message to retrieve a list of processes from the system.
 // It embeds Message for base message functionality and uses ReplyTo to specify the recipient for the response.
-type MessageProcessListRequest struct {
+type MessageProcessList struct {
 	interfaces.Message
 	processes []*interfaces.ProcessDescription
 	ackChan   chan bool
 }
 
-// NewMessageProcessList creates a new MessageProcessListRequest with specified replyTo as an IRouter.
-func NewMessageProcessList(router interfaces.IRouter, ackChan chan bool) *MessageProcessListRequest {
-	return &MessageProcessListRequest{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessListRequest),
+// NewMessageProcessList creates a new MessageProcessList with specified replyTo as an IRouter.
+func NewMessageProcessList(router interfaces.IRouter, ackChan chan bool) *MessageProcessList {
+	return &MessageProcessList{
+		Message: *interfaces.NewMessage(router, interfaces.MessageTypeProcessList),
 		ackChan: ackChan,
 	}
 }
 
 // SetProcesses sets the list of processes and sends the message to the specified recipient via ReplyTo.
-func (m *MessageProcessListRequest) SetProcesses(processes []*interfaces.ProcessDescription) {
+func (m *MessageProcessList) SetProcesses(processes []*interfaces.ProcessDescription) {
 	m.MakeResponse()
 	m.processes = processes
 }
 
 // Processes returns the list of ProcessDescription objects associated with the MessageProcessListResponse instance.
-func (m *MessageProcessListRequest) Processes() []*interfaces.ProcessDescription {
+func (m *MessageProcessList) Processes() []*interfaces.ProcessDescription {
 	return m.processes
 }
 
 // Ack signals the acknowledgment channel and closes it to indicate process completion or unblock synchronous calls.
-func (m *MessageProcessListRequest) Ack() bool {
+func (m *MessageProcessList) Ack() bool {
 	m.ackChan <- true
 	return true
 }

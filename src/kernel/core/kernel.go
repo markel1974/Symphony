@@ -19,7 +19,6 @@ type Kernel struct {
 	foreground   interfaces.IProcess
 	pidGenerator *adaptiveticker.Ids
 	running      map[int]*KernelProcess
-	fsServer     interfaces.IFileSystem
 	shellPath    string
 	messageChan  chan interfaces.IMessage
 	pf           *process_factory.ProcessFactory
@@ -30,13 +29,12 @@ type Kernel struct {
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
-func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver interfaces.IKeyboardDriver, renderServer interfaces.IRender, fsServer interfaces.IFileSystem, shellPath string) *Kernel {
+func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver interfaces.IKeyboardDriver, renderServer interfaces.IRender, shellPath string) *Kernel {
 	t := &Kernel{
 		user:         user,
 		ticker:       ticker,
 		inputDriver:  inputDriver,
 		renderServer: renderServer,
-		fsServer:     fsServer,
 		foreground:   nil,
 		pidGenerator: adaptiveticker.NewIds(1024),
 		messageChan:  make(chan interfaces.IMessage, contextMaQueueLen),
@@ -60,7 +58,8 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver i
 	t.handlers[interfaces.MessageTypeProcessKillForeground] = t.handleProcessKillForeground
 	t.handlers[interfaces.MessageTypeTimerCreate] = t.handleTimerCreate
 	t.handlers[interfaces.MessageTypeTimerStop] = t.handleTimerStop
-	t.handlers[interfaces.MessageTypeProcessListRequest] = t.handleProcessList
+	t.handlers[interfaces.MessageTypeProcessList] = t.handleProcessList
+	t.handlers[interfaces.MessageTypeFileSystemFindResponse] = t.handleFileSystemFindResponse
 	return t
 }
 
@@ -111,20 +110,20 @@ func (c *Kernel) CallScreenSize(router interfaces.IRouter) (int, int) {
 }
 
 // CallCWDPath returns the command path of the current working directory from the file system.
-func (c *Kernel) CallCWDPath(router interfaces.IRouter) string {
-	return c.fsServer.CallCWDPath(router)
-}
+//func (c *Kernel) CallCWDPath(router interfaces.IRouter) string {
+//	return c.fsServer.CallCWDPath(router)
+//}
 
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
-func (c *Kernel) CallCWDDirectoryListing(router interfaces.IRouter) []string {
-	return c.fsServer.CallCWDDirectoryListing(router)
-}
+//func (c *Kernel) CallCWDDirectoryListing(router interfaces.IRouter) []string {
+//	return c.fsServer.CallCWDDirectoryListing(router)
+//}
 
 // CallFileSystemHelp retrieves the help information associated with the given argument and returns it as a string.
 // Returns an error if the help information cannot be fetched.
-func (c *Kernel) CallFileSystemHelp(router interfaces.IRouter, arg string) (string, error) {
-	return c.fsServer.CallHelp(router, arg)
-}
+//func (c *Kernel) CallFileSystemHelp(router interfaces.IRouter, arg string) (string, error) {
+//	return c.fsServer.CallHelp(router, arg)
+//}
 
 // CallExitRequested sets the `exit` flag to true, signaling that an exit has been requested for the kernel.
 func (c *Kernel) CallExitRequested(router interfaces.IRouter) {
@@ -133,7 +132,7 @@ func (c *Kernel) CallExitRequested(router interfaces.IRouter) {
 
 // Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
 func (c *Kernel) Start() {
-	c.doProcessExec(c, c.user, c.shellPath, true)
+	c.PostMessage(messages.NewMessageFileSystemFindRequest(c, c, c.shellPath, true))
 	d := make(chan bool)
 	go func() {
 		d <- true
@@ -245,7 +244,7 @@ func (c *Kernel) handleProcessExec(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	c.doProcessExec(mt.Router(), mt.Router().User(), mt.Line(), false)
+	c.PostMessage(messages.NewMessageFileSystemFindRequest(c, mt.Router(), mt.Line(), false))
 }
 
 // handleProcessSetForeground handles a process set foreground message by setting the foreground process to the specified process.
@@ -340,7 +339,7 @@ func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
 
 // handleProcessList processes a message requesting a list of running processes and sends the response with process details.
 func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
-	mt, ok := msg.(*messages.MessageProcessListRequest)
+	mt, ok := msg.(*messages.MessageProcessList)
 	if !ok {
 		return
 	}
@@ -363,27 +362,35 @@ func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
 
 // doProcessExec executes a process by creating it, assigning a pid, and starting it with the given user and input line.
 // Configures the command arguments, initializes the process, and notifies servers about its creation.
-func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line string, protected bool) {
-	cmd, args, err := c.fsServer.CallFind(router, line)
-	if err != nil {
-		router.PostMessage(messages.NewMessageError(router, fmt.Errorf("error creating task: invalid command '%s'", line)))
-		return
-	}
-
-	pid := NewPID()
-	_, ok := c.pidGenerator.Set(pid)
+func (c *Kernel) handleFileSystemFindResponse(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageFileSystemFindResponse)
 	if !ok {
-		router.PostMessage(messages.NewMessageError(router, fmt.Errorf("error creating task: can't set pid")))
 		return
 	}
-	parent, _ := c.running[router.PID()]
-	kernelProcess := NewKernelProcess(user, line, cmd.Name(), parent, pid, protected, c.pf.Create(pid.GetId(), user, cmd))
+	originator := mt.Parent()
+	if originator == nil {
+		log.Printf("error creating task: invalid originator")
+		return
+	}
+	cmd, args, err := mt.GetResult()
+	if err != nil {
+		originator.PostMessage(messages.NewMessageError(originator, fmt.Errorf("error creating task: invalid command '%s'", mt.Line())))
+		return
+	}
+	pid := NewPID()
+	_, ok = c.pidGenerator.Set(pid)
+	if !ok {
+		originator.PostMessage(messages.NewMessageError(originator, fmt.Errorf("error creating task: can't set pid")))
+		return
+	}
+	parent, _ := c.running[originator.PID()]
+	kernelProcess := NewKernelProcess(originator.User(), mt.Line(), cmd.Name(), parent, pid, mt.Protected(), c.pf.Create(pid.GetId(), originator.User(), cmd))
 	c.running[kernelProcess.PID()] = kernelProcess
 	kernelProcess.Setup()
 	for _, server := range c.servers {
 		server.NotifyProcessCreation(kernelProcess.PID(), kernelProcess.GetCommand().Name())
 	}
-	kernelProcess.PostMessage(messages.NewMessageProcessStart(router, args))
+	kernelProcess.PostMessage(messages.NewMessageProcessStart(originator, args))
 }
 
 // doProcessSetForeground sets the specified process as the foreground process and sends activation messages if needed.
@@ -402,8 +409,6 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 	if process.Protected() {
 		return
 	}
-	delete(c.running, process.PID())
-	c.pidGenerator.Unset(process.PID())
 	if len(process.Timers()) > 0 {
 		c.ticker.RemoveEntries(process.Timers())
 	}
@@ -415,10 +420,12 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 			if parent := process.Parent(); parent != nil {
 				c.doProcessSetForeground(c, parent)
 			} else {
-				log.Printf("foreground process is nil")
+				log.Printf("Fatal Error: foreground process is nil")
 			}
 		}
 	}
+	delete(c.running, process.PID())
+	c.pidGenerator.Unset(process.PID())
 	process.PostMessage(messages.NewMessageQuit(process))
 }
 

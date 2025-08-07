@@ -29,13 +29,13 @@ type KernelProcess struct {
 	line      string
 	name      string
 	pid       *PID
-	parent    interfaces.IProcess
+	parent    *KernelProcess
 	protected bool
 	timers    []int
 }
 
 // NewKernelProcess creates a new KernelProcess instance with a parent process, protection flag, and assigned process.
-func NewKernelProcess(user string, line, name string, parent interfaces.IProcess, pid *PID, protected bool, process interfaces.IProcess) *KernelProcess {
+func NewKernelProcess(user string, line, name string, parent *KernelProcess, pid *PID, protected bool, process interfaces.IProcess) *KernelProcess {
 	return &KernelProcess{
 		user:      user,
 		line:      line,
@@ -59,6 +59,9 @@ func (kp *KernelProcess) AddTimer(tid int) {
 
 // Parent returns the parent process of the current KernelProcess, implementing the IProcess interface.
 func (kp *KernelProcess) Parent() interfaces.IProcess {
+	if kp.parent == nil {
+		return nil
+	}
 	return kp.parent
 }
 

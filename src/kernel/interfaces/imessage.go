@@ -5,35 +5,18 @@ type MessageType int
 
 const (
 	MessageTypeError MessageType = iota
+	MessageTypeQuit
 	MessageTypeRead
 	MessageTypeTimer
+	MessageTypeSetScreenSize
+	MessageTypeTimerCreate
+	MessageTypeTimerCreated
+	MessageTypeTimerStop
+	MessageTypeExitRequested
 	MessageTypeTimedMessage
 	MessageTypePaintRequest
 	MessageTypePaintPrepare
 	MessageTypePaintApply
-	MessageTypeQuit
-	MessageTypeProcessExec
-	MessageTypeProcessStart
-	MessageTypeProcessActivate
-	MessageTypeProcessExit
-	MessageTypeProcessKill
-	MessageTypeProcessKillAll
-	MessageTypeProcessKillForeground
-	MessageTypeProcessSetForeground
-	MessageTypeProcessIsActiveRequest
-	MessageTypeProcessIsActiveResponse
-	MessageTypeProcessListRequest
-	MessageTypeProcessListResponse
-	MessageTypeCWDSet
-	MessageTypeCWDGetRequest
-	MessageTypeCWDPathRequest
-	MessageTypeCWDPathResponse
-	MessageTypeCWDNameRequest
-	MessageTypeCWDNameResponse
-	MessageTypeCWDDirectoryListing
-	MessageTypeFileSystemSuggestion
-	MessageTypeFileSystemHelpRequest
-	MessageTypeFileSystemHelpResponse
 	MessageTypeWrite
 	MessageTypeWriteLn
 	MessageTypeWriteColor
@@ -48,13 +31,23 @@ const (
 	MessageTypeWindowsSelectionNext
 	MessageTypeWindowsSelectionPrevious
 	MessageTypeWindowsSelectionOptions
-	MessageTypeScreenSizeRequest
-	MessageTypeScreenSizeResponse
-	MessageTypeSetScreenSize
-	MessageTypeTimerCreate
-	MessageTypeTimerCreated
-	MessageTypeTimerStop
-	MessageTypeExitRequested
+	MessageTypeProcessExec
+	MessageTypeProcessStart
+	MessageTypeProcessActivate
+	MessageTypeProcessExit
+	MessageTypeProcessKill
+	MessageTypeProcessKillAll
+	MessageTypeProcessKillForeground
+	MessageTypeProcessSetForeground
+	MessageTypeProcessList
+	MessageTypeFileSystemCWDSet
+	MessageTypeFileSystemCWDGet
+	MessageTypeFileSystemCWDDirectoryListing
+	MessageTypeFileSystemCWDPath
+	MessageTypeFileSystemSuggestion
+	MessageTypeFileSystemHelp
+	MessageTypeFileSystemFindRequest
+	MessageTypeFileSystemFindResponse
 )
 
 // IMessage defines the interface for messages used within the system, requiring a method to retrieve the message type.
@@ -70,17 +63,17 @@ type IMessage interface {
 
 // Message represents a basic unit containing a MessageType to define its specific behavior or category.
 type Message struct {
-	router   IRouter
-	kind     MessageType
-	response bool
+	originator IRouter
+	kind       MessageType
+	response   bool
 }
 
 // NewMessage creates a new Message instance with the specified MessageType.
-func NewMessage(router IRouter, kind MessageType) *Message {
+func NewMessage(originator IRouter, kind MessageType) *Message {
 	return &Message{
-		router:   router,
-		kind:     kind,
-		response: false,
+		originator: originator,
+		kind:       kind,
+		response:   false,
 	}
 }
 
@@ -91,7 +84,7 @@ func (m *Message) GetType() MessageType {
 
 // Router returns the IRouter instance associated with the current Message instance.
 func (m *Message) Router() IRouter {
-	return m.router
+	return m.originator
 }
 
 // Response returns a boolean indicating whether the message should be responded to.

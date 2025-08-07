@@ -132,7 +132,7 @@ func (t *Process) GetScreenSize() (int, int) {
 
 // CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
 func (t *Process) CWDSet(arg string) bool {
-	msg := messages.NewMessageCWDSet(t, arg, t.executorWaitChan)
+	msg := messages.NewMessageFileSystemCWDSet(t, arg, t.executorWaitChan)
 	t.kernel.PostMessage(msg)
 	<-t.executorWaitChan
 	return msg.GetResult()
@@ -140,7 +140,7 @@ func (t *Process) CWDSet(arg string) bool {
 
 // CWDName returns the current working directory name by invoking a kernel-level method.
 func (t *Process) CWDName() string {
-	msg := messages.NewMessageCWDGet(t, t.executorWaitChan)
+	msg := messages.NewMessageFileSystemCWDGet(t, t.executorWaitChan)
 	t.kernel.PostMessage(msg)
 	<-t.executorWaitChan
 	return msg.GetResult()
@@ -148,12 +148,18 @@ func (t *Process) CWDName() string {
 
 // CWDPath retrieves the current working directory as a string from the associated kernel instance.
 func (t *Process) CWDPath() string {
-	return t.kernel.CallCWDPath(t)
+	msg := messages.NewMessageFileSystemCWDPath(t, t.executorWaitChan)
+	t.kernel.PostMessage(msg)
+	<-t.executorWaitChan
+	return msg.GetResult()
 }
 
 // CWDDirectoryListing retrieves a slice of strings representing the child nodes of the current working directory (CWD).
 func (t *Process) CWDDirectoryListing() []string {
-	return t.kernel.CallCWDDirectoryListing(t)
+	msg := messages.NewMessageFileSystemCWDDirectoryListing(t, t.executorWaitChan)
+	t.kernel.PostMessage(msg)
+	<-t.executorWaitChan
+	return msg.GetResult()
 }
 
 // Suggestion provides auto-completion suggestions based on the input string and cursor position. Returns prefix, suggestions, and a success flag.
@@ -166,7 +172,10 @@ func (t *Process) Suggestion(in string, cursor int) (string, []string, bool) {
 
 // Help calls the kernel's Help method with the provided argument and returns the result or an error.
 func (t *Process) Help(arg string) (string, error) {
-	return t.kernel.CallFileSystemHelp(t, arg)
+	msg := messages.NewMessageFileSystemHelp(t, arg, t.executorWaitChan)
+	t.kernel.PostMessage(msg)
+	<-t.executorWaitChan
+	return msg.GetResponse()
 }
 
 // ProcessExec executes a task based on the provided command line input and returns a success status and any execution error.

@@ -46,9 +46,13 @@ func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.IComma
 		handlers:    make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
 
-	fs.handlers[interfaces.MessageTypeCWDGetRequest] = fs.handleCWDGetRequest
+	fs.handlers[interfaces.MessageTypeFileSystemCWDGet] = fs.handleCWDGetRequest
 	fs.handlers[interfaces.MessageTypeFileSystemSuggestion] = fs.handleSuggestion
-	fs.handlers[interfaces.MessageTypeCWDSet] = fs.handleCWDSet
+	fs.handlers[interfaces.MessageTypeFileSystemCWDSet] = fs.handleCWDSet
+	fs.handlers[interfaces.MessageTypeFileSystemCWDPath] = fs.handleCWDPath
+	fs.handlers[interfaces.MessageTypeFileSystemCWDDirectoryListing] = fs.handleCWDDirectoryListing
+	fs.handlers[interfaces.MessageTypeFileSystemFindRequest] = fs.handleFindRequest
+	fs.handlers[interfaces.MessageTypeFileSystemHelp] = fs.handleHelp
 	return fs
 }
 
@@ -89,7 +93,7 @@ func (c *FileSystem) PostMessage(m interfaces.IMessage) {
 
 // CallCWDSet updates the current working directory to the specified path and returns true if the operation is successful.
 func (c *FileSystem) handleCWDSet(msg interfaces.IMessage) {
-	mt, ok := msg.(*messages.MessageCWDSet)
+	mt, ok := msg.(*messages.MessageFileSystemCWDSet)
 	if !ok {
 		return
 	}
@@ -123,32 +127,44 @@ func (c *FileSystem) handleCWDSet(msg interfaces.IMessage) {
 //}
 
 // CallCWDPath returns the command path of the current working directory command.
-func (c *FileSystem) CallCWDPath(router interfaces.IRouter) string {
-	return c.cwd.Path()
+func (c *FileSystem) handleCWDPath(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageFileSystemCWDPath)
+	if !ok {
+		return
+	}
+	mt.SetResult(c.cwd.Path())
+	mt.Router().PostMessage(mt)
 }
 
-// CallCWDPathEntries returns the path of the current working directory as a slice of strings.
-//func (c *FileSystem) CallCWDPathEntries(router interfaces.IRouter) []string {
-//	return c.cwd.PathEntries()
-//}
-
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
-func (c *FileSystem) CallCWDDirectoryListing(router interfaces.IRouter) []string {
+func (c *FileSystem) handleCWDDirectoryListing(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageFileSystemCWDDirectoryListing)
+	if !ok {
+		return
+	}
 	var out []string
 	for _, z := range c.cwd.DirectoryListing() {
 		out = append(out, z) // z.Name())
 	}
-	return out
+	mt.SetResult(out)
+	mt.Router().PostMessage(mt)
 }
 
 // CallFind parses and executes a given command line string, associating it with a process, and manages its lifecycle.
-func (c *FileSystem) CallFind(router interfaces.IRouter, line string) (interfaces.ICommand, []string, error) {
-	el, err := c.parser.Parse(line)
+func (c *FileSystem) handleFindRequest(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageFileSystemFindRequest)
+	if !ok {
+		return
+	}
+	el, err := c.parser.Parse(mt.Line())
 	if err != nil {
-		return nil, nil, err
+		mt.Router().PostMessage(mt.CreateResponse(nil, nil, err))
+		return
 	}
 	if len(el) == 0 {
-		return nil, nil, fmt.Errorf("invalid command: '%s'", line)
+		err = fmt.Errorf("invalid command: '%s'", mt.Line())
+		mt.Router().PostMessage(mt.CreateResponse(nil, nil, err))
+		return
 	}
 	name := el[0]
 	args := el[1:]
@@ -166,25 +182,34 @@ func (c *FileSystem) CallFind(router interfaces.IRouter, line string) (interface
 		}
 	}
 	if sel == nil {
-		return nil, nil, fmt.Errorf("unknown command: '%s'", name)
+		err = fmt.Errorf("unknown command: '%s'", name)
+		mt.Router().PostMessage(mt.CreateResponse(nil, nil, err))
+		return
 	}
 	//if len(args) > 0 {
 	//	if sel, args, err = sel.Find(args); err != nil || sel == nil {
 	//		return false, fmt.Errorf("invalid command: '%s %s'", name, strings.Join(args, " "))
 	//	}
 	//}
-	return sel, args, nil
+	mt.Router().PostMessage(mt.CreateResponse(sel, args, nil))
 }
 
 // CallHelp retrieves help information for a given command line string,
 // resolving it within the current context and search paths.
-func (c *FileSystem) CallHelp(router interfaces.IRouter, path string) (string, error) {
+func (c *FileSystem) handleHelp(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageFileSystemHelp)
+	if !ok {
+		return
+	}
+
+	//router interfaces.IRouter, path string
+	//(string, error)
 	var pathSegments []string
-	absolute := interfaces.IsPathAbsolute(path)
+	absolute := interfaces.IsPathAbsolute(mt.Path())
 	if !absolute {
 		pathSegments = append(pathSegments, c.cwd.PathEntries()...)
 	}
-	segments := interfaces.PathToSegments(path)
+	segments := interfaces.PathToSegments(mt.Path())
 	pathSegments = append(pathSegments, segments...)
 
 	sel := c.root.Traverse(pathSegments)
@@ -198,15 +223,19 @@ func (c *FileSystem) CallHelp(router interfaces.IRouter, path string) (string, e
 		}
 	}
 	if sel == nil {
-		return "", fmt.Errorf("invalid command %s", path)
+		mt.SetResponse("", fmt.Errorf("invalid command %s", mt.Path()))
+		mt.Router().PostMessage(mt)
+		return
 	}
-	return sel.Help(), nil
+	mt.SetResponse(sel.Help(), nil)
+	mt.Router().PostMessage(mt)
+	return
 }
 
 // CallSuggestion generates command suggestions based on the provided input and current directory context.
 // It returns the input prefix, a list of suggestions, and a boolean indicating if suggestions exist.
 func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
-	mt, ok := msg.(*messages.MessageFileSystemSuggestionRequest)
+	mt, ok := msg.(*messages.MessageFileSystemSuggestion)
 	if !ok {
 		return
 	}
@@ -455,7 +484,7 @@ func (c *FileSystem) eventLoop(r chan bool) {
 
 // handleCWDName returns the name of the current working directory command.
 func (c *FileSystem) handleCWDGetRequest(msg interfaces.IMessage) {
-	mt, ok := msg.(*messages.MessageCWDGetRequest)
+	mt, ok := msg.(*messages.MessageFileSystemCWDGet)
 	if !ok {
 		return
 	}
