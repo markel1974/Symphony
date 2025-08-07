@@ -7,9 +7,9 @@ type IServer interface {
 
 	Register(router IRouter) []MessageType
 
-	NotifyProcessCreation(desc *ProcessDescription)
+	NotifyProcessCreation(pid int, name string)
 
-	NotifyProcessTermination(desc *ProcessDescription)
+	NotifyProcessTermination(pid int)
 
-	NotifyProcessForeground(desc *ProcessDescription)
+	NotifyProcessForeground(pid int)
 }

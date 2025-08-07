@@ -401,15 +401,15 @@ func (c *FileSystem) deduplicateSuggestions(s []string) []string {
 }
 
 // NotifyProcessCreation handles notifications related to the creation of a process within the file system context.
-func (c *FileSystem) NotifyProcessCreation(desc *interfaces.ProcessDescription) {
+func (c *FileSystem) NotifyProcessCreation(pid int, name string) {
 	//todo notify cwd (cwd non è del filesystem, ma è del processo stesso!)
 }
 
 // NotifyProcessTermination handles notifications related to the termination of a process within the file system context.
-func (c *FileSystem) NotifyProcessTermination(desc *interfaces.ProcessDescription) {
+func (c *FileSystem) NotifyProcessTermination(pid int) {
 }
 
-func (c *FileSystem) NotifyProcessForeground(desc *interfaces.ProcessDescription) {
+func (c *FileSystem) NotifyProcessForeground(pid int) {
 }
 
 // evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.

@@ -158,19 +158,19 @@ func (c *Render) CallWriteColor(router interfaces.IRouter, data string, fg inter
 }
 
 // NotifyProcessCreation notifies the Render instance about the creation of a new process and updates internal state if necessary.
-func (c *Render) NotifyProcessCreation(desc *interfaces.ProcessDescription) {
-	c.running[desc.PID()] = NewComponent(desc.PID(), desc.Name(), c.driver, c.height, c.width)
+func (c *Render) NotifyProcessCreation(pid int, name string) {
+	c.running[pid] = NewComponent(pid, name, c.driver, c.height, c.width)
 }
 
 // NotifyProcessTermination handles the necessary cleanup and state updates when a process associated with the Render terminates.
-func (c *Render) NotifyProcessTermination(desc *interfaces.ProcessDescription) {
+func (c *Render) NotifyProcessTermination(pid int) {
 	c.windowSelector.Clear()
-	delete(c.running, desc.PID())
+	delete(c.running, pid)
 }
 
 // NotifyProcessForeground updates the Render object with the process description currently in the foreground.
-func (c *Render) NotifyProcessForeground(desc *interfaces.ProcessDescription) {
-	p, _ := c.running[desc.PID()]
+func (c *Render) NotifyProcessForeground(pid int) {
+	p, _ := c.running[pid]
 	if p == nil {
 		c.foreground = nil
 		return

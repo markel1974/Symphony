@@ -431,7 +431,7 @@ func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line stri
 	c.running[kernelProcess.PID()] = kernelProcess
 	kernelProcess.Setup()
 	for _, server := range c.servers {
-		server.NotifyProcessCreation(kernelProcess.Description())
+		server.NotifyProcessCreation(kernelProcess.PID(), kernelProcess.GetCommand().Name())
 	}
 	kernelProcess.PostMessage(messages.NewMessageProcessStart(router, args))
 }
@@ -439,7 +439,7 @@ func (c *Kernel) doProcessExec(router interfaces.IRouter, user string, line stri
 // doProcessSetForeground sets the specified process as the foreground process and sends activation messages if needed.
 func (c *Kernel) doProcessSetForeground(router interfaces.IRouter, process interfaces.IProcess) {
 	for _, s := range c.servers {
-		s.NotifyProcessForeground(process.Description())
+		s.NotifyProcessForeground(process.PID())
 	}
 	if c.foreground != process {
 		c.foreground = process
@@ -458,7 +458,7 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 		c.ticker.RemoveEntries(process.Timers())
 	}
 	for _, server := range c.servers {
-		server.NotifyProcessTermination(process.Description())
+		server.NotifyProcessTermination(process.PID())
 	}
 	if c.foreground != nil {
 		if c.foreground.PID() == process.PID() {
