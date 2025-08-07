@@ -110,11 +110,6 @@ func (c *Kernel) CallScreenSize(router interfaces.IRouter) (int, int) {
 	return c.renderServer.CallGetScreenSize(router)
 }
 
-// CallCWDSet sets the current working directory to the specified path and updates the shell prompt accordingly.
-//func (c *Kernel) CallCWDSet(router interfaces.IRouter, arg string) bool {
-//	return c.fsServer.CallCWDSet(router, arg)
-//}
-
 // CallCWDPath returns the command path of the current working directory from the file system.
 func (c *Kernel) CallCWDPath(router interfaces.IRouter) string {
 	return c.fsServer.CallCWDPath(router)
