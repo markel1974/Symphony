@@ -137,18 +137,18 @@ func (t *Process) CWDSet(arg string) bool {
 	return t.kernel.CallCWDSet(t, arg)
 }
 
+// CWDPathEntries retrieves the current working directory path as a slice of strings from the kernel.
+//func (t *Process) CWDPathEntries() []string {
+//	return t.kernel.CallCWDPathEntries(t)
+//}
+
 // CWDName returns the current working directory name by invoking a kernel-level method.
 func (t *Process) CWDName() string {
 	return t.kernel.CallCWDName(t)
 }
 
-// CWDGet retrieves the current working directory as a string from the associated kernel instance.
-func (t *Process) CWDGet() string {
-	return t.kernel.CallCWDGet(t)
-}
-
-// CWDPath retrieves the current working directory path as a slice of strings from the kernel.
-func (t *Process) CWDPath() []string {
+// CWDPath retrieves the current working directory as a string from the associated kernel instance.
+func (t *Process) CWDPath() string {
 	return t.kernel.CallCWDPath(t)
 }
 

@@ -21,7 +21,7 @@ import (
 
 func CreatePWD() interfaces.ICommand {
 	run := func(task interfaces.IProcess, args []string) error {
-		task.Write(task.CWDGet(), true)
+		task.Write(task.CWDPath(), true)
 		return nil
 	}
 	root := process.NewCommand("pwd", interfaces.CommandTypeFile, nil, false, run)

@@ -83,9 +83,9 @@ type ICommand interface {
 
 	RemoveCommand(cx ICommand) error
 
-	CommandPath() string
+	Path() string
 
-	Path() []string
+	PathEntries() []string
 
 	HasAlias(s string) bool
 

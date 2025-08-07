@@ -76,17 +76,12 @@ func (c *FileSystem) PostMessage(m interfaces.IMessage) {
 }
 
 // CallAddSearchPath adds a new ICommand instance to the searchPaths slice for fs resolution.
-func (c *FileSystem) CallAddSearchPath(router interfaces.IRouter, sp interfaces.ICommand) {
-	if sp == nil {
-		return
-	}
-	c.searchPaths = append(c.searchPaths, sp)
-}
-
-// CallCWDName returns the name of the current working directory command.
-func (c *FileSystem) CallCWDName(router interfaces.IRouter) string {
-	return c.cwd.Name()
-}
+//func (c *FileSystem) CallAddSearchPath(router interfaces.IRouter, sp interfaces.ICommand) {
+//	if sp == nil {
+//		return
+//	}
+//	c.searchPaths = append(c.searchPaths, sp)
+//}
 
 // CallCWDSet updates the current working directory to the specified path and returns true if the operation is successful.
 func (c *FileSystem) CallCWDSet(router interfaces.IRouter, arg string) bool {
@@ -106,15 +101,20 @@ func (c *FileSystem) CallCWDSet(router interfaces.IRouter, arg string) bool {
 	return false
 }
 
-// CallCWDCommandPath returns the command path of the current working directory command.
-func (c *FileSystem) CallCWDCommandPath(router interfaces.IRouter) string {
-	return c.cwd.CommandPath()
+// CallCWDName returns the name of the current working directory command.
+func (c *FileSystem) CallCWDName(router interfaces.IRouter) string {
+	return c.cwd.Name()
 }
 
-// CallCWDPath returns the path of the current working directory as a slice of strings.
-func (c *FileSystem) CallCWDPath(router interfaces.IRouter) []string {
+// CallCWDPath returns the command path of the current working directory command.
+func (c *FileSystem) CallCWDPath(router interfaces.IRouter) string {
 	return c.cwd.Path()
 }
+
+// CallCWDPathEntries returns the path of the current working directory as a slice of strings.
+//func (c *FileSystem) CallCWDPathEntries(router interfaces.IRouter) []string {
+//	return c.cwd.PathEntries()
+//}
 
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
 func (c *FileSystem) CallCWDDirectoryListing(router interfaces.IRouter) []string {
@@ -166,7 +166,7 @@ func (c *FileSystem) CallHelp(router interfaces.IRouter, path string) (string, e
 	var pathSegments []string
 	absolute := interfaces.IsPathAbsolute(path)
 	if !absolute {
-		pathSegments = append(pathSegments, c.cwd.Path()...)
+		pathSegments = append(pathSegments, c.cwd.PathEntries()...)
 	}
 	segments := interfaces.PathToSegments(path)
 	pathSegments = append(pathSegments, segments...)

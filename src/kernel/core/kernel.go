@@ -159,13 +159,8 @@ func (c *Kernel) CallCWDSet(router interfaces.IRouter, arg string) bool {
 	return c.fsServer.CallCWDSet(router, arg)
 }
 
-// CallCWDGet returns the command path of the current working directory from the file system.
-func (c *Kernel) CallCWDGet(router interfaces.IRouter) string {
-	return c.fsServer.CallCWDCommandPath(router)
-}
-
-// CallCWDPath retrieves the current working directory's path as a slice of strings from the filesystem instance.
-func (c *Kernel) CallCWDPath(router interfaces.IRouter) []string {
+// CallCWDPath returns the command path of the current working directory from the file system.
+func (c *Kernel) CallCWDPath(router interfaces.IRouter) string {
 	return c.fsServer.CallCWDPath(router)
 }
 
@@ -173,6 +168,11 @@ func (c *Kernel) CallCWDPath(router interfaces.IRouter) []string {
 func (c *Kernel) CallCWDName(router interfaces.IRouter) string {
 	return c.fsServer.CallCWDName(router)
 }
+
+// CallCWDPathEntries retrieves the current working directory's path as a slice of strings from the filesystem instance.
+//func (c *Kernel) CallCWDPathEntries(router interfaces.IRouter) []string {
+//	return c.fsServer.CallCWDPathEntries(router)
+//}
 
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
 func (c *Kernel) CallCWDDirectoryListing(router interfaces.IRouter) []string {

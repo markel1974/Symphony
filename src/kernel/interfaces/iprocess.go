@@ -44,13 +44,13 @@ type IProcess interface {
 
 	KillAll(name string)
 
-	CWDName() string
-
 	CWDSet(arg string) bool
 
-	CWDGet() string
+	CWDName() string
 
-	CWDPath() []string
+	CWDPath() string
+
+	//CWDPathEntries() []string
 
 	CWDDirectoryListing() []string
 

@@ -3,15 +3,15 @@ package interfaces
 type IFileSystem interface {
 	IServer
 
-	CallAddSearchPath(router IRouter, sp ICommand)
+	//CallAddSearchPath(router IRouter, sp ICommand)
 
 	CallCWDName(router IRouter) string
 
 	CallCWDSet(router IRouter, arg string) bool
 
-	CallCWDCommandPath(router IRouter) string
+	CallCWDPath(router IRouter) string
 
-	CallCWDPath(router IRouter) []string
+	//CallCWDPathEntries(router IRouter) []string
 
 	CallCWDDirectoryListing(router IRouter) []string
 

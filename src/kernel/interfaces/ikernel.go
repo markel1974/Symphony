@@ -8,6 +8,10 @@ type IKernel interface {
 
 	AddServer(server IServer)
 
+	CallExitRequested(process IRouter)
+
+	CallProcessIsActive(process IRouter, pid int) bool
+
 	CallProcessList(process IRouter) []*ProcessDescription
 
 	CallWrite(process IRouter, data string, eol bool)
@@ -28,21 +32,17 @@ type IKernel interface {
 
 	CallScreenSize(process IRouter) (int, int)
 
-	CallFileSystemSuggestion(process IRouter, in string, cursor int) (string, []string, bool)
-
 	CallCWDSet(process IRouter, arg string) bool
 
-	CallCWDGet(process IRouter) string
-
-	CallCWDPath(process IRouter) []string
+	CallCWDPath(process IRouter) string
 
 	CallCWDName(process IRouter) string
+
+	//CallCWDPathEntries(process IRouter) []string
 
 	CallCWDDirectoryListing(process IRouter) []string
 
 	CallFileSystemHelp(process IRouter, arg string) (string, error)
 
-	CallExitRequested(process IRouter)
-
-	CallProcessIsActive(process IRouter, pid int) bool
+	CallFileSystemSuggestion(process IRouter, in string, cursor int) (string, []string, bool)
 }

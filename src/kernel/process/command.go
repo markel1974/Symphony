@@ -307,23 +307,23 @@ func (c *Command) RemoveCommand(cx interfaces.ICommand) error {
 	return nil
 }
 
-// CommandPath returns the full path to the command including parent commands, separated by the defined path separator.
-func (c *Command) CommandPath() string {
+// Path returns the full path to the command including parent commands, separated by the defined path separator.
+func (c *Command) Path() string {
 	if !c.HasParent() {
 		return interfaces.PathSeparator
 	}
-	parentPath := c.Parent().CommandPath()
+	parentPath := c.Parent().Path()
 	if !c.Parent().HasParent() {
 		return parentPath + c.Name()
 	}
 	return parentPath + interfaces.PathSeparator + c.Name()
 }
 
-// Path returns the hierarchical path of command names, starting from the root, representing the command structure.
-func (c *Command) Path() []string {
+// PathEntries returns the hierarchical path of command names, starting from the root, representing the command structure.
+func (c *Command) PathEntries() []string {
 	if c.HasParent() {
 		var out []string
-		if path := c.Parent().Path(); len(path) > 0 {
+		if path := c.Parent().PathEntries(); len(path) > 0 {
 			out = append(out, path...)
 		}
 		if len(c.Name()) > 0 {
