@@ -64,6 +64,9 @@ func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
 	r.handlers[interfaces.MessageTypeWrite] = r.handleWrite
 	r.handlers[interfaces.MessageTypeWriteColor] = r.handleWriteColor
 	r.handlers[interfaces.MessageTypeGetScreenSize] = r.handleGetScreenSize
+	r.handlers[interfaces.MessageTypeNotifyProcessCreate] = r.handleProcessCreate
+	r.handlers[interfaces.MessageTypeNotifyProcessForeground] = r.handleProcessForeground
+	r.handlers[interfaces.MessageTypeNotifyProcessTerminate] = r.handleProcessTerminate
 	return r
 }
 
@@ -115,19 +118,31 @@ func (c *Render) PostMessage(m interfaces.IMessage) {
 }
 
 // NotifyProcessCreation notifies the Render instance about the creation of a new process and updates internal state if necessary.
-func (c *Render) NotifyProcessCreation(pid int, name string) {
-	c.running[pid] = NewComponent(pid, name, c.driver, c.height, c.width)
+func (c *Render) handleProcessCreate(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageNotifyProcessCreate)
+	if !ok {
+		return
+	}
+	c.running[mt.CreatedPID()] = NewComponent(mt.CreatedPID(), mt.Name(), c.driver, c.height, c.width)
 }
 
 // NotifyProcessTermination handles the necessary cleanup and state updates when a process associated with the Render terminates.
-func (c *Render) NotifyProcessTermination(pid int) {
+func (c *Render) handleProcessTerminate(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageNotifyProcessTerminate)
+	if !ok {
+		return
+	}
 	c.windowSelector.Clear()
-	delete(c.running, pid)
+	delete(c.running, mt.TerminatedPID())
 }
 
 // NotifyProcessForeground updates the Render object with the process description currently in the foreground.
-func (c *Render) NotifyProcessForeground(pid int) {
-	p, _ := c.running[pid]
+func (c *Render) handleProcessForeground(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageNotifyProcessForeground)
+	if !ok {
+		return
+	}
+	p, _ := c.running[mt.ForegroundPID()]
 	if p == nil {
 		c.foreground = nil
 		return
@@ -281,7 +296,7 @@ func (c *Render) handleWindowsSelectionNext(msg interfaces.IMessage) {
 }
 
 // handleWindowsSelectionEnd handles the completion of the window selection process by clearing the window selector state.
-func (c *Render) handleWindowsSelectionEnd(msg interfaces.IMessage) {
+func (c *Render) handleWindowsSelectionEnd(_ interfaces.IMessage) {
 	c.windowSelector.Clear()
 }
 

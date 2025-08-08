@@ -269,3 +269,74 @@ func (m *MessageProcessIsRunning) SetResult(result bool) {
 func (m *MessageProcessIsRunning) GetResult() bool {
 	return m.result
 }
+
+// MessageNotifyProcessCreate represents a message notifying the creation of a process in the system.
+// It embeds the base Message type and includes details about the created process's PID and name.
+type MessageNotifyProcessCreate struct {
+	interfaces.Message
+	createdPID int
+	name       string
+}
+
+// NewMessageNotifyProcessCreate creates a new instance of MessageNotifyProcessCreate with the given parameters.
+// The `originatorPID` specifies the process ID of the message sender.
+// The `createdPID` specifies the process ID of the newly created process.
+// The `name` specifies the name associated with the created process.
+func NewMessageNotifyProcessCreate(originatorPID int, createdPID int, name string) *MessageNotifyProcessCreate {
+	return &MessageNotifyProcessCreate{
+		Message:    *interfaces.NewMessage(originatorPID, interfaces.MessageTypeNotifyProcessCreate),
+		createdPID: createdPID,
+		name:       name,
+	}
+}
+
+// CreatedPID returns the process ID (PID) created and associated with this MessageNotifyProcessCreate instance.
+func (m *MessageNotifyProcessCreate) CreatedPID() int {
+	return m.createdPID
+}
+
+// Name returns the name associated with the MessageNotifyProcessCreate instance.
+func (m *MessageNotifyProcessCreate) Name() string {
+	return m.name
+}
+
+// MessageNotifyProcessTerminate is a message type used to notify about the termination of a specific process.
+// It embeds the Message struct to inherit general message features and includes the terminated process ID.
+// TerminatedPID returns the ID of the process that was terminated.
+type MessageNotifyProcessTerminate struct {
+	interfaces.Message
+	terminatedPID int
+}
+
+// NewMessageMessageNotifyProcessTerminate creates a new MessageNotifyProcessTerminate with the given PIDs.
+func NewMessageMessageNotifyProcessTerminate(originatorPID int, terminatedPID int) *MessageNotifyProcessTerminate {
+	return &MessageNotifyProcessTerminate{
+		Message:       *interfaces.NewMessage(originatorPID, interfaces.MessageTypeNotifyProcessTerminate),
+		terminatedPID: terminatedPID,
+	}
+}
+
+// TerminatedPID retrieves the process ID (PID) of the terminated process from the MessageNotifyProcessTerminate instance.
+func (m *MessageNotifyProcessTerminate) TerminatedPID() int {
+	return m.terminatedPID
+}
+
+// MessageNotifyProcessForeground represents a notification message to indicate a process is moved to the foreground.
+// It embeds the Message type and includes an additional foreground process ID field, foregroundPID.
+type MessageNotifyProcessForeground struct {
+	interfaces.Message
+	foregroundPID int
+}
+
+// NewMessageNotifyProcessForeground creates a new MessageNotifyProcessForeground with the given PIDs.
+func NewMessageNotifyProcessForeground(originatorPID int, foregroundPID int) *MessageNotifyProcessForeground {
+	return &MessageNotifyProcessForeground{
+		Message:       *interfaces.NewMessage(originatorPID, interfaces.MessageTypeNotifyProcessForeground),
+		foregroundPID: foregroundPID,
+	}
+}
+
+// ForegroundPID returns the process ID (PID) of the process currently marked as running in the foreground.
+func (m *MessageNotifyProcessForeground) ForegroundPID() int {
+	return m.foregroundPID
+}

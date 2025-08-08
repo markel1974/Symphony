@@ -50,6 +50,9 @@ const (
 	MessageTypeFileSystemHelp
 	MessageTypeFileSystemFindRequest
 	MessageTypeFileSystemFindResponse
+	MessageTypeNotifyProcessCreate
+	MessageTypeNotifyProcessForeground
+	MessageTypeNotifyProcessTerminate
 )
 
 // IMessage defines the interface for messages used within the system, requiring a method to retrieve the message type.

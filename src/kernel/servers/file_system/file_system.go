@@ -54,6 +54,9 @@ func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.IComma
 	fs.handlers[interfaces.MessageTypeFileSystemCWDDirectoryListing] = fs.handleCWDDirectoryListing
 	fs.handlers[interfaces.MessageTypeFileSystemFindRequest] = fs.handleFindRequest
 	fs.handlers[interfaces.MessageTypeFileSystemHelp] = fs.handleHelp
+	fs.handlers[interfaces.MessageTypeNotifyProcessCreate] = fs.handleProcessCreate
+	fs.handlers[interfaces.MessageTypeNotifyProcessForeground] = fs.handleProcessForeground
+	fs.handlers[interfaces.MessageTypeNotifyProcessTerminate] = fs.handleProcessTerminate
 	return fs
 }
 
@@ -457,15 +460,16 @@ func (c *FileSystem) deduplicateSuggestions(s []string) []string {
 }
 
 // NotifyProcessCreation handles notifications related to the creation of a process within the file system context.
-func (c *FileSystem) NotifyProcessCreation(pid int, name string) {
+func (c *FileSystem) handleProcessCreate(_ interfaces.IMessage) {
 	//todo notify cwd (cwd non è del filesystem, ma è del processo stesso!)
 }
 
 // NotifyProcessTermination handles notifications related to the termination of a process within the file system context.
-func (c *FileSystem) NotifyProcessTermination(pid int) {
+func (c *FileSystem) handleProcessTerminate(_ interfaces.IMessage) {
 }
 
-func (c *FileSystem) NotifyProcessForeground(pid int) {
+// NotifyProcessForeground handles notifications related to the foregrounding of a process within the file system context.
+func (c *FileSystem) handleProcessForeground(_ interfaces.IMessage) {
 }
 
 // evenLoop continuously listens on the message channel and processes incoming messages until a quit message is received.

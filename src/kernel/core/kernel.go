@@ -53,6 +53,7 @@ func (c *Kernel) PID() int {
 	return c.process.PID()
 }
 
+// Setup initializes the kernel by configuring routing tables, adding servers, and creating necessary processes.
 func (c *Kernel) Setup(servers []interfaces.IServer) error {
 	//routing table
 	c.routingTable[interfaces.MessageTypeRead] = c.handleReadEvent
@@ -417,15 +418,17 @@ func (c *Kernel) handleFileSystemFindResponse(msg interfaces.IMessage) {
 	}
 	kernelProcess.Setup()
 	for _, server := range c.servers {
-		server.NotifyProcessCreation(kernelProcess.PID(), kernelProcess.GetCommand().Name())
+		server.PostMessage(messages.NewMessageNotifyProcessCreate(c.PID(), kernelProcess.PID(), kernelProcess.GetCommand().Name()))
+		//server.NotifyProcessCreation(kernelProcess.PID(), kernelProcess.GetCommand().Name())
 	}
 	kernelProcess.PostMessage(messages.NewMessageProcessStart(originator.PID(), args))
 }
 
 // doProcessSetForeground sets the specified process as the foreground process and sends activation messages if needed.
 func (c *Kernel) doProcessSetForeground(requestorPID int, process interfaces.IProcess) {
-	for _, s := range c.servers {
-		s.NotifyProcessForeground(process.PID())
+	for _, server := range c.servers {
+		server.PostMessage(messages.NewMessageNotifyProcessForeground(c.PID(), process.PID()))
+		//s.NotifyProcessForeground(process.PID())
 	}
 	if c.foreground != process {
 		c.foreground = process
@@ -442,7 +445,8 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 		c.ticker.RemoveEntries(process.Timers())
 	}
 	for _, server := range c.servers {
-		server.NotifyProcessTermination(process.PID())
+		server.PostMessage(messages.NewMessageMessageNotifyProcessTerminate(c.PID(), process.PID()))
+		//server.NotifyProcessTermination(process.PID())
 	}
 	if c.foreground != nil {
 		if c.foreground.PID() == process.PID() {

@@ -10,10 +10,4 @@ type IServer interface {
 	Start()
 
 	Register(router IRouter) []MessageType
-
-	NotifyProcessCreation(pid int, name string)
-
-	NotifyProcessTermination(pid int)
-
-	NotifyProcessForeground(pid int)
 }
