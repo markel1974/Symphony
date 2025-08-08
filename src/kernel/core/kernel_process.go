@@ -1,6 +1,10 @@
 package core
 
-import "github.com/markel1974/c64emu/src/kernel/interfaces"
+import (
+	"time"
+
+	"github.com/markel1974/c64emu/src/kernel/interfaces"
+)
 
 // PID represents a unique process identifier encapsulating an ID value.
 type PID struct {
@@ -36,6 +40,7 @@ type KernelProcess struct {
 	parent       *KernelProcess
 	protected    bool
 	timers       []int
+	time         time.Time
 	routingTable map[interfaces.MessageType]func(interfaces.IMessage)
 }
 
@@ -49,6 +54,7 @@ func NewKernelProcess(user string, line, name string, parent *KernelProcess, pid
 		protected: protected,
 		IProcess:  process,
 		pid:       pid,
+		time:      time.Now(),
 	}
 }
 
@@ -70,7 +76,7 @@ func (kp *KernelProcess) SetRoutingTable(routingTable map[interfaces.MessageType
 
 // Description provides a brief summary of the process including its name, PID, and line information.
 func (kp *KernelProcess) Description() *interfaces.ProcessDescription {
-	return interfaces.NewProcessDescription(kp.name, kp.pid.GetId(), kp.line)
+	return interfaces.NewProcessDescription(kp.name, kp.pid.GetId(), kp.line, kp.time)
 }
 
 // AddTimer adds a timer ID to the KernelProcess's list of timers.
