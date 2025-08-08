@@ -42,7 +42,9 @@ func (ts *WindowSelector) Next() bool {
 		return false
 	}
 	next := ts.idx + 1
-	if next >= len(ts.available) {
+	if next < 0 {
+		next = len(ts.available) - 1
+	} else if next >= len(ts.available) {
 		next = 0
 	}
 	ts.idx = next
@@ -58,7 +60,10 @@ func (ts *WindowSelector) Prev() bool {
 	prev := ts.idx - 1
 	if prev < 0 {
 		prev = len(ts.available) - 1
+	} else if prev >= len(ts.available) {
+		prev = 0
 	}
+
 	ts.idx = prev
 	ts.pid = ts.available[prev]
 	return true
