@@ -6,7 +6,7 @@ type IKernel interface {
 
 	SetScreenSize(w int, h int)
 
-	AddServer(server IServer)
+	Setup(server []IServer) error
 
 	CallExitRequested(process IRouter)
 

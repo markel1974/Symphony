@@ -184,7 +184,9 @@ func (r *Server) handleConnection(nConn net.Conn) {
 
 		ctx := core.NewContext(r.ticker, channel, channel, r.auth, r.template, r.prompt, r.autosave)
 		term := r.factory.Create("VT100", -1)
-		ctx.Setup(term)
+		if err := ctx.Setup(term); err != nil {
+			log.Println("Could not initialize context:", err)
+		}
 		//ctx.setAuthenticatedState()
 		//ctx.SetEnterKey(10)
 

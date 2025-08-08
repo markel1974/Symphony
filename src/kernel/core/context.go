@@ -47,20 +47,15 @@ func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer 
 }
 
 // Setup initializes the context with the terminal, rendering, system commands, file system, kernel, and shell instances.
-func (c *Context) Setup(terminal interfaces.ITerminal) {
+func (c *Context) Setup(terminal interfaces.ITerminal) error {
 	system := apps.NewRoot()
 	xsh, systemCommands, commands := system.Build(c.commands)
-
-	keyboardDriver := drivers.NewKeyboardTerminal(c.reader, terminal)
-	videoDriver := drivers.NewDisplayTerminal(c.writer, terminal)
-
 	admin := "root"
-
-	terminalRender := render.NewRender(admin, videoDriver)
+	c.kernel = NewKernel(admin, c.ticker, drivers.NewKeyboardTerminal(c.reader, terminal), xsh)
+	terminalRender := render.NewRender(admin, drivers.NewDisplayTerminal(c.writer, terminal))
 	fs := file_system.NewFileSystem(admin, commands, []interfaces.ICommand{systemCommands})
-	c.kernel = NewKernel(admin, c.ticker, keyboardDriver, xsh)
-	c.kernel.AddServer(terminalRender)
-	c.kernel.AddServer(fs)
+	servers := []interfaces.IServer{terminalRender, fs}
+	return c.kernel.Setup(servers)
 }
 
 // Exec initializes the admin console display, advances the shell line, and starts the kernel.

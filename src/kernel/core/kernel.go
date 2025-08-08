@@ -46,21 +46,6 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver i
 	}
 	t.pf = process_factory.NewProcessFactory(t)
 
-	t.routingTable[interfaces.MessageTypeRead] = t.handleReadEvent
-	t.routingTable[interfaces.MessageTypeTimer] = t.handleTimerEvent
-	t.routingTable[interfaces.MessageTypeQuit] = t.handleQuitEvent
-	t.routingTable[interfaces.MessageTypeTimedMessage] = t.handleTimedMessage
-	t.routingTable[interfaces.MessageTypeProcessExit] = t.handleProcessExit
-	t.routingTable[interfaces.MessageTypeProcessExec] = t.handleProcessExec
-	t.routingTable[interfaces.MessageTypeProcessSetForeground] = t.handleProcessSetForeground
-	t.routingTable[interfaces.MessageTypeProcessKill] = t.handleProcessKill
-	t.routingTable[interfaces.MessageTypeProcessKillAll] = t.handleProcessKillAll
-	t.routingTable[interfaces.MessageTypeProcessKillForeground] = t.handleProcessKillForeground
-	t.routingTable[interfaces.MessageTypeTimerCreate] = t.handleTimerCreate
-	t.routingTable[interfaces.MessageTypeTimerStop] = t.handleTimerStop
-	t.routingTable[interfaces.MessageTypeProcessList] = t.handleProcessList
-	t.routingTable[interfaces.MessageTypeFileSystemFindResponse] = t.handleFileSystemFindResponse
-
 	return t
 }
 
@@ -85,48 +70,29 @@ func (c *Kernel) createKernelProcess(user string, commandLine string, parent *Ke
 	return kernelProcess, nil
 }
 
-// SetScreenSize adjusts the screen dimensions to the specified width and height values.
-func (c *Kernel) SetScreenSize(w int, h int) {
-	c.messageChan <- messages.NewMessageSetScreenSize(c.PID(), w, h)
-}
-
-// Process returns the KernelProcess instance associated with the Kernel instance.
-func (c *Kernel) Process() interfaces.IProcess {
-	return c.process
-}
-
-// User returns the name of the user associated with the Kernel instance.
-func (c *Kernel) User() string {
-	return c.user
-}
-
-// AddServer adds a new server to the kernel, registers its routingTable, sets the router, and starts the server.
-func (c *Kernel) AddServer(server interfaces.IServer) {
-	c.servers = append(c.servers, server)
-	handlers := server.Register(c)
-	for _, h := range handlers {
-		c.routingTable[h] = server.PostMessage
+func (c *Kernel) Setup(servers []interfaces.IServer) error {
+	//routing table
+	c.routingTable[interfaces.MessageTypeRead] = c.handleReadEvent
+	c.routingTable[interfaces.MessageTypeTimer] = c.handleTimerEvent
+	c.routingTable[interfaces.MessageTypeQuit] = c.handleQuitEvent
+	c.routingTable[interfaces.MessageTypeTimedMessage] = c.handleTimedMessage
+	c.routingTable[interfaces.MessageTypeProcessExit] = c.handleProcessExit
+	c.routingTable[interfaces.MessageTypeProcessExec] = c.handleProcessExec
+	c.routingTable[interfaces.MessageTypeProcessSetForeground] = c.handleProcessSetForeground
+	c.routingTable[interfaces.MessageTypeProcessKill] = c.handleProcessKill
+	c.routingTable[interfaces.MessageTypeProcessKillAll] = c.handleProcessKillAll
+	c.routingTable[interfaces.MessageTypeProcessKillForeground] = c.handleProcessKillForeground
+	c.routingTable[interfaces.MessageTypeTimerCreate] = c.handleTimerCreate
+	c.routingTable[interfaces.MessageTypeTimerStop] = c.handleTimerStop
+	c.routingTable[interfaces.MessageTypeProcessList] = c.handleProcessList
+	c.routingTable[interfaces.MessageTypeFileSystemFindResponse] = c.handleFileSystemFindResponse
+	for _, server := range servers {
+		c.servers = append(c.servers, server)
+		for _, h := range server.Register(c) {
+			c.routingTable[h] = server.PostMessage
+		}
 	}
-}
-
-// PostMessage sends the provided IMessage to the Kernel's internal message channel for further processing.
-func (c *Kernel) PostMessage(msg interfaces.IMessage) {
-	c.messageChan <- msg
-}
-
-// CallProcessIsActive checks if a process with the given PID is currently active in the Kernel's activeProcess map.
-func (c *Kernel) CallProcessIsActive(router interfaces.IRouter, pid int) bool {
-	active, _ := c.running[pid]
-	return active != nil
-}
-
-// CallExitRequested sets the `exit` flag to true, signaling that an exit has been requested for the kernel.
-func (c *Kernel) CallExitRequested(router interfaces.IRouter) {
-	c.exit = true
-}
-
-// Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
-func (c *Kernel) Start() error {
+	//kernel process
 	onCreate := func(process interfaces.IProcess, args []string) error { return nil }
 	kernelCmd := process.NewCommand("kernel", interfaces.CommandTypeFile, nil, true, onCreate)
 	kernelProcess, err := c.createKernelProcess(c.user, kernelCmd.Name(), nil, kernelCmd, true)
@@ -134,6 +100,7 @@ func (c *Kernel) Start() error {
 		return err
 	}
 	c.process = kernelProcess
+	//server process
 	for _, server := range c.servers {
 		serverCmd := process.NewCommand(server.Name(), interfaces.CommandTypeFile, nil, true, func(process interfaces.IProcess, args []string) error { return nil })
 		serverProcess, err := c.createKernelProcess(c.user, server.Name(), c.process, serverCmd, true)
@@ -143,7 +110,11 @@ func (c *Kernel) Start() error {
 		server.SetProcess(serverProcess)
 		server.Start()
 	}
+	return nil
+}
 
+// Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
+func (c *Kernel) Start() error {
 	c.PostMessage(messages.NewMessageFileSystemFindRequest(c.PID(), c.PID(), c.shellPath, true))
 
 	d := make(chan bool)
@@ -169,6 +140,37 @@ func (c *Kernel) Start() error {
 	return nil
 }
 
+// SetScreenSize adjusts the screen dimensions to the specified width and height values.
+func (c *Kernel) SetScreenSize(w int, h int) {
+	c.messageChan <- messages.NewMessageSetScreenSize(c.PID(), w, h)
+}
+
+// Process returns the KernelProcess instance associated with the Kernel instance.
+func (c *Kernel) Process() interfaces.IProcess {
+	return c.process
+}
+
+// User returns the name of the user associated with the Kernel instance.
+func (c *Kernel) User() string {
+	return c.user
+}
+
+// PostMessage sends the provided IMessage to the Kernel's internal message channel for further processing.
+func (c *Kernel) PostMessage(msg interfaces.IMessage) {
+	c.messageChan <- msg
+}
+
+// CallProcessIsActive checks if a process with the given PID is currently active in the Kernel's activeProcess map.
+func (c *Kernel) CallProcessIsActive(router interfaces.IRouter, pid int) bool {
+	active, _ := c.running[pid]
+	return active != nil
+}
+
+// CallExitRequested sets the `exit` flag to true, signaling that an exit has been requested for the kernel.
+func (c *Kernel) CallExitRequested(router interfaces.IRouter) {
+	c.exit = true
+}
+
 // eventLoop is the main execution loop handling incoming messages and timers, and initiates shutdown when needed.
 func (c *Kernel) eventLoop() {
 	for {
@@ -192,7 +194,8 @@ func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 		log.Printf("Kernel: unknown process: %d - type %d", m.PID(), m.GetType())
 		return
 	}
-	fmt.Println("Kernel: dispatching", m.GetType(), "")
+	//TODO IMPLEMENTARE TUTTI I CONTROLLI E I LOG
+	//fmt.Println("Kernel: dispatching", m.GetType(), "")
 	if m.Response() {
 		kernelProcess.PostMessage(m)
 		return
