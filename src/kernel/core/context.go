@@ -50,10 +50,9 @@ func NewContext(ticker *adaptiveticker.AdaptiveTicker, reader io.Reader, writer 
 func (c *Context) Setup(terminal interfaces.ITerminal) error {
 	system := apps.NewRoot()
 	xsh, systemCommands, commands := system.Build(c.commands)
-	admin := "root"
-	c.kernel = NewKernel(admin, c.ticker, drivers.NewKeyboardTerminal(c.reader, terminal), xsh)
-	terminalRender := render.NewRender(admin, drivers.NewDisplayTerminal(c.writer, terminal))
-	fs := file_system.NewFileSystem(admin, commands, []interfaces.ICommand{systemCommands})
+	c.kernel = NewKernel("root", c.ticker, drivers.NewKeyboardTerminal(c.reader, terminal), xsh)
+	terminalRender := render.NewRender(drivers.NewDisplayTerminal(c.writer, terminal))
+	fs := file_system.NewFileSystem(commands, []interfaces.ICommand{systemCommands})
 	servers := []interfaces.IServer{terminalRender, fs}
 	return c.kernel.Setup(servers)
 }

@@ -3,11 +3,9 @@ package interfaces
 type IServer interface {
 	IRouter
 
-	SetProcess(process IProcess)
+	Register(router IRouter) []MessageType
+
+	Setup(process IProcess) error
 
 	Name() string
-
-	Start()
-
-	Register(router IRouter) []MessageType
 }

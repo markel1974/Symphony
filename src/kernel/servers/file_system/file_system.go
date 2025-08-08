@@ -16,7 +16,6 @@ const pathSeparator = "/"
 // FileSystem provides utilities for command hierarchy traversal and completion suggestions.
 type FileSystem struct {
 	process     interfaces.IProcess
-	user        string
 	root        interfaces.ICommand
 	searchPaths []interfaces.ICommand
 	cwd         interfaces.ICommand
@@ -27,7 +26,7 @@ type FileSystem struct {
 }
 
 // NewFileSystem initializes and returns a new FileSystem instance with the given root command and an empty search path list.
-func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.ICommand) *FileSystem {
+func NewFileSystem(root interfaces.ICommand, sp []interfaces.ICommand) *FileSystem {
 	var searchPath []interfaces.ICommand
 	for _, k := range sp {
 		if k != nil {
@@ -38,7 +37,6 @@ func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.IComma
 		searchPath = []interfaces.ICommand{}
 	}
 	fs := &FileSystem{
-		user:        user,
 		root:        root,
 		cwd:         root,
 		searchPaths: searchPath,
@@ -70,20 +68,17 @@ func (c *FileSystem) Process() interfaces.IProcess {
 	return c.process
 }
 
-// SetProcess sets the process implementation to the provided IProcess instance for the Render struct.
-func (c *FileSystem) SetProcess(process interfaces.IProcess) {
-	c.process = process
-}
-
 // PID returns an identifier for the file system process. It always returns a fixed value of -2.
 func (c *FileSystem) PID() int {
 	return c.process.PID()
 }
 
+// User returns the username associated with the file system.
 func (c *FileSystem) User() string {
-	return c.user
+	return c.process.User()
 }
 
+// Register registers the file system with the provided router and returns a slice of message types that it handles.
 func (c *FileSystem) Register(router interfaces.IRouter) []interfaces.MessageType {
 	c.router = router
 	var out []interfaces.MessageType
@@ -93,11 +88,13 @@ func (c *FileSystem) Register(router interfaces.IRouter) []interfaces.MessageTyp
 	return out
 }
 
-// Start begins the process by setting its state to running and initiating its event loop asynchronously.
-func (c *FileSystem) Start() {
+// Setup initializes the FileSystem with the provided process and starts the event loop to handle messages.
+func (c *FileSystem) Setup(process interfaces.IProcess) error {
+	c.process = process
 	b := make(chan bool)
 	c.eventLoop(b)
 	_ = <-b
+	return nil
 }
 
 // PostMessage sends a message of type IMessage to the file system's message channel for further processing.

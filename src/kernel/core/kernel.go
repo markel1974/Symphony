@@ -92,8 +92,9 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 		if err != nil {
 			return err
 		}
-		server.SetProcess(serverProcess)
-		server.Start()
+		if err = server.Setup(serverProcess); err != nil {
+			return err
+		}
 	}
 	return nil
 }

@@ -17,7 +17,6 @@ const eolDef = "\r\n"
 type Render struct {
 	process        interfaces.IProcess
 	driver         interfaces.IDisplayDriver
-	user           string
 	surface        *Surface
 	width          int
 	height         int
@@ -32,12 +31,11 @@ type Render struct {
 
 // NewRender creates and initializes a new Render instance with the provided terminal implementation.
 // Returns a pointer to the newly created Render object.
-func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
+func NewRender(driver interfaces.IDisplayDriver) *Render {
 	const width = 80
 	const height = 24
 	r := &Render{
 		driver:         driver,
-		user:           user,
 		windowSelector: NewWindowSelector(),
 		width:          width,
 		height:         height,
@@ -80,11 +78,6 @@ func (c *Render) Process() interfaces.IProcess {
 	return c.process
 }
 
-// SetProcess sets the process implementation to the provided IProcess instance for the Render struct.
-func (c *Render) SetProcess(process interfaces.IProcess) {
-	c.process = process
-}
-
 // PID returns an identifier for the file system process. It always returns a fixed value of -2.
 func (c *Render) PID() int {
 	return c.process.PID()
@@ -92,7 +85,7 @@ func (c *Render) PID() int {
 
 // User returns the default username as a string, typically "root".
 func (c *Render) User() string {
-	return c.user
+	return c.process.User()
 }
 
 // Register binds the provided router to the Render instance and returns a list of supported message types.
@@ -105,11 +98,12 @@ func (c *Render) Register(router interfaces.IRouter) []interfaces.MessageType {
 	return out
 }
 
-// Start begins the process by setting its state to running and initiating its event loop asynchronously.
-func (c *Render) Start() {
+func (c *Render) Setup(process interfaces.IProcess) error {
+	c.process = process
 	b := make(chan bool)
 	c.eventLoop(b)
 	_ = <-b
+	return nil
 }
 
 // PostMessage sends a message of type IMessage to the file system's message channel for further processing.
