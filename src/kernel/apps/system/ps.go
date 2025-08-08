@@ -32,7 +32,7 @@ func CreatePs() interfaces.ICommand {
 			hours := int(diff.Hours())
 			minutes := int(diff.Minutes()) % 60
 			seconds := int(diff.Seconds()) % 60
-			out += fmt.Sprintf("\r\n%d: %s (%s) %02d:%02d:%02d", v.PID(), v.Name(), v.Line(), hours, minutes, seconds)
+			out += fmt.Sprintf("\r\n%d: %s (%s) %s %02d:%02d:%02d", v.PID(), v.Name(), v.Line(), v.User(), hours, minutes, seconds)
 		}
 		process.Write(out, true)
 		return nil

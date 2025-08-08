@@ -76,7 +76,7 @@ func (kp *KernelProcess) SetRoutingTable(routingTable map[interfaces.MessageType
 
 // Description provides a brief summary of the process including its name, PID, and line information.
 func (kp *KernelProcess) Description() *interfaces.ProcessDescription {
-	return interfaces.NewProcessDescription(kp.name, kp.pid.GetId(), kp.line, kp.time)
+	return interfaces.NewProcessDescription(kp.name, kp.user, kp.pid.GetId(), kp.line, kp.time)
 }
 
 // AddTimer adds a timer ID to the KernelProcess's list of timers.
