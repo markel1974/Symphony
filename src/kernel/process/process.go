@@ -9,7 +9,7 @@ import (
 
 // Process represents a process or job in the system, including its context, state, associated options, and execution details.
 type Process struct {
-	kernel           interfaces.IKernel
+	kernel           interfaces.IRouter
 	cmd              interfaces.ICommand
 	user             string
 	context          interface{}
@@ -22,7 +22,7 @@ type Process struct {
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
-func NewProcess(kernel interfaces.IKernel, pid int, user string, cmd interfaces.ICommand) *Process {
+func NewProcess(kernel interfaces.IRouter, pid int, user string, cmd interfaces.ICommand) *Process {
 	t := &Process{
 		kernel:           kernel,
 		pid:              pid,
@@ -269,7 +269,7 @@ func (t *Process) ClearScreen() {
 
 // SetExit signals the kernel that an exit is requested for the task.
 func (t *Process) SetExit() {
-	t.kernel.CallExitRequested(t)
+	t.kernel.PostMessage(messages.NewMessageExitRequested(t.PID()))
 }
 
 // PostMessage sends the provided message to the message channel for processing.

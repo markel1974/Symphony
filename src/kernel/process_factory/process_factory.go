@@ -8,11 +8,11 @@ import (
 // ProcessFactory is responsible for creating and managing process instances within the system.
 // It encapsulates interactions with the provided IKernel for process-related operations.
 type ProcessFactory struct {
-	kernel interfaces.IKernel
+	kernel interfaces.IRouter
 }
 
 // NewProcessFactory creates and returns a new ProcessFactory instance using the provided kernel for process management.
-func NewProcessFactory(kernel interfaces.IKernel) *ProcessFactory {
+func NewProcessFactory(kernel interfaces.IRouter) *ProcessFactory {
 	return &ProcessFactory{
 		kernel: kernel,
 	}

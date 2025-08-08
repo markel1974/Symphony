@@ -22,6 +22,10 @@ type OnActivate func(process IProcess)
 type IProcess interface {
 	IRouter
 
+	PID() int
+
+	User() string
+
 	Setup()
 
 	GetCommand() ICommand
@@ -45,8 +49,6 @@ type IProcess interface {
 	CWDName() string
 
 	CWDPath() string
-
-	//CWDPathEntries() []string
 
 	CWDDirectoryListing() []string
 

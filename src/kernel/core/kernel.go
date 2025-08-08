@@ -70,6 +70,7 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 	c.routingTable[interfaces.MessageTypeProcessList] = c.handleProcessList
 	c.routingTable[interfaces.MessageTypeFileSystemFindResponse] = c.handleFileSystemFindResponse
 	c.routingTable[interfaces.MessageTypeProcessIsRunning] = c.handleProcessIsRunning
+	c.routingTable[interfaces.MessageTypeExitRequested] = c.handleExitRequested
 	for _, server := range servers {
 		c.servers = append(c.servers, server)
 		for _, h := range server.Register(c) {
@@ -159,7 +160,15 @@ func (c *Kernel) handleProcessIsRunning(msg interfaces.IMessage) {
 }
 
 // CallExitRequested sets the `exit` flag to true, signaling that an exit has been requested for the kernel.
-func (c *Kernel) CallExitRequested(router interfaces.IRouter) {
+func (c *Kernel) handleExitRequested(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageExitRequested)
+	if !ok {
+		return
+	}
+	kernelProcess, _ := c.running[mt.PID()]
+	if kernelProcess == nil {
+		return
+	}
 	c.exit = true
 }
 
