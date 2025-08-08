@@ -226,13 +226,17 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
+	//sentForeground := false
 	for _, kProc := range c.running {
 		if readBroadcastEvent := kProc.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
-			kProc.PostMessage(messages.NewMessageRead(m.PID(), mm.Kind(), mm.Data(), true))
+			kProc.PostMessage(messages.NewMessageRead(mm.PID(), mm.Kind(), mm.Data(), true))
+			//if c.foreground != nil && c.foreground == kProc{
+			//sentForeground = true
+			//}
 		}
 	}
 	if c.foreground != nil {
-		if readBroadcastEvent := c.foreground.GetCommand().OnRead(); readBroadcastEvent != nil {
+		if readEvent := c.foreground.GetCommand().OnRead(); readEvent != nil {
 			c.foreground.PostMessage(mm)
 		}
 	}
