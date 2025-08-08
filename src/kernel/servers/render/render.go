@@ -10,6 +10,11 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/messages"
 )
 
+const (
+	renderQueueLen = 1024
+	renderQueueMax = renderQueueLen - 1
+)
+
 // eol represents the end-of-line marker used for denoting line breaks in the output, set to "\r\n".
 const eolDef = "\r\n"
 
@@ -41,7 +46,7 @@ func NewRender(driver interfaces.IDisplayDriver) *Render {
 		height:         height,
 		fullPaint:      true,
 		running:        make(map[int]*Component),
-		messageChan:    make(chan interfaces.IMessage, 128),
+		messageChan:    make(chan interfaces.IMessage, renderQueueLen),
 		surface:        NewSurface(driver, height, width, ""),
 		handlers:       make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
@@ -108,6 +113,10 @@ func (c *Render) Setup(process interfaces.IProcess) error {
 
 // PostMessage sends a message of type IMessage to the file system's message channel for further processing.
 func (c *Render) PostMessage(m interfaces.IMessage) {
+	if len(c.messageChan) >= renderQueueMax {
+		log.Printf("Render: message queue full, dropping message: %d", m.GetType())
+		return
+	}
 	c.messageChan <- m
 }
 

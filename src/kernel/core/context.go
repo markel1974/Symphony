@@ -12,11 +12,6 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/servers/render"
 )
 
-// contextMaQueueLen defines the default length for message and timer channels used within the context's queue system.
-const (
-	contextMaQueueLen = 1024
-)
-
 // Context is a container for managing and coordinating various dependencies and resources needed for application execution.
 // It encapsulates input/output routingTable, commands, shell interactions, rendering, authentication, and runtime configurations.
 type Context struct {

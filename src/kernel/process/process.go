@@ -7,6 +7,14 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/messages"
 )
 
+const (
+	gatekeeperQueueLen = 1024
+	gatekeeperQueueMax = gatekeeperQueueLen - 1
+
+	executorQueueLen = 128
+	executorQueueMax = executorQueueLen - 1
+)
+
 // Process represents a process or job in the system, including its context, state, associated options, and execution details.
 type Process struct {
 	kernel           interfaces.IRouter
@@ -30,8 +38,8 @@ func NewProcess(kernel interfaces.IRouter, pid int, user string, cmd interfaces.
 		cmd:              cmd,
 		context:          nil,
 		state:            interfaces.ProcessStateSetup,
-		gatekeeperChan:   make(chan interfaces.IMessage, 128),
-		executorChan:     make(chan interfaces.IMessage, 128),
+		gatekeeperChan:   make(chan interfaces.IMessage, gatekeeperQueueLen),
+		executorChan:     make(chan interfaces.IMessage, executorQueueLen),
 		executorWaitChan: make(chan bool, 1),
 	}
 	return t
@@ -274,6 +282,10 @@ func (t *Process) SetExit() {
 
 // PostMessage sends the provided message to the message channel for processing.
 func (t *Process) PostMessage(msg interfaces.IMessage) {
+	if len(t.gatekeeperChan) >= gatekeeperQueueMax {
+		log.Printf("Process Gatekeeper: message queue full, dropping message: %d", msg.GetType())
+		return
+	}
 	t.gatekeeperChan <- msg
 }
 
@@ -310,6 +322,10 @@ func (t *Process) gatekeeperLoop(r chan bool) {
 					return
 				}
 				if !m.Ack() {
+					if len(t.executorChan) >= executorQueueMax {
+						log.Printf("Process Executor: message queue full, dropping message: %d", m.GetType())
+						return
+					}
 					t.executorChan <- m
 				}
 			}

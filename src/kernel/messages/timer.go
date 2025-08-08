@@ -48,6 +48,7 @@ type MessageTimedMessage struct {
 	count    int64
 }
 
+/*
 // NewMessageTimedMessage creates and returns a new instance of MessageTimedMessage with the specified timing settings.
 func NewMessageTimedMessage(originatorPID int, msg interfaces.IMessage, first int64, interval int64, count int64) *MessageTimedMessage {
 	return &MessageTimedMessage{
@@ -78,6 +79,7 @@ func (m *MessageTimedMessage) Interval() int64 {
 func (m *MessageTimedMessage) Count() int64 {
 	return m.count
 }
+*/
 
 type MessageTimerCreate struct {
 	interfaces.IMessage

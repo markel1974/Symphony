@@ -10,6 +10,11 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/messages"
 )
 
+const (
+	fsQueueLen = 1024
+	fsQueueMax = fsQueueLen - 1
+)
+
 // pathSeparator is a constant string representing the character used to separate components in a path, typically "/".
 const pathSeparator = "/"
 
@@ -41,7 +46,7 @@ func NewFileSystem(root interfaces.ICommand, sp []interfaces.ICommand) *FileSyst
 		cwd:         root,
 		searchPaths: searchPath,
 		parser:      NewParser(false, false, ""),
-		messageChan: make(chan interfaces.IMessage, 128),
+		messageChan: make(chan interfaces.IMessage, fsQueueLen),
 		handlers:    make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
 
@@ -99,6 +104,10 @@ func (c *FileSystem) Setup(process interfaces.IProcess) error {
 
 // PostMessage sends a message of type IMessage to the file system's message channel for further processing.
 func (c *FileSystem) PostMessage(m interfaces.IMessage) {
+	if len(c.messageChan) >= fsQueueLen {
+		log.Printf("FS: message queue full, dropping message: %d", m.GetType())
+		return
+	}
 	c.messageChan <- m
 }
 

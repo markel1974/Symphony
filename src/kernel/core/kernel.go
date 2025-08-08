@@ -11,6 +11,11 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/process_factory"
 )
 
+const (
+	kernelQueueLen = 8192
+	kernelQueueMax = kernelQueueLen - 1
+)
+
 // Kernel represents the core component responsible for managing rendering, input/output, process execution, and timers.
 type Kernel struct {
 	user         string
@@ -37,8 +42,8 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver i
 		inputDriver:  inputDriver,
 		foreground:   nil,
 		pidGenerator: adaptiveticker.NewIds(1024),
-		messageChan:  make(chan interfaces.IMessage, contextMaQueueLen),
-		timersChan:   make(chan *adaptiveticker.TimerHandler, contextMaQueueLen),
+		messageChan:  make(chan interfaces.IMessage, kernelQueueLen),
+		timersChan:   make(chan *adaptiveticker.TimerHandler, kernelQueueLen),
 		exit:         false,
 		shellPath:    shellPath,
 		running:      make(map[int]*KernelProcess),
@@ -59,7 +64,7 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 	c.routingTable[interfaces.MessageTypeRead] = c.handleReadEvent
 	c.routingTable[interfaces.MessageTypeTimer] = c.handleTimerEvent
 	c.routingTable[interfaces.MessageTypeQuit] = c.handleQuitEvent
-	c.routingTable[interfaces.MessageTypeTimedMessage] = c.handleTimedMessage
+	//c.routingTable[interfaces.MessageTypeTimedMessage] = c.handleTimedMessage
 	c.routingTable[interfaces.MessageTypeProcessExit] = c.handleProcessExit
 	c.routingTable[interfaces.MessageTypeProcessExec] = c.handleProcessExec
 	c.routingTable[interfaces.MessageTypeProcessSetForeground] = c.handleProcessSetForeground
@@ -80,15 +85,15 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 	}
 	//kernel process
 	var err error
-	kernelCmd := c.doCreateKernelCommand("kernel")
-	c.process, err = c.doCreateKernelProcess(c.user, kernelCmd.Name(), nil, kernelCmd, true)
+	kCmd := c.doCreateKernelCommand("kernel")
+	c.process, err = c.doCreateKernelProcess(c.user, kCmd.Name(), nil, kCmd, true)
 	if err != nil {
 		return err
 	}
 	//server process
 	for _, server := range c.servers {
-		serverCmd := c.doCreateKernelCommand(server.Name())
-		serverProcess, err := c.doCreateKernelProcess(c.user, serverCmd.Name(), c.process, serverCmd, true)
+		sCmd := c.doCreateKernelCommand(server.Name())
+		serverProcess, err := c.doCreateKernelProcess(c.user, sCmd.Name(), c.process, sCmd, true)
 		if err != nil {
 			return err
 		}
@@ -143,6 +148,10 @@ func (c *Kernel) User() string {
 
 // PostMessage sends the provided IMessage to the Kernel's internal message channel for further processing.
 func (c *Kernel) PostMessage(msg interfaces.IMessage) {
+	if len(c.messageChan) >= kernelQueueMax {
+		log.Printf("Kernel: message queue full, dropping message: %d", msg.GetType())
+		return
+	}
 	c.messageChan <- msg
 }
 
@@ -152,13 +161,13 @@ func (c *Kernel) handleProcessIsRunning(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	kernelProcess, _ := c.running[mt.PID()]
-	if kernelProcess == nil {
+	kProc, _ := c.running[mt.PID()]
+	if kProc == nil {
 		return
 	}
-	active, _ := c.running[mt.VerifyPID()]
-	mt.SetResult(active != nil)
-	kernelProcess.PostMessage(mt)
+	kActive, _ := c.running[mt.VerifyPID()]
+	mt.SetResult(kActive != nil)
+	kProc.PostMessage(mt)
 }
 
 // CallExitRequested sets the `exit` flag to true, signaling that an exit has been requested for the kernel.
@@ -167,8 +176,8 @@ func (c *Kernel) handleExitRequested(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	kernelProcess, _ := c.running[mt.PID()]
-	if kernelProcess == nil {
+	kProc, _ := c.running[mt.PID()]
+	if kProc == nil {
 		return
 	}
 	c.exit = true
@@ -192,19 +201,19 @@ func (c *Kernel) eventLoop() {
 
 // handleMessageEvent processes an incoming IMessage by dispatching it to the appropriate routingTable based on its type.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
-	kernelProcess, _ := c.running[m.PID()]
-	if kernelProcess == nil {
+	kProc, _ := c.running[m.PID()]
+	if kProc == nil {
 		log.Printf("Kernel: unknown process: %d - type %d", m.PID(), m.GetType())
 		return
 	}
 	//TODO IMPLEMENTARE TUTTI I CONTROLLI E I LOG
 	//fmt.Println("Kernel: dispatching", m.GetType(), "")
 	if m.Response() {
-		kernelProcess.PostMessage(m)
+		kProc.PostMessage(m)
 		return
 	}
 	id := m.GetType()
-	if route := kernelProcess.GetRoute(id); route != nil {
+	if route := kProc.GetRoute(id); route != nil {
 		route(m)
 		return
 	}
@@ -217,9 +226,9 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	for _, proc := range c.running {
-		if readBroadcastEvent := proc.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
-			proc.PostMessage(messages.NewMessageRead(m.PID(), mm.Kind(), mm.Data(), true))
+	for _, kProc := range c.running {
+		if readBroadcastEvent := kProc.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
+			kProc.PostMessage(messages.NewMessageRead(m.PID(), mm.Kind(), mm.Data(), true))
 		}
 	}
 	if c.foreground != nil {
@@ -236,35 +245,25 @@ func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	proc, _ := c.running[mt.PID()]
-	if proc == nil {
+	kProc, _ := c.running[mt.PID()]
+	if kProc == nil {
 		return
 	}
-	proc.PostMessage(mt)
-}
-
-// handleTimedMessage processes a timed message by extracting its properties and scheduling it via the ticker.
-func (c *Kernel) handleTimedMessage(m interfaces.IMessage) {
-	mt, ok := m.(*messages.MessageTimedMessage)
-	if !ok {
-		return
-	}
-	_ = c.ticker.Create(c.timersChan, mt.Message(), mt.First(), mt.Interval(), mt.Count())
+	kProc.PostMessage(mt)
 }
 
 // handleProcessSetForeground handles a process set foreground message by setting the foreground process to the specified process.
 func (c *Kernel) handleProcessExit(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageProcessExit)
 	if !ok {
-		log.Printf("Kernel [handleProcessExit]: unknown type: %d - process %d", mt.GetType(), mt.PID())
 		return
 	}
-	kernelProcess, _ := c.running[mt.PID()]
-	if kernelProcess == nil {
+	kProc, _ := c.running[mt.PID()]
+	if kProc == nil {
 		log.Printf("Kernel [handleProcessExit]: unknown process: %d - type %d", mt.PID(), mt.GetType())
 		return
 	}
-	c.doProcessExit(kernelProcess)
+	c.doProcessExit(kProc)
 }
 
 // handleProcessExec handles process execution by validating the message type and invoking the process execution logic.
@@ -282,9 +281,11 @@ func (c *Kernel) handleProcessSetForeground(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	if proc, _ := c.running[mt.PID()]; proc != nil {
-		c.doProcessSetForeground(mt.PID(), proc)
+	kProc, _ := c.running[mt.PID()]
+	if kProc == nil {
+		return
 	}
+	c.doProcessSetForeground(mt.PID(), kProc)
 }
 
 // handleProcessKill terminates and removes a process by its process ID (pid). Returns true if successful, false if the pid is not found.
@@ -293,11 +294,11 @@ func (c *Kernel) handleProcessKill(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	proc, _ := c.running[mt.PID()]
-	if proc == nil {
+	kProc, _ := c.running[mt.PID()]
+	if kProc == nil {
 		return
 	}
-	c.doProcessExit(proc)
+	c.doProcessExit(kProc)
 }
 
 // handleProcessKillAll handles the termination of all processes except the sender's and optionally filters by process name.
@@ -307,13 +308,13 @@ func (c *Kernel) handleProcessKillAll(m interfaces.IMessage) {
 		return
 	}
 	var processes []*KernelProcess
-	for _, proc := range c.running {
+	for _, kProc := range c.running {
 		if len(mt.Name()) != 0 {
-			if proc.GetCommand().Name() != mt.Name() {
+			if kProc.GetCommand().Name() != mt.Name() {
 				continue
 			}
 		}
-		processes = append(processes, proc)
+		processes = append(processes, kProc)
 	}
 	for _, proc := range processes {
 		c.doProcessExit(proc)
@@ -326,11 +327,11 @@ func (c *Kernel) handleProcessKillForeground(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	proc, _ := c.running[c.foreground.PID()]
-	if proc == nil {
+	kProc, _ := c.running[c.foreground.PID()]
+	if kProc == nil {
 		return
 	}
-	c.doProcessExit(proc)
+	c.doProcessExit(kProc)
 }
 
 // handleTimerCreate processes a timer creation request, initializes the timer, and sends a response or error message.
@@ -339,18 +340,18 @@ func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	proc, _ := c.running[m.PID()]
-	if proc == nil {
+	kProc, _ := c.running[m.PID()]
+	if kProc == nil {
 		return
 	}
 	msgTimer := messages.NewMessageTimer(mt.PID(), mt.PID(), mt.Interval())
 	msgTimer.SetTID(c.ticker.Create(c.timersChan, msgTimer, int64(mt.First()), int64(mt.Interval()), int64(mt.Count())))
 	if msgTimer.TID() < 0 {
-		proc.PostMessage(messages.NewMessageError(m.PID(), fmt.Errorf("error creating timer")))
+		kProc.PostMessage(messages.NewMessageError(m.PID(), fmt.Errorf("error creating timer")))
 		return
 	}
-	proc.AddTimer(msgTimer.TID())
-	proc.PostMessage(messages.NewMessageTimerCreated(m.PID(), msgTimer.TID()))
+	kProc.AddTimer(msgTimer.TID())
+	kProc.PostMessage(messages.NewMessageTimerCreated(m.PID(), msgTimer.TID()))
 }
 
 func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
@@ -358,12 +359,12 @@ func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	proc, _ := c.running[m.PID()]
-	if proc == nil {
+	kProc, _ := c.running[m.PID()]
+	if kProc == nil {
 		log.Printf("error stopping time: invalid originator %d", m.PID())
 		return
 	}
-	c.doCloseTimer(proc, mt.TID())
+	c.doCloseTimer(kProc, mt.TID())
 }
 
 // handleProcessList processes a message requesting a list of running processes and sends the response with process details.
@@ -372,8 +373,8 @@ func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	kernelProc, _ := c.running[mt.PID()]
-	if kernelProc == nil {
+	kProc, _ := c.running[mt.PID()]
+	if kProc == nil {
 		log.Printf("error in handleProcessList: invalid originator %d", mt.PID())
 		return
 	}
@@ -382,7 +383,7 @@ func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
 		out = append(out, proc.Description())
 	}
 	mt.SetResult(out)
-	kernelProc.PostMessage(mt)
+	kProc.PostMessage(mt)
 }
 
 // handleQuitEvent handles a quit message by verifying its type and setting the kernel's exit flag to true.
@@ -401,35 +402,33 @@ func (c *Kernel) handleFileSystemFindResponse(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	originator, _ := c.running[mt.RequestorPID()]
-	if originator == nil {
+	kRequestor, _ := c.running[mt.RequestorPID()]
+	if kRequestor == nil {
 		log.Printf("error creating task: invalid originator")
 		return
 	}
 	cmd, args, err := mt.GetResult()
 	if err != nil {
-		originator.PostMessage(messages.NewMessageError(originator.PID(), fmt.Errorf("error creating task: invalid command '%s'", mt.Line())))
+		kRequestor.PostMessage(messages.NewMessageError(kRequestor.PID(), fmt.Errorf("error creating task: invalid command '%s'", mt.Line())))
 		return
 	}
-	parent, _ := c.running[originator.PID()]
-	kernelProcess, err := c.doCreateKernelProcess(originator.User(), mt.Line(), parent, cmd, mt.Protected())
+	parent, _ := c.running[kRequestor.PID()]
+	kProc, err := c.doCreateKernelProcess(kRequestor.User(), mt.Line(), parent, cmd, mt.Protected())
 	if err != nil {
-		originator.PostMessage(messages.NewMessageError(originator.PID(), fmt.Errorf("error creating task: %s", err.Error())))
+		kRequestor.PostMessage(messages.NewMessageError(kRequestor.PID(), fmt.Errorf("error creating task: %s", err.Error())))
 		return
 	}
-	kernelProcess.Setup()
+	kProc.Setup()
 	for _, server := range c.servers {
-		server.PostMessage(messages.NewMessageNotifyProcessCreate(c.PID(), kernelProcess.PID(), kernelProcess.GetCommand().Name()))
-		//server.NotifyProcessCreation(kernelProcess.PID(), kernelProcess.GetCommand().Name())
+		server.PostMessage(messages.NewMessageNotifyProcessCreate(c.PID(), kProc.PID(), kProc.GetCommand().Name()))
 	}
-	kernelProcess.PostMessage(messages.NewMessageProcessStart(originator.PID(), args))
+	kProc.PostMessage(messages.NewMessageProcessStart(kRequestor.PID(), args))
 }
 
 // doProcessSetForeground sets the specified process as the foreground process and sends activation messages if needed.
 func (c *Kernel) doProcessSetForeground(requestorPID int, process interfaces.IProcess) {
 	for _, server := range c.servers {
 		server.PostMessage(messages.NewMessageNotifyProcessForeground(c.PID(), process.PID()))
-		//s.NotifyProcessForeground(process.PID())
 	}
 	if c.foreground != process {
 		c.foreground = process
@@ -447,7 +446,6 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 	}
 	for _, server := range c.servers {
 		server.PostMessage(messages.NewMessageMessageNotifyProcessTerminate(c.PID(), process.PID()))
-		//server.NotifyProcessTermination(process.PID())
 	}
 	if c.foreground != nil {
 		if c.foreground.PID() == process.PID() {
@@ -464,10 +462,10 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 }
 
 // doCloseTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
-func (c *Kernel) doCloseTimer(process *KernelProcess, tid int) bool {
+func (c *Kernel) doCloseTimer(kProc *KernelProcess, tid int) bool {
 	ret := false
-	if process != nil {
-		process.TimersIterator(func(timerId int) bool {
+	if kProc != nil {
+		kProc.TimersIterator(func(timerId int) bool {
 			if timerId == tid {
 				ret = c.ticker.RemoveEntries([]int{timerId})
 				return true
@@ -481,11 +479,11 @@ func (c *Kernel) doCloseTimer(process *KernelProcess, tid int) bool {
 // shutdown stops all processes and cleans up resources managed by the Kernel instance.
 func (c *Kernel) doShutdown() {
 	var processes []*KernelProcess
-	for _, proc := range c.running {
-		processes = append(processes, proc)
+	for _, kProc := range c.running {
+		processes = append(processes, kProc)
 	}
-	for _, proc := range processes {
-		c.doProcessExit(proc)
+	for _, kProc := range processes {
+		c.doProcessExit(kProc)
 	}
 }
 
@@ -493,8 +491,8 @@ func (c *Kernel) doShutdown() {
 // Configures the command and returns a pointer to the new instance.
 func (c *Kernel) doCreateKernelCommand(name string) interfaces.ICommand {
 	onCreate := func(process interfaces.IProcess, args []string) error { return nil }
-	kernelCmd := process.NewCommand(name, interfaces.CommandTypeFile, nil, true, onCreate)
-	return kernelCmd
+	kCmd := process.NewCommand(name, interfaces.CommandTypeFile, nil, true, onCreate)
+	return kCmd
 }
 
 // doCreateKernelProcess creates a new KernelProcess instance with the specified user, command line, parent, and command.
@@ -505,12 +503,12 @@ func (c *Kernel) doCreateKernelProcess(user string, commandLine string, parent *
 		return nil, fmt.Errorf("error creating task: pid generator overflow")
 	}
 	userProcess := c.pf.Create(pid.GetId(), user, cmd)
-	kernelProcess := NewKernelProcess(user, commandLine, cmd.Name(), parent, pid, protected, userProcess)
+	kProc := NewKernelProcess(user, commandLine, cmd.Name(), parent, pid, protected, userProcess)
 	routingTable := make(map[interfaces.MessageType]func(interfaces.IMessage))
 	for k, v := range c.routingTable {
 		routingTable[k] = v
 	}
-	kernelProcess.SetRoutingTable(routingTable)
-	c.running[kernelProcess.PID()] = kernelProcess
-	return kernelProcess, nil
+	kProc.SetRoutingTable(routingTable)
+	c.running[kProc.PID()] = kProc
+	return kProc, nil
 }
