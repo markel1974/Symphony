@@ -1,11 +1,11 @@
 package interfaces
 
 type IServer interface {
-	IRouter
+	IUserRouter
 
-	Register(router IRouter) []MessageType
+	Register() []MessageType
 
-	Setup(process IProcess) error
+	Setup(router IKernelServerRouter, process IUserProcess) error
 
 	Name() string
 }

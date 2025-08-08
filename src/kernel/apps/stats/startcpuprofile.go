@@ -11,7 +11,7 @@ import (
 
 // CreateProfileCPUStart initializes and returns a shell command to start CPU profiling and save it to a specified file.
 func CreateProfileCPUStart() interfaces.ICommand {
-	run := func(process interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IUserProcess, args []string) error {
 		if len(args) <= 0 {
 			process.Write("could not create cpu profile: "+"missing filename", true)
 			return nil

@@ -22,7 +22,7 @@ import (
 )
 
 func CreateHelp() interfaces.ICommand {
-	run := func(task interfaces.IProcess, args []string) error {
+	run := func(task interfaces.IUserProcess, args []string) error {
 		if len(args) == 0 {
 			task.Write("usage help [command]", true)
 			return nil

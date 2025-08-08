@@ -1,32 +1,34 @@
 package interfaces
 
 // OnError defines a function type that handles errors that occur during process execution.
-type OnError func(process IProcess, err error)
+type OnError func(process IUserProcess, err error)
 
 // OnRun defines a function type that performs a process execution with given arguments and returns an error if any occurs.
-type OnRun func(process IProcess, args []string) error
+type OnRun func(process IUserProcess, args []string) error
 
 // OnTimer defines a function type for processes invoked at regular intervals, receiving the process, timer id, and interval.
-type OnTimer func(process IProcess, tid int, interval int)
+type OnTimer func(process IUserProcess, tid int, interval int)
 
 // OnRead defines a function type invoked for processing input events with a process, an event code, and a key character.
-type OnRead func(process IProcess, code int, key rune)
+type OnRead func(process IUserProcess, code int, key rune)
 
 // OnPaint defines a function type used to handle painting processes on a specified surface in the context of a process.
-type OnPaint func(process IProcess, surface ISurface)
+type OnPaint func(process IUserProcess, surface ISurface)
 
 // OnActivate defines a function type executed when a process is activated, receiving the process as a parameter.
-type OnActivate func(process IProcess)
+type OnActivate func(process IUserProcess)
 
-// IProcess defines an interface for process management, process handling, interaction, and rendering within a system.
-type IProcess interface {
-	IRouter
+// IUserProcess defines an interface for process management, process handling, interaction, and rendering within a system.
+type IUserProcess interface {
+	IUserRouter
 
 	PID() int
 
+	Bind(router IKernelRouter)
+
 	User() string
 
-	Setup()
+	Start()
 
 	GetCommand() ICommand
 

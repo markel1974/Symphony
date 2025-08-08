@@ -10,9 +10,9 @@ type MessageError struct {
 }
 
 // NewMessageError creates and returns a new MessageQuit instance with the MessageType set to MessageTypeQuit.
-func NewMessageError(originatorPID int, err error) *MessageError {
+func NewMessageError(err error) *MessageError {
 	return &MessageError{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeError),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeError),
 		err:     err,
 	}
 }
@@ -29,9 +29,9 @@ type MessageQuit struct {
 }
 
 // NewMessageQuit creates and returns a new MessageQuit instance with the MessageType set to MessageTypeQuit.
-func NewMessageQuit(originatorPID int) *MessageQuit {
+func NewMessageQuit() *MessageQuit {
 	return &MessageQuit{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeQuit),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeQuit),
 	}
 }
 
@@ -44,9 +44,9 @@ type MessageRead struct {
 }
 
 // NewMessageRead creates a new MessageRead instance with provided data and limits its length to n if necessary.
-func NewMessageRead(originatorPID int, kind interfaces.KeyType, data rune, broadcast bool) *MessageRead {
+func NewMessageRead(kind interfaces.KeyType, data rune, broadcast bool) *MessageRead {
 	return &MessageRead{
-		Message:   *interfaces.NewMessage(originatorPID, interfaces.MessageTypeRead),
+		Message:   *interfaces.NewMessage(interfaces.MessageTypeRead),
 		kind:      kind,
 		data:      data,
 		broadcast: broadcast,
@@ -75,9 +75,9 @@ type MessageProcessExec struct {
 }
 
 // NewMessageProcessExec creates a new MessageProcessExec instance with a provided line and MessageTypeProcessExec type.
-func NewMessageProcessExec(originatorPID int, line string) *MessageProcessExec {
+func NewMessageProcessExec(line string) *MessageProcessExec {
 	return &MessageProcessExec{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessExec),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessExec),
 		line:    line,
 	}
 }
@@ -93,9 +93,9 @@ type MessageProcessStart struct {
 }
 
 // NewMessageProcessStart creates a new MessageProcessExec instance with a provided line and MessageTypeProcessExec type.
-func NewMessageProcessStart(originatorPID int, args []string) *MessageProcessStart {
+func NewMessageProcessStart(args []string) *MessageProcessStart {
 	return &MessageProcessStart{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessStart),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessStart),
 		args:    args,
 	}
 }
@@ -106,9 +106,9 @@ type MessageProcessActivate struct {
 }
 
 // NewMessageProcessActivate creates and returns a new instance of MessageProcessActivate initialized with MessageTypeProcessActivate.
-func NewMessageProcessActivate(originatorPID int) *MessageProcessActivate {
+func NewMessageProcessActivate() *MessageProcessActivate {
 	return &MessageProcessActivate{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessActivate),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessActivate),
 	}
 }
 
@@ -125,9 +125,9 @@ type MessageProcessKill struct {
 }
 
 // NewMessageProcessKill creates a new MessageProcessKill object with the specified PID and a ProcessKill message type.
-func NewMessageProcessKill(originatorPID int, pid int) *MessageProcessKill {
+func NewMessageProcessKill(pid int) *MessageProcessKill {
 	return &MessageProcessKill{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessKill),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessKill),
 		pid:     pid,
 	}
 }
@@ -140,9 +140,9 @@ type MessageProcessKillAll struct {
 }
 
 // NewMessageProcessKillAll creates a new MessageProcessKillAll instance with the specified name and appropriate message type.
-func NewMessageProcessKillAll(originatorPID int, name string) *MessageProcessKillAll {
+func NewMessageProcessKillAll(name string) *MessageProcessKillAll {
 	return &MessageProcessKillAll{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessKillAll),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessKillAll),
 		name:    name,
 	}
 }
@@ -159,9 +159,9 @@ type MessageProcessKillForeground struct {
 }
 
 // NewMessageProcessKillForeground creates a new MessageProcessKillForeground instance with a router and MessageTypeProcessKillForeground.
-func NewMessageProcessKillForeground(originatorPID int) *MessageProcessKillForeground {
+func NewMessageProcessKillForeground() *MessageProcessKillForeground {
 	return &MessageProcessKillForeground{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessKillForeground),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessKillForeground),
 	}
 }
 
@@ -173,9 +173,9 @@ type MessageProcessExit struct {
 }
 
 // NewMessageMessageProcessExit creates and returns a new MessageProcessExit instance with the ProcessExit message type.
-func NewMessageMessageProcessExit(originatorPID int) *MessageProcessExit {
+func NewMessageMessageProcessExit() *MessageProcessExit {
 	return &MessageProcessExit{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessExit),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessExit),
 	}
 }
 
@@ -188,9 +188,9 @@ type MessageProcessSetForeground struct {
 
 // NewMessageProcessSetForeground creates and returns a new MessageProcessSetForeground with the specified process ID.
 // It initializes the embedded Message with the MessageTypeProcessSetForeground constant.
-func NewMessageProcessSetForeground(originatorPID int, pid int) *MessageProcessSetForeground {
+func NewMessageProcessSetForeground(pid int) *MessageProcessSetForeground {
 	return &MessageProcessSetForeground{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessSetForeground),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessSetForeground),
 		pid:     pid,
 	}
 }
@@ -208,9 +208,9 @@ type MessageProcessList struct {
 }
 
 // NewMessageProcessList creates a new MessageProcessList with specified replyTo as an IRouter.
-func NewMessageProcessList(originatorPID int, ackChan chan bool) *MessageProcessList {
+func NewMessageProcessList(ackChan chan bool) *MessageProcessList {
 	return &MessageProcessList{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessList),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessList),
 		ackChan: ackChan,
 	}
 }
@@ -240,9 +240,9 @@ type MessageProcessIsRunning struct {
 }
 
 // NewMessageProcessIsRunning creates a new MessageProcessIsRunning with the given originatorPID, pid, and acknowledgment channel.
-func NewMessageProcessIsRunning(originatorPID int, verifyPid int, ackChan chan bool) *MessageProcessIsRunning {
+func NewMessageProcessIsRunning(verifyPid int, ackChan chan bool) *MessageProcessIsRunning {
 	return &MessageProcessIsRunning{
-		Message:   *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessIsRunning),
+		Message:   *interfaces.NewMessage(interfaces.MessageTypeProcessIsRunning),
 		verifyPid: verifyPid,
 		ackChan:   ackChan,
 	}
@@ -282,9 +282,9 @@ type MessageNotifyProcessCreate struct {
 // The `originatorPID` specifies the process ID of the message sender.
 // The `createdPID` specifies the process ID of the newly created process.
 // The `name` specifies the name associated with the created process.
-func NewMessageNotifyProcessCreate(originatorPID int, createdPID int, name string) *MessageNotifyProcessCreate {
+func NewMessageNotifyProcessCreate(createdPID int, name string) *MessageNotifyProcessCreate {
 	return &MessageNotifyProcessCreate{
-		Message:    *interfaces.NewMessage(originatorPID, interfaces.MessageTypeNotifyProcessCreate),
+		Message:    *interfaces.NewMessage(interfaces.MessageTypeNotifyProcessCreate),
 		createdPID: createdPID,
 		name:       name,
 	}
@@ -309,9 +309,9 @@ type MessageNotifyProcessTerminate struct {
 }
 
 // NewMessageMessageNotifyProcessTerminate creates a new MessageNotifyProcessTerminate with the given PIDs.
-func NewMessageMessageNotifyProcessTerminate(originatorPID int, terminatedPID int) *MessageNotifyProcessTerminate {
+func NewMessageMessageNotifyProcessTerminate(terminatedPID int) *MessageNotifyProcessTerminate {
 	return &MessageNotifyProcessTerminate{
-		Message:       *interfaces.NewMessage(originatorPID, interfaces.MessageTypeNotifyProcessTerminate),
+		Message:       *interfaces.NewMessage(interfaces.MessageTypeNotifyProcessTerminate),
 		terminatedPID: terminatedPID,
 	}
 }
@@ -329,9 +329,9 @@ type MessageNotifyProcessForeground struct {
 }
 
 // NewMessageNotifyProcessForeground creates a new MessageNotifyProcessForeground with the given PIDs.
-func NewMessageNotifyProcessForeground(originatorPID int, foregroundPID int) *MessageNotifyProcessForeground {
+func NewMessageNotifyProcessForeground(foregroundPID int) *MessageNotifyProcessForeground {
 	return &MessageNotifyProcessForeground{
-		Message:       *interfaces.NewMessage(originatorPID, interfaces.MessageTypeNotifyProcessForeground),
+		Message:       *interfaces.NewMessage(interfaces.MessageTypeNotifyProcessForeground),
 		foregroundPID: foregroundPID,
 	}
 }

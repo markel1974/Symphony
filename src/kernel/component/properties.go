@@ -109,7 +109,7 @@ func (prop *PropertyInfo) CreateShellSetCommand() *process.Command {
 	if len(id) > 0 {
 		id[0] = unicode.ToUpper(id[0])
 	}
-	setProp := func(task interfaces.IProcess, args []string) error {
+	setProp := func(task interfaces.IUserProcess, args []string) error {
 		if len(args) == 0 {
 			task.Write("no argument provided", true)
 			return nil
@@ -130,7 +130,7 @@ func (prop *PropertyInfo) CreateShellGetCommand() *process.Command {
 	if len(id) > 0 {
 		id[0] = unicode.ToUpper(id[0])
 	}
-	getProp := func(task interfaces.IProcess, args []string) error {
+	getProp := func(task interfaces.IUserProcess, args []string) error {
 		v, err := prop.Get()
 		task.Write(fmt.Sprint(v), true)
 		return err
@@ -237,7 +237,7 @@ func (p *Properties) Restore(d map[string]interface{}) error {
 
 // CreateShellDump generates a slice of shell commands to get and set property values in the Properties instance.
 func (p *Properties) CreateShellDump(name string) *process.Command {
-	dumpFn := func(task interfaces.IProcess, args []string) error {
+	dumpFn := func(task interfaces.IUserProcess, args []string) error {
 		for _, prop := range p.sort() {
 			if v, err := prop.Get(); err == nil {
 				task.Write(prop.Id()+": "+fmt.Sprint(v), true)

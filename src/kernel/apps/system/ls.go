@@ -6,7 +6,7 @@ import (
 )
 
 func CreateLs() interfaces.ICommand {
-	run := func(task interfaces.IProcess, args []string) error {
+	run := func(task interfaces.IUserProcess, args []string) error {
 		for _, c := range task.CWDDirectoryListing() {
 			task.Write(c, true)
 		}

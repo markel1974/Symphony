@@ -9,7 +9,7 @@ import (
 // CreateInvaders initializes and returns a new process.Command for the "Invaders" game.
 // It sets up handlers for creation, input, timers, and rendering.
 func CreateInvaders() *process.Command {
-	onCreate := func(process interfaces.IProcess, args []string) error {
+	onCreate := func(process interfaces.IUserProcess, args []string) error {
 		w, h := process.GetScreenSize()
 		g := invaders.NewGame(w, h)
 		g.SetMenuState()
@@ -17,7 +17,7 @@ func CreateInvaders() *process.Command {
 		process.CreateTimer(0, 100, -1)
 		return nil
 	}
-	onRead := func(process interfaces.IProcess, code int, key rune) {
+	onRead := func(process interfaces.IUserProcess, code int, key rune) {
 		ctx := process.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
@@ -25,7 +25,7 @@ func CreateInvaders() *process.Command {
 		}
 		g.HandleKey(key)
 	}
-	onTimer := func(process interfaces.IProcess, tid int, interval int) {
+	onTimer := func(process interfaces.IUserProcess, tid int, interval int) {
 		ctx := process.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {
@@ -34,7 +34,7 @@ func CreateInvaders() *process.Command {
 		g.Update()
 		process.PaintRequest()
 	}
-	onPaint := func(process interfaces.IProcess, surface interfaces.ISurface) {
+	onPaint := func(process interfaces.IUserProcess, surface interfaces.ISurface) {
 		ctx := process.GetContext()
 		g, ok := ctx.(*invaders.Invaders)
 		if !ok {

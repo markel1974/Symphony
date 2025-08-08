@@ -61,6 +61,8 @@ type IMessage interface {
 
 	PID() int
 
+	SetPID(int)
+
 	Response() bool
 
 	Ack() bool
@@ -74,9 +76,9 @@ type Message struct {
 }
 
 // NewMessage creates a new Message instance with the specified MessageType.
-func NewMessage(originatorPID int, kind MessageType) *Message {
+func NewMessage(kind MessageType) *Message {
 	return &Message{
-		originatorPID: originatorPID,
+		originatorPID: -1,
 		kind:          kind,
 		response:      false,
 	}
@@ -85,6 +87,11 @@ func NewMessage(originatorPID int, kind MessageType) *Message {
 // GetType returns the MessageType of the current Message instance.
 func (m *Message) GetType() MessageType {
 	return m.kind
+}
+
+// SetPID sets the originator's process ID (PID) associated with the Message instance.'
+func (m *Message) SetPID(pid int) {
+	m.originatorPID = pid
 }
 
 // PID returns the originator's process ID (PID) associated with the Message instance.

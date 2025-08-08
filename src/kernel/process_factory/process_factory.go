@@ -8,18 +8,15 @@ import (
 // ProcessFactory is responsible for creating and managing process instances within the system.
 // It encapsulates interactions with the provided IKernel for process-related operations.
 type ProcessFactory struct {
-	kernel interfaces.IRouter
 }
 
 // NewProcessFactory creates and returns a new ProcessFactory instance using the provided kernel for process management.
-func NewProcessFactory(kernel interfaces.IRouter) *ProcessFactory {
-	return &ProcessFactory{
-		kernel: kernel,
-	}
+func NewProcessFactory() *ProcessFactory {
+	return &ProcessFactory{}
 }
 
 // Create initializes a new process using the provided command, line, and optional window settings.
-func (fp *ProcessFactory) Create(pid int, user string, cmd interfaces.ICommand) interfaces.IProcess {
-	p := process.NewProcess(fp.kernel, pid, user, cmd)
+func (fp *ProcessFactory) Create(pid int, user string, cmd interfaces.ICommand) interfaces.IUserProcess {
+	p := process.NewProcess(pid, user, cmd)
 	return p
 }

@@ -19,9 +19,9 @@ type MessageFileSystemFindRequest struct {
 	protected    bool
 }
 
-func NewMessageFileSystemFindRequest(originatorPID int, requestorPID int, line string, protected bool) *MessageFileSystemFindRequest {
+func NewMessageFileSystemFindRequest(requestorPID int, line string, protected bool) *MessageFileSystemFindRequest {
 	return &MessageFileSystemFindRequest{
-		Message:      *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemFindRequest),
+		Message:      *interfaces.NewMessage(interfaces.MessageTypeFileSystemFindRequest),
 		requestorPID: requestorPID,
 		line:         line,
 		protected:    protected,
@@ -34,7 +34,7 @@ func (m *MessageFileSystemFindRequest) Line() string {
 
 func (m *MessageFileSystemFindRequest) CreateResponse(cmd interfaces.ICommand, args []string, err error) *MessageFileSystemFindResponse {
 	return &MessageFileSystemFindResponse{
-		Message:      *interfaces.NewMessage(m.PID(), interfaces.MessageTypeFileSystemFindResponse),
+		Message:      *interfaces.NewMessage(interfaces.MessageTypeFileSystemFindResponse),
 		requestorPID: m.requestorPID,
 		line:         m.line,
 		protected:    m.protected,
@@ -67,9 +67,9 @@ type MessageFileSystemCWDSet struct {
 	result bool
 }
 
-func NewMessageFileSystemCWDSet(originatorPID int, path string, ack chan bool) *MessageFileSystemCWDSet {
+func NewMessageFileSystemCWDSet(path string, ack chan bool) *MessageFileSystemCWDSet {
 	return &MessageFileSystemCWDSet{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemCWDSet),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeFileSystemCWDSet),
 		path:    path,
 		ack:     ack,
 	}
@@ -99,9 +99,9 @@ type MessageFileSystemCWDGet struct {
 	ack    chan bool
 }
 
-func NewMessageFileSystemCWDGet(originatorPID int, ack chan bool) *MessageFileSystemCWDGet {
+func NewMessageFileSystemCWDGet(ack chan bool) *MessageFileSystemCWDGet {
 	return &MessageFileSystemCWDGet{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemCWDGet),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeFileSystemCWDGet),
 		ack:     ack,
 	}
 }
@@ -126,9 +126,9 @@ type MessageFileSystemCWDPath struct {
 	result string
 }
 
-func NewMessageFileSystemCWDPath(originatorPID int, ack chan bool) *MessageFileSystemCWDPath {
+func NewMessageFileSystemCWDPath(ack chan bool) *MessageFileSystemCWDPath {
 	return &MessageFileSystemCWDPath{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemCWDPath),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeFileSystemCWDPath),
 		ack:     ack,
 	}
 }
@@ -153,9 +153,9 @@ type MessageFileSystemCWDDirectoryListing struct {
 	result []string
 }
 
-func NewMessageFileSystemCWDDirectoryListing(originatorPID int, ack chan bool) *MessageFileSystemCWDDirectoryListing {
+func NewMessageFileSystemCWDDirectoryListing(ack chan bool) *MessageFileSystemCWDDirectoryListing {
 	return &MessageFileSystemCWDDirectoryListing{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemCWDDirectoryListing),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeFileSystemCWDDirectoryListing),
 		ack:     ack,
 	}
 }
@@ -188,9 +188,9 @@ type MessageFileSystemSuggestion struct {
 }
 
 // NewMessageFileSystemSuggestion creates a new MessageFileSystemSuggestion with provided router, input text, cursor position, and acknowledgment channel.
-func NewMessageFileSystemSuggestion(originatorPID int, in string, cursor int, ack chan bool) *MessageFileSystemSuggestion {
+func NewMessageFileSystemSuggestion(in string, cursor int, ack chan bool) *MessageFileSystemSuggestion {
 	return &MessageFileSystemSuggestion{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemSuggestion),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeFileSystemSuggestion),
 		in:      in,
 		cursor:  cursor,
 		ack:     ack,
@@ -234,9 +234,9 @@ type MessageFileSystemHelp struct {
 	err    error
 }
 
-func NewMessageFileSystemHelp(originatorPID int, path string, ack chan bool) *MessageFileSystemHelp {
+func NewMessageFileSystemHelp(path string, ack chan bool) *MessageFileSystemHelp {
 	return &MessageFileSystemHelp{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemHelp),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeFileSystemHelp),
 		path:    path,
 		ack:     ack,
 	}

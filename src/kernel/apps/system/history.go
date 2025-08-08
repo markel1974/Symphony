@@ -9,7 +9,7 @@ import (
 )
 
 func CreateHistory() *process.Command {
-	run := func(task interfaces.IProcess, args []string) error {
+	run := func(task interfaces.IUserProcess, args []string) error {
 		if len(args) == 0 {
 			task.History(interfaces.HistoryActionList, -1)
 			return nil

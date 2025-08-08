@@ -20,13 +20,13 @@ const pathSeparator = "/"
 
 // FileSystem provides utilities for command hierarchy traversal and completion suggestions.
 type FileSystem struct {
-	process     interfaces.IProcess
+	process     interfaces.IUserProcess
 	root        interfaces.ICommand
 	searchPaths []interfaces.ICommand
 	cwd         interfaces.ICommand
 	parser      *Parser
 	messageChan chan interfaces.IMessage
-	router      interfaces.IRouter
+	kRouter     interfaces.IKernelServerRouter
 	handlers    map[interfaces.MessageType]func(interfaces.IMessage)
 }
 
@@ -50,7 +50,7 @@ func NewFileSystem(root interfaces.ICommand, sp []interfaces.ICommand) *FileSyst
 		handlers:    make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
 
-	fs.handlers[interfaces.MessageTypeFileSystemCWDGet] = fs.handleCWDGetRequest
+	fs.handlers[interfaces.MessageTypeFileSystemCWDGet] = fs.handleCWDGet
 	fs.handlers[interfaces.MessageTypeFileSystemSuggestion] = fs.handleSuggestion
 	fs.handlers[interfaces.MessageTypeFileSystemCWDSet] = fs.handleCWDSet
 	fs.handlers[interfaces.MessageTypeFileSystemCWDPath] = fs.handleCWDPath
@@ -68,8 +68,8 @@ func (c *FileSystem) Name() string {
 	return "fs"
 }
 
-// Process returns the process implementation adhering to the interfaces.IProcess interface.
-func (c *FileSystem) Process() interfaces.IProcess {
+// Process returns the process implementation adhering to the interfaces.IUserProcess interface.
+func (c *FileSystem) Process() interfaces.IUserProcess {
 	return c.process
 }
 
@@ -83,9 +83,8 @@ func (c *FileSystem) User() string {
 	return c.process.User()
 }
 
-// Register registers the file system with the provided router and returns a slice of message types that it handles.
-func (c *FileSystem) Register(router interfaces.IRouter) []interfaces.MessageType {
-	c.router = router
+// Register registers the file system with the provided kRouter and returns a slice of message types that it handles.
+func (c *FileSystem) Register() []interfaces.MessageType {
 	var out []interfaces.MessageType
 	for id := range c.handlers {
 		out = append(out, id)
@@ -94,7 +93,8 @@ func (c *FileSystem) Register(router interfaces.IRouter) []interfaces.MessageTyp
 }
 
 // Setup initializes the FileSystem with the provided process and starts the event loop to handle messages.
-func (c *FileSystem) Setup(process interfaces.IProcess) error {
+func (c *FileSystem) Setup(router interfaces.IKernelServerRouter, process interfaces.IUserProcess) error {
+	c.kRouter = router
 	c.process = process
 	b := make(chan bool)
 	c.eventLoop(b)
@@ -103,7 +103,7 @@ func (c *FileSystem) Setup(process interfaces.IProcess) error {
 }
 
 // PostMessage sends a message of type IMessage to the file system's message channel for further processing.
-func (c *FileSystem) PostMessage(m interfaces.IMessage) {
+func (c *FileSystem) PostUserMessage(m interfaces.IMessage) {
 	if len(c.messageChan) >= fsQueueLen {
 		log.Printf("FS: message queue full, dropping message: %d", m.GetType())
 		return
@@ -126,20 +126,20 @@ func (c *FileSystem) handleCWDSet(msg interfaces.IMessage) {
 	if cmd := c.cwd.Traverse(path); cmd != nil {
 		if cmd.Type() != interfaces.CommandTypeDirectory {
 			mt.SetResult(false)
-			c.router.PostMessage(mt)
+			c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 			return
 		}
 		c.cwd = cmd
 		mt.SetResult(true)
-		c.router.PostMessage(mt)
+		c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 		return
 	}
 	mt.SetResult(false)
-	c.router.PostMessage(mt)
+	c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 }
 
 // CallAddSearchPath adds a new ICommand instance to the searchPaths slice for fs resolution.
-//func (c *FileSystem) CallAddSearchPath(router interfaces.IRouter, sp interfaces.ICommand) {
+//func (c *FileSystem) CallAddSearchPath(kRouter interfaces.IRouter, sp interfaces.ICommand) {
 //	if sp == nil {
 //		return
 //	}
@@ -153,7 +153,7 @@ func (c *FileSystem) handleCWDPath(msg interfaces.IMessage) {
 		return
 	}
 	mt.SetResult(c.cwd.Path())
-	c.router.PostMessage(mt)
+	c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 }
 
 // CallCWDDirectoryListing retrieves the directory listing of the current working directory as a slice of strings.
@@ -167,7 +167,7 @@ func (c *FileSystem) handleCWDDirectoryListing(msg interfaces.IMessage) {
 		out = append(out, z) // z.Name())
 	}
 	mt.SetResult(out)
-	c.router.PostMessage(mt)
+	c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 }
 
 // CallFind parses and executes a given command line string, associating it with a process, and manages its lifecycle.
@@ -178,12 +178,12 @@ func (c *FileSystem) handleFindRequest(msg interfaces.IMessage) {
 	}
 	el, err := c.parser.Parse(mt.Line())
 	if err != nil {
-		c.router.PostMessage(mt.CreateResponse(nil, nil, err))
+		c.kRouter.PostKernelServerMessage(mt.PID(), mt.CreateResponse(nil, nil, err))
 		return
 	}
 	if len(el) == 0 {
 		err = fmt.Errorf("invalid command: '%s'", mt.Line())
-		c.router.PostMessage(mt.CreateResponse(nil, nil, err))
+		c.kRouter.PostKernelServerMessage(mt.PID(), mt.CreateResponse(nil, nil, err))
 		return
 	}
 	name := el[0]
@@ -203,7 +203,7 @@ func (c *FileSystem) handleFindRequest(msg interfaces.IMessage) {
 	}
 	if sel == nil {
 		err = fmt.Errorf("unknown command: '%s'", name)
-		c.router.PostMessage(mt.CreateResponse(nil, nil, err))
+		c.kRouter.PostKernelServerMessage(mt.PID(), mt.CreateResponse(nil, nil, err))
 		return
 	}
 	//if len(args) > 0 {
@@ -211,7 +211,7 @@ func (c *FileSystem) handleFindRequest(msg interfaces.IMessage) {
 	//		return false, fmt.Errorf("invalid command: '%s %s'", name, strings.Join(args, " "))
 	//	}
 	//}
-	c.router.PostMessage(mt.CreateResponse(sel, args, nil))
+	c.kRouter.PostKernelServerMessage(mt.PID(), mt.CreateResponse(sel, args, nil))
 }
 
 // CallHelp retrieves help information for a given command line string,
@@ -222,7 +222,7 @@ func (c *FileSystem) handleHelp(msg interfaces.IMessage) {
 		return
 	}
 
-	//router interfaces.IRouter, path string
+	//kRouter interfaces.IRouter, path string
 	//(string, error)
 	var pathSegments []string
 	absolute := interfaces.IsPathAbsolute(mt.Path())
@@ -244,11 +244,11 @@ func (c *FileSystem) handleHelp(msg interfaces.IMessage) {
 	}
 	if sel == nil {
 		mt.SetResponse("", fmt.Errorf("invalid command %s", mt.Path()))
-		c.router.PostMessage(mt)
+		c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 		return
 	}
 	mt.SetResponse(sel.Help(), nil)
-	c.router.PostMessage(mt)
+	c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 	return
 }
 
@@ -262,7 +262,7 @@ func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
 	textBeforeSegment, nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInput(c.cwd, mt.In(), mt.Cursor())
 	if err != nil || nodeToQuery == nil {
 		mt.SetResponse("", nil, false)
-		c.router.PostMessage(mt)
+		c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 		return
 	}
 	prefix := prefixToComplete
@@ -282,7 +282,7 @@ func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
 
 	if len(rawSuggestions) == 0 {
 		mt.SetResponse(prefix, nil, false)
-		c.router.PostMessage(mt)
+		c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 		return
 	}
 
@@ -321,7 +321,7 @@ func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
 		}
 	}
 	mt.SetResponse(prefix, suggestions, len(suggestions) > 0)
-	c.router.PostMessage(mt)
+	c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 }
 
 // parseInput parses the input string to determine the relevant command context, path, and completion prefix details.
@@ -505,11 +505,11 @@ func (c *FileSystem) eventLoop(r chan bool) {
 }
 
 // handleCWDName returns the name of the current working directory command.
-func (c *FileSystem) handleCWDGetRequest(msg interfaces.IMessage) {
+func (c *FileSystem) handleCWDGet(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageFileSystemCWDGet)
 	if !ok {
 		return
 	}
 	mt.SetResult(c.cwd.Name())
-	c.router.PostMessage(mt)
+	c.kRouter.PostKernelServerMessage(mt.PID(), mt)
 }

@@ -52,7 +52,7 @@ func createShell(target interfaces.ICommand) error {
 	const secure = true
 	const pass = "p"
 
-	run := func(proc interfaces.IProcess, args []string) error {
+	run := func(proc interfaces.IUserProcess, args []string) error {
 		return nil
 	}
 	t := process.NewCommand("bin", interfaces.CommandTypeDirectory, nil, false, run)

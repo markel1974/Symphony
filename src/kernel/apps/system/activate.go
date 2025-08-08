@@ -29,7 +29,7 @@ import (
 )
 
 func CreateActivate() *process.Command {
-	run := func(process interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IUserProcess, args []string) error {
 		targetPid := -1
 		if len(args) > 0 {
 			targetPid, _ = strconv.Atoi(args[0])
@@ -37,7 +37,7 @@ func CreateActivate() *process.Command {
 		process.WindowsSelectionb(targetPid)
 		return nil
 	}
-	readFn := func(task interfaces.IProcess, code int, key rune) {
+	readFn := func(task interfaces.IUserProcess, code int, key rune) {
 		if code == 1 {
 			switch interfaces.CursorCodeDef(key) {
 			case interfaces.CursorUpDef:

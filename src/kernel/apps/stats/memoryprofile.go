@@ -13,7 +13,7 @@ import (
 // CreateProfileMemory creates a shell command for generating memory usage profiles.
 // It triggers garbage collection and writes the heap profile to a specified file.
 func CreateProfileMemory() interfaces.ICommand {
-	run := func(process interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IUserProcess, args []string) error {
 		if len(args) <= 0 {
 			process.Write("could not create mem profile: "+"missing filename", true)
 			return nil

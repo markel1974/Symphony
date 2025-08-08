@@ -109,7 +109,7 @@ func (cmd *Command) Exec(args []string) (interface{}, error) {
 
 // CreateShellCommand converts the Command instance into a shell-compatible command with execution and help functionality.
 func (cmd *Command) CreateShellCommand() *process.Command {
-	cmdExec := func(task interfaces.IProcess, args []string) error {
+	cmdExec := func(task interfaces.IUserProcess, args []string) error {
 		v, err := cmd.Exec(args)
 		if v != nil {
 			task.Write(fmt.Sprint(v), true)

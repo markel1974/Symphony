@@ -20,7 +20,7 @@ import (
 )
 
 func CreateKillAll() interfaces.ICommand {
-	run := func(task interfaces.IProcess, args []string) error {
+	run := func(task interfaces.IUserProcess, args []string) error {
 		var arg string
 		if len(args) > 0 {
 			arg = args[0]

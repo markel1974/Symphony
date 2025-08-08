@@ -9,9 +9,9 @@ type MessageGetScreenSize struct {
 	ack    chan bool
 }
 
-func NewMessageGetScreenSize(originatorPID int, ack chan bool) *MessageGetScreenSize {
+func NewMessageGetScreenSize(ack chan bool) *MessageGetScreenSize {
 	return &MessageGetScreenSize{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeGetScreenSize),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeGetScreenSize),
 		ack:     ack,
 	}
 }
@@ -40,9 +40,9 @@ type MessageSetScreenSize struct {
 }
 
 // NewMessageSetScreenSize creates a new MessageSetScreenSize instance for setting the screen width and height.
-func NewMessageSetScreenSize(originatorPID int, width int, height int) *MessageSetScreenSize {
+func NewMessageSetScreenSize(width int, height int) *MessageSetScreenSize {
 	return &MessageSetScreenSize{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeSetScreenSize),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeSetScreenSize),
 		width:   width,
 		height:  height,
 	}
@@ -66,9 +66,9 @@ type MessageWrite struct {
 }
 
 // NewMessageWrite creates a new instance of MessageWrite with the given router, data, and end-of-line flag.
-func NewMessageWrite(originatorPID int, data string, eol bool) *MessageWrite {
+func NewMessageWrite(data string, eol bool) *MessageWrite {
 	return &MessageWrite{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWrite),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeWrite),
 		data:    data,
 		eol:     eol,
 	}
@@ -91,15 +91,6 @@ type MessageWriteLn struct {
 	Data string
 }
 
-// NewMessageWriteLn initializes and returns a pointer to a MessageWriteLn with the provided data.
-// It sets the Message type to MessageTypeWriteLn.
-func NewMessageWriteLn(originatorPID int, data string) *MessageWriteLn {
-	return &MessageWriteLn{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWriteLn),
-		Data:    data,
-	}
-}
-
 // MessageWriteColor represents a message containing text data with specified foreground, background colors, and color mode.
 type MessageWriteColor struct {
 	interfaces.Message
@@ -111,9 +102,9 @@ type MessageWriteColor struct {
 }
 
 // NewMessageWriteColor creates a new MessageWriteColor instance with specified data, foreground and background colors, and mode.
-func NewMessageWriteColor(originatorPID int, data string, fg, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) *MessageWriteColor {
+func NewMessageWriteColor(data string, fg, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) *MessageWriteColor {
 	return &MessageWriteColor{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWriteColor),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeWriteColor),
 		data:    data,
 		fg:      fg,
 		bg:      bg,
@@ -154,9 +145,9 @@ type MessageClearScreen struct {
 }
 
 // NewMessageClearScreen creates a new instance of MessageClearScreen with the MessageType set to ClearScreen.
-func NewMessageClearScreen(originatorPID int) *MessageClearScreen {
+func NewMessageClearScreen() *MessageClearScreen {
 	return &MessageClearScreen{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeClearScreen),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeClearScreen),
 	}
 }
 
@@ -167,9 +158,9 @@ type MessageClearLine struct {
 }
 
 // NewMessageClearLine creates a new MessageClearLine instance to represent a clear line action in the system.
-func NewMessageClearLine(originatorPID int, line string) *MessageClearLine {
+func NewMessageClearLine(line string) *MessageClearLine {
 	return &MessageClearLine{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeClearLine),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeClearLine),
 		line:    line,
 	}
 }
@@ -185,9 +176,9 @@ type MessageSaveCursor struct {
 }
 
 // NewMessageSaveCursor creates a new MessageSaveCursor instance with the MessageTypeSaveCursor message type.
-func NewMessageSaveCursor(originatorPID int) *MessageSaveCursor {
+func NewMessageSaveCursor() *MessageSaveCursor {
 	return &MessageSaveCursor{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeSaveCursor),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeSaveCursor),
 	}
 }
 
@@ -197,9 +188,9 @@ type MessageRestoreCursor struct {
 }
 
 // NewMessageRestoreCursor creates a new MessageRestoreCursor instance with a MessageTypeRestoreCursor type.
-func NewMessageRestoreCursor(originatorPID int) *MessageRestoreCursor {
+func NewMessageRestoreCursor() *MessageRestoreCursor {
 	return &MessageRestoreCursor{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeRestoreCursor),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeRestoreCursor),
 	}
 }
 
@@ -209,9 +200,9 @@ type MessageMoveCursorLeft struct {
 }
 
 // NewMessageMoveCursorLeft creates a new MessageMoveCursorLeft instance to represent a cursor-left movement message.
-func NewMessageMoveCursorLeft(originatorPID int) *MessageMoveCursorLeft {
+func NewMessageMoveCursorLeft() *MessageMoveCursorLeft {
 	return &MessageMoveCursorLeft{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeMoveCursorLeft),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeMoveCursorLeft),
 	}
 }
 
@@ -222,8 +213,8 @@ type MessageMoveCursorRight struct {
 }
 
 // NewMessageMoveCursorRight creates a new instance of MessageMoveCursorRight with the specified router.
-func NewMessageMoveCursorRight(originatorPID int) *MessageMoveCursorRight {
+func NewMessageMoveCursorRight() *MessageMoveCursorRight {
 	return &MessageMoveCursorRight{
-		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeMoveCursorRight),
+		Message: *interfaces.NewMessage(interfaces.MessageTypeMoveCursorRight),
 	}
 }

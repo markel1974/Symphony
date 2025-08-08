@@ -22,7 +22,7 @@ func NewRoot() *Root {
 // Build constructs and returns two command trees, coreC and root, initialized with their respective subcommands and functionality.
 func (t *Root) Build(bin interfaces.ICommand) (string, interfaces.ICommand, interfaces.ICommand) {
 	var aliases []interfaces.ICommand
-	sbin := process.NewCommand("sbin", interfaces.CommandTypeDirectory, nil, false, func(process interfaces.IProcess, args []string) error {
+	sbin := process.NewCommand("sbin", interfaces.CommandTypeDirectory, nil, false, func(process interfaces.IUserProcess, args []string) error {
 		return nil
 	})
 	sbin.SetHelp("SBin", "SBin")
@@ -61,14 +61,14 @@ func (t *Root) Build(bin interfaces.ICommand) (string, interfaces.ICommand, inte
 		aliases = append(aliases, runtimeApp...)
 	}
 
-	root := process.NewCommand("/", interfaces.CommandTypeDirectory, nil, false, func(process interfaces.IProcess, args []string) error {
+	root := process.NewCommand("/", interfaces.CommandTypeDirectory, nil, false, func(process interfaces.IUserProcess, args []string) error {
 		return nil
 	})
 	_ = root.AddCommand(sbin)
 	_ = root.AddCommand(bin)
 	_ = root.AddCommand(games.Create())
 
-	aliasesCommand := process.NewCommand("", interfaces.CommandTypeDirectory, nil, false, func(process interfaces.IProcess, args []string) error {
+	aliasesCommand := process.NewCommand("", interfaces.CommandTypeDirectory, nil, false, func(process interfaces.IUserProcess, args []string) error {
 		return nil
 	})
 	aliasesCommand.SetHelp("Aliases", "Aliases")

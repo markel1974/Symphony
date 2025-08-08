@@ -9,7 +9,7 @@ import (
 )
 
 func CreatePs() interfaces.ICommand {
-	run := func(process interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IUserProcess, args []string) error {
 		out := "Pid: Process"
 		now := time.Now()
 		pl := process.ProcessList()

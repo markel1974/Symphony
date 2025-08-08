@@ -7,13 +7,13 @@ import (
 
 func CreateXShell() *process.Command {
 
-	onCreate := func(process interfaces.IProcess, args []string) error {
+	onCreate := func(process interfaces.IUserProcess, args []string) error {
 		s := NewXShell("% ", true)
 		process.SetContext(s)
 		s.Start(process)
 		return nil
 	}
-	onError := func(process interfaces.IProcess, err error) {
+	onError := func(process interfaces.IUserProcess, err error) {
 		ctx := process.GetContext()
 		s, ok := ctx.(*XShell)
 		if !ok {
@@ -21,7 +21,7 @@ func CreateXShell() *process.Command {
 		}
 		s.ErrorHandler(process, err)
 	}
-	onRead := func(process interfaces.IProcess, code int, key rune) {
+	onRead := func(process interfaces.IUserProcess, code int, key rune) {
 		ctx := process.GetContext()
 		s, ok := ctx.(*XShell)
 		if !ok {
@@ -29,7 +29,7 @@ func CreateXShell() *process.Command {
 		}
 		s.KeyHandler(process, code, key)
 	}
-	onReadBroast := func(process interfaces.IProcess, code int, key rune) {
+	onReadBroast := func(process interfaces.IUserProcess, code int, key rune) {
 		ctx := process.GetContext()
 		s, _ := ctx.(*XShell)
 		if s == nil {
@@ -37,7 +37,7 @@ func CreateXShell() *process.Command {
 		}
 		s.BroadcastKeyHandler(process, code, key)
 	}
-	onActivate := func(process interfaces.IProcess) {
+	onActivate := func(process interfaces.IUserProcess) {
 		ctx := process.GetContext()
 		s, _ := ctx.(*XShell)
 		if s == nil {

@@ -10,7 +10,7 @@ import (
 
 // CreateMemoryStatus initializes a shell command for monitoring runtime memory statistics and garbage collection cycles.
 func CreateMemoryStatus() interfaces.ICommand {
-	run := func(process interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IUserProcess, args []string) error {
 		var m runtime.MemStats
 		runtime.ReadMemStats(&m)
 		process.Write(fmt.Sprintf("Allocated memory in heap objects: %.3f MB", bToMb(m.Alloc)), true)

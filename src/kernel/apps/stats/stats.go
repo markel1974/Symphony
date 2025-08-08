@@ -7,7 +7,7 @@ import (
 
 // Create initializes and returns the root command for system statistics operations with multiple subcommands attached.
 func Create() (*process.Command, []interfaces.ICommand) {
-	run := func(process interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IUserProcess, args []string) error {
 		return nil
 	}
 	root := process.NewCommand("stats", interfaces.CommandTypeDirectory, nil, false, run)

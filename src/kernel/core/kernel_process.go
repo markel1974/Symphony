@@ -1,6 +1,7 @@
 package core
 
 import (
+	"log"
 	"time"
 
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
@@ -32,7 +33,7 @@ func (p *PID) GetId() int {
 
 // KernelProcess represents a kernel-level process with parent linkage, protection status, and associated timer IDs.
 type KernelProcess struct {
-	interfaces.IProcess
+	interfaces.IUserProcess
 	user         string
 	line         string
 	name         string
@@ -42,20 +43,44 @@ type KernelProcess struct {
 	timers       []int
 	time         time.Time
 	routingTable map[interfaces.MessageType]func(interfaces.IMessage)
+	messageChan  chan interfaces.IMessage
 }
 
 // NewKernelProcess creates a new KernelProcess instance with a parent process, protection flag, and assigned process.
-func NewKernelProcess(user string, line, name string, parent *KernelProcess, pid *PID, protected bool, process interfaces.IProcess) *KernelProcess {
-	return &KernelProcess{
-		user:      user,
-		line:      line,
-		name:      name,
-		parent:    parent,
-		protected: protected,
-		IProcess:  process,
-		pid:       pid,
-		time:      time.Now(),
+func NewKernelProcess(process interfaces.IUserProcess, user string, line, name string, parent *KernelProcess, pid *PID, protected bool, messageChan chan interfaces.IMessage) *KernelProcess {
+	kp := &KernelProcess{
+		IUserProcess: process,
+		user:         user,
+		line:         line,
+		name:         name,
+		parent:       parent,
+		protected:    protected,
+		messageChan:  messageChan,
+		pid:          pid,
+		time:         time.Now(),
 	}
+	kp.IUserProcess.Bind(kp)
+	return kp
+}
+
+// PostKernelMessage sends a message to the KernelProcess's message channel from UserProcess.
+func (kp *KernelProcess) PostKernelMessage(msg interfaces.IMessage) {
+	if len(kp.messageChan) >= kernelQueueMax {
+		log.Printf("Kernel: message queue full, dropping message: %d", msg.GetType())
+		return
+	}
+	msg.SetPID(kp.pid.GetId())
+	kp.messageChan <- msg
+}
+
+// PostKernelServerMessage sends a message to the KernelProcess's message channel from ServerProcess.
+func (kp *KernelProcess) PostKernelServerMessage(pid int, msg interfaces.IMessage) {
+	if len(kp.messageChan) >= kernelQueueMax {
+		log.Printf("Kernel: message queue full, dropping message: %d", msg.GetType())
+		return
+	}
+	msg.SetPID(pid)
+	kp.messageChan <- msg
 }
 
 // SetRoute associates a message type with a specific routing function in the routing table of the KernelProcess.
@@ -84,8 +109,8 @@ func (kp *KernelProcess) AddTimer(tid int) {
 	kp.timers = append(kp.timers, tid)
 }
 
-// Parent returns the parent process of the current KernelProcess, implementing the IProcess interface.
-func (kp *KernelProcess) Parent() interfaces.IProcess {
+// Parent returns the parent process of the current KernelProcess, implementing the IUserProcess interface.
+func (kp *KernelProcess) Parent() *KernelProcess {
 	if kp.parent == nil {
 		return nil
 	}

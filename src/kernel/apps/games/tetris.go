@@ -8,12 +8,12 @@ import (
 
 // CreateTetris initializes and returns a Tetris game command process with input, timer, and paint event handlers.
 func CreateTetris() *process.Command {
-	onCreate := func(process interfaces.IProcess, args []string) error {
+	onCreate := func(process interfaces.IUserProcess, args []string) error {
 		process.SetContext(tetris.New(10, 18))
 		process.CreateTimer(0, 300, -1)
 		return nil
 	}
-	onRead := func(process interfaces.IProcess, code int, key rune) {
+	onRead := func(process interfaces.IUserProcess, code int, key rune) {
 		ctx := process.GetContext()
 		tx, ok := ctx.(*tetris.Tetris)
 		if !ok {
@@ -36,7 +36,7 @@ func CreateTetris() *process.Command {
 			tx.Init(10, 18)
 		}
 	}
-	onTimer := func(process interfaces.IProcess, tid int, interval int) {
+	onTimer := func(process interfaces.IUserProcess, tid int, interval int) {
 		ctx := process.GetContext()
 		tx, ok := ctx.(*tetris.Tetris)
 		if !ok {
@@ -45,7 +45,7 @@ func CreateTetris() *process.Command {
 		tx.ApplyGravity()
 		process.PaintRequest()
 	}
-	onPaint := func(process interfaces.IProcess, surface interfaces.ISurface) {
+	onPaint := func(process interfaces.IUserProcess, surface interfaces.ISurface) {
 		ctx := process.GetContext()
 		tx, ok := ctx.(*tetris.Tetris)
 		if !ok {

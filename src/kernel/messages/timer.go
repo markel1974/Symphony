@@ -11,9 +11,9 @@ type MessageTimer struct {
 }
 
 // NewMessageTimer creates a new MessageTimer instance with the specified process ID and interval.
-func NewMessageTimer(originatorPID int, pid int, interval int) *MessageTimer {
+func NewMessageTimer(pid int, interval int) *MessageTimer {
 	return &MessageTimer{
-		Message:  *interfaces.NewMessage(originatorPID, interfaces.MessageTypeTimer),
+		Message:  *interfaces.NewMessage(interfaces.MessageTypeTimer),
 		pid:      pid,
 		interval: interval,
 	}
@@ -90,9 +90,9 @@ type MessageTimerCreate struct {
 
 // NewMessageTimerCreate initializes a new MessageTimerCreate instance with the given router, first, interval, and count values.
 // It sets the MessageType to MessageTypeTimerCreate.
-func NewMessageTimerCreate(originatorPID int, first int, interval int, count int) *MessageTimerCreate {
+func NewMessageTimerCreate(first int, interval int, count int) *MessageTimerCreate {
 	return &MessageTimerCreate{
-		IMessage: interfaces.NewMessage(originatorPID, interfaces.MessageTypeTimerCreate),
+		IMessage: interfaces.NewMessage(interfaces.MessageTypeTimerCreate),
 		first:    first,
 		interval: interval,
 		count:    count,
@@ -121,9 +121,9 @@ type MessageTimerStop struct {
 }
 
 // NewMessageTimerStop creates a new MessageTimerStop instance with the specified router and timer ID (tid).
-func NewMessageTimerStop(originatorPID int, tid int) *MessageTimerStop {
+func NewMessageTimerStop(tid int) *MessageTimerStop {
 	return &MessageTimerStop{
-		IMessage: interfaces.NewMessage(originatorPID, interfaces.MessageTypeTimerStop),
+		IMessage: interfaces.NewMessage(interfaces.MessageTypeTimerStop),
 		tid:      tid,
 	}
 }
@@ -140,9 +140,9 @@ type MessageTimerCreated struct {
 }
 
 // NewMessageTimerCreated creates a new instance of MessageTimerCreated with the specified router and timer ID.
-func NewMessageTimerCreated(originatorPID int, tid int) *MessageTimerCreated {
+func NewMessageTimerCreated(tid int) *MessageTimerCreated {
 	return &MessageTimerCreated{
-		IMessage: interfaces.NewMessage(originatorPID, interfaces.MessageTypeTimerCreated),
+		IMessage: interfaces.NewMessage(interfaces.MessageTypeTimerCreated),
 		tid:      tid,
 	}
 }

@@ -20,7 +20,7 @@ import (
 )
 
 func CreateCD() interfaces.ICommand {
-	run := func(process interfaces.IProcess, args []string) error {
+	run := func(process interfaces.IUserProcess, args []string) error {
 		if len(args) <= 0 {
 			process.Write("cd: empty directory", true)
 			return nil
