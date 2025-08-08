@@ -2,6 +2,7 @@ package process
 
 import (
 	"log"
+	"time"
 
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/messages"
@@ -27,6 +28,7 @@ type Process struct {
 	gatekeeperChan   chan interfaces.IMessage
 	executorChan     chan interfaces.IMessage
 	executorWaitChan chan bool
+	timeout          time.Duration
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kernel, command, and command line data.
@@ -41,6 +43,7 @@ func NewProcess(kernel interfaces.IRouter, pid int, user string, cmd interfaces.
 		gatekeeperChan:   make(chan interfaces.IMessage, gatekeeperQueueLen),
 		executorChan:     make(chan interfaces.IMessage, executorQueueLen),
 		executorWaitChan: make(chan bool, 1),
+		timeout:          10 * time.Second,
 	}
 	return t
 }
@@ -97,10 +100,15 @@ func (t *Process) StopTimer(tid int) {
 
 // IsActive checks if the process with the specified PID is currently active in the kernel.
 func (t *Process) IsActive(pid int) bool {
-	request := messages.NewMessageProcessIsRunning(t.PID(), pid, t.executorWaitChan)
-	t.kernel.PostMessage(request)
-	<-t.executorWaitChan
-	return request.GetResult()
+	msg := messages.NewMessageProcessIsRunning(t.PID(), pid, t.executorWaitChan)
+	t.kernel.PostMessage(msg)
+	select {
+	case <-t.executorWaitChan:
+		return msg.GetResponse()
+	case <-time.After(t.timeout):
+		log.Printf("timeout waiting for response")
+		return msg.GetResponse()
+	}
 }
 
 // Kill attempts to terminate the process associated with the specified pid and returns true if successful.
@@ -125,10 +133,15 @@ func (t *Process) ProcessSetForeground(pid int) {
 
 // ProcessList returns a string representation of the process list from the kernel.
 func (t *Process) ProcessList() []*interfaces.ProcessDescription {
-	request := messages.NewMessageProcessList(t.PID(), t.executorWaitChan)
-	t.kernel.PostMessage(request)
-	<-t.executorWaitChan
-	return request.GetResult()
+	msg := messages.NewMessageProcessList(t.PID(), t.executorWaitChan)
+	t.kernel.PostMessage(msg)
+	select {
+	case <-t.executorWaitChan:
+		return msg.GetResponse()
+	case <-time.After(t.timeout):
+		log.Printf("timeout waiting for response")
+		return msg.GetResponse()
+	}
 }
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.
@@ -140,56 +153,91 @@ func (t *Process) PaintRequest() {
 func (t *Process) GetScreenSize() (int, int) {
 	msg := messages.NewMessageGetScreenSize(t.PID(), t.executorWaitChan)
 	t.kernel.PostMessage(msg)
-	<-t.executorWaitChan
-	return msg.GetResult()
+	select {
+	case <-t.executorWaitChan:
+		return msg.GetResponse()
+	case <-time.After(t.timeout):
+		log.Printf("timeout waiting for response")
+		return msg.GetResponse()
+	}
 }
 
 // CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
 func (t *Process) CWDSet(arg string) bool {
 	msg := messages.NewMessageFileSystemCWDSet(t.PID(), arg, t.executorWaitChan)
 	t.kernel.PostMessage(msg)
-	<-t.executorWaitChan
-	return msg.GetResult()
+	select {
+	case <-t.executorWaitChan:
+		return msg.GetResponse()
+	case <-time.After(t.timeout):
+		log.Printf("timeout waiting for response")
+		return msg.GetResponse()
+	}
 }
 
 // CWDName returns the current working directory name by invoking a kernel-level method.
 func (t *Process) CWDName() string {
 	msg := messages.NewMessageFileSystemCWDGet(t.PID(), t.executorWaitChan)
 	t.kernel.PostMessage(msg)
-	<-t.executorWaitChan
-	return msg.GetResult()
+	select {
+	case <-t.executorWaitChan:
+		return msg.GetResponse()
+	case <-time.After(t.timeout):
+		log.Printf("timeout waiting for response")
+		return msg.GetResponse()
+	}
 }
 
 // CWDPath retrieves the current working directory as a string from the associated kernel instance.
 func (t *Process) CWDPath() string {
 	msg := messages.NewMessageFileSystemCWDPath(t.PID(), t.executorWaitChan)
 	t.kernel.PostMessage(msg)
-	<-t.executorWaitChan
-	return msg.GetResult()
+	select {
+	case <-t.executorWaitChan:
+		return msg.GetResponse()
+	case <-time.After(t.timeout):
+		log.Printf("timeout waiting for response")
+		return msg.GetResponse()
+	}
 }
 
 // CWDDirectoryListing retrieves a slice of strings representing the child nodes of the current working directory (CWD).
 func (t *Process) CWDDirectoryListing() []string {
 	msg := messages.NewMessageFileSystemCWDDirectoryListing(t.PID(), t.executorWaitChan)
 	t.kernel.PostMessage(msg)
-	<-t.executorWaitChan
-	return msg.GetResult()
+	select {
+	case <-t.executorWaitChan:
+		return msg.GetResponse()
+	case <-time.After(t.timeout):
+		log.Printf("timeout waiting for response")
+		return msg.GetResponse()
+	}
 }
 
 // Suggestion provides auto-completion suggestions based on the input string and cursor position. Returns prefix, suggestions, and a success flag.
 func (t *Process) Suggestion(in string, cursor int) (string, []string, bool) {
 	msg := messages.NewMessageFileSystemSuggestion(t.PID(), in, cursor, t.executorWaitChan)
 	t.kernel.PostMessage(msg)
-	<-t.executorWaitChan
-	return msg.GetResponse()
+	select {
+	case <-t.executorWaitChan:
+		return msg.GetResponse()
+	case <-time.After(t.timeout):
+		log.Printf("timeout waiting for response")
+		return msg.GetResponse()
+	}
 }
 
 // Help calls the kernel's Help method with the provided argument and returns the result or an error.
 func (t *Process) Help(arg string) (string, error) {
 	msg := messages.NewMessageFileSystemHelp(t.PID(), arg, t.executorWaitChan)
 	t.kernel.PostMessage(msg)
-	<-t.executorWaitChan
-	return msg.GetResponse()
+	select {
+	case <-t.executorWaitChan:
+		return msg.GetResponse()
+	case <-time.After(t.timeout):
+		log.Printf("timeout waiting for response")
+		return msg.GetResponse()
+	}
 }
 
 // ProcessExec executes a task based on the provided command line input and returns a success status and any execution error.

@@ -1,5 +1,8 @@
 package core
 
+// Package core implements the kernel subsystem responsible for orchestrating process lifecycle,
+// message routing, timer management, and I/O operations within the system environment.
+
 import (
 	"fmt"
 	"log"
@@ -12,29 +15,35 @@ import (
 )
 
 const (
+	// kernelQueueLen defines the buffer capacity for the kernel's message channel
 	kernelQueueLen = 8192
+	// kernelQueueMax represents the maximum safe queue length to prevent overflow
 	kernelQueueMax = kernelQueueLen - 1
 )
 
-// Kernel represents the core component responsible for managing rendering, input/output, process execution, and timers.
+// Kernel serves as the central orchestrator for the system, managing process execution,
+// message routing, timer operations, and I/O handling. It maintains the system's state
+// and coordinates communication between all active components.
 type Kernel struct {
-	user         string
-	ticker       *adaptiveticker.AdaptiveTicker
-	inputDriver  interfaces.IKeyboardDriver
-	foreground   interfaces.IProcess
-	pidGenerator *adaptiveticker.Ids
-	running      map[int]*KernelProcess
-	shellPath    string
-	messageChan  chan interfaces.IMessage
-	pf           *process_factory.ProcessFactory
-	timersChan   chan *adaptiveticker.TimerHandler
-	servers      []interfaces.IServer
-	exit         bool
-	routingTable map[interfaces.MessageType]func(interfaces.IMessage)
-	process      *KernelProcess
+	user         string                                               // Current user context
+	ticker       *adaptiveticker.AdaptiveTicker                       // System timer manager
+	inputDriver  interfaces.IKeyboardDriver                           // Keyboard input handler
+	foreground   interfaces.IProcess                                  // Currently active foreground process
+	pidGenerator *adaptiveticker.Ids                                  // Process ID allocation manager
+	running      map[int]*KernelProcess                               // Registry of active kernel processes
+	shellPath    string                                               // Default shell executable path
+	messageChan  chan interfaces.IMessage                             // Main message processing queue
+	pf           *process_factory.ProcessFactory                      // Factory for creating new processes
+	timersChan   chan *adaptiveticker.TimerHandler                    // Timer event delivery channel
+	servers      []interfaces.IServer                                 // Registered system servers
+	exit         bool                                                 // System shutdown flag
+	routingTable map[interfaces.MessageType]func(interfaces.IMessage) // Message dispatch routing table
+	process      *KernelProcess                                       // The kernel's own process representation
 }
 
-// NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
+// NewKernel constructs a new kernel instance with the specified user context, timer system,
+// input driver, and shell path. It initializes all internal data structures and prepares
+// the kernel for operation without starting the main event loop.
 func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver interfaces.IKeyboardDriver, shellPath string) *Kernel {
 	t := &Kernel{
 		user:         user,
@@ -53,18 +62,20 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver i
 	return t
 }
 
-// PID returns the current process ID (pid) of the Kernel instance.
+// PID returns the kernel's own process identifier, establishing it as a first-class
+// participant in the system's process hierarchy.
 func (c *Kernel) PID() int {
 	return c.process.PID()
 }
 
-// Setup initializes the kernel by configuring routing tables, adding servers, and creating necessary processes.
+// Setup initializes the kernel's operational infrastructure by configuring message routing,
+// registering system servers, and creating the kernel's own process context. This method
+// establishes the foundation for all subsequent kernel operations.
 func (c *Kernel) Setup(servers []interfaces.IServer) error {
-	//routing table
+	// Configure core message routing table
 	c.routingTable[interfaces.MessageTypeRead] = c.handleReadEvent
 	c.routingTable[interfaces.MessageTypeTimer] = c.handleTimerEvent
 	c.routingTable[interfaces.MessageTypeQuit] = c.handleQuitEvent
-	//c.routingTable[interfaces.MessageTypeTimedMessage] = c.handleTimedMessage
 	c.routingTable[interfaces.MessageTypeProcessExit] = c.handleProcessExit
 	c.routingTable[interfaces.MessageTypeProcessExec] = c.handleProcessExec
 	c.routingTable[interfaces.MessageTypeProcessSetForeground] = c.handleProcessSetForeground
@@ -77,20 +88,24 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 	c.routingTable[interfaces.MessageTypeFileSystemFindResponse] = c.handleFileSystemFindResponse
 	c.routingTable[interfaces.MessageTypeProcessIsRunning] = c.handleProcessIsRunning
 	c.routingTable[interfaces.MessageTypeExitRequested] = c.handleExitRequested
+
+	// Register system servers and their message handlers
 	for _, server := range servers {
 		c.servers = append(c.servers, server)
 		for _, h := range server.Register(c) {
 			c.routingTable[h] = server.PostMessage
 		}
 	}
-	//kernel process
+
+	// Initialize kernel's own process context
 	var err error
 	kCmd := c.doCreateKernelCommand("kernel")
 	c.process, err = c.doCreateKernelProcess(c.user, kCmd.Name(), nil, kCmd, true)
 	if err != nil {
 		return err
 	}
-	//server process
+
+	// Initialize server processes
 	for _, server := range c.servers {
 		sCmd := c.doCreateKernelCommand(server.Name())
 		serverProcess, err := c.doCreateKernelProcess(c.user, sCmd.Name(), c.process, sCmd, true)
@@ -104,10 +119,14 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 	return nil
 }
 
-// Start initializes the kernel's event handling loop and begins processing I/O operations asynchronously.
+// Start activates the kernel's main execution loop, beginning asynchronous I/O processing
+// and entering the primary event handling cycle. This method transitions the kernel
+// from initialization to active operation state.
 func (c *Kernel) Start() error {
+	// Request shell initialization
 	c.PostMessage(messages.NewMessageFileSystemFindRequest(c.PID(), c.PID(), c.shellPath, true))
 
+	// Launch asynchronous input processing
 	d := make(chan bool)
 	go func() {
 		d <- true
@@ -131,22 +150,26 @@ func (c *Kernel) Start() error {
 	return nil
 }
 
-// SetScreenSize adjusts the screen dimensions to the specified width and height values.
+// SetScreenSize notifies the system of display dimension changes, allowing processes
+// to adapt their output accordingly.
 func (c *Kernel) SetScreenSize(w int, h int) {
 	c.messageChan <- messages.NewMessageSetScreenSize(c.PID(), w, h)
 }
 
-// Process returns the KernelProcess instance associated with the Kernel instance.
+// Process provides access to the kernel's process representation, enabling it to
+// participate in standard process operations and communication patterns.
 func (c *Kernel) Process() interfaces.IProcess {
 	return c.process
 }
 
-// User returns the name of the user associated with the Kernel instance.
+// User returns the current user context under which the kernel operates,
+// establishing the security and permission context for all operations.
 func (c *Kernel) User() string {
 	return c.user
 }
 
-// PostMessage sends the provided IMessage to the Kernel's internal message channel for further processing.
+// PostMessage queues a message for processing by the kernel's event loop, implementing
+// flow control to prevent queue overflow and maintain system stability.
 func (c *Kernel) PostMessage(msg interfaces.IMessage) {
 	if len(c.messageChan) >= kernelQueueMax {
 		log.Printf("Kernel: message queue full, dropping message: %d", msg.GetType())
@@ -155,7 +178,8 @@ func (c *Kernel) PostMessage(msg interfaces.IMessage) {
 	c.messageChan <- msg
 }
 
-// CallProcessIsActive checks if a process with the given PID is currently active in the Kernel's activeProcess map.
+// handleProcessIsRunning verifies the active status of a specified process and returns
+// the result to the requesting process, supporting process management and coordination.
 func (c *Kernel) handleProcessIsRunning(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageProcessIsRunning)
 	if !ok {
@@ -170,7 +194,8 @@ func (c *Kernel) handleProcessIsRunning(msg interfaces.IMessage) {
 	kProc.PostMessage(mt)
 }
 
-// CallExitRequested sets the `exit` flag to true, signaling that an exit has been requested for the kernel.
+// handleExitRequested processes system shutdown requests by setting the exit flag,
+// initiating the kernel's graceful shutdown sequence.
 func (c *Kernel) handleExitRequested(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageExitRequested)
 	if !ok {
@@ -183,7 +208,8 @@ func (c *Kernel) handleExitRequested(msg interfaces.IMessage) {
 	c.exit = true
 }
 
-// eventLoop is the main execution loop handling incoming messages and timers, and initiates shutdown when needed.
+// eventLoop implements the kernel's main execution cycle, processing messages and timer
+// events while monitoring for shutdown conditions. This is the heart of kernel operation.
 func (c *Kernel) eventLoop() {
 	for {
 		select {
@@ -199,19 +225,23 @@ func (c *Kernel) eventLoop() {
 	}
 }
 
-// handleMessageEvent processes an incoming IMessage by dispatching it to the appropriate routingTable based on its type.
+// handleMessageEvent dispatches incoming messages to their appropriate handlers based
+// on message type and process routing tables, forming the core of the kernel's
+// message processing architecture.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 	kProc, _ := c.running[m.PID()]
 	if kProc == nil {
 		log.Printf("Kernel: unknown process: %d - type %d", m.PID(), m.GetType())
 		return
 	}
-	//TODO IMPLEMENTARE TUTTI I CONTROLLI E I LOG
-	//fmt.Println("Kernel: dispatching", m.GetType(), "")
+
+	// Handle response messages directly
 	if m.Response() {
 		kProc.PostMessage(m)
 		return
 	}
+
+	// Route messages based on process-specific or kernel routing tables
 	id := m.GetType()
 	if route := kProc.GetRoute(id); route != nil {
 		route(m)
@@ -220,12 +250,15 @@ func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 	log.Printf("Kernel: unknown message type: %d", id)
 }
 
-// handleReadEvent processes input events based on their type and key value to handle control, foreground processes, and system state.
+// handleReadEvent processes keyboard input by distributing events to interested processes,
+// supporting both broadcast and targeted delivery mechanisms for flexible I/O handling.
 func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	mm, ok := m.(*messages.MessageRead)
 	if !ok {
 		return
 	}
+
+	// Broadcast to processes requesting global input notifications
 	//sentForeground := false
 	for _, kProc := range c.running {
 		if readBroadcastEvent := kProc.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
@@ -235,6 +268,8 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 			//}
 		}
 	}
+
+	// Send to foreground process if it accepts input
 	if c.foreground != nil {
 		if readEvent := c.foreground.GetCommand().OnRead(); readEvent != nil {
 			c.foreground.PostMessage(mm)
@@ -242,8 +277,8 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	}
 }
 
-// handleTimerEvent triggers a timer event for a process identified by the given pid and tid, with the specified interval.
-// Returns true if the event was successfully triggered, otherwise false.
+// handleTimerEvent delivers timer notifications to the target process, enabling
+// time-based operations and periodic task execution within the system.
 func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageTimer)
 	if !ok {
@@ -256,7 +291,8 @@ func (c *Kernel) handleTimerEvent(m interfaces.IMessage) {
 	kProc.PostMessage(mt)
 }
 
-// handleProcessSetForeground handles a process set foreground message by setting the foreground process to the specified process.
+// handleProcessExit manages process termination by performing cleanup operations
+// and updating system state to reflect the process's removal from active execution.
 func (c *Kernel) handleProcessExit(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageProcessExit)
 	if !ok {
@@ -270,7 +306,8 @@ func (c *Kernel) handleProcessExit(m interfaces.IMessage) {
 	c.doProcessExit(kProc)
 }
 
-// handleProcessExec handles process execution by validating the message type and invoking the process execution logic.
+// handleProcessExec initiates process execution by resolving the command through the
+// filesystem service, preparing the execution environment for the new process.
 func (c *Kernel) handleProcessExec(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageProcessExec)
 	if !ok {
@@ -279,7 +316,8 @@ func (c *Kernel) handleProcessExec(m interfaces.IMessage) {
 	c.PostMessage(messages.NewMessageFileSystemFindRequest(c.PID(), mt.PID(), mt.Line(), false))
 }
 
-// handleProcessSetForeground handles a process set foreground message by setting the foreground process to the specified process.
+// handleProcessSetForeground manages foreground process transitions, ensuring proper
+// focus management and user interface responsiveness within the system.
 func (c *Kernel) handleProcessSetForeground(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageProcessSetForeground)
 	if !ok {
@@ -292,7 +330,8 @@ func (c *Kernel) handleProcessSetForeground(m interfaces.IMessage) {
 	c.doProcessSetForeground(mt.PID(), kProc)
 }
 
-// handleProcessKill terminates and removes a process by its process ID (pid). Returns true if successful, false if the pid is not found.
+// handleProcessKill terminates a specific process by its identifier, providing controlled
+// process lifecycle management and resource cleanup capabilities.
 func (c *Kernel) handleProcessKill(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageProcessKill)
 	if !ok {
@@ -305,7 +344,8 @@ func (c *Kernel) handleProcessKill(m interfaces.IMessage) {
 	c.doProcessExit(kProc)
 }
 
-// handleProcessKillAll handles the termination of all processes except the sender's and optionally filters by process name.
+// handleProcessKillAll terminates multiple processes based on optional name filtering,
+// supporting bulk process management operations for system maintenance tasks.
 func (c *Kernel) handleProcessKillAll(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageProcessKillAll)
 	if !ok {
@@ -325,7 +365,8 @@ func (c *Kernel) handleProcessKillAll(m interfaces.IMessage) {
 	}
 }
 
-// handleProcessKillForeground handles the termination of the foreground process.
+// handleProcessKillForeground terminates the currently active foreground process,
+// typically used for interrupt handling and user-initiated task cancellation.
 func (c *Kernel) handleProcessKillForeground(m interfaces.IMessage) {
 	_, ok := m.(*messages.MessageProcessKillForeground)
 	if !ok {
@@ -338,7 +379,8 @@ func (c *Kernel) handleProcessKillForeground(m interfaces.IMessage) {
 	c.doProcessExit(kProc)
 }
 
-// handleTimerCreate processes a timer creation request, initializes the timer, and sends a response or error message.
+// handleTimerCreate processes timer creation requests, establishing periodic or delayed
+// execution contexts and associating them with the requesting process.
 func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageTimerCreate)
 	if !ok {
@@ -358,6 +400,8 @@ func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
 	kProc.PostMessage(messages.NewMessageTimerCreated(m.PID(), msgTimer.TID()))
 }
 
+// handleTimerStop processes timer cancellation requests, removing active timers
+// and cleaning up associated resources to prevent memory leaks and unnecessary processing.
 func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageTimerStop)
 	if !ok {
@@ -365,13 +409,14 @@ func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
 	}
 	kProc, _ := c.running[m.PID()]
 	if kProc == nil {
-		log.Printf("error stopping time: invalid originator %d", m.PID())
+		log.Printf("error stopping timer: invalid originator %d", m.PID())
 		return
 	}
 	c.doCloseTimer(kProc, mt.TID())
 }
 
-// handleProcessList processes a message requesting a list of running processes and sends the response with process details.
+// handleProcessList generates and returns a comprehensive list of active processes,
+// supporting system monitoring and process management functionality.
 func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageProcessList)
 	if !ok {
@@ -390,7 +435,8 @@ func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
 	kProc.PostMessage(mt)
 }
 
-// handleQuitEvent handles a quit message by verifying its type and setting the kernel's exit flag to true.
+// handleQuitEvent processes system quit requests by setting the exit flag,
+// initiating the kernel's graceful shutdown sequence and resource cleanup.
 func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
 	_, ok := m.(*messages.MessageQuit)
 	if !ok {
@@ -399,8 +445,8 @@ func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
 	c.exit = true
 }
 
-// doProcessExec executes a process by creating it, assigning a pid, and starting it with the given user and input line.
-// Configures the command arguments, initializes the process, and notifies servers about its creation.
+// handleFileSystemFindResponse completes the process execution cycle by creating
+// and initializing new processes based on filesystem command resolution results.
 func (c *Kernel) handleFileSystemFindResponse(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageFileSystemFindResponse)
 	if !ok {
@@ -429,7 +475,8 @@ func (c *Kernel) handleFileSystemFindResponse(msg interfaces.IMessage) {
 	kProc.PostMessage(messages.NewMessageProcessStart(kRequestor.PID(), args))
 }
 
-// doProcessSetForeground sets the specified process as the foreground process and sends activation messages if needed.
+// doProcessSetForeground updates the system's foreground process state and notifies
+// relevant system components of the focus change, maintaining UI consistency.
 func (c *Kernel) doProcessSetForeground(requestorPID int, process interfaces.IProcess) {
 	for _, server := range c.servers {
 		server.PostMessage(messages.NewMessageNotifyProcessForeground(c.PID(), process.PID()))
@@ -440,7 +487,8 @@ func (c *Kernel) doProcessSetForeground(requestorPID int, process interfaces.IPr
 	}
 }
 
-// doProcessExit handles the termination process of a given IProcess, ensuring cleanup of resources and notifying observers.
+// doProcessExit orchestrates complete process termination including resource cleanup,
+// timer cancellation, server notification, and foreground process management.
 func (c *Kernel) doProcessExit(process *KernelProcess) {
 	if process.Protected() {
 		return
@@ -465,7 +513,8 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 	process.PostMessage(messages.NewMessageQuit(process.PID()))
 }
 
-// doCloseTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.
+// doCloseTimer removes a specific timer from both the process context and the system
+// timer manager, ensuring complete timer lifecycle management and resource cleanup.
 func (c *Kernel) doCloseTimer(kProc *KernelProcess, tid int) bool {
 	ret := false
 	if kProc != nil {
@@ -480,7 +529,8 @@ func (c *Kernel) doCloseTimer(kProc *KernelProcess, tid int) bool {
 	return ret
 }
 
-// shutdown stops all processes and cleans up resources managed by the Kernel instance.
+// doShutdown performs comprehensive system shutdown by terminating all active processes
+// and cleaning up system resources, ensuring graceful system state transition.
 func (c *Kernel) doShutdown() {
 	var processes []*KernelProcess
 	for _, kProc := range c.running {
@@ -491,16 +541,16 @@ func (c *Kernel) doShutdown() {
 	}
 }
 
-// doCreateKernelCommand creates a new KernelCommand instance with the specified name.
-// Configures the command and returns a pointer to the new instance.
+// doCreateKernelCommand constructs basic kernel command objects for internal system
+// processes, providing the minimal command interface required for kernel operation.
 func (c *Kernel) doCreateKernelCommand(name string) interfaces.ICommand {
 	onCreate := func(process interfaces.IProcess, args []string) error { return nil }
 	kCmd := process.NewCommand(name, interfaces.CommandTypeFile, nil, true, onCreate)
 	return kCmd
 }
 
-// doCreateKernelProcess creates a new KernelProcess instance with the specified user, command line, parent, and command.
-// Configures the process and returns a pointer to the new instance.
+// doCreateKernelProcess creates fully configured kernel processes with proper PID
+// allocation, routing table setup, and registration in the kernel's process registry.
 func (c *Kernel) doCreateKernelProcess(user string, commandLine string, parent *KernelProcess, cmd interfaces.ICommand, protected bool) (*KernelProcess, error) {
 	pid := NewPID()
 	if _, ok := c.pidGenerator.Set(pid); !ok {

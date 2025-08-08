@@ -221,8 +221,8 @@ func (m *MessageProcessList) SetResult(processes []*interfaces.ProcessDescriptio
 	m.processes = processes
 }
 
-// GetResult returns the list of ProcessDescription objects associated with the MessageProcessListResponse instance.
-func (m *MessageProcessList) GetResult() []*interfaces.ProcessDescription {
+// GetResponse returns the list of ProcessDescription objects associated with the MessageProcessListResponse instance.
+func (m *MessageProcessList) GetResponse() []*interfaces.ProcessDescription {
 	return m.processes
 }
 
@@ -265,8 +265,8 @@ func (m *MessageProcessIsRunning) SetResult(result bool) {
 	m.result = result
 }
 
-// GetResult returns the result of the message process as a boolean value.
-func (m *MessageProcessIsRunning) GetResult() bool {
+// GetResponse returns the result of the message process as a boolean value.
+func (m *MessageProcessIsRunning) GetResponse() bool {
 	return m.result
 }
 

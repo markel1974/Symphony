@@ -27,7 +27,7 @@ func (m *MessageGetScreenSize) SetResult(width int, height int) {
 	m.height = height
 }
 
-func (m *MessageGetScreenSize) GetResult() (int, int) {
+func (m *MessageGetScreenSize) GetResponse() (int, int) {
 	return m.width, m.height
 }
 

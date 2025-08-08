@@ -63,7 +63,7 @@ func TestEventToEventId(t *testing.T) {
 					t.Errorf("Expected %v, got %v", tt.expected, res)
 				}
 			} else {
-				t.Errorf("GetResult was not a map")
+				t.Errorf("GetResponse was not a map")
 			}
 		})
 	}

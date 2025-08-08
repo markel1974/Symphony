@@ -5,6 +5,8 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/servers/render/plotter"
 )
 
+const maxCommands = 16384
+
 // InterpretedCommand represents a drawing action to be processed, including text, colors, positions, and series data.
 type InterpretedCommand struct {
 	Type       InterpretedCommandType
@@ -51,6 +53,9 @@ func NewInterpretedSurface(rows int, columns int) *InterpretedSurface {
 
 // DrawColor adds a drawing command to the surface, specifying position, rune, foreground, background colors, and color mode.
 func (s *InterpretedSurface) DrawColor(rows int, columns int, text rune, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
+	if len(s.commands) > maxCommands {
+		return
+	}
 	s.commands = append(s.commands, InterpretedCommand{
 		Type:   InterpretedCommandDrawColor,
 		Rows:   rows,
@@ -74,6 +79,9 @@ func (s *InterpretedSurface) End() {
 
 // DrawTextColor queues a command to render a string of text at the specified row and column with foreground and background colors.
 func (s *InterpretedSurface) DrawTextColor(rows int, column int, text string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode) {
+	if len(s.commands) > maxCommands {
+		return
+	}
 	s.commands = append(s.commands, InterpretedCommand{
 		Type:   InterpretedCommandDrawTextColor,
 		Rows:   rows,
@@ -87,6 +95,9 @@ func (s *InterpretedSurface) DrawTextColor(rows int, column int, text string, fg
 
 // DrawSeries appends a DrawCommand for rendering a series to the command list with its data, dimensions, and range.
 func (s *InterpretedSurface) DrawSeries(data []float64, w int, h int, min float64, max float64) {
+	if len(s.commands) > maxCommands {
+		return
+	}
 	s.commands = append(s.commands, InterpretedCommand{
 		Type:       InterpretedCommandDrawSeries,
 		SeriesData: data,
@@ -112,7 +123,9 @@ func (s *InterpretedSurface) Appy(target interfaces.ISurface) {
 	for _, cmd := range s.commands {
 		switch cmd.Type {
 		case InterpretedCommandDrawColor:
-			target.DrawColor(cmd.Rows, cmd.Column, []rune(cmd.Text)[0], cmd.Fg, cmd.Bg, cmd.Mode)
+			if len(cmd.Text) > 0 {
+				target.DrawColor(cmd.Rows, cmd.Column, []rune(cmd.Text)[0], cmd.Fg, cmd.Bg, cmd.Mode)
+			}
 		case InterpretedCommandDrawTextColor:
 			target.DrawTextColor(cmd.Rows, cmd.Column, cmd.Text, cmd.Fg, cmd.Bg, cmd.Mode)
 		case InterpretedCommandDrawSeries:

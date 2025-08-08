@@ -89,7 +89,7 @@ func (m *MessageFileSystemCWDSet) SetResult(result bool) {
 	m.result = result
 }
 
-func (m *MessageFileSystemCWDSet) GetResult() bool {
+func (m *MessageFileSystemCWDSet) GetResponse() bool {
 	return m.result
 }
 
@@ -111,7 +111,7 @@ func (m *MessageFileSystemCWDGet) SetResult(result string) {
 	m.result = result
 }
 
-func (m *MessageFileSystemCWDGet) GetResult() string {
+func (m *MessageFileSystemCWDGet) GetResponse() string {
 	return m.result
 }
 
@@ -143,7 +143,7 @@ func (m *MessageFileSystemCWDPath) SetResult(result string) {
 	m.result = result
 }
 
-func (m *MessageFileSystemCWDPath) GetResult() string {
+func (m *MessageFileSystemCWDPath) GetResponse() string {
 	return m.result
 }
 
@@ -170,7 +170,7 @@ func (m *MessageFileSystemCWDDirectoryListing) SetResult(result []string) {
 	m.result = result
 }
 
-func (m *MessageFileSystemCWDDirectoryListing) GetResult() []string {
+func (m *MessageFileSystemCWDDirectoryListing) GetResponse() []string {
 	return m.result
 }
 
