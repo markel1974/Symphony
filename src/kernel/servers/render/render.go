@@ -191,6 +191,12 @@ func (c *Render) handleSetScreenSize(msg interfaces.IMessage) {
 
 // handlePaintRequest handles paint requests by triggering a repaint.
 func (c *Render) handlePaintRequest(msg interfaces.IMessage) {
+	component, _ := c.running[msg.PID()]
+	if component == nil {
+		log.Printf("Render: paint request for unknown process: %d", msg.PID())
+		return
+	}
+	component.SetAvailable()
 	mp := messages.NewMessagePaintPrepare(msg.PID(), NewInterpretedSurface(c.height, c.width))
 	c.router.PostMessage(mp)
 }
@@ -250,15 +256,23 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 func (c *Render) handleWindowsSelectionBegin(msg interfaces.IMessage) {
 	c.windowSelector.Clear()
 	for idx, process := range c.running {
+		if !process.Available() {
+			continue
+		}
 		c.windowSelector.AddAvailable(process.PID())
-		if c.windowSelector.PID() == adaptiveticker.UnknownId {
-			if c.foreground != nil {
-				if c.foreground.PID() == process.PID() {
-					c.windowSelector.Set(c.foreground.PID(), idx)
-				}
-			} else {
-				c.windowSelector.Set(process.PID(), idx)
+		if c.windowSelector.PID() == adaptiveticker.UnknownId && c.foreground != nil {
+			if c.foreground.PID() == process.PID() {
+				c.windowSelector.Set(c.foreground.PID(), idx)
 			}
+		}
+	}
+	if c.windowSelector.Len() == 0 {
+		return
+	}
+	if c.windowSelector.PID() == adaptiveticker.UnknownId {
+		const defaultIdx = 0
+		if pid, ok := c.windowSelector.Get(defaultIdx); ok {
+			c.windowSelector.Set(pid, defaultIdx)
 		}
 	}
 	mp := messages.NewMessagePaintPrepare(msg.PID(), NewInterpretedSurface(c.height, c.width))
@@ -274,6 +288,7 @@ func (c *Render) handleWindowsSelectionOptions(msg interfaces.IMessage) {
 	pid := c.windowSelector.PID()
 	process, _ := c.running[pid]
 	if process == nil {
+		log.Printf("Render: windows selection options for unknown process: %d", pid)
 		return
 	}
 	process.Surface().SetOption(mt.Option(), mt.Value())

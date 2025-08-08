@@ -8,8 +8,9 @@ import (
 
 // Component represents a UI or system entity combining process details with associated rendering surfaces.
 type Component struct {
-	surface *Surface
-	pid     int
+	surface   *Surface
+	pid       int
+	available bool
 }
 
 // NewComponent initializes and returns a new Component instance using the provided process description and terminal interface.
@@ -19,10 +20,19 @@ func NewComponent(pid int, description string, terminal interfaces.ITerminal, ro
 		caption += " - " + description
 	}
 	c := &Component{
-		pid:     pid,
-		surface: NewSurface(terminal, rows, columns, caption),
+		pid:       pid,
+		surface:   NewSurface(terminal, rows, columns, caption),
+		available: false,
 	}
 	return c
+}
+
+func (c *Component) Available() bool {
+	return c.available
+}
+
+func (c *Component) SetAvailable() {
+	c.available = true
 }
 
 // PID returns the process ID associated with the Component.

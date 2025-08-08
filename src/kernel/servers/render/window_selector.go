@@ -1,6 +1,8 @@
 package render
 
-import "github.com/markel1974/c64emu/src/kernel/adaptiveticker"
+import (
+	"github.com/markel1974/c64emu/src/kernel/adaptiveticker"
+)
 
 // WindowSelector is a type that manages available task identifiers and tracks the current one for selection and navigation.
 type WindowSelector struct {
@@ -25,6 +27,11 @@ func (ts *WindowSelector) Clear() {
 	ts.available = nil
 }
 
+// Len returns the length of the available list.
+func (ts *WindowSelector) Len() int {
+	return len(ts.available)
+}
+
 // AddAvailable adds the given process ID to the available pool for selection.
 func (ts *WindowSelector) AddAvailable(pid int) {
 	ts.available = append(ts.available, pid)
@@ -34,6 +41,14 @@ func (ts *WindowSelector) AddAvailable(pid int) {
 func (ts *WindowSelector) Set(pid int, idx int) {
 	ts.pid = pid
 	ts.idx = idx
+}
+
+// Get retrieves the process ID at the specified index in the available list.
+func (ts *WindowSelector) Get(idx int) (int, bool) {
+	if idx < 0 || idx >= len(ts.available) {
+		return adaptiveticker.UnknownId, false
+	}
+	return ts.available[idx], true
 }
 
 // Next advances the selection index to the next available task in the list and updates the current task ID. Returns false if the list is empty.
