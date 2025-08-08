@@ -48,6 +48,17 @@ func NewKernelProcess(user string, line, name string, parent *KernelProcess, pid
 	}
 }
 
+// SetRoute associates a message type with a specific routing function in the routing table of the KernelProcess.
+func (kp *KernelProcess) SetRoute(id interfaces.MessageType, route func(interfaces.IMessage)) {
+	kp.routingTable[id] = route
+}
+
+// GetRoute retrieves the function associated with the given message type from the KernelProcess routing table.
+func (kp *KernelProcess) GetRoute(id interfaces.MessageType) func(interfaces.IMessage) {
+	route, _ := kp.routingTable[id]
+	return route
+}
+
 // SetRoutingTable sets the routing table for the KernelProcess.
 func (kp *KernelProcess) SetRoutingTable(routingTable map[interfaces.MessageType]func(interfaces.IMessage)) {
 	kp.routingTable = routingTable
