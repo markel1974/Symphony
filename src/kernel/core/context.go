@@ -18,7 +18,7 @@ const (
 )
 
 // Context is a container for managing and coordinating various dependencies and resources needed for application execution.
-// It encapsulates input/output handlers, commands, shell interactions, rendering, authentication, and runtime configurations.
+// It encapsulates input/output routingTable, commands, shell interactions, rendering, authentication, and runtime configurations.
 type Context struct {
 	ticker   *adaptiveticker.AdaptiveTicker
 	reader   io.Reader

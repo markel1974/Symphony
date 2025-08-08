@@ -25,13 +25,14 @@ func (p *PID) GetId() int {
 // KernelProcess represents a kernel-level process with parent linkage, protection status, and associated timer IDs.
 type KernelProcess struct {
 	interfaces.IProcess
-	user      string
-	line      string
-	name      string
-	pid       *PID
-	parent    *KernelProcess
-	protected bool
-	timers    []int
+	user         string
+	line         string
+	name         string
+	pid          *PID
+	parent       *KernelProcess
+	protected    bool
+	timers       []int
+	routingTable map[interfaces.MessageType]func(interfaces.IMessage)
 }
 
 // NewKernelProcess creates a new KernelProcess instance with a parent process, protection flag, and assigned process.
@@ -45,6 +46,11 @@ func NewKernelProcess(user string, line, name string, parent *KernelProcess, pid
 		IProcess:  process,
 		pid:       pid,
 	}
+}
+
+// SetRoutingTable sets the routing table for the KernelProcess.
+func (kp *KernelProcess) SetRoutingTable(routingTable map[interfaces.MessageType]func(interfaces.IMessage)) {
+	kp.routingTable = routingTable
 }
 
 // Description provides a brief summary of the process including its name, PID, and line information.

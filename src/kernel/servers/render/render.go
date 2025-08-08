@@ -15,6 +15,7 @@ const eolDef = "\r\n"
 
 // Render represents a rendering engine responsible for managing terminal dimensions, repainting logic, and paint tasks.
 type Render struct {
+	process        interfaces.IProcess
 	driver         interfaces.IDisplayDriver
 	user           string
 	surface        *Surface
@@ -66,14 +67,24 @@ func NewRender(user string, driver interfaces.IDisplayDriver) *Render {
 	return r
 }
 
-// Process returns a nil pointer to the Render object.
-func (c *Render) Process() interfaces.IProcess {
-	return nil
+// Name returns the name of the Render object as a string.
+func (c *Render) Name() string {
+	return "render"
 }
 
-// PID returns a hardcoded integer value representing a Process ID.
+// Process returns the process implementation adhering to the interfaces.IProcess interface.
+func (c *Render) Process() interfaces.IProcess {
+	return c.process
+}
+
+// SetProcess sets the process implementation to the provided IProcess instance for the Render struct.
+func (c *Render) SetProcess(process interfaces.IProcess) {
+	c.process = process
+}
+
+// PID returns an identifier for the file system process. It always returns a fixed value of -2.
 func (c *Render) PID() int {
-	return -1
+	return c.process.PID()
 }
 
 // User returns the default username as a string, typically "root".

@@ -15,6 +15,7 @@ const pathSeparator = "/"
 
 // FileSystem provides utilities for command hierarchy traversal and completion suggestions.
 type FileSystem struct {
+	process     interfaces.IProcess
 	user        string
 	root        interfaces.ICommand
 	searchPaths []interfaces.ICommand
@@ -56,14 +57,24 @@ func NewFileSystem(user string, root interfaces.ICommand, sp []interfaces.IComma
 	return fs
 }
 
-// Process returns nil, as the file system does not have a process.
+// Name returns the name of the Render object as a string.
+func (c *FileSystem) Name() string {
+	return "fs"
+}
+
+// Process returns the process implementation adhering to the interfaces.IProcess interface.
 func (c *FileSystem) Process() interfaces.IProcess {
-	return nil
+	return c.process
+}
+
+// SetProcess sets the process implementation to the provided IProcess instance for the Render struct.
+func (c *FileSystem) SetProcess(process interfaces.IProcess) {
+	c.process = process
 }
 
 // PID returns an identifier for the file system process. It always returns a fixed value of -2.
 func (c *FileSystem) PID() int {
-	return -2
+	return c.process.PID()
 }
 
 func (c *FileSystem) User() string {
