@@ -55,7 +55,7 @@ const (
 type IMessage interface {
 	GetType() MessageType
 
-	Router() IRouter
+	PID() int
 
 	Response() bool
 
@@ -64,17 +64,17 @@ type IMessage interface {
 
 // Message represents a basic unit containing a MessageType to define its specific behavior or category.
 type Message struct {
-	originator IRouter
-	kind       MessageType
-	response   bool
+	originatorPID int
+	kind          MessageType
+	response      bool
 }
 
 // NewMessage creates a new Message instance with the specified MessageType.
-func NewMessage(originator IRouter, kind MessageType) *Message {
+func NewMessage(originatorPID int, kind MessageType) *Message {
 	return &Message{
-		originator: originator,
-		kind:       kind,
-		response:   false,
+		originatorPID: originatorPID,
+		kind:          kind,
+		response:      false,
 	}
 }
 
@@ -83,9 +83,9 @@ func (m *Message) GetType() MessageType {
 	return m.kind
 }
 
-// Router returns the IRouter instance associated with the current Message instance.
-func (m *Message) Router() IRouter {
-	return m.originator
+// PID returns the originator's process ID (PID) associated with the Message instance.
+func (m *Message) PID() int {
+	return m.originatorPID
 }
 
 // Response returns a boolean indicating whether the message should be responded to.

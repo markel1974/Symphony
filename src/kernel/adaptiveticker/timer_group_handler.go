@@ -26,11 +26,28 @@ func NewGroupEvent(event *TimerHandler) *TimerGroupHandler {
 		deadline: event.deadline,
 	}
 	g.Add(event)
-
 	return g
 }
 
 // Add appends a TimerHandler event to the container within the TimerGroupHandler.
 func (g *TimerGroupHandler) Add(event *TimerHandler) {
 	g.container = append(g.container, event)
+}
+
+func (g *TimerGroupHandler) Len() int {
+	return len(g.container)
+}
+
+func (g *TimerGroupHandler) GetDeadline() int64 {
+	return g.deadline
+}
+
+func (g *TimerGroupHandler) Remove(tid int) bool {
+	for i, e := range g.container {
+		if e.sourceId == tid {
+			g.container = append(g.container[:i], g.container[i+1:]...)
+			return true
+		}
+	}
+	return false
 }

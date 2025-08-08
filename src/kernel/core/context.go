@@ -65,7 +65,7 @@ func (c *Context) Setup(terminal interfaces.ITerminal) {
 
 // Exec initializes the admin console display, advances the shell line, and starts the kernel.
 func (c *Context) Exec() {
-	c.kernel.Start()
+	_ = c.kernel.Start()
 }
 
 // Close releases any resources held by the Context and ensures a clean termination of its operations.

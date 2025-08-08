@@ -73,21 +73,21 @@ func (a *AdaptiveTicker) Create(target chan *TimerHandler, event interface{}, fi
 
 // RemoveEntries deletes the specified IDs from the AdaptiveTicker. Returns true if all IDs were successfully removed, false otherwise.
 func (a *AdaptiveTicker) RemoveEntries(tids []int) bool {
-	var removed []int
+	var entries []int
 	a.lock.Lock()
 	if !a.quit {
 		for _, tid := range tids {
 			if a.ids.Unset(tid) {
-				removed = append(removed, tid)
+				entries = append(entries, tid)
 			}
 		}
 	}
 	a.lock.Unlock()
-	if len(removed) > 0 {
-		var event = newRemoveEvent(removed)
+	if len(entries) > 0 {
+		var event = newRemoveEvent(entries)
 		event.PostEvent(a.messages)
 	}
-	return len(tids) == len(removed)
+	return len(tids) == len(entries)
 }
 
 // Quit gracefully stops the AdaptiveTicker by setting the quit flag and emitting a quit event to the message channel.
@@ -187,16 +187,12 @@ func (a *AdaptiveTicker) doHeadRun(now int64) {
 // It ensures the TimerHandler is organized into a sorted container for efficient processing of expiration events.
 func (a *AdaptiveTicker) doAdd(now int64, event *TimerHandler) {
 	event.Prepare(now)
-
 	if group, ok := a.index[event.deadline]; ok {
 		group.Add(event)
 		return
 	}
-
-	var newGroup = NewGroupEvent(event)
-
+	newGroup := NewGroupEvent(event)
 	a.index[newGroup.deadline] = newGroup
-
 	if a.container.Len() == 0 {
 		a.container.PushFront(newGroup)
 		a.runDeadline = 0
@@ -257,7 +253,7 @@ func (a *AdaptiveTicker) eventLoop() {
 				case eventTypeCreate:
 					a.createEventHandler(msg.(*createEvent))
 				case eventTypeRemove:
-					a.removeEventHandler()
+					a.removeEventHandler(msg.(*removeEvent))
 				case eventTypeExpire:
 					a.expireEventHandler()
 				case eventTypeQuit:
@@ -277,7 +273,26 @@ func (a *AdaptiveTicker) createEventHandler(event *createEvent) {
 }
 
 // removeEventHandler is a method used to manage the removal of event handlers and update the ticker's state accordingly.
-func (a *AdaptiveTicker) removeEventHandler() {
+func (a *AdaptiveTicker) removeEventHandler(event *removeEvent) {
+	if event == nil {
+		return
+	}
+	//head := a.container.Front()
+	//if head == nil {
+	//	return
+	//}
+	for _, tid := range event.tids {
+		for elem := a.container.Front(); elem != nil; elem = elem.Next() {
+			if g, _ := elem.Value.(*TimerGroupHandler); g != nil {
+				if g.Remove(tid) {
+					if g.Len() == 0 {
+						a.container.Remove(elem)
+					}
+					break
+				}
+			}
+		}
+	}
 	var now = getEpochMs()
 	a.doHeadRun(now)
 }

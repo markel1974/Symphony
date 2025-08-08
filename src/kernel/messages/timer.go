@@ -11,9 +11,9 @@ type MessageTimer struct {
 }
 
 // NewMessageTimer creates a new MessageTimer instance with the specified process ID and interval.
-func NewMessageTimer(router interfaces.IRouter, pid int, interval int) *MessageTimer {
+func NewMessageTimer(originatorPID int, pid int, interval int) *MessageTimer {
 	return &MessageTimer{
-		Message:  *interfaces.NewMessage(router, interfaces.MessageTypeTimer),
+		Message:  *interfaces.NewMessage(originatorPID, interfaces.MessageTypeTimer),
 		pid:      pid,
 		interval: interval,
 	}
@@ -49,9 +49,9 @@ type MessageTimedMessage struct {
 }
 
 // NewMessageTimedMessage creates and returns a new instance of MessageTimedMessage with the specified timing settings.
-func NewMessageTimedMessage(router interfaces.IRouter, msg interfaces.IMessage, first int64, interval int64, count int64) *MessageTimedMessage {
+func NewMessageTimedMessage(originatorPID int, msg interfaces.IMessage, first int64, interval int64, count int64) *MessageTimedMessage {
 	return &MessageTimedMessage{
-		IMessage: interfaces.NewMessage(router, interfaces.MessageTypeTimedMessage),
+		IMessage: interfaces.NewMessage(originatorPID, interfaces.MessageTypeTimedMessage),
 		msg:      msg,
 		first:    first,
 		interval: interval,
@@ -88,9 +88,9 @@ type MessageTimerCreate struct {
 
 // NewMessageTimerCreate initializes a new MessageTimerCreate instance with the given router, first, interval, and count values.
 // It sets the MessageType to MessageTypeTimerCreate.
-func NewMessageTimerCreate(router interfaces.IRouter, first int, interval int, count int) *MessageTimerCreate {
+func NewMessageTimerCreate(originatorPID int, first int, interval int, count int) *MessageTimerCreate {
 	return &MessageTimerCreate{
-		IMessage: interfaces.NewMessage(router, interfaces.MessageTypeTimerCreate),
+		IMessage: interfaces.NewMessage(originatorPID, interfaces.MessageTypeTimerCreate),
 		first:    first,
 		interval: interval,
 		count:    count,
@@ -119,9 +119,9 @@ type MessageTimerStop struct {
 }
 
 // NewMessageTimerStop creates a new MessageTimerStop instance with the specified router and timer ID (tid).
-func NewMessageTimerStop(router interfaces.IRouter, tid int) *MessageTimerStop {
+func NewMessageTimerStop(originatorPID int, tid int) *MessageTimerStop {
 	return &MessageTimerStop{
-		IMessage: interfaces.NewMessage(router, interfaces.MessageTypeTimerStop),
+		IMessage: interfaces.NewMessage(originatorPID, interfaces.MessageTypeTimerStop),
 		tid:      tid,
 	}
 }
@@ -138,9 +138,9 @@ type MessageTimerCreated struct {
 }
 
 // NewMessageTimerCreated creates a new instance of MessageTimerCreated with the specified router and timer ID.
-func NewMessageTimerCreated(router interfaces.IRouter, tid int) *MessageTimerCreated {
+func NewMessageTimerCreated(originatorPID int, tid int) *MessageTimerCreated {
 	return &MessageTimerCreated{
-		IMessage: interfaces.NewMessage(router, interfaces.MessageTypeTimerCreated),
+		IMessage: interfaces.NewMessage(originatorPID, interfaces.MessageTypeTimerCreated),
 		tid:      tid,
 	}
 }

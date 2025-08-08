@@ -10,9 +10,9 @@ type MessagePaintRequest struct {
 }
 
 // NewMessagePaintRequest creates a new instance of MessagePaint with the MessageType set to MessageTypePaint.
-func NewMessagePaintRequest(router interfaces.IRouter) *MessagePaintRequest {
+func NewMessagePaintRequest(originatorPID int) *MessagePaintRequest {
 	return &MessagePaintRequest{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypePaintRequest),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypePaintRequest),
 	}
 }
 
@@ -23,9 +23,9 @@ type MessagePaintPrepare struct {
 }
 
 // NewMessagePaintPrepare creates a new instance of MessagePaint with the MessageType set to MessageTypePaint.
-func NewMessagePaintPrepare(router interfaces.IRouter, surface interfaces.ISurface) *MessagePaintPrepare {
+func NewMessagePaintPrepare(originatorPID int, surface interfaces.ISurface) *MessagePaintPrepare {
 	mp := &MessagePaintPrepare{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypePaintPrepare),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypePaintPrepare),
 		surface: surface,
 	}
 	mp.MakeResponse()
@@ -46,9 +46,9 @@ type MessagePaintApply struct {
 }
 
 // NewMessagePaintApply creates a new MessagePaintApply instance with the specified router and surface for rendering processes.
-func NewMessagePaintApply(router interfaces.IRouter, surface interfaces.ISurface) *MessagePaintApply {
+func NewMessagePaintApply(originatorPID int, surface interfaces.ISurface) *MessagePaintApply {
 	mp := &MessagePaintApply{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypePaintApply),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypePaintApply),
 		surface: surface,
 	}
 	return mp
@@ -65,9 +65,9 @@ type MessageWindowsSelectionBegin struct {
 }
 
 // NewMessageWindowsSelectionBegin creates and returns a new instance of MessageWindowsSelectionBegin with the proper message type.
-func NewMessageWindowsSelectionBegin(router interfaces.IRouter) *MessageWindowsSelectionBegin {
+func NewMessageWindowsSelectionBegin(originatorPID int) *MessageWindowsSelectionBegin {
 	return &MessageWindowsSelectionBegin{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionBegin),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWindowsSelectionBegin),
 	}
 }
 
@@ -77,9 +77,9 @@ type MessageWindowsSelectionEnd struct {
 }
 
 // NewMessageWindowsSelectionEnd creates and returns a pointer to a new MessageWindowsSelectionEnd instance with the appropriate type.
-func NewMessageWindowsSelectionEnd(router interfaces.IRouter) *MessageWindowsSelectionEnd {
+func NewMessageWindowsSelectionEnd(originatorPID int) *MessageWindowsSelectionEnd {
 	return &MessageWindowsSelectionEnd{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionEnd),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWindowsSelectionEnd),
 	}
 }
 
@@ -89,9 +89,9 @@ type MessageWindowsSelectionNext struct {
 }
 
 // NewMessageWindowsSelectionNext creates and initializes a new MessageWindowsSelectionNext instance with the appropriate message type.
-func NewMessageWindowsSelectionNext(router interfaces.IRouter) *MessageWindowsSelectionNext {
+func NewMessageWindowsSelectionNext(originatorPID int) *MessageWindowsSelectionNext {
 	return &MessageWindowsSelectionNext{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionNext),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWindowsSelectionNext),
 	}
 }
 
@@ -101,9 +101,9 @@ type MessageWindowsSelectionPrevious struct {
 }
 
 // NewMessageWindowsSelectionPrevious creates a new instance of MessageWindowsSelectionPrevious with predefined message type.
-func NewMessageWindowsSelectionPrevious(router interfaces.IRouter) *MessageWindowsSelectionPrevious {
+func NewMessageWindowsSelectionPrevious(originatorPID int) *MessageWindowsSelectionPrevious {
 	return &MessageWindowsSelectionPrevious{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionPrevious),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWindowsSelectionPrevious),
 	}
 }
 
@@ -115,9 +115,9 @@ type MessageWindowsSelectionOptions struct {
 }
 
 // NewMessageWindowsSelectionOptions initializes a MessageWindowsSelectionOptions with the given option and value.
-func NewMessageWindowsSelectionOptions(router interfaces.IRouter, option rune, value float64) *MessageWindowsSelectionOptions {
+func NewMessageWindowsSelectionOptions(originatorPID int, option rune, value float64) *MessageWindowsSelectionOptions {
 	return &MessageWindowsSelectionOptions{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWindowsSelectionOptions),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWindowsSelectionOptions),
 		option:  option,
 		value:   value,
 	}

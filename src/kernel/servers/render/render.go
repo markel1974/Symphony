@@ -173,7 +173,7 @@ func (c *Render) handleSetScreenSize(msg interfaces.IMessage) {
 
 // handlePaintRequest handles paint requests by triggering a repaint.
 func (c *Render) handlePaintRequest(msg interfaces.IMessage) {
-	mp := messages.NewMessagePaintPrepare(msg.Router(), NewInterpretedSurface(c.height, c.width))
+	mp := messages.NewMessagePaintPrepare(msg.PID(), NewInterpretedSurface(c.height, c.width))
 	c.router.PostMessage(mp)
 }
 
@@ -183,7 +183,7 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	component, _ := c.running[msg.Router().PID()]
+	component, _ := c.running[msg.PID()]
 	if component == nil {
 		return
 	}
@@ -243,7 +243,7 @@ func (c *Render) handleWindowsSelectionBegin(msg interfaces.IMessage) {
 			}
 		}
 	}
-	mp := messages.NewMessagePaintPrepare(msg.Router(), NewInterpretedSurface(c.height, c.width))
+	mp := messages.NewMessagePaintPrepare(msg.PID(), NewInterpretedSurface(c.height, c.width))
 	c.router.PostMessage(mp)
 }
 
@@ -260,14 +260,14 @@ func (c *Render) handleWindowsSelectionOptions(msg interfaces.IMessage) {
 	}
 	process.Surface().SetOption(mt.Option(), mt.Value())
 	c.fullPaint = true
-	mp := messages.NewMessagePaintPrepare(msg.Router(), NewInterpretedSurface(c.height, c.width))
+	mp := messages.NewMessagePaintPrepare(msg.PID(), NewInterpretedSurface(c.height, c.width))
 	c.router.PostMessage(mp)
 }
 
 // handleWindowsSelectionPrevious navigates to the previous window in the selection if possible and triggers a paint request.
 func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
 	if c.windowSelector.Prev() {
-		mp := messages.NewMessagePaintPrepare(msg.Router(), NewInterpretedSurface(c.height, c.width))
+		mp := messages.NewMessagePaintPrepare(msg.PID(), NewInterpretedSurface(c.height, c.width))
 		c.router.PostMessage(mp)
 	}
 }
@@ -275,7 +275,7 @@ func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
 // handleWindowsSelectionNext moves the window selector to the next window and triggers a repaint if the selection changes.
 func (c *Render) handleWindowsSelectionNext(msg interfaces.IMessage) {
 	if c.windowSelector.Next() {
-		mp := messages.NewMessagePaintPrepare(msg.Router(), NewInterpretedSurface(c.height, c.width))
+		mp := messages.NewMessagePaintPrepare(msg.PID(), NewInterpretedSurface(c.height, c.width))
 		c.router.PostMessage(mp)
 	}
 }

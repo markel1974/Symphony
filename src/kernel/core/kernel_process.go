@@ -17,6 +17,10 @@ func (p *PID) SetId(i int) {
 	p.id = i
 }
 
+func (p *PID) ClearId(i int) {
+	p.id = i
+}
+
 // GetId retrieves the identifier value stored in the PID instance.
 func (p *PID) GetId() int {
 	return p.id

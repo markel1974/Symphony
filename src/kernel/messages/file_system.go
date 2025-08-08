@@ -4,27 +4,27 @@ import "github.com/markel1974/c64emu/src/kernel/interfaces"
 
 type MessageFileSystemFindResponse struct {
 	interfaces.Message
-	parent    interfaces.IRouter
-	line      string
-	protected bool
-	cmd       interfaces.ICommand
-	args      []string
-	err       error
+	requestorPID int
+	line         string
+	protected    bool
+	cmd          interfaces.ICommand
+	args         []string
+	err          error
 }
 
 type MessageFileSystemFindRequest struct {
 	interfaces.Message
-	parent    interfaces.IRouter
-	line      string
-	protected bool
+	requestorPID int
+	line         string
+	protected    bool
 }
 
-func NewMessageFileSystemFindRequest(router interfaces.IRouter, parent interfaces.IRouter, line string, protected bool) *MessageFileSystemFindRequest {
+func NewMessageFileSystemFindRequest(originatorPID int, requestorPID int, line string, protected bool) *MessageFileSystemFindRequest {
 	return &MessageFileSystemFindRequest{
-		Message:   *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemFindRequest),
-		parent:    parent,
-		line:      line,
-		protected: protected,
+		Message:      *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemFindRequest),
+		requestorPID: requestorPID,
+		line:         line,
+		protected:    protected,
 	}
 }
 
@@ -34,18 +34,18 @@ func (m *MessageFileSystemFindRequest) Line() string {
 
 func (m *MessageFileSystemFindRequest) CreateResponse(cmd interfaces.ICommand, args []string, err error) *MessageFileSystemFindResponse {
 	return &MessageFileSystemFindResponse{
-		Message:   *interfaces.NewMessage(m.Router(), interfaces.MessageTypeFileSystemFindResponse),
-		parent:    m.parent,
-		line:      m.line,
-		protected: m.protected,
-		cmd:       cmd,
-		args:      args,
-		err:       err,
+		Message:      *interfaces.NewMessage(m.PID(), interfaces.MessageTypeFileSystemFindResponse),
+		requestorPID: m.requestorPID,
+		line:         m.line,
+		protected:    m.protected,
+		cmd:          cmd,
+		args:         args,
+		err:          err,
 	}
 }
 
-func (m *MessageFileSystemFindResponse) Parent() interfaces.IRouter {
-	return m.parent
+func (m *MessageFileSystemFindResponse) RequestorPID() int {
+	return m.requestorPID
 }
 
 func (m *MessageFileSystemFindResponse) Line() string {
@@ -67,9 +67,9 @@ type MessageFileSystemCWDSet struct {
 	result bool
 }
 
-func NewMessageFileSystemCWDSet(router interfaces.IRouter, path string, ack chan bool) *MessageFileSystemCWDSet {
+func NewMessageFileSystemCWDSet(originatorPID int, path string, ack chan bool) *MessageFileSystemCWDSet {
 	return &MessageFileSystemCWDSet{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemCWDSet),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemCWDSet),
 		path:    path,
 		ack:     ack,
 	}
@@ -99,9 +99,9 @@ type MessageFileSystemCWDGet struct {
 	ack    chan bool
 }
 
-func NewMessageFileSystemCWDGet(router interfaces.IRouter, ack chan bool) *MessageFileSystemCWDGet {
+func NewMessageFileSystemCWDGet(originatorPID int, ack chan bool) *MessageFileSystemCWDGet {
 	return &MessageFileSystemCWDGet{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemCWDGet),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemCWDGet),
 		ack:     ack,
 	}
 }
@@ -126,9 +126,9 @@ type MessageFileSystemCWDPath struct {
 	result string
 }
 
-func NewMessageFileSystemCWDPath(router interfaces.IRouter, ack chan bool) *MessageFileSystemCWDPath {
+func NewMessageFileSystemCWDPath(originatorPID int, ack chan bool) *MessageFileSystemCWDPath {
 	return &MessageFileSystemCWDPath{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemCWDPath),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemCWDPath),
 		ack:     ack,
 	}
 }
@@ -153,9 +153,9 @@ type MessageFileSystemCWDDirectoryListing struct {
 	result []string
 }
 
-func NewMessageFileSystemCWDDirectoryListing(router interfaces.IRouter, ack chan bool) *MessageFileSystemCWDDirectoryListing {
+func NewMessageFileSystemCWDDirectoryListing(originatorPID int, ack chan bool) *MessageFileSystemCWDDirectoryListing {
 	return &MessageFileSystemCWDDirectoryListing{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemCWDDirectoryListing),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemCWDDirectoryListing),
 		ack:     ack,
 	}
 }
@@ -188,9 +188,9 @@ type MessageFileSystemSuggestion struct {
 }
 
 // NewMessageFileSystemSuggestion creates a new MessageFileSystemSuggestion with provided router, input text, cursor position, and acknowledgment channel.
-func NewMessageFileSystemSuggestion(router interfaces.IRouter, in string, cursor int, ack chan bool) *MessageFileSystemSuggestion {
+func NewMessageFileSystemSuggestion(originatorPID int, in string, cursor int, ack chan bool) *MessageFileSystemSuggestion {
 	return &MessageFileSystemSuggestion{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemSuggestion),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemSuggestion),
 		in:      in,
 		cursor:  cursor,
 		ack:     ack,
@@ -234,9 +234,9 @@ type MessageFileSystemHelp struct {
 	err    error
 }
 
-func NewMessageFileSystemHelp(router interfaces.IRouter, path string, ack chan bool) *MessageFileSystemHelp {
+func NewMessageFileSystemHelp(originatorPID int, path string, ack chan bool) *MessageFileSystemHelp {
 	return &MessageFileSystemHelp{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeFileSystemHelp),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeFileSystemHelp),
 		path:    path,
 		ack:     ack,
 	}

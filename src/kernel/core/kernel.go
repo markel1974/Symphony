@@ -87,7 +87,7 @@ func (c *Kernel) createKernelProcess(user string, commandLine string, parent *Ke
 
 // SetScreenSize adjusts the screen dimensions to the specified width and height values.
 func (c *Kernel) SetScreenSize(w int, h int) {
-	c.messageChan <- messages.NewMessageSetScreenSize(c, w, h)
+	c.messageChan <- messages.NewMessageSetScreenSize(c.PID(), w, h)
 }
 
 // Process returns the KernelProcess instance associated with the Kernel instance.
@@ -144,7 +144,7 @@ func (c *Kernel) Start() error {
 		server.Start()
 	}
 
-	c.PostMessage(messages.NewMessageFileSystemFindRequest(c, c, c.shellPath, true))
+	c.PostMessage(messages.NewMessageFileSystemFindRequest(c.PID(), c.PID(), c.shellPath, true))
 
 	d := make(chan bool)
 	go func() {
@@ -154,11 +154,11 @@ func (c *Kernel) Start() error {
 			k, v, err := c.inputDriver.ScanKey(readBuffer)
 			if err == nil {
 				if k != interfaces.KeyTypeNone {
-					re := messages.NewMessageRead(c, k, v, false)
+					re := messages.NewMessageRead(c.PID(), k, v, false)
 					c.messageChan <- re
 				}
 			} else {
-				qe := messages.NewMessageQuit(c)
+				qe := messages.NewMessageQuit(c.PID())
 				c.messageChan <- qe
 				return
 			}
@@ -187,18 +187,18 @@ func (c *Kernel) eventLoop() {
 
 // handleMessageEvent processes an incoming IMessage by dispatching it to the appropriate routingTable based on its type.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
-	//fmt.Println("Kernel: dispatching", m.GetType(), "")
+	kernelProcess, _ := c.running[m.PID()]
+	if kernelProcess == nil {
+		log.Printf("Kernel: unknown process: %d - type %d", m.PID(), m.GetType())
+		return
+	}
+	fmt.Println("Kernel: dispatching", m.GetType(), "")
 	if m.Response() {
-		m.Router().PostMessage(m)
+		kernelProcess.PostMessage(m)
 		return
 	}
 	id := m.GetType()
-
-	proc, _ := c.running[m.Router().PID()]
-	if proc == nil {
-		return
-	}
-	if route := proc.GetRoute(id); route != nil {
+	if route := kernelProcess.GetRoute(id); route != nil {
 		route(m)
 		return
 	}
@@ -213,7 +213,7 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	}
 	for _, proc := range c.running {
 		if readBroadcastEvent := proc.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
-			proc.PostMessage(messages.NewMessageRead(m.Router(), mm.Kind(), mm.Data(), true))
+			proc.PostMessage(messages.NewMessageRead(m.PID(), mm.Kind(), mm.Data(), true))
 		}
 	}
 	if c.foreground != nil {
@@ -250,12 +250,15 @@ func (c *Kernel) handleTimedMessage(m interfaces.IMessage) {
 func (c *Kernel) handleProcessExit(m interfaces.IMessage) {
 	mt, ok := m.(*messages.MessageProcessExit)
 	if !ok {
+		log.Printf("Kernel [handleProcessExit]: unknown type: %d - process %d", mt.GetType(), mt.PID())
 		return
 	}
-	if proc, _ := c.running[mt.Router().PID()]; proc != nil {
-		c.doProcessExit(proc)
+	kernelProcess, _ := c.running[mt.PID()]
+	if kernelProcess == nil {
+		log.Printf("Kernel [handleProcessExit]: unknown process: %d - type %d", mt.PID(), mt.GetType())
 		return
 	}
+	c.doProcessExit(kernelProcess)
 }
 
 // handleProcessExec handles process execution by validating the message type and invoking the process execution logic.
@@ -264,7 +267,7 @@ func (c *Kernel) handleProcessExec(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	c.PostMessage(messages.NewMessageFileSystemFindRequest(c, mt.Router(), mt.Line(), false))
+	c.PostMessage(messages.NewMessageFileSystemFindRequest(c.PID(), mt.PID(), mt.Line(), false))
 }
 
 // handleProcessSetForeground handles a process set foreground message by setting the foreground process to the specified process.
@@ -274,7 +277,7 @@ func (c *Kernel) handleProcessSetForeground(m interfaces.IMessage) {
 		return
 	}
 	if proc, _ := c.running[mt.PID()]; proc != nil {
-		c.doProcessSetForeground(mt.Router(), proc)
+		c.doProcessSetForeground(mt.PID(), proc)
 	}
 }
 
@@ -284,7 +287,7 @@ func (c *Kernel) handleProcessKill(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	proc, _ := c.running[mt.PID]
+	proc, _ := c.running[mt.PID()]
 	if proc == nil {
 		return
 	}
@@ -330,18 +333,18 @@ func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	proc, _ := c.running[m.Router().PID()]
+	proc, _ := c.running[m.PID()]
 	if proc == nil {
 		return
 	}
-	msgTimer := messages.NewMessageTimer(mt.Router(), mt.Router().PID(), mt.Interval())
+	msgTimer := messages.NewMessageTimer(mt.PID(), mt.PID(), mt.Interval())
 	msgTimer.SetTID(c.ticker.Create(c.timersChan, msgTimer, int64(mt.First()), int64(mt.Interval()), int64(mt.Count())))
 	if msgTimer.TID() < 0 {
-		m.Router().PostMessage(messages.NewMessageError(m.Router(), fmt.Errorf("error creating timer")))
+		proc.PostMessage(messages.NewMessageError(m.PID(), fmt.Errorf("error creating timer")))
 		return
 	}
 	proc.AddTimer(msgTimer.TID())
-	m.Router().PostMessage(messages.NewMessageTimerCreated(m.Router(), msgTimer.TID()))
+	proc.PostMessage(messages.NewMessageTimerCreated(m.PID(), msgTimer.TID()))
 }
 
 func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
@@ -349,9 +352,9 @@ func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	proc, _ := c.running[m.Router().PID()]
+	proc, _ := c.running[m.PID()]
 	if proc == nil {
-		m.Router().PostMessage(messages.NewMessageError(m.Router(), fmt.Errorf("error creating timer")))
+		log.Printf("error stopping time: invalid originator %d", m.PID())
 		return
 	}
 	c.doCloseTimer(proc, mt.TID())
@@ -363,12 +366,17 @@ func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
+	kernelProc, _ := c.running[mt.PID()]
+	if kernelProc == nil {
+		log.Printf("error in handleProcessList: invalid originator %d", mt.PID())
+		return
+	}
 	var out []*interfaces.ProcessDescription
 	for _, proc := range c.running {
 		out = append(out, proc.Description())
 	}
 	mt.SetProcesses(out)
-	mt.Router().PostMessage(mt)
+	kernelProc.PostMessage(mt)
 }
 
 // handleQuitEvent handles a quit message by verifying its type and setting the kernel's exit flag to true.
@@ -387,37 +395,37 @@ func (c *Kernel) handleFileSystemFindResponse(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	originator := mt.Parent()
+	originator, _ := c.running[mt.RequestorPID()]
 	if originator == nil {
 		log.Printf("error creating task: invalid originator")
 		return
 	}
 	cmd, args, err := mt.GetResult()
 	if err != nil {
-		originator.PostMessage(messages.NewMessageError(originator, fmt.Errorf("error creating task: invalid command '%s'", mt.Line())))
+		originator.PostMessage(messages.NewMessageError(originator.PID(), fmt.Errorf("error creating task: invalid command '%s'", mt.Line())))
 		return
 	}
 	parent, _ := c.running[originator.PID()]
 	kernelProcess, err := c.createKernelProcess(originator.User(), mt.Line(), parent, cmd, mt.Protected())
 	if err != nil {
-		originator.PostMessage(messages.NewMessageError(originator, fmt.Errorf("error creating task: %s", err.Error())))
+		originator.PostMessage(messages.NewMessageError(originator.PID(), fmt.Errorf("error creating task: %s", err.Error())))
 		return
 	}
 	kernelProcess.Setup()
 	for _, server := range c.servers {
 		server.NotifyProcessCreation(kernelProcess.PID(), kernelProcess.GetCommand().Name())
 	}
-	kernelProcess.PostMessage(messages.NewMessageProcessStart(originator, args))
+	kernelProcess.PostMessage(messages.NewMessageProcessStart(originator.PID(), args))
 }
 
 // doProcessSetForeground sets the specified process as the foreground process and sends activation messages if needed.
-func (c *Kernel) doProcessSetForeground(router interfaces.IRouter, process interfaces.IProcess) {
+func (c *Kernel) doProcessSetForeground(requestorPID int, process interfaces.IProcess) {
 	for _, s := range c.servers {
 		s.NotifyProcessForeground(process.PID())
 	}
 	if c.foreground != process {
 		c.foreground = process
-		c.foreground.PostMessage(messages.NewMessageProcessActivate(router))
+		c.foreground.PostMessage(messages.NewMessageProcessActivate(requestorPID))
 	}
 }
 
@@ -435,7 +443,7 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 	if c.foreground != nil {
 		if c.foreground.PID() == process.PID() {
 			if parent := process.Parent(); parent != nil {
-				c.doProcessSetForeground(c, parent)
+				c.doProcessSetForeground(c.PID(), parent)
 			} else {
 				log.Printf("Fatal Error: foreground process is nil")
 			}
@@ -443,7 +451,7 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 	}
 	delete(c.running, process.PID())
 	c.pidGenerator.Unset(process.PID())
-	process.PostMessage(messages.NewMessageQuit(process))
+	process.PostMessage(messages.NewMessageQuit(process.PID()))
 }
 
 // doCloseTimer removes a timer with the specified ID from the task and ticker, returning true if the timer is successfully removed.

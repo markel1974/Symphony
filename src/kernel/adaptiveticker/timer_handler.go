@@ -27,6 +27,7 @@ const (
 // TimerHandler represents a timer event with scheduling information and execution control.
 type TimerHandler struct {
 	id        int
+	sourceId  int
 	target    chan *TimerHandler
 	Event     interface{}
 	first     int64
@@ -88,12 +89,17 @@ func (t *TimerHandler) Prepare(now int64) {
 // SetId sets the identifier for the TimerHandler instance.
 func (t *TimerHandler) SetId(id int) {
 	t.id = id
+	t.sourceId = id
+}
+
+func (t *TimerHandler) ClearId(id int) {
+	t.id = id
 }
 
 // Unset marks the TimerHandler instance as removed by setting the `removed` flag to true.
-func (t *TimerHandler) Unset() {
-	t.removed = true
-}
+//func (t *TimerHandler) Unset() {
+//	t.removed = true
+//}
 
 // IsUsable determines if the TimerHandler instance is usable based on its mode and current counter state.
 func (t *TimerHandler) IsUsable() bool {

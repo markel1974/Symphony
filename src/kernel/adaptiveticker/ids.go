@@ -11,6 +11,7 @@ const UnknownId = -1
 // IIds represents an interface requiring a method to set an integer ID for implementing types.
 type IIds interface {
 	SetId(int)
+	ClearId(int)
 }
 
 // Ids manages a pool of reusable integer IDs and their associated objects with thread-safe access.
@@ -47,7 +48,7 @@ func (a *Ids) Set(obj IIds) (int, bool) {
 	a.lock.Lock()
 	defer a.lock.Unlock()
 	if len(a.freeIds) == 0 {
-		obj.SetId(UnknownId)
+		obj.ClearId(UnknownId)
 		return UnknownId, false
 	}
 	lastIndex := len(a.freeIds) - 1
@@ -78,7 +79,7 @@ func (a *Ids) Unset(id int) bool {
 	delete(a.kv, id)
 	a.freeIds = append(a.freeIds, id)
 	if obj != nil {
-		obj.SetId(UnknownId)
+		obj.ClearId(UnknownId)
 	}
 	return true
 }

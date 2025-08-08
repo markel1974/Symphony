@@ -235,11 +235,11 @@ func (c *FileSystem) handleHelp(msg interfaces.IMessage) {
 	}
 	if sel == nil {
 		mt.SetResponse("", fmt.Errorf("invalid command %s", mt.Path()))
-		mt.Router().PostMessage(mt)
+		c.router.PostMessage(mt)
 		return
 	}
 	mt.SetResponse(sel.Help(), nil)
-	mt.Router().PostMessage(mt)
+	c.router.PostMessage(mt)
 	return
 }
 

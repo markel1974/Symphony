@@ -9,9 +9,9 @@ type MessageGetScreenSize struct {
 	ack    chan bool
 }
 
-func NewMessageGetScreenSize(router interfaces.IRouter, ack chan bool) *MessageGetScreenSize {
+func NewMessageGetScreenSize(originatorPID int, ack chan bool) *MessageGetScreenSize {
 	return &MessageGetScreenSize{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeGetScreenSize),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeGetScreenSize),
 		ack:     ack,
 	}
 }
@@ -40,9 +40,9 @@ type MessageSetScreenSize struct {
 }
 
 // NewMessageSetScreenSize creates a new MessageSetScreenSize instance for setting the screen width and height.
-func NewMessageSetScreenSize(router interfaces.IRouter, width int, height int) *MessageSetScreenSize {
+func NewMessageSetScreenSize(originatorPID int, width int, height int) *MessageSetScreenSize {
 	return &MessageSetScreenSize{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeSetScreenSize),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeSetScreenSize),
 		width:   width,
 		height:  height,
 	}
@@ -66,9 +66,9 @@ type MessageWrite struct {
 }
 
 // NewMessageWrite creates a new instance of MessageWrite with the given router, data, and end-of-line flag.
-func NewMessageWrite(router interfaces.IRouter, data string, eol bool) *MessageWrite {
+func NewMessageWrite(originatorPID int, data string, eol bool) *MessageWrite {
 	return &MessageWrite{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWrite),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWrite),
 		data:    data,
 		eol:     eol,
 	}
@@ -93,9 +93,9 @@ type MessageWriteLn struct {
 
 // NewMessageWriteLn initializes and returns a pointer to a MessageWriteLn with the provided data.
 // It sets the Message type to MessageTypeWriteLn.
-func NewMessageWriteLn(router interfaces.IRouter, data string) *MessageWriteLn {
+func NewMessageWriteLn(originatorPID int, data string) *MessageWriteLn {
 	return &MessageWriteLn{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWriteLn),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWriteLn),
 		Data:    data,
 	}
 }
@@ -111,9 +111,9 @@ type MessageWriteColor struct {
 }
 
 // NewMessageWriteColor creates a new MessageWriteColor instance with specified data, foreground and background colors, and mode.
-func NewMessageWriteColor(router interfaces.IRouter, data string, fg, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) *MessageWriteColor {
+func NewMessageWriteColor(originatorPID int, data string, fg, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) *MessageWriteColor {
 	return &MessageWriteColor{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeWriteColor),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeWriteColor),
 		data:    data,
 		fg:      fg,
 		bg:      bg,
@@ -154,9 +154,9 @@ type MessageClearScreen struct {
 }
 
 // NewMessageClearScreen creates a new instance of MessageClearScreen with the MessageType set to ClearScreen.
-func NewMessageClearScreen(router interfaces.IRouter) *MessageClearScreen {
+func NewMessageClearScreen(originatorPID int) *MessageClearScreen {
 	return &MessageClearScreen{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeClearScreen),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeClearScreen),
 	}
 }
 
@@ -167,9 +167,10 @@ type MessageClearLine struct {
 }
 
 // NewMessageClearLine creates a new MessageClearLine instance to represent a clear line action in the system.
-func NewMessageClearLine(router interfaces.IRouter, line string) *MessageClearLine {
+func NewMessageClearLine(originatorPID int, line string) *MessageClearLine {
 	return &MessageClearLine{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeClearLine),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeClearLine),
+		line:    line,
 	}
 }
 
@@ -184,9 +185,9 @@ type MessageSaveCursor struct {
 }
 
 // NewMessageSaveCursor creates a new MessageSaveCursor instance with the MessageTypeSaveCursor message type.
-func NewMessageSaveCursor(router interfaces.IRouter) *MessageSaveCursor {
+func NewMessageSaveCursor(originatorPID int) *MessageSaveCursor {
 	return &MessageSaveCursor{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeSaveCursor),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeSaveCursor),
 	}
 }
 
@@ -196,9 +197,9 @@ type MessageRestoreCursor struct {
 }
 
 // NewMessageRestoreCursor creates a new MessageRestoreCursor instance with a MessageTypeRestoreCursor type.
-func NewMessageRestoreCursor(router interfaces.IRouter) *MessageRestoreCursor {
+func NewMessageRestoreCursor(originatorPID int) *MessageRestoreCursor {
 	return &MessageRestoreCursor{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeRestoreCursor),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeRestoreCursor),
 	}
 }
 
@@ -208,9 +209,9 @@ type MessageMoveCursorLeft struct {
 }
 
 // NewMessageMoveCursorLeft creates a new MessageMoveCursorLeft instance to represent a cursor-left movement message.
-func NewMessageMoveCursorLeft(router interfaces.IRouter) *MessageMoveCursorLeft {
+func NewMessageMoveCursorLeft(originatorPID int) *MessageMoveCursorLeft {
 	return &MessageMoveCursorLeft{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeMoveCursorLeft),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeMoveCursorLeft),
 	}
 }
 
@@ -221,8 +222,8 @@ type MessageMoveCursorRight struct {
 }
 
 // NewMessageMoveCursorRight creates a new instance of MessageMoveCursorRight with the specified router.
-func NewMessageMoveCursorRight(router interfaces.IRouter) *MessageMoveCursorRight {
+func NewMessageMoveCursorRight(originatorPID int) *MessageMoveCursorRight {
 	return &MessageMoveCursorRight{
-		Message: *interfaces.NewMessage(router, interfaces.MessageTypeMoveCursorRight),
+		Message: *interfaces.NewMessage(originatorPID, interfaces.MessageTypeMoveCursorRight),
 	}
 }
