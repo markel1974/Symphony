@@ -13,53 +13,53 @@ import (
 
 // Kernel represents the core component responsible for managing rendering, input/output, process execution, and timers.
 type Kernel struct {
-	user          string
-	ticker        *adaptiveticker.AdaptiveTicker
-	inputDriver   interfaces.IKeyboardDriver
-	foreground    interfaces.IProcess
-	pidGenerator  *adaptiveticker.Ids
-	running       map[int]*KernelProcess
-	shellPath     string
-	messageChan   chan interfaces.IMessage
-	pf            *process_factory.ProcessFactory
-	timersChan    chan *adaptiveticker.TimerHandler
-	servers       []interfaces.IServer
-	exit          bool
-	routingTable2 map[interfaces.MessageType]func(interfaces.IMessage)
-	process       *KernelProcess
+	user         string
+	ticker       *adaptiveticker.AdaptiveTicker
+	inputDriver  interfaces.IKeyboardDriver
+	foreground   interfaces.IProcess
+	pidGenerator *adaptiveticker.Ids
+	running      map[int]*KernelProcess
+	shellPath    string
+	messageChan  chan interfaces.IMessage
+	pf           *process_factory.ProcessFactory
+	timersChan   chan *adaptiveticker.TimerHandler
+	servers      []interfaces.IServer
+	exit         bool
+	routingTable map[interfaces.MessageType]func(interfaces.IMessage)
+	process      *KernelProcess
 }
 
 // NewKernel creates and returns a new Kernel instance, initializing its dependencies and internal fields.
 func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver interfaces.IKeyboardDriver, shellPath string) *Kernel {
 	t := &Kernel{
-		user:          user,
-		ticker:        ticker,
-		inputDriver:   inputDriver,
-		foreground:    nil,
-		pidGenerator:  adaptiveticker.NewIds(1024),
-		messageChan:   make(chan interfaces.IMessage, contextMaQueueLen),
-		timersChan:    make(chan *adaptiveticker.TimerHandler, contextMaQueueLen),
-		exit:          false,
-		shellPath:     shellPath,
-		running:       make(map[int]*KernelProcess),
-		routingTable2: make(map[interfaces.MessageType]func(interfaces.IMessage)),
+		user:         user,
+		ticker:       ticker,
+		inputDriver:  inputDriver,
+		foreground:   nil,
+		pidGenerator: adaptiveticker.NewIds(1024),
+		messageChan:  make(chan interfaces.IMessage, contextMaQueueLen),
+		timersChan:   make(chan *adaptiveticker.TimerHandler, contextMaQueueLen),
+		exit:         false,
+		shellPath:    shellPath,
+		running:      make(map[int]*KernelProcess),
+		routingTable: make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
 	t.pf = process_factory.NewProcessFactory(t)
 
-	t.routingTable2[interfaces.MessageTypeRead] = t.handleReadEvent
-	t.routingTable2[interfaces.MessageTypeTimer] = t.handleTimerEvent
-	t.routingTable2[interfaces.MessageTypeQuit] = t.handleQuitEvent
-	t.routingTable2[interfaces.MessageTypeTimedMessage] = t.handleTimedMessage
-	t.routingTable2[interfaces.MessageTypeProcessExit] = t.handleProcessExit
-	t.routingTable2[interfaces.MessageTypeProcessExec] = t.handleProcessExec
-	t.routingTable2[interfaces.MessageTypeProcessSetForeground] = t.handleProcessSetForeground
-	t.routingTable2[interfaces.MessageTypeProcessKill] = t.handleProcessKill
-	t.routingTable2[interfaces.MessageTypeProcessKillAll] = t.handleProcessKillAll
-	t.routingTable2[interfaces.MessageTypeProcessKillForeground] = t.handleProcessKillForeground
-	t.routingTable2[interfaces.MessageTypeTimerCreate] = t.handleTimerCreate
-	t.routingTable2[interfaces.MessageTypeTimerStop] = t.handleTimerStop
-	t.routingTable2[interfaces.MessageTypeProcessList] = t.handleProcessList
-	t.routingTable2[interfaces.MessageTypeFileSystemFindResponse] = t.handleFileSystemFindResponse
+	t.routingTable[interfaces.MessageTypeRead] = t.handleReadEvent
+	t.routingTable[interfaces.MessageTypeTimer] = t.handleTimerEvent
+	t.routingTable[interfaces.MessageTypeQuit] = t.handleQuitEvent
+	t.routingTable[interfaces.MessageTypeTimedMessage] = t.handleTimedMessage
+	t.routingTable[interfaces.MessageTypeProcessExit] = t.handleProcessExit
+	t.routingTable[interfaces.MessageTypeProcessExec] = t.handleProcessExec
+	t.routingTable[interfaces.MessageTypeProcessSetForeground] = t.handleProcessSetForeground
+	t.routingTable[interfaces.MessageTypeProcessKill] = t.handleProcessKill
+	t.routingTable[interfaces.MessageTypeProcessKillAll] = t.handleProcessKillAll
+	t.routingTable[interfaces.MessageTypeProcessKillForeground] = t.handleProcessKillForeground
+	t.routingTable[interfaces.MessageTypeTimerCreate] = t.handleTimerCreate
+	t.routingTable[interfaces.MessageTypeTimerStop] = t.handleTimerStop
+	t.routingTable[interfaces.MessageTypeProcessList] = t.handleProcessList
+	t.routingTable[interfaces.MessageTypeFileSystemFindResponse] = t.handleFileSystemFindResponse
 
 	return t
 }
@@ -77,7 +77,7 @@ func (c *Kernel) createKernelProcess(user string, commandLine string, parent *Ke
 	userProcess := c.pf.Create(pid.GetId(), user, cmd)
 	kernelProcess := NewKernelProcess(user, commandLine, cmd.Name(), parent, pid, protected, userProcess)
 	routingTable := make(map[interfaces.MessageType]func(interfaces.IMessage))
-	for k, v := range c.routingTable2 {
+	for k, v := range c.routingTable {
 		routingTable[k] = v
 	}
 	kernelProcess.SetRoutingTable(routingTable)
@@ -105,7 +105,7 @@ func (c *Kernel) AddServer(server interfaces.IServer) {
 	c.servers = append(c.servers, server)
 	handlers := server.Register(c)
 	for _, h := range handlers {
-		c.routingTable2[h] = server.PostMessage
+		c.routingTable[h] = server.PostMessage
 	}
 }
 
@@ -145,6 +145,7 @@ func (c *Kernel) Start() error {
 	}
 
 	c.PostMessage(messages.NewMessageFileSystemFindRequest(c, c, c.shellPath, true))
+
 	d := make(chan bool)
 	go func() {
 		d <- true
