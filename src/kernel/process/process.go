@@ -89,7 +89,10 @@ func (t *Process) StopTimer(tid int) {
 
 // IsActive checks if the process with the specified PID is currently active in the kernel.
 func (t *Process) IsActive(pid int) bool {
-	return t.kernel.CallProcessIsActive(t, pid)
+	request := messages.NewMessageProcessIsRunning(t.PID(), pid, t.executorWaitChan)
+	t.kernel.PostMessage(request)
+	<-t.executorWaitChan
+	return request.GetResult()
 }
 
 // Kill attempts to terminate the process associated with the specified pid and returns true if successful.
@@ -117,7 +120,7 @@ func (t *Process) ProcessList() []*interfaces.ProcessDescription {
 	request := messages.NewMessageProcessList(t.PID(), t.executorWaitChan)
 	t.kernel.PostMessage(request)
 	<-t.executorWaitChan
-	return request.Processes()
+	return request.GetResult()
 }
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.

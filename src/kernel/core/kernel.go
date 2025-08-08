@@ -45,29 +45,12 @@ func NewKernel(user string, ticker *adaptiveticker.AdaptiveTicker, inputDriver i
 		routingTable: make(map[interfaces.MessageType]func(interfaces.IMessage)),
 	}
 	t.pf = process_factory.NewProcessFactory(t)
-
 	return t
 }
 
 // PID returns the current process ID (pid) of the Kernel instance.
 func (c *Kernel) PID() int {
 	return c.process.PID()
-}
-
-func (c *Kernel) createKernelProcess(user string, commandLine string, parent *KernelProcess, cmd interfaces.ICommand, protected bool) (*KernelProcess, error) {
-	pid := NewPID()
-	if _, ok := c.pidGenerator.Set(pid); !ok {
-		return nil, fmt.Errorf("error creating task: pid generator overflow")
-	}
-	userProcess := c.pf.Create(pid.GetId(), user, cmd)
-	kernelProcess := NewKernelProcess(user, commandLine, cmd.Name(), parent, pid, protected, userProcess)
-	routingTable := make(map[interfaces.MessageType]func(interfaces.IMessage))
-	for k, v := range c.routingTable {
-		routingTable[k] = v
-	}
-	kernelProcess.SetRoutingTable(routingTable)
-	c.running[kernelProcess.PID()] = kernelProcess
-	return kernelProcess, nil
 }
 
 func (c *Kernel) Setup(servers []interfaces.IServer) error {
@@ -86,6 +69,7 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 	c.routingTable[interfaces.MessageTypeTimerStop] = c.handleTimerStop
 	c.routingTable[interfaces.MessageTypeProcessList] = c.handleProcessList
 	c.routingTable[interfaces.MessageTypeFileSystemFindResponse] = c.handleFileSystemFindResponse
+	c.routingTable[interfaces.MessageTypeProcessIsRunning] = c.handleProcessIsRunning
 	for _, server := range servers {
 		c.servers = append(c.servers, server)
 		for _, h := range server.Register(c) {
@@ -93,17 +77,16 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 		}
 	}
 	//kernel process
-	onCreate := func(process interfaces.IProcess, args []string) error { return nil }
-	kernelCmd := process.NewCommand("kernel", interfaces.CommandTypeFile, nil, true, onCreate)
-	kernelProcess, err := c.createKernelProcess(c.user, kernelCmd.Name(), nil, kernelCmd, true)
+	var err error
+	kernelCmd := c.doCreateKernelCommand("kernel")
+	c.process, err = c.doCreateKernelProcess(c.user, kernelCmd.Name(), nil, kernelCmd, true)
 	if err != nil {
 		return err
 	}
-	c.process = kernelProcess
 	//server process
 	for _, server := range c.servers {
-		serverCmd := process.NewCommand(server.Name(), interfaces.CommandTypeFile, nil, true, func(process interfaces.IProcess, args []string) error { return nil })
-		serverProcess, err := c.createKernelProcess(c.user, server.Name(), c.process, serverCmd, true)
+		serverCmd := c.doCreateKernelCommand(server.Name())
+		serverProcess, err := c.doCreateKernelProcess(c.user, serverCmd.Name(), c.process, serverCmd, true)
 		if err != nil {
 			return err
 		}
@@ -161,9 +144,18 @@ func (c *Kernel) PostMessage(msg interfaces.IMessage) {
 }
 
 // CallProcessIsActive checks if a process with the given PID is currently active in the Kernel's activeProcess map.
-func (c *Kernel) CallProcessIsActive(router interfaces.IRouter, pid int) bool {
-	active, _ := c.running[pid]
-	return active != nil
+func (c *Kernel) handleProcessIsRunning(msg interfaces.IMessage) {
+	mt, ok := msg.(*messages.MessageProcessIsRunning)
+	if !ok {
+		return
+	}
+	kernelProcess, _ := c.running[mt.PID()]
+	if kernelProcess == nil {
+		return
+	}
+	active, _ := c.running[mt.VerifyPID()]
+	mt.SetResult(active != nil)
+	kernelProcess.PostMessage(mt)
 }
 
 // CallExitRequested sets the `exit` flag to true, signaling that an exit has been requested for the kernel.
@@ -378,7 +370,7 @@ func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
 	for _, proc := range c.running {
 		out = append(out, proc.Description())
 	}
-	mt.SetProcesses(out)
+	mt.SetResult(out)
 	kernelProc.PostMessage(mt)
 }
 
@@ -409,7 +401,7 @@ func (c *Kernel) handleFileSystemFindResponse(msg interfaces.IMessage) {
 		return
 	}
 	parent, _ := c.running[originator.PID()]
-	kernelProcess, err := c.createKernelProcess(originator.User(), mt.Line(), parent, cmd, mt.Protected())
+	kernelProcess, err := c.doCreateKernelProcess(originator.User(), mt.Line(), parent, cmd, mt.Protected())
 	if err != nil {
 		originator.PostMessage(messages.NewMessageError(originator.PID(), fmt.Errorf("error creating task: %s", err.Error())))
 		return
@@ -481,4 +473,30 @@ func (c *Kernel) doShutdown() {
 	for _, proc := range processes {
 		c.doProcessExit(proc)
 	}
+}
+
+// doCreateKernelCommand creates a new KernelCommand instance with the specified name.
+// Configures the command and returns a pointer to the new instance.
+func (c *Kernel) doCreateKernelCommand(name string) interfaces.ICommand {
+	onCreate := func(process interfaces.IProcess, args []string) error { return nil }
+	kernelCmd := process.NewCommand(name, interfaces.CommandTypeFile, nil, true, onCreate)
+	return kernelCmd
+}
+
+// doCreateKernelProcess creates a new KernelProcess instance with the specified user, command line, parent, and command.
+// Configures the process and returns a pointer to the new instance.
+func (c *Kernel) doCreateKernelProcess(user string, commandLine string, parent *KernelProcess, cmd interfaces.ICommand, protected bool) (*KernelProcess, error) {
+	pid := NewPID()
+	if _, ok := c.pidGenerator.Set(pid); !ok {
+		return nil, fmt.Errorf("error creating task: pid generator overflow")
+	}
+	userProcess := c.pf.Create(pid.GetId(), user, cmd)
+	kernelProcess := NewKernelProcess(user, commandLine, cmd.Name(), parent, pid, protected, userProcess)
+	routingTable := make(map[interfaces.MessageType]func(interfaces.IMessage))
+	for k, v := range c.routingTable {
+		routingTable[k] = v
+	}
+	kernelProcess.SetRoutingTable(routingTable)
+	c.running[kernelProcess.PID()] = kernelProcess
+	return kernelProcess, nil
 }

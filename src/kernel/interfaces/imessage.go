@@ -35,6 +35,7 @@ const (
 	MessageTypeProcessExec
 	MessageTypeProcessStart
 	MessageTypeProcessActivate
+	MessageTypeProcessIsRunning
 	MessageTypeProcessExit
 	MessageTypeProcessKill
 	MessageTypeProcessKillAll

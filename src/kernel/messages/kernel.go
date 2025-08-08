@@ -215,14 +215,14 @@ func NewMessageProcessList(originatorPID int, ackChan chan bool) *MessageProcess
 	}
 }
 
-// SetProcesses sets the list of processes and sends the message to the specified recipient via ReplyTo.
-func (m *MessageProcessList) SetProcesses(processes []*interfaces.ProcessDescription) {
+// SetResult sets the list of processes and sends the message to the specified recipient via ReplyTo.
+func (m *MessageProcessList) SetResult(processes []*interfaces.ProcessDescription) {
 	m.MakeResponse()
 	m.processes = processes
 }
 
-// Processes returns the list of ProcessDescription objects associated with the MessageProcessListResponse instance.
-func (m *MessageProcessList) Processes() []*interfaces.ProcessDescription {
+// GetResult returns the list of ProcessDescription objects associated with the MessageProcessListResponse instance.
+func (m *MessageProcessList) GetResult() []*interfaces.ProcessDescription {
 	return m.processes
 }
 
@@ -230,4 +230,42 @@ func (m *MessageProcessList) Processes() []*interfaces.ProcessDescription {
 func (m *MessageProcessList) Ack() bool {
 	m.ackChan <- true
 	return true
+}
+
+type MessageProcessIsRunning struct {
+	interfaces.Message
+	verifyPid int
+	ackChan   chan bool
+	result    bool
+}
+
+// NewMessageProcessIsRunning creates a new MessageProcessIsRunning with the given originatorPID, pid, and acknowledgment channel.
+func NewMessageProcessIsRunning(originatorPID int, verifyPid int, ackChan chan bool) *MessageProcessIsRunning {
+	return &MessageProcessIsRunning{
+		Message:   *interfaces.NewMessage(originatorPID, interfaces.MessageTypeProcessIsRunning),
+		verifyPid: verifyPid,
+		ackChan:   ackChan,
+	}
+}
+
+// Ack acknowledges that the processing of the message is complete by sending a signal to the ackChan and returns true.
+func (m *MessageProcessIsRunning) Ack() bool {
+	m.ackChan <- true
+	return true
+}
+
+// VerifyPID returns the PID to be verified.
+func (m *MessageProcessIsRunning) VerifyPID() int {
+	return m.verifyPid
+}
+
+// SetResult assigns the processing result to the result field and marks the message as a response.
+func (m *MessageProcessIsRunning) SetResult(result bool) {
+	m.MakeResponse()
+	m.result = result
+}
+
+// GetResult returns the result of the message process as a boolean value.
+func (m *MessageProcessIsRunning) GetResult() bool {
+	return m.result
 }

@@ -9,6 +9,4 @@ type IKernel interface {
 	Setup(server []IServer) error
 
 	CallExitRequested(process IRouter)
-
-	CallProcessIsActive(process IRouter, pid int) bool
 }
