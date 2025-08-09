@@ -30,7 +30,7 @@ type Render struct {
 	running        map[int]*Component
 	foreground     *Component
 	messageChan    chan interfaces.IMessage
-	router         interfaces.IKernelServerRouter
+	router         interfaces.IKernelResponseRouter
 	handlers       map[interfaces.MessageType]func(interfaces.IMessage)
 }
 
@@ -66,7 +66,7 @@ func NewRender(driver interfaces.IDisplayDriver) *Render {
 	r.handlers[interfaces.MessageTypeMoveCursorRight] = r.handleMoveCursorRight
 	r.handlers[interfaces.MessageTypeWrite] = r.handleWrite
 	r.handlers[interfaces.MessageTypeWriteColor] = r.handleWriteColor
-	r.handlers[interfaces.MessageTypeGetScreenSize] = r.handleGetScreenSize
+	r.handlers[interfaces.MessageTypeGetScreenSizeRequest] = r.handleGetScreenSize
 	r.handlers[interfaces.MessageTypeNotifyProcessCreate] = r.handleProcessCreate
 	r.handlers[interfaces.MessageTypeNotifyProcessForeground] = r.handleProcessForeground
 	r.handlers[interfaces.MessageTypeNotifyProcessTerminate] = r.handleProcessTerminate
@@ -102,7 +102,7 @@ func (c *Render) Register() []interfaces.MessageType {
 	return out
 }
 
-func (c *Render) Setup(router interfaces.IKernelServerRouter, process interfaces.IUserProcess) error {
+func (c *Render) Setup(router interfaces.IKernelResponseRouter, process interfaces.IUserProcess) error {
 	c.router = router
 	c.process = process
 	b := make(chan bool)
@@ -111,8 +111,8 @@ func (c *Render) Setup(router interfaces.IKernelServerRouter, process interfaces
 	return nil
 }
 
-// PostMessage sends a message of type IMessage to the file system's message channel for further processing.
-func (c *Render) PostUserMessage(m interfaces.IMessage) {
+// PostUserMessage sends a message of type IMessage to the file system's message channel for further processing.
+func (c *Render) PostMessage(m interfaces.IMessage) {
 	if len(c.messageChan) >= renderQueueMax {
 		log.Printf("Render: message queue full, dropping message: %d", m.GetType())
 		return
@@ -191,14 +191,14 @@ func (c *Render) handleSetScreenSize(msg interfaces.IMessage) {
 
 // handlePaintRequest handles paint requests by triggering a repaint.
 func (c *Render) handlePaintRequest(msg interfaces.IMessage) {
-	component, _ := c.running[msg.PID()]
+	component, _ := c.running[msg.Source()]
 	if component == nil {
-		log.Printf("Render: paint request for unknown process: %d", msg.PID())
+		log.Printf("Render: paint request for unknown process: %d", msg.Source())
 		return
 	}
 	component.SetAvailable()
 	mp := messages.NewMessagePaintPrepare(NewInterpretedSurface(c.height, c.width))
-	c.router.PostKernelServerMessage(msg.PID(), mp)
+	c.router.PostKernelResponse(msg.Source(), mp)
 }
 
 // handlePaintApply handles paint apply messages by applying the surface to the terminal and triggering a repaint.
@@ -207,7 +207,7 @@ func (c *Render) handlePaintApply(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	component, _ := c.running[msg.PID()]
+	component, _ := c.running[msg.Source()]
 	if component == nil {
 		return
 	}
@@ -276,7 +276,7 @@ func (c *Render) handleWindowsSelectionBegin(msg interfaces.IMessage) {
 		}
 	}
 	mp := messages.NewMessagePaintPrepare(NewInterpretedSurface(c.height, c.width))
-	c.router.PostKernelServerMessage(msg.PID(), mp)
+	c.router.PostKernelResponse(msg.Source(), mp)
 }
 
 // handleWindowsSelectionOptions processes a windows selection options message and updates the corresponding surface options.
@@ -294,14 +294,14 @@ func (c *Render) handleWindowsSelectionOptions(msg interfaces.IMessage) {
 	process.Surface().SetOption(mt.Option(), mt.Value())
 	c.fullPaint = true
 	mp := messages.NewMessagePaintPrepare(NewInterpretedSurface(c.height, c.width))
-	c.router.PostKernelServerMessage(pid, mp)
+	c.router.PostKernelResponse(pid, mp)
 }
 
 // handleWindowsSelectionPrevious navigates to the previous window in the selection if possible and triggers a paint request.
 func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
 	if c.windowSelector.Prev() {
 		mp := messages.NewMessagePaintPrepare(NewInterpretedSurface(c.height, c.width))
-		c.router.PostKernelServerMessage(msg.PID(), mp)
+		c.router.PostKernelResponse(msg.Source(), mp)
 	}
 }
 
@@ -309,7 +309,7 @@ func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
 func (c *Render) handleWindowsSelectionNext(msg interfaces.IMessage) {
 	if c.windowSelector.Next() {
 		mp := messages.NewMessagePaintPrepare(NewInterpretedSurface(c.height, c.width))
-		c.router.PostKernelServerMessage(msg.PID(), mp)
+		c.router.PostKernelResponse(msg.Source(), mp)
 	}
 }
 
@@ -383,12 +383,12 @@ func (c *Render) handleWrite(msg interfaces.IMessage) {
 
 // CallGetScreenSize returns the current screen width and height of the Render instance.
 func (c *Render) handleGetScreenSize(msg interfaces.IMessage) {
-	mt, ok := msg.(*messages.MessageGetScreenSize)
+	mt, ok := msg.(*messages.MessageGetScreenSizeRequest)
 	if !ok {
 		return
 	}
-	mt.SetResult(c.width, c.height)
-	c.router.PostKernelServerMessage(mt.PID(), mt)
+	mt.CreateResponse(c.width, c.height)
+	c.router.PostKernelResponse(mt.Source(), mt)
 }
 
 // handleWriteColor writes the provided string to the terminal using the provided foreground and background colors.

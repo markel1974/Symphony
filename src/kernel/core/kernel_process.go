@@ -63,23 +63,25 @@ func NewKernelProcess(process interfaces.IUserProcess, user string, line, name s
 	return kp
 }
 
-// PostKernelMessage sends a message to the KernelProcess's message channel from UserProcess.
-func (kp *KernelProcess) PostKernelMessage(msg interfaces.IMessage) {
+// PostKernelRequest sends a message to the KernelProcess's message channel from UserProcess.
+func (kp *KernelProcess) PostKernelRequest(msg interfaces.IMessage) {
 	if len(kp.messageChan) >= kernelQueueMax {
 		log.Printf("Kernel: message queue full, dropping message: %d", msg.GetType())
 		return
 	}
-	msg.SetPID(kp.pid.GetId())
+	msg.SetSource(kp.pid.GetId())
+	msg.SetDestination(-1)
 	kp.messageChan <- msg
 }
 
-// PostKernelServerMessage sends a message to the KernelProcess's message channel from ServerProcess.
-func (kp *KernelProcess) PostKernelServerMessage(pid int, msg interfaces.IMessage) {
+// PostKernelResponse sends a message to the KernelProcess's message channel from ServerProcess.
+func (kp *KernelProcess) PostKernelResponse(destination int, msg interfaces.IMessage) {
 	if len(kp.messageChan) >= kernelQueueMax {
 		log.Printf("Kernel: message queue full, dropping message: %d", msg.GetType())
 		return
 	}
-	msg.SetPID(pid)
+	msg.SetSource(kp.pid.GetId())
+	msg.SetDestination(destination)
 	kp.messageChan <- msg
 }
 

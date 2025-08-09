@@ -2,44 +2,37 @@ package messages
 
 import "github.com/markel1974/c64emu/src/kernel/interfaces"
 
-// MessageTimer represents a timed message with an associated process ID, timer ID, and interval.
+// MessageTimer represents a timer message in the system, encapsulating process ID, timer ID, and interval details.
 type MessageTimer struct {
-	interfaces.Message
-	pid      int
+	interfaces.IMessage
 	tid      int
 	interval int
 }
 
-// NewMessageTimer creates a new MessageTimer instance with the specified process ID and interval.
-func NewMessageTimer(pid int, interval int) *MessageTimer {
+// NewMessageTimer creates and returns a new MessageTimer with the specified process ID and interval duration.
+func NewMessageTimer(interval int) *MessageTimer {
 	return &MessageTimer{
-		Message:  *interfaces.NewMessage(interfaces.MessageTypeTimer),
-		pid:      pid,
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeTimer),
 		interval: interval,
 	}
 }
 
-// PID returns the process ID associated with the MessageTimer instance.
-func (m *MessageTimer) PID() int {
-	return m.pid
-}
-
-// SetTID assigns a new timer ID (tid) to the MessageTimer instance.
+// SetTID sets the timer ID (tid) for the MessageTimer instance.
 func (m *MessageTimer) SetTID(tid int) {
 	m.tid = tid
 }
 
-// TID returns the process ID associated with the MessageTimer instance.
+// TID returns the timer ID associated with the MessageTimer instance.
 func (m *MessageTimer) TID() int {
 	return m.tid
 }
 
-// Interval returns the interval value associated with the MessageTimer instance.
+// Interval returns the interval value for the MessageTimer instance.
 func (m *MessageTimer) Interval() int {
 	return m.interval
 }
 
-// MessageTimedMessage represents a timed message with properties for initial delay, interval, and remaining count.
+// MessageTimedMessage wraps an IMessage with timing properties for scheduled or repeated messaging functionality.
 type MessageTimedMessage struct {
 	interfaces.IMessage
 	msg      interfaces.IMessage
@@ -48,39 +41,7 @@ type MessageTimedMessage struct {
 	count    int64
 }
 
-/*
-// NewMessageTimedMessage creates and returns a new instance of MessageTimedMessage with the specified timing settings.
-func NewMessageTimedMessage(originatorPID int, msg interfaces.IMessage, first int64, interval int64, count int64) *MessageTimedMessage {
-	return &MessageTimedMessage{
-		IMessage: interfaces.NewMessage(originatorPID, interfaces.MessageTypeTimedMessage),
-		msg:      msg,
-		first:    first,
-		interval: interval,
-		count:    count,
-	}
-}
-
-// Message returns the encapsulated IMessage instance within the MessageTimedMessage structure.
-func (m *MessageTimedMessage) Message() interfaces.IMessage {
-	return m.msg
-}
-
-// First returns the first timestamp associated with the MessageTimedMessage instance.
-func (m *MessageTimedMessage) First() int64 {
-	return m.first
-}
-
-// Interval returns the interval value (in int64) of the MessageTimedMessage.
-func (m *MessageTimedMessage) Interval() int64 {
-	return m.interval
-}
-
-// Count retrieves the current value of the count field from the MessageTimedMessage instance.
-func (m *MessageTimedMessage) Count() int64 {
-	return m.count
-}
-*/
-
+// MessageTimerCreate represents a request to create a timer with specific parameters for delay, interval, and repetition.
 type MessageTimerCreate struct {
 	interfaces.IMessage
 	first    int
@@ -88,42 +49,43 @@ type MessageTimerCreate struct {
 	count    int
 }
 
-// NewMessageTimerCreate initializes a new MessageTimerCreate instance with the given router, first, interval, and count values.
-// It sets the MessageType to MessageTypeTimerCreate.
+// NewMessageTimerCreate creates a MessageTimerCreate object with specified first delay, interval, and execution count.
 func NewMessageTimerCreate(first int, interval int, count int) *MessageTimerCreate {
 	return &MessageTimerCreate{
-		IMessage: interfaces.NewMessage(interfaces.MessageTypeTimerCreate),
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeTimerCreate),
 		first:    first,
 		interval: interval,
 		count:    count,
 	}
 }
 
-// First returns the initial delay value in milliseconds for the MessageTimerCreate instance.
+// First returns the initial delay in milliseconds before the timer starts.
 func (m *MessageTimerCreate) First() int {
 	return m.first
 }
 
-// Interval retrieves the interval value associated with the MessageTimerCreate instance.
+// Interval returns the interval value of the MessageTimerCreate instance.
 func (m *MessageTimerCreate) Interval() int {
 	return m.interval
 }
 
-// Count returns the count value associated with the MessageTimerCreate instance.
+// Count returns the total count value associated with the MessageTimerCreate instance.
 func (m *MessageTimerCreate) Count() int {
 	return m.count
 }
 
-// MessageTimerStop represents a message to stop a specific timer identified by its TID in the system.
+// MessageTimerStop represents a message to stop a previously created timer, identified by its timer ID (tid).
 type MessageTimerStop struct {
 	interfaces.IMessage
 	tid int
 }
 
-// NewMessageTimerStop creates a new MessageTimerStop instance with the specified router and timer ID (tid).
+// NewMessageTimerStop creates a new MessageTimerStop instance with the specified timer ID (tid).
+// It initializes the IMessage field with a no-acknowledgment message of type MessageTypeTimerStop.
+// tid is the identifier of the timer to be stopped.
 func NewMessageTimerStop(tid int) *MessageTimerStop {
 	return &MessageTimerStop{
-		IMessage: interfaces.NewMessage(interfaces.MessageTypeTimerStop),
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeTimerStop),
 		tid:      tid,
 	}
 }
@@ -133,21 +95,21 @@ func (m *MessageTimerStop) TID() int {
 	return m.tid
 }
 
-// MessageTimerCreated represents a message indicating that a timer has been successfully created within the system.
+// MessageTimerCreated is a message type signaling the successful creation of a timer, encapsulating the timer's ID (tid).
 type MessageTimerCreated struct {
 	interfaces.IMessage
 	tid int
 }
 
-// NewMessageTimerCreated creates a new instance of MessageTimerCreated with the specified router and timer ID.
+// NewMessageTimerCreated creates a new instance of MessageTimerCreated with the specified timer ID (tid).
 func NewMessageTimerCreated(tid int) *MessageTimerCreated {
 	return &MessageTimerCreated{
-		IMessage: interfaces.NewMessage(interfaces.MessageTypeTimerCreated),
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeTimerCreated),
 		tid:      tid,
 	}
 }
 
-// TID retrieves the timer identifier associated with the MessageTimerCreated instance.
+// TID retrieves the timer ID associated with the MessageTimerCreated instance.
 func (m *MessageTimerCreated) TID() int {
 	return m.tid
 }

@@ -4,49 +4,49 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 )
 
+// MessageError represents a specialized message that encapsulates an error within the messaging system.
 type MessageError struct {
-	interfaces.Message
+	interfaces.IMessage
 	err error
 }
 
-// NewMessageError creates and returns a new MessageQuit instance with the MessageType set to MessageTypeQuit.
+// NewMessageError creates and returns a new MessageError instance with the provided error and sets its type to MessageTypeError.
 func NewMessageError(err error) *MessageError {
 	return &MessageError{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeError),
-		err:     err,
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeError),
+		err:      err,
 	}
 }
 
-// Error returns the error associated with the MessageError instance.
+// Error returns the underlying error associated with the MessageError instance.
 func (m *MessageError) Error() error {
 	return m.err
 }
 
-// MessageQuit represents a message signaling a quit operation or system termination.
-// It embeds the base Message type and sets its kind to MessageTypeQuit.
+// MessageQuit represents a specific IMessage implementation used to signal a quit or termination event in the system.
 type MessageQuit struct {
-	interfaces.Message
+	interfaces.IMessage
 }
 
-// NewMessageQuit creates and returns a new MessageQuit instance with the MessageType set to MessageTypeQuit.
+// NewMessageQuit creates and returns a new instance of MessageQuit with type MessageTypeQuit and no acknowledgment.
 func NewMessageQuit() *MessageQuit {
 	return &MessageQuit{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeQuit),
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeQuit),
 	}
 }
 
-// MessageRead represents a specific type of Message containing read operation data. It embeds Message and includes a data field.
+// MessageRead represents a read operation message encapsulating the key type, character data, and broadcast behavior.
 type MessageRead struct {
-	interfaces.Message
+	interfaces.IMessage
 	kind      interfaces.KeyType
 	data      rune
 	broadcast bool
 }
 
-// NewMessageRead creates a new MessageRead instance with provided data and limits its length to n if necessary.
+// NewMessageRead creates and initializes a new MessageRead instance with the specified key type, data, and broadcast flag.
 func NewMessageRead(kind interfaces.KeyType, data rune, broadcast bool) *MessageRead {
 	return &MessageRead{
-		Message:   *interfaces.NewMessage(interfaces.MessageTypeRead),
+		IMessage:  interfaces.NewMessageNoAck(interfaces.MessageTypeRead),
 		kind:      kind,
 		data:      data,
 		broadcast: broadcast,
@@ -58,285 +58,277 @@ func (m *MessageRead) Kind() interfaces.KeyType {
 	return m.kind
 }
 
-// Data returns the data payload contained within the MessageRead instance.
+// Data returns the rune data associated with the MessageRead instance.
 func (m *MessageRead) Data() rune {
 	return m.data
 }
 
-// Broadcast returns a boolean indicating whether the message should be broadcasted.
+// Broadcast returns whether the message is marked as a broadcast.
 func (m *MessageRead) Broadcast() bool {
 	return m.broadcast
 }
 
-// MessageProcessExec represents a message type designed to execute a process with a given command line.
+// MessageProcessExec represents a message encapsulating process execution details.
+// It includes the IMessage interface and a command line to execute.
 type MessageProcessExec struct {
-	interfaces.Message
+	interfaces.IMessage
 	line string
 }
 
-// NewMessageProcessExec creates a new MessageProcessExec instance with a provided line and MessageTypeProcessExec type.
+// NewMessageProcessExec creates a new MessageProcessExec instance with the provided command line and a process execution type.
 func NewMessageProcessExec(line string) *MessageProcessExec {
 	return &MessageProcessExec{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessExec),
-		line:    line,
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessExec),
+		line:     line,
 	}
 }
 
+// Line retrieves the stored line string from the MessageProcessExec instance.
 func (m *MessageProcessExec) Line() string {
 	return m.line
 }
 
-// MessageProcessStart represents a message type designed to execute a process with a given command line.
+// MessageProcessStart represents a message to initiate the start of a process with specified arguments.
 type MessageProcessStart struct {
-	interfaces.Message
+	interfaces.IMessage
 	args []string
 }
 
-// NewMessageProcessStart creates a new MessageProcessExec instance with a provided line and MessageTypeProcessExec type.
+// NewMessageProcessStart creates a new MessageProcessStart instance with the provided arguments.
 func NewMessageProcessStart(args []string) *MessageProcessStart {
 	return &MessageProcessStart{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessStart),
-		args:    args,
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessStart),
+		args:     args,
 	}
 }
 
-// MessageProcessActivate represents a message type designed to execute a process with a given command line.
+// MessageProcessActivate represents a message type for activating an existing process in the messaging system.
 type MessageProcessActivate struct {
-	interfaces.Message
+	interfaces.IMessage
 }
 
-// NewMessageProcessActivate creates and returns a new instance of MessageProcessActivate initialized with MessageTypeProcessActivate.
+// NewMessageProcessActivate creates a new message of type MessageTypeProcessActivate without acknowledgment requirements.
 func NewMessageProcessActivate() *MessageProcessActivate {
 	return &MessageProcessActivate{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessActivate),
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessActivate),
 	}
 }
 
-// Args returns the slice of arguments associated with the MessageProcessStart instance.
+// Args returns the list of arguments associated with the MessageProcessStart instance.
 func (m *MessageProcessStart) Args() []string {
 	return m.args
 }
 
-// MessageProcessKill represents a message used to signal the termination of a process identified by its PID.
-// It embeds the base Message type and includes a PID field for specifying the process to be killed.
+// MessageProcessKill represents a message used to request termination of a process, identified by its process ID (pid).
 type MessageProcessKill struct {
-	interfaces.Message
+	interfaces.IMessage
 	pid int
 }
 
-// NewMessageProcessKill creates a new MessageProcessKill object with the specified PID and a ProcessKill message type.
+// NewMessageProcessKill creates a new MessageProcessKill instance to signal termination of a specific process by its pid.
 func NewMessageProcessKill(pid int) *MessageProcessKill {
 	return &MessageProcessKill{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessKill),
-		pid:     pid,
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessKill),
+		pid:      pid,
 	}
 }
 
-// MessageProcessKillAll represents a message type used to signal the termination of all processes in the system.
-// It embeds the Message struct and includes a Name field to specify the associated process group or identifier.
+// MessageProcessKillAll represents a message designed to instruct the termination of all processes or a subset by name.
 type MessageProcessKillAll struct {
-	interfaces.Message
+	interfaces.IMessage
 	name string
 }
 
-// NewMessageProcessKillAll creates a new MessageProcessKillAll instance with the specified name and appropriate message type.
+// NewMessageProcessKillAll creates a new MessageProcessKillAll instance for terminating all processes by name.
 func NewMessageProcessKillAll(name string) *MessageProcessKillAll {
 	return &MessageProcessKillAll{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessKillAll),
-		name:    name,
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessKillAll),
+		name:     name,
 	}
 }
 
-// Name returns the value of the name field associated with the MessageProcessKillAll instance.
+// Name retrieves the name of the MessageProcessKillAll instance.
 func (m *MessageProcessKillAll) Name() string {
 	return m.name
 }
 
-// MessageProcessKillForeground represents a message that signals the system to terminate all foreground processes.
-// It extends the base Message type to specialize for foreground process kill behavior.
+// MessageProcessKillForeground is a message type used to signal the termination of the currently active foreground process.
 type MessageProcessKillForeground struct {
-	interfaces.Message
+	interfaces.IMessage
 }
 
-// NewMessageProcessKillForeground creates a new MessageProcessKillForeground instance with a router and MessageTypeProcessKillForeground.
+// NewMessageProcessKillForeground creates a new MessageProcessKillForeground instance with a no-acknowledgment message type.
 func NewMessageProcessKillForeground() *MessageProcessKillForeground {
 	return &MessageProcessKillForeground{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessKillForeground),
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessKillForeground),
 	}
 }
 
-// MessageProcessExit represents a message to set a specific process to the foreground.
-// It embeds interfaces.Message and includes a PID field for the target process identifier.
+// MessageProcessExit represents a message indicating a process exit event, containing its process ID and message metadata.
 type MessageProcessExit struct {
-	interfaces.Message
+	interfaces.IMessage
 	pid int
 }
 
-// NewMessageMessageProcessExit creates and returns a new MessageProcessExit instance with the ProcessExit message type.
+// NewMessageMessageProcessExit creates and returns a new MessageProcessExit instance with the MessageTypeProcessExit type.
 func NewMessageMessageProcessExit() *MessageProcessExit {
 	return &MessageProcessExit{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessExit),
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessExit),
 	}
 }
 
-// MessageProcessSetForeground represents a message to set a specific process to the foreground.
-// It embeds interfaces.Message and includes a PID field for the target process identifier.
+// MessageProcessSetForeground represents a message that sets a process as the foreground process.
+// It embeds the IMessage interface for messaging capabilities and contains the process ID.
 type MessageProcessSetForeground struct {
-	interfaces.Message
+	interfaces.IMessage
 	pid int
 }
 
-// NewMessageProcessSetForeground creates and returns a new MessageProcessSetForeground with the specified process ID.
-// It initializes the embedded Message with the MessageTypeProcessSetForeground constant.
+// NewMessageProcessSetForeground creates a new MessageProcessSetForeground with the specified process ID (PID).
 func NewMessageProcessSetForeground(pid int) *MessageProcessSetForeground {
 	return &MessageProcessSetForeground{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessSetForeground),
-		pid:     pid,
+		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessSetForeground),
+		pid:      pid,
 	}
 }
 
+// PID returns the process identifier associated with the MessageProcessSetForeground instance.
 func (m *MessageProcessSetForeground) PID() int {
 	return m.pid
 }
 
-// MessageProcessList represents a request message to retrieve a list of processes from the system.
-// It embeds Message for base message functionality and uses ReplyTo to specify the recipient for the response.
-type MessageProcessList struct {
-	interfaces.Message
-	processes []*interfaces.ProcessDescription
-	ackChan   chan bool
+// MessageProcessListRequest represents a message type used to request the current list of active processes.
+// It implements the IMessage interface, allowing message operations such as setting type, originator, and acknowledgment.
+type MessageProcessListRequest struct {
+	interfaces.IMessage
 }
 
-// NewMessageProcessList creates a new MessageProcessList with specified replyTo as an IRouter.
-func NewMessageProcessList(ackChan chan bool) *MessageProcessList {
-	return &MessageProcessList{
-		Message: *interfaces.NewMessage(interfaces.MessageTypeProcessList),
-		ackChan: ackChan,
+// MessageProcessListResponse represents a response containing a list of process descriptions associated with a message.
+type MessageProcessListResponse struct {
+	interfaces.IMessage
+	processes []*interfaces.ProcessDescription
+}
+
+// NewMessageProcessListRequest creates a new MessageProcessListRequest with the provided acknowledgment channel.
+func NewMessageProcessListRequest(ackChan chan bool) *MessageProcessListRequest {
+	return &MessageProcessListRequest{
+		IMessage: interfaces.NewMessageRequest(interfaces.MessageTypeProcessListRequest, ackChan),
 	}
 }
 
-// SetResult sets the list of processes and sends the message to the specified recipient via ReplyTo.
-func (m *MessageProcessList) SetResult(processes []*interfaces.ProcessDescription) {
-	m.MakeResponse()
-	m.processes = processes
+// CreateResponse constructs a MessageProcessListResponse, clones the original message, and sets it as a response.
+func (m *MessageProcessListRequest) CreateResponse(processes []*interfaces.ProcessDescription) {
+	msg := &MessageProcessListResponse{IMessage: m.Clone(), processes: processes}
+	m.SetResponse(interfaces.MessageTypeProcessListResponse, msg)
 }
 
 // GetResponse returns the list of ProcessDescription objects associated with the MessageProcessListResponse instance.
-func (m *MessageProcessList) GetResponse() []*interfaces.ProcessDescription {
+func (m *MessageProcessListResponse) GetResponse() []*interfaces.ProcessDescription {
 	return m.processes
 }
 
-// Ack signals the acknowledgment channel and closes it to indicate process completion or unblock synchronous calls.
-func (m *MessageProcessList) Ack() bool {
-	m.ackChan <- true
-	return true
-}
-
-type MessageProcessIsRunning struct {
-	interfaces.Message
+// MessageProcessIsRunningRequest represents a request to verify if a specific process is currently running.
+// It embeds interfaces.IMessage and includes a process ID (verifyPid) to check.
+type MessageProcessIsRunningRequest struct {
+	interfaces.IMessage
 	verifyPid int
-	ackChan   chan bool
-	result    bool
 }
 
-// NewMessageProcessIsRunning creates a new MessageProcessIsRunning with the given originatorPID, pid, and acknowledgment channel.
-func NewMessageProcessIsRunning(verifyPid int, ackChan chan bool) *MessageProcessIsRunning {
-	return &MessageProcessIsRunning{
-		Message:   *interfaces.NewMessage(interfaces.MessageTypeProcessIsRunning),
+// MessageProcessIsRunningResponse represents the response message confirming whether a process is currently running.
+type MessageProcessIsRunningResponse struct {
+	interfaces.IMessage
+	result bool
+}
+
+// NewMessageProcessIsRunningRequest creates a new MessageProcessIsRunningRequest with a verify PID and acknowledgment channel.
+func NewMessageProcessIsRunningRequest(verifyPid int, ackChan chan bool) *MessageProcessIsRunningRequest {
+	return &MessageProcessIsRunningRequest{
+		IMessage:  interfaces.NewMessageRequest(interfaces.MessageTypeProcessIsRunningRequest, ackChan),
 		verifyPid: verifyPid,
-		ackChan:   ackChan,
 	}
 }
 
-// Ack acknowledges that the processing of the message is complete by sending a signal to the ackChan and returns true.
-func (m *MessageProcessIsRunning) Ack() bool {
-	m.ackChan <- true
-	return true
-}
-
-// VerifyPID returns the PID to be verified.
-func (m *MessageProcessIsRunning) VerifyPID() int {
+// VerifyPID retrieves the process ID associated with the MessageProcessIsRunningRequest instance.
+func (m *MessageProcessIsRunningRequest) VerifyPID() int {
 	return m.verifyPid
 }
 
-// SetResult assigns the processing result to the result field and marks the message as a response.
-func (m *MessageProcessIsRunning) SetResult(result bool) {
-	m.MakeResponse()
-	m.result = result
+// CreateResponse generates a MessageProcessIsRunningResponse based on the result and sets it as the response for the request.
+func (m *MessageProcessIsRunningRequest) CreateResponse(result bool) {
+	msg := &MessageProcessIsRunningResponse{IMessage: m.Clone(), result: result}
+	m.SetResponse(interfaces.MessageTypeProcessIsRunningResponse, msg)
 }
 
-// GetResponse returns the result of the message process as a boolean value.
-func (m *MessageProcessIsRunning) GetResponse() bool {
+// GetResponse returns the boolean result indicating if the message process is running.
+func (m *MessageProcessIsRunningResponse) GetResponse() bool {
 	return m.result
 }
 
-// MessageNotifyProcessCreate represents a message notifying the creation of a process in the system.
-// It embeds the base Message type and includes details about the created process's PID and name.
+// MessageNotifyProcessCreate is a message type used to notify the creation of a new process.
+// It includes the process ID and name of the created process as fields.
+// Implements the IMessage interface for messaging system integration.
 type MessageNotifyProcessCreate struct {
-	interfaces.Message
+	interfaces.IMessage
 	createdPID int
 	name       string
 }
 
-// NewMessageNotifyProcessCreate creates a new instance of MessageNotifyProcessCreate with the given parameters.
-// The `originatorPID` specifies the process ID of the message sender.
-// The `createdPID` specifies the process ID of the newly created process.
-// The `name` specifies the name associated with the created process.
+// NewMessageNotifyProcessCreate creates a new MessageNotifyProcessCreate instance with the given process ID and name.
 func NewMessageNotifyProcessCreate(createdPID int, name string) *MessageNotifyProcessCreate {
 	return &MessageNotifyProcessCreate{
-		Message:    *interfaces.NewMessage(interfaces.MessageTypeNotifyProcessCreate),
+		IMessage:   interfaces.NewMessageNoAck(interfaces.MessageTypeNotifyProcessCreate),
 		createdPID: createdPID,
 		name:       name,
 	}
 }
 
-// CreatedPID returns the process ID (PID) created and associated with this MessageNotifyProcessCreate instance.
+// CreatedPID returns the process ID of the created process stored in the MessageNotifyProcessCreate instance.
 func (m *MessageNotifyProcessCreate) CreatedPID() int {
 	return m.createdPID
 }
 
-// Name returns the name associated with the MessageNotifyProcessCreate instance.
+// Name returns the name string associated with the MessageNotifyProcessCreate instance.
 func (m *MessageNotifyProcessCreate) Name() string {
 	return m.name
 }
 
-// MessageNotifyProcessTerminate is a message type used to notify about the termination of a specific process.
-// It embeds the Message struct to inherit general message features and includes the terminated process ID.
-// TerminatedPID returns the ID of the process that was terminated.
+// MessageNotifyProcessTerminate notifies when a specific process has been terminated in the system.
+// It implements the IMessage interface for inter-process communication.
+// The terminatedPID field identifies the process ID of the terminated process.
 type MessageNotifyProcessTerminate struct {
-	interfaces.Message
+	interfaces.IMessage
 	terminatedPID int
 }
 
-// NewMessageMessageNotifyProcessTerminate creates a new MessageNotifyProcessTerminate with the given PIDs.
+// NewMessageMessageNotifyProcessTerminate creates a new MessageNotifyProcessTerminate for a terminated process with the given PID.
 func NewMessageMessageNotifyProcessTerminate(terminatedPID int) *MessageNotifyProcessTerminate {
 	return &MessageNotifyProcessTerminate{
-		Message:       *interfaces.NewMessage(interfaces.MessageTypeNotifyProcessTerminate),
+		IMessage:      interfaces.NewMessageNoAck(interfaces.MessageTypeNotifyProcessTerminate),
 		terminatedPID: terminatedPID,
 	}
 }
 
-// TerminatedPID retrieves the process ID (PID) of the terminated process from the MessageNotifyProcessTerminate instance.
+// TerminatedPID returns the PID of the process that has terminated.
 func (m *MessageNotifyProcessTerminate) TerminatedPID() int {
 	return m.terminatedPID
 }
 
-// MessageNotifyProcessForeground represents a notification message to indicate a process is moved to the foreground.
-// It embeds the Message type and includes an additional foreground process ID field, foregroundPID.
+// MessageNotifyProcessForeground represents a message indicating that a process has entered the foreground.
+// It embeds the IMessage interface and includes the process ID of the foreground process.
 type MessageNotifyProcessForeground struct {
-	interfaces.Message
+	interfaces.IMessage
 	foregroundPID int
 }
 
-// NewMessageNotifyProcessForeground creates a new MessageNotifyProcessForeground with the given PIDs.
+// NewMessageNotifyProcessForeground creates a new instance of MessageNotifyProcessForeground with the specified foreground PID.
 func NewMessageNotifyProcessForeground(foregroundPID int) *MessageNotifyProcessForeground {
 	return &MessageNotifyProcessForeground{
-		Message:       *interfaces.NewMessage(interfaces.MessageTypeNotifyProcessForeground),
+		IMessage:      interfaces.NewMessageNoAck(interfaces.MessageTypeNotifyProcessForeground),
 		foregroundPID: foregroundPID,
 	}
 }
 
-// ForegroundPID returns the process ID (PID) of the process currently marked as running in the foreground.
+// ForegroundPID returns the process ID of the foreground process associated with the message.
 func (m *MessageNotifyProcessForeground) ForegroundPID() int {
 	return m.foregroundPID
 }

@@ -20,11 +20,11 @@ type OnActivate func(process IUserProcess)
 
 // IUserProcess defines an interface for process management, process handling, interaction, and rendering within a system.
 type IUserProcess interface {
-	IUserRouter
+	IRouter
 
 	PID() int
 
-	Bind(router IKernelRouter)
+	Bind(router IKernelRequestRouter)
 
 	User() string
 

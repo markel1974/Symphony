@@ -1,14 +1,73 @@
 package interfaces
 
-// MessageType represents the type of a message in the system, typically defined by constant values.
+// MessageType represents the type of a message exchanged within the system, identifying the message's purpose or category.
 type MessageType int
 
+// MessageTypeError represents an error message type.
+// MessageTypeQuit represents a quit message type.
+// MessageTypeRead represents a read operation message type.
+// MessageTypeTimer represents a timer-related message type.
+// MessageTypeGetScreenSizeRequest requests the current screen size.
+// MessageTypeGetScreenSizeResponse provides the screen size as a response.
+// MessageTypeSetScreenSize sets the screen size.
+// MessageTypeTimerCreate requests creation of a timer.
+// MessageTypeTimerCreated indicates a timer has been created.
+// MessageTypeTimerStop stops an existing timer.
+// MessageTypeExitRequested signals a request to exit.
+// MessageTypeTimedMessage represents a message tied to a timed event.
+// MessageTypePaintRequest requests a paint operation.
+// MessageTypePaintPrepare prepares for a paint operation.
+// MessageTypePaintApply applies a paint operation.
+// MessageTypeWrite writes a message.
+// MessageTypeWriteLn writes a message with a newline.
+// MessageTypeWriteColor writes a colored message.
+// MessageTypeClearScreen clears the screen.
+// MessageTypeClearLine clears the current line.
+// MessageTypeMoveCursorLeft moves the cursor to the left.
+// MessageTypeMoveCursorRight moves the cursor to the right.
+// MessageTypeSaveCursor saves the cursor position.
+// MessageTypeRestoreCursor restores the cursor position.
+// MessageTypeWindowsSelectionBegin begins a window selection.
+// MessageTypeWindowsSelectionEnd ends a window selection.
+// MessageTypeWindowsSelectionNext moves to the next window in selection.
+// MessageTypeWindowsSelectionPrevious moves to the previous window in selection.
+// MessageTypeWindowsSelectionOptions retrieves selection options for windows.
+// MessageTypeProcessExec executes a process.
+// MessageTypeProcessStart starts a process.
+// MessageTypeProcessActivate activates an existing process.
+// MessageTypeProcessIsRunningRequest checks if a process is running.
+// MessageTypeProcessIsRunningResponse responds whether a process is running.
+// MessageTypeProcessExit indicates a process has exited.
+// MessageTypeProcessKill kills a process.
+// MessageTypeProcessKillAll kills all processes.
+// MessageTypeProcessKillForeground kills the foreground process.
+// MessageTypeProcessSetForeground sets a process as the foreground process.
+// MessageTypeProcessListRequest requests a list of processes.
+// MessageTypeProcessListResponse provides a list of processes.
+// MessageTypeFileSystemCWDSetRequest requests to set the current working directory.
+// MessageTypeFileSystemCWDSetResponse responds to the CWD set request.
+// MessageTypeFileSystemCWDGetRequest requests the current working directory.
+// MessageTypeFileSystemCWDGetResponse provides the current working directory.
+// MessageTypeFileSystemCWDDirectoryListingRequest requests a directory listing in CWD.
+// MessageTypeFileSystemCWDDirectoryListingResponse provides a directory listing in CWD.
+// MessageTypeFileSystemCWDPathRequest requests the path in the current working directory.
+// MessageTypeFileSystemCWDPathResponse provides the path in the current working directory.
+// MessageTypeFileSystemSuggestionRequest requests file system suggestions.
+// MessageTypeFileSystemSuggestionResponse provides file system suggestions.
+// MessageTypeFileSystemHelpRequest requests help information related to the file system.
+// MessageTypeFileSystemHelpResponse provides help information related to the file system.
+// MessageTypeFileSystemFindRequest requests to find files in the file system.
+// MessageTypeFileSystemFindResponse provides results for the file system find request.
+// MessageTypeNotifyProcessCreate notifies about the creation of a process.
+// MessageTypeNotifyProcessForeground notifies about a process moving to the foreground.
+// MessageTypeNotifyProcessTerminate notifies about the termination of a process.
 const (
 	MessageTypeError MessageType = iota
 	MessageTypeQuit
 	MessageTypeRead
 	MessageTypeTimer
-	MessageTypeGetScreenSize
+	MessageTypeGetScreenSizeRequest
+	MessageTypeGetScreenSizeResponse
 	MessageTypeSetScreenSize
 	MessageTypeTimerCreate
 	MessageTypeTimerCreated
@@ -35,19 +94,27 @@ const (
 	MessageTypeProcessExec
 	MessageTypeProcessStart
 	MessageTypeProcessActivate
-	MessageTypeProcessIsRunning
+	MessageTypeProcessIsRunningRequest
+	MessageTypeProcessIsRunningResponse
 	MessageTypeProcessExit
 	MessageTypeProcessKill
 	MessageTypeProcessKillAll
 	MessageTypeProcessKillForeground
 	MessageTypeProcessSetForeground
-	MessageTypeProcessList
-	MessageTypeFileSystemCWDSet
-	MessageTypeFileSystemCWDGet
-	MessageTypeFileSystemCWDDirectoryListing
-	MessageTypeFileSystemCWDPath
-	MessageTypeFileSystemSuggestion
-	MessageTypeFileSystemHelp
+	MessageTypeProcessListRequest
+	MessageTypeProcessListResponse
+	MessageTypeFileSystemCWDSetRequest
+	MessageTypeFileSystemCWDSetResponse
+	MessageTypeFileSystemCWDGetRequest
+	MessageTypeFileSystemCWDGetResponse
+	MessageTypeFileSystemCWDDirectoryListingRequest
+	MessageTypeFileSystemCWDDirectoryListingResponse
+	MessageTypeFileSystemCWDPathRequest
+	MessageTypeFileSystemCWDPathResponse
+	MessageTypeFileSystemSuggestionRequest
+	MessageTypeFileSystemSuggestionResponse
+	MessageTypeFileSystemHelpRequest
+	MessageTypeFileSystemHelpResponse
 	MessageTypeFileSystemFindRequest
 	MessageTypeFileSystemFindResponse
 	MessageTypeNotifyProcessCreate
@@ -55,61 +122,112 @@ const (
 	MessageTypeNotifyProcessTerminate
 )
 
-// IMessage defines the interface for messages used within the system, requiring a method to retrieve the message type.
+// IMessage defines the interface for structured messages, supporting operations such as cloning, acknowledgment, and responses.
 type IMessage interface {
 	GetType() MessageType
 
-	PID() int
+	SetType(kind MessageType)
 
-	SetPID(int)
+	Source() int
 
-	Response() bool
+	SetSource(source int)
 
-	Ack() bool
+	Destination() int
+
+	SetDestination(destination int)
+
+	Clone() IMessage
+
+	Response() IMessage
+
+	SetResponse(kind MessageType, response IMessage)
+
+	Ack() chan bool
 }
 
-// Message represents a basic unit containing a MessageType to define its specific behavior or category.
+// Message represents a message structure used for communication between entities in the system.
+// It contains metadata such as source, destination, type, and response handling mechanisms.
 type Message struct {
-	originatorPID int
-	kind          MessageType
-	response      bool
+	source       int
+	destination  int
+	kind         MessageType
+	responseKind MessageType
+	ack          chan bool
+	response     IMessage
 }
 
-// NewMessage creates a new Message instance with the specified MessageType.
-func NewMessage(kind MessageType) *Message {
+// Destination returns the destination identifier of the message.
+func (m *Message) Destination() int {
+	return m.destination
+}
+
+// SetDestination updates the destination field of the Message with the specified value.
+func (m *Message) SetDestination(destination int) {
+	m.destination = destination
+}
+
+// NewMessageNoAck initializes a new Message instance of the specified MessageType without an acknowledgment channel.
+func NewMessageNoAck(kind MessageType) *Message {
 	return &Message{
-		originatorPID: -1,
-		kind:          kind,
-		response:      false,
+		kind:        kind,
+		ack:         nil,
+		source:      -1,
+		destination: -1,
 	}
 }
 
-// GetType returns the MessageType of the current Message instance.
+// NewMessageRequest creates a new Message instance with the specified MessageType and acknowledgment channel.
+func NewMessageRequest(kind MessageType, ack chan bool) *Message {
+	return &Message{
+		kind:        kind,
+		ack:         ack,
+		source:      -1,
+		destination: -1,
+	}
+}
+
+// Clone creates a deep copy of the Message and returns it as an IMessage interface.
+func (m *Message) Clone() IMessage {
+	return &Message{
+		kind:        m.kind,
+		source:      m.source,
+		destination: m.destination,
+		ack:         m.ack,
+	}
+}
+
+// GetType returns the type of the message as a MessageType.
 func (m *Message) GetType() MessageType {
 	return m.kind
 }
 
-// SetPID sets the originator's process ID (PID) associated with the Message instance.'
-func (m *Message) SetPID(pid int) {
-	m.originatorPID = pid
+// SetType sets the message type to the specified kind.
+func (m *Message) SetType(kind MessageType) {
+	m.kind = kind
 }
 
-// PID returns the originator's process ID (PID) associated with the Message instance.
-func (m *Message) PID() int {
-	return m.originatorPID
+// SetSource sets the source identifier for the message.
+func (m *Message) SetSource(source int) {
+	m.source = source
 }
 
-// Response returns a boolean indicating whether the message should be responded to.
-func (m *Message) Response() bool {
+// Source returns the source identifier of the Message as an integer.
+func (m *Message) Source() int {
+	return m.source
+}
+
+// Ack sends a signal to the acknowledgment channel if it is not nil.
+func (m *Message) Ack() chan bool {
+	return m.ack
+}
+
+// SetResponse assigns the response message, its type, and the destination to the current message.
+func (m *Message) SetResponse(kind MessageType, response IMessage) {
+	m.response = response
+	m.response.SetType(kind)
+}
+
+// Response retrieves the response message associated with the current message. Returns nil if no response exists.
+func (m *Message) Response() IMessage {
 	return m.response
-}
-
-// MakeResponse marks the message as a response to be sent back to the sender.
-func (m *Message) MakeResponse() {
-	m.response = true
-}
-
-// Ack acknowledges the processing of the message, preventing further handling or retries by the system.
-func (m *Message) Ack() bool {
-	return false
 }
