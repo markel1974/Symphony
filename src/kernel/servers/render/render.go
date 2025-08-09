@@ -111,12 +111,13 @@ func (c *Render) Setup(router interfaces.IKernelResponseRouter, process interfac
 	return nil
 }
 
-// PostUserMessage sends a message of type IMessage to the file system's message channel for further processing.
+// PostMessage sends a message of type IMessage to the file system's message channel for further processing.
 func (c *Render) PostMessage(m interfaces.IMessage) {
 	if len(c.messageChan) >= renderQueueMax {
 		log.Printf("Render: message queue full, dropping message: %d", m.GetType())
 		return
 	}
+	m.SetDestination(c.PID())
 	c.messageChan <- m
 }
 

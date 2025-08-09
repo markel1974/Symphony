@@ -129,7 +129,9 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 // from initialization to active operation state.
 func (c *Kernel) Start() error {
 	// Request shell initialization
-	c.postSelfMessage(messages.NewMessageFileSystemFindRequest(nil, c.PID(), c.shellPath, true))
+	mfs := messages.NewMessageFileSystemFindRequest(nil, c.PID(), c.shellPath, true)
+	mfs.SetSource(c.PID())
+	c.postSelfMessage(mfs)
 
 	// Launch asynchronous input processing
 	d := make(chan bool)
@@ -141,10 +143,12 @@ func (c *Kernel) Start() error {
 			if err == nil {
 				if k != interfaces.KeyTypeNone {
 					re := messages.NewMessageRead(k, v, false)
+					re.SetSource(c.PID())
 					c.postSelfMessage(re)
 				}
 			} else {
 				qe := messages.NewMessageQuit()
+				qe.SetSource(c.PID())
 				c.postSelfMessage(qe)
 				return
 			}
@@ -159,6 +163,7 @@ func (c *Kernel) Start() error {
 // to adapt their output accordingly.
 func (c *Kernel) SetScreenSize(w int, h int) {
 	msg := messages.NewMessageSetScreenSize(w, h)
+	msg.SetSource(c.PID())
 	c.postSelfMessage(msg)
 }
 
@@ -276,7 +281,9 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	//sentForeground := false
 	for _, kProc := range c.running {
 		if readBroadcastEvent := kProc.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
-			kProc.PostMessage(messages.NewMessageRead(mm.Kind(), mm.Data(), true))
+			mr := messages.NewMessageRead(mm.Kind(), mm.Data(), true)
+			mr.SetSource(c.PID())
+			kProc.PostMessage(mr)
 			//if c.foreground != nil && c.foreground == kProc{
 			//sentForeground = true
 			//}
@@ -286,6 +293,7 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	// Send to foreground process if it accepts input
 	if c.foreground != nil {
 		if readEvent := c.foreground.GetCommand().OnRead(); readEvent != nil {
+			mm.SetSource(c.PID())
 			c.foreground.PostMessage(mm)
 		}
 	}
@@ -327,7 +335,9 @@ func (c *Kernel) handleProcessExec(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	c.postSelfMessage(messages.NewMessageFileSystemFindRequest(nil, mt.Source(), mt.Line(), false))
+	mfs := messages.NewMessageFileSystemFindRequest(nil, mt.Source(), mt.Line(), false)
+	mfs.SetSource(c.PID())
+	c.postSelfMessage(mfs)
 }
 
 // handleProcessSetForeground manages foreground process transitions, ensuring proper
@@ -409,11 +419,16 @@ func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
 	msgTimer.SetDestination(mt.Source())
 	msgTimer.SetTID(c.ticker.Create(c.timersChan, msgTimer, int64(mt.First()), int64(mt.Interval()), int64(mt.Count())))
 	if msgTimer.TID() < 0 {
-		kProc.PostMessage(messages.NewMessageError(fmt.Errorf("error creating timer")))
+		me := messages.NewMessageError(fmt.Errorf("error creating timer"))
+		me.SetSource(c.PID())
+		kProc.PostMessage(me)
 		return
 	}
 	kProc.AddTimer(msgTimer.TID())
-	kProc.PostMessage(messages.NewMessageTimerCreated(msgTimer.TID()))
+
+	mtc := messages.NewMessageTimerCreated(msgTimer.TID())
+	mtc.SetSource(c.PID())
+	kProc.PostMessage(mtc)
 }
 
 // handleTimerStop processes timer cancellation requests, removing active timers
@@ -461,6 +476,7 @@ func (c *Kernel) handleQuitEvent(m interfaces.IMessage) {
 	c.exit = true
 }
 
+// doHandleResponse processes the response based on the message type, delegating specific handling or logging unknown types.
 func (c *Kernel) doHandleResponse(m interfaces.IMessage) {
 	switch m.GetType() {
 	case interfaces.MessageTypeFileSystemFindRequest:
@@ -470,6 +486,8 @@ func (c *Kernel) doHandleResponse(m interfaces.IMessage) {
 	}
 }
 
+// doHandleFileSystemFindResponse processes a response to a filesystem find request,
+// creating a new process instance and starting it for execution.
 func (c *Kernel) doHandleFileSystemFindResponse(msg interfaces.IMessage) {
 	mt, ok := msg.(*messages.MessageFileSystemFindRequest)
 	if !ok {
@@ -486,31 +504,43 @@ func (c *Kernel) doHandleFileSystemFindResponse(msg interfaces.IMessage) {
 	}
 	cmd, args, err := response.GetResult()
 	if err != nil {
-		kRequestor.PostMessage(messages.NewMessageError(fmt.Errorf("error creating task: invalid command '%s'", mt.Line())))
+		me := messages.NewMessageError(fmt.Errorf("error creating task: invalid command '%s'", mt.Line()))
+		me.SetSource(c.PID())
+		kRequestor.PostMessage(me)
 		return
 	}
 	parent, _ := c.running[kRequestor.PID()]
 	kProc, err := c.doCreateKernelProcess(kRequestor.User(), mt.Line(), parent, cmd, mt.Protected())
 	if err != nil {
-		kRequestor.PostMessage(messages.NewMessageError(fmt.Errorf("error creating task: %s", err.Error())))
+		me := messages.NewMessageError(fmt.Errorf("error creating task: %s", err.Error()))
+		me.SetSource(c.PID())
+		kRequestor.PostMessage(me)
 		return
 	}
 	kProc.Start()
 	for _, server := range c.servers {
-		server.PostMessage(messages.NewMessageNotifyProcessCreate(kProc.PID(), kProc.GetCommand().Name()))
+		mn := messages.NewMessageNotifyProcessCreate(kProc.PID(), kProc.GetCommand().Name())
+		mn.SetSource(c.PID())
+		server.PostMessage(mn)
 	}
-	kProc.PostMessage(messages.NewMessageProcessStart(args))
+	mps := messages.NewMessageProcessStart(args)
+	mps.SetSource(c.PID())
+	kProc.PostMessage(mps)
 }
 
 // doProcessSetForeground updates the system's foreground process state and notifies
 // relevant system components of the focus change, maintaining UI consistency.
 func (c *Kernel) doProcessSetForeground(process interfaces.IUserProcess) {
 	for _, server := range c.servers {
-		server.PostMessage(messages.NewMessageNotifyProcessForeground(process.PID()))
+		mn := messages.NewMessageNotifyProcessForeground(process.PID())
+		mn.SetSource(c.PID())
+		server.PostMessage(mn)
 	}
 	if c.foreground != process {
 		c.foreground = process
-		c.foreground.PostMessage(messages.NewMessageProcessActivate())
+		mpa := messages.NewMessageProcessActivate()
+		mpa.SetSource(c.PID())
+		c.foreground.PostMessage(mpa)
 	}
 }
 
@@ -524,7 +554,9 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 		c.ticker.RemoveEntries(process.Timers())
 	}
 	for _, server := range c.servers {
-		server.PostMessage(messages.NewMessageMessageNotifyProcessTerminate(process.PID()))
+		mnp := messages.NewMessageMessageNotifyProcessTerminate(process.PID())
+		mnp.SetSource(c.PID())
+		server.PostMessage(mnp)
 	}
 	if c.foreground != nil {
 		if c.foreground.PID() == process.PID() {
@@ -537,7 +569,9 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 	}
 	delete(c.running, process.PID())
 	c.pidGenerator.Unset(process.PID())
-	process.PostMessage(messages.NewMessageQuit())
+	mq := messages.NewMessageQuit()
+	mq.SetSource(c.PID())
+	process.PostMessage(mq)
 }
 
 // doCloseTimer removes a specific timer from both the process context and the system

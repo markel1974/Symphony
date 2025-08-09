@@ -108,6 +108,7 @@ func (c *FileSystem) PostMessage(m interfaces.IMessage) {
 		log.Printf("FS: message queue full, dropping message: %d", m.GetType())
 		return
 	}
+	m.SetDestination(c.PID())
 	c.messageChan <- m
 }
 

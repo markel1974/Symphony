@@ -377,12 +377,13 @@ func (t *Process) SetExit() {
 	t.kRouter.PostKernelRequest(messages.NewMessageExitRequested())
 }
 
-// PostUserMessage sends the provided message to the message channel for processing.
+// PostMessage sends the provided message to the message channel for processing.
 func (t *Process) PostMessage(msg interfaces.IMessage) {
 	if len(t.gatekeeperChan) >= gatekeeperQueueMax {
 		log.Printf("Process Gatekeeper: message queue full, dropping message: %d", msg.GetType())
 		return
 	}
+	msg.SetDestination(t.pid)
 	t.gatekeeperChan <- msg
 }
 
