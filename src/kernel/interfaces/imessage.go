@@ -172,6 +172,7 @@ func NewMessageRequest(source int, destination int, kind MessageType, ack chan b
 	}
 }
 
+// PrepareResponse creates a new Message with the provided responder and type, reversing the source and destination fields.
 func (m *Message) PrepareResponse(responder int, kind MessageType) IMessage {
 	return &Message{
 		kind:        kind,
