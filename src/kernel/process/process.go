@@ -468,6 +468,7 @@ func (t *Process) handleMessageError(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
+	log.Printf("Process [%s]: reveived error %s", t.cmd.Name(), mt.Error())
 	if onError := t.cmd.OnError(); onError != nil {
 		onError(t, mt.Error())
 	}

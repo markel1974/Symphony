@@ -240,7 +240,7 @@ func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 	//log.Printf("Kernel: message received: %d - %d", m.Source(), m.GetType())
 	kSourceProc, _ := c.running[m.Source()]
 	if kSourceProc == nil {
-		log.Printf("Kernel: unknown source process: %d - type %d", m.Source(), m.GetType())
+		log.Printf("Kernel [handleMessageEvent]: unknown source process: %d - type %d", m.Source(), m.GetType())
 		return
 	}
 
@@ -250,7 +250,8 @@ func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 		} else if kDestProc, _ := c.running[m.Destination()]; kDestProc != nil {
 			kDestProc.PostMessage(m)
 		} else {
-			log.Printf("Kernel: unknown destination process: %d - type %d", m.Destination(), m.GetType())
+			mr := messages.NewMessageError(c.PID(), kSourceProc.PID(), fmt.Errorf("unknown destination process: %d", m.Destination()))
+			kSourceProc.PostMessage(mr)
 		}
 		return
 	}
@@ -262,7 +263,8 @@ func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 		route(m)
 		return
 	}
-	log.Printf("Kernel: unknown message type: %d", id)
+	mr := messages.NewMessageError(c.PID(), kSourceProc.PID(), fmt.Errorf("unknown message type: %d", id))
+	kSourceProc.PostMessage(mr)
 }
 
 // handleReadEvent processes keyboard input by distributing events to interested processes,
@@ -445,7 +447,7 @@ func (c *Kernel) handleTimerStop(m interfaces.IMessage) {
 	}
 	kProc, _ := c.running[m.Source()]
 	if kProc == nil {
-		log.Printf("error stopping timer: invalid originator %d", m.Source())
+		log.Printf("Kernel [handleTimerStop]: invalid originator %d", m.Source())
 		return
 	}
 	c.doCloseTimer(kProc, mt.TID())
@@ -460,7 +462,7 @@ func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
 	}
 	kProc, _ := c.running[mt.Source()]
 	if kProc == nil {
-		log.Printf("error in handleProcessList: invalid originator %d", mt.Source())
+		log.Printf("Kernel [handleProcessList]: invalid originator %d", mt.Source())
 		return
 	}
 	var out []*interfaces.ProcessDescription
@@ -487,7 +489,7 @@ func (c *Kernel) doHandleResponse(m interfaces.IMessage) {
 	case interfaces.MessageTypeFileSystemFindRequest:
 		c.doHandleFileSystemFindResponse(m)
 	default:
-		log.Printf("Kernel: unknown kernel message type: %d", m.GetType())
+		log.Printf("Kernel [doHandleResponse]: unknown kernel message type: %d", m.GetType())
 	}
 }
 
@@ -500,7 +502,7 @@ func (c *Kernel) doHandleFileSystemFindResponse(msg interfaces.IMessage) {
 	}
 	kRequestor, _ := c.running[mt.RequestorPID()]
 	if kRequestor == nil {
-		log.Printf("error creating task: invalid originator")
+		log.Printf("Kernel [doHandleFileSystemFindResponse]: error creating task: invalid originator")
 		return
 	}
 	response, ok := msg.Response().(*messages.MessageFileSystemFindResponse)
@@ -561,15 +563,14 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 		mnp := messages.NewMessageMessageNotifyProcessTerminate(c.PID(), server.PID(), process.PID())
 		server.PostMessage(mnp)
 	}
-	if c.foreground != nil {
-		if c.foreground.PID() == process.PID() {
-			if parent := process.Parent(); parent != nil {
-				c.doProcessSetForeground(parent)
-			} else {
-				log.Printf("Fatal Error: foreground process is nil")
-			}
+	if c.foreground != nil && c.foreground.PID() == process.PID() {
+		if parent := process.Parent(); parent != nil {
+			c.doProcessSetForeground(parent)
+		} else {
+			log.Printf("Kernel [doProcessExit]: foreground process is nil")
 		}
 	}
+
 	delete(c.running, process.PID())
 	c.pidGenerator.Unset(process.PID())
 	mq := messages.NewMessageQuit(c.PID(), process.PID())
