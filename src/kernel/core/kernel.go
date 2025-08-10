@@ -28,7 +28,7 @@ type Kernel struct {
 	user         string                                               // Current user context
 	ticker       *adaptiveticker.AdaptiveTicker                       // System timer manager
 	inputDriver  interfaces.IKeyboardDriver                           // Keyboard input handler
-	foreground   interfaces.IUserProcess                              // Currently active foreground process
+	foreground   *KernelProcess                                       // Currently active foreground process
 	pidGenerator *adaptiveticker.Ids                                  // Process ID allocation manager
 	running      map[int]*KernelProcess                               // Registry of active kernel processes
 	shellPath    string                                               // Default shell executable path
@@ -89,6 +89,7 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 	c.kernelTable[interfaces.MessageTypeProcessListRequest] = c.handleProcessList
 	c.kernelTable[interfaces.MessageTypeProcessIsRunningRequest] = c.handleProcessIsRunning
 	c.kernelTable[interfaces.MessageTypeExitRequested] = c.handleExitRequested
+	c.kernelTable[interfaces.MessageTypeProcessSetSelfForeground] = c.handleProcessSetSelfForeground
 
 	for k, v := range c.kernelTable {
 		c.routingTable[k] = v
@@ -117,7 +118,7 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 		if err != nil {
 			return err
 		}
-		if err = server.Setup(serverProcess, serverProcess); err != nil {
+		if err = server.Setup(serverProcess, serverProcess.PID(), serverProcess); err != nil {
 			return err
 		}
 	}
@@ -129,8 +130,7 @@ func (c *Kernel) Setup(servers []interfaces.IServer) error {
 // from initialization to active operation state.
 func (c *Kernel) Start() error {
 	// Request shell initialization
-	mfs := messages.NewMessageFileSystemFindRequest(nil, c.PID(), c.shellPath, true)
-	mfs.SetSource(c.PID())
+	mfs := messages.NewMessageFileSystemFindRequest(c.PID(), -1, nil, c.PID(), c.shellPath, true)
 	c.postSelfMessage(mfs)
 
 	// Launch asynchronous input processing
@@ -142,13 +142,11 @@ func (c *Kernel) Start() error {
 			k, v, err := c.inputDriver.ScanKey(readBuffer)
 			if err == nil {
 				if k != interfaces.KeyTypeNone {
-					re := messages.NewMessageRead(k, v, false)
-					re.SetSource(c.PID())
+					re := messages.NewMessageRead(c.PID(), -1, k, v, false)
 					c.postSelfMessage(re)
 				}
 			} else {
-				qe := messages.NewMessageQuit()
-				qe.SetSource(c.PID())
+				qe := messages.NewMessageQuit(c.PID(), -1)
 				c.postSelfMessage(qe)
 				return
 			}
@@ -162,8 +160,7 @@ func (c *Kernel) Start() error {
 // SetScreenSize notifies the system of display dimension changes, allowing processes
 // to adapt their output accordingly.
 func (c *Kernel) SetScreenSize(w int, h int) {
-	msg := messages.NewMessageSetScreenSize(w, h)
-	msg.SetSource(c.PID())
+	msg := messages.NewMessageSetScreenSize(c.PID(), -1, w, h)
 	c.postSelfMessage(msg)
 }
 
@@ -186,8 +183,6 @@ func (c *Kernel) postSelfMessage(msg interfaces.IMessage) {
 		log.Printf("Kernel: message queue full, dropping message: %d", msg.GetType())
 		return
 	}
-	msg.SetSource(c.PID())
-	msg.SetDestination(-1)
 	c.messageChan <- msg
 }
 
@@ -202,7 +197,8 @@ func (c *Kernel) handleProcessIsRunning(msg interfaces.IMessage) {
 		return
 	}
 	kActive, _ := c.running[mt.VerifyPID()]
-	mt.CreateResponse(kActive != nil)
+	mt.CreateResponse(c.PID(), kActive != nil)
+	//mt.SetDestination(kProc.PID())
 	kProc.PostMessage(mt)
 }
 
@@ -241,8 +237,7 @@ func (c *Kernel) eventLoop() {
 // on message type and process routing tables, forming the core of the kernel's
 // message processing architecture.
 func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
-	log.Printf("Kernel: message received: %d - %d", m.Source(), m.GetType())
-
+	//log.Printf("Kernel: message received: %d - %d", m.Source(), m.GetType())
 	kSourceProc, _ := c.running[m.Source()]
 	if kSourceProc == nil {
 		log.Printf("Kernel: unknown source process: %d - type %d", m.Source(), m.GetType())
@@ -263,6 +258,7 @@ func (c *Kernel) handleMessageEvent(m interfaces.IMessage) {
 	// Route messages based on process-specific or kernel routing tables
 	id := m.GetType()
 	if route := kSourceProc.GetRoute(id); route != nil {
+		m.SetDestination(kSourceProc.PID())
 		route(m)
 		return
 	}
@@ -281,8 +277,7 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	//sentForeground := false
 	for _, kProc := range c.running {
 		if readBroadcastEvent := kProc.GetCommand().OnReadBroadcast(); readBroadcastEvent != nil {
-			mr := messages.NewMessageRead(mm.Kind(), mm.Data(), true)
-			mr.SetSource(c.PID())
+			mr := messages.NewMessageRead(c.PID(), kProc.PID(), mm.Kind(), mm.Data(), true)
 			kProc.PostMessage(mr)
 			//if c.foreground != nil && c.foreground == kProc{
 			//sentForeground = true
@@ -293,8 +288,9 @@ func (c *Kernel) handleReadEvent(m interfaces.IMessage) {
 	// Send to foreground process if it accepts input
 	if c.foreground != nil {
 		if readEvent := c.foreground.GetCommand().OnRead(); readEvent != nil {
-			mm.SetSource(c.PID())
-			c.foreground.PostMessage(mm)
+			mr := messages.NewMessageRead(c.PID(), c.foreground.PID(), mm.Kind(), mm.Data(), false)
+			//mm.SetDestination3(c.PID())
+			c.foreground.PostMessage(mr)
 		}
 	}
 }
@@ -335,8 +331,7 @@ func (c *Kernel) handleProcessExec(m interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	mfs := messages.NewMessageFileSystemFindRequest(nil, mt.Source(), mt.Line(), false)
-	mfs.SetSource(c.PID())
+	mfs := messages.NewMessageFileSystemFindRequest(c.PID(), -1, nil, mt.Source(), mt.Line(), false)
 	c.postSelfMessage(mfs)
 }
 
@@ -348,6 +343,20 @@ func (c *Kernel) handleProcessSetForeground(m interfaces.IMessage) {
 		return
 	}
 	kProc, _ := c.running[mt.PID()]
+	if kProc == nil {
+		return
+	}
+	c.doProcessSetForeground(kProc)
+}
+
+// handleProcessSetForeground manages foreground process transitions, ensuring proper
+// focus management and user interface responsiveness within the system.
+func (c *Kernel) handleProcessSetSelfForeground(m interfaces.IMessage) {
+	mt, ok := m.(*messages.MessageProcessSetSelfForeground)
+	if !ok {
+		return
+	}
+	kProc, _ := c.running[mt.Source()]
 	if kProc == nil {
 		return
 	}
@@ -414,20 +423,16 @@ func (c *Kernel) handleTimerCreate(m interfaces.IMessage) {
 	if kProc == nil {
 		return
 	}
-	msgTimer := messages.NewMessageTimer(mt.Interval())
-	msgTimer.SetSource(c.PID())
-	msgTimer.SetDestination(mt.Source())
+	msgTimer := messages.NewMessageTimer(c.PID(), mt.Source(), mt.Interval())
 	msgTimer.SetTID(c.ticker.Create(c.timersChan, msgTimer, int64(mt.First()), int64(mt.Interval()), int64(mt.Count())))
 	if msgTimer.TID() < 0 {
-		me := messages.NewMessageError(fmt.Errorf("error creating timer"))
-		me.SetSource(c.PID())
+		me := messages.NewMessageError(c.PID(), kProc.PID(), fmt.Errorf("error creating timer"))
 		kProc.PostMessage(me)
 		return
 	}
 	kProc.AddTimer(msgTimer.TID())
 
-	mtc := messages.NewMessageTimerCreated(msgTimer.TID())
-	mtc.SetSource(c.PID())
+	mtc := messages.NewMessageTimerCreated(c.PID(), kProc.PID(), msgTimer.TID())
 	kProc.PostMessage(mtc)
 }
 
@@ -462,7 +467,7 @@ func (c *Kernel) handleProcessList(msg interfaces.IMessage) {
 	for _, proc := range c.running {
 		out = append(out, proc.Description())
 	}
-	mt.CreateResponse(out)
+	mt.CreateResponse(c.PID(), out)
 	kProc.PostMessage(mt)
 }
 
@@ -504,42 +509,41 @@ func (c *Kernel) doHandleFileSystemFindResponse(msg interfaces.IMessage) {
 	}
 	cmd, args, err := response.GetResult()
 	if err != nil {
-		me := messages.NewMessageError(fmt.Errorf("error creating task: invalid command '%s'", mt.Line()))
-		me.SetSource(c.PID())
+		me := messages.NewMessageError(c.PID(), kRequestor.PID(), fmt.Errorf("error creating task: invalid command '%s'", mt.Line()))
 		kRequestor.PostMessage(me)
 		return
 	}
+	background := cmd.Background()
 	parent, _ := c.running[kRequestor.PID()]
 	kProc, err := c.doCreateKernelProcess(kRequestor.User(), mt.Line(), parent, cmd, mt.Protected())
 	if err != nil {
-		me := messages.NewMessageError(fmt.Errorf("error creating task: %s", err.Error()))
-		me.SetSource(c.PID())
+		me := messages.NewMessageError(c.PID(), kRequestor.PID(), fmt.Errorf("error creating task: %s", err.Error()))
 		kRequestor.PostMessage(me)
 		return
 	}
 	kProc.Start()
 	for _, server := range c.servers {
-		mn := messages.NewMessageNotifyProcessCreate(kProc.PID(), kProc.GetCommand().Name())
-		mn.SetSource(c.PID())
+		mn := messages.NewMessageNotifyProcessCreate(c.PID(), server.PID(), kProc.PID(), kProc.GetCommand().Name())
 		server.PostMessage(mn)
 	}
-	mps := messages.NewMessageProcessStart(args)
-	mps.SetSource(c.PID())
+	mps := messages.NewMessageProcessStart(c.PID(), kProc.PID(), args)
 	kProc.PostMessage(mps)
+
+	if !background {
+		c.doProcessSetForeground(kProc)
+	}
 }
 
 // doProcessSetForeground updates the system's foreground process state and notifies
 // relevant system components of the focus change, maintaining UI consistency.
-func (c *Kernel) doProcessSetForeground(process interfaces.IUserProcess) {
+func (c *Kernel) doProcessSetForeground(process *KernelProcess) {
 	for _, server := range c.servers {
-		mn := messages.NewMessageNotifyProcessForeground(process.PID())
-		mn.SetSource(c.PID())
+		mn := messages.NewMessageNotifyProcessForeground(c.PID(), server.PID(), process.PID())
 		server.PostMessage(mn)
 	}
 	if c.foreground != process {
 		c.foreground = process
-		mpa := messages.NewMessageProcessActivate()
-		mpa.SetSource(c.PID())
+		mpa := messages.NewMessageProcessActivate(c.PID(), c.foreground.PID())
 		c.foreground.PostMessage(mpa)
 	}
 }
@@ -554,8 +558,7 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 		c.ticker.RemoveEntries(process.Timers())
 	}
 	for _, server := range c.servers {
-		mnp := messages.NewMessageMessageNotifyProcessTerminate(process.PID())
-		mnp.SetSource(c.PID())
+		mnp := messages.NewMessageMessageNotifyProcessTerminate(c.PID(), server.PID(), process.PID())
 		server.PostMessage(mnp)
 	}
 	if c.foreground != nil {
@@ -569,8 +572,7 @@ func (c *Kernel) doProcessExit(process *KernelProcess) {
 	}
 	delete(c.running, process.PID())
 	c.pidGenerator.Unset(process.PID())
-	mq := messages.NewMessageQuit()
-	mq.SetSource(c.PID())
+	mq := messages.NewMessageQuit(c.PID(), process.PID())
 	process.PostMessage(mq)
 }
 
@@ -621,7 +623,7 @@ func (c *Kernel) doCreateKernelProcess(user string, commandLine string, parent *
 	for k, v := range c.routingTable {
 		routingTable[k] = v
 	}
-	uProc := c.pf.Create(pid.GetId(), user, cmd)
+	uProc := c.pf.Create(cmd)
 	kProc := NewKernelProcess(uProc, user, commandLine, cmd.Name(), parent, pid, protected, c.messageChan)
 	kProc.SetRoutingTable(routingTable)
 	c.running[kProc.PID()] = kProc

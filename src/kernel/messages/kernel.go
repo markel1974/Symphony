@@ -11,9 +11,9 @@ type MessageError struct {
 }
 
 // NewMessageError creates and returns a new MessageError instance with the provided error and sets its type to MessageTypeError.
-func NewMessageError(err error) *MessageError {
+func NewMessageError(source int, destination int, err error) *MessageError {
 	return &MessageError{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeError),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeError),
 		err:      err,
 	}
 }
@@ -29,9 +29,9 @@ type MessageQuit struct {
 }
 
 // NewMessageQuit creates and returns a new instance of MessageQuit with type MessageTypeQuit and no acknowledgment.
-func NewMessageQuit() *MessageQuit {
+func NewMessageQuit(source int, destination int) *MessageQuit {
 	return &MessageQuit{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeQuit),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeQuit),
 	}
 }
 
@@ -44,9 +44,9 @@ type MessageRead struct {
 }
 
 // NewMessageRead creates and initializes a new MessageRead instance with the specified key type, data, and broadcast flag.
-func NewMessageRead(kind interfaces.KeyType, data rune, broadcast bool) *MessageRead {
+func NewMessageRead(source int, destination int, kind interfaces.KeyType, data rune, broadcast bool) *MessageRead {
 	return &MessageRead{
-		IMessage:  interfaces.NewMessageNoAck(interfaces.MessageTypeRead),
+		IMessage:  interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeRead),
 		kind:      kind,
 		data:      data,
 		broadcast: broadcast,
@@ -76,9 +76,9 @@ type MessageProcessExec struct {
 }
 
 // NewMessageProcessExec creates a new MessageProcessExec instance with the provided command line and a process execution type.
-func NewMessageProcessExec(line string) *MessageProcessExec {
+func NewMessageProcessExec(source int, destination int, line string) *MessageProcessExec {
 	return &MessageProcessExec{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessExec),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeProcessExec),
 		line:     line,
 	}
 }
@@ -95,9 +95,9 @@ type MessageProcessStart struct {
 }
 
 // NewMessageProcessStart creates a new MessageProcessStart instance with the provided arguments.
-func NewMessageProcessStart(args []string) *MessageProcessStart {
+func NewMessageProcessStart(source int, destination int, args []string) *MessageProcessStart {
 	return &MessageProcessStart{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessStart),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeProcessStart),
 		args:     args,
 	}
 }
@@ -108,9 +108,9 @@ type MessageProcessActivate struct {
 }
 
 // NewMessageProcessActivate creates a new message of type MessageTypeProcessActivate without acknowledgment requirements.
-func NewMessageProcessActivate() *MessageProcessActivate {
+func NewMessageProcessActivate(source int, destination int) *MessageProcessActivate {
 	return &MessageProcessActivate{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessActivate),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeProcessActivate),
 	}
 }
 
@@ -126,9 +126,9 @@ type MessageProcessKill struct {
 }
 
 // NewMessageProcessKill creates a new MessageProcessKill instance to signal termination of a specific process by its pid.
-func NewMessageProcessKill(pid int) *MessageProcessKill {
+func NewMessageProcessKill(source int, destination int, pid int) *MessageProcessKill {
 	return &MessageProcessKill{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessKill),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeProcessKill),
 		pid:      pid,
 	}
 }
@@ -140,9 +140,9 @@ type MessageProcessKillAll struct {
 }
 
 // NewMessageProcessKillAll creates a new MessageProcessKillAll instance for terminating all processes by name.
-func NewMessageProcessKillAll(name string) *MessageProcessKillAll {
+func NewMessageProcessKillAll(source int, destination int, name string) *MessageProcessKillAll {
 	return &MessageProcessKillAll{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessKillAll),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeProcessKillAll),
 		name:     name,
 	}
 }
@@ -158,9 +158,9 @@ type MessageProcessKillForeground struct {
 }
 
 // NewMessageProcessKillForeground creates a new MessageProcessKillForeground instance with a no-acknowledgment message type.
-func NewMessageProcessKillForeground() *MessageProcessKillForeground {
+func NewMessageProcessKillForeground(source int, destination int) *MessageProcessKillForeground {
 	return &MessageProcessKillForeground{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessKillForeground),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeProcessKillForeground),
 	}
 }
 
@@ -171,9 +171,23 @@ type MessageProcessExit struct {
 }
 
 // NewMessageMessageProcessExit creates and returns a new MessageProcessExit instance with the MessageTypeProcessExit type.
-func NewMessageMessageProcessExit() *MessageProcessExit {
+func NewMessageMessageProcessExit(source int, destination int) *MessageProcessExit {
 	return &MessageProcessExit{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessExit),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeProcessExit),
+	}
+}
+
+// MessageProcessSetSelfForeground represents a message to set a process as the foreground process for itself.
+// It embeds the IMessage interface for standard message operations, including type retrieval and response handling.
+type MessageProcessSetSelfForeground struct {
+	interfaces.IMessage
+}
+
+// NewMessageProcessSetSelfForeground creates and returns a new MessageProcessSetSelfForeground instance.
+// It uses MessageTypeProcessSetSelfForeground as its type and does not initialize an acknowledgment channel.
+func NewMessageProcessSetSelfForeground(source int, destination int) *MessageProcessSetSelfForeground {
+	return &MessageProcessSetSelfForeground{
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeProcessSetSelfForeground),
 	}
 }
 
@@ -185,9 +199,9 @@ type MessageProcessSetForeground struct {
 }
 
 // NewMessageProcessSetForeground creates a new MessageProcessSetForeground with the specified process ID (PID).
-func NewMessageProcessSetForeground(pid int) *MessageProcessSetForeground {
+func NewMessageProcessSetForeground(source int, destination int, pid int) *MessageProcessSetForeground {
 	return &MessageProcessSetForeground{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeProcessSetForeground),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeProcessSetForeground),
 		pid:      pid,
 	}
 }
@@ -210,16 +224,17 @@ type MessageProcessListResponse struct {
 }
 
 // NewMessageProcessListRequest creates a new MessageProcessListRequest with the provided acknowledgment channel.
-func NewMessageProcessListRequest(ackChan chan bool) *MessageProcessListRequest {
+func NewMessageProcessListRequest(source int, destination int, ackChan chan bool) *MessageProcessListRequest {
 	return &MessageProcessListRequest{
-		IMessage: interfaces.NewMessageRequest(interfaces.MessageTypeProcessListRequest, ackChan),
+		IMessage: interfaces.NewMessageRequest(source, destination, interfaces.MessageTypeProcessListRequest, ackChan),
 	}
 }
 
 // CreateResponse constructs a MessageProcessListResponse, clones the original message, and sets it as a response.
-func (m *MessageProcessListRequest) CreateResponse(processes []*interfaces.ProcessDescription) {
-	msg := &MessageProcessListResponse{IMessage: m.Clone(), processes: processes}
-	m.SetResponse(interfaces.MessageTypeProcessListResponse, msg)
+func (m *MessageProcessListRequest) CreateResponse(responder int, processes []*interfaces.ProcessDescription) {
+	base := m.PrepareResponse(responder, interfaces.MessageTypeProcessListResponse)
+	msg := &MessageProcessListResponse{IMessage: base, processes: processes}
+	m.SetResponse(msg)
 }
 
 // GetResponse returns the list of ProcessDescription objects associated with the MessageProcessListResponse instance.
@@ -241,9 +256,9 @@ type MessageProcessIsRunningResponse struct {
 }
 
 // NewMessageProcessIsRunningRequest creates a new MessageProcessIsRunningRequest with a verify PID and acknowledgment channel.
-func NewMessageProcessIsRunningRequest(verifyPid int, ackChan chan bool) *MessageProcessIsRunningRequest {
+func NewMessageProcessIsRunningRequest(source int, destination, verifyPid int, ackChan chan bool) *MessageProcessIsRunningRequest {
 	return &MessageProcessIsRunningRequest{
-		IMessage:  interfaces.NewMessageRequest(interfaces.MessageTypeProcessIsRunningRequest, ackChan),
+		IMessage:  interfaces.NewMessageRequest(source, destination, interfaces.MessageTypeProcessIsRunningRequest, ackChan),
 		verifyPid: verifyPid,
 	}
 }
@@ -254,9 +269,10 @@ func (m *MessageProcessIsRunningRequest) VerifyPID() int {
 }
 
 // CreateResponse generates a MessageProcessIsRunningResponse based on the result and sets it as the response for the request.
-func (m *MessageProcessIsRunningRequest) CreateResponse(result bool) {
-	msg := &MessageProcessIsRunningResponse{IMessage: m.Clone(), result: result}
-	m.SetResponse(interfaces.MessageTypeProcessIsRunningResponse, msg)
+func (m *MessageProcessIsRunningRequest) CreateResponse(responder int, result bool) {
+	base := m.PrepareResponse(responder, interfaces.MessageTypeProcessIsRunningResponse)
+	msg := &MessageProcessIsRunningResponse{IMessage: base, result: result}
+	m.SetResponse(msg)
 }
 
 // GetResponse returns the boolean result indicating if the message process is running.
@@ -274,9 +290,9 @@ type MessageNotifyProcessCreate struct {
 }
 
 // NewMessageNotifyProcessCreate creates a new MessageNotifyProcessCreate instance with the given process ID and name.
-func NewMessageNotifyProcessCreate(createdPID int, name string) *MessageNotifyProcessCreate {
+func NewMessageNotifyProcessCreate(source int, destination int, createdPID int, name string) *MessageNotifyProcessCreate {
 	return &MessageNotifyProcessCreate{
-		IMessage:   interfaces.NewMessageNoAck(interfaces.MessageTypeNotifyProcessCreate),
+		IMessage:   interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeNotifyProcessCreate),
 		createdPID: createdPID,
 		name:       name,
 	}
@@ -301,9 +317,9 @@ type MessageNotifyProcessTerminate struct {
 }
 
 // NewMessageMessageNotifyProcessTerminate creates a new MessageNotifyProcessTerminate for a terminated process with the given PID.
-func NewMessageMessageNotifyProcessTerminate(terminatedPID int) *MessageNotifyProcessTerminate {
+func NewMessageMessageNotifyProcessTerminate(source int, destination int, terminatedPID int) *MessageNotifyProcessTerminate {
 	return &MessageNotifyProcessTerminate{
-		IMessage:      interfaces.NewMessageNoAck(interfaces.MessageTypeNotifyProcessTerminate),
+		IMessage:      interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeNotifyProcessTerminate),
 		terminatedPID: terminatedPID,
 	}
 }
@@ -321,9 +337,9 @@ type MessageNotifyProcessForeground struct {
 }
 
 // NewMessageNotifyProcessForeground creates a new instance of MessageNotifyProcessForeground with the specified foreground PID.
-func NewMessageNotifyProcessForeground(foregroundPID int) *MessageNotifyProcessForeground {
+func NewMessageNotifyProcessForeground(source int, destination int, foregroundPID int) *MessageNotifyProcessForeground {
 	return &MessageNotifyProcessForeground{
-		IMessage:      interfaces.NewMessageNoAck(interfaces.MessageTypeNotifyProcessForeground),
+		IMessage:      interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeNotifyProcessForeground),
 		foregroundPID: foregroundPID,
 	}
 }

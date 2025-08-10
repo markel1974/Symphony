@@ -85,6 +85,16 @@ func (kp *KernelProcess) PostKernelResponse(destination int, msg interfaces.IMes
 	kp.messageChan <- msg
 }
 
+// PID returns the unique process identifier associated with the KernelProcess.
+func (kp *KernelProcess) PID() int {
+	return kp.pid.GetId()
+}
+
+// User retrieves the user associated with the KernelProcess instance.
+func (kp *KernelProcess) User() string {
+	return kp.user
+}
+
 // SetRoute associates a message type with a specific routing function in the routing table of the KernelProcess.
 func (kp *KernelProcess) SetRoute(id interfaces.MessageType, route func(interfaces.IMessage)) {
 	kp.routingTable[id] = route

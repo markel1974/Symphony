@@ -16,16 +16,17 @@ type MessageGetScreenSizeResponse struct {
 }
 
 // NewMessageGetScreenSizeRequest initializes a new MessageGetScreenSizeRequest with the specified acknowledgment channel.
-func NewMessageGetScreenSizeRequest(ack chan bool) *MessageGetScreenSizeRequest {
+func NewMessageGetScreenSizeRequest(source int, destination int, ack chan bool) *MessageGetScreenSizeRequest {
 	return &MessageGetScreenSizeRequest{
-		IMessage: interfaces.NewMessageRequest(interfaces.MessageTypeGetScreenSizeRequest, ack),
+		IMessage: interfaces.NewMessageRequest(destination, source, interfaces.MessageTypeGetScreenSizeRequest, ack),
 	}
 }
 
 // CreateResponse creates and sets a response message with the given width and height for the current request instance.
-func (m *MessageGetScreenSizeRequest) CreateResponse(width int, height int) {
-	msg := &MessageGetScreenSizeResponse{IMessage: m.Clone(), width: width, height: height}
-	m.SetResponse(interfaces.MessageTypeGetScreenSizeResponse, msg)
+func (m *MessageGetScreenSizeRequest) CreateResponse(responder int, width int, height int) {
+	base := m.PrepareResponse(responder, interfaces.MessageTypeGetScreenSizeResponse)
+	msg := &MessageGetScreenSizeResponse{IMessage: base, width: width, height: height}
+	m.SetResponse(msg)
 }
 
 // GetResponse returns the width and height values stored in the MessageGetScreenSizeResponse instance.
@@ -41,9 +42,9 @@ type MessageSetScreenSize struct {
 }
 
 // NewMessageSetScreenSize creates a new MessageSetScreenSize with the specified width and height for screen resizing.
-func NewMessageSetScreenSize(width int, height int) *MessageSetScreenSize {
+func NewMessageSetScreenSize(source int, destination int, width int, height int) *MessageSetScreenSize {
 	return &MessageSetScreenSize{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeSetScreenSize),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeSetScreenSize),
 		width:    width,
 		height:   height,
 	}
@@ -67,9 +68,9 @@ type MessageWrite struct {
 }
 
 // NewMessageWrite creates a new MessageWrite instance with the specified data and end-of-line flag.
-func NewMessageWrite(data string, eol bool) *MessageWrite {
+func NewMessageWrite(source int, destination int, data string, eol bool) *MessageWrite {
 	return &MessageWrite{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeWrite),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeWrite),
 		data:     data,
 		eol:      eol,
 	}
@@ -102,9 +103,9 @@ type MessageWriteColor struct {
 }
 
 // NewMessageWriteColor creates a new MessageWriteColor with specified text data, colors, mode, and end-of-line flag.
-func NewMessageWriteColor(data string, fg, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) *MessageWriteColor {
+func NewMessageWriteColor(source int, destination int, data string, fg, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) *MessageWriteColor {
 	return &MessageWriteColor{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeWriteColor),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeWriteColor),
 		data:     data,
 		fg:       fg,
 		bg:       bg,
@@ -144,9 +145,9 @@ type MessageClearScreen struct {
 }
 
 // NewMessageClearScreen creates a new MessageClearScreen instance representing a request to clear the screen.
-func NewMessageClearScreen() *MessageClearScreen {
+func NewMessageClearScreen(source int, destination int) *MessageClearScreen {
 	return &MessageClearScreen{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeClearScreen),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeClearScreen),
 	}
 }
 
@@ -158,9 +159,9 @@ type MessageClearLine struct {
 }
 
 // NewMessageClearLine creates a new MessageClearLine instance to request clearing a specific line on the screen.
-func NewMessageClearLine(line string) *MessageClearLine {
+func NewMessageClearLine(source int, destination int, line string) *MessageClearLine {
 	return &MessageClearLine{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeClearLine),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeClearLine),
 		line:     line,
 	}
 }
@@ -176,9 +177,9 @@ type MessageSaveCursor struct {
 }
 
 // NewMessageSaveCursor creates a new MessageSaveCursor with the MessageTypeSaveCursor type.
-func NewMessageSaveCursor() *MessageSaveCursor {
+func NewMessageSaveCursor(source int, destination int) *MessageSaveCursor {
 	return &MessageSaveCursor{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeSaveCursor),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeSaveCursor),
 	}
 }
 
@@ -188,9 +189,9 @@ type MessageRestoreCursor struct {
 }
 
 // NewMessageRestoreCursor creates a new MessageRestoreCursor instance with the MessageTypeRestoreCursor message type.
-func NewMessageRestoreCursor() *MessageRestoreCursor {
+func NewMessageRestoreCursor(source int, destination int) *MessageRestoreCursor {
 	return &MessageRestoreCursor{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeRestoreCursor),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeRestoreCursor),
 	}
 }
 
@@ -200,9 +201,9 @@ type MessageMoveCursorLeft struct {
 }
 
 // NewMessageMoveCursorLeft creates a new MessageMoveCursorLeft instance to signal a cursor move to the left.
-func NewMessageMoveCursorLeft() *MessageMoveCursorLeft {
+func NewMessageMoveCursorLeft(source int, destination int) *MessageMoveCursorLeft {
 	return &MessageMoveCursorLeft{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeMoveCursorLeft),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeMoveCursorLeft),
 	}
 }
 
@@ -212,8 +213,8 @@ type MessageMoveCursorRight struct {
 }
 
 // NewMessageMoveCursorRight creates a new MessageMoveCursorRight instance with MessageTypeMoveCursorRight.
-func NewMessageMoveCursorRight() *MessageMoveCursorRight {
+func NewMessageMoveCursorRight(source int, destination int) *MessageMoveCursorRight {
 	return &MessageMoveCursorRight{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeMoveCursorRight),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeMoveCursorRight),
 	}
 }

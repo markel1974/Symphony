@@ -69,7 +69,7 @@ func (c *XShell) BroadcastKeyHandler(process interfaces.IUserProcess, code int, 
 				process.WindowsSelectionBegin()
 			} else {
 				process.WindowsSelectionEnd()
-				process.ProcessSetForeground(process.PID())
+				process.ProcessSetSelfForeground()
 			}
 		}
 		return

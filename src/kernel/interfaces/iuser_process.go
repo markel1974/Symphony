@@ -22,11 +22,7 @@ type OnActivate func(process IUserProcess)
 type IUserProcess interface {
 	IRouter
 
-	PID() int
-
 	Bind(router IKernelRequestRouter)
-
-	User() string
 
 	Start()
 
@@ -73,6 +69,8 @@ type IUserProcess interface {
 	ProcessList() []*ProcessDescription
 
 	ProcessSetForeground(pid int)
+
+	ProcessSetSelfForeground()
 
 	Write(data string, eol bool)
 

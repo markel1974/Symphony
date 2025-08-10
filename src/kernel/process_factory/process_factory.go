@@ -16,7 +16,7 @@ func NewProcessFactory() *ProcessFactory {
 }
 
 // Create initializes a new process using the provided command, line, and optional window settings.
-func (fp *ProcessFactory) Create(pid int, user string, cmd interfaces.ICommand) interfaces.IUserProcess {
-	p := process.NewProcess(pid, user, cmd)
+func (fp *ProcessFactory) Create(cmd interfaces.ICommand) interfaces.IUserProcess {
+	p := process.NewProcess(cmd)
 	return p
 }

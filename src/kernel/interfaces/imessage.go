@@ -14,7 +14,6 @@ type MessageType int
 // MessageTypeTimerCreated indicates a timer has been created.
 // MessageTypeTimerStop stops an existing timer.
 // MessageTypeExitRequested signals a request to exit.
-// MessageTypeTimedMessage represents a message tied to a timed event.
 // MessageTypePaintRequest requests a paint operation.
 // MessageTypePaintPrepare prepares for a paint operation.
 // MessageTypePaintApply applies a paint operation.
@@ -73,12 +72,10 @@ const (
 	MessageTypeTimerCreated
 	MessageTypeTimerStop
 	MessageTypeExitRequested
-	MessageTypeTimedMessage
 	MessageTypePaintRequest
 	MessageTypePaintPrepare
 	MessageTypePaintApply
 	MessageTypeWrite
-	MessageTypeWriteLn
 	MessageTypeWriteColor
 	MessageTypeClearScreen
 	MessageTypeClearLine
@@ -101,6 +98,7 @@ const (
 	MessageTypeProcessKillAll
 	MessageTypeProcessKillForeground
 	MessageTypeProcessSetForeground
+	MessageTypeProcessSetSelfForeground
 	MessageTypeProcessListRequest
 	MessageTypeProcessListResponse
 	MessageTypeFileSystemCWDSetRequest
@@ -120,13 +118,12 @@ const (
 	MessageTypeNotifyProcessCreate
 	MessageTypeNotifyProcessForeground
 	MessageTypeNotifyProcessTerminate
+	//MessageTypeTimedMessage
 )
 
 // IMessage defines the interface for structured messages, supporting operations such as cloning, acknowledgment, and responses.
 type IMessage interface {
 	GetType() MessageType
-
-	SetType(kind MessageType)
 
 	Source() int
 
@@ -136,11 +133,11 @@ type IMessage interface {
 
 	SetDestination(destination int)
 
-	Clone() IMessage
+	PrepareResponse(responder int, kind MessageType) IMessage
 
 	Response() IMessage
 
-	SetResponse(kind MessageType, response IMessage)
+	SetResponse(response IMessage)
 
 	Ack() chan bool
 }
@@ -148,50 +145,38 @@ type IMessage interface {
 // Message represents a message structure used for communication between entities in the system.
 // It contains metadata such as source, destination, type, and response handling mechanisms.
 type Message struct {
-	source       int
-	destination  int
-	kind         MessageType
-	responseKind MessageType
-	ack          chan bool
-	response     IMessage
-}
-
-// Destination returns the destination identifier of the message.
-func (m *Message) Destination() int {
-	return m.destination
-}
-
-// SetDestination updates the destination field of the Message with the specified value.
-func (m *Message) SetDestination(destination int) {
-	m.destination = destination
+	source      int
+	destination int
+	kind        MessageType
+	ack         chan bool
+	response    IMessage
 }
 
 // NewMessageNoAck initializes a new Message instance of the specified MessageType without an acknowledgment channel.
-func NewMessageNoAck(kind MessageType) *Message {
+func NewMessageNoAck(source int, destination int, kind MessageType) *Message {
 	return &Message{
 		kind:        kind,
 		ack:         nil,
-		source:      -1,
-		destination: -1,
+		source:      source,
+		destination: destination,
 	}
 }
 
 // NewMessageRequest creates a new Message instance with the specified MessageType and acknowledgment channel.
-func NewMessageRequest(kind MessageType, ack chan bool) *Message {
+func NewMessageRequest(source int, destination int, kind MessageType, ack chan bool) *Message {
 	return &Message{
 		kind:        kind,
 		ack:         ack,
-		source:      -1,
-		destination: -1,
+		source:      source,
+		destination: destination,
 	}
 }
 
-// Clone creates a deep copy of the Message and returns it as an IMessage interface.
-func (m *Message) Clone() IMessage {
+func (m *Message) PrepareResponse(responder int, kind MessageType) IMessage {
 	return &Message{
-		kind:        m.kind,
-		source:      m.source,
-		destination: m.destination,
+		kind:        kind,
+		source:      responder,
+		destination: m.source,
 		ack:         m.ack,
 	}
 }
@@ -199,11 +184,6 @@ func (m *Message) Clone() IMessage {
 // GetType returns the type of the message as a MessageType.
 func (m *Message) GetType() MessageType {
 	return m.kind
-}
-
-// SetType sets the message type to the specified kind.
-func (m *Message) SetType(kind MessageType) {
-	m.kind = kind
 }
 
 // SetSource sets the source identifier for the message.
@@ -216,15 +196,24 @@ func (m *Message) Source() int {
 	return m.source
 }
 
+// Destination returns the destination identifier of the message.
+func (m *Message) Destination() int {
+	return m.destination
+}
+
+// SetDestination updates the destination field of the Message with the specified value.
+func (m *Message) SetDestination(destination int) {
+	m.destination = destination
+}
+
 // Ack sends a signal to the acknowledgment channel if it is not nil.
 func (m *Message) Ack() chan bool {
 	return m.ack
 }
 
-// SetResponse assigns the response message, its type, and the destination to the current message.
-func (m *Message) SetResponse(kind MessageType, response IMessage) {
+// SetResponse sets the response message associated with the current message.
+func (m *Message) SetResponse(response IMessage) {
 	m.response = response
-	m.response.SetType(kind)
 }
 
 // Response retrieves the response message associated with the current message. Returns nil if no response exists.

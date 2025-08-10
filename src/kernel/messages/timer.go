@@ -10,9 +10,9 @@ type MessageTimer struct {
 }
 
 // NewMessageTimer creates and returns a new MessageTimer with the specified process ID and interval duration.
-func NewMessageTimer(interval int) *MessageTimer {
+func NewMessageTimer(source int, destination int, interval int) *MessageTimer {
 	return &MessageTimer{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeTimer),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeTimer),
 		interval: interval,
 	}
 }
@@ -50,9 +50,9 @@ type MessageTimerCreate struct {
 }
 
 // NewMessageTimerCreate creates a MessageTimerCreate object with specified first delay, interval, and execution count.
-func NewMessageTimerCreate(first int, interval int, count int) *MessageTimerCreate {
+func NewMessageTimerCreate(source int, destination int, first int, interval int, count int) *MessageTimerCreate {
 	return &MessageTimerCreate{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeTimerCreate),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeTimerCreate),
 		first:    first,
 		interval: interval,
 		count:    count,
@@ -83,9 +83,9 @@ type MessageTimerStop struct {
 // NewMessageTimerStop creates a new MessageTimerStop instance with the specified timer ID (tid).
 // It initializes the IMessage field with a no-acknowledgment message of type MessageTypeTimerStop.
 // tid is the identifier of the timer to be stopped.
-func NewMessageTimerStop(tid int) *MessageTimerStop {
+func NewMessageTimerStop(source int, destination int, tid int) *MessageTimerStop {
 	return &MessageTimerStop{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeTimerStop),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeTimerStop),
 		tid:      tid,
 	}
 }
@@ -102,9 +102,9 @@ type MessageTimerCreated struct {
 }
 
 // NewMessageTimerCreated creates a new instance of MessageTimerCreated with the specified timer ID (tid).
-func NewMessageTimerCreated(tid int) *MessageTimerCreated {
+func NewMessageTimerCreated(source int, destination int, tid int) *MessageTimerCreated {
 	return &MessageTimerCreated{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeTimerCreated),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeTimerCreated),
 		tid:      tid,
 	}
 }

@@ -6,8 +6,8 @@ type MessageExitRequested struct {
 	interfaces.IMessage
 }
 
-func NewMessageExitRequested() *MessageExitRequested {
+func NewMessageExitRequested(source int, destination int) *MessageExitRequested {
 	return &MessageExitRequested{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeExitRequested),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeExitRequested),
 	}
 }

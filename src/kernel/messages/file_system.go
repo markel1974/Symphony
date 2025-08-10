@@ -22,9 +22,9 @@ type MessageFileSystemFindResponse struct {
 // NewMessageFileSystemFindRequest creates a new MessageFileSystemFindRequest for finding files in the file system.
 // It initializes the message with the provided acknowledgment channel, requestor PID, query line, and protection flag.
 // Returns a pointer to the created MessageFileSystemFindRequest instance.
-func NewMessageFileSystemFindRequest(ack chan bool, requestorPID int, line string, protected bool) *MessageFileSystemFindRequest {
+func NewMessageFileSystemFindRequest(source int, destination int, ack chan bool, requestorPID int, line string, protected bool) *MessageFileSystemFindRequest {
 	return &MessageFileSystemFindRequest{
-		IMessage:     interfaces.NewMessageRequest(interfaces.MessageTypeFileSystemFindRequest, ack),
+		IMessage:     interfaces.NewMessageRequest(source, destination, interfaces.MessageTypeFileSystemFindRequest, ack),
 		requestorPID: requestorPID,
 		line:         line,
 		protected:    protected,
@@ -47,9 +47,12 @@ func (m *MessageFileSystemFindRequest) Line() string {
 }
 
 // CreateResponse initializes a response to the current message with the given command, arguments, and error, and sets it.
-func (m *MessageFileSystemFindRequest) CreateResponse(cmd interfaces.ICommand, args []string, err error) {
-	r := &MessageFileSystemFindResponse{IMessage: m.Clone(), cmd: cmd, args: args, err: err}
-	m.SetResponse(interfaces.MessageTypeFileSystemFindResponse, r)
+func (m *MessageFileSystemFindRequest) CreateResponse(responder int, cmd interfaces.ICommand, args []string, err error) {
+	base := m.PrepareResponse(responder, interfaces.MessageTypeFileSystemFindResponse)
+	r := &MessageFileSystemFindResponse{
+		IMessage: base, cmd: cmd, args: args, err: err,
+	}
+	m.SetResponse(r)
 }
 
 // GetResult retrieves the command, arguments, and error from the MessageFileSystemFindResponse instance.
@@ -70,9 +73,9 @@ type MessageFileSystemCWDSetResponse struct {
 }
 
 // NewMessageFileSystemCWDSetRequest creates a new MessageFileSystemCWDSetRequest with the given acknowledgment channel and path.
-func NewMessageFileSystemCWDSetRequest(ack chan bool, path string) *MessageFileSystemCWDSetRequest {
+func NewMessageFileSystemCWDSetRequest(source int, destination int, ack chan bool, path string) *MessageFileSystemCWDSetRequest {
 	return &MessageFileSystemCWDSetRequest{
-		IMessage: interfaces.NewMessageRequest(interfaces.MessageTypeFileSystemCWDSetRequest, ack),
+		IMessage: interfaces.NewMessageRequest(source, destination, interfaces.MessageTypeFileSystemCWDSetRequest, ack),
 		path:     path,
 	}
 }
@@ -83,9 +86,10 @@ func (m *MessageFileSystemCWDSetRequest) Path() string {
 }
 
 // CreateResponse creates and sets a response message of type MessageFileSystemCWDSetResponse with the provided result.
-func (m *MessageFileSystemCWDSetRequest) CreateResponse(result bool) {
-	msg := &MessageFileSystemCWDSetResponse{IMessage: m.Clone(), result: result}
-	m.SetResponse(interfaces.MessageTypeFileSystemCWDSetResponse, msg)
+func (m *MessageFileSystemCWDSetRequest) CreateResponse(responder int, result bool) {
+	base := m.PrepareResponse(responder, interfaces.MessageTypeFileSystemCWDSetResponse)
+	resp := &MessageFileSystemCWDSetResponse{IMessage: base, result: result}
+	m.SetResponse(resp)
 }
 
 // GetResponse returns the result of the MessageFileSystemCWDSetResponse indicating the operation's success state.
@@ -106,16 +110,17 @@ type MessageFileSystemCWDGetResponse struct {
 }
 
 // NewMessageFileSystemCWDGetRequest creates a new MessageFileSystemCWDGetRequest with the specified acknowledgment channel.
-func NewMessageFileSystemCWDGetRequest(ack chan bool) *MessageFileSystemCWDGetRequest {
+func NewMessageFileSystemCWDGetRequest(source int, destination int, ack chan bool) *MessageFileSystemCWDGetRequest {
 	return &MessageFileSystemCWDGetRequest{
-		IMessage: interfaces.NewMessageRequest(interfaces.MessageTypeFileSystemCWDGetRequest, ack),
+		IMessage: interfaces.NewMessageRequest(source, destination, interfaces.MessageTypeFileSystemCWDGetRequest, ack),
 	}
 }
 
 // CreateResponse generates a response message with the provided result and assigns it to the request's response field.
-func (m *MessageFileSystemCWDGetRequest) CreateResponse(result string) {
-	msg := &MessageFileSystemCWDGetResponse{IMessage: m.Clone(), result: result}
-	m.SetResponse(interfaces.MessageTypeFileSystemCWDGetResponse, msg)
+func (m *MessageFileSystemCWDGetRequest) CreateResponse(responder int, result string) {
+	base := m.PrepareResponse(responder, interfaces.MessageTypeFileSystemCWDGetResponse)
+	msg := &MessageFileSystemCWDGetResponse{IMessage: base, result: result}
+	m.SetResponse(msg)
 }
 
 // GetResponse retrieves the result string associated with the MessageFileSystemCWDGetResponse instance.
@@ -136,16 +141,17 @@ type MessageFileSystemCWDPathResponse struct {
 }
 
 // NewMessageFileSystemCWDPathRequest creates a new MessageFileSystemCWDPathRequest with the specified acknowledgment channel.
-func NewMessageFileSystemCWDPathRequest(ack chan bool) *MessageFileSystemCWDPathRequest {
+func NewMessageFileSystemCWDPathRequest(source int, destination int, ack chan bool) *MessageFileSystemCWDPathRequest {
 	return &MessageFileSystemCWDPathRequest{
-		IMessage: interfaces.NewMessageRequest(interfaces.MessageTypeFileSystemCWDPathRequest, ack),
+		IMessage: interfaces.NewMessageRequest(source, destination, interfaces.MessageTypeFileSystemCWDPathRequest, ack),
 	}
 }
 
 // CreateResponse constructs a response message with the given result string and assigns it to the current message.
-func (m *MessageFileSystemCWDPathRequest) CreateResponse(result string) {
-	msg := &MessageFileSystemCWDPathResponse{IMessage: m.Clone(), result: result}
-	m.SetResponse(interfaces.MessageTypeFileSystemCWDPathResponse, msg)
+func (m *MessageFileSystemCWDPathRequest) CreateResponse(responder int, result string) {
+	base := m.PrepareResponse(responder, interfaces.MessageTypeFileSystemCWDPathResponse)
+	msg := &MessageFileSystemCWDPathResponse{IMessage: base, result: result}
+	m.SetResponse(msg)
 }
 
 // GetResponse returns the result string stored in the MessageFileSystemCWDPathResponse instance.
@@ -167,16 +173,17 @@ type MessageFileSystemCWDDirectoryListingResponse struct {
 }
 
 // NewMessageFileSystemCWDDirectoryListingRequest creates a request message for listing the current working directory.
-func NewMessageFileSystemCWDDirectoryListingRequest(ack chan bool) *MessageFileSystemCWDDirectoryListingRequest {
+func NewMessageFileSystemCWDDirectoryListingRequest(source int, destination int, ack chan bool) *MessageFileSystemCWDDirectoryListingRequest {
 	return &MessageFileSystemCWDDirectoryListingRequest{
-		IMessage: interfaces.NewMessageRequest(interfaces.MessageTypeFileSystemCWDDirectoryListingRequest, ack),
+		IMessage: interfaces.NewMessageRequest(source, destination, interfaces.MessageTypeFileSystemCWDDirectoryListingRequest, ack),
 	}
 }
 
 // CreateResponse generates a response message with the provided directory listing result and sets it as the response.
-func (m *MessageFileSystemCWDDirectoryListingRequest) CreateResponse(result []string) {
-	msg := &MessageFileSystemCWDDirectoryListingResponse{IMessage: m.Clone(), result: result}
-	m.SetResponse(interfaces.MessageTypeFileSystemCWDDirectoryListingResponse, msg)
+func (m *MessageFileSystemCWDDirectoryListingRequest) CreateResponse(responder int, result []string) {
+	base := m.PrepareResponse(responder, interfaces.MessageTypeFileSystemCWDDirectoryListingResponse)
+	msg := &MessageFileSystemCWDDirectoryListingResponse{IMessage: base, result: result}
+	m.SetResponse(msg)
 }
 
 // GetResponse retrieves the directory listing results as a slice of strings.
@@ -202,9 +209,9 @@ type MessageFileSystemSuggestionResponse struct {
 }
 
 // NewMessageFileSystemSuggestionRequest creates a new MessageFileSystemSuggestionRequest with input, cursor, and ack channel.
-func NewMessageFileSystemSuggestionRequest(in string, cursor int, ack chan bool) *MessageFileSystemSuggestionRequest {
+func NewMessageFileSystemSuggestionRequest(source int, destination int, in string, cursor int, ack chan bool) *MessageFileSystemSuggestionRequest {
 	return &MessageFileSystemSuggestionRequest{
-		IMessage: interfaces.NewMessageRequest(interfaces.MessageTypeFileSystemSuggestionRequest, ack),
+		IMessage: interfaces.NewMessageRequest(source, destination, interfaces.MessageTypeFileSystemSuggestionRequest, ack),
 		in:       in,
 		cursor:   cursor,
 		ack:      ack,
@@ -222,9 +229,10 @@ func (m *MessageFileSystemSuggestionRequest) Cursor() int {
 }
 
 // CreateResponse generates a new MessageFileSystemSuggestionResponse with the provided prefix, suggestions, and validity.
-func (m *MessageFileSystemSuggestionRequest) CreateResponse(prefix string, suggestion []string, valid bool) {
-	msg := &MessageFileSystemSuggestionResponse{IMessage: m.Clone(), prefix: prefix, suggestion: suggestion, valid: valid}
-	m.SetResponse(interfaces.MessageTypeFileSystemSuggestionResponse, msg)
+func (m *MessageFileSystemSuggestionRequest) CreateResponse(responder int, prefix string, suggestion []string, valid bool) {
+	base := m.PrepareResponse(responder, interfaces.MessageTypeFileSystemSuggestionResponse)
+	msg := &MessageFileSystemSuggestionResponse{IMessage: base, prefix: prefix, suggestion: suggestion, valid: valid}
+	m.SetResponse(msg)
 }
 
 // GetResponse retrieves the prefix, suggestion list, and validity status from the MessageFileSystemSuggestionResponse instance.
@@ -248,9 +256,9 @@ type MessageFileSystemHelpResponse struct {
 }
 
 // NewMessageFileSystemHelpRequest creates a new MessageFileSystemHelpRequest with the specified path and acknowledgment channel.
-func NewMessageFileSystemHelpRequest(path string, ack chan bool) *MessageFileSystemHelpRequest {
+func NewMessageFileSystemHelpRequest(source int, destination int, path string, ack chan bool) *MessageFileSystemHelpRequest {
 	return &MessageFileSystemHelpRequest{
-		IMessage: interfaces.NewMessageRequest(interfaces.MessageTypeFileSystemHelpRequest, ack),
+		IMessage: interfaces.NewMessageRequest(source, destination, interfaces.MessageTypeFileSystemHelpRequest, ack),
 		path:     path,
 	}
 }
@@ -261,9 +269,10 @@ func (m *MessageFileSystemHelpRequest) Path() string {
 }
 
 // CreateResponse generates a response message with the provided result and error, linking it to the current request.
-func (m *MessageFileSystemHelpRequest) CreateResponse(result string, err error) {
-	msg := &MessageFileSystemHelpResponse{IMessage: m.Clone(), result: result, err: err}
-	m.SetResponse(interfaces.MessageTypeFileSystemHelpResponse, msg)
+func (m *MessageFileSystemHelpRequest) CreateResponse(responder int, result string, err error) {
+	base := m.PrepareResponse(responder, interfaces.MessageTypeFileSystemHelpResponse)
+	msg := &MessageFileSystemHelpResponse{IMessage: base, result: result, err: err}
+	m.SetResponse(msg)
 }
 
 // GetResponse retrieves the stored result and error from the MessageFileSystemHelpResponse instance.

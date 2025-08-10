@@ -5,7 +5,9 @@ type IServer interface {
 
 	Register() []MessageType
 
-	Setup(router IKernelResponseRouter, process IUserProcess) error
+	Setup(router IKernelResponseRouter, pid int, process IUserProcess) error
 
 	Name() string
+
+	PID() int
 }

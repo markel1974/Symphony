@@ -21,6 +21,7 @@ const pathSeparator = "/"
 // FileSystem provides utilities for command hierarchy traversal and completion suggestions.
 type FileSystem struct {
 	process     interfaces.IUserProcess
+	pid         int
 	root        interfaces.ICommand
 	searchPaths []interfaces.ICommand
 	cwd         interfaces.ICommand
@@ -68,20 +69,24 @@ func (c *FileSystem) Name() string {
 	return "fs"
 }
 
+func (c *FileSystem) PID() int {
+	return c.pid
+}
+
 // Process returns the process implementation adhering to the interfaces.IUserProcess interface.
 func (c *FileSystem) Process() interfaces.IUserProcess {
 	return c.process
 }
 
 // PID returns an identifier for the file system process. It always returns a fixed value of -2.
-func (c *FileSystem) PID() int {
-	return c.process.PID()
-}
+//func (c *FileSystem) PID() int {
+//	return c.process.PID()
+//}
 
 // User returns the username associated with the file system.
-func (c *FileSystem) User() string {
-	return c.process.User()
-}
+//func (c *FileSystem) User() string {
+//	return c.process.User()
+//}
 
 // Register registers the file system with the provided kRouter and returns a slice of message types that it handles.
 func (c *FileSystem) Register() []interfaces.MessageType {
@@ -93,8 +98,9 @@ func (c *FileSystem) Register() []interfaces.MessageType {
 }
 
 // Setup initializes the FileSystem with the provided process and starts the event loop to handle messages.
-func (c *FileSystem) Setup(router interfaces.IKernelResponseRouter, process interfaces.IUserProcess) error {
+func (c *FileSystem) Setup(router interfaces.IKernelResponseRouter, pid int, process interfaces.IUserProcess) error {
 	c.kRouter = router
+	c.pid = pid
 	c.process = process
 	b := make(chan bool)
 	c.eventLoop(b)
@@ -104,11 +110,11 @@ func (c *FileSystem) Setup(router interfaces.IKernelResponseRouter, process inte
 
 // PostMessage sends a message of type IMessage to the file system's message channel for further processing.
 func (c *FileSystem) PostMessage(m interfaces.IMessage) {
-	if len(c.messageChan) >= fsQueueLen {
+	if len(c.messageChan) >= fsQueueMax {
 		log.Printf("FS: message queue full, dropping message: %d", m.GetType())
 		return
 	}
-	m.SetDestination(c.PID())
+	//m.SetDestination(c.PID())
 	c.messageChan <- m
 }
 
@@ -126,16 +132,16 @@ func (c *FileSystem) handleCWDSet(msg interfaces.IMessage) {
 	}
 	if cmd := c.cwd.Traverse(path); cmd != nil {
 		if cmd.Type() != interfaces.CommandTypeDirectory {
-			mt.CreateResponse(false)
+			mt.CreateResponse(c.PID(), false)
 			c.kRouter.PostKernelResponse(mt.Source(), mt)
 			return
 		}
 		c.cwd = cmd
-		mt.CreateResponse(true)
+		mt.CreateResponse(c.PID(), true)
 		c.kRouter.PostKernelResponse(mt.Source(), mt)
 		return
 	}
-	mt.CreateResponse(false)
+	mt.CreateResponse(c.PID(), false)
 	c.kRouter.PostKernelResponse(mt.Source(), mt)
 }
 
@@ -153,7 +159,7 @@ func (c *FileSystem) handleCWDPath(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	mt.CreateResponse(c.cwd.Path())
+	mt.CreateResponse(c.PID(), c.cwd.Path())
 	c.kRouter.PostKernelResponse(mt.Source(), mt)
 }
 
@@ -167,7 +173,7 @@ func (c *FileSystem) handleCWDDirectoryListing(msg interfaces.IMessage) {
 	for _, z := range c.cwd.DirectoryListing() {
 		out = append(out, z) // z.Name())
 	}
-	mt.CreateResponse(out)
+	mt.CreateResponse(c.PID(), out)
 	c.kRouter.PostKernelResponse(mt.Source(), mt)
 }
 
@@ -179,12 +185,12 @@ func (c *FileSystem) handleFindRequest(msg interfaces.IMessage) {
 	}
 	el, err := c.parser.Parse(mt.Line())
 	if err != nil {
-		mt.CreateResponse(nil, nil, err)
+		mt.CreateResponse(c.PID(), nil, nil, err)
 		c.kRouter.PostKernelResponse(mt.Source(), mt)
 		return
 	}
 	if len(el) == 0 {
-		mt.CreateResponse(nil, nil, fmt.Errorf("invalid command: '%s'", mt.Line()))
+		mt.CreateResponse(c.PID(), nil, nil, fmt.Errorf("invalid command: '%s'", mt.Line()))
 		c.kRouter.PostKernelResponse(mt.Source(), mt)
 		return
 	}
@@ -204,7 +210,7 @@ func (c *FileSystem) handleFindRequest(msg interfaces.IMessage) {
 		}
 	}
 	if sel == nil {
-		mt.CreateResponse(nil, nil, fmt.Errorf("unknown command: '%s'", name))
+		mt.CreateResponse(c.PID(), nil, nil, fmt.Errorf("unknown command: '%s'", name))
 		c.kRouter.PostKernelResponse(mt.Source(), mt)
 		return
 	}
@@ -213,7 +219,7 @@ func (c *FileSystem) handleFindRequest(msg interfaces.IMessage) {
 	//		return false, fmt.Errorf("invalid command: '%s %s'", name, strings.Join(args, " "))
 	//	}
 	//}
-	mt.CreateResponse(sel, args, nil)
+	mt.CreateResponse(c.PID(), sel, args, nil)
 	c.kRouter.PostKernelResponse(mt.Source(), mt)
 }
 
@@ -246,11 +252,11 @@ func (c *FileSystem) handleHelp(msg interfaces.IMessage) {
 		}
 	}
 	if sel == nil {
-		mt.CreateResponse("", fmt.Errorf("invalid command %s", mt.Path()))
+		mt.CreateResponse(c.PID(), "", fmt.Errorf("invalid command %s", mt.Path()))
 		c.kRouter.PostKernelResponse(mt.Source(), mt)
 		return
 	}
-	mt.CreateResponse(sel.Help(), nil)
+	mt.CreateResponse(c.PID(), sel.Help(), nil)
 	c.kRouter.PostKernelResponse(mt.Source(), mt)
 	return
 }
@@ -264,7 +270,7 @@ func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
 	}
 	textBeforeSegment, nodeToQuery, prefixToComplete, basePath, isCompletingCommand, err := c.parseInput(c.cwd, mt.In(), mt.Cursor())
 	if err != nil || nodeToQuery == nil {
-		mt.CreateResponse("", nil, false)
+		mt.CreateResponse(c.PID(), "", nil, false)
 		c.kRouter.PostKernelResponse(mt.Source(), mt)
 		return
 	}
@@ -284,7 +290,7 @@ func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
 	}
 
 	if len(rawSuggestions) == 0 {
-		mt.CreateResponse(prefix, nil, false)
+		mt.CreateResponse(c.PID(), prefix, nil, false)
 		c.kRouter.PostKernelResponse(mt.Source(), mt)
 		return
 	}
@@ -323,7 +329,7 @@ func (c *FileSystem) handleSuggestion(msg interfaces.IMessage) {
 			suggestions[i] = textBeforeSegment + " " + suggestion
 		}
 	}
-	mt.CreateResponse(prefix, suggestions, len(suggestions) > 0)
+	mt.CreateResponse(c.PID(), prefix, suggestions, len(suggestions) > 0)
 	c.kRouter.PostKernelResponse(mt.Source(), mt)
 }
 
@@ -513,6 +519,6 @@ func (c *FileSystem) handleCWDGet(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	mt.CreateResponse(c.cwd.Name())
+	mt.CreateResponse(c.PID(), c.cwd.Name())
 	c.kRouter.PostKernelResponse(mt.Source(), mt)
 }

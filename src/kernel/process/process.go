@@ -19,12 +19,12 @@ const (
 
 // Process represents a process or job in the system, including its context, state, associated options, and execution details.
 type Process struct {
-	kRouter          interfaces.IKernelRequestRouter
-	cmd              interfaces.ICommand
-	user             string
-	context          interface{}
-	timers           []int
-	pid              int
+	kRouter interfaces.IKernelRequestRouter
+	cmd     interfaces.ICommand
+	//user             string
+	context interface{}
+	timers  []int
+	//pid              int
 	state            interfaces.ProcessState
 	gatekeeperChan   chan interfaces.IMessage
 	executorChan     chan interfaces.IMessage
@@ -33,10 +33,10 @@ type Process struct {
 }
 
 // NewProcess initializes and returns a new Process instance with the provided kRouter, command, and command line data.
-func NewProcess(pid int, user string, cmd interfaces.ICommand) *Process {
+func NewProcess(cmd interfaces.ICommand) *Process {
 	t := &Process{
-		pid:              pid,
-		user:             user,
+		//pid:              pid,
+		//user:             user,
 		cmd:              cmd,
 		context:          nil,
 		state:            interfaces.ProcessStateSetup,
@@ -69,13 +69,13 @@ func (t *Process) Start() {
 }
 
 // PID returns the process ID (PID) associated with the process.
-func (t *Process) PID() int {
-	return t.pid
-}
+//func (t *Process) PID() int {
+//	return t.pid
+//}
 
-func (t *Process) User() string {
-	return t.user
-}
+//func (t *Process) User() string {
+//	return t.user
+//}
 
 // GetCommand returns the ICommand instance associated with the Process.
 func (t *Process) GetCommand() interfaces.ICommand {
@@ -94,17 +94,19 @@ func (t *Process) GetContext() interface{} {
 
 // CreateTimer initializes a timer with a specified start delay, repeat interval, and count for the current process.
 func (t *Process) CreateTimer(first int, interval int, count int) {
-	t.kRouter.PostKernelRequest(messages.NewMessageTimerCreate(first, interval, count))
+	msg := messages.NewMessageTimerCreate(-1, -1, first, interval, count)
+	t.kRouter.PostKernelRequest(msg)
 }
 
 // StopTimer stops a timer identified by the given timer ID (tid) for the current process and returns true if successful.
 func (t *Process) StopTimer(tid int) {
-	t.kRouter.PostKernelRequest(messages.NewMessageTimerStop(tid))
+	msg := messages.NewMessageTimerStop(-1, -1, tid)
+	t.kRouter.PostKernelRequest(msg)
 }
 
 // IsActive checks if the process with the specified PID is currently active in the kRouter.
 func (t *Process) IsActive(pid int) bool {
-	msg := messages.NewMessageProcessIsRunningRequest(pid, t.executorWaitChan)
+	msg := messages.NewMessageProcessIsRunningRequest(-1, -1, pid, t.executorWaitChan)
 	t.kRouter.PostKernelRequest(msg)
 	select {
 	case <-t.executorWaitChan:
@@ -122,27 +124,31 @@ func (t *Process) IsActive(pid int) bool {
 
 // Kill attempts to terminate the process associated with the specified pid and returns true if successful.
 func (t *Process) Kill(pid int) {
-	t.kRouter.PostKernelRequest(messages.NewMessageProcessKill(pid))
+	t.kRouter.PostKernelRequest(messages.NewMessageProcessKill(-1, -1, pid))
 }
 
 // KillForeground removes the process from the foreground state and returns true if the operation succeeds.
 func (t *Process) KillForeground() {
-	t.kRouter.PostKernelRequest(messages.NewMessageProcessKillForeground())
+	t.kRouter.PostKernelRequest(messages.NewMessageProcessKillForeground(-1, -1))
 }
 
 // KillAll terminates all processes matching the provided name and returns the count of deactivated processes.
 func (t *Process) KillAll(name string) {
-	t.kRouter.PostKernelRequest(messages.NewMessageProcessKillAll(name))
+	t.kRouter.PostKernelRequest(messages.NewMessageProcessKillAll(-1, -1, name))
 }
 
 // ProcessSetForeground sets the foreground process by specifying its PID and returns true if successfully set.
 func (t *Process) ProcessSetForeground(pid int) {
-	t.kRouter.PostKernelRequest(messages.NewMessageProcessSetForeground(pid))
+	t.kRouter.PostKernelRequest(messages.NewMessageProcessSetForeground(-1, -1, pid))
+}
+
+func (t *Process) ProcessSetSelfForeground() {
+	t.kRouter.PostKernelRequest(messages.NewMessageProcessSetSelfForeground(-1, -1))
 }
 
 // ProcessList returns a string representation of the process list from the kRouter.
 func (t *Process) ProcessList() []*interfaces.ProcessDescription {
-	msg := messages.NewMessageProcessListRequest(t.executorWaitChan)
+	msg := messages.NewMessageProcessListRequest(-1, -1, t.executorWaitChan)
 	t.kRouter.PostKernelRequest(msg)
 	select {
 	case <-t.executorWaitChan:
@@ -160,12 +166,12 @@ func (t *Process) ProcessList() []*interfaces.ProcessDescription {
 
 // PaintRequest sends a request to repaint the task and returns true if the request was successfully processed.
 func (t *Process) PaintRequest() {
-	t.kRouter.PostKernelRequest(messages.NewMessagePaintRequest())
+	t.kRouter.PostKernelRequest(messages.NewMessagePaintRequest(-1, -1))
 }
 
 // GetScreenSize returns the width and height of the screen as integers.
 func (t *Process) GetScreenSize() (int, int) {
-	msg := messages.NewMessageGetScreenSizeRequest(t.executorWaitChan)
+	msg := messages.NewMessageGetScreenSizeRequest(-1, -1, t.executorWaitChan)
 	t.kRouter.PostKernelRequest(msg)
 	select {
 	case <-t.executorWaitChan:
@@ -183,7 +189,7 @@ func (t *Process) GetScreenSize() (int, int) {
 
 // CWDSet sets the current working directory to the specified path and returns true if the operation is successful.
 func (t *Process) CWDSet(arg string) bool {
-	msg := messages.NewMessageFileSystemCWDSetRequest(t.executorWaitChan, arg)
+	msg := messages.NewMessageFileSystemCWDSetRequest(-1, -1, t.executorWaitChan, arg)
 	t.kRouter.PostKernelRequest(msg)
 	select {
 	case <-t.executorWaitChan:
@@ -201,7 +207,7 @@ func (t *Process) CWDSet(arg string) bool {
 
 // CWDName returns the current working directory name by invoking a kRouter-level method.
 func (t *Process) CWDName() string {
-	msg := messages.NewMessageFileSystemCWDGetRequest(t.executorWaitChan)
+	msg := messages.NewMessageFileSystemCWDGetRequest(-1, -1, t.executorWaitChan)
 	t.kRouter.PostKernelRequest(msg)
 	select {
 	case <-t.executorWaitChan:
@@ -219,7 +225,7 @@ func (t *Process) CWDName() string {
 
 // CWDPath retrieves the current working directory as a string from the associated kRouter instance.
 func (t *Process) CWDPath() string {
-	msg := messages.NewMessageFileSystemCWDPathRequest(t.executorWaitChan)
+	msg := messages.NewMessageFileSystemCWDPathRequest(-1, -1, t.executorWaitChan)
 	t.kRouter.PostKernelRequest(msg)
 	select {
 	case <-t.executorWaitChan:
@@ -237,7 +243,7 @@ func (t *Process) CWDPath() string {
 
 // CWDDirectoryListing retrieves a slice of strings representing the child nodes of the current working directory (CWD).
 func (t *Process) CWDDirectoryListing() []string {
-	msg := messages.NewMessageFileSystemCWDDirectoryListingRequest(t.executorWaitChan)
+	msg := messages.NewMessageFileSystemCWDDirectoryListingRequest(-1, -1, t.executorWaitChan)
 	t.kRouter.PostKernelRequest(msg)
 	select {
 	case <-t.executorWaitChan:
@@ -255,7 +261,7 @@ func (t *Process) CWDDirectoryListing() []string {
 
 // Suggestion provides auto-completion suggestions based on the input string and cursor position. Returns prefix, suggestions, and a success flag.
 func (t *Process) Suggestion(in string, cursor int) (string, []string, bool) {
-	msg := messages.NewMessageFileSystemSuggestionRequest(in, cursor, t.executorWaitChan)
+	msg := messages.NewMessageFileSystemSuggestionRequest(-1, -1, in, cursor, t.executorWaitChan)
 	t.kRouter.PostKernelRequest(msg)
 	select {
 	case <-t.executorWaitChan:
@@ -273,7 +279,7 @@ func (t *Process) Suggestion(in string, cursor int) (string, []string, bool) {
 
 // Help calls the kRouter's Help method with the provided argument and returns the result or an error.
 func (t *Process) Help(arg string) (string, error) {
-	msg := messages.NewMessageFileSystemHelpRequest(arg, t.executorWaitChan)
+	msg := messages.NewMessageFileSystemHelpRequest(-1, -1, arg, t.executorWaitChan)
 	t.kRouter.PostKernelRequest(msg)
 	select {
 	case <-t.executorWaitChan:
@@ -291,90 +297,90 @@ func (t *Process) Help(arg string) (string, error) {
 
 // ProcessExec executes a task based on the provided command line input and returns a success status and any execution error.
 func (t *Process) ProcessExec(line string) {
-	t.kRouter.PostKernelRequest(messages.NewMessageProcessExec(line))
+	t.kRouter.PostKernelRequest(messages.NewMessageProcessExec(-1, -1, line))
 }
 
 // WindowsSelectionBegin updates the task selection for the given process ID by invoking the kRouter's task selection method.
 func (t *Process) WindowsSelectionBegin() {
-	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionBegin())
+	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionBegin(-1, -1))
 }
 
 // WindowsSelectionEnd finalizes the current text selection process within the Windows environment for the associated process.
 func (t *Process) WindowsSelectionEnd() {
-	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionEnd())
+	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionEnd(-1, -1))
 }
 
 // WindowsSelectionPrevious moves the task selection pointer to the previous task in the list within the Process.
 func (t *Process) WindowsSelectionPrevious() {
-	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionPrevious())
+	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionPrevious(-1, -1))
 }
 
 // WindowsSelectionNext moves the task selection to the next task in the sequence by invoking the kRouter method.
 func (t *Process) WindowsSelectionNext() {
-	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionNext())
+	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionNext(-1, -1))
 }
 
 // WindowsSelectionOptions configures selection behavior for the task based on the provided option and value.
 func (t *Process) WindowsSelectionOptions(option rune, value float64) {
-	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionOptions(option, value))
+	t.kRouter.PostKernelRequest(messages.NewMessageWindowsSelectionOptions(-1, -1, option, value))
 }
 
 // WritePromptEOL writes the provided prompt followed by an end-of-line character if the eol parameter is true.
 func (t *Process) WritePromptEOL(prompt string, eol bool) {
-	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor("", interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, eol))
-	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false))
+	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(-1, -1, "", interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, eol))
+	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(-1, -1, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false))
 }
 
 // WritePromptLine sends a specified prompt and line string to the kRouter for handling the output display.
 func (t *Process) WritePromptLine(prompt string, line string) {
-	t.kRouter.PostKernelRequest(messages.NewMessageClearLine(line))
-	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false))
-	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false))
+	t.kRouter.PostKernelRequest(messages.NewMessageClearLine(-1, -1, line))
+	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(-1, -1, prompt, interfaces.ColorGreenDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false))
+	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(-1, -1, line, interfaces.ColorNoneDef, interfaces.ColorNoneDef, interfaces.ModeNormal, false))
 }
 
 // Write sends the provided string data to the kRouter's write mechanism associated with the task.
 func (t *Process) Write(data string, eol bool) {
-	t.kRouter.PostKernelRequest(messages.NewMessageWrite(data, eol))
+	t.kRouter.PostKernelRequest(messages.NewMessageWrite(-1, -1, data, eol))
 }
 
 // WriteColor writes a string to the output with specified foreground, background colors, and a color mode.
 func (t *Process) WriteColor(data string, fg interfaces.ColorDef, bg interfaces.ColorDef, mode interfaces.ColorMode, eol bool) {
-	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(data, fg, bg, mode, eol))
+	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(-1, -1, data, fg, bg, mode, eol))
 }
 
 // WriteForeground writes the given data to the foreground with the specified color using the kRouter's functionality.
 func (t *Process) WriteForeground(data string, color interfaces.ColorDef, eol bool) {
-	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(data, color, interfaces.ColorNoneDef, interfaces.ModeNormal, eol))
+	t.kRouter.PostKernelRequest(messages.NewMessageWriteColor(-1, -1, data, color, interfaces.ColorNoneDef, interfaces.ModeNormal, eol))
 }
 
 // MoveCursorLeft moves the cursor one position to the left within the render context.
 func (t *Process) MoveCursorLeft() {
-	t.kRouter.PostKernelRequest(messages.NewMessageMoveCursorLeft())
+	t.kRouter.PostKernelRequest(messages.NewMessageMoveCursorLeft(-1, -1))
 }
 
 // MoveCursorRight moves the cursor one position to the right by invoking the render's MoveCursorRight method.
 func (t *Process) MoveCursorRight() {
-	t.kRouter.PostKernelRequest(messages.NewMessageMoveCursorRight())
+	t.kRouter.PostKernelRequest(messages.NewMessageMoveCursorRight(-1, -1))
 }
 
 // SaveCursor saves the current cursor state by invoking the SaveCursor method on the associated renderer.
 func (t *Process) SaveCursor() {
-	t.kRouter.PostKernelRequest(messages.NewMessageSaveCursor())
+	t.kRouter.PostKernelRequest(messages.NewMessageSaveCursor(-1, -1))
 }
 
 // RestoreCursor restores the cursor to its previous position using the render instance of the Kernel.
 func (t *Process) RestoreCursor() {
-	t.kRouter.PostKernelRequest(messages.NewMessageRestoreCursor())
+	t.kRouter.PostKernelRequest(messages.NewMessageRestoreCursor(-1, -1))
 }
 
 // ClearScreen clears the task's screen by delegating the request to the associated kRouter.
 func (t *Process) ClearScreen() {
-	t.kRouter.PostKernelRequest(messages.NewMessageClearScreen())
+	t.kRouter.PostKernelRequest(messages.NewMessageClearScreen(-1, -1))
 }
 
 // SetExit signals the kRouter that an exit is requested for the task.
 func (t *Process) SetExit() {
-	t.kRouter.PostKernelRequest(messages.NewMessageExitRequested())
+	t.kRouter.PostKernelRequest(messages.NewMessageExitRequested(-1, -1))
 }
 
 // PostMessage sends the provided message to the message channel for processing.
@@ -383,7 +389,7 @@ func (t *Process) PostMessage(msg interfaces.IMessage) {
 		log.Printf("Process Gatekeeper: message queue full, dropping message: %d", msg.GetType())
 		return
 	}
-	msg.SetDestination(t.pid)
+	//msg.SetDestination(t.pid)
 	t.gatekeeperChan <- msg
 }
 
@@ -422,11 +428,12 @@ func (t *Process) gatekeeperLoop(r chan bool) {
 				ack := m.Ack()
 				if ack != nil {
 					ack <- true
-				}
-				if len(t.executorChan) >= executorQueueMax {
-					log.Printf("Process Executor: message queue full, dropping message: %d", m.GetType())
 				} else {
-					t.executorChan <- m
+					if len(t.executorChan) >= executorQueueMax {
+						log.Printf("Process Executor: message queue full, dropping message: %d", m.GetType())
+					} else {
+						t.executorChan <- m
+					}
 				}
 			}
 		}
@@ -451,7 +458,7 @@ func (t *Process) handleMessage(msg interfaces.IMessage) {
 	case interfaces.MessageTypePaintPrepare:
 		t.handleMessagePaintPrepare(msg)
 	default:
-		log.Printf("unknown message type: %d", msg.GetType())
+		log.Printf("Process [%s]: unknown message type: %d", t.cmd.Name(), msg.GetType())
 	}
 }
 
@@ -502,11 +509,11 @@ func (t *Process) handleMessageProcessStart(msg interfaces.IMessage) {
 		return
 	}
 	_ = t.cmd.Execute(t, mt.Args())
-	if !t.cmd.Background() {
-		t.kRouter.PostKernelRequest(messages.NewMessageProcessSetForeground(t.PID()))
-	}
+	//if !t.cmd.Background() {
+	//	t.kRouter.PostKernelRequest(messages.NewMessageProcessSetForeground(t.PID()))
+	//}
 	if !t.cmd.Daemon() {
-		t.kRouter.PostKernelRequest(messages.NewMessageMessageProcessExit())
+		t.kRouter.PostKernelRequest(messages.NewMessageMessageProcessExit(-1, -1))
 		return
 	}
 }
@@ -542,7 +549,7 @@ func (t *Process) handleMessagePaintPrepare(msg interfaces.IMessage) {
 		paintEvent(t, mt.Surface())
 		mt.Surface().End()
 
-		ma := messages.NewMessagePaintApply(mt.Surface())
+		ma := messages.NewMessagePaintApply(-1, -1, mt.Surface())
 		t.kRouter.PostKernelRequest(ma)
 	}
 }

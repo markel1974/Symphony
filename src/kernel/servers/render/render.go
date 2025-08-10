@@ -21,6 +21,7 @@ const eolDef = "\r\n"
 // Render represents a rendering engine responsible for managing terminal dimensions, repainting logic, and paint tasks.
 type Render struct {
 	process        interfaces.IUserProcess
+	pid            int
 	driver         interfaces.IDisplayDriver
 	surface        *Surface
 	width          int
@@ -78,19 +79,13 @@ func (c *Render) Name() string {
 	return "render"
 }
 
+func (c *Render) PID() int {
+	return c.pid
+}
+
 // Process returns the process implementation adhering to the interfaces.IUserProcess interface.
 func (c *Render) Process() interfaces.IUserProcess {
 	return c.process
-}
-
-// PID returns an identifier for the file system process. It always returns a fixed value of -2.
-func (c *Render) PID() int {
-	return c.process.PID()
-}
-
-// User returns the default username as a string, typically "root".
-func (c *Render) User() string {
-	return c.process.User()
 }
 
 // Register binds the provided router to the Render instance and returns a list of supported message types.
@@ -102,8 +97,9 @@ func (c *Render) Register() []interfaces.MessageType {
 	return out
 }
 
-func (c *Render) Setup(router interfaces.IKernelResponseRouter, process interfaces.IUserProcess) error {
+func (c *Render) Setup(router interfaces.IKernelResponseRouter, pid int, process interfaces.IUserProcess) error {
 	c.router = router
+	c.pid = pid
 	c.process = process
 	b := make(chan bool)
 	c.eventLoop(b)
@@ -117,7 +113,7 @@ func (c *Render) PostMessage(m interfaces.IMessage) {
 		log.Printf("Render: message queue full, dropping message: %d", m.GetType())
 		return
 	}
-	m.SetDestination(c.PID())
+	//m.SetDestination(c.PID())
 	c.messageChan <- m
 }
 
@@ -198,7 +194,7 @@ func (c *Render) handlePaintRequest(msg interfaces.IMessage) {
 		return
 	}
 	component.SetAvailable()
-	mp := messages.NewMessagePaintPrepare(NewInterpretedSurface(c.height, c.width))
+	mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width))
 	c.router.PostKernelResponse(msg.Source(), mp)
 }
 
@@ -276,7 +272,7 @@ func (c *Render) handleWindowsSelectionBegin(msg interfaces.IMessage) {
 			c.windowSelector.Set(pid, defaultIdx)
 		}
 	}
-	mp := messages.NewMessagePaintPrepare(NewInterpretedSurface(c.height, c.width))
+	mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width))
 	c.router.PostKernelResponse(msg.Source(), mp)
 }
 
@@ -294,14 +290,14 @@ func (c *Render) handleWindowsSelectionOptions(msg interfaces.IMessage) {
 	}
 	process.Surface().SetOption(mt.Option(), mt.Value())
 	c.fullPaint = true
-	mp := messages.NewMessagePaintPrepare(NewInterpretedSurface(c.height, c.width))
+	mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width))
 	c.router.PostKernelResponse(pid, mp)
 }
 
 // handleWindowsSelectionPrevious navigates to the previous window in the selection if possible and triggers a paint request.
 func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
 	if c.windowSelector.Prev() {
-		mp := messages.NewMessagePaintPrepare(NewInterpretedSurface(c.height, c.width))
+		mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width))
 		c.router.PostKernelResponse(msg.Source(), mp)
 	}
 }
@@ -309,7 +305,7 @@ func (c *Render) handleWindowsSelectionPrevious(msg interfaces.IMessage) {
 // handleWindowsSelectionNext moves the window selector to the next window and triggers a repaint if the selection changes.
 func (c *Render) handleWindowsSelectionNext(msg interfaces.IMessage) {
 	if c.windowSelector.Next() {
-		mp := messages.NewMessagePaintPrepare(NewInterpretedSurface(c.height, c.width))
+		mp := messages.NewMessagePaintPrepare(c.PID(), msg.Source(), NewInterpretedSurface(c.height, c.width))
 		c.router.PostKernelResponse(msg.Source(), mp)
 	}
 }
@@ -388,7 +384,7 @@ func (c *Render) handleGetScreenSize(msg interfaces.IMessage) {
 	if !ok {
 		return
 	}
-	mt.CreateResponse(c.width, c.height)
+	mt.CreateResponse(c.PID(), c.width, c.height)
 	c.router.PostKernelResponse(mt.Source(), mt)
 }
 

@@ -10,9 +10,9 @@ type MessagePaintRequest struct {
 }
 
 // NewMessagePaintRequest creates a new instance of MessagePaint with the MessageType set to MessageTypePaint.
-func NewMessagePaintRequest() *MessagePaintRequest {
+func NewMessagePaintRequest(source int, destination int) *MessagePaintRequest {
 	return &MessagePaintRequest{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypePaintRequest),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypePaintRequest),
 	}
 }
 
@@ -23,9 +23,9 @@ type MessagePaintPrepare struct {
 }
 
 // NewMessagePaintPrepare creates a new instance of MessagePaint with the MessageType set to MessageTypePaint.
-func NewMessagePaintPrepare(surface interfaces.ISurface) *MessagePaintPrepare {
+func NewMessagePaintPrepare(source int, destination int, surface interfaces.ISurface) *MessagePaintPrepare {
 	mp := &MessagePaintPrepare{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypePaintPrepare),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypePaintPrepare),
 		surface:  surface,
 	}
 	//mp.MakeResponse()
@@ -46,9 +46,9 @@ type MessagePaintApply struct {
 }
 
 // NewMessagePaintApply creates a new MessagePaintApply instance with the specified router and surface for rendering processes.
-func NewMessagePaintApply(surface interfaces.ISurface) *MessagePaintApply {
+func NewMessagePaintApply(source int, destination int, surface interfaces.ISurface) *MessagePaintApply {
 	mp := &MessagePaintApply{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypePaintApply),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypePaintApply),
 		surface:  surface,
 	}
 	return mp
@@ -65,9 +65,9 @@ type MessageWindowsSelectionBegin struct {
 }
 
 // NewMessageWindowsSelectionBegin creates and returns a new instance of MessageWindowsSelectionBegin with the proper message type.
-func NewMessageWindowsSelectionBegin() *MessageWindowsSelectionBegin {
+func NewMessageWindowsSelectionBegin(source int, destination int) *MessageWindowsSelectionBegin {
 	return &MessageWindowsSelectionBegin{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeWindowsSelectionBegin),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeWindowsSelectionBegin),
 	}
 }
 
@@ -77,9 +77,9 @@ type MessageWindowsSelectionEnd struct {
 }
 
 // NewMessageWindowsSelectionEnd creates and returns a pointer to a new MessageWindowsSelectionEnd instance with the appropriate type.
-func NewMessageWindowsSelectionEnd() *MessageWindowsSelectionEnd {
+func NewMessageWindowsSelectionEnd(source int, destination int) *MessageWindowsSelectionEnd {
 	return &MessageWindowsSelectionEnd{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeWindowsSelectionEnd),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeWindowsSelectionEnd),
 	}
 }
 
@@ -89,9 +89,9 @@ type MessageWindowsSelectionNext struct {
 }
 
 // NewMessageWindowsSelectionNext creates and initializes a new MessageWindowsSelectionNext instance with the appropriate message type.
-func NewMessageWindowsSelectionNext() *MessageWindowsSelectionNext {
+func NewMessageWindowsSelectionNext(source int, destination int) *MessageWindowsSelectionNext {
 	return &MessageWindowsSelectionNext{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeWindowsSelectionNext),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeWindowsSelectionNext),
 	}
 }
 
@@ -101,9 +101,9 @@ type MessageWindowsSelectionPrevious struct {
 }
 
 // NewMessageWindowsSelectionPrevious creates a new instance of MessageWindowsSelectionPrevious with predefined message type.
-func NewMessageWindowsSelectionPrevious() *MessageWindowsSelectionPrevious {
+func NewMessageWindowsSelectionPrevious(source int, destination int) *MessageWindowsSelectionPrevious {
 	return &MessageWindowsSelectionPrevious{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeWindowsSelectionPrevious),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeWindowsSelectionPrevious),
 	}
 }
 
@@ -115,9 +115,9 @@ type MessageWindowsSelectionOptions struct {
 }
 
 // NewMessageWindowsSelectionOptions initializes a MessageWindowsSelectionOptions with the given option and value.
-func NewMessageWindowsSelectionOptions(option rune, value float64) *MessageWindowsSelectionOptions {
+func NewMessageWindowsSelectionOptions(source int, destination int, option rune, value float64) *MessageWindowsSelectionOptions {
 	return &MessageWindowsSelectionOptions{
-		IMessage: interfaces.NewMessageNoAck(interfaces.MessageTypeWindowsSelectionOptions),
+		IMessage: interfaces.NewMessageNoAck(source, destination, interfaces.MessageTypeWindowsSelectionOptions),
 		option:   option,
 		value:    value,
 	}
