@@ -35,7 +35,7 @@ func (m *ModuleMap) Add(name string, module Importable) {
 
 // AddBuiltinModule adds a builtin module.
 func (m *ModuleMap) AddBuiltinModule(name string, attrs map[string]objects.IObject) {
-	m.m[name] = &objects.BuiltinModule{Attrs: attrs}
+	m.m[name] = &BuiltinModule{Attrs: attrs}
 }
 
 // AddSourceModule adds a source module.
@@ -56,8 +56,8 @@ func (m *ModuleMap) Get(name string) Importable {
 
 // GetBuiltinModule returns a builtin module identified by name. It returns
 // if the name is not found or the module is not a builtin module.
-func (m *ModuleMap) GetBuiltinModule(name string) *objects.BuiltinModule {
-	mod, _ := m.m[name].(*objects.BuiltinModule)
+func (m *ModuleMap) GetBuiltinModule(name string) *BuiltinModule {
+	mod, _ := m.m[name].(*BuiltinModule)
 	return mod
 }
 

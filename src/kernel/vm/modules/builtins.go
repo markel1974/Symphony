@@ -8,130 +8,38 @@ import (
 
 // builtinFuncs is a slice of predefined builtin functions used for various standard operations within the system.
 var builtinFuncs = []*objects.BuiltinFunction{
-	{
-		Name:  "len",
-		Value: builtinLen,
-	},
-	{
-		Name:  "copy",
-		Value: builtinCopy,
-	},
-	{
-		Name:  "append",
-		Value: builtinAppend,
-	},
-	{
-		Name:  "delete",
-		Value: builtinDelete,
-	},
-	{
-		Name:  "splice",
-		Value: builtinSplice,
-	},
-	{
-		Name:  "string",
-		Value: builtinString,
-	},
-	{
-		Name:  "int",
-		Value: builtinInt,
-	},
-	{
-		Name:  "bool",
-		Value: builtinBool,
-	},
-	{
-		Name:  "float",
-		Value: builtinFloat,
-	},
-	{
-		Name:  "char",
-		Value: builtinChar,
-	},
-	{
-		Name:  "bytes",
-		Value: builtinBytes,
-	},
-	{
-		Name:  "time",
-		Value: builtinTime,
-	},
-	{
-		Name:  "is_int",
-		Value: builtinIsInt,
-	},
-	{
-		Name:  "is_float",
-		Value: builtinIsFloat,
-	},
-	{
-		Name:  "is_string",
-		Value: builtinIsString,
-	},
-	{
-		Name:  "is_bool",
-		Value: builtinIsBool,
-	},
-	{
-		Name:  "is_char",
-		Value: builtinIsChar,
-	},
-	{
-		Name:  "is_bytes",
-		Value: builtinIsBytes,
-	},
-	{
-		Name:  "is_array",
-		Value: builtinIsArray,
-	},
-	{
-		Name:  "is_immutable_array",
-		Value: builtinIsImmutableArray,
-	},
-	{
-		Name:  "is_map",
-		Value: builtinIsMap,
-	},
-	{
-		Name:  "is_immutable_map",
-		Value: builtinIsImmutableMap,
-	},
-	{
-		Name:  "is_iterable",
-		Value: builtinIsIterable,
-	},
-	{
-		Name:  "is_time",
-		Value: builtinIsTime,
-	},
-	{
-		Name:  "is_error",
-		Value: builtinIsError,
-	},
-	{
-		Name:  "is_undefined",
-		Value: builtinIsUndefined,
-	},
-	{
-		Name:  "is_function",
-		Value: builtinIsFunction,
-	},
-	{
-		Name:  "is_callable",
-		Value: builtinIsCallable,
-	},
-	{
-		Name:  "type_name",
-		Value: builtinTypeName,
-	},
-	{
-		Name:  "format",
-		Value: builtinFormat,
-	},
-	{
-		Name:  "range",
-		Value: builtinRange,
-	},
+	objects.NewBuiltinFunction("len", builtinLen),
+	objects.NewBuiltinFunction("copy", builtinCopy),
+	objects.NewBuiltinFunction("append", builtinAppend),
+	objects.NewBuiltinFunction("delete", builtinDelete),
+	objects.NewBuiltinFunction("splice", builtinSplice),
+	objects.NewBuiltinFunction("string", builtinString),
+	objects.NewBuiltinFunction("int", builtinInt),
+	objects.NewBuiltinFunction("bool", builtinBool),
+	objects.NewBuiltinFunction("bool", builtinBool),
+	objects.NewBuiltinFunction("float", builtinFloat),
+	objects.NewBuiltinFunction("char", builtinChar),
+	objects.NewBuiltinFunction("bytes", builtinBytes),
+	objects.NewBuiltinFunction("time", builtinTime),
+	objects.NewBuiltinFunction("is_int", builtinIsInt),
+	objects.NewBuiltinFunction("is_float", builtinIsFloat),
+	objects.NewBuiltinFunction("is_string", builtinIsString),
+	objects.NewBuiltinFunction("is_bool", builtinIsBool),
+	objects.NewBuiltinFunction("is_char", builtinIsChar),
+	objects.NewBuiltinFunction("is_bytes", builtinIsBytes),
+	objects.NewBuiltinFunction("is_array", builtinIsArray),
+	objects.NewBuiltinFunction("is_immutable_array", builtinIsImmutableArray),
+	objects.NewBuiltinFunction("is_map", builtinIsMap),
+	objects.NewBuiltinFunction("is_immutable_map", builtinIsImmutableMap),
+	objects.NewBuiltinFunction("is_iterable", builtinIsIterable),
+	objects.NewBuiltinFunction("is_time", builtinIsTime),
+	objects.NewBuiltinFunction("is_error", builtinIsError),
+	objects.NewBuiltinFunction("is_undefined", builtinIsUndefined),
+	objects.NewBuiltinFunction("is_function", builtinIsFunction),
+	objects.NewBuiltinFunction("is_callable", builtinIsCallable),
+	objects.NewBuiltinFunction("type_name", builtinTypeName),
+	objects.NewBuiltinFunction("format", builtinFormat),
+	objects.NewBuiltinFunction("range", builtinRange),
 }
 
 // GetAllBuiltinFunctions returns a slice containing all registered builtin functions.
