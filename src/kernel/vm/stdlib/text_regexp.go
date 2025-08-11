@@ -10,17 +10,17 @@ import (
 // makeTextRegexp returns an ImmutableMap of functions for regex operations: match, find, replace, and split.
 func makeTextRegexp(re *regexp.Regexp) *objects.ImmutableMap {
 	return &objects.ImmutableMap{
-		Value: map[string]objects.Object{
+		Value: map[string]objects.IObject{
 			// match(text) => bool
-			"match": objects.NewUserFunction("match", func(args ...objects.Object) (objects.Object, error) { return doTextRegexpMatch(re, args...) }),
+			"match": objects.NewUserFunction("match", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpMatch(re, args...) }),
 			// find(text) 			=> array(array({text:,begin:,end:}))/undefined
 			// find(text, maxCount) => array(array({text:,begin:,end:}))/undefined
-			"find": objects.NewUserFunction("find", func(args ...objects.Object) (objects.Object, error) { return doTextRegexpFind(re, args...) }),
+			"find": objects.NewUserFunction("find", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpFind(re, args...) }),
 			// replace(src, repl) => string
-			"replace": objects.NewUserFunction("replace", func(args ...objects.Object) (objects.Object, error) { return doTextRegexpREReplace(re, args...) }),
+			"replace": objects.NewUserFunction("replace", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpREReplace(re, args...) }),
 			// split(text) 			 => array(string)
 			// split(text, maxCount) => array(string)
-			"split": objects.NewUserFunction("split", func(args ...objects.Object) (objects.Object, error) { return doTextRegexpRESplit(re, args...) }),
+			"split": objects.NewUserFunction("split", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpRESplit(re, args...) }),
 		},
 	}
 }
@@ -53,7 +53,7 @@ func doTextRegexpReplace(re *regexp.Regexp, src, repl string) (string, bool) {
 
 // doTextRegexpMatch checks if the provided string argument matches the given regular expression and returns a boolean result.
 // Returns an error if the number of arguments is not 1 or if the argument type is not a string (compatible).
-func doTextRegexpMatch(re *regexp.Regexp, args ...objects.Object) (objects.Object, error) {
+func doTextRegexpMatch(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -71,7 +71,7 @@ func doTextRegexpMatch(re *regexp.Regexp, args ...objects.Object) (objects.Objec
 // The first argument must be a string, and the second argument (optional) specifies a match limit (integer).
 // Returns an array of match details (e.g., matched text, start index, end index) or undefined if no match is found.
 // Returns an error if invalid argument types or wrong number of arguments are provided.
-func doTextRegexpFind(re *regexp.Regexp, args ...objects.Object) (objects.Object, error) {
+func doTextRegexpFind(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 1 && numArgs != 2 {
 		return nil, errors.ErrWrongNumArguments
@@ -89,13 +89,13 @@ func doTextRegexpFind(re *regexp.Regexp, args ...objects.Object) (objects.Object
 		for i := 0; i < len(m); i += 2 {
 			arr.Value = append(arr.Value,
 				&objects.ImmutableMap{
-					Value: map[string]objects.Object{
+					Value: map[string]objects.IObject{
 						"text":  &objects.String{Value: s1[m[i]:m[i+1]]},
 						"begin": &objects.Int{Value: int64(m[i])},
 						"end":   &objects.Int{Value: int64(m[i+1])},
 					}})
 		}
-		return objects.NewArray([]objects.Object{arr}), nil
+		return objects.NewArray([]objects.IObject{arr}), nil
 	}
 	i2, ok := objects.ToInt(args[1])
 	if !ok {
@@ -111,7 +111,7 @@ func doTextRegexpFind(re *regexp.Regexp, args ...objects.Object) (objects.Object
 		for i := 0; i < len(m); i += 2 {
 			subMatch.Value = append(subMatch.Value,
 				&objects.ImmutableMap{
-					Value: map[string]objects.Object{
+					Value: map[string]objects.IObject{
 						"text":  &objects.String{Value: s1[m[i]:m[i+1]]},
 						"begin": &objects.Int{Value: int64(m[i])},
 						"end":   &objects.Int{Value: int64(m[i+1])},
@@ -123,7 +123,7 @@ func doTextRegexpFind(re *regexp.Regexp, args ...objects.Object) (objects.Object
 }
 
 // doTextRegexpREReplace performs a regex-based replacement with a source and replacement string, returning a new string or an error.
-func doTextRegexpREReplace(re *regexp.Regexp, args ...objects.Object) (objects.Object, error) {
+func doTextRegexpREReplace(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -144,7 +144,7 @@ func doTextRegexpREReplace(re *regexp.Regexp, args ...objects.Object) (objects.O
 
 // doTextRegexpRESplit splits a string using a regular expression and returns an array of substrings. Accepts one or two arguments.
 // The first argument must be a string, the second (optional) must be an integer specifying the maximum number of splits.
-func doTextRegexpRESplit(re *regexp.Regexp, args ...objects.Object) (objects.Object, error) {
+func doTextRegexpRESplit(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 1 && numArgs != 2 {
 		return nil, errors.ErrWrongNumArguments

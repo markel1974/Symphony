@@ -6,56 +6,72 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
+// MaxStringLen defines the maximum allowed byte-length for string values across all compiler/VM instances in the process.
 var (
-	// MaxStringLen is the maximum byte-length for string value. Note this
+	// MaxStringLen is the maximum byte-length for string values. Note this
 	// limit applies to all compiler/VM instances in the process.
 	MaxStringLen = 2147483647
 )
 
-// String represents a string value.
+// String represents a wrapper around a standard string with additional behavior and methods for runtime operations.
+// This type embeds ObjectImpl and supports operations like indexing, iteration, comparison, and copying.
+// It implements IObject and provides a richer functionality for string manipulation within the runtime system.
 type String struct {
 	ObjectImpl
-	Value   string
+	value   string
 	runeStr []rune
 }
 
+// NewString creates and returns a new String object initialized with the provided string values.
 func NewString(value string) *String {
 	return &String{
-		Value: value,
+		value: value,
 	}
 }
 
-// TypeName returns the name of the type.
+// Value returns the string value of the String object.
+func (o *String) Value() string {
+	return o.value
+}
+
+// Length returns the length of the string value.
+func (o *String) Length() int {
+	return len(o.value)
+}
+
+// TypeName returns the name of the type "string".
 func (o *String) TypeName() string {
 	return "string"
 }
 
+// String returns the quoted string representation of the String object.
 func (o *String) String() string {
-	return strconv.Quote(o.Value)
+	return strconv.Quote(o.value)
 }
 
-// BinaryOp returns another object that is the result of a given binary
-// operator and a right-hand side object.
-func (o *String) BinaryOp(op Operator, rhs Object) (Object, error) {
+// BinaryOp performs the specified binary operation on the calling string object and a right-hand operand.
+// Supported operations include addition and comparison (e.g., less than, greater than, and their equal variants).
+// Returns the result of the operation or an error if the operation is invalid or exceeds size limits.
+func (o *String) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 	switch op {
 	case OperatorAdd:
 		switch rhs := rhs.(type) {
 		case *String:
-			if len(o.Value)+len(rhs.Value) > MaxStringLen {
+			if len(o.value)+len(rhs.value) > MaxStringLen {
 				return nil, errors.ErrStringLimit
 			}
-			return &String{Value: o.Value + rhs.Value}, nil
+			return &String{value: o.value + rhs.value}, nil
 		default:
 			rhsStr := rhs.String()
-			if len(o.Value)+len(rhsStr) > MaxStringLen {
+			if len(o.value)+len(rhsStr) > MaxStringLen {
 				return nil, errors.ErrStringLimit
 			}
-			return &String{Value: o.Value + rhsStr}, nil
+			return &String{value: o.value + rhsStr}, nil
 		}
 	case OperatorLess:
 		switch rhs := rhs.(type) {
 		case *String:
-			if o.Value < rhs.Value {
+			if o.value < rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
@@ -63,7 +79,7 @@ func (o *String) BinaryOp(op Operator, rhs Object) (Object, error) {
 	case OperatorLessEq:
 		switch rhs := rhs.(type) {
 		case *String:
-			if o.Value <= rhs.Value {
+			if o.value <= rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
@@ -71,7 +87,7 @@ func (o *String) BinaryOp(op Operator, rhs Object) (Object, error) {
 	case OperatorGreater:
 		switch rhs := rhs.(type) {
 		case *String:
-			if o.Value > rhs.Value {
+			if o.value > rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
@@ -79,7 +95,7 @@ func (o *String) BinaryOp(op Operator, rhs Object) (Object, error) {
 	case OperatorGreaterEq:
 		switch rhs := rhs.(type) {
 		case *String:
-			if o.Value >= rhs.Value {
+			if o.value >= rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
@@ -90,49 +106,49 @@ func (o *String) BinaryOp(op Operator, rhs Object) (Object, error) {
 	return nil, errors.ErrInvalidOperator
 }
 
-// IsFalsy returns true if the value of the type is falsy.
+// Falsy returns true if the String's values is an empty string, indicating it is considered falsy in a boolean context.
 func (o *String) Falsy() bool {
-	return len(o.Value) == 0
+	return len(o.value) == 0
 }
 
-// Copy returns a copy of the type.
-func (o *String) Copy() Object {
-	return &String{Value: o.Value}
+// Copy creates and returns a new String instance with the same values as the original.
+func (o *String) Copy() IObject {
+	return &String{value: o.value}
 }
 
-// Equals returns true if the value of the type is equal to the value of
-// another object.
-func (o *String) Equals(x Object) bool {
+// Equals checks whether the current String object is equal to the provided IObject by comparing their values.
+func (o *String) Equals(x IObject) bool {
 	t, ok := x.(*String)
 	if !ok {
 		return false
 	}
-	return o.Value == t.Value
+	return o.value == t.value
 }
 
-// IndexGet returns a character at a given index.
-func (o *String) IndexGet(index Object) (res Object, err error) {
+// IndexGet retrieves the character at the specified index from the String object.
+// Returns an error if the index is not of type Int or is out of bounds.
+func (o *String) IndexGet(index IObject) (res IObject, err error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
 		err = errors.ErrInvalidIndexType
 		return
 	}
-	idxVal := int(intIdx.Value)
+	idxVal := int(intIdx.value)
 	if o.runeStr == nil {
-		o.runeStr = []rune(o.Value)
+		o.runeStr = []rune(o.value)
 	}
 	if idxVal < 0 || idxVal >= len(o.runeStr) {
 		res = UndefinedValue
 		return
 	}
-	res = &Char{Value: o.runeStr[idxVal]}
+	res = &Char{value: o.runeStr[idxVal]}
 	return
 }
 
-// Iterate creates a string iterator.
-func (o *String) Iterate() Iterator {
+// Iterate returns an IIterator for iterating over the runes of the String. It initializes runeStr if not already initialized.
+func (o *String) Iterate() IIterator {
 	if o.runeStr == nil {
-		o.runeStr = []rune(o.Value)
+		o.runeStr = []rune(o.value)
 	}
 	return &StringIterator{
 		v: o.runeStr,
@@ -140,12 +156,12 @@ func (o *String) Iterate() Iterator {
 	}
 }
 
-// CanIterate returns whether the Object can be Iterated.
+// CanIterate checks if the String object supports iteration and always returns true.
 func (o *String) CanIterate() bool {
 	return true
 }
 
-// StringIterator represents an iterator for a string.
+// StringIterator represents an iterator for traversing over the characters of a string, implemented as runes.
 type StringIterator struct {
 	ObjectImpl
 	v []rune
@@ -153,68 +169,68 @@ type StringIterator struct {
 	l int
 }
 
-// TypeName returns the name of the type.
+// TypeName returns the type name of the StringIterator as a string.
 func (i *StringIterator) TypeName() string {
 	return "string-iterator"
 }
 
+// String returns the string representation of the StringIterator, useful for debugging or logging.
 func (i *StringIterator) String() string {
 	return "<string-iterator>"
 }
 
-// IsFalsy returns true if the value of the type is falsy.
+// Falsy returns true, indicating the iterator is considered falsy in a boolean context.
 func (i *StringIterator) Falsy() bool {
 	return true
 }
 
-// Equals returns true if the value of the type is equal to the value of
-// another object.
-func (i *StringIterator) Equals(Object) bool {
+// Equals compares the current StringIterator with another IObject and determines if they are equal.
+func (i *StringIterator) Equals(IObject) bool {
 	return false
 }
 
-// Copy returns a copy of the type.
-func (i *StringIterator) Copy() Object {
+// Copy creates and returns a new instance of StringIterator with the same state as the current one.
+func (i *StringIterator) Copy() IObject {
 	return &StringIterator{v: i.v, i: i.i, l: i.l}
 }
 
-// Next returns true if there are more elements to iterate.
+// Next advances the iterator to the next position and returns true if the current position is within bounds.
 func (i *StringIterator) Next() bool {
 	i.i++
 	return i.i <= i.l
 }
 
-// Key returns the key or index value of the current element.
-func (i *StringIterator) Key() Object {
-	return &Int{Value: int64(i.i - 1)}
+// Key returns the zero-based index of the current element in the iteration as an Int object.
+func (i *StringIterator) Key() IObject {
+	return &Int{value: int64(i.i - 1)}
 }
 
-// Value returns the value of the current element.
-func (i *StringIterator) Value() Object {
-	return &Char{Value: i.v[i.i-1]}
+// Value returns the current character as an IObject wrapped in a Char instance from the internal rune slice.
+func (i *StringIterator) Value() IObject {
+	return &Char{value: i.v[i.i-1]}
 }
 
-// ToRune will try to convert object o to rune value.
-func ToRune(o Object) (v rune, ok bool) {
+// ToRune attempts to convert an IObject to a rune if it is of type *Int or *Char, returning the rune and a boolean success flag.
+func ToRune(o IObject) (v rune, ok bool) {
 	switch o := o.(type) {
 	case *Int:
-		v = rune(o.Value)
+		v = rune(o.value)
 		ok = true
 	case *Char:
-		v = o.Value
+		v = o.value
 		ok = true
 	}
 	return
 }
 
-// ToString will try to convert object o to string value.
-func ToString(o Object) (v string, ok bool) {
+// ToString converts an IObject to its string representation and determines whether the conversion is valid.
+func ToString(o IObject) (v string, ok bool) {
 	if o == UndefinedValue {
 		return
 	}
 	ok = true
 	if str, isStr := o.(*String); isStr {
-		v = str.Value
+		v = str.value
 	} else {
 		v = o.String()
 	}

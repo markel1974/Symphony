@@ -25,22 +25,22 @@ func (o *UserFunction) String() string {
 }
 
 // Copy returns a copy of the type.
-func (o *UserFunction) Copy() Object {
+func (o *UserFunction) Copy() IObject {
 	return &UserFunction{Value: o.Value}
 }
 
-// Equals returns true if the value of the type is equal to the value of
+// Equals returns true if the values of the type is equal to the values of
 // another object.
-func (o *UserFunction) Equals(_ Object) bool {
+func (o *UserFunction) Equals(_ IObject) bool {
 	return false
 }
 
 // Call invokes a user function.
-func (o *UserFunction) Call(args ...Object) (Object, error) {
+func (o *UserFunction) Call(args ...IObject) (IObject, error) {
 	return o.Value(args...)
 }
 
-// CanCall returns whether the Object can be Called.
+// CanCall returns whether the IObject can be Called.
 func (o *UserFunction) CanCall() bool {
 	return true
 }

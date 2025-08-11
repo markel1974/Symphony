@@ -12,7 +12,7 @@ import (
 )
 
 // textModule is a map of various text processing functions, including string manipulation, regex operations, and type conversions.
-var textModule = map[string]objects.Object{
+var textModule = map[string]objects.IObject{
 	"re_match":       objects.NewUserFunction("re_match", textREMatch),                           // re_match(pattern, text) => bool/error
 	"re_find":        objects.NewUserFunction("re_find", textREFind),                             // re_find(pattern, text, count) => [[{text:,begin:,end:}]]/undefined
 	"re_replace":     objects.NewUserFunction("re_replace", textREReplace),                       // re_replace(pattern, text, repl) => string/error
@@ -65,7 +65,7 @@ var textModule = map[string]objects.Object{
 
 // textREMatch checks if the first argument (regex pattern) matches the second argument (string) and returns a boolean object.
 // Returns an error if arguments are not string or if there is an invalid number of arguments.
-func textREMatch(args ...objects.Object) (ret objects.Object, err error) {
+func textREMatch(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		err = errors.ErrWrongNumArguments
 		return
@@ -94,7 +94,7 @@ func textREMatch(args ...objects.Object) (ret objects.Object, err error) {
 }
 
 // textREFind performs a regular expression match on a string and extracts matched substrings with their positions.
-func textREFind(args ...objects.Object) (ret objects.Object, err error) {
+func textREFind(args ...objects.IObject) (ret objects.IObject, err error) {
 	numArgs := len(args)
 	if numArgs != 2 && numArgs != 3 {
 		err = errors.ErrWrongNumArguments
@@ -124,13 +124,13 @@ func textREFind(args ...objects.Object) (ret objects.Object, err error) {
 		arr := &objects.Array{}
 		for i := 0; i < len(m); i += 2 {
 			arr.Value = append(arr.Value,
-				&objects.ImmutableMap{Value: map[string]objects.Object{
+				&objects.ImmutableMap{Value: map[string]objects.IObject{
 					"text":  &objects.String{Value: s2[m[i]:m[i+1]]},
 					"begin": &objects.Int{Value: int64(m[i])},
 					"end":   &objects.Int{Value: int64(m[i+1])},
 				}})
 		}
-		ret = &objects.Array{Value: []objects.Object{arr}}
+		ret = &objects.Array{Value: []objects.IObject{arr}}
 		return
 	}
 	i3, ok := objects.ToInt(args[2])
@@ -148,7 +148,7 @@ func textREFind(args ...objects.Object) (ret objects.Object, err error) {
 		subMatch := &objects.Array{}
 		for i := 0; i < len(m); i += 2 {
 			subMatch.Value = append(subMatch.Value,
-				&objects.ImmutableMap{Value: map[string]objects.Object{
+				&objects.ImmutableMap{Value: map[string]objects.IObject{
 					"text":  &objects.String{Value: s2[m[i]:m[i+1]]},
 					"begin": &objects.Int{Value: int64(m[i])},
 					"end":   &objects.Int{Value: int64(m[i+1])},
@@ -164,7 +164,7 @@ func textREFind(args ...objects.Object) (ret objects.Object, err error) {
 // textREReplace performs a regular expression replacement in a string.
 // Accepts three arguments: regex pattern as the first argument, source string as the second, and replacement string as the third.
 // Returns the modified string or an error if the input arguments are invalid or the operation fails.
-func textREReplace(args ...objects.Object) (ret objects.Object, err error) {
+func textREReplace(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
 		err = errors.ErrWrongNumArguments
 		return
@@ -201,7 +201,7 @@ func textREReplace(args ...objects.Object) (ret objects.Object, err error) {
 // textRESplit splits a string by a regular expression pattern and returns an array of resulting substrings.
 // The first argument is the regex pattern, the second is the string to split, and the optional third is the max splits.
 // Returns an error if arguments' types or counts are incorrect, or if the regex compilation fails.
-func textRESplit(args ...objects.Object) (ret objects.Object, err error) {
+func textRESplit(args ...objects.IObject) (ret objects.IObject, err error) {
 	numArgs := len(args)
 	if numArgs != 2 && numArgs != 3 {
 		err = errors.ErrWrongNumArguments
@@ -246,7 +246,7 @@ func textRESplit(args ...objects.Object) (ret objects.Object, err error) {
 }
 
 // textRECompile compiles a string argument into a regular expression and returns a map of regex operations or an error.
-func textRECompile(args ...objects.Object) (ret objects.Object, err error) {
+func textRECompile(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		err = errors.ErrWrongNumArguments
 		return
@@ -267,7 +267,7 @@ func textRECompile(args ...objects.Object) (ret objects.Object, err error) {
 
 // textReplace performs a string replacement operation using 4 arguments: original string, target, replacement, and limit.
 // It returns the modified string as an object or an error if the input arguments are invalid or exceed string limits.
-func textReplace(args ...objects.Object) (ret objects.Object, err error) {
+func textReplace(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 4 {
 		err = errors.ErrWrongNumArguments
 		return
@@ -303,7 +303,7 @@ func textReplace(args ...objects.Object) (ret objects.Object, err error) {
 
 // textSubstring extracts a substring from a string, using start and optional end indices provided as arguments.
 // Returns an error if arguments are invalid or indices are out of bounds.
-func textSubstring(args ...objects.Object) (ret objects.Object, err error) {
+func textSubstring(args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
 		err = errors.ErrWrongNumArguments
@@ -349,7 +349,7 @@ func textSubstring(args ...objects.Object) (ret objects.Object, err error) {
 // textPadLeft pads a string from the left with a specified character or default space until the string reaches a given length.
 // Returns an error if arguments are invalid or exceed defined limits.
 // Accepts 2 or 3 arguments: the string to pad, the target length, and an optional padding string.
-func textPadLeft(args ...objects.Object) (ret objects.Object, err error) {
+func textPadLeft(args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
 		err = errors.ErrWrongNumArguments
@@ -394,7 +394,7 @@ func textPadLeft(args ...objects.Object) (ret objects.Object, err error) {
 // textPadRight appends padding characters to the right of a string until it reaches the desired length.
 // Accepts 2-3 arguments: string, target length (int), and optional padding string (default is a space).
 // Returns an error if arguments are of invalid type, the number of arguments is wrong, or string size exceeds the limit.
-func textPadRight(args ...objects.Object) (ret objects.Object, err error) {
+func textPadRight(args ...objects.IObject) (ret objects.IObject, err error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
 		err = errors.ErrWrongNumArguments
@@ -440,7 +440,7 @@ func textPadRight(args ...objects.Object) (ret objects.Object, err error) {
 // textRepeat repeats a string a specified number of times and returns the result as a new string object.
 // It requires exactly 2 arguments: a string and an integer.
 // Returns an error if arguments are of invalid types or if the resulting string exceeds the maximum allowed length.
-func textRepeat(args ...objects.Object) (ret objects.Object, err error) {
+func textRepeat(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -460,7 +460,7 @@ func textRepeat(args ...objects.Object) (ret objects.Object, err error) {
 
 // textJoin concatenates elements of the first argument (array or immutable-array of strings) using the second argument as a separator.
 // Returns an error if the number of arguments is incorrect, types are invalid, or the resulting string exceeds the size limit.
-func textJoin(args ...objects.Object) (ret objects.Object, err error) {
+func textJoin(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -500,7 +500,7 @@ func textJoin(args ...objects.Object) (ret objects.Object, err error) {
 
 // textFormatBool converts a single boolean argument to its string representation ("true" or "false").
 // Returns an error if the argument count is not 1 or the argument type is not boolean.
-func textFormatBool(args ...objects.Object) (ret objects.Object, err error) {
+func textFormatBool(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		err = errors.ErrWrongNumArguments
 		return
@@ -521,7 +521,7 @@ func textFormatBool(args ...objects.Object) (ret objects.Object, err error) {
 // textFormatFloat formats a float value according to a specific format, precision, and bit size.
 // It expects four arguments: a float, a string format character, precision (int), and bit size (int).
 // Returns a formatted string object or an error if arguments are invalid.
-func textFormatFloat(args ...objects.Object) (ret objects.Object, err error) {
+func textFormatFloat(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 4 {
 		err = errors.ErrWrongNumArguments
 		return
@@ -553,7 +553,7 @@ func textFormatFloat(args ...objects.Object) (ret objects.Object, err error) {
 // textFormatInt formats an integer to a string using the specified base.
 // The first argument must be an integer type, and the second argument must be an int-compatible base.
 // It returns the formatted string or an error if the arguments are invalid.
-func textFormatInt(args ...objects.Object) (ret objects.Object, err error) {
+func textFormatInt(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		err = errors.ErrWrongNumArguments
 		return
@@ -572,10 +572,10 @@ func textFormatInt(args ...objects.Object) (ret objects.Object, err error) {
 	return
 }
 
-// textParseBool parses a string argument into a boolean value and returns it as an Object.
+// textParseBool parses a string argument into a boolean value and returns it as an IObject.
 // Returns an error if the argument is not a string or if it fails to parse as a boolean.
 // Requires exactly one argument; otherwise, it returns an ErrWrongNumArguments error.
-func textParseBool(args ...objects.Object) (ret objects.Object, err error) {
+func textParseBool(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		err = errors.ErrWrongNumArguments
 		return
@@ -599,7 +599,7 @@ func textParseBool(args ...objects.Object) (ret objects.Object, err error) {
 }
 
 // textParseFloat parses a string into a float64 with a specified precision, returning a Float object or an error.
-func textParseFloat(args ...objects.Object) (ret objects.Object, err error) {
+func textParseFloat(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
 		err = errors.ErrWrongNumArguments
 		return
@@ -626,7 +626,7 @@ func textParseFloat(args ...objects.Object) (ret objects.Object, err error) {
 // textParseNumber parses a numeric value from a string argument and returns it as a Float object.
 // Returns an error if the argument count is not 1 or if the input type is invalid.
 // Non-numeric characters in the input string are ignored during parsing.
-func textParseNumber(args ...objects.Object) (ret objects.Object, err error) {
+func textParseNumber(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		err = errors.ErrWrongNumArguments
 		return
@@ -655,7 +655,7 @@ func textParseNumber(args ...objects.Object) (ret objects.Object, err error) {
 // textParseInt parses a string into an integer using the specified base and bit size, returning the resulting integer.
 // The function expects exactly three arguments: a string, an integer for base, and an integer for bit size.
 // Returns an error for invalid argument types, an incorrect number of arguments, or a parsing failure.
-func textParseInt(args ...objects.Object) (ret objects.Object, err error) {
+func textParseInt(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
 		err = errors.ErrWrongNumArguments
 		return

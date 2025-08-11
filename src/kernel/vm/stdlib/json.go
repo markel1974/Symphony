@@ -9,7 +9,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/stdlib/json"
 )
 
-var jsonModule = map[string]objects.Object{
+var jsonModule = map[string]objects.IObject{
 	"decode": &objects.UserFunction{
 		Name:  "decode",
 		Value: jsonDecode,
@@ -28,7 +28,7 @@ var jsonModule = map[string]objects.Object{
 	},
 }
 
-func jsonDecode(args ...objects.Object) (ret objects.Object, err error) {
+func jsonDecode(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -55,7 +55,7 @@ func jsonDecode(args ...objects.Object) (ret objects.Object, err error) {
 	}
 }
 
-func jsonEncode(args ...objects.Object) (ret objects.Object, err error) {
+func jsonEncode(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -68,7 +68,7 @@ func jsonEncode(args ...objects.Object) (ret objects.Object, err error) {
 	return &objects.Bytes{Value: b}, nil
 }
 
-func jsonIndent(args ...objects.Object) (ret objects.Object, err error) {
+func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -107,7 +107,7 @@ func jsonIndent(args ...objects.Object) (ret objects.Object, err error) {
 	}
 }
 
-func jsonHTMLEscape(args ...objects.Object) (ret objects.Object, err error) {
+func jsonHTMLEscape(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}

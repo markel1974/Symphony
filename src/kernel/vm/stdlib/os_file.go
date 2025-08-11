@@ -9,7 +9,7 @@ import (
 
 func makeOSFile(file *os.File) *objects.ImmutableMap {
 	return &objects.ImmutableMap{
-		Value: map[string]objects.Object{
+		Value: map[string]objects.IObject{
 			// chdir() => true/error
 			"chdir": &objects.UserFunction{
 				Name:  "chdir",
@@ -58,7 +58,7 @@ func makeOSFile(file *os.File) *objects.ImmutableMap {
 			// chmod(mode int) => error
 			"chmod": &objects.UserFunction{
 				Name: "chmod",
-				Value: func(args ...objects.Object) (objects.Object, error) {
+				Value: func(args ...objects.IObject) (objects.IObject, error) {
 					if len(args) != 1 {
 						return nil, errors.ErrWrongNumArguments
 					}
@@ -72,7 +72,7 @@ func makeOSFile(file *os.File) *objects.ImmutableMap {
 			// seek(offset int, whence int) => int/error
 			"seek": &objects.UserFunction{
 				Name: "seek",
-				Value: func(args ...objects.Object) (objects.Object, error) {
+				Value: func(args ...objects.IObject) (objects.IObject, error) {
 					if len(args) != 2 {
 						return nil, errors.ErrWrongNumArguments
 					}
@@ -94,7 +94,7 @@ func makeOSFile(file *os.File) *objects.ImmutableMap {
 			// stat() => imap(fileinfo)/error
 			"stat": &objects.UserFunction{
 				Name: "stat",
-				Value: func(args ...objects.Object) (objects.Object, error) {
+				Value: func(args ...objects.IObject) (objects.IObject, error) {
 					if len(args) != 0 {
 						return nil, errors.ErrWrongNumArguments
 					}

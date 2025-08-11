@@ -6,36 +6,56 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
+// MaxBytesLen is the maximum allowed size for byte slices across all instances, ensuring consistency in size limits.
 var (
-	// MaxBytesLen is the maximum length for bytes value. Note this limit applies to all compiler/VM instances in the process.
+	// MaxBytesLen is the maximum length for bytes values. Note this limit applies to all compiler/VM instances in the process.
 	MaxBytesLen = 2147483647
 )
 
-// Bytes represents a byte array.
+// Bytes represents a data type for handling a sequence of bytes.
+// It embeds ObjectImpl and provides behaviors like indexing, iteration, and binary operations.
 type Bytes struct {
 	ObjectImpl
-	Value []byte
+	values []byte
 }
 
+// NewBytes creates and returns a new Bytes object initialized with the provided byte slice.
+func NewBytes(value []byte) *Bytes {
+	return &Bytes{values: value}
+}
+
+// Length returns the length of the Bytes object, which is the number of bytes in the underlying byte slice.
+func (o *Bytes) Length() int {
+	return len(o.values)
+}
+
+// Value returns the underlying byte slice of the Bytes object.
+func (o *Bytes) Value() []byte {
+	return o.values
+}
+
+// String returns the string representation of the Bytes object by converting its underlying byte slice to a string.
 func (o *Bytes) String() string {
-	return string(o.Value)
+	return string(o.values)
 }
 
-// TypeName returns the name of the type.
+// TypeName returns the name of the type as a string, which is "bytes".
 func (o *Bytes) TypeName() string {
 	return "bytes"
 }
 
-// BinaryOp returns another object that is the result of a given binary operator and a right-hand side object.
-func (o *Bytes) BinaryOp(op Operator, rhs Object) (Object, error) {
+// BinaryOp performs a binary operation on the Bytes object based on the specified operator and operand.
+// Supports addition for concatenating two Bytes objects, ensuring the combined length does not exceed MaxBytesLen.
+// Returns the resulting Bytes object or an error if the operation or operand is invalid.
+func (o *Bytes) BinaryOp(op Operator, in IObject) (IObject, error) {
 	switch op {
 	case OperatorAdd:
-		switch rhs := rhs.(type) {
+		switch rhs := in.(type) {
 		case *Bytes:
-			if len(o.Value)+len(rhs.Value) > MaxBytesLen {
+			if len(o.values)+len(rhs.values) > MaxBytesLen {
 				return nil, errors.ErrBytesLimit
 			}
-			return &Bytes{Value: append(o.Value, rhs.Value...)}, nil
+			return &Bytes{values: append(o.values, rhs.values...)}, nil
 		}
 	default:
 		return nil, errors.ErrInvalidOperator
@@ -43,55 +63,55 @@ func (o *Bytes) BinaryOp(op Operator, rhs Object) (Object, error) {
 	return nil, errors.ErrInvalidOperator
 }
 
-// Copy returns a copy of the type.
-func (o *Bytes) Copy() Object {
-	return &Bytes{Value: append([]byte{}, o.Value...)}
+// Copy creates and returns a new `Bytes` object with a duplicated values slice, ensuring no reference sharing.
+func (o *Bytes) Copy() IObject {
+	return &Bytes{values: append([]byte{}, o.values...)}
 }
 
-// IsFalsy returns true if the value of the type is falsy.
+// Falsy determines if the Bytes object is considered falsy by checking if it contains no values. Returns true if empty.
 func (o *Bytes) Falsy() bool {
-	return len(o.Value) == 0
+	return len(o.values) == 0
 }
 
-// Equals returns true if the value of the type is equal to the value of another object.
-func (o *Bytes) Equals(x Object) bool {
+// Equals checks if the current Bytes object is equal to another IObject of type *Bytes, comparing their byte values.
+func (o *Bytes) Equals(x IObject) bool {
 	t, ok := x.(*Bytes)
 	if !ok {
 		return false
 	}
-	return bytes.Equal(o.Value, t.Value)
+	return bytes.Equal(o.values, t.values)
 }
 
-// IndexGet returns an element (as Int) at a given index.
-func (o *Bytes) IndexGet(index Object) (res Object, err error) {
+// IndexGet retrieves the values at the specified index from the Bytes object and returns an error if the index is invalid.
+func (o *Bytes) IndexGet(index IObject) (res IObject, err error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
 		err = errors.ErrInvalidIndexType
 		return
 	}
-	idxVal := int(intIdx.Value)
-	if idxVal < 0 || idxVal >= len(o.Value) {
+	idxVal := int(intIdx.value)
+	if idxVal < 0 || idxVal >= len(o.values) {
 		res = UndefinedValue
 		return
 	}
-	res = &Int{Value: int64(o.Value[idxVal])}
+	res = NewInt(int64(o.values[idxVal]))
 	return
 }
 
-// Iterate creates a bytes iterator.
-func (o *Bytes) Iterate() Iterator {
+// Iterate returns an iterator for the Bytes object, enabling sequential access to its byte values.
+func (o *Bytes) Iterate() IIterator {
 	return &BytesIterator{
-		v: o.Value,
-		l: len(o.Value),
+		v: o.values,
+		l: len(o.values),
 	}
 }
 
-// CanIterate returns whether the Object can be Iterated.
+// CanIterate returns true if the object can be iterated over, otherwise false.
 func (o *Bytes) CanIterate() bool {
 	return true
 }
 
-// BytesIterator represents an iterator for a string.
+// BytesIterator is an iterator for traversing elements of a byte slice, implementing the IIterator interface.
 type BytesIterator struct {
 	ObjectImpl
 	v []byte
@@ -99,49 +119,51 @@ type BytesIterator struct {
 	l int
 }
 
-// TypeName returns the name of the type.
+// TypeName returns the string representation of the type name, which is "bytes-iterator".
 func (i *BytesIterator) TypeName() string {
 	return "bytes-iterator"
 }
 
+// String returns the string representation of the BytesIterator.
 func (i *BytesIterator) String() string {
 	return "<bytes-iterator>"
 }
 
-// Equals returns true if the value of the type is equal to the value of another object.
-func (i *BytesIterator) Equals(Object) bool {
+// Equals checks whether the BytesIterator is equal to another object implementing the IObject interface.
+func (i *BytesIterator) Equals(IObject) bool {
 	return false
 }
 
-// Copy returns a copy of the type.
-func (i *BytesIterator) Copy() Object {
+// Copy creates and returns a new instance of BytesIterator with the same state as the current instance.
+func (i *BytesIterator) Copy() IObject {
 	return &BytesIterator{v: i.v, i: i.i, l: i.l}
 }
 
-// Next returns true if there are more elements to iterate.
+// Next advances the iterator to the next position and returns true if the current position is within bounds.
 func (i *BytesIterator) Next() bool {
 	i.i++
 	return i.i <= i.l
 }
 
-// Key returns the key or index value of the current element.
-func (i *BytesIterator) Key() Object {
-	return &Int{Value: int64(i.i - 1)}
+// Key returns the current index of the iterator as an IObject, decremented by one from the internal index tracker.
+func (i *BytesIterator) Key() IObject {
+	return NewInt(int64(i.i - 1))
 }
 
-// Value returns the value of the current element.
-func (i *BytesIterator) Value() Object {
-	return &Int{Value: int64(i.v[i.i-1])}
+// Value returns the values of the current byte in the iteration as an IObject, wrapped in an Int struct.
+func (i *BytesIterator) Value() IObject {
+	return NewInt(int64(i.v[i.i-1]))
 }
 
-// ToByteSlice will try to convert object o to []byte value.
-func ToByteSlice(o Object) (v []byte, ok bool) {
+// ToByteSlice converts an IObject to a byte slice if the object is of type *Bytes or *String.
+// It returns the converted byte slice and a boolean indicating success.
+func ToByteSlice(o IObject) (v []byte, ok bool) {
 	switch o := o.(type) {
 	case *Bytes:
-		v = o.Value
+		v = o.values
 		ok = true
 	case *String:
-		v = []byte(o.Value)
+		v = []byte(o.value)
 		ok = true
 	}
 	return

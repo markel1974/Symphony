@@ -6,113 +6,121 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-// Int represents an integer value.
+// Int represents a wrapper for a 64-bit signed integer, providing methods for operations and comparisons.
 type Int struct {
 	ObjectImpl
-	Value int64
+	value int64
 }
 
+// NewInt creates and returns a new instance of the Int type with the specified int64 value.
 func NewInt(value int64) *Int {
-	return &Int{Value: value}
+	return &Int{value: value}
 }
 
+// Value returns the int64 value of the Int type.
+func (o *Int) Value() int64 {
+	return o.value
+}
+
+// String returns the string representation of the Int type, converting its int64 value to a base-10 formatted string.
 func (o *Int) String() string {
-	return strconv.FormatInt(o.Value, 10)
+	return strconv.FormatInt(o.value, 10)
 }
 
-// TypeName returns the name of the type.
+// TypeName returns the name of the type as a string, which is "int".
 func (o *Int) TypeName() string {
 	return "int"
 }
 
-// BinaryOp returns another object that is the result of a given binary operator and a right-hand side object.
-func (o *Int) BinaryOp(op Operator, rhs Object) (Object, error) {
+// BinaryOp performs a binary operation using the specified operator between the current Int instance and another IObject.
+// Returns the resulting IObject or an error if the operation is invalid.
+func (o *Int) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 	switch rhs := rhs.(type) {
 	case *Int:
 		switch op {
 		case OperatorAdd:
-			r := o.Value + rhs.Value
-			if r == o.Value {
+			r := o.value + rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorSub:
-			r := o.Value - rhs.Value
-			if r == o.Value {
+			r := o.value - rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorMul:
-			r := o.Value * rhs.Value
-			if r == o.Value {
+			r := o.value * rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorQuo:
-			r := o.Value / rhs.Value
-			if r == o.Value {
+			r := o.value / rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorRem:
-			r := o.Value % rhs.Value
-			if r == o.Value {
+			r := o.value % rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorAnd:
-			r := o.Value & rhs.Value
-			if r == o.Value {
+			r := o.value & rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorOr:
-			r := o.Value | rhs.Value
-			if r == o.Value {
+			r := o.value | rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorXor:
-			r := o.Value ^ rhs.Value
-			if r == o.Value {
+			r := o.value ^ rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorAndNot:
-			r := o.Value &^ rhs.Value
-			if r == o.Value {
+			r := o.value &^ rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorShl:
-			r := o.Value << uint64(rhs.Value)
-			if r == o.Value {
+			r := o.value << uint64(rhs.value)
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorShr:
-			r := o.Value >> uint64(rhs.Value)
-			if r == o.Value {
+			r := o.value >> uint64(rhs.value)
+			if r == o.value {
 				return o, nil
 			}
-			return &Int{Value: r}, nil
+			return &Int{value: r}, nil
 		case OperatorLess:
-			if o.Value < rhs.Value {
+			if o.value < rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorGreater:
-			if o.Value > rhs.Value {
+			if o.value > rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorLessEq:
-			if o.Value <= rhs.Value {
+			if o.value <= rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorGreaterEq:
-			if o.Value >= rhs.Value {
+			if o.value >= rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
@@ -122,30 +130,30 @@ func (o *Int) BinaryOp(op Operator, rhs Object) (Object, error) {
 	case *Float:
 		switch op {
 		case OperatorAdd:
-			return &Float{Value: float64(o.Value) + rhs.Value}, nil
+			return &Float{value: float64(o.value) + rhs.value}, nil
 		case OperatorSub:
-			return &Float{Value: float64(o.Value) - rhs.Value}, nil
+			return &Float{value: float64(o.value) - rhs.value}, nil
 		case OperatorMul:
-			return &Float{Value: float64(o.Value) * rhs.Value}, nil
+			return &Float{value: float64(o.value) * rhs.value}, nil
 		case OperatorQuo:
-			return &Float{Value: float64(o.Value) / rhs.Value}, nil
+			return &Float{value: float64(o.value) / rhs.value}, nil
 		case OperatorLess:
-			if float64(o.Value) < rhs.Value {
+			if float64(o.value) < rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorGreater:
-			if float64(o.Value) > rhs.Value {
+			if float64(o.value) > rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorLessEq:
-			if float64(o.Value) <= rhs.Value {
+			if float64(o.value) <= rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorGreaterEq:
-			if float64(o.Value) >= rhs.Value {
+			if float64(o.value) >= rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
@@ -155,26 +163,26 @@ func (o *Int) BinaryOp(op Operator, rhs Object) (Object, error) {
 	case *Char:
 		switch op {
 		case OperatorAdd:
-			return &Char{Value: rune(o.Value) + rhs.Value}, nil
+			return &Char{value: rune(o.value) + rhs.value}, nil
 		case OperatorSub:
-			return &Char{Value: rune(o.Value) - rhs.Value}, nil
+			return &Char{value: rune(o.value) - rhs.value}, nil
 		case OperatorLess:
-			if o.Value < int64(rhs.Value) {
+			if o.value < int64(rhs.value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorGreater:
-			if o.Value > int64(rhs.Value) {
+			if o.value > int64(rhs.value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorLessEq:
-			if o.Value <= int64(rhs.Value) {
+			if o.value <= int64(rhs.value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorGreaterEq:
-			if o.Value >= int64(rhs.Value) {
+			if o.value >= int64(rhs.value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
@@ -185,36 +193,36 @@ func (o *Int) BinaryOp(op Operator, rhs Object) (Object, error) {
 	return nil, errors.ErrInvalidOperator
 }
 
-// Copy returns a copy of the type.
-func (o *Int) Copy() Object {
-	return &Int{Value: o.Value}
+// Copy creates and returns a new instance of the Int object, duplicating its value.
+func (o *Int) Copy() IObject {
+	return &Int{value: o.value}
 }
 
-// IsFalsy returns true if the value of the type is falsy.
+// Falsy checks if the integer value is considered falsy (equal to 0) and returns true if it is, otherwise false.
 func (o *Int) Falsy() bool {
-	return o.Value == 0
+	return o.value == 0
 }
 
-// Equals returns true if the value of the type is equal to the value of another object.
-func (o *Int) Equals(x Object) bool {
+// Equals compares the Int object with another IObject for equality and returns true if both are of type Int and values are equal.
+func (o *Int) Equals(x IObject) bool {
 	t, ok := x.(*Int)
 	if !ok {
 		return false
 	}
-	return o.Value == t.Value
+	return o.value == t.value
 }
 
-// ToInt64 will try to convert object o to int64 value.
-func ToInt64(o Object) (v int64, ok bool) {
+// ToInt64 converts an IObject implementation to an int64 if possible and returns whether the conversion was successful.
+func ToInt64(o IObject) (v int64, ok bool) {
 	switch o := o.(type) {
 	case *Int:
-		v = o.Value
+		v = o.value
 		ok = true
 	case *Float:
-		v = int64(o.Value)
+		v = int64(o.value)
 		ok = true
 	case *Char:
-		v = int64(o.Value)
+		v = int64(o.value)
 		ok = true
 	case *Bool:
 		if o == TrueValue {
@@ -222,7 +230,7 @@ func ToInt64(o Object) (v int64, ok bool) {
 		}
 		ok = true
 	case *String:
-		c, err := strconv.ParseInt(o.Value, 10, 64)
+		c, err := strconv.ParseInt(o.value, 10, 64)
 		if err == nil {
 			v = c
 			ok = true
@@ -231,17 +239,18 @@ func ToInt64(o Object) (v int64, ok bool) {
 	return
 }
 
-// ToInt will try to convert object o to int value.
-func ToInt(o Object) (v int, ok bool) {
+// ToInt attempts to convert the given IObject into an integer type.
+// Returns the integer values and a boolean indicating success.
+func ToInt(o IObject) (v int, ok bool) {
 	switch o := o.(type) {
 	case *Int:
-		v = int(o.Value)
+		v = int(o.value)
 		ok = true
 	case *Float:
-		v = int(o.Value)
+		v = int(o.value)
 		ok = true
 	case *Char:
-		v = int(o.Value)
+		v = int(o.value)
 		ok = true
 	case *Bool:
 		if o == TrueValue {
@@ -249,7 +258,7 @@ func ToInt(o Object) (v int, ok bool) {
 		}
 		ok = true
 	case *String:
-		c, err := strconv.ParseInt(o.Value, 10, 64)
+		c, err := strconv.ParseInt(o.value, 10, 64)
 		if err == nil {
 			v = int(c)
 			ok = true

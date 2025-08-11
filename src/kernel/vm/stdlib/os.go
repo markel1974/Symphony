@@ -10,7 +10,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-var osModule = map[string]objects.Object{
+var osModule = map[string]objects.IObject{
 	"o_rdonly":            &objects.Int{Value: int64(os.O_RDONLY)},
 	"o_wronly":            &objects.Int{Value: int64(os.O_WRONLY)},
 	"o_rdwr":              &objects.Int{Value: int64(os.O_RDWR)},
@@ -200,7 +200,7 @@ var osModule = map[string]objects.Object{
 	}, // readfile(name) => array(byte)/error
 }
 
-func osReadFile(args ...objects.Object) (ret objects.Object, err error) {
+func osReadFile(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -218,7 +218,7 @@ func osReadFile(args ...objects.Object) (ret objects.Object, err error) {
 	return &objects.Bytes{Value: bytes}, nil
 }
 
-func osStat(args ...objects.Object) (ret objects.Object, err error) {
+func osStat(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -231,7 +231,7 @@ func osStat(args ...objects.Object) (ret objects.Object, err error) {
 		return wrapError(err), nil
 	}
 	fstat := &objects.ImmutableMap{
-		Value: map[string]objects.Object{
+		Value: map[string]objects.IObject{
 			"name":  &objects.String{Value: stat.Name()},
 			"mtime": &objects.Time{Value: stat.ModTime()},
 			"size":  &objects.Int{Value: stat.Size()},
@@ -246,7 +246,7 @@ func osStat(args ...objects.Object) (ret objects.Object, err error) {
 	return fstat, nil
 }
 
-func osCreate(args ...objects.Object) (objects.Object, error) {
+func osCreate(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -261,7 +261,7 @@ func osCreate(args ...objects.Object) (objects.Object, error) {
 	return makeOSFile(res), nil
 }
 
-func osOpen(args ...objects.Object) (objects.Object, error) {
+func osOpen(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -276,7 +276,7 @@ func osOpen(args ...objects.Object) (objects.Object, error) {
 	return makeOSFile(res), nil
 }
 
-func osOpenFile(args ...objects.Object) (objects.Object, error) {
+func osOpenFile(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -299,7 +299,7 @@ func osOpenFile(args ...objects.Object) (objects.Object, error) {
 	return makeOSFile(res), nil
 }
 
-func osArgs(args ...objects.Object) (objects.Object, error) {
+func osArgs(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 0 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -316,7 +316,7 @@ func osArgs(args ...objects.Object) (objects.Object, error) {
 func osFuncASFmRE(name string, fn func(string, os.FileMode) error) *objects.UserFunction {
 	return &objects.UserFunction{
 		Name: name,
-		Value: func(args ...objects.Object) (objects.Object, error) {
+		Value: func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 2 {
 				return nil, errors.ErrWrongNumArguments
 			}
@@ -333,7 +333,7 @@ func osFuncASFmRE(name string, fn func(string, os.FileMode) error) *objects.User
 	}
 }
 
-func osLookupEnv(args ...objects.Object) (objects.Object, error) {
+func osLookupEnv(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -351,7 +351,7 @@ func osLookupEnv(args ...objects.Object) (objects.Object, error) {
 	return &objects.String{Value: res}, nil
 }
 
-func osExpandEnv(args ...objects.Object) (objects.Object, error) {
+func osExpandEnv(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -382,7 +382,7 @@ func osExpandEnv(args ...objects.Object) (objects.Object, error) {
 	return &objects.String{Value: s}, nil
 }
 
-func osExec(args ...objects.Object) (objects.Object, error) {
+func osExec(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) == 0 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -401,7 +401,7 @@ func osExec(args ...objects.Object) (objects.Object, error) {
 	return makeOSExecCommand(exec.Command(name, execArgs...)), nil
 }
 
-func osFindProcess(args ...objects.Object) (objects.Object, error) {
+func osFindProcess(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -416,7 +416,7 @@ func osFindProcess(args ...objects.Object) (objects.Object, error) {
 	return makeOSProcess(proc), nil
 }
 
-func osStartProcess(args ...objects.Object) (objects.Object, error) {
+func osStartProcess(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -468,7 +468,7 @@ func osStartProcess(args ...objects.Object) (objects.Object, error) {
 	return makeOSProcess(proc), nil
 }
 
-func stringArray(arr []objects.Object, argName string) ([]string, error) {
+func stringArray(arr []objects.IObject, argName string) ([]string, error) {
 	var sArr []string
 	for idx, elem := range arr {
 		str, ok := elem.(*objects.String)

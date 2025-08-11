@@ -7,75 +7,80 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-// Float represents a floating-point number type.
-// It embeds ObjectImpl to provide default behavior for object operations.
-// Value holds the actual float64 value of the Float type.
+// Float represents a floating-point number and provides operations and behaviors specific to numeric types.
+// It embeds ObjectImpl to implement common interface methods and extends behavior where necessary.
+// The values field holds the actual float64 values encapsulated by the Float type.
 type Float struct {
 	ObjectImpl
-	Value float64
+	value float64
 }
 
-// NewFloat creates a new Float object with the specified float64 value.
+// NewFloat creates and returns a pointer to a new Float object initialized with the specified float64 values.
 func NewFloat(value float64) *Float {
-	return &Float{Value: value}
+	return &Float{value: value}
 }
 
-// String returns the string representation of the Float value.
+func (o *Float) Value() float64 {
+	return o.value
+}
+
+// String returns the string representation of the Float object using its internal float64 values.
 func (o *Float) String() string {
-	return strconv.FormatFloat(o.Value, 'f', -1, 64)
+	return strconv.FormatFloat(o.value, 'f', -1, 64)
 }
 
-// TypeName returns the string "float", indicating the type of the Float object.
+// TypeName returns the name of the type as "float".
 func (o *Float) TypeName() string {
 	return "float"
 }
 
-// BinaryOp applies a binary operator to the current Float and a right-hand side Object, returning the resulting Object or an error.
-func (o *Float) BinaryOp(op Operator, rhs Object) (Object, error) {
+// BinaryOp performs a binary operation between the current Float and another IObject based on the specified operator.
+// Returns the result of the operation as an IObject or an error if the operation is invalid.
+func (o *Float) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 	switch rhs := rhs.(type) {
 	case *Float:
 		switch op {
 		case OperatorAdd:
-			r := o.Value + rhs.Value
-			if r == o.Value {
+			r := o.value + rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Float{Value: r}, nil
+			return &Float{value: r}, nil
 		case OperatorSub:
-			r := o.Value - rhs.Value
-			if r == o.Value {
+			r := o.value - rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Float{Value: r}, nil
+			return &Float{value: r}, nil
 		case OperatorMul:
-			r := o.Value * rhs.Value
-			if r == o.Value {
+			r := o.value * rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Float{Value: r}, nil
+			return &Float{value: r}, nil
 		case OperatorQuo:
-			r := o.Value / rhs.Value
-			if r == o.Value {
+			r := o.value / rhs.value
+			if r == o.value {
 				return o, nil
 			}
-			return &Float{Value: r}, nil
+			return &Float{value: r}, nil
 		case OperatorLess:
-			if o.Value < rhs.Value {
+			if o.value < rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorGreater:
-			if o.Value > rhs.Value {
+			if o.value > rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorLessEq:
-			if o.Value <= rhs.Value {
+			if o.value <= rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorGreaterEq:
-			if o.Value >= rhs.Value {
+			if o.value >= rhs.value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
@@ -85,46 +90,46 @@ func (o *Float) BinaryOp(op Operator, rhs Object) (Object, error) {
 	case *Int:
 		switch op {
 		case OperatorAdd:
-			r := o.Value + float64(rhs.Value)
-			if r == o.Value {
+			r := o.value + float64(rhs.value)
+			if r == o.value {
 				return o, nil
 			}
-			return &Float{Value: r}, nil
+			return &Float{value: r}, nil
 		case OperatorSub:
-			r := o.Value - float64(rhs.Value)
-			if r == o.Value {
+			r := o.value - float64(rhs.value)
+			if r == o.value {
 				return o, nil
 			}
-			return &Float{Value: r}, nil
+			return &Float{value: r}, nil
 		case OperatorMul:
-			r := o.Value * float64(rhs.Value)
-			if r == o.Value {
+			r := o.value * float64(rhs.value)
+			if r == o.value {
 				return o, nil
 			}
-			return &Float{Value: r}, nil
+			return &Float{value: r}, nil
 		case OperatorQuo:
-			r := o.Value / float64(rhs.Value)
-			if r == o.Value {
+			r := o.value / float64(rhs.value)
+			if r == o.value {
 				return o, nil
 			}
-			return &Float{Value: r}, nil
+			return &Float{value: r}, nil
 		case OperatorLess:
-			if o.Value < float64(rhs.Value) {
+			if o.value < float64(rhs.value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorGreater:
-			if o.Value > float64(rhs.Value) {
+			if o.value > float64(rhs.value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorLessEq:
-			if o.Value <= float64(rhs.Value) {
+			if o.value <= float64(rhs.value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
 		case OperatorGreaterEq:
-			if o.Value >= float64(rhs.Value) {
+			if o.value >= float64(rhs.value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
@@ -135,36 +140,36 @@ func (o *Float) BinaryOp(op Operator, rhs Object) (Object, error) {
 	return nil, errors.ErrInvalidOperator
 }
 
-// Copy creates and returns a new instance of Float with the same value as the original.
-func (o *Float) Copy() Object {
-	return &Float{Value: o.Value}
+// Copy creates and returns a new instance of the Float object, duplicating its current state.
+func (o *Float) Copy() IObject {
+	return &Float{value: o.value}
 }
 
-// IsFalsy checks if the Float object's value is NaN, returning true if it is, otherwise false.
+// Falsy determines if the float object is considered falsy, returning true if the values is NaN; otherwise, false.
 func (o *Float) Falsy() bool {
-	return math.IsNaN(o.Value)
+	return math.IsNaN(o.value)
 }
 
-// Equals checks if two Float objects have the same value and returns true if they are equal.
-func (o *Float) Equals(x Object) bool {
+// Equals checks if the current Float object is equal to another IObject by comparing their internal float64 values.
+func (o *Float) Equals(x IObject) bool {
 	t, ok := x.(*Float)
 	if !ok {
 		return false
 	}
-	return o.Value == t.Value
+	return o.value == t.value
 }
 
-// ToFloat64 converts an Object to a float64 value if possible and returns a boolean indicating success.
-func ToFloat64(o Object) (v float64, ok bool) {
+// ToFloat64 attempts to convert an IObject to a float64 and returns the values along with a success flag.
+func ToFloat64(o IObject) (v float64, ok bool) {
 	switch o := o.(type) {
 	case *Int:
-		v = float64(o.Value)
+		v = float64(o.value)
 		ok = true
 	case *Float:
-		v = o.Value
+		v = o.value
 		ok = true
 	case *String:
-		c, err := strconv.ParseFloat(o.Value, 64)
+		c, err := strconv.ParseFloat(o.value, 64)
 		if err == nil {
 			v = c
 			ok = true

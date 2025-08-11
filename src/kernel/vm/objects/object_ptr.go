@@ -1,32 +1,49 @@
 package objects
 
-// ObjectPtr represents a free variable.
+// ObjectPtr is a wrapper around a pointer to an IObject, allowing additional behaviors and encapsulation of the value.
+// It embeds ObjectImpl, inheriting default behaviors for the IObject interface methods.
+// The value field holds the actual IObject instance being wrapped.
 type ObjectPtr struct {
 	ObjectImpl
-	Value *Object
+	value *IObject
 }
 
+// NewObjectPtr creates a new ObjectPtr instance wrapping the provided IObject pointer.// NewObjectPtr creates a new ObjectPtr instance with the provided IObject value.
+func NewObjectPtr(value *IObject) *ObjectPtr {
+	return &ObjectPtr{value: value}
+}
+
+// Value returns the internal IObject pointer stored in the ObjectPtr instance.
+func (o *ObjectPtr) Value() *IObject {
+	return o.value
+}
+
+// SetValue sets the internal value field of the ObjectPtr to the provided IObject pointer.
+func (o *ObjectPtr) SetValue(value IObject) {
+	*o.value = value
+}
+
+// String returns the string representation of the ObjectPtr as "free-var".
 func (o *ObjectPtr) String() string {
 	return "free-var"
 }
 
-// TypeName returns the name of the type.
+// TypeName returns the type name of the object as a string, in this case, "<free-var>".
 func (o *ObjectPtr) TypeName() string {
 	return "<free-var>"
 }
 
-// Copy returns a copy of the type.
-func (o *ObjectPtr) Copy() Object {
+// Copy creates and returns a duplicate of the object implementing the IObject interface.
+func (o *ObjectPtr) Copy() IObject {
 	return o
 }
 
-// IsFalsy returns true if the value of the type is falsy.
+// Falsy returns true if the value of the ObjectPtr is nil, indicating it is considered falsy in a boolean context.
 func (o *ObjectPtr) Falsy() bool {
-	return o.Value == nil
+	return o.value == nil
 }
 
-// Equals returns true if the value of the type is equal to the value of
-// another object.
-func (o *ObjectPtr) Equals(x Object) bool {
+// Equals checks if the current ObjectPtr is equal to the provided IObject by comparing their memory addresses.
+func (o *ObjectPtr) Equals(x IObject) bool {
 	return o == x
 }

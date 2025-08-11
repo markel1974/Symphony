@@ -9,7 +9,7 @@ import (
 
 // FuncAR transform a function of 'func()' signature into CallableFunc type.
 func FuncAR(fn func()) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -21,7 +21,7 @@ func FuncAR(fn func()) objects.CallableFunc {
 // FuncARI transform a function of 'func() int' signature into CallableFunc
 // type.
 func FuncARI(fn func() int) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -32,7 +32,7 @@ func FuncARI(fn func() int) objects.CallableFunc {
 // FuncARI64 transform a function of 'func() int64' signature into CallableFunc
 // type.
 func FuncARI64(fn func() int64) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -43,7 +43,7 @@ func FuncARI64(fn func() int64) objects.CallableFunc {
 // FuncAI64RI64 transform a function of 'func(int64) int64' signature into
 // CallableFunc type.
 func FuncAI64RI64(fn func(int64) int64) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -59,7 +59,7 @@ func FuncAI64RI64(fn func(int64) int64) objects.CallableFunc {
 // FuncAI64R transform a function of 'func(int64)' signature into CallableFunc
 // type.
 func FuncAI64R(fn func(int64)) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -76,7 +76,7 @@ func FuncAI64R(fn func(int64)) objects.CallableFunc {
 // FuncARB transform a function of 'func() bool' signature into CallableFunc
 // type.
 func FuncARB(fn func() bool) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -90,7 +90,7 @@ func FuncARB(fn func() bool) objects.CallableFunc {
 // FuncARE transform a function of 'func() error' signature into CallableFunc
 // type.
 func FuncARE(fn func() error) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -101,7 +101,7 @@ func FuncARE(fn func() error) objects.CallableFunc {
 // FuncARS transform a function of 'func() string' signature into CallableFunc
 // type.
 func FuncARS(fn func() string) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -116,7 +116,7 @@ func FuncARS(fn func() string) objects.CallableFunc {
 // FuncARSE transform a function of 'func() (string, error)' signature into
 // CallableFunc type.
 func FuncARSE(fn func() (string, error)) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -134,7 +134,7 @@ func FuncARSE(fn func() (string, error)) objects.CallableFunc {
 // FuncARYE transform a function of 'func() ([]byte, error)' signature into
 // CallableFunc type.
 func FuncARYE(fn func() ([]byte, error)) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -152,7 +152,7 @@ func FuncARYE(fn func() ([]byte, error)) objects.CallableFunc {
 // FuncARF transform a function of 'func() float64' signature into CallableFunc
 // type.
 func FuncARF(fn func() float64) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -163,7 +163,7 @@ func FuncARF(fn func() float64) objects.CallableFunc {
 // FuncARSs transform a function of 'func() []string' signature into
 // CallableFunc type.
 func FuncARSs(fn func() []string) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -181,7 +181,7 @@ func FuncARSs(fn func() []string) objects.CallableFunc {
 // FuncARIsE transform a function of 'func() ([]int, error)' signature into
 // CallableFunc type.
 func FuncARIsE(fn func() ([]int, error)) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -200,7 +200,7 @@ func FuncARIsE(fn func() ([]int, error)) objects.CallableFunc {
 // FuncAIRIs transform a function of 'func(int) []int' signature into
 // CallableFunc type.
 func FuncAIRIs(fn func(int) []int) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -220,7 +220,7 @@ func FuncAIRIs(fn func(int) []int) objects.CallableFunc {
 // FuncAFRF transform a function of 'func(float64) float64' signature into
 // CallableFunc type.
 func FuncAFRF(fn func(float64) float64) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -234,7 +234,7 @@ func FuncAFRF(fn func(float64) float64) objects.CallableFunc {
 
 // FuncAIR transform a function of 'func(int)' signature into CallableFunc type.
 func FuncAIR(fn func(int)) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -250,7 +250,7 @@ func FuncAIR(fn func(int)) objects.CallableFunc {
 // FuncAIRF transform a function of 'func(int) float64' signature into
 // CallableFunc type.
 func FuncAIRF(fn func(int) float64) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -265,7 +265,7 @@ func FuncAIRF(fn func(int) float64) objects.CallableFunc {
 // FuncAFRI transform a function of 'func(float64) int' signature into
 // CallableFunc type.
 func FuncAFRI(fn func(float64) int) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -280,7 +280,7 @@ func FuncAFRI(fn func(float64) int) objects.CallableFunc {
 // FuncAFFRF transform a function of 'func(float64, float64) float64' signature
 // into CallableFunc type.
 func FuncAFFRF(fn func(float64, float64) float64) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -299,7 +299,7 @@ func FuncAFFRF(fn func(float64, float64) float64) objects.CallableFunc {
 // FuncAIFRF transform a function of 'func(int, float64) float64' signature
 // into CallableFunc type.
 func FuncAIFRF(fn func(int, float64) float64) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -318,7 +318,7 @@ func FuncAIFRF(fn func(int, float64) float64) objects.CallableFunc {
 // FuncAFIRF transform a function of 'func(float64, int) float64' signature
 // into CallableFunc type.
 func FuncAFIRF(fn func(float64, int) float64) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -337,7 +337,7 @@ func FuncAFIRF(fn func(float64, int) float64) objects.CallableFunc {
 // FuncAFIRB transform a function of 'func(float64, int) bool' signature
 // into CallableFunc type.
 func FuncAFIRB(fn func(float64, int) bool) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -359,7 +359,7 @@ func FuncAFIRB(fn func(float64, int) bool) objects.CallableFunc {
 // FuncAFRB transform a function of 'func(float64) bool' signature
 // into CallableFunc type.
 func FuncAFRB(fn func(float64) bool) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -378,7 +378,7 @@ func FuncAFRB(fn func(float64) bool) objects.CallableFunc {
 // CallableFunc type. User function will return 'true' if underlying native
 // function returns nil.
 func FuncASRS(fn func(string) string) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -397,7 +397,7 @@ func FuncASRS(fn func(string) string) objects.CallableFunc {
 // FuncASRSs transform a function of 'func(string) []string' signature into
 // CallableFunc type.
 func FuncASRSs(fn func(string) []string) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -421,7 +421,7 @@ func FuncASRSs(fn func(string) []string) objects.CallableFunc {
 // into CallableFunc type. User function will return 'true' if underlying
 // native function returns nil.
 func FuncASRSE(fn func(string) (string, error)) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -444,7 +444,7 @@ func FuncASRSE(fn func(string) (string, error)) objects.CallableFunc {
 // CallableFunc type. User function will return 'true' if underlying native
 // function returns nil.
 func FuncASRE(fn func(string) error) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -460,7 +460,7 @@ func FuncASRE(fn func(string) error) objects.CallableFunc {
 // into CallableFunc type. User function will return 'true' if underlying
 // native function returns nil.
 func FuncASSRE(fn func(string, string) error) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -479,7 +479,7 @@ func FuncASSRE(fn func(string, string) error) objects.CallableFunc {
 // FuncASSRSs transform a function of 'func(string, string) []string'
 // signature into CallableFunc type.
 func FuncASSRSs(fn func(string, string) []string) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -506,7 +506,7 @@ func FuncASSRSs(fn func(string, string) []string) objects.CallableFunc {
 // FuncASSIRSs transform a function of 'func(string, string, int) []string'
 // signature into CallableFunc type.
 func FuncASSIRSs(fn func(string, string, int) []string) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 3 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -536,7 +536,7 @@ func FuncASSIRSs(fn func(string, string, int) []string) objects.CallableFunc {
 // FuncASSRI transform a function of 'func(string, string) int' signature into
 // CallableFunc type.
 func FuncASSRI(fn func(string, string) int) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -555,7 +555,7 @@ func FuncASSRI(fn func(string, string) int) objects.CallableFunc {
 // FuncASSRS transform a function of 'func(string, string) string' signature
 // into CallableFunc type.
 func FuncASSRS(fn func(string, string) string) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -578,7 +578,7 @@ func FuncASSRS(fn func(string, string) string) objects.CallableFunc {
 // FuncASSRB transform a function of 'func(string, string) bool' signature
 // into CallableFunc type.
 func FuncASSRB(fn func(string, string) bool) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -600,7 +600,7 @@ func FuncASSRB(fn func(string, string) bool) objects.CallableFunc {
 // FuncASsSRS transform a function of 'func([]string, string) string' signature
 // into CallableFunc type.
 func FuncASsSRS(fn func([]string, string) string) objects.CallableFunc {
-	return func(args ...objects.Object) (objects.Object, error) {
+	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -640,7 +640,7 @@ func FuncASsSRS(fn func([]string, string) string) objects.CallableFunc {
 // FuncASI64RE transform a function of 'func(string, int64) error' signature
 // into CallableFunc type.
 func FuncASI64RE(fn func(string, int64) error) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -659,7 +659,7 @@ func FuncASI64RE(fn func(string, int64) error) objects.CallableFunc {
 // FuncAIIRE transform a function of 'func(int, int) error' signature
 // into CallableFunc type.
 func FuncAIIRE(fn func(int, int) error) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -678,7 +678,7 @@ func FuncAIIRE(fn func(int, int) error) objects.CallableFunc {
 // FuncASIRS transform a function of 'func(string, int) string' signature
 // into CallableFunc type.
 func FuncASIRS(fn func(string, int) string) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -701,7 +701,7 @@ func FuncASIRS(fn func(string, int) string) objects.CallableFunc {
 // FuncASIIRE transform a function of 'func(string, int, int) error' signature
 // into CallableFunc type.
 func FuncASIIRE(fn func(string, int, int) error) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 3 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -724,7 +724,7 @@ func FuncASIIRE(fn func(string, int, int) error) objects.CallableFunc {
 // FuncAYRIE transform a function of 'func([]byte) (int, error)' signature
 // into CallableFunc type.
 func FuncAYRIE(fn func([]byte) (int, error)) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -743,7 +743,7 @@ func FuncAYRIE(fn func([]byte) (int, error)) objects.CallableFunc {
 // FuncAYRS transform a function of 'func([]byte) string' signature into
 // CallableFunc type.
 func FuncAYRS(fn func([]byte) string) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -759,7 +759,7 @@ func FuncAYRS(fn func([]byte) string) objects.CallableFunc {
 // FuncASRIE transform a function of 'func(string) (int, error)' signature
 // into CallableFunc type.
 func FuncASRIE(fn func(string) (int, error)) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -778,7 +778,7 @@ func FuncASRIE(fn func(string) (int, error)) objects.CallableFunc {
 // FuncASRYE transform a function of 'func(string) ([]byte, error)' signature
 // into CallableFunc type.
 func FuncASRYE(fn func(string) ([]byte, error)) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -800,7 +800,7 @@ func FuncASRYE(fn func(string) ([]byte, error)) objects.CallableFunc {
 // FuncAIRSsE transform a function of 'func(int) ([]string, error)' signature
 // into CallableFunc type.
 func FuncAIRSsE(fn func(int) ([]string, error)) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}
@@ -826,7 +826,7 @@ func FuncAIRSsE(fn func(int) ([]string, error)) objects.CallableFunc {
 // FuncAIRS transform a function of 'func(int) string' signature into
 // CallableFunc type.
 func FuncAIRS(fn func(int) string) objects.CallableFunc {
-	return func(args ...objects.Object) (ret objects.Object, err error) {
+	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
 			return nil, errors.ErrWrongNumArguments
 		}

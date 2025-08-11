@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-var mathModule = map[string]objects.Object{
+var mathModule = map[string]objects.IObject{
 	"e":       &objects.Float{Value: math.E},
 	"pi":      &objects.Float{Value: math.Pi},
 	"phi":     &objects.Float{Value: math.Phi},

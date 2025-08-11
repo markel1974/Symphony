@@ -594,7 +594,7 @@ func (f *Formatter) fmtFloat(v float64, size int, verb rune, precision int) {
 }
 
 // Format is like fmt.Sprintf but using Objects.
-func Format(format string, a ...objects.Object) (string, error) {
+func Format(format string, a ...objects.IObject) (string, error) {
 	p := newPrinter()
 	err := p.doFormat(format, a)
 	s := string(p.buf)

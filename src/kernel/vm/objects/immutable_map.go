@@ -7,17 +7,28 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-// ImmutableMap represents an immutable map object.
+// ImmutableMap represents a read-only map structure where keys are strings and values are of type IObject.
 type ImmutableMap struct {
 	ObjectImpl
-	Value map[string]Object
+	Value map[string]IObject
 }
 
-// TypeName returns the name of the type.
+// NewImmutableMap creates a new instance of ImmutableMap with the provided map of string keys and IObject values.
+func NewImmutableMap(value map[string]IObject) *ImmutableMap {
+	return &ImmutableMap{Value: value}
+}
+
+// Length returns the number of elements in the ImmutableMap.
+func (o *ImmutableMap) Length() int {
+	return len(o.Value)
+}
+
+// TypeName returns the type name of the ImmutableMap as a string.
 func (o *ImmutableMap) TypeName() string {
 	return "immutable-map"
 }
 
+// String generates a string representation of the ImmutableMap in key-value pair format.
 func (o *ImmutableMap) String() string {
 	var pairs []string
 	for k, v := range o.Value {
@@ -26,22 +37,22 @@ func (o *ImmutableMap) String() string {
 	return fmt.Sprintf("{%s}", strings.Join(pairs, ", "))
 }
 
-// Copy returns a copy of the type.
-func (o *ImmutableMap) Copy() Object {
-	c := make(map[string]Object)
+// Copy creates and returns a deep copy of the ImmutableMap, duplicating all key-value pairs.
+func (o *ImmutableMap) Copy() IObject {
+	c := make(map[string]IObject)
 	for k, v := range o.Value {
 		c[k] = v.Copy()
 	}
-	return &Map{Value: c}
+	return NewMap(c)
 }
 
-// IsFalsy returns true if the value of the type is falsy.
+// Falsy returns true if the map is empty, indicating it is considered "falsy", otherwise false.
 func (o *ImmutableMap) Falsy() bool {
 	return len(o.Value) == 0
 }
 
-// IndexGet returns the value for the given key.
-func (o *ImmutableMap) IndexGet(index Object) (res Object, err error) {
+// IndexGet retrieves the value associated with the given index in the ImmutableMap. Returns an error for invalid index types.
+func (o *ImmutableMap) IndexGet(index IObject) (res IObject, err error) {
 	strIdx, ok := ToString(index)
 	if !ok {
 		err = errors.ErrInvalidIndexType
@@ -54,12 +65,12 @@ func (o *ImmutableMap) IndexGet(index Object) (res Object, err error) {
 	return
 }
 
-// Equals returns true if the value of the type is equal to the value of another object.
-func (o *ImmutableMap) Equals(x Object) bool {
-	var xVal map[string]Object
-	switch x := x.(type) {
+// Equals determines whether the current ImmutableMap is equal to another IObject by comparing their key-value pairs.
+func (o *ImmutableMap) Equals(in IObject) bool {
+	var xVal map[string]IObject
+	switch x := in.(type) {
 	case *Map:
-		xVal = x.Value
+		xVal = x.values
 	case *ImmutableMap:
 		xVal = x.Value
 	default:
@@ -77,8 +88,8 @@ func (o *ImmutableMap) Equals(x Object) bool {
 	return true
 }
 
-// Iterate creates an immutable map iterator.
-func (o *ImmutableMap) Iterate() Iterator {
+// Iterate returns an iterator for traversing the key-value pairs in the immutable map.
+func (o *ImmutableMap) Iterate() IIterator {
 	var keys []string
 	for k := range o.Value {
 		keys = append(keys, k)
@@ -90,7 +101,7 @@ func (o *ImmutableMap) Iterate() Iterator {
 	}
 }
 
-// CanIterate returns whether the Object can be Iterated.
+// CanIterate returns true, indicating that the ImmutableMap supports iteration.
 func (o *ImmutableMap) CanIterate() bool {
 	return true
 }

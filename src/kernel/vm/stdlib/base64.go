@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-var base64Module = map[string]objects.Object{
+var base64Module = map[string]objects.IObject{
 	"encode": &objects.UserFunction{
 		Value: FuncAYRS(base64.StdEncoding.EncodeToString),
 	},

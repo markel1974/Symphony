@@ -36,7 +36,7 @@ func init() {
 type Bytecode struct {
 	FileSet      *objects.SourceFileSet
 	MainFunction *objects.CompiledFunction
-	Constants    []objects.Object
+	Constants    []objects.IObject
 }
 
 // Encode writes Bytecode data to the writer.
@@ -114,7 +114,7 @@ func (b *Bytecode) Decode(r io.Reader, mods *modules.ModuleMap) error {
 
 // RemoveDuplicates finds and remove the duplicate values in Constants. Note this function mutates Bytecode.
 func (b *Bytecode) RemoveDuplicates() {
-	var deDuped []objects.Object
+	var deDuped []objects.IObject
 
 	indexMap := make(map[int]int) // mapping from old constant index to new index
 	fns := make(map[*objects.CompiledFunction]int)
@@ -124,8 +124,8 @@ func (b *Bytecode) RemoveDuplicates() {
 	chars := make(map[rune]int)
 	immutableMaps := make(map[string]int) // for modules
 
-	for curIdx, c := range b.Constants {
-		switch c := c.(type) {
+	for curIdx, in := range b.Constants {
+		switch c := in.(type) {
 		case *objects.CompiledFunction:
 			if newIdx, ok := fns[c]; ok {
 				indexMap[curIdx] = newIdx
@@ -147,38 +147,38 @@ func (b *Bytecode) RemoveDuplicates() {
 				deDuped = append(deDuped, c)
 			}
 		case *objects.Int:
-			if newIdx, ok := ints[c.Value]; ok {
+			if newIdx, ok := ints[c.Value()]; ok {
 				indexMap[curIdx] = newIdx
 			} else {
 				newIdx = len(deDuped)
-				ints[c.Value] = newIdx
+				ints[c.Value()] = newIdx
 				indexMap[curIdx] = newIdx
 				deDuped = append(deDuped, c)
 			}
 		case *objects.String:
-			if newIdx, ok := strings[c.Value]; ok {
+			if newIdx, ok := strings[c.Value()]; ok {
 				indexMap[curIdx] = newIdx
 			} else {
 				newIdx = len(deDuped)
-				strings[c.Value] = newIdx
+				strings[c.Value()] = newIdx
 				indexMap[curIdx] = newIdx
 				deDuped = append(deDuped, c)
 			}
 		case *objects.Float:
-			if newIdx, ok := floats[c.Value]; ok {
+			if newIdx, ok := floats[c.Value()]; ok {
 				indexMap[curIdx] = newIdx
 			} else {
 				newIdx = len(deDuped)
-				floats[c.Value] = newIdx
+				floats[c.Value()] = newIdx
 				indexMap[curIdx] = newIdx
 				deDuped = append(deDuped, c)
 			}
 		case *objects.Char:
-			if newIdx, ok := chars[c.Value]; ok {
+			if newIdx, ok := chars[c.Value()]; ok {
 				indexMap[curIdx] = newIdx
 			} else {
 				newIdx = len(deDuped)
-				chars[c.Value] = newIdx
+				chars[c.Value()] = newIdx
 				indexMap[curIdx] = newIdx
 				deDuped = append(deDuped, c)
 			}
@@ -203,7 +203,7 @@ func (b *Bytecode) RemoveDuplicates() {
 	}
 }
 
-func fixDecodedObject(o objects.Object, mods *modules.ModuleMap) (objects.Object, error) {
+func fixDecodedObject(o objects.IObject, mods *modules.ModuleMap) (objects.IObject, error) {
 	switch o := o.(type) {
 	case *objects.Bool:
 		if o.Falsy() {
@@ -213,28 +213,28 @@ func fixDecodedObject(o objects.Object, mods *modules.ModuleMap) (objects.Object
 	case *objects.Undefined:
 		return objects.UndefinedValue, nil
 	case *objects.Array:
-		for i, v := range o.Value {
+		for i, v := range o.Values() {
 			fv, err := fixDecodedObject(v, mods)
 			if err != nil {
 				return nil, err
 			}
-			o.Value[i] = fv
+			o.SetValue(i, fv)
 		}
 	case *objects.ImmutableArray:
-		for i, v := range o.Value {
+		for i, v := range o.Values() {
 			fv, err := fixDecodedObject(v, mods)
 			if err != nil {
 				return nil, err
 			}
-			o.Value[i] = fv
+			o.SetValue(i, fv)
 		}
 	case *objects.Map:
-		for k, v := range o.Value {
+		for k, v := range o.Values() {
 			fv, err := fixDecodedObject(v, mods)
 			if err != nil {
 				return nil, err
 			}
-			o.Value[k] = fv
+			o.Set(k, fv)
 		}
 	case *objects.ImmutableMap:
 		modName := inferModuleName(o)
@@ -290,7 +290,7 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) {
 
 func inferModuleName(mod *objects.ImmutableMap) string {
 	if modName, ok := mod.Value["__module_name__"].(*objects.String); ok {
-		return modName.Value
+		return modName.Value()
 	}
 	return ""
 }

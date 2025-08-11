@@ -6,139 +6,138 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-// Object represents the fundamental interface for all types
-// TypeName returns the name of the object's type.
-// String returns a string representation of the object.
-// BinaryOp performs a binary operation using the given operator and another object, returning a result or error.
-// Falsy determines if the object is considered falsy in a boolean context.
-// Equals compares the current object with another, checking for value equality.
+// IObject defines a generic interface for objects that can perform various operations and support multiple behaviors.
+// TypeName returns the type name of the object.
+// String returns the string representation of the object.
+// BinaryOp performs a binary operation between the object and a right-hand side operand.
+// Falsy checks if the object represents a falsy values.
+// Equals checks whether the object is equal to another object.
 // Copy creates and returns a copy of the object.
-// IndexGet retrieves a value at the given index from the object, or an error if indexing is not supported.
-// IndexSet assigns a value at the given index within the object, or returns an error if not assignable.
-// Iterate returns an iterator for the object or nil if the object is not iterable.
-// CanIterate checks whether the object supports iteration.
-// Call invokes the object as a callable with arguments, returning the result or error if not callable.
-// CanCall checks whether the object can be invoked as a callable.
-type Object interface {
+// IndexGet retrieves the values at the specified index from the object.
+// IndexSet assigns a values to the specified index within the object.
+// Iterate returns an iterator for the object, enabling iteration.
+// CanIterate checks if the object can be iterated over.
+// Call invokes the object as a callable function with provided arguments.
+// CanCall checks if the object can be called as a function.
+type IObject interface {
 	TypeName() string
 
 	String() string
 
-	BinaryOp(op Operator, rhs Object) (Object, error)
+	BinaryOp(op Operator, rhs IObject) (IObject, error)
 
 	Falsy() bool
 
-	Equals(another Object) bool
+	Equals(another IObject) bool
 
-	Copy() Object
+	Copy() IObject
 
-	IndexGet(index Object) (value Object, err error)
+	IndexGet(index IObject) (value IObject, err error)
 
-	IndexSet(index, value Object) error
+	IndexSet(index, value IObject) error
 
-	Iterate() Iterator
+	Iterate() IIterator
 
 	CanIterate() bool
 
-	Call(args ...Object) (ret Object, err error)
+	Call(args ...IObject) (ret IObject, err error)
 
 	CanCall() bool
 }
 
-// Object represents an object in the VM.
-
-// ObjectImpl is a base implementation of the Object interface, providing default behaviors for common methods.
+// ObjectImpl is a default implementation of the IObject interface with unimplemented or default behavior for methods.
 type ObjectImpl struct {
 }
 
-// TypeName returns the name of the type as a string. Currently, it raises an error indicating the method is not implemented.
+// TypeName returns the name of the type as a string. This method must be implemented by objects inheriting ObjectImpl.
 func (o *ObjectImpl) TypeName() string {
 	panic(errors.ErrNotImplemented)
 }
 
-// String returns a string representation of the ObjectImpl. It currently panics as it is not implemented.
+// String returns the string representation of the ObjectImpl. Currently, it is not implemented and will panic.
 func (o *ObjectImpl) String() string {
 	panic(errors.ErrNotImplemented)
 }
 
-// BinaryOp performs a binary operation with the given operator and object, returning an error for unsupported operations.
-func (o *ObjectImpl) BinaryOp(_ Operator, _ Object) (Object, error) {
+// BinaryOp performs a binary operation on the current object and another object using the specified operator.
+// Returns the result of the operation or an error if the operation is not supported.
+func (o *ObjectImpl) BinaryOp(_ Operator, _ IObject) (IObject, error) {
 	return nil, errors.ErrInvalidOperator
 }
 
-// Copy creates and returns a duplicate of the current object.
-func (o *ObjectImpl) Copy() Object {
+// Copy creates and returns a new instance of the object, duplicating its state.
+func (o *ObjectImpl) Copy() IObject {
 	return nil
 }
 
-// IsFalsy returns true if the object should be considered a falsy value, otherwise false.
+// Falsy returns false, indicating the object is not considered falsy in a boolean context.
 func (o *ObjectImpl) Falsy() bool {
 	return false
 }
 
-// Equals checks whether the given Object is equal to the current ObjectImpl instance.
-func (o *ObjectImpl) Equals(x Object) bool {
+// Equals checks whether the current object is equal to another object of type IObject.
+func (o *ObjectImpl) Equals(x IObject) bool {
 	return o == x
 }
 
-// IndexGet attempts to retrieve a value for the provided index but returns an ErrNotIndexable since ObjectImpl is not indexable.
-func (o *ObjectImpl) IndexGet(_ Object) (res Object, err error) {
+// IndexGet attempts to retrieve a values at the given index and returns an error if the object is not indexable.
+func (o *ObjectImpl) IndexGet(_ IObject) (res IObject, err error) {
 	return nil, errors.ErrNotIndexable
 }
 
-// IndexSet sets a value at the specified index but returns an error indicating the object is not index-assignable.
-func (o *ObjectImpl) IndexSet(_, _ Object) (err error) {
+// IndexSet attempts to assign a values to an index in the object but always returns ErrNotIndexAssignable, as this operation is unsupported.
+func (o *ObjectImpl) IndexSet(_, _ IObject) (err error) {
 	return errors.ErrNotIndexAssignable
 }
 
-// Iterate returns an Iterator for the object, or nil if the object is not iterable.
-func (o *ObjectImpl) Iterate() Iterator {
+// Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
+func (o *ObjectImpl) Iterate() IIterator {
 	return nil
 }
 
-// CanIterate determines if the object supports iteration and returns false for ObjectImpl.
+// CanIterate determines if the object can be iterated over and returns false for this implementation.
 func (o *ObjectImpl) CanIterate() bool {
 	return false
 }
 
-// Call executes the ObjectImpl instance as a callable, passing the provided arguments, and returns the result or an error.
-func (o *ObjectImpl) Call(_ ...Object) (ret Object, err error) {
+// Call invokes the ObjectImpl with the provided arguments, returning a result object and an error, if any.
+func (o *ObjectImpl) Call(_ ...IObject) (ret IObject, err error) {
 	return nil, nil
 }
 
-// CanCall checks if the object can be invoked as a callable. Returns false for non-callable objects.
+// CanCall determines if the object can be invoked as a callable. Returns false for non-callable objects.
 func (o *ObjectImpl) CanCall() bool {
 	return false
 }
 
-// ToInterface converts an Object to its corresponding Go native interface representation.
-func ToInterface(o Object) (res interface{}) {
-	switch o := o.(type) {
+// ToInterface converts an IObject to its corresponding native Go representation, such as int, string, float64, bool, etc.
+func ToInterface(in IObject) (res interface{}) {
+	switch o := in.(type) {
 	case *Int:
-		res = o.Value
+		res = o.value
 	case *String:
-		res = o.Value
+		res = o.value
 	case *Float:
-		res = o.Value
+		res = o.value
 	case *Bool:
 		res = o == TrueValue
 	case *Char:
-		res = o.Value
+		res = o.value
 	case *Bytes:
-		res = o.Value
+		res = o.values
 	case *Array:
-		res = make([]interface{}, len(o.Value))
-		for i, val := range o.Value {
+		res = make([]interface{}, len(o.Values()))
+		for i, val := range o.Values() {
 			res.([]interface{})[i] = ToInterface(val)
 		}
 	case *ImmutableArray:
-		res = make([]interface{}, len(o.Value))
-		for i, val := range o.Value {
+		res = make([]interface{}, o.Length())
+		for i, val := range o.Values() {
 			res.([]interface{})[i] = ToInterface(val)
 		}
 	case *Map:
 		res = make(map[string]interface{})
-		for key, v := range o.Value {
+		for key, v := range o.values {
 			res.(map[string]interface{})[key] = ToInterface(v)
 		}
 	case *ImmutableMap:
@@ -147,65 +146,65 @@ func ToInterface(o Object) (res interface{}) {
 			res.(map[string]interface{})[key] = ToInterface(v)
 		}
 	case *Time:
-		res = o.Value
+		res = o.value
 	case *Error:
 		res = errors.New(o.String())
 	case *Undefined:
 		res = nil
-	case Object:
+	case IObject:
 		return o
 	}
 	return
 }
 
-// FromMap converts a map[string]interface{} to a map[string]Object by recursively transforming its values to Object types.
-func FromMap(v map[string]interface{}) map[string]Object {
-	kv := make(map[string]Object)
+// FromMap converts a map with string keys and interface{} values into a map with string keys and IObject values.
+func FromMap(v map[string]interface{}) map[string]IObject {
+	kv := make(map[string]IObject)
 	for key, val := range v {
 		kv[key] = FromInterface(val)
 	}
 	return kv
 }
 
-// FromInterface converts a native Go interface{} into a corresponding Object type based on its underlying value.
-func FromInterface(v interface{}) Object {
-	switch v := v.(type) {
+// FromInterface converts a native Go values of various types into a corresponding IObject implementation.
+func FromInterface(in interface{}) IObject {
+	switch v := in.(type) {
 	case nil:
 		return UndefinedValue
 	case string:
 		if len(v) > MaxStringLen {
-			return &String{Value: v[0:MaxStringLen]}
+			return &String{value: v[0:MaxStringLen]}
 		}
-		return &String{Value: v}
+		return &String{value: v}
 	case int64:
-		return &Int{Value: v}
+		return &Int{value: v}
 	case int:
-		return &Int{Value: int64(v)}
+		return &Int{value: int64(v)}
 	case bool:
 		if v {
 			return TrueValue
 		}
 		return FalseValue
 	case rune:
-		return &Char{Value: v}
+		return &Char{value: v}
 	case byte:
-		return &Char{Value: rune(v)}
+		return &Char{value: rune(v)}
 	case float64:
-		return &Float{Value: v}
+		return &Float{value: v}
 	case []byte:
 		if len(v) > MaxBytesLen {
-			return &Bytes{Value: v[0:MaxBytesLen]}
+			return &Bytes{values: v[0:MaxBytesLen]}
 		}
-		return &Bytes{Value: v}
+		return &Bytes{values: v}
 	case error:
-		return &Error{Value: &String{Value: v.Error()}}
-	case map[string]Object:
-		return &Map{Value: v}
+		return &Error{value: &String{value: v.Error()}}
+	case map[string]IObject:
+		return NewMap(v)
 	case map[string]interface{}:
 		kv := FromMap(v)
-		return &Map{Value: kv}
+		return NewMap(kv)
 	case []bool:
-		arr := make([]Object, len(v))
+		arr := make([]IObject, len(v))
 		for i, e := range v {
 			if e {
 				arr[i] = TrueValue
@@ -213,32 +212,32 @@ func FromInterface(v interface{}) Object {
 				arr[i] = FalseValue
 			}
 		}
-		return &Array{Value: arr}
+		return NewArray(arr)
 	case []int:
-		arr := make([]Object, len(v))
+		arr := make([]IObject, len(v))
 		for i, e := range v {
-			arr[i] = &Int{Value: int64(e)}
+			arr[i] = &Int{value: int64(e)}
 		}
-		return &Array{Value: arr}
+		return NewArray(arr)
 	case []map[string]interface{}:
-		arr := make([]Object, len(v))
+		arr := make([]IObject, len(v))
 		for i, e := range v {
 			kv := FromMap(e)
 			vo := FromInterface(kv)
 			arr[i] = vo
 		}
-		return &Array{Value: arr}
-	case []Object:
-		return &Array{Value: v}
+		return NewArray(arr)
+	case []IObject:
+		return NewArray(v)
 	case []interface{}:
-		arr := make([]Object, len(v))
+		arr := make([]IObject, len(v))
 		for i, e := range v {
 			arr[i] = FromInterface(e)
 		}
-		return &Array{Value: arr}
+		return NewArray(arr)
 	case time.Time:
-		return &Time{Value: v}
-	case Object:
+		return &Time{value: v}
+	case IObject:
 		return v
 	case CallableFunc:
 		return &UserFunction{Value: v}
@@ -246,20 +245,20 @@ func FromInterface(v interface{}) Object {
 	return UndefinedValue
 }
 
-// CountObjects counts the total number of objects in the given object, including nested objects within supported types.
-func CountObjects(o Object) (c int) {
+// CountObjects recursively counts the total number of objects contained in the given IObject, including nested structures.
+func CountObjects(in IObject) (c int) {
 	c = 1
-	switch o := o.(type) {
+	switch o := in.(type) {
 	case *Array:
-		for _, v := range o.Value {
+		for _, v := range o.Values() {
 			c += CountObjects(v)
 		}
 	case *ImmutableArray:
-		for _, v := range o.Value {
+		for _, v := range o.Values() {
 			c += CountObjects(v)
 		}
 	case *Map:
-		for _, v := range o.Value {
+		for _, v := range o.values {
 			c += CountObjects(v)
 		}
 	case *ImmutableMap:
@@ -267,7 +266,7 @@ func CountObjects(o Object) (c int) {
 			c += CountObjects(v)
 		}
 	case *Error:
-		c += CountObjects(o.Value)
+		c += CountObjects(o.value)
 	}
 	return
 }

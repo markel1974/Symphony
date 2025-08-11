@@ -6,7 +6,7 @@ import (
 
 // Importable interface represents importable module instance.
 type Importable interface {
-	// Import should return either an Object or module source code ([]byte).
+	// Import should return either an IObject or module source code ([]byte).
 	Import(moduleName string) (interface{}, error)
 }
 
@@ -34,7 +34,7 @@ func (m *ModuleMap) Add(name string, module Importable) {
 }
 
 // AddBuiltinModule adds a builtin module.
-func (m *ModuleMap) AddBuiltinModule(name string, attrs map[string]objects.Object) {
+func (m *ModuleMap) AddBuiltinModule(name string, attrs map[string]objects.IObject) {
 	m.m[name] = &objects.BuiltinModule{Attrs: attrs}
 }
 

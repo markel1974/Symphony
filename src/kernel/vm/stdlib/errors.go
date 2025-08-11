@@ -4,7 +4,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-func wrapError(err error) objects.Object {
+func wrapError(err error) objects.IObject {
 	if err == nil {
 		return objects.TrueValue
 	}

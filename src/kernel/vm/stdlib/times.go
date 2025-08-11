@@ -8,7 +8,7 @@ import (
 )
 
 // timesModule is a map providing time-related constants, formats, durations, months, and various time utility functions.
-var timesModule = map[string]objects.Object{
+var timesModule = map[string]objects.IObject{
 	"format_ansic":         objects.NewString(time.ANSIC),
 	"format_unix_date":     objects.NewString(time.UnixDate),
 	"format_ruby_date":     objects.NewString(time.RubyDate),
@@ -82,7 +82,7 @@ var timesModule = map[string]objects.Object{
 // timesSleep pauses execution for the specified duration, given in nanoseconds, as an integer argument.
 // Returns an error if the argument count is not one or if the argument is not int-compatible.
 // The function returns an undefined value after the sleep duration.
-func timesSleep(args ...objects.Object) (objects.Object, error) {
+func timesSleep(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -95,7 +95,7 @@ func timesSleep(args ...objects.Object) (objects.Object, error) {
 }
 
 // timesParseDuration parses a duration string and returns its value as an integer representing nanoseconds or an error.
-func timesParseDuration(args ...objects.Object) (objects.Object, error) {
+func timesParseDuration(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -112,7 +112,7 @@ func timesParseDuration(args ...objects.Object) (objects.Object, error) {
 
 // timesSince calculates the duration in nanoseconds between the provided time argument and the current time.
 // Returns an integer object representing the difference or an error if the argument is invalid.
-func timesSince(args ...objects.Object) (objects.Object, error) {
+func timesSince(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -126,7 +126,7 @@ func timesSince(args ...objects.Object) (objects.Object, error) {
 // timesUntil returns the number of nanoseconds until the provided time argument.
 // Expects exactly one time or time-compatible argument; otherwise, it returns an error.
 // If the argument is not a valid time-compatible object, an invalid argument type error is returned.
-func timesUntil(args ...objects.Object) (objects.Object, error) {
+func timesUntil(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -139,7 +139,7 @@ func timesUntil(args ...objects.Object) (objects.Object, error) {
 
 // timesDurationHours converts an integer input representing nanoseconds to a float representing hours and returns it.
 // Returns an error if input is not a single integer value or cannot be converted to int64.
-func timesDurationHours(args ...objects.Object) (objects.Object, error) {
+func timesDurationHours(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -152,7 +152,7 @@ func timesDurationHours(args ...objects.Object) (objects.Object, error) {
 
 // timesDurationMinutes converts the given integer argument to a time.Duration and returns its value in minutes as a Float.
 // Returns an error if the argument count is not 1 or if the argument is not int-compatible.
-func timesDurationMinutes(args ...objects.Object) (objects.Object, error) {
+func timesDurationMinutes(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -165,7 +165,7 @@ func timesDurationMinutes(args ...objects.Object) (objects.Object, error) {
 
 // timesDurationNanoseconds converts an integer input argument to a time duration in nanoseconds and returns it as an object.
 // Returns an error if the wrong number of arguments is provided or if the input argument is not integer-compatible.
-func timesDurationNanoseconds(args ...objects.Object) (objects.Object, error) {
+func timesDurationNanoseconds(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -178,7 +178,7 @@ func timesDurationNanoseconds(args ...objects.Object) (objects.Object, error) {
 
 // timesDurationSeconds converts an integer argument to a time.Duration and returns its value in seconds as a float.
 // Returns an error if the argument count is incorrect or if the provided argument is not an integer-compatible type.
-func timesDurationSeconds(args ...objects.Object) (objects.Object, error) {
+func timesDurationSeconds(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -192,7 +192,7 @@ func timesDurationSeconds(args ...objects.Object) (objects.Object, error) {
 // timesDurationString converts an integer duration in nanoseconds to its string representation using Go's time.Duration.
 // It takes exactly one argument of int-compatible type; otherwise, it returns an error.
 // The result is returned as a string object representing the duration in a readable format.
-func timesDurationString(args ...objects.Object) (objects.Object, error) {
+func timesDurationString(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -204,7 +204,7 @@ func timesDurationString(args ...objects.Object) (objects.Object, error) {
 }
 
 // timesMonthString converts an integer to its corresponding month name as a string. Returns an error for invalid arguments.
-func timesMonthString(args ...objects.Object) (objects.Object, error) {
+func timesMonthString(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -217,7 +217,7 @@ func timesMonthString(args ...objects.Object) (objects.Object, error) {
 
 // timesDate creates a new time object using year, month, day, hour, minute, second, and nanosecond values as arguments.
 // timesDate returns an error if the number of arguments is not seven or if any argument is not an int-compatible type.
-func timesDate(args ...objects.Object) (objects.Object, error) {
+func timesDate(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 7 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -253,7 +253,7 @@ func timesDate(args ...objects.Object) (objects.Object, error) {
 }
 
 // timesNow returns the current time as an object of type Time or an error if called with arguments.
-func timesNow(args ...objects.Object) (objects.Object, error) {
+func timesNow(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 0 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -264,7 +264,7 @@ func timesNow(args ...objects.Object) (objects.Object, error) {
 // Accepts exactly two arguments: a format string and a time string, both compatible with string types.
 // Returns an error if the number of arguments is incorrect or their types are invalid.
 // Wraps parsing errors as `Error` objects for consistent error handling.
-func timesParse(args ...objects.Object) (objects.Object, error) {
+func timesParse(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -286,7 +286,7 @@ func timesParse(args ...objects.Object) (objects.Object, error) {
 // timesUnix creates a new Time object by interpreting two integers as Unix seconds and nanoseconds since the epoch.
 // The first argument must be an integer for seconds, and the second argument must be an integer for nanoseconds.
 // Returns an error if arguments are not exactly two or cannot be converted to integers.
-func timesUnix(args ...objects.Object) (objects.Object, error) {
+func timesUnix(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -302,7 +302,7 @@ func timesUnix(args ...objects.Object) (objects.Object, error) {
 }
 
 // timesAdd adds a duration (in nanoseconds) to a time object and returns the resulting time or an error if invalid arguments.
-func timesAdd(args ...objects.Object) (objects.Object, error) {
+func timesAdd(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -319,7 +319,7 @@ func timesAdd(args ...objects.Object) (objects.Object, error) {
 
 // timesSub subtracts the second time argument from the first and returns the duration as an integer in nanoseconds.
 // Returns an error if the number of arguments is not 2 or if the arguments are not time-compatible objects.
-func timesSub(args ...objects.Object) (objects.Object, error) {
+func timesSub(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -337,7 +337,7 @@ func timesSub(args ...objects.Object) (objects.Object, error) {
 // timesAddDate adds years, months, and days to a time object and returns the resulting time as a new object.
 // The function expects 4 arguments: a time object, an integer for years, an integer for months, and an integer for days.
 // An error is returned if arguments are of the wrong types or if the number of arguments is not 4.
-func timesAddDate(args ...objects.Object) (objects.Object, error) {
+func timesAddDate(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -362,7 +362,7 @@ func timesAddDate(args ...objects.Object) (objects.Object, error) {
 
 // timesAfter checks if the first time argument occurs after the second time argument and returns a boolean result.
 // Returns an error if the number of arguments is not two or if the provided types are not time-compatible.
-func timesAfter(args ...objects.Object) (objects.Object, error) {
+func timesAfter(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -382,7 +382,7 @@ func timesAfter(args ...objects.Object) (objects.Object, error) {
 
 // timesBefore checks if the first time argument is before the second time argument, returning true or false.
 // Returns an error if the number of arguments is not 2 or if argument types are invalid.
-func timesBefore(args ...objects.Object) (objects.Object, error) {
+func timesBefore(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -401,7 +401,7 @@ func timesBefore(args ...objects.Object) (objects.Object, error) {
 }
 
 // timesTimeYear extracts the year from a given time object and returns it as an integer. It expects exactly one argument.
-func timesTimeYear(args ...objects.Object) (objects.Object, error) {
+func timesTimeYear(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -413,7 +413,7 @@ func timesTimeYear(args ...objects.Object) (objects.Object, error) {
 }
 
 // timesTimeMonth extracts the month from a given time object as an integer and returns it. Errors on invalid input or argument count.
-func timesTimeMonth(args ...objects.Object) (objects.Object, error) {
+func timesTimeMonth(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -426,7 +426,7 @@ func timesTimeMonth(args ...objects.Object) (objects.Object, error) {
 
 // timesTimeDay retrieves the day of the month from a time object and returns it as an integer.
 // Returns an error if the argument count is incorrect or if the input is not a valid time-compatible object.
-func timesTimeDay(args ...objects.Object) (objects.Object, error) {
+func timesTimeDay(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -440,7 +440,7 @@ func timesTimeDay(args ...objects.Object) (objects.Object, error) {
 // timesTimeWeekday returns the weekday of the given time object as an integer.
 // It requires exactly one argument of a type convertible to a time object.
 // Returns an error if the argument count is incorrect or if the type is invalid.
-func timesTimeWeekday(args ...objects.Object) (objects.Object, error) {
+func timesTimeWeekday(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -454,7 +454,7 @@ func timesTimeWeekday(args ...objects.Object) (objects.Object, error) {
 // timesTimeHour returns the hour component of the provided time object as an integer.
 // Expects exactly one argument of type time-compatible object.
 // Returns an error if the argument is not time-compatible or if the number of arguments is not one.
-func timesTimeHour(args ...objects.Object) (objects.Object, error) {
+func timesTimeHour(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -467,7 +467,7 @@ func timesTimeHour(args ...objects.Object) (objects.Object, error) {
 
 // timesTimeMinute returns the minute component of a time object as an integer.
 // Expects exactly one argument of a time-compatible object.
-func timesTimeMinute(args ...objects.Object) (objects.Object, error) {
+func timesTimeMinute(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -479,7 +479,7 @@ func timesTimeMinute(args ...objects.Object) (objects.Object, error) {
 }
 
 // timesTimeSecond extracts the second component of a time object, returning it as an integer. It expects one argument only.
-func timesTimeSecond(args ...objects.Object) (objects.Object, error) {
+func timesTimeSecond(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -492,7 +492,7 @@ func timesTimeSecond(args ...objects.Object) (objects.Object, error) {
 
 // timesTimeNanosecond returns the nanosecond component of a time object as an integer.
 // Returns an error if the argument is not a valid time object or if the number of arguments is not exactly one.
-func timesTimeNanosecond(args ...objects.Object) (objects.Object, error) {
+func timesTimeNanosecond(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -505,7 +505,7 @@ func timesTimeNanosecond(args ...objects.Object) (objects.Object, error) {
 
 // timesTimeUnix converts a single time object to its Unix epoch timestamp representation and returns it as an integer.
 // It returns an error if the number of arguments is not one or if the argument is not time-compatible.
-func timesTimeUnix(args ...objects.Object) (objects.Object, error) {
+func timesTimeUnix(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -518,7 +518,7 @@ func timesTimeUnix(args ...objects.Object) (objects.Object, error) {
 
 // timesTimeUnixNano converts a time object into its Unix time in nanoseconds and returns it as an integer object.
 // An error is returned if the number or type of arguments is invalid.
-func timesTimeUnixNano(args ...objects.Object) (objects.Object, error) {
+func timesTimeUnixNano(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -532,7 +532,7 @@ func timesTimeUnixNano(args ...objects.Object) (objects.Object, error) {
 // timesTimeFormat formats a time object using a specified string-based layout and returns the formatted string.
 // Returns an error if the arguments count is incorrect or the argument types are invalid.
 // Returns an error if the resultant string exceeds the allowed maximum string length.
-func timesTimeFormat(args ...objects.Object) (objects.Object, error) {
+func timesTimeFormat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -553,7 +553,7 @@ func timesTimeFormat(args ...objects.Object) (objects.Object, error) {
 
 // timesIsZero checks if the provided time object is a zero time. Returns true if zero, false otherwise.
 // Accepts one argument of type time-compatible object. Returns an error if the argument is invalid or missing.
-func timesIsZero(args ...objects.Object) (objects.Object, error) {
+func timesIsZero(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -568,7 +568,7 @@ func timesIsZero(args ...objects.Object) (objects.Object, error) {
 }
 
 // timesToLocal converts a time object to its local time equivalent or returns an error if the argument is invalid.
-func timesToLocal(args ...objects.Object) (objects.Object, error) {
+func timesToLocal(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -581,7 +581,7 @@ func timesToLocal(args ...objects.Object) (objects.Object, error) {
 
 // timesToUTC converts a single time-compatible object to its equivalent UTC time and returns it as a Time object.
 // Returns an error if the argument count is incorrect or if the input is not a valid time-compatible type.
-func timesToUTC(args ...objects.Object) (objects.Object, error) {
+func timesToUTC(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -594,7 +594,7 @@ func timesToUTC(args ...objects.Object) (objects.Object, error) {
 
 // timesTimeLocation extracts the location (timezone) of the given time object and returns it as a string.
 // Accepts exactly one time-compatible argument and returns an error for invalid types or argument count.
-func timesTimeLocation(args ...objects.Object) (objects.Object, error) {
+func timesTimeLocation(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
@@ -607,7 +607,7 @@ func timesTimeLocation(args ...objects.Object) (objects.Object, error) {
 
 // timesTimeString converts a time object to its string representation and returns it as a string object.
 // Returns an error if the argument is not a time-compatible object or if the number of arguments is not exactly one.
-func timesTimeString(args ...objects.Object) (objects.Object, error) {
+func timesTimeString(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}

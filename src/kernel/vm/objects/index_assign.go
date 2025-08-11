@@ -6,7 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-func IndexAssign(dst Object, src Object, selectors []Object) error {
+func IndexAssign(dst IObject, src IObject, selectors []IObject) error {
 	numSel := len(selectors)
 	for sIdx := numSel - 1; sIdx > 0; sIdx-- {
 		next, err := dst.IndexGet(selectors[sIdx])
@@ -27,7 +27,7 @@ func IndexAssign(dst Object, src Object, selectors []Object) error {
 			return fmt.Errorf("not index-assignable: %s", dst.TypeName())
 		}
 		if errors.Is(err, errors.ErrInvalidIndexValueType) {
-			return fmt.Errorf("invaid index value type: %s", src.TypeName())
+			return fmt.Errorf("invaid index values type: %s", src.TypeName())
 		}
 		return err
 	}

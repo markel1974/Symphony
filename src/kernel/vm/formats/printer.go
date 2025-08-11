@@ -18,7 +18,7 @@ type PrinterState struct {
 	buf Buffer
 
 	// arg holds the current item.
-	arg objects.Object
+	arg objects.IObject
 
 	// fmt is used to format basic items such as integers or strings.
 	fmt Formatter
@@ -249,7 +249,7 @@ func (p *PrinterState) fmtBytes(v []byte, verb rune, typeString string) {
 	}
 }
 
-func (p *PrinterState) printArg(arg objects.Object, verb rune) {
+func (p *PrinterState) printArg(arg objects.IObject, verb rune) {
 	p.arg = arg
 
 	if arg == nil {
@@ -273,13 +273,13 @@ func (p *PrinterState) printArg(arg objects.Object, verb rune) {
 	case *objects.Bool:
 		p.fmtBool(!f.Falsy(), verb)
 	case *objects.Float:
-		p.fmtFloat(f.Value, 64, verb)
+		p.fmtFloat(f.Value(), 64, verb)
 	case *objects.Int:
-		p.fmtInteger(uint64(f.Value), signed, verb)
+		p.fmtInteger(uint64(f.Value()), signed, verb)
 	case *objects.String:
-		p.fmtString(f.Value, verb)
+		p.fmtString(f.Value(), verb)
 	case *objects.Bytes:
-		p.fmtBytes(f.Value, verb, "[]byte")
+		p.fmtBytes(f.Value(), verb, "[]byte")
 	default:
 		p.fmtString(f.String(), verb)
 	}
@@ -319,7 +319,7 @@ func (p *PrinterState) missingArg(verb rune) {
 	_, _ = p.WriteString(missingString)
 }
 
-func (p *PrinterState) doFormat(format string, a []objects.Object) (err error) {
+func (p *PrinterState) doFormat(format string, a []objects.IObject) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			if e, ok := r.(error); ok && e == errors.ErrStringLimit {

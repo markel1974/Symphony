@@ -16,7 +16,7 @@ import (
 )
 
 // Decode parses the JSON-encoded data and returns the result object.
-func Decode(data []byte) (objects.Object, error) {
+func Decode(data []byte) (objects.IObject, error) {
 	var d decodeState
 	err := checkValid(data, &d.scan)
 	if err != nil {
@@ -78,7 +78,7 @@ func (d *decodeState) scanWhile(op int) {
 	d.opcode = d.scan.eof()
 }
 
-func (d *decodeState) value() (objects.Object, error) {
+func (d *decodeState) value() (objects.IObject, error) {
 	switch d.opcode {
 	default:
 		panic(phasePanicMsg)
@@ -101,8 +101,8 @@ func (d *decodeState) value() (objects.Object, error) {
 	}
 }
 
-func (d *decodeState) array() (objects.Object, error) {
-	var arr []objects.Object
+func (d *decodeState) array() (objects.IObject, error) {
+	var arr []objects.IObject
 	for {
 		// Look ahead for ] - can only happen on first iteration.
 		d.scanWhile(scanSkipSpace)
@@ -129,8 +129,8 @@ func (d *decodeState) array() (objects.Object, error) {
 	return &objects.Array{Value: arr}, nil
 }
 
-func (d *decodeState) object() (objects.Object, error) {
-	m := make(map[string]objects.Object)
+func (d *decodeState) object() (objects.IObject, error) {
+	m := make(map[string]objects.IObject)
 	for {
 		// Read opening " of string key or closing }.
 		d.scanWhile(scanSkipSpace)
@@ -182,7 +182,7 @@ func (d *decodeState) object() (objects.Object, error) {
 	return &objects.Map{Value: m}, nil
 }
 
-func (d *decodeState) literal() (objects.Object, error) {
+func (d *decodeState) literal() (objects.IObject, error) {
 	// All bytes inside literal return scanContinue op code.
 	start := d.readIndex()
 	d.scanWhile(scanContinue)

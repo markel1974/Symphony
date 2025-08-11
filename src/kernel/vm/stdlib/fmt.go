@@ -9,18 +9,18 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-var fmtSafeModule = map[string]objects.Object{
+var fmtSafeModule = map[string]objects.IObject{
 	"sprintf": &objects.UserFunction{Name: "sprintf", Value: fmtSprintf},
 }
 
-var fmtModule = map[string]objects.Object{
+var fmtModule = map[string]objects.IObject{
 	"print":   &objects.UserFunction{Name: "print", Value: fmtPrint},
 	"printf":  &objects.UserFunction{Name: "printf", Value: fmtPrintf},
 	"println": &objects.UserFunction{Name: "println", Value: fmtPrintln},
 	"sprintf": &objects.UserFunction{Name: "sprintf", Value: fmtSprintf},
 }
 
-func fmtPrint(args ...objects.Object) (ret objects.Object, err error) {
+func fmtPrint(args ...objects.IObject) (ret objects.IObject, err error) {
 	printArgs, err := getPrintArgs(args...)
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func fmtPrint(args ...objects.Object) (ret objects.Object, err error) {
 	return nil, nil
 }
 
-func fmtPrintf(args ...objects.Object) (ret objects.Object, err error) {
+func fmtPrintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	numArgs := len(args)
 	if numArgs == 0 {
 		return nil, errors.ErrWrongNumArguments
@@ -51,7 +51,7 @@ func fmtPrintf(args ...objects.Object) (ret objects.Object, err error) {
 	return nil, nil
 }
 
-func fmtPrintln(args ...objects.Object) (ret objects.Object, err error) {
+func fmtPrintln(args ...objects.IObject) (ret objects.IObject, err error) {
 	printArgs, err := getPrintArgs(args...)
 	if err != nil {
 		return nil, err
@@ -61,7 +61,7 @@ func fmtPrintln(args ...objects.Object) (ret objects.Object, err error) {
 	return nil, nil
 }
 
-func fmtSprintf(args ...objects.Object) (ret objects.Object, err error) {
+func fmtSprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	numArgs := len(args)
 	if numArgs == 0 {
 		return nil, errors.ErrWrongNumArguments
@@ -81,7 +81,7 @@ func fmtSprintf(args ...objects.Object) (ret objects.Object, err error) {
 	return &objects.String{Value: s}, nil
 }
 
-func getPrintArgs(args ...objects.Object) ([]interface{}, error) {
+func getPrintArgs(args ...objects.IObject) ([]interface{}, error) {
 	var printArgs []interface{}
 	l := 0
 	for _, arg := range args {

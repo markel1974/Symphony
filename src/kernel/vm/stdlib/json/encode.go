@@ -125,7 +125,7 @@ var safeSet = [utf8.RuneSelf]bool{
 var hex = "0123456789abcdef"
 
 // Encode returns the JSON encoding of the object.
-func Encode(o objects.Object) ([]byte, error) {
+func Encode(o objects.IObject) ([]byte, error) {
 	var b []byte
 
 	switch o := o.(type) {

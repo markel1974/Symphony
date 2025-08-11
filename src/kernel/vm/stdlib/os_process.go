@@ -10,7 +10,7 @@ import (
 
 func makeOSProcessState(state *os.ProcessState) *objects.ImmutableMap {
 	return &objects.ImmutableMap{
-		Value: map[string]objects.Object{
+		Value: map[string]objects.IObject{
 			"exited": &objects.UserFunction{
 				Name:  "exited",
 				Value: FuncARB(state.Exited),
@@ -33,7 +33,7 @@ func makeOSProcessState(state *os.ProcessState) *objects.ImmutableMap {
 
 func makeOSProcess(proc *os.Process) *objects.ImmutableMap {
 	return &objects.ImmutableMap{
-		Value: map[string]objects.Object{
+		Value: map[string]objects.IObject{
 			"kill": &objects.UserFunction{
 				Name:  "kill",
 				Value: FuncARE(proc.Kill),
@@ -44,7 +44,7 @@ func makeOSProcess(proc *os.Process) *objects.ImmutableMap {
 			},
 			"signal": &objects.UserFunction{
 				Name: "signal",
-				Value: func(args ...objects.Object) (objects.Object, error) {
+				Value: func(args ...objects.IObject) (objects.IObject, error) {
 					if len(args) != 1 {
 						return nil, errors.ErrWrongNumArguments
 					}
@@ -57,7 +57,7 @@ func makeOSProcess(proc *os.Process) *objects.ImmutableMap {
 			},
 			"wait": &objects.UserFunction{
 				Name: "wait",
-				Value: func(args ...objects.Object) (objects.Object, error) {
+				Value: func(args ...objects.IObject) (objects.IObject, error) {
 					if len(args) != 0 {
 						return nil, errors.ErrWrongNumArguments
 					}

@@ -6,10 +6,10 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// Variable represents a named entity with a string identifier and an associated value of type objects.Object.
+// Variable represents a named entity with a string identifier and an associated value of type objects.IObject.
 type Variable struct {
 	name  string
-	value objects.Object
+	value objects.IObject
 }
 
 // NewVariable creates a new Variable instance with a given name and value, converting the value to an internal object type.
@@ -163,8 +163,8 @@ func (v *Variable) Error() error {
 	return nil
 }
 
-// Object returns the underlying objects.Object instance held by the Variable.
-func (v *Variable) Object() objects.Object {
+// Object returns the underlying objects.IObject instance held by the Variable.
+func (v *Variable) Object() objects.IObject {
 	return v.value
 }
 

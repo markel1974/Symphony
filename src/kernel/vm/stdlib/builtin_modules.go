@@ -5,7 +5,7 @@ import (
 )
 
 // BuiltinModules are builtin type standard library modules.
-var BuiltinModules = map[string]map[string]objects.Object{
+var BuiltinModules = map[string]map[string]objects.IObject{
 	//"os":   osModule,
 	//"fmt":  fmtModule,
 	"math":   mathModule,

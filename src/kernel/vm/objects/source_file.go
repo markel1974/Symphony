@@ -6,7 +6,7 @@ type SourceFile struct {
 	set *SourceFileSet
 	// SourceFile name as provided to AddFile
 	Name string
-	// SourcePos value range for this file is [base...base+size]
+	// SourcePos values range for this file is [base...base+size]
 	Base int
 	// SourceFile size as provided to AddFile
 	Size int
@@ -55,7 +55,7 @@ func (f *SourceFile) FileSetPos(offset int) Pos {
 // Offset translates the file set position into the file offset.
 func (f *SourceFile) Offset(p Pos) int {
 	if int(p) < f.Base || int(p) > f.Base+f.Size {
-		panic("illegal SourcePos value")
+		panic("illegal SourcePos values")
 	}
 	return int(p) - f.Base
 }
@@ -64,7 +64,7 @@ func (f *SourceFile) Offset(p Pos) int {
 func (f *SourceFile) Position(p Pos) (pos SourceFilePos) {
 	if p != NoPos {
 		if int(p) < f.Base || int(p) > f.Base+f.Size {
-			panic("illegal SourcePos value")
+			panic("illegal SourcePos values")
 		}
 		pos = f.position(p)
 	}

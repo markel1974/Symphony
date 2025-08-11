@@ -1,58 +1,62 @@
 package objects
 
+// TrueValue represents the boolean true values as an IObject.
+// FalseValue represents the boolean false values as an IObject.
+// UndefinedValue represents an undefined values as an IObject.
 var (
-	// TrueValue represents a true value.
-	TrueValue Object = &Bool{value: true}
+	// TrueValue represents a true values.
+	TrueValue IObject = &Bool{value: true}
 
-	// FalseValue represents a false value.
-	FalseValue Object = &Bool{value: false}
+	// FalseValue represents a false values.
+	FalseValue IObject = &Bool{value: false}
 
-	// UndefinedValue represents an undefined value.
-	UndefinedValue Object = &Undefined{}
+	// UndefinedValue represents an undefined values.
+	UndefinedValue IObject = &Undefined{}
 )
 
-// Bool represents a boolean value.
+// Bool represents a boolean type with true or false values.
+// It embeds ObjectImpl and provides methods for common object operations.
+// The values field indicates the boolean state: `true` or `false`.
 type Bool struct {
 	ObjectImpl
-	// this is intentionally non-public to force using objects.TrueValue and FalseValue always
 	value bool
 }
 
+// String returns the string representation of the Bool object, "true" for true values and "false" for false values.
 func (o *Bool) String() string {
 	if o.value {
 		return "true"
 	}
-
 	return "false"
 }
 
-// TypeName returns the name of the type.
+// TypeName returns the string "bool", representing the name of the type of the Bool object.
 func (o *Bool) TypeName() string {
 	return "bool"
 }
 
-// Copy returns a copy of the type.
-func (o *Bool) Copy() Object {
+// Copy returns the Bool object itself as it is considered immutable.
+func (o *Bool) Copy() IObject {
 	return o
 }
 
-// IsFalsy returns true if the value of the type is falsy.
+// Falsy determines if the Bool object's values should be considered falsy (returns true if the values is false).
 func (o *Bool) Falsy() bool {
 	return !o.value
 }
 
-// Equals returns true if the value of the type is equal to the value of another object.
-func (o *Bool) Equals(x Object) bool {
+// Equals checks whether the Bool object is equal to another IObject based on reference comparison.
+func (o *Bool) Equals(x IObject) bool {
 	return o == x
 }
 
-// GobDecode decodes bool value from input bytes.
+// GobDecode implements the gob.GobDecoder interface, decoding a byte slice to set the Bool's values.
 func (o *Bool) GobDecode(b []byte) (err error) {
 	o.value = b[0] == 1
 	return
 }
 
-// GobEncode encodes bool values into bytes.
+// GobEncode encodes the Bool object into a byte slice for serialization, representing true as 1 and false as 0.
 func (o *Bool) GobEncode() (b []byte, err error) {
 	if o.value {
 		b = []byte{1}
@@ -62,14 +66,15 @@ func (o *Bool) GobEncode() (b []byte, err error) {
 	return
 }
 
-// ToBool will try to convert object o to bool value.
-func ToBool(o Object) (v bool, ok bool) {
+// ToBool converts an IObject to a boolean by checking its falsy state. Returns the boolean values and a success flag.
+func ToBool(o IObject) (v bool, ok bool) {
 	ok = true
 	v = !o.Falsy()
 	return
 }
 
-func FromBool(v bool) Object {
+// FromBool converts a boolean values into an IObject, returning TrueValue for true and FalseValue for false.
+func FromBool(v bool) IObject {
 	if v {
 		return TrueValue
 	}

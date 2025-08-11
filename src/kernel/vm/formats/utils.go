@@ -27,7 +27,7 @@ func parseNum(s string, start, end int) (int, bool, int) {
 	return num, isNum, newI
 }
 
-func intFromArg(a []objects.Object, argNum int) (int, bool, int) {
+func intFromArg(a []objects.IObject, argNum int) (int, bool, int) {
 	num := 0
 	isInt := false
 	newArgNum := argNum
