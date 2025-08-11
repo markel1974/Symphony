@@ -21,7 +21,7 @@ func (o *ObjectPtr) Copy() Object {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *ObjectPtr) IsFalsy() bool {
+func (o *ObjectPtr) Falsy() bool {
 	return o.Value == nil
 }
 

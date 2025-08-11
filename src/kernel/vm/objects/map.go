@@ -36,7 +36,7 @@ func (o *Map) Copy() Object {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *Map) IsFalsy() bool {
+func (o *Map) Falsy() bool {
 	return len(o.Value) == 0
 }
 
@@ -126,7 +126,7 @@ func (i *MapIterator) String() string {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (i *MapIterator) IsFalsy() bool {
+func (i *MapIterator) Falsy() bool {
 	return true
 }
 

@@ -271,7 +271,7 @@ func (p *PrinterState) printArg(arg objects.Object, verb rune) {
 	// Some types can be done without reflection.
 	switch f := arg.(type) {
 	case *objects.Bool:
-		p.fmtBool(!f.IsFalsy(), verb)
+		p.fmtBool(!f.Falsy(), verb)
 	case *objects.Float:
 		p.fmtFloat(f.Value, 64, verb)
 	case *objects.Int:

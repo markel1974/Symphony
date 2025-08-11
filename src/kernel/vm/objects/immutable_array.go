@@ -49,7 +49,7 @@ func (o *ImmutableArray) Copy() Object {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *ImmutableArray) IsFalsy() bool {
+func (o *ImmutableArray) Falsy() bool {
 	return len(o.Value) == 0
 }
 

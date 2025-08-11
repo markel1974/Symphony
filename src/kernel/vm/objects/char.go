@@ -107,7 +107,7 @@ func (o *Char) Copy() Object {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *Char) IsFalsy() bool {
+func (o *Char) Falsy() bool {
 	return o.Value == 0
 }
 

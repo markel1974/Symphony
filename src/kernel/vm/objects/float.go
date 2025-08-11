@@ -141,7 +141,7 @@ func (o *Float) Copy() Object {
 }
 
 // IsFalsy checks if the Float object's value is NaN, returning true if it is, otherwise false.
-func (o *Float) IsFalsy() bool {
+func (o *Float) Falsy() bool {
 	return math.IsNaN(o.Value)
 }
 

@@ -206,7 +206,7 @@ func (b *Bytecode) RemoveDuplicates() {
 func fixDecodedObject(o objects.Object, mods *modules.ModuleMap) (objects.Object, error) {
 	switch o := o.(type) {
 	case *objects.Bool:
-		if o.IsFalsy() {
+		if o.Falsy() {
 			return objects.FalseValue, nil
 		}
 		return objects.TrueValue, nil

@@ -25,7 +25,7 @@ func (o *Error) String() string {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *Error) IsFalsy() bool {
+func (o *Error) Falsy() bool {
 	return true // error is always false.
 }
 

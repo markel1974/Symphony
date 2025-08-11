@@ -191,7 +191,7 @@ func (o *Int) Copy() Object {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *Int) IsFalsy() bool {
+func (o *Int) Falsy() bool {
 	return o.Value == 0
 }
 

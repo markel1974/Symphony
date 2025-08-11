@@ -10,15 +10,19 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/opcodes"
 )
 
+// sequenceLen defines the length of a sequence using a bitwise shift for efficient computation.
+// sequenceMask is a bit mask derived from sequenceLen to efficiently limit values within the sequence range.
 const (
 	sequenceLen  = 1 << 8
 	sequenceMask = sequenceLen - 1
 )
 
+// ISequencer defines an interface for creating a sequence of functions for a virtual machine.
 type ISequencer interface {
 	Create(vm *VM) []func()
 }
 
+// VM represents a virtual machine responsible for executing bytecode instructions.
 type VM struct {
 	constants       []objects.Object
 	stack           []objects.Object
@@ -38,6 +42,7 @@ type VM struct {
 	sequencer       []func()
 }
 
+// NewVM initializes and returns a new instance of the VM with provided sequencer, bytecode, globals, and max allocations.
 func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects.Object, maxAllocations int64) *VM {
 	if globals == nil {
 		globals = make([]objects.Object, objects.GlobalsSize)
@@ -65,10 +70,12 @@ func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects
 	return v
 }
 
+// Abort sets the VM's internal abort flag to true, signaling a termination or interruption of its current operation.
 func (v *VM) Abort() {
 	v.abort = true
 }
 
+// Run initializes the virtual machine's state and executes the current frame's instructions. Returns an error if execution fails.
 func (v *VM) Run() error {
 	v.sp = 0
 	v.curFrame = v.frames[0]
@@ -98,6 +105,7 @@ func (v *VM) Run() error {
 //	return v.sp == 0
 //}
 
+// run is the core execution loop of the virtual machine, iterating over and executing instructions until conditions are met.
 func (v *VM) run() {
 	for !v.abort || !v.suspend || v.err == nil {
 		v.ip++
@@ -105,6 +113,7 @@ func (v *VM) run() {
 	}
 }
 
+// doOpConstant fetches a constant from the constants pool and pushes it onto the stack.
 func (v *VM) doOpConstant() {
 	v.ip += 2
 	cIdx := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
@@ -112,11 +121,15 @@ func (v *VM) doOpConstant() {
 	v.sp++
 }
 
+// doOpNull pushes an UndefinedValue onto the stack and increments the stack pointer.
 func (v *VM) doOpNull() {
 	v.stack[v.sp] = objects.UndefinedValue
 	v.sp++
 }
 
+// doOpBinary handles the execution of a binary operation, updating the VM stack and evaluating the result.
+// It increments the instruction pointer, performs a binary operation on the top two stack values, and handles errors.
+// If an invalid operation is detected or the allocation limit is exceeded, an error is set in the VM.
 func (v *VM) doOpBinary() {
 	v.ip++
 	right := v.stack[v.sp-1]
@@ -140,6 +153,7 @@ func (v *VM) doOpBinary() {
 	v.sp--
 }
 
+// doOpEqual compares the top two values on the stack for equality and pushes TrueValue or FalseValue based on the result.
 func (v *VM) doOpEqual() {
 	right := v.stack[v.sp-1]
 	left := v.stack[v.sp-2]
@@ -152,6 +166,7 @@ func (v *VM) doOpEqual() {
 	v.sp++
 }
 
+// doOpNotEqual compares the top two values on the stack for inequality and pushes the result (true or false) onto the stack.
 func (v *VM) doOpNotEqual() {
 	right := v.stack[v.sp-1]
 	left := v.stack[v.sp-2]
@@ -163,24 +178,30 @@ func (v *VM) doOpNotEqual() {
 	}
 	v.sp++
 }
+
+// doOpPop decreases the stack pointer by one during execution in the virtual machine. This effectively pops the top stack value.
 func (v *VM) doOpPop() {
 	v.sp--
 }
 
+// doOpTrue pushes the TrueValue object onto the VM stack and increments the stack pointer.
 func (v *VM) doOpTrue() {
 	v.stack[v.sp] = objects.TrueValue
 	v.sp++
 }
 
+// doOpFalse pushes the predefined false value onto the stack and increments the stack pointer.
 func (v *VM) doOpFalse() {
 	v.stack[v.sp] = objects.FalseValue
 	v.sp++
 }
 
+// doOpLNot performs a logical NOT operation on the top value of the stack, replacing it with the corresponding boolean value.
+// If the operand is falsy, `objects.TrueValue` is pushed, otherwise `objects.FalseValue` is pushed.
 func (v *VM) doOpLNot() {
 	operand := v.stack[v.sp-1]
 	v.sp--
-	if operand.IsFalsy() {
+	if operand.Falsy() {
 		v.stack[v.sp] = objects.TrueValue
 	} else {
 		v.stack[v.sp] = objects.FalseValue
@@ -188,6 +209,8 @@ func (v *VM) doOpLNot() {
 	v.sp++
 }
 
+// doOpBComplement performs a bitwise complement operation on the top stack element, expecting it to be of type *objects.Int.
+// It handles errors such as invalid operand type and allocation limit breaches.
 func (v *VM) doOpBComplement() {
 	operand := v.stack[v.sp-1]
 	v.sp--
@@ -207,6 +230,7 @@ func (v *VM) doOpBComplement() {
 	}
 }
 
+// doOpMinus negates the top operand on the stack if it is an Int or Float, updates the stack, and handles allocation limits.
 func (v *VM) doOpMinus() {
 	operand := v.stack[v.sp-1]
 	v.sp--
@@ -236,18 +260,20 @@ func (v *VM) doOpMinus() {
 	}
 }
 
+// doOpJumpFalsy performs a conditional jump based on the falsy value of the top stack item, adjusting the instruction pointer.
 func (v *VM) doOpJumpFalsy() {
 	v.ip += 2
 	v.sp--
-	if v.stack[v.sp].IsFalsy() {
+	if v.stack[v.sp].Falsy() {
 		pos := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
 		v.ip = pos - 1
 	}
 }
 
+// doOpAndJump adjusts the instruction pointer and stack pointer based on the falsiness of the top stack value.
 func (v *VM) doOpAndJump() {
 	v.ip += 2
-	if v.stack[v.sp-1].IsFalsy() {
+	if v.stack[v.sp-1].Falsy() {
 		pos := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
 		v.ip = pos - 1
 	} else {
@@ -255,9 +281,10 @@ func (v *VM) doOpAndJump() {
 	}
 }
 
+// doOpOrJump updates the instruction pointer and stack pointer based on the falsy state of the top stack value.
 func (v *VM) doOpOrJump() {
 	v.ip += 2
-	if v.stack[v.sp-1].IsFalsy() {
+	if v.stack[v.sp-1].Falsy() {
 		v.sp--
 	} else {
 		pos := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
@@ -265,11 +292,13 @@ func (v *VM) doOpOrJump() {
 	}
 }
 
+// doOpJump adjusts the instruction pointer to the position specified by the next two bytes in the instruction sequence.
 func (v *VM) doOpJump() {
 	pos := int(v.curInstructions[v.ip+2]) | int(v.curInstructions[v.ip+1])<<8
 	v.ip = pos - 1
 }
 
+// doOpSetGlobal updates a global variable by setting its value from the stack, using the global index derived from instructions.
 func (v *VM) doOpSetGlobal() {
 	v.ip += 2
 	v.sp--
@@ -277,6 +306,9 @@ func (v *VM) doOpSetGlobal() {
 	v.globals[globalIndex] = v.stack[v.sp]
 }
 
+// doOpSetSelGlobal handles the assignment of a value to a global object with nested selectors.
+// It updates the instruction pointer, extracts operands, modifies the stack, and performs indexed assignment.
+// Errors during assignment, such as invalid selectors or non-assignable objects, are captured and set in the VM.
 func (v *VM) doOpSetSelGlobal() {
 	v.ip += 3
 	globalIndex := int(v.curInstructions[v.ip-1]) | int(v.curInstructions[v.ip-2])<<8
@@ -295,6 +327,7 @@ func (v *VM) doOpSetSelGlobal() {
 	}
 }
 
+// doOpGetGlobal retrieves a global variable by its index and pushes its value onto the stack.
 func (v *VM) doOpGetGlobal() {
 	v.ip += 2
 	globalIndex := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
@@ -303,6 +336,7 @@ func (v *VM) doOpGetGlobal() {
 	v.sp++
 }
 
+// doOpArray handles the creation of an array object by allocating elements from the stack, ensuring allocation limits.
 func (v *VM) doOpArray() {
 	v.ip += 2
 	numElements := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
@@ -321,6 +355,8 @@ func (v *VM) doOpArray() {
 	v.sp++
 }
 
+// doOpMap creates a new map object from key-value pairs on the stack and places the map object back onto the stack.
+// It also checks for object allocation limits and updates the instruction pointer and stack pointer accordingly.
 func (v *VM) doOpMap() {
 	v.ip += 2
 	numElements := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
@@ -341,6 +377,8 @@ func (v *VM) doOpMap() {
 	v.sp++
 }
 
+// doOpError handles the creation of an `Error` object by wrapping the top stack item and replacing it with the error object.
+// It decrements the allocation counter and sets an allocation limit error if the counter reaches zero.
 func (v *VM) doOpError() {
 	value := v.stack[v.sp-1]
 	var e objects.Object = &objects.Error{
@@ -354,6 +392,8 @@ func (v *VM) doOpError() {
 	v.stack[v.sp-1] = e
 }
 
+// doOpImmutable converts a mutable array or map at the top of the stack to its immutable counterpart if possible.
+// Reduces the allocation counter, setting an error if the allocation limit is exceeded.
 func (v *VM) doOpImmutable() {
 	value := v.stack[v.sp-1]
 	switch value := value.(type) {
@@ -380,6 +420,7 @@ func (v *VM) doOpImmutable() {
 	}
 }
 
+// doOpIndex handles the indexing operation on the stack by retrieving and validating indexed values or setting an error.
 func (v *VM) doOpIndex() {
 	index := v.stack[v.sp-1]
 	left := v.stack[v.sp-2]
@@ -404,6 +445,8 @@ func (v *VM) doOpIndex() {
 	v.sp++
 }
 
+// doOpSliceIndex performs slicing operation on arrays, strings, or bytes based on indices from the stack and updates the stack.
+// It validates index types and bounds, processes allocations, and handles errors for invalid operations.
 func (v *VM) doOpSliceIndex() {
 	highStack := v.stack[v.sp-1]
 	lowStack := v.stack[v.sp-2]
@@ -569,6 +612,8 @@ func (v *VM) doOpSliceIndex() {
 	}
 }
 
+// doOpCall handles the execution of a call operation, validating the callable object and managing arguments.
+// Handles variadic calls, checks for recursion, and updates the call stack or returns any runtime errors encountered.
 func (v *VM) doOpCall() {
 	numArgs := int(v.curInstructions[v.ip+1])
 	spread := int(v.curInstructions[v.ip+2])
@@ -685,6 +730,8 @@ func (v *VM) doOpCall() {
 		v.sp++
 	}
 }
+
+// doOpReturn handles the execution of the return opcode, updating the VM's state and stack with the returned value.
 func (v *VM) doOpReturn() {
 	v.ip++
 	var retVal objects.Object
@@ -705,6 +752,7 @@ func (v *VM) doOpReturn() {
 	//v.sp++
 }
 
+// doOpDefineLocal handles the definition of a local variable by storing a value from the stack into a calculated stack position.
 func (v *VM) doOpDefineLocal() {
 	v.ip++
 	localIndex := int(v.curInstructions[v.ip])
@@ -717,6 +765,7 @@ func (v *VM) doOpDefineLocal() {
 	v.stack[sp] = val
 }
 
+// doOpSetLocal updates a local variable on the stack using its index and manages references for free variables if necessary.
 func (v *VM) doOpSetLocal() {
 	localIndex := int(v.curInstructions[v.ip+1])
 	v.ip++
@@ -734,6 +783,7 @@ func (v *VM) doOpSetLocal() {
 	v.stack[sp] = val // also use a copy of popped value
 }
 
+// doOpSetSelLocal handles the opcode for setting the value of a local variable using selectors.
 func (v *VM) doOpSetSelLocal() {
 	localIndex := int(v.curInstructions[v.ip+1])
 	numSelectors := int(v.curInstructions[v.ip+2])
@@ -756,6 +806,7 @@ func (v *VM) doOpSetSelLocal() {
 	}
 }
 
+// doOpGetLocal retrieves a local variable from the stack and places it at the top of the stack, incrementing the stack pointer.
 func (v *VM) doOpGetLocal() {
 	v.ip++
 	localIndex := int(v.curInstructions[v.ip])
@@ -767,6 +818,7 @@ func (v *VM) doOpGetLocal() {
 	v.sp++
 }
 
+// doOpGetBuiltin retrieves a built-in function by index and pushes it onto the stack, then increments the stack pointer.
 func (v *VM) doOpGetBuiltin() {
 	v.ip++
 	builtinIndex := int(v.curInstructions[v.ip])
@@ -774,6 +826,7 @@ func (v *VM) doOpGetBuiltin() {
 	v.sp++
 }
 
+// doOpClosure handles the creation of a closure object by capturing free variables from the stack and setting it up.
 func (v *VM) doOpClosure() {
 	v.ip += 3
 	constIndex := int(v.curInstructions[v.ip-1]) | int(v.curInstructions[v.ip-2])<<8
@@ -811,6 +864,7 @@ func (v *VM) doOpClosure() {
 	v.sp++
 }
 
+// doOpGetFreePtr executes the opcode to retrieve a free variable pointer and push its value onto the stack.
 func (v *VM) doOpGetFreePtr() {
 	v.ip++
 	freeIndex := int(v.curInstructions[v.ip])
@@ -819,6 +873,7 @@ func (v *VM) doOpGetFreePtr() {
 	v.sp++
 }
 
+// doOpGetFree retrieves the value of a free variable by its index and pushes it onto the stack.
 func (v *VM) doOpGetFree() {
 	v.ip++
 	freeIndex := int(v.curInstructions[v.ip])
@@ -827,6 +882,7 @@ func (v *VM) doOpGetFree() {
 	v.sp++
 }
 
+// doOpSetFree updates the value of a free variable in the current frame using the top value on the stack, then decrements the stack pointer.
 func (v *VM) doOpSetFree() {
 	v.ip++
 	freeIndex := int(v.curInstructions[v.ip])
@@ -834,6 +890,7 @@ func (v *VM) doOpSetFree() {
 	v.sp--
 }
 
+// doOpGetLocalPtr updates the instruction pointer, retrieves a local variable, and creates or updates an ObjectPtr for it.
 func (v *VM) doOpGetLocalPtr() {
 	v.ip++
 	localIndex := int(v.curInstructions[v.ip])
@@ -850,6 +907,9 @@ func (v *VM) doOpGetLocalPtr() {
 	v.sp++
 }
 
+// doOpSetSelFree performs a selective update on free variables using provided selectors and a right-hand side value.
+// It adjusts the stack pointer and increments the instruction pointer after processing.
+// If an error occurs during the update, it sets the error in the virtual machine.
 func (v *VM) doOpSetSelFree() {
 	v.ip += 2
 	freeIndex := int(v.curInstructions[v.ip-1])
@@ -867,6 +927,9 @@ func (v *VM) doOpSetSelFree() {
 	}
 }
 
+// doOpIteratorInit initializes an iterator for the object at the top of the stack and handles errors if not iterable.
+// If the object is iterable, it pushes the iterator onto the stack.
+// Decrements the allocation counter and checks for allocation limits.
 func (v *VM) doOpIteratorInit() {
 	var iterator objects.Object
 	dst := v.stack[v.sp-1]
@@ -885,6 +948,7 @@ func (v *VM) doOpIteratorInit() {
 	v.sp++
 }
 
+// doOpIteratorNext executes the Next operation on an iterator and pushes the result (true/false) onto the stack.
 func (v *VM) doOpIteratorNext() {
 	iterator := v.stack[v.sp-1]
 	v.sp--
@@ -897,6 +961,7 @@ func (v *VM) doOpIteratorNext() {
 	v.sp++
 }
 
+// doOpIteratorKey retrieves the key from the top stack iterator and pushes it onto the stack.
 func (v *VM) doOpIteratorKey() {
 	iterator := v.stack[v.sp-1]
 	v.sp--
@@ -905,6 +970,7 @@ func (v *VM) doOpIteratorKey() {
 	v.sp++
 }
 
+// doOpIteratorValue retrieves the current value from the iterator on the stack and updates the stack pointer accordingly.
 func (v *VM) doOpIteratorValue() {
 	iterator := v.stack[v.sp-1]
 	v.sp--
@@ -913,10 +979,12 @@ func (v *VM) doOpIteratorValue() {
 	v.sp++
 }
 
+// doOpSuspend sets the suspend state of the VM to true, pausing its operation until resumed.
 func (v *VM) doOpSuspend() {
 	v.suspend = true
 }
 
+// doOpUnknown handles situations where the opcode is unrecognized by setting an appropriate error on the VM.
 func (v *VM) doOpUnknown() {
 	v.err = fmt.Errorf("unknown opcode: %d", v.curInstructions[v.ip])
 }

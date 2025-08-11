@@ -49,7 +49,7 @@ func (o *Bytes) Copy() Object {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *Bytes) IsFalsy() bool {
+func (o *Bytes) Falsy() bool {
 	return len(o.Value) == 0
 }
 

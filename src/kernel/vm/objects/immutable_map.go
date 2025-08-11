@@ -36,7 +36,7 @@ func (o *ImmutableMap) Copy() Object {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *ImmutableMap) IsFalsy() bool {
+func (o *ImmutableMap) Falsy() bool {
 	return len(o.Value) == 0
 }
 

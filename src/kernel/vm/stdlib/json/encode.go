@@ -194,7 +194,7 @@ func Encode(o objects.Object) ([]byte, error) {
 		}
 		b = append(b, '}')
 	case *objects.Bool:
-		if o.IsFalsy() {
+		if o.Falsy() {
 			b = strconv.AppendBool(b, false)
 		} else {
 			b = strconv.AppendBool(b, true)

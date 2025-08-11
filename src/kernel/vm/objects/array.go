@@ -7,21 +7,23 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-// Array represents an array of objects.
+// Array represents a collection of Object elements, providing methods for manipulation, indexing, and iteration.
 type Array struct {
 	ObjectImpl
 	Value []Object
 }
 
+// NewArray creates and returns a new Array object initialized with the provided slice of Object elements.
 func NewArray(value []Object) *Array {
 	return &Array{Value: value}
 }
 
-// TypeName returns the name of the type.
+// TypeName returns the string "array", representing the type name of the Array object.
 func (o *Array) TypeName() string {
 	return "array"
 }
 
+// String returns a string representation of the Array, formatting its elements in a comma-separated list enclosed in brackets.
 func (o *Array) String() string {
 	var elements []string
 	for _, e := range o.Value {
@@ -30,8 +32,8 @@ func (o *Array) String() string {
 	return fmt.Sprintf("[%s]", strings.Join(elements, ", "))
 }
 
-// BinaryOp returns another object that is the result of a given binary
-// operator and a right-hand side object.
+// BinaryOp performs a binary operation on the Array with the given operator and right-hand side object.
+// It supports the addition operator (OperatorAdd) for concatenating arrays. Returns the result or an error for invalid operations.
 func (o *Array) BinaryOp(op Operator, rhs Object) (Object, error) {
 	if rhs, ok := rhs.(*Array); ok {
 		switch op {
@@ -47,7 +49,7 @@ func (o *Array) BinaryOp(op Operator, rhs Object) (Object, error) {
 	return nil, errors.ErrInvalidOperator
 }
 
-// Copy returns a copy of the type.
+// Copy creates and returns a deep copy of the Array and its elements.
 func (o *Array) Copy() Object {
 	var c []Object
 	for _, elem := range o.Value {
@@ -56,12 +58,12 @@ func (o *Array) Copy() Object {
 	return &Array{Value: c}
 }
 
-// IsFalsy returns true if the value of the type is falsy.
-func (o *Array) IsFalsy() bool {
+// Falsy returns true if the array is empty, otherwise false.
+func (o *Array) Falsy() bool {
 	return len(o.Value) == 0
 }
 
-// Equals returns true if the value of the type is equal to the value of another object.
+// Equals compares the current Array with another Object and returns true if they have equivalent values and order.
 func (o *Array) Equals(x Object) bool {
 	var xVal []Object
 	switch x := x.(type) {
@@ -83,7 +85,7 @@ func (o *Array) Equals(x Object) bool {
 	return true
 }
 
-// IndexGet returns an element at a given index.
+// IndexGet retrieves the element at the given index from the Array. Returns an error if the index type is invalid or out of bounds.
 func (o *Array) IndexGet(index Object) (res Object, err error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
@@ -99,7 +101,7 @@ func (o *Array) IndexGet(index Object) (res Object, err error) {
 	return
 }
 
-// IndexSet sets an element at a given index.
+// IndexSet assigns a given value to the specified index in the array, returning an error if the operation is invalid.
 func (o *Array) IndexSet(index, value Object) (err error) {
 	intIdx, ok := ToInt(index)
 	if !ok {
@@ -114,7 +116,7 @@ func (o *Array) IndexSet(index, value Object) (err error) {
 	return nil
 }
 
-// Iterate creates an array iterator.
+// Iterate returns an Iterator for the Array instance, allowing sequential access to its elements.
 func (o *Array) Iterate() Iterator {
 	return &ArrayIterator{
 		v: o.Value,
@@ -122,12 +124,13 @@ func (o *Array) Iterate() Iterator {
 	}
 }
 
-// CanIterate returns whether the Object can be Iterated.
+// CanIterate checks if the Array is iterable and always returns true.
 func (o *Array) CanIterate() bool {
 	return true
 }
 
-// ArrayIterator is an iterator for an array.
+// ArrayIterator is an iterator type for traversing elements of an array.
+// It implements the Iterator interface to provide sequential access to array elements.
 type ArrayIterator struct {
 	ObjectImpl
 	v []Object
@@ -135,43 +138,43 @@ type ArrayIterator struct {
 	l int
 }
 
-// TypeName returns the name of the type.
+// TypeName returns the type name of the ArrayIterator as a string.
 func (i *ArrayIterator) TypeName() string {
 	return "array-iterator"
 }
 
+// String returns a string representation of the ArrayIterator instance.
 func (i *ArrayIterator) String() string {
 	return "<array-iterator>"
 }
 
-// IsFalsy returns true if the value of the type is falsy.
-func (i *ArrayIterator) IsFalsy() bool {
+// Falsy determines whether the ArrayIterator should be considered a falsy value. Always returns true.
+func (i *ArrayIterator) Falsy() bool {
 	return true
 }
 
-// Equals returns true if the value of the type is equal to the value of
-// another object.
+// Equals checks whether the given Object is equal to the current ArrayIterator instance by value comparison.
 func (i *ArrayIterator) Equals(Object) bool {
 	return false
 }
 
-// Copy returns a copy of the type.
+// Copy creates and returns a duplicate of the ArrayIterator, preserving its current state.
 func (i *ArrayIterator) Copy() Object {
 	return &ArrayIterator{v: i.v, i: i.i, l: i.l}
 }
 
-// Next returns true if there are more elements to iterate.
+// Next advances the iterator to the next element and returns true if the current position is within bounds.
 func (i *ArrayIterator) Next() bool {
 	i.i++
 	return i.i <= i.l
 }
 
-// Key returns the key or index value of the current element.
+// Key returns the index of the current element in the iteration as an Object.
 func (i *ArrayIterator) Key() Object {
 	return &Int{Value: int64(i.i - 1)}
 }
 
-// Value returns the value of the current element.
+// Value returns the current element in the iteration based on the iterator's internal position.
 func (i *ArrayIterator) Value() Object {
 	return i.v[i.i-1]
 }

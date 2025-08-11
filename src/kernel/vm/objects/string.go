@@ -91,7 +91,7 @@ func (o *String) BinaryOp(op Operator, rhs Object) (Object, error) {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *String) IsFalsy() bool {
+func (o *String) Falsy() bool {
 	return len(o.Value) == 0
 }
 
@@ -163,7 +163,7 @@ func (i *StringIterator) String() string {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (i *StringIterator) IsFalsy() bool {
+func (i *StringIterator) Falsy() bool {
 	return true
 }
 

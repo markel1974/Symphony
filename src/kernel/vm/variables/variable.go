@@ -6,13 +6,14 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// Variable is a user-defined variable for the script.
+// Variable represents a named entity with a string identifier and an associated value of type objects.Object.
 type Variable struct {
 	name  string
 	value objects.Object
 }
 
-// NewVariable creates a Variable.
+// NewVariable creates a new Variable instance with a given name and value, converting the value to an internal object type.
+// It returns the newly created *Variable and an error if any issue occurs during value conversion.
 func NewVariable(name string, value interface{}) (*Variable, error) {
 	obj := objects.FromInterface(value)
 	return &Variable{
@@ -21,57 +22,52 @@ func NewVariable(name string, value interface{}) (*Variable, error) {
 	}, nil
 }
 
-// Name returns the name of the variable.
+// Name returns the name of the Variable as a string.
 func (v *Variable) Name() string {
 	return v.name
 }
 
-// Value returns an empty interface of the variable value.
+// Value retrieves the value of the Variable as an interface{}.
 func (v *Variable) Value() interface{} {
 	return objects.ToInterface(v.value)
 }
 
-// ValueType returns the name of the value type.
+// ValueType returns the type name of the value held by the Variable.
 func (v *Variable) ValueType() string {
 	return v.value.TypeName()
 }
 
-// Int returns int value of the variable value.
-// It returns 0 if the value is not convertible to int.
+// Int converts the value of the Variable to an integer using objects.ToInt and returns the result.
 func (v *Variable) Int() int {
 	c, _ := objects.ToInt(v.value)
 	return c
 }
 
-// Int64 returns int64 value of the variable value. It returns 0 if the value
-// is not convertible to int64.
+// Int64 converts the value of the Variable to an int64 if possible and returns it.
 func (v *Variable) Int64() int64 {
 	c, _ := objects.ToInt64(v.value)
 	return c
 }
 
-// Float returns float64 value of the variable value. It returns 0.0 if the
-// value is not convertible to float64.
+// Float converts the Variable's underlying value to a float64 if possible and returns the result.
 func (v *Variable) Float() float64 {
 	c, _ := objects.ToFloat64(v.value)
 	return c
 }
 
-// Char returns rune value of the variable value. It returns 0 if the value is
-// not convertible to rune.
+// Char converts the value of the Variable to a rune and returns it. If conversion fails, a zero-value rune is returned.
 func (v *Variable) Char() rune {
 	c, _ := objects.ToRune(v.value)
 	return c
 }
 
-// Bool returns bool value of the variable value. It returns 0 if the value is
-// not convertible to bool.
+// Bool converts the stored value of the Variable to a boolean and returns it.
 func (v *Variable) Bool() bool {
 	c, _ := objects.ToBool(v.value)
 	return c
 }
 
-// Array returns []interface value of the variable value. It returns 0 if the value is not convertible to []interface.
+// Array converts the Variable's value to a slice of interface{} if it is of type *objects.Array, otherwise returns nil.
 func (v *Variable) Array() []interface{} {
 	switch val := v.value.(type) {
 	case *objects.Array:
@@ -84,7 +80,7 @@ func (v *Variable) Array() []interface{} {
 	return nil
 }
 
-// ArrayInt Array returns []int value of the variable value. It returns 0 if the value is not convertible to []interface.
+// ArrayInt extracts integer elements from the Variable's value if it is an array and returns them as a slice of integers.
 func (v *Variable) ArrayInt() []int {
 	switch val := v.value.(type) {
 	case *objects.Array:
@@ -100,7 +96,8 @@ func (v *Variable) ArrayInt() []int {
 	return nil
 }
 
-// ArrayBool Array returns []int value of the variable value. It returns 0 if the value is not convertible to []interface.
+// ArrayBool extracts and returns a slice of bool values from the underlying array if it contains boolean elements.
+// Returns nil if the value is not an array or contains non-boolean elements.
 func (v *Variable) ArrayBool() []bool {
 	switch val := v.value.(type) {
 	case *objects.Array:
@@ -116,7 +113,7 @@ func (v *Variable) ArrayBool() []bool {
 	return nil
 }
 
-// ArrayString returns []int value of the variable value. It returns 0 if the value is not convertible to []interface.
+// ArrayString returns a slice of strings extracted from an array value in the Variable if it contains string elements.
 func (v *Variable) ArrayString() []string {
 	switch val := v.value.(type) {
 	case *objects.Array:
@@ -132,8 +129,7 @@ func (v *Variable) ArrayString() []string {
 	return nil
 }
 
-// Map returns map[string]interface{} value of the variable value. It returns
-// 0 if the value is not convertible to map[string]interface{}.
+// Map converts the underlying value of the Variable to a map[string]interface{} if it is of type *objects.Map.
 func (v *Variable) Map() map[string]interface{} {
 	switch val := v.value.(type) {
 	case *objects.Map:
@@ -146,22 +142,19 @@ func (v *Variable) Map() map[string]interface{} {
 	return nil
 }
 
-// String returns string value of the variable value. It returns 0 if the value
-// is not convertible to string.
+// String returns the string representation of the value stored in the Variable.
 func (v *Variable) String() string {
 	c, _ := objects.ToString(v.value)
 	return c
 }
 
-// Bytes returns a byte slice of the variable value. It returns nil if the
-// value is not convertible to byte slice.
+// Bytes converts the internal value of the Variable to a byte slice, returning nil if conversion fails.
 func (v *Variable) Bytes() []byte {
 	c, _ := objects.ToByteSlice(v.value)
 	return c
 }
 
-// Error returns an error if the underlying value is error object. If not,
-// this returns nil.
+// Error checks if the value of the Variable is of type *objects.Error and returns it as a Go error if true.
 func (v *Variable) Error() error {
 	err, ok := v.value.(*objects.Error)
 	if ok {
@@ -170,11 +163,12 @@ func (v *Variable) Error() error {
 	return nil
 }
 
-// Object returns the underlying object.
+// Object returns the underlying objects.Object instance held by the Variable.
 func (v *Variable) Object() objects.Object {
 	return v.value
 }
 
+// IsUndefined checks if the variable's value is equal to the predefined undefined value.
 func (v *Variable) IsUndefined() bool {
 	return v.value == objects.UndefinedValue
 }

@@ -37,7 +37,7 @@ func (o *Bool) Copy() Object {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *Bool) IsFalsy() bool {
+func (o *Bool) Falsy() bool {
 	return !o.value
 }
 
@@ -65,7 +65,7 @@ func (o *Bool) GobEncode() (b []byte, err error) {
 // ToBool will try to convert object o to bool value.
 func ToBool(o Object) (v bool, ok bool) {
 	ok = true
-	v = !o.IsFalsy()
+	v = !o.Falsy()
 	return
 }
 

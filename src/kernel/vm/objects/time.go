@@ -81,7 +81,7 @@ func (o *Time) Copy() Object {
 }
 
 // IsFalsy returns true if the value of the type is falsy.
-func (o *Time) IsFalsy() bool {
+func (o *Time) Falsy() bool {
 	return o.Value.IsZero()
 }
 
