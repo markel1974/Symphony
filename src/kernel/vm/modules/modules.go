@@ -4,73 +4,62 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// Importable interface represents importable module instance.
-type Importable interface {
-	// Import should return either an IObject or module source code ([]byte).
-	Import(moduleName string) (interface{}, error)
-}
-
-// ModuleGetter enables implementing dynamic module loading.
-type ModuleGetter interface {
-	Get(name string) Importable
-}
-
-// ModuleMap represents a set of named modules. Use NewModuleMap to create a
+// Modules represents a set of named modules. Use NewModuleMap to create a
 // new module map.
-type ModuleMap struct {
+type Modules struct {
 	m map[string]Importable
 }
 
 // NewModuleMap creates a new module map.
-func NewModuleMap() *ModuleMap {
-	return &ModuleMap{
+func NewModuleMap() *Modules {
+	return &Modules{
 		m: make(map[string]Importable),
 	}
 }
 
 // Add adds an import module.
-func (m *ModuleMap) Add(name string, module Importable) {
+func (m *Modules) Add(name string, module Importable) {
 	m.m[name] = module
 }
 
 // AddBuiltinModule adds a builtin module.
-func (m *ModuleMap) AddBuiltinModule(name string, attrs map[string]objects.IObject) {
+func (m *Modules) AddBuiltinModule(name string, attrs map[string]objects.IObject) {
 	m.m[name] = &BuiltinModule{Attrs: attrs}
 }
 
 // AddSourceModule adds a source module.
-func (m *ModuleMap) AddSourceModule(name string, src []byte) {
-	m.m[name] = &SourceModule{Src: src}
+func (m *Modules) AddSourceModule(name string, src []byte) {
+	m.m[name] = NewSourceModule(src)
 }
 
 // Remove removes a named module.
-func (m *ModuleMap) Remove(name string) {
+func (m *Modules) Remove(name string) {
 	delete(m.m, name)
 }
 
 // Get returns an import module identified by name. It returns if the name is
 // not found.
-func (m *ModuleMap) Get(name string) Importable {
+func (m *Modules) Get(name string) Importable {
 	return m.m[name]
 }
 
 // GetBuiltinModule returns a builtin module identified by name. It returns
 // if the name is not found or the module is not a builtin module.
-func (m *ModuleMap) GetBuiltinModule(name string) *BuiltinModule {
+func (m *Modules) GetBuiltinModule(name string) *BuiltinModule {
 	mod, _ := m.m[name].(*BuiltinModule)
 	return mod
 }
 
 // GetSourceModule returns a source module identified by name. It returns if
 // the name is not found or the module is not a source module.
-func (m *ModuleMap) GetSourceModule(name string) *SourceModule {
+func (m *Modules) GetSourceModule(name string) *SourceModule {
 	mod, _ := m.m[name].(*SourceModule)
 	return mod
 }
 
 // Copy creates a copy of the module map.
-func (m *ModuleMap) Copy() *ModuleMap {
-	c := &ModuleMap{
+func (m *Modules) Copy() *Modules {
+	c := &Modules{
 		m: make(map[string]Importable),
 	}
 	for name, mod := range m.m {
@@ -80,23 +69,13 @@ func (m *ModuleMap) Copy() *ModuleMap {
 }
 
 // Len returns the number of named modules.
-func (m *ModuleMap) Len() int {
+func (m *Modules) Len() int {
 	return len(m.m)
 }
 
 // AddMap adds named modules from another module map.
-func (m *ModuleMap) AddMap(o *ModuleMap) {
+func (m *Modules) AddMap(o *Modules) {
 	for name, mod := range o.m {
 		m.m[name] = mod
 	}
-}
-
-// SourceModule is an importable module that's written in objects.
-type SourceModule struct {
-	Src []byte
-}
-
-// Import returns a module source code.
-func (m *SourceModule) Import(_ string) (interface{}, error) {
-	return m.Src, nil
 }

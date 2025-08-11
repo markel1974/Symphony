@@ -1,8 +1,8 @@
-package modules
+package stdlib
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/formats"
+	"github.com/markel1974/c64emu/src/kernel/vm/modules/format"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -336,15 +336,15 @@ func builtinFormat(args ...objects.IObject) (objects.IObject, error) {
 	if numArgs == 0 {
 		return nil, errors.ErrWrongNumArguments
 	}
-	format, ok := args[0].(*objects.String)
+	formatString, ok := args[0].(*objects.String)
 	if !ok {
 		return nil, errors.NewInvalidArgumentType("format", "string", args[0].TypeName())
 	}
 	if numArgs == 1 {
 		// okay to return 'format' directly as String is immutable
-		return format, nil
+		return formatString, nil
 	}
-	s, err := formats.Format(format.Value(), args[1:]...)
+	s, err := format.Format(formatString.Value(), args[1:]...)
 	if err != nil {
 		return nil, err
 	}

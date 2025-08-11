@@ -1,4 +1,4 @@
-package formats
+package format
 
 // fmtFlags represents formatting flags used in formatting operations.
 // It encapsulates settings like width, precision, and various flags for alignment, sign, and formatting style.

@@ -131,8 +131,8 @@ func Encode(o objects.IObject) ([]byte, error) {
 	switch o := o.(type) {
 	case *objects.Array:
 		b = append(b, '[')
-		len1 := len(o.Value) - 1
-		for idx, elem := range o.Value {
+		len1 := o.Length() - 1
+		for idx, elem := range o.Values() {
 			eb, err := Encode(elem)
 			if err != nil {
 				return nil, err
@@ -145,8 +145,8 @@ func Encode(o objects.IObject) ([]byte, error) {
 		b = append(b, ']')
 	case *objects.ImmutableArray:
 		b = append(b, '[')
-		len1 := len(o.Value) - 1
-		for idx, elem := range o.Value {
+		len1 := o.Length() - 1
+		for idx, elem := range o.Values() {
 			eb, err := Encode(elem)
 			if err != nil {
 				return nil, err
@@ -159,9 +159,9 @@ func Encode(o objects.IObject) ([]byte, error) {
 		b = append(b, ']')
 	case *objects.Map:
 		b = append(b, '{')
-		len1 := len(o.Value) - 1
+		len1 := o.Length() - 1
 		idx := 0
-		for key, value := range o.Value {
+		for key, value := range o.Values() {
 			b = encodeString(b, key)
 			b = append(b, ':')
 			eb, err := Encode(value)
@@ -201,23 +201,19 @@ func Encode(o objects.IObject) ([]byte, error) {
 		}
 	case *objects.Bytes:
 		b = append(b, '"')
-		encodedLen := base64.StdEncoding.EncodedLen(len(o.Value))
+		encodedLen := base64.StdEncoding.EncodedLen(o.Length())
 		dst := make([]byte, encodedLen)
-		base64.StdEncoding.Encode(dst, o.Value)
+		base64.StdEncoding.Encode(dst, o.Value())
 		b = append(b, dst...)
 		b = append(b, '"')
 	case *objects.Char:
-		b = strconv.AppendInt(b, int64(o.Value), 10)
+		b = strconv.AppendInt(b, int64(o.Value()), 10)
 	case *objects.Float:
 		var y []byte
-
-		f := o.Value
+		f := o.Value()
 		if math.IsInf(f, 0) || math.IsNaN(f) {
 			return nil, errors.New("unsupported float value")
 		}
-
-		// Convert as if by ES6 number to string conversion.
-		// This matches most other JSON generators.
 		abs := math.Abs(f)
 		fmt := byte('f')
 		if abs != 0 {
@@ -237,13 +233,13 @@ func Encode(o objects.IObject) ([]byte, error) {
 
 		b = append(b, y...)
 	case *objects.Int:
-		b = strconv.AppendInt(b, o.Value, 10)
+		b = strconv.AppendInt(b, o.Value(), 10)
 	case *objects.String:
 		// string encoding bug is fixed with newly introduced function
 		// encodeString(). See: https://github.com/d5/tengo/issues/268
-		b = encodeString(b, o.Value)
+		b = encodeString(b, o.Value())
 	case *objects.Time:
-		y, err := o.Value.MarshalJSON()
+		y, err := o.Value().MarshalJSON()
 		if err != nil {
 			return nil, err
 		}

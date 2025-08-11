@@ -5,7 +5,7 @@ import (
 	//"github.com/markel1974/injector/src/vm/compiler"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/formats"
+	"github.com/markel1974/c64emu/src/kernel/vm/format"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -43,7 +43,7 @@ func fmtPrintf(args ...objects.IObject) (ret objects.IObject, err error) {
 		return nil, nil
 	}
 
-	s, err := formats.Format(data.Value, args[1:]...)
+	s, err := format.Format(data.Value, args[1:]...)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func fmtSprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 		// okay to return 'format' directly as String is immutable
 		return data, nil
 	}
-	s, err := formats.Format(data.Value, args[1:]...)
+	s, err := format.Format(data.Value, args[1:]...)
 	if err != nil {
 		return nil, err
 	}

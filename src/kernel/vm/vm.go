@@ -3,11 +3,12 @@ package vm
 import (
 	"fmt"
 
+	"github.com/markel1974/c64emu/src/kernel/compiler"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecodes"
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/modules"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 	"github.com/markel1974/c64emu/src/kernel/vm/opcodes"
+	"github.com/markel1974/c64emu/src/kernel/vm/stdlib"
 )
 
 // sequenceLen defines the length of a sequence using a bitwise shift for efficient computation.
@@ -28,7 +29,7 @@ type VM struct {
 	stack           []objects.IObject
 	sp              int
 	globals         []objects.IObject
-	fileSet         *objects.SourceFileSet
+	fileSet         *compiler.SourceFileSet
 	frames          []*FunctionCallFrame
 	framesIndex     int
 	curFrame        *FunctionCallFrame
@@ -45,7 +46,7 @@ type VM struct {
 // NewVM initializes and returns a new instance of the VM with provided sequencer, bytecode, globals, and max allocations.
 func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects.IObject, maxAllocations int64) *VM {
 	if globals == nil {
-		globals = make([]objects.IObject, objects.GlobalsSize)
+		globals = make([]objects.IObject, GlobalsSize)
 	}
 	v := &VM{
 		constants:      bytecode.Constants,
@@ -56,8 +57,8 @@ func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects
 		ip:             -1,
 		maxAllocations: maxAllocations,
 		suspend:        false,
-		stack:          make([]objects.IObject, objects.StackSize),
-		frames:         make([]*FunctionCallFrame, objects.MaxFrames),
+		stack:          make([]objects.IObject, StackSize),
+		frames:         make([]*FunctionCallFrame, MaxFrames),
 	}
 	for i := range v.frames {
 		v.frames[i] = NewFunctionCallFrame()
@@ -633,9 +634,9 @@ func (v *VM) doOpCall() {
 	}
 
 	if callee, ok := value.(*objects.CompiledFunction); ok {
-		if callee.VarArgs {
+		if callee.VarArgs() {
 			// if the closure is variadic, roll up all variadic parameters into an array
-			realArgs := callee.NumParameters - 1
+			realArgs := callee.NumParameters() - 1
 			varArgs := numArgs - realArgs
 			if varArgs >= 0 {
 				numArgs = realArgs + 1
@@ -648,10 +649,10 @@ func (v *VM) doOpCall() {
 				v.sp = spStart + 1
 			}
 		}
-		if numArgs != callee.NumParameters {
-			numParams := callee.NumParameters
-			if callee.VarArgs {
-				numParams = callee.NumParameters - 1
+		if numArgs != callee.NumParameters() {
+			numParams := callee.NumParameters()
+			if callee.VarArgs() {
+				numParams = callee.NumParameters() - 1
 			}
 			v.err = fmt.Errorf("wrong number of arguments: want>=%d, got=%d", numParams, numArgs)
 			return
@@ -672,7 +673,7 @@ func (v *VM) doOpCall() {
 				return
 			}
 		}
-		if v.framesIndex >= objects.MaxFrames {
+		if v.framesIndex >= MaxFrames {
 			v.err = errors.ErrStackOverflow
 			return
 		}
@@ -681,12 +682,12 @@ func (v *VM) doOpCall() {
 		v.curFrame.ip = v.ip // store current ip before call
 		v.curFrame = v.frames[v.framesIndex]
 		v.curFrame.SetCompiledFunction(callee)
-		v.curFrame.freeVars = callee.Free
+		v.curFrame.freeVars = callee.Free()
 		v.curFrame.basePointer = v.sp - numArgs
-		v.curInstructions = callee.Instructions
+		v.curInstructions = callee.Instructions()
 		v.ip = -1
 		v.framesIndex++
-		v.sp = v.sp - numArgs + callee.NumLocals
+		v.sp = v.sp - numArgs + callee.NumLocals()
 	} else {
 		var args []objects.IObject
 		args = append(args, v.stack[v.sp-numArgs:v.sp]...)
@@ -808,7 +809,7 @@ func (v *VM) doOpGetLocal() {
 func (v *VM) doOpGetBuiltin() {
 	v.ip++
 	builtinIndex := int(v.curInstructions[v.ip])
-	v.stack[v.sp] = modules.GetBuiltin(builtinIndex)
+	v.stack[v.sp] = stdlib.GetBuiltin(builtinIndex)
 	v.sp++
 }
 
@@ -832,13 +833,7 @@ func (v *VM) doOpClosure() {
 		}
 	}
 	v.sp -= numFree
-	cl := &objects.CompiledFunction{
-		Instructions:  fn.Instructions,
-		NumLocals:     fn.NumLocals,
-		NumParameters: fn.NumParameters,
-		VarArgs:       fn.VarArgs,
-		Free:          free,
-	}
+	cl := objects.NewCompiledFunction(fn.Instructions(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	v.allocations--
 	if v.allocations == 0 {
 		v.err = errors.ErrObjectAllocLimit

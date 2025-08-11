@@ -1,4 +1,4 @@
-package formats
+package format
 
 import (
 	"strconv"

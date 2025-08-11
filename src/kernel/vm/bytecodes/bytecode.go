@@ -4,17 +4,18 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
-	"log"
 	"reflect"
 
+	"github.com/markel1974/c64emu/src/kernel/compiler"
 	"github.com/markel1974/c64emu/src/kernel/vm/modules"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 	"github.com/markel1974/c64emu/src/kernel/vm/opcodes"
 )
 
+// init registers various struct types used within the package for gob encoding and decoding.
 func init() {
-	gob.Register(&objects.SourceFileSet{})
-	gob.Register(&objects.SourceFile{})
+	gob.Register(&compiler.SourceFileSet{})
+	gob.Register(&compiler.SourceFile{})
 	gob.Register(&objects.Array{})
 	gob.Register(&objects.Bool{})
 	gob.Register(&objects.Bytes{})
@@ -32,14 +33,14 @@ func init() {
 	gob.Register(&objects.UserFunction{})
 }
 
-// Bytecode is a compiled instructions and constants.
+// Bytecode represents the compiled output of a program, including source files, main function, and constant pool.
 type Bytecode struct {
-	FileSet      *objects.SourceFileSet
+	FileSet      *compiler.SourceFileSet
 	MainFunction *objects.CompiledFunction
 	Constants    []objects.IObject
 }
 
-// Encode writes Bytecode data to the writer.
+// Encode serializes the Bytecode's FileSet, MainFunction, and Constants into the provided io.Writer using a gob encoder.
 func (b *Bytecode) Encode(w io.Writer) error {
 	enc := gob.NewEncoder(w)
 	if err := enc.Encode(b.FileSet); err != nil {
@@ -51,7 +52,7 @@ func (b *Bytecode) Encode(w io.Writer) error {
 	return enc.Encode(b.Constants)
 }
 
-// CountObjects returns the number of objects found in Constants.
+// CountObjects calculates the total number of objects within the Bytecode's constants, including nested objects.
 func (b *Bytecode) CountObjects() int {
 	n := 0
 	for _, c := range b.Constants {
@@ -60,19 +61,19 @@ func (b *Bytecode) CountObjects() int {
 	return n
 }
 
-// FormatInstructions returns human readable string representations of compiled instructions.
+// FormatInstructions retrieves string representations of the main function's bytecode instructions in the Bytecode object.
 func (b *Bytecode) FormatInstructions() []string {
-	return FormatInstructions(b.MainFunction.Instructions, 0)
+	return FormatInstructions(b.MainFunction.Instructions(), 0)
 }
 
-// FormatConstants returns human readable string representations of compiled constants.
+// FormatConstants generates a slice of formatted strings representing the constants in the bytecode.
 func (b *Bytecode) FormatConstants() (output []string) {
 	for cIdx, cn := range b.Constants {
 		switch cn := cn.(type) {
 		case *objects.CompiledFunction:
 			output = append(output, fmt.Sprintf(
 				"[% 3d] (Compiled Function|%p)", cIdx, &cn))
-			for _, l := range FormatInstructions(cn.Instructions, 0) {
+			for _, l := range FormatInstructions(cn.Instructions(), 0) {
 				output = append(output, fmt.Sprintf("     %s", l))
 			}
 		default:
@@ -83,8 +84,8 @@ func (b *Bytecode) FormatConstants() (output []string) {
 	return
 }
 
-// Decode reads Bytecode data from the reader.
-func (b *Bytecode) Decode(r io.Reader, mods *modules.ModuleMap) error {
+// Decode deserializes bytecode data from the provided reader and resolves constants using the given module map.
+func (b *Bytecode) Decode(r io.Reader, mods *modules.Modules) error {
 	if mods == nil {
 		mods = modules.NewModuleMap()
 	}
@@ -112,8 +113,8 @@ func (b *Bytecode) Decode(r io.Reader, mods *modules.ModuleMap) error {
 	return nil
 }
 
-// RemoveDuplicates finds and remove the duplicate values in Constants. Note this function mutates Bytecode.
-func (b *Bytecode) RemoveDuplicates() {
+// RemoveDuplicates identifies and removes duplicate objects from the Bytecode's constants, updating references accordingly.
+func (b *Bytecode) RemoveDuplicates() error {
 	var deDuped []objects.IObject
 
 	indexMap := make(map[int]int) // mapping from old constant index to new index
@@ -183,27 +184,28 @@ func (b *Bytecode) RemoveDuplicates() {
 				deDuped = append(deDuped, c)
 			}
 		default:
-			panic(fmt.Errorf("unsupported top-level constant type: %s",
-				c.TypeName()))
+			return fmt.Errorf("unsupported top-level constant type: %s", reflect.TypeOf(c).Elem().Name())
 		}
 	}
-
-	// replace with de-duplicated constants
 	b.Constants = deDuped
-
-	// update CONST instructions with new indexes
-	// main function
-	updateConstIndexes(b.MainFunction.Instructions, indexMap)
-	// other compiled functions in constants
+	if err := updateConstIndexes(b.MainFunction.Instructions(), indexMap); err != nil {
+		return err
+	}
 	for _, c := range b.Constants {
 		switch c := c.(type) {
 		case *objects.CompiledFunction:
-			updateConstIndexes(c.Instructions, indexMap)
+			if err := updateConstIndexes(c.Instructions(), indexMap); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func fixDecodedObject(o objects.IObject, mods *modules.ModuleMap) (objects.IObject, error) {
+// fixDecodedObject processes a decoded object to ensure proper structure and values, applying modifications as needed.
+// It recursively fixes elements in arrays and maps, while handling specific object types like Bool and Undefined.
+// Returns the fixed object or an error if processing fails.
+func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject, error) {
 	switch o := o.(type) {
 	case *objects.Bool:
 		if o.Falsy() {
@@ -258,7 +260,8 @@ func fixDecodedObject(o objects.IObject, mods *modules.ModuleMap) (objects.IObje
 	return o, nil
 }
 
-func updateConstIndexes(instances []byte, indexMap map[int]int) {
+// updateConstIndexes updates constant indexes in the given bytecode using the provided index mapping. Returns an error if a mapping is missing.
+func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 	i := 0
 	for i < len(instances) {
 		op := instances[i]
@@ -270,7 +273,7 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) {
 			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
 			newIdx, ok := indexMap[curIdx]
 			if !ok {
-				panic(fmt.Errorf("constant index not found: %d", curIdx))
+				return fmt.Errorf("constant index not found: %d", curIdx)
 			}
 			copy(instances[i:], MakeInstruction(op, newIdx))
 		case opcodes.OpClosure:
@@ -278,16 +281,19 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) {
 			numFree := int(instances[i+3])
 			newIdx, ok := indexMap[curIdx]
 			if !ok {
-				panic(fmt.Errorf("constant index not found: %d", curIdx))
+				return fmt.Errorf("constant index not found: %d", curIdx)
 			}
 			copy(instances[i:], MakeInstruction(op, newIdx, numFree))
 		default:
-			log.Printf("unhandled default case")
+			return fmt.Errorf("unsupported opcode: %s", opcodes.OpcodeNames[op])
 		}
 		i += 1 + read
 	}
+	return nil
 }
 
+// inferModuleName extracts the module name from the given ImmutableMap by looking up the "__module_name__" key.
+// Returns an empty string if the key is absent or if the value is not of type String.
 func inferModuleName(mod *objects.ImmutableMap) string {
 	if modName, ok := mod.Value["__module_name__"].(*objects.String); ok {
 		return modName.Value()

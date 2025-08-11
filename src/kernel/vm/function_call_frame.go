@@ -1,6 +1,9 @@
 package vm
 
-import "github.com/markel1974/c64emu/src/kernel/vm/objects"
+import (
+	"github.com/markel1974/c64emu/src/kernel/compiler"
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
+)
 
 // FunctionCallFrame represents a frame in the execution call stack for a compiled function.
 // It contains information about the current function, its free variables, instruction pointer, and base pointer.
@@ -23,11 +26,11 @@ func (f *FunctionCallFrame) SetCompiledFunction(compiledFunction *objects.Compil
 
 // Instructions returns the bytecode instructions of the currently compiled function in the call frame.
 func (f *FunctionCallFrame) Instructions() []byte {
-	return f.compiledFunction.Instructions
+	return f.compiledFunction.Instructions()
 }
 
 // SourcePos returns the source position of the instruction at the given instruction pointer (ip) in the call frame.
-func (f *FunctionCallFrame) SourcePos(ip int) objects.Pos {
+func (f *FunctionCallFrame) SourcePos(ip int) compiler.Pos {
 	return f.compiledFunction.SourcePos(ip)
 }
 

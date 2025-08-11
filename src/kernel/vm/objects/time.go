@@ -6,27 +6,34 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-// Time represents a time values.
+// Time represents a custom object encapsulating a Go time.Time value with extended behaviors and operations.
 type Time struct {
 	ObjectImpl
 	value time.Time
 }
 
+// NewTime creates a new instance of Time wrapping the provided time.Time value.
 func NewTime(value time.Time) *Time {
 	return &Time{value: value}
 }
 
+// Value returns the underlying time.Time value of the Time object.
+func (o *Time) Value() time.Time {
+	return o.value
+}
+
+// String returns the string representation of the Time object by delegating to the underlying time.Time value.
 func (o *Time) String() string {
 	return o.value.String()
 }
 
-// TypeName returns the name of the type.
+// TypeName returns the name of the type as a string, which is "time".
 func (o *Time) TypeName() string {
 	return "time"
 }
 
-// BinaryOp returns another object that is the result of a given binary
-// operator and a right-hand side object.
+// BinaryOp performs a binary operation between the Time object and another IObject using a specified Operator.
+// Returns the resulting IObject or an error if the operation is invalid or unsupported.
 func (o *Time) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 	switch rhs := rhs.(type) {
 	case *Int:
@@ -75,18 +82,17 @@ func (o *Time) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 	return nil, errors.ErrInvalidOperator
 }
 
-// Copy returns a copy of the type.
+// Copy returns a new instance of the Time object with the same internal time value, duplicating its state.
 func (o *Time) Copy() IObject {
 	return &Time{value: o.value}
 }
 
-// IsFalsy returns true if the values of the type is falsy.
+// Falsy returns true if the Time object's value is zero (indicating it is uninitialized or empty), otherwise false.
 func (o *Time) Falsy() bool {
 	return o.value.IsZero()
 }
 
-// Equals returns true if the values of the type is equal to the values of
-// another object.
+// Equals checks whether the Time object is equal to another object of type IObject, returning true if they match.
 func (o *Time) Equals(x IObject) bool {
 	t, ok := x.(*Time)
 	if !ok {
@@ -95,7 +101,7 @@ func (o *Time) Equals(x IObject) bool {
 	return o.value.Equal(t.value)
 }
 
-// ToTime will try to convert object o to time.Time values.
+// ToTime converts an IObject into a time.Time if it is time-compatible (e.g., *Time or *Int). Returns the time and a boolean.
 func ToTime(o IObject) (v time.Time, ok bool) {
 	switch o := o.(type) {
 	case *Time:

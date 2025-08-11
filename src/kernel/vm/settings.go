@@ -1,4 +1,4 @@
-package objects
+package vm
 
 const (
 	// GlobalsSize is the maximum number of global variables for a VM.
