@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/tokens"
 )
 
 // Array represents an array of objects.
@@ -29,10 +28,10 @@ func (o *Array) String() string {
 
 // BinaryOp returns another object that is the result of a given binary
 // operator and a right-hand side object.
-func (o *Array) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
+func (o *Array) BinaryOp(op Operator, rhs Object) (Object, error) {
 	if rhs, ok := rhs.(*Array); ok {
 		switch op {
-		case tokens.Add:
+		case OperatorAdd:
 			if len(rhs.Value) == 0 {
 				return o, nil
 			}

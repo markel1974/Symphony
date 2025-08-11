@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/tokens"
 )
 
 var (
@@ -31,9 +30,9 @@ func (o *String) String() string {
 
 // BinaryOp returns another object that is the result of a given binary
 // operator and a right-hand side object.
-func (o *String) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
+func (o *String) BinaryOp(op Operator, rhs Object) (Object, error) {
 	switch op {
-	case tokens.Add:
+	case OperatorAdd:
 		switch rhs := rhs.(type) {
 		case *String:
 			if len(o.Value)+len(rhs.Value) > MaxStringLen {
@@ -47,7 +46,7 @@ func (o *String) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
 			}
 			return &String{Value: o.Value + rhsStr}, nil
 		}
-	case tokens.Less:
+	case OperatorLess:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.Value < rhs.Value {
@@ -55,7 +54,7 @@ func (o *String) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
 			}
 			return FalseValue, nil
 		}
-	case tokens.LessEq:
+	case OperatorLessEq:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.Value <= rhs.Value {
@@ -63,7 +62,7 @@ func (o *String) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
 			}
 			return FalseValue, nil
 		}
-	case tokens.Greater:
+	case OperatorGreater:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.Value > rhs.Value {
@@ -71,7 +70,7 @@ func (o *String) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
 			}
 			return FalseValue, nil
 		}
-	case tokens.GreaterEq:
+	case OperatorGreaterEq:
 		switch rhs := rhs.(type) {
 		case *String:
 			if o.Value >= rhs.Value {

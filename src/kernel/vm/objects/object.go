@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/tokens"
 )
 
 type Object interface {
@@ -17,7 +16,7 @@ type Object interface {
 	// BinaryOp should return another object that is the result of a given
 	// binary operator and a right-hand side object. If BinaryOp returns an
 	// error, the VM will treat it as a run-time error.
-	BinaryOp(op tokens.Token, rhs Object) (Object, error)
+	BinaryOp(op Operator, rhs Object) (Object, error)
 
 	// IsFalsy should return true if the value of the type should be considered
 	// as falsy.
@@ -82,7 +81,7 @@ func (o *ObjectImpl) String() string {
 
 // BinaryOp returns another object that is the result of a given binary
 // operator and a right-hand side object.
-func (o *ObjectImpl) BinaryOp(_ tokens.Token, _ Object) (Object, error) {
+func (o *ObjectImpl) BinaryOp(_ Operator, _ Object) (Object, error) {
 	return nil, errors.ErrInvalidOperator
 }
 

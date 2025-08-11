@@ -2,7 +2,6 @@ package objects
 
 import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/tokens"
 )
 
 // Char represents a character value.
@@ -22,38 +21,38 @@ func (o *Char) TypeName() string {
 
 // BinaryOp returns another object that is the result of a given binary
 // operator and a right-hand side object.
-func (o *Char) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
+func (o *Char) BinaryOp(op Operator, rhs Object) (Object, error) {
 	switch rhs := rhs.(type) {
 	case *Char:
 		switch op {
-		case tokens.Add:
+		case OperatorAdd:
 			r := o.Value + rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Char{Value: r}, nil
-		case tokens.Sub:
+		case OperatorSub:
 			r := o.Value - rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Char{Value: r}, nil
-		case tokens.Less:
+		case OperatorLess:
 			if o.Value < rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.Greater:
+		case OperatorGreater:
 			if o.Value > rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.LessEq:
+		case OperatorLessEq:
 			if o.Value <= rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.GreaterEq:
+		case OperatorGreaterEq:
 			if o.Value >= rhs.Value {
 				return TrueValue, nil
 			}
@@ -63,34 +62,34 @@ func (o *Char) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
 		}
 	case *Int:
 		switch op {
-		case tokens.Add:
+		case OperatorAdd:
 			r := o.Value + rune(rhs.Value)
 			if r == o.Value {
 				return o, nil
 			}
 			return &Char{Value: r}, nil
-		case tokens.Sub:
+		case OperatorSub:
 			r := o.Value - rune(rhs.Value)
 			if r == o.Value {
 				return o, nil
 			}
 			return &Char{Value: r}, nil
-		case tokens.Less:
+		case OperatorLess:
 			if int64(o.Value) < rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.Greater:
+		case OperatorGreater:
 			if int64(o.Value) > rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.LessEq:
+		case OperatorLessEq:
 			if int64(o.Value) <= rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.GreaterEq:
+		case OperatorGreaterEq:
 			if int64(o.Value) >= rhs.Value {
 				return TrueValue, nil
 			}

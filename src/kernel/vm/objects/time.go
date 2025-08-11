@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/tokens"
 )
 
 // Time represents a time value.
@@ -24,16 +23,16 @@ func (o *Time) TypeName() string {
 
 // BinaryOp returns another object that is the result of a given binary
 // operator and a right-hand side object.
-func (o *Time) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
+func (o *Time) BinaryOp(op Operator, rhs Object) (Object, error) {
 	switch rhs := rhs.(type) {
 	case *Int:
 		switch op {
-		case tokens.Add: // time + int => time
+		case OperatorAdd: // time + int => time
 			if rhs.Value == 0 {
 				return o, nil
 			}
 			return &Time{Value: o.Value.Add(time.Duration(rhs.Value))}, nil
-		case tokens.Sub: // time - int => time
+		case OperatorSub: // time - int => time
 			if rhs.Value == 0 {
 				return o, nil
 			}
@@ -43,24 +42,24 @@ func (o *Time) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
 		}
 	case *Time:
 		switch op {
-		case tokens.Sub: // time - time => int (duration)
+		case OperatorSub: // time - time => int (duration)
 			return &Int{Value: int64(o.Value.Sub(rhs.Value))}, nil
-		case tokens.Less: // time < time => bool
+		case OperatorLess: // time < time => bool
 			if o.Value.Before(rhs.Value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.Greater:
+		case OperatorGreater:
 			if o.Value.After(rhs.Value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.LessEq:
+		case OperatorLessEq:
 			if o.Value.Equal(rhs.Value) || o.Value.Before(rhs.Value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.GreaterEq:
+		case OperatorGreaterEq:
 			if o.Value.Equal(rhs.Value) || o.Value.After(rhs.Value) {
 				return TrueValue, nil
 			}

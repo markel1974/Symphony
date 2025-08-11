@@ -8,7 +8,6 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/modules"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 	"github.com/markel1974/c64emu/src/kernel/vm/opcodes"
-	"github.com/markel1974/c64emu/src/kernel/vm/tokens"
 )
 
 const (
@@ -22,13 +21,13 @@ type ISequencer interface {
 
 type VM struct {
 	constants       []objects.Object
-	stack           [objects.StackSize]objects.Object
+	stack           []objects.Object
 	sp              int
 	globals         []objects.Object
 	fileSet         *objects.SourceFileSet
-	frames          [objects.MaxFrames]frame
+	frames          []*FunctionCallFrame
 	framesIndex     int
-	curFrame        *frame
+	curFrame        *FunctionCallFrame
 	curInstructions []byte
 	ip              int
 	abort           bool
@@ -52,11 +51,16 @@ func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects
 		ip:             -1,
 		maxAllocations: maxAllocations,
 		suspend:        false,
+		stack:          make([]objects.Object, objects.StackSize),
+		frames:         make([]*FunctionCallFrame, objects.MaxFrames),
 	}
-	v.frames[0].fn = bytecode.MainFunction
+	for i := range v.frames {
+		v.frames[i] = NewFunctionCallFrame()
+	}
+	v.frames[0].SetCompiledFunction(bytecode.MainFunction)
 	v.frames[0].ip = -1
-	v.curFrame = &v.frames[0]
-	v.curInstructions = v.curFrame.fn.Instructions
+	v.curFrame = v.frames[0]
+	v.curInstructions = v.curFrame.Instructions()
 	v.sequencer = sequencer.Create(v)
 	return v
 }
@@ -67,22 +71,21 @@ func (v *VM) Abort() {
 
 func (v *VM) Run() error {
 	v.sp = 0
-	v.curFrame = &(v.frames[0])
-	v.curInstructions = v.curFrame.fn.Instructions
+	v.curFrame = v.frames[0]
+	v.curInstructions = v.curFrame.Instructions()
 	v.framesIndex = 1
 	v.ip = -1
 	v.allocations = v.maxAllocations + 1
-
 	v.run()
 	v.abort = false
 	v.suspend = false
 	if v.err != nil {
-		filePos := v.fileSet.Position(v.curFrame.fn.SourcePos(v.ip - 1))
+		filePos := v.fileSet.Position(v.curFrame.SourcePos(v.ip - 1))
 		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
 		for v.framesIndex > 1 {
 			v.framesIndex--
-			v.curFrame = &v.frames[v.framesIndex-1]
-			filePos = v.fileSet.Position(v.curFrame.fn.SourcePos(v.curFrame.ip - 1))
+			v.curFrame = v.frames[v.framesIndex-1]
+			filePos = v.fileSet.Position(v.curFrame.SourcePos(v.curFrame.ip - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)
 		}
 		return err
@@ -90,45 +93,16 @@ func (v *VM) Run() error {
 	return nil
 }
 
+// IsStackEmpty tests if the stack is empty or not.
+//func (v *VM) IsStackEmpty() bool {
+//	return v.sp == 0
+//}
+
 func (v *VM) run() {
 	for !v.abort || !v.suspend || v.err == nil {
 		v.ip++
 		v.sequencer[v.ip&sequenceMask]()
 	}
-}
-
-// IsStackEmpty tests if the stack is empty or not.
-func (v *VM) IsStackEmpty() bool {
-	return v.sp == 0
-}
-
-func (v *VM) indexAssign(dst, src objects.Object, selectors []objects.Object) error {
-	numSel := len(selectors)
-	for sIdx := numSel - 1; sIdx > 0; sIdx-- {
-		next, err := dst.IndexGet(selectors[sIdx])
-		if err != nil {
-			if errors.Is(err, errors.ErrNotIndexable) {
-				return fmt.Errorf("not indexable: %s", dst.TypeName())
-			}
-			if errors.Is(err, errors.ErrInvalidIndexType) {
-				return fmt.Errorf("invalid index type: %s",
-					selectors[sIdx].TypeName())
-			}
-			return err
-		}
-		dst = next
-	}
-
-	if err := dst.IndexSet(selectors[0], src); err != nil {
-		if errors.Is(err, errors.ErrNotIndexAssignable) {
-			return fmt.Errorf("not index-assignable: %s", dst.TypeName())
-		}
-		if errors.Is(err, errors.ErrInvalidIndexValueType) {
-			return fmt.Errorf("invaid index value type: %s", src.TypeName())
-		}
-		return err
-	}
-	return nil
 }
 
 func (v *VM) doOpConstant() {
@@ -147,12 +121,12 @@ func (v *VM) doOpBinary() {
 	v.ip++
 	right := v.stack[v.sp-1]
 	left := v.stack[v.sp-2]
-	tok := tokens.Token(v.curInstructions[v.ip])
+	tok := objects.Operator(v.curInstructions[v.ip])
 	res, e := left.BinaryOp(tok, right)
 	if e != nil {
 		v.sp -= 2
 		if errors.Is(e, errors.ErrInvalidOperator) {
-			v.err = fmt.Errorf("invalid operation: %s %s %s", left.TypeName(), tok.String(), right.TypeName())
+			v.err = fmt.Errorf("invalid operation: %s %d %s", left.TypeName(), tok, right.TypeName())
 		}
 		v.err = e
 		return
@@ -315,8 +289,7 @@ func (v *VM) doOpSetSelGlobal() {
 	}
 	val := v.stack[v.sp-numSelectors-1]
 	v.sp -= numSelectors + 1
-	e := v.indexAssign(v.globals[globalIndex], val, selectors)
-	if e != nil {
+	if e := objects.IndexAssign(v.globals[globalIndex], val, selectors); e != nil {
 		v.err = e
 		return
 	}
@@ -444,8 +417,7 @@ func (v *VM) doOpSliceIndex() {
 		if low, ok := lowStack.(*objects.Int); ok {
 			lowIdx = low.Value
 		} else {
-			v.err = fmt.Errorf("invalid slice index type: %s",
-				low.TypeName())
+			v.err = fmt.Errorf("invalid slice index type: %s", low.TypeName())
 			return
 		}
 	}
@@ -661,7 +633,7 @@ func (v *VM) doOpCall() {
 		}
 
 		// test if it's tail-call
-		if callee == v.curFrame.fn { // recursion
+		if v.curFrame.SameFunction(callee) { // recursion
 			nextOp := v.curInstructions[v.ip+1]
 			if nextOp == opcodes.OpReturn ||
 				(nextOp == opcodes.OpPop &&
@@ -683,8 +655,8 @@ func (v *VM) doOpCall() {
 
 		// update call frame
 		v.curFrame.ip = v.ip // store current ip before call
-		v.curFrame = &(v.frames[v.framesIndex])
-		v.curFrame.fn = callee
+		v.curFrame = v.frames[v.framesIndex]
+		v.curFrame.SetCompiledFunction(callee)
 		v.curFrame.freeVars = callee.Free
 		v.curFrame.basePointer = v.sp - numArgs
 		v.curInstructions = callee.Instructions
@@ -734,8 +706,8 @@ func (v *VM) doOpReturn() {
 	}
 	//v.sp--
 	v.framesIndex--
-	v.curFrame = &v.frames[v.framesIndex-1]
-	v.curInstructions = v.curFrame.fn.Instructions
+	v.curFrame = v.frames[v.framesIndex-1]
+	v.curInstructions = v.curFrame.Instructions()
 	v.ip = v.curFrame.ip
 	//v.sp = lastFrame.basePointer - 1
 	v.sp = v.frames[v.framesIndex].basePointer
@@ -789,7 +761,7 @@ func (v *VM) doOpSetSelLocal() {
 	if obj, ok := dst.(*objects.ObjectPtr); ok {
 		dst = *obj.Value
 	}
-	if e := v.indexAssign(dst, val, selectors); e != nil {
+	if e := objects.IndexAssign(dst, val, selectors); e != nil {
 		v.err = e
 		return
 	}
@@ -893,7 +865,6 @@ func (v *VM) doOpSetSelFree() {
 	v.ip += 2
 	freeIndex := int(v.curInstructions[v.ip-1])
 	numSelectors := int(v.curInstructions[v.ip])
-
 	// selectors and RHS value
 	selectors := make([]objects.Object, numSelectors)
 	for i := 0; i < numSelectors; i++ {
@@ -901,10 +872,8 @@ func (v *VM) doOpSetSelFree() {
 	}
 	val := v.stack[v.sp-numSelectors-1]
 	v.sp -= numSelectors + 1
-	e := v.indexAssign(*v.curFrame.freeVars[freeIndex].Value,
-		val, selectors)
-	if e != nil {
-		v.err = e
+	if err := objects.IndexAssign(*v.curFrame.freeVars[freeIndex].Value, val, selectors); err != nil {
+		v.err = err
 		return
 	}
 }

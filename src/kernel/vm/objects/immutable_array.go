@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/tokens"
 )
 
 // ImmutableArray represents an immutable array of objects.
@@ -28,10 +27,10 @@ func (o *ImmutableArray) String() string {
 }
 
 // BinaryOp returns another object that is the result of a given binary operator and a right-hand side object.
-func (o *ImmutableArray) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
+func (o *ImmutableArray) BinaryOp(op Operator, rhs Object) (Object, error) {
 	if ia, ok := rhs.(*ImmutableArray); ok {
 		switch op {
-		case tokens.Add:
+		case OperatorAdd:
 			return &Array{Value: append(o.Value, ia.Value...)}, nil
 		default:
 			return nil, errors.ErrInvalidOperator

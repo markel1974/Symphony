@@ -4,7 +4,6 @@ import (
 	"bytes"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/tokens"
 )
 
 var (
@@ -28,9 +27,9 @@ func (o *Bytes) TypeName() string {
 }
 
 // BinaryOp returns another object that is the result of a given binary operator and a right-hand side object.
-func (o *Bytes) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
+func (o *Bytes) BinaryOp(op Operator, rhs Object) (Object, error) {
 	switch op {
-	case tokens.Add:
+	case OperatorAdd:
 		switch rhs := rhs.(type) {
 		case *Bytes:
 			if len(o.Value)+len(rhs.Value) > MaxBytesLen {

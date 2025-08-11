@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/tokens"
 )
 
 // Float represents a floating point number value.
@@ -24,50 +23,50 @@ func (o *Float) TypeName() string {
 }
 
 // BinaryOp returns another object that is the result of a given binary operator and a right-hand side object.
-func (o *Float) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
+func (o *Float) BinaryOp(op Operator, rhs Object) (Object, error) {
 	switch rhs := rhs.(type) {
 	case *Float:
 		switch op {
-		case tokens.Add:
+		case OperatorAdd:
 			r := o.Value + rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Float{Value: r}, nil
-		case tokens.Sub:
+		case OperatorSub:
 			r := o.Value - rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Float{Value: r}, nil
-		case tokens.Mul:
+		case OperatorMul:
 			r := o.Value * rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Float{Value: r}, nil
-		case tokens.Quo:
+		case OperatorQuo:
 			r := o.Value / rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Float{Value: r}, nil
-		case tokens.Less:
+		case OperatorLess:
 			if o.Value < rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.Greater:
+		case OperatorGreater:
 			if o.Value > rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.LessEq:
+		case OperatorLessEq:
 			if o.Value <= rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.GreaterEq:
+		case OperatorGreaterEq:
 			if o.Value >= rhs.Value {
 				return TrueValue, nil
 			}
@@ -75,46 +74,46 @@ func (o *Float) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
 		}
 	case *Int:
 		switch op {
-		case tokens.Add:
+		case OperatorAdd:
 			r := o.Value + float64(rhs.Value)
 			if r == o.Value {
 				return o, nil
 			}
 			return &Float{Value: r}, nil
-		case tokens.Sub:
+		case OperatorSub:
 			r := o.Value - float64(rhs.Value)
 			if r == o.Value {
 				return o, nil
 			}
 			return &Float{Value: r}, nil
-		case tokens.Mul:
+		case OperatorMul:
 			r := o.Value * float64(rhs.Value)
 			if r == o.Value {
 				return o, nil
 			}
 			return &Float{Value: r}, nil
-		case tokens.Quo:
+		case OperatorQuo:
 			r := o.Value / float64(rhs.Value)
 			if r == o.Value {
 				return o, nil
 			}
 			return &Float{Value: r}, nil
-		case tokens.Less:
+		case OperatorLess:
 			if o.Value < float64(rhs.Value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.Greater:
+		case OperatorGreater:
 			if o.Value > float64(rhs.Value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.LessEq:
+		case OperatorLessEq:
 			if o.Value <= float64(rhs.Value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.GreaterEq:
+		case OperatorGreaterEq:
 			if o.Value >= float64(rhs.Value) {
 				return TrueValue, nil
 			}

@@ -4,7 +4,6 @@ import (
 	"strconv"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/tokens"
 )
 
 // Int represents an integer value.
@@ -23,92 +22,92 @@ func (o *Int) TypeName() string {
 }
 
 // BinaryOp returns another object that is the result of a given binary operator and a right-hand side object.
-func (o *Int) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
+func (o *Int) BinaryOp(op Operator, rhs Object) (Object, error) {
 	switch rhs := rhs.(type) {
 	case *Int:
 		switch op {
-		case tokens.Add:
+		case OperatorAdd:
 			r := o.Value + rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.Sub:
+		case OperatorSub:
 			r := o.Value - rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.Mul:
+		case OperatorMul:
 			r := o.Value * rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.Quo:
+		case OperatorQuo:
 			r := o.Value / rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.Rem:
+		case OperatorRem:
 			r := o.Value % rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.And:
+		case OperatorAnd:
 			r := o.Value & rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.Or:
+		case OperatorOr:
 			r := o.Value | rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.Xor:
+		case OperatorXor:
 			r := o.Value ^ rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.AndNot:
+		case OperatorAndNot:
 			r := o.Value &^ rhs.Value
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.Shl:
+		case OperatorShl:
 			r := o.Value << uint64(rhs.Value)
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.Shr:
+		case OperatorShr:
 			r := o.Value >> uint64(rhs.Value)
 			if r == o.Value {
 				return o, nil
 			}
 			return &Int{Value: r}, nil
-		case tokens.Less:
+		case OperatorLess:
 			if o.Value < rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.Greater:
+		case OperatorGreater:
 			if o.Value > rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.LessEq:
+		case OperatorLessEq:
 			if o.Value <= rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.GreaterEq:
+		case OperatorGreaterEq:
 			if o.Value >= rhs.Value {
 				return TrueValue, nil
 			}
@@ -118,30 +117,30 @@ func (o *Int) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
 		}
 	case *Float:
 		switch op {
-		case tokens.Add:
+		case OperatorAdd:
 			return &Float{Value: float64(o.Value) + rhs.Value}, nil
-		case tokens.Sub:
+		case OperatorSub:
 			return &Float{Value: float64(o.Value) - rhs.Value}, nil
-		case tokens.Mul:
+		case OperatorMul:
 			return &Float{Value: float64(o.Value) * rhs.Value}, nil
-		case tokens.Quo:
+		case OperatorQuo:
 			return &Float{Value: float64(o.Value) / rhs.Value}, nil
-		case tokens.Less:
+		case OperatorLess:
 			if float64(o.Value) < rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.Greater:
+		case OperatorGreater:
 			if float64(o.Value) > rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.LessEq:
+		case OperatorLessEq:
 			if float64(o.Value) <= rhs.Value {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.GreaterEq:
+		case OperatorGreaterEq:
 			if float64(o.Value) >= rhs.Value {
 				return TrueValue, nil
 			}
@@ -151,26 +150,26 @@ func (o *Int) BinaryOp(op tokens.Token, rhs Object) (Object, error) {
 		}
 	case *Char:
 		switch op {
-		case tokens.Add:
+		case OperatorAdd:
 			return &Char{Value: rune(o.Value) + rhs.Value}, nil
-		case tokens.Sub:
+		case OperatorSub:
 			return &Char{Value: rune(o.Value) - rhs.Value}, nil
-		case tokens.Less:
+		case OperatorLess:
 			if o.Value < int64(rhs.Value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.Greater:
+		case OperatorGreater:
 			if o.Value > int64(rhs.Value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.LessEq:
+		case OperatorLessEq:
 			if o.Value <= int64(rhs.Value) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
-		case tokens.GreaterEq:
+		case OperatorGreaterEq:
 			if o.Value >= int64(rhs.Value) {
 				return TrueValue, nil
 			}

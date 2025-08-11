@@ -325,11 +325,7 @@ func builtinLen(args ...objects.Object) (objects.Object, error) {
 	case *objects.ImmutableMap:
 		return &objects.Int{Value: int64(len(arg.Value))}, nil
 	default:
-		return nil, errors.ErrInvalidArgumentType{
-			Name:     "first",
-			Expected: "array/string/bytes/map",
-			Found:    arg.TypeName(),
-		}
+		return nil, errors.ErrInvalidArgumentType{Name: "first", Expected: "array/string/bytes/map", Found: arg.TypeName()}
 	}
 }
 
@@ -353,12 +349,7 @@ func builtinRange(args ...objects.Object) (objects.Object, error) {
 			case 2:
 				name = "step"
 			}
-
-			return nil, errors.ErrInvalidArgumentType{
-				Name:     name,
-				Expected: "int",
-				Found:    arg.TypeName(),
-			}
+			return nil, errors.ErrInvalidArgumentType{Name: name, Expected: "int", Found: arg.TypeName()}
 		}
 		if i == 2 && v.Value <= 0 {
 			return nil, errors.ErrInvalidRangeStep
@@ -372,11 +363,12 @@ func builtinRange(args ...objects.Object) (objects.Object, error) {
 			step = v
 		}
 	}
-
+	if start == nil || stop == nil {
+		return nil, errors.ErrWrongNumArguments
+	}
 	if step == nil {
 		step = &objects.Int{Value: int64(1)}
 	}
-
 	return buildRange(start.Value, stop.Value, step.Value), nil
 }
 
@@ -405,11 +397,7 @@ func builtinFormat(args ...objects.Object) (objects.Object, error) {
 	}
 	format, ok := args[0].(*objects.String)
 	if !ok {
-		return nil, errors.ErrInvalidArgumentType{
-			Name:     "format",
-			Expected: "string",
-			Found:    args[0].TypeName(),
-		}
+		return nil, errors.ErrInvalidArgumentType{Name: "format", Expected: "string", Found: args[0].TypeName()}
 	}
 	if numArgs == 1 {
 		// okay to return 'format' directly as String is immutable
