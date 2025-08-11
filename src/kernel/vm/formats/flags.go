@@ -1,5 +1,7 @@
 package formats
 
+// fmtFlags represents formatting flags used in formatting operations.
+// It encapsulates settings like width, precision, and various flags for alignment, sign, and formatting style.
 type fmtFlags struct {
 	widPresent       bool
 	precisionPresent bool
@@ -8,15 +10,9 @@ type fmtFlags struct {
 	sharp            bool
 	space            bool
 	zero             bool
-
-	// For the formats %+v %#v, we set the plusV/sharpV flags
-	// and clear the plus/sharp flags since %+v and %#v are in effect
-	// different, flagless formats set at the top level.
-	plusV  bool
-	sharpV bool
-
-	// error-related flags.
-	inDetail    bool
-	needNewline bool
-	needColon   bool
+	plusV            bool
+	sharpV           bool
+	inDetail         bool
+	needNewline      bool
+	needColon        bool
 }
