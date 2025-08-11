@@ -12,6 +12,10 @@ type Time struct {
 	Value time.Time
 }
 
+func NewTime(value time.Time) *Time {
+	return &Time{Value: value}
+}
+
 func (o *Time) String() string {
 	return o.Value.String()
 }

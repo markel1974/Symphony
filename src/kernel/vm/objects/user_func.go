@@ -8,6 +8,13 @@ type UserFunction struct {
 	EncodingID string
 }
 
+func NewUserFunction(id string, fn CallableFunc) *UserFunction {
+	return &UserFunction{
+		Name:  "re_match",
+		Value: fn,
+	}
+}
+
 // TypeName returns the name of the type.
 func (o *UserFunction) TypeName() string {
 	return "user-function:" + o.Name

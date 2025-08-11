@@ -12,6 +12,10 @@ type Int struct {
 	Value int64
 }
 
+func NewInt(value int64) *Int {
+	return &Int{Value: value}
+}
+
 func (o *Int) String() string {
 	return strconv.FormatInt(o.Value, 10)
 }

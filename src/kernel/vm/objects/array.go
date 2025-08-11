@@ -13,6 +13,10 @@ type Array struct {
 	Value []Object
 }
 
+func NewArray(value []Object) *Array {
+	return &Array{Value: value}
+}
+
 // TypeName returns the name of the type.
 func (o *Array) TypeName() string {
 	return "array"

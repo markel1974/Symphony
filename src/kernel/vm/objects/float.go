@@ -7,22 +7,30 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-// Float represents a floating point number value.
+// Float represents a floating-point number type.
+// It embeds ObjectImpl to provide default behavior for object operations.
+// Value holds the actual float64 value of the Float type.
 type Float struct {
 	ObjectImpl
 	Value float64
 }
 
+// NewFloat creates a new Float object with the specified float64 value.
+func NewFloat(value float64) *Float {
+	return &Float{Value: value}
+}
+
+// String returns the string representation of the Float value.
 func (o *Float) String() string {
 	return strconv.FormatFloat(o.Value, 'f', -1, 64)
 }
 
-// TypeName returns the name of the type.
+// TypeName returns the string "float", indicating the type of the Float object.
 func (o *Float) TypeName() string {
 	return "float"
 }
 
-// BinaryOp returns another object that is the result of a given binary operator and a right-hand side object.
+// BinaryOp applies a binary operator to the current Float and a right-hand side Object, returning the resulting Object or an error.
 func (o *Float) BinaryOp(op Operator, rhs Object) (Object, error) {
 	switch rhs := rhs.(type) {
 	case *Float:
@@ -71,6 +79,8 @@ func (o *Float) BinaryOp(op Operator, rhs Object) (Object, error) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
+		default:
+			return nil, errors.ErrInvalidOperator
 		}
 	case *Int:
 		switch op {
@@ -118,22 +128,24 @@ func (o *Float) BinaryOp(op Operator, rhs Object) (Object, error) {
 				return TrueValue, nil
 			}
 			return FalseValue, nil
+		default:
+			return nil, errors.ErrInvalidOperator
 		}
 	}
 	return nil, errors.ErrInvalidOperator
 }
 
-// Copy returns a copy of the type.
+// Copy creates and returns a new instance of Float with the same value as the original.
 func (o *Float) Copy() Object {
 	return &Float{Value: o.Value}
 }
 
-// IsFalsy returns true if the value of the type is falsy.
+// IsFalsy checks if the Float object's value is NaN, returning true if it is, otherwise false.
 func (o *Float) IsFalsy() bool {
 	return math.IsNaN(o.Value)
 }
 
-// Equals returns true if the value of the type is equal to the value of  another object.
+// Equals checks if two Float objects have the same value and returns true if they are equal.
 func (o *Float) Equals(x Object) bool {
 	t, ok := x.(*Float)
 	if !ok {
@@ -142,7 +154,7 @@ func (o *Float) Equals(x Object) bool {
 	return o.Value == t.Value
 }
 
-// ToFloat64 will try to convert object o to float64 value.
+// ToFloat64 converts an Object to a float64 value if possible and returns a boolean indicating success.
 func ToFloat64(o Object) (v float64, ok bool) {
 	switch o := o.(type) {
 	case *Int:

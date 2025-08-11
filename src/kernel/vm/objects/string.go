@@ -19,6 +19,12 @@ type String struct {
 	runeStr []rune
 }
 
+func NewString(value string) *String {
+	return &String{
+		Value: value,
+	}
+}
+
 // TypeName returns the name of the type.
 func (o *String) TypeName() string {
 	return "string"

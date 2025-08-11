@@ -384,16 +384,14 @@ func (v *VM) doOpIndex() {
 	index := v.stack[v.sp-1]
 	left := v.stack[v.sp-2]
 	v.sp -= 2
-
 	val, err := left.IndexGet(index)
 	if err != nil {
-		if err == errors.ErrNotIndexable {
+		if errors.Is(err, errors.ErrNotIndexable) {
 			v.err = fmt.Errorf("not indexable: %s", index.TypeName())
 			return
 		}
-		if err == errors.ErrInvalidIndexType {
-			v.err = fmt.Errorf("invalid index type: %s",
-				index.TypeName())
+		if errors.Is(err, errors.ErrInvalidIndexType) {
+			v.err = fmt.Errorf("invalid index type: %s", index.TypeName())
 			return
 		}
 		v.err = err
@@ -506,13 +504,11 @@ func (v *VM) doOpSliceIndex() {
 		} else if high, ok := highStack.(*objects.Int); ok {
 			highIdx = high.Value
 		} else {
-			v.err = fmt.Errorf("invalid slice index type: %s",
-				high.TypeName())
+			v.err = fmt.Errorf("invalid slice index type: %s", high.TypeName())
 			return
 		}
 		if lowIdx > highIdx {
-			v.err = fmt.Errorf("invalid slice index: %d > %d",
-				lowIdx, highIdx)
+			v.err = fmt.Errorf("invalid slice index: %d > %d", lowIdx, highIdx)
 			return
 		}
 		if lowIdx < 0 {
@@ -543,13 +539,11 @@ func (v *VM) doOpSliceIndex() {
 		} else if high, ok := highStack.(*objects.Int); ok {
 			highIdx = high.Value
 		} else {
-			v.err = fmt.Errorf("invalid slice index type: %s",
-				high.TypeName())
+			v.err = fmt.Errorf("invalid slice index type: %s", high.TypeName())
 			return
 		}
 		if lowIdx > highIdx {
-			v.err = fmt.Errorf("invalid slice index: %d > %d",
-				lowIdx, highIdx)
+			v.err = fmt.Errorf("invalid slice index: %d > %d", lowIdx, highIdx)
 			return
 		}
 		if lowIdx < 0 {
@@ -645,7 +639,6 @@ func (v *VM) doOpCall() {
 				v.sp -= numArgs + 1
 				v.ip = -1 // reset IP to beginning of the frame
 				return
-				//continue
 			}
 		}
 		if v.framesIndex >= objects.MaxFrames {
@@ -666,20 +659,16 @@ func (v *VM) doOpCall() {
 	} else {
 		var args []objects.Object
 		args = append(args, v.stack[v.sp-numArgs:v.sp]...)
-		ret, e := value.Call(args...)
+		ret, err := value.Call(args...)
 		v.sp -= numArgs + 1
 
 		// runtime error
-		if e != nil {
-			if e == errors.ErrWrongNumArguments {
+		if err != nil {
+			if errors.Is(err, errors.ErrWrongNumArguments) {
 				v.err = fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName())
 				return
 			}
-			if e, ok := e.(errors.ErrInvalidArgumentType); ok {
-				v.err = fmt.Errorf("invalid type for argument '%s' in call to '%s': "+"expected %s, found %s", e.Name, value.TypeName(), e.Expected, e.Found)
-				return
-			}
-			v.err = e
+			v.err = err
 			return
 		}
 
