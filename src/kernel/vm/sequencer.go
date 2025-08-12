@@ -1,6 +1,8 @@
 package vm
 
-import "github.com/markel1974/c64emu/src/kernel/vm/opcodes"
+import (
+	"github.com/markel1974/c64emu/src/kernel/vm/bytecodes"
+)
 
 // Sequencer is a type that provides functionality to create a sequence of operations for a virtual machine.
 type Sequencer struct {
@@ -16,47 +18,47 @@ func (ds *Sequencer) Create(v *VM) []func() {
 	for idx := range sequencer {
 		sequencer[idx] = v.doOpUnknown
 	}
-	sequencer[opcodes.OpConstant] = v.doOpConstant
-	sequencer[opcodes.OpNull] = v.doOpNull
-	sequencer[opcodes.OpBinaryOp] = v.doOpBinary
-	sequencer[opcodes.OpEqual] = v.doOpEqual
-	sequencer[opcodes.OpNotEqual] = v.doOpNotEqual
-	sequencer[opcodes.OpPop] = v.doOpPop
-	sequencer[opcodes.OpTrue] = v.doOpTrue
-	sequencer[opcodes.OpFalse] = v.doOpFalse
-	sequencer[opcodes.OpLNot] = v.doOpLNot
-	sequencer[opcodes.OpBComplement] = v.doOpBComplement
-	sequencer[opcodes.OpMinus] = v.doOpMinus
-	sequencer[opcodes.OpJumpFalsy] = v.doOpJumpFalsy
-	sequencer[opcodes.OpAndJump] = v.doOpAndJump
-	sequencer[opcodes.OpOrJump] = v.doOpOrJump
-	sequencer[opcodes.OpJump] = v.doOpJump
-	sequencer[opcodes.OpSetGlobal] = v.doOpSetGlobal
-	sequencer[opcodes.OpSetSelGlobal] = v.doOpSetSelGlobal
-	sequencer[opcodes.OpGetGlobal] = v.doOpGetGlobal
-	sequencer[opcodes.OpArray] = v.doOpArray
-	sequencer[opcodes.OpMap] = v.doOpMap
-	sequencer[opcodes.OpError] = v.doOpError
-	sequencer[opcodes.OpImmutable] = v.doOpImmutable
-	sequencer[opcodes.OpIndex] = v.doOpIndex
-	sequencer[opcodes.OpSliceIndex] = v.doOpSliceIndex
-	sequencer[opcodes.OpCall] = v.doOpCall
-	sequencer[opcodes.OpReturn] = v.doOpReturn
-	sequencer[opcodes.OpDefineLocal] = v.doOpDefineLocal
-	sequencer[opcodes.OpSetLocal] = v.doOpSetLocal
-	sequencer[opcodes.OpSetSelLocal] = v.doOpSetSelLocal
-	sequencer[opcodes.OpGetLocal] = v.doOpGetLocal
-	sequencer[opcodes.OpGetBuiltin] = v.doOpGetBuiltin
-	sequencer[opcodes.OpClosure] = v.doOpClosure
-	sequencer[opcodes.OpGetFreePtr] = v.doOpGetFreePtr
-	sequencer[opcodes.OpGetFree] = v.doOpGetFree
-	sequencer[opcodes.OpSetFree] = v.doOpSetFree
-	sequencer[opcodes.OpGetLocalPtr] = v.doOpGetLocalPtr
-	sequencer[opcodes.OpSetSelFree] = v.doOpSetSelFree
-	sequencer[opcodes.OpIteratorInit] = v.doOpIteratorInit
-	sequencer[opcodes.OpIteratorNext] = v.doOpIteratorNext
-	sequencer[opcodes.OpIteratorKey] = v.doOpIteratorKey
-	sequencer[opcodes.OpIteratorValue] = v.doOpIteratorValue
-	sequencer[opcodes.OpSuspend] = v.doOpSuspend
+	sequencer[bytecodes.OpConstant] = v.doOpConstant
+	sequencer[bytecodes.OpNull] = v.doOpNull
+	sequencer[bytecodes.OpBinaryOp] = v.doOpBinary
+	sequencer[bytecodes.OpEqual] = v.doOpEqual
+	sequencer[bytecodes.OpNotEqual] = v.doOpNotEqual
+	sequencer[bytecodes.OpPop] = v.doOpPop
+	sequencer[bytecodes.OpTrue] = v.doOpTrue
+	sequencer[bytecodes.OpFalse] = v.doOpFalse
+	sequencer[bytecodes.OpLNot] = v.doOpLNot
+	sequencer[bytecodes.OpBComplement] = v.doOpBComplement
+	sequencer[bytecodes.OpMinus] = v.doOpMinus
+	sequencer[bytecodes.OpJumpFalsy] = v.doOpJumpFalsy
+	sequencer[bytecodes.OpAndJump] = v.doOpAndJump
+	sequencer[bytecodes.OpOrJump] = v.doOpOrJump
+	sequencer[bytecodes.OpJump] = v.doOpJump
+	sequencer[bytecodes.OpSetGlobal] = v.doOpSetGlobal
+	sequencer[bytecodes.OpSetSelGlobal] = v.doOpSetSelGlobal
+	sequencer[bytecodes.OpGetGlobal] = v.doOpGetGlobal
+	sequencer[bytecodes.OpArray] = v.doOpArray
+	sequencer[bytecodes.OpMap] = v.doOpMap
+	sequencer[bytecodes.OpError] = v.doOpError
+	sequencer[bytecodes.OpImmutable] = v.doOpImmutable
+	sequencer[bytecodes.OpIndex] = v.doOpIndex
+	sequencer[bytecodes.OpSliceIndex] = v.doOpSliceIndex
+	sequencer[bytecodes.OpCall] = v.doOpCall
+	sequencer[bytecodes.OpReturn] = v.doOpReturn
+	sequencer[bytecodes.OpDefineLocal] = v.doOpDefineLocal
+	sequencer[bytecodes.OpSetLocal] = v.doOpSetLocal
+	sequencer[bytecodes.OpSetSelLocal] = v.doOpSetSelLocal
+	sequencer[bytecodes.OpGetLocal] = v.doOpGetLocal
+	sequencer[bytecodes.OpGetBuiltin] = v.doOpGetBuiltin
+	sequencer[bytecodes.OpClosure] = v.doOpClosure
+	sequencer[bytecodes.OpGetFreePtr] = v.doOpGetFreePtr
+	sequencer[bytecodes.OpGetFree] = v.doOpGetFree
+	sequencer[bytecodes.OpSetFree] = v.doOpSetFree
+	sequencer[bytecodes.OpGetLocalPtr] = v.doOpGetLocalPtr
+	sequencer[bytecodes.OpSetSelFree] = v.doOpSetSelFree
+	sequencer[bytecodes.OpIteratorInit] = v.doOpIteratorInit
+	sequencer[bytecodes.OpIteratorNext] = v.doOpIteratorNext
+	sequencer[bytecodes.OpIteratorKey] = v.doOpIteratorKey
+	sequencer[bytecodes.OpIteratorValue] = v.doOpIteratorValue
+	sequencer[bytecodes.OpSuspend] = v.doOpSuspend
 	return sequencer
 }

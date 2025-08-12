@@ -7,8 +7,13 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecodes"
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
-	"github.com/markel1974/c64emu/src/kernel/vm/opcodes"
 	"github.com/markel1974/c64emu/src/kernel/vm/stdlib"
+)
+
+const (
+	globalsSize = 1024
+	stackSize   = 2048
+	maxFrames   = 1024
 )
 
 // sequenceLen defines the length of a sequence using a bitwise shift for efficient computation.
@@ -52,7 +57,7 @@ func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects
 		sequencer = NewSequencer()
 	}
 	if globals == nil {
-		globals = make([]objects.IObject, GlobalsSize)
+		globals = make([]objects.IObject, globalsSize)
 	}
 	if maxAllocations < 1 {
 		return nil, fmt.Errorf("max allocations must be greater than 0")
@@ -66,8 +71,8 @@ func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects
 		ip:             -1,
 		maxAllocations: maxAllocations,
 		suspend:        false,
-		stack:          make([]objects.IObject, StackSize),
-		frames:         make([]*Frame, MaxFrames),
+		stack:          make([]objects.IObject, stackSize),
+		frames:         make([]*Frame, maxFrames),
 	}
 	for i := range v.frames {
 		v.frames[i] = NewFunctionCallFrame()
@@ -593,7 +598,7 @@ func (v *VM) doOpCall() {
 		if v.curFrame.SameFunction(callee) {
 			// recursive call
 			nextOp := v.curInstructions.Get(v.ip + 1)
-			if nextOp == opcodes.OpReturn || (nextOp == opcodes.OpPop && v.curInstructions.Get(v.ip+2) == opcodes.OpReturn) {
+			if nextOp == bytecodes.OpReturn || (nextOp == bytecodes.OpPop && v.curInstructions.Get(v.ip+2) == bytecodes.OpReturn) {
 				for p := 0; p < numArgs; p++ {
 					v.stack[v.curFrame.basePointer+p] =
 						v.stack[v.sp-numArgs+p]
@@ -603,7 +608,7 @@ func (v *VM) doOpCall() {
 				return
 			}
 		}
-		if v.framesIndex >= MaxFrames {
+		if v.framesIndex >= maxFrames {
 			v.err = errors.ErrStackOverflow
 			return
 		}

@@ -9,7 +9,6 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/compiler"
 	"github.com/markel1974/c64emu/src/kernel/vm/modules"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
-	"github.com/markel1974/c64emu/src/kernel/vm/opcodes"
 )
 
 // init registers various struct types used within the package for gob encoding and decoding.
@@ -263,18 +262,18 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 	i := 0
 	for i < len(instances) {
 		op := instances[i]
-		numOperands := opcodes.OpcodeOperands[op]
-		_, read := opcodes.ReadOperands(numOperands, instances[i+1:])
+		numOperands := OpcodeOperands[op]
+		_, read := ReadOperands(numOperands, instances[i+1:])
 
 		switch op {
-		case opcodes.OpConstant:
+		case OpConstant:
 			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
 			newIdx, ok := indexMap[curIdx]
 			if !ok {
 				return fmt.Errorf("constant index not found: %d", curIdx)
 			}
 			copy(instances[i:], MakeInstruction(op, newIdx))
-		case opcodes.OpClosure:
+		case OpClosure:
 			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
 			numFree := int(instances[i+3])
 			newIdx, ok := indexMap[curIdx]
@@ -283,7 +282,7 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 			}
 			copy(instances[i:], MakeInstruction(op, newIdx, numFree))
 		default:
-			return fmt.Errorf("unsupported opcode: %s", opcodes.OpcodeNames[op])
+			return fmt.Errorf("unsupported opcode: %s", OpcodeNames[op])
 		}
 		i += 1 + read
 	}

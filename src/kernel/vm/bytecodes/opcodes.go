@@ -1,4 +1,4 @@
-package opcodes
+package bytecodes
 
 // Opcode represents a single byte operation code.
 type Opcode = byte

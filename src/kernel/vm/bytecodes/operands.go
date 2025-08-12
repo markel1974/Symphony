@@ -1,4 +1,4 @@
-package opcodes
+package bytecodes
 
 // OpcodeOperands is the number of operands.
 var OpcodeOperands = [...][]int{
