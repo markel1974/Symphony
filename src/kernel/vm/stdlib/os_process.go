@@ -9,65 +9,39 @@ import (
 )
 
 func makeOSProcessState(state *os.ProcessState) *objects.ImmutableMap {
-	return &objects.ImmutableMap{
-		Value: map[string]objects.IObject{
-			"exited": &objects.UserFunction{
-				Name:  "exited",
-				Value: FuncARB(state.Exited),
-			},
-			"pid": &objects.UserFunction{
-				Name:  "pid",
-				Value: FuncARI(state.Pid),
-			},
-			"string": &objects.UserFunction{
-				Name:  "string",
-				Value: FuncARS(state.String),
-			},
-			"success": &objects.UserFunction{
-				Name:  "success",
-				Value: FuncARB(state.Success),
-			},
+	return objects.NewImmutableMap(
+		map[string]objects.IObject{
+			"exited":  objects.NewUserFunction("exited", FuncARB(state.Exited)),
+			"pid":     objects.NewUserFunction("pid", FuncARI(state.Pid)),
+			"string":  objects.NewUserFunction("string", FuncARS(state.String)),
+			"success": objects.NewUserFunction("success", FuncARB(state.Success)),
 		},
-	}
+	)
 }
 
 func makeOSProcess(proc *os.Process) *objects.ImmutableMap {
-	return &objects.ImmutableMap{
-		Value: map[string]objects.IObject{
-			"kill": &objects.UserFunction{
-				Name:  "kill",
-				Value: FuncARE(proc.Kill),
-			},
-			"release": &objects.UserFunction{
-				Name:  "release",
-				Value: FuncARE(proc.Release),
-			},
-			"signal": &objects.UserFunction{
-				Name: "signal",
-				Value: func(args ...objects.IObject) (objects.IObject, error) {
-					if len(args) != 1 {
-						return nil, errors.ErrWrongNumArguments
-					}
-					i1, ok := objects.ToInt64(args[0])
-					if !ok {
-						return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
-					}
-					return wrapError(proc.Signal(syscall.Signal(i1))), nil
-				},
-			},
-			"wait": &objects.UserFunction{
-				Name: "wait",
-				Value: func(args ...objects.IObject) (objects.IObject, error) {
-					if len(args) != 0 {
-						return nil, errors.ErrWrongNumArguments
-					}
-					state, err := proc.Wait()
-					if err != nil {
-						return wrapError(err), nil
-					}
-					return makeOSProcessState(state), nil
-				},
-			},
-		},
-	}
+	return objects.NewImmutableMap(map[string]objects.IObject{
+		"kill":    objects.NewUserFunction("kill", FuncARE(proc.Kill)),
+		"release": objects.NewUserFunction("release", FuncARE(proc.Release)),
+		"signal": objects.NewUserFunction("signal", func(args ...objects.IObject) (objects.IObject, error) {
+			if len(args) != 1 {
+				return nil, errors.ErrWrongNumArguments
+			}
+			i1, err := objects.ToInt64Arg("first", args[0])
+			if err != nil {
+				return nil, err
+			}
+			return wrapError(proc.Signal(syscall.Signal(i1))), nil
+		}),
+		"wait": objects.NewUserFunction("wait", func(args ...objects.IObject) (objects.IObject, error) {
+			if len(args) != 0 {
+				return nil, errors.ErrWrongNumArguments
+			}
+			state, err := proc.Wait()
+			if err != nil {
+				return wrapError(err), nil
+			}
+			return makeOSProcessState(state), nil
+		}),
+	})
 }

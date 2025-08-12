@@ -23,18 +23,27 @@ type String struct {
 }
 
 // NewString creates and returns a new String object initialized with the provided string values.
-func NewString(value string) *String {
+func NewString(value string) (*String, error) {
+	if len(value) > MaxStringLen {
+		return nil, errors.ErrStringLimit
+	}
+	return &String{
+		value: value,
+	}, nil
+}
+
+func NewStringNoSize(value string) *String {
 	return &String{
 		value: value,
 	}
 }
 
-// Value returns the string value of the String object.
+// Value returns the string values of the String object.
 func (o *String) Value() string {
 	return o.value
 }
 
-// Length returns the length of the string value.
+// Length returns the length of the string values.
 func (o *String) Length() int {
 	return len(o.value)
 }
@@ -224,15 +233,23 @@ func ToRune(o IObject) (v rune, ok bool) {
 }
 
 // ToString converts an IObject to its string representation and determines whether the conversion is valid.
-func ToString(o IObject) (v string, ok bool) {
+func ToString(o IObject) (string, bool) {
+	if o == nil {
+		return "", false
+	}
 	if o == UndefinedValue {
-		return
+		return "", false
 	}
-	ok = true
 	if str, isStr := o.(*String); isStr {
-		v = str.value
-	} else {
-		v = o.String()
+		return str.value, true
 	}
-	return
+	return o.String(), true
+}
+
+func ToStringArg(name string, o IObject) (string, error) {
+	v, ok := ToString(o)
+	if !ok {
+		return "", errors.NewInvalidArgumentType(name, "string(compatible)", o.TypeName())
+	}
+	return v, nil
 }

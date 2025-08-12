@@ -65,184 +65,151 @@ var textModule = map[string]objects.IObject{
 
 // textREMatch checks if the first argument (regex pattern) matches the second argument (string) and returns a boolean object.
 // Returns an error if arguments are not string or if there is an invalid number of arguments.
-func textREMatch(args ...objects.IObject) (ret objects.IObject, err error) {
+func textREMatch(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
-		return
+	s1, err := objects.ToStringArg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-	s2, ok := objects.ToString(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
-		return
+	s2, err := objects.ToStringArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
 	matched, err := regexp.MatchString(s1, s2)
 	if err != nil {
-		ret = wrapError(err)
-		return
+		return wrapError(err), nil
 	}
 	if matched {
-		ret = objects.TrueValue
-	} else {
-		ret = objects.FalseValue
+		return objects.TrueValue, nil
 	}
-	return
+	return objects.FalseValue, nil
 }
 
 // textREFind performs a regular expression match on a string and extracts matched substrings with their positions.
-func textREFind(args ...objects.IObject) (ret objects.IObject, err error) {
+func textREFind(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 2 && numArgs != 3 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
-		return
+	s1, err := objects.ToStringArg("first", args[0])
+	if err != nil {
+		return nil, err
+	}
+	s2, err := objects.ToStringArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		ret = wrapError(err)
-		return
-	}
-	s2, ok := objects.ToString(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
-		return
+		return wrapError(err), nil
 	}
 	if numArgs < 3 {
 		m := re.FindStringSubmatchIndex(s2)
 		if m == nil {
-			ret = objects.UndefinedValue
-			return
+			return objects.UndefinedValue, nil
 		}
-		arr := &objects.Array{}
+		arr := objects.NewArray(nil)
 		for i := 0; i < len(m); i += 2 {
-			arr.Value = append(arr.Value,
-				&objects.ImmutableMap{Value: map[string]objects.IObject{
-					"text":  &objects.String{Value: s2[m[i]:m[i+1]]},
-					"begin": &objects.Int{Value: int64(m[i])},
-					"end":   &objects.Int{Value: int64(m[i+1])},
-				}})
+			arr.Append(objects.NewImmutableMap(map[string]objects.IObject{
+				"text":  objects.NewStringNoSize(s2[m[i]:m[i+1]]),
+				"begin": objects.NewInt(int64(m[i])),
+				"end":   objects.NewInt(int64(m[i+1])),
+			}))
 		}
-		ret = &objects.Array{Value: []objects.IObject{arr}}
-		return
+		return objects.NewArray([]objects.IObject{arr}), nil
 	}
-	i3, ok := objects.ToInt(args[2])
-	if !ok {
-		err = errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
-		return
+	i3, err := objects.ToIntArg("third", args[2])
+	if err != nil {
+		return nil, err
 	}
-	m := re.FindAllStringSubmatchIndex(s2, i3)
-	if m == nil {
-		ret = objects.UndefinedValue
-		return
+	mFA := re.FindAllStringSubmatchIndex(s2, i3)
+	if mFA == nil {
+		return objects.UndefinedValue, nil
 	}
-	arr := &objects.Array{}
-	for _, m := range m {
-		subMatch := &objects.Array{}
+	arr := objects.NewArray(nil)
+	for _, m := range mFA {
+		subMatch := objects.NewArray(nil)
 		for i := 0; i < len(m); i += 2 {
-			subMatch.Value = append(subMatch.Value,
-				&objects.ImmutableMap{Value: map[string]objects.IObject{
-					"text":  &objects.String{Value: s2[m[i]:m[i+1]]},
-					"begin": &objects.Int{Value: int64(m[i])},
-					"end":   &objects.Int{Value: int64(m[i+1])},
-				}})
+			subMatch.Append(objects.NewImmutableMap(map[string]objects.IObject{
+				"text":  objects.NewStringNoSize(s2[m[i]:m[i+1]]),
+				"begin": objects.NewInt(int64(m[i])),
+				"end":   objects.NewInt(int64(m[i+1])),
+			}))
 		}
-
-		arr.Value = append(arr.Value, subMatch)
+		arr.Append(subMatch)
 	}
-	ret = arr
-	return
+	return arr, nil
 }
 
 // textREReplace performs a regular expression replacement in a string.
 // Accepts three arguments: regex pattern as the first argument, source string as the second, and replacement string as the third.
 // Returns the modified string or an error if the input arguments are invalid or the operation fails.
-func textREReplace(args ...objects.IObject) (ret objects.IObject, err error) {
+func textREReplace(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
-		return
+	s1, err := objects.ToStringArg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-	s2, ok := objects.ToString(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
-		return
+	s2, err := objects.ToStringArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
-	s3, ok := objects.ToString(args[2])
-	if !ok {
-		err = errors.NewInvalidArgumentType("third", "string(compatible)", args[2].TypeName())
-		return
+	s3, err := objects.ToStringArg("third", args[2])
+	if err != nil {
+		return nil, err
 	}
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		ret = wrapError(err)
-	} else {
-		s, ok := doTextRegexpReplace(re, s2, s3)
-		if !ok {
-			return nil, errors.ErrStringLimit
-		}
-
-		ret = &objects.String{Value: s}
+		return wrapError(err), nil
 	}
-	return
+	s := doTextRegexpReplace(re, s2, s3)
+	v, err := objects.NewString(s)
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
 }
 
 // textRESplit splits a string by a regular expression pattern and returns an array of resulting substrings.
 // The first argument is the regex pattern, the second is the string to split, and the optional third is the max splits.
 // Returns an error if arguments' types or counts are incorrect, or if the regex compilation fails.
-func textRESplit(args ...objects.IObject) (ret objects.IObject, err error) {
+func textRESplit(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 2 && numArgs != 3 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-
 	s1, ok := objects.ToString(args[0])
 	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
-		return
+		return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 	}
-
 	s2, ok := objects.ToString(args[1])
 	if !ok {
-		err = errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
-		return
+		return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
 	}
-
 	var i3 = -1
 	if numArgs > 2 {
 		i3, ok = objects.ToInt(args[2])
 		if !ok {
-			err = errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
-			return
+			return nil, errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
 		}
 	}
-
 	re, err := regexp.Compile(s1)
 	if err != nil {
-		ret = wrapError(err)
-		return
+		return wrapError(err), nil
 	}
-
 	arr := &objects.Array{}
 	for _, s := range re.Split(s2, i3) {
-		arr.Value = append(arr.Value, &objects.String{Value: s})
+		v, err := objects.NewString(s)
+		if err != nil {
+			return nil, err
+		}
+		arr.Append(v)
 	}
-
-	ret = arr
-
-	return
+	return arr, nil
 }
 
 // textRECompile compiles a string argument into a regular expression and returns a map of regex operations or an error.
@@ -267,70 +234,58 @@ func textRECompile(args ...objects.IObject) (ret objects.IObject, err error) {
 
 // textReplace performs a string replacement operation using 4 arguments: original string, target, replacement, and limit.
 // It returns the modified string as an object or an error if the input arguments are invalid or exceed string limits.
-func textReplace(args ...objects.IObject) (ret objects.IObject, err error) {
+func textReplace(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
-		return
+	s1, err := objects.ToStringArg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-	s2, ok := objects.ToString(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
-		return
+	s2, err := objects.ToStringArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
-	s3, ok := objects.ToString(args[2])
-	if !ok {
-		err = errors.NewInvalidArgumentType("third", "string(compatible)", args[2].TypeName())
-		return
+	s3, err := objects.ToStringArg("third", args[2])
+	if err != nil {
+		return nil, err
 	}
-	i4, ok := objects.ToInt(args[3])
-	if !ok {
-		err = errors.NewInvalidArgumentType("fourth", "int(compatible)", args[3].TypeName())
-		return
+	i4, err := objects.ToIntArg("fourth", args[3])
+	if err != nil {
+		return nil, err
 	}
 	s, ok := doTextReplace(s1, s2, s3, i4)
 	if !ok {
-		err = errors.ErrStringLimit
-		return
+		return nil, errors.ErrStringLimit
 	}
-	ret = &objects.String{Value: s}
-	return
+	return objects.NewString(s)
 }
 
 // textSubstring extracts a substring from a string, using start and optional end indices provided as arguments.
 // Returns an error if arguments are invalid or indices are out of bounds.
-func textSubstring(args ...objects.IObject) (ret objects.IObject, err error) {
+func textSubstring(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
-		return
+	s1, err := objects.ToStringArg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-	i2, ok := objects.ToInt(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
-		return
+	i2, err := objects.ToIntArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
 	strlen := len(s1)
 	i3 := strlen
 	if argsLen == 3 {
-		i3, ok = objects.ToInt(args[2])
-		if !ok {
-			err = errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
-			return
+		i3, err = objects.ToIntArg("third", args[2])
+		if err != nil {
+			return nil, err
 		}
 	}
 	if i2 > i3 {
-		err = errors.ErrInvalidIndexType
-		return
+		return nil, errors.ErrInvalidIndexType
 	}
 	if i2 < 0 {
 		i2 = 0
@@ -342,120 +297,100 @@ func textSubstring(args ...objects.IObject) (ret objects.IObject, err error) {
 	} else if i3 > strlen {
 		i3 = strlen
 	}
-	ret = &objects.String{Value: s1[i2:i3]}
-	return
+	return objects.NewString(s1[i2:i3])
 }
 
 // textPadLeft pads a string from the left with a specified character or default space until the string reaches a given length.
 // Returns an error if arguments are invalid or exceed defined limits.
 // Accepts 2 or 3 arguments: the string to pad, the target length, and an optional padding string.
-func textPadLeft(args ...objects.IObject) (ret objects.IObject, err error) {
+func textPadLeft(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
-		return
+	s1, err := objects.ToStringArg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-	i2, ok := objects.ToInt(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
-		return
+	i2, err := objects.ToIntArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
 	if i2 > objects.MaxStringLen {
 		return nil, errors.ErrStringLimit
 	}
 	sLen := len(s1)
 	if sLen >= i2 {
-		ret = &objects.String{Value: s1}
-		return
+		return objects.NewString(s1)
 	}
 	s3 := " "
 	if argsLen == 3 {
-		if s3, ok = objects.ToString(args[2]); !ok {
-			err = errors.NewInvalidArgumentType("third", "string(compatible)", args[2].TypeName())
-			return
+		s3, err = objects.ToStringArg("third", args[2])
+		if err != nil {
+			return nil, err
 		}
 	}
 	padStrLen := len(s3)
 	if padStrLen == 0 {
-		ret = &objects.String{Value: s1}
-		return
+		return objects.NewString(s1)
 	}
 	padCount := ((i2 - padStrLen) / padStrLen) + 1
 	retStr := strings.Repeat(s3, padCount) + s1
-	ret = &objects.String{Value: retStr[len(retStr)-i2:]}
-	return
+	return objects.NewString(retStr[len(retStr)-i2:])
 }
 
 // textPadRight appends padding characters to the right of a string until it reaches the desired length.
 // Accepts 2-3 arguments: string, target length (int), and optional padding string (default is a space).
 // Returns an error if arguments are of invalid type, the number of arguments is wrong, or string size exceeds the limit.
-func textPadRight(args ...objects.IObject) (ret objects.IObject, err error) {
+func textPadRight(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
-		return
+	s1, err := objects.ToStringArg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-	i2, ok := objects.ToInt(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
-		return
-	}
-	if i2 > objects.MaxStringLen {
-		return nil, errors.ErrStringLimit
+	i2, err := objects.ToIntArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
 	sLen := len(s1)
 	if sLen >= i2 {
-		ret = &objects.String{Value: s1}
-		return
+		return objects.NewString(s1)
 	}
 	s3 := " "
 	if argsLen == 3 {
-		s3, ok = objects.ToString(args[2])
-		if !ok {
-			err = errors.NewInvalidArgumentType("third", "string(compatible)", args[2].TypeName())
-			return
+		s3, err = objects.ToStringArg("third", args[2])
+		if err != nil {
+			return nil, err
 		}
 	}
 	padStrLen := len(s3)
 	if padStrLen == 0 {
-		ret = &objects.String{Value: s1}
-		return
+		return objects.NewString(s1)
 	}
 	padCount := ((i2 - padStrLen) / padStrLen) + 1
 	retStr := s1 + strings.Repeat(s3, padCount)
-	ret = &objects.String{Value: retStr[:i2]}
-	return
+	return objects.NewString(retStr[:i2])
 }
 
 // textRepeat repeats a string a specified number of times and returns the result as a new string object.
 // It requires exactly 2 arguments: a string and an integer.
 // Returns an error if arguments are of invalid types or if the resulting string exceeds the maximum allowed length.
-func textRepeat(args ...objects.IObject) (ret objects.IObject, err error) {
+func textRepeat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
 		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := objects.ToString(args[0])
-	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+	s1, err := objects.ToStringArg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-	i2, ok := objects.ToInt(args[1])
-	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+	i2, err := objects.ToIntArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
-	if len(s1)*i2 > objects.MaxStringLen {
-		return nil, errors.ErrStringLimit
-	}
-	return &objects.String{Value: strings.Repeat(s1, i2)}, nil
+	return objects.NewString(strings.Repeat(s1, i2))
 }
 
 // textJoin concatenates elements of the first argument (array or immutable-array of strings) using the second argument as a separator.
@@ -468,19 +403,19 @@ func textJoin(args ...objects.IObject) (ret objects.IObject, err error) {
 	var ss1 []string
 	switch arg0 := args[0].(type) {
 	case *objects.Array:
-		for idx, a := range arg0.Value {
-			as, ok := objects.ToString(a)
-			if !ok {
-				return nil, errors.NewInvalidArgumentType(fmt.Sprintf("first[%d]", idx), "string(compatible)", a.TypeName())
+		for idx, a := range arg0.Values() {
+			as, err := objects.ToStringArg(fmt.Sprintf("first[%d]", idx), a)
+			if err != nil {
+				return nil, err
 			}
 			sLen += len(as)
 			ss1 = append(ss1, as)
 		}
 	case *objects.ImmutableArray:
-		for idx, a := range arg0.Value {
-			as, ok := objects.ToString(a)
-			if !ok {
-				return nil, errors.NewInvalidArgumentType(fmt.Sprintf("first[%d]", idx), "string(compatible)", a.TypeName())
+		for idx, a := range arg0.Values() {
+			as, err := objects.ToStringArg(fmt.Sprintf("first[%d]", idx), a)
+			if err != nil {
+				return nil, err
 			}
 			sLen += len(as)
 			ss1 = append(ss1, as)
@@ -488,88 +423,71 @@ func textJoin(args ...objects.IObject) (ret objects.IObject, err error) {
 	default:
 		return nil, errors.NewInvalidArgumentType("first", "array", args[0].TypeName())
 	}
-	s2, ok := objects.ToString(args[1])
-	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+	s2, err := objects.ToStringArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
-	if sLen+len(s2)*(len(ss1)-1) > objects.MaxStringLen {
-		return nil, errors.ErrStringLimit
-	}
-	return &objects.String{Value: strings.Join(ss1, s2)}, nil
+	return objects.NewString(strings.Join(ss1, s2))
 }
 
 // textFormatBool converts a single boolean argument to its string representation ("true" or "false").
 // Returns an error if the argument count is not 1 or the argument type is not boolean.
-func textFormatBool(args ...objects.IObject) (ret objects.IObject, err error) {
+func textFormatBool(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	b1, ok := args[0].(*objects.Bool)
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "bool", args[0].TypeName())
-		return
+	b1, err := objects.ToBoolArg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-	if b1 == objects.TrueValue {
-		ret = &objects.String{Value: "true"}
-	} else {
-		ret = &objects.String{Value: "false"}
+	if b1 {
+		return objects.NewString("true")
 	}
-	return
+	return objects.NewString("false")
 }
 
 // textFormatFloat formats a float value according to a specific format, precision, and bit size.
 // It expects four arguments: a float, a string format character, precision (int), and bit size (int).
 // Returns a formatted string object or an error if arguments are invalid.
-func textFormatFloat(args ...objects.IObject) (ret objects.IObject, err error) {
+func textFormatFloat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	f1, ok := args[0].(*objects.Float)
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "float", args[0].TypeName())
-		return
+	f1, err := objects.ToFloat64Arg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-	s2, ok := objects.ToString(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
-		return
+	s2, err := objects.ToStringArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
-	i3, ok := objects.ToInt(args[2])
-	if !ok {
-		err = errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
-		return
+	i3, err := objects.ToIntArg("third", args[2])
+	if err != nil {
+		return nil, err
 	}
-	i4, ok := objects.ToInt(args[3])
-	if !ok {
-		err = errors.NewInvalidArgumentType("fourth", "int(compatible)", args[3].TypeName())
-		return
+	i4, err := objects.ToIntArg("fourth", args[3])
+	if err != nil {
+		return nil, err
 	}
-	ret = &objects.String{Value: strconv.FormatFloat(f1.Value, s2[0], i3, i4)}
-	return
+	return objects.NewString(strconv.FormatFloat(f1, s2[0], i3, i4))
 }
 
 // textFormatInt formats an integer to a string using the specified base.
 // The first argument must be an integer type, and the second argument must be an int-compatible base.
 // It returns the formatted string or an error if the arguments are invalid.
-func textFormatInt(args ...objects.IObject) (ret objects.IObject, err error) {
+func textFormatInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	i1, ok := args[0].(*objects.Int)
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "int", args[0].TypeName())
-		return
+	i1, err := objects.ToIntArg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-	i2, ok := objects.ToInt(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
-		return
+	i2, err := objects.ToIntArg("second", args[1])
+	if err != nil {
+		return nil, err
 	}
-	ret = &objects.String{Value: strconv.FormatInt(i1.Value, i2)}
-	return
+	return objects.NewString(strconv.FormatInt(int64(i1), i2))
 }
 
 // textParseBool parses a string argument into a boolean value and returns it as an IObject.
@@ -585,7 +503,7 @@ func textParseBool(args ...objects.IObject) (ret objects.IObject, err error) {
 		err = errors.NewInvalidArgumentType("first", "string", args[0].TypeName())
 		return
 	}
-	parsed, err := strconv.ParseBool(s1.Value)
+	parsed, err := strconv.ParseBool(s1.Value())
 	if err != nil {
 		ret = wrapError(err)
 		return
@@ -599,89 +517,73 @@ func textParseBool(args ...objects.IObject) (ret objects.IObject, err error) {
 }
 
 // textParseFloat parses a string into a float64 with a specified precision, returning a Float object or an error.
-func textParseFloat(args ...objects.IObject) (ret objects.IObject, err error) {
+func textParseFloat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := args[0].(*objects.String)
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string", args[0].TypeName())
-		return
-	}
-	i2, ok := objects.ToInt(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
-		return
-	}
-	parsed, err := strconv.ParseFloat(s1.Value, i2)
+	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
-		ret = wrapError(err)
-		return
+		return nil, err
 	}
-	ret = &objects.Float{Value: parsed}
-	return
+	i2, err := objects.ToIntArg("second", args[1])
+	if err != nil {
+		return nil, err
+	}
+	parsed, err := strconv.ParseFloat(s1, i2)
+	if err != nil {
+		return wrapError(err), nil
+	}
+	return objects.NewFloat(parsed), nil
 }
 
 // textParseNumber parses a numeric value from a string argument and returns it as a Float object.
 // Returns an error if the argument count is not 1 or if the input type is invalid.
 // Non-numeric characters in the input string are ignored during parsing.
-func textParseNumber(args ...objects.IObject) (ret objects.IObject, err error) {
+func textParseNumber(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := args[0].(*objects.String)
-	if !ok {
-		ret = &objects.Float{Value: 0}
-		return
+	s1, err := objects.ToStringArg("first", args[0])
+	if err != nil {
+		return nil, err
 	}
-
 	var target []rune
-	for _, p := range s1.Value {
+	for _, p := range s1 {
 		if (p >= '0' && p <= '9') || p == '.' || p == '+' || p == '-' {
 			target = append(target, p)
 		}
 	}
 	parsed, err := strconv.ParseFloat(string(target), 64)
 	if err != nil {
-		ret = &objects.Float{Value: 0}
-		return
+		return nil, err
 	}
-	ret = &objects.Float{Value: parsed}
-	return
+	return objects.NewFloat(parsed), nil
 }
 
 // textParseInt parses a string into an integer using the specified base and bit size, returning the resulting integer.
 // The function expects exactly three arguments: a string, an integer for base, and an integer for bit size.
 // Returns an error for invalid argument types, an incorrect number of arguments, or a parsing failure.
-func textParseInt(args ...objects.IObject) (ret objects.IObject, err error) {
+func textParseInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
-		err = errors.ErrWrongNumArguments
-		return
+		return nil, errors.ErrWrongNumArguments
 	}
-	s1, ok := args[0].(*objects.String)
-	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string", args[0].TypeName())
-		return
-	}
-	i2, ok := objects.ToInt(args[1])
-	if !ok {
-		err = errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
-		return
-	}
-	i3, ok := objects.ToInt(args[2])
-	if !ok {
-		err = errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
-		return
-	}
-	parsed, err := strconv.ParseInt(s1.Value, i2, i3)
+	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
-		ret = wrapError(err)
-		return
+		return nil, err
 	}
-	ret = &objects.Int{Value: parsed}
-	return
+	i2, err := objects.ToIntArg("second", args[1])
+	if err != nil {
+		return nil, err
+	}
+	i3, err := objects.ToIntArg("third", args[2])
+	if err != nil {
+		return nil, err
+	}
+	parsed, err := strconv.ParseInt(s1, i2, i3)
+	if err != nil {
+		return wrapError(err), nil
+	}
+	return objects.NewInt(parsed), nil
 }
 
 // doTextReplace replaces occurrences of `old` with `new` in the string `s` up to `n` times and returns the result.

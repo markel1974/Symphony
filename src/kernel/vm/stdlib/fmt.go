@@ -5,19 +5,19 @@ import (
 	//"github.com/markel1974/injector/src/vm/compiler"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-	"github.com/markel1974/c64emu/src/kernel/vm/format"
+	"github.com/markel1974/c64emu/src/kernel/vm/modules/format"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
 var fmtSafeModule = map[string]objects.IObject{
-	"sprintf": &objects.UserFunction{Name: "sprintf", Value: fmtSprintf},
+	"sprintf": objects.NewUserFunction("sprintf", fmtSprintf),
 }
 
 var fmtModule = map[string]objects.IObject{
-	"print":   &objects.UserFunction{Name: "print", Value: fmtPrint},
-	"printf":  &objects.UserFunction{Name: "printf", Value: fmtPrintf},
-	"println": &objects.UserFunction{Name: "println", Value: fmtPrintln},
-	"sprintf": &objects.UserFunction{Name: "sprintf", Value: fmtSprintf},
+	"print":   objects.NewUserFunction("print", fmtPrint),
+	"printf":  objects.NewUserFunction("printf", fmtPrintf),
+	"println": objects.NewUserFunction("println", fmtPrintln),
+	"sprintf": objects.NewUserFunction("sprintf", fmtSprintf),
 }
 
 func fmtPrint(args ...objects.IObject) (ret objects.IObject, err error) {
@@ -43,7 +43,7 @@ func fmtPrintf(args ...objects.IObject) (ret objects.IObject, err error) {
 		return nil, nil
 	}
 
-	s, err := format.Format(data.Value, args[1:]...)
+	s, err := format.Format(data.Value(), args[1:]...)
 	if err != nil {
 		return nil, err
 	}
@@ -74,11 +74,11 @@ func fmtSprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 		// okay to return 'format' directly as String is immutable
 		return data, nil
 	}
-	s, err := format.Format(data.Value, args[1:]...)
+	s, err := format.Format(data.Value(), args[1:]...)
 	if err != nil {
 		return nil, err
 	}
-	return &objects.String{Value: s}, nil
+	return objects.NewString(s)
 }
 
 func getPrintArgs(args ...objects.IObject) ([]interface{}, error) {

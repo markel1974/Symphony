@@ -204,7 +204,7 @@ func (d *decodeState) literal() (objects.IObject, error) {
 		if !ok {
 			panic(phasePanicMsg)
 		}
-		return objects.NewString(s), nil
+		return objects.NewStringNoSize(s), nil
 
 	default: // number
 		if c != '-' && (c < '0' || c > '9') {

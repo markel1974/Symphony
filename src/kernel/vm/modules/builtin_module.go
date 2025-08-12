@@ -19,6 +19,6 @@ func (m *BuiltinModule) AsImmutableMap(moduleName string) *objects.ImmutableMap 
 	for k, v := range m.Attrs {
 		attrs[k] = v.Copy()
 	}
-	attrs["__module_name__"] = objects.NewString(moduleName)
-	return &objects.ImmutableMap{Value: attrs}
+	attrs["__module_name__"] = objects.NewStringNoSize(moduleName)
+	return objects.NewImmutableMap(attrs)
 }

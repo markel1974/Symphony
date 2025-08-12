@@ -6,34 +6,33 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-// Int represents a wrapper for a 64-bit signed integer, providing methods for operations and comparisons.
+// Int represents an integer type with a 64-bit value and methods for operations, equality, and object behavior.
 type Int struct {
 	ObjectImpl
 	value int64
 }
 
-// NewInt creates and returns a new instance of the Int type with the specified int64 value.
+// NewInt creates and returns a new instance of the Int struct initialized with the specified int64 value.
 func NewInt(value int64) *Int {
 	return &Int{value: value}
 }
 
-// Value returns the int64 value of the Int type.
+// Value returns the underlying int64 value of the Int object.
 func (o *Int) Value() int64 {
 	return o.value
 }
 
-// String returns the string representation of the Int type, converting its int64 value to a base-10 formatted string.
+// String returns the string representation of the Int value using base 10 format.
 func (o *Int) String() string {
 	return strconv.FormatInt(o.value, 10)
 }
 
-// TypeName returns the name of the type as a string, which is "int".
+// TypeName returns the name of the type as a string, which is "int" for this object.
 func (o *Int) TypeName() string {
 	return "int"
 }
 
-// BinaryOp performs a binary operation using the specified operator between the current Int instance and another IObject.
-// Returns the resulting IObject or an error if the operation is invalid.
+// BinaryOp performs a binary operation using the specified operator and right-hand side operand, returning the result.
 func (o *Int) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 	switch rhs := rhs.(type) {
 	case *Int:
@@ -193,17 +192,17 @@ func (o *Int) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 	return nil, errors.ErrInvalidOperator
 }
 
-// Copy creates and returns a new instance of the Int object, duplicating its value.
+// Copy creates and returns a new instance of the Int object with the same value as the current instance.
 func (o *Int) Copy() IObject {
 	return &Int{value: o.value}
 }
 
-// Falsy checks if the integer value is considered falsy (equal to 0) and returns true if it is, otherwise false.
+// Falsy checks whether the integer value is considered falsy. Returns true if the value is 0, otherwise false.
 func (o *Int) Falsy() bool {
 	return o.value == 0
 }
 
-// Equals compares the Int object with another IObject for equality and returns true if both are of type Int and values are equal.
+// Equals checks if the current Int object is equal to another IObject of type Int by comparing their values.
 func (o *Int) Equals(x IObject) bool {
 	t, ok := x.(*Int)
 	if !ok {
@@ -212,7 +211,8 @@ func (o *Int) Equals(x IObject) bool {
 	return o.value == t.value
 }
 
-// ToInt64 converts an IObject implementation to an int64 if possible and returns whether the conversion was successful.
+// ToInt64 attempts to convert the given IObject to an int64 value.
+// It returns the converted value and a boolean indicating success or failure.
 func ToInt64(o IObject) (v int64, ok bool) {
 	switch o := o.(type) {
 	case *Int:
@@ -239,30 +239,45 @@ func ToInt64(o IObject) (v int64, ok bool) {
 	return
 }
 
-// ToInt attempts to convert the given IObject into an integer type.
-// Returns the integer values and a boolean indicating success.
-func ToInt(o IObject) (v int, ok bool) {
+// ToInt converts an IObject to an integer if possible, returning the integer and a boolean indicating success.
+func ToInt(o IObject) (int, bool) {
 	switch o := o.(type) {
 	case *Int:
-		v = int(o.value)
-		ok = true
+		return int(o.value), true
 	case *Float:
-		v = int(o.value)
-		ok = true
+		return int(o.value), true
 	case *Char:
-		v = int(o.value)
-		ok = true
+		return int(o.value), true
 	case *Bool:
 		if o == TrueValue {
-			v = 1
+			return 1, true
 		}
-		ok = true
+		return 0, true
 	case *String:
 		c, err := strconv.ParseInt(o.value, 10, 64)
 		if err == nil {
-			v = int(c)
-			ok = true
+			return int(c), true
 		}
+		return 0, false
+	default:
+		return 0, false
 	}
-	return
+}
+
+// ToIntArg converts an IObject to an integer, returning an error if the conversion is not possible or types mismatch.
+func ToIntArg(name string, o IObject) (int, error) {
+	v, ok := ToInt(o)
+	if !ok {
+		return 0, errors.NewInvalidArgumentType(name, "int(compatible)", o.TypeName())
+	}
+	return v, nil
+}
+
+// ToInt64Arg converts an IObject to an int64, returning an error if the conversion is not possible or the type is invalid.
+func ToInt64Arg(name string, o IObject) (int64, error) {
+	v, ok := ToInt64(o)
+	if !ok {
+		return 0, errors.NewInvalidArgumentType(name, "int(compatible)", o.TypeName())
+	}
+	return v, nil
 }

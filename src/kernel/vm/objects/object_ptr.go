@@ -1,14 +1,14 @@
 package objects
 
-// ObjectPtr is a wrapper around a pointer to an IObject, allowing additional behaviors and encapsulation of the value.
+// ObjectPtr is a wrapper around a pointer to an IObject, allowing additional behaviors and encapsulation of the values.
 // It embeds ObjectImpl, inheriting default behaviors for the IObject interface methods.
-// The value field holds the actual IObject instance being wrapped.
+// The values field holds the actual IObject instance being wrapped.
 type ObjectPtr struct {
 	ObjectImpl
 	value *IObject
 }
 
-// NewObjectPtr creates a new ObjectPtr instance wrapping the provided IObject pointer.// NewObjectPtr creates a new ObjectPtr instance with the provided IObject value.
+// NewObjectPtr creates a new ObjectPtr instance wrapping the provided IObject pointer.// NewObjectPtr creates a new ObjectPtr instance with the provided IObject values.
 func NewObjectPtr(value *IObject) *ObjectPtr {
 	return &ObjectPtr{value: value}
 }
@@ -18,7 +18,7 @@ func (o *ObjectPtr) Value() *IObject {
 	return o.value
 }
 
-// SetValue sets the internal value field of the ObjectPtr to the provided IObject pointer.
+// SetValue sets the internal values field of the ObjectPtr to the provided IObject pointer.
 func (o *ObjectPtr) SetValue(value IObject) {
 	*o.value = value
 }
@@ -38,7 +38,7 @@ func (o *ObjectPtr) Copy() IObject {
 	return o
 }
 
-// Falsy returns true if the value of the ObjectPtr is nil, indicating it is considered falsy in a boolean context.
+// Falsy returns true if the values of the ObjectPtr is nil, indicating it is considered falsy in a boolean context.
 func (o *ObjectPtr) Falsy() bool {
 	return o.value == nil
 }

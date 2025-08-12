@@ -6,23 +6,23 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-// Time represents a custom object encapsulating a Go time.Time value with extended behaviors and operations.
+// Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
 type Time struct {
 	ObjectImpl
 	value time.Time
 }
 
-// NewTime creates a new instance of Time wrapping the provided time.Time value.
+// NewTime creates a new instance of Time wrapping the provided time.Time values.
 func NewTime(value time.Time) *Time {
 	return &Time{value: value}
 }
 
-// Value returns the underlying time.Time value of the Time object.
+// Value returns the underlying time.Time values of the Time object.
 func (o *Time) Value() time.Time {
 	return o.value
 }
 
-// String returns the string representation of the Time object by delegating to the underlying time.Time value.
+// String returns the string representation of the Time object by delegating to the underlying time.Time values.
 func (o *Time) String() string {
 	return o.value.String()
 }
@@ -34,8 +34,8 @@ func (o *Time) TypeName() string {
 
 // BinaryOp performs a binary operation between the Time object and another IObject using a specified Operator.
 // Returns the resulting IObject or an error if the operation is invalid or unsupported.
-func (o *Time) BinaryOp(op Operator, rhs IObject) (IObject, error) {
-	switch rhs := rhs.(type) {
+func (o *Time) BinaryOp(op Operator, in IObject) (IObject, error) {
+	switch rhs := in.(type) {
 	case *Int:
 		switch op {
 		case OperatorAdd: // time + int => time
@@ -82,12 +82,12 @@ func (o *Time) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 	return nil, errors.ErrInvalidOperator
 }
 
-// Copy returns a new instance of the Time object with the same internal time value, duplicating its state.
+// Copy returns a new instance of the Time object with the same internal time values, duplicating its state.
 func (o *Time) Copy() IObject {
 	return &Time{value: o.value}
 }
 
-// Falsy returns true if the Time object's value is zero (indicating it is uninitialized or empty), otherwise false.
+// Falsy returns true if the Time object's values is zero (indicating it is uninitialized or empty), otherwise false.
 func (o *Time) Falsy() bool {
 	return o.value.IsZero()
 }

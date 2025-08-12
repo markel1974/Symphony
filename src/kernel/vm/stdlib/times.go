@@ -9,21 +9,21 @@ import (
 
 // timesModule is a map providing time-related constants, formats, durations, months, and various time utility functions.
 var timesModule = map[string]objects.IObject{
-	"format_ansic":         objects.NewString(time.ANSIC),
-	"format_unix_date":     objects.NewString(time.UnixDate),
-	"format_ruby_date":     objects.NewString(time.RubyDate),
-	"format_rfc822":        objects.NewString(time.RFC822),
-	"format_rfc822z":       objects.NewString(time.RFC822Z),
-	"format_rfc850":        objects.NewString(time.RFC850),
-	"format_rfc1123":       objects.NewString(time.RFC1123),
-	"format_rfc1123z":      objects.NewString(time.RFC1123Z),
-	"format_rfc3339":       objects.NewString(time.RFC3339),
-	"format_rfc3339_nano":  objects.NewString(time.RFC3339Nano),
-	"format_kitchen":       objects.NewString(time.Kitchen),
-	"format_stamp":         objects.NewString(time.Stamp),
-	"format_stamp_milli":   objects.NewString(time.StampMilli),
-	"format_stamp_micro":   objects.NewString(time.StampMicro),
-	"format_stamp_nano":    objects.NewString(time.StampNano),
+	"format_ansic":         objects.NewStringNoSize(time.ANSIC),
+	"format_unix_date":     objects.NewStringNoSize(time.UnixDate),
+	"format_ruby_date":     objects.NewStringNoSize(time.RubyDate),
+	"format_rfc822":        objects.NewStringNoSize(time.RFC822),
+	"format_rfc822z":       objects.NewStringNoSize(time.RFC822Z),
+	"format_rfc850":        objects.NewStringNoSize(time.RFC850),
+	"format_rfc1123":       objects.NewStringNoSize(time.RFC1123),
+	"format_rfc1123z":      objects.NewStringNoSize(time.RFC1123Z),
+	"format_rfc3339":       objects.NewStringNoSize(time.RFC3339),
+	"format_rfc3339_nano":  objects.NewStringNoSize(time.RFC3339Nano),
+	"format_kitchen":       objects.NewStringNoSize(time.Kitchen),
+	"format_stamp":         objects.NewStringNoSize(time.Stamp),
+	"format_stamp_milli":   objects.NewStringNoSize(time.StampMilli),
+	"format_stamp_micro":   objects.NewStringNoSize(time.StampMicro),
+	"format_stamp_nano":    objects.NewStringNoSize(time.StampNano),
 	"nanosecond":           objects.NewInt(int64(time.Nanosecond)),
 	"microsecond":          objects.NewInt(int64(time.Microsecond)),
 	"millisecond":          objects.NewInt(int64(time.Millisecond)),
@@ -200,7 +200,7 @@ func timesDurationString(args ...objects.IObject) (objects.IObject, error) {
 	if !ok {
 		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
-	return objects.NewString(time.Duration(i1).String()), nil
+	return objects.NewString(time.Duration(i1).String())
 }
 
 // timesMonthString converts an integer to its corresponding month name as a string. Returns an error for invalid arguments.
@@ -212,7 +212,7 @@ func timesMonthString(args ...objects.IObject) (objects.IObject, error) {
 	if !ok {
 		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
-	return objects.NewString(time.Month(i1).String()), nil
+	return objects.NewStringNoSize(time.Month(i1).String()), nil
 }
 
 // timesDate creates a new time object using year, month, day, hour, minute, second, and nanosecond values as arguments.
@@ -545,10 +545,7 @@ func timesTimeFormat(args ...objects.IObject) (objects.IObject, error) {
 		return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
 	}
 	s := t1.Format(s2)
-	if len(s) > objects.MaxStringLen {
-		return nil, errors.ErrStringLimit
-	}
-	return objects.NewString(s), nil
+	return objects.NewString(s)
 }
 
 // timesIsZero checks if the provided time object is a zero time. Returns true if zero, false otherwise.
@@ -589,7 +586,7 @@ func timesToUTC(args ...objects.IObject) (objects.IObject, error) {
 	if !ok {
 		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
-	return &objects.Time{Value: t1.UTC()}, nil
+	return objects.NewTime(t1.UTC()), nil
 }
 
 // timesTimeLocation extracts the location (timezone) of the given time object and returns it as a string.
@@ -602,7 +599,7 @@ func timesTimeLocation(args ...objects.IObject) (objects.IObject, error) {
 	if !ok {
 		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
-	return objects.NewString(t1.Location().String()), nil
+	return objects.NewString(t1.Location().String())
 }
 
 // timesTimeString converts a time object to its string representation and returns it as a string object.
@@ -615,5 +612,5 @@ func timesTimeString(args ...objects.IObject) (objects.IObject, error) {
 	if !ok {
 		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
-	return objects.NewString(t1.String()), nil
+	return objects.NewString(t1.String())
 }

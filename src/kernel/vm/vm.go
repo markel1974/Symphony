@@ -114,6 +114,39 @@ func (v *VM) run() {
 	}
 }
 
+func (v *VM) checkBounds(highStack objects.IObject, lowStack objects.IObject, numElements int64) (int64, int64, error) {
+	var lowIdx int64
+	if lowStack != objects.UndefinedValue {
+		if low, ok := lowStack.(*objects.Int); ok {
+			lowIdx = low.Value()
+		} else {
+			return 0, 0, fmt.Errorf("invalid slice index type: %s", low.TypeName())
+		}
+	}
+	var highIdx int64
+	if highStack == objects.UndefinedValue {
+		highIdx = numElements
+	} else if high, ok := highStack.(*objects.Int); ok {
+		highIdx = high.Value()
+	} else {
+		return 0, 0, fmt.Errorf("invalid slice index type: %s", high.TypeName())
+	}
+	if lowIdx > highIdx {
+		return 0, 0, fmt.Errorf("invalid slice index: %d > %d", lowIdx, highIdx)
+	}
+	if lowIdx < 0 {
+		lowIdx = 0
+	} else if lowIdx > numElements {
+		lowIdx = numElements
+	}
+	if highIdx < 0 {
+		highIdx = 0
+	} else if highIdx > numElements {
+		highIdx = numElements
+	}
+	return lowIdx, highIdx, nil
+}
+
 // doOpConstant fetches a constant from the constants pool and pushes it onto the stack.
 func (v *VM) doOpConstant() {
 	v.ip += 2
@@ -555,7 +588,11 @@ func (v *VM) doOpSliceIndex() {
 		} else if highIdx > numElements {
 			highIdx = numElements
 		}
-		var val objects.IObject = objects.NewString(left.Value()[lowIdx:highIdx])
+		val, err := objects.NewString(left.Value()[lowIdx:highIdx])
+		if err != nil {
+			v.err = err
+			return
+		}
 		v.allocations--
 		if v.allocations == 0 {
 			v.err = errors.ErrObjectAllocLimit

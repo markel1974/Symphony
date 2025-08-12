@@ -4,23 +4,23 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
-// Char represents a character type, encapsulating a single rune value and inheriting behavior from ObjectImpl.
+// Char represents a character type, encapsulating a single rune values and inheriting behavior from ObjectImpl.
 type Char struct {
 	ObjectImpl
 	value rune
 }
 
-// NewChar creates and returns a new Char object with the specified rune value.
+// NewChar creates and returns a new Char object with the specified rune values.
 func NewChar(value rune) *Char {
 	return &Char{value: value}
 }
 
-// Value returns the rune value stored in the Char object.
+// Value returns the rune values stored in the Char object.
 func (o *Char) Value() rune {
 	return o.value
 }
 
-// String returns the string representation of the Char object's value.
+// String returns the string representation of the Char object's values.
 func (o *Char) String() string {
 	return string(o.value)
 }
@@ -111,12 +111,12 @@ func (o *Char) BinaryOp(op Operator, in IObject) (IObject, error) {
 	return nil, errors.ErrInvalidOperator
 }
 
-// Copy creates and returns a new instance of the Char object with the same value.
+// Copy creates and returns a new instance of the Char object with the same values.
 func (o *Char) Copy() IObject {
 	return &Char{value: o.value}
 }
 
-// Falsy checks whether the Char object represents a falsy state, returning true if the underlying value is 0.
+// Falsy checks whether the Char object represents a falsy state, returning true if the underlying values is 0.
 func (o *Char) Falsy() bool {
 	return o.value == 0
 }

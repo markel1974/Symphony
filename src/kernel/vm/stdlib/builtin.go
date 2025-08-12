@@ -52,7 +52,7 @@ func builtinTypeName(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, errors.ErrWrongNumArguments
 	}
-	return objects.NewString(args[0].TypeName()), nil
+	return objects.NewString(args[0].TypeName())
 }
 
 // builtinIsString checks if the given argument is of type String.
@@ -348,7 +348,7 @@ func builtinFormat(args ...objects.IObject) (objects.IObject, error) {
 	if err != nil {
 		return nil, err
 	}
-	return objects.NewString(s), nil
+	return objects.NewString(s)
 }
 
 // builtinCopy creates and returns a copy of the provided object. Only one argument is expected; additional arguments result in an error.
@@ -371,10 +371,7 @@ func builtinString(args ...objects.IObject) (objects.IObject, error) {
 	}
 	v, ok := objects.ToString(args[0])
 	if ok {
-		if len(v) > objects.MaxStringLen {
-			return nil, errors.ErrStringLimit
-		}
-		return objects.NewString(v), nil
+		return objects.NewString(v)
 	}
 	if argsLen == 2 {
 		return args[1], nil

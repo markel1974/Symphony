@@ -19,7 +19,7 @@ func (o *Undefined) Copy() IObject {
 	return o
 }
 
-// IsFalsy returns true if the values of the type is falsy.
+// Falsy returns true if the values of the type is falsy.
 func (o *Undefined) Falsy() bool {
 	return true
 }

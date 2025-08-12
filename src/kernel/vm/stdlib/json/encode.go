@@ -177,9 +177,9 @@ func Encode(o objects.IObject) ([]byte, error) {
 		b = append(b, '}')
 	case *objects.ImmutableMap:
 		b = append(b, '{')
-		len1 := len(o.Value) - 1
+		len1 := o.Length() - 1
 		idx := 0
-		for key, value := range o.Value {
+		for key, value := range o.Values() {
 			b = encodeString(b, key)
 			b = append(b, ':')
 			eb, err := Encode(value)

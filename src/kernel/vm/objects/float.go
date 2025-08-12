@@ -160,20 +160,35 @@ func (o *Float) Equals(x IObject) bool {
 }
 
 // ToFloat64 attempts to convert an IObject to a float64 and returns the values along with a success flag.
-func ToFloat64(o IObject) (v float64, ok bool) {
+func ToFloat64(o IObject) (float64, bool) {
 	switch o := o.(type) {
 	case *Int:
-		v = float64(o.value)
-		ok = true
+		return float64(o.value), true
 	case *Float:
-		v = o.value
-		ok = true
+		return o.value, true
+	case *Char:
+		return float64(o.value), true
+	case *Bool:
+		if o == TrueValue {
+			return 1, true
+		}
+		return 0, true
 	case *String:
 		c, err := strconv.ParseFloat(o.value, 64)
 		if err == nil {
-			v = c
-			ok = true
+			return c, true
 		}
+		return 0, false
+	default:
+		return 0, false
 	}
-	return
+}
+
+// ToFloat64Arg converts an IObject to a float64 and returns an error if the conversion fails or the type is incompatible.
+func ToFloat64Arg(name string, o IObject) (float64, error) {
+	v, ok := ToFloat64(o)
+	if !ok {
+		return 0, errors.NewInvalidArgumentType(name, "float64(compatible)", o.TypeName())
+	}
+	return v, nil
 }

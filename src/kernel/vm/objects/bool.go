@@ -1,8 +1,10 @@
 package objects
 
-// TrueValue represents the boolean true values as an IObject.
-// FalseValue represents the boolean false values as an IObject.
-// UndefinedValue represents an undefined values as an IObject.
+import "github.com/markel1974/c64emu/src/kernel/vm/errors"
+
+// TrueValue is a predefined constant representing the boolean true value as an IObject.
+// FalseValue is a predefined constant representing the boolean false value as an IObject.
+// UndefinedValue is a predefined constant representing an undefined value as an IObject.
 var (
 	// TrueValue represents a true values.
 	TrueValue IObject = &Bool{value: true}
@@ -14,15 +16,13 @@ var (
 	UndefinedValue IObject = &Undefined{}
 )
 
-// Bool represents a boolean type with true or false values.
-// It embeds ObjectImpl and provides methods for common object operations.
-// The values field indicates the boolean state: `true` or `false`.
+// Bool is a custom type representing a boolean values, implementing IObject interface and encapsulating a boolean value.
 type Bool struct {
 	ObjectImpl
 	value bool
 }
 
-// String returns the string representation of the Bool object, "true" for true values and "false" for false values.
+// String returns the string representation of the Bool object, i.e., "true" if the value is true, otherwise "false".
 func (o *Bool) String() string {
 	if o.value {
 		return "true"
@@ -30,33 +30,33 @@ func (o *Bool) String() string {
 	return "false"
 }
 
-// TypeName returns the string "bool", representing the name of the type of the Bool object.
+// TypeName returns the name of the type as a string, specifically "bool" for the Bool type.
 func (o *Bool) TypeName() string {
 	return "bool"
 }
 
-// Copy returns the Bool object itself as it is considered immutable.
+// Copy creates and returns a reference to the current Bool object.
 func (o *Bool) Copy() IObject {
 	return o
 }
 
-// Falsy determines if the Bool object's values should be considered falsy (returns true if the values is false).
+// Falsy returns true if the Bool value is false, otherwise returns false.
 func (o *Bool) Falsy() bool {
 	return !o.value
 }
 
-// Equals checks whether the Bool object is equal to another IObject based on reference comparison.
+// Equals compares the Bool object with another IObject and returns true if both are equal, otherwise false.
 func (o *Bool) Equals(x IObject) bool {
 	return o == x
 }
 
-// GobDecode implements the gob.GobDecoder interface, decoding a byte slice to set the Bool's values.
+// GobDecode decodes a byte slice into the Bool value, setting the Bool's value to true if the first byte equals 1.
 func (o *Bool) GobDecode(b []byte) (err error) {
 	o.value = b[0] == 1
 	return
 }
 
-// GobEncode encodes the Bool object into a byte slice for serialization, representing true as 1 and false as 0.
+// GobEncode serializes the Bool object into a byte slice based on its boolean value. Returns the serialized data and error, if any.
 func (o *Bool) GobEncode() (b []byte, err error) {
 	if o.value {
 		b = []byte{1}
@@ -66,17 +66,26 @@ func (o *Bool) GobEncode() (b []byte, err error) {
 	return
 }
 
-// ToBool converts an IObject to a boolean by checking its falsy state. Returns the boolean values and a success flag.
+// ToBool converts the given IObject to a bool based on its Falsy() method and returns the result along with a success flag.
 func ToBool(o IObject) (v bool, ok bool) {
 	ok = true
 	v = !o.Falsy()
 	return
 }
 
-// FromBool converts a boolean values into an IObject, returning TrueValue for true and FalseValue for false.
+// FromBool converts a boolean values into its corresponding IObject representation, returning TrueValue or FalseValue.
 func FromBool(v bool) IObject {
 	if v {
 		return TrueValue
 	}
 	return FalseValue
+}
+
+// ToBoolArg converts the given IObject to a boolean if possible or returns an error indicating an invalid argument type.
+func ToBoolArg(name string, o IObject) (bool, error) {
+	b1, ok := o.(*Bool)
+	if !ok {
+		return false, errors.NewInvalidArgumentType(name, "bool(compatible)", o.TypeName())
+	}
+	return b1.value, nil
 }

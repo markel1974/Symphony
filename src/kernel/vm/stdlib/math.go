@@ -7,227 +7,68 @@ import (
 )
 
 var mathModule = map[string]objects.IObject{
-	"e":       &objects.Float{Value: math.E},
-	"pi":      &objects.Float{Value: math.Pi},
-	"phi":     &objects.Float{Value: math.Phi},
-	"sqrt2":   &objects.Float{Value: math.Sqrt2},
-	"sqrtE":   &objects.Float{Value: math.SqrtE},
-	"sqrtPi":  &objects.Float{Value: math.SqrtPi},
-	"sqrtPhi": &objects.Float{Value: math.SqrtPhi},
-	"ln2":     &objects.Float{Value: math.Ln2},
-	"log2E":   &objects.Float{Value: math.Log2E},
-	"ln10":    &objects.Float{Value: math.Ln10},
-	"log10E":  &objects.Float{Value: math.Log10E},
-	"abs": &objects.UserFunction{
-		Name:  "abs",
-		Value: FuncAFRF(math.Abs),
-	},
-	"acos": &objects.UserFunction{
-		Name:  "acos",
-		Value: FuncAFRF(math.Acos),
-	},
-	"acosh": &objects.UserFunction{
-		Name:  "acosh",
-		Value: FuncAFRF(math.Acosh),
-	},
-	"asin": &objects.UserFunction{
-		Name:  "asin",
-		Value: FuncAFRF(math.Asin),
-	},
-	"asinh": &objects.UserFunction{
-		Name:  "asinh",
-		Value: FuncAFRF(math.Asinh),
-	},
-	"atan": &objects.UserFunction{
-		Name:  "atan",
-		Value: FuncAFRF(math.Atan),
-	},
-	"atan2": &objects.UserFunction{
-		Name:  "atan2",
-		Value: FuncAFFRF(math.Atan2),
-	},
-	"atanh": &objects.UserFunction{
-		Name:  "atanh",
-		Value: FuncAFRF(math.Atanh),
-	},
-	"cbrt": &objects.UserFunction{
-		Name:  "cbrt",
-		Value: FuncAFRF(math.Cbrt),
-	},
-	"ceil": &objects.UserFunction{
-		Name:  "ceil",
-		Value: FuncAFRF(math.Ceil),
-	},
-	"copysign": &objects.UserFunction{
-		Name:  "copysign",
-		Value: FuncAFFRF(math.Copysign),
-	},
-	"cos": &objects.UserFunction{
-		Name:  "cos",
-		Value: FuncAFRF(math.Cos),
-	},
-	"cosh": &objects.UserFunction{
-		Name:  "cosh",
-		Value: FuncAFRF(math.Cosh),
-	},
-	"dim": &objects.UserFunction{
-		Name:  "dim",
-		Value: FuncAFFRF(math.Dim),
-	},
-	"erf": &objects.UserFunction{
-		Name:  "erf",
-		Value: FuncAFRF(math.Erf),
-	},
-	"erfc": &objects.UserFunction{
-		Name:  "erfc",
-		Value: FuncAFRF(math.Erfc),
-	},
-	"exp": &objects.UserFunction{
-		Name:  "exp",
-		Value: FuncAFRF(math.Exp),
-	},
-	"exp2": &objects.UserFunction{
-		Name:  "exp2",
-		Value: FuncAFRF(math.Exp2),
-	},
-	"expm1": &objects.UserFunction{
-		Name:  "expm1",
-		Value: FuncAFRF(math.Expm1),
-	},
-	"floor": &objects.UserFunction{
-		Name:  "floor",
-		Value: FuncAFRF(math.Floor),
-	},
-	"gamma": &objects.UserFunction{
-		Name:  "gamma",
-		Value: FuncAFRF(math.Gamma),
-	},
-	"hypot": &objects.UserFunction{
-		Name:  "hypot",
-		Value: FuncAFFRF(math.Hypot),
-	},
-	"ilogb": &objects.UserFunction{
-		Name:  "ilogb",
-		Value: FuncAFRI(math.Ilogb),
-	},
-	"inf": &objects.UserFunction{
-		Name:  "inf",
-		Value: FuncAIRF(math.Inf),
-	},
-	"is_inf": &objects.UserFunction{
-		Name:  "is_inf",
-		Value: FuncAFIRB(math.IsInf),
-	},
-	"is_nan": &objects.UserFunction{
-		Name:  "is_nan",
-		Value: FuncAFRB(math.IsNaN),
-	},
-	"j0": &objects.UserFunction{
-		Name:  "j0",
-		Value: FuncAFRF(math.J0),
-	},
-	"j1": &objects.UserFunction{
-		Name:  "j1",
-		Value: FuncAFRF(math.J1),
-	},
-	"jn": &objects.UserFunction{
-		Name:  "jn",
-		Value: FuncAIFRF(math.Jn),
-	},
-	"ldexp": &objects.UserFunction{
-		Name:  "ldexp",
-		Value: FuncAFIRF(math.Ldexp),
-	},
-	"log": &objects.UserFunction{
-		Name:  "log",
-		Value: FuncAFRF(math.Log),
-	},
-	"log10": &objects.UserFunction{
-		Name:  "log10",
-		Value: FuncAFRF(math.Log10),
-	},
-	"log1p": &objects.UserFunction{
-		Name:  "log1p",
-		Value: FuncAFRF(math.Log1p),
-	},
-	"log2": &objects.UserFunction{
-		Name:  "log2",
-		Value: FuncAFRF(math.Log2),
-	},
-	"logb": &objects.UserFunction{
-		Name:  "logb",
-		Value: FuncAFRF(math.Logb),
-	},
-	"max": &objects.UserFunction{
-		Name:  "max",
-		Value: FuncAFFRF(math.Max),
-	},
-	"min": &objects.UserFunction{
-		Name:  "min",
-		Value: FuncAFFRF(math.Min),
-	},
-	"mod": &objects.UserFunction{
-		Name:  "mod",
-		Value: FuncAFFRF(math.Mod),
-	},
-	"nan": &objects.UserFunction{
-		Name:  "nan",
-		Value: FuncARF(math.NaN),
-	},
-	"nextafter": &objects.UserFunction{
-		Name:  "nextafter",
-		Value: FuncAFFRF(math.Nextafter),
-	},
-	"pow": &objects.UserFunction{
-		Name:  "pow",
-		Value: FuncAFFRF(math.Pow),
-	},
-	"pow10": &objects.UserFunction{
-		Name:  "pow10",
-		Value: FuncAIRF(math.Pow10),
-	},
-	"remainder": &objects.UserFunction{
-		Name:  "remainder",
-		Value: FuncAFFRF(math.Remainder),
-	},
-	"signbit": &objects.UserFunction{
-		Name:  "signbit",
-		Value: FuncAFRB(math.Signbit),
-	},
-	"sin": &objects.UserFunction{
-		Name:  "sin",
-		Value: FuncAFRF(math.Sin),
-	},
-	"sinh": &objects.UserFunction{
-		Name:  "sinh",
-		Value: FuncAFRF(math.Sinh),
-	},
-	"sqrt": &objects.UserFunction{
-		Name:  "sqrt",
-		Value: FuncAFRF(math.Sqrt),
-	},
-	"tan": &objects.UserFunction{
-		Name:  "tan",
-		Value: FuncAFRF(math.Tan),
-	},
-	"tanh": &objects.UserFunction{
-		Name:  "tanh",
-		Value: FuncAFRF(math.Tanh),
-	},
-	"trunc": &objects.UserFunction{
-		Name:  "trunc",
-		Value: FuncAFRF(math.Trunc),
-	},
-	"y0": &objects.UserFunction{
-		Name:  "y0",
-		Value: FuncAFRF(math.Y0),
-	},
-	"y1": &objects.UserFunction{
-		Name:  "y1",
-		Value: FuncAFRF(math.Y1),
-	},
-	"yn": &objects.UserFunction{
-		Name:  "yn",
-		Value: FuncAIFRF(math.Yn),
-	},
+	"e":         objects.NewFloat(math.E),
+	"pi":        objects.NewFloat(math.Pi),
+	"phi":       objects.NewFloat(math.Phi),
+	"sqrt2":     objects.NewFloat(math.Sqrt2),
+	"sqrtE":     objects.NewFloat(math.SqrtE),
+	"sqrtPi":    objects.NewFloat(math.SqrtPi),
+	"sqrtPhi":   objects.NewFloat(math.SqrtPhi),
+	"ln2":       objects.NewFloat(math.Ln2),
+	"log2E":     objects.NewFloat(math.Log2E),
+	"ln10":      objects.NewFloat(math.Ln10),
+	"log10E":    objects.NewFloat(math.Log10E),
+	"abs":       objects.NewUserFunction("abs", FuncAFRF(math.Abs)),
+	"acos":      objects.NewUserFunction("acos", FuncAFRF(math.Acos)),
+	"acosh":     objects.NewUserFunction("acosh", FuncAFRF(math.Acosh)),
+	"asin":      objects.NewUserFunction("asin", FuncAFRF(math.Asin)),
+	"asinh":     objects.NewUserFunction("asinh", FuncAFRF(math.Asinh)),
+	"atan":      objects.NewUserFunction("atan", FuncAFRF(math.Atan)),
+	"atan2":     objects.NewUserFunction("atan2", FuncAFFRF(math.Atan2)),
+	"atanh":     objects.NewUserFunction("atanh", FuncAFRF(math.Atanh)),
+	"cbrt":      objects.NewUserFunction("cbrt", FuncAFRF(math.Cbrt)),
+	"ceil":      objects.NewUserFunction("ceil", FuncAFRF(math.Ceil)),
+	"copysign":  objects.NewUserFunction("copysign", FuncAFFRF(math.Copysign)),
+	"cos":       objects.NewUserFunction("cos", FuncAFRF(math.Cos)),
+	"cosh":      objects.NewUserFunction("cosh", FuncAFRF(math.Cosh)),
+	"dim":       objects.NewUserFunction("dim", FuncAFFRF(math.Dim)),
+	"erf":       objects.NewUserFunction("erf", FuncAFRF(math.Erf)),
+	"erfc":      objects.NewUserFunction("erfc", FuncAFRF(math.Erfc)),
+	"exp":       objects.NewUserFunction("exp", FuncAFRF(math.Exp)),
+	"exp2":      objects.NewUserFunction("exp2", FuncAFRF(math.Exp2)),
+	"expm1":     objects.NewUserFunction("expm1", FuncAFRF(math.Expm1)),
+	"floor":     objects.NewUserFunction("floor", FuncAFRF(math.Floor)),
+	"gamma":     objects.NewUserFunction("gamma", FuncAFRF(math.Gamma)),
+	"hypot":     objects.NewUserFunction("hypot", FuncAFFRF(math.Hypot)),
+	"ilogb":     objects.NewUserFunction("ilogb", FuncAFRI(math.Ilogb)),
+	"inf":       objects.NewUserFunction("inf", FuncAIRF(math.Inf)),
+	"is_inf":    objects.NewUserFunction("is_inf", FuncAFIRB(math.IsInf)),
+	"is_nan":    objects.NewUserFunction("is_nan", FuncAFRB(math.IsNaN)),
+	"j0":        objects.NewUserFunction("j0", FuncAFRF(math.J0)),
+	"j1":        objects.NewUserFunction("j1", FuncAFRF(math.J1)),
+	"jn":        objects.NewUserFunction("jn", FuncAIFRF(math.Jn)),
+	"ldexp":     objects.NewUserFunction("ldexp", FuncAFIRF(math.Ldexp)),
+	"log":       objects.NewUserFunction("log", FuncAFRF(math.Log)),
+	"log10":     objects.NewUserFunction("log10", FuncAFRF(math.Log10)),
+	"log1p":     objects.NewUserFunction("log1p", FuncAFRF(math.Log1p)),
+	"log2":      objects.NewUserFunction("log2", FuncAFRF(math.Log2)),
+	"logb":      objects.NewUserFunction("logb", FuncAFRF(math.Logb)),
+	"max":       objects.NewUserFunction("max", FuncAFFRF(math.Max)),
+	"min":       objects.NewUserFunction("min", FuncAFFRF(math.Min)),
+	"mod":       objects.NewUserFunction("mod", FuncAFFRF(math.Mod)),
+	"nan":       objects.NewUserFunction("nan", FuncARF(math.NaN)),
+	"nextafter": objects.NewUserFunction("nextafter", FuncAFFRF(math.Nextafter)),
+	"pow":       objects.NewUserFunction("pow", FuncAFFRF(math.Pow)),
+	"pow10":     objects.NewUserFunction("pow10", FuncAIRF(math.Pow10)),
+	"remainder": objects.NewUserFunction("remainder", FuncAFFRF(math.Remainder)),
+	"signbit":   objects.NewUserFunction("signbit", FuncAFRB(math.Signbit)),
+	"sin":       objects.NewUserFunction("sin", FuncAFRF(math.Sin)),
+	"sinh":      objects.NewUserFunction("sinh", FuncAFRF(math.Sinh)),
+	"sqrt":      objects.NewUserFunction("sqrt", FuncAFRF(math.Sqrt)),
+	"tan":       objects.NewUserFunction("tan", FuncAFRF(math.Tan)),
+	"tanh":      objects.NewUserFunction("tanh", FuncAFRF(math.Tanh)),
+	"trunc":     objects.NewUserFunction("trunc", FuncAFRF(math.Trunc)),
+	"y0":        objects.NewUserFunction("y0", FuncAFRF(math.Y0)),
+	"y1":        objects.NewUserFunction("y1", FuncAFRF(math.Y1)),
+	"yn":        objects.NewUserFunction("yn", FuncAIFRF(math.Yn)),
 }

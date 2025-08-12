@@ -142,7 +142,7 @@ func ToInterface(in IObject) (res interface{}) {
 		}
 	case *ImmutableMap:
 		res = make(map[string]interface{})
-		for key, v := range o.Value {
+		for key, v := range o.Values() {
 			res.(map[string]interface{})[key] = ToInterface(v)
 		}
 	case *Time:
@@ -240,7 +240,7 @@ func FromInterface(in interface{}) IObject {
 	case IObject:
 		return v
 	case CallableFunc:
-		return &UserFunction{Value: v}
+		return NewUserFunction("CallableFunc", v)
 	}
 	return UndefinedValue
 }
@@ -262,7 +262,7 @@ func CountObjects(in IObject) (c int) {
 			c += CountObjects(v)
 		}
 	case *ImmutableMap:
-		for _, v := range o.Value {
+		for _, v := range o.Values() {
 			c += CountObjects(v)
 		}
 	case *Error:

@@ -35,7 +35,7 @@ func (o *BuiltinFunction) String() string {
 	return "<builtin-function>"
 }
 
-// Copy creates and returns a new instance of BuiltinFunction with the same value field as the original object.
+// Copy creates and returns a new instance of BuiltinFunction with the same values field as the original object.
 func (o *BuiltinFunction) Copy() IObject {
 	return &BuiltinFunction{value: o.value}
 }

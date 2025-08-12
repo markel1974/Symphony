@@ -244,7 +244,7 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 			return mod.AsImmutableMap(modName), nil
 		}
 
-		for k, v := range o.Value {
+		for k, v := range o.Values() {
 			// encoding of user function not supported
 			if _, isUserFunction := v.(*objects.UserFunction); isUserFunction {
 				return nil, fmt.Errorf("user function not decodable")
@@ -254,7 +254,7 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 			if err != nil {
 				return nil, err
 			}
-			o.Value[k] = fv
+			o.SetValue(k, fv)
 		}
 	}
 	return o, nil
@@ -295,8 +295,13 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 // inferModuleName extracts the module name from the given ImmutableMap by looking up the "__module_name__" key.
 // Returns an empty string if the key is absent or if the value is not of type String.
 func inferModuleName(mod *objects.ImmutableMap) string {
-	if modName, ok := mod.Value["__module_name__"].(*objects.String); ok {
-		return modName.Value()
+	m, ok := mod.GetValue("__module_name__")
+	if !ok {
+		return ""
 	}
-	return ""
+	modName, ok := m.(*objects.String)
+	if !ok {
+		return ""
+	}
+	return modName.Value()
 }
