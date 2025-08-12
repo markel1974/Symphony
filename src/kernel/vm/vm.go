@@ -532,16 +532,13 @@ func (v *VM) doOpSliceIndex() {
 // Handles variadic calls, checks for recursion, and updates the call stack or returns any runtime errors encountered.
 func (v *VM) doOpCall() {
 	numArgs := int(v.curInstructions[v.ip+1])
-	spread := int(v.curInstructions[v.ip+2])
 	v.ip += 2
-
 	value := v.stack[v.sp-1-numArgs]
 	if !value.CanCall() {
 		v.err = fmt.Errorf("not callable: %s", value.TypeName())
 		return
 	}
-
-	if spread == 1 {
+	if spread := int(v.curInstructions[v.ip+2]); spread == 1 {
 		v.sp--
 		switch arr := v.stack[v.sp].(type) {
 		case *objects.Array:
@@ -561,13 +558,10 @@ func (v *VM) doOpCall() {
 			return
 		}
 	}
-
 	if callee, ok := value.(*objects.CompiledFunction); ok {
 		if callee.VarArgs() {
-			// if the closure is variadic, roll up all variadic parameters into an array
 			realArgs := callee.NumParameters() - 1
-			varArgs := numArgs - realArgs
-			if varArgs >= 0 {
+			if varArgs := numArgs - realArgs; varArgs >= 0 {
 				numArgs = realArgs + 1
 				args := make([]objects.IObject, varArgs)
 				spStart := v.sp - varArgs
@@ -587,12 +581,10 @@ func (v *VM) doOpCall() {
 			return
 		}
 
-		// test if it's tail-call
-		if v.curFrame.SameFunction(callee) { // recursion
+		if v.curFrame.SameFunction(callee) {
+			// recursive call
 			nextOp := v.curInstructions[v.ip+1]
-			if nextOp == opcodes.OpReturn ||
-				(nextOp == opcodes.OpPop &&
-					opcodes.OpReturn == v.curInstructions[v.ip+2]) {
+			if nextOp == opcodes.OpReturn || (nextOp == opcodes.OpPop && v.curInstructions[v.ip+2] == opcodes.OpReturn) {
 				for p := 0; p < numArgs; p++ {
 					v.stack[v.curFrame.basePointer+p] =
 						v.stack[v.sp-numArgs+p]
@@ -803,7 +795,6 @@ func (v *VM) doOpSetSelFree() {
 	v.ip += 2
 	freeIndex := int(v.curInstructions[v.ip-1])
 	numSelectors := int(v.curInstructions[v.ip])
-	// selectors and RHS value
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
 		selectors[i] = v.stack[v.sp-numSelectors+i]
