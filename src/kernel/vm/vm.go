@@ -114,7 +114,7 @@ func (v *VM) run() {
 	}
 }
 
-func (v *VM) checkBounds(highStack objects.IObject, lowStack objects.IObject, numElements int64) (int64, int64, error) {
+func (v *VM) checkBounds(lowStack objects.IObject, highStack objects.IObject, numElements int64) (int64, int64, error) {
 	var lowIdx int64
 	if lowStack != objects.UndefinedValue {
 		if low, ok := lowStack.(*objects.Int); ok {
@@ -481,151 +481,43 @@ func (v *VM) doOpSliceIndex() {
 	leftStack := v.stack[v.sp-3]
 	v.sp -= 3
 
-	var lowIdx int64
-	if lowStack != objects.UndefinedValue {
-		if low, ok := lowStack.(*objects.Int); ok {
-			lowIdx = low.Value()
-		} else {
-			v.err = fmt.Errorf("invalid slice index type: %s", low.TypeName())
-			return
-		}
-	}
+	var val objects.IObject = nil
 
 	switch left := leftStack.(type) {
 	case *objects.Array:
-		numElements := int64(len(left.Values()))
-		var highIdx int64
-		if highStack == objects.UndefinedValue {
-			highIdx = numElements
-		} else if high, ok := highStack.(*objects.Int); ok {
-			highIdx = high.Value()
-		} else {
-			v.err = fmt.Errorf("invalid slice index type: %s",
-				high.TypeName())
-			return
-		}
-		if lowIdx > highIdx {
-			v.err = fmt.Errorf("invalid slice index: %d > %d",
-				lowIdx, highIdx)
-			return
-		}
-		if lowIdx < 0 {
-			lowIdx = 0
-		} else if lowIdx > numElements {
-			lowIdx = numElements
-		}
-		if highIdx < 0 {
-			highIdx = 0
-		} else if highIdx > numElements {
-			highIdx = numElements
-		}
-		var val objects.IObject = objects.NewArray(left.Values()[lowIdx:highIdx])
-		v.allocations--
-		if v.allocations == 0 {
-			v.err = errors.ErrObjectAllocLimit
-			return
-		}
-		v.stack[v.sp] = val
-		v.sp++
-
-	case *objects.ImmutableArray:
-		numElements := int64(left.Length())
-		var highIdx int64
-		if highStack == objects.UndefinedValue {
-			highIdx = numElements
-		} else if high, ok := highStack.(*objects.Int); ok {
-			highIdx = high.Value()
-		} else {
-			v.err = fmt.Errorf("invalid slice index type: %s",
-				high.TypeName())
-			return
-		}
-		if lowIdx > highIdx {
-			v.err = fmt.Errorf("invalid slice index: %d > %d",
-				lowIdx, highIdx)
-			return
-		}
-		if lowIdx < 0 {
-			lowIdx = 0
-		} else if lowIdx > numElements {
-			lowIdx = numElements
-		}
-		if highIdx < 0 {
-			highIdx = 0
-		} else if highIdx > numElements {
-			highIdx = numElements
-		}
-		var val objects.IObject = objects.NewArray(left.Values()[lowIdx:highIdx])
-		v.allocations--
-		if v.allocations == 0 {
-			v.err = errors.ErrObjectAllocLimit
-			return
-		}
-		v.stack[v.sp] = val
-		v.sp++
-	case *objects.String:
-		numElements := int64(left.Length())
-		var highIdx int64
-		if highStack == objects.UndefinedValue {
-			highIdx = numElements
-		} else if high, ok := highStack.(*objects.Int); ok {
-			highIdx = high.Value()
-		} else {
-			v.err = fmt.Errorf("invalid slice index type: %s", high.TypeName())
-			return
-		}
-		if lowIdx > highIdx {
-			v.err = fmt.Errorf("invalid slice index: %d > %d", lowIdx, highIdx)
-			return
-		}
-		if lowIdx < 0 {
-			lowIdx = 0
-		} else if lowIdx > numElements {
-			lowIdx = numElements
-		}
-		if highIdx < 0 {
-			highIdx = 0
-		} else if highIdx > numElements {
-			highIdx = numElements
-		}
-		val, err := objects.NewString(left.Value()[lowIdx:highIdx])
-		if err != nil {
+		if lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(left.Length())); err != nil {
 			v.err = err
 			return
-		}
-		v.allocations--
-		if v.allocations == 0 {
-			v.err = errors.ErrObjectAllocLimit
-			return
-		}
-		v.stack[v.sp] = val
-		v.sp++
-	case *objects.Bytes:
-		numElements := int64(left.Length())
-		var highIdx int64
-		if highStack == objects.UndefinedValue {
-			highIdx = numElements
-		} else if high, ok := highStack.(*objects.Int); ok {
-			highIdx = high.Value()
 		} else {
-			v.err = fmt.Errorf("invalid slice index type: %s", high.TypeName())
+			val = objects.NewArray(left.Values()[lowIdx:highIdx])
+		}
+	case *objects.ImmutableArray:
+		if lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(left.Length())); err != nil {
+			v.err = err
 			return
+		} else {
+			val = objects.NewArray(left.Values()[lowIdx:highIdx])
 		}
-		if lowIdx > highIdx {
-			v.err = fmt.Errorf("invalid slice index: %d > %d", lowIdx, highIdx)
+	case *objects.String:
+		if lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(left.Length())); err != nil {
+			v.err = err
 			return
+		} else {
+			if val, err = objects.NewString(left.Value()[lowIdx:highIdx]); err != nil {
+				v.err = err
+				return
+			}
 		}
-		if lowIdx < 0 {
-			lowIdx = 0
-		} else if lowIdx > numElements {
-			lowIdx = numElements
+	case *objects.Bytes:
+		if lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(left.Length())); err != nil {
+			v.err = err
+			return
+		} else {
+			val = objects.NewBytes(left.Value()[lowIdx:highIdx])
 		}
-		if highIdx < 0 {
-			highIdx = 0
-		} else if highIdx > numElements {
-			highIdx = numElements
-		}
-		val := objects.NewBytes(left.Value()[lowIdx:highIdx])
+	}
+
+	if val != nil {
 		v.allocations--
 		if v.allocations == 0 {
 			v.err = errors.ErrObjectAllocLimit
@@ -714,9 +606,7 @@ func (v *VM) doOpCall() {
 			v.err = errors.ErrStackOverflow
 			return
 		}
-
-		// update call frame
-		v.curFrame.ip = v.ip // store current ip before call
+		v.curFrame.ip = v.ip
 		v.curFrame = v.frames[v.framesIndex]
 		v.curFrame.SetCompiledFunction(callee)
 		v.curFrame.freeVars = callee.Free()
@@ -730,8 +620,6 @@ func (v *VM) doOpCall() {
 		args = append(args, v.stack[v.sp-numArgs:v.sp]...)
 		ret, err := value.Call(args...)
 		v.sp -= numArgs + 1
-
-		// runtime error
 		if err != nil {
 			if errors.Is(err, errors.ErrWrongNumArguments) {
 				v.err = fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName())
@@ -740,8 +628,6 @@ func (v *VM) doOpCall() {
 			v.err = err
 			return
 		}
-
-		// nil return -> undefined
 		if ret == nil {
 			ret = objects.UndefinedValue
 		}
@@ -764,16 +650,12 @@ func (v *VM) doOpReturn() {
 	} else {
 		retVal = objects.UndefinedValue
 	}
-	//v.sp--
 	v.framesIndex--
 	v.curFrame = v.frames[v.framesIndex-1]
 	v.curInstructions = v.curFrame.Instructions()
 	v.ip = v.curFrame.ip
-	//v.sp = lastFrame.basePointer - 1
 	v.sp = v.frames[v.framesIndex].basePointer
-	// skip stack overflow check because (newSP) <= (oldSP)
 	v.stack[v.sp-1] = retVal
-	//v.sp++
 }
 
 // doOpDefineLocal handles the definition of a local variable by storing a value from the stack into a calculated stack position.
@@ -781,9 +663,6 @@ func (v *VM) doOpDefineLocal() {
 	v.ip++
 	localIndex := int(v.curInstructions[v.ip])
 	sp := v.curFrame.basePointer + localIndex
-
-	// local variables can be mutated by other actions
-	// so always store the copy of popped value
 	val := v.stack[v.sp-1]
 	v.sp--
 	v.stack[sp] = val
@@ -794,17 +673,13 @@ func (v *VM) doOpSetLocal() {
 	localIndex := int(v.curInstructions[v.ip+1])
 	v.ip++
 	sp := v.curFrame.basePointer + localIndex
-
-	// update pointee of v.stack[sp] instead of replacing the pointer
-	// itself. this is needed because there can be free variables
-	// referencing the same local variables.
 	val := v.stack[v.sp-1]
 	v.sp--
 	if obj, ok := v.stack[sp].(*objects.ObjectPtr); ok {
 		obj.SetValue(val)
 		val = obj
 	}
-	v.stack[sp] = val // also use a copy of popped value
+	v.stack[sp] = val
 }
 
 // doOpSetSelLocal handles the opcode for setting the value of a local variable using selectors.
@@ -812,8 +687,6 @@ func (v *VM) doOpSetSelLocal() {
 	localIndex := int(v.curInstructions[v.ip+1])
 	numSelectors := int(v.curInstructions[v.ip+2])
 	v.ip += 2
-
-	// selectors and RHS value
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
 		selectors[i] = v.stack[v.sp-numSelectors+i]
