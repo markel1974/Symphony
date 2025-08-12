@@ -63,22 +63,20 @@ func (b *Bytecode) CountObjects() int {
 
 // FormatInstructions retrieves string representations of the main function's bytecode instructions in the Bytecode object.
 func (b *Bytecode) FormatInstructions() []string {
-	return FormatInstructions(b.MainFunction.Instructions(), 0)
+	return FormatInstructions(b.MainFunction.Data(), 0)
 }
 
 // FormatConstants generates a slice of formatted strings representing the constants in the bytecode.
 func (b *Bytecode) FormatConstants() (output []string) {
-	for cIdx, cn := range b.Constants {
-		switch cn := cn.(type) {
+	for cIdx, constant := range b.Constants {
+		switch cn := constant.(type) {
 		case *objects.CompiledFunction:
-			output = append(output, fmt.Sprintf(
-				"[% 3d] (Compiled Function|%p)", cIdx, &cn))
-			for _, l := range FormatInstructions(cn.Instructions(), 0) {
+			output = append(output, fmt.Sprintf("[% 3d] (Compiled Function|%p)", cIdx, &cn))
+			for _, l := range FormatInstructions(cn.Data(), 0) {
 				output = append(output, fmt.Sprintf("     %s", l))
 			}
 		default:
-			output = append(output, fmt.Sprintf("[% 3d] %s (%s|%p)",
-				cIdx, cn, reflect.TypeOf(cn).Elem().Name(), &cn))
+			output = append(output, fmt.Sprintf("[% 3d] %s (%s|%p)", cIdx, cn, reflect.TypeOf(cn).Elem().Name(), &cn))
 		}
 	}
 	return
@@ -188,13 +186,13 @@ func (b *Bytecode) RemoveDuplicates() error {
 		}
 	}
 	b.Constants = deDuped
-	if err := updateConstIndexes(b.MainFunction.Instructions(), indexMap); err != nil {
+	if err := updateConstIndexes(b.MainFunction.Data(), indexMap); err != nil {
 		return err
 	}
 	for _, c := range b.Constants {
 		switch c := c.(type) {
 		case *objects.CompiledFunction:
-			if err := updateConstIndexes(c.Instructions(), indexMap); err != nil {
+			if err := updateConstIndexes(c.Data(), indexMap); err != nil {
 				return err
 			}
 		}

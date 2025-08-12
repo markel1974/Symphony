@@ -2,12 +2,16 @@ package vm
 
 import "github.com/markel1974/c64emu/src/kernel/vm/opcodes"
 
-// DefaultSequencer is a type that provides functionality to create a sequence of operations for a virtual machine.
-type DefaultSequencer struct {
+// Sequencer is a type that provides functionality to create a sequence of operations for a virtual machine.
+type Sequencer struct {
+}
+
+func NewSequencer() *Sequencer {
+	return &Sequencer{}
 }
 
 // Create initializes a sequencer array with operation functions mapped to their corresponding opcodes.
-func (ds *DefaultSequencer) Create(v *VM) []func() {
+func (ds *Sequencer) Create(v *VM) []func() {
 	sequencer := make([]func(), sequenceLen)
 	for idx := range sequencer {
 		sequencer[idx] = v.doOpUnknown

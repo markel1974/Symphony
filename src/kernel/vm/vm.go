@@ -30,10 +30,10 @@ type VM struct {
 	sp              int
 	globals         []objects.IObject
 	fileSet         *compiler.SourceFileSet
-	frames          []*FunctionCallFrame
+	frames          []*Frame
 	framesIndex     int
-	curFrame        *FunctionCallFrame
-	curInstructions []byte
+	curFrame        *Frame
+	curInstructions *objects.Instructions
 	ip              int
 	abort           bool
 	suspend         bool
@@ -44,9 +44,18 @@ type VM struct {
 }
 
 // NewVM initializes and returns a new instance of the VM with provided sequencer, bytecode, globals, and max allocations.
-func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects.IObject, maxAllocations int64) *VM {
+func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects.IObject, maxAllocations int64) (*VM, error) {
+	if bytecode == nil {
+		return nil, fmt.Errorf("bytecode is nil")
+	}
+	if sequencer == nil {
+		sequencer = NewSequencer()
+	}
 	if globals == nil {
 		globals = make([]objects.IObject, GlobalsSize)
+	}
+	if maxAllocations < 1 {
+		return nil, fmt.Errorf("max allocations must be greater than 0")
 	}
 	v := &VM{
 		constants:      bytecode.Constants,
@@ -58,7 +67,7 @@ func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects
 		maxAllocations: maxAllocations,
 		suspend:        false,
 		stack:          make([]objects.IObject, StackSize),
-		frames:         make([]*FunctionCallFrame, MaxFrames),
+		frames:         make([]*Frame, MaxFrames),
 	}
 	for i := range v.frames {
 		v.frames[i] = NewFunctionCallFrame()
@@ -68,7 +77,7 @@ func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects
 	v.curFrame = v.frames[0]
 	v.curInstructions = v.curFrame.Instructions()
 	v.sequencer = sequencer.Create(v)
-	return v
+	return v, nil
 }
 
 // Abort sets the VM's internal abort flag to true, signaling a termination or interruption of its current operation.
@@ -150,7 +159,7 @@ func (v *VM) checkBounds(lowStack objects.IObject, highStack objects.IObject, nu
 // doOpConstant fetches a constant from the constants pool and pushes it onto the stack.
 func (v *VM) doOpConstant() {
 	v.ip += 2
-	cIdx := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
+	cIdx := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
 	v.stack[v.sp] = v.constants[cIdx]
 	v.sp++
 }
@@ -168,7 +177,7 @@ func (v *VM) doOpBinary() {
 	v.ip++
 	right := v.stack[v.sp-1]
 	left := v.stack[v.sp-2]
-	tok := objects.Operator(v.curInstructions[v.ip])
+	tok := objects.Operator(v.curInstructions.Get(v.ip))
 	res, e := left.BinaryOp(tok, right)
 	if e != nil {
 		v.sp -= 2
@@ -299,7 +308,7 @@ func (v *VM) doOpJumpFalsy() {
 	v.ip += 2
 	v.sp--
 	if v.stack[v.sp].Falsy() {
-		pos := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
+		pos := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
 		v.ip = pos - 1
 	}
 }
@@ -308,7 +317,7 @@ func (v *VM) doOpJumpFalsy() {
 func (v *VM) doOpAndJump() {
 	v.ip += 2
 	if v.stack[v.sp-1].Falsy() {
-		pos := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
+		pos := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
 		v.ip = pos - 1
 	} else {
 		v.sp--
@@ -321,14 +330,14 @@ func (v *VM) doOpOrJump() {
 	if v.stack[v.sp-1].Falsy() {
 		v.sp--
 	} else {
-		pos := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
+		pos := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
 		v.ip = pos - 1
 	}
 }
 
 // doOpJump adjusts the instruction pointer to the position specified by the next two bytes in the instruction sequence.
 func (v *VM) doOpJump() {
-	pos := int(v.curInstructions[v.ip+2]) | int(v.curInstructions[v.ip+1])<<8
+	pos := int(v.curInstructions.Get(v.ip+2)) | int(v.curInstructions.Get(v.ip+1))<<8
 	v.ip = pos - 1
 }
 
@@ -336,7 +345,7 @@ func (v *VM) doOpJump() {
 func (v *VM) doOpSetGlobal() {
 	v.ip += 2
 	v.sp--
-	globalIndex := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
+	globalIndex := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
 	v.globals[globalIndex] = v.stack[v.sp]
 }
 
@@ -345,8 +354,8 @@ func (v *VM) doOpSetGlobal() {
 // Errors during assignment, such as invalid selectors or non-assignable objects, are captured and set in the VM.
 func (v *VM) doOpSetSelGlobal() {
 	v.ip += 3
-	globalIndex := int(v.curInstructions[v.ip-1]) | int(v.curInstructions[v.ip-2])<<8
-	numSelectors := int(v.curInstructions[v.ip])
+	globalIndex := int(v.curInstructions.Get(v.ip-1)) | int(v.curInstructions.Get(v.ip-2))<<8
+	numSelectors := int(v.curInstructions.Get(v.ip))
 
 	// selectors and RHS value
 	selectors := make([]objects.IObject, numSelectors)
@@ -364,7 +373,7 @@ func (v *VM) doOpSetSelGlobal() {
 // doOpGetGlobal retrieves a global variable by its index and pushes its value onto the stack.
 func (v *VM) doOpGetGlobal() {
 	v.ip += 2
-	globalIndex := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
+	globalIndex := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
 	val := v.globals[globalIndex]
 	v.stack[v.sp] = val
 	v.sp++
@@ -373,7 +382,7 @@ func (v *VM) doOpGetGlobal() {
 // doOpArray handles the creation of an array object by allocating elements from the stack, ensuring allocation limits.
 func (v *VM) doOpArray() {
 	v.ip += 2
-	numElements := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
+	numElements := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
 	var elements []objects.IObject
 	for i := v.sp - numElements; i < v.sp; i++ {
 		elements = append(elements, v.stack[i])
@@ -393,7 +402,7 @@ func (v *VM) doOpArray() {
 // It also checks for object allocation limits and updates the instruction pointer and stack pointer accordingly.
 func (v *VM) doOpMap() {
 	v.ip += 2
-	numElements := int(v.curInstructions[v.ip]) | int(v.curInstructions[v.ip-1])<<8
+	numElements := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
 	kv := make(map[string]objects.IObject, numElements)
 	for i := v.sp - numElements; i < v.sp; i += 2 {
 		key := v.stack[i]
@@ -531,14 +540,14 @@ func (v *VM) doOpSliceIndex() {
 // doOpCall handles the execution of a call operation, validating the callable object and managing arguments.
 // Handles variadic calls, checks for recursion, and updates the call stack or returns any runtime errors encountered.
 func (v *VM) doOpCall() {
-	numArgs := int(v.curInstructions[v.ip+1])
+	numArgs := int(v.curInstructions.Get(v.ip + 1))
 	v.ip += 2
 	value := v.stack[v.sp-1-numArgs]
 	if !value.CanCall() {
 		v.err = fmt.Errorf("not callable: %s", value.TypeName())
 		return
 	}
-	if spread := int(v.curInstructions[v.ip+2]); spread == 1 {
+	if spread := int(v.curInstructions.Get(v.ip + 2)); spread == 1 {
 		v.sp--
 		switch arr := v.stack[v.sp].(type) {
 		case *objects.Array:
@@ -583,8 +592,8 @@ func (v *VM) doOpCall() {
 
 		if v.curFrame.SameFunction(callee) {
 			// recursive call
-			nextOp := v.curInstructions[v.ip+1]
-			if nextOp == opcodes.OpReturn || (nextOp == opcodes.OpPop && v.curInstructions[v.ip+2] == opcodes.OpReturn) {
+			nextOp := v.curInstructions.Get(v.ip + 1)
+			if nextOp == opcodes.OpReturn || (nextOp == opcodes.OpPop && v.curInstructions.Get(v.ip+2) == opcodes.OpReturn) {
 				for p := 0; p < numArgs; p++ {
 					v.stack[v.curFrame.basePointer+p] =
 						v.stack[v.sp-numArgs+p]
@@ -637,7 +646,7 @@ func (v *VM) doOpCall() {
 func (v *VM) doOpReturn() {
 	v.ip++
 	var retVal objects.IObject
-	if int(v.curInstructions[v.ip]) == 1 {
+	if int(v.curInstructions.Get(v.ip)) == 1 {
 		retVal = v.stack[v.sp-1]
 	} else {
 		retVal = objects.UndefinedValue
@@ -653,7 +662,7 @@ func (v *VM) doOpReturn() {
 // doOpDefineLocal handles the definition of a local variable by storing a value from the stack into a calculated stack position.
 func (v *VM) doOpDefineLocal() {
 	v.ip++
-	localIndex := int(v.curInstructions[v.ip])
+	localIndex := int(v.curInstructions.Get(v.ip))
 	sp := v.curFrame.basePointer + localIndex
 	val := v.stack[v.sp-1]
 	v.sp--
@@ -662,7 +671,7 @@ func (v *VM) doOpDefineLocal() {
 
 // doOpSetLocal updates a local variable on the stack using its index and manages references for free variables if necessary.
 func (v *VM) doOpSetLocal() {
-	localIndex := int(v.curInstructions[v.ip+1])
+	localIndex := int(v.curInstructions.Get(v.ip + 1))
 	v.ip++
 	sp := v.curFrame.basePointer + localIndex
 	val := v.stack[v.sp-1]
@@ -676,8 +685,8 @@ func (v *VM) doOpSetLocal() {
 
 // doOpSetSelLocal handles the opcode for setting the value of a local variable using selectors.
 func (v *VM) doOpSetSelLocal() {
-	localIndex := int(v.curInstructions[v.ip+1])
-	numSelectors := int(v.curInstructions[v.ip+2])
+	localIndex := int(v.curInstructions.Get(v.ip + 1))
+	numSelectors := int(v.curInstructions.Get(v.ip + 2))
 	v.ip += 2
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
@@ -698,7 +707,7 @@ func (v *VM) doOpSetSelLocal() {
 // doOpGetLocal retrieves a local variable from the stack and places it at the top of the stack, incrementing the stack pointer.
 func (v *VM) doOpGetLocal() {
 	v.ip++
-	localIndex := int(v.curInstructions[v.ip])
+	localIndex := int(v.curInstructions.Get(v.ip))
 	val := v.stack[v.curFrame.basePointer+localIndex]
 	if obj, ok := val.(*objects.ObjectPtr); ok {
 		val = *obj.Value()
@@ -710,7 +719,7 @@ func (v *VM) doOpGetLocal() {
 // doOpGetBuiltin retrieves a built-in function by index and pushes it onto the stack, then increments the stack pointer.
 func (v *VM) doOpGetBuiltin() {
 	v.ip++
-	builtinIndex := int(v.curInstructions[v.ip])
+	builtinIndex := int(v.curInstructions.Get(v.ip))
 	v.stack[v.sp] = stdlib.GetBuiltin(builtinIndex)
 	v.sp++
 }
@@ -718,8 +727,8 @@ func (v *VM) doOpGetBuiltin() {
 // doOpClosure handles the creation of a closure object by capturing free variables from the stack and setting it up.
 func (v *VM) doOpClosure() {
 	v.ip += 3
-	constIndex := int(v.curInstructions[v.ip-1]) | int(v.curInstructions[v.ip-2])<<8
-	numFree := int(v.curInstructions[v.ip])
+	constIndex := int(v.curInstructions.Get(v.ip-1)) | int(v.curInstructions.Get(v.ip-2))<<8
+	numFree := int(v.curInstructions.Get(v.ip))
 	fn, ok := v.constants[constIndex].(*objects.CompiledFunction)
 	if !ok {
 		v.err = fmt.Errorf("not function: %s", fn.TypeName())
@@ -735,7 +744,7 @@ func (v *VM) doOpClosure() {
 		}
 	}
 	v.sp -= numFree
-	cl := objects.NewCompiledFunction(fn.Instructions(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	cl := objects.NewCompiledFunction(fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	v.allocations--
 	if v.allocations == 0 {
 		v.err = errors.ErrObjectAllocLimit
@@ -748,7 +757,7 @@ func (v *VM) doOpClosure() {
 // doOpGetFreePtr executes the opcode to retrieve a free variable pointer and push its value onto the stack.
 func (v *VM) doOpGetFreePtr() {
 	v.ip++
-	freeIndex := int(v.curInstructions[v.ip])
+	freeIndex := int(v.curInstructions.Get(v.ip))
 	val := v.curFrame.freeVars[freeIndex]
 	v.stack[v.sp] = val
 	v.sp++
@@ -757,7 +766,7 @@ func (v *VM) doOpGetFreePtr() {
 // doOpGetFree retrieves the value of a free variable by its index and pushes it onto the stack.
 func (v *VM) doOpGetFree() {
 	v.ip++
-	freeIndex := int(v.curInstructions[v.ip])
+	freeIndex := int(v.curInstructions.Get(v.ip))
 	val := *v.curFrame.freeVars[freeIndex].Value()
 	v.stack[v.sp] = val
 	v.sp++
@@ -766,7 +775,7 @@ func (v *VM) doOpGetFree() {
 // doOpSetFree updates the value of a free variable in the current frame using the top value on the stack, then decrements the stack pointer.
 func (v *VM) doOpSetFree() {
 	v.ip++
-	freeIndex := int(v.curInstructions[v.ip])
+	freeIndex := int(v.curInstructions.Get(v.ip))
 	v.curFrame.freeVars[freeIndex].SetValue(v.stack[v.sp-1])
 	v.sp--
 }
@@ -774,7 +783,7 @@ func (v *VM) doOpSetFree() {
 // doOpGetLocalPtr updates the instruction pointer, retrieves a local variable, and creates or updates an ObjectPtr for it.
 func (v *VM) doOpGetLocalPtr() {
 	v.ip++
-	localIndex := int(v.curInstructions[v.ip])
+	localIndex := int(v.curInstructions.Get(v.ip))
 	sp := v.curFrame.basePointer + localIndex
 	val := v.stack[sp]
 	var freeVar *objects.ObjectPtr
@@ -793,8 +802,8 @@ func (v *VM) doOpGetLocalPtr() {
 // If an error occurs during the update, it sets the error in the virtual machine.
 func (v *VM) doOpSetSelFree() {
 	v.ip += 2
-	freeIndex := int(v.curInstructions[v.ip-1])
-	numSelectors := int(v.curInstructions[v.ip])
+	freeIndex := int(v.curInstructions.Get(v.ip - 1))
+	numSelectors := int(v.curInstructions.Get(v.ip))
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
 		selectors[i] = v.stack[v.sp-numSelectors+i]
@@ -866,5 +875,5 @@ func (v *VM) doOpSuspend() {
 
 // doOpUnknown handles situations where the opcode is unrecognized by setting an appropriate error on the VM.
 func (v *VM) doOpUnknown() {
-	v.err = fmt.Errorf("unknown opcode: %d", v.curInstructions[v.ip])
+	v.err = fmt.Errorf("unknown opcode: %d", v.curInstructions.Get(v.ip))
 }

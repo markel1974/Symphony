@@ -5,7 +5,7 @@ import "github.com/markel1974/c64emu/src/kernel/compiler"
 // CompiledFunction represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type CompiledFunction struct {
 	ObjectImpl
-	instructions  []byte
+	instructions  *Instructions
 	numLocals     int
 	numParameters int
 	varArgs       bool
@@ -19,7 +19,7 @@ func NewCompiledFunction(instructions []byte, numLocals int, numParameters int, 
 		sourceMap = make(map[int]compiler.Pos)
 	}
 	return &CompiledFunction{
-		instructions:  instructions,
+		instructions:  NewInstructions(instructions),
 		numLocals:     numLocals,
 		numParameters: numParameters,
 		varArgs:       varArgs,
@@ -28,8 +28,13 @@ func NewCompiledFunction(instructions []byte, numLocals int, numParameters int, 
 	}
 }
 
-// Instructions returns the bytecode instructions of the compiled function.
-func (o *CompiledFunction) Instructions() []byte {
+// Data returns the bytecode instructions of the compiled function.
+func (o *CompiledFunction) Data() []byte {
+	return o.instructions.Data()
+}
+
+// Instructions returns the bytecode instructions associated with the compiled function.
+func (o *CompiledFunction) Instructions() *Instructions {
 	return o.instructions
 }
 
@@ -66,7 +71,7 @@ func (o *CompiledFunction) String() string {
 // Copy creates and returns a new instance of CompiledFunction, duplicating its state, except for its variable pointers.
 func (o *CompiledFunction) Copy() IObject {
 	return &CompiledFunction{
-		instructions:  append([]byte{}, o.instructions...),
+		instructions:  o.instructions.Copy(), //append([]byte{}, o.instructions...),
 		numLocals:     o.numLocals,
 		numParameters: o.numParameters,
 		varArgs:       o.varArgs,
