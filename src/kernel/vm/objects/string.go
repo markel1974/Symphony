@@ -247,7 +247,7 @@ func ToString(o IObject) (string, bool) {
 func ToStringArg(name string, o IObject) (string, error) {
 	v, ok := ToString(o)
 	if !ok {
-		return "", NewInvalidArgumentType(name, "string(compatible)", o.TypeName())
+		return "", NewInvalidArgumentError(name, "string(compatible)", o.TypeName())
 	}
 	return v, nil
 }

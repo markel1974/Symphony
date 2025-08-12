@@ -265,7 +265,7 @@ func builtinLen(args ...objects.IObject) (objects.IObject, error) {
 	case *objects.ImmutableMap:
 		return objects.NewInt(int64(arg.Length())), nil
 	default:
-		return nil, objects.NewInvalidArgumentType("first", "array/string/bytes/map", arg.TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "array/string/bytes/map", arg.TypeName())
 	}
 }
 
@@ -290,7 +290,7 @@ func builtinRange(args ...objects.IObject) (objects.IObject, error) {
 			case 2:
 				name = "step"
 			}
-			return nil, objects.NewInvalidArgumentType(name, "int", arg.TypeName())
+			return nil, objects.NewInvalidArgumentError(name, "int", arg.TypeName())
 		}
 		if i == 2 && v.Value() <= 0 {
 			return nil, objects.ErrInvalidRangeStep
@@ -337,7 +337,7 @@ func builtinFormat(args ...objects.IObject) (objects.IObject, error) {
 	}
 	formatString, ok := args[0].(*objects.String)
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("format", "string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("format", "string", args[0].TypeName())
 	}
 	if numArgs == 1 {
 		// okay to return 'format' directly as String is immutable
@@ -515,7 +515,7 @@ func builtinAppend(args ...objects.IObject) (objects.IObject, error) {
 	case *objects.ImmutableArray:
 		return objects.NewArray(append(arg.Values(), args[1:]...)), nil
 	default:
-		return nil, objects.NewInvalidArgumentType("first", "array", arg.TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "array", arg.TypeName())
 	}
 }
 
@@ -531,9 +531,9 @@ func builtinDelete(args ...objects.IObject) (objects.IObject, error) {
 			arg.Delete(key.Value())
 			return objects.UndefinedValue, nil
 		}
-		return nil, objects.NewInvalidArgumentType("second", "string", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentError("second", "string", args[1].TypeName())
 	default:
-		return nil, objects.NewInvalidArgumentType("first", "map", arg.TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "map", arg.TypeName())
 	}
 }
 
@@ -548,7 +548,7 @@ func builtinSplice(args ...objects.IObject) (objects.IObject, error) {
 
 	array, ok := args[0].(*objects.Array)
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "array", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "array", args[0].TypeName())
 	}
 	arrayLen := array.Length()
 
@@ -556,7 +556,7 @@ func builtinSplice(args ...objects.IObject) (objects.IObject, error) {
 	if argsLen > 1 {
 		arg1, ok := args[1].(*objects.Int)
 		if !ok {
-			return nil, objects.NewInvalidArgumentType("second", "int", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentError("second", "int", args[1].TypeName())
 		}
 		startIdx = int(arg1.Value())
 		if startIdx < 0 || startIdx > arrayLen {
@@ -568,7 +568,7 @@ func builtinSplice(args ...objects.IObject) (objects.IObject, error) {
 	if argsLen > 2 {
 		arg2, ok := args[2].(*objects.Int)
 		if !ok {
-			return nil, objects.NewInvalidArgumentType("third", "int", args[2].TypeName())
+			return nil, objects.NewInvalidArgumentError("third", "int", args[2].TypeName())
 		}
 		delCount = int(arg2.Value())
 		if delCount < 0 {

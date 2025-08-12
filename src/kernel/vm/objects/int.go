@@ -266,7 +266,7 @@ func ToInt(o IObject) (int, bool) {
 func ToIntArg(name string, o IObject) (int, error) {
 	v, ok := ToInt(o)
 	if !ok {
-		return 0, NewInvalidArgumentType(name, "int(compatible)", o.TypeName())
+		return 0, NewInvalidArgumentError(name, "int(compatible)", o.TypeName())
 	}
 	return v, nil
 }
@@ -275,7 +275,7 @@ func ToIntArg(name string, o IObject) (int, error) {
 func ToInt64Arg(name string, o IObject) (int64, error) {
 	v, ok := ToInt64(o)
 	if !ok {
-		return 0, NewInvalidArgumentType(name, "int(compatible)", o.TypeName())
+		return 0, NewInvalidArgumentError(name, "int(compatible)", o.TypeName())
 	}
 	return v, nil
 }

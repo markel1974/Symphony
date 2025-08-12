@@ -83,7 +83,7 @@ func FromBool(v bool) IObject {
 func ToBoolArg(name string, o IObject) (bool, error) {
 	b1, ok := o.(*Bool)
 	if !ok {
-		return false, NewInvalidArgumentType(name, "bool(compatible)", o.TypeName())
+		return false, NewInvalidArgumentError(name, "bool(compatible)", o.TypeName())
 	}
 	return b1.value, nil
 }

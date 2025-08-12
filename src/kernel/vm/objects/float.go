@@ -186,7 +186,7 @@ func ToFloat64(o IObject) (float64, bool) {
 func ToFloat64Arg(name string, o IObject) (float64, error) {
 	v, ok := ToFloat64(o)
 	if !ok {
-		return 0, NewInvalidArgumentType(name, "float64(compatible)", o.TypeName())
+		return 0, NewInvalidArgumentError(name, "float64(compatible)", o.TypeName())
 	}
 	return v, nil
 }

@@ -59,7 +59,15 @@ func Is(err error, target error) bool {
 	return errors.Is(err, target)
 }
 
-// NewInvalidArgumentType creates an error indicating an argument has an unexpected type, providing its name, expected, and actual types.
-func NewInvalidArgumentType(name string, expected string, found string) error {
+// NewInvalidArgumentError creates an error indicating an argument has an unexpected type, providing its name, expected, and actual types.
+func NewInvalidArgumentError(name string, expected string, found string) error {
 	return fmt.Errorf("invalid type for argument '%s': expected %s, found %s", name, expected, found)
+}
+
+// NewObjectError wraps a Go error into an IObject-compatible error object or returns TrueValue if the error is nil.
+func NewObjectError(err error) IObject {
+	if err == nil {
+		return TrueValue
+	}
+	return NewError(NewStringNoSize(err.Error()))
 }

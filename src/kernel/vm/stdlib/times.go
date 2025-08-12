@@ -87,7 +87,7 @@ func timesSleep(args ...objects.IObject) (objects.IObject, error) {
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
 	}
 	time.Sleep(time.Duration(i1))
 	return objects.UndefinedValue, nil
@@ -100,11 +100,11 @@ func timesParseDuration(args ...objects.IObject) (objects.IObject, error) {
 	}
 	s1, ok := objects.ToString(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
 	}
 	dur, err := time.ParseDuration(s1)
 	if err != nil {
-		return wrapError(err), nil
+		return objects.NewObjectError(err), nil
 	}
 	return objects.NewInt(int64(dur)), nil
 }
@@ -117,7 +117,7 @@ func timesSince(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(time.Since(t1))), nil
 }
@@ -131,7 +131,7 @@ func timesUntil(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(time.Until(t1))), nil
 }
@@ -144,7 +144,7 @@ func timesDurationHours(args ...objects.IObject) (objects.IObject, error) {
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewFloat(time.Duration(i1).Hours()), nil
 }
@@ -157,7 +157,7 @@ func timesDurationMinutes(args ...objects.IObject) (objects.IObject, error) {
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewFloat(time.Duration(i1).Minutes()), nil
 }
@@ -170,7 +170,7 @@ func timesDurationNanoseconds(args ...objects.IObject) (objects.IObject, error) 
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(time.Duration(i1).Nanoseconds()), nil
 }
@@ -183,7 +183,7 @@ func timesDurationSeconds(args ...objects.IObject) (objects.IObject, error) {
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewFloat(time.Duration(i1).Seconds()), nil
 }
@@ -197,7 +197,7 @@ func timesDurationString(args ...objects.IObject) (objects.IObject, error) {
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewString(time.Duration(i1).String())
 }
@@ -209,7 +209,7 @@ func timesMonthString(args ...objects.IObject) (objects.IObject, error) {
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewStringNoSize(time.Month(i1).String()), nil
 }
@@ -222,31 +222,31 @@ func timesDate(args ...objects.IObject) (objects.IObject, error) {
 	}
 	i1, ok := objects.ToInt(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
 	}
 	i2, ok := objects.ToInt(args[1])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
 	}
 	i3, ok := objects.ToInt(args[2])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
+		return nil, objects.NewInvalidArgumentError("third", "int(compatible)", args[2].TypeName())
 	}
 	i4, ok := objects.ToInt(args[3])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("fourth", "int(compatible)", args[3].TypeName())
+		return nil, objects.NewInvalidArgumentError("fourth", "int(compatible)", args[3].TypeName())
 	}
 	i5, ok := objects.ToInt(args[4])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("fifth", "int(compatible)", args[4].TypeName())
+		return nil, objects.NewInvalidArgumentError("fifth", "int(compatible)", args[4].TypeName())
 	}
 	i6, ok := objects.ToInt(args[5])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("sixth", "int(compatible)", args[5].TypeName())
+		return nil, objects.NewInvalidArgumentError("sixth", "int(compatible)", args[5].TypeName())
 	}
 	i7, ok := objects.ToInt(args[6])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("seventh", "int(compatible)", args[6].TypeName())
+		return nil, objects.NewInvalidArgumentError("seventh", "int(compatible)", args[6].TypeName())
 	}
 	return objects.NewTime(time.Date(i1, time.Month(i2), i3, i4, i5, i6, i7, time.Now().Location())), nil
 }
@@ -269,15 +269,15 @@ func timesParse(args ...objects.IObject) (objects.IObject, error) {
 	}
 	s1, ok := objects.ToString(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "string(compatible)", args[0].TypeName())
 	}
 	s2, ok := objects.ToString(args[1])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentError("second", "string(compatible)", args[1].TypeName())
 	}
 	parsed, err := time.Parse(s1, s2)
 	if err != nil {
-		return wrapError(err), nil
+		return objects.NewObjectError(err), nil
 	}
 	return objects.NewTime(parsed), nil
 }
@@ -291,11 +291,11 @@ func timesUnix(args ...objects.IObject) (objects.IObject, error) {
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "int(compatible)", args[0].TypeName())
 	}
 	i2, ok := objects.ToInt64(args[1])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
 	}
 	return objects.NewTime(time.Unix(i1, i2)), nil
 }
@@ -307,11 +307,11 @@ func timesAdd(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	i2, ok := objects.ToInt64(args[1])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
 	}
 	return objects.NewTime(t1.Add(time.Duration(i2))), nil
 }
@@ -324,11 +324,11 @@ func timesSub(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	t2, ok := objects.ToTime(args[1])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("second", "time(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentError("second", "time(compatible)", args[1].TypeName())
 	}
 	return objects.NewInt(int64(t1.Sub(t2))), nil
 }
@@ -342,19 +342,19 @@ func timesAddDate(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	i2, ok := objects.ToInt(args[1])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentError("second", "int(compatible)", args[1].TypeName())
 	}
 	i3, ok := objects.ToInt(args[2])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
+		return nil, objects.NewInvalidArgumentError("third", "int(compatible)", args[2].TypeName())
 	}
 	i4, ok := objects.ToInt(args[3])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("fourth", "int(compatible)", args[3].TypeName())
+		return nil, objects.NewInvalidArgumentError("fourth", "int(compatible)", args[3].TypeName())
 	}
 	return objects.NewTime(t1.AddDate(i2, i3, i4)), nil
 }
@@ -367,11 +367,11 @@ func timesAfter(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	t2, ok := objects.ToTime(args[1])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("second", "time(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentError("second", "time(compatible)", args[1].TypeName())
 	}
 	if t1.After(t2) {
 		return objects.TrueValue, nil
@@ -387,11 +387,11 @@ func timesBefore(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	t2, ok := objects.ToTime(args[1])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("second", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("second", "time(compatible)", args[0].TypeName())
 	}
 	if t1.Before(t2) {
 		return objects.TrueValue, nil
@@ -406,7 +406,7 @@ func timesTimeYear(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Year())), nil
 }
@@ -418,7 +418,7 @@ func timesTimeMonth(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Month())), nil
 }
@@ -431,7 +431,7 @@ func timesTimeDay(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Day())), nil
 }
@@ -445,7 +445,7 @@ func timesTimeWeekday(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Weekday())), nil
 }
@@ -459,7 +459,7 @@ func timesTimeHour(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Hour())), nil
 }
@@ -472,7 +472,7 @@ func timesTimeMinute(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Minute())), nil
 }
@@ -484,7 +484,7 @@ func timesTimeSecond(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Second())), nil
 }
@@ -497,7 +497,7 @@ func timesTimeNanosecond(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Nanosecond())), nil
 }
@@ -510,7 +510,7 @@ func timesTimeUnix(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(t1.Unix()), nil
 }
@@ -523,7 +523,7 @@ func timesTimeUnixNano(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(t1.UnixNano()), nil
 }
@@ -537,11 +537,11 @@ func timesTimeFormat(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	s2, ok := objects.ToString(args[1])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentError("second", "string(compatible)", args[1].TypeName())
 	}
 	s := t1.Format(s2)
 	return objects.NewString(s)
@@ -555,7 +555,7 @@ func timesIsZero(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	if t1.IsZero() {
 		return objects.TrueValue, nil
@@ -570,7 +570,7 @@ func timesToLocal(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewTime(t1.Local()), nil
 }
@@ -583,7 +583,7 @@ func timesToUTC(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewTime(t1.UTC()), nil
 }
@@ -596,7 +596,7 @@ func timesTimeLocation(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewString(t1.Location().String())
 }
@@ -609,7 +609,7 @@ func timesTimeString(args ...objects.IObject) (objects.IObject, error) {
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewString(t1.String())
 }

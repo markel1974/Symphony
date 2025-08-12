@@ -33,7 +33,7 @@ func jsonDecode(args ...objects.IObject) (ret objects.IObject, err error) {
 		}
 		return v, nil
 	default:
-		return nil, objects.NewInvalidArgumentType("first", "bytes/string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "bytes/string", args[0].TypeName())
 	}
 }
 
@@ -54,11 +54,11 @@ func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 	}
 	prefix, ok := objects.ToString(args[1])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("prefix", "string(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentError("prefix", "string(compatible)", args[1].TypeName())
 	}
 	indent, ok := objects.ToString(args[2])
 	if !ok {
-		return nil, objects.NewInvalidArgumentType("indent", "string(compatible)", args[2].TypeName())
+		return nil, objects.NewInvalidArgumentError("indent", "string(compatible)", args[2].TypeName())
 	}
 	switch o := args[0].(type) {
 	case *objects.Bytes:
@@ -76,7 +76,7 @@ func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 		}
 		return objects.NewBytes(dst.Bytes()), nil
 	default:
-		return nil, objects.NewInvalidArgumentType("first", "bytes/string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "bytes/string", args[0].TypeName())
 	}
 }
 
@@ -95,6 +95,6 @@ func jsonHTMLEscape(args ...objects.IObject) (ret objects.IObject, err error) {
 		gojson.HTMLEscape(&dst, []byte(o.Value()))
 		return objects.NewBytes(dst.Bytes()), nil
 	default:
-		return nil, objects.NewInvalidArgumentType("first", "bytes/string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentError("first", "bytes/string", args[0].TypeName())
 	}
 }
