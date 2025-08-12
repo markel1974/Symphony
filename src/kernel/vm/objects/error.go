@@ -2,8 +2,6 @@ package objects
 
 import (
 	"fmt"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // Error represents an object that encapsulates an error and implements the IObject interface.
@@ -48,7 +46,7 @@ func (o *Error) Equals(x IObject) bool {
 // IndexGet retrieves the values associated with the "values" index in an Error object or returns an error for invalid indices.
 func (o *Error) IndexGet(index IObject) (res IObject, err error) {
 	if strIdx, _ := ToString(index); strIdx != "values" {
-		err = errors.ErrInvalidIndexOnError
+		err = ErrInvalidIndexOnError
 		return
 	}
 	res = o.value

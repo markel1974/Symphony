@@ -1,7 +1,5 @@
 package objects
 
-import "github.com/markel1974/c64emu/src/kernel/vm/errors"
-
 // TrueValue is a predefined constant representing the boolean true value as an IObject.
 // FalseValue is a predefined constant representing the boolean false value as an IObject.
 // UndefinedValue is a predefined constant representing an undefined value as an IObject.
@@ -85,7 +83,7 @@ func FromBool(v bool) IObject {
 func ToBoolArg(name string, o IObject) (bool, error) {
 	b1, ok := o.(*Bool)
 	if !ok {
-		return false, errors.NewInvalidArgumentType(name, "bool(compatible)", o.TypeName())
+		return false, NewInvalidArgumentType(name, "bool(compatible)", o.TypeName())
 	}
 	return b1.value, nil
 }

@@ -2,8 +2,6 @@ package objects
 
 import (
 	"time"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // IObject defines a generic interface for objects that can perform various operations and support multiple behaviors.
@@ -51,18 +49,18 @@ type ObjectImpl struct {
 
 // TypeName returns the name of the type as a string. This method must be implemented by objects inheriting ObjectImpl.
 func (o *ObjectImpl) TypeName() string {
-	panic(errors.ErrNotImplemented)
+	panic(ErrNotImplemented)
 }
 
 // String returns the string representation of the ObjectImpl. Currently, it is not implemented and will panic.
 func (o *ObjectImpl) String() string {
-	panic(errors.ErrNotImplemented)
+	panic(ErrNotImplemented)
 }
 
 // BinaryOp performs a binary operation on the current object and another object using the specified operator.
 // Returns the result of the operation or an error if the operation is not supported.
 func (o *ObjectImpl) BinaryOp(_ Operator, _ IObject) (IObject, error) {
-	return nil, errors.ErrInvalidOperator
+	return nil, ErrInvalidOperator
 }
 
 // Copy creates and returns a new instance of the object, duplicating its state.
@@ -82,12 +80,12 @@ func (o *ObjectImpl) Equals(x IObject) bool {
 
 // IndexGet attempts to retrieve a values at the given index and returns an error if the object is not indexable.
 func (o *ObjectImpl) IndexGet(_ IObject) (res IObject, err error) {
-	return nil, errors.ErrNotIndexable
+	return nil, ErrNotIndexable
 }
 
 // IndexSet attempts to assign a values to an index in the object but always returns ErrNotIndexAssignable, as this operation is unsupported.
 func (o *ObjectImpl) IndexSet(_, _ IObject) (err error) {
-	return errors.ErrNotIndexAssignable
+	return ErrNotIndexAssignable
 }
 
 // Iterate returns an IIterator to traverse over the elements of the object. If iteration is not supported, it returns nil.
@@ -148,7 +146,7 @@ func ToInterface(in IObject) (res interface{}) {
 	case *Time:
 		res = o.value
 	case *Error:
-		res = errors.New(o.String())
+		res = New(o.String())
 	case *Undefined:
 		res = nil
 	case IObject:

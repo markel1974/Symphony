@@ -1,7 +1,6 @@
 package stdlib
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/modules/format"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -50,7 +49,7 @@ func GetAllBuiltinFunctions() []*objects.BuiltinFunction {
 // builtinTypeName returns the type name of the given object argument as a string, or an error if the argument count is invalid.
 func builtinTypeName(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	return objects.NewString(args[0].TypeName())
 }
@@ -60,7 +59,7 @@ func builtinTypeName(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is not exactly 1.
 func builtinIsString(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.String); ok {
 		return objects.TrueValue, nil
@@ -73,7 +72,7 @@ func builtinIsString(args ...objects.IObject) (objects.IObject, error) {
 // Returns ErrWrongNumArguments if the number of arguments is not exactly one.
 func builtinIsInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Int); ok {
 		return objects.TrueValue, nil
@@ -85,7 +84,7 @@ func builtinIsInt(args ...objects.IObject) (objects.IObject, error) {
 // It expects exactly one argument and returns an error if the number of arguments is incorrect.
 func builtinIsFloat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Float); ok {
 		return objects.TrueValue, nil
@@ -97,7 +96,7 @@ func builtinIsFloat(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is not equal to 1.
 func builtinIsBool(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Bool); ok {
 		return objects.TrueValue, nil
@@ -108,7 +107,7 @@ func builtinIsBool(args ...objects.IObject) (objects.IObject, error) {
 // builtinIsChar checks if the provided argument is of type Char, returning TrueValue if it is, otherwise FalseValue.
 func builtinIsChar(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Char); ok {
 		return objects.TrueValue, nil
@@ -119,7 +118,7 @@ func builtinIsChar(args ...objects.IObject) (objects.IObject, error) {
 // builtinIsBytes checks if the given argument is of type Bytes. Returns TrueValue if yes, otherwise FalseValue.
 func builtinIsBytes(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Bytes); ok {
 		return objects.TrueValue, nil
@@ -131,7 +130,7 @@ func builtinIsBytes(args ...objects.IObject) (objects.IObject, error) {
 // Returns ErrWrongNumArguments if the number of arguments is not exactly 1.
 func builtinIsArray(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Array); ok {
 		return objects.TrueValue, nil
@@ -143,7 +142,7 @@ func builtinIsArray(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is not exactly one.
 func builtinIsImmutableArray(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.ImmutableArray); ok {
 		return objects.TrueValue, nil
@@ -155,7 +154,7 @@ func builtinIsImmutableArray(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is not exactly one.
 func builtinIsMap(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Map); ok {
 		return objects.TrueValue, nil
@@ -166,7 +165,7 @@ func builtinIsMap(args ...objects.IObject) (objects.IObject, error) {
 // builtinIsImmutableMap checks if the provided argument is of type ImmutableMap and returns TrueValue or FalseValue.
 func builtinIsImmutableMap(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.ImmutableMap); ok {
 		return objects.TrueValue, nil
@@ -178,7 +177,7 @@ func builtinIsImmutableMap(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments provided is not exactly one.
 func builtinIsTime(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Time); ok {
 		return objects.TrueValue, nil
@@ -189,7 +188,7 @@ func builtinIsTime(args ...objects.IObject) (objects.IObject, error) {
 // builtinIsError checks if the provided argument is an error object. Returns true if it is, otherwise false.
 func builtinIsError(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Error); ok {
 		return objects.TrueValue, nil
@@ -200,7 +199,7 @@ func builtinIsError(args ...objects.IObject) (objects.IObject, error) {
 // builtinIsUndefined checks if the given argument is the special Undefined value and returns a boolean result.
 func builtinIsUndefined(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if args[0] == objects.UndefinedValue {
 		return objects.TrueValue, nil
@@ -212,7 +211,7 @@ func builtinIsUndefined(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is not 1.
 func builtinIsFunction(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	switch args[0].(type) {
 	case *objects.CompiledFunction:
@@ -225,7 +224,7 @@ func builtinIsFunction(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is not exactly one.
 func builtinIsCallable(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if args[0].CanCall() {
 		return objects.TrueValue, nil
@@ -238,7 +237,7 @@ func builtinIsCallable(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is not exactly one.
 func builtinIsIterable(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if args[0].CanIterate() {
 		return objects.TrueValue, nil
@@ -250,7 +249,7 @@ func builtinIsIterable(args ...objects.IObject) (objects.IObject, error) {
 // Returns an Int object representing the length or an error if the argument is invalid.
 func builtinLen(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	switch arg := args[0].(type) {
 	case *objects.Array:
@@ -266,7 +265,7 @@ func builtinLen(args ...objects.IObject) (objects.IObject, error) {
 	case *objects.ImmutableMap:
 		return objects.NewInt(int64(arg.Length())), nil
 	default:
-		return nil, errors.NewInvalidArgumentType("first", "array/string/bytes/map", arg.TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "array/string/bytes/map", arg.TypeName())
 	}
 }
 
@@ -275,7 +274,7 @@ func builtinLen(args ...objects.IObject) (objects.IObject, error) {
 func builtinRange(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs < 2 || numArgs > 3 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	var start, stop, step *objects.Int
 
@@ -291,10 +290,10 @@ func builtinRange(args ...objects.IObject) (objects.IObject, error) {
 			case 2:
 				name = "step"
 			}
-			return nil, errors.NewInvalidArgumentType(name, "int", arg.TypeName())
+			return nil, objects.NewInvalidArgumentType(name, "int", arg.TypeName())
 		}
 		if i == 2 && v.Value() <= 0 {
-			return nil, errors.ErrInvalidRangeStep
+			return nil, objects.ErrInvalidRangeStep
 		}
 		switch i {
 		case 0:
@@ -306,7 +305,7 @@ func builtinRange(args ...objects.IObject) (objects.IObject, error) {
 		}
 	}
 	if start == nil || stop == nil {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if step == nil {
 		step = objects.NewInt(int64(1))
@@ -315,8 +314,8 @@ func builtinRange(args ...objects.IObject) (objects.IObject, error) {
 }
 
 // buildRange generates an array of integers from start to stop with the specified step, supporting both ascending and descending ranges.
-func buildRange(start, stop, step int64) *objects.Array {
-	array := &objects.Array{}
+func buildRange(start int64, stop int64, step int64) *objects.Array {
+	array := objects.NewArray(nil)
 	if start <= stop {
 		for i := start; i < stop; i += step {
 			array.Append(objects.NewInt(i))
@@ -334,11 +333,11 @@ func buildRange(start, stop, step int64) *objects.Array {
 func builtinFormat(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs == 0 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	formatString, ok := args[0].(*objects.String)
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("format", "string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("format", "string", args[0].TypeName())
 	}
 	if numArgs == 1 {
 		// okay to return 'format' directly as String is immutable
@@ -354,7 +353,7 @@ func builtinFormat(args ...objects.IObject) (objects.IObject, error) {
 // builtinCopy creates and returns a copy of the provided object. Only one argument is expected; additional arguments result in an error.
 func builtinCopy(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	return args[0].Copy(), nil
 }
@@ -364,7 +363,7 @@ func builtinCopy(args ...objects.IObject) (objects.IObject, error) {
 func builtinString(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.String); ok {
 		return args[0], nil
@@ -383,7 +382,7 @@ func builtinString(args ...objects.IObject) (objects.IObject, error) {
 func builtinInt(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Int); ok {
 		return args[0], nil
@@ -405,7 +404,7 @@ func builtinInt(args ...objects.IObject) (objects.IObject, error) {
 func builtinFloat(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Float); ok {
 		return args[0], nil
@@ -424,7 +423,7 @@ func builtinFloat(args ...objects.IObject) (objects.IObject, error) {
 // It returns an error if the number of arguments is not exactly one.
 func builtinBool(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Bool); ok {
 		return args[0], nil
@@ -443,7 +442,7 @@ func builtinBool(args ...objects.IObject) (objects.IObject, error) {
 func builtinChar(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Char); ok {
 		return args[0], nil
@@ -463,20 +462,20 @@ func builtinChar(args ...objects.IObject) (objects.IObject, error) {
 func builtinBytes(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 
 	// bytes(N) => create a new bytes with given size N
 	if n, ok := args[0].(*objects.Int); ok {
 		if n.Value() > int64(objects.MaxBytesLen) {
-			return nil, errors.ErrBytesLimit
+			return nil, objects.ErrBytesLimit
 		}
 		return objects.NewBytes(make([]byte, int(n.Value()))), nil
 	}
 	v, ok := objects.ToByteSlice(args[0])
 	if ok {
 		if len(v) > objects.MaxBytesLen {
-			return nil, errors.ErrBytesLimit
+			return nil, objects.ErrBytesLimit
 		}
 		return objects.NewBytes(v), nil
 	}
@@ -490,7 +489,7 @@ func builtinBytes(args ...objects.IObject) (objects.IObject, error) {
 func builtinTime(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if !(argsLen == 1 || argsLen == 2) {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	if _, ok := args[0].(*objects.Time); ok {
 		return args[0], nil
@@ -508,7 +507,7 @@ func builtinTime(args ...objects.IObject) (objects.IObject, error) {
 // builtinAppend appends elements to an array or immutable array, returning a new array. Errors if the first argument is not an array.
 func builtinAppend(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) < 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	switch arg := args[0].(type) {
 	case *objects.Array:
@@ -516,7 +515,7 @@ func builtinAppend(args ...objects.IObject) (objects.IObject, error) {
 	case *objects.ImmutableArray:
 		return objects.NewArray(append(arg.Values(), args[1:]...)), nil
 	default:
-		return nil, errors.NewInvalidArgumentType("first", "array", arg.TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "array", arg.TypeName())
 	}
 }
 
@@ -524,7 +523,7 @@ func builtinAppend(args ...objects.IObject) (objects.IObject, error) {
 func builtinDelete(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	switch arg := args[0].(type) {
 	case *objects.Map:
@@ -532,9 +531,9 @@ func builtinDelete(args ...objects.IObject) (objects.IObject, error) {
 			arg.Delete(key.Value())
 			return objects.UndefinedValue, nil
 		}
-		return nil, errors.NewInvalidArgumentType("second", "string", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "string", args[1].TypeName())
 	default:
-		return nil, errors.NewInvalidArgumentType("first", "map", arg.TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "map", arg.TypeName())
 	}
 }
 
@@ -544,12 +543,12 @@ func builtinDelete(args ...objects.IObject) (objects.IObject, error) {
 func builtinSplice(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen == 0 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 
 	array, ok := args[0].(*objects.Array)
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "array", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "array", args[0].TypeName())
 	}
 	arrayLen := array.Length()
 
@@ -557,11 +556,11 @@ func builtinSplice(args ...objects.IObject) (objects.IObject, error) {
 	if argsLen > 1 {
 		arg1, ok := args[1].(*objects.Int)
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "int", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "int", args[1].TypeName())
 		}
 		startIdx = int(arg1.Value())
 		if startIdx < 0 || startIdx > arrayLen {
-			return nil, errors.ErrIndexOutOfBounds
+			return nil, objects.ErrIndexOutOfBounds
 		}
 	}
 
@@ -569,11 +568,11 @@ func builtinSplice(args ...objects.IObject) (objects.IObject, error) {
 	if argsLen > 2 {
 		arg2, ok := args[2].(*objects.Int)
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("third", "int", args[2].TypeName())
+			return nil, objects.NewInvalidArgumentType("third", "int", args[2].TypeName())
 		}
 		delCount = int(arg2.Value())
 		if delCount < 0 {
-			return nil, errors.ErrIndexOutOfBounds
+			return nil, objects.ErrIndexOutOfBounds
 		}
 	}
 	if startIdx+delCount > arrayLen {

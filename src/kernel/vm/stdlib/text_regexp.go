@@ -3,7 +3,6 @@ package stdlib
 import (
 	"regexp"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -49,7 +48,7 @@ func doTextRegexpReplace(re *regexp.Regexp, src, repl string) string {
 // Returns an error if the number of arguments is not 1 or if the argument type is not a string (compatible).
 func doTextRegexpMatch(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -68,7 +67,7 @@ func doTextRegexpMatch(re *regexp.Regexp, args ...objects.IObject) (objects.IObj
 func doTextRegexpFind(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 1 && numArgs != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -117,7 +116,7 @@ func doTextRegexpFind(re *regexp.Regexp, args ...objects.IObject) (objects.IObje
 // doTextRegexpREReplace performs a regex-based replacement with a source and replacement string, returning a new string or an error.
 func doTextRegexpREReplace(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -136,7 +135,7 @@ func doTextRegexpREReplace(re *regexp.Regexp, args ...objects.IObject) (objects.
 func doTextRegexpRESplit(re *regexp.Regexp, args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 1 && numArgs != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {

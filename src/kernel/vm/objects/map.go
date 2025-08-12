@@ -3,8 +3,6 @@ package objects
 import (
 	"fmt"
 	"strings"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // Map represents a collection of key-values pairs where keys are strings and values implement the IObject interface.
@@ -105,7 +103,7 @@ func (o *Map) Equals(in IObject) bool {
 func (o *Map) IndexGet(index IObject) (res IObject, err error) {
 	strIdx, ok := ToString(index)
 	if !ok {
-		err = errors.ErrInvalidIndexType
+		err = ErrInvalidIndexType
 		return
 	}
 	res, ok = o.values[strIdx]
@@ -119,7 +117,7 @@ func (o *Map) IndexGet(index IObject) (res IObject, err error) {
 func (o *Map) IndexSet(index, value IObject) (err error) {
 	strIdx, ok := ToString(index)
 	if !ok {
-		err = errors.ErrInvalidIndexType
+		err = ErrInvalidIndexType
 		return
 	}
 	o.values[strIdx] = value

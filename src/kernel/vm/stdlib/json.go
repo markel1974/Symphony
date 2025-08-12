@@ -4,7 +4,6 @@ import (
 	"bytes"
 	gojson "encoding/json"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 	"github.com/markel1974/c64emu/src/kernel/vm/stdlib/json"
 )
@@ -18,7 +17,7 @@ var jsonModule = map[string]objects.IObject{
 
 func jsonDecode(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	switch o := args[0].(type) {
 	case *objects.Bytes:
@@ -34,13 +33,13 @@ func jsonDecode(args ...objects.IObject) (ret objects.IObject, err error) {
 		}
 		return v, nil
 	default:
-		return nil, errors.NewInvalidArgumentType("first", "bytes/string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "bytes/string", args[0].TypeName())
 	}
 }
 
 func jsonEncode(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	b, err := json.Encode(args[0])
 	if err != nil {
@@ -51,15 +50,15 @@ func jsonEncode(args ...objects.IObject) (ret objects.IObject, err error) {
 
 func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	prefix, ok := objects.ToString(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("prefix", "string(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("prefix", "string(compatible)", args[1].TypeName())
 	}
 	indent, ok := objects.ToString(args[2])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("indent", "string(compatible)", args[2].TypeName())
+		return nil, objects.NewInvalidArgumentType("indent", "string(compatible)", args[2].TypeName())
 	}
 	switch o := args[0].(type) {
 	case *objects.Bytes:
@@ -77,13 +76,13 @@ func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 		}
 		return objects.NewBytes(dst.Bytes()), nil
 	default:
-		return nil, errors.NewInvalidArgumentType("first", "bytes/string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "bytes/string", args[0].TypeName())
 	}
 }
 
 func jsonHTMLEscape(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 
 	switch o := args[0].(type) {
@@ -96,6 +95,6 @@ func jsonHTMLEscape(args ...objects.IObject) (ret objects.IObject, err error) {
 		gojson.HTMLEscape(&dst, []byte(o.Value()))
 		return objects.NewBytes(dst.Bytes()), nil
 	default:
-		return nil, errors.NewInvalidArgumentType("first", "bytes/string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "bytes/string", args[0].TypeName())
 	}
 }

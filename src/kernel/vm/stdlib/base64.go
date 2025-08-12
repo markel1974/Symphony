@@ -6,6 +6,7 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+// base64Module provides encoding and decoding utility functions for base64, raw, and URL-safe base64 formats.
 var base64Module = map[string]objects.IObject{
 	"encode":         objects.NewUserFunction("encode", FuncAYRS(base64.StdEncoding.EncodeToString)),
 	"decode":         objects.NewUserFunction("decode", FuncASRYE(base64.StdEncoding.DecodeString)),

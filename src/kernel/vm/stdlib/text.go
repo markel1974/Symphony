@@ -7,7 +7,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -67,7 +66,7 @@ var textModule = map[string]objects.IObject{
 // Returns an error if arguments are not string or if there is an invalid number of arguments.
 func textREMatch(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -91,7 +90,7 @@ func textREMatch(args ...objects.IObject) (objects.IObject, error) {
 func textREFind(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 2 && numArgs != 3 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -148,7 +147,7 @@ func textREFind(args ...objects.IObject) (objects.IObject, error) {
 // Returns the modified string or an error if the input arguments are invalid or the operation fails.
 func textREReplace(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -180,21 +179,21 @@ func textREReplace(args ...objects.IObject) (objects.IObject, error) {
 func textRESplit(args ...objects.IObject) (objects.IObject, error) {
 	numArgs := len(args)
 	if numArgs != 2 && numArgs != 3 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, ok := objects.ToString(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 	}
 	s2, ok := objects.ToString(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
 	}
 	var i3 = -1
 	if numArgs > 2 {
 		i3, ok = objects.ToInt(args[2])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
+			return nil, objects.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
 		}
 	}
 	re, err := regexp.Compile(s1)
@@ -215,12 +214,12 @@ func textRESplit(args ...objects.IObject) (objects.IObject, error) {
 // textRECompile compiles a string argument into a regular expression and returns a map of regex operations or an error.
 func textRECompile(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
-		err = errors.ErrWrongNumArguments
+		err = objects.ErrWrongNumArguments
 		return
 	}
 	s1, ok := objects.ToString(args[0])
 	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+		err = objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		return
 	}
 	re, err := regexp.Compile(s1)
@@ -236,7 +235,7 @@ func textRECompile(args ...objects.IObject) (ret objects.IObject, err error) {
 // It returns the modified string as an object or an error if the input arguments are invalid or exceed string limits.
 func textReplace(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -256,7 +255,7 @@ func textReplace(args ...objects.IObject) (objects.IObject, error) {
 	}
 	s, ok := doTextReplace(s1, s2, s3, i4)
 	if !ok {
-		return nil, errors.ErrStringLimit
+		return nil, objects.ErrStringLimit
 	}
 	return objects.NewString(s)
 }
@@ -266,7 +265,7 @@ func textReplace(args ...objects.IObject) (objects.IObject, error) {
 func textSubstring(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -285,7 +284,7 @@ func textSubstring(args ...objects.IObject) (objects.IObject, error) {
 		}
 	}
 	if i2 > i3 {
-		return nil, errors.ErrInvalidIndexType
+		return nil, objects.ErrInvalidIndexType
 	}
 	if i2 < 0 {
 		i2 = 0
@@ -306,7 +305,7 @@ func textSubstring(args ...objects.IObject) (objects.IObject, error) {
 func textPadLeft(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -317,7 +316,7 @@ func textPadLeft(args ...objects.IObject) (objects.IObject, error) {
 		return nil, err
 	}
 	if i2 > objects.MaxStringLen {
-		return nil, errors.ErrStringLimit
+		return nil, objects.ErrStringLimit
 	}
 	sLen := len(s1)
 	if sLen >= i2 {
@@ -345,7 +344,7 @@ func textPadLeft(args ...objects.IObject) (objects.IObject, error) {
 func textPadRight(args ...objects.IObject) (objects.IObject, error) {
 	argsLen := len(args)
 	if argsLen != 2 && argsLen != 3 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -380,7 +379,7 @@ func textPadRight(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if arguments are of invalid types or if the resulting string exceeds the maximum allowed length.
 func textRepeat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -397,7 +396,7 @@ func textRepeat(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is incorrect, types are invalid, or the resulting string exceeds the size limit.
 func textJoin(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	var sLen int
 	var ss1 []string
@@ -421,7 +420,7 @@ func textJoin(args ...objects.IObject) (ret objects.IObject, err error) {
 			ss1 = append(ss1, as)
 		}
 	default:
-		return nil, errors.NewInvalidArgumentType("first", "array", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "array", args[0].TypeName())
 	}
 	s2, err := objects.ToStringArg("second", args[1])
 	if err != nil {
@@ -434,7 +433,7 @@ func textJoin(args ...objects.IObject) (ret objects.IObject, err error) {
 // Returns an error if the argument count is not 1 or the argument type is not boolean.
 func textFormatBool(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	b1, err := objects.ToBoolArg("first", args[0])
 	if err != nil {
@@ -451,7 +450,7 @@ func textFormatBool(args ...objects.IObject) (objects.IObject, error) {
 // Returns a formatted string object or an error if arguments are invalid.
 func textFormatFloat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	f1, err := objects.ToFloat64Arg("first", args[0])
 	if err != nil {
@@ -477,7 +476,7 @@ func textFormatFloat(args ...objects.IObject) (objects.IObject, error) {
 // It returns the formatted string or an error if the arguments are invalid.
 func textFormatInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, err := objects.ToIntArg("first", args[0])
 	if err != nil {
@@ -495,12 +494,12 @@ func textFormatInt(args ...objects.IObject) (objects.IObject, error) {
 // Requires exactly one argument; otherwise, it returns an ErrWrongNumArguments error.
 func textParseBool(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
-		err = errors.ErrWrongNumArguments
+		err = objects.ErrWrongNumArguments
 		return
 	}
 	s1, ok := args[0].(*objects.String)
 	if !ok {
-		err = errors.NewInvalidArgumentType("first", "string", args[0].TypeName())
+		err = objects.NewInvalidArgumentType("first", "string", args[0].TypeName())
 		return
 	}
 	parsed, err := strconv.ParseBool(s1.Value())
@@ -519,7 +518,7 @@ func textParseBool(args ...objects.IObject) (ret objects.IObject, err error) {
 // textParseFloat parses a string into a float64 with a specified precision, returning a Float object or an error.
 func textParseFloat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -541,7 +540,7 @@ func textParseFloat(args ...objects.IObject) (objects.IObject, error) {
 // Non-numeric characters in the input string are ignored during parsing.
 func textParseNumber(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {
@@ -565,7 +564,7 @@ func textParseNumber(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error for invalid argument types, an incorrect number of arguments, or a parsing failure.
 func textParseInt(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 3 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, err := objects.ToStringArg("first", args[0])
 	if err != nil {

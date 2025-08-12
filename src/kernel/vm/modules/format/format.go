@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -78,7 +77,7 @@ func (f *Formatter) writePadding(n int) {
 	oldLen := len(buf)
 	newLen := oldLen + n
 	if newLen > objects.MaxStringLen {
-		panic(errors.ErrStringLimit)
+		panic(objects.ErrStringLimit)
 	}
 	if newLen > cap(buf) {
 		buf = make(Buffer, cap(buf)*2+n)

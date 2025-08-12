@@ -3,9 +3,7 @@ package vm
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/kernel/compiler"
-	"github.com/markel1974/c64emu/src/kernel/vm/bytecodes"
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
+	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 	"github.com/markel1974/c64emu/src/kernel/vm/stdlib"
 )
@@ -34,7 +32,7 @@ type VM struct {
 	stack           []objects.IObject
 	sp              int
 	globals         []objects.IObject
-	fileSet         *compiler.SourceFileSet
+	sourceFiles     *bytecode.Files
 	frames          []*Frame
 	framesIndex     int
 	curFrame        *Frame
@@ -49,8 +47,8 @@ type VM struct {
 }
 
 // NewVM initializes and returns a new instance of the VM with provided sequencer, bytecode, globals, and max allocations.
-func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects.IObject, maxAllocations int64) (*VM, error) {
-	if bytecode == nil {
+func NewVM(sequencer ISequencer, bc *bytecode.Bytecode, globals []objects.IObject, maxAllocations int64) (*VM, error) {
+	if bc == nil {
 		return nil, fmt.Errorf("bytecode is nil")
 	}
 	if sequencer == nil {
@@ -63,10 +61,10 @@ func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects
 		return nil, fmt.Errorf("max allocations must be greater than 0")
 	}
 	v := &VM{
-		constants:      bytecode.Constants,
+		constants:      bc.Constants(),
 		sp:             0,
 		globals:        globals,
-		fileSet:        bytecode.FileSet,
+		sourceFiles:    bc.SourceFiles(),
 		framesIndex:    1,
 		ip:             -1,
 		maxAllocations: maxAllocations,
@@ -77,7 +75,11 @@ func NewVM(sequencer ISequencer, bytecode *bytecodes.Bytecode, globals []objects
 	for i := range v.frames {
 		v.frames[i] = NewFunctionCallFrame()
 	}
-	v.frames[0].SetCompiledFunction(bytecode.MainFunction)
+	main, err := bc.MainFunction()
+	if err != nil {
+		return nil, err
+	}
+	v.frames[0].SetCompiledFunction(main)
 	v.frames[0].ip = -1
 	v.curFrame = v.frames[0]
 	v.curInstructions = v.curFrame.Instructions()
@@ -102,12 +104,12 @@ func (v *VM) Run() error {
 	v.abort = false
 	v.suspend = false
 	if v.err != nil {
-		filePos := v.fileSet.Position(v.curFrame.SourcePos(v.ip - 1))
+		filePos, _ := v.sourceFiles.Position(v.curFrame.SourcePos(v.ip - 1))
 		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
 		for v.framesIndex > 1 {
 			v.framesIndex--
 			v.curFrame = v.frames[v.framesIndex-1]
-			filePos = v.fileSet.Position(v.curFrame.SourcePos(v.curFrame.ip - 1))
+			filePos, _ = v.sourceFiles.Position(v.curFrame.SourcePos(v.curFrame.ip - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)
 		}
 		return err
@@ -186,7 +188,7 @@ func (v *VM) doOpBinary() {
 	res, e := left.BinaryOp(tok, right)
 	if e != nil {
 		v.sp -= 2
-		if errors.Is(e, errors.ErrInvalidOperator) {
+		if objects.Is(e, objects.ErrInvalidOperator) {
 			v.err = fmt.Errorf("invalid operation: %s %d %s", left.TypeName(), tok, right.TypeName())
 		}
 		v.err = e
@@ -194,7 +196,7 @@ func (v *VM) doOpBinary() {
 	}
 	v.allocations--
 	if v.allocations == 0 {
-		v.err = errors.ErrObjectAllocLimit
+		v.err = objects.ErrObjectAllocLimit
 		return
 	}
 	v.stack[v.sp-2] = res
@@ -267,7 +269,7 @@ func (v *VM) doOpBComplement() {
 		var res objects.IObject = objects.NewInt(^x.Value())
 		v.allocations--
 		if v.allocations == 0 {
-			v.err = errors.ErrObjectAllocLimit
+			v.err = objects.ErrObjectAllocLimit
 			return
 		}
 		v.stack[v.sp] = res
@@ -288,7 +290,7 @@ func (v *VM) doOpMinus() {
 		var res objects.IObject = objects.NewInt(-x.Value())
 		v.allocations--
 		if v.allocations == 0 {
-			v.err = errors.ErrObjectAllocLimit
+			v.err = objects.ErrObjectAllocLimit
 			return
 		}
 		v.stack[v.sp] = res
@@ -297,7 +299,7 @@ func (v *VM) doOpMinus() {
 		var res objects.IObject = objects.NewFloat(-x.Value())
 		v.allocations--
 		if v.allocations == 0 {
-			v.err = errors.ErrObjectAllocLimit
+			v.err = objects.ErrObjectAllocLimit
 			return
 		}
 		v.stack[v.sp] = res
@@ -396,7 +398,7 @@ func (v *VM) doOpArray() {
 	arr := objects.NewArray(elements)
 	v.allocations--
 	if v.allocations == 0 {
-		v.err = errors.ErrObjectAllocLimit
+		v.err = objects.ErrObjectAllocLimit
 		return
 	}
 	v.stack[v.sp] = arr
@@ -418,7 +420,7 @@ func (v *VM) doOpMap() {
 	m := objects.NewMap(kv)
 	v.allocations--
 	if v.allocations == 0 {
-		v.err = errors.ErrObjectAllocLimit
+		v.err = objects.ErrObjectAllocLimit
 		return
 	}
 	v.stack[v.sp] = m
@@ -432,7 +434,7 @@ func (v *VM) doOpError() {
 	var e objects.IObject = objects.NewError(value)
 	v.allocations--
 	if v.allocations == 0 {
-		v.err = errors.ErrObjectAllocLimit
+		v.err = objects.ErrObjectAllocLimit
 		return
 	}
 	v.stack[v.sp-1] = e
@@ -447,7 +449,7 @@ func (v *VM) doOpImmutable() {
 		immutableArray := objects.NewImmutableArray(value.Values())
 		v.allocations--
 		if v.allocations == 0 {
-			v.err = errors.ErrObjectAllocLimit
+			v.err = objects.ErrObjectAllocLimit
 			return
 		}
 		v.stack[v.sp-1] = immutableArray
@@ -455,7 +457,7 @@ func (v *VM) doOpImmutable() {
 		immutableMap := objects.NewImmutableMap(value.Values())
 		v.allocations--
 		if v.allocations == 0 {
-			v.err = errors.ErrObjectAllocLimit
+			v.err = objects.ErrObjectAllocLimit
 			return
 		}
 		v.stack[v.sp-1] = immutableMap
@@ -469,11 +471,11 @@ func (v *VM) doOpIndex() {
 	v.sp -= 2
 	val, err := left.IndexGet(index)
 	if err != nil {
-		if errors.Is(err, errors.ErrNotIndexable) {
+		if objects.Is(err, objects.ErrNotIndexable) {
 			v.err = fmt.Errorf("not indexable: %s", index.TypeName())
 			return
 		}
-		if errors.Is(err, errors.ErrInvalidIndexType) {
+		if objects.Is(err, objects.ErrInvalidIndexType) {
 			v.err = fmt.Errorf("invalid index type: %s", index.TypeName())
 			return
 		}
@@ -534,7 +536,7 @@ func (v *VM) doOpSliceIndex() {
 	if val != nil {
 		v.allocations--
 		if v.allocations == 0 {
-			v.err = errors.ErrObjectAllocLimit
+			v.err = objects.ErrObjectAllocLimit
 			return
 		}
 		v.stack[v.sp] = val
@@ -598,7 +600,7 @@ func (v *VM) doOpCall() {
 		if v.curFrame.SameFunction(callee) {
 			// recursive call
 			nextOp := v.curInstructions.Get(v.ip + 1)
-			if nextOp == bytecodes.OpReturn || (nextOp == bytecodes.OpPop && v.curInstructions.Get(v.ip+2) == bytecodes.OpReturn) {
+			if nextOp == bytecode.OpReturn || (nextOp == bytecode.OpPop && v.curInstructions.Get(v.ip+2) == bytecode.OpReturn) {
 				for p := 0; p < numArgs; p++ {
 					v.stack[v.curFrame.basePointer+p] =
 						v.stack[v.sp-numArgs+p]
@@ -609,7 +611,7 @@ func (v *VM) doOpCall() {
 			}
 		}
 		if v.framesIndex >= maxFrames {
-			v.err = errors.ErrStackOverflow
+			v.err = objects.ErrStackOverflow
 			return
 		}
 		v.curFrame.ip = v.ip
@@ -627,7 +629,7 @@ func (v *VM) doOpCall() {
 		ret, err := value.Call(args...)
 		v.sp -= numArgs + 1
 		if err != nil {
-			if errors.Is(err, errors.ErrWrongNumArguments) {
+			if objects.Is(err, objects.ErrWrongNumArguments) {
 				v.err = fmt.Errorf("wrong number of arguments in call to '%s'", value.TypeName())
 				return
 			}
@@ -639,7 +641,7 @@ func (v *VM) doOpCall() {
 		}
 		v.allocations--
 		if v.allocations == 0 {
-			v.err = errors.ErrObjectAllocLimit
+			v.err = objects.ErrObjectAllocLimit
 			return
 		}
 		v.stack[v.sp] = ret
@@ -752,7 +754,7 @@ func (v *VM) doOpClosure() {
 	cl := objects.NewCompiledFunction(fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	v.allocations--
 	if v.allocations == 0 {
-		v.err = errors.ErrObjectAllocLimit
+		v.err = objects.ErrObjectAllocLimit
 		return
 	}
 	v.stack[v.sp] = cl
@@ -835,7 +837,7 @@ func (v *VM) doOpIteratorInit() {
 	iterator = dst.Iterate()
 	v.allocations--
 	if v.allocations == 0 {
-		v.err = errors.ErrObjectAllocLimit
+		v.err = objects.ErrObjectAllocLimit
 		return
 	}
 	v.stack[v.sp] = iterator

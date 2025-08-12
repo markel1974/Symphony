@@ -3,8 +3,6 @@ package objects
 import (
 	"fmt"
 	"strings"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // Array represents a collection of IObject elements, providing methods for manipulation, indexing, and iteration.
@@ -71,10 +69,10 @@ func (o *Array) BinaryOp(op Operator, in IObject) (IObject, error) {
 			}
 			return &Array{values: append(o.values, rhs.values...)}, nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	}
-	return nil, errors.ErrInvalidOperator
+	return nil, ErrInvalidOperator
 }
 
 // Copy creates and returns a deep copy of the Array and its elements.
@@ -83,7 +81,7 @@ func (o *Array) Copy() IObject {
 	for _, elem := range o.values {
 		c = append(c, elem.Copy())
 	}
-	return &Array{values: c}
+	return NewArray(c)
 }
 
 // Falsy returns true if the array is empty, otherwise false.
@@ -117,7 +115,7 @@ func (o *Array) Equals(in IObject) bool {
 func (o *Array) IndexGet(index IObject) (res IObject, err error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		err = errors.ErrInvalidIndexType
+		err = ErrInvalidIndexType
 		return
 	}
 	idxVal := int(intIdx.value)
@@ -130,14 +128,14 @@ func (o *Array) IndexGet(index IObject) (res IObject, err error) {
 }
 
 // IndexSet assigns a given values to the specified index in the array, returning an error if the operation is invalid.
-func (o *Array) IndexSet(index, value IObject) (err error) {
+func (o *Array) IndexSet(index IObject, value IObject) (err error) {
 	intIdx, ok := ToInt(index)
 	if !ok {
-		err = errors.ErrInvalidIndexType
+		err = ErrInvalidIndexType
 		return
 	}
 	if intIdx < 0 || intIdx >= len(o.values) {
-		err = errors.ErrIndexOutOfBounds
+		err = ErrIndexOutOfBounds
 		return
 	}
 	o.values[intIdx] = value

@@ -2,8 +2,6 @@ package objects
 
 import (
 	"strconv"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // Int represents an integer type with a 64-bit value and methods for operations, equality, and object behavior.
@@ -124,7 +122,7 @@ func (o *Int) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			}
 			return FalseValue, nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	case *Float:
 		switch op {
@@ -157,7 +155,7 @@ func (o *Int) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			}
 			return FalseValue, nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	case *Char:
 		switch op {
@@ -186,10 +184,10 @@ func (o *Int) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			}
 			return FalseValue, nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	}
-	return nil, errors.ErrInvalidOperator
+	return nil, ErrInvalidOperator
 }
 
 // Copy creates and returns a new instance of the Int object with the same value as the current instance.
@@ -268,7 +266,7 @@ func ToInt(o IObject) (int, bool) {
 func ToIntArg(name string, o IObject) (int, error) {
 	v, ok := ToInt(o)
 	if !ok {
-		return 0, errors.NewInvalidArgumentType(name, "int(compatible)", o.TypeName())
+		return 0, NewInvalidArgumentType(name, "int(compatible)", o.TypeName())
 	}
 	return v, nil
 }
@@ -277,7 +275,7 @@ func ToIntArg(name string, o IObject) (int, error) {
 func ToInt64Arg(name string, o IObject) (int64, error) {
 	v, ok := ToInt64(o)
 	if !ok {
-		return 0, errors.NewInvalidArgumentType(name, "int(compatible)", o.TypeName())
+		return 0, NewInvalidArgumentType(name, "int(compatible)", o.TypeName())
 	}
 	return v, nil
 }

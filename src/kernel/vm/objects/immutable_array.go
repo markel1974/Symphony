@@ -3,8 +3,6 @@ package objects
 import (
 	"fmt"
 	"strings"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // ImmutableArray represents an array that cannot be modified after creation.
@@ -58,10 +56,10 @@ func (o *ImmutableArray) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 		case OperatorAdd:
 			return NewArray(append(o.values, ia.values...)), nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	}
-	return nil, errors.ErrInvalidOperator
+	return nil, ErrInvalidOperator
 }
 
 // Copy creates and returns a new copy of the ImmutableArray, with all its elements deeply copied.
@@ -104,7 +102,7 @@ func (o *ImmutableArray) Equals(in IObject) bool {
 func (o *ImmutableArray) IndexGet(index IObject) (res IObject, err error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		err = errors.ErrInvalidIndexType
+		err = ErrInvalidIndexType
 		return
 	}
 	idxVal := int(intIdx.value)

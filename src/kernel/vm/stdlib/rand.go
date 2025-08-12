@@ -3,7 +3,6 @@ package stdlib
 import (
 	"math/rand"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -39,11 +38,11 @@ func randRand(r *rand.Rand) *objects.ImmutableMap {
 // It expects exactly one argument of type *objects.Bytes. Returns an error if the argument is missing or invalid.
 func doRandRead(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	y1, ok := args[0].(*objects.Bytes)
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "bytes", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "bytes", args[0].TypeName())
 	}
 	res, err := rand.Read(y1.Value())
 	if err != nil {
@@ -56,11 +55,11 @@ func doRandRead(args ...objects.IObject) (objects.IObject, error) {
 // Expects one argument: an int(compatible) seed value. Returns an error for invalid arguments or wrong argument count.
 func doRandRand(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
 	src := rand.NewSource(i1)
 	return randRand(rand.New(src)), nil
@@ -70,11 +69,11 @@ func doRandRand(args ...objects.IObject) (objects.IObject, error) {
 // The function expects exactly one argument of type *objects.Bytes; otherwise, it returns an argument or type error.
 func doRRandRand(r *rand.Rand, args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	y1, ok := args[0].(*objects.Bytes)
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "bytes", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "bytes", args[0].TypeName())
 	}
 	res, err := r.Read(y1.Value())
 	if err != nil {

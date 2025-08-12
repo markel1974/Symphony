@@ -2,17 +2,17 @@ package stdlib
 
 import (
 	"fmt"
-	//"github.com/markel1974/injector/src/vm/compiler"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/modules/format"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+// fmtSafeModule is a map containing predefined functions from the fmt package wrapped as IObjects, like "sprintf".
 var fmtSafeModule = map[string]objects.IObject{
 	"sprintf": objects.NewUserFunction("sprintf", fmtSprintf),
 }
 
+// fmtModule is a map that associates string keys with user-defined function objects for various formatted output operations.
 var fmtModule = map[string]objects.IObject{
 	"print":   objects.NewUserFunction("print", fmtPrint),
 	"printf":  objects.NewUserFunction("printf", fmtPrintf),
@@ -20,6 +20,7 @@ var fmtModule = map[string]objects.IObject{
 	"sprintf": objects.NewUserFunction("sprintf", fmtSprintf),
 }
 
+// fmtPrint prints the string representations of the provided IObject arguments without a newline.
 func fmtPrint(args ...objects.IObject) (ret objects.IObject, err error) {
 	printArgs, err := getPrintArgs(args...)
 	if err != nil {
@@ -29,14 +30,15 @@ func fmtPrint(args ...objects.IObject) (ret objects.IObject, err error) {
 	return nil, nil
 }
 
+// fmtPrintf formats and prints a string using given arguments; returns nil or an error on invalid input or formatting.
 func fmtPrintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	numArgs := len(args)
 	if numArgs == 0 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	data, ok := args[0].(*objects.String)
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("format", "string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("format", "string", args[0].TypeName())
 	}
 	if numArgs == 1 {
 		fmt.Print(data)
@@ -51,6 +53,8 @@ func fmtPrintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	return nil, nil
 }
 
+// fmtPrintln outputs arguments to the standard output with a newline, converting them to strings if necessary.
+// Returns nil and an error if any argument conversion fails.
 func fmtPrintln(args ...objects.IObject) (ret objects.IObject, err error) {
 	printArgs, err := getPrintArgs(args...)
 	if err != nil {
@@ -61,14 +65,15 @@ func fmtPrintln(args ...objects.IObject) (ret objects.IObject, err error) {
 	return nil, nil
 }
 
+// fmtSprintf formats a string based on a format string and arguments, returning the result or an error if formatting fails.
 func fmtSprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	numArgs := len(args)
 	if numArgs == 0 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	data, ok := args[0].(*objects.String)
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("format", "string", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("format", "string", args[0].TypeName())
 	}
 	if numArgs == 1 {
 		// okay to return 'format' directly as String is immutable
@@ -81,6 +86,8 @@ func fmtSprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 	return objects.NewString(s)
 }
 
+// getPrintArgs converts IObject arguments to their string representations while ensuring the total length does not exceed the limit.
+// Returns a slice of string representations as interface{} or an error if the length exceeds MaxStringLen.
 func getPrintArgs(args ...objects.IObject) ([]interface{}, error) {
 	var printArgs []interface{}
 	l := 0
@@ -89,7 +96,7 @@ func getPrintArgs(args ...objects.IObject) ([]interface{}, error) {
 		sLen := len(s)
 		// make sure length does not exceed the limit
 		if l+sLen > objects.MaxStringLen {
-			return nil, errors.ErrStringLimit
+			return nil, objects.ErrStringLimit
 		}
 		l += sLen
 		printArgs = append(printArgs, s)

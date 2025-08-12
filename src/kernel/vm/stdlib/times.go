@@ -3,7 +3,6 @@ package stdlib
 import (
 	"time"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -84,11 +83,11 @@ var timesModule = map[string]objects.IObject{
 // The function returns an undefined value after the sleep duration.
 func timesSleep(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
 	time.Sleep(time.Duration(i1))
 	return objects.UndefinedValue, nil
@@ -97,11 +96,11 @@ func timesSleep(args ...objects.IObject) (objects.IObject, error) {
 // timesParseDuration parses a duration string and returns its value as an integer representing nanoseconds or an error.
 func timesParseDuration(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, ok := objects.ToString(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 	}
 	dur, err := time.ParseDuration(s1)
 	if err != nil {
@@ -114,11 +113,11 @@ func timesParseDuration(args ...objects.IObject) (objects.IObject, error) {
 // Returns an integer object representing the difference or an error if the argument is invalid.
 func timesSince(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(time.Since(t1))), nil
 }
@@ -128,11 +127,11 @@ func timesSince(args ...objects.IObject) (objects.IObject, error) {
 // If the argument is not a valid time-compatible object, an invalid argument type error is returned.
 func timesUntil(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(time.Until(t1))), nil
 }
@@ -141,11 +140,11 @@ func timesUntil(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if input is not a single integer value or cannot be converted to int64.
 func timesDurationHours(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewFloat(time.Duration(i1).Hours()), nil
 }
@@ -154,11 +153,11 @@ func timesDurationHours(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the argument count is not 1 or if the argument is not int-compatible.
 func timesDurationMinutes(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewFloat(time.Duration(i1).Minutes()), nil
 }
@@ -167,11 +166,11 @@ func timesDurationMinutes(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the wrong number of arguments is provided or if the input argument is not integer-compatible.
 func timesDurationNanoseconds(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(time.Duration(i1).Nanoseconds()), nil
 }
@@ -180,11 +179,11 @@ func timesDurationNanoseconds(args ...objects.IObject) (objects.IObject, error) 
 // Returns an error if the argument count is incorrect or if the provided argument is not an integer-compatible type.
 func timesDurationSeconds(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewFloat(time.Duration(i1).Seconds()), nil
 }
@@ -194,11 +193,11 @@ func timesDurationSeconds(args ...objects.IObject) (objects.IObject, error) {
 // The result is returned as a string object representing the duration in a readable format.
 func timesDurationString(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewString(time.Duration(i1).String())
 }
@@ -206,11 +205,11 @@ func timesDurationString(args ...objects.IObject) (objects.IObject, error) {
 // timesMonthString converts an integer to its corresponding month name as a string. Returns an error for invalid arguments.
 func timesMonthString(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
 	return objects.NewStringNoSize(time.Month(i1).String()), nil
 }
@@ -219,35 +218,35 @@ func timesMonthString(args ...objects.IObject) (objects.IObject, error) {
 // timesDate returns an error if the number of arguments is not seven or if any argument is not an int-compatible type.
 func timesDate(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 7 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, ok := objects.ToInt(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
 	i2, ok := objects.ToInt(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 	}
 	i3, ok := objects.ToInt(args[2])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
+		return nil, objects.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
 	}
 	i4, ok := objects.ToInt(args[3])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("fourth", "int(compatible)", args[3].TypeName())
+		return nil, objects.NewInvalidArgumentType("fourth", "int(compatible)", args[3].TypeName())
 	}
 	i5, ok := objects.ToInt(args[4])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("fifth", "int(compatible)", args[4].TypeName())
+		return nil, objects.NewInvalidArgumentType("fifth", "int(compatible)", args[4].TypeName())
 	}
 	i6, ok := objects.ToInt(args[5])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("sixth", "int(compatible)", args[5].TypeName())
+		return nil, objects.NewInvalidArgumentType("sixth", "int(compatible)", args[5].TypeName())
 	}
 	i7, ok := objects.ToInt(args[6])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("seventh", "int(compatible)", args[6].TypeName())
+		return nil, objects.NewInvalidArgumentType("seventh", "int(compatible)", args[6].TypeName())
 	}
 	return objects.NewTime(time.Date(i1, time.Month(i2), i3, i4, i5, i6, i7, time.Now().Location())), nil
 }
@@ -255,7 +254,7 @@ func timesDate(args ...objects.IObject) (objects.IObject, error) {
 // timesNow returns the current time as an object of type Time or an error if called with arguments.
 func timesNow(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 0 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	return objects.NewTime(time.Now()), nil
 }
@@ -266,15 +265,15 @@ func timesNow(args ...objects.IObject) (objects.IObject, error) {
 // Wraps parsing errors as `Error` objects for consistent error handling.
 func timesParse(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	s1, ok := objects.ToString(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 	}
 	s2, ok := objects.ToString(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
 	}
 	parsed, err := time.Parse(s1, s2)
 	if err != nil {
@@ -288,15 +287,15 @@ func timesParse(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if arguments are not exactly two or cannot be converted to integers.
 func timesUnix(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	i1, ok := objects.ToInt64(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 	}
 	i2, ok := objects.ToInt64(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 	}
 	return objects.NewTime(time.Unix(i1, i2)), nil
 }
@@ -304,15 +303,15 @@ func timesUnix(args ...objects.IObject) (objects.IObject, error) {
 // timesAdd adds a duration (in nanoseconds) to a time object and returns the resulting time or an error if invalid arguments.
 func timesAdd(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	i2, ok := objects.ToInt64(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 	}
 	return objects.NewTime(t1.Add(time.Duration(i2))), nil
 }
@@ -321,15 +320,15 @@ func timesAdd(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is not 2 or if the arguments are not time-compatible objects.
 func timesSub(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	t2, ok := objects.ToTime(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "time(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "time(compatible)", args[1].TypeName())
 	}
 	return objects.NewInt(int64(t1.Sub(t2))), nil
 }
@@ -339,23 +338,23 @@ func timesSub(args ...objects.IObject) (objects.IObject, error) {
 // An error is returned if arguments are of the wrong types or if the number of arguments is not 4.
 func timesAddDate(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 4 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	i2, ok := objects.ToInt(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 	}
 	i3, ok := objects.ToInt(args[2])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
+		return nil, objects.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
 	}
 	i4, ok := objects.ToInt(args[3])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("fourth", "int(compatible)", args[3].TypeName())
+		return nil, objects.NewInvalidArgumentType("fourth", "int(compatible)", args[3].TypeName())
 	}
 	return objects.NewTime(t1.AddDate(i2, i3, i4)), nil
 }
@@ -364,15 +363,15 @@ func timesAddDate(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is not two or if the provided types are not time-compatible.
 func timesAfter(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	t2, ok := objects.ToTime(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "time(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "time(compatible)", args[1].TypeName())
 	}
 	if t1.After(t2) {
 		return objects.TrueValue, nil
@@ -384,15 +383,15 @@ func timesAfter(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the number of arguments is not 2 or if argument types are invalid.
 func timesBefore(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	t2, ok := objects.ToTime(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "time(compatible)", args[0].TypeName())
 	}
 	if t1.Before(t2) {
 		return objects.TrueValue, nil
@@ -403,11 +402,11 @@ func timesBefore(args ...objects.IObject) (objects.IObject, error) {
 // timesTimeYear extracts the year from a given time object and returns it as an integer. It expects exactly one argument.
 func timesTimeYear(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Year())), nil
 }
@@ -415,11 +414,11 @@ func timesTimeYear(args ...objects.IObject) (objects.IObject, error) {
 // timesTimeMonth extracts the month from a given time object as an integer and returns it. Errors on invalid input or argument count.
 func timesTimeMonth(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Month())), nil
 }
@@ -428,11 +427,11 @@ func timesTimeMonth(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the argument count is incorrect or if the input is not a valid time-compatible object.
 func timesTimeDay(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Day())), nil
 }
@@ -442,11 +441,11 @@ func timesTimeDay(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the argument count is incorrect or if the type is invalid.
 func timesTimeWeekday(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Weekday())), nil
 }
@@ -456,11 +455,11 @@ func timesTimeWeekday(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the argument is not time-compatible or if the number of arguments is not one.
 func timesTimeHour(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Hour())), nil
 }
@@ -469,11 +468,11 @@ func timesTimeHour(args ...objects.IObject) (objects.IObject, error) {
 // Expects exactly one argument of a time-compatible object.
 func timesTimeMinute(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Minute())), nil
 }
@@ -481,11 +480,11 @@ func timesTimeMinute(args ...objects.IObject) (objects.IObject, error) {
 // timesTimeSecond extracts the second component of a time object, returning it as an integer. It expects one argument only.
 func timesTimeSecond(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Second())), nil
 }
@@ -494,11 +493,11 @@ func timesTimeSecond(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the argument is not a valid time object or if the number of arguments is not exactly one.
 func timesTimeNanosecond(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(int64(t1.Nanosecond())), nil
 }
@@ -507,11 +506,11 @@ func timesTimeNanosecond(args ...objects.IObject) (objects.IObject, error) {
 // It returns an error if the number of arguments is not one or if the argument is not time-compatible.
 func timesTimeUnix(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(t1.Unix()), nil
 }
@@ -520,11 +519,11 @@ func timesTimeUnix(args ...objects.IObject) (objects.IObject, error) {
 // An error is returned if the number or type of arguments is invalid.
 func timesTimeUnixNano(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewInt(t1.UnixNano()), nil
 }
@@ -534,15 +533,15 @@ func timesTimeUnixNano(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the resultant string exceeds the allowed maximum string length.
 func timesTimeFormat(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 2 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	s2, ok := objects.ToString(args[1])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+		return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
 	}
 	s := t1.Format(s2)
 	return objects.NewString(s)
@@ -552,11 +551,11 @@ func timesTimeFormat(args ...objects.IObject) (objects.IObject, error) {
 // Accepts one argument of type time-compatible object. Returns an error if the argument is invalid or missing.
 func timesIsZero(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	if t1.IsZero() {
 		return objects.TrueValue, nil
@@ -567,11 +566,11 @@ func timesIsZero(args ...objects.IObject) (objects.IObject, error) {
 // timesToLocal converts a time object to its local time equivalent or returns an error if the argument is invalid.
 func timesToLocal(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewTime(t1.Local()), nil
 }
@@ -580,11 +579,11 @@ func timesToLocal(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the argument count is incorrect or if the input is not a valid time-compatible type.
 func timesToUTC(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewTime(t1.UTC()), nil
 }
@@ -593,11 +592,11 @@ func timesToUTC(args ...objects.IObject) (objects.IObject, error) {
 // Accepts exactly one time-compatible argument and returns an error for invalid types or argument count.
 func timesTimeLocation(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewString(t1.Location().String())
 }
@@ -606,11 +605,11 @@ func timesTimeLocation(args ...objects.IObject) (objects.IObject, error) {
 // Returns an error if the argument is not a time-compatible object or if the number of arguments is not exactly one.
 func timesTimeString(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
-		return nil, errors.ErrWrongNumArguments
+		return nil, objects.ErrWrongNumArguments
 	}
 	t1, ok := objects.ToTime(args[0])
 	if !ok {
-		return nil, errors.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
+		return nil, objects.NewInvalidArgumentType("first", "time(compatible)", args[0].TypeName())
 	}
 	return objects.NewString(t1.String())
 }

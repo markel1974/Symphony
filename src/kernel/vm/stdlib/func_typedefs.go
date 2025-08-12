@@ -3,7 +3,6 @@ package stdlib
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -12,7 +11,7 @@ import (
 func FuncAR(fn func()) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		fn()
 		return objects.UndefinedValue, nil
@@ -25,7 +24,7 @@ func FuncAR(fn func()) objects.CallableFunc {
 func FuncARI(fn func() int) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		return objects.NewInt(int64(fn())), nil
 	}
@@ -35,7 +34,7 @@ func FuncARI(fn func() int) objects.CallableFunc {
 func FuncARI64(fn func() int64) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		return objects.NewInt(fn()), nil
 	}
@@ -45,12 +44,12 @@ func FuncARI64(fn func() int64) objects.CallableFunc {
 func FuncAI64RI64(fn func(int64) int64) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 
 		i1, ok := objects.ToInt64(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 		}
 		return objects.NewInt(fn(i1)), nil
 	}
@@ -62,12 +61,12 @@ func FuncAI64RI64(fn func(int64) int64) objects.CallableFunc {
 func FuncAI64R(fn func(int64)) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 
 		i1, ok := objects.ToInt64(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 		}
 		fn(i1)
 		return objects.UndefinedValue, nil
@@ -80,7 +79,7 @@ func FuncAI64R(fn func(int64)) objects.CallableFunc {
 func FuncARB(fn func() bool) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		if fn() {
 			return objects.TrueValue, nil
@@ -93,7 +92,7 @@ func FuncARB(fn func() bool) objects.CallableFunc {
 func FuncARE(fn func() error) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		return wrapError(fn()), nil
 	}
@@ -105,7 +104,7 @@ func FuncARE(fn func() error) objects.CallableFunc {
 func FuncARS(fn func() string) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		v, err := objects.NewString(fn())
 		if err != nil {
@@ -119,7 +118,7 @@ func FuncARS(fn func() string) objects.CallableFunc {
 func FuncARSE(fn func() (string, error)) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		res, err := fn()
 		if err != nil {
@@ -138,14 +137,14 @@ func FuncARSE(fn func() (string, error)) objects.CallableFunc {
 func FuncARYE(fn func() ([]byte, error)) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		res, err := fn()
 		if err != nil {
 			return wrapError(err), nil
 		}
 		if len(res) > objects.MaxBytesLen {
-			return nil, errors.ErrBytesLimit
+			return nil, objects.ErrBytesLimit
 		}
 		return objects.NewBytes(res), nil
 	}
@@ -156,7 +155,7 @@ func FuncARYE(fn func() ([]byte, error)) objects.CallableFunc {
 func FuncARF(fn func() float64) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		return objects.NewFloat(fn()), nil
 	}
@@ -167,7 +166,7 @@ func FuncARF(fn func() float64) objects.CallableFunc {
 func FuncARSs(fn func() []string) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		arr := &objects.Array{}
 		for _, elem := range fn() {
@@ -187,7 +186,7 @@ func FuncARSs(fn func() []string) objects.CallableFunc {
 func FuncARIsE(fn func() ([]int, error)) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 0 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		res, err := fn()
 		if err != nil {
@@ -206,11 +205,11 @@ func FuncARIsE(fn func() ([]int, error)) objects.CallableFunc {
 func FuncAIRIs(fn func(int) []int) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		i1, ok := objects.ToInt(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 		}
 		res := fn(i1)
 		arr := objects.NewArray(nil)
@@ -225,11 +224,11 @@ func FuncAIRIs(fn func(int) []int) objects.CallableFunc {
 func FuncAFRF(fn func(float64) float64) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		f1, ok := objects.ToFloat64(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
 		}
 		return objects.NewFloat(fn(f1)), nil
 	}
@@ -240,11 +239,11 @@ func FuncAFRF(fn func(float64) float64) objects.CallableFunc {
 func FuncAIR(fn func(int)) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		i1, ok := objects.ToInt(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 		}
 		fn(i1)
 		return objects.UndefinedValue, nil
@@ -257,11 +256,11 @@ func FuncAIR(fn func(int)) objects.CallableFunc {
 func FuncAIRF(fn func(int) float64) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		i1, ok := objects.ToInt(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 		}
 		return objects.NewFloat(fn(i1)), nil
 	}
@@ -272,11 +271,11 @@ func FuncAIRF(fn func(int) float64) objects.CallableFunc {
 func FuncAFRI(fn func(float64) int) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		f1, ok := objects.ToFloat64(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
 		}
 		return objects.NewInt(int64(fn(f1))), nil
 	}
@@ -287,15 +286,15 @@ func FuncAFRI(fn func(float64) int) objects.CallableFunc {
 func FuncAFFRF(fn func(float64, float64) float64) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		f1, ok := objects.ToFloat64(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
 		}
 		f2, ok := objects.ToFloat64(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "float(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "float(compatible)", args[1].TypeName())
 		}
 		return objects.NewFloat(fn(f1, f2)), nil
 	}
@@ -306,15 +305,15 @@ func FuncAFFRF(fn func(float64, float64) float64) objects.CallableFunc {
 func FuncAIFRF(fn func(int, float64) float64) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		i1, ok := objects.ToInt(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 		}
 		f2, ok := objects.ToFloat64(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "float(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "float(compatible)", args[1].TypeName())
 		}
 		return objects.NewFloat(fn(i1, f2)), nil
 	}
@@ -326,15 +325,15 @@ func FuncAIFRF(fn func(int, float64) float64) objects.CallableFunc {
 func FuncAFIRF(fn func(float64, int) float64) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		f1, ok := objects.ToFloat64(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
 		}
 		i2, ok := objects.ToInt(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 		}
 		return objects.NewFloat(fn(f1, i2)), nil
 	}
@@ -347,15 +346,15 @@ func FuncAFIRF(fn func(float64, int) float64) objects.CallableFunc {
 func FuncAFIRB(fn func(float64, int) bool) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		f1, ok := objects.ToFloat64(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
 		}
 		i2, ok := objects.ToInt(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 		}
 		if fn(f1, i2) {
 			return objects.TrueValue, nil
@@ -369,11 +368,11 @@ func FuncAFIRB(fn func(float64, int) bool) objects.CallableFunc {
 func FuncAFRB(fn func(float64) bool) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		f1, ok := objects.ToFloat64(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "float(compatible)", args[0].TypeName())
 		}
 		if fn(f1) {
 			return objects.TrueValue, nil
@@ -388,11 +387,11 @@ func FuncAFRB(fn func(float64) bool) objects.CallableFunc {
 func FuncASRS(fn func(string) string) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		v, err := objects.NewString(fn(s1))
 		if err != nil {
@@ -408,11 +407,11 @@ func FuncASRS(fn func(string) string) objects.CallableFunc {
 func FuncASRSs(fn func(string) []string) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		res := fn(s1)
 		arr := objects.NewArray(nil)
@@ -432,11 +431,11 @@ func FuncASRSs(fn func(string) []string) objects.CallableFunc {
 func FuncASRSE(fn func(string) (string, error)) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		res, err := fn(s1)
 		if err != nil {
@@ -454,11 +453,11 @@ func FuncASRSE(fn func(string) (string, error)) objects.CallableFunc {
 func FuncASRE(fn func(string) error) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		return wrapError(fn(s1)), nil
 	}
@@ -470,15 +469,15 @@ func FuncASRE(fn func(string) error) objects.CallableFunc {
 func FuncASSRE(fn func(string, string) error) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		s2, ok := objects.ToString(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
 		}
 		return wrapError(fn(s1, s2)), nil
 	}
@@ -490,15 +489,15 @@ func FuncASSRE(fn func(string, string) error) objects.CallableFunc {
 func FuncASSRSs(fn func(string, string) []string) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		s2, ok := objects.ToString(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[1].TypeName())
 
 		}
 		arr := objects.NewArray(nil)
@@ -519,19 +518,19 @@ func FuncASSRSs(fn func(string, string) []string) objects.CallableFunc {
 func FuncASSIRSs(fn func(string, string, int) []string) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 3 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		s2, ok := objects.ToString(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
 		}
 		i3, ok := objects.ToInt(args[2])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
+			return nil, objects.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
 		}
 		arr := objects.NewArray(nil)
 		for _, res := range fn(s1, s2, i3) {
@@ -549,15 +548,15 @@ func FuncASSIRSs(fn func(string, string, int) []string) objects.CallableFunc {
 func FuncASSRI(fn func(string, string) int) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		s2, ok := objects.ToString(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[0].TypeName())
 		}
 		return objects.NewInt(int64(fn(s1, s2))), nil
 	}
@@ -568,15 +567,15 @@ func FuncASSRI(fn func(string, string) int) objects.CallableFunc {
 func FuncASSRS(fn func(string, string) string) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		s2, ok := objects.ToString(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
 		}
 		v, err := objects.NewString(fn(s1, s2))
 		if err != nil {
@@ -593,15 +592,15 @@ func FuncASSRS(fn func(string, string) string) objects.CallableFunc {
 func FuncASSRB(fn func(string, string) bool) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		s2, ok := objects.ToString(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
 		}
 		if fn(s1, s2) {
 			return objects.TrueValue, nil
@@ -614,7 +613,7 @@ func FuncASSRB(fn func(string, string) bool) objects.CallableFunc {
 func FuncASsSRS(fn func([]string, string) string) objects.CallableFunc {
 	return func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		var ss1 []string
 		switch arg0 := args[0].(type) {
@@ -622,7 +621,7 @@ func FuncASsSRS(fn func([]string, string) string) objects.CallableFunc {
 			for idx, a := range arg0.Values() {
 				as, ok := objects.ToString(a)
 				if !ok {
-					return nil, errors.NewInvalidArgumentType(fmt.Sprintf("first[%d]", idx), "string(compatible)", a.TypeName())
+					return nil, objects.NewInvalidArgumentType(fmt.Sprintf("first[%d]", idx), "string(compatible)", a.TypeName())
 				}
 				ss1 = append(ss1, as)
 			}
@@ -630,16 +629,16 @@ func FuncASsSRS(fn func([]string, string) string) objects.CallableFunc {
 			for idx, a := range arg0.Values() {
 				as, ok := objects.ToString(a)
 				if !ok {
-					return nil, errors.NewInvalidArgumentType(fmt.Sprintf("first[%d]", idx), "string(compatible)", a.TypeName())
+					return nil, objects.NewInvalidArgumentType(fmt.Sprintf("first[%d]", idx), "string(compatible)", a.TypeName())
 				}
 				ss1 = append(ss1, as)
 			}
 		default:
-			return nil, errors.NewInvalidArgumentType("first", "array", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "array", args[0].TypeName())
 		}
 		s2, ok := objects.ToString(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "string(compatible)", args[1].TypeName())
 		}
 		v, err := objects.NewString(fn(ss1, s2))
 		if err != nil {
@@ -653,15 +652,15 @@ func FuncASsSRS(fn func([]string, string) string) objects.CallableFunc {
 func FuncASI64RE(fn func(string, int64) error) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		i2, ok := objects.ToInt64(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 		}
 		return wrapError(fn(s1, i2)), nil
 	}
@@ -671,15 +670,15 @@ func FuncASI64RE(fn func(string, int64) error) objects.CallableFunc {
 func FuncAIIRE(fn func(int, int) error) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		i1, ok := objects.ToInt(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 		}
 		i2, ok := objects.ToInt(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 		}
 		return wrapError(fn(i1, i2)), nil
 	}
@@ -690,15 +689,15 @@ func FuncAIIRE(fn func(int, int) error) objects.CallableFunc {
 func FuncASIRS(fn func(string, int) string) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 2 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		i2, ok := objects.ToInt(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 		}
 		v, err := objects.NewString(fn(s1, i2))
 		if err != nil {
@@ -713,19 +712,19 @@ func FuncASIRS(fn func(string, int) string) objects.CallableFunc {
 func FuncASIIRE(fn func(string, int, int) error) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 3 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		i2, ok := objects.ToInt(args[1])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+			return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 		}
 		i3, ok := objects.ToInt(args[2])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
+			return nil, objects.NewInvalidArgumentType("third", "int(compatible)", args[2].TypeName())
 		}
 		return wrapError(fn(s1, i2, i3)), nil
 	}
@@ -736,11 +735,11 @@ func FuncASIIRE(fn func(string, int, int) error) objects.CallableFunc {
 func FuncAYRIE(fn func([]byte) (int, error)) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		y1, ok := objects.ToByteSlice(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "bytes(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "bytes(compatible)", args[0].TypeName())
 		}
 		res, err := fn(y1)
 		if err != nil {
@@ -755,11 +754,11 @@ func FuncAYRIE(fn func([]byte) (int, error)) objects.CallableFunc {
 func FuncAYRS(fn func([]byte) string) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		y1, ok := objects.ToByteSlice(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "bytes(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "bytes(compatible)", args[0].TypeName())
 		}
 		v, err := objects.NewString(fn(y1))
 		if err != nil {
@@ -773,11 +772,11 @@ func FuncAYRS(fn func([]byte) string) objects.CallableFunc {
 func FuncASRIE(fn func(string) (int, error)) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		res, err := fn(s1)
 		if err != nil {
@@ -792,18 +791,18 @@ func FuncASRIE(fn func(string) (int, error)) objects.CallableFunc {
 func FuncASRYE(fn func(string) ([]byte, error)) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		s1, ok := objects.ToString(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 		}
 		res, err := fn(s1)
 		if err != nil {
 			return wrapError(err), nil
 		}
 		if len(res) > objects.MaxBytesLen {
-			return nil, errors.ErrBytesLimit
+			return nil, objects.ErrBytesLimit
 		}
 		return objects.NewBytes(res), nil
 	}
@@ -813,11 +812,11 @@ func FuncASRYE(fn func(string) ([]byte, error)) objects.CallableFunc {
 func FuncAIRSsE(fn func(int) ([]string, error)) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		i1, ok := objects.ToInt(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 		}
 		res, err := fn(i1)
 		if err != nil {
@@ -826,7 +825,7 @@ func FuncAIRSsE(fn func(int) ([]string, error)) objects.CallableFunc {
 		arr := objects.NewArray(nil)
 		for _, r := range res {
 			if len(r) > objects.MaxStringLen {
-				return nil, errors.ErrStringLimit
+				return nil, objects.ErrStringLimit
 			}
 			v, err := objects.NewString(r)
 			if err != nil {
@@ -843,11 +842,11 @@ func FuncAIRSsE(fn func(int) ([]string, error)) objects.CallableFunc {
 func FuncAIRS(fn func(int) string) objects.CallableFunc {
 	return func(args ...objects.IObject) (ret objects.IObject, err error) {
 		if len(args) != 1 {
-			return nil, errors.ErrWrongNumArguments
+			return nil, objects.ErrWrongNumArguments
 		}
 		i1, ok := objects.ToInt(args[0])
 		if !ok {
-			return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+			return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 		}
 		s := fn(i1)
 		v, err := objects.NewString(s)

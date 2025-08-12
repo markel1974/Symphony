@@ -3,7 +3,6 @@ package stdlib
 import (
 	"os"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -32,26 +31,26 @@ func makeOSFile(file *os.File) *objects.ImmutableMap {
 			// chmod(mode int) => error
 			"chmod": objects.NewUserFunction("chmod", func(args ...objects.IObject) (objects.IObject, error) {
 				if len(args) != 1 {
-					return nil, errors.ErrWrongNumArguments
+					return nil, objects.ErrWrongNumArguments
 				}
 				i1, ok := objects.ToInt64(args[0])
 				if !ok {
-					return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+					return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 				}
 				return wrapError(file.Chmod(os.FileMode(i1))), nil
 			}),
 			// seek(offset int, whence int) => int/error
 			"seek": objects.NewUserFunction("seek", func(args ...objects.IObject) (objects.IObject, error) {
 				if len(args) != 2 {
-					return nil, errors.ErrWrongNumArguments
+					return nil, objects.ErrWrongNumArguments
 				}
 				i1, ok := objects.ToInt64(args[0])
 				if !ok {
-					return nil, errors.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
+					return nil, objects.NewInvalidArgumentType("first", "int(compatible)", args[0].TypeName())
 				}
 				i2, ok := objects.ToInt(args[1])
 				if !ok {
-					return nil, errors.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
+					return nil, objects.NewInvalidArgumentType("second", "int(compatible)", args[1].TypeName())
 				}
 				res, err := file.Seek(i1, i2)
 				if err != nil {
@@ -62,7 +61,7 @@ func makeOSFile(file *os.File) *objects.ImmutableMap {
 			// stat() => imap(fileinfo)/error
 			"stat": objects.NewUserFunction("stat", func(args ...objects.IObject) (objects.IObject, error) {
 				if len(args) != 0 {
-					return nil, errors.ErrWrongNumArguments
+					return nil, objects.ErrWrongNumArguments
 				}
 				return osStat(objects.NewStringNoSize(file.Name()))
 			}),

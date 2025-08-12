@@ -1,4 +1,4 @@
-package bytecodes
+package bytecode
 
 import (
 	"encoding/gob"
@@ -6,15 +6,14 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/markel1974/c64emu/src/kernel/compiler"
 	"github.com/markel1974/c64emu/src/kernel/vm/modules"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// init registers various struct types used within the package for gob encoding and decoding.
+// init registers various object types with the gob encoder for serialization and deserialization.
 func init() {
-	gob.Register(&compiler.SourceFileSet{})
-	gob.Register(&compiler.SourceFile{})
+	gob.Register(&Files{})
+	//gob.Register(&compiler.SourceFile{})
 	gob.Register(&objects.Array{})
 	gob.Register(&objects.Bool{})
 	gob.Register(&objects.Bytes{})
@@ -32,42 +31,76 @@ func init() {
 	gob.Register(&objects.UserFunction{})
 }
 
-// Bytecode represents the compiled output of a program, including source files, main function, and constant pool.
+// Bytecode represents a compiled set of bytecode instructions, constants, and metadata for program execution.
 type Bytecode struct {
-	FileSet      *compiler.SourceFileSet
-	MainFunction *objects.CompiledFunction
-	Constants    []objects.IObject
+	files        *Files
+	mainFunction *objects.CompiledFunction
+	constants    []objects.IObject
 }
 
-// Encode serializes the Bytecode's FileSet, MainFunction, and Constants into the provided io.Writer using a gob encoder.
+func NewBytecode() *Bytecode {
+	return &Bytecode{
+		files: NewFiles(),
+	}
+}
+
+func (b *Bytecode) AddFile(f IFile) error {
+	return b.files.AddFile(f)
+}
+
+// Position returns the position in the source file corresponding to the given input offset.
+// It provides filename, line, and column information or an error if the position is invalid.
+func (b *Bytecode) Position(p int) (*FilePos, error) {
+	return b.files.Position(p)
+}
+
+// SourceFiles returns the current Files instance associated with the Bytecode.
+func (b *Bytecode) SourceFiles() *Files {
+	return b.files
+}
+
+// Constants returns a slice of IObject that represents the constants used in the bytecode.
+func (b *Bytecode) Constants() []objects.IObject {
+	return b.constants
+}
+
+// MainFunction returns the main compiled function associated with the bytecode.
+func (b *Bytecode) MainFunction() (*objects.CompiledFunction, error) {
+	if b.mainFunction == nil {
+		return nil, fmt.Errorf("main function not found")
+	}
+	return b.mainFunction, nil
+}
+
+// Encode serializes the Bytecode object to the provided io.Writer using gob encoding and returns any encountered error.
 func (b *Bytecode) Encode(w io.Writer) error {
 	enc := gob.NewEncoder(w)
-	if err := enc.Encode(b.FileSet); err != nil {
+	if err := enc.Encode(b.files); err != nil {
 		return err
 	}
-	if err := enc.Encode(b.MainFunction); err != nil {
+	if err := enc.Encode(b.mainFunction); err != nil {
 		return err
 	}
-	return enc.Encode(b.Constants)
+	return enc.Encode(b.constants)
 }
 
-// CountObjects calculates the total number of objects within the Bytecode's constants, including nested objects.
+// CountObjects returns the total number of objects within the Bytecode's constants, including nested objects.
 func (b *Bytecode) CountObjects() int {
 	n := 0
-	for _, c := range b.Constants {
+	for _, c := range b.constants {
 		n += objects.CountObjects(c)
 	}
 	return n
 }
 
-// FormatInstructions retrieves string representations of the main function's bytecode instructions in the Bytecode object.
+// FormatInstructions formats and returns the string representation of the main function's bytecode instructions.
 func (b *Bytecode) FormatInstructions() []string {
-	return FormatInstructions(b.MainFunction.Data(), 0)
+	return FormatInstructions(b.mainFunction.Data(), 0)
 }
 
-// FormatConstants generates a slice of formatted strings representing the constants in the bytecode.
+// FormatConstants formats and returns a slice of strings representing the constants in the Bytecode object.
 func (b *Bytecode) FormatConstants() (output []string) {
-	for cIdx, constant := range b.Constants {
+	for cIdx, constant := range b.constants {
 		switch cn := constant.(type) {
 		case *objects.CompiledFunction:
 			output = append(output, fmt.Sprintf("[% 3d] (Compiled Function|%p)", cIdx, &cn))
@@ -81,36 +114,34 @@ func (b *Bytecode) FormatConstants() (output []string) {
 	return
 }
 
-// Decode deserializes bytecode data from the provided reader and resolves constants using the given module map.
+// Decode reads and decodes Bytecode data from the provided io.Reader and resolves constants using the given Modules map.
 func (b *Bytecode) Decode(r io.Reader, mods *modules.Modules) error {
 	if mods == nil {
 		mods = modules.NewModuleMap()
 	}
-
 	dec := gob.NewDecoder(r)
-	if err := dec.Decode(&b.FileSet); err != nil {
+	if err := dec.Decode(&b.files); err != nil {
 		return err
 	}
-	// TODO: files in b.FileSet.File does not have their 'set' field properly
-	//  set to b.FileSet as it's private field and not serialized by gob
-	//  encoder/decoder.
-	if err := dec.Decode(&b.MainFunction); err != nil {
+	if err := dec.Decode(&b.mainFunction); err != nil {
 		return err
 	}
-	if err := dec.Decode(&b.Constants); err != nil {
+	if err := dec.Decode(&b.constants); err != nil {
 		return err
 	}
-	for i, v := range b.Constants {
+	for i, v := range b.constants {
 		fv, err := fixDecodedObject(v, mods)
 		if err != nil {
 			return err
 		}
-		b.Constants[i] = fv
+		b.constants[i] = fv
 	}
 	return nil
 }
 
-// RemoveDuplicates identifies and removes duplicate objects from the Bytecode's constants, updating references accordingly.
+// RemoveDuplicates removes duplicate constants from the Bytecode while maintaining their first occurrences.
+// It updates constant indices throughout the Bytecode to reflect the changes and ensures consistency for any nested data.
+// Returns an error if any unsupported constant type is encountered or if index updates fail.
 func (b *Bytecode) RemoveDuplicates() error {
 	var deDuped []objects.IObject
 
@@ -122,7 +153,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 	chars := make(map[rune]int)
 	immutableMaps := make(map[string]int) // for modules
 
-	for curIdx, in := range b.Constants {
+	for curIdx, in := range b.constants {
 		switch c := in.(type) {
 		case *objects.CompiledFunction:
 			if newIdx, ok := fns[c]; ok {
@@ -134,7 +165,10 @@ func (b *Bytecode) RemoveDuplicates() error {
 				deDuped = append(deDuped, c)
 			}
 		case *objects.ImmutableMap:
-			modName := inferModuleName(c)
+			modName, err := inferModuleName(c)
+			if err != nil {
+				return err
+			}
 			newIdx, ok := immutableMaps[modName]
 			if modName != "" && ok {
 				indexMap[curIdx] = newIdx
@@ -184,11 +218,11 @@ func (b *Bytecode) RemoveDuplicates() error {
 			return fmt.Errorf("unsupported top-level constant type: %s", reflect.TypeOf(c).Elem().Name())
 		}
 	}
-	b.Constants = deDuped
-	if err := updateConstIndexes(b.MainFunction.Data(), indexMap); err != nil {
+	b.constants = deDuped
+	if err := updateConstIndexes(b.mainFunction.Data(), indexMap); err != nil {
 		return err
 	}
-	for _, c := range b.Constants {
+	for _, c := range b.constants {
 		switch c := c.(type) {
 		case *objects.CompiledFunction:
 			if err := updateConstIndexes(c.Data(), indexMap); err != nil {
@@ -199,9 +233,8 @@ func (b *Bytecode) RemoveDuplicates() error {
 	return nil
 }
 
-// fixDecodedObject processes a decoded object to ensure proper structure and values, applying modifications as needed.
-// It recursively fixes elements in arrays and maps, while handling specific object types like Bool and Undefined.
-// Returns the fixed object or an error if processing fails.
+// fixDecodedObject processes and adjusts decoded objects, handling specific types or values to ensure valid output.
+// Returns a potentially modified object or an error if adjustments fail for certain types or constraints.
 func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject, error) {
 	switch o := o.(type) {
 	case *objects.Bool:
@@ -236,17 +269,17 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 			o.Set(k, fv)
 		}
 	case *objects.ImmutableMap:
-		modName := inferModuleName(o)
+		modName, err := inferModuleName(o)
+		if err != nil {
+			return nil, err
+		}
 		if mod := mods.GetBuiltinModule(modName); mod != nil {
 			return mod.AsImmutableMap(modName), nil
 		}
-
 		for k, v := range o.Values() {
-			// encoding of user function not supported
 			if _, isUserFunction := v.(*objects.UserFunction); isUserFunction {
 				return nil, fmt.Errorf("user function not decodable")
 			}
-
 			fv, err := fixDecodedObject(v, mods)
 			if err != nil {
 				return nil, err
@@ -257,7 +290,8 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 	return o, nil
 }
 
-// updateConstIndexes updates constant indexes in the given bytecode using the provided index mapping. Returns an error if a mapping is missing.
+// updateConstIndexes modifies constant and closure indexes in the instructions slice based on the provided index map.
+// It processes opcodes, updates corresponding indexes using the map, and returns an error for unsupported opcodes or missing indexes.
 func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 	i := 0
 	for i < len(instances) {
@@ -289,16 +323,16 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 	return nil
 }
 
-// inferModuleName extracts the module name from the given ImmutableMap by looking up the "__module_name__" key.
-// Returns an empty string if the key is absent or if the value is not of type String.
-func inferModuleName(mod *objects.ImmutableMap) string {
+// inferModuleName extracts the module name from an ImmutableMap by retrieving the __module_name__ key as a string.
+// Returns an empty string if the key is missing or not a valid string type.
+func inferModuleName(mod *objects.ImmutableMap) (string, error) {
 	m, ok := mod.GetValue("__module_name__")
 	if !ok {
-		return ""
+		return "", fmt.Errorf("missing __module_name__ key")
 	}
 	modName, ok := m.(*objects.String)
 	if !ok {
-		return ""
+		return "", fmt.Errorf("invalid __module_name__ value: %s", m.TypeName())
 	}
-	return modName.Value()
+	return modName.Value(), nil
 }

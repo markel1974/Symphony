@@ -2,8 +2,6 @@ package objects
 
 import (
 	"strconv"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // MaxStringLen defines the maximum allowed byte-length for string values across all compiler/VM instances in the process.
@@ -25,7 +23,7 @@ type String struct {
 // NewString creates and returns a new String object initialized with the provided string values.
 func NewString(value string) (*String, error) {
 	if len(value) > MaxStringLen {
-		return nil, errors.ErrStringLimit
+		return nil, ErrStringLimit
 	}
 	return &String{
 		value: value,
@@ -67,13 +65,13 @@ func (o *String) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 		switch rhs := rhs.(type) {
 		case *String:
 			if len(o.value)+len(rhs.value) > MaxStringLen {
-				return nil, errors.ErrStringLimit
+				return nil, ErrStringLimit
 			}
 			return &String{value: o.value + rhs.value}, nil
 		default:
 			rhsStr := rhs.String()
 			if len(o.value)+len(rhsStr) > MaxStringLen {
-				return nil, errors.ErrStringLimit
+				return nil, ErrStringLimit
 			}
 			return &String{value: o.value + rhsStr}, nil
 		}
@@ -110,9 +108,9 @@ func (o *String) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			return FalseValue, nil
 		}
 	default:
-		return nil, errors.ErrInvalidOperator
+		return nil, ErrInvalidOperator
 	}
-	return nil, errors.ErrInvalidOperator
+	return nil, ErrInvalidOperator
 }
 
 // Falsy returns true if the String's values is an empty string, indicating it is considered falsy in a boolean context.
@@ -139,7 +137,7 @@ func (o *String) Equals(x IObject) bool {
 func (o *String) IndexGet(index IObject) (res IObject, err error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		err = errors.ErrInvalidIndexType
+		err = ErrInvalidIndexType
 		return
 	}
 	idxVal := int(intIdx.value)
@@ -249,7 +247,7 @@ func ToString(o IObject) (string, bool) {
 func ToStringArg(name string, o IObject) (string, error) {
 	v, ok := ToString(o)
 	if !ok {
-		return "", errors.NewInvalidArgumentType(name, "string(compatible)", o.TypeName())
+		return "", NewInvalidArgumentType(name, "string(compatible)", o.TypeName())
 	}
 	return v, nil
 }

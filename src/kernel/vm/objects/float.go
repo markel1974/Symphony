@@ -3,8 +3,6 @@ package objects
 import (
 	"math"
 	"strconv"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // Float represents a floating-point number and provides operations and behaviors specific to numeric types.
@@ -85,7 +83,7 @@ func (o *Float) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			}
 			return FalseValue, nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	case *Int:
 		switch op {
@@ -134,10 +132,10 @@ func (o *Float) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 			}
 			return FalseValue, nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	}
-	return nil, errors.ErrInvalidOperator
+	return nil, ErrInvalidOperator
 }
 
 // Copy creates and returns a new instance of the Float object, duplicating its current state.
@@ -188,7 +186,7 @@ func ToFloat64(o IObject) (float64, bool) {
 func ToFloat64Arg(name string, o IObject) (float64, error) {
 	v, ok := ToFloat64(o)
 	if !ok {
-		return 0, errors.NewInvalidArgumentType(name, "float64(compatible)", o.TypeName())
+		return 0, NewInvalidArgumentType(name, "float64(compatible)", o.TypeName())
 	}
 	return v, nil
 }

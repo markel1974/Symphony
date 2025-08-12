@@ -2,8 +2,6 @@ package objects
 
 import (
 	"bytes"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // MaxBytesLen is the maximum allowed size for byte slices across all instances, ensuring consistency in size limits.
@@ -53,14 +51,14 @@ func (o *Bytes) BinaryOp(op Operator, in IObject) (IObject, error) {
 		switch rhs := in.(type) {
 		case *Bytes:
 			if len(o.values)+len(rhs.values) > MaxBytesLen {
-				return nil, errors.ErrBytesLimit
+				return nil, ErrBytesLimit
 			}
 			return &Bytes{values: append(o.values, rhs.values...)}, nil
 		}
 	default:
-		return nil, errors.ErrInvalidOperator
+		return nil, ErrInvalidOperator
 	}
-	return nil, errors.ErrInvalidOperator
+	return nil, ErrInvalidOperator
 }
 
 // Copy creates and returns a new `Bytes` object with a duplicated values slice, ensuring no reference sharing.
@@ -86,7 +84,7 @@ func (o *Bytes) Equals(x IObject) bool {
 func (o *Bytes) IndexGet(index IObject) (res IObject, err error) {
 	intIdx, ok := index.(*Int)
 	if !ok {
-		err = errors.ErrInvalidIndexType
+		err = ErrInvalidIndexType
 		return
 	}
 	idxVal := int(intIdx.value)

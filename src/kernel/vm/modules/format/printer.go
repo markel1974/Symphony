@@ -4,7 +4,6 @@ import (
 	"sync"
 	"unicode/utf8"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -322,7 +321,7 @@ func (p *PrinterState) missingArg(verb rune) {
 func (p *PrinterState) doFormat(format string, a []objects.IObject) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			if e, ok := r.(error); ok && e == errors.ErrStringLimit {
+			if e, ok := r.(error); ok && e == objects.ErrStringLimit {
 				err = e
 				return
 			}

@@ -1,7 +1,6 @@
 package vm
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/compiler"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -30,7 +29,7 @@ func (f *Frame) Instructions() *objects.Instructions {
 }
 
 // SourcePos returns the source position of the instruction at the given instruction pointer (ip) in the call frame.
-func (f *Frame) SourcePos(ip int) compiler.Pos {
+func (f *Frame) SourcePos(ip int) int {
 	return f.compiledFunction.SourcePos(ip)
 }
 

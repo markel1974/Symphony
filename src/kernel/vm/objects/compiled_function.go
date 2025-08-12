@@ -1,7 +1,5 @@
 package objects
 
-import "github.com/markel1974/c64emu/src/kernel/compiler"
-
 // CompiledFunction represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type CompiledFunction struct {
 	ObjectImpl
@@ -9,14 +7,14 @@ type CompiledFunction struct {
 	numLocals     int
 	numParameters int
 	varArgs       bool
-	sourceMap     map[int]compiler.Pos
+	sourceMap     map[int]int
 	free          []*ObjectPtr
 }
 
 // NewCompiledFunction creates a new instance of CompiledFunction with the given instructions, locals, parameters, varArgs, sourceMap, and free vars.
-func NewCompiledFunction(instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]compiler.Pos, free []*ObjectPtr) *CompiledFunction {
+func NewCompiledFunction(instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPtr) *CompiledFunction {
 	if sourceMap == nil {
-		sourceMap = make(map[int]compiler.Pos)
+		sourceMap = make(map[int]int)
 	}
 	return &CompiledFunction{
 		instructions:  NewInstructions(instructions),
@@ -86,14 +84,14 @@ func (o *CompiledFunction) Equals(_ IObject) bool {
 
 // SourcePos retrieves the source position for the instruction pointer (ip) in the compiled function's source map.
 // If the ip is not found in the map, it decrements ip until a valid position is found or returns NoPos if none exists.
-func (o *CompiledFunction) SourcePos(ip int) compiler.Pos {
+func (o *CompiledFunction) SourcePos(ip int) int {
 	for ip >= 0 {
 		if p, ok := o.sourceMap[ip]; ok {
 			return p
 		}
 		ip--
 	}
-	return compiler.NoPos
+	return 0
 }
 
 // CanCall determines if the compiled function object can be invoked as a callable, always returning true.

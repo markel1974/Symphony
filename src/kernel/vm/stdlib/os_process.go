@@ -4,7 +4,6 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -25,7 +24,7 @@ func makeOSProcess(proc *os.Process) *objects.ImmutableMap {
 		"release": objects.NewUserFunction("release", FuncARE(proc.Release)),
 		"signal": objects.NewUserFunction("signal", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
-				return nil, errors.ErrWrongNumArguments
+				return nil, objects.ErrWrongNumArguments
 			}
 			i1, err := objects.ToInt64Arg("first", args[0])
 			if err != nil {
@@ -35,7 +34,7 @@ func makeOSProcess(proc *os.Process) *objects.ImmutableMap {
 		}),
 		"wait": objects.NewUserFunction("wait", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 0 {
-				return nil, errors.ErrWrongNumArguments
+				return nil, objects.ErrWrongNumArguments
 			}
 			state, err := proc.Wait()
 			if err != nil {

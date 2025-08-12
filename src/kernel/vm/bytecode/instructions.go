@@ -1,4 +1,4 @@
-package bytecodes
+package bytecode
 
 import (
 	"fmt"

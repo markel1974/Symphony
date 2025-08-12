@@ -3,8 +3,6 @@ package objects
 import (
 	"fmt"
 	"strings"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // ImmutableMap represents a read-only map structure where keys are strings and values are of type IObject.
@@ -69,7 +67,7 @@ func (o *ImmutableMap) Falsy() bool {
 func (o *ImmutableMap) IndexGet(index IObject) (res IObject, err error) {
 	strIdx, ok := ToString(index)
 	if !ok {
-		err = errors.ErrInvalidIndexType
+		err = ErrInvalidIndexType
 		return
 	}
 	res, ok = o.values[strIdx]

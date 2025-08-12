@@ -1,9 +1,5 @@
 package objects
 
-import (
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
-)
-
 // Char represents a character type, encapsulating a single rune values and inheriting behavior from ObjectImpl.
 type Char struct {
 	ObjectImpl
@@ -68,7 +64,7 @@ func (o *Char) BinaryOp(op Operator, in IObject) (IObject, error) {
 			}
 			return FalseValue, nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	case *Int:
 		switch op {
@@ -105,10 +101,10 @@ func (o *Char) BinaryOp(op Operator, in IObject) (IObject, error) {
 			}
 			return FalseValue, nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	}
-	return nil, errors.ErrInvalidOperator
+	return nil, ErrInvalidOperator
 }
 
 // Copy creates and returns a new instance of the Char object with the same values.

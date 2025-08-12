@@ -3,7 +3,6 @@ package stdlib
 import (
 	"os/exec"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -23,11 +22,11 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.ImmutableMap {
 		// set_path(path string)
 		"set_path": objects.NewUserFunction("set_path", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
-				return nil, errors.ErrWrongNumArguments
+				return nil, objects.ErrWrongNumArguments
 			}
 			s1, ok := objects.ToString(args[0])
 			if !ok {
-				return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+				return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 			}
 			cmd.Path = s1
 			return objects.UndefinedValue, nil
@@ -35,11 +34,11 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.ImmutableMap {
 		// set_dir(dir string)
 		"set_dir": objects.NewUserFunction("set_dir", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
-				return nil, errors.ErrWrongNumArguments
+				return nil, objects.ErrWrongNumArguments
 			}
 			s1, ok := objects.ToString(args[0])
 			if !ok {
-				return nil, errors.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
+				return nil, objects.NewInvalidArgumentType("first", "string(compatible)", args[0].TypeName())
 			}
 			cmd.Dir = s1
 			return objects.UndefinedValue, nil
@@ -47,7 +46,7 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.ImmutableMap {
 		// set_env(env array(string))
 		"set_env": objects.NewUserFunction("set_env", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
-				return nil, errors.ErrWrongNumArguments
+				return nil, objects.ErrWrongNumArguments
 			}
 			var env []string
 			var err error
@@ -63,7 +62,7 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.ImmutableMap {
 					return nil, err
 				}
 			default:
-				return nil, errors.NewInvalidArgumentType("first", "array", arg0.TypeName())
+				return nil, objects.NewInvalidArgumentType("first", "array", arg0.TypeName())
 			}
 			cmd.Env = env
 			return objects.UndefinedValue, nil
@@ -71,7 +70,7 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.ImmutableMap {
 		// process() => imap(process)
 		"process": objects.NewUserFunction("process", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 0 {
-				return nil, errors.ErrWrongNumArguments
+				return nil, objects.ErrWrongNumArguments
 			}
 			return makeOSProcess(cmd.Process), nil
 		}),

@@ -2,8 +2,6 @@ package objects
 
 import (
 	"time"
-
-	"github.com/markel1974/c64emu/src/kernel/vm/errors"
 )
 
 // Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
@@ -49,7 +47,7 @@ func (o *Time) BinaryOp(op Operator, in IObject) (IObject, error) {
 			}
 			return &Time{value: o.value.Add(time.Duration(-rhs.value))}, nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	case *Time:
 		switch op {
@@ -76,10 +74,10 @@ func (o *Time) BinaryOp(op Operator, in IObject) (IObject, error) {
 			}
 			return FalseValue, nil
 		default:
-			return nil, errors.ErrInvalidOperator
+			return nil, ErrInvalidOperator
 		}
 	}
-	return nil, errors.ErrInvalidOperator
+	return nil, ErrInvalidOperator
 }
 
 // Copy returns a new instance of the Time object with the same internal time values, duplicating its state.
