@@ -113,7 +113,7 @@ func (o *Char) Copy() IObject {
 }
 
 // Falsy checks whether the Char object represents a falsy state, returning true if the underlying values is 0.
-func (o *Char) Falsy() bool {
+func (o *Char) Boolean() bool {
 	return o.value == 0
 }
 

@@ -85,7 +85,7 @@ func (o *Array) Copy() IObject {
 }
 
 // Falsy returns true if the array is empty, otherwise false.
-func (o *Array) Falsy() bool {
+func (o *Array) Boolean() bool {
 	return len(o.values) == 0
 }
 
@@ -95,7 +95,7 @@ func (o *Array) Equals(in IObject) bool {
 	switch x := in.(type) {
 	case *Array:
 		xVal = x.values
-	case *ImmutableArray:
+	case *ArrayImmutable:
 		xVal = x.Values()
 	default:
 		return false

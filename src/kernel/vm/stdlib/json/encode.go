@@ -143,7 +143,7 @@ func Encode(o objects.IObject) ([]byte, error) {
 			}
 		}
 		b = append(b, ']')
-	case *objects.ImmutableArray:
+	case *objects.ArrayImmutable:
 		b = append(b, '[')
 		len1 := o.Length() - 1
 		for idx, elem := range o.Values() {
@@ -175,7 +175,7 @@ func Encode(o objects.IObject) ([]byte, error) {
 			idx++
 		}
 		b = append(b, '}')
-	case *objects.ImmutableMap:
+	case *objects.MapImmutable:
 		b = append(b, '{')
 		len1 := o.Length() - 1
 		idx := 0
@@ -194,7 +194,7 @@ func Encode(o objects.IObject) ([]byte, error) {
 		}
 		b = append(b, '}')
 	case *objects.Bool:
-		if o.Falsy() {
+		if o.Boolean() {
 			b = strconv.AppendBool(b, false)
 		} else {
 			b = strconv.AppendBool(b, true)

@@ -24,7 +24,7 @@ type IObject interface {
 
 	BinaryOp(op Operator, rhs IObject) (IObject, error)
 
-	Falsy() bool
+	Boolean() bool
 
 	Equals(another IObject) bool
 
@@ -69,7 +69,7 @@ func (o *ObjectImpl) Copy() IObject {
 }
 
 // Falsy returns false, indicating the object is not considered falsy in a boolean context.
-func (o *ObjectImpl) Falsy() bool {
+func (o *ObjectImpl) Boolean() bool {
 	return false
 }
 
@@ -128,7 +128,7 @@ func ToInterface(in IObject) (res interface{}) {
 		for i, val := range o.Values() {
 			res.([]interface{})[i] = ToInterface(val)
 		}
-	case *ImmutableArray:
+	case *ArrayImmutable:
 		res = make([]interface{}, o.Length())
 		for i, val := range o.Values() {
 			res.([]interface{})[i] = ToInterface(val)
@@ -138,7 +138,7 @@ func ToInterface(in IObject) (res interface{}) {
 		for key, v := range o.values {
 			res.(map[string]interface{})[key] = ToInterface(v)
 		}
-	case *ImmutableMap:
+	case *MapImmutable:
 		res = make(map[string]interface{})
 		for key, v := range o.Values() {
 			res.(map[string]interface{})[key] = ToInterface(v)
@@ -238,7 +238,7 @@ func FromInterface(in interface{}) IObject {
 	case IObject:
 		return v
 	case CallableFunc:
-		return NewUserFunction("CallableFunc", v)
+		return NewFunctionUser("CallableFunc", v)
 	}
 	return UndefinedValue
 }
@@ -251,7 +251,7 @@ func CountObjects(in IObject) (c int) {
 		for _, v := range o.Values() {
 			c += CountObjects(v)
 		}
-	case *ImmutableArray:
+	case *ArrayImmutable:
 		for _, v := range o.Values() {
 			c += CountObjects(v)
 		}
@@ -259,7 +259,7 @@ func CountObjects(in IObject) (c int) {
 		for _, v := range o.values {
 			c += CountObjects(v)
 		}
-	case *ImmutableMap:
+	case *MapImmutable:
 		for _, v := range o.Values() {
 			c += CountObjects(v)
 		}

@@ -623,7 +623,7 @@ func FuncASsSRS(fn func([]string, string) string) CallableFunc {
 				}
 				ss1 = append(ss1, as)
 			}
-		case *ImmutableArray:
+		case *ArrayImmutable:
 			for idx, a := range arg0.Values() {
 				as, ok := ToString(a)
 				if !ok {

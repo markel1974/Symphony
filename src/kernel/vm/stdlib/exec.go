@@ -7,20 +7,20 @@ import (
 )
 
 // makeOSExecCommand returns an immutable map exposing methods to manipulate and control an exec.Cmd instance.
-func makeOSExecCommand(cmd *exec.Cmd) *objects.ImmutableMap {
-	return objects.NewImmutableMap(map[string]objects.IObject{
+func makeOSExecCommand(cmd *exec.Cmd) *objects.MapImmutable {
+	return objects.NewMapImmutable(map[string]objects.IObject{
 		// combined_output() => bytes/error
-		"combined_output": objects.NewUserFunction("combined_output", objects.FuncARYE(cmd.CombinedOutput)),
+		"combined_output": objects.NewFunctionUser("combined_output", objects.FuncARYE(cmd.CombinedOutput)),
 		// output() => bytes/error
-		"output": objects.NewUserFunction("output", objects.FuncARYE(cmd.Output)), //
+		"output": objects.NewFunctionUser("output", objects.FuncARYE(cmd.Output)), //
 		// run() => error
-		"run": objects.NewUserFunction("run", objects.FuncARE(cmd.Run)), //
+		"run": objects.NewFunctionUser("run", objects.FuncARE(cmd.Run)), //
 		// start() => error
-		"start": objects.NewUserFunction("start", objects.FuncARE(cmd.Start)), //
+		"start": objects.NewFunctionUser("start", objects.FuncARE(cmd.Start)), //
 		// wait() => error
-		"wait": objects.NewUserFunction("wait", objects.FuncARE(cmd.Wait)), //
+		"wait": objects.NewFunctionUser("wait", objects.FuncARE(cmd.Wait)), //
 		// set_path(path string)
-		"set_path": objects.NewUserFunction("set_path", func(args ...objects.IObject) (objects.IObject, error) {
+		"set_path": objects.NewFunctionUser("set_path", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
@@ -32,7 +32,7 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.ImmutableMap {
 			return objects.UndefinedValue, nil
 		}),
 		// set_dir(dir string)
-		"set_dir": objects.NewUserFunction("set_dir", func(args ...objects.IObject) (objects.IObject, error) {
+		"set_dir": objects.NewFunctionUser("set_dir", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
@@ -44,7 +44,7 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.ImmutableMap {
 			return objects.UndefinedValue, nil
 		}),
 		// set_env(env array(string))
-		"set_env": objects.NewUserFunction("set_env", func(args ...objects.IObject) (objects.IObject, error) {
+		"set_env": objects.NewFunctionUser("set_env", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
@@ -56,7 +56,7 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.ImmutableMap {
 				if err != nil {
 					return nil, err
 				}
-			case *objects.ImmutableArray:
+			case *objects.ArrayImmutable:
 				env, err = stringArray(arg0.Values(), "first")
 				if err != nil {
 					return nil, err
@@ -68,7 +68,7 @@ func makeOSExecCommand(cmd *exec.Cmd) *objects.ImmutableMap {
 			return objects.UndefinedValue, nil
 		}),
 		// process() => imap(process)
-		"process": objects.NewUserFunction("process", func(args ...objects.IObject) (objects.IObject, error) {
+		"process": objects.NewFunctionUser("process", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 0 {
 				return nil, objects.ErrWrongNumArguments
 			}

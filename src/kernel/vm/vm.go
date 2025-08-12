@@ -251,7 +251,7 @@ func (v *VM) doOpFalse() {
 func (v *VM) doOpLNot() {
 	operand := v.stack[v.sp-1]
 	v.sp--
-	if operand.Falsy() {
+	if operand.Boolean() {
 		v.stack[v.sp] = objects.TrueValue
 	} else {
 		v.stack[v.sp] = objects.FalseValue
@@ -314,7 +314,7 @@ func (v *VM) doOpMinus() {
 func (v *VM) doOpJumpFalsy() {
 	v.ip += 2
 	v.sp--
-	if v.stack[v.sp].Falsy() {
+	if v.stack[v.sp].Boolean() {
 		pos := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
 		v.ip = pos - 1
 	}
@@ -323,7 +323,7 @@ func (v *VM) doOpJumpFalsy() {
 // doOpAndJump adjusts the instruction pointer and stack pointer based on the falsiness of the top stack value.
 func (v *VM) doOpAndJump() {
 	v.ip += 2
-	if v.stack[v.sp-1].Falsy() {
+	if v.stack[v.sp-1].Boolean() {
 		pos := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
 		v.ip = pos - 1
 	} else {
@@ -334,7 +334,7 @@ func (v *VM) doOpAndJump() {
 // doOpOrJump updates the instruction pointer and stack pointer based on the falsy state of the top stack value.
 func (v *VM) doOpOrJump() {
 	v.ip += 2
-	if v.stack[v.sp-1].Falsy() {
+	if v.stack[v.sp-1].Boolean() {
 		v.sp--
 	} else {
 		pos := int(v.curInstructions.Get(v.ip)) | int(v.curInstructions.Get(v.ip-1))<<8
@@ -446,7 +446,7 @@ func (v *VM) doOpImmutable() {
 	val := v.stack[v.sp-1]
 	switch value := val.(type) {
 	case *objects.Array:
-		immutableArray := objects.NewImmutableArray(value.Values())
+		immutableArray := objects.NewArrayImmutable(value.Values())
 		v.allocations--
 		if v.allocations == 0 {
 			v.err = objects.ErrObjectAllocLimit
@@ -454,7 +454,7 @@ func (v *VM) doOpImmutable() {
 		}
 		v.stack[v.sp-1] = immutableArray
 	case *objects.Map:
-		immutableMap := objects.NewImmutableMap(value.Values())
+		immutableMap := objects.NewMapImmutable(value.Values())
 		v.allocations--
 		if v.allocations == 0 {
 			v.err = objects.ErrObjectAllocLimit
@@ -507,7 +507,7 @@ func (v *VM) doOpSliceIndex() {
 		} else {
 			val = objects.NewArray(left.Values()[lowIdx:highIdx])
 		}
-	case *objects.ImmutableArray:
+	case *objects.ArrayImmutable:
 		if lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(left.Length())); err != nil {
 			v.err = err
 			return
@@ -563,7 +563,7 @@ func (v *VM) doOpCall() {
 				v.sp++
 			}
 			numArgs += arr.Length() - 1
-		case *objects.ImmutableArray:
+		case *objects.ArrayImmutable:
 			for _, item := range arr.Values() {
 				v.stack[v.sp] = item
 				v.sp++
@@ -574,7 +574,7 @@ func (v *VM) doOpCall() {
 			return
 		}
 	}
-	if callee, ok := value.(*objects.CompiledFunction); ok {
+	if callee, ok := value.(*objects.FunctionCompiled); ok {
 		if callee.VarArgs() {
 			realArgs := callee.NumParameters() - 1
 			if varArgs := numArgs - realArgs; varArgs >= 0 {
@@ -683,7 +683,7 @@ func (v *VM) doOpSetLocal() {
 	sp := v.curFrame.basePointer + localIndex
 	val := v.stack[v.sp-1]
 	v.sp--
-	if obj, ok := v.stack[sp].(*objects.ObjectPtr); ok {
+	if obj, ok := v.stack[sp].(*objects.ObjectPointer); ok {
 		obj.SetValue(val)
 		val = obj
 	}
@@ -702,7 +702,7 @@ func (v *VM) doOpSetSelLocal() {
 	val := v.stack[v.sp-numSelectors-1]
 	v.sp -= numSelectors + 1
 	dst := v.stack[v.curFrame.basePointer+localIndex]
-	if obj, ok := dst.(*objects.ObjectPtr); ok {
+	if obj, ok := dst.(*objects.ObjectPointer); ok {
 		dst = *obj.Value()
 	}
 	if e := objects.IndexAssign(dst, val, selectors); e != nil {
@@ -716,7 +716,7 @@ func (v *VM) doOpGetLocal() {
 	v.ip++
 	localIndex := int(v.curInstructions.Get(v.ip))
 	val := v.stack[v.curFrame.basePointer+localIndex]
-	if obj, ok := val.(*objects.ObjectPtr); ok {
+	if obj, ok := val.(*objects.ObjectPointer); ok {
 		val = *obj.Value()
 	}
 	v.stack[v.sp] = val
@@ -736,22 +736,22 @@ func (v *VM) doOpClosure() {
 	v.ip += 3
 	constIndex := int(v.curInstructions.Get(v.ip-1)) | int(v.curInstructions.Get(v.ip-2))<<8
 	numFree := int(v.curInstructions.Get(v.ip))
-	fn, ok := v.constants[constIndex].(*objects.CompiledFunction)
+	fn, ok := v.constants[constIndex].(*objects.FunctionCompiled)
 	if !ok {
 		v.err = fmt.Errorf("not function: %s", fn.TypeName())
 		return
 	}
-	free := make([]*objects.ObjectPtr, numFree)
+	free := make([]*objects.ObjectPointer, numFree)
 	for i := 0; i < numFree; i++ {
 		switch freeVar := (v.stack[v.sp-numFree+i]).(type) {
-		case *objects.ObjectPtr:
+		case *objects.ObjectPointer:
 			free[i] = freeVar
 		default:
-			free[i] = objects.NewObjectPtr(&v.stack[v.sp-numFree+i])
+			free[i] = objects.NewObjectPointer(&v.stack[v.sp-numFree+i])
 		}
 	}
 	v.sp -= numFree
-	cl := objects.NewCompiledFunction(fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
+	cl := objects.NewFunctionCompiled(fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
 	v.allocations--
 	if v.allocations == 0 {
 		v.err = objects.ErrObjectAllocLimit
@@ -787,17 +787,17 @@ func (v *VM) doOpSetFree() {
 	v.sp--
 }
 
-// doOpGetLocalPtr updates the instruction pointer, retrieves a local variable, and creates or updates an ObjectPtr for it.
+// doOpGetLocalPtr updates the instruction pointer, retrieves a local variable, and creates or updates an ObjectPointer for it.
 func (v *VM) doOpGetLocalPtr() {
 	v.ip++
 	localIndex := int(v.curInstructions.Get(v.ip))
 	sp := v.curFrame.basePointer + localIndex
 	val := v.stack[sp]
-	var freeVar *objects.ObjectPtr
-	if obj, ok := val.(*objects.ObjectPtr); ok {
+	var freeVar *objects.ObjectPointer
+	if obj, ok := val.(*objects.ObjectPointer); ok {
 		freeVar = obj
 	} else {
-		freeVar = objects.NewObjectPtr(&val)
+		freeVar = objects.NewObjectPointer(&val)
 		v.stack[sp] = freeVar
 	}
 	v.stack[v.sp] = freeVar

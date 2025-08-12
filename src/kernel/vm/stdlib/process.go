@@ -7,22 +7,22 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-func makeOSProcessState(state *os.ProcessState) *objects.ImmutableMap {
-	return objects.NewImmutableMap(
+func makeOSProcessState(state *os.ProcessState) *objects.MapImmutable {
+	return objects.NewMapImmutable(
 		map[string]objects.IObject{
-			"exited":  objects.NewUserFunction("exited", objects.FuncARB(state.Exited)),
-			"pid":     objects.NewUserFunction("pid", objects.FuncARI(state.Pid)),
-			"string":  objects.NewUserFunction("string", objects.FuncARS(state.String)),
-			"success": objects.NewUserFunction("success", objects.FuncARB(state.Success)),
+			"exited":  objects.NewFunctionUser("exited", objects.FuncARB(state.Exited)),
+			"pid":     objects.NewFunctionUser("pid", objects.FuncARI(state.Pid)),
+			"string":  objects.NewFunctionUser("string", objects.FuncARS(state.String)),
+			"success": objects.NewFunctionUser("success", objects.FuncARB(state.Success)),
 		},
 	)
 }
 
-func makeOSProcess(proc *os.Process) *objects.ImmutableMap {
-	return objects.NewImmutableMap(map[string]objects.IObject{
-		"kill":    objects.NewUserFunction("kill", objects.FuncARE(proc.Kill)),
-		"release": objects.NewUserFunction("release", objects.FuncARE(proc.Release)),
-		"signal": objects.NewUserFunction("signal", func(args ...objects.IObject) (objects.IObject, error) {
+func makeOSProcess(proc *os.Process) *objects.MapImmutable {
+	return objects.NewMapImmutable(map[string]objects.IObject{
+		"kill":    objects.NewFunctionUser("kill", objects.FuncARE(proc.Kill)),
+		"release": objects.NewFunctionUser("release", objects.FuncARE(proc.Release)),
+		"signal": objects.NewFunctionUser("signal", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 1 {
 				return nil, objects.ErrWrongNumArguments
 			}
@@ -32,7 +32,7 @@ func makeOSProcess(proc *os.Process) *objects.ImmutableMap {
 			}
 			return objects.NewObjectError(proc.Signal(syscall.Signal(i1))), nil
 		}),
-		"wait": objects.NewUserFunction("wait", func(args ...objects.IObject) (objects.IObject, error) {
+		"wait": objects.NewFunctionUser("wait", func(args ...objects.IObject) (objects.IObject, error) {
 			if len(args) != 0 {
 				return nil, objects.ErrWrongNumArguments
 			}

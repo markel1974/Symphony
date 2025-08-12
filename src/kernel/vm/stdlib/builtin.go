@@ -6,44 +6,44 @@ import (
 )
 
 // builtinFuncs is a slice of predefined builtin functions used for various standard operations within the system.
-var builtinFuncs = []*objects.BuiltinFunction{
-	objects.NewBuiltinFunction("len", builtinLen),
-	objects.NewBuiltinFunction("copy", builtinCopy),
-	objects.NewBuiltinFunction("append", builtinAppend),
-	objects.NewBuiltinFunction("delete", builtinDelete),
-	objects.NewBuiltinFunction("splice", builtinSplice),
-	objects.NewBuiltinFunction("string", builtinString),
-	objects.NewBuiltinFunction("int", builtinInt),
-	objects.NewBuiltinFunction("bool", builtinBool),
-	objects.NewBuiltinFunction("bool", builtinBool),
-	objects.NewBuiltinFunction("float", builtinFloat),
-	objects.NewBuiltinFunction("char", builtinChar),
-	objects.NewBuiltinFunction("bytes", builtinBytes),
-	objects.NewBuiltinFunction("time", builtinTime),
-	objects.NewBuiltinFunction("is_int", builtinIsInt),
-	objects.NewBuiltinFunction("is_float", builtinIsFloat),
-	objects.NewBuiltinFunction("is_string", builtinIsString),
-	objects.NewBuiltinFunction("is_bool", builtinIsBool),
-	objects.NewBuiltinFunction("is_char", builtinIsChar),
-	objects.NewBuiltinFunction("is_bytes", builtinIsBytes),
-	objects.NewBuiltinFunction("is_array", builtinIsArray),
-	objects.NewBuiltinFunction("is_immutable_array", builtinIsImmutableArray),
-	objects.NewBuiltinFunction("is_map", builtinIsMap),
-	objects.NewBuiltinFunction("is_immutable_map", builtinIsImmutableMap),
-	objects.NewBuiltinFunction("is_iterable", builtinIsIterable),
-	objects.NewBuiltinFunction("is_time", builtinIsTime),
-	objects.NewBuiltinFunction("is_error", builtinIsError),
-	objects.NewBuiltinFunction("is_undefined", builtinIsUndefined),
-	objects.NewBuiltinFunction("is_function", builtinIsFunction),
-	objects.NewBuiltinFunction("is_callable", builtinIsCallable),
-	objects.NewBuiltinFunction("type_name", builtinTypeName),
-	objects.NewBuiltinFunction("format", builtinFormat),
-	objects.NewBuiltinFunction("range", builtinRange),
+var builtinFuncs = []*objects.FunctionBuiltin{
+	objects.NewFunctionBuiltin("len", builtinLen),
+	objects.NewFunctionBuiltin("copy", builtinCopy),
+	objects.NewFunctionBuiltin("append", builtinAppend),
+	objects.NewFunctionBuiltin("delete", builtinDelete),
+	objects.NewFunctionBuiltin("splice", builtinSplice),
+	objects.NewFunctionBuiltin("string", builtinString),
+	objects.NewFunctionBuiltin("int", builtinInt),
+	objects.NewFunctionBuiltin("bool", builtinBool),
+	objects.NewFunctionBuiltin("bool", builtinBool),
+	objects.NewFunctionBuiltin("float", builtinFloat),
+	objects.NewFunctionBuiltin("char", builtinChar),
+	objects.NewFunctionBuiltin("bytes", builtinBytes),
+	objects.NewFunctionBuiltin("time", builtinTime),
+	objects.NewFunctionBuiltin("is_int", builtinIsInt),
+	objects.NewFunctionBuiltin("is_float", builtinIsFloat),
+	objects.NewFunctionBuiltin("is_string", builtinIsString),
+	objects.NewFunctionBuiltin("is_bool", builtinIsBool),
+	objects.NewFunctionBuiltin("is_char", builtinIsChar),
+	objects.NewFunctionBuiltin("is_bytes", builtinIsBytes),
+	objects.NewFunctionBuiltin("is_array", builtinIsArray),
+	objects.NewFunctionBuiltin("is_immutable_array", builtinIsImmutableArray),
+	objects.NewFunctionBuiltin("is_map", builtinIsMap),
+	objects.NewFunctionBuiltin("is_immutable_map", builtinIsImmutableMap),
+	objects.NewFunctionBuiltin("is_iterable", builtinIsIterable),
+	objects.NewFunctionBuiltin("is_time", builtinIsTime),
+	objects.NewFunctionBuiltin("is_error", builtinIsError),
+	objects.NewFunctionBuiltin("is_undefined", builtinIsUndefined),
+	objects.NewFunctionBuiltin("is_function", builtinIsFunction),
+	objects.NewFunctionBuiltin("is_callable", builtinIsCallable),
+	objects.NewFunctionBuiltin("type_name", builtinTypeName),
+	objects.NewFunctionBuiltin("format", builtinFormat),
+	objects.NewFunctionBuiltin("range", builtinRange),
 }
 
 // GetAllBuiltinFunctions returns a slice containing all registered builtin functions.
-func GetAllBuiltinFunctions() []*objects.BuiltinFunction {
-	return append([]*objects.BuiltinFunction{}, builtinFuncs...)
+func GetAllBuiltinFunctions() []*objects.FunctionBuiltin {
+	return append([]*objects.FunctionBuiltin{}, builtinFuncs...)
 }
 
 // builtinTypeName returns the type name of the given object argument as a string, or an error if the argument count is invalid.
@@ -138,13 +138,13 @@ func builtinIsArray(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsImmutableArray checks if the provided argument is of type ImmutableArray and returns TrueValue or FalseValue.
+// builtinIsImmutableArray checks if the provided argument is of type ArrayImmutable and returns TrueValue or FalseValue.
 // Returns an error if the number of arguments is not exactly one.
 func builtinIsImmutableArray(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	if _, ok := args[0].(*objects.ImmutableArray); ok {
+	if _, ok := args[0].(*objects.ArrayImmutable); ok {
 		return objects.TrueValue, nil
 	}
 	return objects.FalseValue, nil
@@ -162,12 +162,12 @@ func builtinIsMap(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsImmutableMap checks if the provided argument is of type ImmutableMap and returns TrueValue or FalseValue.
+// builtinIsImmutableMap checks if the provided argument is of type MapImmutable and returns TrueValue or FalseValue.
 func builtinIsImmutableMap(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	if _, ok := args[0].(*objects.ImmutableMap); ok {
+	if _, ok := args[0].(*objects.MapImmutable); ok {
 		return objects.TrueValue, nil
 	}
 	return objects.FalseValue, nil
@@ -207,14 +207,14 @@ func builtinIsUndefined(args ...objects.IObject) (objects.IObject, error) {
 	return objects.FalseValue, nil
 }
 
-// builtinIsFunction checks if the given argument is a CompiledFunction. Returns TrueValue for true, else FalseValue.
+// builtinIsFunction checks if the given argument is a FunctionCompiled. Returns TrueValue for true, else FalseValue.
 // Returns an error if the number of arguments is not 1.
 func builtinIsFunction(args ...objects.IObject) (objects.IObject, error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
 	switch args[0].(type) {
-	case *objects.CompiledFunction:
+	case *objects.FunctionCompiled:
 		return objects.TrueValue, nil
 	}
 	return objects.FalseValue, nil
@@ -254,7 +254,7 @@ func builtinLen(args ...objects.IObject) (objects.IObject, error) {
 	switch arg := args[0].(type) {
 	case *objects.Array:
 		return objects.NewInt(int64(arg.Length())), nil
-	case *objects.ImmutableArray:
+	case *objects.ArrayImmutable:
 		return objects.NewInt(int64(arg.Length())), nil
 	case *objects.String:
 		return objects.NewInt(int64(arg.Length())), nil
@@ -262,7 +262,7 @@ func builtinLen(args ...objects.IObject) (objects.IObject, error) {
 		return objects.NewInt(int64(arg.Length())), nil
 	case *objects.Map:
 		return objects.NewInt(int64(arg.Length())), nil
-	case *objects.ImmutableMap:
+	case *objects.MapImmutable:
 		return objects.NewInt(int64(arg.Length())), nil
 	default:
 		return nil, objects.NewInvalidArgumentError("first", "array/string/bytes/map", arg.TypeName())
@@ -512,7 +512,7 @@ func builtinAppend(args ...objects.IObject) (objects.IObject, error) {
 	switch arg := args[0].(type) {
 	case *objects.Array:
 		return objects.NewArray(append(arg.Values(), args[1:]...)), nil
-	case *objects.ImmutableArray:
+	case *objects.ArrayImmutable:
 		return objects.NewArray(append(arg.Values(), args[1:]...)), nil
 	default:
 		return nil, objects.NewInvalidArgumentError("first", "array", arg.TypeName())
@@ -594,7 +594,7 @@ func builtinSplice(args ...objects.IObject) (objects.IObject, error) {
 	return objects.NewArray(deleted), nil
 }
 
-// GetBuiltin retrieves a BuiltinFunction by its index from the predefined list of builtin functions.
-func GetBuiltin(idx int) *objects.BuiltinFunction {
+// GetBuiltin retrieves a FunctionBuiltin by its index from the predefined list of builtin functions.
+func GetBuiltin(idx int) *objects.FunctionBuiltin {
 	return builtinFuncs[idx]
 }

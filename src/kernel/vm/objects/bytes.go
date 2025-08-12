@@ -67,7 +67,7 @@ func (o *Bytes) Copy() IObject {
 }
 
 // Falsy determines if the Bytes object is considered falsy by checking if it contains no values. Returns true if empty.
-func (o *Bytes) Falsy() bool {
+func (o *Bytes) Boolean() bool {
 	return len(o.values) == 0
 }
 

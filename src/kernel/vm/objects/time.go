@@ -86,7 +86,7 @@ func (o *Time) Copy() IObject {
 }
 
 // Falsy returns true if the Time object's values is zero (indicating it is uninitialized or empty), otherwise false.
-func (o *Time) Falsy() bool {
+func (o *Time) Boolean() bool {
 	return o.value.IsZero()
 }
 

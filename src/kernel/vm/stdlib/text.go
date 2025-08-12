@@ -12,54 +12,54 @@ import (
 
 // textModule is a map of various text processing functions, including string manipulation, regex operations, and type conversions.
 var textModule = map[string]objects.IObject{
-	"re_match":       objects.NewUserFunction("re_match", textREMatch),                                   // re_match(pattern, text) => bool/error
-	"re_find":        objects.NewUserFunction("re_find", textREFind),                                     // re_find(pattern, text, count) => [[{text:,begin:,end:}]]/undefined
-	"re_replace":     objects.NewUserFunction("re_replace", textREReplace),                               // re_replace(pattern, text, repl) => string/error
-	"re_split":       objects.NewUserFunction("re_split", textRESplit),                                   // re_split(pattern, text, count) => [string]/error
-	"re_compile":     objects.NewUserFunction("re_compile", textRECompile),                               // re_compile(pattern) => Regexp/error
-	"compare":        objects.NewUserFunction("compare", objects.FuncASSRI(strings.Compare)),             // compare(a, b) => int
-	"contains":       objects.NewUserFunction("contains", objects.FuncASSRB(strings.Contains)),           // contains(s, substr) => bool
-	"contains_any":   objects.NewUserFunction("contains_any", objects.FuncASSRB(strings.ContainsAny)),    // contains_any(s, chars) => bool
-	"count":          objects.NewUserFunction("count", objects.FuncASSRI(strings.Count)),                 // count(s, substr) => int
-	"equal_fold":     objects.NewUserFunction("equal_fold", objects.FuncASSRB(strings.EqualFold)),        // "equal_fold(s, t) => bool
-	"fields":         objects.NewUserFunction("fields", objects.FuncASRSs(strings.Fields)),               // fields(s) => [string]
-	"has_prefix":     objects.NewUserFunction("has_prefix", objects.FuncASSRB(strings.HasPrefix)),        // has_prefix(s, prefix) => bool
-	"has_suffix":     objects.NewUserFunction("has_suffix", objects.FuncASSRB(strings.HasSuffix)),        // has_suffix(s, suffix) => bool
-	"index":          objects.NewUserFunction("index", objects.FuncASSRI(strings.Index)),                 // index(s, substr) => int
-	"index_any":      objects.NewUserFunction("index_any", objects.FuncASSRI(strings.IndexAny)),          // index_any(s, chars) => int
-	"join":           objects.NewUserFunction("join", textJoin),                                          // join(arr, sep) => string
-	"last_index":     objects.NewUserFunction("last_index", objects.FuncASSRI(strings.LastIndex)),        // last_index(s, substr) => int
-	"last_index_any": objects.NewUserFunction("last_index_any", objects.FuncASSRI(strings.LastIndexAny)), // last_index_any(s, chars) => int
-	"repeat":         objects.NewUserFunction("repeat", textRepeat),                                      // repeat(s, count) => string
-	"replace":        objects.NewUserFunction("replace", textReplace),                                    // replace(s, old, new, n) => string
-	"substr":         objects.NewUserFunction("substr", textSubstring),                                   // substr(s, lower, upper) => string
-	"split":          objects.NewUserFunction("split", objects.FuncASSRSs(strings.Split)),                // split(s, sep) => [string]
-	"split_after":    objects.NewUserFunction("split_after", objects.FuncASSRSs(strings.SplitAfter)),     // split_after(s, sep) => [string]
-	"split_after_n":  objects.NewUserFunction("split_after_n", objects.FuncASSIRSs(strings.SplitAfterN)), // split_after_n(s, sep, n) => [string]
-	"split_n":        objects.NewUserFunction("split_n", objects.FuncASSIRSs(strings.SplitN)),            // split_n(s, sep, n) => [string]
-	"title":          objects.NewUserFunction("title", objects.FuncASRS(strings.Title)),                  // title(s) => string
-	"to_lower":       objects.NewUserFunction("to_lower", objects.FuncASRS(strings.ToLower)),             // to_lower(s) => string
-	"to_title":       objects.NewUserFunction("to_title", objects.FuncASRS(strings.ToTitle)),             // to_title(s) => string
-	"to_upper":       objects.NewUserFunction("to_upper", objects.FuncASRS(strings.ToUpper)),             // to_upper(s) => string
-	"pad_left":       objects.NewUserFunction("pad_left", textPadLeft),                                   // pad_left(s, pad_len, pad_with) => string
-	"pad_right":      objects.NewUserFunction("pad_right", textPadRight),                                 // pad_right(s, pad_len, pad_with) => string
-	"trim":           objects.NewUserFunction("trim", objects.FuncASSRS(strings.Trim)),                   // trim(s, cutset) => string
-	"trim_left":      objects.NewUserFunction("trim_left", objects.FuncASSRS(strings.TrimLeft)),          // trim_left(s, cutset) => string
-	"trim_prefix":    objects.NewUserFunction("trim_prefix", objects.FuncASSRS(strings.TrimPrefix)),      // trim_prefix(s, prefix) => string
-	"trim_right":     objects.NewUserFunction("trim_right", objects.FuncASSRS(strings.TrimRight)),        // trim_right(s, cutset) => string
-	"trim_space":     objects.NewUserFunction("trim_space", objects.FuncASRS(strings.TrimSpace)),         // trim_space(s) => string
-	"trim_suffix":    objects.NewUserFunction("trim_suffix", objects.FuncASSRS(strings.TrimSuffix)),      // trim_suffix(s, suffix) => string
-	"atoi":           objects.NewUserFunction("atoi", objects.FuncASRIE(strconv.Atoi)),                   // atoi(str) => int/error
-	"format_bool":    objects.NewUserFunction("format_bool", textFormatBool),                             // format_bool(b) => string
-	"format_float":   objects.NewUserFunction("format_float", textFormatFloat),                           // format_float(f, fmt, prec, bits) => string
-	"format_int":     objects.NewUserFunction("format_int", textFormatInt),                               // format_int(i, base) => string
-	"itoa":           objects.NewUserFunction("itoa", objects.FuncAIRS(strconv.Itoa)),                    // itoa(i) => string
-	"parse_bool":     objects.NewUserFunction("parse_bool", textParseBool),                               // parse_bool(str) => bool/error
-	"parse_float":    objects.NewUserFunction("parse_float", textParseFloat),                             // parse_float(str, bits) => float/error
-	"parse_number":   objects.NewUserFunction("parse_number", textParseNumber),                           // parse_float(str, bits) => float/error
-	"parse_int":      objects.NewUserFunction("parse_int", textParseInt),                                 // parse_int(str, base, bits) => int/error
-	"quote":          objects.NewUserFunction("quote", objects.FuncASRS(strconv.Quote)),                  // quote(str) => string
-	"unquote":        objects.NewUserFunction("unquote", objects.FuncASRSE(strconv.Unquote)),             // unquote(str) => string/error
+	"re_match":       objects.NewFunctionUser("re_match", textREMatch),                                   // re_match(pattern, text) => bool/error
+	"re_find":        objects.NewFunctionUser("re_find", textREFind),                                     // re_find(pattern, text, count) => [[{text:,begin:,end:}]]/undefined
+	"re_replace":     objects.NewFunctionUser("re_replace", textREReplace),                               // re_replace(pattern, text, repl) => string/error
+	"re_split":       objects.NewFunctionUser("re_split", textRESplit),                                   // re_split(pattern, text, count) => [string]/error
+	"re_compile":     objects.NewFunctionUser("re_compile", textRECompile),                               // re_compile(pattern) => Regexp/error
+	"compare":        objects.NewFunctionUser("compare", objects.FuncASSRI(strings.Compare)),             // compare(a, b) => int
+	"contains":       objects.NewFunctionUser("contains", objects.FuncASSRB(strings.Contains)),           // contains(s, substr) => bool
+	"contains_any":   objects.NewFunctionUser("contains_any", objects.FuncASSRB(strings.ContainsAny)),    // contains_any(s, chars) => bool
+	"count":          objects.NewFunctionUser("count", objects.FuncASSRI(strings.Count)),                 // count(s, substr) => int
+	"equal_fold":     objects.NewFunctionUser("equal_fold", objects.FuncASSRB(strings.EqualFold)),        // "equal_fold(s, t) => bool
+	"fields":         objects.NewFunctionUser("fields", objects.FuncASRSs(strings.Fields)),               // fields(s) => [string]
+	"has_prefix":     objects.NewFunctionUser("has_prefix", objects.FuncASSRB(strings.HasPrefix)),        // has_prefix(s, prefix) => bool
+	"has_suffix":     objects.NewFunctionUser("has_suffix", objects.FuncASSRB(strings.HasSuffix)),        // has_suffix(s, suffix) => bool
+	"index":          objects.NewFunctionUser("index", objects.FuncASSRI(strings.Index)),                 // index(s, substr) => int
+	"index_any":      objects.NewFunctionUser("index_any", objects.FuncASSRI(strings.IndexAny)),          // index_any(s, chars) => int
+	"join":           objects.NewFunctionUser("join", textJoin),                                          // join(arr, sep) => string
+	"last_index":     objects.NewFunctionUser("last_index", objects.FuncASSRI(strings.LastIndex)),        // last_index(s, substr) => int
+	"last_index_any": objects.NewFunctionUser("last_index_any", objects.FuncASSRI(strings.LastIndexAny)), // last_index_any(s, chars) => int
+	"repeat":         objects.NewFunctionUser("repeat", textRepeat),                                      // repeat(s, count) => string
+	"replace":        objects.NewFunctionUser("replace", textReplace),                                    // replace(s, old, new, n) => string
+	"substr":         objects.NewFunctionUser("substr", textSubstring),                                   // substr(s, lower, upper) => string
+	"split":          objects.NewFunctionUser("split", objects.FuncASSRSs(strings.Split)),                // split(s, sep) => [string]
+	"split_after":    objects.NewFunctionUser("split_after", objects.FuncASSRSs(strings.SplitAfter)),     // split_after(s, sep) => [string]
+	"split_after_n":  objects.NewFunctionUser("split_after_n", objects.FuncASSIRSs(strings.SplitAfterN)), // split_after_n(s, sep, n) => [string]
+	"split_n":        objects.NewFunctionUser("split_n", objects.FuncASSIRSs(strings.SplitN)),            // split_n(s, sep, n) => [string]
+	"title":          objects.NewFunctionUser("title", objects.FuncASRS(strings.Title)),                  // title(s) => string
+	"to_lower":       objects.NewFunctionUser("to_lower", objects.FuncASRS(strings.ToLower)),             // to_lower(s) => string
+	"to_title":       objects.NewFunctionUser("to_title", objects.FuncASRS(strings.ToTitle)),             // to_title(s) => string
+	"to_upper":       objects.NewFunctionUser("to_upper", objects.FuncASRS(strings.ToUpper)),             // to_upper(s) => string
+	"pad_left":       objects.NewFunctionUser("pad_left", textPadLeft),                                   // pad_left(s, pad_len, pad_with) => string
+	"pad_right":      objects.NewFunctionUser("pad_right", textPadRight),                                 // pad_right(s, pad_len, pad_with) => string
+	"trim":           objects.NewFunctionUser("trim", objects.FuncASSRS(strings.Trim)),                   // trim(s, cutset) => string
+	"trim_left":      objects.NewFunctionUser("trim_left", objects.FuncASSRS(strings.TrimLeft)),          // trim_left(s, cutset) => string
+	"trim_prefix":    objects.NewFunctionUser("trim_prefix", objects.FuncASSRS(strings.TrimPrefix)),      // trim_prefix(s, prefix) => string
+	"trim_right":     objects.NewFunctionUser("trim_right", objects.FuncASSRS(strings.TrimRight)),        // trim_right(s, cutset) => string
+	"trim_space":     objects.NewFunctionUser("trim_space", objects.FuncASRS(strings.TrimSpace)),         // trim_space(s) => string
+	"trim_suffix":    objects.NewFunctionUser("trim_suffix", objects.FuncASSRS(strings.TrimSuffix)),      // trim_suffix(s, suffix) => string
+	"atoi":           objects.NewFunctionUser("atoi", objects.FuncASRIE(strconv.Atoi)),                   // atoi(str) => int/error
+	"format_bool":    objects.NewFunctionUser("format_bool", textFormatBool),                             // format_bool(b) => string
+	"format_float":   objects.NewFunctionUser("format_float", textFormatFloat),                           // format_float(f, fmt, prec, bits) => string
+	"format_int":     objects.NewFunctionUser("format_int", textFormatInt),                               // format_int(i, base) => string
+	"itoa":           objects.NewFunctionUser("itoa", objects.FuncAIRS(strconv.Itoa)),                    // itoa(i) => string
+	"parse_bool":     objects.NewFunctionUser("parse_bool", textParseBool),                               // parse_bool(str) => bool/error
+	"parse_float":    objects.NewFunctionUser("parse_float", textParseFloat),                             // parse_float(str, bits) => float/error
+	"parse_number":   objects.NewFunctionUser("parse_number", textParseNumber),                           // parse_float(str, bits) => float/error
+	"parse_int":      objects.NewFunctionUser("parse_int", textParseInt),                                 // parse_int(str, base, bits) => int/error
+	"quote":          objects.NewFunctionUser("quote", objects.FuncASRS(strconv.Quote)),                  // quote(str) => string
+	"unquote":        objects.NewFunctionUser("unquote", objects.FuncASRSE(strconv.Unquote)),             // unquote(str) => string/error
 }
 
 // textREMatch checks if the first argument (regex pattern) matches the second argument (string) and returns a boolean object.
@@ -111,7 +111,7 @@ func textREFind(args ...objects.IObject) (objects.IObject, error) {
 		}
 		arr := objects.NewArray(nil)
 		for i := 0; i < len(m); i += 2 {
-			arr.Append(objects.NewImmutableMap(map[string]objects.IObject{
+			arr.Append(objects.NewMapImmutable(map[string]objects.IObject{
 				"text":  objects.NewStringNoSize(s2[m[i]:m[i+1]]),
 				"begin": objects.NewInt(int64(m[i])),
 				"end":   objects.NewInt(int64(m[i+1])),
@@ -131,7 +131,7 @@ func textREFind(args ...objects.IObject) (objects.IObject, error) {
 	for _, m := range mFA {
 		subMatch := objects.NewArray(nil)
 		for i := 0; i < len(m); i += 2 {
-			subMatch.Append(objects.NewImmutableMap(map[string]objects.IObject{
+			subMatch.Append(objects.NewMapImmutable(map[string]objects.IObject{
 				"text":  objects.NewStringNoSize(s2[m[i]:m[i+1]]),
 				"begin": objects.NewInt(int64(m[i])),
 				"end":   objects.NewInt(int64(m[i+1])),
@@ -406,7 +406,7 @@ func textJoin(args ...objects.IObject) (ret objects.IObject, err error) {
 			sLen += len(as)
 			ss1 = append(ss1, as)
 		}
-	case *objects.ImmutableArray:
+	case *objects.ArrayImmutable:
 		for idx, a := range arg0.Values() {
 			as, err := objects.ToStringArg(fmt.Sprintf("first[%d]", idx), a)
 			if err != nil {

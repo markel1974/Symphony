@@ -7,8 +7,8 @@ import (
 // Frame represents a frame in the execution call stack for a compiled function.
 // It contains information about the current function, its free variables, instruction pointer, and base pointer.
 type Frame struct {
-	compiledFunction *objects.CompiledFunction
-	freeVars         []*objects.ObjectPtr
+	compiledFunction *objects.FunctionCompiled
+	freeVars         []*objects.ObjectPointer
 	ip               int
 	basePointer      int
 }
@@ -19,7 +19,7 @@ func NewFunctionCallFrame() *Frame {
 }
 
 // SetCompiledFunction sets the compiled function for the current Frame.
-func (f *Frame) SetCompiledFunction(compiledFunction *objects.CompiledFunction) {
+func (f *Frame) SetCompiledFunction(compiledFunction *objects.FunctionCompiled) {
 	f.compiledFunction = compiledFunction
 }
 
@@ -34,6 +34,6 @@ func (f *Frame) SourcePos(ip int) int {
 }
 
 // SameFunction checks if the given compiled function matches the compiled function in the current call frame.
-func (f *Frame) SameFunction(callee *objects.CompiledFunction) bool {
+func (f *Frame) SameFunction(callee *objects.FunctionCompiled) bool {
 	return callee == f.compiledFunction
 }

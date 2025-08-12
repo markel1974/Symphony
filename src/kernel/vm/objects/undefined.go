@@ -20,7 +20,7 @@ func (o *Undefined) Copy() IObject {
 }
 
 // Falsy returns true if the values of the type is falsy.
-func (o *Undefined) Falsy() bool {
+func (o *Undefined) Boolean() bool {
 	return true
 }
 

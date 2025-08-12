@@ -71,7 +71,7 @@ func (o *Map) Copy() IObject {
 }
 
 // Falsy returns true if the map contains no key-values pairs, indicating it is empty.
-func (o *Map) Falsy() bool {
+func (o *Map) Boolean() bool {
 	return len(o.values) == 0
 }
 
@@ -81,7 +81,7 @@ func (o *Map) Equals(in IObject) bool {
 	switch x := in.(type) {
 	case *Map:
 		xVal = x.values
-	case *ImmutableMap:
+	case *MapImmutable:
 		xVal = x.Values()
 	default:
 		return false

@@ -18,23 +18,23 @@ func init() {
 	gob.Register(&objects.Bool{})
 	gob.Register(&objects.Bytes{})
 	gob.Register(&objects.Char{})
-	gob.Register(&objects.CompiledFunction{})
+	gob.Register(&objects.FunctionCompiled{})
 	gob.Register(&objects.Error{})
 	gob.Register(&objects.Float{})
-	gob.Register(&objects.ImmutableArray{})
-	gob.Register(&objects.ImmutableMap{})
+	gob.Register(&objects.ArrayImmutable{})
+	gob.Register(&objects.MapImmutable{})
 	gob.Register(&objects.Int{})
 	gob.Register(&objects.Map{})
 	gob.Register(&objects.String{})
 	gob.Register(&objects.Time{})
 	gob.Register(&objects.Undefined{})
-	gob.Register(&objects.UserFunction{})
+	gob.Register(&objects.FunctionUser{})
 }
 
 // Bytecode represents a compiled set of bytecode instructions, constants, and metadata for program execution.
 type Bytecode struct {
 	files        *Files
-	mainFunction *objects.CompiledFunction
+	mainFunction *objects.FunctionCompiled
 	constants    []objects.IObject
 }
 
@@ -65,7 +65,7 @@ func (b *Bytecode) Constants() []objects.IObject {
 }
 
 // MainFunction returns the main compiled function associated with the bytecode.
-func (b *Bytecode) MainFunction() (*objects.CompiledFunction, error) {
+func (b *Bytecode) MainFunction() (*objects.FunctionCompiled, error) {
 	if b.mainFunction == nil {
 		return nil, fmt.Errorf("main function not found")
 	}
@@ -102,7 +102,7 @@ func (b *Bytecode) FormatInstructions() []string {
 func (b *Bytecode) FormatConstants() (output []string) {
 	for cIdx, constant := range b.constants {
 		switch cn := constant.(type) {
-		case *objects.CompiledFunction:
+		case *objects.FunctionCompiled:
 			output = append(output, fmt.Sprintf("[% 3d] (Compiled Function|%p)", cIdx, &cn))
 			for _, l := range FormatInstructions(cn.Data(), 0) {
 				output = append(output, fmt.Sprintf("     %s", l))
@@ -146,7 +146,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 	var deDuped []objects.IObject
 
 	indexMap := make(map[int]int) // mapping from old constant index to new index
-	fns := make(map[*objects.CompiledFunction]int)
+	fns := make(map[*objects.FunctionCompiled]int)
 	ints := make(map[int64]int)
 	strings := make(map[string]int)
 	floats := make(map[float64]int)
@@ -155,7 +155,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 
 	for curIdx, in := range b.constants {
 		switch c := in.(type) {
-		case *objects.CompiledFunction:
+		case *objects.FunctionCompiled:
 			if newIdx, ok := fns[c]; ok {
 				indexMap[curIdx] = newIdx
 			} else {
@@ -164,7 +164,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 				indexMap[curIdx] = newIdx
 				deDuped = append(deDuped, c)
 			}
-		case *objects.ImmutableMap:
+		case *objects.MapImmutable:
 			modName, err := inferModuleName(c)
 			if err != nil {
 				return err
@@ -224,7 +224,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 	}
 	for _, c := range b.constants {
 		switch c := c.(type) {
-		case *objects.CompiledFunction:
+		case *objects.FunctionCompiled:
 			if err := updateConstIndexes(c.Data(), indexMap); err != nil {
 				return err
 			}
@@ -238,7 +238,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject, error) {
 	switch o := o.(type) {
 	case *objects.Bool:
-		if o.Falsy() {
+		if o.Boolean() {
 			return objects.FalseValue, nil
 		}
 		return objects.TrueValue, nil
@@ -252,7 +252,7 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 			}
 			o.SetValue(i, fv)
 		}
-	case *objects.ImmutableArray:
+	case *objects.ArrayImmutable:
 		for i, v := range o.Values() {
 			fv, err := fixDecodedObject(v, mods)
 			if err != nil {
@@ -268,7 +268,7 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 			}
 			o.Set(k, fv)
 		}
-	case *objects.ImmutableMap:
+	case *objects.MapImmutable:
 		modName, err := inferModuleName(o)
 		if err != nil {
 			return nil, err
@@ -277,7 +277,7 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 			return mod.AsImmutableMap(modName), nil
 		}
 		for k, v := range o.Values() {
-			if _, isUserFunction := v.(*objects.UserFunction); isUserFunction {
+			if _, isUserFunction := v.(*objects.FunctionUser); isUserFunction {
 				return nil, fmt.Errorf("user function not decodable")
 			}
 			fv, err := fixDecodedObject(v, mods)
@@ -323,9 +323,9 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 	return nil
 }
 
-// inferModuleName extracts the module name from an ImmutableMap by retrieving the __module_name__ key as a string.
+// inferModuleName extracts the module name from an MapImmutable by retrieving the __module_name__ key as a string.
 // Returns an empty string if the key is missing or not a valid string type.
-func inferModuleName(mod *objects.ImmutableMap) (string, error) {
+func inferModuleName(mod *objects.MapImmutable) (string, error) {
 	m, ok := mod.GetValue("__module_name__")
 	if !ok {
 		return "", fmt.Errorf("missing __module_name__ key")

@@ -6,20 +6,20 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// makeTextRegexp returns an ImmutableMap of functions for regex operations: match, find, replace, and split.
-func makeTextRegexp(re *regexp.Regexp) *objects.ImmutableMap {
-	return objects.NewImmutableMap(
+// makeTextRegexp returns an MapImmutable of functions for regex operations: match, find, replace, and split.
+func makeTextRegexp(re *regexp.Regexp) *objects.MapImmutable {
+	return objects.NewMapImmutable(
 		map[string]objects.IObject{
 			// match(text) => bool
-			"match": objects.NewUserFunction("match", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpMatch(re, args...) }),
+			"match": objects.NewFunctionUser("match", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpMatch(re, args...) }),
 			// find(text) 			=> array(array({text:,begin:,end:}))/undefined
 			// find(text, maxCount) => array(array({text:,begin:,end:}))/undefined
-			"find": objects.NewUserFunction("find", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpFind(re, args...) }),
+			"find": objects.NewFunctionUser("find", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpFind(re, args...) }),
 			// replace(src, repl) => string
-			"replace": objects.NewUserFunction("replace", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpREReplace(re, args...) }),
+			"replace": objects.NewFunctionUser("replace", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpREReplace(re, args...) }),
 			// split(text) 			 => array(string)
 			// split(text, maxCount) => array(string)
-			"split": objects.NewUserFunction("split", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpRESplit(re, args...) }),
+			"split": objects.NewFunctionUser("split", func(args ...objects.IObject) (objects.IObject, error) { return doTextRegexpRESplit(re, args...) }),
 		},
 	)
 }
@@ -80,7 +80,7 @@ func doTextRegexpFind(re *regexp.Regexp, args ...objects.IObject) (objects.IObje
 		}
 		arr := objects.NewArray(nil)
 		for i := 0; i < len(mRe); i += 2 {
-			arr.Append(objects.NewImmutableMap(
+			arr.Append(objects.NewMapImmutable(
 				map[string]objects.IObject{
 					"text":  objects.NewStringNoSize(s1[mRe[i]:mRe[i+1]]),
 					"begin": objects.NewInt(int64(mRe[i])),
@@ -101,7 +101,7 @@ func doTextRegexpFind(re *regexp.Regexp, args ...objects.IObject) (objects.IObje
 	for _, m := range mRe {
 		subMatch := objects.NewArray(nil)
 		for i := 0; i < len(m); i += 2 {
-			subMatch.Append(objects.NewImmutableMap(
+			subMatch.Append(objects.NewMapImmutable(
 				map[string]objects.IObject{
 					"text":  objects.NewStringNoSize(s1[m[i]:m[i+1]]),
 					"begin": objects.NewInt(int64(m[i])),

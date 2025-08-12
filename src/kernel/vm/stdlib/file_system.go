@@ -6,30 +6,30 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// makeOSFile creates an ImmutableMap containing methods applicable to an os.File object as IObject values.
-func makeOSFile(file *os.File) *objects.ImmutableMap {
-	return objects.NewImmutableMap(
+// makeOSFile creates an MapImmutable containing methods applicable to an os.File object as IObject values.
+func makeOSFile(file *os.File) *objects.MapImmutable {
+	return objects.NewMapImmutable(
 		map[string]objects.IObject{
 			// chdir() => true/error
-			"chdir": objects.NewUserFunction("chdir", objects.FuncARE(file.Chdir)), //
+			"chdir": objects.NewFunctionUser("chdir", objects.FuncARE(file.Chdir)), //
 			// chown(uid int, gid int) => true/error
-			"chown": objects.NewUserFunction("chown", objects.FuncAIIRE(file.Chown)), //
+			"chown": objects.NewFunctionUser("chown", objects.FuncAIIRE(file.Chown)), //
 			// close() => error
-			"close": objects.NewUserFunction("close", objects.FuncARE(file.Close)), //
+			"close": objects.NewFunctionUser("close", objects.FuncARE(file.Close)), //
 			// name() => string
-			"name": objects.NewUserFunction("name", objects.FuncARS(file.Name)), //
+			"name": objects.NewFunctionUser("name", objects.FuncARS(file.Name)), //
 			// readdirnames(n int) => array(string)/error
-			"readdirnames": objects.NewUserFunction("readdirnames", objects.FuncAIRSsE(file.Readdirnames)), //
+			"readdirnames": objects.NewFunctionUser("readdirnames", objects.FuncAIRSsE(file.Readdirnames)), //
 			// sync() => error
-			"sync": objects.NewUserFunction("sync", objects.FuncARE(file.Sync)), //
+			"sync": objects.NewFunctionUser("sync", objects.FuncARE(file.Sync)), //
 			// write(bytes) => int/error
-			"write": objects.NewUserFunction("write", objects.FuncAYRIE(file.Write)), //
+			"write": objects.NewFunctionUser("write", objects.FuncAYRIE(file.Write)), //
 			// write(string) => int/error
-			"write_string": objects.NewUserFunction("write_string", objects.FuncASRIE(file.WriteString)), //
+			"write_string": objects.NewFunctionUser("write_string", objects.FuncASRIE(file.WriteString)), //
 			// read(bytes) => int/error
-			"read": objects.NewUserFunction("read", objects.FuncAYRIE(file.Read)), //
+			"read": objects.NewFunctionUser("read", objects.FuncAYRIE(file.Read)), //
 			// chmod(mode int) => error
-			"chmod": objects.NewUserFunction("chmod", func(args ...objects.IObject) (objects.IObject, error) {
+			"chmod": objects.NewFunctionUser("chmod", func(args ...objects.IObject) (objects.IObject, error) {
 				if len(args) != 1 {
 					return nil, objects.ErrWrongNumArguments
 				}
@@ -40,7 +40,7 @@ func makeOSFile(file *os.File) *objects.ImmutableMap {
 				return objects.NewObjectError(file.Chmod(os.FileMode(i1))), nil
 			}),
 			// seek(offset int, whence int) => int/error
-			"seek": objects.NewUserFunction("seek", func(args ...objects.IObject) (objects.IObject, error) {
+			"seek": objects.NewFunctionUser("seek", func(args ...objects.IObject) (objects.IObject, error) {
 				if len(args) != 2 {
 					return nil, objects.ErrWrongNumArguments
 				}
@@ -59,7 +59,7 @@ func makeOSFile(file *os.File) *objects.ImmutableMap {
 				return objects.NewInt(res), nil
 			}),
 			// stat() => imap(fileinfo)/error
-			"stat": objects.NewUserFunction("stat", func(args ...objects.IObject) (objects.IObject, error) {
+			"stat": objects.NewFunctionUser("stat", func(args ...objects.IObject) (objects.IObject, error) {
 				if len(args) != 0 {
 					return nil, objects.ErrWrongNumArguments
 				}

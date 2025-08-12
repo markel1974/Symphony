@@ -114,7 +114,7 @@ func (o *String) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 }
 
 // Falsy returns true if the String's values is an empty string, indicating it is considered falsy in a boolean context.
-func (o *String) Falsy() bool {
+func (o *String) Boolean() bool {
 	return len(o.value) == 0
 }
 
@@ -187,7 +187,7 @@ func (i *StringIterator) String() string {
 }
 
 // Falsy returns true, indicating the iterator is considered falsy in a boolean context.
-func (i *StringIterator) Falsy() bool {
+func (i *StringIterator) Boolean() bool {
 	return true
 }
 

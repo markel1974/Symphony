@@ -14,11 +14,11 @@ func (m *ModuleBuiltin) Import(moduleName string) (interface{}, error) {
 }
 
 // AsImmutableMap transforms the ModuleBuiltin's attributes into an immutable map, embedding the given module name.
-func (m *ModuleBuiltin) AsImmutableMap(moduleName string) *objects.ImmutableMap {
+func (m *ModuleBuiltin) AsImmutableMap(moduleName string) *objects.MapImmutable {
 	attrs := make(map[string]objects.IObject, len(m.Attrs))
 	for k, v := range m.Attrs {
 		attrs[k] = v.Copy()
 	}
 	attrs["__module_name__"] = objects.NewStringNoSize(moduleName)
-	return objects.NewImmutableMap(attrs)
+	return objects.NewMapImmutable(attrs)
 }

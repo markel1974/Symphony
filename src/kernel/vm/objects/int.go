@@ -195,8 +195,8 @@ func (o *Int) Copy() IObject {
 	return &Int{value: o.value}
 }
 
-// Falsy checks whether the integer value is considered falsy. Returns true if the value is 0, otherwise false.
-func (o *Int) Falsy() bool {
+// Boolean checks whether the integer value is considered falsy. Returns true if the value is 0, otherwise false.
+func (o *Int) Boolean() bool {
 	return o.value == 0
 }
 

@@ -9,10 +9,10 @@ import (
 )
 
 var jsonModule = map[string]objects.IObject{
-	"decode":      objects.NewUserFunction("decode", jsonDecode),
-	"encode":      objects.NewUserFunction("encode", jsonEncode),
-	"indent":      objects.NewUserFunction("encode", jsonIndent),
-	"html_escape": objects.NewUserFunction("html_escape", jsonHTMLEscape),
+	"decode":      objects.NewFunctionUser("decode", jsonDecode),
+	"encode":      objects.NewFunctionUser("encode", jsonEncode),
+	"indent":      objects.NewFunctionUser("encode", jsonIndent),
+	"html_escape": objects.NewFunctionUser("html_escape", jsonHTMLEscape),
 }
 
 func jsonDecode(args ...objects.IObject) (ret objects.IObject, err error) {

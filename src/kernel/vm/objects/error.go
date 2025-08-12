@@ -29,7 +29,7 @@ func (o *Error) String() string {
 }
 
 // Falsy returns true, indicating that the Error object is always considered falsy in a boolean context.
-func (o *Error) Falsy() bool {
+func (o *Error) Boolean() bool {
 	return true // error is always false.
 }
 

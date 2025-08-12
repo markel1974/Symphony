@@ -39,7 +39,7 @@ func (o *Bool) Copy() IObject {
 }
 
 // Falsy returns true if the Bool value is false, otherwise returns false.
-func (o *Bool) Falsy() bool {
+func (o *Bool) Boolean() bool {
 	return !o.value
 }
 
@@ -64,10 +64,10 @@ func (o *Bool) GobEncode() (b []byte, err error) {
 	return
 }
 
-// ToBool converts the given IObject to a bool based on its Falsy() method and returns the result along with a success flag.
+// ToBool converts the given IObject to a bool based on its Boolean() method and returns the result along with a success flag.
 func ToBool(o IObject) (v bool, ok bool) {
 	ok = true
-	v = !o.Falsy()
+	v = !o.Boolean()
 	return
 }
 

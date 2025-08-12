@@ -38,48 +38,48 @@ var osModule = map[string]objects.IObject{
 	"seek_set":            objects.NewInt(int64(io.SeekStart)),
 	"seek_cur":            objects.NewInt(int64(io.SeekCurrent)),
 	"seek_end":            objects.NewInt(int64(io.SeekEnd)),
-	"args":                objects.NewUserFunction("args", osArgs),                                     // args() => array(string)
-	"chdir":               objects.NewUserFunction("chdir", objects.FuncASRE(os.Chdir)),                // chdir(dir string) => error
+	"args":                objects.NewFunctionUser("args", osArgs),                                     // args() => array(string)
+	"chdir":               objects.NewFunctionUser("chdir", objects.FuncASRE(os.Chdir)),                // chdir(dir string) => error
 	"chmod":               osFuncASFmRE("chmod", os.Chmod),                                             // chmod(name string, mode int) => error
-	"chown":               objects.NewUserFunction("chown", objects.FuncASIIRE(os.Chown)),              // chown(name string, uid int, gid int) => error
-	"clearenv":            objects.NewUserFunction("clearenv", objects.FuncAR(os.Clearenv)),            // clearenv()
-	"environ":             objects.NewUserFunction("environ", objects.FuncARSs(os.Environ)),            // environ() => array(string)
-	"exit":                objects.NewUserFunction("exit", objects.FuncAIR(os.Exit)),                   // exit(code int)
-	"expand_env":          objects.NewUserFunction("expand_env", osExpandEnv),                          // expand_env(s string) => string
-	"getegid":             objects.NewUserFunction("getegid", objects.FuncARI(os.Getegid)),             // getegid() => int
-	"getenv":              objects.NewUserFunction("getenv", objects.FuncASRS(os.Getenv)),              // getenv(s string) => string
-	"geteuid":             objects.NewUserFunction("geteuid", objects.FuncARI(os.Geteuid)),             // geteuid() => int
-	"getgid":              objects.NewUserFunction("getgid", objects.FuncARI(os.Getgid)),               // getgid() => int
-	"getgroups":           objects.NewUserFunction("getgroups", objects.FuncARIsE(os.Getgroups)),       // getgroups() => array(string)/error
-	"getpagesize":         objects.NewUserFunction("getpagesize", objects.FuncARI(os.Getpagesize)),     // getpagesize() => int
-	"getpid":              objects.NewUserFunction("getpid", objects.FuncARI(os.Getpid)),               // getpid() => int
-	"getppid":             objects.NewUserFunction("getppid", objects.FuncARI(os.Getppid)),             // getppid() => int
-	"getuid":              objects.NewUserFunction("getuid", objects.FuncARI(os.Getuid)),               // getuid() => int
-	"getwd":               objects.NewUserFunction("getwd", objects.FuncARSE(os.Getwd)),                // getwd() => string/error
-	"hostname":            objects.NewUserFunction("hostname", objects.FuncARSE(os.Hostname)),          // hostname() => string/error
-	"lchown":              objects.NewUserFunction("lchown", objects.FuncASIIRE(os.Lchown)),            // lchown(name string, uid int, gid int) => error
-	"link":                objects.NewUserFunction("link", objects.FuncASSRE(os.Link)),                 // link(oldname string, newname string) => error
-	"lookup_env":          objects.NewUserFunction("lookup_env", osLookupEnv),                          // lookup_env(key string) => string/false
+	"chown":               objects.NewFunctionUser("chown", objects.FuncASIIRE(os.Chown)),              // chown(name string, uid int, gid int) => error
+	"clearenv":            objects.NewFunctionUser("clearenv", objects.FuncAR(os.Clearenv)),            // clearenv()
+	"environ":             objects.NewFunctionUser("environ", objects.FuncARSs(os.Environ)),            // environ() => array(string)
+	"exit":                objects.NewFunctionUser("exit", objects.FuncAIR(os.Exit)),                   // exit(code int)
+	"expand_env":          objects.NewFunctionUser("expand_env", osExpandEnv),                          // expand_env(s string) => string
+	"getegid":             objects.NewFunctionUser("getegid", objects.FuncARI(os.Getegid)),             // getegid() => int
+	"getenv":              objects.NewFunctionUser("getenv", objects.FuncASRS(os.Getenv)),              // getenv(s string) => string
+	"geteuid":             objects.NewFunctionUser("geteuid", objects.FuncARI(os.Geteuid)),             // geteuid() => int
+	"getgid":              objects.NewFunctionUser("getgid", objects.FuncARI(os.Getgid)),               // getgid() => int
+	"getgroups":           objects.NewFunctionUser("getgroups", objects.FuncARIsE(os.Getgroups)),       // getgroups() => array(string)/error
+	"getpagesize":         objects.NewFunctionUser("getpagesize", objects.FuncARI(os.Getpagesize)),     // getpagesize() => int
+	"getpid":              objects.NewFunctionUser("getpid", objects.FuncARI(os.Getpid)),               // getpid() => int
+	"getppid":             objects.NewFunctionUser("getppid", objects.FuncARI(os.Getppid)),             // getppid() => int
+	"getuid":              objects.NewFunctionUser("getuid", objects.FuncARI(os.Getuid)),               // getuid() => int
+	"getwd":               objects.NewFunctionUser("getwd", objects.FuncARSE(os.Getwd)),                // getwd() => string/error
+	"hostname":            objects.NewFunctionUser("hostname", objects.FuncARSE(os.Hostname)),          // hostname() => string/error
+	"lchown":              objects.NewFunctionUser("lchown", objects.FuncASIIRE(os.Lchown)),            // lchown(name string, uid int, gid int) => error
+	"link":                objects.NewFunctionUser("link", objects.FuncASSRE(os.Link)),                 // link(oldname string, newname string) => error
+	"lookup_env":          objects.NewFunctionUser("lookup_env", osLookupEnv),                          // lookup_env(key string) => string/false
 	"mkdir":               osFuncASFmRE("mkdir", os.Mkdir),                                             // mkdir(name string, perm int) => error
 	"mkdir_all":           osFuncASFmRE("mkdir_all", os.MkdirAll),                                      // mkdir_all(name string, perm int) => error
-	"readlink":            objects.NewUserFunction("readlink", objects.FuncASRSE(os.Readlink)),         // readlink(name string) => string/error
-	"remove":              objects.NewUserFunction("remove", objects.FuncASRE(os.Remove)),              // remove(name string) => error
-	"remove_all":          objects.NewUserFunction("remove_all", objects.FuncASRE(os.RemoveAll)),       // remove_all(name string) => error
-	"rename":              objects.NewUserFunction("rename", objects.FuncASSRE(os.Rename)),             // rename(oldpath string, newpath string) => error
-	"setenv":              objects.NewUserFunction("setenv", objects.FuncASSRE(os.Setenv)),             // setenv(key string, value string) => error
-	"symlink":             objects.NewUserFunction("symlink", objects.FuncASSRE(os.Symlink)),           // symlink(oldname string newname string) => error
-	"temp_dir":            objects.NewUserFunction("temp_dir", objects.FuncARS(os.TempDir)),            // temp_dir() => string
-	"truncate":            objects.NewUserFunction("truncate", objects.FuncASI64RE(os.Truncate)),       // truncate(name string, size int) => error
-	"unsetenv":            objects.NewUserFunction("unsetenv", objects.FuncASRE(os.Unsetenv)),          // unsetenv(key string) => error
-	"create":              objects.NewUserFunction("create", osCreate),                                 // create(name string) => imap(file)/error
-	"open":                objects.NewUserFunction("open", osOpen),                                     // open(name string) => imap(file)/error
-	"open_file":           objects.NewUserFunction("open_file", osOpenFile),                            // open_file(name string, flag int, perm int) => imap(file)/error
-	"find_process":        objects.NewUserFunction("find_process", osFindProcess),                      // find_process(pid int) => imap(process)/error
-	"start_process":       objects.NewUserFunction("start_process", osStartProcess),                    // start_process(name string, argv array(string), dir string, env array(string)) => imap(process)/error
-	"exec_look_path":      objects.NewUserFunction("exec_look_path", objects.FuncASRSE(exec.LookPath)), // exec_look_path(file) => string/error
-	"exec":                objects.NewUserFunction("exec", osExec),                                     // exec(name, args...) => command
-	"stat":                objects.NewUserFunction("stat", osStat),                                     // stat(name) => imap(fileinfo)/error
-	"read_file":           objects.NewUserFunction("read_file", osReadFile),                            // readfile(name) => array(byte)/error
+	"readlink":            objects.NewFunctionUser("readlink", objects.FuncASRSE(os.Readlink)),         // readlink(name string) => string/error
+	"remove":              objects.NewFunctionUser("remove", objects.FuncASRE(os.Remove)),              // remove(name string) => error
+	"remove_all":          objects.NewFunctionUser("remove_all", objects.FuncASRE(os.RemoveAll)),       // remove_all(name string) => error
+	"rename":              objects.NewFunctionUser("rename", objects.FuncASSRE(os.Rename)),             // rename(oldpath string, newpath string) => error
+	"setenv":              objects.NewFunctionUser("setenv", objects.FuncASSRE(os.Setenv)),             // setenv(key string, value string) => error
+	"symlink":             objects.NewFunctionUser("symlink", objects.FuncASSRE(os.Symlink)),           // symlink(oldname string newname string) => error
+	"temp_dir":            objects.NewFunctionUser("temp_dir", objects.FuncARS(os.TempDir)),            // temp_dir() => string
+	"truncate":            objects.NewFunctionUser("truncate", objects.FuncASI64RE(os.Truncate)),       // truncate(name string, size int) => error
+	"unsetenv":            objects.NewFunctionUser("unsetenv", objects.FuncASRE(os.Unsetenv)),          // unsetenv(key string) => error
+	"create":              objects.NewFunctionUser("create", osCreate),                                 // create(name string) => imap(file)/error
+	"open":                objects.NewFunctionUser("open", osOpen),                                     // open(name string) => imap(file)/error
+	"open_file":           objects.NewFunctionUser("open_file", osOpenFile),                            // open_file(name string, flag int, perm int) => imap(file)/error
+	"find_process":        objects.NewFunctionUser("find_process", osFindProcess),                      // find_process(pid int) => imap(process)/error
+	"start_process":       objects.NewFunctionUser("start_process", osStartProcess),                    // start_process(name string, argv array(string), dir string, env array(string)) => imap(process)/error
+	"exec_look_path":      objects.NewFunctionUser("exec_look_path", objects.FuncASRSE(exec.LookPath)), // exec_look_path(file) => string/error
+	"exec":                objects.NewFunctionUser("exec", osExec),                                     // exec(name, args...) => command
+	"stat":                objects.NewFunctionUser("stat", osStat),                                     // stat(name) => imap(fileinfo)/error
+	"read_file":           objects.NewFunctionUser("read_file", osReadFile),                            // readfile(name) => array(byte)/error
 }
 
 func osReadFile(args ...objects.IObject) (ret objects.IObject, err error) {
@@ -116,7 +116,7 @@ func osStat(args ...objects.IObject) (ret objects.IObject, err error) {
 	if stat.IsDir() {
 		dir = objects.TrueValue
 	}
-	fstat := objects.NewImmutableMap(map[string]objects.IObject{
+	fstat := objects.NewMapImmutable(map[string]objects.IObject{
 		"name":      objects.NewStringNoSize(stat.Name()),
 		"mtime":     objects.NewTime(stat.ModTime()),
 		"size":      objects.NewInt(stat.Size()),
@@ -197,8 +197,8 @@ func osArgs(args ...objects.IObject) (objects.IObject, error) {
 	return arr, nil
 }
 
-func osFuncASFmRE(name string, fn func(string, os.FileMode) error) *objects.UserFunction {
-	return objects.NewUserFunction(name, func(args ...objects.IObject) (objects.IObject, error) {
+func osFuncASFmRE(name string, fn func(string, os.FileMode) error) *objects.FunctionUser {
+	return objects.NewFunctionUser(name, func(args ...objects.IObject) (objects.IObject, error) {
 		if len(args) != 2 {
 			return nil, objects.ErrWrongNumArguments
 		}
@@ -304,7 +304,7 @@ func osStartProcess(args ...objects.IObject) (objects.IObject, error) {
 		if err != nil {
 			return nil, err
 		}
-	case *objects.ImmutableArray:
+	case *objects.ArrayImmutable:
 		argv, err = stringArray(arg1.Values(), "second")
 		if err != nil {
 			return nil, err
@@ -325,7 +325,7 @@ func osStartProcess(args ...objects.IObject) (objects.IObject, error) {
 		if err != nil {
 			return nil, err
 		}
-	case *objects.ImmutableArray:
+	case *objects.ArrayImmutable:
 		env, err = stringArray(arg3.Values(), "fourth")
 		if err != nil {
 			return nil, err
