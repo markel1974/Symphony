@@ -8,7 +8,7 @@ import (
 // TypeName returns the type name of the object.
 // String returns the string representation of the object.
 // BinaryOp performs a binary operation between the object and a right-hand side operand.
-// Falsy checks if the object represents a falsy value.
+// Boolean checks if the object represents a falsy value.
 // Equals checks whether the object is equal to another object.
 // Copy creates and returns a copy of the object.
 // IndexGet retrieves the values at the specified index from the object.
@@ -22,11 +22,11 @@ type IObject interface {
 
 	String() string
 
-	BinaryOp(op Operator, rhs IObject) (IObject, error)
+	BinaryOp(op Operator, rightHandSide IObject) (IObject, error)
 
 	Boolean() bool
 
-	Equals(another IObject) bool
+	Equals(other IObject) bool
 
 	Copy() IObject
 
