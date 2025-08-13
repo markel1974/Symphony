@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/token"
 	"strconv"
+	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
@@ -250,11 +251,9 @@ func (c *Compiler) Compile(in ast.Node) error {
 			// Map literal (e.g. map[string]int{"a": 1})
 			for _, elt := range node.Elts {
 				kve := elt.(*ast.KeyValueExpr)
-				// Compile key
 				if err := c.Compile(kve.Key); err != nil {
 					return err
 				}
-				// Compile value
 				if err := c.Compile(kve.Value); err != nil {
 					return err
 				}
@@ -346,6 +345,28 @@ func (c *Compiler) Compile(in ast.Node) error {
 				return err
 			}
 		}
+	case *ast.SelectorExpr:
+		// 1. Compila l'espressione a sinistra (es. 'fmt').
+		// Questo emetterà un 'OpGetGlobal' che a runtime metterà
+		// l'oggetto modulo MapImmutable sullo stack.
+		if err := c.Compile(node.X); err != nil {
+			return err
+		}
+		moduleIdent, ok := node.X.(*ast.Ident)
+		if !ok {
+			// Per ora, gestiamo solo il caso semplice come 'fmt.print'
+			// e non casi complessi come 'a[0].print()'.
+			return fmt.Errorf("unsupported selector expression: %T", node.X)
+		}
+		moduleName := moduleIdent.Name
+		selectorName := node.Sel.Name
+		nameIndex := c.addConstant(objects.NewStringNoSize(moduleName + "." + selectorName))
+		if _, err := c.emit(bytecode.OpGetAttr, nameIndex); err != nil {
+			return err
+		}
+	case *ast.ImportSpec:
+		moduleName := node.Path.Value
+		c.symbolTable.Define(strings.Trim(moduleName, "\"'"))
 	default:
 		return fmt.Errorf("unsupported expression type: %T", node)
 	}

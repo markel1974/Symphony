@@ -40,12 +40,9 @@ func FormatInstructions(b []byte, posOffset int) []string {
 		case 0:
 			out = append(out, fmt.Sprintf("%04d %-7s", posOffset+i, OpcodeNames[b[i]]))
 		case 1:
-			out = append(out, fmt.Sprintf("%04d %-7s %-5d",
-				posOffset+i, OpcodeNames[b[i]], operands[0]))
+			out = append(out, fmt.Sprintf("%04d %-7s %-5d", posOffset+i, OpcodeNames[b[i]], operands[0]))
 		case 2:
-			out = append(out, fmt.Sprintf("%04d %-7s %-5d %-5d",
-				posOffset+i, OpcodeNames[b[i]],
-				operands[0], operands[1]))
+			out = append(out, fmt.Sprintf("%04d %-7s %-5d %-5d", posOffset+i, OpcodeNames[b[i]], operands[0], operands[1]))
 		}
 		i += 1 + read
 	}

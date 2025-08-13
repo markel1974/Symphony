@@ -21,6 +21,7 @@ func (ds *Sequencer) Create(v *VM) []func() {
 	sequencer[bytecode.OpConstant] = v.doOpConstant
 	sequencer[bytecode.OpNull] = v.doOpNull
 	sequencer[bytecode.OpBinaryOp] = v.doOpBinary
+	sequencer[bytecode.OpGetAttr] = v.doOpGetAttr
 	sequencer[bytecode.OpEqual] = v.doOpEqual
 	sequencer[bytecode.OpNotEqual] = v.doOpNotEqual
 	sequencer[bytecode.OpPop] = v.doOpPop

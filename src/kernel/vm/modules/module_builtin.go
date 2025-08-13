@@ -22,3 +22,9 @@ func (m *ModuleBuiltin) AsImmutableMap(moduleName string) *objects.MapImmutable 
 	attrs["__module_name__"] = objects.NewStringNoSize(moduleName)
 	return objects.NewMapImmutable(attrs)
 }
+
+// Symbol returns the value of the attribute with the given name, if it exists.
+func (m *ModuleBuiltin) Symbol(name string) (objects.IObject, bool) {
+	v, ok := m.Attrs[name]
+	return v, ok
+}

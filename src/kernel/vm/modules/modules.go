@@ -4,18 +4,13 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// IImportable defines an interface with a single method for importing a module by name, returning the module or an error.
-type IImportable interface {
-	Import(moduleName string) (interface{}, error)
-}
-
 // Modules represents a collection of named modules implementing the IImportable interface.
 type Modules struct {
 	m map[string]IImportable
 }
 
-// NewModuleMap creates and returns a new instance of Modules with an initialized internal map.
-func NewModuleMap() *Modules {
+// NewModules creates and returns a new instance of Modules with an initialized internal map.
+func NewModules() *Modules {
 	return &Modules{
 		m: make(map[string]IImportable),
 	}

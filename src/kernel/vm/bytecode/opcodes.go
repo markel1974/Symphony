@@ -46,7 +46,8 @@ const (
 	OpIteratorKey                 // Iterator key
 	OpIteratorValue               // Iterator value
 	OpBinaryOp                    // Binary operation
-	OpSuspend                     // Suspend VM
+	OpGetAttr
+	OpSuspend // Suspend VM
 )
 
 // OpcodeNames are string representation of opcodes.
@@ -92,5 +93,6 @@ var OpcodeNames = [...]string{
 	OpIteratorKey:   "ITKEY",
 	OpIteratorValue: "ITVAL",
 	OpBinaryOp:      "BINARYOP",
+	OpGetAttr:       "GETATTR",
 	OpSuspend:       "SUSPEND",
 }

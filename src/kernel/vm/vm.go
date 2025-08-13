@@ -2,8 +2,10 @@ package vm
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
+	"github.com/markel1974/c64emu/src/kernel/vm/modules"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 	"github.com/markel1974/c64emu/src/kernel/vm/stdlib"
 )
@@ -42,10 +44,11 @@ type VM struct {
 	allocations      int64
 	err              error
 	sequencer        []func()
+	linker           modules.IModuleGetter
 }
 
 // NewVM initializes and returns a new instance of the VM with provided sequencer, bytecode, globals, and max allocations.
-func NewVM(sequencer ISequencer, bc *bytecode.Bytecode, globals []objects.IObject, maxAllocations int64) (*VM, error) {
+func NewVM(linker modules.IModuleGetter, sequencer ISequencer, bc *bytecode.Bytecode, globals []objects.IObject, maxAllocations int64) (*VM, error) {
 	if bc == nil {
 		return nil, fmt.Errorf("bytecode is nil")
 	}
@@ -66,6 +69,7 @@ func NewVM(sequencer ISequencer, bc *bytecode.Bytecode, globals []objects.IObjec
 		maxAllocations: maxAllocations,
 		suspend:        false,
 		stack:          NewStack(stackSize),
+		linker:         linker,
 	}
 	main, err := bc.MainFunction()
 	if err != nil {
@@ -116,7 +120,7 @@ func (v *VM) run() {
 			return
 		}
 		opcode = opcode & sequenceMask
-		fmt.Println("Executing instruction ", opcode)
+		fmt.Println("Executing instruction ", opcode, bytecode.OpcodeNames[opcode])
 		v.sequencer[opcode]()
 		if v.abort || v.suspend || v.err != nil {
 			break
@@ -124,6 +128,7 @@ func (v *VM) run() {
 	}
 }
 
+// checkBounds calculates and validates lower and upper bounds for slicing operations, ensuring they fit within valid indices.
 func (v *VM) checkBounds(lowStack objects.IObject, highStack objects.IObject, numElements int64) (int64, int64, error) {
 	var lowIdx int64
 	if lowStack != objects.UndefinedValue {
@@ -384,13 +389,16 @@ func (v *VM) doOpSetSelGlobal() {
 // doOpGetGlobal retrieves a global variable by its index and pushes its value onto the stack.
 func (v *VM) doOpGetGlobal() {
 	v.ip += 2
-	//globalIndex := int(v.currInstructions.Get(v.ip)) | int(v.currInstructions.Get(v.ip-1))<<8
 	globalIndex, err := v.currInstructions.Pos(v.ip, v.ip-1)
 	if err != nil {
 		v.err = err
 		return
 	}
 	val := v.globals[globalIndex]
+	if val == nil {
+		//v.err = fmt.Errorf("undefined global: %d", globalIndex)
+		//return
+	}
 	v.stack.Push(val)
 }
 
@@ -959,6 +967,42 @@ func (v *VM) doOpIteratorValue() {
 	}
 	val := iterator.Value()
 	v.stack.Push(val)
+}
+
+func (v *VM) doOpGetAttr() {
+	if v.linker == nil {
+		v.err = fmt.Errorf("no module loaded")
+		return
+	}
+	v.ip += 2
+	nameIndex, err := v.currInstructions.Pos(v.ip, v.ip-1)
+	if err != nil {
+		v.err = err
+		return
+	}
+	attrName, ok := v.constants[nameIndex].(*objects.String)
+	if !ok {
+		v.err = fmt.Errorf("invalid attribute name constant")
+		return
+	}
+	values := strings.Split(attrName.Value(), ".")
+	if len(values) != 2 {
+		v.err = fmt.Errorf("invalid attribute name")
+		return
+	}
+	packageName := values[0]
+	symbolName := values[1]
+	container := v.linker.Get(packageName)
+	if container == nil {
+		v.err = fmt.Errorf("module '%s' not found", packageName)
+		return
+	}
+	symbol, ok := container.Symbol(symbolName)
+	if !ok {
+		v.err = fmt.Errorf("symbol '%s' not found", symbolName)
+		return
+	}
+	v.stack.Push(symbol)
 }
 
 // doOpSuspend sets the suspend state of the VM to true, pausing its operation until resumed.

@@ -127,7 +127,7 @@ func (b *Bytecode) FormatConstants() (output []string) {
 // Decode reads and decodes Bytecode data from the provided io.Reader and resolves constants using the given Modules map.
 func (b *Bytecode) Decode(r io.Reader, mods *modules.Modules) error {
 	if mods == nil {
-		mods = modules.NewModuleMap()
+		mods = modules.NewModules()
 	}
 	dec := gob.NewDecoder(r)
 	if err := dec.Decode(&b.files); err != nil {
