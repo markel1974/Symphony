@@ -32,9 +32,8 @@ type VM struct {
 	constants        []objects.IObject
 	globals          []objects.IObject
 	stack            *Stack
-	frames           []*Frame
 	ip               int
-	framesIndex      int
+	frames           *Frames
 	currFrame        *Frame
 	currInstructions *objects.Instructions
 	abort            bool
@@ -63,23 +62,17 @@ func NewVM(sequencer ISequencer, bc *bytecode.Bytecode, globals []objects.IObjec
 		constants:      bc.Constants(),
 		globals:        globals,
 		sourceFiles:    bc.SourceFiles(),
-		framesIndex:    1,
 		ip:             -1,
 		maxAllocations: maxAllocations,
 		suspend:        false,
 		stack:          NewStack(stackSize),
-		frames:         make([]*Frame, maxFrames),
-	}
-	for i := range v.frames {
-		v.frames[i] = NewFunctionCallFrame()
 	}
 	main, err := bc.MainFunction()
 	if err != nil {
 		return nil, err
 	}
-	v.frames[0].SetCompiledFunction(main)
-	v.frames[0].ip = -1
-	v.currFrame = v.frames[0]
+	v.frames = NewFrames(main, maxFrames)
+	v.currFrame = v.frames.Head()
 	v.currInstructions = v.currFrame.Instructions()
 	v.sequencer = sequencer.Create(v)
 	return v, nil
@@ -93,9 +86,9 @@ func (v *VM) Abort() {
 // Run initializes the virtual machine's state and executes the current frame's instructions. Returns an error if execution fails.
 func (v *VM) Run() error {
 	v.stack.Clear()
-	v.currFrame = v.frames[0]
+	v.currFrame = v.frames.Head()
 	v.currInstructions = v.currFrame.Instructions()
-	v.framesIndex = 1
+	v.frames.Clear()
 	v.ip = -1
 	v.allocations = v.maxAllocations + 1
 	v.run()
@@ -104,10 +97,8 @@ func (v *VM) Run() error {
 	if v.err != nil {
 		filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
 		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
-		for v.framesIndex > 1 {
-			v.framesIndex--
-			v.currFrame = v.frames[v.framesIndex-1]
-			filePos, _ = v.sourceFiles.Position(v.currFrame.SourcePos(v.currFrame.ip - 1))
+		for _, frame := range v.frames.Unroll() {
+			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.IP() - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)
 		}
 		return err
@@ -651,25 +642,24 @@ func (v *VM) doOpCall() {
 			if byte(nextOp) == bytecode.OpReturn || (byte(nextOp) == bytecode.OpPop && byte(nextNextOp) == bytecode.OpReturn) {
 				for p := 0; p < numArgs; p++ {
 					o := v.stack.PeekOffset(-numArgs + p)
-					v.stack.SetAbsolute(v.currFrame.basePointer+p, o)
+					v.stack.SetAbsolute(v.currFrame.BasePointer()+p, o)
 				}
 				v.stack.DecrementCount(numArgs + 1)
 				v.ip = -1 // reset IP to beginning of the frame
 				return
 			}
 		}
-		if v.framesIndex >= maxFrames {
-			v.err = objects.ErrStackOverflow
-			return
-		}
-		v.currFrame.ip = v.ip
-		v.currFrame = v.frames[v.framesIndex]
+		v.currFrame.SetIP(v.ip)
+		v.currFrame = v.frames.Get()
 		v.currFrame.SetCompiledFunction(callee)
-		v.currFrame.freeVars = callee.Free()
-		v.currFrame.basePointer = v.stack.StackPointer() - numArgs
+		v.currFrame.SetFreeVars(callee.Free())
+		v.currFrame.SetBasePointer(v.stack.StackPointer() - numArgs)
 		v.currInstructions = callee.Instructions()
 		v.ip = -1
-		v.framesIndex++
+		if err = v.frames.Next(); err != nil {
+			v.err = err
+			return
+		}
 		v.stack.DecrementCount(numArgs + callee.NumLocals())
 	} else {
 		var args []objects.IObject
@@ -710,12 +700,15 @@ func (v *VM) doOpReturn() {
 	} else {
 		retVal = objects.UndefinedValue
 	}
-	if v.framesIndex > 1 {
-		v.framesIndex--
-		v.currFrame = v.frames[v.framesIndex-1]
+	if v.frames.Index() > 1 {
+		if err = v.frames.Previous(); err != nil {
+			v.err = err
+			return
+		}
+		v.currFrame = v.frames.GetPrev()
 		v.currInstructions = v.currFrame.Instructions()
-		v.ip = v.currFrame.ip
-		v.stack.SetStackPointer(v.frames[v.framesIndex].basePointer)
+		v.ip = v.currFrame.IP()
+		v.stack.SetStackPointer(v.frames.Get().BasePointer())
 		v.stack.SetOffset(-1, retVal)
 	} else {
 		//log.Printf("returning from the root frame")
@@ -726,6 +719,8 @@ func (v *VM) doOpReturn() {
 	}
 }
 
+// doOpDefineLocal defines a local variable in the virtual machine's current frame and stack.
+// It retrieves the local index, assigns the top value of the stack to the computed slot, and adjusts the stack pointer.
 func (v *VM) doOpDefineLocal() {
 	v.ip++
 	localIndex, err := v.currInstructions.Get(v.ip)
@@ -735,7 +730,7 @@ func (v *VM) doOpDefineLocal() {
 	}
 
 	val := v.stack.Pop()
-	destSlot := v.currFrame.basePointer + localIndex
+	destSlot := v.currFrame.BasePointer() + localIndex
 	v.stack.SetAbsolute(destSlot, val)
 
 	// Assicura che lo stack pointer avanzi per "proteggere" la nuova variabile.
@@ -755,7 +750,7 @@ func (v *VM) doOpSetLocal() {
 	}
 	v.ip++
 	val := v.stack.Pop()
-	destSlot := v.currFrame.basePointer + localIndex
+	destSlot := v.currFrame.BasePointer() + localIndex
 	existingValue := v.stack.PeekAbsolute(destSlot)
 	if obj, ok := existingValue.(*objects.ObjectPointer); ok {
 		obj.SetValue(val)
@@ -783,7 +778,7 @@ func (v *VM) doOpSetSelLocal() {
 	}
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
-	dst := v.stack.PeekAbsolute(v.currFrame.basePointer + localIndex)
+	dst := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	if obj, ok := dst.(*objects.ObjectPointer); ok {
 		dst = *obj.Value()
 	}
@@ -801,7 +796,7 @@ func (v *VM) doOpGetLocal() {
 		v.err = err
 		return
 	}
-	val := v.stack.PeekAbsolute(v.currFrame.basePointer + localIndex)
+	val := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		val = *obj.Value()
 	}
@@ -866,7 +861,7 @@ func (v *VM) doOpGetFreePtr() {
 		v.err = err
 		return
 	}
-	val := v.currFrame.freeVars[freeIndex]
+	val := v.currFrame.FreeVarsIndex(freeIndex)
 	v.stack.Push(val)
 }
 
@@ -878,7 +873,7 @@ func (v *VM) doOpGetFree() {
 		v.err = err
 		return
 	}
-	val := *v.currFrame.freeVars[freeIndex].Value()
+	val := *v.currFrame.FreeVarsIndex(freeIndex).Value()
 	v.stack.Push(val)
 }
 
@@ -891,7 +886,7 @@ func (v *VM) doOpSetFree() {
 		return
 	}
 	o := v.stack.Peek()
-	v.currFrame.freeVars[freeIndex].SetValue(o)
+	v.currFrame.FreeVarsIndex(freeIndex).SetValue(o)
 	v.stack.Decrement()
 }
 
@@ -908,7 +903,7 @@ func (v *VM) doOpGetLocalPtr() {
 		v.stack.Push(obj)
 		return
 	}
-	sp := v.currFrame.basePointer + localIndex
+	sp := v.currFrame.BasePointer() + localIndex
 	freeVar := objects.NewObjectPointer(&val)
 	v.stack.SetAbsolute(sp, freeVar)
 	v.stack.Push(freeVar)
@@ -935,7 +930,7 @@ func (v *VM) doOpSetSelFree() {
 	}
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
-	if err := objects.IndexAssign(*v.currFrame.freeVars[freeIndex].Value(), val, selectors); err != nil {
+	if err = objects.IndexAssign(*v.currFrame.FreeVarsIndex(freeIndex).Value(), val, selectors); err != nil {
 		v.err = err
 		return
 	}
