@@ -4,8 +4,9 @@ import (
 	"fmt"
 )
 
-// FuncAR converts a zero-argument function into a CallableFunc that enforces no arguments and returns UndefinedValue.
-// Returns an error if arguments are provided.
+// FuncAR converts a no-argument, no-return Go function into a CallableFunc type that can be called with zero arguments.
+// Returns ErrWrongNumArguments if any arguments are passed.
+// Invokes the provided function and returns UndefinedValue upon successful execution.
 func FuncAR(fn func()) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -16,9 +17,8 @@ func FuncAR(fn func()) CallableFunc {
 	}
 }
 
-// FuncARI wraps a zero-argument function returning an int into a CallableFunc compatible with objects.IObject behavior.
-// It ensures the function is called with no arguments, else returns an error for wrong number of arguments.
-// The return value is converted into an objects.IObject representation using objects.NewInt.
+// FuncARI wraps a no-argument integer-returning function into a callable functional interface of type CallableFunc.
+// Returns an error if arguments are provided. Converts the integer result into an IObject using NewInt.
 func FuncARI(fn func() int) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -28,7 +28,9 @@ func FuncARI(fn func() int) CallableFunc {
 	}
 }
 
-// FuncARI64
+// FuncARI64 wraps a function returning int64 into a CallableFunc with no arguments.
+// Returns ErrWrongNumArguments if arguments are passed.
+// Converts the result to an IObject using NewInt before returning.
 func FuncARI64(fn func() int64) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -38,7 +40,7 @@ func FuncARI64(fn func() int64) CallableFunc {
 	}
 }
 
-// FuncAI64RI64 wraps a function that takes an int64 and returns an int64 into a callable object function.
+// FuncAI64RI64 wraps a function that takes int64 and returns int64, into a CallableFunc compatible with IObject interface.
 func FuncAI64RI64(fn func(int64) int64) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -53,9 +55,7 @@ func FuncAI64RI64(fn func(int64) int64) CallableFunc {
 	}
 }
 
-// FuncAI64R adapts a function taking a single int64 argument to an objects.CallableFunc type.
-// It ensures the provided argument is an int64-compatible value and calls the underlying function.
-// Returns an error if the argument type is invalid or the number of arguments is incorrect.
+// FuncAI64R wraps a function that accepts a single int64 argument into a CallableFunc that works with IObject arguments.
 func FuncAI64R(fn func(int64)) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -71,9 +71,7 @@ func FuncAI64R(fn func(int64)) CallableFunc {
 	}
 }
 
-// FuncARB wraps a function that returns a bool into a CallableFunc compatible with the IObject interface.
-// It converts the bool result into either TrueValue or FalseValue and validates that no arguments are provided.
-// Returns ErrWrongNumArguments if arguments are passed.
+// FuncARB wraps a zero-argument boolean function into a CallableFunc that returns TrueValue or FalseValue.
 func FuncARB(fn func() bool) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -86,7 +84,9 @@ func FuncARB(fn func() bool) CallableFunc {
 	}
 }
 
-// FuncARE wraps a function with no arguments and a single error return into a CallableFunc for use in the objects framework.
+// FuncARE creates a CallableFunc wrapper around a zero-argument function that returns an error.
+// Returns ErrWrongNumArguments if arguments are provided.
+// Wraps the error returned by the given function into an IObject-compatible error object.
 func FuncARE(fn func() error) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -96,9 +96,8 @@ func FuncARE(fn func() error) CallableFunc {
 	}
 }
 
-// FuncARS wraps a function returning a string, converting it into a callable function returning an IObject or an error.
-// It validates the number of arguments and limits the byte-length of the string based on MaxStringLen.
-// Returns an error if argument count is non-zero or the string length exceeds the allowed limit.
+// FuncARS wraps a function that returns a string, creating a CallableFunc with IObject arguments and results.
+// If called with arguments, it returns ErrWrongNumArguments. Otherwise, it returns a string-wrapped IObject result.
 func FuncARS(fn func() string) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -112,7 +111,8 @@ func FuncARS(fn func() string) CallableFunc {
 	}
 }
 
-// FuncARSE wraps a function returning a string and error into a CallableFunc ensuring no arguments are passed, and string limits obeyed.
+// FuncARSE wraps a function that returns a string and error into a CallableFunc that accepts no arguments.
+// Returns an error if arguments are provided or if the wrapped function encounters an error.
 func FuncARSE(fn func() (string, error)) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -130,8 +130,8 @@ func FuncARSE(fn func() (string, error)) CallableFunc {
 	}
 }
 
-// FuncARYE wraps a function that returns a byte slice and an error, converting it into an objects.CallableFunc instance.
-// The returned CallableFunc takes no arguments and returns a byte object or an error, enforcing argument count and size limits.
+// FuncARYE converts a function returning ([]byte, error) into a CallableFunc that adheres to IObject function standards.
+// It ensures the argument count is zero, wraps errors into IObject-compatible errors, and enforces byte slice size limits.
 func FuncARYE(fn func() ([]byte, error)) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -148,8 +148,9 @@ func FuncARYE(fn func() ([]byte, error)) CallableFunc {
 	}
 }
 
-// FuncARF wraps a function returning a float64 into a CallableFunc that accepts no arguments and returns an IObject.
-// Returns an error if any arguments are provided.
+// FuncARF wraps a zero-argument function that returns a float64 into a CallableFunc returning an IObject and an error.
+// Returns ErrWrongNumArguments if called with arguments.
+// Converts the float64 output of the provided function into an IObject using NewFloat.
 func FuncARF(fn func() float64) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -159,8 +160,9 @@ func FuncARF(fn func() float64) CallableFunc {
 	}
 }
 
-// FuncARSs creates a CallableFunc that invokes the provided function and wraps its string results in an Array of objects.
-// Returns an error if arguments are provided, or if any string exceeds the maximum length allowed.
+// FuncARSs takes a function that returns a slice of strings and wraps it into a CallableFunc returning an Array of strings.
+// The CallableFunc expects zero arguments; passing others results in ErrWrongNumArguments.
+// Converts each string from the slice into a String object and appends it to the Array.
 func FuncARSs(fn func() []string) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -178,9 +180,9 @@ func FuncARSs(fn func() []string) CallableFunc {
 	}
 }
 
-// FuncARIsE transforms a no-argument function returning a slice of ints and error into a CallableFunc returning an IObject.
-// Returns an error if arguments are provided, or wraps any error returned by the provided function.
-// Converts the int slice output into an Array of IObject, appending elements one by one.
+// FuncARIsE wraps a function that returns a slice of integers and an error into a CallableFunc compatible function.
+// It validates zero arguments, invokes the wrapped function, wraps any error, and converts the slice to an array of IObject.
+// Returns an IObject array containing the integers or a wrapped error if the wrapped function fails.
 func FuncARIsE(fn func() ([]int, error)) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 0 {
@@ -198,8 +200,7 @@ func FuncARIsE(fn func() ([]int, error)) CallableFunc {
 	}
 }
 
-// FuncAIRIs maps an external function operating on integers to a callable function that works with IObject arguments.
-// The resulting function accepts one integer-compatible argument and returns an Array of integers as IObjects.
+// FuncAIRIs takes a function that converts an integer to a slice of integers and returns it as a callable function.
 func FuncAIRIs(fn func(int) []int) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -218,7 +219,9 @@ func FuncAIRIs(fn func(int) []int) CallableFunc {
 	}
 }
 
-// FuncAFRF creates a CallableFunc that applies a provided float64 function to the first argument and returns the result.
+// FuncAFRF converts a single-argument float64 function into a CallableFunc compatible with IObject arguments.
+// It validates the input argument as a float-compatible type.
+// Returns a new IObject representing the result or an appropriate error if validation fails.
 func FuncAFRF(fn func(float64) float64) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -232,8 +235,9 @@ func FuncAFRF(fn func(float64) float64) CallableFunc {
 	}
 }
 
-// FuncAIR wraps a function taking an int argument, turning it into a CallableFunc that processes IObject arguments.
-// Returns an error if the number of arguments is not 1 or if the argument is not convertible to an int.
+// FuncAIR wraps a function with an int parameter to conform to the CallableFunc signature for custom runtime calls.
+// It validates the argument count and type, invoking the provided function with the argument as an integer.
+// Returns UndefinedValue on success or an error if the argument is invalid.
 func FuncAIR(fn func(int)) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -248,9 +252,9 @@ func FuncAIR(fn func(int)) CallableFunc {
 	}
 }
 
-// FuncAIRF converts a function from int to float64 into a CallableFunc for use with the objects.IObject interface.
-// The function takes one argument, validates its type, and applies the provided function to return a Float object.
-// Returns an error if the argument count differs from 1 or if the argument type is not int-compatible.
+// FuncAIRF wraps a function of type func(int) float64 as a CallableFunc, enabling its use within the IObject interface ecosystem.
+// It validates that exactly one argument is provided and converts it to an int before calling the wrapped function.
+// If the argument type is incompatible or the wrong number of arguments are passed, an appropriate error is returned.
 func FuncAIRF(fn func(int) float64) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -264,8 +268,8 @@ func FuncAIRF(fn func(int) float64) CallableFunc {
 	}
 }
 
-// FuncAFRI converts a Go function with a float64 input and int output into an objects.CallableFunc.
-// It validates the arguments, enforcing a single float-compatible input, and wraps the output as an objects.Int.
+// FuncAFRI wraps a function transforming a float64 to an int, making it callable with IObject arguments.
+// Returns an error if incorrect number or type of arguments are provided.
 func FuncAFRI(fn func(float64) int) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -279,8 +283,8 @@ func FuncAFRI(fn func(float64) int) CallableFunc {
 	}
 }
 
-// FuncAFFRF creates a callable function that takes two float-compatible arguments and applies a provided binary function.
-// Returns an error if arguments are not float-compatible or if the number of arguments is invalid.
+// FuncAFFRF creates a CallableFunc that applies the given binary float64 function to two converted IObject arguments.
+// Returns an error if arguments are not exactly two or cannot be converted to float64.
 func FuncAFFRF(fn func(float64, float64) float64) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -298,8 +302,8 @@ func FuncAFFRF(fn func(float64, float64) float64) CallableFunc {
 	}
 }
 
-// FuncAIFRF converts a function with signature func(int, float64) float64 into an objects.CallableFunc.
-// It validates arguments, converts them to appropriate types, and executes the provided function.
+// FuncAIFRF wraps a provided function accepting an int and float64, returning it as a CallableFunc compatible with IObject arguments.
+// It enforces argument type validation and handles potential type mismatches with descriptive errors.
 func FuncAIFRF(fn func(int, float64) float64) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -317,9 +321,9 @@ func FuncAIFRF(fn func(int, float64) float64) CallableFunc {
 	}
 }
 
-// FuncAFIRF wraps a function with signature func(float64, int) float64 into an objects.CallableFunc compatible callable.
-// The wrapped function takes two arguments: a float-compatible object and an int-compatible object.
-// Returns a callable function that invokes the underlying wrapped function and provides error handling for invalid arguments.
+// FuncAFIRF creates a CallableFunc wrapping a function that takes a float64 and int and returns a float64.
+// It validates input argument types and converts them to the appropriate types expected by the wrapped function.
+// Returns an IObject representing the result of the wrapped function or an error if argument validation fails.
 func FuncAFIRF(fn func(float64, int) float64) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -337,10 +341,10 @@ func FuncAFIRF(fn func(float64, int) float64) CallableFunc {
 	}
 }
 
-// FuncAFIRB creates a CallableFunc that applies a given function fn to a float64 and int extracted from IObject arguments.
-// The returned CallableFunc expects exactly two arguments: the first convertible to float64, the second to int.
-// If the arguments are valid and fn evaluates to true, it returns objects.TrueValue; otherwise, objects.FalseValue.
-// Returns an error if there are an incorrect number of arguments or type conversion fails.
+// FuncAFIRB wraps a function that processes a float64 and an int, exposing it as a CallableFunc compatible with the IObject interface.
+// It converts the first argument to a float64 and the second to an int, then applies the provided function.
+// Returns TrueValue if the function evaluates to true; otherwise, returns FalseValue.
+// Returns ErrWrongNumArguments if the argument count is not 2 or NewInvalidArgumentError on type conversion failures.
 func FuncAFIRB(fn func(float64, int) bool) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -361,8 +365,7 @@ func FuncAFIRB(fn func(float64, int) bool) CallableFunc {
 	}
 }
 
-// FuncAFRB takes a function that accepts a float64 and returns a bool, and converts it into a CallableFunc.
-// It validates the argument count, checks the type, and invokes the provided function, returning a truthy or falsy value.
+// FuncAFRB wraps a function accepting a float64 and returning a boolean into a CallableFunc compatible with the IObject interface.
 func FuncAFRB(fn func(float64) bool) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -379,9 +382,7 @@ func FuncAFRB(fn func(float64) bool) CallableFunc {
 	}
 }
 
-// FuncASRS wraps a string transformation function into a CallableFunc compatible with the IObject interface.
-// It ensures the function receives a single string argument, validates its type, applies the transformation,
-// checks the resulting string length against a defined limit, and returns the transformed value as a String object.
+// FuncASRS creates a CallableFunc that applies a provided string-to-string function to the first argument and returns the result.
 func FuncASRS(fn func(string) string) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 1 {
@@ -399,9 +400,9 @@ func FuncASRS(fn func(string) string) CallableFunc {
 	}
 }
 
-// FuncASRSs converts a function that takes a string and returns a slice of strings into an objects.CallableFunc.
-// It checks the argument count and type, applies the function, and wraps the result in an objects.Array.
-// Returns an error if the arguments are invalid or string size exceeds the limit.
+// FuncASRSs converts a string-to-string-array function into a CallableFunc that operates on IObject arguments.
+// It takes one string-compatible argument, applies the provided function, and returns the result as an Array of strings.
+// If argument count or type is invalid, it returns an error.
 func FuncASRSs(fn func(string) []string) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 1 {
@@ -424,8 +425,7 @@ func FuncASRSs(fn func(string) []string) CallableFunc {
 	}
 }
 
-// FuncASRSE wraps a function accepting a string and returning a string and error into an objects.CallableFunc.
-// Returns an error if the argument is not a string or the function exceeds the maximum string length.
+// FuncASRSE wraps a string transformation function and adapts it to a CallableFunc with argument validation logic.
 func FuncASRSE(fn func(string) (string, error)) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 1 {
@@ -447,7 +447,10 @@ func FuncASRSE(fn func(string) (string, error)) CallableFunc {
 	}
 }
 
-// FuncASRE wraps a single-argument string function to conform to the CallableFunc type, with error handling for argument checks.
+// FuncASRE converts a string-to-error function into a CallableFunc that operates on IObject arguments.
+// It expects exactly one argument convertible to a string and returns an IObject error or result.
+// Returns ErrWrongNumArguments if called with an incorrect number of arguments.
+// Returns an invalid argument error if the first argument is not string-compatible.
 func FuncASRE(fn func(string) error) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 1 {
@@ -461,9 +464,8 @@ func FuncASRE(fn func(string) error) CallableFunc {
 	}
 }
 
-// FuncASSRE converts a function accepting two string arguments and returning an error into an objects.CallableFunc.
-// It validates the provided arguments to ensure they are string-compatible and wraps the error, if any, into IObject.
-// Returns ErrWrongNumArguments for invalid argument count or NewInvalidArgumentError for type mismatches.
+// FuncASSRE wraps a function accepting two strings and returning an error into a CallableFunc compatible with the IObject interface.
+// It ensures the function is called with exactly two string arguments and returns an appropriate error for incorrect usage.
 func FuncASSRE(fn func(string, string) error) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -481,9 +483,8 @@ func FuncASSRE(fn func(string, string) error) CallableFunc {
 	}
 }
 
-// FuncASSRSs wraps a function accepting two strings and returning a slice of strings into a CallableFunc.
-// It ensures the right number of arguments (2 strings) and validates their types before calling the provided function.
-// The result is converted into an Array
+// FuncASSRSs converts a function that takes two strings and returns a slice of strings into a CallableFunc.
+// The returned CallableFunc validates its arguments, invokes the provided function, and returns the results as an array.
 func FuncASSRSs(fn func(string, string) []string) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -510,9 +511,9 @@ func FuncASSRSs(fn func(string, string) []string) CallableFunc {
 	}
 }
 
-// FuncASSIRSs wraps a given function with specific parameter types and converts its behavior into an objects.CallableFunc.
-// It ensures type validation for three arguments: two strings and one integer, and applies the provided function.
-// Returns an objects.Array containing the results or an appropriate error if validation fails.
+// FuncASSIRSs converts a function with parameters (string, string, int) -> []string into a CallableFunc.
+// It validates arguments, applies the function, and wraps the output in an IObject-compatible Array.
+// Returns an error if argument validation fails or function results cannot be converted to a String.
 func FuncASSIRSs(fn func(string, string, int) []string) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 3 {
@@ -542,7 +543,10 @@ func FuncASSIRSs(fn func(string, string, int) []string) CallableFunc {
 	}
 }
 
-// FuncASSRI wraps a function that accepts two string arguments and returns an int, making it compatible with IObject inputs.
+// FuncASSRI converts a function with two string inputs and an int output into a CallableFunc type.
+// The returned CallableFunc validates that exactly two arguments are passed and they are string-compatible.
+// If arguments are valid, the wrapped function is invoked, and its integer result is wrapped in an IObject.
+// Returns an error if the number of arguments is incorrect or conversion to strings fails.
 func FuncASSRI(fn func(string, string) int) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -560,8 +564,9 @@ func FuncASSRI(fn func(string, string) int) CallableFunc {
 	}
 }
 
-// FuncASSRS creates a CallableFunc that invokes a function taking two strings and returning a string.
-// It validates the arguments as string-compatible, applies the provided function, and ensures the result respects string limits.
+// FuncASSRS wraps a function that takes two strings and returns a string into a CallableFunc accepting IObject arguments.
+// It validates argument types and ensures exactly two arguments are passed or returns an appropriate error.
+// The wrapped function's result is converted to an IObject before being returned.
 func FuncASSRS(fn func(string, string) string) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -584,9 +589,10 @@ func FuncASSRS(fn func(string, string) string) CallableFunc {
 	}
 }
 
-// FuncASSRB converts a function that takes two strings and returns a bool into a CallableFunc, processing IObject arguments.
-// It enforces that the input is exactly two string-compatible arguments, returning errors otherwise.
-// Based on the function result, it returns TrueValue for true or FalseValue for false as IObject.
+// FuncASSRB wraps a binary comparison function for strings as a callable function in the IObject system.
+// The returned CallableFunc validates arguments, applies the provided function, and returns TrueValue or FalseValue.
+// It expects the function to take two string arguments and return a boolean indicating the comparison result.
+// Returns an error if the number of arguments is incorrect or arguments are not string-compatible.
 func FuncASSRB(fn func(string, string) bool) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -607,7 +613,7 @@ func FuncASSRB(fn func(string, string) bool) CallableFunc {
 	}
 }
 
-// FuncASsSRS converts a function that processes a slice of strings
+// FuncASsSRS creates a CallableFunc that processes a string slice and a string, applying the given transformation function.
 func FuncASsSRS(fn func([]string, string) string) CallableFunc {
 	return func(args ...IObject) (IObject, error) {
 		if len(args) != 2 {
@@ -646,7 +652,9 @@ func FuncASsSRS(fn func([]string, string) string) CallableFunc {
 	}
 }
 
-// FuncASI64RE wraps a function taking a string and int64, returning a
+// FuncASI64RE transforms a function accepting a string and int64 into a CallableFunc that operates on IObject arguments.
+// Takes exactly two arguments; the first must be string-compatible, the second int64-compatible, or errors are returned.
+// Wraps the result of the provided function into an IObject or returns an appropriate error if validation fails.
 func FuncASI64RE(fn func(string, int64) error) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -664,7 +672,7 @@ func FuncASI64RE(fn func(string, int64) error) CallableFunc {
 	}
 }
 
-// FuncAIIRE creates a CallableFunc that validates two int-compatible arguments and invokes a given function returning error.
+// FuncAIIRE wraps a function taking two integers and returning an error into a CallableFunc accepting two IObject arguments.
 func FuncAIIRE(fn func(int, int) error) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -682,8 +690,9 @@ func FuncAIIRE(fn func(int, int) error) CallableFunc {
 	}
 }
 
-// FuncASIRS converts a Go function to a callable runtime object that takes two arguments: a string and an int.
-// It validates argument types, applies the function, and checks the result for the string size constraint.
+// FuncASIRS wraps a function that takes a string and int as inputs and returns a string, converting it to a CallableFunc.
+// It validates the arguments, calls the wrapped function, and converts the result to an IObject.
+// Returns an error if arguments are of invalid types or wrong number of arguments is supplied.
 func FuncASIRS(fn func(string, int) string) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 2 {
@@ -705,8 +714,7 @@ func FuncASIRS(fn func(string, int) string) CallableFunc {
 	}
 }
 
-// FuncASIIRE wraps a given function with string and two integer arguments into a CallableFunc returning IObject and error.
-// It validates input argument count and types, returning errors for invalid values or wrapping the function's execution.
+// FuncASIIRE converts a function with string, int, int inputs, and an error return into a CallableFunc with variadic IObject arguments.
 func FuncASIIRE(fn func(string, int, int) error) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 3 {
@@ -728,8 +736,11 @@ func FuncASIIRE(fn func(string, int, int) error) CallableFunc {
 	}
 }
 
-// FuncAYRIE converts a function of type func([]byte) (int, error) into an objects.CallableFunc compatible function.
-// It enforces argument count and type, invoking the wrapped function with a byte slice and returning its result or error.
+// FuncAYRIE wraps a function that takes a byte slice and returns an int and error into a CallableFunc for IObject use.
+// It ensures the input argument is a single byte-compatible IObject and converts its result to IObject format.
+// Returns ErrWrongNumArguments if called with more or less than one argument.
+// Returns NewInvalidArgumentError if the input argument isn't byte-compatible.
+// Converts the function's error output into an appropriate IObject error.
 func FuncAYRIE(fn func([]byte) (int, error)) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -747,8 +758,9 @@ func FuncAYRIE(fn func([]byte) (int, error)) CallableFunc {
 	}
 }
 
-// FuncAYRS wraps a function transforming a byte slice into a string as a callable that expects a single IObject argument.
-// It converts the input argument into a byte slice, applies the provided function, and returns the result as a String object.
+// FuncAYRS wraps a function that converts a byte slice to a string, returning it as a CallableFunc in the custom object system.
+// It ensures the input is a single argument of type bytes-compatible, and returns an error for invalid or unsupported types.
+// The resulting CallableFunc checks argument validity, applies the provided function, and returns a new String object.
 func FuncAYRS(fn func([]byte) string) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -766,7 +778,7 @@ func FuncAYRS(fn func([]byte) string) CallableFunc {
 	}
 }
 
-// FuncASRIE wraps a function that converts a string to an int and error into a CallableFunc implementation.
+// FuncASRIE wraps a string-to-int function into a CallableFunc compatible with IObject interface arguments and error handling.
 func FuncASRIE(fn func(string) (int, error)) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -784,8 +796,9 @@ func FuncASRIE(fn func(string) (int, error)) CallableFunc {
 	}
 }
 
-// FuncASRYE wraps a function taking a string input and returning bytes and an error into a CallableFunc interface.
-// It validates arguments, ensures results do not exceed MaxBytesLen, and handles errors, returning them as
+// FuncASRYE returns a CallableFunc that wraps a function converting a string to a byte slice and error output.
+// It validates input, reports invalid arguments, enforces byte length limits, and converts output to IObject format.
+// Uses ErrWrongNumArguments, NewInvalidArgumentError, and ErrBytesLimit for error handling.
 func FuncASRYE(fn func(string) ([]byte, error)) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -806,7 +819,7 @@ func FuncASRYE(fn func(string) ([]byte, error)) CallableFunc {
 	}
 }
 
-// FuncAIRSsE wraps a function that takes an integer and returns a slice of strings and an error into a CallableFunc type.
+// FuncAIRSsE converts a function mapping an integer to a slice of strings and an error into a CallableFunc.
 func FuncAIRSsE(fn func(int) ([]string, error)) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
@@ -835,8 +848,8 @@ func FuncAIRSsE(fn func(int) ([]string, error)) CallableFunc {
 	}
 }
 
-// FuncAIRS wraps a function accepting an integer and returning a string, exposing it as an objects.CallableFunc.
-// It validates argument count and types, ensuring correct usage and error handling for runtime invocation.
+// FuncAIRS wraps a function of type `func(int) string` into a CallableFunc compatible with the IObject interface system.
+// It validates argument count and type, executes the provided function, and converts the result into an IObject.
 func FuncAIRS(fn func(int) string) CallableFunc {
 	return func(args ...IObject) (ret IObject, err error) {
 		if len(args) != 1 {
