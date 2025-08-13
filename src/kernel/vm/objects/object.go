@@ -68,7 +68,7 @@ func (o *ObjectImpl) Copy() IObject {
 	return nil
 }
 
-// Falsy returns false, indicating the object is not considered falsy in a boolean context.
+// Boolean returns false for all objects.
 func (o *ObjectImpl) Boolean() bool {
 	return false
 }

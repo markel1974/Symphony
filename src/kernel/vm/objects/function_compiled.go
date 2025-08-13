@@ -3,6 +3,7 @@ package objects
 // FunctionCompiled represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type FunctionCompiled struct {
 	ObjectImpl
+	name          string
 	instructions  *Instructions
 	numLocals     int
 	numParameters int
@@ -12,11 +13,12 @@ type FunctionCompiled struct {
 }
 
 // NewFunctionCompiled creates a new instance of FunctionCompiled with the given instructions, locals, parameters, varArgs, sourceMap, and free vars.
-func NewFunctionCompiled(instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FunctionCompiled {
+func NewFunctionCompiled(name string, instructions []byte, numLocals int, numParameters int, varArgs bool, sourceMap map[int]int, free []*ObjectPointer) *FunctionCompiled {
 	if sourceMap == nil {
 		sourceMap = make(map[int]int)
 	}
 	return &FunctionCompiled{
+		name:          name,
 		instructions:  NewInstructions(instructions),
 		numLocals:     numLocals,
 		numParameters: numParameters,
@@ -24,6 +26,11 @@ func NewFunctionCompiled(instructions []byte, numLocals int, numParameters int, 
 		sourceMap:     sourceMap,
 		free:          free,
 	}
+}
+
+// Name returns the name of the compiled function.
+func (o *FunctionCompiled) Name() string {
+	return o.name
 }
 
 // Data returns the bytecode instructions of the compiled function.

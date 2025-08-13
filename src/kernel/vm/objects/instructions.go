@@ -1,5 +1,7 @@
 package objects
 
+import "fmt"
+
 // Instructions represents a collection of bytecode instructions stored as a byte slice.
 type Instructions struct {
 	data []byte
@@ -28,6 +30,22 @@ func (i *Instructions) Length() int {
 }
 
 // Get retrieves the byte at the specified index in the Instructions data slice.
-func (i *Instructions) Get(index int) byte {
-	return i.data[index]
+func (i *Instructions) Get(index int) (int, error) {
+	if index < 0 || index >= len(i.data) {
+		return 0, fmt.Errorf("invalid instruction index: %d", index)
+	}
+	return int(i.data[index]), nil
+}
+
+// Pos returns the position of the instruction at the specified indices.
+func (i *Instructions) Pos(x int, y int) (int, error) {
+	a, err := i.Get(x)
+	if err != nil {
+		return 0, err
+	}
+	b, err := i.Get(y)
+	if err != nil {
+		return 0, err
+	}
+	return a | b<<8, nil
 }

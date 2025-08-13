@@ -14,6 +14,22 @@ func NewSourceFilePos(filename string, offset int, line int, column int) *FilePo
 	return &FilePos{filename, offset, line, column}
 }
 
+func (p FilePos) Filename() string {
+	return p.filename
+}
+
+func (p FilePos) Offset() int {
+	return p.offset
+}
+
+func (p FilePos) Line() int {
+	return p.line
+}
+
+func (p FilePos) Column() int {
+	return p.column
+}
+
 // IsValid checks if the FilePos instance represents a valid position by ensuring the line number is greater than 0.
 func (p FilePos) IsValid() bool {
 	return p.line > 0

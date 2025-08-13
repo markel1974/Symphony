@@ -72,6 +72,16 @@ func (b *Bytecode) MainFunction() (*objects.FunctionCompiled, error) {
 	return b.mainFunction, nil
 }
 
+// SetMainFunction sets the main compiled function associated with the bytecode.
+func (b *Bytecode) SetMainFunction(f *objects.FunctionCompiled) {
+	b.mainFunction = f
+}
+
+// SetConstants sets the constants used in the bytecode.
+func (b *Bytecode) SetConstants(constants []objects.IObject) {
+	b.constants = constants
+}
+
 // Encode serializes the Bytecode object to the provided io.Writer using gob encoding and returns any encountered error.
 func (b *Bytecode) Encode(w io.Writer) error {
 	enc := gob.NewEncoder(w)
