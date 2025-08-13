@@ -50,9 +50,9 @@ func (v *Stack) SetAbsolute(absolute int, obj objects.IObject) {
 	v.stack[absolute] = obj
 }
 
-// SetOffset sets the object at the specified offset from the current stack pointer to the provided object.
-func (v *Stack) SetOffset(offset int, obj objects.IObject) {
-	v.stack[v.sp+offset] = obj
+// Set assigns the given object to the position indicated by the current stack pointer minus one.
+func (v *Stack) Set(obj objects.IObject) {
+	v.stack[v.sp-1] = obj
 }
 
 // Push adds the provided object to the top of the stack and increments the stack pointer.
@@ -118,12 +118,6 @@ func (v *Stack) PeekAbsolute(absolute int) objects.IObject {
 func (v *Stack) PeekOffset(offset int) objects.IObject {
 	sp := v.sp + offset
 	ret := v.stack[sp]
-	return ret
-}
-
-// PeekCurrent returns the object at the current stack pointer without removing it from the stack.
-func (v *Stack) PeekCurrent() objects.IObject {
-	ret := v.stack[v.sp]
 	return ret
 }
 

@@ -174,35 +174,23 @@ func (v *VM) doOpNull() {
 	v.stack.Push(objects.UndefinedValue)
 }
 
-// doOpBinary handles the execution of a binary operation, updating the VM stack and evaluating the result.
-// It increments the instruction pointer, performs a binary operation on the top two stack values, and handles errors.
-// If an invalid operation is detected or the allocation limit is exceeded, an error is set in the VM.
+// in vm.go
 func (v *VM) doOpBinary() {
 	v.ip++
-	right := v.stack.Peek()
-	left := v.stack.PeekOffset(-2)
+	right := v.stack.Pop()
+	left := v.stack.Pop()
 	opcode, err := v.currInstructions.Get(v.ip)
 	if err != nil {
 		v.err = err
 		return
 	}
 	operator := objects.Operator(opcode)
-	res, e := left.BinaryOp(operator, right)
-	if e != nil {
-		v.stack.DecrementCount(2)
-		if objects.Is(e, objects.ErrInvalidOperator) {
-			v.err = fmt.Errorf("invalid operation: %s %d %s", left.TypeName(), operator, right.TypeName())
-		}
-		v.err = e
+	res, err := left.BinaryOp(operator, right)
+	if err != nil {
+		v.err = err
 		return
 	}
-	v.allocations--
-	if v.allocations == 0 {
-		v.err = objects.ErrObjectAllocLimit
-		return
-	}
-	v.stack.SetOffset(-2, res)
-	v.stack.Decrement()
+	v.stack.Push(res)
 }
 
 // doOpEqual compares the top two values on the stack for equality and pushes TrueValue or FalseValue based on the result.
@@ -307,10 +295,8 @@ func (v *VM) doOpMinus() {
 // doOpJumpFalsy performs a conditional jump based on the falsy value of the top stack item, adjusting the instruction pointer.
 func (v *VM) doOpJumpFalsy() {
 	v.ip += 2
-	v.stack.Decrement()
-	obj := v.stack.PeekCurrent()
+	obj := v.stack.Pop()
 	if obj.Boolean() {
-		//pos := int(v.currInstructions.Get(v.ip)) | int(v.currInstructions.Get(v.ip-1))<<8
 		pos, err := v.currInstructions.Pos(v.ip, v.ip-1)
 		if err != nil {
 			v.err = err
@@ -365,17 +351,15 @@ func (v *VM) doOpJump() {
 	v.ip = pos - 1
 }
 
-// doOpSetGlobal updates a global variable by setting its value from the stack, using the global index derived from instructions.
 func (v *VM) doOpSetGlobal() {
 	v.ip += 2
-	v.stack.Decrement()
-	//globalIndex := int(v.currInstructions.Get(v.ip)) | int(v.currInstructions.Get(v.ip-1))<<8
 	pos, err := v.currInstructions.Pos(v.ip, v.ip-1)
 	if err != nil {
 		v.err = err
 		return
 	}
-	v.globals[pos] = v.stack.PeekCurrent()
+	val := v.stack.Pop()
+	v.globals[pos] = val
 }
 
 // doOpSetSelGlobal handles the assignment of a value to a global object with nested selectors.
@@ -467,7 +451,7 @@ func (v *VM) doOpError() {
 		v.err = objects.ErrObjectAllocLimit
 		return
 	}
-	v.stack.SetOffset(-1, e)
+	v.stack.Set(e)
 }
 
 // doOpImmutable converts a mutable array or map at the top of the stack to its immutable counterpart if possible.
@@ -482,7 +466,7 @@ func (v *VM) doOpImmutable() {
 			v.err = objects.ErrObjectAllocLimit
 			return
 		}
-		v.stack.SetOffset(-1, immutableArray)
+		v.stack.Set(immutableArray)
 	case *objects.Map:
 		immutableMap := objects.NewMapImmutable(value.Values())
 		v.allocations--
@@ -490,7 +474,7 @@ func (v *VM) doOpImmutable() {
 			v.err = objects.ErrObjectAllocLimit
 			return
 		}
-		v.stack.SetOffset(-1, immutableMap)
+		v.stack.Set(immutableMap)
 	}
 }
 
@@ -595,9 +579,8 @@ func (v *VM) doOpCall() {
 		return
 	}
 	if spread == 1 {
-		v.stack.Decrement()
-		arr := v.stack.PeekCurrent()
-		switch z := arr.(type) {
+		arrObj := v.stack.Pop()
+		switch z := arrObj.(type) {
 		case *objects.Array:
 			for _, item := range z.Values() {
 				v.stack.Push(item)
@@ -609,7 +592,7 @@ func (v *VM) doOpCall() {
 			}
 			numArgs += z.Length() - 1
 		default:
-			v.err = fmt.Errorf("not an array: %s", arr.TypeName())
+			v.err = fmt.Errorf("not an array: %s", arrObj.TypeName())
 			return
 		}
 	}
@@ -709,7 +692,7 @@ func (v *VM) doOpReturn() {
 		v.currInstructions = v.currFrame.Instructions()
 		v.ip = v.currFrame.IP()
 		v.stack.SetStackPointer(v.frames.Get().BasePointer())
-		v.stack.SetOffset(-1, retVal)
+		v.stack.Set(retVal)
 	} else {
 		//log.Printf("returning from the root frame")
 		fmt.Println("returning from the root frame")
@@ -890,7 +873,7 @@ func (v *VM) doOpSetFree() {
 	v.stack.Decrement()
 }
 
-// doOpGetLocalPtr updates the instruction pointer, retrieves a local variable, and creates or updates an ObjectPointer for it.
+// doOpGetLocalPtr retrieves a local pointer from the stack or creates one if it doesn't exist, updating the stack state.
 func (v *VM) doOpGetLocalPtr() {
 	v.ip++
 	localIndex, err := v.currInstructions.Get(v.ip)
@@ -898,12 +881,12 @@ func (v *VM) doOpGetLocalPtr() {
 		v.err = err
 		return
 	}
-	val := v.stack.PeekCurrent()
+	sp := v.currFrame.BasePointer() + localIndex
+	val := v.stack.PeekAbsolute(sp)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		v.stack.Push(obj)
 		return
 	}
-	sp := v.currFrame.BasePointer() + localIndex
 	freeVar := objects.NewObjectPointer(&val)
 	v.stack.SetAbsolute(sp, freeVar)
 	v.stack.Push(freeVar)
