@@ -24,11 +24,12 @@ const (
 
 // Compiler manages the compilation process, including constant storage, scopes, and symbol resolution during program compilation.
 type Compiler struct {
-	constants   []objects.IObject
-	symbolTable *SymbolTable
-	scopes      []*CompilationScope
-	scopeIndex  int
-	mainFn      *objects.FunctionCompiled
+	constants     []objects.IObject
+	symbolTable   *SymbolTable
+	scopes        []*CompilationScope
+	scopeIndex    int
+	mainFn        *objects.FunctionCompiled
+	constantCache map[string]int
 }
 
 // New creates and initializes a new Compiler instance with a fresh symbol table and main compilation scope.
@@ -39,11 +40,12 @@ func New() *Compiler {
 		symbolTable.DefineBuiltin(fn.Name(), i)
 	}
 	return &Compiler{
-		constants:   []objects.IObject{},
-		symbolTable: symbolTable,
-		scopes:      []*CompilationScope{mainScope},
-		scopeIndex:  0,
-		mainFn:      nil,
+		constants:     []objects.IObject{},
+		symbolTable:   symbolTable,
+		scopes:        []*CompilationScope{mainScope},
+		scopeIndex:    0,
+		mainFn:        nil,
+		constantCache: make(map[string]int),
 	}
 }
 
@@ -72,7 +74,6 @@ func (c *Compiler) Compile(in ast.Node) error {
 				return err
 			}
 			symbol := c.symbolTable.Define(name.Name)
-			// USE THE NEW FUNCTION HERE
 			if err := c.emitSymbolDefine(symbol); err != nil {
 				return err
 			}
@@ -99,7 +100,6 @@ func (c *Compiler) Compile(in ast.Node) error {
 				return err
 			}
 			ident := node.Lhs[i].(*ast.Ident)
-
 			if node.Tok == token.DEFINE { // Handles 'x := 10'
 				symbol := c.symbolTable.Define(ident.Name)
 				// AND USE THE NEW FUNCTION HERE TOO
@@ -161,7 +161,6 @@ func (c *Compiler) Compile(in ast.Node) error {
 				return err
 			}
 		}
-	// NEW IMPLEMENTATION FOR FOR LOOP
 	case *ast.ForStmt:
 		scope, err := c.scopeCurrent()
 		if err != nil {
@@ -169,28 +168,23 @@ func (c *Compiler) Compile(in ast.Node) error {
 		}
 		// Starting position for loop condition
 		loopStartPos := scope.InstructionsLen()
-
 		// Compile condition
 		if err = c.Compile(node.Cond); err != nil {
 			return err
 		}
-
 		// Emit conditional jump to exit loop
 		jumpNotTruthyPos, err := c.emit(bytecode.OpJumpFalsy, 9999)
 		if err != nil {
 			return err
 		}
-
 		// Compile loop body
 		if err = c.Compile(node.Body); err != nil {
 			return err
 		}
-
 		// Emit unconditional jump to return to condition start
 		if _, err = c.emit(bytecode.OpJump, loopStartPos); err != nil {
 			return err
 		}
-
 		// Update (back-patching) OpJumpFalsy address to point to loop end
 		scope, err = c.scopeCurrent()
 		if err != nil {
@@ -200,7 +194,6 @@ func (c *Compiler) Compile(in ast.Node) error {
 		if err = c.changeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
 			return err
 		}
-
 		// Remove condition value from stack after loop terminates
 		if _, err = c.emit(bytecode.OpPop); err != nil {
 			return err
@@ -303,7 +296,7 @@ func (c *Compiler) Compile(in ast.Node) error {
 		// Create compiled function object
 		//TODO sourceMap
 		compiledFn := objects.NewFunctionCompiled(node.Name.String(), instructions, numLocals, numParams, varArgs, nil, c.symbolTable.ConvertFreeSymbols())
-		fnIndex := c.addConstant(compiledFn)
+		fnIndex := c.addConstant("", compiledFn)
 		if _, err = c.emit(bytecode.OpClosure, fnIndex, c.symbolTable.FreeSymbolsLen()); err != nil {
 			return err
 		}
@@ -358,12 +351,26 @@ func (c *Compiler) Compile(in ast.Node) error {
 			// e non casi complessi come 'a[0].print()'.
 			return fmt.Errorf("unsupported selector expression: %T", node.X)
 		}
-		moduleName := moduleIdent.Name
-		selectorName := node.Sel.Name
-		nameIndex := c.addConstant(objects.NewStringNoSize(moduleName + "." + selectorName))
+		mName := moduleIdent.Name
+		sName := node.Sel.Name
+		cacheKey := "selector:" + mName + "." + sName
+		nameIndex, found := c.constantCache[cacheKey]
+		if !found {
+			attrArray := objects.NewArray([]objects.IObject{objects.NewStringNoSize(mName), objects.NewStringNoSize(sName)})
+			nameIndex = c.addConstant(cacheKey, attrArray)
+		}
 		if _, err := c.emit(bytecode.OpGetAttr, nameIndex); err != nil {
 			return err
 		}
+		/*
+			//nameIndex := c.addConstant(objects.NewStringNoSize(mName + "." + sName))
+			symbol := objects.NewArray([]objects.IObject{objects.NewStringNoSize(mName), objects.NewStringNoSize(sName)})
+			nameIndex := c.addConstant(symbol)
+			if _, err := c.emit(bytecode.OpGetAttr, nameIndex); err != nil {
+				return err
+			}
+
+		*/
 	case *ast.ImportSpec:
 		moduleName := node.Path.Value
 		c.symbolTable.Define(strings.Trim(moduleName, "\"'"))
@@ -381,10 +388,6 @@ func (c *Compiler) Bytecode() (*bytecode.Bytecode, error) {
 	if c.mainFn == nil {
 		return nil, errors.New("main function not found")
 	}
-	//fmt.Println("Main Function:")
-	//for idx, v := range c.mainFn.Instructions().Data() {
-	//	fmt.Println(idx, v)
-	//}
 	bc.SetMainFunction(c.mainFn)
 	bc.SetConstants(c.constants)
 	return bc, nil
@@ -397,12 +400,12 @@ func (c *Compiler) compileLiteral(node *ast.BasicLit) error {
 	switch node.Kind {
 	case token.INT:
 		val, _ := strconv.ParseInt(node.Value, 0, 64)
-		if _, err := c.emit(bytecode.OpConstant, c.addConstant(objects.NewInt(val))); err != nil {
+		if _, err := c.emit(bytecode.OpConstant, c.addConstant("", objects.NewInt(val))); err != nil {
 			return err
 		}
 	case token.FLOAT:
 		val, _ := strconv.ParseFloat(node.Value, 64)
-		if _, err := c.emit(bytecode.OpConstant, c.addConstant(objects.NewFloat(val))); err != nil {
+		if _, err := c.emit(bytecode.OpConstant, c.addConstant("", objects.NewFloat(val))); err != nil {
 			return err
 		}
 	case token.STRING:
@@ -411,7 +414,7 @@ func (c *Compiler) compileLiteral(node *ast.BasicLit) error {
 		if err != nil {
 			return err
 		}
-		if _, err = c.emit(bytecode.OpConstant, c.addConstant(s)); err != nil {
+		if _, err = c.emit(bytecode.OpConstant, c.addConstant("", s)); err != nil {
 			return err
 		}
 	default:
@@ -421,9 +424,13 @@ func (c *Compiler) compileLiteral(node *ast.BasicLit) error {
 }
 
 // addConstant adds a new object to the constants pool and returns its index in the pool.
-func (c *Compiler) addConstant(obj objects.IObject) int {
+func (c *Compiler) addConstant(id string, obj objects.IObject) int {
 	c.constants = append(c.constants, obj)
-	return len(c.constants) - 1
+	nameIndex := len(c.constants) - 1
+	if len(id) > 0 {
+		c.constantCache[id] = nameIndex
+	}
+	return nameIndex
 }
 
 // addInstructions adds a sequence of byte instructions to the current compilation scope.

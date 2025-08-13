@@ -2,7 +2,6 @@ package vm
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/modules"
@@ -45,6 +44,7 @@ type VM struct {
 	err              error
 	sequencer        []func()
 	linker           modules.IModuleGetter
+	linkerCache      map[int]objects.IObject
 }
 
 // NewVM initializes and returns a new instance of the VM with provided sequencer, bytecode, globals, and max allocations.
@@ -70,6 +70,7 @@ func NewVM(linker modules.IModuleGetter, sequencer ISequencer, bc *bytecode.Byte
 		suspend:        false,
 		stack:          NewStack(stackSize),
 		linker:         linker,
+		linkerCache:    make(map[int]objects.IObject),
 	}
 	main, err := bc.MainFunction()
 	if err != nil {
@@ -969,9 +970,10 @@ func (v *VM) doOpIteratorValue() {
 	v.stack.Push(val)
 }
 
+// doOpGetAttr retrieves an attribute from a loaded module and pushes it onto the stack. Sets an error if the operation fails.
 func (v *VM) doOpGetAttr() {
 	if v.linker == nil {
-		v.err = fmt.Errorf("no module loaded")
+		v.err = fmt.Errorf("no linker loaded")
 		return
 	}
 	v.ip += 2
@@ -980,28 +982,16 @@ func (v *VM) doOpGetAttr() {
 		v.err = err
 		return
 	}
-	attrName, ok := v.constants[nameIndex].(*objects.String)
+	if symbol, ok := v.linkerCache[nameIndex]; ok && symbol != nil {
+		v.stack.Push(symbol)
+		return
+	}
+	symbol, ok := v.linker.GetSymbolFromDefinition(v.constants[nameIndex])
 	if !ok {
-		v.err = fmt.Errorf("invalid attribute name constant")
+		v.err = fmt.Errorf("invalid attribute index %d", nameIndex)
 		return
 	}
-	values := strings.Split(attrName.Value(), ".")
-	if len(values) != 2 {
-		v.err = fmt.Errorf("invalid attribute name")
-		return
-	}
-	packageName := values[0]
-	symbolName := values[1]
-	container := v.linker.Get(packageName)
-	if container == nil {
-		v.err = fmt.Errorf("module '%s' not found", packageName)
-		return
-	}
-	symbol, ok := container.Symbol(symbolName)
-	if !ok {
-		v.err = fmt.Errorf("symbol '%s' not found", symbolName)
-		return
-	}
+	v.linkerCache[nameIndex] = symbol
 	v.stack.Push(symbol)
 }
 

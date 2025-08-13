@@ -26,6 +26,14 @@ func (o *Array) Values() []IObject {
 	return o.values
 }
 
+// Index returns the element at the specified index in the Array, or an error if the index is out of bounds.
+func (o *Array) Index(index int) (IObject, error) {
+	if index < 0 || index >= len(o.values) {
+		return nil, ErrIndexOutOfBounds
+	}
+	return o.values[index], nil
+}
+
 // Length returns the number of elements in the Array.
 func (o *Array) Length() int {
 	return len(o.values)
@@ -84,7 +92,7 @@ func (o *Array) Copy() IObject {
 	return NewArray(c)
 }
 
-// Falsy returns true if the array is empty, otherwise false.
+// Boolean returns true if the array is empty, otherwise false.
 func (o *Array) Boolean() bool {
 	return len(o.values) == 0
 }

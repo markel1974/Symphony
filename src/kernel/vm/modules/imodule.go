@@ -10,5 +10,9 @@ type IImportable interface {
 }
 
 type IModuleGetter interface {
-	Get(name string) IImportable
+	Get(module string) IImportable
+
+	GetSymbol(module string, symbol string) (objects.IObject, bool)
+
+	GetSymbolFromDefinition(definition objects.IObject) (objects.IObject, bool)
 }
