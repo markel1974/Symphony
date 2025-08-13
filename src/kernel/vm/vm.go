@@ -195,10 +195,8 @@ func (v *VM) doOpBinary() {
 
 // doOpEqual compares the top two values on the stack for equality and pushes TrueValue or FalseValue based on the result.
 func (v *VM) doOpEqual() {
-	right := v.stack.Peek()
-	v.stack.Decrement()
-	left := v.stack.Peek()
-	v.stack.Decrement()
+	right := v.stack.Pop()
+	left := v.stack.Pop()
 	if left.Equals(right) {
 		v.stack.Push(objects.TrueValue)
 	} else {
@@ -208,10 +206,8 @@ func (v *VM) doOpEqual() {
 
 // doOpNotEqual compares the top two values on the stack for inequality and pushes the result (true or false) onto the stack.
 func (v *VM) doOpNotEqual() {
-	right := v.stack.Peek()
-	v.stack.Decrement()
-	left := v.stack.Peek()
-	v.stack.Decrement()
+	right := v.stack.Pop()
+	left := v.stack.Pop()
 	if left.Equals(right) {
 		v.stack.Push(objects.FalseValue)
 	} else {
@@ -238,8 +234,7 @@ func (v *VM) doOpFalse() {
 // doOpLNot performs a logical NOT operation on the top value of the stack, replacing it with the corresponding boolean value.
 // If the operand is falsy, `objects.TrueValue` is pushed, otherwise `objects.FalseValue` is pushed.
 func (v *VM) doOpLNot() {
-	operand := v.stack.Peek()
-	v.stack.Decrement()
+	operand := v.stack.Pop()
 	if operand.Boolean() {
 		v.stack.Push(objects.TrueValue)
 	} else {
@@ -250,8 +245,7 @@ func (v *VM) doOpLNot() {
 // doOpBComplement performs a bitwise complement operation on the top stack element, expecting it to be of type *objects.Int.
 // It handles errors such as invalid operand type and allocation limit breaches.
 func (v *VM) doOpBComplement() {
-	operand := v.stack.Peek()
-	v.stack.Decrement()
+	operand := v.stack.Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
 		var res objects.IObject = objects.NewInt(^x.Value())
@@ -269,8 +263,7 @@ func (v *VM) doOpBComplement() {
 
 // doOpMinus negates the top operand on the stack if it is an Int or Float, updates the stack, and handles allocation limits.
 func (v *VM) doOpMinus() {
-	operand := v.stack.Peek()
-	v.stack.Decrement()
+	operand := v.stack.Pop()
 	switch x := operand.(type) {
 	case *objects.Int:
 		var res objects.IObject = objects.NewInt(-x.Value())
@@ -311,7 +304,6 @@ func (v *VM) doOpAndJump() {
 	v.ip += 2
 	obj := v.stack.Peek()
 	if obj.Boolean() {
-		//pos := int(v.currInstructions.Get(v.ip)) | int(v.currInstructions.Get(v.ip-1))<<8
 		pos, err := v.currInstructions.Pos(v.ip, v.ip-1)
 		if err != nil {
 			v.err = err
@@ -330,7 +322,6 @@ func (v *VM) doOpOrJump() {
 	if obj.Boolean() {
 		v.stack.Decrement()
 	} else {
-		//pos := int(v.currInstructions.Get(v.ip)) | int(v.currInstructions.Get(v.ip-1))<<8
 		pos, err := v.currInstructions.Pos(v.ip, v.ip-1)
 		if err != nil {
 			v.err = err
@@ -342,7 +333,6 @@ func (v *VM) doOpOrJump() {
 
 // doOpJump adjusts the instruction pointer to the position specified by the next two bytes in the instruction sequence.
 func (v *VM) doOpJump() {
-	//pos := int(v.currInstructions.Get(v.ip+2)) | int(v.currInstructions.Get(v.ip+1))<<8
 	pos, err := v.currInstructions.Pos(v.ip+2, v.ip+1)
 	if err != nil {
 		v.err = err
@@ -480,10 +470,8 @@ func (v *VM) doOpImmutable() {
 
 // doOpIndex handles the indexing operation on the stack by retrieving and validating indexed values or setting an error.
 func (v *VM) doOpIndex() {
-	index := v.stack.Peek()
-	v.stack.Decrement()
-	left := v.stack.Peek()
-	v.stack.Decrement()
+	index := v.stack.Pop()
+	left := v.stack.Pop()
 	val, err := left.IndexGet(index)
 	if err != nil {
 		if objects.Is(err, objects.ErrNotIndexable) {
@@ -506,13 +494,9 @@ func (v *VM) doOpIndex() {
 // doOpSliceIndex performs slicing operation on arrays, strings, or bytes based on indices from the stack and updates the stack.
 // It validates index types and bounds, processes allocations, and handles errors for invalid operations.
 func (v *VM) doOpSliceIndex() {
-	highStack := v.stack.Peek()
-	v.stack.Decrement()
-	lowStack := v.stack.Peek()
-	v.stack.Decrement()
-	leftStack := v.stack.Peek()
-	v.stack.Decrement()
-
+	highStack := v.stack.Pop()
+	lowStack := v.stack.Pop()
+	leftStack := v.stack.Pop()
 	var val objects.IObject = nil
 
 	switch left := leftStack.(type) {
@@ -868,9 +852,8 @@ func (v *VM) doOpSetFree() {
 		v.err = err
 		return
 	}
-	o := v.stack.Peek()
+	o := v.stack.Pop()
 	v.currFrame.FreeVarsIndex(freeIndex).SetValue(o)
-	v.stack.Decrement()
 }
 
 // doOpGetLocalPtr retrieves a local pointer from the stack or creates one if it doesn't exist, updating the stack state.
@@ -913,7 +896,8 @@ func (v *VM) doOpSetSelFree() {
 	}
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
-	if err = objects.IndexAssign(*v.currFrame.FreeVarsIndex(freeIndex).Value(), val, selectors); err != nil {
+	fvi := v.currFrame.FreeVarsIndex(freeIndex)
+	if err = objects.IndexAssign(*fvi.Value(), val, selectors); err != nil {
 		v.err = err
 		return
 	}
@@ -923,14 +907,12 @@ func (v *VM) doOpSetSelFree() {
 // If the object is iterable, it pushes the iterator onto the stack.
 // Decrements the allocation counter and checks for allocation limits.
 func (v *VM) doOpIteratorInit() {
-	var iterator objects.IObject
-	dst := v.stack.Peek()
-	v.stack.Decrement()
+	dst := v.stack.Pop()
 	if !dst.CanIterate() {
 		v.err = fmt.Errorf("not iterable: %s", dst.TypeName())
 		return
 	}
-	iterator = dst.Iterate()
+	iterator := dst.Iterate()
 	v.allocations--
 	if v.allocations == 0 {
 		v.err = objects.ErrObjectAllocLimit
@@ -941,9 +923,13 @@ func (v *VM) doOpIteratorInit() {
 
 // doOpIteratorNext executes the Next operation on an iterator and pushes the result (true/false) onto the stack.
 func (v *VM) doOpIteratorNext() {
-	iterator := v.stack.Peek()
-	v.stack.Decrement()
-	hasMore := iterator.(objects.IIterator).Next()
+	it := v.stack.Pop()
+	iterator, ok := it.(objects.IIterator)
+	if !ok {
+		v.err = fmt.Errorf("not an iterator: %s", it.TypeName())
+		return
+	}
+	hasMore := iterator.Next()
 	if hasMore {
 		v.stack.Push(objects.TrueValue)
 	} else {
@@ -953,17 +939,25 @@ func (v *VM) doOpIteratorNext() {
 
 // doOpIteratorKey retrieves the key from the top stack iterator and pushes it onto the stack.
 func (v *VM) doOpIteratorKey() {
-	iterator := v.stack.Peek()
-	v.stack.Decrement()
-	val := iterator.(objects.IIterator).Key()
+	it := v.stack.Pop()
+	iterator, ok := it.(objects.IIterator)
+	if !ok {
+		v.err = fmt.Errorf("not an iterator: %s", it.TypeName())
+		return
+	}
+	val := iterator.Key()
 	v.stack.Push(val)
 }
 
 // doOpIteratorValue retrieves the current value from the iterator on the stack and updates the stack pointer accordingly.
 func (v *VM) doOpIteratorValue() {
-	iterator := v.stack.Peek()
-	v.stack.Decrement()
-	val := iterator.(objects.IIterator).Value()
+	it := v.stack.Pop()
+	iterator, ok := it.(objects.IIterator)
+	if !ok {
+		v.err = fmt.Errorf("not an iterator: %s", it.TypeName())
+		return
+	}
+	val := iterator.Value()
 	v.stack.Push(val)
 }
 

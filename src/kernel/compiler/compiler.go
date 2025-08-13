@@ -59,25 +59,25 @@ func (c *Compiler) Compile(in ast.Node) error {
 		if err := c.Compile(node.Decl); err != nil {
 			return err
 		}
-	case *ast.GenDecl: // Per `var` e `const` che sono gestiti da AssignStmt
+	case *ast.GenDecl: // For `var` and `const` which are handled by AssignStmt
 		for _, spec := range node.Specs {
 			if err := c.Compile(spec); err != nil {
 				return err
 			}
 		}
-	case *ast.ValueSpec: // Gestisce 'var x = 10'
+	case *ast.ValueSpec: // Handles 'var x = 10'
 		for i, name := range node.Names {
 			if err := c.Compile(node.Values[i]); err != nil {
 				return err
 			}
 			symbol := c.symbolTable.Define(name.Name)
-			// USA LA NUOVA FUNZIONE QUI
+			// USE THE NEW FUNCTION HERE
 			if err := c.emitSymbolDefine(symbol); err != nil {
 				return err
 			}
 		}
 
-	// --- Istruzioni (Statements) ---
+	// --- Statements ---
 	case *ast.BlockStmt:
 		for _, s := range node.List {
 			if err := c.Compile(s); err != nil {
@@ -88,7 +88,7 @@ func (c *Compiler) Compile(in ast.Node) error {
 		if err := c.Compile(node.X); err != nil {
 			return err
 		}
-		// Rimuove il valore dello stack se non usato
+		// Remove value from stack if unused
 		if _, err := c.emit(bytecode.OpPop); err != nil {
 			return err
 		}
@@ -99,38 +99,38 @@ func (c *Compiler) Compile(in ast.Node) error {
 			}
 			ident := node.Lhs[i].(*ast.Ident)
 
-			if node.Tok == token.DEFINE { // Gestisce 'x := 10'
+			if node.Tok == token.DEFINE { // Handles 'x := 10'
 				symbol := c.symbolTable.Define(ident.Name)
-				// E USA LA NUOVA FUNZIONE ANCHE QUI
+				// AND USE THE NEW FUNCTION HERE TOO
 				if err := c.emitSymbolDefine(symbol); err != nil {
 					return err
 				}
-			} else { // Gestisce 'x = 20'
+			} else { // Handles 'x = 20'
 				symbol, ok := c.symbolTable.Resolve(ident.Name)
 				if !ok {
 					return fmt.Errorf("undefined variable: %s", ident.Name)
 				}
-				// L'assegnazione continua a usare la vecchia funzione
+				// Assignment continues to use the old function
 				if err := c.emitSymbolSet(symbol); err != nil {
 					return err
 				}
 			}
 		}
 	case *ast.IfStmt:
-		// Compila la condizione
+		// Compile condition
 		if err := c.Compile(node.Cond); err != nil {
 			return err
 		}
-		// Emette un salto condizionale con un indirizzo temporaneo
+		// Emit conditional jump with temporary address
 		jumpNotTruthyPos, err := c.emit(bytecode.OpJumpFalsy, 9999)
 		if err != nil {
 			return err
 		}
-		// Compila il blocco 'then'
+		// Compile 'then' block
 		if err = c.Compile(node.Body); err != nil {
 			return err
 		}
-		// Se c'è un blocco 'else', emetti un salto per scavalcarlo
+		// If there's an 'else' block, emit jump to skip it
 		jumpToEndPos := 0
 		if node.Else != nil {
 			jumpToEndPos, err = c.emit(bytecode.OpJump, 9999)
@@ -142,11 +142,11 @@ func (c *Compiler) Compile(in ast.Node) error {
 		if err != nil {
 			return err
 		}
-		// Aggiorna l'indirizzo del salto condizionale
+		// Update conditional jump address
 		if err = c.changeOperand(jumpNotTruthyPos, scope.InstructionsLen()); err != nil {
 			return err
 		}
-		// Compila il blocco 'else', se esiste
+		// Compile 'else' block if it exists
 		if node.Else != nil {
 			if err = c.Compile(node.Else); err != nil {
 				return err
@@ -155,42 +155,42 @@ func (c *Compiler) Compile(in ast.Node) error {
 			if err != nil {
 				return err
 			}
-			// Aggiorna l'indirizzo del salto per scavalcare l'else
+			// Update jump address to skip else
 			if err = c.changeOperand(jumpToEndPos, scope.InstructionsLen()); err != nil {
 				return err
 			}
 		}
-	// NUOVA IMPLEMENTAZIONE PER IL CICLO FOR
+	// NEW IMPLEMENTATION FOR FOR LOOP
 	case *ast.ForStmt:
 		scope, err := c.scopeCurrent()
 		if err != nil {
 			return err
 		}
-		// Posizione di inizio della condizione del ciclo
+		// Starting position for loop condition
 		loopStartPos := scope.InstructionsLen()
 
-		// Compila la condizione
+		// Compile condition
 		if err = c.Compile(node.Cond); err != nil {
 			return err
 		}
 
-		// Emette un salto condizionale per uscire dal ciclo
+		// Emit conditional jump to exit loop
 		jumpNotTruthyPos, err := c.emit(bytecode.OpJumpFalsy, 9999)
 		if err != nil {
 			return err
 		}
 
-		// Compila il corpo del ciclo
+		// Compile loop body
 		if err = c.Compile(node.Body); err != nil {
 			return err
 		}
 
-		// Emette un salto incondizionato per tornare all'inizio della condizione
+		// Emit unconditional jump to return to condition start
 		if _, err = c.emit(bytecode.OpJump, loopStartPos); err != nil {
 			return err
 		}
 
-		// Aggiorna (back-patching) l'indirizzo di OpJumpFalsy per puntare alla fine del ciclo
+		// Update (back-patching) OpJumpFalsy address to point to loop end
 		scope, err = c.scopeCurrent()
 		if err != nil {
 			return err
@@ -200,7 +200,7 @@ func (c *Compiler) Compile(in ast.Node) error {
 			return err
 		}
 
-		// Rimuove il valore della condizione dallo stack una volta che il ciclo è terminato
+		// Remove condition value from stack after loop terminates
 		if _, err = c.emit(bytecode.OpPop); err != nil {
 			return err
 		}
@@ -234,10 +234,10 @@ func (c *Compiler) Compile(in ast.Node) error {
 			return err
 		}
 	case *ast.CompositeLit:
-		// Controlliamo il tipo per capire se è un array o una mappa
+		// Check type to determine if array or map
 		switch node.Type.(type) {
 		case *ast.ArrayType:
-			// È un letterale di array (es. []int{1, 2, 3})
+			// Array literal (e.g. []int{1, 2, 3})
 			for _, elt := range node.Elts {
 				if err := c.Compile(elt); err != nil {
 					return err
@@ -247,14 +247,14 @@ func (c *Compiler) Compile(in ast.Node) error {
 				return err
 			}
 		case *ast.MapType:
-			// È un letterale di mappa (es. map[string]int{"a": 1})
+			// Map literal (e.g. map[string]int{"a": 1})
 			for _, elt := range node.Elts {
 				kve := elt.(*ast.KeyValueExpr)
-				// Compila la chiave
+				// Compile key
 				if err := c.Compile(kve.Key); err != nil {
 					return err
 				}
-				// Compila il valore
+				// Compile value
 				if err := c.Compile(kve.Value); err != nil {
 					return err
 				}
@@ -268,21 +268,21 @@ func (c *Compiler) Compile(in ast.Node) error {
 		}
 	case *ast.FuncDecl:
 		//fmt.Println("Compiling FuncDecl:", node.Name.Name)
-		// Dichiarazione di funzione globale
+		// Global function declaration
 		if err := c.scopeEnter(); err != nil {
 			return err
 		}
-		// Il ricevitore (metodi) non è supportato in questa versione Parametri
+		// Receiver (methods) not supported in this version Parameters
 		for _, p := range node.Type.Params.List {
 			for _, name := range p.Names {
 				c.symbolTable.Define(name.Name)
 			}
 		}
-		// Corpo
+		// Body
 		if err := c.Compile(node.Body); err != nil {
 			return err
 		}
-		// Ritorno implicito se manca
+		// Implicit return if missing
 		if _, err := c.emit(bytecode.OpReturn, 0); err != nil {
 			return err
 		}
@@ -301,14 +301,14 @@ func (c *Compiler) Compile(in ast.Node) error {
 				}
 			}
 		}
-		// Crea l'oggetto funzione compilata
+		// Create compiled function object
 		//TODO sourceMap
 		compiledFn := objects.NewFunctionCompiled(node.Name.String(), instructions, numLocals, numParams, varArgs, nil, c.symbolTable.ConvertFreeSymbols())
 		fnIndex := c.addConstant(compiledFn)
 		if _, err = c.emit(bytecode.OpClosure, fnIndex, c.symbolTable.FreeSymbolsLen()); err != nil {
 			return err
 		}
-		// Definisce la funzione nello scope corrente
+		// Define function in current scope
 		symbol := c.symbolTable.Define(node.Name.Name)
 		if err = c.emitSymbolSet(symbol); err != nil {
 			return err
@@ -317,23 +317,23 @@ func (c *Compiler) Compile(in ast.Node) error {
 			c.mainFn = compiledFn
 		}
 	case *ast.CallExpr:
-		// Compila la funzione da chiamare (es. l'identificatore)
+		// Compile function to call (e.g. identifier)
 		if err := c.Compile(node.Fun); err != nil {
 			return err
 		}
-		// Compila gli argomenti
+		// Compile arguments
 		for _, arg := range node.Args {
 			if err := c.Compile(arg); err != nil {
 				return err
 			}
 		}
-		// 0 per non-spread call
+		// 0 for non-spread call
 		if _, err := c.emit(bytecode.OpCall, len(node.Args), 0); err != nil {
 			return err
 		}
 	case *ast.ReturnStmt:
 		if len(node.Results) == 0 {
-			// Ritorna 'undefined'
+			// Return 'undefined'
 			if _, err := c.emit(bytecode.OpReturn, 0); err != nil {
 				return err
 			}
@@ -341,7 +341,7 @@ func (c *Compiler) Compile(in ast.Node) error {
 			if err := c.Compile(node.Results[0]); err != nil {
 				return err
 			}
-			// Ritorna un valore
+			// Return a value
 			if _, err := c.emit(bytecode.OpReturn, 1); err != nil {
 				return err
 			}
@@ -540,16 +540,16 @@ func (c *Compiler) emitSymbolSet(s *Symbol) error {
 	return nil
 }
 
-// emitSymbolDefine emette l'opcode per la *definizione* di una variabile.
+// emitSymbolDefine emits the opcode for *defining* a variable.
 func (c *Compiler) emitSymbolDefine(s *Symbol) error {
 	switch s.Scope {
 	case GlobalScope:
-		// Per lo scope globale, definire è uguale ad assegnare.
+		// For global scope, define is same as assign
 		if _, err := c.emit(bytecode.OpSetGlobal, s.Index); err != nil {
 			return err
 		}
 	case LocalScope:
-		// Usa il nuovo opcode per le variabili locali.
+		// Use new opcode for local variables
 		if _, err := c.emit(bytecode.OpDefineLocal, s.Index); err != nil {
 			return err
 		}
