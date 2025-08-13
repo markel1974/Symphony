@@ -8,11 +8,11 @@ import (
 // TypeName returns the type name of the object.
 // String returns the string representation of the object.
 // BinaryOp performs a binary operation between the object and a right-hand side operand.
-// Falsy checks if the object represents a falsy values.
+// Falsy checks if the object represents a falsy value.
 // Equals checks whether the object is equal to another object.
 // Copy creates and returns a copy of the object.
 // IndexGet retrieves the values at the specified index from the object.
-// IndexSet assigns a values to the specified index within the object.
+// IndexSet assigns a value to the specified index within the object.
 // Iterate returns an iterator for the object, enabling iteration.
 // CanIterate checks if the object can be iterated over.
 // Call invokes the object as a callable function with provided arguments.
@@ -78,12 +78,13 @@ func (o *ObjectImpl) Equals(x IObject) bool {
 	return o == x
 }
 
-// IndexGet attempts to retrieve a values at the given index and returns an error if the object is not indexable.
+// IndexGet attempts to retrieve a value at the given index and returns an error if the object is not indexable.
 func (o *ObjectImpl) IndexGet(_ IObject) (res IObject, err error) {
 	return nil, ErrNotIndexable
 }
 
-// IndexSet attempts to assign a values to an index in the object but always returns ErrNotIndexAssignable, as this operation is unsupported.
+// IndexSet attempts to assign a value to an index in the object but always returns ErrNotIndexAssignable,
+// as this operation is unsupported.
 func (o *ObjectImpl) IndexSet(_, _ IObject) (err error) {
 	return ErrNotIndexAssignable
 }
@@ -164,7 +165,7 @@ func FromMap(v map[string]interface{}) map[string]IObject {
 	return kv
 }
 
-// FromInterface converts a native Go values of various types into a corresponding IObject implementation.
+// FromInterface converts a native Go value of various types into a corresponding IObject implementation.
 func FromInterface(in interface{}) IObject {
 	switch v := in.(type) {
 	case nil:
