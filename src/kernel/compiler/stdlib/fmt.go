@@ -3,7 +3,6 @@ package stdlib
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/kernel/compiler/stdlib/format"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -44,12 +43,11 @@ func fmtPrintf(args ...objects.IObject) (ret objects.IObject, err error) {
 		fmt.Print(data)
 		return nil, nil
 	}
-
-	s, err := format.Format(data.Value(), args[1:]...)
-	if err != nil {
-		return nil, err
+	var ar []interface{}
+	for _, v := range args[1:] {
+		ar = append(ar, objects.ToInterface(v))
 	}
-	fmt.Print(s)
+	fmt.Printf(data.Value(), ar...)
 	return nil, nil
 }
 
@@ -79,11 +77,12 @@ func fmtSprintf(args ...objects.IObject) (ret objects.IObject, err error) {
 		// okay to return 'format' directly as String is immutable
 		return data, nil
 	}
-	s, err := format.Format(data.Value(), args[1:]...)
-	if err != nil {
-		return nil, err
+
+	var ar []interface{}
+	for _, v := range args[1:] {
+		ar = append(ar, objects.ToInterface(v))
 	}
-	return objects.NewString(s)
+	return objects.NewString(fmt.Sprintf(data.Value(), ar...))
 }
 
 // getPrintArgs converts IObject arguments to their string representations while ensuring the total length does not exceed the limit.

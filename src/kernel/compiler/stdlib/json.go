@@ -2,12 +2,12 @@ package stdlib
 
 import (
 	"bytes"
-	gojson "encoding/json"
+	"encoding/json"
 
-	json2 "github.com/markel1974/c64emu/src/kernel/compiler/stdlib/json"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+// jsonModule is a map of JSON-related functions (decode, encode, indent, html_escape) implementing the IObject interface.
 var jsonModule = map[string]objects.IObject{
 	"decode":      objects.NewFunctionUser("decode", jsonDecode),
 	"encode":      objects.NewFunctionUser("encode", jsonEncode),
@@ -15,39 +15,46 @@ var jsonModule = map[string]objects.IObject{
 	"html_escape": objects.NewFunctionUser("html_escape", jsonHTMLEscape),
 }
 
+// jsonDecode parses a JSON-encoded bytes or string argument into a map-like object or returns an error if decoding fails.
 func jsonDecode(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
+	var data []byte
 	switch o := args[0].(type) {
 	case *objects.Bytes:
-		v, err := json2.Decode(o.Value())
-		if err != nil {
-			return objects.NewError(objects.NewStringNoSize(err.Error())), nil
-		}
-		return v, nil
+		data = o.Value()
 	case *objects.String:
-		v, err := json2.Decode([]byte(o.Value()))
-		if err != nil {
-			return objects.NewError(objects.NewStringNoSize(err.Error())), nil
-		}
-		return v, nil
-	default:
+		data = []byte(o.Value())
+	}
+	if data == nil {
 		return nil, objects.NewInvalidArgumentError("first", "bytes/string", args[0].TypeName())
 	}
+	d := make(map[string]interface{})
+	if err = json.Unmarshal(data, &d); err != nil {
+		return objects.NewError(objects.NewStringNoSize(err.Error())), nil
+	}
+	result := objects.NewMap(objects.FromMap(d))
+	return result, nil
 }
 
+// jsonEncode serializes an IObject into its JSON-encoded byte representation and returns it as a Bytes object.
+// jsonEncode expects exactly one argument; otherwise, it returns an error for incorrect argument count.
+// jsonEncode returns a serialized result or an error object if JSON marshalling fails.
 func jsonEncode(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	b, err := json2.Encode(args[0])
+	result, err := json.Marshal(objects.ToInterface(args[0]))
 	if err != nil {
 		return objects.NewError(objects.NewStringNoSize(err.Error())), nil
 	}
-	return objects.NewBytes(b), nil
+	return objects.NewBytes(result), nil
 }
 
+// jsonIndent formats JSON input with the specified prefix and indentation, returning the formatted JSON as Bytes.
+// It accepts three arguments: a string/bytes JSON input, a string prefix, and a string indentation.
+// Returns an error if the input is invalid or the formatting fails.
 func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 3 {
 		return nil, objects.ErrWrongNumArguments
@@ -63,14 +70,14 @@ func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 	switch o := args[0].(type) {
 	case *objects.Bytes:
 		var dst bytes.Buffer
-		err := gojson.Indent(&dst, o.Value(), prefix, indent)
+		err = json.Indent(&dst, o.Value(), prefix, indent)
 		if err != nil {
 			return objects.NewError(objects.NewStringNoSize(err.Error())), nil
 		}
 		return objects.NewBytes(dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
-		err := gojson.Indent(&dst, []byte(o.Value()), prefix, indent)
+		err = json.Indent(&dst, []byte(o.Value()), prefix, indent)
 		if err != nil {
 			return objects.NewError(objects.NewStringNoSize(err.Error())), nil
 		}
@@ -80,19 +87,20 @@ func jsonIndent(args ...objects.IObject) (ret objects.IObject, err error) {
 	}
 }
 
+// jsonHTMLEscape escapes special HTML characters in a bytes or string object using JSON encoding.
+// Returns a new bytes object with the escaped data or an error if the input type is invalid.
 func jsonHTMLEscape(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-
 	switch o := args[0].(type) {
 	case *objects.Bytes:
 		var dst bytes.Buffer
-		gojson.HTMLEscape(&dst, o.Value())
+		json.HTMLEscape(&dst, o.Value())
 		return objects.NewBytes(dst.Bytes()), nil
 	case *objects.String:
 		var dst bytes.Buffer
-		gojson.HTMLEscape(&dst, []byte(o.Value()))
+		json.HTMLEscape(&dst, []byte(o.Value()))
 		return objects.NewBytes(dst.Bytes()), nil
 	default:
 		return nil, objects.NewInvalidArgumentError("first", "bytes/string", args[0].TypeName())

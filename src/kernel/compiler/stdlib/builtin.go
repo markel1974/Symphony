@@ -1,7 +1,8 @@
 package stdlib
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/compiler/stdlib/format"
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -340,14 +341,13 @@ func builtinFormat(args ...objects.IObject) (objects.IObject, error) {
 		return nil, objects.NewInvalidArgumentError("format", "string", args[0].TypeName())
 	}
 	if numArgs == 1 {
-		// okay to return 'format' directly as String is immutable
 		return formatString, nil
 	}
-	s, err := format.Format(formatString.Value(), args[1:]...)
-	if err != nil {
-		return nil, err
+	var ar []interface{}
+	for _, v := range args[1:] {
+		ar = append(ar, objects.ToInterface(v))
 	}
-	return objects.NewString(s)
+	return objects.NewString(fmt.Sprintf(formatString.Value(), ar...))
 }
 
 // builtinCopy creates and returns a copy of the provided object. Only one argument is expected; additional arguments result in an error.
