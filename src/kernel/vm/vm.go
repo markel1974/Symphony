@@ -12,6 +12,10 @@ const (
 	resetIp = -1
 )
 
+const (
+	mainFunction = "main"
+)
+
 // globalsSize defines the maximum size of the global variables space.
 // stackSize specifies the size limit of the stack for function execution.
 // maxFrames indicates the maximum number of call frames allowed.
@@ -61,9 +65,9 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 	if maxAllocations < 1 {
 		return nil, fmt.Errorf("max allocations must be greater than 0")
 	}
-	mainFn, err := bc.MainFunction()
-	if err != nil {
-		return nil, err
+	mainFn, ok := bc.CompiledFunctions()[mainFunction]
+	if !ok {
+		return nil, fmt.Errorf("main function not found")
 	}
 	builtin, err := loader.ResolveBuiltinSymbols(bc.Constants())
 	if err != nil {
