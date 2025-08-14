@@ -32,7 +32,6 @@ type ISequencer interface {
 type VM struct {
 	sourceFiles      *bytecode.Files
 	constants        []objects.IObject
-	references       []objects.IObject
 	globals          []objects.IObject
 	stack            *Stack
 	frames           *Frames
@@ -46,7 +45,7 @@ type VM struct {
 	err              error
 	sequencer        []func()
 	loader           ILoader
-	loaderCache      map[int]objects.IObject
+	references       map[int]objects.IObject
 }
 
 // NewVM initializes and returns a new virtual machine instance configured with the provided components and settings.
@@ -63,9 +62,18 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 	if maxAllocations < 1 {
 		return nil, fmt.Errorf("max allocations must be greater than 0")
 	}
+
+	references := make(map[int]objects.IObject)
+	for i, ref := range bc.References() {
+		symbol, ok := loader.GetSymbol(ref)
+		if !ok {
+			return nil, fmt.Errorf("can't load symbols, invalid reference %d", i)
+		}
+		references[i] = symbol
+	}
+
 	v := &VM{
 		constants:      bc.Constants(),
-		references:     bc.References(),
 		globals:        globals,
 		sourceFiles:    bc.SourceFiles(),
 		ip:             -1,
@@ -73,7 +81,7 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 		suspend:        false,
 		stack:          NewStack(stackSize),
 		loader:         loader,
-		loaderCache:    make(map[int]objects.IObject),
+		references:     references,
 	}
 	main, err := bc.MainFunction()
 	if err != nil {
@@ -995,17 +1003,12 @@ func (v *VM) doOpReferences() {
 		v.err = err
 		return
 	}
-	if symbol, ok := v.loaderCache[nameIndex]; ok && symbol != nil {
+	if symbol, ok := v.references[nameIndex]; ok && symbol != nil {
 		v.stack.Push(symbol)
 		return
 	}
-	symbol, ok := v.loader.GetSymbol(v.references[nameIndex])
-	if !ok {
-		v.err = fmt.Errorf("invalid attribute index %d", nameIndex)
-		return
-	}
-	v.loaderCache[nameIndex] = symbol
-	v.stack.Push(symbol)
+	v.err = fmt.Errorf("invalid attribute index %d", nameIndex)
+	return
 }
 
 // doOpSuspend sets the VM's `suspend` flag to true, pausing the execution of the bytecode operations.
