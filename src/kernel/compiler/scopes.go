@@ -61,6 +61,11 @@ func (c *Scopes) ConstantsRetrieve() []objects.IObject {
 	return c.constants.Retrieve()
 }
 
+// SymbolDefineUnique defines a new symbol in the current scope and adds it to the symbol table. Returns the defined Symbol.
+func (c *Scopes) SymbolDefineUnique(symbol string) *Symbol {
+	return c.symbolTable.DefineUnique(symbol)
+}
+
 // SymbolDefine defines a new symbol in the current scope and adds it to the symbol table. Returns the defined Symbol.
 func (c *Scopes) SymbolDefine(symbol string) *Symbol {
 	return c.symbolTable.Define(symbol)
@@ -272,6 +277,7 @@ func (c *Scopes) EmitSymbolDefine(s *Symbol) error {
 		}
 	case LocalScope:
 		// Use new opcode for local variables
+		//fmt.Println("Emitting New Local Symbol:", s.Index, s.Name, c.scopeIndex)
 		if _, err := c.Emit(bytecode.OpDefineLocal, s.Index); err != nil {
 			return err
 		}
@@ -287,6 +293,7 @@ func (c *Scopes) EmitSymbolGet(s *Symbol) error {
 			return err
 		}
 	case LocalScope:
+		//fmt.Println("Emitting Update Local Symbol:", s.Index, s.Name, c.scopeIndex)
 		if _, err := c.Emit(bytecode.OpGetLocal, s.Index); err != nil {
 			return err
 		}
@@ -325,8 +332,12 @@ func (c *Scopes) EmitBinaryOp(op token.Token) error {
 		if _, err := c.Emit(bytecode.OpEqual); err != nil {
 			return err
 		}
-	case token.NEQ:
-		if _, err := c.Emit(bytecode.OpNotEqual); err != nil {
+	case token.LSS:
+		if _, err := c.Emit(bytecode.OpBinaryOp, int(objects.OperatorLess)); err != nil {
+			return err
+		}
+	case token.GTR:
+		if _, err := c.Emit(bytecode.OpBinaryOp, int(objects.OperatorGreater)); err != nil {
 			return err
 		}
 	default:

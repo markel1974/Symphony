@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io"
+	"log"
 	"reflect"
 
 	"github.com/markel1974/c64emu/src/kernel/compiler/modules"
@@ -41,6 +42,19 @@ type Bytecode struct {
 func NewBytecode() *Bytecode {
 	return &Bytecode{
 		files: NewFiles(),
+	}
+}
+
+func (b *Bytecode) Print() {
+	log.Println("--- Object Count ---")
+	log.Println(b.CountObjects())
+	log.Println("--- Constants ---")
+	for idx, v := range b.FormatConstants() {
+		log.Printf("%000d => %s\n", idx, v)
+	}
+	log.Println("--- References ---")
+	for idx, v := range b.FormatReferences() {
+		log.Printf("%2d => %s\n", idx, v)
 	}
 }
 

@@ -88,7 +88,7 @@ var OpcodeNames = [...]string{
 	OpSetFree:       "SETF",
 	OpGetLocalPtr:   "GETLP",
 	OpSetSelFree:    "SETSF",
-	OpIteratorInit:  "ITER",
+	OpIteratorInit:  "ITINIT",
 	OpIteratorNext:  "ITNXT",
 	OpIteratorKey:   "ITKEY",
 	OpIteratorValue: "ITVAL",

@@ -1,6 +1,10 @@
 package compiler
 
-import "github.com/markel1974/c64emu/src/kernel/vm/objects"
+import (
+	"strconv"
+
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
+)
 
 // SymbolScope defines the scope of a symbol within a program, such as global, local, free, or built-in.
 type SymbolScope string
@@ -22,12 +26,16 @@ type SymbolTable struct {
 	store          map[string]*Symbol
 	numDefinitions int
 	freeSymbols    []*Symbol
+	symbolsCounter int
 }
 
 // NewSymbolTable creates and returns a pointer to a new, empty SymbolTable with initialized storage.
 func NewSymbolTable() *SymbolTable {
 	s := make(map[string]*Symbol)
-	return &SymbolTable{store: s}
+	return &SymbolTable{
+		store:          s,
+		symbolsCounter: 0,
+	}
 }
 
 // NewEnclosedSymbolTable creates a new SymbolTable and sets the provided table as its outer scope.
@@ -51,8 +59,17 @@ func (s *SymbolTable) ConvertFreeSymbols() []*objects.ObjectPointer {
 	return make([]*objects.ObjectPointer, len(s.freeSymbols))
 }
 
+// FreeSymbolsLen returns the number of free symbols in the symbol table.
 func (s *SymbolTable) FreeSymbolsLen() int {
 	return len(s.freeSymbols)
+}
+
+// DefineUnique adds a new symbol with a unique name to the symbol table and assigns it a unique index and scope.
+// It returns a pointer to the newly created Symbol.
+func (s *SymbolTable) DefineUnique(name string) *Symbol {
+	uniqueName := name + strconv.Itoa(s.symbolsCounter)
+	s.symbolsCounter++
+	return s.Define(uniqueName)
 }
 
 // Define adds a new symbol with the provided name to the symbol table and assigns it a unique index and scope.

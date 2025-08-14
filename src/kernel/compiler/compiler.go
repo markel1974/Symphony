@@ -57,8 +57,12 @@ func (c *Compiler) Compile(in ast.Node) error {
 		err = c.doAssignStmt(node)
 	case *ast.IfStmt:
 		err = c.doIfStmt(node)
+	case *ast.RangeStmt:
+		err = c.doRangeStmt(node)
 	case *ast.ForStmt:
 		err = c.doForStmt(node)
+	case *ast.IncDecStmt:
+		err = c.doIncDecStmt(node)
 	case *ast.BinaryExpr:
 		err = c.doBinaryExpr(node)
 	case *ast.UnaryExpr:
@@ -119,7 +123,6 @@ func (c *Compiler) doExprStmt(node *ast.ExprStmt) error {
 	if err := c.Compile(node.X); err != nil {
 		return err
 	}
-	// Remove value from stack if unused
 	if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 		return err
 	}
@@ -137,7 +140,6 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 		ident := node.Lhs[i].(*ast.Ident)
 		if node.Tok == token.DEFINE { // Handles 'x := 10'
 			symbol := c.scopes.SymbolDefine(ident.Name)
-			// AND USE THE NEW FUNCTION HERE TOO
 			if err := c.scopes.EmitSymbolDefine(symbol); err != nil {
 				return err
 			}
@@ -146,10 +148,12 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 			if !ok {
 				return fmt.Errorf("undefined variable: %s", ident.Name)
 			}
-			// Assignment continues to use the old function
 			if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 				return err
 			}
+		}
+		if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -250,46 +254,361 @@ func (c *Compiler) doIfStmt(node *ast.IfStmt) error {
 	return nil
 }
 
-// doForStmt compiles an AST ForStmt node into bytecode, handling the loop's condition, body, jump logic, and stack cleanup.
-func (c *Compiler) doForStmt(node *ast.ForStmt) error {
-	scope, err := c.scopes.Current()
-	if err != nil {
+// doIncDecStmt processes increment and decrement statements in the AST and generates corresponding bytecode.
+// It ensures the variable is defined, fetches its value, performs the operation, and saves the result.
+// Returns an error if the variable is undefined or if an unsupported token is encountered.
+func (c *Compiler) doIncDecStmt(node *ast.IncDecStmt) error {
+	ident, ok := node.X.(*ast.Ident)
+	if !ok {
+		return fmt.Errorf("unsupported IncDec statement for type %T", node.X)
+	}
+	symbol, ok := c.scopes.SymbolResolve(ident.Name)
+	if !ok {
+		return fmt.Errorf("undefined variable: %s", ident.Name)
+	}
+	if err := c.scopes.EmitSymbolGet(symbol); err != nil {
 		return err
 	}
-	// Starting position for loop condition
-	loopStartPos := scope.InstructionsLen()
-	// Compile condition
-	if err = c.Compile(node.Cond); err != nil {
+	// 3. Aggiunge la costante '1' allo stack
+	constIndex := c.scopes.ConstantsAdd(objects.NewInt(1))
+	if _, err := c.scopes.Emit(bytecode.OpConstant, constIndex); err != nil {
 		return err
 	}
-	// Emit conditional jump to exit loop
-	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
-	if err != nil {
+	if node.Tok == token.INC {
+		if _, err := c.scopes.Emit(bytecode.OpBinaryOp, int(objects.OperatorAdd)); err != nil {
+			return err
+		}
+	} else if node.Tok == token.DEC {
+		if _, err := c.scopes.Emit(bytecode.OpBinaryOp, int(objects.OperatorSub)); err != nil {
+			return err
+		}
+	} else {
+		return fmt.Errorf("unsupported IncDec token: %s", node.Tok)
+	}
+	if err := c.scopes.EmitSymbolSet(symbol); err != nil {
 		return err
 	}
-	// Compile loop body
-	if err = c.Compile(node.Body); err != nil {
-		return err
-	}
-	// Emit unconditional jump to return to condition start
-	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
-		return err
-	}
-	// Update (back-patching) OpJumpFalsy address to point to loop end
-	scope, err = c.scopes.Current()
-	if err != nil {
-		return err
-	}
-	afterLoopPos := scope.InstructionsLen()
-	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
-		return err
-	}
-	// Remove condition value from stack after loop terminates
-	if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
+	// --- INIZIO DELLA CORREZIONE ---
+	// L'operazione di incremento/decremento lascia il risultato sullo stack.
+	// Dato che è un'istruzione, dobbiamo pulire questo valore.
+	if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
 		return err
 	}
 	return nil
 }
+
+// doForStmt compiles an AST ForStmt node into bytecode, handling the loop's
+// initialization, condition, post-statement, body, and jump logic.
+func (c *Compiler) doForStmt(node *ast.ForStmt) error {
+	if node.Init != nil {
+		if err := c.Compile(node.Init); err != nil {
+			return err
+		}
+	}
+	scope, err := c.scopes.Current()
+	if err != nil {
+		return err
+	}
+	loopStartPos := scope.InstructionsLen()
+	// compiles condition (e.g. x < 10)
+	if node.Cond != nil {
+		if err = c.Compile(node.Cond); err != nil {
+			return err
+		}
+	} else {
+		// if no condition is provided, it's an infinite loop - for simplicity emit 'true'
+		if _, err = c.scopes.Emit(bytecode.OpTrue); err != nil {
+			return err
+		}
+	}
+	// emits a conditional jump to exit the loop if condition is false
+	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
+	if err != nil {
+		return err
+	}
+	if err = c.Compile(node.Body); err != nil {
+		return err
+	}
+	// compiles post-iteration statement (e.g. x++)
+	if node.Post != nil {
+		if err = c.Compile(node.Post); err != nil {
+			return err
+		}
+	}
+	// emits an unconditional jump to return to condition start
+	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
+		return err
+	}
+	scope, err = c.scopes.Current()
+	if err != nil {
+		return err
+	}
+	// updates (back-patching) conditional jump address (OpJumpFalsy)
+	// to point to loop end
+	afterLoopPos := scope.InstructionsLen()
+	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
+		return err
+	}
+	return nil
+}
+
+// doRangeStmt processes a range statement, handling iteration and variable assignment in the compiled instructions.
+func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
+	if err := c.Compile(node.X); err != nil {
+		return err
+	}
+	scope, err := c.scopes.Current()
+	if err != nil {
+		return err
+	}
+	iteratorSymbol := c.scopes.SymbolDefineUnique("__iterator")
+	if _, err = c.scopes.Emit(bytecode.OpIteratorInit, iteratorSymbol.Index); err != nil {
+		return err
+	}
+	var keySymbol, valueSymbol *Symbol
+	if node.Key != nil {
+		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != "_" {
+			keySymbol = c.scopes.SymbolDefine(ident.Name)
+		}
+	}
+	if node.Value != nil {
+		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != "_" {
+			valueSymbol = c.scopes.SymbolDefine(ident.Name)
+		}
+	}
+
+	// 4. Inizio del ciclo
+	loopStartPos := scope.InstructionsLen()
+
+	// 5. Controlla se ci sono altri elementi, passando l'indice dell'iteratore.
+	if _, err := c.scopes.Emit(bytecode.OpIteratorNext, iteratorSymbol.Index); err != nil {
+		return err
+	}
+	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
+	if err != nil {
+		return err
+	}
+
+	// 6. Assegna i valori e pulisce lo stack degli operandi
+	if valueSymbol != nil {
+		if _, err = c.scopes.Emit(bytecode.OpIteratorValue, iteratorSymbol.Index); err != nil {
+			return err
+		}
+		if err = c.scopes.EmitSymbolSet(valueSymbol); err != nil {
+			return err
+		}
+		if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
+			return err
+		}
+	}
+
+	if keySymbol != nil {
+		if _, err = c.scopes.Emit(bytecode.OpIteratorKey, iteratorSymbol.Index); err != nil {
+			return err
+		}
+		if _, err = c.scopes.Emit(bytecode.OpIteratorValue, iteratorSymbol.Index); err != nil {
+			return err
+		}
+		if err = c.scopes.EmitSymbolSet(keySymbol); err != nil {
+			return err
+		}
+		if _, err = c.scopes.Emit(bytecode.OpPop); err != nil {
+			return err
+		}
+	}
+
+	// 7. Compila il corpo del ciclo
+	if err := c.Compile(node.Body); err != nil {
+		return err
+	}
+
+	// 8. Salta all'inizio
+	if _, err := c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
+		return err
+	}
+
+	// 9. Back-patching del jump di uscita
+	afterLoopPos := scope.InstructionsLen()
+	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
+		return err
+	}
+	return nil
+}
+
+/*
+// doRangeStmt compiles a for...range statement.
+func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
+	// 1. Compila l'espressione su cui iterare (es. la variabile 'x').
+	// Questo lascerà l'oggetto iterabile (stringa, array, mappa, ecc.) in cima allo stack.
+	if err := c.Compile(node.X); err != nil {
+		return err
+	}
+
+	// 2. Inizializza l'iteratore.
+	// Questa istruzione prende l'oggetto iterabile dallo stack e lo sostituisce con un oggetto iteratore.
+	if _, err := c.scopes.Emit(bytecode.OpIteratorInit); err != nil {
+		return err
+	}
+
+	scope, err := c.scopes.Current()
+	if err != nil {
+		return err
+	}
+
+	// 3. Inizio del ciclo di controllo.
+	loopStartPos := scope.InstructionsLen()
+
+	// 4. Controlla se c'è un prossimo elemento.
+	// OpIteratorNext lascia l'iteratore sullo stack e aggiunge un booleano (true se ci sono altri elementi).
+	if _, err = c.scopes.Emit(bytecode.OpIteratorNext); err != nil {
+		return err
+	}
+
+	// 5. Emette un salto per uscire dal ciclo se OpIteratorNext restituisce 'false'.
+	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
+	if err != nil {
+		return err
+	}
+
+	// 6. Definisce le variabili di ciclo (chiave e/o valore).
+	// La chiave (es. 'idx')
+	if node.Key != nil {
+		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != "_" {
+			if _, err = c.scopes.Emit(bytecode.OpIteratorKey); err != nil {
+				return err
+			}
+			// Definisce la variabile locale per la chiave.
+			symbol := c.scopes.SymbolDefine(ident.Name)
+			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
+				return err
+			}
+		}
+	}
+	// Il valore (es. 'v')
+	if node.Value != nil {
+		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != "_" {
+			if _, err = c.scopes.Emit(bytecode.OpIteratorValue); err != nil {
+				return err
+			}
+			symbol := c.scopes.SymbolDefine(ident.Name)
+			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
+				return err
+			}
+		}
+	}
+	if err = c.Compile(node.Body); err != nil {
+		return err
+	}
+	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
+		return err
+	}
+	scope, err = c.scopes.Current()
+	if err != nil {
+		return err
+	}
+	// 9. Aggiorna (back-patching) l'indirizzo del salto condizionale (OpJumpFalsy).
+	afterLoopPos := scope.InstructionsLen()
+	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
+		return err
+	}
+
+	// 10. Pulisce lo stack dall'oggetto iteratore dopo la fine del ciclo.
+	if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+*/
+
+/*
+
+// doRangeStmt compiles a for...range statement.
+func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
+	// 1. Compila l'espressione su cui iterare (es. la variabile 'x').
+	// Questo lascerà l'oggetto iterabile (stringa, array, mappa, ecc.) in cima allo stack.
+	if err := c.Compile(node.X); err != nil {
+		return err
+	}
+
+	// 2. Inizializza l'iteratore.
+	// Questa istruzione prende l'oggetto iterabile dallo stack e lo sostituisce con un oggetto iteratore.
+	if _, err := c.scopes.Emit(bytecode.OpIteratorInit); err != nil {
+		return err
+	}
+
+	scope, err := c.scopes.Current()
+	if err != nil {
+		return err
+	}
+
+	// 3. Inizio del ciclo di controllo.
+	loopStartPos := scope.InstructionsLen()
+
+	// 4. Controlla se c'è un prossimo elemento.
+	// OpIteratorNext lascia l'iteratore sullo stack e aggiunge un booleano (true se ci sono altri elementi).
+	if _, err = c.scopes.Emit(bytecode.OpIteratorNext); err != nil {
+		return err
+	}
+
+	// 5. Emette un salto per uscire dal ciclo se OpIteratorNext restituisce 'false'.
+	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
+	if err != nil {
+		return err
+	}
+
+	// 6. Definisce le variabili di ciclo (chiave e/o valore).
+	// La chiave (es. 'idx')
+	if node.Key != nil {
+		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != "_" {
+			if _, err = c.scopes.Emit(bytecode.OpIteratorKey); err != nil {
+				return err
+			}
+			// Definisce la variabile locale per la chiave.
+			symbol := c.scopes.SymbolDefine(ident.Name)
+			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
+				return err
+			}
+		}
+	}
+	// Il valore (es. 'v')
+	if node.Value != nil {
+		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != "_" {
+			if _, err = c.scopes.Emit(bytecode.OpIteratorValue); err != nil {
+				return err
+			}
+			symbol := c.scopes.SymbolDefine(ident.Name)
+			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
+				return err
+			}
+		}
+	}
+	if err = c.Compile(node.Body); err != nil {
+		return err
+	}
+	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
+		return err
+	}
+	scope, err = c.scopes.Current()
+	if err != nil {
+		return err
+	}
+	// 9. Aggiorna (back-patching) l'indirizzo del salto condizionale (OpJumpFalsy).
+	afterLoopPos := scope.InstructionsLen()
+	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
+		return err
+	}
+
+	// 10. Pulisce lo stack dall'oggetto iteratore dopo la fine del ciclo.
+	if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+*/
 
 // doFuncDecl compiles a function declaration into bytecode and manages the function's scope, parameters, and body.
 func (c *Compiler) doFuncDecl(node *ast.FuncDecl) error {
