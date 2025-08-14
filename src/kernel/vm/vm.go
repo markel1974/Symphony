@@ -44,8 +44,8 @@ type VM struct {
 	allocations      int64
 	err              error
 	sequencer        []func()
-	loader           ILoader
-	references       map[int]objects.IObject
+	references       []objects.IObject
+	builtin          []*objects.FunctionBuiltin
 }
 
 // NewVM initializes and returns a new virtual machine instance configured with the provided components and settings.
@@ -62,16 +62,14 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 	if maxAllocations < 1 {
 		return nil, fmt.Errorf("max allocations must be greater than 0")
 	}
-
-	references := make(map[int]objects.IObject)
-	for i, ref := range bc.References() {
-		symbol, ok := loader.GetSymbol(ref)
-		if !ok {
-			return nil, fmt.Errorf("can't load symbols, invalid reference %d", i)
-		}
-		references[i] = symbol
+	builtin, err := loader.ResolveBuiltinSymbols(bc.Constants())
+	if err != nil {
+		return nil, err
 	}
-
+	references, err := loader.ResolveSymbols(bc.References())
+	if err != nil {
+		return nil, err
+	}
 	v := &VM{
 		constants:      bc.Constants(),
 		globals:        globals,
@@ -80,7 +78,7 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 		maxAllocations: maxAllocations,
 		suspend:        false,
 		stack:          NewStack(stackSize),
-		loader:         loader,
+		builtin:        builtin,
 		references:     references,
 	}
 	main, err := bc.MainFunction()
@@ -797,17 +795,18 @@ func (v *VM) doOpGetLocal() {
 
 // doOpGetBuiltin retrieves a builtin function by its index and pushes it onto the stack, incrementing the instruction pointer.
 func (v *VM) doOpGetBuiltin() {
-	if v.loader == nil {
-		v.err = fmt.Errorf("loader not defined")
-		return
-	}
 	v.ip++
 	builtinIndex, err := v.currInstructions.Get(v.ip)
 	if err != nil {
 		v.err = err
 		return
 	}
-	v.stack.Push(v.loader.GetBuiltinSymbol(builtinIndex))
+	if builtinIndex < 0 || builtinIndex >= len(v.builtin) {
+		v.err = fmt.Errorf("builtin index out of range: %d", builtinIndex)
+		return
+	}
+	symbol := v.builtin[builtinIndex]
+	v.stack.Push(symbol)
 }
 
 // doOpClosure handles the creation of a new compiled-function closure with captured free variables on the call stack.
@@ -993,21 +992,18 @@ func (v *VM) doOpIteratorValue() {
 
 // doOpReferences retrieves an attribute identified by its index, resolves it, and pushes it onto the stack.
 func (v *VM) doOpReferences() {
-	if v.loader == nil {
-		v.err = fmt.Errorf("no loader loaded")
-		return
-	}
 	v.ip += 2
 	nameIndex, err := v.currInstructions.Pos(v.ip, v.ip-1)
 	if err != nil {
 		v.err = err
 		return
 	}
-	if symbol, ok := v.references[nameIndex]; ok && symbol != nil {
-		v.stack.Push(symbol)
+	if nameIndex < 0 || nameIndex >= len(v.references) {
+		v.err = fmt.Errorf("invalid attribute index %d", nameIndex)
 		return
 	}
-	v.err = fmt.Errorf("invalid attribute index %d", nameIndex)
+	symbol := v.references[nameIndex]
+	v.stack.Push(symbol)
 	return
 }
 

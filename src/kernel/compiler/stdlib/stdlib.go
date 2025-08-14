@@ -1,6 +1,8 @@
 package stdlib
 
 import (
+	"fmt"
+
 	"github.com/markel1974/c64emu/src/kernel/compiler/modules"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -21,13 +23,34 @@ func NewLoader() *Loader {
 	}
 }
 
-// GetBuiltin retrieves a FunctionBuiltin instance from the predefined list of built-in functions based on the given index.
+func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, error) {
+	references := make([]objects.IObject, len(symbols))
+	for i, ref := range symbols {
+		symbol, ok := l.GetSymbol(ref)
+		if !ok {
+			return nil, fmt.Errorf("can't load symbols, invalid reference %d", i)
+		}
+		references[i] = symbol
+	}
+	return references, nil
+}
+
+func (l *Loader) ResolveBuiltinSymbols(symbols []objects.IObject) ([]*objects.FunctionBuiltin, error) {
+	builtin := make([]*objects.FunctionBuiltin, len(symbols))
+	for i := range symbols {
+		v := l.GetBuiltinSymbol(i)
+		if v == nil {
+			return nil, fmt.Errorf("can't load builtin symbols, invalid reference %d", i)
+		}
+		builtin[i] = v
+	}
+	return builtin, nil
+}
+
 func (l *Loader) GetBuiltinSymbol(idx int) *objects.FunctionBuiltin {
 	return GetBuiltin(idx)
 }
 
-// GetSymbolFromDefinition retrieves a symbol from a module using the provided definition as an identifier.
-// Returns the located symbol and a boolean indicating whether the symbol was successfully found.
 func (l *Loader) GetSymbol(definition objects.IObject) (objects.IObject, bool) {
 	return l.mod.GetSymbolFromDefinition(definition)
 }
