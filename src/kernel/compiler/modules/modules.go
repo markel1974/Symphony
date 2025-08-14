@@ -6,18 +6,18 @@ import (
 
 // Modules represents a collection of modules identified by their names, allowing management and access to importable modules.
 type Modules struct {
-	m map[string]IImportable
+	m map[string]IModule
 }
 
 // NewModules creates and returns a new instance of Modules with an initialized map for storing module data.
 func NewModules() *Modules {
 	return &Modules{
-		m: make(map[string]IImportable),
+		m: make(map[string]IModule),
 	}
 }
 
 // Add inserts a module into the Modules map with the specified name as the key.
-func (m *Modules) Add(name string, module IImportable) {
+func (m *Modules) Add(name string, module IModule) {
 	m.m[name] = module
 }
 
@@ -36,8 +36,8 @@ func (m *Modules) Remove(name string) {
 	delete(m.m, name)
 }
 
-// Get retrieves a module by its name from the Modules map and returns it as an IImportable instance.
-func (m *Modules) Get(name string) IImportable {
+// Get retrieves a module by its name from the Modules map and returns it as an IModule instance.
+func (m *Modules) Get(name string) IModule {
 	return m.m[name]
 }
 
@@ -97,7 +97,7 @@ func (m *Modules) GetSourceModule(name string) *ModuleSource {
 // Copy creates and returns a new Modules instance with a deep copy of the current module map.
 func (m *Modules) Copy() *Modules {
 	c := &Modules{
-		m: make(map[string]IImportable),
+		m: make(map[string]IModule),
 	}
 	for name, mod := range m.m {
 		c.m[name] = mod

@@ -4,9 +4,7 @@ import (
 	"fmt"
 
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
-	"github.com/markel1974/c64emu/src/kernel/vm/modules"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
-	"github.com/markel1974/c64emu/src/kernel/vm/stdlib"
 )
 
 // globalsSize defines the maximum size of the global variables space.
@@ -46,12 +44,12 @@ type VM struct {
 	allocations      int64
 	err              error
 	sequencer        []func()
-	linker           modules.IModuleGetter
-	linkerCache      map[int]objects.IObject
+	loader           ILoader
+	loaderCache      map[int]objects.IObject
 }
 
 // NewVM initializes and returns a new virtual machine instance configured with the provided components and settings.
-func NewVM(linker modules.IModuleGetter, sequencer ISequencer, bc *bytecode.Bytecode, globals []objects.IObject, maxAllocations int64) (*VM, error) {
+func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals []objects.IObject, maxAllocations int64) (*VM, error) {
 	if bc == nil {
 		return nil, fmt.Errorf("bytecode is nil")
 	}
@@ -72,8 +70,8 @@ func NewVM(linker modules.IModuleGetter, sequencer ISequencer, bc *bytecode.Byte
 		maxAllocations: maxAllocations,
 		suspend:        false,
 		stack:          NewStack(stackSize),
-		linker:         linker,
-		linkerCache:    make(map[int]objects.IObject),
+		loader:         loader,
+		loaderCache:    make(map[int]objects.IObject),
 	}
 	main, err := bc.MainFunction()
 	if err != nil {
@@ -789,13 +787,17 @@ func (v *VM) doOpGetLocal() {
 
 // doOpGetBuiltin retrieves a builtin function by its index and pushes it onto the stack, incrementing the instruction pointer.
 func (v *VM) doOpGetBuiltin() {
+	if v.loader == nil {
+		v.err = fmt.Errorf("loader not defined")
+		return
+	}
 	v.ip++
 	builtinIndex, err := v.currInstructions.Get(v.ip)
 	if err != nil {
 		v.err = err
 		return
 	}
-	v.stack.Push(stdlib.GetBuiltin(builtinIndex))
+	v.stack.Push(v.loader.GetBuiltin(builtinIndex))
 }
 
 // doOpClosure handles the creation of a new compiled-function closure with captured free variables on the call stack.
@@ -981,8 +983,8 @@ func (v *VM) doOpIteratorValue() {
 
 // doOpGetAttr retrieves an attribute identified by its index, resolves it, and pushes it onto the stack.
 func (v *VM) doOpGetAttr() {
-	if v.linker == nil {
-		v.err = fmt.Errorf("no linker loaded")
+	if v.loader == nil {
+		v.err = fmt.Errorf("no loader loaded")
 		return
 	}
 	v.ip += 2
@@ -991,16 +993,16 @@ func (v *VM) doOpGetAttr() {
 		v.err = err
 		return
 	}
-	if symbol, ok := v.linkerCache[nameIndex]; ok && symbol != nil {
+	if symbol, ok := v.loaderCache[nameIndex]; ok && symbol != nil {
 		v.stack.Push(symbol)
 		return
 	}
-	symbol, ok := v.linker.GetSymbolFromDefinition(v.constants[nameIndex])
+	symbol, ok := v.loader.GetSymbolFromDefinition(v.constants[nameIndex])
 	if !ok {
 		v.err = fmt.Errorf("invalid attribute index %d", nameIndex)
 		return
 	}
-	v.linkerCache[nameIndex] = symbol
+	v.loaderCache[nameIndex] = symbol
 	v.stack.Push(symbol)
 }
 

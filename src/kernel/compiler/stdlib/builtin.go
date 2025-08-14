@@ -1,12 +1,12 @@
 package stdlib
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/vm/modules/format"
+	"github.com/markel1974/c64emu/src/kernel/compiler/modules/format"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// builtinFuncs is a slice of predefined builtin functions used for various standard operations within the system.
-var builtinFuncs = []*objects.FunctionBuiltin{
+// _builtinFuncs is a slice of predefined builtin functions used for various standard operations within the system.
+var _builtinFuncs = []*objects.FunctionBuiltin{
 	objects.NewFunctionBuiltin("len", builtinLen),
 	objects.NewFunctionBuiltin("copy", builtinCopy),
 	objects.NewFunctionBuiltin("append", builtinAppend),
@@ -43,7 +43,7 @@ var builtinFuncs = []*objects.FunctionBuiltin{
 
 // GetAllBuiltinFunctions returns a slice containing all registered builtin functions.
 func GetAllBuiltinFunctions() []*objects.FunctionBuiltin {
-	return append([]*objects.FunctionBuiltin{}, builtinFuncs...)
+	return append([]*objects.FunctionBuiltin{}, _builtinFuncs...)
 }
 
 // builtinTypeName returns the type name of the given object argument as a string, or an error if the argument count is invalid.
@@ -596,5 +596,5 @@ func builtinSplice(args ...objects.IObject) (objects.IObject, error) {
 
 // GetBuiltin retrieves a FunctionBuiltin by its index from the predefined list of builtin functions.
 func GetBuiltin(idx int) *objects.FunctionBuiltin {
-	return builtinFuncs[idx]
+	return _builtinFuncs[idx]
 }

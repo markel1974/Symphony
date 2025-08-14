@@ -4,8 +4,8 @@ import (
 	"bytes"
 	gojson "encoding/json"
 
+	json2 "github.com/markel1974/c64emu/src/kernel/compiler/stdlib/json"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
-	"github.com/markel1974/c64emu/src/kernel/vm/stdlib/json"
 )
 
 var jsonModule = map[string]objects.IObject{
@@ -21,13 +21,13 @@ func jsonDecode(args ...objects.IObject) (ret objects.IObject, err error) {
 	}
 	switch o := args[0].(type) {
 	case *objects.Bytes:
-		v, err := json.Decode(o.Value())
+		v, err := json2.Decode(o.Value())
 		if err != nil {
 			return objects.NewError(objects.NewStringNoSize(err.Error())), nil
 		}
 		return v, nil
 	case *objects.String:
-		v, err := json.Decode([]byte(o.Value()))
+		v, err := json2.Decode([]byte(o.Value()))
 		if err != nil {
 			return objects.NewError(objects.NewStringNoSize(err.Error())), nil
 		}
@@ -41,7 +41,7 @@ func jsonEncode(args ...objects.IObject) (ret objects.IObject, err error) {
 	if len(args) != 1 {
 		return nil, objects.ErrWrongNumArguments
 	}
-	b, err := json.Encode(args[0])
+	b, err := json2.Encode(args[0])
 	if err != nil {
 		return objects.NewError(objects.NewStringNoSize(err.Error())), nil
 	}

@@ -6,7 +6,7 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/markel1974/c64emu/src/kernel/vm/modules"
+	"github.com/markel1974/c64emu/src/kernel/compiler/modules"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 

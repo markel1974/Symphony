@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/markel1974/c64emu/src/kernel/compiler/stdlib"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
-	"github.com/markel1974/c64emu/src/kernel/vm/stdlib"
 )
 
 const (
