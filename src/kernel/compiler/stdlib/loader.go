@@ -7,7 +7,9 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// Loader provides access to and management of modules, including built-in and source modules, for symbol resolution and imports.
+// Loader is responsible for managing modules and resolving symbols within those modules.
+// It provides functionality for accessing and resolving both regular and built-in symbols.
+// The mod field holds a collection of modules, allowing for import and retrieval of symbols.
 type Loader struct {
 	mod *modules.Modules
 }
@@ -23,6 +25,7 @@ func NewLoader() *Loader {
 	}
 }
 
+// ResolveSymbols resolves a list of symbol references to their corresponding objects using the loader's symbol mapping.
 func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, error) {
 	references := make([]objects.IObject, len(symbols))
 	for i, ref := range symbols {
@@ -35,6 +38,7 @@ func (l *Loader) ResolveSymbols(symbols []objects.IObject) ([]objects.IObject, e
 	return references, nil
 }
 
+// ResolveBuiltinSymbols resolves a list of IObject symbols into their corresponding built-in functions, returning an error if any fail.
 func (l *Loader) ResolveBuiltinSymbols(symbols []objects.IObject) ([]*objects.FunctionBuiltin, error) {
 	builtin := make([]*objects.FunctionBuiltin, len(symbols))
 	for i := range symbols {
@@ -47,10 +51,12 @@ func (l *Loader) ResolveBuiltinSymbols(symbols []objects.IObject) ([]*objects.Fu
 	return builtin, nil
 }
 
+// GetBuiltinSymbol retrieves a built-in function by its index and returns it as a FunctionBuiltin instance.
 func (l *Loader) GetBuiltinSymbol(idx int) *objects.FunctionBuiltin {
 	return GetBuiltin(idx)
 }
 
+// GetSymbol retrieves a symbol from the module based on the provided object definition. Returns the symbol and success status.
 func (l *Loader) GetSymbol(definition objects.IObject) (objects.IObject, bool) {
 	return l.mod.GetSymbolFromDefinition(definition)
 }
