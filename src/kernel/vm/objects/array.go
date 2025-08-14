@@ -5,9 +5,13 @@ import (
 	"strings"
 )
 
+const (
+	ArrayType = "array"
+)
+
 // Array represents a collection of IObject elements, providing methods for manipulation, indexing, and iteration.
 type Array struct {
-	ObjectImpl
+	Object
 	values []IObject
 }
 
@@ -18,7 +22,7 @@ func NewArray(value []IObject) *Array {
 
 // TypeName returns the string "array", representing the type name of the Array object.
 func (o *Array) TypeName() string {
-	return "array"
+	return ArrayType
 }
 
 // Values returns the slice of IObject elements stored in the Array.
@@ -150,12 +154,12 @@ func (o *Array) IndexSet(index IObject, value IObject) (err error) {
 	return nil
 }
 
-// Iterate returns an IIterator for the Array instance, allowing sequential access to its elements.
-func (o *Array) Iterate() IIterator {
-	return NewArrayIterator(o.values)
-}
-
 // CanIterate checks if the Array is iterable and always returns true.
 func (o *Array) CanIterate() bool {
 	return true
+}
+
+// Iterate returns an IIterator for the Array instance, allowing sequential access to its elements.
+func (o *Array) Iterate() IIterator {
+	return NewArrayIterator(o.values)
 }

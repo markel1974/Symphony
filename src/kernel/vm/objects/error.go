@@ -4,9 +4,13 @@ import (
 	"fmt"
 )
 
+const (
+	ErrorType = "error"
+)
+
 // Error represents an object that encapsulates an error and implements the IObject interface.
 type Error struct {
-	ObjectImpl
+	Object
 	value IObject
 }
 
@@ -17,18 +21,18 @@ func NewError(value IObject) *Error {
 
 // TypeName returns the name of the type as a string, which is "error".
 func (o *Error) TypeName() string {
-	return "error"
+	return ErrorType
 }
 
 // String returns the string representation of the Error object. If the values is nil, it returns "error".
 func (o *Error) String() string {
 	if o.value != nil {
-		return fmt.Sprintf("error: %s", o.value.String())
+		return fmt.Sprintf("%s: %s", ErrorType, o.value.String())
 	}
-	return "error"
+	return ErrorType
 }
 
-// Falsy returns true, indicating that the Error object is always considered falsy in a boolean context.
+// Boolean returns true, indicating that the Error object is always considered falsy in a boolean context.
 func (o *Error) Boolean() bool {
 	return true // error is always false.
 }

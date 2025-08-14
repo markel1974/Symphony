@@ -1,10 +1,15 @@
 package objects
 
+const (
+	ObjectPointerType  = "object_pointer"
+	ObjectPointerLabel = "<" + ObjectPointerType + ">"
+)
+
 // ObjectPointer is a wrapper around a pointer to an IObject, allowing additional behaviors and encapsulation of the values.
-// It embeds ObjectImpl, inheriting default behaviors for the IObject interface methods.
-// The values field holds the actual IObject instance being wrapped.
+// It embeds Object, inheriting default behaviors for the IObject interface methods.
+// The value field holds the actual IObject instance being wrapped.
 type ObjectPointer struct {
-	ObjectImpl
+	Object
 	value *IObject
 }
 
@@ -23,14 +28,14 @@ func (o *ObjectPointer) SetValue(value IObject) {
 	*o.value = value
 }
 
-// String returns the string representation of the ObjectPointer as "free-var".
+// String returns the string representation of the ObjectPointer instance.
 func (o *ObjectPointer) String() string {
-	return "free-var"
+	return ObjectPointerType
 }
 
-// TypeName returns the type name of the object as a string, in this case, "<free-var>".
+// TypeName returns the type name of the ObjectPointer as a string.
 func (o *ObjectPointer) TypeName() string {
-	return "<free-var>"
+	return ObjectPointerLabel
 }
 
 // Copy creates and returns a duplicate of the object implementing the IObject interface.
@@ -38,7 +43,7 @@ func (o *ObjectPointer) Copy() IObject {
 	return o
 }
 
-// Falsy returns true if the values of the ObjectPointer is nil, indicating it is considered falsy in a boolean context.
+// Boolean returns true if the value of the ObjectPointer is nil.
 func (o *ObjectPointer) Boolean() bool {
 	return o.value == nil
 }

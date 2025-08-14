@@ -4,9 +4,13 @@ import (
 	"strconv"
 )
 
+const (
+	IntType = "int"
+)
+
 // Int represents an integer type with a 64-bit value and methods for operations, equality, and object behavior.
 type Int struct {
-	ObjectImpl
+	Object
 	value int64
 }
 
@@ -27,7 +31,7 @@ func (o *Int) String() string {
 
 // TypeName returns the name of the type as a string, which is "int" for this object.
 func (o *Int) TypeName() string {
-	return "int"
+	return IntType
 }
 
 // BinaryOp performs a binary operation using the specified operator and right-hand side operand, returning the result.
@@ -207,75 +211,4 @@ func (o *Int) Equals(x IObject) bool {
 		return false
 	}
 	return o.value == t.value
-}
-
-// ToInt64 attempts to convert the given IObject to an int64 value.
-// It returns the converted value and a boolean indicating success or failure.
-func ToInt64(o IObject) (v int64, ok bool) {
-	switch o := o.(type) {
-	case *Int:
-		v = o.value
-		ok = true
-	case *Float:
-		v = int64(o.value)
-		ok = true
-	case *Char:
-		v = int64(o.value)
-		ok = true
-	case *Bool:
-		if o == TrueValue {
-			v = 1
-		}
-		ok = true
-	case *String:
-		c, err := strconv.ParseInt(o.value, 10, 64)
-		if err == nil {
-			v = c
-			ok = true
-		}
-	}
-	return
-}
-
-// ToInt converts an IObject to an integer if possible, returning the integer and a boolean indicating success.
-func ToInt(o IObject) (int, bool) {
-	switch o := o.(type) {
-	case *Int:
-		return int(o.value), true
-	case *Float:
-		return int(o.value), true
-	case *Char:
-		return int(o.value), true
-	case *Bool:
-		if o == TrueValue {
-			return 1, true
-		}
-		return 0, true
-	case *String:
-		c, err := strconv.ParseInt(o.value, 10, 64)
-		if err == nil {
-			return int(c), true
-		}
-		return 0, false
-	default:
-		return 0, false
-	}
-}
-
-// ToIntArg converts an IObject to an integer, returning an error if the conversion is not possible or types mismatch.
-func ToIntArg(name string, o IObject) (int, error) {
-	v, ok := ToInt(o)
-	if !ok {
-		return 0, NewInvalidArgumentError(name, "int(compatible)", o.TypeName())
-	}
-	return v, nil
-}
-
-// ToInt64Arg converts an IObject to an int64, returning an error if the conversion is not possible or the type is invalid.
-func ToInt64Arg(name string, o IObject) (int64, error) {
-	v, ok := ToInt64(o)
-	if !ok {
-		return 0, NewInvalidArgumentError(name, "int(compatible)", o.TypeName())
-	}
-	return v, nil
 }

@@ -1,5 +1,9 @@
 package objects
 
+const (
+	BoolType = "bool"
+)
+
 // TrueValue is a predefined constant representing the boolean true value as an IObject.
 // FalseValue is a predefined constant representing the boolean false value as an IObject.
 // UndefinedValue is a predefined constant representing an undefined value as an IObject.
@@ -9,18 +13,15 @@ var (
 
 	// FalseValue represents a false values.
 	FalseValue IObject = &Bool{value: false}
-
-	// UndefinedValue represents an undefined values.
-	UndefinedValue IObject = &Undefined{}
 )
 
 // Bool is a custom type representing a boolean values, implementing IObject interface and encapsulating a boolean value.
 type Bool struct {
-	ObjectImpl
+	Object
 	value bool
 }
 
-// String returns the string representation of the Bool object, i.e., "true" if the value is true, otherwise "false".
+// String returns the string representation of the Bool object, index.e., "true" if the value is true, otherwise "false".
 func (o *Bool) String() string {
 	if o.value {
 		return "true"
@@ -30,7 +31,7 @@ func (o *Bool) String() string {
 
 // TypeName returns the name of the type as a string, specifically "bool" for the Bool type.
 func (o *Bool) TypeName() string {
-	return "bool"
+	return BoolType
 }
 
 // Copy creates and returns a reference to the current Bool object.
@@ -38,7 +39,7 @@ func (o *Bool) Copy() IObject {
 	return o
 }
 
-// Falsy returns true if the Bool value is false, otherwise returns false.
+// Boolean returns true if the Bool value is false, otherwise returns false.
 func (o *Bool) Boolean() bool {
 	return !o.value
 }

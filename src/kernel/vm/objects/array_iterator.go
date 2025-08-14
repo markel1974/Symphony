@@ -1,30 +1,35 @@
 package objects
 
+const (
+	ArrayIteratorType  = "array_iterator"
+	ArrayIteratorLabel = "<" + ArrayIteratorType + ">"
+)
+
 // ArrayIterator is an iterator type for traversing elements of an array.
 // It implements the IIterator interface to provide sequential access to array elements.
 type ArrayIterator struct {
-	ObjectImpl
-	v []IObject
-	i int
-	l int
+	Object
+	values []IObject
+	index  int
+	length int
 }
 
 // NewArrayIterator creates and returns a new ArrayIterator instance with the given slice of IObject.
 func NewArrayIterator(v []IObject) *ArrayIterator {
-	return &ArrayIterator{v: v, l: len(v), i: 0}
+	return &ArrayIterator{values: v, length: len(v), index: 0}
 }
 
 // TypeName returns the type name of the ArrayIterator as a string.
 func (i *ArrayIterator) TypeName() string {
-	return "array-iterator"
+	return ArrayIteratorType
 }
 
 // String returns a string representation of the ArrayIterator instance.
 func (i *ArrayIterator) String() string {
-	return "<array-iterator>"
+	return ArrayIteratorLabel
 }
 
-// Falsy determines whether the ArrayIterator should be considered a falsy values. Always returns true.
+// Boolean determines whether the ArrayIterator should be considered a falsy values. Always returns true.
 func (i *ArrayIterator) Boolean() bool {
 	return true
 }
@@ -36,21 +41,25 @@ func (i *ArrayIterator) Equals(IObject) bool {
 
 // Copy creates and returns a duplicate of the ArrayIterator, preserving its current state.
 func (i *ArrayIterator) Copy() IObject {
-	return &ArrayIterator{v: i.v, i: i.i, l: i.l}
+	return &ArrayIterator{
+		values: i.values,
+		index:  i.index,
+		length: i.length,
+	}
 }
 
 // Next advances the iterator to the next element and returns true if the current position is within bounds.
 func (i *ArrayIterator) Next() bool {
-	i.i++
-	return i.i <= i.l
+	i.index++
+	return i.index <= i.length
 }
 
 // Key returns the index of the current element in the iteration as an IObject.
 func (i *ArrayIterator) Key() IObject {
-	return NewInt(int64(i.i - 1))
+	return NewInt(int64(i.index - 1))
 }
 
 // Value returns the current element in the iteration based on the iterator's internal position.
 func (i *ArrayIterator) Value() IObject {
-	return i.v[i.i-1]
+	return i.values[i.index-1]
 }

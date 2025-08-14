@@ -1,17 +1,27 @@
 package objects
 
+const (
+	UndefinedType  = "undefined"
+	UndefinedLabel = "<" + UndefinedType + ">"
+)
+
+var (
+	// UndefinedValue represents an undefined values.
+	UndefinedValue IObject = &Undefined{}
+)
+
 // Undefined represents an undefined values.
 type Undefined struct {
-	ObjectImpl
+	Object
 }
 
 // TypeName returns the name of the type.
 func (o *Undefined) TypeName() string {
-	return "undefined"
+	return UndefinedType
 }
 
 func (o *Undefined) String() string {
-	return "<undefined>"
+	return UndefinedLabel
 }
 
 // Copy returns a copy of the type.
@@ -19,12 +29,12 @@ func (o *Undefined) Copy() IObject {
 	return o
 }
 
-// Falsy returns true if the values of the type is falsy.
+// Boolean returns true.
 func (o *Undefined) Boolean() bool {
 	return true
 }
 
-// Equals returns true if the values of the type is equal to the values of
+// Equals returns true if the values of the type are equal to the values of
 // another object.
 func (o *Undefined) Equals(x IObject) bool {
 	return o == x

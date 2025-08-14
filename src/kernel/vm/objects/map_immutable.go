@@ -5,9 +5,13 @@ import (
 	"strings"
 )
 
+const (
+	MapImmutableType = "map_immutable"
+)
+
 // MapImmutable represents a read-only map structure where keys are strings and values are of type IObject.
 type MapImmutable struct {
-	ObjectImpl
+	Object
 	values map[string]IObject
 }
 
@@ -37,7 +41,7 @@ func (o *MapImmutable) GetValue(k string) (IObject, bool) {
 
 // TypeName returns the type name of the MapImmutable as a string.
 func (o *MapImmutable) TypeName() string {
-	return "immutable-map"
+	return MapImmutableType
 }
 
 // String generates a string representation of the MapImmutable in key-values pair format.
@@ -58,7 +62,7 @@ func (o *MapImmutable) Copy() IObject {
 	return NewMap(c)
 }
 
-// Falsy returns true if the map is empty, indicating it is considered "falsy", otherwise false.
+// Boolean returns true if the map is empty, indicating it is considered "falsy", otherwise false.
 func (o *MapImmutable) Boolean() bool {
 	return len(o.values) == 0
 }
@@ -77,7 +81,7 @@ func (o *MapImmutable) IndexGet(index IObject) (res IObject, err error) {
 	return
 }
 
-// Equals determines whether the current MapImmutable is equal to another IObject by comparing their key-values pairs.
+// Equals determine whether the current MapImmutable is equal to another IObject by comparing their key-values pairs.
 func (o *MapImmutable) Equals(in IObject) bool {
 	var xVal map[string]IObject
 	switch x := in.(type) {
@@ -102,15 +106,7 @@ func (o *MapImmutable) Equals(in IObject) bool {
 
 // Iterate returns an iterator for traversing the key-values pairs in the immutable map.
 func (o *MapImmutable) Iterate() IIterator {
-	var keys []string
-	for k := range o.values {
-		keys = append(keys, k)
-	}
-	return &MapIterator{
-		v: o.values,
-		k: keys,
-		l: len(keys),
-	}
+	return NewMapIterator(o.values)
 }
 
 // CanIterate returns true, indicating that the MapImmutable supports iteration.

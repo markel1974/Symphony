@@ -5,9 +5,13 @@ import (
 	"strings"
 )
 
+const (
+	MapType = "map"
+)
+
 // Map represents a collection of key-values pairs where keys are strings and values implement the IObject interface.
 type Map struct {
-	ObjectImpl
+	Object
 	values map[string]IObject
 }
 
@@ -49,7 +53,7 @@ func (o *Map) Length() int {
 
 // TypeName returns the string "map", which represents the type name of the Map object.
 func (o *Map) TypeName() string {
-	return "map"
+	return MapType
 }
 
 // String returns the string representation of the Map object in the format of key-values pairs enclosed in braces.
@@ -70,7 +74,7 @@ func (o *Map) Copy() IObject {
 	return &Map{values: c}
 }
 
-// Falsy returns true if the map contains no key-values pairs, indicating it is empty.
+// Boolean returns true if the map contains no key-values pairs, indicating it is empty.
 func (o *Map) Boolean() bool {
 	return len(o.values) == 0
 }
@@ -126,11 +130,7 @@ func (o *Map) IndexSet(index, value IObject) (err error) {
 
 // Iterate creates and returns an iterator for the Map, allowing iteration over its keys and associated values.
 func (o *Map) Iterate() IIterator {
-	var keys []string
-	for k := range o.values {
-		keys = append(keys, k)
-	}
-	return NewMapIterator(o.values, keys)
+	return NewMapIterator(o.values)
 }
 
 // CanIterate returns true, indicating that the Map object supports iteration over its elements.

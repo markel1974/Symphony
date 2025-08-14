@@ -5,11 +5,15 @@ import (
 	"strconv"
 )
 
+const (
+	FloatType = "float"
+)
+
 // Float represents a floating-point number and provides operations and behaviors specific to numeric types.
-// It embeds ObjectImpl to implement common interface methods and extends behavior where necessary.
-// The values field holds the actual float64 values encapsulated by the Float type.
+// It embeds Object to implement common interface methods and extends behavior where necessary.
+// The value field holds the actual float64 values encapsulated by the Float type.
 type Float struct {
-	ObjectImpl
+	Object
 	value float64
 }
 
@@ -27,9 +31,9 @@ func (o *Float) String() string {
 	return strconv.FormatFloat(o.value, 'f', -1, 64)
 }
 
-// TypeName returns the name of the type as "float".
+// TypeName returns the name of the type.
 func (o *Float) TypeName() string {
-	return "float"
+	return FloatType
 }
 
 // BinaryOp performs a binary operation between the current Float and another IObject based on the specified operator.
@@ -143,7 +147,7 @@ func (o *Float) Copy() IObject {
 	return &Float{value: o.value}
 }
 
-// Falsy determines if the float object is considered falsy, returning true if the values is NaN; otherwise, false.
+// Boolean determines if the float object is considered falsy, returning true if the values is NaN; otherwise, false.
 func (o *Float) Boolean() bool {
 	return math.IsNaN(o.value)
 }
@@ -155,38 +159,4 @@ func (o *Float) Equals(x IObject) bool {
 		return false
 	}
 	return o.value == t.value
-}
-
-// ToFloat64 attempts to convert an IObject to a float64 and returns the values along with a success flag.
-func ToFloat64(o IObject) (float64, bool) {
-	switch o := o.(type) {
-	case *Int:
-		return float64(o.value), true
-	case *Float:
-		return o.value, true
-	case *Char:
-		return float64(o.value), true
-	case *Bool:
-		if o == TrueValue {
-			return 1, true
-		}
-		return 0, true
-	case *String:
-		c, err := strconv.ParseFloat(o.value, 64)
-		if err == nil {
-			return c, true
-		}
-		return 0, false
-	default:
-		return 0, false
-	}
-}
-
-// ToFloat64Arg converts an IObject to a float64 and returns an error if the conversion fails or the type is incompatible.
-func ToFloat64Arg(name string, o IObject) (float64, error) {
-	v, ok := ToFloat64(o)
-	if !ok {
-		return 0, NewInvalidArgumentError(name, "float64(compatible)", o.TypeName())
-	}
-	return v, nil
 }

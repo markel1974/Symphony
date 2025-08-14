@@ -1,12 +1,17 @@
 package objects
 
+const (
+	FunctionUserDef   = "function_user"
+	FunctionUserLabel = "<" + FunctionUserDef + ">"
+)
+
 // FunctionUser represents a user-defined callable function object.
-// It embeds ObjectImpl to inherit default behavior and implements a callable interface.
+// It embeds Object to inherit default behavior and implements a callable interface.
 // Name is the identifier for the function.
 // Value holds the callable logic of the function as a CallableFunc.
 // EncodingID is an identifier used for serialization or external encoding purposes.
 type FunctionUser struct {
-	ObjectImpl
+	Object
 	name       string
 	value      CallableFunc
 	encodingID string
@@ -20,14 +25,14 @@ func NewFunctionUser(id string, fn CallableFunc) *FunctionUser {
 	}
 }
 
-// TypeName returns the type name of the FunctionUser as a string, prefixed with "user-function:".
+// TypeName returns the type name of the FunctionUser as a string.
 func (o *FunctionUser) TypeName() string {
-	return "user-function:" + o.name
+	return FunctionUserDef + ":" + o.name
 }
 
-// String returns the string representation of a FunctionUser object, which is always "<user-function>".
+// String returns the string representation of a FunctionUser object.
 func (o *FunctionUser) String() string {
-	return "<user-function>"
+	return FunctionUserLabel
 }
 
 // Copy creates and returns a new FunctionUser instance with the same Value field as the original object.

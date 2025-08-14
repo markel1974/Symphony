@@ -4,9 +4,13 @@ import (
 	"time"
 )
 
+const (
+	TimeType = "time"
+)
+
 // Time represents a custom object encapsulating a Go time.Time values with extended behaviors and operations.
 type Time struct {
-	ObjectImpl
+	Object
 	value time.Time
 }
 
@@ -27,7 +31,7 @@ func (o *Time) String() string {
 
 // TypeName returns the name of the type as a string, which is "time".
 func (o *Time) TypeName() string {
-	return "time"
+	return TimeType
 }
 
 // BinaryOp performs a binary operation between the Time object and another IObject using a specified Operator.
@@ -36,12 +40,12 @@ func (o *Time) BinaryOp(op Operator, in IObject) (IObject, error) {
 	switch rhs := in.(type) {
 	case *Int:
 		switch op {
-		case OperatorAdd: // time + int => time
+		case OperatorAdd:
 			if rhs.value == 0 {
 				return o, nil
 			}
 			return &Time{value: o.value.Add(time.Duration(rhs.value))}, nil
-		case OperatorSub: // time - int => time
+		case OperatorSub:
 			if rhs.value == 0 {
 				return o, nil
 			}
@@ -51,9 +55,9 @@ func (o *Time) BinaryOp(op Operator, in IObject) (IObject, error) {
 		}
 	case *Time:
 		switch op {
-		case OperatorSub: // time - time => int (duration)
+		case OperatorSub:
 			return &Int{value: int64(o.value.Sub(rhs.value))}, nil
-		case OperatorLess: // time < time => bool
+		case OperatorLess:
 			if o.value.Before(rhs.value) {
 				return TrueValue, nil
 			}
@@ -85,7 +89,7 @@ func (o *Time) Copy() IObject {
 	return &Time{value: o.value}
 }
 
-// Falsy returns true if the Time object's values is zero (indicating it is uninitialized or empty), otherwise false.
+// Boolean returns true if the Time object's values is zero (indicating it is uninitialized or empty), otherwise false.
 func (o *Time) Boolean() bool {
 	return o.value.IsZero()
 }

@@ -6,13 +6,13 @@ import (
 )
 
 // ErrStackOverflow is a stack overflow error.
-// ErrObjectAllocLimit is an objects allocation limit error.
+// ErrObjectAllocLimit is an object allocation limit error.
 // ErrIndexOutOfBounds is an error where a given index is out of bounds.
 // ErrInvalidIndexType represents an invalid index type.
 // ErrInvalidIndexValueType represents an invalid index value type.
 // ErrInvalidIndexOnError represents an invalid index on error.
 // ErrInvalidOperator represents an error for invalid operator usage.
-// ErrWrongNumArguments represents a wrong number of arguments error.
+// ErrWrongNumArguments represents a wrong amount of argument error.
 // ErrBytesLimit represents an error where the size of bytes value exceeds the limit.
 // ErrStringLimit represents an error where the size of string value exceeds the limit.
 // ErrNotIndexable is an error where an Object is not indexable.
@@ -54,7 +54,7 @@ func New(src string) error {
 	return errors.New(src)
 }
 
-// Is reports whether any error in err's chain matches the target error. Uses errors.Is for comparison.
+// Is reports whether any error in an error chain matches the target error. Uses errors.Is for comparison.
 func Is(err error, target error) bool {
 	return errors.Is(err, target)
 }

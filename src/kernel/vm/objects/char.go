@@ -1,8 +1,12 @@
 package objects
 
-// Char represents a character type, encapsulating a single rune values and inheriting behavior from ObjectImpl.
+const (
+	CharType = "char"
+)
+
+// Char represents a character type, encapsulating a single rune values and inheriting behavior from Object.
 type Char struct {
-	ObjectImpl
+	Object
 	value rune
 }
 
@@ -21,9 +25,9 @@ func (o *Char) String() string {
 	return string(o.value)
 }
 
-// TypeName returns the name of the type as a string, which is "char" for the Char type.
+// TypeName returns the name of the type as a string.
 func (o *Char) TypeName() string {
-	return "char"
+	return CharType
 }
 
 // BinaryOp performs a binary operation between the Char object and another IObject using the specified operator.
@@ -112,7 +116,7 @@ func (o *Char) Copy() IObject {
 	return &Char{value: o.value}
 }
 
-// Falsy checks whether the Char object represents a falsy state, returning true if the underlying values is 0.
+// Boolean checks whether the Char object represents a falsy state, returning true if the underlying values is 0.
 func (o *Char) Boolean() bool {
 	return o.value == 0
 }

@@ -5,10 +5,14 @@ import (
 	"strings"
 )
 
+const (
+	ImmutableArrayType = "immutable_array"
+)
+
 // ArrayImmutable represents an array that cannot be modified after creation.
 // Implements IObject and supports iteration, comparison, and copying.
 type ArrayImmutable struct {
-	ObjectImpl
+	Object
 	values []IObject
 }
 
@@ -37,7 +41,7 @@ func (o *ArrayImmutable) Length() int {
 
 // TypeName returns the type name of the ArrayImmutable, which is "immutable-array".
 func (o *ArrayImmutable) TypeName() string {
-	return "immutable-array"
+	return ImmutableArrayType
 }
 
 // String returns a string representation of the ArrayImmutable, displaying its elements in a comma-separated list.
@@ -71,7 +75,7 @@ func (o *ArrayImmutable) Copy() IObject {
 	return NewArray(c)
 }
 
-// Falsy checks if the ArrayImmutable is considered falsy, returning true if its Value slice has no elements.
+// Boolean checks if the ArrayImmutable is considered falsy, returning true if its Value slice has no elements.
 func (o *ArrayImmutable) Boolean() bool {
 	return len(o.values) == 0
 }
@@ -114,15 +118,12 @@ func (o *ArrayImmutable) IndexGet(index IObject) (res IObject, err error) {
 	return
 }
 
-// Iterate returns an IIterator to traverse the elements of the ArrayImmutable sequentially.
-func (o *ArrayImmutable) Iterate() IIterator {
-	return &ArrayIterator{
-		v: o.values,
-		l: len(o.values),
-	}
-}
-
 // CanIterate determines if the ArrayImmutable supports iteration, always returning true.
 func (o *ArrayImmutable) CanIterate() bool {
 	return true
+}
+
+// Iterate returns an IIterator to traverse the elements of the ArrayImmutable sequentially.
+func (o *ArrayImmutable) Iterate() IIterator {
+	return NewArrayIterator(o.values)
 }

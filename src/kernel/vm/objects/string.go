@@ -4,18 +4,22 @@ import (
 	"strconv"
 )
 
+const (
+	StringType = "string"
+)
+
 // MaxStringLen defines the maximum allowed byte-length for string values across all compiler/VM instances in the process.
-var (
+const (
 	// MaxStringLen is the maximum byte-length for string values. Note this
 	// limit applies to all compiler/VM instances in the process.
 	MaxStringLen = 2147483647
 )
 
 // String represents a wrapper around a standard string with additional behavior and methods for runtime operations.
-// This type embeds ObjectImpl and supports operations like indexing, iteration, comparison, and copying.
+// This type embeds Object and supports operations like indexing, iteration, comparison, and copying.
 // It implements IObject and provides a richer functionality for string manipulation within the runtime system.
 type String struct {
-	ObjectImpl
+	Object
 	value   string
 	runeStr []rune
 }
@@ -48,7 +52,7 @@ func (o *String) Length() int {
 
 // TypeName returns the name of the type "string".
 func (o *String) TypeName() string {
-	return "string"
+	return StringType
 }
 
 // String returns the quoted string representation of the String object.
@@ -113,7 +117,7 @@ func (o *String) BinaryOp(op Operator, rhs IObject) (IObject, error) {
 	return nil, ErrInvalidOperator
 }
 
-// Falsy returns true if the String's values is an empty string, indicating it is considered falsy in a boolean context.
+// Boolean returns true if the String's values is an empty string, indicating it is considered falsy in a boolean context.
 func (o *String) Boolean() bool {
 	return len(o.value) == 0
 }
@@ -152,102 +156,15 @@ func (o *String) IndexGet(index IObject) (res IObject, err error) {
 	return
 }
 
-// Iterate returns an IIterator for iterating over the runes of the String. It initializes runeStr if not already initialized.
-func (o *String) Iterate() IIterator {
-	if o.runeStr == nil {
-		o.runeStr = []rune(o.value)
-	}
-	return &StringIterator{
-		v: o.runeStr,
-		l: len(o.runeStr),
-	}
-}
-
 // CanIterate checks if the String object supports iteration and always returns true.
 func (o *String) CanIterate() bool {
 	return true
 }
 
-// StringIterator represents an iterator for traversing over the characters of a string, implemented as runes.
-type StringIterator struct {
-	ObjectImpl
-	v []rune
-	i int
-	l int
-}
-
-// TypeName returns the type name of the StringIterator as a string.
-func (i *StringIterator) TypeName() string {
-	return "string-iterator"
-}
-
-// String returns the string representation of the StringIterator, useful for debugging or logging.
-func (i *StringIterator) String() string {
-	return "<string-iterator>"
-}
-
-// Falsy returns true, indicating the iterator is considered falsy in a boolean context.
-func (i *StringIterator) Boolean() bool {
-	return true
-}
-
-// Equals compares the current StringIterator with another IObject and determines if they are equal.
-func (i *StringIterator) Equals(IObject) bool {
-	return false
-}
-
-// Copy creates and returns a new instance of StringIterator with the same state as the current one.
-func (i *StringIterator) Copy() IObject {
-	return &StringIterator{v: i.v, i: i.i, l: i.l}
-}
-
-// Next advances the iterator to the next position and returns true if the current position is within bounds.
-func (i *StringIterator) Next() bool {
-	i.i++
-	return i.i <= i.l
-}
-
-// Key returns the zero-based index of the current element in the iteration as an Int object.
-func (i *StringIterator) Key() IObject {
-	return &Int{value: int64(i.i - 1)}
-}
-
-// Value returns the current character as an IObject wrapped in a Char instance from the internal rune slice.
-func (i *StringIterator) Value() IObject {
-	return &Char{value: i.v[i.i-1]}
-}
-
-// ToRune attempts to convert an IObject to a rune if it is of type *Int or *Char, returning the rune and a boolean success flag.
-func ToRune(o IObject) (v rune, ok bool) {
-	switch o := o.(type) {
-	case *Int:
-		v = rune(o.value)
-		ok = true
-	case *Char:
-		v = o.value
-		ok = true
+// Iterate returns an IIterator for iterating over the runes of the String. It initializes runeStr if not already initialized.
+func (o *String) Iterate() IIterator {
+	if o.runeStr == nil {
+		o.runeStr = []rune(o.value)
 	}
-	return
-}
-
-// ToString converts an IObject to its string representation and determines whether the conversion is valid.
-func ToString(o IObject) (string, bool) {
-	if o == nil {
-		return "", false
-	}
-	if o == UndefinedValue {
-		return "", false
-	}
-	if str, isStr := o.(*String); isStr {
-		return str.value, true
-	}
-	return o.String(), true
-}
-
-func ToStringArg(name string, o IObject) (string, error) {
-	v, ok := ToString(o)
-	if !ok {
-		return "", NewInvalidArgumentError(name, "string(compatible)", o.TypeName())
-	}
-	return v, nil
+	return NewStringIterator(o.runeStr)
 }

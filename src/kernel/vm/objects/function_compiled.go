@@ -1,8 +1,13 @@
 package objects
 
+const (
+	FunctionCompiledDef   = "function_compiled"
+	FunctionCompiledLabel = "<" + FunctionCompiledDef + ">"
+)
+
 // FunctionCompiled represents a compiled function with bytecode instructions, metadata, and associated free variables.
 type FunctionCompiled struct {
-	ObjectImpl
+	Object
 	name          string
 	instructions  *Instructions
 	numLocals     int
@@ -65,12 +70,12 @@ func (o *FunctionCompiled) Free() []*ObjectPointer {
 
 // TypeName returns the type name of the object as a string, specifically "compiled-function".
 func (o *FunctionCompiled) TypeName() string {
-	return "compiled-function"
+	return FunctionCompiledDef
 }
 
 // String returns a human-readable string representation of the FunctionCompiled object.
 func (o *FunctionCompiled) String() string {
-	return "<compiled-function>"
+	return FunctionCompiledLabel
 }
 
 // Copy creates and returns a new instance of FunctionCompiled, duplicating its state, except for its variable pointers.

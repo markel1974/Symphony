@@ -1,11 +1,16 @@
 package objects
 
+const (
+	FunctionBuiltinDef   = "function_builtin"
+	FunctionBuiltinLabel = "<" + FunctionBuiltinDef + ">"
+)
+
 // CallableFunc is a type alias for a function that takes a variadic list of IObject arguments and returns an IObject and an error.
 type CallableFunc = func(args ...IObject) (ret IObject, err error)
 
 // FunctionBuiltin represents a callable built-in function with a name and specific implementation.
 type FunctionBuiltin struct {
-	ObjectImpl
+	Object
 	name  string
 	value CallableFunc
 }
@@ -25,14 +30,14 @@ func (o *FunctionBuiltin) Value() CallableFunc {
 	return o.value
 }
 
-// TypeName returns the type name of the FunctionBuiltin in the format "builtin-function:<name>".
+// TypeName returns the type name of the FunctionBuiltin object along with the specific function name.
 func (o *FunctionBuiltin) TypeName() string {
-	return "builtin-function:" + o.name
+	return FunctionBuiltinDef + ":" + o.name
 }
 
 // String returns the string representation of the FunctionBuiltin object.
 func (o *FunctionBuiltin) String() string {
-	return "<builtin-function>"
+	return FunctionBuiltinLabel
 }
 
 // Copy creates and returns a new instance of FunctionBuiltin with the same values field as the original object.
