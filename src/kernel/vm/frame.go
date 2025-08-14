@@ -16,7 +16,7 @@ type Frame struct {
 // NewFunctionCallFrame creates and returns a new Frame instance with its instruction pointer initialized to -1.
 func NewFunctionCallFrame() *Frame {
 	return &Frame{
-		ip: -1,
+		ip: resetIp,
 	}
 }
 
@@ -30,13 +30,13 @@ func (f *Frame) SetFreeVars(freeVars []*objects.ObjectPointer) {
 	f.freeVars2 = freeVars
 }
 
-// IP returns the current instruction pointer stored in the frame.
-func (f *Frame) IP() int {
+// StartIP retrieves the current instruction pointer (ip) of the frame, indicating the execution position in bytecode.
+func (f *Frame) StartIP() int {
 	return f.ip
 }
 
-// SetIP updates the instruction pointer (IP) of the Frame to the provided value.
-func (f *Frame) SetIP(ip int) {
+// SetStartIP sets the instruction pointer (ip) to the specified value, modifying the execution state of the frame.
+func (f *Frame) SetStartIP(ip int) {
 	f.ip = ip
 }
 

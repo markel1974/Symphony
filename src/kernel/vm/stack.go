@@ -31,8 +31,8 @@ func (v *Stack) SetStackPointer(sp int) {
 	v.sp = sp
 }
 
-// Clear resets the stack pointer to zero, effectively clearing the stack.
-func (v *Stack) Clear() {
+// Reset resets the stack pointer to zero, effectively clearing the stack.
+func (v *Stack) Reset() {
 	v.sp = 0
 }
 

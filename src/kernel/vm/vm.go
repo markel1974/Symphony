@@ -7,6 +7,11 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+// resetIp is the instruction pointer value used to reset the VM's instruction pointer to the beginning of the main function.'
+const (
+	resetIp = -1
+)
+
 // globalsSize defines the maximum size of the global variables space.
 // stackSize specifies the size limit of the stack for function execution.
 // maxFrames indicates the maximum number of call frames allowed.
@@ -78,7 +83,7 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 		constants:      bc.Constants(),
 		globals:        globals,
 		sourceFiles:    bc.SourceFiles(),
-		ip:             -1,
+		ip:             resetIp,
 		maxAllocations: maxAllocations,
 		suspend:        false,
 		stack:          NewStack(stackSize),
@@ -86,8 +91,6 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 		references:     references,
 		frames:         NewFrames(mainFn, maxFrames),
 	}
-	v.currFrame = v.frames.Head()
-	v.currInstructions = v.currFrame.Instructions()
 	v.sequencer = sequencer.Create(v)
 	return v, nil
 }
@@ -97,22 +100,30 @@ func (v *VM) Abort() {
 	v.abort = true
 }
 
-// Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) Run() error {
-	v.stack.Clear()
+// Reset reinitializes the VM state, including stack, frames, instruction pointer, allocations, and error state.
+func (v *VM) Reset() {
+	v.stack.Reset()
 	v.currFrame = v.frames.Head()
 	v.currInstructions = v.currFrame.Instructions()
 	v.frames.Clear()
-	v.ip = -1
+	v.ip = resetIp
 	v.allocations = v.maxAllocations + 1
-	v.run()
-	v.abort = false
+	v.err = nil
 	v.suspend = false
+	v.abort = false
+}
+
+// Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
+func (v *VM) Run() error {
+	v.Reset()
+
+	v.run()
+
 	if v.err != nil {
 		filePos, _ := v.sourceFiles.Position(v.currFrame.SourcePos(v.ip - 1))
 		err := fmt.Errorf("runtime error %w at %s", v.err, filePos)
 		for _, frame := range v.frames.Unroll() {
-			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.IP() - 1))
+			filePos, _ = v.sourceFiles.Position(frame.SourcePos(frame.StartIP() - 1))
 			err = fmt.Errorf("%w at %s", err, filePos)
 		}
 		return err
@@ -382,7 +393,6 @@ func (v *VM) doOpSetSelGlobal() {
 	if err != nil {
 		return
 	}
-	// selectors and RHS value
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
 		selectors[i] = v.stack.PeekOffset(-numSelectors + i)
@@ -613,9 +623,8 @@ func (v *VM) doOpCall() {
 			v.err = fmt.Errorf("wrong number of arguments: want>=%d, got=%d", numParams, numArgs)
 			return
 		}
-
 		if v.currFrame.SameFunction(callee) {
-			// recursive call
+			// recursive
 			nextOp, err := v.currInstructions.Get(v.ip + 1)
 			if err != nil {
 				v.err = err
@@ -632,17 +641,17 @@ func (v *VM) doOpCall() {
 					v.stack.SetAbsolute(v.currFrame.BasePointer()+p, o)
 				}
 				v.stack.DecrementCount(numArgs + 1)
-				v.ip = -1 // reset IP to beginning of the frame
+				v.ip = resetIp
 				return
 			}
 		}
-		v.currFrame.SetIP(v.ip)
+		v.currFrame.SetStartIP(v.ip)
 		v.currFrame = v.frames.Get()
 		v.currFrame.SetCompiledFunction(callee)
 		v.currFrame.SetFreeVars(callee.Free())
 		v.currFrame.SetBasePointer(v.stack.StackPointer() - numArgs)
 		v.currInstructions = callee.Instructions()
-		v.ip = -1
+		v.ip = resetIp
 		if err = v.frames.Next(); err != nil {
 			v.err = err
 			return
@@ -694,7 +703,7 @@ func (v *VM) doOpReturn() {
 		}
 		v.currFrame = v.frames.GetPrev()
 		v.currInstructions = v.currFrame.Instructions()
-		v.ip = v.currFrame.IP()
+		v.ip = v.currFrame.StartIP()
 		v.stack.SetStackPointer(v.frames.Get().BasePointer())
 		v.stack.Set(retVal)
 	} else {
