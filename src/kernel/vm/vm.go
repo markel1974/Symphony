@@ -32,6 +32,7 @@ type ISequencer interface {
 type VM struct {
 	sourceFiles      *bytecode.Files
 	constants        []objects.IObject
+	references       []objects.IObject
 	globals          []objects.IObject
 	stack            *Stack
 	frames           *Frames
@@ -64,6 +65,7 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 	}
 	v := &VM{
 		constants:      bc.Constants(),
+		references:     bc.References(),
 		globals:        globals,
 		sourceFiles:    bc.SourceFiles(),
 		ip:             -1,
@@ -797,7 +799,7 @@ func (v *VM) doOpGetBuiltin() {
 		v.err = err
 		return
 	}
-	v.stack.Push(v.loader.GetBuiltin(builtinIndex))
+	v.stack.Push(v.loader.GetBuiltinSymbol(builtinIndex))
 }
 
 // doOpClosure handles the creation of a new compiled-function closure with captured free variables on the call stack.
@@ -981,8 +983,8 @@ func (v *VM) doOpIteratorValue() {
 	v.stack.Push(val)
 }
 
-// doOpGetAttr retrieves an attribute identified by its index, resolves it, and pushes it onto the stack.
-func (v *VM) doOpGetAttr() {
+// doOpReferences retrieves an attribute identified by its index, resolves it, and pushes it onto the stack.
+func (v *VM) doOpReferences() {
 	if v.loader == nil {
 		v.err = fmt.Errorf("no loader loaded")
 		return
@@ -997,7 +999,7 @@ func (v *VM) doOpGetAttr() {
 		v.stack.Push(symbol)
 		return
 	}
-	symbol, ok := v.loader.GetSymbolFromDefinition(v.constants[nameIndex])
+	symbol, ok := v.loader.GetSymbol(v.references[nameIndex])
 	if !ok {
 		v.err = fmt.Errorf("invalid attribute index %d", nameIndex)
 		return

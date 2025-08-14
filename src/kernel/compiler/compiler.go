@@ -43,6 +43,7 @@ func (c *Compiler) Bytecode() (*bytecode.Bytecode, error) {
 	}
 	bc.SetMainFunction(c.mainFn)
 	bc.SetConstants(c.scopes.ConstantsRetrieve())
+	bc.SetReferences(c.scopes.ReferencesRetrieve())
 	return bc, nil
 }
 
@@ -338,7 +339,7 @@ func (c *Compiler) doFuncDecl(node *ast.FuncDecl) error {
 	// Create compiled function object
 	//TODO sourceMap
 	compiledFn := objects.NewFunctionCompiled(node.Name.String(), instructions, numLocals, numParams, varArgs, nil, c.scopes.SymbolFreeConvert())
-	fnIndex := c.scopes.ConstantsAdd("", compiledFn)
+	fnIndex := c.scopes.ConstantsAdd(compiledFn)
 	if _, err = c.scopes.Emit(bytecode.OpClosure, fnIndex, c.scopes.SymbolFreeCount()); err != nil {
 		return err
 	}
@@ -474,12 +475,12 @@ func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
 	sName := node.Sel.Name
 	cacheKey := "selector:" + mName + "." + sName
 
-	nameIndex, found := c.scopes.ConstantsGet(cacheKey)
+	nameIndex, found := c.scopes.ReferencesGet(cacheKey)
 	if !found {
 		attrArray := objects.NewArray([]objects.IObject{objects.NewStringNoSize(mName), objects.NewStringNoSize(sName)})
-		nameIndex = c.scopes.ConstantsAdd(cacheKey, attrArray)
+		nameIndex = c.scopes.ReferencesAdd(cacheKey, attrArray)
 	}
-	if _, err := c.scopes.Emit(bytecode.OpGetAttr, nameIndex); err != nil {
+	if _, err := c.scopes.Emit(bytecode.OpReferences, nameIndex); err != nil {
 		return err
 	}
 	return nil

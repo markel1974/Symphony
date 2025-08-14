@@ -43,7 +43,7 @@ var OpcodeOperands = [...][]int{
 	OpIteratorKey:   {},
 	OpIteratorValue: {},
 	OpBinaryOp:      {1},
-	OpGetAttr:       {2},
+	OpReferences:    {2},
 	OpSuspend:       {},
 }
 

@@ -22,12 +22,12 @@ func NewLoader() *Loader {
 }
 
 // GetBuiltin retrieves a FunctionBuiltin instance from the predefined list of built-in functions based on the given index.
-func (l *Loader) GetBuiltin(idx int) *objects.FunctionBuiltin {
+func (l *Loader) GetBuiltinSymbol(idx int) *objects.FunctionBuiltin {
 	return GetBuiltin(idx)
 }
 
 // GetSymbolFromDefinition retrieves a symbol from a module using the provided definition as an identifier.
 // Returns the located symbol and a boolean indicating whether the symbol was successfully found.
-func (l *Loader) GetSymbolFromDefinition(definition objects.IObject) (objects.IObject, bool) {
+func (l *Loader) GetSymbol(definition objects.IObject) (objects.IObject, bool) {
 	return l.mod.GetSymbolFromDefinition(definition)
 }

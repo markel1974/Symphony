@@ -36,6 +36,7 @@ type Bytecode struct {
 	files        *Files
 	mainFunction *objects.FunctionCompiled
 	constants    []objects.IObject
+	references   []objects.IObject
 }
 
 func NewBytecode() *Bytecode {
@@ -59,9 +60,14 @@ func (b *Bytecode) SourceFiles() *Files {
 	return b.files
 }
 
-// Constants returns a slice of IObject that represents the constants used in the bytecode.
+// Constants return a slice of IObject that represents the constants used in the bytecode.
 func (b *Bytecode) Constants() []objects.IObject {
 	return b.constants
+}
+
+// References return a slice of IObject that represents the constants used in the bytecode.
+func (b *Bytecode) References() []objects.IObject {
+	return b.references
 }
 
 // MainFunction returns the main compiled function associated with the bytecode.
@@ -82,6 +88,11 @@ func (b *Bytecode) SetConstants(constants []objects.IObject) {
 	b.constants = constants
 }
 
+// SetReferences sets the constants used in the bytecode.
+func (b *Bytecode) SetReferences(references []objects.IObject) {
+	b.references = references
+}
+
 // Encode serializes the Bytecode object to the provided io.Writer using gob encoding and returns any encountered error.
 func (b *Bytecode) Encode(w io.Writer) error {
 	enc := gob.NewEncoder(w)
@@ -91,13 +102,22 @@ func (b *Bytecode) Encode(w io.Writer) error {
 	if err := enc.Encode(b.mainFunction); err != nil {
 		return err
 	}
-	return enc.Encode(b.constants)
+	if err := enc.Encode(b.constants); err != nil {
+		return err
+	}
+	if err := enc.Encode(b.references); err != nil {
+		return err
+	}
+	return nil
 }
 
 // CountObjects returns the total number of objects within the Bytecode's constants, including nested objects.
 func (b *Bytecode) CountObjects() int {
 	n := 0
 	for _, c := range b.constants {
+		n += objects.CountObjects(c)
+	}
+	for _, c := range b.references {
 		n += objects.CountObjects(c)
 	}
 	return n
@@ -109,19 +129,35 @@ func (b *Bytecode) FormatInstructions() []string {
 }
 
 // FormatConstants formats and returns a slice of strings representing the constants in the Bytecode object.
-func (b *Bytecode) FormatConstants() (output []string) {
+func (b *Bytecode) FormatConstants() []string {
+	var output []string
 	for cIdx, constant := range b.constants {
-		switch cn := constant.(type) {
-		case *objects.FunctionCompiled:
-			output = append(output, fmt.Sprintf("[% 3d] (Compiled Function|%p)", cIdx, &cn))
-			for _, l := range FormatInstructions(cn.Data(), 0) {
-				output = append(output, fmt.Sprintf("     %s", l))
-			}
-		default:
-			output = append(output, fmt.Sprintf("[% 3d] %s (%s|%p)", cIdx, cn, reflect.TypeOf(cn).Elem().Name(), &cn))
-		}
+		output = append(output, b.formatObject(cIdx, constant)...)
 	}
-	return
+	return output
+}
+
+// FormatReferences formats and returns a slice of strings representing the constants in the Bytecode object.
+func (b *Bytecode) FormatReferences() []string {
+	var output []string
+	for cIdx, constant := range b.references {
+		output = append(output, b.formatObject(cIdx, constant)...)
+	}
+	return output
+}
+
+func (b *Bytecode) formatObject(cIdx int, constant objects.IObject) []string {
+	var output []string
+	switch cn := constant.(type) {
+	case *objects.FunctionCompiled:
+		output = append(output, fmt.Sprintf("[% 3d] (Compiled Function|%p)", cIdx, &cn))
+		for _, l := range FormatInstructions(cn.Data(), 0) {
+			output = append(output, fmt.Sprintf("     %s", l))
+		}
+	default:
+		output = append(output, fmt.Sprintf("[% 3d] %s (%s|%p)", cIdx, cn, reflect.TypeOf(cn).Elem().Name(), &cn))
+	}
+	return output
 }
 
 // Decode reads and decodes Bytecode data from the provided io.Reader and resolves constants using the given Modules map.
@@ -146,15 +182,46 @@ func (b *Bytecode) Decode(r io.Reader, mods *modules.Modules) error {
 		}
 		b.constants[i] = fv
 	}
+	if err := dec.Decode(&b.references); err != nil {
+		return err
+	}
+	for i, v := range b.references {
+		fv, err := fixDecodedObject(v, mods)
+		if err != nil {
+			return err
+		}
+		b.references[i] = fv
+	}
+	return nil
+}
+
+// RemoveDuplicates removes duplicate constants from the Bytecode by deduplicating them and updating all relevant indexes.
+// Returns an error if the deduplication or index update process fails.
+func (b *Bytecode) RemoveDuplicates() error {
+	constantsDeduped, constantsIndexMap, err := b.removeDuplicates(b.constants)
+	if err != nil {
+		return err
+	}
+	b.constants = constantsDeduped
+	if err = updateConstIndexes(b.mainFunction.Data(), constantsIndexMap); err != nil {
+		return err
+	}
+	for _, in := range b.constants {
+		switch c := in.(type) {
+		case *objects.FunctionCompiled:
+			if err := updateConstIndexes(c.Data(), constantsIndexMap); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
 // RemoveDuplicates removes duplicate constants from the Bytecode while maintaining their first occurrences.
 // It updates constant indices throughout the Bytecode to reflect the changes and ensures consistency for any nested data.
 // Returns an error if any unsupported constant type is encountered or if index updates fail.
-func (b *Bytecode) RemoveDuplicates() error {
+func (b *Bytecode) removeDuplicates(container []objects.IObject) ([]objects.IObject, map[int]int, error) {
 	var deDuped []objects.IObject
-
 	indexMap := make(map[int]int) // mapping from old constant index to new index
 	fns := make(map[*objects.FunctionCompiled]int)
 	ints := make(map[int64]int)
@@ -163,7 +230,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 	chars := make(map[rune]int)
 	immutableMaps := make(map[string]int) // for modules
 
-	for curIdx, in := range b.constants {
+	for curIdx, in := range container {
 		switch c := in.(type) {
 		case *objects.FunctionCompiled:
 			if newIdx, ok := fns[c]; ok {
@@ -177,7 +244,7 @@ func (b *Bytecode) RemoveDuplicates() error {
 		case *objects.MapImmutable:
 			modName, err := inferModuleName(c)
 			if err != nil {
-				return err
+				return nil, nil, err
 			}
 			newIdx, ok := immutableMaps[modName]
 			if modName != "" && ok {
@@ -225,22 +292,10 @@ func (b *Bytecode) RemoveDuplicates() error {
 				deDuped = append(deDuped, c)
 			}
 		default:
-			return fmt.Errorf("unsupported top-level constant type: %s", reflect.TypeOf(c).Elem().Name())
+			return nil, nil, fmt.Errorf("unsupported top-level constant type: %s", reflect.TypeOf(c).Elem().Name())
 		}
 	}
-	b.constants = deDuped
-	if err := updateConstIndexes(b.mainFunction.Data(), indexMap); err != nil {
-		return err
-	}
-	for _, c := range b.constants {
-		switch c := c.(type) {
-		case *objects.FunctionCompiled:
-			if err := updateConstIndexes(c.Data(), indexMap); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return deDuped, indexMap, nil
 }
 
 // fixDecodedObject processes and adjusts decoded objects, handling specific types or values to ensure valid output.

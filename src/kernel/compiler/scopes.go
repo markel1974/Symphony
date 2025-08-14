@@ -15,6 +15,7 @@ import (
 // Scopes manages a collection of compilation scopes and the associated symbol table for nested compilation contexts.
 type Scopes struct {
 	constants   *Constants
+	references  *Constants
 	symbolTable *SymbolTable
 	scopeIndex  int
 	scopes      []*CompilationScope
@@ -28,20 +29,31 @@ func NewScopes() *Scopes {
 	}
 	return &Scopes{
 		constants:   NewConstants(),
+		references:  NewConstants(),
 		symbolTable: symbolTable,
 		scopeIndex:  0,
 		scopes:      []*CompilationScope{NewCompilationScope()},
 	}
 }
 
-// ConstantsAdd adds a constant object with the given id to the scope and returns its internal index.
-func (c *Scopes) ConstantsAdd(id string, obj objects.IObject) int {
-	return c.constants.Add(id, obj)
+// ReferencesAdd adds a constant object with the given id to the scope and returns its internal index.
+func (c *Scopes) ReferencesAdd(id string, obj objects.IObject) int {
+	return c.references.Add(id, obj)
 }
 
-// ConstantsGet retrieves the constant identified by the provided id and returns its value along with a boolean for existence.
-func (c *Scopes) ConstantsGet(id string) (int, bool) {
-	return c.constants.Get(id)
+// ReferencesGet retrieves the constant identified by the provided id and returns its value along with a boolean for existence.
+func (c *Scopes) ReferencesGet(id string) (int, bool) {
+	return c.references.Get(id)
+}
+
+// ReferencesRetrieve retrieves a slice of IObject constants from the scope's internal constants collection.
+func (c *Scopes) ReferencesRetrieve() []objects.IObject {
+	return c.references.Retrieve()
+}
+
+// ConstantsAdd adds a constant object with the given id to the scope and returns its internal index.
+func (c *Scopes) ConstantsAdd(obj objects.IObject) int {
+	return c.constants.Add("", obj)
 }
 
 // ConstantsRetrieve retrieves a slice of IObject constants from the scope's internal constants collection.
@@ -207,12 +219,12 @@ func (c *Scopes) EmitLiteral(node *ast.BasicLit) error {
 	switch node.Kind {
 	case token.INT:
 		val, _ := strconv.ParseInt(node.Value, 0, 64)
-		if _, err := c.Emit(bytecode.OpConstant, c.constants.Add("", objects.NewInt(val))); err != nil {
+		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd(objects.NewInt(val))); err != nil {
 			return err
 		}
 	case token.FLOAT:
 		val, _ := strconv.ParseFloat(node.Value, 64)
-		if _, err := c.Emit(bytecode.OpConstant, c.constants.Add("", objects.NewFloat(val))); err != nil {
+		if _, err := c.Emit(bytecode.OpConstant, c.ConstantsAdd(objects.NewFloat(val))); err != nil {
 			return err
 		}
 	case token.STRING:
@@ -221,7 +233,7 @@ func (c *Scopes) EmitLiteral(node *ast.BasicLit) error {
 		if err != nil {
 			return err
 		}
-		if _, err = c.Emit(bytecode.OpConstant, c.constants.Add("", s)); err != nil {
+		if _, err = c.Emit(bytecode.OpConstant, c.ConstantsAdd(s)); err != nil {
 			return err
 		}
 	default:
