@@ -26,11 +26,6 @@ func (m *Modules) AddBuiltinModule(name string, attrs map[string]objects.IObject
 	m.m[name] = &ModuleBuiltin{Attrs: attrs}
 }
 
-// AddSourceModule adds a new source module to the collection with the given name and source code.
-func (m *Modules) AddSourceModule(name string, src []byte) {
-	m.m[name] = NewSourceModule(src)
-}
-
 // Remove removes the module with the specified name from the Modules map. If the name does not exist, no action is taken.
 func (m *Modules) Remove(name string) {
 	delete(m.m, name)
@@ -85,12 +80,6 @@ func (m *Modules) GetSymbolFromDefinition(in objects.IObject) (objects.IObject, 
 // GetBuiltinModule retrieves a built-in module by its name from the module collection and returns it as *ModuleBuiltin.
 func (m *Modules) GetBuiltinModule(name string) *ModuleBuiltin {
 	mod, _ := m.m[name].(*ModuleBuiltin)
-	return mod
-}
-
-// GetSourceModule retrieves a ModuleSource instance by its name from the Modules map or returns nil if not found.
-func (m *Modules) GetSourceModule(name string) *ModuleSource {
-	mod, _ := m.m[name].(*ModuleSource)
 	return mod
 }
 
