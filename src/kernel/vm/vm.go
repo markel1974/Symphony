@@ -687,6 +687,7 @@ func (v *VM) doOpReturn() {
 		retVal = objects.UndefinedValue
 	}
 	if v.frames.Index() > 1 {
+		leavingFrameBasePointer := v.currFrame.BasePointer()
 		if err = v.frames.Previous(); err != nil {
 			v.err = err
 			return
@@ -694,8 +695,8 @@ func (v *VM) doOpReturn() {
 		v.currFrame = v.frames.GetPrev()
 		v.currInstructions = v.currFrame.Instructions()
 		v.ip = v.currFrame.StartIP()
-		v.stack.SetStackPointer(v.frames.Get().BasePointer())
-		v.stack.Set(retVal)
+		v.stack.SetStackPointer(leavingFrameBasePointer)
+		v.stack.Push(retVal)
 	} else {
 		//log.Printf("returning from the root frame")
 		fmt.Println("returning from the root frame")
