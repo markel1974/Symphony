@@ -43,6 +43,8 @@ type IObject interface {
 	Call(args ...IObject) (ret IObject, err error)
 
 	CanCall() bool
+
+	Length() int
 }
 
 // ToInterface converts an IObject to its corresponding native Go representation, such as int, string, float64, bool, etc.
@@ -345,6 +347,19 @@ func ToFloat64Arg(name string, o IObject) (float64, error) {
 		return 0, NewInvalidArgumentError(name, "float64(compatible)", o.TypeName())
 	}
 	return v, nil
+}
+
+// ToTime converts an IObject into a time.Time if it is time-compatible (e.g., *Time or *Int). Returns the time and a boolean.
+func ToTime(o IObject) (v time.Time, ok bool) {
+	switch o := o.(type) {
+	case *Time:
+		v = o.value
+		ok = true
+	case *Int:
+		v = time.Unix(o.value, 0)
+		ok = true
+	}
+	return
 }
 
 // CountObjects recursively counts the total number of objects contained in the given IObject, including nested structures.

@@ -102,16 +102,3 @@ func (o *Time) Equals(x IObject) bool {
 	}
 	return o.value.Equal(t.value)
 }
-
-// ToTime converts an IObject into a time.Time if it is time-compatible (e.g., *Time or *Int). Returns the time and a boolean.
-func ToTime(o IObject) (v time.Time, ok bool) {
-	switch o := o.(type) {
-	case *Time:
-		v = o.value
-		ok = true
-	case *Int:
-		v = time.Unix(o.value, 0)
-		ok = true
-	}
-	return
-}

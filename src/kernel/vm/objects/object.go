@@ -65,3 +65,8 @@ func (o *Object) Call(_ ...IObject) (ret IObject, err error) {
 func (o *Object) CanCall() bool {
 	return false
 }
+
+// Length returns the length of the Int object.
+func (o *Object) Length() int {
+	return 0
+}

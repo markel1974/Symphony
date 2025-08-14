@@ -20,7 +20,7 @@ func NewFrames(main *objects.FunctionCompiled, maxFrames int) *Frames {
 		f.frames[i] = NewFunctionCallFrame()
 	}
 	f.frames[0].SetCompiledFunction(main)
-	f.frames[0].SetIP(-1)
+	f.frames[0].SetStartIP(resetIp)
 	return f
 }
 

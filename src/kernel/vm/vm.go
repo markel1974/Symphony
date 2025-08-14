@@ -528,42 +528,25 @@ func (v *VM) doOpSliceIndex() {
 	highStack := v.stack.Pop()
 	lowStack := v.stack.Pop()
 	leftStack := v.stack.Pop()
+	lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(leftStack.Length()))
+	if err != nil {
+		v.err = err
+		return
+	}
 	var val objects.IObject = nil
-
 	switch left := leftStack.(type) {
 	case *objects.Array:
-		if lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(left.Length())); err != nil {
-			v.err = err
-			return
-		} else {
-			val = objects.NewArray(left.Values()[lowIdx:highIdx])
-		}
+		val = objects.NewArray(left.Values()[lowIdx:highIdx])
 	case *objects.ArrayImmutable:
-		if lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(left.Length())); err != nil {
-			v.err = err
-			return
-		} else {
-			val = objects.NewArray(left.Values()[lowIdx:highIdx])
-		}
+		val = objects.NewArray(left.Values()[lowIdx:highIdx])
 	case *objects.String:
-		if lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(left.Length())); err != nil {
+		if val, err = objects.NewString(left.Value()[lowIdx:highIdx]); err != nil {
 			v.err = err
 			return
-		} else {
-			if val, err = objects.NewString(left.Value()[lowIdx:highIdx]); err != nil {
-				v.err = err
-				return
-			}
 		}
 	case *objects.Bytes:
-		if lowIdx, highIdx, err := v.checkBounds(lowStack, highStack, int64(left.Length())); err != nil {
-			v.err = err
-			return
-		} else {
-			val = objects.NewBytes(left.Value()[lowIdx:highIdx])
-		}
+		val = objects.NewBytes(left.Value()[lowIdx:highIdx])
 	}
-
 	if val != nil {
 		v.allocations--
 		if v.allocations == 0 {
