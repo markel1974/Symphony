@@ -1,7 +1,6 @@
 package compiler
 
 import (
-	"errors"
 	"fmt"
 	"go/ast"
 	"go/token"
@@ -23,25 +22,22 @@ const (
 
 // Compiler manages the organization and tracking of scopes and the main compiled function during a compilation process.
 type Compiler struct {
-	mainFn *objects.FunctionCompiled
-	scopes *Scopes
+	functions map[string]*objects.FunctionCompiled
+	scopes    *Scopes
 }
 
 // New initializes and returns a new instance of Compiler.
 func New() *Compiler {
 	return &Compiler{
-		mainFn: nil,
-		scopes: NewScopes(),
+		functions: make(map[string]*objects.FunctionCompiled),
+		scopes:    NewScopes(),
 	}
 }
 
 // Bytecode generates and returns the compiled bytecode along with any errors encountered during compilation.
 func (c *Compiler) Bytecode() (*bytecode.Bytecode, error) {
 	bc := bytecode.NewBytecode()
-	if c.mainFn == nil {
-		return nil, errors.New("main function not found")
-	}
-	bc.SetMainFunction(c.mainFn)
+	bc.SetCompiledFunctions(c.functions)
 	bc.SetConstants(c.scopes.ConstantsRetrieve())
 	bc.SetReferences(c.scopes.ReferencesRetrieve())
 	return bc, nil
@@ -348,9 +344,7 @@ func (c *Compiler) doFuncDecl(node *ast.FuncDecl) error {
 	if err = c.scopes.EmitSymbolSet(symbol); err != nil {
 		return err
 	}
-	if node.Name.Name == mainFnName {
-		c.mainFn = compiledFn
-	}
+	c.functions[node.Name.Name] = compiledFn
 	return nil
 }
 
