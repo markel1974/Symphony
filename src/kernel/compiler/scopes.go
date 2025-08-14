@@ -163,7 +163,7 @@ func (c *Scopes) Enter() error {
 	if c.scopeIndex > maxScope {
 		return fmt.Errorf("maximum scope depth exceeded: %d", maxScope)
 	}
-	scope := NewCompilationScope() //CompilationScope{instructions: []byte{}, lastInstruction: EmittedInstruction{}, previousInstruction: EmittedInstruction{}}
+	scope := NewCompilationScope()
 	c.scopes = append(c.scopes, scope)
 	c.scopeIndex++
 	c.symbolTable = NewEnclosedSymbolTable(c.symbolTable)

@@ -10,11 +10,6 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// mainFnName is the constant string representing the name of the main entry function in the program.
-const (
-	mainFnName = "main"
-)
-
 // maxScope defines the maximum depth allowed for compilation scopes to prevent excessive nesting during processing.
 const (
 	maxScope = 1024
@@ -22,22 +17,20 @@ const (
 
 // Compiler manages the organization and tracking of scopes and the main compiled function during a compilation process.
 type Compiler struct {
-	functions map[string]*objects.FunctionCompiled
-	scopes    *Scopes
+	scopes *Scopes
 }
 
 // New initializes and returns a new instance of Compiler.
 func New() *Compiler {
-	return &Compiler{
-		functions: make(map[string]*objects.FunctionCompiled),
-		scopes:    NewScopes(),
+	c := &Compiler{
+		scopes: NewScopes(),
 	}
+	return c
 }
 
 // Bytecode generates and returns the compiled bytecode along with any errors encountered during compilation.
 func (c *Compiler) Bytecode() (*bytecode.Bytecode, error) {
 	bc := bytecode.NewBytecode()
-	bc.SetCompiledFunctions(c.functions)
 	bc.SetConstants(c.scopes.ConstantsRetrieve())
 	bc.SetReferences(c.scopes.ReferencesRetrieve())
 	return bc, nil
@@ -318,33 +311,33 @@ func (c *Compiler) doFuncDecl(node *ast.FuncDecl) error {
 	if _, err := c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
 		return err
 	}
-	numLocals := c.scopes.SymbolCount()
-	instructions, err := c.scopes.Leave()
+	nLocals := c.scopes.SymbolCount()
+	code, err := c.scopes.Leave()
 	if err != nil {
 		return err
 	}
-	numParams := 0
+	nParams := 0
 	varArgs := false
 	if paramL := node.Type.Params.List; paramL != nil {
-		if numParams = len(paramL); numParams > 0 {
-			if _, ok := paramL[numParams-1].Type.(*ast.Ellipsis); ok {
+		if nParams = len(paramL); nParams > 0 {
+			if _, ok := paramL[nParams-1].Type.(*ast.Ellipsis); ok {
 				varArgs = true
 			}
 		}
 	}
-	// Create compiled function object
+
+	fName := node.Name.Name
 	//TODO sourceMap
-	compiledFn := objects.NewFunctionCompiled(node.Name.String(), instructions, numLocals, numParams, varArgs, nil, c.scopes.SymbolFreeConvert())
+	compiledFn := objects.NewFunctionCompiled(fName, code, nLocals, nParams, varArgs, nil, c.scopes.SymbolFreeConvert())
 	fnIndex := c.scopes.ConstantsAdd(compiledFn)
-	if _, err = c.scopes.Emit(bytecode.OpClosure, fnIndex, c.scopes.SymbolFreeCount()); err != nil {
+	if _, err = c.scopes.Emit(bytecode.OpClosure, fnIndex, c.scopes.SymbolFreeCount()); err != nil { //bytecode.OpClosure
 		return err
 	}
 	// Define function in current scope
-	symbol := c.scopes.SymbolDefine(node.Name.Name)
+	symbol := c.scopes.SymbolDefine(fName)
 	if err = c.scopes.EmitSymbolSet(symbol); err != nil {
 		return err
 	}
-	c.functions[node.Name.Name] = compiledFn
 	return nil
 }
 

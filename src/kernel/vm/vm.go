@@ -20,9 +20,8 @@ const (
 // stackSize specifies the size limit of the stack for function execution.
 // maxFrames indicates the maximum number of call frames allowed.
 const (
-	globalsSize = 1024
-	stackSize   = 2048
-	maxFrames   = 1024
+	stackSize = 2048
+	maxFrames = 1024
 )
 
 // sequenceLen defines the length of a sequence using a bitwise left shift operation.
@@ -39,8 +38,8 @@ type ISequencer interface {
 
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
-	sourceFiles      *bytecode.Files
-	constants        []objects.IObject
+	sourceFiles *bytecode.Files
+	//constants        []objects.IObject
 	globals          []objects.IObject
 	stack            *Stack
 	frames           *Frames
@@ -54,24 +53,17 @@ type VM struct {
 	err              error
 	sequencer        []func()
 	references       []objects.IObject
-	builtin          []*objects.FunctionBuiltin
+	loader           ILoader
+	//builtin          []*objects.FunctionBuiltin
 }
 
 // NewVM initializes and returns a new virtual machine instance configured with the provided components and settings.
-func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals []objects.IObject, maxAllocations int64) (*VM, error) {
+func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, maxAllocations int64) (*VM, error) {
 	if bc == nil {
 		return nil, fmt.Errorf("bytecode is nil")
 	}
 	if maxAllocations < 1 {
 		return nil, fmt.Errorf("max allocations must be greater than 0")
-	}
-	mainFn, ok := bc.CompiledFunctions()[mainFunction]
-	if !ok {
-		return nil, fmt.Errorf("main function not found")
-	}
-	builtin, err := loader.ResolveBuiltinSymbols(bc.Constants())
-	if err != nil {
-		return nil, err
 	}
 	references, err := loader.ResolveSymbols(bc.References())
 	if err != nil {
@@ -80,18 +72,28 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 	if sequencer == nil {
 		sequencer = NewSequencer()
 	}
-	if globals == nil {
-		globals = make([]objects.IObject, globalsSize)
+	var mainFn *objects.FunctionCompiled = nil
+	globals := make([]objects.IObject, len(bc.Constants()))
+	for idx, constant := range bc.Constants() {
+		switch v := constant.(type) {
+		case *objects.FunctionCompiled:
+			if v.Name() == mainFunction {
+				mainFn = v
+			}
+		}
+		globals[idx] = constant
+	}
+	if mainFn == nil {
+		return nil, fmt.Errorf("main function not found")
 	}
 	v := &VM{
-		constants:      bc.Constants(),
 		globals:        globals,
 		sourceFiles:    bc.SourceFiles(),
 		ip:             resetIp,
 		maxAllocations: maxAllocations,
 		suspend:        false,
 		stack:          NewStack(stackSize),
-		builtin:        builtin,
+		loader:         loader,
 		references:     references,
 		frames:         NewFrames(mainFn, maxFrames),
 	}
@@ -195,7 +197,11 @@ func (v *VM) doOpConstant() {
 		v.err = err
 		return
 	}
-	v.stack.Push(v.constants[cIdx])
+	if cIdx < 0 || cIdx > len(v.globals) {
+		v.err = fmt.Errorf("invalid constant index: %d", cIdx)
+		return
+	}
+	v.stack.Push(v.globals[cIdx])
 }
 
 // doOpNull pushes the UndefinedValue onto the stack to represent a null or undefined operation result.
@@ -793,11 +799,11 @@ func (v *VM) doOpGetBuiltin() {
 		v.err = err
 		return
 	}
-	if builtinIndex < 0 || builtinIndex >= len(v.builtin) {
-		v.err = fmt.Errorf("builtin index out of range: %d", builtinIndex)
+	symbol := v.loader.GetBuiltinSymbol(builtinIndex)
+	if symbol == nil {
+		v.err = fmt.Errorf("unkown builtin index: %d", builtinIndex)
 		return
 	}
-	symbol := v.builtin[builtinIndex]
 	v.stack.Push(symbol)
 }
 
@@ -814,7 +820,11 @@ func (v *VM) doOpClosure() {
 		v.err = err
 		return
 	}
-	fn, ok := v.constants[constIndex].(*objects.FunctionCompiled)
+	if constIndex < 0 || constIndex > len(v.globals) {
+		v.err = fmt.Errorf("invalid constant index: %d", constIndex)
+		return
+	}
+	fn, ok := v.globals[constIndex].(*objects.FunctionCompiled)
 	if !ok {
 		v.err = fmt.Errorf("not function: %s", fn.TypeName())
 		return

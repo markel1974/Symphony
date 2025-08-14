@@ -15,10 +15,14 @@ type Stack struct {
 
 // NewStack creates and initializes a new Stack with the specified size and returns a pointer to it.
 func NewStack(size int) *Stack {
-	return &Stack{
+	s := &Stack{
 		sp:    0,
 		stack: make([]objects.IObject, size),
 	}
+	for i := range s.stack {
+		s.stack[i] = objects.UndefinedValue
+	}
+	return s
 }
 
 // StackPointer returns the current stack pointer (sp) indicating the top position of the stack.
@@ -117,13 +121,17 @@ func (v *Stack) PeekAbsolute(absolute int) objects.IObject {
 // PeekOffset returns the stack object at the specified offset relative to the current stack pointer.
 func (v *Stack) PeekOffset(offset int) objects.IObject {
 	sp := v.sp + offset
+	if sp < 0 || sp >= len(v.stack) {
+		return objects.UndefinedValue
+	}
 	ret := v.stack[sp]
 	return ret
 }
 
 // Peek returns the object at the top of the stack.
 func (v *Stack) Peek() objects.IObject {
-	if v.sp == 0 {
+	sp := v.sp - 1
+	if sp < 0 || sp >= len(v.stack) {
 		return objects.UndefinedValue
 	}
 	ret := v.stack[v.sp-1]
@@ -132,7 +140,15 @@ func (v *Stack) Peek() objects.IObject {
 
 // PeekArrayObject retrieves a slice of IObject elements from the stack, based on the specified number of arguments.
 func (v *Stack) PeekArrayObject(numArgs int) []objects.IObject {
-	z := v.stack[v.sp-numArgs : v.sp]
+	start := v.sp - numArgs
+	if start < 0 || start >= len(v.stack) {
+		return nil
+	}
+	end := v.sp
+	if end < 0 || end > len(v.stack) {
+		return nil
+	}
+	z := v.stack[start:v.sp]
 	return z
 }
 

@@ -33,16 +33,14 @@ func init() {
 
 // Bytecode represents a compiled set of bytecode instructions, constants, and metadata for program execution.
 type Bytecode struct {
-	files             *Files
-	compiledFunctions map[string]*objects.FunctionCompiled
-	constants         []objects.IObject
-	references        []objects.IObject
+	files      *Files
+	constants  []objects.IObject
+	references []objects.IObject
 }
 
 func NewBytecode() *Bytecode {
 	return &Bytecode{
-		files:             NewFiles(),
-		compiledFunctions: make(map[string]*objects.FunctionCompiled),
+		files: NewFiles(),
 	}
 }
 
@@ -71,16 +69,6 @@ func (b *Bytecode) References() []objects.IObject {
 	return b.references
 }
 
-// CompiledFunctions returns the main compiled function associated with the bytecode.
-func (b *Bytecode) CompiledFunctions() map[string]*objects.FunctionCompiled {
-	return b.compiledFunctions
-}
-
-// SetCompiledFunctions sets the main compiled function associated with the bytecode.
-func (b *Bytecode) SetCompiledFunctions(f map[string]*objects.FunctionCompiled) {
-	b.compiledFunctions = f
-}
-
 // SetConstants sets the constants used in the bytecode.
 func (b *Bytecode) SetConstants(constants []objects.IObject) {
 	b.constants = constants
@@ -95,9 +83,6 @@ func (b *Bytecode) SetReferences(references []objects.IObject) {
 func (b *Bytecode) Encode(w io.Writer) error {
 	enc := gob.NewEncoder(w)
 	if err := enc.Encode(b.files); err != nil {
-		return err
-	}
-	if err := enc.Encode(b.compiledFunctions); err != nil {
 		return err
 	}
 	if err := enc.Encode(b.constants); err != nil {
@@ -120,11 +105,6 @@ func (b *Bytecode) CountObjects() int {
 	}
 	return n
 }
-
-// FormatInstructions formats and returns the string representation of the main function's bytecode instructions.
-//func (b *Bytecode) FormatInstructions() []string {
-//	return FormatInstructions(b.mainFunction.Data(), 0)
-//}
 
 // FormatConstants formats and returns a slice of strings representing the constants in the Bytecode object.
 func (b *Bytecode) FormatConstants() []string {
@@ -167,9 +147,6 @@ func (b *Bytecode) Decode(r io.Reader, mods *modules.Modules) error {
 	if err := dec.Decode(&b.files); err != nil {
 		return err
 	}
-	if err := dec.Decode(&b.compiledFunctions); err != nil {
-		return err
-	}
 	if err := dec.Decode(&b.constants); err != nil {
 		return err
 	}
@@ -193,7 +170,6 @@ func (b *Bytecode) Decode(r io.Reader, mods *modules.Modules) error {
 	return nil
 }
 
-/*
 // RemoveDuplicates removes duplicate constants from the Bytecode by deduplicating them and updating all relevant indexes.
 // Returns an error if the deduplication or index update process fails.
 func (b *Bytecode) RemoveDuplicates() error {
@@ -202,13 +178,10 @@ func (b *Bytecode) RemoveDuplicates() error {
 		return err
 	}
 	b.constants = constantsDeduped
-	if err = updateConstIndexes(b.mainFunction.Data(), constantsIndexMap); err != nil {
-		return err
-	}
 	for _, in := range b.constants {
 		switch c := in.(type) {
 		case *objects.FunctionCompiled:
-			if err := updateConstIndexes(c.Data(), constantsIndexMap); err != nil {
+			if err = updateConstIndexes(c.Data(), constantsIndexMap); err != nil {
 				return err
 			}
 		}
@@ -216,9 +189,6 @@ func (b *Bytecode) RemoveDuplicates() error {
 	return nil
 }
 
-*/
-
-/*
 // RemoveDuplicates removes duplicate constants from the Bytecode while maintaining their first occurrences.
 // It updates constant indices throughout the Bytecode to reflect the changes and ensures consistency for any nested data.
 // Returns an error if any unsupported constant type is encountered or if index updates fail.
@@ -300,8 +270,6 @@ func (b *Bytecode) removeDuplicates(container []objects.IObject) ([]objects.IObj
 	return deDuped, indexMap, nil
 }
 
-*/
-
 // fixDecodedObject processes and adjusts decoded objects, handling specific types or values to ensure valid output.
 // Returns a potentially modified object or an error if adjustments fail for certain types or constraints.
 func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject, error) {
@@ -359,7 +327,6 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 	return o, nil
 }
 
-/*
 // updateConstIndexes modifies constant and closure indexes in the instructions slice based on the provided index map.
 // It processes opcodes, updates corresponding indexes using the map, and returns an error for unsupported opcodes or missing indexes.
 func updateConstIndexes(instances []byte, indexMap map[int]int) error {
@@ -392,8 +359,6 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 	}
 	return nil
 }
-
-*/
 
 // inferModuleName extracts the module name from an MapImmutable by retrieving the __module_name__ key as a string.
 // Returns an empty string if the key is missing or not a valid string type.
