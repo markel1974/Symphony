@@ -9,15 +9,19 @@ import (
 // Stack represents a data structure that operates on a LIFO (Last In, First Out) principle.
 // It manages a slice of objects implementing the IObject interface and tracks the stack pointer.
 type Stack struct {
-	stack []objects.IObject
-	sp    int
+	stack          []objects.IObject
+	sp             int
+	allocations    int64
+	maxAllocations int64
 }
 
 // NewStack creates and initializes a new Stack with the specified size and returns a pointer to it.
-func NewStack(size int) *Stack {
+func NewStack(size int, maxAllocations int64) *Stack {
 	s := &Stack{
-		sp:    0,
-		stack: make([]objects.IObject, size),
+		sp:             0,
+		stack:          make([]objects.IObject, size),
+		maxAllocations: maxAllocations,
+		allocations:    maxAllocations + 1,
 	}
 	for i := range s.stack {
 		s.stack[i] = objects.UndefinedValue
@@ -37,6 +41,7 @@ func (v *Stack) SetStackPointer(sp int) {
 
 // Reset resets the stack pointer to zero, effectively clearing the stack.
 func (v *Stack) Reset() {
+	v.allocations = v.maxAllocations + 1
 	v.sp = 0
 }
 
@@ -50,19 +55,41 @@ func (v *Stack) DecrementCount(count int) {
 }
 
 // SetAbsolute assigns the specified object to the stack at the given absolute index.
-func (v *Stack) SetAbsolute(absolute int, obj objects.IObject) {
+func (v *Stack) SetAbsolute(absolute int, obj objects.IObject) error {
+	if v.allocations--; v.allocations == 0 {
+		return objects.ErrObjectAllocLimit
+	}
+	if absolute < 0 || absolute >= len(v.stack) {
+		return objects.ErrIndexOutOfBounds
+	}
 	v.stack[absolute] = obj
+	return nil
 }
 
 // Set assigns the given object to the position indicated by the current stack pointer minus one.
-func (v *Stack) Set(obj objects.IObject) {
-	v.stack[v.sp-1] = obj
+func (v *Stack) Set(obj objects.IObject) error {
+	if v.allocations--; v.allocations == 0 {
+		return objects.ErrObjectAllocLimit
+	}
+	sp := v.sp - 1
+	if sp < 0 || sp >= len(v.stack) {
+		return objects.ErrIndexOutOfBounds
+	}
+	v.stack[sp] = obj
+	return nil
 }
 
 // Push adds the provided object to the top of the stack and increments the stack pointer.
-func (v *Stack) Push(obj objects.IObject) {
+func (v *Stack) Push(obj objects.IObject) error {
+	if v.allocations--; v.allocations == 0 {
+		return objects.ErrObjectAllocLimit
+	}
+	if v.sp < 0 || v.sp >= len(v.stack) {
+		return objects.ErrIndexOutOfBounds
+	}
 	v.stack[v.sp] = obj
 	v.sp++
+	return nil
 }
 
 // PushVarArgs processes a variadic argument list, grouping extra arguments into an array and updating the stack pointer.

@@ -49,7 +49,6 @@ type VM struct {
 	abort            bool
 	suspend          bool
 	maxAllocations   int64
-	allocations      int64
 	err              error
 	sequencer        []func()
 	references       []objects.IObject
@@ -92,7 +91,7 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, maxAlloc
 		ip:             resetIp,
 		maxAllocations: maxAllocations,
 		suspend:        false,
-		stack:          NewStack(stackSize),
+		stack:          NewStack(stackSize, maxAllocations),
 		loader:         loader,
 		references:     references,
 		frames:         NewFrames(mainFn, maxFrames),
@@ -112,7 +111,6 @@ func (v *VM) Reset() {
 	v.currInstructions = v.currFrame.Instructions()
 	v.frames.Clear()
 	v.ip = resetIp
-	v.allocations = v.maxAllocations + 1
 	v.err = nil
 	v.suspend = false
 	v.abort = false
@@ -201,12 +199,18 @@ func (v *VM) doOpConstant() {
 		v.err = fmt.Errorf("invalid constant index: %d", cIdx)
 		return
 	}
-	v.stack.Push(v.globals[cIdx])
+	if err = v.stack.Push(v.globals[cIdx]); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpNull pushes the UndefinedValue onto the stack to represent a null or undefined operation result.
 func (v *VM) doOpNull() {
-	v.stack.Push(objects.UndefinedValue)
+	if err := v.stack.Push(objects.UndefinedValue); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpBinary performs a binary operation between the top two stack elements based on the current opcode instruction.
@@ -227,17 +231,23 @@ func (v *VM) doOpBinary() {
 		v.err = err
 		return
 	}
-	v.stack.Push(res)
+	if err = v.stack.Push(res); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpEqual pops two objects from the stack, compares them for equality, and pushes TrueValue or FalseValue based on the result.
 func (v *VM) doOpEqual() {
 	right := v.stack.Pop()
 	left := v.stack.Pop()
+	val := objects.FalseValue
 	if left.Equals(right) {
-		v.stack.Push(objects.TrueValue)
-	} else {
-		v.stack.Push(objects.FalseValue)
+		val = objects.TrueValue
+	}
+	if err := v.stack.Push(val); err != nil {
+		v.err = err
+		return
 	}
 }
 
@@ -245,10 +255,13 @@ func (v *VM) doOpEqual() {
 func (v *VM) doOpNotEqual() {
 	right := v.stack.Pop()
 	left := v.stack.Pop()
+	val := objects.TrueValue
 	if left.Equals(right) {
-		v.stack.Push(objects.FalseValue)
-	} else {
-		v.stack.Push(objects.TrueValue)
+		val = objects.FalseValue
+	}
+	if err := v.stack.Push(val); err != nil {
+		v.err = err
+		return
 	}
 }
 
@@ -259,21 +272,30 @@ func (v *VM) doOpPop() {
 
 // doOpTrue pushes the predefined TrueValue object onto the stack.
 func (v *VM) doOpTrue() {
-	v.stack.Push(objects.TrueValue)
+	if err := v.stack.Push(objects.TrueValue); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpFalse pushes the predefined false value (FalseValue) onto the stack.
 func (v *VM) doOpFalse() {
-	v.stack.Push(objects.FalseValue)
+	if err := v.stack.Push(objects.FalseValue); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpLNot performs the logical NOT operation on the top value on the stack and pushes the result back onto the stack.
 func (v *VM) doOpLNot() {
 	operand := v.stack.Pop()
+	val := objects.FalseValue
 	if operand.Boolean() {
-		v.stack.Push(objects.TrueValue)
-	} else {
-		v.stack.Push(objects.FalseValue)
+		val = objects.TrueValue
+	}
+	if err := v.stack.Push(val); err != nil {
+		v.err = err
+		return
 	}
 }
 
@@ -285,12 +307,10 @@ func (v *VM) doOpBComplement() {
 	switch x := operand.(type) {
 	case *objects.Int:
 		var res objects.IObject = objects.NewInt(^x.Value())
-		v.allocations--
-		if v.allocations == 0 {
-			v.err = objects.ErrObjectAllocLimit
+		if err := v.stack.Push(res); err != nil {
+			v.err = err
 			return
 		}
-		v.stack.Push(res)
 	default:
 		v.err = fmt.Errorf("invalid operation: ^%s", operand.TypeName())
 		return
@@ -304,18 +324,16 @@ func (v *VM) doOpMinus() {
 	switch x := operand.(type) {
 	case *objects.Int:
 		var res objects.IObject = objects.NewInt(-x.Value())
-		if v.allocations--; v.allocations == 0 {
-			v.err = objects.ErrObjectAllocLimit
+		if err := v.stack.Push(res); err != nil {
+			v.err = err
 			return
 		}
-		v.stack.Push(res)
 	case *objects.Float:
 		var res objects.IObject = objects.NewFloat(-x.Value())
-		if v.allocations--; v.allocations == 0 {
-			v.err = objects.ErrObjectAllocLimit
+		if err := v.stack.Push(res); err != nil {
+			v.err = err
 			return
 		}
-		v.stack.Push(res)
 	default:
 		v.err = fmt.Errorf("invalid operation: -%s", operand.TypeName())
 		return
@@ -428,7 +446,10 @@ func (v *VM) doOpGetGlobal() {
 		//v.err = fmt.Errorf("undefined global: %d", globalIndex)
 		//return
 	}
-	v.stack.Push(val)
+	if err = v.stack.Push(val); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpArray processes array-based operations in the VM by retrieving elements from the stack and creating a new array object.
@@ -443,12 +464,10 @@ func (v *VM) doOpArray() {
 	}
 	elements := v.stack.PopArrayElements(numElements)
 	arr := objects.NewArray(elements)
-	v.allocations--
-	if v.allocations == 0 {
-		v.err = objects.ErrObjectAllocLimit
+	if err = v.stack.Push(arr); err != nil {
+		v.err = err
 		return
 	}
-	v.stack.Push(arr)
 }
 
 // doOpMap creates a new map object from key-value pairs popped from the stack and pushes the map onto the stack.
@@ -462,12 +481,10 @@ func (v *VM) doOpMap() {
 	}
 	kv := v.stack.PopMapElements(numElements)
 	m := objects.NewMap(kv)
-	v.allocations--
-	if v.allocations == 0 {
-		v.err = objects.ErrObjectAllocLimit
+	if err = v.stack.Push(m); err != nil {
+		v.err = err
 		return
 	}
-	v.stack.Push(m)
 }
 
 // doOpError handles an operation error by converting the top stack value into an error object and updating the stack.
@@ -475,12 +492,10 @@ func (v *VM) doOpMap() {
 func (v *VM) doOpError() {
 	value := v.stack.Peek()
 	var e objects.IObject = objects.NewError(value)
-	v.allocations--
-	if v.allocations == 0 {
-		v.err = objects.ErrObjectAllocLimit
+	if err := v.stack.Set(e); err != nil {
+		v.err = err
 		return
 	}
-	v.stack.Set(e)
 }
 
 // doOpImmutable transforms the top stack value into its immutable form if it is an Array or Map.
@@ -490,20 +505,16 @@ func (v *VM) doOpImmutable() {
 	switch value := val.(type) {
 	case *objects.Array:
 		immutableArray := objects.NewArrayImmutable(value.Values())
-		v.allocations--
-		if v.allocations == 0 {
-			v.err = objects.ErrObjectAllocLimit
+		if err := v.stack.Set(immutableArray); err != nil {
+			v.err = err
 			return
 		}
-		v.stack.Set(immutableArray)
 	case *objects.Map:
 		immutableMap := objects.NewMapImmutable(value.Values())
-		v.allocations--
-		if v.allocations == 0 {
-			v.err = objects.ErrObjectAllocLimit
+		if err := v.stack.Set(immutableMap); err != nil {
+			v.err = err
 			return
 		}
-		v.stack.Set(immutableMap)
 	}
 }
 
@@ -528,7 +539,10 @@ func (v *VM) doOpIndex() {
 	if val == nil {
 		val = objects.UndefinedValue
 	}
-	v.stack.Push(val)
+	if err = v.stack.Push(val); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpSliceIndex processes slice indexing operations for arrays, strings, and bytes by validating bounds and slicing them.
@@ -558,12 +572,10 @@ func (v *VM) doOpSliceIndex() {
 		val = objects.NewBytes(left.Value()[lowIdx:highIdx])
 	}
 	if val != nil {
-		v.allocations--
-		if v.allocations == 0 {
-			v.err = objects.ErrObjectAllocLimit
+		if err = v.stack.Push(val); err != nil {
+			v.err = err
 			return
 		}
-		v.stack.Push(val)
 	}
 }
 
@@ -592,12 +604,18 @@ func (v *VM) doOpCall() {
 		switch z := arrObj.(type) {
 		case *objects.Array:
 			for _, item := range z.Values() {
-				v.stack.Push(item)
+				if err = v.stack.Push(item); err != nil {
+					v.err = err
+					return
+				}
 			}
 			numArgs += z.Length() - 1
 		case *objects.ArrayImmutable:
 			for _, item := range z.Values() {
-				v.stack.Push(item)
+				if err = v.stack.Push(item); err != nil {
+					v.err = err
+					return
+				}
 			}
 			numArgs += z.Length() - 1
 		default:
@@ -653,22 +671,18 @@ func (v *VM) doOpCall() {
 		}
 
 		if ret != nil && ret != objects.UndefinedValue {
-			v.allocations--
-			if v.allocations == 0 {
-				v.err = objects.ErrObjectAllocLimit
+			if err = v.stack.Push(ret); err != nil {
+				v.err = err
 				return
 			}
-			v.stack.Push(ret)
 		}
 		if ret == nil {
 			ret = objects.UndefinedValue
 		}
-		v.allocations--
-		if v.allocations == 0 {
-			v.err = objects.ErrObjectAllocLimit
+		if err = v.stack.Push(ret); err != nil {
+			v.err = err
 			return
 		}
-		v.stack.Push(ret)
 	}
 }
 
@@ -696,7 +710,10 @@ func (v *VM) doOpReturn() {
 		v.currInstructions = v.currFrame.Instructions()
 		v.ip = v.currFrame.StartIP()
 		v.stack.SetStackPointer(leavingFrameBasePointer)
-		v.stack.Push(retVal)
+		if err = v.stack.Push(retVal); err != nil {
+			v.err = err
+			return
+		}
 	} else {
 		//log.Printf("returning from the root frame")
 		fmt.Println("returning from the root frame")
@@ -719,7 +736,10 @@ func (v *VM) doOpDefineLocal() {
 
 	val := v.stack.Peek()
 	destSlot := v.currFrame.BasePointer() + localIndex
-	v.stack.SetAbsolute(destSlot, val)
+	if err = v.stack.SetAbsolute(destSlot, val); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpSetLocal sets a local variable in the current function's call frame. It adjusts the stack as needed for the operation.
@@ -736,7 +756,10 @@ func (v *VM) doOpSetLocal() {
 	if obj, ok := existingValue.(*objects.ObjectPointer); ok {
 		obj.SetValue(val)
 	} else {
-		v.stack.SetAbsolute(destSlot, val)
+		if err = v.stack.SetAbsolute(destSlot, val); err != nil {
+			v.err = err
+			return
+		}
 	}
 }
 
@@ -781,7 +804,10 @@ func (v *VM) doOpGetLocal() {
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		val = *obj.Value()
 	}
-	v.stack.Push(val)
+	if err = v.stack.Push(val); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpGetBuiltin retrieves a builtin function by its index and pushes it onto the stack, incrementing the instruction pointer.
@@ -797,7 +823,10 @@ func (v *VM) doOpGetBuiltin() {
 		v.err = fmt.Errorf("unkown builtin index: %d", builtinIndex)
 		return
 	}
-	v.stack.Push(symbol)
+	if err = v.stack.Push(symbol); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpClosure handles the creation of a new compiled-function closure with captured free variables on the call stack.
@@ -835,12 +864,10 @@ func (v *VM) doOpClosure() {
 	}
 	v.stack.DecrementCount(numFree)
 	cl := objects.NewFunctionCompiled("closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
-	v.allocations--
-	if v.allocations == 0 {
-		v.err = objects.ErrObjectAllocLimit
+	if err = v.stack.Push(cl); err != nil {
+		v.err = err
 		return
 	}
-	v.stack.Push(cl)
 }
 
 // doOpGetFreePtr retrieves a free variable from the current frame based on the index in the bytecode and pushes it onto the stack.
@@ -852,7 +879,10 @@ func (v *VM) doOpGetFreePtr() {
 		return
 	}
 	val := v.currFrame.FreeVarsIndex(freeIndex)
-	v.stack.Push(val)
+	if err = v.stack.Push(val); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpGetFree extracts a free variable value using its index, pushes it onto the stack, and increments the instruction pointer.
@@ -865,7 +895,10 @@ func (v *VM) doOpGetFree() {
 		return
 	}
 	val := *v.currFrame.FreeVarsIndex(freeIndex).Value()
-	v.stack.Push(val)
+	if err = v.stack.Push(val); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpSetFree increments the instruction pointer, retrieves a free variable index, and sets its value from the stack.
@@ -892,12 +925,21 @@ func (v *VM) doOpGetLocalPtr() {
 	sp := v.currFrame.BasePointer() + localIndex
 	val := v.stack.PeekAbsolute(sp)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
-		v.stack.Push(obj)
+		if err = v.stack.Push(obj); err != nil {
+			v.err = err
+			return
+		}
 		return
 	}
 	freeVar := objects.NewObjectPointer(&val)
-	v.stack.SetAbsolute(sp, freeVar)
-	v.stack.Push(freeVar)
+	if err = v.stack.SetAbsolute(sp, freeVar); err != nil {
+		v.err = err
+		return
+	}
+	if err = v.stack.Push(freeVar); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpSetSelFree performs a selector-based assignment operation on a free variable within the VM's current frame.
@@ -945,13 +987,11 @@ func (v *VM) doOpIteratorInit() {
 		return
 	}
 	iterator := iterable.Iterate()
-	v.allocations--
-	if v.allocations == 0 {
-		v.err = objects.ErrObjectAllocLimit
+	destSlot := v.currFrame.BasePointer() + localIndex
+	if err = v.stack.SetAbsolute(destSlot, iterator); err != nil {
+		v.err = err
 		return
 	}
-	destSlot := v.currFrame.BasePointer() + localIndex
-	v.stack.SetAbsolute(destSlot, iterator)
 }
 
 // doOpIteratorNext retrieves the next value from an iterator and pushes it onto the stack.
@@ -972,9 +1012,15 @@ func (v *VM) doOpIteratorNext() {
 		return
 	}
 	if iterator.Next() {
-		v.stack.Push(objects.TrueValue)
+		if err = v.stack.Push(objects.TrueValue); err != nil {
+			v.err = err
+			return
+		}
 	} else {
-		v.stack.Push(objects.FalseValue)
+		if err = v.stack.Push(objects.FalseValue); err != nil {
+			v.err = err
+			return
+		}
 	}
 }
 
@@ -993,7 +1039,10 @@ func (v *VM) doOpIteratorKey() {
 		v.err = fmt.Errorf("not an iterator: %s", iteratorObj.TypeName())
 		return
 	}
-	v.stack.Push(iterator.Key())
+	if err = v.stack.Push(iterator.Key()); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpIteratorValue retrieves the current value from an iterator and pushes it onto the stack.
@@ -1013,7 +1062,10 @@ func (v *VM) doOpIteratorValue() {
 		v.err = fmt.Errorf("not an iterator: %s", iteratorObj.TypeName())
 		return
 	}
-	v.stack.Push(iterator.Value())
+	if err = v.stack.Push(iterator.Value()); err != nil {
+		v.err = err
+		return
+	}
 }
 
 // doOpReferences retrieves an attribute identified by its index, resolves it, and pushes it onto the stack.
@@ -1029,7 +1081,10 @@ func (v *VM) doOpReferences() {
 		return
 	}
 	symbol := v.references[nameIndex]
-	v.stack.Push(symbol)
+	if err = v.stack.Push(symbol); err != nil {
+		v.err = err
+		return
+	}
 	return
 }
 
