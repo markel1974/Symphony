@@ -53,14 +53,12 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 	if bc == nil {
 		return nil, fmt.Errorf("bytecode is nil")
 	}
-	if sequencer == nil {
-		sequencer = NewSequencer()
-	}
-	if globals == nil {
-		globals = make([]objects.IObject, globalsSize)
-	}
 	if maxAllocations < 1 {
 		return nil, fmt.Errorf("max allocations must be greater than 0")
+	}
+	mainFn, err := bc.MainFunction()
+	if err != nil {
+		return nil, err
 	}
 	builtin, err := loader.ResolveBuiltinSymbols(bc.Constants())
 	if err != nil {
@@ -69,6 +67,12 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 	references, err := loader.ResolveSymbols(bc.References())
 	if err != nil {
 		return nil, err
+	}
+	if sequencer == nil {
+		sequencer = NewSequencer()
+	}
+	if globals == nil {
+		globals = make([]objects.IObject, globalsSize)
 	}
 	v := &VM{
 		constants:      bc.Constants(),
@@ -80,12 +84,8 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, globals 
 		stack:          NewStack(stackSize),
 		builtin:        builtin,
 		references:     references,
+		frames:         NewFrames(mainFn, maxFrames),
 	}
-	main, err := bc.MainFunction()
-	if err != nil {
-		return nil, err
-	}
-	v.frames = NewFrames(main, maxFrames)
 	v.currFrame = v.frames.Head()
 	v.currInstructions = v.currFrame.Instructions()
 	v.sequencer = sequencer.Create(v)
@@ -175,7 +175,6 @@ func (v *VM) checkBounds(lowStack objects.IObject, highStack objects.IObject, nu
 // doOpConstant retrieves a constant from the instructions using the indices at ip and pushes it onto the stack.
 func (v *VM) doOpConstant() {
 	v.ip += 2
-	//cIdx := int(v.currInstructions.Get(v.ip)) | int(v.currInstructions.Get(v.ip-1))<<8
 	cIdx, err := v.currInstructions.Pos(v.ip, v.ip-1)
 	if err != nil {
 		v.err = err
@@ -235,7 +234,6 @@ func (v *VM) doOpNotEqual() {
 // doOpPop decreases the stack pointer by one, effectively discarding the top element of the stack.
 func (v *VM) doOpPop() {
 	v.stack.Decrement()
-	//v.sp--
 }
 
 // doOpTrue pushes the predefined TrueValue object onto the stack.
@@ -375,7 +373,6 @@ func (v *VM) doOpSetGlobal() {
 // doOpSetSelGlobal is a VM instruction to set a value in a global object using selectors for index assignment.
 func (v *VM) doOpSetSelGlobal() {
 	v.ip += 3
-	//globalIndex := int(v.currInstructions.Get(v.ip-1)) | int(v.currInstructions.Get(v.ip-2))<<8
 	globalIndex, err := v.currInstructions.Pos(v.ip-1, v.ip-2)
 	if err != nil {
 		v.err = err
@@ -392,7 +389,6 @@ func (v *VM) doOpSetSelGlobal() {
 	}
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(int(numSelectors) + 1)
-	//v.sp -= int(numSelectors) + 1
 	if e := objects.IndexAssign(v.globals[globalIndex], val, selectors); e != nil {
 		v.err = e
 		return
