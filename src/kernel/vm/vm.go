@@ -624,10 +624,12 @@ func (v *VM) doOpCall() {
 		}
 	}
 
-	// La logica si divide qui tra funzioni compilate e built-in
 	if callee, ok := value.(*objects.FunctionCompiled); ok {
 		if callee.VarArgs() {
-			v.stack.PushVarArgs(numArgs, callee.NumParameters()-1)
+			if err = v.stack.PushVarArgs(numArgs, callee.NumParameters()-1); err != nil {
+				v.err = err
+				return
+			}
 			numArgs = callee.NumParameters()
 		}
 		if numArgs != callee.NumParameters() {

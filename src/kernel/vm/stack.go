@@ -93,10 +93,13 @@ func (v *Stack) Push(obj objects.IObject) error {
 }
 
 // PushVarArgs processes a variadic argument list, grouping extra arguments into an array and updating the stack pointer.
-func (v *Stack) PushVarArgs(numArgs int, realArgs int) {
+func (v *Stack) PushVarArgs(numArgs int, realArgs int) error {
 	varArgs := numArgs - realArgs
 	if varArgs < 0 {
-		return
+		return nil
+	}
+	if v.allocations--; v.allocations <= 0 {
+		return objects.ErrObjectAllocLimit
 	}
 	numArgs = realArgs + 1
 	args := make([]objects.IObject, varArgs)
@@ -104,8 +107,12 @@ func (v *Stack) PushVarArgs(numArgs int, realArgs int) {
 	for i := spStart; i < v.sp; i++ {
 		args[i-spStart] = v.stack[i]
 	}
+	if spStart < 0 || spStart >= len(v.stack) {
+		return objects.ErrIndexOutOfBounds
+	}
 	v.stack[spStart] = objects.NewArray(args)
 	v.sp = spStart + 1
+	return nil
 }
 
 // Pop removes and returns the object at the top of the stack.

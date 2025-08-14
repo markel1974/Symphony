@@ -19,6 +19,7 @@ import (
 // CanIterate checks if the object can be iterated over.
 // Call invokes the object as a callable function with provided arguments.
 // CanCall checks if the object can be called as a function.
+// Length returns the length of the object.
 type IObject interface {
 	TypeName() string
 
