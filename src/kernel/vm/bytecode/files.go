@@ -75,7 +75,6 @@ func (s *Files) Position(p int) (*FilePos, error) {
 
 // file retrieves the SourceFile corresponding to the specified Pos from the Files or nil if not found.
 func (s *Files) file(p int) IFile {
-	// common case: p is in last file
 	lf := s.lastFile
 	if lf != nil && lf.Base() <= int(p) && int(p) <= lf.Base()+lf.Size() {
 		return lf
