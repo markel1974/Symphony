@@ -8,7 +8,7 @@ import (
 // It encapsulates the execution state, free variables, instruction pointer, and base pointer of a function call.
 type Frame struct {
 	compiledFunction *objects.FunctionCompiled
-	freeVars2        []*objects.ObjectPointer
+	freeVars         []*objects.ObjectPointer
 	ip               int
 	basePointer      int
 }
@@ -22,12 +22,12 @@ func NewFunctionCallFrame() *Frame {
 
 // FreeVarsIndex retrieves the free variable at the specified index from the frame's free variables.
 func (f *Frame) FreeVarsIndex(idx int) *objects.ObjectPointer {
-	return f.freeVars2[idx]
+	return f.freeVars[idx]
 }
 
 // SetFreeVars sets the free variables of the frame to the provided slice of ObjectPointer instances.
 func (f *Frame) SetFreeVars(freeVars []*objects.ObjectPointer) {
-	f.freeVars2 = freeVars
+	f.freeVars = freeVars
 }
 
 // StartIP retrieves the current instruction pointer (ip) of the frame, indicating the execution position in bytecode.

@@ -518,7 +518,7 @@ func (v *VM) doOpImmutable() {
 	}
 }
 
-// doOpIndex processes an index operation by retrieving the index, the left operand, and obtaining the indexed value.
+// doOpIndex processes an index operation by retrieving the index, the left operand, and getting the indexed value.
 // If an error occurs during the operation, it sets the VM error accordingly. Pushes the result or UndefinedValue to the stack.
 func (v *VM) doOpIndex() {
 	index := v.stack.Pop()
