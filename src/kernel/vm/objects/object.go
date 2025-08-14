@@ -4,14 +4,14 @@ package objects
 type Object struct {
 }
 
-// TypeName returns the name of the type as a string. This method must be implemented by objects inheriting Object.
+// TypeName returns the name of the object type. This method must be implemented by objects inheriting Object.
 func (o *Object) TypeName() string {
-	panic(ErrNotImplemented)
+	return "not_implemented"
 }
 
-// String returns the string representation of the Object. Currently, it is not implemented and will panic.
+// String returns a string representation of the object. This method must be implemented by objects inheriting Object.
 func (o *Object) String() string {
-	panic(ErrNotImplemented)
+	return "not_implemented"
 }
 
 // BinaryOp performs a binary operation on the current object and another object using the specified operator.

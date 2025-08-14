@@ -34,9 +34,9 @@ type VM struct {
 	constants        []objects.IObject
 	globals          []objects.IObject
 	stack            *Stack
-	ip               int
 	frames           *Frames
 	currFrame        *Frame
+	ip               int
 	currInstructions *objects.Instructions
 	abort            bool
 	suspend          bool

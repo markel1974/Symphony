@@ -3,7 +3,7 @@ package stdlib
 import (
 	"fmt"
 
-	"github.com/markel1974/c64emu/src/kernel/compiler/modules/format"
+	"github.com/markel1974/c64emu/src/kernel/compiler/stdlib/format"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 

@@ -1,7 +1,7 @@
 package stdlib
 
 import (
-	"github.com/markel1974/c64emu/src/kernel/compiler/modules/format"
+	"github.com/markel1974/c64emu/src/kernel/compiler/stdlib/format"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -464,8 +464,6 @@ func builtinBytes(args ...objects.IObject) (objects.IObject, error) {
 	if !(argsLen == 1 || argsLen == 2) {
 		return nil, objects.ErrWrongNumArguments
 	}
-
-	// bytes(N) => create a new bytes with given size N
 	if n, ok := args[0].(*objects.Int); ok {
 		if n.Value() > int64(objects.MaxBytesLen) {
 			return nil, objects.ErrBytesLimit
