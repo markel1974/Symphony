@@ -13,14 +13,16 @@ var _builtinFuncs = []*objects.FunctionBuiltin{
 	objects.NewFunctionBuiltin("append", builtinAppend),
 	objects.NewFunctionBuiltin("delete", builtinDelete),
 	objects.NewFunctionBuiltin("splice", builtinSplice),
+	objects.NewFunctionBuiltin("format", builtinFormat),
+	objects.NewFunctionBuiltin("range", builtinRange),
 	objects.NewFunctionBuiltin("string", builtinString),
 	objects.NewFunctionBuiltin("int", builtinInt),
-	objects.NewFunctionBuiltin("bool", builtinBool),
 	objects.NewFunctionBuiltin("bool", builtinBool),
 	objects.NewFunctionBuiltin("float", builtinFloat),
 	objects.NewFunctionBuiltin("char", builtinChar),
 	objects.NewFunctionBuiltin("bytes", builtinBytes),
 	objects.NewFunctionBuiltin("time", builtinTime),
+	objects.NewFunctionBuiltin("type_name", builtinTypeName),
 	objects.NewFunctionBuiltin("is_int", builtinIsInt),
 	objects.NewFunctionBuiltin("is_float", builtinIsFloat),
 	objects.NewFunctionBuiltin("is_string", builtinIsString),
@@ -37,14 +39,16 @@ var _builtinFuncs = []*objects.FunctionBuiltin{
 	objects.NewFunctionBuiltin("is_undefined", builtinIsUndefined),
 	objects.NewFunctionBuiltin("is_function", builtinIsFunction),
 	objects.NewFunctionBuiltin("is_callable", builtinIsCallable),
-	objects.NewFunctionBuiltin("type_name", builtinTypeName),
-	objects.NewFunctionBuiltin("format", builtinFormat),
-	objects.NewFunctionBuiltin("range", builtinRange),
 }
 
-// GetAllBuiltinFunctions returns a slice containing all registered builtin functions.
-func GetAllBuiltinFunctions() []*objects.FunctionBuiltin {
+// GetAllBuiltin returns a slice containing all registered builtin functions.
+func GetAllBuiltin() []*objects.FunctionBuiltin {
 	return append([]*objects.FunctionBuiltin{}, _builtinFuncs...)
+}
+
+// GetBuiltin retrieves a FunctionBuiltin by its index from the predefined list of builtin functions.
+func GetBuiltin(idx int) *objects.FunctionBuiltin {
+	return _builtinFuncs[idx]
 }
 
 // builtinTypeName returns the type name of the given object argument as a string, or an error if the argument count is invalid.
@@ -590,9 +594,4 @@ func builtinSplice(args ...objects.IObject) (objects.IObject, error) {
 	items = append(items, array.Values()[endIdx:]...)
 	array.Assign(append(head, items...))
 	return objects.NewArray(deleted), nil
-}
-
-// GetBuiltin retrieves a FunctionBuiltin by its index from the predefined list of builtin functions.
-func GetBuiltin(idx int) *objects.FunctionBuiltin {
-	return _builtinFuncs[idx]
 }

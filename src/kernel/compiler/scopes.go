@@ -24,7 +24,7 @@ type Scopes struct {
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
 func NewScopes() *Scopes {
 	symbolTable := NewSymbolTable()
-	for i, fn := range stdlib.GetAllBuiltinFunctions() {
+	for i, fn := range stdlib.GetAllBuiltin() {
 		symbolTable.DefineBuiltin(fn.Name(), i)
 	}
 	return &Scopes{
