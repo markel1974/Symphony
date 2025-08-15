@@ -1,6 +1,10 @@
 package compiler
 
-import "github.com/markel1974/c64emu/src/kernel/vm/objects"
+import (
+	"fmt"
+
+	"github.com/markel1974/c64emu/src/kernel/vm/objects"
+)
 
 // Constants is a structure that manages a collection of objects and provides indexing functionality for efficient retrieval.
 type Constants struct {
@@ -34,6 +38,15 @@ func (c *Constants) Get(id string) (int, bool) {
 		return 0, false
 	}
 	return index, true
+}
+
+// SetIndex updates an object at a specific index.
+func (c *Constants) SetIndex(index int, obj objects.IObject) error {
+	if index < 0 || index >= len(c.constants) {
+		return fmt.Errorf("constants: index %d out of bounds", index)
+	}
+	c.constants[index] = obj
+	return nil
 }
 
 // Len returns the number of constants currently stored in the Constants structure.

@@ -56,6 +56,11 @@ func (c *Scopes) ConstantsAdd(obj objects.IObject) int {
 	return c.constants.Add("", obj)
 }
 
+// ConstantsSetIndex sets the object at the specified index in the constant collection and returns an error if it fails.
+func (c *Scopes) ConstantsSetIndex(index int, object objects.IObject) error {
+	return c.constants.SetIndex(index, object)
+}
+
 // ConstantsRetrieve retrieves a slice of IObject constants from the scope's internal constants collection.
 func (c *Scopes) ConstantsRetrieve() []objects.IObject {
 	return c.constants.Retrieve()

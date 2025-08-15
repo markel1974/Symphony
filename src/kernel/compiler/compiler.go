@@ -3,6 +3,7 @@ package compiler
 import (
 	"fmt"
 	"go/ast"
+	"go/parser"
 	"go/token"
 	"strings"
 
@@ -22,23 +23,40 @@ type Compiler struct {
 
 // New initializes and returns a new instance of Compiler.
 func New() *Compiler {
+
 	c := &Compiler{
 		scopes: NewScopes(),
 	}
 	return c
 }
 
+// Compile compiles the provided source code and returns the compiled bytecode along with any errors encountered during compilation.
+// It accepts a filename and source code as arguments and returns a tuple containing the compiled bytecode and any errors encountered.
+// The source code can be a string or a []byte.
+func (c *Compiler) Compile(filename string, source any) (*bytecode.Bytecode, error) {
+	fSet := token.NewFileSet()
+	astFile, err := parser.ParseFile(fSet, filename, source, 0)
+	if err != nil {
+		return nil, err
+	}
+	if err = c.compile(astFile); err != nil {
+		return nil, err
+	}
+	return c.bytecode()
+}
+
 // Bytecode generates and returns the compiled bytecode along with any errors encountered during compilation.
-func (c *Compiler) Bytecode() (*bytecode.Bytecode, error) {
+func (c *Compiler) bytecode() (*bytecode.Bytecode, error) {
 	bc := bytecode.NewBytecode()
 	bc.SetConstants(c.scopes.ConstantsRetrieve())
 	bc.SetReferences(c.scopes.ReferencesRetrieve())
 	return bc, nil
 }
 
-// Compile processes the provided AST node and invokes the appropriate handler based on the node's type.
-// It returns an error if the node type is unsupported or any processing issue occurs.
-func (c *Compiler) Compile(in ast.Node) error {
+// compile processes an AST node and compiles it into bytecode.
+// It recursively traverses the AST and calls the appropriate compile method for each node type.
+// Returns an error if compilation fails.
+func (c *Compiler) compile(in ast.Node) error {
 	var err error = nil
 	switch node := in.(type) {
 	case *ast.File:
@@ -89,19 +107,103 @@ func (c *Compiler) Compile(in ast.Node) error {
 	return err
 }
 
-// doFile processes an AST file node by compiling its declarations and returns an error if the compilation fails.
+// doFile processes an AST file, separates declarations, and compiles both functions and non-function code.
+// It predefines functions for stable indexing and resolves their bodies after global declarations are compiled.
+// Returns an error if compilation fails at any stage.
 func (c *Compiler) doFile(node *ast.File) error {
-	for _, s := range node.Decls {
-		if err := c.Compile(s); err != nil {
+	var funcDecls []*ast.FuncDecl
+	var otherDecls []ast.Decl
+	// Step 1: Separate function declarations from all other declarations.
+	for _, decl := range node.Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok {
+			funcDecls = append(funcDecls, fn)
+		} else {
+			otherDecls = append(otherDecls, decl)
+		}
+	}
+	// Step 2: Pre-define functions.
+	// This reserves a stable index in the constant table and symbol table
+	// for each function before any other bytecode is generated.
+	funcIndexes := make(map[string]int)
+	for _, fn := range funcDecls {
+		placeholder := objects.NewFunctionCompiled(fn.Name.Name, nil, 0, 0, false, nil, nil)
+		fnIndex := c.scopes.ConstantsAdd(placeholder)
+		c.scopes.SymbolDefine(fn.Name.Name)
+		funcIndexes[fn.Name.Name] = fnIndex
+	}
+	// Step 3: Compile all non-function code (imports, global vars, etc.).
+	// This can now add other constants without disturbing function indices.
+	for _, decl := range otherDecls {
+		if err := c.compile(decl); err != nil {
+			return err
+		}
+	}
+	// Step 4: Compile function bodies.
+	// Now that indices are stable, we can compile the internal code.
+	for _, fn := range funcDecls {
+		if err := c.compileFuncBody(fn, funcIndexes[fn.Name.Name]); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
+// compileFuncBody compiles the body of a function, managing scoping, symbol resolution, and bytecode generation.
+func (c *Compiler) compileFuncBody(node *ast.FuncDecl, constIndex int) error {
+	symbol, _ := c.scopes.SymbolResolve(node.Name.Name)
+	if err := c.scopes.Enter(); err != nil {
+		return err
+	}
+	for _, p := range node.Type.Params.List {
+		for _, name := range p.Names {
+			c.scopes.SymbolDefine(name.Name)
+		}
+	}
+	if err := c.compile(node.Body); err != nil {
+		return err
+	}
+	scope, err := c.scopes.Current()
+	if err != nil {
+		return err
+	}
+	if scope.LastInstruction() == nil || scope.LastInstruction().opcode != bytecode.OpReturn {
+		if _, err = c.scopes.Emit(bytecode.OpReturn, 0); err != nil {
+			return err
+		}
+	}
+	nLocals := c.scopes.SymbolCount()
+	freeSymbols := c.scopes.SymbolFreeConvert()
+	numFree := c.scopes.SymbolFreeCount()
+	code, err := c.scopes.Leave()
+	if err != nil {
+		return err
+	}
+	nParams := 0
+	varArgs := false
+	if paramL := node.Type.Params; paramL != nil && paramL.List != nil {
+		if nParams = len(paramL.List); nParams > 0 {
+			lastParam := paramL.List[nParams-1]
+			if _, ok := lastParam.Type.(*ast.Ellipsis); ok {
+				varArgs = true
+			}
+		}
+	}
+	compiledFn := objects.NewFunctionCompiled(node.Name.Name, code, nLocals, nParams, varArgs, nil, freeSymbols)
+	if err = c.scopes.ConstantsSetIndex(constIndex, compiledFn); err != nil {
+		return err
+	}
+	if _, err = c.scopes.Emit(bytecode.OpClosure, constIndex, numFree); err != nil {
+		return err
+	}
+	if err = c.scopes.EmitSymbolSet(symbol); err != nil {
+		return err
+	}
+	return nil
+}
+
 // doDeclStmt processes a declaration statement within the AST and compiles it, returning an error if compilation fails.
 func (c *Compiler) doDeclStmt(node *ast.DeclStmt) error {
-	if err := c.Compile(node.Decl); err != nil {
+	if err := c.compile(node.Decl); err != nil {
 		return err
 	}
 	return nil
@@ -111,7 +213,7 @@ func (c *Compiler) doDeclStmt(node *ast.DeclStmt) error {
 // Returns an error if compilation of any statement fails.
 func (c *Compiler) doBlockStmt(node *ast.BlockStmt) error {
 	for _, s := range node.List {
-		if err := c.Compile(s); err != nil {
+		if err := c.compile(s); err != nil {
 			return err
 		}
 	}
@@ -120,7 +222,7 @@ func (c *Compiler) doBlockStmt(node *ast.BlockStmt) error {
 
 // doExprStmt compiles an expression statement and removes its value from the stack if it is unused.
 func (c *Compiler) doExprStmt(node *ast.ExprStmt) error {
-	if err := c.Compile(node.X); err != nil {
+	if err := c.compile(node.X); err != nil {
 		return err
 	}
 	if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
@@ -134,7 +236,7 @@ func (c *Compiler) doExprStmt(node *ast.ExprStmt) error {
 // Returns an error if compilation or symbol resolution encounters a problem.
 func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 	for i, expr := range node.Rhs {
-		if err := c.Compile(expr); err != nil {
+		if err := c.compile(expr); err != nil {
 			return err
 		}
 		ident := node.Lhs[i].(*ast.Ident)
@@ -162,7 +264,7 @@ func (c *Compiler) doAssignStmt(node *ast.AssignStmt) error {
 // doGenDecl processes a generic declaration node and compiles each specification contained within the declaration.
 func (c *Compiler) doGenDecl(node *ast.GenDecl) error {
 	for _, spec := range node.Specs {
-		if err := c.Compile(spec); err != nil {
+		if err := c.compile(spec); err != nil {
 			return err
 		}
 	}
@@ -173,7 +275,7 @@ func (c *Compiler) doGenDecl(node *ast.GenDecl) error {
 func (c *Compiler) doValueSpec(node *ast.ValueSpec) error {
 	// Handles 'var x = 10'
 	for i, name := range node.Names {
-		if err := c.Compile(node.Values[i]); err != nil {
+		if err := c.compile(node.Values[i]); err != nil {
 			return err
 		}
 		symbol := c.scopes.SymbolDefine(name.Name)
@@ -189,12 +291,12 @@ func (c *Compiler) doValueSpec(node *ast.ValueSpec) error {
 // Returns an error if compilation of the function or its arguments fails.
 func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 	// Compile function to call (e.g. identifier)
-	if err := c.Compile(node.Fun); err != nil {
+	if err := c.compile(node.Fun); err != nil {
 		return err
 	}
 	// Compile arguments
 	for _, arg := range node.Args {
-		if err := c.Compile(arg); err != nil {
+		if err := c.compile(arg); err != nil {
 			return err
 		}
 	}
@@ -209,7 +311,7 @@ func (c *Compiler) doCallExpr(node *ast.CallExpr) error {
 // It manages jump instructions to handle conditional execution and ensures proper operand updates for jumps.
 func (c *Compiler) doIfStmt(node *ast.IfStmt) error {
 	// Compile condition
-	if err := c.Compile(node.Cond); err != nil {
+	if err := c.compile(node.Cond); err != nil {
 		return err
 	}
 	// Emit conditional jump with temporary address
@@ -218,7 +320,7 @@ func (c *Compiler) doIfStmt(node *ast.IfStmt) error {
 		return err
 	}
 	// Compile 'then' block
-	if err = c.Compile(node.Body); err != nil {
+	if err = c.compile(node.Body); err != nil {
 		return err
 	}
 	// If there's an 'else' block, emit jump to skip it
@@ -239,7 +341,7 @@ func (c *Compiler) doIfStmt(node *ast.IfStmt) error {
 	}
 	// Compile 'else' block if it exists
 	if node.Else != nil {
-		if err = c.Compile(node.Else); err != nil {
+		if err = c.compile(node.Else); err != nil {
 			return err
 		}
 		scope, err = c.scopes.Current()
@@ -301,7 +403,7 @@ func (c *Compiler) doIncDecStmt(node *ast.IncDecStmt) error {
 // initialization, condition, post-statement, body, and jump logic.
 func (c *Compiler) doForStmt(node *ast.ForStmt) error {
 	if node.Init != nil {
-		if err := c.Compile(node.Init); err != nil {
+		if err := c.compile(node.Init); err != nil {
 			return err
 		}
 	}
@@ -312,7 +414,7 @@ func (c *Compiler) doForStmt(node *ast.ForStmt) error {
 	loopStartPos := scope.InstructionsLen()
 	// compiles condition (e.g. x < 10)
 	if node.Cond != nil {
-		if err = c.Compile(node.Cond); err != nil {
+		if err = c.compile(node.Cond); err != nil {
 			return err
 		}
 	} else {
@@ -326,12 +428,12 @@ func (c *Compiler) doForStmt(node *ast.ForStmt) error {
 	if err != nil {
 		return err
 	}
-	if err = c.Compile(node.Body); err != nil {
+	if err = c.compile(node.Body); err != nil {
 		return err
 	}
 	// compiles post-iteration statement (e.g. x++)
 	if node.Post != nil {
-		if err = c.Compile(node.Post); err != nil {
+		if err = c.compile(node.Post); err != nil {
 			return err
 		}
 	}
@@ -354,7 +456,7 @@ func (c *Compiler) doForStmt(node *ast.ForStmt) error {
 
 // doRangeStmt processes a range statement, handling iteration and variable assignment in the compiled instructions.
 func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
-	if err := c.Compile(node.X); err != nil {
+	if err := c.compile(node.X); err != nil {
 		return err
 	}
 	scope, err := c.scopes.Current()
@@ -418,12 +520,12 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 	}
 
 	// 7. Compila il corpo del ciclo
-	if err := c.Compile(node.Body); err != nil {
+	if err = c.compile(node.Body); err != nil {
 		return err
 	}
 
 	// 8. Salta all'inizio
-	if _, err := c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
+	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
 		return err
 	}
 
@@ -435,181 +537,11 @@ func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
 	return nil
 }
 
-/*
-// doRangeStmt compiles a for...range statement.
-func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
-	// 1. Compila l'espressione su cui iterare (es. la variabile 'x').
-	// Questo lascerà l'oggetto iterabile (stringa, array, mappa, ecc.) in cima allo stack.
-	if err := c.Compile(node.X); err != nil {
-		return err
-	}
-
-	// 2. Inizializza l'iteratore.
-	// Questa istruzione prende l'oggetto iterabile dallo stack e lo sostituisce con un oggetto iteratore.
-	if _, err := c.scopes.Emit(bytecode.OpIteratorInit); err != nil {
-		return err
-	}
-
-	scope, err := c.scopes.Current()
-	if err != nil {
-		return err
-	}
-
-	// 3. Inizio del ciclo di controllo.
-	loopStartPos := scope.InstructionsLen()
-
-	// 4. Controlla se c'è un prossimo elemento.
-	// OpIteratorNext lascia l'iteratore sullo stack e aggiunge un booleano (true se ci sono altri elementi).
-	if _, err = c.scopes.Emit(bytecode.OpIteratorNext); err != nil {
-		return err
-	}
-
-	// 5. Emette un salto per uscire dal ciclo se OpIteratorNext restituisce 'false'.
-	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
-	if err != nil {
-		return err
-	}
-
-	// 6. Definisce le variabili di ciclo (chiave e/o valore).
-	// La chiave (es. 'idx')
-	if node.Key != nil {
-		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != "_" {
-			if _, err = c.scopes.Emit(bytecode.OpIteratorKey); err != nil {
-				return err
-			}
-			// Definisce la variabile locale per la chiave.
-			symbol := c.scopes.SymbolDefine(ident.Name)
-			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
-				return err
-			}
-		}
-	}
-	// Il valore (es. 'v')
-	if node.Value != nil {
-		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != "_" {
-			if _, err = c.scopes.Emit(bytecode.OpIteratorValue); err != nil {
-				return err
-			}
-			symbol := c.scopes.SymbolDefine(ident.Name)
-			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
-				return err
-			}
-		}
-	}
-	if err = c.Compile(node.Body); err != nil {
-		return err
-	}
-	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
-		return err
-	}
-	scope, err = c.scopes.Current()
-	if err != nil {
-		return err
-	}
-	// 9. Aggiorna (back-patching) l'indirizzo del salto condizionale (OpJumpFalsy).
-	afterLoopPos := scope.InstructionsLen()
-	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
-		return err
-	}
-
-	// 10. Pulisce lo stack dall'oggetto iteratore dopo la fine del ciclo.
-	if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
-		return err
-	}
-
+func (c *Compiler) doFuncDecl(node *ast.FuncDecl) error {
 	return nil
 }
 
-*/
-
 /*
-
-// doRangeStmt compiles a for...range statement.
-func (c *Compiler) doRangeStmt(node *ast.RangeStmt) error {
-	// 1. Compila l'espressione su cui iterare (es. la variabile 'x').
-	// Questo lascerà l'oggetto iterabile (stringa, array, mappa, ecc.) in cima allo stack.
-	if err := c.Compile(node.X); err != nil {
-		return err
-	}
-
-	// 2. Inizializza l'iteratore.
-	// Questa istruzione prende l'oggetto iterabile dallo stack e lo sostituisce con un oggetto iteratore.
-	if _, err := c.scopes.Emit(bytecode.OpIteratorInit); err != nil {
-		return err
-	}
-
-	scope, err := c.scopes.Current()
-	if err != nil {
-		return err
-	}
-
-	// 3. Inizio del ciclo di controllo.
-	loopStartPos := scope.InstructionsLen()
-
-	// 4. Controlla se c'è un prossimo elemento.
-	// OpIteratorNext lascia l'iteratore sullo stack e aggiunge un booleano (true se ci sono altri elementi).
-	if _, err = c.scopes.Emit(bytecode.OpIteratorNext); err != nil {
-		return err
-	}
-
-	// 5. Emette un salto per uscire dal ciclo se OpIteratorNext restituisce 'false'.
-	jumpNotTruthyPos, err := c.scopes.Emit(bytecode.OpJumpFalsy, 9999)
-	if err != nil {
-		return err
-	}
-
-	// 6. Definisce le variabili di ciclo (chiave e/o valore).
-	// La chiave (es. 'idx')
-	if node.Key != nil {
-		if ident, ok := node.Key.(*ast.Ident); ok && ident.Name != "_" {
-			if _, err = c.scopes.Emit(bytecode.OpIteratorKey); err != nil {
-				return err
-			}
-			// Definisce la variabile locale per la chiave.
-			symbol := c.scopes.SymbolDefine(ident.Name)
-			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
-				return err
-			}
-		}
-	}
-	// Il valore (es. 'v')
-	if node.Value != nil {
-		if ident, ok := node.Value.(*ast.Ident); ok && ident.Name != "_" {
-			if _, err = c.scopes.Emit(bytecode.OpIteratorValue); err != nil {
-				return err
-			}
-			symbol := c.scopes.SymbolDefine(ident.Name)
-			if err = c.scopes.EmitSymbolDefine(symbol); err != nil {
-				return err
-			}
-		}
-	}
-	if err = c.Compile(node.Body); err != nil {
-		return err
-	}
-	if _, err = c.scopes.Emit(bytecode.OpJump, loopStartPos); err != nil {
-		return err
-	}
-	scope, err = c.scopes.Current()
-	if err != nil {
-		return err
-	}
-	// 9. Aggiorna (back-patching) l'indirizzo del salto condizionale (OpJumpFalsy).
-	afterLoopPos := scope.InstructionsLen()
-	if err = c.scopes.ChangeOperand(jumpNotTruthyPos, afterLoopPos); err != nil {
-		return err
-	}
-
-	// 10. Pulisce lo stack dall'oggetto iteratore dopo la fine del ciclo.
-	if _, err := c.scopes.Emit(bytecode.OpPop); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-*/
-
 // doFuncDecl compiles a function declaration into bytecode and manages the function's scope, parameters, and body.
 func (c *Compiler) doFuncDecl(node *ast.FuncDecl) error {
 	// Global function declaration
@@ -623,7 +555,7 @@ func (c *Compiler) doFuncDecl(node *ast.FuncDecl) error {
 		}
 	}
 	// Body
-	if err := c.Compile(node.Body); err != nil {
+	if err := c.compile(node.Body); err != nil {
 		return err
 	}
 	// Implicit return if missing
@@ -660,6 +592,8 @@ func (c *Compiler) doFuncDecl(node *ast.FuncDecl) error {
 	return nil
 }
 
+*/
+
 // doReturnStmt compiles a return statement, handling both void and value returns, and emits corresponding bytecode.
 func (c *Compiler) doReturnStmt(node *ast.ReturnStmt) error {
 	if len(node.Results) == 0 {
@@ -669,7 +603,7 @@ func (c *Compiler) doReturnStmt(node *ast.ReturnStmt) error {
 		}
 		return nil
 	}
-	if err := c.Compile(node.Results[0]); err != nil {
+	if err := c.compile(node.Results[0]); err != nil {
 		return err
 	}
 	// Return a value
@@ -681,10 +615,10 @@ func (c *Compiler) doReturnStmt(node *ast.ReturnStmt) error {
 
 // doBinaryExpr compiles a binary expression by processing its left and right operands and emitting the corresponding operation.
 func (c *Compiler) doBinaryExpr(node *ast.BinaryExpr) error {
-	if err := c.Compile(node.X); err != nil {
+	if err := c.compile(node.X); err != nil {
 		return err
 	}
-	if err := c.Compile(node.Y); err != nil {
+	if err := c.compile(node.Y); err != nil {
 		return err
 	}
 	if err := c.scopes.EmitBinaryOp(node.Op); err != nil {
@@ -695,7 +629,7 @@ func (c *Compiler) doBinaryExpr(node *ast.BinaryExpr) error {
 
 // doUnaryExpr compiles a unary expression by processing its operand and emitting the associated unary operation.
 func (c *Compiler) doUnaryExpr(node *ast.UnaryExpr) error {
-	if err := c.Compile(node.X); err != nil {
+	if err := c.compile(node.X); err != nil {
 		return err
 	}
 	if err := c.scopes.EmitUnaryOp(node.Op); err != nil {
@@ -732,7 +666,7 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 	case *ast.ArrayType:
 		// Array literal (e.g. []int{1, 2, 3})
 		for _, elt := range node.Elts {
-			if err := c.Compile(elt); err != nil {
+			if err := c.compile(elt); err != nil {
 				return err
 			}
 		}
@@ -743,10 +677,10 @@ func (c *Compiler) doCompositeLit(node *ast.CompositeLit) error {
 		// Map literal (e.g. map[string]int{"a": 1})
 		for _, elt := range node.Elts {
 			kve := elt.(*ast.KeyValueExpr)
-			if err := c.Compile(kve.Key); err != nil {
+			if err := c.compile(kve.Key); err != nil {
 				return err
 			}
-			if err := c.Compile(kve.Value); err != nil {
+			if err := c.compile(kve.Value); err != nil {
 				return err
 			}
 		}
@@ -768,7 +702,7 @@ func (c *Compiler) doImportSpec(node *ast.ImportSpec) error {
 
 // doSelectorExpr compiles a selector expression (e.g., 'fmt.Println') and emits the necessary bytecode instructions.
 func (c *Compiler) doSelectorExpr(node *ast.SelectorExpr) error {
-	if err := c.Compile(node.X); err != nil {
+	if err := c.compile(node.X); err != nil {
 		return err
 	}
 	moduleIdent, ok := node.X.(*ast.Ident)
