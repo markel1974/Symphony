@@ -44,13 +44,13 @@ type VM struct {
 	err         error
 	sequencer   []func()
 	references  []objects.IObject
-	loader      ILoader
+	loader      bytecode.ILoader
 	globals     *Globals
 	functions   map[string]*objects.FunctionCompiled
 }
 
 // NewVM initializes and returns a new virtual machine instance configured with the provided components and settings.
-func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, maxAllocations int64) (*VM, error) {
+func NewVM(loader bytecode.ILoader, sequencer ISequencer, bc *bytecode.Bytecode, maxAllocations int64) (*VM, error) {
 	if bc == nil {
 		return nil, fmt.Errorf("bytecode is nil")
 	}

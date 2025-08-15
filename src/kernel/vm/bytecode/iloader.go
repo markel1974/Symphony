@@ -1,4 +1,4 @@
-package vm
+package bytecode
 
 import "github.com/markel1974/c64emu/src/kernel/vm/objects"
 
@@ -15,4 +15,6 @@ type ILoader interface {
 	ResolveBuiltinSymbols([]objects.IObject) ([]*objects.FunctionBuiltin, error)
 
 	ResolveSymbols([]objects.IObject) ([]objects.IObject, error)
+
+	CompileModule(name string) (*objects.MapImmutable, error)
 }

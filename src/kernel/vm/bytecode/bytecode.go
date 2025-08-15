@@ -7,7 +7,6 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/markel1974/c64emu/src/kernel/compiler/modules"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
@@ -159,10 +158,10 @@ func (b *Bytecode) formatObject(cIdx int, constant objects.IObject) []string {
 }
 
 // Decode deserializes the bytecode from the given io.Reader and resolves its components using the provided modules.
-func (b *Bytecode) Decode(r io.Reader, mods *modules.Modules) error {
-	if mods == nil {
-		mods = modules.NewModules()
-	}
+func (b *Bytecode) Decode(r io.Reader, loader ILoader) error {
+	//if mods == nil {
+	//	mods = modules.NewModules()
+	//}
 	dec := gob.NewDecoder(r)
 	if err := dec.Decode(&b.files); err != nil {
 		return err
@@ -171,7 +170,7 @@ func (b *Bytecode) Decode(r io.Reader, mods *modules.Modules) error {
 		return err
 	}
 	for i, v := range b.constants {
-		fv, err := fixDecodedObject(v, mods)
+		fv, err := fixDecodedObject(v, loader)
 		if err != nil {
 			return err
 		}
@@ -181,7 +180,7 @@ func (b *Bytecode) Decode(r io.Reader, mods *modules.Modules) error {
 		return err
 	}
 	for i, v := range b.references {
-		fv, err := fixDecodedObject(v, mods)
+		fv, err := fixDecodedObject(v, loader)
 		if err != nil {
 			return err
 		}
@@ -293,7 +292,7 @@ func (b *Bytecode) removeDuplicates(container []objects.IObject) ([]objects.IObj
 // fixDecodedObject ensures that a decoded object is properly reconstructed and compatible with the runtime environment.
 // It recursively processes composite objects like arrays and maps, fixing or transforming their elements if necessary.
 // Returns the modified object or an error if reconstruction fails.
-func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject, error) {
+func fixDecodedObject(o objects.IObject, loader ILoader) (objects.IObject, error) {
 	switch o := o.(type) {
 	case *objects.Bool:
 		if o.Boolean() {
@@ -304,7 +303,7 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 		return objects.UndefinedValue, nil
 	case *objects.Array:
 		for i, v := range o.Values() {
-			fv, err := fixDecodedObject(v, mods)
+			fv, err := fixDecodedObject(v, loader)
 			if err != nil {
 				return nil, err
 			}
@@ -312,7 +311,7 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 		}
 	case *objects.ArrayImmutable:
 		for i, v := range o.Values() {
-			fv, err := fixDecodedObject(v, mods)
+			fv, err := fixDecodedObject(v, loader)
 			if err != nil {
 				return nil, err
 			}
@@ -320,7 +319,7 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 		}
 	case *objects.Map:
 		for k, v := range o.Values() {
-			fv, err := fixDecodedObject(v, mods)
+			fv, err := fixDecodedObject(v, loader)
 			if err != nil {
 				return nil, err
 			}
@@ -331,14 +330,14 @@ func fixDecodedObject(o objects.IObject, mods *modules.Modules) (objects.IObject
 		if err != nil {
 			return nil, err
 		}
-		if mod := mods.GetBuiltinModule(modName); mod != nil {
-			return mod.AsImmutableMap(modName), nil
+		if mod, _ := loader.CompileModule(modName); mod != nil {
+			return mod, nil
 		}
 		for k, v := range o.Values() {
 			if _, isUserFunction := v.(*objects.FunctionUser); isUserFunction {
 				return nil, fmt.Errorf("user function not decodable")
 			}
-			fv, err := fixDecodedObject(v, mods)
+			fv, err := fixDecodedObject(v, loader)
 			if err != nil {
 				return nil, err
 			}
