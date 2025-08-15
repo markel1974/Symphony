@@ -13,10 +13,6 @@ const (
 	resetIp = -1
 )
 
-const (
-	mainFunction = "main"
-)
-
 // globalsSize defines the maximum size of the global variables space.
 // stackSize specifies the size limit of the stack for function execution.
 // maxFrames indicates the maximum number of call frames allowed.
@@ -50,7 +46,7 @@ type VM struct {
 	references  []objects.IObject
 	loader      ILoader
 	globals     *Globals
-	mainFn      *objects.FunctionCompiled
+	functions   map[string]*objects.FunctionCompiled
 }
 
 // NewVM initializes and returns a new virtual machine instance configured with the provided components and settings.
@@ -68,29 +64,24 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, maxAlloc
 	if sequencer == nil {
 		sequencer = NewSequencer()
 	}
-	var mainFn *objects.FunctionCompiled = nil
+	functions := make(map[string]*objects.FunctionCompiled)
 	globals := make([]objects.IObject, len(bc.Constants()))
 	for idx, constant := range bc.Constants() {
 		switch v := constant.(type) {
 		case *objects.FunctionCompiled:
-			if v.Name() == mainFunction {
-				mainFn = v
-			}
+			functions[v.Name()] = v
 		}
 		globals[idx] = constant
-	}
-	if mainFn == nil {
-		return nil, fmt.Errorf("main function not found")
 	}
 	v := &VM{
 		sourceFiles: bc.SourceFiles(),
 		ip:          resetIp,
 		loader:      loader,
 		references:  references,
-		mainFn:      mainFn,
+		functions:   functions,
 	}
 	v.stack = NewStack(stackSize, maxAllocations, v.setError)
-	v.frames = NewFrames(mainFn, maxFrames, v.setError)
+	v.frames = NewFrames(maxFrames, v.setError)
 	v.globals = NewGlobals(globals, v.setError)
 	v.sequencer = sequencer.Create(v)
 	v.Reset()
@@ -107,15 +98,20 @@ func (v *VM) Reset() {
 	v.ip = resetIp
 	v.stack.Reset()
 	v.frames.Reset()
-	v.currFrame = v.frames.Head()
-	v.currFrame.Bind(v.ip, v.mainFn, 0)
-	v.stack.SetStackPointer(v.currFrame.NumLocals())
 	v.err = nil
 	v.shutdown = false
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
-func (v *VM) Run() error {
+func (v *VM) Run(main string) error {
+	mainFn, _ := v.functions[main]
+	if mainFn == nil {
+		return fmt.Errorf("main function not found")
+	}
+	v.currFrame = v.frames.Head()
+	v.currFrame.Bind(v.ip, mainFn, 0)
+	v.stack.SetStackPointer(v.currFrame.NumLocals())
+
 	v.run()
 
 	if v.err != nil {

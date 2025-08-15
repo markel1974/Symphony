@@ -13,7 +13,7 @@ type Frames struct {
 }
 
 // NewFrames initializes and returns a new Frames instance with the specified main function and maximum frame count.
-func NewFrames(main *objects.FunctionCompiled, maxFrames int, errSignal func(err error)) *Frames {
+func NewFrames(maxFrames int, errSignal func(err error)) *Frames {
 	f := &Frames{
 		frames:      make([]*Frame, maxFrames),
 		framesIndex: 1,
