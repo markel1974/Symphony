@@ -3,8 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"go/parser"
-	"go/token"
 	"log"
 	"os"
 	"path"
@@ -13,13 +11,14 @@ import (
 	"github.com/markel1974/c64emu/src"
 	"github.com/markel1974/c64emu/src/config"
 	"github.com/markel1974/c64emu/src/kernel/compiler"
+	"github.com/markel1974/c64emu/src/kernel/compiler/stdlib"
+	"github.com/markel1974/c64emu/src/kernel/compiler/stub"
 	"github.com/markel1974/c64emu/src/kernel/component"
 	"github.com/markel1974/c64emu/src/kernel/frontend"
 	"github.com/markel1974/c64emu/src/kernel/frontend/authenticator"
 	"github.com/markel1974/c64emu/src/kernel/interfaces"
 	"github.com/markel1974/c64emu/src/kernel/process"
 	"github.com/markel1974/c64emu/src/kernel/vm"
-	"github.com/markel1974/c64emu/src/kernel/vm/stdlib"
 	"github.com/markel1974/c64emu/src/renderers/audio"
 	"github.com/markel1974/c64emu/src/renderers/graphics"
 	"github.com/markel1974/c64emu/src/version"
@@ -133,54 +132,20 @@ func BuildDrives(d string) ([]*config.Drive, error) {
 }
 
 func vmTest() {
-	// Codice sorgente Go da compilare ed eseguire
-	//println(x + y)
-	source := `
-package main
-
-import "fmt"
-
-func main() {
-	fmt.println("PROVA")
-	var x = 4
-	var y = 15
-	z := x+y
-	fmt.println(z)
-	return z
-}
-`
-	languageModules := stdlib.GetBuiltinModules()
-	fmt.Println(languageModules)
-
-	fSet := token.NewFileSet()
-	astFile, err := parser.ParseFile(fSet, "example.go", source, 0)
-	if err != nil {
-		log.Fatalf("Errore di parsing: %s", err)
-	}
-	// 2. Compilazione
-
 	comp := compiler.New()
-	if err := comp.Compile(astFile); err != nil {
-		log.Fatalf("Errore di compilazione: %s", err)
-	}
-	// 3. Esecuzione con la VM
-	bytecode, err := comp.Bytecode()
+	bc, err := comp.Compile("example.go", stub.Source1)
 	if err != nil {
-		log.Fatalf("Errore di compilazione: %s", err)
+		log.Fatalf("compiler error: %s", err)
 	}
-	// Aggiungi un metodo a compiler.go per esporre i metodi set,
-	// altrimenti questo codice non compilerà.
-	// Esempio in `bytecode/compiler.go`:
-	// func (b *Bytecode) SetMainFunction(fn *objects.FunctionCompiled) { b.mainFunction = fn }
-	// func (b *Bytecode) SetConstants(c []objects.IObject) { b.constants = c }
-	machine, err := vm.NewVM(languageModules, nil, bytecode, nil, 100000)
+	bc.Print()
+	loader := stdlib.NewLoader()
+	machine, err := vm.NewVM(loader, nil, bc, 100000)
 	if err != nil {
-		log.Fatalf("Errore creazione VM: %s", err)
+		log.Fatalf("VM creation error: %s", err)
 	}
-	if err := machine.Run(); err != nil {
-		log.Fatalf("Errore runtime VM: %s", err)
+	if err = machine.Run("main"); err != nil {
+		log.Fatalf("VM runtime error: %s", err)
 	}
-	fmt.Println("Esecuzione completata.")
 	os.Exit(0)
 }
 
@@ -193,13 +158,6 @@ func (nw *NilWriter) Write(p []byte) (int, error) {
 
 func main() {
 	//benchmark.VIC(1000000, 20, 10, 1)
-	//bc := bytecode.NewBytecode()
-	//vmt, err := vm.NewVM(nil, bc, nil, 10)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//fmt.Println(vmt)
-	//os.Exit(0)
 
 	vmTest()
 

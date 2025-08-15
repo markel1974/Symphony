@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"strings"
 
+	"github.com/markel1974/c64emu/src/kernel/compiler/stdlib"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -23,9 +24,9 @@ type Compiler struct {
 
 // New initializes and returns a new instance of Compiler.
 func New() *Compiler {
-
+	loader := stdlib.NewLoader()
 	c := &Compiler{
-		scopes: NewScopes(),
+		scopes: NewScopes(loader),
 	}
 	return c
 }

@@ -7,7 +7,6 @@ import (
 	"go/token"
 	"strconv"
 
-	"github.com/markel1974/c64emu/src/kernel/compiler/stdlib"
 	"github.com/markel1974/c64emu/src/kernel/vm/bytecode"
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
@@ -22,9 +21,9 @@ type Scopes struct {
 }
 
 // NewScopes initializes and returns a Scopes structure with a new symbol table, main compilation scope, and scope index set to 0.
-func NewScopes() *Scopes {
+func NewScopes(loader bytecode.ILoader) *Scopes {
 	symbolTable := NewSymbolTable()
-	for i, fn := range stdlib.GetAllBuiltin() {
+	for i, fn := range loader.GetBuiltinFunctions() {
 		symbolTable.DefineBuiltin(fn.Name(), i)
 	}
 	return &Scopes{

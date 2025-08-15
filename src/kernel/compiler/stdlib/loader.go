@@ -20,11 +20,6 @@ var _builtinModules = map[string]map[string]objects.IObject{
 	"hex":    _hexModule,
 }
 
-// GetAllBuiltin returns a slice containing all registered builtin functions.
-func GetAllBuiltin() []*objects.FunctionBuiltin {
-	return append([]*objects.FunctionBuiltin{}, _builtinFunctions...)
-}
-
 // Module represents a module with predefined attributes that can be imported or accessed at runtime.
 // Attrs stores a map of string keys to IObject values, representing the module's predefined attributes.
 type Module struct {
@@ -56,18 +51,25 @@ func (m *Module) Symbol(name string) (objects.IObject, bool) {
 // It provides functionality for accessing and resolving both regular and built-in symbols.
 // The mod field holds a collection of modules, allowing for import and retrieval of symbols.
 type Loader struct {
-	m map[string]*Module
+	modules          map[string]*Module
+	builtinFunctions []*objects.FunctionBuiltin
 }
 
 // NewLoader initializes and returns a new Loader instance with built-in modules preloaded.
 func NewLoader() *Loader {
-	m := make(map[string]*Module)
+	modules := make(map[string]*Module)
 	for name, mod := range _builtinModules {
-		m[name] = NewModule(mod)
+		modules[name] = NewModule(mod)
 	}
 	return &Loader{
-		m: m,
+		modules:          modules,
+		builtinFunctions: append([]*objects.FunctionBuiltin{}, _builtinFunctions...),
 	}
+}
+
+// GetBuiltinFunctions returns a slice containing all registered builtin functions.
+func (l *Loader) GetBuiltinFunctions() []*objects.FunctionBuiltin {
+	return l.builtinFunctions
 }
 
 // ResolveSymbols resolves a list of symbol references to their corresponding objects using the loader's symbol mapping.
@@ -126,7 +128,7 @@ func (l *Loader) GetSymbol(in objects.IObject) (objects.IObject, bool) {
 	if !ok {
 		return nil, false
 	}
-	mod, ok := l.m[packageName.Value()]
+	mod, ok := l.modules[packageName.Value()]
 	if !ok {
 		return nil, false
 	}
@@ -136,7 +138,7 @@ func (l *Loader) GetSymbol(in objects.IObject) (objects.IObject, bool) {
 
 // CompileModule compiles the specified module by its name, returning an immutable map of its attributes or an error if not found.
 func (l *Loader) CompileModule(name string) (*objects.MapImmutable, error) {
-	m, ok := l.m[name]
+	m, ok := l.modules[name]
 	if !ok {
 		return nil, fmt.Errorf("module %s not found", name)
 	}
