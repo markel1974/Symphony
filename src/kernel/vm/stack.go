@@ -13,15 +13,17 @@ type Stack struct {
 	sp             int
 	allocations    int64
 	maxAllocations int64
+	errSignal      func(err error)
 }
 
 // NewStack creates and initializes a new Stack with the specified size and returns a pointer to it.
-func NewStack(size int, maxAllocations int64) *Stack {
+func NewStack(size int, maxAllocations int64, errSignal func(err error)) *Stack {
 	s := &Stack{
 		sp:             0,
 		stack:          make([]objects.IObject, size),
 		maxAllocations: maxAllocations,
 		allocations:    maxAllocations + 1,
+		errSignal:      errSignal,
 	}
 	for i := range s.stack {
 		s.stack[i] = objects.UndefinedValue
@@ -55,51 +57,55 @@ func (v *Stack) DecrementCount(count int) {
 }
 
 // SetAbsolute assigns the specified object to the stack at the given absolute index.
-func (v *Stack) SetAbsolute(absolute int, obj objects.IObject) error {
+func (v *Stack) SetAbsolute(absolute int, obj objects.IObject) {
 	if v.allocations--; v.allocations == 0 {
-		return objects.ErrObjectAllocLimit
+		v.errSignal(objects.ErrObjectAllocLimit)
+		return
 	}
 	if absolute < 0 || absolute >= len(v.stack) {
-		return objects.ErrIndexOutOfBounds
+		v.errSignal(objects.ErrIndexOutOfBounds)
+		return
 	}
 	v.stack[absolute] = obj
-	return nil
 }
 
 // Set assigns the given object to the position indicated by the current stack pointer minus one.
-func (v *Stack) Set(obj objects.IObject) error {
+func (v *Stack) Set(obj objects.IObject) {
 	if v.allocations--; v.allocations == 0 {
-		return objects.ErrObjectAllocLimit
+		v.errSignal(objects.ErrObjectAllocLimit)
+		return
 	}
 	sp := v.sp - 1
 	if sp < 0 || sp >= len(v.stack) {
-		return objects.ErrIndexOutOfBounds
+		v.errSignal(objects.ErrIndexOutOfBounds)
+		return
 	}
 	v.stack[sp] = obj
-	return nil
 }
 
 // Push adds the provided object to the top of the stack and increments the stack pointer.
-func (v *Stack) Push(obj objects.IObject) error {
+func (v *Stack) Push(obj objects.IObject) {
 	if v.allocations--; v.allocations == 0 {
-		return objects.ErrObjectAllocLimit
+		v.errSignal(objects.ErrObjectAllocLimit)
+		return
 	}
 	if v.sp < 0 || v.sp >= len(v.stack) {
-		return objects.ErrIndexOutOfBounds
+		v.errSignal(objects.ErrIndexOutOfBounds)
+		return
 	}
 	v.stack[v.sp] = obj
 	v.sp++
-	return nil
 }
 
 // PushVarArgs processes a variadic argument list, grouping extra arguments into an array and updating the stack pointer.
-func (v *Stack) PushVarArgs(numArgs int, realArgs int) error {
+func (v *Stack) PushVarArgs(numArgs int, realArgs int) {
 	varArgs := numArgs - realArgs
 	if varArgs < 0 {
-		return nil
+		return
 	}
 	if v.allocations--; v.allocations <= 0 {
-		return objects.ErrObjectAllocLimit
+		v.errSignal(objects.ErrObjectAllocLimit)
+		return
 	}
 	numArgs = realArgs + 1
 	args := make([]objects.IObject, varArgs)
@@ -108,11 +114,11 @@ func (v *Stack) PushVarArgs(numArgs int, realArgs int) error {
 		args[i-spStart] = v.stack[i]
 	}
 	if spStart < 0 || spStart >= len(v.stack) {
-		return objects.ErrIndexOutOfBounds
+		v.errSignal(objects.ErrIndexOutOfBounds)
+		return
 	}
 	v.stack[spStart] = objects.NewArray(args)
 	v.sp = spStart + 1
-	return nil
 }
 
 // Pop removes and returns the object at the top of the stack.
