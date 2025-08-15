@@ -39,21 +39,19 @@ type ISequencer interface {
 
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
 type VM struct {
-	sourceFiles      *bytecode.Files
-	globals          []objects.IObject
-	stack            *Stack
-	frames           *Frames
-	currFrame        *Frame
-	ip               int
-	currInstructions *objects.Instructions
-	abort            bool
-	suspend          bool
-	maxAllocations   int64
-	err              error
-	sequencer        []func()
-	references       []objects.IObject
-	loader           ILoader
-	//builtin          []*objects.FunctionBuiltin
+	sourceFiles    *bytecode.Files
+	stack          *Stack
+	frames         *Frames
+	currFrame      *Frame
+	ip             int
+	shutdown       bool
+	maxAllocations int64
+	err            error
+	sequencer      []func()
+	references     []objects.IObject
+	loader         ILoader
+	globals        *Globals
+	mainFn         *objects.FunctionCompiled
 }
 
 // NewVM initializes and returns a new virtual machine instance configured with the provided components and settings.
@@ -86,41 +84,40 @@ func NewVM(loader ILoader, sequencer ISequencer, bc *bytecode.Bytecode, maxAlloc
 		return nil, fmt.Errorf("main function not found")
 	}
 	v := &VM{
-		globals:        globals,
 		sourceFiles:    bc.SourceFiles(),
 		ip:             resetIp,
 		maxAllocations: maxAllocations,
-		suspend:        false,
 		stack:          NewStack(stackSize, maxAllocations),
 		loader:         loader,
 		references:     references,
-		frames:         NewFrames(mainFn, maxFrames),
+		mainFn:         mainFn,
 	}
+	v.frames = NewFrames(mainFn, maxFrames, v.setError)
+	v.globals = NewGlobals(globals, v.setError)
 	v.sequencer = sequencer.Create(v)
+	v.Reset()
 	return v, nil
 }
 
-// Abort sets the VM's internal abort flag to true, indicating that the execution should be halted.
-func (v *VM) Abort() {
-	v.abort = true
+// Shutdown gracefully shuts down the virtual machine by setting its internal state to signify termination.
+func (v *VM) Shutdown() {
+	v.shutdown = true
 }
 
+// Reset reinitializes the virtual machine's state, clears the stack and frames, and resets execution-related variables.
 func (v *VM) Reset() {
-	v.stack.Reset() // Imposta v.sp = 0
-	v.currFrame = v.frames.Head()
-	v.currInstructions = v.currFrame.Instructions()
-	v.frames.Clear()
 	v.ip = resetIp
+	v.stack.Reset()
+	v.frames.Reset()
+	v.currFrame = v.frames.Head()
+	v.currFrame.Bind(v.ip, v.mainFn, 0)
+	v.stack.SetStackPointer(v.currFrame.NumLocals())
 	v.err = nil
-	v.suspend = false
-	v.abort = false
-	v.stack.SetStackPointer(v.currFrame.compiledFunction.NumLocals())
+	v.shutdown = false
 }
 
 // Run executes the virtual machine's bytecode, managing the stack, frames, and instruction pointer state.
 func (v *VM) Run() error {
-	v.Reset()
-
 	v.run()
 
 	if v.err != nil {
@@ -139,18 +136,20 @@ func (v *VM) Run() error {
 func (v *VM) run() {
 	for {
 		v.ip++
-		opcode, err := v.currInstructions.Get(v.ip)
-		if err != nil {
-			v.err = err
-			return
-		}
+		opcode := v.currFrame.Get(v.ip)
 		opcode = opcode & sequenceMask
 		log.Println("Executing instruction ", opcode, bytecode.OpcodeNames[opcode])
 		v.sequencer[opcode]()
-		if v.abort || v.suspend || v.err != nil {
+		if v.shutdown {
 			break
 		}
 	}
+}
+
+// setError sets the internal error state of the VM and marks it for shutdown.
+func (v *VM) setError(err error) {
+	v.err = err
+	v.shutdown = true
 }
 
 // checkBounds validates and adjusts slice bounds using provided low and high indices, ensuring they are within valid range.
@@ -190,16 +189,9 @@ func (v *VM) checkBounds(lowStack objects.IObject, highStack objects.IObject, nu
 // doOpConstant retrieves a constant from the instructions using the indices at ip and pushes it onto the stack.
 func (v *VM) doOpConstant() {
 	v.ip += 2
-	cIdx, err := v.currInstructions.Pos(v.ip, v.ip-1)
-	if err != nil {
-		v.err = err
-		return
-	}
-	if cIdx < 0 || cIdx > len(v.globals) {
-		v.err = fmt.Errorf("invalid constant index: %d", cIdx)
-		return
-	}
-	if err = v.stack.Push(v.globals[cIdx]); err != nil {
+	cIdx := v.currFrame.Pos(v.ip, v.ip-1)
+	glObj := v.globals.Get(uint(cIdx))
+	if err := v.stack.Push(glObj); err != nil {
 		v.err = err
 		return
 	}
@@ -220,11 +212,7 @@ func (v *VM) doOpBinary() {
 	v.ip++
 	right := v.stack.Pop()
 	left := v.stack.Pop()
-	opcode, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	opcode := v.currFrame.Get(v.ip)
 	operator := objects.Operator(opcode)
 	res, err := left.BinaryOp(operator, right)
 	if err != nil {
@@ -345,11 +333,7 @@ func (v *VM) doOpJumpFalsy() {
 	v.ip += 2
 	obj := v.stack.Pop()
 	if obj.Boolean() {
-		pos, err := v.currInstructions.Pos(v.ip, v.ip-1)
-		if err != nil {
-			v.err = err
-			return
-		}
+		pos := v.currFrame.Pos(v.ip, v.ip-1)
 		v.ip = pos - 1
 	}
 }
@@ -359,11 +343,7 @@ func (v *VM) doOpAndJump() {
 	v.ip += 2
 	obj := v.stack.Peek()
 	if obj.Boolean() {
-		pos, err := v.currInstructions.Pos(v.ip, v.ip-1)
-		if err != nil {
-			v.err = err
-			return
-		}
+		pos := v.currFrame.Pos(v.ip, v.ip-1)
 		v.ip = pos - 1
 	} else {
 		v.stack.Decrement()
@@ -378,56 +358,38 @@ func (v *VM) doOpOrJump() {
 	if obj.Boolean() {
 		v.stack.Decrement()
 	} else {
-		pos, err := v.currInstructions.Pos(v.ip, v.ip-1)
-		if err != nil {
-			v.err = err
-			return
-		}
+		pos := v.currFrame.Pos(v.ip, v.ip-1)
 		v.ip = pos - 1
 	}
 }
 
 // doOpJump updates the instruction pointer based on the position derived from the bytecode and adjusts for zero-based indexing.
 func (v *VM) doOpJump() {
-	pos, err := v.currInstructions.Pos(v.ip+2, v.ip+1)
-	if err != nil {
-		v.err = err
-		return
-	}
+	pos := v.currFrame.Pos(v.ip+2, v.ip+1)
 	v.ip = pos - 1
 }
 
 // doOpSetGlobal performs the SET_GLOBAL operation, updating a global variable with a value from the stack.
 func (v *VM) doOpSetGlobal() {
 	v.ip += 2
-	pos, err := v.currInstructions.Pos(v.ip, v.ip-1)
-	if err != nil {
-		v.err = err
-		return
-	}
+	pos := v.currFrame.Pos(v.ip, v.ip-1)
 	val := v.stack.Peek()
-	v.globals[pos] = val
+	v.globals.Set(uint(pos), val)
 }
 
 // doOpSetSelGlobal is a VM instruction to set a value in a global object using selectors for index assignment.
 func (v *VM) doOpSetSelGlobal() {
 	v.ip += 3
-	globalIndex, err := v.currInstructions.Pos(v.ip-1, v.ip-2)
-	if err != nil {
-		v.err = err
-		return
-	}
-	numSelectors, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		return
-	}
+	globalIndex := v.currFrame.Pos(v.ip-1, v.ip-2)
+	numSelectors := v.currFrame.Get(v.ip)
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
 		selectors[i] = v.stack.PeekOffset(-numSelectors + i)
 	}
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(int(numSelectors) + 1)
-	if e := objects.IndexAssign(v.globals[globalIndex], val, selectors); e != nil {
+	glObj := v.globals.Get(uint(globalIndex))
+	if e := objects.IndexAssign(glObj, val, selectors); e != nil {
 		v.err = e
 		return
 	}
@@ -436,17 +398,13 @@ func (v *VM) doOpSetSelGlobal() {
 // doOpGetGlobal retrieves a global variable from the global pool and pushes its value onto the stack.
 func (v *VM) doOpGetGlobal() {
 	v.ip += 2
-	globalIndex, err := v.currInstructions.Pos(v.ip, v.ip-1)
-	if err != nil {
-		v.err = err
-		return
-	}
-	val := v.globals[globalIndex]
-	if val == nil {
+	globalIndex := v.currFrame.Pos(v.ip, v.ip-1)
+	glObj := v.globals.Get(uint(globalIndex))
+	if glObj == nil {
 		//v.err = fmt.Errorf("undefined global: %d", globalIndex)
 		//return
 	}
-	if err = v.stack.Push(val); err != nil {
+	if err := v.stack.Push(glObj); err != nil {
 		v.err = err
 		return
 	}
@@ -457,14 +415,10 @@ func (v *VM) doOpGetGlobal() {
 // If the allocation limit is exceeded or an error occurs, it sets the error state of the VM.
 func (v *VM) doOpArray() {
 	v.ip += 2
-	numElements, err := v.currInstructions.Pos(v.ip, v.ip-1)
-	if err != nil {
-		v.err = err
-		return
-	}
+	numElements := v.currFrame.Pos(v.ip, v.ip-1)
 	elements := v.stack.PopArrayElements(numElements)
 	arr := objects.NewArray(elements)
-	if err = v.stack.Push(arr); err != nil {
+	if err := v.stack.Push(arr); err != nil {
 		v.err = err
 		return
 	}
@@ -474,14 +428,10 @@ func (v *VM) doOpArray() {
 // It adjusts the instruction pointer and handles allocation limits or errors during creation.
 func (v *VM) doOpMap() {
 	v.ip += 2
-	numElements, err := v.currInstructions.Pos(v.ip, v.ip-1)
-	if err != nil {
-		v.err = err
-		return
-	}
+	numElements := v.currFrame.Pos(v.ip, v.ip-1)
 	kv := v.stack.PopMapElements(numElements)
 	m := objects.NewMap(kv)
-	if err = v.stack.Push(m); err != nil {
+	if err := v.stack.Push(m); err != nil {
 		v.err = err
 		return
 	}
@@ -581,30 +531,19 @@ func (v *VM) doOpSliceIndex() {
 
 // doOpCall handles the execution of a function call in the virtual machine, including compiled and built-in functions.
 func (v *VM) doOpCall() {
-	numArgs, err := v.currInstructions.Get(v.ip + 1)
-	if err != nil {
-		v.err = err
-		return
-	}
+	numArgs := v.currFrame.Get(v.ip + 1)
 	v.ip += 2
 	value := v.stack.PeekOffset(-1 - numArgs)
 	if !value.CanCall() {
 		v.err = fmt.Errorf("not callable: %s", value.TypeName())
 		return
 	}
-
-	// La gestione dello spread operator rimane invariata
-	spread, err := v.currInstructions.Get(v.ip + 2)
-	if err != nil {
-		v.err = err
-		return
-	}
-	if spread == 1 {
+	if spread := v.currFrame.Get(v.ip + 2); spread == 1 {
 		arrObj := v.stack.Pop()
 		switch z := arrObj.(type) {
 		case *objects.Array:
 			for _, item := range z.Values() {
-				if err = v.stack.Push(item); err != nil {
+				if err := v.stack.Push(item); err != nil {
 					v.err = err
 					return
 				}
@@ -612,7 +551,7 @@ func (v *VM) doOpCall() {
 			numArgs += z.Length() - 1
 		case *objects.ArrayImmutable:
 			for _, item := range z.Values() {
-				if err = v.stack.Push(item); err != nil {
+				if err := v.stack.Push(item); err != nil {
 					v.err = err
 					return
 				}
@@ -626,7 +565,7 @@ func (v *VM) doOpCall() {
 
 	if callee, ok := value.(*objects.FunctionCompiled); ok {
 		if callee.VarArgs() {
-			if err = v.stack.PushVarArgs(numArgs, callee.NumParameters()-1); err != nil {
+			if err := v.stack.PushVarArgs(numArgs, callee.NumParameters()-1); err != nil {
 				v.err = err
 				return
 			}
@@ -641,21 +580,15 @@ func (v *VM) doOpCall() {
 			return
 		}
 		// Frame setup
-		v.currFrame.SetStartIP(v.ip)
 		v.currFrame = v.frames.Get()
-		if err = v.frames.Next(); err != nil {
-			v.err = err
-			return
-		}
-		v.currFrame.SetCompiledFunction(callee)
-		v.currFrame.SetFreeVars(callee.Free())
-		v.currFrame.SetBasePointer(v.stack.StackPointer() - numArgs)
+		v.frames.Next()
+		bp := v.stack.StackPointer() - numArgs
+		v.currFrame.Bind(v.ip, callee, bp)
 		// Si riserva lo spazio per *tutte* le variabili locali della nuova funzione
 		// semplicemente avanzando il puntatore dello stack.
 		// Questo garantisce che lo spazio per i calcoli temporanei inizi *dopo*
 		// lo spazio riservato per le variabili locali, evitando collisioni.
 		v.stack.SetStackPointer(v.stack.StackPointer() + callee.NumLocals())
-		v.currInstructions = callee.Instructions()
 		v.ip = resetIp
 	} else {
 		var args []objects.IObject
@@ -671,7 +604,6 @@ func (v *VM) doOpCall() {
 			v.err = err
 			return
 		}
-
 		if ret != nil && ret != objects.UndefinedValue {
 			if err = v.stack.Push(ret); err != nil {
 				v.err = err
@@ -692,27 +624,19 @@ func (v *VM) doOpCall() {
 func (v *VM) doOpReturn() {
 	v.ip++
 	var retVal objects.IObject
-	opcode, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
-	if opcode == 1 {
+	if opcode := v.currFrame.Get(v.ip); opcode == 1 {
 		retVal = v.stack.Peek()
 	} else {
 		retVal = objects.UndefinedValue
 	}
 	if v.frames.Index() > 1 {
 		leavingFrameBasePointer := v.currFrame.BasePointer()
-		if err = v.frames.Previous(); err != nil {
-			v.err = err
-			return
-		}
+		prevIp := v.currFrame.StartIP()
+		v.frames.Previous()
 		v.currFrame = v.frames.GetPrev()
-		v.currInstructions = v.currFrame.Instructions()
-		v.ip = v.currFrame.StartIP()
+		v.ip = prevIp //v.currFrame.StartIP()
 		v.stack.SetStackPointer(leavingFrameBasePointer)
-		if err = v.stack.Push(retVal); err != nil {
+		if err := v.stack.Push(retVal); err != nil {
 			v.err = err
 			return
 		}
@@ -721,7 +645,7 @@ func (v *VM) doOpReturn() {
 		fmt.Println("returning from the root frame")
 		fmt.Println("stack:")
 		v.stack.Print()
-		v.abort = true
+		v.shutdown = true
 	}
 }
 
@@ -730,15 +654,10 @@ func (v *VM) doOpReturn() {
 // If the stack pointer is less than or equal to the destination slot, it updates the stack pointer to protect the new variable.
 func (v *VM) doOpDefineLocal() {
 	v.ip++
-	localIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
-
+	localIndex := v.currFrame.Get(v.ip)
 	val := v.stack.Peek()
 	destSlot := v.currFrame.BasePointer() + localIndex
-	if err = v.stack.SetAbsolute(destSlot, val); err != nil {
+	if err := v.stack.SetAbsolute(destSlot, val); err != nil {
 		v.err = err
 		return
 	}
@@ -746,11 +665,7 @@ func (v *VM) doOpDefineLocal() {
 
 // doOpSetLocal sets a local variable in the current function's call frame. It adjusts the stack as needed for the operation.
 func (v *VM) doOpSetLocal() {
-	localIndex, err := v.currInstructions.Get(v.ip + 1)
-	if err != nil {
-		v.err = err
-		return
-	}
+	localIndex := v.currFrame.Get(v.ip + 1)
 	v.ip++
 	val := v.stack.Peek()
 	destSlot := v.currFrame.BasePointer() + localIndex
@@ -758,7 +673,7 @@ func (v *VM) doOpSetLocal() {
 	if obj, ok := existingValue.(*objects.ObjectPointer); ok {
 		obj.SetValue(val)
 	} else {
-		if err = v.stack.SetAbsolute(destSlot, val); err != nil {
+		if err := v.stack.SetAbsolute(destSlot, val); err != nil {
 			v.err = err
 			return
 		}
@@ -767,16 +682,8 @@ func (v *VM) doOpSetLocal() {
 
 // doOpSetSelLocal performs a set operation on a local variable using provided selectors and value from the stack.
 func (v *VM) doOpSetSelLocal() {
-	localIndex, err := v.currInstructions.Get(v.ip + 1)
-	if err != nil {
-		v.err = err
-		return
-	}
-	numSelectors, err := v.currInstructions.Get(v.ip + 2)
-	if err != nil {
-		v.err = err
-		return
-	}
+	localIndex := v.currFrame.Get(v.ip + 1)
+	numSelectors := v.currFrame.Get(v.ip + 2)
 	v.ip += 2
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
@@ -797,16 +704,12 @@ func (v *VM) doOpSetSelLocal() {
 // doOpGetLocal retrieves a local variable from the stack based on its index in the current frame and pushes it onto the stack.
 func (v *VM) doOpGetLocal() {
 	v.ip++
-	localIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	localIndex := v.currFrame.Get(v.ip)
 	val := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
 		val = *obj.Value()
 	}
-	if err = v.stack.Push(val); err != nil {
+	if err := v.stack.Push(val); err != nil {
 		v.err = err
 		return
 	}
@@ -815,17 +718,13 @@ func (v *VM) doOpGetLocal() {
 // doOpGetBuiltin retrieves a builtin function by its index and pushes it onto the stack, incrementing the instruction pointer.
 func (v *VM) doOpGetBuiltin() {
 	v.ip++
-	builtinIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	builtinIndex := v.currFrame.Get(v.ip)
 	symbol := v.loader.GetBuiltinSymbol(builtinIndex)
 	if symbol == nil {
 		v.err = fmt.Errorf("unkown builtin index: %d", builtinIndex)
 		return
 	}
-	if err = v.stack.Push(symbol); err != nil {
+	if err := v.stack.Push(symbol); err != nil {
 		v.err = err
 		return
 	}
@@ -834,21 +733,10 @@ func (v *VM) doOpGetBuiltin() {
 // doOpClosure handles the creation of a new compiled-function closure with captured free variables on the call stack.
 func (v *VM) doOpClosure() {
 	v.ip += 3
-	constIndex, err := v.currInstructions.Pos(v.ip-1, v.ip-2)
-	if err != nil {
-		v.err = err
-		return
-	}
-	numFree, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
-	if constIndex < 0 || constIndex > len(v.globals) {
-		v.err = fmt.Errorf("invalid constant index: %d", constIndex)
-		return
-	}
-	fn, ok := v.globals[constIndex].(*objects.FunctionCompiled)
+	constIndex := v.currFrame.Pos(v.ip-1, v.ip-2)
+	numFree := v.currFrame.Get(v.ip)
+	glObj := v.globals.Get(uint(constIndex))
+	fn, ok := glObj.(*objects.FunctionCompiled)
 	if !ok {
 		v.err = fmt.Errorf("not function: %s", fn.TypeName())
 		return
@@ -866,7 +754,7 @@ func (v *VM) doOpClosure() {
 	}
 	v.stack.DecrementCount(numFree)
 	cl := objects.NewFunctionCompiled("closure", fn.Instructions().Data(), fn.NumLocals(), fn.NumParameters(), fn.VarArgs(), nil, free)
-	if err = v.stack.Push(cl); err != nil {
+	if err := v.stack.Push(cl); err != nil {
 		v.err = err
 		return
 	}
@@ -875,13 +763,9 @@ func (v *VM) doOpClosure() {
 // doOpGetFreePtr retrieves a free variable from the current frame based on the index in the bytecode and pushes it onto the stack.
 func (v *VM) doOpGetFreePtr() {
 	v.ip++
-	freeIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	freeIndex := v.currFrame.Get(v.ip)
 	val := v.currFrame.FreeVarsIndex(freeIndex)
-	if err = v.stack.Push(val); err != nil {
+	if err := v.stack.Push(val); err != nil {
 		v.err = err
 		return
 	}
@@ -891,13 +775,9 @@ func (v *VM) doOpGetFreePtr() {
 // If an error occurs while retrieving the instruction, it sets the VM's error and halts further execution.
 func (v *VM) doOpGetFree() {
 	v.ip++
-	freeIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	freeIndex := v.currFrame.Get(v.ip)
 	val := *v.currFrame.FreeVarsIndex(freeIndex).Value()
-	if err = v.stack.Push(val); err != nil {
+	if err := v.stack.Push(val); err != nil {
 		v.err = err
 		return
 	}
@@ -906,11 +786,7 @@ func (v *VM) doOpGetFree() {
 // doOpSetFree increments the instruction pointer, retrieves a free variable index, and sets its value from the stack.
 func (v *VM) doOpSetFree() {
 	v.ip++
-	freeIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	freeIndex := v.currFrame.Get(v.ip)
 	o := v.stack.Pop()
 	v.currFrame.FreeVarsIndex(freeIndex).SetValue(o)
 }
@@ -919,26 +795,22 @@ func (v *VM) doOpSetFree() {
 // If the value is not already an ObjectPointer, it wraps it as a new ObjectPointer.
 func (v *VM) doOpGetLocalPtr() {
 	v.ip++
-	localIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	localIndex := v.currFrame.Get(v.ip)
 	sp := v.currFrame.BasePointer() + localIndex
 	val := v.stack.PeekAbsolute(sp)
 	if obj, ok := val.(*objects.ObjectPointer); ok {
-		if err = v.stack.Push(obj); err != nil {
+		if err := v.stack.Push(obj); err != nil {
 			v.err = err
 			return
 		}
 		return
 	}
 	freeVar := objects.NewObjectPointer(&val)
-	if err = v.stack.SetAbsolute(sp, freeVar); err != nil {
+	if err := v.stack.SetAbsolute(sp, freeVar); err != nil {
 		v.err = err
 		return
 	}
-	if err = v.stack.Push(freeVar); err != nil {
+	if err := v.stack.Push(freeVar); err != nil {
 		v.err = err
 		return
 	}
@@ -949,16 +821,9 @@ func (v *VM) doOpGetLocalPtr() {
 // Selector and value data are validated, and errors are set in the VM if any issues occur during assignment.
 func (v *VM) doOpSetSelFree() {
 	v.ip += 2
-	freeIndex, err := v.currInstructions.Get(v.ip - 1)
-	if err != nil {
-		v.err = err
-		return
-	}
-	numSelectors, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	freeIndex := v.currFrame.Get(v.ip - 1)
+	numSelectors := v.currFrame.Get(v.ip)
+
 	selectors := make([]objects.IObject, numSelectors)
 	for i := 0; i < numSelectors; i++ {
 		selectors[i] = v.stack.PeekOffset(-numSelectors + i)
@@ -966,7 +831,7 @@ func (v *VM) doOpSetSelFree() {
 	val := v.stack.PeekOffset(-numSelectors - 1)
 	v.stack.DecrementCount(numSelectors + 1)
 	fvi := v.currFrame.FreeVarsIndex(freeIndex)
-	if err = objects.IndexAssign(*fvi.Value(), val, selectors); err != nil {
+	if err := objects.IndexAssign(*fvi.Value(), val, selectors); err != nil {
 		v.err = err
 		return
 	}
@@ -978,11 +843,7 @@ func (v *VM) doOpSetSelFree() {
 // Finally, the iterator is stored in the local variable slot specified by the instruction.
 func (v *VM) doOpIteratorInit() {
 	v.ip++
-	localIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	localIndex := v.currFrame.Get(v.ip)
 	iterable := v.stack.Pop()
 	if !iterable.CanIterate() {
 		v.err = fmt.Errorf("not iterable: %s", iterable.TypeName())
@@ -990,7 +851,7 @@ func (v *VM) doOpIteratorInit() {
 	}
 	iterator := iterable.Iterate()
 	destSlot := v.currFrame.BasePointer() + localIndex
-	if err = v.stack.SetAbsolute(destSlot, iterator); err != nil {
+	if err := v.stack.SetAbsolute(destSlot, iterator); err != nil {
 		v.err = err
 		return
 	}
@@ -1002,11 +863,7 @@ func (v *VM) doOpIteratorInit() {
 // If the iterator is invalid, it pushes a false value onto the stack.
 func (v *VM) doOpIteratorNext() {
 	v.ip++
-	localIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	localIndex := v.currFrame.Get(v.ip)
 	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
@@ -1014,12 +871,12 @@ func (v *VM) doOpIteratorNext() {
 		return
 	}
 	if iterator.Next() {
-		if err = v.stack.Push(objects.TrueValue); err != nil {
+		if err := v.stack.Push(objects.TrueValue); err != nil {
 			v.err = err
 			return
 		}
 	} else {
-		if err = v.stack.Push(objects.FalseValue); err != nil {
+		if err := v.stack.Push(objects.FalseValue); err != nil {
 			v.err = err
 			return
 		}
@@ -1030,18 +887,14 @@ func (v *VM) doOpIteratorNext() {
 // It increments the instruction pointer, retrieves the iterator index, and validates that the iterator is valid.
 func (v *VM) doOpIteratorKey() {
 	v.ip++
-	localIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	localIndex := v.currFrame.Get(v.ip)
 	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
 		v.err = fmt.Errorf("not an iterator: %s", iteratorObj.TypeName())
 		return
 	}
-	if err = v.stack.Push(iterator.Key()); err != nil {
+	if err := v.stack.Push(iterator.Key()); err != nil {
 		v.err = err
 		return
 	}
@@ -1053,18 +906,14 @@ func (v *VM) doOpIteratorKey() {
 // If the iterator is invalid, it pushes a false value onto the stack.
 func (v *VM) doOpIteratorValue() {
 	v.ip++
-	localIndex, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	localIndex := v.currFrame.Get(v.ip)
 	iteratorObj := v.stack.PeekAbsolute(v.currFrame.BasePointer() + localIndex)
 	iterator, ok := iteratorObj.(objects.IIterator)
 	if !ok {
 		v.err = fmt.Errorf("not an iterator: %s", iteratorObj.TypeName())
 		return
 	}
-	if err = v.stack.Push(iterator.Value()); err != nil {
+	if err := v.stack.Push(iterator.Value()); err != nil {
 		v.err = err
 		return
 	}
@@ -1073,17 +922,13 @@ func (v *VM) doOpIteratorValue() {
 // doOpReferences retrieves an attribute identified by its index, resolves it, and pushes it onto the stack.
 func (v *VM) doOpReferences() {
 	v.ip += 2
-	nameIndex, err := v.currInstructions.Pos(v.ip, v.ip-1)
-	if err != nil {
-		v.err = err
-		return
-	}
+	nameIndex := v.currFrame.Pos(v.ip, v.ip-1)
 	if nameIndex < 0 || nameIndex >= len(v.references) {
 		v.err = fmt.Errorf("invalid attribute index %d", nameIndex)
 		return
 	}
 	symbol := v.references[nameIndex]
-	if err = v.stack.Push(symbol); err != nil {
+	if err := v.stack.Push(symbol); err != nil {
 		v.err = err
 		return
 	}
@@ -1092,16 +937,12 @@ func (v *VM) doOpReferences() {
 
 // doOpSuspend sets the VM's `suspend` flag to true, pausing the execution of the bytecode operations.
 func (v *VM) doOpSuspend() {
-	v.suspend = true
+	v.shutdown = true
 }
 
 // doOpUnknown is a fallback method executed when an unrecognized opcode is encountered in the instruction set.
 // It retrieves the current instruction at the instruction pointer and sets an error indicating the unknown opcode.
 func (v *VM) doOpUnknown() {
-	pos, err := v.currInstructions.Get(v.ip)
-	if err != nil {
-		v.err = err
-		return
-	}
+	pos := v.currFrame.Get(v.ip)
 	v.err = fmt.Errorf("unknown opcode: %d", pos)
 }

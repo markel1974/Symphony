@@ -8,30 +8,30 @@ import (
 // It maintains a stack of frames and tracks the current frame index for managing execution state.
 type Frames struct {
 	frames      []*Frame
-	framesIndex int
+	framesIndex uint
+	errSignal   func(err error)
 }
 
 // NewFrames initializes and returns a new Frames instance with the specified main function and maximum frame count.
-func NewFrames(main *objects.FunctionCompiled, maxFrames int) *Frames {
+func NewFrames(main *objects.FunctionCompiled, maxFrames int, errSignal func(err error)) *Frames {
 	f := &Frames{
 		frames:      make([]*Frame, maxFrames),
 		framesIndex: 1,
+		errSignal:   errSignal,
 	}
 	for i := range f.frames {
-		f.frames[i] = NewFunctionCallFrame()
+		f.frames[i] = NewFunctionCallFrame(errSignal)
 	}
-	f.frames[0].SetCompiledFunction(main)
-	f.frames[0].SetStartIP(resetIp)
 	return f
 }
 
-// Clear resets the frame index to its initial position, effectively clearing the current frame context.
-func (f *Frames) Clear() {
+// Reset resets the frame index to its initial position, effectively clearing the current frame context.
+func (f *Frames) Reset() {
 	f.framesIndex = 1
 }
 
 // Index returns the current index of the frame stack.
-func (f *Frames) Index() int {
+func (f *Frames) Index() uint {
 	return f.framesIndex
 }
 
@@ -51,21 +51,21 @@ func (f *Frames) GetPrev() *Frame {
 }
 
 // Next advances the frame index by one. Returns ErrStackOverflow if the index exceeds the bounds of the frames.
-func (f *Frames) Next() error {
+func (f *Frames) Next() {
 	f.framesIndex++
-	if f.framesIndex >= len(f.frames) {
-		return objects.ErrStackOverflow
+	if f.framesIndex >= uint(len(f.frames)) {
+		f.errSignal(objects.ErrStackOverflow)
+		return
 	}
-	return nil
 }
 
 // Previous decrements the framesIndex and returns an error if it goes below zero, indicating a stack underflow.
-func (f *Frames) Previous() error {
-	f.framesIndex--
-	if f.framesIndex < 0 {
-		return objects.ErrStackOverflow
+func (f *Frames) Previous() {
+	if f.framesIndex <= 1 {
+		f.errSignal(objects.ErrStackOverflow)
+		return
 	}
-	return nil
+	f.framesIndex--
 }
 
 // Unroll iterates through the frames in reverse order, appending each one to a slice, and decreases the frame index.

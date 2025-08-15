@@ -11,13 +11,45 @@ type Frame struct {
 	freeVars         []*objects.ObjectPointer
 	ip               int
 	basePointer      int
+	instructions     *objects.Instructions
+	errSignal        func(err error)
 }
 
 // NewFunctionCallFrame creates and returns a new Frame instance with its instruction pointer initialized to -1.
-func NewFunctionCallFrame() *Frame {
+func NewFunctionCallFrame(errSignal func(err error)) *Frame {
 	return &Frame{
-		ip: resetIp,
+		ip:        resetIp,
+		errSignal: errSignal,
 	}
+}
+
+// Bind initializes the frame with the given instruction pointer, compiled function, and base pointer values.
+func (f *Frame) Bind(startIp int, compiledFunction *objects.FunctionCompiled, basePointer int) {
+	f.ip = startIp
+	f.basePointer = basePointer
+	f.compiledFunction = compiledFunction
+	f.instructions = f.compiledFunction.Instructions()
+	f.freeVars = f.compiledFunction.Free()
+}
+
+// Get retrieves the integer value at the specified index from the instructions in the current frame.
+func (f *Frame) Get(index int) int {
+	v, err := f.instructions.Get(index)
+	if err != nil {
+		f.errSignal(err)
+		return 0
+	}
+	return v
+}
+
+// Pos calculates and returns an instruction position based on the given indices in the frame's instruction set.
+func (f *Frame) Pos(x int, y int) int {
+	v, err := f.instructions.Pos(x, y)
+	if err != nil {
+		f.errSignal(err)
+		return 0
+	}
+	return v
 }
 
 // FreeVarsIndex retrieves the free variable at the specified index from the frame's free variables.
@@ -25,39 +57,14 @@ func (f *Frame) FreeVarsIndex(idx int) *objects.ObjectPointer {
 	return f.freeVars[idx]
 }
 
-// SetFreeVars sets the free variables of the frame to the provided slice of ObjectPointer instances.
-func (f *Frame) SetFreeVars(freeVars []*objects.ObjectPointer) {
-	f.freeVars = freeVars
-}
-
 // StartIP retrieves the current instruction pointer (ip) of the frame, indicating the execution position in bytecode.
 func (f *Frame) StartIP() int {
 	return f.ip
 }
 
-// SetStartIP sets the instruction pointer (ip) to the specified value, modifying the execution state of the frame.
-func (f *Frame) SetStartIP(ip int) {
-	f.ip = ip
-}
-
 // BasePointer retrieves the base pointer value of the current frame, indicating the starting position of its variables.
 func (f *Frame) BasePointer() int {
 	return f.basePointer
-}
-
-// SetBasePointer sets the base pointer index for the frame, which is used to manage the call stack during execution.
-func (f *Frame) SetBasePointer(basePointer int) {
-	f.basePointer = basePointer
-}
-
-// SetCompiledFunction sets the compiled function for the current frame.
-func (f *Frame) SetCompiledFunction(compiledFunction *objects.FunctionCompiled) {
-	f.compiledFunction = compiledFunction
-}
-
-// Instructions retrieve the bytecode instructions associated with the current frame's compiled function.
-func (f *Frame) Instructions() *objects.Instructions {
-	return f.compiledFunction.Instructions()
 }
 
 // SourcePos returns the source position mapped to the given instruction pointer (ip) in the current frame's context.
@@ -67,5 +74,10 @@ func (f *Frame) SourcePos(ip int) int {
 
 // SameFunction compares the given FunctionCompiled with the Frame's compiled function and returns true if they are the same.
 func (f *Frame) SameFunction(callee *objects.FunctionCompiled) bool {
-	return callee == f.compiledFunction
+	return f.compiledFunction == callee
+}
+
+// NumLocals returns the number of local variables required by the current frame's compiled function.	'
+func (f *Frame) NumLocals() int {
+	return f.compiledFunction.NumLocals()
 }
