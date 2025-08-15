@@ -30,7 +30,7 @@ const (
 
 // ISequencer defines an interface to generate a sequence of functions for a given Virtual Machine instance.
 type ISequencer interface {
-	Create() []func(vm *VM)
+	Create() []IOpExecutor
 }
 
 // VM represents a virtual machine that executes bytecode instructions, handles stack, and manages execution frames.
@@ -83,7 +83,11 @@ func NewVM(loader bytecode.ILoader, sequencer ISequencer, bc *bytecode.Bytecode,
 	v.stack = NewStack(stackSize, maxAllocations, v.setError)
 	v.frames = NewFrames(maxFrames, v.setError)
 	v.globals = NewGlobals(globals, v.setError)
-	v.sequencer = sequencer.Create()
+	seq := sequencer.Create()
+	v.sequencer = make([]func(vm *VM), len(seq))
+	for i, s := range seq {
+		v.sequencer[i] = s.Execute
+	}
 	v.Reset()
 	return v, nil
 }
