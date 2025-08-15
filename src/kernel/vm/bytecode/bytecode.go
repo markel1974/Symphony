@@ -53,11 +53,11 @@ func (b *Bytecode) Print() {
 	log.Println(b.CountObjects())
 	log.Println("--- Constants ---")
 	for idx, v := range b.FormatConstants() {
-		log.Printf("%000d => %s\n", idx, v)
+		log.Printf("%04d => %s\n", idx, v)
 	}
 	log.Println("--- References ---")
 	for idx, v := range b.FormatReferences() {
-		log.Printf("%2d => %s\n", idx, v)
+		log.Printf("%04d => %s\n", idx, v)
 	}
 }
 
@@ -148,9 +148,9 @@ func (b *Bytecode) formatObject(cIdx int, constant objects.IObject) []string {
 	var output []string
 	switch cn := constant.(type) {
 	case *objects.FunctionCompiled:
-		output = append(output, fmt.Sprintf("[% 3d] (Compiled Function|%p)", cIdx, &cn))
+		output = append(output, fmt.Sprintf("[% 3d] %s (Compiled Function|%p)", cIdx, cn.Name(), &cn))
 		for _, l := range FormatInstructions(cn.Data(), 0) {
-			output = append(output, fmt.Sprintf("     %s", l))
+			output = append(output, fmt.Sprintf("\t\t%s", l))
 		}
 	default:
 		output = append(output, fmt.Sprintf("[% 3d] %s (%s|%p)", cIdx, cn, reflect.TypeOf(cn).Elem().Name(), &cn))
