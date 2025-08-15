@@ -7,7 +7,7 @@ import (
 )
 
 // timesModule is a map providing time-related constants, formats, durations, months, and various time utility functions.
-var timesModule = map[string]objects.IObject{
+var _timesModule = map[string]objects.IObject{
 	"format_ansic":         objects.NewStringNoSize(time.ANSIC),
 	"format_unix_date":     objects.NewStringNoSize(time.UnixDate),
 	"format_ruby_date":     objects.NewStringNoSize(time.RubyDate),

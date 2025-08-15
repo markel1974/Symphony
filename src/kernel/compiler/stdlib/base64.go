@@ -7,7 +7,7 @@ import (
 )
 
 // base64Module provides encoding and decoding utility functions for base64, raw, and URL-safe base64 formats.
-var base64Module = map[string]objects.IObject{
+var _base64Module = map[string]objects.IObject{
 	"encode":         objects.NewFunctionUser("encode", objects.FuncAYRS(base64.StdEncoding.EncodeToString)),
 	"decode":         objects.NewFunctionUser("decode", objects.FuncASRYE(base64.StdEncoding.DecodeString)),
 	"raw_encode":     objects.NewFunctionUser("raw_encode", objects.FuncAYRS(base64.RawStdEncoding.EncodeToString)),

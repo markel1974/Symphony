@@ -10,7 +10,7 @@ func main() {
 	a := 0
 	for idx, v := range x {
 		a++
-		fmt.println(v, " ", a)
+		fmt.Println(v, " ", a)
 	}
 	return 0
 }

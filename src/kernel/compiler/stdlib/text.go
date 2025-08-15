@@ -11,7 +11,7 @@ import (
 )
 
 // textModule is a map of various text processing functions, including string manipulation, regex operations, and type conversions.
-var textModule = map[string]objects.IObject{
+var _textModule = map[string]objects.IObject{
 	"re_match":       objects.NewFunctionUser("re_match", textREMatch),                                   // re_match(pattern, text) => bool/error
 	"re_find":        objects.NewFunctionUser("re_find", textREFind),                                     // re_find(pattern, text, count) => [[{text:,begin:,end:}]]/undefined
 	"re_replace":     objects.NewFunctionUser("re_replace", textREReplace),                               // re_replace(pattern, text, repl) => string/error

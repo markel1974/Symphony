@@ -7,16 +7,17 @@ import (
 )
 
 // fmtSafeModule is a map containing predefined functions from the fmt package wrapped as IObjects, like "sprintf".
-var fmtSafeModule = map[string]objects.IObject{
-	"sprintf": objects.NewFunctionUser("sprintf", fmtSprintf),
+var _fmtSafeModule = map[string]objects.IObject{
+	"Sprintf": objects.NewFunctionUser("Sprintf", fmtSprintf),
 }
 
 // fmtModule is a map that associates string keys with user-defined function objects for various formatted output operations.
-var fmtModule = map[string]objects.IObject{
-	"print":   objects.NewFunctionUser("print", fmtPrint),
-	"printf":  objects.NewFunctionUser("printf", fmtPrintf),
-	"println": objects.NewFunctionUser("println", fmtPrintln),
-	"sprintf": objects.NewFunctionUser("sprintf", fmtSprintf),
+var _fmtModule = map[string]objects.IObject{
+	"Print":   objects.NewFunctionUser("Print", fmtPrint),
+	"Printf":  objects.NewFunctionUser("Printf", fmtPrintf),
+	"Println": objects.NewFunctionUser("Println", fmtPrintln),
+	"Sprint":  objects.NewFunctionUser("Sprintf", fmtSprint),
+	"Sprintf": objects.NewFunctionUser("Sprintf", fmtSprintf),
 }
 
 // fmtPrint prints the string representations of the provided IObject arguments without a newline.
@@ -61,6 +62,26 @@ func fmtPrintln(args ...objects.IObject) (ret objects.IObject, err error) {
 	printArgs = append(printArgs, "\n")
 	_, _ = fmt.Print(printArgs...)
 	return nil, nil
+}
+
+// fmtSprintf formats a string based on a format string and arguments, returning the result or an error if formatting fails.
+func fmtSprint(args ...objects.IObject) (ret objects.IObject, err error) {
+	numArgs := len(args)
+	if numArgs == 0 {
+		return nil, objects.ErrWrongNumArguments
+	}
+	data, ok := args[0].(*objects.String)
+	if !ok {
+		return nil, objects.NewInvalidArgumentError("format", "string", args[0].TypeName())
+	}
+	if numArgs == 1 {
+		return data, nil
+	}
+	var ar []interface{}
+	for _, v := range args {
+		ar = append(ar, objects.ToInterface(v))
+	}
+	return objects.NewString(fmt.Sprint(ar))
 }
 
 // fmtSprintf formats a string based on a format string and arguments, returning the result or an error if formatting fails.

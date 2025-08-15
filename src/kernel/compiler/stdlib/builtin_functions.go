@@ -6,8 +6,8 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
-// _builtinFuncs is a slice of predefined builtin functions used for various standard operations within the system.
-var _builtinFuncs = []*objects.FunctionBuiltin{
+// _builtinFunctions is a slice of predefined builtin functions used for various standard operations within the system.
+var _builtinFunctions = []*objects.FunctionBuiltin{
 	objects.NewFunctionBuiltin("len", builtinLen),
 	objects.NewFunctionBuiltin("copy", builtinCopy),
 	objects.NewFunctionBuiltin("append", builtinAppend),
@@ -39,16 +39,6 @@ var _builtinFuncs = []*objects.FunctionBuiltin{
 	objects.NewFunctionBuiltin("is_undefined", builtinIsUndefined),
 	objects.NewFunctionBuiltin("is_function", builtinIsFunction),
 	objects.NewFunctionBuiltin("is_callable", builtinIsCallable),
-}
-
-// GetAllBuiltin returns a slice containing all registered builtin functions.
-func GetAllBuiltin() []*objects.FunctionBuiltin {
-	return append([]*objects.FunctionBuiltin{}, _builtinFuncs...)
-}
-
-// GetBuiltin retrieves a FunctionBuiltin by its index from the predefined list of builtin functions.
-func GetBuiltin(idx int) *objects.FunctionBuiltin {
-	return _builtinFuncs[idx]
 }
 
 // builtinTypeName returns the type name of the given object argument as a string, or an error if the argument count is invalid.

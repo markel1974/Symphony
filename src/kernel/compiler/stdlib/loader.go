@@ -7,6 +7,30 @@ import (
 	"github.com/markel1974/c64emu/src/kernel/vm/objects"
 )
 
+// _builtinModules are builtin type standard library modules.
+var _builtinModules = map[string]map[string]objects.IObject{
+	//"os":   osModule,
+	//"fmt":    _fmtSafeModule,
+	"fmt":    _fmtModule,
+	"math":   _mathModule,
+	"text":   _textModule,
+	"times":  _timesModule,
+	"rand":   _randModule,
+	"json":   _jsonModule,
+	"base64": _base64Module,
+	"hex":    _hexModule,
+}
+
+// GetAllBuiltin returns a slice containing all registered builtin functions.
+func GetAllBuiltin() []*objects.FunctionBuiltin {
+	return append([]*objects.FunctionBuiltin{}, _builtinFunctions...)
+}
+
+// GetBuiltin retrieves a FunctionBuiltin by its index from the predefined list of builtin functions.
+func GetBuiltin(idx int) *objects.FunctionBuiltin {
+	return _builtinFunctions[idx]
+}
+
 // Loader is responsible for managing modules and resolving symbols within those modules.
 // It provides functionality for accessing and resolving both regular and built-in symbols.
 // The mod field holds a collection of modules, allowing for import and retrieval of symbols.
@@ -17,7 +41,7 @@ type Loader struct {
 // NewLoader initializes and returns a new Loader instance with built-in modules preloaded.
 func NewLoader() *Loader {
 	mods := modules.NewModules()
-	for name, mod := range BuiltinModules {
+	for name, mod := range _builtinModules {
 		mods.AddBuiltinModule(name, mod)
 	}
 	return &Loader{
