@@ -8,6 +8,11 @@ type ModuleBuiltin struct {
 	Attrs map[string]objects.IObject
 }
 
+// NewModuleBuiltin creates and returns a new instance of ModuleBuiltin with the given attributes.
+func NewModuleBuiltin(attrs map[string]objects.IObject) *ModuleBuiltin {
+	return &ModuleBuiltin{Attrs: attrs}
+}
+
 // Import loads a built-in module by its name and returns its immutable map representation or an error if it fails.
 func (m *ModuleBuiltin) Import(moduleName string) (interface{}, error) {
 	return m.AsImmutableMap(moduleName), nil

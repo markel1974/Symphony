@@ -23,7 +23,7 @@ func (m *Modules) Add(name string, module IModule) {
 
 // AddBuiltinModule registers a built-in module with the given name and its attributes in the modules map.
 func (m *Modules) AddBuiltinModule(name string, attrs map[string]objects.IObject) {
-	m.m[name] = &ModuleBuiltin{Attrs: attrs}
+	m.m[name] = NewModuleBuiltin(attrs)
 }
 
 // Remove removes the module with the specified name from the Modules map. If the name does not exist, no action is taken.
