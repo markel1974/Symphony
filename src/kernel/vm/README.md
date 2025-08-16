@@ -31,7 +31,29 @@ The VM's core execution loop avoids a monolithic and unmaintainable `switch` sta
 -   **Self-Describing Executors:** In a Go-idiomatic design, each executor `struct` **embeds** its own `*bytecode.OpcodeDetails`. This means that at runtime, inside the `Execute` method, an instruction knows everything about itself—its name, its opcode, and the layout of its operands—without needing to query an external source. This is a powerful example of **composition over inheritance**.
 -   **Pragmatic Performance:** While the design uses interfaces for flexibility, the critical execution loop is highly optimized. During initialization, the `Sequencer` creates a slice of **direct function pointers** to each executor's `Execute` method. This means the main loop performs a direct function call, which is extremely fast, avoiding any dynamic dispatch overhead at runtime.
 
-### 3. The Object System: Dynamic and Rich
+### 3. Modular Architecture: The Sequencer as an Interchangeable Engine
+
+The `sequencer` architecture is not just an elegant implementation of the Strategy Pattern for executing the VM's native bytecode; it is the cornerstone of a much deeper flexibility that allows the very purpose of the virtual machine to be radically redefined.
+
+The Instruction Set Architecture (ISA) is not hardwired into the VM's core. Instead, thanks to the clear separation of concerns, the entire instruction set is, in effect, an interchangeable "plugin."
+
+#### Beyond Compilation: Pure Emulation
+
+While an obvious approach to running a different language would be to write a new compiler that targets the VM's bytecode, this architecture enables a far more powerful and performant alternative: **replacing the sequencer itself**.
+
+##### Concrete Example: Transforming the VM into a Z80 CPU Emulator
+
+Instead of writing a compiler from Z80 assembly to the VM's bytecode (a process that would require multiple VM instructions to emulate a single hardware instruction), one could create a dedicated `Z80_Sequencer`:
+
+1.  **New Executors**: Implement an `IOpExecutor` for each opcode of the Z80 CPU (e.g., `LD_A_n_Executor`, `ADD_A_B_Executor`, etc.).
+2.  **1-to-1 Dispatch**: The sequencer's array would become a direct dispatch table mapping the Z80's binary opcodes (0x00 to 0xFF) to the corresponding executor.
+3.  **Native Execution**: The logic within each executor would no longer manipulate the VM's high-level stack but would operate directly on a data structure representing the Z80 CPU's registers and memory.
+
+In this scenario, the VM's execution loop (`v.sequencer[opcode](v)`) is no longer interpreting a scripting language. It is, in effect, performing the **fetch-decode-execute cycle of an emulated Z80 CPU**, with the maximum efficiency afforded by direct function pointer dispatch.
+
+This ability to transform a high-level language VM into a high-performance, low-level CPU emulator—simply by "swapping the instruction disk"—is the ultimate testament to the robustness and brilliance of this architecture.
+
+### 4. The Object System: Dynamic and Rich
 
 The VM operates on a flexible and powerful type system defined in the `vm/objects` package.
 
