@@ -6,7 +6,7 @@ import (
 
 // MakeInstruction returns a bytecode for an opcode and the operands.
 func MakeInstruction(opcode Opcode, operands ...int) []byte {
-	numOperands := OpcodeOperands[opcode]
+	numOperands := OpcodeToOperands(opcode)
 	totalLen := 1
 	for _, w := range numOperands {
 		totalLen += w
@@ -30,19 +30,19 @@ func MakeInstruction(opcode Opcode, operands ...int) []byte {
 }
 
 // FormatInstructions returns string representation of bytecode instructions.
-func FormatInstructions(b []byte, posOffset int) []string {
+func FormatInstructions(bc []byte, posOffset int) []string {
 	var out []string
 	i := 0
-	for i < len(b) {
-		numOperands := OpcodeOperands[b[i]]
-		operands, read := ReadOperands(numOperands, b[i+1:])
+	for i < len(bc) {
+		opcode := bc[i]
+		numOperands, operands, read := OpcodeToOperandsDetails(opcode, bc[i+1:])
 		switch len(numOperands) {
 		case 0:
-			out = append(out, fmt.Sprintf("%04d %-7s", posOffset+i, OpcodeNames[b[i]]))
+			out = append(out, fmt.Sprintf("%04d %-7s", posOffset+i, OpcodeNames(opcode)))
 		case 1:
-			out = append(out, fmt.Sprintf("%04d %-7s %-5d", posOffset+i, OpcodeNames[b[i]], operands[0]))
+			out = append(out, fmt.Sprintf("%04d %-7s %-5d", posOffset+i, OpcodeNames(opcode), operands[0]))
 		case 2:
-			out = append(out, fmt.Sprintf("%04d %-7s %-5d %-5d", posOffset+i, OpcodeNames[b[i]], operands[0], operands[1]))
+			out = append(out, fmt.Sprintf("%04d %-7s %-5d %-5d", posOffset+i, OpcodeNames(opcode), operands[0], operands[1]))
 		}
 		i += 1 + read
 	}

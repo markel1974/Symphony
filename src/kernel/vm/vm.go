@@ -134,9 +134,9 @@ func (v *VM) Run(main string) error {
 func (v *VM) run() {
 	for {
 		v.ip++
-		opcode := v.currFrame.Get(v.ip)
-		opcode = opcode & sequenceMask
-		log.Println("Executing instruction ", opcode, bytecode.OpcodeNames[opcode])
+		inst := v.currFrame.Get(v.ip)
+		opcode := bytecode.Opcode(inst & sequenceMask)
+		log.Println("Executing instruction ", opcode, bytecode.OpcodeNames(opcode))
 		v.sequencer[opcode](v)
 		if v.shutdown {
 			break

@@ -353,9 +353,7 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 	i := 0
 	for i < len(instances) {
 		op := instances[i]
-		numOperands := OpcodeOperands[op]
-		_, read := ReadOperands(numOperands, instances[i+1:])
-
+		offset := OpcodeToOperandsOffset(op)
 		switch op {
 		case OpConstant:
 			curIdx := int(instances[i+2]) | int(instances[i+1])<<8
@@ -373,9 +371,9 @@ func updateConstIndexes(instances []byte, indexMap map[int]int) error {
 			}
 			copy(instances[i:], MakeInstruction(op, newIdx, numFree))
 		default:
-			return fmt.Errorf("unsupported opcode: %s", OpcodeNames[op])
+			return fmt.Errorf("unsupported opcode: %s", OpcodeNames(op))
 		}
-		i += 1 + read
+		i += 1 + offset
 	}
 	return nil
 }
